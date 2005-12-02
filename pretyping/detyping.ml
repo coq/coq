@@ -177,7 +177,7 @@ let lookup_name_as_renamed env t s =
 	       if id=s then (Some n) 
 	       else lookup avoid' (add_name (Name id) env_names) (n+1) c'
 	   | (Anonymous,avoid')    -> lookup avoid' env_names (n+1) (pop c'))
-    | Cast (c,_) -> lookup avoid env_names n c
+    | Cast (c,_,_) -> lookup avoid env_names n c
     | _ -> None
   in lookup (ids_of_named_context (named_context env)) empty_names_context 1 t
 
@@ -191,7 +191,7 @@ let lookup_index_as_renamed env t n =
 	  (match concrete_name true [] empty_names_context name c' with
              | (Name _,_) -> lookup n (d+1) c'
              | (Anonymous,_) -> if n=1 then Some d else lookup (n-1) (d+1) c')
-    | Cast (c,_) -> lookup n d c
+    | Cast (c,_,_) -> lookup n d c
     | _ -> None
   in lookup n 1 t
 
@@ -345,8 +345,8 @@ let rec detype tenv avoid env t =
 	  RVar (dummy_loc, id))
     | Sort (Prop c) -> RSort (dummy_loc,RProp c)
     | Sort (Type u) -> RSort (dummy_loc,RType (Some u))
-    | Cast (c1,c2) ->
-	RCast(dummy_loc,detype tenv avoid env c1,
+    | Cast (c1,k,c2) ->
+	RCast(dummy_loc,detype tenv avoid env c1, k,
               detype tenv avoid env c2)
     | Prod (na,ty,c) -> detype_binder tenv BProd avoid env na ty c
     | Lambda (na,ty,c) -> detype_binder tenv BLambda avoid env na ty c
@@ -468,7 +468,7 @@ and detype_eqn tenv avoid env constr construct_nargs branch =
 	    let pat,new_avoid,new_env,new_ids = make_pat x avoid env b ids in
             buildrec new_ids (pat::patlist) new_avoid new_env (n-1) b
 
-	| Cast (c,_) ->    (* Oui, il y a parfois des cast *)
+	| Cast (c,_,_) ->    (* Oui, il y a parfois des cast *)
 	    buildrec ids patlist avoid env n c
 
 	| _ -> (* eta-expansion : n'arrivera plus lorsque tous les
@@ -600,10 +600,10 @@ let rec subst_raw subst raw =
   | RHole (loc, (BinderType _ | QuestionMark | CasesType |
       InternalHole | TomatchTypeParameter _)) -> raw
 
-  | RCast (loc,r1,r2) -> 
+  | RCast (loc,r1,k,r2) -> 
       let r1' = subst_raw subst r1 and r2' = subst_raw subst r2 in
 	if r1' == r1 && r2' == r2 then raw else
-	  RCast (loc,r1',r2')
+	  RCast (loc,r1',k,r2')
 
   | RDynamic _ -> raw
 

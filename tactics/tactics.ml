@@ -50,7 +50,7 @@ let rec nb_prod x =
     match kind_of_term c with
         Prod(_,_,t) -> count (n+1) t
       | LetIn(_,a,_,t) -> count n (subst1 a t)
-      | Cast(c,_) -> count n c
+      | Cast(c,_,_) -> count n c
       | _ -> n
   in count 0 x
 
@@ -144,8 +144,8 @@ type tactic_reduction = env -> evar_map -> constr -> constr
    reduction function either to the conclusion or to a 
    certain hypothesis *)
 
-let reduct_in_concl redfun gl = 
-  convert_concl_no_check (pf_reduce redfun gl (pf_concl gl)) gl
+let reduct_in_concl (redfun,sty) gl = 
+  convert_concl_no_check (pf_reduce redfun gl (pf_concl gl)) sty gl
 
 let reduct_in_hyp redfun (id,_,(where,where')) gl =
   let (_,c, ty) = pf_get_hyp gl id in
@@ -165,7 +165,7 @@ let reduct_in_hyp redfun (id,_,(where,where')) gl =
       convert_hyp_no_check (id,Some b',ty') gl
 
 let reduct_option redfun = function
-  | Some id -> reduct_in_hyp   redfun id 
+  | Some id -> reduct_in_hyp   (fst redfun) id 
   | None    -> reduct_in_concl redfun 
 
 (* The following tactic determines whether the reduction
@@ -188,7 +188,8 @@ let change_on_subterm cv_pb t = function
   | Some occl -> contextually false occl (change_and_check Reduction.CONV t) 
 
 let change_in_concl occl t =
-  reduct_in_concl (change_on_subterm Reduction.CUMUL t occl) 
+  reduct_in_concl ((change_on_subterm Reduction.CUMUL t occl),DEFAULTcast)
+
 let change_in_hyp occl t   =
   reduct_in_hyp (change_on_subterm Reduction.CONV t occl)
 
@@ -205,22 +206,23 @@ let change occl c cls =
   onClauses (change_option occl c) cls
 
 (* Pour usage interne (le niveau User est pris en compte par reduce) *)
-let red_in_concl        = reduct_in_concl red_product
+let red_in_concl        = reduct_in_concl (red_product,DEFAULTcast)
 let red_in_hyp          = reduct_in_hyp   red_product
-let red_option          = reduct_option   red_product
-let hnf_in_concl        = reduct_in_concl hnf_constr
+let red_option          = reduct_option   (red_product,DEFAULTcast)
+let hnf_in_concl        = reduct_in_concl (hnf_constr,DEFAULTcast)
 let hnf_in_hyp          = reduct_in_hyp   hnf_constr
-let hnf_option          = reduct_option   hnf_constr
-let simpl_in_concl      = reduct_in_concl nf
+let hnf_option          = reduct_option   (hnf_constr,DEFAULTcast)
+let simpl_in_concl      = reduct_in_concl (nf,DEFAULTcast)
 let simpl_in_hyp        = reduct_in_hyp   nf
-let simpl_option        = reduct_option   nf
-let normalise_in_concl  = reduct_in_concl compute
+let simpl_option        = reduct_option   (nf,DEFAULTcast)
+let normalise_in_concl  = reduct_in_concl (compute,DEFAULTcast)
 let normalise_in_hyp    = reduct_in_hyp   compute
-let normalise_option    = reduct_option   compute
-let unfold_in_concl loccname   = reduct_in_concl (unfoldn loccname) 
-let unfold_in_hyp   loccname   = reduct_in_hyp   (unfoldn loccname) 
-let unfold_option   loccname   = reduct_option   (unfoldn loccname) 
-let pattern_option l = reduct_option (pattern_occs l)
+let normalise_option    = reduct_option   (compute,DEFAULTcast)
+let normalise_vm_in_concl = reduct_in_concl (Redexpr.cbv_vm,VMcast)
+let unfold_in_concl loccname = reduct_in_concl (unfoldn loccname,DEFAULTcast)
+let unfold_in_hyp   loccname = reduct_in_hyp   (unfoldn loccname) 
+let unfold_option   loccname = reduct_option (unfoldn loccname,DEFAULTcast) 
+let pattern_option l = reduct_option (pattern_occs l,DEFAULTcast)
 
 (* A function which reduces accordingly to a reduction expression,
    as the command Eval does. *)
@@ -346,7 +348,9 @@ let pf_lookup_hypothesis_as_renamed_gen red h gl =
   let rec aux ccl =
     match pf_lookup_hypothesis_as_renamed env ccl h with
       | None when red ->
-          aux (Redexpr.reduction_of_red_expr (Red true) env (project gl) ccl)
+          aux 
+	    ((fst (Redexpr.reduction_of_red_expr (Red true))) 
+	       env (project gl) ccl)
       | x -> x
   in
   try aux (pf_concl gl)
@@ -433,7 +437,7 @@ let rec intros_rmove = function
  *  of the type of a term. *)
 
 let apply_type hdcty argl gl =
-  refine (applist (mkCast (Evarutil.mk_new_meta(),hdcty),argl)) gl
+  refine (applist (mkCast (Evarutil.mk_new_meta(),DEFAULTcast, hdcty),argl)) gl
     
 let apply_term hdc argl gl =
   refine (applist (hdc,argl)) gl
@@ -443,7 +447,7 @@ let bring_hyps hyps =
   else
     (fun gl ->
       let newcl = List.fold_right mkNamedProd_or_LetIn hyps (pf_concl gl) in
-      let f = mkCast (Evarutil.mk_new_meta(),newcl) in
+      let f = mkCast (Evarutil.mk_new_meta(),DEFAULTcast, newcl) in
       refine_no_check (mkApp (f, instance_from_named_context hyps)) gl)
 
 (* Resolution with missing arguments *)
@@ -749,7 +753,7 @@ let letin_tac with_eq name c occs gl =
   let t = refresh_universes (pf_type_of gl c) in
   let newcl = mkNamedLetIn id c t ccl in
   tclTHENLIST
-    [ convert_concl_no_check newcl;
+    [ convert_concl_no_check newcl DEFAULTcast;
       intro_gen (IntroMustBe id) lastlhyp true;
       if with_eq then tclIDTAC else thin_body [id];
       tclMAP convert_hyp_no_check depdecls ] gl
@@ -882,7 +886,8 @@ let constructor_tac boundopt i lbind gl =
   end;
   let cons = mkConstruct (ith_constructor_of_inductive mind i) in
   let apply_tac = apply_with_bindings (cons,lbind) in
-  (tclTHENLIST [convert_concl_no_check redcl; intros; apply_tac]) gl
+  (tclTHENLIST 
+     [convert_concl_no_check redcl DEFAULTcast; intros; apply_tac]) gl
 
 let one_constructor i = constructor_tac None i
 
@@ -1391,7 +1396,8 @@ let induction_tac varname typ ((elimc,lbindelimc),elimt) gl =
   let c = mkVar varname in
   let indclause  = make_clenv_binding gl (c,typ) NoBindings  in
   let elimclause =
-    make_clenv_binding gl (mkCast (elimc,elimt),elimt) lbindelimc in
+    make_clenv_binding gl 
+      (mkCast (elimc,DEFAULTcast, elimt),elimt) lbindelimc in
   elimination_clause_scheme true elimclause indclause gl
 
 let make_up_names7 n ind (old_style,cname) = 
@@ -1900,9 +1906,9 @@ let abstract_subproof name tac gls =
       (fun (id,_,_ as d) (s1,s2) -> 
 	 if mem_named_context id current_sign &
            interpretable_as_section_decl (Sign.lookup_named id current_sign) d
-         then (s1,add_named_decl d s2)
+         then (s1,push_named_context_val d s2)
 	 else (add_named_decl d s1,s2)) 
-      global_sign (empty_named_context,empty_named_context) in
+      global_sign (empty_named_context,empty_named_context_val) in
   let na = next_global_ident_away false name (pf_ids_of_hyps gls) in
   let concl = it_mkNamedProd_or_LetIn (pf_concl gls) sign in
   if occur_existential concl then

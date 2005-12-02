@@ -1,6 +1,6 @@
 open Names
 open Term
-open Environ
+open Pre_env
 
 val val_of_constr : env -> constr -> values 
 

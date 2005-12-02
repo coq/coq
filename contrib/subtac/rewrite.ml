@@ -349,7 +349,8 @@ and subset_coerce prog_info ctx x y =
 		let ctx', pcx' = subst_ctx ctx pcx in
 		  cx, {
 		    Evd.evar_concl = pcx';
-		    Evd.evar_hyps = evar_ctx prog_info ctx';
+		    Evd.evar_hyps = 
+                     Environ.val_of_named_context (evar_ctx prog_info ctx');
 		    Evd.evar_body = Evd.Evar_empty;
 		  }
 	      in
@@ -368,7 +369,7 @@ and subset_coerce prog_info ctx x y =
 		 in
 		   ignore(Univ.merge_constraints cstrs (Global.universes ()));
 		   Some (fun x ->
-			   mkCast (x, y))
+			   mkCast (x, DEFAULTcast, y))
 	       with 
 		   Reduction.NotConvertible ->	
 		     subtyping_error 
@@ -420,7 +421,9 @@ and rewrite_term prog_info ctx (t : dterm_loc) : Term.constr * Term.types =
 			   let evarinfo = 
 			     { 
 			       Evd.evar_concl = proof;
-			       Evd.evar_hyps = evar_ctx prog_info ctx';
+			       Evd.evar_hyps = 
+			        Environ.val_of_named_context 
+				 (evar_ctx prog_info ctx');
 			       Evd.evar_body = Evd.Evar_empty;
 			     }
 			   in
@@ -581,7 +584,7 @@ let subtac recursive id (s, t) =
 		    let key = mknewexist () in
 		      prog_info.evm <- Evd.add prog_info.evm key 
 			{ Evd.evar_concl = wf_rel;
-			  Evd.evar_hyps = [];
+			  Evd.evar_hyps = Environ.empty_named_context_val;
 			  Evd.evar_body = Evd.Evar_empty };
 		      mkEvar (key, [| |])
 	    in

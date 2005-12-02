@@ -41,7 +41,7 @@ let rec head_const c = match kind_of_term c with
   | Prod (_,_,d) -> head_const d
   | LetIn (_,_,_,d) -> head_const d
   | App (f,_)   -> head_const f
-  | Cast (d,_)   -> head_const d
+  | Cast (d,_,_)   -> head_const d
   | _            -> c
 
 (* General search, restricted to head constant if [only_head] *)

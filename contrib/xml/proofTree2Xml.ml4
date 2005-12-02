@@ -46,7 +46,8 @@ let constr_to_xml obj sigma env =
   let rel_context = Sign.push_named_to_rel_context named_context' [] in
   let rel_env =
    Environ.push_rel_context rel_context
-    (Environ.reset_with_named_context real_named_context env) in
+    (Environ.reset_with_named_context 
+	(Environ.val_of_named_context real_named_context) env) in
   let obj' =
    Term.subst_vars (List.map (function (i,_,_) -> i) named_context') obj in
   let seed = ref 0 in
@@ -180,11 +181,12 @@ Pp.ppnl (Pp.(++) (Pp.str
                     (constr_to_xml tid sigma env))
                >] in
          let old_names = List.map (fun (id,c,tid)->id) old_hyps in
+	 let nhyps = Environ.named_context_of_val hyps in
          let new_hyps =
-          List.filter (fun (id,c,tid)-> not (List.mem id old_names)) hyps in
+          List.filter (fun (id,c,tid)-> not (List.mem id old_names)) nhyps in
 
          X.xml_nempty "Tactic" of_attribute
-          [<(build_hyps new_hyps) ; (aux flat_proof hyps)>]
+          [<(build_hyps new_hyps) ; (aux flat_proof nhyps)>]
         end
 
      | {PT.ref=Some(PT.Change_evars,nodes)} ->

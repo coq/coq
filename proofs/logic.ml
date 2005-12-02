@@ -69,77 +69,45 @@ let with_check = Options.with_option check
 (* Implementation of the structural rules (moving and deleting
    hypotheses around) *)
 
-let check_clear_forward cleared_ids used_ids whatfor =
-  if !check && cleared_ids<>[] then
-    Idset.iter
-      (fun id' ->
-        if List.mem id' cleared_ids then
-          error (string_of_id id'^" is used in "^whatfor))
-      used_ids
-
 (* The Clear tactic: it scans the context for hypotheses to be removed
    (instead of iterating on the list of identifier to be removed, which
    forces the user to give them in order). *)
 let clear_hyps ids gl =
   let env = Global.env() in
-  let (nhyps,rmv) =
-    Sign.fold_named_context
-      (fun (id,c,ty as d) (hyps,rmv) ->
-        if List.mem id ids then
-          (hyps,id::rmv)
-        else begin
-          check_clear_forward rmv (global_vars_set_of_decl env d)
-            ("hypothesis "^string_of_id id);
-          (add_named_decl d hyps, rmv)
-        end)
-      gl.evar_hyps
-      ~init:(empty_named_context,[]) in
+  let (nhyps,cleared_ids) =
+    let fcheck cleared_ids (id,_,_ as d)  =
+      if !check && cleared_ids<>[] then
+	Idset.iter
+	  (fun id' ->
+            if List.mem id' cleared_ids then
+              error (string_of_id id'^
+		        " is used in hypothesis "^string_of_id id))
+	  (global_vars_set_of_decl env d) in
+    clear_hyps ids fcheck gl.evar_hyps in
   let ncl = gl.evar_concl in
-  check_clear_forward rmv (global_vars_set env ncl) "conclusion";
+  if !check && cleared_ids<>[] then
+    Idset.iter
+      (fun id' ->
+        if List.mem id' cleared_ids then
+          error (string_of_id id'^" is used in conclusion"))
+      (global_vars_set env ncl);
   mk_goal nhyps ncl
 
 (* The ClearBody tactic *)
 
 (* [apply_to_hyp sign id f] splits [sign] into [tail::[id,_,_]::head] and
-   returns [tail::(f head (id,_,_) tail)] *)
+   returns [tail::(f head (id,_,_) (rev tail))] *)
 let apply_to_hyp sign id f =
-  let found = ref false in
-  let sign' =
-    fold_named_context_both_sides
-      (fun head (idc,c,ct as d) tail ->
-	 if idc = id then begin
-	   found := true; f head d tail
-	 end else 
-	   add_named_decl d head)
-      sign ~init:empty_named_context
-  in
-  if (not !check) || !found then sign' else error "No such assumption"
-
-(* Same but with whole environment *)
-let apply_to_hyp2 env id f =
-  let found = ref false in
-  let env' =
-    fold_named_context_both_sides
-      (fun env (idc,c,ct as d) tail ->
-	 if idc = id then begin
-	   found := true; f env d tail
-	 end else 
-	   push_named d env)
-      (named_context env) ~init:(reset_context env)
-  in
-  if (not !check) || !found then env' else error "No such assumption"
+  try apply_to_hyp sign id f 
+  with Hyp_not_found -> 
+    if !check then error "No such assumption"
+    else sign
 
 let apply_to_hyp_and_dependent_on sign id f g =
-  let found = ref false in
-  let sign =
-    Sign.fold_named_context
-      (fun (idc,_,_ as d) oldest ->
-         if idc = id then (found := true; add_named_decl (f d) oldest)
-         else if !found then add_named_decl (g d) oldest
-         else add_named_decl d oldest)
-      sign ~init:empty_named_context
-  in
-  if (not !check) || !found then sign else error "No such assumption"
+  try apply_to_hyp_and_dependent_on sign id f g 
+  with Hyp_not_found -> 
+    if !check then error "No such assumption"
+    else sign
 
 let check_typability env sigma c =
   if !check then let _ = type_of env sigma c in () 
@@ -154,26 +122,24 @@ let recheck_typability (what,id) env sigma t =
       ("The correctness of "^s^" relies on the body of "^(string_of_id id))
   
 let remove_hyp_body env sigma id =
-  apply_to_hyp2 env id
-    (fun env (_,c,t) tail ->
-       match c with
-         | None -> error ((string_of_id id)^" is not a local definition")
-         | Some c ->
-             let env' = push_named (id,None,t) env in
-             if !check then 
-               ignore
-                 (Sign.fold_named_context 
-                    (fun (id',c,t as d) env'' ->
-                       (match c with
-                          | None -> 
-                              recheck_typability (Some id',id) env'' sigma t
-                          | Some b ->
-                              let b' = mkCast (b,t) in
-                              recheck_typability (Some id',id) env'' sigma b');
-                       push_named d env'')
-                    (List.rev tail) ~init:env');
-             env')
-
+  let sign =
+    apply_to_hyp_and_dependent_on (named_context_val env) id
+      (fun (_,c,t) _ ->
+	match c with
+	| None -> error ((string_of_id id)^" is not a local definition")
+	| Some c ->(id,None,t))
+      (fun (id',c,t as d) sign ->
+	(if !check then
+	  begin 
+	    let env = reset_with_named_context sign env in
+	    match c with
+	    | None ->  recheck_typability (Some id',id) env sigma t
+	    | Some b ->
+		let b' = mkCast (b,DEFAULTcast, t) in
+		recheck_typability (Some id',id) env sigma b'
+	  end;d))
+  in
+  reset_with_named_context sign env 
 
 (* Auxiliary functions for primitive MOVE tactic
  *
@@ -223,9 +189,16 @@ let move_after with_dep toleft (left,(idfrom,_,_ as declfrom),right) hto =
 	  moverec first' middle' right
   in
   if toleft then 
-    List.rev_append (moverec [] [declfrom] left) right
+    let right = 
+      List.fold_right push_named_context_val right empty_named_context_val in
+    List.fold_left (fun sign d -> push_named_context_val d sign)
+      right (moverec [] [declfrom] left) 
   else 
-    List.rev_append left (moverec [] [declfrom] right)
+    let right = 
+      List.fold_right push_named_context_val
+	(moverec [] [declfrom] right) empty_named_context_val in
+    List.fold_left (fun sign d -> push_named_context_val d sign)
+      right left
 
 let check_backward_dependencies sign d =
   if not (Idset.for_all
@@ -247,8 +220,8 @@ let check_forward_dependencies id tail =
 
 let rename_hyp id1 id2 sign =
   apply_to_hyp_and_dependent_on sign id1
-    (fun (_,b,t) -> (id2,b,t))
-    (map_named_declaration (replace_vars [id1,mkVar id2]))
+    (fun (_,b,t) _ -> (id2,b,t))
+    (fun d _ -> map_named_declaration (replace_vars [id1,mkVar id2]) d)
 
 let replace_hyp sign id d =
   apply_to_hyp sign id
@@ -256,13 +229,17 @@ let replace_hyp sign id d =
        if !check then
 	 (check_backward_dependencies sign d;
 	  check_forward_dependencies id tail);
-       add_named_decl d sign)
+       d)
 
+(* why we dont check that id does not appear in tail ??? *)
 let insert_after_hyp sign id d =
-  apply_to_hyp sign id
-    (fun sign d' _ ->
-       if !check then check_backward_dependencies sign d;
-       add_named_decl d (add_named_decl d' sign))
+  try 
+    insert_after_hyp sign id d 
+      (fun sign ->
+	if !check then check_backward_dependencies sign d)
+  with Hyp_not_found ->
+    if !check then error "No such assumption"
+    else sign
 
 (************************************************************************)
 (************************************************************************)
@@ -274,7 +251,7 @@ variables only in Application and Case *)
 let collect_meta_variables c = 
   let rec collrec acc c = match kind_of_term c with
     | Meta mv -> mv::acc
-    | Cast(c,_) -> collrec acc c
+    | Cast(c,_,_) -> collrec acc c
     | (App _| Case _) -> fold_constr collrec acc c
     | _ -> acc
   in 
@@ -303,7 +280,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
           raise (RefinerError (OccurMetaGoal conclty));
 	(mk_goal hyps (nf_betaiota conclty))::goalacc, conclty
 
-    | Cast (t,ty) ->
+    | Cast (t,_, ty) ->
 	check_typability env sigma ty;
 	check_conv_leq_goal env sigma trm ty conclty;
 	mk_refgoals sigma goal goalacc ty t
@@ -338,11 +315,11 @@ and mk_hdgoals sigma goal goalacc trm =
   let env = evar_env goal in
   let hyps = goal.evar_hyps in
   match kind_of_term trm with
-    | Cast (c,ty) when isMeta c ->
+    | Cast (c,_, ty) when isMeta c ->
 	check_typability env sigma ty;
 	(mk_goal hyps (nf_betaiota ty))::goalacc,ty
 
-    | Cast (t,ty) ->
+    | Cast (t,_, ty) ->
 	check_typability env sigma ty;
 	mk_refgoals sigma goal goalacc ty t
 
@@ -393,13 +370,13 @@ let error_use_instantiate () =
 
 let convert_hyp sign sigma (id,b,bt as d) =
   apply_to_hyp sign id
-    (fun sign (_,c,ct) _ ->
+    (fun _ (_,c,ct) _ ->
        let env = Global.env_of_context sign in
        if !check && not (is_conv env sigma bt ct) then
 	 error ("Incorrect change of the type of "^(string_of_id id));
        if !check && not (option_compare (is_conv env sigma) b c) then
 	 error ("Incorrect change of the body of "^(string_of_id id));
-       add_named_decl d sign)
+       d)
 
 
 (************************************************************************)
@@ -413,18 +390,18 @@ let prim_refiner r sigma goal =
   match r with
     (* Logical rules *)
     | Intro id ->
-    	if !check && mem_named_context id sign then
+    	if !check && mem_named_context id (named_context_of_val sign) then
 	  error "New variable is already declared";
         (match kind_of_term (strip_outer_cast cl) with
 	   | Prod (_,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
-	       let sg = mk_goal (add_named_decl (id,None,c1) sign)
+	       let sg = mk_goal (push_named_context_val (id,None,c1) sign)
 			  (subst1 (mkVar id) b) in
 	       [sg]
 	   | LetIn (_,c1,t1,b) ->
 	       if occur_meta c1 or occur_meta t1 then error_use_instantiate();
 	       let sg =
-		 mk_goal (add_named_decl (id,Some c1,t1) sign)
+		 mk_goal (push_named_context_val (id,Some c1,t1) sign)
 		   (subst1 (mkVar id) b) in
 	       [sg]
 	   | _ ->
@@ -446,11 +423,11 @@ let prim_refiner r sigma goal =
 	       raise (RefinerError IntroNeedsProduct))
 	
     | Cut (b,id,t) ->
-    	if !check && mem_named_context id sign then
+    	if !check && mem_named_context id (named_context_of_val sign) then
 	  error "New variable is already declared";
         if occur_meta t then error_use_instantiate();
         let sg1 = mk_goal sign (nf_betaiota t) in
-        let sg2 = mk_goal (add_named_decl (id,None,t) sign) cl in
+        let sg2 = mk_goal (push_named_context_val (id,None,t) sign) cl in
         if b then [sg1;sg2] else [sg2;sg1]  
 
     | FixRule (f,n,rest) ->
@@ -474,9 +451,9 @@ let prim_refiner r sigma goal =
 	      if not (sp=sp') then 
 		error ("fixpoints should be on the same " ^ 
 		       "mutual inductive declaration");
-	      if !check && mem_named_context f sign then 
+	      if !check && mem_named_context f (named_context_of_val sign) then
 		error "name already used in the environment";
-	      mk_sign (add_named_decl (f,None,ar) sign) oth
+	      mk_sign (push_named_context_val (f,None,ar) sign) oth
 	  | [] -> 
 	      List.map (fun (_,_,c) -> mk_goal sign c) all
 	in 
@@ -499,11 +476,11 @@ let prim_refiner r sigma goal =
         let rec mk_sign sign = function 
           | (f,ar)::oth ->
 	      (try
-                (let _ = Sign.lookup_named f sign in
+                (let _ = lookup_named_val f sign in
                 error "name already used in the environment")
               with
               |	Not_found ->
-                  mk_sign (add_named_decl (f,None,ar) sign) oth)
+                  mk_sign (push_named_context_val (f,None,ar) sign) oth)
 	  | [] -> List.map (fun (_,c) -> mk_goal sign c) all
      	in 
 	mk_sign sign all
@@ -516,7 +493,7 @@ let prim_refiner r sigma goal =
 	sgl
 
     (* Conversion rules *)
-    | Convert_concl cl' ->
+    | Convert_concl (cl',_) ->
 	check_typability env sigma cl';
 	if (not !check) || is_conv_leq env sigma cl' cl then
           let sg = mk_goal sign cl' in
@@ -537,18 +514,20 @@ let prim_refiner r sigma goal =
           if !check then recheck_typability (None,id) env' sigma cl;
           env'
 	in
-	let sign' = named_context (List.fold_left clear_aux env ids) in
+	let sign' = named_context_val (List.fold_left clear_aux env ids) in
      	let sg = mk_goal sign' cl in
      	[sg]
 
     | Move (withdep, hfrom, hto) ->
-  	let (left,right,declfrom,toleft) = split_sign hfrom hto sign in
+  	let (left,right,declfrom,toleft) = 
+	  split_sign hfrom hto (named_context_of_val sign) in
   	let hyps' = 
 	  move_after withdep toleft (left,declfrom,right) hto in
   	[mk_goal hyps' cl]
 
     | Rename (id1,id2) ->
-        if !check & id1 <> id2 & List.mem id2 (ids_of_named_context sign) then
+        if !check & id1 <> id2 &&
+	  List.mem id2 (ids_of_named_context (named_context_of_val sign)) then
           error ((string_of_id id2)^" is already used");
         let sign' = rename_hyp id1 id2 sign in
         let cl' = replace_vars [id1,mkVar id2] cl in
@@ -622,9 +601,9 @@ let prim_extractor subfun vl pft =
 	plain_instance metamap cc
 
     (* Structural and conversion rules do not produce any proof *)
-    | Some (Prim (Convert_concl _),[pf]) ->
-	subfun vl pf
-	
+    | Some (Prim (Convert_concl (t,k)),[pf]) ->
+	if k = DEFAULTcast then subfun vl pf
+	else mkCast (subfun vl pf,k,cl)
     | Some (Prim (Convert_hyp _),[pf]) ->
 	subfun vl pf
 

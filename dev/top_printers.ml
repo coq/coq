@@ -113,13 +113,19 @@ let pr_obj obj = Format.print_string (Libobject.object_tag obj)
 
 let cnt = ref 0
 
+let cast_kind_display k = 
+  match k with
+  | VMcast -> "VMcast"
+  | DEFAULTcast -> "DEFAULTcast"
+
 let constr_display csr =
   let rec term_display c = match kind_of_term c with
   | Rel n -> "Rel("^(string_of_int n)^")"
   | Meta n -> "Meta("^(string_of_int n)^")"
   | Var id -> "Var("^(string_of_id id)^")"
   | Sort s -> "Sort("^(sort_display s)^")"
-  | Cast (c,t) -> "Cast("^(term_display c)^","^(term_display t)^")"
+  | Cast (c,k, t) -> 
+      "Cast("^(term_display c)^","^(cast_kind_display k)^","^(term_display t)^")"
   | Prod (na,t,c) ->
       "Prod("^(name_display na)^","^(term_display t)^","^(term_display c)^")\n"
   | Lambda (na,t,c) ->
@@ -180,7 +186,7 @@ let print_pure_constr csr =
   | Meta n -> print_string "Meta("; print_int n; print_string ")"
   | Var id -> print_string (string_of_id id)
   | Sort s -> sort_display s
-  | Cast (c,t) -> open_hovbox 1;
+  | Cast (c,_, t) -> open_hovbox 1;
       print_string "("; (term_display c); print_cut();
       print_string "::"; (term_display t); print_string ")"; close_box()
   | Prod (Name(id),t,c) ->

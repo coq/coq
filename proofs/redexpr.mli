@@ -14,12 +14,11 @@ open Closure
 open Rawterm
 open Reductionops
 
-(* Call by value strategy (uses virtual machine) *)
-val cbv_vm : reduction_function
 
 type red_expr = (constr, evaluable_global_reference) red_expr_gen
 
-val reduction_of_red_expr : red_expr -> reduction_function
+val reduction_of_red_expr : red_expr -> reduction_function * cast_kind
+(* [true] if we should use the vm to verify the reduction *)
 
 val declare_red_expr : string -> reduction_function -> unit
 
@@ -29,3 +28,8 @@ val set_transparent_const : constant -> unit
 
 val set_opaque_var      : identifier -> unit
 val set_transparent_var : identifier -> unit
+
+
+
+(* call by value normalisation function using the virtual machine *)
+val cbv_vm : reduction_function

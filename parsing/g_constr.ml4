@@ -63,7 +63,7 @@ let set_loc loc = function
   | CPatVar(_,v) -> CPatVar(loc,v)
   | CEvar(_,ev) -> CEvar(loc,ev)
   | CSort(_,s) -> CSort(loc,s)
-  | CCast(_,a,b) -> CCast(loc,a,b)
+  | CCast(_,a,k,b) -> CCast(loc,a,k,b)
   | CNotation(_,n,l) -> CNotation(loc,n,l)
   | CNumeral(_,i) -> CNumeral(loc,i)
   | CDelimiters(_,s,e) -> CDelimiters(loc,s,e)
@@ -162,7 +162,8 @@ GEXTEND Gram
 *)
       | f = operconstr; args = LIST1 constr91 -> CApp (loc, (None,f), args) ]
     | "9" RIGHTA
-      [ c1 = operconstr; "::"; c2 = operconstr LEVEL "9" -> CCast (loc, c1, c2) ]
+      [ c1 = operconstr; "::"; c2 = operconstr LEVEL "9" -> 
+	CCast (loc, c1, Term.DEFAULTcast,c2) ]
     | "8" RIGHTA
       [ c1 = operconstr; "->"; c2 = operconstr LEVEL "8"-> CArrow (loc, c1, c2) ]
     | "1" RIGHTA
@@ -303,7 +304,7 @@ GEXTEND Gram
       | -> [] ] ]
   ;
   opt_casted_constr:
-    [ [ c = constr;  ":"; t = constr -> CCast (loc, c, t)
+    [ [ c = constr;  ":"; t = constr -> CCast (loc, c, DEFAULTcast, t)
       | c = constr -> c ] ]
   ;
   vardecls:

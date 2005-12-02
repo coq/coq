@@ -106,7 +106,7 @@ let make_final_cmd f optname clear_names constr path =
     add_clear_names_if_necessary (f optname constr path) clear_names;;
 
 let (rem_cast:pbp_rule) = function
-    (a,c,cf,o, Cast(f,_), p, func) ->
+    (a,c,cf,o, Cast(f,_,_), p, func) ->
       Some(func a c cf o (kind_of_term f) p)
   | _ -> None;;
 

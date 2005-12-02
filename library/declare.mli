@@ -73,7 +73,7 @@ val variable_strength : variable -> strength
 val variable_kind : variable -> local_kind
 val find_section_variable : variable -> section_path
 val last_section_hyps : dir_path -> identifier list
-val clear_proofs : named_context -> named_context
+val clear_proofs : named_context -> Environ.named_context_val
 
 (*s Global references *)
 

@@ -411,7 +411,7 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
    | CDynamic (_, _) -> assert false
    | CDelimiters (_, key, num) -> 
 	 CT_num_encapsulator(CT_num_type key , xlate_formula  num)
-   | CCast (_, e, t) -> 
+   | CCast (_, e,_, t) -> 
        CT_coerce_TYPED_FORMULA_to_FORMULA
 	 (CT_typed_formula(xlate_formula e, xlate_formula t))
    | CPatVar (_, (_,i)) when is_int_meta i ->

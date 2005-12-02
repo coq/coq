@@ -122,7 +122,7 @@ let destArity =
     match kind_of_term c with
     | Prod (x,t,c)    -> prodec_rec ((x,None,t)::l) c
     | LetIn (x,b,t,c) -> prodec_rec ((x,Some b,t)::l) c
-    | Cast (c,_)      -> prodec_rec l c
+    | Cast (c,_,_)      -> prodec_rec l c
     | Sort s          -> l,s
     | _               -> anomaly "destArity: not an arity"
   in 
@@ -134,7 +134,7 @@ let rec isArity c =
   match kind_of_term c with
   | Prod (_,_,c)    -> isArity c
   | LetIn (_,b,_,c) -> isArity (subst1 b c)
-  | Cast (c,_)      -> isArity c
+  | Cast (c,_,_)      -> isArity c
   | Sort _          -> true
   | _               -> false
 
@@ -145,7 +145,7 @@ let decompose_prod_assum =
     match kind_of_term c with
     | Prod (x,t,c)    -> prodec_rec (add_rel_decl (x,None,t) l) c
     | LetIn (x,b,t,c) -> prodec_rec (add_rel_decl (x,Some b,t) l) c
-    | Cast (c,_)      -> prodec_rec l c
+    | Cast (c,_,_)      -> prodec_rec l c
     | _               -> l,c
   in 
   prodec_rec empty_rel_context
@@ -157,7 +157,7 @@ let decompose_lam_assum =
     match kind_of_term c with
     | Lambda (x,t,c)  -> lamdec_rec (add_rel_decl (x,None,t) l) c
     | LetIn (x,b,t,c) -> lamdec_rec (add_rel_decl (x,Some b,t) l) c
-    | Cast (c,_)      -> lamdec_rec l c
+    | Cast (c,_,_)      -> lamdec_rec l c
     | _               -> l,c
   in 
   lamdec_rec empty_rel_context
@@ -172,7 +172,7 @@ let decompose_prod_n_assum n =
     else match kind_of_term c with 
     | Prod (x,t,c)    -> prodec_rec (add_rel_decl (x,None,t) l) (n-1) c
     | LetIn (x,b,t,c) -> prodec_rec (add_rel_decl (x,Some b,t) l) (n-1) c
-    | Cast (c,_)      -> prodec_rec l n c
+    | Cast (c,_,_)      -> prodec_rec l n c
     | c -> error "decompose_prod_n_assum: not enough assumptions"
   in 
   prodec_rec empty_rel_context n
@@ -187,7 +187,7 @@ let decompose_lam_n_assum n =
     else match kind_of_term c with 
     | Lambda (x,t,c)  -> lamdec_rec (add_rel_decl (x,None,t) l) (n-1) c
     | LetIn (x,b,t,c) -> lamdec_rec (add_rel_decl (x,Some b,t) l) (n-1) c
-    | Cast (c,_)      -> lamdec_rec l n c
+    | Cast (c,_,_)      -> lamdec_rec l n c
     | c -> error "decompose_lam_n_assum: not enough abstractions"
   in 
   lamdec_rec empty_rel_context n 

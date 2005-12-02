@@ -217,7 +217,7 @@ let subst_constr_expr a loc subs =
   | CAppExpl (_,r,l) -> CAppExpl (loc,r,List.map subst l) 
   | CApp (_,(p,a),l) ->
       CApp (loc,(p,subst a),List.map (fun (a,i) -> (subst a,i)) l)
-  | CCast (_,a,b) -> CCast (loc,subst a,subst b)
+  | CCast (_,a,k,b) -> CCast (loc,subst a,k,subst b)
   | CNotation (_,n,l) -> CNotation (loc,n,List.map subst l)
   | CDelimiters (_,s,a) -> CDelimiters (loc,s,subst a)
   | CHole _ | CEvar _ | CPatVar _ | CSort _ 

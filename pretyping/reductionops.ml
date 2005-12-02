@@ -47,7 +47,7 @@ type local_state_reduction_function = state -> state
 let rec whd_state (x, stack as s) =
   match kind_of_term x with
     | App (f,cl) -> whd_state (f, append_stack cl stack)
-    | Cast (c,_)  -> whd_state (c, stack)
+    | Cast (c,_,_)  -> whd_state (c, stack)
     | _             -> s
 
 let appterm_of_stack (f,s) = (f,list_of_stack s)
@@ -254,7 +254,7 @@ let rec whd_state_gen flags env sigma =
 	     | Some  body -> whrec (body, stack)
 	     | None -> s)
       | LetIn (_,b,_,c) when red_zeta flags -> stacklam whrec [b] c stack
-      | Cast (c,_) -> whrec (c, stack)
+      | Cast (c,_,_) -> whrec (c, stack)
       | App (f,cl)  -> whrec (f, append_stack cl stack)
       | Lambda (na,t,c) ->
           (match decomp_stack stack with
@@ -299,7 +299,7 @@ let local_whd_state_gen flags =
   let rec whrec (x, stack as s) =
     match kind_of_term x with
       | LetIn (_,b,_,c) when red_zeta flags -> stacklam whrec [b] c stack
-      | Cast (c,_) -> whrec (c, stack)
+      | Cast (c,_,_) -> whrec (c, stack)
       | App (f,cl)  -> whrec (f, append_stack cl stack)
       | Lambda (_,_,c) ->
           (match decomp_stack stack with
@@ -337,6 +337,47 @@ let local_whd_state_gen flags =
       | x -> s
   in 
   whrec
+
+let rec whd_betaiotaevar_preserving_vm_cast env sigma t = 
+  let rec stacklam_var subst t stack =
+    match (decomp_stack stack,kind_of_term t) with
+    | Some (h,stacktl), Lambda (_,_,c) ->
+	begin match kind_of_term h with
+	| Rel i when not (evaluable_rel i env) ->
+	    stacklam_var (h::subst) c stacktl
+        | Var id when  not (evaluable_named id env)->
+	    stacklam_var (h::subst) c stacktl
+	| _ -> whrec (substl subst t, stack)
+	end
+    | _ -> whrec (substl subst t, stack)
+  and whrec (x, stack as s) =
+    match kind_of_term x with
+      | Evar ev ->
+	  (match existential_opt_value sigma ev with
+	     | Some body -> whrec (body, stack)
+	     | None -> s)
+      | Cast (c,VMcast,t) ->
+	  let c = app_stack (whrec (c,empty_stack)) in
+	  let t = app_stack (whrec (t,empty_stack)) in
+	  (mkCast(c,VMcast,t),stack)
+      | Cast (c,DEFAULTcast,_) ->
+	  whrec (c, stack)
+      | App (f,cl)  -> whrec (f, append_stack cl stack)
+      | Lambda (na,t,c) ->
+          (match decomp_stack stack with
+           | Some (a,m) -> stacklam_var [a] c m
+           | _ -> s)
+      | Case (ci,p,d,lf) ->
+          let (c,cargs) = whrec (d, empty_stack) in
+          if reducible_mind_case c then
+            whrec (reduce_mind_case
+                     {mP=p; mconstr=c; mcargs=list_of_stack cargs;
+		      mci=ci; mlf=lf}, stack)
+          else 
+	    (mkCase (ci, p, app_stack (c,cargs), lf), stack)
+      | x -> s
+  in 
+  app_stack (whrec (t,empty_stack))
 
 (* 1. Beta Reduction Functions *)
 
@@ -512,22 +553,22 @@ let plain_instance s c =
   let rec irec u = match kind_of_term u with
     | Meta p -> (try List.assoc p s with Not_found -> u)
     | App (f,l) when isCast f ->
-        let (f,t) = destCast f in
+        let (f,_,t) = destCast f in
         let l' = Array.map irec l in 
         (match kind_of_term f with
-          | Meta p ->
-              (* Don't flatten application nodes: this is used to extract a
-                 proof-term from a proof-tree and we want to keep the structure
-                 of the proof-tree *)
-              (try let g = List.assoc p s in
-              match kind_of_term g with
-                | App _ -> 
-                    let h = id_of_string "H" in
-                    mkLetIn (Name h,g,t,mkApp(mkRel 1,Array.map (lift 1) l'))
-                | _ -> mkApp (g,l')
-              with Not_found -> mkApp (f,l'))
-          | _ -> mkApp (irec f,l'))
-    | Cast (m,_) when isMeta m ->
+        | Meta p ->
+	    (* Don't flatten application nodes: this is used to extract a
+               proof-term from a proof-tree and we want to keep the structure
+               of the proof-tree *)
+	    (try let g = List.assoc p s in
+	    match kind_of_term g with
+            | App _ -> 
+                let h = id_of_string "H" in
+                mkLetIn (Name h,g,t,mkApp(mkRel 1,Array.map (lift 1) l'))
+            | _ -> mkApp (g,l')
+	    with Not_found -> mkApp (f,l'))
+        | _ -> mkApp (irec f,l'))	
+    | Cast (m,_,_) when isMeta m ->
 	(try List.assoc (destMeta m) s with Not_found -> u)
     | _ -> map_constr irec u
   in 
@@ -598,7 +639,7 @@ let splay_prod_assum env sigma =
     | LetIn (x,b,t,c) ->
 	prodec_rec (push_rel (x, Some b, t) env)
 	  (Sign.add_rel_decl (x, Some b, t) l) c
-    | Cast (c,_)    -> prodec_rec env l c
+    | Cast (c,_,_)    -> prodec_rec env l c
     | _               -> l,t
   in
   prodec_rec env Sign.empty_rel_context

@@ -92,7 +92,7 @@ let pf_global gls id = Constrintern.construct_reference (pf_hyps gls) id
 let pf_parse_const gls = compose (pf_global gls) id_of_string
 
 let pf_reduction_of_red_expr gls re c = 
-  reduction_of_red_expr re (pf_env gls) (project gls) c 
+  (fst (reduction_of_red_expr re)) (pf_env gls) (project gls) c 
 
 let pf_apply f gls = f (pf_env gls) (project gls)
 let pf_reduce = pf_apply
@@ -115,7 +115,8 @@ let pf_reduce_to_atomic_ind     = pf_reduce reduce_to_atomic_ind
 
 let hnf_type_of gls = compose (pf_whd_betadeltaiota gls) (pf_type_of gls)
 
-let pf_check_type gls c1 c2 = ignore (pf_type_of gls (mkCast (c1, c2)))
+let pf_check_type gls c1 c2 = 
+  ignore (pf_type_of gls (mkCast (c1, DEFAULTcast, c2)))
 
 (************************************)
 (* Tactics handling a list of goals *)
@@ -190,8 +191,8 @@ let internal_cut_rev_no_check id t gl =
 let refine_no_check c gl = 
   refiner (Prim (Refine c)) gl
 
-let convert_concl_no_check c gl = 
-  refiner (Prim (Convert_concl c)) gl
+let convert_concl_no_check c sty gl = 
+  refiner (Prim (Convert_concl (c,sty))) gl
 
 let convert_hyp_no_check d gl =
   refiner (Prim (Convert_hyp d)) gl
@@ -218,8 +219,10 @@ let mutual_cofix f others gl =
     
 let rename_bound_var_goal gls =
   let { evar_hyps = sign; evar_concl = cl } = sig_it gls in 
-  let ids = ids_of_named_context sign in
-  convert_concl_no_check (rename_bound_var (Global.env()) ids cl) gls
+  let ids = ids_of_named_context (named_context_of_val sign) in
+  convert_concl_no_check 
+    (rename_bound_var (Global.env()) ids cl) DEFAULTcast gls 
+
 
 
 (* Versions with consistency checks *)
@@ -229,7 +232,7 @@ let intro_replacing id = with_check (intro_replacing_no_check id)
 let internal_cut d t     = with_check (internal_cut_no_check d t)
 let internal_cut_rev d t = with_check (internal_cut_rev_no_check d t)
 let refine c           = with_check (refine_no_check c)
-let convert_concl d    = with_check (convert_concl_no_check d)
+let convert_concl d sty = with_check (convert_concl_no_check d sty)
 let convert_hyp d      = with_check (convert_hyp_no_check d)
 let thin l             = with_check (thin_no_check l)
 let thin_body c        = with_check (thin_body_no_check c)

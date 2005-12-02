@@ -31,9 +31,10 @@ type evar_body =
 
 type evar_info = {
   evar_concl : constr;
-  evar_hyps : named_context;
+  evar_hyps : Environ.named_context_val;
   evar_body : evar_body}
 
+val evar_context : evar_info -> named_context
 type evar_map
 
 val empty : evar_map
@@ -125,7 +126,7 @@ type hole_kind =
 val is_defined_evar :  evar_defs -> existential -> bool
 val is_undefined_evar :  evar_defs -> constr -> bool
 val evar_declare :
-  named_context -> evar -> types -> ?src:loc * hole_kind ->
+  Environ.named_context_val -> evar -> types -> ?src:loc * hole_kind ->
   evar_defs -> evar_defs
 val evar_define : evar -> constr -> evar_defs -> evar_defs
 val evar_source : existential_key -> evar_defs -> loc * hole_kind

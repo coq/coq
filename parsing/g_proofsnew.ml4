@@ -122,6 +122,6 @@ GEXTEND Gram
     ;
   constr_body:
     [ [ ":="; c = lconstr -> c
-      | ":"; t = lconstr; ":="; c = lconstr -> CCast(loc,c,t) ] ]
+      | ":"; t = lconstr; ":="; c = lconstr -> CCast(loc,c,Term.DEFAULTcast,t) ] ]
   ;
 END

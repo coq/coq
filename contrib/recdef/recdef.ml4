@@ -132,7 +132,7 @@ let rec (find_call_occs:
   | Meta(_) -> error "find_call_occs : Meta"
   | Evar(_) -> error "find_call_occs : Evar"
   | Sort(_)  -> error "find_call_occs : Sort"
-  | Cast(_,_) -> error "find_call_occs : cast"
+  | Cast(_,_,_) -> error "find_call_occs : cast"
   | Prod(_,_,_) -> error "find_call_occs : Prod"
   | Lambda(_,_,_) -> error "find_call_occs : Lambda"
   | LetIn(_,_,_,_) -> error "find_call_occs : let in"
@@ -514,7 +514,7 @@ let com_terminate fonctional_ref input_type relation_ast wf_thm_ast
   let (proofs_constr:constr list) =
       List.map (fun x -> interp_constr evmap env x) proofs in
     (start_proof thm_name
-       (IsGlobal (Proof Lemma)) (Environ.named_context env) (hyp_terminates fonctional_ref)
+       (IsGlobal (Proof Lemma)) (Environ.named_context_val env) (hyp_terminates fonctional_ref)
        (fun _ _ -> ());
      by (whole_start fonctional_ref
 	   input_type relation wf_thm proofs_constr);
@@ -713,7 +713,7 @@ let (com_eqn : identifier ->
     let eq_constr = interp_constr evmap env eq in
     let f_constr = (constr_of_reference f_ref) in
       (start_proof eq_name (IsGlobal (Proof Lemma))
-       (Environ.named_context env) eq_constr (fun _ _ -> ());
+       (Environ.named_context_val env) eq_constr (fun _ _ -> ());
        by
 	 (start_equation f_ref terminate_ref
 	    (fun x ->

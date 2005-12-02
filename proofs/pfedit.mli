@@ -76,7 +76,7 @@ val get_undo : unit -> int option
     declare the built constructions as a coercion or a setoid morphism) *)
 
 val start_proof : 
-  identifier -> goal_kind -> named_context -> constr
+  identifier -> goal_kind -> named_context_val -> constr
     -> declaration_hook -> unit
 
 (* [restart_proof ()] restarts the current focused proof from the beginning

@@ -93,7 +93,7 @@ let rec def_const_in_term_rec vl x =
           def_const_in_term_rec vl (mkInd (inductive_of_constructor c))
    | Case(_,x,t,a) 
         -> def_const_in_term_rec vl x
-   | Cast(x,t)-> def_const_in_term_rec vl t
+   | Cast(x,_,t)-> def_const_in_term_rec vl t
    | Const(c)  -> def_const_in_term_rec vl (lookup_constant c vl).const_type
    | _ -> def_const_in_term_rec vl (type_of vl Evd.empty x)
 ;;

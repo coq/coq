@@ -357,22 +357,22 @@ let ref_value_cache info ref =
 
 let defined_vars flags env =
 (*  if red_local_const (snd flags) then*)
-    fold_named_context 
-      (fun env (id,b,t) e ->
+    Sign.fold_named_context 
+      (fun (id,b,_) e ->
 	 match b with
 	   | None -> e
 	   | Some body -> (id, body)::e)
-      env ~init:[]
+       (named_context env) ~init:[]
 (*  else []*)
 
 let defined_rels flags env =
 (*  if red_local_const (snd flags) then*)
-  fold_rel_context 
-      (fun env (id,b,t) (i,subs) ->
+  Sign.fold_rel_context 
+      (fun (id,b,t) (i,subs) ->
 	 match b with
 	   | None -> (i+1, subs)
 	   | Some body -> (i+1, (i,body) :: subs))
-      env ~init:(0,[])
+      (rel_context env) ~init:(0,[])
 (*  else (0,[])*)
 
 
@@ -512,7 +512,7 @@ type fconstr = {
 and fterm =
   | FRel of int
   | FAtom of constr (* Metas and Sorts *)
-  | FCast of fconstr * fconstr
+  | FCast of fconstr * cast_kind * fconstr
   | FFlex of table_key
   | FInd of inductive
   | FConstruct of constructor
@@ -603,10 +603,10 @@ let rec compact_constr (lg, subs as s) c k =
     | Evar(ev,v) ->
         let (v',s) = compact_vect s v k in
         if v==v' then c,s else mkEvar(ev,v'),s
-    | Cast(a,b) ->
+    | Cast(a,ck,b) ->
         let (a',s) = compact_constr s a k in
         let (b',s) = compact_constr s b k in
-        if a==a' && b==b' then c,s else mkCast(a',b'), s
+        if a==a' && b==b' then c,s else mkCast(a', ck, b'), s
     | App(f,v) ->
         let (f',s) = compact_constr s f k in
         let (v',s) = compact_vect s v k in
@@ -693,9 +693,9 @@ let mk_clos_deep clos_fun env t =
   match kind_of_term t with
     | (Rel _|Ind _|Const _|Construct _|Var _|Meta _ | Sort _) ->
         mk_clos env t
-    | Cast (a,b) ->
+    | Cast (a,k,b) ->
         { norm = Red;
-          term = FCast (clos_fun env a, clos_fun env b)}
+          term = FCast (clos_fun env a, k, clos_fun env b)}
     | App (f,v) ->
         { norm = Red;
 	  term = FApp (clos_fun env f, Array.map (clos_fun env) v) }
@@ -728,8 +728,8 @@ let rec to_constr constr_fun lfts v =
     | FFlex (RelKey p) -> mkRel (reloc_rel p lfts)
     | FFlex (VarKey x) -> mkVar x
     | FAtom c -> exliftn lfts c
-    | FCast (a,b) ->
-        mkCast (constr_fun lfts a, constr_fun lfts b)
+    | FCast (a,k,b) ->
+        mkCast (constr_fun lfts a, k, constr_fun lfts b)
     | FFlex (ConstKey op) -> mkConst op
     | FInd op -> mkInd op
     | FConstruct op -> mkConstruct op
@@ -976,7 +976,7 @@ let rec knh m stk =
         (match get_nth_arg m ri.(n) stk with
              (Some(pars,arg),stk') -> knh arg (Zfix(m,pars)::stk')
            | (None, stk') -> (m,stk'))
-    | FCast(t,_) -> knh t stk
+    | FCast(t,_,_) -> knh t stk
 (* cases where knh stops *)
     | (FFlex _|FLetIn _|FConstruct _|FEvar _|
        FCoFix _|FLambda _|FRel _|FAtom _|FInd _|FProd _) ->
@@ -990,7 +990,7 @@ and knht e t stk =
     | Case(ci,p,t,br) ->
         knht e t (Zcase(ci, mk_clos e p, mk_clos_vect e br)::stk)
     | Fix _ -> knh (mk_clos2 e t) stk
-    | Cast(a,b) -> knht e a stk
+    | Cast(a,_,_) -> knht e a stk
     | Rel n -> knh (clos_rel e n) stk
     | (Lambda _|Prod _|Construct _|CoFix _|Ind _|
        LetIn _|Const _|Var _|Evar _|Meta _|Sort _) ->

@@ -290,7 +290,7 @@ let find_hyps t =
     | T.Meta _
     | T.Evar _
     | T.Sort _ -> l
-    | T.Cast (te,ty) -> aux (aux l te) ty
+    | T.Cast (te,_, ty) -> aux (aux l te) ty
     | T.Prod (_,s,t) -> aux (aux l s) t
     | T.Lambda (_,s,t) -> aux (aux l s) t
     | T.LetIn (_,s,_,t) -> aux (aux l s) t
@@ -359,7 +359,7 @@ let mk_current_proof_obj is_a_variable id bo ty evar_map env =
                (* t will not be exported to XML. Thus no unsharing performed *)
                final_var_ids,(n, Acic.Def  (Unshare.unshare b',t))::tl'
         in
-         aux [] (List.rev evar_hyps)
+         aux [] (List.rev (Environ.named_context_of_val evar_hyps))
        in
         (* We map the named context to a rel context and every Var to a Rel *)
         (n,context,Unshare.unshare (Term.subst_vars final_var_ids evar_concl))

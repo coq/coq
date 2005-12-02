@@ -263,7 +263,7 @@ let typeur sigma metamap =
     | T.App(f,args)->
         T.strip_outer_cast
           (subst_type env sigma (type_of env f) (Array.to_list args))
-    | T.Cast (c,t) -> t
+    | T.Cast (c,_, t) -> t
     | T.Sort _ | T.Prod _ ->
        match sort_of env cstr with
           Coq_sort T.InProp -> T.mkProp
@@ -273,7 +273,7 @@ let typeur sigma metamap =
                                                                                 
   and sort_of env t =
     match Term.kind_of_term t with
-    | T.Cast (c,s) when T.isSort s -> family_of_term s
+    | T.Cast (c,_, s) when T.isSort s -> family_of_term s
     | T.Sort (T.Prop c) -> Coq_sort T.InType
     | T.Sort (T.Type u) -> Coq_sort T.InType
     | T.Prod (name,t,c2) ->
@@ -283,7 +283,7 @@ let typeur sigma metamap =
           | Coq_sort T.InSet, (Coq_sort T.InSet as s) -> s
           | Coq_sort T.InType, (Coq_sort T.InSet as s)
           | CProp, (Coq_sort T.InSet as s) when
-              Environ.engagement env = Some Environ.ImpredicativeSet -> s
+              Environ.engagement env = Some Declarations.ImpredicativeSet -> s
           | Coq_sort T.InType, Coq_sort T.InSet
           | CProp, Coq_sort T.InSet -> Coq_sort T.InType
           | _, (Coq_sort T.InType as s) -> s (*Type Univ.dummy_univ*)
@@ -295,7 +295,7 @@ let typeur sigma metamap =
                                                                                 
   and sort_family_of env t =
     match T.kind_of_term t with
-    | T.Cast (c,s) when T.isSort s -> family_of_term s
+    | T.Cast (c,_, s) when T.isSort s -> family_of_term s
     | T.Sort (T.Prop c) -> Coq_sort T.InType
     | T.Sort (T.Type u) -> Coq_sort T.InType
     | T.Prod (name,t,c2) -> sort_family_of (Environ.push_rel (name,None,t) env) c2
@@ -560,7 +560,7 @@ print_endline "PASSATO" ; flush stdout ;
                (fresh_id'', n, Array.to_list (Array.map (aux' env idrefs) l))
            | T.Meta _ -> Util.anomaly "Meta met during exporting to XML"
            | T.Sort s -> A.ASort (fresh_id'', s)
-           | T.Cast (v,t) ->
+           | T.Cast (v,_, t) ->
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
               if is_a_Prop innersort then
                add_inner_type fresh_id'' ;

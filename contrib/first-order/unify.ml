@@ -59,8 +59,8 @@ let unif t1 t2=
 		if Intset.is_empty (free_rels t) && 
 		  not (occur_term (mkMeta i) t) then
 		    bind i t else raise (UFAIL(nt1,nt2))
-	  | Cast(_,_),_->Queue.add (strip_outer_cast nt1,nt2) bige
- 	  | _,Cast(_,_)->Queue.add (nt1,strip_outer_cast nt2) bige 
+	  | Cast(_,_,_),_->Queue.add (strip_outer_cast nt1,nt2) bige
+ 	  | _,Cast(_,_,_)->Queue.add (nt1,strip_outer_cast nt2) bige 
 	  | (Prod(_,a,b),Prod(_,c,d))|(Lambda(_,a,b),Lambda(_,c,d))->
 	      Queue.add (a,c) bige;Queue.add (pop b,pop d) bige
 	  | Case (_,pa,ca,va),Case (_,pb,cb,vb)->

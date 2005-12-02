@@ -262,7 +262,7 @@ let rec pretype tycon env isevars lvar = function
   | REvar (loc, ev, instopt) ->
       (* Ne faudrait-il pas s'assurer que hyps est bien un
       sous-contexte du contexte courant, et qu'il n'y a pas de Rel "caché" *)
-      let hyps = (Evd.map (evars_of !isevars) ev).evar_hyps in
+      let hyps = evar_context (Evd.map (evars_of !isevars) ev) in
       let args = match instopt with
         | None -> instance_from_named_context hyps
         | Some inst -> failwith "Evar subtitutions not implemented" in
@@ -637,7 +637,7 @@ let rec pretype tycon env isevars lvar = function
 	                let pat,new_avoid,new_ids = make_pat x avoid b ids in
                         buildrec new_ids (pat::patlist) new_avoid (n-1) b
                           
-	            | RCast (_,c,_) ->    (* Oui, il y a parfois des cast *)
+	            | RCast (_,c,_,_) ->    (* Oui, il y a parfois des cast *)
 	                buildrec ids patlist avoid n c
                         
 	            | _ -> (* eta-expansion *)
@@ -873,7 +873,7 @@ let rec pretype tycon env isevars lvar = function
 	                let pat,new_avoid,new_ids = make_pat x avoid b ids in
                         buildrec new_ids (pat::patlist) new_avoid (n-1) b
                           
-	            | RCast (_,c,_) ->    (* Oui, il y a parfois des cast *)
+	            | RCast (_,c,_,_) ->    (* Oui, il y a parfois des cast *)
 	                buildrec ids patlist avoid n c
                         
 	            | _ -> (* eta-expansion *)
@@ -906,12 +906,12 @@ let rec pretype tycon env isevars lvar = function
 	((fun vtyc env -> pretype vtyc env isevars lvar),isevars)
 	tycon env (* loc *) (po,tml,eqns)
 
-  | RCast(loc,c,t) ->
+  | RCast(loc,c,k,t) ->
       let tj = pretype_type empty_tycon env isevars lvar t in
       let cj = pretype (mk_tycon tj.utj_val) env isevars lvar c in
       (* User Casts are for helping pretyping, experimentally not to be kept*)
       (* ... except for Correctness *)
-      let v = mkCast (cj.uj_val, tj.utj_val) in
+      let v = mkCast (cj.uj_val, k, tj.utj_val) in
       let cj = { uj_val = v; uj_type = tj.utj_val } in
       inh_conv_coerce_to_tycon loc env isevars cj tycon
 
@@ -1006,7 +1006,8 @@ let ise_infer_gen fail_evar sigma env lvar exptyp c =
   let tycon = match exptyp with None -> empty_tycon | Some t -> mk_tycon t in
   let isevars = ref (create_evar_defs sigma) in
   let j = unsafe_infer tycon isevars env lvar c in
-  if fail_evar then check_evars env sigma isevars (mkCast(j.uj_val,j.uj_type));
+  if fail_evar then 
+    check_evars env sigma isevars (mkCast(j.uj_val,DEFAULTcast, j.uj_type));
   (!isevars, j)
 
 let ise_infer_type_gen fail_evar sigma env lvar c =

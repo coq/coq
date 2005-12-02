@@ -344,7 +344,7 @@ let rec ast_of_raw = function
 	 | RProp Pos -> ope("SET",[])
 	 | RType _ -> ope("TYPE",[]))
   | RHole _ -> ope("ISEVAR",[])
-  | RCast (_,c,t) -> ope("CAST",[ast_of_raw c;ast_of_raw t])
+  | RCast (_,c,_,t) -> ope("CAST",[ast_of_raw c;ast_of_raw t])
   | RDynamic (loc,d) -> Dynamic (loc,d)
 	
 and ast_of_eqn (_,ids,pl,c) =

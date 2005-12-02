@@ -134,7 +134,7 @@ let check_inductive cst env msid1 l info1 mib2 spec2 =
     let rec names_prod_letin t = match kind_of_term t with 
       | Prod(n,_,t) -> n::(names_prod_letin t)
       | LetIn(n,_,_,t) -> n::(names_prod_letin t)
-      | Cast(t,_) -> names_prod_letin t
+      | Cast(t,_,_) -> names_prod_letin t
       | _ -> []
     in 
     assert (Array.length mib1.mind_packets = 1);

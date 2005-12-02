@@ -34,7 +34,7 @@ let instantiate n rawc ido gl =
     match ido with
 	ConclLocation () -> evar_list sigma gl.it.evar_concl 
       | HypLocation (id,hloc) ->
-	  let decl = lookup_named id gl.it.evar_hyps in
+	  let decl = Environ.lookup_named_val id gl.it.evar_hyps in
 	    match hloc with
 		InHyp ->  
 		  (match decl with 

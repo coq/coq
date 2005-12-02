@@ -41,7 +41,7 @@ let and_status = List.fold_left (+) 0
 (* Getting env *)
 
 let pf_env gls = Global.env_of_context (sig_it gls).evar_hyps
-let pf_hyps gls = (sig_it gls).evar_hyps
+let pf_hyps gls = named_context_of_val (sig_it gls).evar_hyps
 
 (* Normalizing evars in a goal. Called by tactic Local_constraints
    (i.e. when the sigma of the proof tree changes). Detect if the
@@ -51,11 +51,7 @@ let norm_goal sigma gl =
   let ncl = red_fun gl.evar_concl in
   let ngl =
     { evar_concl = ncl;
-      evar_hyps =
-      Sign.fold_named_context 
-        (fun (d,b,ty) sign ->
-          add_named_decl (d, option_app red_fun b, red_fun ty) sign)
-        gl.evar_hyps ~init:empty_named_context;
+      evar_hyps = map_named_val red_fun gl.evar_hyps; 
       evar_body = gl.evar_body} in
   if ngl = gl then None else Some ngl
 
@@ -288,11 +284,11 @@ let extract_open_proof sigma pf =
             (fun id ->
                try let n = list_index id vl in (n,id)
 	       with Not_found -> failwith "caught")
-            (ids_of_named_context goal.evar_hyps) in
+            (ids_of_named_context (named_context_of_val goal.evar_hyps)) in
 	let sorted_rels =
 	  Sort.list (fun (n1,_) (n2,_) -> n1 > n2 ) visible_rels in
         let sorted_env =
-          List.map (fun (n,id) -> (n,Sign.lookup_named id goal.evar_hyps))
+          List.map (fun (n,id) -> (n,lookup_named_val id goal.evar_hyps))
             sorted_rels in
 	let abs_concl =
           List.fold_right (fun (_,decl) c -> mkNamedProd_or_LetIn decl c)
@@ -776,7 +772,8 @@ let extract_pftreestate pts =
       else
         str "Attempt to save a proof with existential variables still non-instantiated");
   let env = Global.env_of_context pts.tpf.goal.evar_hyps in
-  strong whd_betaiotaevar env pts.tpfsigma pfterm
+  strong whd_betaiotaevar_preserving_vm_cast env pts.tpfsigma pfterm
+  (* strong whd_betaiotaevar env pts.tpfsigma pfterm *)
   (***
   local_strong (Evarutil.whd_ise (ts_it pts.tpfsigma)) pfterm
   ***)
@@ -900,7 +897,7 @@ let tclINFO (tac : tactic) gls =
   let (sgl,v) as res = tac gls in 
   begin try 
     let pf = v (List.map leaf (sig_it sgl)) in
-    let sign = (sig_it gls).evar_hyps in
+    let sign = named_context_of_val (sig_it gls).evar_hyps in
     msgnl (hov 0 (str" == " ++
                   !pp_info (project gls) sign pf))
   with e when catchable_exception e -> 

@@ -130,11 +130,11 @@ KERNEL=\
   kernel/esubst.cmo kernel/term.cmo kernel/mod_subst.cmo kernel/sign.cmo \
   kernel/cbytecodes.cmo kernel/copcodes.cmo \
   kernel/cemitcodes.cmo kernel/vm.cmo \
-  kernel/declarations.cmo kernel/environ.cmo  kernel/conv_oracle.cmo \
-  kernel/closure.cmo kernel/reduction.cmo kernel/type_errors.cmo\
-  kernel/entries.cmo \
-  kernel/cbytegen.cmo kernel/csymtable.cmo  \
-  kernel/modops.cmo \
+  kernel/declarations.cmo kernel/pre_env.cmo \
+  kernel/cbytegen.cmo  kernel/environ.cmo  \
+  kernel/csymtable.cmo kernel/conv_oracle.cmo \
+  kernel/closure.cmo kernel/reduction.cmo kernel/type_errors.cmo \
+  kernel/entries.cmo kernel/modops.cmo \
   kernel/inductive.cmo kernel/vconv.cmo kernel/typeops.cmo \
   kernel/indtypes.cmo kernel/cooking.cmo kernel/term_typing.cmo \
   kernel/subtyping.cmo kernel/mod_typing.cmo kernel/safe_typing.cmo
@@ -1398,10 +1398,10 @@ GRAMMARNEEDEDCMO=\
   kernel/names.cmo kernel/univ.cmo \
   kernel/esubst.cmo kernel/term.cmo kernel/mod_subst.cmo kernel/sign.cmo \
   kernel/cbytecodes.cmo kernel/copcodes.cmo kernel/cemitcodes.cmo \
-  kernel/declarations.cmo kernel/environ.cmo  kernel/conv_oracle.cmo \
+  kernel/declarations.cmo kernel/pre_env.cmo \
+  kernel/cbytegen.cmo kernel/conv_oracle.cmo kernel/environ.cmo \
   kernel/closure.cmo kernel/reduction.cmo kernel/type_errors.cmo\
   kernel/entries.cmo \
-  kernel/cbytegen.cmo \
   kernel/modops.cmo \
   kernel/inductive.cmo kernel/typeops.cmo \
   kernel/indtypes.cmo kernel/cooking.cmo kernel/term_typing.cmo \
@@ -1433,9 +1433,10 @@ PRINTERSCMO=\
   config/coq_config.cmo lib/lib.cma \
   kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo kernel/term.cmo	\
   kernel/mod_subst.cmo kernel/copcodes.cmo kernel/cemitcodes.cmo	\
-  kernel/sign.cmo kernel/declarations.cmo kernel/environ.cmo		\
+  kernel/sign.cmo kernel/declarations.cmo kernel/pre_env.cmo \
+  kernel/cbytecodes.cmo kernel/cbytegen.cmo kernel/environ.cmo \
   kernel/conv_oracle.cmo kernel/closure.cmo kernel/reduction.cmo	\
-  kernel/cooking.cmo kernel/cbytecodes.cmo kernel/cbytegen.cmo		\
+  kernel/cooking.cmo 		\
   kernel/modops.cmo kernel/type_errors.cmo kernel/inductive.cmo		\
   kernel/subtyping.cmo kernel/typeops.cmo kernel/indtypes.cmo		\
   kernel/term_typing.cmo kernel/mod_typing.cmo kernel/safe_typing.cmo	\

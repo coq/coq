@@ -111,6 +111,10 @@ val whd_betadeltaiotaeta_stack :  stack_reduction_function
 val whd_betadeltaiotaeta_state :  state_reduction_function
 val whd_betadeltaiotaeta :  reduction_function
 
+val whd_betaiotaevar_preserving_vm_cast : reduction_function
+
+
+
 val beta_applist : constr * constr list -> constr
 
 val hnf_prod_app     : env ->  evar_map -> constr -> constr -> constr

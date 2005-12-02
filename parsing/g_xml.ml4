@@ -151,7 +151,7 @@ let rec interp_xml_constr = function
       let ln,lc,lt = list_split3 (List.map interp_xml_CoFixFunction xl) in
       RRec (loc, RCoFix (get_xml_noFun al), Array.of_list ln, [||], Array.of_list lc, Array.of_list lt)
   | XmlTag (loc,"CAST",al,[x1;x2]) ->
-      RCast (loc, interp_xml_term x1, interp_xml_type x2)
+      RCast (loc, interp_xml_term x1, DEFAULTcast, interp_xml_type x2)
   | XmlTag (loc,"SORT",al,[]) ->
       RSort (loc, get_xml_sort al)
   | XmlTag (loc,s,_,_) -> user_err_loc (loc,"", str "Unexpected tag " ++ str s)

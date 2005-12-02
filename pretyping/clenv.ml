@@ -78,7 +78,7 @@ let clenv_environments evd bound c =
   let rec clrec (e,metas) n c =
     match n, kind_of_term c with
       | (Some 0, _) -> (e, List.rev metas, c)
-      | (n, Cast (c,_)) -> clrec (e,metas) n c
+      | (n, Cast (c,_,_)) -> clrec (e,metas) n c
       | (n, Prod (na,c1,c2)) ->
 	  let mv = new_meta () in
 	  let dep = dependent (mkRel 1) c2 in
@@ -96,7 +96,7 @@ let clenv_environments_evars env evd bound c =
   let rec clrec (e,ts) n c =
     match n, kind_of_term c with
       | (Some 0, _) -> (e, List.rev ts, c)
-      | (n, Cast (c,_)) -> clrec (e,ts) n c
+      | (n, Cast (c,_,_)) -> clrec (e,ts) n c
       | (n, Prod (na,c1,c2)) ->
           let e',constr = Evarutil.new_evar e env c1 in
 	  let dep = dependent (mkRel 1) c2 in

@@ -42,7 +42,7 @@ let clenv_cast_meta clenv =
   let rec crec u =
     match kind_of_term u with
       | App _ | Case _ -> crec_hd u
-      | Cast (c,_) when isMeta c -> u
+      | Cast (c,_,_) when isMeta c -> u
       | _  -> map_constr crec u
 	    
   and crec_hd u =
@@ -51,7 +51,7 @@ let clenv_cast_meta clenv =
 	  (try 
             let b = Typing.meta_type clenv.env mv in
 	    if occur_meta b then u
-            else mkCast (mkMeta mv, b)
+            else mkCast (mkMeta mv, DEFAULTcast, b)
 	  with Not_found -> u)
       | App(f,args) -> mkApp (crec_hd f, Array.map crec args)
       | Case(ci,p,c,br) ->

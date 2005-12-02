@@ -37,7 +37,7 @@ let interp_decl sigma env = function
   | Vernacexpr.DefExpr((_,id),c,t) ->
       let c = match t with
 	| None -> c
-	| Some t -> mkCastC (c,t)
+	| Some t -> mkCastC (c,DEFAULTcast,t)
       in
       let j = judgment_of_rawconstr Evd.empty env c in
       (id,Some j.uj_val, j.uj_type)

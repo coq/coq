@@ -97,9 +97,9 @@ let replace_by_meta env = function
       (* quand on introduit une mv on calcule son type *)
       let ty = match kind_of_term c with
 	| Lambda (Name id,c1,c2) when isCast c2 ->
-	    mkNamedProd id c1 (snd (destCast c2))
+	    let _,_,t = destCast c2 in mkNamedProd id c1 t
 	| Lambda (Anonymous,c1,c2) when isCast c2 ->
-	    mkArrow c1 (snd (destCast c2))
+	    let _,_,t = destCast c2 in mkArrow c1 t
 	| _ -> (* (App _ | Case _) -> *)
 	    Retyping.get_type_of_with_meta env Evd.empty mm c
 	(*
@@ -108,7 +108,7 @@ let replace_by_meta env = function
 	| _ -> invalid_arg "Tcc.replace_by_meta (TO DO)" 
         *)
       in
-      mkCast (m,ty),[n,ty],[Some th]
+      mkCast (m,DEFAULTcast, ty),[n,ty],[Some th]
 
 exception NoMeta
 
@@ -138,8 +138,9 @@ let rec compute_metamap env c = match kind_of_term c with
   | Meta n ->
       TH (c,[],[None])
 
-  | Cast (m,ty) when isMeta m -> 
+  | Cast (m,_, ty) when isMeta m -> 
       TH (c,[destMeta m,ty],[None])
+
 
   (* abstraction => il faut décomposer si le terme dessous n'est pas pur
    *    attention : dans ce cas il faut remplacer (Rel 1) par (Var x)
@@ -216,7 +217,7 @@ let rec compute_metamap env c = match kind_of_term c with
       end
 	      
   (* Cast. Est-ce bien exact ? *)
-  | Cast (c,t) -> compute_metamap env c
+  | Cast (c,_,t) -> compute_metamap env c
       (*let TH (c',mm,sgp) = compute_metamap sign c in
 	TH (mkCast (c',t),mm,sgp) *)
       
@@ -258,7 +259,7 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
     | Meta _ , _ ->
 	tclIDTAC gl
 
-    | Cast (c,_), _ when isMeta c ->
+    | Cast (c,_,_), _ when isMeta c ->
 	tclIDTAC gl
 	  
     (* terme pur => refine *)

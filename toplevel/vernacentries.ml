@@ -764,14 +764,6 @@ let _ =
 
 let _ =
   declare_bool_option 
-    { optsync  = false;
-      optname  = "print the bytecode of global definitions";
-      optkey   = (SecondaryTable ("Print","Bytecode"));
-      optread  = Options.print_bytecodes;
-      optwrite = (fun b -> Options.set_print_bytecodes b) } 
-
-let _ =
-  declare_bool_option 
     { optsync  = true;
       optname  = "use of virtual machine inside the kernel";
       optkey   = (SecondaryTable ("Virtual","Machine"));
@@ -780,7 +772,7 @@ let _ =
 
 let _ =
   declare_bool_option 
-    { optsync  = false;
+    { optsync  = true;
       optname  = "use of boxed definitions";
       optkey   = (SecondaryTable ("Boxed","Definitions"));
       optread  = Options.boxed_definitions;
@@ -888,7 +880,7 @@ let vernac_check_may_eval redexp glopt rc =
 	if !pcoq <> None then (out_some !pcoq).print_check j
 	else msg (print_judgment env j)
     | Some r ->
-	let redfun = reduction_of_red_expr (interp_redexp env evmap r) in
+	let redfun = fst (reduction_of_red_expr (interp_redexp env evmap r)) in
 	if !pcoq <> None
 	then (out_some !pcoq).print_eval (redfun env evmap) env rc j
 	else msg (print_eval redfun env j)

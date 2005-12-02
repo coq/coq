@@ -89,7 +89,7 @@ let autorewrite_in id tac_main lbas gl =
   let to_be_cleared = ref false in
    fun dir cstr gl ->
     let last_hyp_id =
-     match gl.Evd.it.Evd.evar_hyps with
+     match (Environ.named_context_of_val gl.Evd.it.Evd.evar_hyps) with
         (last_hyp_id,_,_)::_ -> last_hyp_id
       | _ -> (* even the hypothesis id is missing *)
              error ("No such hypothesis : " ^ (string_of_id !id))
@@ -98,7 +98,7 @@ let autorewrite_in id tac_main lbas gl =
     let gls = (fst gl').Evd.it in
     match gls with
        g::_ ->
-        (match g.Evd.evar_hyps with
+        (match Environ.named_context_of_val g.Evd.evar_hyps with
             (lastid,_,_)::_ ->
               if last_hyp_id <> lastid then
                begin

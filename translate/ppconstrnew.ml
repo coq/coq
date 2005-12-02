@@ -214,7 +214,7 @@ let pr_binder_among_many pr_c = function
       pr_binder true pr_c (nal,t)
   | LocalRawDef (na,c) ->
       let c,topt = match c with
-        | CCast(_,c,t) -> c, t
+        | CCast(_,c,_,t) -> c, t
         | _ -> c, CHole dummy_loc in
       hov 1 (surround
         (pr_lname na ++ pr_opt_type pr_c topt ++
@@ -595,7 +595,7 @@ let rec pr sep inherited a =
   | CEvar (_,n) -> str (Evd.string_of_existential n), latom
   | CPatVar (_,(_,p)) -> str "?" ++ pr_patvar p, latom
   | CSort (_,s) -> pr_sort s, latom
-  | CCast (_,a,b) ->
+  | CCast (_,a,_,b) ->
       hv 0 (pr mt (lcast,L) a ++ cut () ++ str ":" ++ pr mt (-lcast,E) b),
       lcast
   | CNotation (_,"( _ )",[t]) ->
@@ -634,7 +634,7 @@ let rec prod_constr_expr c = function
 
 let rec strip_context n iscast t =
   if n = 0 then
-    [], if iscast then match t with CCast (_,c,_) -> c | _ -> t else t
+    [], if iscast then match t with CCast (_,c,_,_) -> c | _ -> t else t
   else match t with
     | CLambdaN (loc,(nal,t)::bll,c) ->
 	let n' = List.length nal in
@@ -657,7 +657,7 @@ let rec strip_context n iscast t =
     | CArrow (loc,t,c) ->
 	let bl', c = strip_context (n-1) iscast c in
 	LocalRawAssum ([loc,Anonymous],t) :: bl', c 
-    | CCast (_,c,_) -> strip_context n false c
+    | CCast (_,c,_,_) -> strip_context n false c
     | CLetIn (_,na,b,c) -> 
 	let bl', c = strip_context (n-1) iscast c in
 	LocalRawDef (na,b) :: bl', c

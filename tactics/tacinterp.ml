@@ -1191,7 +1191,9 @@ open Evd
 let solvable_by_tactic env evi (ev,args) src = 
   match (!implicit_tactic, src) with
   | Some tac, (ImplicitArg _ | QuestionMark)
-      when evi.evar_hyps = Environ.named_context env ->
+      when 
+	Environ.named_context_of_val evi.evar_hyps = 
+	Environ.named_context env ->
       let id = id_of_string "H" in
       start_proof id IsLocal evi.evar_hyps evi.evar_concl (fun _ _ -> ());
       begin
@@ -1510,7 +1512,7 @@ and interp_letin ist gl = function
       with Not_found ->
       try
 	let t = tactic_of_value v in
-	let ndc = Environ.named_context env in
+	let ndc = Environ.named_context_val env in
 	start_proof id IsLocal ndc typ (fun _ _ -> ());
 	by t;
 	let (_,({const_entry_body = pft},_,_)) = cook_proof () in
@@ -1520,7 +1522,7 @@ and interp_letin ist gl = function
 	delete_proof (dummy_loc,id);
 	errorlabstrm "Tacinterp.interp_letin"
           (str "Term or fully applied tactic expected in Let")
-    in (id,VConstr (mkCast (csr,typ)))::(interp_letin ist gl tl)
+    in (id,VConstr (mkCast (csr,DEFAULTcast, typ)))::(interp_letin ist gl tl)
 
 (* Interprets the Match Context expressions *)
 and interp_match_context ist g lz lr lmr =

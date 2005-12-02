@@ -53,12 +53,13 @@ let thin_sign osign sign =
        try 
 	 if Sign.lookup_named id osign = (id,c,ty) then sign
 	 else raise Different
-       with Not_found | Different -> add_named_decl d sign)
-    sign ~init:empty_named_context
+       with Not_found | Different -> Environ.push_named_context_val d sign)
+    sign ~init:Environ.empty_named_context_val
 
 let rec print_proof sigma osign pf =
   let {evar_hyps=hyps; evar_concl=cl; 
        evar_body=body} = pf.goal in
+  let hyps = Environ.named_context_of_val hyps in
   let hyps' = thin_sign osign hyps in
   match pf.ref with
     | None -> 
@@ -78,6 +79,7 @@ let pr_change gl =
 
 let rec print_script nochange sigma osign pf =
   let {evar_hyps=sign; evar_concl=cl} = pf.goal in
+  let sign = Environ.named_context_of_val sign in
   match pf.ref with
     | None ->
         (if nochange then 
@@ -124,10 +126,12 @@ let rec print_info_script sigma osign pf =
 		   (str "." ++ fnl ())
                  else 
 		   (str";" ++ brk(1,3) ++
-		      print_info_script sigma sign pf1)
+		      print_info_script sigma 
+		      (Environ.named_context_of_val sign) pf1)
              | _ -> (str"." ++ fnl () ++
                        prlist_with_sep pr_fnl
-                         (print_info_script sigma sign) spfl))
+                         (print_info_script sigma 
+			    (Environ.named_context_of_val sign)) spfl))
 
 let format_print_info_script sigma osign pf = 
   hov 0 (print_info_script sigma osign pf)

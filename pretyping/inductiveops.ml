@@ -363,7 +363,7 @@ let control_only_guard env =
     | Case(_,p,c,b) -> control_rec p;control_rec c;Array.iter control_rec b
     | Evar (_,cl)        -> Array.iter control_rec cl
     | App (c,cl)         -> control_rec c; Array.iter control_rec cl
-    | Cast (c1,c2)       -> control_rec c1; control_rec c2
+    | Cast (c1,_, c2)  -> control_rec c1; control_rec c2
     | Prod (_,c1,c2)     -> control_rec c1; control_rec c2
     | Lambda (_,c1,c2)   -> control_rec c1; control_rec c2
     | LetIn (_,c1,c2,c3) -> control_rec c1; control_rec c2; control_rec c3

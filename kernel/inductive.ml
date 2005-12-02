@@ -630,7 +630,7 @@ let check_one_fix renv recpos def =
 
       (* The cases below simply check recursively the condition on the
          subterms *)
-      | Cast (a,b) -> 
+      | Cast (a,_, b) -> 
           List.for_all (check_rec_call renv) (a::b::l)
 
       | Lambda (x,a,b) ->

@@ -3,7 +3,7 @@ open Cbytecodes
 open Cemitcodes 
 open Term
 open Declarations
-open Environ
+open Pre_env
 
 
 

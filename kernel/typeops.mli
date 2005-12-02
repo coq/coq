@@ -69,8 +69,8 @@ val judge_of_letin :
 
 (*s Type of a cast. *)
 val judge_of_cast :
-  env -> unsafe_judgment -> unsafe_type_judgment
-    -> unsafe_judgment * constraints
+  env -> unsafe_judgment -> cast_kind -> unsafe_type_judgment ->
+    unsafe_judgment * constraints
 
 (*s Inductive types. *)
 

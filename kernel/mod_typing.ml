@@ -97,7 +97,7 @@ and merge_with env mtb with_decl =
 			SPBconst {cb with 
 				    const_body = body;
 			            const_body_code = Cemitcodes.from_val
-                        (Cbytegen.compile_constant_body env' body false false);
+                        (compile_constant_body env' body false false);
                                     const_constraints = cst}
 		  | Some b -> 
 		      let cst1 = Reduction.conv env' c (Declarations.force b) in
@@ -106,7 +106,7 @@ and merge_with env mtb with_decl =
 			SPBconst {cb with 
 				    const_body = body;
 				    const_body_code = Cemitcodes.from_val
-                        (Cbytegen.compile_constant_body env' body false false);
+                        (compile_constant_body env' body false false);
                                     const_constraints = cst}
 	      end	
 (* and what about msid's ????? Don't they clash ? *)

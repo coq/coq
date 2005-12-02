@@ -85,7 +85,8 @@ let e_constructor_tac boundopt i lbind gl =
   end;
   let cons = mkConstruct (ith_constructor_of_inductive mind i) in
   let apply_tac = e_resolve_with_bindings_tac (cons,lbind) in
-  (tclTHENLIST [convert_concl_no_check redcl; intros; apply_tac]) gl
+  (tclTHENLIST [convert_concl_no_check redcl DEFAULTcast
+; intros; apply_tac]) gl
 
 let e_one_constructor i = e_constructor_tac None i
 

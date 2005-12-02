@@ -20,6 +20,13 @@ open Tacred
 open Closure
 open RedFlags
 
+
+(* call by value normalisation function using the virtual machine *)
+let cbv_vm env _ c =
+  let ctyp = (fst (Typeops.infer env c)).Environ.uj_type in
+  Vconv.cbv_vm env c ctyp
+
+
 let set_opaque_const sp = 
   Conv_oracle.set_opaque_const sp;
   Csymtable.set_opaque_const sp
@@ -45,10 +52,6 @@ let _ =
       Summary.survive_module = false;
       Summary.survive_section = false }
 
-(* call by value reduction functions using virtual machine *)
-let cbv_vm env _ c =
-  let ctyp = (fst (Typeops.infer env c)).Environ.uj_type in
-  Vconv.cbv_vm env c ctyp
 
 (* Generic reduction: reduction functions used in reduction tactics *)
 
@@ -91,16 +94,19 @@ let declare_red_expr s f =
     red_expr_tab := Stringmap.add s f !red_expr_tab
 
 let reduction_of_red_expr = function
-  | Red internal -> if internal then try_red_product else red_product
-  | Hnf -> hnf_constr
-  | Simpl (Some (_,c as lp)) -> contextually (is_reference c) lp nf
-  | Simpl None -> nf
-  | Cbv f -> cbv_norm_flags (make_flag f)
-  | Lazy f -> clos_norm_flags (make_flag f)
-  | Unfold ubinds -> unfoldn ubinds
-  | Fold cl -> fold_commands cl
-  | Pattern lp -> pattern_occs lp
+  | Red internal -> 
+      if internal then (try_red_product,DEFAULTcast) 
+      else (red_product,DEFAULTcast)
+  | Hnf -> (hnf_constr,DEFAULTcast)
+  | Simpl (Some (_,c as lp)) -> 
+      (contextually (is_reference c) lp nf,DEFAULTcast)
+  | Simpl None -> (nf,DEFAULTcast)
+  | Cbv f -> (cbv_norm_flags (make_flag f),DEFAULTcast)
+  | Lazy f -> (clos_norm_flags (make_flag f),DEFAULTcast)
+  | Unfold ubinds -> (unfoldn ubinds,DEFAULTcast)
+  | Fold cl -> (fold_commands cl,DEFAULTcast)
+  | Pattern lp -> (pattern_occs lp,DEFAULTcast)
   | ExtraRedExpr s ->
-      (try Stringmap.find s !red_expr_tab
+      (try (Stringmap.find s !red_expr_tab,DEFAULTcast)
       with Not_found -> error("unknown user-defined reduction \""^s^"\""))
-  | CbvVm -> cbv_vm 
+  | CbvVm -> (cbv_vm ,VMcast)

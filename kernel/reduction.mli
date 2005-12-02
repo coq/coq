@@ -44,12 +44,12 @@ val conv_leq       : types conversion_function
 val conv_leq_vecti : types array conversion_function
 
 (* option for conversion *)
-
-val set_default_vm_conv : unit -> unit
-val set_vm_conv_cmp : (conv_pb -> types conversion_function) -> unit
+val set_vm_conv : (conv_pb -> types conversion_function) -> unit
 val vm_conv : conv_pb -> types conversion_function
-val vm_conv_leq_vecti : types array conversion_function
-val vm_conv_leq          : types conversion_function
+
+val set_default_conv : (conv_pb -> types conversion_function) -> unit
+val default_conv     : conv_pb -> types conversion_function
+val default_conv_leq : types conversion_function
 
 (************************************************************************)
 

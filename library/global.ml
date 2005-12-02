@@ -39,6 +39,7 @@ let _ =
 
 let universes () = universes (env())
 let named_context () = named_context (env())
+let named_context_val () = named_context_val (env())
 
 let push_named_assum a =
   let (cst,env) = push_named_assum a !global_env in
@@ -134,7 +135,7 @@ let env_of_context hyps =
 open Libnames
 
 let type_of_reference env = function
-  | VarRef id -> let (_,_,t) = Environ.lookup_named id env in t
+  | VarRef id -> Environ.named_type id env 
   | ConstRef c -> Environ.constant_type env c
   | IndRef ind ->
      let specif = Inductive.lookup_mind_specif env ind in

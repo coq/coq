@@ -46,7 +46,7 @@ type aconstr =
   | ASort of rawsort
   | AHole of Evd.hole_kind
   | APatVar of patvar
-  | ACast of aconstr * aconstr
+  | ACast of aconstr * cast_kind * aconstr
   
 let name_app f e = function
   | Name id -> let (id, e) = f id e in (e, Name id)
@@ -96,7 +96,7 @@ let rawconstr_of_aconstr_with_binders loc g f e = function
   | AIf (c,(na,po),b1,b2) ->
       let e,na = name_app g e na in
       RIf (loc,f e c,(na,option_app (f e) po),f e b1,f e b2)
-  | ACast (c,t) -> RCast (loc,f e c,f e t)
+  | ACast (c,k,t) -> RCast (loc,f e c,k,f e t)
   | ASort x -> RSort (loc,x)
   | AHole x  -> RHole (loc,x)
   | APatVar n -> RPatVar (loc,(false,n))
@@ -196,7 +196,7 @@ let aconstr_and_vars_of_rawconstr a =
   | RIf (loc,c,(na,po),b1,b2) ->
       add_name found na;
       AIf (aux c,(na,option_app aux po),aux b1,aux b2)
-  | RCast (_,c,t) -> ACast (aux c,aux t)
+  | RCast (_,c,k,t) -> ACast (aux c,k,aux t)
   | RSort (_,s) -> ASort s
   | RHole (_,w) -> AHole w
   | RRef (_,r) -> ARef r
@@ -338,10 +338,10 @@ let rec subst_aconstr subst bound raw =
   | AHole (Evd.BinderType _ | Evd.QuestionMark | Evd.CasesType |
       Evd.InternalHole | Evd.TomatchTypeParameter _) -> raw
 
-  | ACast (r1,r2) -> 
+  | ACast (r1,k,r2) -> 
       let r1' = subst_aconstr subst bound r1 and r2' = subst_aconstr subst bound r2 in
 	if r1' == r1 && r2' == r2 then raw else
-	  ACast (r1',r2')
+	  ACast (r1',k,r2')
 
 
 let encode_list_value l = RApp (dummy_loc,RVar (dummy_loc,ldots_var),l)
@@ -423,7 +423,7 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
       let (alp,sigma) =
 	List.fold_left2 (match_names metas) (alp,sigma) nal1 nal2 in
       match_ alp metas sigma c1 c2
-  | RCast(_,c1,t1), ACast(c2,t2) ->
+  | RCast(_,c1,_,t1), ACast(c2,_,t2) ->
       match_ alp metas (match_ alp metas sigma c1 c2) t1 t2
   | RSort (_,s1), ASort s2 when s1 = s2 -> sigma
   | RPatVar _, AHole _ -> (*Don't hide Metas, they bind in ltac*) raise No_match
@@ -520,7 +520,7 @@ type constr_expr =
   | CPatVar of loc * (bool * patvar)
   | CEvar of loc * existential_key
   | CSort of loc * rawsort
-  | CCast of loc * constr_expr * constr_expr
+  | CCast of loc * constr_expr * cast_kind * constr_expr
   | CNotation of loc * notation * constr_expr list
   | CNumeral of loc * Bigint.bigint
   | CDelimiters of loc * string * constr_expr
@@ -569,7 +569,7 @@ let constr_loc = function
   | CPatVar (loc,_) -> loc
   | CEvar (loc,_) -> loc
   | CSort (loc,_) -> loc
-  | CCast (loc,_,_) -> loc
+  | CCast (loc,_,_,_) -> loc
   | CNotation (loc,_,_) -> loc
   | CNumeral (loc,_) -> loc
   | CDelimiters (loc,_,_) -> loc
@@ -599,7 +599,8 @@ let rec occur_var_constr_expr id = function
   | CProdN (_,l,b) -> occur_var_binders id b l
   | CLambdaN (_,l,b) -> occur_var_binders id b l
   | CLetIn (_,na,a,b) -> occur_var_binders id b [[na],a]
-  | CCast (loc,a,b) -> occur_var_constr_expr id a or occur_var_constr_expr id b
+  | CCast (loc,a,_,b) -> 
+    occur_var_constr_expr id a or occur_var_constr_expr id b
   | CNotation (_,_,l) -> List.exists (occur_var_constr_expr id) l
   | CDelimiters (loc,_,a) -> occur_var_constr_expr id a
   | CHole _ | CEvar _ | CPatVar _ | CSort _ | CNumeral _ | CDynamic _ -> false
@@ -621,7 +622,7 @@ and occur_var_binders id b = function
 let mkIdentC id  = CRef (Ident (dummy_loc, id))
 let mkRefC r     = CRef r
 let mkAppC (f,l) = CApp (dummy_loc, (None,f), List.map (fun x -> (x,None)) l)
-let mkCastC (a,b)  = CCast (dummy_loc,a,b)
+let mkCastC (a,k,b)  = CCast (dummy_loc,a,k,b)
 let mkLambdaC (idl,a,b) = CLambdaN (dummy_loc,[idl,a],b)
 let mkLetInC (id,a,b)   = CLetIn (dummy_loc,id,a,b)
 let mkProdC (idl,a,b)   = CProdN (dummy_loc,[idl,a],b)
@@ -670,7 +671,7 @@ let map_constr_expr_with_binders f g e = function
   | CLambdaN (loc,bl,b) ->
       let (e,bl) = map_binders f g e bl in CLambdaN (loc,bl,f e b)
   | CLetIn (loc,na,a,b) -> CLetIn (loc,na,f e a,f (name_fold g (snd na) e) b)
-  | CCast (loc,a,b) -> CCast (loc,f e a,f e b)
+  | CCast (loc,a,k,b) -> CCast (loc,f e a,k,f e b)
   | CNotation (loc,n,l) -> CNotation (loc,n,List.map (f e) l)
   | CDelimiters (loc,s,a) -> CDelimiters (loc,s,f e a)
   | CHole _ | CEvar _ | CPatVar _ | CSort _ 

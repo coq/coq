@@ -1464,7 +1464,7 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
               | (he::tl) as a->
                  let typnf = Reduction.whd_betadeltaiota env typ in
                   match kind_of_term typnf with
-                    Cast (typ,_) ->
+                    Cast (typ,_,_) ->
                      find_non_dependent_function env c c_args_rev typ
                       f_args_rev a_rev a
                   | Prod (name,s,t) ->
@@ -1676,7 +1676,7 @@ let syntactic_but_representation_of_marked_but hole_relation hole_direction =
        else
         let c_is_proper =
          let typ = mkApp (rel_out, [| c ; c |]) in
-          mkCast (Evarutil.mk_new_meta (),typ)
+          mkCast (Evarutil.mk_new_meta (),DEFAULTcast, typ)
         in
          mkApp ((Lazy.force coq_ProperElementToKeep),
           [| hole_relation ; hole_direction; precise_out ;
@@ -1759,7 +1759,8 @@ let relation_rewrite c1 c2 (input_direction,cl) ~new_goals gl =
      let impl2 = mkProd (Anonymous, hyp1, lift 1 hyp2) in
       let th' = mkApp (proj, [|impl2; impl1; th|]) in
        Tactics.refine
-        (mkApp (th', [| mkCast (Evarutil.mk_new_meta(), new_but) |])) gl in
+        (mkApp (th',[|mkCast (Evarutil.mk_new_meta(), DEFAULTcast, new_but)|]))
+	gl in
    let if_output_relation_is_if gl =
     let th =
      apply_coq_setoid_rewrite input_relation output_relation c1 c2 hyp
@@ -1767,15 +1768,15 @@ let relation_rewrite c1 c2 (input_direction,cl) ~new_goals gl =
     in
      let new_but = Termops.replace_term c1 c2 but in
       Tactics.refine
-       (mkApp (th, [| mkCast (Evarutil.mk_new_meta(), new_but) |])) gl
-   in
-    if output_relation = (Lazy.force coq_iff_relation) then
+       (mkApp (th, [|mkCast (Evarutil.mk_new_meta(), DEFAULTcast, new_but)|]))
+       gl in
+   if output_relation = (Lazy.force coq_iff_relation) then
      if_output_relation_is_iff gl
-    else
+   else
      if_output_relation_is_if gl
   with
-   Optimize ->
-    !general_rewrite (input_direction = Left2Right) (snd hyp) gl
+    Optimize ->
+      !general_rewrite (input_direction = Left2Right) (snd hyp) gl
 
 let analyse_hypothesis gl c =
  let ctype = pf_type_of gl c in

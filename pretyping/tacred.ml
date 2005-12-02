@@ -440,7 +440,7 @@ let rec red_elim_const env sigma ref largs =
 and construct_const env sigma = 
   let rec hnfstack (x, stack as s) =
     match kind_of_term x with
-      | Cast (c,_) -> hnfstack (c, stack)
+      | Cast (c,_,_) -> hnfstack (c, stack)
       | App (f,cl) -> hnfstack (f, append_stack cl stack)
       | Lambda (id,t,c) ->
           (match decomp_stack stack with 
@@ -494,7 +494,7 @@ let try_red_product env sigma c =
                         let stack' = stack_assign stack recargnum recarg' in
                         simpfun (app_stack (f,stack')))
              | _ -> simpfun (appvect (redrec env f, l)))
-      | Cast (c,_) -> redrec env c
+      | Cast (c,_,_) -> redrec env c
       | Prod (x,a,b) -> mkProd (x, a, redrec (push_rel (x,None,a) env) b)
       | LetIn (x,a,b,t) -> redrec env (subst1 a t)
       | Case (ci,p,d,lf) -> simpfun (mkCase (ci,p,redrec env d,lf))
@@ -522,7 +522,7 @@ let hnf_constr env sigma c =
 		 stacklam redrec [a] c rest)
       | LetIn (n,b,t,c) -> stacklam redrec [b] c largs
       | App (f,cl)   -> redrec (f, append_stack cl largs)
-      | Cast (c,_) -> redrec (c, largs)
+      | Cast (c,_,_) -> redrec (c, largs)
       | Case (ci,p,c,lf) ->
           (try
              redrec 
@@ -563,7 +563,7 @@ let whd_nf env sigma c =
 		 stacklam nf_app [a1] c2 rest)
       | LetIn (n,b,t,c) -> stacklam nf_app [b] c stack
       | App (f,cl) -> nf_app (f, append_stack cl stack)
-      | Cast (c,_) -> nf_app (c, stack)
+      | Cast (c,_,_) -> nf_app (c, stack)
       | Case (ci,p,d,lf) ->
           (try
              nf_app (special_red_case sigma env nf_app (ci,p,d,lf), stack)
@@ -705,13 +705,13 @@ let rec substlin env name n ol c =
 	              let (n3,ol3,lf') = substlist n2 ol2 (Array.to_list llf)
                       in (n3,ol3,mkCase (ci, p', d', Array.of_list lf'))))
         
-    | Cast (c1,c2)   ->
+    | Cast (c1,k,c2)   ->
         let (n1,ol1,c1') = substlin env name n ol c1 in
         (match ol1 with 
-           | [] -> (n1,[],mkCast (c1',c2))
-           | _  ->
-               let (n2,ol2,c2') = substlin env name n1 ol1 c2 in
-               (n2,ol2,mkCast (c1',c2')))
+           | [] -> (n1,[],mkCast (c1',k,c2))
+           | _  -> 
+	       let (n2,ol2,c2') = substlin env name n1 ol1 c2 in
+               (n2,ol2,mkCast (c1',k,c2')))
 
     | Fix _ -> 
         (warning "do not consider occurrences inside fixpoints"; (n,ol,c))
@@ -815,7 +815,7 @@ let one_step_reduce env sigma c =
 	  (match reduce_fix (whd_betadeltaiota_state env sigma) fix largs with
              | Reduced s' -> s'
 	     | NotReducible -> raise NotStepReducible)
-      | Cast (c,_) -> redrec (c,largs)
+      | Cast (c,_,_) -> redrec (c,largs)
       | _ when isEvalRef env x ->
 	  let ref =
             try destEvalRef x

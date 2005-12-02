@@ -4,7 +4,7 @@ open Cbytecodes
 open Cemitcodes
 open Term
 open Declarations
-open Environ
+open Pre_env
 
 (*i Compilation des variables + calcul des variables libres *)
 
@@ -191,7 +191,7 @@ let get_strcst = function
 let rec str_const c =
   match kind_of_term c with
   | Sort s -> Bstrconst (Const_sorts s)
-  | Cast(c,_) -> str_const c 
+  | Cast(c,_,_) -> str_const c 
   | App(f,args) -> 
       begin
 	match kind_of_term f with
@@ -201,18 +201,18 @@ let rec str_const c =
 	    let num,arity = oip.mind_reloc_tbl.(i-1) in
 	    let nparams = oib.mind_nparams in
 	    if nparams + arity = Array.length args then
-	    if arity = 0 then Bstrconst(Const_b0 num)
-	    else
-	      let rargs = Array.sub args nparams arity in
-	      let b_args = Array.map str_const rargs in
-	      try 
-		let sc_args = Array.map get_strcst b_args in
-		Bstrconst(Const_bn(num, sc_args))
-	      with Not_found ->
-		Bmakeblock(num,b_args)
+	      if arity = 0 then Bstrconst(Const_b0 num)
+	      else
+		let rargs = Array.sub args nparams arity in
+		let b_args = Array.map str_const rargs in
+		try 
+		  let sc_args = Array.map get_strcst b_args in
+		  Bstrconst(Const_bn(num, sc_args))
+		with Not_found ->
+		  Bmakeblock(num,b_args)
 	    else  
-	    let b_args = Array.map str_const args in
-	    Bconstruct_app(num, nparams, arity, b_args)
+	      let b_args = Array.map str_const args in
+	      Bconstruct_app(num, nparams, arity, b_args)
 	| _ -> Bconstr c
       end
   | Ind ind -> Bstrconst (Const_ind ind)
@@ -274,7 +274,7 @@ let rec compile_constr reloc c sz cont =
   | Meta _ -> raise (Invalid_argument "Cbytegen.gen_lam : Meta")
   | Evar _ -> raise (Invalid_argument "Cbytegen.gen_lam : Evar")
  
-  | Cast(c,_) -> compile_constr reloc c sz cont
+  | Cast(c,_,_) -> compile_constr reloc c sz cont
 
   | Rel i -> pos_rel i reloc sz :: cont
   | Var id -> pos_named id reloc :: cont
@@ -483,10 +483,6 @@ let compile_constant_body env body opaque boxed =
       else
 	match kind_of_term body with
 	| Const kn' -> BCallias (get_allias env kn')
-	| Construct _ ->
-	    let res = compile env body in
-	    let to_patch = to_memory res in
-	    BCdefined (false, to_patch)
 	| _ -> 
 	    let res = compile env body in
 	    let to_patch = to_memory res in

@@ -132,7 +132,7 @@ let rec infos_and_sort env t =
 	let logic = not (is_info_type env varj) in
 	let small = Term.is_small varj.utj_type in
 	(logic,small) :: (infos_and_sort env1 c2)
-    | Cast (c,_) -> infos_and_sort env c
+    | Cast (c,_,_) -> infos_and_sort env c
     | _ -> []
 
 let small_unit constrsinfos =

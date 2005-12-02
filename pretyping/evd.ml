@@ -29,8 +29,10 @@ type evar_body =
 
 type evar_info = {
   evar_concl : constr;
-  evar_hyps : named_context;
+  evar_hyps : named_context_val;
   evar_body : evar_body}
+
+let evar_context evi = named_context_of_val evi.evar_hyps
 
 module Evarmap = Intmap
 
@@ -107,14 +109,14 @@ let existential_type sigma (n,args) =
     try map sigma n
     with Not_found ->
       anomaly ("Evar "^(string_of_existential n)^" was not declared") in
-  let hyps = info.evar_hyps in
+  let hyps = evar_context info in
   instantiate_evar hyps info.evar_concl (Array.to_list args)
 
 exception NotInstantiatedEvar
 
 let existential_value sigma (n,args) =
   let info = map sigma n in
-  let hyps = info.evar_hyps in
+  let hyps = evar_context info in
   match evar_body info with
     | Evar_defined c ->
 	instantiate_evar hyps c (Array.to_list args)
@@ -519,7 +521,7 @@ let pr_meta_map mmap =
 let pr_idl idl = prlist_with_sep pr_spc pr_id idl
 
 let pr_evar_info evi =
-  let phyps = pr_idl (List.rev (ids_of_named_context evi.evar_hyps)) in
+  let phyps = pr_idl (List.rev (ids_of_named_context (evar_context evi))) in
   let pty = print_constr evi.evar_concl in
   let pb =
     match evi.evar_body with

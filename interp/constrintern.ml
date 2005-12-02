@@ -929,8 +929,8 @@ let internalise sigma env allow_soapp lvar c =
 	REvar (loc, n, None)
     | CSort (loc, s) ->
 	RSort(loc,s)
-    | CCast (loc, c1, c2) ->
-	RCast (loc,intern env c1,intern_type env c2)
+    | CCast (loc, c1, k, c2) ->
+	RCast (loc,intern env c1,k,intern_type env c2)
 
     | CDynamic (loc,d) -> RDynamic (loc,d)
 

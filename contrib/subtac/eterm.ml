@@ -61,7 +61,7 @@ let etype_of_evar evs ev =
     | [] ->
 	let t' = subst_evars evs n ev.evar_concl in
 	  subst_vars acc 0 t'	
-  in aux [] 0 (rev ev.evar_hyps)
+  in aux [] 0 (rev (Environ.named_context_of_val ev.evar_hyps))
 
 
 open Tacticals

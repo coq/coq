@@ -355,8 +355,10 @@ let variable_kind id =
   pi3 (Idmap.find id !vartab)
 
 let clear_proofs sign =
-  List.map
-    (fun (id,c,t as d) -> if variable_opacity id then (id,None,t) else d) sign
+  List.fold_right
+    (fun (id,c,t as d) signv -> 
+      let d = if variable_opacity id then (id,None,t) else d in
+      Environ.push_named_context_val d signv) sign Environ.empty_named_context_val
 
 (* Global references. *)
 

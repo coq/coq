@@ -28,7 +28,7 @@ type 'a t = (global_reference,constr_pattern,'a) Dn.t
 let decomp = 
   let rec decrec acc c = match kind_of_term c with
     | App (f,l) -> decrec (Array.fold_right (fun a l -> a::l) l acc) f
-    | Cast (c1,_) -> decrec acc c1
+    | Cast (c1,_,_) -> decrec acc c1
     | _ -> (c,acc)
   in 
   decrec []

@@ -609,7 +609,7 @@ let rec pr_vernac = function
                   (bl2,body,mt())
               | Some ty ->
                   let bl2,body,ty' = extract_def_binders c ty in
-                  (bl2,CCast (dummy_loc,body,ty'),
+                  (bl2,CCast (dummy_loc,body,Term.DEFAULTcast,ty'),
                    spc() ++ str":" ++
                    pr_sep_com spc
                      (pr_type_env_n (Global.env()) (bl@bl2)) ty') in
@@ -791,7 +791,8 @@ let rec pr_vernac = function
                 spc() ++ str "{struct " ++ pr_name name ++ str"}"
               else mt() in
 	    let bl,ppc =
-              pr_lconstr_env_n rec_sign true bl (CCast(dummy_loc,def,type_)) in
+              pr_lconstr_env_n rec_sign true bl 
+		(CCast(dummy_loc,def,Term.DEFAULTcast,type_)) in
             pr_id id ++ pr_binders_arg bl ++ annot ++ spc()
             ++ pr_type_option (fun c -> spc() ++ pr_type c) type_
             ++ str" :=" ++ brk(1,1) ++ ppc ++ 

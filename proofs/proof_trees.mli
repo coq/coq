@@ -21,7 +21,7 @@ open Proof_type
 (* This module declares readable constraints, and a few utilities on
    constraints and proof trees *)
 
-val mk_goal : named_context -> constr -> goal
+val mk_goal : named_context_val -> constr -> goal
 
 val rule_of_proof     : proof_tree -> rule
 val ref_of_proof      : proof_tree -> (rule * proof_tree list)

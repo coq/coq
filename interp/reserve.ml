@@ -76,7 +76,7 @@ let rec unloc = function
               bl,
             Array.map unloc tyl,
             Array.map unloc bv)
-  | RCast (_,c,t) -> RCast (dummy_loc,unloc c,unloc t)
+  | RCast (_,c,k,t) -> RCast (dummy_loc,unloc c,k,unloc t)
   | RSort (_,x) -> RSort (dummy_loc,x)
   | RHole (_,x)  -> RHole (dummy_loc,x)
   | RRef (_,x) -> RRef (dummy_loc,x)

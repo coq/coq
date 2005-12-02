@@ -690,7 +690,7 @@ let try_delta_expand env sigma t =
     match kind_of_term c with
       | Construct _ -> whdt
       | App (f,_)  -> hd_rec f
-      | Cast (c,_) -> hd_rec c
+      | Cast (c,_,_) -> hd_rec c
       | _  -> t
   in 
   hd_rec whdt 
@@ -1036,7 +1036,7 @@ let unfold_body x gl =
   let rfun _ _ c = replace_term xvar xval c in
   tclTHENLIST
     [tclMAP (fun h -> reduct_in_hyp rfun h) hl;
-     reduct_in_concl rfun] gl
+     reduct_in_concl (rfun,DEFAULTcast)] gl
 
 
 
@@ -1088,8 +1088,9 @@ let subst_one x gl =
   let introtac = function
       (id,None,_) -> intro_using id
     | (id,Some hval,htyp) ->
-        forward true (Name id) (mkCast(replace_term varx rhs hval,
-                                       replace_term varx rhs htyp)) in
+        forward true (Name id) (mkCast(replace_term varx rhs hval,DEFAULTcast,
+                                       replace_term varx rhs htyp))
+  in
   let need_rewrite = dephyps <> [] || depconcl in
   tclTHENLIST 
     ((if need_rewrite then

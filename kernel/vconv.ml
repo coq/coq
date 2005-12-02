@@ -6,11 +6,11 @@ open Conv_oracle
 open Reduction 
 open Closure
 open Vm
-open Csymtable
+open Csymtable 
 open Univ
-open Cbytecodes
 
-
+let val_of_constr env c =
+  val_of_constr (pre_env env) c
 
 (* Test la structure des piles *)
 
@@ -194,8 +194,8 @@ let rec conv_eq pb t1 t2 cu =
     | Var id1, Var id2 -> 
 	if id1 = id2 then cu else raise NotConvertible
     | Sort s1, Sort s2 -> sort_cmp pb s1 s2 cu
-    | Cast (c1,_), _ -> conv_eq pb c1 t2 cu
-    | _, Cast (c2,_) -> conv_eq pb t1 c2 cu
+    | Cast (c1,_,_), _ -> conv_eq pb c1 t2 cu
+    | _, Cast (c2,_,_) -> conv_eq pb t1 c2 cu
     | Prod (_,t1,c1), Prod (_,t2,c2) -> 
 	conv_eq pb c1 c2 (conv_eq CONV t1 t2 cu)
     | Lambda (_,t1,c1), Lambda (_,t2,c2) -> conv_eq CONV c1 c2 cu
@@ -244,12 +244,14 @@ let vconv pb env t1 t2 =
       cu
   in cu
     
-let use_vm = ref true
-let _ = Reduction.set_vm_conv_cmp vconv
+let _ = Reduction.set_vm_conv vconv
+
+let use_vm = ref false
+
 let set_use_vm b =
   use_vm := b;
-  if b then Reduction.set_vm_conv_cmp vconv
-  else Reduction.set_default_vm_conv ()
+  if b then Reduction.set_default_conv vconv
+  else Reduction.set_default_conv Reduction.conv_cmp
       
 let use_vm _ = !use_vm
 
@@ -540,8 +542,6 @@ and nf_cofix env cf =
   let cfb = Util.array_map2 (fun v t -> nf_val env v t) vb cft in
   mkCoFix (init,(name,cft,cfb))
   
-
-
 let cbv_vm env c t  =
   let transp = transp_values () in
   if not transp then set_transp_values true; 

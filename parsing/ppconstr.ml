@@ -315,7 +315,7 @@ let rec pr inherited a =
   | CEvar (_,n) -> str (Evd.string_of_existential n), latom
   | CPatVar (_,(_,p)) -> str "?" ++ pr_patvar p, latom
   | CSort (_,s) -> pr_sort s, latom
-  | CCast (_,a,b) ->
+  | CCast (_,a,_,b) ->
       hv 0 (pr (lcast,L) a ++ cut () ++ str "::" ++ pr (lcast,E) b), lcast
   | CNotation (_,"( _ )",[t]) ->
       str"("++ pr (max_int,E) t ++ str")", latom

@@ -32,6 +32,7 @@ val env : unit -> Environ.env
 val env_is_empty : unit -> bool
 
 val universes : unit -> universes
+val named_context_val : unit -> Environ.named_context_val
 val named_context : unit -> Sign.named_context
 
 (*s Extending env with variables and local definitions *)
@@ -51,7 +52,7 @@ val add_modtype     : identifier -> module_type_entry -> kernel_name
 
 val add_constraints : constraints -> unit
 
-val set_engagement : Environ.engagement -> unit
+val set_engagement : engagement -> unit
 
 (*s Interactive modules and module types *)
 (* Both [start_*] functions take the [dir_path] argument to create a 
@@ -93,5 +94,5 @@ val import : compiled_library -> Digest.t -> module_path
  * environment and a given context. *)
   
 val type_of_global : Libnames.global_reference -> types
-val env_of_context : Sign.named_context -> Environ.env
+val env_of_context : Environ.named_context_val -> Environ.env
 

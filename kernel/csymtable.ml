@@ -4,12 +4,9 @@ open Vm
 open Cemitcodes
 open Cbytecodes
 open Declarations
-open Environ
+open Pre_env
 open Cbytegen
-open Cemitcodes
 
-
-open Format 
 
 external tcode_of_code : emitcodes -> int -> tcode = "coq_tcode_of_code"
 external free_tcode : tcode -> unit = "coq_static_free"
@@ -78,6 +75,17 @@ let str_cst_tbl = Hashtbl.create 31
 let annot_tbl = Hashtbl.create 31
     (* (annot_switch * int) Hashtbl.t  *)
 
+(*************************************************************)
+(*** Mise a jour des valeurs des variables et des constantes *)
+(*************************************************************)
+
+exception NotEvaluated
+
+let key rk =
+  match !rk with
+  | Some k -> k
+  | _ -> raise NotEvaluated
+
 (************************)
 (* traduction des patch *)
 
@@ -98,55 +106,46 @@ let slot_for_annot key =
     Hashtbl.add annot_tbl key n;
     n
 
-open Format
-
 let rec slot_for_getglobal env kn =
-  let ck = lookup_constant_key kn env in
-  try constant_key_pos ck
+  let (cb,rk) = lookup_constant_key kn env in
+  try key rk
   with NotEvaluated ->
-    match force (constant_key_body ck).const_body_code with
-    | BCdefined(boxed,(code,pl,fv)) -> 
+    let pos =
+      match Cemitcodes.force cb.const_body_code with
+      | BCdefined(boxed,(code,pl,fv)) -> 
 	let v = eval_to_patch env (code,pl,fv) in
-   	let pos = 
-	  if boxed then set_global_boxed kn v 
-	  else set_global v in
-	set_pos_constant ck pos;
-	pos
-    | BCallias kn' ->
-	let pos = slot_for_getglobal env kn' in
-	set_pos_constant ck pos;
-	pos
-    | BCconstant -> 
-	let v = val_of_constant kn in
-	let pos = set_global v in
-	set_pos_constant ck pos;
-	pos  
+  	if boxed then set_global_boxed kn v 
+	else set_global v 
+    | BCallias kn' -> slot_for_getglobal env kn' 
+    | BCconstant -> set_global (val_of_constant kn) in
+    rk := Some pos;
+    pos
 
 and slot_for_fv env fv=
   match fv with
   | FVnamed id -> 
-      let nv = lookup_namedval id env in
+      let nv = lookup_named_val id env in
       begin
-	match kind_of_named nv with
+	match !nv with
 	| VKvalue v -> v
 	| VKaxiom id ->
 	    let v = val_of_named id in
-	    set_namedval nv v; v
-	| VKdef(c,e) ->
-	    let v = val_of_constr e c in
-	    set_namedval nv v; v
+	    nv := VKvalue v; v
+	| VKdef c ->
+	    let v = val_of_constr (env_of_named id env) c in
+	    nv := VKvalue v; v
       end
   | FVrel i ->
-      let rv = lookup_relval i env in
+      let rv = lookup_rel_val i env in
       begin
-	match kind_of_rel rv with
+	match !rv with
 	| VKvalue v -> v
 	| VKaxiom k ->
 	    let v = val_of_rel k in
-	    set_relval rv v; v
-	| VKdef(c,e) ->
-	    let v = val_of_constr e c in
-	    set_relval rv v; v
+	    rv := VKvalue v; v
+	| VKdef c ->
+	    let v = val_of_constr (env_of_rel i env) c in
+	    rv := VKvalue v; v
       end
  
 and eval_to_patch env (buff,pl,fv) = 
@@ -164,7 +163,7 @@ and eval_to_patch env (buff,pl,fv) =
 and val_of_constr env c = 
   let (_,fun_code,_ as ccfv) = 
     try compile env c 
-    with e -> print_string "can not compile \n";print_flush();raise e in
+    with e -> print_string "can not compile \n";Format.print_flush();raise e in
   eval_to_patch env (to_memory ccfv)
  
 let set_transparent_const kn =

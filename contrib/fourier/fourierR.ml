@@ -85,13 +85,13 @@ let string_of_R_constant kn =
 
 let rec string_of_R_constr c =
  match kind_of_term c with
-   Cast (c,t) -> string_of_R_constr c
+   Cast (c,_,_) -> string_of_R_constr c
   |Const c -> string_of_R_constant c
   | _ -> "not_of_constant"
 
 let rec rational_of_constr c =
   match kind_of_term c with
-  | Cast (c,t) -> (rational_of_constr c)
+  | Cast (c,_,_) -> (rational_of_constr c)
   | App (c,args) ->
       (match (string_of_R_constr c) with
 	 | "Ropp" -> 
@@ -122,7 +122,7 @@ let rec rational_of_constr c =
 let rec flin_of_constr c =
   try(
     match kind_of_term c with
-  | Cast (c,t) -> (flin_of_constr c)
+  | Cast (c,_,_) -> (flin_of_constr c)
   | App (c,args) ->
       (match (string_of_R_constr c) with
 	   "Ropp" -> 

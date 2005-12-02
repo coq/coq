@@ -339,9 +339,9 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 
     | Rigid c1, Rigid c2 -> match kind_of_term c1, kind_of_term c2 with
 	  
-	| Cast (c1,_), _ -> evar_eqappr_x env isevars pbty (c1,l1) appr2
+	| Cast (c1,_,_), _ -> evar_eqappr_x env isevars pbty (c1,l1) appr2
 
-	| _, Cast (c2,_) -> evar_eqappr_x env isevars pbty appr1 (c2,l2)
+	| _, Cast (c2,_,_) -> evar_eqappr_x env isevars pbty appr1 (c2,l2)
 
 	| Sort s1, Sort s2 when l1=[] & l2=[] ->
             (isevars,base_sort_cmp pbty s1 s2)

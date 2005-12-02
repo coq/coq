@@ -42,7 +42,7 @@ prerr_endline "###whd_betadeltaiotacprop:" ;
 let xxx =
 (*Pp.msgerr (Printer.prterm_env env ty);*)
 prerr_endline "";
-   Redexpr.reduction_of_red_expr red_exp env evar_map ty
+   (fst (Redexpr.reduction_of_red_expr red_exp)) env evar_map ty
 in
 prerr_endline "###FINE" ;
 (*
@@ -92,7 +92,8 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
         let ty = Unshare.unshare (Evd.existential_type sigma ev) in
         let jty = execute env sigma ty None in
         let jty = assumption_of_judgment env sigma jty in
-        let evar_context = (Evd.map sigma n).Evd.evar_hyps in
+        let evar_context = 
+	  E.named_context_of_val (Evd.map sigma n).Evd.evar_hyps in
          let rec iter actual_args evar_context =
           match actual_args,evar_context with
              [],[] -> ()
@@ -230,11 +231,11 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
          let j3 = execute env1 sigma c3 None in
           Typeops.judge_of_letin env name j1 j2 j3
   
-     | T.Cast (c,t) ->
+     | T.Cast (c,k,t) ->
         let cj = execute env sigma c (Some (Reductionops.nf_beta t)) in
         let tj = execute env sigma t None in
 	let tj = type_judgment env sigma tj in
-        let j, _ = Typeops.judge_of_cast env cj tj in
+        let j, _ = Typeops.judge_of_cast env cj k tj in
 	 j
     in
      let synthesized = E.j_type judgement in

@@ -32,7 +32,7 @@ let nf_evar sigma ~preserve =
     match T.kind_of_term t with
      | T.Rel _ | T.Meta _ | T.Var _ | T.Sort _ | T.Const _ | T.Ind _
      | T.Construct _ -> t
-     | T.Cast (c1,c2) -> T.mkCast (aux c1, aux c2)
+     | T.Cast (c1,k,c2) -> T.mkCast (aux c1, k, aux c2)
      | T.Prod (na,c1,c2) -> T.mkProd (na, aux c1, aux c2)
      | T.Lambda (na,t,c) -> T.mkLambda (na, aux t, aux c)
      | T.LetIn (na,b,t,c) -> T.mkLetIn (na, aux b, aux t, aux c)
@@ -41,7 +41,7 @@ let nf_evar sigma ~preserve =
         let l' = Array.map aux l in
          (match T.kind_of_term c' with
              T.App (c'',l'') -> T.mkApp (c'', Array.append l'' l')
-           | T.Cast (he,_) ->
+           | T.Cast (he,_,_) ->
               (match T.kind_of_term he with
                   T.App (c'',l'') -> T.mkApp (c'', Array.append l'' l')
                 | _ -> T.mkApp (c', l')
@@ -123,18 +123,22 @@ let extract_open_proof sigma pf =
 (*CSC: it becomes a Rel; otherwise a Var. Then it can be already used  *)
 (*CSC: as the evar_instance. Ordering the instance becomes useless (it *)
 (*CSC: will already be ordered.                                        *)
-             (Termops.ids_of_named_context goal.Evd.evar_hyps) in
+             (Termops.ids_of_named_context 
+		(Environ.named_context_of_val goal.Evd.evar_hyps)) in
 	 let sorted_rels =
 	   Sort.list (fun (n1,_) (n2,_) -> n1 < n2 ) visible_rels in
 	 let context =
-          List.map
-            (fun (_,id) -> Sign.lookup_named id goal.Evd.evar_hyps)
-            sorted_rels
+	   let l = 
+             List.map
+               (fun (_,id) -> Sign.lookup_named id 
+		   (Environ.named_context_of_val goal.Evd.evar_hyps))
+               sorted_rels in
+	   Environ.val_of_named_context l
          in
 (*CSC: the section variables in the right order must be added too *)
          let evar_instance = List.map (fun (n,_) -> Term.mkRel n) sorted_rels in
-         let env = Global.env_of_context context in
-         let evd',evar =
+    (*     let env = Global.env_of_context context in *)
+	 let evd',evar =
            Evarutil.new_evar_instance context !evd goal.Evd.evar_concl
              evar_instance in
          evd := evd' ;

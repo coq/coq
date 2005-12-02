@@ -70,7 +70,7 @@ type rawconstr =
       rawconstr array * rawconstr array
   | RSort of loc * rawsort
   | RHole of (loc * hole_kind)
-  | RCast of loc * rawconstr * rawconstr
+  | RCast of loc * rawconstr * cast_kind * rawconstr
   | RDynamic of loc * Dyn.t
 
 and rawdecl = name * rawconstr option * rawconstr
@@ -110,7 +110,7 @@ let map_rawconstr f = function
   | RRec (loc,fk,idl,bl,tyl,bv) ->
       RRec (loc,fk,idl,Array.map (List.map (map_rawdecl f)) bl,
             Array.map f tyl,Array.map f bv)
-  | RCast (loc,c,t) -> RCast (loc,f c,f t)
+  | RCast (loc,c,k,t) -> RCast (loc,f c,k,f t)
   | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) as x -> x
   
 
@@ -184,7 +184,7 @@ let occur_rawconstr id =
                 (na=Name id or not(occur_fix bl)) in
           occur_fix bl)
           idl bl tyl bv)
-    | RCast (loc,c,t) -> (occur c) or (occur t)
+    | RCast (loc,c,_,t) -> (occur c) or (occur t)
     | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) -> false
 
   and occur_pattern (loc,idl,p,c) = not (List.mem id idl) & (occur c)
@@ -211,7 +211,7 @@ let loc_of_rawconstr = function
   | RRec (loc,_,_,_,_,_) -> loc
   | RSort (loc,_) -> loc
   | RHole (loc,_) -> loc
-  | RCast (loc,_,_) -> loc
+  | RCast (loc,_,_,_) -> loc
   | RDynamic (loc,_) -> loc
 
 type 'a raw_red_flag = {

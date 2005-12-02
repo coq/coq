@@ -186,7 +186,7 @@ let rec norm_head info env t stack =
       let nargs = Array.map (cbv_stack_term info TOP env) args in
       norm_head info env head (stack_app (Array.to_list nargs) stack)
   | Case (ci,p,c,v) -> norm_head info env c (CASE(p,v,ci,env,stack))
-  | Cast (ct,_) -> norm_head info env ct stack
+  | Cast (ct,_,_) -> norm_head info env ct stack
 
   (* constants, axioms
    * the first pattern is CRUCIAL, n=0 happens very often:

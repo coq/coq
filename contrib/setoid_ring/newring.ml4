@@ -195,10 +195,10 @@ let protect_red env sigma c =
     (mk_clos_but (is_ring_thm req) c);;
 
 let protect_tac =
-  Tactics.reduct_option protect_red None ;;
+  Tactics.reduct_option (protect_red,DEFAULTcast) None ;;
 
 let protect_tac_in id =
-  Tactics.reduct_option protect_red (Some(id,[],(InHyp, ref None)));;
+  Tactics.reduct_option (protect_red,DEFAULTcast) (Some(id,[],(InHyp, ref None)));;
 
 
 TACTIC EXTEND protect_fv

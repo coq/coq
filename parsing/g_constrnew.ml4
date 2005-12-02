@@ -33,7 +33,7 @@ let _ = Lexer.add_token ("","!")
 
 let mk_cast = function
     (c,(_,None)) -> c
-  | (c,(_,Some ty)) -> CCast(join_loc (constr_loc c) (constr_loc ty), c, ty)
+  | (c,(_,Some ty)) -> CCast(join_loc (constr_loc c) (constr_loc ty), c, DEFAULTcast,ty)
 
 let mk_lam = function
     ([],c) -> c
@@ -168,8 +168,8 @@ GEXTEND Gram
     [ "200" RIGHTA
       [ c = binder_constr -> c ]
     | "100" RIGHTA
-      [ c1 = operconstr; ":"; c2 = binder_constr -> CCast(loc,c1,c2)
-      | c1 = operconstr; ":"; c2 = SELF -> CCast(loc,c1,c2) ]
+      [ c1 = operconstr; ":"; c2 = binder_constr -> CCast(loc,c1,DEFAULTcast,c2)
+      | c1 = operconstr; ":"; c2 = SELF -> CCast(loc,c1,DEFAULTcast,c2) ]
     | "99" RIGHTA [ ]
     | "90" RIGHTA
       [ c1 = operconstr; "->"; c2 = binder_constr -> CArrow(loc,c1,c2)
@@ -329,7 +329,7 @@ GEXTEND Gram
       | "("; id=name; ":="; c=lconstr; ")" ->
           LocalRawDef (id,c)
       | "("; id=name; ":"; t=lconstr; ":="; c=lconstr; ")" -> 
-          LocalRawDef (id,CCast (join_loc (constr_loc t) loc,c,t))
+          LocalRawDef (id,CCast (join_loc (constr_loc t) loc,c,DEFAULTcast,t))
     ] ]
   ;
   binder:

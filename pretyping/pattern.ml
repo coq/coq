@@ -99,7 +99,7 @@ let rec pattern_of_constr t =
     | Var id -> PVar id
     | Sort (Prop c) -> PSort (RProp c)
     | Sort (Type _) -> PSort (RType None)
-    | Cast (c,_)      -> pattern_of_constr c
+    | Cast (c,_,_)      -> pattern_of_constr c
     | LetIn (na,c,_,b) -> PLetIn (na,pattern_of_constr c,pattern_of_constr b)
     | Prod (na,c,b)   -> PProd (na,pattern_of_constr c,pattern_of_constr b)
     | Lambda (na,c,b) -> PLambda (na,pattern_of_constr c,pattern_of_constr b)
@@ -213,7 +213,7 @@ let rec pat_of_raw metas vars = function
       PSort s
   | RHole _ ->
       PMeta None
-  | RCast (_,c,t) ->
+  | RCast (_,c,_,t) ->
       Options.if_verbose
         Pp.warning "Cast not taken into account in constr pattern";
       pat_of_raw metas vars c

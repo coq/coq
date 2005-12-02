@@ -55,7 +55,7 @@ sp is a local copy of the global variable extern_sp. */
 #  define Next break
 #endif 
 
-/*#define _COQ_DEBUG_ */
+/* #define _COQ_DEBUG_ */
 
 #ifdef _COQ_DEBUG_ 
 #   define print_instr(s) /*if (drawinstr)*/ printf("%s\n",s)
@@ -715,7 +715,7 @@ value coq_interprete
 	  forcable = Val_true;
 	  /* On pousse l'addresse de retour et l'argument */
 	  sp -= 3;
-	  sp[0] = (value) (pc);
+	  sp[0] = (value) (pc - 1);
 	  sp[1] = coq_env;
 	  sp[2] = Val_long(coq_extra_args);
 	  /* On evalue le cofix */
@@ -966,6 +966,7 @@ value coq_push_vstack(value stk) {
 value  coq_interprete_ml(value tcode, value a, value e, value ea) {
   print_instr("coq_interprete");
   return coq_interprete((code_t)tcode, a, e, Long_val(ea));
+   print_instr("end coq_interprete");
 }
 
 value coq_eval_tcode (value tcode, value e) {

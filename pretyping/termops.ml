@@ -42,7 +42,7 @@ let rec pr_constr c = match kind_of_term c with
   | Meta n -> str "Meta(" ++ int n ++ str ")"
   | Var id -> pr_id id
   | Sort s -> print_sort s
-  | Cast (c,t) -> hov 1 
+  | Cast (c,_, t) -> hov 1 
       (str"(" ++ pr_constr c ++ cut() ++
        str":" ++ pr_constr t ++ str")")
   | Prod (Name(id),t,c) -> hov 1
@@ -120,7 +120,8 @@ let pr_rel_decl env (na,c,typ) =
 
 let print_named_context env =
   hv 0 (fold_named_context
-	  (fun env d pps -> pps ++ ws 2 ++ pr_var_decl env d)
+	  (fun env d pps -> 
+	    pps ++ ws 2 ++ pr_var_decl env d)
           env ~init:(mt ()))
 
 let print_rel_context env = 
@@ -132,7 +133,8 @@ let print_env env =
   let sign_env =
     fold_named_context
       (fun env d pps ->
-         let pidt =  pr_var_decl env d in (pps ++ fnl () ++ pidt))
+         let pidt =  pr_var_decl env d in
+	 (pps ++ fnl () ++ pidt))
       env ~init:(mt ()) 
   in
   let db_env =
@@ -262,11 +264,11 @@ let rec strip_head_cast c = match kind_of_term c with
   | App (f,cl) -> 
       let rec collapse_rec f cl2 = match kind_of_term f with
 	| App (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
-	| Cast (c,_) -> collapse_rec c cl2
+	| Cast (c,_,_) -> collapse_rec c cl2
 	| _ -> if Array.length cl2 = 0 then f else mkApp (f,cl2)
       in 
       collapse_rec f cl
-  | Cast (c,t) -> strip_head_cast c
+  | Cast (c,_,_) -> strip_head_cast c
   | _ -> c
 
 (* [map_constr_with_named_binders g f l c] maps [f l] on the immediate
@@ -278,7 +280,7 @@ let rec strip_head_cast c = match kind_of_term c with
 let map_constr_with_named_binders g f l c = match kind_of_term c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _) -> c
-  | Cast (c,t) -> mkCast (f l c, f l t)
+  | Cast (c,k,t) -> mkCast (f l c, k, f l t)
   | Prod (na,t,c) -> mkProd (na, f l t, f (g na l) c)
   | Lambda (na,t,c) -> mkLambda (na, f l t, f (g na l) c)
   | LetIn (na,b,t,c) -> mkLetIn (na, f l b, f l t, f (g na l) c)
@@ -313,7 +315,7 @@ let fold_rec_types g (lna,typarray,_) e =
 let map_constr_with_binders_left_to_right g f l c = match kind_of_term c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _) -> c
-  | Cast (c,t) -> let c' = f l c in mkCast (c', f l t)
+  | Cast (c,k,t) -> let c' = f l c in mkCast (c',k,f l t)
   | Prod (na,t,c) ->
       let t' = f l t in
       mkProd (na, t', f (g (na,None,t) l) c)
@@ -348,10 +350,10 @@ let map_constr_with_binders_left_to_right g f l c = match kind_of_term c with
 let map_constr_with_full_binders g f l cstr = match kind_of_term cstr with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _) -> cstr
-  | Cast (c,t) -> 
+  | Cast (c,k, t) -> 
       let c' = f l c in
       let t' = f l t in
-      if c==c' && t==t' then cstr else mkCast (c', t')
+      if c==c' && t==t' then cstr else mkCast (c', k, t')
   | Prod (na,t,c) ->
       let t' = f l t in
       let c' = f (g (na,None,t) l) c in
@@ -405,7 +407,7 @@ let map_constr_with_full_binders g f l cstr = match kind_of_term cstr with
 let fold_constr_with_binders g f n acc c = match kind_of_term c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _) -> acc
-  | Cast (c,t) -> f n (f n acc c) t
+  | Cast (c,_, t) -> f n (f n acc c) t
   | Prod (_,t,c) -> f (g n) (f n acc t) c
   | Lambda (_,t,c) -> f (g n) (f n acc t) c
   | LetIn (_,b,t,c) -> f (g n) (f n (f n acc b) t) c
@@ -429,7 +431,7 @@ let fold_constr_with_binders g f n acc c = match kind_of_term c with
 let iter_constr_with_full_binders g f l c = match kind_of_term c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _) -> ()
-  | Cast (c,t) -> f l c; f l t
+  | Cast (c,_, t) -> f l c; f l t
   | Prod (na,t,c) -> f l t; f (g (na,None,t) l) c
   | Lambda (na,t,c) -> f l t; f (g (na,None,t) l) c
   | LetIn (na,b,t,c) -> f l b; f l t; f (g (na,Some b,t) l) c
@@ -695,7 +697,7 @@ let hdchar env c =
     | Prod (_,_,c)       -> hdrec (k+1) c
     | Lambda (_,_,c)     -> hdrec (k+1) c
     | LetIn (_,_,_,c)    -> hdrec (k+1) c
-    | Cast (c,_)         -> hdrec k c
+    | Cast (c,_,_)         -> hdrec k c
     | App (f,l)         -> hdrec k f
     | Const kn       ->
 	let c = lowercase_first_char (id_of_label (con_label kn)) in
@@ -786,12 +788,14 @@ let ids_of_rel_context sign =
   Sign.fold_rel_context
     (fun (na,_,_) l -> match na with Name id -> id::l | Anonymous -> l)
     sign ~init:[]
+
 let ids_of_named_context sign =
   Sign.fold_named_context (fun (id,_,_) idl -> id::idl) sign ~init:[]
 
 let ids_of_context env = 
   (ids_of_rel_context (rel_context env))
   @ (ids_of_named_context (named_context env))
+
 
 let names_of_rel_context env =
   List.map (fun (na,_,_) -> na) (rel_context env)
@@ -824,7 +828,7 @@ let is_global id =
     false
 
 let is_section_variable id =
-  try let _ = Sign.lookup_named id (Global.named_context()) in true
+  try let _ = Global.lookup_named id in true
   with Not_found -> false
 
 let next_global_ident_from allow_secvar id avoid = 
@@ -934,7 +938,7 @@ let eta_eq_constr =
 
 (* iterator on rel context *)
 let process_rel_context f env =
-  let sign = named_context env in
+  let sign = named_context_val env in
   let rels = rel_context env in
   let env0 = reset_with_named_context sign env in
   Sign.fold_rel_context f rels ~init:env0
@@ -1006,6 +1010,6 @@ let rec rename_bound_var env l c =
   | Prod (Anonymous,c1,c2) ->
         let env' = push_rel (Anonymous,None,c1) env in
         mkProd (Anonymous, c1, rename_bound_var env' l c2)
-  | Cast (c,t) -> mkCast (rename_bound_var env l c, t)
+  | Cast (c,k,t) -> mkCast (rename_bound_var env l c, k,t)
   | x -> c
 

@@ -405,7 +405,7 @@ let pr_prim_rule_v7 = function
       str(if occur_meta c then "Refine " else "Exact ") ++
       Constrextern.with_meta_as_hole print_constr c
       
-  | Convert_concl c ->
+  | Convert_concl (c,_) ->
       (str"Change "  ++ print_constr c)
       
   | Convert_hyp (id,None,t) ->
@@ -472,7 +472,7 @@ let pr_prim_rule_v8 = function
       str(if occur_meta c then "refine " else "exact ") ++
       Constrextern.with_meta_as_hole print_constr8 c
       
-  | Convert_concl c ->
+  | Convert_concl (c,_) ->
       (str"change "  ++ print_constr8 c)
       
   | Convert_hyp (id,None,t) ->

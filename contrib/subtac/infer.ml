@@ -552,7 +552,7 @@ let rec dtype_of_types ctx c =
       | Meta mv -> notimpl "Meta"
       | Evar pex -> notimpl "Evar"
       | Sort s -> DTSort (dummy_loc, s)
-      | Cast (c, t) -> snd (dtype_of_types ctx t)
+      | Cast (c, _, t) -> snd (dtype_of_types ctx t)
       | Prod (n, t, t') -> 
 	  let dt = dtype_of_types ctx t in
 	  let ctx' = (n, dt) :: ctx in
@@ -600,7 +600,7 @@ let rec dtype_of_constr ctx c =
       | Meta mv -> notimpl "Meta"
       | Evar pex -> notimpl "Evar"
       | Sort s -> DTSort (dummy_loc, s)
-      | Cast (c, t) -> snd (dtype_of_constr ctx t)
+      | Cast (_,_,t) -> snd (dtype_of_constr ctx t)
       | Prod (n, t, t') -> 
 	  let dt = dtype_of_constr ctx t in
 	  let ctx' = (n, dt) :: ctx in

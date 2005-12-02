@@ -460,7 +460,7 @@ type constr_path =
 let context operation path (t : constr) =
   let rec loop i p0 t = 
     match (p0,kind_of_term t) with 
-      | (p, Cast (c,t)) -> mkCast (loop i p c,t)
+      | (p, Cast (c,k,t)) -> mkCast (loop i p c,k,t)
       | ([], _) -> operation i t
       | ((P_APP n :: p),  App (f,v)) ->
 	  let v' = Array.copy v in
@@ -498,7 +498,7 @@ let context operation path (t : constr) =
 
 let occurence path (t : constr) =
   let rec loop p0 t = match (p0,kind_of_term t) with
-    | (p, Cast (c,t)) -> loop p c
+    | (p, Cast (c,_,_)) -> loop p c
     | ([], _) -> t
     | ((P_APP n :: p),  App (f,v)) -> loop p v.(pred n)
     | ((P_BRANCH n :: p), Case (_,_,_,v)) -> loop p v.(n)
@@ -524,7 +524,7 @@ let abstract_path typ path t =
 
 let focused_simpl path gl =
   let newc = context (fun i t -> pf_nf gl t) (List.rev path) (pf_concl gl) in
-  convert_concl_no_check newc gl
+  convert_concl_no_check newc DEFAULTcast gl
 
 let focused_simpl path = simpl_time (focused_simpl path)
 

@@ -48,7 +48,7 @@ let whd_castappevar_stack sigma c =
     match kind_of_term c with
       | Evar (ev,args) when Evd.in_dom sigma ev & Evd.is_defined sigma ev -> 
 	  whrec (existential_value sigma (ev,args), l)
-      | Cast (c,_) -> whrec (c, l)
+      | Cast (c,_,_) -> whrec (c, l)
       | App (f,args) -> whrec (f, Array.fold_right (fun a l -> a::l) args l)
       | _ -> s
   in 
@@ -64,11 +64,7 @@ let tj_nf_evar = Pretype_errors.tj_nf_evar
 
 let nf_evar_info evc info =
   { evar_concl = Reductionops.nf_evar evc info.evar_concl;
-    evar_hyps = List.map 
-		  (fun (id,body,typ) -> 
-		     (id,
-		      option_app (Reductionops.nf_evar evc) body,
-		      Reductionops.nf_evar evc typ)) info.evar_hyps; 
+    evar_hyps = map_named_val (Reductionops.nf_evar evc) info.evar_hyps;
     evar_body = info.evar_body}
 
 (**********************)
@@ -107,7 +103,7 @@ let evars_to_metas sigma (emap, c) =
   let change_exist evar =
     let ty = nf_betaiota (nf_evar emap (existential_type emap evar)) in
     let n = new_meta() in
-    mkCast (mkMeta n, ty) in
+    mkCast (mkMeta n, DEFAULTcast, ty) in
   let rec replace c =
     match kind_of_term c with
         Evar (k,_ as ev) when Evd.in_dom emap' k -> change_exist ev
@@ -163,8 +159,9 @@ let new_untyped_evar =
 
 (* All ids of sign must be distincts! *)
 let new_evar_instance sign evd typ ?(src=(dummy_loc,InternalHole)) instance =
-  assert (List.length instance = named_context_length sign); 
-  if not (list_distinct (ids_of_named_context sign)) then 
+  let ctxt = named_context_of_val sign in
+  assert (List.length instance = named_context_length ctxt); 
+  if not (list_distinct (ids_of_named_context ctxt)) then 
     anomaly "new_evar_instance: two vars have the same name";
   let newev = new_untyped_evar() in
   (evar_declare sign newev typ ~src:src evd,
@@ -194,19 +191,18 @@ let make_subst env args =
 (* Converting the env into the sign of the evar to define *)
 
 let push_rel_context_to_named_context env =
-  let sign0 = named_context env in
-  let (subst,_,sign) =
+  let (subst,_,env) =
   Sign.fold_rel_context
-    (fun (na,c,t) (subst,avoid,sign) ->
+    (fun (na,c,t) (subst,avoid,env) ->
        let na = if na = Anonymous then Name(id_of_string"_") else na in
        let id = next_name_away na avoid in
        ((mkVar id)::subst,
         id::avoid,
-	add_named_decl (id,option_app (substl subst) c,
+	push_named (id,option_app (substl subst) c,
                         type_app (substl subst) t)
-	  sign))
-    (rel_context env) ~init:([],ids_of_named_context sign0,sign0)
-  in (subst, sign)
+	  env))
+    (rel_context env) ~init:([],ids_of_named_context (named_context env),env)
+  in (subst, (named_context_val env))
 
 let new_evar evd env ?(src=(dummy_loc,InternalHole)) typ =
   let subst,sign = push_rel_context_to_named_context env in
@@ -271,7 +267,7 @@ let inverse_instance env isevars ev evi inst rhs =
              if rigid then error()
              else if
                not strict_inverse &&
-               List.exists (fun (id',_,_) -> id=id') evi.evar_hyps
+               List.exists (fun (id',_,_) -> id=id') (evar_context evi)
              then
                failwith "cannot solve pb yet"
              else t)
@@ -308,13 +304,14 @@ let do_restrict_hyps evd ev args =
   let args = Array.to_list args in
   let evi = Evd.map (evars_of !evd) ev in
   let env = evar_env evi in
-  let hyps = evi.evar_hyps in
+  let hyps = evar_context evi in
   let (sign,ncargs) = list_filter2 (fun _ a -> closed0 a) (hyps,args) in
   (* No care is taken in case the evar type uses vars filtered out!
      Is it important ? *)
   let nc =
-    e_new_evar evd (reset_with_named_context sign env)
-      ~src:(evar_source ev !evd) evi.evar_concl in
+    let env =
+      Sign.fold_named_context push_named sign ~init:(reset_context env) in
+    e_new_evar evd env ~src:(evar_source ev !evd) evi.evar_concl in
   evd := Evd.evar_define ev nc !evd;
   let (evn,_) = destEvar nc in
   mkEvar(evn,Array.of_list ncargs)
@@ -351,7 +348,8 @@ let real_clean env isevars ev evi args rhs =
           (try List.assoc t subst
            with Not_found ->
              if
-               not rigid or List.exists (fun (id',_,_) -> id=id') evi.evar_hyps
+               not rigid 
+		 or List.exists (fun (id',_,_) -> id=id') (evar_context evi)
              then t
              else
                error_not_clean env (evars_of !evd) ev rhs
@@ -430,7 +428,7 @@ let head_is_evar isevars =
   let rec hrec k = match kind_of_term k with
     | Evar n   -> not (Evd.is_defined_evar isevars n)
     | App (f,_) -> hrec f
-    | Cast (c,_) -> hrec c
+    | Cast (c,_,_) -> hrec c
     | _ -> false
   in 
   hrec 
@@ -438,7 +436,7 @@ let head_is_evar isevars =
 let rec is_eliminator c = match kind_of_term c with
   | App _    -> true
   | Case _ -> true
-  | Cast (c,_) -> is_eliminator c
+  | Cast (c,_,_) -> is_eliminator c
   | _ -> false
 
 let head_is_embedded_evar isevars c =
@@ -449,7 +447,7 @@ let head_evar =
     | Evar (ev,_)       -> ev
     | Case (_,_,c,_) -> hrec c
     | App (c,_)        -> hrec c
-    | Cast (c,_)        -> hrec c
+    | Cast (c,_,_)        -> hrec c
     | _                   -> failwith "headconstant"
   in 
   hrec 
@@ -494,7 +492,7 @@ let status_changed lev (pbty,t1,t2) =
 let solve_refl conv_algo env isevars ev argsv1 argsv2 =
   if argsv1 = argsv2 then (isevars,[]) else
   let evd = Evd.map (evars_of isevars) ev in
-  let hyps = evd.evar_hyps in
+  let hyps = evar_context evd in
   let (isevars',_,rsign) = 
     array_fold_left2
       (fun (isevars,sgn,rsgn) a1 a2 ->
@@ -507,8 +505,9 @@ let solve_refl conv_algo env isevars ev argsv1 argsv2 =
   in
   let nsign = List.rev rsign in
   let (evd',newev) =
-    new_evar isevars (reset_with_named_context nsign env)
-      ~src:(evar_source ev isevars) evd.evar_concl in
+    let env =
+      Sign.fold_named_context push_named nsign ~init:(reset_context env) in
+    new_evar isevars env ~src:(evar_source ev isevars) evd.evar_concl in
   let evd'' = Evd.evar_define ev newev evd' in
   evd'', [ev]
 
@@ -585,7 +584,8 @@ let define_evar_as_arrow evd (ev,args) =
   let evenv = evar_env evi in
   let (evd1,dom) = new_evar evd evenv (new_Type()) in
   let nvar =
-    next_ident_away (id_of_string "x") (ids_of_named_context evi.evar_hyps) in
+    next_ident_away (id_of_string "x")
+      (ids_of_named_context (evar_context evi)) in
   let newenv = push_named (nvar, None, dom) evenv in
   let (evd2,rng) =
     new_evar evd1 newenv ~src:(evar_source ev evd1) (new_Type()) in

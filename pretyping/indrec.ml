@@ -447,7 +447,7 @@ let make_case_gen env   = make_case_com None env
 
 let change_sort_arity sort = 
   let rec drec a = match kind_of_term a with
-    | Cast (c,t) -> drec c 
+    | Cast (c,_,_) -> drec c 
     | Prod (n,t,c) -> mkProd (n, t, drec c)
     | LetIn (n,b,t,c) -> mkLetIn (n,b, t, drec c)
     | Sort _ -> mkSort sort

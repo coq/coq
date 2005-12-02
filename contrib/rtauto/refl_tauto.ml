@@ -113,7 +113,7 @@ let rec make_form atom_env gls term =
 	      Arrow (fa,fb)
 	  else
 	    make_atom atom_env (normalize term)
-      | Cast(a,b) -> 
+      | Cast(a,_,_) -> 
 	  make_form atom_env gls a
       | Ind ind ->
 	  if ind = Lazy.force li_False then
@@ -273,7 +273,8 @@ let rtauto_tac gls=
       (pf_env gls) (Tacmach.project gls) gl <> InProp 
     then errorlabstrm "rtauto" (Pp.str "goal should be in Prop") in
   let glf=make_form gamma gls gl in
-  let hyps=make_hyps gamma gls [gl] gls.it.evar_hyps in
+  let hyps=make_hyps gamma gls [gl] 
+      (Environ.named_context_of_val gls.it.evar_hyps) in
   let formula=
     List.fold_left (fun gl (_,f)-> Arrow (f,gl)) glf hyps in  
   let search_fun = 

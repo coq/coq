@@ -18,7 +18,7 @@ Ltac caseq t := generalize (refl_equal t); pattern t at -1; case t.
 Ltac clean:=try (simpl;congruence).
 
 Inductive form:Set:=
-Atom : positive -> form
+  Atom : positive -> form
 | Arrow : form -> form -> form
 | Bot
 | Conjunct : form -> form -> form 

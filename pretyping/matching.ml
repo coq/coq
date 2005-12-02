@@ -179,15 +179,15 @@ let special_meta = (-1)
 (* Tries to match a subterm of [c] with [pat] *)
 let rec sub_match nocc pat c =
   match kind_of_term c with
-  | Cast (c1,c2) ->
+  | Cast (c1,k,c2) ->
     (try authorized_occ nocc ((matches pat c), mkMeta special_meta) with
     | PatternMatchingFailure ->
       let (lm,lc) = try_sub_match nocc pat [c1] in
-      (lm,mkCast (List.hd lc, c2))
+      (lm,mkCast (List.hd lc, k,c2))
     | NextOccurrence nocc ->
       let (lm,lc) = try_sub_match (nocc - 1) pat [c1] in
-      (lm,mkCast (List.hd lc, c2)))
-  | Lambda (x,c1,c2) ->
+      (lm,mkCast (List.hd lc, k,c2)))
+ | Lambda (x,c1,c2) ->
     (try authorized_occ nocc ((matches pat c), mkMeta special_meta) with
     | PatternMatchingFailure ->
       let (lm,lc) = try_sub_match nocc pat [c1;c2] in

@@ -20,6 +20,9 @@ open Mod_subst
 (* This module defines the types of global declarations. This includes
    global constants/axioms and mutual inductive definitions *)
 
+type engagement = ImpredicativeSet
+
+
 (*s Constants (internal representation) (Definition/Axiom) *)
 
 type constr_substituted = constr substituted
@@ -191,3 +194,4 @@ and module_body =
       mod_type : module_type_body;
       mod_equiv : module_path option;
       mod_constraints : constraints }
+

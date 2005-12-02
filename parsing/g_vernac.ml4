@@ -78,8 +78,8 @@ GEXTEND Gram
     ] ]
   ;
   constr_body:
-    [ [ ":="; c = constr; ":"; t = constr -> CCast(loc,c,t)
-      | ":"; t = constr; ":="; c = constr -> CCast(loc,c,t)
+    [ [ ":="; c = constr; ":"; t = constr -> CCast(loc,c,Term.DEFAULTcast,t)
+      | ":"; t = constr; ":="; c = constr -> CCast(loc,c,Term.DEFAULTcast,t)
       | ":="; c = constr -> c ] ]
   ;
   vernac_list_tail:
@@ -162,7 +162,7 @@ GEXTEND Gram
       | -> evar_constr loc ] ]
   ;
   opt_casted_constr:
-    [ [ c = constr;  ":"; t = constr -> CCast(loc,c,t)
+    [ [ c = constr;  ":"; t = constr -> CCast(loc,c,Term.DEFAULTcast,t)
       | c = constr -> c ] ]
   ;
   vardecls:

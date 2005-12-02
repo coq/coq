@@ -108,11 +108,6 @@ let _ = at_exit dump_it
 
 (* Options for the virtual machine *)
 
-let print_bytecodes = ref false 
-let set_print_bytecodes b = print_bytecodes := b
-let print_bytecodes _ = !print_bytecodes
-
-
 let boxed_definitions = ref true
 let set_boxed_definitions b = boxed_definitions := b
 let boxed_definitions _ = !boxed_definitions 

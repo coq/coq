@@ -112,16 +112,16 @@ let rec execute env evd cstr =
         let j1 = execute env evd c1 in
         let j2 = execute env evd c2 in
         let j2 = type_judgment env j2 in
-        let _ =  judge_of_cast env j1 j2 in
+        let _ =  judge_of_cast env j1 DEFAULTcast j2 in
         let env1 = push_rel (name,Some j1.uj_val,j2.utj_val) env in
         let j3 = execute env1 evd c3 in
         judge_of_letin env name j1 j2 j3
   
-    | Cast (c,t) ->
+    | Cast (c,k,t) ->
         let cj = execute env evd c in
         let tj = execute env evd t in
 	let tj = type_judgment env tj in
-        let j, _ = judge_of_cast env cj tj in
+        let j, _ = judge_of_cast env cj k tj in
 	j
 
 and execute_recdef env evd (names,lar,vdef) =

@@ -178,7 +178,7 @@ let get_target t ind =
 let prods_of t = 
   let rec aux acc d = match kind_of_term d with
     | Prod (_,c1,c2) -> aux (c1::acc) c2
-    | Cast (c,_) -> aux acc c
+    | Cast (c,_,_) -> aux acc c
     | _ -> (d,acc)
   in 
   aux [] t
@@ -244,7 +244,7 @@ let build_id_coercion idf_opt source =
   in
   let constr_entry = (* Cast is necessary to express [val_f] is identity *)
     DefinitionEntry
-      { const_entry_body = mkCast (val_f, typ_f);
+      { const_entry_body = mkCast (val_f, DEFAULTcast, typ_f);
 	const_entry_type = Some typ_f;
         const_entry_opaque = false;
 	const_entry_boxed = Options.boxed_definitions()} in

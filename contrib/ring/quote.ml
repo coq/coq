@@ -212,7 +212,7 @@ let compute_rhs bodyi index_of_f =
 	  PMeta (Some (coerce_meta_in i))
       | App (f,args) ->
           PApp (pattern_of_constr f, Array.map aux args)
-      | Cast (c,t) -> aux c 
+      | Cast (c,_,_) -> aux c 
       | _ -> pattern_of_constr c
   in
   aux bodyi
@@ -297,7 +297,7 @@ binary search trees (see file \texttt{Quote.v}) *)
 let rec closed_under cset t =
   (ConstrSet.mem t cset) or
   (match (kind_of_term t) with
-     | Cast(c,_) -> closed_under cset c  
+     | Cast(c,_,_) -> closed_under cset c  
      | App(f,l) -> closed_under cset f & array_for_all (closed_under cset) l
      | _ -> false)
     
@@ -360,7 +360,7 @@ let rec subterm gl (t : constr) (t' : constr) =
   (pf_conv_x gl t t') or
   (match (kind_of_term t) with 
      | App (f,args) -> array_exists (fun t -> subterm gl t t') args
-     | Cast(t,_) -> (subterm gl t t')
+     | Cast(t,_,_) -> (subterm gl t t')
      | _ -> false)
            
 (*s We want to sort the list according to reverse subterm order. *)
@@ -447,8 +447,8 @@ let quote f lid gl =
     | _ -> assert false
   in
   match ivs.variable_lhs with
-    | None -> Tactics.convert_concl (mkApp (f, [| p |])) gl
-    | Some _ -> Tactics.convert_concl (mkApp (f, [| vm; p |])) gl
+    | None -> Tactics.convert_concl (mkApp (f, [| p |])) DEFAULTcast gl
+    | Some _ -> Tactics.convert_concl (mkApp (f, [| vm; p |])) DEFAULTcast gl
 
 (*i 
 

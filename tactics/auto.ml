@@ -189,7 +189,7 @@ let make_exact_entry name (c,cty) =
 	   { hname=name; pri=0; pat=None; code=Give_exact c })
 
 let dummy_goal =
-  {it={evar_hyps=empty_named_context;evar_concl=mkProp;evar_body=Evar_empty};
+  {it={evar_hyps=empty_named_context_val;evar_concl=mkProp;evar_body=Evar_empty};
    sigma=Evd.empty}
 
 let make_apply_entry env sigma (eapply,verbose) name (c,cty) =

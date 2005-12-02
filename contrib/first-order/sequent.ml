@@ -91,8 +91,8 @@ let compare_constr_int f t1 t2 =
     | Meta m1, Meta m2 -> m1 - m2
     | Var id1, Var id2 -> Pervasives.compare id1 id2
     | Sort s1, Sort s2 -> Pervasives.compare s1 s2
-    | Cast (c1,_), _ -> f c1 t2
-    | _, Cast (c2,_) -> f t1 c2
+    | Cast (c1,_,_), _ -> f c1 t2
+    | _, Cast (c2,_,_) -> f t1 c2
     | Prod (_,t1,c1), Prod (_,t2,c2) 
     | Lambda (_,t1,c1), Lambda (_,t2,c2) ->
 	(f =? f) t1 t2 c1 c2 

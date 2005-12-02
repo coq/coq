@@ -53,7 +53,7 @@ let tj_nf_evar sigma {utj_val=v;utj_type=t} =
   {utj_val=type_app (nf_evar sigma) v;utj_type=t}
 
 let env_ise sigma env =
-  let sign = named_context env in
+  let sign = named_context_val env in
   let ctxt = rel_context env in
   let env0 = reset_with_named_context sign env in
   Sign.fold_rel_context

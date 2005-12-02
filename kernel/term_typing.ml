@@ -19,8 +19,6 @@ open Inductive
 open Environ
 open Entries
 open Type_errors
-open Cemitcodes
-open Cbytegen
 open Indtypes
 open Typeops
 
@@ -28,12 +26,9 @@ let constrain_type env j cst1 = function
   | None -> j.uj_type, cst1
   | Some t -> 
       let (tj,cst2) = infer_type env t in
-      let cst3 =
-	try vm_conv_leq env j.uj_type tj.utj_val
-	with NotConvertible -> error_actual_type env j tj.utj_val in
+      let (_,cst3) = judge_of_cast env j DEFAULTcast tj in
       assert (t = tj.utj_val);
       t, Constraint.union (Constraint.union cst1 cst2) cst3
-
 
 let translate_local_def env (b,topt) =
   let (j,cst) = infer env b in
@@ -99,7 +94,7 @@ let build_constant_declaration env kn (body,typ,cst,op,boxed) =
 	  (global_vars_set env (Declarations.force b)) 
 	  (global_vars_set env typ)
   in
-  let tps = from_val (compile_constant_body env body op boxed) in
+  let tps = Cemitcodes.from_val (compile_constant_body env body op boxed) in
   let hyps = keep_hyps env ids in
     { const_hyps = hyps;
       const_body = body;

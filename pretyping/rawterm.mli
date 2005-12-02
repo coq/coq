@@ -67,7 +67,7 @@ type rawconstr =
       rawconstr array * rawconstr array
   | RSort of loc * rawsort
   | RHole of (loc * Evd.hole_kind)
-  | RCast of loc * rawconstr * rawconstr
+  | RCast of loc * rawconstr * cast_kind * rawconstr
   | RDynamic of loc * Dyn.t
 
 and rawdecl = name * rawconstr option * rawconstr

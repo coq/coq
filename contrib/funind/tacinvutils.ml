@@ -74,7 +74,7 @@ let  rec mkevarmap_from_listex lex =
 		  let _ = prconstr typ in*)
 		  let info ={
 			 evar_concl = typ;
-			 evar_hyps = empty_named_context;
+			 evar_hyps = empty_named_context_val;
 			 evar_body = Evar_empty} in
 		  Evd.add (mkevarmap_from_listex lex') ex info
 

@@ -43,8 +43,8 @@ val e_new_evar :
    of [inst] are typed in the occurrence context and their type (seen
    as a telescope) is [sign] *)
 val new_evar_instance :
- named_context -> evar_defs -> types -> ?src:loc * hole_kind -> constr list ->
- evar_defs * constr
+ named_context_val -> evar_defs -> types -> ?src:loc * hole_kind ->
+   constr list -> evar_defs * constr
 
 (***********************************************************)
 (* Instanciate evars *)

@@ -135,7 +135,7 @@ let rec uri_of_constr c =
   | RLetIn (_,na,b,c) ->
       url_string "let "; url_of_name na; url_string "\\def ";
       uri_of_constr b; url_string " in "; uri_of_constr c
-  | RCast (_,c,t) ->
+  | RCast (_,c,_,t) ->
       uri_of_constr c; url_string ":"; uri_of_constr t
   | RRec _ | RIf _ | RLetTuple _ | ROrderedCase _ | RCases _ ->
       error "Whelp does not support pattern-matching and (co-)fixpoint"

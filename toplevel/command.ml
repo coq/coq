@@ -75,7 +75,7 @@ let rec destSubCast c = match kind_of_term c with
       let (b,u) = destSubCast c in mkLambda (x,t,b), mkProd (x,t,u)
   | LetIn (x,b,t,c) ->
       let (d,u) = destSubCast c in mkLetIn (x,b,t,d), mkLetIn (x,b,t,u)
-  | Cast (b,u) -> (b,u)
+  | Cast (b,_, u) -> (b,u)
   | _ -> assert false
 
 let rec adjust_conclusion a cs = function
@@ -112,7 +112,7 @@ let constant_entry_of_com (bl,com,comtypopt,opacity,boxed) =
     | Some comtyp ->
 	(* We use a cast to avoid troubles with evars in comtyp *)
 	(* that can only be resolved knowing com *)
-	let b = abstract_rawconstr (mkCastC (com,comtyp)) bl in
+	let b = abstract_rawconstr (mkCastC (com,DEFAULTcast,comtyp)) bl in
 	let (body,typ) = destSubCast (interp_constr sigma env b) in
 	{ const_entry_body = body;
 	  const_entry_type = Some typ;
@@ -124,7 +124,7 @@ let red_constant_entry bl ce = function
   | Some red ->
       let body = ce.const_entry_body in
       { ce with const_entry_body = 
-	under_binders (Global.env()) (reduction_of_red_expr red)
+	under_binders (Global.env()) (fst (reduction_of_red_expr red))
 	  (length_of_raw_binders bl)
 	  body }
 

@@ -144,9 +144,9 @@ let re_exec is_ide =
 
 (*s options for the virtual machine *)
 
-let boxed_val = ref true
-let boxed_def = ref true
-let use_vm = ref true
+let boxed_val = ref false
+let boxed_def = ref false
+let use_vm = ref false
 
 let set_vm_opt () =
   Vm.set_transp_values (not !boxed_val);
@@ -173,7 +173,7 @@ let parse_args is_ide =
     | [] -> ()
 
     | "-impredicative-set" :: rem -> 
-        set_engagement Environ.ImpredicativeSet; parse rem
+        set_engagement Declarations.ImpredicativeSet; parse rem
 
     | ("-I"|"-include") :: d :: rem -> set_default_include d; parse rem
     | ("-I"|"-include") :: []       -> usage ()
@@ -239,13 +239,7 @@ let parse_args is_ide =
 
     | "-debug" :: rem -> set_debug (); parse rem
 
-    | "-unboxed-values" :: rem -> 
-	boxed_val := false; parse rem
-    | "-boxed-definitions" :: rem ->
-	boxed_def := true; parse rem
-    | "-no-vm" :: rem -> use_vm := false; parse rem
-    | "-draw-vm-instr" :: rem -> Vm.set_drawinstr ();
-	Options.set_print_bytecodes true; parse rem
+    | "-vm" :: rem -> use_vm := true; parse rem
     | "-emacs" :: rem -> Options.print_emacs := true; parse rem
 	  
     | "-where" :: _ -> print_endline Coq_config.coqlib; exit 0

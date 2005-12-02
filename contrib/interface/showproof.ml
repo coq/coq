@@ -54,7 +54,7 @@ and ngoal=
      {newhyp : nhyp list;
       t_concl : Term.constr;
       t_full_concl: Term.constr;
-      t_full_env: Sign.named_context}
+      t_full_env: Environ.named_context_val}
 and ntree=
       {t_info:string;
 	t_goal:ngoal;
@@ -151,7 +151,7 @@ let seq_to_lnhyp sign sign' cl =
       {newhyp=nh;
        t_concl=cl;
        t_full_concl=long_type_hyp !lh cl;
-       t_full_env = sign@sign'}
+       t_full_env = Environ.val_of_named_context (sign@sign')}
 ;;
 
 
@@ -247,6 +247,7 @@ let old_sign osign sign =
 let  to_nproof sigma osign pf =
   let rec to_nproof_rec sigma osign pf =
     let {evar_hyps=sign;evar_concl=cl} = pf.goal in
+    let sign = Environ.named_context_of_val sign in
     let nsign = new_sign osign sign in 
     let oldsign = old_sign osign sign in 
     match pf.ref with
@@ -759,7 +760,7 @@ let rec nsortrec vl x =
           nsortrec vl (mkInd (inductive_of_constructor c))
    | Case(_,x,t,a) 
         -> nsortrec vl x
-   | Cast(x,t)-> nsortrec vl t
+   | Cast(x,_, t)-> nsortrec vl t
    | Const c  -> nsortrec vl (lookup_constant c vl).const_type
    | _ -> nsortrec vl (type_of vl Evd.empty x)
 ;;

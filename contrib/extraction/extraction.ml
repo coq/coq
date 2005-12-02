@@ -354,7 +354,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	let rec names_prod t = match kind_of_term t with 
 	  | Prod(n,_,t) -> n::(names_prod t)
 	  | LetIn(_,_,_,t) -> names_prod t
-	  | Cast(t,_) -> names_prod t
+	  | Cast(t,_,_) -> names_prod t
 	  | _ -> []
 	in 
 	let field_names = 
@@ -515,7 +515,7 @@ let rec extract_term env mle mlt c args =
  	extract_app env mle mlt (extract_fix env mle i recd) args 
     | CoFix (i,recd) ->
  	extract_app env mle mlt (extract_fix env mle i recd) args
-    | Cast (c, _) -> extract_term env mle mlt c args
+    | Cast (c,_,_) -> extract_term env mle mlt c args
     | Ind _ | Prod _ | Sort _ | Meta _ | Evar _ | Var _ -> assert false 
 
 (*s [extract_maybe_term] is [extract_term] for usual terms, else [MLdummy] *) 

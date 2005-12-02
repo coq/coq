@@ -12,6 +12,7 @@
 open Names
 (*i*)
 
+
 (*s The sorts of CCI. *)
 
 type contents = Pos | Null
@@ -99,9 +100,13 @@ val mkProp : types
 val mkSet  : types
 val mkType : Univ.universe -> types
 
+
+(* This defines the strategy to use for verifiying a Cast *)
+type cast_kind = VMcast | DEFAULTcast 
+
 (* Constructs the term [t1::t2], i.e. the term $t_1$ casted with the 
    type $t_2$ (that means t2 is declared as the type of t1). *)
-val mkCast : constr * types -> constr
+val mkCast : constr * cast_kind * constr -> constr
 
 (* Constructs the product [(x:t1)t2] *)
 val mkProd : name * types * types -> types
@@ -192,7 +197,7 @@ type ('constr, 'types) kind_of_term =
   | Meta      of metavariable
   | Evar      of 'constr pexistential
   | Sort      of sorts
-  | Cast      of 'constr * 'types
+  | Cast      of 'constr * cast_kind * 'types
   | Prod      of name * 'types * 'types
   | Lambda    of name * 'types * 'constr
   | LetIn     of name * 'constr * 'types * 'constr
@@ -213,7 +218,7 @@ val kind_of_term : constr -> (constr, types) kind_of_term
 (* Experimental *)
 type ('constr, 'types) kind_of_type =
   | SortType   of sorts
-  | CastType   of 'types * 'types
+  | CastType   of 'types * 'types 
   | ProdType   of name * 'types * 'types
   | LetInType  of name * 'constr * 'types * 'types
   | AtomicType of 'constr * 'constr array
@@ -258,7 +263,7 @@ val destVar : constr -> identifier
 val destSort : constr -> sorts
 
 (* Destructs a casted term *)
-val destCast : constr -> constr * types
+val destCast : constr -> constr * cast_kind * constr
 
 (* Destructs the product $(x:t_1)t_2$ *)
 val destProd : types -> name * types * types

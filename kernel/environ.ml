@@ -14,75 +14,30 @@ open Sign
 open Univ
 open Term
 open Declarations
+open Pre_env
+open Csymtable
 
 (* The type of environments. *)
 
-type checksum = int
+type named_context_val = Pre_env.named_context_val
 
-type compilation_unit_name = dir_path * checksum
+type env = Pre_env.env
 
-type global = Constant | Inductive
+let pre_env env = env
 
-type key = int option ref 
-type constant_key = constant_body * key
- 
-type engagement = ImpredicativeSet
+let empty_named_context_val = empty_named_context_val
 
-type globals = {
-  env_constants : constant_key Cmap.t;
-  env_inductives : mutual_inductive_body KNmap.t;
-  env_modules : module_body MPmap.t;
-  env_modtypes : module_type_body KNmap.t }
-
-type stratification = {
-  env_universes : universes;
-  env_engagement : engagement option
-}
-
-type 'a val_kind =   
-  | VKvalue of values
-  | VKaxiom of 'a
-  | VKdef of constr * env
-
-and 'a lazy_val = 'a val_kind ref
-
-and env = {
-  env_globals       : globals;
-  env_named_context : named_context;
-  env_named_val     : (identifier * (identifier lazy_val)) list;
-  env_rel_context   : rel_context;
-  env_rel_val       : inv_rel_key lazy_val list;
-  env_nb_rel        : int;
-  env_stratification : stratification }
-
-let empty_env = { 
-  env_globals = {
-    env_constants = Cmap.empty;
-    env_inductives = KNmap.empty;
-    env_modules = MPmap.empty;
-    env_modtypes = KNmap.empty };
-  env_named_context = empty_named_context;
-  env_named_val = [];
-  env_rel_context = empty_rel_context;
-  env_rel_val = [];
-  env_nb_rel = 0;
-  env_stratification = {
-    env_universes = initial_universes;
-    env_engagement = None } }
-
-
+let empty_env = empty_env
 
 let engagement env = env.env_stratification.env_engagement
 let universes env = env.env_stratification.env_universes
 let named_context env = env.env_named_context
+let named_context_val env = env.env_named_context,env.env_named_vals
 let rel_context env = env.env_rel_context
 
 let empty_context env = 
   env.env_rel_context = empty_rel_context 
   && env.env_named_context = empty_named_context
-
-exception NotEvaluated 
-exception AllReadyEvaluated
 
 (* Rel context *)
 let lookup_rel n env =
@@ -98,18 +53,7 @@ let evaluable_rel n env =
 
 let nb_rel env = env.env_nb_rel
 
-let push_rel d env =
-  let _,body,_ = d in
-  let rval =
-    match body with
-    | None -> ref (VKaxiom env.env_nb_rel)
-    | Some c -> ref (VKdef(c,env))
-  in     
-  { env with
-    env_rel_context = add_rel_decl d env.env_rel_context;
-    env_rel_val = rval :: env.env_rel_val;
-    env_nb_rel = env.env_nb_rel + 1 }
- 
+let push_rel = push_rel
 
 let push_rel_context ctxt x = Sign.fold_rel_context push_rel ctxt ~init:x
     
@@ -126,105 +70,87 @@ let reset_rel_context env =
     env_nb_rel = 0 }
 
 let fold_rel_context f env ~init =
-  snd (Sign.fold_rel_context
-	 (fun d (env,e) -> (push_rel d env, f env d e))
-         (rel_context env) ~init:(reset_rel_context env,init))
-    
-(* Abstract machine rel values *)
-type relval = int lazy_val
-      
-let kind_of_rel r = !r
-    
-let set_relval r v =
-  match !r with
-  | VKvalue _ -> raise AllReadyEvaluated
-  | _ -> r := VKvalue v
-	
-let lookup_relval n env =
-  try List.nth env.env_rel_val (n - 1)
-  with _ -> raise Not_found
-      
+  let rec fold_right env =
+    match env.env_rel_context with
+    | [] -> init
+    | rd::rc ->
+	let env = 
+	  { env with
+	    env_rel_context = rc;
+	    env_rel_val = List.tl env.env_rel_val;
+	    env_nb_rel = env.env_nb_rel - 1 } in
+	f env rd (fold_right env) 
+  in fold_right env
+
 (* Named context *)
-let lookup_named id env =
-  Sign.lookup_named id env.env_named_context
-    
+
+let named_context_of_val = fst
+
+(* [map_named_val f ctxt] apply [f] to the body and the type of
+   each declarations.
+   *** /!\ ***   [f t] should be convertible with t *)  
+let map_named_val f (ctxt,ctxtv) = 
+  let ctxt =
+    List.map (fun (id,body,typ) -> (id, option_app f body, f typ)) ctxt in
+  (ctxt,ctxtv)
+
+let empty_named_context = empty_named_context 
+
+let push_named = push_named
+let push_named_context_val = push_named_context_val
+
+let val_of_named_context ctxt =
+  List.fold_right push_named_context_val ctxt empty_named_context_val
+
+
+let lookup_named id env = Sign.lookup_named id env.env_named_context
+let lookup_named_val id (ctxt,_) = Sign.lookup_named id ctxt
 
 (* A local const is evaluable if it is defined  *)
+
+let named_type id env =
+  let (_,_,t) = lookup_named id env in t
+
+let named_body id env =
+  let (_,b,_) = lookup_named id env in b
+
 let evaluable_named id env =
   try 
-    match lookup_named id env with
-      (_,Some _,_) -> true
-    | _ -> false
-  with Not_found -> 
-    false
+    match named_body id env with
+    |Some _      -> true
+    | _          -> false
+  with Not_found -> false
       
-let push_named d env = 
-  let id,body,_ = d in
-  let rval =
-    match body with
-    | None -> ref (VKaxiom id)
-    | Some c -> ref (VKdef(c,env))
-	  
-  in
-  { env with  
-    env_named_context = Sign.add_named_decl d env.env_named_context;
-    env_named_val =  (id,rval):: env.env_named_val }
-
-let reset_context env =
+let reset_with_named_context (ctxt,ctxtv) env =
   { env with
-    env_named_context = empty_named_context;
-    env_named_val = [];
+    env_named_context = ctxt;
+    env_named_vals = ctxtv;
     env_rel_context = empty_rel_context;
     env_rel_val = [];
     env_nb_rel = 0 }
 
-let reset_with_named_context ctxt env =
-  Sign.fold_named_context push_named ctxt ~init:(reset_context env)
-    
+let reset_context = reset_with_named_context empty_named_context_val
+ 
 let fold_named_context f env ~init =
-  snd (Sign.fold_named_context
-	 (fun d (env,e) -> (push_named d env, f env d e))
-         (named_context env) ~init:(reset_context env,init))
-    
+  let rec fold_right env =
+    match env.env_named_context with
+    | [] -> init
+    | d::ctxt ->
+	let env = 
+	  reset_with_named_context (ctxt,List.tl env.env_named_vals) env in
+	f env d (fold_right env) 
+  in fold_right env
+
 let fold_named_context_reverse f ~init env =
-  Sign.fold_named_context_reverse f ~init:init (named_context env) 
-    
-(* Abstract machine values of local vars referred by names *)
-type namedval = identifier lazy_val
-
-let kind_of_named r = !r
-
-let set_namedval r v =
-  match !r with
-  | VKvalue _ -> raise AllReadyEvaluated
-  | _ -> r := VKvalue v
-	
-let lookup_namedval id env =
-  snd (List.find (fun (id',_) -> id = id') env.env_named_val)
-  
+  Sign.fold_named_context_reverse f ~init:init (named_context env)
+ 
 (* Global constants *)
 
-let notevaluated = None
-    
-let constant_key_pos (cb,r) =
-  match !r with
-  | None -> raise NotEvaluated
-  | Some key -> key
-
-let constant_key_body = fst 
-
-let set_pos_constant (cb,r) bpos =
-  if !r = notevaluated then r := Some bpos 
-  else raise AllReadyEvaluated
-
-let lookup_constant_key kn env =
-  Cmap.find kn env.env_globals.env_constants
-
-let lookup_constant kn env = constant_key_body (lookup_constant_key kn env)
+let lookup_constant = lookup_constant
 
 let add_constant kn cs env =
   let new_constants = 
-    Cmap.add kn (cs,ref notevaluated) env.env_globals.env_constants in
+    Cmap.add kn (cs,ref None) env.env_globals.env_constants in
   let new_globals = 
     { env.env_globals with 
 	env_constants = new_constants } in 
@@ -256,8 +182,7 @@ let evaluable_constant cst env =
   with Not_found | NotEvaluableConst _ -> false
 
 (* Mutual Inductives *)
-let lookup_mind kn env =
-  KNmap.find kn env.env_globals.env_inductives
+let lookup_mind = lookup_mind
 
 let add_mind kn mib env =
   let new_inds = KNmap.add kn mib env.env_globals.env_inductives in
@@ -341,7 +266,6 @@ let keep_hyps env needed =
     (named_context env)
     ~init:empty_named_context
 
-
 (* Modules *)
 
 let add_modtype ln mtb env = 
@@ -381,3 +305,61 @@ type unsafe_type_judgment = {
   utj_val : constr;
   utj_type : sorts }
 
+(*s Compilation of global declaration *)
+
+let compile_constant_body = Cbytegen.compile_constant_body  
+
+(*s Special functions for the refiner (logic.ml) *)
+
+let clear_hyps ids check (ctxt,vals) =
+  let ctxt,vals,rmv = 
+    List.fold_right2 (fun (id,_,_ as d) v (ctxt,vals,rmv) ->
+      if List.mem id ids then (ctxt,vals,id::rmv)
+      else begin
+	check rmv d;
+	(d::ctxt,v::vals,rmv)
+      end) ctxt vals ([],[],[])
+  in ((ctxt,vals),rmv)
+
+exception Hyp_not_found
+
+let rec apply_to_hyp (ctxt,vals) id f =
+  let rec aux rtail ctxt vals =
+    match ctxt, vals with
+    | (idc,c,ct as d)::ctxt, v::vals ->
+	if idc = id then
+	  (f ctxt d rtail)::ctxt, v::vals
+	else 
+	  let ctxt',vals' = aux (d::rtail) ctxt vals in
+	  d::ctxt', v::vals'
+    | [],[] -> raise Hyp_not_found
+    | _, _ -> assert false
+  in aux [] ctxt vals
+
+let rec apply_to_hyp_and_dependent_on (ctxt,vals) id f g =
+  let rec aux ctxt vals =
+    match ctxt,vals with
+    | (idc,c,ct as d)::ctxt, v::vals ->
+	if idc = id then
+	  let sign = ctxt,vals in
+	  push_named_context_val (f d sign) sign 
+	else 
+	  let (ctxt,vals as sign) = aux ctxt vals in
+	  push_named_context_val (g d sign) sign
+    | [],[] -> raise Hyp_not_found
+    | _,_ -> assert false
+  in aux ctxt vals
+
+let insert_after_hyp (ctxt,vals) id d check =
+  let rec aux ctxt vals =
+    match  ctxt, vals with
+    | (idc,c,ct as d')::ctxt', v::vals' ->
+	if idc = id then begin
+	  check ctxt; 
+	  push_named_context_val d (ctxt,vals) 
+	end else 
+	  let ctxt,vals = aux ctxt vals in
+	  d::ctxt, v::vals
+    | [],[] -> raise Hyp_not_found
+    | _, _ -> assert false
+  in aux ctxt vals

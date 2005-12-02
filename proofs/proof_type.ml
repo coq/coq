@@ -32,7 +32,7 @@ type prim_rule =
   | FixRule of identifier * int * (identifier * int * constr) list
   | Cofix of identifier * (identifier * constr) list
   | Refine of constr
-  | Convert_concl of types
+  | Convert_concl of types * cast_kind
   | Convert_hyp of named_declaration
   | Thin of identifier list
   | ThinBody of identifier list

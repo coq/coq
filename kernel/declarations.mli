@@ -21,6 +21,9 @@ open Mod_subst
    declarations. This includes global constants/axioms, mutual
    inductive definitions, modules and module types *)
 
+type engagement = ImpredicativeSet
+
+
 (*s Constants (Definition/Axiom) *)
 
 type constr_substituted

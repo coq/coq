@@ -131,7 +131,7 @@ let rec make_prb gls additionnal_terms =
 		      add_disequality state (HeqnH (idp,id)) ph nh) 
 		   !pos_hyps;
 		 neg_hyps:=(id,nh):: !neg_hyps
-	 end) gls.it.evar_hyps;
+	 end) (Environ.named_context_of_val gls.it.evar_hyps);
     begin
       match atom_of_constr env gls.it.evar_concl with
 	  `Eq (t,a,b) -> add_disequality state Goal a b

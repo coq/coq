@@ -342,31 +342,28 @@ let conv_leq_vecti env v1 v2 =
 
 (* option for conversion *)
 
-let vm_fconv = ref fconv 
-
-let set_default_vm_conv _ = vm_fconv := fconv
-let set_vm_conv_cmp f = vm_fconv := f
-
+let vm_conv = ref fconv
+let set_vm_conv f = vm_conv := f
 let vm_conv cv_pb env t1 t2 = 
   try 
-    !vm_fconv cv_pb env t1 t2
+    !vm_conv cv_pb env t1 t2
   with Not_found | Invalid_argument _ ->
       (* If compilation fails, fall-back to closure conversion *)
       clos_fconv cv_pb env t1 t2
   
 
-let vm_conv_leq_vecti env v1 v2 =
-  array_fold_left2_i 
-    (fun i c t1 t2 ->
-      let c' =
-        try vm_conv CUMUL env t1 t2 
-        with NotConvertible -> raise (NotConvertibleVect i) in
-      Constraint.union c c')
-    Constraint.empty
-    v1
-    v2
+let default_conv = ref fconv 
 
-let vm_conv_leq = vm_conv CUMUL
+let set_default_conv f = default_conv := f
+
+let default_conv cv_pb env t1 t2 = 
+  try 
+    !default_conv cv_pb env t1 t2
+  with Not_found | Invalid_argument _ ->
+      (* If compilation fails, fall-back to closure conversion *)
+      clos_fconv cv_pb env t1 t2
+  
+let default_conv_leq = default_conv CUMUL
 (*
 let convleqkey = Profile.declare_profile "Kernel_reduction.conv_leq";;
 let conv_leq env t1 t2 =
@@ -419,7 +416,7 @@ let dest_prod_assum env =
     | LetIn (x,b,t,c) ->
         let d = (x,Some b,t) in
 	prodec_rec (push_rel d env) (Sign.add_rel_decl d l) c
-    | Cast (c,_)    -> prodec_rec env l c
+    | Cast (c,_,_)    -> prodec_rec env l c
     | _               -> l,rty
   in
   prodec_rec env Sign.empty_rel_context

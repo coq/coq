@@ -164,7 +164,7 @@ Ltac Make_ring_rw Cst_tac lemma req r :=
     let pe1 := mkPol r1 fv in
     let pe2 := mkPol r2 fv in
     ((apply (lemma1 fv pe1 pe2);
-      compute;
+      vm_compute;
       exact (refl_equal true)) ||
      (Make_ring_rewrite_step (lemma2 fv) pe1;
       Make_ring_rewrite_step (lemma2 fv) pe2))

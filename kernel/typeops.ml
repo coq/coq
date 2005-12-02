@@ -19,10 +19,20 @@ open Entries
 open Reduction
 open Inductive
 open Type_errors
+  
+let conv = default_conv CONV
+let conv_leq = default_conv CUMUL
 
-let conv = vm_conv CONV
-let conv_leq = vm_conv CUMUL
-let conv_leq_vecti = vm_conv_leq_vecti
+let conv_leq_vecti env v1 v2 =
+  array_fold_left2_i 
+    (fun i c t1 t2 ->
+      let c' =
+        try default_conv CUMUL env t1 t2 
+        with NotConvertible -> raise (NotConvertibleVect i) in
+      Constraint.union c c')
+    Constraint.empty
+    v1
+    v2
 
 (* This should be a type (a priori without intension to be an assumption) *)
 let type_judgment env j =
@@ -89,7 +99,7 @@ let judge_of_relative env n =
 (* Type of variables *)
 let judge_of_variable env id =
   try
-    let (_,_,ty) = lookup_named id env in
+    let ty = named_type id env in
     make_judge (mkVar id) ty
   with Not_found -> 
     error_unbound_var env id
@@ -100,10 +110,9 @@ let judge_of_variable env id =
    variables of the current env *)
 (* TODO: check order? *)
 let rec check_hyps_inclusion env sign =
-  let env_sign = named_context env in
   Sign.fold_named_context
     (fun (id,_,ty1) () ->
-      let (_,_,ty2) = Sign.lookup_named id env_sign in
+      let ty2 = named_type id env in
       if not (eq_constr ty2 ty1) then
         error "types do not match")
     sign
@@ -233,11 +242,14 @@ let judge_of_product env name t1 t2 =
          env |- c:typ2
 *)
 
-let judge_of_cast env cj tj =
+let judge_of_cast env cj k tj =
   let expected_type = tj.utj_val in
   try 
-    let cst = conv_leq env cj.uj_type expected_type in
-    { uj_val = mkCast (j_val cj, expected_type);
+    let cst = 
+      match k with
+      | VMcast -> vm_conv CUMUL env cj.uj_type expected_type
+      | DEFAULTcast -> conv_leq env cj.uj_type expected_type in
+    { uj_val = mkCast (cj.uj_val, k, expected_type);
       uj_type = expected_type },
     cst
   with NotConvertible ->
@@ -279,11 +291,11 @@ let judge_of_constructor env cstr
 
 (* Case. *)
 
-let check_branch_types env cj (lft,explft) = 
-  try conv_leq_vecti env lft explft
+let check_branch_types env cj (lfj,explft) = 
+  try conv_leq_vecti env (Array.map j_type lfj) explft
   with
       NotConvertibleVect i ->
-        error_ill_formed_branch env cj.uj_val i lft.(i) explft.(i)
+        error_ill_formed_branch env cj.uj_val i lfj.(i).uj_type explft.(i)
     | Invalid_argument _ ->
         error_number_branches env cj (Array.length explft)
 
@@ -294,8 +306,7 @@ let judge_of_case env ci pj cj lfj =
   let _ = check_case_info env (fst indspec) ci in
   let (bty,rslty,univ) =
     type_case_branches env indspec pj cj.uj_val in
-  let lft = Array.map j_type lfj in
-  let univ' = check_branch_types env cj (lft,bty) in
+  let univ' = check_branch_types env cj (lfj,bty) in
   ({ uj_val  = mkCase (ci, (*nf_betaiota*) pj.uj_val, cj.uj_val,
                        Array.map j_val lfj);
      uj_type = rslty },
@@ -316,9 +327,7 @@ let type_fixpoint env lna lar vdefj =
   let lt = Array.length vdefj in
   assert (Array.length lar = lt);
   try
-    conv_leq_vecti env
-      (Array.map (fun j -> body_of_type j.uj_type) vdefj)
-      (Array.map (fun ty -> lift lt ty) lar)
+    conv_leq_vecti env (Array.map j_type vdefj) (Array.map (fun ty -> lift lt ty) lar)
   with NotConvertibleVect i ->
     error_ill_typed_rec_body env i lna vdefj lar
 
@@ -375,17 +384,17 @@ let rec execute env cstr cu =
     | LetIn (name,c1,c2,c3) ->
         let (j1,cu1) = execute env c1 cu in
         let (j2,cu2) = execute_type env c2 cu1 in
-        let (_,cu3) = univ_combinator cu2 (judge_of_cast env j1 j2) in
+        let (_,cu3) = 
+	  univ_combinator cu2 (judge_of_cast env j1 DEFAULTcast j2) in
         let env1 = push_rel (name,Some j1.uj_val,j2.utj_val) env in
         let (j',cu4) = execute env1 c3 cu3 in
         (judge_of_letin env name j1 j2 j', cu4)
 	  
-    | Cast (c,t) ->
+    | Cast (c,k, t) ->
         let (cj,cu1) = execute env c cu in
         let (tj,cu2) = execute_type env t cu1 in
 	univ_combinator cu2
-          (judge_of_cast env cj tj)
-
+          (judge_of_cast env cj k tj)
     (* Inductive types *)
     | Ind ind ->
 	(judge_of_inductive env ind, cu)
