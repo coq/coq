@@ -34,6 +34,12 @@ type evar_info = {
 
 let evar_context evi = named_context_of_val evi.evar_hyps
 
+let eq_evar_info ei1 ei2 =
+  ei1 == ei2 || 
+    eq_constr ei1.evar_concl ei2.evar_concl && 
+    eq_named_context_val (ei1.evar_hyps) (ei2.evar_hyps) &&
+    ei1.evar_body = ei2.evar_body
+
 module Evarmap = Intmap
 
 type evar_map1 = evar_info Evarmap.t

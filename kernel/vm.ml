@@ -76,9 +76,9 @@ let crasy_val = (val_of_obj (repr 0))
 (* Functions *)
 type vfun  
 (* v = [Tc | c | fv1 | ... | fvn ] *)
-(*                  ^                       *)
+(*         ^                       *)
 (* [Tc | (Restart : c) | v | a1 | ... an] *)
-(*              ^                                  *)
+(*              ^                         *)
 
 (* Products *)
 type vprod 
@@ -220,6 +220,7 @@ type vswitch = {
     sw_env : vm_env
   } 
 
+(* Ne pas changer ce type sans modifier le code C *)
 type atom = 
   | Aid of id_key
   | Aiddef of id_key * values

@@ -53,7 +53,7 @@ let norm_goal sigma gl =
     { evar_concl = ncl;
       evar_hyps = map_named_val red_fun gl.evar_hyps; 
       evar_body = gl.evar_body} in
-  if ngl = gl then None else Some ngl
+  if Evd.eq_evar_info ngl gl then None else Some ngl
 
 
 (* [mapshape [ l1 ; ... ; lk ] [ v1 ; ... ; vk ] [ p_1 ; .... ; p_(l1+...+lk) ]]
@@ -81,7 +81,7 @@ let rec frontier p =
 	([p.goal],
 	 (fun lp' -> 
 	    let p' = List.hd lp' in
-            if p'.goal = p.goal then 
+            if Evd.eq_evar_info p'.goal p.goal then 
 	      p'
             else 
 	      errorlabstrm "Refiner.frontier"
@@ -101,7 +101,7 @@ let rec frontier_map_rec f n p =
   match p.ref with
     | None -> 
         let p' = f p in
-        if p'.goal == p.goal || p'.goal = p.goal then p'
+        if Evd.eq_evar_info p'.goal p.goal then p'
         else 
 	  errorlabstrm "Refiner.frontier_map"
             (str"frontier_map was handed back a ill-formed proof.")
@@ -127,7 +127,7 @@ let rec frontier_mapi_rec f i p =
   match p.ref with
     | None -> 
         let p' = f i p in
-        if p'.goal == p.goal || p'.goal = p.goal then p'
+        if Evd.eq_evar_info p'.goal p.goal then p'
         else 
 	  errorlabstrm "Refiner.frontier_mapi"
             (str"frontier_mapi was handed back a ill-formed proof.")
@@ -185,7 +185,7 @@ let lookup_tactic s =
 (* refiner r is a tactic applying the rule r *)
 
 let check_subproof_connection gl spfl =
-  list_for_all2eq (fun g pf -> g=pf.goal) gl spfl
+  list_for_all2eq (fun g pf -> Evd.eq_evar_info g pf.goal) gl spfl
 
 let abstract_tactic_expr te tacfun gls =
   let (sgl_sigma,v) = tacfun gls in
@@ -459,7 +459,7 @@ let rec tclTHENLIST = function
 
 (* various progress criterions *)
 let same_goal gl subgoal = 
-  (hypotheses subgoal) = (hypotheses gl) &
+  eq_named_context_val (hypotheses subgoal) (hypotheses gl) &&
   eq_constr (conclusion subgoal) (conclusion gl)
 
 

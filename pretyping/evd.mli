@@ -34,6 +34,7 @@ type evar_info = {
   evar_hyps : Environ.named_context_val;
   evar_body : evar_body}
 
+val eq_evar_info : evar_info -> evar_info -> bool
 val evar_context : evar_info -> named_context
 type evar_map
 
