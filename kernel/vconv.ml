@@ -459,7 +459,9 @@ and nf_stk env c t stk  =
 	      mkLambda(name,dom,body)
           | _, _ -> nf_val env v crazy_type
 	in 
-	let aux = nf_predicate env (type_of_switch sw) mip.mind_nf_arity in
+	let aux = 
+	  nf_predicate env (type_of_switch sw) 
+	    (hnf_prod_applist env mip.mind_nf_arity (Array.to_list params)) in
 	!dep,aux in
       (* Calcul du type des branches *)
       let btypes = 
