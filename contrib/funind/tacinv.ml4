@@ -790,6 +790,7 @@ let buildFunscheme fonc mutflist =
  (* Here we call the function invfun_proof, that effectively 
     builds the scheme *)
 (*  let princ_proof,levar,_,evararr,absc,parms =  *)
+ let _ = prstr "Recherche du principe... lancement de invfun_proof\n" in
  let pr = invfun_proof mutflist def_fonc [||] pis (Global.env()) Evd.empty in
  (* parameters are still there (unboud rel), and patternify must not take them
   -> lift*)
@@ -825,10 +826,15 @@ let buildFunscheme fonc mutflist =
     
 (* Declaration of the functional scheme. *)
 let declareFunScheme f fname mutflist =
- let id_to_cstr = constr_of_id (Global.env()) in (* careful: env() is evaluated now *)
+ let _ = prstr "Recherche du perincipe...\n" in
+ let id_to_cstr id = 
+  try constr_of_id (Global.env()) id 
+  with
+     Not_found -> error (string_of_id id ^ " not found in the environment") in
  let flist = if mutflist=[] then [f] else mutflist in
  let fcstrlist = Array.of_list (List.map id_to_cstr flist) in
- let scheme = buildFunscheme (id_to_cstr f) fcstrlist in
+ let idf = id_to_cstr f in
+ let scheme = buildFunscheme idf fcstrlist in
   let _ = prstr "Principe:" in
   let _ = prconstr scheme in
  let ce = { 
