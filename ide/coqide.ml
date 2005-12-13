@@ -3324,11 +3324,11 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 
 ;;
 
-(* This function check every half of second if DrGeoCaml has send 
+(* This function check every half of second if GeoProof has send 
    something on his private clipboard *)
 
-let rec check_for_drgeocaml_input () = 
-  let cb_Dr = GData.clipboard (Gdk.Atom.intern "_DrGeoCaml") in
+let rec check_for_geoproof_input () = 
+  let cb_Dr = GData.clipboard (Gdk.Atom.intern "_GeoProof") in
     while true do
       Thread.delay 0.1;
       let s = cb_Dr#text in
@@ -3362,7 +3362,7 @@ let start () =
   Command_windows.main ();
   Blaster_window.main 9;
   main files;
-  ignore (Thread.create check_for_drgeocaml_input ()); 
+  ignore (Thread.create check_for_geoproof_input ()); 
   while true do 
     try 
       GtkThread.main ()	
