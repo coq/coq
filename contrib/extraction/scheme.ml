@@ -24,16 +24,29 @@ open Ocaml
 
 let keywords =     
   List.fold_right (fun s -> Idset.add (id_of_string s))
-    [ "define"; "let"; "lambda"; "lambdas"; "match-case"; 
+    [ "define"; "let"; "lambda"; "lambdas"; "match"; 
       "apply"; "car"; "cdr"; 
       "error"; "delay"; "force"; "_"; "__"] 
     Idset.empty
 
 let preamble _ _ (mldummy,_,_) _ = 
+  str ";; This extracted scheme code relies on some additional macros" ++ 
+  fnl () ++
+  str ";; available at http://www.pps.jussieu.fr/~letouzey/scheme" ++
+  fnl () ++
+  str "(load \"macros_extr.scm\")" ++
+  fnl () ++ fnl () ++
   (if mldummy then 
      str "(define __ (lambda (_) __))" 
      ++ fnl () ++ fnl()
    else mt ())
+
+let pr_id id = 
+  let s = string_of_id id in
+  for i = 0 to String.length s - 1 do 
+    if s.[i] = '\'' then s.[i] <- '~'
+  done; 
+  str s
 
 let paren = pp_par true
 
@@ -97,18 +110,18 @@ let rec pp_expr env args =
 	  if i <> Coinductive then pp_expr env [] t 	
 	  else paren (str "force" ++ spc () ++ pp_expr env [] t)
 	in 
-	apply (v 3 (paren (str "match-case " ++ e ++ fnl () ++ pp_pat env pv)))
+	apply (v 3 (paren (str "match " ++ e ++ fnl () ++ pp_pat env pv)))
     | MLfix (i,ids,defs) ->
 	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
       	pp_fix env' i (Array.of_list (List.rev ids'),defs) args
     | MLexn s -> 
 	(* An [MLexn] may be applied, but I don't really care. *)
-	paren (str "absurd")
+	paren (str "error" ++ spc () ++ qs s)
     | MLdummy ->
 	str "__" (* An [MLdummy] may be applied, but I don't really care. *)
     | MLmagic a ->
 	pp_expr env args a
-    | MLaxiom -> paren (str "absurd ;;AXIOM TO BE REALIZED\n")
+    | MLaxiom -> paren (str "error \"AXIOM TO BE REALIZED\"")
 
 and pp_cons_args env = function 
   | MLcons (i,r,args) when i<>Coinductive -> 
@@ -119,11 +132,10 @@ and pp_cons_args env = function
 	
 
 and pp_one_pat env (r,ids,t) = 
-  let pp_arg id = str "?" ++ pr_id id in 
   let ids,env' = push_vars (List.rev ids) env in
   let args = 
     if ids = [] then mt () 
-    else (str " " ++ prlist_with_sep spc pp_arg (List.rev ids))
+    else (str " " ++ prlist_with_sep spc pr_id (List.rev ids))
   in 
   (pp_global r ++ args), (pp_expr env' [] t)
   
@@ -164,8 +176,12 @@ let pp_decl _ = function
   | Dterm (r, a, _) ->
       if is_inline_custom r then mt () 
       else 
-	hov 2 (paren (str "define " ++ pp_global r ++ spc () ++
-		      pp_expr (empty_env ()) [] a)) ++ fnl ()  ++ fnl ()
+	if is_custom r then 
+	  hov 2 (paren (str "define " ++ pp_global r ++ spc () ++ 
+			  str (find_custom r))) ++ fnl () ++ fnl () 
+	else 
+	  hov 2 (paren (str "define " ++ pp_global r ++ spc () ++
+			  pp_expr (empty_env ()) [] a)) ++ fnl () ++ fnl ()
 
 let pp_structure_elem mp = function 
   | (l,SEdecl d) -> pp_decl mp d
