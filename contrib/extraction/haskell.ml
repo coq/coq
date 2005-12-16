@@ -88,14 +88,21 @@ let empty_env () = [], P.globals()
 (*s Pretty-printing of types. [par] is a boolean indicating whether parentheses
     are needed or not. *)
 
+let kn_sig = 
+  let specif = MPfile (dirpath_of_string "Coq.Init.Specif") in 
+  make_kn specif empty_dirpath (mk_label "sig")
+
 let rec pp_type par vl t =
   let rec pp_rec par = function
     | Tmeta _ | Tvar' _ -> assert false 
     | Tvar i -> (try pr_id (List.nth vl (pred i)) with _ -> (str "a" ++ int i))
     | Tglob (r,[]) -> pp_global r	
     | Tglob (r,l) -> 
-	pp_par par 
-	  (pp_global r ++ spc () ++ prlist_with_sep spc (pp_type true vl) l)
+	if r = IndRef (kn_sig,0) then 
+	  pp_type true vl (List.hd l)
+	else 
+	  pp_par par 
+	    (pp_global r ++ spc () ++ prlist_with_sep spc (pp_type true vl) l)
     | Tarr (t1,t2) ->
 	pp_par par 
 	  (pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ pp_rec false t2)
@@ -288,15 +295,15 @@ let pp_decl mpl =
 	(fun (pi,ti) -> pp_function (empty_env ()) pi ti)
 	(List.combine (Array.to_list ppv) (Array.to_list defs)) 
       ++ fnl () ++ fnl ()
-  | Dterm (r, a, _) ->
+  | Dterm (r, a, t) ->
       if is_inline_custom r then mt () 
       else 
-	if is_custom r then 	
-	  hov 0 (pp_global r ++ str " = " ++ str (find_custom r) 
-		 ++ fnl() ++ fnl ())
-	else 
-	  hov 0 (pp_function (empty_env ()) (pp_global r) a 
-		 ++ fnl () ++ fnl ())
+	let e = pp_global r in 
+	e ++ str " :: " ++ pp_type false [] t ++ fnl () ++
+	  if is_custom r then 	
+	    hov 0 (e ++ str " = " ++ str (find_custom r) ++ fnl() ++ fnl ())
+	  else 
+	    hov 0 (pp_function (empty_env ()) e a ++ fnl () ++ fnl ())
 
 let pp_structure_elem mpl = function 
   | (l,SEdecl d) -> pp_decl mpl d
