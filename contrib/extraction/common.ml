@@ -269,11 +269,18 @@ module StdParams = struct
 
   (* TODO: remettre des conditions [lang () = Haskell] disant de qualifier. *)
 
+  let unquote s = 
+    if lang () <> Scheme then s 
+    else 
+      let s = String.copy s in 
+      for i=0 to String.length s - 1 do if s.[i] = '\'' then s.[i] <- '~' done;
+      s
+
   let rec dottify = function 
     | [] -> assert false 
-    | [s] -> s 
-    | s::[""] -> s 
-    | s::l -> (dottify l)^"."^s
+    | [s] -> unquote s 
+    | s::[""] -> unquote s 
+    | s::l -> (dottify l)^"."^(unquote s)
 
   let pp_global mpl r = 
     let ls = get_renamings r in 
