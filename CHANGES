@@ -5,6 +5,18 @@ Tactics
 
 - Added entry constr_may_eval for tactic extensions (new syntax)
 
+Bug fixes
+
+- Many fixes concerning extraction: 
+  * fewer useless eta-expansions
+  * for Ocaml: extraction of records should be ok now. Problem with 
+    type t = M.t in modules fixed.
+  * in Haskell: improved use of unsafeCoerce, fixed Extract Constant, 
+    function types are now printed.
+  * important revision of the Scheme extraction: 
+    see http://www.pps.jussieu.fr/~letouzey/scheme
+
+
 Changes from V8.0pl1 to V8.0pl2
 ===============================
 
