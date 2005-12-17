@@ -76,6 +76,8 @@ let rec explain_exn_default = function
       hov 0 (str "Error:" ++ spc () ++ Himsg.explain_pretype_error ctx te)
   | InductiveError e -> 
       hov 0 (str "Error:" ++ spc () ++ Himsg.explain_inductive_error e)
+  | RecursionSchemeError e -> 
+      hov 0 (str "Error:" ++ spc () ++ Himsg.explain_recursion_scheme_error e)
   | Cases.PatternMatchingError (env,e) -> 
       hov 0
 	(str "Error:" ++ spc () ++ Himsg.explain_pattern_matching_error env e)

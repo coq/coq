@@ -23,10 +23,17 @@ open Environ
 open Reductionops
 open Typeops
 open Type_errors
-open Indtypes (* pour les erreurs *)
 open Safe_typing
 open Nametab
 open Sign
+
+(* Errors related to recursors building *)
+type recursion_scheme_error =
+  | NotAllowedCaseAnalysis of bool * sorts * inductive
+  | BadInduction of bool * identifier * sorts
+  | NotMutualInScheme
+
+exception RecursionSchemeError of recursion_scheme_error
 
 let make_prod_dep dep env = if dep then prod_name env else mkProd
 let mkLambda_string s t c = mkLambda (Name (id_of_string s), t, c)
@@ -442,7 +449,7 @@ let make_case_gen env   = make_case_com None env
 
 
 (**********************************************************************)
-(* [instanciate_indrec_scheme s rec] replace the sort of the scheme
+(* [instantiate_indrec_scheme s rec] replace the sort of the scheme
    [rec] by [s] *)
 
 let change_sort_arity sort = 
@@ -456,7 +463,7 @@ let change_sort_arity sort =
   drec 
 
 (* [npar] is the number of expected arguments (then excluding letin's) *)
-let instanciate_indrec_scheme sort =
+let instantiate_indrec_scheme sort =
   let rec drec npar elim =
     match kind_of_term elim with
       | Lambda (n,t,c) -> 
@@ -465,13 +472,13 @@ let instanciate_indrec_scheme sort =
 	  else 
 	    mkLambda (n, t, drec (npar-1) c)
       | LetIn (n,b,t,c) -> mkLetIn (n,b,t,drec npar c)
-      | _ -> anomaly "instanciate_indrec_scheme: wrong elimination type"
+      | _ -> anomaly "instantiate_indrec_scheme: wrong elimination type"
   in
   drec
 
 (* Change the sort in the type of an inductive definition, builds the
    corresponding eta-expanded term *)
-let instanciate_type_indrec_scheme sort npars term =
+let instantiate_type_indrec_scheme sort npars term =
   let rec drec np elim =
     match kind_of_term elim with
       | Prod (n,t,c) -> 
@@ -484,7 +491,7 @@ let instanciate_type_indrec_scheme sort npars term =
 	    mkProd (n, t, c'), mkLambda (n, t, term')
       | LetIn (n,b,t,c) -> let c',term' = drec np c in
            mkLetIn (n,b,t,c'), mkLetIn (n,b,t,term') 
-      | _ -> anomaly "instanciate_type_indrec_scheme: wrong elimination type"
+      | _ -> anomaly "instantiate_type_indrec_scheme: wrong elimination type"
   in
   drec npars
 

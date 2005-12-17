@@ -586,8 +586,9 @@ let error_bad_induction dep indid kind =
 let error_not_mutual_in_scheme () =
  str "Induction schemes are concerned only with distinct mutually inductive types"
 
+(* Inductive constructions errors *)
+
 let explain_inductive_error = function
-  (* These are errors related to inductive constructions *)
   | NonPos (env,c,v) -> error_non_strictly_positive env c v
   | NotEnoughArgs (env,c,v) -> error_ill_formed_inductive env c v
   | NotConstructor (env,c,v) -> error_ill_formed_constructor env c v
@@ -597,7 +598,10 @@ let explain_inductive_error = function
   | SameNamesOverlap idl -> error_same_names_overlap idl
   | NotAnArity id -> error_not_an_arity id
   | BadEntry -> error_bad_entry ()
-  (* These are errors related to recursors *)
+
+(* Recursion schemes errors *)
+
+let explain_recursion_scheme_error = function
   | NotAllowedCaseAnalysis (dep,k,i) ->
       error_not_allowed_case_analysis dep k i
   | BadInduction (dep,indid,kind) -> error_bad_induction dep indid kind

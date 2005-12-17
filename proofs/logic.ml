@@ -46,18 +46,15 @@ exception RefinerError of refiner_error
 
 open Pretype_errors
 
-let catchable_exception = function
-  | Util.UserError _ | TypeError _ | RefinerError _
+let rec catchable_exception = function
+  | Stdpp.Exc_located(_,e) -> catchable_exception e
+  | Util.UserError _ | TypeError _ 
+  | RefinerError _ | Indrec.RecursionSchemeError _
+  | Nametab.GlobalizationError _ | PretypeError (_,VarNotFound _)
   (* unification errors *)
   | PretypeError(_,(CannotUnify _|CannotGeneralize _|NoOccurrenceFound _|
-      CannotUnifyBindingType _|NotClean _))
-  | Stdpp.Exc_located(_,PretypeError(_,(CannotUnify _|CannotGeneralize _|
-          NoOccurrenceFound _ | CannotUnifyBindingType _|NotClean _)))
-  | Stdpp.Exc_located(_,(Util.UserError _ | TypeError _ | RefinerError _ |
-    Nametab.GlobalizationError _ | PretypeError (_,VarNotFound _)
-    | Indtypes.InductiveError (Indtypes.NotAllowedCaseAnalysis _ )))-> true
+      CannotUnifyBindingType _|NotClean _)) -> true
   | _ -> false
-
 
 (* Tells if the refiner should check that the submitted rules do not
    produce invalid subgoals *)

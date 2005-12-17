@@ -22,8 +22,8 @@ open Typeops
 (*s The different kinds of errors that may result of a malformed inductive
   definition. *)
 
+(* Errors related to inductive constructions *)
 type inductive_error =
-  (* These are errors related to inductive constructions in this module *)
   | NonPos of env * constr * constr
   | NotEnoughArgs of env * constr * constr
   | NotConstructor of env * constr * constr
@@ -33,10 +33,6 @@ type inductive_error =
   | SameNamesOverlap of identifier list
   | NotAnArity of identifier
   | BadEntry
-  (* These are errors related to recursors building in Indrec *)
-  | NotAllowedCaseAnalysis of bool * sorts * inductive
-  | BadInduction of bool * identifier * sorts
-  | NotMutualInScheme
 
 exception InductiveError of inductive_error
 
