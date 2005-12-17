@@ -1488,18 +1488,20 @@ proofs/logic.cmo: lib/util.cmi pretyping/typing.cmi kernel/typeops.cmi \
     proofs/proof_type.cmi proofs/proof_trees.cmi parsing/printer.cmi \
     pretyping/pretype_errors.cmi lib/pp.cmi lib/options.cmi \
     library/nametab.cmi kernel/names.cmi library/nameops.cmi \
-    pretyping/inductiveops.cmi kernel/inductive.cmi library/global.cmi \
-    pretyping/evd.cmi pretyping/evarutil.cmi kernel/environ.cmi \
-    parsing/coqast.cmi interp/constrextern.cmi proofs/logic.cmi 
+    pretyping/inductiveops.cmi kernel/inductive.cmi kernel/indtypes.cmi \
+    library/global.cmi pretyping/evd.cmi pretyping/evarutil.cmi \
+    kernel/environ.cmi parsing/coqast.cmi interp/constrextern.cmi \
+    proofs/logic.cmi 
 proofs/logic.cmx: lib/util.cmx pretyping/typing.cmx kernel/typeops.cmx \
     kernel/type_errors.cmx pretyping/termops.cmx kernel/term.cmx \
     kernel/sign.cmx pretyping/retyping.cmx pretyping/reductionops.cmx \
     proofs/proof_type.cmx proofs/proof_trees.cmx parsing/printer.cmx \
     pretyping/pretype_errors.cmx lib/pp.cmx lib/options.cmx \
     library/nametab.cmx kernel/names.cmx library/nameops.cmx \
-    pretyping/inductiveops.cmx kernel/inductive.cmx library/global.cmx \
-    pretyping/evd.cmx pretyping/evarutil.cmx kernel/environ.cmx \
-    parsing/coqast.cmx interp/constrextern.cmx proofs/logic.cmi 
+    pretyping/inductiveops.cmx kernel/inductive.cmx kernel/indtypes.cmx \
+    library/global.cmx pretyping/evd.cmx pretyping/evarutil.cmx \
+    kernel/environ.cmx parsing/coqast.cmx interp/constrextern.cmx \
+    proofs/logic.cmi 
 proofs/pfedit.cmo: lib/util.cmi pretyping/typing.cmi kernel/term.cmi \
     proofs/tacmach.cmi proofs/tacexpr.cmo kernel/sign.cmi \
     kernel/safe_typing.cmi proofs/refiner.cmi proofs/proof_type.cmi \
