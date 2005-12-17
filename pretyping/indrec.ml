@@ -56,7 +56,7 @@ let mis_make_case_com depopt env sigma (ind,mib,mip) kind =
   in
   if not (List.exists ((=) kind) mip.mind_kelim) then
     raise
-      (InductiveError
+      (RecursionSchemeError
 	 (NotAllowedCaseAnalysis
 	    (dep,(new_sort_in_family kind),ind)));
 
@@ -505,11 +505,10 @@ let check_arities listdepkind =
     (fun ln ((_,ni),mibi,mipi,dep,kind) -> 
        let id = mipi.mind_typename  in
        let kelim = mipi.mind_kelim in
-       if not (List.exists ((=) kind) kelim) then
-	 raise
-	   (InductiveError (BadInduction (dep, id, new_sort_in_family kind)))
+       if not (List.exists ((=) kind) kelim) then raise
+	 (RecursionSchemeError (BadInduction (dep,id,new_sort_in_family kind)))
        else if List.mem ni ln then raise
-	   (InductiveError NotMutualInScheme)
+	 (RecursionSchemeError NotMutualInScheme)
        else ni::ln)
 	    [] listdepkind
   in true
@@ -526,7 +525,7 @@ let build_mutual_indrec env sigma = function
                 let (mibi',mipi') = lookup_mind_specif env mind' in
 		(mind',mibi',mipi',dep',s') 
 	      else 
-		raise (InductiveError NotMutualInScheme))
+		raise (RecursionSchemeError NotMutualInScheme))
 	   lrecspec)
       in
       let _ = check_arities listdepkind in 

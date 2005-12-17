@@ -15,6 +15,7 @@ open Indtypes
 open Environ
 open Type_errors
 open Pretype_errors
+open Indrec
 open Cases
 open Logic
 (*i*)

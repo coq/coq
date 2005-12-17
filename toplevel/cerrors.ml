@@ -14,6 +14,7 @@ open Ast
 open Indtypes
 open Type_errors
 open Pretype_errors
+open Indrec
 open Lexer
 
 let print_loc loc =

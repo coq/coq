@@ -21,6 +21,7 @@ open Sign
 open Environ
 open Pretype_errors
 open Type_errors
+open Indrec
 open Reduction
 open Cases
 open Logic
