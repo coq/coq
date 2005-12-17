@@ -54,7 +54,8 @@ open Pretype_errors
 let catchable_exception = function
   | Util.UserError _ | TypeError _ | RefinerError _
   | Stdpp.Exc_located(_,(Util.UserError _ | TypeError _ | RefinerError _ |
-    Nametab.GlobalizationError _ | PretypeError (_,VarNotFound _))) -> true
+    Nametab.GlobalizationError _ | PretypeError (_,VarNotFound _) | 
+    Indtypes.InductiveError (Indtypes.NotAllowedCaseAnalysis _ ))) -> true
   | _ -> false
 
 let error_cannot_unify (m,n) =
