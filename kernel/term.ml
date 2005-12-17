@@ -8,7 +8,7 @@
 
 (* $Id$ *)
 
-(* This module instanciates the structure of generic deBruijn terms to Coq *)
+(* This module instantiates the structure of generic deBruijn terms to Coq *)
 
 open Util
 open Pp

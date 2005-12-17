@@ -221,7 +221,7 @@ let declare_one_elimination ind =
   let sigma = Evd.empty in
   let elim_scheme = Indrec.build_indrec env sigma ind in
   let npars = mib.mind_nparams_rec in
-  let make_elim s = Indrec.instanciate_indrec_scheme s npars elim_scheme in
+  let make_elim s = Indrec.instantiate_indrec_scheme s npars elim_scheme in
   let kelim = mip.mind_kelim in
   (* in case the inductive has a type elimination, generates only one
      induction scheme, the other ones share the same code with the
@@ -232,7 +232,7 @@ let declare_one_elimination ind =
     let c = mkConst cte and t = constant_type (Global.env()) cte in
     List.iter (fun (sort,suff) -> 
       let (t',c') = 
-	Indrec.instanciate_type_indrec_scheme (new_sort_in_family sort)
+	Indrec.instantiate_type_indrec_scheme (new_sort_in_family sort)
 	  npars c t in
       let _ = declare (mindstr^suff) c' (Some t') in ())
       non_type_eliminations

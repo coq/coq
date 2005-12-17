@@ -319,7 +319,7 @@ let do_restrict_hyps evd ev args =
 
 let need_restriction isevars args = not (array_for_all closed0 args)
 
-(* We try to instanciate the evar assuming the body won't depend
+(* We try to instantiate the evar assuming the body won't depend
  * on arguments that are not Rels or Vars, or appearing several times.
  *)
 (* Note: error_not_clean should not be an error: it simply means that the
@@ -513,7 +513,7 @@ let solve_refl conv_algo env isevars ev argsv1 argsv2 =
 
 
 (* Tries to solve problem t1 = t2.
- * Precondition: t1 is an uninstanciated evar
+ * Precondition: t1 is an uninstantiated evar
  * Returns an optional list of evars that were instantiated, or None
  * if the problem couldn't be solved. *)
 

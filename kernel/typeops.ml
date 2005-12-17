@@ -106,7 +106,7 @@ let judge_of_variable env id =
 
 (* Management of context of variables. *)
 
-(* Checks if a context of variable can be instanciated by the
+(* Checks if a context of variable can be instantiated by the
    variables of the current env *)
 (* TODO: check order? *)
 let rec check_hyps_inclusion env sign =

@@ -127,7 +127,7 @@ let check_conv_record (t1,l1) (t2,l2) =
     raise Not_found
 
 
-(* Precondition: one of the terms of the pb is an uninstanciated evar,
+(* Precondition: one of the terms of the pb is an uninstantiated evar,
  * possibly applied to arguments. *)
 
 let rec ise_try isevars = function

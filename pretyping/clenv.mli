@@ -28,7 +28,7 @@ open Mod_subst
  * [templval] is the template which we are trying to fill out.
  * [templtyp] is its type.
  * [namenv] is a mapping from metavar numbers to names, for
- *          use in instanciating metavars by name.
+ *          use in instantiating metavars by name.
  *)
 type clausenv = {
   templenv : env;
