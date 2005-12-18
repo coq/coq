@@ -9,15 +9,15 @@ else
 fi
 
 if [ "$1" = -byte ]; then
-  command="../bin/coqtop.byte -no-vm -q -batch -load-vernac-source"
+  command="../bin/coqtop.byte -q -batch -load-vernac-source"
 else
-  command="../bin/coqtop -no-vm -q -batch -load-vernac-source"
+  command="../bin/coqtop -q -batch -load-vernac-source"
 fi
 
 if [ "$1" = -byte ]; then
-  coqtop="../bin/coqtop.byte -no-vm -q -batch"
+  coqtop="../bin/coqtop.byte -q -batch"
 else
-  coqtop="../bin/coqtop -no-vm -q -batch"
+  coqtop="../bin/coqtop -q -batch"
 fi
 
 # on compte le nombre de tests et de succès
