@@ -813,6 +813,10 @@ let pr_level ntn (from,args) =
   str "at level " ++ int from ++ spc () ++ str "with arguments" ++ spc() ++
   prlist_with_sep pr_coma (pr_arg_level from) args
 
+(* In v8: prec = Some prec8 is for both parsing and printing *)
+(* In v7 and translator: 
+     prec is for parsing (None if V8Notation), 
+     prec8 for v8 printing (v7 printing is via ast) *)
 let cache_syntax_extension (_,(_,((prec,prec8),ntn,gr,se))) =
   try 
     let oldprec, oldprec8 = Symbols.level_of_notation ntn in
@@ -1037,22 +1041,30 @@ let compute_syntax_data forv7 (df,modifiers) =
   ((onlyparse,recvars,vars,
     ntn_for_interp,notation),prec,ppdata,(Lib.library_dp(),df))
 
+(* Uninterpreted (reserved) notations *)
 let add_syntax_extension local mv mv8 =
+  (* from v7: 
+       if mv8 <> None: tells the translator how to print in v8
+       if mv <> None: tells how to parse and, how to print in v7
+       mv = None = mv8 does not occur   
+     from v8 (mv8 is always None and mv is always Some)
+       mv tells how to parse and print in v8
+  *)
   let data8 = option_app (compute_syntax_data false) mv8 in
   let data = option_app (compute_syntax_data !Options.v7) mv in
   let prec,gram_rule = match data with
-  | None -> None, None
+  | None -> None, None (* Case of V8Notation from v7 *)
   | Some ((_,_,_,_,notation),prec,(n,typs,symbols,_),_) -> 
       Some prec, Some (make_grammar_rule n typs symbols notation None) in
   match data, data8 with
   | None, None -> (* Nothing to do: V8Notation while not translating *) () 
   | _, Some d | Some d, None ->
-    let ((_,_,_,_,ntn),ppprec,ppdata,_) = d in
+    let ((_,_,_,_,ntn),ppprec,ppdata,_) = d in (* tells how to print *)
     let ntn' = match data with Some ((_,_,_,_,ntn),_,_,_) -> ntn | _ -> ntn in
     let pp_rule = make_pp_rule ppdata in
     Lib.add_anonymous_leaf
       (inSyntaxExtension (local,((prec,ppprec),ntn',gram_rule,pp_rule)))
-	
+
 (**********************************************************************)
 (* Distfix, Infix, Symbols *)
 
@@ -1305,6 +1317,10 @@ let is_quoted_ident x =
   let x' = unquote_notation_token x in
   x <> x' & try Lexer.check_ident x'; true with _ -> false
 
+(* v7: dfmod=None; mv8=Some: add only v8 printing rule *)
+(*     dfmod=Some: add v7 parsing rule; mv8=Some: add v8 printing rule *)
+(*     dfmod=Some; mv8=None: same v7-parsing and v8-printing rules *)
+(* v8: dfmod=Some; mv8=None: same v8 parsing and printing rules *)
 let add_notation local c dfmod mv8 sc =
   match dfmod with
   | None -> add_notation_v8only local c (out_some mv8) sc
