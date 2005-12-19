@@ -791,10 +791,8 @@ let make_syntax_rule n name symbols typs ast ntn sc =
 
 let make_pp_rule (n,typs,symbols,fmt) =
   match fmt with
-    | None -> [UnpBox (PpHOVB 0, make_hunks typs symbols n)]
-    | Some fmt -> 
-	[UnpBox (PpHOVB 0, 
-	 hunks_of_format (n,List.split typs) (symbols,parse_format fmt))]
+  | None -> [UnpBox (PpHOVB 0, make_hunks typs symbols n)]
+  | Some fmt -> hunks_of_format (n,List.split typs) (symbols,parse_format fmt)
 
 (**************************************************************************)
 (* Syntax extenstion: common parsing/printing rules and no interpretation *)
