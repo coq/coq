@@ -1,5 +1,5 @@
 Name: coqide
-Version: 8.0pl2
+Version: 8.0pl3
 Release: 1
 Summary: The Coq Integrated Development Interface
 Copyright: freely redistributable

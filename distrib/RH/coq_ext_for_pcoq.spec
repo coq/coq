@@ -1,5 +1,5 @@
 Name: coq_ext_for_pcoq
-Version: 8.0pl2
+Version: 8.0pl3
 Release: 1
 Summary: The Coq Extension for Pcoq
 Copyright: freely redistributable
