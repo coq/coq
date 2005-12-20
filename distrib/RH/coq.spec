@@ -6,7 +6,7 @@ Copyright: freely redistributable
 Group: Applications/Math
 Vendor: INRIA & LRI
 URL: http://coq.inria.fr
-Source: ftp://ftp.inria.fr/INRIA/coq/V8.0pl2/coq-8.0pl2.tar.gz
+Source: ftp://ftp.inria.fr/INRIA/coq/V8.0pl3/coq-8.0pl3.tar.gz
 Icon: petit-coq.gif
 BuildRoot: /var/tmp/coq
 
