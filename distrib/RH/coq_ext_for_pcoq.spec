@@ -6,9 +6,9 @@ Copyright: freely redistributable
 Group: Applications/Math
 Vendor: INRIA & LRI
 URL: http://coq.inria.fr
-Source: ftp://ftp.inria.fr/INRIA/coq/V8.0pl2/coq-8.0pl2.tar.gz
+Source: ftp://ftp.inria.fr/INRIA/coq/V8.0pl3/coq-8.0pl3.tar.gz
 Icon: petit-coq.gif
-Requires: coq = 8.0pl2
+Requires: coq = 8.0pl3
 BuildRoot: /var/tmp/pcoq
 
 %description
@@ -18,7 +18,7 @@ Pcoq
 %define debug_package %{nil}
 
 %prep
-%setup -n coq-8.0pl2
+%setup -n coq-8.0pl3
 
 %build
 ./configure -bindir %{_bindir} -libdir %{_libdir}/coq -mandir %{_mandir} \
