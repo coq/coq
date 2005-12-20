@@ -395,7 +395,7 @@ COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQTOP)
 
 coqbinaries:: ${COQBINARIES}
 
-coq: coqlib tools coqbinaries coqlib7
+coq: coqlib tools coqbinaries
 coq8: coqlib tools coqbinaries
 coq7: coqlib7 tools coqbinaries
 
