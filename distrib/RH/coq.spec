@@ -1,5 +1,5 @@
 Name: coq
-Version: 8.0pl2
+Version: 8.0pl3
 Release: 1
 Summary: The Coq Proof Assistant
 Copyright: freely redistributable
