@@ -2300,27 +2300,21 @@ toplevel/himsg.cmx: lib/util.cmx kernel/type_errors.cmx pretyping/termops.cmx \
 toplevel/line_oriented_parser.cmo: toplevel/line_oriented_parser.cmi 
 toplevel/line_oriented_parser.cmx: toplevel/line_oriented_parser.cmi 
 toplevel/metasyntax.cmo: toplevel/vernacexpr.cmo lib/util.cmi \
-    interp/topconstr.cmi parsing/termast.cmi tactics/tacinterp.cmi \
-    library/summary.cmi pretyping/rawterm.cmi parsing/pptactic.cmi \
-    interp/ppextend.cmi lib/pp.cmi parsing/pcoq.cmi lib/options.cmi \
-    interp/notation.cmi library/nametab.cmi kernel/names.cmi \
-    library/library.cmi library/libobject.cmi library/libnames.cmi \
-    library/lib.cmi parsing/lexer.cmi library/global.cmi interp/genarg.cmi \
-    parsing/extend.cmi pretyping/evd.cmi parsing/esyntax.cmi \
-    parsing/egrammar.cmi parsing/coqast.cmi interp/constrintern.cmi \
-    interp/constrextern.cmi pretyping/classops.cmi parsing/ast.cmi \
-    toplevel/metasyntax.cmi 
+    interp/topconstr.cmi tactics/tacinterp.cmi library/summary.cmi \
+    pretyping/rawterm.cmi parsing/pptactic.cmi interp/ppextend.cmi lib/pp.cmi \
+    parsing/pcoq.cmi lib/options.cmi interp/notation.cmi library/nametab.cmi \
+    kernel/names.cmi library/libobject.cmi library/libnames.cmi \
+    library/lib.cmi parsing/lexer.cmi library/global.cmi parsing/extend.cmi \
+    parsing/egrammar.cmi interp/constrintern.cmi interp/constrextern.cmi \
+    pretyping/classops.cmi toplevel/metasyntax.cmi 
 toplevel/metasyntax.cmx: toplevel/vernacexpr.cmx lib/util.cmx \
-    interp/topconstr.cmx parsing/termast.cmx tactics/tacinterp.cmx \
-    library/summary.cmx pretyping/rawterm.cmx parsing/pptactic.cmx \
-    interp/ppextend.cmx lib/pp.cmx parsing/pcoq.cmx lib/options.cmx \
-    interp/notation.cmx library/nametab.cmx kernel/names.cmx \
-    library/library.cmx library/libobject.cmx library/libnames.cmx \
-    library/lib.cmx parsing/lexer.cmx library/global.cmx interp/genarg.cmx \
-    parsing/extend.cmx pretyping/evd.cmx parsing/esyntax.cmx \
-    parsing/egrammar.cmx parsing/coqast.cmx interp/constrintern.cmx \
-    interp/constrextern.cmx pretyping/classops.cmx parsing/ast.cmx \
-    toplevel/metasyntax.cmi 
+    interp/topconstr.cmx tactics/tacinterp.cmx library/summary.cmx \
+    pretyping/rawterm.cmx parsing/pptactic.cmx interp/ppextend.cmx lib/pp.cmx \
+    parsing/pcoq.cmx lib/options.cmx interp/notation.cmx library/nametab.cmx \
+    kernel/names.cmx library/libobject.cmx library/libnames.cmx \
+    library/lib.cmx parsing/lexer.cmx library/global.cmx parsing/extend.cmx \
+    parsing/egrammar.cmx interp/constrintern.cmx interp/constrextern.cmx \
+    pretyping/classops.cmx toplevel/metasyntax.cmi 
 toplevel/minicoq.cmo: lib/util.cmi kernel/type_errors.cmi kernel/term.cmi \
     kernel/sign.cmi kernel/safe_typing.cmi lib/pp.cmi kernel/names.cmi \
     kernel/inductive.cmi parsing/g_minicoq.cmi toplevel/fhimsg.cmi \
