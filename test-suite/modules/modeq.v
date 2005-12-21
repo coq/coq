@@ -4,7 +4,7 @@ Module M.
 End M.
 
 Module Type SIG.
-  Declare Module M:=Top.M.
+  Module M:=Top.M.
   Module Type SIG.
     Parameter T:Set.
   End SIG.

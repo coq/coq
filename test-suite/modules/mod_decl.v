@@ -1,5 +1,4 @@
 Module Type SIG.
-  Definition A:Set. (*error*)
   Axiom A:Set.
 End SIG.
 
@@ -27,13 +26,9 @@ Module M5<:SIG:=M0.
 Module F[X:SIG]:=X.
 
 
-Declare Module M6.
-
-
 Module Type T.
 
-  Declare Module M0.
-    Lemma A:Set (*error*).
+  Module M0.
     Axiom A:Set.
   End M0.
   
@@ -43,13 +38,12 @@ Module Type T.
     Definition A:=nat.
   End M2.
   
-  Declare Module M3:=M0.
+  Module M3:=M0.
   
-  Declare Module M4:SIG:=M0.  (* error *)
+  Module M4:SIG:=M0.
   
-  Declare Module M5<:SIG:=M0.
+  Module M5<:SIG:=M0.
 
-  Declare Module M6:=F M0. (* error *)
+  Module M6:=F M0.
 
-  Module M7.
 End T.

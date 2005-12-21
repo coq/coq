@@ -12,7 +12,7 @@ End M.
 Module N:=M.
 
 Module Type SPRYT.
-  Declare Module N.
+  Module N.
     Definition T:=M.N.T.
     Parameter x:T.
   End N.

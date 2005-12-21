@@ -16,24 +16,22 @@ Module M.
 
 End M.
 
+Locate Module M.
+
 (*Lemma w1 : (M.rel O (S O)).
 Auto.
 *)
 
 Import M.
 
-Print Hint *.
 Lemma w1 : (O#(S O)).
-Print Hint.
-Print Hint *.
-
 Auto.
 Save.
 
 Check (O#O).
 Locate rel.
 
-Locate M.
+Locate Module M.
 
 Module N:=Top.M.
 
