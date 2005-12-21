@@ -432,17 +432,35 @@ let destCoFix c = match kind_of_term c with
   | _ -> invalid_arg "destCoFix"
 
 (******************************************************************)
+(* Cast management                                                *)
+(******************************************************************)
+
+let rec strip_outer_cast c = match kind_of_term c with
+  | Cast (c,_,_) -> strip_outer_cast c
+  | _ -> c
+
+(* Fonction spéciale qui laisse les cast clés sous les Fix ou les Case *)
+
+let under_outer_cast f c =  match kind_of_term c with
+  | Cast (b,k,t) -> mkCast (f b, k, f t)
+  | _ -> f c
+
+let rec under_casts f c = match kind_of_term c with
+  | Cast (c,k,t) -> mkCast (under_casts f c, k, t)
+  | _            -> f c
+
+(******************************************************************)
 (* Flattening and unflattening of embedded applications and casts *)
 (******************************************************************)
 
-(* flattens application lists *)
+(* flattens application lists throwing casts in-between *)
 let rec collapse_appl c = match kind_of_term c with
   | App (f,cl) -> 
-      let rec collapse_rec f cl2 = match kind_of_term f with
+      let rec collapse_rec f cl2 =
+        match kind_of_term (strip_outer_cast f) with
 	| App (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
-	| Cast (c,_,_) when isApp c -> collapse_rec c cl2
-	| _ -> if Array.length cl2 = 0 then f else mkApp (f,cl2)
-      in 
+	| _ -> mkApp (f,cl2)
+      in
       collapse_rec f cl
   | _ -> c
 
@@ -948,20 +966,6 @@ let mkCoFix = mkCoFix
 (* Construct an implicit *)
 let implicit_sort = Type (make_univ(make_dirpath[id_of_string"implicit"],0))
 let mkImplicit = mkSort implicit_sort
-
-let rec strip_outer_cast c = match kind_of_term c with
-  | Cast (c,_,_) -> strip_outer_cast c
-  | _ -> c
-
-(* Fonction spéciale qui laisse les cast clés sous les Fix ou les Case *)
-
-let under_outer_cast f c =  match kind_of_term c with
-  | Cast (b,k,t) -> mkCast (f b, k, f t)
-  | _ -> f c
-
-let rec under_casts f c = match kind_of_term c with
-  | Cast (c,k,t) -> mkCast (under_casts f c, k, t)
-  | _            -> f c
 
 (***************************)
 (* Other term constructors *)
