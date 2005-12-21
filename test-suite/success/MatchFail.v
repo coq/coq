@@ -6,23 +6,24 @@ Require Export ZArithRing.
    2*(POS e)+1  ou 2*(POS e), pour rendre les expressions plus
    à même d'être utilisées par Ring, lorsque ces expressions contiennent
    des variables de type positive. *)
-Tactic Definition compute_POS :=
- (Match Context With
- | [|- [(POS (xI ?1))]] -> Let v = ?1 In 
-                          (Match v With
-                            | [xH] ->
-                              (Fail 1)
-                            |_->
-                              Rewrite (POS_xI v))
- | [ |- [(POS (xO ?1))]] -> Let v = ?1 In
-                           Match v With
-                            |[xH]->
-                              (Fail 1)
-                            |[?]->
-                              Rewrite (POS_xO v)).
+Ltac compute_POS :=
+  match goal with
+  |  |- context [(Zpos (xI ?X1))] =>
+      let v := constr:X1 in
+      match constr:v with
+      | 1%positive => fail 1
+      | _ =>  rewrite (BinInt.Zpos_xI v)
+      end
+  |  |- context [(Zpos (xO ?X1))] =>
+      let v := constr:X1 in
+      match constr:v with
+      | 1%positive => fail 1
+      | _ =>  rewrite (BinInt.Zpos_xO v)
+      end
+  end.
 
-Goal (x:positive)(POS (xI (xI x)))=`4*(POS x)+3`.
-Intros.
-Repeat compute_POS.
-Ring.
+Goal forall x : positive, Zpos (xI (xI x)) = (4 * Zpos x + 3)%Z.
+intros.
+repeat compute_POS.
+ ring.
 Qed.

@@ -1,33 +1,56 @@
 (* Check coercions in patterns *)
 
 Inductive I : Set :=
-  C1 : nat -> I
-| C2 : I -> I.
+  | C1 : nat -> I
+  | C2 : I -> I.
 
 Coercion C1 : nat >-> I.
 
 (* Coercion at the root of pattern *)
-Check [x]Cases x of (C2 n) => O | O => O | (S n) => n end.
+Check (fun x => match x with
+                | C2 n => 0
+                | O => 0
+                | S n => n
+                end).
 
 (* Coercion not at the root of pattern *)
-Check [x]Cases x of (C2 O) => O | _ => O end.
+Check (fun x => match x with
+                | C2 O => 0
+                | _ => 0
+                end).
 
 (* Unification and coercions inside patterns *)
-Check [x:(option nat)]Cases x of None => O | (Some O) => O | _ => O end.
+Check
+  (fun x : option nat => match x with
+                         | None => 0
+                         | Some O => 0
+                         | _ => 0
+                         end).
 
 (* Coercion up to delta-conversion, and unification *)
-Coercion somenat := (Some nat).
-Check [x]Cases x of None => O | O => O | (S n) => n end.
+Coercion somenat := Some (A:=nat).
+Check (fun x => match x with
+                | None => 0
+                | O => 0
+                | S n => n
+                end).
 
 (* Coercions with parameters *)
-Inductive listn : nat-> Set := 
-  niln : (listn O) 
-| consn : (n:nat)nat->(listn n) -> (listn (S n)).
+Inductive listn : nat -> Set :=
+  | niln : listn 0
+  | consn : forall n : nat, nat -> listn n -> listn (S n).
 
 Inductive I' : nat -> Set :=
-  C1' : (n:nat) (listn n) -> (I' n)
-| C2' : (n:nat) (I' n) -> (I' n).
+  | C1' : forall n : nat, listn n -> I' n
+  | C2' : forall n : nat, I' n -> I' n.
 
 Coercion C1' : listn >-> I'.
-Check [x:(I' O)]Cases x of (C2' _ _) => O | niln => O | _ => O end.
-Check [x:(I' O)]Cases x of (C2' _ niln) => O | _ => O end.
+Check (fun x : I' 0 => match x with
+                       | C2' _ _ => 0
+                       | niln => 0
+                       | _ => 0
+                       end).
+Check (fun x : I' 0 => match x with
+                       | C2' _ niln => 0
+                       | _ => 0
+                       end).

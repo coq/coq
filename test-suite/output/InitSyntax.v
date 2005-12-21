@@ -1,4 +1,4 @@
 (* Soumis par Pierre *)
-Print  sig2.
-Check (EX x:nat|x=x).
-Check [b:bool]if b then b else b.
+Print sig2.
+Check (exists x : nat, x = x).
+Check (fun b : bool => if b then b else b).

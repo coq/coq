@@ -17,3 +17,4 @@ Proof.
   intros.
   autorewrite with base0 in H using try (apply H1; reflexivity).
 Qed.
+

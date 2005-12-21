@@ -1,4 +1,5 @@
 (* Check static globalisation of tactic names *)
 (* Proposed by Benjamin (mars 2002) *)
-Goal (n:nat)n=n.
-Induction n; Try REflexivity.
+Goal forall n : nat, n = n.
+induction n; try REflexivity.
+

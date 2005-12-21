@@ -1,33 +1,33 @@
 Module Type SET.
-  Axiom T:Set.
-  Axiom x:T.
+  Axiom T : Set.
+  Axiom x : T.
 End SET.
  
-Implicit Arguments On.
+Set Implicit Arguments.
+Unset Strict Implicit.
 
-Module M[X:SET].
+Module M (X: SET).
   Definition T := nat.
-  Definition x := O.
-  Definition f := [A:Set][x:A]X.x.
+  Definition x := 0.
+  Definition f (A : Set) (x : A) := X.x.
 End M.
 
-Module N:=M.
+Module N := M.
 
 Module Nat.
   Definition T := nat.
-  Definition x := O.
+  Definition x := 0.
 End Nat.
 
-Module Z:=(N Nat).
+Module Z := N Nat.
 
-Check (Z.f O).
+Check (Z.f 0).
 
-Module P[Y:SET] := N.
+Module P (Y: SET) := N.
 
-Module Y:=P Z Nat.
+Module Y := P Z Nat.
 
-Check (Y.f O).
-
+Check (Y.f 0).
 
 
 

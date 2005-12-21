@@ -1,20 +1,20 @@
 (* Submitted by Houda Anoun *)
 
 Module toto.
-Tactic Definition titi:=Auto.
+Ltac titi := auto.
 End toto.
 
 Module ti.
 Import toto.
-Tactic Definition equal:=
-Match Context With
-[ |- ?1=?1]-> titi
-| [ |- ?]-> Idtac.
+Ltac equal := match goal with
+              |  |- (?X1 = ?X1) => titi
+              |  |- _ => idtac
+              end.
 
 End ti.
 
 Import ti.
-Definition simple:(a:nat) a=a.
-Intro.
+Definition simple : forall a : nat, a = a.
+intro.
 equal.
 Qed.

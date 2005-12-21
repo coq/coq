@@ -1,33 +1,32 @@
 Set Implicit Arguments.
+Unset Strict Implicit.
 
 
 Module M.
-  Definition id:=[A:Set][x:A]x.
+  Definition id (A : Set) (x : A) := x.
 
   Module Type SIG.
-    Parameter idid:(A:Set)A->A.
+    Parameter idid : forall A : Set, A -> A.
   End SIG.
 
   Module N.
-    Definition idid:=[A:Set][x:A](id x).
-    Grammar constr constr8 := 
-      not_eq [ "#"  constr7($b) ] -> [ (idid $b) ].
-    Notation inc := (plus (S O)). 
+    Definition idid (A : Set) (x : A) := id x.
+    (* <Warning> : Grammar is replaced by Notation *)
+    Notation inc := (plus 1). 
   End N.
 
-  Definition zero:=(N.idid O).
+  Definition zero := N.idid 0.
 
 End M.
 
-Definition zero := (M.N.idid O).
-Definition jeden := (M.N.inc O).
+Definition zero := M.N.idid 0.
+Definition jeden := M.N.inc 0.
 
-Module Goly:=M.N.
+Module Goly := M.N.
 
-Definition Gole_zero := (Goly.idid O).
-Definition Goly_jeden := (Goly.inc O).
+Definition Gole_zero := Goly.idid 0.
+Definition Goly_jeden := Goly.inc 0.
 
 Module Ubrany : M.SIG := M.N.
 
-Definition Ubrane_zero := (Ubrany.idid O).
-
+Definition Ubrane_zero := Ubrany.idid 0.

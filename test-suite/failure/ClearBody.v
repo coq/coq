@@ -2,7 +2,7 @@
    invalidate the well-typabilility of the visible goal *)
 
 Goal True.
-LetTac n:=O.
-LetTac I:=(refl_equal nat O).
-Change (n=O) in (Type of I).
-ClearBody n.
+set (n := 0) in *.
+set (I := refl_equal 0) in *.
+change (n = 0) in (type of I).
+clearbody n.

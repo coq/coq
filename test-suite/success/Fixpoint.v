@@ -28,3 +28,4 @@ CoFixpoint g (n:nat) (m:=pred n) (l:Stream m) (p:=S n) : Stream p :=
    end l.
 
 Eval compute in (fun l => match g 2 (Consn 0 6 l) with Consn _ a _ => a end).
+

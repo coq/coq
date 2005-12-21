@@ -20,3 +20,4 @@ Notation "! A" := (forall _:nat, A) (at level 60).
 Check ! (0=0).
 Check forall n, n=0.
 Check forall n:nat, 0=0.
+

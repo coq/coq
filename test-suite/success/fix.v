@@ -12,40 +12,41 @@ Require Import ZArith.
 
 Definition rNat := positive.
 
-Inductive rBoolOp: Set :=
-     rAnd: rBoolOp
-    | rEq: rBoolOp .
+Inductive rBoolOp : Set :=
+  | rAnd : rBoolOp
+  | rEq : rBoolOp.
 
-Definition rlt: rNat -> rNat ->Prop := [a, b:rNat](compare a b EGAL)=INFERIEUR.
+Definition rlt (a b : rNat) : Prop :=
+  (a ?= b)%positive Datatypes.Eq = Datatypes.Lt.
 
-Definition rltDec: (m, n:rNat){(rlt m n)}+{(rlt n m) \/ m=n}.
-Intros n m; Generalize (compare_convert_INFERIEUR n m);
- Generalize (compare_convert_SUPERIEUR n m);
- Generalize (compare_convert_EGAL n m); Case (compare n m EGAL).
-Intros H' H'0 H'1; Right; Right; Auto.
-Intros H' H'0 H'1; Left; Unfold rlt.
-Apply convert_compare_INFERIEUR; Auto.
-Intros H' H'0 H'1; Right; Left; Unfold rlt.
-Apply convert_compare_INFERIEUR; Auto.
-Apply H'0; Auto.
+Definition rltDec : forall m n : rNat, {rlt m n} + {rlt n m \/ m = n}.
+intros n m; generalize (nat_of_P_lt_Lt_compare_morphism n m);
+ generalize (nat_of_P_gt_Gt_compare_morphism n m);
+ generalize (Pcompare_Eq_eq n m); case ((n ?= m)%positive Datatypes.Eq).
+intros H' H'0 H'1; right; right; auto.
+intros H' H'0 H'1; left; unfold rlt in |- *.
+apply nat_of_P_lt_Lt_compare_complement_morphism; auto.
+intros H' H'0 H'1; right; left; unfold rlt in |- *.
+apply nat_of_P_lt_Lt_compare_complement_morphism; auto.
+apply H'0; auto.
 Defined.
 
 
-Definition rmax: rNat -> rNat ->rNat.
-Intros n m; Case (rltDec n m); Intros Rlt0.
-Exact m.
-Exact n.
+Definition rmax : rNat -> rNat -> rNat.
+intros n m; case (rltDec n m); intros Rlt0.
+exact m.
+exact n.
 Defined.
 
-Inductive rExpr: Set :=
-     rV: rNat ->rExpr
-    | rN: rExpr ->rExpr
-    | rNode: rBoolOp -> rExpr -> rExpr ->rExpr .
+Inductive rExpr : Set :=
+  | rV : rNat -> rExpr
+  | rN : rExpr -> rExpr
+  | rNode : rBoolOp -> rExpr -> rExpr -> rExpr.
 
-Fixpoint maxVar[e:rExpr]: rNat :=
-   Cases e of
-       (rV n) => n
-      | (rN p) => (maxVar p)
-      | (rNode n p q) => (rmax (maxVar p) (maxVar q))
-   end.
+Fixpoint maxVar (e : rExpr) : rNat :=
+  match e with
+  | rV n => n
+  | rN p => maxVar p
+  | rNode n p q => rmax (maxVar p) (maxVar q)
+  end.
 

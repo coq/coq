@@ -1,3 +1,3 @@
-Implicits eq [1].
+Implicit Arguments eq [A].
 
-Check (eq bool true).
+Check (bool = true).

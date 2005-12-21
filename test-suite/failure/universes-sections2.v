@@ -3,8 +3,8 @@
 Definition Type2 := Type.
 
 Section A.
-  Local Type1 := Type : Type2.
+  Let Type1 : Type2 := Type.
   Definition Type1' := Type1.
 End A.
 
-Definition Inconsistency := Type2 : Type1'.
+Definition Inconsistency : Type1' := Type2.

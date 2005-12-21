@@ -1,5 +1,7 @@
 (* Check that the syntax for options works *)
 Set Implicit Arguments.
+Unset Strict Implicit.
+Set Strict Implicit.
 Unset Implicit Arguments.
 Test Implicit Arguments.
 
@@ -12,16 +14,16 @@ Unset Silent.
 Test Silent.
 
 Set Printing Depth 100.
-Print Table Printing Depth.
+Test Printing Depth.
 
 Parameter i : bool -> nat.
 Coercion i : bool >-> nat.
-Set Printing Coercion i.
-Unset Printing Coercion i.
+Add Printing Coercion i.
+Remove Printing Coercion i.
 Test Printing Coercion i.
 
-Print Table Printing Let.
-Print Table Printing If.
+Test Printing Let.
+Test Printing If.
 Remove Printing Let sig.
 Remove Printing If bool.
 

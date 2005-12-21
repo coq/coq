@@ -1,57 +1,57 @@
-Implicit Arguments On.
+Set Implicit Arguments.
+Unset Strict Implicit.
 
-Implicits fst.
-Implicits snd.
+Implicit Arguments fst.
+Implicit Arguments snd.
 
 Module Type PO.
-  Parameter T:Set.
-  Parameter le:T->T->Prop.
+  Parameter T : Set.
+  Parameter le : T -> T -> Prop.
   
-  Axiom le_refl : (x:T)(le x x).
-  Axiom le_trans : (x,y,z:T)(le x y) -> (le y z) -> (le x z).
-  Axiom le_antis : (x,y:T)(le x y) -> (le y x) -> (x=y).
+  Axiom le_refl : forall x : T, le x x.
+  Axiom le_trans : forall x y z : T, le x y -> le y z -> le x z.
+  Axiom le_antis : forall x y : T, le x y -> le y x -> x = y.
   
-  Hints Resolve le_refl le_trans le_antis.
+  Hint Resolve le_refl le_trans le_antis.
 End PO.
 
 
-Module Pair[X:PO][Y:PO] <: PO.
-  Definition T:=X.T*Y.T.
-  Definition le:=[p1,p2]
-    (X.le (fst p1) (fst p2)) /\ (Y.le (snd p1) (snd p2)).
+Module Pair (X: PO) (Y: PO) <: PO.
+  Definition T := (X.T * Y.T)%type.
+  Definition le p1 p2 := X.le (fst p1) (fst p2) /\ Y.le (snd p1) (snd p2).
 
-  Hints Unfold le.
+  Hint Unfold le.
 
-  Lemma le_refl : (p:T)(le p p).
-    Info Auto.
+  Lemma le_refl : forall p : T, le p p.
+    info auto.
   Qed.
 
-  Lemma le_trans : (p1,p2,p3:T)(le p1 p2) -> (le p2 p3) -> (le p1 p3).
-    Unfold le; Intuition; Info EAuto.
+  Lemma le_trans : forall p1 p2 p3 : T, le p1 p2 -> le p2 p3 -> le p1 p3.
+    unfold le in |- *;  intuition; info  eauto.
   Qed.    
 
-  Lemma le_antis : (p1,p2:T)(le p1 p2) -> (le p2 p1) -> (p1=p2).
-    NewDestruct p1.  
-    NewDestruct p2.
-    Unfold le.
-    Intuition.
-    CutRewrite t=t1.
-    CutRewrite t0=t2.
-    Reflexivity.
+  Lemma le_antis : forall p1 p2 : T, le p1 p2 -> le p2 p1 -> p1 = p2.
+    destruct p1.  
+    destruct p2.
+    unfold le in |- *.
+     intuition.
+     cutrewrite (t = t1).
+     cutrewrite (t0 = t2).
+    reflexivity.
 
-    Info Auto.
+    info auto.
 
-    Info Auto.
+    info auto.
   Qed.
 
 End Pair.
 
 
 
-Read Module Nat.
+Require Nat.
 
 Module NN := Pair Nat Nat.
 
-Lemma zz_min : (p:NN.T)(NN.le (O,O) p).
-  Info Auto with arith.
+Lemma zz_min : forall p : NN.T, NN.le (0, 0) p.
+  info auto with arith.
 Qed.

@@ -1,3 +1,3 @@
-Require Reals.
-Check ``32``.
-Check ``-31``.
+Require Import Reals.
+Check 32%R.
+Check (-31)%R.

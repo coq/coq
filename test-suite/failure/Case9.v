@@ -1,6 +1,8 @@
-Parameter compare : (n,m:nat)({(lt n m)}+{n=m})+{(gt n m)}.
-Type <nat>Cases (compare O O) of
-               (* k<i *)  (left _ _ (left _ _ _)) => O
-            |  (* k=i *)  (left _ _ _)  => O
-            |  (* k>i *)  (right _ _ _) => O end.
-
+Parameter compare : forall n m : nat, {n < m} + {n = m} + {n > m}.
+Type
+  match compare 0 0 return nat with
+  
+      (* k<i *) | left _ _ (left _ _ _) => 0
+   (* k=i *) | left _ _ _ => 0
+   (* k>i *) | right _ _ _ => 0
+  end.

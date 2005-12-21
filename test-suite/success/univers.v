@@ -1,41 +1,42 @@
 (* This requires cumulativity *)
 
 Definition Type2 := Type.
-Definition Type1 := Type : Type2.
+Definition Type1 : Type2 := Type.
 
-Lemma lem1 : (True->Type1)->Type2.
-Intro H.
-Apply H.
-Exact I.
+Lemma lem1 : (True -> Type1) -> Type2.
+intro H.
+apply H.
+exact I.
 Qed.
 
-Lemma lem2 : (A:Type)(P:A->Type)(x:A)((y:A)(x==y)->(P y))->(P x).
-Auto.
+Lemma lem2 :
+ forall (A : Type) (P : A -> Type) (x : A),
+ (forall y : A, x = y -> P y) -> P x.
+auto.
 Qed.
 
-Lemma lem3 : (P:Prop)P.
-Intro P ; Pattern P.
-Apply lem2.
+Lemma lem3 : forall P : Prop, P.
+intro P; pattern P in |- *.
+apply lem2.
 Abort.
 
 (* Check managing of universe constraints in inversion *)
 (* Bug report #855 *)
 
-Inductive dep_eq : (X:Type) X -> X -> Prop :=
-   | intro_eq : (X:Type) (f:X)(dep_eq X f f)
-   | intro_feq : (A:Type) (B:A->Type)
-                 let T = (x:A)(B x) in
-                 (f, g:T) (x:A)
-                 (dep_eq (B x) (f x) (g x)) ->
-                 (dep_eq T f g).
+Inductive dep_eq : forall X : Type, X -> X -> Prop :=
+  | intro_eq : forall (X : Type) (f : X), dep_eq X f f
+  | intro_feq :
+      forall (A : Type) (B : A -> Type),
+      let T := forall x : A, B x in
+      forall (f g : T) (x : A), dep_eq (B x) (f x) (g x) -> dep_eq T f g.
                                                                                 
 Require Import Relations.
                                                                                 
-Theorem dep_eq_trans : (X:Type) (transitive X (dep_eq X)).
+Theorem dep_eq_trans : forall X : Type, transitive X (dep_eq X).
 Proof.
-  Unfold transitive.
-  Intros X f g h H1 H2.
-  Inversion H1.
+  unfold transitive in |- *.
+  intros X f g h H1 H2.
+  inversion H1.
 Abort.
 
 
@@ -50,8 +51,8 @@ Abort.
 
    Especially, universe refreshing was not done for "set/pose" *)
 
-Lemma ind_unsec:(Q:nat->Type)True. 
-Intro.
-Pose C:= (m:?)(Q m)->(Q m).
-Exact I.
+Lemma ind_unsec : forall Q : nat -> Type, True. 
+intro.
+set (C := forall m, Q m -> Q m).
+exact I.
 Qed.

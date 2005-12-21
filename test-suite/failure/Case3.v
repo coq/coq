@@ -1,7 +1,10 @@
-Inductive List [A:Set] :Set := 
- Nil:(List A) | Cons:A->(List A)->(List A).
+Inductive List (A : Set) : Set :=
+  | Nil : List A
+  | Cons : A -> List A -> List A.
 
-Type [l:(List nat)]<nat>Cases l of 
-                         (Nil nat) =>O
-                      | (Cons  a l) => (S a)
-                      end.
+Type
+  (fun l : List nat =>
+   match l return nat with
+   | Nil nat => 0
+   | Cons a l => S a
+   end).

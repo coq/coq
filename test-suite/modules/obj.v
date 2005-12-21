@@ -1,16 +1,17 @@
-Implicit Arguments On.
+Set Implicit Arguments.
+Unset Strict Implicit.
 
 Module M. 
-  Definition a:=[s:Set]s.
+  Definition a (s : Set) := s.
   Print a.
 End M.
 
 Print M.a.
 
 Module K.
-  Definition app:=[A,B:Set; f:(A->B); x:A](f x).
+  Definition app (A B : Set) (f : A -> B) (x : A) := f x.
   Module N.
-    Definition apap:=[A,B:Set](app (app 1!A 2!B)).
+    Definition apap (A B : Set) := app (app (A:=A) (B:=B)).
     Print app.
     Print apap.
   End N.
@@ -20,7 +21,6 @@ End K.
 Print K.app.
 Print K.N.apap.
 
-Module W:=K.N.
+Module W := K.N.
 
 Print W.apap.
-

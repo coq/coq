@@ -21,3 +21,4 @@ with copy_of_compute_size_tree (t:tree) : nat :=
 Eval simpl in (copy_of_compute_size_forest leaf).
 
 
+

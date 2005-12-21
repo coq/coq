@@ -15,6 +15,6 @@
   Simplifications of goals, based on LJT calcul ****)
 
 (* Fails because Tauto does not perform any Apply *)
-Goal ((A:Prop)A\/~A)->(x,y:nat)(x=y\/~x=y).
+Goal (forall A : Prop, A \/ ~ A) -> forall x y : nat, x = y \/ x <> y.
 Proof.
-  Tauto.
+   tauto.

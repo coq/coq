@@ -3,9 +3,10 @@
 (*  Nested patterns                               *)
 (* ============================================== *)
 
-Type <[n:nat]n=n>Cases O of 
-                    O => (refl_equal nat O) 
-                  | m => (refl_equal nat m) 
-end.
+Type
+  match 0 as n return (n = n) with
+  | O => refl_equal 0
+  | m => refl_equal m
+  end.
 
 

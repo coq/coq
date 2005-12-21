@@ -9,6 +9,6 @@
 (* This file tests that pretty-printing does not fail                        *)
 (* Test of exact output is not specified                                     *)
 
-Check O.
+Check 0.
 Check S.
 Check nat.

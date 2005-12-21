@@ -2,7 +2,7 @@
    non-existent names in Unfold [cf bug #263] *)
 
 Lemma lem1 : True.
-Try (Unfold i_dont_exist).
-Trivial.
+try unfold i_dont_exist in |- *.
+trivial.
 Qed.
 

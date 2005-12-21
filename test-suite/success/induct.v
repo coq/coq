@@ -7,11 +7,11 @@
 (************************************************************************)
 (* Teste des definitions inductives imbriquees *)
 
-Require PolyList.
+Require Import List.
 
-Inductive X : Set := 
-    cons1 : (list X)->X.
+Inductive X : Set :=
+    cons1 : list X -> X.
 
-Inductive Y : Set := 
-    cons2 : (list Y*Y)->Y.
+Inductive Y : Set :=
+    cons2 : list (Y * Y) -> Y.
 

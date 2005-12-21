@@ -1,19 +1,19 @@
-Definition T:=nat.
+Definition T := nat.
 
-Definition le:=Peano.le.
+Definition le := le.
 
-Hints Unfold le.
+Hint Unfold le.
 
-Lemma le_refl:(n:nat)(le n n).
-  Auto.
+Lemma le_refl : forall n : nat, le n n.
+  auto.
 Qed.
 
-Require Le.
+Require Import Le.
 
-Lemma le_trans:(n,m,k:nat)(le n m) -> (le m k) -> (le n k).
-  EAuto with arith.
+Lemma le_trans : forall n m k : nat, le n m -> le m k -> le n k.
+   eauto with arith.
 Qed.
 
-Lemma le_antis:(n,m:nat)(le n m) -> (le m n) -> n=m.
-  EAuto with arith.
+Lemma le_antis : forall n m : nat, le n m -> le m n -> n = m.
+   eauto with arith.
 Qed.

@@ -1,7 +1,8 @@
 
-Type [x:nat]<nat> Cases x  of 
-                  ((S x) as b) => <nat>Cases x  of
-                                        x => x 
-                                   end
-                          end.
-
+Type
+  (fun x : nat =>
+   match x return nat with
+   | S x as b => match x with
+                 | x => x
+                 end
+   end).

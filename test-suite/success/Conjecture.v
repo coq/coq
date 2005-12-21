@@ -1,13 +1,13 @@
 (* Check keywords Conjecture and Admitted are recognized *)
 
-Conjecture c : (n:nat)n=O.
+Conjecture c : forall n : nat, n = 0.
 
 Check c.
 
-Theorem d : (n:nat)n=O.
+Theorem d : forall n : nat, n = 0.
 Proof.
-  NewInduction n.
-  Reflexivity.
-  Assert H:False.
-  2:NewDestruct H.
+  induction n.
+  reflexivity.
+  assert (H : False).
+  2: destruct H.
 Admitted.

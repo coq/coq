@@ -1,6 +1,6 @@
-'type:nat+nat '+{True}
+nat + nat + {True}
      : Set
-{True}+{True}+{True}
+{True} + {True} + {True}
      : Set
-nat+{True}+{True}
+nat + {True} + {True}
      : Set

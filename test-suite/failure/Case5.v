@@ -1,3 +1,7 @@
-Inductive MS: Set := X:MS->MS | Y:MS->MS.
+Inductive MS : Set :=
+  | X : MS -> MS
+  | Y : MS -> MS.
  
-Type  [p:MS]<nat>Cases p of (X x) => O end.
+Type (fun p : MS => match p return nat with
+                    | X x => 0
+                    end).

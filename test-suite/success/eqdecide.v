@@ -6,24 +6,26 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Inductive T : Set := A: T | B :T->T.
+Inductive T : Set :=
+  | A : T
+  | B : T -> T.
 
-Lemma lem1 : (x,y:T){x=y}+{~x=y}.
-Decide Equality.
+Lemma lem1 : forall x y : T, {x = y} + {x <> y}.
+ decide equality.
 Qed.
 
-Lemma lem2 : (x,y:T){x=y}+{~x=y}.
-Intros x y.
-Decide Equality x y.
+Lemma lem2 : forall x y : T, {x = y} + {x <> y}.
+intros x y.
+ decide equality x y.
 Qed.
 
-Lemma lem3 : (x,y:T){x=y}+{~x=y}.
-Intros x y.
-Decide Equality y x.
+Lemma lem3 : forall x y : T, {x = y} + {x <> y}.
+intros x y.
+ decide equality y x.
 Qed.
 
-Lemma lem4 : (x,y:T){x=y}+{~x=y}.
-Intros x y.
-Compare x y; Auto.
+Lemma lem4 : forall x y : T, {x = y} + {x <> y}.
+intros x y.
+ compare x y; auto.
 Qed.
 

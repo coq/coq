@@ -3,43 +3,48 @@
    (Simplification of an example from file parsing2.v of the Coq'Art
     exercises) *)
 
-Require Import PolyList.
+Require Import List.
 
-Variable parse_rel : (list bool) -> (list bool) -> nat -> Prop.
+Variable parse_rel : list bool -> list bool -> nat -> Prop.
 
-Variables l0:(list bool); rec:(l' : (list bool))
-    (le (length l') (S (length l0))) ->
-    {l'' : (list bool) &
-    {t : nat | (parse_rel l' l'' t) /\ (le (length l'') (length l'))}} +
-    {(l'' : (list bool))(t : nat)~ (parse_rel l' l'' t)}.
+Variables (l0 : list bool)
+  (rec :
+     forall l' : list bool,
+     length l' <= S (length l0) ->
+     {l'' : list bool & 
+     {t : nat | parse_rel l' l'' t /\ length l'' <= length l'}} +
+     {(forall (l'' : list bool) (t : nat), ~ parse_rel l' l'' t)}).
 
-Axiom HHH : (A:Prop)A.
+Axiom HHH : forall A : Prop, A.
 
-Check (Cases (rec l0 (HHH ?)) of
-      | (inleft (existS (cons false l1) _)) => (inright ? ? (HHH ?))
-      | (inleft (existS (cons true l1) (exist t1 (conj Hp Hl)))) =>
-         (inright ? ? (HHH ?))
-      | (inleft (existS _ _)) => (inright ? ? (HHH ?))
-      | (inright Hnp) => (inright ? ? (HHH ?))
-      end ::
-   {l'' : (list bool) &
-   {t : nat | (parse_rel (cons true l0) l'' t) /\ (le (length l'') (S (length l0)))}} +
-   {(l'' : (list bool)) (t : nat) ~ (parse_rel (cons true l0) l'' t)}).
+Check
+  (match rec l0 (HHH _) with
+   | inleft (existS (false :: l1) _) => inright _ (HHH _)
+   | inleft (existS (true :: l1) (exist t1 (conj Hp Hl))) =>
+       inright _ (HHH _)
+   | inleft (existS _ _) => inright _ (HHH _)
+   | inright Hnp => inright _ (HHH _)
+   end
+   :{l'' : list bool & 
+    {t : nat | parse_rel (true :: l0) l'' t /\ length l'' <= S (length l0)}} +
+    {(forall (l'' : list bool) (t : nat), ~ parse_rel (true :: l0) l'' t)}).
  
 (* The same but with relative links to l0 and rec *)
  
-Check [l0:(list bool);rec:(l' : (list bool))
-    (le (length l') (S (length l0))) ->
-    {l'' : (list bool) &
-    {t : nat | (parse_rel l' l'' t) /\ (le (length l'') (length l'))}} +
-    {(l'' : (list bool)) (t : nat) ~ (parse_rel l' l'' t)}]
-   (Cases (rec l0 (HHH ?)) of
-      | (inleft (existS (cons false l1) _)) => (inright ? ? (HHH ?))
-      | (inleft (existS (cons true l1) (exist t1 (conj Hp Hl)))) =>
-         (inright ? ? (HHH ?))
-      | (inleft (existS _ _)) => (inright ? ? (HHH ?))
-      | (inright Hnp) => (inright ? ? (HHH ?))
-      end ::
-   {l'' : (list bool) &
-   {t : nat | (parse_rel (cons true l0) l'' t) /\ (le (length l'') (S (length l0)))}} +
-   {(l'' : (list bool)) (t : nat) ~ (parse_rel (cons true l0) l'' t)}).
+Check
+  (fun (l0 : list bool)
+     (rec : forall l' : list bool,
+            length l' <= S (length l0) ->
+            {l'' : list bool & 
+            {t : nat | parse_rel l' l'' t /\ length l'' <= length l'}} +
+            {(forall (l'' : list bool) (t : nat), ~ parse_rel l' l'' t)}) =>
+   match rec l0 (HHH _) with
+   | inleft (existS (false :: l1) _) => inright _ (HHH _)
+   | inleft (existS (true :: l1) (exist t1 (conj Hp Hl))) =>
+       inright _ (HHH _)
+   | inleft (existS _ _) => inright _ (HHH _)
+   | inright Hnp => inright _ (HHH _)
+   end
+   :{l'' : list bool & 
+    {t : nat | parse_rel (true :: l0) l'' t /\ length l'' <= S (length l0)}} +
+    {(forall (l'' : list bool) (t : nat), ~ parse_rel (true :: l0) l'' t)}).

@@ -1,25 +1,28 @@
 (* Check forward dependencies *)
 
-Check [P:nat->Prop][Q][A:(P O)->Q][B:(n:nat)(P (S n))->Q][x]
-  <[_]Q>Cases x of 
-  | (exist O H) => (A H)
-  | (exist (S n) H) => (B n H)
-  end.
+Check
+  (fun (P : nat -> Prop) Q (A : P 0 -> Q) (B : forall n : nat, P (S n) -> Q)
+     x =>
+   match x return Q with
+   | exist O H => A H
+   | exist (S n) H => B n H
+   end).
 
 (* Check dependencies in anonymous arguments (from FTA/listn.v) *)
 
-Inductive listn [A:Set] : nat->Set :=
-  niln: (listn A O)
-| consn: (a:A)(n:nat)(listn A n)->(listn A (S n)).
+Inductive listn (A : Set) : nat -> Set :=
+  | niln : listn A 0
+  | consn : forall (a : A) (n : nat), listn A n -> listn A (S n).
 
 Section Folding.
-Variables B, C : Set.
+Variable B C : Set.
 Variable g : B -> C -> C.
 Variable c : C.
 
-Fixpoint foldrn [n:nat; bs:(listn B n)] : C :=
-  Cases bs of niln => c
-            | (consn b _ tl) => (g b (foldrn ? tl))
+Fixpoint foldrn (n : nat) (bs : listn B n) {struct bs} : C :=
+  match bs with
+  | niln => c
+  | consn b _ tl => g b (foldrn _ tl)
   end.
 End Folding.
 
@@ -30,149 +33,154 @@ End Folding.
 (* -------------------------------------------------------------------- *)
 
 
-Require Prelude.
-Require Logic_Type.
+Require Import Prelude.
+Require Import Logic_Type.
 
 Section Orderings.
-   Variable U: Type.
+   Variable U : Type.
    
-   Definition Relation :=  U -> U -> Prop.
+   Definition Relation := U -> U -> Prop.
 
-   Variable R: Relation.
+   Variable R : Relation.
    
-   Definition Reflexive : Prop :=  (x: U) (R x x).
+   Definition Reflexive : Prop := forall x : U, R x x.
    
-   Definition Transitive : Prop :=  (x,y,z: U) (R x y) -> (R y z) -> (R x z).
+   Definition Transitive : Prop := forall x y z : U, R x y -> R y z -> R x z.
    
-   Definition Symmetric : Prop :=  (x,y: U) (R x y) -> (R y x).
+   Definition Symmetric : Prop := forall x y : U, R x y -> R y x.
    
-   Definition Antisymmetric : Prop :=
-      (x,y: U) (R x y) -> (R y x) -> x==y.
+   Definition Antisymmetric : Prop := forall x y : U, R x y -> R y x -> x = y.
    
-   Definition contains : Relation -> Relation -> Prop :=
-      [R,R': Relation] (x,y: U) (R' x y) -> (R x y).
-  Definition same_relation : Relation -> Relation -> Prop :=
-      [R,R': Relation] (contains R R') /\ (contains R' R).
+   Definition contains (R R' : Relation) : Prop :=
+     forall x y : U, R' x y -> R x y.
+  Definition same_relation (R R' : Relation) : Prop :=
+    contains R R' /\ contains R' R.
 Inductive Equivalence : Prop :=
-         Build_Equivalence:
-           Reflexive -> Transitive -> Symmetric -> Equivalence.
+    Build_Equivalence : Reflexive -> Transitive -> Symmetric -> Equivalence.
    
    Inductive PER : Prop :=
-         Build_PER: Symmetric -> Transitive -> PER.
+       Build_PER : Symmetric -> Transitive -> PER.
    
 End Orderings.
 
 (***** Setoid  *******)
 
-Inductive Setoid : Type 
-  := Build_Setoid : (S:Type)(R:(Relation S))(Equivalence ? R) -> Setoid.
+Inductive Setoid : Type :=
+    Build_Setoid :
+      forall (S : Type) (R : Relation S), Equivalence _ R -> Setoid.
 
-Definition elem := [A:Setoid] let (S,R,e)=A in S.
+Definition elem (A : Setoid) := let (S, R, e) := A in S.
 
-Grammar constr constr1 :=
- elem  [ "|" constr0($s) "|"] -> [ (elem $s) ].
+(* <Warning> : Grammar is replaced by Notation *)
 
-Definition equal := [A:Setoid]
-   <[s:Setoid](Relation |s|)>let (S,R,e)=A in R.
+Definition equal (A : Setoid) :=
+  let (S, R, e) as s return (Relation (elem s)) := A in R.
 
-Grammar constr constr1 :=
- equal   [ constr0($c) "=" "%" "S" constr0($c2) ] -> 
-         [ (equal ? $c $c2) ].
+(* <Warning> : Grammar is replaced by Notation *)
 
 
-Axiom prf_equiv : (A:Setoid)(Equivalence |A| (equal A)).
-Axiom prf_refl : (A:Setoid)(Reflexive |A| (equal A)).
-Axiom prf_sym : (A:Setoid)(Symmetric |A| (equal A)).
-Axiom prf_trans : (A:Setoid)(Transitive |A| (equal A)).
+Axiom prf_equiv : forall A : Setoid, Equivalence (elem A) (equal A).
+Axiom prf_refl : forall A : Setoid, Reflexive (elem A) (equal A).
+Axiom prf_sym : forall A : Setoid, Symmetric (elem A) (equal A).
+Axiom prf_trans : forall A : Setoid, Transitive (elem A) (equal A).
 
 Section Maps.
-Variables A,B: Setoid.
+Variable A B : Setoid.
 
-Definition Map_law := [f:|A| -> |B|]
-    (x,y:|A|) x =%S y -> (f x) =%S (f y).
+Definition Map_law (f : elem A -> elem B) :=
+  forall x y : elem A, equal _ x y -> equal _ (f x) (f y).
 
 Inductive Map : Type :=
-    Build_Map : (f:|A| -> |B|)(p:(Map_law f))Map.
+    Build_Map : forall (f : elem A -> elem B) (p : Map_law f), Map.
 
-Definition explicit_ap := [m:Map] <|A| -> |B|>Match m with 
-         [f:?][p:?]f end.
+Definition explicit_ap (m : Map) :=
+  match m return (elem A -> elem B) with
+  | Build_Map f p => f
+  end.
 
-Axiom pres : (m:Map)(Map_law (explicit_ap m)).
+Axiom pres : forall m : Map, Map_law (explicit_ap m).
 
-Definition ext := [f,g:Map]
-         (x:|A|) (explicit_ap f x) =%S (explicit_ap g x).
+Definition ext (f g : Map) :=
+  forall x : elem A, equal _ (explicit_ap f x) (explicit_ap g x).
 
-Axiom Equiv_map_eq : (Equivalence Map ext).
+Axiom Equiv_map_eq : Equivalence Map ext.
 
-Definition Map_setoid := (Build_Setoid Map ext Equiv_map_eq).
+Definition Map_setoid := Build_Setoid Map ext Equiv_map_eq.
 
 End Maps.
 
-Notation ap := (explicit_ap ? ?). 
+Notation ap := (explicit_ap _ _). 
 
-Grammar constr constr8 :=
-  map_setoid [ constr7($c1) "=>" constr8($c2) ] 
-                 -> [ (Map_setoid $c1 $c2) ].
+(* <Warning> : Grammar is replaced by Notation *)
 
 
-Definition ap2 := [A,B,C:Setoid][f:|(A=>(B=>C))|][a:|A|] (ap (ap f a)).
+Definition ap2 (A B C : Setoid) (f : elem (Map_setoid A (Map_setoid B C)))
+  (a : elem A) := ap (ap f a).
 
 
 (*****    posint     ******)
 
-Inductive posint : Type
-        := Z : posint | Suc : posint -> posint.
+Inductive posint : Type :=
+  | Z : posint
+  | Suc : posint -> posint.
 
-Axiom f_equal : (A,B:Type)(f:A->B)(x,y:A) x==y -> (f x)==(f y).
-Axiom eq_Suc : (n,m:posint) n==m -> (Suc n)==(Suc m).
+Axiom
+  f_equal : forall (A B : Type) (f : A -> B) (x y : A), x = y -> f x = f y.
+Axiom eq_Suc : forall n m : posint, n = m -> Suc n = Suc m.
 
 (* The predecessor function *)
 
-Definition pred : posint->posint
-     := [n:posint](<posint>Case n of (* Z *) Z 
-                            (* Suc u *) [u:posint]u end).
+Definition pred (n : posint) : posint :=
+  match n return posint with
+  | Z => (* Z *)  Z 
+      (* Suc u *) 
+  | Suc u => u
+  end.
 
-Axiom pred_Sucn : (m:posint) m==(pred (Suc m)).
-Axiom eq_add_Suc : (n,m:posint) (Suc n)==(Suc m) -> n==m.
-Axiom not_eq_Suc : (n,m:posint) ~(n==m) -> ~((Suc n)==(Suc m)).
+Axiom pred_Sucn : forall m : posint, m = pred (Suc m).
+Axiom eq_add_Suc : forall n m : posint, Suc n = Suc m -> n = m.
+Axiom not_eq_Suc : forall n m : posint, n <> m -> Suc n <> Suc m.
 
 
-Definition IsSuc : posint->Prop
-  := [n:posint](<Prop>Case n of (* Z *) False
-                          (* Suc p *) [p:posint]True end).
-Definition IsZero :posint->Prop :=
-	[n:posint]<Prop>Match n with 
-		True
-		[p:posint][H:Prop]False end.
+Definition IsSuc (n : posint) : Prop :=
+  match n return Prop with
+  | Z => (* Z *)  False
+      (* Suc p *) 
+  | Suc p => True
+  end.
+Definition IsZero (n : posint) : Prop :=
+  match n with
+  | Z => True
+  | Suc _ => False
+  end.
 
-Axiom Z_Suc : (n:posint) ~(Z==(Suc n)).
-Axiom  Suc_Z: (n:posint) ~(Suc n)==Z.
-Axiom n_Sucn : (n:posint) ~(n==(Suc n)).
-Axiom Sucn_n : (n:posint) ~(Suc n)==n.
-Axiom eqT_symt : (a,b:posint) ~(a==b)->~(b==a).
+Axiom Z_Suc : forall n : posint, Z <> Suc n.
+Axiom Suc_Z : forall n : posint, Suc n <> Z.
+Axiom n_Sucn : forall n : posint, n <> Suc n.
+Axiom Sucn_n : forall n : posint, Suc n <> n.
+Axiom eqT_symt : forall a b : posint, a <> b -> b <> a.
 
 
 (*******  Dsetoid *****)
 
-Definition Decidable :=[A:Type][R:(Relation A)]
-		(x,y:A)(R x y) \/ ~(R x y).
+Definition Decidable (A : Type) (R : Relation A) :=
+  forall x y : A, R x y \/ ~ R x y.
 
 
-Record DSetoid : Type :=
-{Set_of : Setoid;
- prf_decid : (Decidable |Set_of| (equal Set_of))}.
+Record DSetoid : Type := 
+  {Set_of : Setoid; prf_decid : Decidable (elem Set_of) (equal Set_of)}.
 
 (* example de Dsetoide d'entiers *)
 
 
-Axiom eqT_equiv : (Equivalence posint (eqT posint)).
-Axiom Eq_posint_deci : (Decidable posint (eqT posint)).
+Axiom eqT_equiv : Equivalence posint (eq (A:=posint)).
+Axiom Eq_posint_deci : Decidable posint (eq (A:=posint)).
 
 (* Dsetoide des posint*)
 
-Definition Set_of_posint := (Build_Setoid posint (eqT posint) eqT_equiv).
+Definition Set_of_posint := Build_Setoid posint (eq (A:=posint)) eqT_equiv.
 
-Definition Dposint := (Build_DSetoid Set_of_posint Eq_posint_deci).
+Definition Dposint := Build_DSetoid Set_of_posint Eq_posint_deci.
 
 
 
@@ -186,23 +194,22 @@ Definition Dposint := (Build_DSetoid Set_of_posint Eq_posint_deci).
 
 Section Sig.
 
-Record Signature :Type :=
-{Sigma : DSetoid; 
- Arity : (Map (Set_of Sigma) (Set_of Dposint))}.
+Record Signature : Type := 
+  {Sigma : DSetoid; Arity : Map (Set_of Sigma) (Set_of Dposint)}.
 
-Variable S:Signature.
+Variable S : Signature.
 
 
 
 Variable Var : DSetoid.
 
-Mutual Inductive TERM : Type :=
-	  var : |(Set_of Var)| -> TERM
-	| oper : (op: |(Set_of (Sigma S))| ) (LTERM (ap (Arity S) op)) -> TERM
-with
-	LTERM : posint -> Type :=
-	  nil : (LTERM Z)
-	| cons : TERM -> (n:posint)(LTERM n) -> (LTERM (Suc n)).
+Inductive TERM : Type :=
+  | var : elem (Set_of Var) -> TERM
+  | oper :
+      forall op : elem (Set_of (Sigma S)), LTERM (ap (Arity S) op) -> TERM
+with LTERM : posint -> Type :=
+  | nil : LTERM Z
+  | cons : TERM -> forall n : posint, LTERM n -> LTERM (Suc n).
 
 
 
@@ -211,51 +218,51 @@ with
 (* -------------------------------------------------------------------- *)
 
 
-Parameter t1,t2: TERM.
+Parameter t1 t2 : TERM.
 
-Type 
- Cases t1 t2 of 
- | (var  v1) (var v2) => True
- | (oper op1 l1) (oper op2 l2) => False
- | _ _ => False 
- end.
-
-
-
-Parameter n2:posint.
-Parameter l1, l2:(LTERM n2).
-
-Type 
- Cases l1 l2  of
-    nil            nil => True 
- |  (cons v m y)   nil => False
- |  _               _  => False
-end.
-
-
-Type Cases l1 l2 of
-    nil              nil      => True 
- | (cons u n x)  (cons v m y) =>False
- |   _               _        => False
-end.
+Type
+  match t1, t2 with
+  | var v1, var v2 => True
+  | oper op1 l1, oper op2 l2 => False
+  | _, _ => False
+  end.
 
 
 
-Definition equalT [t1:TERM]:TERM->Prop :=
-[t2:TERM] 
- Cases t1 t2 of 
-   (var  v1)        (var v2)    => True
- | (oper op1 l1)  (oper op2 l2) => False
- |  _                   _       => False 
- end.
+Parameter n2 : posint.
+Parameter l1 l2 : LTERM n2.
 
-Definition EqListT [n1:posint;l1:(LTERM n1)]: (n2:posint)(LTERM n2)->Prop :=
-[n2:posint][l2:(LTERM n2)]
- Cases l1 l2 of
-    nil                 nil             => True 
- | (cons t1 n1' l1')  (cons t2 n2' l2') => False
- | _                    _               => False
-end.
+Type
+  match l1, l2 with
+  | nil, nil => True
+  | cons v m y, nil => False
+  | _, _ => False
+  end.
+
+
+Type
+  match l1, l2 with
+  | nil, nil => True
+  | cons u n x, cons v m y => False
+  | _, _ => False
+  end.
+
+
+
+Definition equalT (t1 t2 : TERM) : Prop :=
+  match t1, t2 with
+  | var v1, var v2 => True
+  | oper op1 l1, oper op2 l2 => False
+  | _, _ => False
+  end.
+
+Definition EqListT (n1 : posint) (l1 : LTERM n1) (n2 : posint)
+  (l2 : LTERM n2) : Prop :=
+  match l1, l2 with
+  | nil, nil => True
+  | cons t1 n1' l1', cons t2 n2' l2' => False
+  | _, _ => False
+  end.
 
 
 Reset equalT.
@@ -263,37 +270,52 @@ Reset equalT.
 (*          Initial exemple (without patterns)                       *)
 (*-------------------------------------------------------------------*)
 
-Fixpoint equalT [t1:TERM]:TERM->Prop :=
-<TERM->Prop>Case t1 of 
-	(*var*) [v1:|(Set_of Var)|][t2:TERM]
-		<Prop>Case t2 of
-		(*var*)[v2:|(Set_of Var)|] (v1 =%S v2)
-		(*oper*)[op2:|(Set_of (Sigma S))|][_:(LTERM (ap (Arity S) op2))]False
-		end
-	(*oper*)[op1:|(Set_of (Sigma S))|]
-                [l1:(LTERM (ap (Arity S) op1))][t2:TERM]
-                <Prop>Case t2 of
-		(*var*)[v2:|(Set_of Var)|]False
-		(*oper*)[op2:|(Set_of (Sigma S))|]
-                        [l2:(LTERM (ap (Arity S) op2))]
-			((op1=%S op2)/\ (EqListT (ap (Arity S) op1) l1 (ap (Arity S) op2) l2))
-		end
-end
-with EqListT [n1:posint;l1:(LTERM n1)]: (n2:posint)(LTERM n2)->Prop :=
-<[_:posint](n2:posint)(LTERM n2)->Prop>Case l1 of
-	(*nil*) [n2:posint][l2:(LTERM n2)]
-		<[_:posint]Prop>Case l2 of
-		(*nil*)True
-	 	(*cons*)[t2:TERM][n2':posint][l2':(LTERM n2')]False
-	end
-	(*cons*)[t1:TERM][n1':posint][l1':(LTERM n1')]
-		[n2:posint][l2:(LTERM n2)]
-		<[_:posint]Prop>Case l2 of
-		(*nil*) False
-		(*cons*)[t2:TERM][n2':posint][l2':(LTERM n2')]
-			((equalT t1 t2) /\ (EqListT n1' l1' n2' l2'))
-		end
-end.
+Fixpoint equalT (t1 : TERM) : TERM -> Prop :=
+  match t1 return (TERM -> Prop) with
+  | var v1 => 
+      (*var*) 
+      fun t2 : TERM =>
+      match t2 return Prop with
+      | var v2 =>
+          (*var*) equal _ v1 v2
+          (*oper*)
+      | oper op2 _ => False
+      end
+      (*oper*)
+  | oper op1 l1 =>
+      fun t2 : TERM =>
+      match t2 return Prop with
+      | var v2 =>
+          (*var*) False
+          (*oper*)
+      | oper op2 l2 =>
+          equal _ op1 op2 /\
+          EqListT (ap (Arity S) op1) l1 (ap (Arity S) op2) l2
+      end
+  end
+ 
+ with EqListT (n1 : posint) (l1 : LTERM n1) {struct l1} :
+ forall n2 : posint, LTERM n2 -> Prop :=
+  match l1 in (LTERM _) return (forall n2 : posint, LTERM n2 -> Prop) with
+  | nil =>
+      (*nil*) 
+      fun (n2 : posint) (l2 : LTERM n2) =>
+      match l2 in (LTERM _) return Prop with
+      | nil =>
+          (*nil*) True
+          (*cons*)
+      | cons t2 n2' l2' => False
+      end
+      (*cons*)
+  | cons t1 n1' l1' =>
+      fun (n2 : posint) (l2 : LTERM n2) =>
+      match l2 in (LTERM _) return Prop with
+      | nil =>
+          (*nil*)  False
+          (*cons*)
+      | cons t2 n2' l2' => equalT t1 t2 /\ EqListT n1' l1' n2' l2'
+      end
+  end.
 
 
 (* ---------------------------------------------------------------- *)
@@ -301,91 +323,97 @@ end.
 (* ---------------------------------------------------------------- *)
 Reset equalT.
 
-Fixpoint equalT [t1:TERM]:TERM->Prop :=
-Cases t1 of 
-  (var  v1) => [t2:TERM]
-	        Cases t2 of
-		     (var v2) => (v1 =%S v2)
-		 | (oper op2 _) =>False
-		 end
-| (oper op1 l1) => [t2:TERM]
-		    Cases t2 of
-	              (var _) => False
-                    | (oper op2 l2) => (op1=%S op2)
-                      /\ (EqListT (ap (Arity S) op1) l1 (ap (Arity S) op2) l2)
-		    end
-end
-with EqListT [n1:posint;l1:(LTERM n1)]: (n2:posint)(LTERM n2)->Prop :=
-<[_:posint](n2:posint)(LTERM n2)->Prop>Cases l1 of
-  nil => [n2:posint][l2:(LTERM n2)]
-          Cases l2 of
-              nil => True
-	  | _  => False
-	  end
-| (cons t1 n1' l1') => [n2:posint][l2:(LTERM n2)]
-		        Cases l2 of
-		           nil =>False
-		        | (cons t2 n2' l2') => (equalT t1 t2) 
-                                                /\ (EqListT n1' l1' n2' l2')
-		end
-end.
+Fixpoint equalT (t1 : TERM) : TERM -> Prop :=
+  match t1 with
+  | var v1 =>
+      fun t2 : TERM =>
+      match t2 with
+      | var v2 => equal _ v1 v2
+      | oper op2 _ => False
+      end
+  | oper op1 l1 =>
+      fun t2 : TERM =>
+      match t2 with
+      | var _ => False
+      | oper op2 l2 =>
+          equal _ op1 op2 /\
+          EqListT (ap (Arity S) op1) l1 (ap (Arity S) op2) l2
+      end
+  end
+ 
+ with EqListT (n1 : posint) (l1 : LTERM n1) {struct l1} :
+ forall n2 : posint, LTERM n2 -> Prop :=
+  match l1 return (forall n2 : posint, LTERM n2 -> Prop) with
+  | nil =>
+      fun (n2 : posint) (l2 : LTERM n2) =>
+      match l2 with
+      | nil => True
+      | _ => False
+      end
+  | cons t1 n1' l1' =>
+      fun (n2 : posint) (l2 : LTERM n2) =>
+      match l2 with
+      | nil => False
+      | cons t2 n2' l2' => equalT t1 t2 /\ EqListT n1' l1' n2' l2'
+      end
+  end.
 
 
 Reset equalT.
 
-Fixpoint equalT [t1:TERM]:TERM->Prop :=
-Cases t1 of 
-  (var  v1) => [t2:TERM]
-	        Cases t2 of
-		     (var v2) => (v1 =%S v2)
-		 | (oper op2 _) =>False
-		 end
-| (oper op1 l1) => [t2:TERM]
-		    Cases t2 of
-	              (var _) => False
-                    | (oper op2 l2) => (op1=%S op2)
-                      /\ (EqListT (ap (Arity S) op1) l1 (ap (Arity S) op2) l2)
-		    end
-end
-with EqListT [n1:posint;l1:(LTERM n1)]: (n2:posint)(LTERM n2)->Prop :=
-[n2:posint][l2:(LTERM n2)]
-Cases l1 of
-  nil => 
-          Cases l2 of
-              nil => True
-	  | _  => False
-	  end
-| (cons t1 n1' l1') =>  Cases l2 of
-		           nil =>False
-		        | (cons t2 n2' l2') => (equalT t1 t2) 
-                                                /\ (EqListT n1' l1' n2' l2')
-		end
-end.
+Fixpoint equalT (t1 : TERM) : TERM -> Prop :=
+  match t1 with
+  | var v1 =>
+      fun t2 : TERM =>
+      match t2 with
+      | var v2 => equal _ v1 v2
+      | oper op2 _ => False
+      end
+  | oper op1 l1 =>
+      fun t2 : TERM =>
+      match t2 with
+      | var _ => False
+      | oper op2 l2 =>
+          equal _ op1 op2 /\
+          EqListT (ap (Arity S) op1) l1 (ap (Arity S) op2) l2
+      end
+  end
+ 
+ with EqListT (n1 : posint) (l1 : LTERM n1) (n2 : posint) 
+ (l2 : LTERM n2) {struct l1} : Prop :=
+  match l1 with
+  | nil => match l2 with
+           | nil => True
+           | _ => False
+           end
+  | cons t1 n1' l1' =>
+      match l2 with
+      | nil => False
+      | cons t2 n2' l2' => equalT t1 t2 /\ EqListT n1' l1' n2' l2'
+      end
+  end.
 
 (* ---------------------------------------------------------------- *)
 (*                  Version with multiple patterns                  *)
 (* ---------------------------------------------------------------- *)
 Reset equalT.
 
-Fixpoint equalT [t1:TERM]:TERM->Prop :=
-[t2:TERM] 
- Cases t1 t2 of 
-   (var  v1)       (var v2)     => (v1 =%S v2)
-
- | (oper op1 l1)  (oper op2 l2) => 
-     (op1=%S op2) /\ (EqListT (ap (Arity S) op1) l1 (ap (Arity S) op2) l2)
-
- |  _               _ => False 
- end
-
-with EqListT [n1:posint;l1:(LTERM n1)]: (n2:posint)(LTERM n2)->Prop :=
-[n2:posint][l2:(LTERM n2)]
- Cases l1 l2 of
-    nil                nil              => True 
- | (cons t1 n1' l1')  (cons t2 n2' l2') => (equalT t1 t2) 
-                                          /\ (EqListT n1' l1' n2'  l2')
- | _ _ => False
-end.
+Fixpoint equalT (t1 t2 : TERM) {struct t1} : Prop :=
+  match t1, t2 with
+  | var v1, var v2 => equal _ v1 v2
+  | oper op1 l1, oper op2 l2 =>
+      equal _ op1 op2 /\ EqListT (ap (Arity S) op1) l1 (ap (Arity S) op2) l2
+  | _, _ => False
+  end
+ 
+ with EqListT (n1 : posint) (l1 : LTERM n1) (n2 : posint) 
+ (l2 : LTERM n2) {struct l1} : Prop :=
+  match l1, l2 with
+  | nil, nil => True
+  | cons t1 n1' l1', cons t2 n2' l2' =>
+      equalT t1 t2 /\ EqListT n1' l1' n2' l2'
+  | _, _ => False
+  end.
 
 
 (* ------------------------------------------------------------------ *)
@@ -394,12 +422,11 @@ End Sig.
 
 (* Exemple soumis par Bruno *)
 
-Definition bProp [b:bool] : Prop :=
-  if b then True else False.
+Definition bProp (b : bool) : Prop := if b then True else False.
 
-Definition f0 [F:False;ty:bool]: (bProp ty) :=
-  <[_:bool][ty:bool](bProp ty)>Cases ty ty of
-    true true => I
-  | _ false => F
-  | _ true => I
+Definition f0 (F : False) (ty : bool) : bProp ty :=
+  match ty as _, ty return (bProp ty) with
+  | true, true => I
+  | _, false => F
+  | _, true => I
   end.

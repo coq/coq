@@ -1,6 +1,6 @@
-(P x)
+P x
      : Prop
-(R x x)
+R x x
      : Prop
-[x:foo; n:nat](x n)
-     : foo ->nat ->nat
+fun (x : foo) (n : nat) => x n
+     : foo -> nat -> nat

@@ -2,7 +2,7 @@
 
 Section A.
   Definition Type2 := Type.
-  Definition Type1 := Type : Type2.
+  Definition Type1 : Type2 := Type.
 End A.
 
-Definition Inconsistency := Type2 : Type1.
+Definition Inconsistency : Type1 := Type2.

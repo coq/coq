@@ -1,18 +1,17 @@
 Module M.
-  Parameter rel:nat -> nat -> Prop.
+  Parameter rel : nat -> nat -> Prop.
 
-  Axiom w : (n:nat)(rel O (S n)).
+  Axiom w : forall n : nat, rel 0 (S n).
 
-  Hints Resolve w.
+  Hint Resolve w.
 
-  Grammar constr constr8 := 
-     not_eq [ constr7($a) "#" constr7($b) ] -> [ (rel $a $b) ].
+  (* <Warning> : Grammar is replaced by Notation *)
   
   Print Hint *.
 
-  Lemma w1 : (O#(S O)).
-  Auto.
-  Save.
+  Lemma w1 : rel 0 1.
+  auto.
+  Qed.
 
 End M.
 
@@ -24,14 +23,13 @@ Auto.
 
 Import M.
 
-Lemma w1 : (O#(S O)).
-Auto.
-Save.
+Lemma w1 : rel 0 1.
+auto.
+Qed.
 
-Check (O#O).
+Check (rel 0 0).
 Locate rel.
 
 Locate Module M.
 
-Module N:=Top.M.
-
+Module N := Top.M.

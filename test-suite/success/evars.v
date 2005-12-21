@@ -1,38 +1,45 @@
 (* The "?" of cons and eq should be inferred *)
-Variable list:Set -> Set.
-Variable cons:(T:Set) T -> (list T) -> (list T).
-Check (n:(list nat)) (EX l| (EX x| (n = (cons ? x l)))).
+Variable list : Set -> Set.
+Variable cons : forall T : Set, T -> list T -> list T.
+Check (forall n : list nat, exists l : _, (exists x : _, n = cons _ x l)).
 
 (* Examples provided by Eduardo Gimenez *)
 
-Definition c [A;Q:(nat*A->Prop)->Prop;P] :=
-   (Q [p:nat*A]let (i,v) = p in (P i v)).
+Definition c A (Q : (nat * A -> Prop) -> Prop) P :=
+  Q (fun p : nat * A => let (i, v) := p in P i v).
 
 (* What does this test ? *)
-Require PolyList.
-Definition list_forall_bool  [A:Set][p:A->bool][l:(list A)] : bool := 
- (fold_right ([a][r]if (p a) then r else false) true l).
+Require Import List.
+Definition list_forall_bool (A : Set) (p : A -> bool) 
+  (l : list A) : bool :=
+  fold_right (fun a r => if p a then r else false) true l.
 
 (* Checks that solvable ? in the lambda prefix of the definition are harmless*)
-Parameter A1,A2,F,B,C : Set.
+Parameter A1 A2 F B C : Set.
 Parameter f : F -> A1 -> B.
-Definition f1 [frm0,a1]: B := (f frm0 a1).
+Definition f1 frm0 a1 : B := f frm0 a1.
 
 (* Checks that solvable ? in the type part of the definition are harmless *)
-Definition f2 : (frm0:?;a1:?)B := [frm0,a1](f frm0 a1).
+Definition f2 frm0 a1 : B := f frm0 a1.
 
 (* Checks that sorts that are evars are handled correctly (bug 705) *)
-Require PolyList.
+Require Import List.
 
-Fixpoint build [nl : (list nat)] :
- (Cases nl of nil => True | _ => False end) -> unit :=
- <[nl](Cases nl of nil => True | _ => False end) -> unit>Cases nl of
- | nil => [_]tt
- | (cons n rest) =>
-   Cases n of
-   | O => [_]tt
-   | (S m) => [a](build rest (False_ind ? a))
-   end
+Fixpoint build (nl : list nat) :
+ match nl with
+ | nil => True
+ | _ => False
+ end -> unit :=
+  match nl return (match nl with
+                   | nil => True
+                   | _ => False
+                   end -> unit) with
+  | nil => fun _ => tt
+  | n :: rest =>
+      match n with
+      | O => fun _ => tt
+      | S m => fun a => build rest (False_ind _ a)
+      end
   end.
 
 
@@ -40,8 +47,12 @@ Fixpoint build [nl : (list nat)] :
 (* Bug de 1999 corrigé en déc 2004 *)
 
 Check
-  let p = [m:nat;f;n:nat]Cases (f m n) of
-                         (exist a b) => (exist ? ? a b)
-                         end
-  in 
-  (p:: (x:nat)((y:nat)(n:nat){q:nat | y = (mult q n)}) -> (n:nat){q:nat | x = (mult q n)}).
+  (let p :=
+     fun (m : nat) f (n : nat) =>
+     match f m n with
+     | exist a b => exist _ a b
+     end in
+   p
+   :forall x : nat,
+    (forall y n : nat, {q : nat | y = q * n}) ->
+    forall n : nat, {q : nat | x = q * n}).

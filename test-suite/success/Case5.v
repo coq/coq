@@ -1,14 +1,13 @@
 
-Parameter ff: (n,m:nat)~n=m -> ~(S n)=(S m).
-Parameter discr_r : (n:nat) ~(O=(S n)).
-Parameter discr_l : (n:nat) ~((S n)=O).
+Parameter ff : forall n m : nat, n <> m -> S n <> S m.
+Parameter discr_r : forall n : nat, 0 <> S n.
+Parameter discr_l : forall n : nat, S n <> 0.
 
 
-Type 
-[n:nat] 
-  <[n:nat]n=O\/~n=O>Cases n of 
-      O     => (or_introl ? ~O=O (refl_equal ? O))      
-   |  (S O) => (or_intror (S O)=O ? (discr_l O))
-   |  (S (S x)) => (or_intror (S (S x))=O ? (discr_l (S x)))
- 
-  end.
+Type
+  (fun n : nat =>
+   match n return (n = 0 \/ n <> 0) with
+   | O => or_introl (0 <> 0) (refl_equal 0)
+   | S O => or_intror (1 = 0) (discr_l 0)
+   | S (S x) => or_intror (S (S x) = 0) (discr_l (S x))
+   end).

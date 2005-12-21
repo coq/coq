@@ -13,3 +13,4 @@ Goal forall n d, d<>0 -> { q:nat & { r:nat | d * q + r = n }}.
 intros.
 (* Here, assumption is used to solve the implicit argument of quo *)
 exists (n / d).
+

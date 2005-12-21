@@ -1,15 +1,15 @@
 Module N.
-Definition f:=plus.
-Syntax constr level 7: plus [ (f $n $m)] -> [ $n:L "+" $m:E].
-Check (f O O).
+Definition f := plus.
+(* <Warning> : Syntax is discontinued *)
+Check (f 0 0).
 End N.
-Check (N.f O O).
+Check (N.f 0 0).
 Import N.
-Check (N.f O O).
-Check (f O O).
-Module M:=N.
-Check (f O O).
-Check (N.f O O).
+Check (f 0 0).
+Check (f 0 0).
+Module M := N.
+Check (f 0 0).
+Check (f 0 0).
 Import M.
-Check (f O O).
-Check (N.f O O).
+Check (f 0 0).
+Check (N.f 0 0).

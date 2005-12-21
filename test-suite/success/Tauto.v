@@ -18,183 +18,186 @@
   Simplifications of goals, based on LJT* calcul ****)
 
 (**** Examples of intuitionistic tautologies ****)
-Parameter A,B,C,D,E,F:Prop.
-Parameter even:nat -> Prop.
-Parameter P:nat -> Prop.
+Parameter A B C D E F : Prop.
+Parameter even : nat -> Prop.
+Parameter P : nat -> Prop.
 
-Lemma Ex_Wallen:(A->(B/\C)) -> ((A->B)\/(A->C)).
+Lemma Ex_Wallen : (A -> B /\ C) -> (A -> B) \/ (A -> C).
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
-Lemma Ex_Klenne:~(~(A \/ ~A)).
+Lemma Ex_Klenne : ~ ~ (A \/ ~ A).
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
-Lemma Ex_Klenne':(n:nat)(~(~((even n) \/ ~(even n)))).
+Lemma Ex_Klenne' : forall n : nat, ~ ~ (even n \/ ~ even n).
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
-Lemma Ex_Klenne'':~(~(((n:nat)(even n)) \/ ~((m:nat)(even m)))).
+Lemma Ex_Klenne'' :
+ ~ ~ ((forall n : nat, even n) \/ ~ (forall m : nat, even m)).
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
-Lemma tauto:((x:nat)(P x)) -> ((y:nat)(P y)).
+Lemma tauto : (forall x : nat, P x) -> forall y : nat, P y.
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
-Lemma tauto1:(A -> A).
+Lemma tauto1 : A -> A.
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
-Lemma tauto2:(A -> B -> C) -> (A -> B) -> A -> C.
+Lemma tauto2 : (A -> B -> C) -> (A -> B) -> A -> C.
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
-Lemma a:(x0: (A \/ B))(x1:(B /\ C))(A -> B).
+Lemma a : forall (x0 : A \/ B) (x1 : B /\ C), A -> B.
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
-Lemma a2:((A -> (B /\ C)) -> ((A -> B) \/ (A -> C))).
+Lemma a2 : (A -> B /\ C) -> (A -> B) \/ (A -> C).
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
-Lemma a4:(~A -> ~A).
+Lemma a4 : ~ A -> ~ A.
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
-Lemma e2:~(~(A \/ ~A)).
+Lemma e2 : ~ ~ (A \/ ~ A).
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
-Lemma e4:~(~((A \/ B) -> (A \/ B))).
+Lemma e4 : ~ ~ (A \/ B -> A \/ B).
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
-Lemma y0:(x0:A)(x1: ~A)(x2:(A -> B))(x3:(A \/ B))(x4:(A /\ B))(A -> False).
+Lemma y0 :
+ forall (x0 : A) (x1 : ~ A) (x2 : A -> B) (x3 : A \/ B) (x4 : A /\ B),
+ A -> False.
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
-Lemma y1:(x0:((A /\ B) /\ C))B.
+Lemma y1 : forall x0 : (A /\ B) /\ C, B.
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
-Lemma y2:(x0:A)(x1:B)(C \/ B).
+Lemma y2 : forall (x0 : A) (x1 : B), C \/ B.
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
-Lemma y3:(x0:(A /\ B))(B /\ A).
+Lemma y3 : forall x0 : A /\ B, B /\ A.
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
-Lemma y5:(x0:(A \/ B))(B \/ A).
+Lemma y5 : forall x0 : A \/ B, B \/ A.
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
-Lemma y6:(x0:(A -> B))(x1:A) B.
+Lemma y6 : forall (x0 : A -> B) (x1 : A), B.
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
-Lemma y7:(x0 : ((A /\ B) -> C))(x1 : B)(x2 : A) C.
+Lemma y7 : forall (x0 : A /\ B -> C) (x1 : B) (x2 : A), C.
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
-Lemma y8:(x0 : ((A \/ B) -> C))(x1 : A) C.
+Lemma y8 : forall (x0 : A \/ B -> C) (x1 : A), C.
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
-Lemma y9:(x0 : ((A \/ B) -> C))(x1 : B) C.
+Lemma y9 : forall (x0 : A \/ B -> C) (x1 : B), C.
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
-Lemma y10:(x0 : ((A -> B) -> C))(x1 : B) C.
+Lemma y10 : forall (x0 : (A -> B) -> C) (x1 : B), C.
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
 (* This example took much time with the old version of Tauto *)
-Lemma critical_example0:(~~B->B)->(A->B)->~~A->B.
+Lemma critical_example0 : (~ ~ B -> B) -> (A -> B) -> ~ ~ A -> B.
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
 (* Same remark as previously *)
-Lemma critical_example1:(~~B->B)->(~B->~A)->~~A->B.
+Lemma critical_example1 : (~ ~ B -> B) -> (~ B -> ~ A) -> ~ ~ A -> B.
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
 (* This example took very much time (about 3mn on a PIII 450MHz in bytecode)
    with the old Tauto. Now, it's immediate (less than 1s). *)
-Lemma critical_example2:(~A<->B)->(~B<->A)->(~~A<->A).
+Lemma critical_example2 : (~ A <-> B) -> (~ B <-> A) -> (~ ~ A <-> A).
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
 (* This example was a bug *)
-Lemma old_bug0:(~A<->B)->(~(C\/E)<->D/\F)->~(C\/A\/E)<->D/\B/\F.
+Lemma old_bug0 :
+ (~ A <-> B) -> (~ (C \/ E) <-> D /\ F) -> (~ (C \/ A \/ E) <-> D /\ B /\ F).
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
 (* Another bug *)
-Lemma old_bug1:((A->B->False)->False) -> (B->False) -> False.
+Lemma old_bug1 : ((A -> B -> False) -> False) -> (B -> False) -> False.
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
 (* A bug again *)
-Lemma old_bug2:
-  ((((C->False)->A)->((B->False)->A)->False)->False) ->
-  (((C->B->False)->False)->False) ->
-  ~A->A.
+Lemma old_bug2 :
+ ((((C -> False) -> A) -> ((B -> False) -> A) -> False) -> False) ->
+ (((C -> B -> False) -> False) -> False) -> ~ A -> A.
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
 (* A bug from CNF form *)
-Lemma old_bug3:
-  ((~A\/B)/\(~B\/B)/\(~A\/~B)/\(~B\/~B)->False)->~((A->B)->B)->False.
+Lemma old_bug3 :
+ ((~ A \/ B) /\ (~ B \/ B) /\ (~ A \/ ~ B) /\ (~ B \/ ~ B) -> False) ->
+ ~ ((A -> B) -> B) -> False.
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
 (* sometimes, the behaviour of Tauto depends on the order of the hyps *)
-Lemma old_bug3bis:
-  ~((A->B)->B)->((~B\/~B)/\(~B\/~A)/\(B\/~B)/\(B\/~A)->False)->False.
+Lemma old_bug3bis :
+ ~ ((A -> B) -> B) ->
+ ((~ B \/ ~ B) /\ (~ B \/ ~ A) /\ (B \/ ~ B) /\ (B \/ ~ A) -> False) -> False.
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
 (* A bug found by Freek Wiedijk <freek@cs.kun.nl> *)
-Lemma new_bug:
- ((A<->B)->(B<->C)) ->
- ((B<->C)->(C<->A)) ->
- ((C<->A)->(A<->B)) ->
- (A<->B).
+Lemma new_bug :
+ ((A <-> B) -> (B <-> C)) ->
+ ((B <-> C) -> (C <-> A)) -> ((C <-> A) -> (A <-> B)) -> (A <-> B).
 Proof.
-  Tauto.
-Save.
+   tauto.
+Qed.
 
 
 (*  A private club has the following rules :
@@ -211,30 +214,31 @@ Save.
 
 Section club.
 
-Variable Scottish, RedSocks, WearKilt, Married, GoOutSunday : Prop.
+Variable Scottish RedSocks WearKilt Married GoOutSunday : Prop.
 
-Hypothesis rule1 : ~Scottish -> RedSocks.
-Hypothesis rule2 : WearKilt \/ ~RedSocks.
-Hypothesis rule3 : Married -> ~GoOutSunday.
+Hypothesis rule1 : ~ Scottish -> RedSocks.
+Hypothesis rule2 : WearKilt \/ ~ RedSocks.
+Hypothesis rule3 : Married -> ~ GoOutSunday.
 Hypothesis rule4 : GoOutSunday <-> Scottish.
-Hypothesis rule5 : WearKilt -> (Scottish /\ Married).
+Hypothesis rule5 : WearKilt -> Scottish /\ Married.
 Hypothesis rule6 : Scottish -> WearKilt.
 
 Lemma NoMember : False.
-Tauto.
-Save.
+ tauto.
+Qed.
 
 End club.
 
 (**** Use of Intuition ****)
-Lemma intu0:(((x:nat)(P x)) /\ B) ->
-              (((y:nat)(P y)) /\ (P O)) \/ (B /\ (P O)).
+Lemma intu0 :
+ (forall x : nat, P x) /\ B -> (forall y : nat, P y) /\ P 0 \/ B /\ P 0.
 Proof.
-  Intuition.
-Save.
+   intuition.
+Qed.
 
-Lemma intu1:((A:Prop)A\/~A)->(x,y:nat)(x=y\/~x=y).
+Lemma intu1 :
+ (forall A : Prop, A \/ ~ A) -> forall x y : nat, x = y \/ x <> y.
 Proof.
-  Intuition.
-Save.
+   intuition.
+Qed.
 

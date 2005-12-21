@@ -1,5 +1,5 @@
-Goal (n:nat)(n=O)->(n=O).
-Intros.
-Rename n into p.
-NewInduction p; Auto.
+Goal forall n : nat, n = 0 -> n = 0.
+intros.
+rename n into p.
+induction p; auto.
 Qed.

@@ -1,80 +1,80 @@
 
-Definition iszero [n:nat] : bool := Cases n of
-                                    | O => true
-                                    | _ => false
-                                    end.
+Definition iszero (n : nat) : bool :=
+  match n with
+  | O => true
+  | _ => false
+  end.
 
-Functional Scheme iszer_ind := Induction for iszero.
+ Functional Scheme iszer_ind := Induction for iszero.
  
-Lemma toto : (n:nat) n = 0 -> (iszero n) = true.
-Intros x eg.
-Functional Induction iszero x; Simpl.
-Trivial.
-Subst x.
-Inversion H_eq_.
+Lemma toto : forall n : nat, n = 0 -> iszero n = true.
+intros x eg.
+ functional induction iszero x; simpl in |- *.
+trivial.
+ subst x.
+inversion H_eq_.
 Qed.
 
 (* We can even reuse the proof as a scheme: *)
 
-Functional Scheme toto_ind := Induction for iszero.
+ Functional Scheme toto_ind := Induction for iszero.
 
 
 
 
  
-Definition ftest [n, m:nat] : nat :=
-  Cases n of
-  | O => Cases m of
+Definition ftest (n m : nat) : nat :=
+  match n with
+  | O => match m with
          | O => 0
          | _ => 1
          end
-  | (S p) => 0
+  | S p => 0
   end.
 
-Functional Scheme ftest_ind := Induction for ftest. 
+ Functional Scheme ftest_ind := Induction for ftest. 
 
-Lemma test1 : (n,m:nat) (le (ftest n m) 2).
-Intros n m.
-Functional Induction ftest n m;Auto.
-Save.
-
-
-Lemma test11 : (m:nat) (le (ftest 0 m) 2).
-Intros m.
-Functional Induction ftest 0 m.
-Auto. 
-Auto. 
+Lemma test1 : forall n m : nat, ftest n m <= 2.
+intros n m.
+ functional induction ftest n m; auto.
 Qed.
 
 
-Definition lamfix :=
-[m:nat ]
-(Fix trivfun {trivfun [n:nat] : nat := Cases n of
-                              | O => m
-                              | (S p) => (trivfun p)
-                              end}).
+Lemma test11 : forall m : nat, ftest 0 m <= 2.
+intros m.
+ functional induction ftest 0 m.
+auto. 
+auto. 
+Qed.
+
+
+Definition lamfix (m : nat) :=
+  fix trivfun (n : nat) : nat := match n with
+                                 | O => m
+                                 | S p => trivfun p
+                                 end.
 
 (* Parameter v1 v2 : nat. *)
 
-Lemma lamfix_lem : (v1,v2:nat) (lamfix v1 v2) = v1.
-Intros v1 v2.
-Functional Induction lamfix v1 v2.
-Trivial.
-Assumption.
+Lemma lamfix_lem : forall v1 v2 : nat, lamfix v1 v2 = v1.
+intros v1 v2.
+ functional induction lamfix v1 v2.
+trivial.
+assumption.
 Defined.
 
 
 
 (* polymorphic function *)
-Require PolyList.
+Require Import List.
 
-Functional Scheme app_ind := Induction for app.
+ Functional Scheme app_ind := Induction for app.
 
-Lemma appnil : (A:Set)(l,l':(list A)) l'=(nil A) ->  l = (app l l').
-Intros A l l'.
-Functional Induction app A l l';Intuition.
-Rewrite <- H1;Trivial.
-Save.
+Lemma appnil : forall (A : Set) (l l' : list A), l' = nil -> l = l ++ l'.
+intros A l l'.
+ functional induction app A l l';  intuition.
+ rewrite <- H1; trivial.
+Qed.
 
 
 
@@ -83,10 +83,10 @@ Save.
 Require Export Arith.
 
 
-Fixpoint trivfun [n:nat] : nat :=
-  Cases n of
+Fixpoint trivfun (n : nat) : nat :=
+  match n with
   | O => 0
-  | (S m) => (trivfun m)
+  | S m => trivfun m
   end.
 
 
@@ -94,22 +94,22 @@ Fixpoint trivfun [n:nat] : nat :=
 
 Parameter varessai : nat.
 
-Lemma first_try : (trivfun varessai) = 0.
-Functional Induction trivfun varessai.
-Trivial.
-Simpl.
-Assumption.
+Lemma first_try : trivfun varessai = 0.
+ functional induction trivfun varessai.
+trivial.
+simpl in |- *.
+assumption.
 Defined.
  
 
-Functional Scheme triv_ind := Induction for trivfun.
+ Functional Scheme triv_ind := Induction for trivfun.
 
-Lemma bisrepetita : (n':nat) (trivfun n') = 0.
-Intros n'.
-Functional Induction trivfun n'.
-Trivial.
-Simpl .
-Assumption.
+Lemma bisrepetita : forall n' : nat, trivfun n' = 0.
+intros n'.
+ functional induction trivfun n'.
+trivial.
+simpl in |- *.
+assumption.
 Qed.
 
 
@@ -118,312 +118,335 @@ Qed.
 
 
 
-Fixpoint iseven [n:nat] : bool :=
-  Cases n of
+Fixpoint iseven (n : nat) : bool :=
+  match n with
   | O => true
-  | (S (S m)) => (iseven m)
+  | S (S m) => iseven m
   | _ => false
   end.
  
-Fixpoint funex [n:nat] : nat :=
-  Cases (iseven n) of
+Fixpoint funex (n : nat) : nat :=
+  match iseven n with
   | true => n
-  | false => Cases n of
+  | false => match n with
              | O => 0
-             | (S r) => (funex r)
+             | S r => funex r
              end
   end.
  
-Fixpoint nat_equal_bool [n:nat]  : nat -> bool :=
-[m:nat]
-  Cases n of
-  | O => Cases m of
+Fixpoint nat_equal_bool (n m : nat) {struct n} : bool :=
+  match n with
+  | O => match m with
          | O => true
          | _ => false
          end
-  | (S p) => Cases m of
+  | S p => match m with
            | O => false
-           | (S q) => (nat_equal_bool p q)
+           | S q => nat_equal_bool p q
            end
   end.
 
 
 Require Export Div2.
  
-Lemma div2_inf : (n:nat) (le (div2 n) n).
-Intros n.
-Functional Induction div2 n.
-Auto.
-Auto.
+Lemma div2_inf : forall n : nat, div2 n <= n.
+intros n.
+ functional induction div2 n.
+auto.
+auto.
 
-Apply le_S.
-Apply le_n_S.
-Exact H.
+apply le_S.
+apply le_n_S.
+exact H.
 Qed.
 
 (* reuse this lemma as a scheme:*)
 
-Functional Scheme div2_ind := Induction for div2_inf.
+ Functional Scheme div2_ind := Induction for div2_inf.
 
-Fixpoint nested_lam [n:nat] : nat -> nat :=
-  Cases n of
-  | O => [m:nat ] 0
-  | (S n') => [m:nat ] (plus m (nested_lam n' m))
+Fixpoint nested_lam (n : nat) : nat -> nat :=
+  match n with
+  | O => fun m : nat => 0
+  | S n' => fun m : nat => m + nested_lam n' m
   end.
 
-Functional Scheme nested_lam_ind := Induction for nested_lam.
+ Functional Scheme nested_lam_ind := Induction for nested_lam.
 
-Lemma nest : (n, m:nat) (nested_lam n m) = (mult n m).
-Intros n m.
-Functional Induction nested_lam n m; Auto.
+Lemma nest : forall n m : nat, nested_lam n m = n * m.
+intros n m.
+ functional induction nested_lam n m; auto.
 Qed.
 
-Lemma nest2 : (n, m:nat) (nested_lam n m) = (mult n m).
-Intros n m. Pattern n m . 
-Apply nested_lam_ind; Simpl ; Intros; Auto.
-Qed.
-
- 
-Fixpoint essai [x : nat] : nat * nat ->  nat :=
- [p : nat * nat]  ( Case p of [n, m : ?]  Cases n of
-                                            O => O
-                                           | (S q) =>
-                                               Cases x of
-                                                 O => (S O)
-                                                | (S r) => (S (essai r (q, m)))
-                                               end
-                                          end end ).
- 
-Lemma essai_essai:
- (x : nat)
- (p : nat * nat)  ( Case p of [n, m : ?] (lt O n) ->  (lt O (essai x p)) end ).
-Intros x p.
-(Functional Induction essai x p); Intros.
-Inversion H.
-Simpl; Try Abstract ( Auto with arith ).
-Simpl; Try Abstract ( Auto with arith ).
+Lemma nest2 : forall n m : nat, nested_lam n m = n * m.
+intros n m. pattern n, m in |- *. 
+apply nested_lam_ind; simpl in |- *; intros; auto.
 Qed.
 
  
-Fixpoint plus_x_not_five'' [n : nat] : nat ->  nat :=
- [m : nat]  let x = (nat_equal_bool m (S (S (S (S (S O)))))) in
-              let y = O in
-                Cases n of
-                  O => y
-                 | (S q) =>
-                     let recapp = (plus_x_not_five'' q m) in
-                       Cases x of true => (S recapp) | false => (S recapp) end
-                end.
+Fixpoint essai (x : nat) (p : nat * nat) {struct x} : nat :=
+  let (n, m) := p in
+  match n with
+  | O => 0
+  | S q => match x with
+           | O => 1
+           | S r => S (essai r (q, m))
+           end
+  end.
  
-Lemma notplusfive'':
- (x, y : nat) y = (S (S (S (S (S O))))) ->  (plus_x_not_five'' x y) = x.
-Intros a b.
-Unfold plus_x_not_five''.
-(Functional Induction plus_x_not_five'' a b); Intros hyp; Simpl; Auto.
-Qed.
- 
-Lemma iseq_eq: (n, m : nat) n = m ->  (nat_equal_bool n m) = true.
-Intros n m.
-Unfold nat_equal_bool.
-(Functional Induction nat_equal_bool n m); Simpl; Intros hyp; Auto.
-Inversion hyp.
-Inversion hyp.
-Qed.
- 
-Lemma iseq_eq': (n, m : nat) (nat_equal_bool n m) = true ->  n = m.
-Intros n m.
-Unfold nat_equal_bool.
-(Functional Induction nat_equal_bool n m); Simpl; Intros eg; Auto.
-Inversion eg.
-Inversion eg.
-Qed.
- 
- 
-Inductive istrue : bool ->  Prop :=
-  istrue0: (istrue true) .
- 
-Lemma inf_x_plusxy': (x, y : nat)  (le x (plus x y)).
-Intros n m.
-(Functional Induction plus n m); Intros.
-Auto with arith.
-Auto with arith.
+Lemma essai_essai :
+ forall (x : nat) (p : nat * nat), let (n, m) := p in 0 < n -> 0 < essai x p.
+intros x p.
+ functional induction essai x p; intros.
+inversion H.
+simpl in |- *; try abstract auto with arith.
+simpl in |- *; try abstract auto with arith.
 Qed.
 
  
-Lemma inf_x_plusxy'': (x : nat)  (le x (plus x O)).
-Intros n.
-Unfold plus.
-(Functional Induction plus n O); Intros.
-Auto with arith.
-Apply le_n_S.
-Assumption.
+Fixpoint plus_x_not_five'' (n m : nat) {struct n} : nat :=
+  let x := nat_equal_bool m 5 in
+  let y := 0 in
+  match n with
+  | O => y
+  | S q =>
+      let recapp := plus_x_not_five'' q m in
+      match x with
+      | true => S recapp
+      | false => S recapp
+      end
+  end.
+ 
+Lemma notplusfive'' : forall x y : nat, y = 5 -> plus_x_not_five'' x y = x.
+intros a b.
+unfold plus_x_not_five'' in |- *.
+ functional induction plus_x_not_five'' a b; intros hyp; simpl in |- *; auto.
 Qed.
  
-Lemma inf_x_plusxy''': (x : nat)  (le x (plus O x)).
-Intros n.
-(Functional Induction plus O n); Intros;Auto with arith.
+Lemma iseq_eq : forall n m : nat, n = m -> nat_equal_bool n m = true.
+intros n m.
+unfold nat_equal_bool in |- *.
+ functional induction nat_equal_bool n m; simpl in |- *; intros hyp; auto.
+inversion hyp.
+inversion hyp.
+Qed.
+ 
+Lemma iseq_eq' : forall n m : nat, nat_equal_bool n m = true -> n = m.
+intros n m.
+unfold nat_equal_bool in |- *.
+ functional induction nat_equal_bool n m; simpl in |- *; intros eg; auto.
+inversion eg.
+inversion eg.
+Qed.
+ 
+ 
+Inductive istrue : bool -> Prop :=
+    istrue0 : istrue true.
+ 
+Lemma inf_x_plusxy' : forall x y : nat, x <= x + y.
+intros n m.
+ functional induction plus n m; intros.
+auto with arith.
+auto with arith.
 Qed.
 
-Fixpoint mod2 [n : nat] : nat :=
- Cases n of   O => O
-             | (S (S m)) => (S (mod2 m))
-             | _ => O end.
  
-Lemma princ_mod2: (n : nat)  (le (mod2 n) n).
-Intros n.
-(Functional Induction mod2 n); Simpl; Auto with arith.
+Lemma inf_x_plusxy'' : forall x : nat, x <= x + 0.
+intros n.
+unfold plus in |- *.
+ functional induction plus n 0; intros.
+auto with arith.
+apply le_n_S.
+assumption.
 Qed.
  
-Definition isfour : nat ->  bool :=
-   [n : nat]  Cases n of (S (S (S (S O)))) => true | _ => false end.
+Lemma inf_x_plusxy''' : forall x : nat, x <= 0 + x.
+intros n.
+ functional induction plus 0 n; intros; auto with arith.
+Qed.
+
+Fixpoint mod2 (n : nat) : nat :=
+  match n with
+  | O => 0
+  | S (S m) => S (mod2 m)
+  | _ => 0
+  end.
  
-Definition isononeorfour : nat ->  bool :=
-   [n : nat]  Cases n of   (S O) => true
-                          | (S (S (S (S O)))) => true
-                          | _ => false end.
- 
-Lemma toto'': (n : nat) (istrue (isfour n)) ->  (istrue (isononeorfour n)).
-Intros n.
-(Functional Induction isononeorfour n); Intros istr; Simpl; Inversion istr.
-Apply istrue0.
+Lemma princ_mod2 : forall n : nat, mod2 n <= n.
+intros n.
+ functional induction mod2 n; simpl in |- *; auto with arith.
 Qed.
  
-Lemma toto': (n, m : nat) n = (S (S (S (S O)))) ->  (istrue (isononeorfour n)).
-Intros n.
-(Functional Induction isononeorfour n); Intros m istr; Inversion istr.
-Apply istrue0.
+Definition isfour (n : nat) : bool :=
+  match n with
+  | S (S (S (S O))) => true
+  | _ => false
+  end.
+ 
+Definition isononeorfour (n : nat) : bool :=
+  match n with
+  | S O => true
+  | S (S (S (S O))) => true
+  | _ => false
+  end.
+ 
+Lemma toto'' : forall n : nat, istrue (isfour n) -> istrue (isononeorfour n).
+intros n.
+ functional induction isononeorfour n; intros istr; simpl in |- *;
+ inversion istr.
+apply istrue0.
 Qed.
  
-Definition ftest4 : nat -> nat ->  nat :=
-   [n, m : nat]  Cases n of
-                   O =>
-                     Cases m of O => O | (S q) => (S O) end
-                  | (S p) =>
-                      Cases m of O => O | (S r) => (S O) end
-                 end.
- 
-Lemma test4: (n, m : nat)  (le (ftest n m) (S (S O))).
-Intros n m.
-(Functional Induction ftest n m); Auto with arith.
+Lemma toto' : forall n m : nat, n = 4 -> istrue (isononeorfour n).
+intros n.
+ functional induction isononeorfour n; intros m istr; inversion istr.
+apply istrue0.
 Qed.
  
-Lemma test4': (n, m : nat)  (le (ftest4 (S n) m) (S (S O))).
-Intros n m.
-(Functional Induction ftest4 (S n) m).
-Auto with arith.
-Auto with arith.
+Definition ftest4 (n m : nat) : nat :=
+  match n with
+  | O => match m with
+         | O => 0
+         | S q => 1
+         end
+  | S p => match m with
+           | O => 0
+           | S r => 1
+           end
+  end.
+ 
+Lemma test4 : forall n m : nat, ftest n m <= 2.
+intros n m.
+ functional induction ftest n m; auto with arith.
 Qed.
  
-Definition ftest44 : nat * nat -> nat -> nat ->  nat :=
-   [x : nat * nat]
-   [n, m : nat]
-    ( Case x of [p, q : ?]  Cases n of
-                              O =>
-                                Cases m of O => O | (S q) => (S O) end
-                             | (S p) =>
-                                 Cases m of O => O | (S r) => (S O) end
-                            end end ).
- 
-Lemma test44:
- (pq : nat * nat) (n, m, o, r, s : nat)  (le (ftest44 pq n (S m)) (S (S O))).
-Intros pq n m o r s.
-(Functional Induction ftest44 pq n (S m)).
-Auto with arith.
-Auto with arith.
-Auto with arith.
-Auto with arith.
+Lemma test4' : forall n m : nat, ftest4 (S n) m <= 2.
+intros n m.
+ functional induction ftest4 (S n) m.
+auto with arith.
+auto with arith.
 Qed.
  
-Fixpoint ftest2 [n : nat] : nat ->  nat :=
- [m : nat]  Cases n of
-              O =>
-                Cases m of O => O | (S q) => O end
-             | (S p) => (ftest2 p m)
-            end.
+Definition ftest44 (x : nat * nat) (n m : nat) : nat :=
+  let (p, q) := x in
+  match n with
+  | O => match m with
+         | O => 0
+         | S q => 1
+         end
+  | S p => match m with
+           | O => 0
+           | S r => 1
+           end
+  end.
  
-Lemma test2: (n, m : nat)  (le (ftest2 n m) (S (S O))).
-Intros n m.
-(Functional Induction ftest2 n m) ; Simpl; Intros; Auto.
+Lemma test44 :
+ forall (pq : nat * nat) (n m o r s : nat), ftest44 pq n (S m) <= 2.
+intros pq n m o r s.
+ functional induction ftest44 pq n (S m).
+auto with arith.
+auto with arith.
+auto with arith.
+auto with arith.
 Qed.
  
-Fixpoint ftest3 [n : nat] : nat ->  nat :=
- [m : nat]  Cases n of
-              O => O
-             | (S p) =>
-                 Cases m of O => (ftest3 p O) | (S r) => O end
-            end.
+Fixpoint ftest2 (n m : nat) {struct n} : nat :=
+  match n with
+  | O => match m with
+         | O => 0
+         | S q => 0
+         end
+  | S p => ftest2 p m
+  end.
  
-Lemma test3: (n, m : nat)  (le (ftest3 n m) (S (S O))).
-Intros n m.
-(Functional Induction ftest3 n m).
-Intros.
-Auto.
-Intros.
-Auto.
-Intros.
-Simpl.
-Auto.
+Lemma test2 : forall n m : nat, ftest2 n m <= 2.
+intros n m.
+ functional induction ftest2 n m; simpl in |- *; intros; auto.
 Qed.
  
-Fixpoint ftest5 [n : nat] : nat ->  nat :=
- [m : nat]  Cases n of
-              O => O
-             | (S p) =>
-                 Cases m of O => (ftest5 p O) | (S r) => (ftest5 p r) end
-            end.
+Fixpoint ftest3 (n m : nat) {struct n} : nat :=
+  match n with
+  | O => 0
+  | S p => match m with
+           | O => ftest3 p 0
+           | S r => 0
+           end
+  end.
  
-Lemma test5: (n, m : nat)  (le (ftest5 n m) (S (S O))).
-Intros n m.
-(Functional Induction ftest5 n m).
-Intros.
-Auto.
-Intros.
-Auto.
-Intros.
-Simpl.
-Auto.
+Lemma test3 : forall n m : nat, ftest3 n m <= 2.
+intros n m.
+ functional induction ftest3 n m.
+intros.
+auto.
+intros.
+auto.
+intros.
+simpl in |- *.
+auto.
 Qed.
  
-Definition ftest7 : (n : nat)  nat :=
-   [n : nat]  Cases (ftest5 n O) of O => O | (S r) => O end.
+Fixpoint ftest5 (n m : nat) {struct n} : nat :=
+  match n with
+  | O => 0
+  | S p => match m with
+           | O => ftest5 p 0
+           | S r => ftest5 p r
+           end
+  end.
  
-Lemma essai7:
- (Hrec : (n : nat) (ftest5 n O) = O ->  (le (ftest7 n) (S (S O))))
- (Hrec0 : (n, r : nat) (ftest5 n O) = (S r) ->  (le (ftest7 n) (S (S O))))
- (n : nat)  (le (ftest7 n) (S (S O))).
-Intros hyp1 hyp2 n.
-Unfold ftest7.
-(Functional Induction ftest7 n); Auto.
+Lemma test5 : forall n m : nat, ftest5 n m <= 2.
+intros n m.
+ functional induction ftest5 n m.
+intros.
+auto.
+intros.
+auto.
+intros.
+simpl in |- *.
+auto.
 Qed.
  
-Fixpoint ftest6 [n : nat] : nat ->  nat :=
- [m : nat]
-  Cases n of
-    O => O
-   | (S p) =>
-       Cases (ftest5 p O) of O => (ftest6 p O) | (S r) => (ftest6 p r) end
+Definition ftest7 (n : nat) : nat :=
+  match ftest5 n 0 with
+  | O => 0
+  | S r => 0
+  end.
+ 
+Lemma essai7 :
+ forall (Hrec : forall n : nat, ftest5 n 0 = 0 -> ftest7 n <= 2)
+   (Hrec0 : forall n r : nat, ftest5 n 0 = S r -> ftest7 n <= 2) 
+   (n : nat), ftest7 n <= 2.
+intros hyp1 hyp2 n.
+unfold ftest7 in |- *.
+ functional induction ftest7 n; auto.
+Qed.
+ 
+Fixpoint ftest6 (n m : nat) {struct n} : nat :=
+  match n with
+  | O => 0
+  | S p => match ftest5 p 0 with
+           | O => ftest6 p 0
+           | S r => ftest6 p r
+           end
   end.
 
  
-Lemma princ6:
- ((n, m : nat) n = O ->  (le (ftest6 O m) (S (S O)))) ->
- ((n, m, p : nat)
-  (le (ftest6 p O) (S (S O))) ->
-  (ftest5 p O) = O -> n = (S p) ->  (le (ftest6 (S p) m) (S (S O)))) ->
- ((n, m, p, r : nat)
-  (le (ftest6 p r) (S (S O))) ->
-  (ftest5 p O) = (S r) -> n = (S p) ->  (le (ftest6 (S p) m) (S (S O)))) ->
- (x, y : nat)  (le (ftest6 x y) (S (S O))).
-Intros hyp1 hyp2 hyp3 n m.
-Generalize hyp1 hyp2 hyp3.
-Clear hyp1 hyp2 hyp3.
-(Functional Induction ftest6 n m);Auto.
+Lemma princ6 :
+ (forall n m : nat, n = 0 -> ftest6 0 m <= 2) ->
+ (forall n m p : nat,
+  ftest6 p 0 <= 2 -> ftest5 p 0 = 0 -> n = S p -> ftest6 (S p) m <= 2) ->
+ (forall n m p r : nat,
+  ftest6 p r <= 2 -> ftest5 p 0 = S r -> n = S p -> ftest6 (S p) m <= 2) ->
+ forall x y : nat, ftest6 x y <= 2.
+intros hyp1 hyp2 hyp3 n m.
+generalize hyp1 hyp2 hyp3.
+clear hyp1 hyp2 hyp3.
+ functional induction ftest6 n m; auto.
 Qed.
  
-Lemma essai6: (n, m : nat)  (le (ftest6 n m) (S (S O))).
-Intros n m.
-Unfold ftest6.
-(Functional Induction ftest6 n m); Simpl; Auto.
+Lemma essai6 : forall n m : nat, ftest6 n m <= 2.
+intros n m.
+unfold ftest6 in |- *.
+ functional induction ftest6 n m; simpl in |- *; auto.
 Qed.
 
 

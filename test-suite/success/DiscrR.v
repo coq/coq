@@ -1,41 +1,41 @@
-Require Reals.
-Require DiscrR.
+Require Import Reals.
+Require Import DiscrR.
 
-Lemma ex0: ``1<>0``.
+Lemma ex0 : 1%R <> 0%R.
 Proof.
-  DiscrR.
-Save.
+  discrR.
+Qed.
 
-Lemma ex1: ``0<>2``.
+Lemma ex1 : 0%R <> 2%R.
 Proof.
-  DiscrR.
-Save.
-Lemma ex2: ``4<>3``.
+  discrR.
+Qed.
+Lemma ex2 : 4%R <> 3%R.
 Proof.
-  DiscrR.
-Save.
+  discrR.
+Qed.
 
-Lemma ex3: ``3<>5``.
+Lemma ex3 : 3%R <> 5%R.
 Proof.
-  DiscrR.
-Save.
+  discrR.
+Qed.
 
-Lemma ex4: ``-1<>0``.
+Lemma ex4 : (-1)%R <> 0%R.
 Proof.
-  DiscrR.
-Save.
+  discrR.
+Qed.
 
-Lemma ex5: ``-2<>-3``.
+Lemma ex5 : (-2)%R <> (-3)%R.
 Proof.
-  DiscrR.
-Save.
+  discrR.
+Qed.
 
-Lemma ex6: ``8<>-3``.
+Lemma ex6 : 8%R <> (-3)%R.
 Proof.
-  DiscrR.
-Save.
+  discrR.
+Qed.
 
-Lemma ex7: ``-8<>3``.
+Lemma ex7 : (-8)%R <> 3%R.
 Proof.
-  DiscrR.
-Save.
+  discrR.
+Qed.

@@ -4,5 +4,6 @@
    S.n to keep n accessible... *)
 
 Section S.
-Variable n:nat.
-Inductive P : Set := n : P.
+Variable n : nat.
+Inductive P : Set :=
+    n : P.

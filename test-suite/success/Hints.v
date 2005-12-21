@@ -2,47 +2,47 @@
 (* Checks that qualified names are accepted *)
 
 (* New-style syntax *)
-Hint h1 : core arith := Resolve Logic.refl_equal.
-Hint h2 := Immediate Logic.trans_equal.
-Hint h3 : core := Unfold Logic.sym_equal.
-Hint h4 : foo bar := Constructors Logic.eq.
-Hint h5 : foo bar := Extern 3 (eq ? ? ?) Apply Logic.refl_equal.
+Hint Resolve refl_equal: core arith.
+Hint Immediate trans_equal.
+Hint Unfold sym_equal: core.
+Hint Constructors eq: foo bar.
+Hint Extern 3 (_ = _) => apply refl_equal: foo bar.
 
 (* Old-style syntax *)
-Hints Resolve Coq.Init.Logic.refl_equal Coq.Init.Logic.sym_equal.
-Hints Resolve Coq.Init.Logic.refl_equal Coq.Init.Logic.sym_equal : foo.
-Hints Immediate Coq.Init.Logic.refl_equal Coq.Init.Logic.sym_equal.
-Hints Immediate Coq.Init.Logic.refl_equal Coq.Init.Logic.sym_equal : foo.
-Hints Unfold Coq.Init.Datatypes.fst Coq.Init.Logic.sym_equal.
-Hints Unfold Coq.Init.Datatypes.fst Coq.Init.Logic.sym_equal : foo.
+Hint Resolve refl_equal sym_equal.
+Hint Resolve refl_equal sym_equal: foo.
+Hint Immediate refl_equal sym_equal.
+Hint Immediate refl_equal sym_equal: foo.
+Hint Unfold fst sym_equal.
+Hint Unfold fst sym_equal: foo.
 
 (* What's this stranged syntax ? *)
-HintDestruct Conclusion h6 (le ? ?) 4 [ Fun H -> Apply H ].
-HintDestruct Discardable Hypothesis h7 (le ? ?) 4 [ Fun H -> Apply H ].
-HintDestruct Hypothesis h8 (le ? ?) 4 [ Fun H -> Apply H ].
+Hint Destruct h6 := 4 Conclusion (_ <= _) => fun H => apply H.
+Hint Destruct h7 := 4 Discardable Hypothesis (_ <= _) => fun H => apply H.
+Hint Destruct h8 := 4 Hypothesis (_ <= _) => fun H => apply H.
 
 (* Checks that local names are accepted *)
 Section A.
-  Remark Refl : (A:Set)(x:A)x=x. 
+  Remark Refl : forall (A : Set) (x : A), x = x. 
   Proof refl_equal.
   Definition Sym := sym_equal.
-  Local Trans := trans_equal.
+  Let Trans := trans_equal.
  
-  Hint h1 : foo := Resolve Refl.
-  Hint h2 : bar := Resolve Sym.
-  Hint h3 : foo2 := Resolve Trans.
+  Hint Resolve Refl: foo.
+  Hint Resolve Sym: bar.
+  Hint Resolve Trans: foo2.
 
-  Hint h2 := Immediate Refl.
-  Hint h2 := Immediate Sym.
-  Hint h2 := Immediate Trans.
+  Hint Immediate Refl.
+  Hint Immediate Sym.
+  Hint Immediate Trans.
 
-  Hint h3 := Unfold Refl.
-  Hint h3 := Unfold Sym.
-  Hint h3 := Unfold Trans.
+  Hint Unfold Refl.
+  Hint Unfold Sym.
+  Hint Unfold Trans.
 
-  Hints Resolve Sym Trans Refl.
-  Hints Immediate Sym Trans Refl.
-  Hints Unfold Sym Trans Refl.
+  Hint Resolve Sym Trans Refl.
+  Hint Immediate Sym Trans Refl.
+  Hint Unfold Sym Trans Refl.
 
 End A.
 

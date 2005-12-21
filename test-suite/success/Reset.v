@@ -1,7 +1,7 @@
 (* Check Reset Section *)
 
 Section A.
-Definition B:=Prop.
+Definition B := Prop.
 End A.
 
 Reset A.

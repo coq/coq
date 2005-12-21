@@ -1,5 +1,7 @@
 (* Check all variables are different in a Context *)
-Tactic Definition X := Match Context With [ x:?; x:? |- ? ] -> Apply x.
-Goal True->True->True.
-Intros.
+Ltac X := match goal with
+          | x:_,x:_ |- _ => apply x
+          end.
+Goal True -> True -> True.
+intros.
 X.
