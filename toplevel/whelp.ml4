@@ -20,10 +20,14 @@ open Environ
 open Rawterm
 open Libnames
 open Nametab
+open Termops
+open Detyping
 open Constrintern
 open Dischargedhypsmap
 open Command
-open Detyping
+open Pfedit
+open Refiner
+open Tacmach
 
 (* Coq interface to the Whelp query engine developed at 
    the University of Bologna *)
@@ -53,7 +57,7 @@ let uri_of_dirpath dir =
 
 let error_whelp_unknown_reference ref =
   let qid = Nametab.shortest_qualid_of_global Idset.empty ref in
-  error ("Unknown Whelp reference: " ^ string_of_qualid qid)
+  error ("Definitions of the current session not supported in Whelp: " ^ string_of_qualid qid)
 
 let uri_of_repr_kn ref (mp,dir,l) = 
   match mp with
@@ -151,14 +155,14 @@ let send_whelp req s =
   let command = (fst browser_cmd_fmt) ^ url ^ (snd browser_cmd_fmt) in
   let _ = run_command (fun x -> x) print_string command in ()
 
-let whelp_constr env req c =
+let whelp_constr req env c =
   let c = detype (false,env) [whelm_special] [] c in
   send_whelp req (make_string uri_of_constr c)
 
 let whelp_constr_expr req c =
   let (sigma,env)= get_current_context () in
-  let _,c = interp_openconstr_gen sigma env ([],[]) c None in
-  whelp_constr env req c
+  let _,c = interp_open_constr sigma env c in
+  whelp_constr req env c
 
 let whelp_locate s =
   send_whelp "locate" s
@@ -173,6 +177,10 @@ let locate_inductive r =
     | _ -> user_err_loc (loc,"",str "Inductive type expected")
   with Not_found -> error_global_not_found_loc loc qid
 
+let on_goal f =
+  let gls = nth_goal_of_pftreestate 1 (get_pftreestate ()) in
+  f (Global.env()) (it_mkNamedProd_or_LetIn (pf_concl gls) (pf_hyps gls))
+
 type whelp_request =
   | Locate of string
   | Elim of inductive
@@ -181,11 +189,10 @@ type whelp_request =
 let whelp = function
   | Locate s -> whelp_locate s
   | Elim ind -> whelp_elim ind
-  | Constr (s,env,c) -> whelp_constr env s c
+  | Constr (s,env,c) -> whelp_constr s env c
 
 VERNAC ARGUMENT EXTEND whelp_constr_request
 | [ "Match" ] -> [ "match" ]
-| [ "Hint" ] -> [ "hint" ]
 | [ "Instance" ] -> [ "instance" ]
 END
 
@@ -194,4 +201,9 @@ VERNAC COMMAND EXTEND Whelp
 | [ "Whelp" "Locate" preident(s) ] -> [ whelp_locate s ] 
 | [ "Whelp" "Elim" global(r) ] -> [ whelp_elim (locate_inductive r) ] 
 | [ "Whelp" whelp_constr_request(req) constr(c) ] -> [ whelp_constr_expr req c]
+END
+
+VERNAC COMMAND EXTEND WhelpHint
+| [ "Whelp" "Hint" constr(c) ] -> [ whelp_constr_expr "hint" c ] 
+| [ "Whelp" "Hint" ] -> [ on_goal (whelp_constr "hint") ] 
 END
