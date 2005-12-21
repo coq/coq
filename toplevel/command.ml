@@ -42,19 +42,19 @@ open Notation
 let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,a,b))
 let mkProdCit = List.fold_right (fun (x,a) b -> mkProdC(x,a,b))
 
-let rec abstract_rawconstr c = function
+let rec abstract_constr_expr c = function
   | [] -> c
-  | LocalRawDef (x,b)::bl -> mkLetInC(x,b,abstract_rawconstr c bl)
+  | LocalRawDef (x,b)::bl -> mkLetInC(x,b,abstract_constr_expr c bl)
   | LocalRawAssum (idl,t)::bl ->
       List.fold_right (fun x b -> mkLambdaC([x],t,b)) idl
-        (abstract_rawconstr c bl)
+        (abstract_constr_expr c bl)
 
-let rec generalize_rawconstr c = function
+let rec generalize_constr_expr c = function
   | [] -> c
-  | LocalRawDef (x,b)::bl -> mkLetInC(x,b,generalize_rawconstr c bl)
+  | LocalRawDef (x,b)::bl -> mkLetInC(x,b,generalize_constr_expr c bl)
   | LocalRawAssum (idl,t)::bl ->
       List.fold_right (fun x b -> mkProdC([x],t,b)) idl
-        (generalize_rawconstr c bl)
+        (generalize_constr_expr c bl)
 
 let rec length_of_raw_binders = function
   | [] -> 0
@@ -103,8 +103,8 @@ let constant_entry_of_com (bl,com,comtypopt,opacity,boxed) =
   let env = Global.env() in
   match comtypopt with
       None -> 
-	let b = abstract_rawconstr com bl in
-	let j = judgment_of_rawconstr sigma env b in
+	let b = abstract_constr_expr com bl in
+	let j = interp_constr_judgment sigma env b in
 	{ const_entry_body = j.uj_val;
 	  const_entry_type = Some (refresh_universes j.uj_type);
           const_entry_opaque = opacity;
@@ -112,7 +112,7 @@ let constant_entry_of_com (bl,com,comtypopt,opacity,boxed) =
     | Some comtyp ->
 	(* We use a cast to avoid troubles with evars in comtyp *)
 	(* that can only be resolved knowing com *)
-	let b = abstract_rawconstr (mkCastC (com,DEFAULTcast,comtyp)) bl in
+	let b = abstract_constr_expr (mkCastC (com,DEFAULTcast,comtyp)) bl in
 	let (body,typ) = destSubCast (interp_constr sigma env b) in
 	{ const_entry_body = body;
 	  const_entry_type = Some typ;
@@ -190,7 +190,7 @@ let declare_one_assumption is_coe (local,kind) c (_,ident) =
   if is_coe then Class.try_add_new_coercion r local
 
 let declare_assumption idl is_coe k bl c =
-  let c = generalize_rawconstr c bl in
+  let c = generalize_constr_expr c bl in
   let c = interp_type Evd.empty (Global.env()) c in
   List.iter (declare_one_assumption is_coe k c) idl
 
@@ -279,26 +279,9 @@ let interp_mutual lparams lnamearconstrs finite =
       [] lnamearconstrs in
   if not (list_distinct allnames) then
     error "Two inductive objects have the same name";
-  let sigma = Evd.empty 
-  and env0 = Global.env() in
-  let env_params, params =
-    List.fold_left
-      (fun (env, params) d -> match d with
-	| LocalRawAssum ([_,na],(CHole _ as t)) ->
-	    let t = interp_binder sigma env na t in
-	    let d = (na,None,t) in
-	    (push_rel d env, d::params)
-	| LocalRawAssum (nal,t) ->
-	    let t = interp_type sigma env t in
-	    let ctx = list_map_i (fun i (_,na) -> (na,None,lift i t)) 0 nal in
-	    let ctx = List.rev ctx in
-	    (push_rel_context ctx env, ctx@params)
-	| LocalRawDef ((_,na),c) ->
-	    let c = judgment_of_rawconstr sigma env c in
-	    let d = (na, Some c.uj_val, c.uj_type) in
-	    (push_rel d env,d::params))
-      (env0,[]) lparams
-  in
+  let sigma = Evd.empty and env0 = Global.env() in
+  let env_params, params = interp_context sigma env0 lparams in
+
   (* Builds the params of the inductive entry *)
   let params' =
     List.map (fun (na,b,t) ->
@@ -364,8 +347,7 @@ let interp_mutual lparams lnamearconstrs finite =
          (* Interpret the constructor types *)
          let constrs =
 	   List.map 
-	     (interp_type_with_implicits sigma ind_env_params
-	       (paramassums,ind_impls))
+	     (interp_type sigma ind_env_params ~impls:(paramassums,ind_impls))
 	     bodies
 	 in
 
@@ -482,7 +464,7 @@ let build_recursive (lnameargsardef:(fixpoint_expr *decl_notation) list)
   let (rec_sign,rec_impls,arityl) = 
     List.fold_left 
       (fun (env,impls,arl) ((recname,_,bl,arityc,_),_) -> 
-        let arityc = generalize_rawconstr arityc bl in
+        let arityc = generalize_constr_expr arityc bl in
         let arity = interp_type sigma env0 arityc in
 	let impl = 
 	  if Impargs.is_implicit_args()
@@ -506,9 +488,9 @@ let build_recursive (lnameargsardef:(fixpoint_expr *decl_notation) list)
 	 Metasyntax.add_notation_interpretation df rec_impls c None) notations;
 	List.map2
 	  (fun ((_,_,bl,_,def),_) arity ->
-            let def = abstract_rawconstr def bl in
-            interp_casted_constr_with_implicits 
-	      sigma rec_sign rec_impls def arity)
+            let def = abstract_constr_expr def bl in
+            interp_casted_constr sigma rec_sign ~impls:([],rec_impls)
+              def arity)
           lnameargsardef arityl
       with e ->
 	States.unfreeze fs; raise e in
@@ -559,11 +541,10 @@ let build_corecursive lnameardef boxed =
     try 
       List.fold_left 
         (fun (env,arl) (recname,bl,arityc,_) -> 
-           let arityc = generalize_rawconstr arityc bl in
-           let arj = type_judgment_of_rawconstr Evd.empty env0 arityc in
-	   let arity = arj.utj_val in
+           let arityc = generalize_constr_expr arityc bl in
+           let arity = interp_type Evd.empty env0 arityc in
            let _ = declare_variable recname
-	     (Lib.cwd(),SectionLocalAssum arj.utj_val,IsAssumption Definitional) in
+	     (Lib.cwd(),SectionLocalAssum arity,IsAssumption Definitional) in
            (Environ.push_named (recname,None,arity) env, (arity::arl)))
         (env0,[]) lnameardef
     with e -> 
@@ -572,10 +553,10 @@ let build_corecursive lnameardef boxed =
   let recdef =
     try 
       List.map (fun (_,bl,arityc,def) ->
-        let arityc = generalize_rawconstr arityc bl in
-        let def = abstract_rawconstr def bl in
+        let arityc = generalize_constr_expr arityc bl in
+        let def = abstract_constr_expr def bl in
 	let arity = interp_constr sigma rec_sign arityc in
-                  interp_casted_constr sigma rec_sign def arity)
+        interp_casted_constr sigma rec_sign def arity)
         lnameardef
     with e -> 
       States.unfreeze fs; raise e 
@@ -656,7 +637,7 @@ let start_proof_com sopt kind (bl,t) hook =
  	  (Pfedit.get_all_proof_names ())
   in
   let env = Global.env () in
-  let c = interp_type Evd.empty env (generalize_rawconstr t bl) in
+  let c = interp_type Evd.empty env (generalize_constr_expr t bl) in
   let _ = Typeops.infer_type env c in
   start_proof id kind c hook
 

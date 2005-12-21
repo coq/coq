@@ -956,13 +956,16 @@ and pretype_type valcon env isevars lvar = function
                 (loc_of_rawconstr c) env (evars_of !isevars) tj.utj_val v
 
 
-let unsafe_infer tycon isevars env lvar constr =
-  let j = pretype tycon env isevars lvar constr in
-  j_nf_evar (evars_of !isevars) j
+type typing_constraint = OfType of types option | IsType
 
-let unsafe_infer_type valcon isevars env lvar constr =
-  let tj = pretype_type valcon env isevars lvar constr in
-  tj_nf_evar (evars_of !isevars) tj
+let pretype_gen isevars env lvar kind c =
+  let c' = match kind with
+  | OfType exptyp ->
+    let tycon = match exptyp with None -> empty_tycon | Some t -> mk_tycon t in
+    (pretype tycon env isevars lvar c).uj_val
+  | IsType ->
+    (pretype_type empty_valcon env isevars lvar c).utj_val in
+  nf_evar (evars_of !isevars) c'
 
 (* [check_evars] fails if some unresolved evar remains *)
 (* it assumes that the defined existentials have already been substituted
@@ -998,52 +1001,43 @@ let check_evars env initial_sigma isevars c =
        retourne aussi le nouveau sigma...
 *)
 
+let understand_judgment sigma env c =
+  let isevars = ref (create_evar_defs sigma) in
+  let j = pretype empty_tycon env isevars ([],[]) c in
+  let j = j_nf_evar (evars_of !isevars) j in
+  check_evars env sigma isevars (mkCast(j.uj_val,DEFAULTcast, j.uj_type));
+  j
+
 (* Raw calls to the unsafe inference machine: boolean says if we must
    fail on unresolved evars; the unsafe_judgment list allows us to
    extend env with some bindings *)
 
-let ise_infer_gen fail_evar sigma env lvar exptyp c =
-  let tycon = match exptyp with None -> empty_tycon | Some t -> mk_tycon t in
+let ise_pretype_gen fail_evar sigma env lvar kind c =
   let isevars = ref (create_evar_defs sigma) in
-  let j = unsafe_infer tycon isevars env lvar c in
-  if fail_evar then 
-    check_evars env sigma isevars (mkCast(j.uj_val,DEFAULTcast, j.uj_type));
-  (!isevars, j)
-
-let ise_infer_type_gen fail_evar sigma env lvar c =
-  let isevars = ref (create_evar_defs sigma) in
-  let tj = unsafe_infer_type empty_valcon isevars env lvar c in
-  if fail_evar then check_evars env sigma isevars tj.utj_val;
-  (!isevars, tj)
+  let c = pretype_gen isevars env lvar kind c in
+  if fail_evar then check_evars env sigma isevars c;
+  (!isevars, c)
 
 (** Entry points of the high-level type synthesis algorithm *)
 
 type var_map = (identifier * unsafe_judgment) list
 type unbound_ltac_var_map = (identifier * identifier option) list
 
-let understand_judgment sigma env c =
-  snd (ise_infer_gen true sigma env ([],[]) None c)
+let understand_gen kind sigma env c =
+  snd (ise_pretype_gen true sigma env ([],[]) kind c)
 
-let understand_type_judgment sigma env c =
-  snd (ise_infer_type_gen true sigma env ([],[]) c)
-
-let understand sigma env c =
-  (understand_judgment sigma env c).uj_val
+let understand sigma env ?expected_type:exptyp c =
+  snd (ise_pretype_gen true sigma env ([],[]) (OfType exptyp) c)
 
 let understand_type sigma env c =
-  (understand_type_judgment sigma env c).utj_val
+  snd (ise_pretype_gen true sigma env ([],[]) IsType c)
 
-let understand_gen_ltac sigma env lvar ~expected_type:exptyp c =
-  let evars,j = ise_infer_gen false sigma env lvar exptyp c in
-  (evars, j.uj_val)
+let understand_ltac sigma env lvar kind c =
+  ise_pretype_gen false sigma env lvar kind c
 
-let understand_gen sigma env lvar ~expected_type:exptyp c =
-  let _, c = ise_infer_gen true sigma env (lvar,[]) exptyp c in
-  c.uj_val
-
-let understand_gen_tcc sigma env lvar ~expected_type:exptyp c =
-  let evars,j = ise_infer_gen false sigma env (lvar,[]) exptyp c in
-  evars_of evars, j.uj_val
+let understand_tcc sigma env ?expected_type:exptyp c =
+  let evars,c = ise_pretype_gen false sigma env ([],[]) (OfType exptyp) c in
+  evars_of evars,c
 
 (** Miscellaneous interpretation functions *)
 

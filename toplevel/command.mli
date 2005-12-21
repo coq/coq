@@ -50,7 +50,7 @@ val build_corecursive : cofixpoint_expr list -> bool -> unit
 
 val build_scheme : (identifier located * bool * reference * rawsort) list -> unit
 
-val generalize_rawconstr : constr_expr -> local_binder list -> constr_expr
+val generalize_constr_expr : constr_expr -> local_binder list -> constr_expr
 
 val start_proof : identifier -> goal_kind -> constr ->
   declaration_hook -> unit

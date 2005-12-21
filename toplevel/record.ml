@@ -39,29 +39,12 @@ let interp_decl sigma env = function
 	| None -> c
 	| Some t -> mkCastC (c,DEFAULTcast,t)
       in
-      let j = judgment_of_rawconstr Evd.empty env c in
+      let j = interp_constr_judgment Evd.empty env c in
       (id,Some j.uj_val, j.uj_type)
 
 let typecheck_params_and_fields ps fs =
   let env0 = Global.env () in
-  let env1,newps =
-    List.fold_left
-      (fun (env,newps) d -> match d with
-	| LocalRawAssum ([_,na],(CHole _ as t)) ->
-	    let t = interp_binder Evd.empty env na t in
-	    let d = (na,None,t) in
-	    (push_rel d env, d::newps)
-	| LocalRawAssum (nal,t) ->
-	    let t = interp_type Evd.empty env t in
-	    let ctx = list_map_i (fun i (_,na) -> (na,None,lift i t)) 0 nal in
-	    let ctx = List.rev ctx in
-	    (push_rel_context ctx env, ctx@newps)
-	| LocalRawDef ((_,na),c) ->
-	    let c = judgment_of_rawconstr Evd.empty env c in
-	    let d = (na, Some c.uj_val, c.uj_type) in
-	    (push_rel d env, d::newps))
-      (env0,[]) ps
-  in
+  let env1,newps = interp_context Evd.empty env0 ps in
   let env2,newfs =
     List.fold_left
       (fun (env,newfs) d ->

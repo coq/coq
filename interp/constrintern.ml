@@ -247,7 +247,7 @@ let set_var_scope loc id (_,scopt,scopes) varscopes =
    [vars2] is the set of global variables, env is the set of variables
    abstracted until this point *)
 
-let intern_var (env,_,_ as genv) (ltacvars,vars2,vars3,_,impls) loc id =
+let intern_var (env,_,_ as genv) (ltacvars,vars2,vars3,(_,impls)) loc id =
   let (vars1,unbndltacvars) = ltacvars in
   (* Is [id] an inductive type potentially with implicit *)
   try
@@ -285,7 +285,7 @@ let intern_var (env,_,_ as genv) (ltacvars,vars2,vars3,_,impls) loc id =
     (* [id] a goal variable *)
     RVar (loc,id), [], [], []
 
-let find_appl_head_data (_,_,_,_,impls) = function
+let find_appl_head_data (_,_,_,(_,impls)) = function
   | RRef (_,ref) as x -> x,implicits_of_global ref,find_arguments_scope ref,[]
   | x -> x,[],[],[]
 
@@ -334,7 +334,7 @@ let intern_reference env lvar = function
 	else raise e
 
 let interp_reference vars r =
-  let (r,_,_,_) = intern_reference (Idset.empty,None,[]) (vars,[],[],[],[]) r 
+  let r,_,_,_ = intern_reference (Idset.empty,None,[]) (vars,[],[],([],[])) r 
   in r
 
 let apply_scope_env (ids,_,scopes) = function
@@ -628,7 +628,7 @@ let locate_if_isevar loc na = function
       with Not_found -> RHole (loc, Evd.BinderType na))
   | x -> x
 
-let check_hidden_implicit_parameters id (_,_,_,indnames,_) =
+let check_hidden_implicit_parameters id (_,_,_,(indnames,_)) =
   if List.mem id indnames then
     errorlabstrm "" (str "A parameter or name of an inductive type " ++
     pr_id id ++ str " must not be used as a bound variable in the type \
@@ -919,7 +919,7 @@ let internalise sigma env allow_soapp lvar c =
     | CPatVar (loc, (false,n)) when Options.do_translate () ->
 	RVar (loc, n)
     | CPatVar (loc, (false,n)) ->
-        if List.mem n (fst (let (a,_,_,_,_) = lvar in a)) & !Options.v7 then
+        if List.mem n (fst (let (a,_,_,_) = lvar in a)) & !Options.v7 then
 	  RVar (loc, n)
 	else
           error_unbound_patvar loc n
@@ -1063,113 +1063,53 @@ let extract_ids env =
     (Termops.ids_of_rel_context (Environ.rel_context env))
     Idset.empty
 
-let interp_rawconstr_gen_with_implicits isarity sigma env (indpars,impls) allow_soapp ltacvar c =
+let intern_gen isarity sigma env
+               ?(impls=([],[])) ?(allow_soapp=false) ?(ltacvars=([],[]))
+               c =
   let tmp_scope = if isarity then Some Notation.type_scope else None in
   internalise sigma (extract_ids env, tmp_scope,[])
-    allow_soapp (ltacvar,Environ.named_context env, [], indpars, impls) c
+    allow_soapp (ltacvars,Environ.named_context env, [], impls) c
 
-let interp_rawconstr_gen isarity sigma env allow_soapp ltacvar c =
-  interp_rawconstr_gen_with_implicits isarity sigma env ([],[]) allow_soapp ltacvar c
+let intern_constr sigma env c = intern_gen true sigma env c 
 
-let interp_rawconstr sigma env c =
-  interp_rawconstr_gen false sigma env false ([],[]) c
-
-let interp_rawtype sigma env c =
-  interp_rawconstr_gen true sigma env false ([],[]) c
-
-let interp_rawtype_with_implicits sigma env impls c =
-  interp_rawconstr_gen_with_implicits true sigma env impls false ([],[]) c
-
-let interp_rawconstr_with_implicits sigma env vars impls c =
-  interp_rawconstr_gen_with_implicits false sigma env ([],impls) false
-    (vars,[]) c
-
-(*
-(* The same as interp_rawconstr but with a list of variables which must not be
-   globalized *)
-
-let interp_rawconstr_wo_glob sigma env lvar c =
-  interp_rawconstr_gen sigma env [] (Some []) lvar c
-*)
+let intern_ltac isarity ltacvars sigma env c =
+  intern_gen isarity sigma env ~ltacvars:ltacvars c
 
 (*********************************************************************)
 (* Functions to parse and interpret constructions *)
 
+let interp_gen kind sigma env 
+               ?(impls=([],[])) ?(allow_soapp=false) ?(ltacvars=([],[]))
+               c =
+  understand_gen kind sigma env 
+    (intern_gen (kind=IsType) ~impls ~allow_soapp ~ltacvars sigma env c)
+
 let interp_constr sigma env c =
-  understand sigma env (interp_rawconstr sigma env c)
+  interp_gen (OfType None) sigma env c 
 
-let interp_openconstr sigma env c =
-  understand_gen_tcc sigma env [] None (interp_rawconstr sigma env c)
+let interp_type sigma env ?(impls=([],[])) c =
+  interp_gen IsType sigma env ~impls c
 
-(*
-let interp_casted_openconstr sigma env c typ =
-  understand_gen_tcc sigma env [] (Some typ) (interp_rawconstr sigma env c)
-*)
+let interp_casted_constr sigma env ?(impls=([],[])) c typ =
+  interp_gen (OfType (Some typ)) sigma env ~impls c 
 
-let interp_type sigma env c =
-  understand_type sigma env (interp_rawtype sigma env c)
+let interp_open_constr sigma env c =
+  understand_tcc sigma env (intern_constr sigma env c)
 
-let interp_binder sigma env na t =
-  let t = interp_rawtype sigma env t in
-  understand_type sigma env (locate_if_isevar (loc_of_rawconstr t) na t)
-
-let interp_type_with_implicits sigma env impls c =
-  understand_type sigma env (interp_rawtype_with_implicits sigma env impls c)
-
-let judgment_of_rawconstr sigma env c =
-  understand_judgment sigma env (interp_rawconstr sigma env c)
-
-let type_judgment_of_rawconstr sigma env c =
-  understand_type_judgment sigma env (interp_rawconstr sigma env c)
-
-(* To retype a list of key*constr with undefined key *)
-let retype_list sigma env lst =
-  List.fold_right (fun (x,csr) a ->
-    try (x,Retyping.get_judgment_of env sigma csr)::a with
-    | Anomaly _ -> a) lst []
-
-(*  List.map (fun (x,csr) -> (x,Retyping.get_judgment_of env sigma csr)) lst*)
+let interp_constr_judgment sigma env c =
+  understand_judgment sigma env (intern_constr sigma env c)
 
 type ltac_sign = identifier list * unbound_ltac_var_map
-type ltac_env = (identifier * Term.constr) list * unbound_ltac_var_map
-
-(* Interprets a constr according to two lists *)
-(* of instantiations (variables and metas)    *)
-(* Note: typ is retyped *)
-let interp_constr_gen sigma env (ltacvars,unbndltacvars) c exptyp =
-  let c = interp_rawconstr_gen false sigma env false
-    (List.map fst ltacvars,unbndltacvars) c in
-  let typs = retype_list sigma env ltacvars in
-  understand_gen_ltac sigma env (typs,[]) exptyp c
-
-(*Interprets a casted constr according to two lists of instantiations
-  (variables and metas)*)
-let interp_openconstr_gen sigma env (ltacvars,unbndltacvars) c exptyp =
-  let c = interp_rawconstr_gen false sigma env false
-    (List.map fst ltacvars,unbndltacvars) c in
-  let typs = retype_list sigma env ltacvars in
-  understand_gen_tcc sigma env typs exptyp c
-
-let interp_casted_constr sigma env c typ = 
-  understand_gen sigma env [] (Some typ) (interp_rawconstr sigma env c)
-
-let interp_casted_constr_with_implicits sigma env impls c typ =
-  understand_gen sigma env [] (Some typ) 
-    (interp_rawconstr_with_implicits sigma env [] impls c)
-
-let interp_constrpattern_gen sigma env ltacvar c =
-  let c = interp_rawconstr_gen false sigma env true (ltacvar,[]) c in
-  pattern_of_rawconstr c
 
 let interp_constrpattern sigma env c =
-  interp_constrpattern_gen sigma env [] c
+  pattern_of_rawconstr (intern_constr sigma env c)
 
 let interp_aconstr impls vars a =
   let env = Global.env () in
   (* [vl] is intended to remember the scope of the free variables of [a] *)
   let vl = List.map (fun id -> (id,ref None)) vars in
   let c = internalise Evd.empty (extract_ids env, None, [])
-    false (([],[]),Environ.named_context env,vl,[],impls) a in
+    false (([],[]),Environ.named_context env,vl,([],impls)) a in
   (* Translate and check that [c] has all its free variables bound in [vars] *)
   let a = aconstr_of_rawconstr vars c in
   (* Returns [a] and the ordered list of variables with their scopes *)
@@ -1177,6 +1117,33 @@ let interp_aconstr impls vars a =
   List.map
     (fun (id,r) -> (id,match !r with None -> None,[] | Some (a,l) -> a,l)) vl,
   a
+
+(* Interpret binders and contexts  *)
+
+let interp_binder sigma env na t =
+  let t = intern_gen true sigma env t in
+  understand_type sigma env (locate_if_isevar (loc_of_rawconstr t) na t)
+
+open Environ
+open Term
+
+let interp_context sigma env params = 
+  List.fold_left
+    (fun (env,params) d -> match d with
+      | LocalRawAssum ([_,na],(CHole _ as t)) ->
+	  let t = interp_binder sigma env na t in
+	  let d = (na,None,t) in
+	  (push_rel d env, d::params)
+      | LocalRawAssum (nal,t) ->
+	  let t = interp_type sigma env t in
+	  let ctx = list_map_i (fun i (_,na) -> (na,None,lift i t)) 0 nal in
+	  let ctx = List.rev ctx in
+	  (push_rel_context ctx env, ctx@params)
+      | LocalRawDef ((_,na),c) ->
+	  let c = interp_constr_judgment sigma env c in
+	  let d = (na, Some c.uj_val, c.uj_type) in
+	  (push_rel d env,d::params))
+    (env,[]) params
 
 (**********************************************************************)
 (* Locating reference, possibly via an abbreviation *)

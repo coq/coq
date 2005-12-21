@@ -670,11 +670,10 @@ let transf istype env iscast bl c =
   if Options.do_translate() then
     let r = 
       Constrintern.for_grammar
-        (Constrintern.interp_rawconstr_gen istype Evd.empty env false ([],[]))
-	c' in
+        (Constrintern.intern_gen istype Evd.empty env) c' in
     begin try
       (* Try to infer old case and type annotations *)
-      let _ = Pretyping.understand_gen_tcc Evd.empty env [] None r in 
+      let _ = Pretyping.understand_tcc Evd.empty env r in 
       (*msgerrnl (str "Typage OK");*) ()
     with e -> (*msgerrnl (str "Warning: can't type")*) () end;
     let c =
@@ -716,8 +715,7 @@ let transf_pattern env c =
   if Options.do_translate() then
     Constrextern.extern_rawconstr (Termops.vars_of_env env)
       (Constrintern.for_grammar
-	(Constrintern.interp_rawconstr_gen false Evd.empty env true ([],[]))
-	c)
+	(Constrintern.intern_gen false ~allow_soapp:true Evd.empty env) c)
   else c
 
 let pr_pattern c = pr lsimple (transf_pattern (Global.env()) c)

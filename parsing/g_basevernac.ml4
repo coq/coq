@@ -504,7 +504,7 @@ GEXTEND Gram
     [ [ "<<" ; a = Prim.ast; ">>" -> a 
       | a = Constr.constr -> 
 	  Termast.ast_of_rawconstr 
-	  (Constrintern.interp_rawconstr Evd.empty (Global.env()) a)
+	  (Constrintern.intern_constr Evd.empty (Global.env()) a)
     ] ]
   ; 
   action:

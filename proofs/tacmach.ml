@@ -79,10 +79,6 @@ let pf_interp_constr gls c =
   let evc = project gls in 
   Constrintern.interp_constr evc (pf_env gls) c
 
-let pf_interp_openconstr gls c =
-  let evc = project gls in 
-  Constrintern.interp_openconstr evc (pf_env gls) c
-
 let pf_interp_type gls c =
   let evc = project gls in 
   Constrintern.interp_type evc (pf_env gls) c

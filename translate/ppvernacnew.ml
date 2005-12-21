@@ -660,7 +660,7 @@ let rec pr_vernac = function
 		in let ctx = List.rev ctx in
 		(Environ.push_rel_context ctx env, ctx@params)
 	    | LocalRawDef ((_,na),c) ->
-		let c = Constrintern.judgment_of_rawconstr sigma env c in
+		let c = Constrintern.interp_constr_judgment sigma env c in
 		let d = (na, Some c.Environ.uj_val, c.Environ.uj_type) in
 		(Environ.push_rel d env,d::params))
 	  (env0,[]) lparams in

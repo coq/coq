@@ -28,8 +28,8 @@ let w_refine env ev rawc evd =
   let e_info = Evd.map (evars_of evd) ev in
   let env = Evd.evar_env e_info in
   let sigma,typed_c = 
-    Pretyping.understand_gen_tcc (evars_of evd) env [] 
-      (Some e_info.evar_concl) rawc in
+    Pretyping.understand_tcc (evars_of evd) env 
+      ~expected_type:e_info.evar_concl rawc in
   evar_define ev typed_c (evars_reset_evd sigma evd)
 
 (* vernac command Existential *)
@@ -43,7 +43,7 @@ let instantiate_pf_com n com pfts =
     with Failure _ -> 
       error "not so many uninstantiated existential variables" in 
   let env = Evd.evar_env evi in
-  let rawc = Constrintern.interp_rawconstr sigma env com in 
+  let rawc = Constrintern.intern_constr sigma env com in 
   let evd = create_evar_defs sigma in
   let evd' = w_refine env sp rawc evd in
   change_constraints_pftreestate (evars_of evd') pfts
