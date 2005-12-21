@@ -593,8 +593,8 @@ interp/constrextern.cmx: lib/util.cmx kernel/univ.cmx interp/topconstr.cmx \
     pretyping/classops.cmx lib/bigint.cmx interp/constrextern.cmi 
 interp/constrintern.cmo: lib/util.cmi interp/topconstr.cmi \
     pretyping/termops.cmi kernel/term.cmi interp/syntax_def.cmi \
-    kernel/sign.cmi pretyping/retyping.cmi interp/reserve.cmi \
-    pretyping/recordops.cmi pretyping/rawterm.cmi pretyping/pretyping.cmi \
+    kernel/sign.cmi interp/reserve.cmi pretyping/recordops.cmi \
+    pretyping/rawterm.cmi pretyping/pretyping.cmi \
     pretyping/pretype_errors.cmi lib/pp.cmi pretyping/pattern.cmi \
     lib/options.cmi interp/notation.cmi library/nametab.cmi kernel/names.cmi \
     library/nameops.cmi library/libnames.cmi library/lib.cmi \
@@ -603,8 +603,8 @@ interp/constrintern.cmo: lib/util.cmi interp/topconstr.cmi \
     kernel/declarations.cmi lib/bigint.cmi interp/constrintern.cmi 
 interp/constrintern.cmx: lib/util.cmx interp/topconstr.cmx \
     pretyping/termops.cmx kernel/term.cmx interp/syntax_def.cmx \
-    kernel/sign.cmx pretyping/retyping.cmx interp/reserve.cmx \
-    pretyping/recordops.cmx pretyping/rawterm.cmx pretyping/pretyping.cmx \
+    kernel/sign.cmx interp/reserve.cmx pretyping/recordops.cmx \
+    pretyping/rawterm.cmx pretyping/pretyping.cmx \
     pretyping/pretype_errors.cmx lib/pp.cmx pretyping/pattern.cmx \
     lib/options.cmx interp/notation.cmx library/nametab.cmx kernel/names.cmx \
     library/nameops.cmx library/libnames.cmx library/lib.cmx \
@@ -2445,20 +2445,24 @@ toplevel/vernacinterp.cmx: toplevel/vernacexpr.cmx lib/util.cmx \
     lib/options.cmx kernel/names.cmx library/libnames.cmx toplevel/himsg.cmx \
     parsing/extend.cmx parsing/coqast.cmx parsing/ast.cmx \
     toplevel/vernacinterp.cmi 
-toplevel/whelp.cmo: toplevel/vernacinterp.cmi lib/util.cmi kernel/term.cmi \
-    lib/system.cmi interp/syntax_def.cmi pretyping/rawterm.cmi lib/pp.cmi \
-    parsing/pcoq.cmi lib/options.cmi library/nametab.cmi kernel/names.cmi \
-    library/libnames.cmi interp/genarg.cmi parsing/extend.cmi \
-    kernel/environ.cmi parsing/egrammar.cmi library/dischargedhypsmap.cmi \
-    pretyping/detyping.cmi interp/constrintern.cmi toplevel/command.cmi \
-    toplevel/cerrors.cmi toplevel/whelp.cmi 
-toplevel/whelp.cmx: toplevel/vernacinterp.cmx lib/util.cmx kernel/term.cmx \
-    lib/system.cmx interp/syntax_def.cmx pretyping/rawterm.cmx lib/pp.cmx \
-    parsing/pcoq.cmx lib/options.cmx library/nametab.cmx kernel/names.cmx \
-    library/libnames.cmx interp/genarg.cmx parsing/extend.cmx \
-    kernel/environ.cmx parsing/egrammar.cmx library/dischargedhypsmap.cmx \
-    pretyping/detyping.cmx interp/constrintern.cmx toplevel/command.cmx \
-    toplevel/cerrors.cmx toplevel/whelp.cmi 
+toplevel/whelp.cmo: toplevel/vernacinterp.cmi lib/util.cmi \
+    pretyping/termops.cmi kernel/term.cmi proofs/tacmach.cmi lib/system.cmi \
+    interp/syntax_def.cmi proofs/refiner.cmi pretyping/rawterm.cmi lib/pp.cmi \
+    proofs/pfedit.cmi parsing/pcoq.cmi lib/options.cmi library/nametab.cmi \
+    kernel/names.cmi library/libnames.cmi library/global.cmi \
+    interp/genarg.cmi parsing/extend.cmi kernel/environ.cmi \
+    parsing/egrammar.cmi library/dischargedhypsmap.cmi pretyping/detyping.cmi \
+    interp/constrintern.cmi toplevel/command.cmi toplevel/cerrors.cmi \
+    toplevel/whelp.cmi 
+toplevel/whelp.cmx: toplevel/vernacinterp.cmx lib/util.cmx \
+    pretyping/termops.cmx kernel/term.cmx proofs/tacmach.cmx lib/system.cmx \
+    interp/syntax_def.cmx proofs/refiner.cmx pretyping/rawterm.cmx lib/pp.cmx \
+    proofs/pfedit.cmx parsing/pcoq.cmx lib/options.cmx library/nametab.cmx \
+    kernel/names.cmx library/libnames.cmx library/global.cmx \
+    interp/genarg.cmx parsing/extend.cmx kernel/environ.cmx \
+    parsing/egrammar.cmx library/dischargedhypsmap.cmx pretyping/detyping.cmx \
+    interp/constrintern.cmx toplevel/command.cmx toplevel/cerrors.cmx \
+    toplevel/whelp.cmi 
 translate/ppconstrnew.cmo: lib/util.cmi kernel/univ.cmi interp/topconstr.cmi \
     pretyping/termops.cmi kernel/term.cmi interp/syntax_def.cmi \
     pretyping/retyping.cmi pretyping/rawterm.cmi pretyping/pretyping.cmi \
