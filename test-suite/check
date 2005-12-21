@@ -3,22 +3,12 @@
 # Automatic test of Coq
 
 if [ "$1" = -byte ]; then
-  command7="../bin/coqtop.byte -translate -q -batch -load-vernac-source"
-else
-  command7="../bin/coqtop -translate -q -batch -load-vernac-source"
-fi
-
-if [ "$1" = -byte ]; then
-  command="../bin/coqtop.byte -q -batch -load-vernac-source"
-else
-  command="../bin/coqtop -q -batch -load-vernac-source"
-fi
-
-if [ "$1" = -byte ]; then
   coqtop="../bin/coqtop.byte -q -batch"
 else
   coqtop="../bin/coqtop -q -batch"
 fi
+
+command="$coqtop -load-vernac-source"
 
 # on compte le nombre de tests et de succès
 nbtests=0
@@ -30,33 +20,13 @@ test_success() {
     for f in $1/*.v; do 
 	nbtests=`expr $nbtests + 1`
 	printf "    "$f"..."
-	$command7 $f > /dev/null 2>&1
+	$command $f $2 > /dev/null 2>&1
 	if [ $? = 0 ]; then
-            mv "$f"8 tmp8.v
-            $command tmp8.v > /dev/null 2>&1
-            if [ $? = 0 ]; then
-                echo "Ok"
-                nbtestsok=`expr $nbtestsok + 1`
-            else
-                echo "V8 Error! (should be accepted)"
-            fi
-            rm tmp8.v
+	    echo "Ok"
+	    nbtestsok=`expr $nbtestsok + 1`
         else 
-	    echo "V7 Error! (should be accepted)"
+	    echo "Error! (should be accepted)"
         fi 
-    done
-    for f in $1/*.v8; do 
-	nbtests=`expr $nbtests + 1`
-	printf "    "$f"..."
-        cp $f tmp8.v
-	$command tmp8.v > /dev/null 2>&1
-        if [ $? = 0 ]; then
-            echo "Ok"
-            nbtestsok=`expr $nbtestsok + 1`
-        else
-            echo "V8 Error! (should be accepted)"
-        fi
-        rm tmp8.v
     done
 }
 
@@ -66,7 +36,7 @@ test_failure() {
     for f in $1/*.v; do 
 	nbtests=`expr $nbtests + 1`
 	printf "    "$f"..."
-	$command7 $f > /dev/null 2>&1
+	$command $f > /dev/null 2>&1
 	if [ $? != 0 ]; then 
 	    echo "Ok"
 	    nbtestsok=`expr $nbtestsok + 1`
@@ -82,31 +52,15 @@ test_output() {
 	nbtests=`expr $nbtests + 1`
 	printf "    "$f"..."
         tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`
-	$command7 $f | tail +3 > $tmpoutput 2>&1
+	$command $f 2>&1 | grep -v "Welcome to Coq" | grep -v "Skipping rcfile loading" > $tmpoutput
         foutput=`dirname $f`/`basename $f .v`.out
-        diff $tmpoutput $foutput > /dev/null
+        diff $tmpoutput $foutput >& /dev/null
 	if [ $? = 0 ]; then 
 	    echo "Ok"
 	    nbtestsok=`expr $nbtestsok + 1`
         else 
 	    echo "Error! (unexpected output)"
         fi 
-        rm $tmpoutput
-    done
-    for f in $1/*.v8; do 
-	nbtests=`expr $nbtests + 1`
-	printf "    "$f"..."
-        cp $f tmp8.v
-        tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`
-	$command tmp8.v 2>&1 | tail +3 > $tmpoutput
-        foutput=`dirname $f`/`basename $f .v8`.out8
-        if [ $? = 0 ]; then
-            echo "Ok"
-            nbtestsok=`expr $nbtestsok + 1`
-        else
-            echo "V8 Error! (unexpected output)"
-        fi
-        rm tmp8.v
         rm $tmpoutput
     done
 }
@@ -151,16 +105,24 @@ test_interactive() {
 
 # Programme principal
 
-echo "Output tests"
-test_output output
 echo "Success tests"
 test_success success
 echo "Failure tests"
 test_failure failure
+echo "Output tests"
+test_output output
 echo "Parser tests"
 test_parser parser
 echo "Interactive tests"
 test_interactive interactive
+echo "Module tests"
+$coqtop -compile modules/Nat
+$coqtop -compile modules/plik
+test_success modules "-I modules -impredicative-set"
+
 pourcentage=`expr 100 \* $nbtestsok / $nbtests`
 echo
 echo "$nbtestsok tests passed over $nbtests, i.e. $pourcentage %"
+
+#echo "Ideal-features tests"
+#test_success ideal-features
