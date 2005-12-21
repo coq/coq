@@ -182,22 +182,9 @@ Refine (well_founded_induction
       	       	       	       	       	       (fib (pred (pred x0)) ?))
 		     end
 	 end).
-(*********
-Refine (well_founded_induction
-       nat
-       lt ?
-       [_:nat]nat
-       [x0:nat][fib:(x:nat)(lt x x0)->nat]
-         Cases x0 of 
-      	   O     => (S O)
-      	 | (S O) => (S O)
-      	 | (S (S p)) => (plus (fib (pred x0) ?)
-      	       	       	      (fib (pred (pred x0)) ?))
-	 end).
-***********)
 Exact lt_wf.
-Auto.
-Apply lt_trans with m:=(pred x0); Auto.
+Auto with arith.
+Apply lt_trans with m:=(pred x0); Auto with arith.
 Save.
 
 
