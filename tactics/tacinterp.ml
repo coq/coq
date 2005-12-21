@@ -45,6 +45,7 @@ open Mod_subst
 open Printer
 open Inductiveops
 open Syntax_def
+open Pretyping
 
 let strip_meta id = (* For Grammar v7 compatibility *)
   let s = string_of_id id in
@@ -160,11 +161,11 @@ let valueOut = function
     anomalylabstrm "valueOut" (str "Not a Dynamic ast: ")
 
 (* To embed constr in Coqast.t *)
-let constrIn t = CDynamic (dummy_loc,Pretyping.constr_in t)
+let constrIn t = CDynamic (dummy_loc,constr_in t)
 let constrOut = function
   | CDynamic (_,d) ->
     if (Dyn.tag d) = "constr" then
-      Pretyping.constr_out d
+      constr_out d
     else
       anomalylabstrm "constrOut" (str "Dynamic tag should be constr")
   | ast ->
@@ -461,18 +462,21 @@ let intern_quantified_hypothesis ist x =
      statically check the existence of a quantified hyp); thus nothing to do *)
   x
 
-let intern_constr {ltacvars=lfun; gsigma=sigma; genv=env} c =
+let intern_constr_gen isarity {ltacvars=lfun; gsigma=sigma; genv=env} c =
   let warn = if !strict_check then fun x -> x else Constrintern.for_grammar in
   let c' = 
-    warn (Constrintern.interp_rawconstr_gen false sigma env 
-      false (fst lfun,[])) c in
+    warn (Constrintern.intern_gen isarity ~ltacvars:(fst lfun,[]) sigma env) c
+  in
   begin if Options.do_translate () then try
       (* Try to infer old case and type annotations *)
-      let _ = Pretyping.understand_gen_tcc sigma env [] None c' in 
+      let _ = understand_tcc sigma env c' in 
       (* msgerrnl (str "Typage tactique OK");*)
       ()
     with e -> (*msgerrnl (str "Warning: can't type tactic");*) () end;
   (c',if !strict_check then None else Some c)
+
+let intern_constr = intern_constr_gen false
+let intern_type = intern_constr_gen true
 
 (* Globalize bindings *)
 let intern_binding ist (loc,b,c) =
@@ -558,10 +562,15 @@ let intern_inversion_strength lf ist = function
 let intern_hyp_location ist (id,occs,hl) =
   (intern_hyp ist (skip_metaid id), occs, hl)
 
+let interp_constrpattern_gen sigma env ltacvar c =
+  let c = intern_gen false ~allow_soapp:true ~ltacvars:(ltacvar,[])
+                     sigma env c in
+  pattern_of_rawconstr c
+
 (* Reads a pattern *)
 let intern_pattern evc env lfun = function
   | Subterm (ido,pc) ->
-      let (metas,pat) = interp_constrpattern_gen evc env lfun pc  in
+      let (metas,pat) = interp_constrpattern_gen evc env lfun pc in
       ido, metas, Subterm (ido,pat)
   | Term pc ->
       let (metas,pat) = interp_constrpattern_gen evc env lfun pc  in
@@ -648,20 +657,20 @@ let rec intern_atomic lf ist x =
   | TacElim (cb,cbo) ->
       TacElim (intern_constr_with_bindings ist cb,
                option_app (intern_constr_with_bindings ist) cbo)
-  | TacElimType c -> TacElimType (intern_constr ist c)
+  | TacElimType c -> TacElimType (intern_type ist c)
   | TacCase cb -> TacCase (intern_constr_with_bindings ist cb)
-  | TacCaseType c -> TacCaseType (intern_constr ist c)
+  | TacCaseType c -> TacCaseType (intern_type ist c)
   | TacFix (idopt,n) -> TacFix (option_app (intern_ident lf ist) idopt,n)
   | TacMutualFix (id,n,l) ->
-      let f (id,n,c) = (intern_ident lf ist id,n,intern_constr ist c) in
+      let f (id,n,c) = (intern_ident lf ist id,n,intern_type ist c) in
       TacMutualFix (intern_ident lf ist id, n, List.map f l)
   | TacCofix idopt -> TacCofix (option_app (intern_ident lf ist) idopt)
   | TacMutualCofix (id,l) ->
-      let f (id,c) = (intern_ident lf ist id,intern_constr ist c) in
+      let f (id,c) = (intern_ident lf ist id,intern_type ist c) in
       TacMutualCofix (intern_ident lf ist id, List.map f l)
-  | TacCut c -> TacCut (intern_constr ist c)
+  | TacCut c -> TacCut (intern_type ist c)
   | TacTrueCut (na,c) ->
-      TacTrueCut (intern_name lf ist na, intern_constr ist c)
+      TacTrueCut (intern_name lf ist na, intern_type ist c)
   | TacForward (b,na,c) ->
       TacForward (b,intern_name lf ist na,intern_constr ist c)
   | TacGeneralize cl -> TacGeneralize (List.map (intern_constr ist) cl)
@@ -1177,10 +1186,13 @@ let rec extract_ids = function
   | _::tl -> extract_ids tl
   | [] -> []
 
+(* To retype a list of key*constr with undefined key *)
 let retype_list sigma env lst =
   List.fold_right (fun (x,csr) a ->
     try (x,Retyping.get_judgment_of env sigma csr)::a with
     | Anomaly _ -> a) lst []
+
+(*  List.map (fun (x,csr) -> (x,Retyping.get_judgment_of env sigma csr)) lst*)
 
 let implicit_tactic = ref None
 
@@ -1225,46 +1237,51 @@ let solve_remaining_evars env initial_sigma evars c =
   in
   map_constr proc_rec c
 
-let interp_casted_constr ocl ist sigma env (c,ce) =
-  let (l1,l2) = constr_list ist env in
-  let tl1 = retype_list sigma env l1 in
-  let evars,csr = 
-    match ce with
-    | None -> Pretyping.understand_gen_ltac sigma env (tl1,l2) ocl c
-      (* If at toplevel (ce<>None), the error can be due to an incorrect
-         context at globalization time: we retype with the now known
-         intros/lettac/inversion hypothesis names *)
-    | Some c -> interp_constr_gen sigma env (l1,l2) c ocl
-  in
-  let csr = solve_remaining_evars env sigma evars csr in
-  db_constr ist.debug env csr;
-  csr
-
-let interp_constr ist sigma env c =
-  interp_casted_constr None ist sigma env c
-
-(* Interprets an open constr expression *)
-let pf_interp_open_constr casted ist gl (c,ce) =
-  let sigma = project gl in
-  let env = pf_env gl in
-  let (ltacvars,l) = constr_list ist env in
+let interp_gen kind ist sigma env (c,ce) =
+  let (ltacvars,unbndltacvars) = constr_list ist env in
   let typs = retype_list sigma env ltacvars in
-  let ocl = if casted then Some (pf_concl gl) else None in
-  match ce with
-  | None ->
-      Pretyping.understand_gen_tcc sigma env typs ocl c
+  let c = match ce with
+  | None -> c
     (* If at toplevel (ce<>None), the error can be due to an incorrect
        context at globalization time: we retype with the now known
        intros/lettac/inversion hypothesis names *)
-  | Some c -> interp_openconstr_gen sigma env (ltacvars,l) c ocl
+  | Some c ->
+      let ltacdata = (List.map fst ltacvars,unbndltacvars) in
+      intern_gen (kind = IsType) ~ltacvars:ltacdata sigma env c in
+  understand_ltac sigma env (typs,unbndltacvars) kind c
+
+(* Interprets a constr and solve remaining evars with default tactic *)
+let interp_econstr kind ist sigma env cc =
+  let evars,c = interp_gen kind ist sigma env cc in
+  let csr = solve_remaining_evars env sigma evars c in
+  db_constr ist.debug env csr;
+  csr
+
+(* Interprets an open constr *)
+let interp_open_constr ccl ist sigma env cc =
+  let isevars,c = interp_gen (OfType ccl) ist sigma env cc in
+  (evars_of isevars,c)
+
+let interp_constr = interp_econstr (OfType None)
+
+let interp_type = interp_econstr IsType
+
+(* Interprets a constr expression casted by the current goal *)
+let pf_interp_casted_constr ist gl cc =
+  interp_econstr (OfType (Some (pf_concl gl))) ist (project gl) (pf_env gl) cc
+
+(* Interprets an open constr expression *)
+let pf_interp_open_constr casted ist gl cc =
+  let cl = if casted then Some (pf_concl gl) else None in
+  interp_open_constr cl ist (project gl) (pf_env gl) cc
 
 (* Interprets a constr expression *)
 let pf_interp_constr ist gl =
   interp_constr ist (project gl) (pf_env gl)
 
-(* Interprets a constr expression casted by the current goal *)
-let pf_interp_casted_constr ist gl c =
-  interp_casted_constr (Some(pf_concl gl)) ist (project gl) (pf_env gl) c
+(* Interprets a type expression *)
+let pf_interp_type ist gl =
+  interp_type ist (project gl) (pf_env gl)
 
 (* Interprets a reduction expression *)
 let interp_unfold ist env (l,qid) =
@@ -1440,7 +1457,7 @@ and interp_tacarg ist gl = function
       else if tg = "value" then
         value_out t
       else if tg = "constr" then
-        VConstr (Pretyping.constr_out t)
+        VConstr (constr_out t)
       else
         anomaly_loc (loc, "Tacinterp.val_interp",
           (str "Unknown dynamic: <" ++ str (Dyn.tag t) ++ str ">"))
@@ -1715,20 +1732,20 @@ and interp_atomic ist gl = function
   | TacElim (cb,cbo) ->
       h_elim (interp_constr_with_bindings ist gl cb)
                 (option_app (interp_constr_with_bindings ist gl) cbo)
-  | TacElimType c -> h_elim_type (pf_interp_constr ist gl c)
+  | TacElimType c -> h_elim_type (pf_interp_type ist gl c)
   | TacCase cb -> h_case (interp_constr_with_bindings ist gl cb)
-  | TacCaseType c -> h_case_type (pf_interp_constr ist gl c)
+  | TacCaseType c -> h_case_type (pf_interp_type ist gl c)
   | TacFix (idopt,n) -> h_fix (option_app (interp_ident ist) idopt) n
   | TacMutualFix (id,n,l) ->
-      let f (id,n,c) = (interp_ident ist id,n,pf_interp_constr ist gl c) in
+      let f (id,n,c) = (interp_ident ist id,n,pf_interp_type ist gl c) in
       h_mutual_fix (interp_ident ist id) n (List.map f l)
   | TacCofix idopt -> h_cofix (option_app (interp_ident ist) idopt)
   | TacMutualCofix (id,l) ->
-      let f (id,c) = (interp_ident ist id,pf_interp_constr ist gl c) in
+      let f (id,c) = (interp_ident ist id,pf_interp_type ist gl c) in
       h_mutual_cofix (interp_ident ist id) (List.map f l)
-  | TacCut c -> h_cut (pf_interp_constr ist gl c)
+  | TacCut c -> h_cut (pf_interp_type ist gl c)
   | TacTrueCut (na,c) ->
-      h_true_cut (interp_name ist na) (pf_interp_constr ist gl c)
+      h_true_cut (interp_name ist na) (pf_interp_type ist gl c)
   | TacForward (b,na,c) ->
       h_forward b (interp_name ist na) (pf_interp_constr ist gl c)
   | TacGeneralize cl -> h_generalize (List.map (pf_interp_constr ist gl) cl)
@@ -1846,7 +1863,7 @@ and interp_atomic ist gl = function
         VConstr (constr_of_global 
           (pf_interp_reference ist gl (out_gen globwit_ref x)))
     | SortArgType ->
-	VConstr (mkSort (Pretyping.interp_sort (out_gen globwit_sort x)))
+	VConstr (mkSort (interp_sort (out_gen globwit_sort x)))
     | ConstrArgType ->
         VConstr (pf_interp_constr ist gl (out_gen globwit_constr x))
     | ConstrMayEvalArgType ->
