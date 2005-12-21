@@ -115,7 +115,7 @@ END
 
 (* For the translator, otherwise the code above is OK *)
 open Ppconstrnew
-let pp_minus_div_arg _prc _prt (omin,odiv) = 
+let pp_minus_div_arg _prc _prlc _prt (omin,odiv) = 
   if omin=None && odiv=None then mt() else
     spc() ++ str "with" ++
     pr_opt (fun c -> str "minus := " ++ _prc c) omin ++

@@ -420,7 +420,7 @@ open Genarg
 
 (* Hint bases *)
 
-let pr_hintbases _prc _prt = function 
+let pr_hintbases _prc _prlc _prt = function 
   | None -> str " with *"
   | Some [] -> mt ()
   | Some l -> str " with " ++ Util.prlist_with_sep spc str l

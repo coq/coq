@@ -22,7 +22,7 @@ open Tacinterp
 let _ = Metasyntax.add_token_obj "<-"
 let _ = Metasyntax.add_token_obj "->"
 
-let pr_orient _prc _prt = function
+let pr_orient _prc _prlc _prt = function
   | true -> Pp.mt ()
   | false -> Pp.str " <-"
 
@@ -34,7 +34,7 @@ ARGUMENT EXTEND orient TYPED AS bool PRINTED BY pr_orient
 END
 
 (* For Setoid rewrite *)
-let pr_morphism_signature _ _ = Setoid_replace.pr_morphism_signature
+let pr_morphism_signature _ _ _ = Setoid_replace.pr_morphism_signature
 
 ARGUMENT EXTEND morphism_signature
  TYPED AS morphism_signature
@@ -48,9 +48,9 @@ ARGUMENT EXTEND morphism_signature
        [ let l,out = s in (None,c)::l,out ]
 END
 
-let pr_gen prc _ c = prc c
+let pr_gen prc _prlc _prtac c = prc c
 
-let pr_rawc _ _ raw = Ppconstr.pr_rawconstr raw
+let pr_rawc _prc _prlc _prtac raw = Ppconstr.pr_rawconstr raw
 
 let interp_raw _ _ (t,_) = t
 
@@ -87,8 +87,8 @@ let pr_gen_place pr_id = function
   | HypLocation (id,InHypValueOnly) -> 
       str "in (Value of " ++ pr_id id ++ str ")"
 
-let pr_loc_place _ _ = pr_gen_place (fun (_,id) -> Nameops.pr_id id)
-let pr_place _ _ = pr_gen_place Nameops.pr_id
+let pr_loc_place _ _ _ = pr_gen_place (fun (_,id) -> Nameops.pr_id id)
+let pr_place _ _ _ = pr_gen_place Nameops.pr_id
 
 let intern_place ist = function
     ConclLocation () -> ConclLocation ()

@@ -23,16 +23,22 @@ val pr_and_short_name : ('a -> std_ppcmds) -> 'a and_short_name -> std_ppcmds
 val pr_located : ('a -> std_ppcmds) -> 'a Util.located -> std_ppcmds
 
 type 'a raw_extra_genarg_printer =
-    (constr_expr -> std_ppcmds) -> (tolerability -> raw_tactic_expr -> std_ppcmds) ->
-      'a -> std_ppcmds
+    (constr_expr -> std_ppcmds) -> 
+    (constr_expr -> std_ppcmds) -> 
+    (tolerability -> raw_tactic_expr -> std_ppcmds) ->
+    'a -> std_ppcmds
 
 type 'a glob_extra_genarg_printer =
-    (rawconstr_and_expr -> std_ppcmds) -> (tolerability -> glob_tactic_expr -> std_ppcmds) ->
-      'a -> std_ppcmds
+    (rawconstr_and_expr -> std_ppcmds) ->
+    (rawconstr_and_expr -> std_ppcmds) ->
+    (tolerability -> glob_tactic_expr -> std_ppcmds) ->
+    'a -> std_ppcmds
 
 type 'a extra_genarg_printer =
-    (Term.constr -> std_ppcmds) -> (tolerability -> glob_tactic_expr -> std_ppcmds) ->
-      'a -> std_ppcmds
+    (Term.constr -> std_ppcmds) -> 
+    (Term.constr -> std_ppcmds) -> 
+    (tolerability -> glob_tactic_expr -> std_ppcmds) ->
+    'a -> std_ppcmds
 
   (* if the boolean is false then the extension applies only to old syntax *)
 val declare_extra_genarg_pprule : 

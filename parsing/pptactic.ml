@@ -44,16 +44,21 @@ let declare_extra_tactic_pprule for_v8 s (tags,prods) =
 
 type 'a raw_extra_genarg_printer =
     (constr_expr -> std_ppcmds) -> 
+    (constr_expr -> std_ppcmds) -> 
     (tolerability -> raw_tactic_expr -> std_ppcmds) ->
-      'a -> std_ppcmds
+    'a -> std_ppcmds
+
 type 'a glob_extra_genarg_printer =
     (rawconstr_and_expr -> std_ppcmds) ->
+    (rawconstr_and_expr -> std_ppcmds) ->
     (tolerability -> glob_tactic_expr -> std_ppcmds) ->
-      'a -> std_ppcmds
+    'a -> std_ppcmds
+
 type 'a extra_genarg_printer =
-    (Term.constr -> std_ppcmds) ->
+    (Term.constr -> std_ppcmds) -> 
+    (Term.constr -> std_ppcmds) -> 
     (tolerability -> glob_tactic_expr -> std_ppcmds) ->
-      'a -> std_ppcmds
+    'a -> std_ppcmds
 
 let genarg_pprule_v7 = ref Stringmap.empty
 let genarg_pprule = ref Stringmap.empty
@@ -64,9 +69,9 @@ let declare_extra_genarg_pprule for_v8 (rawwit, f) (globwit, g) (wit, h) =
     | _ -> error
 	"Can declare a pretty-printing rule only for extra argument types"
   in
-  let f prc prtac x = f prc prtac (out_gen rawwit x) in
-  let g prc prtac x = g prc prtac (out_gen globwit x) in
-  let h prc prtac x = h prc prtac (out_gen wit x) in
+  let f prc prlc prtac x = f prc prlc prtac (out_gen rawwit x) in
+  let g prc prlc prtac x = g prc prlc prtac (out_gen globwit x) in
+  let h prc prlc prtac x = h prc prlc prtac (out_gen wit x) in
   genarg_pprule_v7 := Stringmap.add s (f,g,h) !genarg_pprule_v7;
   if for_v8 then
     genarg_pprule := Stringmap.add s (f,g,h) !genarg_pprule 
@@ -296,7 +301,7 @@ let rec pr_raw_generic prc prlc prtac prref x =
       let tab =
 	if Options.do_translate() or not !Options.v7 then !genarg_pprule
         else !genarg_pprule_v7 in
-      try pi1 (Stringmap.find s tab) prc prtac x
+      try pi1 (Stringmap.find s tab) prc prlc prtac x
       with Not_found -> str " [no printer for " ++ str s ++ str "] "
 
 
@@ -343,7 +348,7 @@ let rec pr_glob_generic prc prlc prtac x =
       let tab =
 	if Options.do_translate() or not !Options.v7 then !genarg_pprule
         else !genarg_pprule_v7 in
-      try pi2 (Stringmap.find s tab) prc prtac x
+      try pi2 (Stringmap.find s tab) prc prlc prtac x
       with Not_found -> str " [no printer for " ++ str s ++ str "] "
 
 open Closure
@@ -389,7 +394,7 @@ let rec pr_generic prc prlc prtac x =
       let tab = 
 	if Options.do_translate() or not !Options.v7 then !genarg_pprule
         else !genarg_pprule_v7 in
-      try pi3 (Stringmap.find s tab) prc prtac x
+      try pi3 (Stringmap.find s tab) prc prlc prtac x
       with Not_found -> str " [no printer for " ++ str s ++ str "]"
 
 let rec pr_tacarg_using_rule pr_gen = function

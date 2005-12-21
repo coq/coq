@@ -15,7 +15,7 @@ open Pcoq
 open Genarg
 open Pp
 
-let pr_mlname _ _ s =
+let pr_mlname _ _ _ s =
   spc () ++
   (if !Options.v7 && not (Options.do_translate()) then qs s
   else Pptacticnew.qsnew s)
@@ -39,7 +39,7 @@ END
 
 (* Temporary for translator *)
 if !Options.v7 then
-  let pr_language _ _ = function
+  let pr_language _ _ _ = function
     | Ocaml -> str " Ocaml"
     | Haskell -> str " Haskell"
     | Scheme -> str " Scheme"
