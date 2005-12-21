@@ -49,6 +49,8 @@ Tactics
   ~B |- A and ~A |- B respectively.
 - Added command "Declare Implicit Tactic" to set up a default tactic to be
   used to solve unresolved subterms of term arguments of tactics.
+- Better support for coercions to Sortclass in tactics expecting type arguments
+- Low-priority term printer made available in ML-written tactic extensions
 
 Modules
 
@@ -65,6 +67,7 @@ Modules
 Notations
 
 - "format" option aware of recursive notations
+- no more automatic printing box in case of user-provided printing "format"
 
 Library
 
