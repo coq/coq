@@ -1070,7 +1070,7 @@ let intern_gen isarity sigma env
   internalise sigma (extract_ids env, tmp_scope,[])
     allow_soapp (ltacvars,Environ.named_context env, [], impls) c
 
-let intern_constr sigma env c = intern_gen true sigma env c 
+let intern_constr sigma env c = intern_gen false sigma env c 
 
 let intern_ltac isarity ltacvars sigma env c =
   intern_gen isarity sigma env ~ltacvars:ltacvars c
@@ -1102,7 +1102,7 @@ let interp_constr_judgment sigma env c =
 type ltac_sign = identifier list * unbound_ltac_var_map
 
 let interp_constrpattern sigma env c =
-  pattern_of_rawconstr (intern_constr sigma env c)
+  pattern_of_rawconstr (intern_gen false sigma env ~allow_soapp:true c)
 
 let interp_aconstr impls vars a =
   let env = Global.env () in
