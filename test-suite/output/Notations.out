@@ -1,0 +1,16 @@
+true ? 0; 1
+     : nat
+if true as x return (x ? nat; bool) then 0 else true
+     : true ? nat; bool
+Defining 'proj1' as keyword
+fun e : nat * nat => proj1 e
+     : nat * nat -> nat
+Defining 'decomp' as keyword
+decomp (true, true) as t, u in (t, u)
+     : bool * bool
+!(0 = 0)
+     : Prop
+forall n : nat, n = 0
+     : Prop
+!(0 = 0)
+     : Prop
