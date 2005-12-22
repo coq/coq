@@ -52,7 +52,7 @@ let set_batch_mode () = batch_mode := true
 
 let toplevel_name = ref None
 let toplevel_default_name = make_dirpath [id_of_string "Top"]
-let set_toplevel_name dir = toplevel_name := dir
+let set_toplevel_name dir = toplevel_name := Some dir
 let get_toplevel_name () =
   match !toplevel_name with Some dir -> dir | None -> toplevel_default_name
 
@@ -314,7 +314,7 @@ let init is_ide =
       set_vm_opt ();
       engage ();
       if (not !batch_mode|| !toplevel_name<>None) && Global.env_is_empty() then
-        Declaremods.start_library (get_toplevel_name ())
+        Declaremods.start_library (get_toplevel_name ());
       init_library_roots ();
       load_vernac_obj ();
       require ();
