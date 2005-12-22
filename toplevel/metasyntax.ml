@@ -873,7 +873,7 @@ let (inSyntaxExtension, outSyntaxExtension) =
        classify_function = classify_syntax_definition;
        export_function = export_syntax_definition}
 
-let interp_modifiers =
+let interp_modifiers modl =
   let onlyparsing = ref false in
   let rec interp assoc level etyps format = function
     | [] ->
@@ -903,9 +903,8 @@ let interp_modifiers =
 	interp assoc level etyps format l
     | SetFormat s :: l ->
 	if format <> None then error "A format is given more than once";
-	onlyparsing := true;
 	interp assoc level etyps (Some s) l
-  in interp None None [] None
+  in interp None None [] None modl
 
 let merge_modifiers a n l =
   (match a with None -> [] | Some a -> [SetAssoc a]) @
