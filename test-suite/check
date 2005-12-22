@@ -8,7 +8,7 @@ else
   coqtop="../bin/coqtop -q -batch"
 fi
 
-command="$coqtop -load-vernac-source"
+command="$coqtop -top Top -load-vernac-source"
 
 # on compte le nombre de tests et de succès
 nbtests=0
@@ -20,7 +20,7 @@ test_success() {
     for f in $1/*.v; do 
 	nbtests=`expr $nbtests + 1`
 	printf "    "$f"..."
-	$command $f $2 > /dev/null 2>&1
+	$command $f $2 > /dev/null 2>&1 
 	if [ $? = 0 ]; then
 	    echo "Ok"
 	    nbtestsok=`expr $nbtestsok + 1`
