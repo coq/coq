@@ -6,32 +6,27 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* Petit bench vite fait, mal fait *)
+
+Require Refine.
+
+
 (************************************************************************)
 
-Lemma essai : forall x : nat, x = x.
+Lemma essai : (x:nat)x=x.
 
- refine
- ((fun x0 : nat => match x0 with
-                   | O => _
-                   | S p => _
-                   end)
-  :forall x : nat, x = x).  (* x0=x0 et x0=x0 *)
+Refine (([x0:nat]Cases x0 of
+    O => ?
+  | (S p) => ?
+  end) :: (x:nat)x=x).  (* x0=x0 et x0=x0 *)
 
 Restart.
 
- refine
- (fun x0 : nat => match x0 as n return (n = n) with
-                  | O => _
-                  | S p => _
-                  end). (* OK *)
+Refine [x0:nat]<[n:nat]n=n>Case x0 of ? [p:nat]? end. (* OK *)
 
 Restart.
 
- refine
- (fun x0 : nat => match x0 as n return (n = n) with
-                  | O => _
-                  | S p => _
-                  end). (* OK *)
+Refine [x0:nat]<[n:nat]n=n>Cases x0 of O => ? | (S p) => ? end. (* OK *)
 
 Restart.
 
@@ -46,52 +41,40 @@ Abort.
 
 Lemma T : nat. 
 
- refine (S _).
+Refine (S ?).
 
 Abort.
 
 
 (************************************************************************)
 
-Lemma essai2 : forall x : nat, x = x.
+Lemma essai2 : (x:nat)x=x.
 
- refine (fix f (x : nat) : x = x := _).
-
-Restart.
-
- refine
- (fix f (x : nat) : x = x :=
-    match x as n return (n = n :>nat) with
-    | O => _
-    | S p => _
-    end).
+Refine Fix f{f/1 : (x:nat)x=x := [x:nat]? }.
 
 Restart.
 
- refine
- (fix f (x : nat) : x = x :=
-    match x as n return (n = n) with
-    | O => _
-    | S p => _
-    end).
+Refine Fix f{f/1 : (x:nat)x=x :=
+  [x:nat]<[n:nat](eq nat n n)>Case x of ? [p:nat]? end}.
 
 Restart.
 
- refine
- (fix f (x : nat) : x = x :=
-    match x as n return (n = n :>nat) with
-    | O => _
-    | S p => f_equal S _
-    end).
+Refine Fix f{f/1 : (x:nat)x=x :=
+  [x:nat]<[n:nat]n=n>Cases x of O => ? | (S p) => ? end}.
 
 Restart.
 
- refine
- (fix f (x : nat) : x = x :=
-    match x as n return (n = n :>nat) with
-    | O => _
-    | S p => f_equal S _
-    end).
+Refine Fix f{f/1 : (x:nat)x=x :=
+  [x:nat]<[n:nat](eq nat n n)>Case x of
+       ?
+       [p:nat](f_equal nat nat S p p ?) end}.
+
+Restart.
+
+Refine Fix f{f/1 : (x:nat)x=x :=
+  [x:nat]<[n:nat](eq nat n n)>Cases x of
+       O => ?
+     | (S p) =>(f_equal nat nat S p p ?) end}.
 
 Abort.
 
@@ -100,13 +83,13 @@ Abort.
 
 Lemma essai : nat.
 
-Parameter f : nat * nat -> nat -> nat. 
+Parameter f : nat*nat -> nat -> nat. 
 
- refine (f _ ((fun x : nat => _:nat) 0)).
+Refine (f ? ([x:nat](? :: nat) O)).
 
 Restart.
 
- refine (f _ 0).
+Refine (f ? O).
 
 Abort.
 
@@ -115,113 +98,93 @@ Abort.
 
 Parameter P : nat -> Prop.
 
-Lemma essai : {x : nat | x = 1}.
+Lemma essai : { x:nat | x=(S O) }.
 
- refine (exist _ 1 _).  (* ECHEC *)
+Refine (exist nat ? (S O) ?).  (* ECHEC *)
 
 Restart.
 
 (* mais si on contraint par le but alors ca marche : *)
 (* Remarque : on peut toujours faire ça *)
- refine (exist _ 1 _:{x : nat | x = 1}).
+Refine ((exist nat ? (S O) ?) :: { x:nat | x=(S O) }).
 
 Restart.
 
- refine (exist (fun x : nat => x = 1) 1 _).
+Refine (exist nat [x:nat](x=(S O)) (S O) ?).
 
 Abort.
 
 
 (************************************************************************)
 
-Lemma essai : forall n : nat, {x : nat | x = S n}.
+Lemma essai : (n:nat){ x:nat | x=(S n) }.
 
- refine
- (fun n : nat =>
-  match n return {x : nat | x = S n} with
-  | O => _
-  | S p => _
-  end).
+Refine [n:nat]<[n:nat]{x:nat|x=(S n)}>Case n of ? [p:nat]? end.
 
 Restart.
 
- refine
- ((fun n : nat => match n with
-                  | O => _
-                  | S p => _
-                  end)
-  :forall n : nat, {x : nat | x = S n}).
+Refine (([n:nat]Case n of ? [p:nat]? end) :: (n:nat){ x:nat | x=(S n) }).
 
 Restart.
 
- refine
- (fun n : nat =>
-  match n return {x : nat | x = S n} with
-  | O => _
-  | S p => _
-  end).
+Refine [n:nat]<[n:nat]{x:nat|x=(S n)}>Cases n of O => ? | (S p) => ? end.
 
 Restart.
 
- refine
- (fix f (n : nat) : {x : nat | x = S n} :=
-    match n return {x : nat | x = S n} with
-    | O => _
-    | S p => _
-    end).
+Refine Fix f{f/1 :(n:nat){x:nat|x=(S n)} :=
+        [n:nat]<[n:nat]{x:nat|x=(S n)}>Case n of ? [p:nat]? end}.
 
 Restart.
 
- refine
- (fix f (n : nat) : {x : nat | x = S n} :=
-    match n return {x : nat | x = S n} with
-    | O => _
-    | S p => _
-    end).
+Refine Fix f{f/1 :(n:nat){x:nat|x=(S n)} :=
+        [n:nat]<[n:nat]{x:nat|x=(S n)}>Cases n of O => ? | (S p) => ? end}.
 
-exists 1. trivial. 
-elim (f0 p).
- refine
- (fun (x : nat) (h : x = S p) => exist (fun x : nat => x = S (S p)) (S x) _). 
- rewrite h. auto.
-Qed.
+Exists (S O). Trivial. 
+Elim (f0 p).
+Refine [x:nat][h:x=(S p)](exist nat [x:nat]x=(S (S p)) (S x) ?). 
+Rewrite h. Auto.
+Save.
 
 
 
 (* Quelques essais de recurrence bien fondée *)
 
-Require Import Wf.
-Require Import Wf_nat.
+Require Wf.
+Require Wf_nat.
 
-Lemma essai_wf : nat -> nat.
+Lemma essai_wf : nat->nat.
 
- refine
- (fun x : nat =>
-  well_founded_induction _ (fun _ : nat => nat -> nat)
-    (fun (phi0 : nat) (w : forall phi : nat, phi < phi0 -> nat -> nat) =>
-     w x _) x x).
-exact lt_wf.
+Refine [x:nat](well_founded_induction
+      	       nat
+      	       lt ?
+               [_:nat]nat->nat
+	       [phi0:nat][w:(phi:nat)(lt phi phi0)->nat->nat](w x ?)
+	       x x).
+Exact lt_wf.
 
 Abort.
 
 
-Require Import Compare_dec.
-Require Import Lt.
+Require Compare_dec.
+Require Lt.
 
 Lemma fibo : nat -> nat.
- refine
- (well_founded_induction _ (fun _ : nat => nat)
-    (fun (x0 : nat) (fib : forall x : nat, x < x0 -> nat) =>
-     match zerop x0 with
-     | left _ => 1
-     | right h1 =>
-         match zerop (pred x0) with
-         | left _ => 1
-         | right h2 => fib (pred x0) _ + fib (pred (pred x0)) _
-         end
-     end)).
-exact lt_wf.
-auto with arith.
-apply lt_trans with (m := pred x0); auto with arith.
-Qed.
+Refine (well_founded_induction
+       nat
+       lt ?
+       [_:nat]nat
+       [x0:nat][fib:(x:nat)(lt x x0)->nat]
+         Cases (zerop x0) of 
+      	   (left _)   => (S O)
+      	 | (right h1) => Cases (zerop (pred x0)) of
+      	                   (left _)   => (S O)
+                         | (right h2) => (plus (fib (pred x0) ?)
+      	       	       	       	       	       (fib (pred (pred x0)) ?))
+		     end
+	 end).
+Exact lt_wf.
+Auto with arith.
+Apply lt_trans with m:=(pred x0); Auto with arith.
+Save.
+
 
