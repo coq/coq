@@ -46,6 +46,8 @@ type grammar_terminals = string option list
 val declare_extra_tactic_pprule : bool -> string -> 
   argument_type list * (string * grammar_terminals) -> unit
 
+val exists_extra_tactic_pprule : string -> argument_type list -> bool
+
 val pr_match_pattern : ('a -> std_ppcmds) -> 'a match_pattern -> std_ppcmds
 
 val pr_match_rule : bool -> ('a -> std_ppcmds) -> ('b -> std_ppcmds) ->

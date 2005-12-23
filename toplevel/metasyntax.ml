@@ -154,12 +154,11 @@ let rec make_tags = function
 
 let declare_pprule = function
   (* Pretty-printing rules only for Grammar (Tactic Notation) *)
-  | Egrammar.TacticGrammar gl ->
-      let f (s,(s',l),tac) =
-        let pp = (make_tags l, (s',List.map make_terminal_status l)) in
-        Pptactic.declare_extra_tactic_pprule true s pp;
-        Pptactic.declare_extra_tactic_pprule false s pp in
-      List.iter f gl
+  | Egrammar.TacticGrammar (_,pp) ->
+      let f (s,t,p) =
+        Pptactic.declare_extra_tactic_pprule true s (t,p);
+        Pptactic.declare_extra_tactic_pprule false s (t,p) in
+      List.iter f pp
   | _ -> ()
 
 let cache_grammar (_,a) =
@@ -199,12 +198,24 @@ let add_grammar_obj univ entryl =
 
 (* Tactic notations *)
 
-let locate_tactic_body dir (s,p,e) = (s,p,(dir,e))
+let rec tactic_notation_key = function
+  | VTerm id :: _ -> id
+  | _ :: l -> tactic_notation_key l
+  | [] -> "terminal_free_notation"
+
+let rec next_key_away key t =
+  if Pptactic.exists_extra_tactic_pprule key t then next_key_away (key^"'") t
+  else key
+
+let locate_tactic_body dir (s,(s',prods as x),e) =
+  let tags = make_tags prods in
+  let s = if s="" then next_key_away (tactic_notation_key prods) tags else s in
+  (s,x,(dir,e)),(s,tags,(s',List.map make_terminal_status prods))
 
 let add_tactic_grammar g =
   let dir = Lib.cwd () in
-  let g = List.map (locate_tactic_body dir) g in
-  Lib.add_anonymous_leaf (inGrammar (Egrammar.TacticGrammar g))
+  let pa,pp = List.split (List.map (locate_tactic_body dir) g) in
+  Lib.add_anonymous_leaf (inGrammar (Egrammar.TacticGrammar (pa,pp)))
 
 (* Printing grammar entries *)
 

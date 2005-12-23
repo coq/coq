@@ -28,7 +28,8 @@ type all_grammar_command =
   | TacticGrammar of
       (string * (string * grammar_production list) * 
       (Names.dir_path * Tacexpr.raw_tactic_expr))
-      list
+      list * (string * Genarg.argument_type list *
+              (string * Pptactic.grammar_terminals)) list
 
 val extend_grammar : all_grammar_command -> unit
 
