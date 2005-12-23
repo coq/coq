@@ -60,9 +60,12 @@ let pr_module r =
         Ident (loc,id_of_string s)
     | Qualid (loc,qid) ->
         Qualid (loc,make_qualid (fst (repr_qualid qid)) (id_of_string s)) in
-  let (_,dir,_) =
+  let dir =
     try
-      Library.locate_qualified_library (snd (qualid_of_reference r))
+      Nametab.full_name_module (snd (qualid_of_reference r))
+    with _ -> 
+    try
+      pi2 (Library.locate_qualified_library (snd (qualid_of_reference r)))
     with _ -> 
       errorlabstrm "" (str"Translator cannot find " ++ Libnames.pr_reference r)
   in
