@@ -88,19 +88,15 @@ let rec make_tags lev = function
       etyp :: make_tags lev l
   | [] -> []
 
-let declare_tactic_pprule n (s,t,p) =
-  Pptactic.declare_extra_tactic_pprule true s (t,p);
-  Pptactic.declare_extra_tactic_pprule false s (t,p)
+let cache_tactic_notation (_,(pa,pp)) =
+  Egrammar.extend_grammar (Egrammar.TacticGrammar pa);
+  Pptactic.declare_extra_tactic_pprule true (pi1 pp) (pi2 pp, pi3 pp)
 
-let cache_tactic_notation (_,((n,pa),pp)) =
-  Egrammar.extend_grammar (Egrammar.TacticGrammar (n,pa));
-  List.iter (declare_tactic_pprule n) pp
+let subst_tactic_parule subst (key,n,p,(d,tac)) =
+  (key,n,p,(d,Tacinterp.subst_tactic subst tac))
 
-let subst_one_tactic_notation subst (s,p,(d,tac)) =
-  (s,p,(d,Tacinterp.subst_tactic subst tac))
-
-let subst_tactic_notation (_,subst,((n,pa),pp)) =
-  ((n,List.map (subst_one_tactic_notation subst) pa),pp)
+let subst_tactic_notation (_,subst,(pa,pp)) =
+  (subst_tactic_parule subst pa,pp)
 
 let (inTacticGrammar, outTacticGrammar) =
   declare_object {(default_object "TacticGrammar") with
@@ -123,23 +119,14 @@ let rec next_key_away key t =
   if Pptactic.exists_extra_tactic_pprule key t then next_key_away (key^"'") t
   else key
 
-let make_tactic_pprule n s prods =
+let add_tactic_notation (n,prods,e) =
   let tags = make_tags n prods in
-  let s = if s="" then next_key_away (tactic_notation_key prods) tags else s in
-  (s, tags, (n,List.map make_terminal_status prods))
-
-let make_tactic_parule s prods e =
+  let key = next_key_away (tactic_notation_key prods) tags in
+  let pprule = (key,tags,(n,List.map make_terminal_status prods)) in
   let ids = List.fold_left cons_production_parameter [] prods in
   let tac = Tacinterp.glob_tactic_env ids (Global.env()) e in
-  (s,prods,(Lib.cwd (),tac))
-
-let locate_tactic_body n (s,prods,e) =
-  let (s',t,p as pp) = make_tactic_pprule n s prods in
-  (make_tactic_parule s' prods e, pp)
-
-let add_tactic_notation (n,g) =
-  let pa,pp = List.split (List.map (locate_tactic_body n) g) in
-  Lib.add_anonymous_leaf (inTacticGrammar ((n,pa),pp))
+  let parule = (key,n,prods,(Lib.cwd(),tac)) in
+  Lib.add_anonymous_leaf (inTacticGrammar (parule,pprule))
 
 (**********************************************************************)
 (* Printing grammar entries                                           *)
@@ -631,7 +618,7 @@ let recompute_assoc typs =
 let make_grammar_rule (n,typs,symbols,_) ntn =
   let assoc = recompute_assoc typs in
   let prod = make_production typs symbols in
-  (n,assoc,ntn,prod,None)
+  (n,assoc,ntn,prod)
 
 let make_pp_rule (n,typs,symbols,fmt) =
   match fmt with
@@ -654,7 +641,7 @@ let pr_level ntn (from,args) =
 
 let cache_syntax_extension (_,(_,(prec,ntn,gr,pp))) =
   try 
-    let _, oldprec = Notation.level_of_notation ntn in
+    let oldprec = Notation.level_of_notation ntn in
     if prec <> oldprec then
       errorlabstrm ""
 	(str ("Notation "^ntn^" is already defined") ++ spc() ++ 
@@ -663,7 +650,7 @@ let cache_syntax_extension (_,(_,(prec,ntn,gr,pp))) =
 	 pr_level ntn prec);
   with Not_found ->
     (* Reserve the notation level *)
-    Notation.declare_notation_level ntn (None,prec);
+    Notation.declare_notation_level ntn prec;
     (* Declare the parsing rule *)
     Egrammar.extend_grammar (Egrammar.Notation (prec,gr));
     (* Declare the printing rule *)
@@ -869,10 +856,10 @@ let load_notation _ (_,(_,scope,pat,onlyparse,_)) =
 
 let open_notation i (_,(_,scope,pat,onlyparse,(ntn,df))) =
   if i=1 then begin
-    let exists,_ = Notation.exists_notation_in_scope scope ntn pat in
+    let exists = Notation.exists_notation_in_scope scope ntn pat in
     (* Declare the interpretation *)
     if not exists then
-      Notation.declare_notation_interpretation ntn scope pat df false;
+      Notation.declare_notation_interpretation ntn scope pat df;
     if not exists & not onlyparse then
       Notation.declare_uninterpretation (NotationRule (scope,ntn)) pat
   end
@@ -929,7 +916,7 @@ let level_rule (n,p) = if p = E then n else max (n-1) 0
 
 let recover_syntax ntn = 
   try 
-    let _,prec = Notation.level_of_notation ntn in
+    let prec = Notation.level_of_notation ntn in
     let pprule,_ = Notation.find_notation_printing_rule ntn in
     let gr = Egrammar.recover_notation_grammar ntn prec in
     Some (prec,ntn,gr,pprule)
@@ -1022,7 +1009,7 @@ let add_infix local (inf,modl) pr sc =
   else
     add_notation_in_scope local df a modl sc toks
 
-let standardise_locatable_notation ntn =
+let standardize_locatable_notation ntn =
   let unquote = function
     | String s -> [unquote_notation_token s]
     | _ -> [] in
@@ -1070,16 +1057,3 @@ let add_delimiters scope key =
 
 let add_class_scope scope cl = 
   Lib.add_anonymous_leaf (inScopeCommand(scope,ScopeClasses cl))
-
-
-(* Temporary compatibility *)
-
-let translate_distfix _ = failwith "No more v7 support 1"
-let add_distfix _ = failwith "No more v7 support 2"
-let add_tactic_grammar = add_tactic_notation
-let add_grammar_obj _ = failwith "No more v7 support 4"
-let add_syntax_obj _ = failwith "No more v7 support 5"
-
-let add_syntax_extension local mv _ = add_syntax_extension local (out_some mv)
-let add_notation local c x _ sc = add_notation local c (out_some x) sc
-let add_infix local x pr _ sc = add_infix local x pr sc

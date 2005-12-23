@@ -88,7 +88,7 @@ type interp_rule =
   | NotationRule of scope_name option * notation
   | SynDefRule of kernel_name
 val declare_notation_interpretation : notation -> scope_name option ->
-      interpretation -> dir_path * string -> bool -> unit
+      interpretation -> dir_path * string -> unit
 
 val declare_uninterpretation : interp_rule -> interpretation -> unit
 
@@ -111,15 +111,14 @@ val availability_of_notation : scope_name option * notation -> scopes ->
 
 (*s Declare and test the level of a (possibly uninterpreted) notation *)
 
-val declare_notation_level : notation -> level option * level -> unit
-val level_of_notation : notation -> level option * level 
-      (* raise [Not_found] if no level *)
+val declare_notation_level : notation -> level -> unit
+val level_of_notation : notation -> level (* raise [Not_found] if no level *)
 
 (*s** Miscellaneous *)
 
 (* Checks for already existing notations *)
 val exists_notation_in_scope : scope_name option -> notation ->
-      interpretation -> bool * bool
+      interpretation -> bool
 
 (* Declares and looks for scopes associated to arguments of a global ref *)
 val declare_arguments_scope: global_reference -> scope_name option list -> unit

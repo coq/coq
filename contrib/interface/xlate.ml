@@ -1954,8 +1954,6 @@ let rec xlate_vernac =
       CT_require(ct_impexp, ct_spec, 
 		 CT_coerce_STRING_to_ID_NE_LIST_OR_STRING(CT_string filename))
 
-   | VernacSyntax (phylum, l) -> xlate_error "SYNTAX not implemented"
-
    | VernacOpenCloseScope(true, true, s) -> CT_local_open_scope(CT_ident s)
    | VernacOpenCloseScope(false, true, s) -> CT_open_scope(CT_ident s)
    | VernacOpenCloseScope(true, false, s) -> CT_local_close_scope(CT_ident s)
@@ -1977,8 +1975,7 @@ let rec xlate_vernac =
 		     CT_id_ne_list(xlate_class_rawexpr a,
 				   List.map xlate_class_rawexpr l))
    | VernacBindScope(id, []) -> assert false
-   | VernacNotation(b, c, None, _, _) -> assert false
-   | VernacNotation(b, c, Some(s,modif_list), _, opt_scope) -> 
+   | VernacNotation(b, c, (s,modif_list), opt_scope) -> 
        let translated_s = CT_string s in
        let formula = xlate_formula c in
        let translated_modif_list = 
@@ -1992,7 +1989,7 @@ let rec xlate_vernac =
        else
 	 CT_define_notation(translated_s, formula, 
 			    translated_modif_list, translated_scope)
-   | VernacSyntaxExtension(b,Some(s,modif_list), None) -> 
+   | VernacSyntaxExtension(b,(s,modif_list)) -> 
        let translated_s = CT_string s in
        let translated_modif_list = 
 	 CT_modifier_list(List.map xlate_syntax_modifier modif_list) in
@@ -2000,8 +1997,7 @@ let rec xlate_vernac =
 	 CT_local_reserve_notation(translated_s, translated_modif_list)
        else
 	 CT_reserve_notation(translated_s, translated_modif_list)
-   | VernacSyntaxExtension(_, _, _) -> assert false
-   | VernacInfix (b,(str,modl),id,_, opt_scope) ->
+   | VernacInfix (b,(str,modl),id, opt_scope) ->
        let id1 = loc_qualid_to_ct_ID id in
        let modl1 = CT_modifier_list(List.map xlate_syntax_modifier modl) in
        let s = CT_string str in
@@ -2012,7 +2008,6 @@ let rec xlate_vernac =
 	   CT_local_infix(s, id1,modl1, translated_scope)
 	 else
 	   CT_infix(s, id1,modl1, translated_scope)
-   | VernacGrammar _ -> xlate_error "GRAMMAR not implemented"
    | VernacCoercion (s, id1, id2, id3) ->
       let id_opt = CT_coerce_NONE_to_IDENTITY_OPT CT_none in
       let local_opt =
@@ -2126,8 +2121,8 @@ let rec xlate_vernac =
   | (VernacGlobalCheck _|VernacPrintOption _|
      VernacMemOption (_, _)|VernacRemoveOption (_, _)
   | VernacBack _ | VernacBacktrack _ |VernacBackTo _|VernacRestoreState _| VernacWriteState _|
-    VernacSolveExistential (_, _)|VernacCanonical _ | VernacDistfix _|
-     VernacTacticGrammar _)
+    VernacSolveExistential (_, _)|VernacCanonical _ |
+     VernacTacticNotation _)
     -> xlate_error "TODO: vernac";;
 
 let rec xlate_vernac_list =

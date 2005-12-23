@@ -403,7 +403,7 @@ let pr_syntax_modifiers = function
 let print_level n =
   if n <> 0 then str " (at level " ++ int n ++ str ")" else mt ()
 
-let pr_grammar_tactic_rule n (name,pil,t) =
+let pr_grammar_tactic_rule n (_,pil,t) =
   hov 2 (str "Tactic Notation" ++ print_level n ++ spc() ++ 
     hov 0 (prlist_with_sep sep pr_production_item pil ++
     spc() ++ str":=" ++ spc() ++ pr_raw_tactic t))
@@ -520,21 +520,7 @@ let rec pr_vernac = function
   | VernacVar id -> pr_lident id
   
   (* Syntax *) 
-  | VernacGrammar _ -> 
-      msgerrnl (str"Warning : constr Grammar is discontinued; use Notation");
-      str"(* <Warning> : Grammar is replaced by Notation *)"
-  | VernacTacticGrammar (n,l) ->
-      prlist_with_sep (fun () -> sep_end() ++ fnl())
-        (pr_grammar_tactic_rule n) l
-  | VernacSyntax (u,el) ->
-      msgerrnl (str"Warning : Syntax is discontinued; use Notation");
-      str"(* <Warning> : Syntax is discontinued" ++ 
-(*
-      fnl () ++
-      hov 1 (str"Syntax " ++ str u ++ spc() ++
-      prlist_with_sep sep_v2 pr_syntax_entry el) ++ 
-*)
-      str " *)"
+  | VernacTacticNotation (n,r,e) -> pr_grammar_tactic_rule n ("",r,e)
   | VernacOpenCloseScope (local,opening,sc) ->
       str (if opening then "Open " else "Close ") ++ pr_locality local ++
       str "Scope" ++ spc() ++ str sc
@@ -548,23 +534,14 @@ let rec pr_vernac = function
       |	None -> str"_"
       |	Some sc -> str sc in 
     str"Arguments Scope" ++ spc() ++ pr_reference q ++ spc() ++ str"[" ++ prlist_with_sep sep pr_opt_scope scl ++ str"]"
-  | VernacInfix (local,(s,_),q,ov8,sn) -> (* A Verifier *)
-      let s,mv8 = match ov8 with Some smv8 -> smv8 | None -> (s,[]) in
+  | VernacInfix (local,(s,mv),q,sn) -> (* A Verifier *)
       hov 0 (hov 0 (str"Infix " ++ pr_locality local
       ++ qsnew s ++ str " :=" ++ spc() ++ pr_reference q) ++
-      pr_syntax_modifiers mv8 ++
+      pr_syntax_modifiers mv ++
       (match sn with
     | None -> mt()
     | Some sc -> spc() ++ str":" ++ spc() ++ str sc))
-  | VernacDistfix (local,a,p,s,q,sn) ->
-      hov 0 (str"Distfix " ++ pr_locality local ++ pr_entry_prec a ++ int p
-        ++ spc() ++ qsnew s ++ spc() ++ pr_reference q ++ (match sn with
-    | None -> mt()
-    | Some sc -> spc() ++ str":" ++ spc() ++ str sc))
-  | VernacNotation (local,c,sl,mv8,opt) ->
-      let (s,l) = match mv8 with
-          None -> fst (out_some sl), []
-        | Some ml -> ml in
+  | VernacNotation (local,c,(s,l),opt) ->
       let ps =
 	let n = String.length s in
 	if n > 2 & s.[0] = '\'' & s.[n-1] = '\'' 
@@ -577,10 +554,7 @@ let rec pr_vernac = function
       (match opt with
         | None -> mt()
         | Some sc -> str" :" ++ spc() ++ str sc))
-  | VernacSyntaxExtension (local,sl,mv8) ->
-      let (s,l) = match mv8 with
-          None -> out_some sl
-        | Some ml -> ml in
+  | VernacSyntaxExtension (local,(s,l)) ->
       str"Reserved Notation" ++ spc() ++ pr_locality local ++ qsnew s ++
       pr_syntax_modifiers l
 
@@ -1132,7 +1106,6 @@ let pr_vernac = function
       (* Pour ceux qui ont utilisé la couche "Import *_scope" de compat *)
       let a = Names.string_of_id a in
       a = "nat_scope" or a = "Z_scope" or a = "R_scope" -> mt()
-  | VernacSyntax _  | VernacGrammar _ as x -> pr_vernac x
   | VernacPrint PrintLocalContext -> 
       warning ("\"Print.\" is discontinued");
       mt ()

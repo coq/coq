@@ -21,16 +21,14 @@ open Mod_subst
 (*i*)
 
 type notation_grammar = 
-    int * Gramext.g_assoc option * notation * prod_item list * int list option
+    int * Gramext.g_assoc option * notation * prod_item list
 
 type all_grammar_command =
   | Notation of (precedence * tolerability list) * notation_grammar
   | Grammar of grammar_command
   | TacticGrammar of
-      int *
-      (string * grammar_production list * 
-       (Names.dir_path * Tacexpr.glob_tactic_expr))
-      list
+      (string * int * grammar_production list * 
+        (Names.dir_path * Tacexpr.glob_tactic_expr))
 
 val extend_grammar : all_grammar_command -> unit
 

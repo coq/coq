@@ -172,25 +172,17 @@ type vernac_expr =
   | VernacVar of lident
 
   (* Syntax *) 
-  | VernacGrammar of lstring * raw_grammar_entry list
-  | VernacTacticGrammar of int *
-      (lstring * grammar_production list * raw_tactic_expr) list
-  | VernacSyntax of lstring * raw_syntax_entry list
-  | VernacSyntaxExtension of locality_flag *
-      (lstring * syntax_modifier list) option 
-      * (lstring * syntax_modifier list) option
-  | VernacDistfix of locality_flag *
-      grammar_associativity * precedence * lstring * lreference *
-      scope_name option
+  | VernacTacticNotation of int * grammar_production list * raw_tactic_expr
+  | VernacSyntaxExtension of locality_flag * (lstring * syntax_modifier list)
   | VernacOpenCloseScope of (locality_flag * bool * scope_name)
   | VernacDelimiters of scope_name * lstring
   | VernacBindScope of scope_name * class_rawexpr list
   | VernacArgumentsScope of lreference * scope_name option list
   | VernacInfix of locality_flag * (lstring * syntax_modifier list) *
-      lreference * (lstring * syntax_modifier list) option * scope_name option
+      lreference * scope_name option
   | VernacNotation of
-      locality_flag * constr_expr * (lstring * syntax_modifier list) option *
-      (lstring * syntax_modifier list) option * scope_name option
+      locality_flag * constr_expr * (lstring * syntax_modifier list) *
+      scope_name option
 
   (* Gallina *)
   | VernacDefinition of definition_kind * lident * definition_expr * 

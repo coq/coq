@@ -44,7 +44,7 @@ type level = precedence * tolerability list
 type delimiters = string
 
 type scope = {
-  notations: (interpretation * (dir_path * string) * bool) Stringmap.t;
+  notations: (interpretation * (dir_path * string)) Stringmap.t;
   delimiters: delimiters option
 }
 
@@ -270,13 +270,13 @@ let level_of_notation ntn =
 
 (* The mapping between notations and their interpretation *)
 
-let declare_notation_interpretation ntn scopt pat df pp8only =
+let declare_notation_interpretation ntn scopt pat df =
   let scope = match scopt with Some s -> s | None -> default_scope in
   let sc = find_scope scope in
   if Stringmap.mem ntn sc.notations && Options.is_verbose () then
     warning ("Notation "^ntn^" was already used"^
     (if scopt = None then "" else " in scope "^scope));
-  let sc = { sc with notations = Stringmap.add ntn (pat,df,pp8only) sc.notations } in
+  let sc = { sc with notations = Stringmap.add ntn (pat,df) sc.notations } in
   scope_map := Stringmap.add scope sc !scope_map;
   if scopt = None then scope_stack := SingleNotation ntn :: !scope_stack
 
@@ -296,8 +296,7 @@ let rec find_interpretation f = function
 let rec interp_notation loc ntn scopes =
   let f sc =
     let scope = find_scope sc in
-    let (pat,df,pp8only) = Stringmap.find ntn scope.notations in
-    if pp8only then raise Not_found;
+    let (pat,df) = Stringmap.find ntn scope.notations in
     pat,(df,if sc = default_scope then None else Some sc) in
   try find_interpretation f (List.fold_right push_scope scopes !scope_stack)
   with Not_found -> 
@@ -361,9 +360,9 @@ let exists_notation_in_scope scopt ntn r =
   let scope = match scopt with Some s -> s | None -> default_scope in
   try
     let sc = Stringmap.find scope !scope_map in
-    let (r',_,pp8only) = Stringmap.find ntn sc.notations in
-    r' = r, pp8only
-  with Not_found -> false, false
+    let (r',_) = Stringmap.find ntn sc.notations in
+    r' = r
+  with Not_found -> false
 
 (**********************************************************************)
 (* Mapping classes to scopes *)
@@ -506,7 +505,7 @@ let pr_named_scope prraw scope sc =
   ++ fnl ()
   ++ pr_scope_classes scope
   ++ Stringmap.fold
-       (fun ntn ((_,r),(_,df),_) strm ->
+       (fun ntn ((_,r),(_,df)) strm ->
 	 pr_notation_info prraw df r ++ fnl () ++ strm)
        sc.notations (mt ())
 
@@ -544,7 +543,7 @@ let browse_notation ntn map =
   let l =
     Stringmap.fold 
       (fun scope_name sc ->
-	Stringmap.fold (fun ntn ((_,r),df,_) l ->
+	Stringmap.fold (fun ntn ((_,r),df) l ->
 	  if find ntn then (ntn,(scope_name,r,df))::l else l) sc.notations)
       map [] in
   let l = List.sort (fun x y -> Pervasives.compare (fst x) (fst y)) l in
@@ -572,7 +571,7 @@ let locate_notation prraw ntn =
 let collect_notation_in_scope scope sc known =
   assert (scope <> default_scope);
   Stringmap.fold
-    (fun ntn ((_,r),(_,df),_) (l,known as acc) ->
+    (fun ntn ((_,r),(_,df)) (l,known as acc) ->
       if List.mem ntn known then acc else ((df,r)::l,ntn::known))
     sc.notations ([],known)
 
@@ -588,7 +587,7 @@ let collect_notations stack =
       | SingleNotation ntn ->
 	  if List.mem ntn knownntn then (all,knownntn)
 	  else
-	    let ((_,r),(_,df),_) =
+	    let ((_,r),(_,df)) =
 	      Stringmap.find ntn (find_scope default_scope).notations in
 	    let all' = match all with
 	      | (s,lonelyntn)::rest when s = default_scope ->

@@ -21,16 +21,14 @@ open Nameops
 (* State of the grammar extensions *)
 
 type notation_grammar = 
-    int * Gramext.g_assoc option * notation * prod_item list * int list option
+    int * Gramext.g_assoc option * notation * prod_item list
 
 type all_grammar_command =
   | Notation of Notation.level * notation_grammar
   | Grammar of grammar_command
-  | TacticGrammar of 
-      int *
-      (string * grammar_production list *
-       (Names.dir_path * Tacexpr.glob_tactic_expr))
-      list
+  | TacticGrammar of
+      (string * int * grammar_production list * 
+        (Names.dir_path * Tacexpr.glob_tactic_expr))
 
 let (grammar_state : all_grammar_command list ref) = ref []
 
@@ -318,12 +316,8 @@ let extend_constr entry (n,assoc,pos,p4assoc,name) make_act (forpat,pt) =
   let act = make_act ntl in
   grammar_extend entry pos [(name, p4assoc, [symbs, act])]
 
-let extend_constr_notation (n,assoc,ntn,rule,permut) =
-  let mkact =
-    match permut with
-        None -> (fun loc env -> CNotation (loc,ntn,List.map snd env))
-      | Some p -> (fun loc env ->
-          CNotation (loc,ntn,List.map (fun i -> snd (List.nth env i)) p)) in
+let extend_constr_notation (n,assoc,ntn,rule) =
+  let mkact loc env = CNotation (loc,ntn,List.map snd env) in
   let (e,level,keepassoc) = get_constr_entry false (ETConstr (n,())) in
   let pos,p4assoc,name = find_position false keepassoc assoc level in
   extend_constr e (ETConstr(n,()),assoc,pos,p4assoc,name)
@@ -438,34 +432,31 @@ let get_tactic_entry n =
 
 open Tacexpr
 
-let head_is_ident = function (_,VTerm _::_,_) -> true | _ -> false
+let head_is_ident = function VTerm _::_ -> true | _ -> false
 
-let add_tactic_entries (lev,gl) =
+let add_tactic_entry (key,lev,prods,tac) =
   let univ = get_univ "tactic" in
   let entry, pos = get_tactic_entry lev in
   let rules = 
     if lev = 0 then begin
-      if not (List.for_all head_is_ident gl) then
-	error "Notations for simple tactics must start with an identifier";
+      if not (head_is_ident prods) then
+	error "Notation for simple tactic must start with an identifier";
       let make_act s tac loc l = 
 	(TacAlias(loc,s,l,tac):raw_atomic_tactic_expr) in
-      let f (s,l,tac) =
-	make_rule univ (make_act s tac) (make_vprod_item lev "tactic") l in
-      List.map f gl end
+      make_rule univ (make_act key tac) (make_vprod_item lev "tactic") prods
+    end
     else
       let make_act s tac loc l = 
 	(TacAtom(loc,TacAlias(loc,s,l,tac)):raw_tactic_expr) in
-      let f (s,l,tac) =
-	make_rule univ (make_act s tac) (make_vprod_item lev "tactic") l in
-      List.map f gl in
+      make_rule univ (make_act key tac) (make_vprod_item lev "tactic") prods in
   let _ = find_position true true None None (* to synchronise with remove *) in
-  grammar_extend entry pos [(None, None, List.rev rules)]
+  grammar_extend entry pos [(None, None, List.rev [rules])]
 
 let extend_grammar gram =
   (match gram with
   | Notation (_,a) -> extend_constr_notation a
   | Grammar g -> extend_grammar_rules g
-  | TacticGrammar (n,l) -> add_tactic_entries (n,l));
+  | TacticGrammar g -> add_tactic_entry g);
   grammar_state := gram :: !grammar_state
 
 let reset_extend_grammars_v8 () =
@@ -478,7 +469,7 @@ let reset_extend_grammars_v8 () =
 
 let recover_notation_grammar ntn prec =
   let l = map_succeed (function
-    | Notation (prec',(_,_,ntn',_,_ as x)) when prec = prec' & ntn = ntn' -> x
+    | Notation (prec',(_,_,ntn',_ as x)) when prec = prec' & ntn = ntn' -> x
     | _ -> failwith "") !grammar_state in
   assert (List.length l = 1);
   List.hd l

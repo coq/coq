@@ -280,10 +280,6 @@ let print_located_module r =
 (**********)
 (* Syntax *)
 
-let vernac_syntax = Metasyntax.add_syntax_obj
-
-let vernac_grammar = Metasyntax.add_grammar_obj
-
 let vernac_syntax_extension = Metasyntax.add_syntax_extension
 
 let vernac_delimiters = Metasyntax.add_delimiters
@@ -297,8 +293,6 @@ let vernac_arguments_scope qid scl =
   Notation.declare_arguments_scope (global qid) scl
 
 let vernac_infix = Metasyntax.add_infix
-
-let vernac_distfix = Metasyntax.add_distfix
 
 let vernac_notation = Metasyntax.add_notation
 
@@ -974,7 +968,7 @@ let vernac_locate = function
   | LocateFile f -> locate_file f
   | LocateNotation ntn ->
       ppnl (Notation.locate_notation (Constrextern.without_symbols pr_rawterm)
-	(Metasyntax.standardise_locatable_notation ntn))
+	(Metasyntax.standardize_locatable_notation ntn))
 
 (********************)
 (* Proof management *)
@@ -1108,19 +1102,14 @@ let interp c = match c with
   | (VernacV7only _ | VernacV8only _) -> assert false
 
   (* Syntax *)
-  | VernacSyntax (whatfor,sel) -> vernac_syntax whatfor sel
-  | VernacTacticGrammar (n,al) -> Metasyntax.add_tactic_grammar (n,al)
-  | VernacGrammar (univ,al) -> vernac_grammar univ al
-  | VernacSyntaxExtension (lcl,sl,l8) -> vernac_syntax_extension lcl sl l8
+  | VernacTacticNotation (n,r,e) -> Metasyntax.add_tactic_notation (n,r,e)
+  | VernacSyntaxExtension (lcl,sl) -> vernac_syntax_extension lcl sl
   | VernacDelimiters (sc,lr) -> vernac_delimiters sc lr
   | VernacBindScope (sc,rl) -> vernac_bind_scope sc rl
   | VernacOpenCloseScope sc -> vernac_open_close_scope sc
   | VernacArgumentsScope (qid,scl) -> vernac_arguments_scope qid scl
-  | VernacInfix (local,mv,qid,mv8,sc) -> vernac_infix local mv qid mv8 sc
-  | VernacDistfix (local,assoc,n,inf,qid,sc) -> 
-      vernac_distfix local assoc n inf qid sc
-  | VernacNotation (local,c,infpl,mv8,sc) ->
-      vernac_notation local c infpl mv8 sc
+  | VernacInfix (local,mv,qid,sc) -> vernac_infix local mv qid sc
+  | VernacNotation (local,c,infpl,sc) -> vernac_notation local c infpl sc
 
   (* Gallina *)
   | VernacDefinition (k,(_,id),d,f) -> vernac_definition k id d f
