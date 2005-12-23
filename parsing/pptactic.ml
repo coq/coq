@@ -42,6 +42,8 @@ let declare_extra_tactic_pprule for_v8 s (tags,prods) =
   Hashtbl.add prtac_tab_v7 (s,tags) prods;
   if for_v8 then Hashtbl.add prtac_tab (s,tags) prods
 
+let exists_extra_tactic_pprule s tags = Hashtbl.mem prtac_tab_v7 (s,tags)
+
 type 'a raw_extra_genarg_printer =
     (constr_expr -> std_ppcmds) -> (raw_tactic_expr -> std_ppcmds) ->
       'a -> std_ppcmds
