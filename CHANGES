@@ -1,6 +1,10 @@
 Changes from V8.0
 =================
 
+Syntax
+
+- Removal of old syntax and translation support 
+
 Environment variables
 
 - COQREMOTEBROWSER to set the command invoked to start the remote browser
@@ -75,6 +79,11 @@ Library
   compatibility (useless hypothesys of Zgt_square_simpl and
   Zlt_square_simpl removed; fixed names mentioning letter O instead of
   digit 0; weaken premises in Z_lt_induction)
+
+Tools
+
+- New semantics for coqtop options ("-batch" expects option "-top dir"
+  for loading vernac file that contains definitions).
 
 Changes from V8.0beta to V8.0
 =============================
