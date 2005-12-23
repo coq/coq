@@ -33,7 +33,7 @@ Save.
 Check (O#O).
 Locate rel.
 
-Locate M.
+Locate Library M.
 
 Module N:=Top.M.
 
