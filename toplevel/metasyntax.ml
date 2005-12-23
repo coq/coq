@@ -88,22 +88,19 @@ let rec make_tags lev = function
       etyp :: make_tags lev l
   | [] -> []
 
-let declare_tactic_pprule n (s,l,tac) =
-  let pp = (make_tags n l, (n,List.map make_terminal_status l)) in
-  Pptactic.declare_extra_tactic_pprule true s pp;
-  Pptactic.declare_extra_tactic_pprule false s pp
+let declare_tactic_pprule n (s,t,p) =
+  Pptactic.declare_extra_tactic_pprule true s (t,p);
+  Pptactic.declare_extra_tactic_pprule false s (t,p)
 
-let cache_tactic_notation (_,(n,gl)) =
-  Egrammar.extend_grammar (Egrammar.TacticGrammar (n,gl));
-  List.iter (declare_tactic_pprule n) gl
+let cache_tactic_notation (_,((n,pa),pp)) =
+  Egrammar.extend_grammar (Egrammar.TacticGrammar (n,pa));
+  List.iter (declare_tactic_pprule n) pp
 
 let subst_one_tactic_notation subst (s,p,(d,tac)) =
   (s,p,(d,Tacinterp.subst_tactic subst tac))
 
-open Egrammar
-
-let subst_tactic_notation (_,subst,(n,g)) =
-  (n,List.map (subst_one_tactic_notation subst) g)
+let subst_tactic_notation (_,subst,((n,pa),pp)) =
+  ((n,List.map (subst_one_tactic_notation subst) pa),pp)
 
 let (inTacticGrammar, outTacticGrammar) =
   declare_object {(default_object "TacticGrammar") with
@@ -117,15 +114,32 @@ let cons_production_parameter l = function
   | VTerm _ -> l
   | VNonTerm (_,_,ido) -> option_cons ido l
 
-let locate_tactic_body dir (s,prods,e) = 
+let rec tactic_notation_key = function
+  | VTerm id :: _ -> id
+  | _ :: l -> tactic_notation_key l
+  | [] -> "terminal_free_notation"
+
+let rec next_key_away key t =
+  if Pptactic.exists_extra_tactic_pprule key t then next_key_away (key^"'") t
+  else key
+
+let make_tactic_pprule n s prods =
+  let tags = make_tags n prods in
+  let s = if s="" then next_key_away (tactic_notation_key prods) tags else s in
+  (s, tags, (n,List.map make_terminal_status prods))
+
+let make_tactic_parule s prods e =
   let ids = List.fold_left cons_production_parameter [] prods in
   let tac = Tacinterp.glob_tactic_env ids (Global.env()) e in
-  (s,prods,(dir,tac))
+  (s,prods,(Lib.cwd (),tac))
+
+let locate_tactic_body n (s,prods,e) =
+  let (s',t,p as pp) = make_tactic_pprule n s prods in
+  (make_tactic_parule s' prods e, pp)
 
 let add_tactic_notation (n,g) =
-  let dir = Lib.cwd () in
-  let g = List.map (locate_tactic_body dir) g in
-  Lib.add_anonymous_leaf (inTacticGrammar (n,g))
+  let pa,pp = List.split (List.map (locate_tactic_body n) g) in
+  Lib.add_anonymous_leaf (inTacticGrammar ((n,pa),pp))
 
 (**********************************************************************)
 (* Printing grammar entries                                           *)
