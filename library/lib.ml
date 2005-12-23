@@ -183,6 +183,8 @@ let add_absolutely_named_leaf sp obj =
   add_entry sp (Leaf obj)
 
 let add_leaf id obj =
+  if fst (current_prefix ()) = initial_path then 
+    error ("No session module started (use -top dir)");
   let oname = make_oname id in
   cache_object (oname,obj);
   add_entry oname (Leaf obj);
