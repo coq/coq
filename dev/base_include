@@ -42,26 +42,21 @@ let qid = Libnames.qualid_of_string;;
 
 (* parsing of terms *)
 
-let parse_com   = Pcoq.parse_string Pcoq.Constr.constr;;
-let parse_tac = Pcoq.parse_string Pcoq.Tactic.tactic;;
+let parse_constr = Pcoq.parse_string Pcoq.Constr.constr;;
+let parse_tac    = Pcoq.parse_string Pcoq.Tactic.tactic;;
 let parse_vernac = Pcoq.parse_string Pcoq.Vernac_.vernac;;
-
-(* For compatibility reasons *)
-let parse_ast = parse_com;;
 
 (* build a term of type rawconstr without type-checking or resolution of 
    implicit syntax *)
 
-let e s = Constrintern.interp_rawconstr Evd.empty (Global.env()) (parse_ast s);;
-
-(* For compatibility *)
-let raw_constr_of_string = e;;
+let e s =
+  Constrintern.intern_constr Evd.empty (Global.env()) (parse_constr s);;
 
 (* build a term of type constr with type-checking and resolution of 
    implicit syntax *)
 
 let constr_of_string s = 
-  Constrintern.interp_constr Evd.empty (Global.env()) (parse_ast s);;
+  Constrintern.interp_constr Evd.empty (Global.env()) (parse_constr s);;
 
 (* get the body of a constant *)
 
@@ -79,7 +74,7 @@ let get_nth_goal n = nth_goal_of_pftreestate n (Pfedit.get_pftreestate ());;
 let current_goal () = get_nth_goal 1;;
 
 let pf_e gl s = 
-    Constrintern.interp_constr (project gl) (pf_env gl) (parse_ast s);;
+  Constrintern.interp_constr (project gl) (pf_env gl) (parse_constr s);;
 
 open Toplevel
 let go = loop
