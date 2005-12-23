@@ -180,11 +180,11 @@ PARSING=\
   parsing/printmod.cmo parsing/prettyp.cmo parsing/search.cmo 
 
 HIGHPARSING=\
-  parsing/g_prim.cmo parsing/g_proofs.cmo parsing/g_basevernac.cmo \
-  parsing/g_vernac.cmo parsing/g_tactic.cmo \
-  parsing/g_ltac.cmo parsing/g_constr.cmo parsing/g_cases.cmo \
-  parsing/g_module.cmo \
-  parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo
+  parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo \
+  parsing/g_prim.cmo # parsing/g_proofs.cmo parsing/g_basevernac.cmo \
+#  parsing/g_vernac.cmo parsing/g_tactic.cmo \
+#  parsing/g_ltac.cmo parsing/g_constr.cmo parsing/g_cases.cmo \
+#  parsing/g_module.cmo \
 
 HIGHPARSINGNEW=\
   parsing/g_primnew.cmo parsing/g_constrnew.cmo parsing/g_tacticnew.cmo \
