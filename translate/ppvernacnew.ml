@@ -48,9 +48,12 @@ let pr_module r =
         Ident (loc,id_of_string s)
     | Qualid (loc,qid) ->
         Qualid (loc,make_qualid (fst (repr_qualid qid)) (id_of_string s)) in
-  let (_,dir,_) =
+  let dir =
     try
-      Library.locate_qualified_library (snd (qualid_of_reference r))
+      Nametab.full_name_module (snd (qualid_of_reference r))
+    with _ -> 
+    try
+      pi2 (Library.locate_qualified_library (snd (qualid_of_reference r)))
     with _ -> 
       errorlabstrm "" (str"Translator cannot find " ++ Libnames.pr_reference r)
   in
@@ -1032,7 +1035,7 @@ let rec pr_vernac = function
 	| PrintImplicit qid -> str"Print Implicit" ++ spc()  ++ pr_reference qid
       in pr_printable p
   | VernacSearch (sea,sea_r) -> pr_search sea sea_r pr_pattern
-  | VernacLocate loc -> 
+  | VernacLocate loc ->
       let pr_locate =function
 	| LocateTerm qid ->  pr_reference qid
 	| LocateFile f -> str"File" ++ spc() ++ qsnew f
