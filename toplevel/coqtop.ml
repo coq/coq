@@ -50,11 +50,10 @@ let engage () =
   
 let set_batch_mode () = batch_mode := true
 
-let toplevel_name = ref None
 let toplevel_default_name = make_dirpath [id_of_string "Top"]
+let toplevel_name = ref (Some toplevel_default_name)
 let set_toplevel_name dir = toplevel_name := Some dir
-let get_toplevel_name () =
-  match !toplevel_name with Some dir -> dir | None -> toplevel_default_name
+let unset_toplevel_name () = toplevel_name := None
 
 let remove_top_ml () = Mltop.remove ()
 
@@ -187,6 +186,7 @@ let parse_args is_ide =
     | "-top" :: d :: rem -> set_toplevel_name (dirpath_of_string d); parse rem
     | "-top" :: [] -> usage ()
 
+    | "-notop" :: rem -> unset_toplevel_name (); parse rem
     | "-q" :: rem -> no_load_rc (); parse rem
 
     | "-opt" :: rem -> set_opt(); parse rem
@@ -313,8 +313,8 @@ let init is_ide =
       inputstate ();
       set_vm_opt ();
       engage ();
-      if (not !batch_mode|| !toplevel_name<>None) && Global.env_is_empty() then
-        Declaremods.start_library (get_toplevel_name ());
+      if (not !batch_mode|| !compile_list=[]) && Global.env_is_empty() then
+        option_iter Declaremods.start_library !toplevel_name;
       init_library_roots ();
       load_vernac_obj ();
       require ();
