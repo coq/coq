@@ -145,7 +145,7 @@ let bool_not loc a =
   let d = SApp ( [Variable connective_not ], [a]) in
   w d
 
-let ast_zwf_zero loc = mk_appl loc loc "Zwf" [mk_ref loc "ZERO"]
+let ast_zwf_zero loc = mk_appl loc loc "Zwf" [mk_ref loc "Z0"]
 
 (* program -> Coq AST *)
 
