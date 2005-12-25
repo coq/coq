@@ -78,23 +78,23 @@ let constant = Coqlib.gen_constant_in_modules "Omega" coq_modules
 let coq_xH = lazy (constant "xH")
 let coq_xO = lazy (constant "xO")
 let coq_xI = lazy (constant "xI")
-let coq_ZERO = lazy (constant "Z0")
-let coq_POS = lazy (constant "Zpos")
-let coq_NEG = lazy (constant "Zneg")
+let coq_Z0 = lazy (constant "Z0")
+let coq_Zpos = lazy (constant "Zpos")
+let coq_Zneg = lazy (constant "Zneg")
 let coq_Z = lazy (constant "Z")
-let coq_relation = lazy (constant  "comparison")
-let coq_SUPERIEUR = lazy (constant "SUPERIEUR")
-let coq_INFEEIEUR = lazy (constant "INFERIEUR")
-let coq_EGAL = lazy (constant "EGAL")
+let coq_comparison = lazy (constant  "comparison")
+let coq_Gt = lazy (constant "Gt")
+let coq_Lt = lazy (constant "Lt")
+let coq_Eq = lazy (constant "Eq")
 let coq_Zplus = lazy (constant "Zplus")
 let coq_Zmult = lazy (constant  "Zmult")
 let coq_Zopp = lazy (constant "Zopp")
 
 let coq_Zminus = lazy (constant "Zminus")
-let coq_Zs = lazy (constant  "Zs")
+let coq_Zsucc = lazy (constant  "Zsucc")
 let coq_Zgt = lazy (constant "Zgt")
 let coq_Zle = lazy (constant "Zle")
-let coq_inject_nat = lazy (constant  "inject_nat")
+let coq_Z_of_nat = lazy (constant  "Z_of_nat")
 
 (* Peano *)
 let coq_le = lazy(constant "le")
@@ -187,7 +187,7 @@ let coq_c_mult_assoc_r = lazy (constant  "C_MULT_ASSOC_R")
 let coq_c_plus_assoc_r = lazy (constant  "C_PLUS_ASSOC_R")
 let coq_c_plus_assoc_l = lazy (constant  "C_PLUS_ASSOC_L")
 let coq_c_plus_permute = lazy (constant  "C_PLUS_PERMUTE")
-let coq_c_plus_sym = lazy (constant  "C_PLUS_SYM")
+let coq_c_plus_comm = lazy (constant  "C_PLUS_COMM")
 let coq_c_red0 = lazy (constant  "C_RED0")
 let coq_c_red1 = lazy (constant  "C_RED1")
 let coq_c_red2 = lazy (constant  "C_RED2")
@@ -199,7 +199,7 @@ let coq_c_mult_opp_left = lazy (constant  "C_MULT_OPP_LEFT")
 let coq_c_mult_assoc_reduced = 
   lazy (constant  "C_MULT_ASSOC_REDUCED")
 let coq_c_minus = lazy (constant  "C_MINUS")
-let coq_c_mult_sym = lazy (constant  "C_MULT_SYM")
+let coq_c_mult_comm = lazy (constant  "C_MULT_COMM")
 
 let coq_s_constant_not_nul = lazy (constant  "O_CONSTANT_NOT_NUL")
 let coq_s_constant_neg = lazy (constant  "O_CONSTANT_NEG")
@@ -245,8 +245,8 @@ let mk_and t1 t2 =  Term.mkApp (Lazy.force coq_and, [|t1; t2 |])
 let mk_or t1 t2 =  Term.mkApp (Lazy.force coq_or, [|t1; t2 |])
 let mk_not t = Term.mkApp (Lazy.force coq_not, [|t |])
 let mk_eq_rel t1 t2 = Term.mkApp (Lazy.force coq_eq, [|
-				Lazy.force coq_relation; t1; t2 |])
-let mk_inj t = Term.mkApp (Lazy.force coq_inject_nat, [|t |])
+				Lazy.force coq_comparison; t1; t2 |])
+let mk_inj t = Term.mkApp (Lazy.force coq_Z_of_nat, [|t |])
 
 
 let do_left t = 
@@ -280,12 +280,12 @@ let mk_integer n =
         ((if r = Bigint.zero then Lazy.force coq_xO else Lazy.force coq_xI),
 	[| loop q |]) in
     
-    if n = Bigint.zero then Lazy.force coq_ZERO 
+    if n = Bigint.zero then Lazy.force coq_Z0 
     else
       if Bigint.is_strictly_pos n then
-        Term.mkApp (Lazy.force coq_POS, [| loop n |])
+        Term.mkApp (Lazy.force coq_Zpos, [| loop n |])
       else
-        Term.mkApp (Lazy.force coq_NEG, [| loop (Bigint.neg n) |])
+        Term.mkApp (Lazy.force coq_Zneg, [| loop (Bigint.neg n) |])
 
 let mk_Z = mk_integer
 

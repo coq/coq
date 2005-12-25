@@ -130,7 +130,7 @@ Inductive step : Set :=
   | C_PLUS_ASSOC_R : step
   | C_PLUS_ASSOC_L : step
   | C_PLUS_PERMUTE : step
-  | C_PLUS_SYM : step
+  | C_PLUS_COMM : step
   | C_RED0 : step
   | C_RED1 : step
   | C_RED2 : step
@@ -140,7 +140,7 @@ Inductive step : Set :=
   | C_RED6 : step
   | C_MULT_ASSOC_REDUCED : step
   | C_MINUS : step
-  | C_MULT_SYM : step.
+  | C_MULT_COMM : step.
 
 (* \subsubsection{Omega steps} *)
 (* The following inductive type describes steps as they can be found in
@@ -1483,7 +1483,7 @@ Fixpoint rewrite (s : step) : term -> term :=
   | C_PLUS_ASSOC_R => Tplus_assoc_r
   | C_PLUS_ASSOC_L => Tplus_assoc_l
   | C_PLUS_PERMUTE => Tplus_permute
-  | C_PLUS_SYM => Tplus_sym
+  | C_PLUS_COMM => Tplus_sym
   | C_RED0 => Tred_factor0
   | C_RED1 => Tred_factor1
   | C_RED2 => Tred_factor2
@@ -1493,7 +1493,7 @@ Fixpoint rewrite (s : step) : term -> term :=
   | C_RED6 => Tred_factor6
   | C_MULT_ASSOC_REDUCED => Tmult_assoc_reduced
   | C_MINUS => Tminus_def
-  | C_MULT_SYM => Tmult_sym
+  | C_MULT_COMM => Tmult_sym
   end.
 
 Theorem rewrite_stable : forall s : step, term_stable (rewrite s).

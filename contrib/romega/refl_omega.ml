@@ -545,7 +545,7 @@ let rec shuffle env (t1,t2) =
       if weight env l1 > weight env t2 then
         let (l_action,t') = shuffle env (r1,t2) in
 	do_list [Lazy.force coq_c_plus_assoc_r;do_right l_action],Oplus(l1, t')
-      else do_list [Lazy.force coq_c_plus_sym], Oplus(t2,t1)
+      else do_list [Lazy.force coq_c_plus_comm], Oplus(t2,t1)
   | t1,Oplus(l2,r2) -> 
       if weight env l2 > weight env t1 then
         let (l_action,t') = shuffle env (t1,r2) in
@@ -555,7 +555,7 @@ let rec shuffle env (t1,t2) =
       do_list [Lazy.force coq_c_reduce], Oint(t1+t2)
   | t1,t2 ->
       if weight env t1 < weight env t2 then
-	do_list [Lazy.force coq_c_plus_sym], Oplus(t2,t1)
+	do_list [Lazy.force coq_c_plus_comm], Oplus(t2,t1)
       else do_list [],Oplus(t1,t2)
 
 (* \subsection{Fusion avec réduction} *)
@@ -654,7 +654,7 @@ let rec reduce env = function
 	  t', do_list [do_both trace1 trace2; tac]
       | (Oint n,_) ->
 	  let tac,t' = scalar n t2' in
-	  t', do_list [do_both trace1 trace2; Lazy.force coq_c_mult_sym; tac]
+	  t', do_list [do_both trace1 trace2; Lazy.force coq_c_mult_comm; tac]
       | _ -> Oufo t, Lazy.force coq_c_nop
       end
   | Oopp t ->
