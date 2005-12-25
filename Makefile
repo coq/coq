@@ -1094,13 +1094,13 @@ ALLOLDVO = $(OLDINITVO) $(OLDTHEORIESVO) $(OLDCONTRIBVO)
 SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v
 
 states7/barestate.coq: $(SYNTAXPP) $(BESTCOQTOP)
-	$(BESTCOQTOP) -v7 -boot -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate $@
+	$(BESTCOQTOP) -v7 -boot -batch -notop -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate $@
 
 states7/initial.coq: states7/barestate.coq states7/MakeInitial.v $(OLDINITVO) $(BESTCOQTOP)
-	$(BOOTCOQTOP) -v7 -batch -silent -is states7/barestate.coq -load-vernac-source states7/MakeInitial.v -outputstate states7/initial.coq
+	$(BOOTCOQTOP) -v7 -batch -notop -silent -is states7/barestate.coq -load-vernac-source states7/MakeInitial.v -outputstate states7/initial.coq
 
 states/initial.coq: states/MakeInitial.v $(NEWINITVO)
-	$(BOOTCOQTOP) -batch -silent -nois -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
+	$(BOOTCOQTOP) -batch -notop -silent -nois -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
 
 theories7/Init/%.vo: $(BESTCOQTOP) theories7/Init/%.v
 	$(BOOTCOQTOP) $(TRANSLATE) -nois -compile theories7/Init/$*
