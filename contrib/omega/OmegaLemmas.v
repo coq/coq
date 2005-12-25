@@ -1,15 +1,14 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
+(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
+(*   \VV/  *************************************************************)
+(*    //   *      This file is distributed under the terms of the      *)
+(*         *       GNU Lesser General Public License Version 2.1       *)
+(***********************************************************************)
 
 (*i $Id$ i*)
 
 Require Import ZArith_base.
-
 Open Local Scope Z_scope.
 
 (** These are specific variants of theorems dedicated for the Omega tactic *)
@@ -185,13 +184,13 @@ unfold Zne, not in |- *; intros x y z H1 H2 H3; apply H1; rewrite H2 in H3;
  simpl in H3; rewrite Zplus_0_r in H3; trivial with arith.
 Qed.
 
-Definition fast_Zplus_sym (x y : Z) (P : Z -> Prop) 
+Definition fast_Zplus_comm (x y : Z) (P : Z -> Prop)
   (H : P (y + x)) := eq_ind_r P H (Zplus_comm x y).
 
-Definition fast_Zplus_assoc_r (n m p : Z) (P : Z -> Prop)
+Definition fast_Zplus_assoc_reverse (n m p : Z) (P : Z -> Prop)
   (H : P (n + (m + p))) := eq_ind_r P H (Zplus_assoc_reverse n m p).
 
-Definition fast_Zplus_assoc_l (n m p : Z) (P : Z -> Prop)
+Definition fast_Zplus_assoc (n m p : Z) (P : Z -> Prop) 
   (H : P (n + m + p)) := eq_ind_r P H (Zplus_assoc n m p).
 
 Definition fast_Zplus_permute (n m p : Z) (P : Z -> Prop)
@@ -214,35 +213,35 @@ Definition fast_OMEGA15 (v c1 c2 l1 l2 k2 : Z) (P : Z -> Prop)
 Definition fast_OMEGA16 (v c l k : Z) (P : Z -> Prop)
   (H : P (v * (c * k) + l * k)) := eq_ind_r P H (OMEGA16 v c l k).
 
-Definition fast_OMEGA13 (v l1 l2 : Z) (x : positive) 
-  (P : Z -> Prop) (H : P (l1 + l2)) := eq_ind_r P H (OMEGA13 v l1 l2 x).
+Definition fast_OMEGA13 (v l1 l2 : Z) (x : positive) (P : Z -> Prop)
+  (H : P (l1 + l2)) := eq_ind_r P H (OMEGA13 v l1 l2 x).
 
-Definition fast_OMEGA14 (v l1 l2 : Z) (x : positive) 
-  (P : Z -> Prop) (H : P (l1 + l2)) := eq_ind_r P H (OMEGA14 v l1 l2 x).
+Definition fast_OMEGA14 (v l1 l2 : Z) (x : positive) (P : Z -> Prop)
+  (H : P (l1 + l2)) := eq_ind_r P H (OMEGA14 v l1 l2 x).
 Definition fast_Zred_factor0 (x : Z) (P : Z -> Prop) 
   (H : P (x * 1)) := eq_ind_r P H (Zred_factor0 x).
 
-Definition fast_Zopp_one (x : Z) (P : Z -> Prop) (H : P (x * -1)) :=
-  eq_ind_r P H (Zopp_eq_mult_neg_1 x).
+Definition fast_Zopp_eq_mult_neg_1 (x : Z) (P : Z -> Prop)
+  (H : P (x * -1)) := eq_ind_r P H (Zopp_eq_mult_neg_1 x).
 
-Definition fast_Zmult_sym (x y : Z) (P : Z -> Prop) 
+Definition fast_Zmult_comm (x y : Z) (P : Z -> Prop)
   (H : P (y * x)) := eq_ind_r P H (Zmult_comm x y).
 
-Definition fast_Zopp_Zplus (x y : Z) (P : Z -> Prop) 
+Definition fast_Zopp_plus_distr (x y : Z) (P : Z -> Prop)
   (H : P (- x + - y)) := eq_ind_r P H (Zopp_plus_distr x y).
 
-Definition fast_Zopp_Zopp (x : Z) (P : Z -> Prop) (H : P x) :=
+Definition fast_Zopp_involutive (x : Z) (P : Z -> Prop) (H : P x) :=
   eq_ind_r P H (Zopp_involutive x).
 
-Definition fast_Zopp_Zmult_r (x y : Z) (P : Z -> Prop) 
+Definition fast_Zopp_mult_distr_r (x y : Z) (P : Z -> Prop) 
   (H : P (x * - y)) := eq_ind_r P H (Zopp_mult_distr_r x y).
 
-Definition fast_Zmult_plus_distr (n m p : Z) (P : Z -> Prop)
+Definition fast_Zmult_plus_distr_l (n m p : Z) (P : Z -> Prop)
   (H : P (n * p + m * p)) := eq_ind_r P H (Zmult_plus_distr_l n m p).
-Definition fast_Zmult_Zopp_left (x y : Z) (P : Z -> Prop)
+Definition fast_Zmult_opp_comm (x y : Z) (P : Z -> Prop) 
   (H : P (x * - y)) := eq_ind_r P H (Zmult_opp_comm x y).
 
-Definition fast_Zmult_assoc_r (n m p : Z) (P : Z -> Prop)
+Definition fast_Zmult_assoc_reverse (n m p : Z) (P : Z -> Prop)
   (H : P (n * (m * p))) := eq_ind_r P H (Zmult_assoc_reverse n m p).
 
 Definition fast_Zred_factor1 (x : Z) (P : Z -> Prop) 
@@ -250,6 +249,7 @@ Definition fast_Zred_factor1 (x : Z) (P : Z -> Prop)
 
 Definition fast_Zred_factor2 (x y : Z) (P : Z -> Prop)
   (H : P (x * (1 + y))) := eq_ind_r P H (Zred_factor2 x y).
+
 Definition fast_Zred_factor3 (x y : Z) (P : Z -> Prop)
   (H : P (x * (1 + y))) := eq_ind_r P H (Zred_factor3 x y).
 

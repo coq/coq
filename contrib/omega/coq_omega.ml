@@ -173,22 +173,22 @@ let constant = gen_constant_in_modules "Omega" coq_modules
 let coq_xH = lazy (constant "xH")
 let coq_xO = lazy (constant "xO")
 let coq_xI = lazy (constant "xI")
-let coq_ZERO = lazy (constant (if !Options.v7 then "ZERO" else "Z0"))
-let coq_POS = lazy (constant (if !Options.v7 then "POS" else "Zpos"))
-let coq_NEG = lazy (constant (if !Options.v7 then "NEG" else "Zneg"))
+let coq_Z0 = lazy (constant "Z0")
+let coq_Zpos = lazy (constant "Zpos")
+let coq_Zneg = lazy (constant "Zneg")
 let coq_Z = lazy (constant "Z")
-let coq_relation = lazy (constant (if !Options.v7 then "relation" else "comparison"))
-let coq_SUPERIEUR = lazy (constant "SUPERIEUR")
-let coq_INFEEIEUR = lazy (constant "INFERIEUR")
-let coq_EGAL = lazy (constant "EGAL")
+let coq_comparison = lazy (constant "comparison")
+let coq_Gt = lazy (constant "Gt")
+let coq_INFEEIEUR = lazy (constant "Lt")
+let coq_Eq = lazy (constant "Eq")
 let coq_Zplus = lazy (constant "Zplus")
 let coq_Zmult = lazy (constant "Zmult")
 let coq_Zopp = lazy (constant "Zopp")
 let coq_Zminus = lazy (constant "Zminus")
-let coq_Zs = lazy (constant "Zs")
+let coq_Zsucc = lazy (constant "Zsucc")
 let coq_Zgt = lazy (constant "Zgt")
 let coq_Zle = lazy (constant "Zle")
-let coq_inject_nat = lazy (constant "inject_nat")
+let coq_Z_of_nat = lazy (constant "Z_of_nat")
 let coq_inj_plus = lazy (constant "inj_plus")
 let coq_inj_mult = lazy (constant "inj_mult")
 let coq_inj_minus1 = lazy (constant "inj_minus1")
@@ -200,12 +200,12 @@ let coq_inj_ge = lazy (constant "inj_ge")
 let coq_inj_gt = lazy (constant "inj_gt")
 let coq_inj_neq = lazy (constant "inj_neq")
 let coq_inj_eq = lazy (constant "inj_eq")
-let coq_fast_Zplus_assoc_r = lazy (constant "fast_Zplus_assoc_r")
-let coq_fast_Zplus_assoc_l = lazy (constant "fast_Zplus_assoc_l")
-let coq_fast_Zmult_assoc_r = lazy (constant "fast_Zmult_assoc_r")
+let coq_fast_Zplus_assoc_reverse = lazy (constant "fast_Zplus_assoc_reverse")
+let coq_fast_Zplus_assoc = lazy (constant "fast_Zplus_assoc")
+let coq_fast_Zmult_assoc_reverse = lazy (constant "fast_Zmult_assoc_reverse")
 let coq_fast_Zplus_permute = lazy (constant "fast_Zplus_permute")
-let coq_fast_Zplus_sym = lazy (constant "fast_Zplus_sym")
-let coq_fast_Zmult_sym = lazy (constant "fast_Zmult_sym")
+let coq_fast_Zplus_comm = lazy (constant "fast_Zplus_comm")
+let coq_fast_Zmult_comm = lazy (constant "fast_Zmult_comm")
 let coq_Zmult_le_approx = lazy (constant "Zmult_le_approx")
 let coq_OMEGA1 = lazy (constant "OMEGA1")
 let coq_OMEGA2 = lazy (constant "OMEGA2")
@@ -234,12 +234,12 @@ let coq_fast_Zred_factor3 = lazy (constant "fast_Zred_factor3")
 let coq_fast_Zred_factor4 = lazy (constant "fast_Zred_factor4")
 let coq_fast_Zred_factor5 = lazy (constant "fast_Zred_factor5")
 let coq_fast_Zred_factor6 = lazy (constant "fast_Zred_factor6")
-let coq_fast_Zmult_plus_distr = lazy (constant "fast_Zmult_plus_distr")
-let coq_fast_Zmult_Zopp_left =  lazy (constant "fast_Zmult_Zopp_left")
-let coq_fast_Zopp_Zplus =   lazy (constant "fast_Zopp_Zplus")
-let coq_fast_Zopp_Zmult_r = lazy (constant "fast_Zopp_Zmult_r")
-let coq_fast_Zopp_one =  lazy (constant "fast_Zopp_one")
-let coq_fast_Zopp_Zopp = lazy (constant "fast_Zopp_Zopp")
+let coq_fast_Zmult_plus_distr_l = lazy (constant "fast_Zmult_plus_distr_l")
+let coq_fast_Zmult_opp_comm =  lazy (constant "fast_Zmult_opp_comm")
+let coq_fast_Zopp_plus_distr =   lazy (constant "fast_Zopp_plus_distr")
+let coq_fast_Zopp_mult_distr_r = lazy (constant "fast_Zopp_mult_distr_r")
+let coq_fast_Zopp_eq_mult_neg_1 =  lazy (constant "fast_Zopp_eq_mult_neg_1")
+let coq_fast_Zopp_involutive = lazy (constant "fast_Zopp_involutive")
 let coq_Zegal_left = lazy (constant "Zegal_left")
 let coq_Zne_left = lazy (constant "Zne_left")
 let coq_Zlt_left = lazy (constant "Zlt_left")
@@ -257,10 +257,10 @@ let coq_dec_Zgt = lazy (constant "dec_Zgt")
 let coq_dec_Zge = lazy (constant "dec_Zge")
 
 let coq_not_Zeq = lazy (constant "not_Zeq")
-let coq_not_Zle = lazy (constant "not_Zle")
-let coq_not_Zlt = lazy (constant "not_Zlt")
-let coq_not_Zge = lazy (constant "not_Zge")
-let coq_not_Zgt = lazy (constant "not_Zgt")
+let coq_Znot_le_gt = lazy (constant "Znot_le_gt")
+let coq_Znot_lt_ge = lazy (constant "Znot_lt_ge")
+let coq_Znot_ge_lt = lazy (constant "Znot_ge_lt")
+let coq_Znot_gt_le = lazy (constant "Znot_gt_le")
 let coq_neq = lazy (constant "neq")
 let coq_Zne = lazy (constant "Zne")
 let coq_Zle = lazy (constant "Zle")
@@ -321,7 +321,7 @@ let evaluable_ref_of_constr s c = match kind_of_term (Lazy.force c) with
       EvalConstRef kn
   | _ -> anomaly ("Coq_omega: "^s^" is not an evaluable constant")
 
-let sp_Zs =     lazy (evaluable_ref_of_constr "Zs" coq_Zs)
+let sp_Zsucc =     lazy (evaluable_ref_of_constr "Zsucc" coq_Zsucc)
 let sp_Zminus = lazy (evaluable_ref_of_constr "Zminus" coq_Zminus)
 let sp_Zle = lazy (evaluable_ref_of_constr "Zle" coq_Zle)
 let sp_Zgt = lazy (evaluable_ref_of_constr "Zgt" coq_Zgt)
@@ -341,8 +341,8 @@ let mk_and t1 t2 =  mkApp (build_coq_and (), [| t1; t2 |])
 let mk_or t1 t2 =  mkApp (build_coq_or (), [| t1; t2 |])
 let mk_not t = mkApp (build_coq_not (), [| t |])
 let mk_eq_rel t1 t2 = mkApp (build_coq_eq (),
-			      [| Lazy.force coq_relation; t1; t2 |])
-let mk_inj t = mkApp (Lazy.force coq_inject_nat, [| t |])
+			      [| Lazy.force coq_comparison; t1; t2 |])
+let mk_inj t = mkApp (Lazy.force coq_Z_of_nat, [| t |])
 
 let mk_integer n =
   let rec loop n = 
@@ -350,14 +350,14 @@ let mk_integer n =
     mkApp((if n mod two =? zero then Lazy.force coq_xO else Lazy.force coq_xI),
 		[| loop (n/two) |])
   in
-  if n =? zero then Lazy.force coq_ZERO 
-  else mkApp ((if n >? zero then Lazy.force coq_POS else Lazy.force coq_NEG),
+  if n =? zero then Lazy.force coq_Z0 
+  else mkApp ((if n >? zero then Lazy.force coq_Zpos else Lazy.force coq_Zneg),
 		 [| loop (abs n) |])
     
 type omega_constant =
-  | Zplus | Zmult | Zminus | Zs | Zopp
+  | Zplus | Zmult | Zminus | Zsucc | Zopp
   | Plus | Mult | Minus | Pred | S | O
-  | POS | NEG | ZERO | Inject_nat
+  | Zpos | Zneg | Z0 | Z_of_nat
   | Eq | Neq
   | Zne | Zle | Zlt | Zge | Zgt
   | Z | Nat
@@ -418,7 +418,7 @@ let destructurate_term t =
     | _, [_;_] when c = Lazy.force coq_Zplus -> Kapp (Zplus,args)
     | _, [_;_] when c = Lazy.force coq_Zmult -> Kapp (Zmult,args)
     | _, [_;_] when c = Lazy.force coq_Zminus -> Kapp (Zminus,args)
-    | _, [_] when c = Lazy.force coq_Zs -> Kapp (Zs,args)
+    | _, [_] when c = Lazy.force coq_Zsucc -> Kapp (Zsucc,args)
     | _, [_] when c = Lazy.force coq_Zopp -> Kapp (Zopp,args)
     | _, [_;_] when c = Lazy.force coq_plus -> Kapp (Plus,args)
     | _, [_;_] when c = Lazy.force coq_mult -> Kapp (Mult,args)
@@ -426,10 +426,10 @@ let destructurate_term t =
     | _, [_] when c = Lazy.force coq_pred -> Kapp (Pred,args)
     | _, [_] when c = Lazy.force coq_S -> Kapp (S,args)
     | _, [] when c = Lazy.force coq_O -> Kapp (O,args)
-    | _, [_] when c = Lazy.force coq_POS -> Kapp (NEG,args)
-    | _, [_] when c = Lazy.force coq_NEG -> Kapp (POS,args)
-    | _, [] when c = Lazy.force coq_ZERO -> Kapp (ZERO,args)
-    | _, [_] when c = Lazy.force coq_inject_nat -> Kapp (Inject_nat,args)
+    | _, [_] when c = Lazy.force coq_Zpos -> Kapp (Zneg,args)
+    | _, [_] when c = Lazy.force coq_Zneg -> Kapp (Zpos,args)
+    | _, [] when c = Lazy.force coq_Z0 -> Kapp (Z0,args)
+    | _, [_] when c = Lazy.force coq_Z_of_nat -> Kapp (Z_of_nat,args)
     | Var id,[] -> Kvar id
     | _ -> Kufo
 
@@ -442,9 +442,9 @@ let recognize_number t =
       | _ -> failwith "not a number" 
   in
   match decompose_app t with 
-    | f, [t] when f = Lazy.force coq_POS -> loop t
-    | f, [t] when f = Lazy.force coq_NEG -> neg (loop t)
-    | f, [] when f = Lazy.force coq_ZERO -> zero
+    | f, [t] when f = Lazy.force coq_Zpos -> loop t
+    | f, [t] when f = Lazy.force coq_Zneg -> neg (loop t)
+    | f, [] when f = Lazy.force coq_Z0 -> zero
     | _ -> failwith "not a number"
 	  
 type constr_path =
@@ -629,7 +629,7 @@ let rec shuffle p (t1,t2) =
           let (tac,t') = shuffle (P_APP 2 :: p) (r1,t2) in
           (clever_rewrite p [[P_APP 1;P_APP 1]; 
 			     [P_APP 1; P_APP 2];[P_APP 2]]
-             (Lazy.force coq_fast_Zplus_assoc_r)
+             (Lazy.force coq_fast_Zplus_assoc_reverse)
            :: tac,
            Oplus(l1,t'))
 	else 
@@ -642,12 +642,12 @@ let rec shuffle p (t1,t2) =
 	if weight l1 > weight t2 then
           let (tac,t') = shuffle (P_APP 2 :: p) (r1,t2) in
           clever_rewrite p [[P_APP 1;P_APP 1]; [P_APP 1; P_APP 2];[P_APP 2]]
-            (Lazy.force coq_fast_Zplus_assoc_r)
+            (Lazy.force coq_fast_Zplus_assoc_reverse)
           :: tac, 
           Oplus(l1, t')
 	else 
           [clever_rewrite p [[P_APP 1];[P_APP 2]] 
-	     (Lazy.force coq_fast_Zplus_sym)],
+	     (Lazy.force coq_fast_Zplus_comm)],
           Oplus(t2,t1)
     | t1,Oplus(l2,r2) -> 
 	if weight l2 > weight t1 then
@@ -662,7 +662,7 @@ let rec shuffle p (t1,t2) =
     | t1,t2 ->
 	if weight t1 < weight t2 then
           [clever_rewrite p [[P_APP 1];[P_APP 2]] 
-	     (Lazy.force coq_fast_Zplus_sym)],
+	     (Lazy.force coq_fast_Zplus_comm)],
 	  Oplus(t2,t1)
 	else [],Oplus(t1,t2)
 	  
@@ -747,7 +747,7 @@ let rec shuffle_mult_right p_init e1 k2 e2 =
           else tac :: loop (P_APP 2 :: p) (l1,l2)
 	else if v1 > v2 then
           clever_rewrite p [[P_APP 1;P_APP 1]; [P_APP 1; P_APP 2];[P_APP 2]]
-            (Lazy.force coq_fast_Zplus_assoc_r) ::
+            (Lazy.force coq_fast_Zplus_assoc_reverse) ::
           loop (P_APP 2 :: p) (l1,l2')
 	else
           clever_rewrite p [[P_APP 2; P_APP 1; P_APP 1; P_APP 1];
@@ -759,7 +759,7 @@ let rec shuffle_mult_right p_init e1 k2 e2 =
           loop (P_APP 2 :: p) (l1',l2)
     | ({c=c1;v=v1}::l1), [] -> 
         clever_rewrite p [[P_APP 1;P_APP 1]; [P_APP 1; P_APP 2];[P_APP 2]]
-          (Lazy.force coq_fast_Zplus_assoc_r) ::
+          (Lazy.force coq_fast_Zplus_assoc_reverse) ::
         loop (P_APP 2 :: p) (l1,[])
     | [],({c=c2;v=v2}::l2) -> 
         clever_rewrite p [[P_APP 2; P_APP 1; P_APP 1; P_APP 1];
@@ -792,15 +792,15 @@ let rec scalar p n = function
       let tac1,t1' = scalar (P_APP 1 :: p) n t1 and 
         tac2,t2' = scalar (P_APP 2 :: p) n t2 in
       clever_rewrite p [[P_APP 1;P_APP 1];[P_APP 1;P_APP 2];[P_APP 2]]
-        (Lazy.force coq_fast_Zmult_plus_distr) :: 
+        (Lazy.force coq_fast_Zmult_plus_distr_l) :: 
       (tac1 @ tac2), Oplus(t1',t2')
   | Oinv t ->
       [clever_rewrite p [[P_APP 1;P_APP 1];[P_APP 2]] 
-	 (Lazy.force coq_fast_Zmult_Zopp_left);
+	 (Lazy.force coq_fast_Zmult_opp_comm);
        focused_simpl (P_APP 2 :: p)], Otimes(t,Oz(neg n))
   | Otimes(t1,Oz x) -> 
       [clever_rewrite p [[P_APP 1;P_APP 1];[P_APP 1;P_APP 2];[P_APP 2]]
-         (Lazy.force coq_fast_Zmult_assoc_r);
+         (Lazy.force coq_fast_Zmult_assoc_reverse);
        focused_simpl (P_APP 2 :: p)], 
       Otimes(t1,Oz (n*x))
   | Otimes(t1,t2) -> error "Omega: Can't solve a goal with non-linear products"
@@ -824,7 +824,7 @@ let rec norm_add p_init =
     | [] -> [focused_simpl p_init]
     | _:: l -> 
 	clever_rewrite p [[P_APP 1;P_APP 1]; [P_APP 1; P_APP 2];[P_APP 2]]
-          (Lazy.force coq_fast_Zplus_assoc_r) ::
+          (Lazy.force coq_fast_Zplus_assoc_reverse) ::
 	loop (P_APP 2 :: p) l 
   in
   loop p_init
@@ -846,19 +846,19 @@ let rec negate p = function
       let tac1,t1' = negate (P_APP 1 :: p) t1 and 
         tac2,t2' = negate (P_APP 2 :: p) t2 in
       clever_rewrite p [[P_APP 1;P_APP 1];[P_APP 1;P_APP 2]]
-        (Lazy.force coq_fast_Zopp_Zplus) :: 
+        (Lazy.force coq_fast_Zopp_plus_distr) :: 
       (tac1 @ tac2),
       Oplus(t1',t2')
   | Oinv t ->
-      [clever_rewrite p [[P_APP 1;P_APP 1]] (Lazy.force coq_fast_Zopp_Zopp)], t
+      [clever_rewrite p [[P_APP 1;P_APP 1]] (Lazy.force coq_fast_Zopp_involutive)], t
   | Otimes(t1,Oz x) -> 
       [clever_rewrite p [[P_APP 1;P_APP 1];[P_APP 1;P_APP 2]]
-         (Lazy.force coq_fast_Zopp_Zmult_r);
+         (Lazy.force coq_fast_Zopp_mult_distr_r);
        focused_simpl (P_APP 2 :: p)], Otimes(t1,Oz (neg x))
   | Otimes(t1,t2) -> error "Omega: Can't solve a goal with non-linear products"
   | (Oatom _ as t) ->
       let r = Otimes(t,Oz(negone)) in
-      [clever_rewrite p [[P_APP 1]] (Lazy.force coq_fast_Zopp_one)], r
+      [clever_rewrite p [[P_APP 1]] (Lazy.force coq_fast_Zopp_eq_mult_neg_1)], r
   | Oz i -> [focused_simpl p],Oz(neg i)
   | Oufo c -> [], Oufo (mkApp (Lazy.force coq_Zopp, [| c |]))
       
@@ -885,10 +885,10 @@ let rec transform p t =
 	    (mkApp (Lazy.force coq_Zplus,
 		     [| t1; (mkApp (Lazy.force coq_Zopp, [| t2 |])) |])) in
 	unfold sp_Zminus :: tac,t
-    | Kapp(Zs,[t1]) ->
+    | Kapp(Zsucc,[t1]) ->
 	let tac,t = transform p (mkApp (Lazy.force coq_Zplus,
 					 [| t1; mk_integer one |])) in
-	unfold sp_Zs :: tac,t
+	unfold sp_Zsucc :: tac,t
    | Kapp(Zmult,[t1;t2]) ->
        let tac1,t1' = transform (P_APP 1 :: p) t1 
        and tac2,t2' = transform (P_APP 2 :: p) t2 in
@@ -897,18 +897,18 @@ let rec transform p t =
          | (Oz n,_) ->
              let sym = 
 	       clever_rewrite p [[P_APP 1];[P_APP 2]] 
-		 (Lazy.force coq_fast_Zmult_sym) in
+		 (Lazy.force coq_fast_Zmult_comm) in
              let tac,t' = scalar p n t2' in tac1 @ tac2 @ (sym :: tac),t'
          | _ -> default false t
        end
-   | Kapp((POS|NEG|ZERO),_) -> 
+   | Kapp((Zpos|Zneg|Z0),_) -> 
        (try ([],Oz(recognize_number t)) with _ -> default false t)
    | Kvar s -> [],Oatom s
    | Kapp(Zopp,[t]) ->
        let tac,t' = transform (P_APP 1 :: p) t in
        let tac',t'' = negate p t' in
        tac @ tac', t''
-   | Kapp(Inject_nat,[t']) -> default true t'
+   | Kapp(Z_of_nat,[t']) -> default true t'
    | _ -> default false t
   with e when catchable_exception e -> default false t
       
@@ -957,7 +957,7 @@ let rec condense p = function
 	let assoc_tac = 
           clever_rewrite p 
             [[P_APP 1];[P_APP 2;P_APP 1];[P_APP 2;P_APP 2]]
-            (Lazy.force coq_fast_Zplus_assoc_l) in
+            (Lazy.force coq_fast_Zplus_assoc) in
 	let tac_list,t' = condense p (Oplus(t,r)) in
 	(assoc_tac :: shrink_tac :: tac_list), t'
       end else begin
@@ -1036,9 +1036,9 @@ let replay_history tactic_normalisation =
 	  let tac = shuffle_cancel p_initial e1.body in
 	  let solve_le =
             let not_sup_sup = mkApp (build_coq_eq (), [| 
-					Lazy.force coq_relation; 
-					Lazy.force coq_SUPERIEUR;
-					Lazy.force coq_SUPERIEUR |])
+					Lazy.force coq_comparison; 
+					Lazy.force coq_Gt;
+					Lazy.force coq_Gt |])
 	    in
             tclTHENS 
 	      (tclTHENLIST [
@@ -1172,7 +1172,7 @@ let replay_history tactic_normalisation =
 	  and eq2 = val_of (decompile (negate_eq e1)) in
 	  let tac = 
 	    clever_rewrite [P_APP 3] [[P_APP 1]] 
-	      (Lazy.force coq_fast_Zopp_one) ::
+	      (Lazy.force coq_fast_Zopp_eq_mult_neg_1) ::
             scalar_norm [P_APP 3] e1.body 
 	  in
 	  tclTHENS 
@@ -1205,7 +1205,7 @@ let replay_history tactic_normalisation =
 	  let p_initial = [P_APP 2;P_TYPE] in
 	  let tac = 
             clever_rewrite (P_APP 1 :: P_APP 1 :: P_APP 2 :: p_initial) 
-              [[P_APP 1]] (Lazy.force coq_fast_Zopp_one) ::
+              [[P_APP 1]] (Lazy.force coq_fast_Zopp_eq_mult_neg_1) ::
             shuffle_mult_right p_initial
               orig.body m ({c= negone;v= v}::def.body) in
 	  tclTHENS 
@@ -1462,7 +1462,7 @@ let nat_inject gl =
 		Kapp(S,[t]) ->
                   (tclTHEN 
                      (clever_rewrite_gen p 
-			(mkApp (Lazy.force coq_Zs, [| mk_inj t |]))
+			(mkApp (Lazy.force coq_Zsucc, [| mk_inj t |]))
 			((Lazy.force coq_inj_S),[t])) 
 		     (loop (P_APP 1 :: p) t))
               | _ -> explore p t 
@@ -1666,25 +1666,25 @@ let destructure_hyps gl =
 		| Kapp(Zle, [t1;t2]) ->
                     tclTHENLIST [
 		      (generalize_tac
-                        [mkApp (Lazy.force coq_not_Zle, [| t1;t2;mkVar i|])]);
+                        [mkApp (Lazy.force coq_Znot_le_gt, [| t1;t2;mkVar i|])]);
 		      (onClearedName i (fun _ -> loop lit))
                     ]
 		| Kapp(Zge, [t1;t2]) ->
                     tclTHENLIST [
 		      (generalize_tac
-                        [mkApp (Lazy.force coq_not_Zge, [| t1;t2;mkVar i|])]);
+                        [mkApp (Lazy.force coq_Znot_ge_lt, [| t1;t2;mkVar i|])]);
 		      (onClearedName i (fun _ -> loop lit))
                     ]
 		| Kapp(Zlt, [t1;t2]) ->
                     tclTHENLIST [
 		      (generalize_tac 
-                        [mkApp (Lazy.force coq_not_Zlt, [| t1;t2;mkVar i|])]);
+                        [mkApp (Lazy.force coq_Znot_lt_ge, [| t1;t2;mkVar i|])]);
 		      (onClearedName i (fun _ -> loop lit))
                     ]
 		| Kapp(Zgt, [t1;t2]) ->
                     tclTHENLIST [
 		      (generalize_tac
-                        [mkApp (Lazy.force coq_not_Zgt, [| t1;t2;mkVar i|])]);
+                        [mkApp (Lazy.force coq_Znot_gt_le, [| t1;t2;mkVar i|])]);
 		      (onClearedName i (fun _ -> loop lit))
                     ]
 		| Kapp(Le, [t1;t2]) ->
