@@ -303,7 +303,7 @@ let coq_R0 = lazy (constant_real "R0")
 let coq_R1 = lazy (constant_real "R1")
 
 (* RIneq *)
-let coq_Rinv_R1 = lazy (constant ["Reals";"RIneq"] "Rinv_R1")
+let coq_Rinv_1 = lazy (constant ["Reals";"RIneq"] "Rinv_1")
 
 (* Fourier_util *)
 let constant_fourier = constant ["fourier";"Fourier_util"]
@@ -604,7 +604,7 @@ let rec fourier gl=
                                    (Ring.polynom [])
                                    tclIDTAC;
 					  (tclTHEN (apply (get coq_sym_eqT))
-						(apply (get coq_Rinv_R1)))]
+						(apply (get coq_Rinv_1)))]
                                
 					 )
 				]));
