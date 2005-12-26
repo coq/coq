@@ -205,12 +205,8 @@ let make_apply_entry env sigma (eapply,verbose) name (c,cty) =
         in 
 	if eapply & (nmiss <> 0) then begin
           if verbose then 
-	    if !Options.v7 then
-	    warn (str "the hint: EApply " ++ prterm c ++
-		    str " will only be used by EAuto")
-	    else
 	    warn (str "the hint: eapply " ++ prterm c ++
-		    str " will only be used by eauto"); 
+		  str " will only be used by eauto"); 
           (hd,
            { hname = name;
 	     pri = nb_hyp cty + nmiss;
@@ -388,9 +384,6 @@ let add_unfolds l local dbnames =
 let add_extern name pri (patmetas,pat) tacast local dbname =
   (* We check that all metas that appear in tacast have at least
      one occurence in the left pattern pat *)
-(* TODO
-  let tacmetas = Coqast.collect_metas tacast in
-*)
   let tacmetas = [] in
   match (list_subtract tacmetas patmetas) with
     | i::_ ->
@@ -482,16 +475,6 @@ let add_hints local dbnames0 h =
 (**************************************************************************)
 
 let fmt_autotactic =
-  if !Options.v7 then
-  function
-  | Res_pf (c,clenv) -> (str"Apply " ++ prterm c)
-  | ERes_pf (c,clenv) -> (str"EApply " ++ prterm c)
-  | Give_exact c -> (str"Exact " ++ prterm c)
-  | Res_pf_THEN_trivial_fail (c,clenv) -> 
-      (str"Apply " ++ prterm c ++ str" ; Trivial")
-  | Unfold_nth c -> (str"Unfold " ++  pr_evaluable_reference c)
-  | Extern tac -> (str "Extern " ++ Pptactic.pr_glob_tactic tac)
-  else
   function
   | Res_pf (c,clenv) -> (str"apply " ++ prterm c)
   | ERes_pf (c,clenv) -> (str"eapply " ++ prterm c)
@@ -700,10 +683,7 @@ let trivial dbnames gl =
 	 try 
 	   searchtable_map x
 	 with Not_found -> 
-	   if !Options.v7 then
-	     error ("Trivial: "^x^": No such Hint database")
-	   else
-	     error ("trivial: "^x^": No such Hint database"))
+	   error ("trivial: "^x^": No such Hint database"))
       ("core"::dbnames) 
   in
   tclTRY (trivial_fail_db db_list (make_local_hint_db gl)) gl 
@@ -802,10 +782,7 @@ let auto n dbnames gl =
 	 try 
 	   searchtable_map x
 	 with Not_found -> 
-	   if !Options.v7 then
-	     error ("Auto: "^x^": No such Hint database")
-	   else
-	     error ("auto: "^x^": No such Hint database"))
+	   error ("auto: "^x^": No such Hint database"))
       ("core"::dbnames) 
   in
   let hyps = pf_hyps gl in

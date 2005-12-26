@@ -17,7 +17,6 @@ open Environ
 open Libnames
 open Rawterm
 open Pattern
-open Coqast
 open Topconstr
 open Termops
 open Pretyping
@@ -116,7 +115,3 @@ val for_grammar : ('a -> 'b) -> 'a -> 'b
 type coqdoc_state
 val coqdoc_freeze : unit -> coqdoc_state
 val coqdoc_unfreeze : coqdoc_state -> unit
-
-(* For v8 translation *)
-val set_temporary_implicits_in :
-  (identifier * Impargs.implicits_list) list -> unit

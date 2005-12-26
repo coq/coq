@@ -21,7 +21,6 @@ open Constr
 let thm_token = G_vernacnew.thm_token
 
 (* Proof commands *)
-if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: command;
 
@@ -36,7 +35,7 @@ GEXTEND Gram
   ;
   command:
     [ [ IDENT "Goal"; c = Constr.lconstr -> VernacGoal c
-      | IDENT "Proof" -> VernacNop
+      | IDENT "Proof" -> VernacProof (Tacexpr.TacId "")
       | IDENT "Proof"; "with"; ta = tactic -> VernacProof ta
       | IDENT "Abort" -> VernacAbort None
       | IDENT "Abort"; IDENT "All" -> VernacAbortAll
@@ -113,7 +112,7 @@ GEXTEND Gram
           tac = tactic ->
 	  HintsExtern (None,n,c,tac)
       | IDENT"Destruct"; 
-          id = base_ident; ":=";
+          id = ident; ":=";
           pri = natural;
           dloc = destruct_location;
           hyptyp = Constr.constr_pattern;

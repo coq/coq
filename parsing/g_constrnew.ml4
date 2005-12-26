@@ -24,12 +24,7 @@ let constr_kw =
     "end"; "as"; "let"; "if"; "then"; "else"; "return";
     "Prop"; "Set"; "Type"; ".("; "_"; ".." ]
 
-let _ = 
-  if not !Options.v7 then
-    List.iter (fun s -> Lexer.add_token("",s)) constr_kw
-
-(* For Correctness syntax; doesn't work if in psyntax (freeze pb?)  *)
-let _ = Lexer.add_token ("","!")
+let _ = List.iter (fun s -> Lexer.add_token("",s)) constr_kw
 
 let mk_cast = function
     (c,(_,None)) -> c
@@ -38,9 +33,6 @@ let mk_cast = function
 let mk_lam = function
     ([],c) -> c
   | (bl,c) -> CLambdaN(constr_loc c, bl,c)
-
-let mk_match (loc,cil,rty,br) =
-  CCases(loc,(None,rty),cil,br)
 
 let loc_of_binder_let = function
   | LocalRawAssum ((loc,_)::_,_)::_ -> loc
@@ -125,7 +117,6 @@ let lpar_id_coloneq =
         | _ -> raise Stream.Failure)
 
 
-if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: binder_constr lconstr constr operconstr sort global
   constr_pattern lconstr_pattern Constr.ident binder binder_let pattern;
@@ -137,9 +128,6 @@ GEXTEND Gram
   ;
   Prim.name:
     [ [ "_" -> (loc, Anonymous) ] ]
-  ;
-  Prim.ast:
-    [ [ "_" -> Coqast.Nvar(loc,id_of_string"_") ] ]
   ;
   global:
     [ [ r = Prim.reference -> r
@@ -259,7 +247,7 @@ GEXTEND Gram
   ;
   match_constr:
     [ [ "match"; ci=LIST1 case_item SEP ","; ty=OPT case_type; "with";
-        br=branches; "end" -> mk_match (loc,ci,ty,br) ] ]
+        br=branches; "end" -> CCases(loc,ty,ci,br) ] ]
   ;
   case_item:
     [ [ c=operconstr LEVEL "100"; p=pred_pattern -> (c,p) ] ]
@@ -297,7 +285,7 @@ GEXTEND Gram
           | _ -> Util.user_err_loc 
               (cases_pattern_loc p, "compound_pattern",
                Pp.str "Constructor expected"))
-      | p = pattern; "as"; id = base_ident ->
+      | p = pattern; "as"; id = ident ->
 	  CPatAlias (loc, p, id)
       | c = pattern; "%"; key=IDENT -> 
           CPatDelimiters (loc,key,c) ]

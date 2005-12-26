@@ -13,7 +13,6 @@ open Names
 open Nameops
 open Environ
 open Util
-open Extend
 open Ppextend
 open Ppconstrnew
 open Tacexpr
@@ -41,8 +40,8 @@ let strip_prod_binders_expr n ty =
   strip_ty [] n ty
 
 
-(* In v8 syntax only double quote char is escaped by repeating it *)
-let rec escape_string_v8 s =
+(* In new syntax only double quote char is escaped by repeating it *)
+let rec escape_string s =
   let rec escape_at s i =
     if i<0 then s
     else if s.[i] == '"' then
@@ -51,128 +50,31 @@ let rec escape_string_v8 s =
     else escape_at s (i-1) in
   escape_at s (String.length s - 1)
 
-let qstringnew s = str ("\""^escape_string_v8 s^"\"")
-let qsnew = qstringnew
-
-let translate_v7_ltac = function
-  | "DiscrR" -> "discrR"
-  | "Sup0" -> "prove_sup0"
-  | "SupOmega" -> "omega_sup"
-  | "Sup" -> "prove_sup"
-  | "RCompute" -> "Rcompute"
-  | "IntroHypG" -> "intro_hyp_glob"
-  | "IntroHypL" -> "intro_hyp_pt"
-  | "IsDiff_pt" -> "is_diff_pt"
-  | "IsDiff_glob" -> "is_diff_glob"
-  | "IsCont_pt" -> "is_cont_pt"
-  | "IsCont_glob" -> "is_cont_glob"
-  | "RewTerm" -> "rew_term"
-  | "ConsProof" -> "deriv_proof"
-  | "SimplifyDerive" -> "simplify_derive"
-  | "Reg" -> "reg" (* ??? *)
-  | "SplitAbs" -> "split_case_Rabs"
-  | "SplitAbsolu" -> "split_Rabs"
-  | "SplitRmult" -> "split_Rmult"
-  | "CaseEqk" -> "case_eq"
-  | "SqRing" -> "ring_Rsqr"
-  | "TailSimpl" -> "tail_simpl"
-  | "CoInduction" -> "coinduction"
-  | "ElimCompare" -> "elim_compare"
-  | "CCsolve" -> "CCsolve"  (* ?? *)
-  | "ArrayAccess" -> "array_access"
-  | "MemAssoc" -> "mem_assoc"
-  | "SeekVarAux" -> "seek_var_aux"
-  | "SeekVar" -> "seek_var"
-  | "NumberAux" -> "number_aux"
-  | "Number" -> "number"
-  | "BuildVarList" -> "build_varlist"
-  | "Assoc" -> "assoc"
-  | "Remove" -> "remove"
-  | "Union" -> "union"
-  | "RawGiveMult" -> "raw_give_mult"
-  | "GiveMult" -> "give_mult"
-  | "ApplyAssoc" -> "apply_assoc"
-  | "ApplyDistrib" -> "apply_distrib"
-  | "GrepMult" -> "grep_mult"
-  | "WeakReduce" -> "weak_reduce"
-  | "Multiply" -> "multiply"
-  | "ApplyMultiply" -> "apply_multiply"
-  | "ApplyInverse" -> "apply_inverse"
-  | "StrongFail" -> "strong_fail"
-  | "InverseTestAux" -> "inverse_test_aux"
-  | "InverseTest" -> "inverse_test"
-  | "ApplySimplif" -> "apply_simplif"
-  | "Unfolds" -> "unfolds"
-  | "Reduce" -> "reduce"
-  | "Field_Gen_Aux" -> "field_gen_aux"
-  | "Field_Gen" -> "field_gen"
-  | "EvalWeakReduce" -> "eval_weak_reduce"
-  | "Field_Term" -> "field_term"
-  | "Fourier" -> "fourier" (* ou Fourier ?? *)
-  | "FourierEq" -> "fourier_eq"
-  | "S_to_plus" -> "rewrite_S_to_plus_term"
-  | "S_to_plus_eq" -> "rewrite_S_to_plus"
-  | "NatRing" -> "ring_nat"
-  | "Solve1" -> "solve1"
-  | "Solve2" -> "solve2"
-  | "Elim_eq_term" -> "elim_eq_term"
-  | "Elim_eq_Z" -> "elim_eq_Z"
-  | "Elim_eq_pos" -> "elim_eq_pos"
-  | "Elim_Zcompare" -> "elim_Zcompare"
-  | "ProveStable" -> "prove_stable"
-  | "interp_A" -> "interp_A"
-  | "InitExp" -> "init_exp"
-  | "SimplInv" -> "simpl_inv"
-  | "Map" -> "map_tactic"
-  | "BuildMonomAux" -> "build_monom_aux"
-  | "BuildMonom" -> "build_monom"
-  | "SimplMonomAux" -> "simpl_monom_aux"
-  | "SimplMonom" -> "simpl_monom"
-  | "SimplAllMonoms" -> "simpl_all_monomials"
-  | "AssocDistrib" -> "assoc_distrib"
-  | "NowShow" -> "now_show"
-  | ("subst"|"simpl"|"elim"|"destruct"|"apply"|"intro" (* ... *)) as x ->
-      let x' = x^"_" in
-      msgerrnl
-      (str ("Warning: '"^
-         x^"' is now a primitive tactic; it has been translated to '"^x'^"'"));
-      x'
-  | x -> x
-
-let id_of_ltac_v7_id id = 
-  id_of_string (translate_v7_ltac (string_of_id id))
+let qstring s = str ("\""^escape_string s^"\"")
+let qsnew = qstring
 
 let pr_ltac_or_var pr = function
   | ArgArg x -> pr x
-  | ArgVar (loc,id) ->
-      pr_with_comments loc (pr_id (id_of_ltac_v7_id id))
+  | ArgVar (loc,id) -> pr_with_comments loc (pr_id id)
 
 let pr_arg pr x = spc () ++ pr x
 
 let pr_ltac_constant sp =
-  (* Source de bug: le nom le plus court n'est pas forcement correct 
-     apres renommage *)
-  let qid = Nametab.shortest_qualid_of_tactic sp in
-  let dir,id = repr_qualid qid in
-  pr_qualid (make_qualid dir (id_of_ltac_v7_id id))
+  pr_qualid (Nametab.shortest_qualid_of_tactic sp)
 
 let pr_evaluable_reference_env env = function 
-  | EvalVarRef id -> pr_id (Constrextern.v7_to_v8_id id)
-  | EvalConstRef sp -> pr_global (Termops.vars_of_env env) (Libnames.ConstRef sp)
+  | EvalVarRef id -> pr_id id
+  | EvalConstRef sp -> 
+      Nametab.pr_global_env (Termops.vars_of_env env) (Libnames.ConstRef sp)
 
-let pr_inductive vars ind = pr_global vars (Libnames.IndRef ind)
+let pr_inductive env ind =
+  Nametab.pr_global_env (Termops.vars_of_env env) (Libnames.IndRef ind)
 
 let pr_quantified_hypothesis = function
   | AnonHyp n -> int n
   | NamedHyp id -> pr_id id 
 
 let pr_quantified_hypothesis_arg h = spc () ++ pr_quantified_hypothesis h
-
-(*
-let pr_binding prc = function
-  | NamedHyp id, c -> hov 1 (pr_id id ++ str " := " ++ cut () ++ prc c)
-  | AnonHyp n, c -> hov 1 (int n ++ str " := " ++ cut () ++ prc c)
-*)
 
 let pr_esubst prc l =
   let pr_qhyp = function
@@ -196,12 +98,7 @@ let pr_bindings_gen for_ex prlc prc = function
 let pr_bindings prlc prc = pr_bindings_gen false prlc prc
 
 let pr_with_bindings prlc prc (c,bl) =
-  if Options.do_translate () then
-    (* translator calls pr_with_bindings on rawconstr: we cast it! *)
-    let bl' = translate_with_bindings (fst (Obj.magic c) : rawconstr) bl in
-    hov 1 (prc c ++ pr_bindings prlc prc bl')
-  else
-    hov 1 (prc c ++ pr_bindings prlc prc bl)
+  hov 1 (prc c ++ pr_bindings prlc prc bl)
 
 let pr_with_constr prc = function
   | None -> mt ()
@@ -236,13 +133,6 @@ let pr_hyp_location pr_id = function
       spc () ++ pr_occs (str "(type of " ++ pr_id id ++ str ")") occs
   | id, occs, InHypValueOnly ->
       spc () ++ pr_occs (str "(value of " ++ pr_id id ++ str ")") occs
-
-let pr_hyp_location pr_id (id,occs,(hl,hl')) =
-  if !hl' <> None then pr_hyp_location pr_id (id,occs,out_some !hl')
-  else
-    (if hl = InHyp && Options.do_translate () then 
-      msgerrnl (h 0 (str "Translator warning: Unable to detect if " ++ pr_id id ++ spc () ++ str "denotes a local definition"));
-    pr_hyp_location pr_id (id,occs,hl))
 
 let pr_in pp = spc () ++ hov 0 (str "in" ++ pp)
 
@@ -332,32 +222,6 @@ let pr_seq_body pr tl =
         prlist_with_sep (fun () -> spc () ++ str "| ") pr tl ++
         str " ]")
 
-let pr_as_names_force force ids (pp,ids') =
-  pr_with_names 
-    (if (!pp or force) & List.exists ((<>) (ref [])) ids'
-    then Some (IntroOrAndPattern (List.map (fun x -> !x) ids'))
-    else ids)
-
-let duplicate force nodup ids pr = function
-  | [] -> pr (pr_as_names_force force ids (ref false,[]))
-  | x::l when List.for_all (fun y -> snd x=snd y) l ->
-      pr (pr_as_names_force force ids x)
-  | l ->
-     if List.exists (fun (b,ids) -> !b) l & (force or
-	 List.exists (fun (_,ids) -> ids <> (snd (List.hd l))) (List.tl l))
-      then 
-        if nodup then begin
-          msgerrnl
-            (h 0 (str "Translator warning: Unable to enforce v7 names while translating Induction/NewDestruct/NewInduction. Names in the different branches are") ++ brk (0,0) ++
-            hov 0 (prlist_with_sep spc
-              (fun id -> hov 0 (pr_as_names_force true ids id))
-              (List.rev l)));
-          pr (pr_as_names_force force ids (ref false,[]))
-        end
-        else
-          pr_seq_body (fun x -> pr (pr_as_names_force force ids x)) (List.rev l)
-      else pr (pr_as_names_force force ids (ref false,[]))
-
 let pr_hintbases = function
   | None -> spc () ++ str "with *"
   | Some [] -> mt ()
@@ -403,15 +267,26 @@ let level_of (n,p) = match p with E -> n | L -> n-1 | Prec n -> n | Any -> lseq
 
 open Closure
 
-let make_pr_tac (pr_tac_level,pr_constr,pr_lconstr,pr_pat,pr_cst,pr_ind,pr_ref,pr_ident,pr_extend,strip_prod_binders) =
+let make_pr_tac 
+  (pr_tac_level,pr_constr,pr_lconstr,pr_pat,
+   pr_cst,pr_ind,pr_ref,pr_ident,
+   pr_extend,strip_prod_binders) =
 
-let pr_bindings env = pr_bindings (pr_lconstr env) (pr_constr env) in
-let pr_ex_bindings env = pr_bindings_gen true (pr_lconstr env) (pr_constr env) in
-let pr_with_bindings env = pr_with_bindings (pr_lconstr env) (pr_constr env) in
-let pr_eliminator env cb = str "using" ++ pr_arg (pr_with_bindings env) cb in
+let pr_bindings env =
+  pr_bindings (pr_lconstr env) (pr_constr env) in
+let pr_ex_bindings env =
+  pr_bindings_gen true (pr_lconstr env) (pr_constr env) in
+let pr_with_bindings env =
+  pr_with_bindings (pr_lconstr env) (pr_constr env) in
+let pr_eliminator env cb =
+  str "using" ++ pr_arg (pr_with_bindings env) cb in
+let pr_extend env =
+  pr_extend (pr_constr env) (pr_lconstr env) (pr_tac_level env) in
+let pr_red_expr env = 
+  pr_red_expr (pr_constr env,pr_lconstr env,pr_cst env) in
+
 let pr_constrarg env c = spc () ++ pr_constr env c in
 let pr_lconstrarg env c = spc () ++ pr_lconstr env c in
-
 let pr_intarg n = spc () ++ int n in
 
 let pr_binder_fix env (nal,t) =
@@ -467,8 +342,6 @@ let rec pr_atom0 env = function
   | TacAnyConstructor None -> str "constructor"
   | TacTrivial (Some []) -> str "trivial"
   | TacAuto (None,Some []) -> str "auto"
-(*  | TacAutoTDB None -> str "autotdb"
-  | TacDestructConcl -> str "dconcl"*)
   | TacReflexivity -> str "reflexivity"
   | t -> str "(" ++ pr_atom1 env t ++ str ")"
 
@@ -480,12 +353,9 @@ and pr_atom1 env = function
      "LinearIntuition"),_) ->
       errorlabstrm "Obsolete V8" (str "Tactic is not ported to V8.0")
   | TacExtend (loc,s,l) ->
-      pr_with_comments loc
-        (pr_extend (pr_constr env) (pr_lconstr env) (pr_tac_level env) 1 s l)
+      pr_with_comments loc (pr_extend env 1 s l)
   | TacAlias (loc,s,l,_) ->
-      pr_with_comments loc
-        (pr_extend (pr_constr env) (pr_lconstr env) (pr_tac_level env) 1 s
-          (List.map snd l))
+      pr_with_comments loc (pr_extend env 1 s (List.map snd l))
 
   (* Basic tactics *)
   | TacIntroPattern [] as t -> pr_atom0 env t
@@ -529,17 +399,8 @@ and pr_atom1 env = function
              hov 1 (str"(" ++ pr_name na ++ str " :=" ++
                     pr_lconstrarg env c ++ str")"))
   | TacForward (true,Anonymous,c) ->
-      if Options.do_translate () then
-        (* Pose was buggy and was wrongly substituted in conclusion in v7 *)
-        hov 1 (str "set" ++ pr_constrarg env c)
-      else
-        hov 1 (str "pose" ++ pr_constrarg env c)
+      hov 1 (str "pose" ++ pr_constrarg env c)
   | TacForward (true,Name id,c) ->
-      if Options.do_translate () then
-      hov 1 (str "set" ++ spc() ++
-             hov 1 (str"(" ++ pr_id id ++ str " :=" ++
-                    pr_lconstrarg env c ++ str")"))
-      else
       hov 1 (str "pose" ++ spc() ++
              hov 1 (str"(" ++ pr_id id ++ str " :=" ++
                     pr_lconstrarg env c ++ str")"))
@@ -567,25 +428,18 @@ and pr_atom1 env = function
 	     ++ str "in" ++ pr_hyp_location pr_ident (id,[],(hloc,ref None)))
 *)
   (* Derived basic tactics *)
-  | TacSimpleInduction (h,l) ->
-      if List.exists (fun (pp,_) -> !pp) !l then
-        duplicate true true None (fun pnames -> 
-          hov 1 (str "induction" ++ pr_arg pr_quantified_hypothesis h ++
-          pnames)) !l
-      else
+  | TacSimpleInduction h ->
       hov 1 (str "simple induction" ++ pr_arg pr_quantified_hypothesis h)
-  | TacNewInduction (h,e,(ids,l)) ->
-      duplicate false true ids (fun pnames ->
+  | TacNewInduction (h,e,ids) ->
       hov 1 (str "induction" ++ spc () ++
-             pr_induction_arg (pr_constr env) h ++ pnames ++
-             pr_opt (pr_eliminator env) e)) !l
+             pr_induction_arg (pr_constr env) h ++ pr_with_names ids ++
+             pr_opt (pr_eliminator env) e)
   | TacSimpleDestruct h ->
       hov 1 (str "simple destruct" ++ pr_arg pr_quantified_hypothesis h)
-  | TacNewDestruct (h,e,(ids,l)) ->
-      duplicate false true ids (fun pnames ->
+  | TacNewDestruct (h,e,ids) ->
       hov 1 (str "destruct" ++ spc () ++
-             pr_induction_arg (pr_constr env) h ++ pnames ++
-             pr_opt (pr_eliminator env) e)) !l
+             pr_induction_arg (pr_constr env) h ++ pr_with_names ids ++
+             pr_opt (pr_eliminator env) e)
   | TacDoubleInduction (h1,h2) ->
       hov 1
         (str "double induction" ++  
@@ -596,12 +450,12 @@ and pr_atom1 env = function
   | TacDecomposeOr c ->
       hov 1 (str "decompose sum" ++ pr_constrarg env c)
   | TacDecompose (l,c) ->
-      let vars = Termops.vars_of_env env in
       hov 1 (str "decompose" ++ spc () ++
-        hov 0 (str "[" ++ prlist_with_sep spc (pr_ind vars) l
+        hov 0 (str "[" ++ prlist_with_sep spc (pr_ind env) l
 	  ++ str "]" ++ pr_constrarg env c))
   | TacSpecialize (n,c) ->
-      hov 1 (str "specialize" ++ spc () ++ pr_opt int n ++ pr_with_bindings env c)
+      hov 1 (str "specialize" ++ spc () ++ pr_opt int n ++ 
+             pr_with_bindings env c)
   | TacLApply c -> 
       hov 1 (str "lapply" ++ pr_constrarg env c)
 
@@ -611,16 +465,6 @@ and pr_atom1 env = function
   | TacAuto (None,Some []) as x -> pr_atom0 env x
   | TacAuto (n,db) ->
       hov 0 (str "auto" ++ pr_opt (pr_or_var int) n ++ pr_hintbases db)
-(*  | TacAutoTDB None as x -> pr_atom0 env x
-  | TacAutoTDB (Some n) -> hov 0 (str "autotdb" ++ spc () ++ int n)
-  | TacDestructHyp (true,id) ->
-      hov 0 (str "cdhyp" ++ spc () ++ pr_lident id)
-  | TacDestructHyp (false,id) ->
-      hov 0 (str "dhyp" ++ spc () ++ pr_lident id)
-  | TacDestructConcl as x -> pr_atom0 env x
-  | TacSuperAuto (n,l,b1,b2) ->
-      hov 1 (str "superauto" ++ pr_opt int n ++ pr_autoarg_adding l ++ 
-             pr_autoarg_destructing b1 ++ pr_autoarg_usingTDB b2)*)
   | TacDAuto (n,p) ->
       hov 1 (str "auto" ++ pr_opt (pr_or_var int) n ++ str "decomp" ++ pr_opt int p)
 
@@ -650,19 +494,17 @@ and pr_atom1 env = function
       hov 1 (str "constructor" ++ pr_arg (pr_tac_level env (latom,E)) t)
   | TacAnyConstructor None as t -> pr_atom0 env t
   | TacConstructor (n,l) ->
-      hov 1 (str "constructor" ++ pr_or_metaid pr_intarg n ++
-             pr_bindings env l)
+      hov 1 (str "constructor" ++ pr_or_metaid pr_intarg n ++ pr_bindings env l)
 
   (* Conversion *)  
   | TacReduce (r,h) ->
-      hov 1 (pr_red_expr (pr_constr env,pr_lconstr env,pr_cst env) r ++
+      hov 1 (pr_red_expr env r ++
              pr_clauses pr_ident h)
   | TacChange (occ,c,h) ->
       hov 1 (str "change" ++ brk (1,1) ++
       (match occ with
           None -> mt()
-        | Some([],c1) ->
-            hov 1 (pr_constr env c1 ++ spc() ++ str "with ")
+        | Some([],c1) -> hov 1 (pr_constr env c1 ++ spc() ++ str "with ")
         | Some(ocl,c1) ->
             hov 1 (pr_constr env c1 ++ spc() ++
 	           str "at " ++ prlist_with_sep spc int ocl) ++ spc() ++
@@ -728,6 +570,7 @@ let rec pr_tac env inherited tac =
         ++ fnl() ++ str "end"),
       lmatch
   | TacFun (lvar,body) ->
+(*      let env = List.fold_right (option_fold_right Idset.add) lvar env in*)
       hov 2 (str "fun" ++
         prlist pr_funvar lvar ++ str " =>" ++ spc () ++
         pr_tac env (lfun,E) body),
@@ -737,37 +580,15 @@ let rec pr_tac env inherited tac =
              pr_seq_body (pr_tac env ltop) tl),
       lseq
   | TacThen (t1,t2) ->
-      let pp2 =
-        (* Hook for translation names in induction/destruct *)
-        match t2 with
-          | TacAtom (_,TacSimpleInduction (h,l)) ->
-              if List.exists (fun (pp,ids) -> !pp) !l then
-                duplicate true false None (fun pnames ->
-                  hov 1 
-                  (str "induction" ++ pr_arg pr_quantified_hypothesis h ++
-                  pnames)) !l
-              else
-                hov 1
-                  (str "simple induction" ++ pr_arg pr_quantified_hypothesis h)
-          | TacAtom (_,TacNewInduction (h,e,(ids,l))) ->
-              duplicate false false ids (fun pnames -> 
-                hov 1 (str "induction" ++ spc () ++
-                pr_induction_arg (pr_constr env) h ++ pnames ++
-                pr_opt (pr_eliminator env) e)) !l
-          | TacAtom (_,TacNewDestruct (h,e,(ids,l))) ->
-              duplicate false false ids (fun pnames ->
-                hov 1 (str "destruct" ++ spc () ++
-                pr_induction_arg (pr_constr env) h ++ pnames ++
-                pr_opt (pr_eliminator env) e)) !l
-              (* end hook *)
-          | _ -> pr_tac env (lseq,L) t2 in
-      hov 1 (pr_tac env (lseq,E) t1 ++ pr_then () ++ spc () ++ pp2),
+      hov 1 (pr_tac env (lseq,E) t1 ++ pr_then () ++ spc () ++
+             pr_tac env (lseq,L) t2),
       lseq
   | TacTry t ->
       hov 1 (str "try" ++ spc () ++ pr_tac env (ltactical,E) t),
       ltactical
   | TacDo (n,t) ->
-      hov 1 (str "do " ++ pr_or_var int n ++ spc () ++ pr_tac env (ltactical,E) t),
+      hov 1 (str "do " ++ pr_or_var int n ++ spc () ++ 
+             pr_tac env (ltactical,E) t),
       ltactical
   | TacRepeat t ->
       hov 1 (str "repeat" ++ spc () ++ pr_tac env (ltactical,E) t),
@@ -785,18 +606,17 @@ let rec pr_tac env inherited tac =
   | TacFail (ArgArg 0,"") -> str "fail", latom
   | TacFail (n,s) -> 
       str "fail" ++ (if n=ArgArg 0 then mt () else pr_arg (pr_or_var int) n) ++
-      (if s="" then mt() else (spc() ++ qsnew s)), latom
+      (if s="" then mt() else (spc() ++ qstring s)), latom
   | TacFirst tl ->
       str "first" ++ spc () ++ pr_seq_body (pr_tac env ltop) tl, llet
   | TacSolve tl ->
       str "solve" ++ spc () ++ pr_seq_body (pr_tac env ltop) tl, llet
   | TacId "" -> str "idtac", latom
-  | TacId s -> str "idtac" ++ (qsnew s), latom
+  | TacId s -> str "idtac" ++ (qstring s), latom
   | TacAtom (loc,TacAlias (_,s,l,_)) ->
       pr_with_comments loc
-        (pr_extend (pr_constr env) (pr_lconstr env) (pr_tac_level env)
-	  (level_of inherited) s
-          (List.map snd l)), latom
+        (pr_extend env (level_of inherited) s (List.map snd l)),
+      latom
   | TacAtom (loc,t) ->
       pr_with_comments loc (hov 1 (pr_atom1 env t)), ltatom
   | TacArg(Tacexp e) -> pr_tac_level env (latom,E) e, latom
@@ -804,7 +624,7 @@ let rec pr_tac env inherited tac =
       str "constr:" ++ pr_constr env c, latom
   | TacArg(ConstrMayEval c) ->
       pr_may_eval (pr_constr env) (pr_lconstr env) (pr_cst env) c, leval
-  | TacArg(TacFreshId sopt) -> str "fresh" ++ pr_opt qsnew sopt, latom
+  | TacArg(TacFreshId sopt) -> str "fresh" ++ pr_opt qstring sopt, latom
   | TacArg(Integer n) -> int n, latom
   | TacArg(TacCall(loc,f,l)) ->
       pr_with_comments loc
@@ -825,10 +645,10 @@ and pr_tacarg env = function
   | Reference r -> pr_ref r
   | ConstrMayEval c ->
       pr_may_eval (pr_constr env) (pr_lconstr env) (pr_cst env) c
-  | TacFreshId sopt -> str "fresh" ++ pr_opt qsnew sopt
+  | TacFreshId sopt -> str "fresh" ++ pr_opt qstring sopt
   | TacExternal (_,com,req,la) ->
-      str "external" ++ spc() ++ qsnew com ++ spc() ++ qsnew req ++ spc() ++
-      prlist_with_sep spc (pr_tacarg env) la
+      str "external" ++ spc() ++ qstring com ++ spc() ++ qstring req ++ 
+      spc() ++ prlist_with_sep spc (pr_tacarg env) la
   | (TacCall _|Tacexp _|Integer _) as a ->
       str "ltac:" ++ pr_tac env (latom,E) (TacArg a)
 
@@ -852,13 +672,15 @@ let strip_prod_binders_constr n ty =
         | _ -> error "Cannot translate fix tactic: not enough products" in
   strip_ty [] n ty
 
+let drop_env f _env = f
+
 let rec raw_printers =
     (pr_raw_tactic_level, 
-     Ppconstrnew.pr_constr_env,
-     Ppconstrnew.pr_lconstr_env,
+     drop_env Ppconstrnew.pr_constr,
+     drop_env Ppconstrnew.pr_lconstr,
      Ppconstrnew.pr_pattern,
-     (fun _ -> pr_reference),
-     (fun _ -> pr_reference),
+     drop_env pr_reference,
+     drop_env pr_reference,
      pr_reference,
      pr_or_metaid pr_lident,
      Pptactic.pr_raw_extend,
@@ -872,14 +694,13 @@ and pr_raw_match_rule env t =
 
 let pr_and_constr_expr pr (c,_) = pr c
 
-
 let rec glob_printers =
     (pr_glob_tactic_level, 
-     (fun env -> pr_and_constr_expr (Ppconstrnew.pr_rawconstr_env_no_translate env)),
-     (fun env -> pr_and_constr_expr (Ppconstrnew.pr_lrawconstr_env_no_translate env)),
+     (fun env -> pr_and_constr_expr (Ppconstrnew.pr_rawconstr_env env)),
+     (fun env -> pr_and_constr_expr (Ppconstrnew.pr_lrawconstr_env env)),
      (fun c -> Ppconstrnew.pr_constr_pattern_env (Global.env()) c),
      (fun env -> pr_or_var (pr_and_short_name (pr_evaluable_reference_env env))),
-     (fun vars -> pr_or_var (pr_inductive vars)),
+     (fun env -> pr_or_var (pr_inductive env)),
      pr_ltac_or_var (pr_located pr_ltac_constant),
      pr_lident,
      Pptactic.pr_glob_extend,
@@ -909,24 +730,13 @@ let pr_glob_tactic env = pr_glob_tactic_level env ltop
 let pr_tactic env = pr_tactic_level env ltop
 
 let _ = Tactic_debug.set_tactic_printer
-  (fun x -> 
-    if !Options.v7 then Pptactic.pr_glob_tactic x
-    else pr_glob_tactic (Global.env()) x)
+  (fun x -> pr_glob_tactic (Global.env()) x)
 
 let _ = Tactic_debug.set_match_pattern_printer
   (fun env hyp ->
-    if !Options.v7 then
-      Pptactic.pr_match_pattern
-        (Printer.pr_pattern_env env (Termops.names_of_rel_context env)) hyp
-    else
-      pr_match_pattern
-        (Printer.pr_pattern_env env (Termops.names_of_rel_context env)) hyp)
+    pr_match_pattern
+      (Printer.pr_pattern_env env (Termops.names_of_rel_context env)) hyp)
 
 let _ = Tactic_debug.set_match_rule_printer
   (fun rl ->
-    if !Options.v7 then
-      Pptactic.pr_match_rule false
-        Printer.pr_pattern Pptactic.pr_glob_tactic rl
-    else
-      pr_match_rule false
-        (pr_glob_tactic (Global.env())) Printer.pr_pattern rl)
+    pr_match_rule false (pr_glob_tactic (Global.env())) Printer.pr_pattern rl)

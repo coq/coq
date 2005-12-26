@@ -58,8 +58,7 @@ let print_impl_args_by_name = function
       str" are implicit" ++ fnl()
 
 let print_impl_args l = 
-  if !Options.v7 then print_impl_args_by_pos (positions_of_implicits l)
-  else print_impl_args_by_name (List.filter is_status_implicit l)
+  print_impl_args_by_name (List.filter is_status_implicit l)
 
 (*********************)
 (** Printing Scopes  *)
@@ -183,8 +182,7 @@ let pr_located_qualid = function
 	| VarRef _ -> "Variable" in
       str ref_str ++ spc () ++ pr_sp (Nametab.sp_of_global ref)
   | Syntactic kn ->
-      str (if !Options.v7 then "Syntactic Definition" else "Notation") ++ 
-      spc () ++ pr_sp (Nametab.sp_of_syntactic_definition kn)
+      str "Notation" ++ spc () ++ pr_sp (Nametab.sp_of_syntactic_definition kn)
   | Dir dir ->
       let s,dir = match dir with
 	| DirOpenModule (dir,_) -> "Open Module", dir
@@ -269,13 +267,7 @@ let assumptions_for_print lna =
 (* *)
 
 let print_params env params =
-  if params = [] then 
-    (mt ()) 
-  else
-    if !Options.v7 then
-      (str "[" ++ pr_rel_context env params ++ str "]" ++ brk(1,2))
-    else 
-      (pr_rel_context env params ++ brk(1,2))
+  if params = [] then mt () else pr_rel_context env params ++ brk(1,2)
 
 let print_constructors envpar names types =
   let pc =
@@ -356,9 +348,8 @@ let print_inductive sp = (print_mutual sp)
 let print_syntactic_def sep kn =
   let qid = Nametab.shortest_qualid_of_syndef Idset.empty kn in
   let c = Syntax_def.search_syntactic_definition dummy_loc kn in 
-  (str (if !Options.v7 then "Syntactic Definition " else "Notation ")
-   ++ pr_qualid qid ++ str sep ++ 
-  Constrextern.without_symbols pr_rawterm c ++ fnl ())
+  str "Notation " ++ pr_qualid qid ++ str sep ++ 
+  Constrextern.without_symbols pr_rawterm c ++ fnl ()
 
 let print_leaf_entry with_values sep ((sp,kn as oname),lobj) =
   let tag = object_tag lobj in

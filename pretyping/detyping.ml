@@ -223,14 +223,13 @@ let detype_case computable detype detype_eqn testdep
     List.rev (fst (decompose_prod_assum t)) in
   let consnargs = Array.init (Array.length mip.mind_consnames) get_consnarg in
   let consnargsl = Array.map List.length consnargs in
-  let alias, aliastyp, newpred, pred = 
+  let alias, aliastyp, pred= 
     if (not !Options.raw_print) & synth_type & computable & Array.length bl<>0 
     then 
-      Anonymous, None, None, None
+      Anonymous, None, None
     else
-      let p = option_app detype p in
-      match p with
-        | None -> Anonymous, None, None, None
+      match option_app detype p with
+        | None -> Anonymous, None, None
         | Some p ->
             let decompose_lam k c =
               let rec lamdec_rec l avoid k c =
@@ -255,7 +254,7 @@ let detype_case computable detype detype_eqn testdep
 	      else 
 		let pars = list_tabulate (fun _ -> Anonymous) mib.mind_nparams
 		in Some (dummy_loc,indsp,pars@nl) in
-            n, aliastyp, Some typ, Some p
+            n, aliastyp, Some typ
   in
   let constructs = Array.init (Array.length bl) (fun i -> (indsp,i+1)) in
   let eqnv = array_map3 detype_eqn constructs consnargsl bl in
@@ -273,10 +272,10 @@ let detype_case computable detype detype_eqn testdep
     with Not_found -> st
   in 
   if tag = RegularStyle then
-    RCases (dummy_loc,(pred,ref newpred),[tomatch,ref (alias,aliastyp)],eqnl)
+    RCases (dummy_loc,pred,[tomatch,(alias,aliastyp)],eqnl)
   else
     let bl' = Array.map detype bl in
-    if not !Options.v7 && tag = LetStyle && aliastyp = None then
+    if tag = LetStyle && aliastyp = None then
       let rec decomp_lam_force n avoid l p =
 	if n = 0 then (List.rev l,p) else
           match p with
@@ -293,37 +292,16 @@ let detype_case computable detype detype_eqn testdep
                     | RApp (loc,p,l) -> RApp (loc,p,l@[a])
                     | _ -> (RApp (dummy_loc,p,[a]))) in
       let (nal,d) = decomp_lam_force consnargsl.(0) avoid [] bl'.(0) in
-      RLetTuple (dummy_loc,nal,(alias,newpred),tomatch,d)
+      RLetTuple (dummy_loc,nal,(alias,pred),tomatch,d)
     else
     let nondepbrs =
       array_map3 (extract_nondep_branches testdep) bl bl' consnargsl in
-    if not !Options.v7 && tag = IfStyle && aliastyp = None
+    if tag = IfStyle && aliastyp = None
       && array_for_all ((<>) None) nondepbrs then
-      RIf (dummy_loc,tomatch,(alias,newpred),
+      RIf (dummy_loc,tomatch,(alias,pred),
            out_some nondepbrs.(0),out_some nondepbrs.(1))
-    else if !Options.v7 then
-      let rec remove_type avoid args c =
-	match c,args with
-          | RLambda (loc,na,t,c), _::args ->
-              let h = RHole (dummy_loc,BinderType na) in
-              RLambda (loc,na,h,remove_type avoid args c)
-          | RLetIn (loc,na,b,c), _::args ->
-              RLetIn (loc,na,b,remove_type avoid args c)
-          | c, (na,None,t)::args ->
-              let id = next_name_away_with_default "x" na avoid in
-              let h = RHole (dummy_loc,BinderType na) in
-              let c = remove_type (id::avoid) args
-		(RApp (dummy_loc,c,[RVar (dummy_loc,id)])) in
-              RLambda (dummy_loc,Name id,h,c)
-          | c, (na,Some b,t)::args ->
-              let h = RHole (dummy_loc,BinderType na) in
-              let avoid = name_fold (fun x l -> x::l) na avoid in
-              RLetIn (dummy_loc,na,h,remove_type avoid args c)
-          | c, [] -> c in
-      let bl' = array_map2 (remove_type avoid) consnargs bl' in
-      ROrderedCase (dummy_loc,tag,pred,tomatch,bl',ref None)
-    else
-      RCases(dummy_loc,(pred,ref newpred),[tomatch,ref (alias,aliastyp)],eqnl)
+    else 
+      RCases(dummy_loc,pred,[tomatch,(alias,aliastyp)],eqnl)
 
 
 let rec detype tenv avoid env t =
@@ -405,11 +383,6 @@ and detype_cofix tenv avoid env n (names,tys,bodies) =
        Array.map (fun (_,bd,_) -> bd) v)
 
 and share_names tenv n l avoid env c t =
-  if !Options.v7 && n=0 then
-    let c = detype tenv avoid env c in
-    let t = detype tenv avoid env t in
-    (List.rev l,c,t)
-  else
   match kind_of_term c, kind_of_term t with
     (* factorize even when not necessary to have better presentation *)
     | Lambda (na,t,c), Prod (na',t',c') ->
@@ -535,17 +508,16 @@ let rec subst_raw subst raw =
 	if r1' == r1 && r2' == r2 then raw else
 	  RLetIn (loc,n,r1',r2')
 
-  | RCases (loc,(ro,rtno),rl,branches) -> 
-      let ro' = option_smartmap (subst_raw subst) ro 
-      and rtno' = ref (option_smartmap (subst_raw subst) !rtno)
+  | RCases (loc,rtno,rl,branches) -> 
+      let rtno' = option_smartmap (subst_raw subst) rtno
       and rl' = list_smartmap (fun (a,x as y) ->
         let a' = subst_raw subst a in
-        let (n,topt) = !x in 
+        let (n,topt) = x in 
         let topt' = option_smartmap
           (fun (loc,(sp,i),x as t) ->
             let sp' = subst_kn subst sp in
             if sp == sp' then t else (loc,(sp',i),x)) topt in
-        if a == a' && topt == topt' then y else (a',ref (n,topt'))) rl
+        if a == a' && topt == topt' then y else (a',(n,topt'))) rl
       and branches' = list_smartmap 
 			(fun (loc,idl,cpl,r as branch) ->
 			   let cpl' = list_smartmap (subst_pat subst) cpl
@@ -554,15 +526,8 @@ let rec subst_raw subst raw =
 			       (loc,idl,cpl',r'))
 			branches
       in
-	if ro' == ro && rl' == rl && branches' == branches then raw else
-	  RCases (loc,(ro',rtno'),rl',branches')
-
-  | ROrderedCase (loc,b,ro,r,ra,x) -> 
-      let ro' = option_smartmap (subst_raw subst) ro
-      and r' = subst_raw subst r 
-      and ra' = array_smartmap (subst_raw subst) ra in
-	if ro' == ro && r' == r && ra' == ra then raw else
-	  ROrderedCase (loc,b,ro',r',ra',x)
+	if rtno' == rtno && rl' == rl && branches' == branches then raw else
+	  RCases (loc,rtno',rl',branches')
 
   | RLetTuple (loc,nal,(na,po),b,c) ->
       let po' = option_smartmap (subst_raw subst) po

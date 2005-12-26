@@ -141,7 +141,7 @@ let rec uri_of_constr c =
       uri_of_constr b; url_string " in "; uri_of_constr c
   | RCast (_,c,_,t) ->
       uri_of_constr c; url_string ":"; uri_of_constr t
-  | RRec _ | RIf _ | RLetTuple _ | ROrderedCase _ | RCases _ ->
+  | RRec _ | RIf _ | RLetTuple _ | RCases _ ->
       error "Whelp does not support pattern-matching and (co-)fixpoint"
   | RVar _ | RRef _ | RHole _ | REvar _ | RSort _ ->
       anomaly "Written w/o parenthesis"

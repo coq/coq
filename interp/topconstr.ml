@@ -37,10 +37,9 @@ type aconstr =
   | ALambda of name * aconstr * aconstr
   | AProd of name * aconstr * aconstr
   | ALetIn of name * aconstr * aconstr
-  | ACases of aconstr option * aconstr option *
+  | ACases of aconstr option *
       (aconstr * (name * (inductive * name list) option)) list *
       (identifier list * cases_pattern list * aconstr) list
-  | AOrderedCase of case_style * aconstr option * aconstr * aconstr array
   | ALetTuple of name list * (name * aconstr option) * aconstr * aconstr
   | AIf of aconstr * (name * aconstr option) * aconstr * aconstr
   | ASort of rawsort
@@ -73,7 +72,7 @@ let rawconstr_of_aconstr_with_binders loc g f e = function
       let e,na = name_app g e na in RProd (loc,na,f e ty,f e c)
   | ALetIn (na,b,c) ->
       let e,na = name_app g e na in RLetIn (loc,na,f e b,f e c)
-  | ACases (tyopt,rtntypopt,tml,eqnl) ->
+  | ACases (rtntypopt,tml,eqnl) ->
       let cases_predicate_names tml =
 	List.flatten (List.map (function
 	  | (tm,(na,None)) -> [na]
@@ -84,11 +83,9 @@ let rawconstr_of_aconstr_with_binders loc g f e = function
       let fold id (idl,e) = let (id,e) = g id e in (id::idl,e) in
       let eqnl = List.map (fun (idl,pat,rhs) ->
         let (idl,e) = List.fold_right fold idl ([],e) in (loc,idl,pat,f e rhs)) eqnl in
-      RCases (loc,(option_app (f e) tyopt, ref (option_app (f e') rtntypopt)),
+      RCases (loc,option_app (f e') rtntypopt,
         List.map (fun (tm,(na,x)) -> 
-	  (f e tm,ref (na,option_app (fun (x,y) -> (loc,x,y)) x))) tml,eqnl)
-  | AOrderedCase (b,tyopt,tm,bv) ->
-      ROrderedCase (loc,b,option_app (f e) tyopt,f e tm,Array.map (f e) bv,ref None)
+	  (f e tm,(na,option_app (fun (x,y) -> (loc,x,y)) x))) tml,eqnl)
   | ALetTuple (nal,(na,po),b,c) ->
       let e,nal = list_fold_map (name_app g) e nal in 
       let e,na = name_app g e na in
@@ -129,9 +126,9 @@ let compare_rawconstr f t1 t2 = match t1,t2 with
       f ty1 ty2 & f c1 c2
   | RHole _, RHole _ -> true
   | RSort (_,s1), RSort (_,s2) -> s1 = s2
-  | (RLetIn _ | RCases _ | ROrderedCase _ | RRec _ | RDynamic _
+  | (RLetIn _ | RCases _ | RRec _ | RDynamic _
     | RPatVar _ | REvar _ | RLetTuple _ | RIf _ | RCast _),_
-  | _,(RLetIn _ | RCases _ | ROrderedCase _ | RRec _ | RDynamic _
+  | _,(RLetIn _ | RCases _ | RRec _ | RDynamic _
       | RPatVar _ | REvar _ | RLetTuple _ | RIf _ | RCast _)
       -> error "Unsupported construction in recursive notations"
   | (RRef _ | RVar _ | RApp _ | RLambda _ | RProd _ | RHole _ | RSort _), _
@@ -175,20 +172,17 @@ let aconstr_and_vars_of_rawconstr a =
   | RLambda (_,na,ty,c) -> add_name found na; ALambda (na,aux ty,aux c)
   | RProd (_,na,ty,c) -> add_name found na; AProd (na,aux ty,aux c)
   | RLetIn (_,na,b,c) -> add_name found na; ALetIn (na,aux b,aux c)
-  | RCases (_,(tyopt,rtntypopt),tml,eqnl) ->
+  | RCases (_,rtntypopt,tml,eqnl) ->
       let f (_,idl,pat,rhs) =
         found := idl@(!found);
         (idl,pat,aux rhs) in
-      ACases (option_app aux tyopt,
-        option_app aux !rtntypopt,
-        List.map (fun (tm,{contents = (na,x)}) ->
+      ACases (option_app aux rtntypopt,
+        List.map (fun (tm,(na,x)) ->
 	  add_name found na;
 	  option_iter
 	    (fun (_,_,nl) -> List.iter (add_name found) nl) x;
           (aux tm,(na,option_app (fun (_,ind,nal) -> (ind,nal)) x))) tml,
         List.map f eqnl)
-  | ROrderedCase (_,b,tyopt,tm,bv,_) ->
-      AOrderedCase (b,option_app aux tyopt,aux tm, Array.map aux bv)
   | RLetTuple (loc,nal,(na,po),b,c) ->
       add_name found na;
       List.iter (add_name found) nal;
@@ -284,9 +278,8 @@ let rec subst_aconstr subst bound raw =
 	if r1' == r1 && r2' == r2 then raw else
 	  ALetIn (n,r1',r2')
 
-  | ACases (ro,rtntypopt,rl,branches) -> 
-      let ro' = option_smartmap (subst_aconstr subst bound) ro 
-      and rtntypopt' = option_smartmap (subst_aconstr subst bound) rtntypopt
+  | ACases (rtntypopt,rl,branches) -> 
+      let rtntypopt' = option_smartmap (subst_aconstr subst bound) rtntypopt
       and rl' = list_smartmap
         (fun (a,(n,signopt) as x) -> 
 	  let a' = subst_aconstr subst bound a in
@@ -303,16 +296,9 @@ let rec subst_aconstr subst bound raw =
                                (idl,cpl',r'))
                         branches
       in
-        if ro' == ro && rtntypopt == rtntypopt' &
+        if rtntypopt' == rtntypopt && rtntypopt == rtntypopt' &
           rl' == rl && branches' == branches then raw else
-          ACases (ro',rtntypopt',rl',branches')
-
-  | AOrderedCase (b,ro,r,ra) -> 
-      let ro' = option_smartmap (subst_aconstr subst bound) ro
-      and r' = subst_aconstr subst bound r 
-      and ra' = array_smartmap (subst_aconstr subst bound) ra in
-	if ro' == ro && r' == r && ra' == ra then raw else
-	  AOrderedCase (b,ro',r',ra')
+          ACases (rtntypopt',rl',branches')
 
   | ALetTuple (nal,(na,po),b,c) ->
       let po' = option_smartmap (subst_aconstr subst bound) po
@@ -402,17 +388,13 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
      match_binders alp metas na1 na2 (match_ alp metas sigma t1 t2) b1 b2
   | RLetIn (_,na1,t1,b1), ALetIn (na2,t2,b2) ->
      match_binders alp metas na1 na2 (match_ alp metas sigma t1 t2) b1 b2
-  | RCases (_,(po1,rtno1),tml1,eqnl1), ACases (po2,rtno2,tml2,eqnl2) 
+  | RCases (_,rtno1,tml1,eqnl1), ACases (rtno2,tml2,eqnl2) 
       when List.length tml1 = List.length tml2 ->
-     let sigma = option_fold_left2 (match_ alp metas) sigma po1 po2 in
+     let sigma = option_fold_left2 (match_ alp metas) sigma rtno1 rtno2 in
      (* TODO: match rtno' with their contexts *)
      let sigma = List.fold_left2 
        (fun s (tm1,_) (tm2,_) -> match_ alp metas s tm1 tm2) sigma tml1 tml2 in
      List.fold_left2 (match_equations alp metas) sigma eqnl1 eqnl2
-  | ROrderedCase (_,st,po1,c1,bl1,_), AOrderedCase (st2,po2,c2,bl2) 
-      when Array.length bl1 = Array.length bl2 ->
-     let sigma = option_fold_left2 (match_ alp metas) sigma po1 po2 in
-     array_fold_left2 (match_ alp metas) (match_ alp metas sigma c1 c2) bl1 bl2
   | RIf (_,a1,(na1,to1),b1,c1), AIf (a2,(na2,to2),b2,c2) ->
       let sigma = match_opt (match_binders alp metas na1 na2) sigma to1 to2 in
       List.fold_left2 (match_ alp metas) sigma [a1;b1;c1] [a2;b2;c2]
@@ -507,11 +489,9 @@ type constr_expr =
   | CAppExpl of loc * (proj_flag * reference) * constr_expr list
   | CApp of loc * (proj_flag * constr_expr) * 
       (constr_expr * explicitation located option) list
-  | CCases of loc * (constr_expr option * constr_expr option) *
+  | CCases of loc * constr_expr option *
       (constr_expr * (name option * constr_expr option)) list *
       (loc * cases_pattern_expr list * constr_expr) list
-  | COrderedCase of loc * case_style * constr_expr option * constr_expr
-      * constr_expr list
   | CLetTuple of loc * name list * (name option * constr_expr option) *
       constr_expr * constr_expr
   | CIf of loc * constr_expr * (name option * constr_expr option)
@@ -562,7 +542,6 @@ let constr_loc = function
   | CAppExpl (loc,_,_) -> loc
   | CApp (loc,_,_) -> loc
   | CCases (loc,_,_,_) -> loc
-  | COrderedCase (loc,_,_,_,_) -> loc
   | CLetTuple (loc,_,_,_,_) -> loc
   | CIf (loc,_,_,_,_) -> loc
   | CHole loc -> loc
@@ -605,7 +584,6 @@ let rec occur_var_constr_expr id = function
   | CDelimiters (loc,_,a) -> occur_var_constr_expr id a
   | CHole _ | CEvar _ | CPatVar _ | CSort _ | CNumeral _ | CDynamic _ -> false
   | CCases (loc,_,_,_) 
-  | COrderedCase (loc,_,_,_,_) 
   | CLetTuple (loc,_,_,_,_) 
   | CIf (loc,_,_,_,_) 
   | CFix (loc,_,_) 
@@ -676,7 +654,7 @@ let map_constr_expr_with_binders f g e = function
   | CDelimiters (loc,s,a) -> CDelimiters (loc,s,f e a)
   | CHole _ | CEvar _ | CPatVar _ | CSort _ 
   | CNumeral _ | CDynamic _ | CRef _ as x -> x
-  | CCases (loc,(po,rtnpo),a,bl) ->
+  | CCases (loc,rtnpo,a,bl) ->
       (* TODO: apply g on the binding variables in pat... *)
       let bl = List.map (fun (loc,pat,rhs) -> (loc,pat,f e rhs)) bl in
       let e' = 
@@ -689,10 +667,8 @@ let map_constr_expr_with_binders f g e = function
             indnal (option_fold_right (name_fold g) na e))
 	  a e
       in
-      CCases (loc,(option_app (f e) po, option_app (f e') rtnpo),
+      CCases (loc,option_app (f e') rtnpo,
          List.map (fun (tm,x) -> (f e tm,x)) a,bl)
-  | COrderedCase (loc,s,po,a,bl) ->
-      COrderedCase (loc,s,option_app (f e) po,f e a,List.map (f e) bl)
   | CLetTuple (loc,nal,(ona,po),b,c) ->
       let e' = List.fold_right (name_fold g) nal e in
       let e'' = option_fold_right (name_fold g) ona e in

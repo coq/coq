@@ -17,7 +17,6 @@ open Rawterm
 open Declarations
 open Libobject
 open Declare
-open Coqast
 open Environ
 open Pattern
 open Matching

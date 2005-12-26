@@ -11,14 +11,13 @@
 open Pp
 open Util
 open Names
+open Extend
 open Libnames
 open Rawterm
 open Topconstr
-open Ast
 open Genarg
 open Tacexpr
 open Ppextend
-open Extend
 
 (* The lexer of Coq *)
 
@@ -65,8 +64,9 @@ struct
   let weaken_entry e = Obj.magic e
 end
 
+type entry_type = argument_type
 type grammar_object = Gramobj.grammar_object
-type typed_entry = entry_type * grammar_object G.Entry.e
+type typed_entry = argument_type * grammar_object G.Entry.e
 let in_typed_entry t e = (t,Gramobj.weaken_entry e)
 let type_of_typed_entry (t,e) = t
 let object_of_typed_entry (t,e) = e
@@ -311,10 +311,7 @@ module Prim =
     let reference = make_gen_entry uprim rawwit_ref "reference"
 
     (* parsed like ident but interpreted as a term *)
-    let hyp = gec_gen rawwit_ident "hyp"
-
-    (* synonym of hyp/ident (before semantics split) for v7 compatibility *)
-    let var = gec_gen rawwit_ident "var"
+    let var = gec_gen rawwit_var "var"
 
     let name = Gram.Entry.create "Prim.name"
     let identref = Gram.Entry.create "Prim.identref"
@@ -328,12 +325,6 @@ module Prim =
 
     let ne_string = Gram.Entry.create "Prim.ne_string"
 
-    (* For old ast printer *)
-    let astpat = Gram.Entry.create "Prim.astpat"
-    let ast = Gram.Entry.create "Prim.ast"
-    let astlist = Gram.Entry.create "Prim.astlist"
-    let ast_eoi = eoi_entry ast
-    let astact = Gram.Entry.create "Prim.astact"
   end
 
 
@@ -380,8 +371,7 @@ module Tactic =
       make_gen_entry utactic rawwit_constr_with_bindings "constr_with_bindings"
     let bindings =
       make_gen_entry utactic rawwit_bindings "bindings"
-(*v7*) let constrarg = make_gen_entry utactic rawwit_constr_may_eval "constrarg"
-(*v8*) let constr_may_eval = make_gen_entry utactic rawwit_constr_may_eval "constr_may_eval"
+    let constr_may_eval = make_gen_entry utactic rawwit_constr_may_eval "constr_may_eval"
     let quantified_hypothesis =
       make_gen_entry utactic rawwit_quant_hyp "quantified_hypothesis"
     let int_or_var = make_gen_entry utactic rawwit_int_or_var "int_or_var"
@@ -391,13 +381,7 @@ module Tactic =
 
     (* Main entries for ltac *)
     let tactic_arg = Gram.Entry.create "tactic:tactic_arg"
-    (* For v8: *)
     let tactic_expr = Gram.Entry.create "tactic:tactic_expr"
-    (* For v7: *)
-    let tactic_expr2 = Gram.Entry.create "tactic:tactic_expr2"
-    let tactic_expr3 = Gram.Entry.create "tactic:tactic_expr3"
-    let tactic_expr4 = Gram.Entry.create "tactic:tactic_expr4"
-    let tactic_expr5 = Gram.Entry.create "tactic:tactic_expr5"
 
     let tactic_main_level = 5
     let tactic = make_gen_entry utactic (rawwit_tactic tactic_main_level) "tactic"
@@ -422,32 +406,6 @@ module Vernac_ =
     let vernac_eoi = eoi_entry vernac
   end
 
-
-(* Prim is not re-initialized *)
-let reset_all_grammars () =
-  let f = Gram.Unsafe.clear_entry in
-  List.iter f
-    [Constr.constr;Constr.operconstr;Constr.lconstr;Constr.annot;
-     Constr.constr_pattern;Constr.lconstr_pattern];
-  f Constr.ident; f Constr.global; f Constr.sort; f Constr.pattern;
-  f Module.module_expr; f Module.module_type;
-  f Tactic.simple_tactic;
-  f Tactic.open_constr;
-  f Tactic.constr_with_bindings;
-  f Tactic.bindings;
-  f Tactic.constrarg;
-  f Tactic.quantified_hypothesis;
-  f Tactic.int_or_var;
-  f Tactic.red_expr;
-  f Tactic.tactic_arg;
-  f Tactic.tactic;
-  f Vernac_.gallina;
-  f Vernac_.gallina_ext;
-  f Vernac_.command;
-  f Vernac_.syntax;
-  f Vernac_.vernac;
-  Lexer.init()
-
 let main_entry = Gram.Entry.create "vernac"
 
 GEXTEND Gram
@@ -455,88 +413,6 @@ GEXTEND Gram
     [ [ a = Vernac_.vernac -> Some (loc,a) | EOI -> None ] ]
   ;
 END
-
-(* Quotations *)
-
-open Prim
-open Constr
-open Tactic
-open Vernac_
-
-(* current file and toplevel/vernac.ml *)
-let globalizer = ref (fun x -> failwith "No globalizer")
-let set_globalizer f = globalizer := f
-
-let define_ast_quotation default s (e:Coqast.t G.Entry.e) =
-  (if default then
-    GEXTEND Gram
-      ast: [ [ "<<"; c = e; ">>" -> c ] ];
-     (* Uncomment this to keep compatibility with old grammar syntax
-     constr: [ [ "<<"; c = e; ">>" -> c ] ];
-     vernac: [ [ "<<"; c = e; ">>" -> c ] ];
-     tactic: [ [ "<<"; c = e; ">>" -> c ] ];
-     *)
-   END);
-  (GEXTEND Gram
-     GLOBAL: ast constr command tactic;
-     ast:
-       [ [ "<:"; IDENT $s$; ":<"; c = e; ">>" -> c ] ];
-     (* Uncomment this to keep compatibility with old grammar syntax
-     constr:
-       [ [ "<:"; IDENT $s$; ":<"; c = e; ">>" -> c ] ];
-     command:
-       [ [ "<:"; IDENT $s$; ":<"; c = e; ">>" -> c ] ];
-     tactic:
-       [ [ "<:"; IDENT $s$; ":<"; c = e; ">>" -> c ] ];
-     *)
-   END)
-
-(*
-let _ = define_ast_quotation false "ast" ast in ()
-*)
-
-let dynconstr = Gram.Entry.create "Constr.dynconstr"
-let dyncasespattern = Gram.Entry.create "Constr.dyncasespattern"
-
-GEXTEND Gram
-  dynconstr:
-  [ [ a = Constr.constr -> ConstrNode a 
-    (* For compatibility *)
-    | "<<"; a = Constr.lconstr; ">>" -> ConstrNode a ] ]
-  ;
-  dyncasespattern: [ [ a = Constr.pattern -> CasesPatternNode a ] ];
-END
-
-(**********************************************************************)
-(* The following is to dynamically set the parser in Grammar actions  *)
-(* and Syntax pattern, according to the universe of the rule defined  *)
-
-type parser_type =
-  | ConstrParser
-  | CasesPatternParser
-
-let default_action_parser_ref = ref dynconstr
-
-let get_default_action_parser () = !default_action_parser_ref
-
-let entry_type_of_parser =  function
-  | ConstrParser -> Some ConstrArgType
-  | CasesPatternParser -> failwith "entry_type_of_parser: cases_pattern, TODO"
-
-let parser_type_from_name =  function
-  | "constr" -> ConstrParser
-  | "cases_pattern" -> CasesPatternParser
-  | "tactic" -> assert false
-  | "vernac" -> error "No longer supported"
-  | s -> ConstrParser
-
-let set_default_action_parser = function
-  | ConstrParser  -> default_action_parser_ref := dynconstr
-  | CasesPatternParser  -> default_action_parser_ref := dyncasespattern
-
-let default_action_parser =
-  Gram.Entry.of_parser "default_action_parser" 
-    (fun strm -> Gram.Entry.parse_token (get_default_action_parser ()) strm)
 
 (**********************************************************************)
 (* This determines (depending on the associativity of the current
@@ -547,24 +423,9 @@ let default_action_parser =
    translated in camlp4 into "constr" without level) or to another level
    (to be translated into "constr LEVEL n") *)
 
-let assoc_level = function
-  | Some Gramext.LeftA when !Options.v7 -> "L"
-  | _ -> ""
+let constr_level = string_of_int
 
-let constr_level = function
-  | n,assoc -> (string_of_int n)^(assoc_level assoc)
-
-let constr_level2 = function
-  | n,assoc -> (string_of_int n)^(assoc_level (Some assoc))
-
-let default_levels_v7 =
-  [10,Gramext.RightA;
-   9,Gramext.RightA;
-   8,Gramext.RightA;
-   1,Gramext.RightA;
-   0,Gramext.RightA]
-
-let default_levels_v8 =
+let default_levels =
   [200,Gramext.RightA;
    100,Gramext.RightA;
    99,Gramext.RightA;
@@ -574,20 +435,16 @@ let default_levels_v8 =
    1,Gramext.LeftA;
    0,Gramext.RightA]
 
-let default_pattern_levels_v8 =
+let default_pattern_levels =
   [10,Gramext.LeftA;
    0,Gramext.RightA]
 
 let level_stack = 
-  ref 
-    [if !Options.v7 then (default_levels_v7, default_levels_v7)
-     else (default_levels_v8, default_pattern_levels_v8)]
+  ref [(default_levels, default_pattern_levels)]
 
 (* At a same level, LeftA takes precedence over RightA and NoneA *)
 (* In case, several associativity exists for a level, we make two levels, *)
 (* first LeftA, then RightA and NoneA together *)
-exception Found of Gramext.g_assoc
-
 open Ppextend
 
 let admissible_assoc = function
@@ -610,48 +467,35 @@ let error_level_assoc p current expected =
      pr_assoc expected ++ str " associative")
 
 let find_position forpat other assoc lev =
-  let default = if !Options.v7 then Some (10,Gramext.RightA) else None in
   let ccurrent,pcurrent as current = List.hd !level_stack in 
   match lev with
   | None ->
       level_stack := current :: !level_stack;
       None, (if other then assoc else None), None
   | Some n ->
-      if !Options.v7 & n = 8 & assoc = Some Gramext.LeftA then 
-	error "Left associativity not allowed at level 8";
-      let after = ref default in
+      let after = ref None in
       let rec add_level q = function
-        | (p,_ as pa)::l when p > n -> pa :: add_level (Some pa) l
-        | (p,a as pa)::l as l' when p = n ->
-	    if admissible_assoc (a,assoc) then raise (Found a);
-	    (* No duplication of levels in v8 *)
-	    if not !Options.v7 then error_level_assoc p a (out_some assoc);
-	    (* Maybe this was (p,Left) and p occurs a second time *)
-	    if a = Gramext.LeftA then
-	      match l with
-		| (p,a)::_ when p = n -> raise (Found a)
-		| _ -> after := Some pa; pa::(n,create_assoc assoc)::l
-	    else
-	      (* This was not (p,LeftA) hence assoc is RightA *)
-	      (after := q; (n,create_assoc assoc)::l')
-	| l ->
-	    after := q; (n,create_assoc assoc)::l
+        | (p,_ as pa)::l when p > n -> pa :: add_level (Some p) l
+        | (p,a)::l when p = n ->
+	    if admissible_assoc (a,assoc) then raise Exit;
+	    error_level_assoc p a (out_some assoc)
+	| l -> after := q; (n,create_assoc assoc)::l
       in
       try
 	(* Create the entry *)
 	let updated =
-	  if forpat then (ccurrent, add_level default pcurrent)
-	  else (add_level default ccurrent, pcurrent) in
+	  if forpat then (ccurrent, add_level None pcurrent)
+	  else (add_level None ccurrent, pcurrent) in
         level_stack := updated:: !level_stack;
 	let assoc = create_assoc assoc in
 	(if !after = None then Some Gramext.First
-	else Some (Gramext.After (constr_level2 (out_some !after)))),
-	Some assoc, Some (constr_level2 (n,assoc))
+	else Some (Gramext.After (constr_level (out_some !after)))),
+	Some assoc, Some (constr_level n)
       with
-          Found a ->
+          Exit ->
             level_stack := current :: !level_stack;
 	    (* Just inherit the existing associativity and name (None) *)
-	    Some (Gramext.Level (constr_level2 (n,a))), None, None
+	    Some (Gramext.Level (constr_level n)), None, None
 
 let remove_levels n =
   level_stack := list_skipn n !level_stack
@@ -729,7 +573,7 @@ let compute_entry allow_create adjust forpat = function
   | ETConstr (n,q) ->
       (if forpat then weaken_entry Constr.pattern
        else weaken_entry Constr.operconstr),
-      (if forpat & !Options.v7 then None else adjust (n,q)), false
+      adjust (n,q), false
   | ETIdent -> weaken_entry Constr.ident, None, false
   | ETBigint -> weaken_entry Prim.bigint, None, false
   | ETReference -> weaken_entry Constr.global, None, false
@@ -747,7 +591,7 @@ let compute_entry allow_create adjust forpat = function
 (* This computes the name of the level where to add a new rule *)
 let get_constr_entry forpat en =
   match en with
-      ETConstr(200,()) when not !Options.v7 & not forpat ->
+      ETConstr(200,()) when not forpat ->
 	snd (get_entry (get_univ "constr") "binder_constr"),
         None,
         false
@@ -756,25 +600,7 @@ let get_constr_entry forpat en =
 (* This computes the name to give to a production knowing the name and
    associativity of the level where it must be added *)
 let get_constr_production_entry ass from forpat en =
-  (* first 2 cases to help factorisation *)
-  match en with
-    | ETConstr (NumLevel 10,q) when !Options.v7 & not forpat ->
-        weaken_entry Constr.lconstr, None, false
-(*
-    | ETConstr (8,q) when !Options.v7 ->
-        weaken_entry Constr.constr, None, false
-*)
-    | _ -> compute_entry false (adjust_level ass from) forpat en
-
-let constr_prod_level assoc cur lev =
-  if !Options.v7 then
-    if cur then constr_level (lev,assoc) else
-      match lev with
-	| 4 when !Options.v7 -> "4L"
-	| n -> string_of_int n
-  else
-    (* No duplication L/R of levels in v8 *)
-    constr_level (lev,assoc)
+  compute_entry false (adjust_level ass from) forpat en
 
 let is_self from e =
   match from, e with
@@ -789,8 +615,7 @@ let is_self from e =
 let is_binder_level from e =
   match from, e with
       ETConstr(200,()),
-      ETConstr(NumLevel 200,(BorderProd(false,_)|InternalProd)) ->
-        not !Options.v7
+      ETConstr(NumLevel 200,(BorderProd(false,_)|InternalProd)) -> true
     | _ -> false
 
 let rec symbol_of_production assoc from forpat typ =
@@ -814,4 +639,19 @@ let rec symbol_of_production assoc from forpat typ =
       | (eobj,None,_) -> Gramext.Snterm (Gram.Entry.obj eobj)
       | (eobj,Some None,_) -> Gramext.Snext
       | (eobj,Some (Some (lev,cur)),_) -> 
-          Gramext.Snterml (Gram.Entry.obj eobj,constr_prod_level assoc cur lev)
+          Gramext.Snterml (Gram.Entry.obj eobj,constr_level lev)
+
+let coerce_reference_to_id = function
+  | Ident (_,id) -> id
+  | Qualid (loc,_) ->
+      user_err_loc (loc, "coerce_reference_to_id",
+        str "This expression should be a simple identifier")
+
+let coerce_global_to_id = coerce_reference_to_id
+
+let coerce_to_id = function
+  | CRef (Ident (loc,id)) -> (loc,id)
+  | a -> user_err_loc
+        (constr_loc a,"coerce_to_id",
+         str "This expression should be a simple identifier")
+

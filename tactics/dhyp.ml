@@ -129,7 +129,6 @@ open Libobject
 open Library
 open Pattern
 open Matching
-open Ast
 open Pcoq
 open Tacexpr
 open Libnames
@@ -266,11 +265,10 @@ let match_dpat dp cls gls =
     | ({onhyps=lo;onconcl=false},HypLocation(_,hypd,concld)) ->
         let hl = match lo with
             Some l -> l
-          | None -> List.map (fun id -> (id,[],(InHyp,ref None)))
-                     (pf_ids_of_hyps gls) in
+          | None -> List.map (fun id -> (id,[],InHyp)) (pf_ids_of_hyps gls) in
         if not
           (List.for_all
-            (fun (id,_,(hl,_)) ->
+            (fun (id,_,hl) ->
               let cltyp = pf_get_hyp_typ gls id in
               let cl = pf_concl gls in
               (hl=InHyp) &

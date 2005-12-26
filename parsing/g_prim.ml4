@@ -33,46 +33,21 @@ let local_make_binding loc a b =
 let local_append l id = l@[id]
 
 GEXTEND Gram
-  GLOBAL: bigint ident natural integer string preident ast
-    astlist qualid reference dirpath identref name base_ident var
-    hyp;
+  GLOBAL: bigint ident string preident ast
+    astlist qualid reference dirpath identref name base_ident var;
 
- (* Compatibility: Prim.var is a synonym of Prim.ident *)
-  var:
-    [ [ id = ident -> id ] ]
-  ;
-  hyp:
-    [ [ id = ident -> id ] ]
-  ;
   metaident:
     [ [ s = METAIDENT -> Nmeta (loc,s) ] ]
-  ;
-  preident:
-    [ [ s = IDENT -> s ] ]
   ;
   base_ident:
     [ [ s = IDENT -> local_id_of_string s ] ]
   ;
-  name:
-    [ [ IDENT "_" -> (loc, Anonymous)
-      | id = base_ident -> (loc, Name id) ] ]
-  ;
-  identref:
-    [ [ id = base_ident -> (loc,id) ] ]
-  ;
   ident:
     [ [ id = base_ident -> id ] ]
-  ;
-  natural:
-    [ [ i = INT -> local_make_posint i ] ]
   ;
   bigint:
     [ [ i = INT -> Bigint.of_string i
       | "-"; i = INT -> Bigint.neg (Bigint.of_string i) ] ]
-  ;
-  integer:
-    [ [ i = INT      -> local_make_posint i
-      | "-"; i = INT -> local_make_negint i ] ]
   ;
   field:
     [ [ s = FIELD -> local_id_of_string s ] ]

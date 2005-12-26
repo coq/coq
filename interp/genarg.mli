@@ -71,7 +71,7 @@ VarArgType                     identifier               constr
 RefArgType                     reference                global_reference
 ConstrArgType                  constr_expr              constr
 ConstrMayEvalArgType           constr_expr may_eval     constr
-QuantHypArgType                quantified_hypothesis    quantified_hypothesis
+QuantVarArgType                quantified_hypothesis    quantified_hypothesis
 TacticArgType                  raw_tactic_expr          tactic
 OpenConstrArgType              constr_expr              open_constr
 ConstrBindingsArgType      constr_expr with_bindings constr with_bindings
@@ -114,7 +114,7 @@ val wit_ident : (identifier,'co,'ta) abstract_argument_type
 
 val rawwit_var : (identifier located,'co,'ta) abstract_argument_type
 val globwit_var : (identifier located,'co,'ta) abstract_argument_type
-val wit_var : ('co,'co,'ta) abstract_argument_type
+val wit_var : (identifier,'co,'ta) abstract_argument_type
 
 val rawwit_ref : (reference,constr_expr,'ta) abstract_argument_type
 val globwit_ref : (global_reference located or_var,rawconstr_and_expr,'ta) abstract_argument_type
@@ -231,13 +231,13 @@ type argument_type =
   | PreIdentArgType
   | IntroPatternArgType
   | IdentArgType
-  | HypArgType
+  | VarArgType
   | RefArgType
   (* Specific types *)
   | SortArgType
   | ConstrArgType
   | ConstrMayEvalArgType
-  | QuantHypArgType
+  | QuantVarArgType
   | TacticArgType of int
   | OpenConstrArgType of bool
   | ConstrWithBindingsArgType
@@ -271,4 +271,3 @@ val in_gen :
   ('a,'co,'ta) abstract_argument_type -> 'a -> ('co,'ta) generic_argument
 val out_gen :
   ('a,'co,'ta) abstract_argument_type -> ('co,'ta) generic_argument -> 'a 
-

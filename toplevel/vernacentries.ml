@@ -501,45 +501,9 @@ let vernac_end_segment id =
     | _,Lib.OpenedSection _ -> vernac_end_section id
     | _ -> anomaly "No more opened things"
       
-
-let is_obsolete_module (_,qid) =
-  match repr_qualid qid with
-  | dir, id when dir = empty_dirpath ->
-      (match string_of_id id with
-	| ("Refine" | "Inv" | "Equality" | "EAuto" | "AutoRewrite"
-	  | "EqDecide" | "Xml" |  "Extraction" | "Tauto" | "Setoid_replace"
-          | "Elimdep" 
-	  | "DatatypesSyntax" | "LogicSyntax" | "Logic_TypeSyntax"
-	  | "SpecifSyntax" | "PeanoSyntax" | "TypeSyntax" | "PolyListSyntax")
-	  -> true
-	| _ -> false)
-  | _ -> false
-
-let test_renamed_module (_,qid) =
-  match repr_qualid qid with
-  | dir, id when dir = empty_dirpath ->
-      (match string_of_id id with
-	| "List" -> warning "List has been renamed into MonoList"
-        | "PolyList" -> warning "PolyList has been renamed into List and old List into MonoList"
-        | _ -> ())
-  | _ -> ()
-
 let vernac_require import _ qidl =
   let qidl = List.map qualid_of_reference qidl in
-  try
-    Library.require_library qidl import
-  with e ->
-  (* Compatibility message *)
-    let qidl' = List.filter is_obsolete_module qidl in
-    if qidl' = qidl then
-      List.iter
-	(fun (_,qid) ->
-	  warning ("Module "^(string_of_qualid qid)^
-	  " is now built-in and shouldn't be required")) qidl
-    else
-      (if not !Options.v7 then List.iter test_renamed_module qidl;
-       raise e)
-      
+  Library.require_library qidl import
 
 let vernac_canonical locqid =
   Recordops.declare_canonical_structure (Nametab.global locqid)
@@ -698,13 +662,11 @@ let _ =
       optread  = Impargs.is_implicit_args;
       optwrite = Impargs.make_implicit_args }
 
-let impargs = if !Options.v7 then "Implicits" else "Implicit"
-
 let _ =
   declare_bool_option 
-    { optsync  = false; (* synchronisation is in Impargs *)
+    { optsync  = true;
       optname  = "strict implicit arguments";
-      optkey   = (SecondaryTable ("Strict",impargs));
+      optkey   = (SecondaryTable ("Strict","Implicit"));
       optread  = Impargs.is_strict_implicit_args;
       optwrite = Impargs.make_strict_implicit_args }
 
@@ -712,7 +674,7 @@ let _ =
   declare_bool_option 
     { optsync  = true;
       optname  = "contextual implicit arguments";
-      optkey   = (SecondaryTable ("Contextual",impargs));
+      optkey   = (SecondaryTable ("Contextual","Implicit"));
       optread  = Impargs.is_contextual_implicit_args;
       optwrite = Impargs.make_contextual_implicit_args }
 
@@ -728,7 +690,7 @@ let _ =
   declare_bool_option 
     { optsync  = true;
       optname  = "implicit arguments printing";
-      optkey   = (SecondaryTable ("Printing",impargs));
+      optkey   = (SecondaryTable ("Printing","Implicit"));
       optread  = (fun () -> !Constrextern.print_implicits);
       optwrite = (fun b ->  Constrextern.print_implicits := b) }
 
@@ -744,7 +706,7 @@ let _ =
   declare_bool_option 
     { optsync  = true;
       optname  = "notations printing";
-      optkey   = (SecondaryTable ("Printing",if !Options.v7 then "Symbols" else "Notations"));
+      optkey   = (SecondaryTable ("Printing","Notations"));
       optread  = (fun () -> not !Constrextern.print_no_symbol);
       optwrite = (fun b ->  Constrextern.print_no_symbol := not b) }
 
@@ -1099,7 +1061,6 @@ let vernac_debug b =
 let interp c = match c with
   (* Control (done in vernac) *)
   | (VernacTime _ | VernacVar _ | VernacList _ | VernacLoad _) -> assert false
-  | (VernacV7only _ | VernacV8only _) -> assert false
 
   (* Syntax *)
   | VernacTacticNotation (n,r,e) -> Metasyntax.add_tactic_notation (n,r,e)

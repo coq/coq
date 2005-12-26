@@ -1,3 +1,4 @@
+
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -14,8 +15,6 @@ open Term
 open Libnames
 open Pcoq
 open Rawterm
-open Extend
-open Coqast
 open Topconstr
 open Names
 open Util
@@ -65,9 +64,6 @@ val pr_constr : constr_expr -> std_ppcmds
 val pr_lconstr : constr_expr -> std_ppcmds
 val pr_constr_env : env -> constr_expr -> std_ppcmds
 val pr_lconstr_env : env -> constr_expr -> std_ppcmds
-val pr_lconstr_env_n : env -> bool -> local_binder list -> constr_expr -> 
-  local_binder list * std_ppcmds
-val pr_type_env_n : env -> local_binder list -> constr_expr -> std_ppcmds
 val pr_type : constr_expr -> std_ppcmds
 val pr_cases_pattern : cases_pattern_expr -> std_ppcmds
 val pr_may_eval :
@@ -80,9 +76,6 @@ val prod_constr_expr : constr_expr -> local_binder list -> constr_expr
 val pr_rawconstr_env : env -> rawconstr -> std_ppcmds
 val pr_lrawconstr_env : env -> rawconstr -> std_ppcmds
 
-val pr_rawconstr_env_no_translate : env -> rawconstr -> std_ppcmds
-val pr_lrawconstr_env_no_translate : env -> rawconstr -> std_ppcmds
-
 val pr_reference : reference -> std_ppcmds
 
 (** constr printers *)
@@ -94,7 +87,3 @@ val pr_lterm : constr -> std_ppcmds
 
 val pr_constr_pattern_env : env -> Pattern.constr_pattern -> std_ppcmds
 val pr_constr_pattern : Pattern.constr_pattern -> std_ppcmds
-
-(* To translate names in ZArith *)
-val translate_with_bindings : rawconstr -> 'a bindings -> 'a bindings
-val rename_bound_variables : identifier -> constr_expr -> constr_expr

@@ -18,10 +18,8 @@ open Vernacexpr
 open Ppconstrnew
 open Pptacticnew
 open Rawterm
-open Coqast
 open Genarg
 open Pcoq
-open Ast
 open Libnames
 open Ppextend
 open Topconstr
@@ -52,7 +50,7 @@ let pr_lname = function
     (loc,Name id) -> pr_lident (loc,id)
   | lna -> pr_located pr_name lna
 
-let pr_ltac_id id = Nameops.pr_id (id_of_ltac_v7_id id)
+let pr_ltac_id = Nameops.pr_id
 
 let pr_module r =
   let update_ref s = match r with
@@ -92,8 +90,9 @@ let pr_raw_tactic_env l env t =
   Pptacticnew.pr_glob_tactic env (Tacinterp.glob_tactic_env l env t)
 
 let pr_gen env t =
-  Pptactic.pr_raw_generic (Ppconstrnew.pr_constr_env env)
-    (Ppconstrnew.pr_lconstr_env env)
+  Pptactic.pr_raw_generic 
+    Ppconstrnew.pr_constr
+    Ppconstrnew.pr_lconstr
     (Pptacticnew.pr_raw_tactic_level env) pr_reference t
 
 let pr_raw_tactic tac =
@@ -141,19 +140,14 @@ let pr_set_entry_type = function
   | ETBigint -> str "bigint"
   | ETConstrList _ -> failwith "Internal entry type"
 
-let pr_non_terminal = function
-  | NtQual (u,nt) -> (* no more qualified entries *) str nt
-  | NtShort "constrarg" -> str "constr"
-  | NtShort nt -> str nt
-
 let strip_meta id =
   let s = string_of_id id in
   if s.[0]='$' then id_of_string (String.sub s 1 (String.length s - 1))
   else id
 
 let pr_production_item = function
-  | VNonTerm (loc,nt,Some p) -> pr_non_terminal nt ++ str"(" ++ pr_id (strip_meta p) ++ str")"
-  | VNonTerm (loc,nt,None) -> pr_non_terminal nt
+  | VNonTerm (loc,nt,Some p) -> str nt ++ str"(" ++ pr_id (strip_meta p) ++ str")"
+  | VNonTerm (loc,nt,None) -> str nt
   | VTerm s -> qsnew s
 
 let pr_comment pr_c = function
@@ -292,26 +286,13 @@ let rec pr_module_expr = function
       pr_module_expr me1 ++ spc() ++
       hov 1 (str"(" ++ pr_module_expr me2 ++ str")")
 
-(*
-let pr_opt_casted_constr pr_c = function
-  | CCast (loc,c,t) -> pr_c c ++ str":" ++ pr_c t
-  | _ as c -> pr_c c
-*)
-
 let pr_type_option pr_c = function
   | CHole loc -> mt()
   | _ as c -> brk(0,2) ++ str":" ++ pr_c c
 
-let without_translation f x =
-  let old = Options.do_translate () in
-  let oldv7 = !Options.v7 in
-  Options.make_translate false;
-  try let r = f x in Options.make_translate old; Options.v7:=oldv7; r
-  with e -> Options.make_translate old; Options.v7:=oldv7; raise e
-
 let pr_decl_notation prc =
   pr_opt (fun (ntn,c,scopt) -> fnl () ++
-    str "where " ++ qsnew ntn ++ str " := " ++ without_translation prc c ++
+    str "where " ++ qsnew ntn ++ str " := " ++ prc c ++
     pr_opt (fun sc -> str ": " ++ str sc) scopt)
 
 let pr_vbinders l =
@@ -321,7 +302,6 @@ let pr_binders_arg =
   pr_ne_sep spc pr_binders
 
 let pr_and_type_binders_arg bl =
-  let bl, _ = pr_lconstr_env_n (Global.env()) false bl (CHole dummy_loc) in
   pr_binders_arg bl
 
 let pr_onescheme (id,dep,ind,s) =
@@ -422,7 +402,7 @@ let pr_paren_reln_or_extern = function
   | Some pprim,Any -> qsnew pprim
   | Some pprim,Prec p -> qsnew pprim ++ spc() ++ str":" ++ spc() ++ int p
   | _ -> mt()
-
+(*
 let rec pr_next_hunks = function 
   | UNP_FNL -> str"FNL"
   | UNP_TAB -> str"TAB"
@@ -444,7 +424,7 @@ let pr_syntax_rule (nm,s,u) = str nm ++ spc() ++ str"[" ++ pr_astpat s ++ str"]"
 let pr_syntax_entry (p,rl) =
   str"level" ++ spc() ++ int p ++ str" :" ++ fnl() ++
   prlist_with_sep (fun _ -> fnl() ++ str"| ") pr_syntax_rule rl
-
+*)
 let pr_vernac_solve (i,env,tac,deftac) =
   (if i = 1 then mt() else int i ++ str ": ") ++
   Pptacticnew.pr_glob_tactic env tac
@@ -579,24 +559,14 @@ let rec pr_vernac = function
             pr_red_expr (pr_constr, pr_lconstr, pr_reference) r ++
             str" in" ++ spc() in
       let pr_def_body = function
-        | DefineBody (bl,red,c,d) ->
-            let (bl2,body,ty) = match d with
-              | None ->
-                  let bl2,body = extract_lam_binders c in
-                  (bl2,body,mt())
-              | Some ty ->
-                  let bl2,body,ty' = extract_def_binders c ty in
-                  (bl2,CCast (dummy_loc,body,Term.DEFAULTcast,ty'),
-                   spc() ++ str":" ++
-                   pr_sep_com spc
-                     (pr_type_env_n (Global.env()) (bl@bl2)) ty') in
-	    let iscast = d <> None in
-            let bindings,ppred =
-	      pr_lconstr_env_n (Global.env()) iscast (bl@bl2) body in
-            (pr_binders_arg bindings,ty,Some (pr_reduce red ++ ppred))
+        | DefineBody (bl,red,body,d) ->
+            let ty = match d with
+              | None -> mt()
+              | Some ty -> spc() ++ str":" ++ pr_sep_com spc pr_lconstr ty
+	    in
+            (pr_binders_arg bl,ty,Some (pr_reduce red ++ pr_lconstr body))
         | ProveBody (bl,t) ->
-            (pr_and_type_binders_arg bl, str" :" ++ pr_spc_type t, None)
-      in
+            (pr_binders_arg bl, str" :" ++ pr_spc_type t, None) in
       let (binds,typ,c) = pr_def_body b in
       hov 2 (pr_def_token d ++ spc() ++ pr_lident id ++ binds ++ typ ++
       (match c with
@@ -608,7 +578,7 @@ let rec pr_vernac = function
       (match bl with
         | [] -> mt()
         | _ -> pr_binders bl ++ spc())
-      ++ str":" ++ pr_spc_type (rename_bound_variables (snd id) c))
+      ++ str":" ++ pr_spc_type c)
   | VernacEndProof Admitted -> str"Admitted"
   | VernacEndProof (Proved (opac,o)) -> (match o with
     | None -> if opac then str"Qed" else str"Defined"
@@ -618,72 +588,16 @@ let rec pr_vernac = function
   | VernacExactProof c ->
       hov 2 (str"Proof" ++ pr_lconstrarg c)
   | VernacAssumption (stre,l) ->
+      let n = List.length (List.flatten (List.map fst (List.map snd l))) in
       hov 2
-        (pr_assumption_token (List.length l > 1) stre ++ spc() ++ 
+        (pr_assumption_token (n > 1) stre ++ spc() ++ 
 	 pr_ne_params_list pr_type l)
   | VernacInductive (f,l) ->
-
-      (* Copie simplifiée de command.ml pour recalculer les implicites, *)
-      (* les notations, et le contexte d'evaluation *)
-      let lparams = match l with [] -> assert false | (_,_,la,_,_)::_ -> la in
-      let sigma = Evd.empty 
-      and env0 = Global.env() in
-      let (env_params,params) =
-	List.fold_left
-	  (fun (env,params) d -> match d with
-	    | LocalRawAssum (nal,t) ->
-		let t = Constrintern.interp_type sigma env t in
-		let ctx = list_map_i (fun i (_,na) -> (na,None,Term.lift i t)) 0 nal
-		in let ctx = List.rev ctx in
-		(Environ.push_rel_context ctx env, ctx@params)
-	    | LocalRawDef ((_,na),c) ->
-		let c = Constrintern.interp_constr_judgment sigma env c in
-		let d = (na, Some c.Environ.uj_val, c.Environ.uj_type) in
-		(Environ.push_rel d env,d::params))
-	  (env0,[]) lparams in
-
-      let (ind_env,ind_impls,arityl) =
-        List.fold_left
-          (fun (env, ind_impls, arl) ((_,recname), _, _, arityc, _) ->
-            let arity = Constrintern.interp_type sigma env_params arityc in
-	    let fullarity = Termops.it_mkProd_or_LetIn arity params in
-	    let env' = Termops.push_rel_assum (Name recname,fullarity) env in
-	    let impls = 
-	      if Impargs.is_implicit_args()
-	      then Impargs.compute_implicits false env_params fullarity
-	      else [] in
-	    (env', (recname,impls)::ind_impls, (arity::arl)))
-          (env0, [], []) l
-      in
-      let notations = 
-	List.fold_right (fun (_,ntnopt,_,_,_) l ->option_cons ntnopt l) l [] in
-      let ind_env_params = Environ.push_rel_context params ind_env in
-
-      let impl = List.map
-	(fun ((_,recname),_,_,arityc,_) ->
-	  let arity = Constrintern.interp_type sigma env_params arityc in
-	  let fullarity =
-            Termops.prod_it arity (List.map (fun (id,_,ty) -> (id,ty)) params)
-	  in
-	  let impl_in =
-	    if Impargs.is_implicit_args()
-	    then Impargs.compute_implicits false env_params fullarity
-	    else [] in
-	  let impl_out =
-	    if Impargs.is_implicit_args_out()
-	    then Impargs.compute_implicits true env_params fullarity
-	    else [] in
-	  (recname,impl_in,impl_out)) l in
-      let impls_in = List.map (fun (id,a,_) -> (id,a)) impl in
-      let impls_out = List.map (fun (id,_,a) -> (id,a)) impl in
-      Constrintern.set_temporary_implicits_in impls_in;
-      Constrextern.set_temporary_implicits_out impls_out;
-      (* Fin calcul implicites *)
 
       let pr_constructor (coe,(id,c)) =
         hov 2 (pr_lident id ++ str" " ++
                (if coe then str":>" else str":") ++
-                pr_sep_com spc (pr_type_env_n ind_env_params []) c) in
+                pr_sep_com spc pr_type c) in
       let pr_constructor_list l = match l with
         | [] -> mt()
         | _ ->
@@ -699,55 +613,12 @@ let rec pr_vernac = function
 	  str" :=") ++ pr_constructor_list lc ++ 
 	pr_decl_notation pr_constr ntn in
 
-      (* Copie simplifiée de command.ml pour déclarer les notations locales *)
-      List.iter (fun (df,c,scope) ->
- 	Metasyntax.add_notation_interpretation df [] c scope) notations;
-
       hov 1 (pr_oneind (if f then "Inductive" else "CoInductive") (List.hd l))
       ++ 
       (prlist (fun ind -> fnl() ++ hov 1 (pr_oneind "with" ind)) (List.tl l))
 
 
   | VernacFixpoint (recs,b) ->
-
-      (* Copie simplifiée de command.ml pour recalculer les implicites *)
-      (* les notations, et le contexte d'evaluation *)
-      let sigma = Evd.empty
-      and env0 = Global.env() in
-      let notations = 
-	List.fold_right (fun (_,ntnopt) l -> option_cons ntnopt l) recs [] in
-      let impl = List.map
-        (fun ((recname,_, bl, arityc,_),_) -> 
-          let arity =
-            Constrintern.interp_type sigma env0
-              (prod_constr_expr arityc bl) in
-	  let impl_in =
-	    if Impargs.is_implicit_args()
-	    then Impargs.compute_implicits false env0 arity
-	    else [] in
-	  let impl_out =
-	    if Impargs.is_implicit_args_out()
-	    then Impargs.compute_implicits true env0 arity
-	    else [] in
-	  (recname,impl_in,impl_out)) recs in
-      let impls_in = List.map (fun (id,a,_) -> (id,a)) impl in
-      let impls_out = List.map (fun (id,_,a) -> (id,a)) impl in
-      Constrintern.set_temporary_implicits_in impls_in;
-      Constrextern.set_temporary_implicits_out impls_out;
-
-      (* Copie simplifiée de command.ml pour déclarer les notations locales *)
-      List.iter (fun (df,c,scope) ->
-	Metasyntax.add_notation_interpretation df [] c None) notations;
-
-      let rec_sign = 
-        List.fold_left 
-          (fun env ((recname,_,bl,arityc,_),_) -> 
-            let arity =
-              Constrintern.interp_type sigma env0
-                (prod_constr_expr arityc bl) in
-            Environ.push_named (recname,None,arity) env)
-          (Global.env()) recs in
-      
       let name_of_binder = function
         | LocalRawAssum (nal,_) -> nal
         | LocalRawDef (_,_) -> [] in
@@ -767,12 +638,9 @@ let rec pr_vernac = function
               if List.length ids > 1 then 
                 spc() ++ str "{struct " ++ pr_name name ++ str"}"
               else mt() in
-	    let bl,ppc =
-              pr_lconstr_env_n rec_sign true bl 
-		(CCast(dummy_loc,def,Term.DEFAULTcast,type_)) in
             pr_id id ++ pr_binders_arg bl ++ annot ++ spc()
             ++ pr_type_option (fun c -> spc() ++ pr_type c) type_
-            ++ str" :=" ++ brk(1,1) ++ ppc ++ 
+            ++ str" :=" ++ brk(1,1) ++ pr_lconstr def ++ 
 	    pr_decl_notation pr_constr ntn
       in
       let start = if b then "Boxed Fixpoint" else "Fixpoint" in
@@ -1040,8 +908,6 @@ let rec pr_vernac = function
 
   (* For extension *)
   | VernacExtend (s,c) -> pr_extend s c
-  | VernacV7only _ -> mt()
-  | VernacV8only com -> pr_vernac com
   | VernacProof Tacexpr.TacId _ -> str "Proof"
   | VernacProof te -> str "Proof with" ++ spc() ++ pr_raw_tactic te 
 
@@ -1050,16 +916,6 @@ and pr_extend s cl =
     try pr_gen (Global.env()) a
     with Failure _ -> str ("<error in "^s^">") in
   try
-    (* Hack pour les syntaxes changeant non uniformément en passant a la V8 *)
-    let s =
-      let n = String.length s in
-      if Options.do_translate() & n > 2 & String.sub s (n-2) 2 = "V7"
-      then String.sub s 0 (n-2) ^ "V8"
-      else s in
-    (* "Hint Rewrite in using" changes the order of its args in v8 !! *)
-    let cl = match s, cl with
-      | "HintRewriteV8", [a;b;c;d] -> [a;b;d;c]
-      | _ -> cl in
     let rls = List.assoc s (Egrammar.get_extend_vernac_grammars()) in
     let rl = match_vernac_rule (List.map Genarg.genarg_tag cl) rls in
     let (pp,_) =
@@ -1072,7 +928,6 @@ and pr_extend s cl =
             | Egrammar.TacTerm s -> (strm ++ spc() ++ str s, args))
         (mt(),cl) rl in
     hov 1 pp
-    ++ (if s = "Correctness" then sep_end () ++ fnl() ++ str "Proof" else mt())
   with Not_found ->
     hov 1 (str ("TODO("^s) ++ prlist_with_sep sep pr_arg cl ++ str ")")
 

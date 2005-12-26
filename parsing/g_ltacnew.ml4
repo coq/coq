@@ -10,12 +10,10 @@
 
 open Pp
 open Util
-open Ast
 open Topconstr
 open Rawterm
 open Tacexpr
 open Vernacexpr
-open Ast
 open Pcoq
 open Prim
 open Tactic
@@ -39,7 +37,6 @@ let arg_of_expr = function
     
 (* Tactics grammar rules *)
 
-if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: tactic Vernac_.command tactic_expr tactic_arg constr_may_eval;
 
@@ -60,7 +57,7 @@ GEXTEND Gram
       | IDENT "info"; tc = tactic_expr -> TacInfo tc
 (*To do: put Abstract in Refiner*)
       | IDENT "abstract"; tc = NEXT -> TacAbstract (tc,None)
-      | IDENT "abstract"; tc = NEXT; "using";  s = base_ident ->
+      | IDENT "abstract"; tc = NEXT; "using";  s = ident ->
           TacAbstract (tc,Some s) ]
 (*End of To do*)
     | "2" RIGHTA
@@ -135,7 +132,7 @@ GEXTEND Gram
   ;
   input_fun:
     [ [ "_" -> None 
-      | l = base_ident -> Some l ] ]
+      | l = ident -> Some l ] ]
   ;
   let_clause:
     [ [ id = identref; ":="; te = tactic_expr ->

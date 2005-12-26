@@ -26,13 +26,13 @@ type argument_type =
   | PreIdentArgType
   | IntroPatternArgType
   | IdentArgType
-  | HypArgType
+  | VarArgType
   | RefArgType
   (* Specific types *)
   | SortArgType
   | ConstrArgType
   | ConstrMayEvalArgType
-  | QuantHypArgType
+  | QuantVarArgType
   | TacticArgType of int
   | OpenConstrArgType of bool
   | ConstrWithBindingsArgType
@@ -116,17 +116,17 @@ let rawwit_ident = IdentArgType
 let globwit_ident = IdentArgType
 let wit_ident = IdentArgType
 
-let rawwit_var = HypArgType
-let globwit_var = HypArgType
-let wit_var = HypArgType
+let rawwit_var = VarArgType
+let globwit_var = VarArgType
+let wit_var = VarArgType
 
 let rawwit_ref = RefArgType
 let globwit_ref = RefArgType
 let wit_ref = RefArgType
 
-let rawwit_quant_hyp = QuantHypArgType
-let globwit_quant_hyp = QuantHypArgType
-let wit_quant_hyp = QuantHypArgType
+let rawwit_quant_hyp = QuantVarArgType
+let globwit_quant_hyp = QuantVarArgType
+let wit_quant_hyp = QuantVarArgType
 
 let rawwit_sort = SortArgType
 let globwit_sort = SortArgType

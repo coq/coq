@@ -37,13 +37,9 @@ NOARG:
 	@echo "For make to be verbose, add VERBOSE=1"
 
 # build and install the three subsystems: coq, coqide, pcoq
-world: coq coqide pcoq
-world8: coq8 coqide pcoq
-world7: coq7 coqide pcoq
+world: coq coqide # pcoq
 
 install: install-coq install-coqide install-pcoq
-install8: install-coq8 install-coqide install-pcoq
-install7: install-coq7 install-coqide install-pcoq
 #install-manpages: install-coq-manpages install-pcoq-manpages
 
 ###########################################################################
@@ -172,16 +168,15 @@ PROOFS=\
   proofs/clenvtac.cmo
 
 PARSING=\
-  parsing/coqast.cmo parsing/ast.cmo \
-  parsing/termast.cmo parsing/extend.cmo parsing/esyntax.cmo \
-  parsing/pcoq.cmo parsing/egrammar.cmo parsing/g_xml.cmo \
-  parsing/ppconstr.cmo translate/ppconstrnew.cmo parsing/printer.cmo \
+  parsing/extend.cmo \
+  parsing/pcoq.cmo parsing/egrammar.cmo parsing/g_xml.cmo parsing/ppconstr.cmo \
+  translate/ppconstrnew.cmo parsing/printer.cmo \
   parsing/pptactic.cmo translate/pptacticnew.cmo parsing/tactic_printer.cmo \
   parsing/printmod.cmo parsing/prettyp.cmo parsing/search.cmo 
 
 HIGHPARSING=\
   parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo \
-  parsing/g_prim.cmo # parsing/g_proofs.cmo parsing/g_basevernac.cmo \
+#  parsing/g_prim.cmo # parsing/g_proofs.cmo parsing/g_basevernac.cmo \
 #  parsing/g_vernac.cmo parsing/g_tactic.cmo \
 #  parsing/g_ltac.cmo parsing/g_constr.cmo parsing/g_cases.cmo \
 #  parsing/g_module.cmo \
@@ -396,16 +391,10 @@ COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQTOP)
 coqbinaries:: ${COQBINARIES}
 
 coq: coqlib tools coqbinaries
-coq8: coqlib tools coqbinaries
-coq7: coqlib7 tools coqbinaries
 
 coqlib:: newtheories newcontrib
 
-coqlib7: theories7 contrib7
-
 coqlight: theories-light tools coqbinaries
-
-states7:: states7/initial.coq
 
 states:: states/initial.coq
 
@@ -763,14 +752,6 @@ INTERFACERC= contrib/interface/vernacrc
 
 pcoq-files:: $(INTERFACEVO) $(INTERFACERC)
 
-# Centaur grammar rules now in centaur.ml4
-contrib7/interface/Centaur.vo: contrib7/interface/Centaur.v $(INTERFACE)
-	$(BESTCOQTOP) $(TRANSLATE) -boot -byte $(COQOPTS) -compile $*
-
-# Move the grammar rules to dad.ml ?
-contrib7/interface/AddDad.vo: contrib7/interface/AddDad.v $(INTERFACE) states7/initial.coq
-	$(BESTCOQTOP) $(TRANSLATE) -boot -byte  $(COQOPTS) -compile $*
-
 clean::
 	rm -f bin/parser$(EXE) bin/parser.opt$(EXE) bin/coq-interface$(EXE) bin/coq-interface.opt$(EXE)
 
@@ -949,7 +930,6 @@ REALS_all=\
 REALSVO=$(REALSBASEVO) $(REALS_$(REALS))
 
 ALLREALS=$(REALSBASEVO) $(REALS_all)
-ALLOLDREALS=$(REALSBASEVO:theories%.vo:theories7%.vo) $(REALS_all:theories%.vo:theories7%.vo)
 
 SETOIDSVO=theories/Setoids/Setoid.vo
 
@@ -1085,7 +1065,6 @@ contrib7:: $(OLDCONTRIBVO)
 translation:: $(NEWTHEORIESV) $(NEWCONTRIBV)
 
 ALLNEWVO = $(INITVO) $(THEORIESVO) $(CONTRIBVO)
-ALLOLDVO = $(OLDINITVO) $(OLDTHEORIESVO) $(OLDCONTRIBVO)
 
 ###########################################################################
 # rules to make theories, contrib and states
@@ -1093,23 +1072,8 @@ ALLOLDVO = $(OLDINITVO) $(OLDTHEORIESVO) $(OLDCONTRIBVO)
 
 SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v
 
-states7/barestate.coq: $(SYNTAXPP) $(BESTCOQTOP)
-	$(BESTCOQTOP) -v7 -boot -batch -notop -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate $@
-
-states7/initial.coq: states7/barestate.coq states7/MakeInitial.v $(OLDINITVO) $(BESTCOQTOP)
-	$(BOOTCOQTOP) -v7 -batch -notop -silent -is states7/barestate.coq -load-vernac-source states7/MakeInitial.v -outputstate states7/initial.coq
-
 states/initial.coq: states/MakeInitial.v $(NEWINITVO)
 	$(BOOTCOQTOP) -batch -notop -silent -nois -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
-
-theories7/Init/%.vo: $(BESTCOQTOP) theories7/Init/%.v
-	$(BOOTCOQTOP) $(TRANSLATE) -nois -compile theories7/Init/$*
-
-theories7/%.vo: theories7/%.v states7/initial.coq
-	$(BOOTCOQTOP) $(TRANSLATE) -compile theories7/$*
-
-contrib7/%.vo: contrib7/%.v states7/initial.coq
-	$(BOOTCOQTOP) $(TRANSLATE) -compile contrib7/$*
 
 theories/Init/%.vo: $(BESTCOQTOP) theories/Init/%.v
 	$(BOOTCOQTOP) -nois -compile theories/Init/$*
@@ -1123,17 +1087,14 @@ contrib/%.vo: contrib/%.v
 contrib/extraction/%.vo: contrib/extraction/%.v states/barestate.coq $(COQC)
 	$(BOOTCOQTOP) -is states/barestate.coq -compile $*
 
-contrib7/extraction/%.vo: contrib7/extraction/%.v states/barestate.coq $(COQC)
-	$(BOOTCOQTOP) $(TRANSLATE) -is states7/barestate.coq -compile $*
-
 cleantheories:
-	rm -f states/*.coq states7/*.coq
-	rm -f theories/*/*.vo theories7/*/*.vo
+	rm -f states/*.coq
+	rm -f theories/*/*.vo
 
 clean :: cleantheories
 
 clean :: 
-	rm -f contrib/*/*.cm[io] contrib/*.cma contrib/*/*.vo contrib7/*/*.vo 
+	rm -f contrib/*/*.cm[io] contrib/*.cma contrib/*/*.vo
 
 archclean::
 	rm -f contrib/*/*.cmx contrib/*.cmxa contrib/*.a contrib/*/*.[so]
@@ -1245,8 +1206,6 @@ FULLEMACSLIB=$(COQINSTALLPREFIX)$(EMACSLIB)
 FULLCOQDOCDIR=$(COQINSTALLPREFIX)$(COQDOCDIR)
 
 install-coq: install-binaries install-library install-coq-info
-install-coq8: install-binaries install-library8 install-coq-info
-install-coq7: install-binaries install-library7 install-coq-info
 install-coqlight: install-binaries install-library-light
 
 install-binaries:: install-$(BEST) install-tools
@@ -1271,9 +1230,7 @@ LIBFILESLIGHT=$(OLDTHEORIESLIGHTVO)
 NEWLIBFILES=$(NEWTHEORIESVO) $(NEWCONTRIBVO)
 NEWLIBFILESLIGHT=$(NEWTHEORIESLIGHTVO)
 
-install-library: install-library7 install-library8
-
-install-library8:
+install-library:
 	$(MKDIR) $(FULLCOQLIB)
 	for f in $(NEWLIBFILES); do \
 	  $(MKDIR) $(FULLCOQLIB)/`dirname $$f`; \
@@ -1283,15 +1240,6 @@ install-library8:
 	cp states/*.coq $(FULLCOQLIB)/states
 	$(MKDIR) $(FULLCOQLIB)/user-contrib
 
-install-library7:
-	$(MKDIR) $(FULLCOQLIB)
-	for f in $(LIBFILES); do \
-	  $(MKDIR) $(FULLCOQLIB)/`dirname $$f`; \
-	  cp $$f $(FULLCOQLIB)/`dirname $$f`; \
-        done
-	$(MKDIR) $(FULLCOQLIB)/states7
-	cp states7/*.coq $(FULLCOQLIB)/states7
-
 install-library-light:
 	$(MKDIR) $(FULLCOQLIB)
 	for f in $(LIBFILESLIGHT) $(NEWLIBFILESLIGHT); do \
@@ -1300,8 +1248,6 @@ install-library-light:
         done
 	$(MKDIR) $(FULLCOQLIB)/states
 	cp states/*.coq $(FULLCOQLIB)/states
-	$(MKDIR) $(FULLCOQLIB)/states7
-	cp states7/*.coq $(FULLCOQLIB)/states7
 
 install-allreals::
 	for f in $(ALLREALS); do \
@@ -1391,8 +1337,8 @@ otags:
 
 # grammar modules with camlp4
 
-ML4FILES += parsing/lexer.ml4 parsing/q_util.ml4 parsing/q_coqast.ml4 \
-            parsing/g_prim.ml4 parsing/pcoq.ml4
+ML4FILES += parsing/lexer.ml4 parsing/pcoq.ml4 parsing/q_util.ml4 \
+   # parsing/q_coqast.ml4 parsing/g_prim.ml4 
 
 GRAMMARNEEDEDCMO=\
   lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/util.cmo lib/bigint.cmo \
@@ -1417,18 +1363,19 @@ GRAMMARNEEDEDCMO=\
   pretyping/pattern.cmo \
   interp/topconstr.cmo interp/genarg.cmo interp/ppextend.cmo \
   proofs/tacexpr.cmo \
-  parsing/coqast.cmo parsing/ast.cmo \
-  parsing/ast.cmo parsing/lexer.cmo parsing/q_util.cmo parsing/extend.cmo \
-  toplevel/vernacexpr.cmo parsing/pcoq.cmo parsing/q_coqast.cmo
+  parsing/lexer.cmo parsing/extend.cmo \
+  toplevel/vernacexpr.cmo parsing/pcoq.cmo parsing/q_util.cmo \
+  parsing/q_coqast.cmo
+#  parsing/coqast.cmo parsing/ast.cmo \
 
 CAMLP4EXTENSIONSCMO=\
   parsing/argextend.cmo parsing/tacextend.cmo parsing/vernacextend.cmo 
 
 GRAMMARSCMO=\
-  parsing/g_prim.cmo parsing/g_tactic.cmo \
-  parsing/g_ltac.cmo parsing/g_constr.cmo \
   parsing/g_primnew.cmo parsing/g_tacticnew.cmo \
-  parsing/g_ltacnew.cmo parsing/g_constrnew.cmo
+  parsing/g_ltacnew.cmo parsing/g_constrnew.cmo 
+#  parsing/g_prim.cmo parsing/g_tactic.cmo \
+#  parsing/g_ltac.cmo parsing/g_constr.cmo \
 
 GRAMMARCMO=$(GRAMMARNEEDEDCMO) $(CAMLP4EXTENSIONSCMO) $(GRAMMARSCMO)
 
@@ -1461,8 +1408,7 @@ PRINTERSCMO=\
   interp/constrextern.cmo interp/syntax_def.cmo interp/constrintern.cmo	\
   proofs/proof_trees.cmo proofs/logic.cmo proofs/refiner.cmo		\
   proofs/evar_refiner.cmo proofs/pfedit.cmo proofs/tactic_debug.cmo	\
-  parsing/ppconstr.cmo parsing/coqast.cmo parsing/ast.cmo		\
-  parsing/termast.cmo parsing/extend.cmo parsing/esyntax.cmo		\
+  parsing/ppconstr.cmo parsing/extend.cmo \
   translate/ppconstrnew.cmo parsing/printer.cmo parsing/pptactic.cmo 	\
   translate/pptacticnew.cmo parsing/tactic_printer.cmo \
   dev/top_printers.cmo
@@ -1705,8 +1651,6 @@ alldepend: depend dependcoq
 dependcoq:: beforedepend
 	$(COQDEP) -coqlib . -R theories Coq -R contrib Coq $(COQINCLUDES) \
 	 $(ALLREALS:.vo=.v) $(ALLNEWVO:.vo=.v) > .depend.coq
-	$(COQDEP) -coqlib . -R theories7 Coq -R contrib7 Coq $(COQINCLUDES) \
-	 $(ALLOLDREALS:.vo=.v) $(ALLOLDVO:.vo=.v) > .depend.coq7
 
 # Build dependencies ignoring failures in building ml files from ml4 files
 # This is useful to rebuild dependencies when they are strongly corrupted:
@@ -1773,10 +1717,8 @@ devel:
 
 -include .depend
 -include .depend.coq
--include .depend.coq7
 
 clean::
-	rm -fr *.v8 syntax/*.v8 ide/*.v8 theories7/*/*.v8 contrib7/*/*.v8
 	find . -name "\.#*" -exec rm -f {} \;
 	find . -name "*~" -exec rm -f {} \;
 

@@ -9,7 +9,6 @@
 (* $Id$ *)
 
 open Pp
-open Ast
 open Pcoq
 open Util
 open Tacexpr
@@ -18,11 +17,8 @@ open Genarg
 
 let compute = Cbv all_flags
 
-let tactic_kw =
-  [ "->"; "<-" ]
-let _ = 
-  if not !Options.v7 then
-    List.iter (fun s -> Lexer.add_token("",s)) tactic_kw
+let tactic_kw = [ "->"; "<-" ]
+let _ = List.iter (fun s -> Lexer.add_token("",s)) tactic_kw
 
 (* Hack to parse "(x:=t)" as an explicit argument without conflicts with the *)
 (* admissible notation "(x t)" *)
@@ -98,15 +94,8 @@ let induction_arg_of_constr c =
   try ElimOnIdent (Topconstr.constr_loc c,snd(coerce_to_id c))
   with _ -> ElimOnConstr c
 
-let local_compute = [FBeta;FIota;FDeltaBut [];FZeta]
-
-let error_oldelim _ = error "OldElim no longer supported"
-
-let join_to_constr loc c2 = (fst loc), snd (Topconstr.constr_loc c2)
-
 (* Auxiliary grammar rules *)
 
-if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: simple_tactic constr_with_bindings quantified_hypothesis
   bindings red_expr int_or_var open_constr casted_open_constr 
@@ -141,7 +130,7 @@ GEXTEND Gram
     ] ]
   ;
   quantified_hypothesis:
-    [ [ id = base_ident -> NamedHyp id
+    [ [ id = ident -> NamedHyp id
       | n = natural -> AnonHyp n ] ]
   ;
   conversion:
@@ -167,11 +156,11 @@ GEXTEND Gram
     [ [ "["; tc = LIST1 intropatterns SEP "|" ; "]" -> IntroOrAndPattern tc
       | "("; tc = LIST1 simple_intropattern SEP "," ; ")" -> IntroOrAndPattern [tc]
       | "_" -> IntroWildcard
-      | id = base_ident -> IntroIdentifier id
+      | id = ident -> IntroIdentifier id
       ] ]
   ;
   simple_binding:
-    [ [ "("; id = base_ident; ":="; c = lconstr; ")" -> (loc, NamedHyp id, c)
+    [ [ "("; id = ident; ":="; c = lconstr; ")" -> (loc, NamedHyp id, c)
       | "("; n = natural; ":="; c = lconstr; ")" -> (loc, AnonHyp n, c) ] ]
   ;
   bindings:
@@ -221,11 +210,12 @@ GEXTEND Gram
       | s = IDENT -> ExtraRedExpr s ] ]
   ;
   hypident:
-    [ [ id = id_or_meta -> id,(InHyp,ref None)
+    [ [ id = id_or_meta ->
+          id,InHyp
       | "("; IDENT "type"; IDENT "of"; id = id_or_meta; ")" ->
-          id,(InHypTypeOnly,ref None)
+	  id,InHypTypeOnly
       | "("; IDENT "value"; IDENT "of"; id = id_or_meta; ")" ->
-          id,(InHypValueOnly,ref None)
+	  id,InHypValueOnly
     ] ]
   ;
   hypident_occ:
@@ -251,7 +241,7 @@ GEXTEND Gram
       | -> [] ] ]
   ;
   fixdecl:
-    [ [ "("; id = base_ident; bl=LIST0 Constr.binder; ann=fixannot;
+    [ [ "("; id = ident; bl=LIST0 Constr.binder; ann=fixannot;
         ":"; ty=lconstr; ")" -> (loc,id,bl,ann,ty) ] ]
   ;
   fixannot:
@@ -275,11 +265,11 @@ GEXTEND Gram
         IDENT "intros"; IDENT "until"; id = quantified_hypothesis -> 
 	  TacIntrosUntil id
       | IDENT "intros"; pl = intropatterns -> TacIntroPattern pl
-      | IDENT "intro"; id = base_ident; IDENT "after"; id2 = identref ->
+      | IDENT "intro"; id = ident; IDENT "after"; id2 = identref ->
 	  TacIntroMove (Some id, Some id2)
       | IDENT "intro"; IDENT "after"; id2 = identref ->
 	  TacIntroMove (None, Some id2)
-      | IDENT "intro"; id = base_ident -> TacIntroMove (Some id, None)
+      | IDENT "intro"; id = ident -> TacIntroMove (Some id, None)
       | IDENT "intro" -> TacIntroMove (None, None)
 
       | IDENT "assumption" -> TacAssumption
@@ -293,12 +283,12 @@ GEXTEND Gram
       | IDENT "case"; cl = constr_with_bindings -> TacCase cl
       | IDENT "casetype"; c = constr -> TacCaseType c
       | "fix"; n = natural -> TacFix (None,n)
-      | "fix"; id = base_ident; n = natural -> TacFix (Some id,n)
-      | "fix"; id = base_ident; n = natural; "with"; fd = LIST1 fixdecl ->
+      | "fix"; id = ident; n = natural -> TacFix (Some id,n)
+      | "fix"; id = ident; n = natural; "with"; fd = LIST1 fixdecl ->
 	  TacMutualFix (id,n,List.map mk_fix_tac fd)
       | "cofix" -> TacCofix None
-      | "cofix"; id = base_ident -> TacCofix (Some id)
-      | "cofix"; id = base_ident; "with"; fd = LIST1 fixdecl ->
+      | "cofix"; id = ident -> TacCofix (Some id)
+      | "cofix"; id = ident; "with"; fd = LIST1 fixdecl ->
 	  TacMutualCofix (id,List.map mk_cofix_tac fd)
 
       | IDENT "cut"; c = constr -> TacCut c
@@ -330,15 +320,15 @@ GEXTEND Gram
 
       (* Derived basic tactics *)
       | IDENT "simple"; IDENT"induction"; h = quantified_hypothesis ->
-          TacSimpleInduction (h,ref [])
+          TacSimpleInduction h
       | IDENT "induction"; c = induction_arg; ids = with_names; 
-	  el = OPT eliminator -> TacNewInduction (c,el,(ids,ref []))
+	  el = OPT eliminator -> TacNewInduction (c,el,ids)
       | IDENT "double"; IDENT "induction"; h1 = quantified_hypothesis;
 	  h2 = quantified_hypothesis -> TacDoubleInduction (h1,h2)
       | IDENT "simple"; IDENT"destruct"; h = quantified_hypothesis ->
           TacSimpleDestruct h
       | IDENT "destruct"; c = induction_arg; ids = with_names; 
-	  el = OPT eliminator -> TacNewDestruct (c,el,(ids,ref []))
+	  el = OPT eliminator -> TacNewDestruct (c,el,ids)
       | IDENT "decompose"; IDENT "record" ; c = constr -> TacDecomposeAnd c
       | IDENT "decompose"; IDENT "sum"; c = constr -> TacDecomposeOr c
       | IDENT "decompose"; "["; l = LIST1 global; "]"; c = constr

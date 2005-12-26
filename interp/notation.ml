@@ -31,7 +31,7 @@ open Ppextend
     terms and patterns can be set; these interpreters are in permanent table
     [numeral_interpreter_tab]
   - a set of ML printers for expressions denoting numbers parsable in 
-    this scope (permanently declared in [Esyntax.primitive_printer_tab])
+    this scope
   - a set of interpretations for infix (more generally distfix) notations
   - an optional pair of delimiters which, when occurring in a syntactic
     expression, set this scope to be the current scope
@@ -261,7 +261,7 @@ let rec find_without_delimiters find (ntn_scope,ntn) = function
 (* Uninterpreted notation levels *)
 
 let declare_notation_level ntn level =
-  if not !Options.v7 & Stringmap.mem ntn !notation_level_map then
+  if Stringmap.mem ntn !notation_level_map then
     error ("Notation "^ntn^" is already assigned a level");
   notation_level_map := Stringmap.add ntn level !notation_level_map
 

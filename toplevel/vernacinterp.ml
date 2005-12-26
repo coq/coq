@@ -15,10 +15,7 @@ open Libnames
 open Himsg
 open Proof_type
 open Tacinterp
-open Coqast
 open Vernacexpr
-open Ast
-open Extend
 
 let disable_drop e =
   if e <> Drop then e

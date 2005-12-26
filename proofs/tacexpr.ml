@@ -56,8 +56,7 @@ type hyp_location_flag = (* To distinguish body and type of local defs *)
   | InHypTypeOnly
   | InHypValueOnly
 
-type 'a raw_hyp_location = 
-    'a * int list * (hyp_location_flag * hyp_location_flag option ref)
+type 'a raw_hyp_location = 'a * int list * hyp_location_flag
 
 type 'a induction_arg =
   | ElimOnConstr of 'a
@@ -132,12 +131,12 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
 (*  | TacInstantiate of int * 'constr * (('id * hyp_location_flag,unit) location) *)
 
   (* Derived basic tactics *)
-  | TacSimpleInduction of (quantified_hypothesis * (bool ref * intro_pattern_expr list ref list) list ref)
+  | TacSimpleInduction of quantified_hypothesis
   | TacNewInduction of 'constr induction_arg * 'constr with_bindings option
-      * (intro_pattern_expr option * (bool ref * intro_pattern_expr list ref list) list ref)
+      * intro_pattern_expr option
   | TacSimpleDestruct of quantified_hypothesis
   | TacNewDestruct of 'constr induction_arg * 'constr with_bindings option
-      * (intro_pattern_expr option * (bool ref * intro_pattern_expr list ref list) list ref)
+      * intro_pattern_expr option
 
   | TacDoubleInduction of quantified_hypothesis * quantified_hypothesis
   | TacDecomposeAnd of 'constr

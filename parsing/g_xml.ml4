@@ -135,10 +135,13 @@ let rec interp_xml_constr = function
   | XmlTag (loc,"CONST",al,[]) ->
       RRef (loc, ConstRef (get_xml_constant al))
   | XmlTag (loc,"MUTCASE",al,x::y::yl) -> (* BUGGE *)
+      failwith "XML MUTCASE TO DO";
+(*
       ROrderedCase (loc,RegularStyle,Some (interp_xml_patternsType x),
       interp_xml_inductiveTerm y,
       Array.of_list (List.map interp_xml_pattern yl),
       ref None)
+*)
   | XmlTag (loc,"MUTIND",al,[]) ->
       RRef (loc, IndRef (get_xml_inductive al))
   | XmlTag (loc,"MUTCONSTRUCT",al,[]) ->

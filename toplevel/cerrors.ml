@@ -10,7 +10,6 @@
 
 open Pp
 open Util
-open Ast
 open Indtypes
 open Type_errors
 open Pretype_errors
@@ -48,8 +47,6 @@ let rec explain_exn_default = function
       hov 0 (str "Out of memory")
   | Stack_overflow -> 
       hov 0 (str "Stack overflow")
-  | Ast.No_match s -> 
-      hov 0 (str "Anomaly: Ast matching error: " ++ str s ++ report ())
   | Anomaly (s,pps) -> 
       hov 1 (str "Anomaly: " ++ where s ++ pps ++ report ())
   | Match_failure(filename,pos1,pos2) ->

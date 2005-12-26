@@ -177,12 +177,12 @@ let compare c1 c2 g =
 
 (* User syntax *)
 
-TACTIC EXTEND DecideEquality
-  [ "Decide" "Equality" constr(c1) constr(c2) ] -> [ decideEquality c1 c2 ]
-| [ "Decide" "Equality" ] -> [ decideGralEquality ]
+TACTIC EXTEND decide_equality
+  [ "decide" "equality" constr(c1) constr(c2) ] -> [ decideEquality c1 c2 ]
+| [ "decide" "equality" ] -> [ decideGralEquality ]
 END
 
-TACTIC EXTEND Compare
-| [ "Compare" constr(c1) constr(c2) ] -> [ compare c1 c2 ]
+TACTIC EXTEND compare
+| [ "compare" constr(c1) constr(c2) ] -> [ compare c1 c2 ]
 END
 

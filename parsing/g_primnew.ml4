@@ -8,71 +8,62 @@
 
 (*i $Id$ i*)
 
-open Coqast
 open Pcoq
 open Names
 open Libnames
 open Topconstr
 
-let _ =
-  if not !Options.v7 then
-    Pcoq.reset_all_grammars()
-let _ =
-  if not !Options.v7 then
-  let f = Gram.Unsafe.clear_entry in
-  f Prim.bigint;
-  f Prim.qualid;
-  f Prim.ast;
-  f Prim.reference
-
-let prim_kw = ["{"; "}"; "["; "]"; "("; ")"; "<>"; "<<"; ">>"; "'"]
-let _ = 
-  if not !Options.v7 then
-    List.iter (fun s -> Lexer.add_token("",s)) prim_kw
+let prim_kw = ["{"; "}"; "["; "]"; "("; ")"; "'"]
+let _ = List.iter (fun s -> Lexer.add_token("",s)) prim_kw
 
 open Prim
-
 open Nametab
-let local_id_of_string = id_of_string
-let local_make_dirpath = make_dirpath
-let local_make_qualid l id' = make_qualid (local_make_dirpath l) id'
-let local_make_short_qualid id = make_short_qualid id
-let local_make_posint = int_of_string
-let local_make_negint n = - int_of_string n
-let local_make_path l a = encode_kn (local_make_dirpath l) a
-let local_make_binding loc a b =
-  match a with
-    | Nvar (_,id) -> Slam(loc,Some id,b)
-    | Nmeta (_,s) -> Smetalam(loc,s,b)
-    | _ -> failwith "Slam expects a var or a metavar"
-let local_append l id = l@[id]
 
-if not !Options.v7 then
+let local_make_qualid l id = make_qualid (make_dirpath l) id
+
 GEXTEND Gram
-  GLOBAL: bigint fullyqualid qualid reference ne_string;
+  GLOBAL: 
+    bigint natural integer identref name ident var preident
+    fullyqualid qualid reference
+    ne_string;
+  preident:
+    [ [ s = IDENT -> s ] ]
+  ;
+  ident:
+    [ [ s = IDENT -> id_of_string s ] ]
+  ;
+  var: (* as identref, but interpret as a term identifier in ltac *)
+    [ [ id = ident -> (loc,id) ] ]
+  ;
+  identref:
+    [ [ id = ident -> (loc,id) ] ]
+  ;
   field:
-    [ [ s = FIELD -> local_id_of_string s ] ]
+    [ [ s = FIELD -> id_of_string s ] ]
   ;
   fields:
-    [ [ id = field; (l,id') = fields -> (local_append l id,id')
+    [ [ id = field; (l,id') = fields -> (l@[id],id')
       | id = field -> ([],id)
       ] ]
   ;
   fullyqualid:
-    [ [ id = base_ident; (l,id')=fields -> loc,id::List.rev (id'::l)
-      | id = base_ident -> loc,[id]
+    [ [ id = ident; (l,id')=fields -> loc,id::List.rev (id'::l)
+      | id = ident -> loc,[id]
       ] ]
   ;
   basequalid:
-    [ [ id = base_ident; (l,id')=fields ->
-          local_make_qualid (local_append l id) id'
-      | id = base_ident -> local_make_short_qualid id
+    [ [ id = ident; (l,id')=fields -> local_make_qualid (l@[id]) id'
+      | id = ident -> make_short_qualid id
       ] ]
   ;
+  name:
+    [ [ IDENT "_" -> (loc, Anonymous)
+      | id = ident -> (loc, Name id) ] ]
+  ;
   reference:
-    [ [ id = base_ident; (l,id') = fields ->
-        Qualid (loc, local_make_qualid (local_append l id) id')
-      | id = base_ident -> Ident (loc,id)
+    [ [ id = ident; (l,id') = fields ->
+        Qualid (loc, local_make_qualid (l@[id]) id')
+      | id = ident -> Ident (loc,id)
       ] ]
   ;
   qualid:
@@ -82,6 +73,13 @@ GEXTEND Gram
     [ [ s = STRING -> 
         if s="" then Util.user_err_loc(loc,"",Pp.str"Empty string"); s
     ] ]
+  ;
+  integer:
+    [ [ i = INT      -> int_of_string i
+      | "-"; i = INT -> - int_of_string i ] ]
+  ;
+  natural:
+    [ [ i = INT -> int_of_string i ] ]
   ;
   bigint: (* Negative numbers are dealt with specially *)
     [ [ i = INT -> (Bigint.of_string i) ] ]

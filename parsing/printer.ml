@@ -18,11 +18,7 @@ open Sign
 open Environ
 open Global
 open Declare
-open Coqast
-open Ast
-open Termast
 open Libnames
-open Extend
 open Nametab
 open Ppconstr
 open Evd
@@ -33,97 +29,25 @@ open Pfedit
 let emacs_str s = if !Options.print_emacs then s else "" 
 
 (**********************************************************************)
-(* Old Ast printing *)
-
-let constr_syntax_universe = "constr"
-(* This is starting precedence for printing constructions or tactics *)
-(* Level 9 means no parentheses except for applicative terms (at level 10) *)
-let constr_initial_prec_v7 = Some (9,Ppextend.L)
-let constr_initial_prec = Some (200,Ppextend.E)
-
-let dfltpr ast = (str"#GENTERM " ++ print_ast ast);;
-
-let global_const_name kn =
-  try pr_global Idset.empty (ConstRef kn)
-  with Not_found -> (* May happen in debug *)
-    (str ("CONST("^(string_of_con kn)^")"))
-
-let global_var_name id =
-  try pr_global Idset.empty (VarRef id)
-  with Not_found -> (* May happen in debug *)
-    (str ("SECVAR("^(string_of_id id)^")"))
-
-let global_ind_name (kn,tyi) =
-  try pr_global Idset.empty (IndRef (kn,tyi))
-  with Not_found -> (* May happen in debug *)
-    (str ("IND("^(string_of_kn kn)^","^(string_of_int tyi)^")"))
-
-let global_constr_name ((kn,tyi),i) =
-  try pr_global Idset.empty (ConstructRef ((kn,tyi),i))
-  with Not_found -> (* May happen in debug *)
-    (str ("CONSTRUCT("^(string_of_kn kn)^","^(string_of_int tyi)
-		  ^","^(string_of_int i)^")"))
-
-let globpr gt = match gt with
-  | Nvar(_,s) -> (pr_id s)
-  | Node(_,"EVAR", [Num (_,ev)]) -> (str ("?" ^ (string_of_int ev)))
-  | Node(_,"CONST",[ConPath(_,sl)]) ->
-      global_const_name sl
-  | Node(_,"SECVAR",[Nvar(_,s)]) ->
-      global_var_name s
-  | Node(_,"MUTIND",[Path(_,sl); Num(_,tyi)]) ->
-      global_ind_name (sl, tyi)
-  | Node(_,"MUTCONSTRUCT",[Path(_,sl); Num(_,tyi); Num(_,i)]) ->
-      global_constr_name ((sl, tyi), i)
-  | Dynamic(_,d) ->
-    if (Dyn.tag d) = "constr" then (str"<dynamic [constr]>")
-    else dfltpr gt
-  | gt -> dfltpr gt
-
-
-let wrap_exception = function
-    Anomaly (s1,s2) ->
-      warning ("Anomaly ("^s1^")"); pp s2;
-      str"<PP error: non-printable term>"
-  | Failure _ | UserError _ | Not_found ->
-      str"<PP error: non-printable term>"
-  | s -> raise s
-
-let gentermpr_fail gt =
-  let prec =
-    if !Options.v7 then constr_initial_prec_v7 else constr_initial_prec in
-  Esyntax.genprint globpr constr_syntax_universe prec gt
-
-let gentermpr gt =
-  try gentermpr_fail gt
-  with s -> wrap_exception s
-
-(**********************************************************************)
 (* Generic printing: choose old or new printers *)
 
 (* [at_top] means ids of env must be avoided in bound variables *)
-let gentermpr_core at_top env t =
-  if !Options.v7 then gentermpr (Termast.ast_of_constr at_top env t)
-  else Ppconstrnew.pr_lconstr (Constrextern.extern_constr at_top env t)
-let gentypepr_core at_top env t =
-  if !Options.v7 then gentermpr (Termast.ast_of_constr at_top env t)
-  else Ppconstrnew.pr_lconstr (Constrextern.extern_type at_top env t)
+let prterm_core at_top env t =
+  Ppconstrnew.pr_lconstr (Constrextern.extern_constr at_top env t)
+let prtype_core at_top env t =
+  Ppconstrnew.pr_lconstr (Constrextern.extern_type at_top env t)
 let pr_cases_pattern t =
-  if !Options.v7 then gentermpr (Termast.ast_of_cases_pattern t)
-  else Ppconstrnew.pr_cases_pattern
-    (Constrextern.extern_cases_pattern Idset.empty t)
+  Ppconstrnew.pr_cases_pattern (Constrextern.extern_cases_pattern Idset.empty t)
 let pr_pattern_env tenv env t =
-  if !Options.v7 then gentermpr (Termast.ast_of_pattern tenv env t)
-  else Ppconstrnew.pr_constr
-    (Constrextern.extern_pattern tenv env t)
+  Ppconstrnew.pr_constr (Constrextern.extern_pattern tenv env t)
 
 (**********************************************************************)
 (* Derived printers *)
   
-let prterm_env_at_top env = gentermpr_core true env
-let prterm_env env = gentermpr_core false env
-let prtype_env_at_top env = gentypepr_core true env
-let prtype_env env = gentypepr_core false env
+let prterm_env_at_top env = prterm_core true env
+let prterm_env env = prterm_core false env
+let prtype_env_at_top env = prtype_core true env
+let prtype_env env = prtype_core false env
 let prjudge_env env j =
   (prterm_env env j.uj_val, prterm_env env j.uj_type)
 
@@ -134,13 +58,11 @@ let prjudge j = prjudge_env (Global.env()) j
 
 let _ = Termops.set_print_constr prterm_env
 
-(*let _ = Tactic_debug.set_pattern_printer pr_pattern_env*)
-
 let pr_constant env cst = prterm_env env (mkConst cst)
 let pr_existential env ev = prterm_env env (mkEvar ev)
 let pr_inductive env ind = prterm_env env (mkInd ind)
 let pr_constructor env cstr = prterm_env env (mkConstruct cstr)
-let pr_global = pr_global Idset.empty
+let pr_global = pr_global_env Idset.empty
 let pr_evaluable_reference ref =
  let ref' = match ref with
   | EvalConstRef const -> ConstRef const
@@ -148,8 +70,7 @@ let pr_evaluable_reference ref =
  pr_global ref'
 
 let pr_rawterm t =
-  if !Options.v7 then gentermpr (Termast.ast_of_rawconstr t)
-  else Ppconstrnew.pr_lconstr (Constrextern.extern_rawconstr Idset.empty t)
+  Ppconstrnew.pr_lconstr (Constrextern.extern_rawconstr Idset.empty t)
 
 open Pattern
 
@@ -197,16 +118,11 @@ let pr_named_context env ne_context =
 let pr_rel_context env rel_context =
   let rec prec env = function
     | [] -> (mt ()) 
-    | [b] -> 
-	if !Options.v7 then pr_rel_decl env b
-	else str "(" ++ pr_rel_decl env b ++ str")"
+    | [b] -> str "(" ++ pr_rel_decl env b ++ str")"
     | b::rest ->
         let pb = pr_rel_decl env b in
         let penvtl = prec (push_rel b env) rest in
-	if !Options.v7 then
-          (pb ++ str";" ++ spc () ++ penvtl)
-	else 
-          (str "(" ++ pb ++ str")" ++ spc () ++ penvtl)
+        str "(" ++ pb ++ str")" ++ spc () ++ penvtl
   in 
   hov 0 (prec env (List.rev rel_context))
 
@@ -367,74 +283,13 @@ let pr_nth_open_subgoal n =
 
 (* Elementary tactics *)
 
-let pr_prim_rule_v7 = function
-  | Intro id -> 
-      str"Intro " ++ pr_id id
-	
-  | Intro_replacing id -> 
-      (str"intro replacing "  ++ pr_id id)
-	
-  | Cut (b,id,t) ->
-      if b then
-        (str"Assert " ++ print_constr t)
-      else
-        (str"Cut " ++ print_constr t ++ str ";[Intro " ++ pr_id id ++ str "|Idtac]")
-	
-  | FixRule (f,n,[]) ->
-      (str"Fix " ++ pr_id f ++ str"/" ++ int n)
-      
-  | FixRule (f,n,others) -> 
-      let rec print_mut = function
-	| (f,n,ar)::oth -> 
-           pr_id f ++ str"/" ++ int n ++ str" : " ++ print_constr ar ++ print_mut oth
-        | [] -> mt () in
-      (str"Fix " ++ pr_id f ++ str"/" ++ int n ++
-         str" with " ++ print_mut others)
-
-  | Cofix (f,[]) ->
-      (str"Cofix " ++ pr_id f)
-
-  | Cofix (f,others) ->
-      let rec print_mut = function
-	| (f,ar)::oth ->
-	  (pr_id f ++ str" : " ++ print_constr ar ++ print_mut oth)
-        | [] -> mt () in
-      (str"Cofix " ++ pr_id f ++  str" with " ++ print_mut others)
-
-  | Refine c -> 
-      str(if occur_meta c then "Refine " else "Exact ") ++
-      Constrextern.with_meta_as_hole print_constr c
-      
-  | Convert_concl (c,_) ->
-      (str"Change "  ++ print_constr c)
-      
-  | Convert_hyp (id,None,t) ->
-      (str"Change "  ++ print_constr t  ++ spc ()  ++ str"in "  ++ pr_id id)
-
-  | Convert_hyp (id,Some c,t) ->
-      (str"Change "  ++ print_constr c  ++ spc ()  ++ str"in "
-       ++ pr_id id ++ str" (Type of "  ++ pr_id id ++ str ")")
-      
-  | Thin ids ->
-      (str"Clear "  ++ prlist_with_sep pr_spc pr_id ids)
-      
-  | ThinBody ids ->
-      (str"ClearBody "  ++ prlist_with_sep pr_spc pr_id ids)
-      
-  | Move (withdep,id1,id2) ->
-      (str (if withdep then "Dependent " else "") ++
-	 str"Move "  ++ pr_id id1 ++ str " after " ++ pr_id id2)
-
-  | Rename (id1,id2) ->
-      (str "Rename " ++ pr_id id1 ++ str " into " ++ pr_id id2)
-
 let print_constr8 t =
   Ppconstrnew.pr_constr (Constrextern.extern_constr false (Global.env()) t)
 
 let print_lconstr8 t =
   Ppconstrnew.pr_lconstr (Constrextern.extern_constr false (Global.env()) t)
 
-let pr_prim_rule_v8 = function
+let pr_prim_rule = function
   | Intro id -> 
       str"intro " ++ pr_id id
 	
@@ -494,6 +349,3 @@ let pr_prim_rule_v8 = function
 
   | Rename (id1,id2) ->
       (str "rename " ++ pr_id id1 ++ str " into " ++ pr_id id2)
-
-let pr_prim_rule t =
-  if! Options.v7 then pr_prim_rule_v7 t else pr_prim_rule_v8 t

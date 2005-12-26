@@ -26,11 +26,10 @@ open Reduction
 open Cases
 open Logic
 open Printer
-open Ast
 open Rawterm
 open Evd
 
-let quote s = if !Options.v7 then s else h 0 (str "\"" ++ s ++ str "\"")
+let quote s = h 0 (str "\"" ++ s ++ str "\"")
 
 let prterm c = quote (prterm c)
 let prterm_env e c = quote (prterm_env e c)
@@ -107,16 +106,7 @@ let explain_elim_arity ctx ind aritylst c pj okinds =
   hov 0 (
   str "Incorrect elimination of" ++ spc() ++ pc ++ spc () ++
   str "in the inductive type " ++ spc() ++ quote pi ++ 
-  (if !Options.v7 then 
-    let pp = prterm_env ctx pj.uj_val in
-    let ppar = pr_disjunction (prterm_env ctx) aritylst in
-    let ppt = prterm_env ctx pj.uj_type in
-    fnl () ++
-    str "The elimination predicate"  ++ brk(1,1) ++ pp ++ spc () ++
-    str "has arity" ++ brk(1,1) ++ ppt ++ fnl () ++
-    str "It should be " ++ brk(1,1)  ++ ppar
-  else
-    let sorts = List.map (fun x -> mkSort (new_sort_in_family x))
+  (let sorts = List.map (fun x -> mkSort (new_sort_in_family x))
       (list_uniquize (List.map (fun ar ->
       family_of_sort (destSort (snd (decompose_prod_assum ar)))) aritylst)) in
     let ppar = pr_disjunction (prterm_env ctx) sorts in
@@ -345,14 +335,10 @@ let explain_hole_kind env = function
   | BinderType Anonymous ->
       str "a type for this anonymous binder"
   | ImplicitArg (c,(n,ido)) ->
-      if !Options.v7 then
-	str "the " ++ pr_ord n ++
-	str " implicit argument of " ++ Nametab.pr_global_env Idset.empty c
-      else
-	let id = out_some ido in
-	str "an instance for the implicit parameter " ++
-	pr_id id ++ spc () ++ str "of" ++
-	spc () ++ Nametab.pr_global_env Idset.empty c
+      let id = out_some ido in
+      str "an instance for the implicit parameter " ++
+      pr_id id ++ spc () ++ str "of" ++
+      spc () ++ Nametab.pr_global_env Idset.empty c
   | InternalHole ->
       str "a term for an internal placeholder"
   | TomatchTypeParameter (tyi,n) ->

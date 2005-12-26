@@ -125,7 +125,7 @@ let rewriteRL_clause = function
 
 (* Replacing tactics *)
 
-(* eqt,sym_eqt : equality on Type and its symmetry theorem
+(* eq,sym_eq : equality on Type and its symmetry theorem
    c2 c1 : c1 is to be replaced by c2
    unsafe : If true, do not check that c1 and c2 are convertible
    gl : goal *)
@@ -134,8 +134,8 @@ let abstract_replace clause c2 c1 unsafe gl =
   let t1 = pf_type_of gl c1 
   and t2 = pf_type_of gl c2 in
   if unsafe or (pf_conv_x gl t1 t2) then
-    let e = (build_coq_eqT_data ()).eq in
-    let sym = (build_coq_eqT_data ()).sym in
+    let e = (build_coq_eq_data ()).eq in
+    let sym = (build_coq_eq_data ()).sym in
     let eq = applist (e, [t1;c1;c2]) in
     tclTHENS (assert_tac false Anonymous eq)
       [onLastHyp (fun id -> 
@@ -1030,8 +1030,7 @@ let unfold_body x gl =
       | _ -> errorlabstrm "unfold_body"
           (pr_id x ++ str" is not a defined hypothesis") in
   let aft = afterHyp x gl in
-  let hl = List.fold_right
-    (fun (y,yval,_) cl -> (y,[],(InHyp,ref None)) :: cl) aft [] in
+  let hl = List.fold_right (fun (y,yval,_) cl -> (y,[],InHyp) :: cl) aft [] in
   let xvar = mkVar x in
   let rfun _ _ c = replace_term xvar xval c in
   tclTHENLIST

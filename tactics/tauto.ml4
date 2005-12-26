@@ -10,8 +10,6 @@
 
 (*i $Id$ i*)
 
-open Ast
-open Coqast
 open Hipattern
 open Names
 open Libnames
@@ -171,39 +169,11 @@ let tauto g =
 
 let default_intuition_tac = interp <:tactic< auto with * >>
 
-let q_elim tac=
-  <:tactic<
-  match goal with 
-    x : ?X1, H : ?X1 -> _ |- _ => generalize (H x); clear H; $tac
-  end >>
+TACTIC EXTEND tauto
+| [ "tauto" ] -> [ tauto ]
+END
 
-let rec lfo n gl=
-  if n=0 then (tclFAIL 0 "LinearIntuition failed" gl) else
-    let p=if n<0 then n else (n-1) in
-    let lfo_rec=q_elim (Tacexpr.TacArg (valueIn (VTactic(dummy_loc,lfo p)))) in
-      intuition_gen (interp lfo_rec) gl
-
-let lfo_wrap n gl= 
-  try lfo n gl
-  with
-    Refiner.FailError _ | UserError _ ->
-      errorlabstrm "LinearIntuition" [< str "LinearIntuition failed." >]
-
-TACTIC EXTEND Tauto
-| [ "Tauto" ] -> [ tauto ]
+TACTIC EXTEND intuition
+| [ "intuition" ] -> [ intuition_gen default_intuition_tac ]
+| [ "intuition" tactic(t) ] -> [ intuition_gen (snd t) ]
 END
-(* Obsolete sinve V8.0
-TACTIC EXTEND TSimplif
-| [ "Simplif" ] -> [ simplif_gen ]
-END
-*)
-TACTIC EXTEND Intuition
-| [ "Intuition" ] -> [ intuition_gen default_intuition_tac ]
-| [ "Intuition" tactic(t) ] -> [ intuition_gen (snd t) ]
-END
-(* Obsolete since V8.0
-TACTIC EXTEND LinearIntuition
-| [ "LinearIntuition" ] -> [ lfo_wrap (-1)]
-| [ "LinearIntuition" integer(n)] -> [ lfo_wrap n]
-END
-*)

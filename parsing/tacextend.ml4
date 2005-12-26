@@ -120,34 +120,13 @@ let rec make_tags loc = function
       <:expr< [ $t$ :: $l$ ] >>
   | _::l -> make_tags loc l
 
-let make_one_printing_rule (pt,e) =
+let make_one_printing_rule se (pt,e) =
   let level = mlexpr_of_int 0 in (* only level 0 supported here *)
   let loc = MLast.loc_of_expr e in
   let prods = mlexpr_of_list mlexpr_terminals_of_grammar_production pt in
-  <:expr< ($make_tags loc pt$, ($level$, $prods$)) >>
+  <:expr< ($se$, $make_tags loc pt$, ($level$, $prods$)) >>
 
-let make_printing_rule = mlexpr_of_list make_one_printing_rule
-
-let new_tac_ext (s,cl) =
-  (String.lowercase s, List.map 
-    (fun (l,e) ->
-      (List.map (function 
-	| TacTerm s -> TacTerm (String.lowercase s)
-        | t -> t) l,
-        e))
-    cl)
-
-let declare_tactic_v7 loc s cl =
-  let pp = make_printing_rule cl in
-  let gl = mlexpr_of_clause cl in
-  let se = mlexpr_of_string s in
-  <:str_item<
-    declare
-      open Pcoq;
-      Egrammar.extend_tactic_grammar $se$ $gl$;
-      List.iter (Pptactic.declare_extra_tactic_pprule False $se$) $pp$;
-    end
-  >>
+let make_printing_rule se = mlexpr_of_list (make_one_printing_rule se)
 
 let rec contains_epsilon = function
   | List0ArgType _ -> true
@@ -165,80 +144,40 @@ let is_atomic = function
   | _ -> []
 
 let declare_tactic loc s cl =
-  let (s',cl') = new_tac_ext (s,cl) in
-  let pp' = make_printing_rule cl' in
-  let gl' = mlexpr_of_clause cl' in
-  let se' = mlexpr_of_string s' in
-  let pp = make_printing_rule cl in
+  let se = mlexpr_of_string s in
+  let pp = make_printing_rule se cl in
   let gl = mlexpr_of_clause cl in
   let hide_tac (p,e) =
     (* reste a definir les fonctions cachees avec des noms frais *)
-    let stac = "h_"^s' in
+    let stac = "h_"^s in
     let e = 
       make_fun
         <:expr<
-          Refiner.abstract_extended_tactic $mlexpr_of_string s'$ $make_args p$ $make_eval_tactic e p$
+          Refiner.abstract_extended_tactic $mlexpr_of_string s$ $make_args p$ $make_eval_tactic e p$
         >>
       p in
     <:str_item< value $lid:stac$ = $e$ >>
   in
-  let hidden = if List.length cl = 1 then List.map hide_tac cl' else [] in
+  let hidden = if List.length cl = 1 then List.map hide_tac cl else [] in
   let atomic_tactics =
     mlexpr_of_list mlexpr_of_string
-      (List.flatten (List.map (fun (al,_) -> is_atomic al) cl')) in
+      (List.flatten (List.map (fun (al,_) -> is_atomic al) cl)) in
   <:str_item<
     declare
       open Pcoq;
       declare $list:hidden$ end;
       try
-        let _=Refiner.add_tactic $se'$ (fun [ $list:make_clauses s' cl'$ ]) in
+        let _=Refiner.add_tactic $se$ (fun [ $list:make_clauses s cl$ ]) in
         List.iter
           (fun s -> Tacinterp.add_primitive_tactic s
               (Tacexpr.TacAtom($default_loc$,
                  Tacexpr.TacExtend($default_loc$,s,[]))))
           $atomic_tactics$
       with e -> Pp.pp (Cerrors.explain_exn e);
-      if Options.v7.val then Egrammar.extend_tactic_grammar $se'$ $gl$
-      else Egrammar.extend_tactic_grammar $se'$ $gl'$;
-      List.iter (Pptactic.declare_extra_tactic_pprule True $se'$) $pp'$;
-      List.iter (Pptactic.declare_extra_tactic_pprule False $se'$) $pp$;
+      Egrammar.extend_tactic_grammar $se$ $gl$;
+      List.iter Pptactic.declare_extra_tactic_pprule $pp$;
     end
   >>
-
-open Vernacexpr
-open Pcoq
-
-let rec interp_entry_name loc s =
-  let l = String.length s in
-  if l > 8 & String.sub s 0 3 = "ne_" & String.sub s (l-5) 5 = "_list" then
-    let t, g = interp_entry_name loc (String.sub s 3 (l-8)) in
-    List1ArgType t, <:expr< Gramext.Slist1 $g$ >>
-  else if l > 5 & String.sub s (l-5) 5 = "_list" then
-    let t, g = interp_entry_name loc (String.sub s 0 (l-5)) in
-    List0ArgType t, <:expr< Gramext.Slist0 $g$ >>
-  else if l > 4 & String.sub s (l-4) 4 = "_opt" then
-    let t, g = interp_entry_name loc (String.sub s 0 (l-4)) in
-    OptArgType t, <:expr< Gramext.Sopt $g$ >>
-  else
-    
-    let t, se =
-      match Pcoq.entry_type (Pcoq.get_univ "prim") s with
-	| Some _ as x -> x, <:expr< Prim. $lid:s$ >>
-	| None -> 
-      match Pcoq.entry_type (Pcoq.get_univ "constr") s with
-	| Some _ as x -> x, <:expr< Constr. $lid:s$ >>
-	| None -> 
-      match Pcoq.entry_type (Pcoq.get_univ "tactic") s with
-	| Some _ as x -> x, <:expr< Tactic. $lid:s$ >>
-	| None -> None, <:expr< $lid:s$ >> in
-    let t =
-      match t with
-	| Some t -> t
-	| None ->
-(*	    Pp.warning_with Pp_control.err_ft
-            ("Unknown primitive grammar entry: "^s);*)
-	    ExtraArgType s
-    in t, <:expr< Gramext.Snterm (Pcoq.Gram.Entry.obj $se$) >>
 
 open Pcaml
 
@@ -248,11 +187,7 @@ EXTEND
     [ [ "TACTIC"; "EXTEND"; s = [ UIDENT | LIDENT ];
         OPT "|"; l = LIST1 tacrule SEP "|";
         "END" ->
-         declare_tactic loc s l
-      | "V7"; "TACTIC"; "EXTEND"; s = [ UIDENT | LIDENT ];
-        OPT "|"; l = LIST1 tacrule SEP "|";
-        "END" ->
-         declare_tactic_v7 loc s l ] ]
+         declare_tactic loc s l ] ]
   ;
   tacrule:
     [ [ "["; l = LIST1 tacargs; "]"; "->"; "["; e = Pcaml.expr; "]"
@@ -265,7 +200,7 @@ EXTEND
   ;
   tacargs:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
-        let t, g = interp_entry_name loc e in
+        let t, g = Q_util.interp_entry_name loc e in
         TacNonTerm (loc, t, g, Some s)
       | s = STRING ->
 	if s = "" then Util.user_err_loc (loc,"",Pp.str "Empty terminal");

@@ -58,11 +58,9 @@ type rawconstr =
   | RLambda of loc * name * rawconstr * rawconstr
   | RProd of loc * name * rawconstr * rawconstr
   | RLetIn of loc * name * rawconstr * rawconstr
-  | RCases of loc * (rawconstr option * rawconstr option ref) *
-      (rawconstr * (name * (loc * inductive * name list) option) ref) list * 
+  | RCases of loc * rawconstr option *
+      (rawconstr * (name * (loc * inductive * name list) option)) list * 
       (loc * identifier list * cases_pattern list * rawconstr) list
-  | ROrderedCase of loc * case_style * rawconstr option * rawconstr * 
-      rawconstr array * rawconstr option ref
   | RLetTuple of loc * name list * (name * rawconstr option) * 
       rawconstr * rawconstr
   | RIf of loc * rawconstr * (name * rawconstr option) * rawconstr * rawconstr
@@ -77,8 +75,8 @@ and rawdecl = name * rawconstr option * rawconstr
 
 let cases_predicate_names tml =
   List.flatten (List.map (function
-    | (tm,{contents=(na,None)}) -> [na]
-    | (tm,{contents=(na,Some (_,_,nal))}) -> na::nal) tml)
+    | (tm,(na,None)) -> [na]
+    | (tm,(na,Some (_,_,nal))) -> na::nal) tml)
 
 (*i - if PRec (_, names, arities, bodies) is in env then arities are
    typed in env too and bodies are typed in env enriched by the
@@ -97,12 +95,10 @@ let map_rawconstr f = function
   | RLambda (loc,na,ty,c) -> RLambda (loc,na,f ty,f c)
   | RProd (loc,na,ty,c) -> RProd (loc,na,f ty,f c)
   | RLetIn (loc,na,b,c) -> RLetIn (loc,na,f b,f c)
-  | RCases (loc,(tyopt,rtntypopt),tml,pl) ->
-      RCases (loc,(option_app f tyopt,ref (option_app f !rtntypopt)),
+  | RCases (loc,rtntypopt,tml,pl) ->
+      RCases (loc,option_app f rtntypopt,
         List.map (fun (tm,x) -> (f tm,x)) tml,
         List.map (fun (loc,idl,p,c) -> (loc,idl,p,f c)) pl)
-  | ROrderedCase (loc,b,tyopt,tm,bv,x) ->
-      ROrderedCase (loc,b,option_app f tyopt,f tm, Array.map f bv,ref (option_app f !x))
   | RLetTuple (loc,nal,(na,po),b,c) ->
       RLetTuple (loc,nal,(na,option_app f po),f b,f c)
   | RIf (loc,c,(na,po),b1,b2) ->
@@ -140,8 +136,6 @@ let map_rawconstr_with_binders_loc loc g f e = function
       let h (_,idl,p,c) = (loc,idl,p,f (List.fold_right g' idl e) c) in
       RCases
 	(loc,option_app (f e) tyopt,List.map (f e) tml, List.map h pl)
-  | ROrderedCase (_,b,tyopt,tm,bv) ->
-      ROrderedCase (loc,b,option_app (f e) tyopt,f e tm,Array.map (f e) bv)
   | RRec (_,fk,idl,tyl,bv) ->
       let idl',e' = fold_ident g idl e in
       RRec (loc,fk,idl',Array.map (f e) tyl,Array.map (f e') bv)
@@ -161,12 +155,10 @@ let occur_rawconstr id =
     | RLambda (loc,na,ty,c) -> (occur ty) or ((na <> Name id) & (occur c))
     | RProd (loc,na,ty,c) -> (occur ty) or ((na <> Name id) & (occur c))
     | RLetIn (loc,na,b,c) -> (occur b) or ((na <> Name id) & (occur c))
-    | RCases (loc,(tyopt,rtntypopt),tml,pl) ->
-	(occur_option tyopt) or (occur_option !rtntypopt)
+    | RCases (loc,rtntypopt,tml,pl) ->
+	(occur_option rtntypopt)
         or (List.exists (fun (tm,_) -> occur tm) tml)
 	or (List.exists occur_pattern pl)
-    | ROrderedCase (loc,b,tyopt,tm,bv,_) -> 
-	(occur_option tyopt) or (occur tm) or (array_exists occur bv)
     | RLetTuple (loc,nal,rtntyp,b,c) -> 
 	occur_return_type rtntyp id
         or (occur b) or (not (List.mem (Name id) nal) & (occur c))
@@ -205,7 +197,6 @@ let loc_of_rawconstr = function
   | RProd (loc,_,_,_) -> loc
   | RLetIn (loc,_,_,_) -> loc
   | RCases (loc,_,_,_) -> loc
-  | ROrderedCase (loc,_,_,_,_,_) -> loc
   | RLetTuple (loc,_,_,_,_) -> loc
   | RIf (loc,_,_,_,_) -> loc
   | RRec (loc,_,_,_,_,_) -> loc

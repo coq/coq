@@ -160,6 +160,10 @@ type local_decl_expr =
 
 type module_binder = bool option * lident list * module_type_ast
 
+type grammar_production =
+  | VTerm of string
+  | VNonTerm of loc * string * Names.identifier option
+
 type proof_end =
   | Admitted
   | Proved of opacity_flag * (lident * theorem_kind option) option
@@ -282,10 +286,6 @@ type vernac_expr =
   | VernacProof of raw_tactic_expr
   (* Toplevel control *)
   | VernacToplevelControl of exn
-
-  (* For translation from V7 to V8 syntax *)
-  | VernacV8only of vernac_expr
-  | VernacV7only of vernac_expr
 
   (* For extension *)
   | VernacExtend of string * raw_generic_argument list

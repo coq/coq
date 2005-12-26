@@ -53,7 +53,7 @@ val compile_cases :
   evar_defs ref ->
   type_constraint -> 
   env ->
-  (rawconstr option * rawconstr option ref) *
-  (rawconstr * (name * (loc * inductive * name list) option) ref) list *
+  rawconstr option *
+  (rawconstr * (name * (loc * inductive * name list) option)) list *
   (loc * identifier list * cases_pattern list * rawconstr) list ->
   unsafe_judgment

@@ -42,10 +42,6 @@ let for_grammar f x =
 
 let variables_bind = ref false
 
-(* For the translator *)
-let temporary_implicits_in = ref []
-let set_temporary_implicits_in l = temporary_implicits_in := l
-
 (**********************************************************************)
 (* Internalisation errors                                             *)
 
@@ -254,8 +250,7 @@ let intern_var (env,_,_ as genv) (ltacvars,vars2,vars3,(_,impls)) loc id =
     let l,impl,argsc = List.assoc id impls in
     let l = List.map 
       (fun id -> CRef (Ident (loc,id)), Some (loc,ExplByName id)) l in
-    RVar (loc,id), impl, argsc,
-    (if !Options.v7 & !interning_grammar then [] else l)
+    RVar (loc,id), impl, argsc, l
   with Not_found ->
   (* Is [id] bound in current env or is an ltac var bound to constr *)
   if Idset.mem id env or List.mem id vars1
@@ -318,13 +313,6 @@ let intern_reference env lvar = function
   | Qualid (loc, qid) ->
       find_appl_head_data lvar (intern_qualid loc qid)
   | Ident (loc, id) ->
-      (* For old ast syntax compatibility *)
-      if (string_of_id id).[0] = '$' then RVar (loc,id),[],[],[] else
-      (* End old ast syntax compatibility *)
-      (* Pour traduction des implicites d'inductifs et points-fixes *)
-      try RVar (loc,id), List.assoc id !temporary_implicits_in, [], []
-      with Not_found ->
-      (* Fin pour traduction *)
       try intern_var env lvar loc id
       with Not_found -> 
       try find_appl_head_data lvar (intern_qualid loc (make_short_qualid id))
@@ -665,8 +653,7 @@ let check_projection isproj nargs r =
   | _, None -> ()
 
 let get_implicit_name n imps =
-  if !Options.v7 then None
-  else Some (Impargs.name_of_implicit (List.nth imps (n-1)))
+  Some (Impargs.name_of_implicit (List.nth imps (n-1)))
 
 let set_hole_implicit i = function
   | RRef (loc,r) -> (loc,Evd.ImplicitArg (r,i))
@@ -884,21 +871,15 @@ let internalise sigma env allow_soapp lvar c =
           (* Now compact "(f args') args" *)
 	  | RApp (loc', f', args') -> RApp (join_loc loc' loc, f',args'@args)
 	  | _ -> RApp (loc, c, args))
-    | CCases (loc, (po,rtnpo), tms, eqns) ->
+    | CCases (loc, rtnpo, tms, eqns) ->
         let tms,env' = List.fold_right
           (fun citm (inds,env) ->
 	    let (tm,ind),nal = intern_case_item env citm in
-	    (tm,ref ind)::inds,List.fold_left (push_name_env lvar) env nal)
+	    (tm,ind)::inds,List.fold_left (push_name_env lvar) env nal)
 	  tms ([],env) in
         let rtnpo = option_app (intern_type env') rtnpo in
         let eqns' = List.map (intern_eqn (List.length tms) env) eqns in
-	RCases (loc, (option_app (intern_type env) po, ref rtnpo), tms,
-		List.flatten eqns')
-    | COrderedCase (loc, tag, po, c, cl) ->
-	let env = reset_tmp_scope env in
-	ROrderedCase (loc, tag, option_app (intern_type env) po,
-	          intern env c,
-		  Array.of_list (List.map (intern env) cl),ref None)
+	RCases (loc, rtnpo, tms, List.flatten eqns')
     | CLetTuple (loc, nal, (na,po), b, c) ->
 	let env' = reset_tmp_scope env in
         let ((b',(na',_)),ids) = intern_case_item env' (b,(na,None)) in
@@ -916,13 +897,8 @@ let internalise sigma env allow_soapp lvar c =
 	RHole (loc, Evd.QuestionMark)
     | CPatVar (loc, n) when allow_soapp ->
 	RPatVar (loc, n)
-    | CPatVar (loc, (false,n)) when Options.do_translate () ->
-	RVar (loc, n)
     | CPatVar (loc, (false,n)) ->
-        if List.mem n (fst (let (a,_,_,_) = lvar in a)) & !Options.v7 then
-	  RVar (loc, n)
-	else
-          error_unbound_patvar loc n
+        error_unbound_patvar loc n
     | CPatVar (loc, _) ->
 	raise (InternalisationError (loc,NegativeMetavariable))
     | CEvar (loc, n) ->
@@ -986,7 +962,7 @@ let internalise sigma env allow_soapp lvar c =
     | None -> 
 	[], None in
     let na = match tm', na with
-      | RVar (_,id), None when Idset.mem id vars & not !Options.v7 -> Name id
+      | RVar (_,id), None when Idset.mem id vars -> Name id
       | _, None -> Anonymous
       | _, Some na -> na in
     (tm',(na,typ)), na::ids

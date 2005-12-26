@@ -295,30 +295,10 @@ let (in_import, out_import) =
 
 (*s Loading from disk to cache (preparation phase) *)
 
-let vo_magic_number7 = 07992 (* V8.0 final old syntax *)
-(* let vo_magic_number8 = 08002 (* V8.0 final new syntax *) *)
-let vo_magic_number8 = 08003 (* V8.0 final new syntax + new params in ind *)
+let vo_magic_number = 08003 (* V8.0 final new syntax + new params in ind *)
 
-let (raw_extern_library7, raw_intern_library7) =
-  System.raw_extern_intern vo_magic_number7 ".vo"
-
-let (raw_extern_library8, raw_intern_library8) =
-  System.raw_extern_intern vo_magic_number8 ".vo"
-
-let raw_intern_library a =
-  if !Options.v7 then
-    try raw_intern_library7 a
-    with System.Bad_magic_number fname ->
-      let _= raw_intern_library8 a in
-      error "Inconsistent compiled files: you probably want to use Coq in new syntax and remove the option -v7 or -translate"
-  else
-    try raw_intern_library8 a
-    with System.Bad_magic_number fname ->
-      let _= raw_intern_library7 a in
-      error "Inconsistent compiled files: you probably want to use Coq in old syntax by setting options -v7 or -translate"
-
-let raw_extern_library =
-  if !Options.v7 then raw_extern_library7 else raw_extern_library8
+let (raw_extern_library, raw_intern_library) =
+  System.raw_extern_intern vo_magic_number ".vo"
 
 let with_magic_number_check f a =
   try f a

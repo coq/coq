@@ -29,9 +29,8 @@ let get_version_date () =
   with _ -> Coq_config.date
 
 let print_header () =
-  Printf.printf "Welcome to Coq %s%s (%s)\n"
+  Printf.printf "Welcome to Coq %s (%s)\n" 
     Coq_config.version 
-    (if !Options.v7 then " (V7 syntax)" else "")
     (get_version_date ());
   flush stdout
 
@@ -268,8 +267,8 @@ let parse_args is_ide =
     | "-xml" :: rem -> Options.xml_export := true; parse rem
 
     (* Scanned in Options! *)
-    | "-v7" :: rem -> (* Options.v7 := true; *) parse rem
-    | "-v8" :: rem -> (* Options.v7 := false; *) parse rem
+    | "-v7" :: rem -> error "This version of Coq does not support v7 syntax"
+    | "-v8" :: rem -> parse rem
 
     | "-no-hash-consing" :: rem -> Options.hash_cons_proofs := false; parse rem
 

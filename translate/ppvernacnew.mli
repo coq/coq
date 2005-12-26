@@ -15,13 +15,10 @@ open Names
 open Nameops
 open Nametab
 open Util
-open Extend
 open Ppconstr
 open Pptactic
 open Rawterm
-open Coqast
 open Pcoq
-open Ast
 open Libnames
 open Ppextend
 open Topconstr

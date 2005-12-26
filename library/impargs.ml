@@ -27,71 +27,44 @@ open Topconstr
 
 (* les implicites sont stricts par défaut en v8 *)
 let implicit_args = ref false
-let strict_implicit_args = ref (not !Options.v7)
+let strict_implicit_args = ref true
 let contextual_implicit_args = ref false
 
-let implicit_args_out = ref false
-let strict_implicit_args_out = ref true
-let contextual_implicit_args_out = ref false
-
 let make_implicit_args flag =
-  implicit_args := flag;
-  if not !Options.v7_only then implicit_args_out := flag;
-  if !Options.translate_strict_impargs then
-    strict_implicit_args_out := not flag
+  implicit_args := flag
 
 let make_strict_implicit_args flag =
-  strict_implicit_args := flag;
-  if not !Options.v7_only then strict_implicit_args_out := flag
+  strict_implicit_args := flag
 
 let make_contextual_implicit_args flag =
-  contextual_implicit_args := flag;
-  if not !Options.v7_only then contextual_implicit_args_out := flag
+  contextual_implicit_args := flag
 
 let is_implicit_args () = !implicit_args
-let is_implicit_args_out () = !implicit_args_out
 let is_strict_implicit_args () = !strict_implicit_args
 let is_contextual_implicit_args () = !contextual_implicit_args
 
-type implicits_flags = (bool * bool * bool) * (bool * bool * bool)
+type implicits_flags = bool * bool * bool
 
 let implicits_flags () = 
-  (!implicit_args,
-  !strict_implicit_args,
-  !contextual_implicit_args),
-  (!implicit_args_out,
-  !strict_implicit_args_out,
-  !contextual_implicit_args_out)
+  (!implicit_args, !strict_implicit_args, !contextual_implicit_args)
 
-let with_implicits ((a,b,c),(d,e,g)) f x =
+let with_implicits (a,b,c) f x =
   let oa = !implicit_args in
   let ob = !strict_implicit_args in
   let oc = !contextual_implicit_args in
-  let od = !implicit_args_out in
-  let oe = !strict_implicit_args_out in
-  let og = !contextual_implicit_args_out in
   try 
     implicit_args := a;
     strict_implicit_args := b;
     contextual_implicit_args := c;
-    implicit_args_out := d;
-    strict_implicit_args_out := e;
-    contextual_implicit_args_out := g;
     let rslt = f x in 
     implicit_args := oa;
     strict_implicit_args := ob;
     contextual_implicit_args := oc;
-    implicit_args_out := od;
-    strict_implicit_args_out := oe;
-    contextual_implicit_args_out := og;
     rslt
   with e -> begin
     implicit_args := oa;
     strict_implicit_args := ob;
     contextual_implicit_args := oc;
-    implicit_args_out := od;
-    strict_implicit_args_out := oe;
-    contextual_implicit_args_out := og;
     raise e
   end
 
@@ -221,13 +194,9 @@ let compute_implicits_gen strict contextual env t =
 	Array.to_list v
     | _ -> []
 
-let compute_implicits output env t =
-  let strict =
-    (not output & !strict_implicit_args) or
-    (output & !strict_implicit_args_out) in 
-  let contextual =
-    (not output & !contextual_implicit_args) or
-    (output & !contextual_implicit_args_out) in
+let compute_implicits env t =
+  let strict = !strict_implicit_args in
+  let contextual = !contextual_implicit_args in
   let l = compute_implicits_gen strict contextual env t in
   List.map (function
     | (Name id, Some imp) -> Some (id,imp)
@@ -275,20 +244,11 @@ type implicits =
   | No_impl
 
 let auto_implicits env ty =
-  let impl = 
-    if !implicit_args then
-      let l = compute_implicits false env ty in
-      Impl_auto (!strict_implicit_args,!contextual_implicit_args,l)
-    else
-      No_impl in
-  if Options.do_translate () then
-    impl, 
-    if !implicit_args_out then 
-      (let l = compute_implicits true env ty in
-      Impl_auto (!strict_implicit_args_out,!contextual_implicit_args_out,l))
-    else No_impl
-  else 
-    impl, impl
+  if !implicit_args then
+    let l = compute_implicits env ty in
+    Impl_auto (!strict_implicit_args,!contextual_implicit_args,l)
+  else
+    No_impl
 
 let list_of_implicits = function 
   | Impl_auto (_,_,l) -> l
@@ -305,7 +265,7 @@ let compute_constant_implicits kn =
   auto_implicits env (body_of_type cb.const_type)
 
 let constant_implicits sp =
-  try Cmap.find sp !constants_table with Not_found -> No_impl,No_impl
+  try Cmap.find sp !constants_table with Not_found -> No_impl
 
 (*s Inductives and constructors. Their implicit arguments are stored
    in an array, indexed by the inductive number, of pairs $(i,v)$ where
@@ -334,10 +294,11 @@ let compute_mib_implicits kn =
   Array.mapi imps_one_inductive mib.mind_packets
 
 let inductive_implicits indp =
-  try Indmap.find indp !inductives_table with Not_found -> No_impl,No_impl
+  try Indmap.find indp !inductives_table with Not_found -> No_impl
 
 let constructor_implicits consp =
-  try Constrmap.find consp !constructors_table with Not_found -> No_impl,No_impl
+  try Constrmap.find consp !constructors_table with Not_found -> No_impl
+
 (*s Variables. *)
 
 let var_table = ref Idmap.empty
@@ -348,7 +309,7 @@ let compute_var_implicits id =
   auto_implicits env ty
 
 let var_implicits id = 
-  try Idmap.find id !var_table with Not_found -> No_impl,No_impl
+  try Idmap.find id !var_table with Not_found -> No_impl
 
 (* Implicits of a global reference. *)
 
@@ -378,11 +339,6 @@ let load_implicits _ (_,l) = List.iter cache_implicits_decl l
 let cache_implicits o =
   load_implicits 1 o
 
-(*
-let discharge_implicits (_,(r,imps)) =
-  match r with VarRef _ -> None | _ -> Some (r,compute_global_implicits r)
-*)
-
 let subst_implicits_decl subst (r,imps as o) =
   let r' = fst (subst_global subst r) in if r==r' then o else (r',imps)
 
@@ -402,20 +358,17 @@ let declare_implicits_gen r =
 
 let declare_implicits r =
   with_implicits
-    ((true,!strict_implicit_args,!contextual_implicit_args),
-     (true,!strict_implicit_args_out,!contextual_implicit_args_out))
+    (true,!strict_implicit_args,!contextual_implicit_args)
     declare_implicits_gen r
 
 let declare_var_implicits id =
-  if !implicit_args or !implicit_args_out then
-    declare_implicits_gen (VarRef id)
+  if !implicit_args then declare_implicits_gen (VarRef id)
 
 let declare_constant_implicits kn =
-  if !implicit_args or !implicit_args_out then
-    declare_implicits_gen (ConstRef kn)
+  if !implicit_args then declare_implicits_gen (ConstRef kn)
 
 let declare_mib_implicits kn =
-  if !implicit_args or !implicit_args_out then
+  if !implicit_args then
   let imps = compute_mib_implicits kn in
   let imps = array_map_to_list
     (fun (ind,cstrs) -> ind::(Array.to_list cstrs)) imps in
@@ -428,22 +381,9 @@ let implicits_of_global_gen = function
   | ConstructRef csp ->	constructor_implicits csp
 
 let implicits_of_global r =
-  let (imp_in,imp_out) = implicits_of_global_gen r in
-  list_of_implicits imp_in
-
-let implicits_of_global_out r =
-  let (imp_in,imp_out) = implicits_of_global_gen r in
-  list_of_implicits imp_out
+  list_of_implicits (implicits_of_global_gen r)
 
 (* Declare manual implicits *)
-
-(*
-let check_range n = function
-  | loc,ExplByPos i ->
-      if i<1 or i>n then error ("Bad argument number: "^(string_of_int i))
-  | loc,ExplByName id ->
-()
-*)
 
 let rec list_remove a = function
   | b::l when a = b -> l
@@ -459,8 +399,6 @@ let declare_manual_implicits r l =
   let n = List.length autoimps in
   if not (list_distinct l) then 
     error ("Some parameters are referred more than once");
-(*  List.iter (check_range n) l;*)
-(*  let l = List.sort (-) l in*)
   (* Compare with automatic implicits to recover printing data and names *)
   let rec merge k l = function
     | (Name id,imp)::imps ->
@@ -486,8 +424,6 @@ let declare_manual_implicits r l =
 		(str "Cannot set implicit argument number " ++ int i ++
 		 str ": it has no name") in
   let l = Impl_manual (merge 1 l autoimps) in
-  let (_,oimp_out) = implicits_of_global_gen r in
-  let l = l, if !Options.v7_only then oimp_out else l in
   add_anonymous_leaf (in_implicits [r,l])
 
 (* Tests if declared implicit *)
@@ -497,8 +433,8 @@ let test = function
   | Impl_auto (s,c,_) -> true,s,c
 
 let test_if_implicit find a =
-  try let b,c = find a in test b, test c
-  with Not_found -> (false,false,false),(false,false,false)
+  try let b = find a in test b
+  with Not_found -> (false,false,false)
     
 let is_implicit_constant sp =
   test_if_implicit (Cmap.find sp) !constants_table
@@ -534,34 +470,3 @@ let _ =
       Summary.init_function = init;
       Summary.survive_module = false;
       Summary.survive_section = false }
-
-(* Remark: flags implicit_args, contextual_implicit_args
-   are synchronized by the general options mechanism - see Vernacentries *)
-
-let init () =
-  (* strict_implicit_args_out must be not !Options.v7 
-     but init is done before parsing *)
-  strict_implicit_args:=not !Options.v7;
-  implicit_args_out:=false;
-  (* strict_implicit_args_out needs to be not !Options.v7 or
-     Options.do_translate() but init is done before parsing *)
-  strict_implicit_args_out:=true;
-  contextual_implicit_args_out:=false
-
-let freeze () =
-  (!strict_implicit_args,
-   !implicit_args_out,!strict_implicit_args_out,!contextual_implicit_args_out)
-
-let unfreeze (b,d,e,f) =
-  strict_implicit_args := b;
-  implicit_args_out := d;
-  strict_implicit_args_out := e;
-  contextual_implicit_args_out := f
-
-let _ = 
-  Summary.declare_summary "implicits-out-options"
-    { Summary.freeze_function = freeze;
-      Summary.unfreeze_function = unfreeze;
-      Summary.init_function = init;
-      Summary.survive_module = false;
-      Summary.survive_section = true }

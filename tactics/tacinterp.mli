@@ -119,8 +119,6 @@ val glob_tactic : raw_tactic_expr -> glob_tactic_expr
 
 val glob_tactic_env : identifier list -> Environ.env -> raw_tactic_expr -> glob_tactic_expr
 
-val glob_tactic_env_v7 : identifier list -> Environ.env -> raw_tactic_expr -> glob_tactic_expr
-
 val eval_tactic : glob_tactic_expr -> tactic
 
 val interp : raw_tactic_expr -> tactic
@@ -130,13 +128,6 @@ val subst_tactic : substitution -> glob_tactic_expr -> glob_tactic_expr
 (* Hides interpretation for pretty-print *)
 
 val hide_interp : raw_tactic_expr -> tactic option -> tactic
-
-(* Adds an interpretation function *)
-val interp_add : string * (interp_sign -> Coqast.t -> value) -> unit
-
-(* Adds a possible existing interpretation function *)
-val overwriting_interp_add : string * (interp_sign -> Coqast.t -> value) ->
-                             unit
 
 (* Declare the default tactic to fill implicit arguments *)
 val declare_implicit_tactic : tactic -> unit

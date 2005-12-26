@@ -21,6 +21,8 @@ open Vernacexpr
 open Pcoq
 open Rawterm
 open Libnames
+open Lexer
+open Egrammar
 
 (**********************************************************************)
 (* Globalisation for constr_expr *)
@@ -51,9 +53,6 @@ let rec globalize_constr_expr vars = function
       map_constr_expr_with_binders globalize_constr_expr (fun id e -> id::e)
         vars c
 
-let _ = set_constr_globalizer
-  (fun vars e -> for_grammar (globalize_constr_expr vars) e)
-
 (**********)
 (* Tokens *)
 
@@ -76,21 +75,16 @@ let make_terminal_status = function
   | VTerm s -> Some s
   | VNonTerm _ -> None
 
-let qualified_nterm current_univ = function
-  | NtQual (univ, en) -> (univ, en)
-  | NtShort en -> (current_univ, en)
-
 let rec make_tags lev = function
   | VTerm s :: l -> make_tags lev l
   | VNonTerm (loc, nt, po) :: l ->
-      let (u,nt) = qualified_nterm "tactic" nt in
-      let (etyp, _) = Egrammar.interp_entry_name lev u nt in
+      let (etyp, _) = Egrammar.interp_entry_name lev "tactic" nt in
       etyp :: make_tags lev l
   | [] -> []
 
 let cache_tactic_notation (_,(pa,pp)) =
   Egrammar.extend_grammar (Egrammar.TacticGrammar pa);
-  Pptactic.declare_extra_tactic_pprule true (pi1 pp) (pi2 pp, pi3 pp)
+  Pptactic.declare_extra_tactic_pprule pp
 
 let subst_tactic_parule subst (key,n,p,(d,tac)) =
   (key,n,p,(d,Tacinterp.subst_tactic subst tac))
@@ -148,6 +142,17 @@ let print_grammar univ = function
       Gram.Entry.print Pcoq.Tactic.tactic_expr;
       msgnl (str "Entry simple_tactic is");
       Gram.Entry.print Pcoq.Tactic.simple_tactic;
+  | "vernac" -> 
+      msgnl (str "Entry vernac is");
+      Gram.Entry.print Pcoq.Vernac_.vernac;
+      msgnl (str "Entry command is");
+      Gram.Entry.print Pcoq.Vernac_.command;
+      msgnl (str "Entry syntax is");
+      Gram.Entry.print Pcoq.Vernac_.syntax;
+      msgnl (str "Entry gallina is");
+      Gram.Entry.print Pcoq.Vernac_.gallina;
+      msgnl (str "Entry gallina_ext is");
+      Gram.Entry.print Pcoq.Vernac_.gallina_ext;
   | _ -> error "Unknown or unprintable grammar entry"
 
 (**********************************************************************)
@@ -577,12 +582,12 @@ let make_production etyps symbols =
 	    let typ = List.assoc m etyps in
 	    NonTerm (typ, Some (m,typ)) :: l
         | Terminal s ->
-	    Term (Extend.terminal s) :: l
+	    Term (terminal s) :: l
         | Break _ ->
             l
         | SProdList (x,sl) ->
             let sl = List.flatten
-              (List.map (function Terminal s -> [Extend.terminal s] 
+              (List.map (function Terminal s -> [terminal s] 
                 | Break _ -> []
                 | _ -> anomaly "Found a non terminal token in recursive notation separator") sl) in
 	    let y = match List.assoc x etyps with
@@ -713,10 +718,6 @@ let interp_modifiers modl =
 	if format <> None then error "A format is given more than once";
 	interp assoc level etyps (Some s) l
   in interp None None [] None modl
-
-let merge_modifiers a n l =
-  (match a with None -> [] | Some a -> [SetAssoc a]) @
-  (match n with None -> [] | Some n -> [SetLevel n]) @ l
 
 let interp_infix_modifiers modl =
   let (assoc,level,t,b,fmt) = interp_modifiers modl in

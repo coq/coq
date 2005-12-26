@@ -11,7 +11,6 @@
 open Pp
 open Util
 open Names
-open Coqast
 open Topconstr
 open Vernacexpr
 open Pcoq
@@ -27,11 +26,8 @@ open Constr
 open Vernac_
 open Module
 
-
 let vernac_kw = [ ";"; ","; ">->"; ":<"; "<:"; "where"; "at" ]
-let _ = 
-  if not !Options.v7 then
-    List.iter (fun s -> Lexer.add_token ("",s)) vernac_kw
+let _ = List.iter (fun s -> Lexer.add_token ("",s)) vernac_kw
 
 (* Rem: do not join the different GEXTEND into one, it breaks native *)
 (* compilation on PowerPC and Sun architectures *)
@@ -41,7 +37,6 @@ let class_rawexpr = Gram.Entry.create "vernac:class_rawexpr"
 let thm_token = Gram.Entry.create "vernac:thm_token"
 let def_body = Gram.Entry.create "vernac:def_body"
 
-if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: vernac gallina_ext;
   vernac:
@@ -87,7 +82,6 @@ let no_coercion loc (c,x) =
   x
 
 (* Gallina declarations *)
-if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_body;
 
@@ -210,7 +204,7 @@ GEXTEND Gram
   ;
   (* (co)-fixpoints *)
   rec_definition:
-    [ [ id = base_ident; bl = LIST1 binder_let;
+    [ [ id = ident; bl = LIST1 binder_let;
         annot = OPT rec_annotation; type_ = type_cstr; 
 	":="; def = lconstr; ntn = decl_notation ->
           let names = List.map snd (names_of_local_assums bl) in
@@ -230,7 +224,7 @@ GEXTEND Gram
 	  ((id, ni, bl, type_, def),ntn) ] ]
   ;
   corec_definition:
-    [ [ id = base_ident; bl = LIST0 binder_let; c = type_cstr; ":=";
+    [ [ id = ident; bl = LIST0 binder_let; c = type_cstr; ":=";
         def = lconstr ->
           (id,bl,c ,def) ] ]
   ;
@@ -301,7 +295,6 @@ END
 
 
 (* Modules and Sections *)
-if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: gallina_ext module_expr module_type;
 
@@ -387,7 +380,6 @@ GEXTEND Gram
 END
 
 (* Extensions: implicits, coercions, etc. *)   
-if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: gallina_ext;
 
@@ -400,17 +392,17 @@ GEXTEND Gram
       | IDENT "Canonical"; IDENT "Structure"; qid = global ->
 	  VernacCanonical qid
       | IDENT "Canonical"; IDENT "Structure"; qid = global; d = def_body ->
-          let s = Ast.coerce_global_to_id qid in
+          let s = coerce_global_to_id qid in
 	  VernacDefinition 
 	    ((Global,CanonicalStructure),(dummy_loc,s),d,
 	     (fun _ -> Recordops.declare_canonical_structure))
 
       (* Coercions *)
       | IDENT "Coercion"; qid = global; d = def_body ->
-          let s = Ast.coerce_global_to_id qid in
+          let s = coerce_global_to_id qid in
 	  VernacDefinition ((Global,Coercion),(dummy_loc,s),d,Class.add_coercion_hook)
       | IDENT "Coercion"; IDENT "Local"; qid = global; d = def_body ->
-           let s = Ast.coerce_global_to_id qid in
+           let s = coerce_global_to_id qid in
 	  VernacDefinition ((Local,Coercion),(dummy_loc,s),d,Class.add_coercion_hook)
       | IDENT "Identity"; IDENT "Coercion"; IDENT "Local"; f = identref;
          ":"; s = class_rawexpr; ">->"; t = class_rawexpr -> 
@@ -436,7 +428,6 @@ GEXTEND Gram
   ;
 END
 
-if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: command check_command class_rawexpr;
 
@@ -632,7 +623,6 @@ GEXTEND Gram
   ;
 END;
 
-if not !Options.v7 then
 GEXTEND Gram
   command:
     [ [ 
@@ -661,7 +651,6 @@ GEXTEND Gram
 
 (* Grammar extensions *)
 	  
-if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: syntax;
 
@@ -737,13 +726,8 @@ GEXTEND Gram
     [ [ "_" -> None | sc = IDENT -> Some sc ] ]
   ;
   production_item:
-    [[ s = ne_string -> VTerm s
-     | nt = IDENT; po = OPT [ "("; p = ident; ")" -> p ] ->
-	 VNonTerm (loc,NtShort nt,po) ]]
+    [ [ s = ne_string -> VTerm s
+      | nt = IDENT; po = OPT [ "("; p = ident; ")" -> p ] -> 
+	  VNonTerm (loc,nt,po) ] ]
   ;
 END
-
-(* Reinstall tactic and vernac extensions *)
-let _ = 
-  if not !Options.v7 then
-    Egrammar.reset_extend_grammars_v8()

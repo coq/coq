@@ -210,8 +210,8 @@ let inductive_class_of ind = fst (class_info (CL_IND ind))
 let class_args_of c = snd (decompose_app c)
 
 let string_of_class = function
-  | CL_FUN -> if !Options.v7 then "FUNCLASS" else "Funclass"
-  | CL_SORT -> if !Options.v7 then "SORTCLASS" else "Sortclass"
+  | CL_FUN -> "Funclass"
+  | CL_SORT -> "Sortclass"
   | CL_CONST sp ->
       string_of_qualid (shortest_qualid_of_global Idset.empty (ConstRef sp))
   | CL_IND sp ->

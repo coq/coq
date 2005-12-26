@@ -47,11 +47,8 @@ let e_resolve_with_bindings_tac  (c,lbind) gl =
 
 let e_resolve_constr c gls = e_resolve_with_bindings_tac (c,NoBindings) gls
 			     
-(* V8 TACTIC EXTEND eexact
+TACTIC EXTEND eexact
 | [ "eexact" constr(c) ] -> [ e_give_exact c ]
-END*)
-TACTIC EXTEND Eexact
-| [ "EExact" constr(c) ] -> [ e_give_exact c ]
 END
 
 let e_give_exact_constr = h_eexact
@@ -61,11 +58,8 @@ let registered_e_assumption gl =
               (pf_ids_of_hyps gl)) gl
 
 (* This automatically define h_eApply (among other things) *)
-(*V8 TACTIC EXTEND eapply
-  [ "eapply" constr_with_bindings(c) ] -> [ e_resolve_with_bindings_tac c ]
-END*)
 TACTIC EXTEND eapply
-  [ "EApply" constr_with_bindings(c) ] -> [ e_resolve_with_bindings_tac c ]
+  [ "eapply" constr_with_bindings(c) ] -> [ e_resolve_with_bindings_tac c ]
 END
 
 let vernac_e_resolve_constr c = h_eapply (c,NoBindings)
@@ -106,33 +100,30 @@ let e_right = e_constructor_tac (Some 2) 2
 let e_split = e_constructor_tac (Some 1) 1
 
 (* This automatically define h_econstructor (among other things) *)
-(*V8 TACTIC EXTEND eapply
-  [ "econstructor" integer(n) with_bindings(c) ] -> [ e_constructor_tac None n c ]
-END*)
 TACTIC EXTEND econstructor
-  [ "EConstructor" integer(n) "with" bindings(c) ] -> [ e_constructor_tac None n c ]
-  | [ "EConstructor" integer(n) ] -> [ e_constructor_tac None n NoBindings ]
-  | [ "EConstructor" tactic_opt(t) ] -> [ e_any_constructor (option_app Tacinterp.eval_tactic t) ] 
+  [ "econstructor" integer(n) "with" bindings(c) ] -> [ e_constructor_tac None n c ]
+| [ "econstructor" integer(n) ] -> [ e_constructor_tac None n NoBindings ]
+| [ "econstructor" tactic_opt(t) ] -> [ e_any_constructor (option_app Tacinterp.eval_tactic t) ] 
       END
 
 TACTIC EXTEND eleft
-  [ "ELeft" "with" bindings(l) ] -> [e_left l]
-  | [ "ELeft"] -> [e_left NoBindings]
+  [ "eleft" "with" bindings(l) ] -> [e_left l]
+| [ "eleft"] -> [e_left NoBindings]
 END
 
 TACTIC EXTEND eright
-  [ "ERight" "with" bindings(l) ] -> [e_right l]
-  | [ "ERight" ] -> [e_right NoBindings]
+  [ "eright" "with" bindings(l) ] -> [e_right l]
+| [ "eright" ] -> [e_right NoBindings]
 END
 
 TACTIC EXTEND esplit
-  [ "ESplit" "with" bindings(l) ] -> [e_split l]
-  | [ "ESplit"] -> [e_split NoBindings]
+  [ "esplit" "with" bindings(l) ] -> [e_split l]
+| [ "esplit"] -> [e_split NoBindings]
 END
 
 
 TACTIC EXTEND eexists
-  [ "EExists" bindings(l) ] -> [e_split l]
+  [ "eexists" bindings(l) ] -> [e_split l]
 END
 
 
@@ -161,28 +152,9 @@ let prolog_tac l n gl =
   with UserError ("Refiner.tclFIRST",_) ->
     errorlabstrm "Prolog.prolog" (str "Prolog failed")
 
-(* V8 TACTIC EXTEND prolog
+TACTIC EXTEND prolog
 | [ "prolog" "[" constr_list(l) "]" int_or_var(n) ] -> [ prolog_tac l n ]
-END*)
-TACTIC EXTEND Prolog
-| [ "Prolog" "[" constr_list(l) "]" int_or_var(n) ] -> [ prolog_tac l n ]
 END
-
-(*
-let vernac_prolog =
-  let uncom = function
-    | Constr c -> c
-    | _ -> assert false
-  in
-  let gentac = 
-    hide_tactic "Prolog"
-      (function
-	 | (Integer n) :: al -> prolog_tac (List.map uncom al) n
-	 | _ -> assert false)
-  in 
-  fun coms n -> 
-    gentac ((Integer n) :: (List.map (fun com -> (Constr com)) coms))
-*)
 
 open Auto
 
@@ -433,14 +405,7 @@ ARGUMENT EXTEND hintbases
 | [ ] -> [ Some [] ]
 END
 
-TACTIC EXTEND EAuto
-| [ "EAuto" int_or_var_opt(n) int_or_var_opt(p) hintbases(db) ] ->
+TACTIC EXTEND eauto
+| [ "eauto" int_or_var_opt(n) int_or_var_opt(p) hintbases(db) ] ->
     [ gen_eauto false (make_dimension n p) db ]
 END
-
-V7 TACTIC EXTEND EAutodebug
-| [ "EAutod" int_or_var_opt(n) int_or_var_opt(p) hintbases(db) ] ->
-    [ gen_eauto true (make_dimension n p) db ]
-END
-
-

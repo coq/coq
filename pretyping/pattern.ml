@@ -22,13 +22,7 @@ open Mod_subst
 (* Metavariables *)
 
 type patvar_map = (patvar * constr) list
-let patvar_of_int n =
-  let p = if !Options.v7 & not (Options.do_translate ()) then "?" else "X"
-  in
-  Names.id_of_string (p ^ string_of_int n)
 let pr_patvar = pr_id
-
-let patvar_of_int_v7 n = Names.id_of_string ("?" ^ string_of_int n)
 
 (* Patterns *)
 
@@ -217,26 +211,21 @@ let rec pat_of_raw metas vars = function
       Options.if_verbose
         Pp.warning "Cast not taken into account in constr pattern";
       pat_of_raw metas vars c
-  | ROrderedCase (_,st,po,c,br,_) ->
-      PCase ((None,st),option_app (pat_of_raw metas vars) po,
-             pat_of_raw metas vars c,
-             Array.map (pat_of_raw metas vars) br)
   | RIf (_,c,(_,None),b1,b2) ->
       PCase ((None,IfStyle),None, pat_of_raw metas vars c,
              [|pat_of_raw metas vars b1; pat_of_raw metas vars b2|])
-  | RCases (loc,(po,_),[c,_],brs) ->
+  | RCases (loc,None,[c,_],brs) ->
       let sp =
 	match brs with
 	  | (_,_,[PatCstr(_,(ind,_),_,_)],_)::_ -> Some ind
 	  | _ -> None in
-      (* When po disappears: switch to rtn type *)
-      PCase ((sp,Term.RegularStyle),option_app (pat_of_raw metas vars) po,
+      PCase ((sp,Term.RegularStyle),None,
              pat_of_raw metas vars c,
              Array.init (List.length brs)
 	       (pat_of_raw_branch loc metas vars sp brs))
   | r ->
       let loc = loc_of_rawconstr r in
-      user_err_loc (loc,"pattern_of_rawconstr", Pp.str "Not supported pattern")
+      user_err_loc (loc,"pattern_of_rawconstr", Pp.str "Pattern not supported")
 
 and pat_of_raw_branch loc metas vars ind brs i =
   let bri = List.filter

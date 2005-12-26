@@ -25,10 +25,6 @@ open Mod_subst
 type patvar_map = (patvar * constr) list
 val pr_patvar : patvar -> std_ppcmds
 
-(* Only for v7 parsing/printing *)
-val patvar_of_int : int -> patvar
-val patvar_of_int_v7 : int -> patvar
-
 (* Patterns *)
 
 type constr_pattern =

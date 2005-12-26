@@ -93,12 +93,9 @@ let check_ident str =
 	    | (('\134'..'\143' | '\152'..'\155'
                | '\164'..'\165' | '\168'..'\171'),_) ->
 		bad_token str
-	    | _ -> (* default to iso 8859-1 "â" *)
-		if !Options.v7 then loop_id [< 'c2; 'c3; s >]
-                else bad_token str)
+	    | _ -> 
+		bad_token str)
 	(* iso 8859-1 accentuated letters *)
-    | [< ' ('\192'..'\214' | '\216'..'\246' | '\248'..'\255'); s >] ->
-        if !Options.v7 then loop_id s else bad_token str
     | [< _ = Stream.empty >] -> ()
     | [< >] -> bad_token str
   in
@@ -170,26 +167,13 @@ let get_buff len = String.sub !buff 0 len
 
 (* The classical lexer: idents, numbers, quoted strings, comments *)
 
-let rec ident_tail len strm =
-  if !Options.v7 then
-    match strm with parser
-      | [< ' ('a'..'z' | 'A'..'Z' | '0'..'9' | ''' | '_' | '@' as c); s >] ->
-          ident_tail (store len c) s
-      (* Greek utf-8 letters [CE80-CEBF and CF80-CFBF] (CE=206; BF=191) *)
-      | [< ' ('\206' | '\207' as c1); ' ('\128'..'\191' as c2) ; s >] ->
-          ident_tail (store (store len c1) c2) s
-      (* iso 8859-1 accentuated letters *)
-      | [< ' ('\192'..'\214' | '\216'..'\246' | '\248'..'\255' as c); s >] -> 
-          ident_tail (store len c) s
-      | [< >] -> len
-  else
-    match strm with parser
-      | [< ' ('a'..'z' | 'A'..'Z' | '0'..'9' | ''' | '_' as c); s >] ->
-          ident_tail (store len c) s
-      (* Greek utf-8 letters [CE80-CEBF and CF80-CFBF] (CE=206; BF=191) *)
-      | [< ' ('\206' | '\207' as c1); ' ('\128'..'\191' as c2) ; s >] ->
-          ident_tail (store (store len c1) c2) s
-      | [< >] -> len
+let rec ident_tail len = parser
+  | [< ' ('a'..'z' | 'A'..'Z' | '0'..'9' | ''' | '_' as c); s >] ->
+      ident_tail (store len c) s
+  (* Greek utf-8 letters [CE80-CEBF and CF80-CFBF] (CE=206; BF=191) *)
+  | [< ' ('\206' | '\207' as c1); ' ('\128'..'\191' as c2) ; s >] ->
+      ident_tail (store (store len c1) c2) s
+  | [< >] -> len
 
 
 let rec number len = parser
@@ -198,21 +182,11 @@ let rec number len = parser
 
 let escape len c = store len c
 
-let rec string_v8 bp len = parser
+let rec string bp len = parser
   | [< ''"'; esc=(parser [<''"' >] -> true | [< >] -> false); s >] ->
-      if esc then string_v8 bp (store len '"') s else len
-  | [< 'c; s >] -> string_v8 bp (store len c) s 
+      if esc then string bp (store len '"') s else len
+  | [< 'c; s >] -> string bp (store len c) s 
   | [< _ = Stream.empty >] ep -> err (bp, ep) Unterminated_string
-
-let rec string_v7 bp len = parser
-  | [< ''"' >] -> len
-  | [< ''\\'; c = (parser [< ' ('"' | '\\' as c) >] -> c | [< >] -> '\\'); s >]
-     -> string_v7 bp (escape len c) s
-  | [< _ = Stream.empty >] ep -> err (bp, ep) Unterminated_string
-  | [< 'c; s >] -> string_v7 bp (store len c) s 
-
-let string bp len s =
-  if !Options.v7 then string_v7 bp len s else string_v8 bp len s
 
 (* Hook for exporting comment into xml theory files *)
 let xml_output_comment = ref (fun _ -> ())
@@ -359,45 +333,22 @@ let parse_226_tail tk = parser
 
 
 (* Parse what follows a dot *)
-let parse_after_dot bp c strm =
-  if !Options.v7 then 
-    match strm with parser
-	 | [< ' ('_' | 'a'..'z' | 'A'..'Z' as c);
-              len = ident_tail (store 0 c) >] ->
-	     ("FIELD", get_buff len)
-	 (* Greek utf-8 letters [CE80-CEBF and CF80-CFBF] (CE=206; BF=191) *)
-	 | [< ' ('\206' | '\207' as c1); ' ('\128'..'\191' as c2); 
-	   len = ident_tail (store (store 0 c1) c2) >] ->
-	     ("FIELD", get_buff len)
-         (* utf-8 mathematical symbols have format E2 xx xx [E2=226] *)
-	 | [< ''\226'; t = parse_226_tail 
-	     (progress_special '.' (Some !token_tree)) >] ep ->
-	     (match t with
-	       | TokSymbol (Some t) -> ("", t)
-	       | TokSymbol None -> err (bp, ep) Undefined_token
-	       | TokIdent t -> ("FIELD", t))
-	 (* iso 8859-1 accentuated letters *)
-	 | [< ' ('\192'..'\214' | '\216'..'\246' | '\248'..'\255' as c);
-	   len = ident_tail (store 0 c) >] ->
-	     ("FIELD", get_buff len)
-	 | [< (t,_) = process_chars bp c >] -> t
-  else
-    match strm with parser
-	 | [< ' ('a'..'z' | 'A'..'Z' | '_' as c);
-              len = ident_tail (store 0 c) >] ->
-	     ("FIELD", get_buff len)
-	 (* Greek utf-8 letters [CE80-CEBF and CF80-CFBF] (CE=206; BF=191) *)
-	 | [< ' ('\206' | '\207' as c1); ' ('\128'..'\191' as c2); 
-	   len = ident_tail (store (store 0 c1) c2) >] ->
-	     ("FIELD", get_buff len)
-         (* utf-8 mathematical symbols have format E2 xx xx [E2=226] *)
-	 | [< ''\226'; t = parse_226_tail 
-	     (progress_special '.' (Some !token_tree)) >] ep ->
-	     (match t with
-	       | TokSymbol (Some t) -> ("", t)
-	       | TokSymbol None -> err (bp, ep) Undefined_token
-	       | TokIdent t -> ("FIELD", t))
-	 | [< (t,_) = process_chars bp c >] -> t
+let parse_after_dot bp c = parser
+  | [< ' ('a'..'z' | 'A'..'Z' | '_' as c);
+    len = ident_tail (store 0 c) >] ->
+      ("FIELD", get_buff len)
+  (* Greek utf-8 letters [CE80-CEBF and CF80-CFBF] (CE=206; BF=191) *)
+  | [< ' ('\206' | '\207' as c1); ' ('\128'..'\191' as c2); 
+    len = ident_tail (store (store 0 c1) c2) >] ->
+      ("FIELD", get_buff len)
+  (* utf-8 mathematical symbols have format E2 xx xx [E2=226] *)
+  | [< ''\226'; t = parse_226_tail 
+      (progress_special '.' (Some !token_tree)) >] ep ->
+      (match t with
+	| TokSymbol (Some t) -> ("", t)
+	| TokSymbol None -> err (bp, ep) Undefined_token
+	| TokIdent t -> ("FIELD", t))
+  | [< (t,_) = process_chars bp c >] -> t
 
 
 (* Parse a token in a char stream *)
@@ -410,7 +361,6 @@ let rec next_token = parser bp
       (("METAIDENT", get_buff len), (bp,ep))
   | [< ''.' as c; t = parse_after_dot bp c >] ep ->
       comment_stop bp;
-      if !Options.v7 & t=("",".") then between_com := true;
       (t, (bp,ep))
   | [< ' ('a'..'z' | 'A'..'Z' | '_' as c);
        len = ident_tail (store 0 c) >] ep ->
@@ -433,20 +383,10 @@ let rec next_token = parser bp
 	    (try ("", find_keyword id) with Not_found -> ("IDENT", id)),
 	    (bp, ep))
   (* iso 8859-1 accentuated letters *)
-  | [< ' ('\192'..'\214' | '\216'..'\246' | '\248'..'\255' as c) ; s >] ->
-      if !Options.v7 then
-	begin
-	  match s with parser
-	      [< len = ident_tail (store 0 c) >] ep ->
-		let id = get_buff len in
-		comment_stop bp;
-		(try ("", find_keyword id) with Not_found -> ("IDENT", id)), (bp, ep)
-	end
-      else
-	begin
-	  match s with parser
-	      [< t = process_chars bp c >] -> comment_stop bp; t
-	end
+  | [< ' ('\192'..'\214' | '\216'..'\246' | '\248'..'\255' as c) ; 
+       t = process_chars bp c >] ->
+      comment_stop bp;
+      t
   | [< ' ('0'..'9' as c); len = number (store 0 c) >] ep ->
       comment_stop bp;
       (("INT", get_buff len), (bp, ep))
@@ -534,3 +474,41 @@ let tparse (p_con, p_prm) =
   else
     (parser [< '(con, prm) when con = p_con && prm = p_prm >] -> prm)
   i*)
+
+(* Terminal symbols interpretation *)
+
+let is_ident_not_keyword s =
+  match s.[0] with
+    | 'a'..'z' | 'A'..'Z' | '_' -> not (is_keyword s)
+    | _ -> false
+
+let is_number s =
+  match s.[0] with
+    | '0'..'9' -> true
+    | _ -> false
+
+let strip s =
+  let len =
+    let rec loop i len =
+      if i = String.length s then len
+      else if s.[i] == ' ' then loop (i + 1) len
+      else loop (i + 1) (len + 1)
+    in
+    loop 0 0
+  in
+  if len == String.length s then s
+  else
+    let s' = String.create len in
+    let rec loop i i' =
+      if i == String.length s then s'
+      else if s.[i] == ' ' then loop (i + 1) i'
+      else begin s'.[i'] <- s.[i]; loop (i + 1) (i' + 1) end
+    in
+    loop 0 0
+
+let terminal s =
+  let s = strip s in
+  if s = "" then failwith "empty token";
+  if is_ident_not_keyword s then ("IDENT", s)
+  else if is_number s then ("INT", s)
+  else ("", s)

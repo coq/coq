@@ -258,10 +258,12 @@ let add_inversion_lemma name env sigma t sort dep inv_op =
 (* inv_op = Inv (derives de complete inv. lemma)
  * inv_op = InvNoThining (derives de semi inversion lemma) *)
 
-let inversion_lemma_from_goal n na id sort dep_option inv_op =
+let inversion_lemma_from_goal n na (loc,id) sort dep_option inv_op =
   let pts = get_pftreestate() in
   let gl = nth_goal_of_pftreestate n pts in
-  let t = pf_get_hyp_typ gl id in
+  let t = 
+    try pf_get_hyp_typ gl id
+    with Not_found -> Pretype_errors.error_var_not_found_loc loc id in
   let env = pf_env gl and sigma = project gl in
 (* Pourquoi ??? 
   let fv = global_vars env t in

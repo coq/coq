@@ -20,7 +20,6 @@ open Declarations
 open Entries
 open Declare
 open Nametab
-open Coqast
 open Constrintern
 open Command
 open Inductive

@@ -32,7 +32,6 @@ open Refiner
 open Tacmach
 open Tactic_debug
 open Topconstr
-open Ast
 open Term
 open Termops
 open Tacexpr
@@ -46,11 +45,6 @@ open Printer
 open Inductiveops
 open Syntax_def
 open Pretyping
-
-let strip_meta id = (* For Grammar v7 compatibility *)
-  let s = string_of_id id in
-  if s.[0]='$' then id_of_string (String.sub s 1 (String.length s - 1))
-  else id
 
 let error_syntactic_metavariables_not_allowed loc =
   user_err_loc 
@@ -131,7 +125,7 @@ let make_hyps = List.map (fun (id,_,typ) -> (id, typ))
 let constr_of_id env id = 
   construct_reference (Environ.named_context env) id
 
-(* To embed several objects in Coqast.t *)
+(* To embed tactics *)
 let ((tactic_in : (interp_sign -> raw_tactic_expr) -> Dyn.t),
      (tactic_out : Dyn.t -> (interp_sign -> raw_tactic_expr))) =
   create "tactic"
@@ -160,7 +154,7 @@ let valueOut = function
   | ast ->
     anomalylabstrm "valueOut" (str "Not a Dynamic ast: ")
 
-(* To embed constr in Coqast.t *)
+(* To embed constr *)
 let constrIn t = CDynamic (dummy_loc,constr_in t)
 let constrOut = function
   | CDynamic (_,d) ->
@@ -170,32 +164,8 @@ let constrOut = function
       anomalylabstrm "constrOut" (str "Dynamic tag should be constr")
   | ast ->
     anomalylabstrm "constrOut" (str "Not a Dynamic ast")
+
 let loc = dummy_loc
-
-(* Table of interpretation functions *)
-let interp_tab =
-  (Hashtbl.create 17 : (string , interp_sign -> Coqast.t -> value) Hashtbl.t)
-
-(* Adds an interpretation function *)
-let interp_add (ast_typ,interp_fun) =
-  try
-    Hashtbl.add interp_tab ast_typ interp_fun
-  with
-      Failure _ ->
-        errorlabstrm "interp_add"
-          (str "Cannot add the interpretation function for " ++ str ast_typ ++            str " twice")
-
-(* Adds a possible existing interpretation function *)
-let overwriting_interp_add (ast_typ,interp_fun) =
-  if Hashtbl.mem interp_tab ast_typ then
-  begin
-    Hashtbl.remove interp_tab ast_typ;
-    warning ("Overwriting definition of tactic interpreter command " ^ ast_typ)
-  end;
-  Hashtbl.add interp_tab ast_typ interp_fun
-
-(* Finds the interpretation function corresponding to a given ast type *)
-let look_for_interp = Hashtbl.find interp_tab
 
 (* Globalizes the identifier *)
 
@@ -249,14 +219,12 @@ let coerce_to_inductive = function
 (* Table of "pervasives" macros tactics (e.g. auto, simpl, etc.) *)
 let atomic_mactab = ref Idmap.empty
 let add_primitive_tactic s tac =
-  (if not !Options.v7 then
-    let id = id_of_string s in
-    atomic_mactab := Idmap.add id tac !atomic_mactab)
+  let id = id_of_string s in
+  atomic_mactab := Idmap.add id tac !atomic_mactab
 
 let _ =
-  if not !Options.v7 then
-    (let nocl = {onhyps=Some[];onconcl=true; concl_occs=[]} in
-    List.iter
+  let nocl = {onhyps=Some[];onconcl=true; concl_occs=[]} in
+  List.iter
       (fun (s,t) -> add_primitive_tactic s (TacAtom(dummy_loc,t)))
       [ "red", TacReduce(Red false,nocl);
         "hnf", TacReduce(Hnf,nocl);
@@ -275,12 +243,12 @@ let _ =
         "reflexivity", TacReflexivity;
         "symmetry", TacSymmetry nocl
       ];
-    List.iter
+  List.iter
       (fun (s,t) -> add_primitive_tactic s t)
       [ "idtac",TacId "";
         "fail", TacFail(ArgArg 0,"");
         "fresh", TacArg(TacFreshId None)
-      ])
+      ]
  
 let lookup_atomic id = Idmap.find id !atomic_mactab
 let is_atomic id = Idmap.mem id !atomic_mactab
@@ -697,18 +665,18 @@ let rec intern_atomic lf ist x =
   | TacDAuto (n,p) -> TacDAuto (option_app (intern_int_or_var ist) n,p)
 
   (* Derived basic tactics *)
-  | TacSimpleInduction (h,ids) ->
-      TacSimpleInduction (intern_quantified_hypothesis ist h,ids)
-  | TacNewInduction (c,cbo,(ids,ids')) ->
+  | TacSimpleInduction h ->
+      TacSimpleInduction (intern_quantified_hypothesis ist h)
+  | TacNewInduction (c,cbo,ids) ->
       TacNewInduction (intern_induction_arg ist c,
                option_app (intern_constr_with_bindings ist) cbo,
-               (option_app (intern_intro_pattern lf ist) ids,ids'))
+               (option_app (intern_intro_pattern lf ist) ids))
   | TacSimpleDestruct h ->
       TacSimpleDestruct (intern_quantified_hypothesis ist h)
-  | TacNewDestruct (c,cbo,(ids,ids')) ->
+  | TacNewDestruct (c,cbo,ids) ->
       TacNewDestruct (intern_induction_arg ist c,
                option_app (intern_constr_with_bindings ist) cbo,
-	       (option_app (intern_intro_pattern lf ist) ids,ids'))
+	       (option_app (intern_intro_pattern lf ist) ids))
   | TacDoubleInduction (h1,h2) ->
       let h1 = intern_quantified_hypothesis ist h1 in
       let h2 = intern_quantified_hypothesis ist h2 in
@@ -757,19 +725,13 @@ let rec intern_atomic lf ist x =
       let _ = lookup_tactic opn in
       TacExtend (adjust_loc loc,opn,List.map (intern_genarg ist) l)
   | TacAlias (loc,s,l,(dir,body)) ->
-      let l = List.map (fun (id,a) -> (strip_meta id,intern_genarg ist a)) l in
+      let l = List.map (fun (id,a) -> (id,intern_genarg ist a)) l in
       try TacAlias (loc,s,l,(dir,body))
       with e -> raise (locate_error_in_file (string_of_dirpath dir) e)
 
 and intern_tactic ist tac = (snd (intern_tactic_seq ist tac) : glob_tactic_expr)
 
 and intern_tactic_seq ist = function
-  (* Traducteur v7->v8 *)
-  | TacAtom (_,TacReduce (Unfold [_,Ident (_,id)],_))
-      when string_of_id id = "INZ" & !Options.translate_syntax
-        -> ist.ltacvars, (TacId "")
-  (* Fin traducteur v7->v8 *)
-
   | TacAtom (loc,t) ->
       let lf = ref ist.ltacvars in
       let t = intern_atomic lf ist t in
@@ -833,7 +795,7 @@ and intern_tacarg strict ist = function
       (* $id can occur in Grammar tactic... *)
       let id = id_of_string s in
       if find_ltacvar id ist or Options.do_translate()
-      then Reference (ArgVar (adjust_loc loc,strip_meta id))
+      then Reference (ArgVar (adjust_loc loc,id))
       else error_syntactic_metavariables_not_allowed loc
   | TacCall (loc,f,l) ->
       TacCall (loc,
@@ -881,7 +843,7 @@ and intern_genarg ist x =
   | IdentArgType ->
       let lf = ref ([],[]) in
       in_gen globwit_ident(intern_ident lf ist (out_gen rawwit_ident x))
-  | HypArgType ->
+  | VarArgType ->
       in_gen globwit_var (intern_hyp ist (out_gen rawwit_var x))
   | RefArgType ->
       in_gen globwit_ref (intern_global_reference ist (out_gen rawwit_ref x))
@@ -892,7 +854,7 @@ and intern_genarg ist x =
   | ConstrMayEvalArgType ->
       in_gen globwit_constr_may_eval 
         (intern_constr_may_eval ist (out_gen rawwit_constr_may_eval x))
-  | QuantHypArgType ->
+  | QuantVarArgType ->
       in_gen globwit_quant_hyp
         (intern_quantified_hypothesis ist (out_gen rawwit_quant_hyp x))
   | RedExprArgType ->
@@ -1092,8 +1054,8 @@ let id_of_Identifier = variable_of_value
 (* Extract a constr from a value, if any *)
 let constr_of_VConstr = constr_of_value
 
-(* Interprets an variable *)
-let interp_var ist gl (loc,id) =
+(* Interprets a bound variable (especially an existing hypothesis) *)
+let interp_hyp ist gl (loc,id) =
   (* Look first in lfun for a value coercible to a variable *)
   try 
     let v = List.assoc id ist.lfun in
@@ -1107,9 +1069,6 @@ let interp_var ist gl (loc,id) =
   if is_variable (pf_env gl) id then id
   else
     user_err_loc (loc,"eval_variable",pr_id id ++ str " not found")
-
-(* Interprets an existing hypothesis (i.e. a declared variable) *)
-let interp_hyp = interp_var
 
 let interp_name ist = function
   | Anonymous -> Anonymous
@@ -1637,8 +1596,8 @@ and interp_genarg ist goal x =
         (interp_intro_pattern ist (out_gen globwit_intro_pattern x))
   | IdentArgType ->
       in_gen wit_ident (interp_ident ist (out_gen globwit_ident x))
-  | HypArgType ->
-      in_gen wit_var (mkVar (interp_hyp ist goal (out_gen globwit_var x)))
+  | VarArgType ->
+      in_gen wit_var (interp_hyp ist goal (out_gen globwit_var x))
   | RefArgType ->
       in_gen wit_ref (pf_interp_reference ist goal (out_gen globwit_ref x))
   | SortArgType ->
@@ -1650,7 +1609,7 @@ and interp_genarg ist goal x =
       in_gen wit_constr (pf_interp_constr ist goal (out_gen globwit_constr x))
   | ConstrMayEvalArgType ->
       in_gen wit_constr_may_eval (interp_constr_may_eval ist goal (out_gen globwit_constr_may_eval x))
-  | QuantHypArgType ->
+  | QuantVarArgType ->
       in_gen wit_quant_hyp
         (interp_declared_or_quantified_hypothesis ist goal
           (out_gen globwit_quant_hyp x))
@@ -1770,21 +1729,18 @@ and interp_atomic ist gl = function
   | TacDAuto (n,p) -> Auto.h_dauto (option_app (interp_int_or_var ist) n,p)
 
   (* Derived basic tactics *)
-  | TacSimpleInduction (h,ids) ->
-      let h =
-        if !Options.v7 then interp_declared_or_quantified_hypothesis ist gl h
-        else interp_quantified_hypothesis ist h in
-      h_simple_induction (h,ids)
-  | TacNewInduction (c,cbo,(ids,ids')) ->
+  | TacSimpleInduction h ->
+      h_simple_induction (interp_quantified_hypothesis ist h)
+  | TacNewInduction (c,cbo,ids) ->
       h_new_induction (interp_induction_arg ist gl c)
         (option_app (interp_constr_with_bindings ist gl) cbo)
-        (option_app (interp_intro_pattern ist) ids,ids')
+        (option_app (interp_intro_pattern ist) ids)
   | TacSimpleDestruct h ->
       h_simple_destruct (interp_quantified_hypothesis ist h)
-  | TacNewDestruct (c,cbo,(ids,ids')) -> 
+  | TacNewDestruct (c,cbo,ids) -> 
       h_new_destruct (interp_induction_arg ist gl c)
         (option_app (interp_constr_with_bindings ist gl) cbo)
-        (option_app (interp_intro_pattern ist) ids,ids')
+        (option_app (interp_intro_pattern ist) ids)
   | TacDoubleInduction (h1,h2) ->
       let h1 = interp_quantified_hypothesis ist h1 in
       let h2 = interp_quantified_hypothesis ist h2 in
@@ -1857,8 +1813,8 @@ and interp_atomic ist gl = function
 	VIntroPattern (out_gen globwit_intro_pattern x)
     | IdentArgType -> 
         VIntroPattern (IntroIdentifier (out_gen globwit_ident x))
-    | HypArgType ->
-	VConstr (mkVar (interp_var ist gl (out_gen globwit_var x)))
+    | VarArgType ->
+	VConstr (mkVar (interp_hyp ist gl (out_gen globwit_var x)))
     | RefArgType -> 
         VConstr (constr_of_global 
           (pf_interp_reference ist gl (out_gen globwit_ref x)))
@@ -1872,7 +1828,7 @@ and interp_atomic ist gl = function
     | TacticArgType n -> 
 	val_interp ist gl (out_gen (globwit_tactic n) x)
     | StringArgType | BoolArgType
-    | QuantHypArgType | RedExprArgType 
+    | QuantVarArgType | RedExprArgType 
     | OpenConstrArgType _ | ConstrWithBindingsArgType | BindingsArgType 
     | ExtraArgType _ | List0ArgType _ | List1ArgType _ | OptArgType _ | PairArgType _ 
 	-> error "This generic type is not supported in alias"
@@ -2155,7 +2111,7 @@ and subst_genarg subst (x:glob_generic_argument) =
   | IntroPatternArgType ->
       in_gen globwit_intro_pattern (out_gen globwit_intro_pattern x)
   | IdentArgType -> in_gen globwit_ident (out_gen globwit_ident x)
-  | HypArgType -> in_gen globwit_var (out_gen globwit_var x)
+  | VarArgType -> in_gen globwit_var (out_gen globwit_var x)
   | RefArgType ->
       in_gen globwit_ref (subst_global_reference subst 
 	(out_gen globwit_ref x))
@@ -2165,7 +2121,7 @@ and subst_genarg subst (x:glob_generic_argument) =
       in_gen globwit_constr (subst_rawconstr subst (out_gen globwit_constr x))
   | ConstrMayEvalArgType ->
       in_gen globwit_constr_may_eval (subst_raw_may_eval subst (out_gen globwit_constr_may_eval x))
-  | QuantHypArgType ->
+  | QuantVarArgType ->
       in_gen globwit_quant_hyp
         (subst_declared_or_quantified_hypothesis subst 
           (out_gen globwit_quant_hyp x))
@@ -2278,11 +2234,6 @@ let glob_tactic_env l env x =
   Options.with_option strict_check
   (intern_tactic
     { ltacvars = (l,[]); ltacrecvars = []; gsigma = Evd.empty; genv = env })
-    x
-
-let glob_tactic_env_v7 l env x = 
-  intern_tactic
-    { ltacvars = (l,[]); ltacrecvars = []; gsigma = Evd.empty; genv = env }
     x
 
 let interp_redexp env evc r = 

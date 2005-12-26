@@ -8,8 +8,6 @@
 
 (* $Id$ *)
 
-open Ast
-open Coqast
 open Equality
 open Hipattern
 open Names
@@ -51,7 +49,8 @@ let print_rewrite_hintdb bas =
      (fun (c,typ,d,t) ->
        str (if d then "rewrite -> " else "rewrite <- ") ++
        Printer.prterm c ++ str " of type " ++ Printer.prterm typ ++
-       str " then use tactic " ++ Pptactic.pr_glob_tactic t) hints)
+       str " then use tactic " ++ 
+       Pptacticnew.pr_glob_tactic (Global.env()) t) hints)
  with
   Not_found -> 
    errorlabstrm "AutoRewrite" 

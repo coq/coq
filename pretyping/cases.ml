@@ -1641,7 +1641,7 @@ let build_initial_predicate isdep allnames pred =
   in buildrec 0 pred allnames
 
 let extract_arity_signature env0 tomatchl tmsign =
-  let get_one_sign n tm {contents = (na,t)} =
+  let get_one_sign n tm (na,t) =
     match tm with
       | NotInd (bo,typ) -> 
 	  (match t with
@@ -1684,73 +1684,29 @@ let extract_arity_signature env0 tomatchl tmsign =
  * type and 1 assumption for each term not _syntactically_ in an
  * inductive type.
 
- * V7 case: determines whether the multiple case is dependent or not
- * - if its arity is made of nrealargs assumptions for each matched
- * term in an inductive type and nothing for terms not _syntactically_
- * in an inductive type, then it is non dependent
- * - if its arity is made of 1+nrealargs assumptions for each matched
- * term in an inductive type and nothing for terms not _syntactically_
- * in an inductive type, then it is dependent and needs an adjustement
- * to fulfill the criterion above that terms not in an inductive type
- * counts for 1 in the dependent case
+ * Each matched terms are independently considered dependent or not.
 
- * V8 case: each matched terms are independently considered dependent
- * or not
-
- * A type constraint but no annotation case: it is assumed non dependent
+ * A type constraint but no annotation case: it is assumed non dependent.
  *)
 
 let prepare_predicate loc typing_fun isevars env tomatchs sign tycon = function
-  (* No type annotation at all *)
-  | (None,{contents = None}) ->
+  (* No type annotation *)
+  | None ->
       (match tycon with
        | None -> None
        | Some t ->
-	 let names,pred = prepare_predicate_from_tycon loc false env isevars tomatchs t in
+	 let names,pred = 
+	   prepare_predicate_from_tycon loc false env isevars tomatchs t in
 	 Some (build_initial_predicate false names pred))
 
-  (* v8 style type annotation *)
-  | (None,{contents = Some rtntyp}) ->
-
+  (* Some type annotation *)
+  | Some rtntyp ->
       (* We extract the signature of the arity *)
       let arsign = extract_arity_signature env tomatchs sign in
       let env = List.fold_right push_rels arsign env in
       let allnames = List.rev (List.map (List.map pi1) arsign) in
       let predccl = (typing_fun (mk_tycon (new_Type ())) env rtntyp).uj_val in
       Some (build_initial_predicate true allnames predccl)
-
-  (* v7 style type annotation; set the v8 annotation by side effect *)
-  | (Some pred,x) ->
-      let loc = loc_of_rawconstr pred in
-      let dep, n, predj =
-	let isevars_copy = !isevars in
-        (* We first assume the predicate is non dependent *)
-	let ndep_arity = build_expected_arity env isevars false tomatchs in
-        try
-	  false, nb_prod ndep_arity, typing_fun (mk_tycon ndep_arity) env pred
-	with PretypeError _ | TypeError _ |
-	    Stdpp.Exc_located (_,(PretypeError _ | TypeError _)) ->
-        (* Backtrack! *)
-        isevars := isevars_copy;
-        (* We then assume the predicate is dependent *)
-	let dep_arity = build_expected_arity env isevars true tomatchs in
-	try
-	  true, nb_prod dep_arity, typing_fun (mk_tycon dep_arity) env pred
-	with PretypeError _ | TypeError _ |
-	  Stdpp.Exc_located (_,(PretypeError _ | TypeError _)) ->
-        (* Backtrack again! *)
-        isevars := isevars_copy;
-        (* Otherwise we attempt to type it without constraints, possibly *)
-        (* failing with an error message; it may also be well-typed *)
-	(* but fails to satisfy arity constraints in case_dependent *)
-        let predj = typing_fun empty_tycon env pred in
-	error_wrong_predicate_arity_loc
-	  loc env predj.uj_val ndep_arity dep_arity
-      in
-      let ln,predccl= extract_predicate_conclusion dep tomatchs predj.uj_val in
-      set_arity_signature dep n sign tomatchs pred x;
-      Some (build_initial_predicate dep ln predccl)
-
 
 (**************************************************************************)
 (* Main entry of the matching compilation                                 *)

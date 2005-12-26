@@ -43,7 +43,7 @@ val positions_of_implicits : implicits_list -> int list
 
 (* Computation of the positions of arguments automatically inferable
    for an object of the given type in the given env *)
-val compute_implicits : bool -> env -> types -> implicits_list
+val compute_implicits : env -> types -> implicits_list
 
 (*s Computation of implicits (done using the global environment). *)
 
@@ -65,7 +65,3 @@ val is_implicit_var : variable -> implicits_flags
 val implicits_of_global : global_reference -> implicits_list
 
 val implicits_flags : unit -> implicits_flags
-
-(* For translator *)
-val implicits_of_global_out : global_reference -> implicits_list
-val is_implicit_args_out : unit -> bool

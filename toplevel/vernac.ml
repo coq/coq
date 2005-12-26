@@ -15,7 +15,6 @@ open Lexer
 open Util
 open Options
 open System
-open Coqast
 open Vernacexpr
 open Vernacinterp
 open Ppvernacnew
@@ -122,8 +121,7 @@ let pre_printing = function
   | VernacSolve (i,tac,deftac) when Options.do_translate () ->
       (try
         let (_,env) = Pfedit.get_goal_context i in
-        let t = Options.with_option Options.translate_syntax
-	  (Tacinterp.glob_tactic_env_v7 [] env) tac in
+        let t = Tacinterp.glob_tactic_env [] env tac in
         let pfts = Pfedit.get_pftreestate () in
         let gls = fst (Refiner.frontier (Tacmach.proof_of_pftreestate pfts)) in
         Some (env,t,Pfedit.focus(),List.length gls)
@@ -148,9 +146,6 @@ let pr_new_syntax loc ocom =
   if !translate_file then set_formatter_translator();
   let fs = States.freeze () in
   let com = match ocom with
-    | Some (VernacV7only _) ->
-        Options.v7_only := true;
-        mt()
     | Some VernacNop -> mt()
     | Some com -> pr_vernac com
     | None -> mt() in
@@ -159,8 +154,6 @@ let pr_new_syntax loc ocom =
   else
     msgnl (hov 4 (str"New Syntax:" ++ fnl() ++ (hov 0 com)));
   States.unfreeze fs;
-  Constrintern.set_temporary_implicits_in [];
-  Constrextern.set_temporary_implicits_out [];
   Format.set_formatter_out_channel stdout
 
 let rec vernac_com interpfun (loc,com) =
@@ -203,22 +196,10 @@ let rec vernac_com interpfun (loc,com) =
         msgnl (str"Finished transaction in " ++
                  System.fmt_time_difference tstart tend)
 
-    (* To be interpreted in v7 or translator input only *)
-    | VernacV7only v ->
-        Options.v7_only := true;
-        if !Options.v7 || Options.do_translate() then interp v;
-        Options.v7_only := false
-
-    (* To be interpreted in translator output only *)
-    | VernacV8only v -> 
-        if not !Options.v7 && not (do_translate()) then
-          interp v
-
     | v -> if not !just_parsing then interpfun v
 
   in 
   try
-    Options.v7_only := false;
     if do_translate () then
       match pre_printing com with
           None ->
@@ -235,7 +216,6 @@ let rec vernac_com interpfun (loc,com) =
       interp com
   with e -> 
     Format.set_formatter_out_channel stdout;
-    Options.v7_only := false;
     raise (DuringCommandInterp (loc, e))
 
 and vernac interpfun input =

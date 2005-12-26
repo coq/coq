@@ -20,15 +20,10 @@ open Printer
 
 let pr_tactic = function
   | TacArg (Tacexp t) ->
-      if !Options.v7 then
-	Pptactic.pr_glob_tactic t (*top tactic from tacinterp*)
-      else
-	Pptacticnew.pr_glob_tactic (Global.env()) t
+      (*top tactic from tacinterp*)
+      Pptacticnew.pr_glob_tactic (Global.env()) t
   | t -> 
-      if !Options.v7 then
-	Pptactic.pr_tactic t
-      else
-	Pptacticnew.pr_tactic (Global.env()) t
+      Pptacticnew.pr_tactic (Global.env()) t
 
 let pr_rule = function
   | Prim r -> hov 0 (pr_prim_rule r)

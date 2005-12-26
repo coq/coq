@@ -9,21 +9,17 @@
 (* $Id$ *)      
 
 (*i*)
-open Ast
 open Util
 open Pp
 open Nametab
 open Names
 open Nameops
 open Libnames
-open Coqast
 open Ppextend
 open Topconstr
 open Term
 open Pattern
 (*i*)
-
-let pr_id id = Nameops.pr_id (Constrextern.v7_to_v8_id id)
 
 let sep_p = fun _ -> str"."
 let sep_v = fun _ -> str"," ++ spc()
@@ -140,6 +136,8 @@ let pr_opt_type pr = function
 let pr_opt_type_spc pr = function
   | CHole _ -> mt ()
   | t ->  str " :" ++ pr_sep_com (fun()->brk(1,2)) (pr ltop) t
+
+let pr_id = pr_id
 
 let pr_name = function
   | Anonymous -> str"_"
@@ -258,10 +256,7 @@ let rec extract_lam_binders = function
       LocalRawAssum (nal,t) :: bl, c
   | c -> [], c
     
-let pr_global vars ref =
-  (* pr_global_env vars ref *)
-  let s = string_of_qualid (Constrextern.shortest_qualid_of_v7_global vars ref) in
-  (str s)
+let pr_global vars ref = pr_global_env vars ref
 
 let split_lambda = function
   | CLambdaN (loc,[[na],t],c) -> (na,t,c)
@@ -531,7 +526,7 @@ let rec pr sep inherited a =
       else
 	p, lproj
   | CApp (_,(None,a),l) -> pr_app (pr mt) a l, lapp
-  | CCases (_,(po,rtntypopt),c,eqns) ->
+  | CCases (_,rtntypopt,c,eqns) ->
       v 0
         (hv 0 (str "match" ++ brk (1,2) ++
 	  hov 0 (
@@ -561,36 +556,6 @@ let rec pr sep inherited a =
 	hov 0 (str "else" ++ pr (fun () -> brk (1,1)) ltop b2)),
       lif
      
-  | COrderedCase (_,st,po,c,[b1;b2]) when st = IfStyle ->
-      (* On force les parenthèses autour d'un "if" sous-terme (même si le
-	 parsing est lui plus tolérant) *)
-      hv 0 (
-	hov 1 (str "if " ++ pr mt ltop c ++
-                 pr_return_type (pr mt) po) ++ spc () ++
-	hov 0 (str "then" ++ pr (fun () -> brk (1,1)) ltop b1) ++ spc () ++
-	hov 0 (str "else" ++ pr (fun () -> brk (1,1)) ltop b2)),
-      lif
-  | COrderedCase (_,st,po,c,[CLambdaN(_,[nal,_],b)]) when st = LetStyle ->
-      hv 0 (
-        str "let " ++
-	hov 0 (str "(" ++
-               prlist_with_sep sep_v (fun (_,n) -> pr_name n) nal ++
-               str ")" ++
-	       pr_return_type (pr mt) po ++ str " :=" ++
-               pr spc ltop c ++ str " in") ++
-        pr spc ltop b),
-      lletin
-
-  | COrderedCase (_,style,po,c,bl) ->
-      hv 0 (
-	str (if style=MatchStyle then "old_match " else "match ") ++ 
-	pr mt ltop c ++
-	pr_return_type (pr_dangling_with_for mt) po ++
-	str " with" ++ brk (1,0) ++
-	hov 0 (prlist
-          (fun b -> str "| ??? =>" ++ pr spc ltop b ++ fnl ()) bl) ++
-        str "end"),
-      latom
   | CHole _ -> str "_", latom
   | CEvar (_,n) -> str (Evd.string_of_existential n), latom
   | CPatVar (_,(_,p)) -> str "?" ++ pr_patvar p, latom
@@ -663,53 +628,15 @@ let rec strip_context n iscast t =
 	LocalRawDef (na,b) :: bl', c
     | _ -> anomaly "ppconstrnew: strip_context"
 
-let transf istype env iscast bl c =
-  let c' =
-    if istype then prod_constr_expr c bl
-    else abstract_constr_expr c bl in
-  if Options.do_translate() then
-    let r = 
-      Constrintern.for_grammar
-        (Constrintern.intern_gen istype Evd.empty env) c' in
-    begin try
-      (* Try to infer old case and type annotations *)
-      let _ = Pretyping.understand_tcc Evd.empty env r in 
-      (*msgerrnl (str "Typage OK");*) ()
-    with e -> (*msgerrnl (str "Warning: can't type")*) () end;
-    let c =
-      (if istype then Constrextern.extern_rawtype
-      else Constrextern.extern_rawconstr)
-      (Termops.vars_of_env env) r in
-    let n = local_binders_length bl in
-    strip_context n iscast c
-  else bl, c
-
-let pr_constr_env env c = pr lsimple (snd (transf false env false [] c))
-let pr_lconstr_env env c = pr ltop (snd (transf false env false [] c))
+let pr_constr_env env c = pr lsimple c
+let pr_lconstr_env env c = pr ltop c
 let pr_constr c = pr_constr_env (Global.env()) c
 let pr_lconstr c = pr_lconstr_env (Global.env()) c
 
 let pr_binders = pr_undelimited_binders (pr ltop)
 
-let is_Eval_key c =
-  Options.do_translate () &
-  (let f id = let s = string_of_id id in s = "Eval" in
-  let g = function
-    | Ident(_,id) -> f id
-    | Qualid (_,qid) -> let d,id = repr_qualid qid in d = empty_dirpath & f id
-  in
-  match c with
-    | CRef ref | CApp (_,(_,CRef ref),_) when g ref -> true
-    | _ -> false)
-
-let pr_protect_eval c =
-  if is_Eval_key c then h 0 (str "(" ++ pr ltop c ++ str ")") else pr ltop c
-
-let pr_lconstr_env_n env iscast bl c =
-  let bl, c = transf false env iscast bl c in
-  bl, pr_protect_eval c
-let pr_type_env_n env bl c = pr ltop (snd (transf true env false bl c))
-let pr_type c = pr ltop (snd (transf true (Global.env()) false [] c))
+let pr_lconstr_env_n env iscast bl c = bl, pr ltop c
+let pr_type c = pr ltop c
 
 let transf_pattern env c =
   if Options.do_translate() then
@@ -797,11 +724,6 @@ let rec pr_may_eval test prc prlc pr2 = function
 
 let pr_may_eval a = pr_may_eval (fun _ -> false) a
 
-let pr_rawconstr_env_no_translate env c =
-  pr lsimple (Constrextern.extern_rawconstr (Termops.vars_of_env env) c)
-let pr_lrawconstr_env_no_translate env c =
-  pr ltop (Constrextern.extern_rawconstr (Termops.vars_of_env env) c)
-
 (* Printing reference with translation *)
 
 let pr_reference r =
@@ -839,130 +761,3 @@ let pr_constr_pattern_env env c =
 let pr_constr_pattern t =
   pr lsimple
     (Constrextern.extern_pattern (Global.env()) Termops.empty_names_context t)
-
-
-(************************************************************************)
-(* Automatic standardisation of names in Arith and ZArith by translator *)
-(* Very not robust *)
-
-let is_to_rename dir id =
-  let dirs = List.map string_of_id (repr_dirpath dir) in
-  match List.rev dirs with
-  | "Coq"::"Arith"::"Between"::_ -> false
-  | "Coq"::"ZArith"::
-    ("Wf_Z"|"Zpower"|"Zlogarithm"|"Zbinary"|"Zdiv"|"Znumtheory")::_ -> false
-  | "Coq"::("Arith"|"NArith"|"ZArith")::_ -> true
-  | "Coq"::"Init"::"Peano"::_ -> true
-  | "Coq"::"Init"::"Logic"::_ when string_of_id id = "iff_trans" -> true
-  | "Coq"::"Reals"::"RIneq"::_ -> true
-  | _ -> false
-
-let is_ref_to_rename ref =
-  let sp = sp_of_global ref in
-  is_to_rename (dirpath sp) (basename sp)
-
-let get_name (ln,lp,lz,ll,lr,lr') id refbase n =
-  let id' = string_of_id n in
-  (match id' with
-    | "nat" -> (id_of_string (List.hd ln),(List.tl ln,lp,lz,ll,lr,lr'))
-    | "positive" -> (id_of_string (List.hd lp),(ln,List.tl lp,lz,ll,lr,lr'))
-    | "Z" -> (id_of_string (List.hd lz),(ln,lp,List.tl lz,ll,lr,lr'))
-    | "Prop" when List.mem (string_of_id id) ["a";"b";"c"] -> 
-	(* pour iff_trans *)
-	(id_of_string (List.hd ll),(ln,lp,lz,List.tl ll,lr,lr'))
-    | "R" when (* Noms r,r1,r2 *)
-	refbase = "Rle_refl" or
-	refbase = "Rlt_monotony_contra" or 
-	refbase = "Rmult_le_reg_l" or 
-	refbase = "Rle_monotony_contra" or 
-	refbase = "Rge_monotony" ->
-	(id_of_string (List.hd lr')),(ln,lp,lz,ll,lr,List.tl lr')
-    | "R" when (* Noms r1,r2,r3,r4 *)
-	List.mem (string_of_id id)
-	  ["x";"y";"x'";"y'";"z";"t";"n";"m";"a";"b";"c";"p";"q"] 
-	& refbase <> "sum_inequa_Rle_lt"
-	-> 
-	(id_of_string (List.hd lr),(ln,lp,lz,ll,List.tl lr,lr'))
-    | _ -> id,(ln,lp,lz,ll,lr,lr'))
-
-let get_name_constr names id refbase t = match kind_of_term t with
-  | Ind ind ->
-      let n = basename (sp_of_global (IndRef ind)) in
-      get_name names id refbase n
-  | Const sp ->
-      let n = basename (sp_of_global (ConstRef sp)) in
-      get_name names id refbase n
-  | Sort _ -> get_name names id refbase (id_of_string "Prop")
-  | _ -> id,names
-
-let names = 
-  (["n";"m";"p";"q"],["p";"q";"r";"s"],["n";"m";"p";"q"],["A";"B";"C"],
-   ["r1";"r2";"r3";"r4"],["r";"r1";"r2"])
-
-let znames refbase t =
-  let rec aux c names = match kind_of_term c with
-    | Prod (Name id as na,t,c) ->
-	let (id,names) = get_name_constr names id refbase t in
-	(na,id) :: aux c names
-    | Prod (Anonymous,t,c) ->
-	(Anonymous,id_of_string "ZZ") :: aux c names
-    | _ -> []
-  in aux t names
-
-let get_name_raw names id refbase t = match t with
-  | CRef(Ident (_,n)) -> get_name names id refbase n
-  | CSort _ -> get_name names id refbase (id_of_string "Prop")
-  | _ -> id,names
-
-let rename_bound_variables id0 t =
-  if is_to_rename (Lib.library_dp()) id0 then
-  let refbase = string_of_id id0 in
-  let rec aux c names subst = match c with
-    | CProdN (loc,bl,c) ->
-	let rec aux2 names subst = function
-	  | (nal,t)::bl ->
-	      let rec aux3 names subst = function
-		| (loc,Name id)::nal ->
-		    let (id',names) = get_name_raw names id refbase t in
-		    let (nal,names,subst) = aux3 names ((id,id')::subst) nal in
-		    (loc,Name id')::nal, names, subst
-		| x::nal -> 
-		    let (nal,names,subst) = aux3 names subst nal in
-		    x::nal,names,subst
-		| [] -> [],names,subst in
-	      let t = replace_vars_constr_expr subst t in
-	      let nal,names,subst = aux3 names subst nal in
-	      let bl,names,subst = aux2 names subst bl in
-	      (nal,t)::bl, names, subst
-	  | [] -> [],names,subst in
-	let bl,names,subst = aux2 names subst bl in
-	CProdN (loc,bl,aux c names subst)
-    | CArrow (loc,t,u) ->
-	let u = aux u names subst in
-	CArrow (loc,replace_vars_constr_expr subst t,u)
-    | _ -> replace_vars_constr_expr subst c
-  in aux t names []
-  else t
-
-let translate_binding kn n ebl =
-  let t = Retyping.get_type_of (Global.env()) Evd.empty (mkConst kn) in
-  let subst= znames (string_of_id (basename (sp_of_global (ConstRef kn)))) t in
-  try
-    let _,subst' = list_chop n subst in
-    List.map (function
-      | (x,NamedHyp id,c) -> (x,NamedHyp (List.assoc (Name id) subst'),c)
-      |  x -> x) ebl
-  with _ -> ebl
-
-let translate_with_bindings c bl =
-  match bl with
-  | ExplicitBindings l ->
-      let l = match c with
-	| RRef (_,(ConstRef kn as ref)) when is_ref_to_rename ref -> 
-	    translate_binding kn 0 l
-	| RApp (_,RRef (_,(ConstRef kn as ref)),args) when is_ref_to_rename ref
-	    -> translate_binding kn (List.length args) l
-	| _ ->
-	    l
-      in ExplicitBindings l
-    | x -> x

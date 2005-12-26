@@ -26,9 +26,6 @@ val dont_load_proofs : bool ref
 
 val raw_print : bool ref
 
-val v7 : bool ref
-val v7_only : bool ref
-
 val translate : bool ref
 val make_translate : bool -> unit
 val do_translate : unit -> bool

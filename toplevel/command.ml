@@ -160,7 +160,6 @@ let declare_definition ident (local,dok) bl red_option c typopt hook =
 
 let syntax_definition ident c local onlyparse =
   let c = snd (interp_aconstr [] [] c) in
-  let onlyparse = !Options.v7_only or onlyparse in
   Syntax_def.declare_syntactic_definition local ident onlyparse c
 
 (* 2| Variable/Hypothesis/Parameter/Axiom declarations *)
@@ -305,7 +304,7 @@ let interp_mutual lparams lnamearconstrs finite =
 	 let argsc = compute_arguments_scope fullarity in
 	 let ind_impls' = 
 	   if Impargs.is_implicit_args() then
-	     let impl = Impargs.compute_implicits false env_params fullarity in
+	     let impl = Impargs.compute_implicits env_params fullarity in
 	     let paramimpl,_ = list_chop nparamassums impl in
 	     let l = List.fold_right
 	       (fun imp l -> if Impargs.is_status_implicit imp then
@@ -468,7 +467,7 @@ let build_recursive (lnameargsardef:(fixpoint_expr *decl_notation) list)
         let arity = interp_type sigma env0 arityc in
 	let impl = 
 	  if Impargs.is_implicit_args()
-	  then Impargs.compute_implicits false env0 arity
+	  then Impargs.compute_implicits env0 arity
 	  else [] in
 	let impls' =(recname,([],impl,compute_arguments_scope arity))::impls in
         (Environ.push_named (recname,None,arity) env, impls', arity::arl))

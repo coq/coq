@@ -24,9 +24,6 @@ open Notation
 (*i*)
 
 (* v7->v8 translation *)
-val id_of_v7_string : string -> identifier
-val v7_to_v8_id : identifier -> identifier (* v7->v8 translation *)
-val shortest_qualid_of_v7_global : Idset.t -> global_reference -> qualid
 val check_same_type : constr_expr -> constr_expr -> unit
 
 (* Translation of pattern, cases pattern, rawterm and term into syntax
@@ -72,7 +69,3 @@ val without_symbols : ('a -> 'b) -> 'a -> 'b
 
 (* This prints metas as anonymous holes *)
 val with_meta_as_hole : ('a -> 'b) -> 'a -> 'b
-
-(* For v8 translation *)
-val set_temporary_implicits_out :
-  (identifier * Impargs.implicits_list) list -> unit
