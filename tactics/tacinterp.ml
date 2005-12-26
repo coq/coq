@@ -854,7 +854,7 @@ and intern_genarg ist x =
   | ConstrMayEvalArgType ->
       in_gen globwit_constr_may_eval 
         (intern_constr_may_eval ist (out_gen rawwit_constr_may_eval x))
-  | QuantVarArgType ->
+  | QuantHypArgType ->
       in_gen globwit_quant_hyp
         (intern_quantified_hypothesis ist (out_gen rawwit_quant_hyp x))
   | RedExprArgType ->
@@ -1609,7 +1609,7 @@ and interp_genarg ist goal x =
       in_gen wit_constr (pf_interp_constr ist goal (out_gen globwit_constr x))
   | ConstrMayEvalArgType ->
       in_gen wit_constr_may_eval (interp_constr_may_eval ist goal (out_gen globwit_constr_may_eval x))
-  | QuantVarArgType ->
+  | QuantHypArgType ->
       in_gen wit_quant_hyp
         (interp_declared_or_quantified_hypothesis ist goal
           (out_gen globwit_quant_hyp x))
@@ -1828,7 +1828,7 @@ and interp_atomic ist gl = function
     | TacticArgType n -> 
 	val_interp ist gl (out_gen (globwit_tactic n) x)
     | StringArgType | BoolArgType
-    | QuantVarArgType | RedExprArgType 
+    | QuantHypArgType | RedExprArgType 
     | OpenConstrArgType _ | ConstrWithBindingsArgType | BindingsArgType 
     | ExtraArgType _ | List0ArgType _ | List1ArgType _ | OptArgType _ | PairArgType _ 
 	-> error "This generic type is not supported in alias"
@@ -2121,7 +2121,7 @@ and subst_genarg subst (x:glob_generic_argument) =
       in_gen globwit_constr (subst_rawconstr subst (out_gen globwit_constr x))
   | ConstrMayEvalArgType ->
       in_gen globwit_constr_may_eval (subst_raw_may_eval subst (out_gen globwit_constr_may_eval x))
-  | QuantVarArgType ->
+  | QuantHypArgType ->
       in_gen globwit_quant_hyp
         (subst_declared_or_quantified_hypothesis subst 
           (out_gen globwit_quant_hyp x))

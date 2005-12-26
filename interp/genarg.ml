@@ -32,7 +32,7 @@ type argument_type =
   | SortArgType
   | ConstrArgType
   | ConstrMayEvalArgType
-  | QuantVarArgType
+  | QuantHypArgType
   | TacticArgType of int
   | OpenConstrArgType of bool
   | ConstrWithBindingsArgType
@@ -124,9 +124,9 @@ let rawwit_ref = RefArgType
 let globwit_ref = RefArgType
 let wit_ref = RefArgType
 
-let rawwit_quant_hyp = QuantVarArgType
-let globwit_quant_hyp = QuantVarArgType
-let wit_quant_hyp = QuantVarArgType
+let rawwit_quant_hyp = QuantHypArgType
+let globwit_quant_hyp = QuantHypArgType
+let wit_quant_hyp = QuantHypArgType
 
 let rawwit_sort = SortArgType
 let globwit_sort = SortArgType

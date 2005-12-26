@@ -173,7 +173,7 @@ let rec mlexpr_of_argtype loc = function
   | Genarg.IdentArgType -> <:expr< Genarg.IdentArgType >>
   | Genarg.VarArgType -> <:expr< Genarg.VarArgType >>
   | Genarg.StringArgType -> <:expr< Genarg.StringArgType >>
-  | Genarg.QuantVarArgType -> <:expr< Genarg.QuantVarArgType >>
+  | Genarg.QuantHypArgType -> <:expr< Genarg.QuantHypArgType >>
   | Genarg.OpenConstrArgType b -> <:expr< Genarg.OpenConstrArgType $mlexpr_of_bool b$ >>
   | Genarg.ConstrWithBindingsArgType -> <:expr< Genarg.ConstrWithBindingsArgType >>
   | Genarg.BindingsArgType -> <:expr< Genarg.BindingsArgType >>

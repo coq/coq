@@ -29,7 +29,7 @@ let rec make_rawwit loc = function
   | SortArgType -> <:expr< Genarg.rawwit_sort >>
   | ConstrArgType -> <:expr< Genarg.rawwit_constr >>
   | ConstrMayEvalArgType -> <:expr< Genarg.rawwit_constr_may_eval >>
-  | QuantVarArgType -> <:expr< Genarg.rawwit_quant_hyp >>
+  | QuantHypArgType -> <:expr< Genarg.rawwit_quant_hyp >>
   | TacticArgType n -> <:expr< Genarg.rawwit_tactic $mlexpr_of_int n$ >>
   | RedExprArgType -> <:expr< Genarg.rawwit_red_expr >>
   | OpenConstrArgType b -> <:expr< Genarg.rawwit_open_constr_gen $mlexpr_of_bool b$ >>
@@ -52,7 +52,7 @@ let rec make_globwit loc = function
   | IdentArgType -> <:expr< Genarg.globwit_ident >>
   | VarArgType -> <:expr< Genarg.globwit_var >>
   | RefArgType -> <:expr< Genarg.globwit_ref >>
-  | QuantVarArgType -> <:expr< Genarg.globwit_quant_hyp >>
+  | QuantHypArgType -> <:expr< Genarg.globwit_quant_hyp >>
   | SortArgType -> <:expr< Genarg.globwit_sort >>
   | ConstrArgType -> <:expr< Genarg.globwit_constr >>
   | ConstrMayEvalArgType -> <:expr< Genarg.globwit_constr_may_eval >>
@@ -78,7 +78,7 @@ let rec make_wit loc = function
   | IdentArgType -> <:expr< Genarg.wit_ident >>
   | VarArgType -> <:expr< Genarg.wit_var >>
   | RefArgType -> <:expr< Genarg.wit_ref >>
-  | QuantVarArgType -> <:expr< Genarg.wit_quant_hyp >>
+  | QuantHypArgType -> <:expr< Genarg.wit_quant_hyp >>
   | SortArgType -> <:expr< Genarg.wit_sort >>
   | ConstrArgType -> <:expr< Genarg.wit_constr >>
   | ConstrMayEvalArgType -> <:expr< Genarg.wit_constr_may_eval >>

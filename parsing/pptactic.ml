@@ -141,7 +141,7 @@ let rec pr_raw_generic prc prlc prtac prref x =
   | ConstrMayEvalArgType ->
       pr_arg (pr_may_eval prc prlc prref)
         (out_gen rawwit_constr_may_eval x)
-  | QuantVarArgType ->
+  | QuantHypArgType ->
       pr_arg pr_quantified_hypothesis (out_gen rawwit_quant_hyp x)
   | RedExprArgType ->
       pr_arg (pr_red_expr (prc,prlc,prref)) (out_gen rawwit_red_expr x)
@@ -184,7 +184,7 @@ let rec pr_glob_generic prc prlc prtac x =
   | ConstrMayEvalArgType ->
       pr_arg (pr_may_eval prc prlc
         (pr_or_var (pr_and_short_name pr_evaluable_reference))) (out_gen globwit_constr_may_eval x)
-  | QuantVarArgType ->
+  | QuantHypArgType ->
       pr_arg pr_quantified_hypothesis (out_gen globwit_quant_hyp x)
   | RedExprArgType ->
       pr_arg (pr_red_expr 
@@ -229,7 +229,7 @@ let rec pr_generic prc prlc prtac x =
   | ConstrArgType -> pr_arg prc (out_gen wit_constr x)
   | ConstrMayEvalArgType ->
       pr_arg prc (out_gen wit_constr_may_eval x)
-  | QuantVarArgType ->
+  | QuantHypArgType ->
       pr_arg pr_quantified_hypothesis (out_gen wit_quant_hyp x)
   | RedExprArgType ->
       pr_arg (pr_red_expr (prc,prlc,pr_evaluable_reference)) 

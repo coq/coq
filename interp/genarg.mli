@@ -71,7 +71,7 @@ VarArgType                     identifier               constr
 RefArgType                     reference                global_reference
 ConstrArgType                  constr_expr              constr
 ConstrMayEvalArgType           constr_expr may_eval     constr
-QuantVarArgType                quantified_hypothesis    quantified_hypothesis
+QuantHypArgType                quantified_hypothesis    quantified_hypothesis
 TacticArgType                  raw_tactic_expr          tactic
 OpenConstrArgType              constr_expr              open_constr
 ConstrBindingsArgType      constr_expr with_bindings constr with_bindings
@@ -237,7 +237,7 @@ type argument_type =
   | SortArgType
   | ConstrArgType
   | ConstrMayEvalArgType
-  | QuantVarArgType
+  | QuantHypArgType
   | TacticArgType of int
   | OpenConstrArgType of bool
   | ConstrWithBindingsArgType
