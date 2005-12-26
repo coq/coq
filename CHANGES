@@ -3,7 +3,7 @@ Changes from V8.0
 
 Syntax
 
-- Removal of old syntax and translation support 
+- No more support for version 7 syntax and for translation to version 8 syntax.
 
 Environment variables
 
@@ -79,6 +79,7 @@ Library
   compatibility (useless hypothesys of Zgt_square_simpl and
   Zlt_square_simpl removed; fixed names mentioning letter O instead of
   digit 0; weaken premises in Z_lt_induction)
+- Change of the internal names of lemmas in OmegaLemmas
 
 Tools
 
