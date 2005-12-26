@@ -19,8 +19,8 @@
 
 open Eterm
 
-TACTIC EXTEND Eterm
-  [ "Eterm" ] -> [ 
+TACTIC EXTEND eterm
+  [ "eterm" ] -> [ 
     (fun gl ->
        let evm = Tacmach.project gl and t = Tacmach.pf_concl gl in
          Eterm.etermtac (evm, t) gl) ]

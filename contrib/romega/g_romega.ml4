@@ -10,6 +10,6 @@
 
 open Refl_omega
 
-TACTIC EXTEND ROmega
-  [ "ROmega" ] -> [ total_reflexive_omega_tactic ]
+TACTIC EXTEND romelga
+  [ "romega" ] -> [ total_reflexive_omega_tactic ]
 END

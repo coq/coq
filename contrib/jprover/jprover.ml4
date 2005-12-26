@@ -542,20 +542,9 @@ let jpn n gls =
   TCL.tclTHEN (TCL.tclTRY T.red_in_concl)
               (TCL.tclTHEN (unfail_gen (List.map TR.mkVar ls))
                          (jp n)) gls
-(*
-let dyn_jpn l gls =
-  match l with
-   | [PT.Integer n] -> jpn n
-   | _ -> jp_error "Impossible!!!"
 
-
-let h_jp = TM.hide_tactic "Jp" dyn_jp
-
-let h_jpn = TM.hide_tactic "Jpn" dyn_jpn
-*)
-
-TACTIC EXTEND Jprover
-  [ "Jp" natural_opt(n) ] -> [ jpn n ]
+TACTIC EXTEND jprover
+  [ "jp" natural_opt(n) ] -> [ jpn n ]
 END
 
 (*

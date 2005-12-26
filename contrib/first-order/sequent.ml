@@ -289,9 +289,9 @@ let print_cmap map=
   let print_entry c l s=
     let xc=Constrextern.extern_constr false (Global.env ()) c in
       str "| " ++ 
-      Util.prlist (Ppconstr.pr_global Idset.empty) l ++ 
+      Util.prlist Printer.pr_global l ++ 
       str " : " ++
-      Ppconstr.pr_constr xc ++ 
+      Ppconstrnew.pr_constr xc ++ 
       cut () ++ 
       s in
     msgnl (v 0 

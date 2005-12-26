@@ -15,10 +15,7 @@ open Pcoq
 open Genarg
 open Pp
 
-let pr_mlname _ _ _ s =
-  spc () ++
-  (if !Options.v7 && not (Options.do_translate()) then qs s
-  else Pptacticnew.qsnew s)
+let pr_mlname _ _ _ s = spc () ++ Pptacticnew.qsnew s
 
 ARGUMENT EXTEND mlname
   TYPED AS string
@@ -36,21 +33,6 @@ VERNAC ARGUMENT EXTEND language
 | [ "Scheme" ] -> [ Scheme ]
 | [ "Toplevel" ] -> [ Toplevel ]
 END
-
-(* Temporary for translator *)
-if !Options.v7 then
-  let pr_language _ _ _ = function
-    | Ocaml -> str " Ocaml"
-    | Haskell -> str " Haskell"
-    | Scheme -> str " Scheme"
-    | Toplevel -> str " Toplevel"
-  in
-  let globwit_language = Obj.magic rawwit_language in
-  let wit_language = Obj.magic rawwit_language in
-  Pptactic.declare_extra_genarg_pprule true
-    (rawwit_language, pr_language)
-    (globwit_language, pr_language)
-    (wit_language, pr_language);
 
 (* Extraction commands *)
 

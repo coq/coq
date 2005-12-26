@@ -772,8 +772,8 @@ let invfun_verif c l dorew gl =
    else error "wrong number of arguments for the function"
 
 
-TACTIC EXTEND FunctionalInduction
-  [ "Functional" "Induction" constr(c)  ne_constr_list(l) ] 
+TACTIC EXTEND functional_induction
+  [ "functional" "induction" constr(c)  ne_constr_list(l) ] 
      -> [ invfun_verif c l true ]
 END
 

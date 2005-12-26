@@ -198,7 +198,7 @@ let protect_tac =
   Tactics.reduct_option (protect_red,DEFAULTcast) None ;;
 
 let protect_tac_in id =
-  Tactics.reduct_option (protect_red,DEFAULTcast) (Some(id,[],(InHyp, ref None)));;
+  Tactics.reduct_option (protect_red,DEFAULTcast) (Some(id,[],InHyp));;
 
 
 TACTIC EXTEND protect_fv

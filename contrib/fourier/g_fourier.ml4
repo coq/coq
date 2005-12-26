@@ -12,6 +12,6 @@
 
 open FourierR
 
-TACTIC EXTEND Fourier
-  [ "FourierZ" (* constr_list(l) *) ] -> [ fourier (* l *) ]
+TACTIC EXTEND fourier
+  [ "fourierz" ] -> [ fourier ]
 END

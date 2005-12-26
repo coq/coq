@@ -16,14 +16,14 @@ open Tacticals
 
 (* Tactic registration *)
       
-TACTIC EXTEND CC
- [ "Congruence" ] -> [ tclORELSE 
+TACTIC EXTEND cc
+ [ "congruence" ] -> [ tclORELSE 
 			 (tclTHEN (tclREPEAT introf) (cc_tactic [])) 
 			 cc_fail ]
 END
       
-TACTIC EXTEND CCwith
- [ "Congruence" "with" ne_constr_list(l) ] -> [ tclORELSE 
+TACTIC EXTEND cc_with
+ [ "congruence" "with" ne_constr_list(l) ] -> [ tclORELSE 
 			 (tclTHEN (tclREPEAT introf) (cc_tactic l)) 
 			 cc_fail]
 END

@@ -533,8 +533,8 @@ let (value_f:constr -> global_reference -> constr) =
       RLambda
       	(d0, Name x_id, RDynamic(d0, constr_in a),
 	 RCases
-	   (d0,(None,ref None),
-	   [RApp(d0, RRef(d0,fterm), [RVar(d0, x_id)]),ref (Anonymous,None)],
+	   (d0,None,
+	   [RApp(d0, RRef(d0,fterm), [RVar(d0, x_id)]),(Anonymous,None)],
 	    [d0, [v_id], [PatCstr(d0,(ind_of_ref 
 					(Lazy.force coq_sig_ref),1),
 				  [PatVar(d0, Name v_id);

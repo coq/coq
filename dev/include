@@ -4,10 +4,6 @@
 #cd ".";;
 #use "base_include";;
 
-#install_printer  (* ast *)  prast;;
-#install_printer  (* pat *)  prastpat;;
-#install_printer  (* patlist *)  prastpatl;;
-
 #install_printer  (* pattern *) pppattern;;
 #install_printer  (* rawconstr *) pprawterm;;
 

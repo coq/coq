@@ -19,6 +19,6 @@
 
 open Coq_omega
 
-TACTIC EXTEND Omega
-  [ "Omega" ] -> [ omega_solver ]
+TACTIC EXTEND omega
+  [ "omega" ] -> [ omega_solver ]
 END

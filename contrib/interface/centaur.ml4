@@ -632,17 +632,17 @@ let pcoq_hook = {
 }
 
 
-TACTIC EXTEND Pbp
-| [ "Pbp" ident_opt(idopt) natural_list(nl) ] -> 
+TACTIC EXTEND pbp
+| [ "pbp" ident_opt(idopt) natural_list(nl) ] -> 
     [ if_pcoq pbp_tac_pcoq idopt nl ]
 END
 
-TACTIC EXTEND CtDebugTac
-| [ "DebugTac" tactic(t) ] -> [ if_pcoq debug_tac2_pcoq (fst t) ]
+TACTIC EXTEND ct_debugtac
+| [ "debugtac" tactic(t) ] -> [ if_pcoq debug_tac2_pcoq (fst t) ]
 END
 
-TACTIC EXTEND CtDebugTac2
-| [ "DebugTac2" tactic(t) ] -> [ if_pcoq debug_tac2_pcoq (fst t) ]
+TACTIC EXTEND ct_debugtac2
+| [ "debugtac2" tactic(t) ] -> [ if_pcoq debug_tac2_pcoq (fst t) ]
 END
 
 

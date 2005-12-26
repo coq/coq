@@ -13,8 +13,8 @@
 open Quote
 open Ring
 
-TACTIC EXTEND Ring
-  [ "Ring" constr_list(l) ] -> [ polynom l ]
+TACTIC EXTEND ring
+  [ "ring" constr_list(l) ] -> [ polynom l ]
 END
 
 (* The vernac commands "Add Ring" and co *)

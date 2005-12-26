@@ -10,7 +10,7 @@
 
 (*i camlp4deps: "parsing/grammar.cma"  i*)
 
-TACTIC EXTEND Rtauto
-  [ "Rtauto" ] -> [ Refl_tauto.rtauto_tac ]
+TACTIC EXTEND rtauto
+  [ "rtauto" ] -> [ Refl_tauto.rtauto_tac ]
 END
 

@@ -11,9 +11,6 @@ install_printer Top_printers.prkn
 install_printer Top_printers.prcon
 install_printer Top_printers.prsp
 install_printer Top_printers.prqualid
-install_printer Top_printers.prast
-install_printer Top_printers.prastpat
-install_printer Top_printers.prastpatl
 install_printer Top_printers.ppbigint
 
 install_printer Top_printers.pppattern

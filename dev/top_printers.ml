@@ -10,7 +10,6 @@
 
 open System
 open Pp
-open Ast
 open Names
 open Libnames
 open Nameops
@@ -53,11 +52,6 @@ let ppfconstr c = ppterm (Closure.term_of_fconstr c)
 let ppbigint n = pp (Bigint.pr_bigint n);;
 
 let pP s = pp (hov 0 s)
-
-let prast c = pp(print_ast c)
-
-let prastpat c = pp(print_astpat c)
-let prastpatl c = pp(print_astlpat c)
 
 let safe_prglobal = function 
   | ConstRef kn -> pp (str "CONSTREF(" ++ pr_con kn ++ str ")")
@@ -107,7 +101,7 @@ let ppenv e = pp
   (str "[" ++ pr_named_context_of e ++ str "]" ++ spc() ++
    str "[" ++ pr_rel_context e (rel_context e) ++ str "]")
 
-let pptac = (fun x -> pp(Pptactic.pr_glob_tactic x))
+let pptac = (fun x -> pp(Pptacticnew.pr_glob_tactic (Global.env()) x))
 
 let pr_obj obj = Format.print_string (Libobject.object_tag obj)
 

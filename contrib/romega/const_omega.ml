@@ -69,7 +69,7 @@ let logic_dir = ["Coq";"Logic";"Decidable"]
 let coq_modules =
   Coqlib.init_modules @ [logic_dir] @ Coqlib.arith_modules @ Coqlib.zarith_base_modules
     @ [["Coq"; "omega"; "OmegaLemmas"]]
-    @ [["Coq"; "Lists"; (if !Options.v7 then "PolyList" else "List")]]
+    @ [["Coq"; "Lists"; "List"]]
     @ [module_refl_path]
 
 

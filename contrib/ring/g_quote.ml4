@@ -12,7 +12,7 @@
 
 open Quote
 
-TACTIC EXTEND Quote
-  [ "Quote" ident(f) ] -> [ quote f [] ]
-| [ "Quote" ident(f) "[" ne_ident_list(lc) "]"] -> [ quote f lc ]
+TACTIC EXTEND quote
+  [ "quote" ident(f) ] -> [ quote f [] ]
+| [ "quote" ident(f) "[" ne_ident_list(lc) "]"] -> [ quote f lc ]
 END

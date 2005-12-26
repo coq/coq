@@ -492,10 +492,10 @@ Ltac elim_eq_pos t1 t2 :=
    avec son théorème *)
 
 Theorem relation_ind2 :
- forall (P : Datatypes.comparison -> Prop) (b : Datatypes.comparison),
- (b = Datatypes.Eq -> P Datatypes.Eq) ->
- (b = Datatypes.Lt -> P Datatypes.Lt) ->
- (b = Datatypes.Gt -> P Datatypes.Gt) -> P b.
+ forall (P : comparison -> Prop) (b : comparison),
+ (b = Eq -> P Eq) ->
+ (b = Lt -> P Lt) ->
+ (b = Gt -> P Gt) -> P b.
 
 simple induction b; auto.
 Qed.
@@ -841,31 +841,25 @@ Qed.
 (* \subsubsection{La tactique pour prouver la stabilité} *)
 
 Ltac loop t :=
-  match constr:t with
-  | (?X1 = ?X2) => 
-                    (* Global *)
-                    loop X1 || loop X2
+  match t with
+  (* Global *)
+  | (?X1 = ?X2) => loop X1 || loop X2
   | (_ -> ?X1) => loop X1
-  | (interp_hyps _ _ ?X1) =>
-      
   (* Interpretations *)
-  loop X1
+  | (interp_hyps _ _ ?X1) => loop X1
   | (interp_list_hyps _ _ ?X1) => loop X1
   | (interp_proposition _ _ ?X1) => loop X1
   | (interp_term _ ?X1) => loop X1
-  | (EqTerm ?X1 ?X2) =>
-      
-       (* Propositions *)
-       loop X1 || loop X2
+  (* Propositions *)
+  | (EqTerm ?X1 ?X2) => loop X1 || loop X2
   | (LeqTerm ?X1 ?X2) => loop X1 || loop X2
-  | (?X1 + ?X2)%term => 
-                         (* Termes *)
-                         loop X1 || loop X2
+  (* Termes *)
+  | (?X1 + ?X2)%term => loop X1 || loop X2
   | (?X1 - ?X2)%term => loop X1 || loop X2
   | (?X1 * ?X2)%term => loop X1 || loop X2
   | (- ?X1)%term => loop X1
-  | (Tint ?X1) =>
-      loop X1
+  | (Tint ?X1) => loop X1
+  (* Eliminations *)
   | match ?X1 with
     | EqTerm x x0 => _
     | LeqTerm x x0 => _
@@ -881,8 +875,6 @@ Ltac loop t :=
     | Timp x x0 => _
     | Tprop x => _
     end =>
-      
-       (* Eliminations *)
        case X1;
        [ intro; intro
        | intro; intro
@@ -909,9 +901,9 @@ Ltac loop t :=
        [ intro | intro; intro | intro; intro | intro; intro | intro | intro ];
        auto; Simplify
   | match ?X1 ?= ?X2 with
-    | Datatypes.Eq => _
-    | Datatypes.Lt => _
-    | Datatypes.Gt => _
+    | Eq => _
+    | Lt => _
+    | Gt => _
     end =>
       elim_Zcompare X1 X2; intro; auto; Simplify
   | match ?X1 with
@@ -1578,9 +1570,9 @@ Definition not_exact_divide (k1 k2 : Z) (body : term)
       with
       | true =>
           match k2 ?= 0 with
-          | Datatypes.Gt =>
+          | Gt =>
               match k1 ?= k2 with
-              | Datatypes.Gt => absurd
+              | Gt => absurd
               | _ => l
               end
           | _ => l
@@ -1613,7 +1605,7 @@ Definition contradiction (t i j : nat) (l : hyps) :=
       | LeqTerm (Tint Z0) b2 =>
           match fusion_cancel t (b1 + b2)%term with
           | Tint k => match 0 ?= k with
-                      | Datatypes.Gt => absurd
+                      | Gt => absurd
                       | _ => l
                       end
           | _ => l
@@ -1749,7 +1741,7 @@ Definition sum (k1 k2 : Z) (trace : list t_fusion)
           EqTerm (Tint 0) (fusion trace (b1 * Tint k1 + b2 * Tint k2)%term)
       | LeqTerm (Tint Z0) b2 =>
           match k2 ?= 0 with
-          | Datatypes.Gt =>
+          | Gt =>
               LeqTerm (Tint 0)
                 (fusion trace (b1 * Tint k1 + b2 * Tint k2)%term)
           | _ => TrueTerm
@@ -1758,14 +1750,14 @@ Definition sum (k1 k2 : Z) (trace : list t_fusion)
       end
   | LeqTerm (Tint Z0) b1 =>
       match k1 ?= 0 with
-      | Datatypes.Gt =>
+      | Gt =>
           match prop2 with
           | EqTerm (Tint Z0) b2 =>
               LeqTerm (Tint 0)
                 (fusion trace (b1 * Tint k1 + b2 * Tint k2)%term)
           | LeqTerm (Tint Z0) b2 =>
               match k2 ?= 0 with
-              | Datatypes.Gt =>
+              | Gt =>
                   LeqTerm (Tint 0)
                     (fusion trace (b1 * Tint k1 + b2 * Tint k2)%term)
               | _ => TrueTerm
@@ -1808,7 +1800,7 @@ intros a b c d; case a; case b; case c; case d; unfold Zle in |- *;
  simpl in |- *; auto. 
 Qed.
 
-Theorem sum4 : forall k : Z, (k ?= 0) = Datatypes.Gt -> 0 <= k.
+Theorem sum4 : forall k : Z, (k ?= 0) = Gt -> 0 <= k.
 
 intro; case k; unfold Zle in |- *; simpl in |- *; auto; intros; discriminate.  
 Qed.
@@ -1886,9 +1878,9 @@ Definition divide_and_approx (k1 k2 : Z) (body : term)
       with
       | true =>
           match k1 ?= 0 with
-          | Datatypes.Gt =>
+          | Gt =>
               match k1 ?= k2 with
-              | Datatypes.Gt => LeqTerm (Tint 0) body
+              | Gt => LeqTerm (Tint 0) body
               | _ => prop
               end
           | _ => prop

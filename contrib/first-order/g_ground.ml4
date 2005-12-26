@@ -81,23 +81,16 @@ let normalize_evaluables=
 	   unfold_in_hyp (Lazy.force defined_connectives) 
 	   (Tacexpr.InHypType id)) *)
 
-TACTIC EXTEND Firstorder
-    [ "Firstorder" tactic_opt(t) "with" ne_reference_list(l) ] -> 
+TACTIC EXTEND firstorder
+    [ "firstorder" tactic_opt(t) "with" ne_reference_list(l) ] -> 
       [ gen_ground_tac true (option_app eval_tactic t) (Ids l) ]
-|   [ "Firstorder" tactic_opt(t) "using" ne_preident_list(l) ] -> 
+|   [ "firstorder" tactic_opt(t) "using" ne_preident_list(l) ] -> 
       [ gen_ground_tac true (option_app eval_tactic t) (Bases l) ]
-|   [ "Firstorder" tactic_opt(t) ] -> 
+|   [ "firstorder" tactic_opt(t) ] -> 
       [ gen_ground_tac true (option_app eval_tactic t) Void ]
 END
 
-(* Obsolete since V8.0
-TACTIC EXTEND GTauto   
-  [ "GTauto" ] ->
-     [ gen_ground_tac false (Some fail_solver) Void ]   
-END
-*)
-
-TACTIC EXTEND GIntuition
-  [ "GIntuition" tactic_opt(t) ] ->
+TACTIC EXTEND gintuition
+  [ "gintuition" tactic_opt(t) ] ->
      [ gen_ground_tac false (option_app eval_tactic t) Void ]
 END

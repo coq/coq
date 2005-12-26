@@ -184,7 +184,7 @@ let field_term l g =
 
 (* Declaration of Field *)
 
-TACTIC EXTEND Field
-| [ "Field" ] -> [ field ]
-| [ "Field" ne_constr_list(l) ] -> [ field_term l ]
+TACTIC EXTEND field
+| [ "field" ] -> [ field ]
+| [ "field" ne_constr_list(l) ] -> [ field_term l ]
 END

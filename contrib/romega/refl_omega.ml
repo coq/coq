@@ -1308,7 +1308,6 @@ let resolution env full_reified_goal systems_list =
   Tactics.apply (Lazy.force coq_I)
 
 let total_reflexive_omega_tactic gl = 
-  if !Options.v7 then Util.error "ROmega does not work in v7 mode";
   Coqlib.check_required_library ["Coq";"romega";"ROmega"];
   try
   let env = new_environment () in

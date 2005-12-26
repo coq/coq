@@ -19,7 +19,6 @@ open Util
 open Pp
 open Reduction
 open Proof_type
-open Ast
 open Names
 open Nameops
 open Term

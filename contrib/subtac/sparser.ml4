@@ -83,9 +83,7 @@ end
 
 open Subtac
 open Util
-open Coqast
 
-if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: subtac_spec subtac_term subtac_wf_proof_type;
 
@@ -231,7 +229,6 @@ GEXTEND Gram
     ]
   ;
   END
-else (* Developped with Coq 8.0 *) ()
 
 type type_loc_argtype = (type_loc, constr_expr, Tacexpr.raw_tactic_expr) Genarg.abstract_argument_type
 type term_loc_argtype = (term_loc, constr_expr, Tacexpr.raw_tactic_expr) Genarg.abstract_argument_type

@@ -3,7 +3,6 @@
 open String;;
 open Char;;
 open Util;;
-open Ast;;
 open Names;;
 open Ascent;;
 open Genarg;;
@@ -63,10 +62,6 @@ let coercion_description t = !coercion_description_holder t;;
 
 let set_coercion_description f =
  coercion_description_holder:=f; ();;
-
-let string_of_node_loc the_node =
-  match unloc (loc the_node) with
-      (a,b) -> "(" ^ (string_of_int a) ^ ", " ^ (string_of_int b) ^ ")";;
 
 let xlate_error s = failwith ("Translation error: " ^ s);;
 
