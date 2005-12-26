@@ -251,7 +251,7 @@ let rec sort_list = function
 let mk_dad_meta n = CPatVar (zz,(true,Nameops.make_ident "DAD" (Some n)));;
 let mk_rewrite lr ast =
   let b = in_gen rawwit_bool lr in
-  let cb = in_gen rawwit_constr_with_bindings ((*Ctast.ct_to_ast*) ast,NoBindings) in
+  let cb = in_gen rawwit_constr_with_bindings (ast,NoBindings) in
   TacExtend (zz,"Rewrite",[b;cb])
 
 open Vernacexpr

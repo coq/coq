@@ -1,13 +1,11 @@
 (* Une tactique qui tente de démontrer toute seule le but courant,
    interruptible par pcoq (si dans le fichier C:\WINDOWS\free il y a un A)
 *)
-open Ctast;;
 open Termops;;
 open Nameops;;
 open Auto;;
 open Clenv;;
 open Command;;
-open Ctast;;
 open Declarations;;
 open Declare;;
 open Eauto;;
@@ -597,7 +595,7 @@ let blast_tac display_function = function
 
 let blast_tac_txt = 
   blast_tac
-    (function x -> msgnl(Pptactic.pr_glob_tactic (Tacinterp.glob_tactic x)));;
+    (function x -> msgnl(Pptacticnew.pr_glob_tactic (Global.env()) (Tacinterp.glob_tactic x)));;
 
 (* Obsolète ?
 overwriting_add_tactic "Blast1" blast_tac_txt;;

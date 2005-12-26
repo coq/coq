@@ -3,7 +3,6 @@
    Vers Ctcoq
 *)
 
-open Esyntax
 open Metasyntax
 open Printer
 open Pp

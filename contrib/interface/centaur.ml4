@@ -4,7 +4,6 @@
 open Names;;
 open Nameops;;
 open Util;;
-open Ast;;
 open Term;;
 open Pp;;
 open Libnames;;
@@ -13,7 +12,6 @@ open Library;;
 open Vernacinterp;;
 open Evd;;
 open Proof_trees;;
-open Termast;;
 open Tacmach;;
 open Pfedit;;
 open Proof_type;;
@@ -28,7 +26,6 @@ open Vernacinterp;;
 open Vernac;;
 open Command;;
 open Protectedtoplevel;;
-open Coqast;;
 open Line_oriented_parser;;
 open Xlate;;
 open Vtp;;
@@ -283,15 +280,12 @@ let print_check judg =
  let value_ct_ast = 
      (try translate_constr false (Global.env()) value 
       with UserError(f,str) ->
-           raise(UserError(f,
-			   Ast.print_ast 
-				(ast_of_constr true (Global.env()) value) ++
+           raise(UserError(f,Printer.prterm value ++
 			      fnl () ++ str ))) in
  let type_ct_ast =
      (try translate_constr false (Global.env()) typ
       with UserError(f,str) ->
-           raise(UserError(f, Ast.print_ast (ast_of_constr true (Global.env())
-					       value) ++ fnl() ++ str))) in
+           raise(UserError(f, Printer.prterm value ++ fnl() ++ str))) in
  ((ctf_SearchResults !global_request_id),
  (Some  (P_pl
   (CT_premises_list
@@ -314,18 +308,6 @@ and ntyp = nf_betaiota typ in
     translate_constr false env ntyp)]))));;
 
 
-
-(* The following function is copied from globpr in env/printer.ml *)
-let globcv x =
-    match x with
-      | Node(_,"MUTIND", (Path(_,sp))::(Num(_,tyi))::_) ->
-	    convert_qualid
-	      (Nametab.shortest_qualid_of_global Idset.empty (IndRef(sp,tyi)))
-      | Node(_,"MUTCONSTRUCT",(Path(_,sp))::(Num(_,tyi))::(Num(_,i))::_) ->
-	  convert_qualid
-            (Nametab.shortest_qualid_of_global Idset.empty
-	       (ConstructRef ((sp, tyi), i)))
-  | _ -> failwith "globcv : unexpected value";;
 
 let pbp_tac_pcoq =
     pbp_tac (function (x:raw_tactic_expr) -> 
@@ -364,7 +346,7 @@ let debug_tac2_pcoq tac =
 	  (errorlabstrm "DEBUG TACTIC"
 	     (str "no error here " ++ fnl () ++ Printer.pr_goal (sig_it g) ++
 	      fnl () ++ str "the tactic is" ++ fnl () ++
-	      Pptactic.pr_glob_tactic tac);
+	      Pptacticnew.pr_glob_tactic (Global.env()) tac);
 	   result)
 	with
 	  e ->

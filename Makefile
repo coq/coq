@@ -37,7 +37,7 @@ NOARG:
 	@echo "For make to be verbose, add VERBOSE=1"
 
 # build and install the three subsystems: coq, coqide, pcoq
-world: coq coqide # pcoq
+world: coq coqide pcoq
 
 install: install-coq install-coqide install-pcoq
 #install-manpages: install-coq-manpages install-pcoq-manpages

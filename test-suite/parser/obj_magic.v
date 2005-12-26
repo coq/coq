@@ -1,5 +1,5 @@
 inversion H.
-ry absurd (exists a : b, c).
+try absurd (exists a : b, c).
 discriminate H.
 simplify_eq H.
 injection H.

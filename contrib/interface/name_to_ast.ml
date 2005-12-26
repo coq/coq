@@ -2,9 +2,6 @@ open Sign;;
 open Classops;;
 open Names;;
 open Nameops
-open Coqast;;
-open Ast;;
-open Termast;;
 open Term;;
 open Impargs;;
 open Reduction;;
@@ -90,13 +87,6 @@ let implicit_args_to_ast_list sp mipv =
 	  [] -> []
 	| _ -> [VernacComments (List.rev implicit_args_descriptions)];;
 	      
-let convert_qualid qid =
-  let d, id = Libnames.repr_qualid qid in
-    match repr_dirpath d with
-	[] -> nvar id
-      | d -> ope("QUALID", List.fold_left (fun l s -> (nvar s)::l)
-		   [nvar id] d);;
-
 (* This function converts constructors for an inductive definition to a
    Coqast.t.  It is obtained directly from print_constructors in pretty.ml *)
 
@@ -142,16 +132,6 @@ let implicits_to_ast_list implicits =
     | None -> []
     | Some s -> [VernacComments [CommentString s]];;
 
-(*
-let make_variable_ast name typ implicits =
-   (ope("VARIABLE",
-    [string "VARIABLE";
-     ope("BINDERLIST",
-         [ope("BINDER",
-            [(constr_to_ast (body_of_type typ));
-             nvar name])])]))::(implicits_to_ast_list implicits)
-    ;;
-*)
 let make_variable_ast name typ implicits =
   (VernacAssumption
     ((Local,Definitional),

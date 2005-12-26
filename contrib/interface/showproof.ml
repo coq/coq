@@ -11,7 +11,6 @@ open Term
 open Termops
 open Util
 open Proof_type
-open Coqast
 open Pfedit
 open Translate
 open Term
@@ -163,26 +162,6 @@ let rule_is_complex r =
    |_ -> false
 ;;
 
-let ast_of_constr = Termast.ast_of_constr true (Global.env()) ;;
-
-(*
-let rule_to_ntactic r =
-   let rast =
-     (match r with
-       Tactic (s,l) ->
-	 Ast.ope (s,(List.map ast_of_cvt_arg l))
-     | Prim (Refine h) ->
-	 Ast.ope ("Exact",
-		  [Node ((0,0), "COMMAND", [ast_of_constr h])])
-     | _ -> Ast.ope ("Intros",[])) in
-   if rule_is_complex r
-   then (match rast with
-           Node(_,_,[Node(_,_,[Node(_,_,x)])]) ->x
-          | _ -> assert false)
-
-   else [rast ]
-;;
-*)
 let rule_to_ntactic r =
    let rt =
      (match r with
@@ -196,14 +175,6 @@ let rule_to_ntactic r =
 
    else rt
 ;;
-
-(*
-let term_of_command x =
-  match x with
-    Node(_,_,y::_) -> y
-  | _ -> x
-;;
-*)
 
 (* Attribue les preuves de la liste l aux sous-buts non-prouvés de nt  *)
 
@@ -418,13 +389,6 @@ let enumerate f ln =
 
 let constr_of_ast = Constrintern.interp_constr Evd.empty (Global.env());;
 
-(*
-let sp_tac tac =
-   try spt (constr_of_ast (term_of_command tac))
-   with _ -> (* let Node(_,t,_) = tac in *)
-             spe (* sps ("error in sp_tac " ^ t) *)
-;;
-*)
 let sp_tac tac = failwith "TODO"
 
 let soit_A_une_proposition nh ln t=  match !natural_language with
@@ -964,16 +928,6 @@ let  natural_lhyp lh hi =
     Analyse des tactiques.
 *)
 
-(*
-let name_tactic tac =
-      match tac with
-        (Node(_,"Interp",
-		(Node(_,_,
-		      (Node(_,t,_))::_))::_))::_  -> t
-       |(Node(_,t,_))::_ -> t
-       | _ -> assert false
-;;
-*)
 let name_tactic = function
   | TacIntroPattern _ -> "Intro"
   | TacAssumption -> "Assumption"
@@ -992,51 +946,8 @@ let arg1_tactic tac =
 ;;
 *)
 
-let arg1_tactic tac = failwith "TODO"
+let arg1_tactic tac = failwith "TODO";;
 
-let arg2_tactic tac =
-   match tac with
-     (Node(_,"Interp",
-		(Node(_,_,
-		      (Node(_,_,_::x::_))::_))::_))::_ -> x
-    | (Node(_,_,_::x::_))::_ -> x
-    | _ -> assert false
-;;
-
-(*
-type nat_tactic =
-    Split of (Coqast.t list)
-  | Generalize of (Coqast.t list)
-  | Reduce of string*(Coqast.t list)
-  | Other of string*(Coqast.t list)
-;;
-
-let analyse_tac tac =
-  match tac with
-    [Node (_, "Split", [Node (_, "BINDINGS", [])])]
-      -> Split []
-  | [Node (_, "Split",[Node(_, "BINDINGS",[Node(_, "BINDING",
-	[Node (_, "COMMAND", x)])])])] 
-     -> Split x
-  | [Node (_, "Generalize", [Node (_, "COMMAND", x)])] 
-     ->Generalize x
-  | [Node (_, "Reduce", [Node (_, "REDEXP", [Node (_, mode, _)]);
-             Node (_, "CLAUSE", lhyp)])] 
-     -> Reduce(mode,lhyp)
-  | [Node (_, x,la)] -> Other (x,la)
-  | _ -> assert false
-;;
-*)
-      
-
-
-
-
-let id_of_command x =
-  match x with
-      Node(_,_,Node(_,_,y::_)::_) ->  y
-     |_ -> assert false
-;;
 type type_info_subgoals =
     {ihsg: type_info_subgoals_hyp;
      isgintro : string}
@@ -1286,7 +1197,7 @@ let rec natural_ntree ig ntree =
 	  | TacAssumption -> natural_trivial ig lh g gs ltree
 	  | TacClear _ -> natural_clear ig lh g gs ltree
 (* Besoin de l'argument de la tactique *)
-	  | TacSimpleInduction (NamedHyp id,_) -> 
+	  | TacSimpleInduction (NamedHyp id) -> 
               natural_induction ig lh g gs ge id ltree false
 	  | TacExtend (_,"InductionIntro",[a]) -> 
               let id=(out_gen wit_ident a) in

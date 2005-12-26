@@ -48,52 +48,6 @@ let ctf_FileErrorMessage reqid pps =
   int reqid ++ fnl () ++ pps ++ fnl () ++ str "E-n-d---M-e-s-s-a-g-e" ++
   fnl ();;
 
-(*
-(*In the code for CoqV6.2, the require_module call is encapsulated in
-  a function "without_mes_ambig".  Here I have supposed that this
-  function has no effect on parsing *)
-let try_require_module import specif names =
- try Library.require_module 
-   (if specif = "UNSPECIFIED" then None
-    else Some (specif = "SPECIFICATION"))
-   (List.map 
-     (fun name ->
-       (dummy_loc,Libnames.make_short_qualid (Names.id_of_string name)))
-      names)
-   (import = "IMPORT")
- with
-   | e -> msgnl (str "Reinterning of " ++ prlist str names ++ str " failed");;
-*)
-(*
-let try_require_module_from_file import specif name fname =
- try Library.require_module_from_file (if specif = "UNSPECIFIED" then None
-  else Some (specif = "SPECIFICATION")) (Some (Names.id_of_string name)) fname (import = "IMPORT")
- with
- | e -> msgnl (str "Reinterning of " ++ str name ++ str " failed");;
-*)
-(*
-let execute_when_necessary ast =
- (match ast with
-  | Node (_, "GRAMMAR", ((Nvar (_, s)) :: ((Node (_, "ASTLIST", al)) :: []))) ->
-   Metasyntax.add_grammar_obj s (List.map Ctast.ct_to_ast al)
-(* Obsolete
-  | Node (_, "TOKEN", ((Str (_, s)) :: [])) -> Metasyntax.add_token_obj s
-*)
-  | Node (_, "Require",
-            ((Str (_, import)) ::
-              ((Str (_, specif)) :: l))) ->
-   let mnames = List.map (function
-     | (Nvar (_, m)) -> m
-     | _ -> error "parse_string_action : bad require expression") l in
-   try_require_module import specif mnames
-  | Node (_, "RequireFrom",
-            ((Str (_, import)) ::
-              ((Str (_, specif)) ::
-                ((Nvar (_, mname)) :: ((Str (_, file_name)) :: []))))) ->
-   try_require_module_from_file import specif mname file_name
-  | _ -> ()); ast;;
-*)
-
 let execute_when_necessary v =
  (match v with
   | VernacOpenCloseScope sc -> Vernacentries.interp v
@@ -201,12 +155,6 @@ let parse_command_list reqid stream string_list =
                 discard_to_dot stream;
                 msgnl (str "debug" ++ fnl () ++ int this_pos ++ fnl () ++
 		       int (Stream.count stream));
-(*
-                Some( Node(l, "PARSING_ERROR",
-                        List.map Ctast.str
-                        (get_substring_list string_list this_pos
-                            (Stream.count stream))))
-*)
 		ParseError ("PARSING_ERROR",
                   get_substring_list string_list this_pos
 		    (Stream.count stream))
@@ -215,12 +163,6 @@ let parse_command_list reqid stream string_list =
         | e-> 
           begin
             discard_to_dot stream;
-(*
-            Some(Node((0,0), "PARSING_ERROR2",
-                   List.map Ctast.str
-		   (get_substring_list string_list this_pos
-                     (Stream.count stream))))
-*)
 	    ParseError ("PARSING_ERROR2",
 	      get_substring_list string_list this_pos (Stream.count stream))
           end in
@@ -229,13 +171,6 @@ let parse_command_list reqid stream string_list =
         let ast0 = (execute_when_necessary ast) in
           (try xlate_vernac ast
 	  with e ->
-(*
-	    xlate_vernac 
-              (Node((0,0), "PARSING_ERROR2",
-               List.map Ctast.str
-		 (get_substring_list string_list this_pos
-		    (Stream.count stream)))))::parse_whole_stream()
-*)
 	    make_parse_error_item "PARSING_ERROR2" 
 		     (get_substring_list string_list this_pos
 		       (Stream.count stream)))::parse_whole_stream()
@@ -455,7 +390,6 @@ Libobject.relax true;
 	   coqdir [ "contrib"; "interface"; "vernacrc"] in
    try
      (Gramext.warning_verbose := false;
-      Esyntax.warning_verbose := false;
       coqparser_loop (open_in vernacrc))
    with
      | End_of_file -> ()

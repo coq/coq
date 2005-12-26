@@ -4,9 +4,7 @@ open Names
 open Term
 open Util
 open Proof_type
-open Coqast
 open Pfedit
-open Translate
 open Term
 open Reduction
 open Clenv
