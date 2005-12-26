@@ -852,7 +852,7 @@ let pr_effects x =
   let (ro,rw) = Peffect.get_repr x in pr_reads ro ++ pr_writes rw
 
 let pr_predicate delimited { a_name = n; a_value = c } =
-  (if delimited then Ppconstrnew.pr_lconstr else Ppconstrnew.pr_constr) c ++
+  (if delimited then Ppconstr.pr_lconstr else Ppconstr.pr_constr) c ++
   (match n with Name id -> spc () ++ str "as " ++ pr_id id | Anonymous -> mt())
 
 let pr_assert b { p_name = x; p_value = v } =
@@ -870,7 +870,7 @@ let pr_post_condition_opt = function
 
 let rec pr_type_v_v8 = function
   | Array (a,v) ->
-      str "array" ++ spc() ++ Ppconstrnew.pr_constr a ++ spc() ++ str "of " ++
+      str "array" ++ spc() ++ Ppconstr.pr_constr a ++ spc() ++ str "of " ++
       pr_type_v_v8 v
   | v -> pr_type_v3 v
 
@@ -882,7 +882,7 @@ and pr_type_v3 = function
       pr_type_v_v8 v ++ pr_effects e ++ 
       pr_pre_condition_list prel ++ pr_post_condition_opt postl ++
       spc () ++ str "end"
-  | TypePure a -> Ppconstrnew.pr_constr a
+  | TypePure a -> Ppconstr.pr_constr a
   | v -> str "(" ++ pr_type_v_v8 v ++ str ")"
 
 and pr_binder = function
@@ -910,9 +910,9 @@ let pr_invariant = function
   | Some c -> hov 2 (str "invariant" ++ spc ()  ++ pr_predicate false c)
 
 let pr_variant (c1,c2) =
-  Ppconstrnew.pr_constr c1 ++
+  Ppconstr.pr_constr c1 ++
   (try Constrextern.check_same_type c2 (ast_zwf_zero dummy_loc); mt ()
-   with _ -> spc() ++ hov 0 (str "for" ++ spc () ++ Ppconstrnew.pr_constr c2))
+   with _ -> spc() ++ hov 0 (str "for" ++ spc () ++ Ppconstr.pr_constr c2))
 
 let rec pr_desc = function
   | Variable id ->
@@ -1025,7 +1025,7 @@ let rec pr_desc = function
       (* Numeral or "tt": use a printer which doesn't globalize *)
       Ppconstr.pr_constr
         (Constrextern.extern_constr_in_scope false "Z_scope" (Global.env()) c)
-  | Debug (s,p) -> str "@" ++ Pptacticnew.qsnew s ++ pr_prog p
+  | Debug (s,p) -> str "@" ++ Pptactic.qsnew s ++ pr_prog p
 
 and pr_block_st = function
   | Label s -> hov 0 (str "label" ++ spc() ++ str s)
@@ -1046,7 +1046,7 @@ and pr_prog0 b { desc = desc; pre = pre; post = post } =
     hov 0
       (if b & post<>None then str"(" ++ pr_desc desc ++ str")"
        else pr_desc desc)
-    ++ Ppconstrnew.pr_opt pr_postcondition post)
+    ++ Ppconstr.pr_opt pr_postcondition post)
 
 and pr_prog x = pr_prog0 true x
 

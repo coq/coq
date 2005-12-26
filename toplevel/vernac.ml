@@ -17,7 +17,7 @@ open Options
 open System
 open Vernacexpr
 open Vernacinterp
-open Ppvernacnew
+open Ppvernac
 
 (* The functions in this module may raise (unexplainable!) exceptions.
    Use the module Coqtoplevel, which catches these exceptions
@@ -132,7 +132,7 @@ let post_printing loc (env,t,f,n) = function
   | VernacSolve (i,_,deftac) ->
       let loc = unloc loc in
       set_formatter_translator();
-      let pp = Ppvernacnew.pr_vernac_solve (i,env,t,deftac) ++ sep_end () in
+      let pp = Ppvernac.pr_vernac_solve (i,env,t,deftac) ++ sep_end () in
       (if !translate_file then begin
 	msg (hov 0 (comment (fst loc) ++ pp ++ comment (snd loc - 1)));
       end

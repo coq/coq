@@ -31,7 +31,6 @@ val make_translate : bool -> unit
 val do_translate : unit -> bool
 val translate_file : bool ref
 val translate_syntax : bool ref
-val translate_strict_impargs : bool ref
 
 val make_silent : bool -> unit
 val is_silent : unit -> bool

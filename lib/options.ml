@@ -36,7 +36,6 @@ let translate = ref false
 let make_translate f = translate := f
 let do_translate () = !translate
 let translate_file = ref false
-let translate_strict_impargs = ref true
 
 (* True only when interning from pp*new.ml *)
 let translate_syntax = ref false

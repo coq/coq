@@ -10,7 +10,7 @@ open Proof_type;;
 open Tacexpr;;
 open Genarg;;
 
-let pr_glob_tactic = Pptacticnew.pr_glob_tactic (Global.env())
+let pr_glob_tactic = Pptactic.pr_glob_tactic (Global.env())
 
 (* Compacting and uncompacting proof commands *)
 

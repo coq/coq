@@ -34,7 +34,6 @@ type class_rawexpr = FunClass | SortClass | RefClass of reference
   
 type printable =
   | PrintTables
-  | PrintLocalContext
   | PrintFullContext
   | PrintSectionContext of reference
   | PrintInspect of int

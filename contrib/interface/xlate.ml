@@ -416,7 +416,7 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
      let strip_mutrec (fid, n, bl, arf, ardef) =
         let (struct_arg,bl,arf,ardef) =
          if bl = [] then
-           let (bl,arf,ardef) = Ppconstrnew.split_fix (n+1) arf ardef in
+           let (bl,arf,ardef) = Ppconstr.split_fix (n+1) arf ardef in
            (xlate_id_opt(List.nth (names_of_local_assums bl) n),bl,arf,ardef)
          else (make_fix_struct (n, bl),bl,arf,ardef) in
         let arf = xlate_formula arf in
@@ -1785,8 +1785,7 @@ let rec xlate_vernac =
 	    xlate_error "TODO: Print Canonical Structures"
 	| PrintInspect n -> CT_inspect (CT_int n)
 	| PrintUniverses opt_s -> CT_print_universes(ctf_STRING_OPT opt_s)
-	| PrintLocalContext -> CT_print
-  | PrintSetoids -> CT_print_setoids
+	| PrintSetoids -> CT_print_setoids
 	| PrintTables -> CT_print_tables
         | PrintModuleType a -> CT_print_module_type (loc_qualid_to_ct_ID a)
         | PrintModule a -> CT_print_module (loc_qualid_to_ct_ID a)
@@ -1870,7 +1869,7 @@ let rec xlate_vernac =
       let strip_mutrec ((fid, n, bl, arf, ardef), ntn) =
         let (struct_arg,bl,arf,ardef) =
          if bl = [] then
-           let (bl,arf,ardef) = Ppconstrnew.split_fix (n+1) arf ardef in
+           let (bl,arf,ardef) = Ppconstr.split_fix (n+1) arf ardef in
            (xlate_id_opt(List.nth (names_of_local_assums bl) n),bl,arf,ardef)
          else (make_fix_struct (n, bl),bl,arf,ardef) in
         let arf = xlate_formula arf in

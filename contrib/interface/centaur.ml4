@@ -346,7 +346,7 @@ let debug_tac2_pcoq tac =
 	  (errorlabstrm "DEBUG TACTIC"
 	     (str "no error here " ++ fnl () ++ Printer.pr_goal (sig_it g) ++
 	      fnl () ++ str "the tactic is" ++ fnl () ++
-	      Pptacticnew.pr_glob_tactic (Global.env()) tac);
+	      Pptactic.pr_glob_tactic (Global.env()) tac);
 	   result)
 	with
 	  e ->

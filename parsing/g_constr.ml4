@@ -10,124 +10,124 @@
 
 open Pcoq
 open Constr
+open Prim
 open Rawterm
 open Term
 open Names
 open Libnames
-open Prim
 open Topconstr
-
-(* Initialize the lexer *)
-let constr_kw =
-  [ "Cases"; "of"; "with"; "end"; "as"; "in"; "Prop"; "Set"; "Type";
-    ":"; "("; ")"; "["; "]"; "{"; "}"; ","; ";"; "->"; "="; ":="; "!";
-    "::"; "<:"; ":<"; "=>"; "<"; ">"; "|"; "?"; "/";
-    "<->"; "\\/"; "/\\"; "`"; "``"; "&"; "*"; "+"; "@"; "^"; "#"; "-";
-    "~"; "'"; "<<"; ">>"; "<>"; ".."
-  ]
-let _ =
-  if !Options.v7 then
-  List.iter (fun s -> Lexer.add_token ("",s)) constr_kw
-(* "let" is not a keyword because #Core#let.cci would not parse.
-   Is it still accurate ? *)
-
-
-let coerce_to_var = function
-  | CRef (Ident (_,id)) -> id
-  | ast -> Util.user_err_loc
-        (constr_loc ast,"Ast.coerce_to_var",
-         (Pp.str"This expression should be a simple identifier"))
-
-let coerce_to_name = function
-  | CRef (Ident (loc,id)) -> (loc, Name id)
-  | ast -> Util.user_err_loc
-        (constr_loc ast,"Ast.coerce_to_var",
-         (Pp.str"This expression should be a simple identifier"))
-
-let set_loc loc = function
-  | CRef(Ident(_,i)) -> CRef(Ident(loc,i))
-  | CRef(Qualid(_,q)) -> CRef(Qualid(loc,q))
-  | CFix(_,x,a) -> CFix(loc,x,a)
-  | CCoFix(_,x,a) -> CCoFix(loc,x,a)
-  | CArrow(_,a,b) -> CArrow(loc,a,b)
-  | CProdN(_,bl,a) -> CProdN(loc,bl,a)
-  | CLambdaN(_,bl,a) -> CLambdaN(loc,bl,a)
-  | CLetIn(_,x,a,b) -> CLetIn(loc,x,a,b)
-  | CAppExpl(_,f,a) -> CAppExpl(loc,f,a)
-  | CApp(_,f,a) -> CApp(loc,f,a)
-  | CCases(_,p,a,br) -> CCases(loc,p,a,br)
-  | COrderedCase(_,s,p,a,br) -> COrderedCase(loc,s,p,a,br)
-  | CLetTuple(_,ids,p,a,b) -> CLetTuple(loc,ids,p,a,b)
-  | CIf(_,e,p,a,b) -> CIf(loc,e,p,a,b)
-  | CHole _ -> CHole loc
-  | CPatVar(_,v) -> CPatVar(loc,v)
-  | CEvar(_,ev) -> CEvar(loc,ev)
-  | CSort(_,s) -> CSort(loc,s)
-  | CCast(_,a,k,b) -> CCast(loc,a,k,b)
-  | CNotation(_,n,l) -> CNotation(loc,n,l)
-  | CNumeral(_,i) -> CNumeral(loc,i)
-  | CDelimiters(_,s,e) -> CDelimiters(loc,s,e)
-  | CDynamic(_,d) -> CDynamic(loc,d)
 
 open Util
 
-let rec abstract_constr loc c = function
+let constr_kw =
+  [ "forall"; "fun"; "match"; "fix"; "cofix"; "with"; "in"; "for"; 
+    "end"; "as"; "let"; "if"; "then"; "else"; "return";
+    "Prop"; "Set"; "Type"; ".("; "_"; ".." ]
+
+let _ = List.iter (fun s -> Lexer.add_token("",s)) constr_kw
+
+let mk_cast = function
+    (c,(_,None)) -> c
+  | (c,(_,Some ty)) -> CCast(join_loc (constr_loc c) (constr_loc ty), c, DEFAULTcast,ty)
+
+let mk_lam = function
+    ([],c) -> c
+  | (bl,c) -> CLambdaN(constr_loc c, bl,c)
+
+let loc_of_binder_let = function
+  | LocalRawAssum ((loc,_)::_,_)::_ -> loc
+  | LocalRawDef ((loc,_),_)::_ -> loc
+  | _ -> dummy_loc
+
+let rec mkCProdN loc bll c =
+  match bll with
+  | LocalRawAssum ((loc1,_)::_ as idl,t) :: bll -> 
+      CProdN (loc,[idl,t],mkCProdN (join_loc loc1 loc) bll c)
+  | LocalRawDef ((loc1,_) as id,b) :: bll -> 
+      CLetIn (loc,id,b,mkCProdN (join_loc loc1 loc) bll c)
   | [] -> c
-  | LocalRawDef ((loc',x),b)::bl ->
-      CLetIn (join_loc loc' loc, (loc', x), b, abstract_constr loc c bl)
-  | LocalRawAssum (nal,t)::bl ->
-      let loc' = join_loc (fst (List.hd nal)) loc in
-      CLambdaN(loc', [nal, t], abstract_constr loc c bl)
+  | LocalRawAssum ([],_) :: bll -> mkCProdN loc bll c
 
-(* Hack to parse "(n)" as nat without conflicts with the (useless) *)
-(* admissible notation "(n)" *)
-let test_int_rparen =
-  Gram.Entry.of_parser "test_int_rparen"
+let rec mkCLambdaN loc bll c =
+  match bll with
+  | LocalRawAssum ((loc1,_)::_ as idl,t) :: bll -> 
+      CLambdaN (loc,[idl,t],mkCLambdaN (join_loc loc1 loc) bll c)
+  | LocalRawDef ((loc1,_) as id,b) :: bll -> 
+      CLetIn (loc,id,b,mkCLambdaN (join_loc loc1 loc) bll c)
+  | [] -> c
+  | LocalRawAssum ([],_) :: bll -> mkCLambdaN loc bll c
+
+let rec index_of_annot loc bl ann =
+  match names_of_local_assums bl,ann with
+    | [_], None -> 0
+    | lids, Some x ->
+        let ids = List.map snd lids in
+        (try list_index (snd x) ids - 1
+        with Not_found ->
+          user_err_loc(fst x,"index_of_annot", Pp.str"no such fix variable"))
+    | _ -> user_err_loc(loc,"index_of_annot",
+      Pp.str "cannot guess decreasing argument of fix")
+
+let mk_fixb (id,bl,ann,body,(loc,tyc)) =
+  let n = index_of_annot (fst id) bl ann in
+  let ty = match tyc with
+      Some ty -> ty
+    | None -> CHole loc in
+  (snd id,n,bl,ty,body)
+
+let mk_cofixb (id,bl,ann,body,(loc,tyc)) =
+  let _ = option_app (fun (aloc,_) ->
+    Util.user_err_loc
+      (aloc,"Constr:mk_cofixb",
+       Pp.str"Annotation forbidden in cofix expression")) ann in
+  let ty = match tyc with
+      Some ty -> ty
+    | None -> CHole loc in
+  (snd id,bl,ty,body)
+
+let mk_fix(loc,kw,id,dcls) =
+  if kw then 
+    let fb = List.map mk_fixb dcls in
+    CFix(loc,id,fb)
+  else
+    let fb = List.map mk_cofixb dcls in
+    CCoFix(loc,id,fb)
+
+let mk_single_fix (loc,kw,dcl) =
+  let (id,_,_,_,_) = dcl in mk_fix(loc,kw,id,[dcl])
+
+let binder_constr =
+  create_constr_entry (get_univ "constr") "binder_constr"
+
+(* Hack to parse "(x:=t)" as an explicit argument without conflicts with the *)
+(* admissible notation "(x t)" *)
+let lpar_id_coloneq =
+  Gram.Entry.of_parser "test_lpar_id_coloneq"
     (fun strm ->
       match Stream.npeek 1 strm with
-        | [("INT", _)] ->
-            begin match Stream.npeek 2 strm with
-              | [_; ("", ")")] -> ()
-              | _ -> raise Stream.Failure
-            end
-        | _ -> raise Stream.Failure)
-
-(* Hack to parse "n" at level 0 without conflicting with "n!" at level 91 *)
-(* admissible notation "(n)" *)
-let test_int_bang =
-  Gram.Entry.of_parser "test_int_bang"
-    (fun strm ->
-      match Stream.npeek 1 strm with
-        | [("INT", n)] ->
-            begin match Stream.npeek 2 strm with
-              | [_; ("", "!")] -> ()
-              | _ -> raise Stream.Failure
-            end
-        | _ -> raise Stream.Failure)
-
-(* Hack to parse "`id:...`" at level 0 without conflicting with
-   "`...`" from ZArith *)
-let test_ident_colon =
-  Gram.Entry.of_parser "test_ident_colon"
-    (fun strm ->
-      match Stream.npeek 1 strm with
-        | [("IDENT", _)] ->
-            begin match Stream.npeek 2 strm with
-              | [_; ("", ":")] -> ()
-              | _ -> raise Stream.Failure
-            end
+        | [("","(")] ->
+            (match Stream.npeek 2 strm with
+	      | [_; ("IDENT",s)] ->
+                  (match Stream.npeek 3 strm with
+                    | [_; _; ("", ":=")] ->
+                        Stream.junk strm; Stream.junk strm; Stream.junk strm;
+                        Names.id_of_string s
+	            | _ -> raise Stream.Failure)
+              | _ -> raise Stream.Failure)
         | _ -> raise Stream.Failure)
 
 
-if !Options.v7 then
 GEXTEND Gram
-  GLOBAL: operconstr lconstr constr sort global constr_pattern Constr.ident annot
-          (*ne_name_comma_list*);
+  GLOBAL: binder_constr lconstr constr operconstr sort global
+  constr_pattern lconstr_pattern Constr.ident binder binder_let pattern;
   Constr.ident:
     [ [ id = Prim.ident -> id
 
       (* This is used in quotations and Syntax *)
       | id = METAIDENT -> id_of_string id ] ]
+  ;
+  Prim.name:
+    [ [ "_" -> (loc, Anonymous) ] ]
   ;
   global:
     [ [ r = Prim.reference -> r
@@ -138,238 +138,193 @@ GEXTEND Gram
   constr_pattern:
     [ [ c = constr -> c ] ]
   ;
-  ne_constr_list:
-    [ [ cl = LIST1 constr -> cl ] ]
+  lconstr_pattern:
+    [ [ c = lconstr -> c ] ]
   ;
   sort:
     [ [ "Set"  -> RProp Pos
       | "Prop" -> RProp Null
       | "Type" -> RType None ] ]
   ;
-  constr:
-    [ [ c = operconstr LEVEL "8" -> c ] ]
-  ;
   lconstr:
-    [ [ c = operconstr LEVEL "10" -> c ] ]
+    [ [ c = operconstr LEVEL "200" -> c ] ]
+  ;
+  constr:
+    [ [ c = operconstr LEVEL "9" -> c ] ]
   ;
   operconstr:
-    [ "10" RIGHTA
-      [ "!"; f = global; args = LIST0 (operconstr LEVEL "9") ->
-          CAppExpl (loc, (None,f), args)
-(*
-      | "!"; f = global; "with"; b = binding_list ->
-	  <:ast< (APPLISTWITH $f $b) >>
-*)
-      | f = operconstr; args = LIST1 constr91 -> CApp (loc, (None,f), args) ]
-    | "9" RIGHTA
-      [ c1 = operconstr; "::"; c2 = operconstr LEVEL "9" -> 
-	CCast (loc, c1, Term.DEFAULTcast,c2) ]
-    | "8" RIGHTA
-      [ c1 = operconstr; "->"; c2 = operconstr LEVEL "8"-> CArrow (loc, c1, c2) ]
-    | "1" RIGHTA
-      [ "<"; p = annot; ">"; IDENT "Match"; c = constr; "with";
-        cl = LIST0 constr; "end" ->
-	  COrderedCase (loc, MatchStyle, Some p, c, cl)
-      | "<"; p = annot; ">"; IDENT "Case"; c = constr; "of";
-        cl = LIST0 constr; "end" ->
-	  COrderedCase (loc, RegularStyle, Some p, c, cl)
-      | IDENT "Case"; c = constr; "of"; cl = LIST0 constr; "end" ->
-          COrderedCase (loc, RegularStyle, None, c, cl)
-      | IDENT "Match"; c = constr; "with"; cl = LIST1 constr; "end" ->
-          COrderedCase (loc, MatchStyle, None, c, cl)
-      | IDENT "let"; "("; b = ne_name_comma_list; ")"; "=";
-        c = constr; "in"; c1 = constr ->
-          (* TODO: right loc *)
-	  COrderedCase
-            (loc, LetStyle, None, c, [CLambdaN (loc, [b, CHole loc], c1)])
-      | IDENT "let"; na = name; "="; c = opt_casted_constr; 
-	"in"; c1 = constr ->
-          CLetIn (loc, na, c, c1)
-      | IDENT "if"; c1 = constr;
-        IDENT "then"; c2 = constr;
-        IDENT "else"; c3 = constr ->
-	  COrderedCase (loc, IfStyle, None, c1, [c2; c3])
-      | "<"; p = annot; ">";
-        IDENT "let"; "("; b = ne_name_comma_list; ")"; "="; c = constr; 
-        "in"; c1 = constr ->
-          (* TODO: right loc *)
-	  COrderedCase (loc, LetStyle, Some p, c,
-            [CLambdaN (loc, [b, CHole loc], c1)])
-      | "<"; p = annot; ">";
-        IDENT "if"; c1 = constr;
-        IDENT "then"; c2 = constr; 
-        IDENT "else"; c3 = constr ->
-	  COrderedCase (loc, IfStyle, Some p, c1, [c2; c3])
-      | ".."; c = operconstr LEVEL "0"; ".." ->
+    [ "200" RIGHTA
+      [ c = binder_constr -> c ]
+    | "100" RIGHTA
+      [ c1 = operconstr; ":"; c2 = binder_constr -> CCast(loc,c1,DEFAULTcast,c2)
+      | c1 = operconstr; ":"; c2 = SELF -> CCast(loc,c1,DEFAULTcast,c2) ]
+    | "99" RIGHTA [ ]
+    | "90" RIGHTA
+      [ c1 = operconstr; "->"; c2 = binder_constr -> CArrow(loc,c1,c2)
+      | c1 = operconstr; "->"; c2 = SELF -> CArrow(loc,c1,c2)]
+    | "10" LEFTA
+      [ f=operconstr; args=LIST1 appl_arg -> CApp(loc,(None,f),args)
+      | "@"; f=global; args=LIST0 NEXT -> CAppExpl(loc,(None,f),args) ]
+    | "9"
+        [ ".."; c = operconstr LEVEL "0"; ".." ->
           CAppExpl (loc,(None,Ident (loc,Topconstr.ldots_var)),[c]) ]
-    | "0" RIGHTA
-      [ "?" -> CHole loc
-      | "?"; n = Prim.natural -> CPatVar (loc, (false,Pattern.patvar_of_int n))
-      | bll = binders; c = constr -> abstract_constr loc c bll
-      (* Hack to parse syntax "(n)" as a natural number *)
-      | "("; test_int_rparen; n = INT; ")" ->
-	  (* Delimiter "N" moved to "nat" in V7 *)
-          CDelimiters (loc,"nat",CNumeral (loc,Bigint.of_string n))
-      | "("; lc1 = lconstr; ":"; c = constr; (bl,body) = product_tail ->
-          let id = coerce_to_name lc1 in
-	  CProdN (loc, ([id], c)::bl, body)
-(* TODO: Syntaxe (_:t...)t et (_,x...)t *)
-      | "("; lc1 = lconstr; ","; lc2 = lconstr; ":"; c = constr;
-        (bl,body) = product_tail ->
-          let id1 = coerce_to_name lc1 in
-          let id2 = coerce_to_name lc2 in
-	  CProdN (loc, ([id1; id2], c)::bl, body)
-      | "("; lc1 = lconstr; ","; lc2 = lconstr; ",";
-        idl = ne_name_comma_list; ":"; c = constr; (bl,body) = product_tail ->
-          let id1 = coerce_to_name lc1 in
-          let id2 = coerce_to_name lc2 in
-	  CProdN (loc, (id1::id2::idl, c)::bl, body)
-      | "("; lc1 = lconstr; ")" ->
-          if Options.do_translate() then set_loc loc lc1 else lc1
-      | "("; lc1 = lconstr; ")"; "@"; "["; cl = ne_constr_list; "]" ->
-	  (match lc1 with
-	    | CPatVar (loc2,(false,n)) -> 
-                CApp (loc,(None,CPatVar (loc2, (true,n))), List.map (fun c -> c, None) cl)
-	    | _ ->
-	    Util.error "Second-order pattern-matching expects a head metavariable")
-      | IDENT "Fix"; id = identref; "{"; fbinders = fixbinders; "}" ->
-	  CFix (loc, id, fbinders)
-      | IDENT "CoFix"; id = identref; "{"; fbinders = cofixbinders; "}" ->
-	  CCoFix (loc, id, fbinders)
-      | IDENT "Prefix" ; "(" ;  s = STRING ; cl = LIST0 constr ; ")" ->
-	  CNotation(loc, s, cl)
-      | s = sort -> CSort (loc, s)
-      | v = global -> CRef v
-      | (b,n) = bigint -> 
-          if n = Bigint.zero & b then CNotation(loc,"( _ )",[CNumeral (loc,n)])
-          else CNumeral (loc,n)
-      | "!"; f = global -> CAppExpl (loc,(None,f),[])
-      | "'"; test_ident_colon; key = IDENT; ":"; c = constr; "'" -> 
-	  (* Delimiter "N" implicitly moved to "nat" in V7 *)
-	  let key = if key = "N" then "nat" else key in
-	  let key = if key = "P" then "positive" else key in
-	  let key = if key = "T" then "type" else key in
-	  CDelimiters (loc,key,c) ] ]
+    | "1" LEFTA
+      [ c=operconstr; ".("; f=global; args=LIST0 appl_arg; ")" ->
+	CApp(loc,(Some (List.length args+1),CRef f),args@[c,None])
+      | c=operconstr; ".("; "@"; f=global;
+        args=LIST0 (operconstr LEVEL "9"); ")" ->
+        CAppExpl(loc,(Some (List.length args+1),f),args@[c]) 
+      | c=operconstr; "%"; key=IDENT -> CDelimiters (loc,key,c) ]
+    | "0"
+      [ c=atomic_constr -> c
+      | c=match_constr -> c
+      | "("; c = operconstr LEVEL "200"; ")" ->
+          (match c with
+              CNumeral(_,z) when Bigint.is_pos_or_zero z ->
+                CNotation(loc,"( _ )",[c])
+            | _ -> c) ] ]
   ;
-  constr91:
-    [ [ test_int_bang; n = INT; "!"; c = operconstr LEVEL "9" ->
-        (c, Some (loc,ExplByPos (int_of_string n)))
-      | c = operconstr LEVEL "9" -> (c, None) ] ]
+  binder_constr:
+    [ [ "forall"; bl = binder_list; ","; c = operconstr LEVEL "200" ->
+          mkCProdN loc bl c
+      | "fun"; bl = binder_list; "=>"; c = operconstr LEVEL "200" ->
+          mkCLambdaN loc bl c
+      | "let"; id=name; bl = LIST0 binder_let; ty = type_cstr; ":=";
+        c1 = operconstr LEVEL "200"; "in"; c2 = operconstr LEVEL "200" ->
+          let loc1 = loc_of_binder_let bl in
+          CLetIn(loc,id,mkCLambdaN loc1 bl (mk_cast(c1,ty)),c2)
+      | "let"; fx = single_fix; "in"; c = operconstr LEVEL "200" ->
+          let fixp = mk_single_fix fx in
+          let (li,id) = match fixp with
+              CFix(_,id,_) -> id
+            | CCoFix(_,id,_) -> id
+            | _ -> assert false in
+          CLetIn(loc,(li,Name id),fixp,c)
+      | "let"; lb = ["("; l=LIST0 name SEP ","; ")" -> l | "()" -> []];
+	  po = return_type;
+	  ":="; c1 = operconstr LEVEL "200"; "in";
+          c2 = operconstr LEVEL "200" ->
+          CLetTuple (loc,List.map snd lb,po,c1,c2)
+      | "if"; c=operconstr LEVEL "200"; po = return_type;
+	"then"; b1=operconstr LEVEL "200";
+        "else"; b2=operconstr LEVEL "200" ->
+          CIf (loc, c, po, b1, b2)
+      | c=fix_constr -> c ] ]
   ;
-  (* annot and product_annot_tail are hacks to forbid concrete syntax *)
-  (* ">" (e.g. for gt, Zgt, ...) in annotations *)
-  annot:
-    [ RIGHTA
-      [ bll = binders; c = annot -> abstract_constr loc c bll 
-      | "("; lc1 = lconstr; ":"; c = constr; (bl,body) = product_annot_tail ->
-          let id = coerce_to_name lc1 in
-	  CProdN (loc, ([id], c)::bl, body)
-      | "("; lc1 = lconstr; ","; lc2 = lconstr; ":"; c = constr;
-        (bl,body) = product_annot_tail ->
-          let id1 = coerce_to_name lc1 in
-          let id2 = coerce_to_name lc2 in
-	  CProdN (loc, ([id1; id2], c)::bl, body)
-      | "("; lc1 = lconstr; ","; lc2 = lconstr; ",";
-        idl = ne_name_comma_list; ":"; c = constr;
-	(bl,body) = product_annot_tail ->
-          let id1 = coerce_to_name lc1 in
-          let id2 = coerce_to_name lc2 in
-	  CProdN (loc, (id1::id2::idl, c)::bl, body)
-      | "("; lc1 = lconstr; ")" -> lc1
-      | c1 = annot; "->"; c2 = annot -> CArrow (loc, c1, c2) ]
-    | RIGHTA 
-      [ c1 = annot; "\\/"; c2 = annot -> CNotation (loc, "_ \\/ _", [c1;c2]) ]
-    | RIGHTA
-      [ c1 = annot; "/\\"; c2 = annot -> CNotation (loc, "_ /\\ _", [c1;c2]) ]
-    | RIGHTA
-      [ "~"; c = SELF -> CNotation (loc, "~ _", [c]) ]
-    | RIGHTA
-      [ c1 = SELF; "=="; c2 = NEXT -> CNotation (loc, "_ == _", [c1;c2]) ]
-    | RIGHTA
-      [ c1 = SELF; "="; c2 = NEXT -> CNotation (loc, "_ = _", [c1;c2]) ]
-    | [ c = operconstr LEVEL "4L" -> c ] ]
+  appl_arg:
+    [ [ id = lpar_id_coloneq; c=lconstr; ")" ->
+	  (c,Some (loc,ExplByName id))
+      | c=constr -> (c,None) ] ]
   ;
-  product_annot_tail:
-    [ [ ";"; idl = ne_name_comma_list; ":"; c = constr;
-        (bl,c2) = product_annot_tail -> ((idl, c)::bl, c2)
-      | ";"; idl = ne_name_comma_list; (bl,c2) = product_annot_tail ->
-          ((idl, CHole (fst (List.hd idl)))::bl, c2)
-      | ")"; c = annot -> ([], c) ] ]
+  atomic_constr:
+    [ [ g=global -> CRef g
+      | s=sort -> CSort(loc,s)
+      | n=INT -> CNumeral (loc, Bigint.of_string n)
+      | "_" -> CHole loc
+      | "?"; id=ident -> CPatVar(loc,(false,id)) ] ]
   ;
-  ne_name_comma_list:
-    [ [ nal = LIST1 name SEP "," -> nal ] ]
-  ;
-  name_comma_list_tail:
-    [ [ ","; idl = ne_name_comma_list -> idl
-      | -> [] ] ]
-  ;
-  opt_casted_constr:
-    [ [ c = constr;  ":"; t = constr -> CCast (loc, c, DEFAULTcast, t)
-      | c = constr -> c ] ]
-  ;
-  vardecls:
-    [ [ na = name; nal = name_comma_list_tail; c = type_option ->
-          LocalRawAssum (na::nal,c)
-      | na = name; "="; c = opt_casted_constr ->
-          LocalRawDef (na, c)
-      | na = name; ":="; c = opt_casted_constr ->
-          LocalRawDef (na, c)
-
-      (* This is used in quotations *)
-      | id = METAIDENT; c = type_option -> LocalRawAssum ([loc, Name (id_of_string id)], c)
+  fix_constr:
+    [ [ fx1=single_fix -> mk_single_fix fx1
+      | (_,kw,dcl1)=single_fix; "with"; dcls=LIST1 fix_decl SEP "with";
+        "for"; id=identref ->
+          mk_fix(loc,kw,id,dcl1::dcls)
     ] ]
   ;
-  ne_vardecls_list:
-    [ [ id = vardecls; ";"; idl = ne_vardecls_list -> id :: idl
-      | id = vardecls -> [id] ] ]
+  single_fix:
+    [ [ kw=fix_kw; dcl=fix_decl -> (loc,kw,dcl) ] ]
   ;
-  binders:
-    [ [ "["; bl = ne_vardecls_list; "]" -> bl ] ]
+  fix_kw:
+    [ [ "fix" -> true
+      | "cofix" -> false ] ]
   ;
-  simple_params:
-    [ [ idl = LIST1 name SEP ","; ":"; c = constr -> (idl, c)
-      | idl = LIST1 name SEP "," -> (idl, CHole loc)
+  fix_decl:
+    [ [ id=identref; bl=LIST0 binder_let; ann=fixannot; ty=type_cstr; ":=";
+        c=operconstr LEVEL "200" -> (id,bl,ann,c,ty) ] ]
+  ;
+  fixannot:
+    [ [ "{"; IDENT "struct"; id=name; "}" -> Some id
+      | -> None ] ]
+  ;
+  match_constr:
+    [ [ "match"; ci=LIST1 case_item SEP ","; ty=OPT case_type; "with";
+        br=branches; "end" -> CCases(loc,ty,ci,br) ] ]
+  ;
+  case_item:
+    [ [ c=operconstr LEVEL "100"; p=pred_pattern -> (c,p) ] ]
+  ;
+  pred_pattern:
+    [ [ ona = OPT ["as"; id=name -> snd id];
+        ty = OPT ["in"; t=lconstr -> t] -> (ona,ty) ] ]
+  ;
+  case_type:
+    [ [ "return"; ty = operconstr LEVEL "100" -> ty ] ]
+  ;
+  return_type:
+    [ [ a = OPT [ na = OPT["as"; id=name -> snd id];
+                  ty = case_type -> (na,ty) ] -> 
+        match a with 
+          | None -> None, None
+          | Some (na,t) -> (na, Some t)
     ] ]
   ;
-  simple_binders:
-    [ [ "["; bll = LIST1 simple_params SEP ";"; "]" -> bll ] ]
+  branches:
+    [ [ OPT"|"; br=LIST0 eqn SEP "|" -> br ] ]
   ;
-  ne_simple_binders_list:
-    [ [ bll = LIST1 simple_binders -> List.flatten bll ] ]
+  eqn:
+    [ [ pl = LIST1 pattern SEP ","; "=>"; rhs = lconstr -> (loc,pl,rhs) ] ]
   ;
-  type_option:
-    [ [ ":"; c = constr -> c 
-      | -> CHole loc ] ]
+  pattern:
+    [ "200" RIGHTA [ ]
+    | "100" LEFTA
+      [ p = pattern; "|"; pl = LIST1 pattern SEP "|" -> CPatOr (loc,p::pl) ]
+    | "99" RIGHTA [ ]
+    | "10" LEFTA
+      [ p = pattern; lp = LIST1 (pattern LEVEL "0") ->
+        (match p with
+          | CPatAtom (_, Some r) -> CPatCstr (loc, r, lp)
+          | _ -> Util.user_err_loc 
+              (cases_pattern_loc p, "compound_pattern",
+               Pp.str "Constructor expected"))
+      | p = pattern; "as"; id = ident ->
+	  CPatAlias (loc, p, id)
+      | c = pattern; "%"; key=IDENT -> 
+          CPatDelimiters (loc,key,c) ]
+    | "0"
+      [ r = Prim.reference -> CPatAtom (loc,Some r)
+      | "_" -> CPatAtom (loc,None)
+      | "("; p = pattern LEVEL "200"; ")" ->
+          (match p with
+              CPatNumeral(_,z) when Bigint.is_pos_or_zero z ->
+                CPatNotation(loc,"( _ )",[p])
+            | _ -> p)
+      | n = INT -> CPatNumeral (loc, Bigint.of_string n) ] ]
   ;
-  fixbinder:
-    [ [ id = base_ident; "/"; recarg = natural; ":"; type_ = constr;
-        ":="; def = constr ->
-          (id, recarg-1, [], type_, def)
-      | id = base_ident; bl = ne_simple_binders_list; ":"; type_ = constr;
-	":="; def = constr ->
-          let ni = List.length (List.flatten (List.map fst bl)) -1 in
-          let bl = List.map (fun(nal,ty)->LocalRawAssum(nal,ty)) bl in
-	  (id, ni, bl, type_, def) ] ]
+  binder_list:
+    [ [ idl=LIST1 name; bl=LIST0 binder_let -> 
+          LocalRawAssum (idl,CHole loc)::bl
+      | idl=LIST1 name; ":"; c=lconstr -> 
+          [LocalRawAssum (idl,c)]
+      | "("; idl=LIST1 name; ":"; c=lconstr; ")"; bl=LIST0 binder_let ->
+          LocalRawAssum (idl,c)::bl ] ]
   ;
-  fixbinders:
-    [ [ fbs = LIST1 fixbinder SEP "with" -> fbs ] ]
+  binder_let:
+    [ [ id=name ->
+          LocalRawAssum ([id],CHole loc)
+      | "("; id=name; idl=LIST1 name; ":"; c=lconstr; ")" -> 
+          LocalRawAssum (id::idl,c)
+      | "("; id=name; ":"; c=lconstr; ")" -> 
+          LocalRawAssum ([id],c)
+      | "("; id=name; ":="; c=lconstr; ")" ->
+          LocalRawDef (id,c)
+      | "("; id=name; ":"; t=lconstr; ":="; c=lconstr; ")" -> 
+          LocalRawDef (id,CCast (join_loc (constr_loc t) loc,c,DEFAULTcast,t))
+    ] ]
   ;
-  cofixbinder:
-    [ [ id = base_ident; ":"; type_ = constr; ":="; def = constr ->
-          (id, [],type_, def) ] ]
+  binder:
+    [ [ id=name -> ([id],CHole loc)
+      | "("; idl=LIST1 name; ":"; c=lconstr; ")" -> (idl,c) ] ]
   ;
-  cofixbinders:
-    [ [ fbs = LIST1 cofixbinder SEP "with" -> fbs ] ]
+  type_cstr:
+    [ [ c=OPT [":"; c=lconstr -> c] -> (loc,c) ] ]
   ;
-  product_tail:
-    [ [ ";"; idl = ne_name_comma_list; ":"; c = constr;
-        (bl,c2) = product_tail -> ((idl, c)::bl, c2)
-      | ";"; idl = ne_name_comma_list; (bl,c2) = product_tail ->
-          ((idl, CHole (fst (List.hd idl)))::bl, c2)
-      | ")"; c = constr -> ([], c) ] ]
-  ;
-  bigint:
-    [ [ i = INT -> true, Bigint.of_string i
-      | "-"; i = INT -> false, Bigint.neg (Bigint.of_string i) ] ]
-  ;
-END;;
+  END;;

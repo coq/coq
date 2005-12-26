@@ -101,7 +101,7 @@ let ppenv e = pp
   (str "[" ++ pr_named_context_of e ++ str "]" ++ spc() ++
    str "[" ++ pr_rel_context e (rel_context e) ++ str "]")
 
-let pptac = (fun x -> pp(Pptacticnew.pr_glob_tactic (Global.env()) x))
+let pptac = (fun x -> pp(Pptactic.pr_glob_tactic (Global.env()) x))
 
 let pr_obj obj = Format.print_string (Libobject.object_tag obj)
 

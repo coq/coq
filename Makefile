@@ -61,8 +61,7 @@ endif
 LOCALINCLUDES=-I config -I tools -I tools/coqdoc \
 	      -I scripts -I lib -I kernel -I kernel/byterun -I library \
               -I proofs -I tactics -I pretyping \
-              -I interp -I toplevel -I parsing -I ide/utils \
-	      -I ide -I translate \
+              -I interp -I toplevel -I parsing -I ide/utils -I ide \
               -I contrib/omega -I contrib/romega \
 	      -I contrib/ring -I contrib/dp -I contrib/setoid_ring \
               -I contrib/xml -I contrib/extraction \
@@ -90,7 +89,6 @@ COQ_XML=	# is "-xml" when building XML library
 VM=          # is "-no-vm" to not use the vm"
 UNBOXEDVALUES=  # is "-unboxed-values" to use unboxed values
 COQOPTS=$(GLOB) $(COQ_XML) $(VM) $(UNBOXEDVALUES)
-TRANSLATE=-translate -strict-implicit
 TIME=           # is "'time -p'" to get compilation time of .v 
 
 BOOTCOQTOP= $(TIME) $(BESTCOQTOP) -boot $(COQOPTS)
@@ -154,7 +152,8 @@ PRETYPING=\
   pretyping/cases.cmo pretyping/pretyping.cmo pretyping/matching.cmo
 
 INTERP=\
-  parsing/lexer.cmo interp/topconstr.cmo interp/ppextend.cmo interp/notation.cmo \
+  parsing/lexer.cmo interp/topconstr.cmo interp/ppextend.cmo \
+  interp/notation.cmo \
   interp/genarg.cmo interp/syntax_def.cmo interp/reserve.cmo \
   library/impargs.cmo interp/constrintern.cmo \
   interp/modintern.cmo interp/constrextern.cmo interp/coqlib.cmo \
@@ -169,21 +168,15 @@ PROOFS=\
 
 PARSING=\
   parsing/extend.cmo \
-  parsing/pcoq.cmo parsing/egrammar.cmo parsing/g_xml.cmo parsing/ppconstr.cmo \
-  translate/ppconstrnew.cmo parsing/printer.cmo \
-  parsing/pptactic.cmo translate/pptacticnew.cmo parsing/tactic_printer.cmo \
+  parsing/pcoq.cmo parsing/egrammar.cmo parsing/g_xml.cmo \
+  parsing/ppconstr.cmo parsing/printer.cmo \
+  parsing/pptactic.cmo parsing/tactic_printer.cmo \
   parsing/printmod.cmo parsing/prettyp.cmo parsing/search.cmo 
 
 HIGHPARSING=\
   parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo \
-#  parsing/g_prim.cmo # parsing/g_proofs.cmo parsing/g_basevernac.cmo \
-#  parsing/g_vernac.cmo parsing/g_tactic.cmo \
-#  parsing/g_ltac.cmo parsing/g_constr.cmo parsing/g_cases.cmo \
-#  parsing/g_module.cmo \
-
-HIGHPARSINGNEW=\
-  parsing/g_primnew.cmo parsing/g_constrnew.cmo parsing/g_tacticnew.cmo \
-  parsing/g_ltacnew.cmo parsing/g_vernacnew.cmo parsing/g_proofsnew.cmo
+  parsing/g_constr.cmo parsing/g_vernac.cmo parsing/g_prim.cmo \
+  parsing/g_proofs.cmo parsing/g_tactic.cmo parsing/g_ltac.cmo 
 
 ARITHSYNTAX=\
   parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo
@@ -203,7 +196,7 @@ TOPLEVEL=\
   toplevel/himsg.cmo toplevel/cerrors.cmo toplevel/class.cmo \
   toplevel/vernacexpr.cmo  toplevel/metasyntax.cmo \
   toplevel/command.cmo toplevel/record.cmo \
-  translate/ppvernacnew.cmo \
+  parsing/ppvernac.cmo \
   toplevel/vernacinterp.cmo toplevel/mltop.cmo \
   toplevel/vernacentries.cmo toplevel/whelp.cmo toplevel/vernac.cmo \
   toplevel/line_oriented_parser.cmo toplevel/protectedtoplevel.cmo \
@@ -324,21 +317,20 @@ CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
 
 # LINK ORDER:
-# Beware that highparsingnew.cma should appear before hightactics.cma
+# Beware that highparsing.cma should appear before hightactics.cma
 # respecting this order is useful for developers that want to load or link
 # the libraries directly
 LINKCMO=$(CONFIG) lib/lib.cma kernel/kernel.cma library/library.cma \
         pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
         parsing/parsing.cma tactics/tactics.cma toplevel/toplevel.cma \
-        parsing/highparsing.cma parsing/highparsingnew.cma \
-        tactics/hightactics.cma contrib/contrib.cma
+        parsing/highparsing.cma tactics/hightactics.cma contrib/contrib.cma
 LINKCMOCMXA=$(LINKCMO:.cma=.cmxa)
 LINKCMX=$(LINKCMOCMXA:.cmo=.cmx)
 
 # objects known by the toplevel of Coq
 OBJSCMO=$(CONFIG) $(LIBREP) $(KERNEL) $(LIBRARY) $(PRETYPING) $(INTERP) \
         $(PROOFS) $(PARSING) $(TACTICS) $(TOPLEVEL) $(HIGHPARSING) \
-        $(HIGHPARSINGNEW) $(HIGHTACTICS) $(USERTACMO) $(CONTRIB)
+        $(HIGHTACTICS) $(USERTACMO) $(CONTRIB)
 
 ###########################################################################
 # Compilation option for .c files 
@@ -392,7 +384,7 @@ coqbinaries:: ${COQBINARIES}
 
 coq: coqlib tools coqbinaries
 
-coqlib:: newtheories newcontrib
+coqlib:: theories contrib
 
 coqlight: theories-light tools coqbinaries
 
@@ -456,7 +448,6 @@ interp: $(INTERP)
 parsing: $(PARSING)
 pretyping: $(PRETYPING)
 highparsing: $(HIGHPARSING)
-highparsingnew: $(HIGHPARSINGNEW)
 toplevel: $(TOPLEVEL)
 hightactics: $(HIGHTACTICS)
 
@@ -558,14 +549,6 @@ contrib/contrib.cma: $(CONTRIB)
 contrib/contrib.cmxa: $(CONTRIB:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(CONTRIB:.cmo=.cmx)
-
-parsing/highparsingnew.cma: $(HIGHPARSINGNEW)
-	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(HIGHPARSINGNEW)
-
-parsing/highparsingnew.cmxa: $(HIGHPARSINGNEW:.cmo=.cmx)
-	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(HIGHPARSINGNEW:.cmo=.cmx)
 
 ###########################################################################
 # CoqIde special targets
@@ -938,11 +921,10 @@ THEORIESVO =\
   $(LISTSVO) $(SETSVO) $(INTMAPVO) $(RELATIONSVO) $(WELLFOUNDEDVO) \
   $(REALSVO) $(SETOIDSVO) $(SORTINGVO)
 
-NEWTHEORIESLIGHTVO = $(INITVO) $(LOGICVO) $(ARITHVO)
-OLDTHEORIESLIGHTVO = $(NEWTHEORIESLIGHTVO:theories%.vo:theories7%.vo)
+THEORIESLIGHTVO = $(INITVO) $(LOGICVO) $(ARITHVO)
 
 theories: $(THEORIESVO)
-theories-light: $(NEWTHEORIESLIGHTVO)
+theories-light: $(THEORIESLIGHTVO)
 
 logic: $(LOGICVO)
 arith: $(ARITHVO)
@@ -1006,15 +988,11 @@ CCVO=
 SUBTACVO=
 
 RTAUTOVO = \
-	contrib/rtauto/Bintree.vo contrib/rtauto/Rtauto.vo
-
+ contrib/rtauto/Bintree.vo contrib/rtauto/Rtauto.vo
 
 CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
 	    $(FOURIERVO) $(JPROVERVO) $(CCVO) $(FUNINDVO) $(SUBTACVO) \
 	    $(RTAUTOVO) $(RECDEFVO) $(NEWRINGVO)
-
-CONTRIB7VO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) \
-	$(FOURIERVO) $(EXTRACTIONVO) $(CCVO)
 
 $(CONTRIBVO): states/initial.coq
 
@@ -1033,38 +1011,7 @@ cc: $(CCVO) $(CCCMO)
 subtac: $(SUBTACVO) $(SUBTACCMO)
 rtauto: $(RTAUTOVO) $(RTAUTOCMO)
 
-NEWINITVO=$(INITVO)
-NEWTHEORIESVO=$(THEORIESVO)
-NEWCONTRIBVO=$(CONTRIBVO)
-
-OBSOLETETHEORIESVO=\
- theories7/Lists/PolyList.vo theories7/Lists/PolyListSyntax.vo \
- theories7/ZArith/Zsyntax.vo \
- theories7/ZArith/zarith_aux.vo	theories7/ZArith/fast_integer.vo \
- theories7/Reals/Rsyntax.vo
-
-OLDINITVO=$(INITVO:theories%.vo=theories7%.vo)
-OLDTHEORIESVO=$(THEORIESVO:theories%.vo=theories7%.vo) $(OBSOLETETHEORIESVO)
-OLDCONTRIBVO=$(CONTRIB7VO:contrib%.vo=contrib7%.vo)
-
-$(OLDCONTRIBVO): states7/initial.coq
-
-NEWINITV=$(INITVO:%.vo=%.v)
-NEWTHEORIESV=$(THEORIESVO:%.vo=%.v)
-NEWCONTRIBV=$(CONTRIBVO:%.vo=%.v)
-
-# Made *.vo and new*.v targets explicit, otherwise "make" 
-# either removes them after use or don't do them (e.g. List.vo)
-newinit:: $(NEWINITV) $(NEWINITVO)
-newtheories:: $(NEWTHEORIESV) $(NEWTHEORIESVO)
-newcontrib:: $(NEWCONTRIBV) $(NEWCONTRIBVO) $(CONTRIBCMO)
-
-theories7:: $(OLDTHEORIESVO)
-contrib7:: $(OLDCONTRIBVO) 
-
-translation:: $(NEWTHEORIESV) $(NEWCONTRIBV)
-
-ALLNEWVO = $(INITVO) $(THEORIESVO) $(CONTRIBVO)
+ALLVO = $(INITVO) $(THEORIESVO) $(CONTRIBVO)
 
 ###########################################################################
 # rules to make theories, contrib and states
@@ -1072,7 +1019,7 @@ ALLNEWVO = $(INITVO) $(THEORIESVO) $(CONTRIBVO)
 
 SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v
 
-states/initial.coq: states/MakeInitial.v $(NEWINITVO)
+states/initial.coq: states/MakeInitial.v $(INITVO)
 	$(BOOTCOQTOP) -batch -notop -silent -nois -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
 
 theories/Init/%.vo: $(BESTCOQTOP) theories/Init/%.v
@@ -1224,15 +1171,12 @@ install-tools::
 	$(MKDIR) $(FULLBINDIR)
 	cp $(TOOLS) $(FULLBINDIR)
 
-LIBFILES=$(OLDTHEORIESVO) $(OLDCONTRIBVO)
-LIBFILESLIGHT=$(OLDTHEORIESLIGHTVO)
-
-NEWLIBFILES=$(NEWTHEORIESVO) $(NEWCONTRIBVO)
-NEWLIBFILESLIGHT=$(NEWTHEORIESLIGHTVO)
+LIBFILES=$(THEORIESVO) $(CONTRIBVO)
+LIBFILESLIGHT=$(THEORIESLIGHTVO)
 
 install-library:
 	$(MKDIR) $(FULLCOQLIB)
-	for f in $(NEWLIBFILES); do \
+	for f in $(LIBFILES); do \
 	  $(MKDIR) $(FULLCOQLIB)/`dirname $$f`; \
 	  cp $$f $(FULLCOQLIB)/`dirname $$f`; \
         done
@@ -1242,7 +1186,7 @@ install-library:
 
 install-library-light:
 	$(MKDIR) $(FULLCOQLIB)
-	for f in $(LIBFILESLIGHT) $(NEWLIBFILESLIGHT); do \
+	for f in $(LIBFILESLIGHT); do \
 	  $(MKDIR) $(FULLCOQLIB)/`dirname $$f`; \
 	  cp $$f $(FULLCOQLIB)/`dirname $$f`; \
         done
@@ -1366,16 +1310,13 @@ GRAMMARNEEDEDCMO=\
   parsing/lexer.cmo parsing/extend.cmo \
   toplevel/vernacexpr.cmo parsing/pcoq.cmo parsing/q_util.cmo \
   parsing/q_coqast.cmo
-#  parsing/coqast.cmo parsing/ast.cmo \
 
 CAMLP4EXTENSIONSCMO=\
   parsing/argextend.cmo parsing/tacextend.cmo parsing/vernacextend.cmo 
 
 GRAMMARSCMO=\
-  parsing/g_primnew.cmo parsing/g_tacticnew.cmo \
-  parsing/g_ltacnew.cmo parsing/g_constrnew.cmo 
-#  parsing/g_prim.cmo parsing/g_tactic.cmo \
-#  parsing/g_ltac.cmo parsing/g_constr.cmo \
+  parsing/g_prim.cmo parsing/g_tactic.cmo \
+  parsing/g_ltac.cmo parsing/g_constr.cmo
 
 GRAMMARCMO=$(GRAMMARNEEDEDCMO) $(CAMLP4EXTENSIONSCMO) $(GRAMMARSCMO)
 
@@ -1409,8 +1350,7 @@ PRINTERSCMO=\
   proofs/proof_trees.cmo proofs/logic.cmo proofs/refiner.cmo		\
   proofs/evar_refiner.cmo proofs/pfedit.cmo proofs/tactic_debug.cmo	\
   parsing/ppconstr.cmo parsing/extend.cmo \
-  translate/ppconstrnew.cmo parsing/printer.cmo parsing/pptactic.cmo 	\
-  translate/pptacticnew.cmo parsing/tactic_printer.cmo \
+  parsing/printer.cmo parsing/pptactic.cmo parsing/tactic_printer.cmo \
   dev/top_printers.cmo
 
 dev/printers.cma: $(PRINTERSCMO)
@@ -1431,17 +1371,12 @@ parsing/grammar.cma: $(GRAMMARCMO)
 clean::
 	rm -f parsing/grammar.cma
 
-ML4FILES +=parsing/g_basevernac.ml4 parsing/g_minicoq.ml4 \
+ML4FILES +=parsing/g_minicoq.ml4 \
 	   parsing/g_vernac.ml4 parsing/g_proofs.ml4 \
-	   parsing/g_cases.ml4 parsing/g_xml.ml4 \
-	   parsing/g_constr.ml4 parsing/g_module.ml4 \
+	   parsing/g_xml.ml4 parsing/g_constr.ml4 \
 	   parsing/g_tactic.ml4 parsing/g_ltac.ml4 \
 	   parsing/argextend.ml4 parsing/tacextend.ml4 \
-	   parsing/vernacextend.ml4 \
-           parsing/g_primnew.ml4 \
-           parsing/g_vernacnew.ml4 parsing/g_proofsnew.ml4 \
-	   parsing/g_constrnew.ml4 \
-	   parsing/g_tacticnew.ml4 parsing/g_ltacnew.ml4 \
+	   parsing/vernacextend.ml4
 
 # beforedepend:: $(GRAMMARCMO)
 
@@ -1502,11 +1437,11 @@ proofs/tacexpr.cmx: proofs/tacexpr.ml
 	$(SHOW)'OCAMLOPT  -rectypes $<'
 	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -c $<
 
-translate/pptacticnew.cmo: translate/pptacticnew.ml
+parsing/pptactic.cmo: parsing/pptactic.ml
 	$(SHOW)'OCAMLC    -rectypes $<'
 	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -c $<
 
-translate/pptacticnew.cmx: translate/pptacticnew.ml
+parsing/pptactic.cmx: parsing/pptactic.ml
 	$(SHOW)'OCAMLOPT    -rectypes $<'
 	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -c $<
 
@@ -1611,7 +1546,6 @@ archclean::
 	rm -f toplevel/*.cmx* toplevel/*.[soa]
 	rm -f ide/*.cmx* ide/*.[soa]
 	rm -f ide/utils/*.cmx* ide/utils/*.[soa]
-	rm -f translate/*.cmx* translate/*.[soa]
 	rm -f tools/*.cmx* tools/*.[soa]
 	rm -f tools/*/*.cmx* tools/*/*.[soa]
 	rm -f scripts/*.cmx* scripts/*.[soa]
@@ -1632,7 +1566,6 @@ clean:: archclean
 	rm -f toplevel/*.cm[ioa]
 	rm -f ide/*.cm[ioa]
 	rm -f ide/utils/*.cm[ioa]
-	rm -f translate/*.cm[ioa]
 	rm -f tools/*.cm[ioa]
 	rm -f tools/*/*.cm[ioa]
 	rm -f scripts/*.cm[ioa]
@@ -1650,7 +1583,7 @@ alldepend: depend dependcoq
 
 dependcoq:: beforedepend
 	$(COQDEP) -coqlib . -R theories Coq -R contrib Coq $(COQINCLUDES) \
-	 $(ALLREALS:.vo=.v) $(ALLNEWVO:.vo=.v) > .depend.coq
+	 $(ALLREALS:.vo=.v) $(ALLVO:.vo=.v) > .depend.coq
 
 # Build dependencies ignoring failures in building ml files from ml4 files
 # This is useful to rebuild dependencies when they are strongly corrupted:

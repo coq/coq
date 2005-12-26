@@ -25,6 +25,7 @@ open Evd
 open Proof_type
 open Refiner
 open Pfedit
+open Ppconstr
 
 let emacs_str s = if !Options.print_emacs then s else "" 
 
@@ -33,13 +34,13 @@ let emacs_str s = if !Options.print_emacs then s else ""
 
 (* [at_top] means ids of env must be avoided in bound variables *)
 let prterm_core at_top env t =
-  Ppconstrnew.pr_lconstr (Constrextern.extern_constr at_top env t)
+  pr_lconstr (Constrextern.extern_constr at_top env t)
 let prtype_core at_top env t =
-  Ppconstrnew.pr_lconstr (Constrextern.extern_type at_top env t)
+  pr_lconstr (Constrextern.extern_type at_top env t)
 let pr_cases_pattern t =
-  Ppconstrnew.pr_cases_pattern (Constrextern.extern_cases_pattern Idset.empty t)
+  pr_cases_pattern (Constrextern.extern_cases_pattern Idset.empty t)
 let pr_pattern_env tenv env t =
-  Ppconstrnew.pr_constr (Constrextern.extern_pattern tenv env t)
+  pr_constr (Constrextern.extern_pattern tenv env t)
 
 (**********************************************************************)
 (* Derived printers *)
@@ -70,7 +71,7 @@ let pr_evaluable_reference ref =
  pr_global ref'
 
 let pr_rawterm t =
-  Ppconstrnew.pr_lconstr (Constrextern.extern_rawconstr Idset.empty t)
+  pr_lconstr (Constrextern.extern_rawconstr Idset.empty t)
 
 open Pattern
 
@@ -284,10 +285,10 @@ let pr_nth_open_subgoal n =
 (* Elementary tactics *)
 
 let print_constr8 t =
-  Ppconstrnew.pr_constr (Constrextern.extern_constr false (Global.env()) t)
+  pr_constr (Constrextern.extern_constr false (Global.env()) t)
 
 let print_lconstr8 t =
-  Ppconstrnew.pr_lconstr (Constrextern.extern_constr false (Global.env()) t)
+  pr_lconstr (Constrextern.extern_constr false (Global.env()) t)
 
 let pr_prim_rule = function
   | Intro id -> 

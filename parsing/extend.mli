@@ -9,16 +9,6 @@
 (*i $Id$ i*)
 
 open Util
-(*i
-open Pp
-open Names
-open Ast
-open Coqast
-open Ppextend
-open Topconstr
-open Genarg
-open Mod_subst
-i*)
 
 (**********************************************************************)
 (* constr entry keys                                                  *)

@@ -27,7 +27,7 @@ open Setoid_replace
 open Proof_type
 open Coqlib
 open Tacmach
-open Ppconstrnew
+open Ppconstr
 open Mod_subst
 open Tacinterp
 open Libobject

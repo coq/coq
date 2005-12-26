@@ -595,7 +595,7 @@ let blast_tac display_function = function
 
 let blast_tac_txt = 
   blast_tac
-    (function x -> msgnl(Pptacticnew.pr_glob_tactic (Global.env()) (Tacinterp.glob_tactic x)));;
+    (function x -> msgnl(Pptactic.pr_glob_tactic (Global.env()) (Tacinterp.glob_tactic x)));;
 
 (* Obsolète ?
 overwriting_add_tactic "Blast1" blast_tac_txt;;

@@ -7,7 +7,7 @@ open Term
 open Names
 open Scoq
 open Pp
-open Ppconstrnew
+open Ppconstr
 open Util
 
 type recursion_info = {

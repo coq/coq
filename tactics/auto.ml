@@ -483,7 +483,7 @@ let fmt_autotactic =
       (str"apply " ++ prterm c ++ str" ; trivial")
   | Unfold_nth c -> (str"unfold " ++  pr_evaluable_reference c)
   | Extern tac -> 
-      (str "(external) " ++ Pptacticnew.pr_glob_tactic (Global.env()) tac)
+      (str "(external) " ++ Pptactic.pr_glob_tactic (Global.env()) tac)
 
 let fmt_hint v =
   (fmt_autotactic v.code ++ str"(" ++ int v.pri ++ str")" ++ spc ())

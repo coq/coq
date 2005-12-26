@@ -50,7 +50,7 @@ let print_rewrite_hintdb bas =
        str (if d then "rewrite -> " else "rewrite <- ") ++
        Printer.prterm c ++ str " of type " ++ Printer.prterm typ ++
        str " then use tactic " ++ 
-       Pptacticnew.pr_glob_tactic (Global.env()) t) hints)
+       Pptactic.pr_glob_tactic (Global.env()) t) hints)
  with
   Not_found -> 
    errorlabstrm "AutoRewrite" 

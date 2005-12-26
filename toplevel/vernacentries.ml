@@ -852,7 +852,6 @@ let vernac_global_check c =
 
 let vernac_print = function
   | PrintTables -> print_tables ()
-  | PrintLocalContext -> msg (print_local_context ())
   | PrintFullContext -> msg (print_full_context_typ ())
   | PrintSectionContext qid -> msg (print_sec_context_typ qid)
   | PrintInspect n -> msg (inspect n)

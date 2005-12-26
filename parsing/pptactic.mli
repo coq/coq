@@ -16,6 +16,7 @@ open Proof_type
 open Topconstr
 open Rawterm
 open Ppextend
+open Environ
 
 val pr_or_var : ('a -> std_ppcmds) -> 'a or_var -> std_ppcmds
 val pr_or_metaid : ('a -> std_ppcmds) -> 'a or_metaid -> std_ppcmds
@@ -75,3 +76,15 @@ val pr_extend :
   (Term.constr -> std_ppcmds) -> (Term.constr -> std_ppcmds) ->
   (tolerability -> glob_tactic_expr -> std_ppcmds) -> int ->
     string -> closed_generic_argument list -> std_ppcmds
+
+val qsnew : string -> std_ppcmds
+
+val pr_intro_pattern : intro_pattern_expr -> std_ppcmds
+
+val pr_raw_tactic : env -> raw_tactic_expr -> std_ppcmds
+
+val pr_raw_tactic_level : env -> tolerability -> raw_tactic_expr -> std_ppcmds
+ 
+val pr_glob_tactic : env -> glob_tactic_expr -> std_ppcmds
+
+val pr_tactic : env -> Proof_type.tactic_expr -> std_ppcmds

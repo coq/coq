@@ -239,8 +239,8 @@ let prmorphism_argument_gen prrelation (variance,rel) =
 let prargument_class = prmorphism_argument_gen prrelation_class
 
 let pr_morphism_signature (l,c) =
- prlist (prmorphism_argument_gen Ppconstrnew.pr_constr) l ++
-  Ppconstrnew.pr_constr c
+ prlist (prmorphism_argument_gen Ppconstr.pr_constr) l ++
+  Ppconstr.pr_constr c
 
 let prmorphism k m =
   prterm k ++ str ": " ++

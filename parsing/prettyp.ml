@@ -526,38 +526,6 @@ let print_impargs ref =
   (if has_impl then print_impl_args impl 
    else (str "No implicit arguments" ++ fnl ()))
 
-let print_local_context () =
-  let env = Lib.contents_after None in
-  let rec print_var_rec = function 
-    | [] -> (mt ())
-    | (oname,Lib.Leaf lobj)::rest ->
-	if "VARIABLE" = object_tag lobj then
-          let d = get_variable (basename (fst oname)) in 
-	  (print_var_rec rest ++
-             print_named_decl d)
-	else 
-	  print_var_rec rest
-    | _::rest -> print_var_rec rest
-
-  and print_last_const = function
-    | (oname,Lib.Leaf lobj)::rest -> 
-        (match object_tag lobj with
-           | "CONSTANT" -> 
-	       let kn = constant_of_kn (snd oname) in
-               let {const_body=val_0;const_type=typ} = 
-		 Global.lookup_constant kn in
-		 (print_last_const rest ++
-                  print_basename kn ++str" = " ++
-                  print_typed_body (val_0,typ))
-           | "INDUCTIVE" -> 
-	       let kn = snd oname in
-               (print_last_const rest ++print_mutual kn ++ fnl ())
-           | "VARIABLE" ->  (mt ())
-           | _          ->  print_last_const rest)
-    | _ -> (mt ())
-  in 
-  (print_var_rec env ++  print_last_const env)
-
 let unfold_head_fconst = 
   let rec unfrec k = match kind_of_term k with
     | Const cst -> constant_value (Global.env ()) cst 

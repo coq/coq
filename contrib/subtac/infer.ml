@@ -6,7 +6,7 @@ open Util
 open Sast
 open Scoq
 open Pp
-open Ppconstrnew
+open Ppconstr
 
 let ($) f g = fun x -> f (g x)
 

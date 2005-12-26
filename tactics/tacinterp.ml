@@ -2192,7 +2192,7 @@ let print_ltac id =
   let kn = Nametab.locate_tactic id in
   let t = lookup kn in
    str "Ltac" ++ spc() ++ pr_qualid id ++ str ":=" ++ spc() ++
-    Pptacticnew.pr_glob_tactic (Global.env ()) t
+    Pptactic.pr_glob_tactic (Global.env ()) t
  with
   Not_found ->
    errorlabstrm "print_ltac"

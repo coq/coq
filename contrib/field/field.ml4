@@ -114,7 +114,7 @@ END
 *)
 
 (* For the translator, otherwise the code above is OK *)
-open Ppconstrnew
+open Ppconstr
 let pp_minus_div_arg _prc _prlc _prt (omin,odiv) = 
   if omin=None && odiv=None then mt() else
     spc() ++ str "with" ++

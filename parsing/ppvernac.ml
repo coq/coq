@@ -15,8 +15,8 @@ open Nametab
 open Util
 open Extend
 open Vernacexpr
-open Ppconstrnew
-open Pptacticnew
+open Ppconstr
+open Pptactic
 open Rawterm
 open Genarg
 open Pcoq
@@ -52,51 +52,25 @@ let pr_lname = function
 
 let pr_ltac_id = Nameops.pr_id
 
-let pr_module r =
-  let update_ref s = match r with
-    | Ident (loc,_) ->
-        Ident (loc,id_of_string s)
-    | Qualid (loc,qid) ->
-        Qualid (loc,make_qualid (fst (repr_qualid qid)) (id_of_string s)) in
-  let dir =
-    try
-      Nametab.full_name_module (snd (qualid_of_reference r))
-    with _ -> 
-    try
-      pi2 (Library.locate_qualified_library (snd (qualid_of_reference r)))
-    with _ -> 
-      errorlabstrm "" (str"Translator cannot find " ++ Libnames.pr_reference r)
-  in
-  let r = match List.rev (List.map string_of_id (repr_dirpath dir)) with
-    | [ "Coq"; "Lists"; "List" ] -> update_ref "MonoList"
-    | [ "Coq"; "Lists"; "PolyList" ] -> update_ref "List"
-    | _ -> r in
-  Libnames.pr_reference r
+let pr_module = Libnames.pr_reference
 
-let pr_import_module =
-  (* We assume List is never imported with "Import" ... *)
-  Libnames.pr_reference
-
-let pr_reference = Ppconstrnew.pr_reference
+let pr_import_module = Libnames.pr_reference
 
 let sep_end () = str"."
 
 (* Warning: [pr_raw_tactic] globalises and fails if globalisation fails *)
-(*
+
 let pr_raw_tactic_env l env t = 
-  Pptacticnew.pr_raw_tactic env t
-*)
-let pr_raw_tactic_env l env t = 
-  Pptacticnew.pr_glob_tactic env (Tacinterp.glob_tactic_env l env t)
+  pr_glob_tactic env (Tacinterp.glob_tactic_env l env t)
 
 let pr_gen env t =
-  Pptactic.pr_raw_generic 
-    Ppconstrnew.pr_constr
-    Ppconstrnew.pr_lconstr
-    (Pptacticnew.pr_raw_tactic_level env) pr_reference t
+  pr_raw_generic 
+    pr_constr
+    pr_lconstr
+    (pr_raw_tactic_level env) pr_reference t
 
 let pr_raw_tactic tac =
-  Pptacticnew.pr_glob_tactic (Global.env()) (Tacinterp.glob_tactic tac)
+  pr_glob_tactic (Global.env()) (Tacinterp.glob_tactic tac)
 
 let rec extract_signature = function
   | [] -> []
@@ -427,7 +401,7 @@ let pr_syntax_entry (p,rl) =
 *)
 let pr_vernac_solve (i,env,tac,deftac) =
   (if i = 1 then mt() else int i ++ str ": ") ++
-  Pptacticnew.pr_glob_tactic env tac
+  pr_glob_tactic env tac
   ++ (try if deftac & Pfedit.get_end_tac() <> None then str ".." else mt ()
       with UserError _|Stdpp.Exc_located _ -> mt())
 
@@ -812,26 +786,6 @@ let rec pr_vernac = function
   | VernacSetOpacity (fl,l) ->
       hov 1 ((if fl then str"Opaque" else str"Transparent") ++
              spc() ++ prlist_with_sep sep pr_reference l)
-
-  | VernacSetOption (Goptions.SecondaryTable ("Implicit","Arguments"),BoolValue true) -> 
-      str"Set Implicit Arguments" 
-      ++
-      (if !Options.translate_strict_impargs then
-	sep_end () ++ fnl () ++ str"Unset Strict Implicit"
-      else mt ())
-  | VernacUnsetOption (Goptions.SecondaryTable ("Implicit","Arguments"))
-  | VernacSetOption (Goptions.SecondaryTable ("Implicit","Arguments"),BoolValue false) -> 
-      (if !Options.translate_strict_impargs then
-	str"Set Strict Implicit" ++ sep_end () ++ fnl ()
-      else mt ())
-      ++
-      str"Unset Implicit Arguments" 
-
-  | VernacSetOption (Goptions.SecondaryTable (a,"Implicits"),BoolValue true) ->
-      str("Set "^a^" Implicit")
-  | VernacUnsetOption (Goptions.SecondaryTable (a,"Implicits")) -> 
-      str("Unset "^a^" Implicit")
-
   | VernacUnsetOption na ->
       hov 1 (str"Unset" ++ spc() ++ pr_printoption na None)
   | VernacSetOption (na,v) -> hov 2 (str"Set" ++ spc() ++ pr_set_option na v)
@@ -877,8 +831,6 @@ let rec pr_vernac = function
 	| PrintRewriteHintDbName s -> str"Print Rewrite HintDb" ++ spc() ++ str s
 	| PrintUniverses fopt -> str"Dump Universes" ++ pr_opt str fopt
 	| PrintName qid -> str"Print" ++ spc()  ++ pr_reference qid
-	| PrintLocalContext -> assert false
-            (* str"Print" *) 
 	| PrintModuleType qid -> str"Print Module Type" ++ spc() ++ pr_reference qid
 	| PrintModule qid -> str"Print Module" ++ spc() ++ pr_reference qid
 	| PrintInspect n -> str"Inspect" ++ spc() ++ int n
@@ -933,36 +885,4 @@ and pr_extend s cl =
 
 in pr_vernac
 
-let pr_vernac = make_pr_vernac Ppconstrnew.pr_constr Ppconstrnew.pr_lconstr
-
-let pr_vernac = function
-  | VernacRequire (_,_,[Ident(_,r)]) when
-      (* Obsolete modules *)
-      List.mem (string_of_id r)
-	["Refine"; "Inv"; "Equality"; "EAuto"; "AutoRewrite"; "EqDecide"; 
-         "Xml"; "Extraction"; "Tauto"; "Setoid_replace";"Elimdep";
-	 "DatatypesSyntax"; "LogicSyntax"; "Logic_TypeSyntax";
-	 "SpecifSyntax"; "PeanoSyntax"; "TypeSyntax"; "PolyListSyntax";
-	 "Zsyntax"] ->
-      warning ("Forgetting obsolete module "^(string_of_id r));
-      mt()
-  | VernacRequire (exp,spe,[Ident(_,r)]) when
-      (* Renamed modules *)
-      List.mem (string_of_id r) ["zarith_aux";"fast_integer"] ->
-      warning ("Replacing obsolete module "^(string_of_id r)^" with ZArith");
-	(str "Require" ++ spc() ++ pr_require_token exp ++
-	(match spe with
-	  | None -> mt()
-	  | Some flag ->
-	      (if flag then str"Specification" else str"Implementation") ++
-	      spc ()) ++
-	str "ZArith.")
-  | VernacImport (false,[Libnames.Ident (_,a)]) when
-      (* Pour ceux qui ont utilisé la couche "Import *_scope" de compat *)
-      let a = Names.string_of_id a in
-      a = "nat_scope" or a = "Z_scope" or a = "R_scope" -> mt()
-  | VernacPrint PrintLocalContext -> 
-      warning ("\"Print.\" is discontinued");
-      mt ()
-  | x -> pr_vernac x ++ sep_end ()
-
+let pr_vernac v = make_pr_vernac pr_constr pr_lconstr v ++ sep_end ()

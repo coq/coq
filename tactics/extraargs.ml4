@@ -51,7 +51,7 @@ END
 let pr_gen prc _prlc _prtac c = prc c
 
 let pr_rawc _prc _prlc _prtac raw = 
-  Ppconstrnew.pr_constr (Constrextern.extern_rawconstr Idset.empty raw)
+  Ppconstr.pr_constr (Constrextern.extern_rawconstr Idset.empty raw)
 
 let interp_raw _ _ (t,_) = t
 
