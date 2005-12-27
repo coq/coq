@@ -139,10 +139,10 @@ parsing/pptactic.cmi: interp/topconstr.cmi kernel/term.cmi proofs/tacexpr.cmo \
     interp/ppextend.cmi lib/pp.cmi library/libnames.cmi interp/genarg.cmi \
     kernel/environ.cmi 
 parsing/ppvernac.cmi: toplevel/vernacexpr.cmo lib/util.cmi \
-    interp/topconstr.cmi proofs/tacexpr.cmo pretyping/rawterm.cmi \
-    parsing/pptactic.cmi interp/ppextend.cmi parsing/ppconstr.cmi lib/pp.cmi \
-    parsing/pcoq.cmi library/nametab.cmi kernel/names.cmi library/nameops.cmi \
-    library/libnames.cmi interp/genarg.cmi kernel/environ.cmi 
+    interp/topconstr.cmi pretyping/rawterm.cmi parsing/pptactic.cmi \
+    interp/ppextend.cmi parsing/ppconstr.cmi lib/pp.cmi parsing/pcoq.cmi \
+    library/nametab.cmi kernel/names.cmi library/nameops.cmi \
+    library/libnames.cmi interp/genarg.cmi 
 parsing/prettyp.cmi: lib/util.cmi pretyping/termops.cmi kernel/term.cmi \
     kernel/sign.cmi kernel/safe_typing.cmi pretyping/reductionops.cmi \
     lib/pp.cmi library/nametab.cmi kernel/names.cmi library/libnames.cmi \
@@ -1113,8 +1113,7 @@ parsing/ppvernac.cmo: toplevel/vernacexpr.cmo lib/util.cmi \
     interp/modintern.cmi library/libnames.cmi library/lib.cmi \
     library/impargs.cmi library/goptions.cmi library/global.cmi \
     interp/genarg.cmi parsing/extend.cmi parsing/egrammar.cmi \
-    library/declaremods.cmi library/decl_kinds.cmo interp/constrintern.cmi \
-    parsing/ppvernac.cmi 
+    library/declaremods.cmi library/decl_kinds.cmo parsing/ppvernac.cmi 
 parsing/ppvernac.cmx: toplevel/vernacexpr.cmx lib/util.cmx \
     interp/topconstr.cmx tactics/tacinterp.cmx proofs/tacexpr.cmx \
     pretyping/rawterm.cmx parsing/pptactic.cmx interp/ppextend.cmx \
@@ -1123,8 +1122,7 @@ parsing/ppvernac.cmx: toplevel/vernacexpr.cmx lib/util.cmx \
     interp/modintern.cmx library/libnames.cmx library/lib.cmx \
     library/impargs.cmx library/goptions.cmx library/global.cmx \
     interp/genarg.cmx parsing/extend.cmx parsing/egrammar.cmx \
-    library/declaremods.cmx library/decl_kinds.cmx interp/constrintern.cmx \
-    parsing/ppvernac.cmi 
+    library/declaremods.cmx library/decl_kinds.cmx parsing/ppvernac.cmi 
 parsing/prettyp.cmo: lib/util.cmi pretyping/termops.cmi kernel/term.cmi \
     interp/syntax_def.cmi kernel/sign.cmi kernel/safe_typing.cmi \
     pretyping/reductionops.cmi kernel/reduction.cmi pretyping/recordops.cmi \
@@ -2208,19 +2206,15 @@ toplevel/toplevel.cmx: toplevel/vernacexpr.cmx toplevel/vernac.cmx \
 toplevel/usage.cmo: config/coq_config.cmi toplevel/usage.cmi 
 toplevel/usage.cmx: config/coq_config.cmx toplevel/usage.cmi 
 toplevel/vernac.cmo: toplevel/vernacinterp.cmi toplevel/vernacexpr.cmo \
-    toplevel/vernacentries.cmi lib/util.cmi proofs/tacmach.cmi \
-    tactics/tacinterp.cmi lib/system.cmi library/states.cmi \
-    proofs/refiner.cmi parsing/ppvernac.cmi lib/pp.cmi proofs/pfedit.cmi \
-    parsing/pcoq.cmi lib/options.cmi kernel/names.cmi library/library.cmi \
-    library/lib.cmi parsing/lexer.cmi interp/constrintern.cmi \
-    toplevel/vernac.cmi 
+    toplevel/vernacentries.cmi lib/util.cmi lib/system.cmi library/states.cmi \
+    parsing/ppvernac.cmi lib/pp.cmi proofs/pfedit.cmi parsing/pcoq.cmi \
+    lib/options.cmi kernel/names.cmi library/library.cmi library/lib.cmi \
+    parsing/lexer.cmi interp/constrintern.cmi toplevel/vernac.cmi 
 toplevel/vernac.cmx: toplevel/vernacinterp.cmx toplevel/vernacexpr.cmx \
-    toplevel/vernacentries.cmx lib/util.cmx proofs/tacmach.cmx \
-    tactics/tacinterp.cmx lib/system.cmx library/states.cmx \
-    proofs/refiner.cmx parsing/ppvernac.cmx lib/pp.cmx proofs/pfedit.cmx \
-    parsing/pcoq.cmx lib/options.cmx kernel/names.cmx library/library.cmx \
-    library/lib.cmx parsing/lexer.cmx interp/constrintern.cmx \
-    toplevel/vernac.cmi 
+    toplevel/vernacentries.cmx lib/util.cmx lib/system.cmx library/states.cmx \
+    parsing/ppvernac.cmx lib/pp.cmx proofs/pfedit.cmx parsing/pcoq.cmx \
+    lib/options.cmx kernel/names.cmx library/library.cmx library/lib.cmx \
+    parsing/lexer.cmx interp/constrintern.cmx toplevel/vernac.cmi 
 toplevel/vernacentries.cmo: kernel/vm.cmi toplevel/vernacinterp.cmi \
     toplevel/vernacexpr.cmo kernel/vconv.cmi lib/util.cmi kernel/univ.cmi \
     kernel/typeops.cmi interp/topconstr.cmi pretyping/termops.cmi \
