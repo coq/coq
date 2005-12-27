@@ -94,52 +94,12 @@ let parse_phrase (po, verbch) =
 
 let just_parsing = ref false
 let chan_translate = ref stdout
-let last_char = ref '\000'
 
-(* postprocessor to avoid lexical icompatibilities between V7 and V8.
-   Ex: auto.(* comment *)  or  simpl.auto
- *)
 let set_formatter_translator() =
   let ch = !chan_translate in
-  let out s b e =
-    let n = e-b in
-    if n > 0 then begin
-      (match !last_char with
-          '.' -> 
-            (match s.[b] with
-                '('|'a'..'z'|'A'..'Z' -> output ch " " 0 1 
-              | _ -> ())
-        | _ -> ());
-      last_char := s.[e-1]
-    end;
-    output ch s b e
-  in
+  let out s b e = output ch s b e in
   Format.set_formatter_output_functions out (fun () -> flush ch);
   Format.set_max_boxes max_int
-
-let pre_printing = function
-  | VernacSolve (i,tac,deftac) when Options.do_translate () ->
-      (try
-        let (_,env) = Pfedit.get_goal_context i in
-        let t = Tacinterp.glob_tactic_env [] env tac in
-        let pfts = Pfedit.get_pftreestate () in
-        let gls = fst (Refiner.frontier (Tacmach.proof_of_pftreestate pfts)) in
-        Some (env,t,Pfedit.focus(),List.length gls)
-      with UserError _|Stdpp.Exc_located _ -> None)
-  | _ -> None
-
-let post_printing loc (env,t,f,n) = function
-  | VernacSolve (i,_,deftac) ->
-      let loc = unloc loc in
-      set_formatter_translator();
-      let pp = Ppvernac.pr_vernac_solve (i,env,t,deftac) ++ sep_end () in
-      (if !translate_file then begin
-	msg (hov 0 (comment (fst loc) ++ pp ++ comment (snd loc - 1)));
-      end
-      else
-	msgnl (hov 4 (str"New Syntax:" ++ fnl() ++ pp)));
-      Format.set_formatter_out_channel stdout
-  | _ -> ()
 
 let pr_new_syntax loc ocom =
   let loc = unloc loc in
@@ -200,20 +160,8 @@ let rec vernac_com interpfun (loc,com) =
 
   in 
   try
-    if do_translate () then
-      match pre_printing com with
-          None ->
-            pr_new_syntax loc (Some com);
-            interp com
-        | Some state ->
-            (try
-              interp com;
-              post_printing loc state com
-            with e ->
-              post_printing loc state com;
-              raise e)
-    else
-      interp com
+    if do_translate () then pr_new_syntax loc (Some com);
+    interp com
   with e -> 
     Format.set_formatter_out_channel stdout;
     raise (DuringCommandInterp (loc, e))

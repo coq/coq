@@ -69,8 +69,7 @@ let pr_gen env t =
     pr_lconstr
     (pr_raw_tactic_level env) pr_reference t
 
-let pr_raw_tactic tac =
-  pr_glob_tactic (Global.env()) (Tacinterp.glob_tactic tac)
+let pr_raw_tactic tac = pr_raw_tactic (Global.env()) tac
 
 let rec extract_signature = function
   | [] -> []
@@ -376,34 +375,6 @@ let pr_paren_reln_or_extern = function
   | Some pprim,Any -> qsnew pprim
   | Some pprim,Prec p -> qsnew pprim ++ spc() ++ str":" ++ spc() ++ int p
   | _ -> mt()
-(*
-let rec pr_next_hunks = function 
-  | UNP_FNL -> str"FNL"
-  | UNP_TAB -> str"TAB"
-  | RO c -> qsnew c
-  | UNP_BOX (b,ll) -> str"[" ++ pr_box b ++ prlist_with_sep sep pr_next_hunks ll ++ str"]"
-  | UNP_BRK (n,m) -> str"[" ++ int n ++ spc() ++ int m ++ str"]"
-  | UNP_TBRK (n,m) -> str"[ TBRK" ++ int n ++ spc() ++ int m ++ str"]"
-  | PH (e,None,_) -> print_ast e
-  | PH (e,Some ext,pr) -> print_ast e ++ spc() ++ str":" ++ spc() ++ pr_paren_reln_or_extern (Some ext,pr)
-  | UNP_SYMBOLIC _ -> mt()
-
-let pr_unparsing u =
-  str "[ " ++ prlist_with_sep sep pr_next_hunks u ++ str " ]"
-
-let pr_astpat a = str"<<" ++ print_ast a ++ str">>"
-
-let pr_syntax_rule (nm,s,u) = str nm ++ spc() ++ str"[" ++ pr_astpat s ++ str"]" ++ spc() ++ str"->" ++ spc() ++ pr_unparsing u
-
-let pr_syntax_entry (p,rl) =
-  str"level" ++ spc() ++ int p ++ str" :" ++ fnl() ++
-  prlist_with_sep (fun _ -> fnl() ++ str"| ") pr_syntax_rule rl
-*)
-let pr_vernac_solve (i,env,tac,deftac) =
-  (if i = 1 then mt() else int i ++ str ": ") ++
-  pr_glob_tactic env tac
-  ++ (try if deftac & Pfedit.get_end_tac() <> None then str ".." else mt ()
-      with UserError _|Stdpp.Exc_located _ -> mt())
 
 (**************************************)
 (* Pretty printer for vernac commands *)
@@ -708,14 +679,10 @@ let rec pr_vernac = function
 
   (* Solving *)
   | VernacSolve (i,tac,deftac) ->
-      (* Normally shunted by vernac.ml *)
-      let env =
-        try snd (Pfedit.get_goal_context i)
-        with UserError _ -> Global.env() in
-      let tac = 
-	Options.with_option Options.translate_syntax 
-	  (Constrintern.for_grammar (Tacinterp.glob_tactic_env [] env)) tac in
-      pr_vernac_solve (i,env,tac,deftac)
+      (if i = 1 then mt() else int i ++ str ": ") ++
+      pr_raw_tactic tac
+      ++ (try if deftac & Pfedit.get_end_tac() <> None then str ".." else mt ()
+      with UserError _|Stdpp.Exc_located _ -> mt())
 
   | VernacSolveExistential (i,c) ->
       str"Existential " ++ int i ++ pr_lconstrarg c

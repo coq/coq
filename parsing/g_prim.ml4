@@ -25,7 +25,7 @@ GEXTEND Gram
   GLOBAL: 
     bigint natural integer identref name ident var preident
     fullyqualid qualid reference
-    ne_string;
+    ne_string string;
   preident:
     [ [ s = IDENT -> s ] ]
   ;
@@ -73,6 +73,9 @@ GEXTEND Gram
     [ [ s = STRING -> 
         if s="" then Util.user_err_loc(loc,"",Pp.str"Empty string"); s
     ] ]
+  ;
+  string:
+    [ [ s = STRING -> s ] ]
   ;
   integer:
     [ [ i = INT      -> int_of_string i

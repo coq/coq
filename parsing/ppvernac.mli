@@ -26,6 +26,3 @@ open Topconstr
 val sep_end : unit -> std_ppcmds
 
 val pr_vernac : vernac_expr -> std_ppcmds
-
-val pr_vernac_solve : 
-  int * Environ.env * Tacexpr.glob_tactic_expr * bool -> std_ppcmds
