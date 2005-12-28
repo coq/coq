@@ -2019,6 +2019,8 @@ tactics/termdn.cmx: lib/util.cmx kernel/term.cmx pretyping/rawterm.cmx \
     pretyping/pattern.cmx library/nametab.cmx kernel/names.cmx \
     library/nameops.cmx library/libnames.cmx tactics/dn.cmx \
     tactics/termdn.cmi 
+test-suite/zarith.cmo: test-suite/zarith.cmi 
+test-suite/zarith.cmx: test-suite/zarith.cmi 
 tools/coqdep.cmo: tools/coqdep_lexer.cmo config/coq_config.cmi 
 tools/coqdep.cmx: tools/coqdep_lexer.cmx config/coq_config.cmx 
 tools/gallina.cmo: tools/gallina_lexer.cmo 
