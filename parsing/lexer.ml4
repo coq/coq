@@ -95,7 +95,6 @@ let check_ident str =
 		bad_token str
 	    | _ -> 
 		bad_token str)
-	(* iso 8859-1 accentuated letters *)
     | [< _ = Stream.empty >] -> ()
     | [< >] -> bad_token str
   in
