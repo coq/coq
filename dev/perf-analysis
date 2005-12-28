@@ -5,12 +5,13 @@ Performance analysis for V8-0 branch
 
   Dec 27, 2005: contrib Karatsuba added (~ 30s)
 
-Dec 1-14, 2005: benchmarking server down
-  entre les 2: Godel: -10%
+Dec 28, 2005: size decrease
+  mainly due to Defined moved to Qed in FSets (reduction from 95M to 7Mo)
 
-Nov 29 and Dec 16, 2005: size increase
-  due to new record flag in inductive for extraction
-  but time decrease (e.g. Godel: -8%)
+Dec 1-14, 2005: benchmarking server down
+  between the two dates: Godel: -10%, CoRN: -10%
+  probably due to changes around vm (new informative Cast,
+  change of equality in named_context_val) 
 
   Oct 6, 2005: contribs IPC and Tait added (~ 22s and ~ 25s)
 
