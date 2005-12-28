@@ -77,8 +77,6 @@ val pr_extend :
   (tolerability -> glob_tactic_expr -> std_ppcmds) -> int ->
     string -> closed_generic_argument list -> std_ppcmds
 
-val qsnew : string -> std_ppcmds
-
 val pr_intro_pattern : intro_pattern_expr -> std_ppcmds
 
 val pr_raw_tactic : env -> raw_tactic_expr -> std_ppcmds

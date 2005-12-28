@@ -15,7 +15,7 @@ open Pcoq
 open Genarg
 open Pp
 
-let pr_mlname _ _ _ s = spc () ++ Pptactic.qsnew s
+let pr_mlname _ _ _ s = spc () ++ qs s
 
 ARGUMENT EXTEND mlname
   TYPED AS string

@@ -296,20 +296,6 @@ let strip_prod_binders_expr n ty =
       | _ -> error "Cannot translate fix tactic: not enough products" in
   strip_ty [] n ty
 
-
-(* In new syntax only double quote char is escaped by repeating it *)
-let rec escape_string s =
-  let rec escape_at s i =
-    if i<0 then s
-    else if s.[i] == '"' then
-      let s' = String.sub s 0 i^"\""^String.sub s i (String.length s - i) in
-      escape_at s' (i-1)
-    else escape_at s (i-1) in
-  escape_at s (String.length s - 1)
-
-let qstring s = str ("\""^escape_string s^"\"")
-let qsnew = qstring
-
 let pr_ltac_or_var pr = function
   | ArgArg x -> pr x
   | ArgVar (loc,id) -> pr_with_comments loc (pr_id id)
@@ -863,13 +849,13 @@ let rec pr_tac env inherited tac =
   | TacFail (ArgArg 0,"") -> str "fail", latom
   | TacFail (n,s) -> 
       str "fail" ++ (if n=ArgArg 0 then mt () else pr_arg (pr_or_var int) n) ++
-      (if s="" then mt() else (spc() ++ qstring s)), latom
+      (if s="" then mt() else (spc() ++ qs s)), latom
   | TacFirst tl ->
       str "first" ++ spc () ++ pr_seq_body (pr_tac env ltop) tl, llet
   | TacSolve tl ->
       str "solve" ++ spc () ++ pr_seq_body (pr_tac env ltop) tl, llet
   | TacId "" -> str "idtac", latom
-  | TacId s -> str "idtac" ++ (qstring s), latom
+  | TacId s -> str "idtac" ++ (qs s), latom
   | TacAtom (loc,TacAlias (_,s,l,_)) ->
       pr_with_comments loc
         (pr_extend env (level_of inherited) s (List.map snd l)),
@@ -881,7 +867,7 @@ let rec pr_tac env inherited tac =
       str "constr:" ++ pr_constr env c, latom
   | TacArg(ConstrMayEval c) ->
       pr_may_eval (pr_constr env) (pr_lconstr env) (pr_cst env) c, leval
-  | TacArg(TacFreshId sopt) -> str "fresh" ++ pr_opt qstring sopt, latom
+  | TacArg(TacFreshId sopt) -> str "fresh" ++ pr_opt qs sopt, latom
   | TacArg(Integer n) -> int n, latom
   | TacArg(TacCall(loc,f,l)) ->
       pr_with_comments loc
@@ -902,9 +888,9 @@ and pr_tacarg env = function
   | Reference r -> pr_ref r
   | ConstrMayEval c ->
       pr_may_eval (pr_constr env) (pr_lconstr env) (pr_cst env) c
-  | TacFreshId sopt -> str "fresh" ++ pr_opt qstring sopt
+  | TacFreshId sopt -> str "fresh" ++ pr_opt qs sopt
   | TacExternal (_,com,req,la) ->
-      str "external" ++ spc() ++ qstring com ++ spc() ++ qstring req ++ 
+      str "external" ++ spc() ++ qs com ++ spc() ++ qs req ++ 
       spc() ++ prlist_with_sep spc (pr_tacarg env) la
   | (TacCall _|Tacexp _|Integer _) as a ->
       str "ltac:" ++ pr_tac env (latom,E) (TacArg a)
