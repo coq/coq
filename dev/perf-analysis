@@ -1,6 +1,35 @@
 Performance analysis for V8-0-bugfix branch
 -------------------------------------------
 
+  Dec 27, 2005: contrib Karatsuba added (~ 24s)
+
+Dec 1-14, 2005: benchmarking server down
+
+Nov 29 and Dec 16, 2005: size increase
+  due to new record flag in inductive for extraction
+
+  Oct 6, 2005: contribs IPC and Tait added (~ 22s and ~ 24s)
+ 
+  Aug 1, 2005: contrib Kildall added (~ 64s)
+ 
+Jul 26-Aug 2, 2005: bench down
+
+Jul 14-15, 2005: 4 contribs failed including CoRN
+
+  Jul 7, 2005: adding contrib Fermat4: but not compabible and remove on Jul 8
+
+  Jun 17, 2005: contrib Goodstein extended and moved to CantorOrdinals (~ 28s)
+
+Jun 4, 2005: significant time reduction
+   (e.g. Nijmegen/LinAlg: -15%, Nijmegen/QArith: stable; Nijmegen/CoRN: -1%)
+   only changes are the removal of an assert checking location and
+   the pre-definition of level 200 (could it be just a parsing improvement??)
+
+  May 19, 2005: contrib Goodstein and prfx (~ 9s) added 
+
+Apr 30, 2005: evaluation order of atomic tactics changed
+   (e.g. Nijmegen/CoRN: stable, Nijmegen/QArith: -2%, Nijmegen/LinAlg: +20%) 
+
 Mar 20, 2005: fixed Logic.with_check bug
   improved whole V8-0-bugfix bench by 4 %
   (e.g. Nijmegen/CoRN: - 7.5 %, Nijmegen/QARITH: - 1.5 %)
@@ -15,6 +44,8 @@ Feb 17, 2005: fixed omega bug #922 (wrong STATE dependency):
 
 Feb 2, 2005: fixed ltac var interpretation order
 
+  Jan 13, 2005: contrib SumOfTwoSquare added (~ 37s)
+
 Dec 20-29, 2004: reduced whole V8-0-bugfix due to Berkeley/Godel failure
 
-Nov 27 - Dec 10, 2005: strong instability
+Nov 27 - Dec 10, 2004: strong instability
