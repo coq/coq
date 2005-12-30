@@ -221,7 +221,7 @@ let ineq1_of_constr (h,t) =
 			   hstrict=false}]
                 |_->assert false)
           | Ind (kn,i) ->
-	      if IndRef(kn,i) = Coqlib.glob_eqT then
+	      if IndRef(kn,i) = Coqlib.glob_eq then
 		           let t0= args.(0) in
                            let t1= args.(1) in
                            let t2= args.(2) in
