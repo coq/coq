@@ -20,8 +20,10 @@ open Genarg
 (**********************************************************************)
 (* constr entry keys                                                  *)
 
+type side = Left | Right
+
 type production_position =
-  | BorderProd of bool * Gramext.g_assoc option  (* true=left; false=right *)
+  | BorderProd of side * Gramext.g_assoc option  (* true=left; false=right *)
   | InternalProd
 
 type production_level =

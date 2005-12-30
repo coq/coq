@@ -377,8 +377,8 @@ let prec_assoc = function
 
 let precedence_of_entry_type from = function
   | ETConstr (NumLevel n,BorderProd (_,None)) -> n, Prec n
-  | ETConstr (NumLevel n,BorderProd (left,Some a)) ->
-      n, let (lp,rp) = prec_assoc a in if left then lp else rp
+  | ETConstr (NumLevel n,BorderProd (b,Some a)) ->
+      n, let (lp,rp) = prec_assoc a in if b=Left then lp else rp
   | ETConstr (NumLevel n,InternalProd) -> n, Prec n
   | ETConstr (NextLevel,_) -> from, L
   | ETOther ("constr","annot") -> 10, Prec 10
@@ -825,9 +825,9 @@ let compute_syntax_data (df,modifiers) =
   let innerlevel = NumLevel 200 in
   let typs =
     find_symbols
-      (NumLevel n,BorderProd(true,assoc))
+      (NumLevel n,BorderProd(Left,assoc))
       (innerlevel,InternalProd)
-      (NumLevel n,BorderProd(false,assoc))
+      (NumLevel n,BorderProd(Right,assoc))
       symbols in
   (* To globalize... *)
   let typs = List.map (set_entry_type etyps) typs in
