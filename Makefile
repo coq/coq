@@ -1282,7 +1282,7 @@ otags:
 # grammar modules with camlp4
 
 ML4FILES += parsing/lexer.ml4 parsing/pcoq.ml4 parsing/q_util.ml4 \
-   # parsing/q_coqast.ml4 parsing/g_prim.ml4 
+  parsing/q_coqast.ml4 parsing/g_prim.ml4 
 
 GRAMMARNEEDEDCMO=\
   lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/util.cmo lib/bigint.cmo \
