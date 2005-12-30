@@ -47,9 +47,15 @@ val path_of_S : constructor
 val glob_O : global_reference
 val glob_S : global_reference
 
+(* Booleans *)
+val glob_bool : global_reference
+val path_of_true : constructor
+val path_of_false : constructor
+val glob_true : global_reference
+val glob_false : global_reference
+
 (* Equality *)
 val glob_eq : global_reference
-val glob_eqT : global_reference
 
 (*s Constructions and patterns related to Coq initial state are unknown
    at compile time. Therefore, we can only provide methods to build

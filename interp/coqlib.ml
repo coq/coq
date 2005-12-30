@@ -78,9 +78,9 @@ let check_required_library d =
 (************************************************************************)
 (* Specific Coq objects *)
 
-let init_reference dir s=gen_reference "Coqlib" ("Init"::dir) s
+let init_reference dir s = gen_reference "Coqlib" ("Init"::dir) s
 
-let init_constant dir s=gen_constant "Coqlib" ("Init"::dir) s  
+let init_constant dir s = gen_constant "Coqlib" ("Init"::dir) s  
 
 let arith_dir = ["Coq";"Arith"]
 let arith_modules = [arith_dir]
@@ -113,6 +113,7 @@ let arith_module = make_dir ["Coq";"Arith";"Arith"]
 (* TODO: temporary hack *)
 let make_path dir id = Libnames.encode_kn dir id
 
+(** Natural numbers *)
 let nat_path = make_path datatypes_module (id_of_string "nat")
 
 let glob_nat = IndRef (nat_path,0)
@@ -122,11 +123,20 @@ let path_of_S = ((nat_path,0),2)
 let glob_O = ConstructRef path_of_O
 let glob_S = ConstructRef path_of_S
 
+(** Booleans *)
+let bool_path = make_path datatypes_module (id_of_string "bool")
+
+let glob_bool = IndRef (bool_path,0)
+
+let path_of_true = ((bool_path,0),1)
+let path_of_false = ((bool_path,0),2)
+let glob_true  = ConstructRef path_of_true
+let glob_false  = ConstructRef path_of_false
+
+(** Equality *)
 let eq_path = make_path logic_module (id_of_string "eq")
-let eqT_path = make_path logic_module (id_of_string "eq")
 
 let glob_eq = IndRef (eq_path,0)
-let glob_eqT = IndRef (eqT_path,0)
 
 type coq_sigma_data = {
   proj1 : constr;
@@ -232,40 +242,6 @@ let build_coq_and ()   = Lazy.force coq_and
 let build_coq_or ()   = Lazy.force coq_or
 let build_coq_ex ()   = Lazy.force coq_ex
 
-(****************************************************************************)
-(*                             Patterns                                     *)
-(* This needs to have interp_constrpattern available ... 
-
-let parse_constr s =
-  try 
-    Pcoq.parse_string Pcoq.Constr.constr_eoi s 
-  with Stdpp.Exc_located (_ , (Stream.Failure | Stream.Error _)) ->
-    error "Syntax error : not a construction"
-
-let parse_pattern s =
-  Constrintern.interp_constrpattern Evd.empty (Global.env()) (parse_constr s)
-let coq_eq_pattern =
-  lazy (snd (parse_pattern "(Coq.Init.Logic.eq ?1 ?2 ?3)"))
-let coq_eqT_pattern =
-  lazy (snd (parse_pattern "(Coq.Init.Logic.eq ?1 ?2 ?3)"))
-let coq_identity_pattern =
-  lazy (snd (parse_pattern "(Coq.Init.Logic_Type.identity ?1 ?2 ?3)"))
-let coq_existS_pattern =
-  lazy (snd (parse_pattern "(Coq.Init.Specif.existS ?1 ?2 ?3 ?4)"))
-let coq_existT_pattern = 
-  lazy (snd (parse_pattern "(Coq.Init.Specif.existT ?1 ?2 ?3 ?4)"))
-let coq_not_pattern =
-  lazy (snd (parse_pattern "(Coq.Init.Logic.not ?)"))
-let coq_imp_False_pattern =
-  lazy (snd (parse_pattern "? -> Coq.Init.Logic.False"))
-let coq_imp_False_pattern =
-  lazy (snd (parse_pattern "? -> Coq.Init.Logic.False"))
-let coq_eqdec_partial_pattern =
-  lazy (snd (parse_pattern "(sumbool (eq ?1 ?2 ?3) ?4)"))
-let coq_eqdec_pattern =
-  lazy (snd (parse_pattern "(x,y:?1){<?1>x=y}+{~(<?1>x=y)}"))
-*)
-
 (* The following is less readable but does not depend on parsing *)
 let coq_eq_ref      = lazy (init_reference ["Logic"] "eq")
 let coq_identity_ref     = lazy (init_reference ["Datatypes"] "identity")
@@ -275,3 +251,4 @@ let coq_not_ref     = lazy (init_reference ["Logic"] "not")
 let coq_False_ref   = lazy (init_reference ["Logic"] "False")
 let coq_sumbool_ref = lazy (init_reference ["Specif"] "sumbool")
 let coq_sig_ref = lazy (init_reference ["Specif"] "sig")
+
