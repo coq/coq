@@ -502,17 +502,17 @@ let end_module id =
   let dir = fst oldprefix in
   let msid = msid_of_prefix oldprefix in
 
-  let substobjs = try
+  let substobjs, keep, special = try
     match res_o with
       | None -> 
-	  empty_subst, mbids, msid, substitute
+	  (empty_subst, mbids, msid, substitute), keep, special
       | Some (MTEident ln) ->
-	  abstract_substobjs mbids (KNmap.find ln (!modtypetab))
+	  abstract_substobjs mbids (KNmap.find ln (!modtypetab)), [], []
       | Some (MTEsig (msid,_)) ->
 	  todo "Anonymous signatures not supported";
-	  empty_subst, mbids, msid, []
+	  (empty_subst, mbids, msid, []), keep, special
       | Some (MTEwith _ as mty) ->
-	  abstract_substobjs mbids (get_modtype_substobjs mty)
+	  abstract_substobjs mbids (get_modtype_substobjs mty), [], []
       | Some (MTEfunsig _) -> 
 	  anomaly "Funsig cannot be here..."
     with
