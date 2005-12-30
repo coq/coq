@@ -134,8 +134,8 @@ let abstract_replace clause c2 c1 unsafe gl =
   let t1 = pf_type_of gl c1 
   and t2 = pf_type_of gl c2 in
   if unsafe or (pf_conv_x gl t1 t2) then
-    let e = (build_coq_eq_data ()).eq in
-    let sym = (build_coq_eq_data ()).sym in
+    let e = build_coq_eq () in
+    let sym = build_coq_sym_eq () in
     let eq = applist (e, [t1;c1;c2]) in
     tclTHENS (assert_tac false Anonymous eq)
       [onLastHyp (fun id -> 
@@ -157,20 +157,8 @@ let replace_in id c2 c1 gl = abstract_replace (Some id) c2 c1 false gl
    -- Eduardo (19/8/97)
 *)
 
-(* Tactics for equality reasoning with the "eq"  or "eqT"
-   relation This code  will work with any equivalence relation which 
-   is substitutive *)
-
-(* Patterns *)
-
-let build_coq_eq eq = eq.eq
-let build_ind eq = eq.ind
-let build_rect eq = 
-  match eq.rect with
-    | None -> assert false
-    | Some c -> c
-	  
-(*********** List of constructions depending of the initial state *)
+(* Tactics for equality reasoning with the "eq" relation. This code
+   will work with any equivalence relation which is substitutive *)
 
 (* [find_positions t1 t2]
 
@@ -416,7 +404,7 @@ let gen_absurdity id gl =
 let discrimination_pf e (t,t1,t2) discriminator lbeq gls =
   let i           = build_coq_I () in
   let absurd_term = build_coq_False () in
-  let eq_elim     = build_ind lbeq in
+  let eq_elim     = lbeq.ind in
   (applist (eq_elim, [t;t1;mkNamedLambda e t discriminator;i;t2]), absurd_term)
 
 exception NotDiscriminable
