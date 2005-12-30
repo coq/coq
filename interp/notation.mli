@@ -50,36 +50,45 @@ val push_scope : scope_name -> scopes -> scopes
 val declare_delimiters : scope_name -> delimiters -> unit
 val find_delimiters_scope : loc -> delimiters -> scope_name
 
-(*s Declare and uses back and forth a numeral interpretation *)
+(*s Declare and uses back and forth an interpretation of primitive token *)
 
 (* A numeral interpreter is the pair of an interpreter for **integer**
    numbers in terms and an optional interpreter in pattern, if
    negative numbers are not supported, the interpreter must fail with
    an appropriate error message *)
 
-type num_interpreter =
-    (loc -> bigint -> rawconstr)
-    * (loc -> bigint -> name -> cases_pattern) option
-
-type num_uninterpreter =
-    rawconstr list * (rawconstr -> bigint option)
-    * (cases_pattern -> bigint option) option
-
 type required_module = global_reference * string list 
+
+type 'a prim_token_interpreter =
+    (loc -> 'a -> rawconstr) * (loc -> 'a -> name -> cases_pattern) option
+
+type 'a prim_token_uninterpreter =
+    rawconstr list * (rawconstr -> 'a option)
+    * (cases_pattern -> 'a option) option
+
 val declare_numeral_interpreter : scope_name -> required_module ->
-  num_interpreter -> num_uninterpreter -> unit
+  bigint prim_token_interpreter -> bigint prim_token_uninterpreter -> unit
 
-(* Return the [term]/[cases_pattern] bound to a numeral in a given scope context*)
-val interp_numeral : loc -> bigint -> scope_name list -> rawconstr
-val interp_numeral_as_pattern : loc -> bigint -> name -> scope_name list ->
-  cases_pattern
+val declare_string_interpreter : scope_name -> required_module ->
+  string prim_token_interpreter -> string prim_token_uninterpreter -> unit
 
-(* Return the numeral bound to a [term]/[cases_pattern]; raise [No_match] if no *)
-(* such numeral *)
-val uninterp_numeral : rawconstr -> scope_name * bigint
-val uninterp_cases_numeral : cases_pattern -> scope_name * bigint
+(* Return the [term]/[cases_pattern] bound to a primitive token in a
+   given scope context*)
 
-val availability_of_numeral : scope_name -> scopes -> delimiters option option
+val interp_prim_token : loc -> prim_token -> scope_name list -> rawconstr
+val interp_prim_token_cases_pattern : loc -> prim_token -> name -> 
+  scope_name list -> cases_pattern
+
+(* Return the primitive token associated to a [term]/[cases_pattern];
+   raise [No_match] if no such token *)
+
+val uninterp_prim_token : 
+  rawconstr -> scope_name * prim_token
+val uninterp_prim_token_cases_pattern : 
+  cases_pattern -> scope_name * prim_token
+
+val availability_of_prim_token : 
+  scope_name -> scopes -> delimiters option option
 
 (*s Declare and interpret back and forth a notation *)
 
@@ -103,9 +112,8 @@ val uninterp_cases_pattern_notations : cases_pattern ->
       (interp_rule * interpretation * int option) list
 
 (* Test if a notation is available in the scopes *)
-(* context [scopes] if available, the result is not None; the first *)
-(* argument is itself not None if a delimiters is needed; the second *)
-(* argument is a numeral printer if the *)
+(* context [scopes]; if available, the result is not None; the first *)
+(* argument is itself not None if a delimiters is needed *)
 val availability_of_notation : scope_name option * notation -> scopes -> 
   (scope_name option * delimiters option) option
 
@@ -156,4 +164,4 @@ val declare_notation_printing_rule : notation -> unparsing_rule -> unit
 val find_notation_printing_rule : notation -> unparsing_rule
 
 (**********************************************************************)
-(* Rem: printing rules for numerals are trivial *)
+(* Rem: printing rules for primitive token are canonical *)

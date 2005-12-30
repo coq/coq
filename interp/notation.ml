@@ -168,7 +168,7 @@ type key =
 
 (* Scopes table : interpretation -> scope_name *)
 let notations_key_table = ref Gmapl.empty
-let numeral_key_table = Hashtbl.create 7
+let prim_token_key_table = Hashtbl.create 7
 
 let rawconstr_key = function
   | RApp (_,RRef (_,ref),_) -> RefKey ref
@@ -192,40 +192,64 @@ let pattern_key = function
 (**********************************************************************)
 (* Interpreting numbers (not in summary because functional objects)   *)
 
-type num_interpreter =
-    (loc -> bigint -> rawconstr)
-    * (loc -> bigint -> name -> cases_pattern) option
-
-type num_uninterpreter =
-    rawconstr list * (rawconstr -> bigint option)
-    * (cases_pattern -> bigint option) option
-
 type required_module = global_reference * string list 
 
-let numeral_interpreter_tab =
-  (Hashtbl.create 7 : (scope_name,required_module*num_interpreter) Hashtbl.t)
+type 'a prim_token_interpreter =
+    (loc -> 'a -> rawconstr) * (loc -> 'a -> name -> cases_pattern) option
 
-let declare_numeral_interpreter sc dir interp (patl,uninterp,uninterpc) =
+type 'a prim_token_uninterpreter =
+    rawconstr list * (rawconstr -> 'a option)
+    * (cases_pattern -> 'a option) option
+
+type internal_prim_token_interpreter =
+    loc -> prim_token -> 
+      required_module * ((unit -> rawconstr) * (name -> cases_pattern) option)
+
+let prim_token_interpreter_tab =
+  (Hashtbl.create 7 : (scope_name, internal_prim_token_interpreter) Hashtbl.t)
+
+let add_prim_token_interpreter sc interp =
+  try 
+    let cont = Hashtbl.find prim_token_interpreter_tab sc in
+    Hashtbl.replace prim_token_interpreter_tab sc (interp cont)
+  with Not_found ->
+    let cont = (fun _loc _p -> raise Not_found) in
+    Hashtbl.add prim_token_interpreter_tab sc (interp cont)
+
+let declare_prim_token_interpreter sc interp (patl,uninterp,uninterpc) =
   declare_scope sc;
-  Hashtbl.add numeral_interpreter_tab sc (dir,interp);
+  add_prim_token_interpreter sc interp;
   List.iter
-    (fun pat -> Hashtbl.add numeral_key_table (rawconstr_key pat)
+    (fun pat -> Hashtbl.add prim_token_key_table (rawconstr_key pat)
       (sc,uninterp,uninterpc))
     patl
+
+let mkNumeral n = Numeral n
+let mkString s = String s
+
+let delay dir (int,intc) loc x =
+  (dir, ((fun () -> int loc x), option_app (fun i -> i loc x) intc))
+
+let declare_numeral_interpreter sc dir interp (patl,uninterp,uninterpc) =
+  declare_prim_token_interpreter sc
+    (fun cont loc -> function Numeral n-> delay dir interp loc n | p -> cont loc p)
+    (patl,
+     (fun r -> option_app mkNumeral (uninterp r)),
+     option_app (fun u pc -> option_app mkNumeral (u pc)) uninterpc)
+
+let declare_string_interpreter sc dir interp (patl,uninterp,uninterpc) =
+  declare_prim_token_interpreter sc
+    (fun cont loc -> function String s -> delay dir interp loc s | p -> cont loc p)
+    (patl,
+     (fun r -> option_app mkString (uninterp r)),
+     option_app (fun u -> fun pc -> option_app mkString (u pc)) uninterpc)
 
 let check_required_module loc sc (ref,d) =
   try let _ = sp_of_global ref in ()
   with Not_found ->
-    user_err_loc (loc,"numeral_interpreter",
+    user_err_loc (loc,"prim_token_interpreter",
     str ("Cannot interpret numbers in "^sc^" without requiring first module "
     ^(list_last d)))
-
-let lookup_numeral_interpreter loc = function
-  | Scope sc ->
-      let (dir,interpreter) = Hashtbl.find numeral_interpreter_tab sc in
-      check_required_module loc sc dir;
-      interpreter
-  | SingleNotation _ -> raise Not_found
 
 (* Look if some notation or numeral printer in [scope] can be used in
    the scope stack [scopes], and if yes, using delimiters or not *)
@@ -314,35 +338,42 @@ let availability_of_notation (ntn_scope,ntn) scopes =
     Stringmap.mem ntn (Stringmap.find scope !scope_map).notations in
   find_without_delimiters f (ntn_scope,Some ntn) scopes
 
-let rec interp_numeral_gen loc f n = function
-  | scope :: scopes ->
-      (try f (lookup_numeral_interpreter loc scope)
-       with Not_found -> interp_numeral_gen loc f n scopes)
+let rec interp_prim_token_gen loc f p = function
+  | SingleNotation _ :: scopes -> interp_prim_token_gen loc f p scopes
+  | Scope sc :: scopes ->
+      (try 
+	let dir,interp = Hashtbl.find prim_token_interpreter_tab sc loc p in
+	check_required_module loc sc dir;
+	f interp
+       with Not_found -> 
+	 interp_prim_token_gen loc f p scopes)
   | [] ->
-      user_err_loc (loc,"interp_numeral",
-      str "No interpretation for numeral " ++ pr_bigint n)
+      user_err_loc (loc,"interp_prim_token",
+      (match p with
+	| Numeral n -> str "No interpretation for numeral " ++ pr_bigint n
+	| String s -> str "No interpretation for string " ++ qs s))
 
-let interp_numeral loc n scopes =
-  interp_numeral_gen loc (fun x -> fst x loc n) n
-    (List.fold_right push_scope scopes !scope_stack)
+let push_scopes = List.fold_right push_scope
 
-let interp_numeral_as_pattern loc n name scopes =
-  let f x = match snd x with
-    | None -> raise Not_found
-    | Some g -> g loc n name in
-  interp_numeral_gen loc f n (List.fold_right push_scope scopes !scope_stack)
+let interp_prim_token loc p scopes =
+  let f x = fst x () in
+  interp_prim_token_gen loc f p (push_scopes scopes !scope_stack)
 
-let uninterp_numeral c =
+let interp_prim_token_cases_pattern loc p name scopes =
+  let f x = match snd x with None -> raise Not_found | Some g -> g name in
+  interp_prim_token_gen loc f p (push_scopes scopes !scope_stack)
+
+let uninterp_prim_token c =
   try 
-    let (sc,numpr,_) = Hashtbl.find numeral_key_table (rawconstr_key c) in
+    let (sc,numpr,_) = Hashtbl.find prim_token_key_table (rawconstr_key c) in
     match numpr c with
       | None -> raise No_match
       | Some n -> (sc,n)
   with Not_found -> raise No_match
 
-let uninterp_cases_numeral c =
+let uninterp_prim_token_cases_pattern c =
   try 
-    match Hashtbl.find numeral_key_table (pattern_key c) with
+    match Hashtbl.find prim_token_key_table (pattern_key c) with
       | (_,_,None) -> raise No_match
       | (sc,_,Some numpr) ->
 	  match numpr c with
@@ -350,8 +381,8 @@ let uninterp_cases_numeral c =
 	    | Some n -> (sc,n)
   with Not_found -> raise No_match
 
-let availability_of_numeral printer_scope scopes =
-  let f scope = Hashtbl.mem numeral_interpreter_tab scope in
+let availability_of_prim_token printer_scope scopes =
+  let f scope = Hashtbl.mem prim_token_interpreter_tab scope in
   option_app snd (find_without_delimiters f (Some printer_scope,None) scopes)
 
 (* Miscellaneous *)

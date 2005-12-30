@@ -19,6 +19,7 @@ open Ppextend
 open Topconstr
 open Term
 open Pattern
+open Rawterm
 (*i*)
 
 let sep_p = fun _ -> str"."
@@ -53,6 +54,10 @@ let prec_less child (parent,assoc) =
       | L -> (<) child parent
       | Prec n -> child<=n
       | Any -> true
+
+let prec_of_prim_token = function
+  | Numeral p -> if Bigint.is_pos_or_zero p then lposint else lnegint
+  | String _ -> latom
 
 let env_assoc_value v env =
   try List.nth env (v-1)
@@ -103,8 +108,6 @@ let pr_com_at n =
 let pr_with_comments loc pp = pr_located (fun x -> x) (loc,pp)
 
 let pr_sep_com sep f c = pr_with_comments (constr_loc c) (sep() ++ f c)
-
-open Rawterm
 
 let pr_opt pr = function
   | None -> mt ()
@@ -157,6 +160,10 @@ let pr_or_var pr = function
   | Genarg.ArgArg x -> pr x
   | Genarg.ArgVar (loc,s) -> pr_lident (loc,s)
 
+let pr_prim_token = function
+  | Numeral n -> Bigint.pr_bigint n
+  | String s -> qs s
+
 let las = lapp
 let lpator = 100
 
@@ -174,7 +181,7 @@ let rec pr_patt sep inh p =
   | CPatNotation (_,"( _ )",[p]) ->
       pr_patt (fun()->str"(") (max_int,E) p ++ str")", latom
   | CPatNotation (_,s,env) -> pr_patnotation (pr_patt mt) s env
-  | CPatNumeral (_,i) -> Bigint.pr_bigint i, latom
+  | CPatPrim (_,p) -> pr_prim_token p, latom
   | CPatDelimiters (_,k,p) -> pr_delimiters k (pr_patt mt lsimple p), 1
   in
   let loc = cases_pattern_loc p in
@@ -566,9 +573,7 @@ let rec pr sep inherited a =
   | CNotation (_,"( _ )",[t]) ->
       pr (fun()->str"(") (max_int,L) t ++ str")", latom
   | CNotation (_,s,env) -> pr_notation (pr mt) s env
-  | CNumeral (_,p) ->
-      Bigint.pr_bigint p, 
-      (if Bigint.is_pos_or_zero p then lposint else lnegint)
+  | CPrim (_,p) -> pr_prim_token p, prec_of_prim_token p
   | CDelimiters (_,sc,a) -> pr_delimiters sc (pr mt lsimple a), 1
   | CDynamic _ -> str "<dynamic>", latom
   in
@@ -665,8 +670,6 @@ let pr_unfold_occ pr_ref = function
                        hov 0 (prlist_with_sep spc int nl))
 
 let pr_qualid qid = str (string_of_qualid qid)
-
-open Rawterm
 
 let pr_arg pr x = spc () ++ pr x
 

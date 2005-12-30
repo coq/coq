@@ -180,7 +180,7 @@ GEXTEND Gram
       | c=match_constr -> c
       | "("; c = operconstr LEVEL "200"; ")" ->
           (match c with
-              CNumeral(_,z) when Bigint.is_pos_or_zero z ->
+              CPrim (_,Numeral z) when Bigint.is_pos_or_zero z ->
                 CNotation(loc,"( _ )",[c])
             | _ -> c) ] ]
   ;
@@ -218,8 +218,9 @@ GEXTEND Gram
   ;
   atomic_constr:
     [ [ g=global -> CRef g
-      | s=sort -> CSort(loc,s)
-      | n=INT -> CNumeral (loc, Bigint.of_string n)
+      | s=sort -> CSort (loc,s)
+      | n=INT -> CPrim (loc, Numeral (Bigint.of_string n))
+      | s=string -> CPrim (loc, String s)
       | "_" -> CHole loc
       | "?"; id=ident -> CPatVar(loc,(false,id)) ] ]
   ;
@@ -294,10 +295,11 @@ GEXTEND Gram
       | "_" -> CPatAtom (loc,None)
       | "("; p = pattern LEVEL "200"; ")" ->
           (match p with
-              CPatNumeral(_,z) when Bigint.is_pos_or_zero z ->
+              CPatPrim (_,Numeral z) when Bigint.is_pos_or_zero z ->
                 CPatNotation(loc,"( _ )",[p])
             | _ -> p)
-      | n = INT -> CPatNumeral (loc, Bigint.of_string n) ] ]
+      | n = INT -> CPatPrim (loc, Numeral (Bigint.of_string n))
+      | s = string -> CPatPrim (loc, String s) ] ]
   ;
   binder_list:
     [ [ idl=LIST1 name; bl=LIST0 binder_let -> 

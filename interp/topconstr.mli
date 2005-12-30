@@ -70,13 +70,15 @@ type explicitation = ExplByPos of int | ExplByName of identifier
 
 type proj_flag = int option (* [Some n] = proj of the n-th visible argument *)
 
+type prim_token = Numeral of Bigint.bigint | String of string
+
 type cases_pattern_expr =
   | CPatAlias of loc * cases_pattern_expr * identifier
   | CPatCstr of loc * reference * cases_pattern_expr list
   | CPatAtom of loc * reference option
   | CPatOr of loc * cases_pattern_expr list
   | CPatNotation of loc * notation * cases_pattern_expr list
-  | CPatNumeral of loc * Bigint.bigint
+  | CPatPrim of loc * prim_token
   | CPatDelimiters of loc * string * cases_pattern_expr
 
 type constr_expr =
@@ -103,7 +105,7 @@ type constr_expr =
   | CSort of loc * rawsort
   | CCast of loc * constr_expr * cast_kind * constr_expr
   | CNotation of loc * notation * constr_expr list
-  | CNumeral of loc * Bigint.bigint
+  | CPrim of loc * prim_token
   | CDelimiters of loc * string * constr_expr
   | CDynamic of loc * Dyn.t
 

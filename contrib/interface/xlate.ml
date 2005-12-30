@@ -264,9 +264,10 @@ let rec xlate_match_pattern =
     | CPatOr (_,l) -> xlate_error "CPatOr: TODO"
     | CPatDelimiters(_, key, p) -> 
 	CT_pattern_delimitors(CT_num_type key, xlate_match_pattern p)
-    | CPatNumeral(_,n) ->
+    | CPatPrim (_,Numeral n) ->
  	CT_coerce_NUM_to_MATCH_PATTERN
 	  (CT_int_encapsulator(Bigint.to_string n))
+    | CPatPrim (_,String _) -> xlate_error "CPatPrim (String): TODO"
     | CPatNotation(_, s, l) -> 
 	CT_pattern_notation(CT_string s,
 			    CT_match_pattern_list(List.map xlate_match_pattern l))
@@ -388,8 +389,9 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
 
    | CSort(_, s) -> CT_coerce_SORT_TYPE_to_FORMULA(xlate_sort s)
    | CNotation(_, s, l) -> notation_to_formula s (List.map xlate_formula l)
-   | CNumeral(_, i) -> 
+   | CPrim (_, Numeral i) -> 
        CT_coerce_NUM_to_FORMULA(CT_int_encapsulator(Bigint.to_string i))
+   | CPrim (_, String _) -> xlate_error "CPrim (String): TODO"
    | CHole _ -> CT_existvarc 
 (* I assume CDynamic has been inserted to make free form extension of
    the language possible, but this would go agains the logic of pcoq anyway. *)

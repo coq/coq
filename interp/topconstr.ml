@@ -469,13 +469,15 @@ type explicitation = ExplByPos of int | ExplByName of identifier
 
 type proj_flag = int option (* [Some n] = proj of the n-th visible argument *)
 
+type prim_token = Numeral of Bigint.bigint | String of string
+
 type cases_pattern_expr =
   | CPatAlias of loc * cases_pattern_expr * identifier
   | CPatCstr of loc * reference * cases_pattern_expr list
   | CPatAtom of loc * reference option
   | CPatOr of loc * cases_pattern_expr list
   | CPatNotation of loc * notation * cases_pattern_expr list
-  | CPatNumeral of loc * Bigint.bigint
+  | CPatPrim of loc * prim_token
   | CPatDelimiters of loc * string * cases_pattern_expr
 
 type constr_expr =
@@ -502,7 +504,7 @@ type constr_expr =
   | CSort of loc * rawsort
   | CCast of loc * constr_expr * cast_kind * constr_expr
   | CNotation of loc * notation * constr_expr list
-  | CNumeral of loc * Bigint.bigint
+  | CPrim of loc * prim_token
   | CDelimiters of loc * string * constr_expr
   | CDynamic of loc * Dyn.t
 
@@ -550,7 +552,7 @@ let constr_loc = function
   | CSort (loc,_) -> loc
   | CCast (loc,_,_,_) -> loc
   | CNotation (loc,_,_) -> loc
-  | CNumeral (loc,_) -> loc
+  | CPrim (loc,_) -> loc
   | CDelimiters (loc,_,_) -> loc
   | CDynamic _ -> dummy_loc
 
@@ -560,7 +562,7 @@ let cases_pattern_loc = function
   | CPatAtom (loc,_) -> loc
   | CPatOr (loc,_) -> loc
   | CPatNotation (loc,_,_) -> loc
-  | CPatNumeral (loc,_) -> loc
+  | CPatPrim (loc,_) -> loc
   | CPatDelimiters (loc,_,_) -> loc
 
 let occur_var_constr_ref id = function
@@ -582,7 +584,7 @@ let rec occur_var_constr_expr id = function
     occur_var_constr_expr id a or occur_var_constr_expr id b
   | CNotation (_,_,l) -> List.exists (occur_var_constr_expr id) l
   | CDelimiters (loc,_,a) -> occur_var_constr_expr id a
-  | CHole _ | CEvar _ | CPatVar _ | CSort _ | CNumeral _ | CDynamic _ -> false
+  | CHole _ | CEvar _ | CPatVar _ | CSort _ | CPrim _ | CDynamic _ -> false
   | CCases (loc,_,_,_) 
   | CLetTuple (loc,_,_,_,_) 
   | CIf (loc,_,_,_,_) 
@@ -653,7 +655,7 @@ let map_constr_expr_with_binders f g e = function
   | CNotation (loc,n,l) -> CNotation (loc,n,List.map (f e) l)
   | CDelimiters (loc,s,a) -> CDelimiters (loc,s,f e a)
   | CHole _ | CEvar _ | CPatVar _ | CSort _ 
-  | CNumeral _ | CDynamic _ | CRef _ as x -> x
+  | CPrim _ | CDynamic _ | CRef _ as x -> x
   | CCases (loc,rtnpo,a,bl) ->
       (* TODO: apply g on the binding variables in pat... *)
       let bl = List.map (fun (loc,pat,rhs) -> (loc,pat,f e rhs)) bl in

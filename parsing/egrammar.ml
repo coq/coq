@@ -70,7 +70,7 @@ let make_constr_action
 	  make ((p,CRef (Ident (dummy_loc,v))) :: env) tl)
     | Some (p, ETBigint) :: tl -> (* non-terminal *)
         Gramext.action (fun (v:Bigint.bigint) ->
-	  make ((p,CNumeral (dummy_loc,v)) :: env) tl)
+	  make ((p,CPrim (dummy_loc,Numeral v)) :: env) tl)
     | Some (p, ETConstrList _) :: tl ->
         Gramext.action (fun (v:constr_expr list) ->
           let dummyid = Ident (dummy_loc,id_of_string "") in
@@ -96,7 +96,7 @@ let make_cases_pattern_action
 	  make ((p,CPatAtom (dummy_loc,Some (Ident (dummy_loc,v)))) :: env) tl)
     | Some (p, ETBigint) :: tl -> (* non-terminal *)
         Gramext.action (fun (v:Bigint.bigint) ->
-	  make ((p,CPatNumeral (dummy_loc,v)) :: env) tl)
+	  make ((p,CPatPrim (dummy_loc,Numeral v)) :: env) tl)
     | Some (p, ETConstrList _) :: tl ->
         Gramext.action (fun (v:cases_pattern_expr list) ->
           let dummyid = Ident (dummy_loc,id_of_string "") in

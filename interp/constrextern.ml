@@ -54,7 +54,7 @@ let print_coercions = ref false
 (* This forces printing universe names of Type{.} *)
 let print_universes = ref false
 
-(* This suppresses printing of numeral and symbols *)
+(* This suppresses printing of primitive tokens (e.g. numeral) and symbols *)
 let print_no_symbol = ref false
 
 (* This governs printing of projections using the dot notation symbols *)
@@ -131,7 +131,7 @@ let rec check_same_pattern p1 p2 =
     | CPatCstr(_,c1,a1), CPatCstr(_,c2,a2) when c1=c2 ->
         List.iter2 check_same_pattern a1 a2
     | CPatAtom(_,r1), CPatAtom(_,r2) when r1=r2 -> ()
-    | CPatNumeral(_,i1), CPatNumeral(_,i2) when i1=i2 -> ()
+    | CPatPrim(_,i1), CPatPrim(_,i2) when i1=i2 -> ()
     | CPatDelimiters(_,s1,e1), CPatDelimiters(_,s2,e2) when s1=s2 ->
         check_same_pattern e1 e2
     | _ -> failwith "not same pattern"
@@ -191,7 +191,7 @@ let rec check_same_type ty1 ty2 =
       check_same_type b1 b2
   | CNotation(_,n1,e1), CNotation(_,n2,e2) when n1=n2 ->
       List.iter2 check_same_type e1 e2
-  | CNumeral(_,i1), CNumeral(_,i2) when i1=i2 -> ()
+  | CPrim(_,i1), CPrim(_,i2) when i1=i2 -> ()
   | CDelimiters(_,s1,e1), CDelimiters(_,s2,e2) when s1=s2 ->
       check_same_type e1 e2
   | _ when ty1=ty2 -> ()
@@ -330,7 +330,7 @@ let make_notation loc ntn l =
   then expand_curly_brackets (fun n l -> CNotation (loc,n,l)) ntn l
   else match ntn,l with
     (* Special case to avoid writing "- 3" for e.g. (Zopp 3) *)
-    | "- _", [CNumeral(_,p)] when Bigint.is_strictly_pos p ->
+    | "- _", [CPrim(_,Numeral p)] when Bigint.is_strictly_pos p ->
         CNotation (loc,ntn,[CNotation(loc,"( _ )",l)])
     | _ -> CNotation (loc,ntn,l)
 
@@ -339,7 +339,7 @@ let make_pat_notation loc ntn l =
   then expand_curly_brackets (fun n l -> CPatNotation (loc,n,l)) ntn l
   else match ntn,l with
     (* Special case to avoid writing "- 3" for e.g. (Zopp 3) *)
-    | "- _", [CPatNumeral(_,p)] when Bigint.is_strictly_pos p ->
+    | "- _", [CPatPrim (_,Numeral p)] when Bigint.is_strictly_pos p ->
         CPatNotation (loc,ntn,[CPatNotation(loc,"( _ )",l)])
     | _ -> CPatNotation (loc,ntn,l)
 
@@ -385,17 +385,17 @@ let match_aconstr_cases_pattern c (metas_scl,pat) =
 let rec extern_cases_pattern_in_scope scopes vars pat =
   try 
     if !Options.raw_print or !print_no_symbol then raise No_match;
-    let (sc,n) = Notation.uninterp_cases_numeral pat in
-    match Notation.availability_of_numeral sc (make_current_scopes scopes) with
+    let (sc,p) = uninterp_prim_token_cases_pattern pat in
+    match availability_of_prim_token sc (make_current_scopes scopes) with
     | None -> raise No_match
     | Some key ->
         let loc = pattern_loc pat in
-        insert_pat_delimiters (CPatNumeral (loc,n)) key
+        insert_pat_delimiters (CPatPrim (loc,p)) key
   with No_match ->
   try 
     if !Options.raw_print or !print_no_symbol then raise No_match;
     extern_symbol_pattern scopes vars pat
-      (Notation.uninterp_cases_pattern_notations pat)
+      (uninterp_cases_pattern_notations pat)
   with No_match ->
   match pat with
   | PatVar (loc,Name id) -> CPatAtom (loc,Some (Ident (loc,id)))
@@ -424,7 +424,7 @@ and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
         match keyrule with
           | NotationRule (sc,ntn) ->
 	      let scopes' = make_current_scopes (tmp_scope, scopes) in
-	      (match Notation.availability_of_notation (sc,ntn) scopes' with
+	      (match availability_of_notation (sc,ntn) scopes' with
                   (* Uninterpretation is not allowed in current context *)
               | None -> raise No_match
                   (* Uninterpretation is allowed in current context *)
@@ -588,15 +588,14 @@ let rec share_fix_binders n rbl ty def =
 let rec extern inctx scopes vars r =
   try 
     if !Options.raw_print or !print_no_symbol then raise No_match;
-    extern_numeral (Rawterm.loc_of_rawconstr r)
-      scopes (Notation.uninterp_numeral r)
+    extern_prim_token (loc_of_rawconstr r) scopes (uninterp_prim_token r)
   with No_match ->
 
   let r = remove_coercions inctx r in
 
   try 
     if !Options.raw_print or !print_no_symbol then raise No_match;
-    extern_symbol scopes vars r (Notation.uninterp_notations r)
+    extern_symbol scopes vars r (uninterp_notations r)
   with No_match -> match r with
   | RRef (loc,ref) ->
       extern_global loc (implicits_of_global ref)
@@ -611,7 +610,7 @@ let rec extern inctx scopes vars r =
   | RApp (loc,f,args) ->
       (match f with
 	 | RRef (rloc,ref) ->
-	     let subscopes = Notation.find_arguments_scope ref in
+	     let subscopes = find_arguments_scope ref in
 	     let args =
 	       extern_args (extern true) (snd scopes) vars args subscopes in
 	     extern_app loc inctx (implicits_of_global ref)
@@ -766,10 +765,10 @@ and extern_eqn inctx scopes vars (loc,ids,pl,c) =
   (loc,List.map (extern_cases_pattern_in_scope scopes vars) pl,
    extern inctx scopes vars c)
 
-and extern_numeral loc scopes (sc,n) =
-  match Notation.availability_of_numeral sc (make_current_scopes scopes) with
-    | None -> raise No_match
-    | Some key -> insert_delimiters (CNumeral (loc,n)) key
+and extern_prim_token loc scopes (sc,p) =
+  match availability_of_prim_token sc (make_current_scopes scopes) with
+  | None -> raise No_match
+  | Some key -> insert_delimiters (CPrim (loc,p)) key
 
 and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
   | [] -> raise No_match
@@ -789,7 +788,7 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
           match keyrule with
           | NotationRule (sc,ntn) ->
 	      let scopes' = make_current_scopes (tmp_scope, scopes) in
-	      (match Notation.availability_of_notation (sc,ntn) scopes' with
+	      (match availability_of_notation (sc,ntn) scopes' with
                   (* Uninterpretation is not allowed in current context *)
               | None -> raise No_match
                   (* Uninterpretation is allowed in current context *)
