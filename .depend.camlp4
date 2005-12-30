@@ -27,6 +27,8 @@ contrib/interface/centaur.ml: parsing/grammar.cma
 parsing/lexer.ml: 
 parsing/pcoq.ml: 
 parsing/q_util.ml: 
+parsing/q_coqast.ml: 
+parsing/g_prim.ml: 
 parsing/g_minicoq.ml: 
 parsing/g_vernac.ml: 
 parsing/g_proofs.ml: 
