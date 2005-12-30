@@ -36,10 +36,12 @@ apply Acc_intro.
 unfold ltof in |- *; intros b ltfafb.
 apply IHn.
 apply lt_le_trans with (f a); auto with arith.
-Qed.
+Defined.
 
 Theorem well_founded_gtof : well_founded gtof.
-Proof well_founded_ltof.
+Proof.
+exact well_founded_ltof.
+Defined.
 
 (** It is possible to directly prove the induction principle going
    back to primitive recursion on natural numbers ([induction_ltof1])
@@ -113,31 +115,30 @@ apply Acc_intro.
 intros b ltfafb.
 apply IHn.
 apply lt_le_trans with (f a); auto with arith.
-Qed.
+Defined.
 
 End Well_founded_Nat.
 
 Lemma lt_wf : well_founded lt.
-Proof well_founded_ltof nat (fun m => m).
+Proof.
+exact (well_founded_ltof nat (fun m => m)).
+Defined.
 
 Lemma lt_wf_rec1 :
  forall n (P:nat -> Set), (forall n, (forall m, m < n -> P m) -> P n) -> P n.
 Proof.
-exact
- (fun p (P:nat -> Set) (F:forall n, (forall m, m < n -> P m) -> P n) =>
-    induction_ltof1 nat (fun m => m) P F p).
+exact (fun p P F => induction_ltof1 nat (fun m => m) P F p).
 Defined.
 
 Lemma lt_wf_rec :
  forall n (P:nat -> Set), (forall n, (forall m, m < n -> P m) -> P n) -> P n.
 Proof.
-exact
- (fun p (P:nat -> Set) (F:forall n, (forall m, m < n -> P m) -> P n) =>
-    induction_ltof2 nat (fun m => m) P F p).
+exact (fun p P F => induction_ltof2 nat (fun m => m) P F p).
 Defined.
 
 Lemma lt_wf_ind :
  forall n (P:nat -> Prop), (forall n, (forall m, m < n -> P m) -> P n) -> P n.
+Proof.
 intro p; intros; elim (lt_wf p); auto with arith.
 Qed.
 
@@ -154,8 +155,9 @@ Proof lt_wf_ind.
 Lemma lt_wf_double_rec :
  forall P:nat -> nat -> Set,
    (forall n m,
-      (forall p (q:nat), p < n -> P p q) ->
+      (forall p q, p < n -> P p q) ->
       (forall p, p < m -> P n p) -> P n m) -> forall n m, P n m.
+Proof.
 intros P Hrec p; pattern p in |- *; apply lt_wf_rec.
 intros n H q; pattern q in |- *; apply lt_wf_rec; auto with arith.
 Defined.
@@ -165,6 +167,7 @@ Lemma lt_wf_double_ind :
    (forall n m,
       (forall p (q:nat), p < n -> P p q) ->
       (forall p, p < m -> P n p) -> P n m) -> forall n m, P n m.
+Proof.
 intros P Hrec p; pattern p in |- *; apply lt_wf_ind.
 intros n H q; pattern q in |- *; apply lt_wf_ind; auto with arith.
 Qed.
@@ -178,25 +181,25 @@ Variable R : A -> A -> Prop.
 
 (* Relational form of inversion *)
 Variable F : A -> nat -> Prop.
-Definition inv_lt_rel x y :=
-   exists2 n : _, F x n & (forall m, F y m -> n < m).
+Definition inv_lt_rel x y := exists2 n, F x n & (forall m, F y m -> n < m).
 
 Hypothesis F_compat : forall x y:A, R x y -> inv_lt_rel x y.
-Remark acc_lt_rel : forall x:A, (exists n : _, F x n) -> Acc R x.
-intros x [n fxn]; generalize x fxn; clear x fxn.
+Remark acc_lt_rel : forall x:A, (exists n, F x n) -> Acc R x.
+Proof.
+intros x [n fxn]; generalize dependent x.
 pattern n in |- *; apply lt_wf_ind; intros.
 constructor; intros.
-case (F_compat y x); trivial; intros.
+destruct (F_compat y x) as (x0,H1,H2); trivial.
 apply (H x0); auto.
 Qed.
 
 Theorem well_founded_inv_lt_rel_compat : well_founded R.
+Proof.
 constructor; intros.
 case (F_compat y a); trivial; intros.
 apply acc_lt_rel; trivial.
 exists x; trivial.
 Qed.
-
 
 End LT_WF_REL.
 
