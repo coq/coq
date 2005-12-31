@@ -978,9 +978,11 @@ library/states.cmx: lib/system.cmx library/summary.cmx library/library.cmx \
 library/summary.cmo: lib/util.cmi lib/pp.cmi lib/dyn.cmi library/summary.cmi 
 library/summary.cmx: lib/util.cmx lib/pp.cmx lib/dyn.cmx library/summary.cmi 
 parsing/argextend.cmo: toplevel/vernacexpr.cmo lib/util.cmi \
-    parsing/q_util.cmi parsing/pcoq.cmi interp/genarg.cmi 
+    parsing/q_util.cmi parsing/q_coqast.cmo parsing/pcoq.cmi \
+    interp/genarg.cmi 
 parsing/argextend.cmx: toplevel/vernacexpr.cmx lib/util.cmx \
-    parsing/q_util.cmx parsing/pcoq.cmx interp/genarg.cmx 
+    parsing/q_util.cmx parsing/q_coqast.cmx parsing/pcoq.cmx \
+    interp/genarg.cmx 
 parsing/egrammar.cmo: toplevel/vernacexpr.cmo lib/util.cmi \
     interp/topconstr.cmi proofs/tacexpr.cmo library/summary.cmi lib/pp.cmi \
     parsing/pcoq.cmi interp/notation.cmi kernel/names.cmi library/nameops.cmi \
@@ -1021,6 +1023,12 @@ parsing/g_natsyntax.cmx: lib/util.cmx pretyping/rawterm.cmx lib/pp.cmx \
     parsing/pcoq.cmx lib/options.cmx interp/notation.cmx kernel/names.cmx \
     library/libnames.cmx interp/coqlib.cmx lib/bigint.cmx \
     parsing/g_natsyntax.cmi 
+parsing/g_prim.cmo: lib/util.cmi interp/topconstr.cmi lib/pp.cmi \
+    parsing/pcoq.cmi library/nametab.cmi kernel/names.cmi \
+    library/libnames.cmi parsing/lexer.cmi lib/bigint.cmi 
+parsing/g_prim.cmx: lib/util.cmx interp/topconstr.cmx lib/pp.cmx \
+    parsing/pcoq.cmx library/nametab.cmx kernel/names.cmx \
+    library/libnames.cmx parsing/lexer.cmx lib/bigint.cmx 
 parsing/g_proofs.cmo: toplevel/vernacexpr.cmo lib/util.cmi \
     interp/topconstr.cmi kernel/term.cmi proofs/tacexpr.cmo lib/pp.cmi \
     parsing/pcoq.cmi interp/genarg.cmi parsing/g_vernac.cmo 
@@ -1163,6 +1171,12 @@ parsing/printmod.cmo: lib/util.cmi lib/pp.cmi library/nametab.cmi \
 parsing/printmod.cmx: lib/util.cmx lib/pp.cmx library/nametab.cmx \
     kernel/names.cmx library/nameops.cmx library/libnames.cmx \
     library/global.cmx kernel/declarations.cmx parsing/printmod.cmi 
+parsing/q_coqast.cmo: lib/util.cmi interp/topconstr.cmi proofs/tacexpr.cmo \
+    pretyping/rawterm.cmi parsing/q_util.cmi parsing/pcoq.cmi \
+    kernel/names.cmi library/libnames.cmi interp/genarg.cmi 
+parsing/q_coqast.cmx: lib/util.cmx interp/topconstr.cmx proofs/tacexpr.cmx \
+    pretyping/rawterm.cmx parsing/q_util.cmx parsing/pcoq.cmx \
+    kernel/names.cmx library/libnames.cmx interp/genarg.cmx 
 parsing/q_util.cmo: toplevel/vernacexpr.cmo lib/util.cmi parsing/pcoq.cmi \
     interp/genarg.cmi parsing/q_util.cmi 
 parsing/q_util.cmx: toplevel/vernacexpr.cmx lib/util.cmx parsing/pcoq.cmx \
@@ -1183,10 +1197,10 @@ parsing/search.cmx: lib/util.cmx pretyping/typing.cmx pretyping/termops.cmx \
     pretyping/evd.cmx kernel/environ.cmx library/declaremods.cmx \
     library/declare.cmx kernel/declarations.cmx interp/coqlib.cmx \
     parsing/search.cmi 
-parsing/tacextend.cmo: lib/util.cmi parsing/q_util.cmi lib/pp_control.cmi \
-    lib/pp.cmi interp/genarg.cmi parsing/argextend.cmo 
-parsing/tacextend.cmx: lib/util.cmx parsing/q_util.cmx lib/pp_control.cmx \
-    lib/pp.cmx interp/genarg.cmx parsing/argextend.cmx 
+parsing/tacextend.cmo: lib/util.cmi parsing/q_util.cmi parsing/q_coqast.cmo \
+    lib/pp_control.cmi lib/pp.cmi interp/genarg.cmi parsing/argextend.cmo 
+parsing/tacextend.cmx: lib/util.cmx parsing/q_util.cmx parsing/q_coqast.cmx \
+    lib/pp_control.cmx lib/pp.cmx interp/genarg.cmx parsing/argextend.cmx 
 parsing/tactic_printer.cmo: lib/util.cmi proofs/tacexpr.cmo kernel/sign.cmi \
     proofs/refiner.cmi proofs/proof_type.cmi proofs/proof_trees.cmi \
     parsing/printer.cmi parsing/pptactic.cmi lib/pp.cmi proofs/logic.cmi \
@@ -1197,10 +1211,12 @@ parsing/tactic_printer.cmx: lib/util.cmx proofs/tacexpr.cmx kernel/sign.cmx \
     parsing/printer.cmx parsing/pptactic.cmx lib/pp.cmx proofs/logic.cmx \
     library/global.cmx pretyping/evd.cmx kernel/environ.cmx \
     parsing/tactic_printer.cmi 
-parsing/vernacextend.cmo: lib/util.cmi parsing/q_util.cmi lib/pp_control.cmi \
-    lib/pp.cmi interp/genarg.cmi parsing/argextend.cmo 
-parsing/vernacextend.cmx: lib/util.cmx parsing/q_util.cmx lib/pp_control.cmx \
-    lib/pp.cmx interp/genarg.cmx parsing/argextend.cmx 
+parsing/vernacextend.cmo: lib/util.cmi parsing/q_util.cmi \
+    parsing/q_coqast.cmo lib/pp_control.cmi lib/pp.cmi interp/genarg.cmi \
+    parsing/argextend.cmo 
+parsing/vernacextend.cmx: lib/util.cmx parsing/q_util.cmx \
+    parsing/q_coqast.cmx lib/pp_control.cmx lib/pp.cmx interp/genarg.cmx \
+    parsing/argextend.cmx 
 pretyping/cases.cmo: lib/util.cmi kernel/typeops.cmi kernel/type_errors.cmi \
     pretyping/termops.cmi kernel/term.cmi kernel/sign.cmi \
     pretyping/retyping.cmi pretyping/reductionops.cmi pretyping/rawterm.cmi \
@@ -3513,6 +3529,10 @@ parsing/pcoq.cmo:
 parsing/pcoq.cmx: 
 parsing/q_util.cmo: 
 parsing/q_util.cmx: 
+parsing/q_coqast.cmo: 
+parsing/q_coqast.cmx: 
+parsing/g_prim.cmo: 
+parsing/g_prim.cmx: 
 parsing/g_minicoq.cmo: 
 parsing/g_minicoq.cmx: 
 parsing/g_vernac.cmo: 
