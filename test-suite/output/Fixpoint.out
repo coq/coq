@@ -5,7 +5,7 @@ list B := match l with
           end
      : forall A B : Set, (A -> B) -> list A -> list B
 let fix f (m : nat) : nat := match m with
-                             | O => 0
+                             | 0 => 0
                              | S m' => f m'
                              end in f 0
      : nat
