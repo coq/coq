@@ -21,7 +21,7 @@ let fold = Gmap.fold
 let add x y m =
   try
     let l = Gmap.find x m in
-    Gmap.add x (if List.mem y l then l else y::l) m
+    Gmap.add x (y::list_except y l) m
   with Not_found ->
     Gmap.add x [y] m
 
