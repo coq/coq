@@ -39,10 +39,15 @@ let load_syntax_constant i ((sp,kn),(local,c,onlyparse)) =
   add_syntax_constant kn c;
   Nametab.push_syntactic_definition (Nametab.Until i) sp kn;
   if not onlyparse then
+    (* Declare it to be used as (long) name *)
     Symbols.declare_uninterpretation (Symbols.SynDefRule kn) ([],c)
 
-let open_syntax_constant i ((sp,kn),c) =
-  Nametab.push_syntactic_definition (Nametab.Exactly i) sp kn
+let open_syntax_constant i ((sp,kn),(_,c,onlyparse)) =
+  Nametab.push_syntactic_definition (Nametab.Exactly i) sp kn;
+  if not onlyparse then
+    (* Redeclare it to be used as (short) name in case an other (distfix)
+       notation was declared inbetween *)
+    Symbols.declare_uninterpretation (Symbols.SynDefRule kn) ([],c)
 
 let cache_syntax_constant d =
   load_syntax_constant 1 d
