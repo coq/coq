@@ -309,7 +309,9 @@ let pploc x = let (l,r) = unloc x in
 (* Vernac-level debugging commands                                    *)
 
 let in_current_context f c =
-  let (evmap,sign) = Command.get_current_context () in
+  let (evmap,sign) = 
+    try Pfedit.get_current_goal_context ()
+    with e when Logic.catchable_exception e -> (Evd.empty, Global.env()) in
   f (Constrintern.interp_constr evmap sign c)
 
 (* We expand the result of preprocessing to be independent of camlp4

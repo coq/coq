@@ -1351,6 +1351,8 @@ PRINTERSCMO=\
   proofs/evar_refiner.cmo proofs/pfedit.cmo proofs/tactic_debug.cmo	\
   parsing/ppconstr.cmo parsing/extend.cmo \
   parsing/printer.cmo parsing/pptactic.cmo parsing/tactic_printer.cmo \
+  parsing/pcoq.cmo parsing/egrammar.cmo toplevel/himsg.cmo \
+  toplevel/cerrors.cmo toplevel/vernacexpr.cmo toplevel/vernacinterp.cmo \
   dev/top_printers.cmo
 
 dev/printers.cma: $(PRINTERSCMO)
