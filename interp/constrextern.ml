@@ -586,13 +586,11 @@ let rec share_fix_binders n rbl ty def =
 (* mapping rawterms to constr_expr                                    *)
 
 let rec extern inctx scopes vars r =
+  let r = remove_coercions inctx r in
   try 
     if !Options.raw_print or !print_no_symbol then raise No_match;
     extern_prim_token (loc_of_rawconstr r) scopes (uninterp_prim_token r)
   with No_match ->
-
-  let r = remove_coercions inctx r in
-
   try 
     if !Options.raw_print or !print_no_symbol then raise No_match;
     extern_symbol scopes vars r (uninterp_notations r)
