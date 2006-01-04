@@ -1173,7 +1173,7 @@ let contract_notation ntn =
     else ntn in
   aux ntn 0
 
-let add_notation_in_scope local df c mods omodv8 scope toks =
+let add_notation_in_scope local df c mods omodv8 scope =
   let ((onlyparse,recs,vars,intnot,notation),prec,(n,typs,symbols,_ as ppdata),df')=
     compute_syntax_data !Options.v7 (df,mods) in
   (* Declare the parsing and printing rules if not already done *)
@@ -1286,7 +1286,7 @@ let add_notation_interpretation df names c sc =
   add_notation_interpretation_core false symbs for_oldpp df a sc onlyparse 
     false gram_data
 
-let add_notation_in_scope_v8only local df c mv8 scope toks =
+let add_notation_in_scope_v8only local df c mv8 scope =
   let (_,recs,vars,intnot,notation),prec,ppdata,df' = compute_syntax_data false (df,mv8) in
   let pp_rule = make_pp_rule ppdata in
   Lib.add_anonymous_leaf
@@ -1303,7 +1303,7 @@ let add_notation_v8only local c (df,modifiers) sc =
   match toks with 
     | [String x] when (modifiers = [] or modifiers = [SetOnlyParsing]) ->
 	(* This is a ident to be declared as a rule *)
-        add_notation_in_scope_v8only local df c (SetLevel 0::modifiers) sc toks
+        add_notation_in_scope_v8only local df c (SetLevel 0::modifiers) sc
     | _ ->
 	let (assoc,lev,typs,onlyparse,fmt) = interp_modifiers modifiers	in
 	match lev with
@@ -1325,7 +1325,7 @@ let add_notation_v8only local c (df,modifiers) sc =
 		if List.for_all (function SetAssoc _ -> false | _ -> true)
 		  modifiers 
 		then SetAssoc Gramext.NonA :: modifiers else modifiers in
-	      add_notation_in_scope_v8only local df c mods sc toks
+	      add_notation_in_scope_v8only local df c mods sc
 
 let is_quoted_ident x =
   let x' = unquote_notation_token x in
@@ -1343,7 +1343,7 @@ let add_notation local c dfmod mv8 sc =
   match toks with 
     | [String x] when (modifiers = [] or modifiers = [SetOnlyParsing]) ->
 	(* This is a ident to be declared as a rule *)
-        add_notation_in_scope local df c (SetLevel 0::modifiers) mv8 sc toks
+        add_notation_in_scope local df c (SetLevel 0::modifiers) mv8 sc
     | _ ->
 	let (assoc,lev,typs,onlyparse,fmt) = interp_modifiers modifiers	in
 	match lev with
@@ -1365,11 +1365,11 @@ let add_notation local c dfmod mv8 sc =
 		  add_notation_interpretation_core local symbs for_old df a
 		    sc onlyparse false gram_data
                 else
-                  add_notation_in_scope local df c modifiers mv8 sc toks
+                  add_notation_in_scope local df c modifiers mv8 sc
 	  | Some n ->
 	    (* Declare both syntax and interpretation *)
 	    let assoc = match assoc with None -> Some Gramext.NonA | a -> a in
-            add_notation_in_scope local df c modifiers mv8 sc toks
+            add_notation_in_scope local df c modifiers mv8 sc
 
 (* TODO add boxes information in the expression *)
 
@@ -1401,7 +1401,6 @@ let add_distfix local assoc n df r sc =
   let a = mkAppC (mkRefC r, vars) in
   let assoc = match assoc with None -> Gramext.LeftA | Some a -> a in
   add_notation_in_scope local df a [SetAssoc assoc;SetLevel n] None sc
-    (split_notation_string df)
 
 let make_infix_data n assoc modl mv8 =
   (* Infix defaults to LEFTA in V7 (cf doc) *)
@@ -1434,7 +1433,7 @@ let add_infix local (inf,modl) pr mv8 sc =
     else
       if n8 = None then error "Needs a level" else
       let mv8 = match a8 with None -> SetAssoc Gramext.NonA :: mv8 |_ -> mv8 in
-      add_notation_in_scope_v8only local df a mv8 sc toks
+      add_notation_in_scope_v8only local df a mv8 sc
   else begin
   let (assoc,n,onlyparse,fmt) = interp_infix_modifiers modl in
   (* check the precedence *)
@@ -1465,10 +1464,10 @@ let add_infix local (inf,modl) pr mv8 sc =
         onlyparse false gram_data
     else
       let mv,mv8 = make_infix_data n assoc modl mv8 in
-      add_notation_in_scope local df a mv mv8 sc toks
+      add_notation_in_scope local df a mv mv8 sc
   else
     let mv,mv8 = make_infix_data n assoc modl mv8 in
-    add_notation_in_scope local df a mv mv8 sc toks
+    add_notation_in_scope local df a mv mv8 sc
   end
 
 let standardise_locatable_notation ntn =
