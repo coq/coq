@@ -609,8 +609,12 @@ let make_hunks etyps symbols from =
     | SProdList (m,sl) :: prods ->
 	let i = list_index m vars in
 	let _,prec = precedence_of_entry_type from (List.nth typs (i-1)) in
-        (* We add NonTerminal for simulation but remove it afterwards *)
-        let _,sl' = list_sep_last (make NoBreak (sl@[NonTerminal m])) in
+        let sl' =
+          (* If no separator: add a break *)
+	  if sl = [] then add_break 1 []
+          (* We add NonTerminal for simulation but remove it afterwards *)
+	  else snd (list_sep_last (make NoBreak (sl@[NonTerminal m])))
+	in
 	UnpListMetaVar (i,prec,sl') :: make CanBreak prods
 
     | [] -> []
