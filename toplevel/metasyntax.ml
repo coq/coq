@@ -475,8 +475,12 @@ let make_hunks etyps symbols from =
     | SProdList (m,sl) :: prods ->
 	let i = list_index m vars in
 	let _,prec = precedence_of_entry_type from (List.nth typs (i-1)) in
-        (* We add NonTerminal for simulation but remove it afterwards *)
-        let _,sl' = list_sep_last (make NoBreak (sl@[NonTerminal m])) in
+        let sl' =
+          (* If no separator: add a break *)
+	  if sl = [] then add_break 1 []
+          (* We add NonTerminal for simulation but remove it afterwards *)
+	  else snd (list_sep_last (make NoBreak (sl@[NonTerminal m])))
+	in
 	UnpListMetaVar (i,prec,sl') :: make CanBreak prods
 
     | [] -> []
@@ -536,6 +540,14 @@ let hunks_of_format (from,(vars,typs)) symfmt =
       symbs', UnpBox (a,b') :: l
   | symbs, (UnpCut _ as u) :: fmt ->
       let symbs, l = aux (symbs,fmt) in symbs, u :: l
+  | SProdList (m,sl) :: symbs, fmt ->
+      let i = list_index m vars in
+      let _,prec = precedence_of_entry_type from (List.nth typs (i-1)) in
+      let slfmt,fmt = read_recursive_format sl fmt in
+      let sl, slfmt = aux (sl,slfmt) in
+      if sl <> [] then error_format ();
+      let symbs, l = aux (symbs,fmt) in
+      symbs, UnpListMetaVar (i,prec,slfmt) :: l
   | symbs, [] -> symbs, []
   | _, _ -> error_format ()
   in
