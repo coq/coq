@@ -473,20 +473,24 @@ config/coq_config.cmo: config/coq_config.cmi
 config/coq_config.cmx: config/coq_config.cmi 
 dev/db_printers.cmo: lib/pp.cmi kernel/names.cmi 
 dev/db_printers.cmx: lib/pp.cmx kernel/names.cmx 
-dev/top_printers.cmo: lib/util.cmi kernel/univ.cmi pretyping/termops.cmi \
-    kernel/term.cmi parsing/tactic_printer.cmi lib/system.cmi kernel/sign.cmi \
-    proofs/refiner.cmi proofs/proof_trees.cmi parsing/printer.cmi \
-    parsing/pptactic.cmi lib/pp.cmi kernel/names.cmi library/nameops.cmi \
+dev/top_printers.cmo: toplevel/vernacinterp.cmi lib/util.cmi kernel/univ.cmi \
+    pretyping/termops.cmi kernel/term.cmi parsing/tactic_printer.cmi \
+    lib/system.cmi kernel/sign.cmi proofs/refiner.cmi proofs/proof_trees.cmi \
+    parsing/printer.cmi parsing/pptactic.cmi lib/pp.cmi proofs/pfedit.cmi \
+    parsing/pcoq.cmi kernel/names.cmi library/nameops.cmi proofs/logic.cmi \
     library/libobject.cmi library/libnames.cmi library/global.cmi \
-    pretyping/evd.cmi kernel/environ.cmi kernel/declarations.cmi \
+    interp/genarg.cmi pretyping/evd.cmi kernel/environ.cmi \
+    parsing/egrammar.cmi kernel/declarations.cmi interp/constrintern.cmi \
     interp/constrextern.cmi kernel/closure.cmi pretyping/clenv.cmi \
     toplevel/cerrors.cmi lib/bigint.cmi 
-dev/top_printers.cmx: lib/util.cmx kernel/univ.cmx pretyping/termops.cmx \
-    kernel/term.cmx parsing/tactic_printer.cmx lib/system.cmx kernel/sign.cmx \
-    proofs/refiner.cmx proofs/proof_trees.cmx parsing/printer.cmx \
-    parsing/pptactic.cmx lib/pp.cmx kernel/names.cmx library/nameops.cmx \
+dev/top_printers.cmx: toplevel/vernacinterp.cmx lib/util.cmx kernel/univ.cmx \
+    pretyping/termops.cmx kernel/term.cmx parsing/tactic_printer.cmx \
+    lib/system.cmx kernel/sign.cmx proofs/refiner.cmx proofs/proof_trees.cmx \
+    parsing/printer.cmx parsing/pptactic.cmx lib/pp.cmx proofs/pfedit.cmx \
+    parsing/pcoq.cmx kernel/names.cmx library/nameops.cmx proofs/logic.cmx \
     library/libobject.cmx library/libnames.cmx library/global.cmx \
-    pretyping/evd.cmx kernel/environ.cmx kernel/declarations.cmx \
+    interp/genarg.cmx pretyping/evd.cmx kernel/environ.cmx \
+    parsing/egrammar.cmx kernel/declarations.cmx interp/constrintern.cmx \
     interp/constrextern.cmx kernel/closure.cmx pretyping/clenv.cmx \
     toplevel/cerrors.cmx lib/bigint.cmx 
 dev/vm_printers.cmo: kernel/vm.cmi kernel/term.cmi kernel/names.cmi \
