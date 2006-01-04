@@ -1,5 +1,9 @@
-Changes from V8.0pl2
-====================
+Changes from V8.0pl2 to V8.0pl3
+===============================
+
+Compilation
+
+- Coq sources made compatible with ocaml 3.09.0 and lablgtk 2.6.0.
 
 Tactics
 
@@ -15,6 +19,9 @@ Bug fixes
     function types are now printed.
   * important revision of the Scheme extraction: 
     see http://www.pps.jussieu.fr/~letouzey/scheme
+- "Notation" bug fixes ("only parsing" bug, printing of numerals
+  arguments of coercions, default spacing for recursive notations
+  with no terminal separator, "Tactic Notation" printer).
 
 
 Changes from V8.0pl1 to V8.0pl2
