@@ -300,24 +300,66 @@ let print_pure_constr csr =
 	print_string (Printexc.to_string e);print_flush ();
 	raise e
 
-(*
-let _ =
-  Vernacentries.add "PrintConstr"
-    (function
-       | [VARG_CONSTR c] -> 
-	   (fun () ->
-              let (evmap,sign) = Command.get_current_context () in
-  	      constr_display (Constrintern.interp_constr evmap sign c))
-       | _ -> bad_vernac_args "PrintConstr")
+let ppfconstr c = ppterm (Closure.term_of_fconstr c)
 
-let _ =
-  Vernacentries.add "PrintPureConstr"
-    (function
-       | [VARG_CONSTR c] -> 
-	   (fun () ->
-              let (evmap,sign) = Command.get_current_context () in
-  	      print_pure_constr (Constrintern.interp_constr evmap sign c))
-       | _ -> bad_vernac_args "PrintPureConstr")
+let pploc x = let (l,r) = unloc x in
+  print_string"(";print_int l;print_string",";print_int r;print_string")"
+
+(**********************************************************************)
+(* Vernac-level debugging commands                                    *)
+
+let in_current_context f c =
+  let (evmap,sign) = Command.get_current_context () in
+  f (Constrintern.interp_constr evmap sign c)
+
+(* We expand the result of preprocessing to be independent of camlp4
+
+VERNAC COMMAND EXTEND PrintPureConstr
+| [ "PrintPureConstr" constr(c) ] -> [ in_current_context print_pure_constr c ]
+END
+VERNAC COMMAND EXTEND PrintConstr
+  [ "PrintConstr" constr(c) ] -> [ in_current_context constr_display c ]
+END
 *)
 
-let ppfconstr c = ppterm (Closure.term_of_fconstr c)
+open Pcoq
+open Genarg
+open Egrammar
+
+let _ =
+  try
+    Vernacinterp.vinterp_add "PrintConstr"
+      (function
+         [c] when genarg_tag c = ConstrArgType && true ->
+           let c = out_gen rawwit_constr c in
+           (fun () -> in_current_context constr_display c)
+       | _ -> failwith "Vernac extension: cannot occur")
+  with
+    e -> Pp.pp (Cerrors.explain_exn e)
+let _ =
+  extend_vernac_command_grammar "PrintConstr"
+    [[TacTerm "PrintConstr";
+      TacNonTerm
+        (dummy_loc,
+         (Gramext.Snterm (Pcoq.Gram.Entry.obj Constr.constr),
+          ConstrArgType),
+         Some "c")]]
+
+let _ =
+  try
+    Vernacinterp.vinterp_add "PrintPureConstr"
+      (function
+         [c] when genarg_tag c = ConstrArgType && true ->
+           let c = out_gen rawwit_constr c in
+           (fun () -> in_current_context print_pure_constr c)
+       | _ -> failwith "Vernac extension: cannot occur")
+  with
+    e -> Pp.pp (Cerrors.explain_exn e)
+let _ =
+  extend_vernac_command_grammar "PrintPureConstr"
+    [[TacTerm "PrintPureConstr";
+      TacNonTerm
+        (dummy_loc,
+         (Gramext.Snterm (Pcoq.Gram.Entry.obj Constr.constr),
+          ConstrArgType),
+         Some "c")]]
