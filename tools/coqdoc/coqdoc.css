@@ -1,0 +1,59 @@
+body { padding: 0px 0px;
+       margin: 0px 0px; 
+       background-color: white }
+
+#page { display: block;
+        padding: 0px;
+        margin: 0px;
+        padding-bottom: 10px; }
+
+#header { display: block;
+          position: relative;
+          padding: 0;
+          margin: 0;
+          vertical-align: middle;
+          border-bottom-style: solid;
+          border-width: thin }
+
+#header h1 { padding: 0; 
+             margin: 0;}
+
+
+/* Contenu */
+
+#main{ display: block;
+       padding: 10px;
+       overflow: hidden;
+       font-size: 10pt }
+
+#main  a.idref:visited {color : #416DFF; text-decoration : none; }
+#main  a.idref:link {color : #416DFF; text-decoration : none; }
+#main  a.idref:hover {color : Red; text-decoration : underline; }
+#main  a.idref:active {color : Red; text-decoration : underline; }
+
+#main .keyword { font-weight : bold; 
+                 color : Red }
+
+#main .section { font-size : 20pt }
+
+#main code { font-family: monospace; 
+             font-size: 8pt; 
+             line-height: 50% }
+
+#main .doc { margin: 0px;
+             padding: 10px;
+             font-family: sans-serif;
+             font-size: 11pt;
+             font-weight:bold;
+             background-color:#66ff66 }
+
+#main .doc code { font-family: monospace; 
+                  font-size: 10pt} 
+
+/* Pied de page */
+
+#footer { font-size: 8pt;
+          font-family: sans-serif; }
+
+#footer a:visited { color: blue; }
+
