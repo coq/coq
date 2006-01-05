@@ -14,3 +14,7 @@ forall n : nat, n = 0
      : Prop
 !(0 = 0)
      : Prop
+3 + 3
+     : Z
+3 + 3
+     : znat
