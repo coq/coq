@@ -31,7 +31,7 @@ A1) VÉRIFICATIONS
   - Relecture des fichiers "README", "README.win", en particulier,
     vérification du numéro de version, des adresses internet et des
     coordonnées de Coq
-  - Relecture des fichiers "INSTALL", "INSTALL.win", "INSTALL.macosx",
+  - Relecture des fichiers "INSTALL", "INSTALL.ide", "INSTALL.macosx",
     en particulier numéro de version de coq et numéros des versions de
     OCaml et Camlp4 demandées
   - Mise à jour/nettoyage du fichier CHANGES et du fichier ANNONCE

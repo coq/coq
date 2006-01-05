@@ -100,11 +100,9 @@ tar-gz:
 $(TARGZ): $(COQPACKAGE)
 	@rm -rf $(COQPACKAGE)/doc     # doc is implementation doc
 	@rm -rf $(COQPACKAGE)/distrib
-	@rm -rf $(COQPACKAGE)/KNOWN-BUGS
 	@rm -rf $(COQPACKAGE)/{TODO,ANNONCE,PROBLEMES}
 	@rm -rf $(COQPACKAGE)/theories/Num
 	@rm -rf $(COQPACKAGE)/contrib/graphs
-	@rm -rf $(COQPACKAGE)/doc/newsyntax.tex 
 	@rm -f $(COQPACKAGE)/make.result
 	@rm -rf $(COQPACKAGE)/test-suite/parser   # tests pcoq
 	@find $(COQPACKAGE) -name ".cvsignore" -exec rm {} \;
@@ -277,7 +275,6 @@ $(COQWINZIP): $(TARGZ)
 	 ./configure -bindir /coq/bin -libdir /coq/lib -mandir /coq/man -emacslib /coq/emacs -reals all -coqide no;\
 	 $(MAKECOQ) coq;\
 	 $(MAKECOQ) -e COQINSTALLPREFIX=$(WININSTALL) BASETEXDIR=$(WININSTALL) install-coq) > win.log
-	mv $(WINBUILDROOT)/$(COQPACKAGE)/INSTALL.win $(WININSTALL)
 	cd $(WININSTALL); zip -A -r $(DISTRIBDIR)/$(COQWINZIP) *
 
 clean::
@@ -416,7 +413,6 @@ ftp-install: prep-ftp-install
 	$(CP) $(COQPACKAGE)/CHANGES $(FTPVDIR)/
 	$(CP) $(COQPACKAGE)/README $(FTPVDIR)/
 	$(CP) $(COQPACKAGE)/README.win $(FTPVDIR)/
-	$(CP) $(COQPACKAGE)/README.macosx $(FTVPDIR)/
 	$(CP) $(TARGZ) $(FTPVDIR)/
 	$(CP) $(COQPACKAGE)-*.tar.gz $(FTPVDIR)/
 	$(CP) $(COQRPMPACKAGE).*.rpm $(FTPVDIR)/
