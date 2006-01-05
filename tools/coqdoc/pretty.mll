@@ -64,6 +64,8 @@
 
   let gstate = ref AfterDot
 
+  let glet = ref false
+
   let is_proof = 
     let t = Hashtbl.create 13 in
     List.iter (fun s -> Hashtbl.add t s true)
@@ -77,8 +79,11 @@
 	if id <> "Add" then gstate := Nothing
 
   let gallina_symbol s = 
-    if !gstate = AfterDot || (!gstate = Proof && s = ":=") then 
+    if !gstate = AfterDot then 
       gstate := Nothing
+    else
+      if (!gstate = Proof && s = ":=") then 
+	if !glet then glet := false else gstate := Nothing
 
   let is_space = function ' ' | '\t' | '\n' | '\r' -> true | _ -> false
 
@@ -122,7 +127,8 @@
   let reset () =
     formatted := false;
     brackets := 0;
-    gstate := AfterDot
+    gstate := AfterDot;
+    glet := false
 
   (* erasing of Section/End *)
 
@@ -194,6 +200,8 @@
 
 let space = [' ' '\t']
 let space_nl = [' ' '\t' '\n' '\r']
+
+let enddot = '.' space_nl
 
 let firstchar = 
   ['A'-'Z' 'a'-'z' '_' 
@@ -321,11 +329,15 @@ and coq = parse
 	if eol then coq_bol lexbuf else coq lexbuf }
   | "(*"
       { let eol = comment lexbuf in
-	if eol then coq_bol lexbuf else coq lexbuf }
+	  if eol then begin line_break(); coq_bol lexbuf end 
+          else coq lexbuf
+      }
   | '\n'+ space* "]]"
       { if not !formatted then begin symbol (lexeme lexbuf); coq lexbuf end }
   | eof 
       { () }
+  | "let" { let s = lexeme lexbuf in
+	      glet:=true; ident s (lexeme_start lexbuf); coq lexbuf }
   | token
       { let s = lexeme lexbuf in
 	if !gallina then gallina_symbol s;
@@ -487,13 +499,13 @@ and skip_proof = parse
   | "(*" { ignore (comment lexbuf); skip_proof lexbuf }
   | "Save" | "Qed" | "Defined"
   | "Abort" | "Proof" | "Admitted" { skip_to_dot lexbuf }
-  | "Proof" space* '.' { skip_proof lexbuf }
+  | "Proof" space* enddot { skip_proof lexbuf }
   | identifier { skip_proof lexbuf } (* to avoid keywords within idents *)
   | eof { () }
   | _ { skip_proof lexbuf }
 
 and skip_to_dot = parse
-  | eof | '.' { if !gallina then gstate := AfterDot }
+  | eof | enddot { if !gallina then gstate := AfterDot }
   | "(*" { ignore (comment lexbuf); skip_to_dot lexbuf }
   | _ { skip_to_dot lexbuf }
 
