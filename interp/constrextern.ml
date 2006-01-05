@@ -1495,19 +1495,38 @@ let rec share_fix_binders n rbl ty def =
     | _ -> List.rev rbl, ty, def
 
 (**********************************************************************)
+(* mapping rawterms to numerals (in presence of coercions, choose the *)
+(* one with no delimiter if possible)                                 *)
+
+let extern_possible_numeral scopes r =
+  try
+    let (sc,n) = uninterp_numeral r in
+    match Symbols.availability_of_numeral sc (make_current_scopes scopes) with
+    | None -> None
+    | Some key -> Some (insert_delimiters (CNumeral(loc_of_rawconstr r,n)) key)
+  with No_match ->
+    None
+
+let extern_optimal_numeral scopes r r' =
+  let c = extern_possible_numeral scopes r in
+  let c' = if r==r' then None else extern_possible_numeral scopes r' in
+  match c,c' with
+  | Some n, (Some (CDelimiters _) | None) | _, Some n -> n
+  | _ -> raise No_match
+
+(**********************************************************************)
 (* mapping rawterms to constr_expr                                    *)
 
 let rec extern inctx scopes vars r =
-  let r = remove_coercions inctx r in
+  let r' = remove_coercions inctx r in
   try 
     if !Options.raw_print or !print_no_symbol then raise No_match;
-    extern_numeral (Rawterm.loc_of_rawconstr r)
-      scopes (Symbols.uninterp_numeral r)
+    extern_optimal_numeral scopes r r'
   with No_match ->
   try 
     if !Options.raw_print or !print_no_symbol then raise No_match;
-    extern_symbol scopes vars r (Symbols.uninterp_notations r)
-  with No_match -> match r with
+    extern_symbol scopes vars r' (Symbols.uninterp_notations r')
+  with No_match -> match r' with
   | RRef (loc,ref) ->
       extern_global loc (implicits_of_global_out ref)
         (extern_reference loc vars ref)
@@ -1709,11 +1728,6 @@ and extern_local_binder scopes vars = function
 and extern_eqn inctx scopes vars (loc,ids,pl,c) =
   (loc,List.map (extern_cases_pattern_in_scope scopes vars) pl,
    extern inctx scopes vars c)
-
-and extern_numeral loc scopes (sc,n) =
-  match Symbols.availability_of_numeral sc (make_current_scopes scopes) with
-    | None -> raise No_match
-    | Some key -> insert_delimiters (CNumeral (loc,n)) key
 
 and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
   | [] -> raise No_match
