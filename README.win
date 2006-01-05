@@ -6,7 +6,26 @@ THE COQ V8.0 SYSTEM
 INSTALLATION.
 =============
 
-    See the file INSTALL.win for installation procedure.
+    The windows distribution of Coq consists of an installer that should
+    perform all installation steps. CoqIde (a GTK interface to Coq) can
+    be installed. In case the GTK runtime libraries are not installed,
+    the Coq installer can be set to make a copy of those libraries
+    within the directory of Coq.
+    However, if the files are installed but Coq does not work properly,
+    some steps can be made manually.
+    Let us assume that the installation dir was c:\coq. The following
+    environment variables must be set as:
+      set COQBIN=c:\coq\bin
+      set COQLIB=c:\coq\lib
+    On win9x systems, this is achieved by inserting the 2 lines above
+    in the autoexec.bat file of the system. On other windows systems,
+    environment variables can be configured via the System application
+    of the Control Panel. Then select the Advanced tab.
+    The .bat files in c:\coq should now launch Coq (or CoqIde).
+    The COQBIN path can also be added to the PATH. This might be a
+    bad idea if the GTK libraries of Coq's installer were installed
+    since they might conflict with already installed GTK libraries.
+
 
 COMPILATION.
 ============
@@ -15,12 +34,10 @@ COMPILATION.
     distribution. If you really need to recompile under Windows, here
     are some indications:
 
-    1- Install ocaml version 3.06 or later, Visual C++ (needed
-       for the -custom option of ocaml) and MASM (needed if you want
-       to produce a native version).
+    1- Install ocaml version 3.06 or later (mingw port preferably).
 
     2- Install a complete set of Unix utilities (used by Makefiles). 
-       See: http://sources.redhat.com/cygwin/.
+       See: http://www.cygwin.com/.
 
     3- Under cygwin, type successively
 

@@ -35,7 +35,7 @@ INSTALLATION
 
  1) You need to install the OCaml stub library lablgtk2. See 
        	http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html
-    The first official release of lablftk2 is here:
+    The first official release of lablgtk2 is here:
 	http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/dist/lablgtk-2.2.0.tar.gz
     Note that even if its README requires ocaml > 3.07, it works ok with 3.06.
     If you are in a hurry just run :

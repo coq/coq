@@ -1,16 +1,28 @@
 Changes from V8.0pl2 to V8.0pl3
 ===============================
 
+Tactics
+
+- The search depth argument of auto can be parameterised in the
+  Ltac language
+- Added entry constr_may_eval for tactic extensions (new syntax)
+
 Compilation
 
 - Coq sources made compatible with ocaml 3.09.0 and lablgtk 2.6.0.
 
-Tactics
+Standard library
 
-- Added entry constr_may_eval for tactic extensions (new syntax)
+- A couple of lemmas of ZArith were renamed. This concerns names
+  containing O, which is replaced by 0.
 
 Bug fixes
 
+- Fixes a serious bug in CoqIde. The windows port should be able
+  to load large libraries (such as Reals) without producing the
+  "bad file descriptor" error.
+- Scope of Ltac variables: global Ltac macros no longer hide goal
+  hypotheses
 - Many fixes concerning extraction: 
   * fewer useless eta-expansions
   * for Ocaml: extraction of records should be ok now. Problem with 
@@ -19,10 +31,15 @@ Bug fixes
     function types are now printed.
   * important revision of the Scheme extraction: 
     see http://www.pps.jussieu.fr/~letouzey/scheme
+- Fixes a bug in the interpretation of record projections ("bad number
+  of parameters" error)
+- Fixed a bug in the omega tactic
+- Fixed a bug in the fold tactic regarding hypotheses ordering
+- Pretty-print of universes fixed
+- Added an empty level 99 in patterns syntax entry
 - "Notation" bug fixes ("only parsing" bug, printing of numerals
   arguments of coercions, default spacing for recursive notations
   with no terminal separator, "Tactic Notation" printer).
-
 
 Changes from V8.0pl1 to V8.0pl2
 ===============================
