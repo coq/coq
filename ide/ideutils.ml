@@ -34,9 +34,9 @@ let prerr_string s =
 
 let lib_ide_file f =
   let coqlib =
-    System.getenv_else "COQLIB"
-      (if Coq_config.local || !Options.boot then Coq_config.coqtop
-       else Coq_config.coqlib) in
+    if !Options.boot then Coq_config.coqtop
+    else
+      System.getenv_else "COQLIB" Coq_config.coqlib in
   Filename.concat (Filename.concat coqlib "ide") f
   
 let get_insert input_buffer = input_buffer#get_iter_at_mark `INSERT
