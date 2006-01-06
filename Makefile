@@ -80,7 +80,7 @@ MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 BYTEFLAGS=$(MLINCLUDES) $(CAMLDEBUG)
 OPTFLAGS=$(MLINCLUDES) $(CAMLTIMEPROF)
 OCAMLDEP=ocamldep
-DEPFLAGS=$(LOCALINCLUDES)
+DEPFLAGS=-slash $(LOCALINCLUDES)
 
 OCAMLC_P4O=$(OCAMLC) -pp $(CAMLP4O) $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp $(CAMLP4O) $(OPTFLAGS)
@@ -375,10 +375,6 @@ $(COQC): $(COQCCMO) $(COQTOPBYTE) $(BESTCOQTOP)
 clean::
 	rm -f scripts/tolink.ml
 
-archclean::
-	rm -f $(COQTOPBYTE) $(COQTOPOPT) $(BESTCOQTOP) $(COQC) $(COQMKTOP)
-	rm -f $(COQTOP)
-
 # we provide targets for each subdirectory
 
 lib: $(LIBREP)
@@ -534,7 +530,7 @@ COQIDEVO=ide/utf8.vo
 $(COQIDEVO): states/initial.coq 
 	$(BOOTCOQTOP) -compile $*
 
-IDEFILES=$(COQIDEVO) ide/utf8.v ide/coq.png ide/.coqide-gtk2rc
+IDEFILES=$(COQIDEVO) ide/utf8.v ide/coq.ico ide/coq2.ico ide/.coqide-gtk2rc
 
 coqide-binaries: coqide-$(HASCOQIDE)
 coqide-no:
@@ -698,8 +694,6 @@ contrib7/interface/Centaur.vo: contrib7/interface/Centaur.v $(INTERFACE)
 contrib7/interface/AddDad.vo: contrib7/interface/AddDad.v $(INTERFACE) states7/initial.coq
 	$(BESTCOQTOP) $(TRANSLATE) -boot -byte  $(COQOPTS) -compile $*
 
-clean::
-	rm -f bin/parser$(EXE) bin/coq-interface$(EXE) bin/coq-interface.opt$(EXE)
 
 # install targets
 install-pcoq:: install-pcoq-binaries install-pcoq-files install-pcoq-manpages
@@ -1109,9 +1103,6 @@ clean::
 	rm -f tools/coqwc.ml
 	rm -f tools/coqdoc/pretty.ml tools/coqdoc/index.ml
 
-archclean::
-	rm -f $(TOOLS)
-
 ###########################################################################
 # minicoq
 ###########################################################################
@@ -1125,9 +1116,6 @@ MINICOQ=bin/minicoq$(EXE)
 $(MINICOQ): $(MINICOQCMO)
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ -custom $(CMA) $(MINICOQCMO) $(OSDEPLIBS)
-
-archclean::
-	rm -f $(MINICOQ)
 
 ###########################################################################
 # Installation
@@ -1478,6 +1466,7 @@ ML4FILES += lib/pp.ml4 			\
 ###########################################################################
 
 archclean::
+	-rm -f bin/*
 	rm -f config/*.cmx* config/*.[soa]
 	rm -f lib/*.cmx* lib/*.[soa]
 	rm -f kernel/*.cmx* kernel/*.[soa]

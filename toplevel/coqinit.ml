@@ -73,7 +73,7 @@ let init_load_path () =
   (* developper specific directories to open *)
   let dev = if Coq_config.local then [ "dev" ] else [] in
   let coqlib =
-    if Coq_config.local || !Options.boot then Coq_config.coqtop
+    if !Options.boot then Coq_config.coqtop
       (* variable COQLIB overrides the default library *)
     else getenv_else "COQLIB" Coq_config.coqlib in
   (* first user-contrib *)
