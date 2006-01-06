@@ -201,8 +201,6 @@
 let space = [' ' '\t']
 let space_nl = [' ' '\t' '\n' '\r']
 
-let enddot = '.' space_nl
-
 let firstchar = 
   ['A'-'Z' 'a'-'z' '_' 
   (* iso 8859-1 accents *) 
@@ -499,13 +497,14 @@ and skip_proof = parse
   | "(*" { ignore (comment lexbuf); skip_proof lexbuf }
   | "Save" | "Qed" | "Defined"
   | "Abort" | "Proof" | "Admitted" { skip_to_dot lexbuf }
-  | "Proof" space* enddot { skip_proof lexbuf }
+  | "Proof" space* '.' { skip_proof lexbuf }
   | identifier { skip_proof lexbuf } (* to avoid keywords within idents *)
   | eof { () }
   | _ { skip_proof lexbuf }
 
 and skip_to_dot = parse
-  | eof | enddot { if !gallina then gstate := AfterDot }
+  | eof | '.' space { if !gallina then gstate := AfterDot }
+  | ".\n" { if !gallina then gstate := AfterDot; line_break(); }
   | "(*" { ignore (comment lexbuf); skip_to_dot lexbuf }
   | _ { skip_to_dot lexbuf }
 
