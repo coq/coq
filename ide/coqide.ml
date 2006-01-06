@@ -1732,11 +1732,11 @@ let main files =
 	    ~width:!current.window_width ~height:!current.window_height 
 	    ~title:"CoqIde" ()
   in
-(*
-  let icon_image = lib_ide_file "coq.ico" in
-  let icon = GdkPixbuf.from_file icon_image in
-  w#set_icon (Some icon);
-*)
+  (try
+    let icon_image = lib_ide_file "coq2.ico" in
+    let icon = GdkPixbuf.from_file icon_image in
+    w#set_icon (Some icon)
+  with _ -> ());
   let vbox = GPack.vbox ~homogeneous:false ~packing:w#add () in
 
 
@@ -3219,7 +3219,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
   );
   let about (b:GText.buffer) =
     (try 
-       let image = lib_ide_file "coq.png" in
+       let image = lib_ide_file "coq.ico" in
        let startup_image = GdkPixbuf.from_file image in
        b#insert_pixbuf ~iter:b#start_iter 
 	 ~pixbuf:startup_image;
