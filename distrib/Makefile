@@ -52,6 +52,7 @@ noarguments:
 ################## Main targets
 
 COQPACKAGE=coq-$(VERSION)
+COQIDEPACKAGE=coqide-$(VERSION)
 
 distrib: tag tar-gz
 
@@ -71,9 +72,9 @@ WORKDIR=..
 $(COQPACKAGE):
 	@echo "Copying sources from work directory"
 	@- rm -rf $(COQPACKAGE)
-	mkdir $(COQPACKAGE)
-	cd $(WORKDIR) ; cp -rf `ls -a | egrep -v 'distrib|^\.$$|^\.\.$$'` $(DISTRIBDIR)/$(COQPACKAGE)/
-	cd $(COQPACKAGE)/ ; $(MAKECOQ) clean; \
+	mkdir -p $(COQPACKAGE)/bin
+	cd $(WORKDIR) ; cp -rf `ls -a | egrep -v 'distrib|bin|^\.$$|^\.\.$$'` $(DISTRIBDIR)/$(COQPACKAGE)/
+	cd $(COQPACKAGE)/ ; $(MAKECOQ) clean archclean; \
 	  rm -fr CVS */CVS */*/CVS */*/*/CVS */*/*/*/CVS
 	find $(COQPACKAGE) -name CVS -type d -exec rm -fr {} \;
 else
@@ -123,7 +124,7 @@ test:
 	rm -f tmp.tar
 	@echo Trying "$(MAKECOQ) $(BUILDTARGET) check"
 	(cd $(COQPACKAGE);\
-	 ./configure -local -opt -emacs emacs;\
+	 ./configure -local -emacs emacs;\
 	 $(MAKECOQ) world check >& test.log;\
 	 if [ $$? = 0 ];\
 	 then echo '"$(MAKECOQ) $(BUILDTARGET) check" succeeded';\
@@ -150,7 +151,7 @@ arch-image: $(TARGZ)
 	 cd $(COQPACKAGE);\
 	 ./configure -prefix /usr/local -emacslib /usr/local/lib/emacs/site-lisp -opt -reals all;\
 	 $(MAKECOQ) coq check;\
-	 $(MAKECOQ) -e COQINSTALLPREFIX=$(ARCHINSTALL) BASETEXDIR=$(ARCHINSTALL) install-coq) > arch-image.log 2>&1
+	 $(MAKECOQ) COQINSTALLPREFIX=$(ARCHINSTALL) BASETEXDIR=$(ARCHINSTALL) install-coq) > arch-image.log 2>&1
 	@echo " .... done"
 
 arch-tar-gz-final:
@@ -256,32 +257,92 @@ cleanall::
 # Zip for Windows (package does not contain coqide)
 #
 
-COQWINZIP=$(COQPACKAGE)-Win.zip
-WINBUILDROOT=$(DISTRIBDIR)/winbuildroot
-WININSTALL=$(DISTRIBDIR)/wininstallroot
+COQWIN=$(COQPACKAGE)-win
+COQIDEWIN=$(COQIDEPACKAGE)-win
 
+COQWINZIP=$(COQWIN).zip
+COQIDEWINZIP=$(COQIDEWIN).zip
+WINBUILDROOT=$(DISTRIBDIR)/windows/build
+WININSTALL=$(DISTRIBDIR)/windows/install
+WINIDEINSTALL=$(DISTRIBDIR)/windows/install-ide
+BINDLLS=../bin
+#BINDLLS=$(WINBUILDROOT)/$(COQPACKAGE)/bin
 
 win: $(COQWINZIP)
 
-$(COQWINZIP): $(TARGZ)
-	@echo "Building $(COQWINZIP) to be installed in \coq\bin"
+CONFIGUREDWINCOQ=$(WINBUILDROOT)/$(COQPACKAGE)/config/Makefile
+
+# compiling Coq and Coqide for windows
+$(WINBUILDROOT): $(TARGZ)
+	@echo "Building coq to be installed in C:\coq\bin"
 	@echo "Warning: leading / is removed"
-	@-rm -fr $(WINBUILDROOT) $(WININSTALL)
-	@-mkdir -p $(WINBUILDROOT) $(WININSTALL)
+	@-rm -fr $(WINBUILDROOT)
+	@-mkdir -p $(WINBUILDROOT)
+	(cd $(WINBUILDROOT) && gunzip -c $(DISTRIBDIR)/$(TARGZ) | tar xf -)
+
+$(CONFIGUREDWINCOQ): $(WINBUILDROOT)
+	(cd $(WINBUILDROOT)/$(COQPACKAGE) &&\
+	 ./configure -bindir /bin -libdir /lib -mandir /man -emacslib /emacs -coqdocdir /latex -reals all -coqide opt)
+
+$(COQWINZIP): $(CONFIGUREDWINCOQ)
+	@-rm -fr $(WININSTALL)
+	@-mkdir -p $(WININSTALL)
 	@echo "Compiling and installing coq... (see win.log)"
-	(cd $(WINBUILDROOT);\
-	 gunzip -c $(DISTRIBDIR)/$(TARGZ) | tar xf -;\
-	 cd $(COQPACKAGE);\
-	 ./configure -bindir /coq/bin -libdir /coq/lib -mandir /coq/man -emacslib /coq/emacs -reals all -coqide no;\
-	 $(MAKECOQ) coq;\
-	 $(MAKECOQ) -e COQINSTALLPREFIX=$(WININSTALL) BASETEXDIR=$(WININSTALL) install-coq) > win.log
+	(cd $(WINBUILDROOT)/$(COQPACKAGE) &&\
+	 $(MAKECOQ) coq CFLAGS=-mno-cygwin &&\
+	 $(MAKECOQ) COQINSTALLPREFIX=$(WININSTALL) BASETEXDIR=$(WININSTALL) install-coq) > win.log
+	mv $(WINBUILDROOT)/$(COQPACKAGE)/INSTALL.win $(WININSTALL)
 	cd $(WININSTALL); zip -A -r $(DISTRIBDIR)/$(COQWINZIP) *
 
+###################################################################
+# Auto-installer for Windows (coq + coqide + dlls package)
+#
+
+NSISDIR=/cygdrive/c/Program\ Files/NSIS
+
+COQWINAUTOINST=$(COQWIN).exe
+
+nsis: $(COQWINAUTOINST)
+
+DLLCOPY=windows/dlls/.done
+
+$(DLLCOPY):
+	-rm -fr windows/dlls
+	mkdir -p windows/dlls/{bin,etc,lib}
+	cp -r /etc/{pango,gtk-2.0} windows/dlls/etc
+	cp -r /lib/{pango,gtk-2.0} windows/dlls/lib
+	cp `cygcheck $(BINDLLS)/*.exe windows/dlls/lib/gtk-2.0/*/loaders/*.dll | grep .dll | grep -v system32 | sort -b -f -u` windows/dlls/bin
+	touch $(DLLCOPY)
+
+$(WININSTALL)/.done: $(CONFIGUREDWINCOQ)
+	@-rm -fr $(WININSTALL)
+	@-mkdir -p $(WININSTALL)
+	@echo "Compiling and installing coq..."
+	cd $(WINBUILDROOT)/$(COQPACKAGE) &&\
+	 $(MAKECOQ) coq CFLAGS=-mno-cygwin &&\
+	 $(MAKECOQ) COQINSTALLPREFIX=$(WININSTALL) BASETEXDIR=$(WININSTALL) install-coq &&\
+	 rm -f $(WININSTALL)/bin/coqtop.exe
+	touch $(WININSTALL)/.done
+
+$(WINIDEINSTALL)/.done: $(WININSTALL)/.done
+	@-rm -fr $(WINIDEINSTALL)
+	@-mkdir -p $(WINIDEINSTALL)
+	@echo "Compiling and installing coqide..."
+	cd $(WINBUILDROOT)/$(COQPACKAGE) &&\
+	 $(MAKECOQ) coqide CFLAGS=-mno-cygwin &&\
+	 $(MAKECOQ) COQINSTALLPREFIX=$(WINIDEINSTALL) install-coqide &&\
+	 rm -f $(WINIDEINSTALL)/bin/coqide.exe
+	touch $(WINIDEINSTALL)/.done
+
+$(COQWINAUTOINST): $(DLLCOPY) $(WININSTALL)/.done $(WINIDEINSTALL)/.done windows/coq.nsi
+	/cygdrive/c/Program\ Files/NSIS/makensis.exe /DVERSION=$(VERSION) /DSOURCEDIR=install /DSOURCEIDEDIR=install-ide windows\\coq.nsi
+	mv windows/installer.exe $(COQWINAUTOINST)
+
 clean::
-	rm -fr $(WINBUILDROOT) $(WININSTALL)
+	rm -fr $(WINBUILDROOT) $(WININSTALL) $(WINIDEINSTALL) windows/dlls
 
 cleanall::
-	rm -f $(COQWINZIP) win.log
+	rm -f $(COQWINZIP) $(COQWINAUTOINST) win.log
 
 ###################################################################
 # Debian
