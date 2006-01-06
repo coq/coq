@@ -4,13 +4,22 @@
 ;Written by Joost Verburg
 ;Modified by Julien Narboux
 
-; The VERSION should be passed as an argument at compile time using :
+; The VERSION should be passed as an argument at compile time
 ;
-
-!define MY_PRODUCT "Coq" ;Define your own software name here
-!define EXE_PATH "..\..\bin\"
+!ifndef VERSION
+  !error "VERSION not set"
+!endif
 
 !include "MUI.nsh"
+
+; to set COQLIB and COQBIN for all users
+!include "WriteEnvStr.nsh"
+; to modify PATH
+;!include "AddToPath.nsh"
+
+!ifndef OUTFILE
+  !define OUTFILE "installer.exe"
+!endif
 
 ;--------------------------------
 ;Configuration
@@ -18,13 +27,16 @@
   Name "Coq"
 
   ;General
-  OutFile "${OUTFILE}"
+  OutFile ${OUTFILE}
 
   ;Folder selection page
-  InstallDir "$PROGRAMFILES\${MY_PRODUCT}"
+  InstallDir "$PROGRAMFILES\Coq"
   
   ;Remember install folder
-  InstallDirRegKey HKCU "Software\${MY_PRODUCT}" ""
+  InstallDirRegKey HKCU "Software\Coq" ""
+
+  !define Uninstall_Coq_Key \
+     'HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Coq"'
 
 ;Interface Configuration
 
@@ -32,6 +44,10 @@
 ;  !define MUI_HEADERIMAGE_BITMAP "coq_logo.bmp" ; optional
 ;  !define MUI_ABORTWARNING
 
+  !define MUI_ICON "${NSISDIR}\Contrib\Graphics\Icons\win-install.ico"
+  !define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\win-uninstall.ico"
+
+  Icon "coq.ico"
 
 ;--------------------------------
 ;Modern UI Configuration
@@ -57,24 +73,37 @@
 ;Language Strings
 
   ;Description
-  LangString DESC_1 ${LANG_ENGLISH} "This is the windows version of Coq."
-  LangString DESC_2 ${LANG_ENGLISH} "This is CoqIde, an interactive development environment for Coq."
-  LangString DESC_3 ${LANG_ENGLISH} "This will copy the GTK dlls in the installation directory (These files are needed by CoqIde)."
+  LangString STR_COQ ${LANG_ENGLISH} "This is the windows version of Coq."
+  LangString STR_COQIDE ${LANG_ENGLISH} \
+    "This is CoqIde, an interactive development environment for Coq."
+  LangString STR_GTKDLLS ${LANG_ENGLISH} \
+    "This will copy the GTK dlls in the installation directory (These files are needed by CoqIde)."
+  LangString STR_USERS ${LANG_ENGLISH} \
+    "Check this box to install Coq for all users"
 
 ;--------------------------------
 ;Data
   
-Function .onInit
-  SetOutPath $TEMP
-  File /oname=coq_splash.bmp "coq_splash.bmp"
-	InitPluginsDir
+;Function .onInit
+;  SetOutPath $TEMP
+;  File /oname=coq_splash.bmp "coq_splash.bmp"
+;	InitPluginsDir
+;
+;  advsplash::show 1000 600 400 -1 $TEMP\coq_splash
+;
+;  Pop $0 ; $0 has '1' if the user closed the splash screen early,
+;         ; '0' if everything closed normal, and '-1' if some error occured.
+;
+;  Delete $TEMP\coq_splash.bmp
+;FunctionEnd
 
-  advsplash::show 1000 600 400 -1 $TEMP\coq_splash
+; Notify the user if Coq was installed for the current user only
+Function NotifyInstallUser
+  StrCmp $INSTUSER "all users" AllUsersInstOK 
+  MessageBox MB_OK|MB_ICONINFORMATION \
+    "Warning: Coq could be installed only for the current user"
 
-  Pop $0 ; $0 has '1' if the user closed the splash screen early,
-         ; '0' if everything closed normal, and '-1' if some error occured.
-
-  Delete $TEMP\coq_splash.bmp
+ AllUsersInstOK:
 FunctionEnd
 
 
@@ -87,63 +116,44 @@ SetCompress off
 
 Section "Coq" Sec1
 
-  ;ADD YOUR OWN STUFF HERE!
+  SetOutPath "$INSTDIR\bin\"
+  FileOpen $0 coqtop.bat w
+  FileWrite $0 "@echo off$\r$\n"
+  FileWrite $0 "set HOME=$INSTDIR$\r$\n"
+  FileWrite $0 '"%COQBIN%\coqtop.opt.exe"' 
+  FileClose $0
+  CreateShortCut "$INSTDIR\Coq.lnk" \
+    "$INSTDIR\bin\coqtop.bat" "" "$INSTDIR\lib\ide\coq.ico" 0
+
+  StrCpy $INSTUSER "all users"
 
   SetOutPath "$INSTDIR\"
+  File /r /x .done "${SOURCEDIR}\*"
 
-  FileOpen $0 $INSTDIR\Coq.bat w
-  FileWrite $0 "@echo off$\r$\n"
-  FileWrite $0 "set COQLIB=$INSTDIR\lib$\r$\n"
-  FileWrite $0 "set COQBIN=$INSTDIR\bin$\r$\n"
-  FileWrite $0 "set HOME=%HOMEPATH%$\r$\n"
-  FileWrite $0 "bin\coqtop.opt.exe" 
-  FileClose $0
-
-  SetOutPath "$INSTDIR\bin"
-  File /x coqide.* ${EXE_PATH}\*.exe
+  SetOutPath "$INSTDIR\lib\ide"
   File "coq.ico"
 
-  SetOutPath "$INSTDIR\lib\theories"
-  File /r ..\..\theories\*.vo
-  SetOutPath "$INSTDIR\lib\contrib"
-  File /r ..\..\contrib\*.vo
-  SetOutPath "$INSTDIR\lib\theories7"
-  File /r ..\..\theories7\*.vo
-  SetOutPath "$INSTDIR\lib\contrib7"
-  File /r ..\..\contrib7\*.vo
-  SetOutPath "$INSTDIR\lib\states"
-  File ..\..\states\initial.coq
-  SetOutPath "$INSTDIR\lib\states7"
-  File ..\..\states7\initial.coq
-  File ..\..\states7\barestate.coq
-  SetOutPath "$INSTDIR\latex"
-  File ..\..\tools\coqdoc\coqdoc.sty
-  File ..\..\tools\coqdoc\style.css
-  SetOutPath "$INSTDIR\emacs"
-  File ..\..\tools\*.el
-  SetOutPath "$INSTDIR\man"
-  File ..\..\man\*.1
-
   ;Store install folder
-  WriteRegStr HKCU "Software\${MY_PRODUCT}" "" $INSTDIR
+  WriteRegStr HKCU "Software\Coq" "" $INSTDIR
   
   ;Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
-  WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\Coq" \
-	  "DisplayName" "Coq Version ${MY_VERSION}"
-  WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\Coq" \
-	  "UninstallString" '"$INSTDIR\Uninstall.exe"'
+  WriteRegStr ${Uninstall_Coq_Key} "DisplayName" "Coq Version ${VERSION}"
+  WriteRegStr ${Uninstall_Coq_Key} "UninstallString" '"$INSTDIR\Uninstall.exe"'
+  WriteRegStr ${Uninstall_Coq_Key} "DisplayVersion" "${VERSION}"
+  WriteRegDWORD ${Uninstall_Coq_Key} "NoModify" "1"
+  WriteRegDWORD ${Uninstall_Coq_Key} "NoRepair" "1"
+  WriteRegStr ${Uninstall_Coq_Key} "URLInfoAbout" "http://coq.inria.fr"
 
-  WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\Coq" \
-          "DisplayVersion" "${MY_VERSION}"
-
-  WriteRegDWORD HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\Coq" \
-          "NoModify" "1"
-  WriteRegDWORD HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\Coq" \
-          "NoRepair" "1"
-
-  WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\Coq" \
-          "URLInfoAbout" "http://coq.inria.fr"
+; Environment variables
+  Push "COQLIB"
+  Push "$INSTDIR\lib"
+  Call WriteEnvStr
+  Push "COQBIN"
+  Push "$INSTDIR\bin"
+  Call WriteEnvStr
+;  Push "$INSTDIR\bin"
+;  Call AddToPath
 
 ; Start Menu Entries
 
@@ -151,52 +161,56 @@ Section "Coq" Sec1
   SetOutPath "$INSTDIR" 
 
   CreateDirectory "$SMPROGRAMS\Coq"
-  CreateShortCut "$SMPROGRAMS\Coq\Coq.lnk" "$INSTDIR\Coq.bat" "" "$INSTDIR\bin\coq.ico" 0
-  WriteINIStr "$SMPROGRAMS\Coq\The Coq HomePage.url" "InternetShortcut" "URL" "http://coq.inria.fr"
-  WriteINIStr "$SMPROGRAMS\Coq\The Coq Standard Library.url" "InternetShortcut" "URL" "http://coq.inria.fr/library-eng.html"
-  CreateShortCut "$SMPROGRAMS\Coq\Uninstall.lnk" "$INSTDIR\Uninstall.exe" "" "$INSTDIR\Uninstall.exe" 0
+  CreateShortCut "$SMPROGRAMS\Coq\Uninstall.lnk" \
+    "$INSTDIR\Uninstall.exe" "" "$INSTDIR\Uninstall.exe" 0
+  CreateShortCut "$SMPROGRAMS\Coq\Coq.lnk" \
+    "$INSTDIR\bin\coqtop.bat" "" "$INSTDIR\lib\ide\coq.ico" 0
+  WriteINIStr "$SMPROGRAMS\Coq\The Coq HomePage.url" \
+    "InternetShortcut" "URL" "http://coq.inria.fr"
+  WriteINIStr "$SMPROGRAMS\Coq\The Coq Standard Library.url" \
+    "InternetShortcut" "URL" "http://coq.inria.fr/library-eng.html"
+
+  Call NotifyInstallUser
 
 SectionEnd
 
 Section "CoqIde" Sec2
 
+  SetOutPath "$INSTDIR\bin\"
+  FileOpen $0 coqide.bat w
+  FileWrite $0 "@echo off$\r$\n"
+  FileWrite $0 "set HOME=$INSTDIR$\r$\n"
+  FileWrite $0 '"%COQBIN%\coqide.opt.exe"' 
+  FileClose $0
+  CreateShortCut "$INSTDIR\CoqIde.lnk" \
+    "$INSTDIR\bin\coqide.bat" "" "$INSTDIR\lib\ide\coq.ico" 0 SW_SHOWMINIMIZED
 
   SetOutPath "$INSTDIR"
- 
-  FileOpen $0 $INSTDIR\Coqide.bat w
-  FileWrite $0 "@echo off$\r$\n"
-  FileWrite $0 "set COQLIB=$INSTDIR\lib$\r$\n"
-  FileWrite $0 "set COQBIN=$INSTDIR\bin$\r$\n"
-  FileWrite $0 "set HOME=%HOMEPATH%$\r$\n"
-  FileWrite $0 "bin\coqide.opt.exe" 
-  FileClose $0
-
   File /oname=.coqiderc ..\..\ide\.coqide-gtk2rc
-
-  SetOutPath "$INSTDIR\bin"
-  File ${EXE_PATH}\coqide.*
+  File /r /x .done "${SOURCEIDEDIR}\*"
 
   ; Start Menu Entries
-  CreateShortCut "$SMPROGRAMS\Coq\CoqIde.lnk" "$INSTDIR\Coqide.bat" "" "$INSTDIR\bin\coq.ico" 0 
+  CreateShortCut "$SMPROGRAMS\Coq\CoqIde.lnk" \
+    "$INSTDIR\bin\coqide.bat" "" "$INSTDIR\lib\ide\coq.ico" 0 SW_SHOWMINIMIZED
 
 SectionEnd
 
 Section  "The GTK DLLs (needed by CoqIde)" Sec3
   
-  SetOutPath "$INSTDIR\bin"
-  File /r /x CVS  dlls\*.*
+  SetOutPath "$INSTDIR"
+  File /r /x .done dlls\*
 
 SectionEnd
-
+ 
 ;--------------------------------
 ;Descriptions
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-  !insertmacro MUI_DESCRIPTION_TEXT ${Sec1} $(DESC_1)
-  !insertmacro MUI_DESCRIPTION_TEXT ${Sec2} $(DESC_2)
-  !insertmacro MUI_DESCRIPTION_TEXT ${Sec3} $(DESC_3)
+  !insertmacro MUI_DESCRIPTION_TEXT ${Sec1} $(STR_COQ)
+  !insertmacro MUI_DESCRIPTION_TEXT ${Sec2} $(STR_COQIDE)
+  !insertmacro MUI_DESCRIPTION_TEXT ${Sec3} $(STR_GTKDLLS)
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
- 
+
 ;--------------------------------
 ;Uninstaller Section
 
@@ -204,35 +218,36 @@ Section "Uninstall"
 
 ;; Bat
 
-  Delete "$INSTDIR\Coq.bat"
-  Delete "$INSTDIR\Coqide.bat"
+  Delete "$INSTDIR\Coq.lnk"
+  Delete "$INSTDIR\Coqide.lnk"
 
 ;; We keep the settings 
 ;;  Delete "$INSTDIR\.coqiderc"
  
 ;; Binaries
   Delete "$INSTDIR\bin\*.exe"
-  Delete "$INSTDIR\bin\*.lnk"
+  Delete "$INSTDIR\bin\*.bat"
  
 ;; Icon
-  Delete "$INSTDIR\bin\coq.ico"
+  Delete "$INSTDIR\lib\ide\coq.ico"
 
 ;; DLLs
 
   Delete "$INSTDIR\bin\*.dll" 
-  RMDir /r "$INSTDIR\bin\etc"
-  RMDir /r "$INSTDIR\bin\lib"
-
   RMDir "$INSTDIR\bin"
 
 ;; Misc
+
+  RMDir /r "$INSTDIR\etc\pango"
+  RMDir /r "$INSTDIR\etc\gtk-2.0"
+  RMDir "$INSTDIR\etc"
 
   Delete "$INSTDIR\latex\coqdoc.sty"
   Delete "$INSTDIR\latex\style.css"
   RMDir "$INSTDIR\latex"
 
-  Delete "$INSTDIR\man\*.1"
-  RMDir "$INSTDIR\man"
+;  Delete "$INSTDIR\man\man1\*.1"
+  RMDir /r "$INSTDIR\man"
 
   Delete "$INSTDIR\emacs\*.el"
   RMDir "$INSTDIR\emacs"
@@ -249,11 +264,19 @@ Section "Uninstall"
   Delete "$SMPROGRAMS\Coq\The Coq Standard Library.url"
   Delete "$INSTDIR\Uninstall.exe"
   
-  DeleteRegKey /ifempty HKCU "Software\${MY_PRODUCT}"
+  DeleteRegKey /ifempty HKCU "Software\Coq"
 
-  DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Coq"
-  DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Coq"
+  DeleteRegKey HKLM "SOFTWARE\Coq"
+  DeleteRegKey ${Uninstall_Coq_Key}
   RMDir "$INSTDIR"
   RMDir "$SMPROGRAMS\Coq"
+
+;; Environment variable and PATH
+  Push "COQLIB"
+  Call un.DeleteEnvStr
+  Push "COQBIN"
+  Call un.DeleteEnvStr
+;  Push "$INSTDIR"
+;  Call un.RemoveFromPath
 
 SectionEnd
