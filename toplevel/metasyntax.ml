@@ -23,38 +23,10 @@ open Rawterm
 open Libnames
 open Lexer
 open Egrammar
+open Notation
 
 (**********************************************************************)
-(* Globalisation for constr_expr *)
-
-let globalize_ref vars ref =
-  match Constrintern.interp_reference (vars,[]) ref with
-  | RRef (loc,VarRef a) -> Ident (loc,a)
-  | RRef (loc,a) -> Qualid (loc,qualid_of_sp (Nametab.sp_of_global a))
-  | RVar (loc,x) -> Ident (loc,x)
-  | _ -> anomaly "globalize_ref: not a reference"
-
-let globalize_ref_term vars ref =
-  match Constrintern.interp_reference (vars,[]) ref with
-  | RRef (loc,VarRef a) -> CRef (Ident (loc,a))
-  | RRef (loc,a) -> CRef (Qualid (loc,qualid_of_sp (Nametab.sp_of_global a)))
-  | RVar (loc,x) -> CRef (Ident (loc,x))
-  | c -> Constrextern.extern_rawconstr Idset.empty c 
-
-let rec globalize_constr_expr vars = function
-  | CRef ref -> globalize_ref_term vars ref
-  | CAppExpl (_,(p,ref),l) ->
-      let f = 
-	map_constr_expr_with_binders globalize_constr_expr
-	  (fun x e -> e) vars
-      in
-      CAppExpl (dummy_loc,(p,globalize_ref vars ref), List.map f l)
-  | c ->
-      map_constr_expr_with_binders globalize_constr_expr (fun id e -> id::e)
-        vars c
-
-(**********)
-(* Tokens *)
+(* Tokens                                                             *)
 
 let cache_token (_,s) = Pcoq.lexer.Token.using ("", s)
 
@@ -258,9 +230,9 @@ let parse_format (loc,str) =
 (***********************)
 (* Analyzing notations *)
 
-open Notation
-
 type symbol_token = WhiteSpace of int | String of string
+
+(* Decompose the notation string into tokens *)
 
 let split_notation_string str =
   let push_token beg i l =
@@ -289,6 +261,43 @@ let split_notation_string str =
       push_whitespace beg i []
   in
   loop 0 0
+
+(* Interpret notations with a recursive component *)
+
+let rec find_pattern xl = function
+  | Break n as x :: l, Break n' :: l' when n=n' -> 
+      find_pattern (x::xl) (l,l')
+  | Terminal s as x :: l, Terminal s' :: l' when s = s' -> 
+      find_pattern (x::xl) (l,l')
+  | [NonTerminal x], NonTerminal x' :: l' ->
+      (x,x',xl),l'
+  | [NonTerminal _], Terminal s :: _ | Terminal s :: _, _ ->
+      error ("The token "^s^" occurs on one side of \"..\" but not on the other side")
+  | [NonTerminal _], Break s :: _ | Break s :: _, _ ->
+      error ("A break occurs on one side of \"..\" but not on the other side")
+  | ((SProdList _ | NonTerminal _) :: _ | []), _ -> 
+      error ("The special symbol \"..\" must occur in a configuration of the form\n\"x symbs .. symbs y\"")
+
+let rec interp_list_parser hd = function
+  | [] -> [], List.rev hd
+  | NonTerminal id :: tl when id = ldots_var ->
+      let ((x,y,sl),tl') = find_pattern [] (hd,tl) in
+      let yl,tl'' = interp_list_parser [] tl' in
+      (* We remember the second copy of each recursive part variable to *)
+      (* remove it afterwards *)
+      y::yl, SProdList (x,sl) :: tl''
+  | (Terminal _ | Break _) as s :: tl ->
+      if hd = [] then 
+        let yl,tl' = interp_list_parser [] tl in
+        yl, s :: tl'
+      else
+        interp_list_parser (s::hd) tl
+  | NonTerminal _ as x :: tl ->
+      let yl,tl' = interp_list_parser [x] tl in
+      yl, List.rev_append hd tl'
+  | SProdList _ :: _ -> anomaly "Unexpected SProdList in interp_list_parser"
+
+(* Find non-terminal tokens of notation *)
 
 let unquote_notation_token s =
   let n = String.length s in
@@ -324,39 +333,6 @@ let rec raw_analyse_notation_tokens = function
       let (vars,l) = raw_analyse_notation_tokens sl in
       (vars, Break n :: l)
 
-let rec find_pattern xl = function
-  | Break n as x :: l, Break n' :: l' when n=n' -> 
-      find_pattern (x::xl) (l,l')
-  | Terminal s as x :: l, Terminal s' :: l' when s = s' -> 
-      find_pattern (x::xl) (l,l')
-  | [NonTerminal x], NonTerminal x' :: l' ->
-      (x,x',xl),l'
-  | [NonTerminal _], Terminal s :: _ | Terminal s :: _, _ ->
-      error ("The token "^s^" occurs on one side of \"..\" but not on the other side")
-  | [NonTerminal _], Break s :: _ | Break s :: _, _ ->
-      error ("A break occurs on one side of \"..\" but not on the other side")
-  | ((SProdList _ | NonTerminal _) :: _ | []), _ -> 
-      error ("The special symbol \"..\" must occur in a configuration of the form\n\"x symbs .. symbs y\"")
-
-let rec interp_list_parser hd = function
-  | [] -> [], List.rev hd
-  | NonTerminal id :: tl when id = ldots_var ->
-      let ((x,y,sl),tl') = find_pattern [] (hd,tl) in
-      let yl,tl'' = interp_list_parser [] tl' in
-      (* We remember the second copy of each recursive part variable to *)
-      (* remove it afterwards *)
-      y::yl, SProdList (x,sl) :: tl''
-  | (Terminal _ | Break _) as s :: tl ->
-      if hd = [] then 
-        let yl,tl' = interp_list_parser [] tl in
-        yl, s :: tl'
-      else
-        interp_list_parser (s::hd) tl
-  | NonTerminal _ as x :: tl ->
-      let yl,tl' = interp_list_parser [x] tl in
-      yl, List.rev_append hd tl'
-  | SProdList _ :: _ -> anomaly "Unexpected SProdList in interp_list_parser"
-
 let analyse_notation_tokens l =
   let vars,l = raw_analyse_notation_tokens l in
   let recvars,l = interp_list_parser [] l in
@@ -365,7 +341,7 @@ let analyse_notation_tokens l =
 let remove_vars = List.fold_right List.remove_assoc
  
 (**********************************************************************)
-(* Build the parsing and pretty-printing rules *)
+(* Build pretty-printing rules                                        *)
 
 type printing_precedence = int * parenRelation
 type parsing_precedence = int option
@@ -416,13 +392,15 @@ let is_operator s =
    s.[0] = '-' or s.[0] = '/' or s.[0] = '<' or s.[0] = '>' or
    s.[0] = '@' or s.[0] = '\\' or s.[0] = '&' or s.[0] = '~')
 
-type previous_prod_status = NoBreak | CanBreak
-
 let rec is_non_terminal = function
   | NonTerminal _ | SProdList _ -> true
   | _ -> false
 
 let add_break n l = UnpCut (PpBrk(n,0)) :: l
+
+(* Heuristics for building default printing rules *)
+
+type previous_prod_status = NoBreak | CanBreak
 
 let make_hunks etyps symbols from =
   let vars,typs = List.split etyps in
@@ -486,6 +464,8 @@ let make_hunks etyps symbols from =
     | [] -> []
 
   in make NoBreak symbols
+
+(* Build default printing rules from explicit format *)
 
 let error_format () = error "The format does not match the notation"
 
@@ -555,15 +535,10 @@ let hunks_of_format (from,(vars,typs)) symfmt =
   | [], l -> l
   | _ -> error_format ()
 
-let string_of_prec (n,p) =
-  (string_of_int n)^(match p with E -> "E" | L -> "L" | _ -> "")
+(**********************************************************************)
+(* Build parsing rules                                                *)
 
 let assoc_of_type n (_,typ) = precedence_of_entry_type n typ
-
-let string_of_assoc = function
-  | Some(Gramext.RightA) -> "RIGHTA"
-  | Some(Gramext.LeftA) | None -> "LEFTA"
-  | Some(Gramext.NonA) -> "NONA"
 
 let is_not_small_constr = function
     ETConstr _ -> true
@@ -643,7 +618,7 @@ let make_pp_rule (n,typs,symbols,fmt) =
   | Some fmt -> hunks_of_format (n,List.split typs) (symbols,parse_format fmt)
 
 (**************************************************************************)
-(* Syntax extension: common parsing/printing rules (w/o interpretation)   *)
+(* Registration of syntax extensions (parsing/printing, no interpretation)*)
 
 let pr_arg_level from = function
   | (n,L) when n=from -> str "at next level"
@@ -656,15 +631,17 @@ let pr_level ntn (from,args) =
   str "at level " ++ int from ++ spc () ++ str "with arguments" ++ spc() ++
   prlist_with_sep pr_coma (pr_arg_level from) args
 
+let error_incompatible_level ntn oldprec prec =
+  errorlabstrm ""
+    (str ("Notation "^ntn^" is already defined") ++ spc() ++ 
+    pr_level ntn oldprec ++ 
+    spc() ++ str "while it is now required to be" ++ spc() ++ 
+    pr_level ntn prec)
+
 let cache_syntax_extension (_,(_,(prec,ntn,gr,pp))) =
   try 
     let oldprec = Notation.level_of_notation ntn in
-    if prec <> oldprec then
-      errorlabstrm ""
-	(str ("Notation "^ntn^" is already defined") ++ spc() ++ 
-	 pr_level ntn oldprec ++ 
-	 spc() ++ str "while it is now required to be" ++ spc() ++ 
-	 pr_level ntn prec);
+    if prec <> oldprec then error_incompatible_level ntn oldprec prec
   with Not_found ->
     (* Reserve the notation level *)
     Notation.declare_notation_level ntn prec;
@@ -699,6 +676,8 @@ let (inSyntaxExtension, outSyntaxExtension) =
 (**************************************************************************)
 (* Precedences                                                            *)
 
+(* Interpreting user-provided modifiers *)
+
 let interp_modifiers modl =
   let onlyparsing = ref false in
   let rec interp assoc level etyps format = function
@@ -731,17 +710,15 @@ let interp_modifiers modl =
 	interp assoc level etyps (Some s) l
   in interp None None [] None modl
 
-let interp_infix_modifiers modl =
-  let (assoc,level,t,b,fmt) = interp_modifiers modl in
+let check_infix_modifiers modifiers =
+  let (assoc,level,t,b,fmt) = interp_modifiers modifiers in
   if t <> [] then
-    error "explicit entry level or type unexpected in infix notation";
-  (assoc,level,b,fmt)
+    error "explicit entry level or type unexpected in infix notation"
 
-(* 2nd list of types has priority *)
-let rec merge_entry_types etyps' = function
-  | [] -> etyps'
-  | (x,_ as e)::etyps ->
-      e :: merge_entry_types (List.remove_assoc x etyps') etyps
+let no_syntax_modifiers modifiers = 
+  modifiers = [] or modifiers = [SetOnlyParsing]
+
+(* Compute precedences from modifiers (or find default ones) *)
 
 let set_entry_type etyps (x,typ) =
   let typ = try 
@@ -850,30 +827,17 @@ let compute_syntax_data (df,modifiers) =
   (i_data,ntn_for_grammar,prec,sy_data)
 
 (**********************************************************************)
-(* Reserved Notations *)
-
-let add_syntax_extension local mv =
-  let (_,ntn,prec,sy_data) = compute_syntax_data mv in
-  let pa_rule = make_grammar_rule sy_data ntn in
-  let pp_rule = make_pp_rule sy_data in
-  Lib.add_anonymous_leaf (inSyntaxExtension (local,(prec,ntn,pa_rule,pp_rule)))
-
-(**********************************************************************)
-(* Notations *)
-
-(* A notation comes with a parsing rule, a pretty-printing rule, an
-   identifiying pattern called notation and an associated scope *)
+(* Registration of notations interpretation                            *)
 
 let load_notation _ (_,(_,scope,pat,onlyparse,_)) =
   option_iter Notation.declare_scope scope
 
 let open_notation i (_,(_,scope,pat,onlyparse,(ntn,df))) =
-  if i=1 then begin
-    let exists = Notation.exists_notation_in_scope scope ntn pat in
+  if i=1 & not (Notation.exists_notation_in_scope scope ntn pat) then begin
     (* Declare the interpretation *)
-    if not exists then
-      Notation.declare_notation_interpretation ntn scope pat df;
-    if not exists & not onlyparse then
+    Notation.declare_notation_interpretation ntn scope pat df;
+    (* Declare the uninterpretation *)
+    if not onlyparse then
       Notation.declare_uninterpretation (NotationRule (scope,ntn)) pat
   end
 
@@ -899,6 +863,9 @@ let (inNotation, outNotation) =
        classify_function = classify_notation;
        export_function = export_notation}
 
+(**********************************************************************)
+(* Recovering existing syntax                                         *)
+
 let contract_notation ntn =
   if ntn = "{ _ }" then ntn else
   let rec aux ntn i =
@@ -912,11 +879,30 @@ let contract_notation ntn =
     else ntn in
   aux ntn 0
 
-let add_notation_in_scope local df c mods scope toks =
+exception NoSyntaxRule
+
+let recover_syntax ntn =
+  try 
+    let prec = Notation.level_of_notation ntn in
+    let pprule,_ = Notation.find_notation_printing_rule ntn in
+    let gr = Egrammar.recover_notation_grammar ntn prec in
+    (prec,ntn,gr,pprule)
+  with Not_found ->
+    raise NoSyntaxRule
+
+let recover_notation_syntax rawntn =
+  let ntn = contract_notation rawntn in
+  let sy = recover_syntax ntn in
+  (sy,if ntn=rawntn then None else Some (recover_syntax "{ _ }"))
+
+(**********************************************************************)
+(* Main functions about notations                                     *)
+
+let add_notation_in_scope local df c mods scope =
   let (i_data,ntn,prec,sy_data) = compute_syntax_data (df,mods) in
   (* Declare the parsing and printing rules *)
-  let pp_rule = make_pp_rule sy_data in
   let pa_rule = make_grammar_rule sy_data ntn in
+  let pp_rule = make_pp_rule sy_data in
   Lib.add_anonymous_leaf (inSyntaxExtension(local,(prec,ntn,pa_rule,pp_rule)));
   (* Declare interpretation *)
   let (onlyparse,recvars,vars,df') = i_data in
@@ -925,102 +911,64 @@ let add_notation_in_scope local df c mods scope toks =
   let onlyparse = onlyparse or is_not_printable ac in
   Lib.add_anonymous_leaf (inNotation(local,scope,a,onlyparse,df'))
 
-let level_rule (n,p) = if p = E then n else max (n-1) 0
-
-let recover_syntax ntn = 
-  try 
-    let prec = Notation.level_of_notation ntn in
-    let pprule,_ = Notation.find_notation_printing_rule ntn in
-    let gr = Egrammar.recover_notation_grammar ntn prec in
-    Some (prec,ntn,gr,pprule)
-  with Not_found -> None
-
-let recover_notation_syntax rawntn =
-  let ntn = contract_notation rawntn in
-  match recover_syntax ntn with
-    | None -> None
-    | Some sy -> Some (sy,if ntn=rawntn then None else recover_syntax "{ _ }")
-
-let add_notation_interpretation_core local symbs df a scope onlyparse sy_data =
-  let i_ntn = make_notation_key symbs in
-  option_iter
-    (fun (x,y) ->
-      Lib.add_anonymous_leaf (inSyntaxExtension (local,x));
-      (* For "{ _ }" based notations *)
-      option_iter
-	(fun z -> Lib.add_anonymous_leaf (inSyntaxExtension (local,z))) y)
-    sy_data;
-  Lib.add_anonymous_leaf
-    (inNotation(local,scope,a,onlyparse,(i_ntn,(Lib.library_dp(),df))))
-
-let add_notation_interpretation df names c sc =
+let add_notation_interpretation_core local df names c sc onlyparse =
   let (recs,vars,symbs) = analyse_notation_tokens (split_notation_string df) in
-  let sy_data = recover_notation_syntax (make_notation_key symbs) in
-  if sy_data = None then
-    error "Parsing rule for this notation has to be previously declared";
+  let (sy_data,squash) = recover_notation_syntax (make_notation_key symbs) in
   let (acvars,ac) = interp_aconstr names vars c in
   let a = (remove_vars recs acvars,ac) (* For recursive parts *) in
-  let onlyparse = is_not_printable ac in
-  add_notation_interpretation_core false symbs df a sc onlyparse sy_data
+  let onlyparse = onlyparse or is_not_printable ac in
+  let i_ntn = make_notation_key symbs in
+  (* Redeclare pa/pp rules *)
+  Lib.add_anonymous_leaf (inSyntaxExtension (local,sy_data));
+  option_iter (* For "{ _ }" based notations *)
+    (fun z -> Lib.add_anonymous_leaf (inSyntaxExtension (local,z))) squash;
+  (* Declare interpretation *)
+  Lib.add_anonymous_leaf
+    (inNotation(local,sc,a,onlyparse,(i_ntn,(Lib.library_dp(),df))))
 
-let is_quoted_ident x =
-  let x' = unquote_notation_token x in
-  x <> x' & try Lexer.check_ident x'; true with _ -> false
+(* Notations without interpretation (Reserved Notation) *)
+
+let add_syntax_extension local mv =
+  let (_,ntn,prec,sy_data) = compute_syntax_data mv in
+  let pa_rule = make_grammar_rule sy_data ntn in
+  let pp_rule = make_pp_rule sy_data in
+  Lib.add_anonymous_leaf (inSyntaxExtension (local,(prec,ntn,pa_rule,pp_rule)))
+
+(* Notations with only interpretation *)
+
+let add_notation_interpretation df names c sc =
+  try add_notation_interpretation_core false df names c sc false
+  with NoSyntaxRule ->
+    error "Parsing rule for this notation has to be previously declared"
+
+(* Main entry point *)
 
 let add_notation local c (df,modifiers) sc =
-  let toks = split_notation_string df in
-  match toks with 
-  | [String x] when (modifiers = [] or modifiers = [SetOnlyParsing]) ->
-    (* This is a ident to be declared as a rule *)
-    add_notation_in_scope local df c (SetLevel 0::modifiers) sc toks
-  | _ ->
-    let (assoc,lev,typs,onlyparse,fmt) = interp_modifiers modifiers	in
-    match lev with
-    | None->
-      if modifiers <> [] & modifiers <> [SetOnlyParsing] then
-	error "Parsing rule for this notation includes no level"
-      else
-	(* Declare only interpretation *)
-	let (recs,vars,symbs) = analyse_notation_tokens toks in
-	let sy_data = recover_notation_syntax (make_notation_key symbs) in
-	if sy_data <> None then 
-          let (acvars,ac) = interp_aconstr [] vars c in
-          let a = (remove_vars recs acvars,ac) in
-	  let onlyparse = modifiers=[SetOnlyParsing] or is_not_printable ac in
-	  add_notation_interpretation_core local symbs df a sc onlyparse 
-	    sy_data
-        else
-          add_notation_in_scope local df c modifiers sc toks
-    | Some n ->
-      (* Declare both syntax and interpretation *)
-      add_notation_in_scope local df c modifiers sc toks
+  if no_syntax_modifiers modifiers then
+    (* No syntax data: try to rely on a previously declared rule *)
+    let onlyparse = modifiers=[SetOnlyParsing] in
+    try add_notation_interpretation_core local df [] c sc onlyparse
+    with NoSyntaxRule ->
+      (* Try to determine a default syntax rule *)
+      add_notation_in_scope local df c modifiers sc
+  else
+    (* Declare both syntax and interpretation *)
+    add_notation_in_scope local df c modifiers sc
 
-(**********************************************************************)
-(* Infix notations                                                    *)
-
-(* TODO add boxes information in the expression *)
+(* Infix notations *)
 
 let inject_var x = CRef (Ident (dummy_loc, id_of_string x))
 
-let add_infix local (inf,modl) pr sc =
-  let (assoc,n,onlyparse,fmt) = interp_infix_modifiers modl in
+let add_infix local (inf,modifiers) pr sc =
+  check_infix_modifiers modifiers;
   (* check the precedence *)
   let metas = [inject_var "x"; inject_var "y"] in
-  let a = mkAppC (mkRefC pr,metas) in
+  let c = mkAppC (mkRefC pr,metas) in
   let df = "x "^(quote_notation_token inf)^" y" in
-  let toks = split_notation_string df in
-  if n=None & assoc=None then
-    (* No pa/pp rule: declare only interpretation *)
-    let (recs,vars,symbs) = analyse_notation_tokens toks in
-    let sy_data = recover_notation_syntax (make_notation_key symbs) in
-    if sy_data <> None then 
-      let (acvars,ac) = interp_aconstr [] vars a in
-      let a' = (remove_vars recs acvars,ac) in
-      add_notation_interpretation_core local symbs df a' sc onlyparse sy_data
-    else
-      add_notation_in_scope local df a modl sc toks
-  else
-    add_notation_in_scope local df a modl sc toks
+  add_notation local c (df,modifiers) sc
+
+(**********************************************************************)
+(* Miscellaneous                                                      *)
 
 let standardize_locatable_notation ntn =
   let unquote = function
