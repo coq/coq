@@ -4,6 +4,7 @@ Changes from V8.0
 Syntax
 
 - No more support for version 7 syntax and for translation to version 8 syntax.
+- Support for primitive interpretation of string litterals
 
 Environment variables
 
@@ -71,6 +72,7 @@ Modules
 Notations
 
 - "format" option aware of recursive notations
+- added insertion of spaces by default in recursive notations w/o separators
 - no more automatic printing box in case of user-provided printing "format"
 
 Library
