@@ -73,19 +73,20 @@ let rawconstr_of_aconstr_with_binders loc g f e = function
   | ALetIn (na,b,c) ->
       let e,na = name_app g e na in RLetIn (loc,na,f e b,f e c)
   | ACases (rtntypopt,tml,eqnl) ->
-      let cases_predicate_names tml =
-	List.flatten (List.map (function
-	  | (tm,(na,None)) -> [na]
-	  | (tm,(na,Some (_,nal))) -> na::nal) tml) in
-      (* TODO: apply g to na (in fact not used) *)
-      let e' = List.fold_right
-	(fun na e -> fst (name_app g e na)) (cases_predicate_names tml) e in
+      let e',tml' = List.fold_right (fun (tm,(na,t)) (e',tml') ->
+	let e',t' = match t with
+	| None -> e',None
+	| Some (ind,nal) -> 
+	  let e',nal' = List.fold_right (fun na (e',nal) -> 
+	      let e',na' = name_app g e' na in e',na'::nal) nal (e',[]) in
+	  e',Some (loc,ind,nal') in
+	let e',na' = name_app g e' na in
+	(e',(f e tm,(na',t'))::tml')) tml (e,[]) in
       let fold id (idl,e) = let (id,e) = g id e in (id::idl,e) in
-      let eqnl = List.map (fun (idl,pat,rhs) ->
-        let (idl,e) = List.fold_right fold idl ([],e) in (loc,idl,pat,f e rhs)) eqnl in
-      RCases (loc,option_app (f e') rtntypopt,
-        List.map (fun (tm,(na,x)) -> 
-	  (f e tm,(na,option_app (fun (x,y) -> (loc,x,y)) x))) tml,eqnl)
+      let eqnl' = List.map (fun (idl,pat,rhs) ->
+        let (idl,e) = List.fold_right fold idl ([],e) in
+	(loc,idl,pat,f e rhs)) eqnl in
+      RCases (loc,option_app (f e') rtntypopt,tml',eqnl')
   | ALetTuple (nal,(na,po),b,c) ->
       let e,nal = list_fold_map (name_app g) e nal in 
       let e,na = name_app g e na in
@@ -339,6 +340,22 @@ let encode_list_value l = RApp (dummy_loc,RVar (dummy_loc,ldots_var),l)
 
 (* Pattern-matching rawconstr and aconstr *)
 
+let abstract_return_type_context pi mklam tml rtno =
+  option_app (fun rtn ->
+    let nal =
+      List.flatten (List.map (fun (_,(na,t)) ->
+	match t with Some x -> (pi x)@[na] | None -> [na]) tml) in
+    List.fold_right mklam nal rtn)
+    rtno
+
+let abstract_return_type_context_rawconstr =
+  abstract_return_type_context pi3
+    (fun na c -> RLambda(dummy_loc,na,RHole(dummy_loc,Evd.InternalHole),c))
+
+let abstract_return_type_context_aconstr =
+  abstract_return_type_context snd
+    (fun na c -> ALambda(na,AHole Evd.InternalHole,c))
+
 let rec adjust_scopes = function
   | _,[] -> []
   | [],a::args -> (None,a) :: adjust_scopes ([],args)
@@ -395,11 +412,12 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
      match_binders alp metas na1 na2 (match_ alp metas sigma t1 t2) b1 b2
   | RCases (_,rtno1,tml1,eqnl1), ACases (rtno2,tml2,eqnl2) 
       when List.length tml1 = List.length tml2 ->
-     let sigma = option_fold_left2 (match_ alp metas) sigma rtno1 rtno2 in
-     (* TODO: match rtno' with their contexts *)
-     let sigma = List.fold_left2 
+      let rtno1' = abstract_return_type_context_rawconstr tml1 rtno1 in
+      let rtno2' = abstract_return_type_context_aconstr tml2 rtno2 in
+      let sigma = option_fold_left2 (match_ alp metas) sigma rtno1' rtno2' in
+      let sigma = List.fold_left2 
        (fun s (tm1,_) (tm2,_) -> match_ alp metas s tm1 tm2) sigma tml1 tml2 in
-     List.fold_left2 (match_equations alp metas) sigma eqnl1 eqnl2
+      List.fold_left2 (match_equations alp metas) sigma eqnl1 eqnl2
   | RIf (_,a1,(na1,to1),b1,c1), AIf (a2,(na2,to2),b2,c2) ->
       let sigma = match_opt (match_binders alp metas na1 na2) sigma to1 to2 in
       List.fold_left2 (match_ alp metas) sigma [a1;b1;c1] [a2;b2;c2]
