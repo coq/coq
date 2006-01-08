@@ -205,6 +205,39 @@ let loc_of_rawconstr = function
   | RCast (loc,_,_,_) -> loc
   | RDynamic (loc,_) -> loc
 
+(**********************************************************************)
+(* Conversion from rawconstr to cases pattern, if possible            *)
+
+let rec cases_pattern_of_rawconstr na = function
+  | RVar (loc,id) when na<>Anonymous ->
+      (* Unable to manage the presence of both an alias and a variable *)
+      raise Not_found
+  | RVar (loc,id) -> PatVar (loc,Name id)
+  | RHole (loc,_) -> PatVar (loc,na)
+  | RRef (loc,ConstructRef cstr) ->
+      PatCstr (loc,cstr,[],na)
+  | RApp (loc,RRef (_,ConstructRef cstr),l) ->
+      PatCstr (loc,cstr,List.map (cases_pattern_of_rawconstr Anonymous) l,na)
+  | _ -> raise Not_found
+
+(* Turn a closed cases pattern into a rawconstr *)
+let rec rawconstr_of_closed_cases_pattern_aux = function
+  | PatCstr (loc,cstr,[],Anonymous) ->
+      RRef (loc,ConstructRef cstr)
+  | PatCstr (loc,cstr,l,Anonymous) ->
+      let ref = RRef (loc,ConstructRef cstr) in
+      RApp (loc,ref, List.map rawconstr_of_closed_cases_pattern_aux l)
+  | _ -> raise Not_found
+
+let rawconstr_of_closed_cases_pattern = function
+  | PatCstr (loc,cstr,l,na) ->
+      na,rawconstr_of_closed_cases_pattern_aux (PatCstr (loc,cstr,l,Anonymous))
+  | _ ->
+      raise Not_found
+
+(**********************************************************************)
+(* Reduction expressions                                              *)
+
 type 'a raw_red_flag = {
   rBeta : bool;
   rIota : bool;

@@ -96,6 +96,19 @@ val occur_rawconstr : identifier -> rawconstr -> bool
 
 val loc_of_rawconstr : rawconstr -> loc
 
+(**********************************************************************)
+(* Conversion from rawconstr to cases pattern, if possible            *)
+
+(* Take the current alias as parameter, raise Not_found if *)
+(* translation is impossible *)
+
+val cases_pattern_of_rawconstr : name -> rawconstr -> cases_pattern
+
+val rawconstr_of_closed_cases_pattern : cases_pattern -> name * rawconstr
+
+(**********************************************************************)
+(* Reduction expressions                                              *)
+
 type 'a raw_red_flag = {
   rBeta : bool;
   rIota : bool;
