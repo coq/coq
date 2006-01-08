@@ -57,14 +57,15 @@ val find_delimiters_scope : loc -> delimiters -> scope_name
    negative numbers are not supported, the interpreter must fail with
    an appropriate error message *)
 
+type notation_location = dir_path * string
 type required_module = global_reference * string list 
+type cases_pattern_status = bool (* true = use prim token in patterns *)
 
 type 'a prim_token_interpreter =
-    (loc -> 'a -> rawconstr) * (loc -> 'a -> name -> cases_pattern) option
+    loc -> 'a -> rawconstr
 
 type 'a prim_token_uninterpreter =
-    rawconstr list * (rawconstr -> 'a option)
-    * (cases_pattern -> 'a option) option
+    rawconstr list * (rawconstr -> 'a option) * cases_pattern_status
 
 val declare_numeral_interpreter : scope_name -> required_module ->
   bigint prim_token_interpreter -> bigint prim_token_uninterpreter -> unit
@@ -75,9 +76,10 @@ val declare_string_interpreter : scope_name -> required_module ->
 (* Return the [term]/[cases_pattern] bound to a primitive token in a
    given scope context*)
 
-val interp_prim_token : loc -> prim_token -> scope_name list -> rawconstr
+val interp_prim_token : loc -> prim_token -> scope_name list -> 
+  rawconstr * (notation_location * scope_name option)
 val interp_prim_token_cases_pattern : loc -> prim_token -> name -> 
-  scope_name list -> cases_pattern
+  scope_name list -> cases_pattern * (notation_location * scope_name option)
 
 (* Return the primitive token associated to a [term]/[cases_pattern];
    raise [No_match] if no such token *)
@@ -85,7 +87,7 @@ val interp_prim_token_cases_pattern : loc -> prim_token -> name ->
 val uninterp_prim_token : 
   rawconstr -> scope_name * prim_token
 val uninterp_prim_token_cases_pattern : 
-  cases_pattern -> scope_name * prim_token
+  cases_pattern -> name * scope_name * prim_token
 
 val availability_of_prim_token : 
   scope_name -> scopes -> delimiters option option
@@ -96,14 +98,15 @@ val availability_of_prim_token :
 type interp_rule =
   | NotationRule of scope_name option * notation
   | SynDefRule of kernel_name
+
 val declare_notation_interpretation : notation -> scope_name option ->
-      interpretation -> dir_path * string -> unit
+      interpretation -> notation_location -> unit
 
 val declare_uninterpretation : interp_rule -> interpretation -> unit
 
 (* Return the interpretation bound to a notation *)
 val interp_notation : loc -> notation -> scope_name list -> 
-      interpretation * ((dir_path * string) * scope_name option)
+      interpretation * (notation_location * scope_name option)
 
 (* Return the possible notations for a given term *)
 val uninterp_notations : rawconstr ->

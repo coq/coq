@@ -42,9 +42,10 @@ open Ppextend
 
 type level = precedence * tolerability list
 type delimiters = string
+type notation_location = dir_path * string
 
 type scope = {
-  notations: (interpretation * (dir_path * string)) Stringmap.t;
+  notations: (interpretation * notation_location) Stringmap.t;
   delimiters: delimiters option
 }
 
@@ -127,6 +128,8 @@ let empty_scope_stack = []
 
 let push_scope sc scopes = Scope sc :: scopes
 
+let push_scopes = List.fold_right push_scope
+
 (**********************************************************************)
 (* Delimiters *)
 
@@ -195,15 +198,15 @@ let pattern_key = function
 type required_module = global_reference * string list 
 
 type 'a prim_token_interpreter =
-    (loc -> 'a -> rawconstr) * (loc -> 'a -> name -> cases_pattern) option
+    loc -> 'a -> rawconstr
+
+type cases_pattern_status = bool (* true = use prim token in patterns *)
 
 type 'a prim_token_uninterpreter =
-    rawconstr list * (rawconstr -> 'a option)
-    * (cases_pattern -> 'a option) option
+    rawconstr list * (rawconstr -> 'a option) * cases_pattern_status
 
 type internal_prim_token_interpreter =
-    loc -> prim_token -> 
-      required_module * ((unit -> rawconstr) * (name -> cases_pattern) option)
+    loc -> prim_token -> required_module * (unit -> rawconstr)
 
 let prim_token_interpreter_tab =
   (Hashtbl.create 7 : (scope_name, internal_prim_token_interpreter) Hashtbl.t)
@@ -216,33 +219,27 @@ let add_prim_token_interpreter sc interp =
     let cont = (fun _loc _p -> raise Not_found) in
     Hashtbl.add prim_token_interpreter_tab sc (interp cont)
 
-let declare_prim_token_interpreter sc interp (patl,uninterp,uninterpc) =
+let declare_prim_token_interpreter sc interp (patl,uninterp,b) =
   declare_scope sc;
   add_prim_token_interpreter sc interp;
-  List.iter
-    (fun pat -> Hashtbl.add prim_token_key_table (rawconstr_key pat)
-      (sc,uninterp,uninterpc))
+  List.iter (fun pat -> 
+      Hashtbl.add prim_token_key_table (rawconstr_key pat) (sc,uninterp,b))
     patl
 
 let mkNumeral n = Numeral n
 let mkString s = String s
 
-let delay dir (int,intc) loc x =
-  (dir, ((fun () -> int loc x), option_app (fun i -> i loc x) intc))
+let delay dir int loc x = (dir, (fun () -> int loc x))
 
-let declare_numeral_interpreter sc dir interp (patl,uninterp,uninterpc) =
+let declare_numeral_interpreter sc dir interp (patl,uninterp,inpat) =
   declare_prim_token_interpreter sc
     (fun cont loc -> function Numeral n-> delay dir interp loc n | p -> cont loc p)
-    (patl,
-     (fun r -> option_app mkNumeral (uninterp r)),
-     option_app (fun u pc -> option_app mkNumeral (u pc)) uninterpc)
+    (patl, (fun r -> option_app mkNumeral (uninterp r)), inpat)
 
-let declare_string_interpreter sc dir interp (patl,uninterp,uninterpc) =
+let declare_string_interpreter sc dir interp (patl,uninterp,inpat) =
   declare_prim_token_interpreter sc
     (fun cont loc -> function String s -> delay dir interp loc s | p -> cont loc p)
-    (patl,
-     (fun r -> option_app mkString (uninterp r)),
-     option_app (fun u -> fun pc -> option_app mkString (u pc)) uninterpc)
+    (patl, (fun r -> option_app mkString (uninterp r)), inpat)
 
 let check_required_module loc sc (ref,d) =
   try let _ = sp_of_global ref in ()
@@ -308,24 +305,57 @@ let declare_uninterpretation rule (metas,c as pat) =
   let (key,n) = aconstr_key c in
   notations_key_table := Gmapl.add key (rule,pat,n) !notations_key_table
 
-let rec find_interpretation f = function
-  | sce :: scopes ->
-      let scope = match sce with
-	| Scope s -> s 
-	| SingleNotation _ -> default_scope in
-      (try f scope
-      with Not_found -> find_interpretation f scopes)
+let rec find_interpretation find = function
   | [] -> raise Not_found
+  | sce :: scopes ->
+      let sc,sco = match sce with
+	| Scope sc -> sc, Some sc
+	| SingleNotation _ -> default_scope, None in
+      try
+	let (pat,df) = find sc in
+	pat,(df,sco)
+      with Not_found ->
+	find_interpretation find scopes
+
+let find_notation ntn sc =
+  Stringmap.find ntn (find_scope sc).notations
+
+let notation_of_prim_token = function
+  | Numeral n when is_pos_or_zero n -> to_string n
+  | Numeral n -> "- "^(to_string (neg n))
+  | String _ -> raise Not_found
+
+let find_prim_token g loc p sc =
+  (* Try for a user-defined numerical notation *)
+  try
+    let (_,c),df = find_notation (notation_of_prim_token p) sc in
+    g (rawconstr_of_aconstr loc c),df
+  with Not_found ->
+  (* Try for a primitive numerical notation *)
+  let (dir,interp) = Hashtbl.find prim_token_interpreter_tab sc loc p in
+  check_required_module loc sc dir;
+  g (interp ()), (dirpath (sp_of_global (fst dir)),"")
+
+let interp_prim_token_gen g loc p scopes =
+  let all_scopes = push_scopes scopes !scope_stack in
+  try find_interpretation (find_prim_token g loc p) all_scopes
+  with Not_found ->
+    user_err_loc (loc,"interp_prim_token",
+    (match p with
+      | Numeral n -> str "No interpretation for numeral " ++ pr_bigint n
+      | String s -> str "No interpretation for string " ++ qs s))
+
+let interp_prim_token =
+  interp_prim_token_gen (fun x -> x)
+
+let interp_prim_token_cases_pattern loc p name =
+  interp_prim_token_gen (cases_pattern_of_rawconstr name) loc p
 
 let rec interp_notation loc ntn scopes =
-  let f sc =
-    let scope = find_scope sc in
-    let (pat,df) = Stringmap.find ntn scope.notations in
-    pat,(df,if sc = default_scope then None else Some sc) in
-  try find_interpretation f (List.fold_right push_scope scopes !scope_stack)
-  with Not_found -> 
+  try find_interpretation (find_notation ntn) (push_scopes scopes !scope_stack) 
+  with Not_found ->
     user_err_loc
-      (loc,"",str ("Unknown interpretation for notation \""^ntn^"\""))
+    (loc,"",str ("Unknown interpretation for notation \""^ntn^"\""))
 
 let uninterp_notations c =
   Gmapl.find (rawconstr_key c) !notations_key_table
@@ -338,31 +368,6 @@ let availability_of_notation (ntn_scope,ntn) scopes =
     Stringmap.mem ntn (Stringmap.find scope !scope_map).notations in
   find_without_delimiters f (ntn_scope,Some ntn) scopes
 
-let rec interp_prim_token_gen loc f p = function
-  | SingleNotation _ :: scopes -> interp_prim_token_gen loc f p scopes
-  | Scope sc :: scopes ->
-      (try 
-	let dir,interp = Hashtbl.find prim_token_interpreter_tab sc loc p in
-	check_required_module loc sc dir;
-	f interp
-       with Not_found -> 
-	 interp_prim_token_gen loc f p scopes)
-  | [] ->
-      user_err_loc (loc,"interp_prim_token",
-      (match p with
-	| Numeral n -> str "No interpretation for numeral " ++ pr_bigint n
-	| String s -> str "No interpretation for string " ++ qs s))
-
-let push_scopes = List.fold_right push_scope
-
-let interp_prim_token loc p scopes =
-  let f x = fst x () in
-  interp_prim_token_gen loc f p (push_scopes scopes !scope_stack)
-
-let interp_prim_token_cases_pattern loc p name scopes =
-  let f x = match snd x with None -> raise Not_found | Some g -> g name in
-  interp_prim_token_gen loc f p (push_scopes scopes !scope_stack)
-
 let uninterp_prim_token c =
   try 
     let (sc,numpr,_) = Hashtbl.find prim_token_key_table (rawconstr_key c) in
@@ -373,12 +378,13 @@ let uninterp_prim_token c =
 
 let uninterp_prim_token_cases_pattern c =
   try 
-    match Hashtbl.find prim_token_key_table (pattern_key c) with
-      | (_,_,None) -> raise No_match
-      | (sc,_,Some numpr) ->
-	  match numpr c with
-	    | None -> raise No_match
-	    | Some n -> (sc,n)
+    let k = cases_pattern_key c in
+    let (sc,numpr,b) = Hashtbl.find prim_token_key_table k in
+    if not b then raise No_match;
+    let na,c = rawconstr_of_closed_cases_pattern c in
+    match numpr c with
+      | None -> raise No_match
+      | Some n -> (na,sc,n)
   with Not_found -> raise No_match
 
 let availability_of_prim_token printer_scope scopes =
@@ -519,12 +525,9 @@ let pr_scope_classes sc =
     hov 0 (str ("Bound to class"^(if List.tl l=[] then "" else "es")) ++
       spc() ++ prlist_with_sep spc pr_class l) ++ fnl()
 
-let rec rawconstr_of_aconstr () x =
-  rawconstr_of_aconstr_with_binders dummy_loc (fun id () -> (id,())) 
-    rawconstr_of_aconstr () x
-
 let pr_notation_info prraw ntn c =
-  str "\"" ++ str ntn ++ str "\" := " ++ prraw (rawconstr_of_aconstr () c)
+  str "\"" ++ str ntn ++ str "\" := " ++ 
+  prraw (rawconstr_of_aconstr dummy_loc c)
 
 let pr_named_scope prraw scope sc =
  (if scope = default_scope then
