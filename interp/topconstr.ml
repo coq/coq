@@ -99,6 +99,11 @@ let rawconstr_of_aconstr_with_binders loc g f e = function
   | APatVar n -> RPatVar (loc,(false,n))
   | ARef x -> RRef (loc,x)
 
+let rec rawconstr_of_aconstr loc x =
+  let rec aux () x = 
+    rawconstr_of_aconstr_with_binders loc (fun id () -> (id,())) aux () x
+  in aux () x
+
 let rec subst_pat subst pat = 
   match pat with
   | PatVar _ -> pat
