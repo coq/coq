@@ -160,20 +160,19 @@ let loc_of_notation f loc args ntn =
 let ntn_loc = loc_of_notation constr_loc
 let patntn_loc = loc_of_notation cases_pattern_loc
 
-let dump_notation_location =
-  fun pos ntn ((path,df),sc) ->
-    let rec next growing =
-      let loc = Lexer.location_function !token_number in
-      let (bp,_) = unloc loc in
-      if growing then if bp >= pos then loc else (incr token_number;next true)
-      else if bp = pos then loc
-      else if bp > pos then (decr token_number;next false)
-      else (incr token_number;next true) in
-    let loc = next (pos >= !last_pos) in
-    last_pos := pos;
-    let path = string_of_dirpath path in
-    let sc = match sc with Some sc -> " "^sc | None -> "" in
-    dump_string (Printf.sprintf "R%d %s \"%s\"%s\n" (fst (unloc loc)) path df sc)
+let dump_notation_location pos ((path,df),sc) =
+  let rec next growing =
+    let loc = Lexer.location_function !token_number in
+    let (bp,_) = unloc loc in
+    if growing then if bp >= pos then loc else (incr token_number;next true)
+    else if bp = pos then loc
+    else if bp > pos then (decr token_number;next false)
+    else (incr token_number;next true) in
+  let loc = next (pos >= !last_pos) in
+  last_pos := pos;
+  let path = string_of_dirpath path in
+  let sc = match sc with Some sc -> " "^sc | None -> "" in
+  dump_string (Printf.sprintf "R%d %s \"%s\"%s\n" (fst (unloc loc)) path df sc)
 
 (**********************************************************************)
 (* Contracting "{ _ }" in notations *)
@@ -559,24 +558,24 @@ let rec intern_cases_pattern scopes (ids,subst as aliases) tmp_scope = function
         (subst, PatCstr (loc,c,pl0@pl,alias_of aliases))) pll in
       ids',pl'
   | CPatNotation (loc,"- _",[CPatPrim(_,Numeral p)]) 
-      when Bigint.is_strictly_pos p->
-      let scopes = option_cons tmp_scope scopes in
+      when Bigint.is_strictly_pos p ->
       let np = Numeral (Bigint.neg p) in
-      let a = alias_of aliases in
-      (ids, [subst, Notation.interp_prim_token_cases_pattern loc np a scopes])
+      intern_cases_pattern scopes aliases tmp_scope (CPatPrim(loc,np))
   | CPatNotation (_,"( _ )",[a]) ->
       intern_cases_pattern scopes aliases tmp_scope a
   | CPatNotation (loc, ntn, args) ->
       let ntn,args = contract_pat_notation ntn args in
       let scopes = option_cons tmp_scope scopes in
       let ((ids,c),df) = Notation.interp_notation loc ntn scopes in
-      if !dump then dump_notation_location (patntn_loc loc args ntn) ntn df;
+      if !dump then dump_notation_location (patntn_loc loc args ntn) df;
       let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids args in
       subst_cases_pattern loc aliases intern_cases_pattern subst scopes c
   | CPatPrim (loc, p) ->
       let scopes = option_cons tmp_scope scopes in
       let a = alias_of aliases in
-      (ids,[subst, Notation.interp_prim_token_cases_pattern loc p a scopes])
+      let (c,df) = Notation.interp_prim_token_cases_pattern loc p a scopes in
+      if !dump then dump_notation_location (fst (unloc loc)) df;
+      (ids,[subst,c])
   | CPatDelimiters (loc, key, e) ->
       intern_cases_pattern (find_delimiters_scope loc key::scopes)
         aliases None e
@@ -760,7 +759,7 @@ let intern_notation intern (_,tmp_scope,scopes as env) loc ntn args =
   let ntn,args = contract_notation ntn args in
   let scopes = option_cons tmp_scope scopes in
   let ((ids,c),df) = Notation.interp_notation loc ntn scopes in
-  if !dump then dump_notation_location (ntn_loc loc args ntn) ntn df;
+  if !dump then dump_notation_location (ntn_loc loc args ntn) df;
   let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids args in
   subst_aconstr_in_rawconstr loc intern subst env c
 
@@ -838,16 +837,16 @@ let internalise sigma env allow_soapp lvar c =
 	RLetIn (loc, na, intern (reset_tmp_scope env) c1,
           intern (push_name_env lvar env na) c2)
     | CNotation (loc,"- _",[CPrim (_,Numeral p)])
-	when Bigint.is_strictly_pos p ->
-        let scopes = option_cons tmp_scope scopes in
-	let np = Numeral (Bigint.neg p) in
-        Notation.interp_prim_token loc np scopes
+	when Bigint.is_strictly_pos p -> 
+	intern env (CPrim (loc,Numeral (Bigint.neg p)))
     | CNotation (_,"( _ )",[a]) -> intern env a
     | CNotation (loc,ntn,args) ->
         intern_notation intern env loc ntn args
     | CPrim (loc, p) ->
 	let scopes = option_cons tmp_scope scopes in
-	Notation.interp_prim_token loc p scopes
+	let c,df = Notation.interp_prim_token loc p scopes in
+	if !dump then dump_notation_location (fst (unloc loc)) df;
+	c
     | CDelimiters (loc, key, e) ->
 	intern (ids,None,find_delimiters_scope loc key::scopes) e
     | CAppExpl (loc, (isproj,ref), args) ->
