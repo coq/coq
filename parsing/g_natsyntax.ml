@@ -51,19 +51,6 @@ let nat_of_int dloc n =
       user_err_loc (dloc, "nat_of_int",
         str "Cannot interpret a negative number as a number of type nat")
 
-let pat_nat_of_int dloc n name =
-  if is_pos_or_zero n then
-      let rec mk_nat n name =
-	if n <> zero then 
-	  PatCstr (dloc,path_of_S,[mk_nat (sub_1 n) Anonymous],name)
-	else 
-	  PatCstr (dloc,path_of_O,[],name)
-      in 
-      mk_nat n name
-  else
-      user_err_loc (dloc, "pat_nat_of_int",
-        str "Unable to interpret a negative number in type nat")
-
 (************************************************************************)
 (* Printing via scopes *)
 
@@ -80,24 +67,11 @@ let uninterp_nat p =
   with
     Non_closed_number -> None
 
-let rec int_of_nat_pattern = function
-  | PatCstr (_,s,[a],_) when ConstructRef s = glob_S ->
-      add_1 (int_of_nat_pattern a)
-  | PatCstr (_,z,[],_) when ConstructRef z = glob_O -> zero
-  | _ -> raise Non_closed_number
-	  
-let uninterp_nat_pattern p =
-  try 
-    Some (int_of_nat_pattern p)
-  with
-    Non_closed_number -> None
-
 (************************************************************************)
 (* Declare the primitive parsers and printers *)
 
 let _ =
   Notation.declare_numeral_interpreter "nat_scope"
     (glob_nat,["Coq";"Init";"Datatypes"])
-    (nat_of_int,Some pat_nat_of_int)
-    ([RRef (dummy_loc,glob_S); RRef (dummy_loc,glob_O)], 
-     uninterp_nat, Some uninterp_nat_pattern)
+    nat_of_int
+    ([RRef (dummy_loc,glob_S); RRef (dummy_loc,glob_O)], uninterp_nat, true)
