@@ -333,6 +333,13 @@ let rec raw_analyse_notation_tokens = function
       let (vars,l) = raw_analyse_notation_tokens sl in
       (vars, Break n :: l)
 
+let is_numeral symbs = 
+  match List.filter (function Break _ -> false | _ -> true) symbs with
+  | ([Terminal "-"; Terminal x] | [Terminal x]) ->
+      (try let _ = Bigint.of_string x in true with _ -> false)
+  | _ ->
+      false
+
 let analyse_notation_tokens l =
   let vars,l = raw_analyse_notation_tokens l in
   let recvars,l = interp_list_parser [] l in
@@ -607,16 +614,6 @@ let recompute_assoc typs =
     | _, Some Gramext.RightA -> Some Gramext.RightA
     | _ -> None
 
-let make_grammar_rule (n,typs,symbols,_) ntn =
-  let assoc = recompute_assoc typs in
-  let prod = make_production typs symbols in
-  (n,assoc,ntn,prod)
-
-let make_pp_rule (n,typs,symbols,fmt) =
-  match fmt with
-  | None -> [UnpBox (PpHOVB 0, make_hunks typs symbols n)]
-  | Some fmt -> hunks_of_format (n,List.split typs) (symbols,parse_format fmt)
-
 (**************************************************************************)
 (* Registration of syntax extensions (parsing/printing, no interpretation)*)
 
@@ -638,7 +635,7 @@ let error_incompatible_level ntn oldprec prec =
     spc() ++ str "while it is now required to be" ++ spc() ++ 
     pr_level ntn prec)
 
-let cache_syntax_extension (_,(_,(prec,ntn,gr,pp))) =
+let cache_one_syntax_extension (prec,ntn,gr,pp) =
   try 
     let oldprec = Notation.level_of_notation ntn in
     if prec <> oldprec then error_incompatible_level ntn oldprec prec
@@ -650,14 +647,16 @@ let cache_syntax_extension (_,(_,(prec,ntn,gr,pp))) =
     (* Declare the printing rule *)
     Notation.declare_notation_printing_rule ntn (pp,fst prec)
 
+let cache_syntax_extension (_,(_,sy_rules)) =
+  List.iter cache_one_syntax_extension sy_rules
+
 let subst_parsing_rule subst x = x
 
 let subst_printing_rule subst x = x
 
-let subst_syntax_extension (_,subst,(local,(prec,ntn,gr,pp))) =
-  (local,(prec,ntn,
-   subst_parsing_rule subst gr,
-   subst_printing_rule subst pp))
+let subst_syntax_extension (_,subst,(local,sy)) =
+  (local, List.map (fun (prec,ntn,gr,pp) ->
+     (prec,ntn, subst_parsing_rule subst gr, subst_printing_rule subst pp)) sy)
 
 let classify_syntax_definition (_,(local,_ as o)) =
   if local then Dispose else Substitute o
@@ -807,24 +806,25 @@ let compute_syntax_data (df,modifiers) =
   let toks = split_notation_string df in
   let (recvars,vars,symbols) = analyse_notation_tokens toks in
   let ntn_for_interp = make_notation_key symbols in
-  let symbols = remove_curly_brackets symbols in
-  let ntn_for_grammar = make_notation_key symbols in
-  check_rule_productivity symbols;
-  let n = find_precedence n etyps symbols in
+  let symbols' = remove_curly_brackets symbols in
+  let need_squash = (symbols <> symbols') in
+  let ntn_for_grammar = make_notation_key symbols' in
+  check_rule_productivity symbols';
+  let n = find_precedence n etyps symbols' in
   let innerlevel = NumLevel 200 in
   let typs =
     find_symbols
       (NumLevel n,BorderProd(Left,assoc))
       (innerlevel,InternalProd)
       (NumLevel n,BorderProd(Right,assoc))
-      symbols in
+      symbols' in
   (* To globalize... *)
   let typs = List.map (set_entry_type etyps) typs in
-  let sy_data = (n,typs,symbols,fmt) in
   let prec = (n,List.map (assoc_of_type n) typs) in
+  let sy_data = (ntn_for_grammar,prec,need_squash,(n,typs,symbols',fmt)) in
   let df' = (Lib.library_dp(),df) in
   let i_data = (onlyparse,recvars,vars,(ntn_for_interp,df')) in
-  (i_data,ntn_for_grammar,prec,sy_data)
+  (i_data,sy_data)
 
 (**********************************************************************)
 (* Registration of notations interpretation                            *)
@@ -890,20 +890,44 @@ let recover_syntax ntn =
   with Not_found ->
     raise NoSyntaxRule
 
+let recover_squash_syntax () = recover_syntax "{ _ }"
+
 let recover_notation_syntax rawntn =
   let ntn = contract_notation rawntn in
-  let sy = recover_syntax ntn in
-  (sy,if ntn=rawntn then None else Some (recover_syntax "{ _ }"))
+  let sy_rule = recover_syntax ntn in
+  let need_squash = ntn<>rawntn in
+  if need_squash then [sy_rule; recover_squash_syntax ()] else [sy_rule]
+
+(**********************************************************************)
+(* Main entry point for building parsing and printing rules           *)
+ 
+let make_pa_rule (n,typs,symbols,_) ntn =
+  let assoc = recompute_assoc typs in
+  let prod = make_production typs symbols in
+  (n,assoc,ntn,prod)
+
+let make_pp_rule (n,typs,symbols,fmt) =
+  match fmt with
+  | None -> [UnpBox (PpHOVB 0, make_hunks typs symbols n)]
+  | Some fmt -> hunks_of_format (n,List.split typs) (symbols,parse_format fmt)
+
+let make_syntax_rules (ntn,prec,need_squash,sy_data) =
+  let pa_rule = make_pa_rule sy_data ntn in
+  let pp_rule = make_pp_rule sy_data in
+  let sy_rule = (prec,ntn,pa_rule,pp_rule) in
+  (* By construction, the rule for "{ _ }" is declared, but we need to
+     redeclare it because the file where it is declared needs not be open
+     when the current file opens (especially in presence of -nois) *)
+  if need_squash then [sy_rule; recover_squash_syntax ()] else [sy_rule]
 
 (**********************************************************************)
 (* Main functions about notations                                     *)
 
 let add_notation_in_scope local df c mods scope =
-  let (i_data,ntn,prec,sy_data) = compute_syntax_data (df,mods) in
+  let (i_data,sy_data) = compute_syntax_data (df,mods) in
   (* Declare the parsing and printing rules *)
-  let pa_rule = make_grammar_rule sy_data ntn in
-  let pp_rule = make_pp_rule sy_data in
-  Lib.add_anonymous_leaf (inSyntaxExtension(local,(prec,ntn,pa_rule,pp_rule)));
+  let sy_rules = make_syntax_rules sy_data in
+  Lib.add_anonymous_leaf (inSyntaxExtension(local,sy_rules));
   (* Declare interpretation *)
   let (onlyparse,recvars,vars,df') = i_data in
   let (acvars,ac) = interp_aconstr [] vars c in
@@ -911,28 +935,26 @@ let add_notation_in_scope local df c mods scope =
   let onlyparse = onlyparse or is_not_printable ac in
   Lib.add_anonymous_leaf (inNotation(local,scope,a,onlyparse,df'))
 
-let add_notation_interpretation_core local df names c sc onlyparse =
+let add_notation_interpretation_core local df names c scope onlyparse =
   let (recs,vars,symbs) = analyse_notation_tokens (split_notation_string df) in
-  let (sy_data,squash) = recover_notation_syntax (make_notation_key symbs) in
+  (* Redeclare pa/pp rules *)
+  if not (is_numeral symbs) then begin
+    let sy_rules = recover_notation_syntax (make_notation_key symbs) in
+    Lib.add_anonymous_leaf (inSyntaxExtension (local,sy_rules))
+  end;
+  (* Declare interpretation *)
+  let df' = (make_notation_key symbs,(Lib.library_dp(),df)) in
   let (acvars,ac) = interp_aconstr names vars c in
   let a = (remove_vars recs acvars,ac) (* For recursive parts *) in
   let onlyparse = onlyparse or is_not_printable ac in
-  let i_ntn = make_notation_key symbs in
-  (* Redeclare pa/pp rules *)
-  Lib.add_anonymous_leaf (inSyntaxExtension (local,sy_data));
-  option_iter (* For "{ _ }" based notations *)
-    (fun z -> Lib.add_anonymous_leaf (inSyntaxExtension (local,z))) squash;
-  (* Declare interpretation *)
-  Lib.add_anonymous_leaf
-    (inNotation(local,sc,a,onlyparse,(i_ntn,(Lib.library_dp(),df))))
+  Lib.add_anonymous_leaf (inNotation(local,scope,a,onlyparse,df'))
 
 (* Notations without interpretation (Reserved Notation) *)
 
 let add_syntax_extension local mv =
-  let (_,ntn,prec,sy_data) = compute_syntax_data mv in
-  let pa_rule = make_grammar_rule sy_data ntn in
-  let pp_rule = make_pp_rule sy_data in
-  Lib.add_anonymous_leaf (inSyntaxExtension (local,(prec,ntn,pa_rule,pp_rule)))
+  let (_,sy_data) = compute_syntax_data mv in
+  let sy_rules = make_syntax_rules sy_data in
+  Lib.add_anonymous_leaf (inSyntaxExtension(local,sy_rules))
 
 (* Notations with only interpretation *)
 
