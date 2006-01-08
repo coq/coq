@@ -76,9 +76,13 @@ let insert_delimiters e = function
   | None -> e
   | Some sc -> CDelimiters (dummy_loc,sc,e)
 
-let insert_pat_delimiters e = function
-  | None -> e
-  | Some sc -> CPatDelimiters (dummy_loc,sc,e)
+let insert_pat_delimiters loc p = function
+  | None -> p
+  | Some sc -> CPatDelimiters (loc,sc,p)
+
+let insert_pat_alias loc p = function
+  | Anonymous -> p
+  | Name id -> CPatAlias (loc,p,id)
 
 (**********************************************************************)
 (* conversion of references                                           *)
@@ -305,7 +309,7 @@ and spaces ntn n =
   if n = String.length ntn then []
   else if ntn.[n] = ' ' then wildcards ntn (n+1) else spaces ntn (n+1)
 
-let expand_curly_brackets make_ntn ntn l =
+let expand_curly_brackets loc mknot ntn l =
   let ntn' = ref ntn in
   let rec expand_ntn i =
     function
@@ -318,31 +322,45 @@ let expand_curly_brackets make_ntn ntn l =
             ntn' := 
               String.sub !ntn' 0 p ^ "_" ^ 
               String.sub !ntn' (p+5) (String.length !ntn' -p-5);
-            make_ntn "{ _ }" [a] end
+            mknot (loc,"{ _ }",[a]) end
           else a in
         a' :: expand_ntn (i+1) l in
   let l = expand_ntn 0 l in
   (* side effect *)
-  make_ntn !ntn' l
+  mknot (loc,!ntn',l)
+
+let destPrim = function CPrim(_,t) -> Some t | _ -> None
+let destPatPrim = function CPatPrim(_,t) -> Some t | _ -> None
+
+let make_notation_gen loc ntn mknot mkprim destprim l =
+  if has_curly_brackets ntn
+  then expand_curly_brackets loc mknot ntn l
+  else match ntn,List.map destprim l with
+    (* Special case to avoid writing "- 3" for e.g. (Zopp 3) *)
+    | "- _", [Some (Numeral p)] when Bigint.is_strictly_pos p ->
+        mknot (loc,ntn,[mknot (loc,"( _ )",l)])
+    | _ -> 
+	match decompose_notation_key ntn, l with
+	| [Terminal "-"; Terminal x], [] ->
+	    (try mkprim (loc, Numeral (Bigint.neg (Bigint.of_string x)))
+ 	     with _ -> mknot (loc,ntn,[]))
+	| [Terminal x], [] ->
+	    (try mkprim (loc, Numeral (Bigint.of_string x))
+ 	     with _ -> mknot (loc,ntn,[]))
+	| _ ->
+	    mknot (loc,ntn,l)
 
 let make_notation loc ntn l =
-  if has_curly_brackets ntn
-  then expand_curly_brackets (fun n l -> CNotation (loc,n,l)) ntn l
-  else match ntn,l with
-    (* Special case to avoid writing "- 3" for e.g. (Zopp 3) *)
-    | "- _", [CPrim(_,Numeral p)] when Bigint.is_strictly_pos p ->
-        CNotation (loc,ntn,[CNotation(loc,"( _ )",l)])
-    | _ -> CNotation (loc,ntn,l)
+  make_notation_gen loc ntn
+    (fun (loc,ntn,l) -> CNotation (loc,ntn,l))
+    (fun (loc,p) -> CPrim (loc,p))
+    destPrim l
 
 let make_pat_notation loc ntn l =
-  if has_curly_brackets ntn
-  then expand_curly_brackets (fun n l -> CPatNotation (loc,n,l)) ntn l
-  else match ntn,l with
-    (* Special case to avoid writing "- 3" for e.g. (Zopp 3) *)
-    | "- _", [CPatPrim (_,Numeral p)] when Bigint.is_strictly_pos p ->
-        CPatNotation (loc,ntn,[CPatNotation(loc,"( _ )",l)])
-    | _ -> CPatNotation (loc,ntn,l)
-
+  make_notation_gen loc ntn
+    (fun (loc,ntn,l) -> CPatNotation (loc,ntn,l))
+    (fun (loc,p) -> CPatPrim (loc,p))
+    destPatPrim l
 
 let bind_env sigma var v =
   try
@@ -385,12 +403,12 @@ let match_aconstr_cases_pattern c (metas_scl,pat) =
 let rec extern_cases_pattern_in_scope scopes vars pat =
   try 
     if !Options.raw_print or !print_no_symbol then raise No_match;
-    let (sc,p) = uninterp_prim_token_cases_pattern pat in
+    let (na,sc,p) = uninterp_prim_token_cases_pattern pat in
     match availability_of_prim_token sc (make_current_scopes scopes) with
     | None -> raise No_match
     | Some key ->
-        let loc = pattern_loc pat in
-        insert_pat_delimiters (CPatPrim (loc,p)) key
+      let loc = pattern_loc pat in
+      insert_pat_alias loc (insert_pat_delimiters loc (CPatPrim(loc,p)) key) na
   with No_match ->
   try 
     if !Options.raw_print or !print_no_symbol then raise No_match;
@@ -404,9 +422,7 @@ let rec extern_cases_pattern_in_scope scopes vars pat =
       let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
       let p = CPatCstr
         (loc,extern_reference loc vars (ConstructRef cstrsp),args) in
-      (match na with
-	| Name id -> CPatAlias (loc,p,id)
-	| Anonymous -> p)
+      insert_pat_alias loc p na
 	
 and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
   | [] -> raise No_match
@@ -435,7 +451,7 @@ and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
 		      extern_cases_pattern_in_scope 
 		        (scopt,List.fold_right push_scope scl scopes) vars c)
                       subst in
-		  insert_pat_delimiters (make_pat_notation loc ntn l) key)
+		  insert_pat_delimiters loc (make_pat_notation loc ntn l) key)
           | SynDefRule kn ->
 	      let qid = shortest_qualid_of_syndef vars kn in
               CPatAtom (loc,Some (Qualid (loc, qid)))
