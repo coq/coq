@@ -142,6 +142,8 @@ val mkLambdaC : name located list * constr_expr * constr_expr -> constr_expr
 val mkLetInC : name located * constr_expr * constr_expr -> constr_expr
 val mkProdC : name located list * constr_expr * constr_expr -> constr_expr
 
+val coerce_to_id : constr_expr -> identifier located
+
 (* For binders parsing *)
 
 (* Includes let binders *)

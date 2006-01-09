@@ -178,5 +178,3 @@ val find_position :
 val remove_levels : int -> unit 
 
 val coerce_global_to_id : reference -> identifier
-
-val coerce_to_id : constr_expr -> identifier located

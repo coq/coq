@@ -630,6 +630,12 @@ let mkLambdaC (idl,a,b) = CLambdaN (dummy_loc,[idl,a],b)
 let mkLetInC (id,a,b)   = CLetIn (dummy_loc,id,a,b)
 let mkProdC (idl,a,b)   = CProdN (dummy_loc,[idl,a],b)
 
+let coerce_to_id = function
+  | CRef (Ident (loc,id)) -> (loc,id)
+  | a -> user_err_loc
+        (constr_loc a,"coerce_to_id",
+         str "This expression should be a simple identifier")
+
 (* Used in correctness and interface *)
 
 

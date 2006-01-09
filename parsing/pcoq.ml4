@@ -620,10 +620,3 @@ let coerce_reference_to_id = function
         str "This expression should be a simple identifier")
 
 let coerce_global_to_id = coerce_reference_to_id
-
-let coerce_to_id = function
-  | CRef (Ident (loc,id)) -> (loc,id)
-  | a -> user_err_loc
-        (constr_loc a,"coerce_to_id",
-         str "This expression should be a simple identifier")
-

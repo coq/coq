@@ -14,6 +14,7 @@ open Util
 open Tacexpr
 open Rawterm
 open Genarg
+open Topconstr
 
 let compute = Cbv all_flags
 
@@ -80,18 +81,18 @@ let mk_fix_tac (loc,id,bl,ann,ty) =
           (try list_index (snd x) ids
           with Not_found -> error "no such fix variable")
       | _ -> error "cannot guess decreasing argument of fix" in
-  (id,n,Topconstr.CProdN(loc,bl,ty))
+  (id,n,CProdN(loc,bl,ty))
 
 let mk_cofix_tac (loc,id,bl,ann,ty) =
   let _ = option_app (fun (aloc,_) ->
     Util.user_err_loc
       (aloc,"Constr:mk_cofix_tac",
        Pp.str"Annotation forbidden in cofix expression")) ann in
-  (id,Topconstr.CProdN(loc,bl,ty))
+  (id,CProdN(loc,bl,ty))
 
 (* Functions overloaded by quotifier *)
 let induction_arg_of_constr c =
-  try ElimOnIdent (Topconstr.constr_loc c,snd(coerce_to_id c))
+  try ElimOnIdent (constr_loc c,snd(coerce_to_id c))
   with _ -> ElimOnConstr c
 
 (* Auxiliary grammar rules *)

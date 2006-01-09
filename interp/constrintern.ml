@@ -698,18 +698,12 @@ let extract_explicit_arg imps args =
 (**********************************************************************)
 (* Syntax extensions                                                  *)
 
-let coerce_to_id = function
-  | CRef (Ident (_,id)) -> id 
-  | c ->
-      user_err_loc (constr_loc c, "subst_rawconstr",
-        str"This expression should be a simple identifier")
-
 let traverse_binder subst id (ids,tmpsc,scopes as env) =
   try
     (* Binders bound in the notation are consider first-order object *)
     (* and binders not bound in the notation do not capture variables *)
     (* outside the notation *)
-    let id' = coerce_to_id (fst (List.assoc id subst)) in
+    let _,id' = coerce_to_id (fst (List.assoc id subst)) in
     id', (Idset.add id' ids,tmpsc,scopes)
   with Not_found ->
     id, env
