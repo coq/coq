@@ -356,7 +356,7 @@ let rec apply_to_hyp_and_dependent_on (ctxt,vals) id f g =
 let insert_after_hyp (ctxt,vals) id d check =
   let rec aux ctxt vals =
     match  ctxt, vals with
-    | (idc,c,ct as d')::ctxt', v::vals' ->
+    | (idc,c,ct)::ctxt', v::vals' ->
 	if idc = id then begin
 	  check ctxt; 
 	  push_named_context_val d (ctxt,vals) 
