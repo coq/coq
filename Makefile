@@ -1215,7 +1215,7 @@ install-emacs:
 
 install-latex:
 	$(MKDIR) $(FULLCOQDOCDIR)
-	cp tools/coqdoc/coqdoc.sty $(FULLCOQDOCDIR)	
+	cp tools/coqdoc/coqdoc.sty $(FULLCOQDOCDIR)
 #	-$(UPDATETEX)
 
 ###########################################################################
