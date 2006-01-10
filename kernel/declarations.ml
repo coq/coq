@@ -89,6 +89,7 @@ type one_inductive_body = {
     mind_sort : sorts;
     mind_kelim : sorts_family list;
     mind_consnames : identifier array;
+    mind_consnrealargs : int array;
     mind_nf_lc : types array; (* constrs and arity with pre-expanded ccl *)
     mind_user_lc : types array;
     mind_recargs : wf_paths;
@@ -122,6 +123,7 @@ let subst_const_body sub cb = {
 
 let subst_mind_packet sub mbp = 
   { mind_consnames = mbp.mind_consnames;
+    mind_consnrealargs = mbp.mind_consnrealargs;
     mind_typename = mbp.mind_typename;
     mind_nf_lc = 
       array_smartmap (type_app (subst_mps sub)) mbp.mind_nf_lc;

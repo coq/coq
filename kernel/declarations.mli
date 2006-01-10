@@ -76,6 +76,7 @@ type one_inductive_body = {
     mind_sort : sorts;
     mind_kelim : sorts_family list;
     mind_consnames : identifier array;
+    mind_consnrealargs : int array; (* length of constructs, let-in included *)
     mind_nf_lc : types array; (* constrs and arity with pre-expanded ccl *)
     mind_user_lc : types array;
     mind_recargs : wf_paths;

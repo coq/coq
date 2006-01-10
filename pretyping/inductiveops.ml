@@ -116,6 +116,7 @@ let make_case_info env ind style pats_source =
       source    = pats_source } in
   { ci_ind     = ind;
     ci_npar    = mib.mind_nparams;
+    ci_cstr_nargs = mip.mind_consnrealargs;
     ci_pp_info = print_info }
 
 let make_default_case_info env style ind =

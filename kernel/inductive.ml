@@ -278,7 +278,8 @@ let check_case_info env indsp ci =
   let (mib,mip) = lookup_mind_specif env indsp in
   if
     (indsp <> ci.ci_ind) or
-    (mib.mind_nparams <> ci.ci_npar)
+    (mib.mind_nparams <> ci.ci_npar) or
+    (mip.mind_consnrealargs <> ci.ci_cstr_nargs)
   then raise (TypeError(env,WrongCaseInfo(indsp,ci)))
 
 (************************************************************************)
