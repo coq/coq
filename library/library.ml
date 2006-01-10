@@ -29,53 +29,26 @@ let load_path = ref ([],[] : System.physical_path list * logical_path list)
 
 let get_load_path () = fst !load_path
 
-(* Hints to partially detects if two paths refer to the same repertory *)
-let rec remove_path_dot p = 
-  let curdir = Filename.concat Filename.current_dir_name "" in (* Unix: "./" *)
-  let n = String.length curdir in
-  if String.length p > n && String.sub p 0 n = curdir then
-    remove_path_dot (String.sub p n (String.length p - n))
-  else
-    p
-
-let strip_path p =
-  let cwd = Filename.concat (Sys.getcwd ()) "" in (* Unix: "`pwd`/" *)
-  let n = String.length cwd in
-  if String.length p > n && String.sub p 0 n = cwd then
-    remove_path_dot (String.sub p n (String.length p - n))
-  else
-    remove_path_dot p
-
-let canonical_path_name p =
-  let current = Sys.getcwd () in
-  try 
-    Sys.chdir p;
-    let p' = Sys.getcwd () in
-    Sys.chdir current;
-    p'
-  with Sys_error _ ->
-    (* We give up to find a canonical name and just simplify it... *)
-    strip_path p
-
 
 let find_logical_path phys_dir = 
-  let phys_dir = canonical_path_name phys_dir in
+  let phys_dir = System.canonical_path_name phys_dir in
   match list_filter2 (fun p d -> p = phys_dir) !load_path with
   | _,[dir] -> dir
   | _,[] -> Nameops.default_root_prefix
   | _,l -> anomaly ("Two logical paths are associated to "^phys_dir)
 
 let remove_path dir =
+  let dir = System.canonical_path_name dir in
   load_path := list_filter2 (fun p d -> p <> dir) !load_path
 
 let add_load_path_entry (phys_path,coq_path) =
-  let phys_path = canonical_path_name phys_path in
+  let phys_path = System.canonical_path_name phys_path in
   match list_filter2 (fun p d -> p = phys_path) !load_path with
   | _,[dir] ->
       if coq_path <> dir 
         (* If this is not the default -I . to coqtop *)
         && not
-        (phys_path = canonical_path_name Filename.current_dir_name
+        (phys_path = System.canonical_path_name Filename.current_dir_name
          && coq_path = Nameops.default_root_prefix)
       then
 	begin

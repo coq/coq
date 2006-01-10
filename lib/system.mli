@@ -16,6 +16,8 @@
 type physical_path = string
 type load_path = physical_path list
 
+val canonical_path_name : string -> physical_path
+
 val all_subdirs : unix_path:string -> (physical_path * string list) list
 val is_in_path : load_path -> string -> bool
 val where_in_path : load_path -> string -> physical_path * string
