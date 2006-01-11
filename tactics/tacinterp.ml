@@ -435,12 +435,6 @@ let intern_constr_gen isarity {ltacvars=lfun; gsigma=sigma; genv=env} c =
   let c' = 
     warn (Constrintern.intern_gen isarity ~ltacvars:(fst lfun,[]) sigma env) c
   in
-  begin if Options.do_translate () then try
-      (* Try to infer old case and type annotations *)
-      let _ = understand_tcc sigma env c' in 
-      (* msgerrnl (str "Typage tactique OK");*)
-      ()
-    with e -> (*msgerrnl (str "Warning: can't type tactic");*) () end;
   (c',if !strict_check then None else Some c)
 
 let intern_constr = intern_constr_gen false
@@ -794,8 +788,7 @@ and intern_tacarg strict ist = function
   | MetaIdArg (loc,s) ->
       (* $id can occur in Grammar tactic... *)
       let id = id_of_string s in
-      if find_ltacvar id ist or Options.do_translate()
-      then Reference (ArgVar (adjust_loc loc,id))
+      if find_ltacvar id ist then Reference (ArgVar (adjust_loc loc,id))
       else error_syntactic_metavariables_not_allowed loc
   | TacCall (loc,f,l) ->
       TacCall (loc,

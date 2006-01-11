@@ -373,7 +373,7 @@ let bind_env sigma var v =
 let rec match_cases_pattern metas sigma a1 a2 = match (a1,a2) with
   | r1, AVar id2 when List.mem id2 metas -> bind_env sigma id2 r1
   | PatVar (_,Anonymous), AHole _ -> sigma
-  | a, AHole _ when not(Options.do_translate()) -> sigma
+  | a, AHole _ -> sigma
   | PatCstr (loc,(ind,_ as r1),args1,Anonymous), _ ->
       let nparams =
 	(fst (Global.lookup_inductive ind)).Declarations.mind_nparams in
@@ -547,9 +547,7 @@ let rec extern_args extern scopes env args subscopes =
 
 let rec remove_coercions inctx = function
   | RApp (loc,RRef (_,r),args) as c
-      when
-        inctx &
-        not (!Options.raw_print or !print_coercions or Options.do_translate ())
+      when inctx & not (!Options.raw_print or !print_coercions)
       ->
       (try match Classops.hide_coercion r with
 	  | Some n when n < List.length args ->
@@ -717,13 +715,7 @@ let rec extern inctx scopes vars r =
 	 | RFix (nv,n) ->
 	     let listdecl = 
 	       Array.mapi (fun i fi ->
-                 let (bl,ty,def) =
-                   if Options.do_translate() then
-                     let n = List.fold_left
-                       (fun n (_,obd,_) -> if obd=None then n-1 else n)
-                       nv.(i) blv.(i) in
-                     share_fix_binders n (List.rev blv.(i)) tyv.(i) bv.(i)
-                   else blv.(i), tyv.(i), bv.(i) in
+                 let (bl,ty,def) = blv.(i), tyv.(i), bv.(i) in
                  let (ids,bl) = extern_local_binder scopes vars bl in
                  let vars0 = List.fold_right (name_fold Idset.add) ids vars in
                  let vars1 = List.fold_right (name_fold Idset.add) ids vars' in

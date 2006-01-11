@@ -432,7 +432,7 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
       match_ alp metas (match_ alp metas sigma c1 c2) t1 t2
   | RSort (_,s1), ASort s2 when s1 = s2 -> sigma
   | RPatVar _, AHole _ -> (*Don't hide Metas, they bind in ltac*) raise No_match
-  | a, AHole _ when not(Options.do_translate()) -> sigma
+  | a, AHole _ -> sigma
   | RHole _, AHole _ -> sigma
   | (RDynamic _ | RRec _ | REvar _), _ 
   | _,_ -> raise No_match
