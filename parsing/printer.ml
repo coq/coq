@@ -87,13 +87,7 @@ let _ = Termops.set_print_constr pr_lconstr_env
 (**********************************************************************)
 (* Global references *)
 
-let pr_global_env env ref =
-  (* Il est important de laisser le let-in, car les streams s'évaluent
-  paresseusement : il faut forcer l'évaluation pour capturer
-  l'éventuelle levée d'une exception (cela arrive dans le debugger) *)
-  let s = string_of_qualid (shortest_qualid_of_global env ref) in
-  (str s)
-
+let pr_global_env = pr_global_env
 let pr_global = pr_global_env Idset.empty
 
 let pr_constant env cst = pr_global_env (vars_of_env env) (ConstRef cst)
