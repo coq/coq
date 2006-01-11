@@ -55,3 +55,14 @@ Notation "z1 + z2" := (addz z1 z2) : znat_scope.
      only tested with coercion still present *)
 
 Check (3+3).
+
+(**********************************************************************)
+(* Check recursive notations                                          *)
+ 
+Require Import List.
+Notation "[ x ; .. ; y ]" := (cons x .. (cons y nil) ..).
+Check [1;2;4].
+  
+Reserved Notation "( x ; y , .. , z )" (at level 0).
+Notation "( x ; y , .. , z )" := (pair .. (pair x y) .. z).
+Check (1;2,4).
