@@ -1013,6 +1013,13 @@ let interp_ident ist id =
          str ") should have been bound to an identifier")
   with Not_found -> id
 
+let interp_hint_base ist s =
+  try match List.assoc (id_of_string s) ist.lfun with
+  | VIntroPattern (IntroIdentifier id) -> string_of_id id
+  | _ -> user_err_loc(loc,"", str "An ltac name (" ++ str s ++
+         str ") should have been bound to a hint base name")
+  with Not_found -> s
+
 let interp_intro_pattern_var ist id =
   try match List.assoc id ist.lfun with
   | VIntroPattern ipat -> ipat
@@ -1720,8 +1727,10 @@ and interp_atomic ist gl = function
 	     HypLocation(interp_hyp ist gl id,hloc))
 *)
   (* Automation tactics *)
-  | TacTrivial l -> Auto.h_trivial l
-  | TacAuto (n, l) -> Auto.h_auto (option_app (interp_int_or_var ist) n) l
+  | TacTrivial l -> Auto.h_trivial (option_app (List.map (interp_hint_base ist)) l)
+  | TacAuto (n, l) ->
+      Auto.h_auto (option_app (interp_int_or_var ist) n)
+      (option_app (List.map (interp_hint_base ist)) l)
   | TacAutoTDB n -> Dhyp.h_auto_tdb n
   | TacDestructHyp (b,id) -> Dhyp.h_destructHyp b (interp_hyp ist gl id)
   | TacDestructConcl -> Dhyp.h_destructConcl
