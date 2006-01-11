@@ -19,7 +19,9 @@ open Termops
 open Mod_subst
 (*i*)
 
-val subst_raw : substitution -> rawconstr -> rawconstr
+val subst_cases_pattern : substitution -> cases_pattern -> cases_pattern
+
+val subst_rawconstr : substitution -> rawconstr -> rawconstr
 
 (* [detype isgoal avoid ctx c] turns a closed [c], into a rawconstr *)
 (* de Bruijn indexes are turned to bound names, avoiding names in [avoid] *)

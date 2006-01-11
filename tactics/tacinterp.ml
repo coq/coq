@@ -1869,9 +1869,11 @@ let subst_quantified_hypothesis _ x = x
 
 let subst_declared_or_quantified_hypothesis _ x = x
 
-let subst_rawconstr subst (c,e) =
+let subst_rawconstr_and_expr subst (c,e) =
   assert (e=None); (* e<>None only for toplevel tactics *)
-  (Detyping.subst_raw subst c,None)
+  (Detyping.subst_rawconstr subst c,None)
+
+let subst_rawconstr = subst_rawconstr_and_expr (* shortening *)
 
 let subst_binding subst (loc,b,c) =
   (loc,subst_quantified_hypothesis subst b,subst_rawconstr subst c)
