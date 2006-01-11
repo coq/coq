@@ -76,6 +76,7 @@ let init_load_path () =
     if !Options.boot then Coq_config.coqtop
       (* variable COQLIB overrides the default library *)
     else getenv_else "COQLIB" Coq_config.coqlib in
+  let coqlib = canonical_path_name coqlib in
   (* first user-contrib *)
   let user_contrib = coqlib/"user-contrib" in
   if Sys.file_exists user_contrib then 
@@ -88,6 +89,7 @@ let init_load_path () =
     (if !Options.v7 then "states7" else "states") :: dev @ vdirs in
   List.iter (fun s -> coq_add_rec_path (coqlib/s)) dirs;
   let camlp4 = getenv_else "CAMLP4LIB" Coq_config.camlp4lib in
+  let camlp4 = canonical_path_name camlp4 in
   add_ml_include camlp4;
   (* then current directory *)
   Mltop.add_path "." Nameops.default_root_prefix;

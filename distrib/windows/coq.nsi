@@ -47,7 +47,7 @@
   !define MUI_ICON "${NSISDIR}\Contrib\Graphics\Icons\win-install.ico"
   !define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\win-uninstall.ico"
 
-  Icon "coq.ico"
+  Icon "${SOURCEIDEDIR}/ide/coq2.ico"
 
 ;--------------------------------
 ;Modern UI Configuration
@@ -123,15 +123,12 @@ Section "Coq" Sec1
   FileWrite $0 '"%COQBIN%\coqtop.opt.exe"' 
   FileClose $0
   CreateShortCut "$INSTDIR\Coq.lnk" \
-    "$INSTDIR\bin\coqtop.bat" "" "$INSTDIR\lib\ide\coq.ico" 0
+    "$INSTDIR\bin\coqtop.bat" "" "$INSTDIR\ide\coq2.ico" 0
 
   StrCpy $INSTUSER "all users"
 
   SetOutPath "$INSTDIR\"
   File /r /x .done "${SOURCEDIR}\*"
-
-  SetOutPath "$INSTDIR\lib\ide"
-  File "coq.ico"
 
   ;Store install folder
   WriteRegStr HKCU "Software\Coq" "" $INSTDIR
@@ -147,7 +144,7 @@ Section "Coq" Sec1
 
 ; Environment variables
   Push "COQLIB"
-  Push "$INSTDIR\lib"
+  Push "$INSTDIR"
   Call WriteEnvStr
   Push "COQBIN"
   Push "$INSTDIR\bin"
@@ -164,7 +161,7 @@ Section "Coq" Sec1
   CreateShortCut "$SMPROGRAMS\Coq\Uninstall.lnk" \
     "$INSTDIR\Uninstall.exe" "" "$INSTDIR\Uninstall.exe" 0
   CreateShortCut "$SMPROGRAMS\Coq\Coq.lnk" \
-    "$INSTDIR\bin\coqtop.bat" "" "$INSTDIR\lib\ide\coq.ico" 0
+    "$INSTDIR\bin\coqtop.bat" "" "$INSTDIR\ide\coq2.ico" 0
   WriteINIStr "$SMPROGRAMS\Coq\The Coq HomePage.url" \
     "InternetShortcut" "URL" "http://coq.inria.fr"
   WriteINIStr "$SMPROGRAMS\Coq\The Coq Standard Library.url" \
@@ -183,15 +180,14 @@ Section "CoqIde" Sec2
   FileWrite $0 '"%COQBIN%\coqide.opt.exe"' 
   FileClose $0
   CreateShortCut "$INSTDIR\CoqIde.lnk" \
-    "$INSTDIR\bin\coqide.bat" "" "$INSTDIR\lib\ide\coq.ico" 0 SW_SHOWMINIMIZED
+    "$INSTDIR\bin\coqide.bat" "" "$INSTDIR\ide\coq2.ico" 0 SW_SHOWMINIMIZED
 
   SetOutPath "$INSTDIR"
-  File /oname=.coqiderc ..\..\ide\.coqide-gtk2rc
   File /r /x .done "${SOURCEIDEDIR}\*"
 
   ; Start Menu Entries
   CreateShortCut "$SMPROGRAMS\Coq\CoqIde.lnk" \
-    "$INSTDIR\bin\coqide.bat" "" "$INSTDIR\lib\ide\coq.ico" 0 SW_SHOWMINIMIZED
+    "$INSTDIR\bin\coqide.bat" "" "$INSTDIR\ide\coq2.ico" 0 SW_SHOWMINIMIZED
 
 SectionEnd
 
@@ -229,7 +225,7 @@ Section "Uninstall"
   Delete "$INSTDIR\bin\*.bat"
  
 ;; Icon
-  Delete "$INSTDIR\lib\ide\coq.ico"
+  Delete "$INSTDIR\ide\coq2.ico"
 
 ;; DLLs
 
@@ -238,9 +234,8 @@ Section "Uninstall"
 
 ;; Misc
 
-  RMDir /r "$INSTDIR\etc\pango"
-  RMDir /r "$INSTDIR\etc\gtk-2.0"
-  RMDir "$INSTDIR\etc"
+  RMDir /r "$INSTDIR\etc"
+  RMDir /r "$INSTDIR\lib"
 
   Delete "$INSTDIR\latex\coqdoc.sty"
   Delete "$INSTDIR\latex\style.css"
@@ -254,7 +249,13 @@ Section "Uninstall"
 
 ;; Lib
 
-  RMDir /r "$INSTDIR\lib"
+  RMDir /r "$INSTDIR\ide"
+  RMDir /r "$INSTDIR\states"
+  RMDir /r "$INSTDIR\states7"
+  RMDir /r "$INSTDIR\theories"
+  RMDir /r "$INSTDIR\theories7"
+  RMDir /r "$INSTDIR\contrib"
+  RMDir /r "$INSTDIR\contrib7"
   
 ;; Start Menu
   Delete "$SMPROGRAMS\Coq\Coq.lnk"
