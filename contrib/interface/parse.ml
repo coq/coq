@@ -168,7 +168,7 @@ let parse_command_list reqid stream string_list =
           end in
     match first_ast with
     | ParseOK (Some (loc,ast)) ->
-        let ast0 = (execute_when_necessary ast) in
+        let _ast0 = (execute_when_necessary ast) in
           (try xlate_vernac ast
 	  with e ->
 	    make_parse_error_item "PARSING_ERROR2" 
@@ -245,7 +245,7 @@ let parse_file_action reqid file_name =
         get the text when a syntax error occurs *)
      let file_chan_err = open_in file_name in 
      let stream = Stream.of_channel file_chan in
-     let stream_err = Stream.of_channel file_chan_err in
+     let _stream_err = Stream.of_channel file_chan_err in
      let rec discard_to_dot () =
        try Gram.Entry.parse parse_to_dot (Gram.parsable stream)
        with Stdpp.Exc_located(_,Token.Error _) -> discard_to_dot() in
@@ -279,7 +279,7 @@ let parse_file_action reqid file_name =
 		   
              with
                | ParseOK (Some (_,ast)) ->
-		   let ast0=(execute_when_necessary ast) in 
+		   let _ast0=(execute_when_necessary ast) in 
 		   let term =
                      (try xlate_vernac ast
 		      with e ->
@@ -403,7 +403,7 @@ Libobject.relax true;
 (try let user_vernacrc =
    try Some(Sys.getenv "USERVERNACRC")
    with
-     | Not_found as e ->
+     | Not_found ->
 	 msgnl (str "no .vernacrc file"); None in
    (match user_vernacrc with
       	Some f -> coqparser_loop (open_in f)

@@ -84,7 +84,7 @@ let rec string len = parser
    spaces and tabulations are ignored, identifiers, integers,
    strings, opening and closing square brackets.  Lexical errors are
    ignored ! *)
-let rec next_token = parser count
+let rec next_token = parser _count
   [< '' ' | '\t'; tok = next_token >] -> tok
 | [< ''_' | 'a'..'z' | 'A'..'Z' as c;i = (ident (add_in_buff 0 c))>] -> i
 | [< ''0'..'9' as c ; i = (parse_int (get_digit c))>] -> i
@@ -96,7 +96,7 @@ let rec next_token = parser count
 (* A very simple lexical analyser to recognize a integer value behind 
    blank characters *)
 
-let rec next_int = parser count
+let rec next_int = parser _count
   [< '' ' | '\t'; v = next_int >] -> v
 | [< ''0'..'9' as c; i = (parse_int (get_digit c))>] ->
      (match i with
