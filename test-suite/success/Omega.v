@@ -85,3 +85,12 @@ Lemma lem9 :
 intros;  omega.
 Qed.
 
+(* Check that the interpretation of mult on nat enforces its positivity *)
+(* Submitted by Hubert Thierry (bug #743) *)
+(* Postponed... problem with goals of the form "(n*m=0)%nat -> (n*m=0)%Z"
+Require Omega.
+Lemma lem10 : (n, m : nat) (le n (plus n (mult n m))).
+Proof.
+Intros; Omega.
+Qed.
+*)
