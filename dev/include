@@ -5,26 +5,26 @@
 #use "base_include";;
 
 #install_printer  (* pattern *) pppattern;;
-#install_printer  (* rawconstr *) pprawterm;;
+#install_printer  (* rawconstr *) pprawconstr;;
 
-#install_printer  (* constr *) ppterm;;
-#install_printer  (* constr_substituted *) ppsterm;; 
-#install_printer  (* universe *)  print_uni;;
-#install_printer  (* universes *)  pp_universes;;
-#install_printer  (* type_judgement*) pptype;;
-#install_printer  (* judgement*) prj;;
+#install_printer  (* constr *) ppconstr;;
+#install_printer  (* constr_substituted *) ppsconstr;; 
+#install_printer  (* universe *)  ppuni;;
+#install_printer  (* universes *)  ppuniverses;;
+#install_printer  (* type_judgement *) pptype;;
+#install_printer  (* judgement *) ppj;;
 
-#install_printer  (* goal *)  prgoal;;
-#install_printer  (* sigma goal *)  prsigmagoal;;
+#install_printer  (* goal *)  ppgoal;;
+#install_printer  (* sigma goal *)  ppsigmagoal;;
 #install_printer  (* proof *)  pproof;;
-#install_printer  (* evar_map *)  prevm;;
-#install_printer  (* evar_defs *)  prevd;;
-#install_printer  (* clenv *) prclenv;;
+#install_printer  (* evar_map *)  ppevm;;
+#install_printer  (* evar_defs *)  ppevd;;
+#install_printer  (* clenv *) ppclenv;;
 #install_printer  (* env *) ppenv;;
 
 #install_printer  (* tactic *) pptac;;
-#install_printer  (* object *) pr_obj;;
-#install_printer  (* global_reference *) prglobal;;
+#install_printer  (* object *) ppobj;;
+#install_printer  (* global_reference *) ppglobal;;
 
 #install_printer  (* fconstr *) ppfconstr;;
 

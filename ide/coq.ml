@@ -249,7 +249,7 @@ type goal = hyp list * concl
 let prepare_hyp sigma env ((i,c,d) as a) =
   env, sigma,
   ((i,string_of_id i),c,d), 
-  (msg (pr_var_decl env a), msg (prterm_env_at_top env d))
+  (msg (pr_var_decl env a), msg (pr_lconstr_env_at_top env d))
 
 let prepare_hyps sigma env =
   assert (rel_context env = []);
@@ -263,7 +263,7 @@ let prepare_hyps sigma env =
 let prepare_goal sigma g =
   let env = evar_env g in
   (prepare_hyps sigma env,
-   (env, sigma, g.evar_concl, msg (prterm_env_at_top env g.evar_concl)))
+   (env, sigma, g.evar_concl, msg (pr_lconstr_env_at_top env g.evar_concl)))
 
 let get_current_goals () = 
     let pfts = get_pftreestate () in

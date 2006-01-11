@@ -19,6 +19,6 @@ open Environ
 type whelp_request =
   | Locate of string
   | Elim of inductive
-  | Constr of string * env * constr
+  | Constr of string * constr
 
 val whelp : whelp_request -> unit

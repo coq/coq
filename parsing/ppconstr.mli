@@ -30,15 +30,17 @@ val extract_def_binders :
 val split_fix :
   int -> constr_expr -> constr_expr -> 
   local_binder list *  constr_expr * constr_expr
-val pr_binders : local_binder list -> std_ppcmds
 
 val prec_less : int -> int * Ppextend.parenRelation -> bool
  
-val pr_global : Idset.t -> global_reference -> std_ppcmds
- 
 val pr_tight_coma : unit -> std_ppcmds
+
 val pr_located :
   ('a -> std_ppcmds) -> 'a located -> std_ppcmds
+val pr_opt : ('a -> std_ppcmds) -> 'a option -> std_ppcmds
+val pr_or_var : ('a -> std_ppcmds) -> 'a or_var -> std_ppcmds
+val pr_metaid : identifier -> std_ppcmds
+
 val pr_lident : identifier located -> std_ppcmds
 val pr_lname : name located -> std_ppcmds
 
@@ -48,40 +50,22 @@ val pr_sep_com :
   (unit -> std_ppcmds) ->
   (constr_expr -> std_ppcmds) ->
   constr_expr -> std_ppcmds
-val pr_opt : ('a -> std_ppcmds) -> 'a option -> std_ppcmds
+
 val pr_id : identifier -> std_ppcmds
 val pr_name : name -> std_ppcmds
 val pr_qualid : qualid -> std_ppcmds
-val pr_or_var : ('a -> std_ppcmds) -> 'a or_var -> std_ppcmds
-val pr_metaid : identifier -> std_ppcmds
+
 val pr_red_expr :
   ('a -> std_ppcmds) * ('a -> std_ppcmds) *  ('b -> std_ppcmds) ->
     ('a,'b) red_expr_gen -> std_ppcmds
+val pr_may_eval :
+  ('a -> std_ppcmds) -> ('a -> std_ppcmds) -> ('b -> std_ppcmds) ->
+    ('a,'b) may_eval -> std_ppcmds
 
 val pr_sort : rawsort -> std_ppcmds
-val pr_pattern : Tacexpr.pattern_expr -> std_ppcmds
-val pr_constr : constr_expr -> std_ppcmds
-val pr_lconstr : constr_expr -> std_ppcmds
-val pr_constr_env : env -> constr_expr -> std_ppcmds
-val pr_lconstr_env : env -> constr_expr -> std_ppcmds
-val pr_type : constr_expr -> std_ppcmds
-val pr_cases_pattern : cases_pattern_expr -> std_ppcmds
-val pr_may_eval :
-  ('a -> std_ppcmds) -> ('a -> std_ppcmds) -> ('b -> std_ppcmds) -> ('a,'b) may_eval
-    -> std_ppcmds
-val abstract_constr_expr : constr_expr -> local_binder list -> constr_expr
-val prod_constr_expr : constr_expr -> local_binder list -> constr_expr
 
-
-val pr_rawconstr_env : env -> rawconstr -> std_ppcmds
-val pr_lrawconstr_env : env -> rawconstr -> std_ppcmds
-
-(** constr printers *)
-
-val pr_term_env : env -> constr -> std_ppcmds
-val pr_lterm_env : env -> constr -> std_ppcmds
-val pr_term : constr -> std_ppcmds
-val pr_lterm : constr -> std_ppcmds
-
-val pr_constr_pattern_env : env -> Pattern.constr_pattern -> std_ppcmds
-val pr_constr_pattern : Pattern.constr_pattern -> std_ppcmds
+val pr_binders : local_binder list -> std_ppcmds
+val pr_pattern_expr : Tacexpr.pattern_expr -> std_ppcmds
+val pr_constr_expr : constr_expr -> std_ppcmds
+val pr_lconstr_expr : constr_expr -> std_ppcmds
+val pr_cases_pattern_expr : cases_pattern_expr -> std_ppcmds

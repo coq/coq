@@ -70,7 +70,7 @@ let rec print_proof sigma osign pf =
 	  
 let pr_change gl = 
   str"Change " ++
-  prterm_env (Global.env_of_context gl.evar_hyps) gl.evar_concl ++ str"."
+  pr_lconstr_env (Global.env_of_context gl.evar_hyps) gl.evar_concl ++ str"."
 
 let rec print_script nochange sigma osign pf =
   let {evar_hyps=sign; evar_concl=cl} = pf.goal in

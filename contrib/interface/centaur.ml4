@@ -280,12 +280,12 @@ let print_check judg =
  let value_ct_ast = 
      (try translate_constr false (Global.env()) value 
       with UserError(f,str) ->
-           raise(UserError(f,Printer.prterm value ++
+           raise(UserError(f,Printer.pr_lconstr value ++
 			      fnl () ++ str ))) in
  let type_ct_ast =
      (try translate_constr false (Global.env()) typ
       with UserError(f,str) ->
-           raise(UserError(f, Printer.prterm value ++ fnl() ++ str))) in
+           raise(UserError(f, Printer.pr_lconstr value ++ fnl() ++ str))) in
  ((ctf_SearchResults !global_request_id),
  (Some  (P_pl
   (CT_premises_list
@@ -557,7 +557,7 @@ let rec hyp_pattern_filter pat name a c =
     match kind_of_term c with
       | Prod(_, hyp, c2) -> 
 	  (try
-(*	     let _ = msgnl ((str "WHOLE ") ++ (Printer.prterm c)) in
+(*	     let _ = msgnl ((str "WHOLE ") ++ (Printer.pr_lconstr c)) in
              let _ = msgnl ((str "PAT ") ++ (Printer.pr_pattern pat)) in *)
              if Matching.is_matching pat hyp then
 	       (msgnl (str "ok"); true)

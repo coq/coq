@@ -287,7 +287,7 @@ let guess_theory a =
   with Not_found -> 
     errorlabstrm "Ring" 
       (str "No Declared Ring Theory for " ++
-	 prterm a ++ fnl () ++
+	 pr_lconstr a ++ fnl () ++
 	 str "Use Add [Semi] Ring to declare it")
 
 (* Looks up an option *)
@@ -325,7 +325,7 @@ let states_compatibility_for env plus mult opp morphs =
 let add_theory want_ring want_abstract want_setoid a aequiv asetth amorph aplus amult aone azero aopp aeq t cset = 
   if theories_map_mem a then errorlabstrm "Add Semi Ring" 
     (str "A (Semi-)(Setoid-)Ring Structure is already declared for " ++
-       prterm a);
+       pr_lconstr a);
   let env = Global.env () in
     if (want_ring & want_setoid & (
 	not (implement_theory env t coq_Setoid_Ring_Theory

@@ -114,8 +114,8 @@ let pr_value env = function
   | VVoid -> str "()"
   | VInteger n -> int n
   | VIntroPattern ipat -> pr_intro_pattern ipat
-  | VConstr c -> prterm_env env c
-  | VConstr_context c -> prterm_env env c
+  | VConstr c -> pr_lconstr_env env c
+  | VConstr_context c -> pr_lconstr_env env c
   | (VTactic _ | VRTactic _ | VFun _ | VRec _) -> str "<fun>"
 
 (* Transforms a named_context into a (string * constr) list *)
@@ -1917,7 +1917,7 @@ let subst_global_reference subst =
   let ref',t' = subst_global subst ref in
    if not (eq_constr (constr_of_global ref') t') then
     ppnl (str "Warning: the reference " ++ pr_global ref ++ str " is not " ++
-          str " expanded to \"" ++ prterm t' ++ str "\", but to " ++
+          str " expanded to \"" ++ pr_lconstr t' ++ str "\", but to " ++
           pr_global ref') ;
    ref'
  in

@@ -66,12 +66,12 @@ and  sg_proofs       = (term_with_holes option) list
 (* pour debugger *)
 
 let rec pp_th (TH(c,mm,sg)) =
-  (str"TH=[ " ++ hov 0 (prterm c ++ fnl () ++
+  (str"TH=[ " ++ hov 0 (pr_lconstr c ++ fnl () ++
 			      (* pp_mm mm ++ fnl () ++ *)
 			   pp_sg sg) ++ str "]")
 and pp_mm l =
   hov 0 (prlist_with_sep (fun _ -> (fnl ())) 
-	   (fun (n,c) -> (int n ++ str" --> " ++ prterm c)) l)
+	   (fun (n,c) -> (int n ++ str" --> " ++ pr_lconstr c)) l)
 and pp_sg sg =
   hov 0 (prlist_with_sep (fun _ -> (fnl ()))
 	   (function None -> (str"None") | Some th -> (pp_th th)) sg)

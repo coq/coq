@@ -51,7 +51,7 @@ let mbreak s = Format.print_flush (); print_string ("-break at: "^s);
 let jp_error re = raise (JT.RefineError ("jprover", JT.StringError re))
 
 (* print Coq constructor *)
-let print_constr ct = Pp.ppnl (PR.prterm ct); Format.print_flush ()
+let print_constr ct = Pp.ppnl (PR.pr_lconstr ct); Format.print_flush ()
 
 let rec print_constr_list = function
   |  [] -> ()

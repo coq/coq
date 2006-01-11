@@ -48,7 +48,7 @@ let print_rewrite_hintdb bas =
     prlist_with_sep Pp.cut
      (fun (c,typ,d,t) ->
        str (if d then "rewrite -> " else "rewrite <- ") ++
-       Printer.prterm c ++ str " of type " ++ Printer.prterm typ ++
+       Printer.pr_lconstr c ++ str " of type " ++ Printer.pr_lconstr typ ++
        str " then use tactic " ++ 
        Pptactic.pr_glob_tactic (Global.env()) t) hints)
  with

@@ -40,13 +40,13 @@ let whd_betadeltaiotacprop env evar_map ty =
 Conv_oracle.set_opaque_const cprop;
 prerr_endline "###whd_betadeltaiotacprop:" ;
 let xxx =
-(*Pp.msgerr (Printer.prterm_env env ty);*)
+(*Pp.msgerr (Printer.pr_lconstr_env env ty);*)
 prerr_endline "";
    (fst (Redexpr.reduction_of_red_expr red_exp)) env evar_map ty
 in
 prerr_endline "###FINE" ;
 (*
-Pp.msgerr (Printer.prterm_env env xxx);
+Pp.msgerr (Printer.pr_lconstr_env env xxx);
 *)
 prerr_endline "";
 Conv_oracle.set_transparent_const cprop;
@@ -258,7 +258,7 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
       in
 (*CSC: debugging stuff to be removed *)
 if Acic.CicHash.mem subterms_to_types cstr then
- (Pp.ppnl (Pp.(++) (Pp.str "DUPLICATE INSERTION: ") (Printer.prterm cstr)) ; flush stdout ) ;
+ (Pp.ppnl (Pp.(++) (Pp.str "DUPLICATE INSERTION: ") (Printer.pr_lconstr cstr)) ; flush stdout ) ;
        Acic.CicHash.add subterms_to_types cstr types ;
        E.make_judge cstr res
 

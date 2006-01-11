@@ -155,14 +155,14 @@ let send_whelp req s =
   let command = (fst browser_cmd_fmt) ^ url ^ (snd browser_cmd_fmt) in
   let _ = run_command (fun x -> x) print_string command in ()
 
-let whelp_constr req env c =
-  let c = detype (false,env) [whelm_special] [] c in
+let whelp_constr req c =
+  let c = detype false [whelm_special] [] c in
   send_whelp req (make_string uri_of_constr c)
 
 let whelp_constr_expr req c =
   let (sigma,env)= get_current_context () in
   let _,c = interp_open_constr sigma env c in
-  whelp_constr req env c
+  whelp_constr req c
 
 let whelp_locate s =
   send_whelp "locate" s
@@ -179,17 +179,17 @@ let locate_inductive r =
 
 let on_goal f =
   let gls = nth_goal_of_pftreestate 1 (get_pftreestate ()) in
-  f (Global.env()) (it_mkNamedProd_or_LetIn (pf_concl gls) (pf_hyps gls))
+  f (it_mkNamedProd_or_LetIn (pf_concl gls) (pf_hyps gls))
 
 type whelp_request =
   | Locate of string
   | Elim of inductive
-  | Constr of string * env * constr
+  | Constr of string * constr
 
 let whelp = function
   | Locate s -> whelp_locate s
   | Elim ind -> whelp_elim ind
-  | Constr (s,env,c) -> whelp_constr s env c
+  | Constr (s,c) -> whelp_constr s c
 
 VERNAC ARGUMENT EXTEND whelp_constr_request
 | [ "Match" ] -> [ "match" ]

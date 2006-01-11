@@ -102,7 +102,7 @@ let constr_to_section_path c = match kind_of_term c with
 let xor a b = (a or b) & (not (a & b))
 
 let plain_display ref a c =
-  let pc = prterm_env a c in
+  let pc = pr_lconstr_env a c in
   let pr = pr_global ref in
   msg (hov 2 (pr ++ str":" ++ spc () ++ pc) ++ fnl ())
 

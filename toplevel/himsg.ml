@@ -31,9 +31,9 @@ open Evd
 
 let quote s = h 0 (str "\"" ++ s ++ str "\"")
 
-let prterm c = quote (prterm c)
-let prterm_env e c = quote (prterm_env e c)
-let prjudge_env e c = let v,t = prjudge_env e c in (quote v,quote t)
+let pr_lconstr c = quote (pr_lconstr c)
+let pr_lconstr_env e c = quote (pr_lconstr_env e c)
+let pr_ljudge_env e c = let v,t = pr_ljudge_env e c in (quote v,quote t)
 
 let nth i =
   let many = match i mod 10 with 1 -> "st" | 2 -> "nd" | _ -> "th" in
@@ -57,20 +57,20 @@ let explain_unbound_var ctx v =
 
 let explain_not_type ctx j =
   let pe = pr_ne_context_of (str"In environment") ctx in
-  let pc,pt = prjudge_env ctx j in
+  let pc,pt = pr_ljudge_env ctx j in
   pe ++ str "the term" ++ brk(1,1) ++ pc ++ spc () ++
   str"has type" ++ spc () ++ pt ++ spc () ++ 
   str"which should be Set, Prop or Type."
 
 let explain_bad_assumption ctx j =
   let pe = pr_ne_context_of (str"In environment") ctx in
-  let pc,pt = prjudge_env ctx j in
+  let pc,pt = pr_ljudge_env ctx j in
   pe ++ str "cannot declare a variable or hypothesis over the term" ++
   brk(1,1) ++ pc ++ spc () ++ str"of type" ++ spc () ++ pt ++ spc () ++
   str "because this term is not a type."
 
 let explain_reference_variables c =
-  let pc = prterm c in
+  let pc = pr_lconstr c in
   str "the constant" ++ spc () ++ pc ++ spc () ++ 
   str "refers to variables which are not in the context"
 
@@ -83,11 +83,11 @@ let rec pr_disjunction pr = function
 let explain_elim_arity ctx ind aritylst c pj okinds = 
   let ctx = make_all_name_different ctx in
   let pi = pr_inductive ctx ind in
-  let pc = prterm_env ctx c in
+  let pc = pr_lconstr_env ctx c in
   let msg = match okinds with
   | Some(kp,ki,explanation) ->
-      let pki = prterm_env ctx ki in
-      let pkp = prterm_env ctx kp in
+      let pki = pr_lconstr_env ctx ki in
+      let pkp = pr_lconstr_env ctx kp in
       let explanation =	match explanation with
 	| NonInformativeToInformative ->
           "proofs can be eliminated only to build proofs"
@@ -109,16 +109,16 @@ let explain_elim_arity ctx ind aritylst c pj okinds =
   (let sorts = List.map (fun x -> mkSort (new_sort_in_family x))
       (list_uniquize (List.map (fun ar ->
       family_of_sort (destSort (snd (decompose_prod_assum ar)))) aritylst)) in
-    let ppar = pr_disjunction (prterm_env ctx) sorts in
-    let ppt = prterm_env ctx (snd (decompose_prod_assum pj.uj_type)) in
+    let ppar = pr_disjunction (pr_lconstr_env ctx) sorts in
+    let ppt = pr_lconstr_env ctx (snd (decompose_prod_assum pj.uj_type)) in
     str "," ++ spc() ++ str "the return type has sort" ++ spc() ++ ppt ++ 
     spc () ++ str "while it should be " ++ ppar))
   ++ fnl () ++ msg
 
 let explain_case_not_inductive ctx cj =
   let ctx = make_all_name_different ctx in
-  let pc = prterm_env ctx cj.uj_val in
-  let pct = prterm_env ctx cj.uj_type in
+  let pc = pr_lconstr_env ctx cj.uj_val in
+  let pct = pr_lconstr_env ctx cj.uj_type in
     match kind_of_term cj.uj_type with
       | Evar _ -> 
 	  str "Cannot infer a type for this expression"
@@ -129,17 +129,17 @@ let explain_case_not_inductive ctx cj =
 
 let explain_number_branches ctx cj expn =
   let ctx = make_all_name_different ctx in
-  let pc = prterm_env ctx cj.uj_val in
-  let pct = prterm_env ctx cj.uj_type in
+  let pc = pr_lconstr_env ctx cj.uj_val in
+  let pct = pr_lconstr_env ctx cj.uj_type in
   str "Matching on term" ++ brk(1,1) ++ pc ++ spc ()  ++
   str "of type" ++ brk(1,1) ++ pct ++ spc () ++
   str "expects " ++  int expn ++ str " branches"
 
 let explain_ill_formed_branch ctx c i actty expty =
   let ctx = make_all_name_different ctx in
-  let pc = prterm_env ctx c in
-  let pa = prterm_env ctx actty in
-  let pe = prterm_env ctx expty in
+  let pc = pr_lconstr_env ctx c in
+  let pa = pr_lconstr_env ctx actty in
+  let pe = pr_lconstr_env ctx expty in
   str "In pattern-matching on term" ++ brk(1,1) ++ pc ++
   spc () ++ str "the branch "  ++ int (i+1) ++
   str " has type" ++ brk(1,1) ++ pa  ++ spc () ++ 
@@ -147,8 +147,8 @@ let explain_ill_formed_branch ctx c i actty expty =
 
 let explain_generalization ctx (name,var) j =
   let pe = pr_ne_context_of (str "In environment") ctx in
-  let pv = prtype_env ctx var in
-  let (pc,pt) = prjudge_env (push_rel_assum (name,var) ctx) j in
+  let pv = pr_ltype_env ctx var in
+  let (pc,pt) = pr_ljudge_env (push_rel_assum (name,var) ctx) j in
   str"Illegal generalization: " ++ pe ++
   str"Cannot generalize" ++ brk(1,1) ++ pv ++ spc () ++
   str"over" ++ brk(1,1) ++ pc ++ str"," ++ spc () ++ 
@@ -157,8 +157,8 @@ let explain_generalization ctx (name,var) j =
 
 let explain_actual_type ctx j pt =
   let pe = pr_ne_context_of (str "In environment") ctx in
-  let (pc,pct) = prjudge_env ctx j in
-  let pt = prterm_env ctx pt in
+  let (pc,pct) = pr_ljudge_env ctx j in
+  let pt = pr_lconstr_env ctx pt in
   pe ++
   str "The term" ++ brk(1,1) ++ pc ++ spc ()  ++
   str "has type"  ++ brk(1,1) ++ pct ++ brk(1,1) ++ 
@@ -168,7 +168,7 @@ let explain_cant_apply_bad_type ctx (n,exptyp,actualtyp) rator randl =
   let ctx = make_all_name_different ctx in
   let randl = Array.to_list randl in
 (*  let pe = pr_ne_context_of (str"in environment") ctx in*)
-  let pr,prt = prjudge_env ctx rator in
+  let pr,prt = pr_ljudge_env ctx rator in
   let term_string1,term_string2 =
     if List.length randl > 1 then
       str "terms", (str"The "++nth n++str" term")
@@ -176,7 +176,7 @@ let explain_cant_apply_bad_type ctx (n,exptyp,actualtyp) rator randl =
       str "term", str "This term" in
   let appl = prlist_with_sep pr_fnl 
 	       (fun c ->
-		  let pc,pct = prjudge_env ctx c in
+		  let pc,pct = pr_ljudge_env ctx c in
 		  hov 2 (pc ++ spc () ++ str": "  ++ pct)) randl
   in
   str"Illegal application (Type Error): " ++ (* pe ++ *) fnl () ++
@@ -184,20 +184,20 @@ let explain_cant_apply_bad_type ctx (n,exptyp,actualtyp) rator randl =
   str"of type" ++ brk(1,1) ++ prt ++ spc ()  ++
   str"cannot be applied to the " ++ term_string1 ++ fnl () ++ 
   str" " ++ v 0 appl ++ fnl () ++ term_string2 ++ str" has type" ++
-  brk(1,1) ++ prterm_env ctx actualtyp ++ spc () ++
-  str"which should be coercible to" ++ brk(1,1) ++ prterm_env ctx exptyp
+  brk(1,1) ++ pr_lconstr_env ctx actualtyp ++ spc () ++
+  str"which should be coercible to" ++ brk(1,1) ++ pr_lconstr_env ctx exptyp
 
 let explain_cant_apply_not_functional ctx rator randl =
   let ctx = make_all_name_different ctx in
   let randl = Array.to_list randl in
 (*  let pe = pr_ne_context_of (str"in environment") ctx in*)
-  let pr = prterm_env ctx rator.uj_val in
-  let prt = prterm_env ctx rator.uj_type in
+  let pr = pr_lconstr_env ctx rator.uj_val in
+  let prt = pr_lconstr_env ctx rator.uj_type in
   let term_string = if List.length randl > 1 then "terms" else "term" in
   let appl = prlist_with_sep pr_fnl 
 	       (fun c ->
-		  let pc = prterm_env ctx c.uj_val in
-		  let pct = prterm_env ctx c.uj_type in
+		  let pc = pr_lconstr_env ctx c.uj_val in
+		  let pct = pr_lconstr_env ctx c.uj_type in
 		  hov 2 (pc ++ spc () ++ str": "  ++ pct)) randl
   in
   str"Illegal application (Non-functional construction): " ++ 
@@ -208,14 +208,14 @@ let explain_cant_apply_not_functional ctx rator randl =
   str" " ++ v 0 appl
 
 let explain_unexpected_type ctx actual_type expected_type =
-  let pract = prterm_env ctx actual_type in
-  let prexp = prterm_env ctx expected_type in
+  let pract = pr_lconstr_env ctx actual_type in
+  let prexp = pr_lconstr_env ctx expected_type in
   str"This type is" ++ spc () ++ pract ++ spc () ++ 
   str "but is expected to be" ++
   spc () ++ prexp
 
 let explain_not_product ctx c =
-  let pr = prterm_env ctx c in
+  let pr = pr_lconstr_env ctx c in
   str"The type of this term is a product," ++ spc () ++
   str"but it is casted with type" ++
   brk(1,1) ++ pr
@@ -234,7 +234,7 @@ let explain_ill_formed_rec_body ctx err names i =
   | NotEnoughAbstractionInFixBody ->
       str "Not enough abstractions in the definition"
   | RecursionNotOnInductiveType c ->
-      str "Recursive definition on" ++ spc() ++ prterm_env ctx c ++ spc() ++
+      str "Recursive definition on" ++ spc() ++ pr_lconstr_env ctx c ++ spc() ++
       str "which should be an inductive type"
   | RecursionOnIllegalTerm(j,arg,le,lt) ->
       let called =
@@ -255,7 +255,7 @@ let explain_ill_formed_rec_body ctx err names i =
               prlist_with_sep pr_spc (pr_db ctx) lt in
       str "Recursive call to " ++ called ++ spc() ++
       str "has principal argument equal to" ++ spc() ++
-      prterm_env ctx arg ++ fnl() ++ str "instead of " ++ vars
+      pr_lconstr_env ctx arg ++ fnl() ++ str "instead of " ++ vars
 
   | NotEnoughArgumentsForFixCall j ->
       let called =
@@ -266,31 +266,31 @@ let explain_ill_formed_rec_body ctx err names i =
 
   (* CoFixpoint guard errors *)
   | CodomainNotInductiveType c ->
-      str "the codomain is" ++ spc () ++ prterm_env ctx c ++ spc () ++
+      str "the codomain is" ++ spc () ++ pr_lconstr_env ctx c ++ spc () ++
       str "which should be a coinductive type"
   | NestedRecursiveOccurrences ->
       str "nested recursive occurrences"
   | UnguardedRecursiveCall c ->
-      str "unguarded recursive call in" ++ spc() ++ prterm_env ctx c
+      str "unguarded recursive call in" ++ spc() ++ pr_lconstr_env ctx c
   | RecCallInTypeOfAbstraction c ->
       str "recursive call forbidden in the domain of an abstraction:" ++
-      spc() ++ prterm_env ctx c
+      spc() ++ pr_lconstr_env ctx c
   | RecCallInNonRecArgOfConstructor c ->
       str "recursive call on a non-recursive argument of constructor" ++
-      spc() ++ prterm_env ctx c
+      spc() ++ pr_lconstr_env ctx c
   | RecCallInTypeOfDef c ->
       str "recursive call forbidden in the type of a recursive definition" ++
-      spc() ++ prterm_env ctx c
+      spc() ++ pr_lconstr_env ctx c
   | RecCallInCaseFun c ->
-      str "recursive call in a branch of" ++ spc() ++ prterm_env ctx c
+      str "recursive call in a branch of" ++ spc() ++ pr_lconstr_env ctx c
   | RecCallInCaseArg c -> 
       str "recursive call in the argument of cases in" ++ spc() ++
-      prterm_env ctx c
+      pr_lconstr_env ctx c
   | RecCallInCasePred c ->
       str "recursive call in the type of cases in" ++  spc() ++
-      prterm_env ctx c
+      pr_lconstr_env ctx c
   | NotGuardedForm c ->
-      str "sub-expression " ++ prterm_env ctx c ++ spc() ++
+      str "sub-expression " ++ pr_lconstr_env ctx c ++ spc() ++
       str "not in guarded form" ++ spc()++
       str"(should be a constructor, an abstraction, a match, a cofix or a recursive call)"
   in
@@ -300,8 +300,8 @@ let explain_ill_formed_rec_body ctx err names i =
 
 let explain_ill_typed_rec_body ctx i names vdefj vargs =
   let ctx = make_all_name_different ctx in
-  let pvd,pvdt = prjudge_env ctx (vdefj.(i)) in
-  let pv = prterm_env ctx vargs.(i) in
+  let pvd,pvdt = pr_ljudge_env ctx (vdefj.(i)) in
+  let pv = pr_lconstr_env ctx vargs.(i) in
   str"The "  ++
   (if Array.length vdefj = 1 then mt () else int (i+1) ++ str "-th") ++
   str"recursive definition"  ++ spc () ++ pvd ++ spc () ++
@@ -310,19 +310,19 @@ let explain_ill_typed_rec_body ctx i names vdefj vargs =
 (*
 let explain_not_inductive ctx c =
   let ctx = make_all_name_different ctx in
-  let pc = prterm_env ctx c in
+  let pc = pr_lconstr_env ctx c in
   str"The term" ++ brk(1,1) ++ pc ++ spc () ++
   str "is not an inductive definition"
 *)
 let explain_cant_find_case_type ctx c =
   let ctx = make_all_name_different ctx in
-  let pe = prterm_env ctx c in
+  let pe = pr_lconstr_env ctx c in
   hov 3 (str "Cannot infer type of pattern-matching on" ++ ws 1 ++ pe)
 
 let explain_occur_check ctx ev rhs =
   let ctx = make_all_name_different ctx in
   let id = Evd.string_of_existential ev in
-  let pt = prterm_env ctx rhs in
+  let pt = pr_lconstr_env ctx rhs in
   str"Occur check failed: tried to define " ++ str id ++
   str" with term" ++ brk(1,1) ++ pt
 
@@ -350,7 +350,7 @@ let explain_not_clean ctx ev t k =
   let ctx = make_all_name_different ctx in
   let c = mkRel (Intset.choose (free_rels t)) in
   let id = Evd.string_of_existential ev in
-  let var = prterm_env ctx c in
+  let var = pr_lconstr_env ctx c in
   str"Tried to define " ++ explain_hole_kind ctx k ++
   str" (" ++ str id ++ str ")" ++ spc() ++
   str"with a term using variable " ++ var ++ spc () ++
@@ -366,33 +366,33 @@ let explain_var_not_found ctx id =
   spc ()  ++ str "in the current" ++ spc ()  ++ str "environment"
 
 let explain_wrong_case_info ctx ind ci =
-  let pi = prterm (mkInd ind) in
+  let pi = pr_lconstr (mkInd ind) in
   if ci.ci_ind = ind then
     str"Pattern-matching expression on an object of inductive" ++ spc () ++ pi ++
     spc () ++ str"has invalid information"
   else
-    let pc = prterm (mkInd ci.ci_ind) in
+    let pc = pr_lconstr (mkInd ci.ci_ind) in
     str"A term of inductive type" ++ spc () ++ pi ++ spc () ++
     str"was given to a pattern-matching expression on the inductive type" ++
     spc () ++ pc
        
 
 let explain_cannot_unify m n =
-  let pm = prterm m in 
-  let pn = prterm n in
+  let pm = pr_lconstr m in 
+  let pn = pr_lconstr n in
   str"Impossible to unify" ++ brk(1,1)  ++ pm ++ spc ()  ++
   str"with" ++ brk(1,1)  ++ pn
 
 let explain_refiner_cannot_generalize ty =
   str "Cannot find a well-typed generalisation of the goal with type : " ++ 
-  prterm ty
+  pr_lconstr ty
 
 let explain_no_occurrence_found c =
-  str "Found no subterm matching " ++ prterm c ++ str " in the current goal"
+  str "Found no subterm matching " ++ pr_lconstr c ++ str " in the current goal"
 
 let explain_cannot_unify_binding_type m n =
-  let pm = prterm m in 
-  let pn = prterm n in
+  let pm = pr_lconstr m in 
+  let pn = pr_lconstr n in
   str "This binding has type" ++ brk(1,1) ++ pm ++ spc () ++ 
   str "which should be unifiable with" ++ brk(1,1) ++ pn
 
@@ -461,36 +461,36 @@ let explain_pretype_error ctx err =
 
 let explain_refiner_bad_type arg ty conclty =
   str"refiner was given an argument" ++ brk(1,1) ++ 
-  prterm arg ++ spc () ++
-  str"of type" ++ brk(1,1) ++ prterm ty ++ spc () ++
-  str"instead of" ++ brk(1,1) ++ prterm conclty
+  pr_lconstr arg ++ spc () ++
+  str"of type" ++ brk(1,1) ++ pr_lconstr ty ++ spc () ++
+  str"instead of" ++ brk(1,1) ++ pr_lconstr conclty
 
 let explain_refiner_occur_meta t =
-  str"cannot refine with term" ++ brk(1,1) ++ prterm t ++
+  str"cannot refine with term" ++ brk(1,1) ++ pr_lconstr t ++
   spc () ++ str"because there are metavariables, and it is" ++
   spc () ++ str"neither an application nor a Case"
 
 let explain_refiner_occur_meta_goal t =
-  str"generated subgoal" ++ brk(1,1) ++ prterm t ++
+  str"generated subgoal" ++ brk(1,1) ++ pr_lconstr t ++
   spc () ++ str"has metavariables in it"
 
 let explain_refiner_cannot_apply t harg =
   str"in refiner, a term of type " ++ brk(1,1) ++
-  prterm t ++ spc () ++ str"could not be applied to" ++ brk(1,1) ++
-  prterm harg
+  pr_lconstr t ++ spc () ++ str"could not be applied to" ++ brk(1,1) ++
+  pr_lconstr harg
 
 let explain_refiner_not_well_typed c =
-  str"The term "  ++ prterm c  ++ str" is not well-typed"
+  str"The term "  ++ pr_lconstr c  ++ str" is not well-typed"
 
 let explain_intro_needs_product () =
   str "Introduction tactics needs products"
 
 let explain_does_not_occur_in c hyp =
-  str "The term" ++ spc () ++ prterm c ++ spc () ++ str "does not occur in" ++ 
+  str "The term" ++ spc () ++ pr_lconstr c ++ spc () ++ str "does not occur in" ++ 
   spc () ++ pr_id hyp
 
 let explain_non_linear_proof c =
-  str "cannot refine with term" ++ brk(1,1) ++ prterm c ++
+  str "cannot refine with term" ++ brk(1,1) ++ pr_lconstr c ++
   spc () ++ str"because a metavariable has several occurrences"
 
 let explain_refiner_error = function
@@ -506,20 +506,20 @@ let explain_refiner_error = function
 (* Inductive errors *)
 
 let error_non_strictly_positive env c v  =
-  let pc = prterm_env env c in
-  let pv = prterm_env env v in
+  let pc = pr_lconstr_env env c in
+  let pv = pr_lconstr_env env v in
   str "Non strictly positive occurrence of " ++ pv ++ str " in" ++
   brk(1,1) ++ pc
 
 let error_ill_formed_inductive env c v =
-  let pc = prterm_env env c in
-  let pv = prterm_env env v in
+  let pc = pr_lconstr_env env c in
+  let pv = pr_lconstr_env env v in
   str "Not enough arguments applied to the " ++ pv ++
   str " in" ++ brk(1,1) ++ pc
 
 let error_ill_formed_constructor env c v =
-  let pc = prterm_env env c in
-  let pv = prterm_env env v in
+  let pc = pr_lconstr_env env c in
+  let pv = pr_lconstr_env env v in
   str "The conclusion of" ++ brk(1,1) ++ pc ++ brk(1,1) ++ 
   str "is not valid;" ++ brk(1,1) ++ str "it must be built from " ++ pv
 
@@ -532,9 +532,9 @@ let str_of_nth n =
      | _ -> "th")
 
 let error_bad_ind_parameters env c n v1 v2  =
-  let pc = prterm_env_at_top env c in
-  let pv1 = prterm_env env v1 in
-  let pv2 = prterm_env env v2 in
+  let pc = pr_lconstr_env_at_top env c in
+  let pv1 = pr_lconstr_env env v1 in
+  let pv2 = pr_lconstr_env env v2 in
   str ("The "^(str_of_nth n)^" argument of ") ++ pv2 ++ brk(1,1) ++
   str "must be " ++ pv1 ++ str " in" ++ brk(1,1) ++ pc
 
@@ -598,7 +598,7 @@ let explain_recursion_scheme_error = function
 
 let explain_bad_pattern ctx cstr ty = 
   let ctx = make_all_name_different ctx in
-  let pt = prterm_env ctx ty in
+  let pt = pr_lconstr_env ctx ty in
   let pc = pr_constructor ctx cstr in
   str "Found the constructor " ++ pc ++ brk(1,1) ++ 
   str "while matching a term of type " ++ pt ++ brk(1,1) ++ 
@@ -620,17 +620,17 @@ let explain_wrong_numarg_of_constructor ctx cstr n =
 
 let explain_wrong_predicate_arity ctx pred nondep_arity dep_arity=
   let ctx = make_all_name_different ctx in
-  let pp = prterm_env ctx pred in
+  let pp = pr_lconstr_env ctx pred in
   str "The elimination predicate " ++ spc () ++ pp ++ fnl () ++
   str "should be of arity"  ++ spc () ++
-  prterm_env ctx nondep_arity  ++ spc () ++ 
+  pr_lconstr_env ctx nondep_arity  ++ spc () ++ 
   str "(for non dependent case) or"  ++
-  spc () ++ prterm_env ctx dep_arity  ++ spc () ++ str "(for dependent case)."
+  spc () ++ pr_lconstr_env ctx dep_arity  ++ spc () ++ str "(for dependent case)."
 
 let explain_needs_inversion ctx x t =
   let ctx = make_all_name_different ctx in
-  let px = prterm_env ctx x in
-  let pt = prterm_env ctx t in
+  let px = pr_lconstr_env ctx x in
+  let pt = pr_lconstr_env ctx t in
   str "Sorry, I need inversion to compile pattern matching of term " ++
   px  ++ str " of type: " ++ pt
 
@@ -651,7 +651,7 @@ let explain_cannot_infer_predicate ctx typs =
   let ctx = make_all_name_different ctx in
   let pr_branch (cstr,typ) =
     let cstr,_ = decompose_app cstr in
-    str "For " ++ prterm_env ctx cstr ++ str " : " ++ prterm_env ctx typ
+    str "For " ++ pr_lconstr_env ctx cstr ++ str " : " ++ pr_lconstr_env ctx typ
   in
   str "Unable to unify the types found in the branches:" ++
   spc () ++ hov 0 (prlist_with_sep pr_fnl pr_branch (Array.to_list typs))

@@ -17,16 +17,16 @@
 #use "top_printers.ml";;
 #use "vm_printers.ml";;
 
-#install_printer  (* identifier *) prid;;
-#install_printer  (* label *) prlab;;
-#install_printer prmsid;;
-#install_printer prmbid;;
-#install_printer prdir;;
-#install_printer prmp;;
-#install_printer  (* section_path *)  prsp;;
-#install_printer  (* qualid *)  prqualid;;
-#install_printer  (* kernel_name *) prkn;;
-#install_printer  (* constant *) prcon;;
+#install_printer  (* identifier *) ppid;;
+#install_printer  (* label *) pplab;;
+#install_printer  (* mod_self_id *) ppmsid;;
+#install_printer  (* mod_bound_id *) ppmbid;;
+#install_printer  (* dir_path *) ppdir;;
+#install_printer  (* module_path *) ppmp;;
+#install_printer  (* section_path *)  ppsp;;
+#install_printer  (* qualid *)  ppqualid;;
+#install_printer  (* kernel_name *) ppkn;;
+#install_printer  (* constant *) ppcon;;
 #install_printer  (* constr *)  print_pure_constr;; 
 #install_printer  (* patch *) ppripos;;
 #install_printer  (* values *) ppvalues;;

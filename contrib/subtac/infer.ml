@@ -6,7 +6,7 @@ open Util
 open Sast
 open Scoq
 open Pp
-open Ppconstr
+open Printer
 
 let ($) f g = fun x -> f (g x)
 
@@ -385,7 +385,7 @@ let rec print_dterm' ctx = function
 	++ print_dterm_loc ctx t ++ str "," 
 	++ print_dterm_loc ctx' t' ++ str ":" 
 	++ print_dtype_loc ctx' tt' ++ str ")"
-  | DCoq (cstr, t) -> pr_term cstr
+  | DCoq (cstr, t) -> pr_constr cstr
 
 and print_dterm_loc ctx (_, x) = print_dterm' ctx x
   (*debug_msg 1 (str ":" ++ print_dtype_loc ctx (type_of_dterm ctx x))*)
@@ -408,10 +408,10 @@ and print_dtype' ctx = function
   | DTTerm (t, tt, s) -> str "Term:(" ++ print_dterm_loc ctx t ++ str ")"
   | DTInd (n, t, i, s) -> str (string_of_id (snd n))
   | DTCoq (c, t, s) -> 
-      debug_msg 1 (str "Coq:(") ++ pr_term c ++ 
+      debug_msg 1 (str "Coq:(") ++ pr_constr c ++ 
 	debug_msg 1 (str ":" ++ print_dtype_loc ctx t ++ str ")")
   | DTSort s -> 
-      pr_term (mkSort (snd s))
+      pr_constr (mkSort (snd s))
 
 and print_dtype_loc ctx (_, t) = print_dtype' ctx t
 

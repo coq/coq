@@ -44,7 +44,7 @@ let lookup env typ =
   with Not_found -> 
     errorlabstrm "field"
       (str "No field is declared for type" ++ spc() ++
-      Printer.prterm_env env typ)
+      Printer.pr_lconstr_env env typ)
 
 let _ = 
   let init () = th_tab := Gmap.empty in

@@ -26,65 +26,98 @@ open Proof_type
 open Refiner
 open Pfedit
 open Ppconstr
+open Constrextern
 
 let emacs_str s = if !Options.print_emacs then s else "" 
 
 (**********************************************************************)
-(* Generic printing: choose old or new printers *)
+(** Terms                                                             *)
 
-(* [at_top] means ids of env must be avoided in bound variables *)
-let prterm_core at_top env t =
-  pr_lconstr (Constrextern.extern_constr at_top env t)
-let prtype_core at_top env t =
-  pr_lconstr (Constrextern.extern_type at_top env t)
+  (* [at_top] means ids of env must be avoided in bound variables *)
+let pr_constr_core at_top env t =
+  pr_constr_expr (extern_constr at_top env t)
+let pr_lconstr_core at_top env t =
+  pr_lconstr_expr (extern_constr at_top env t)
+
+let pr_lconstr_env_at_top env = pr_lconstr_core true env
+let pr_lconstr_env env = pr_lconstr_core false env
+let pr_constr_env env = pr_constr_core false env
+
+  (* NB do not remove the eta-redexes! Global.env() has side-effects... *)
+let pr_lconstr t = pr_lconstr_env (Global.env()) t
+let pr_constr t = pr_constr_env (Global.env()) t
+
+let pr_type_core at_top env t =
+  pr_constr_expr (extern_type at_top env t)
+let pr_ltype_core at_top env t =
+  pr_lconstr_expr (extern_type at_top env t)
+
+let pr_ltype_env_at_top env = pr_ltype_core true env
+let pr_ltype_env env = pr_ltype_core false env
+let pr_type_env env = pr_type_core false env
+
+let pr_ltype t = pr_ltype_env (Global.env()) t
+let pr_type t = pr_type_env (Global.env()) t
+
+let pr_ljudge_env env j =
+  (pr_lconstr_env env j.uj_val, pr_lconstr_env env j.uj_type)
+
+let pr_ljudge j = pr_ljudge_env (Global.env()) j
+
+let pr_lrawconstr_env env c =
+  pr_lconstr_expr (extern_rawconstr (vars_of_env env) c)
+let pr_rawconstr_env env c = 
+  pr_constr_expr (extern_rawconstr (vars_of_env env) c)
+
+let pr_lrawconstr c =
+  pr_lconstr_expr (extern_rawconstr Idset.empty c)
+let pr_rawconstr c =
+  pr_constr_expr (extern_rawconstr Idset.empty c)
+
 let pr_cases_pattern t =
-  pr_cases_pattern (Constrextern.extern_cases_pattern Idset.empty t)
-let pr_pattern_env tenv env t =
-  pr_constr (Constrextern.extern_pattern tenv env t)
+  pr_cases_pattern_expr (extern_cases_pattern Idset.empty t)
+
+let pr_constr_pattern_env env c =
+  pr_constr_expr (extern_constr_pattern (names_of_rel_context env) c)
+let pr_constr_pattern t =
+  pr_constr_expr (extern_constr_pattern empty_names_context t)
+
+let _ = Termops.set_print_constr pr_lconstr_env
 
 (**********************************************************************)
-(* Derived printers *)
-  
-let prterm_env_at_top env = prterm_core true env
-let prterm_env env = prterm_core false env
-let prtype_env_at_top env = prtype_core true env
-let prtype_env env = prtype_core false env
-let prjudge_env env j =
-  (prterm_env env j.uj_val, prterm_env env j.uj_type)
+(* Global references *)
 
-(* NB do not remove the eta-redexes! Global.env() has side-effects... *)
-let prterm t = prterm_env (Global.env()) t
-let prtype t = prtype_env (Global.env()) t
-let prjudge j = prjudge_env (Global.env()) j
+let pr_global_env env ref =
+  (* Il est important de laisser le let-in, car les streams s'évaluent
+  paresseusement : il faut forcer l'évaluation pour capturer
+  l'éventuelle levée d'une exception (cela arrive dans le debugger) *)
+  let s = string_of_qualid (shortest_qualid_of_global env ref) in
+  (str s)
 
-let _ = Termops.set_print_constr prterm_env
-
-let pr_constant env cst = prterm_env env (mkConst cst)
-let pr_existential env ev = prterm_env env (mkEvar ev)
-let pr_inductive env ind = prterm_env env (mkInd ind)
-let pr_constructor env cstr = prterm_env env (mkConstruct cstr)
 let pr_global = pr_global_env Idset.empty
+
+let pr_constant env cst = pr_global_env (vars_of_env env) (ConstRef cst)
+let pr_existential env ev = pr_lconstr_env env (mkEvar ev)
+let pr_inductive env ind = pr_lconstr_env env (mkInd ind)
+let pr_constructor env cstr = pr_lconstr_env env (mkConstruct cstr)
+
 let pr_evaluable_reference ref =
  let ref' = match ref with
   | EvalConstRef const -> ConstRef const
   | EvalVarRef sp -> VarRef sp in
  pr_global ref'
 
-let pr_rawterm t =
-  pr_lconstr (Constrextern.extern_rawconstr Idset.empty t)
-
-open Pattern
-
-let pr_pattern t = pr_pattern_env (Global.env()) empty_names_context t
+(**********************************************************************)
+(* Contexts and declarations                                          *)
 
 let pr_var_decl env (id,c,typ) =
   let pbody = match c with
     | None ->  (mt ())
     | Some c ->
 	(* Force evaluation *) 
-	let pb = prterm_env env c in
+	let pb = pr_lconstr_env env c in
 	(str" := " ++ pb ++ cut () ) in
-  let pt = prtype_env env typ in
+  let pt = pr_ltype_env env typ in
   let ptyp = (str" : " ++ pt) in
   (pr_id id ++ hov 0 (pbody ++ ptyp))
 
@@ -93,9 +126,9 @@ let pr_rel_decl env (na,c,typ) =
     | None -> mt ()
     | Some c ->
 	(* Force evaluation *) 
-	let pb = prterm_env env c in
+	let pb = pr_lconstr_env env c in
 	(str":=" ++ spc () ++ pb ++ spc ()) in
-  let ptyp = prtype_env env typ in
+  let ptyp = pr_ltype_env env typ in
   match na with
   | Anonymous -> hov 0 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
   | Name id -> hov 0 (pr_id id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
@@ -190,7 +223,7 @@ let pr_context_of env = match Options.print_hyps_limit () with
 let pr_goal g =
   let env = evar_env g in
   let penv = pr_context_of env in
-  let pc = prtype_env_at_top env g.evar_concl in
+  let pc = pr_ltype_env_at_top env g.evar_concl in
   str"  " ++ hv 0 (penv ++ fnl () ++
 		   str (emacs_str (String.make 1 (Char.chr 253)))  ++
                    str "============================" ++ fnl ()  ++
@@ -199,14 +232,14 @@ let pr_goal g =
 (* display the conclusion of a goal *)
 let pr_concl n g =
   let env = evar_env g in
-  let pc = prtype_env_at_top env g.evar_concl in
+  let pc = pr_ltype_env_at_top env g.evar_concl in
   str (emacs_str (String.make 1 (Char.chr 253)))  ++
   str "subgoal " ++ int n ++ str " is:" ++ cut () ++ str" "  ++ pc
 
 (* display evar type: a context and a type *)
 let pr_evgl_sign gl = 
   let ps = pr_named_context_of (evar_env gl) in
-  let pc = prterm gl.evar_concl in
+  let pc = pr_lconstr gl.evar_concl in
   hov 0 (str"["  ++ ps ++ spc () ++ str"|- "  ++ pc ++ str"]")
 
 (* Print an enumerated list of existential variables *)
@@ -284,12 +317,6 @@ let pr_nth_open_subgoal n =
 
 (* Elementary tactics *)
 
-let print_constr8 t =
-  pr_constr (Constrextern.extern_constr false (Global.env()) t)
-
-let print_lconstr8 t =
-  pr_lconstr (Constrextern.extern_constr false (Global.env()) t)
-
 let pr_prim_rule = function
   | Intro id -> 
       str"intro " ++ pr_id id
@@ -299,9 +326,9 @@ let pr_prim_rule = function
 	
   | Cut (b,id,t) ->
       if b then
-        (str"assert " ++ print_constr8 t)
+        (str"assert " ++ pr_constr t)
       else
-        (str"cut " ++ print_constr8 t ++ str ";[intro " ++ pr_id id ++ str "|idtac]")
+        (str"cut " ++ pr_constr t ++ str ";[intro " ++ pr_id id ++ str "|idtac]")
 	
   | FixRule (f,n,[]) ->
       (str"fix " ++ pr_id f ++ str"/" ++ int n)
@@ -309,7 +336,7 @@ let pr_prim_rule = function
   | FixRule (f,n,others) -> 
       let rec print_mut = function
 	| (f,n,ar)::oth -> 
-           pr_id f ++ str"/" ++ int n ++ str" : " ++ print_lconstr8 ar ++ print_mut oth
+           pr_id f ++ str"/" ++ int n ++ str" : " ++ pr_lconstr ar ++ print_mut oth
         | [] -> mt () in
       (str"fix " ++ pr_id f ++ str"/" ++ int n ++
          str" with " ++ print_mut others)
@@ -320,22 +347,22 @@ let pr_prim_rule = function
   | Cofix (f,others) ->
       let rec print_mut = function
 	| (f,ar)::oth ->
-	  (pr_id f ++ str" : " ++ print_lconstr8 ar ++ print_mut oth)
+	  (pr_id f ++ str" : " ++ pr_lconstr ar ++ print_mut oth)
         | [] -> mt () in
       (str"cofix " ++ pr_id f ++  str" with " ++ print_mut others)
 
   | Refine c -> 
       str(if occur_meta c then "refine " else "exact ") ++
-      Constrextern.with_meta_as_hole print_constr8 c
+      Constrextern.with_meta_as_hole pr_constr c
       
   | Convert_concl (c,_) ->
-      (str"change "  ++ print_constr8 c)
+      (str"change "  ++ pr_constr c)
       
   | Convert_hyp (id,None,t) ->
-      (str"change "  ++ print_constr8 t  ++ spc ()  ++ str"in "  ++ pr_id id)
+      (str"change "  ++ pr_constr t  ++ spc ()  ++ str"in "  ++ pr_id id)
 
   | Convert_hyp (id,Some c,t) ->
-      (str"change "  ++ print_constr8 c  ++ spc ()  ++ str"in "
+      (str"change "  ++ pr_constr c  ++ spc ()  ++ str"in "
        ++ pr_id id ++ str" (type of "  ++ pr_id id ++ str ")")
       
   | Thin ids ->

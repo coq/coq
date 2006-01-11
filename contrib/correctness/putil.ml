@@ -231,26 +231,26 @@ and c_of_constr c =
 open Pp
 open Util
 
-let prterm x = Printer.prterm_env (Global.env()) x
+let pr_lconstr x = Printer.pr_lconstr_env (Global.env()) x
 
 let pp_pre = function
     [] -> (mt ())
   | l  ->
       hov 0 (str"pre " ++ 
 	       prlist_with_sep (fun () -> (spc ())) 
-		 (fun x -> prterm x.p_value) l)
+		 (fun x -> pr_lconstr x.p_value) l)
 
 let pp_post = function
     None -> (mt ())
-  | Some c -> hov 0 (str"post " ++ prterm c.a_value)
+  | Some c -> hov 0 (str"post " ++ pr_lconstr c.a_value)
 
 let rec pp_type_v = function
     Ref v -> hov 0 (pp_type_v v ++ spc () ++ str"ref")
-  | Array (cc,v) -> hov 0 (str"array " ++ prterm cc ++ str" of " ++ pp_type_v v)
+  | Array (cc,v) -> hov 0 (str"array " ++ pr_lconstr cc ++ str" of " ++ pp_type_v v)
   | Arrow (b,c) -> 
       hov 0 (prlist_with_sep (fun () -> (mt ())) pp_binder b ++ 
 	       pp_type_c c)
-  | TypePure c -> prterm c
+  | TypePure c -> pr_lconstr c
 
 and pp_type_c ((id,v),e,p,q) =
   hov 0 (str"returns " ++ pr_id id ++ str":" ++ pp_type_v v ++ spc () ++ 
@@ -297,7 +297,7 @@ let rec pp_cc_term = function
   | CC_case _ ->
       hov 0 (str"<Case: not yet implemented>")
   | CC_expr c ->
-      hov 0 (prterm c)
+      hov 0 (pr_lconstr c)
   | CC_hole c ->
-      (str"(?::" ++ prterm c ++ str")")
+      (str"(?::" ++ pr_lconstr c ++ str")")
 

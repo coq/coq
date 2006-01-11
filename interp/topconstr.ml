@@ -247,7 +247,7 @@ let aconstr_of_rawconstr vars a =
   a
 
 let aconstr_of_constr avoiding t =
- aconstr_of_rawconstr [] (Detyping.detype (false,Global.env()) avoiding [] t)
+ aconstr_of_rawconstr [] (Detyping.detype false avoiding [] t)
 
 let rec subst_aconstr subst bound raw =
   match raw with
@@ -629,6 +629,20 @@ let mkCastC (a,k,b)  = CCast (dummy_loc,a,k,b)
 let mkLambdaC (idl,a,b) = CLambdaN (dummy_loc,[idl,a],b)
 let mkLetInC (id,a,b)   = CLetIn (dummy_loc,id,a,b)
 let mkProdC (idl,a,b)   = CProdN (dummy_loc,[idl,a],b)
+
+let rec abstract_constr_expr c = function
+  | [] -> c
+  | LocalRawDef (x,b)::bl -> mkLetInC(x,b,abstract_constr_expr c bl)
+  | LocalRawAssum (idl,t)::bl ->
+      List.fold_right (fun x b -> mkLambdaC([x],t,b)) idl
+      (abstract_constr_expr c bl)
+      
+let rec prod_constr_expr c = function
+  | [] -> c
+  | LocalRawDef (x,b)::bl -> mkLetInC(x,b,prod_constr_expr c bl)
+  | LocalRawAssum (idl,t)::bl ->
+      List.fold_right (fun x b -> mkProdC([x],t,b)) idl
+      (prod_constr_expr c bl)
 
 let coerce_to_id = function
   | CRef (Ident (loc,id)) -> (loc,id)

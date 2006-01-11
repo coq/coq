@@ -26,7 +26,7 @@ open Topconstr
 open Decl_kinds
 open Tacinterp
 
-let pr_spc_type = pr_sep_com spc pr_type
+let pr_spc_lconstr = pr_sep_com spc pr_lconstr_expr
 
 let pr_lident (b,_ as loc,id) =
   if loc <> dummy_loc then
@@ -65,8 +65,8 @@ let pr_raw_tactic_env l env t =
 
 let pr_gen env t =
   pr_raw_generic 
-    pr_constr
-    pr_lconstr
+    pr_constr_expr
+    pr_lconstr_expr
     (pr_raw_tactic_level env) pr_reference t
 
 let pr_raw_tactic tac = pr_raw_tactic (Global.env()) tac
@@ -507,11 +507,11 @@ let rec pr_vernac = function
         | DefineBody (bl,red,body,d) ->
             let ty = match d with
               | None -> mt()
-              | Some ty -> spc() ++ str":" ++ pr_sep_com spc pr_lconstr ty
+              | Some ty -> spc() ++ str":" ++ pr_spc_lconstr ty
 	    in
             (pr_binders_arg bl,ty,Some (pr_reduce red ++ pr_lconstr body))
         | ProveBody (bl,t) ->
-            (pr_binders_arg bl, str" :" ++ pr_spc_type t, None) in
+            (pr_binders_arg bl, str" :" ++ pr_spc_lconstr t, None) in
       let (binds,typ,c) = pr_def_body b in
       hov 2 (pr_def_token d ++ spc() ++ pr_lident id ++ binds ++ typ ++
       (match c with
@@ -523,7 +523,7 @@ let rec pr_vernac = function
       (match bl with
         | [] -> mt()
         | _ -> pr_binders bl ++ spc())
-      ++ str":" ++ pr_spc_type c)
+      ++ str":" ++ pr_spc_lconstr c)
   | VernacEndProof Admitted -> str"Admitted"
   | VernacEndProof (Proved (opac,o)) -> (match o with
     | None -> if opac then str"Qed" else str"Defined"
@@ -536,13 +536,13 @@ let rec pr_vernac = function
       let n = List.length (List.flatten (List.map fst (List.map snd l))) in
       hov 2
         (pr_assumption_token (n > 1) stre ++ spc() ++ 
-	 pr_ne_params_list pr_type l)
+	 pr_ne_params_list pr_lconstr_expr l)
   | VernacInductive (f,l) ->
 
       let pr_constructor (coe,(id,c)) =
         hov 2 (pr_lident id ++ str" " ++
                (if coe then str":>" else str":") ++
-                pr_sep_com spc pr_type c) in
+                pr_spc_lconstr c) in
       let pr_constructor_list l = match l with
         | [] -> mt()
         | _ ->
@@ -554,7 +554,7 @@ let rec pr_vernac = function
 	hov 0 (
           str key ++ spc() ++
           pr_lident id ++ pr_and_type_binders_arg indpar ++ spc() ++ str":" ++ 
-	  spc() ++ pr_type s ++ 
+	  spc() ++ pr_lconstr_expr s ++ 
 	  str" :=") ++ pr_constructor_list lc ++ 
 	pr_decl_notation pr_constr ntn in
 
@@ -584,7 +584,7 @@ let rec pr_vernac = function
                 spc() ++ str "{struct " ++ pr_name name ++ str"}"
               else mt() in
             pr_id id ++ pr_binders_arg bl ++ annot ++ spc()
-            ++ pr_type_option (fun c -> spc() ++ pr_type c) type_
+            ++ pr_type_option (fun c -> spc() ++ pr_lconstr_expr c) type_
             ++ str" :=" ++ brk(1,1) ++ pr_lconstr def ++ 
 	    pr_decl_notation pr_constr ntn
       in
@@ -599,7 +599,7 @@ let rec pr_vernac = function
               else ([],def,c) in
         let bl = bl @ bl' in
         pr_id id ++ spc() ++ pr_binders bl ++ spc() ++ str":" ++
-        spc() ++ pr_type c ++
+        spc() ++ pr_lconstr_expr c ++
         str" :=" ++ brk(1,1) ++ pr_lconstr def in
       let start = if b then "Boxed CoFixpoint" else "CoFixpoint" in
       hov 1 (str start ++ spc() ++
@@ -614,20 +614,20 @@ let rec pr_vernac = function
         | (oc,AssumExpr (id,t)) ->
             hov 1 (pr_lname id ++
             (if oc then str" :>" else str" :") ++ spc() ++
-            pr_type t)
+            pr_lconstr_expr t)
         | (oc,DefExpr(id,b,opt)) -> (match opt with
 	    | Some t ->
                 hov 1 (pr_lname id ++
                 (if oc then str" :>" else str" :") ++ spc() ++
-                pr_type t ++ str" :=" ++ pr_lconstr b)
+                pr_lconstr_expr t ++ str" :=" ++ pr_lconstr b)
 	    | None ->
                 hov 1 (pr_lname id ++ str" :=" ++ spc() ++
                 pr_lconstr b)) in
       hov 2
         (str (if b then "Record" else "Structure") ++
          (if oc then str" > " else str" ") ++ pr_lident name ++ 
-          pr_and_type_binders_arg ps ++ str" :" ++ spc() ++ pr_type s ++ 
-	  str" := " ++
+          pr_and_type_binders_arg ps ++ str" :" ++ spc() ++ 
+	  pr_lconstr_expr s ++ str" := " ++
          (match c with
            | None -> mt()
            | Some sc -> pr_lident sc) ++
@@ -732,7 +732,7 @@ let rec pr_vernac = function
 	    (* Rec by default *) str "Ltac ") ++
         prlist_with_sep (fun () -> fnl() ++ str"with ") pr_tac_body l)
   | VernacHints (local,dbnames,h) ->
-      pr_hints local dbnames h pr_constr pr_pattern
+      pr_hints local dbnames h pr_constr pr_pattern_expr
   | VernacSyntacticDefinition (id,c,local,onlyparsing) ->
       hov 2
         (str"Notation " ++ pr_locality local ++ pr_id id ++ str" :=" ++
@@ -749,7 +749,8 @@ let rec pr_vernac = function
   | VernacReserve (idl,c) ->
       hov 1 (str"Implicit Type" ++
         str (if List.length idl > 1 then "s " else " ") ++
-        prlist_with_sep spc pr_lident idl ++ str " :" ++ spc () ++ pr_type c)
+        prlist_with_sep spc pr_lident idl ++ str " :" ++ spc () ++
+        pr_lconstr c)
   | VernacSetOpacity (fl,l) ->
       hov 1 ((if fl then str"Opaque" else str"Transparent") ++
              spc() ++ prlist_with_sep sep pr_reference l)
@@ -808,7 +809,7 @@ let rec pr_vernac = function
 	| PrintAbout qid -> str"About" ++ spc()  ++ pr_reference qid
 	| PrintImplicit qid -> str"Print Implicit" ++ spc()  ++ pr_reference qid
       in pr_printable p
-  | VernacSearch (sea,sea_r) -> pr_search sea sea_r pr_pattern
+  | VernacSearch (sea,sea_r) -> pr_search sea sea_r pr_pattern_expr
   | VernacLocate loc -> 
       let pr_locate =function
 	| LocateTerm qid ->  pr_reference qid
@@ -852,4 +853,4 @@ and pr_extend s cl =
 
 in pr_vernac
 
-let pr_vernac v = make_pr_vernac pr_constr pr_lconstr v ++ sep_end ()
+let pr_vernac v = make_pr_vernac pr_constr_expr pr_lconstr_expr v ++ sep_end ()

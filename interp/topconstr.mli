@@ -144,6 +144,9 @@ val mkProdC : name located list * constr_expr * constr_expr -> constr_expr
 
 val coerce_to_id : constr_expr -> identifier located
 
+val abstract_constr_expr : constr_expr -> local_binder list -> constr_expr
+val prod_constr_expr : constr_expr -> local_binder list -> constr_expr
+
 (* For binders parsing *)
 
 (* Includes let binders *)

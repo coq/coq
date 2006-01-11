@@ -217,16 +217,16 @@ let relation_table_find s = Gmap.find s !relation_table
 let relation_table_mem s = Gmap.mem s !relation_table
 
 let prrelation s =
- str "(" ++ prterm s.rel_a ++ str "," ++ prterm s.rel_aeq ++ str ")"
+ str "(" ++ pr_lconstr s.rel_a ++ str "," ++ pr_lconstr s.rel_aeq ++ str ")"
 
 let prrelation_class =
  function
     Relation eq  ->
      (try prrelation (relation_table_find eq)
       with Not_found ->
-       str "[[ Error: " ++ prterm eq ++
+       str "[[ Error: " ++ pr_lconstr eq ++
         str " is not registered as a relation ]]")
-  | Leibniz (Some ty) -> prterm ty
+  | Leibniz (Some ty) -> pr_lconstr ty
   | Leibniz None -> str "_"
 
 let prmorphism_argument_gen prrelation (variance,rel) =
@@ -239,11 +239,11 @@ let prmorphism_argument_gen prrelation (variance,rel) =
 let prargument_class = prmorphism_argument_gen prrelation_class
 
 let pr_morphism_signature (l,c) =
- prlist (prmorphism_argument_gen Ppconstr.pr_constr) l ++
-  Ppconstr.pr_constr c
+ prlist (prmorphism_argument_gen Ppconstr.pr_constr_expr) l ++
+  Ppconstr.pr_constr_expr c
 
 let prmorphism k m =
-  prterm k ++ str ": " ++
+  pr_lconstr k ++ str ": " ++
   prlist prargument_class m.args ++
   prrelation_class m.output
 
@@ -259,7 +259,7 @@ let default_relation_for_carrier ?(filter=fun _ -> true) a =
      if tl <> [] then
       ppnl
        (str "Warning: There are several relations on the carrier \"" ++
-         prterm a ++ str "\". The relation " ++ prrelation relation ++
+         pr_lconstr a ++ str "\". The relation " ++ prrelation relation ++
          str " is chosen.") ;
      Relation relation
 
@@ -350,24 +350,24 @@ let (relation_to_obj, obj_to_relation)=
           str " is redeclared. The new declaration" ++
            (match th'.rel_refl with
               None -> str ""
-            | Some t -> str " (reflevity proved by " ++ prterm t) ++
+            | Some t -> str " (reflevity proved by " ++ pr_lconstr t) ++
            (match th'.rel_sym with
                None -> str ""
              | Some t ->
                 (if th'.rel_refl = None then str " (" else str " and ") ++
-                str "symmetry proved by " ++ prterm t) ++
+                str "symmetry proved by " ++ pr_lconstr t) ++
            (if th'.rel_refl <> None && th'.rel_sym <> None then
              str ")" else str "") ++
            str " replaces the old declaration" ++
            (match old_relation.rel_refl with
               None -> str ""
-            | Some t -> str " (reflevity proved by " ++ prterm t) ++
+            | Some t -> str " (reflevity proved by " ++ pr_lconstr t) ++
            (match old_relation.rel_sym with
                None -> str ""
              | Some t ->
                 (if old_relation.rel_refl = None then
                   str " (" else str " and ") ++
-                str "symmetry proved by " ++ prterm t) ++
+                str "symmetry proved by " ++ pr_lconstr t) ++
            (if old_relation.rel_refl <> None && old_relation.rel_sym <> None
             then str ")" else str "") ++
            str ".");
@@ -414,9 +414,9 @@ let morphism_table_add (m,c) =
      (str "Warning: The morphism " ++ prmorphism m old_morph ++
       str " is redeclared. " ++
       str "The new declaration whose compatibility is proved by " ++
-       prterm c.lem ++ str " replaces the old declaration whose" ++
+       pr_lconstr c.lem ++ str " replaces the old declaration whose" ++
        str " compatibility was proved by " ++
-       prterm old_morph.lem ++ str ".")
+       pr_lconstr old_morph.lem ++ str ".")
   with
    Not_found -> morphism_table := Gmap.add m (c::old) !morphism_table
 
@@ -427,7 +427,7 @@ let default_morphism ?(filter=fun _ -> true) m =
         if ml <> [] then
           ppnl
             (str "Warning: There are several morphisms associated to \"" ++
-            prterm m ++ str"\". Morphism " ++ prmorphism m m1 ++
+            pr_lconstr m ++ str"\". Morphism " ++ prmorphism m m1 ++
             str " is randomly chosen.");
         relation_morphism_of_constr_morphism m1
 
@@ -485,13 +485,13 @@ let print_setoids () =
      ppnl (str"Relation " ++ prrelation relation ++ str";" ++
       (match relation.rel_refl with
           None -> str ""
-        | Some t -> str" reflexivity proved by " ++ prterm t) ++
+        | Some t -> str" reflexivity proved by " ++ pr_lconstr t) ++
       (match relation.rel_sym with
           None -> str ""
-        | Some t -> str " symmetry proved by " ++ prterm t) ++
+        | Some t -> str " symmetry proved by " ++ pr_lconstr t) ++
       (match relation.rel_trans with
           None -> str ""
-        | Some t -> str " transitivity proved by " ++ prterm t)))
+        | Some t -> str " transitivity proved by " ++ pr_lconstr t)))
    !relation_table ;
   Gmap.iter
    (fun k l ->
@@ -499,7 +499,7 @@ let print_setoids () =
       (fun ({lem=lem} as mor) ->
         ppnl (str "Morphism " ++ prmorphism k mor ++
         str ". Compatibility proved by " ++
-        prterm lem ++ str "."))
+        pr_lconstr lem ++ str "."))
       l) !morphism_table
 ;;
 
@@ -703,15 +703,15 @@ let add_morphism lemma_infos mor_name (m,quantifiers_rev,args,output) =
         output = output_constr;
         lem = lem;
         morphism_theory = mmor }));
-   Options.if_verbose ppnl (prterm m ++ str " is registered as a morphism")   
+   Options.if_verbose ppnl (pr_lconstr m ++ str " is registered as a morphism")   
 
 (* first order matching with a bit of conversion *)
 let unify_relation_carrier_with_type env rel t =
  let raise_error quantifiers_no =
   errorlabstrm "New Morphism"
-   (str "One morphism argument or its output has type " ++ prterm t ++
+   (str "One morphism argument or its output has type " ++ pr_lconstr t ++
     str " but the signature requires an argument of type \"" ++
-    prterm rel.rel_a ++ str " " ++ prvect_with_sep pr_spc (fun _ -> str  "?")
+    pr_lconstr rel.rel_a ++ str " " ++ prvect_with_sep pr_spc (fun _ -> str  "?")
      (Array.make quantifiers_no 0) ++ str "\"") in
  let args =
   match kind_of_term t with
@@ -757,9 +757,9 @@ let unify_relation_class_carrier_with_type env rel t =
       rel
      else
       errorlabstrm "New Morphism"
-       (str "One morphism argument or its output has type " ++ prterm t ++
+       (str "One morphism argument or its output has type " ++ pr_lconstr t ++
         str " but the signature requires an argument of type " ++
-        prterm t')
+        pr_lconstr t')
   | Leibniz None -> Leibniz (Some t)
   | Relation rel -> Relation (unify_relation_carrier_with_type env rel t)
 
@@ -837,8 +837,8 @@ let new_morphism m signature id hook =
       None ->
        if args_ty = [] then
         errorlabstrm "New Morphism"
-         (str "The term " ++ prterm m ++ str " has type " ++
-          prterm typeofm ++ str " that is not a product.") ;
+         (str "The term " ++ pr_lconstr m ++ str " has type " ++
+          pr_lconstr typeofm ++ str " that is not a product.") ;
        ignore (check_is_dependent 0 args_ty output) ;
        let args =
         List.map
@@ -851,8 +851,8 @@ let new_morphism m signature id hook =
        let number_of_quantifiers = args_ty_len - number_of_arguments in
        if number_of_quantifiers < 0 then
         errorlabstrm "New Morphism"
-         (str "The morphism " ++ prterm m ++ str " has type " ++
-          prterm typeofm ++ str " that attends at most " ++ int args_ty_len ++
+         (str "The morphism " ++ pr_lconstr m ++ str " has type " ++
+          pr_lconstr typeofm ++ str " that attends at most " ++ int args_ty_len ++
           str " arguments. The signature that you specified requires " ++
           int number_of_arguments ++ str " arguments.")
        else
@@ -869,7 +869,7 @@ let new_morphism m signature id hook =
             rel, unify_relation_class_carrier_with_type env rel real_t
           with Not_found ->
            errorlabstrm "Add Morphism"
-            (str "Not a valid signature: " ++ prterm t ++
+            (str "Not a valid signature: " ++ pr_lconstr t ++
              str " is neither a registered relation nor the Leibniz " ++
              str " equality.")
          in
@@ -976,7 +976,7 @@ let check_eq env a_quantifiers_rev a aeq =
    (is_conv env Evd.empty (Typing.type_of env Evd.empty aeq) typ)
  then
   errorlabstrm "Add Relation Class"
-   (prterm aeq ++ str " should have type (" ++ prterm typ ++ str ")")
+   (pr_lconstr aeq ++ str " should have type (" ++ pr_lconstr typ ++ str ")")
 
 let check_property env a_quantifiers_rev a aeq strprop coq_prop t =
  if
@@ -1070,7 +1070,7 @@ let int_add_relation id a aeq refl sym trans =
       rel_X_relation_class = current_constant id;
       rel_Xreflexive_relation_class = current_constant id_precise } in
   Lib.add_anonymous_leaf (relation_to_obj (aeq, aeq_rel)) ;
-  Options.if_verbose ppnl (prterm aeq ++ str " is registered as a relation");
+  Options.if_verbose ppnl (pr_lconstr aeq ++ str " is registered as a relation");
   match trans with
      None -> ()
    | Some trans ->
@@ -1233,7 +1233,7 @@ let relation_class_that_matches_a_constr caller_name new_goals hypt =
   function
      []
    | [_] ->
-      errorlabstrm caller_name (prterm hypt ++
+      errorlabstrm caller_name (pr_lconstr hypt ++
        str " is not a registered relation.")
    | [_;_] -> []
    | he::tl -> he::(get_all_but_last_two tl) in
@@ -1257,7 +1257,7 @@ let relation_class_that_matches_a_constr caller_name new_goals hypt =
   with Not_found ->
    if l = [] then
     errorlabstrm caller_name
-     (prterm (mkApp (aeq, Array.of_list all_aeq_args)) ++
+     (pr_lconstr (mkApp (aeq, Array.of_list all_aeq_args)) ++
       str " is not a registered relation.")
    else
     let last,others = Util.list_sep_last l in
@@ -1309,7 +1309,7 @@ let pr_new_goals i c =
     else
      (pr_fnl () ++ str "   " ++
        prlist_with_sep (fun () -> str "\n   ")
-        (fun c -> str " ... |- " ++ prterm c) glc))
+        (fun c -> str " ... |- " ++ pr_lconstr c) glc))
 
 (* given a list of constr_with_marks, it returns the list where
    constr_with_marks than open more goals than simpler ones in the list
@@ -1527,7 +1527,7 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
              errorlabstrm "Setoid_replace"
               (str "Rewriting in a product A -> B is possible only when A " ++
                str "is a proposition (i.e. A is of type Prop). The type " ++
-               prterm c1 ++ str " has type " ++ prterm typeofc1 ++
+               pr_lconstr c1 ++ str " has type " ++ pr_lconstr typeofc1 ++
                str " that is not convertible to Prop.")
             else
              aux output_relation output_direction
@@ -1536,7 +1536,7 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
       | _ ->
         if occur_term t in_c then
          errorlabstrm "Setoid_replace"
-          (str "Trying to replace " ++ prterm t ++ str " in " ++ prterm in_c ++
+          (str "Trying to replace " ++ pr_lconstr t ++ str " in " ++ pr_lconstr in_c ++
            str " that is not an applicative context.")
         else
          [ToKeep (in_c,output_relation,output_direction)]
@@ -1555,7 +1555,7 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
   match res' with
      [] when res = [] ->
       errorlabstrm "Setoid_rewrite"
-       (str "Either the term " ++ prterm t ++ str " that must be " ++
+       (str "Either the term " ++ pr_lconstr t ++ str " that must be " ++
         str "rewritten occurs in a covariant position or the goal is not " ++
         str "made of morphism applications only. You can replace only " ++
         str "occurrences that are in a contravariant position and such that " ++
@@ -1835,7 +1835,7 @@ let setoid_replace relation c1 c2 ~new_goals gl =
         with
          Not_found ->
           errorlabstrm "Setoid_rewrite"
-           (prterm rel ++ str " is not a registered relation."))
+           (pr_lconstr rel ++ str " is not a registered relation."))
     | None ->
        match default_relation_for_carrier (pf_type_of gl c1) with
           Relation sa -> sa

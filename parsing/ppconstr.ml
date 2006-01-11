@@ -20,6 +20,8 @@ open Topconstr
 open Term
 open Pattern
 open Rawterm
+open Constrextern
+open Termops
 (*i*)
 
 let sep_p = fun _ -> str"."
@@ -124,6 +126,10 @@ let pr_sort = function
   | RProp Term.Pos -> str "Set"
   | RType u -> str "Type" ++ pr_opt pr_universe u
 
+let pr_id = pr_id
+let pr_name = pr_name
+let pr_qualid = pr_qualid
+
 let pr_expl_args pr (a,expl) =
   match expl with
   | None -> pr (lapp,L) a
@@ -139,12 +145,6 @@ let pr_opt_type pr = function
 let pr_opt_type_spc pr = function
   | CHole _ -> mt ()
   | t ->  str " :" ++ pr_sep_com (fun()->brk(1,2)) (pr ltop) t
-
-let pr_id = pr_id
-
-let pr_name = function
-  | Anonymous -> str"_"
-  | Name id -> pr_id id
 
 let pr_lident (b,_ as loc,id) =
   if loc <> dummy_loc then
@@ -263,8 +263,6 @@ let rec extract_lam_binders = function
       LocalRawAssum (nal,t) :: bl, c
   | c -> [], c
     
-let pr_global vars ref = pr_global_env vars ref
-
 let split_lambda = function
   | CLambdaN (loc,[[na],t],c) -> (na,t,c)
   | CLambdaN (loc,([na],t)::bl,c) -> (na,t,CLambdaN(loc,bl,c))
@@ -588,20 +586,6 @@ and pr_dangling_with_for sep inherited a =
 
 let pr = pr mt
 
-let rec abstract_constr_expr c = function
-  | [] -> c
-  | LocalRawDef (x,b)::bl -> mkLetInC(x,b,abstract_constr_expr c bl)
-  | LocalRawAssum (idl,t)::bl ->
-      List.fold_right (fun x b -> mkLambdaC([x],t,b)) idl
-      (abstract_constr_expr c bl)
-      
-let rec prod_constr_expr c = function
-  | [] -> c
-  | LocalRawDef (x,b)::bl -> mkLetInC(x,b,prod_constr_expr c bl)
-  | LocalRawAssum (idl,t)::bl ->
-      List.fold_right (fun x b -> mkProdC([x],t,b)) idl
-      (prod_constr_expr c bl)
-
 let rec strip_context n iscast t =
   if n = 0 then
     [], if iscast then match t with CCast (_,c,_,_) -> c | _ -> t else t
@@ -631,33 +615,14 @@ let rec strip_context n iscast t =
     | CLetIn (_,na,b,c) -> 
 	let bl', c = strip_context (n-1) iscast c in
 	LocalRawDef (na,b) :: bl', c
-    | _ -> anomaly "ppconstrnew: strip_context"
+    | _ -> anomaly "strip_context"
 
-let pr_constr_env env c = pr lsimple c
-let pr_lconstr_env env c = pr ltop c
-let pr_constr c = pr_constr_env (Global.env()) c
-let pr_lconstr c = pr_lconstr_env (Global.env()) c
+let pr_constr_expr c = pr lsimple c
+let pr_lconstr_expr c = pr ltop c
+let pr_pattern_expr c = pr lsimple c
+let pr_cases_pattern_expr = pr_patt ltop
 
 let pr_binders = pr_undelimited_binders (pr ltop)
-
-let pr_lconstr_env_n env iscast bl c = bl, pr ltop c
-let pr_type c = pr ltop c
-
-let transf_pattern env c =
-  if Options.do_translate() then
-    Constrextern.extern_rawconstr (Termops.vars_of_env env)
-      (Constrintern.for_grammar
-	(Constrintern.intern_gen false ~allow_soapp:true Evd.empty env) c)
-  else c
-
-let pr_pattern c = pr lsimple (transf_pattern (Global.env()) c)
-
-let pr_rawconstr_env env c =
-  pr_constr (Constrextern.extern_rawconstr (Termops.vars_of_env env) c)
-let pr_lrawconstr_env env c =
-  pr_lconstr (Constrextern.extern_rawconstr (Termops.vars_of_env env) c)
-
-let pr_cases_pattern = pr_patt ltop
 
 let pr_pattern_occ prc = function
     ([],c) -> prc c
@@ -668,10 +633,6 @@ let pr_unfold_occ pr_ref = function
     ([],qid) -> pr_ref qid
   | (nl,qid) -> hov 1 (pr_ref qid ++ spc() ++ str"at " ++
                        hov 0 (prlist_with_sep spc int nl))
-
-let pr_qualid qid = str (string_of_qualid qid)
-
-let pr_arg pr x = spc () ++ pr x
 
 let pr_red_flag pr r =
   (if r.rBeta then pr_arg str "beta" else mt ()) ++
@@ -726,17 +687,3 @@ let rec pr_may_eval test prc prlc pr2 = function
   | ConstrTerm c -> prc c
 
 let pr_may_eval a = pr_may_eval (fun _ -> false) a
-
-(** constr printers *)
-
-let pr_term_env env  c = pr lsimple (Constrextern.extern_constr false env c)
-let pr_lterm_env env c = pr ltop    (Constrextern.extern_constr false env c)
-let pr_term  c = pr_term_env  (Global.env()) c
-let pr_lterm c = pr_lterm_env (Global.env()) c
-
-let pr_constr_pattern_env env c =
-  pr lsimple (Constrextern.extern_pattern env Termops.empty_names_context c)
-
-let pr_constr_pattern t =
-  pr lsimple
-    (Constrextern.extern_pattern (Global.env()) Termops.empty_names_context t)

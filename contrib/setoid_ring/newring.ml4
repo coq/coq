@@ -31,6 +31,7 @@ open Ppconstr
 open Mod_subst
 open Tacinterp
 open Libobject
+open Printer
 
 (****************************************************************************)
 (* Library linking *)
@@ -346,18 +347,18 @@ let default_ring_equality is_semi (r,add,mul,opp,req) =
              let op_morph =
                op_morph r add mul opp req add_m.lem mul_m.lem opp_m.lem in
              msgnl
-               (str"Using setoid \""++pr_term rel.rel_aeq++str"\""++spc()++  
-               str"and morphisms \""++pr_term add_m.morphism_theory++
-               str"\","++spc()++ str"\""++pr_term mul_m.morphism_theory++
-               str"\""++spc()++str"and \""++pr_term opp_m.morphism_theory++
+               (str"Using setoid \""++pr_constr rel.rel_aeq++str"\""++spc()++  
+               str"and morphisms \""++pr_constr add_m.morphism_theory++
+               str"\","++spc()++ str"\""++pr_constr mul_m.morphism_theory++
+               str"\""++spc()++str"and \""++pr_constr opp_m.morphism_theory++
                str"\"");
              op_morph)
           else
             (msgnl
-              (str"Using setoid \""++pr_term rel.rel_aeq++str"\"" ++ spc() ++  
-               str"and morphisms \""++pr_term add_m.morphism_theory++
+              (str"Using setoid \""++pr_constr rel.rel_aeq++str"\"" ++ spc() ++  
+               str"and morphisms \""++pr_constr add_m.morphism_theory++
                str"\""++spc()++str"and \""++
-               pr_term mul_m.morphism_theory++str"\"");
+               pr_constr mul_m.morphism_theory++str"\"");
             op_smorph r add mul req add_m.lem mul_m.lem) in
         (setoid,op_morph)
 
@@ -484,7 +485,7 @@ let ring gl =
     with Not_found ->
       errorlabstrm "ring"
         (str"cannot find a declared ring structure for equality"++
-         spc()++str"\""++pr_term req++str"\"") in
+         spc()++str"\""++pr_constr req++str"\"") in
   let req = carg e.ring_req in
   let lemma1 = carg e.ring_lemma1 in
   let lemma2 = carg e.ring_lemma2 in
@@ -503,7 +504,7 @@ let ring_rewrite rl =
     with Not_found ->
       errorlabstrm "ring"
         (str"cannot find a declared ring structure over"++
-         spc()++str"\""++pr_term ty++str"\"") in
+         spc()++str"\""++pr_constr ty++str"\"") in
   let rl = List.fold_right (fun x l -> lapp coq_cons [|ty;x;l|]) rl
     (lapp coq_nil [|ty|]) in
   Tacinterp.eval_tactic

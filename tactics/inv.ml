@@ -52,7 +52,7 @@ let check_no_metas clenv ccl =
       (str ("Cannot find an instantiation for variable"^
 	       (if List.length metas = 1 then " " else "s ")) ++
 	 prlist_with_sep pr_coma pr_name metas
-	 (* ajouter "in " ++ prterm ccl mais il faut le bon contexte *))
+	 (* ajouter "in " ++ pr_lconstr ccl mais il faut le bon contexte *))
 
 let var_occurs_in_pf gl id =
   let env = pf_env gl in

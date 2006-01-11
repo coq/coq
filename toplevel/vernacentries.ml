@@ -71,9 +71,9 @@ let show_proof () =
     prlist_with_sep pr_spc pr_int (List.rev cursor) ++ fnl () ++
     str"Subgoals" ++ fnl () ++
     prlist (fun (mv,ty) -> Nameops.pr_meta mv ++ str" -> " ++ 
-      prtype ty ++ fnl ())
+      pr_ltype ty ++ fnl ())
       meta_types
-    ++ str"Proof: " ++ prterm (Evarutil.nf_evar evc pfterm))
+    ++ str"Proof: " ++ pr_lconstr (Evarutil.nf_evar evc pfterm))
 
 let show_node () =
   let pts = get_pftreestate () in
@@ -638,7 +638,7 @@ let vernac_declare_implicits locqid = function
 
 let vernac_reserve idl c =
   let t = Constrintern.interp_type Evd.empty (Global.env()) c in
-  let t = Detyping.detype (false,Global.env()) [] [] t in
+  let t = Detyping.detype false [] [] t in
   List.iter (fun id -> Reserve.declare_reserved_type id t) idl
 
 let make_silent_if_not_pcoq b =
@@ -882,11 +882,11 @@ let vernac_print = function
   | PrintHintDb -> Auto.print_searchtable ()
   | PrintSetoids -> Setoid_replace.print_setoids()
   | PrintScopes ->
-      pp (Notation.pr_scopes (Constrextern.without_symbols pr_rawterm))
+      pp (Notation.pr_scopes (Constrextern.without_symbols pr_lrawconstr))
   | PrintScope s ->
-      pp (Notation.pr_scope (Constrextern.without_symbols pr_rawterm) s)
+      pp (Notation.pr_scope (Constrextern.without_symbols pr_lrawconstr) s)
   | PrintVisibility s ->
-      pp (Notation.pr_visibility (Constrextern.without_symbols pr_rawterm) s)
+      pp (Notation.pr_visibility (Constrextern.without_symbols pr_lrawconstr) s)
   | PrintAbout qid -> msgnl (print_about qid)
   | PrintImplicit qid -> msg (print_impargs qid)
 
@@ -928,7 +928,7 @@ let vernac_locate = function
   | LocateModule qid -> print_located_module qid
   | LocateFile f -> locate_file f
   | LocateNotation ntn ->
-      ppnl (Notation.locate_notation (Constrextern.without_symbols pr_rawterm)
+      ppnl (Notation.locate_notation (Constrextern.without_symbols pr_lrawconstr)
 	(Metasyntax.standardize_locatable_notation ntn))
 
 (********************)

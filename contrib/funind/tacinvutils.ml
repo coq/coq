@@ -21,9 +21,9 @@ open Reductionops
 (*s printing of constr -- debugging *)
 
 (* comment this line to see debug msgs *)
-let msg x = () ;; let prterm c = str ""
+let msg x = () ;; let pr_lconstr c = str ""
   (* uncomment this to see debugging *)
-let prconstr c =  msg (str"  " ++ prterm c ++ str"\n")
+let prconstr c =  msg (str"  " ++ pr_lconstr c ++ str"\n")
 let prlistconstr lc = List.iter prconstr lc
 let prstr s = msg(str s)
 
@@ -31,7 +31,7 @@ let prchr () = msg (str" (ret) \n")
 let prNamedConstr s c = 
   begin
     msg(str "");
-    msg(str(s^"==>\n ") ++ prterm c ++ str "\n<==\n");
+    msg(str(s^"==>\n ") ++ pr_lconstr c ++ str "\n<==\n");
     msg(str "");
   end
 

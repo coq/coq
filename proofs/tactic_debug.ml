@@ -142,9 +142,9 @@ let db_mc_pattern_success debug =
            str "Let us execute the right-hand side part..." ++ fnl())
 
 let pp_match_pattern env = function
-  | Term c -> Term (extern_pattern env (names_of_rel_context env) c)
+  | Term c -> Term (extern_constr_pattern (names_of_rel_context env) c)
   | Subterm (o,c) ->
-    Subterm (o,(extern_pattern env (names_of_rel_context env) c))
+    Subterm (o,(extern_constr_pattern (names_of_rel_context env) c))
 
 (* Prints a failure message for an hypothesis pattern *)
 let db_hyp_pattern_failure debug env (na,hyp) =

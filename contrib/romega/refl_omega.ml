@@ -219,7 +219,7 @@ let print_env_reification env =
       [] -> Printf.printf "  ===============================\n\n"
     | t :: l -> 
 	Printf.printf "  (%c%02d) := " c i;
-	Pp.ppnl (Printer.prterm t);
+	Pp.ppnl (Printer.pr_lconstr t);
 	Pp.flush_all ();
 	loop c (succ i) l in
   print_newline ();

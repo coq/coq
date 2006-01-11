@@ -67,9 +67,9 @@ Pp.ppnl (Pp.str "Problem during the conversion of constr into XML") ;
 Pp.ppnl (Pp.str "ENVIRONMENT:") ;
 Pp.ppnl (Printer.pr_context_of rel_env) ;
 Pp.ppnl (Pp.str "TERM:") ;
-Pp.ppnl (Printer.prterm_env rel_env obj') ;
+Pp.ppnl (Printer.pr_lconstr_env rel_env obj') ;
 Pp.ppnl (Pp.str "RAW-TERM:") ;
-Pp.ppnl (Printer.prterm obj') ;
+Pp.ppnl (Printer.pr_lconstr obj') ;
 Xml.xml_empty "MISSING TERM" [] (*; raise e*)
 *)
 ;;
@@ -120,7 +120,7 @@ in
    with _ ->
 Pp.ppnl (Pp.(++) (Pp.str
 "The_generated_term_is_not_a_subterm_of_the_final_lambda_term")
-(Printer.prterm constr)) ;
+(Printer.pr_lconstr constr)) ;
     None
   in
   let rec aux node old_hyps =

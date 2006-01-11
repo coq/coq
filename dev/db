@@ -1,35 +1,35 @@
 load_printer "gramlib.cma"
 load_printer "printers.cma"
 
-install_printer Top_printers.prid
-install_printer Top_printers.prlab
-install_printer Top_printers.prmsid
-install_printer Top_printers.prmbid
-install_printer Top_printers.prdir
-install_printer Top_printers.prmp
-install_printer Top_printers.prkn
-install_printer Top_printers.prcon
-install_printer Top_printers.prsp
-install_printer Top_printers.prqualid
+install_printer Top_printers.ppid
+install_printer Top_printers.pplab
+install_printer Top_printers.ppmsid
+install_printer Top_printers.ppmbid
+install_printer Top_printers.ppdir
+install_printer Top_printers.ppmp
+install_printer Top_printers.ppkn
+install_printer Top_printers.ppcon
+install_printer Top_printers.ppsp
+install_printer Top_printers.ppqualid
 install_printer Top_printers.ppbigint
 
 install_printer Top_printers.pppattern
-install_printer Top_printers.pprawterm
+install_printer Top_printers.pprawconstr
 
-install_printer Top_printers.ppterm
-install_printer Top_printers.print_uni
-install_printer Top_printers.pp_universes
+install_printer Top_printers.ppconstr
+install_printer Top_printers.ppuni
+install_printer Top_printers.ppuniverses
 install_printer Top_printers.pptype
-install_printer Top_printers.prj
+install_printer Top_printers.ppj
 
-install_printer Top_printers.prgoal
-install_printer Top_printers.prsigmagoal
+install_printer Top_printers.ppgoal
+install_printer Top_printers.ppsigmagoal
 install_printer Top_printers.pproof
-install_printer Top_printers.prevd
-install_printer Top_printers.prclenv
+install_printer Top_printers.ppevd
+install_printer Top_printers.ppclenv
 
 install_printer Top_printers.pptac
-install_printer Top_printers.pr_obj
+install_printer Top_printers.ppobj
 install_printer Top_printers.pploc
                                                   
 

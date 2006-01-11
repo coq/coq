@@ -70,7 +70,7 @@ let print_ref reduce ref =
       let ctx,ccl = Reductionops.splay_prod_assum (Global.env()) Evd.empty typ
       in it_mkProd_or_LetIn ccl ctx 
     else typ in
-  hov 0 (pr_global ref ++ str " :" ++ spc () ++ prtype typ) ++ fnl ()
+  hov 0 (pr_global ref ++ str " :" ++ spc () ++ pr_ltype typ) ++ fnl ()
 
 let print_argument_scopes = function
   | [Some sc] -> str"Argument scope is [" ++ str sc ++ str"]" ++ fnl()
@@ -225,8 +225,8 @@ let print_located_qualid ref =
 (**** Printing declarations and judgments *)
 
 let print_typed_value_in_env env (trm,typ) =
-  (prterm_env env trm ++ fnl () ++
-     str "     : " ++ prtype_env env typ ++ fnl ())
+  (pr_lconstr_env env trm ++ fnl () ++
+     str "     : " ++ pr_ltype_env env typ ++ fnl ())
 
 let print_typed_value x = print_typed_value_in_env (Global.env ()) x
 
@@ -239,20 +239,20 @@ let print_safe_judgment env j =
   print_typed_value_in_env env (trm, typ)
     
 (* To be improved; the type should be used to provide the types in the
-   abstractions. This should be done recursively inside prterm, so that
+   abstractions. This should be done recursively inside pr_lconstr, so that
    the pretty-print of a proposition (P:(nat->nat)->Prop)(P [u]u)
    synthesizes the type nat of the abstraction on u *)
 
 let print_named_def name body typ =
-  let pbody = prterm body in
-  let ptyp = prtype typ in
+  let pbody = pr_lconstr body in
+  let ptyp = pr_ltype typ in
   (str "*** [" ++ str name ++ str " " ++
      hov 0 (str ":=" ++ brk (1,2) ++ pbody ++ spc () ++
 	      str ":" ++ brk (1,2) ++ ptyp) ++
 	   str "]" ++ fnl ())
 
 let print_named_assum name typ =
-  (str "*** [" ++ str name ++ str " : " ++ prtype typ ++ str "]" ++ fnl ())
+  (str "*** [" ++ str name ++ str " : " ++ pr_ltype typ ++ str "]" ++ fnl ())
 
 let print_named_decl (id,c,typ) =
   let s = string_of_id id in
@@ -272,7 +272,7 @@ let print_params env params =
 let print_constructors envpar names types =
   let pc =
     prlist_with_sep (fun () -> brk(1,0) ++ str "| ")
-      (fun (id,c) -> pr_id id ++ str " : " ++ prterm_env envpar c)
+      (fun (id,c) -> pr_id id ++ str " : " ++ pr_lconstr_env envpar c)
       (Array.to_list (array_map2 (fun n t -> (n,t)) names types))
   in 
   hv 0 (str "  " ++ pc)
@@ -295,7 +295,7 @@ let print_one_inductive (sp,tyi) =
   let envpar = push_rel_context params env in
   hov 0 (
     pr_global (IndRef (sp,tyi)) ++ brk(1,4) ++ print_params env params ++
-    str ": " ++ prterm_env envpar arity ++ str " :=") ++
+    str ": " ++ pr_lconstr_env envpar arity ++ str " :=") ++
   brk(0,2) ++ print_constructors envpar cstrnames cstrtypes
 
 let pr_mutual_inductive finite indl =
@@ -319,11 +319,11 @@ let print_section_variable sp =
   print_name_infos (VarRef sp)
 
 let print_body = function
-  | Some lc  -> prterm (Declarations.force lc)
+  | Some lc  -> pr_lconstr (Declarations.force lc)
   | None -> (str"<no body>")
 
 let print_typed_body (val_0,typ) =
-  (print_body val_0 ++ fnl () ++ str "     : " ++ prtype typ ++ fnl ())
+  (print_body val_0 ++ fnl () ++ str "     : " ++ pr_ltype typ ++ fnl ())
 
 let print_constant with_values sep sp =
   let cb = Global.lookup_constant sp in
@@ -333,11 +333,11 @@ let print_constant with_values sep sp =
     match val_0 with 
     | None -> 
 	str"*** [ " ++ 
-	print_basename sp ++ str " : " ++ cut () ++ prtype typ ++ 
+	print_basename sp ++ str " : " ++ cut () ++ pr_ltype typ ++ 
 	str" ]" ++ fnl ()
     | _ -> 
 	print_basename sp ++ str sep ++ cut () ++
-	(if with_values then print_typed_body (val_0,typ) else prtype typ) ++
+	(if with_values then print_typed_body (val_0,typ) else pr_ltype typ) ++
 	fnl ())
 
 let print_constant_with_infos sp =
@@ -349,7 +349,7 @@ let print_syntactic_def sep kn =
   let qid = Nametab.shortest_qualid_of_syndef Idset.empty kn in
   let c = Syntax_def.search_syntactic_definition dummy_loc kn in 
   str "Notation " ++ pr_qualid qid ++ str sep ++ 
-  Constrextern.without_symbols pr_rawterm c ++ fnl ()
+  Constrextern.without_symbols pr_lrawconstr c ++ fnl ()
 
 let print_leaf_entry with_values sep ((sp,kn as oname),lobj) =
   let tag = object_tag lobj in
@@ -545,7 +545,7 @@ let inspect depth =
 
 open Classops
 
-let print_coercion_value v = prterm (get_coercion_value v)
+let print_coercion_value v = pr_lconstr (get_coercion_value v)
 
 let print_class i =
   let cl,_ = class_info_from_index i in
@@ -588,7 +588,7 @@ let print_path_between cls clt =
 
 let print_canonical_projections () =
   prlist_with_sep pr_fnl (fun ((r1,r2),o) -> 
-    pr_global r2 ++ str " <- " ++ pr_global r1 ++ str " ( " ++ prterm o.o_DEF ++ str " )")
+    pr_global r2 ++ str " <- " ++ pr_global r1 ++ str " ( " ++ pr_lconstr o.o_DEF ++ str " )")
     (canonical_projections ())
 
 (*************************************************************************)

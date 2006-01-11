@@ -40,7 +40,7 @@ let not_work_message = "tactic fails to build the inversion lemma, may be becaus
 
 let no_inductive_inconstr env constr =
   (str "Cannot recognize an inductive predicate in " ++ 
-     prterm_env env constr ++
+     pr_lconstr_env env constr ++
      str "." ++ spc () ++ str "If there is one, may be the structure of the arity" ++
      spc () ++ str "or of the type of constructors" ++ spc () ++
      str "is hidden by constant definitions.")
@@ -298,7 +298,7 @@ let lemInv id c gls =
     |  UserError (a,b) -> 
 	 errorlabstrm "LemInv" 
 	   (str "Cannot refine current goal with the lemma " ++ 
-	      prterm_env (Global.env()) c) 
+	      pr_lconstr_env (Global.env()) c) 
 
 let lemInv_gen id c = try_intros_until (fun id -> lemInv id c) id
 

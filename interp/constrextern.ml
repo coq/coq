@@ -458,6 +458,9 @@ and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
       with
 	  No_match -> extern_symbol_pattern allscopes vars t rules
 
+let extern_cases_pattern vars p = 
+  extern_cases_pattern_in_scope (None,Notation.current_scopes()) vars p
+
 (**********************************************************************)
 (* Externalising applications *)
 
@@ -839,14 +842,11 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
       with
 	  No_match -> extern_symbol allscopes vars t rules
 
-let extern_rawconstr vars c = 
+let extern_rawconstr vars c =
   extern false (None,Notation.current_scopes()) vars c
 
 let extern_rawtype vars c =
   extern_typ (None,Notation.current_scopes()) vars c
-
-let extern_cases_pattern vars p = 
-  extern_cases_pattern_in_scope (None,Notation.current_scopes()) vars p
 
 (******************************************************************)
 (* Main translation function from constr -> constr_expr *)
@@ -855,7 +855,7 @@ let loc = dummy_loc (* for constr and pattern, locations are lost *)
 
 let extern_constr_gen at_top scopt env t =
   let avoid = if at_top then ids_of_context env else [] in
-  let r = Detyping.detype (at_top,env) avoid (names_of_rel_context env) t in
+  let r = Detyping.detype at_top avoid (names_of_rel_context env) t in
   let vars = vars_of_env env in
   extern (not at_top) (scopt,Notation.current_scopes()) vars r
 
@@ -867,16 +867,16 @@ let extern_constr at_top env t =
 
 let extern_type at_top env t =
   let avoid = if at_top then ids_of_context env else [] in
-  let r = Detyping.detype (at_top,env) avoid (names_of_rel_context env) t in
+  let r = Detyping.detype at_top avoid (names_of_rel_context env) t in
   extern_rawtype (vars_of_env env) r
 
 (******************************************************************)
 (* Main translation function from pattern -> constr_expr *)
 
-let rec raw_of_pat tenv env = function
+let rec raw_of_pat env = function
   | PRef ref -> RRef (loc,ref)
   | PVar id -> RVar (loc,id)
-  | PEvar (n,l) -> REvar (loc,n,Some (array_map_to_list (raw_of_pat tenv env) l))
+  | PEvar (n,l) -> REvar (loc,n,Some (array_map_to_list (raw_of_pat env) l))
   | PRel n ->
       let id = try match lookup_name_of_rel n env with
 	| Name id   -> id
@@ -887,32 +887,35 @@ let rec raw_of_pat tenv env = function
   | PMeta None -> RHole (loc,Evd.InternalHole)
   | PMeta (Some n) -> RPatVar (loc,(false,n))
   | PApp (f,args) ->
-      RApp (loc,raw_of_pat tenv env f,array_map_to_list (raw_of_pat tenv env) args)
+      RApp (loc,raw_of_pat env f,array_map_to_list (raw_of_pat env) args)
   | PSoApp (n,args) ->
       RApp (loc,RPatVar (loc,(true,n)),
-        List.map (raw_of_pat tenv env) args)
+        List.map (raw_of_pat env) args)
   | PProd (na,t,c) ->
-      RProd (loc,na,raw_of_pat tenv env t,raw_of_pat tenv (na::env) c)
+      RProd (loc,na,raw_of_pat env t,raw_of_pat (na::env) c)
   | PLetIn (na,t,c) ->
-      RLetIn (loc,na,raw_of_pat tenv env t, raw_of_pat tenv (na::env) c)
+      RLetIn (loc,na,raw_of_pat env t, raw_of_pat (na::env) c)
   | PLambda (na,t,c) ->
-      RLambda (loc,na,raw_of_pat tenv env t, raw_of_pat tenv (na::env) c)
+      RLambda (loc,na,raw_of_pat env t, raw_of_pat (na::env) c)
   | PCase ((_,cs),typopt,tm,[||]) ->
       if typopt <> None then failwith "TODO: PCase to RCases";
-      RCases (loc,(*(option_app (raw_of_pat tenv env) typopt,*)None,
-         [raw_of_pat tenv env tm,(Anonymous,None)],[])
+      RCases (loc,(*(option_app (raw_of_pat env) typopt,*)None,
+         [raw_of_pat env tm,(Anonymous,None)],[])
   | PCase ((Some ind,cs),typopt,tm,bv) ->
       let avoid = List.fold_right (name_fold (fun x l -> x::l)) env [] in
-      let k = (snd (lookup_mind_specif (Global.env()) ind)).Declarations.mind_nrealargs in
-      Detyping.detype_case false (raw_of_pat tenv env)(raw_of_eqn tenv env)
+      let mib,mip = lookup_mind_specif (Global.env()) ind in
+      let k = mip.Declarations.mind_nrealargs in
+      let nparams = mib.Declarations.mind_nparams in
+      let cstrnargs = mip.Declarations.mind_consnrealargs in
+      Detyping.detype_case false (raw_of_pat env)(raw_of_eqn env)
 	(fun _ _ -> false (* lazy: don't try to display pattern with "if" *))
-	tenv avoid ind cs typopt k tm bv
+	avoid (ind,cs,nparams,cstrnargs,k) typopt tm bv
   | PCase _ -> error "Unsupported case-analysis while printing pattern"
-  | PFix f -> Detyping.detype (false,tenv) [] env (mkFix f)
-  | PCoFix c -> Detyping.detype (false,tenv) [] env (mkCoFix c)
+  | PFix f -> Detyping.detype false [] env (mkFix f)
+  | PCoFix c -> Detyping.detype false [] env (mkCoFix c)
   | PSort s -> RSort (loc,s)
 
-and raw_of_eqn tenv env constr construct_nargs branch =
+and raw_of_eqn env constr construct_nargs branch =
   let make_pat x env b ids =
     let avoid = List.fold_right (name_fold (fun x l -> x::l)) env [] in
     let id = next_name_away_with_default "x" x avoid in
@@ -922,7 +925,7 @@ and raw_of_eqn tenv env constr construct_nargs branch =
     if n=0 then
       (dummy_loc, ids, 
        [PatCstr(dummy_loc, constr, List.rev patlist,Anonymous)],
-       raw_of_pat tenv env b)
+       raw_of_pat env b)
     else
       match b with
 	| PLambda (x,_,b) -> 
@@ -938,6 +941,6 @@ and raw_of_eqn tenv env constr construct_nargs branch =
   in 
   buildrec [] [] env construct_nargs branch
 
-let extern_pattern tenv env pat =
+let extern_constr_pattern env pat =
   extern true (None,Notation.current_scopes()) Idset.empty
-    (raw_of_pat tenv env pat)
+    (raw_of_pat env pat)

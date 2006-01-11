@@ -388,7 +388,7 @@ try
           Acic.CicHash.find terms_to_types tt
 with _ ->
 (*CSC: Warning: it really happens, for example in Ring_theory!!! *)
-Pp.ppnl (Pp.(++) (Pp.str "BUG: this subterm was not visited during the double-type-inference: ") (Printer.prterm tt)) ; assert false
+Pp.ppnl (Pp.(++) (Pp.str "BUG: this subterm was not visited during the double-type-inference: ") (Printer.pr_lconstr tt)) ; assert false
          else
           (* We are already in an inner-type and Coscoy's double *)
           (* type inference algorithm has not been applied.      *)
@@ -402,9 +402,9 @@ Pp.ppnl (Pp.(++) (Pp.str "BUG: this subterm was not visited during the double-ty
         in
 (* Debugging only:
 print_endline "TERMINE:" ; flush stdout ;
-Pp.ppnl (Printer.prterm tt) ; flush stdout ;
+Pp.ppnl (Printer.pr_lconstr tt) ; flush stdout ;
 print_endline "TIPO:" ; flush stdout ;
-Pp.ppnl (Printer.prterm synthesized) ; flush stdout ;
+Pp.ppnl (Printer.pr_lconstr synthesized) ; flush stdout ;
 print_endline "ENVIRONMENT:" ; flush stdout ;
 Pp.ppnl (Printer.pr_context_of env) ; flush stdout ;
 print_endline "FINE_ENVIRONMENT" ; flush stdout ;

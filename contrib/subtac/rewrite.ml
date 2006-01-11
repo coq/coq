@@ -7,7 +7,7 @@ open Term
 open Names
 open Scoq
 open Pp
-open Ppconstr
+open Printer
 open Util
 
 type recursion_info = {
@@ -614,7 +614,7 @@ let subtac recursive id (s, t) =
 	      coqt, coqt', coqt', prog_info, [], []
     in
     trace (str "Rewrite of coqtype done" ++ 
-	     str "coqtype' = " ++ pr_term coqtype');
+	     str "coqtype' = " ++ pr_constr coqtype');
     let dterm, dtype = infer ctx t in
     trace (str "Inference done" ++ spc () ++
 	     str "Infered term: " ++ print_dterm_loc ctx dterm ++ spc () ++
@@ -624,9 +624,9 @@ let subtac recursive id (s, t) =
       fst (rewrite_type prog_info coqctx dtype)
     in
     trace (str "Rewrite done" ++ spc () ++
-	     str "Inferred Coq term:" ++ pr_term dterm' ++ spc () ++
-	     str "Inferred Coq type:" ++ pr_term dtype' ++ spc () ++
-	     str "Rewritten Coq type:" ++ pr_term coqtype');
+	     str "Inferred Coq term:" ++ pr_constr dterm' ++ spc () ++
+	     str "Inferred Coq type:" ++ pr_constr dtype' ++ spc () ++
+	     str "Rewritten Coq type:" ++ pr_constr coqtype');
     let coercespec = coerce prog_info coqctx dtype' coqtype' in
     trace (str "Specs coercion successfull");
     let realt = app_opt coercespec dterm' in

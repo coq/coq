@@ -20,6 +20,7 @@ open Libnames
 open Pattern
 open Ppextend
 open Ppconstr
+open Printer
 
 let pr_global x = Nametab.pr_global_env Idset.empty x
 
@@ -919,9 +920,9 @@ let drop_env f _env = f
 
 let rec raw_printers =
     (pr_raw_tactic_level, 
-     drop_env pr_constr,
-     drop_env pr_lconstr,
-     pr_pattern,
+     drop_env pr_constr_expr,
+     drop_env pr_lconstr_expr,
+     pr_pattern_expr,
      drop_env pr_reference,
      drop_env pr_reference,
      pr_reference,
@@ -958,8 +959,8 @@ and pr_glob_match_rule env t =
 let ((pr_tactic_level:Environ.env -> tolerability -> Proof_type.tactic_expr -> std_ppcmds),_) =
   make_pr_tac
     (pr_glob_tactic_level,
-     pr_term_env,
-     pr_lterm_env,
+     pr_constr_env,
+     pr_lconstr_env,
      pr_constr_pattern,
      pr_evaluable_reference_env,
      pr_inductive,
@@ -976,10 +977,8 @@ let _ = Tactic_debug.set_tactic_printer
   (fun x -> pr_glob_tactic (Global.env()) x)
 
 let _ = Tactic_debug.set_match_pattern_printer
-  (fun env hyp ->
-    pr_match_pattern
-      (Printer.pr_pattern_env env (Termops.names_of_rel_context env)) hyp)
+  (fun env hyp -> pr_match_pattern (pr_constr_pattern_env env) hyp)
 
 let _ = Tactic_debug.set_match_rule_printer
   (fun rl ->
-    pr_match_rule false (pr_glob_tactic (Global.env())) Printer.pr_pattern rl)
+    pr_match_rule false (pr_glob_tactic (Global.env())) pr_constr_pattern rl)

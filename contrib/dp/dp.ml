@@ -172,7 +172,7 @@ let rec_names_for c =
        | Name id -> 
 	   let c' = Names.make_con mp dp (label_of_id id) in
 	   ignore (Global.lookup_constant c');
-	   msgnl (Ppconstr.pr_term (mkConst c'));
+	   msgnl (Printer.pr_constr (mkConst c'));
 	   c'
        | Anonymous ->
 	   raise Not_found)

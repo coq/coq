@@ -205,7 +205,7 @@ let make_apply_entry env sigma (eapply,verbose) name (c,cty) =
         in 
 	if eapply & (nmiss <> 0) then begin
           if verbose then 
-	    warn (str "the hint: eapply " ++ prterm c ++
+	    warn (str "the hint: eapply " ++ pr_lconstr c ++
 		  str " will only be used by eauto"); 
           (hd,
            { hname = name;
@@ -231,7 +231,7 @@ let make_resolves env sigma name eap (c,cty) =
       [make_exact_entry; make_apply_entry env sigma eap]
   in 
   if ents = [] then 
-    errorlabstrm "Hint" (prterm c ++ spc () ++ str "cannot be used as a hint");
+    errorlabstrm "Hint" (pr_lconstr c ++ spc () ++ str "cannot be used as a hint");
   ents
 
 (* used to add an hypothesis to the local hint database *)
@@ -476,11 +476,11 @@ let add_hints local dbnames0 h =
 
 let fmt_autotactic =
   function
-  | Res_pf (c,clenv) -> (str"apply " ++ prterm c)
-  | ERes_pf (c,clenv) -> (str"eapply " ++ prterm c)
-  | Give_exact c -> (str"exact " ++ prterm c)
+  | Res_pf (c,clenv) -> (str"apply " ++ pr_lconstr c)
+  | ERes_pf (c,clenv) -> (str"eapply " ++ pr_lconstr c)
+  | Give_exact c -> (str"exact " ++ pr_lconstr c)
   | Res_pf_THEN_trivial_fail (c,clenv) -> 
-      (str"apply " ++ prterm c ++ str" ; trivial")
+      (str"apply " ++ pr_lconstr c ++ str" ; trivial")
   | Unfold_nth c -> (str"unfold " ++  pr_evaluable_reference c)
   | Extern tac -> 
       (str "(external) " ++ Pptactic.pr_glob_tactic (Global.env()) tac)

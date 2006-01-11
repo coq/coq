@@ -490,7 +490,7 @@ let context operation path (t : constr) =
       | ((P_TYPE :: p), LetIn (n,b,t,c)) ->
 	  (mkLetIn (n,b,loop i p t,c))
       | (p, _) -> 
-	  ppnl (Printer.prterm t);
+	  ppnl (Printer.pr_lconstr t);
 	  failwith ("abstract_path " ^ string_of_int(List.length p)) 
   in
   loop 1 path t
@@ -511,7 +511,7 @@ let occurence path (t : constr) =
     | ((P_TYPE :: p), Lambda (n,term,c)) -> loop p term
     | ((P_TYPE :: p), LetIn (n,b,term,c)) -> loop p term
     | (p, _) -> 
-	ppnl (Printer.prterm t);
+	ppnl (Printer.pr_lconstr t);
 	failwith ("occurence " ^ string_of_int(List.length p)) 
   in
   loop path t
@@ -1564,7 +1564,7 @@ let rec decidability gl t =
           | Kapp(Nat,[]) ->  mkApp (Lazy.force coq_dec_eq_nat, [| t1;t2 |])
           | _ -> errorlabstrm "decidability" 
 		(str "Omega: Can't solve a goal with equality on " ++ 
-		   Printer.prterm typ)
+		   Printer.pr_lconstr typ)
 	end
     | Kapp(Zne,[t1;t2]) -> mkApp (Lazy.force coq_dec_Zne, [| t1;t2 |])
     | Kapp(Zle,[t1;t2]) -> mkApp (Lazy.force coq_dec_Zle, [| t1;t2 |])
