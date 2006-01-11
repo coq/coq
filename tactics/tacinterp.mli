@@ -97,7 +97,7 @@ val intern_hyp :
 val subst_genarg :
   substitution -> glob_generic_argument -> glob_generic_argument
 
-val subst_rawconstr :
+val subst_rawconstr_and_expr :
   substitution -> rawconstr_and_expr -> rawconstr_and_expr
 
 (* Interprets any expression *)

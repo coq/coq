@@ -54,9 +54,9 @@ let pr_rawc _prc _prlc _prtac raw = Printer.pr_rawconstr raw
 
 let interp_raw _ _ (t,_) = t
 
-let glob_raw ist a = Tacinterp.intern_constr ist a
+let glob_raw = Tacinterp.intern_constr
 
-let subst_raw subst arawc = Tacinterp.subst_rawconstr subst arawc
+let subst_raw = Tacinterp.subst_rawconstr_and_expr
 
 ARGUMENT EXTEND raw
     TYPED AS rawconstr
