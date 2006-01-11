@@ -19,13 +19,7 @@ let id_ord = Pervasives.compare
 
 let id_of_string s = String.copy s
 
-let map_ident id =
-  if Options.do_translate() then
-    match id with
-        "fix" -> "Fix"
-      | _ -> id
-  else id
-let string_of_id id = String.copy (map_ident id)
+let string_of_id id = String.copy id
 
 (* Hash-consing of identifier *)
 module Hident = Hashcons.Make(
