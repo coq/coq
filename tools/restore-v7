@@ -1,9 +1,0 @@
-#!/bin/sh
-
-echo Restoring v7 files from directory v7
-v7files=`find v7 -name \*.v`
-for i in $v7files; do
-  j=`echo $i | sed -e "s@^v7/@@"`
-  echo Restoring $i from v7
-  cp -f $i $j
-done
