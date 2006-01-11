@@ -175,7 +175,7 @@ and e_my_find_search db_list local_db hdc concl =
       list_map_append (Hint_db.map_auto (hdc,concl)) (local_db::db_list)
   in 
   let tac_of_hint = 
-    fun ({pri=b; pat = p; code=t} as patac) -> 
+    fun ({pri=b; pat = p; code=t} as _patac) -> 
       (b, 
        let tac =
 	 match t with
@@ -357,7 +357,7 @@ let full_eauto debug n gl =
   let dbnames = stringmap_dom !searchtable in
   let dbnames =  list_subtract dbnames ["v62"] in
   let db_list = List.map (fun x -> Stringmap.find x !searchtable) dbnames in
-  let local_db = make_local_hint_db gl in
+  let _local_db = make_local_hint_db gl in
   tclTRY (e_search_auto debug n db_list) gl
 
 let my_full_eauto n gl = full_eauto false (n,0) gl
@@ -393,7 +393,7 @@ and my_find_search db_list local_db hdc concl =
       	(local_db::db_list)
   in
   List.map 
-    (fun ({pri=b; pat=p; code=t} as patac) -> 
+    (fun ({pri=b; pat=p; code=t} as _patac) -> 
        (b,
 	match t with
 	  | Res_pf (term,cl)  -> unify_resolve (term,cl)
@@ -564,7 +564,7 @@ let blast gls =
       open_subgoals = 1;
       goal = g;
       ref = None } in
-     try (let (sgl,v) as res = !blast_tactic gls in
+     try (let (sgl,v) as _res = !blast_tactic gls in
 	  let {it=lg} = sgl in
           if lg = [] 
           then (let pf = v (List.map leaf (sig_it sgl)) in
@@ -586,7 +586,7 @@ let blast gls =
 ;;
 
 let blast_tac display_function = function 
-          | (n::_) as l -> 
+          | (n::_) as _l -> 
                  (function g ->
                     let exp_ast = (blast g) in
                      (display_function exp_ast;

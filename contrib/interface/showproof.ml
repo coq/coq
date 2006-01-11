@@ -197,7 +197,7 @@ let fill_unproved nt l =
 let new_sign osign sign =
     let res=ref [] in
     List.iter (fun (id,c,ty) ->
-		   try (let  (_,_,ty1)= (lookup_named id osign) in
+		   try (let  (_,_,_ty1)= (lookup_named id osign) in
 			())
 		   with Not_found -> res:=(id,c,ty)::(!res))
               sign;
@@ -756,7 +756,7 @@ let rec group_lhyp lh =
 let natural_ghyp (sort,ln,lt) intro =
   let t=List.hd lt in
   let nh=List.length ln in
-  let ns=List.hd ln in
+  let _ns=List.hd ln in
   match sort with
     Nprop -> soit_A_une_proposition nh ln t
   | Ntype -> soit_X_un_element_de_T nh ln t
@@ -1206,7 +1206,7 @@ let rec natural_ntree ig ntree =
 	  | TacExact c -> natural_exact ig lh g gs c ltree
 	  | TacCut c -> natural_cut ig lh g gs c ltree
 	  | TacExtend (_,"CutIntro",[a]) ->
-	      let c = out_gen wit_constr a in
+	      let _c = out_gen wit_constr a in
 	      natural_cutintro ig lh g gs a ltree
 	  | TacCase (c,_) -> natural_case ig lh g gs ge c ltree false
 	  | TacExtend (_,"CaseIntro",[a]) ->
@@ -1430,7 +1430,7 @@ and natural_case ig lh g gs ge arg1 ltree with_intros =
 	 if with_intros
          then (arity_of_constr_of_mind env indf 1)
 	 else 0 in
-       let ici= 1 in
+       let _ici= 1 in
        sph[ (natural_ntree  
                {ihsg=
                  (match (nsort targ1) with
@@ -1459,7 +1459,7 @@ and prod_list_var t =
 and  hd_is_mind t ti =
     try (let env = Global.env() in
          let IndType (indf,targ) = find_rectype env Evd.empty t in
-	 let ncti= Array.length(get_constructors env indf) in
+	 let _ncti= Array.length(get_constructors env indf) in
 	 let (ind,_) = dest_ind_family indf in
          let (mib,mip) = lookup_mind_specif env ind in
 	 (string_of_id mip.mind_typename) = ti)
@@ -1468,7 +1468,7 @@ and mind_ind_info_hyp_constr indf c =
   let env = Global.env() in
   let (ind,_) = dest_ind_family indf in
   let (mib,mip) = lookup_mind_specif env ind in
-  let p = mib.mind_nparams in
+  let _p = mib.mind_nparams in
   let a = arity_of_constr_of_mind env indf c in
   let lp=ref (get_constructors env indf).(c).cs_args in
   let lr=ref [] in
@@ -1498,8 +1498,8 @@ and natural_elim ig lh g gs ge arg1 ltree with_intros=
  let ncti= Array.length(get_constructors env indf) in
  let (ind,_) = dest_ind_family indf in
  let (mib,mip) = lookup_mind_specif env ind in
- let ti =(string_of_id mip.mind_typename) in
- let type_arg=targ1 (* List.nth targ (mis_index dmi) *) in
+ let _ti =(string_of_id mip.mind_typename) in
+ let _type_arg=targ1 (* List.nth targ (mis_index dmi) *) in
   spv
          [  (natural_lhyp lh ig.ihsg);
              (show_goal2 lh ig g gs "");
@@ -1542,11 +1542,11 @@ and natural_induction ig lh g gs ge arg2 ltree with_intros=
  let arg1= mkVar arg2 in
  let targ1 = prod_head (type_of env Evd.empty arg1) in
  let IndType (indf,targ) = find_rectype env Evd.empty targ1 in
- let ncti= Array.length(get_constructors env indf) in
+ let _ncti= Array.length(get_constructors env indf) in
  let (ind,_) = dest_ind_family indf in
  let (mib,mip) = lookup_mind_specif env ind in
- let ti =(string_of_id mip.mind_typename) in
- let type_arg= targ1(*List.nth targ (mis_index dmi)*) in
+ let _ti =(string_of_id mip.mind_typename) in
+ let _type_arg= targ1(*List.nth targ (mis_index dmi)*) in
 
  let lh1= hyps (List.hd ltree) in (* la liste des hyp jusqu'a n *)
  (* on les enleve des hypotheses des sous-buts *)
@@ -1631,8 +1631,8 @@ and natural_reduce ig lh g gs ge mode la ltree =
 and natural_split ig lh g gs ge la ltree =
   match la with
     [arg] -> 
-      let env= (gLOB ge) in
-      let arg1= (*dbize env*) arg in
+      let _env= (gLOB ge) in
+      let arg1= (*dbize _env*) arg in
       spv
       	[ (natural_lhyp lh ig.ihsg);
           (show_goal2 lh ig g gs ""); 
@@ -1652,9 +1652,9 @@ and natural_split ig lh g gs ge la ltree =
 and natural_generalize ig lh g gs ge la ltree =
   match la with
     [arg] ->
-      let env= (gLOB ge) in
+      let _env= (gLOB ge) in
       let arg1= (*dbize env*) arg in
-      let type_arg=type_of (Global.env()) Evd.empty arg in
+      let _type_arg=type_of (Global.env()) Evd.empty arg in
 (*      let type_arg=type_of_ast ge arg in*)
       spv
       	[ (natural_lhyp lh ig.ihsg);

@@ -135,7 +135,7 @@ let rec sp_print x =
 		   CT_text_path (CT_signed_int_list p);
 		   CT_coerce_ID_to_TEXT (CT_ident "goal");
 		   g] ->
-      let p=(List.map (fun y -> match y with
+      let _p=(List.map (fun y -> match y with
 	                 (CT_coerce_INT_to_SIGNED_INT
 			      (CT_int x)) -> x
 		       | _ -> raise (Failure "sp_print")) p) in
@@ -148,7 +148,7 @@ let rec sp_print x =
 	      CT_text_path (CT_signed_int_list p);
 	      CT_coerce_ID_to_TEXT (CT_ident hyp);
               g]  ->
-      let p=(List.map (fun y -> match y with
+      let _p=(List.map (fun y -> match y with
 	                  (CT_coerce_INT_to_SIGNED_INT
 			      (CT_int x)) -> x
 		       | _ -> raise (Failure "sp_print")) p) in
@@ -158,7 +158,7 @@ let rec sp_print x =
 	      CT_text_path (CT_signed_int_list p);
 	      CT_coerce_ID_to_TEXT (CT_ident hyp);
               g]  ->
-      let p=(List.map (fun y -> match y with
+      let _p=(List.map (fun y -> match y with
                          (CT_coerce_INT_to_SIGNED_INT
 			      (CT_int x)) -> x
 		       | _ -> raise (Failure "sp_print")) p) in

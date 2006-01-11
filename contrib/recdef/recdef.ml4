@@ -176,7 +176,7 @@ let coq_sig = lazy(coq_constant "sig")
 let coq_O = lazy(coq_constant "O")
 let coq_S = lazy(coq_constant "S")
 
-let gt_antirefl = lazy(coq_constant "gt_antirefl")
+let gt_antirefl = lazy(coq_constant "gt_irrefl")
 let lt_n_O = lazy(coq_constant "lt_n_O")
 let lt_n_Sn = lazy(coq_constant "lt_n_Sn")
 
@@ -376,8 +376,8 @@ let rec introduce_all_values func context_fn
 	    (tclTHENS
 	   (simplest_elim (mkApp(mkVar hrec, [|arg|])))
 	   [tclTHENLIST [intros_using [rec_res; hspec];
-			 tac];
-	    tclTHENLIST
+			 tac]; tclIDTAC
+(*	    tclTHENLIST
 	      [list_rewrite true eqs;
 	       List.fold_right
                  (fun proof tac ->
@@ -390,7 +390,8 @@ let rec introduce_all_values func context_fn
                  proofs
                  (fun g ->
                    (msgnl (str "complete proof failed for decreasing call");
-                    msgnl (Printer.pr_goal (sig_it g)); tclFAIL 0 "" g))]]) g)
+                    msgnl (Printer.pr_goal (sig_it g)); tclFAIL 0 "" g))]*)
+]) g)
        
 	   
 let rec_leaf hrec proofs (func:global_reference) eqs expr =
@@ -501,24 +502,26 @@ let whole_start func input_type relation wf_thm proofs =
 	 | Anonymous -> assert false in
      let tac, hrec = (start n_id input_type relation wf_thm g) in
        tclTHEN tac
-           (proveterminate hrec proofs (mkVar f_id) func []
-	     (instantiate_lambda func_body [mkVar f_id;mkVar n_id])) g in
+           (* (observe_tac "debug" *)
+             (fun g ->  try 
+               (proveterminate hrec proofs (mkVar f_id) func []
+	        (instantiate_lambda func_body [mkVar f_id;mkVar n_id])) g with
+               e -> (msgnl (str "debug : found an exception");raise e))(* ) *)g in
 (*     let _ = msgnl(str "exiting whole start") in *)
        v);;
 
 let com_terminate fonctional_ref input_type relation_ast wf_thm_ast
-    thm_name proofs =
+    thm_name proofs hook =
   let (evmap, env) = Command.get_current_context() in
   let (relation:constr)= interp_constr evmap env relation_ast in
   let (wf_thm:constr) = interp_constr evmap env wf_thm_ast in
   let (proofs_constr:constr list) =
       List.map (fun x -> interp_constr evmap env x) proofs in
     (start_proof thm_name
-       (IsGlobal (Proof Lemma)) (Environ.named_context_val env) (hyp_terminates fonctional_ref)
-       (fun _ _ -> ());
+       (IsGlobal (Proof Lemma)) (Environ.named_context_val env)
+         (hyp_terminates fonctional_ref) hook;
      by (whole_start fonctional_ref
-	   input_type relation wf_thm proofs_constr);
-     Command.save_named true);;
+	   input_type relation wf_thm proofs_constr));;
 
 let ind_of_ref = function 
   | IndRef (ind,i) -> (ind,i)
@@ -740,11 +743,12 @@ let recursive_definition f type_of_f r wf proofs eq =
   let functional_id =  add_suffix f "_F" in
   let term_id = add_suffix f "_terminate" in
   let functional_ref = declare_fun functional_id IsDefinition res in
-  let _ = com_terminate functional_ref input_type r wf term_id proofs in
-  let term_ref = Nametab.locate (make_short_qualid term_id) in
+  let hook _ _ =   let term_ref = Nametab.locate (make_short_qualid term_id) in
   let f_ref = declare_f f (IsProof Lemma) input_type term_ref in
 (*  let _ = message "start second proof" in *)
-    com_eqn equation_id functional_ref f_ref term_ref eq;;
+    com_eqn equation_id functional_ref f_ref term_ref eq in
+  com_terminate functional_ref input_type r wf term_id proofs hook
+;;
 
 VERNAC COMMAND EXTEND RecursiveDefinition
   [ "Recursive" "Definition" ident(f) constr(type_of_f) constr(r) constr(wf)

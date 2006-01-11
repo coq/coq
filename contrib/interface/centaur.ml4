@@ -342,12 +342,13 @@ let debug_tac2_pcoq tac =
 	let the_ast = ref tac in
 	let the_path = ref ([] : int list) in
 	try
-	  let result = report_error tac the_goal the_ast the_path [] g in
+	  let _result = report_error tac the_goal the_ast the_path [] g in
 	  (errorlabstrm "DEBUG TACTIC"
 	     (str "no error here " ++ fnl () ++ Printer.pr_goal (sig_it g) ++
 	      fnl () ++ str "the tactic is" ++ fnl () ++
-	      Pptactic.pr_glob_tactic (Global.env()) tac);
-	   result)
+	      Pptactic.pr_glob_tactic (Global.env()) tac) (*
+Caution, this is in the middle of what looks like dead code. ;
+	   result *))
 	with
 	  e ->
 	    match !the_goal with
@@ -553,7 +554,7 @@ let pcoq_search s l =
 
 (* Check sequentially whether the pattern is one of the premises *)
 let rec hyp_pattern_filter pat name a c =
-  let c1 = strip_outer_cast c in
+  let _c1 = strip_outer_cast c in
     match kind_of_term c with
       | Prod(_, hyp, c2) -> 
 	  (try

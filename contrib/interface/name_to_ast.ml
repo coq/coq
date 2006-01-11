@@ -220,7 +220,7 @@ let name_to_ast ref =
 		   | Some c1 -> make_definition_ast name c1 typ [])
 	  with Not_found ->
 	    try
-	      let sp = Nametab.locate_syntactic_definition qid in
+	      let _sp = Nametab.locate_syntactic_definition qid in
 		errorlabstrm "print"
       		  (str "printing of syntax definitions not implemented")
 	    with Not_found ->

@@ -203,7 +203,7 @@ let (imply_elim1: pbp_rule) = function
   Some h, Prod(Anonymous, prem, body), 1::path, f ->
   let clear_names' = if clear_flag then h::clear_names else clear_names in
   let h' = next_global_ident hyp_radix avoid in
-  let str_h' = (string_of_id h') in
+  let _str_h' = (string_of_id h') in
   Some(PbpThens
 	  ([PbpLApply h],
 	   [chain_tactics [make_named_intro h'] (make_clears (h::clear_names));
