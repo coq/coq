@@ -95,7 +95,7 @@ ARCHTAR=$(COQPACKAGE)-$(SYSTEM)-$(ARCH).tar
 ARCHTARGZ=$(COQPACKAGE)-$(SYSTEM)-$(ARCH).tar.gz
 
 tar-gz:
-	rm -f $(TARGZ)
+	rm -f $(COQPACKAGE) $(TARGZ)
 	$(MAKE) $(TARGZ)
 
 $(TARGZ): $(COQPACKAGE)
@@ -264,35 +264,40 @@ COQWINZIP=$(COQWIN).zip
 COQIDEWINZIP=$(COQIDEWIN).zip
 WINBUILDROOT=$(DISTRIBDIR)/windows/build
 WININSTALL=$(DISTRIBDIR)/windows/install
+WINZIPINSTALL=$(DISTRIBDIR)/windows/install-zip
 WINIDEINSTALL=$(DISTRIBDIR)/windows/install-ide
 BINDLLS=../bin
 #BINDLLS=$(WINBUILDROOT)/$(COQPACKAGE)/bin
 
-win: $(COQWINZIP)
+win-zip: $(COQWINZIP)
 
 CONFIGUREDWINCOQ=$(WINBUILDROOT)/$(COQPACKAGE)/config/Makefile
+COMPILEDWINCOQ=$(WINBUILDROOT)/$(COQPACKAGE)/.done
 
 # compiling Coq and Coqide for windows
-$(WINBUILDROOT): $(TARGZ)
-	@echo "Building coq to be installed in C:\coq\bin"
-	@echo "Warning: leading / is removed"
+$(CONFIGUREDWINCOQ): $(TARGZ)
+	@echo "Building coq to be installed in C:\coq"
 	@-rm -fr $(WINBUILDROOT)
 	@-mkdir -p $(WINBUILDROOT)
 	(cd $(WINBUILDROOT) && gunzip -c $(DISTRIBDIR)/$(TARGZ) | tar xf -)
-
-$(CONFIGUREDWINCOQ): $(WINBUILDROOT)
+	@echo "Configuring coq..."
 	(cd $(WINBUILDROOT)/$(COQPACKAGE) &&\
-	 ./configure -bindir /bin -libdir /lib -mandir /man -emacslib /emacs -coqdocdir /latex -reals all -coqide opt)
+	 ./configure -prefix 'C:\coq' -reals all -coqide opt)
 
-$(COQWINZIP): $(CONFIGUREDWINCOQ)
-	@-rm -fr $(WININSTALL)
-	@-mkdir -p $(WININSTALL)
-	@echo "Compiling and installing coq... (see win.log)"
-	(cd $(WINBUILDROOT)/$(COQPACKAGE) &&\
-	 $(MAKECOQ) coq CFLAGS=-mno-cygwin &&\
-	 $(MAKECOQ) COQINSTALLPREFIX=$(WININSTALL) BASETEXDIR=$(WININSTALL) install-coq) > win.log
-	mv $(WINBUILDROOT)/$(COQPACKAGE)/INSTALL.win $(WININSTALL)
-	cd $(WININSTALL); zip -A -r $(DISTRIBDIR)/$(COQWINZIP) *
+$(COMPILEDWINCOQ): $(CONFIGUREDWINCOQ)
+	@echo "Compiling coq, coqide and pcoq..."
+	cd $(WINBUILDROOT)/$(COQPACKAGE) &&\
+	 $(MAKECOQ) world CFLAGS=-mno-cygwin
+	touch $(COMPILEDWINCOQ)
+
+$(COQWINZIP): $(COMPILEDWINCOQ)
+	@-rm -fr $(WINZIPINSTALL)
+	@-mkdir -p $(WINZIPINSTALL)
+	@echo "Installing coq..."
+	cd $(WINBUILDROOT)/$(COQPACKAGE) &&\
+	 $(MAKECOQ) OLDROOT='C:\coq' COQINSTALLPREFIX=$(WINZIPINSTALL) BASETEXDIR=$(WINZIPINSTALL) install &&\
+	 rm -f $(WINZIPINSTALL)/bin/coqtop.exe
+	cd $(WINZIPINSTALL); zip -A -r $(DISTRIBDIR)/$(COQWINZIP) *
 
 ###################################################################
 # Auto-installer for Windows (coq + coqide + dlls package)
@@ -302,6 +307,7 @@ NSISDIR=/cygdrive/c/Program\ Files/NSIS
 
 COQWINAUTOINST=$(COQWIN).exe
 
+win: nsis
 nsis: $(COQWINAUTOINST)
 
 DLLCOPY=windows/dlls/.done
@@ -314,24 +320,23 @@ $(DLLCOPY):
 	cp `cygcheck $(BINDLLS)/*.exe windows/dlls/lib/gtk-2.0/*/loaders/*.dll | grep .dll | grep -v system32 | sort -b -f -u` windows/dlls/bin
 	touch $(DLLCOPY)
 
-$(WININSTALL)/.done: $(CONFIGUREDWINCOQ)
+$(WININSTALL)/.done: $(COMPILEDWINCOQ)
 	@-rm -fr $(WININSTALL)
 	@-mkdir -p $(WININSTALL)
-	@echo "Compiling and installing coq..."
+	@echo "Installing coq..."
 	cd $(WINBUILDROOT)/$(COQPACKAGE) &&\
-	 $(MAKECOQ) coq CFLAGS=-mno-cygwin &&\
-	 $(MAKECOQ) COQINSTALLPREFIX=$(WININSTALL) BASETEXDIR=$(WININSTALL) install-coq &&\
+	 $(MAKECOQ) OLDROOT='C:\coq' COQINSTALLPREFIX=$(WININSTALL) BASETEXDIR=$(WININSTALL) install-coq &&\
 	 rm -f $(WININSTALL)/bin/coqtop.exe
 	touch $(WININSTALL)/.done
 
 $(WINIDEINSTALL)/.done: $(WININSTALL)/.done
 	@-rm -fr $(WINIDEINSTALL)
 	@-mkdir -p $(WINIDEINSTALL)
-	@echo "Compiling and installing coqide..."
+	@echo "Installing coqide..."
 	cd $(WINBUILDROOT)/$(COQPACKAGE) &&\
-	 $(MAKECOQ) coqide CFLAGS=-mno-cygwin &&\
-	 $(MAKECOQ) COQINSTALLPREFIX=$(WINIDEINSTALL) install-coqide &&\
-	 rm -f $(WINIDEINSTALL)/bin/coqide.exe
+	 $(MAKECOQ) OLDROOT='C:\coq' COQINSTALLPREFIX=$(WINIDEINSTALL) install-coqide &&\
+	 rm -f $(WINIDEINSTALL)/bin/coqide.exe &&\
+	 cp ide/.coqide-gtk2rc $(WINIDEINSTALL)/.coqiderc
 	touch $(WINIDEINSTALL)/.done
 
 $(COQWINAUTOINST): $(DLLCOPY) $(WININSTALL)/.done $(WINIDEINSTALL)/.done windows/coq.nsi
@@ -339,7 +344,8 @@ $(COQWINAUTOINST): $(DLLCOPY) $(WININSTALL)/.done $(WINIDEINSTALL)/.done windows
 	mv windows/installer.exe $(COQWINAUTOINST)
 
 clean::
-	rm -fr $(WINBUILDROOT) $(WININSTALL) $(WINIDEINSTALL) windows/dlls
+	rm -fr $(WINBUILDROOT) $(WINZIPINSTALL) $(WININSTALL) \
+	  $(WINIDEINSTALL)  windows/dlls
 
 cleanall::
 	rm -f $(COQWINZIP) $(COQWINAUTOINST) win.log

@@ -1125,11 +1125,11 @@ $(MINICOQ): $(MINICOQCMO)
 # Can be changed for a local installation (to make packages).
 # You must NOT put a "/" at the end (Cygnus for win32 does not like "//").
 
-FULLBINDIR=$(COQINSTALLPREFIX)$(BINDIR)
-FULLCOQLIB=$(COQINSTALLPREFIX)$(COQLIB)
-FULLMANDIR=$(COQINSTALLPREFIX)$(MANDIR)
-FULLEMACSLIB=$(COQINSTALLPREFIX)$(EMACSLIB)
-FULLCOQDOCDIR=$(COQINSTALLPREFIX)$(COQDOCDIR)
+FULLBINDIR=$(BINDIR:'$(OLDROOT)%='$(COQINSTALLPREFIX)%)
+FULLCOQLIB=$(COQLIB:'$(OLDROOT)%='$(COQINSTALLPREFIX)%)
+FULLMANDIR=$(MANDIR:'$(OLDROOT)%='$(COQINSTALLPREFIX)%)
+FULLEMACSLIB=$(EMACSLIB:'$(OLDROOT)%='$(COQINSTALLPREFIX)%)
+FULLCOQDOCDIR=$(COQDOCDIR:'$(OLDROOT)%='$(COQINSTALLPREFIX)%)
 
 install-coq: install-binaries install-library install-coq-info
 install-coq8: install-binaries install-library8 install-coq-info
