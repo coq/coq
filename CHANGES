@@ -14,7 +14,7 @@ Compilation
 Standard library
 
 - A couple of lemmas of ZArith were renamed. This concerns names
-  containing O, which is replaced by 0.
+  containing O (the letter), which is replaced by 0 (the number).
 
 Bug fixes
 
