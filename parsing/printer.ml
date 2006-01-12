@@ -371,3 +371,8 @@ let pr_prim_rule = function
 
   | Rename (id1,id2) ->
       (str "rename " ++ pr_id id1 ++ str " into " ++ pr_id id2)
+
+(* Backwards compatibility *)
+
+let prterm = pr_lconstr
+
