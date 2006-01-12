@@ -517,6 +517,14 @@ case $ARCH in
    	ESCCOQDOCDIR=`echo $COQDOCDIR |sed -e 's|\\\|\\\\\\\|g'`
    	ESCCAMLP4BIN=`echo $CAMLP4BIN |sed -e 's|\\\|\\\\\\\|g'`
 	;;
+    *)
+        ESCCOQTOP="$COQTOP"
+	ESCBINDIR="$BINDIR"
+	ESCLIBDIR="$LIBDIR"
+  	ESCMANDIR="$MANDIR"
+   	ESCEMACSLIB="$EMACSLIB"
+   	ESCCOQDOCDIR="$COQDOCDIR"
+   	ESCCAMLP4BIN="$CAMLP4BIN" ;;
 esac
 
 sed -e "s|LOCALINSTALLATION|$local|" \
