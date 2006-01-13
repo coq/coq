@@ -95,7 +95,7 @@ ARCHTAR=$(COQPACKAGE)-$(SYSTEM)-$(ARCH).tar
 ARCHTARGZ=$(COQPACKAGE)-$(SYSTEM)-$(ARCH).tar.gz
 
 tar-gz:
-	rm -f $(COQPACKAGE) $(TARGZ)
+	rm -rf $(COQPACKAGE) $(TARGZ)
 	$(MAKE) $(TARGZ)
 
 $(TARGZ): $(COQPACKAGE)
