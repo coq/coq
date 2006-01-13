@@ -36,7 +36,7 @@ bindir_spec=no
 libdir_spec=no
 mandir_spec=no
 emacslib_spec=no
-emacs_spec=no
+#emacs_spec=no
 coqdocdir_spec=no
 reals_opt=no
 reals=all
@@ -141,6 +141,8 @@ case $ARCH in
     win32) EXE=".exe";;
     *) EXE=""
 esac
+
+# strip command
 
 case $ARCH in
     win32)
@@ -283,6 +285,7 @@ fi
 
 ######################################
 # mktexlsr
+
 #MKTEXLSR=`which mktexlsr`
 #case $MKTEXLSR in
 #    "") MKTEXLSR=true;;
@@ -303,11 +306,11 @@ esac
 
 case $ARCH in
   win32)
-	 bindir_def=/cygdrive/c/coq/bin
-	 libdir_def=/cygdrive/c/coq/lib
-	 mandir_def=/cygdrive/c/coq/man
-	 emacslib_def=/cygdrive/c/coq/emacs
-         coqdocdir_def=/cygdrive/c/coq/latex;;
+	 bindir_def='C:\coq\bin'
+	 libdir_def='C:\coq\lib'
+	 mandir_def='C:\coq\man'
+	 emacslib_def='C:\coq\emacs'
+         coqdocdir_def='C:\coq\latex';;
   *)
 	 bindir_def=/usr/local/bin
 	 libdir_def=/usr/local/lib/coq
