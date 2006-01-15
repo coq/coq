@@ -327,8 +327,9 @@ let parse_226_tail tk = parser
       t = special (progress_special c3 (progress_special c2 
 	(progress_special '\226' tk))) >] ->
       TokSymbol t
-  | [< len = ident_tail (store 0 '\226') >] ->
-      TokIdent (get_buff len)
+  | [< '_; '_ >] ->
+      (* Unsupported utf-8 code *)
+      TokSymbol None
 
 
 (* Parse what follows a dot *)
