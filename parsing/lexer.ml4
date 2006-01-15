@@ -82,16 +82,19 @@ let check_ident str =
   let rec loop_id = parser
     | [< ' ('$' | 'a'..'z' | 'A'..'Z' | '0'..'9' | ''' | '_'); s >] ->
         loop_id s
-    (* Greek utf-8 letters [CE80-CEBF and CF80-CFBF] (CE=206; BF=191) *)
-    | [< ' ('\206' | '\207'); ' ('\128'..'\191'); s >] -> loop_id s
-    | [< ''\226'; 'c2; 'c3; s >] ->
+    (* utf-8 Greek letters U0380-03FF *)
+    | [< ' ('\xCE' | '\xCF'); ' ('\x80'..'\xBF'); s >] -> loop_id s
+    | [< ''\xE2'; 'c2; 'c3; s >] ->
 	  (match c2, c3 with
-	      (* utf8 letter-like unicode 2100-214F *) 
-	    | (('\132', '\128'..'\191') | ('\133', '\128'..'\143')) ->
+	      (* utf-8 letter-like U2100-214F *)
+	    | ( ('\x84', '\x80'..'\xBF')
+	      | ('\x85', '\x80'..'\x8F')
+	      (* utf-8 subscript U2080-2089 *) 
+	      | ('\x82', '\x80'..'\x89')) ->
                 loop_id s 
-		(* utf8 symbols (see [parse_226_tail]) *)
-	    | (('\134'..'\143' | '\152'..'\155'
-               | '\164'..'\165' | '\168'..'\171'),_) ->
+	      (* utf-8 symbols (see [parse_226_tail]) *)
+	    | (('\x86'..'\x8F' | '\x94'..'\x9B'
+               | '\xA4'..'\xA5' | '\xA8'..'\xAB'),_) ->
 		bad_token str
 	    | _ -> 
 		bad_token str)
@@ -169,11 +172,23 @@ let get_buff len = String.sub !buff 0 len
 let rec ident_tail len = parser
   | [< ' ('a'..'z' | 'A'..'Z' | '0'..'9' | ''' | '_' as c); s >] ->
       ident_tail (store len c) s
-  (* Greek utf-8 letters [CE80-CEBF and CF80-CFBF] (CE=206; BF=191) *)
-  | [< ' ('\206' | '\207' as c1); ' ('\128'..'\191' as c2) ; s >] ->
+  (* utf-8 Greek letters U0380-03FF *)
+  | [< ' ('\xCE' | '\xCF' as c1); ' ('\x80'..'\xBF' as c2) ; s >] ->
       ident_tail (store (store len c1) c2) s
-  | [< >] -> len
-
+  | [< s >] ->
+      match Stream.peek s with
+      | Some '\xE2' -> 
+	  (match List.tl (Stream.npeek 3 s) with
+	    (* utf-8 subscript U2080-2089 *) 
+	  | ['\x82' as c2; ('\x80'..'\x89' as c3)]
+	    (* utf-8 letter-like U2100-214F part 1 *)
+	  | ['\x84' as c2; ('\x80'..'\xBF' as c3)]
+	    (* utf-8 letter-like U2100-214F part 2 *)
+	  | ['\x85' as c2; ('\x80'..'\x8F' as c3)] ->
+	    Stream.junk s; Stream.junk s; Stream.junk s;
+	    ident_tail (store (store (store len '\xE2') c2) c3) s
+	  | _ -> len)
+      | _ -> len
 
 let rec number len = parser
   | [< ' ('0'..'9' as c); s >] -> number (store len c) s
@@ -273,7 +288,7 @@ let rec comment bp = parser bp2
       else ignore (string bp2 0 s);
       comment bp s
   | [< _ = Stream.empty >] ep -> err (bp, ep) Unterminated_comment
-  | [< '_ as z; s >] -> real_push_char z; comment bp s
+  | [< 'z; s >] -> real_push_char z; comment bp s
 
 (* Parse a special token, using the [token_tree] *)
 
@@ -307,42 +322,49 @@ type token_226_tail =
   | TokSymbol of string option
   | TokIdent of string
 
+(* 1110xxxx 10yyyyzz 10zztttt utf-8 codes for xxxx=0010 *)
 let parse_226_tail tk = parser
-  | [< ''\132' as c2; ' ('\128'..'\191' as c3);
-      (* utf8 letter-like unicode 2100-214F *)
-      len = ident_tail (store (store (store 0 '\226') c2) c3) >] ->
+  | [< ''\x82' as c2; ' ('\x80'..'\x89' as c3);
+      (* utf-8 subscript U2080-2089 *) 
+      len = ident_tail (store (store (store 0 '\xE2') c2) c3) >] ->
       TokIdent (get_buff len) 
-  | [< ''\133' as c2; ' ('\128'..'\143' as c3);
-      (* utf8 letter-like unicode 2100-214F *)
-      len = ident_tail (store (store (store 0 '\226') c2) c3) >] ->
+  | [< ''\x84' as c2; ' ('\x80'..'\xBF' as c3);
+      (* utf-8 letter-like U2100-214F part 1 *)
+      len = ident_tail (store (store (store 0 '\xE2') c2) c3) >] ->
       TokIdent (get_buff len) 
-  | [< ' ('\134'..'\143' | '\152'..'\155' 
-         | '\164'..'\165' | '\168'..'\171' as c2); 'c3;
-      (* utf8 arrows A unicode 2190-21FF *)
-      (* utf8 mathematical operators unicode 2200-22FF *)
-      (* utf8 miscellaneous technical unicode 2300-23FF *)
-      (* utf8 miscellaneous symbols unicode 2600-26FF *)
-      (* utf8 arrows B unicode 2900-297F *)
-      (* utf8 mathematical operators unicode 2A00-2AFF *)
+  | [< ''\x85' as c2; ' ('\x80'..'\x8F' as c3);
+      (* utf-8 letter-like U2100-214F part 2 *)
+      len = ident_tail (store (store (store 0 '\xE2') c2) c3) >] ->
+      TokIdent (get_buff len) 
+  | [< ' ('\x86'..'\x8F' | '\x94'..'\x9B' | '\xA4'..'\xA5' 
+         | '\xA8'..'\xAB' as c2); 'c3;
+      (* utf-8 arrows A U2190-21FF *)
+      (* utf-8 mathematical operators U2200-22FF *)
+      (* utf-8 miscellaneous technical U2300-23FF *)
+      (* utf-8 box drawing U2500-257F has ceiling, etc. *)
+      (* utf-8 block elements U2580-259F *)
+      (* utf-8 geom. shapes U25A0-25FF (has triangles, losange, etc) *)
+      (* utf-8 miscellaneous symbols U2600-26FF *)
+      (* utf-8 arrows B U2900-297F *)
+      (* utf-8 mathematical operators U2A00-2AFF *)
       t = special (progress_special c3 (progress_special c2 
-	(progress_special '\226' tk))) >] ->
+	(progress_special '\xE2' tk))) >] ->
       TokSymbol t
   | [< '_; '_ >] ->
       (* Unsupported utf-8 code *)
       TokSymbol None
-
 
 (* Parse what follows a dot *)
 let parse_after_dot bp c = parser
   | [< ' ('a'..'z' | 'A'..'Z' | '_' as c);
     len = ident_tail (store 0 c) >] ->
       ("FIELD", get_buff len)
-  (* Greek utf-8 letters [CE80-CEBF and CF80-CFBF] (CE=206; BF=191) *)
-  | [< ' ('\206' | '\207' as c1); ' ('\128'..'\191' as c2); 
+  (* utf-8 Greek letters U0380-03FF *)
+  | [< ' ('\xCE' | '\xCF' as c1); ' ('\x80'..'\xBF' as c2); 
     len = ident_tail (store (store 0 c1) c2) >] ->
       ("FIELD", get_buff len)
   (* utf-8 mathematical symbols have format E2 xx xx [E2=226] *)
-  | [< ''\226'; t = parse_226_tail 
+  | [< ''\xE2'; t = parse_226_tail 
       (progress_special '.' (Some !token_tree)) >] ep ->
       (match t with
 	| TokSymbol (Some t) -> ("", t)
@@ -367,14 +389,14 @@ let rec next_token = parser bp
       let id = get_buff len in 
       comment_stop bp;
       (try ("", find_keyword id) with Not_found -> ("IDENT", id)), (bp, ep)
-  (* Greek utf-8 letters [CE80-CEBF and CF80-CFBF] (CE=206; BF=191) *)
-  | [< ' ('\206' | '\207' as c1); ' ('\128'..'\191' as c2); 
+  (* utf-8 Greek letters U0380-03FF [CE80-CEBF and CF80-CFBF] *)
+  | [< ' ('\xCE' | '\xCF' as c1); ' ('\x80'..'\xBF' as c2); 
 	   len = ident_tail (store (store 0 c1) c2) >] ep ->
       let id = get_buff len in
       comment_stop bp;
       (try ("", find_keyword id) with Not_found -> ("IDENT", id)), (bp, ep)
   (* utf-8 mathematical symbols have format E2 xx xx [E2=226] *)
-  | [< ''\226'; t = parse_226_tail (Some !token_tree) >] ep ->
+  | [< ''\xE2'; t = parse_226_tail (Some !token_tree) >] ep ->
       comment_stop bp;
       (match t with
 	| TokSymbol (Some t) -> ("", t), (bp, ep)
