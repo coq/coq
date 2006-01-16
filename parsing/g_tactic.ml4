@@ -176,6 +176,7 @@ GEXTEND Gram
       | "("; tc = LIST0 simple_intropattern SEP "," ; ")" -> IntroOrAndPattern [tc]
       | "()" -> IntroOrAndPattern [[]]
       | "_" -> IntroWildcard
+      | "?" -> IntroAnonymous
       | id = ident -> IntroIdentifier id
       ] ]
   ;
@@ -277,7 +278,7 @@ GEXTEND Gram
     [ [ "using"; el = constr_with_bindings -> el ] ]
   ;
   with_names:
-    [ [ "as"; ipat = simple_intropattern -> Some ipat | -> None ] ]
+    [ [ "as"; ipat = simple_intropattern -> ipat | -> IntroAnonymous ] ]
   ;
   by_tactic:
     [ [ "by"; tac = tactic -> tac | -> TacId "" ] ]
@@ -325,9 +326,9 @@ GEXTEND Gram
 
       (* Begin compatibility *)
       | IDENT "assert"; id = lpar_id_coloneq; c = lconstr; ")" -> 
-	  TacAssert (None,Some (IntroIdentifier id),c)
+	  TacAssert (None,IntroIdentifier id,c)
       | IDENT "assert"; id = lpar_id_colon; c = lconstr; ")"; tac=by_tactic -> 
-	  TacAssert (Some tac,Some (IntroIdentifier id),c)
+	  TacAssert (Some tac,IntroIdentifier id,c)
       (* End compatibility *)
 
       | IDENT "assert"; c = constr; ipat = with_names; tac = by_tactic ->

@@ -58,6 +58,7 @@ let mlexpr_of_reference = function
 let mlexpr_of_intro_pattern = function
   | Genarg.IntroOrAndPattern _ -> failwith "mlexpr_of_intro_pattern: TODO"
   | Genarg.IntroWildcard -> <:expr< Genarg.IntroWildcard >>
+  | Genarg.IntroAnonymous -> <:expr< Genarg.IntroAnonymous >>
   | Genarg.IntroIdentifier id ->
       <:expr< Genarg.IntroIdentifier (mlexpr_of_ident $dloc$ id) >>
 
@@ -298,7 +299,7 @@ let rec mlexpr_of_atomic_tactic = function
   | Tacexpr.TacCut c ->
       <:expr< Tacexpr.TacCut $mlexpr_of_constr c$ >>
   | Tacexpr.TacAssert (t,ipat,c) ->
-      let ipat = mlexpr_of_option mlexpr_of_intro_pattern ipat in
+      let ipat = mlexpr_of_intro_pattern ipat in
       <:expr< Tacexpr.TacAssert $mlexpr_of_option mlexpr_of_tactic t$ $ipat$ 
 	      $mlexpr_of_constr c$ >>
   | Tacexpr.TacGeneralize cl ->
@@ -315,13 +316,13 @@ let rec mlexpr_of_atomic_tactic = function
       <:expr< Tacexpr.TacSimpleInduction ($mlexpr_of_quantified_hypothesis h$) >>
   | Tacexpr.TacNewInduction (c,cbo,ids) ->
       let cbo = mlexpr_of_option mlexpr_of_constr_with_binding cbo in
-      let ids = mlexpr_of_option mlexpr_of_intro_pattern ids in
+      let ids = mlexpr_of_intro_pattern ids in
       <:expr< Tacexpr.TacNewInduction $mlexpr_of_induction_arg c$ $cbo$ $ids$>>
   | Tacexpr.TacSimpleDestruct h ->
       <:expr< Tacexpr.TacSimpleDestruct $mlexpr_of_quantified_hypothesis h$ >>
   | Tacexpr.TacNewDestruct (c,cbo,ids) ->
       let cbo = mlexpr_of_option mlexpr_of_constr_with_binding cbo in
-      let ids = mlexpr_of_option mlexpr_of_intro_pattern ids in
+      let ids = mlexpr_of_intro_pattern ids in
       <:expr< Tacexpr.TacNewDestruct $mlexpr_of_induction_arg c$ $cbo$ $ids$ >>
 
   (* Context management *)

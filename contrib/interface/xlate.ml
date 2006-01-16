@@ -615,6 +615,7 @@ let rec xlate_intro_pattern =
 	   ll)
   | IntroWildcard -> CT_coerce_ID_to_INTRO_PATT(CT_ident "_" )
   | IntroIdentifier c -> CT_coerce_ID_to_INTRO_PATT(xlate_ident c)
+  | IntroAnonymous -> xlate_error "TODO: IntroAnonymous"
 
 let compute_INV_TYPE = function
    FullInversionClear -> CT_inv_clear
@@ -662,9 +663,9 @@ let xlate_one_unfold_block = function
   | (n::nums, qid) ->
       CT_unfold_occ(tac_qualid_to_ct_ID qid, nums_to_int_ne_list n nums);;
 
-let xlate_intro_patt_opt = function
-    None -> CT_coerce_ID_OPT_to_INTRO_PATT_OPT ctv_ID_OPT_NONE
-  | Some fp -> CT_coerce_INTRO_PATT_to_INTRO_PATT_OPT (xlate_intro_pattern fp)
+let xlate_with_names = function
+    IntroAnonymous -> CT_coerce_ID_OPT_to_INTRO_PATT_OPT ctv_ID_OPT_NONE
+  | fp -> CT_coerce_INTRO_PATT_to_INTRO_PATT_OPT (xlate_intro_pattern fp)
 
 let rawwit_main_tactic = rawwit_tactic Pcoq.Tactic.tactic_main_level
 
@@ -1127,12 +1128,12 @@ and xlate_tac =
     | (*For translating tactics/Inv.v *)
       TacInversion (NonDepInversion (k,idl,l),quant_hyp) ->
 	CT_inversion(compute_INV_TYPE k, xlate_quantified_hypothesis quant_hyp,
-		     xlate_intro_patt_opt l,
+		     xlate_with_names l,
 	             CT_id_list (List.map xlate_hyp idl))
     | TacInversion (DepInversion (k,copt,l),quant_hyp) ->
 	let id = xlate_quantified_hypothesis quant_hyp in
 	CT_depinversion (compute_INV_TYPE k, id, 
-			 xlate_intro_patt_opt l, xlate_formula_opt copt)
+			 xlate_with_names l, xlate_formula_opt copt)
     | TacInversion (InversionUsing (c,idlist), id) ->
 	let id = xlate_quantified_hypothesis id in
 	  CT_use_inversion (id, xlate_formula c,
@@ -1147,11 +1148,11 @@ and xlate_tac =
     | TacNewDestruct(a,b,c) ->
 	CT_new_destruct
 	  (xlate_int_or_constr a, xlate_using b, 
-	   xlate_intro_patt_opt c)
+	   xlate_with_names c)
     | TacNewInduction(a,b,c) ->
 	CT_new_induction
 	  (xlate_int_or_constr a, xlate_using b,
-	   xlate_intro_patt_opt c)
+	   xlate_with_names c)
     (*| TacInstantiate (a, b, cl) -> 
         CT_instantiate(CT_int a, xlate_formula b,
 		       assert false) *)
@@ -1162,13 +1163,13 @@ and xlate_tac =
 		  (* TODO LATER: This should be shared with Unfold,
 		     but the structures are different *)
 		  xlate_clause cl)
-    | TacAssert (None, Some (IntroIdentifier id), c) -> 
+    | TacAssert (None, IntroIdentifier id, c) -> 
         CT_assert(xlate_id_opt ((0,0),Name id), xlate_formula c)
-    | TacAssert (None, None, c) -> 
+    | TacAssert (None, IntroAnonymous, c) -> 
         CT_assert(xlate_id_opt ((0,0),Anonymous), xlate_formula c)
-    | TacAssert (Some (TacId ""), Some (IntroIdentifier id), c) -> 
+    | TacAssert (Some (TacId ""), IntroIdentifier id, c) -> 
         CT_truecut(xlate_id_opt ((0,0),Name id), xlate_formula c)
-    | TacAssert (Some (TacId ""), None, c) -> 
+    | TacAssert (Some (TacId ""), IntroAnonymous, c) -> 
         CT_truecut(xlate_id_opt ((0,0),Anonymous), xlate_formula c)
     | TacAssert _ ->
 	xlate_error "TODO: assert with 'as' and 'by' and pose proof with 'as'"

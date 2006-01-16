@@ -348,23 +348,9 @@ let pr_with_constr prc = function
   | None -> mt ()
   | Some c -> spc () ++ hov 1 (str "with" ++ spc () ++ prc c)
 
-(* Translator copy of pr_intro_pattern based on a translating "pr_id" *)
-let rec pr_intro_pattern = function
-  | IntroOrAndPattern pll -> pr_case_intro_pattern pll
-  | IntroWildcard -> str "_"
-  | IntroIdentifier id -> pr_id id
-and pr_case_intro_pattern = function
-  | [pl] ->
-      str "(" ++ hov 0 (prlist_with_sep pr_coma pr_intro_pattern pl) ++ str ")"
-  | pll ->
-      str "[" ++
-      hv 0 (prlist_with_sep pr_bar 
-        (fun l -> hov 0 (prlist_with_sep spc pr_intro_pattern l)) pll)
-      ++ str "]"
-
 let pr_with_names = function
-  | None -> mt ()
-  | Some ipat -> spc () ++ hov 1 (str "as" ++ spc () ++ pr_intro_pattern ipat)
+  | IntroAnonymous -> mt ()
+  | ipat -> spc () ++ hov 1 (str "as" ++ spc () ++ pr_intro_pattern ipat)
 
 let pr_pose prlc prc na c = match na with
   | Anonymous -> spc() ++ prc c
@@ -372,7 +358,7 @@ let pr_pose prlc prc na c = match na with
 
 let pr_assertion _prlc prc ipat c = match ipat with
 (* Use this "optimisation" or use only the general case ?
-  | Some (IntroIdentifier id) ->
+  | IntroIdentifier id ->
       spc() ++ surround (pr_intro_pattern ipat ++ str " :" ++ spc() ++ prlc c)
 *)
   | ipat ->
@@ -380,7 +366,7 @@ let pr_assertion _prlc prc ipat c = match ipat with
 
 let pr_assumption prlc prc ipat c = match ipat with
 (* Use this "optimisation" or use only the general case ?
-  | Some (IntroIdentifier id) ->
+  | IntroIdentifier id ->
       spc() ++ surround (pr_intro_pattern ipat ++ str " :" ++ spc() ++ prlc c)
 *)
   | ipat ->

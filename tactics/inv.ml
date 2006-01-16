@@ -377,6 +377,8 @@ let rewrite_equations_gene othin neqns ba gl =
 let rec get_names allow_conj = function
   | IntroWildcard ->
       error "Discarding pattern not allowed for inversion equations"
+  | IntroAnonymous ->
+      error "Anonymous pattern not allowed for inversion equations"
   | IntroOrAndPattern [l] -> 
       if allow_conj then
 	if l = [] then (None,[]) else
@@ -519,15 +521,15 @@ open Tacexpr
 
 let inv k = inv_gen false k NoDep
 
-let half_inv_tac id  = inv SimpleInversion None (NamedHyp id)
-let inv_tac id       = inv FullInversion None (NamedHyp id)
-let inv_clear_tac id = inv FullInversionClear None (NamedHyp id)
+let half_inv_tac id  = inv SimpleInversion IntroAnonymous (NamedHyp id)
+let inv_tac id       = inv FullInversion IntroAnonymous (NamedHyp id)
+let inv_clear_tac id = inv FullInversionClear IntroAnonymous (NamedHyp id)
 
 let dinv k c = inv_gen false k (Dep c)
 
-let half_dinv_tac id  = dinv SimpleInversion None None (NamedHyp id)
-let dinv_tac id       = dinv FullInversion None None (NamedHyp id)
-let dinv_clear_tac id = dinv FullInversionClear None None (NamedHyp id)
+let half_dinv_tac id  = dinv SimpleInversion None IntroAnonymous (NamedHyp id)
+let dinv_tac id       = dinv FullInversion None IntroAnonymous (NamedHyp id)
+let dinv_clear_tac id = dinv FullInversionClear None IntroAnonymous (NamedHyp id)
 
 (* InvIn will bring the specified clauses into the conclusion, and then
  * perform inversion on the named hypothesis.  After, it will intro them

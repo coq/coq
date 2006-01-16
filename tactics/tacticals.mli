@@ -129,13 +129,13 @@ type branch_assumptions = {
 
 (* Useful for [as intro_pattern] modifier *)
 val compute_induction_names : 
-  int -> intro_pattern_expr option -> intro_pattern_expr list array
+  int -> intro_pattern_expr -> intro_pattern_expr list array
 
 val elimination_sort_of_goal : goal sigma -> sorts_family
 val elimination_sort_of_hyp  : identifier -> goal sigma -> sorts_family
 
 val general_elim_then_using :
-  constr -> (* isrec: *) bool -> intro_pattern_expr option ->
+  constr -> (* isrec: *) bool -> intro_pattern_expr ->
     (branch_args -> tactic) -> constr option -> 
       (arg_bindings * arg_bindings) -> constr -> tactic
 	  
@@ -148,11 +148,11 @@ val elimination_then :
     (arg_bindings * arg_bindings) -> constr -> tactic
 
 val case_then_using :
-  intro_pattern_expr option -> (branch_args -> tactic) -> 
+  intro_pattern_expr -> (branch_args -> tactic) -> 
     constr option -> (arg_bindings * arg_bindings) -> constr -> tactic
 
 val case_nodep_then_using :
-  intro_pattern_expr option -> (branch_args -> tactic) -> 
+  intro_pattern_expr -> (branch_args -> tactic) -> 
     constr option -> (arg_bindings * arg_bindings) -> constr -> tactic
 
 val simple_elimination_then :

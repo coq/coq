@@ -178,7 +178,7 @@ val elim          : constr with_bindings -> constr with_bindings option -> tacti
 val simple_induct : quantified_hypothesis -> tactic
 
 val new_induct : constr induction_arg -> constr with_bindings option ->
-  intro_pattern_expr option -> tactic
+  intro_pattern_expr -> tactic
 
 (*s Case analysis tactics. *)
 
@@ -187,7 +187,7 @@ val simplest_case         : constr -> tactic
 
 val simple_destruct          : quantified_hypothesis -> tactic
 val new_destruct : constr induction_arg -> constr with_bindings option ->
-  intro_pattern_expr option -> tactic
+  intro_pattern_expr -> tactic
 
 (*s Eliminations giving the type instead of the proof. *)
 
@@ -239,11 +239,12 @@ val cut_replacing               :
   identifier -> constr -> (tactic -> tactic) -> tactic
 val cut_in_parallel             : constr list -> tactic
 
-val assert_as : bool -> intro_pattern_expr option -> constr -> tactic
+val assert_as : bool -> intro_pattern_expr -> constr -> tactic
+val forward   : tactic option -> intro_pattern_expr -> constr -> tactic
+
 val true_cut                    : name -> constr -> tactic
 val letin_tac                   : bool -> name -> constr -> clause -> tactic
 val assert_tac                  : bool -> name -> constr -> tactic
-val forward    : tactic option -> intro_pattern_expr option -> constr -> tactic
 val generalize                  : constr list -> tactic
 val generalize_dep              : constr  -> tactic
 

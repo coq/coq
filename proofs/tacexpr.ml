@@ -69,8 +69,8 @@ type inversion_kind =
   | FullInversionClear
 
 type ('c,'id) inversion_strength =
-  | NonDepInversion of inversion_kind * 'id list * intro_pattern_expr option
-  | DepInversion of inversion_kind * 'c option * intro_pattern_expr option
+  | NonDepInversion of inversion_kind * 'id list * intro_pattern_expr
+  | DepInversion of inversion_kind * 'c option * intro_pattern_expr
   | InversionUsing of 'c * 'id list
 
 type ('a,'b) location = HypLocation of 'a | ConclLocation of 'b
@@ -125,7 +125,7 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacCofix of identifier option
   | TacMutualCofix of identifier * (identifier * 'constr) list
   | TacCut of 'constr
-  | TacAssert of 'tac option * intro_pattern_expr option * 'constr
+  | TacAssert of 'tac option * intro_pattern_expr * 'constr
   | TacGeneralize of 'constr list
   | TacGeneralizeDep of 'constr
   | TacLetTac of name * 'constr * 'id gclause
@@ -134,10 +134,10 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   (* Derived basic tactics *)
   | TacSimpleInduction of quantified_hypothesis
   | TacNewInduction of 'constr induction_arg * 'constr with_bindings option
-      * intro_pattern_expr option
+      * intro_pattern_expr
   | TacSimpleDestruct of quantified_hypothesis
   | TacNewDestruct of 'constr induction_arg * 'constr with_bindings option
-      * intro_pattern_expr option
+      * intro_pattern_expr
 
   | TacDoubleInduction of quantified_hypothesis * quantified_hypothesis
   | TacDecomposeAnd of 'constr

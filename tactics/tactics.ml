@@ -798,7 +798,7 @@ let clear_last = tclLAST_HYP (fun c -> (clear [destVar c]))
 let case_last  = tclLAST_HYP simplest_case
 
 let rec explicit_intro_names = function
-| IntroWildcard :: l -> explicit_intro_names l
+| (IntroWildcard | IntroAnonymous) :: l -> explicit_intro_names l
 | IntroIdentifier id :: l -> id :: explicit_intro_names l
 | IntroOrAndPattern ll :: l' -> 
     List.flatten (List.map (fun l -> explicit_intro_names (l@l')) ll)
@@ -808,26 +808,33 @@ let rec explicit_intro_names = function
      to ensure that dependent hypotheses are cleared in the right
      dependency order (see bug #1000); we use fresh names, not used in
      the tactic, for the hyps to clear *)
-let rec intros_patterns thin destopt = function
+let rec intros_patterns avoid thin destopt = function
   | IntroWildcard :: l ->
       tclTHEN 
-        (intro_gen (IntroAvoid (explicit_intro_names l)) None true)
-        (onLastHyp (fun id -> intros_patterns (id::thin) destopt l))
+        (intro_gen (IntroAvoid (avoid@explicit_intro_names l)) None true)
+        (onLastHyp (fun id ->
+	  tclORELSE
+	    (tclTHEN (clear [id]) (intros_patterns avoid thin destopt l))
+	    (intros_patterns avoid (id::thin) destopt l)))
   | IntroIdentifier id :: l ->
       tclTHEN
         (intro_gen (IntroMustBe id) destopt true)
-        (intros_patterns thin destopt l)
+        (intros_patterns avoid thin destopt l)
+  | IntroAnonymous :: l ->
+      tclTHEN
+        (intro_gen (IntroAvoid (avoid@explicit_intro_names l)) destopt true)
+        (intros_patterns avoid thin destopt l)
   | IntroOrAndPattern ll :: l' ->
       tclTHEN
         introf
         (tclTHENS
 	  (tclTHEN case_last clear_last)
-	  (List.map (fun l -> intros_patterns thin destopt (l@l')) ll))
+	  (List.map (fun l -> intros_patterns avoid thin destopt (l@l')) ll))
   | [] -> clear thin
 
-let intros_pattern = intros_patterns []
+let intros_pattern = intros_patterns [] []
 
-let intro_pattern destopt pat = intros_patterns [] destopt [pat]
+let intro_pattern destopt pat = intros_patterns [] [] destopt [pat]
 
 let intro_patterns = function 
   | [] -> tclREPEAT intro
@@ -843,17 +850,17 @@ let xid = id_of_string "X"
 let make_id s = fresh_id [] (match s with Prop _ -> hid | Type _ -> xid)
 
 let prepare_intros s ipat gl = match ipat with
-  | None -> make_id s gl, tclIDTAC
-  | Some IntroWildcard -> let id = make_id s gl in id, thin [id]
-  | Some (IntroIdentifier id) -> id, tclIDTAC
-  | Some (IntroOrAndPattern ll) -> make_id s gl, 
-        (tclTHENS 
-	  (tclTHEN case_last clear_last)
-	  (List.map (intros_patterns [] None) ll))
+  | IntroAnonymous -> make_id s gl, tclIDTAC
+  | IntroWildcard -> let id = make_id s gl in id, thin [id]
+  | IntroIdentifier id -> id, tclIDTAC
+  | IntroOrAndPattern ll -> make_id s gl, 
+    (tclTHENS 
+      (tclTHEN case_last clear_last)
+      (List.map (intros_pattern None) ll))
 
 let ipat_of_name = function
-  | Anonymous -> None
-  | Name id -> Some (IntroIdentifier id)
+  | Anonymous -> IntroAnonymous
+  | Name id -> IntroIdentifier id
 
 let assert_as first ipat c gl =
   match kind_of_term (hnf_type_of gl c) with
@@ -1124,6 +1131,14 @@ let rec first_name_buggy = function
   | IntroOrAndPattern ((p::_)::_) -> first_name_buggy p
   | IntroWildcard -> None
   | IntroIdentifier id -> Some id
+  | IntroAnonymous -> assert false
+
+let consume_pattern avoid id gl = function
+  | [] -> (IntroIdentifier (fresh_id avoid id gl), [])
+  | IntroAnonymous::names ->
+      let avoid = avoid@explicit_intro_names names in
+      (IntroIdentifier (fresh_id avoid id gl), names)
+  | pat::names -> (pat,names)
 
 type elim_arg_kind = RecArg | IndArg | OtherArg
 
@@ -1134,43 +1149,30 @@ let induct_discharge statuslists destopt avoid' (avoid,ra) names gl =
   let rec peel_tac ra names gl = match ra with
     | (RecArg,recvarname) ::
         (IndArg,hyprecname) :: ra' ->
-        let recpat,hyprec,names = match names with
-          | [] ->
-              let idrec = fresh_id avoid recvarname gl in
-              let idhyp = fresh_id avoid hyprecname gl in
-              (IntroIdentifier idrec, IntroIdentifier idhyp, [])
+        let recpat,names = match names with
           | [IntroIdentifier id as pat] ->
               let id = next_ident_away (add_prefix "IH" id) avoid in
-	      (pat, IntroIdentifier id, [])
-	  | [pat] ->
-              let idhyp = (fresh_id avoid hyprecname gl) in
-	      (pat, IntroIdentifier idhyp, [])
-          | pat1::pat2::names -> (pat1,pat2,names) in
+	      (pat, [IntroIdentifier id])
+          | _ -> consume_pattern avoid recvarname gl names in
+        let hyprec,names = consume_pattern avoid hyprecname gl names in
 	(* This is buggy for intro-or-patterns with different first hypnames *)
 	if !tophyp=None then tophyp := first_name_buggy hyprec;
         tclTHENLIST
-	  [ intros_pattern destopt [recpat];
-	    intros_pattern None [hyprec];
+	  [ intros_patterns avoid [] destopt [recpat];
+	    intros_patterns avoid [] None [hyprec];
 	    peel_tac ra' names ] gl
     | (IndArg,hyprecname) :: ra' ->
 	(* Rem: does not happen in Coq schemes, only in user-defined schemes *)
-        let pat,names = match names with
-          | [] -> IntroIdentifier (fresh_id avoid hyprecname gl), []
-	  | pat::names -> pat,names in
-	tclTHEN (intros_pattern destopt [pat]) (peel_tac ra' names) gl
+        let pat,names = consume_pattern avoid hyprecname gl names in
+	tclTHEN (intros_patterns avoid [] destopt [pat]) (peel_tac ra' names) gl
     | (RecArg,recvarname) :: ra' ->
-        let introtac,names = match names with
-          | [] -> 
-              let id = fresh_id avoid recvarname gl in
-	      intro_gen (IntroMustBe id) destopt false, []
-          | pat::names ->
-	      intros_pattern destopt [pat],names in
-	tclTHEN introtac (peel_tac ra' names) gl
+        let pat,names = consume_pattern avoid recvarname gl names in
+	tclTHEN (intros_patterns avoid [] destopt [pat]) (peel_tac ra' names) gl
     | (OtherArg,_) :: ra' ->
-        let introtac,names = match names with
-          | [] -> intro_gen (IntroAvoid avoid) destopt false, []
-          | pat::names -> intros_pattern destopt [pat],names in
-	tclTHEN introtac (peel_tac ra' names) gl
+        let pat,names = match names with
+          | [] -> IntroAnonymous, []
+          | pat::names -> pat,names in
+	tclTHEN (intros_patterns avoid [] destopt [pat]) (peel_tac ra' names) gl
     | [] ->
         check_unused_names names;
         tclIDTAC gl
@@ -1491,7 +1493,6 @@ let induction_from_context isrec elim_info hyp0 names gl =
   let (statlists,lhyp0,indhyps,deps) = cook_sign hyp0 indvars env in
   let tmpcl = it_mkNamedProd_or_LetIn (pf_concl gl) deps in
   let names = compute_induction_names (Array.length indsign) names in
-  (* End translator *)
   let dephyps = List.map (fun (id,_,_) -> id) deps in
   let args =
     List.fold_left
