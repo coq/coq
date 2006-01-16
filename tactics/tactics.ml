@@ -1111,20 +1111,12 @@ let forward usetac ipat c gl =
 
  *)
 
-let rec str_intro_pattern = function
-  | IntroOrAndPattern pll ->
-      "["^(String.concat "|" 
-	(List.map 
-	  (fun pl -> String.concat " " (List.map str_intro_pattern pl)) pll))
-      ^"]"
-  | IntroWildcard -> "_"
-  | IntroIdentifier id -> string_of_id id
-
 let check_unused_names names =
   if names <> [] & Options.is_verbose () then
     let s = if List.tl names = [] then " " else "s " in
-    let names = String.concat " " (List.map str_intro_pattern names) in
-    warning ("Unused introduction pattern"^s^": "^names)
+    msg_warning 
+      (str"Unused introduction pattern" ++ str s ++ 
+       str": " ++ prlist_with_sep spc pr_intro_pattern names)
 
 let rec first_name_buggy = function
   | IntroOrAndPattern [] -> None
