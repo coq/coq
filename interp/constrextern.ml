@@ -899,13 +899,16 @@ let rec raw_of_pat env = function
       let k = mip.Declarations.mind_nrealargs in
       let nparams = mib.Declarations.mind_nparams in
       let cstrnargs = mip.Declarations.mind_consnrealargs in
-      Detyping.detype_case false (raw_of_pat env)(raw_of_eqn env)
+      Detyping.detype_case false (raw_of_pat env) (raw_of_eqns env)
 	(fun _ _ -> false (* lazy: don't try to display pattern with "if" *))
 	avoid (ind,cs,nparams,cstrnargs,k) typopt tm bv
   | PCase _ -> error "Unsupported case-analysis while printing pattern"
   | PFix f -> Detyping.detype false [] env (mkFix f)
   | PCoFix c -> Detyping.detype false [] env (mkCoFix c)
   | PSort s -> RSort (loc,s)
+
+and raw_of_eqns env constructs consnargsl bl =
+  Array.to_list (array_map3 (raw_of_eqn env) constructs consnargsl bl)
 
 and raw_of_eqn env constr construct_nargs branch =
   let make_pat x env b ids =

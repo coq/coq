@@ -32,8 +32,9 @@ val detype : bool -> identifier list -> names_context -> constr -> rawconstr
 
 val detype_case : 
   bool -> ('a -> rawconstr) ->
-  (constructor -> int -> 'a -> loc * identifier list * cases_pattern list *
-    rawconstr) -> ('a -> int -> bool) ->
+  (constructor array -> int array -> 'a array -> 
+    (loc * identifier list * cases_pattern list * rawconstr) list) ->
+  ('a -> int -> bool) ->
   identifier list -> inductive * case_style * int * int array * int ->
     'a option -> 'a -> 'a array -> rawconstr
 
