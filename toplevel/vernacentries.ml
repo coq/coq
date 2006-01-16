@@ -345,14 +345,9 @@ let vernac_end_proof = function
      the theories [??] *)
 
 let vernac_exact_proof c =
-  let pts = top_of_tree (get_pftreestate ()) in
-  let pf = (proof_of_pftreestate pts) in
-    if is_leaf_proof pf then 
-      begin by (Tactics.exact_proof c); save_named true end
-    else
-      errorlabstrm "Vernacentries.ExactProof" 
-	(str "Proof can only be used at the beginning of the proof")
-	
+  by (Tactics.exact_proof c);
+  save_named true
+  	
 let vernac_assumption kind l =
   List.iter (fun (is_coe,(idl,c)) -> declare_assumption idl is_coe kind [] c) l
 
@@ -568,14 +563,8 @@ let vernac_solve_existential = instantiate_nth_evar_com
 let vernac_set_end_tac tac =
   if not (refining ()) then
     error "Unknown command of the non proof-editing mode";
-  let pts = top_of_tree (get_pftreestate ()) in
-  let pf = (proof_of_pftreestate pts) in
-    if is_leaf_proof pf then 
-      if tac <> (Tacexpr.TacId "") then set_end_tac (Tacinterp.interp tac)
-    else
-      errorlabstrm "Vernacentries.ExactProof" 
-	(str "Proof can only be used at the beginning of the proof")
-(* TO DO verifier s'il faut pas mettre exist s | TacId s ici*)
+  if tac <> (Tacexpr.TacId "") then set_end_tac (Tacinterp.interp tac)
+    (* TO DO verifier s'il faut pas mettre exist s | TacId s ici*)
  
    
 (*****************************)
