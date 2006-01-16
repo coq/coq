@@ -1155,17 +1155,23 @@ and xlate_tac =
     (*| TacInstantiate (a, b, cl) -> 
         CT_instantiate(CT_int a, xlate_formula b,
 		       assert false) *)
+    | TacLetTac (na, c, cl) when cl = nowhere -> 
+        CT_pose(xlate_id_opt_aux na, xlate_formula c)
     | TacLetTac (na, c, cl) ->
         CT_lettac(xlate_id_opt ((0,0),na), xlate_formula c, 
 		  (* TODO LATER: This should be shared with Unfold,
 		     but the structures are different *)
 		  xlate_clause cl)
-    | TacForward (true, name, c) -> 
-               CT_pose(xlate_id_opt_aux name, xlate_formula c)
-    | TacForward (false, name, c) -> 
-               CT_assert(xlate_id_opt ((0,0),name), xlate_formula c)
-    | TacTrueCut (na, c) -> 
-        CT_truecut(xlate_id_opt ((0,0),na), xlate_formula c)
+    | TacAssert (None, Some (IntroIdentifier id), c) -> 
+        CT_assert(xlate_id_opt ((0,0),Name id), xlate_formula c)
+    | TacAssert (None, None, c) -> 
+        CT_assert(xlate_id_opt ((0,0),Anonymous), xlate_formula c)
+    | TacAssert (Some (TacId ""), Some (IntroIdentifier id), c) -> 
+        CT_truecut(xlate_id_opt ((0,0),Name id), xlate_formula c)
+    | TacAssert (Some (TacId ""), None, c) -> 
+        CT_truecut(xlate_id_opt ((0,0),Anonymous), xlate_formula c)
+    | TacAssert _ ->
+	xlate_error "TODO: assert with 'as' and 'by' and pose proof with 'as'"
     | TacAnyConstructor(Some tac) -> 
 	CT_any_constructor
 	(CT_coerce_TACTIC_COM_to_TACTIC_OPT(xlate_tactic tac))

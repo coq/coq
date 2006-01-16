@@ -366,6 +366,30 @@ let pr_with_names = function
   | None -> mt ()
   | Some ipat -> spc () ++ hov 1 (str "as" ++ spc () ++ pr_intro_pattern ipat)
 
+let pr_pose prlc prc na c = match na with
+  | Anonymous -> spc() ++ prc c
+  | Name id -> spc() ++ surround (pr_id id ++ str " :=" ++ spc() ++ prlc c)
+
+let pr_assertion _prlc prc ipat c = match ipat with
+(* Use this "optimisation" or use only the general case ?
+  | Some (IntroIdentifier id) ->
+      spc() ++ surround (pr_intro_pattern ipat ++ str " :" ++ spc() ++ prlc c)
+*)
+  | ipat ->
+      spc() ++ prc c ++ pr_with_names ipat
+
+let pr_assumption prlc prc ipat c = match ipat with
+(* Use this "optimisation" or use only the general case ?
+  | Some (IntroIdentifier id) ->
+      spc() ++ surround (pr_intro_pattern ipat ++ str " :" ++ spc() ++ prlc c)
+*)
+  | ipat ->
+      spc() ++ prc c ++ pr_with_names ipat
+
+let pr_by_tactic prt = function
+  | TacId "" -> mt ()
+  | tac -> spc() ++ str "by " ++ prt tac
+
 let pr_occs pp = function
     [] -> pp
   | nl -> hov 1 (pp ++ spc() ++ str"at " ++
@@ -577,7 +601,6 @@ let pr_fix_tac env (id,n,c) =
 let pr_cofix_tac env (id,c) =
   hov 1 (str"(" ++ pr_id id ++ str" :" ++ pr_lconstrarg env c ++ str")") in
 
-
   (* Printing tactics as arguments *)
 let rec pr_atom0 env = function
   | TacIntroPattern [] -> str "intros"
@@ -632,34 +655,23 @@ and pr_atom1 env = function
       hov 1 (str "cofix" ++ spc () ++ pr_id id ++ spc() ++
              str"with " ++ prlist_with_sep spc (pr_cofix_tac env) l)
   | TacCut c -> hov 1 (str "cut" ++ pr_constrarg env c)
-  | TacTrueCut (Anonymous,c) -> 
-      hov 1 (str "assert" ++ pr_constrarg env c)
-  | TacTrueCut (Name id,c) -> 
-      hov 1 (str "assert" ++ spc () ++
-             hov 1 (str"(" ++ pr_id id ++ str " :" ++
-                    pr_lconstrarg env c ++ str")"))
-  | TacForward (false,na,c) ->
-      hov 1 (str "assert" ++ spc () ++
-             hov 1 (str"(" ++ pr_name na ++ str " :=" ++
-                    pr_lconstrarg env c ++ str")"))
-  | TacForward (true,Anonymous,c) ->
-      hov 1 (str "pose" ++ pr_constrarg env c)
-  | TacForward (true,Name id,c) ->
-      hov 1 (str "pose" ++ spc() ++
-             hov 1 (str"(" ++ pr_id id ++ str " :=" ++
-                    pr_lconstrarg env c ++ str")"))
+  | TacAssert (Some tac,ipat,c) -> 
+      hov 1 (str "assert" ++ 
+             pr_assumption (pr_lconstr env) (pr_constr env) ipat c ++ 
+             pr_by_tactic (pr_tac_level env ltop) tac)
+  | TacAssert (None,ipat,c) -> 
+      hov 1 (str "pose proof" ++
+             pr_assertion (pr_lconstr env) (pr_constr env) ipat c)
   | TacGeneralize l ->
       hov 1 (str "generalize" ++ spc () ++
              prlist_with_sep spc (pr_constr env) l)
   | TacGeneralizeDep c ->
       hov 1 (str "generalize" ++ spc () ++ str "dependent" ++
              pr_constrarg env c)
-  | TacLetTac (Anonymous,c,cl) ->
-      hov 1 (str "set" ++ pr_constrarg env c) ++ pr_clauses pr_ident cl
-  | TacLetTac (Name id,c,cl) ->
-      hov 1 (str "set" ++ spc () ++
-             hov 1 (str"(" ++ pr_id id ++ str " :=" ++
-                    pr_lconstrarg env c ++ str")") ++
+  | TacLetTac (na,c,cl) when cl = nowhere ->
+      hov 1 (str "pose" ++ pr_pose (pr_lconstr env) (pr_constr env) na c)
+  | TacLetTac (na,c,cl) ->
+      hov 1 (str "set" ++ pr_pose (pr_lconstr env) (pr_constr env) na c ++
              pr_clauses pr_ident cl)
 (*  | TacInstantiate (n,c,ConclLocation ()) ->
       hov 1 (str "instantiate" ++ spc() ++

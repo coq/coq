@@ -71,5 +71,5 @@ let let_evar name typ gls =
   let evd = Evd.create_evar_defs gls.sigma in
   let evd',evar = Evarutil.new_evar evd (pf_env gls) typ in
   Refiner.tclTHEN (Refiner.tclEVARS (evars_of evd'))
-    (Tactics.forward true name evar) gls
+    (Tactics.letin_tac true name evar nowhere) gls
  

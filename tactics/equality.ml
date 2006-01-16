@@ -1075,8 +1075,9 @@ let subst_one x gl =
   let introtac = function
       (id,None,_) -> intro_using id
     | (id,Some hval,htyp) ->
-        forward true (Name id) (mkCast(replace_term varx rhs hval,DEFAULTcast,
-                                       replace_term varx rhs htyp))
+        letin_tac true (Name id)
+	  (mkCast(replace_term varx rhs hval,DEFAULTcast,
+	          replace_term varx rhs htyp)) nowhere
   in
   let need_rewrite = dephyps <> [] || depconcl in
   tclTHENLIST 

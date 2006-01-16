@@ -57,6 +57,8 @@ Tactics
   used to solve unresolved subterms of term arguments of tactics.
 - Better support for coercions to Sortclass in tactics expecting type arguments
 - Low-priority term printer made available in ML-written tactic extensions
+- Tactic "assert" now accepts "as" intro patterns and "by" tactic clauses
+- New tactic "pose proof" that generalizes "assert (id:=p)" with intro patterns
 
 Modules
 

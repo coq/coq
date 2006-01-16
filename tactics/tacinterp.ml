@@ -631,10 +631,10 @@ let rec intern_atomic lf ist x =
       let f (id,c) = (intern_ident lf ist id,intern_type ist c) in
       TacMutualCofix (intern_ident lf ist id, List.map f l)
   | TacCut c -> TacCut (intern_type ist c)
-  | TacTrueCut (na,c) ->
-      TacTrueCut (intern_name lf ist na, intern_type ist c)
-  | TacForward (b,na,c) ->
-      TacForward (b,intern_name lf ist na,intern_constr ist c)
+  | TacAssert (otac,ipat,c) ->
+      TacAssert (option_app (intern_tactic ist) otac,
+                 option_app (intern_intro_pattern lf ist) ipat,
+                 intern_constr_gen (otac<>None) ist c)
   | TacGeneralize cl -> TacGeneralize (List.map (intern_constr ist) cl)
   | TacGeneralizeDep c -> TacGeneralizeDep (intern_constr ist c)
   | TacLetTac (na,c,cls) ->
@@ -1703,10 +1703,11 @@ and interp_atomic ist gl = function
       let f (id,c) = (interp_ident ist id,pf_interp_type ist gl c) in
       h_mutual_cofix (interp_ident ist id) (List.map f l)
   | TacCut c -> h_cut (pf_interp_type ist gl c)
-  | TacTrueCut (na,c) ->
-      h_true_cut (interp_name ist na) (pf_interp_type ist gl c)
-  | TacForward (b,na,c) ->
-      h_forward b (interp_name ist na) (pf_interp_constr ist gl c)
+  | TacAssert (t,ipat,c) ->
+      let c = (if t=None then pf_interp_constr else pf_interp_type) ist gl c in
+      abstract_tactic (TacAssert (t,ipat,c))
+        (Tactics.forward (option_app (interp_tactic ist) t)
+	  (option_app (interp_intro_pattern ist) ipat) c)
   | TacGeneralize cl -> h_generalize (List.map (pf_interp_constr ist gl) cl)
   | TacGeneralizeDep c -> h_generalize_dep (pf_interp_constr ist gl c)
   | TacLetTac (na,c,clp) ->
@@ -1975,8 +1976,7 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacMutualCofix (id,l) ->
       TacMutualCofix (id, List.map (fun (id,c) -> (id,subst_rawconstr subst c)) l)
   | TacCut c -> TacCut (subst_rawconstr subst c)
-  | TacTrueCut (ido,c) -> TacTrueCut (ido, subst_rawconstr subst c)
-  | TacForward (b,na,c) -> TacForward (b,na,subst_rawconstr subst c)
+  | TacAssert (b,na,c) -> TacAssert (b,na,subst_rawconstr subst c)
   | TacGeneralize cl -> TacGeneralize (List.map (subst_rawconstr subst) cl)
   | TacGeneralizeDep c -> TacGeneralizeDep (subst_rawconstr subst c)
   | TacLetTac (id,c,clp) -> TacLetTac (id,subst_rawconstr subst c,clp)

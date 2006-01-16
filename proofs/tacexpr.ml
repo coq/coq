@@ -84,6 +84,8 @@ type 'id gclause =
     onconcl : bool;
     concl_occs :int list }
 
+let nowhere = {onhyps=Some[]; onconcl=false; concl_occs=[]}
+
 let simple_clause_of = function
     { onhyps = Some[scl]; onconcl = false } -> Some scl
   | { onhyps = Some []; onconcl = true; concl_occs=[] } -> None
@@ -123,8 +125,7 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacCofix of identifier option
   | TacMutualCofix of identifier * (identifier * 'constr) list
   | TacCut of 'constr
-  | TacTrueCut of name * 'constr 
-  | TacForward of bool * name * 'constr
+  | TacAssert of 'tac option * intro_pattern_expr option * 'constr
   | TacGeneralize of 'constr list
   | TacGeneralizeDep of 'constr
   | TacLetTac of name * 'constr * 'id gclause

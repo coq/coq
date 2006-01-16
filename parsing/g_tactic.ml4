@@ -68,6 +68,24 @@ let lpar_id_colon =
               | _ -> raise Stream.Failure)
         | _ -> raise Stream.Failure)
 
+let guess_lpar_ipat s strm =
+  match Stream.npeek 1 strm with
+    | [("","(")] ->
+        (match Stream.npeek 2 strm with
+          | [_; ("",("("|"["))] -> ()
+          | [_; ("IDENT",_)] ->
+              (match Stream.npeek 3 strm with
+                | [_; _; ("", s')] when s = s' -> ()
+                | _ -> raise Stream.Failure)
+          | _ -> raise Stream.Failure)
+    | _ -> raise Stream.Failure
+
+let guess_lpar_coloneq =
+  Gram.Entry.of_parser "guess_lpar_coloneq" (guess_lpar_ipat ":=")
+
+let guess_lpar_colon =
+  Gram.Entry.of_parser "guess_lpar_colon" (guess_lpar_ipat ":")
+
 open Constr
 open Prim
 open Tactic
@@ -261,6 +279,9 @@ GEXTEND Gram
   with_names:
     [ [ "as"; ipat = simple_intropattern -> Some ipat | -> None ] ]
   ;
+  by_tactic:
+    [ [ "by"; tac = tactic -> tac | -> TacId "" ] ]
+  ;
   simple_tactic:
     [ [ 
       (* Basic tactics *)
@@ -293,22 +314,30 @@ GEXTEND Gram
       | "cofix"; id = ident; "with"; fd = LIST1 fixdecl ->
 	  TacMutualCofix (id,List.map mk_cofix_tac fd)
 
-      | IDENT "cut"; c = constr -> TacCut c
-      | IDENT "assert"; id = lpar_id_colon; t = lconstr; ")" ->
-          TacTrueCut (Names.Name id,t)
-      | IDENT "assert"; id = lpar_id_coloneq; b = lconstr; ")" ->
-          TacForward (false,Names.Name id,b)
-      | IDENT "assert"; c = constr -> TacTrueCut (Names.Anonymous,c)
       | IDENT "pose"; id = lpar_id_coloneq; b = lconstr; ")" ->
-	  TacForward (true,Names.Name id,b)
-      | IDENT "pose"; b = constr -> TacForward (true,Names.Anonymous,b)
-      | IDENT "generalize"; lc = LIST1 constr -> TacGeneralize lc
-      | IDENT "generalize"; IDENT "dependent"; c = constr ->
-          TacGeneralizeDep c
-      | IDENT "set"; id = lpar_id_coloneq; c = lconstr; ")";
-          p = clause -> TacLetTac (Names.Name id,c,p)
+	  TacLetTac (Names.Name id,b,nowhere)
+      | IDENT "pose"; b = constr ->
+	  TacLetTac (Names.Anonymous,b,nowhere)
+      | IDENT "set"; id = lpar_id_coloneq; c = lconstr; ")"; p = clause ->
+	  TacLetTac (Names.Name id,c,p)
       | IDENT "set"; c = constr; p = clause ->
           TacLetTac (Names.Anonymous,c,p)
+
+      (* Begin compatibility *)
+      | IDENT "assert"; id = lpar_id_coloneq; c = lconstr; ")" -> 
+	  TacAssert (None,Some (IntroIdentifier id),c)
+      | IDENT "assert"; id = lpar_id_colon; c = lconstr; ")"; tac=by_tactic -> 
+	  TacAssert (Some tac,Some (IntroIdentifier id),c)
+      (* End compatibility *)
+
+      | IDENT "assert"; c = constr; ipat = with_names; tac = by_tactic ->
+	  TacAssert (Some tac,ipat,c)
+      | IDENT "pose"; IDENT "proof"; c = lconstr; ipat = with_names ->
+	  TacAssert (None,ipat,c)
+
+      | IDENT "cut"; c = constr -> TacCut c
+      | IDENT "generalize"; lc = LIST1 constr -> TacGeneralize lc
+      | IDENT "generalize"; IDENT "dependent"; c = constr -> TacGeneralizeDep c
     (*  | IDENT "instantiate"; "("; n = natural; ":="; c = lconstr; ")"; "in";
 	  hid = hypident ->
 	    let (id,(hloc,_)) = hid in

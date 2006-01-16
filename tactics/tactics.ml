@@ -500,6 +500,10 @@ let apply_without_reduce c gl =
   end.
 *)
 
+(**************************)
+(*     Cut tactics        *)
+(**************************)
+
 let cut_and_apply c gl =
   let goal_constr = pf_concl gl in 
   match kind_of_term (pf_hnf_constr gl (pf_type_of gl c)) with
@@ -508,24 +512,6 @@ let cut_and_apply c gl =
 	  (apply_type (mkProd (Anonymous,c2,goal_constr)) [mkMeta(new_meta())])
 	  (apply_term c [mkMeta (new_meta())]) gl
     | _ -> error "Imp_elim needs a non-dependent product"
-
-(**************************)
-(*     Cut tactics        *)
-(**************************)
-
-let assert_tac first na c gl =
-  match kind_of_term (hnf_type_of gl c) with
-    | Sort s -> 
-	let id = match na with
-	  | Anonymous -> 
-              let d = match s with Prop _ -> "H" | Type _ -> "X" in
-              fresh_id [] (id_of_string d) gl
-	  | Name id -> id
-	in
-	(if first then internal_cut else internal_cut_rev) id c gl
-    | _  -> error "Not a proposition or a type"
-
-let true_cut = assert_tac true
 
 let cut c gl =
   match kind_of_term (hnf_type_of gl c) with
@@ -553,222 +539,6 @@ let cut_in_parallel l =
     | h::t -> tclTHENFIRST (cut h) (prec t)
   in 
   prec (List.rev l)
-
-(**************************)
-(*   Generalize tactics   *)
-(**************************)
-
-let generalize_goal gl c cl =
-  let t = pf_type_of gl c in
-  match kind_of_term c with
-    | Var id ->
-	(* The choice of remembering or not a non dependent name has an impact
-	   on the future Intro naming strategy! *)
-	(* if dependent c cl then mkNamedProd id t cl
-	   else mkProd (Anonymous,t,cl) *)
-	mkNamedProd id t cl
-    | _        -> 
-        let cl' = subst_term c cl in
-        if noccurn 1 cl' then 
-	  mkProd (Anonymous,t,cl)
-          (* On ne se casse pas la tete : on prend pour nom de variable
-             la premiere lettre du type, meme si "ci" est une
-             constante et qu'on pourrait prendre directement son nom *)
-        else 
-	  prod_name (Global.env()) (Anonymous, t, cl')
-
-let generalize_dep c gl =
-  let env = pf_env gl in
-  let sign = pf_hyps gl in
-  let init_ids = ids_of_named_context (Global.named_context()) in
-  let rec seek d toquant =
-    if List.exists (fun (id,_,_) -> occur_var_in_decl env id d) toquant
-      or dependent_in_decl c d then 
-      d::toquant
-    else 
-      toquant in
-  let to_quantify = Sign.fold_named_context seek sign ~init:[] in
-  let to_quantify_rev = List.rev to_quantify in
-  let qhyps = List.map (fun (id,_,_) -> id) to_quantify_rev in
-  let tothin = List.filter (fun id -> not (List.mem id init_ids)) qhyps in
-  let tothin' =
-    match kind_of_term c with
-      | Var id when mem_named_context id sign & not (List.mem id init_ids)
-	  -> id::tothin
-      | _ -> tothin
-  in
-  let cl' = it_mkNamedProd_or_LetIn (pf_concl gl) to_quantify in
-  let cl'' = generalize_goal gl c cl' in
-  let args = Array.to_list (instance_from_named_context to_quantify_rev) in
-  tclTHEN
-    (apply_type cl'' (c::args))
-    (thin (List.rev tothin'))
-    gl
-    
-let generalize lconstr gl = 
-  let newcl = List.fold_right (generalize_goal gl) lconstr (pf_concl gl) in
-  apply_type newcl lconstr gl
-
-(* Faudra-t-il une version avec plusieurs args de generalize_dep ?
-Cela peut-être troublant de faire "Generalize Dependent H n" dans
-"n:nat; H:n=n |- P(n)" et d'échouer parce que H a disparu après la
-généralisation dépendante par n.
-
-let quantify lconstr =
- List.fold_right 
-   (fun com tac -> tclTHEN tac (tactic_com generalize_dep c))
-   lconstr
-   tclIDTAC
-*)
-
-(* A dependent cut rule à la sequent calculus
-   ------------------------------------------
-   Sera simplifiable le jour où il y aura un let in primitif dans constr
-
-   [letin_tac b na c (occ_hyp,occ_ccl) gl] transforms
-   [...x1:T1(c),...,x2:T2(c),... |- G(c)] into
-   [...x:T;x1:T1(x),...,x2:T2(x),... |- G(x)] if [b] is false or
-   [...x:=c:T;x1:T1(x),...,x2:T2(x),... |- G(x)] if [b] is true
-
-   [occ_hyp,occ_ccl] tells which occurrences of [c] have to be substituted;
-   if [occ_hyp = []] and [occ_ccl = None] then [c] is substituted
-   wherever it occurs, otherwise [c] is substituted only in hyps
-   present in [occ_hyps] at the specified occurrences (everywhere if
-   the list of occurrences is empty), and in the goal at the specified
-   occurrences if [occ_goal] is not [None];
-
-   if name = Anonymous, the name is build from the first letter of the type;
-
-   The tactic first quantify the goal over x1, x2,... then substitute then
-   re-intro x1, x2,... at their initial place ([marks] is internally
-   used to remember the place of x1, x2, ...: it is the list of hypotheses on
-   the left of each x1, ...).
-*)
-
-
-
-let occurrences_of_hyp id cls =
-  let rec hyp_occ = function
-      [] -> None
-    | (id',occs,hl)::_ when id=id' -> Some occs
-    | _::l -> hyp_occ l in
-  match cls.onhyps with
-      None -> Some []
-    | Some l -> hyp_occ l
-
-let occurrences_of_goal cls =
-  if cls.onconcl then Some cls.concl_occs else None
-
-let in_every_hyp cls = (cls.onhyps=None)
-
-(*
-(* Implementation with generalisation then re-intro: introduces noise *)
-(* in proofs *)
-
-let letin_abstract id c occs gl =
-  let env = pf_env gl in
-  let compute_dependency _ (hyp,_,_ as d) ctxt =
-    let d' =
-      try
-	match occurrences_of_hyp hyp occs with
-	  | None -> raise Not_found
-	  | Some occ ->
-              let newdecl = subst_term_occ_decl occ c d in
-              if occ = [] & d = newdecl then
-		if not (in_every_hyp occs)
-		then raise (RefinerError (DoesNotOccurIn (c,hyp)))
-		else raise Not_found
-              else 
-		(subst1_decl (mkVar id) newdecl, true)
-	with Not_found -> 
-	  (d,List.exists
-	      (fun ((id,_,_),dep) -> dep && occur_var_in_decl env id d) ctxt)
-    in d'::ctxt
-  in 
-  let ctxt' = fold_named_context compute_dependency env ~init:[] in
-  let compute_marks ((depdecls,marks as accu),lhyp) ((hyp,_,_) as d,b) =
-    if b then ((d::depdecls,(hyp,lhyp)::marks), lhyp)
-    else (accu, Some hyp) in
-  let (depdecls,marks),_ = List.fold_left compute_marks (([],[]),None) ctxt' in
-  let ccl = match occurrences_of_goal occs with
-    | None -> pf_concl gl
-    | Some occ -> subst1 (mkVar id) (subst_term_occ occ c (pf_concl gl))
-  in
-  (depdecls,marks,ccl)
-
-let letin_tac with_eq name c occs gl =
-  let x = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c) name in
-  let id =
-    if name = Anonymous then fresh_id [] x gl else
-      if not (mem_named_context x (pf_hyps gl)) then x else
-	error ("The variable "^(string_of_id x)^" is already declared") in
-  let (depdecls,marks,ccl)= letin_abstract id c occs gl in 
-  let t = pf_type_of gl c in
-  let tmpcl = List.fold_right mkNamedProd_or_LetIn depdecls ccl in
-  let args = Array.to_list (instance_from_named_context depdecls) in
-  let newcl = mkNamedLetIn id c t tmpcl in
-  let lastlhyp = if marks=[] then None else snd (List.hd marks) in
-  tclTHENLIST
-    [ apply_type newcl args;
-      thin (List.map (fun (id,_,_) -> id) depdecls);
-      intro_gen (IntroMustBe id) lastlhyp false;
-      if with_eq then tclIDTAC else thin_body [id];
-      intros_move marks ] gl
-*)
-
-(* Implementation without generalisation: abbrev will be lost in hyps in *)
-(* in the extracted proof *)
-
-let letin_abstract id c occs gl =
-  let env = pf_env gl in
-  let compute_dependency _ (hyp,_,_ as d) depdecls =
-    match occurrences_of_hyp hyp occs with
-      | None -> depdecls
-      | Some occ ->
-          let newdecl = subst_term_occ_decl occ c d in
-          if occ = [] & d = newdecl then
-	    if not (in_every_hyp occs)
-	    then raise (RefinerError (DoesNotOccurIn (c,hyp)))
-	    else depdecls
-          else 
-	    (subst1_decl (mkVar id) newdecl)::depdecls in 
-  let depdecls = fold_named_context compute_dependency env ~init:[] in
-  let ccl = match occurrences_of_goal occs with
-    | None -> pf_concl gl
-    | Some occ -> subst1 (mkVar id) (subst_term_occ occ c (pf_concl gl)) in
-  let lastlhyp = if depdecls = [] then None else Some(pi1(list_last depdecls)) in
-  (depdecls,lastlhyp,ccl)
-
-let letin_tac with_eq name c occs gl =
-  let id =
-    let x = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c) name in
-    if name = Anonymous then fresh_id [] x gl else
-      if not (mem_named_context x (pf_hyps gl)) then x else
-	error ("The variable "^(string_of_id x)^" is already declared") in
-  let (depdecls,lastlhyp,ccl)= letin_abstract id c occs gl in 
-  let t = refresh_universes (pf_type_of gl c) in
-  let newcl = mkNamedLetIn id c t ccl in
-  tclTHENLIST
-    [ convert_concl_no_check newcl DEFAULTcast;
-      intro_gen (IntroMustBe id) lastlhyp true;
-      if with_eq then tclIDTAC else thin_body [id];
-      tclMAP convert_hyp_no_check depdecls ] gl
-  
-let check_hypotheses_occurrences_list env (_,occl) =
-  let rec check acc = function
-    | (hyp,_) :: rest -> 
-	if List.mem hyp acc then
-	  error ("Hypothesis "^(string_of_id hyp)^" occurs twice");
-	if not (mem_named_context hyp (named_context env)) then
-	  error ("No such hypothesis: " ^ (string_of_id hyp));
-	check (hyp::acc) rest
-    | [] -> ()
-  in check [] occl
-
-let nowhere = {onhyps=Some[]; onconcl=false; concl_occs=[]}
-
-(* Tactics "assert (...:=...)" (b=false) and "pose" (b=true) *)
-let forward b na c = letin_tac b na c nowhere
 
 (********************************************************************)
 (*               Exact tactics                                      *)
@@ -1062,6 +832,252 @@ let intro_pattern destopt pat = intros_patterns [] destopt [pat]
 let intro_patterns = function 
   | [] -> tclREPEAT intro
   | l  -> intros_pattern None l
+
+(**************************)
+(*   Other cut tactics    *)
+(**************************)
+
+let hid = id_of_string "H"
+let xid = id_of_string "X"
+
+let make_id s = fresh_id [] (match s with Prop _ -> hid | Type _ -> xid)
+
+let prepare_intros s ipat gl = match ipat with
+  | None -> make_id s gl, tclIDTAC
+  | Some IntroWildcard -> let id = make_id s gl in id, thin [id]
+  | Some (IntroIdentifier id) -> id, tclIDTAC
+  | Some (IntroOrAndPattern ll) -> make_id s gl, 
+        (tclTHENS 
+	  (tclTHEN case_last clear_last)
+	  (List.map (intros_patterns [] None) ll))
+
+let ipat_of_name = function
+  | Anonymous -> None
+  | Name id -> Some (IntroIdentifier id)
+
+let assert_as first ipat c gl =
+  match kind_of_term (hnf_type_of gl c) with
+  | Sort s ->
+      let id,tac = prepare_intros s ipat gl in
+      tclTHENS ((if first then internal_cut else internal_cut_rev) id c)
+	(if first then [tclIDTAC; tac] else [tac; tclIDTAC]) gl
+  | _  -> error "Not a proposition or a type"
+
+let assert_tac first na = assert_as first (ipat_of_name na)
+let true_cut = assert_tac true 
+
+(**************************)
+(*   Generalize tactics   *)
+(**************************)
+
+let generalize_goal gl c cl =
+  let t = pf_type_of gl c in
+  match kind_of_term c with
+    | Var id ->
+	(* The choice of remembering or not a non dependent name has an impact
+	   on the future Intro naming strategy! *)
+	(* if dependent c cl then mkNamedProd id t cl
+	   else mkProd (Anonymous,t,cl) *)
+	mkNamedProd id t cl
+    | _        -> 
+        let cl' = subst_term c cl in
+        if noccurn 1 cl' then 
+	  mkProd (Anonymous,t,cl)
+          (* On ne se casse pas la tete : on prend pour nom de variable
+             la premiere lettre du type, meme si "ci" est une
+             constante et qu'on pourrait prendre directement son nom *)
+        else 
+	  prod_name (Global.env()) (Anonymous, t, cl')
+
+let generalize_dep c gl =
+  let env = pf_env gl in
+  let sign = pf_hyps gl in
+  let init_ids = ids_of_named_context (Global.named_context()) in
+  let rec seek d toquant =
+    if List.exists (fun (id,_,_) -> occur_var_in_decl env id d) toquant
+      or dependent_in_decl c d then 
+      d::toquant
+    else 
+      toquant in
+  let to_quantify = Sign.fold_named_context seek sign ~init:[] in
+  let to_quantify_rev = List.rev to_quantify in
+  let qhyps = List.map (fun (id,_,_) -> id) to_quantify_rev in
+  let tothin = List.filter (fun id -> not (List.mem id init_ids)) qhyps in
+  let tothin' =
+    match kind_of_term c with
+      | Var id when mem_named_context id sign & not (List.mem id init_ids)
+	  -> id::tothin
+      | _ -> tothin
+  in
+  let cl' = it_mkNamedProd_or_LetIn (pf_concl gl) to_quantify in
+  let cl'' = generalize_goal gl c cl' in
+  let args = Array.to_list (instance_from_named_context to_quantify_rev) in
+  tclTHEN
+    (apply_type cl'' (c::args))
+    (thin (List.rev tothin'))
+    gl
+    
+let generalize lconstr gl = 
+  let newcl = List.fold_right (generalize_goal gl) lconstr (pf_concl gl) in
+  apply_type newcl lconstr gl
+
+(* Faudra-t-il une version avec plusieurs args de generalize_dep ?
+Cela peut-être troublant de faire "Generalize Dependent H n" dans
+"n:nat; H:n=n |- P(n)" et d'échouer parce que H a disparu après la
+généralisation dépendante par n.
+
+let quantify lconstr =
+ List.fold_right 
+   (fun com tac -> tclTHEN tac (tactic_com generalize_dep c))
+   lconstr
+   tclIDTAC
+*)
+
+(* A dependent cut rule à la sequent calculus
+   ------------------------------------------
+   Sera simplifiable le jour où il y aura un let in primitif dans constr
+
+   [letin_tac b na c (occ_hyp,occ_ccl) gl] transforms
+   [...x1:T1(c),...,x2:T2(c),... |- G(c)] into
+   [...x:T;x1:T1(x),...,x2:T2(x),... |- G(x)] if [b] is false or
+   [...x:=c:T;x1:T1(x),...,x2:T2(x),... |- G(x)] if [b] is true
+
+   [occ_hyp,occ_ccl] tells which occurrences of [c] have to be substituted;
+   if [occ_hyp = []] and [occ_ccl = None] then [c] is substituted
+   wherever it occurs, otherwise [c] is substituted only in hyps
+   present in [occ_hyps] at the specified occurrences (everywhere if
+   the list of occurrences is empty), and in the goal at the specified
+   occurrences if [occ_goal] is not [None];
+
+   if name = Anonymous, the name is build from the first letter of the type;
+
+   The tactic first quantify the goal over x1, x2,... then substitute then
+   re-intro x1, x2,... at their initial place ([marks] is internally
+   used to remember the place of x1, x2, ...: it is the list of hypotheses on
+   the left of each x1, ...).
+*)
+
+
+
+let occurrences_of_hyp id cls =
+  let rec hyp_occ = function
+      [] -> None
+    | (id',occs,hl)::_ when id=id' -> Some occs
+    | _::l -> hyp_occ l in
+  match cls.onhyps with
+      None -> Some []
+    | Some l -> hyp_occ l
+
+let occurrences_of_goal cls =
+  if cls.onconcl then Some cls.concl_occs else None
+
+let in_every_hyp cls = (cls.onhyps=None)
+
+(*
+(* Implementation with generalisation then re-intro: introduces noise *)
+(* in proofs *)
+
+let letin_abstract id c occs gl =
+  let env = pf_env gl in
+  let compute_dependency _ (hyp,_,_ as d) ctxt =
+    let d' =
+      try
+	match occurrences_of_hyp hyp occs with
+	  | None -> raise Not_found
+	  | Some occ ->
+              let newdecl = subst_term_occ_decl occ c d in
+              if occ = [] & d = newdecl then
+		if not (in_every_hyp occs)
+		then raise (RefinerError (DoesNotOccurIn (c,hyp)))
+		else raise Not_found
+              else 
+		(subst1_decl (mkVar id) newdecl, true)
+	with Not_found -> 
+	  (d,List.exists
+	      (fun ((id,_,_),dep) -> dep && occur_var_in_decl env id d) ctxt)
+    in d'::ctxt
+  in 
+  let ctxt' = fold_named_context compute_dependency env ~init:[] in
+  let compute_marks ((depdecls,marks as accu),lhyp) ((hyp,_,_) as d,b) =
+    if b then ((d::depdecls,(hyp,lhyp)::marks), lhyp)
+    else (accu, Some hyp) in
+  let (depdecls,marks),_ = List.fold_left compute_marks (([],[]),None) ctxt' in
+  let ccl = match occurrences_of_goal occs with
+    | None -> pf_concl gl
+    | Some occ -> subst1 (mkVar id) (subst_term_occ occ c (pf_concl gl))
+  in
+  (depdecls,marks,ccl)
+
+let letin_tac with_eq name c occs gl =
+  let x = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c) name in
+  let id =
+    if name = Anonymous then fresh_id [] x gl else
+      if not (mem_named_context x (pf_hyps gl)) then x else
+	error ("The variable "^(string_of_id x)^" is already declared") in
+  let (depdecls,marks,ccl)= letin_abstract id c occs gl in 
+  let t = pf_type_of gl c in
+  let tmpcl = List.fold_right mkNamedProd_or_LetIn depdecls ccl in
+  let args = Array.to_list (instance_from_named_context depdecls) in
+  let newcl = mkNamedLetIn id c t tmpcl in
+  let lastlhyp = if marks=[] then None else snd (List.hd marks) in
+  tclTHENLIST
+    [ apply_type newcl args;
+      thin (List.map (fun (id,_,_) -> id) depdecls);
+      intro_gen (IntroMustBe id) lastlhyp false;
+      if with_eq then tclIDTAC else thin_body [id];
+      intros_move marks ] gl
+*)
+
+(* Implementation without generalisation: abbrev will be lost in hyps in *)
+(* in the extracted proof *)
+
+let letin_abstract id c occs gl =
+  let env = pf_env gl in
+  let compute_dependency _ (hyp,_,_ as d) depdecls =
+    match occurrences_of_hyp hyp occs with
+      | None -> depdecls
+      | Some occ ->
+          let newdecl = subst_term_occ_decl occ c d in
+          if occ = [] & d = newdecl then
+	    if not (in_every_hyp occs)
+	    then raise (RefinerError (DoesNotOccurIn (c,hyp)))
+	    else depdecls
+          else 
+	    (subst1_decl (mkVar id) newdecl)::depdecls in 
+  let depdecls = fold_named_context compute_dependency env ~init:[] in
+  let ccl = match occurrences_of_goal occs with
+    | None -> pf_concl gl
+    | Some occ -> subst1 (mkVar id) (subst_term_occ occ c (pf_concl gl)) in
+  let lastlhyp = if depdecls = [] then None else Some(pi1(list_last depdecls)) in
+  (depdecls,lastlhyp,ccl)
+
+let letin_tac with_eq name c occs gl =
+  let id =
+    let x = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c) name in
+    if name = Anonymous then fresh_id [] x gl else
+      if not (mem_named_context x (pf_hyps gl)) then x else
+	error ("The variable "^(string_of_id x)^" is already declared") in
+  let (depdecls,lastlhyp,ccl)= letin_abstract id c occs gl in 
+  let t = refresh_universes (pf_type_of gl c) in
+  let newcl = mkNamedLetIn id c t ccl in
+  tclTHENLIST
+    [ convert_concl_no_check newcl DEFAULTcast;
+      intro_gen (IntroMustBe id) lastlhyp true;
+      if with_eq then tclIDTAC else thin_body [id];
+      tclMAP convert_hyp_no_check depdecls ] gl
+  
+(* Tactics "pose proof" (usetac=None) and "assert" (otherwise) *)
+let forward usetac ipat c gl =
+  match usetac with
+  | None -> 
+      let t = refresh_universes (pf_type_of gl c) in
+      tclTHENS (assert_as true ipat t) [exact_no_check c; tclIDTAC] gl
+  | Some tac -> 
+      tclTHENS (assert_as true ipat c) [tac; tclIDTAC] gl
+
+(*****************************)
+(* High-level induction      *)
+(*****************************)
 
 (*
  * A "natural" induction tactic

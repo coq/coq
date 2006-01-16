@@ -297,11 +297,10 @@ let rec mlexpr_of_atomic_tactic = function
 
   | Tacexpr.TacCut c ->
       <:expr< Tacexpr.TacCut $mlexpr_of_constr c$ >>
-  | Tacexpr.TacTrueCut (na,c) ->
-      let na = mlexpr_of_name na in
-      <:expr< Tacexpr.TacTrueCut $na$ $mlexpr_of_constr c$ >>
-  | Tacexpr.TacForward (b,na,c) ->
-      <:expr< Tacexpr.TacForward $mlexpr_of_bool b$ $mlexpr_of_name na$ $mlexpr_of_constr c$ >>
+  | Tacexpr.TacAssert (t,ipat,c) ->
+      let ipat = mlexpr_of_option mlexpr_of_intro_pattern ipat in
+      <:expr< Tacexpr.TacAssert $mlexpr_of_option mlexpr_of_tactic t$ $ipat$ 
+	      $mlexpr_of_constr c$ >>
   | Tacexpr.TacGeneralize cl ->
       <:expr< Tacexpr.TacGeneralize $mlexpr_of_list mlexpr_of_constr cl$ >>
   | Tacexpr.TacGeneralizeDep c ->

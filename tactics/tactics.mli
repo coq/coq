@@ -239,10 +239,11 @@ val cut_replacing               :
   identifier -> constr -> (tactic -> tactic) -> tactic
 val cut_in_parallel             : constr list -> tactic
 
-val assert_tac                  : bool -> name -> constr -> tactic
+val assert_as : bool -> intro_pattern_expr option -> constr -> tactic
 val true_cut                    : name -> constr -> tactic
 val letin_tac                   : bool -> name -> constr -> clause -> tactic
-val forward                     : bool -> name -> constr -> tactic
+val assert_tac                  : bool -> name -> constr -> tactic
+val forward    : tactic option -> intro_pattern_expr option -> constr -> tactic
 val generalize                  : constr list -> tactic
 val generalize_dep              : constr  -> tactic
 
