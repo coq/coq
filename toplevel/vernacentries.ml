@@ -345,8 +345,8 @@ let vernac_end_proof = function
      the theories [??] *)
 
 let vernac_exact_proof c =
-  let pts = get_pftreestate () in
-  let pf = top_of_tree (proof_of_pftreestate pts) in
+  let pts = top_of_tree (get_pftreestate ()) in
+  let pf = (proof_of_pftreestate pts) in
     if is_leaf_proof pf then 
       begin by (Tactics.exact_proof c); save_named true end
     else
@@ -568,8 +568,8 @@ let vernac_solve_existential = instantiate_nth_evar_com
 let vernac_set_end_tac tac =
   if not (refining ()) then
     error "Unknown command of the non proof-editing mode";
-  let pts = get_pftreestate () in
-  let pf = top_of_tree (proof_of_pftreestate pts) in
+  let pts = top_of_tree (get_pftreestate ()) in
+  let pf = (proof_of_pftreestate pts) in
     if is_leaf_proof pf then 
       if tac <> (Tacexpr.TacId "") then set_end_tac (Tacinterp.interp tac)
     else
