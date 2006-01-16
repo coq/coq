@@ -1347,7 +1347,8 @@ PRINTERSCMO=\
   interp/topconstr.cmo interp/notation.cmo interp/reserve.cmo		\
   library/impargs.cmo\
   interp/constrextern.cmo interp/syntax_def.cmo interp/constrintern.cmo	\
-  proofs/proof_trees.cmo proofs/logic.cmo proofs/refiner.cmo		\
+  proofs/proof_trees.cmo proofs/logic.cmo proofs/refiner.cmo \
+  proofs/tacexpr.cmo \
   proofs/evar_refiner.cmo proofs/pfedit.cmo proofs/tactic_debug.cmo	\
   parsing/ppconstr.cmo parsing/extend.cmo \
   parsing/printer.cmo parsing/pptactic.cmo parsing/tactic_printer.cmo \
