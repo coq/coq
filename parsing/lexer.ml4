@@ -357,9 +357,11 @@ let parse_226_tail tk = parser
       t = special (progress_special c3 (progress_special c2 
 	(progress_special '\226' tk))) >] ->
       TokSymbol t
-  | [< len = ident_tail (store 0 '\226') >] ->
-      TokIdent (get_buff len)
-
+  | [< s >] ->
+      if !Options.v7 then match s with parser
+	  [< len = ident_tail (store 0 '\226') >] -> TokIdent (get_buff len)
+      else match s with parser
+	  [< '_; '_ >] -> (* Unsupported utf-8 code *) TokSymbol None
 
 (* Parse what follows a dot *)
 let parse_after_dot bp c strm =
