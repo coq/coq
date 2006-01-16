@@ -32,6 +32,7 @@ type intro_pattern_expr =
   | IntroOrAndPattern of case_intro_pattern_expr
   | IntroWildcard
   | IntroIdentifier of identifier
+  | IntroAnonymous
 and case_intro_pattern_expr = intro_pattern_expr list list
 
 val pr_intro_pattern : intro_pattern_expr -> Pp.std_ppcmds

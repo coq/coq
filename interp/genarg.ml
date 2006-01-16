@@ -69,15 +69,17 @@ type intro_pattern_expr =
   | IntroOrAndPattern of case_intro_pattern_expr
   | IntroWildcard
   | IntroIdentifier of identifier
+  | IntroAnonymous
 and case_intro_pattern_expr = intro_pattern_expr list list
 
 let rec pr_intro_pattern = function
   | IntroOrAndPattern pll -> pr_case_intro_pattern pll
   | IntroWildcard -> str "_"
   | IntroIdentifier id -> pr_id id
+  | IntroAnonymous -> str "?"
 
 and pr_case_intro_pattern = function
-  | [_::_ as pl] ->
+  | [pl] ->
       str "(" ++ hv 0 (prlist_with_sep pr_coma pr_intro_pattern pl) ++ str ")"
   | pll ->
       str "[" ++
