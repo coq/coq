@@ -155,7 +155,8 @@ GEXTEND Gram
   ;
   simple_intropattern:
     [ [ "["; tc = LIST1 intropatterns SEP "|" ; "]" -> IntroOrAndPattern tc
-      | "("; tc = LIST1 simple_intropattern SEP "," ; ")" -> IntroOrAndPattern [tc]
+      | "("; tc = LIST0 simple_intropattern SEP "," ; ")" -> IntroOrAndPattern [tc]
+      | "()" -> IntroOrAndPattern [[]]
       | "_" -> IntroWildcard
       | id = ident -> IntroIdentifier id
       ] ]

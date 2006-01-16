@@ -354,7 +354,7 @@ let rec pr_intro_pattern = function
   | IntroWildcard -> str "_"
   | IntroIdentifier id -> pr_id id
 and pr_case_intro_pattern = function
-  | [_::_ as pl] ->
+  | [pl] ->
       str "(" ++ hov 0 (prlist_with_sep pr_coma pr_intro_pattern pl) ++ str ")"
   | pll ->
       str "[" ++
