@@ -281,7 +281,7 @@ GEXTEND Gram
     [ [ "as"; ipat = simple_intropattern -> ipat | -> IntroAnonymous ] ]
   ;
   by_tactic:
-    [ [ "by"; tac = tactic -> tac | -> TacId "" ] ]
+    [ [ IDENT "by"; tac = tactic -> tac | -> TacId "" ] ]
   ;
   simple_tactic:
     [ [ 
