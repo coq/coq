@@ -1362,7 +1362,7 @@ let make_base n id =
     (* digits *)
     id_of_string (atompart_of_id (make_ident (string_of_id id) (Some 0)))
 
-let make_up_names n ind (_,cname) = 
+let make_up_names n ind cname = 
   let is_hyp = atompart_of_id cname = "H" in
   let base = string_of_id (make_base n cname) in
   let hyprecname =
@@ -1463,7 +1463,7 @@ let compute_elim_signature elimt names_info =
     find_branches 0 l in
   nparams, indt, (Array.of_list (check_elim 0 revhyps2))
 
-let find_elim_signature isrec style elim hyp0 gl =
+let find_elim_signature isrec elim hyp0 gl =
   let tmptyp0 =	pf_get_hyp_typ gl hyp0 in
   let (elimc,elimt) = match elim with
     | None ->
@@ -1476,8 +1476,7 @@ let find_elim_signature isrec style elim hyp0 gl =
 	((elimc, NoBindings), elimt)
     | Some (elimc,lbind as e) -> 
 	(e, pf_type_of gl elimc) in
-  let name_info = (style,hyp0) in
-  let nparams,indref,indsign = compute_elim_signature elimt name_info in
+  let nparams,indref,indsign = compute_elim_signature elimt hyp0 in
   (elimc,elimt,nparams,indref,indsign)
 
 let induction_from_context isrec elim_info hyp0 names gl =
@@ -1521,13 +1520,11 @@ let induction_from_context isrec elim_info hyp0 names gl =
 
 let induction_with_atomization_of_ind_arg isrec elim names hyp0 gl =
   let (elimc,elimt,nparams,indref,indsign as elim_info) =
-    find_elim_signature isrec false elim hyp0 gl in
+    find_elim_signature isrec elim hyp0 gl in
   tclTHEN
     (atomize_param_of_ind (indref,nparams) hyp0)
     (induction_from_context isrec elim_info hyp0 names) gl
 
-(* This is Induction since V7 ("natural" induction both in quantified
-   premisses and introduced ones) *)
 let new_induct_gen isrec elim names c gl =
   match kind_of_term c with
     | Var id when not (mem_named_context id (Global.named_context())) ->
@@ -1540,6 +1537,7 @@ let new_induct_gen isrec elim names c gl =
 	  (letin_tac true (Name id) c allClauses)
 	  (induction_with_atomization_of_ind_arg isrec elim names id) gl
 
+(* Induction either over a term or over a quantified premisse *)
 let new_induct_destruct isrec c elim names = match c with
   | ElimOnConstr c -> new_induct_gen isrec elim names c
   | ElimOnAnonHyp n ->
