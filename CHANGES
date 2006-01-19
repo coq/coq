@@ -5,6 +5,7 @@ Syntax
 
 - No more support for version 7 syntax and for translation to version 8 syntax.
 - Support for primitive interpretation of string litterals
+- Extended support for Unicode ranges (Unicode doc TODO)
 
 Environment variables
 
