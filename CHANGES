@@ -61,6 +61,7 @@ Tactics
 - Tactic "assert" now accepts "as" intro patterns and "by" tactic clauses
 - New tactic "pose proof" that generalizes "assert (id:=p)" with intro patterns
 - New introduction pattern "?" for letting Coq choose a name
+- Added "eassumption"
 
 Modules
 
