@@ -94,7 +94,7 @@ End Equivalence.
 Definition IF_then_else (P Q R:Prop) := P /\ Q \/ ~ P /\ R.
 
 Notation "'IF' c1 'then' c2 'else' c3" := (IF_then_else c1 c2 c3)
-  (at level 200) : type_scope.
+  (at level 200, right associativity) : type_scope.
 
 (** * First-order quantifiers
   - [ex A P], or simply [exists x, P x], expresses the existence of an 
@@ -119,15 +119,16 @@ Definition all (A:Type) (P:A -> Prop) := forall x:A, P x.
 (* Rule order is important to give printing priority to fully typed exists *)
 
 Notation "'exists' x , p" := (ex (fun x => p))
-  (at level 200, x ident) : type_scope.
+  (at level 200, x ident, right associativity) : type_scope.
 Notation "'exists' x : t , p" := (ex (fun x:t => p))
-  (at level 200, x ident, format "'exists'  '/  ' x  :  t ,  '/  ' p")
+  (at level 200, x ident, right associativity, 
+   format "'exists'  '/  ' x  :  t ,  '/  ' p")
   : type_scope.
 
 Notation "'exists2' x , p & q" := (ex2 (fun x => p) (fun x => q))
-  (at level 200, x ident, p at level 200) : type_scope.
+  (at level 200, x ident, p at level 200, right associativity) : type_scope.
 Notation "'exists2' x : t , p & q" := (ex2 (fun x:t => p) (fun x:t => q))
-  (at level 200, x ident, t at level 200, p at level 200,
+  (at level 200, x ident, t at level 200, p at level 200, right associativity,
    format "'exists2'  '/  ' x  :  t ,  '/  ' '[' p  &  '/' q ']'")
   : type_scope.
 
