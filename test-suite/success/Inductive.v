@@ -42,3 +42,11 @@ Inductive Finite (A : Set) : LList A -> Prop :=
   | Finite_LNil : Finite LNil
   | Finite_LCons :
       forall (a : A) (l : LList A), Finite l -> Finite (LCons a l).
+
+(* Check positivity modulo reduction (cf bug #983) *)
+
+Record P:Type := {PA:Set; PB:Set}.
+
+Definition F (p:P) := (PA p) -> (PB p).
+
+Inductive I_F:Set := c : (F (Build_P nat I_F)) -> I_F.
