@@ -1080,7 +1080,7 @@ let forward usetac ipat c gl =
       let t = refresh_universes (pf_type_of gl c) in
       tclTHENS (assert_as true ipat t) [exact_no_check c; tclIDTAC] gl
   | Some tac -> 
-      tclTHENS (assert_as true ipat c) [tac; tclIDTAC] gl
+      tclTHENS (assert_as true ipat c) [tclCOMPLETE tac; tclIDTAC] gl
 
 (*****************************)
 (* High-level induction      *)
