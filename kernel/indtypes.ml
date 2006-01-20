@@ -20,10 +20,14 @@ open Reduction
 open Typeops
 open Entries
 
-(* [check_constructors_names id s cl] checks that all the constructors names
-   appearing in [l] are not present in the set [s], and returns the new set
-   of names. The name [id] is the name of the current inductive type, used
-   when reporting the error. *)
+(* Same as noccur_between but may perform reductions.
+   Could be refined more...  *)
+let weaker_noccur_between env x nvars t =
+  if noccur_between x nvars t then Some t
+  else
+   let t' = whd_betadeltaiota env t in
+   if noccur_between x nvars t' then Some t'
+   else None
 
 (************************************************************************)
 (* Various well-formedness check for inductive declarations            *)
@@ -41,6 +45,11 @@ type inductive_error =
   | BadEntry
 
 exception InductiveError of inductive_error
+
+(* [check_constructors_names id s cl] checks that all the constructors names
+   appearing in [l] are not present in the set [s], and returns the new set
+   of names. The name [id] is the name of the current inductive type, used
+   when reporting the error. *)
 
 let check_constructors_names id =
   let rec check idset = function
@@ -357,10 +366,10 @@ let check_positivity_one (env, _,ntypes,_ as ienv) hyps i indlc =
     match kind_of_term x with
       | Prod (na,b,d) ->
 	  assert (largs = []);
-	  let b = whd_betadeltaiota env b in
-          if not (noccur_between n ntypes b) then
-	    raise (IllFormedInd (LocalNonPos n));
-	  check_pos (ienv_push_var ienv (na, b, mk_norec)) nmr d
+          (match weaker_noccur_between env n ntypes b with
+              None -> raise (IllFormedInd (LocalNonPos n));
+            | Some b ->
+	        check_pos (ienv_push_var ienv (na, b, mk_norec)) nmr d)
       | Rel k ->
            (try let (ra,rarg) = List.nth ra_env (k-1) in 
 		let nmr1 =

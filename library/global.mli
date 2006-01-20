@@ -35,6 +35,8 @@ val universes : unit -> universes
 val named_context_val : unit -> Environ.named_context_val
 val named_context : unit -> Sign.named_context
 
+val env_is_empty : unit -> bool
+
 (*s Extending env with variables and local definitions *)
 val push_named_assum : (identifier * types) -> Univ.constraints
 val push_named_def   : (identifier * constr * types option) -> Univ.constraints
