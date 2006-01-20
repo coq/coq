@@ -26,7 +26,7 @@ let weaker_noccur_between env x nvars t =
   if noccur_between x nvars t then Some t
   else
    let t' = whd_betadeltaiota env t in
-   if noccur_between x nvars t then Some t'
+   if noccur_between x nvars t' then Some t'
    else None
 
 (************************************************************************)
