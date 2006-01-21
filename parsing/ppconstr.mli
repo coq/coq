@@ -35,9 +35,7 @@ val prec_less : int -> int * Ppextend.parenRelation -> bool
  
 val pr_tight_coma : unit -> std_ppcmds
 
-val pr_located :
-  ('a -> std_ppcmds) -> 'a located -> std_ppcmds
-val pr_opt : ('a -> std_ppcmds) -> 'a option -> std_ppcmds
+val pr_located : ('a -> std_ppcmds) -> 'a located -> std_ppcmds
 val pr_or_var : ('a -> std_ppcmds) -> 'a or_var -> std_ppcmds
 val pr_metaid : identifier -> std_ppcmds
 

@@ -694,6 +694,8 @@ let pr_str = str
 let pr_coma () = str "," ++ spc ()
 let pr_semicolon () = str ";" ++ spc ()
 let pr_bar () = str "|" ++ spc ()
+let pr_arg pr x = spc () ++ pr x
+let pr_opt pr = function None -> mt () | Some x -> pr_arg pr x
 
 let pr_ord n =
   let suff = match n mod 10 with 1 -> "st" | 2 -> "nd" | _ -> "th" in

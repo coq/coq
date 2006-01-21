@@ -223,6 +223,8 @@ val pr_coma : unit -> std_ppcmds
 val pr_semicolon : unit -> std_ppcmds
 val pr_bar : unit -> std_ppcmds
 val pr_ord : int -> std_ppcmds
+val pr_arg : ('a -> std_ppcmds) -> 'a -> std_ppcmds
+val pr_opt : ('a -> std_ppcmds) -> 'a option -> std_ppcmds
 
 val prlist : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
 val prvecti : (int -> 'a -> std_ppcmds) -> 'a array -> std_ppcmds

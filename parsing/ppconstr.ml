@@ -111,10 +111,6 @@ let pr_with_comments loc pp = pr_located (fun x -> x) (loc,pp)
 
 let pr_sep_com sep f c = pr_with_comments (constr_loc c) (sep() ++ f c)
 
-let pr_opt pr = function
-  | None -> mt ()
-  | Some x -> spc() ++ pr x
-
 let pr_optc pr = function
   | None -> mt ()
   | Some x -> pr_sep_com spc pr x
@@ -396,8 +392,6 @@ let pr_recursive pr_decl id = function
       prlist_with_sep (fun () -> fnl() ++ str "with ")
         (pr_decl true) dl ++
       fnl() ++ str "for " ++ pr_id id
-
-let pr_arg pr x = spc () ++ pr x
 
 let is_var id = function
   | CRef (Ident (_,id')) when id=id' -> true
