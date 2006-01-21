@@ -245,8 +245,8 @@ let _ =
       ];
   List.iter
       (fun (s,t) -> add_primitive_tactic s t)
-      [ "idtac",TacId "";
-        "fail", TacFail(ArgArg 0,"");
+      [ "idtac",TacId [];
+        "fail", TacFail(ArgArg 0,[]);
         "fresh", TacArg(TacFreshId None)
       ]
  
@@ -413,6 +413,12 @@ let intern_reference strict ist r =
           | _ ->
               let (loc,qid) = qualid_of_reference r in
               error_global_not_found_loc loc qid)))
+
+let intern_message_token ist = function
+  | (MsgString _ | MsgInt _ as x) -> x
+  | MsgIdent id -> MsgIdent (intern_hyp_or_metaid ist id)
+
+let intern_message ist = List.map (intern_message_token ist)
 
 let rec intern_intro_pattern lf ist = function
   | IntroOrAndPattern l ->
@@ -747,8 +753,9 @@ and intern_tactic_seq ist = function
       ist.ltacvars, TacMatchContext(lz,lr, intern_match_rule ist lmr)
   | TacMatch (lz,c,lmr) ->
       ist.ltacvars, TacMatch (lz,intern_tactic ist c,intern_match_rule ist lmr)
-  | TacId _ as x -> ist.ltacvars, x
-  | TacFail (n,x) -> ist.ltacvars, TacFail (intern_int_or_var ist n,x)
+  | TacId l -> ist.ltacvars, TacId (intern_message ist l)
+  | TacFail (n,l) -> 
+      ist.ltacvars, TacFail (intern_int_or_var ist n,intern_message ist l)
   | TacProgress tac -> ist.ltacvars, TacProgress (intern_tactic ist tac)
   | TacAbstract (tac,s) -> ist.ltacvars, TacAbstract (intern_tactic ist tac,s)
   | TacThen (t1,t2) ->
@@ -769,6 +776,7 @@ and intern_tactic_seq ist = function
       ist.ltacvars, TacOrelse (intern_tactic ist tac1,intern_tactic ist tac2)
   | TacFirst l -> ist.ltacvars, TacFirst (List.map (intern_tactic ist) l)
   | TacSolve l -> ist.ltacvars, TacSolve (List.map (intern_tactic ist) l)
+  | TacComplete tac -> ist.ltacvars, TacComplete (intern_tactic ist tac)
   | TacArg a -> ist.ltacvars, TacArg (intern_tacarg true ist a)
 
 and intern_tactic_fun ist (var,body) = 
@@ -928,7 +936,7 @@ let rec read_match_rule evc env lfun = function
 
 (* For Match Context and Match *)
 exception Not_coherent_metas
-exception Eval_fail of string
+exception Eval_fail of std_ppcmds
 
 let is_match_catchable = function
   | PatternMatchingFailure | Eval_fail _ -> true
@@ -1287,6 +1295,27 @@ let interp_constr_may_eval ist gl c =
     csr
   end
 
+let message_of_value = function
+  | VVoid -> str "()"
+  | VInteger n -> int n
+  | VIntroPattern ipat -> pr_intro_pattern ipat
+  | VConstr_context c | VConstr c -> pr_constr c
+  | VRec _ | VTactic _ | VRTactic _ | VFun _ -> str "<tactic>"
+
+let rec interp_message ist = function
+  | [] -> mt()
+  | MsgString s :: l -> pr_arg str s ++ interp_message ist l
+  | MsgInt n :: l -> pr_arg int n ++ interp_message ist l
+  | MsgIdent (_,id) :: l ->
+      let v =
+	try List.assoc id ist.lfun
+	with Not_found -> user_err_loc (loc,"",pr_id id ++ str " not found") in
+      pr_arg message_of_value v ++ interp_message ist l
+
+let rec interp_message_nl ist = function
+  | [] -> mt()
+  | l -> interp_message ist l ++ fnl()
+
 let rec interp_intro_pattern ist = function
   | IntroOrAndPattern l -> IntroOrAndPattern (interp_case_intro_pattern ist l)
   | IntroIdentifier id -> interp_intro_pattern_var ist id
@@ -1361,8 +1390,8 @@ and eval_tactic ist = function
   | TacAtom (loc,t) -> fun gl -> catch_error loc (interp_atomic ist gl t) gl
   | TacFun _ | TacLetRecIn _ | TacLetIn _ -> assert false
   | TacMatchContext _ | TacMatch _ -> assert false
-  | TacId s -> tclIDTAC_MESSAGE s
-  | TacFail (n,s) -> tclFAIL (interp_int_or_var ist n) s
+  | TacId s -> tclIDTAC_MESSAGE (interp_message_nl ist s)
+  | TacFail (n,s) -> tclFAIL (interp_int_or_var ist n) (interp_message ist s)
   | TacProgress tac -> tclPROGRESS (interp_tactic ist tac)
   | TacAbstract (tac,s) -> Tactics.tclABSTRACT s (interp_tactic ist tac)
   | TacThen (t1,t2) -> tclTHEN (interp_tactic ist t1) (interp_tactic ist t2)
@@ -1376,6 +1405,7 @@ and eval_tactic ist = function
         tclORELSE (interp_tactic ist tac1) (interp_tactic ist tac2)
   | TacFirst l -> tclFIRST (List.map (interp_tactic ist) l)
   | TacSolve l -> tclSOLVE (List.map (interp_tactic ist) l)
+  | TacComplete tac -> tclCOMPLETE (interp_tactic ist tac)
   | TacArg a -> assert false
 
 and interp_ltac_reference isapplied ist gl = function
@@ -2073,6 +2103,7 @@ and subst_tactic subst (t:glob_tactic_expr) = match t with
       TacOrelse (subst_tactic subst tac1,subst_tactic subst tac2)
   | TacFirst l -> TacFirst (List.map (subst_tactic subst) l)
   | TacSolve l -> TacSolve (List.map (subst_tactic subst) l)
+  | TacComplete tac -> TacComplete (subst_tactic subst tac)
   | TacArg a -> TacArg (subst_tacarg subst a)
 
 and subst_tactic_fun subst (var,body) = (var,subst_tactic subst body)

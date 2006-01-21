@@ -122,6 +122,11 @@ let pr_with_names = function
   | None -> mt ()
   | Some ipat -> spc () ++ hov 1 (str "as" ++ spc () ++ pr_intro_pattern ipat)
 
+let rec pr_message_token prid = function
+  | MsgString s -> qs s
+  | MsgInt n -> int n
+  | MsgIdent id -> prid id
+
 let rec pr_raw_generic prc prlc prtac prref x =
   match Genarg.genarg_tag x with
   | BoolArgType -> pr_arg str (if out_gen rawwit_bool x then "true" else "false")
@@ -373,7 +378,7 @@ let pr_assumption prlc prc ipat c = match ipat with
       spc() ++ prc c ++ pr_with_names ipat
 
 let pr_by_tactic prt = function
-  | TacId "" -> mt ()
+  | TacId [] -> mt ()
   | tac -> spc() ++ str "by " ++ prt tac
 
 let pr_occs pp = function
@@ -510,6 +515,7 @@ let ltactical = 3
 let lorelse = 2
 let llet = 1
 let lfun = 1
+let lcomplete = 1
 let labstract = 3
 let lmatch = 1
 let latom = 0
@@ -845,16 +851,17 @@ let rec pr_tac env inherited tac =
       hov 1 (pr_tac env (lorelse,L) t1 ++ str " ||" ++ brk (1,1) ++
              pr_tac env (lorelse,E) t2),
       lorelse
-  | TacFail (ArgArg 0,"") -> str "fail", latom
-  | TacFail (n,s) -> 
+  | TacFail (n,l) -> 
       str "fail" ++ (if n=ArgArg 0 then mt () else pr_arg (pr_or_var int) n) ++
-      (if s="" then mt() else (spc() ++ qs s)), latom
+      prlist (pr_arg (pr_message_token pr_ident)) l, latom
   | TacFirst tl ->
       str "first" ++ spc () ++ pr_seq_body (pr_tac env ltop) tl, llet
   | TacSolve tl ->
       str "solve" ++ spc () ++ pr_seq_body (pr_tac env ltop) tl, llet
-  | TacId "" -> str "idtac", latom
-  | TacId s -> str "idtac" ++ (qs s), latom
+  | TacComplete t ->
+      str "complete" ++ spc () ++ pr_tac env (lcomplete,E) t, lcomplete
+  | TacId l ->
+      str "idtac" ++ prlist (pr_arg (pr_message_token pr_ident)) l, latom
   | TacAtom (loc,TacAlias (_,s,l,_)) ->
       pr_with_comments loc
         (pr_extend env (level_of inherited) s (List.map snd l)),

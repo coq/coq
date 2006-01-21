@@ -776,6 +776,7 @@ and xlate_tactic =
    | TacFirst(t1::l)-> CT_first(xlate_tactic t1, List.map xlate_tactic l)
    | TacSolve([]) -> assert false
    | TacSolve(t1::l)-> CT_tacsolve(xlate_tactic t1, List.map xlate_tactic l)
+   | TacComplete _ -> xlate_error "TODO: tactical complete"
    | TacDo(count, t) -> CT_do(xlate_id_or_int count, xlate_tactic t)
    | TacTry t -> CT_try (xlate_tactic t)
    | TacRepeat t -> CT_repeat(xlate_tactic t)
@@ -844,11 +845,13 @@ and xlate_tactic =
 		   (xlate_local_rec_tac f1, List.map xlate_local_rec_tac l) in
        CT_rec_tactic_in(tl, xlate_tactic t)
    | TacAtom (_, t) -> xlate_tac t 
-   | TacFail (count, "") -> CT_fail(xlate_id_or_int count, ctf_STRING_OPT_NONE)
-   | TacFail (count, s) -> CT_fail(xlate_id_or_int count,
+   | TacFail (count, []) -> CT_fail(xlate_id_or_int count, ctf_STRING_OPT_NONE)
+   | TacFail (count, [MsgString s]) -> CT_fail(xlate_id_or_int count,
 				   ctf_STRING_OPT_SOME (CT_string s))
-   | TacId "" -> CT_idtac ctf_STRING_OPT_NONE
-   | TacId s -> CT_idtac(ctf_STRING_OPT_SOME (CT_string s))
+   | TacFail (count, _) -> xlate_error "TODO: generic fail message"
+   | TacId [] -> CT_idtac ctf_STRING_OPT_NONE
+   | TacId [MsgString s] -> CT_idtac(ctf_STRING_OPT_SOME (CT_string s))
+   | TacId _ -> xlate_error "TODO: generic idtac message"
    | TacInfo t -> CT_info(xlate_tactic t)
    | TacArg a -> xlate_call_or_tacarg a
 
@@ -1167,9 +1170,9 @@ and xlate_tac =
         CT_assert(xlate_id_opt ((0,0),Name id), xlate_formula c)
     | TacAssert (None, IntroAnonymous, c) -> 
         CT_assert(xlate_id_opt ((0,0),Anonymous), xlate_formula c)
-    | TacAssert (Some (TacId ""), IntroIdentifier id, c) -> 
+    | TacAssert (Some (TacId []), IntroIdentifier id, c) -> 
         CT_truecut(xlate_id_opt ((0,0),Name id), xlate_formula c)
-    | TacAssert (Some (TacId ""), IntroAnonymous, c) -> 
+    | TacAssert (Some (TacId []), IntroAnonymous, c) -> 
         CT_truecut(xlate_id_opt ((0,0),Anonymous), xlate_formula c)
     | TacAssert _ ->
 	xlate_error "TODO: assert with 'as' and 'by' and pose proof with 'as'"
@@ -1653,7 +1656,7 @@ let rec xlate_vernac =
       let formula_list = out_gen (wit_list1 rawwit_constr) f in
       let base = out_gen rawwit_pre_ident b in
       let t = 
-	match args with [t;_] -> out_gen rawwit_main_tactic t | _ -> TacId ""
+	match args with [t;_] -> out_gen rawwit_main_tactic t | _ -> TacId []
       in
       let ct_orient = match orient with
 	| true  -> CT_lr

@@ -45,7 +45,7 @@ GEXTEND Gram
       [ ta0 = tactic_expr; ";"; ta1 = tactic_expr -> TacThen (ta0, ta1)
       | ta = tactic_expr; ";"; 
 	"["; lta = LIST0 OPT tactic_expr SEP "|"; "]" ->
-	  let lta = List.map (function None -> TacId "" | Some t -> t) lta in 
+	  let lta = List.map (function None -> TacId [] | Some t -> t) lta in 
 	  TacThens (ta, lta) ]
     | "4"
       [ ]
@@ -80,9 +80,10 @@ GEXTEND Gram
 	  TacFirst l
       | IDENT "solve" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
 	  TacSolve l
-      | IDENT "idtac"; s = [ s = STRING -> s | -> ""] -> TacId s		
+      | IDENT "complete" ; ta = tactic_expr -> TacComplete ta
+      | IDENT "idtac"; l = LIST0 message_token -> TacId l
       | IDENT "fail"; n = [ n = int_or_var -> n | -> fail_default_value ];
-	  s = [ s = STRING -> s | -> ""] -> TacFail (n,s)
+	  l = LIST0 message_token -> TacFail (n,l)
       | IDENT "external"; com = STRING; req = STRING; la = LIST1 tactic_arg ->
 	  TacArg (TacExternal (loc,com,req,la))
       | st = simple_tactic -> TacAtom (loc,st)
@@ -172,14 +173,13 @@ GEXTEND Gram
     [ [ mrl = LIST1 match_rule SEP "|" -> mrl
       | "|"; mrl = LIST1 match_rule SEP "|" -> mrl ] ]
   ;
+  message_token:
+    [ [ id = identref -> MsgIdent (AI id)
+      | s = STRING -> MsgString s
+      | n = integer -> MsgInt n ] ]
+  ;
 
   (* Definitions for tactics *)
-(*
-  deftok:
-    [ [ IDENT "Meta"
-      | IDENT "Tactic" ] ]
-  ;
-*)
   tacdef_body:
     [ [ name = identref; it=LIST1 input_fun; ":="; body = tactic_expr ->
 	  (name, TacFun (it, body))

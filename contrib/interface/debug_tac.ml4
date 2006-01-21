@@ -276,7 +276,7 @@ let rec reconstruct_success_tac (tac:glob_tactic_expr) =
 	  Report_node(true, n, l) -> tac
       	| Report_node(false, n, rl) ->
 	    TacThens (a,List.map2 reconstruct_success_tac l rl)
-      	| Failed n -> TacId ""
+      	| Failed n -> TacId []
       	| Tree_fail r -> reconstruct_success_tac a r
       	| Mismatch (n,p) -> a)
   | TacThen (a,b) ->
@@ -288,13 +288,13 @@ let rec reconstruct_success_tac (tac:glob_tactic_expr) =
 	      [in_gen globwit_main_tactic a;
 	       in_gen globwit_main_tactic b;
 	       in_gen (wit_list0 globwit_int) selected_indices]))
-	| Failed n -> TacId ""
+	| Failed n -> TacId []
 	| Tree_fail r -> reconstruct_success_tac a r
 	| _ -> error "this error case should not happen in a THEN tactic")
   | _ -> 
       (function
 	  Report_node(true, n, l) -> tac
-	| Failed n -> TacId ""
+	| Failed n -> TacId []
 	| _ ->
 	    errorlabstrm
 	      "this error case should not happen on an unknown tactic"
