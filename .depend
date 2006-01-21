@@ -305,7 +305,7 @@ tactics/tacinterp.cmi: lib/util.cmi interp/topconstr.cmi kernel/term.cmi \
     kernel/names.cmi kernel/mod_subst.cmi library/libnames.cmi \
     interp/genarg.cmi pretyping/evd.cmi kernel/environ.cmi lib/dyn.cmi 
 tactics/tacticals.cmi: kernel/term.cmi proofs/tacmach.cmi proofs/tacexpr.cmo \
-    kernel/sign.cmi kernel/reduction.cmi proofs/proof_type.cmi \
+    kernel/sign.cmi kernel/reduction.cmi proofs/proof_type.cmi lib/pp.cmi \
     pretyping/pattern.cmi kernel/names.cmi interp/genarg.cmi \
     pretyping/clenv.cmi 
 tactics/tactics.cmi: interp/topconstr.cmi kernel/term.cmi \
@@ -2714,7 +2714,7 @@ contrib/first-order/instances.cmo: lib/util.cmi contrib/first-order/unify.cmi \
     tactics/tacticals.cmi proofs/tacmach.cmi kernel/sign.cmi \
     contrib/first-order/sequent.cmi contrib/first-order/rules.cmi \
     proofs/refiner.cmi pretyping/reductionops.cmi pretyping/rawterm.cmi \
-    pretyping/pretyping.cmi kernel/names.cmi library/libnames.cmi \
+    pretyping/pretyping.cmi lib/pp.cmi kernel/names.cmi library/libnames.cmi \
     lib/heap.cmi contrib/first-order/formula.cmi pretyping/evd.cmi \
     pretyping/detyping.cmi kernel/declarations.cmi \
     contrib/first-order/instances.cmi 
@@ -2723,22 +2723,22 @@ contrib/first-order/instances.cmx: lib/util.cmx contrib/first-order/unify.cmx \
     tactics/tacticals.cmx proofs/tacmach.cmx kernel/sign.cmx \
     contrib/first-order/sequent.cmx contrib/first-order/rules.cmx \
     proofs/refiner.cmx pretyping/reductionops.cmx pretyping/rawterm.cmx \
-    pretyping/pretyping.cmx kernel/names.cmx library/libnames.cmx \
+    pretyping/pretyping.cmx lib/pp.cmx kernel/names.cmx library/libnames.cmx \
     lib/heap.cmx contrib/first-order/formula.cmx pretyping/evd.cmx \
     pretyping/detyping.cmx kernel/declarations.cmx \
     contrib/first-order/instances.cmi 
 contrib/first-order/rules.cmo: lib/util.cmi pretyping/termops.cmi \
     kernel/term.cmi tactics/tactics.cmi tactics/tacticals.cmi \
     proofs/tacmach.cmi proofs/tacexpr.cmo kernel/sign.cmi \
-    contrib/first-order/sequent.cmi kernel/names.cmi library/libnames.cmi \
-    contrib/first-order/formula.cmi kernel/declarations.cmi interp/coqlib.cmi \
-    contrib/first-order/rules.cmi 
+    contrib/first-order/sequent.cmi lib/pp.cmi kernel/names.cmi \
+    library/libnames.cmi contrib/first-order/formula.cmi \
+    kernel/declarations.cmi interp/coqlib.cmi contrib/first-order/rules.cmi 
 contrib/first-order/rules.cmx: lib/util.cmx pretyping/termops.cmx \
     kernel/term.cmx tactics/tactics.cmx tactics/tacticals.cmx \
     proofs/tacmach.cmx proofs/tacexpr.cmx kernel/sign.cmx \
-    contrib/first-order/sequent.cmx kernel/names.cmx library/libnames.cmx \
-    contrib/first-order/formula.cmx kernel/declarations.cmx interp/coqlib.cmx \
-    contrib/first-order/rules.cmi 
+    contrib/first-order/sequent.cmx lib/pp.cmx kernel/names.cmx \
+    library/libnames.cmx contrib/first-order/formula.cmx \
+    kernel/declarations.cmx interp/coqlib.cmx contrib/first-order/rules.cmi 
 contrib/first-order/sequent.cmo: lib/util.cmi contrib/first-order/unify.cmi \
     kernel/term.cmi proofs/tacmach.cmi parsing/printer.cmi \
     parsing/ppconstr.cmi lib/pp.cmi kernel/names.cmi library/libnames.cmi \
