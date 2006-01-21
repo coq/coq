@@ -247,7 +247,7 @@ let list_rewrite (rev:bool) (eqs: constr list) =
   tclREPEAT
     (List.fold_right
        (fun eq i -> tclORELSE (rewriteLR eq) i)
-       (if rev then (List.rev eqs) else eqs) (tclFAIL 0 ""));;
+       (if rev then (List.rev eqs) else eqs) (tclFAIL 0 (mt())));;
 
 let base_leaf (func:global_reference) eqs expr =
 (*  let _ = msgnl (str "entering base_leaf") in *)

@@ -138,7 +138,7 @@ let left_instance_tac (inst,id) continue seq=
   match inst with
       Phantom dom->
 	if lookup (id,None) seq then 
-	  tclFAIL 0 "already done"
+	  tclFAIL 0 (Pp.str "already done")
 	else
 	  tclTHENS (cut dom) 
 	    [tclTHENLIST
@@ -152,7 +152,7 @@ let left_instance_tac (inst,id) continue seq=
 	    tclTRY assumption]
     | Real((m,t) as c,_)->
 	if lookup (id,Some c) seq then 
-	  tclFAIL 0 "already done" 
+	  tclFAIL 0 (Pp.str "already done")
 	else 
 	  let special_generalize=
 	    if m>0 then 
@@ -186,7 +186,7 @@ let right_instance_tac inst continue seq=
 	(tclTHEN (split (Rawterm.ImplicitBindings [t]))
 	   (tclSOLVE [wrap 0 true continue (deepen seq)]))
     | Real ((m,t),_) ->
-	tclFAIL 0 "not implemented ... yet"
+	tclFAIL 0 (Pp.str "not implemented ... yet")
 
 let instance_tac inst=
   if (snd inst)==dummy_id then 

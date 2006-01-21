@@ -91,7 +91,7 @@ let tclLAST_HYP = tclNTH_HYP 1
 
 let tclTRY_sign (tac : constr->tactic) sign gl =
   let rec arec = function
-    | []      -> tclFAIL 0 "no applicable hypothesis"
+    | []      -> tclFAIL 0 (str "no applicable hypothesis")
     | [s]     -> tac (mkVar s) (*added in order to get useful error messages *)
     | (s::sl) -> tclORELSE (tac (mkVar s)) (arec sl) 
   in 
@@ -133,7 +133,7 @@ let simple_clause_list_of cl gls =
 (* OR-branch *)
 let tryClauses tac cl gls = 
   let rec firstrec = function
-    | []      -> tclFAIL 0 "no applicable hypothesis"
+    | []      -> tclFAIL 0 (str "no applicable hypothesis")
     | [cls]   -> tac cls (* added in order to get a useful error message *)
     | cls::tl -> (tclORELSE (tac cls) (firstrec tl))
   in

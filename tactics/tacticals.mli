@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 (*i*)
+open Pp
 open Names
 open Term
 open Sign
@@ -24,7 +25,7 @@ open Tacexpr
 (* Tacticals i.e. functions from tactics to tactics. *)
 
 val tclIDTAC         : tactic
-val tclIDTAC_MESSAGE : string -> tactic
+val tclIDTAC_MESSAGE : std_ppcmds -> tactic
 val tclORELSE        : tactic -> tactic -> tactic
 val tclTHEN          : tactic -> tactic -> tactic
 val tclTHENSEQ       : tactic list -> tactic
@@ -46,7 +47,7 @@ val tclTRY           : tactic -> tactic
 val tclINFO          : tactic -> tactic
 val tclCOMPLETE      : tactic -> tactic
 val tclAT_LEAST_ONCE : tactic -> tactic
-val tclFAIL          : int -> string -> tactic
+val tclFAIL          : int -> std_ppcmds -> tactic
 val tclDO            : int -> tactic -> tactic
 val tclPROGRESS      : tactic -> tactic
 val tclWEAK_PROGRESS : tactic -> tactic

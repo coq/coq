@@ -58,7 +58,7 @@ let clear_global=function
 
 let axiom_tac t seq=
   try exact_no_check (constr_of_global (find_left t seq)) 
-  with Not_found->tclFAIL 0 "No axiom link" 
+  with Not_found->tclFAIL 0 (Pp.str "No axiom link")
 
 let ll_atom_tac a backtrack id continue seq= 
   tclIFTHENELSE
@@ -68,7 +68,7 @@ let ll_atom_tac a backtrack id continue seq=
 			   [|constr_of_global (find_left a seq)|])];
 	 clear_global id;
 	 intro]
-    with Not_found->tclFAIL 0 "No link") 
+    with Not_found->tclFAIL 0 (Pp.str "No link"))
     (wrap 1 false continue seq) backtrack 
 
 (* right connectives rules *)
@@ -168,7 +168,7 @@ let forall_tac backtrack continue seq=
 	  (tclTHEN introf (tclCOMPLETE (wrap 0 true continue seq)))
 	  backtrack))
     (if !qflag then 
-       tclFAIL 0 "reversible in 1st order mode"
+       tclFAIL 0 (Pp.str "reversible in 1st order mode")
      else
        backtrack)
 

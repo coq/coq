@@ -41,7 +41,7 @@ let _=
       
 let default_solver=(Tacinterp.interp <:tactic<auto with *>>)
     
-let fail_solver=tclFAIL 0 "GTauto failed"
+let fail_solver=tclFAIL 0 (Pp.str "GTauto failed")
 		      
 type external_env=
     Ids of global_reference list

@@ -138,7 +138,7 @@ let add_rewrite_hint name ort t lcsr =
 
 VERNAC COMMAND EXTEND HintRewrite
   [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ":" preident(b) ] ->
-  [ add_rewrite_hint b o (Tacexpr.TacId "") l ]
+  [ add_rewrite_hint b o (Tacexpr.TacId []) l ]
 | [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t)
     ":" preident(b) ] ->
   [ add_rewrite_hint b o t l ]

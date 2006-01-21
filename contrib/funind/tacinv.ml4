@@ -597,7 +597,7 @@ let rec iterintro i =
         let sub = 
          try String.sub hypname 0 (String.length heq_prefix)
          with _ -> "" (* different than [heq_prefix] *) in
-        if sub=heq_prefix then rewriteLR hyp else tclFAIL 0 "Cannot rewrite")
+        if sub=heq_prefix then rewriteLR hyp else tclFAIL 0 (str "Cannot rewrite"))
       )) gl)
 
 

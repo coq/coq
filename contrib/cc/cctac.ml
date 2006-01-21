@@ -287,7 +287,7 @@ let cc_tactic additionnal_terms gls=
   let _ = debug Pp.msgnl (Pp.str "Computation completed.") in
   let uf=forest state in
     match sol with
-	None -> tclFAIL 0 "congruence failed" gls  
+	None -> tclFAIL 0 (str "congruence failed") gls  
       | Some reason ->
 	  debug Pp.msgnl (Pp.str "Goal solved, generating proof ...");
 	  match reason with
@@ -318,7 +318,7 @@ let cc_tactic additionnal_terms gls=
 		       end);
 		  Pp.msgnl
 		    (Pp.str "  replacing metavariables by arbitrary terms.");
-		  tclFAIL 0 "Incomplete" gls
+		  tclFAIL 0 (str "Incomplete") gls
 	    | Contradiction dis ->
 		let p=build_proof uf (`Prove (dis.lhs,dis.rhs)) in
 		let ta=term uf dis.lhs and tb=term uf dis.rhs in
