@@ -171,7 +171,6 @@ let is_correct_arity env c pj ind mib mip params =
   let kelim = mip.mind_kelim in
   let arsign,s = get_arity mib mip params in
   let nodep_ar = it_mkProd_or_LetIn (mkSort s) arsign in
-  let nrealargs = mip.mind_nrealargs in
   let rec srec env pt t u =
     let pt' = whd_betadeltaiota env pt in
     let t' = whd_betadeltaiota env t in
