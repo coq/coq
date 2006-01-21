@@ -694,11 +694,6 @@ let string_of_prec (n,p) =
 
 let assoc_of_type n (_,typ) = precedence_of_entry_type n typ
 
-let string_of_assoc = function
-  | Some(Gramext.RightA) -> "RIGHTA"
-  | Some(Gramext.LeftA) | None -> "LEFTA"
-  | Some(Gramext.NonA) -> "NONA"
-
 let is_not_small_constr = function
     ETConstr _ -> true
   | ETOther("constr","binder_constr") -> true
@@ -930,12 +925,6 @@ let interp_infix_modifiers modl =
   if t <> [] then
     error "explicit entry level or type unexpected in infix notation";
   (assoc,level,b,fmt)
-
-(* 2nd list of types has priority *)
-let rec merge_entry_types etyps' = function
-  | [] -> etyps'
-  | (x,_ as e)::etyps ->
-      e :: merge_entry_types (List.remove_assoc x etyps') etyps
 
 let set_entry_type etyps (x,typ) =
   let typ = try 
@@ -1370,8 +1359,6 @@ let add_notation local c dfmod mv8 sc =
 	    (* Declare both syntax and interpretation *)
 	    let assoc = match assoc with None -> Some Gramext.NonA | a -> a in
             add_notation_in_scope local df c modifiers mv8 sc
-
-(* TODO add boxes information in the expression *)
 
 let inject_var x = CRef (Ident (dummy_loc, id_of_string x))
 
