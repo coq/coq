@@ -66,7 +66,7 @@ val frontier_mapi :
 
 (* [tclIDTAC] is the identity tactic without message printing*)
 val tclIDTAC          : tactic
-val tclIDTAC_MESSAGE  : string -> tactic
+val tclIDTAC_MESSAGE  : Pp.std_ppcmds -> tactic
 
 (* [tclEVARS sigma] changes the current evar map *)
 val tclEVARS : evar_map -> tactic
@@ -123,7 +123,7 @@ val tclTHENLASTn    : tactic -> tactic array -> tactic
 val tclTHENFIRSTn   : tactic -> tactic array -> tactic
 
 (* A special exception for levels for the Fail tactic *)
-exception FailError of int * string
+exception FailError of int * Pp.std_ppcmds
 
 val tclORELSE        : tactic -> tactic -> tactic
 val tclREPEAT        : tactic -> tactic
@@ -134,7 +134,7 @@ val tclTRY           : tactic -> tactic
 val tclTHENTRY       : tactic -> tactic -> tactic
 val tclCOMPLETE      : tactic -> tactic
 val tclAT_LEAST_ONCE : tactic -> tactic
-val tclFAIL          : int -> string -> tactic
+val tclFAIL          : int -> Pp.std_ppcmds -> tactic
 val tclDO            : int -> tactic -> tactic
 val tclPROGRESS      : tactic -> tactic
 val tclWEAK_PROGRESS : tactic -> tactic

@@ -247,6 +247,11 @@ let mlexpr_of_match_rule f = function
   | Tacexpr.Pat (l,mp,t) -> <:expr< Tacexpr.Pat $mlexpr_of_list mlexpr_of_match_context_hyps l$ $mlexpr_of_match_pattern mp$ $f t$ >>
   | Tacexpr.All t -> <:expr< Tacexpr.All $f t$ >>
 
+let mlexpr_of_message_token = function
+  | Tacexpr.MsgString s -> <:expr< Tacexpr.MsgString $str:s$ >>
+  | Tacexpr.MsgInt n -> <:expr< Tacexpr.MsgInt $mlexpr_of_int n$ >>
+  | Tacexpr.MsgIdent id -> <:expr< Tacexpr.MsgIdent $mlexpr_of_hyp id$ >>
+
 let rec mlexpr_of_atomic_tactic = function
   (* Basic tactics *)
   | Tacexpr.TacIntroPattern pl ->
@@ -405,8 +410,10 @@ and mlexpr_of_tactic : (Tacexpr.raw_tactic_expr -> MLast.expr) = function
       <:expr< Tacexpr.TacRepeat $mlexpr_of_tactic t$ >>
   | Tacexpr.TacProgress t ->
       <:expr< Tacexpr.TacProgress $mlexpr_of_tactic t$ >>
-  | Tacexpr.TacId s -> <:expr< Tacexpr.TacId $str:s$ >>
-  | Tacexpr.TacFail (n,s) -> <:expr< Tacexpr.TacFail $mlexpr_of_or_var mlexpr_of_int n$ $str:s$ >>
+  | Tacexpr.TacId l -> 
+      <:expr< Tacexpr.TacId $mlexpr_of_list mlexpr_of_message_token l$ >>
+  | Tacexpr.TacFail (n,l) ->
+      <:expr< Tacexpr.TacFail $mlexpr_of_or_var mlexpr_of_int n$ $mlexpr_of_list mlexpr_of_message_token l$ >>
 (*
   | Tacexpr.TacInfo t -> TacInfo (loc,f t)
 

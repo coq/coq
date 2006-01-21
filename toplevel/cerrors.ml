@@ -90,8 +90,7 @@ let rec explain_exn_default = function
       hov 0 (str "Error:" ++ spc () ++
 	       str "No constant of this name:" ++ spc () ++ Libnames.pr_qualid q)
   | Refiner.FailError (i,s) ->
-      let s = if s="" then "" else " \""^s^"\"" in
-      hov 0 (str "Error: Tactic failure" ++ str s ++
+      hov 0 (str "Error: Tactic failure" ++ s ++
              if i=0 then mt () else str " (level " ++ int i ++ str").")
   | Stdpp.Exc_located (loc,exc) ->
       hov 0 ((if loc = dummy_loc then (mt ())

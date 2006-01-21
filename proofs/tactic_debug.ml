@@ -162,10 +162,10 @@ let db_matching_failure debug =
 (* Prints an evaluation failure message for a rule *)
 let db_eval_failure debug s =
   if debug <> DebugOff & !skip = 0 then
-    let s = if s="" then "no message" else "message \""^s^"\"" in
+    let s = str "message \"" ++ s ++ str "\"" in
     msgnl 
       (str "This rule has failed due to \"Fail\" tactic (" ++
-       str s ++ str ", level 0)!" ++ fnl() ++ str "Let us try the next one...")
+       s ++ str ", level 0)!" ++ fnl() ++ str "Let us try the next one...")
 
 (* Prints a logic failure message for a rule *)
 let db_logic_failure debug err =

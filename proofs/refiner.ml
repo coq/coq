@@ -335,17 +335,13 @@ let tclIDTAC gls = (goal_goal_list gls, idtac_valid)
 
 (* the message printing identity tactic *)
 let tclIDTAC_MESSAGE s gls = 
-  if s = "" then tclIDTAC gls
-  else 
-    begin
-      msgnl (str ("Idtac says : "^s)); tclIDTAC gls
-    end
+  msg (hov 0 s); tclIDTAC gls
 
 (* General failure tactic *)
 let tclFAIL_s s gls = errorlabstrm "Refiner.tclFAIL_s" (str s)
 
 (* A special exception for levels for the Fail tactic *)
-exception FailError of int * string
+exception FailError of int * std_ppcmds
 
 (* The Fail tactic *)
 let tclFAIL lvl s g = raise (FailError (lvl,s))
