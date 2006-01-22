@@ -97,7 +97,7 @@ Section Well_founded.
 
 Section FixPoint.
 
-Variable P : A -> Set.
+Variable P : A -> Type.
 Variable F : forall x:A, (forall y:A, R y x -> P y) -> P x.
 
 Fixpoint Fix_F (x:A) (r:Acc x) {struct r} : P x :=
