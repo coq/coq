@@ -769,7 +769,7 @@ Eval simpl in even_test.
 
 Eval simpl in (fun x : nat => even_test x).
 
-
+Eval simpl in (fun x : nat => plus 5 x).
 Eval simpl in (fun x : nat => even_test (plus 5 x)).
 
 Eval simpl in (fun x : nat => even_test (plus x 5)).
@@ -778,11 +778,11 @@ Eval simpl in (fun x : nat => even_test (plus x 5)).
 Section Principle_of_Induction.
 Variable    P               : nat -> Prop.
 Hypothesis  base_case       : P 0.
-Hypothesis  inductive_hyp   : forall n:nat, P n -> P (S n).
+Hypothesis  inductive_step   : forall n:nat, P n -> P (S n).
 Fixpoint nat_ind  (n:nat)    : (P n) := 
    match n return P n with
           | 0 => base_case
-          | S m => inductive_hyp m (nat_ind m)
+          | S m => inductive_step m (nat_ind m)
    end. 
 
 End Principle_of_Induction.
@@ -802,12 +802,12 @@ Section Principle_of_Double_Induction.
 Variable    P               : nat -> nat ->Prop.
 Hypothesis  base_case1      : forall x:nat, P 0 x.
 Hypothesis  base_case2      : forall x:nat, P (S x) 0.
-Hypothesis  inductive_hyp   : forall n m:nat, P n m -> P (S n) (S m).
+Hypothesis  inductive_step   : forall n m:nat, P n m -> P (S n) (S m).
 Fixpoint nat_double_ind (n m:nat){struct n} : P n m := 
   match n, m return P n m with 
          |  0 ,     x    =>  base_case1 x 
          |  (S x),    0  =>  base_case2 x
-         |  (S x), (S y) =>  inductive_hyp x y (nat_double_ind x y)
+         |  (S x), (S y) =>  inductive_step x y (nat_double_ind x y)
      end.
 End Principle_of_Double_Induction.
 
@@ -815,12 +815,12 @@ Section Principle_of_Double_Recursion.
 Variable    P               : nat -> nat -> Set.
 Hypothesis  base_case1      : forall x:nat, P 0 x.
 Hypothesis  base_case2      : forall x:nat, P (S x) 0.
-Hypothesis  inductive_hyp   : forall n m:nat, P n m -> P (S n) (S m).
+Hypothesis  inductive_step   : forall n m:nat, P n m -> P (S n) (S m).
 Fixpoint nat_double_rec (n m:nat){struct n} : P n m := 
   match n, m return P n m with 
          |   0 ,     x    =>  base_case1 x 
          |  (S x),    0   => base_case2 x
-         |  (S x), (S y)  => inductive_hyp x y (nat_double_rec x y)
+         |  (S x), (S y)  => inductive_step x y (nat_double_rec x y)
      end.
 End Principle_of_Double_Recursion.
 
@@ -912,7 +912,7 @@ Definition minus_decrease : forall x y:nat, Acc lt x ->
                                          Acc lt (x-y).
 Proof.
  intros x y H; case H.
- intros z Hz posz posy. 
+ intros Hz posz posy. 
  apply Hz; apply minus_smaller_positive; assumption.
 Defined.
 
@@ -1223,7 +1223,6 @@ Proof.
  constructor.
  trivial.
 Qed.
-
 
 
 
