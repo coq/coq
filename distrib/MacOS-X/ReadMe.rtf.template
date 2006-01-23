@@ -22,6 +22,7 @@ Coq also includes\
 - a mechanism for automatic generation of certified programs\
   from proofs of their specifications\
 - a graphical user interface based on gtk (CoqIde)\
+  [not included in this package]\
 - a documentation tool (coqdoc)\
 - dependency and makefile generation tools for Coq (coq_makefile\
   and coqdep)\
