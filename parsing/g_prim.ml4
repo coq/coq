@@ -24,7 +24,7 @@ let local_make_qualid l id = make_qualid (make_dirpath l) id
 GEXTEND Gram
   GLOBAL: 
     bigint natural integer identref name ident var preident
-    fullyqualid qualid reference
+    fullyqualid qualid reference dirpath
     ne_string string;
   preident:
     [ [ s = IDENT -> s ] ]
@@ -73,6 +73,10 @@ GEXTEND Gram
     [ [ s = STRING -> 
         if s="" then Util.user_err_loc(loc,"",Pp.str"Empty string"); s
     ] ]
+  ;
+  dirpath:
+    [ [ id = ident; l = LIST0 field ->
+        make_dirpath (l@[id]) ] ]
   ;
   string:
     [ [ s = STRING -> s ] ]
