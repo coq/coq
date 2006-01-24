@@ -10,9 +10,10 @@
 open Term
 open Proof_type
 open Tacexpr
+open Auto
 (*i*)
 
-val rawwit_hintbases : string list option raw_abstract_argument_type
+val rawwit_hintbases : hint_db_name list option raw_abstract_argument_type
 
 val e_assumption : tactic
 
@@ -24,4 +25,5 @@ val vernac_e_resolve_constr :  constr -> tactic
 
 val e_give_exact_constr : constr -> tactic
 
-val gen_eauto : bool -> bool * int -> Util.Stringmap.key list option -> tactic
+val gen_eauto : bool -> bool * int -> hint_db_name list option -> tactic
+

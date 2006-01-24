@@ -119,10 +119,6 @@ module Stringset = Set.Make(struct type t = string let compare = compare end)
 
 module Stringmap = Map.Make(struct type t = string let compare = compare end)
 
-let stringmap_to_list m = Stringmap.fold (fun s y l -> (s,y)::l) m []
-
-let stringmap_dom m = Stringmap.fold (fun s _ l -> s::l) m []
-
 (* Lists *)
 
 let list_add_set x l = if List.mem x l then l else x::l

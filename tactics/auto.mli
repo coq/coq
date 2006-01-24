@@ -57,11 +57,11 @@ module Hint_db :
     val iter : (global_reference -> stored_data list -> unit) -> t -> unit
   end
 
-type frozen_hint_db_table = Hint_db.t Stringmap.t
-
-type hint_db_table = Hint_db.t Stringmap.t ref
-
 type hint_db_name = string
+
+val searchtable_map : hint_db_name -> Hint_db.t
+
+val current_db_names : unit -> hint_db_name list
 
 val add_hints : locality_flag -> hint_db_name list -> hints -> unit
 
@@ -72,8 +72,6 @@ val print_applicable_hint : unit -> unit
 val print_hint_ref : global_reference -> unit
 
 val print_hint_db_by_name : hint_db_name -> unit
-
-val searchtable : hint_db_table
 
 (* [make_exact_entry hint_name (c, ctyp)]. 
    [hint_name] is the name of then hint;

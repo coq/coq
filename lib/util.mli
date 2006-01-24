@@ -72,11 +72,7 @@ val string_string_contains : where:string -> what:string -> bool
 val parse_loadpath : string -> string list
 
 module Stringset : Set.S with type elt = string
-
 module Stringmap : Map.S with type key = string
-
-val stringmap_to_list : 'a Stringmap.t -> (string * 'a) list 
-val stringmap_dom : 'a Stringmap.t -> string list
 
 (*s Lists. *)
 
