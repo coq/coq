@@ -134,24 +134,28 @@ module Hint_db = struct
 
 end
 
-type frozen_hint_db_table = Hint_db.t Stringmap.t 
+module Hintdbmap = Gmap
 
-type hint_db_table = Hint_db.t Stringmap.t ref
+type frozen_hint_db_table = (string,Hint_db.t) Hintdbmap.t 
+
+type hint_db_table = (string,Hint_db.t) Hintdbmap.t ref
 
 type hint_db_name = string
 
-let searchtable = (ref Stringmap.empty : hint_db_table)
+let searchtable = (ref Hintdbmap.empty : hint_db_table)
 
 let searchtable_map name = 
-  Stringmap.find name !searchtable
+  Hintdbmap.find name !searchtable
 let searchtable_add (name,db) = 
-  searchtable := Stringmap.add name db !searchtable
+  searchtable := Hintdbmap.add name db !searchtable
+let current_db_names () =
+  Hintdbmap.dom !searchtable
 
 (**************************************************************************)
 (*                       Definition of the summary                        *)
 (**************************************************************************)
 
-let init     () = searchtable := Stringmap.empty
+let init     () = searchtable := Hintdbmap.empty
 let freeze   () = !searchtable
 let unfreeze fs = searchtable := fs
 
@@ -498,7 +502,7 @@ let fmt_hints_db (name,db,hintlist) =
 
 (* Print all hints associated to head c in any database *)
 let fmt_hint_list_for_head c = 
-  let dbs = stringmap_to_list !searchtable in
+  let dbs = Hintdbmap.to_list !searchtable in
   let valid_dbs = 
     map_succeed 
       (fun (name,db) -> (name,db,Hint_db.map_all c db)) 
@@ -523,7 +527,7 @@ let fmt_hint_term cl =
       | [] -> assert false 
     in
     let hd = head_of_constr_reference hdc in
-    let dbs = stringmap_to_list !searchtable in
+    let dbs = Hintdbmap.to_list !searchtable in
     let valid_dbs = 
       if occur_existential cl then 
 	map_succeed 
@@ -568,7 +572,7 @@ let print_hint_db_by_name dbname =
   
 (* displays all the hints of all databases *)
 let print_searchtable () =
-  Stringmap.iter
+  Hintdbmap.iter
     (fun name db ->
        msg (str "In the database " ++ str name ++ fnl ());
        print_hint_db db)
@@ -693,7 +697,7 @@ let trivial dbnames gl =
   tclTRY (trivial_fail_db db_list (make_local_hint_db gl)) gl 
     
 let full_trivial gl =
-  let dbnames = stringmap_dom !searchtable in
+  let dbnames = Hintdbmap.dom !searchtable in
   let dbnames = list_subtract dbnames ["v62"] in
   let db_list = List.map (fun x -> searchtable_map x) dbnames in
   tclTRY (trivial_fail_db db_list (make_local_hint_db gl)) gl
@@ -798,7 +802,7 @@ let auto n dbnames gl =
 let default_auto = auto !default_search_depth []
 
 let full_auto n gl = 
-  let dbnames = stringmap_dom !searchtable in
+  let dbnames = Hintdbmap.dom !searchtable in
   let dbnames = list_subtract dbnames ["v62"] in
   let db_list = List.map (fun x -> searchtable_map x) dbnames in
   let hyps = pf_hyps gl in
@@ -911,7 +915,7 @@ let search_superauto n to_add argl g =
       to_add empty_named_context in
   let db0 = list_map_append (make_resolve_hyp (pf_env g) (project g)) sigma in
   let db = Hint_db.add_list db0 (make_local_hint_db g) in
-  super_search n [Stringmap.find "core" !searchtable] db argl g
+  super_search n [Hintdbmap.find "core" !searchtable] db argl g
 
 let superauto n to_add argl  = 
   tclTRY (tclCOMPLETE (search_superauto n to_add argl))

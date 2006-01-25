@@ -278,7 +278,7 @@ let create_with_auto_hints l depth gl=
   let h dbname=
     let hdb=
       try
-	Util.Stringmap.find dbname !searchtable 
+	searchtable_map dbname 
       with Not_found-> 
 	error ("Firstorder: "^dbname^" : No such Hint database") in
       Hint_db.iter g hdb in

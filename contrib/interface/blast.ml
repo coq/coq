@@ -351,16 +351,16 @@ let eauto debug np dbnames =
   let db_list =
     List.map
       (fun x -> 
-	 try Stringmap.find x !searchtable
+	 try searchtable_map x
 	 with Not_found -> error ("EAuto: "^x^": No such Hint database"))
       ("core"::dbnames) 
   in
   tclTRY (e_search_auto debug np db_list)
 
 let full_eauto debug n gl = 
-  let dbnames = stringmap_dom !searchtable in
+  let dbnames = current_db_names () in
   let dbnames =  list_subtract dbnames ["v62"] in
-  let db_list = List.map (fun x -> Stringmap.find x !searchtable) dbnames in
+  let db_list = List.map searchtable_map dbnames in
   let local_db = make_local_hint_db gl in
   tclTRY (e_search_auto debug n db_list) gl
 
@@ -369,8 +369,6 @@ let my_full_eauto n gl = full_eauto false (n,0) gl
 (**********************************************************************
    copié de tactics/auto.ml on a juste modifié search_gen
 *)
-let searchtable_map name = 
-  Stringmap.find name !searchtable
 
 (* local_db is a Hint database containing the hypotheses of current goal *)
 (* Papageno : cette fonction a été pas mal simplifiée depuis que la base
@@ -499,9 +497,9 @@ let search = search_gen 0
 let default_search_depth = ref 5
 			     
 let full_auto n gl = 
-  let dbnames = stringmap_dom !searchtable in
+  let dbnames = current_db_names () in
   let dbnames = list_subtract dbnames ["v62"] in
-  let db_list = List.map (fun x -> searchtable_map x) dbnames in
+  let db_list = List.map searchtable_map dbnames in
   let hyps = pf_hyps gl in
   tclTRY (search n db_list (make_local_hint_db gl) hyps) gl
   
