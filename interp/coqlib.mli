@@ -123,3 +123,5 @@ val coq_not_ref : global_reference lazy_t
 val coq_False_ref : global_reference lazy_t
 val coq_sumbool_ref : global_reference lazy_t
 val coq_sig_ref : global_reference lazy_t
+
+val coq_or_ref : global_reference lazy_t

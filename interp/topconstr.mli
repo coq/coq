@@ -53,6 +53,8 @@ val subst_aconstr : substitution -> Names.identifier list -> aconstr -> aconstr
 
 val aconstr_of_rawconstr : identifier list -> rawconstr -> aconstr
 
+val eq_rawconstr : rawconstr -> rawconstr -> bool
+
 (* [match_aconstr metas] match a rawconstr against an aconstr with
    metavariables in [metas]; it raises [No_match] if the matching fails *)
 exception No_match

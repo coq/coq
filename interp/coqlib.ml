@@ -251,4 +251,5 @@ let coq_not_ref     = lazy (init_reference ["Logic"] "not")
 let coq_False_ref   = lazy (init_reference ["Logic"] "False")
 let coq_sumbool_ref = lazy (init_reference ["Specif"] "sumbool")
 let coq_sig_ref = lazy (init_reference ["Specif"] "sig")
+let coq_or_ref     = lazy (init_reference ["Logic"] "or")
 
