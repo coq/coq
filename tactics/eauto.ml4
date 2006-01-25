@@ -391,16 +391,16 @@ let eauto debug np dbnames =
   let db_list =
     List.map
       (fun x -> 
-	 try Stringmap.find x !searchtable
+	 try searchtable_map x
 	 with Not_found -> error ("EAuto: "^x^": No such Hint database"))
       ("core"::dbnames) 
   in
   tclTRY (e_search_auto debug np db_list)
 
 let full_eauto debug n gl = 
-  let dbnames = stringmap_dom !searchtable in
+  let dbnames = current_db_names () in
   let dbnames =  list_subtract dbnames ["v62"] in
-  let db_list = List.map (fun x -> Stringmap.find x !searchtable) dbnames in
+  let db_list = List.map (fun x -> searchtable_map x) dbnames in
   let local_db = make_local_hint_db gl in
   tclTRY (e_search_auto debug n db_list) gl
 

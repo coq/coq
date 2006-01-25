@@ -56,11 +56,15 @@ module Hint_db :
     val iter : (constr_label -> stored_data list -> unit) -> t -> unit
   end
 
-type frozen_hint_db_table = Hint_db.t Stringmap.t
+type frozen_hint_db_table
 
-type hint_db_table = Hint_db.t Stringmap.t ref
+type hint_db_table
 
 type hint_db_name = string
+
+val searchtable_map : hint_db_name -> Hint_db.t
+
+val current_db_names : unit -> hint_db_name list
 
 val add_hints : locality_flag -> hint_db_name list -> hints -> unit
 
