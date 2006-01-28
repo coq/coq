@@ -265,8 +265,8 @@ tactics/contradiction.cmi: kernel/term.cmi pretyping/rawterm.cmi \
     proofs/proof_type.cmi kernel/names.cmi 
 tactics/dhyp.cmi: toplevel/vernacexpr.cmo interp/topconstr.cmi \
     proofs/tacmach.cmi proofs/tacexpr.cmo kernel/names.cmi 
-tactics/eauto.cmi: kernel/term.cmi proofs/tacexpr.cmo proofs/proof_type.cmi \
-    tactics/auto.cmi 
+tactics/eauto.cmi: interp/topconstr.cmi kernel/term.cmi proofs/tacexpr.cmo \
+    proofs/proof_type.cmi tactics/auto.cmi 
 tactics/elim.cmi: kernel/term.cmi tactics/tacticals.cmi proofs/tacmach.cmi \
     pretyping/rawterm.cmi proofs/proof_type.cmi kernel/names.cmi \
     interp/genarg.cmi 
@@ -865,6 +865,8 @@ lib/tlm.cmo: lib/gset.cmi lib/gmap.cmi lib/tlm.cmi
 lib/tlm.cmx: lib/gset.cmx lib/gmap.cmx lib/tlm.cmi 
 lib/util.cmo: lib/pp.cmi lib/compat.cmo lib/util.cmi 
 lib/util.cmx: lib/pp.cmx lib/compat.cmx lib/util.cmi 
+library/decl_kinds.cmo: lib/util.cmi 
+library/decl_kinds.cmx: lib/util.cmx 
 library/declare.cmo: lib/util.cmi kernel/univ.cmi kernel/typeops.cmi \
     kernel/type_errors.cmi kernel/term.cmi library/summary.cmi \
     kernel/sign.cmi kernel/safe_typing.cmi kernel/reduction.cmi lib/pp.cmi \
