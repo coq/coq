@@ -355,7 +355,9 @@ let print_leaf_entry with_values sep ((sp,kn as oname),lobj) =
   let tag = object_tag lobj in
   match (oname,tag) with
     | (_,"VARIABLE") ->
-	Some (print_section_variable (basename sp))
+	(* Outside sections, VARIABLES still exist but only with universes 
+           constraints *)
+	(try Some(print_section_variable (basename sp)) with Not_found -> None)
     | (_,"CONSTANT") ->
 	Some (print_constant with_values sep (constant_of_kn kn))
     | (_,"INDUCTIVE") ->
