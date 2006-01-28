@@ -84,3 +84,7 @@ val pr_raw_tactic_level : env -> tolerability -> raw_tactic_expr -> std_ppcmds
 val pr_glob_tactic : env -> glob_tactic_expr -> std_ppcmds
 
 val pr_tactic : env -> Proof_type.tactic_expr -> std_ppcmds
+
+val pr_hintbases : string list option -> std_ppcmds
+
+val pr_auto_using : ('constr -> std_ppcmds) -> 'constr list -> std_ppcmds

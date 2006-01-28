@@ -567,11 +567,11 @@ let unify_resolve (c,clenv) gls =
 (* builds a hint database from a constr signature *)
 (* typically used with (lid, ltyp) = pf_hyps_types <some goal> *)
 
-let make_local_hint_db g = 
+let make_local_hint_db lems g =
   let sign = pf_hyps g in
-  let hintlist = list_map_append (make_resolve_hyp (pf_env g) (project g)) sign
-  in Hint_db.add_list hintlist Hint_db.empty
-
+  let hintlist = list_map_append (pf_apply make_resolve_hyp g) sign in
+  let hintlist' = list_map_append (pf_apply make_resolves g true) lems in
+  Hint_db.add_list hintlist' (Hint_db.add_list hintlist Hint_db.empty)
 
 (* Serait-ce possible de compiler d'abord la tactique puis de faire la
    substitution sans passer par bdize dont l'objectif est de préparer un
@@ -648,7 +648,7 @@ and trivial_resolve db_list local_db cl =
   with Bound | Not_found -> 
     []
 
-let trivial dbnames gl =
+let trivial lems dbnames gl =
   let db_list = 
     List.map
       (fun x -> 
@@ -658,19 +658,20 @@ let trivial dbnames gl =
 	   error ("trivial: "^x^": No such Hint database"))
       ("core"::dbnames) 
   in
-  tclTRY (trivial_fail_db db_list (make_local_hint_db gl)) gl 
+  tclTRY (trivial_fail_db db_list (make_local_hint_db lems gl)) gl 
     
-let full_trivial gl =
+let full_trivial lems gl =
   let dbnames = Hintdbmap.dom !searchtable in
   let dbnames = list_subtract dbnames ["v62"] in
   let db_list = List.map (fun x -> searchtable_map x) dbnames in
-  tclTRY (trivial_fail_db db_list (make_local_hint_db gl)) gl
+  tclTRY (trivial_fail_db db_list (make_local_hint_db lems gl)) gl
 
-let gen_trivial = function
-  | None -> full_trivial
-  | Some l -> trivial l
+let gen_trivial lems = function
+  | None -> full_trivial lems
+  | Some l -> trivial lems l
 
-let h_trivial l = Refiner.abstract_tactic (TacTrivial l) (gen_trivial l)
+let h_trivial lems l =
+  Refiner.abstract_tactic (TacTrivial (lems,l)) (gen_trivial lems l)
 
 (**************************************************************************)
 (*                       The classical Auto tactic                        *)
@@ -746,8 +747,8 @@ let rec search_gen decomp n db_list local_db extra_sign goal =
 let search = search_gen 0
 
 let default_search_depth = ref 5
-			     
-let auto n dbnames gl = 
+
+let auto n lems dbnames gl =
   let db_list = 
     List.map
       (fun x -> 
@@ -758,29 +759,29 @@ let auto n dbnames gl =
       ("core"::dbnames) 
   in
   let hyps = pf_hyps gl in
-  tclTRY (search n db_list (make_local_hint_db gl) hyps) gl
+  tclTRY (search n db_list (make_local_hint_db lems gl) hyps) gl
 
-let default_auto = auto !default_search_depth []
+let default_auto = auto !default_search_depth [] []
 
-let full_auto n gl = 
+let full_auto n lems gl = 
   let dbnames = Hintdbmap.dom !searchtable in
   let dbnames = list_subtract dbnames ["v62"] in
   let db_list = List.map (fun x -> searchtable_map x) dbnames in
   let hyps = pf_hyps gl in
-  tclTRY (search n db_list (make_local_hint_db gl) hyps) gl
+  tclTRY (search n db_list (make_local_hint_db lems gl) hyps) gl
   
-let default_full_auto gl = full_auto !default_search_depth gl
+let default_full_auto gl = full_auto !default_search_depth [] gl
 
-let gen_auto n dbnames =
+let gen_auto n lems dbnames =
   let n = match n with None -> !default_search_depth | Some n -> n in
   match dbnames with
-  | None -> full_auto n
-  | Some l -> auto n l
+  | None -> full_auto n lems
+  | Some l -> auto n lems l
 
 let inj_or_var = option_app (fun n -> Genarg.ArgArg n)
 
-let h_auto n l =
-  Refiner.abstract_tactic (TacAuto (inj_or_var n,l)) (gen_auto n l)
+let h_auto n lems l =
+  Refiner.abstract_tactic (TacAuto (inj_or_var n,lems,l)) (gen_auto n lems l)
 
 (**************************************************************************)
 (*                  The "destructing Auto" from Eduardo                   *)
@@ -795,7 +796,7 @@ let default_search_decomp = ref 1
 let destruct_auto des_opt n gl = 
   let hyps = pf_hyps gl in
   search_gen des_opt n [searchtable_map "core"] 
-    (make_local_hint_db gl) hyps gl
+    (make_local_hint_db [] gl) hyps gl
     
 let dautomatic des_opt n = tclTRY (destruct_auto des_opt n)
 
@@ -880,7 +881,7 @@ let search_superauto n to_add argl g =
       (fun (id,c) -> add_named_decl (id, None, pf_type_of g c))
       to_add empty_named_context in
   let db0 = list_map_append (make_resolve_hyp (pf_env g) (project g)) sigma in
-  let db = Hint_db.add_list db0 (make_local_hint_db g) in
+  let db = Hint_db.add_list db0 (make_local_hint_db [] g) in
   super_search n [Hintdbmap.find "core" !searchtable] db argl g
 
 let superauto n to_add argl  = 

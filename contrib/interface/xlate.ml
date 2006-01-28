@@ -1030,14 +1030,16 @@ and xlate_tac =
         (if a3 then CT_destructing else CT_coerce_NONE_to_DESTRUCTING CT_none),
         (if a4 then CT_usingtdb else CT_coerce_NONE_to_USINGTDB CT_none))
     | TacAutoTDB nopt -> CT_autotdb (xlate_int_opt nopt)
-    | TacAuto (nopt, Some []) -> CT_auto (xlate_int_or_var_opt_to_int_opt nopt)
-    | TacAuto (nopt, None) ->
+    | TacAuto (nopt, [], Some []) -> CT_auto (xlate_int_or_var_opt_to_int_opt nopt)
+    | TacAuto (nopt, [], None) ->
  	CT_auto_with (xlate_int_or_var_opt_to_int_opt nopt,
 		      CT_coerce_STAR_to_ID_NE_LIST_OR_STAR CT_star)
-    | TacAuto (nopt, Some (id1::idl)) ->
+    | TacAuto (nopt, [], Some (id1::idl)) ->
 	CT_auto_with(xlate_int_or_var_opt_to_int_opt nopt,
              CT_coerce_ID_NE_LIST_to_ID_NE_LIST_OR_STAR(
              CT_id_ne_list(CT_ident id1, List.map (fun x -> CT_ident x) idl)))
+    | TacAuto (nopt, _::_, _) ->
+	xlate_error "TODO: auto using"
     |TacExtend(_, ("autorewritev7"|"autorewritev8"), l::t) ->
        let (id_list:ct_ID list) =
 	 List.map (fun x -> CT_ident x) (out_gen (wit_list1 rawwit_pre_ident) l) in
@@ -1051,7 +1053,7 @@ and xlate_tac =
 	   | [] -> CT_coerce_NONE_to_TACTIC_OPT CT_none
 	   | _ -> assert false in
 	 CT_autorewrite (CT_id_ne_list(fst, id_list1), t1)
-    | TacExtend (_,"eauto", [nopt; popt; idl]) ->
+    | TacExtend (_,"eauto", [nopt; popt; lems; idl]) ->
 	let first_n =
 	  match out_gen (wit_opt rawwit_int_or_var) nopt with
 	    | Some (ArgVar(_, s)) -> xlate_id_to_id_or_int_opt s
@@ -1062,6 +1064,10 @@ and xlate_tac =
 	    | Some (ArgVar(_, s)) -> xlate_id_to_id_or_int_opt s
 	    | Some ArgArg n -> xlate_int_to_id_or_int_opt n
 	    | None -> none_in_id_or_int_opt in
+	let _lems =
+	  match out_gen Eauto.rawwit_auto_using lems with
+	    | [] -> []
+	    | _ -> xlate_error "TODO: eauto using" in
 	let idl = out_gen Eauto.rawwit_hintbases idl in
           (match idl with
 	    None -> CT_eauto_with(first_n,
@@ -1083,12 +1089,14 @@ and xlate_tac =
      let (c,bindl) = out_gen rawwit_constr_with_bindings cbindl in
      let c = xlate_formula c and bindl = xlate_bindings bindl in
      CT_eapply (c, bindl)
-    | TacTrivial (Some []) -> CT_trivial
-    | TacTrivial None -> 
+    | TacTrivial ([],Some []) -> CT_trivial
+    | TacTrivial ([],None) -> 
 	CT_trivial_with(CT_coerce_STAR_to_ID_NE_LIST_OR_STAR CT_star)
-    | TacTrivial (Some (id1::idl)) ->
+    | TacTrivial ([],Some (id1::idl)) ->
 	 CT_trivial_with(CT_coerce_ID_NE_LIST_to_ID_NE_LIST_OR_STAR(
             (CT_id_ne_list(CT_ident id1,List.map (fun x -> CT_ident x) idl))))
+    | TacTrivial (_::_,_) ->
+	xlate_error "TODO: trivial using"
     | TacReduce (red, l) ->
      CT_reduce (xlate_red_tactic red, xlate_clause l)
     | TacApply (c,bindl) ->

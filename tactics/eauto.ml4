@@ -354,14 +354,14 @@ let e_breadth_search debug n db_list local_db gl =
     s.SearchProblem.tacres
   with Not_found -> error "EAuto: breadth first search failed"
 
-let e_search_auto debug (in_depth,p) db_list gl = 
-  let local_db = make_local_hint_db gl in 
+let e_search_auto debug (in_depth,p) lems db_list gl = 
+  let local_db = make_local_hint_db lems gl in 
   if in_depth then 
     e_depth_search debug p db_list local_db gl
   else 
     e_breadth_search debug p db_list local_db gl
 
-let eauto debug np dbnames = 
+let eauto debug np lems dbnames =
   let db_list =
     List.map
       (fun x -> 
@@ -369,18 +369,17 @@ let eauto debug np dbnames =
 	 with Not_found -> error ("EAuto: "^x^": No such Hint database"))
       ("core"::dbnames) 
   in
-  tclTRY (e_search_auto debug np db_list)
+  tclTRY (e_search_auto debug np lems db_list)
 
-let full_eauto debug n gl = 
+let full_eauto debug n lems gl = 
   let dbnames = current_db_names () in
   let dbnames =  list_subtract dbnames ["v62"] in
   let db_list = List.map searchtable_map dbnames in
-  let local_db = make_local_hint_db gl in
-  tclTRY (e_search_auto debug n db_list) gl
+  tclTRY (e_search_auto debug n lems db_list) gl
 
-let gen_eauto d np = function
-  | None -> full_eauto d np
-  | Some l -> eauto d np l
+let gen_eauto d np lems = function
+  | None -> full_eauto d np lems
+  | Some l -> eauto d np lems l
 
 let make_depth = function
   | None -> !default_search_depth 
@@ -396,10 +395,7 @@ open Genarg
 
 (* Hint bases *)
 
-let pr_hintbases _prc _prlc _prt = function 
-  | None -> str " with *"
-  | Some [] -> mt ()
-  | Some l -> str " with " ++ Util.prlist_with_sep spc str l
+let pr_hintbases _prc _prlc _prt = Pptactic.pr_hintbases
 
 ARGUMENT EXTEND hintbases
   TYPED AS preident_list_opt
@@ -409,7 +405,26 @@ ARGUMENT EXTEND hintbases
 | [ ] -> [ Some [] ]
 END
 
+let pr_constr_coma_sequence prc _ _ = prlist_with_sep pr_coma prc
+
+ARGUMENT EXTEND constr_coma_sequence
+  TYPED AS constr_list
+  PRINTED BY pr_constr_coma_sequence
+| [ constr(c) "," constr_coma_sequence(l) ] -> [ c::l ]
+| [ constr(c) ] -> [ [c] ]
+END
+
+let pr_auto_using prc _prlc _prt = Pptactic.pr_auto_using prc
+
+ARGUMENT EXTEND auto_using
+  TYPED AS constr_list
+  PRINTED BY pr_auto_using
+| [ "using" constr_coma_sequence(l) ] -> [ l ]
+| [ ] -> [ [] ]
+END
+
 TACTIC EXTEND eauto
-| [ "eauto" int_or_var_opt(n) int_or_var_opt(p) hintbases(db) ] ->
-    [ gen_eauto false (make_dimension n p) db ]
+| [ "eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems) 
+    hintbases(db) ] ->
+    [ gen_eauto false (make_dimension n p) lems db ]
 END

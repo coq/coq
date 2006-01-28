@@ -114,7 +114,7 @@ let diseqCase =
   (tclTHEN  (intro_using absurd)
   (tclTHEN  (h_simplest_apply (mkVar diseq))
   (tclTHEN  (Extratactics.h_injHyp (Rawterm.NamedHyp absurd))
-            full_trivial))))))
+            (full_trivial [])))))))
 
 let solveArg a1 a2 tac  g = 
   let rectype = pf_type_of g a1 in

@@ -127,7 +127,7 @@ val set_extern_subst_tactic :
 (* Create a Hint database from the pairs (name, constr).
    Useful to take the current goal hypotheses as hints *)
 
-val make_local_hint_db : goal sigma -> Hint_db.t
+val make_local_hint_db : constr list -> goal sigma -> Hint_db.t
 
 val priority : (int * 'a) list -> 'a list
 
@@ -145,29 +145,29 @@ val conclPattern : constr -> constr_pattern -> Tacexpr.glob_tactic_expr -> tacti
 
 (* The Auto tactic *)
 
-val auto : int -> hint_db_name list -> tactic
+val auto : int -> constr list -> hint_db_name list -> tactic
 
 (* auto with default search depth and with the hint database "core" *)
 val default_auto : tactic
 
 (* auto with all hint databases except the "v62" compatibility database *)
-val full_auto : int -> tactic
+val full_auto : int -> constr list -> tactic
 
 (* auto with default search depth and with all hint databases 
    except the "v62" compatibility database *)
 val default_full_auto : tactic
 
 (* The generic form of auto (second arg [None] means all bases) *)
-val gen_auto : int option -> hint_db_name list option -> tactic
+val gen_auto : int option -> constr list -> hint_db_name list option -> tactic
 
 (* The hidden version of auto *)
-val h_auto   : int option -> hint_db_name list option -> tactic
+val h_auto   : int option -> constr list -> hint_db_name list option -> tactic
 
 (* Trivial *)
-val trivial : hint_db_name list -> tactic
-val gen_trivial : hint_db_name list option -> tactic
-val full_trivial : tactic
-val h_trivial : hint_db_name list option -> tactic
+val trivial : constr list -> hint_db_name list -> tactic
+val gen_trivial : constr list -> hint_db_name list option -> tactic
+val full_trivial : constr list -> tactic
+val h_trivial : constr list -> hint_db_name list option -> tactic
 
 val fmt_autotactic : auto_tactic -> Pp.std_ppcmds
 

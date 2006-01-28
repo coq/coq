@@ -234,8 +234,8 @@ let _ =
         "intros", TacIntroPattern [];
         "assumption", TacAssumption;
         "cofix", TacCofix None;
-        "trivial", TacTrivial None;
-        "auto", TacAuto(None,None);
+        "trivial", TacTrivial ([],None);
+        "auto", TacAuto(None,[],None);
         "left", TacLeft NoBindings;
         "right", TacRight NoBindings;
         "split", TacSplit(false,NoBindings);
@@ -655,8 +655,10 @@ let rec intern_atomic lf ist x =
 *)
 
   (* Automation tactics *)
-  | TacTrivial l -> TacTrivial l
-  | TacAuto (n,l) -> TacAuto (option_app (intern_int_or_var ist) n,l)
+  | TacTrivial (lems,l) -> TacTrivial (List.map (intern_constr ist) lems,l)
+  | TacAuto (n,lems,l) ->
+      TacAuto (option_app (intern_int_or_var ist) n,
+        List.map (intern_constr ist) lems,l)
   | TacAutoTDB n -> TacAutoTDB n
   | TacDestructHyp (b,id) -> TacDestructHyp(b,intern_hyp ist id)
   | TacDestructConcl -> TacDestructConcl
@@ -1750,9 +1752,12 @@ and interp_atomic ist gl = function
 	     HypLocation(interp_hyp ist gl id,hloc))
 *)
   (* Automation tactics *)
-  | TacTrivial l -> Auto.h_trivial (option_app (List.map (interp_hint_base ist)) l)
-  | TacAuto (n, l) ->
+  | TacTrivial (lems,l) -> 
+      Auto.h_trivial (List.map (pf_interp_constr ist gl) lems)
+	(option_app (List.map (interp_hint_base ist)) l)
+  | TacAuto (n,lems,l) ->
       Auto.h_auto (option_app (interp_int_or_var ist) n)
+      (List.map (pf_interp_constr ist gl) lems)
       (option_app (List.map (interp_hint_base ist)) l)
   | TacAutoTDB n -> Dhyp.h_auto_tdb n
   | TacDestructHyp (b,id) -> Dhyp.h_destructHyp b (interp_hyp ist gl id)
@@ -2012,8 +2017,8 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
 (*| TacInstantiate (n,c,ido) -> TacInstantiate (n,subst_rawconstr subst c,ido)
 *)
   (* Automation tactics *)
-  | TacTrivial l -> TacTrivial l
-  | TacAuto (n,l) -> TacAuto (n,l)
+  | TacTrivial (lems,l) -> TacTrivial (List.map (subst_rawconstr subst) lems,l)
+  | TacAuto (n,lems,l) -> TacAuto (n,List.map (subst_rawconstr subst) lems,l)
   | TacAutoTDB n -> TacAutoTDB n
   | TacDestructHyp (b,id) -> TacDestructHyp(b,id)
   | TacDestructConcl -> TacDestructConcl

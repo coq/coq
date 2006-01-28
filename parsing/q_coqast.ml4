@@ -371,15 +371,15 @@ let rec mlexpr_of_atomic_tactic = function
   | Tacexpr.TacTransitivity c -> <:expr< Tacexpr.TacTransitivity $mlexpr_of_constr c$ >>
 
   (* Automation tactics *)
-  | Tacexpr.TacAuto (n,l) ->
+  | Tacexpr.TacAuto (n,lems,l) ->
       let n = mlexpr_of_option (mlexpr_of_or_var mlexpr_of_int) n in
+      let lems = mlexpr_of_list mlexpr_of_constr lems in
       let l = mlexpr_of_option (mlexpr_of_list mlexpr_of_string) l in
-      <:expr< Tacexpr.TacAuto $n$ $l$ >>
-(*
-  | Tacexpr.TacTrivial l ->
+      <:expr< Tacexpr.TacAuto $n$ $lems$ $l$ >>
+  | Tacexpr.TacTrivial (lems,l) ->
       let l = mlexpr_of_option (mlexpr_of_list mlexpr_of_string) l in
-      <:expr< Tacexpr.TacTrivial $l$ >>
-*)
+      let lems = mlexpr_of_list mlexpr_of_constr lems in
+      <:expr< Tacexpr.TacTrivial $lems$ $l$ >>
 
 (*
   | Tacexpr.TacExtend (s,l) ->

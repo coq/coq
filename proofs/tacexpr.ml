@@ -152,8 +152,8 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacLApply of 'constr
 
   (* Automation tactics *)
-  | TacTrivial of string list option
-  | TacAuto of int or_var option * string list option
+  | TacTrivial of 'constr list * string list option
+  | TacAuto of int or_var option * 'constr list * string list option
   | TacAutoTDB of int option
   | TacDestructHyp of (bool * identifier located)
   | TacDestructConcl

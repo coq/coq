@@ -487,6 +487,11 @@ let pr_hintbases = function
   | Some l ->
       spc () ++ hov 2 (str "with" ++ prlist (fun s -> spc () ++ str s) l)
 
+let pr_auto_using prc = function
+  | [] -> mt ()
+  | l -> spc () ++ 
+      hov 2 (str "using" ++ spc () ++ prlist_with_sep pr_coma prc l)
+
 let pr_autoarg_adding = function
   | [] -> mt ()
   | l ->
@@ -599,8 +604,8 @@ let rec pr_atom0 env = function
   | TacIntroMove (None,None) -> str "intro"
   | TacAssumption -> str "assumption"
   | TacAnyConstructor None -> str "constructor"
-  | TacTrivial (Some []) -> str "trivial"
-  | TacAuto (None,Some []) -> str "auto"
+  | TacTrivial ([],Some []) -> str "trivial"
+  | TacAuto (None,[],Some []) -> str "auto"
   | TacReflexivity -> str "reflexivity"
   | t -> str "(" ++ pr_atom1 env t ++ str ")"
 
@@ -708,11 +713,14 @@ and pr_atom1 env = function
       hov 1 (str "lapply" ++ pr_constrarg env c)
 
   (* Automation tactics *)
-  | TacTrivial (Some []) as x -> pr_atom0 env x
-  | TacTrivial db -> hov 0 (str "trivial" ++ pr_hintbases db)
-  | TacAuto (None,Some []) as x -> pr_atom0 env x
-  | TacAuto (n,db) ->
-      hov 0 (str "auto" ++ pr_opt (pr_or_var int) n ++ pr_hintbases db)
+  | TacTrivial ([],Some []) as x -> pr_atom0 env x
+  | TacTrivial (lems,db) ->
+      hov 0 (str "trivial" ++ 
+             pr_auto_using (pr_constr env) lems ++ pr_hintbases db)
+  | TacAuto (None,[],Some []) as x -> pr_atom0 env x
+  | TacAuto (n,lems,db) ->
+      hov 0 (str "auto" ++ pr_opt (pr_or_var int) n ++ 
+             pr_auto_using (pr_constr env) lems ++ pr_hintbases db)
   | TacDAuto (n,p) ->
       hov 1 (str "auto" ++ pr_opt (pr_or_var int) n ++ str "decomp" ++ pr_opt int p)
 

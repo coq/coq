@@ -274,6 +274,10 @@ GEXTEND Gram
       | "with"; l = LIST1 IDENT -> Some l
       | -> Some [] ] ]
   ;
+  auto_using:
+    [ [ "using"; l = LIST1 constr SEP "," -> l
+      | -> [] ] ]
+  ;
   eliminator:
     [ [ "using"; el = constr_with_bindings -> el ] ]
   ;
@@ -367,8 +371,10 @@ GEXTEND Gram
         -> TacDecompose (l,c)
 
       (* Automation tactic *)
-      | IDENT "trivial"; db = hintbases -> TacTrivial db
-      | IDENT "auto"; n = OPT int_or_var; db = hintbases -> TacAuto (n, db)
+      | IDENT "trivial"; lems = auto_using; db = hintbases ->
+	  TacTrivial (lems,db)
+      | IDENT "auto"; n = OPT int_or_var; lems = auto_using; db = hintbases ->
+	  TacAuto (n,lems,db)
 
 (* Obsolete since V8.0
       | IDENT "autotdb"; n = OPT natural -> TacAutoTDB n
