@@ -1175,7 +1175,8 @@ let solvable_by_tactic env evi (ev,args) src =
 	Environ.named_context_of_val evi.evar_hyps = 
 	Environ.named_context env ->
       let id = id_of_string "H" in
-      start_proof id IsLocal evi.evar_hyps evi.evar_concl (fun _ _ -> ());
+      start_proof id (Local,Proof Lemma) evi.evar_hyps evi.evar_concl
+	(fun _ _ -> ());
       begin
 	try
 	  by (tclCOMPLETE tac);
@@ -1520,7 +1521,7 @@ and interp_letin ist gl = function
       try
 	let t = tactic_of_value v in
 	let ndc = Environ.named_context_val env in
-	start_proof id IsLocal ndc typ (fun _ _ -> ());
+	start_proof id (Local,Proof Lemma) ndc typ (fun _ _ -> ());
 	by t;
 	let (_,({const_entry_body = pft},_,_)) = cook_proof () in
 	delete_proof (dummy_loc,id);

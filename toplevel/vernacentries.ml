@@ -304,7 +304,7 @@ let start_proof_and_print idopt k t hook =
   print_subgoals ();
   if !pcoq <> None then (out_some !pcoq).start_proof ()
 
-let vernac_definition (local,_ as k) id def hook =
+let vernac_definition (local,_,_ as k) id def hook =
   match def with
   | ProveBody (bl,t) ->   (* local binders, typ *)
       if Lib.is_modtype () then
@@ -312,8 +312,7 @@ let vernac_definition (local,_ as k) id def hook =
 	  (str "Proof editing mode not supported in module types")
       else
 	let hook _ _ = () in
-        let kind = if local=Local then IsLocal else IsGlobal DefinitionBody in
-	  start_proof_and_print (Some id) kind (bl,t) hook
+	start_proof_and_print (Some id) (local,DefinitionBody Definition) (bl,t) hook
   | DefineBody (bl,red_option,c,typ_opt) ->
       let red_option = match red_option with
         | None -> None
@@ -330,7 +329,7 @@ let vernac_start_proof kind sopt (bl,t) lettop hook =
   if Lib.is_modtype () then
     errorlabstrm "Vernacentries.StartProof"
       (str "Proof editing mode not supported in module types");
-  start_proof_and_print sopt (IsGlobal (Proof kind)) (bl,t) hook
+  start_proof_and_print sopt (Global, Proof kind) (bl,t) hook
 
 let vernac_end_proof = function
   | Admitted -> admit ()
@@ -939,7 +938,7 @@ let vernac_goal = function
   | Some c ->
       if not (refining()) then begin
         let unnamed_kind = Lemma (* Arbitrary *) in
-        start_proof_com None (IsGlobal (Proof unnamed_kind)) c (fun _ _ ->());
+        start_proof_com None (Global, Proof unnamed_kind) c (fun _ _ ->());
 	print_subgoals ()
       end else 
 	error "repeated Goal not permitted in refining mode"

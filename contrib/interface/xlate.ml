@@ -1361,24 +1361,9 @@ let coerce_genarg_to_VARG x =
   | ExtraArgType s -> xlate_error "Cannot treat extra generic arguments"
 
 
-let xlate_thm x = CT_thm (match x with
-  | Theorem -> "Theorem"
-  | Remark -> "Remark"
-  | Lemma -> "Lemma"
-  | Fact -> "Fact")
+let xlate_thm x = CT_thm (string_of_theorem_kind x)
 
-
-let xlate_defn x = CT_defn (match x with
- | (Local, Definition _) -> "Local"
- | (Global, Definition true) -> "Boxed Definition"
- | (Global, Definition false) -> "Definition"
- | (Global, SubClass) -> "SubClass"
- | (Global, Coercion) -> "Coercion"
- | (Local, SubClass) -> "Local SubClass"
- | (Local, Coercion) -> "Local Coercion"
- | (Global,CanonicalStructure) -> "Canonical Structure"
- | (Local, CanonicalStructure) -> 
-     xlate_error "Local CanonicalStructure not parsed")
+let xlate_defn k = CT_defn (string_of_definition_kind k)
 
 let xlate_var x = CT_var (match x with
  | (Global,Definitional) -> "Parameter"

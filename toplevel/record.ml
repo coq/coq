@@ -166,7 +166,7 @@ let declare_projections indsp coers fields =
                     const_entry_type = Some projtyp;
                     const_entry_opaque = false;
 		    const_entry_boxed = Options.boxed_definitions() } in
-		  let k = (DefinitionEntry cie,IsDefinition) in
+		  let k = (DefinitionEntry cie,IsDefinition StructureComponent) in
 		  let kn = declare_internal_constant fid k in
 		  Options.if_verbose message (string_of_id fid ^" is defined");
 		  kn

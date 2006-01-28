@@ -434,16 +434,10 @@ let theory_output_string ?(do_not_quote = false) s =
    Buffer.add_string theory_buffer s
 ;;
 
-let kind_of_theorem = function
-  | Decl_kinds.Theorem -> "Theorem"
-  | Decl_kinds.Lemma -> "Lemma"
-  | Decl_kinds.Fact -> "Fact"
-  | Decl_kinds.Remark -> "Remark"
-
 let kind_of_global_goal = function
-  | Decl_kinds.IsGlobal Decl_kinds.DefinitionBody -> "DEFINITION","InteractiveDefinition"
-  | Decl_kinds.IsGlobal (Decl_kinds.Proof k) -> "THEOREM",kind_of_theorem k
-  | Decl_kinds.IsLocal -> assert false
+  | Decl_kinds.Global, Decl_kinds.DefinitionBody _ -> "DEFINITION","InteractiveDefinition"
+  | Decl_kinds.Global, (Decl_kinds.Proof k) -> "THEOREM",Decl_kinds.string_of_theorem_kind k
+  | Decl_kinds.Local, _ -> assert false
 
 let kind_of_inductive isrecord kn =
  "DEFINITION",
@@ -458,8 +452,9 @@ let kind_of_variable id =
     | DK.IsAssumption DK.Definitional -> "VARIABLE","Assumption"
     | DK.IsAssumption DK.Logical -> "VARIABLE","Hypothesis"
     | DK.IsAssumption DK.Conjectural -> "VARIABLE","Conjecture"
-    | DK.IsDefinition -> "VARIABLE","LocalDefinition"
-    | DK.IsProof DK.LocalStatement -> "VARIABLE","LocalFact"
+    | DK.IsDefinition DK.Definition -> "VARIABLE","LocalDefinition"
+    | DK.IsProof _ -> "VARIABLE","LocalFact"
+    | _ -> Util.anomaly "Unsupported variable kind"
 ;;
 
 let kind_of_constant kn = 
@@ -468,8 +463,10 @@ let kind_of_constant kn =
     | DK.IsAssumption DK.Definitional -> "AXIOM","Declaration"
     | DK.IsAssumption DK.Logical -> "AXIOM","Axiom"
     | DK.IsAssumption DK.Conjectural -> "AXIOM","Conjecture"
-    | DK.IsDefinition -> "DEFINITION","Definition"
-    | DK.IsProof thm -> "THEOREM",kind_of_theorem thm
+    | DK.IsDefinition DK.Definition -> "DEFINITION","Definition"
+    | DK.IsDefinition DK.Example -> "DEFINITION","Example"
+    | DK.IsDefinition _ -> Util.anomaly "Unsupported constant kind"
+    | DK.IsProof thm -> "THEOREM",DK.string_of_theorem_kind thm
 ;;
 
 let kind_of_global r =
@@ -560,10 +557,10 @@ let show_pftreestate internal fn (kind,pftst) id =
  let kn = Lib.make_kn id in
  let env = Global.env () in
  let obj =
-  mk_current_proof_obj (kind = Decl_kinds.IsLocal) id val0 typ evar_map env in
+  mk_current_proof_obj (fst kind = Decl_kinds.Local) id val0 typ evar_map env in
  let uri =
   match kind with
-     Decl_kinds.IsLocal ->
+     Decl_kinds.Local, _ ->
       let uri =
        "cic:/" ^ String.concat "/"
         (Cic2acic.token_list_of_path (Lib.cwd ()) id Cic2acic.TVariable)
@@ -571,7 +568,7 @@ let show_pftreestate internal fn (kind,pftst) id =
       let kind_of_var = "VARIABLE","LocalFact" in
        if not internal then print_object_kind uri kind_of_var;
       uri
-   | Decl_kinds.IsGlobal _ ->
+   | Decl_kinds.Global, _ ->
       let uri = Cic2acic.uri_of_declaration id Cic2acic.TConstant in
        if not internal then print_object_kind uri (kind_of_global_goal kind);
        uri

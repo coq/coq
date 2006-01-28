@@ -842,7 +842,7 @@ let declareFunScheme f fname mutflist =
   const_entry_type = None;
   const_entry_opaque = false;
   const_entry_boxed = true } in
- let _= ignore (declare_constant fname (DefinitionEntry ce,IsDefinition)) in
+ let _= ignore (declare_constant fname (DefinitionEntry ce,IsDefinition Scheme)) in
  ()
 
 

@@ -323,11 +323,7 @@ let pr_ne_params_list pr_c l =
   prlist_with_sep pr_semicolon (pr_params pr_c)
 *)
 
-let pr_thm_token = function
-  | Theorem -> str"Theorem"
-  | Lemma -> str"Lemma"
-  | Fact -> str"Fact"
-  | Remark -> str"Remark"
+let pr_thm_token k = str (string_of_theorem_kind k)
 
 let pr_syntax_modifier = function
   | SetItemLevel (l,NextLevel) ->
@@ -481,18 +477,7 @@ let rec pr_vernac = function
 
   (* Gallina *)
   | VernacDefinition (d,id,b,f) -> (* A verifier... *)
-      let pr_def_token = function
-        | Local, Coercion -> str"Coercion Local"
-        | Global, Coercion -> str"Coercion"
-        | Local, Definition _ -> str"Let"
-        | Global, Definition b ->
-	    if b then str"Boxed Definition"
-	    else str"Definition"
-        | Local, SubClass -> str"Local SubClass"
-        | Global, SubClass -> str"SubClass"
-        | Global, CanonicalStructure -> str"Canonical Structure"
-        | Local, CanonicalStructure ->
-	   anomaly "Don't know how to translate a local canonical structure" in
+      let pr_def_token dk = str (string_of_definition_kind dk) in
       let pr_reduce = function
         | None -> mt()
         | Some r ->

@@ -688,7 +688,7 @@ let add_morphism lemma_infos mor_name (m,quantifiers_rev,args,output) =
           const_entry_type = None;
           const_entry_opaque = false;
           const_entry_boxed = Options.boxed_definitions()},
-	IsDefinition)) ;
+	IsDefinition Definition)) ;
      mext 
  in
   let mmor = current_constant mor_name in
@@ -926,7 +926,7 @@ let new_morphism m signature id hook =
      begin
       new_edited id
        (m,args_ty_quantifiers_rev,args,argsconstr,output,outputconstr);
-      Pfedit.start_proof id (IsGlobal (Proof Lemma)) 
+      Pfedit.start_proof id (Global, Proof Lemma) 
        (Declare.clear_proofs (Global.named_context ()))
        lem hook;
       Options.if_verbose msg (Printer.pr_open_subgoals ());
@@ -1047,7 +1047,7 @@ let int_add_relation id a aeq refl sym trans =
        const_entry_type = None;
        const_entry_opaque = false;
        const_entry_boxed = Options.boxed_definitions()},
-      IsDefinition) in
+      IsDefinition Definition) in
   let id_precise = id_of_string (string_of_id id ^ "_precise_relation_class") in
   let xreflexive_relation_class =
    let subst =
@@ -1064,7 +1064,7 @@ let int_add_relation id a aeq refl sym trans =
        const_entry_type = None;
        const_entry_opaque = false;
        const_entry_boxed = Options.boxed_definitions() },
-      IsDefinition) in
+      IsDefinition Definition) in
   let aeq_rel =
    { aeq_rel with
       rel_X_relation_class = current_constant id;
@@ -1124,7 +1124,7 @@ let int_add_relation id a aeq refl sym trans =
            const_entry_type = None;
            const_entry_opaque = false;
           const_entry_boxed = Options.boxed_definitions()},
-          IsDefinition)
+          IsDefinition Definition)
       in
        let a_quantifiers_rev =
         List.map (fun (n,b,t) -> assert (b = None); n,t) a_quantifiers_rev in

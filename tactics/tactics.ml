@@ -1816,7 +1816,7 @@ let abstract_subproof name tac gls =
   if occur_existential concl then
     error "\"abstract\" cannot handle existentials";
   let lemme =
-    start_proof na (IsGlobal (Proof Lemma)) secsign concl (fun _ _ -> ());
+    start_proof na (Global, Proof Lemma) secsign concl (fun _ _ -> ());
     let _,(const,kind,_) =
       try
 	by (tclCOMPLETE (tclTHEN (tclDO (List.length sign) intro) tac)); 

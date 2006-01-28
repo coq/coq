@@ -59,14 +59,14 @@ type section_variable_entry =
   | SectionLocalDef of constr * types option * bool (* opacity *)
   | SectionLocalAssum of types
 
-type variable_declaration = dir_path * section_variable_entry * local_kind
+type variable_declaration = dir_path * section_variable_entry * logical_kind
 
 type checked_section_variable =
   | CheckedSectionLocalDef of constr * types * Univ.constraints * bool
   | CheckedSectionLocalAssum of types * Univ.constraints
 
 type checked_variable_declaration = 
-    dir_path * checked_section_variable * local_kind
+    dir_path * checked_section_variable * logical_kind
 
 let vartab = ref (Idmap.empty : checked_variable_declaration Idmap.t)
 
@@ -123,9 +123,9 @@ let declare_variable id obj =
 
 (* Globals: constants and parameters *)
 
-type constant_declaration = constant_entry * global_kind
+type constant_declaration = constant_entry * logical_kind
 
-let csttab = ref (Spmap.empty : global_kind Spmap.t)
+let csttab = ref (Spmap.empty : logical_kind Spmap.t)
 
 let _ = Summary.declare_summary "CONSTANT"
 	  { Summary.freeze_function = (fun () -> !csttab);

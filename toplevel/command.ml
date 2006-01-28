@@ -129,26 +129,20 @@ let red_constant_entry bl ce = function
 	  body }
 
 let declare_global_definition ident ce local =
-  let kn = declare_constant ident (DefinitionEntry ce,IsDefinition) in
+  let kn = declare_constant ident (DefinitionEntry ce,IsDefinition Definition) in
   if local = Local then
     msg_warning (pr_id ident ++ str" is declared as a global definition");
   definition_message ident;
   ConstRef kn
 
-let is_boxed_def dok = 
-  match dok with
-  | Definition b -> b
-  | _ -> false
- 
-let declare_definition ident (local,dok) bl red_option c typopt hook =
-  let boxed = is_boxed_def dok in
+let declare_definition ident (local,boxed,dok) bl red_option c typopt hook =
   let ce = constant_entry_of_com (bl,c,typopt,false,boxed) in
   let ce' = red_constant_entry bl ce red_option in
   let r = match local with
     | Local when Lib.sections_are_opened () ->
         let c =
           SectionLocalDef(ce'.const_entry_body,ce'.const_entry_type,false) in
-        let _ = declare_variable ident (Lib.cwd(), c, IsDefinition) in
+        let _ = declare_variable ident (Lib.cwd(),c,IsDefinition Definition) in
         definition_message ident;
         if Pfedit.refining () then 
           msgerrnl (str"Warning: Local definition " ++ pr_id ident ++ 
@@ -212,7 +206,7 @@ let declare_one_elimination ind =
           const_entry_type = t;
           const_entry_opaque = false;
 	  const_entry_boxed = Options.boxed_definitions() }, 
-       Decl_kinds.IsDefinition) in
+       Decl_kinds.IsDefinition Definition) in
     definition_message id;
     kn
   in
@@ -507,8 +501,8 @@ let build_recursive (lnameargsardef:(fixpoint_expr *decl_notation) list)
         const_entry_type = Some arrec.(i);
         const_entry_opaque = false;
         const_entry_boxed = boxed} in
-    let kn = declare_constant fi (DefinitionEntry ce, IsDefinition) in
-    (ConstRef kn)
+    let kn = declare_constant fi (DefinitionEntry ce,IsDefinition Fixpoint)
+    in (ConstRef kn)
   in 
   (* declare the recursive definitions *)
   let lrefrec = Array.mapi declare namerec in
@@ -522,7 +516,9 @@ let build_recursive (lnameargsardef:(fixpoint_expr *decl_notation) list)
 		    const_entry_type = Some t;
                     const_entry_opaque = false;
 		    const_entry_boxed = boxed } in
-	 let _ = declare_constant f (DefinitionEntry ce, IsDefinition) in
+	 let _ =
+	   declare_constant f (DefinitionEntry ce,IsDefinition Definition)
+	 in
       	 warning ((string_of_id f)^" is non-recursively defined");
       	 (var_subst f) :: subst)
       (List.map var_subst (Array.to_list namerec))
@@ -573,8 +569,8 @@ let build_corecursive lnameardef boxed =
         const_entry_opaque = false;
         const_entry_boxed = boxed } 
     in
-    let kn = declare_constant fi (DefinitionEntry ce, IsDefinition) in
-    (ConstRef kn)
+    let kn = declare_constant fi (DefinitionEntry ce,IsDefinition CoFixpoint)
+    in (ConstRef kn)
   in 
   let lrefrec = Array.mapi declare namerec in
   if_verbose ppnl (corecursive_message lrefrec);
@@ -586,7 +582,8 @@ let build_corecursive lnameardef boxed =
 		    const_entry_type = Some t;
                     const_entry_opaque = false;
 		    const_entry_boxed = boxed } in
-	 let _ = declare_constant f (DefinitionEntry ce,IsDefinition) in
+	 let _ = 
+	   declare_constant f (DefinitionEntry ce,IsDefinition Definition) in
       	 warning ((string_of_id f)^" is non-recursively defined");
       	 (var_subst f) :: subst)
       (List.map var_subst (Array.to_list namerec))
@@ -613,7 +610,7 @@ let build_scheme lnamedepindsort =
                const_entry_type = Some decltype;
                const_entry_opaque = false;
 	       const_entry_boxed = Options.boxed_definitions() } in
-    let kn = declare_constant fi (DefinitionEntry ce, IsDefinition) in
+    let kn = declare_constant fi (DefinitionEntry ce, IsDefinition Scheme) in
     ConstRef kn :: lrecref
   in 
   let lrecref = List.fold_right2 declare listdecl lrecnames [] in
@@ -640,21 +637,22 @@ let start_proof_com sopt kind (bl,t) hook =
   let _ = Typeops.infer_type env c in
   start_proof id kind c hook
 
-let save id const kind hook =
+let save id const (locality,kind) hook =
   let {const_entry_body = pft;
        const_entry_type = tpo;
        const_entry_opaque = opacity } = const in
-  let l,r = match kind with
-    | IsLocal when Lib.sections_are_opened () ->
+  let l,r = match locality with
+    | Local when Lib.sections_are_opened () ->
+        let k = logical_kind_of_goal_kind kind in
 	let c = SectionLocalDef (pft, tpo, opacity) in
-	let _ = declare_variable id (Lib.cwd(), c, IsDefinition) in
+	let _ = declare_variable id (Lib.cwd(), c, k) in
 	(Local, VarRef id)
-    | IsLocal ->
-        let k = IsDefinition in
+    | Local ->
+        let k = logical_kind_of_goal_kind kind in
         let kn = declare_constant id (DefinitionEntry const, k) in
 	(Global, ConstRef kn)
-    | IsGlobal k ->
-        let k = theorem_kind_of_goal_kind k in
+    | Global ->
+        let k = logical_kind_of_goal_kind kind in
         let kn = declare_constant id (DefinitionEntry const, k) in
 	(Global, ConstRef kn) in
   hook l r;
@@ -684,7 +682,7 @@ let save_anonymous_with_strength kind opacity save_ident =
   let const = { const with const_entry_opaque = opacity } in
   check_anonymity id save_ident;
   (* we consider that non opaque behaves as local for discharge *)
-  save save_ident const (IsGlobal (Proof kind)) hook
+  save save_ident const (Global, Proof kind) hook
 
 let admit () =
   let (id,k,typ,hook) = Pfedit.current_proof_statement () in

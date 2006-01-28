@@ -36,14 +36,14 @@ type section_variable_entry =
   | SectionLocalDef of constr * types option * bool (* opacity *)
   | SectionLocalAssum of types
 
-type variable_declaration = dir_path * section_variable_entry * local_kind
+type variable_declaration = dir_path * section_variable_entry * logical_kind
 
 val declare_variable : variable -> variable_declaration -> object_name
 
 (* Declaration of global constructions *)
 (* i.e. Definition/Theorem/Axiom/Parameter/... *)
 
-type constant_declaration = constant_entry * global_kind
+type constant_declaration = constant_entry * logical_kind
 
 (* [declare_constant id cd] declares a global declaration
    (constant/parameter) with name [id] in the current section; it returns
@@ -66,11 +66,11 @@ val string_of_strength : strength -> string
 
 val is_constant : section_path -> bool
 val constant_strength : section_path -> strength
-val constant_kind : section_path -> global_kind
+val constant_kind : section_path -> logical_kind
 
 val get_variable : variable -> named_declaration
 val variable_strength : variable -> strength 
-val variable_kind : variable -> local_kind
+val variable_kind : variable -> logical_kind
 val find_section_variable : variable -> section_path
 val last_section_hyps : dir_path -> identifier list
 val clear_proofs : named_context -> Environ.named_context_val

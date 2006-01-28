@@ -539,8 +539,8 @@ and rewrite_term prog_info ctx (t : dterm_loc) : Term.constr * Term.types =
       
   in aux ctx t
 
-let global_kind :  Decl_kinds.global_kind = Decl_kinds.IsDefinition
-let goal_kind = Decl_kinds.IsGlobal Decl_kinds.DefinitionBody
+let global_kind = Decl_kinds.IsDefinition Decl_kinds.Definition
+let goal_kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Definition
   
 let make_fixpoint t id term = 
   let term' = mkLambda (Name id, t.f_fulltype, term) in
