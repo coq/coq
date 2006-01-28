@@ -37,6 +37,7 @@ let class_rawexpr = Gram.Entry.create "vernac:class_rawexpr"
 let thm_token = Gram.Entry.create "vernac:thm_token"
 let def_body = Gram.Entry.create "vernac:def_body"
 
+let no_hook _ _ = ()
 GEXTEND Gram
   GLOBAL: vernac gallina_ext;
   vernac:
@@ -89,16 +90,16 @@ GEXTEND Gram
       (* Definition, Theorem, Variable, Axiom, ... *)
     [ [ thm = thm_token; id = identref; bl = LIST0 binder_let; ":";
         c = lconstr ->
-          VernacStartTheoremProof (thm, id, (bl, c), false, (fun _ _ -> ()))
+          VernacStartTheoremProof (thm, id, (bl, c), false, no_hook)
       | stre = assumption_token; bl = assum_list -> 
 	  VernacAssumption (stre, bl)
       | stre = assumptions_token; bl = assum_list ->
 	  test_plurial_form bl;
 	  VernacAssumption (stre, bl)
       | IDENT "Boxed";"Definition";id = identref; b = def_body -> 
-	  VernacDefinition ((Global,Definition true), id, b, (fun _ _ -> ()))
+	  VernacDefinition ((Global,true,Definition), id, b, no_hook)
       | IDENT "Unboxed";"Definition";id = identref; b = def_body -> 
-	  VernacDefinition ((Global,Definition false), id, b, (fun _ _ -> ()))
+	  VernacDefinition ((Global,false,Definition), id, b, no_hook)
       | (f,d) = def_token; id = identref; b = def_body -> 
           VernacDefinition (d, id, b, f)
       (* Gallina inductive declarations *)
@@ -132,16 +133,20 @@ GEXTEND Gram
     [ [ "Theorem" -> Theorem
       | IDENT "Lemma" -> Lemma
       | IDENT "Fact" -> Fact
-      | IDENT "Remark" -> Remark ] ]
+      | IDENT "Remark" -> Remark
+      | IDENT "Corollary" -> Corollary
+      | IDENT "Property" -> Property ] ]
   ;
   def_token:
     [ [ "Definition" -> 
-	(fun _ _ -> ()), (Global, Definition (Options.boxed_definitions()))
+	no_hook, (Global, Options.boxed_definitions(), Definition)
       | IDENT "Let" -> 
-	(fun _ _ -> ()), (Local, Definition (Options.boxed_definitions()))
-      | IDENT "SubClass"  -> Class.add_subclass_hook, (Global, SubClass)
+	no_hook, (Local, Options.boxed_definitions(), Definition)
+      | IDENT "Example" -> 
+	no_hook, (Global, Options.boxed_definitions(), Example)
+      | IDENT "SubClass"  -> Class.add_subclass_hook, (Global, false, SubClass)
       | IDENT "Local"; IDENT "SubClass"  ->
-          Class.add_subclass_hook, (Local, SubClass) ] ] 
+          Class.add_subclass_hook, (Local, false, SubClass) ] ] 
   ;
   assumption_token:
     [ [ "Hypothesis" -> (Local, Logical)
@@ -394,16 +399,16 @@ GEXTEND Gram
       | IDENT "Canonical"; IDENT "Structure"; qid = global; d = def_body ->
           let s = coerce_global_to_id qid in
 	  VernacDefinition 
-	    ((Global,CanonicalStructure),(dummy_loc,s),d,
+	    ((Global,false,CanonicalStructure),(dummy_loc,s),d,
 	     (fun _ -> Recordops.declare_canonical_structure))
 
       (* Coercions *)
       | IDENT "Coercion"; qid = global; d = def_body ->
           let s = coerce_global_to_id qid in
-	  VernacDefinition ((Global,Coercion),(dummy_loc,s),d,Class.add_coercion_hook)
+	  VernacDefinition ((Global,false,Coercion),(dummy_loc,s),d,Class.add_coercion_hook)
       | IDENT "Coercion"; IDENT "Local"; qid = global; d = def_body ->
            let s = coerce_global_to_id qid in
-	  VernacDefinition ((Local,Coercion),(dummy_loc,s),d,Class.add_coercion_hook)
+	  VernacDefinition ((Local,false,Coercion),(dummy_loc,s),d,Class.add_coercion_hook)
       | IDENT "Identity"; IDENT "Coercion"; IDENT "Local"; f = identref;
          ":"; s = class_rawexpr; ">->"; t = class_rawexpr -> 
 	   VernacIdentityCoercion (Local, f, s, t)
