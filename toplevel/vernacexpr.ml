@@ -108,11 +108,11 @@ type comment =
   | CommentInt of int
 
 type hints =
-  | HintsResolve of (identifier option * constr_expr) list
-  | HintsImmediate of (identifier option * constr_expr) list
-  | HintsUnfold of (identifier option * reference) list
-  | HintsConstructors of identifier option * reference list
-  | HintsExtern of identifier option * int * constr_expr * raw_tactic_expr
+  | HintsResolve of constr_expr list
+  | HintsImmediate of constr_expr list
+  | HintsUnfold of reference list
+  | HintsConstructors of reference list
+  | HintsExtern of int * constr_expr * raw_tactic_expr
   | HintsDestruct of identifier *
       int * (bool,unit) location * constr_expr * raw_tactic_expr
 

@@ -1668,7 +1668,7 @@ let rec xlate_vernac =
   | VernacHints (local,dbnames,h) ->
       let dblist = CT_id_list(List.map (fun x -> CT_ident x) dbnames) in
       (match h with
-	| HintsConstructors (None, l) ->
+	| HintsConstructors l ->
 	 let n1, names = match List.map tac_qualid_to_ct_ID l with
 	     n1 :: names -> n1, names
 	   | _  -> failwith "" in
@@ -1678,15 +1678,10 @@ let rec xlate_vernac =
 	   else
 	     CT_hints(CT_ident "Constructors",
 		      CT_id_ne_list(n1, names), dblist)
-	| HintsExtern (None, n, c, t) ->
+	| HintsExtern (n, c, t) ->
 	    CT_hint_extern(CT_int n, xlate_formula c, xlate_tactic t, dblist)
         | HintsResolve l | HintsImmediate l -> 
-	    let l = 
-	      List.map 
-	     	(function (None, f) -> xlate_formula f
-		   | _ -> 
-		       xlate_error "obsolete Hint Resolve not supported") l in
-	 let f1, formulas = match l  with
+	 let f1, formulas = match List.map xlate_formula l with
 	     a :: tl -> a, tl
 	   | _  -> failwith "" in
 	 let l' = CT_formula_ne_list(f1, formulas) in
@@ -1703,10 +1698,7 @@ let rec xlate_vernac =
 		| HintsImmediate _ -> CT_hints_immediate(l', dblist)
 		| _ -> assert false)
         | HintsUnfold l -> 
-	 let l = List.map
-	   (function (None,ref) -> loc_qualid_to_ct_ID ref |
-	      _ -> xlate_error "obsolete Hint Unfold not supported") l in
-	 let n1, names = match l with
+	 let n1, names = match List.map loc_qualid_to_ct_ID l with
 	     n1 :: names -> n1, names
 	   | _  -> failwith "" in
 	   if local then
@@ -1727,9 +1719,6 @@ let rec xlate_vernac =
 	       CT_hint_destruct
 		 (xlate_ident id, CT_int n, dl, xlate_formula f,
 		  xlate_tactic t, dblist)
-	| HintsExtern(Some _, _, _, _)
-	| HintsConstructors(Some _, _) -> 
-            xlate_error "obsolete Hint Constructors not supported"
 )
   | VernacEndProof (Proved (true,None)) ->
       CT_save (CT_coerce_THM_to_THM_OPT (CT_thm "Theorem"), ctv_ID_OPT_NONE)

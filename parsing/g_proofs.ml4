@@ -34,7 +34,7 @@ GEXTEND Gram
     | ":"; l = LIST1 IDENT -> l ] ]
   ;
   command:
-    [ [ IDENT "Goal"; c = Constr.lconstr -> VernacGoal c
+    [ [ IDENT "Goal"; c = lconstr -> VernacGoal c
       | IDENT "Proof" -> VernacProof (Tacexpr.TacId [])
       | IDENT "Proof"; "with"; ta = tactic -> VernacProof ta
       | IDENT "Abort" -> VernacAbort None
@@ -56,7 +56,7 @@ GEXTEND Gram
       | IDENT "Resume" -> VernacResume None
       | IDENT "Resume"; id = identref -> VernacResume (Some id)
       | IDENT "Restart" -> VernacRestart
-      | IDENT "Proof"; c = Constr.lconstr -> VernacExactProof c
+      | IDENT "Proof"; c = lconstr -> VernacExactProof c
       | IDENT "Undo" -> VernacUndo 1
       | IDENT "Undo"; n = natural -> VernacUndo n
       | IDENT "Focus" -> VernacFocus None
@@ -91,7 +91,7 @@ GEXTEND Gram
 	  
 
 (*This entry is not commented, only for debug*)
-      | IDENT "PrintConstr"; c = Constr.constr -> 
+      | IDENT "PrintConstr"; c = constr -> 
 	  VernacExtend ("PrintConstr",
 	    [Genarg.in_gen Genarg.rawwit_constr c])
       ] ];
@@ -100,22 +100,18 @@ GEXTEND Gram
     [ [ IDENT "Local" -> true | -> false ] ]
   ;
   hint:
-    [ [ IDENT "Resolve"; lc = LIST1 Constr.constr ->
-          HintsResolve (List.map (fun c -> (None, c)) lc)
-      | IDENT "Immediate"; lc = LIST1 Constr.constr ->
-          HintsImmediate (List.map (fun c -> (None,c)) lc)
-      | IDENT "Unfold"; lqid = LIST1 global ->
-          HintsUnfold (List.map (fun g -> (None,g)) lqid)
-      | IDENT "Constructors"; lc = LIST1 global ->
-          HintsConstructors (None,lc)
-      | IDENT "Extern"; n = natural; c = Constr.constr_pattern ; "=>";
+    [ [ IDENT "Resolve"; lc = LIST1 constr -> HintsResolve lc
+      | IDENT "Immediate"; lc = LIST1 constr -> HintsImmediate lc
+      | IDENT "Unfold"; lqid = LIST1 global -> HintsUnfold lqid
+      | IDENT "Constructors"; lc = LIST1 global -> HintsConstructors lc
+      | IDENT "Extern"; n = natural; c = constr_pattern ; "=>";
           tac = tactic ->
-	  HintsExtern (None,n,c,tac)
-      | IDENT"Destruct"; 
+	  HintsExtern (n,c,tac)
+      | IDENT "Destruct"; 
           id = ident; ":=";
           pri = natural;
           dloc = destruct_location;
-          hyptyp = Constr.constr_pattern;
+          hyptyp = constr_pattern;
           "=>"; tac = tactic ->
             HintsDestruct(id,pri,dloc,hyptyp,tac) ] ]
     ;

@@ -35,7 +35,6 @@ type auto_tactic =
 open Rawterm
 
 type pri_auto_tactic = { 
-  hname : identifier;     (* name of the hint *)
   pri   : int;            (* A number between 0 and 4, 4 = lower priority *)
   pat   : constr_pattern option; (* A pattern for the concl of the Goal *)
   code  : auto_tactic;    (* the tactic to apply when the concl matches pat *)
@@ -74,21 +73,18 @@ val print_hint_ref : global_reference -> unit
 val print_hint_db_by_name : hint_db_name -> unit
 
 (* [make_exact_entry hint_name (c, ctyp)]. 
-   [hint_name] is the name of then hint;
    [c] is the term given as an exact proof to solve the goal;
    [ctyp] is the type of [hc]. *)
 
-val make_exact_entry :
-  identifier -> constr * constr -> global_reference * pri_auto_tactic
+val make_exact_entry : constr * constr -> global_reference * pri_auto_tactic
 
-(* [make_apply_entry (eapply,verbose) name (c,cty)].
+(* [make_apply_entry (eapply,verbose) (c,cty)].
    [eapply] is true if this hint will be used only with EApply;
-   [name] is the name of then hint;
    [c] is the term given as an exact proof to solve the goal;
    [cty] is the type of [hc]. *)
 
 val make_apply_entry :
-  env -> evar_map -> bool * bool -> identifier -> constr * constr
+  env -> evar_map -> bool * bool -> constr * constr
       -> global_reference * pri_auto_tactic
 
 (* A constr which is Hint'ed will be:
@@ -99,8 +95,8 @@ val make_apply_entry :
        has missing arguments. *)
 
 val make_resolves :
-  env -> evar_map -> identifier -> bool * bool -> constr * constr -> 
-    (global_reference * pri_auto_tactic) list
+  env -> evar_map -> bool -> constr -> 
+      (global_reference * pri_auto_tactic) list
 
 (* [make_resolve_hyp hname htyp].
    used to add an hypothesis to the local hint database;
@@ -111,10 +107,10 @@ val make_resolve_hyp :
   env -> evar_map -> named_declaration ->
       (global_reference * pri_auto_tactic) list
 
-(* [make_extern name pri pattern tactic_expr] *)
+(* [make_extern pri pattern tactic_expr] *)
 
 val make_extern :
-  identifier -> int -> constr_pattern -> Tacexpr.glob_tactic_expr
+  int -> constr_pattern -> Tacexpr.glob_tactic_expr
       -> global_reference * pri_auto_tactic
 
 val set_extern_interp :

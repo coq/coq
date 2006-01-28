@@ -184,18 +184,14 @@ let pr_hints local db h pr_c pr_pat =
   let pph =
     match h with
     | HintsResolve l ->
-        str "Resolve " ++
-        prlist_with_sep sep pr_c (List.map snd l)
+        str "Resolve " ++ prlist_with_sep sep pr_c l
     | HintsImmediate l ->
-        str"Immediate" ++ spc() ++
-        prlist_with_sep sep pr_c (List.map snd l)
+        str"Immediate" ++ spc() ++ prlist_with_sep sep pr_c l
     | HintsUnfold l ->
-        str "Unfold " ++
-	prlist_with_sep sep pr_reference (List.map snd l)
-    | HintsConstructors (n,c) ->
-        str"Constructors" ++ spc() ++
-        prlist_with_sep spc pr_reference c
-    | HintsExtern (name,n,c,tac) ->
+        str "Unfold " ++ prlist_with_sep sep pr_reference l
+    | HintsConstructors c ->
+        str"Constructors" ++ spc() ++ prlist_with_sep spc pr_reference c
+    | HintsExtern (n,c,tac) ->
         str "Extern" ++ spc() ++ int n ++ spc() ++ pr_pat c ++ str" =>" ++
         spc() ++ pr_raw_tactic tac
     | HintsDestruct(name,i,loc,c,tac) ->
