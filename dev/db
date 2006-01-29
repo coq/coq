@@ -2,6 +2,7 @@ load_printer "gramlib.cma"
 load_printer "printers.cma"
 
 install_printer Top_printers.ppid
+install_printer Top_printers.ppidset
 install_printer Top_printers.pplab
 install_printer Top_printers.ppmsid
 install_printer Top_printers.ppmbid

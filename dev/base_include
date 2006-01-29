@@ -18,6 +18,7 @@
 #use "vm_printers.ml";;
 
 #install_printer  (* identifier *) ppid;;
+#install_printer  (* identifier *) ppidset;;
 #install_printer  (* label *) pplab;;
 #install_printer  (* mod_self_id *) ppmsid;;
 #install_printer  (* mod_bound_id *) ppmbid;;

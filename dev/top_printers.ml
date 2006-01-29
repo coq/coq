@@ -9,6 +9,7 @@
 (* Printers for the ocaml toplevel. *)
 
 open System
+open Util
 open Pp
 open Names
 open Libnames
@@ -52,6 +53,8 @@ let ppfconstr c = ppconstr (Closure.term_of_fconstr c)
 
 let ppbigint n = pp (Bigint.pr_bigint n);;
 
+let ppidset l = pp (prlist_with_sep spc pr_id (Idset.elements l))
+
 let pP s = pp (hov 0 s)
 
 let safe_pr_global = function 
@@ -82,8 +85,6 @@ let ppgoal g = pp(db_pr_goal g)
 
 let pr_gls gls =
   hov 0 (pr_evar_map (sig_sig gls) ++ fnl () ++ db_pr_goal (sig_it gls))
-
-open Util
 
 let pr_glls glls =
   hov 0 (pr_evar_map (sig_sig glls) ++ fnl () ++
