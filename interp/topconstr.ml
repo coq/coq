@@ -653,17 +653,16 @@ let coerce_to_id = function
 
 
 let names_of_cases_indtype =
-  let rec vars_of ids t =
-    match t with
-      (* We deal only with the regular cases *)
-      | CApp (_,_,l) -> List.fold_left (fun ids (a,_) -> vars_of ids a) [] l
-      | CRef (Ident (_,id)) -> id::ids
-      | CNotation (_,_,l)
-      (* assume the ntn is applicative and does not instantiate the head !! *)
-      | CAppExpl (_,_,l) -> List.fold_left vars_of [] l
-      | CDelimiters(_,_,c) -> vars_of ids c
-      | _ -> ids in
-  vars_of []
+  let add_var ids = function CRef (Ident (_,id)) -> id::ids | _ -> ids in
+  let rec vars_of = function
+    (* We deal only with the regular cases *)
+    | CApp (_,_,l) -> List.fold_left add_var [] (List.map fst l)
+    | CNotation (_,_,l)
+    (* assume the ntn is applicative and does not instantiate the head !! *)
+    | CAppExpl (_,_,l) -> List.fold_left add_var [] l
+    | CDelimiters(_,_,c) -> vars_of c
+    | _ -> [] in
+  vars_of
 
 let map_binder g e nal = List.fold_right (fun (_,na) -> name_fold g na) nal e
 
