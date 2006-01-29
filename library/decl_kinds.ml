@@ -24,6 +24,7 @@ type theorem_kind =
   | Fact
   | Remark
   | Property
+  | Proposition
   | Corollary
 
 type definition_object_kind =
@@ -80,8 +81,9 @@ let string_of_theorem_kind = function
   | Lemma -> "Lemma"
   | Fact -> "Fact"
   | Remark -> "Remark"
-  | Corollary -> "Corollary"
   | Property -> "Property"
+  | Proposition -> "Proposition"
+  | Corollary -> "Corollary"
 
 let string_of_definition_kind (l,boxed,d) =
   match (l,d) with

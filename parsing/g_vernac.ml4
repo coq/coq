@@ -135,6 +135,7 @@ GEXTEND Gram
       | IDENT "Fact" -> Fact
       | IDENT "Remark" -> Remark
       | IDENT "Corollary" -> Corollary
+      | IDENT "Proposition" -> Proposition
       | IDENT "Property" -> Property ] ]
   ;
   def_token:
