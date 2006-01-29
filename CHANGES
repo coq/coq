@@ -19,6 +19,8 @@ Vernacular commands
 - Added "Print Rewrite HintDb" to print the content of a DB used by
   autorewrite (doc TODO)
 - Added "Print Canonical Projections" (doc TODO)
+- Added "Example" as synonym of "Definition"
+- Added "Property", "Proposition" and "Corollary" as extra synonyms of "Lemma"
 
 Gallina
 
@@ -62,6 +64,7 @@ Tactics
 - New tactic "pose proof" that generalizes "assert (id:=p)" with intro patterns
 - New introduction pattern "?" for letting Coq choose a name
 - Added "eassumption"
+- Added option 'using lemmas' to auto, trivial and eauto
 
 Modules
 
