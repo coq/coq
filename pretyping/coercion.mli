@@ -37,7 +37,7 @@ val inh_coerce_to_sort :
    [t]; i.e. it inserts a coercion into [j], if needed, in such a way [t] and
    [j.uj_type] are convertible; it fails if no coercion is applicable *)
 val inh_conv_coerce_to : loc -> 
-  env -> evar_defs -> unsafe_judgment -> constr -> evar_defs * unsafe_judgment
+  env -> evar_defs -> unsafe_judgment -> types -> evar_defs * unsafe_judgment
 
 (* [inh_pattern_coerce_to loc env isevars pat ind1 ind2] coerces the Cases
    pattern [pat] typed in [ind1] into a pattern typed in [ind2];
