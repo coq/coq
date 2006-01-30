@@ -36,20 +36,6 @@ val error_wrong_numarg_constructor_loc : loc -> env -> constructor -> int -> 'a
 
 val error_wrong_numarg_inductive_loc : loc -> env -> inductive -> int -> 'a
 
-(*s Used for old cases in pretyping *)
-
-val branch_scheme : 
-  env -> evar_defs ref -> bool -> inductive_family -> constr array
-
-type ml_case_error =
-  | MlCaseAbsurd
-  | MlCaseDependent
-
-exception NotInferable of ml_case_error
-
-val pred_case_ml : (* raises [NotInferable] if not inferable *)
-  env -> evar_map -> bool -> inductive_type -> int * types -> constr 
-
 (*s Compilation of pattern-matching. *)
 
 val compile_cases :

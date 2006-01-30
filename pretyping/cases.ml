@@ -63,108 +63,6 @@ let error_wrong_predicate_arity_loc loc env c n1 n2 =
 let error_needs_inversion env x t =
   raise (PatternMatchingError (env, NeedsInversion (x,t)))
 
-(*********************************************************************)
-(* A) Typing old cases                                               *)
-(* This was previously in Indrec but creates existential holes       *)
-
-let mkExistential env ?(src=(dummy_loc,Evd.InternalHole)) isevars =
-  e_new_evar isevars env ~src:src (new_Type ())
-
-let norec_branch_scheme env isevars cstr =
-  let rec crec env = function
-    | d::rea -> mkProd_or_LetIn d (crec (push_rel d env) rea)
-    | [] -> mkExistential env isevars in 
-  crec env (List.rev cstr.cs_args)
-
-let rec_branch_scheme env isevars (sp,j) recargs cstr =
-  let rec crec env (args,recargs) = 
-    match args, recargs with 
-      | (name,None,c as d)::rea,(ra::reca) -> 
-	  let d =
- 	    match dest_recarg ra with 
-	      | Mrec k when k=j ->
-		  let t = mkExistential env isevars in
-		  mkArrow t
-		    (crec (push_rel (Anonymous,None,t) env)
-		       (List.rev (lift_rel_context 1 (List.rev rea)),reca))
-              | _ -> crec (push_rel d env) (rea,reca) in
-          mkProd (name,  c, d)
-
-      | (name,Some b,c as d)::rea, reca -> 
-	  mkLetIn (name,b, c,crec (push_rel d env) (rea,reca))
-      | [],[] -> mkExistential env isevars
-      | _ -> anomaly "rec_branch_scheme"
-  in 
-  crec env (List.rev cstr.cs_args,recargs) 
-    
-let branch_scheme env isevars isrec indf =
-  let (ind,params) = dest_ind_family indf in
-  let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  let cstrs = get_constructors env indf in 
-  if isrec then
-    array_map2
-      (rec_branch_scheme env isevars ind)
-      (dest_subterms mip.mind_recargs) cstrs
-  else 
-    Array.map (norec_branch_scheme env isevars) cstrs
-
-(******************************************************)
-(* B) Building ML like case expressions without types *)
-
-let concl_n env sigma = 
-  let rec decrec m c = if m = 0 then (nf_evar sigma c) else 
-    match kind_of_term (whd_betadeltaiota env sigma c) with
-      | Prod (n,_,c_0) -> decrec (m-1) c_0
-      | _                -> failwith "Typing.concl_n"
-  in 
-  decrec
-
-let count_rec_arg j = 
-  let rec crec i = function 
-    | [] -> i 
-    | ra::l ->
-        (match dest_recarg ra with
-            Mrec k -> crec (if k=j then (i+1) else i) l
-          | _ -> crec i l)
-  in 
-  crec 0
-
-(* if arity of mispec is (p_bar:P_bar)(a_bar:A_bar)s where p_bar are the
- * K parameters. Then then build_notdep builds the predicate
- * [a_bar:A'_bar](lift k pred) 
- * where A'_bar = A_bar[p_bar <- globargs] *)
-
-let build_dep_pred env sigma indf pred =
-  let arsign,_ = get_arity env indf in
-  let psign = (Anonymous,None,build_dependent_inductive env indf)::arsign in
-  let nar = List.length psign in
-  it_mkLambda_or_LetIn_name env (lift nar pred) psign
-
-type ml_case_error =
-  | MlCaseAbsurd
-  | MlCaseDependent
-
-exception NotInferable of ml_case_error
-
-
-let pred_case_ml env sigma isrec (IndType (indf,realargs)) (i,ft) =
-  let pred =
-    let (ind,params) = dest_ind_family indf in
-    let (mib,mip) = Inductive.lookup_mind_specif env ind in
-    let recargs = dest_subterms mip.mind_recargs in
-    if Array.length recargs = 0 then raise (NotInferable MlCaseAbsurd);
-    let recargi = recargs.(i) in
-    let j = snd ind in (* index of inductive *)
-    let nbrec = if isrec then count_rec_arg j recargi else 0 in
-    let nb_arg = List.length (recargs.(i)) + nbrec in
-    let pred = refresh_universes (concl_n env sigma nb_arg ft) in
-    if noccur_between 1 nb_arg pred then 
-      lift (-nb_arg) pred
-    else 
-      raise (NotInferable MlCaseDependent)
-  in
-  build_dep_pred env sigma indf pred  
-
 (************************************************************************)
 (*            Pattern-matching compilation (Cases)                      *)
 (************************************************************************)
@@ -464,6 +362,9 @@ let coerce_to_indtype typing_fun isevars env matx tomatchl =
 
 (************************************************************************)
 (* Utils *)
+
+let mkExistential env ?(src=(dummy_loc,Evd.InternalHole)) isevars =
+  e_new_evar isevars env ~src:src (new_Type ())
 
 let evd_comb2 f isevars x y =
   let (evd',y) = f !isevars x y in
