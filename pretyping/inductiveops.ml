@@ -114,13 +114,16 @@ let constructor_nrealargs env (ind,j) =
 
 let constructor_nrealhyps env (ind,j) =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  mip.mind_consnrealargs.(j-1) - List.length (mib.mind_params_ctxt)
+  mip.mind_consnrealargs.(j-1) - rel_context_length (mib.mind_params_ctxt)
 
 (* Length of arity (w/o local defs) *)
 
 let inductive_nargs env ind =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  mip.mind_nrealargs + rel_context_length mib.mind_params_ctxt
+  print_int mip.mind_nrealargs;
+  print_int (rel_context_length mib.mind_params_ctxt);
+  flush stdout;
+  mip.mind_nrealargs + rel_context_nhyps mib.mind_params_ctxt
 
 (* Annotation for cases *)
 let make_case_info env ind style pats_source =
