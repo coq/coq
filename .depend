@@ -478,8 +478,8 @@ dev/top_printers.cmo: toplevel/vernacinterp.cmi lib/util.cmi kernel/univ.cmi \
     lib/system.cmi kernel/sign.cmi proofs/refiner.cmi proofs/proof_trees.cmi \
     parsing/printer.cmi parsing/pptactic.cmi lib/pp.cmi proofs/pfedit.cmi \
     parsing/pcoq.cmi kernel/names.cmi library/nameops.cmi proofs/logic.cmi \
-    library/libobject.cmi library/libnames.cmi library/global.cmi \
-    interp/genarg.cmi pretyping/evd.cmi kernel/environ.cmi \
+    library/libobject.cmi library/libnames.cmi library/goptions.cmi \
+    library/global.cmi interp/genarg.cmi pretyping/evd.cmi kernel/environ.cmi \
     parsing/egrammar.cmi kernel/declarations.cmi interp/constrintern.cmi \
     interp/constrextern.cmi kernel/closure.cmi pretyping/clenv.cmi \
     toplevel/cerrors.cmi lib/bigint.cmi 
@@ -488,8 +488,8 @@ dev/top_printers.cmx: toplevel/vernacinterp.cmx lib/util.cmx kernel/univ.cmx \
     lib/system.cmx kernel/sign.cmx proofs/refiner.cmx proofs/proof_trees.cmx \
     parsing/printer.cmx parsing/pptactic.cmx lib/pp.cmx proofs/pfedit.cmx \
     parsing/pcoq.cmx kernel/names.cmx library/nameops.cmx proofs/logic.cmx \
-    library/libobject.cmx library/libnames.cmx library/global.cmx \
-    interp/genarg.cmx pretyping/evd.cmx kernel/environ.cmx \
+    library/libobject.cmx library/libnames.cmx library/goptions.cmx \
+    library/global.cmx interp/genarg.cmx pretyping/evd.cmx kernel/environ.cmx \
     parsing/egrammar.cmx kernel/declarations.cmx interp/constrintern.cmx \
     interp/constrextern.cmx kernel/closure.cmx pretyping/clenv.cmx \
     toplevel/cerrors.cmx lib/bigint.cmx 
@@ -578,9 +578,10 @@ interp/constrintern.cmo: lib/util.cmi interp/topconstr.cmi \
     pretyping/pretype_errors.cmi lib/pp.cmi pretyping/pattern.cmi \
     lib/options.cmi interp/notation.cmi library/nametab.cmi kernel/names.cmi \
     library/nameops.cmi library/libnames.cmi library/lib.cmi \
-    parsing/lexer.cmi kernel/inductive.cmi library/impargs.cmi \
-    library/global.cmi pretyping/evd.cmi kernel/environ.cmi \
-    kernel/declarations.cmi lib/bigint.cmi interp/constrintern.cmi 
+    parsing/lexer.cmi pretyping/inductiveops.cmi kernel/inductive.cmi \
+    library/impargs.cmi library/global.cmi pretyping/evd.cmi \
+    kernel/environ.cmi kernel/declarations.cmi pretyping/cases.cmi \
+    lib/bigint.cmi interp/constrintern.cmi 
 interp/constrintern.cmx: lib/util.cmx interp/topconstr.cmx \
     pretyping/termops.cmx kernel/term.cmx interp/syntax_def.cmx \
     kernel/sign.cmx interp/reserve.cmx pretyping/recordops.cmx \
@@ -588,9 +589,10 @@ interp/constrintern.cmx: lib/util.cmx interp/topconstr.cmx \
     pretyping/pretype_errors.cmx lib/pp.cmx pretyping/pattern.cmx \
     lib/options.cmx interp/notation.cmx library/nametab.cmx kernel/names.cmx \
     library/nameops.cmx library/libnames.cmx library/lib.cmx \
-    parsing/lexer.cmx kernel/inductive.cmx library/impargs.cmx \
-    library/global.cmx pretyping/evd.cmx kernel/environ.cmx \
-    kernel/declarations.cmx lib/bigint.cmx interp/constrintern.cmi 
+    parsing/lexer.cmx pretyping/inductiveops.cmx kernel/inductive.cmx \
+    library/impargs.cmx library/global.cmx pretyping/evd.cmx \
+    kernel/environ.cmx kernel/declarations.cmx pretyping/cases.cmx \
+    lib/bigint.cmx interp/constrintern.cmi 
 interp/coqlib.cmo: lib/util.cmi kernel/term.cmi lib/pp.cmi \
     pretyping/pattern.cmi library/nametab.cmi kernel/names.cmi \
     library/library.cmi library/libnames.cmi interp/coqlib.cmi 
