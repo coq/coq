@@ -91,6 +91,7 @@ let mis_nf_constructor_type (ind,mib,mip) j =
   substl (list_tabulate make_Ik ntypes) specif.(j-1)
 
 (* Arity of constructors excluding parameters and local defs *)
+
 let mis_constr_nargs indsp =
   let (mib,mip) = Global.lookup_inductive indsp in
   let recargs = dest_subterms mip.mind_recargs in
@@ -106,6 +107,20 @@ let mis_constructor_nargs_env env ((kn,i),j) =
   let mib = Environ.lookup_mind kn env in
   let mip = mib.mind_packets.(i) in 
   recarg_length mip.mind_recargs j + mib.mind_nparams
+
+let constructor_nrealargs env (ind,j) =
+  let (_,mip) = Inductive.lookup_mind_specif env ind in
+  recarg_length mip.mind_recargs j
+
+let constructor_nrealhyps env (ind,j) =
+  let (mib,mip) = Inductive.lookup_mind_specif env ind in
+  mip.mind_consnrealargs.(j-1) - List.length (mib.mind_params_ctxt)
+
+(* Length of arity (w/o local defs) *)
+
+let inductive_nargs env ind =
+  let (mib,mip) = Inductive.lookup_mind_specif env ind in
+  mip.mind_nrealargs + rel_context_length mib.mind_params_ctxt
 
 (* Annotation for cases *)
 let make_case_info env ind style pats_source =
@@ -371,4 +386,6 @@ let control_only_guard env =
   in 
   control_rec 
 
-let subst_inductive subst (kn,i) = (Mod_subst.subst_kn subst kn,i)
+let subst_inductive subst (kn,i as ind) = 
+  let kn' = Mod_subst.subst_kn subst kn in
+  if kn == kn' then ind else (kn',i)
