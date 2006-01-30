@@ -26,8 +26,10 @@ open Termops
 open Clenv
 open Cerrors
 open Evd
+open Goptions
 
 let _ = Constrextern.print_evar_arguments := true
+let _ = set_bool_option_value (SecondaryTable ("Printing","Matching")) false
 
 (* name printers *)
 let ppid id = pp (pr_id id)
