@@ -372,22 +372,6 @@ let check_linearity lhs ids =
     | None ->
 	()
 
-(* Warns if some pattern variable starts with uppercase *)
-let check_uppercase loc ids =
-(* A quoi ça sert ? Pour l'extraction vers ML ? Maintenant elle est externe
-  let is_uppercase_var v =
-    match (string_of_id v).[0] with 'A'..'Z' -> true | _  -> false
-  in
-  let warning_uppercase loc uplid =
-    let vars = h 0 (prlist_with_sep pr_coma pr_id uplid) in
-    let (s1,s2) = if List.length uplid = 1 then (" ","s ") else ("s "," ") in
-    warn (str ("the variable"^s1) ++ vars ++
-	  str (" start"^s2^"with an upper case letter in pattern")) in
-  let uplid = List.filter is_uppercase_var ids in
-  if uplid <> [] then warning_uppercase loc uplid
-*)
-  ()
-
 (* Match the number of pattern against the number of matched args *)
 let check_number_of_pattern loc n l =
   let p = List.length l in
@@ -535,7 +519,7 @@ let maybe_constructor ref =
     | InternalisationError _ -> VarPat (find_pattern_variable ref)
       (* patt var also exists globally but does not satisfy preconditions *)
     | (Environ.NotEvaluableConst _ | Not_found) ->
-        warn (str "pattern " ++ pr_reference ref ++
+        if_verbose msg_warning (str "pattern " ++ pr_reference ref ++
               str " is understood as a pattern variable");
         VarPat (find_pattern_variable ref)
 
@@ -928,7 +912,6 @@ let internalise sigma env allow_soapp lvar c =
     let eqn_ids,pll = product_of_cases_patterns [] idsl_pll in
     (* Linearity implies the order in ids is irrelevant *)
     check_linearity lhs eqn_ids;
-    check_uppercase loc eqn_ids;
     check_number_of_pattern loc n (snd (List.hd pll));
     let env_ids = List.fold_right Idset.add eqn_ids ids in
     List.map (fun (subst,pl) ->
