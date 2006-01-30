@@ -612,11 +612,18 @@ let explain_bad_constructor ctx cstr ind =
   str "while a constructor of "  ++ pi ++ brk(1,1)  ++
   str "is expected"
 
-let explain_wrong_numarg_of_constructor ctx cstr n =
-  let pc = pr_constructor ctx cstr in
-  str "The constructor " ++ pc ++ str " expects "  ++
-  (if n = 0 then str "no argument." else if n = 1 then str "1 argument."
-   else (int n  ++ str " arguments."))
+let decline_string n s =
+  if n = 0 then "no "^s
+  else if n = 1 then "1 "^s
+  else (string_of_int n^" "^s^"s")
+
+let explain_wrong_numarg_constructor ctx cstr n =
+  str "The constructor " ++ pr_constructor ctx cstr ++ 
+  str " expects "  ++ str (decline_string n "argument")
+
+let explain_wrong_numarg_inductive ctx ind n =
+  str "The inductive type " ++ pr_inductive ctx ind ++ 
+  str " expects "  ++ str (decline_string n "argument")
 
 let explain_wrong_predicate_arity ctx pred nondep_arity dep_arity=
   let ctx = make_all_name_different ctx in
@@ -662,7 +669,9 @@ let explain_pattern_matching_error env = function
   | BadConstructor (c,ind) ->
       explain_bad_constructor env c ind
   | WrongNumargConstructor (c,n) ->
-      explain_wrong_numarg_of_constructor env c n
+      explain_wrong_numarg_constructor env c n
+  | WrongNumargInductive (c,n) ->
+      explain_wrong_numarg_inductive env c n
   | WrongPredicateArity (pred,n,dep) ->
       explain_wrong_predicate_arity env pred n dep
   | NeedsInversion (x,t) ->
