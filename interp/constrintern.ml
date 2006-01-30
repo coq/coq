@@ -382,6 +382,18 @@ let check_or_pat_variables loc ids idsl =
     user_err_loc (loc, "", str 
     "The components of this disjunctive pattern must bind the same variables")
 
+let check_constructor_length env loc cstr pl pl0 =
+  let n = List.length pl + List.length pl0 in
+  let nargs = Inductiveops.constructor_nrealargs env cstr in
+  let nhyps = Inductiveops.constructor_nrealhyps env cstr in
+  if n <> nargs && n <> nhyps (* i.e. with let's *) then
+    Cases.error_wrong_numarg_constructor_loc loc env cstr nargs
+
+let check_inductive_length env (loc,ind,nal) =
+  let n = Inductiveops.inductive_nargs env ind in
+  if n <> List.length nal then
+    Cases.error_wrong_numarg_inductive_loc loc env ind n
+
 (* Manage multiple aliases *)
 
   (* [merge_aliases] returns the sets of all aliases encountered at this
@@ -528,15 +540,18 @@ let mustbe_constructor loc ref =
   with (Environ.NotEvaluableConst _ | Not_found) ->
     raise (InternalisationError (loc,NotAConstructor ref))
 
-let rec intern_cases_pattern scopes (ids,subst as aliases) tmp_scope = function
+let rec intern_cases_pattern genv scopes (ids,subst as aliases) tmp_scope = 
+  function
   | CPatAlias (loc, p, id) ->
       let aliases' = merge_aliases aliases id in
-      intern_cases_pattern scopes aliases' tmp_scope p
+      intern_cases_pattern genv scopes aliases' tmp_scope p
   | CPatCstr (loc, head, pl) ->
       let c,pl0 = mustbe_constructor loc head in
       let argscs =
 	simple_adjust_scopes (find_arguments_scope (ConstructRef c), pl) in
-      let idslpl = List.map2 (intern_cases_pattern scopes ([],[])) argscs pl in
+      check_constructor_length genv loc c pl0 pl;
+      let idslpl =
+	List.map2 (intern_cases_pattern genv scopes ([],[])) argscs pl in
       let (ids',pll) = product_of_cases_patterns ids idslpl in
       let pl' = List.map (fun (subst,pl) ->
         (subst, PatCstr (loc,c,pl0@pl,alias_of aliases))) pll in
@@ -544,16 +559,17 @@ let rec intern_cases_pattern scopes (ids,subst as aliases) tmp_scope = function
   | CPatNotation (loc,"- _",[CPatPrim(_,Numeral p)]) 
       when Bigint.is_strictly_pos p ->
       let np = Numeral (Bigint.neg p) in
-      intern_cases_pattern scopes aliases tmp_scope (CPatPrim(loc,np))
+      intern_cases_pattern genv scopes aliases tmp_scope (CPatPrim(loc,np))
   | CPatNotation (_,"( _ )",[a]) ->
-      intern_cases_pattern scopes aliases tmp_scope a
+      intern_cases_pattern genv scopes aliases tmp_scope a
   | CPatNotation (loc, ntn, args) ->
       let ntn,args = contract_pat_notation ntn args in
       let scopes = option_cons tmp_scope scopes in
       let ((ids,c),df) = Notation.interp_notation loc ntn scopes in
       if !dump then dump_notation_location (patntn_loc loc args ntn) df;
       let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids args in
-      subst_cases_pattern loc aliases intern_cases_pattern subst scopes c
+      subst_cases_pattern loc aliases (intern_cases_pattern genv) subst scopes 
+	c
   | CPatPrim (loc, p) ->
       let scopes = option_cons tmp_scope scopes in
       let a = alias_of aliases in
@@ -561,11 +577,12 @@ let rec intern_cases_pattern scopes (ids,subst as aliases) tmp_scope = function
       if !dump then dump_notation_location (fst (unloc loc)) df;
       (ids,[subst,c])
   | CPatDelimiters (loc, key, e) ->
-      intern_cases_pattern (find_delimiters_scope loc key::scopes)
+      intern_cases_pattern genv (find_delimiters_scope loc key::scopes)
         aliases None e
   | CPatAtom (loc, Some head) ->
       (match maybe_constructor head with
 	 | ConstrPat (c,args) ->
+	     check_constructor_length genv loc c [] [];
 	     (ids,[subst, PatCstr (loc,c,args,alias_of aliases)])
 	 | VarPat id ->
 	     let ids,subst = merge_aliases aliases id in
@@ -574,7 +591,8 @@ let rec intern_cases_pattern scopes (ids,subst as aliases) tmp_scope = function
       (ids,[subst, PatVar (loc,alias_of aliases)])
   | CPatOr (loc, pl) ->
       assert (pl <> []);
-      let pl' = List.map (intern_cases_pattern scopes aliases tmp_scope) pl in
+      let pl' = 
+	List.map (intern_cases_pattern genv scopes aliases tmp_scope) pl in
       let (idsl,pl') = List.split pl' in
       let ids = List.hd idsl in
       check_or_pat_variables loc ids (List.tl idsl);
@@ -750,7 +768,7 @@ let reset_tmp_scope (ids,tmp_scope,scopes) =
 (**********************************************************************)
 (* Main loop                                                          *)
 
-let internalise sigma env allow_soapp lvar c =
+let internalise sigma globalenv env allow_soapp lvar c =
   let rec intern (ids,tmp_scope,scopes as env) = function
     | CRef ref as x ->
 	let (c,imp,subscopes,l) = intern_reference env lvar ref in
@@ -907,7 +925,8 @@ let internalise sigma env allow_soapp lvar c =
          (na,Some(intern env def),RHole(loc,Evd.BinderType na))::bl)
 
   and intern_eqn n (ids,tmp_scope,scopes as _env) (loc,lhs,rhs) =
-    let idsl_pll = List.map (intern_cases_pattern scopes ([],[]) None) lhs in
+    let idsl_pll = 
+      List.map (intern_cases_pattern globalenv scopes ([],[]) None) lhs in
 
     let eqn_ids,pll = product_of_cases_patterns [] idsl_pll in
     (* Linearity implies the order in ids is irrelevant *)
@@ -927,17 +946,19 @@ let internalise sigma env allow_soapp lvar c =
 	let tids = names_of_cases_indtype t in
 	let tids = List.fold_right Idset.add tids Idset.empty in
 	let t = intern_type (tids,None,scopes) t in
-	begin match t with
-	  | RRef (loc,IndRef ind) -> [],Some (loc,ind,[])
+	let (_,_,nal as indsign) =
+	  match t with
+	  | RRef (loc,IndRef ind) -> (loc,ind,[])
 	  | RApp (loc,RRef (_,IndRef ind),l) ->
 	      let nal = List.map (function
 		| RHole _ -> Anonymous
 		| RVar (_,id) -> Name id
 		| c ->
 		    user_err_loc (loc_of_rawconstr c,"",str "Not a name")) l in
-	      nal, Some (loc,ind,nal)
-	  | _ -> error_bad_inductive_type (loc_of_rawconstr t)
-	end
+	      (loc,ind,nal)
+	  | _ -> error_bad_inductive_type (loc_of_rawconstr t) in
+	check_inductive_length globalenv indsign;
+	nal, Some indsign
     | None -> 
 	[], None in
     let na = match tm', na with
@@ -1022,7 +1043,7 @@ let intern_gen isarity sigma env
                ?(impls=([],[])) ?(allow_soapp=false) ?(ltacvars=([],[]))
                c =
   let tmp_scope = if isarity then Some Notation.type_scope else None in
-  internalise sigma (extract_ids env, tmp_scope,[])
+  internalise sigma env (extract_ids env, tmp_scope,[])
     allow_soapp (ltacvars,Environ.named_context env, [], impls) c
 
 let intern_constr sigma env c = intern_gen false sigma env c 
@@ -1063,7 +1084,7 @@ let interp_aconstr impls vars a =
   let env = Global.env () in
   (* [vl] is intended to remember the scope of the free variables of [a] *)
   let vl = List.map (fun id -> (id,ref None)) vars in
-  let c = internalise Evd.empty (extract_ids env, None, [])
+  let c = internalise Evd.empty (Global.env()) (extract_ids env, None, [])
     false (([],[]),Environ.named_context env,vl,([],impls)) a in
   (* Translate and check that [c] has all its free variables bound in [vars] *)
   let a = aconstr_of_rawconstr vars c in
