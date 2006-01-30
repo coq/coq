@@ -23,6 +23,7 @@ type pattern_matching_error =
   | BadPattern of constructor * constr
   | BadConstructor of constructor * inductive
   | WrongNumargConstructor of constructor * int
+  | WrongNumargInductive of inductive * int
   | WrongPredicateArity of constr * constr * constr
   | NeedsInversion of constr * constr
   | UnusedClause of cases_pattern list
@@ -30,6 +31,10 @@ type pattern_matching_error =
   | CannotInferPredicate of (constr * types) array
 
 exception PatternMatchingError of env * pattern_matching_error
+
+val error_wrong_numarg_constructor_loc : loc -> env -> constructor -> int -> 'a
+
+val error_wrong_numarg_inductive_loc : loc -> env -> inductive -> int -> 'a
 
 (*s Used for old cases in pretyping *)
 
