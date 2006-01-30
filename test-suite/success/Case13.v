@@ -54,3 +54,16 @@ Check (fun x : I' 0 => match x with
                        | C2' _ niln => 0
                        | _ => 0
                        end).
+
+(* Check insertion of coercions around matched subterm *)
+
+Parameter A:Set.
+Parameter f:> A -> nat.
+
+Inductive J : Set := D : A -> J.
+
+Check (fun x => match x with
+                | D 0 => 0
+                | D _ => 1
+                end).
+
