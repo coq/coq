@@ -33,6 +33,7 @@ type pattern_matching_error =
   | BadPattern of constructor * constr
   | BadConstructor of constructor * inductive
   | WrongNumargConstructor of constructor * int
+  | WrongNumargInductive of inductive * int
   | WrongPredicateArity of constr * constr * constr
   | NeedsInversion of constr * constr
   | UnusedClause of cases_pattern list
@@ -50,8 +51,11 @@ let error_bad_pattern_loc loc cstr ind =
 let error_bad_constructor_loc loc cstr ind =
   raise_pattern_matching_error (loc, Global.env(), BadConstructor (cstr,ind))
 
-let error_wrong_numarg_constructor_loc loc c n =
-  raise_pattern_matching_error (loc, Global.env(), WrongNumargConstructor (c,n))
+let error_wrong_numarg_constructor_loc loc env c n =
+  raise_pattern_matching_error (loc, env, WrongNumargConstructor(c,n))
+
+let error_wrong_numarg_inductive_loc loc env c n =
+  raise_pattern_matching_error (loc, env, WrongNumargInductive(c,n))
 
 let error_wrong_predicate_arity_loc loc env c n1 n2 =
   raise_pattern_matching_error (loc, env, WrongPredicateArity (c,n1,n2))
@@ -499,9 +503,9 @@ let adjust_tomatch_to_pattern pb ((current,typ),deps) =
 
    (* extract some ind from [t], possibly coercing from constructors in [tm] *)
 let to_mutind env isevars tm c t =
-  match c with
-    | Some body -> NotInd (c,t)
-    | None -> unify_tomatch_with_patterns isevars env t tm
+(*  match c with
+    | Some body -> *) NotInd (c,t)
+(*    | None -> unify_tomatch_with_patterns isevars env t tm*)
 
 let type_of_tomatch = function
   | IsInd (t,_) -> t
@@ -597,7 +601,8 @@ let check_and_adjust_constructor ind cstrs = function
 	    let args' = adjust_local_defs loc (args, List.rev ci.cs_args)
 	    in PatCstr (loc, cstr, args', alias)
 	  with NotAdjustable ->
-	    error_wrong_numarg_constructor_loc loc cstr nb_args_constr
+	    error_wrong_numarg_constructor_loc loc (Global.env())
+	      cstr nb_args_constr
       else
 	(* Try to insert a coercion *)
 	try
@@ -1696,9 +1701,10 @@ let extract_arity_signature env0 tomatchl tmsign =
 		  let nparams = List.length params in
 		  if ind <> ind' then
 		    user_err_loc (loc,"",str "Wrong inductive type");
-		  if List.length nal <> nparams + nrealargs then
-		    user_err_loc (loc,"",
-		    str "Wrong number of arguments for inductive type");
+		  let nindargs = nparams + nrealargs in
+		  (* Normally done at interning time *)
+		  if List.length nal <> nindargs then
+		    error_wrong_numarg_inductive_loc loc env0 ind' nindargs;
 		  let parnal,realnal = list_chop nparams nal in
 		  if List.exists ((<>) Anonymous) parnal then
 		    user_err_loc (loc,"",
