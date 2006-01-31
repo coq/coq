@@ -1003,6 +1003,12 @@ parsing/extend.cmo: lib/util.cmi interp/topconstr.cmi interp/ppextend.cmi \
     lib/pp.cmi kernel/names.cmi interp/genarg.cmi parsing/extend.cmi 
 parsing/extend.cmx: lib/util.cmx interp/topconstr.cmx interp/ppextend.cmx \
     lib/pp.cmx kernel/names.cmx interp/genarg.cmx parsing/extend.cmi 
+parsing/g_ascii_syntax.cmo: lib/util.cmi interp/topconstr.cmi \
+    pretyping/rawterm.cmi lib/pp.cmi parsing/pcoq.cmi interp/notation.cmi \
+    kernel/names.cmi library/libnames.cmi interp/coqlib.cmi lib/bigint.cmi 
+parsing/g_ascii_syntax.cmx: lib/util.cmx interp/topconstr.cmx \
+    pretyping/rawterm.cmx lib/pp.cmx parsing/pcoq.cmx interp/notation.cmx \
+    kernel/names.cmx library/libnames.cmx interp/coqlib.cmx lib/bigint.cmx 
 parsing/g_constr.cmo: lib/util.cmi interp/topconstr.cmi kernel/term.cmi \
     pretyping/rawterm.cmi lib/pp.cmi parsing/pcoq.cmi kernel/names.cmi \
     library/libnames.cmi parsing/lexer.cmi lib/bigint.cmi 
@@ -1047,6 +1053,12 @@ parsing/g_rsyntax.cmo: lib/util.cmi interp/topconstr.cmi \
 parsing/g_rsyntax.cmx: lib/util.cmx interp/topconstr.cmx \
     pretyping/rawterm.cmx lib/pp.cmx parsing/pcoq.cmx interp/notation.cmx \
     kernel/names.cmx library/libnames.cmx lib/bigint.cmx 
+parsing/g_string_syntax.cmo: lib/util.cmi interp/topconstr.cmi \
+    pretyping/rawterm.cmi lib/pp.cmi parsing/pcoq.cmi interp/notation.cmi \
+    kernel/names.cmi library/libnames.cmi parsing/g_ascii_syntax.cmo 
+parsing/g_string_syntax.cmx: lib/util.cmx interp/topconstr.cmx \
+    pretyping/rawterm.cmx lib/pp.cmx parsing/pcoq.cmx interp/notation.cmx \
+    kernel/names.cmx library/libnames.cmx parsing/g_ascii_syntax.cmx 
 parsing/g_tactic.cmo: lib/util.cmi interp/topconstr.cmi proofs/tacexpr.cmo \
     pretyping/rawterm.cmi lib/pp.cmi parsing/pcoq.cmi kernel/names.cmi \
     parsing/lexer.cmi interp/genarg.cmi 
