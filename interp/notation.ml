@@ -245,7 +245,7 @@ let check_required_module loc sc (ref,d) =
   try let _ = sp_of_global ref in ()
   with Not_found ->
     user_err_loc (loc,"prim_token_interpreter",
-    str ("Cannot interpret numbers in "^sc^" without requiring first module "
+    str ("Cannot interpret in "^sc^" without requiring first module "
     ^(list_last d)))
 
 (* Look if some notation or numeral printer in [scope] can be used in
