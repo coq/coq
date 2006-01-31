@@ -541,3 +541,10 @@ Proof.
 Qed.
 
 Hint Resolve bool_1 bool_2 bool_3 bool_4 bool_5 bool_6.
+
+(** Decidability *)
+
+Lemma bool_dec : forall a b : bool, {a = b} + { a <> b}.
+Proof.
+  decide equality.
+Defined.
