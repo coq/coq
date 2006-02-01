@@ -144,10 +144,11 @@ let rec mk_clos_but f_map t =
     | None ->
         (match kind_of_term t with
             App(f,args) -> mk_clos_app_but f_map f args 0
-          | _ -> mk_atom t)
+          (* unspecified constants are evaluated *)
+          | _ -> inject t)
 
 and mk_clos_app_but f_map f args n =
-  if n >= Array.length args then mk_atom(mkApp(f, args))
+  if n >= Array.length args then inject(mkApp(f, args))
   else
     let fargs, args' = array_chop n args in
     let f' = mkApp(f,fargs) in
@@ -406,6 +407,7 @@ type cst_tac_spec =
 
 
 let add_theory name rth eqth morphth cst_tac =
+  Coqlib.check_required_library ["Coq";"setoid_ring";"Ring_tac"];
   let (kind,r,zero,one,add,mul,sub,opp,req) = dest_ring rth in
   let (sth,morph) = build_setoid_params kind r add mul opp req eqth in
   let args0 = [|r;zero;one;add;mul;sub;opp;req;sth;morph|] in
@@ -426,6 +428,7 @@ let add_theory name rth eqth morphth cst_tac =
           let args = Array.concat [args0;[|rth|]; args1; [|m|]] in
           (lapp coq_ring_lemma1 args, lapp coq_ring_lemma2 args)
       | Abstract ->
+          Coqlib.check_required_library ["Coq";"setoid_ring";"ZRing_th"];
           let args1 = Array.append args0 [|rth|] in
           (match kind with
               None -> error "an almost_ring cannot be abstract"
@@ -490,10 +493,6 @@ let ring gl =
       errorlabstrm "ring"
         (str"cannot find a declared ring structure for equality"++
          spc()++str"\""++pr_constr req++str"\"") in
-  let req = carg e.ring_req in
-  let lemma1 = carg e.ring_lemma1 in
-  let lemma2 = carg e.ring_lemma2 in
-  let cst_tac = Tacexp e.ring_cst_tac in
   Tacinterp.eval_tactic
     (TacArg(TacCall(dummy_loc,
       Genarg.ArgArg(dummy_loc, Lazy.force ltac_setoid_ring),
