@@ -89,11 +89,15 @@ let matches_core convert allow_partial_app pat c =
 
       | PMeta (Some n), m ->
 	  let depth = List.length stk in
-	  let frels = Intset.elements (free_rels cT) in
-          if List.for_all (fun i -> i > depth) frels then
-	    constrain (n,lift (-depth) cT) sigma
-          else 
-	    raise PatternMatchingFailure
+          if depth = 0 then
+            (* Optimisation *)
+            constrain (n,cT) sigma
+          else
+	    let frels = Intset.elements (free_rels cT) in
+            if List.for_all (fun i -> i > depth) frels then
+	      constrain (n,lift (-depth) cT) sigma
+            else 
+	      raise PatternMatchingFailure
 
       | PMeta None, m -> sigma
 
