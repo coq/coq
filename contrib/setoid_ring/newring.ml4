@@ -177,11 +177,15 @@ let arg_map =
   [mk_cst [contrib_name;"BinList"] "cons",(function -1->Eval|2->Rec|_->Prot);
    mk_cst [contrib_name;"BinList"] "nil", (function -1->Eval|_ -> Prot);
    (* Pphi_dev: evaluate polynomial and coef operations, protect
-       ring operations and make recursive call on the var map *)
-   pol_cst "Pphi_dev", (function -1|6|7|8|9|11->Eval|10->Rec|_->Prot);
-   (* PEeval: evaluate morphism and polynomial, protect ring 
-      operations and make recursive call on the var map *)
-   pol_cst "PEeval", (function -1|7|9->Eval|8->Rec|_->Prot)];;
+       ring operations and make recursive call on morphism and var map *)
+   pol_cst "Pphi_dev", (function -1|6|7|8|11->Eval|9|10->Rec|_->Prot);
+   (* PEeval: evaluate polynomial, protect ring operations
+      and make recursive call on morphism and var map *)
+   pol_cst "PEeval", (function -1|9->Eval|7|8->Rec|_->Prot);
+   (* Do not evaluate ring operations... *)
+   ring_constant "gen_phiZ", (function -1|6->Eval|_->Prot);
+   ring_constant "gen_phiN", (function -1|5->Eval|_->Prot);
+];;
 
 (* Equality: do not evaluate but make recursive call on both sides *)
 let is_ring_thm req =
