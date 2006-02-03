@@ -86,7 +86,7 @@ let def_of_const t =
       (try (match (Global.lookup_constant sp) with
              {const_body=Some c} -> Declarations.force c
 	     |_ -> assert false)
-       with _ -> assert false)
+       with _ -> anomaly ("Cannot find constant "^(string_of_id (id_of_label (con_label sp)))))
     |_ -> assert false
 
 let arg_type t =
@@ -792,7 +792,7 @@ let start_equation (f:global_reference) (term_f:global_reference)
   tclTHENLIST [
     intros_using x;
     unfold_constr f;
-    simplest_case (mkApp (constr_of_reference term_f, Array.of_list (List.map mkVar x)));
+    simplest_case (mkApp (terminate_constr, Array.of_list (List.map mkVar x)));
     cont_tactic x] g;;
 
 let base_leaf_eq func eqs f_id g =
