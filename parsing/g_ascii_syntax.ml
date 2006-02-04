@@ -19,14 +19,21 @@ open Bigint
 exception Non_closed_ascii
 
 let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
-let make_path dir id = Libnames.encode_kn dir id
+let make_kn dir id = Libnames.encode_kn (make_dir dir) (id_of_string id)
+let make_path dir id = Libnames.make_path (make_dir dir) (id_of_string id)
 
-let ascii_module = make_dir ["Coq";"Strings";"Ascii"]
-let ascii_path = make_path ascii_module (id_of_string "ascii")
+let ascii_module = ["Coq";"Strings";"Ascii"]
 
-let glob_ascii  = IndRef (ascii_path,0)
-let path_of_Ascii = ((ascii_path,0),1)
-let glob_Ascii  = ConstructRef path_of_Ascii
+let ascii_path = make_path ascii_module "ascii"
+
+let ascii_kn = make_kn ascii_module "ascii"
+let path_of_Ascii = ((ascii_kn,0),1)
+let static_glob_Ascii  = ConstructRef path_of_Ascii
+
+let make_reference id = find_reference "Ascii interpretation" ascii_module id
+let glob_Ascii = lazy (make_reference "Ascii")
+
+open Lazy
 
 let interp_ascii dloc p =
   let rec aux n p = 
@@ -34,7 +41,7 @@ let interp_ascii dloc p =
      let mp = p mod 2 in
      RRef (dloc,if mp = 0 then glob_false else glob_true)
      :: (aux (n-1) (p/2)) in
-  RApp (dloc,RRef(dloc,glob_Ascii), aux 8 p)
+  RApp (dloc,RRef(dloc,force glob_Ascii), aux 8 p)
 
 let interp_ascii_string dloc s =
   let p = 
@@ -55,7 +62,7 @@ let uninterp_ascii r =
     | _ -> raise Non_closed_ascii in
   try 
     let rec aux = function
-    | RApp (_,RRef (_,k),l) when k = glob_Ascii -> uninterp_bool_list 8 l
+    | RApp (_,RRef (_,k),l) when k = force glob_Ascii -> uninterp_bool_list 8 l
     | _ -> raise Non_closed_ascii in
     Some (aux r)
   with 
@@ -69,6 +76,6 @@ let uninterp_ascii_string r = option_app make_ascii_string (uninterp_ascii r)
 
 let _ =
   Notation.declare_string_interpreter "char_scope"
-    (glob_ascii,["Coq";"Strings";"Ascii"])
+    (ascii_path,ascii_module)
     interp_ascii_string
-    ([RRef (dummy_loc,glob_Ascii)], uninterp_ascii_string, true)
+    ([RRef (dummy_loc,static_glob_Ascii)], uninterp_ascii_string, true)
