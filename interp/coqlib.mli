@@ -19,11 +19,29 @@ open Pattern
 (*s This module collects the global references, constructions and
     patterns of the standard library used in ocaml files *)
 
-(*s Some utilities, the first argument is used for error messages.
-    Must be used lazyly. s*)
+(*s [find_reference caller_message [dir;subdir;...] s] returns a global
+   reference to the name dir.subdir.(...).s; the corresponding module
+   must have been required or in the process of being compiled so that
+   it must be used lazyly; it raises an anomaly with the given message
+   if not found *)
 
-val gen_reference : string->string list -> string -> global_reference
-val gen_constant : string->string list -> string -> constr
+type message = string
+
+val find_reference : message -> string list -> string -> global_reference
+
+(* [coq_reference caller_message [dir;subdir;...] s] returns a
+   global reference to the name Coq.dir.subdir.(...).s *)
+
+val coq_reference : message -> string list -> string -> global_reference
+
+(* idem but return a term *)
+
+val coq_constant : message -> string list -> string -> constr
+
+(* Synonyms of [coq_constant] and [coq_reference] *)
+
+val gen_constant : message -> string list -> string -> constr
+val gen_reference :  message -> string list -> string -> global_reference
 
 (* Search in several modules (not prefixed by "Coq") *)
 val gen_constant_in_modules : string->string list list-> string -> constr
@@ -41,6 +59,7 @@ val logic_module : dir_path
 val logic_type_module : dir_path
 
 (* Natural numbers *)
+val nat_path : section_path
 val glob_nat : global_reference
 val path_of_O : constructor
 val path_of_S : constructor

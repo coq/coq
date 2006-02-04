@@ -19,18 +19,22 @@ open Nametab
 (************************************************************************)
 (* Generic functions to find Coq objects *)
 
+type message = string
+
 let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
 
-let gen_reference locstr dir s =
-  let dir = make_dir ("Coq"::dir) in
-  let sp = Libnames.make_path dir (id_of_string s) in
+let find_reference locstr dir s =
+  let sp = Libnames.make_path (make_dir dir) (id_of_string s) in
   try
     Nametab.absolute_reference sp
   with Not_found ->
     anomaly (locstr^": cannot find "^(string_of_path sp))
-    
-let gen_constant locstr dir s = 
-  constr_of_global (gen_reference locstr dir s)
+
+let coq_reference locstr dir s = find_reference locstr ("Coq"::dir) s
+let coq_constant locstr dir s = constr_of_global (coq_reference locstr dir s)
+
+let gen_reference = coq_reference
+let gen_constant = coq_constant
 
 let list_try_find f = 
   let rec try_find_f = function
@@ -111,32 +115,33 @@ let datatypes_module = make_dir ["Coq";"Init";"Datatypes"]
 let arith_module = make_dir ["Coq";"Arith";"Arith"]
 
 (* TODO: temporary hack *)
-let make_path dir id = Libnames.encode_kn dir id
+let make_kn dir id = Libnames.encode_kn dir id
 
 (** Natural numbers *)
-let nat_path = make_path datatypes_module (id_of_string "nat")
+let nat_kn = make_kn datatypes_module (id_of_string "nat")
+let nat_path = Libnames.make_path datatypes_module (id_of_string "nat")
 
-let glob_nat = IndRef (nat_path,0)
+let glob_nat = IndRef (nat_kn,0)
 
-let path_of_O = ((nat_path,0),1)
-let path_of_S = ((nat_path,0),2)
+let path_of_O = ((nat_kn,0),1)
+let path_of_S = ((nat_kn,0),2)
 let glob_O = ConstructRef path_of_O
 let glob_S = ConstructRef path_of_S
 
 (** Booleans *)
-let bool_path = make_path datatypes_module (id_of_string "bool")
+let bool_kn = make_kn datatypes_module (id_of_string "bool")
 
-let glob_bool = IndRef (bool_path,0)
+let glob_bool = IndRef (bool_kn,0)
 
-let path_of_true = ((bool_path,0),1)
-let path_of_false = ((bool_path,0),2)
+let path_of_true = ((bool_kn,0),1)
+let path_of_false = ((bool_kn,0),2)
 let glob_true  = ConstructRef path_of_true
 let glob_false  = ConstructRef path_of_false
 
 (** Equality *)
-let eq_path = make_path logic_module (id_of_string "eq")
+let eq_kn = make_kn logic_module (id_of_string "eq")
 
-let glob_eq = IndRef (eq_path,0)
+let glob_eq = IndRef (eq_kn,0)
 
 type coq_sigma_data = {
   proj1 : constr;
