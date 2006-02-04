@@ -1063,10 +1063,12 @@ parsing/g_rsyntax.cmx: lib/util.cmx interp/topconstr.cmx \
     kernel/names.cmx library/libnames.cmx lib/bigint.cmx 
 parsing/g_string_syntax.cmo: lib/util.cmi interp/topconstr.cmi \
     pretyping/rawterm.cmi lib/pp.cmi parsing/pcoq.cmi interp/notation.cmi \
-    kernel/names.cmi library/libnames.cmi parsing/g_ascii_syntax.cmo 
+    kernel/names.cmi library/libnames.cmi parsing/g_ascii_syntax.cmo \
+    interp/coqlib.cmi 
 parsing/g_string_syntax.cmx: lib/util.cmx interp/topconstr.cmx \
     pretyping/rawterm.cmx lib/pp.cmx parsing/pcoq.cmx interp/notation.cmx \
-    kernel/names.cmx library/libnames.cmx parsing/g_ascii_syntax.cmx 
+    kernel/names.cmx library/libnames.cmx parsing/g_ascii_syntax.cmx \
+    interp/coqlib.cmx 
 parsing/g_tactic.cmo: lib/util.cmi interp/topconstr.cmi proofs/tacexpr.cmo \
     pretyping/rawterm.cmi lib/pp.cmi parsing/pcoq.cmi kernel/names.cmi \
     parsing/lexer.cmi interp/genarg.cmi 
