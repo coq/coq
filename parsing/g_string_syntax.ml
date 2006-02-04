@@ -14,25 +14,31 @@ open Libnames
 open Topconstr
 open G_ascii_syntax
 open Rawterm
+open Coqlib
 
 exception Non_closed_string
 
 (* make a string term from the string s *)
 
-let string_module = make_dir ["Coq";"Strings";"String"]
-let string_path = make_path string_module (id_of_string "string")
+let string_module = ["Coq";"Strings";"String"]
 
-let glob_string  = IndRef (string_path,0)
-let path_of_EmptyString  = ((string_path,0),1)
-let glob_EmptyString  = ConstructRef path_of_EmptyString
-let path_of_String  = ((string_path,0),2)
-let glob_String  = ConstructRef path_of_String
+let string_path = make_path string_module "string"
+
+let string_kn = make_kn string_module "string"
+let static_glob_EmptyString  = ConstructRef ((string_kn,0),1)
+let static_glob_String  = ConstructRef ((string_kn,0),2)
+
+let make_reference id = find_reference "String interpretation" string_module id
+let glob_String = lazy (make_reference "String")
+let glob_EmptyString = lazy (make_reference "EmptyString")
+
+open Lazy
 
 let interp_string dloc s =
   let le = String.length s in
   let rec aux n = 
-     if n = le then RRef (dloc, glob_EmptyString) else
-     RApp (dloc,RRef (dloc, glob_String),
+     if n = le then RRef (dloc, force glob_EmptyString) else
+     RApp (dloc,RRef (dloc, force glob_String),
        [interp_ascii dloc (int_of_char s.[n]); aux (n+1)])
   in aux 0
 
@@ -40,11 +46,11 @@ let uninterp_string r =
   try 
     let b = Buffer.create 16 in
     let rec aux = function
-    | RApp (_,RRef (_,k),[a;s]) when k = glob_String ->
+    | RApp (_,RRef (_,k),[a;s]) when k = force glob_String ->
 	(match uninterp_ascii a with
 	  | Some c -> Buffer.add_char b (Char.chr c); aux s
 	  | _ -> raise Non_closed_string)
-    | RRef (_,z) when z = glob_EmptyString ->
+    | RRef (_,z) when z = force glob_EmptyString ->
 	Some (Buffer.contents b)
     | _ ->
 	raise Non_closed_string
@@ -54,7 +60,8 @@ let uninterp_string r =
 
 let _ =
   Notation.declare_string_interpreter "string_scope"
-    (glob_string,["Coq";"Strings";"String"])
+    (string_path,["Coq";"Strings";"String"])
     interp_string
-    ([RRef (dummy_loc,glob_String); RRef (dummy_loc,glob_EmptyString)],
+    ([RRef (dummy_loc,static_glob_String); 
+      RRef (dummy_loc,static_glob_EmptyString)],
      uninterp_string, true)
