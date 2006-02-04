@@ -58,7 +58,7 @@ val find_delimiters_scope : loc -> delimiters -> scope_name
    an appropriate error message *)
 
 type notation_location = dir_path * string
-type required_module = global_reference * string list 
+type required_module = section_path * string list 
 type cases_pattern_status = bool (* true = use prim token in patterns *)
 
 type 'a prim_token_interpreter =

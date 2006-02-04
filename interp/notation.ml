@@ -195,7 +195,7 @@ let pattern_key = function
 (**********************************************************************)
 (* Interpreting numbers (not in summary because functional objects)   *)
 
-type required_module = global_reference * string list 
+type required_module = section_path * string list 
 
 type 'a prim_token_interpreter =
     loc -> 'a -> rawconstr
@@ -241,8 +241,8 @@ let declare_string_interpreter sc dir interp (patl,uninterp,inpat) =
     (fun cont loc -> function String s -> delay dir interp loc s | p -> cont loc p)
     (patl, (fun r -> option_app mkString (uninterp r)), inpat)
 
-let check_required_module loc sc (ref,d) =
-  try let _ = sp_of_global ref in ()
+let check_required_module loc sc (sp,d) =
+  try let _ = Nametab.absolute_reference sp in ()
   with Not_found ->
     user_err_loc (loc,"prim_token_interpreter",
     str ("Cannot interpret in "^sc^" without requiring first module "
@@ -332,9 +332,9 @@ let find_prim_token g loc p sc =
     g (rawconstr_of_aconstr loc c),df
   with Not_found ->
   (* Try for a primitive numerical notation *)
-  let (dir,interp) = Hashtbl.find prim_token_interpreter_tab sc loc p in
-  check_required_module loc sc dir;
-  g (interp ()), (dirpath (sp_of_global (fst dir)),"")
+  let (spdir,interp) = Hashtbl.find prim_token_interpreter_tab sc loc p in
+  check_required_module loc sc spdir;
+  g (interp ()), (dirpath (fst spdir),"")
 
 let interp_prim_token_gen g loc p scopes =
   let all_scopes = push_scopes scopes !scope_stack in
