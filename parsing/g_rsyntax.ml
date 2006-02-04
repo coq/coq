@@ -25,11 +25,15 @@ open Bigint
 
 let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
 let rdefinitions = make_dir ["Coq";"Reals";"Rdefinitions"]
+let make_path dir id = Libnames.make_path dir (id_of_string id)
+
+let r_path = make_path rdefinitions "R"
 
 (* TODO: temporary hack *)
 let make_path dir id = Libnames.encode_con dir (id_of_string id)
 
-let glob_R = ConstRef (make_path rdefinitions "R")
+let r_kn = make_path rdefinitions "R"
+let glob_R = ConstRef r_kn
 let glob_R1 = ConstRef (make_path rdefinitions "R1")
 let glob_R0 = ConstRef (make_path rdefinitions "R0")
 let glob_Ropp = ConstRef (make_path rdefinitions "Ropp")
@@ -110,7 +114,7 @@ let uninterp_r p =
     None
 
 let _ = Notation.declare_numeral_interpreter "R_scope"
-  (glob_R,["Coq";"Reals";"Rdefinitions"])
+  (r_path,["Coq";"Reals";"Rdefinitions"])
   r_of_int
   ([RRef(dummy_loc,glob_Ropp);RRef(dummy_loc,glob_R0);
     RRef(dummy_loc,glob_Rplus);RRef(dummy_loc,glob_Rmult);

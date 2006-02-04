@@ -26,16 +26,19 @@ open Libnames
 open Rawterm
 let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
 let positive_module = ["Coq";"NArith";"BinPos"]
+let make_path dir id = Libnames.make_path (make_dir dir) (id_of_string id)
+
+let positive_path = make_path positive_module "positive"
 
 (* TODO: temporary hack *)
-let make_path dir id = Libnames.encode_kn dir id
+let make_kn dir id = Libnames.encode_kn dir id
 
-let positive_path = 
-  make_path (make_dir positive_module) (id_of_string "positive")
-let glob_positive = IndRef (positive_path,0)
-let path_of_xI = ((positive_path,0),1)
-let path_of_xO = ((positive_path,0),2)
-let path_of_xH = ((positive_path,0),3)
+let positive_kn = 
+  make_kn (make_dir positive_module) (id_of_string "positive")
+let glob_positive = IndRef (positive_kn,0)
+let path_of_xI = ((positive_kn,0),1)
+let path_of_xO = ((positive_kn,0),2)
+let path_of_xH = ((positive_kn,0),3)
 let glob_xI = ConstructRef path_of_xI
 let glob_xO = ConstructRef path_of_xO
 let glob_xH = ConstructRef path_of_xH
@@ -81,7 +84,7 @@ let uninterp_positive p =
 (************************************************************************)
 
 let _ = Notation.declare_numeral_interpreter "positive_scope"
-  (glob_positive,positive_module)
+  (positive_path,positive_module)
   interp_positive
   ([RRef (dummy_loc, glob_xI);
     RRef (dummy_loc, glob_xO); 
@@ -94,12 +97,14 @@ let _ = Notation.declare_numeral_interpreter "positive_scope"
 (**********************************************************************)
 
 let binnat_module = ["Coq";"NArith";"BinNat"]
-let n_path = make_path (make_dir binnat_module) (id_of_string "N")
-let glob_n = IndRef (n_path,0)
-let path_of_N0 = ((n_path,0),1)
-let path_of_Npos = ((n_path,0),2)
+let n_kn = make_kn (make_dir binnat_module) (id_of_string "N")
+let glob_n = IndRef (n_kn,0)
+let path_of_N0 = ((n_kn,0),1)
+let path_of_Npos = ((n_kn,0),2)
 let glob_N0 = ConstructRef path_of_N0
 let glob_Npos = ConstructRef path_of_Npos
+
+let n_path = make_path binnat_module "N"
 
 let n_of_binnat dloc pos_or_neg n = 
   if n <> zero then
@@ -131,7 +136,7 @@ let uninterp_n p =
 (* Declaring interpreters and uninterpreters for N *)
 
 let _ = Notation.declare_numeral_interpreter "N_scope"
-  (glob_n,binnat_module)
+  (n_path,binnat_module)
   n_of_int
   ([RRef (dummy_loc, glob_N0); 
     RRef (dummy_loc, glob_Npos)],
@@ -142,12 +147,13 @@ let _ = Notation.declare_numeral_interpreter "N_scope"
 (* Parsing Z via scopes                                               *)
 (**********************************************************************)
 
-let fast_integer_module = ["Coq";"ZArith";"BinInt"]
-let z_path = make_path (make_dir fast_integer_module) (id_of_string "Z")
-let glob_z = IndRef (z_path,0)
-let path_of_ZERO = ((z_path,0),1)
-let path_of_POS = ((z_path,0),2)
-let path_of_NEG = ((z_path,0),3)
+let binint_module = ["Coq";"ZArith";"BinInt"]
+let z_path = make_path binint_module "Z"
+let z_kn = make_kn (make_dir binint_module) (id_of_string "Z")
+let glob_z = IndRef (z_kn,0)
+let path_of_ZERO = ((z_kn,0),1)
+let path_of_POS = ((z_kn,0),2)
+let path_of_NEG = ((z_kn,0),3)
 let glob_ZERO = ConstructRef path_of_ZERO
 let glob_POS = ConstructRef path_of_POS
 let glob_NEG = ConstructRef path_of_NEG
@@ -179,7 +185,7 @@ let uninterp_z p =
 (* Declaring interpreters and uninterpreters for Z *)
 
 let _ = Notation.declare_numeral_interpreter "Z_scope"
-  (glob_z,fast_integer_module)
+  (z_path,binint_module)
   z_of_int
   ([RRef (dummy_loc, glob_ZERO); 
     RRef (dummy_loc, glob_POS); 
