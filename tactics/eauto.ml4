@@ -283,7 +283,7 @@ module SearchProblem = struct
 	  filter_tactics s.tacres
 	    (List.map 
 	       (fun id -> (e_give_exact_constr (mkVar id),
-			   (str "Exact" ++ spc () ++ pr_id id)))
+			   (str "exact" ++ spc () ++ pr_id id)))
 	       (pf_ids_of_hyps g))
 	in
 	List.map (fun (res,pp) -> { depth = s.depth; tacres = res;
@@ -301,7 +301,7 @@ module SearchProblem = struct
 	     { depth = s.depth; tacres = res; 
 	       last_tactic = pp; dblist = s.dblist;
 	       localdb = ldb :: List.tl s.localdb })
-	  (filter_tactics s.tacres [Tactics.intro,(str "Intro")])
+	  (filter_tactics s.tacres [Tactics.intro,(str "intro")])
       in
       let rec_tacs = 
 	let l = 
