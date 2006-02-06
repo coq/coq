@@ -79,7 +79,7 @@ coq_makefile [subdirectory] .... [file.v] ... [file.ml] ... [-custom
 [--help]: equivalent to [-h]\n";
   exit 1
 
-let standard sds =
+let standard sds sps =
   print "byte:\n";
   print "\t$(MAKE) all \"OPT=\"\n\n";
   print "opt:\n";
@@ -117,6 +117,9 @@ let standard sds =
   print "clean:\n";
   print "\trm -f *.cmo *.cmi *.cmx *.o $(VOFILES) $(VIFILES) $(GFILES) *~\n";
   print "\trm -f all.ps all-gal.ps $(HTMLFILES) $(GHTMLFILES)\n";
+  List.iter
+    (fun (file,_,_) -> print "\t- rm -f "; print file; print "\n")
+    sps;
   List.iter
     (fun x -> print "\t(cd "; print x; print " ; $(MAKE) clean)\n")
     sds;
@@ -224,17 +227,16 @@ let include_dirs l =
   print "OCAMLLIBS="; print_list "\\\n  " i_ocaml; print "\n";
   print "COQLIBS=";   print_list "\\\n  " i_coq; print "\n\n"
 
-let special l =
+let rec special = function
+  | [] -> []
+  | Special (file,deps,com) :: r -> (file,deps,com) :: (special r)
+  | _ :: r -> special r
+
+let custom sps =
   let pr_sp (file,dependencies,com) =
     print file; print ": "; print dependencies; print "\n";
     print "\t"; print com; print "\n\n"
   in
-  let rec sp_aux = function
-    | [] -> []
-    | Special (file,deps,com) :: r -> (file,deps,com) :: (sp_aux r)
-    | _ :: r -> sp_aux r
-  in
-  let sps = sp_aux l in
   if sps <> [] then section "Custom targets.";
   List.iter pr_sp sps
 
@@ -434,10 +436,11 @@ let do_makefile args =
   variables l;
   include_dirs l;
   all_target l;
-  special l;
+  let sps = special  l in
+  custom sps;
   let sds = subdirs l in
   implicit ();
-  standard sds;
+  standard sds sps;
   (* TEST directories_deps l; *)
   warning ();
   if not (!output_channel == stdout) then close_out !output_channel;
