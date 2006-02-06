@@ -96,6 +96,7 @@ Tools
 
 - New semantics for coqtop options ("-batch" expects option "-top dir"
   for loading vernac file that contains definitions).
+- coq_makefile now removes custom targets that are file names in "make clean"
 
 Changes from V8.0beta to V8.0
 =============================
