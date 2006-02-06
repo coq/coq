@@ -24,7 +24,7 @@ Require Import Datatypes.
 
 Section Well_founded.
 
- Variable A : Set.
+ Variable A : Type.
  Variable R : A -> A -> Prop.
 
  (** The accessibility predicate is defined to be non-informative *)
@@ -41,13 +41,11 @@ Section Well_founded.
 
  Section AccRecType.
   Variable P : A -> Type.
-  Variable
-    F :
-      forall x:A,
-        (forall y:A, R y x -> Acc y) -> (forall y:A, R y x -> P y) -> P x.
+  Variable F : forall x:A,
+    (forall y:A, R y x -> Acc y) -> (forall y:A, R y x -> P y) -> P x.
 
   Fixpoint Acc_rect (x:A) (a:Acc x) {struct a} : P x :=
-    F (Acc_inv a) (fun (y:A) (h:R y x) => Acc_rect (x:=y) (Acc_inv a h)).
+    F (Acc_inv a) (fun (y:A) (h:R y x) => Acc_rect (Acc_inv a h)).
 
  End AccRecType.
 
@@ -56,11 +54,11 @@ Section Well_founded.
  (** A simplified version of [Acc_rect] *)
 
  Section AccIter.
-  Variable P : A -> Type. 
+  Variable P : A -> Type.
   Variable F : forall x:A, (forall y:A, R y x -> P y) -> P x.
 
   Fixpoint Acc_iter (x:A) (a:Acc x) {struct a} : P x :=
-    F (fun (y:A) (h:R y x) => Acc_iter (x:=y) (Acc_inv a h)).
+    F (fun (y:A) (h:R y x) => Acc_iter (Acc_inv a h)).
 
  End AccIter.
 
@@ -95,47 +93,48 @@ Section Well_founded.
 
 (** Building fixpoints  *) 
 
-Section FixPoint.
+ Section FixPoint.
 
-Variable P : A -> Type.
-Variable F : forall x:A, (forall y:A, R y x -> P y) -> P x.
+  Variable P : A -> Type.
+  Variable F : forall x:A, (forall y:A, R y x -> P y) -> P x.
 
-Fixpoint Fix_F (x:A) (r:Acc x) {struct r} : P x :=
-  F (fun (y:A) (p:R y x) => Fix_F (x:=y) (Acc_inv r p)).
+  Notation Fix_F := (Acc_iter P F) (only parsing). (* alias *)
 
-Definition Fix (x:A) := Fix_F (Rwf x).
+  Definition Fix (x:A) := Acc_iter P F (Rwf x).
 
-(** Proof that [well_founded_induction] satisfies the fixpoint equation. 
-    It requires an extra property of the functional *)
+  (** Proof that [well_founded_induction] satisfies the fixpoint equation. 
+      It requires an extra property of the functional *)
 
-Hypothesis
-  F_ext :
-    forall (x:A) (f g:forall y:A, R y x -> P y),
-      (forall (y:A) (p:R y x), f y p = g y p) -> F f = F g.
+  Hypothesis
+    F_ext :
+      forall (x:A) (f g:forall y:A, R y x -> P y),
+        (forall (y:A) (p:R y x), f y p = g y p) -> F f = F g.
 
-Scheme Acc_inv_dep := Induction for Acc Sort Prop.
+  Scheme Acc_inv_dep := Induction for Acc Sort Prop.
 
-Lemma Fix_F_eq :
- forall (x:A) (r:Acc x),
-   F (fun (y:A) (p:R y x) => Fix_F (Acc_inv r p)) = Fix_F r.
-destruct r using Acc_inv_dep; auto.
-Qed.
+  Lemma Fix_F_eq :
+   forall (x:A) (r:Acc x),
+     F (fun (y:A) (p:R y x) => Fix_F y (Acc_inv r p)) = Fix_F x r.
+  Proof. 
+   destruct r using Acc_inv_dep; auto.
+  Qed.
 
-Lemma Fix_F_inv : forall (x:A) (r s:Acc x), Fix_F r = Fix_F s.
-intro x; induction (Rwf x); intros.
-rewrite <- (Fix_F_eq r); rewrite <- (Fix_F_eq s); intros.
-apply F_ext; auto.
-Qed.
+  Lemma Fix_F_inv : forall (x:A) (r s:Acc x), Fix_F x r = Fix_F x s.
+  Proof.
+   intro x; induction (Rwf x); intros.
+   rewrite <- (Fix_F_eq r); rewrite <- (Fix_F_eq s); intros.
+   apply F_ext; auto.
+  Qed.
 
+  Lemma Fix_eq : forall x:A, Fix x = F (fun (y:A) (p:R y x) => Fix y).
+  Proof.
+   intro x; unfold Fix in |- *.
+   rewrite <- (Fix_F_eq (x:=x)).
+   apply F_ext; intros.
+   apply Fix_F_inv.
+  Qed.
 
-Lemma Fix_eq : forall x:A, Fix x = F (fun (y:A) (p:R y x) => Fix y).
-intro x; unfold Fix in |- *.
-rewrite <- (Fix_F_eq (x:=x)).
-apply F_ext; intros.
-apply Fix_F_inv.
-Qed.
-
-End FixPoint.
+ End FixPoint.
 
 End Well_founded. 
 
@@ -169,3 +168,5 @@ Section Well_founded_2.
   Defined.
 
 End Well_founded_2.
+
+Notation Fix_F := Acc_iter (only parsing). (* compatibility *)
