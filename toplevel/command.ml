@@ -130,7 +130,7 @@ let red_constant_entry bl ce = function
 
 let declare_global_definition ident ce local =
   let kn = declare_constant ident (DefinitionEntry ce,IsDefinition Definition) in
-  if local = Local then
+  if local = Local && Options.is_verbose() then
     msg_warning (pr_id ident ++ str" is declared as a global definition");
   definition_message ident;
   ConstRef kn
