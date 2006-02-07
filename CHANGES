@@ -90,6 +90,7 @@ Library
   compatibility (useless hypothesys of Zgt_square_simpl and
   Zlt_square_simpl removed; fixed names mentioning letter O instead of
   digit 0; weaken premises in Z_lt_induction)
+- More lemmas stated on Type in Wf.v, removal of redundant Fix_F
 - Change of the internal names of lemmas in OmegaLemmas
 
 Tools
