@@ -65,9 +65,10 @@ Tactics
 - New introduction pattern "?" for letting Coq choose a name
 - Added "eassumption"
 - Added option 'using lemmas' to auto, trivial and eauto
-- Numbering of "pattern" occurrences in "match with" made consistent
-  with the printing of the return clause after the term to match in
-  "match-with" construct (use "Set Printing All" to see hidden occurrences).
+- Numbering of "pattern", "unfold", "simpl", ... occurrences in "match
+  with" made consistent with the printing of the return clause after
+  the term to match in the "match-with" construct (use "Set Printing All"
+  to see hidden occurrences).
 
 Modules
 
