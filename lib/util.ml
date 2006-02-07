@@ -99,6 +99,8 @@ let string_string_contains ~where ~what =
   with
       Not_found -> false
 
+let plural n s = if n>1 then s^"s" else s
+
 (* string parsing *)
 
 let parse_loadpath s =
