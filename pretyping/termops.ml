@@ -335,7 +335,9 @@ let map_constr_with_binders_left_to_right g f l c = match kind_of_term c with
       mkApp (hd, [| f l a |])
   | Evar (e,al) -> mkEvar (e, array_map_left (f l) al)
   | Case (ci,p,c,bl) ->
-      let p' = f l p in let c' = f l c in
+      (* In v8 concrete syntax, predicate is after the term to match! *)
+      let c' = f l c in
+      let p' = f l p in
       mkCase (ci, p', c', array_map_left (f l) bl)
   | Fix (ln,(lna,tl,bl as fx)) ->
       let l' = fold_rec_types g fx l in
