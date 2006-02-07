@@ -23,6 +23,15 @@ open Closure
 open Cbv
 open Rawterm
 
+(* Errors *)
+
+type reduction_tactic_error = 
+    InvalidAbstraction of env * constr * (env * Type_errors.type_error)
+
+exception ReductionTacticError of reduction_tactic_error
+
+(* Evaluable reference *)
+
 exception Elimconst
 exception Redelimination
 
@@ -619,7 +628,7 @@ let contextually byhead (locs,c) f env sigma t =
   in
   let t' = traverse (env,c) t in
   if locs <> [] & List.exists (fun o -> o >= !pos or o <= - !pos) locs then
-    errorlabstrm "contextually" (str "Too few occurences");
+    error_invalid_occurrence locs;
   t'
 
 (* linear bindings (following pretty-printer) of the value of name in c.
@@ -683,7 +692,7 @@ let rec substlin env name n ol c =
                let (n2,ol2,c2') = substlin env name n1 ol1 c2 in
                (n2,ol2,mkProd (na,c1',c2')))
 	
-    | Case (ci,p,d,llf) -> 
+    | Case (ci,p,d,llf) ->
         let rec substlist nn oll = function
           | []     -> (nn,oll,[])
           | f::lfe ->
@@ -694,11 +703,12 @@ let rec substlin env name n ol c =
                      let (nn2,oll2,lfe') = substlist nn1 oll1 lfe in
                      (nn2,oll2,f'::lfe'))
 	in
-	let (n1,ol1,p') = substlin env name n ol p in  (* ATTENTION ERREUR *)
-        (match ol1 with                                 (* si P pas affiche *)
-           | [] -> (n1,[],mkCase (ci, p', d, llf))
+	(* p is printed after d in v8 syntax *)
+	let (n1,ol1,d') = substlin env name n ol d in
+        (match ol1 with
+           | [] -> (n1,[],mkCase (ci, p, d', llf))
            | _  ->
-               let (n2,ol2,d') = substlin env name n1 ol1 d in
+               let (n2,ol2,p') = substlin env name n1 ol1 p in
                (match ol2 with
 		  | [] -> (n2,[],mkCase (ci, p', d', llf))
 		  | _  -> 
@@ -746,8 +756,8 @@ let unfoldoccs env sigma (occl,name) c =
           | (_,[],uc) -> nf_betaiota uc
           | (1,_,_) ->
               error ((string_of_evaluable_ref env name)^" does not occur")
-          | _ -> error ("bad occurrence numbers of "
-			^(string_of_evaluable_ref env name))
+          | (_,l,_) ->
+	      error_invalid_occurrence l
 
 (* Unfold reduction tactic: *)
 let unfoldn loccname env sigma c = 
@@ -790,8 +800,11 @@ let abstract_scheme env sigma (locc,a) c =
 
 let pattern_occs loccs_trm env sigma c =
   let abstr_trm = List.fold_right (abstract_scheme env sigma) loccs_trm c in
-  let _ = Typing.type_of env sigma abstr_trm in
-  applist(abstr_trm, List.map snd loccs_trm)
+  try
+    let _ = Typing.type_of env sigma abstr_trm in
+    applist(abstr_trm, List.map snd loccs_trm)
+  with Type_errors.TypeError (env',t) ->
+    raise (ReductionTacticError (InvalidAbstraction (env,abstr_trm,(env',t))))
 
 (* Used in several tactics. *)
 

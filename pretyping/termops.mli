@@ -124,6 +124,8 @@ val subst_term_occ : int list -> constr -> types -> types
 val subst_term_occ_decl :
   int list -> constr -> named_declaration -> named_declaration
 
+val error_invalid_occurrence : int list -> 'a
+
 (* Alternative term equalities *)
 val eta_reduce_head : constr -> constr
 val eta_eq_constr : constr -> constr -> bool

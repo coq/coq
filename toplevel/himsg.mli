@@ -34,3 +34,6 @@ val explain_refiner_error : refiner_error -> std_ppcmds
 
 val explain_pattern_matching_error :
   env -> pattern_matching_error -> std_ppcmds
+
+val explain_reduction_tactic_error :
+  Tacred.reduction_tactic_error -> std_ppcmds

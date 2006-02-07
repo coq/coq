@@ -615,6 +615,11 @@ let replace_term = replace_term_gen eq_constr
    bindings is done. The list may contain only negative occurrences
    that will not be substituted. *)
 
+let error_invalid_occurrence l =
+  errorlabstrm ""
+    (str ("Invalid occurrence " ^ plural (List.length l) "number" ^": ") ++ 
+     prlist_with_sep spc int l)
+
 let subst_term_occ_gen locs occ c t =
   let maxocc = List.fold_right max locs 0 in
   let pos = ref occ in
@@ -646,8 +651,8 @@ let subst_term_occ locs c t =
     t
   else 
     let (nbocc,t') = subst_term_occ_gen locs 1 c t in
-    if List.exists (fun o -> o >= nbocc or o <= -nbocc) locs then
-      errorlabstrm "subst_term_occ" (str "Too few occurences");
+    let rest = List.filter (fun o -> o >= nbocc or o <= -nbocc) locs in
+    if rest <> [] then error_invalid_occurrence rest;
     t'
 
 let subst_term_occ_decl locs c (id,bodyopt,typ as d) =
@@ -661,8 +666,8 @@ let subst_term_occ_decl locs c (id,bodyopt,typ as d) =
 	else 
 	  let (nbocc,body') = subst_term_occ_gen locs 1 c body in
 	  let (nbocc',t') = subst_term_occ_gen locs nbocc c typ in
-	  if List.exists (fun o -> o >= nbocc' or o <= -nbocc') locs then
-	    errorlabstrm "subst_term_occ_decl" (str "Too few occurences");
+	  let rest = List.filter (fun o -> o >= nbocc' or o <= -nbocc') locs in
+	  if rest <> [] then error_invalid_occurrence rest;
 	  (id,Some body',t')
 
 

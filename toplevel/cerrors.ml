@@ -79,6 +79,8 @@ let rec explain_exn_default = function
   | Cases.PatternMatchingError (env,e) -> 
       hov 0
 	(str "Error:" ++ spc () ++ Himsg.explain_pattern_matching_error env e)
+  | Tacred.ReductionTacticError e -> 
+      hov 0 (str "Error:" ++ spc () ++ Himsg.explain_reduction_tactic_error e)
   | Logic.RefinerError e -> 
       hov 0 (str "Error:" ++ spc () ++ Himsg.explain_refiner_error e)
   | Nametab.GlobalizationError q ->

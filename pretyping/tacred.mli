@@ -18,6 +18,11 @@ open Closure
 open Rawterm
 (*i*)
 
+type reduction_tactic_error = 
+    InvalidAbstraction of env * constr * (env * Type_errors.type_error)
+
+exception ReductionTacticError of reduction_tactic_error
+
 (*s Reduction functions associated to tactics. \label{tacred} *)
 
 val is_evaluable : env -> evaluable_global_reference -> bool

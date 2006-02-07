@@ -33,6 +33,7 @@ let quote s = h 0 (str "\"" ++ s ++ str "\"")
 
 let pr_lconstr c = quote (pr_lconstr c)
 let pr_lconstr_env e c = quote (pr_lconstr_env e c)
+let pr_lconstr_env_at_top e c = quote (pr_lconstr_env_at_top e c)
 let pr_ljudge_env e c = let v,t = pr_ljudge_env e c in (quote v,quote t)
 
 let nth i =
@@ -682,3 +683,9 @@ let explain_pattern_matching_error env = function
       explain_non_exhaustive env tms
   | CannotInferPredicate typs ->
       explain_cannot_infer_predicate env typs
+
+let explain_reduction_tactic_error = function
+  | Tacred.InvalidAbstraction (env,c,(env',e)) ->
+      str "The abstracted term" ++ spc() ++ pr_lconstr_env_at_top env c ++ 
+      spc() ++ str "is not well typed." ++ fnl () ++
+      explain_type_error env' e
