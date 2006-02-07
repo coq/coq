@@ -136,14 +136,18 @@ let explain_number_branches ctx cj expn =
   str "of type" ++ brk(1,1) ++ pct ++ spc () ++
   str "expects " ++  int expn ++ str " branches"
 
+let ordinal n =
+  let s = match n mod 10 with 1 -> "st" | 2 -> "nd" | 3 -> "rd" | _ -> "th" in
+  string_of_int n ^ s
+
 let explain_ill_formed_branch ctx c i actty expty =
   let ctx = make_all_name_different ctx in
   let pc = pr_lconstr_env ctx c in
   let pa = pr_lconstr_env ctx actty in
   let pe = pr_lconstr_env ctx expty in
   str "In pattern-matching on term" ++ brk(1,1) ++ pc ++
-  spc () ++ str "the branch "  ++ int (i+1) ++
-  str " has type" ++ brk(1,1) ++ pa  ++ spc () ++ 
+  spc () ++ str "the " ++ str (ordinal (i+1)) ++ str " branch has type" ++
+  brk(1,1) ++ pa ++ spc () ++ 
   str "which should be" ++ brk(1,1) ++ pe
 
 let explain_generalization ctx (name,var) j =
