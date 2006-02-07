@@ -120,9 +120,6 @@ let constructor_nrealhyps env (ind,j) =
 
 let inductive_nargs env ind =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  print_int mip.mind_nrealargs;
-  print_int (rel_context_length mib.mind_params_ctxt);
-  flush stdout;
   mip.mind_nrealargs + rel_context_nhyps mib.mind_params_ctxt
 
 (* Annotation for cases *)
