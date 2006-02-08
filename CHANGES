@@ -90,6 +90,7 @@ Notations
 
 Library
 
+- New library on String and Ascii characters (contributed by L. Thery)
 - Few improvements in ZArith potentially exceptionally breaking the
   compatibility (useless hypothesys of Zgt_square_simpl and
   Zlt_square_simpl removed; fixed names mentioning letter O instead of
