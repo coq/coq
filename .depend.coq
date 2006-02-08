@@ -146,6 +146,8 @@ theories/Lists/ListSet.vo: theories/Lists/ListSet.v theories/Lists/List.vo
 theories/Lists/Streams.vo: theories/Lists/Streams.v
 theories/Lists/TheoryList.vo: theories/Lists/TheoryList.v theories/Lists/List.vo theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Minus.vo theories/Bool/DecBool.vo
 theories/Lists/List.vo: theories/Lists/List.v theories/Arith/Le.vo
+theories/Strings/Ascii.vo: theories/Strings/Ascii.v theories/Bool/Bool.vo theories/NArith/BinPos.vo
+theories/Strings/String.vo: theories/Strings/String.v theories/Arith/Arith.vo theories/Strings/Ascii.vo
 theories/Sets/Classical_sets.vo: theories/Sets/Classical_sets.v theories/Sets/Ensembles.vo theories/Sets/Constructive_sets.vo theories/Logic/Classical_Type.vo
 theories/Sets/Permut.vo: theories/Sets/Permut.v
 theories/Sets/Constructive_sets.vo: theories/Sets/Constructive_sets.v theories/Sets/Ensembles.vo
