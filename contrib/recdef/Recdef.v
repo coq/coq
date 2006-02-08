@@ -13,7 +13,7 @@ Require Import Wf_nat.
 Declare ML Module "recdef".
 
 Section Iter.
-Variable A : Set.
+Variable A : Type.
 
 Fixpoint iter (n : nat) : (A -> A) -> A -> A :=
   fun (fl : A -> A) (def : A) =>
