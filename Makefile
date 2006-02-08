@@ -307,14 +307,15 @@ RTAUTOCMO=contrib/rtauto/proof_search.cmo contrib/rtauto/refl_tauto.cmo \
 
 ML4FILES += contrib/jprover/jprover.ml4 contrib/cc/g_congruence.ml4 \
   contrib/funind/tacinv.ml4 contrib/first-order/g_ground.ml4 \
-  contrib/funind/indfun_main.ml4 \
   contrib/subtac/sparser.ml4 contrib/subtac/g_eterm.ml4 \
-  contrib/rtauto/g_rtauto.ml4 contrib/recdef/recdef.ml4
+  contrib/rtauto/g_rtauto.ml4 contrib/recdef/recdef.ml4 \
+   contrib/funind/indfun_main.ml4 
+
 
 CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(DPCMO) $(FIELDCMO) \
 	$(FOURIERCMO) $(EXTRACTIONCMO) $(JPROVERCMO) $(XMLCMO) \
-	$(CCCMO) $(FUNINDCMO) $(FOCMO) $(SUBTACCMO) $(RTAUTOCMO) \
-        $(RECDEFCMO) $(NEWRINGCMO)
+	$(CCCMO)  $(FOCMO) $(SUBTACCMO) $(RTAUTOCMO) \
+        $(RECDEFCMO) $(FUNINDCMO) $(NEWRINGCMO)
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)

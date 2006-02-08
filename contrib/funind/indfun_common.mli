@@ -37,3 +37,17 @@ val def_of_const : Term.constr -> Term.constr
 val eq : Term.constr Lazy.t
 val refl_equal : Term.constr Lazy.t
 val const_of_id: identifier -> constant
+
+
+type elim_scheme = { (* lists are in reverse order! *)
+  params: Sign.rel_context;     (* (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *)
+  predicates: Sign.rel_context; (* (Qq, (Tq_1 -> Tq_2 ->...-> Tq_nq)), (Q1,...) *)
+  branches: Sign.rel_context;    (* branchr,...,branch1 *)
+  args: Sign.rel_context;       (* (xni, Ti_ni) ... (x1, Ti_1) *)
+  indarg: Term.rel_declaration option; (* Some (H,I prm1..prmp x1...xni) if present, None otherwise *)
+  concl: Term.types;            (* Qi x1...xni HI, some prmis may not be present *)
+  indarg_in_concl:bool;    (* true if HI appears at the end of conclusion (dependent scheme) *)
+}
+
+
+val compute_elim_sig : Term.types ->  elim_scheme

@@ -1,13 +1,14 @@
 open Util
 open Names
 open Term
-
+open Tacinvutils
 open Pp
 open Indfun_common
 open Libnames
 open Tacticals
 open Tactics
 open Tacmach
+open Sign
 
 
 let tac_pattern l =
@@ -36,7 +37,7 @@ let intro_discr_until n tac : tactic =
 	(fun g' ->
 	  let id,_,t = pf_last_hyp g' in
 	  tclORELSE
-	     (Extratactics.h_discrHyp (Rawterm.NamedHyp id))
+	     (tclABSTRACT None (Extratactics.h_discrHyp (Rawterm.NamedHyp id)))
 	    (intro_discr_until ((id,t)::acc))
 	    g'
 	) 
@@ -47,7 +48,7 @@ let intro_discr_until n tac : tactic =
 
 let rec discr_rew_in_H hypname idl : tactic =
   match idl with 
-    | [] -> Extratactics.h_discrHyp (Rawterm.NamedHyp hypname)
+    | [] -> (Extratactics.h_discrHyp (Rawterm.NamedHyp hypname))
     | ((id,t)::idl') ->
        match kind_of_term t with 
 	 | App(eq',[| _ ; arg1 ; _ |]) when eq_constr eq' (Lazy.force eq) -> 
@@ -64,14 +65,27 @@ let rec discr_rew_in_H hypname idl : tactic =
 	 | _ -> discr_rew_in_H hypname idl'
 
 let finalize fname hypname idl : tactic = 
-  tclTRY 
+  tclTRY (
     (tclTHEN 
       (Hiddentac.h_reduce
 	(Rawterm.Unfold [[],EvalConstRef fname])
 	(Tacticals.onHyp hypname)
       )
       (discr_rew_in_H hypname idl)
-    )
+    ))
+
+let gen_fargs fargs : tactic = 
+  fun g -> 
+    generalize
+      (List.map
+	 (fun arg -> 
+	    let targ = pf_type_of g arg in
+	    let refl_arg = mkApp (Lazy.force refl_equal , [|targ ; arg|]) in
+	    refl_arg
+	 )
+	 (Array.to_list fargs)
+      ) 
+      g 
       
 
 let invfun (hypname:identifier) (fid:identifier) : tactic=
@@ -80,17 +94,41 @@ let invfun (hypname:identifier) (fid:identifier) : tactic=
     let f_ind_id =  
       (
 	Indrec.make_elimination_ident
-	  ( id_of_string ((string_of_id fid)^"_2"))
+	  fid 
 	  (Tacticals.elimination_sort_of_goal g)
       )
     in
     let fname = const_of_id fid in
     let princ = const_of_id f_ind_id in
+    let princ_info = 
+      let princ_type = 
+	(try (match (Global.lookup_constant princ) with
+		  {Declarations.const_type=t} -> t
+	     )
+	 with _ -> assert false)
+      in
+      compute_elim_sig princ_type
+    in
     let _,_,typhyp = List.find (fun (id,_,_) -> hypname=id) (pf_hyps g) in
+    let do_invert  fargs  appf : tactic = 
+      let frealargs = (snd (array_chop (List.length princ_info.params) fargs))  
+      in
+      let pat_args = 
+	(List.map (fun e -> ([-1],e)) (Array.to_list frealargs)) @ [[],appf] 
+      in
+      tclTHENSEQ 
+	[
+	  gen_fargs frealargs;
+	  tac_pattern pat_args;
+	  Hiddentac.h_apply (mkConst princ,Rawterm.NoBindings);
+	  intro_discr_until nprod_goal (finalize fname hypname) 
+	    
+	]
+    in
     match kind_of_term typhyp with
       | App(eq',[| _ ; arg1 ; arg2 |]) when eq_constr eq' (Lazy.force eq) -> 
 (* 	  let valf = def_of_const (mkConst fname) in *)
-	  let eq_arg1 , eq_arg2 , tac, fargs = 
+	  let eq_arg1 , eq_arg2 , good_eq_form , fargs = 
 	    match kind_of_term arg1 , kind_of_term arg2 with
 	      | App(f, args),_ when eq_constr f (mkConst fname) -> 
 		  arg1 , arg2 , tclIDTAC , args
@@ -98,87 +136,13 @@ let invfun (hypname:identifier) (fid:identifier) : tactic=
 		  arg2 , arg1 , symmetry_in hypname , args
 	      | _ , _  -> error "inversion impossible" 
 	  in
-	  let gen_fargs : tactic = 
-	    fun g -> 
-	      generalize
-		(List.map
-		  (fun arg -> 
-		    let targ = pf_type_of g arg in
-		    let refl_arg = mkApp (Lazy.force refl_equal , [|targ ; arg|]) in
-		    refl_arg
-		  )
-		  (Array.to_list fargs)
-		) g 
-	  in
-	  let pat_args = 
-	    (List.map (fun e -> ([-1],e)) (Array.to_list fargs)) @ [[],eq_arg1] in
-	 
-  	  tclTHENSEQ 
-	    [
-	    tac;
-	    gen_fargs;
-	    tac_pattern pat_args;
-	    Hiddentac.h_apply (mkConst princ,Rawterm.NoBindings);
-	    intro_discr_until nprod_goal (finalize fname hypname) 
-	      
-	    ]
+	  tclTHEN
+	    good_eq_form
+	    (do_invert fargs eq_arg1)
 	    g
-
-
-      | _ -> error "inversion impossible"
-
-      
-
-let invfun (hypname:identifier) (fid:identifier) : tactic=
-  fun g -> 
-    let nprod_goal = nb_prod (pf_concl g) in
-    let f_ind_id =  
-      (
-	Indrec.make_elimination_ident
-	  ( id_of_string ((string_of_id fid)^"_2"))
-	  (Tacticals.elimination_sort_of_goal g)
-      )
-    in
-    let fname = const_of_id fid in
-    let princ = const_of_id f_ind_id in
-    let _,_,typhyp = List.find (fun (id,_,_) -> hypname=id) (pf_hyps g) in
-    match kind_of_term typhyp with
-      | App(eq',[| _ ; arg1 ; arg2 |]) when eq_constr eq' (Lazy.force eq) -> 
-(* 	  let valf = def_of_const (mkConst fname) in *)
-	  let eq_arg1 , eq_arg2 , tac, fargs = 
-	    match kind_of_term arg1 , kind_of_term arg2 with
-	      | App(f, args),_ when eq_constr f (mkConst fname) -> 
-		  arg1 , arg2 , tclIDTAC , args
-	      | _,App(f, args) when eq_constr f (mkConst fname) -> 
-		  arg2 , arg1 , symmetry_in hypname , args
-	      | _ , _  -> error "inversion impossible" 
-	  in
-	  let gen_fargs : tactic = 
-	    fun g -> 
-	      generalize
-		(List.map
-		  (fun arg -> 
-		    let targ = pf_type_of g arg in
-		    let refl_arg = mkApp (Lazy.force refl_equal , [|targ ; arg|]) in
-		    refl_arg
-		  )
-		  (Array.to_list fargs)
-		) g 
-	  in
-	  let pat_args = 
-	    (List.map (fun e -> ([-1],e)) (Array.to_list fargs)) @ [[],eq_arg1] in
-	 
-  	  tclTHENSEQ 
-	    [
-	    tac;
-	    gen_fargs;
-	    tac_pattern pat_args;
-	    Hiddentac.h_apply (mkConst princ,Rawterm.NoBindings);
-	    intro_discr_until nprod_goal (finalize fname hypname) 
-	      
-	    ]
-	    g
-
+      | App(f',fargs) when eq_constr f' (mkConst fname) -> 
+	  do_invert fargs typhyp g
+	  
 
       | _ -> error "inversion impossible"
 

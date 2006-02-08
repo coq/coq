@@ -568,19 +568,22 @@ let is_res id =
 (* rebuild the raw constructors expression. 
    eliminates some meaningless equality, applies some rewrites......
 *)
-let rec rebuild_cons relname args rt = 
+let rec rebuild_cons relname args crossed_types rt = 
   match rt with 
     | RProd(_,n,t,b) -> 
+	let not_free_in_t id = not (is_free_in id t) in 
+	let new_crossed_types = t::crossed_types in 
 	begin
 	  match t with 
 	    | RApp(_,(RVar(_,res_id) as res_rt),args') when is_res res_id ->
 		begin
 		  match args' with 
 		    | (RVar(_,this_relname))::args' -> 
-			let new_b,id_to_exclude =  rebuild_cons relname args b in 
+			let new_b,id_to_exclude =  rebuild_cons relname args new_crossed_types b in 
 			let new_t = 
 			  mkRApp(mkRVar(mk_rel_id this_relname),args'@[res_rt]) 
-			in mkRProd(n,new_t,new_b),id_to_exclude
+			in mkRProd(n,new_t,new_b),
+			Idset.filter not_free_in_t id_to_exclude
 		    | _ -> (* the first args is the name of the function! *)
 			assert false 
 		end
@@ -588,36 +591,46 @@ let rec rebuild_cons relname args rt =
 		when  eq_as_ref = Lazy.force Coqlib.coq_eq_ref  
 		  -> 
 		let is_in_b = is_free_in id b in
-		let keep_eq = not (List.exists (is_free_in id) args) || is_in_b in 
+		let keep_eq = 
+		  not (List.exists (is_free_in id) args) || is_in_b  || 
+		    List.exists (is_free_in id) crossed_types 
+		in 
 		let new_args = List.map (replace_var_by_term id rt) args in 
 		let subst_b = 
 		  if is_in_b then b else  replace_var_by_term id rt b 
 		in 
-		let new_b,id_to_exclude =  rebuild_cons relname new_args subst_b in 
+		let new_b,id_to_exclude =  rebuild_cons relname new_args new_crossed_types subst_b in 
 		if keep_eq then mkRProd(n,t,new_b),id_to_exclude 
 		else new_b, Idset.add id id_to_exclude
 	    | _ -> 
-		let new_b,id_to_exclude =  rebuild_cons relname args b in 
+		let new_b,id_to_exclude =  rebuild_cons relname args new_crossed_types b in 
 		match n with
 		  | Name id when Idset.mem id id_to_exclude ->
-		      new_b,Idset.remove id id_to_exclude
-		  | _ -> mkRProd(n,t,new_b),id_to_exclude
+		      new_b,Idset.remove id 
+			(Idset.filter not_free_in_t id_to_exclude)
+		  | _ -> mkRProd(n,t,new_b),Idset.filter not_free_in_t id_to_exclude
 	end
     | RLambda(_,n,t,b) ->
 	begin
-	  let new_b,id_to_exclude = rebuild_cons relname args b in
+	  let not_free_in_t id = not (is_free_in id t) in 
+	  let new_crossed_types = t :: crossed_types in 
+	  let new_b,id_to_exclude = rebuild_cons relname args new_crossed_types b in
 	  match n with
 	    | Name id when Idset.mem id id_to_exclude ->
-		new_b,Idset.remove id id_to_exclude
-	    | _ -> RProd(dummy_loc,n,t,new_b),id_to_exclude
+		new_b,
+		Idset.remove id (Idset.filter not_free_in_t id_to_exclude)
+	    | _ -> 
+		RProd(dummy_loc,n,t,new_b),Idset.filter not_free_in_t id_to_exclude
 	end
     | RLetIn(_,n,t,b) -> 
 	begin
-	  let new_b,id_to_exclude = rebuild_cons relname args b in
+	  let not_free_in_t id = not (is_free_in id t) in 
+	  let new_b,id_to_exclude = rebuild_cons relname args (t::crossed_types) b in
 	  match n with 
 	    | Name id when Idset.mem id id_to_exclude -> 
-		new_b,Idset.remove id id_to_exclude
-	    | _ -> RLetIn(dummy_loc,n,t,new_b),id_to_exclude
+		new_b,Idset.remove id (Idset.filter not_free_in_t id_to_exclude)
+	    | _ -> RLetIn(dummy_loc,n,t,new_b),
+		Idset.filter not_free_in_t id_to_exclude
 	end
     | _ -> mkRApp(mkRVar  relname,args@[rt]),Idset.empty
 
@@ -699,6 +712,7 @@ let build_inductive funnames funsargs  returned_types (rtl:rawconstr list) =
 				 | Name id, _ -> mkRVar id
 			      )
 		       funsargs.(i)) 
+		    []
 		    rt 
 		)
 	     ) 

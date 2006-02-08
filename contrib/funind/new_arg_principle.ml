@@ -185,9 +185,6 @@ let compute_new_princ_type_from_rel with_concl replace
 	    compute_new_princ_type_for_letin env x v t b
 	| _ -> pre_princ,[]
     in 
-(*     let _tim2 = Sys.time() in *)
-
-
 (*     if Tacinterp.get_debug () <> Tactic_debug.DebugOff *)
 (*     then *)
 (*       msgnl (str "compute_new_princ_type for "++ *)
@@ -333,16 +330,7 @@ let exactify_proof rec_pos ptes_to_fix : tactic =
   let eq_or = eq_constr or_as_ind in
   let tac_res tac: tactic = 
     fun g -> 
-(*       let concl = pf_concl g in  *)
-(*       if eq_constr concl (Coqlib.build_coq_True ())  *)
-(*       then exact_no_check (Coqlib.build_coq_I ()) g *)
-(*       else *)
       match kind_of_term (pf_concl g) with
-(* 	| LetIn _ | Case _ ->  *)
-(* 	    tclTHEN    *)
-(* 	      (tclPROGRESS (h_reduce (Rawterm.Simpl None) onConcl)) *)
-(* 	      tac *)
-(* 	      g *)
 	| Prod _ -> tclTHEN intro tac g
 	| App(f,_) -> 
 	    if eq_not f 
@@ -385,7 +373,7 @@ let exactify_proof rec_pos ptes_to_fix : tactic =
   let rec exactify_proof g = 
     tclFIRST
       [
-	tclSOLVE [my_reflexivity(* Tactics.reflexivity *)];
+	tclSOLVE [my_reflexivity];
 	tclSOLVE [Eauto.e_assumption];
 	tclSOLVE [Tactics.reflexivity ];
 	tac_res exactify_proof
@@ -486,10 +474,6 @@ let finalize_proof rec_pos fixes (hyps:identifier list) =
 		tclTHENS
 		  (try Equality.replace (args.(nargs -1)) t
 		   with _ ->
-(* 		     Pp.msgnl (str "Cannot replace " ++ *)
-(* 				 pr_lconstr_env (pf_env g) args.(nargs - 1) ++ *)
-(* 				 str " with " ++ pr_lconstr_env (pf_env g) t *)
-(* 			      ); *)
 		     tclFAIL 0 (str "")
 		  )
 		[tac;
@@ -517,7 +501,6 @@ let do_prove_princ_for_struct
     finalize_proof rec_pos fixes hyps with_concl fnames term
   in
   let rec do_prove_princ_for_struct do_finalize term g =
-(*     Pp.msgnl (str "Proving with body : " ++ pr_lconstr_env (pf_env g) term); *)
 (*      if Tacinterp.get_debug () <> Tactic_debug.DebugOff  *)
 (*      then msgnl (str "Proving with body : " ++ pr_lconstr_env (pf_env g) term); *)
     let tac = 
@@ -618,7 +601,6 @@ let prove_princ_for_struct with_concl f_names fun_num nparams : tactic =
 	  begin Some (idxs.(fix_num) - nparams),substl (List.rev fnames_as_constr) ca.(fix_num) end
       | b -> None,fbody
   in
-(*   msgnl (str "fbody : " ++ Printer.pr_lconstr fbody); *)
   let f_real_args = nb_lam fbody - nparams in
   let test_goal_for_hyps g = 
     let goal_nb_prod = nb_prod (pf_concl g) in 
@@ -626,7 +608,7 @@ let prove_princ_for_struct with_concl f_names fun_num nparams : tactic =
   in
   let test_goal_for_args g = 
     let goal_nb_prod = nb_prod (pf_concl g) in 
-    (with_concl && goal_nb_prod <= 1)||
+    (with_concl && goal_nb_prod < 1 )||
       ((not with_concl) && goal_nb_prod = 0 )
   in
   let rec intro_params tac params n : tactic =  
@@ -719,8 +701,8 @@ let prove_princ_for_struct with_concl f_names fun_num nparams : tactic =
 (* 			  msgnl (str "introducing args"); *)
 			  intro_args
 			    (fun args ->  
-			       tclTHEN 
-				 (reduce_fname (Array.to_list f_names))
+(* 			       tclTHEN  *)
+(* 				 (reduce_fname (Array.to_list f_names)) *)
 				 (tac params ptes ptes_to_fix hyps args))
 			    []
 		       )
@@ -748,10 +730,41 @@ let prove_princ_for_struct with_concl f_names fun_num nparams : tactic =
       (fun  params ptes ptes_to_fix hyps args g -> 
 	 let app_f = apply_fbody g params args in 
 (* 	 msgnl (str "proving"); *)
-	 tac (Array.to_list f_names) ptes ptes_to_fix hyps app_f g
+	 match rec_arg_num with 
+	     Some rec_arg_num -> 
+	       let actual_args = 
+		 List.fold_left (fun  y x -> x::y) 
+		   (List.rev args)
+		   params
+	       in
+	       let to_replace = applist(mkConst f_names.(fun_num),List.map mkVar actual_args) in 
+	       
+	       tclTHENS
+		 (Equality.replace 
+		    to_replace
+		    app_f
+		 )
+		 [
+		   tac (Array.to_list f_names) ptes ptes_to_fix hyps app_f;
+		   let id = List.nth (List.rev args) (rec_arg_num ) in
+		   (tclTHENSEQ
+		      [(h_simplest_case (mkVar id));
+		       tclTRY Tactics.intros_reflexivity
+		      ]
+		   )
+(* 		     Tactics.reflexivity) *)
+		 ]
+		 g
+	   | None -> 
+	       tclTHEN
+		 (reduce_fname (Array.to_list f_names))
+		 (tac (Array.to_list f_names) ptes ptes_to_fix hyps app_f)
+		 g
+
+(* 	 tac (Array.to_list f_names) ptes ptes_to_fix hyps app_f g *)
       )
   in
-  prepare_goal_tac (fun g ->   (* Pp.msgnl (str "starting proof real .... "); *)do_prove_princ_for_struct rec_arg_num with_concl g) 
+  prepare_goal_tac (fun g -> do_prove_princ_for_struct rec_arg_num with_concl g) 
     
   
 
@@ -871,25 +884,17 @@ let generate_new_structural_principle
     match new_princ_name with 
       | Some (id) -> id
       | None -> 
-	  let id_of_f = 
-	    let id = id_of_label (con_label f) in 
-	    if with_concl 
-	    then id_of_string ((string_of_id id)^"_2") 
-	    else id 
-	  in
-	  Indrec.make_elimination_ident (id_of_f) (family_of_sort toSort)
+	  let id_of_f = id_of_label (con_label f) in
+	  Indrec.make_elimination_ident id_of_f (family_of_sort toSort)
   in
   let hook _ _  = 
-    let id_of_f = 
-      let id = id_of_label (con_label f) in 
-      if with_concl 
-      then id_of_string ((string_of_id id)^"_2") 
-      else id 
-    in
+    let id_of_f = id_of_label (con_label f) in
     let register_with_sort fam_sort = 
       let s = Termops.new_sort_in_family  fam_sort in 
       let name = Indrec.make_elimination_ident id_of_f fam_sort in 
-      let value = change_property_sort mutr_nparams s new_principle_type new_princ_name in 
+      let value = 
+	change_property_sort mutr_nparams s new_principle_type new_princ_name 
+      in 
       let ce = 
 	{ const_entry_body = value;
 	  const_entry_type = None;
@@ -907,7 +912,7 @@ let generate_new_structural_principle
     in
     register_with_sort InProp;
     register_with_sort InSet
-    in
+  in
   begin
     Command.start_proof 
       new_princ_name
@@ -941,3 +946,249 @@ let generate_new_structural_principle
 	      )
 
   end
+
+
+
+
+
+
+(*************************************************)
+let next_ident_away = Nameops.next_ident_away
+
+
+(* let base_leaf_eq eqs f_id g = *)
+(*   let ids = ids_of_named_context (pf_hyps g) in *)
+(*   let k = next_ident_away (id_of_string "k") ids in *)
+(*   let p = next_ident_away (id_of_string "p") (k::ids) in *)
+(*   let v = next_ident_away (id_of_string "v") (p::k::ids) in *)
+(*   let heq = next_ident_away (id_of_string "heq") (v::p::k::ids) in *)
+(*   let heq1 = next_ident_away (id_of_string "heq") (heq::v::p::k::ids) in *)
+(*   let hex = next_ident_away (id_of_string "hex") (heq1::heq::v::p::k::ids) in *)
+(*     tclTHENLIST [ *)
+(*       intros_using [v; hex]; *)
+(*       simplest_elim (mkVar hex); *)
+(*       intros_using [p;heq1]; *)
+(*       tclTRY *)
+(* 	(Equality.rewriteRL *)
+(* 	   (mkApp(mkVar heq1, *)
+(* 		  [|mkApp (Lazy.force Recdef.coq_S, [|mkVar p|]); *)
+(* 		    mkApp(Lazy.force Recdef.lt_n_Sn, [|mkVar p|]); f_id|]))); *)
+(*       Recdef.list_rewrite true eqs; *)
+(*       apply (Lazy.force refl_equal)] g;; *)
+
+(* let f_S t = mkApp(Lazy.force Recdef.coq_S, [|t|]);; *)
+
+(* let rec introduce_all_values_eq cont_tac f p heq1 pmax *)
+(*     bounds le_proofs eqs ids = *)
+(*   function *)
+(*       [] -> *)
+(* 	tclTHENLIST *)
+(* 	  [tclTHENS *)
+(* 	     (Equality.general_rewrite_bindings false *)
+(* 		(mkVar heq1, *)
+(* 		 Rawterm.ExplicitBindings[dummy_loc,Rawterm.NamedHyp (id_of_string "k"), *)
+(* 				  f_S(f_S(mkVar pmax)); *)
+(* 				  dummy_loc,Rawterm.NamedHyp (id_of_string "def"), *)
+(* 				  f])) *)
+(*    [tclTHENLIST *)
+(*    [Recdef.list_rewrite true eqs; cont_tac pmax le_proofs]; *)
+(*    tclTHENLIST[apply (Lazy.force Recdef.le_lt_SS); *)
+(* 			Recdef.compute_le_proofs le_proofs]]] *)
+(*     | arg::args -> *)
+(* 	let v' = next_ident_away (id_of_string "v") ids in *)
+(*         let ids = v'::ids in *)
+(* 	let hex' = next_ident_away Recdef.hex_id ids in *)
+(*         let ids = hex'::ids in *)
+(* 	let p' = next_ident_away Recdef.p_id ids in *)
+(*         let ids = p'::ids in *)
+(* 	let new_pmax = next_ident_away Recdef.pmax_id ids in *)
+(*         let ids = pmax::ids in *)
+(* 	let hle1 = next_ident_away Recdef.hle_id ids in *)
+(*         let ids = hle1::ids in *)
+(* 	let hle2 = next_ident_away Recdef.hle_id ids in *)
+(*         let ids = hle2::ids in *)
+(* 	let heq = next_ident_away Recdef.heq_id ids in *)
+(*         let ids = heq::ids in *)
+(* 	let heq2 = *)
+(* 	  next_ident_away Recdef.heq_id ids in *)
+(*         let ids = heq2::ids in *)
+(* 	tclTHENLIST *)
+(* 	  [Recdef.mkCaseEq(mkApp(termine, Array.of_list arg)); *)
+(* 	   intros_using [v'; hex']; *)
+(* 	   simplest_elim(mkVar hex'); *)
+(* 	   intros_using [p']; *)
+(* 	   simplest_elim(mkApp(Lazy.force max_constr, [|mkVar pmax; *)
+(* 							mkVar p'|])); *)
+(* 	   intros_using [new_pmax;hle1;hle2]; *)
+(*            introduce_all_values_eq *)
+(*               (fun pmax' le_proofs'-> *)
+(* 		tclTHENLIST *)
+(* 		  [cont_tac pmax' le_proofs'; *)
+(* 		   intros_using [heq;heq2]; *)
+(* 		   rewriteLR (mkVar heq2); *)
+(* 		   tclTHENS *)
+(* 		     (general_rewrite_bindings false *)
+(* 			(mkVar heq, *)
+(* 			 ExplicitBindings *)
+(* 			   [dummy_loc, NamedHyp k_id, *)
+(* 			    f_S(mkVar pmax'); *)
+(* 			    dummy_loc, NamedHyp def_id, f])) *)
+(* 		     [tclIDTAC; *)
+(* 		      tclTHENLIST *)
+(* 			[apply (Lazy.force le_lt_n_Sm); *)
+(* 			 compute_le_proofs le_proofs']]]) *)
+(* 	     functional termine f p heq1 new_pmax *)
+(* 	     (p'::bounds)((mkVar pmax)::le_proofs) eqs *)
+(*              (heq2::heq::hle2::hle1::new_pmax::p'::hex'::v'::ids) args] *)
+  
+
+(* let rec_leaf_eq  f ids eqs expr fn args = *)
+(*   let p = next_ident_away (id_of_string "id") ids in *)
+(*   let ids = p::ids in *)
+(*   let v = next_ident_away (id_of_string "v") ids in *)
+(*   let ids = v::ids in *)
+(*   let hex = next_ident_away (id_of_string "hex") ids in *)
+(*   let ids = hex::ids in *)
+(*   let heq1 = next_ident_away (id_of_string "heq") ids in *)
+(*   let ids = heq1::ids in *)
+(*   let hle1 = next_ident_away (id_of_string "hle") ids in *)
+(*   let ids = hle1::ids in *)
+(*     tclTHENLIST *)
+(*       [intros_using [v;hex]; *)
+(*        simplest_elim (mkVar hex); *)
+(*        intros_using [p;heq1]; *)
+(*        generalize [mkApp(Lazy.force Recdef.le_n,[|mkVar p|])]; *)
+(*        intros_using [hle1]; *)
+(* (\*        introduce_all_values_eq (fun _ _ -> tclIDTAC) *\) *)
+(* (\* 	  f p heq1 p [] [] eqs ids args; *\) *)
+(* (\*        apply (Lazy.force refl_equal) *\)] *)
+
+open Libnames
+let rec nthtl = function
+    l, 0 -> l  | _::tl, n -> nthtl (tl, n-1) | [], _ -> [];;
+let  mkCaseEq a =
+     (fun g ->
+(* commentaire de Yves: on pourra avoir des problemes si
+   a n'est pas bien type dans l'environnement du but *)
+       let type_of_a = pf_type_of g a in
+       (tclTHEN (generalize [mkApp(Lazy.force refl_equal, [| type_of_a; a|])])
+	  (tclTHEN 
+	     (fun g2 ->
+	       change_in_concl None 
+		 (Tacred.pattern_occs [([2], a)] (pf_env g2) Evd.empty (pf_concl g2))
+		 g2)
+	     (simplest_case a))) g);;
+
+let rec (find_call_occs:
+	   constr -> constr -> (constr list ->constr)*(constr  list list)) =
+ fun f expr ->
+  match (kind_of_term expr) with
+    App (g, args) when g = f -> 
+      (* For now we suppose that the function takes only one argument. *)
+      (fun l -> List.hd l), [Array.to_list args]
+  | App (g, args) ->
+     let (largs: constr list) = Array.to_list args in
+     let rec find_aux = function
+	 []    -> (fun x -> []), []
+       | a::tl ->
+         (match find_aux tl with
+          (cf, ((arg1::args) as opt_args)) -> 
+           (match find_call_occs f a with
+             cf2, (_ :: _ as other_args) ->
+	       let len1 = List.length other_args in
+                 (fun l ->
+                   cf2 l::(cf (nthtl(l,len1)))), other_args@opt_args
+           | _, [] -> (fun x -> a::cf x), opt_args)
+	 | _, [] ->
+	   (match find_call_occs f a with
+	     cf, (arg1::args) -> (fun l -> cf l::tl), (arg1::args)
+	   | _, [] -> (fun x -> a::tl), [])) in
+     begin
+       match (find_aux largs) with
+	   cf, [] -> (fun l -> mkApp(g, args)), []
+	 | cf, args ->
+	     (fun l -> mkApp (g, Array.of_list (cf l))), args
+     end
+  | Rel(_) -> error "find_call_occs : Rel"
+  | Var(id) -> (fun l -> expr), []
+  | Meta(_) -> error "find_call_occs : Meta"
+  | Evar(_) -> error "find_call_occs : Evar"
+  | Sort(_)  -> error "find_call_occs : Sort"
+  | Cast(_,_,_) -> error "find_call_occs : cast"
+  | Prod(_,_,_) -> error "find_call_occs : Prod"
+  | Lambda(_,_,_) -> error "find_call_occs : Lambda"
+  | LetIn(_,_,_,_) -> error "find_call_occs : let in"
+  | Const(_) -> (fun l -> expr), []
+  | Ind(_) -> (fun l -> expr), []
+  | Construct (_, _) -> (fun l -> expr), []
+  | Case(i,t,a,r) ->
+      (match find_call_occs f a with
+	cf, (arg1::args) -> (fun l -> mkCase(i, t, (cf l), r)),(arg1::args)
+      | _ -> (fun l -> mkCase(i, t, a, r)),[])
+  | Fix(_) -> error "find_call_occs : Fix"
+  | CoFix(_) -> error "find_call_occs : CoFix";;
+
+let rec  mk_intros_and_continue (extra_eqn:bool)
+    cont_function (eqs:constr list) (expr:constr) g =
+  let ids=ids_of_named_context (pf_hyps g) in
+  match kind_of_term expr with
+      Lambda (n, _, b) -> 
+     	let n1 = (match n with
+      	              Name x -> x
+                    | Anonymous -> (id_of_string "anonymous") ) in
+     	let new_n = next_ident_away n1 ids in
+	  tclTHEN (intro_using new_n)
+	    (mk_intros_and_continue extra_eqn cont_function eqs 
+	       (subst1 (mkVar new_n) b)) g
+    | _ -> 
+ 	if extra_eqn then
+	  let teq = next_ident_away (id_of_string "teq") ids in
+	    tclTHENSEQ
+	      [(intro_using teq); Equality.rewriteLR (mkVar teq); 
+	      (cont_function (mkVar teq::eqs) expr)] g
+	else
+	  cont_function eqs expr g;;
+
+let base_leaf_eq eqs f = tclTRY reflexivity 
+
+let rec_leaf_eq f ids eqs expr fn args = tclTRY reflexivity
+
+
+let rec prove_eq (f:constr)
+    (eqs:constr list)
+    (expr:constr) =
+  tclTRY
+    (match kind_of_term expr with
+	 Case(_,t,a,l) ->
+	   (match find_call_occs f a with
+		_,[] -> 
+		  tclTHENS(mkCaseEq a)(* (simplest_case a) *)
+	  	    (List.map
+		       (mk_intros_and_continue true
+			  (prove_eq  f) eqs)
+		       (Array.to_list l))
+	      | _,_::_ ->
+               	  (match find_call_occs f expr with
+		       _,[] -> base_leaf_eq eqs f
+		     | fn,args ->
+			 fun g ->
+			   let ids = pf_ids_of_hyps g in
+			   rec_leaf_eq f ids eqs expr fn args g
+		  )
+	   )
+       | _ -> 
+	   (match find_call_occs f expr with
+		_,[] -> base_leaf_eq eqs f
+	      | fn,args ->
+		  fun g ->
+		    let ids = pf_ids_of_hyps g in
+		    rec_leaf_eq f ids eqs expr fn args g
+	   )
+    )
+    
+
+let prove_eq f expr = 
+  let fname = destConst f in 
+  tclTHEN
+    (Tactics.unfold_constr (ConstRef fname))
+    (mk_intros_and_continue false (prove_eq f)  [] expr)

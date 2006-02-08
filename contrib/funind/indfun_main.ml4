@@ -33,9 +33,7 @@ open G_vernac
 open Indfun
 open Topconstr
 
-open Tacinterp;;
-
-let _ = ref 0;;
+open Tacinterp
 
 
 TACTIC EXTEND newfuninv
@@ -59,21 +57,41 @@ TACTIC EXTEND newfunind
        let princ_name = 
 	   (
 	     Indrec.make_elimination_ident
-	       ( id_of_string ((string_of_id fname)^"_2"))
+	       fname
 	       (Tacticals.elimination_sort_of_goal g)
 	   )
        in
-       let princ = 
-	 let _,princ_ref = 
-	   qualid_of_reference (Libnames.Ident (Util.dummy_loc,princ_name))
+       let princ = const_of_id princ_name in
+       let princ_info = 
+	 let princ_type = 
+	(try (match (Global.lookup_constant princ) with
+		  {Declarations.const_type=t} -> t
+	     )
+	 with _ -> assert false)
 	 in
-	 try Nametab.locate_constant princ_ref
-	 with Not_found -> Util.error "Don't know the induction scheme to use"
+	 compute_elim_sig princ_type
        in
-       
+       let frealargs = 
+	 try
+	   snd (Util.list_chop (List.length princ_info.params) args)
+	 with _ -> 
+	   msg_warning
+	     (str "computing non parameters argument for " ++
+		Ppconstr.pr_id princ_name ++ fnl () ++
+		str " detected params number is : " ++
+		str (string_of_int (List.length princ_info.params)) ++ fnl ()++
+		str  " while number of arguments is " ++
+		str (string_of_int (List.length args)) ++ fnl () 
+(* 		str " number of predicates " ++  *)
+(* 		str (string_of_int (List.length princ_info.predicates))++ fnl () ++ *)
+(* 		str " number of branches " ++  *)
+(* 		str (string_of_int (List.length princ_info.branches)) *)
+	     );args
+	     
+       in
        Tacticals.tclTHEN 
 	 (Hiddentac.h_reduce 
-	    (Rawterm.Pattern (List.map (fun e -> ([],e)) (args@[c])))
+	    (Rawterm.Pattern (List.map (fun e -> ([],e)) (frealargs@[c])))
 	    Tacticals.onConcl
 	 )
 	 ((Hiddentac.h_apply (mkConst princ,Rawterm.NoBindings)))
@@ -82,7 +100,8 @@ TACTIC EXTEND newfunind
 END
 
 VERNAC ARGUMENT EXTEND rec_annotation2
-  [ "{"  "struct" ident(id)  "}"] -> [ id ]
+  [ "{"  "struct" ident(id)  "}"] -> [ Struct id ]
+| [ "{" "wf" constr(r) ident(id) "}" ] -> [ Wf(r,id) ]
 END
 
 
@@ -104,7 +123,8 @@ VERNAC ARGUMENT EXTEND rec_definition2
                  (Util.dummy_loc,"GenFixpoint",
                   Pp.str "the recursive argument needs to be specified");
 	   in
-	   let check_exists_args id =
+	   let check_exists_args an =
+	     let id = match an with Struct id -> id | Wf(_,id) -> id in 
 	     (try ignore(Util.list_index (Name id) names - 1); annot
 	      with Not_found ->  Util.user_err_loc
                 (Util.dummy_loc,"GenFixpoint",
@@ -117,7 +137,7 @@ VERNAC ARGUMENT EXTEND rec_definition2
 		  check_one_name ();
                   annot
 	      | Some an ->
-			check_exists_args an
+		  check_exists_args an
 	  in
 	  (id, ni, bl, type_, def) ]
 END
@@ -133,4 +153,20 @@ VERNAC COMMAND EXTEND GenFixpoint
    ["GenFixpoint" rec_definitions2(recsl)] ->
 	[ do_generate_principle recsl]
       END
+(*
 
+VERNAC COMMAND EXTEND RecursiveDefinition
+  [ "Recursive" "Definition" ident(f) constr(type_of_f) constr(r) constr(wf)
+     constr(proof) integer_opt(rec_arg_num) constr(eq) ] ->
+  [ ignore(proof);ignore(wf);
+    let rec_arg_num = 
+      match rec_arg_num with 
+	| None -> 1
+	| Some n -> n 
+    in
+    recursive_definition f type_of_f r rec_arg_num eq ]
+| [ "Recursive" "Definition" ident(f) constr(type_of_f) constr(r) constr(wf)
+     "[" ne_constr_list(proof) "]" constr(eq) ] ->
+  [ ignore(proof);ignore(wf);recursive_definition f type_of_f r 1 eq ]
+END
+*)
