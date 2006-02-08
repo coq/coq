@@ -30,7 +30,7 @@ val inh_app_fun :
 (* [inh_coerce_to_sort env isevars j] coerces [j] to a type; i.e. it
    inserts a coercion into [j], if needed, in such a way it gets as
    type a sort; it fails if no coercion is applicable *)
-val inh_coerce_to_sort :
+val inh_coerce_to_sort : loc ->
   env -> evar_defs -> unsafe_judgment -> evar_defs * unsafe_type_judgment
 
 (* [inh_conv_coerce_to loc env isevars j t] coerces [j] to an object of type 

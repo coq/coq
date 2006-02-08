@@ -136,6 +136,9 @@ let error_ill_typed_rec_body_loc loc env sigma i na jl tys =
      IllTypedRecBody (i,na,jv_nf_evar sigma jl,
                       Array.map (nf_evar sigma) tys))
 
+let error_not_a_type_loc loc env sigma j =
+  raise_located_type_error (loc, env, sigma, NotAType (j_nf_evar sigma j))
+
 (*s Implicit arguments synthesis errors. It is hard to find
     a precise location. *)
 

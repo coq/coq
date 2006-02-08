@@ -467,7 +467,8 @@ and pretype_type valcon env isevars lvar = function
 	       utj_type = s})
   | c ->
       let j = pretype empty_tycon env isevars lvar c in
-      let tj = evd_comb1 (inh_coerce_to_sort env) isevars j in
+      let loc = loc_of_rawconstr c in
+      let tj = evd_comb1 (inh_coerce_to_sort loc env) isevars j in
       match valcon with
 	| None -> tj
 	| Some v ->

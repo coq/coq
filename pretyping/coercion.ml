@@ -89,15 +89,16 @@ let inh_app_fun env isevars j =
            (isevars,apply_coercion env p j t)
 	 with Not_found -> (isevars,j))
 
-let inh_tosort_force env isevars j =
+let inh_tosort_force loc env isevars j =
   try
     let t,i1 = class_of1 env (evars_of isevars) j.uj_type in
     let p = lookup_path_to_sort_from i1 in
-    apply_coercion env p j t 
-  with Not_found -> 
-    j
+    let j1 = apply_coercion env p j t in 
+    (isevars,type_judgment env (j_nf_evar (evars_of isevars) j1))
+  with Not_found ->
+    error_not_a_type_loc loc env (evars_of isevars) j
 
-let inh_coerce_to_sort env isevars j =
+let inh_coerce_to_sort loc env isevars j =
   let typ = whd_betadeltaiota env (evars_of isevars) j.uj_type in
   match kind_of_term typ with
     | Sort s -> (isevars,{ utj_val = j.uj_val; utj_type = s })
@@ -105,8 +106,7 @@ let inh_coerce_to_sort env isevars j =
 	let (isevars',s) = define_evar_as_sort isevars ev in
 	(isevars',{ utj_val = j.uj_val; utj_type = s })
     | _ ->
-        let j1 = inh_tosort_force env isevars j in 
-	(isevars,type_judgment env (j_nf_evar (evars_of isevars) j1))
+	inh_tosort_force loc env isevars j
 
 let inh_coerce_to_fail env isevars c1 hj =
   let hj' =
