@@ -837,6 +837,9 @@ LISTSVO=\
  theories/Lists/ListSet.vo   	theories/Lists/Streams.vo \
  theories/Lists/TheoryList.vo   theories/Lists/List.vo
 
+STRINGSVO=\
+ theories/Strings/Ascii.vo      theories/Strings/String.vo
+
 SETSVO=\
  theories/Sets/Classical_sets.vo    theories/Sets/Permut.vo \
  theories/Sets/Constructive_sets.vo theories/Sets/Powerset.vo \
@@ -921,8 +924,8 @@ SETOIDSVO=theories/Setoids/Setoid.vo
 
 THEORIESVO =\
   $(INITVO) $(LOGICVO) $(ARITHVO) $(BOOLVO) $(NARITHVO) $(ZARITHVO) \
-  $(LISTSVO) $(SETSVO) $(INTMAPVO) $(RELATIONSVO) $(WELLFOUNDEDVO) \
-  $(REALSVO) $(SETOIDSVO) $(SORTINGVO)
+  $(LISTSVO) $(STRINGSVO) $(SETSVO) $(INTMAPVO) $(RELATIONSVO) \
+  $(WELLFOUNDEDVO) $(REALSVO) $(SETOIDSVO) $(SORTINGVO)
 
 THEORIESLIGHTVO = $(INITVO) $(LOGICVO) $(ARITHVO)
 
@@ -935,6 +938,7 @@ bool: $(BOOLVO)
 narith: $(NARITHVO)
 zarith: $(ZARITHVO)
 lists: $(LISTSVO)
+strings: $(STRINGSVO)
 sets: $(SETSVO)
 intmap: $(INTMAPVO)
 relations: $(RELATIONSVO)
