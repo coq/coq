@@ -189,11 +189,13 @@ let well_founded_induction = lazy(coq_constant "well_founded_induction")
 let well_founded = lazy (coq_constant "well_founded")
 let acc_rel = lazy (coq_constant "Acc")
 let acc_inv_id = lazy (coq_constant "Acc_inv")
-
+let well_founded_ltof = lazy (Coqlib.coq_constant "" ["Arith";"Wf_nat"] "well_founded_ltof")
 let iter_ref = lazy(find_reference ["Recdef"] "iter")
 let max_ref = lazy(find_reference ["Recdef"] "max")
 let iter = lazy(constr_of_reference (Lazy.force iter_ref))
 let max_constr = lazy(constr_of_reference (Lazy.force max_ref))
+
+let ltof_ref = lazy (find_reference ["Coq";"Arith";"Wf_nat"] "ltof") 
 
 (* These are specific to experiments in nat with lt as well_founded_relation,
    but this should be made more general. *)
@@ -246,16 +248,19 @@ let simpl_iter () =
         rConst = [ EvalConstRef (const_of_ref (Lazy.force iter_ref))]})
     onConcl
     
-let tclUSER l g = 
+let tclUSER is_mes l g = 
   let b,l = 
     match l with 
 	None -> true,[]
       | Some l -> false,l
   in
-  tclTHEN 
-    (h_clear b l)
-    (*     (tclIDTAC_MESSAGE (str "USER"++fnl()))  *)
-    tclIDTAC
+  tclTHENSEQ 
+    [
+      (h_clear b l);
+      if is_mes 
+      then unfold_in_concl [([], evaluable_of_global_reference (Lazy.force ltof_ref))]
+      else tclIDTAC
+    ]
     g
     
     
@@ -395,7 +400,7 @@ let retrieve_acc_var g =
        with _ -> failwith "")
     hyps 
 
-let rec introduce_all_values acc_inv func context_fn
+let rec introduce_all_values is_mes acc_inv func context_fn
     eqs  hrec args values specs =
     (match args with
     [] -> 
@@ -410,7 +415,7 @@ let rec introduce_all_values acc_inv func context_fn
 	let rec_res = next_ident_away rec_res_id ids in
         let ids = rec_res::ids in
 	let hspec = next_ident_away hspec_id ids in
-	let tac = introduce_all_values acc_inv func context_fn eqs 
+	let tac = introduce_all_values is_mes acc_inv func context_fn eqs 
 	  hrec args
 	  (rec_res::values)(hspec::specs) in
 	(tclTHENS
@@ -422,7 +427,7 @@ let rec introduce_all_values acc_inv func context_fn
 		 [ h_assumption
 		 ;
 		   (fun g ->  
-		      tclUSER (Some (hrec::hspec::(retrieve_acc_var g)@specs)) g
+		      tclUSER is_mes (Some (hrec::hspec::(retrieve_acc_var g)@specs)) g
 		   )
 		 ]
 	    )
@@ -431,12 +436,12 @@ let rec introduce_all_values acc_inv func context_fn
     )
  
 	   
-let rec_leaf acc_inv hrec (func:global_reference) eqs expr =
+let rec_leaf is_mes acc_inv hrec (func:global_reference) eqs expr =
   match find_call_occs (mkVar (get_f (constr_of_reference func))) expr with
   | context_fn, args ->
-      introduce_all_values acc_inv func context_fn eqs  hrec args  [] []
+      introduce_all_values is_mes acc_inv func context_fn eqs  hrec args  [] []
 
-let rec proveterminate acc_inv (hrec:identifier)  (* (proofs:constr list) *)
+let rec proveterminate is_mes acc_inv (hrec:identifier)  
   (f_constr:constr) (func:global_reference) (eqs:constr list) (expr:constr)  =
 try
 (*  let _ = msgnl (str "entering proveterminate") in *)
@@ -452,7 +457,7 @@ try
 			   v
 			)
    	         (List.map (mk_intros_and_continue true
-                              (proveterminate acc_inv hrec f_constr func)
+                              (proveterminate is_mes acc_inv hrec f_constr func)
                               eqs) 
 	            (Array.to_list l))
 	   | _, _::_ -> 
@@ -460,7 +465,7 @@ try
 		 match find_call_occs  f_constr expr with
 	     	     _,[] -> base_leaf func eqs expr
 		   | _, _:: _ -> 
-		       rec_leaf acc_inv hrec  func eqs expr
+		       rec_leaf is_mes acc_inv hrec  func eqs expr
 	       )
 	)
     | _ ->  (match find_call_occs  f_constr expr with
@@ -469,7 +474,7 @@ try
 		    base_leaf func eqs expr
 		   with e -> (msgerrnl (str "failure in base case");raise e ))
 	       | _, _::_ -> 
-		   rec_leaf acc_inv hrec  func eqs expr) in
+		   rec_leaf is_mes acc_inv hrec  func eqs expr) in
   (*  let _ = msgnl(str "exiting proveterminate") in *)
   v
 with e -> 
@@ -507,7 +512,14 @@ let hyp_terminates func =
   compose_prod rev_args value
 	     
 
-let start input_type ids args_id relation rec_arg_num rec_arg_id tac : tactic = 
+
+let tclUSER_if_not_mes is_mes = 
+  if is_mes 
+  then 
+    tclCOMPLETE (h_apply (Lazy.force well_founded_ltof,Rawterm.NoBindings))
+  else tclUSER is_mes None
+
+let start is_mes input_type ids args_id relation rec_arg_num rec_arg_id tac : tactic = 
   begin 
     fun g -> 
       let nargs = List.length args_id in
@@ -559,7 +571,7 @@ let start input_type ids args_id relation rec_arg_num rec_arg_id tac : tactic =
 	       )
 	       [ 
 		 (* interactive proof of the well_foundness of the relation *) 
-		 tclUSER None;
+		 tclUSER_if_not_mes is_mes;
 		 (* well_foundness -> Acc for any element *)
 		 observe_tac 
 		   "apply wf_thm" 
@@ -596,7 +608,7 @@ let rec instantiate_lambda t l =
 ;;
 
 
-let whole_start func input_type relation rec_arg_num  : tactic = 
+let whole_start is_mes func input_type relation rec_arg_num  : tactic = 
   begin 
     fun g -> 
       let ids = ids_of_named_context (pf_hyps g) in
@@ -623,6 +635,7 @@ let whole_start func input_type relation rec_arg_num  : tactic =
       let rec_arg_id = List.nth n_ids (rec_arg_num - 1) in
       let expr = instantiate_lambda func_body (mkVar f_id::(List.map mkVar n_ids)) in 
       start 
+	is_mes
 	input_type
 	ids
 	n_ids
@@ -631,6 +644,7 @@ let whole_start func input_type relation rec_arg_num  : tactic =
 	rec_arg_id
 	(fun hrec acc_inv g ->  
            (proveterminate 
+	      is_mes
 	      acc_inv 
 	      hrec
 	      (mkVar f_id)
@@ -645,13 +659,13 @@ let whole_start func input_type relation rec_arg_num  : tactic =
 
 
 
-let com_terminate fonctional_ref input_type relation rec_arg_num
+let com_terminate is_mes fonctional_ref input_type relation rec_arg_num
     thm_name hook =
   let (evmap, env) = Command.get_current_context() in
   start_proof thm_name
     (Global, Proof Lemma) (Environ.named_context_val env)
     (hyp_terminates fonctional_ref) hook;
-  by (whole_start fonctional_ref
+  by (whole_start is_mes fonctional_ref
 	input_type relation rec_arg_num )
     
 
@@ -899,7 +913,7 @@ let (com_eqn : identifier ->
      Command.save_named true);;
 
 
-let recursive_definition f type_of_f r  rec_arg_num eq =
+let recursive_definition is_mes f type_of_f r  rec_arg_num eq =
   let function_type = interp_constr Evd.empty (Global.env()) type_of_f in
   let env = push_rel (Name f,None,function_type) (Global.env()) in
   let res_vars,eq' = decompose_prod (interp_constr Evd.empty env eq) in 
@@ -934,7 +948,7 @@ let recursive_definition f type_of_f r  rec_arg_num eq =
 (*     let _ = message "start second proof" in *)
     com_eqn equation_id functional_ref f_ref term_ref eq
   in
-  com_terminate functional_ref rec_arg_type relation  rec_arg_num term_id  hook 
+  com_terminate is_mes functional_ref rec_arg_type relation  rec_arg_num term_id  hook 
 ;;
 
 VERNAC COMMAND EXTEND RecursiveDefinition
@@ -946,8 +960,8 @@ VERNAC COMMAND EXTEND RecursiveDefinition
 	| None -> 1
 	| Some n -> n 
     in
-    recursive_definition f type_of_f r rec_arg_num eq ]
+    recursive_definition false f type_of_f r rec_arg_num eq ]
 | [ "Recursive" "Definition" ident(f) constr(type_of_f) constr(r) constr(wf)
      "[" ne_constr_list(proof) "]" constr(eq) ] ->
-  [ ignore(proof);ignore(wf);recursive_definition f type_of_f r 1 eq ]
+  [ ignore(proof);ignore(wf);recursive_definition false f type_of_f r 1 eq ]
 END

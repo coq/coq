@@ -9,7 +9,8 @@ open Rawterm
 
 type annot = 
     Struct of identifier 
-  | Wf of Topconstr.constr_expr * identifier 
+  | Wf of Topconstr.constr_expr * identifier option
+  | Mes of Topconstr.constr_expr * identifier option
 
 
 type newfixpoint_expr =
@@ -171,7 +172,7 @@ let register_struct is_rec fixpoint_exprl =
     | _ -> 
 	Command.build_recursive fixpoint_exprl (Options.boxed_definitions())
 
-let register_wf fname wf_rel_expr wf_arg args ret_type body =  
+let register_wf ?(is_mes=false) fname wf_rel_expr wf_arg args ret_type body =  
   let type_of_f = Command.generalize_constr_expr ret_type args in 
   let rec_arg_num = 
     let names = 
@@ -179,7 +180,12 @@ let register_wf fname wf_rel_expr wf_arg args ret_type body =
 	snd
 	(Topconstr.names_of_local_assums args) 
     in 
-    Util.list_index (Name wf_arg) names 
+    match wf_arg with 
+      | None -> 
+	  if List.length names = 1 then 1
+	  else error "Recursive argument must be specified"
+      | Some wf_arg -> 
+	  Util.list_index (Name wf_arg) names 
   in
   let unbounded_eq = 
     let f_app_args = 
@@ -199,8 +205,49 @@ let register_wf fname wf_rel_expr wf_arg args ret_type body =
 		    [(f_app_args,None);(body,None)])
   in
   let eq = Command.generalize_constr_expr unbounded_eq args in 
-  Recdef.recursive_definition fname type_of_f wf_rel_expr rec_arg_num eq
+  Recdef.recursive_definition is_mes fname type_of_f wf_rel_expr rec_arg_num eq
     
+let register_mes fname wf_mes_expr wf_arg args ret_type body = 
+  let wf_arg_type,wf_arg = 
+    match wf_arg with 
+      | None -> 
+	  begin
+	    match args with 
+	      | [Topconstr.LocalRawAssum ([(_,Name x)],t)] -> t,x 
+	      | _ -> error "Recursive argument must be specified" 
+	  end
+      | Some wf_args -> 
+	  try 
+	    match 
+	      List.find 
+		(function 
+		   | Topconstr.LocalRawAssum(l,t) -> 
+		       List.exists (function (_,Name id) -> id =  wf_args | _ -> false) l 
+		   | _ -> false
+		)
+		args 
+	    with 
+	      | Topconstr.LocalRawAssum(_,t)  ->	    t,wf_args
+	      | _ -> assert false 
+	  with Not_found -> assert false 
+  in
+  let ltof = 
+    let make_dir l = make_dirpath (List.map id_of_string (List.rev l)) in 
+    Libnames.Qualid (dummy_loc,Libnames.qualid_of_sp 
+      (Libnames.make_path (make_dir ["Arith";"Wf_nat"]) (id_of_string "ltof")))
+  in
+  let fun_from_mes = 
+    let applied_mes = 
+      Topconstr.mkAppC(wf_mes_expr,[Topconstr.mkIdentC wf_arg])
+    in
+    Topconstr.mkLambdaC ([(dummy_loc,Name wf_arg)],wf_arg_type,applied_mes) 
+  in
+  let wf_rel_from_mes = 
+    Topconstr.mkAppC(Topconstr.mkRefC  ltof,[wf_arg_type;fun_from_mes])
+  in
+  register_wf ~is_mes:true fname wf_rel_from_mes (Some wf_arg) args ret_type body
+	  
+
 
 
 let register (fixpoint_exprl :  newfixpoint_expr list) = 
@@ -209,6 +256,9 @@ let register (fixpoint_exprl :  newfixpoint_expr list) =
     match fixpoint_exprl with 
       | [((name,Wf (wf_rel,wf_x),args,types,body))] -> 
 	  register_wf name wf_rel wf_x args types body;
+	  false
+      | [((name,Mes (wf_mes,wf_x),args,types,body))] -> 
+	  register_mes name wf_mes wf_x args types body;
 	  false
       | _ -> 
 	  
@@ -223,7 +273,7 @@ let register (fixpoint_exprl :  newfixpoint_expr list) =
 		     in 
 		     let annot = Util.list_index (Name id) names - 1 in 
  		     (name,annot,args,types,body),(None:Vernacexpr.decl_notation) 
-		 | (_,Wf _,_,_,_) -> 
+		 | (_,Wf _,_,_,_) | (_,Mes _,_,_,_)  -> 
 		     error 
 		       ("Cannot use mutual definition with well-founded recursion")
 	      ) 
