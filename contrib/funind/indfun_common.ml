@@ -30,7 +30,7 @@ let invalid_argument s = raise (Invalid_argument s)
 
 
 
-let fresh_id avoid s = Nameops.next_ident_away (id_of_string s) avoid
+let fresh_id avoid s = Termops.next_global_ident_away true (id_of_string s) avoid
 
 let fresh_name avoid s = Name (fresh_id avoid s)
 
