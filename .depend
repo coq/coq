@@ -2827,14 +2827,14 @@ contrib/funind/indfun.cmx: toplevel/vernacexpr.cmx lib/util.cmx \
     interp/constrintern.cmx toplevel/command.cmx 
 contrib/funind/indfun_common.cmo: lib/util.cmi pretyping/termops.cmi \
     kernel/term.cmi kernel/sign.cmi pretyping/rawterm.cmi lib/pp.cmi \
-    library/nametab.cmi kernel/names.cmi library/nameops.cmi \
-    library/libnames.cmi library/global.cmi kernel/declarations.cmi \
-    interp/coqlib.cmi contrib/funind/indfun_common.cmi 
+    library/nametab.cmi kernel/names.cmi library/libnames.cmi \
+    library/global.cmi kernel/declarations.cmi interp/coqlib.cmi \
+    contrib/funind/indfun_common.cmi 
 contrib/funind/indfun_common.cmx: lib/util.cmx pretyping/termops.cmx \
     kernel/term.cmx kernel/sign.cmx pretyping/rawterm.cmx lib/pp.cmx \
-    library/nametab.cmx kernel/names.cmx library/nameops.cmx \
-    library/libnames.cmx library/global.cmx kernel/declarations.cmx \
-    interp/coqlib.cmx contrib/funind/indfun_common.cmi 
+    library/nametab.cmx kernel/names.cmx library/libnames.cmx \
+    library/global.cmx kernel/declarations.cmx interp/coqlib.cmx \
+    contrib/funind/indfun_common.cmi 
 contrib/funind/indfun_main.cmo: toplevel/vernacinterp.cmi lib/util.cmi \
     interp/topconstr.cmi kernel/term.cmi tactics/tacticals.cmi \
     tactics/tacinterp.cmi proofs/tacexpr.cmo proofs/refiner.cmi \
@@ -2874,7 +2874,7 @@ contrib/funind/new_arg_principle.cmo: toplevel/vernacexpr.cmo \
     proofs/tacmach.cmi tactics/tacinterp.cmi pretyping/rawterm.cmi \
     proofs/proof_type.cmi parsing/printer.cmi parsing/ppconstr.cmi lib/pp.cmi \
     proofs/pfedit.cmi lib/options.cmi library/nametab.cmi kernel/names.cmi \
-    library/nameops.cmi library/libnames.cmi pretyping/indrec.cmi \
+    library/libnames.cmi pretyping/indrec.cmi \
     contrib/funind/indfun_common.cmi tactics/hiddentac.cmi library/global.cmi \
     interp/genarg.cmi pretyping/evd.cmi tactics/equality.cmi \
     kernel/environ.cmi kernel/entries.cmi tactics/eauto.cmi \
@@ -2889,7 +2889,7 @@ contrib/funind/new_arg_principle.cmx: toplevel/vernacexpr.cmx \
     proofs/tacmach.cmx tactics/tacinterp.cmx pretyping/rawterm.cmx \
     proofs/proof_type.cmx parsing/printer.cmx parsing/ppconstr.cmx lib/pp.cmx \
     proofs/pfedit.cmx lib/options.cmx library/nametab.cmx kernel/names.cmx \
-    library/nameops.cmx library/libnames.cmx pretyping/indrec.cmx \
+    library/libnames.cmx pretyping/indrec.cmx \
     contrib/funind/indfun_common.cmx tactics/hiddentac.cmx library/global.cmx \
     interp/genarg.cmx pretyping/evd.cmx tactics/equality.cmx \
     kernel/environ.cmx kernel/entries.cmx tactics/eauto.cmx \
