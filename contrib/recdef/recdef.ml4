@@ -44,6 +44,10 @@ open Eauto
 
 open Genarg
 
+
+let h_intros l = 
+  tclMAP h_intro l
+
 let observe_tac s tac g = tac g
 
 (* let observe_tac s tac g = *)
@@ -234,13 +238,13 @@ let rec  mk_intros_and_continue (extra_eqn:bool)
             | Anonymous -> ano_id
 	in
      	let new_n = next_global_ident_away true n1 ids in
-	  tclTHEN (intro_using new_n)
+	  tclTHEN (h_intro new_n)
 	    (mk_intros_and_continue extra_eqn cont_function eqs 
 	       (subst1 (mkVar new_n) b)) g
     | _ -> 
  	if extra_eqn then
 	  let teq = next_global_ident_away true teq_id ids in
-	    tclTHEN (intro_using teq)	
+	    tclTHEN (h_intro teq)	
 	      (cont_function (mkVar teq::eqs) expr) g
 	else
 	  cont_function eqs expr g
@@ -286,11 +290,11 @@ let base_leaf (func:global_reference) eqs expr =
      let h = next_global_ident_away true h_id (k'::ids) in
        tclTHENLIST [observe_tac "first split" (split (ImplicitBindings [expr]));
 		    observe_tac "second split" (split (ImplicitBindings [delayed_force coq_O]));
-		    observe_tac "intro k" (intro_using k');
+		    observe_tac "intro k" (h_intro k');
                     observe_tac "case on k" 
 		      (tclTHENS 
 			 (simplest_case (mkVar k'))
-			 [(tclTHEN (intro_using h) 
+			 [(tclTHEN (h_intro h) 
 		     	     (tclTHEN (simplest_elim 
 					 (mkApp (delayed_force gt_antirefl,
 						 [| delayed_force coq_O |])))
@@ -358,14 +362,14 @@ let rec introduce_all_equalities func eqs values specs bound le_proofs
 	let def = next_global_ident_away true def_id ids in
 	tclTHENLIST
 	  [observe_tac "introduce_all_equalities_final split" (split (ImplicitBindings [s_max]));
-	   observe_tac "introduce_all_equalities_final intro k" (intro_using  k);
+	   observe_tac "introduce_all_equalities_final intro k" (h_intro  k);
 	   tclTHENS
 	     (observe_tac "introduce_all_equalities_final case k" (simplest_case (mkVar k)))
-	     [tclTHENLIST[intro_using h';
+	     [tclTHENLIST[h_intro h';
 			  simplest_elim(mkApp(delayed_force lt_n_O,[|s_max|]));
 			  default_full_auto]; tclIDTAC];
 	   observe_tac "clearing k " (clear [k]);
-	   intros_using [k;h';def];
+	   h_intros [k;h';def];
 	   simpl_iter();
 	   unfold_in_concl[([1],evaluable_of_global_reference func)];
 	   list_rewrite true eqs;
@@ -386,9 +390,9 @@ let rec introduce_all_equalities func eqs values specs bound le_proofs
 	tclTHENLIST
 	  [simplest_elim (mkVar spec1);
 	   list_rewrite true eqs;
-	   intros_using [p; heq];
+	   h_intros [p; heq];
 	   simplest_elim (mkApp(delayed_force max_constr, [| bound; mkVar p|]));
-	   intros_using [pmax; hle1; hle2];
+	   h_intros [pmax; hle1; hle2];
 	   introduce_all_equalities func eqs values specs 
 	     (mkVar pmax) ((mkVar pmax)::le_proofs)
 	     (heq::cond_eqs)] g;;
@@ -431,7 +435,7 @@ let rec introduce_all_values is_mes acc_inv func context_fn
 	  (rec_res::values)(hspec::specs) in
 	(tclTHENS
 	   (simplest_elim (mkApp(mkVar hrec, Array.of_list arg)))
-	   [tclTHENLIST [intros_using [rec_res; hspec];
+	   [tclTHENLIST [h_intros [rec_res; hspec];
 			 tac]; 
 	    (tclTHENS
 		 (apply (Lazy.force acc_inv))
@@ -561,7 +565,7 @@ let start is_mes input_type ids args_id relation rec_arg_num rec_arg_id tac : ta
 	  )
       in
       tclTHEN
-	(intros_using args_id)
+	(h_intros args_id)
 	(tclTHENS
 	   (observe_tac 
 	      "first assert" 
@@ -604,8 +608,8 @@ let start is_mes input_type ids args_id relation rec_arg_num rec_arg_id tac : ta
 		     ))
 	       ;
 		observe_tac "h_fix" (h_fix (Some hrec) (nargs+1));
-		intros_using args_id;
-		intro_using wf_rec_arg;
+		h_intros args_id;
+		h_intro wf_rec_arg;
 		observe_tac "tac" (tac hrec acc_inv)
 	       ]
 	   ]
@@ -756,7 +760,7 @@ let start_equation (f:global_reference) (term_f:global_reference)
     f ids nargs
   in
   tclTHENLIST [
-    intros_using x;
+    h_intros x;
     unfold_constr f;
     simplest_case (mkApp (terminate_constr, Array.of_list (List.map mkVar x)));
     cont_tactic x] g
@@ -771,9 +775,9 @@ let base_leaf_eq func eqs f_id g =
   let heq1 = next_global_ident_away true heq_id (heq::v::p::k::ids) in
   let hex = next_global_ident_away true hex_id (heq1::heq::v::p::k::ids) in
     tclTHENLIST [
-      intros_using [v; hex]; 
+      h_intros [v; hex]; 
       simplest_elim (mkVar hex);
-      intros_using [p;heq1];
+      h_intros [p;heq1];
       tclTRY
 	(rewriteRL 
 	   (mkApp(mkVar heq1, 
@@ -823,17 +827,17 @@ let rec introduce_all_values_eq  cont_tac functional termine
         let ids = heq2::ids in
 	tclTHENLIST
 	  [mkCaseEq(mkApp(termine, Array.of_list arg));
-	   intros_using [v'; hex'];
+	   h_intros [v'; hex'];
 	   simplest_elim(mkVar hex');
-	   intros_using [p'];
+	   h_intros [p'];
 	   simplest_elim(mkApp(delayed_force max_constr, [|mkVar pmax;
 							mkVar p'|]));
-	   intros_using [new_pmax;hle1;hle2];
+	   h_intros [new_pmax;hle1;hle2];
            introduce_all_values_eq 
               (fun pmax' le_proofs'->
 		tclTHENLIST
 		  [cont_tac pmax' le_proofs';
-		   intros_using [heq;heq2];
+		   h_intros [heq;heq2];
 		   rewriteLR (mkVar heq2);
 		   tclTHENS
 		     (general_rewrite_bindings false
@@ -863,11 +867,11 @@ let rec_leaf_eq termine f ids functional eqs expr fn args =
   let hle1 = next_global_ident_away true hle_id ids in
   let ids = hle1::ids in
     tclTHENLIST
-      [intros_using [v;hex];
+      [h_intros [v;hex];
        simplest_elim (mkVar hex);
-       intros_using [p;heq1];
+       h_intros [p;heq1];
        generalize [mkApp(delayed_force le_n,[|mkVar p|])];
-       intros_using [hle1];
+       h_intros [hle1];
        introduce_all_values_eq
 	 (fun _ _ -> tclIDTAC)
 	 functional termine f p heq1 p [] [] eqs ids args;
