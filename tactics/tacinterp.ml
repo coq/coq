@@ -668,8 +668,8 @@ let rec intern_atomic lf ist x =
   (* Derived basic tactics *)
   | TacSimpleInduction h ->
       TacSimpleInduction (intern_quantified_hypothesis ist h)
-  | TacNewInduction (c,cbo,ids) ->
-      TacNewInduction (intern_induction_arg ist c,
+  | TacNewInduction (lc,cbo,ids) ->
+      TacNewInduction (List.map (intern_induction_arg ist) lc,
                option_app (intern_constr_with_bindings ist) cbo,
                (intern_intro_pattern lf ist ids))
   | TacSimpleDestruct h ->
@@ -1769,8 +1769,8 @@ and interp_atomic ist gl = function
   (* Derived basic tactics *)
   | TacSimpleInduction h ->
       h_simple_induction (interp_quantified_hypothesis ist h)
-  | TacNewInduction (c,cbo,ids) ->
-      h_new_induction (interp_induction_arg ist gl c)
+  | TacNewInduction (lc,cbo,ids) ->
+      h_new_induction (List.map (interp_induction_arg ist gl) lc)
         (option_app (interp_constr_with_bindings ist gl) cbo)
         (interp_intro_pattern ist ids)
   | TacSimpleDestruct h ->
@@ -2028,8 +2028,8 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
 
   (* Derived basic tactics *)
   | TacSimpleInduction h as x -> x
-  | TacNewInduction (c,cbo,ids) ->
-      TacNewInduction (subst_induction_arg subst c,
+  | TacNewInduction (lc,cbo,ids) -> (* Pierre C. est-ce correct? *)
+      TacNewInduction (List.map (subst_induction_arg subst) lc,
                option_app (subst_raw_with_bindings subst) cbo, ids)
   | TacSimpleDestruct h as x -> x
   | TacNewDestruct (c,cbo,ids) ->

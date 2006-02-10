@@ -671,7 +671,7 @@ and ct_TACTIC_COM =
   | CT_match_tac of ct_TACTIC_COM * ct_MATCH_TAC_RULES
   | CT_move_after of ct_ID * ct_ID
   | CT_new_destruct of ct_FORMULA_OR_INT * ct_USING * ct_INTRO_PATT_OPT
-  | CT_new_induction of ct_FORMULA_OR_INT * ct_USING * ct_INTRO_PATT_OPT
+  | CT_new_induction of ct_FORMULA_OR_INT list * ct_USING * ct_INTRO_PATT_OPT
   | CT_omega
   | CT_orelse of ct_TACTIC_COM * ct_TACTIC_COM
   | CT_parallel of ct_TACTIC_COM * ct_TACTIC_COM list

@@ -57,7 +57,7 @@ val h_instantiate     : int -> Rawterm.rawconstr ->
 val h_simple_induction   : quantified_hypothesis -> tactic
 val h_simple_destruct    : quantified_hypothesis -> tactic
 val h_new_induction   :
-  constr induction_arg -> constr with_bindings option ->
+  constr induction_arg list -> constr with_bindings option ->
   intro_pattern_expr -> tactic
 val h_new_destruct    :
   constr induction_arg -> constr with_bindings option -> 

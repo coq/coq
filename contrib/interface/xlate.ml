@@ -1161,8 +1161,8 @@ and xlate_tac =
 	  (xlate_int_or_constr a, xlate_using b, 
 	   xlate_with_names c)
     | TacNewInduction(a,b,c) ->
-	CT_new_induction
-	  (xlate_int_or_constr a, xlate_using b,
+	CT_new_induction (* Pierre C. : est-ce correct *)
+	  (List.map xlate_int_or_constr a, xlate_using b,
 	   xlate_with_names c)
     (*| TacInstantiate (a, b, cl) -> 
         CT_instantiate(CT_int a, xlate_formula b,

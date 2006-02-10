@@ -1665,7 +1665,7 @@ and fTACTIC_COM = function
    fINTRO_PATT_OPT x3;
    fNODE "new_destruct" 3
 | CT_new_induction(x1, x2, x3) ->
-   fFORMULA_OR_INT x1;
+   (List.iter fFORMULA_OR_INT x1); (* Pierre C. Est-ce correct? *)
    fUSING x2;
    fINTRO_PATT_OPT x3;
    fNODE "new_induction" 3

@@ -177,7 +177,7 @@ val simplest_elim : constr -> tactic
 val elim          : constr with_bindings -> constr with_bindings option -> tactic
 val simple_induct : quantified_hypothesis -> tactic
 
-val new_induct : constr induction_arg -> constr with_bindings option ->
+val new_induct : constr induction_arg list -> constr with_bindings option ->
   intro_pattern_expr -> tactic
 
 (*s Case analysis tactics. *)
