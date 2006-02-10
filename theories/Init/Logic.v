@@ -230,16 +230,6 @@ Section Logic_lemmas.
 
   End equality.
 
-(* Is now a primitive principle 
-  Theorem eq_rect: (A:Type)(x:A)(P:A->Type)(P x)->(y:A)(eq ? x y)->(P y).
-  Proof.
-   Intros.
-   Cut (identity A x y).
-   NewDestruct 1; Auto.
-   NewDestruct H; Auto.
-  Qed.
-*)
-
   Definition eq_ind_r :
     forall (A:Type) (x:A) (P:A -> Prop), P x -> forall y:A, y = x -> P y.
    intros A x P H y H0; elim sym_eq with (1 := H0); assumption.
