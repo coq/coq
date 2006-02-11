@@ -14,9 +14,7 @@
 Require Import Bool.
 Require Import BinPos.
 
-(***********************************)
-(** Definition of ascii characters *)
-(***********************************)
+(** *** Definition of ascii characters *)
 
 (* Definition of ascii character as a 8 bits constructor *)
  
@@ -53,9 +51,7 @@ Definition ascii_dec : forall a b : ascii, {a = b} + {a <> b}.
  decide equality; apply bool_dec.
 Defined.
 
-(***********************************************************************)
-(** Conversion between natural numbers modulo 256 and ascii characters *)
-(***********************************************************************)
+(** *** Conversion between natural numbers modulo 256 and ascii characters *)
 
 (* Auxillary function that turns a positive into an ascii by
    looking at the last n bits, ie z mod 2^n *)
@@ -112,9 +108,23 @@ Proof.
   destruct a as [[|][|][|][|][|][|][|][|]]; compute; reflexivity.
 Abort.
 
-(********************************)
-(** Examples of concrete syntax *)
-(********************************)
+(** *** Concrete syntax *)
+
+(**
+  Ascii characters can be represented in scope char_scope as follows:
+  - ["c"]   represents itself if c is a character of code < 128,
+  - [""""]  is an exception: it represents the ascii character 34
+            (double quote),
+  - ["nnn"] represents the ascii character of decimal code nnn.
+
+  For instance, both ["065"] and ["A"] denote the character `uppercase
+  A', and both ["034"] and [""""] denote the character `double quote'.
+
+  Notice that the ascii characters of code >= 128 do not denote
+  stand-alone utf8 characters so that only the notation "nnn" is
+  available for them (unless your terminal is able to represent them,
+  which is typically not the case in coqide). 
+*)
 
 Open Local Scope char_scope.
 

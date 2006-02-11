@@ -14,9 +14,7 @@
 Require Import Arith.
 Require Import Ascii.
 
-(******************************)
-(** Definition of strings     *)
-(******************************)
+(** *** Definition of strings *)
 
 (** Implementation of string as list of ascii characters *)
  
@@ -34,9 +32,7 @@ Definition string_dec : forall s1 s2 : string, {s1 = s2} + {s1 <> s2}.
  decide equality; apply ascii_dec.
 Defined.
 
-(******************************)
-(** Concatenation of strings  *)
-(******************************)
+(** *** Concatenation of strings *)
 
 Reserved Notation "x ++ y" (right associativity, at level 60).
 
@@ -118,9 +114,7 @@ generalize (Rec s2 0); simpl in |- *; auto.
 intros n0; rewrite <- Plus.plus_Snm_nSm; auto.
 Qed.
 
-(******************************)
-(** Substrings                *)
-(******************************)
+(** *** Substrings *)
 
 (** [substring n m s] returns the substring of [s] that starts
     at position [n] and of length [m];
@@ -169,9 +163,7 @@ intros n0 H; apply Rec; simpl in |- *; auto.
 apply Le.le_S_n; auto.
 Qed.
 
-(******************************)
-(** Test functions            *)
-(******************************)
+(** *** Test functions *)
 
 (** Test if [s1] is a prefix of [s2] *)
  
@@ -382,9 +374,19 @@ Definition findex n s1 s2 :=
   | None => 0
   end.
 
-(********************************)
-(** Examples of concrete syntax *)
-(********************************)
+(** *** Concrete syntax *)
+
+(**
+  The concrete syntax for strings in scope string_scope follows the
+  Coq convention for strings: all ascii characters of code less than
+  128 are litteral to the exception of the character `double quote'
+  which must be doubled.
+
+  Strings that involve ascii characters of code >= 128 which are not
+  part of a valid utf8 sequence of characters are not representable
+  using the Coq string notation (use explicitly the String constructor
+  with the ascii codes of the characters).
+*)
 
 Example HelloWorld := "	""Hello world!""
 ".
