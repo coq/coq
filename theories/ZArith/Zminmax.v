@@ -10,7 +10,7 @@
 Require Import Zmin Zmax.
 Require Import BinInt Zorder.
 
-Open Scope Z_scope.
+Open Local Scope Z_scope.
 
 (** *** Lattice properties of min and max on Z *)
 
