@@ -68,16 +68,12 @@ induction n; induction m; simpl in |- *; auto with arith.
 elim (IHn m); intro H; elim H; auto.
 Qed.
 
-Lemma min_case : forall n m (P:nat -> Set), P n -> P m -> P (min n m).
+Lemma min_case : forall n m (P:nat -> Type), P n -> P m -> P (min n m).
 Proof.
 induction n; simpl in |- *; auto with arith.
 induction m; intros; simpl in |- *; auto with arith.
 pattern (min n m) in |- *; apply IHn; auto with arith.
 Qed.
 
-Lemma min_case2 : forall n m (P:nat -> Prop), P n -> P m -> P (min n m).
-Proof.
-induction n; simpl in |- *; auto with arith.
-induction m; intros; simpl in |- *; auto with arith.
-pattern (min n m) in |- *; apply IHn; auto with arith.
-Qed.
+Notation min_case2 := min_case (only parsing).
+
