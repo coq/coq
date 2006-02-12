@@ -825,7 +825,8 @@ ZARITHVO=\
  theories/ZArith/auxiliary.vo   theories/ZArith/Zmisc.vo \
  theories/ZArith/Zcompare.vo    theories/ZArith/Znat.vo \
  theories/ZArith/Zorder.vo      theories/ZArith/Zabs.vo \
- theories/ZArith/Zmin.vo        theories/ZArith/Zeven.vo \
+ theories/ZArith/Zmin.vo        theories/ZArith/Zmax.vo \
+ theories/ZArith/Zminmax.vo     theories/ZArith/Zeven.vo \
  theories/ZArith/Zhints.vo	theories/ZArith/Zlogarithm.vo \
  theories/ZArith/Zpower.vo 	theories/ZArith/Zcomplements.vo \
  theories/ZArith/Zdiv.vo	theories/ZArith/Zsqrt.vo \

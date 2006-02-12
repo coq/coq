@@ -90,8 +90,9 @@ Notations
 
 Library
 
+- Small extension of Zmin.V, new Zmax.v, new Zminmax.v
 - New library on String and Ascii characters (contributed by L. Thery)
-- Few improvements in ZArith potentially exceptionally breaking the
+- Few other improvements in ZArith potentially exceptionally breaking the
   compatibility (useless hypothesys of Zgt_square_simpl and
   Zlt_square_simpl removed; fixed names mentioning letter O instead of
   digit 0; weaken premises in Z_lt_induction)
