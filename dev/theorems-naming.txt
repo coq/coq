@@ -1,0 +1,324 @@
+Canonical naming convention of lemmas in the standard library of Coq
+                           --------------
+                             A proposal 
+
+
+======================================================================
+Table of Contents
+-----------------
+
+I Properties naming
+I-A Equational properties of operations
+I-B Preservation and compatibility properties of operations
+I-C Morphisms
+I-D Preservation and compatibility properties of operations wrt order
+I-E Properties of relations
+I-F Arithmetical conventions
+II General conventions
+III General questions
+
+======================================================================
+Equational properties of Operations
+-----------------------------------
+
+Associativity of binary operator op on domain D : Dop_assoc
+  forall x y z:D, op x (op y z) = op (op x y) z
+
+  Remark: symmetric form: Dop_assoc_reverse
+  forall x y z:D, op (op x y) z = op x (op y z)
+
+Commutativity of binary operator op on domain D : Dop_comm
+  forall x y:D, op x y = op y x
+
+  Remark: avoid forall x y:D, op y x = op x m, or at worst, call it
+  Dop_comm_reverse
+
+Left neutrality of element elt for binary operator op : Dop_elt_l
+  forall x:D, op elt x = x
+
+  Remark: in English, "elt is an identity for op" seems a more common
+  terminology.
+
+Right neutrality of element elt for binary operator op : Dop_elt_r
+  forall x:D, op x elt = x
+
+  Remark: by convention, if the identities are referred to zero or one, they
+  are written 1 and 0 in the name  of the property.
+
+Left absorption of element elt for binary operator op : Dop_elt_l  [BAD ??]
+  forall x:D, op elt x = elt
+
+  Remarks:
+   - In French school, this property is named "elt est absorbant pour op"
+   - In English, the property seems generally named "elt is a zero of op"
+   - In the context of lattices, this a boundedness property, it may
+     be called "elt is a bound on D", or referring to a (possibly
+     arbitrarily oriented) order "elt is a least element of D" or "elt
+     is a greatest element of D"
+
+Right absorption of element a for binary operator op : Dop_elt_l  [BAD ??]
+  forall x:D, op x elt = elt
+
+Left distributivity of binary operator op over op' on domain D : Dop_op'_distr_l
+  forall x y z:D, op (op' x y) z = op' (op x z) (op y z)
+
+  Remark: some authors say "distribution".
+
+Right distributivity of binary operator op over op' on domain D : Dop_op'_distr_r
+  forall x y z:D, op z (op' x y) = op' (op z x) (op z y)
+
+  Remark: note the order of arguments
+
+Distributivity of unary operator op over binary op' on domain D : Dop_op'_distr
+  forall x y:D, op (op' x y) = op' (op x) (op y)
+
+Left distributivity of unary operator op over binary op' on domain D : Dop_op'_distr_l
+  forall x y:D, op (op' x y) = op' (op x) y
+
+  Question: call it left commutativity ??
+
+Right distributivity of unary operator op over binary op' on domain D : Dop_op'_distr_r
+  forall x y:D, op (op' x y) = op' x (op y)
+
+Idempotency of binary operator op on domain D : Dop_idempotent
+  forall x:D, op x n = x
+
+Idempotency of unary operator op on domain D : Dop_idempotent
+  forall x:D, op (op x) = op x
+
+Idempotency of element elt for binary operator op on domain D : Dop_elt_idempotent
+  op elt elt = elt
+
+  Remark: generally useless in cic for concrete, computable operators
+
+Involutivity of unary op on D : Dop_involutive
+  forall x:D, op (op x) = x
+
+Nilpotency wrt element elt of binary operator op on D : Dop_nilpotent
+  forall x:D, op x n = elt
+
+  Remark: we leave elt implicit since it is determined by the nilpotency of op
+
+Absorption law on the left for binary operator op over binary operator op' on the left : Dop_op'_absorption_l_l
+  forall x y:D, op x (op' x y) = x
+
+Absorption law on the left for binary operator op over binary operator op' on the right : Dop_op'_absorption_l_r
+  forall x y:D, op x (op' y x) = x
+
+  Rem: Similarly for Dop_op'_absorption_r_l and Dop_op'_absorption_r_r
+
+De Morgan law's for binary op' and op'' wrt to unary op on D : ??
+  forall x y:D, op (op' x y) = op'' (op x) (op y)
+  forall x y:D, op (op'' x y) = op' (op x) (op y)
+
+Left complementation of binary op by means of unary op wrt elt: Dop_op'_l ??
+  forall x:D, op (op' x) x = elt
+
+  Question: make explicit the "complementation" in the name of the property?
+
+Right complementation of binary op by means of unary op wrt elt: Dop_op'_l
+  forall x:D, op x (op' x) = elt
+
+======================================================================
+Preservation and compatibility properties of Operations
+-------------------------------------------------------
+
+- Wrt equality
+
+Injectivity of unary operator op : Dop_inj
+  forall x y:D, op x = op y -> x = y
+
+Left regularity of binary operator op : Dop_reg_l [or call it Dop_inj_l ??]
+  forall x y z:D, op z x = op z y -> x = y
+
+  Remark: note the order of arguments
+
+  Remark: The property is sometimes called cancellation (would give
+  Dop_cancel_l).
+
+Right regularity of binary operator op : Dop_reg_r [or call it Dop_inj_r ??]
+  forall x y z:D, op x z = op y z -> x = y
+
+- Wrt to relation rel
+
+Compatibility of unary operator op : Dop_rel_compat
+  forall x y:D, rel y x -> rel (op y) (op x)
+
+  Remark: for equality, use names of the form Dop_eq_compat
+  forall x y:D, y = x -> op y = op x
+  (actually subsumed by the substitutivity property of equality)
+
+Left compatibility of binary operator op : Dop_rel_compat_l
+  forall x y z:D, rel y x -> rel (op z y) (op z x)
+
+Right compatibility of binary operator op : Dop_rel_compat_r
+  forall x y z:D, rel y x -> rel (op y z) (op x z)
+
+  Remark: for equality, use names of the form Dop_eq_compat_l or 
+  Dop_eq_compat_r
+  forall x y z:D, y = x -> op y z = op x z
+  forall x y z:D, y = x -> op y z = op x z
+
+  Remark: should we admit (or even prefer) the name Dop_rel_monotone,
+  Dop_rel_monotone_l, Dop_rel_monotone_r when rel is an order ?
+
+Left regularity of binary operator op : Dop_rel_reg_l
+  forall x y z:D, rel (op z x) (op z y) -> rel x y
+
+Right regularity of binary operator op : Dop_rel_reg_r
+  forall x y z:D, rel (op x z) (op y z) -> rel x y
+
+  Question: Would it be better to have z as first argument, since it
+  is missing in the conclusion ?? (or "with p" should work ?)
+
+Left distributivity of binary operator op over op' along relation rel on domain D : Dop_op'_rel_distr_l
+  forall x y z:D, rel (op (op' x y) z) (op' (op x z) (op y z))
+
+  Example: standard property of (not necessarily distributive) lattices
+
+  Remark: in a (non distributive) lattice, by exchange join and meet,
+  one would like also,
+  forall x y z:D, rel (op' (op x z) (op y z)) (op (op' x y) z)
+  How to name it with a symmetric name ?
+
+Irreducibility of binary operator op on domain D : Dop_irreducible
+  forall x y z:D, z = op x y -> z = x \/ z = y
+
+  Question: what about the constructive version ? Call it Dop_irreducible_inf ?
+  forall x y z:D, z = op x y -> {z = x} + {z = y}
+
+Primality of binary operator op along relation rel on domain D : Dop_rel_prime
+  forall x y z:D, rel z (op x y) -> rel z x \/ rel  z y
+
+
+======================================================================
+Morphisms
+-----------------------------------------------------------------
+
+Morphism phi mapping unary operators op to op' : op_op'_phi_morphism ? (or just
+op_op'_phi, or just op_op' ?)
+  forall x:D, phi (op x) = op' (phi x)
+
+Morphism phi mapping binary operators op to op' : op_op'_phi_morphism ? (or 
+just op_op'_phi, or just op_op' ?)
+  forall x y:D, phi (op x y) = op' (phi x) (phi y)
+
+Morphism phi mapping binary operator op to binary relation rel : 
+op_rel_phi_morphism ? (or just op_rel_phi, or just op_rel ?)
+  forall x y:D, phi (op x y) <-> rel (phi x) (phi y)
+
+  Remark: how to name each direction? (add _elim for -> and _intro for <- ?? --
+  as done in Bool.v ??)
+
+======================================================================
+Preservation and compatibility properties of Operations wrt order
+-----------------------------------------------------------------
+
+Compatibility of binary operator op wrt (strict order) rel and (large
+order) rel': Dop_rel_rel'_compat
+  forall x y z t:D, rel y x -> rel' z t -> rel (op y z) (op x t)
+
+Compatibility of binary operator op wrt (large order) rel' and (strict
+order) rel : Dop_rel'_rel_compat
+  forall x y z t:D, rel' y x -> rel z t -> rel (op y z) (op x t)
+
+
+======================================================================
+Properties of relations
+-----------------------
+
+Reflexivity of relation rel on domain D : Drel_refl
+  forall x:D, rel x x
+
+Symmetry of relation rel on domain D : Drel_sym
+  forall x y:D, rel x y -> rel y x
+
+Transitivity of relation rel on domain D : Drel_sym
+  forall x y z:D, rel x y -> rel y z -> rel x z
+
+Antisymmetry of relation rel on domain D : Drel_antisym
+  forall x y:D, rel x y -> rel y x -> x = y
+
+Irreflexivity of relation rel on domain D : Drel_antisym
+  forall x:D, ~ rel x x
+
+Asymmetry of relation rel on domain D : Drel_antisym
+  forall x y:D, rel x y -> ~ rel y x
+
+Cotransitivity of relation rel on domain D : Drel_cotrans
+  forall x y z:D, rel x y -> {rel z y} + {rel x z}
+
+  Question: or forall x y:D, rel x y -> forall z:D, {rel z y} + {rel x z} ?
+  or forall x y:D, rel x y -> forall z:D, rel z y \/ rel x z ?
+
+Linearity of relation rel on domain D : Drel_trichotomy
+  forall x y:D, {rel x y} + {x = y} + {rel y x}
+
+  Questions: or call it Drel_total, or Drel_linear
+  use \/ ? or use a ternary sumbool, or a ternary disjunction, for nicer
+  elimination
+
+Informative decidability of relation rel on domain D : Drel_dec (or
+Drel_dect, Drel_dec_inf ?)
+  forall x y:D, {rel x y} + {~ rel x y}
+
+  Remark: if equality: eq_D_dec
+
+Non informative decidability of relation rel on domain D : Drel_dec_prop (or Drel_dec)
+  forall x y:D, rel x y \/ ~ rel x y
+
+Inclusion of relation rel in relation rel' on domain D : Drel_rel'_incl (or 
+  Drel_incl_rel')
+  forall x y:D, rel x y -> rel' x y
+
+======================================================================
+Arithmetical conventions
+------------------------
+
+Zero on domain D : D0 (notation 0)
+One on domain D : D1 (if explicitly defined) (notation 1)
+Successor on domain D : Dsucc
+Predessor on domain D : Dpred
+Addition on domain D : Dplus (infix notation + [50,L])
+Multiplication on domain D : Dmult (infix notation * [40,L]))
+Soustraction on domain D : Dminus (infix notation - [50,L])
+Opposite on domain D : Dopp (if any) (prefix notation - [35,R]))
+Inverse on domain D : Dinv (if any) (prefix notation / [35,R]))
+Power on domain D : Dpower (infix notation ^ [30,R])
+Minimal element on domain D : Dmin
+Maximal element on domain D : Dmax
+Large less than order on D : Dle (infix notations <= and >= [70,N]))
+Strict less than order on D : Dlt (infix notations < and > [70,N]))
+
+No explicit definition for >= and > : accepted only as parsing notations
+
+Exception: Peano Arithmetic which is used for pedagogical purpose :
+  - domain name is implicit
+  - 0 is O
+  - succ is S (but S or succ in theorems ?)
+
+======================================================================
+General conventions:
+
+- for equalities w/o premisses, if the conclusion is in the other way
+  round, add suffix "_reverse"
+
+======================================================================
+General questions
+-----------------
+
+Names of bound variables: n,m,p, or n,m,p, or a,b,c, or x,y,z ??
+
+Status of constructive disjunctive statements. Add a standard suffix
+"_inf" to the name ?
+
+Existential arguments: often, one argument is not in the conclusion of
+property ppty. Put it first to allow "apply (ppty t)" or put it last
+(because, often, there is no symmetry over it).
+
+Order of arguments: When an argument does not occur in some premisses,
+quantify it after the non dependent premisses, or put it in the same
+quantification bunch ?
+
+Peano arithmetic: use S or succ in lemmas ?
+
