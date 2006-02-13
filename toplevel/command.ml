@@ -655,8 +655,8 @@ let save id const (locality,kind) hook =
         let k = logical_kind_of_goal_kind kind in
         let kn = declare_constant id (DefinitionEntry const, k) in
 	(Global, ConstRef kn) in
-  hook l r;
   Pfedit.delete_current_proof ();
+  hook l r;
   definition_message id
 
 let save_named opacity =
@@ -692,8 +692,8 @@ let admit () =
 *)
   let kn =
     declare_constant id (ParameterEntry typ, IsAssumption Conjectural) in
-  hook Global (ConstRef kn);
   Pfedit.delete_current_proof ();
+  hook Global (ConstRef kn);
   assumption_message id
 
 let get_current_context () =
