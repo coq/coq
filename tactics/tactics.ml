@@ -1300,7 +1300,7 @@ let find_atomic_param_of_ind nparams indtyp =
    main arg hyp. hyp0 is now optional, meaning that it is possible
    that there is no main induction hypotheses. In this case, we
    consider the last "parameter" (in [indvars]) as the limit between
-   "left" and "right".
+   "left" and "right", BUT it must be included in indhyps.
 
    Other solutions are still welcome
 
@@ -1457,10 +1457,6 @@ let count_nonfree_rels_from n c =
     !cpt
   else raise Not_found
 
-let isProd c =
-  match kind_of_term c with
-    | Prod(_) -> true
-    | _ -> false
 
 (* cuts a list in two parts, first of size n. Size must be greater than n *)
 let cut_list n l =
@@ -1578,9 +1574,6 @@ type elim_scheme = {
 exception NoLastArg
 exception NoLastArgCcl
 
-(* TODO: traiter les principes avec seulement des parametres (pas
-   d'argument), par exemple: lt_wf_ind / lt_wf_rec *)
-
 let compute_elim_sig elimc elimt =
   (* We first separate branches (easily identified because they have a
      special form AND correpsponding rels do not appear in the
@@ -1637,7 +1630,7 @@ let compute_elim_sig elimc elimt =
 	  try List.hd args_indargs 
 	  with Failure "hd" -> raise NoLastArg in
 	match last_arg with
-	  | hiname,Some _,hi -> error "cannot recognise an induction schema"
+	  | hiname,Some _,hi -> error "cannot recognize an induction schema"
 	  | hiname,None,hi -> 
 	      let hi_ind, hi_args = decompose_app hi in
 	      let hi_is_ind = 
@@ -1653,7 +1646,7 @@ let compute_elim_sig elimc elimt =
 	NoLastArgCcl -> 
 	  List.tl args_indargs , Some (List.hd args_indargs) , false , false
       | NoLastArg -> args_indargs , None , false , false
-      | Failure s -> error "cannot recognise an induction schema" in
+      | Failure s -> error "cannot recognize an induction schema" in
 
   let indref = 
     match indarg with
@@ -1941,7 +1934,7 @@ let induction_from_context_noind isrec elim_info lid names gl =
   let deps_cstr =
     List.fold_left
       (fun a (id,b,_) -> if b = None then (mkVar id)::a else a) [] deps in
-  (* terms to patternify we must patternify indarg or farg if any *)
+  (* terms to patternify we must patternify indarg or farg if present in concl *)
   let lid_in_pattern = 
     if scheme.indarg_in_concl || scheme.farg_in_concl then hyp0::indvars 
     else indvars in
