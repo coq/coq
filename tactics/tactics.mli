@@ -167,6 +167,7 @@ val cut_and_apply         : constr -> tactic
 
 (*s Elimination tactics. *)
 
+
 (*
    The general form of an induction principle is the following:
    
@@ -206,8 +207,8 @@ type elim_scheme = {
 				     if HI is in premisses, None otherwise *)
   concl: types;            (* Qi x1...xni HI (f...), HI and (f...) 
 			      are optional and mutually exclusive *)
-  indarg_in_concl:bool;    (* true if HI appears at the end of conclusion *)
-  farg_in_concl:bool;      (* true if (f...) appears at the end of conclusion *)
+  indarg_in_concl: bool;   (* true if HI appears at the end of conclusion *)
+  farg_in_concl: bool;     (* true if (f...) appears at the end of conclusion *)
 }
 
 val compute_elim_sig : Term.constr * constr Rawterm.bindings -> types -> elim_scheme

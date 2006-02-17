@@ -3,10 +3,10 @@ open Names
 open Term
 open Tacinvutils
 open Pp
-open Indfun_common
 open Libnames
 open Tacticals
 open Tactics
+open Indfun_common
 open Tacmach
 open Sign
 
@@ -107,7 +107,7 @@ let invfun (hypname:identifier) (fid:identifier) : tactic=
 	     )
 	 with _ -> assert false)
       in
-      compute_elim_sig princ_type
+      Indfun_common.compute_elim_sig princ_type
     in
     let _,_,typhyp = List.find (fun (id,_,_) -> hypname=id) (pf_hyps g) in
     let do_invert  fargs  appf : tactic = 
