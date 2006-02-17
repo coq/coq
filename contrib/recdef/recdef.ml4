@@ -1023,8 +1023,8 @@ let recursive_definition is_mes f type_of_f r rec_arg_num eq generate_induction_
 (*     let _ = message "start second proof" in *)
     com_eqn equation_id functional_ref f_ref term_ref eq;
     let eq_ref = Nametab.locate (make_short_qualid equation_id ) in
-    generate_induction_principle
-      functional_ref eq_ref rec_arg_num rec_arg_type (nb_prod res) relation;
+(*     generate_induction_principle *)
+(*       functional_ref eq_ref rec_arg_num rec_arg_type (nb_prod res) relation; *)
     ()
 
   in
