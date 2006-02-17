@@ -1487,31 +1487,19 @@ let cut_list n l =
 let decompose_paramspred_branch_args elimt = 
   let rec cut_noccur elimt acc2 : rel_context * rel_context * types =
     match kind_of_term elimt with
-      | Prod(nme,tpe,elimt')  -> 
-	  let hd_tpe,_ = decompose_app 
-	    (if isProd tpe then snd (decompose_prod_assum tpe) else tpe) in
+      | Prod(nme,tpe,elimt') -> 
+	  let hd_tpe,_ = decompose_app (snd (decompose_prod_assum tpe)) in
 	  if not (occur_rel 1 elimt') && isRel hd_tpe	    
 	  then cut_noccur elimt' ((nme,None,tpe)::acc2)
-	  else 
-	    let acc3,ccl = decompose_prod_assum elimt in
-	    acc2 , acc3 , ccl
-      | App(qi, args) -> acc2 , [] , elimt
-      | Rel _ -> acc2 , [] , elimt
-	  (* | LetIn ??*)
+	  else let acc3,ccl = decompose_prod_assum elimt in acc2 , acc3 , ccl
+      | App(_, _) | Rel _ -> acc2 , [] , elimt
       | _ -> error "cannot recognise an induction schema" in
-
   let rec cut_occur elimt acc1 : rel_context * rel_context * rel_context * types =
     match kind_of_term elimt with
-      | Prod(nme,tpe,elimt')  -> 
-	  if occur_rel 1 elimt' then cut_occur elimt' ((nme,None,tpe)::acc1)
-	  else (* cut_noccur will decide if this and the following are branches *)
-	    let acc2,acc3,ccl = cut_noccur elimt [] in
-	    acc1 , acc2 , acc3 , ccl
-      | App(qi, args) -> acc1 , [] , [] , elimt
-      | Rel _ -> acc1 , [] , [] , elimt
-	  (* | LetIn ??*)
+      | Prod(nme,tpe,c) when occur_rel 1 c -> cut_occur c ((nme,None,tpe)::acc1)
+      | Prod(nme,tpe,c) -> let acc2,acc3,ccl = cut_noccur elimt [] in acc1,acc2,acc3,ccl
+      | App(_, _) | Rel _ -> acc1,[],[],elimt
       | _ -> error "cannot recognise an induction schema" in
-
   let acc1, acc2 , acc3, ccl = cut_occur elimt [] in
   (* Particular treatment when dealing with a dependent empty type elim scheme:
      if there is no branch, then acc1 contains all hyps which is wrong (acc1
@@ -1519,15 +1507,12 @@ let decompose_paramspred_branch_args elimt =
      type (See for example Empty_set_ind, as False would actually be ok). Then
      we must find the predicate of the conclusion to separate params_pred from
      args. We suppose there is only one predicate here. *)
-  if List.length acc2 <> 0 
-  then acc1, acc2 , acc3, ccl
+  if List.length acc2 <> 0 then acc1, acc2 , acc3, ccl
   else 
     let hyps,ccl = decompose_prod_assum elimt in
     let hd_ccl_pred,_ = decompose_app ccl in
     match kind_of_term hd_ccl_pred with
-      | Rel i  -> 
-	  let acc3,acc1 = cut_list (i-1) hyps in
-	  acc1 , [] , acc3 , ccl
+      | Rel i  -> let acc3,acc1 = cut_list (i-1) hyps in acc1 , [] , acc3 , ccl
       | _ -> error "cannot recognize an induction schema"
 
 
@@ -1629,11 +1614,10 @@ let compute_elim_sig elimc elimt =
     predicates = preds; branches = branches; 
     farg_in_concl = (try isApp (last_arg ccl) with _ -> false);
     params = params; nparams = nparams; 
-    (* This fields (+ indarg + indref + indarg_in_concl + farg_in_concl)
-       are approximate at this point: *)
+    (* all other fields are unsure at this point. Including these:*)
     args = args_indargs; nargs = List.length args_indargs; } in
   try 
-    (* Order of following tests is important. Each of them exits if successful. *)
+    (* Order of tests below is important. Each of them exits if successful. *)
     (* 1- First see if (f x...) is in the conclusion. *)
     if !res.farg_in_concl 
     then begin
@@ -1642,8 +1626,8 @@ let compute_elim_sig elimc elimt =
 	indarg_in_concl = false; farg_in_concl = true };
       raise Exit
     end;
-    (* 2- If no args_indargs then no indarg (indarg cannot be a parameter). *)
-    if !res.nargs=0 then raise Exit;
+    (* 2- If no args_indargs (=!res.nargs at this point) then no indarg *)
+    if !res.nargs=0 then raise Exit; 
     (* 3- Look at last arg: is it the indarg? *)
     ignore (
       match List.hd args_indargs with
@@ -1655,17 +1639,15 @@ let compute_elim_sig elimc elimt =
 	    let hi_args_enough = (* hi a le bon nbre d'arguments *)
 	      List.length hi_args = List.length params + !res.nargs -1 in
 	    (* FIXME: Ces deux tests ne sont pas suffisants. *)
-	    if not (hi_is_ind & hi_args_enough)
-	    then raise Exit (* No indarg, args and params unchanged *)
+	    if not (hi_is_ind & hi_args_enough) then raise Exit (* No indarg *)
 	    else (* Last arg is the indarg *)
 	      res := {!res with
 		indarg = Some (List.hd !res.args);
 		indarg_in_concl = occur_rel 1 ccl;
-		args = List.tl !res.args;
-		nargs = !res.nargs - 1;
+		args = List.tl !res.args; nargs = !res.nargs - 1;
 	      };
 	    raise Exit);
-    raise Exit
+    raise Exit(* exit anyway *)
   with Exit -> (* Ending by computing indrev: *)
     match !res.indarg with
       | None -> !res (* No indref *)
