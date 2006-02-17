@@ -107,7 +107,7 @@ let invfun (hypname:identifier) (fid:identifier) : tactic=
 	     )
 	 with _ -> assert false)
       in
-      Indfun_common.compute_elim_sig princ_type
+      Tactics.compute_elim_sig (mkRel 0,Rawterm.NoBindings) princ_type
     in
     let _,_,typhyp = List.find (fun (id,_,_) -> hypname=id) (pf_hyps g) in
     let do_invert  fargs  appf : tactic = 

@@ -9,12 +9,21 @@ open Util
 open Rawtermops
 
 
-type binder_type = 
-  | Lambda 
-  | Prod 
-  | LetIn
+(* type binder_type =  *)
+(*   | Lambda  *)
+(*   | Prod  *)
+(*   | LetIn *)
+  
+(* type raw_context = (binder_type*name*rawconstr) list *)
 
-type raw_context = (binder_type*name*rawconstr) list
+type binder_type =
+  | Lambda of name 
+  | Prod of name 
+  | LetIn of name
+(*   | LetTuple of name list * name  *)
+
+type raw_context = (binder_type*rawconstr) list
+
 
 (* 
    compose_raw_context [(bt_1,n_1,t_1);......] rt returns 
@@ -22,11 +31,13 @@ type raw_context = (binder_type*name*rawconstr) list
    binders corresponding to the bt_i's
 *)
 let compose_raw_context = 
-  let compose_binder  (bt,n,t) acc =
+  let compose_binder  (bt,t) acc =
     match bt with 
-      | Lambda -> mkRLambda(n,t,acc)
-      | Prod -> mkRProd(n,t,acc)
-      | LetIn -> mkRLetIn(n,t,acc)
+      | Lambda n -> mkRLambda(n,t,acc)
+      | Prod n -> mkRProd(n,t,acc)
+      | LetIn n -> mkRLetIn(n,t,acc)
+(*       | LetTuple (nal,na) ->  *)
+(* 	  RLetTuple(dummy_loc,nal,(na,None),t,acc) *)
   in
   List.fold_right compose_binder
   
@@ -100,27 +111,104 @@ let combine_args arg args =
   }
 
 
+let ids_of_binder =  function 
+  | LetIn Anonymous | Prod Anonymous | Lambda Anonymous -> []
+  | LetIn (Name id)  | Prod (Name id) | Lambda (Name id) -> [id]
+(*   | LetTuple(nal,_) ->  *)
+(*       map_succeed (function Name id -> id | _ -> failwith "ids_of_binder") nal *)
+
+let rec change_vars_in_binder mapping = function 
+    [] -> []
+  | (bt,t)::l ->
+      let new_mapping = List.fold_right Idmap.remove (ids_of_binder bt) mapping in 
+      (bt,change_vars mapping t)::
+	(if Idmap.is_empty new_mapping
+	 then l 
+	 else change_vars_in_binder new_mapping l
+	)
+
+let rec replace_var_by_term_in_binder x_id term = function
+  | [] -> []
+  | (bt,t)::l -> 
+      (bt,replace_var_by_term x_id term t)::
+	if List.mem x_id (ids_of_binder bt) 
+	then l
+	else replace_var_by_term_in_binder x_id term l
+
+let add_bt_names bt = List.append (ids_of_binder bt)
+
+(* let rec replace_var_by_term_in_binder x_id term = function  *)
+(*   | [] -> []  *)
+(*   | (bt,Name id,t)::l when id_ord id x_id = 0 ->  *)
+(*       (bt,Name id,replace_var_by_term x_id term t)::l *)
+(*   | (bt,na,t)::l ->  *)
+(*       (bt,na,replace_var_by_term x_id term t)::(replace_var_by_term_in_binder x_id term l) *)
+
+(* let rec change_vars_in_binder mapping = function *)
+(*   | [] -> [] *)
+(*   | (bt,(Name id as na),t)::l when Idmap.mem id mapping -> *)
+(*       (bt,na,change_vars mapping t):: l *)
+(*   | (bt,na,t)::l -> *)
+(*       (bt,na,change_vars mapping t):: *)
+(* 	(change_vars_in_binder mapping l) *)
 
    
+(* let alpha_ctxt avoid b = *)
+(*   let rec alpha_ctxt = function *)
+(*     | [] -> [],b *)
+(*     | (bt,n,t)::ctxt -> *)
+(* 	let new_ctxt,new_b = alpha_ctxt ctxt in *)
+(* 	match n with *)
+(* 	  | Name id when List.mem id avoid -> *)
+(* 	      let new_id = Nameops.next_ident_away id avoid in *)
+(* 	      let mapping = Idmap.add id new_id Idmap.empty in *)
+(* 	      (bt,Name new_id,t):: *)
+(* 		(change_vars_in_binder mapping new_ctxt), *)
+(* 	      change_vars mapping new_b *)
+(* 	  | _ -> (bt,n,t)::new_ctxt,new_b *)
+(*   in *)
+(*   alpha_ctxt *)
 let apply_args ctxt body args = 
   let need_convert_id avoid id = 
     List.exists (is_free_in id) args || List.mem id avoid 
   in 
-  let need_convert avoid  =  function
-    | Anonymous -> false 
-    | Name id -> need_convert_id avoid id 
+  let need_convert avoid  bt =  
+    List.exists (need_convert_id avoid) (ids_of_binder bt)
   in
-  let add_name na avoid = 
+(*   let add_name na avoid =  *)
+(*     match na with  *)
+(*       | Anonymous -> avoid  *)
+(*       | Name id -> id::avoid  *)
+(*   in *)
+  let next_name_away (na:name) (mapping: identifier Idmap.t) (avoid: identifier list) = 
     match na with 
-      | Anonymous -> avoid 
-      | Name id -> id::avoid 
+       | Name id when List.mem id avoid -> 
+	   let new_id = Nameops.next_ident_away id avoid in 
+	   Name new_id,Idmap.add id new_id mapping,new_id::avoid
+       | _ -> na,mapping,avoid
   in
-  let next_name_away na avoid = 
-    match na with 
-      | Anonymous -> anomaly "next_name_away"
-      | Name id -> 
-	  let new_id = Nameops.next_ident_away id avoid in 
-	  Name new_id,Idmap.add id new_id Idmap.empty,new_id::avoid
+  let next_bt_away bt (avoid:identifier list) = 
+    match bt with 
+      | LetIn na -> 
+	  let new_na,mapping,new_avoid = next_name_away na Idmap.empty avoid  in 
+	  LetIn new_na,mapping,new_avoid
+      | Prod na -> 
+	  let new_na,mapping,new_avoid = next_name_away na Idmap.empty avoid  in 
+	  Prod new_na,mapping,new_avoid
+      | Lambda na -> 
+	  let new_na,mapping,new_avoid = next_name_away na Idmap.empty avoid  in 
+	  Lambda new_na,mapping,new_avoid
+(*       | LetTuple (nal,na) ->  *)
+(* 	  let rev_new_nal,mapping,new_avoid =  *)
+(* 	    List.fold_left *)
+(* 	      (fun (nal,mapping,(avoid:identifier list)) na ->  *)
+(* 		 let new_na,new_mapping,new_avoid = next_name_away na mapping avoid in *)
+(* 		 (new_na::nal,new_mapping,new_avoid) *)
+(* 	      ) *)
+(* 	      ([],Idmap.empty,avoid) *)
+(* 	      nal *)
+(* 	  in  *)
+(* 	  (LetTuple(List.rev rev_new_nal,na),mapping,new_avoid) *)
   in
   let rec do_apply avoid ctxt body args = 
     match ctxt,args with  
@@ -129,9 +217,9 @@ let apply_args ctxt body args =
       | [],_ -> (* no more fun *)
 	  let f,args' = raw_decompose_app body in
 	  (ctxt,mkRApp(f,args'@args))
-      | (Lambda,Anonymous,t)::ctxt',arg::args' -> 
+      | (Lambda Anonymous,t)::ctxt',arg::args' -> 
 	  do_apply avoid ctxt' body args'
-      | (Lambda,Name id,t)::ctxt',arg::args' -> 
+      | (Lambda (Name id),t)::ctxt',arg::args' -> 
 	  let new_avoid,new_ctxt',new_body,new_id = 
 	    if need_convert_id avoid id 
 	    then 
@@ -139,12 +227,8 @@ let apply_args ctxt body args =
 	      let new_id = Nameops.next_ident_away id new_avoid in 
 	      let new_avoid' = new_id :: new_avoid in 
 	      let mapping = Idmap.add id new_id Idmap.empty in 
-	      let new_ctxt' = 
-		(change_vars_in_binder mapping ctxt')
-	      in 
-	      let new_body = 
-		(change_vars mapping body) 
-	      in 
+	      let new_ctxt' = change_vars_in_binder mapping ctxt' in 
+	      let new_body = change_vars mapping body in 
 	      new_avoid',new_ctxt',new_body,new_id
 	    else 
 	      id::avoid,ctxt',body,id 
@@ -152,24 +236,24 @@ let apply_args ctxt body args =
 	  let new_body = replace_var_by_term new_id arg new_body in
 	  let new_ctxt' = replace_var_by_term_in_binder new_id arg new_ctxt' in
 	  do_apply avoid new_ctxt' new_body args'
-      | (bt,na,t)::ctxt',_ -> 
-	  let new_avoid,new_ctxt',new_body,new_na = 
-	    let new_avoid = add_name na avoid in 
-	    if need_convert avoid na 
+      | (bt,t)::ctxt',_ -> 
+	  let new_avoid,new_ctxt',new_body,new_bt = 
+	    let new_avoid = add_bt_names bt avoid in 
+	    if need_convert avoid bt 
 	    then 
-	      let new_na,mapping,new_avoid = next_name_away na new_avoid in 
-	     (
-	       new_avoid,
-	       change_vars_in_binder mapping ctxt',
-	       change_vars mapping body,
-	       new_na
+	      let new_bt,mapping,new_avoid = next_bt_away bt new_avoid in 
+	      (
+		new_avoid,
+		change_vars_in_binder mapping ctxt',
+		change_vars mapping body,
+		new_bt
 	     )
-	    else new_avoid,ctxt',body,na
+	    else new_avoid,ctxt',body,bt
 	  in
 	  let new_ctxt',new_body = 
 	    do_apply new_avoid new_ctxt' new_body args 
 	  in
-	  (bt,new_na,t)::new_ctxt',new_body
+	  (new_bt,t)::new_ctxt',new_body
   in 
   do_apply []  ctxt body args
 
@@ -195,10 +279,16 @@ let combine_lam n t b =
 
 
 let combine_prod n t b = 
-  { context = t.context@((Prod,n,t.value)::b.context); value = b.value}
+  { context = t.context@((Prod n,t.value)::b.context); value = b.value}
 
 let combine_letin n t b = 
-  { context = t.context@((LetIn,n,t.value)::b.context); value = b.value}
+  { context = t.context@((LetIn n,t.value)::b.context); value = b.value}
+
+(* let combine_tuple nal na b in_e =  *)
+(*   {  *)
+(*     context = b.context@(LetTuple(nal,na),b.value)::in_e.context;  *)
+(*     value = in_e.value *)
+(*   } *)
 
 let mk_result ctxt value avoid = 
   { 
@@ -235,7 +325,8 @@ let make_discr_match brl =
 	   make_discr_match_brl i brl)
   
 
-let rec build_entry_lc funnames avoid rt  : rawconstr build_entry_return (* (raw_context*rawconstr) list  *)= 
+let rec build_entry_lc funnames avoid rt  : rawconstr build_entry_return = 
+(*   Pp.msgnl (str " Entering : " ++ Printer.pr_rawconstr rt); *)
   match rt with 
     | RRef _ | RVar _ | REvar _ | RPatVar _     | RSort _  | RHole _  -> 
 	mk_result [] rt avoid
@@ -260,8 +351,8 @@ let rec build_entry_lc funnames avoid rt  : rawconstr build_entry_return (* (raw
 		  List.map 
 		    (fun arg_res -> 
 		       let new_hyps = 
-			 [Prod,Name res,mkRHole ();
-			  Prod,Anonymous,mkRApp(res_rt,(mkRVar id)::arg_res.value)]
+			 [Prod (Name res),mkRHole ();
+			  Prod Anonymous,mkRApp(res_rt,(mkRVar id)::arg_res.value)]
 		       in
 		       {context =  arg_res.context@new_hyps; value = res_rt } 
 		    )
@@ -323,8 +414,8 @@ let rec build_entry_lc funnames avoid rt  : rawconstr build_entry_return (* (raw
     | RCases(_,_,el,brl) -> 
 	let make_discr = make_discr_match brl in 
 	build_entry_lc_from_case funnames make_discr el brl avoid
-    | RLetTuple _ -> error "Not handled RLetTuple"
     | RIf _ -> error "Not handled RIf"
+    | RLetTuple _ -> error "Not handled RLetTuple"
     | RRec _ -> error "Not handled RRec"
     | RCast _ -> error "Not handled RCast"
     | RDynamic _ -> error "Not handled RDynamic"
@@ -394,13 +485,13 @@ and build_entry_lc_from_case_term funname make_discr patterns_to_prevent brl avo
 	    avoid
 	    matched_expr
 	in
-	let ids = List.map (fun id -> Prod,Name id,mkRHole ()) idl in 
+	let ids = List.map (fun id -> Prod (Name id),mkRHole ()) idl in 
       	let those_pattern_preconds =
 	  (
 	    List.map2
 	      (fun pat e -> 
 		 let pat_as_term = pattern_to_term pat in 
-		 (Prod,Anonymous,raw_make_eq pat_as_term e)
+		 (Prod Anonymous,raw_make_eq pat_as_term e)
 	      )
 	      patl
 	      matched_expr.value
@@ -413,42 +504,10 @@ and build_entry_lc_from_case_term funname make_discr patterns_to_prevent brl avo
 		List.for_all (fun x -> x) unif) patterns_to_prevent
 	      then 
 		let i = List.length patterns_to_prevent in 
-		[(Prod,Anonymous,make_discr (List.map pattern_to_term patl) i  )]
+		[(Prod Anonymous,make_discr (List.map pattern_to_term patl) i  )]
 	      else 
 		[]
 	      )
-(* 	    List.fold_right *)
-(* 	    (fun (unifl,neql) acc -> *)
-(* 	       let unif,eqs : bool list * bool list =  *)
-(* 		 List.split (List.map2 (fun x y -> x y) unifl patl) *)
-(* 	       in *)
-(* 	       (\* all the pattern must be unifiables *\) *)
-(* 	       if List.for_all (fun x -> x) unif (\* List.for_all2 (fun unif pat -> unif pat) unifl patl *\) *)
-(* 	       then *)
-(* 		 let precond = *)
-(* 		   List.map2 *)
-(* 		     (fun neq pat -> *)
-(* 			let pat_as_term = pattern_to_term pat in  *)
-(* 			(neq new_avoid pat_as_term) *)
-(* 		     ) *)
-(* 		     neql patl *)
-(* 		 in *)
-(* 		 let precond =  *)
-(* 		   List.fold_right2  *)
-(* 		     (fun precond eq acc ->  *)
-(* 			if not eq then precond::acc else acc *)
-(* 		     ) *)
-(* 		     precond  *)
-(* 		     eqs *)
-(* 		     [] *)
-(* 		 in				        *)
-(* 		 try *)
-(* 		   (Prod,Anonymous,raw_make_or_list precond)::acc *)
-(* 		 with Invalid_argument "mk_or" -> acc *)
-(* 	       else acc *)
-(* 	    ) *)
-(* 	    patterns_to_prevent *)
-(* 	    [] *)
 	in
 	let return_res = build_entry_lc funname new_avoid return in
 	let this_branch_res =
@@ -461,103 +520,6 @@ and build_entry_lc_from_case_term funname make_discr patterns_to_prevent brl avo
 	    return_res.result
 	in
 	{ brl'_res with result = this_branch_res@brl'_res.result }
-
-
-
-(* and build_entry_lc_from_case_term funname patterns_to_prevent brl avoid *)
-(*     matched_expr = *)
-(*   match brl with *)
-(*     | [] -> (\* computed_branches  *\) {result = [];to_avoid = avoid} *)
-(*     | br::brl' -> *)
-(* 	let _,idl,patl,return = alpha_br avoid br in *)
-(* 	let new_avoid  = idl@avoid in  *)
-(* 	let e_ctxt,el = (matched_expr.context,matched_expr.value) in *)
-(* 	if  (List.length patl) <> (List.length el) *)
-(* 	then error ("Pattern matching on product: not yet implemented"); *)
-(* 	let not_those_patterns : (identifier list -> rawconstr -> rawconstr) list =  *)
-(* 	  List.map  *)
-(* 	    (fun pat ->  *)
-(* 	       fun avoid pat'_as_term ->  *)
-(* 		 let renamed_pat,_,_ = alpha_pat avoid pat in *)
-(* 		 let pat_ids = get_pattern_id renamed_pat  in  *)
-(* 		 List.fold_right  *)
-(* 		   (fun id acc -> mkRProd (Name id,mkRHole (),acc)) *)
-(* 		   pat_ids *)
-(* 		   (raw_make_neq pat'_as_term (pattern_to_term renamed_pat)) *)
-(* 	    ) *)
-(* 	    patl *)
-(* 	in *)
-(* 	let unify_with_those_patterns : (cases_pattern -> bool*bool) list = *)
-(* 	  List.map (fun pat pat' -> are_unifiable pat pat',eq_cases_pattern pat pat') patl *)
-(* 	in *)
-(* 	let brl'_res = *)
-(* 	  build_entry_lc_from_case_term *)
-(* 	    funname *)
-(* 	    ((unify_with_those_patterns,not_those_patterns)::patterns_to_prevent) *)
-(* 	    brl' *)
-(* 	    avoid *)
-(* 	    matched_expr *)
-(* 	in *)
-(* 	let ids = List.map (fun id -> Prod,Name id,mkRHole ()) idl in  *)
-(*       	let those_pattern_preconds = *)
-(* 	  ( *)
-(* 	    List.map2 *)
-(* 	      (fun pat e ->  *)
-(* 		 let pat_as_term = pattern_to_term pat in  *)
-(* 		 (Prod,Anonymous,raw_make_eq pat_as_term e) *)
-(* 	      ) *)
-(* 	      patl *)
-(* 	      el *)
-(* 	  ) *)
-(* 	  @ *)
-(* 	    List.fold_right *)
-(* 	    (fun (unifl,neql) acc -> *)
-(* 	       let unif,eqs : bool list * bool list =  *)
-(* 		 List.split (List.map2 (fun x y -> x y) unifl patl) *)
-(* 	       in *)
-(* 	       (\* all the pattern must be unifiables *\) *)
-(* 	       if List.for_all (fun x -> x) unif (\* List.for_all2 (fun unif pat -> unif pat) unifl patl *\) *)
-(* 	       then *)
-(* 		 let precond = *)
-(* 		   List.map2 *)
-(* 		     (fun neq pat -> *)
-(* 			let pat_as_term = pattern_to_term pat in  *)
-(* 			(neq new_avoid pat_as_term) *)
-(* 		     ) *)
-(* 		     neql patl *)
-(* 		 in *)
-(* 		 let precond =  *)
-(* 		   List.fold_right2  *)
-(* 		     (fun precond eq acc ->  *)
-(* 			if not eq then precond::acc else acc *)
-(* 		     ) *)
-(* 		     precond  *)
-(* 		     eqs *)
-(* 		     [] *)
-(* 		 in				        *)
-(* 		 try *)
-(* 		   (Prod,Anonymous,raw_make_or_list precond)::acc *)
-(* 		 with Invalid_argument "mk_or" -> acc *)
-(* 	       else acc *)
-(* 	    ) *)
-(* 	    patterns_to_prevent *)
-(* 	    [] *)
-(* 	in *)
-(* 	let return_res = build_entry_lc funname new_avoid return in *)
-(* 	let this_branch_res = *)
-(* 	  List.map *)
-(* 	    (fun res  -> *)
-(* 	       { context = e_ctxt@ids@those_pattern_preconds@res.context ; *)
-(* 		 value=res.value} *)
-(* 	    ) *)
-(* 	    return_res.result *)
-(* 	in *)
-(* 	{ brl'_res with result = this_branch_res@brl'_res.result } *)
-
-
-
-
-
 
 	  
 let is_res id = 
@@ -625,13 +587,33 @@ let rec rebuild_cons relname args crossed_types rt =
     | RLetIn(_,n,t,b) -> 
 	begin
 	  let not_free_in_t id = not (is_free_in id t) in 
-	  let new_b,id_to_exclude = rebuild_cons relname args (t::crossed_types) b in
+	  let new_b,id_to_exclude = 
+	    rebuild_cons relname args (t::crossed_types) b in
 	  match n with 
 	    | Name id when Idset.mem id id_to_exclude -> 
 		new_b,Idset.remove id (Idset.filter not_free_in_t id_to_exclude)
 	    | _ -> RLetIn(dummy_loc,n,t,new_b),
 		Idset.filter not_free_in_t id_to_exclude
 	end
+    | RLetTuple(_,nal,(na,rto),t,b) -> 
+	assert (rto=None);
+	begin
+	  let not_free_in_t id = not (is_free_in id t) in 
+	  let new_t,id_to_exclude' = 
+	    rebuild_cons relname args (crossed_types) t 
+	  in
+	  let new_b,id_to_exclude = 
+	    rebuild_cons relname args (t::crossed_types) b 
+	  in
+(* 	  match n with  *)
+(* 	    | Name id when Idset.mem id id_to_exclude ->  *)
+(* 		new_b,Idset.remove id (Idset.filter not_free_in_t id_to_exclude) *)
+(* 	    | _ -> *)
+	  RLetTuple(dummy_loc,nal,(na,None),t,new_b),
+		Idset.filter not_free_in_t (Idset.union id_to_exclude id_to_exclude')
+
+	end
+
     | _ -> mkRApp(mkRVar  relname,args@[rt]),Idset.empty
 
 
@@ -642,14 +624,14 @@ let rec compute_cst_params relnames params = function
       compute_cst_params_from_app [] (params,rtl)
   | RApp(_,f,args) -> 
       List.fold_left (compute_cst_params relnames) params (f::args)
-  | RLambda(_,_,t,b) | RProd(_,_,t,b) | RLetIn(_,_,t,b) -> 
+  | RLambda(_,_,t,b) | RProd(_,_,t,b) | RLetIn(_,_,t,b) | RLetTuple(_,_,_,t,b) -> 
       let t_params = compute_cst_params relnames params t in 
       compute_cst_params relnames t_params b
   | RCases _ -> params  (* If there is still cases at this point they can only be 
 			discriminitation ones *)
   | RSort _ -> params
   | RHole _ -> params
-  | RLetTuple _ | RIf _ | RRec _ | RCast _ | RDynamic _  ->
+  | RIf _ | RRec _ | RCast _ | RDynamic _  ->
       raise (UserError("compute_cst_params", str "Not handled case"))
 and compute_cst_params_from_app acc (params,rtl) = 
   match params,rtl with 
@@ -691,7 +673,7 @@ let compute_params_name relnames args csts =
 
 
 
-let build_inductive funnames funsargs  returned_types (rtl:rawconstr list) =
+let build_inductive parametrize funnames funsargs  returned_types (rtl:rawconstr list) =
   let funnames_as_set = List.fold_right Idset.add funnames Idset.empty in
   let funnames = Array.of_list funnames in  
   let funsargs = Array.of_list funsargs in 
@@ -702,20 +684,21 @@ let build_inductive funnames funsargs  returned_types (rtl:rawconstr list) =
   let relnames_as_set = Array.fold_right Idset.add relnames Idset.empty in 
   let resa = Array.map (build_entry_lc funnames_as_set []) rta in 
   let constr i res = 
-    List.map (function result (* (args',concl') *) -> 
-		let rt = compose_raw_context result.context result.value in 
-(* 		Pp.msgnl (str "raw constr " ++ pr_rawconstr rt); *)
-		fst (
-		  rebuild_cons relnames.(i)
-		    (List.map (function 
-				   (Anonymous,_) -> mkRVar(fresh_id res.to_avoid "x__") 
-				 | Name id, _ -> mkRVar id
-			      )
-		       funsargs.(i)) 
-		    []
-		    rt 
-		)
-	     ) 
+    List.map 
+      (function result (* (args',concl') *) -> 
+	 let rt = compose_raw_context result.context result.value in 
+(* 	 Pp.msgnl (str "raw constr " ++ pr_rawconstr rt); *)
+	 fst (
+	   rebuild_cons relnames.(i)
+	     (List.map (function 
+			    (Anonymous,_) -> mkRVar(fresh_id res.to_avoid "x__") 
+			  | Name id, _ -> mkRVar id
+		       )
+		funsargs.(i)) 
+	     []
+	     rt 
+	 )
+      ) 
       res.result 
   in 
   let next_constructor_id = ref (-1) in 
@@ -728,7 +711,10 @@ let build_inductive funnames funsargs  returned_types (rtl:rawconstr list) =
   in
   let rel_constructors = Array.mapi rel_constructors resa in
   let rels_params = 
-     compute_params_name relnames_as_set funsargs  rel_constructors 
+    if parametrize 
+    then
+      compute_params_name relnames_as_set funsargs  rel_constructors 
+    else []
   in
   let nrel_params = List.length rels_params in
   let rel_constructors = 

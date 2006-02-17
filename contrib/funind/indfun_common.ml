@@ -157,157 +157,160 @@ let eq = lazy(coq_constant "eq")
 let refl_equal = lazy(coq_constant "refl_equal")
 
 
-(************************************************) 
-(* Should be removed latter                     *)
-(* Comes from new induction  (cf Pierre)        *)
-(************************************************) 
+(* (\************************************************\)  *)
+(* (\* Should be removed latter                     *\) *)
+(* (\* Comes from new induction  (cf Pierre)        *\) *)
+(* (\************************************************\)  *)
 
-open Sign
-open Term
+(* open Sign *)
+(* open Term *)
 
-type elim_scheme = { (* lists are in reverse order! *)
-  params: rel_context;     (* (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *)
-  predicates: rel_context; (* (Qq, (Tq_1 -> Tq_2 ->...-> Tq_nq)), (Q1,...) *)
-  branches: rel_context;    (* branchr,...,branch1 *)
-  args: rel_context;       (* (xni, Ti_ni) ... (x1, Ti_1) *)
-  indarg: rel_declaration option; (* Some (H,I prm1..prmp x1...xni) if present, None otherwise *)
-  concl: types;            (* Qi x1...xni HI, some prmis may not be present *)
-  indarg_in_concl:bool;    (* true if HI appears at the end of conclusion (dependent scheme) *)
-}
+(* type elim_scheme =  *)
+
+(* (\* { (\\* lists are in reverse order! *\\) *\) *)
+(* (\*   params: rel_context;     (\\* (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *\\) *\) *)
+(* (\*   predicates: rel_context; (\\* (Qq, (Tq_1 -> Tq_2 ->...-> Tq_nq)), (Q1,...) *\\) *\) *)
+(* (\*   branches: rel_context;    (\\* branchr,...,branch1 *\\) *\) *)
+(* (\*   args: rel_context;       (\\* (xni, Ti_ni) ... (x1, Ti_1) *\\) *\) *)
+(* (\*   indarg: rel_declaration option; (\\* Some (H,I prm1..prmp x1...xni) if present, None otherwise *\\) *\) *)
+(* (\*   concl: types;            (\\* Qi x1...xni HI, some prmis may not be present *\\) *\) *)
+(* (\*   indarg_in_concl:bool;    (\\* true if HI appears at the end of conclusion (dependent scheme) *\\) *\) *)
+(* (\* } *\) *)
 
 
 
-let occur_rel n c = 
-  let res = not (noccurn n c) in
-  res
+(* let occur_rel n c =  *)
+(*   let res = not (noccurn n c) in *)
+(*   res *)
 
-let list_filter_firsts f l =
-  let rec list_filter_firsts_aux f acc l =
-    match l with
-      | e::l' when f e -> list_filter_firsts_aux f (acc@[e]) l'
-      | _ -> acc,l
-  in
-  list_filter_firsts_aux f [] l
+(* let list_filter_firsts f l = *)
+(*   let rec list_filter_firsts_aux f acc l = *)
+(*     match l with *)
+(*       | e::l' when f e -> list_filter_firsts_aux f (acc@[e]) l' *)
+(*       | _ -> acc,l *)
+(*   in *)
+(*   list_filter_firsts_aux f [] l *)
 
-let count_rels_from n c =
-  let rels = Termops.free_rels c in
-  let cpt,rg = ref 0, ref n in
-  while Util.Intset.mem !rg rels do
-    cpt:= !cpt+1; rg:= !rg+1;
-  done;
-  !cpt
+(* let count_rels_from n c = *)
+(*   let rels = Termops.free_rels c in *)
+(*   let cpt,rg = ref 0, ref n in *)
+(*   while Util.Intset.mem !rg rels do *)
+(*     cpt:= !cpt+1; rg:= !rg+1; *)
+(*   done; *)
+(*   !cpt *)
 
-let count_nonfree_rels_from n c =
-  let rels = Termops.free_rels c in
-  if Util.Intset.exists (fun x -> x >= n) rels then
-    let cpt,rg = ref 0, ref n in
-    while not (Util.Intset.mem !rg rels) do
-      cpt:= !cpt+1; rg:= !rg+1;
-    done;
-    !cpt
-  else raise Not_found
+(* let count_nonfree_rels_from n c = *)
+(*   let rels = Termops.free_rels c in *)
+(*   if Util.Intset.exists (fun x -> x >= n) rels then *)
+(*     let cpt,rg = ref 0, ref n in *)
+(*     while not (Util.Intset.mem !rg rels) do *)
+(*       cpt:= !cpt+1; rg:= !rg+1; *)
+(*     done; *)
+(*     !cpt *)
+(*   else raise Not_found *)
 
-(* cuts a list in two parts, first of size n. Size must be greater than n *)
-let cut_list n l =
-  let rec cut_list_aux acc n l =
-    if n<=0 then acc,l
-    else match l with
-      | [] -> assert false
-      | e::l' -> cut_list_aux (acc@[e]) (n-1) l' in
-  let res = cut_list_aux [] n l in
-  res
+(* (\* cuts a list in two parts, first of size n. Size must be greater than n *\) *)
+(* let cut_list n l = *)
+(*   let rec cut_list_aux acc n l = *)
+(*     if n<=0 then acc,l *)
+(*     else match l with *)
+(*       | [] -> assert false *)
+(*       | e::l' -> cut_list_aux (acc@[e]) (n-1) l' in *)
+(*   let res = cut_list_aux [] n l in *)
+(*   res *)
 
-let exchange_hd_prod subst_hd t =
-  let hd,args= decompose_app t in mkApp (subst_hd,Array.of_list args)
+(* let exchange_hd_prod subst_hd t = *)
+(*   let hd,args= decompose_app t in mkApp (subst_hd,Array.of_list args) *)
 
-let compute_elim_sig elimt  =
-  (* conclusion is the final (Qi ...) *)
-  let hyps,conclusion = decompose_prod_assum elimt in
-  (* ccl is conclusion where Qi (that is rel <something>) is replaced
-     by a constant (Prop) to avoid it being counted as an arg or
-parameter in the following. *)
-  let ccl = exchange_hd_prod mkProp conclusion in
-  (* indarg is the inductive argument if it exists. If it exists it is
-the last hyp before the conclusion, so it is the first element of
-     hyps. To know the first elmt is an inductive arg, we check if the
-     it appears in the conclusion (as rel 1). If yes, then it is not
-     an inductive arg, otherwise it is. There is a pathological case
-     with False_inf where Qi is rel 1, so we first get rid of Qi in
-     ccl. *)
-  (* if last arg of ccl is an application then this a functional ind
-principle *) let last_arg_ccl = 
-    try List.hd (List.rev (snd (decompose_app ccl))) 
-    with Failure "hd" -> mkProp in (* dummy constr that is not an app
-*) let hyps',indarg,dep = 
-    if isApp last_arg_ccl 
-    then 
-      hyps,None , false (* no HI at all *)
-    else 
-      try 
-	if noccurn 1 ccl (* rel 1 does not occur in ccl *)
-	then
-	  List.tl hyps , Some (List.hd hyps), false (* it does not
-occur in concl *) else
-	  List.tl hyps , Some (List.hd hyps) , true (* it does occur in concl *) 
-      with Failure s -> Util.error "cannot recognise an induction schema"
-  in
+(* let compute_elim_sig elimt  = *)
+(*   (\* conclusion is the final (Qi ...) *\) *)
+(*   let hyps,conclusion = decompose_prod_assum elimt in *)
+(*   (\* ccl is conclusion where Qi (that is rel <something>) is replaced *)
+(*      by a constant (Prop) to avoid it being counted as an arg or *)
+(* parameter in the following. *\) *)
+(*   let ccl = exchange_hd_prod mkProp conclusion in *)
+(*   (\* indarg is the inductive argument if it exists. If it exists it is *)
+(* the last hyp before the conclusion, so it is the first element of *)
+(*      hyps. To know the first elmt is an inductive arg, we check if the *)
+(*      it appears in the conclusion (as rel 1). If yes, then it is not *)
+(*      an inductive arg, otherwise it is. There is a pathological case *)
+(*      with False_inf where Qi is rel 1, so we first get rid of Qi in *)
+(*      ccl. *\) *)
+(*   (\* if last arg of ccl is an application then this a functional ind *)
+(* principle *\) let last_arg_ccl =  *)
+(*     try List.hd (List.rev (snd (decompose_app ccl)))  *)
+(*     with Failure "hd" -> mkProp in (\* dummy constr that is not an app *)
+(* *\) let hyps',indarg,dep =  *)
+(*     if isApp last_arg_ccl  *)
+(*     then  *)
+(*       hyps,None , false (\* no HI at all *\) *)
+(*     else  *)
+(*       try  *)
+(* 	if noccurn 1 ccl (\* rel 1 does not occur in ccl *\) *)
+(* 	then *)
+(* 	  List.tl hyps , Some (List.hd hyps), false (\* it does not *)
+(* occur in concl *\) else *)
+(* 	  List.tl hyps , Some (List.hd hyps) , true (\* it does occur in concl *\)  *)
+(*       with Failure s -> Util.error "cannot recognise an induction schema" *)
+(*   in *)
 
-  (* Arguments [xni...x1] must appear in the conclusion, so we count
-     successive rels appearing in conclusion **Qi is not considered a
-rel** *) let nargs = count_rels_from 
-    (match indarg with
-      | None -> 1
-      | Some _ -> 2) ccl in
-  let args,hyps'' = cut_list nargs hyps' in
-  let rel_is_pred (_,_,c) = isSort (snd(decompose_prod_assum c)) in
-  let branches,hyps''' = 
-    list_filter_firsts (function x -> not (rel_is_pred x)) hyps''
-  in
-  (* Now we want to know which hyps remaining are predicates and which
-     are parameters *)
-  (* We rebuild 
+(*   (\* Arguments [xni...x1] must appear in the conclusion, so we count *)
+(*      successive rels appearing in conclusion **Qi is not considered a *)
+(* rel** *\) let nargs = count_rels_from  *)
+(*     (match indarg with *)
+(*       | None -> 1 *)
+(*       | Some _ -> 2) ccl in *)
+(*   let args,hyps'' = cut_list nargs hyps' in *)
+(*   let rel_is_pred (_,_,c) = isSort (snd(decompose_prod_assum c)) in *)
+(*   let branches,hyps''' =  *)
+(*     list_filter_firsts (function x -> not (rel_is_pred x)) hyps'' *)
+(*   in *)
+(*   (\* Now we want to know which hyps remaining are predicates and which *)
+(*      are parameters *\) *)
+(*   (\* We rebuild  *)
      
-     forall (x1:Ti_1) (xni:Ti_ni) (HI:I prm1..prmp x1...xni), DUMMY
-x1...xni HI ^^^^^^^^^^^^^^^^^^^^^^^^^                  ^^
-                                          optional
-opt
+(*      forall (x1:Ti_1) (xni:Ti_ni) (HI:I prm1..prmp x1...xni), DUMMY *)
+(* x1...xni HI ^^^^^^^^^^^^^^^^^^^^^^^^^                  ^^ *)
+(*                                           optional *)
+(* opt *)
 
-     Free rels appearing in this term are parameters. We catch all of
-     them if HI is present. In this case the number of parameters is
-     the number of free rels. Otherwise (principle generated by
-     functional induction or by hand) WE GUESS that all parameters
-     appear in Ti_js, IS THAT TRUE??.
+(*      Free rels appearing in this term are parameters. We catch all of *)
+(*      them if HI is present. In this case the number of parameters is *)
+(*      the number of free rels. Otherwise (principle generated by *)
+(*      functional induction or by hand) WE GUESS that all parameters *)
+(*      appear in Ti_js, IS THAT TRUE??. *)
 
-     TODO: if we want to generalize to the case where arges are merged
-     with branches (?) and/or where several predicates are cited in
-     the conclusion, we should do something more precise than just
-     counting free rels.
- *)
-  let concl_with_indarg = 
-    match indarg with
-    | None -> ccl
-    | Some c -> it_mkProd_or_LetIn ccl [c] in
-  let concl_with_args = it_mkProd_or_LetIn concl_with_indarg args in
-(*   let nparams2 = Util.Intset.cardinal (Termops.free_rels concl_with_args) in *)
-  let nparams = 
-    try List.length (hyps'''@branches) - count_nonfree_rels_from 1
-      concl_with_args with Not_found -> 0 in
-  let preds,params = cut_list (List.length hyps''' - nparams) hyps''' in
-  let elimscheme = {
-    params = params;
-    predicates = preds;
-    branches = branches;
-    args = args;
-    indarg = indarg;
-    concl = conclusion;
-    indarg_in_concl = dep;
-  }
-  in
-  elimscheme
+(*      TODO: if we want to generalize to the case where arges are merged *)
+(*      with branches (?) and/or where several predicates are cited in *)
+(*      the conclusion, we should do something more precise than just *)
+(*      counting free rels. *)
+(*  *\) *)
+(*   let concl_with_indarg =  *)
+(*     match indarg with *)
+(*     | None -> ccl *)
+(*     | Some c -> it_mkProd_or_LetIn ccl [c] in *)
+(*   let concl_with_args = it_mkProd_or_LetIn concl_with_indarg args in *)
+(* (\*   let nparams2 = Util.Intset.cardinal (Termops.free_rels concl_with_args) in *\) *)
+(*   let nparams =  *)
+(*     try List.length (hyps'''@branches) - count_nonfree_rels_from 1 *)
+(*       concl_with_args with Not_found -> 0 in *)
+(*   let preds,params = cut_list (List.length hyps''' - nparams) hyps''' in *)
+(*   let elimscheme = { *)
+(*     params = params; *)
+(*     predicates = preds; *)
+(*     branches = branches; *)
+(*     args = args; *)
+(*     indarg = indarg; *)
+(*     concl = conclusion; *)
+(*     indarg_in_concl = dep; *)
+(*   } *)
+(*   in *)
+(*   elimscheme *)
 
-let get_params elimt = 
-  (compute_elim_sig elimt).params
-(************************************************) 
-(* end of Should be removed latter              *)
-(* Comes from new induction  (cf Pierre)        *)
-(************************************************) 
+(* let get_params elimt =  *)
+(*   (compute_elim_sig elimt).params *)
+(* (\************************************************\)  *)
+(* (\* end of Should be removed latter              *\) *)
+(* (\* Comes from new induction  (cf Pierre)        *\) *)
+(* (\************************************************\)  *)
+

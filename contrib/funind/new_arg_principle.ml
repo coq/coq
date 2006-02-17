@@ -130,7 +130,7 @@ let is_pte_id =
   function  id -> 
     String.sub (string_of_id id) 0 pref_length = prov_pte_prefix
 
-let compute_new_princ_type_from_rel with_concl replace
+let compute_new_princ_type_from_rel  replace
     (rel_as_kn:mutual_inductive)  =
   let is_dom c =
     match kind_of_term c with
@@ -464,10 +464,8 @@ let finalize_proof rec_pos fixes (hyps:identifier list) =
 	 )
       ))
   in
-  let finalize_proof with_concl fnames t  : tactic = 
+  let finalize_proof fnames t  : tactic = 
     let change_tac  tac g =
-      if with_concl
-      then
 	match kind_of_term ( pf_concl g) with
 	  | App(p,args) ->
 	      let nargs = Array.length args in
@@ -483,7 +481,6 @@ let finalize_proof rec_pos fixes (hyps:identifier list) =
 		  g
 	      end
 	  | _ -> assert false
-      else tac g
     in
   fun g -> 
 (*     if Tacinterp.get_debug () <> Tactic_debug.DebugOff  *)
@@ -495,11 +492,11 @@ let finalize_proof rec_pos fixes (hyps:identifier list) =
   finalize_proof
 
 let do_prove_princ_for_struct
-    (rec_pos:int option) (with_concl:bool) (fnames:constant list)
+    (rec_pos:int option)  (fnames:constant list)
     (ptes:identifier list) (fixes:identifier Idmap.t) (hyps: identifier list)
       (term:constr) : tactic =
   let finalize_proof term = 
-    finalize_proof rec_pos fixes hyps with_concl fnames term
+    finalize_proof rec_pos fixes hyps fnames term
   in
   let rec do_prove_princ_for_struct do_finalize term g =
 (*      if Tacinterp.get_debug () <> Tactic_debug.DebugOff  *)
@@ -583,7 +580,7 @@ let do_prove_princ_for_struct
     term
 
 
-let prove_princ_for_struct with_concl f_names fun_num nparams : tactic = 
+let prove_princ_for_struct fun_num f_names  nparams : tactic = 
   let fnames_as_constr = Array.to_list (Array.map mkConst f_names) in 
   let fbody = 
     match (Global.lookup_constant f_names.(fun_num)).const_body with 
@@ -609,8 +606,7 @@ let prove_princ_for_struct with_concl f_names fun_num nparams : tactic =
   in
   let test_goal_for_args g = 
     let goal_nb_prod = nb_prod (pf_concl g) in 
-    (with_concl && goal_nb_prod < 1 )||
-      ((not with_concl) && goal_nb_prod = 0 )
+    goal_nb_prod < 1 
   in
   let rec intro_params tac params n : tactic =  
     if n = 0 
@@ -765,7 +761,7 @@ let prove_princ_for_struct with_concl f_names fun_num nparams : tactic =
 (* 	 tac (Array.to_list f_names) ptes ptes_to_fix hyps app_f g *)
       )
   in
-  prepare_goal_tac (fun g -> do_prove_princ_for_struct rec_arg_num with_concl g) 
+  prepare_goal_tac (fun g -> do_prove_princ_for_struct rec_arg_num g) 
     
   
 
@@ -807,8 +803,10 @@ let change_property_sort nparam toSort princ princName =
   res
 
 let generate_new_structural_principle 
-    old_princ toSort new_princ_name with_concl funs i  
+    interactive_proof
+    old_princ new_princ_name funs i proof_tac 
     = 
+  let type_sort = (Termops.new_sort_in_family InType) in 
   let f = funs.(i) in 
   (* First we get the type of the old graph principle *)
   let old_princ_type =  (Global.lookup_constant old_princ).const_type
@@ -851,11 +849,7 @@ let generate_new_structural_principle
 	if is_pte_type t 
 	then 
 	  let t' = 
-	    if with_concl 
-	    then let args,concl = decompose_prod t in compose_prod args (mkSort toSort)
-	    else 
-	      let pte_args,pte_concl = decompose_prod t in 
-	      compose_prod (List.tl pte_args) (* (pop pte_concl) *) (mkSort toSort)
+	    let args,concl = decompose_prod t in compose_prod args (mkSort type_sort)
 	  in
 	  let pte_id = fresh_id avoid prov_pte_prefix in 
 	  f ((Name pte_id,None,t)::acc_context,(n,t')::acc_prod) (pte_id::avoid) c'
@@ -868,7 +862,6 @@ let generate_new_structural_principle
 (*   let tim1 = Sys.time ()  in *)
   let new_principle_type,_ = 
     compute_new_princ_type_from_rel 
-      with_concl
       (Array.map mkConst funs)
       mutr_as_kn
       env_with_ptes
@@ -886,7 +879,7 @@ let generate_new_structural_principle
       | Some (id) -> id
       | None -> 
 	  let id_of_f = id_of_label (con_label f) in
-	  Indrec.make_elimination_ident id_of_f (family_of_sort toSort)
+	  Indrec.make_elimination_ident id_of_f (family_of_sort type_sort)
   in
   let hook _ _  = 
     let id_of_f = id_of_label (con_label f) in
@@ -923,12 +916,11 @@ let generate_new_structural_principle
     ;
     try 
 (*       let tim1 = Sys.time ()  in *)
-      Pfedit.by  
-	((prove_princ_for_struct with_concl funs i  mutr_nparams));
+      Pfedit.by  (proof_tac mutr_nparams);
 (*       let tim2 = Sys.time ()  in *)
 (* Pp.msgnl (str ("Time to compute proof: ") ++ str (string_of_float (tim2 -. tim1))); *)
 
-      if Tacinterp.get_debug () = Tactic_debug.DebugOff 
+      if Tacinterp.get_debug () = Tactic_debug.DebugOff && not interactive_proof 
       then
 	Options.silently Command.save_named false;
 

@@ -54,9 +54,6 @@ val  raw_make_or_list : rawconstr list -> rawconstr
 (* Replace the var mapped in the rawconstr/context *)
 val change_vars : Names.identifier Names.Idmap.t -> rawconstr -> rawconstr
 
-val change_vars_in_binder :
-  Names.identifier Names.Idmap.t -> ('a*Names.name*rawconstr) list -> 
-  ('a*Names.name*rawconstr) list
 
 
 (* [alpha_pat avoid pat] rename all the variables present in [pat] s.t. 
@@ -89,11 +86,6 @@ val alpha_br : Names.identifier list ->
 val replace_var_by_term  :     
   Names.identifier ->
   Rawterm.rawconstr -> Rawterm.rawconstr -> Rawterm.rawconstr
-val replace_var_by_term_in_binder :
-  Names.identifier ->
-  Rawterm.rawconstr ->
-  ('a * Names.name * Rawterm.rawconstr) list ->
-  ('a * Names.name * Rawterm.rawconstr) list
 
 
 

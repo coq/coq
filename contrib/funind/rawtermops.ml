@@ -106,13 +106,20 @@ let change_vars =
 		 change_vars mapping def,
 		 change_vars mapping b
 		)
+      | RLetTuple(_,nal,(na,_),_,_) when List.exists (function Name id -> Idmap.mem id mapping | _ -> false) (na::nal) -> rt 
+      | RLetTuple(loc,nal,(na,rto),b,e) -> 
+	  RLetTuple(loc,
+		    nal, 
+		    (na, option_app (change_vars mapping) rto), 
+		    change_vars mapping b,
+		    change_vars mapping e
+		   )
       | RCases(loc,infos,el,brl) -> 
 	  RCases(loc,
 		 infos,
 		 List.map (fun (e,x) -> (change_vars mapping e,x)) el, 
 		 List.map (change_vars_br mapping) brl
 		)
-      | RLetTuple _ ->error "Not handled RLetTuple"
       | RIf _ -> error "Not handled RIf"
       | RRec _ -> error "Not handled RRec"
       | RSort _ -> rt 
@@ -128,14 +135,6 @@ let change_vars =
   in
   change_vars 
 
-
-let rec change_vars_in_binder mapping = function 
-  | [] -> []
-  | (bt,(Name id as na),t)::l when Idmap.mem id mapping -> 
-      (bt,na,change_vars mapping t):: l 
-  | (bt,na,t)::l -> 
-      (bt,na,change_vars mapping t)::
-	(change_vars_in_binder mapping l)
 
 
 let rec alpha_pat excluded pat = 
@@ -258,12 +257,41 @@ let rec alpha_rt excluded rt =
 	let new_t = alpha_rt new_excluded t in 
 	let new_b = alpha_rt new_excluded b in 
 	RLetIn(loc,Name new_id,new_t,new_b)
+
+
+    | RLetTuple(loc,nal,(na,rto),t,b) -> 
+	let rev_new_nal,new_excluded,mapping = 
+	  List.fold_left 
+	    (fun (nal,excluded,mapping) na -> 
+	       match na with 
+		 | Anonymous -> (na::nal,excluded,mapping)
+		 | Name id ->  
+		     let new_id = Nameops.next_ident_away id excluded in 
+		     if new_id = id 
+		     then 
+		       na::nal,id::excluded,mapping 
+		     else 
+		       (Name new_id)::nal,id::excluded,(Idmap.add id new_id mapping)
+	    )
+	    ([],excluded,Idmap.empty)
+	    nal
+	in
+	let new_nal = List.rev rev_new_nal in 
+	let new_rto,new_t,new_b = 
+	  if Idmap.is_empty mapping
+	  then rto,t,b
+	  else let replace = change_vars mapping in 
+	  (option_app replace rto,replace t,replace b)
+	in
+	let new_t = alpha_rt new_excluded new_t in 
+	let new_b = alpha_rt new_excluded new_b in 
+	let new_rto = option_app (alpha_rt new_excluded) new_rto  in
+	RLetTuple(loc,new_nal,(na,new_rto),new_t,new_b)
     | RCases(loc,infos,el,brl) -> 
 	let new_el = 
 	  List.map (function (rt,i) -> alpha_rt excluded rt, i) el 
 	in 
 	RCases(loc,infos,new_el,List.map (alpha_br excluded) brl) 
-    | RLetTuple _ -> error "Not handled RLetTuple"
     | RIf _ -> error "Not handled RIf"
     | RRec _ -> error "Not handled RRec"
     | RSort _ -> rt 
@@ -301,22 +329,6 @@ and alpha_br excluded (loc,ids,patl,res) =
 
 
 
-let alpha_ctxt avoid b =
-  let rec alpha_ctxt = function
-    | [] -> [],b
-    | (bt,n,t)::ctxt ->
-	let new_ctxt,new_b = alpha_ctxt ctxt in
-	match n with
-	  | Name id when List.mem id avoid ->
-	      let new_id = Nameops.next_ident_away id avoid in
-	      let mapping = Idmap.add id new_id Idmap.empty in
-	      (bt,Name new_id,t)::
-		(change_vars_in_binder mapping new_ctxt),
-	      change_vars mapping new_b
-	  | _ -> (bt,n,t)::new_ctxt,new_b
-  in
-  alpha_ctxt
-
 (* 
    [is_free_in id rt] checks if [id] is a free variable in [rt]
 *)
@@ -337,10 +349,16 @@ let is_free_in id =
     | RCases(_,_,el,brl) ->
 	(List.exists (fun (e,_) -> is_free_in e) el) ||
 	  List.exists is_free_in_br brl
-    | RLetTuple _ -> raise (UserError("",str "Not handled RLetTuple"))
+
+    | RLetTuple(_,nal,_,b,t) -> 
+	let check_in_nal = 
+	  not (List.exists (function Name id' -> id'= id | _ -> false) nal) 
+	in 
+	is_free_in t  || (check_in_nal && is_free_in b)
+	  
     | RIf(_,cond,_,br1,br2) ->
 	is_free_in cond || is_free_in br1 || is_free_in br2
-    | RRec _ -> raise (UserError("",str "Not handled RLetTuple"))
+    | RRec _ -> raise (UserError("",str "Not handled RRec"))
     | RSort _ -> false
     | RHole _ -> false
     | RCast (_,b,_,t) -> is_free_in b || is_free_in t
@@ -410,13 +428,22 @@ let replace_var_by_term x_id term =
 		 replace_var_by_pattern def,
 		 replace_var_by_pattern b
 		)
+      | RLetTuple(_,nal,_,_,_) 
+	  when List.exists (function Name id -> id = x_id | _ -> false) nal  ->  
+	  rt
+      | RLetTuple(loc,nal,(na,rto),def,b) -> 
+	  RLetTuple(loc,
+		    nal,
+		    (na,option_app replace_var_by_pattern rto),
+		    replace_var_by_pattern def,
+		    replace_var_by_pattern b
+		   )
       | RCases(loc,infos,el,brl) -> 
 	  RCases(loc,
 		 infos,
 		 List.map (fun (e,x) -> (replace_var_by_pattern e,x)) el, 
 		 List.map replace_var_by_pattern_br brl
 		)
-      | RLetTuple _ -> raise (UserError("",str "Not handled RLetTuple"))
       | RIf _ -> raise (UserError("",str "Not handled RIf"))
       | RRec _ -> raise (UserError("",str "Not handled RRec"))
       | RSort _ -> rt 
@@ -430,13 +457,6 @@ let replace_var_by_term x_id term =
     else (loc,idl,patl,replace_var_by_pattern res)
   in
   replace_var_by_pattern 
-
-let rec replace_var_by_term_in_binder x_id term = function 
-  | [] -> [] 
-  | (bt,Name id,t)::l when id_ord id x_id = 0 -> 
-      (bt,Name id,replace_var_by_term x_id term t)::l
-  | (bt,na,t)::l -> 
-      (bt,na,replace_var_by_term x_id term t)::(replace_var_by_term_in_binder x_id term l)
 
 
 

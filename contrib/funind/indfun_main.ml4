@@ -15,26 +15,31 @@
 
 (*i camlp4deps: "parsing/grammar.cma" i*)
 
-open Indfun_common
-open Pp
-open Libnames
-open Names
+(* open Indfun_common *)
+(* open Pp *)
+(* open Libnames *)
+(* open Names *)
+(* open Term *)
+
+
+(* open Pcoq *)
+
+(* open Genarg *)
+(* open Vernac_ *)
+(* open Prim *)
+(* open Constr *)
+(* open G_constr *)
+(* open G_vernac *)
+(* open Indfun *)
+(* open Topconstr *)
+
+(* open Tacinterp *)
 open Term
-
-
-open Pcoq
-
-open Genarg
-open Vernac_
-open Prim
-open Constr
-open G_constr
-open G_vernac
-open Indfun
+open Names
+open Pp
 open Topconstr
-
-open Tacinterp
-
+open Indfun_common 
+open Indfun
 
 TACTIC EXTEND newfuninv
    [ "functional" "inversion" ident(hyp) ident(fname) ] -> 
@@ -69,17 +74,30 @@ TACTIC EXTEND newfunind
 	     )
 	 with _ -> assert false)
 	 in
-	 compute_elim_sig princ_type
+	 Tactics.compute_elim_sig (mkRel 0,Rawterm.NoBindings) princ_type
        in
+(* 	   msg *)
+(* 	     (str "computing non parameters argument for " ++ *)
+(* 		Ppconstr.pr_id princ_name ++ fnl () ++ *)
+(* 		str "detected params are : " ++ *)
+(* 		Util.prlist_with_sep spc (fun (id,_,_) -> Ppconstr.pr_name id) princ_info.Tactics.params ++ fnl ()++ *)
+(* 		str  "detected arguments are " ++ *)
+(* 		Util.prlist_with_sep spc (Printer.pr_lconstr_env (Tacmach.pf_env g))  args ++ fnl ()  *)
+(* 	      ++ str " number of predicates " ++ *)
+(* 		str (string_of_int (List.length princ_info.Tactics.predicates))++ fnl () ++ *)
+(* 		str " number of branches " ++ *)
+(* 		str (string_of_int (List.length princ_info.Tactics.branches)) *)
+(* 	     ); *)
+
        let frealargs = 
 	 try
-	   snd (Util.list_chop (List.length princ_info.params) args)
+	   snd (Util.list_chop (List.length princ_info.Tactics.params) args)
 	 with _ -> 
 	   msg_warning
 	     (str "computing non parameters argument for " ++
 		Ppconstr.pr_id princ_name ++ fnl () ++
 		str " detected params number is : " ++
-		str (string_of_int (List.length princ_info.params)) ++ fnl ()++
+		str (string_of_int (List.length princ_info.Tactics.params)) ++ fnl ()++
 		str  " while number of arguments is " ++
 		str (string_of_int (List.length args)) ++ fnl () 
 (* 		str " number of predicates " ++  *)
@@ -94,8 +112,8 @@ TACTIC EXTEND newfunind
 	    (Rawterm.Pattern (List.map (fun e -> ([],e)) (frealargs@[c])))
 	    Tacticals.onConcl
 	 )
-	 ((Hiddentac.h_apply (mkConst princ,Rawterm.NoBindings)))
-	 g
+	 (Hiddentac.h_apply (mkConst princ,Rawterm.NoBindings))
+     	 g
      ]
 END
 
@@ -115,7 +133,7 @@ END
 
 VERNAC ARGUMENT EXTEND rec_definition2
  [ ident(id)  binder2_list( bl)
-     rec_annotation2_opt(annot) ":" constr( type_)
+     rec_annotation2_opt(annot) ":" lconstr( type_)
 	":=" lconstr(def)] ->
           [let names = List.map snd (Topconstr.names_of_local_assums bl) in
 	   let check_one_name () =
@@ -156,20 +174,3 @@ VERNAC COMMAND EXTEND GenFixpoint
    ["GenFixpoint" rec_definitions2(recsl)] ->
 	[ do_generate_principle recsl]
       END
-(*
-
-VERNAC COMMAND EXTEND RecursiveDefinition
-  [ "Recursive" "Definition" ident(f) constr(type_of_f) constr(r) constr(wf)
-     constr(proof) integer_opt(rec_arg_num) constr(eq) ] ->
-  [ ignore(proof);ignore(wf);
-    let rec_arg_num = 
-      match rec_arg_num with 
-	| None -> 1
-	| Some n -> n 
-    in
-    recursive_definition f type_of_f r rec_arg_num eq ]
-| [ "Recursive" "Definition" ident(f) constr(type_of_f) constr(r) constr(wf)
-     "[" ne_constr_list(proof) "]" constr(eq) ] ->
-  [ ignore(proof);ignore(wf);recursive_definition f type_of_f r 1 eq ]
-END
-*)

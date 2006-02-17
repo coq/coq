@@ -1,18 +1,23 @@
 
 val generate_new_structural_principle : 
+  (* do we accept interactive proving *)
+  bool ->
   (* induction principle on rel *) 
   Names.constant ->
-  (* the elimination sort *)
-  Term.sorts -> 
   (* Name of the new principle *) 
   (Names.identifier) option -> 
-  (* do we want to use a principle with conclusion *)
-  bool -> 
   (* the compute functions to use   *)
   Names.constant array -> 
+  (* We prove the nth- principle *)
   int  ->
+  (* The tactic to use to make the proof w.r
+     the number of params
+  *)
+  (int -> Tacmach.tactic) -> 
   unit
 
 
 
 val my_reflexivity : Tacmach.tactic 
+
+val prove_princ_for_struct : int -> Names.constant array -> int -> Tacmach.tactic
