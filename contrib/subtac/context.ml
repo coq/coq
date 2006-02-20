@@ -43,3 +43,5 @@ let names_context_of ctx =
 let env_of_ctx env (ctx : t) = 
   Environ.push_rel_context ctx env
 
+
+let subst_env env c = (env, c)
