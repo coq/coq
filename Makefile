@@ -297,6 +297,7 @@ SUBTACCMO=\
 	contrib/subtac/eterm.cmo \
 	contrib/subtac/context.cmo \
 	contrib/subtac/subtac_errors.cmo \
+	contrib/subtac/subtac_coercion.cmo \
 	contrib/subtac/interp.cmo \
 	contrib/subtac/sparser.cmo
 
