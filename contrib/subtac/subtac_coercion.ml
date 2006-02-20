@@ -84,8 +84,7 @@ let sort_rel s1 s2 =
     | Type _, Prop Null -> Prop Null
     | _, Type _ -> s2
 
-let rec mu env isevars j = 
-  let {uj_val = v; uj_type = t} = j in
+let rec mu env isevars t =   
   let rec aux v = 
     match disc_subset v with
       Some (u, p) -> 

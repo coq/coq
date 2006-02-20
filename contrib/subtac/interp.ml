@@ -268,7 +268,7 @@ let rec pretype tycon env isevars lvar = function
 	    let resj = evd_comb1 (inh_app_fun env) isevars resj in
             let resty =
               whd_betadeltaiota env (evars_of !isevars) resj.uj_type in
-	    let coercef, resty = Subtac_coercion.mu env isevars resj in
+	    let coercef, resty = Subtac_coercion.mu env isevars resty in
 	      match kind_of_term resty with
 	      | Prod (na,c1,c2) ->
 		  let hj = pretype (mk_tycon c1) env isevars lvar c in
