@@ -293,23 +293,22 @@ CCCMO=contrib/cc/ccalgo.cmo contrib/cc/ccproof.cmo contrib/cc/cctac.cmo \
   contrib/cc/g_congruence.cmo 
 
 SUBTACCMO=\
-	contrib/subtac/natural.cmo \
 	contrib/subtac/scoq.cmo \
-	contrib/subtac/sast.cmo \
-	contrib/subtac/infer.cmo \
-	contrib/subtac/sutils.cmo \
 	contrib/subtac/eterm.cmo \
-	contrib/subtac/rewrite.cmo \
+	contrib/subtac/context.cmo \
+	contrib/subtac/subtac_errors.cmo \
+	contrib/subtac/interp.cmo \
 	contrib/subtac/sparser.cmo
+
 
 RTAUTOCMO=contrib/rtauto/proof_search.cmo contrib/rtauto/refl_tauto.cmo \
 	contrib/rtauto/g_rtauto.cmo
 
 ML4FILES += contrib/jprover/jprover.ml4 contrib/cc/g_congruence.ml4 \
-  contrib/funind/tacinv.ml4 contrib/first-order/g_ground.ml4 \
-  contrib/subtac/sparser.ml4 contrib/subtac/g_eterm.ml4 \
-  contrib/rtauto/g_rtauto.ml4 contrib/recdef/recdef.ml4 \
-   contrib/funind/indfun_main.ml4 
+	contrib/funind/tacinv.ml4 contrib/first-order/g_ground.ml4 \
+	contrib/subtac/sparser.ml4 contrib/subtac/g_eterm.ml4 \
+	contrib/rtauto/g_rtauto.ml4 contrib/recdef/recdef.ml4 \
+	contrib/funind/indfun_main.ml4 
 
 
 CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(DPCMO) $(FIELDCMO) \
