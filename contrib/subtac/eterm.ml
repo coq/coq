@@ -7,10 +7,23 @@
 
 open Term
 open Names
-open Sutils
 open Evd
 open List
 open Pp
+
+(** Utilities to find indices in lists *)
+let list_index x l =
+  let rec aux i = function
+      k :: tl -> if k = x then i else aux (succ i) tl
+    | [] -> raise Not_found
+  in aux 0 l
+
+let list_assoc_index x l =
+  let rec aux i = function
+      (k, v) :: tl -> if k = x then i else aux (succ i) tl
+    | [] -> raise Not_found
+  in aux 0 l
+
 (** Substitute evar references in t using De Bruijn indices, 
   where n binders were passed through. *)
 let subst_evars evs n t = 
@@ -91,28 +104,19 @@ let eterm evm t =
       
 
   in
-  let declare_evar (id, c) =
+  let _declare_evar (id, c) =
     let id = id_of_string ("Evar" ^ string_of_int id) in
       ignore(Declare.declare_variable id (Names.empty_dirpath, Declare.SectionLocalAssum c,
 					  Decl_kinds.IsAssumption Decl_kinds.Definitional))
   in
-  let declare_assert acc (id, c) =
+  let _declare_assert acc (id, c) =
     let id = id_of_string ("Evar" ^ string_of_int id) in
       tclTHEN acc (Tactics.assert_tac false (Name id) c)
   in
     msgnl (str "Term constructed in Eterm" ++
 	   Termops.print_constr_env (Global.env ()) t'');
    Tactics.apply_term (Reduction.nf_betaiota t'') (map (fun _ -> Evarutil.mk_new_meta ()) evts)
-    (* t'' *)
-    (* Hack: push evars as assumptions in the global env *)
-(*     iter declare_evar evts; *)
-(*     Tactics.apply t' *)
-    (*tclTHEN (fold_left declare_assert tclIDTAC evts) (Tactics.apply t')*)
        
 open Tacmach
 
-let etermtac (evm, t) = 
-  let t' = eterm evm t in
-    t'
-(*     Tactics.apply (Reduction.nf_betaiota t') 
-    Tactics.exact (Reduction.nf_betaiota t')*)
+let etermtac (evm, t) = eterm evm t

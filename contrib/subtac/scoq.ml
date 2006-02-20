@@ -1,7 +1,6 @@
 open Evd
 open Libnames
 open Coqlib
-open Natural
 open Term
 open Names
 
@@ -15,6 +14,8 @@ let build_sig () =
     typ = init_constant ["Init"; "Specif"] "sig" }
 
 let sig_ = lazy (build_sig ())
+
+let eqind = lazy (gen_constant "subtac" ["Init"; "Logic"] "eq")
 
 let boolind = lazy (gen_constant "subtac" ["Init"; "Datatypes"] "bool")
 let sumboolind = lazy (gen_constant "subtac" ["Init"; "Specif"] "sumbool")
@@ -66,7 +67,5 @@ let std_relations = Lazy.lazy_from_fun std_relations
 
 type wf_proof_type = 
     AutoProof 
-  | ManualProof of Term.constr 
+  | ManualProof of Topconstr.constr_expr
   | ExistentialProof
-
-let constr_of c = Constrintern.interp_constr Evd.empty (Global.env()) c
