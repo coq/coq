@@ -43,6 +43,7 @@ let subst_evars evs n t =
 (* 	     mkVar (id_of_string ("Evar" ^ string_of_int k));*)
   	     mkRel (evar_index k + depth)  
 	   in
+	     (* Evar arguments are created in inverse order *)
 	   let args = List.rev_map (map_constr_with_binders succ substrec depth) (Array.to_list args) in
 	     mkApp (ex, Array.of_list args)
 	 with Not_found -> 

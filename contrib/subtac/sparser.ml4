@@ -31,12 +31,15 @@ open Topconstr
 module Gram = Pcoq.Gram
 module Constr = Pcoq.Constr
 module Tactic = Pcoq.Tactic
+module Prim = Pcoq.Prim
 
 module Subtac =
   struct
     let gec s = Gram.Entry.create ("Subtac."^s)
     (* types *)
     let subtac_wf_proof_type : Scoq.wf_proof_type Gram.Entry.e = gec "subtac_wf_proof_type"
+    let subtac_binders : Scoq.binders Gram.Entry.e = gec "subtac_binders"
+    let subtac_fixannot : Scoq.recursion_order option Gram.Entry.e = gec "subtac_fixannot"
 
     (* Hack to parse "(x:=t)" as an explicit argument without conflicts with the *)
     (* admissible notation "(x t)" 
@@ -81,7 +84,7 @@ open Subtac
 open Util
 
 GEXTEND Gram
-  GLOBAL: subtac_wf_proof_type;
+  GLOBAL: subtac_wf_proof_type subtac_binders subtac_fixannot;
  
   subtac_wf_proof_type:
     [ [ IDENT "proof"; t = Constr.constr -> 
@@ -90,6 +93,15 @@ GEXTEND Gram
       | -> Scoq.ExistentialProof
       ]
     ]
+    ;
+  
+  subtac_fixannot:
+    [ [ "{"; IDENT "struct"; id=Prim.name; "}" -> Some (Scoq.StructRec id)
+      | "{"; IDENT "wf"; rel= Constr.constr; id=Prim.name; "}" -> Some (Scoq.WfRec (rel, id))
+      | -> None ] ]
+  ;
+
+  subtac_binders: [ [ bl = LIST0 Constr.binder_let -> bl ] ]
   ;
   END
 
@@ -100,16 +112,27 @@ let (wit_subtac_wf_proof_type : wf_proof_type_argtype),
   (rawwit_subtac_wf_proof_type : wf_proof_type_argtype) =
   Genarg.create_arg "subtac_wf_proof_type"
 
+type subtac_binders_argtype = (Scoq.binders, constr_expr, Tacexpr.raw_tactic_expr) Genarg.abstract_argument_type
+
+let (wit_subtac_binders : subtac_binders_argtype),
+  (globwit_subtac_binders : subtac_binders_argtype),
+  (rawwit_subtac_binders : subtac_binders_argtype) =
+  Genarg.create_arg "subtac_binders"
+
+type subtac_fixannot_argtype = (Scoq.recursion_order, constr_expr, Tacexpr.raw_tactic_expr) Genarg.abstract_argument_type
+
+let (wit_subtac_fixannot : subtac_fixannot_argtype),
+  (globwit_subtac_fixannot : subtac_fixannot_argtype),
+  (rawwit_subtac_fixannot : subtac_fixannot_argtype) =
+  Genarg.create_arg "subtac_fixannot"
+
 VERNAC COMMAND EXTEND SubtacRec
-[ "Recursive" "program" ident(id) 
-  "(" ident(recid) ":" constr(rect) ")" 
-  "using" constr(wf_relation)
-    subtac_wf_proof_type(wf)
-  ":" constr(s) ":=" constr(t) ] -> 
-  [ Interp.subtac (Some (recid, rect, wf_relation, wf)) id Environ.empty_env (s, t) ]
+[ "Recursive" "program" ident(id) subtac_binders(l) subtac_fixannot(f)
+    ":" lconstr(s) ":=" lconstr(t) ] -> 
+  [ Interp.subtac (Some f) id l Environ.empty_env (s, t) ]
 END
   
 VERNAC COMMAND EXTEND Subtac
-[ "Program" ident(id) ":" operconstr(s) ":=" constr(t) ] -> 
-  [ Interp.subtac None id Environ.empty_env (s, t) ]
+[ "Program" ident(id) subtac_binders(l) ":" lconstr(s) ":=" lconstr(t) ] -> 
+  [ Interp.subtac None id l Environ.empty_env (s, t) ]
 END

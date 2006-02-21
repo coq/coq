@@ -3,6 +3,7 @@ open Libnames
 open Coqlib
 open Term
 open Names
+open Util
 
 let init_constant dir s = gen_constant "Subtac" dir s
 
@@ -74,6 +75,12 @@ type wf_proof_type =
   | ManualProof of Topconstr.constr_expr
   | ExistentialProof
 
+type recursion_order =
+  | StructRec of name located
+  | WfRec of Topconstr.constr_expr * name located
+
+type binders = Topconstr.local_binder list
+
 let app_opt c e = 
   match c with
       Some constr -> constr e
@@ -112,3 +119,4 @@ let non_instanciated_map env nonimplicit evd =
 	       debug 2 (str " and is an implicit");
 	       Pretype_errors.error_unsolvable_implicit loc env evm k)
       Evd.empty (Evarutil.non_instantiated evm)
+

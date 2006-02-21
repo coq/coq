@@ -359,6 +359,7 @@ let inh_conv_coerce_to loc env nonimplicit isevars cj t =
 	coerce_itf loc env nonimplicit isevars cj t
       with NoCoercion ->
 	let sigma = evars_of isevars in
+	  debug 2 (str "No coercion found");
 	  error_actual_type_loc loc env sigma cj t
   in
   (evd',{ uj_val = cj'.uj_val; uj_type = t })
