@@ -11,6 +11,10 @@ open Evd
 open List
 open Pp
 
+let reverse_array arr = 
+  Array.of_list (List.rev (Array.to_list arr))
+    
+
 (** Utilities to find indices in lists *)
 let list_index x l =
   let rec aux i = function
@@ -39,8 +43,8 @@ let subst_evars evs n t =
 (* 	     mkVar (id_of_string ("Evar" ^ string_of_int k));*)
   	     mkRel (evar_index k + depth)  
 	   in
-	   let args = Array.map (map_constr_with_binders succ substrec depth) args in
-	     mkApp (ex, args)
+	   let args = List.rev_map (map_constr_with_binders succ substrec depth) (Array.to_list args) in
+	     mkApp (ex, Array.of_list args)
 	 with Not_found -> 
 	   msgnl (str "Evar " ++ int k ++ str " not found!!!");
 	   c)

@@ -99,12 +99,18 @@ let rec mu env isevars t =
 and coerce loc env nonimplicit isevars (x : Term.constr) (y : Term.constr) 
     : (Term.constr -> Term.constr) option 
     =
+  trace (str "Coerce called for " ++ (my_print_constr env x) ++ 
+	 str " and "++ my_print_constr env y);
+
   let rec coerce_unify env x y =
-    if e_cumul env isevars x y then None
-    else coerce' env x y (* head recutions needed *)
+    if e_cumul env isevars x y then (
+      trace (str "Unified " ++ (my_print_constr env x) ++ 
+	     str " and "++ my_print_constr env y);
+      None
+    ) else coerce' env x y (* head recutions needed *)
   and coerce' env x y : (Term.constr -> Term.constr) option =
     let subco () = subset_coerce env x y in
-      trace (str "Coercion from " ++ (my_print_constr env x) ++ 
+      trace (str "coerce' from " ++ (my_print_constr env x) ++ 
 	     str " to "++ my_print_constr env y);
       match (kind_of_term x, kind_of_term y) with
 	| Sort s, Sort s' -> 

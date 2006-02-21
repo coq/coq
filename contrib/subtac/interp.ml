@@ -656,11 +656,14 @@ let subtac' recursive id env (s, t) =
 	  Some t -> make_fixpoint t id realt
 	| None -> realt
     in
+      (try trace (str "Original evar map: " ++ Evd.pr_evar_map (evars_of !evd));
+       with Not_found -> trace (str "Not found in pr_evar_map"));
     let realt = Evarutil.nf_evar (evars_of !evd) realt in
+    let coqtype = Evarutil.nf_evar (evars_of !evd) coqtype in
     trace (str "Coq term: " ++ my_print_constr env realt ++ spc ()
 	   ++ str "Coq type: " ++ my_print_constr env coqtype);
     let evm = non_instanciated_map env nonimplicit evd in
-      (try trace (str "Original evar map: " ++ Evd.pr_evar_map evm);
+      (try trace (str "Non instanciated evars map: " ++ Evd.pr_evar_map evm);
        with Not_found -> trace (str "Not found in pr_evar_map"));
     let tac = Eterm.etermtac (evm, realt) in 
     msgnl (str "Starting proof");
@@ -700,10 +703,16 @@ let subtac' recursive id env (s, t) =
 		str "Uncoercible terms:" ++ spc ()
 		++ x ++ spc () ++ str "and" ++ spc () ++ y
 	in msg_warning cmds
-
+    
+    | Type_errors.TypeError (env, e) ->
+	debug 2 (Himsg.explain_type_error env e)
+	  
+    | Pretype_errors.PretypeError (env, e) ->
+	debug 2 (Himsg.explain_pretype_error env e)
+	  
     | e -> 
-	msg_warning (str "Uncatched exception: " ++ str (Printexc.to_string e))
-	(*raise e*)
+	msg_warning (str "Uncatched exception: " ++ str (Printexc.to_string e));
+	raise e
 
 let subtac recursive id env (s, t) =
   subtac' recursive id (Global.env ()) (s, t)

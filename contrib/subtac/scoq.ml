@@ -80,20 +80,35 @@ let app_opt c e =
     | None -> e	
 
 let make_existential loc env nonimplicit isevars c =
-  let key = mknewexist () in
-  let args = Sign.instance_from_named_context (Environ.named_context env) in
-    isevars :=
-      Evd.evar_declare (Environ.named_context_val env) key c ~src:(loc, InternalHole) !isevars;
+  let evar = Evarutil.e_new_evar isevars env ~src:(loc, QuestionMark) c in
+  let (key, args) = destEvar evar in
+    debug 2 (str "Constructed evar " ++ int key ++ str " applied to args: " ++
+	     Array.fold_right (fun a acc -> my_print_constr env a ++ spc () ++ acc) args (str ""));
     nonimplicit := Gset.add key !nonimplicit;
-    mkEvar(key, args)
+    evar
 
+let string_of_hole_kind = function
+  | ImplicitArg _ -> "ImplicitArg"
+  | BinderType _ -> "BinderType"
+  | QuestionMark -> "QuestionMark"
+  | CasesType -> "CasesType"
+  | InternalHole -> "InternalHole"
+  | TomatchTypeParameter _ -> "TomatchTypeParameter"
+      
 let non_instanciated_map env nonimplicit evd =
   let evm = evars_of !evd in
     List.fold_left 
       (fun evm (key, evi) -> 
-	 if Gset.mem key !nonimplicit then
-	   Evd.add evm key evi
-	 else
-	   let (loc,k) = evar_source key !evd in
-	     Pretype_errors.error_unsolvable_implicit loc env evm k)
+	 let (loc,k) = evar_source key !evd in
+	   debug 2 (str "evar " ++ int key ++ str " has kind " ++ 
+		    str (string_of_hole_kind k));
+	   if Gset.mem key !nonimplicit then
+	     begin
+	       debug 2 (str " and is not an implicit");
+	       Evd.add evm key evi
+	     end
+	   else
+	     let (loc,k) = evar_source key !evd in
+	       debug 2 (str " and is an implicit");
+	       Pretype_errors.error_unsolvable_implicit loc env evm k)
       Evd.empty (Evarutil.non_instantiated evm)
