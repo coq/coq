@@ -5,7 +5,16 @@ open Term
 open Names
 open Util
 
-let init_constant dir s = gen_constant "Subtac" dir s
+(****************************************************************************)
+(* Library linking *)
+
+let contrib_name = "subtac"
+
+let subtac_dir = ["subtac"]
+let subfix_module = subtac_dir @ ["FixSub"]
+let init_constant dir s = gen_constant contrib_name dir s
+
+let fixsub = lazy (init_constant subfix_module "Fix_sub")
 
 let build_sig () = 
   { proj1 = init_constant ["Init"; "Specif"] "proj1_sig";
@@ -16,19 +25,19 @@ let build_sig () =
 
 let sig_ = lazy (build_sig ())
 
-let eqind = lazy (gen_constant "subtac" ["Init"; "Logic"] "eq")
+let eqind = lazy (init_constant ["Init"; "Logic"] "eq")
 
-let boolind = lazy (gen_constant "subtac" ["Init"; "Datatypes"] "bool")
-let sumboolind = lazy (gen_constant "subtac" ["Init"; "Specif"] "sumbool")
-let natind = lazy (gen_constant "subtac" ["Init"; "Datatypes"] "nat")
-let intind = lazy (gen_constant "subtac" ["ZArith"; "binint"] "Z")
-let existSind = lazy (gen_constant "subtac" ["Init"; "Specif"] "sigS")
+let boolind = lazy (init_constant ["Init"; "Datatypes"] "bool")
+let sumboolind = lazy (init_constant ["Init"; "Specif"] "sumbool")
+let natind = lazy (init_constant ["Init"; "Datatypes"] "nat")
+let intind = lazy (init_constant ["ZArith"; "binint"] "Z")
+let existSind = lazy (init_constant ["Init"; "Specif"] "sigS")
   
 let existS = lazy (build_sigma_set ())
 
 (* orders *)
-let well_founded = lazy (gen_constant "subtac" ["Init"; "Wf"] "well_founded")
-let fix = lazy (gen_constant "subtac" ["Init"; "Wf"] "Fix")
+let well_founded = lazy (init_constant ["Init"; "Wf"] "well_founded")
+let fix = lazy (init_constant ["Init"; "Wf"] "Fix")
 
 let extconstr = Constrextern.extern_constr true (Global.env ())
 let extsort s = Constrextern.extern_constr true (Global.env ()) (mkSort s)
@@ -37,6 +46,7 @@ open Pp
 
 let my_print_constr = Termops.print_constr_env
 let my_print_context = Termops.print_rel_context
+let my_print_env = Termops.print_env
 let my_print_rawconstr = Printer.pr_rawconstr_env
 
 let mknewexist = 
@@ -65,8 +75,8 @@ let wf_relations = Hashtbl.create 10
 
 let std_relations () = 
   let add k v = Hashtbl.add wf_relations k v in
-    add (gen_constant "subtac" ["Init"; "Peano"] "lt")
-      (lazy (gen_constant "subtac" ["Arith"; "Wf_nat"] "lt_wf"))
+    add (init_constant ["Init"; "Peano"] "lt")
+      (lazy (init_constant ["Arith"; "Wf_nat"] "lt_wf"))
       
 let std_relations = Lazy.lazy_from_fun std_relations
 
@@ -86,12 +96,11 @@ let app_opt c e =
       Some constr -> constr e
     | None -> e	
 
-let make_existential loc env nonimplicit isevars c =
+let make_existential loc env isevars c =
   let evar = Evarutil.e_new_evar isevars env ~src:(loc, QuestionMark) c in
   let (key, args) = destEvar evar in
     debug 2 (str "Constructed evar " ++ int key ++ str " applied to args: " ++
 	     Array.fold_right (fun a acc -> my_print_constr env a ++ spc () ++ acc) args (str ""));
-    nonimplicit := Gset.add key !nonimplicit;
     evar
 
 let string_of_hole_kind = function
@@ -102,20 +111,16 @@ let string_of_hole_kind = function
   | InternalHole -> "InternalHole"
   | TomatchTypeParameter _ -> "TomatchTypeParameter"
       
-let non_instanciated_map env nonimplicit evd =
+let non_instanciated_map env evd =
   let evm = evars_of !evd in
     List.fold_left 
       (fun evm (key, evi) -> 
 	 let (loc,k) = evar_source key !evd in
 	   debug 2 (str "evar " ++ int key ++ str " has kind " ++ 
-		    str (string_of_hole_kind k));
-	   if Gset.mem key !nonimplicit then
-	     begin
-	       debug 2 (str " and is not an implicit");
-	       Evd.add evm key evi
-	     end
-	   else
-	     let (loc,k) = evar_source key !evd in
+		      str (string_of_hole_kind k));
+	   match k with 
+	       QuestionMark -> Evd.add evm key evi
+	     | _ ->
 	       debug 2 (str " and is an implicit");
 	       Pretype_errors.error_unsolvable_implicit loc env evm k)
       Evd.empty (Evarutil.non_instantiated evm)

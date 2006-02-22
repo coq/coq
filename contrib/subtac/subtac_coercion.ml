@@ -96,7 +96,7 @@ let rec mu env isevars t =
     | None -> (None, t)
   in aux t
 
-and coerce loc env nonimplicit isevars (x : Term.constr) (y : Term.constr) 
+and coerce loc env isevars (x : Term.constr) (y : Term.constr) 
     : (Term.constr -> Term.constr) option 
     =
   trace (str "Coerce called for " ++ (my_print_constr env x) ++ 
@@ -186,7 +186,7 @@ and coerce loc env nonimplicit isevars (x : Term.constr) (y : Term.constr)
 		Some 
 		  (fun x ->
 		     let cx = app_opt c x in
-		     let evar = make_existential dummy_loc env nonimplicit isevars (mkApp (p, [| cx |]))
+		     let evar = make_existential dummy_loc env isevars (mkApp (p, [| cx |]))
 		     in
 		       (mkApp 
 			  ((Lazy.force sig_).intro, 
@@ -194,10 +194,10 @@ and coerce loc env nonimplicit isevars (x : Term.constr) (y : Term.constr)
 	    | None -> raise NoCoercion
   in coerce_unify env x y
 
-let coerce_itf loc env nonimplicit isevars hj c1 =
+let coerce_itf loc env isevars hj c1 =
   let {uj_val = v; uj_type = t} = hj in
   let evars = ref isevars in
-  let coercion = coerce loc env nonimplicit evars t c1 in
+  let coercion = coerce loc env evars t c1 in
     !evars, {uj_val = app_opt coercion v;
 	     uj_type = t}
       
@@ -269,7 +269,12 @@ let inh_app_fun env isevars j =
  	   let t,i1 = class_of1 env (evars_of isevars) j.uj_type in
       	   let p = lookup_path_to_fun_from i1 in
            (isevars,apply_coercion env p j t)
-	 with Not_found -> (isevars,j))
+	 with Not_found ->
+	   try 
+	     let coercef, t = mu env isevars t in
+	       (isevars, { uj_val = app_opt coercef j.uj_val; uj_type = t })
+	   with NoCoercion ->
+	     (isevars,j))
 
 let inh_tosort_force loc env isevars j =
   try
@@ -350,13 +355,15 @@ let rec inh_conv_coerce_to_fail env isevars hj c1 =
 	 | _ -> raise NoCoercion))
 
 (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
-let inh_conv_coerce_to loc env nonimplicit isevars cj t =
+let inh_conv_coerce_to loc env isevars cj t =
+  trace (str "inh_conv_coerce_to called for " ++ (my_print_constr env cj.uj_type) ++ 
+	   str " and "++ my_print_constr env t);
   let (evd',cj') = 
     try 
       inh_conv_coerce_to_fail env isevars cj t
     with NoCoercion ->
       try
-	coerce_itf loc env nonimplicit isevars cj t
+	coerce_itf loc env isevars cj t
       with NoCoercion ->
 	let sigma = evars_of isevars in
 	  debug 2 (str "No coercion found");

@@ -28,10 +28,10 @@ open Evarutil
 open Pretype_errors
 open Rawterm
 open Evarconv
-open Coercion
 open Pattern
 open Dyn
 
+open Subtac_coercion
 open Scoq
 open Coqlib
 open Printer
@@ -42,18 +42,20 @@ open Eterm
 type recursion_info = {
   arg_name: name;
   arg_type: types; (* A *)
+  args_after : rel_context;
   wf_relation: constr; (* R : A -> A -> Prop *)
   wf_proof: constr; (* : well_founded R *)
   f_type: types; (* f: A -> Set *)
   f_fulltype: types; (* Type with argument and wf proof product first *)
 }
 
-type prog_info = {
-  evd : evar_defs ref;
-  mutable evm: evar_map;
-  rec_info: recursion_info option;
-}
-
+let my_print_rec_info env t = 
+  str "Name: " ++ Nameops.pr_name t.arg_name ++ spc () ++
+  str "Arg type: " ++ my_print_constr env t.arg_type ++ spc () ++
+  str "Wf relation: " ++ my_print_constr env t.wf_relation ++ spc () ++
+  str "Wf proof: " ++ my_print_constr env t.wf_proof ++ spc () ++
+  str "Abbreviated Type: " ++ my_print_constr env t.f_type ++ spc () ++
+  str "Full type: " ++ my_print_constr env t.f_fulltype
 
 (* Taken from pretyping.ml *)
 let evd_comb0 f isevars =
@@ -110,7 +112,7 @@ let check_branches_message loc env isevars c (explft,lft) =
 (* coerce to tycon if any *)
 let inh_conv_coerce_to_tycon loc env isevars j = function
    | None -> j
-   | Some typ -> evd_comb2 (inh_conv_coerce_to loc env) isevars j typ
+   | Some typ -> evd_comb2 (Subtac_coercion.inh_conv_coerce_to loc env) isevars j typ
 
 let push_rels vars env = List.fold_right push_rel vars env
 
@@ -168,10 +170,18 @@ let pretype_sort = function
   | RProp c -> judge_of_prop_contents c
   | RType _ -> judge_of_new_Type ()
 
+let my_print_tycon env = function
+    Some t -> my_print_constr env t
+  | None -> str "None"
+
 (* [pretype tycon env isevars lvar lmeta cstr] attempts to type [cstr] *)
 (* in environment [env], with existential variables [(evars_of isevars)] and *)
 (* the type constraint tycon *)
-let rec pretype tycon env isevars lvar = function
+let rec pretype tycon env isevars lvar c = 
+(*   trace (str "pretype for " ++ (my_print_rawconstr env c) ++  *)
+(* 	   str " and tycon "++ my_print_tycon env tycon ++  *)
+(* 	   str " in environment: " ++ my_print_env env); *)
+  match c with
 
   | RRef (loc,ref) ->
       inh_conv_coerce_to_tycon loc env isevars
@@ -268,12 +278,11 @@ let rec pretype tycon env isevars lvar = function
 	    let resj = evd_comb1 (inh_app_fun env) isevars resj in
             let resty =
               whd_betadeltaiota env (evars_of !isevars) resj.uj_type in
-	    let coercef, resty = Subtac_coercion.mu env isevars resty in
 	      match kind_of_term resty with
 	      | Prod (na,c1,c2) ->
 		  let hj = pretype (mk_tycon c1) env isevars lvar c in
 		  let newresj =
-      		    { uj_val = applist (app_opt coercef (j_val resj), [j_val hj]);
+      		    { uj_val = applist (j_val resj, [j_val hj]);
 		      uj_type = subst1 hj.uj_val c2 } in
 		  apply_rec env (n+1) newresj rest
 
@@ -385,9 +394,11 @@ let rec pretype tycon env isevars lvar = function
         user_err_loc (loc,"",
 	  str "If is only for inductive types with two constructors");
 
-      (* Make dependencies from arity signature impossible *)
+      (* Make dependencies from arity signature possible ! *)
       let arsgn,_ = get_arity env indf in
-      let arsgn = List.map (fun (_,b,t) -> (Anonymous,b,t)) arsgn in
+      let arsgn = List.map (fun (n,b,t) -> 
+			      debug 2 (str "If case arg: " ++ Nameops.pr_name n);
+			      (n,b,t)) arsgn in
       let nar = List.length arsgn in
       let psign = (na,None,build_dependent_inductive env indf)::arsgn in
       let pred,p = match po with
@@ -408,7 +419,13 @@ let rec pretype tycon env isevars lvar = function
 	let n = rel_context_length cs.cs_args in
 	let pi = liftn n 2 pred in
 	let pi = beta_applist (pi, [build_dependent_constructor cs]) in
-	let csgn = List.map (fun (_,b,t) -> (Anonymous,b,t)) cs.cs_args in
+	let csgn = 
+	  List.map (fun (n,b,t) ->
+		      match n with 
+			  Name _ -> (n, b, t)
+			| Anonymous -> (Name (id_of_string "H"), b, t))
+	    cs.cs_args 
+	in
 	let env_c = push_rels csgn env in 
 	let bj = pretype (Some pi) env_c isevars lvar b in
 	it_mkLambda_or_LetIn bj.uj_val cs.cs_args in
@@ -578,8 +595,9 @@ let global_kind = Decl_kinds.IsDefinition Decl_kinds.Definition
 let goal_kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Definition
   
 let make_fixpoint t id term = 
+  let term = it_mkLambda_or_LetIn term t.args_after in
   let term' = mkLambda (Name id, t.f_fulltype, term) in
-    mkApp (Lazy.force fix, 
+    mkApp (Lazy.force fixsub, 
 	   [| t.arg_type; t.wf_relation; t.wf_proof; t.f_type; 
 	      mkLambda (t.arg_name, t.arg_type, term') |])       
 
@@ -596,12 +614,23 @@ let find_with_index x l =
     | [] -> raise Not_found
   in aux 0 l
 
+let require_library dirpath =
+  let qualid = (dummy_loc, qualid_of_dirpath (dirpath_of_string dirpath)) in
+    Library.require_library [qualid] None
+
+let list_split_at index l = 
+  let rec aux i acc = function
+      hd :: tl when i = index -> (List.rev acc), tl
+    | hd :: tl -> aux (succ i) (hd :: acc) tl
+    | [] -> failwith "list_split_at: Invalid argument"
+  in aux 0 [] l
+
 let subtac' recursive id l env (s, t) =
   check_required_library ["Coq";"Init";"Datatypes"];
   check_required_library ["Coq";"Init";"Specif"];
+  require_library "Coq.subtac.FixSub";
   try
     let evd = ref (create_evar_defs Evd.empty) in
-    let nonimplicit = ref Gset.empty in
     let coqintern evd env = Constrintern.intern_constr (evars_of evd) env in
     let coqinterp evd env = Constrintern.interp_constr (evars_of evd) env in
     let rec env_with_binders ((env, rels) as acc) = function
@@ -626,54 +655,62 @@ let subtac' recursive id l env (s, t) =
     trace (str "Creating env with binders");
     let env', binders_rel = env_with_binders (env, []) l in
     trace (str "New env created:" ++ my_print_context env');
-    let s, t = coqintern !evd env' s, coqintern !evd env' t in
-    trace (str "Begin infer_type of given spec");
-    let coqtype, rec_info, env' =
+    let s = coqintern !evd env' s in
+    trace (str "Internalized specification: " ++ my_print_rawconstr env s);
+    let coqtype, rec_info, env', binders_type, binders_term =
       match recursive with
-	  Some (StructRec id) ->
-	    assert(false)
-	| Some (WfRec (rel, (loc, n))) ->
-	    let coqrel = coqinterp !evd env rel in
+	  Some (Some (StructRec _) | None) -> assert(false)
+	| Some (Some (WfRec (rel, (loc, n)))) ->
+	    let index, ((n, def, ntype) as nrel) = find_with_index n (rel_context env') in
+	    let after, before = list_split_at index (rel_context env') in
+	    let envbefore = push_rel_context before env in
+	    let typeenv = env' in
+	    let coqrel = coqinterp !evd envbefore rel in
 	    let coqs, styp = interp env' evd s empty_tycon in
-	    let index, (_, _, ntype) = find_with_index n (rel_context env') in
+	    let fullcoqs = it_mkProd_or_LetIn coqs after in
 	    let ntype = lift index ntype in
+	    let ftype = mkLambda (n, ntype,  fullcoqs) in
+	    (*let termenv = 
+	      push_rel_context (subst_ctx (mkApp ((Lazy.force _sig).proj1, mkRel 1)) after) *)
+		
 	    let argtype = 
-	      mkApp ((Lazy.force sig_).intro, 
+	      mkApp ((Lazy.force sig_).typ, 
 		     [| ntype;
 			mkLambda (n, ntype, 
 				  mkApp (coqrel, [| mkRel 1; mkRel (index + 2)|])) |])
 	    in
-	    let ftype = mkProd (n, argtype, lift 1 coqs) in
-	    let fulltype =
-	      mkProd (n, argtype,
-		      mkProd(Anonymous,
-			     mkApp (coqrel, [| mkRel 1; mkRel 2 |]),
-			     Term.subst1 (mkRel 2) coqs))
-	    in
+	    let fulltype = mkProd (n, argtype, fullcoqs) in
 	    let proof = 
 	      let wf_rel = mkApp (Lazy.force well_founded, [| ntype; coqrel |]) in
-		make_existential dummy_loc env nonimplicit evd wf_rel (* TODO use env before rec arg *)
+		make_existential dummy_loc envbefore evd wf_rel
 	    in
 	    let rec_info = 
 	      { arg_name = n;
 		arg_type = ntype;
+		args_after = after;
 		wf_relation = coqrel;
 		wf_proof = proof;
 		f_type = ftype;
 		f_fulltype = fulltype;
 	      }
 	    in 
-	    let env' = push_rel (Name id, None, ftype) env' in 
-	      coqs, Some rec_info, env'
+	    let env' = push_rel (Name id, None, fulltype) env' in 
+	      coqs, Some rec_info, env', binders_rel, before
 	| None ->
 	    let coqs, _ = interp env' evd s empty_tycon in
-	      coqs, None, env'
+	      coqs, None, env', binders_rel, binders_rel
     in
+    (match rec_info with 
+	 Some rec_info -> trace (str "Got recursion info: " ++ my_print_rec_info env rec_info)
+       | None -> ());
     trace (str "Interpreted type: " ++ my_print_constr env' coqtype);
-    let coqt, ttyp = interp env' evd t empty_tycon in
+    let tycon = mk_tycon coqtype in
+    let t = coqintern !evd env' t in
+    trace (str "Internalized term: " ++ my_print_rawconstr env t);   
+    let coqt, ttyp = interp env' evd t tycon in
     trace (str "Interpreted term: " ++ my_print_constr env' coqt ++ spc () ++
 	   str "Infered type: " ++ my_print_constr env' ttyp);
-    let coercespec = Subtac_coercion.coerce dummy_loc env' nonimplicit evd ttyp coqtype in
+    let coercespec = Subtac_coercion.coerce dummy_loc env' evd ttyp coqtype in
     trace (str "Specs coercion successfull");
     let realt = app_opt coercespec coqt in
     trace (str "Term Specs coercion successfull: " ++ my_print_constr env' realt);
@@ -684,14 +721,14 @@ let subtac' recursive id l env (s, t) =
     in
     (try trace (str "Original evar map: " ++ Evd.pr_evar_map (evars_of !evd));
      with Not_found -> trace (str "Not found in pr_evar_map"));
-    let realt = it_mkLambda_or_LetIn realt binders_rel and
-      coqtype = it_mkProd_or_LetIn coqtype binders_rel
+    let realt = it_mkLambda_or_LetIn realt binders_term and
+      coqtype = it_mkProd_or_LetIn coqtype binders_type
     in
     let realt = Evarutil.nf_evar (evars_of !evd) realt in
     let coqtype = Evarutil.nf_evar (evars_of !evd) coqtype in
     trace (str "Coq term: " ++ my_print_constr env realt ++ spc ()
 	   ++ str "Coq type: " ++ my_print_constr env coqtype);
-    let evm = non_instanciated_map env nonimplicit evd in
+    let evm = non_instanciated_map env evd in
       (try trace (str "Non instanciated evars map: " ++ Evd.pr_evar_map evm);
        with Not_found -> trace (str "Not found in pr_evar_map"));
     let tac = Eterm.etermtac (evm, realt) in 
@@ -750,7 +787,10 @@ let subtac' recursive id l env (s, t) =
 	   | e -> raise e)
   
     | e -> 
-	msg_warning (str "Uncatched exception: " ++ str (Printexc.to_string e))
+	msg_warning (str "Uncatched exception: " ++ str (Printexc.to_string e));
+	raise e
+	
+	  
 	
 
 let subtac recursive id l env (s, t) =

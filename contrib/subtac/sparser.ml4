@@ -119,7 +119,7 @@ let (wit_subtac_binders : subtac_binders_argtype),
   (rawwit_subtac_binders : subtac_binders_argtype) =
   Genarg.create_arg "subtac_binders"
 
-type subtac_fixannot_argtype = (Scoq.recursion_order, constr_expr, Tacexpr.raw_tactic_expr) Genarg.abstract_argument_type
+type subtac_fixannot_argtype = (Scoq.recursion_order option, constr_expr, Tacexpr.raw_tactic_expr) Genarg.abstract_argument_type
 
 let (wit_subtac_fixannot : subtac_fixannot_argtype),
   (globwit_subtac_fixannot : subtac_fixannot_argtype),
