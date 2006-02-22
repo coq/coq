@@ -135,33 +135,34 @@ VERNAC ARGUMENT EXTEND rec_definition2
  [ ident(id)  binder2_list( bl)
      rec_annotation2_opt(annot) ":" lconstr( type_)
 	":=" lconstr(def)] ->
-          [let names = List.map snd (Topconstr.names_of_local_assums bl) in
-	   let check_one_name () =
-	     if List.length names > 1 then
-               Util.user_err_loc
-                 (Util.dummy_loc,"GenFixpoint",
-                  Pp.str "the recursive argument needs to be specified");
-	   in
-	   let check_exists_args an =
-	     try 
-	       let id = match an with Struct id -> id | Wf(_,Some id) -> id | Mes(_,Some id) -> id | Wf(_,None) | Mes(_,None) -> failwith "check_exists_args" in 
-	       (try ignore(Util.list_index (Name id) names - 1); annot
-		with Not_found ->  Util.user_err_loc
-                  (Util.dummy_loc,"GenFixpoint",
-                   Pp.str "No argument named " ++ Nameops.pr_id id)
-	       )
-	     with Failure "check_exists_args" ->  check_one_name ();annot
-	   in
-          let ni =
-            match annot with
-              | None ->
-		  check_one_name ();
-                  annot
-	      | Some an ->
-		  check_exists_args an
-	  in
-	  (id, ni, bl, type_, def) ]
-END
+    [let names = List.map snd (Topconstr.names_of_local_assums bl) in
+     let check_one_name () =
+       if List.length names > 1 then
+         Util.user_err_loc
+           (Util.dummy_loc,"GenFixpoint",
+            Pp.str "the recursive argument needs to be specified");
+     in
+     let check_exists_args an =
+       try 
+	 let id = match an with Struct id -> id | Wf(_,Some id) -> id | Mes(_,Some id) -> id | Wf(_,None) | Mes(_,None) -> failwith "check_exists_args" in 
+	 (try ignore(Util.list_index (Name id) names - 1); annot
+	  with Not_found ->  Util.user_err_loc
+            (Util.dummy_loc,"GenFixpoint",
+             Pp.str "No argument named " ++ Nameops.pr_id id)
+	 )
+       with Failure "check_exists_args" ->  check_one_name ();annot
+     in
+     let ni =
+       match annot with
+         | None ->
+(* 	     check_one_name (); *)
+             annot
+	     
+	 | Some an ->
+	     check_exists_args an
+     in
+     (id, ni, bl, type_, def) ]
+      END
 
 
 VERNAC ARGUMENT EXTEND rec_definitions2

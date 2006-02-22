@@ -18,6 +18,6 @@ val generate_new_structural_principle :
 
 
 
-val my_reflexivity : Tacmach.tactic 
+(* val my_reflexivity : Tacmach.tactic  *)
 
 val prove_princ_for_struct : int -> Names.constant array -> int -> Tacmach.tactic

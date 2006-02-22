@@ -29,7 +29,7 @@ let interp_casted_constr_with_implicits sigma env impls c  =
     ~allow_soapp:false  ~ltacvars:([],[]) c
 
 let build_newrecursive
-(lnameargsardef:(newfixpoint_expr ) list)  =
+(lnameargsardef)  =
   let env0 = Global.env()
   and sigma = Evd.empty
   in
@@ -69,9 +69,9 @@ let compute_annot (name,annot,args,types,body) =
   match annot with
     | None ->
         if List.length names > 1 then
-            user_err_loc
-              (dummy_loc,"GenFixpoint",
-               Pp.str "the recursive argument needs to be specified");
+          user_err_loc
+            (dummy_loc,"GenFixpoint",
+             Pp.str "the recursive argument needs to be specified");
         let new_annot = (id_of_name (List.hd names)) in
 	(name,Struct new_annot,args,types,body)
     | Some r -> (name,r,args,types,body)
@@ -159,10 +159,10 @@ let register_struct is_rec fixpoint_exprl =
 	Command.build_recursive fixpoint_exprl (Options.boxed_definitions())
 
 
-let generate_correction_proof_wf  
+let generate_correction_proof_wf tcc_lemma_ref   
     is_mes f_ref eq_ref rec_arg_num rec_arg_type nb_args relation
     (_: int) (_:Names.constant array) (_:int) : Tacmach.tactic = 
-  Recdef.prove_principle 
+  Recdef.prove_principle  tcc_lemma_ref
     is_mes f_ref eq_ref rec_arg_num rec_arg_type nb_args relation
 
 
@@ -201,11 +201,16 @@ let register_wf ?(is_mes=false) fname wf_rel_expr wf_arg args ret_type body
 		    [(f_app_args,None);(body,None)])
   in
   let eq = Command.generalize_constr_expr unbounded_eq args in 
-  let hook f_ref eq_ref rec_arg_num rec_arg_type nb_args relation =
-    pre_hook 
-      (generate_correction_proof_wf is_mes
-	 f_ref eq_ref rec_arg_num rec_arg_type nb_args relation
-      )
+  let hook tcc_lemma_ref f_ref eq_ref rec_arg_num rec_arg_type nb_args relation =
+    try 
+      pre_hook 
+	(generate_correction_proof_wf tcc_lemma_ref is_mes
+	   f_ref eq_ref rec_arg_num rec_arg_type nb_args relation
+	);
+      Command.save_named true
+    with e -> 
+      (* No proof done *) 
+      ()
   in 
   Recdef.recursive_definition 
     is_mes fname 
@@ -261,11 +266,11 @@ let register_mes fname wf_mes_expr wf_arg args ret_type body =
 
 
 
-let register (fixpoint_exprl :  newfixpoint_expr list) = 
+let do_generate_principle fixpoint_exprl  = 
   let recdefs = build_newrecursive fixpoint_exprl in 
   let _is_struct = 
     match fixpoint_exprl with 
-      | [((name,Wf (wf_rel,wf_x),args,types,body))] -> 
+      | [((name,Some (Wf (wf_rel,wf_x)),args,types,body))] -> 
 	  let pre_hook = 
 	    generate_principle 
 	      fixpoint_exprl 
@@ -275,7 +280,7 @@ let register (fixpoint_exprl :  newfixpoint_expr list) =
 	  in 
 	  register_wf name wf_rel wf_x args types body pre_hook;
 	  false
-      | [((name,Mes (wf_mes,wf_x),args,types,body))] -> 
+      | [((name,Some (Mes (wf_mes,wf_x)),args,types,body))] -> 
 	  let pre_hook = 
 	    generate_principle 
 	      fixpoint_exprl 
@@ -284,14 +289,16 @@ let register (fixpoint_exprl :  newfixpoint_expr list) =
 	      false
 	  in 
 	  register_mes name wf_mes wf_x args types body pre_hook;
-
 	  false
       | _ -> 
-	  
+	  let fix_names = 
+	    List.map (function (name,_,_,_,_) -> name) fixpoint_exprl 
+	  in
+	  let is_one_rec = is_rec fix_names  in
 	  let old_fixpoint_exprl =  
-	    List.map 
+	    List.map
 	      (function
-		 | (name,Struct id,args,types,body) -> 
+		 | (name,Some (Struct id),args,types,body),_ -> 
 		     let names = 
 		       List.map
 			 snd
@@ -299,11 +306,19 @@ let register (fixpoint_exprl :  newfixpoint_expr list) =
 		     in 
 		     let annot = Util.list_index (Name id) names - 1 in 
  		     (name,annot,args,types,body),(None:Vernacexpr.decl_notation) 
-		 | (_,Wf _,_,_,_) | (_,Mes _,_,_,_)  -> 
+		 | (name,None,args,types,body),recdef -> 
+		     let names =  (Topconstr.names_of_local_assums args) in
+		     if  is_one_rec recdef  && List.length names > 1 then
+		       Util.user_err_loc
+			 (Util.dummy_loc,"GenFixpoint",
+			  Pp.str "the recursive argument needs to be specified")
+		     else 
+		       (name,0,args,types,body),(None:Vernacexpr.decl_notation)
+		 | (_,Some (Wf _),_,_,_),_ | (_,Some (Mes _),_,_,_),_-> 
 		     error 
 		       ("Cannot use mutual definition with well-founded recursion")
 	      ) 
-	      fixpoint_exprl 
+	      (List.combine fixpoint_exprl recdefs)
 	  in
 	  (* ok all the expressions are structural *) 
 	  let fix_names = 
@@ -323,10 +338,10 @@ let register (fixpoint_exprl :  newfixpoint_expr list) =
   ()
 
 
-let do_generate_principle fix_rec_l = 
-  (* we first of all checks whether on not all the correct 
-     assumption  are here 
-  *)
-  let newfixpoint_exprl = List.map compute_annot fix_rec_l in 
-  (* we can then register the functions *) 
-  register newfixpoint_exprl 
+(* let do_generate_principle fix_rec_l =  *)
+(*   (\* we first of all checks whether on not all the correct  *)
+(*      assumption  are here  *)
+(*   *\) *)
+(*   let newfixpoint_exprl = List.map compute_annot fix_rec_l in  *)
+(*   (\* we can then register the functions *\)  *)
+(*   register(\*  newfixpoint_exprl  *\) fix_rec_l *)
