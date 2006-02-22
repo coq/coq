@@ -994,7 +994,7 @@ JPROVERVO=
 
 CCVO=
 
-SUBTACVO=
+SUBTACVO=contrib/subtac/FixSub.vo
 
 RTAUTOVO = \
  contrib/rtauto/Bintree.vo contrib/rtauto/Rtauto.vo
