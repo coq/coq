@@ -1,5 +1,0 @@
-#!/bin/sh
-
-./tradv8 $1
-mv $1 $1.save
-mv $1.v8 $1

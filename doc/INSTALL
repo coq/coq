@@ -1,0 +1,65 @@
+                           The Coq documentation
+                           =====================
+
+The Coq documentation includes 
+
+- A Reference Manual
+- A Tutorial
+- A document presenting the Coq standard library
+- A list of questions/answers in the FAQ style
+
+The sources of the documents are mainly made of LaTeX code from which
+user-readable PostScript or PDF files, or a user-browsable bunch of
+html files are generated.
+
+Prerequisite
+------------
+
+To produce the documents, you need the coqtop, coq-tex, coqdoc and
+gallina tools, with same version number as the current
+documentation. These four tools normally come with any basic Coq
+installation.
+
+In addition, to produce the PostScript documents, the following tools
+are needed:
+
+  - latex (latex2e)
+  - dvips
+  - bibtex
+  - makeindex
+  - pngtopnm and pnmtops (for the Reference Manual and the FAQ)
+
+To produce the PDF documents, the following tools are needed:
+
+  - pdflatex
+  - bibtex
+
+To produce the html documents, the following tools are needed:
+
+  - hevea (e.g. 1.07 works)
+
+To produce the documentation of the standard library, a source copy of
+the coq distribution is needed.
+
+Compilation
+-----------
+
+To produce all PostScript documents, do:                make all-ps
+To produce all PDF documents, do:                       make all-pdf
+To produce all html documents, do:                      make all-html
+To produce all formats of the Reference Manual, do:     make refman
+To produce all formats of the Tutorial, do:             make tutorial
+To produce all formats of the Coq Standard Library, do: make stdlib
+To produce all formats of the FAQ, do:                  make faq
+
+Installation
+------------
+
+To install all produced documents, do:
+
+  make DOCDIR=/some/directory/for/documentation install
+
+DOCDIR defauts to /usr/share/doc/coq-x.y were x.y is the version number
+
+
+
