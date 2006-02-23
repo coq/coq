@@ -4,7 +4,7 @@ Changes from V8.0
 Syntax
 
 - No more support for version 7 syntax and for translation to version 8 syntax.
-- Support for primitive interpretation of string litterals
+- Support for primitive interpretation of string literals
 - Extended support for Unicode ranges (Unicode doc TODO)
 
 Environment variables
@@ -84,9 +84,10 @@ Modules
 
 Notations
 
-- "format" option aware of recursive notations
-- added insertion of spaces by default in recursive notations w/o separators
-- no more automatic printing box in case of user-provided printing "format"
+- "format" option aware of recursive notations.
+- added insertion of spaces by default in recursive notations w/o separators.
+- no more automatic printing box in case of user-provided printing "format".
+- new notation "exists! x:A, P" for unique existence.
 
 Library
 
