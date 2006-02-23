@@ -141,16 +141,6 @@ Notation "'exists2' x : t , p & q" := (ex2 (fun x:t => p) (fun x:t => q))
    format "'[' 'exists2'  '/  ' x  :  t ,  '/  ' '[' p  &  '/' q ']' ']'")
   : type_scope.
 
-Notation "'exists' ! x , P" := 
-  (exists x',  (fun x => P) x' /\ forall x'', (fun x => P) x'' -> x' = x'')
-  (at level 200, x ident, right associativity,
-   format "'[' 'exists' !  '/  ' x ,  '/  ' P ']'") : type_scope.
-Notation "'exists' ! x : A , P" := 
-  (exists x' : A,  (fun x => P) x' /\ forall x'':A, (fun x => P) x'' -> x' = x'')
-  (at level 200, x ident, right associativity,
-   format "'[' 'exists' !  '/  ' x  :  A ,  '/  ' P ']'") : type_scope.
-
-
 (** Derived rules for universal quantification *)
 
 Section universal_quantification.
@@ -289,3 +279,14 @@ Proof.
 Qed.
 
 Hint Immediate sym_eq sym_not_eq: core v62.
+
+(** Other notations *)
+
+Notation "'exists' ! x , P" := 
+  (exists x',  (fun x => P) x' /\ forall x'', (fun x => P) x'' -> x' = x'')
+  (at level 200, x ident, right associativity,
+   format "'[' 'exists' !  '/  ' x ,  '/  ' P ']'") : type_scope.
+Notation "'exists' ! x : A , P" := 
+  (exists x' : A,  (fun x => P) x' /\ forall x'':A, (fun x => P) x'' -> x' = x'')
+  (at level 200, x ident, right associativity,
+   format "'[' 'exists' !  '/  ' x  :  A ,  '/  ' P ']'") : type_scope.
