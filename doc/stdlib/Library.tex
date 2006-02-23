@@ -3,15 +3,18 @@
 \usepackage[latin1]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{fullpage}
-\usepackage[noweb]{coqweb}
+\usepackage{coqdoc}
 
-\input{./title}
-\input{./macros}
+\input{../common/version}
+\input{../common/title}
+\input{../common/macros}
 
 \begin{document}
  
 \coverpage{The standard library}%
 {\ }
+{This material is distributed under the terms of the GNU Lesser
+General Public License Version 2.1.}
 
 \tableofcontents
 
@@ -53,7 +56,7 @@ is also a version of this document in HTML format on the WWW, which
 you can access from the \Coq\ home page at
 \texttt{http://coq.inria.fr/library}.
 
-\input{library.coqweb.tex}
+\input{library.coqdoc}
 
 \end{document}
 

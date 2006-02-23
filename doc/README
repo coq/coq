@@ -5,40 +5,26 @@ V8.0 is divided into the following documents :
 
      * Tutorial.ps: An introduction to the use of the Coq Proof Assistant;
 
-     * Reference-Manual-base.ps:  215 pp., includes
+     * Reference-Manual.ps:
 
-     - the description of Gallina, the language of Coq
-     - the description of the Vernacular, the commands of Coq
-     - the description of each tactic
-     - chapters about Grammar/Syntax extentions and Writing tactics
-     - index on tactics, commands and error messages
+       Base chapters:
+       - the description of Gallina, the language of Coq
+       - the description of the Vernacular, the commands of Coq
+       - the description of each tactic
+       - index on tactics, commands and error messages
 
-     * Reference-Manual-addendum.ps, 75 pp., includes more detailed
-       explanations and examples about the following topics:
-
-     - the extended Cases (C.Cornes)
-     - the Coercions (A. Saïbi)
-     - the tactic Omega (P. Crégut)
-     - the Correctness tactic (J.-C. Filliâtre)
-     - the extraction features (J.-C. Filliâtre and P. Letouzey) 
-     - the tactic Ring (S. Boutin and P. Loiseleur)
-     - the Setoid_replace tactic (C. Renard)
-
-     Index, page and chapter numbers are shared by the two documents, in
-     order to make cross-references possible. There is also a on the ftp
-     server a Postscript file Reference-Manual-all.ps that contains the two
-     documents (base and addendum).
+       Additional chapters:
+       - the extended Cases (C.Cornes)
+       - the coercions (A. Saïbi)
+       - the tactic Omega (P. Crégut)
+       - the extraction features (J.-C. Filliâtre and P. Letouzey) 
+       - the tactic Ring (S. Boutin and P. Loiseleur)
+       - the Setoid_replace tactic (C. Renard)
+       - etc.
 
      * Library.ps: A description of the Coq standard library;
 
-     * CHANGES: A description of the differences between version 8.0
-       and previous versions
-
      * rectypes.ps : A tutorial on recursive types by Eduardo Gimenez
 
-Documentation is also available in the DVI format (you can get the DVI docs 
-separately or in the tar file all-dvi.docs.tar).
-
-The Reference Manual and the Tutorial are also available in HTML format 
+Documentation is also available in the PDF format and HTML format
 (online at http://coq.inria.fr or by ftp in the file doc-html.tar.gz).
-

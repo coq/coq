@@ -1,368 +1,280 @@
 # Makefile for the Coq documentation
 
-# if coqc,coqtop,coq-tex are not in your PATH, you need the environment 
-# variable COQBIN to be correctly set  
-# (COQTOP is autodetected)
-# (some files are preprocessed using Coq and some part of the documentation
-# is automatically built from the theories sources)
+# COQTOP needs to be set to a coq source repository
 
 # To compile documentation, you need the following tools:
-# Dvi: latex (latex2e), bibtex, makeindex, dviselect (package RPM dviutils)
-# Ps: dvips, psutils (ftp://ftp.dcs.ed.ac.uk/pub/ajcd/psutils.tar.gz)
+# Dvi: latex (latex2e), bibtex, makeindex
 # Pdf: pdflatex
-# Html:
-#   - hevea: http://para.inria.fr/~maranget/hevea/
-#   - htmlSplit: http://coq.inria.fr/~delahaye
-# Rapports INRIA: dviselect, rrkit (par Michel Mauny)
-
-
-ifeq ("$(COQBIN)","")
- COQBINPATH =  
-else    
- COQBINPATH = $(COQBIN)/
-endif
-
-DOCCOQTOP=$(COQBINPATH)coqtop #.byte
-DOCCOQC=$(COQBINPATH)coqc
-COQTOP=`$(DOCCOQC) -where`
-COQTEX=$(COQBINPATH)coq-tex -n 72 -image $(DOCCOQTOP) -v -sl -small
-#COQWEBSTY=$(HOME)/lib/tex/
-COQWEBSTY=/usr/share/texmf/tex/latex/misc/
-HEVEALIB=/usr/local/lib/hevea:/usr/lib/hevea
+# Html: hevea (http://hevea.inria.fr) >= 1.05
 
 LATEX=latex
 BIBTEX=bibtex -min-crossrefs=10
 MAKEINDEX=makeindex
 PDFLATEX=pdflatex
 
-MKDIR=mkdir
-TEST=test
+HEVEALIB=/usr/local/lib/hevea:/usr/lib/hevea
+TEXINPUTS=$(HEVEALIB):.:
 
-TEXINPUTS=/usr/local/lib/rrkit/RRINPUTSDIR:$(COQWEBSTY):$(HEVEALIB):.:
+DOCCOQTOP=$(COQTOP)/bin/coqtop
+COQTEX=$(COQTOP)/bin/coq-tex -n 72 -image $(DOCCOQTOP) -v -sl -small
+COQDOC=$(COQTOP)/bin/coqdoc
 
-INPUTS=./version.tex ./macros.tex ./title.tex ./headers.tex ./Reference-Manual.tex
-
-LIBFILES=library/Logic.tex library/Datatypes.tex library/Peano.tex \
-         library/Wf.tex library/Specif.tex
-
-REFMANCOQTEXFILES=\
-  RefMan-gal.v.tex RefMan-ext.v.tex RefMan-mod.v.tex RefMan-tac.v.tex \
-  RefMan-cic.v.tex RefMan-lib.v.tex RefMan-tacex.v.tex \
-  RefMan-syn.v.tex RefMan-oth.v.tex
-
-COQTEXFILES= Cases.v.tex Coercion.v.tex Extraction.v.tex \
-  Omega.v.tex Changes.v.tex Tutorial.v.tex Polynom.v.tex \
-  Setoid.v.tex Helm.tex
-#SUPPRIME: Program.v.tex Natural.v.tex Correctness.v.tex
-
-REFMANFILES= Reference-Manual.tex RefMan-pre.tex RefMan-int.tex \
-  RefMan-pro.tex RefMan-com.tex RefMan-ltac.tex RefMan-uti.tex \
-  RefMan-ide.tex coqide.eps coqide-queries.eps RefMan-add.tex RefMan-modr.tex \
-  $(REFMANCOQTEXFILES) 
-
-REFMAN=Reference-Manual
-
-VERSION=8.0
+VERSION=8.0pl3
 #VERSION=POSITIONNEZ-CETTE-VARIABLE
 
-FTPDOCDIR=/net/pauillac/infosystems/ftp/coq/coq/V$(VERSION)/doc
-WWWDOCDIR=/net/pauillac/infosystems/www/coq/doc
+######################################################################
+### General rules
+######################################################################
 
-FTPDOCS=Reference-Manual-base.ps.gz Reference-Manual-base.dvi.gz \
-        Reference-Manual-addendum.ps.gz Reference-Manual-addendum.dvi.gz\
-        Reference-Manual-all.ps.gz Reference-Manual-all.dvi.gz\
-#	Library.dvi.gz Library.ps.gz\
-        Tutorial.dvi.gz Tutorial.ps.gz\
-#        README all-ps-docs.tar.gz\
-#	Changes.dvi.gz Changes.ps.gz
+all: all-html all-pdf all-ps
 
-FTPHTMLDOCS=doc-html.tar.gz
+all-html:\
+  tutorial/Tutorial.v.html refman/html/index.html \
+  faq/html/index.html stdlib/html/index.html
 
-#########################
-# Principal targets 
-########################
+all-pdf:\
+  tutorial/Tutorial.v.pdf refman/Reference-Manual.pdf \
+  faq/faq.v.pdf stdlib/Library.pdf
 
-all: check-env all-ps all-pdf
+all-ps:\
+  tutorial/Tutorial.v.ps refman/Reference-Manual.ps \
+  faq/faq.v.ps stdlib/Library.ps
 
-check-env:
-	@if $(TEST) "$(COQBIN)" = ""; then \
-		if coq-tex; then true ; \
-		else echo "coq-tex not found, COQBIN undefined"; exit 1; fi; \
-	fi
-	@if $(TEST) "$(COQTOP)" = ""; then echo "COQTOP undefined"; exit 1; \
-		else echo "COQTOP = $(COQTOP)"; fi
+refman:\
+  refman/html/index.html refman/Reference-Manual.ps refman/Reference-Manual.pdf
 
-coq-part: $(REFMANCOQTEXFILES) $(COQTEXFILES) demos-programs library/libdoc.tex
+tutorial:\
+  tutorial/Tutorial.v.html tutorial/Tutorial.v.ps tutorial/Tutorial.v.pdf
 
-latex-part: all-dvi
+stdlib:\
+  stdlib/html/index.html stdlib/Library.ps stdlib/Library.pdf
 
-all-dvi: Tutorial.v.dvi Reference-Manual.dvi # faq.v.dvi Library.dvi Changes.v.dvi
+faq:\
+  faq/html/index.html faq/faq.v.ps faq/faq.v.pdf
 
-all-pdf: Tutorial.v.pdf Reference-Manual.pdf # faq.v.pdf Library.pdf Changes.v.pdf
-
-all-ps: Tutorial.v.ps Reference-Manual.ps # faq.v.ps  Library.ps Changes.v.ps
-
-all-html: Tutorial.v.html Reference-Manual.html # faq.v.html Library.html Changes.v.html
-
-#version
-version.tex: Makefile
-	echo "\newcommand{\coqversion}{$(VERSION)}" > version.tex
-
-
-# dvips et dviselect existent sur loupiac
-distrib:
-	make check-env
-	make clean-coq demos-programs
-	make clean-latex all-dvi all-ps all-pdf compress-latex
-	make clean-html all-html doc-html.tar.gz html-www
-
-compress-latex:
-	sh Reference-Manual.sh
-	mv -f Reference-Manual.ps Reference-Manual-all.ps
-	mv -f Tutorial.v.ps Tutorial.ps
-	mv -f Tutorial.v.dvi Tutorial.dvi
-	mv -f Reference-Manual.dvi Reference-Manual-all.dvi
-#	mv -f Changes.v.ps Changes.ps
-#	mv -f Changes.v.dvi Changes.dvi
-	- mv -f Tutorial.v.pdf Tutorial.pdf
-#	- mv -f Changes.v.pdf Changes.pdf
-	tar cf all-ps-docs.tar Reference-Manual-base.ps \
-	  Reference-Manual-addendum.ps Tutorial.ps # Library.ps # Changes.ps
-	gzip -f *.ps
-	gzip -f *.dvi
-	gzip -f *.pdf
-	gzip -f all-ps-docs.tar
-
-Tutorial.v.html: Tutorial.v.tex
-	hevea ./book-html.sty ./coq-html.sty ./Tutorial.v
-
-Changes.v.html: Changes.v.tex
-	hevea ./Changes.v.tex
-
-Reference-Manual.html: $(INPUTS) $(REFMANFILES) $(COQTEXFILES) biblio.bib
-#1.05 ?	hevea -fix ./book-html.sty ./coq-html.sty ./Reference-Manual.tex
-#1.04	hevea ./book-html.sty ./coq-html.sty ./Reference-Manual.tex
-	hevea -fix -nosymb -exec xxdate.exe ./Reference-Manual.tex
-
-faq.v.html: faq.v.tex
-	hevea ./faq.v
-
-coq.info: $(INPUTS) $(REFMANFILES) $(COQTEXFILES) biblio.bib
-	hevea -info ./book-html.sty ./coq-html.sty ./Reference-Manual.tex
-
-doc-html.tar.gz: all-html
-	$(MKDIR) -p coq-docs-html
-	rm -rf coq-docs-html/*
-	cp Tutorial.v.html coq-docs-html/tutorial.html
-	cp Reference-Manual.html coqide-queries.png coqide.png coq-docs-html 
-	(cd coq-docs-html; hacha -o toc.html ./Reference-Manual.html; rm ./Reference-Manual.html)
-	cp cover.html main.html main-0.html coq-docs-html
-	tar cf doc-html.tar coq-docs-html
-	gzip -f doc-html.tar
-
-# Pour le site de Coq.
-html-www: all-html
-	$(MKDIR) -p www
-	rm -rf www/*
-	cp Tutorial.v.html www/tutorial.html
-	cp coqide-queries.png coqide.png www
-	(cd www; hacha -o toc.html ../Reference-Manual.html)
-	cp cover.html main.html main-0.html www
-	ln -s main.html www/index.html
-
-
-clean-refman:
-	rm -f Reference-Manual.toc Reference-Manual.idx Reference-Manual.atoc\
-	  Reference-Manual.aux Reference-Manual.bbl Reference-Manual.blg\
-	  Reference-Manual.ilg Reference-Manual.ind\
-	  Reference-Manual.tacidx Reference-Manual.tacind\
-	  Reference-Manual.comidx Reference-Manual.comind\
-	  Reference-Manual.erridx Reference-Manual.errind\
-          Reference-Manual.dvi Reference-Manual.ps\
-	  Reference-Manual.sh\
-	  $(REFMANFILES:.tex=.aux) $(REFMANFILES:.tex=.log)\
-	  $(COQTEXFILES:.tex=.aux) $(COQTEXFILES:.tex=.log)
-
-clean-latex: clean-refman
-	rm -f *.dvi *.aux *.log *.bbl *.blg *.ps *.toc *.idx *~ *.ilg *.ind\
-	*.dvi.gz *.ps.gz *.pdf *.pdf.gz
-
-clean-coq:
-	rm -f *.v.tex avl.ml heapsort.ml euclid.ml library/libdoc.tex *.cm[io]
-
-clean: clean-coq clean-latex
-
-clean-html:
-	rm -f Tutorial.v.html Reference-Manual.html # Changes.v.html
-	rm -f *.hatoc *.haux *.hcomind *.herrind *.hidx *.hind *.htacind *.htoc
-
-
-cleanall: clean clean-html
-
-#########################
-# Implicit rules
-#########################
+######################################################################
+### Implicit rules
+######################################################################
 
 .SUFFIXES: .dvi .tex .v.tex .ps .pdf .eps .png
 
-.tex.dvi:
-	$(LATEX) $<
-	$(LATEX) $<
-
-.tex.pdf:
-	$(PDFLATEX) $<
-	$(PDFLATEX) $<
-
 .tex.v.tex:
-	$(COQTEX) $<
+	(cd `dirname $<`; $(COQTEX) `basename $<`)
 
 .dvi.ps:
-	dvips -o $@ $<
+	(cd `dirname $<`; dvips -o `basename $@` `basename $<`)
 
-%.eps: %.png
+.png.eps:
 	pngtopnm $< | pnmtops -equalpixels -noturn -rle > $@
 
+clean:
+	rm -f */*.dvi */*.aux */*.log */*.bbl */*.blg */*.toc \
+	*/*.idx */*~ */*.ilg */*.ind */*.dvi.gz */*.ps.gz */*.pdf.gz\
+	*/*.???idx */*.???ind */*.v.tex */*.atoc */*.lof\
+	*/*.hatoc */*.haux */*.hcomind */*.herrind */*.hidx */*.hind \
+	*/*.htacind */*.htoc */*.v.html
+	rm -f stdlib/index-list.html stdlib/index-body.html \
+	  stdlib/library.coqdoc.tex stdlib/library.files \
+	  stdlib/library.files.ls
+	rm -f refman/euclid.ml{,i} refman/heapsort.ml{,i}
+	rm -f common/version.tex
+	rm -f refman/*.eps refman/Reference-Manual.html
 
+cleanall: clean
+	rm -f */*.ps */*.pdf
+	rm -rf refman/html stdlib/html faq/html tutorial/tutorial.v.html
 
-##########################
-# Dependencies
-##########################
+######################################################################
+# Common
+######################################################################
 
-Library.dvi: $(INPUTS) library.coqweb.tex Library.tex
-	$(LATEX) Library
-	$(LATEX) Library
+COMMON=common/version.tex common/title.tex common/macros.tex 
 
-Library.pdf: $(INPUTS) library.coqweb.tex Library.tex
-	$(PDFLATEX) Library
-	$(PDFLATEX) Library
+### Version
 
-# L'option -exec xxdate.exe sert a produire la date (macro \today) 
-# mais ne marche pas avec hevea 1.04
-Library.html: $(INPUTS) library.coqweb.tex Library.tex
-	hevea ./coq-html.sty -exec xxdate.exe $(COQWEBSTY)/coqweb.sty ./Library.tex
-#1.04	hevea ./coq-html.sty $(COQWEBSTY)/coqweb.sty ./Library.tex
+common/version.tex: Makefile
+	echo "\newcommand{\coqversion}{$(VERSION)}" > common/version.tex
 
-LIBDIRS= Logic Bool Arith ZArith Reals Lists Sets Relations \
-         Wellfounded IntMap
+######################################################################
+# Reference Manual
+######################################################################
 
-library.coqweb.tex: library.files
-	WHERE=`pwd` ; \
-	cd $(COQTOP)/theories; \
-	coqweb --noweb -o $$WHERE/$@ --no-preamble `cat $$WHERE/library.files`
+REFMANCOQTEXFILES=\
+  refman/RefMan-gal.v.tex refman/RefMan-ext.v.tex \
+  refman/RefMan-mod.v.tex refman/RefMan-tac.v.tex \
+  refman/RefMan-cic.v.tex refman/RefMan-lib.v.tex \
+  refman/RefMan-tacex.v.tex refman/RefMan-syn.v.tex \
+  refman/RefMan-oth.v.tex \
+  refman/Cases.v.tex refman/Coercion.v.tex refman/Extraction.v.tex \
+  refman/Omega.v.tex refman/Polynom.v.tex \
+  refman/Setoid.v.tex refman/Helm.tex # refman/Natural.v.tex
 
-GALLINA=$(COQBINPATH)gallina
+REFMANTEXFILES=\
+  refman/headers.tex \
+  refman/Reference-Manual.tex refman/RefMan-pre.tex \
+  refman/RefMan-int.tex refman/RefMan-pro.tex \
+  refman/RefMan-com.tex refman/RefMan-ltac.tex \
+  refman/RefMan-uti.tex refman/RefMan-ide.tex \
+  refman/RefMan-add.tex refman/RefMan-modr.tex \
+  $(REFMANCOQTEXFILES) \
 
-# On garde la liste de tous les *.v avec dates dans library.files.ls
-# Si elle a change depuis la derniere fois ou library.files n'existe pas
-# on fabrique des .g (si besoin) et la liste library.files dans 
-# l'ordre de ls -tr des *.vo
-# Ce dernier trie les fichiers dans l'ordre inverse de leur date de création
-# En supposant que make fait son boulot, ca fait un tri topologique du
-# graphe des dépendances
-library.files::
-	rm -f library.files.ls.tmp
-	(cd $(COQTOP)/theories ; find $(LIBDIRS) -name "*.v" -ls) > library.files.ls.tmp
-	if ! test -e library.files || ! cmp library.files.ls library.files.ls.tmp; then \
-	  mv -f library.files.ls.tmp library.files.ls; \
-	  rm -f library.files; touch library.files; \
-	  ABSOLUTE=`pwd`/library.files ; \
-	  for rep in $(LIBDIRS) ; do \
-	    (cd $(COQTOP)/theories/$$rep ; \
-	     echo $$rep/intro.tex >> $$ABSOLUTE ; \
-	     VOFILES=`ls -tr *.vo` ; \
-	     for file in $$VOFILES ; do \
-		VF=`basename $$file \.vo` ; \
-		if $(TEST) \( ! -e $$VF.g \) -o \( $$VF.v -nt $$VF.g \) ; then \
-	          $(GALLINA) $$VF.v; fi ; \
-		echo $$rep/$$VF.g >> $$ABSOLUTE ; \
-             done \
-	    ) ; \
-	  done ; \
-	fi
+REFMANEPSFILES= refman/coqide.eps refman/coqide-queries.eps
 
-demos-programs:
-#	(cd ../theories/DEMOS/PROGRAMS ; make all)
+REFMANFILES=\
+  $(REFMANTEXFILES) $(COMMON) $(REFMANEPSFILES) refman/biblio.bib
 
-Recursive-Definition.v.tex: ./title.tex Recursive-Definition.tex
+REFMANPNGFILES=$(REFMANEPSFILES:.eps=.png)
 
-Tutorial.v.dvi: ./version.tex ./title.tex Tutorial.v.tex
-Tutorial.v.pdf: ./version.tex ./title.tex Tutorial.v.tex
-
-# RefMan-ppr.v.tex: ../tactics/eqdecide.cmo
-
-# RefMan-tus.v.tex: ../tactics/EqDecide.vo ../tactics/eqdecide.cmo
-
-Reference-Manual.ps: Reference-Manual.dvi
+### Reference Manual (printable format)
 
 # The second LATEX compilation is necessary otherwise the pages of the index
 # are not correct (don't know why...) - BB
-Reference-Manual.dvi: $(INPUTS) $(REFMANFILES) $(COQTEXFILES) biblio.bib
-	$(LATEX) Reference-Manual
-	$(BIBTEX) Reference-Manual
-	$(LATEX) Reference-Manual
-	$(MAKEINDEX) Reference-Manual
-	$(MAKEINDEX) Reference-Manual.tacidx -o Reference-Manual.tacind
-	$(MAKEINDEX) Reference-Manual.comidx -o Reference-Manual.comind
-	$(MAKEINDEX) Reference-Manual.erridx -o Reference-Manual.errind
-	$(LATEX) Reference-Manual
-	$(LATEX) Reference-Manual
+refman/Reference-Manual.dvi: $(REFMANFILES)
+	(cd refman;\
+	$(LATEX) Reference-Manual;\
+	$(BIBTEX) Reference-Manual;\
+	$(LATEX) Reference-Manual;\
+	$(MAKEINDEX) Reference-Manual;\
+	$(MAKEINDEX) Reference-Manual.tacidx -o Reference-Manual.tacind;\
+	$(MAKEINDEX) Reference-Manual.comidx -o Reference-Manual.comind;\
+	$(MAKEINDEX) Reference-Manual.erridx -o Reference-Manual.errind;\
+	$(LATEX) Reference-Manual;\
+	$(LATEX) Reference-Manual)
 
-Reference-Manual.pdf: Reference-Manual.dvi
-	#rm -f Reference-Manual.sh
-	$(PDFLATEX) Reference-Manual.tex
+refman/Reference-Manual.pdf: refman/Reference-Manual.dvi
+	(cd refman; $(PDFLATEX) Reference-Manual.tex)
 
-quick: $(INPUTS) $(REFMANFILES) $(COQTEXFILES) biblio.bib
-	#rm -f Reference-Manual.sh
-	$(LATEX) Reference-Manual
+### Reference Manual (browsable format)
+
+refman/Reference-Manual.html: refman/Reference-Manual.dvi # to ensure bbl file
+	(cd refman; hevea -fix -nosymb -exec xxdate.exe ./Reference-Manual.tex)
+
+refman/html/index.html: refman/Reference-Manual.html $(REFMANPNGFILES) \
+                        refman/cover.html refman/index.html
+	- rm -rf refman/html
+	mkdir refman/html
+	cp $(REFMANPNGFILES) refman/html
+	(cd refman/html; hacha -o toc.html ../Reference-Manual.html)
+	cp refman/cover.html refman/html
+	cp refman/index.html refman/html
+
+######################################################################
+# Tutorial
+######################################################################
+
+tutorial/Tutorial.v.dvi: common/version.tex common/title.tex tutorial/Tutorial.v.tex
+	(cd tutorial; $(LATEX) Tutorial.v)
+
+tutorial/Tutorial.v.pdf: common/version.tex common/title.tex tutorial/Tutorial.v.dvi
+	(cd tutorial; $(PDFLATEX) Tutorial.v.tex)
+
+tutorial/Tutorial.v.html: tutorial/Tutorial.v.tex
+	(cd tutorial; hevea -exec xxdate.exe Tutorial.v)
 
 
-###################
-# RT
-###################
-# Fabrication d'un RT INRIA (utilise rrkit de Michel Mauny)
-Reference-Manual-RT.dvi: Reference-Manual.dvi RefMan-cover.tex
-	dviselect -i Reference-Manual.dvi -o RefMan-body.dvi 3:
-	$(LATEX) RefMan-cover.tex
-	set a=`tail -1 Reference-Manual.log`;\
-	set a=expr \("$$a" : '.*(\(.*\) pages.*'\) % 2;\
-	if $(TEST) "$$a = 0";\
-	 then rrkit  RefMan-cover.dvi RefMan-body.dvi Reference-Manual-RT.dvi;\
-	 else rrkit -odd RefMan-cover.dvi RefMan-body.dvi Reference-Manual-RT.dvi;\
-	fi
+######################################################################
+# FAQ
+######################################################################
 
-# Fabrication d'un RT INRIA (utilise rrkit de Michel Mauny)
-Tutorial-RT.dvi : Tutorial.v.dvi Tutorial-cover.tex
-	dviselect -i Tutorial.v.dvi -o Tutorial-body.dvi 3:
-	$(LATEX) Tutorial-cover.tex
-	set a=`tail -1 Tutorial.v.log`;\
-	set a=expr \("$$a" : '.*(\(.*\) pages.*'\) % 2;\
-	if $(TEST) "$$a = 0";\
-	 then rrkit      Tutorial-cover.dvi Tutorial-body.dvi Tutorial-RT.dvi;\
-	 else rrkit -odd Tutorial-cover.dvi Tutorial-body.dvi Tutorial-RT.dvi;\
-	fi
+faq/faq.v.dvi: common/version.tex common/title.tex faq/faq.v.tex
+	(cd faq;\
+	$(LATEX) faq.v;\
+	$(BIBTEX) faq.v;\
+	$(LATEX) faq.v;\
+	$(LATEX) faq.v)
 
-################ doc ftp and www installation ############
-doc-ftp-www-install: doc-ftp-install doc-www-install
+faq/faq.v.pdf: common/version.tex common/title.tex faq/faq.v.dvi faq/axioms.png
+	(cd faq; $(PDFLATEX) faq.v.tex)
 
-doc-ftp-install: 
-	- mkdir $(FTPDOCDIR)
-	cp $(FTPDOCS) $(FTPHTMLDOCS) $(FTPDOCDIR)
-	- chmod g+w $(FTPDOCDIR)/*
+faq/faq.v.html: faq/faq.v.dvi # to ensure faq.v.bbl
+	(cd faq; hevea -fix -nosymb faq.v.tex)
 
-faq-www-install:
-	cp faq.v.html $(WWWDOCDIR)/faq.html
+faq/html/index.html: faq/faq.v.html
+	- rm -rf faq/html
+	mkdir faq/html
+	cp faq/interval_discr.v faq/axioms.png faq/html
+	cp faq/faq.v.html faq/html/index.html
 
-doc-www-install: 
-	(cd $(WWWDOCDIR); rm -f node*.html main*.html toc.html \
-	 tutorial.html changes.html cover.html)
-	cp www/* $(WWWDOCDIR)
+######################################################################
+# Standard library
+######################################################################
 
-# traducteur V7 -> V8
-tradv8: tradv8.ml4
-	ocamlopt.opt -o $@ str.cmxa unix.cmxa -pp "camlp4o -impl" -impl $^
+GLOBDUMP=$(COQTOP)/glob.dump
 
-v8: tradv8
-	for f in `grep -l coq_exa *tex`; do \
-	  echo $$f; \
-	  ./tradv8 $$f; mv $$f $$f.save; mv $$f.v8 $$f; \
-	done
+LIBDIRS=\
+  Logic Bool Arith ZArith Reals \
+  Lists Strings IntMap Sorting \
+  Sets Relations Wellfounded 
+
+$(GLOBDUMP): $(COQDOC)
+	(cd $(COQTOP); $(MAKE) GLOB="-dump-glob $(GLOBDUMP)" coqlib)
+
+### Standard library (browsable html format)
+
+stdlib/index-body.html: $(GLOBDUMP)
+	- rm -rf stdlib/html
+	mkdir stdlib/html
+	(cd stdlib/html;\
+	 $(COQDOC) -q --multi-index --body-only --html --glob-from $(GLOBDUMP)\
+	  -R $(COQTOP)/theories Coq $(COQTOP)/theories/*/*.v)
+	mv stdlib/html/index.html stdlib/index-body.html
+
+stdlib/index-list.html: stdlib/index-list.html.template
+	./stdlib/make-library-index stdlib/index-list.html
+
+stdlib/html/index.html: stdlib/index-list.html stdlib/index-body.html stdlib/index-trailer.html
+	cat $^ > $@
+
+### Standard library (printable format - produces > 350 pages)
+
+stdlib/library.files:
+	(cd stdlib; GALLINA=gallina ./make-library-files)
+
+stdlib/library.coqdoc.tex: stdlib/library.files
+	WHERE=`pwd`/stdlib; cd $(COQTOP)/theories; \
+	$(COQDOC) -q --body-only --latex -o $$WHERE/library.coqdoc.tex \
+         -R `pwd`/$(COQTOP)/theories Coq `cat $$WHERE/library.files`
+
+stdlib/Library.dvi: $(COMMON) stdlib/library.coqdoc.tex stdlib/Library.tex
+	(cd stdlib;\
+	$(LATEX) Library;\
+	$(LATEX) Library)
+
+stdlib/Library.pdf: $(COMMON) stdlib/library.coqdoc.tex stdlib/Library.dvi
+	(cd stdlib; $(PDFLATEX) Library)
+
+######################################################################
+# Install all documentation files
+######################################################################
+
+COQINSTALLPREFIX=
+DOCDIR=/usr/local/share/doc/coq-8.0
+FULLDOCDIR=$(COQINSTALLPREFIX)$(DOCDIR)
+HTMLINSTALLDIR=$(FULLDOCDIR)/html
+PRINTABLEINSTALLDIR=$(FULLDOCDIR)/ps
+
+install-doc: install-meta install-doc-html install-doc-printable
+
+install-meta:
+	mkdir $(DOCDIC)
+	cp LICENCE $(DOCDIC)/LICENCE.doc
+#	cp $(COQTOP)/LICENCE $(COQTOP)/CREDITS $(COQTOP)/COPYRIGHT $(DOCDIC)
+#	cp $(COQTOP)/README $(COQTOP)/CHANGES $(DOCDIC)
+
+install-doc-html: all-html
+	mkdir $(HTMLINSTALLDIR)
+	cp -r refman/html $(HTMLINSTALLDIR)/refman
+	cp -r stdlib/html $(HTMLINSTALLDIR)/stdlib
+	cp -r tutorial/tutorial.html $(HTMLINSTALLDIR)/
+	cp -r faq/html $(HTMLINSTALLDIR)/faq
+
+install-doc-printable: all-pdf all-ps
+	mkdir $(PRINTABLEINSTALLDIR)
+	cp -r refman/Reference-manual.pdf $(PRINTABLEINSTALLDIR)
+	cp -r stdlib/Library.pdf $(PRINTABLEINSTALLDIR)
+	cp -r tutorial/Tutorial.v.pdf $(PRINTABLEINSTALLDIR)/Tutorial.pdf
+	cp -r faq/faq.v.pdf $(PRINTABLEINSTALLDIR)/faq.pdf
+	cp -r refman/Reference-manual.ps $(PRINTABLEINSTALLDIR)
+	cp -r stdlib/Library.ps $(PRINTABLEINSTALLDIR)
+	cp -r tutorial/Tutorial.v.ps $(PRINTABLEINSTALLDIR)/Tutorial.ps
+	cp -r faq/faq.v.ps $(PRINTABLEINSTALLDIR)/faq.ps

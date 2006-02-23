@@ -1,4 +1,8 @@
+\ifx\pdfoutput\undefined   % si on est pas en pdflatex
 \documentclass[a4paper]{article}
+\else
+\documentclass[a4paper,pdftex]{article}
+\fi
 \pagestyle{plain}
 
 % yay les symboles
@@ -10,7 +14,12 @@
 \usepackage{fullpage}
 \usepackage[latin1]{inputenc}
 \usepackage[english]{babel}
-\usepackage{graphics}
+
+\ifx\pdfoutput\undefined   % si on est pas en pdflatex
+  \usepackage[dvips]{graphicx}
+\else
+  \usepackage[pdftex]{graphicx}
+\fi
 
 %\input{../macros.tex}
 
@@ -464,7 +473,14 @@ standard library of {\Coq}. The most interesting ones are
 Here is a summary of the relative strength of these axioms, most
 proofs can be found in directory {\tt Logic} of the standard library.
 
-\includegraphics{axioms}
+%HEVEA\imgsrc{axioms.png}
+%BEGIN LATEX
+\ifx\pdfoutput\undefined   % si on est pas en pdflatex
+\includegraphics[width=1.0\textwidth]{axioms.eps}
+\else
+\includegraphics[width=1.0\textwidth]{axioms.png}
+\fi
+%END LATEX
 
 \Question{What standard axioms are inconsistent with {\Coq}?}
 
@@ -1621,7 +1637,7 @@ Definition R (a b:list nat) := length a < length b.
 \item Prove that this order is well-founded (in fact that all elements in {\tt A} are accessible along {\tt R}).
 
 \begin{coq_example*}
-Lemma Rwf : well_founded (A:=R).
+Lemma Rwf : well_founded R.
 \end{coq_example*}
 
 \item Define the step function (which needs proofs that recursive
@@ -1989,6 +2005,7 @@ This is provable without requiring any axiom because axiom $K$
 directly holds on {\tt nat}. Here is a proof using question \ref{K-nat}.
 
 \begin{coq_example*}
+Require Import Arith.
 Scheme le_ind' := Induction for le Sort Prop.
 Theorem le_uniqueness_proof : forall (n m : nat) (p q : n <= m), p = q.
 Proof.

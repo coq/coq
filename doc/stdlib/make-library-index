@@ -1,0 +1,32 @@
+#!/bin/sh
+
+# Instantiate links to library files in index template
+
+FILE=$1
+
+cp -f $FILE.template tmp
+echo -n Building file index-list.prehtml ...
+for i in $COQTOP/theories/*; do
+  d=`basename $i`
+  if [ "$d" != "Num" -a "$d" != "CVS" ]; then
+  for j in $i/*.v; do
+    b=`basename $j .v`
+    rm -f tmp2
+    grep -q theories/$d/$b.v tmp
+    a=$?
+    if [ $a = 0 ]; then
+      sed -e "s/theories\/$d\/$b.v/<a href=\"Coq.$d.$b.html\">$b<\/a>/g" tmp > tmp2
+      mv -f tmp2 tmp
+    else
+      echo Warning: theories/$d/$b.v is missing in the template file
+    fi
+  done
+  fi
+  rm -f tmp2
+  sed -e "s/#$d#//" tmp > tmp2
+  mv -f tmp2 tmp
+done
+a=`grep theories tmp`
+if [ $? = 0 ]; then echo Warning: extra files:; echo $a; fi
+mv tmp $FILE
+echo Done
