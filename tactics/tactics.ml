@@ -1784,13 +1784,14 @@ let recolle_clenv scheme lid elimclause gl =
       arr in
   let nmv = Array.length lindmv in
   let lidparams,lidargs = cut_list (scheme.nparams) lid in
+  let nidargs = List.length lidargs in
   (* parameters correspond to first elts of lid. *)
   let clauses_params = 
     mapi (fun id i -> mkVar id , pf_get_hyp_typ gl id , lindmv.(i)) lidparams in
   (* arguments correspond to last elts of lid. *)
   let clauses_args = 
     mapi 
-      (fun id i -> mkVar id , pf_get_hyp_typ gl id , lindmv.(nmv-i-1))
+      (fun id i -> mkVar id , pf_get_hyp_typ gl id , lindmv.(nmv-nidargs+i))
       lidargs in
   let clause_indarg = 
     match scheme.indarg with
@@ -1855,12 +1856,12 @@ let induction_from_context_l isrec elim_info lid names gl =
     List.fold_left (fun a (id,b,_) -> if b = None then (mkVar id)::a else a) [] deps in
   (* terms to patternify we must patternify indarg or farg if present in concl *)
   let lid_in_pattern = 
-    if scheme.indarg <> None & not scheme.indarg_in_concl then indvars
-    else hyp0::indvars in
+    if scheme.indarg <> None & not scheme.indarg_in_concl then List.rev indvars
+    else List.rev (hyp0::indvars) in
   let lidcstr = List.map (fun x -> mkVar x) lid_in_pattern in
   let realindvars = (* hyp0 is a real induction arg if it is not the
 		       farg in the conclusion of the induction scheme *)
-    lid_params @ (if scheme.farg_in_concl then indvars else hyp0::indvars) in
+    List.rev ((if scheme.farg_in_concl then indvars else hyp0::indvars) @ lid_params) in
   (* Magistral effet de bord: comme dans induction_from_context. *)
   tclTHENLIST
     [ 
@@ -1868,7 +1869,7 @@ let induction_from_context_l isrec elim_info lid names gl =
       if deps = [] then tclIDTAC else apply_type tmpcl deps_cstr;
       thin dephyps; (* clear dependent hyps *)
       (* pattern to make the predicate appear. *)
-      reduce (Pattern (List.map (fun e -> ([],e)) (List.rev lidcstr))) onConcl;
+      reduce (Pattern (List.map (fun e -> ([],e)) lidcstr)) onConcl;
       (* FIXME: Tester ca avec un principe dependant et non-dependant *)
       (if isrec then tclTHENFIRSTn else tclTHENLASTn)
        	(tclTHENLIST [ 
