@@ -34,11 +34,11 @@ all-html:\
 
 all-pdf:\
   tutorial/Tutorial.v.pdf refman/Reference-Manual.pdf \
-  faq/faq.v.pdf stdlib/Library.pdf
+  faq/FAQ.v.pdf stdlib/Library.pdf
 
 all-ps:\
   tutorial/Tutorial.v.ps refman/Reference-Manual.ps \
-  faq/faq.v.ps stdlib/Library.ps
+  faq/FAQ.v.ps stdlib/Library.ps
 
 refman:\
   refman/html/index.html refman/Reference-Manual.ps refman/Reference-Manual.pdf
@@ -50,7 +50,7 @@ stdlib:\
   stdlib/html/index.html stdlib/Library.ps stdlib/Library.pdf
 
 faq:\
-  faq/html/index.html faq/faq.v.ps faq/faq.v.pdf
+  faq/html/index.html faq/FAQ.v.ps faq/FAQ.v.pdf
 
 ######################################################################
 ### Implicit rules
@@ -74,7 +74,7 @@ clean:
 	*/*.hatoc */*.haux */*.hcomind */*.herrind */*.hidx */*.hind \
 	*/*.htacind */*.htoc */*.v.html
 	rm -f stdlib/index-list.html stdlib/index-body.html \
-	  stdlib/library.coqdoc.tex stdlib/library.files \
+	  stdlib/Library.coqdoc.tex stdlib/library.files \
 	  stdlib/library.files.ls
 	rm -f refman/euclid.ml{,i} refman/heapsort.ml{,i}
 	rm -f common/version.tex
@@ -176,24 +176,24 @@ tutorial/Tutorial.v.html: tutorial/Tutorial.v.tex
 # FAQ
 ######################################################################
 
-faq/faq.v.dvi: common/version.tex common/title.tex faq/faq.v.tex
+faq/FAQ.v.dvi: common/version.tex common/title.tex faq/FAQ.v.tex
 	(cd faq;\
-	$(LATEX) faq.v;\
-	$(BIBTEX) faq.v;\
-	$(LATEX) faq.v;\
-	$(LATEX) faq.v)
+	$(LATEX) FAQ.v;\
+	$(BIBTEX) FAQ.v;\
+	$(LATEX) FAQ.v;\
+	$(LATEX) FAQ.v)
 
-faq/faq.v.pdf: common/version.tex common/title.tex faq/faq.v.dvi faq/axioms.png
-	(cd faq; $(PDFLATEX) faq.v.tex)
+faq/FAQ.v.pdf: common/version.tex common/title.tex faq/FAQ.v.dvi faq/axioms.png
+	(cd faq; $(PDFLATEX) FAQ.v.tex)
 
-faq/faq.v.html: faq/faq.v.dvi # to ensure faq.v.bbl
-	(cd faq; hevea -fix -nosymb faq.v.tex)
+faq/FAQ.v.html: faq/FAQ.v.dvi # to ensure FAQ.v.bbl
+	(cd faq; hevea -fix -nosymb FAQ.v.tex)
 
-faq/html/index.html: faq/faq.v.html
+faq/html/index.html: faq/FAQ.v.html
 	- rm -rf faq/html
 	mkdir faq/html
 	cp faq/interval_discr.v faq/axioms.png faq/html
-	cp faq/faq.v.html faq/html/index.html
+	cp faq/FAQ.v.html faq/html/index.html
 
 ######################################################################
 # Standard library
@@ -230,17 +230,17 @@ stdlib/html/index.html: stdlib/index-list.html stdlib/index-body.html stdlib/ind
 stdlib/library.files:
 	(cd stdlib; GALLINA=gallina ./make-library-files)
 
-stdlib/library.coqdoc.tex: stdlib/library.files
+stdlib/Library.coqdoc.tex: stdlib/library.files
 	WHERE=`pwd`/stdlib; cd $(COQTOP)/theories; \
-	$(COQDOC) -q --body-only --latex -o $$WHERE/library.coqdoc.tex \
+	$(COQDOC) -q --body-only --latex -o $$WHERE/Library.coqdoc.tex \
          -R `pwd`/$(COQTOP)/theories Coq `cat $$WHERE/library.files`
 
-stdlib/Library.dvi: $(COMMON) stdlib/library.coqdoc.tex stdlib/Library.tex
+stdlib/Library.dvi: $(COMMON) stdlib/Library.coqdoc.tex stdlib/Library.tex
 	(cd stdlib;\
 	$(LATEX) Library;\
 	$(LATEX) Library)
 
-stdlib/Library.pdf: $(COMMON) stdlib/library.coqdoc.tex stdlib/Library.dvi
+stdlib/Library.pdf: $(COMMON) stdlib/Library.coqdoc.tex stdlib/Library.dvi
 	(cd stdlib; $(PDFLATEX) Library)
 
 ######################################################################
@@ -273,8 +273,8 @@ install-doc-printable: all-pdf all-ps
 	cp -r refman/Reference-manual.pdf $(PRINTABLEINSTALLDIR)
 	cp -r stdlib/Library.pdf $(PRINTABLEINSTALLDIR)
 	cp -r tutorial/Tutorial.v.pdf $(PRINTABLEINSTALLDIR)/Tutorial.pdf
-	cp -r faq/faq.v.pdf $(PRINTABLEINSTALLDIR)/faq.pdf
+	cp -r faq/FAQ.v.pdf $(PRINTABLEINSTALLDIR)/FAQ.pdf
 	cp -r refman/Reference-manual.ps $(PRINTABLEINSTALLDIR)
 	cp -r stdlib/Library.ps $(PRINTABLEINSTALLDIR)
 	cp -r tutorial/Tutorial.v.ps $(PRINTABLEINSTALLDIR)/Tutorial.ps
-	cp -r faq/faq.v.ps $(PRINTABLEINSTALLDIR)/faq.ps
+	cp -r faq/FAQ.v.ps $(PRINTABLEINSTALLDIR)/FAQ.ps
