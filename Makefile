@@ -508,7 +508,7 @@ COQIDEBYTE=bin/coqide.byte$(EXE)
 COQIDEOPT=bin/coqide.opt$(EXE)
 COQIDE=bin/coqide$(EXE)
 
-COQIDECMO=ide/utils/okey.cmo ide/utils/uoptions.cmo \
+COQIDECMO=ide/utils/okey.cmo ide/utils/config_file.cmo \
 	  ide/utils/configwin_keys.cmo ide/utils/configwin_types.cmo \
 	  ide/utils/configwin_messages.cmo ide/utils/configwin_ihm.cmo \
 	  ide/utils/configwin.cmo \
