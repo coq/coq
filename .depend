@@ -3252,28 +3252,30 @@ contrib/xml/xmlentries.cmx: contrib/xml/xmlcommand.cmx \
     toplevel/vernacinterp.cmx lib/util.cmx lib/pp.cmx parsing/pcoq.cmx \
     interp/genarg.cmx parsing/extend.cmx parsing/egrammar.cmx \
     toplevel/cerrors.cmx 
+ide/utils/config_file.cmo: ide/utils/config_file.cmi 
+ide/utils/config_file.cmx: ide/utils/config_file.cmi 
 ide/utils/configwin.cmo: ide/utils/configwin_types.cmo \
     ide/utils/configwin_ihm.cmo ide/utils/configwin.cmi 
 ide/utils/configwin.cmx: ide/utils/configwin_types.cmx \
     ide/utils/configwin_ihm.cmx ide/utils/configwin.cmi 
-ide/utils/configwin_html_config.cmo: ide/utils/config_file.cmi \
-    ide/utils/configwin_types.cmo ide/utils/configwin_messages.cmo \
-    ide/utils/configwin_ihm.cmo 
-ide/utils/configwin_html_config.cmx: ide/utils/config_file.cmx \
-    ide/utils/configwin_types.cmx ide/utils/configwin_messages.cmx \
-    ide/utils/configwin_ihm.cmx 
-ide/utils/configwin_ihm.cmo: ide/utils/config_file.cmi ide/utils/okey.cmi \
-    ide/utils/configwin_types.cmo ide/utils/configwin_messages.cmo 
-ide/utils/configwin_ihm.cmx: ide/utils/config_file.cmx ide/utils/okey.cmx \
-    ide/utils/configwin_types.cmx ide/utils/configwin_messages.cmx 
-ide/utils/configwin_types.cmo: ide/utils/config_file.cmi \
-    ide/utils/configwin_keys.cmo 
-ide/utils/configwin_types.cmx: ide/utils/config_file.cmx \
-    ide/utils/configwin_keys.cmx 
+ide/utils/configwin_html_config.cmo: ide/utils/configwin_types.cmo \
+    ide/utils/configwin_messages.cmo ide/utils/configwin_ihm.cmo \
+    ide/utils/config_file.cmi 
+ide/utils/configwin_html_config.cmx: ide/utils/configwin_types.cmx \
+    ide/utils/configwin_messages.cmx ide/utils/configwin_ihm.cmx \
+    ide/utils/config_file.cmx 
+ide/utils/configwin_ihm.cmo: ide/utils/okey.cmi ide/utils/configwin_types.cmo \
+    ide/utils/configwin_messages.cmo ide/utils/config_file.cmi 
+ide/utils/configwin_ihm.cmx: ide/utils/okey.cmx ide/utils/configwin_types.cmx \
+    ide/utils/configwin_messages.cmx ide/utils/config_file.cmx 
+ide/utils/configwin_types.cmo: ide/utils/configwin_keys.cmo \
+    ide/utils/config_file.cmi 
+ide/utils/configwin_types.cmx: ide/utils/configwin_keys.cmx \
+    ide/utils/config_file.cmx 
 ide/utils/okey.cmo: ide/utils/okey.cmi 
 ide/utils/okey.cmx: ide/utils/okey.cmi 
-ide/utils/config_file.cmo: ide/utils/config_file.cmi 
-ide/utils/config_file.cmx: ide/utils/config_file.cmi 
+ide/utils/uoptions.cmo: ide/utils/uoptions.cmi 
+ide/utils/uoptions.cmx: ide/utils/uoptions.cmi 
 tools/coqdoc/alpha.cmo: tools/coqdoc/alpha.cmi 
 tools/coqdoc/alpha.cmx: tools/coqdoc/alpha.cmi 
 tools/coqdoc/index.cmo: tools/coqdoc/alpha.cmi tools/coqdoc/index.cmi 
