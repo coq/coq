@@ -439,7 +439,7 @@ contrib/xml/doubleTypeInference.cmi: kernel/term.cmi kernel/names.cmi \
 contrib/xml/xmlcommand.cmi: contrib/xml/xml.cmi kernel/term.cmi \
     proofs/proof_type.cmi contrib/xml/proof2aproof.cmo library/libnames.cmi \
     pretyping/evd.cmi contrib/xml/acic.cmo 
-ide/utils/configwin.cmi: ide/utils/uoptions.cmi 
+ide/utils/configwin.cmi: ide/utils/config_file.cmi 
 tools/coqdoc/output.cmi: tools/coqdoc/index.cmi 
 tools/coqdoc/pretty.cmi: tools/coqdoc/index.cmi 
 config/coq_config.cmo: config/coq_config.cmi 
@@ -3256,24 +3256,24 @@ ide/utils/configwin.cmo: ide/utils/configwin_types.cmo \
     ide/utils/configwin_ihm.cmo ide/utils/configwin.cmi 
 ide/utils/configwin.cmx: ide/utils/configwin_types.cmx \
     ide/utils/configwin_ihm.cmx ide/utils/configwin.cmi 
-ide/utils/configwin_html_config.cmo: ide/utils/uoptions.cmi \
+ide/utils/configwin_html_config.cmo: ide/utils/config_file.cmi \
     ide/utils/configwin_types.cmo ide/utils/configwin_messages.cmo \
     ide/utils/configwin_ihm.cmo 
-ide/utils/configwin_html_config.cmx: ide/utils/uoptions.cmx \
+ide/utils/configwin_html_config.cmx: ide/utils/config_file.cmx \
     ide/utils/configwin_types.cmx ide/utils/configwin_messages.cmx \
     ide/utils/configwin_ihm.cmx 
-ide/utils/configwin_ihm.cmo: ide/utils/uoptions.cmi ide/utils/okey.cmi \
+ide/utils/configwin_ihm.cmo: ide/utils/config_file.cmi ide/utils/okey.cmi \
     ide/utils/configwin_types.cmo ide/utils/configwin_messages.cmo 
-ide/utils/configwin_ihm.cmx: ide/utils/uoptions.cmx ide/utils/okey.cmx \
+ide/utils/configwin_ihm.cmx: ide/utils/config_file.cmx ide/utils/okey.cmx \
     ide/utils/configwin_types.cmx ide/utils/configwin_messages.cmx 
-ide/utils/configwin_types.cmo: ide/utils/uoptions.cmi \
+ide/utils/configwin_types.cmo: ide/utils/config_file.cmi \
     ide/utils/configwin_keys.cmo 
-ide/utils/configwin_types.cmx: ide/utils/uoptions.cmx \
+ide/utils/configwin_types.cmx: ide/utils/config_file.cmx \
     ide/utils/configwin_keys.cmx 
 ide/utils/okey.cmo: ide/utils/okey.cmi 
 ide/utils/okey.cmx: ide/utils/okey.cmi 
-ide/utils/uoptions.cmo: ide/utils/uoptions.cmi 
-ide/utils/uoptions.cmx: ide/utils/uoptions.cmi 
+ide/utils/config_file.cmo: ide/utils/config_file.cmi 
+ide/utils/config_file.cmx: ide/utils/config_file.cmi 
 tools/coqdoc/alpha.cmo: tools/coqdoc/alpha.cmi 
 tools/coqdoc/alpha.cmx: tools/coqdoc/alpha.cmi 
 tools/coqdoc/index.cmo: tools/coqdoc/alpha.cmi tools/coqdoc/index.cmi 
