@@ -91,7 +91,7 @@ B) INTÉGRATION À LA SECTION CONTRIBUTIONS UTILISATEURS DU SITE WEB
    # des contribution par numéro de version de Coq
    #
    scp all-contribs/CONTRIBNAME.tar.gz \
-     $MACHINE:/net/yquem/infosystems/www/coq/contributions/VX.XX
+     $MACHINE:/net/yquem/infosystems/www/logical/coq/contributions/VX.XX
 
 5) S'assurer que le site web de coq a été mis à jour correctement, que
    la nouvelle contribution apparaît dans les versions anglaise et
