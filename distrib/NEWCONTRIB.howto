@@ -66,6 +66,10 @@ B) INTÉGRATION À LA SECTION CONTRIBUTIONS UTILISATEURS DU SITE WEB
    configurer ../config avec le tag de la version courante de Coq et
    s'être assuré que contrib-X.XX était effacé.
 
+   Cette étape nécessite la présence de htmlpp.
+   Attention il y a (au moins) deux programmes qui portent ce nom sur le web. 
+   Ici on a besoin de celui-ci : http://htmlpp.sourceforge.net/
+
 4) Faire une mise à jour partielle du site web de coq:
 
    export MACHINE=pauillac.inria.fr
