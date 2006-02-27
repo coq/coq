@@ -1,10 +1,9 @@
 
-type typ = string
-(***
-  | Base of string
-  | Arrow of typ * typ
-  | Tuple of typ list
-***)
+(* Polymorphic First-Order Logic (that is Why's input logic) *)
+
+type typ = 
+  | Tvar of string
+  | Tid of string * typ list
 
 type term =   
   | Cst of int
@@ -33,13 +32,14 @@ and form =
   | True
   | False
 
-type hyp =
-  | Assert of string * form
-  | DeclVar of string * typ list * typ
-  | DeclPred of string * typ list
-  | DeclType of string
+(* the integer indicates the number of type variables *)
+type decl =
+  | DeclType of string * int
+  | DeclFun of string * int * typ list * typ
+  | DeclPred of string * int * typ list
+  | Axiom of string * form
 
-type query = hyp list * form
+type query = decl list * form
 
 
 (* prover result *)

@@ -1,6 +1,15 @@
-(* Author : Nicolas Ayache and Jean-Christophe Filliâtre *)
-(* Goal : Tactics to call decision procedures *)
+(* Authors: Nicolas Ayache and Jean-Christophe Filliâtre *)
+(* Tactics to call decision procedures *)
 
+(* Works in two steps: 
+
+   - first the Coq context and the current goal are translated in
+     Polymorphic First-Order Logic (see fol.mli in this directory)
+
+   - then the resulting query is passed to the Why tool that translates
+     it to the syntax of the selected prover (Simplify, CVC Lite, haRVey,
+     Zenon)
+*)
 
 open Util
 open Pp
@@ -22,7 +31,7 @@ let coq_modules =
   init_modules @ [logic_dir] @ arith_modules @ zarith_base_modules
     @ [["Coq"; "omega"; "OmegaLemmas"]]
 
-let constant = gen_constant_in_modules "Omega" coq_modules
+let constant = gen_constant_in_modules "dp" coq_modules
 
 let coq_Z = lazy (constant "Z")
 let coq_Zplus = lazy (constant "Zplus")
@@ -89,6 +98,39 @@ let coq_rename_vars env vars =
        id :: newvars, Environ.push_named (id, None, t) newenv)
     vars ([],env)
 
+(* extract the prenex type quantifications i.e.
+   type_quantifiers env (A1:Set)...(Ak:Set)t = A1...An, (env+Ai), t *)
+let decomp_type_quantifiers env t =
+  let rec loop vars t = match kind_of_term t with
+    | Prod (n, a, t) when is_Set a -> 
+	loop ((n,a) :: vars) t
+    | _ -> 
+	let vars, env = coq_rename_vars env vars in
+	let t = substl (List.map mkVar vars) t in
+	List.rev vars, env, t
+  in
+  loop [] t
+
+(* same thing with lambda binders (for axiomatize body) *)
+let decomp_type_lambdas env t =
+  let rec loop vars t = match kind_of_term t with
+    | Lambda (n, a, t) when is_Set a -> 
+	loop ((n,a) :: vars) t
+    | _ -> 
+	let vars, env = coq_rename_vars env vars in
+	let t = substl (List.map mkVar vars) t in
+	List.rev vars, env, t
+  in
+  loop [] t
+
+let decompose_arrows = 
+  let rec arrows_rec l c = match kind_of_term c with
+    | Prod (_,t,c) when not (dependent (mkRel 1) c) -> arrows_rec (t :: l) c
+    | Cast (c,_,_) -> arrows_rec l c
+    | _ -> List.rev l, c
+  in 
+  arrows_rec []
+
 let rec eta_expanse t vars env i =
   assert (i >= 0);
   if i = 0 then
@@ -104,9 +146,14 @@ let rec eta_expanse t vars env i =
       | _ -> 
 	  assert false
 
+let rec skip_k_args k cl = match k, cl with
+  | 0, _ -> cl
+  | _, _ :: cl -> skip_k_args (k-1) cl
+  | _, [] -> raise NotFO
+
 (* Coq global references *)
 
-type global = Gnot_fo | Gfo of Fol.hyp
+type global = Gnot_fo | Gfo of Fol.decl
 
 let globals = ref Refmap.empty
 let globals_stack = ref []
@@ -159,7 +206,7 @@ let injection c l =
   let f = Imp (Fatom (Eq (App (c, vars xl), App (c, vars yl))), f) in
   let foralls = List.fold_right (fun (x,t) p -> Forall (x, t, p)) in
   let f = foralls xl (foralls yl f) in
-  let ax = Assert ("injection_" ^ c, f) in
+  let ax = Axiom ("injection_" ^ c, f) in
   globals_stack := ax :: !globals_stack
 
 (* rec_names_for c [|n1;...;nk|] builds the list of constant names for 
@@ -184,28 +231,53 @@ let term_abstractions = Hashtbl.create 97
 let new_abstraction = 
   let r = ref 0 in fun () -> incr r; "abstraction_" ^ string_of_int !r
 
-(* assumption : p:Z *)
-let rec fol_term_of_positive env p =
+(* translates a Coq term p:positive into a FOL term of type int *)
+let rec fol_term_of_positive tv env p =
   match kind_of_term p with
     | Term.Construct _ when p = Lazy.force coq_xH ->
 	Cst 1
     | Term.App (f, [|a|]) when f = Lazy.force coq_xI ->
-	Plus (Mult (Cst 2, (fol_term_of_positive env a)), Cst 1)
+	Plus (Mult (Cst 2, (fol_term_of_positive tv env a)), Cst 1)
     | Term.App (f, [|a|]) when f = Lazy.force coq_xO ->
-	Mult (Cst 2, (fol_term_of_positive env a))
+	Mult (Cst 2, (fol_term_of_positive tv env a))
     | Var id ->
 	Fol.App (string_of_id id, [])
     | _ ->
-	tr_term [] env p
+	tr_term tv [] env p
 
-(* assumption: t:Set or Type *)
-and tr_type env ty =
-  if ty = Lazy.force coq_Z then [], "INT"
-  else if is_Prop ty then [], "BOOLEAN"
-  else if is_Set ty then [], "TYPE"
+(* translate a Coq term t:Set into a FOL type expression;
+   tv = list of type variables *)
+and tr_type tv env t =
+  if t = Lazy.force coq_Z then 
+    Tid ("int", [])
+  else match kind_of_term t with
+    | Var x when List.mem x tv ->
+	Tvar (string_of_id x)
+    | _ ->
+	let f, cl = decompose_app t in
+	begin try
+	  let r = global_of_constr f in
+	  match tr_global env r with
+	    | DeclType (id, k) -> 
+		assert (k = List.length cl); (* since t:Set *)
+		Tid (id, List.map (tr_type tv env) cl)
+	    | _ -> 
+		raise NotFO
+	with 
+	  | Not_found ->
+	      raise NotFO
+	  | NotFO -> 
+	      (* we need to abstract some part of (f cl) *)
+	      (*TODO*)
+	      raise NotFO
+	end
+
+(**** OLD TR_TYPE
+  else if is_Prop ty then [], Tid ("BOOLEAN", [])
+  else if is_Set ty then [], Tid ("TYPE", [])
   else if is_imp_term ty then 
     begin match match_with_imp_term ty with
-      | Some (t1, t2) -> begin match tr_type env t1, tr_type env t2 with
+      | Some (t1, t2) -> begin match tr_type tv env t1, tr_type tv env t2 with
 	  | ([], t1'), (l2, t2') -> t1' :: l2, t2'
 	  | _ -> raise NotFO
 	end
@@ -215,14 +287,14 @@ and tr_type env ty =
     try let r = global_of_constr ty in
     (try
        begin match lookup_global r with
-	 | DeclType id -> [], id
+	 | DeclType (id,0) -> [], Tid (id,[])
 	 | _ -> assert false (* assumption: t:Set *)
        end
      with Not_found ->
        begin match r with
 	 | IndRef i ->
 	     let id = rename_global r in
-	     let d = DeclType id in
+	     let d = DeclType (id,0) in
 	     add_global r (Gfo d);
 	     globals_stack := d :: !globals_stack;
 	     iter_all_constructors i
@@ -230,50 +302,68 @@ and tr_type env ty =
 		  let rc = global_of_constr c in
 		  try
 		    begin match tr_global env rc with
-		      | DeclVar (idc, [], _) -> ()
-		      | DeclVar (idc, al, _) -> injection idc al
+		      | DeclFun (idc, [], _) -> ()
+		      | DeclFun (idc, al, _) -> injection idc al
 		      | _ -> assert false
 		    end
 		  with NotFO ->
 		    ());
-	     [], id
+	     [], Tid (id,[])
 	 | _ -> 
 	     let id = rename_global r in
-	     let d = DeclType id in
+	     let d = DeclType (id,0) in
 	     add_global r (Gfo d);
 	     globals_stack := d :: !globals_stack;
-	     [], id
+	     [], Tid (id,[])
 	     (* TODO: constant type definition *)
        end)
     with Not_found -> raise NotFO
+***)
 
-and make_term_abstraction env c =
+and make_term_abstraction tv env c =
   let ty = Typing.type_of env Evd.empty c in
-  let tl,t = tr_type env ty in
-  try
-    Hashtbl.find term_abstractions c
-  with Not_found ->
-    let id = new_abstraction () in
-    Hashtbl.add term_abstractions c id;
-    globals_stack := (DeclVar (id, tl, t)) :: !globals_stack;
-    id
+  let id = new_abstraction () in
+  match tr_decl env id ty with
+    | DeclFun (id,_,_,_) as d ->
+	begin try
+	  Hashtbl.find term_abstractions c
+	with Not_found ->
+	  Hashtbl.add term_abstractions c id;
+	  globals_stack := d :: !globals_stack;
+	  id
+	end
+    | _ ->
+	raise NotFO
 
-and tr_global_type env id ty =
-  if is_Prop ty then
-    DeclPred (id, [])
-  else if is_Set ty then
-    DeclType id
+(* translate a Coq declaration id:ty in a FOL declaration, that is either
+   - a type declaration : DeclType (id, n) where n:int is the type arity
+   - a function declaration : DeclFun (id, tl, t) ; that includes constants
+   - a predicate declaration : DeclPred (id, tl)
+   - an axiom : Axiom (id, p)
+ *)
+and tr_decl env id ty =
+  let tv, env, t = decomp_type_quantifiers env ty in
+  if is_Set t then
+    DeclType (id, List.length tv)
+  else if is_Prop t then
+    DeclPred (id, List.length tv, [])
   else 
-    let s = Typing.type_of env Evd.empty ty in
+    let s = Typing.type_of env Evd.empty t in
     if is_Prop s then
-      Assert (id, tr_formula [] env ty)
+      Axiom (id, tr_formula tv [] env t)
     else
-      let l, t = tr_type env ty in
-      if is_Set s then DeclVar(id, l, t)
-      else if t = "BOOLEAN" then
-	DeclPred(id, l)
-      else raise NotFO
+      let l, t = decompose_arrows t in
+      let l = List.map (tr_type tv env) l in
+      if is_Prop t then
+	DeclPred(id, List.length tv, l)
+      else 
+	let s = Typing.type_of env Evd.empty t in
+	if is_Set s then 
+	  DeclFun(id, List.length tv, l, tr_type tv env t)
+	else 
+	  raise NotFO
 
+(* tr_global(r) = tr_decl(id(r),typeof(r)) + a cache mechanism *)
 and tr_global env r = match r with
   | VarRef id ->
       lookup_local id
@@ -284,7 +374,7 @@ and tr_global env r = match r with
 	try
 	  let ty = Global.type_of_global r in
 	  let id = rename_global r in
-	  let d = tr_global_type env id ty in
+	  let d = tr_decl env id ty in
 	  (* r can be already declared if it is a constructor *)
 	  if not (mem_global r) then begin 
 	    add_global r (Gfo d);
@@ -303,16 +393,17 @@ and axiomatize_body env r id d = match r with
       begin match (Global.lookup_constant c).const_body with
 	| Some b ->
 	    let b = force b in
+	    let tv, env, b = decomp_type_lambdas env b in
 	    let axioms =
 	      (match d with
-		 | DeclPred (id, []) ->
-		     let value = tr_formula [] env b in
+		 | DeclPred (id, _, []) ->
+		     let value = tr_formula tv [] env b in
 		     [id, And (Imp (Fatom (Pred (id, [])), value),
 			       Imp (value, Fatom (Pred (id, []))))]
-		 | DeclVar (id, [], _) ->
-		     let value = tr_term [] env b in
+		 | DeclFun (id, _, [], _) ->
+		     let value = tr_term tv [] env b in
 		     [id, Fatom (Eq (Fol.App (id, []), value))]
-		 | DeclVar (id, l, _) | DeclPred (id, l) ->
+		 | DeclFun (id, _, l, _) | DeclPred (id, _, l) ->
 		     let b = match kind_of_term b with
 		       (* a single recursive function *)
 		       | Fix (_, (_,_,[|b|])) -> 
@@ -344,19 +435,19 @@ and axiomatize_body env r id d = match r with
 		     let fol_vars = List.map fol_var vars in
 		     let vars = List.combine vars l in
 		     begin match d with
-		       | DeclVar _ ->
+		       | DeclFun _ ->
 			   begin match kind_of_term t with
 			     | Case (ci, _, e, br) ->
-				 equations_for_case env id vars bv ci e br
+				 equations_for_case env id vars tv bv ci e br
 			     | _ -> 
 				 let p = 
 				   Fatom (Eq (App (id, fol_vars), 
-					      tr_term bv env t)) 
+					      tr_term tv bv env t)) 
 				 in
 				 [id, foralls vars p]
 			   end
 		       | DeclPred _ ->
-			   let value = tr_formula bv env t in
+			   let value = tr_formula tv bv env t in
 			   let p = 
 			     And (Imp (Fatom (Pred (id, fol_vars)), value),
 				  Imp (value, Fatom (Pred (id, fol_vars))))
@@ -367,37 +458,28 @@ and axiomatize_body env r id d = match r with
 		     end
 		 | DeclType _ ->
 		     raise NotFO
-		 | Assert _ -> assert false)
+		 | Axiom _ -> assert false)
 	    in
-	    let axioms = List.map (fun (id,ax) -> Assert (id, ax)) axioms in
+	    let axioms = List.map (fun (id,ax) -> Axiom (id, ax)) axioms in
 	    globals_stack := axioms @ !globals_stack
 	| None -> 
 	    () (* Coq axiom *)
       end
   | IndRef i ->
-      (*iter_all_constructors i
-        (let rc = reference_of_constr c in
-match tr_global c with
-  | DeclVar(idc, l, _) ->
-      (fun _ c -> List.map (fun co -> ) (liste des constructeurs à partir de c non compris));*)
-      begin match d with
-	| DeclPred _ ->
-	    iter_all_constructors i
-	      (fun _ c ->
-		 let rc = reference_of_constr c in
-		 try
-		   begin match tr_global env rc with
-		     | Assert _ -> ()
-		     | _ -> assert false
-		   end
-		 with NotFO ->
-		   ());
-	| DeclType _ -> raise NotFO
-	| _ -> assert false
-      end
+      iter_all_constructors i
+	(fun _ c ->
+	   let rc = reference_of_constr c in
+	   try
+	     begin match tr_global env rc with
+	       | DeclFun (_, _, [], _) -> ()
+	       | DeclFun (idc, _, al, _) -> injection idc al
+	       | _ -> ()
+	     end
+	   with NotFO ->
+	     ())
   | _ -> ()
 
-and equations_for_case env id vars bv ci e br = match kind_of_term e with
+and equations_for_case env id vars tv bv ci e br = match kind_of_term e with
   | Var x when List.exists (fun (y, _) -> string_of_id x = y) vars ->
       let eqs = ref [] in
       iter_all_constructors ci.ci_ind
@@ -405,7 +487,7 @@ and equations_for_case env id vars bv ci e br = match kind_of_term e with
 	   try
 	     let cjr = reference_of_constr cj in
 	     begin match tr_global env cjr with
-	       | DeclVar (idc, l, _) ->
+	       | DeclFun (idc, _, l, _) ->
 		   let b = br.(j) in
 		   let rec_vars, b = decompose_lam b in
 		   let rec_vars, env = coq_rename_vars env rec_vars in
@@ -435,7 +517,7 @@ and equations_for_case env id vars bv ci e br = match kind_of_term e with
 		   let vars = remove vars x in
 		   let p = 
 		     Fatom (Eq (App (id, fol_vars), 
-				tr_term bv env b))
+				tr_term tv bv env b))
 		   in
 		   eqs := (id ^ "_" ^ idc, foralls vars p) :: !eqs
 	       | _ -> 
@@ -448,22 +530,22 @@ and equations_for_case env id vars bv ci e br = match kind_of_term e with
 
 
 (* assumption: t:T:Set *)
-and tr_term bv env t =
+and tr_term tv bv env t =
   match kind_of_term t with
     | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zplus -> 
-	Plus (tr_term bv env a, tr_term bv env b)
+	Plus (tr_term tv bv env a, tr_term tv bv env b)
     | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zminus -> 
-	Moins (tr_term bv env a, tr_term bv env b)
+	Moins (tr_term tv bv env a, tr_term tv bv env b)
     | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zmult -> 
-	Mult (tr_term bv env a, tr_term bv env b)
+	Mult (tr_term tv bv env a, tr_term tv bv env b)
     | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zdiv -> 
-	Div (tr_term bv env a, tr_term bv env b)
+	Div (tr_term tv bv env a, tr_term tv bv env b)
     | Term.Construct _ when t = Lazy.force coq_Z0 ->
 	Cst 0
     | Term.App (f, [|a|]) when f = Lazy.force coq_Zpos ->
-	fol_term_of_positive env a
+	fol_term_of_positive tv env a
     | Term.App (f, [|a|]) when f = Lazy.force coq_Zneg ->
-	Moins (Cst 0, (fol_term_of_positive env a))
+	Moins (Cst 0, (fol_term_of_positive tv env a))
     | Term.Var id when List.mem id bv ->
 	App (string_of_id id, [])
     | _ ->
@@ -471,8 +553,9 @@ and tr_term bv env t =
 	begin try
 	  let r = global_of_constr f in
 	  match tr_global env r with
-	    | DeclVar (s, _, _) -> 
-		Fol.App (s, List.map (tr_term bv env) cl)
+	    | DeclFun (s, k, _, _) -> 
+		let cl = skip_k_args k cl in
+		Fol.App (s, List.map (tr_term tv bv env) cl)
 	    | _ -> 
 		raise NotFO
 	with 
@@ -481,34 +564,31 @@ and tr_term bv env t =
 	  | NotFO -> (* we need to abstract some part of (f cl) *)
 	      let rec abstract app = function
 		| [] ->
-		    Fol.App (make_term_abstraction env app, [])
+		    Fol.App (make_term_abstraction tv env app, [])
 		| x :: l as args ->
 		    begin try
-		      let s = make_term_abstraction env app in
-		      Fol.App (s, List.map (tr_term bv env) args)
+		      let s = make_term_abstraction tv env app in
+		      Fol.App (s, List.map (tr_term tv bv env) args)
 		    with NotFO ->
 		      abstract (applist (app, [x])) l
 		    end
 	      in
 	      let app,l = match cl with 
-		| x :: l -> applist (f, [x]), l | _ -> raise NotFO
+		| x :: l -> applist (f, [x]), l | [] -> raise NotFO
 	      in
 	      abstract app l
 	end
 
-and quantifiers n a b bv env =
+and quantifiers n a b tv bv env =
   let vars, env = coq_rename_vars env [n,a] in
   let id = match vars with [x] -> x | _ -> assert false in
   let b = subst1 (mkVar id) b in
-  let t = match tr_type env a with
-    | [], t -> t
-    | _ -> raise NotFO
-  in
+  let t = tr_type tv env a in
   let bv = id :: bv in
   id, t, bv, env, b
 
 (* assumption: f is of type Prop *)
-and tr_formula bv env f =
+and tr_formula tv bv env f =
   let c, args = decompose_app f in
   match kind_of_term c, args with
     | Var id, [] -> 
@@ -516,49 +596,50 @@ and tr_formula bv env f =
     | _, [t;a;b] when c = build_coq_eq () ->
 	let ty = Typing.type_of env Evd.empty t in
 	if is_Set ty then
-	  begin match tr_type env t with
-	    | [], _ ->
-		Fatom (Eq (tr_term bv env a, tr_term bv env b))
-	    | _ -> raise NotFO
-	  end
-	else raise NotFO
+	  let _ = tr_type tv env t in
+	  Fatom (Eq (tr_term tv bv env a, tr_term tv bv env b))
+	else 
+	  raise NotFO
     | _, [a;b] when c = Lazy.force coq_Zle ->
-	Fatom (Le (tr_term bv env a, tr_term bv env b))
+	Fatom (Le (tr_term tv bv env a, tr_term tv bv env b))
     | _, [a;b] when c = Lazy.force coq_Zlt ->
-	Fatom (Lt (tr_term bv env a, tr_term bv env b))
+	Fatom (Lt (tr_term tv bv env a, tr_term tv bv env b))
     | _, [a;b] when c = Lazy.force coq_Zge ->
-	Fatom (Ge (tr_term bv env a, tr_term bv env b))
+	Fatom (Ge (tr_term tv bv env a, tr_term tv bv env b))
     | _, [a;b] when c = Lazy.force coq_Zgt ->
-	Fatom (Gt (tr_term bv env a, tr_term bv env b))
+	Fatom (Gt (tr_term tv bv env a, tr_term tv bv env b))
     | _, [] when c = build_coq_False () ->
 	False
     | _, [] when c = build_coq_True () ->
 	True
     | _, [a] when c = build_coq_not () ->
-	Not (tr_formula bv env a)
+	Not (tr_formula tv bv env a)
     | _, [a;b] when c = build_coq_and () ->
-	And (tr_formula bv env a, tr_formula bv env b)
+	And (tr_formula tv bv env a, tr_formula tv bv env b)
     | _, [a;b] when c = build_coq_or () ->
-	Or (tr_formula bv env a, tr_formula bv env b)
+	Or (tr_formula tv bv env a, tr_formula tv bv env b)
     | Prod (n, a, b), _ ->
 	if is_imp_term f then
-	  Imp (tr_formula bv env a, tr_formula bv env b)
+	  Imp (tr_formula tv bv env a, tr_formula tv bv env b)
 	else
-	  let id, t, bv, env, b = quantifiers n a b bv env in
-	  Forall (string_of_id id, t, tr_formula bv env b)
+	  let id, t, bv, env, b = quantifiers n a b tv bv env in
+	  Forall (string_of_id id, t, tr_formula tv bv env b)
     | _, [_; a] when c = build_coq_ex () ->
 	begin match kind_of_term a with
 	  | Lambda(n, a, b) ->
-	      let id, t, bv, env, b = quantifiers n a b bv env in
-	      Exists (string_of_id id, t, tr_formula bv env b)
-	  | _ -> assert false
-		(* a must be a Lambda since we are in the ex case *) end
+	      let id, t, bv, env, b = quantifiers n a b tv bv env in
+	      Exists (string_of_id id, t, tr_formula tv bv env b)
+	  | _ -> 
+	      (* unusual case of the shape (ex p) *)
+	      raise NotFO (* TODO: we could eta-expanse *)
+	end
     | _ ->
 	begin try
 	  let r = global_of_constr c in
 	  match tr_global env r with
-	    | DeclPred (s, _) -> 
-		Fatom (Pred (s, List.map (tr_term bv env) args))
+	    | DeclPred (s, k, _) -> 
+		let args = skip_k_args k args in
+		Fatom (Pred (s, List.map (tr_term tv bv env) args))
 	    | _ -> 
 		raise NotFO
 	with Not_found ->
@@ -571,7 +652,7 @@ let tr_goal gl =
   let tr_one_hyp (id, ty) = 
     try
       let s = rename_global (VarRef id) in
-      let d = tr_global_type (pf_env gl) s ty in
+      let d = tr_decl (pf_env gl) s ty in
       Hashtbl.add locals id (Gfo d);
       d
     with NotFO ->
@@ -583,18 +664,26 @@ let tr_goal gl =
       (fun h acc -> try tr_one_hyp h :: acc with NotFO -> acc)
       (pf_hyps_types gl) []
   in
-  let c = tr_formula [] (pf_env gl) (pf_concl gl) in
+  let c = tr_formula [] [] (pf_env gl) (pf_concl gl) in
   let hyps = List.rev_append !globals_stack (List.rev hyps) in
   hyps, c
 
 
 type prover = Simplify | CVCLite | Harvey | Zenon
 
+(***
 let call_prover prover q = match prover with
   | Simplify -> Dp_simplify.call (Dp_sorts.query q)
   | CVCLite -> Dp_cvcl.call q
   | Harvey -> error "haRVey not yet interfaced"
   | Zenon -> Dp_zenon.call (Dp_sorts.query q)
+***)
+let call_prover prover q =
+  Dp_why.output_file "test.why" q;
+  ignore (Sys.command "cat test.why");
+  ignore (Sys.command "why --simplify test.why");
+  ignore (Sys.command "timeout 5 Simplify < test_why.sx");
+  Valid
   
 let dp prover gl =
   let concl_type = pf_type_of gl (pf_concl gl) in
@@ -625,7 +714,7 @@ let dp_hint l =
       if is_Prop s then
 	try
 	  let id = rename_global r in
-	  let d = Assert (id, tr_formula [] env ty) in
+	  let d = Axiom (id, tr_formula [] [] env ty) in
 	  add_global r (Gfo d);
 	  globals_stack := d :: !globals_stack
 	with NotFO ->

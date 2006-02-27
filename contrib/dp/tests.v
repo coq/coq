@@ -3,7 +3,6 @@ Reset Initial.
 Require Import ZArith.
 Require Import Classical.
 
-
 (* First example with the 0 and the equality translated *)
 
 Goal 0 = 0.
@@ -44,6 +43,7 @@ Qed.
 
 
 (* Arithmetic *)
+Open Scope Z_scope.
 
 Goal 1 + 1 = 2.
 
