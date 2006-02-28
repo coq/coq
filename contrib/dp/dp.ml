@@ -231,19 +231,35 @@ let term_abstractions = Hashtbl.create 97
 let new_abstraction = 
   let r = ref 0 in fun () -> incr r; "abstraction_" ^ string_of_int !r
 
-(* translates a Coq term p:positive into a FOL term of type int *)
-let rec fol_term_of_positive tv env p =
-  match kind_of_term p with
-    | Term.Construct _ when p = Lazy.force coq_xH ->
-	Cst 1
-    | Term.App (f, [|a|]) when f = Lazy.force coq_xI ->
-	Plus (Mult (Cst 2, (fol_term_of_positive tv env a)), Cst 1)
-    | Term.App (f, [|a|]) when f = Lazy.force coq_xO ->
-	Mult (Cst 2, (fol_term_of_positive tv env a))
-    | Var id ->
-	Fol.App (string_of_id id, [])
-    | _ ->
-	tr_term tv [] env p
+(* Arithmetic constants *)
+
+exception NotArithConstant
+
+(* translates a closed Coq term p:positive into a FOL term of type int *)
+let rec tr_positive p = match kind_of_term p with
+  | Term.Construct _ when p = Lazy.force coq_xH ->
+      Cst 1
+  | Term.App (f, [|a|]) when f = Lazy.force coq_xI ->
+      Plus (Mult (Cst 2, tr_positive a), Cst 1)
+  | Term.App (f, [|a|]) when f = Lazy.force coq_xO ->
+      Mult (Cst 2, tr_positive a)
+  | Term.Cast (p, _, _) ->
+      tr_positive p
+  | _ ->
+      raise NotArithConstant
+
+(* translates a closed Coq term t:Z into a FOL term of type int *)
+let rec tr_arith_constant t = match kind_of_term t with
+  | Term.Construct _ when t = Lazy.force coq_Z0 ->
+      Cst 0
+  | Term.App (f, [|a|]) when f = Lazy.force coq_Zpos ->
+      tr_positive a
+  | Term.App (f, [|a|]) when f = Lazy.force coq_Zneg ->
+      Moins (Cst 0, tr_positive a)
+  | Term.Cast (t, _, _) ->
+      tr_arith_constant t
+  | _ -> 
+      raise NotArithConstant
 
 (* translate a Coq term t:Set into a FOL type expression;
    tv = list of type variables *)
@@ -271,54 +287,6 @@ and tr_type tv env t =
 	      (*TODO*)
 	      raise NotFO
 	end
-
-(**** OLD TR_TYPE
-  else if is_Prop ty then [], Tid ("BOOLEAN", [])
-  else if is_Set ty then [], Tid ("TYPE", [])
-  else if is_imp_term ty then 
-    begin match match_with_imp_term ty with
-      | Some (t1, t2) -> begin match tr_type tv env t1, tr_type tv env t2 with
-	  | ([], t1'), (l2, t2') -> t1' :: l2, t2'
-	  | _ -> raise NotFO
-	end
-      | _ -> assert false
-    end
-  else
-    try let r = global_of_constr ty in
-    (try
-       begin match lookup_global r with
-	 | DeclType (id,0) -> [], Tid (id,[])
-	 | _ -> assert false (* assumption: t:Set *)
-       end
-     with Not_found ->
-       begin match r with
-	 | IndRef i ->
-	     let id = rename_global r in
-	     let d = DeclType (id,0) in
-	     add_global r (Gfo d);
-	     globals_stack := d :: !globals_stack;
-	     iter_all_constructors i
-	       (fun _ c ->
-		  let rc = global_of_constr c in
-		  try
-		    begin match tr_global env rc with
-		      | DeclFun (idc, [], _) -> ()
-		      | DeclFun (idc, al, _) -> injection idc al
-		      | _ -> assert false
-		    end
-		  with NotFO ->
-		    ());
-	     [], Tid (id,[])
-	 | _ -> 
-	     let id = rename_global r in
-	     let d = DeclType (id,0) in
-	     add_global r (Gfo d);
-	     globals_stack := d :: !globals_stack;
-	     [], Tid (id,[])
-	     (* TODO: constant type definition *)
-       end)
-    with Not_found -> raise NotFO
-***)
 
 and make_term_abstraction tv env c =
   let ty = Typing.type_of env Evd.empty c in
@@ -404,6 +372,7 @@ and axiomatize_body env r id d = match r with
 		     let value = tr_term tv [] env b in
 		     [id, Fatom (Eq (Fol.App (id, []), value))]
 		 | DeclFun (id, _, l, _) | DeclPred (id, _, l) ->
+		     Format.eprintf "axiomatize_body %S@." id;
 		     let b = match kind_of_term b with
 		       (* a single recursive function *)
 		       | Fix (_, (_,_,[|b|])) -> 
@@ -528,27 +497,22 @@ and equations_for_case env id vars tv bv ci e br = match kind_of_term e with
   | _ ->
       raise NotFO
 
-
 (* assumption: t:T:Set *)
-and tr_term tv bv env t =
-  match kind_of_term t with
-    | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zplus -> 
-	Plus (tr_term tv bv env a, tr_term tv bv env b)
-    | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zminus -> 
-	Moins (tr_term tv bv env a, tr_term tv bv env b)
-    | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zmult -> 
-	Mult (tr_term tv bv env a, tr_term tv bv env b)
-    | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zdiv -> 
-	Div (tr_term tv bv env a, tr_term tv bv env b)
-    | Term.Construct _ when t = Lazy.force coq_Z0 ->
-	Cst 0
-    | Term.App (f, [|a|]) when f = Lazy.force coq_Zpos ->
-	fol_term_of_positive tv env a
-    | Term.App (f, [|a|]) when f = Lazy.force coq_Zneg ->
-	Moins (Cst 0, (fol_term_of_positive tv env a))
-    | Term.Var id when List.mem id bv ->
-	App (string_of_id id, [])
-    | _ ->
+and tr_term tv bv env t = match kind_of_term t with
+  | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zplus -> 
+      Plus (tr_term tv bv env a, tr_term tv bv env b)
+  | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zminus -> 
+      Moins (tr_term tv bv env a, tr_term tv bv env b)
+  | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zmult -> 
+      Mult (tr_term tv bv env a, tr_term tv bv env b)
+  | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zdiv -> 
+      Div (tr_term tv bv env a, tr_term tv bv env b)
+  | Term.Var id when List.mem id bv ->
+      App (string_of_id id, [])
+  | _ ->
+      try
+	tr_arith_constant t
+      with NotArithConstant ->
 	let f, cl = decompose_app t in
 	begin try
 	  let r = global_of_constr f in

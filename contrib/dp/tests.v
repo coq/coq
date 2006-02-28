@@ -1,4 +1,3 @@
-Reset Initial.
 
 Require Import ZArith.
 Require Import Classical.
@@ -64,10 +63,11 @@ Goal (forall (x y : Z), x = y) -> 0 = 1.
 simplify.
 Qed.
 
+Goal forall (x: nat), (x + 0 = x)%nat.
 
-Goal forall (x y : Z), x + y = y + x.
-
-induction x ; simplify.
+induction x0.
+zenon.
+zenon.
 Qed.
 
 
@@ -98,7 +98,7 @@ simplify.
 Qed.
 
 
-(* Inductive types definitions - call to injection function *)
+(* Inductive types definitions - call to incontrib/dp/jection function *)
 
 Inductive even : Z -> Prop :=
 | even_0 : even 0
@@ -185,9 +185,9 @@ Qed.
 (* sorts issues *)
 
 Parameter foo : Set.         
-Parameter f : nat -> foo -> foo -> nat.
+Parameter ff : nat -> foo -> foo -> nat.
 Parameter g : foo -> foo.
-Goal (forall x:foo, f 0 x x = O) -> forall y, f 0 (g y) (g y) = O.
+Goal (forall x:foo, ff 0 x x = O) -> forall y, ff 0 (g y) (g y) = O.
 simplify.      
 Qed.
 
