@@ -292,7 +292,7 @@ let extract_open_proof sigma pf =
 	let visible_rels =
           map_succeed
             (fun id ->
-               try let n = list_index id vl in (n,id)
+               try let n = proof_variable_index id vl in (n,id)
 	       with Not_found -> failwith "caught")
             (ids_of_named_context goal.evar_hyps) in
 	let sorted_rels =
