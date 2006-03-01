@@ -117,7 +117,7 @@ let extract_open_proof sigma pf =
              (fun id ->
                 (* Section variables are in the [id] list but are not *)
                 (* lambda abstracted in the term [vl]                 *)
-                try let n = Util.list_index id vl in (n,id)
+                try let n = Logic.proof_variable_index id vl in (n,id)
 	        with Not_found -> failwith "caught")
 (*CSC: the above function must be modified such that when it is found  *)
 (*CSC: it becomes a Rel; otherwise a Var. Then it can be already used  *)

@@ -37,9 +37,13 @@ val with_check    : tactic -> tactic
 
 val prim_refiner : prim_rule -> evar_map -> goal -> goal list
 
+type proof_variable
+
 val prim_extractor :
-  (identifier list -> proof_tree -> constr)
-  -> identifier list -> proof_tree -> constr
+  (proof_variable list -> proof_tree -> constr)
+  -> proof_variable list -> proof_tree -> constr
+
+val proof_variable_index : identifier -> proof_variable list -> int
 
 (*s Refiner errors. *)
 

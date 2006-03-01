@@ -566,15 +566,39 @@ let prim_refiner r sigma goal =
 (* Extracting a proof term from the proof tree *)
 
 (* Util *)
+
+type variable_proof_status = ProofVar | SectionVar of identifier
+
+type proof_variable = name * variable_proof_status
+
+let subst_proof_vars = 
+  let rec aux p vars =
+    let _,subst =
+      List.fold_left (fun (n,l) var ->
+        let t = match var with
+          | Anonymous,_ -> l
+          | Name id, ProofVar -> (id,mkRel n)::l
+          | Name id, SectionVar id' -> (id,mkVar id')::l in
+        (n+1,t)) (p,[]) vars
+    in replace_vars (List.rev subst)
+  in aux 1
+         
 let rec rebind id1 id2 = function
-  | [] -> []
-  | id::l -> 
-      if id = id1 then id2::l else
+  | [] -> [Name id2,SectionVar id1]
+  | (na,_ as x)::l -> 
+      if na = Name id1 then (Name id2,ProofVar)::l else
         let l' = rebind id1 id2 l in
-        if id = id2 then
-          (* TODO: find a more elegant way to hide a variable *)
-          (id_of_string "_@")::l'
-        else id::l'
+        if na = Name id2 then (Anonymous,ProofVar)::l' else x::l'
+
+let add_proof_var id vl = (Name id,ProofVar)::vl
+
+let proof_variable_index x = 
+  let rec aux n = function
+    | (Name id,ProofVar)::l when x = id -> n
+    | _::l ->  aux (n+1) l
+    | [] -> raise Not_found
+  in 
+  aux 1
 
 let prim_extractor subfun vl pft =
   let cl = pft.goal.evar_concl in
@@ -582,50 +606,53 @@ let prim_extractor subfun vl pft =
     | Some (Prim (Intro id), [spf]) ->
 	(match kind_of_term (strip_outer_cast cl) with
 	   | Prod (_,ty,_) ->
-	       let cty = subst_vars vl ty in
-	       mkLambda (Name id, cty, subfun (id::vl) spf)
+	       let cty = subst_proof_vars vl ty in
+	       mkLambda (Name id, cty, subfun (add_proof_var id vl) spf)
 	   | LetIn (_,b,ty,_) ->
-	       let cb = subst_vars vl b in
-	       let cty = subst_vars vl ty in
-	       mkLetIn (Name id, cb, cty, subfun (id::vl) spf)
+	       let cb = subst_proof_vars vl b in
+	       let cty = subst_proof_vars vl ty in
+	       mkLetIn (Name id, cb, cty, subfun (add_proof_var id vl) spf)
 	   | _ -> error "incomplete proof!")
 	
     | Some (Prim (Intro_replacing id),[spf]) ->
 	(match kind_of_term (strip_outer_cast cl) with
 	   | Prod (_,ty,_) ->
-	       let cty = subst_vars vl ty in
-	       mkLambda (Name id, cty, subfun (id::vl) spf)
+	       let cty = subst_proof_vars vl ty in
+	       mkLambda (Name id, cty, subfun (add_proof_var id vl) spf)
 	   | LetIn (_,b,ty,_) ->
-	       let cb = subst_vars vl b in
-	       let cty = subst_vars vl ty in
-	       mkLetIn (Name id, cb, cty, subfun (id::vl) spf)
+	       let cb = subst_proof_vars vl b in
+	       let cty = subst_proof_vars vl ty in
+	       mkLetIn (Name id, cb, cty, subfun (add_proof_var id vl) spf)
 	   | _ -> error "incomplete proof!")
 
     | Some (Prim (Cut (b,id,t)),[spf1;spf2]) ->
         let spf1, spf2 = if b then spf1, spf2 else spf2, spf1 in
-	mkLetIn (Name id,subfun vl spf1,subst_vars vl t,subfun (id::vl) spf2)
+	mkLetIn (Name id,subfun vl spf1,subst_proof_vars vl t,
+                 subfun (add_proof_var id vl) spf2)
 
     | Some (Prim (FixRule (f,n,others)),spfl) ->
 	let all = Array.of_list ((f,n,cl)::others) in
-	let lcty = Array.map (fun (_,_,ar) -> subst_vars vl ar) all in
+	let lcty = Array.map (fun (_,_,ar) -> subst_proof_vars vl ar) all in
 	let names = Array.map (fun (f,_,_) -> Name f) all in
 	let vn = Array.map (fun (_,n,_) -> n-1) all in
-	let newvl = List.fold_left (fun vl (id,_,_)->(id::vl)) (f::vl)others in
+	let newvl = List.fold_left (fun vl (id,_,_)-> add_proof_var id vl) 
+          (add_proof_var f vl)others in
 	let lfix = Array.map (subfun newvl) (Array.of_list spfl) in
 	mkFix ((vn,0),(names,lcty,lfix))	
 
     | Some (Prim (Cofix (f,others)),spfl) ->
 	let all = Array.of_list ((f,cl)::others) in
-	let lcty = Array.map (fun (_,ar) -> subst_vars vl ar) all in
+	let lcty = Array.map (fun (_,ar) -> subst_proof_vars vl ar) all in
 	let names  = Array.map (fun (f,_) -> Name f) all in
-	let newvl = List.fold_left (fun vl (id,_)->(id::vl)) (f::vl) others in 
+	let newvl = List.fold_left (fun vl (id,_)-> add_proof_var id vl)
+          (add_proof_var f vl) others in 
 	let lfix = Array.map (subfun newvl) (Array.of_list spfl) in
 	mkCoFix (0,(names,lcty,lfix))
 	  
     | Some (Prim (Refine c),spfl) ->
 	let mvl = collect_meta_variables c in
 	let metamap = List.combine mvl (List.map (subfun vl) spfl) in
-	let cc = subst_vars vl c in 
+	let cc = subst_proof_vars vl c in 
 	plain_instance metamap cc
 
     (* Structural and conversion rules do not produce any proof *)
@@ -636,7 +663,7 @@ let prim_extractor subfun vl pft =
 	subfun vl pf
 
     | Some (Prim (Thin _),[pf]) ->
-     (* No need to make ids Anonymous in vl: subst_vars take the more recent *)
+     (* No need to make ids Anon in vl: subst_proof_vars take the most recent*)
 	subfun vl pf
 	
     | Some (Prim (ThinBody _),[pf]) ->
