@@ -26,6 +26,8 @@ open Hipattern
 open Libnames
 open Declarations
 
+let debug = ref true
+
 let logic_dir = ["Coq";"Logic";"Decidable"]
 let coq_modules =
   init_modules @ [logic_dir] @ arith_modules @ zarith_base_modules
@@ -635,19 +637,61 @@ let tr_goal gl =
 
 type prover = Simplify | CVCLite | Harvey | Zenon
 
-(***
-let call_prover prover q = match prover with
-  | Simplify -> Dp_simplify.call (Dp_sorts.query q)
-  | CVCLite -> Dp_cvcl.call q
-  | Harvey -> error "haRVey not yet interfaced"
-  | Zenon -> Dp_zenon.call (Dp_sorts.query q)
-***)
+let remove_files = List.iter (fun f -> try Sys.remove f with _ -> ())
+
+let sprintf = Format.sprintf
+
+let call_simplify fwhy =
+  if Sys.command (sprintf "why --simplify %s" fwhy) <> 0 then
+    anomaly ("call to why --simplify " ^ fwhy ^ " failed; please report");
+  let fsx = Filename.chop_suffix fwhy ".why" ^ "_why.sx" in
+  let cmd = 
+    sprintf "timeout 10 Simplify %s > out 2>&1 && grep -q -w Valid out" fsx
+  in
+  let out = Sys.command cmd in
+  let r = if out = 0 then Valid else if out = 1 then Invalid else Timeout in
+  if not !debug then remove_files [fwhy; fsx];
+  r
+
+let call_zenon fwhy =
+  if Sys.command (sprintf "why --zenon %s" fwhy) <> 0 then
+    anomaly ("call to why --zenon " ^ fwhy ^ " failed; please report");
+  let fznn = Filename.chop_suffix fwhy ".why" ^ "_why.znn" in
+  let cmd = 
+    sprintf "timeout 10 zenon %s > out 2>&1 && grep -q PROOF-FOUND out" fznn
+  in
+  let out = Sys.command cmd in
+  let r = 
+    if out = 0 then Valid 
+    else if out = 1 then Invalid 
+    else if out = 137 then Timeout 
+    else anomaly ("malformed Zenon input file " ^ fznn)
+  in
+  if not !debug then remove_files [fwhy; fznn];
+  r
+
+let call_cvcl fwhy =
+  if Sys.command (sprintf "why --cvcl %s" fwhy) <> 0 then
+    anomaly ("call to why --cvcl " ^ fwhy ^ " failed; please report");
+  let fcvc = Filename.chop_suffix fwhy ".why" ^ "_why.cvc" in
+  let cmd = 
+    sprintf "timeout 10 cvcl < %s > out 2>&1 && grep -q -w Valid out" fcvc
+  in
+  let out = Sys.command cmd in
+  let r = if out = 0 then Valid else if out = 1 then Invalid else Timeout in
+  if not !debug then remove_files [fwhy; fcvc];
+  r
+
+
 let call_prover prover q =
-  Dp_why.output_file "test.why" q;
-  ignore (Sys.command "cat test.why");
-  ignore (Sys.command "why --simplify test.why");
-  ignore (Sys.command "timeout 5 Simplify < test_why.sx");
-  Valid
+  let fwhy = Filename.temp_file "coq_dp" ".why" in
+  Dp_why.output_file fwhy q;
+  if !debug then ignore (Sys.command (sprintf "cat %s" fwhy));
+  match prover with
+    | Simplify -> call_simplify fwhy
+    | Zenon -> call_zenon fwhy
+    | CVCLite -> call_cvcl fwhy
+    | Harvey -> error "haRVey not yet interfaced"
   
 let dp prover gl =
   let concl_type = pf_type_of gl (pf_concl gl) in

@@ -5,8 +5,7 @@ Require Import Classical.
 (* First example with the 0 and the equality translated *)
 
 Goal 0 = 0.
-
-simplify.
+zenon.
 Qed.
 
 
@@ -16,8 +15,7 @@ Qed.
 Parameter A C : Prop.
 
 Goal A -> A.
-
-simplify.
+zenon.
 Qed.
 
 
@@ -37,7 +35,7 @@ Qed.
 
 Goal ((((A -> C) -> A) -> A) -> C) -> C.
 
-simplify.
+zenon.
 Qed.
 
 
@@ -45,7 +43,6 @@ Qed.
 Open Scope Z_scope.
 
 Goal 1 + 1 = 2.
-
 simplify.
 Qed.
 
@@ -58,8 +55,8 @@ Qed.
 
 (* Universal quantifier *)
 
-Goal (forall (x y : Z), x = y) -> 0 = 1.
-
+Goal (forall (x y : Z), x = y) -> 0=1.
+zenon.
 simplify.
 Qed.
 

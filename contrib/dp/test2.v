@@ -12,14 +12,15 @@ Definition neg (z:Z) : Z := match z with
   end.
 
 Goal forall z, neg (neg z) = z.
-  zenon.
   Admitted.
 
 Open Scope nat_scope.
 Print plus.
 
 Goal forall x, x+0=x.
-  induction x; zenon.
+  induction x.
+  zenon.
+  zenon.
   (* simplify resoud le premier, pas le second *)
   Admitted.
 
@@ -35,7 +36,7 @@ Fixpoint even (n:nat) : Prop :=
   end.
 
 Goal even 4%nat.
-  zenon.
+  try zenon.
   Admitted.
 
 Definition p (A B:Set) (a:A) (b:B) : list (A*B) := cons (a,b) nil.
@@ -49,7 +50,6 @@ end.
 
 Goal forall x, head _ (p _ _ 1 2) = Some x -> fst x = 1.
 
-zenon.
 Admitted.
 
 (*
