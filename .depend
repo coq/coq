@@ -2509,20 +2509,20 @@ contrib/correctness/pwp.cmx: lib/util.cmx pretyping/termops.cmx \
     contrib/correctness/pwp.cmi 
 contrib/dp/dp.cmo: lib/util.cmi pretyping/typing.cmi pretyping/termops.cmi \
     kernel/term.cmi tactics/tactics.cmi tactics/tacticals.cmi \
-    proofs/tacmach.cmi library/summary.cmi parsing/printer.cmi lib/pp.cmi \
-    library/nametab.cmi kernel/names.cmi library/nameops.cmi \
-    library/libnames.cmi tactics/hipattern.cmi library/global.cmi \
-    contrib/dp/fol.cmi pretyping/evd.cmi kernel/environ.cmi \
-    contrib/dp/dp_why.cmo kernel/declarations.cmi interp/coqlib.cmi \
-    contrib/dp/dp.cmi 
+    proofs/tacmach.cmi library/summary.cmi pretyping/reductionops.cmi \
+    parsing/printer.cmi lib/pp.cmi library/nametab.cmi kernel/names.cmi \
+    library/nameops.cmi library/libnames.cmi tactics/hipattern.cmi \
+    library/global.cmi contrib/dp/fol.cmi pretyping/evd.cmi \
+    kernel/environ.cmi contrib/dp/dp_why.cmo kernel/declarations.cmi \
+    interp/coqlib.cmi contrib/dp/dp.cmi 
 contrib/dp/dp.cmx: lib/util.cmx pretyping/typing.cmx pretyping/termops.cmx \
     kernel/term.cmx tactics/tactics.cmx tactics/tacticals.cmx \
-    proofs/tacmach.cmx library/summary.cmx parsing/printer.cmx lib/pp.cmx \
-    library/nametab.cmx kernel/names.cmx library/nameops.cmx \
-    library/libnames.cmx tactics/hipattern.cmx library/global.cmx \
-    contrib/dp/fol.cmi pretyping/evd.cmx kernel/environ.cmx \
-    contrib/dp/dp_why.cmx kernel/declarations.cmx interp/coqlib.cmx \
-    contrib/dp/dp.cmi 
+    proofs/tacmach.cmx library/summary.cmx pretyping/reductionops.cmx \
+    parsing/printer.cmx lib/pp.cmx library/nametab.cmx kernel/names.cmx \
+    library/nameops.cmx library/libnames.cmx tactics/hipattern.cmx \
+    library/global.cmx contrib/dp/fol.cmi pretyping/evd.cmx \
+    kernel/environ.cmx contrib/dp/dp_why.cmx kernel/declarations.cmx \
+    interp/coqlib.cmx contrib/dp/dp.cmi 
 contrib/dp/dp_cvcl.cmo: contrib/dp/fol.cmi contrib/dp/dp_cvcl.cmi 
 contrib/dp/dp_cvcl.cmx: contrib/dp/fol.cmi contrib/dp/dp_cvcl.cmi 
 contrib/dp/dp_simplify.cmo: contrib/dp/fol.cmi contrib/dp/dp_simplify.cmi 
