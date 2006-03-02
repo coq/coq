@@ -300,8 +300,13 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
           ise_and isevars
             (* First compare extra args for better failure message *)
             [(fun i -> ise_list2 i (fun i -> evar_conv_x env i CONV) l1 rest2);
-             (fun i -> solve_simple_eqn evar_conv_x env i
-                 (pbty,ev1,applist(term2,deb2)))]
+             (fun i ->
+               (* Then instantiate evar unless already done by unifying args *)
+	       let t2 = applist(term2,deb2) in
+	       if is_defined_evar i ev1 then
+		 evar_conv_x env i pbty (mkEvar ev1) t2
+	       else
+		 solve_simple_eqn evar_conv_x env i (pbty,ev1,t2))]
         else (isevars,false)
     | Rigid _, Flexible ev2 ->
         if List.length l2 <= List.length l1 then
@@ -309,8 +314,13 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
           ise_and isevars
             (* First compare extra args for better failure message *)
             [(fun i -> ise_list2 i (fun i -> evar_conv_x env i CONV) rest1 l2);
-	     (fun i -> solve_simple_eqn evar_conv_x env i
-	         (pbty,ev2,applist(term1,deb1)))]
+	     (fun i ->
+               (* Then instantiate evar unless already done by unifying args *)
+	       let t1 = applist(term1,deb1) in
+	       if is_defined_evar i ev2 then
+		 evar_conv_x env i pbty t1 (mkEvar ev2)
+	       else
+		 solve_simple_eqn evar_conv_x env i (pbty,ev2,t1))]
         else (isevars,false)
 
     | MaybeFlexible flex1, Rigid _ ->
