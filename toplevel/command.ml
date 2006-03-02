@@ -183,9 +183,13 @@ let declare_one_assumption is_coe (local,kind) c (_,ident) =
   if is_coe then Class.try_add_new_coercion r local
 
 let declare_assumption idl is_coe k bl c =
-  let c = generalize_constr_expr c bl in
-  let c = interp_type Evd.empty (Global.env()) c in
-  List.iter (declare_one_assumption is_coe k c) idl
+  if not (Pfedit.refining ()) then 
+    let c = generalize_constr_expr c bl in
+    let c = interp_type Evd.empty (Global.env()) c in
+      List.iter (declare_one_assumption is_coe k c) idl
+  else
+    errorlabstrm "Command.Assumption"
+	(str "Cannot declare an assumption while in proof editing mode.")
 
 (* 3a| Elimination schemes for mutual inductive definitions *)
 

@@ -97,10 +97,9 @@ Abort.
 
 
 (************************************************************************)
+Parameter f : nat * nat -> nat -> nat. 
 
 Lemma essai : nat.
-
-Parameter f : nat * nat -> nat -> nat. 
 
  refine (f _ ((fun x : nat => _:nat) 0)).
 
