@@ -56,7 +56,7 @@ Qed.
 (* Universal quantifier *)
 
 Goal (forall (x y : Z), x = y) -> 0=1.
-zenon.
+try zenon.
 simplify.
 Qed.
 
@@ -106,7 +106,6 @@ Inductive even : Z -> Prop :=
    unlike CVC Lite *)
 
 Goal even 4.
-
 cvcl.
 Qed.
 
@@ -185,7 +184,7 @@ Parameter foo : Set.
 Parameter ff : nat -> foo -> foo -> nat.
 Parameter g : foo -> foo.
 Goal (forall x:foo, ff 0 x x = O) -> forall y, ff 0 (g y) (g y) = O.
-simplify.      
+zenon.
 Qed.
 
 
@@ -195,7 +194,7 @@ Qed.
 Parameter poly_f : forall A:Set, A->A.
 
 Goal forall x:nat, poly_f nat x = poly_f nat x.
-simplify.
+zenon.
 Qed.
 
 

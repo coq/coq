@@ -266,6 +266,7 @@ let rec tr_arith_constant t = match kind_of_term t with
 (* translate a Coq term t:Set into a FOL type expression;
    tv = list of type variables *)
 and tr_type tv env t =
+  let t = Reductionops.nf_betadeltaiota env Evd.empty t in
   if t = Lazy.force coq_Z then 
     Tid ("int", [])
   else match kind_of_term t with
@@ -682,6 +683,28 @@ let call_cvcl fwhy =
   if not !debug then remove_files [fwhy; fcvc];
   r
 
+let call_harvey fwhy =
+  if Sys.command (sprintf "why --harvey %s" fwhy) <> 0 then
+    anomaly ("call to why --harvey " ^ fwhy ^ " failed; please report");
+  let frv = Filename.chop_suffix fwhy ".why" ^ "_why.rv" in
+  let out = Sys.command (sprintf "rvc -e -t %s > /dev/null 2>&1" frv) in
+  if out <> 0 then anomaly ("call to rvc -e -t " ^ frv ^ " failed");
+  let f = Filename.chop_suffix frv ".rv" ^ "-0.baf" in
+  let outf = Filename.temp_file "rv" ".out" in
+  let out = 
+    Sys.command (sprintf "timeout 10 rv -e\"-T 2000\" %s > %s 2>&1" f outf) 
+  in
+  let r =
+    if out <> 0 then 
+      Timeout
+    else
+      let cmd = 
+	sprintf "grep \"Proof obligation in\" %s | grep -q \"is valid\"" outf
+      in
+      if Sys.command cmd = 0 then Valid else Invalid
+  in
+  if not !debug then remove_files [fwhy; frv; outf];
+  r
 
 let call_prover prover q =
   let fwhy = Filename.temp_file "coq_dp" ".why" in
@@ -691,7 +714,7 @@ let call_prover prover q =
     | Simplify -> call_simplify fwhy
     | Zenon -> call_zenon fwhy
     | CVCLite -> call_cvcl fwhy
-    | Harvey -> error "haRVey not yet interfaced"
+    | Harvey -> call_harvey fwhy
   
 let dp prover gl =
   let concl_type = pf_type_of gl (pf_concl gl) in

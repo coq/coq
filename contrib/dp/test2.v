@@ -28,6 +28,11 @@ Goal 1::2::3::nil = 1::2::(1+2)::nil.
   zenon.
   Admitted.
 
+Definition T := nat.
+Parameter fct : T -> nat.
+Goal fct O = O.
+ Admitted.
+
 Fixpoint even (n:nat) : Prop :=
   match n with 
   O => True
