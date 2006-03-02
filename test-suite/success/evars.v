@@ -56,3 +56,7 @@ Check
    :forall x : nat,
     (forall y n : nat, {q : nat | y = q * n}) ->
     forall n : nat, {q : nat | x = q * n}).
+
+(* Check instantiation of nested evars (bug #1089) *)
+
+Check (fun f:(forall (v:Set->Set), v (v nat) -> nat) => f _ (Some (Some O))).
