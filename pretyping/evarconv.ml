@@ -248,16 +248,22 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
        	let (deb2,rest2) = list_chop (List.length l2-List.length l1) l2 in
         (* First compare extra args for better failure message *)
         list_for_all2eq (evar_conv_x env isevars CONV) l1 rest2 &
-	solve_simple_eqn evar_conv_x env isevars
-	  (pbty,ev1,applist(term2,deb2))
+	if is_defined_evar isevars ev1 then
+	  evar_conv_x env isevars pbty (mkEvar ev1) (applist(term2,deb2))
+	else
+	  solve_simple_eqn evar_conv_x env isevars
+	    (pbty,ev1,applist(term2,deb2))
 
     | Rigid _, Flexible ev2 ->
        	(List.length l2 <= List.length l1) &
        	let (deb1,rest1) = list_chop (List.length l1-List.length l2) l1 in
         (* First compare extra args for better failure message *)
         list_for_all2eq (evar_conv_x env isevars CONV) rest1 l2 &
-	solve_simple_eqn evar_conv_x env isevars
-	  (pbty,ev2,applist(term1,deb1))
+	if is_defined_evar isevars ev2 then
+	  evar_conv_x env isevars pbty (applist(term1,deb1)) (mkEvar ev2)
+	else
+	  solve_simple_eqn evar_conv_x env isevars
+	    (pbty,ev2,applist(term1,deb1))
         
 
     | MaybeFlexible flex1, Rigid _ ->
