@@ -153,7 +153,7 @@ let subst_hintrewrite (_,subst,(rbase,list as node)) =
      typ (* dummy value, it will be recomputed by cache_hintrewrite *) in
     let t' = Tacinterp.subst_tactic subst t in
       if cst == cst' && t == t' then pair else
-	(cst',typ',b,t)
+	(cst',typ',b,t')
   in
   let list' = list_smartmap subst_first list in
     if list' == list then node else
