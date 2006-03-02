@@ -80,7 +80,7 @@ let subst_hintrewrite (_,subst,(rbase,list as node)) =
     let cst' = Term.subst_mps subst cst in
     let t' = Tacinterp.subst_tactic subst t in
       if cst == cst' & t == t' then pair else
-	(cst',b,t)
+	(cst',b,t')
   in
   let list' = list_smartmap subst_first list in
     if list' == list then node else
