@@ -11,8 +11,8 @@ Section rename.
 Variable A:Prop.
 
 Lemma Tauto: A->A.
-rename A into B.
-tauto.
+Rename A into B.
+Tauto.
 Qed.
 
 End rename.
