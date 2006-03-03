@@ -115,14 +115,6 @@
 \addcontentsline{toc}{chapter}{\listfigurename}
 %END LATEX
 
-%BEGIN LATEX
-\RefManCutCommand{psselect -q -p-$ENDREFMAN,$BEGINBIBLIO- Reference-Manual.ps Reference-Manual-base.ps}
-\RefManCutCommand{psselect -q -p$BEGINADDENDUM-$ENDADDENDUM Reference-Manual.ps Reference-Manual-addendum.ps}
-\RefManCutCommand{dviselect -i Reference-Manual.dvi -o Reference-Manual-base.dvi 1-$ENDREFMAN $BEGINBIBLIO-}
-\RefManCutCommand{dviselect -i Reference-Manual.dvi -o Reference-Manual-addendum.dvi $BEGINADDENDUM-$ENDADDENDUM}
-\RefManCutClose
-%END LATEX
-
 \end{document}
 
 
