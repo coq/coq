@@ -1384,6 +1384,7 @@ and interp_tacarg ist gl = function
   | IntroPattern ipat -> VIntroPattern ipat
   | ConstrMayEval c -> VConstr (interp_constr_may_eval ist gl c)
   | MetaIdArg (loc,id) -> assert false
+  | TacCall (loc,r,[]) -> interp_ltac_reference false ist gl r
   | TacCall (loc,f,l) ->
       let fv = interp_ltac_reference true ist gl f
       and largs = List.map (interp_tacarg ist gl) l in
