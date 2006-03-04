@@ -265,7 +265,7 @@ let intern_var (env,_,_ as genv) (ltacvars,vars2,vars3,(_,impls)) loc id =
   try
     match List.assoc id unbndltacvars with
       | None -> user_err_loc (loc,"intern_var",
-	  pr_id id ++ str " ist not bound to a term")
+	  str "variable " ++ pr_id id ++ str " should be bound to a term")
       | Some id0 -> Pretype_errors.error_var_not_found_loc loc id0
   with Not_found ->
   (* Is [id] a goal or section variable *)

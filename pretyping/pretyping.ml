@@ -20,6 +20,7 @@ open Environ
 open Type_errors
 open Typeops
 open Libnames
+open Nameops
 open Classops
 open List
 open Recordops 
@@ -121,7 +122,7 @@ let pretype_id loc env (lvar,unbndltacvars) id =
   try (* To build a nicer ltac error message *)
     match List.assoc id unbndltacvars with
       | None -> user_err_loc (loc,"",
-	  str (string_of_id id ^ " ist not bound to a term"))
+	str "variable " ++ pr_id id ++ str " should be bound to a term")
       | Some id0 -> Pretype_errors.error_var_not_found_loc loc id0
   with Not_found ->
     error_var_not_found_loc loc id
