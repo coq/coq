@@ -92,14 +92,10 @@ End Retracts.
 Lemma L1 : forall A B:Prop, retract_cond (pow A) (pow B).
 Proof.
 intros A B.
-elim (EM (retract (pow A) (pow B))).
-intros [f0 g0 e].
-exists f0 g0.
-trivial.
-
-intros hf.
-exists (fun (x:pow A) (y:B) => F) (fun (x:pow B) (y:A) => F).
-intros; elim hf; auto.
+destruct (EM (retract (pow A) (pow B))) as [(f0,g0,e) | hf].
+  exists f0 g0; trivial.
+  exists (fun (x:pow A) (y:B) => F) (fun (x:pow B) (y:A) => F); intros; 
+    destruct hf; auto.
 Qed.
 
 
