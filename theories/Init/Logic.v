@@ -12,7 +12,7 @@ Set Implicit Arguments.
 
 Require Import Notations.
 
-(** * Propositional connectives *)
+(** *** Propositional connectives *)
 
 (** [True] is the always true proposition *)
 Inductive True : Prop :=
@@ -97,7 +97,7 @@ Definition IF_then_else (P Q R:Prop) := P /\ Q \/ ~ P /\ R.
 Notation "'IF' c1 'then' c2 'else' c3" := (IF_then_else c1 c2 c3)
   (at level 200, right associativity) : type_scope.
 
-(** * First-order quantifiers *)
+(** *** First-order quantifiers *)
 
 (** [ex P], or simply [exists x, P x], or also [exists x:A, P x],
     expresses the existence of an [x] of some type [A] in [Set] which
@@ -160,7 +160,7 @@ Section universal_quantification.
 
 End universal_quantification.
 
-(** * Equality *)
+(** *** Equality *)
 
 (** [eq x y], or simply [x=y] expresses the equality of [x] and
     [y]. Both [x] and [y] must belong to the same type [A].
