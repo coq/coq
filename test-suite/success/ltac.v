@@ -145,3 +145,11 @@ Ltac check_binding y := cut ((fun y => y) = S).
 Goal True.
 check_binding true.
 Abort.
+
+(* Check that variables explicitly parsed as ltac variables are not
+   seen as intro pattern or constr (bug #984) *)
+
+Ltac afi tac := intros; tac.
+Goal 1 = 2.
+afi ltac:auto.
+
