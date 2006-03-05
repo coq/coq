@@ -14,6 +14,10 @@ Require Export Field_Theory.
 
 (**** Interpretation A --> ExprA ****)
 
+Ltac get_component a s := eval cbv beta iota delta [a] in (a s).
+
+Ltac body_of s := eval cbv beta iota delta [s] in s.
+
 Ltac mem_assoc var lvar :=
   match constr:lvar with
   | (nilT _) => constr:false
@@ -24,49 +28,46 @@ Ltac mem_assoc var lvar :=
       end
   end.
 
-Ltac seek_var_aux FT lvar trm :=
-  let AT := eval cbv beta iota delta [A] in (A FT)
-  with AzeroT := eval cbv beta iota delta [Azero] in (Azero FT)
-  with AoneT := eval cbv beta iota delta [Aone] in (Aone FT)
-  with AplusT := eval cbv beta iota delta [Aplus] in (Aplus FT)
-  with AmultT := eval cbv beta iota delta [Amult] in (Amult FT)
-  with AoppT := eval cbv beta iota delta [Aopp] in (Aopp FT)
-  with AinvT := eval cbv beta iota delta [Ainv] in (Ainv FT) in
-  match constr:trm with
-  | AzeroT => lvar
-  | AoneT => lvar
-  | (AplusT ?X1 ?X2) =>
-      let l1 := seek_var_aux FT lvar X1 in
-      seek_var_aux FT l1 X2
-  | (AmultT ?X1 ?X2) =>
-      let l1 := seek_var_aux FT lvar X1 in
-      seek_var_aux FT l1 X2
-  | (AoppT ?X1) => seek_var_aux FT lvar X1
-  | (AinvT ?X1) => seek_var_aux FT lvar X1
-  | ?X1 =>
-      let res := mem_assoc X1 lvar in
-      match constr:res with
-      | true => lvar
-      | false => constr:(consT AT X1 lvar)
-      end
-  end.
+Ltac number lvar := 
+  let rec number_aux lvar cpt :=
+    match constr:lvar with
+    | (nilT ?X1) => constr:(nilT (prodT X1 nat))
+    | (consT ?X1 ?X2 ?X3) =>
+        let l2 := number_aux X3 (S cpt) in
+        constr:(consT (prodT X1 nat) (pairT X1 nat X2 cpt) l2) 
+    end
+  in number_aux lvar 0.
 
-Ltac seek_var FT trm :=
-  let AT := eval cbv beta iota delta [A] in (A FT) in
-  seek_var_aux FT (nilT AT) trm.
-
-Ltac number_aux lvar cpt :=
-  match constr:lvar with
-  | (nilT ?X1) => constr:(nilT (prodT X1 nat))
-  | (consT ?X1 ?X2 ?X3) =>
-      let l2 := number_aux X3 (S cpt) in
-      constr:(consT (prodT X1 nat) (pairT X1 nat X2 cpt) l2)
-  end.
-
-Ltac number lvar := number_aux lvar 0.
-
-Ltac build_varlist FT trm := let lvar := seek_var FT trm in
-                             number lvar.
+Ltac build_varlist FT trm := 
+  let rec seek_var lvar trm :=
+    let AT := get_component A FT
+    with AzeroT := get_component Azero FT
+    with AoneT := get_component Aone FT
+    with AplusT := get_component Aplus FT
+    with AmultT := get_component Amult FT
+    with AoppT := get_component Aopp FT
+    with AinvT := get_component Ainv FT in
+    match constr:trm with
+    | AzeroT => lvar
+    | AoneT => lvar
+    | (AplusT ?X1 ?X2) =>
+        let l1 := seek_var lvar X1 in
+        seek_var l1 X2
+    | (AmultT ?X1 ?X2) =>
+        let l1 := seek_var lvar X1 in
+        seek_var l1 X2
+    | (AoppT ?X1) => seek_var lvar X1
+    | (AinvT ?X1) => seek_var lvar X1
+    | ?X1 =>
+        let res := mem_assoc X1 lvar in
+        match constr:res with
+        | true => lvar
+        | false => constr:(consT AT X1 lvar)
+        end
+    end in
+  let AT := get_component A FT in
+  let lvar := seek_var (nilT AT) trm in
+  number lvar.
 
 Ltac assoc elt lst :=
   match constr:lst with
@@ -79,13 +80,13 @@ Ltac assoc elt lst :=
   end.
 
 Ltac interp_A FT lvar trm :=
-  let AT := eval cbv beta iota delta [A] in (A FT)
-  with AzeroT := eval cbv beta iota delta [Azero] in (Azero FT)
-  with AoneT := eval cbv beta iota delta [Aone] in (Aone FT)
-  with AplusT := eval cbv beta iota delta [Aplus] in (Aplus FT)
-  with AmultT := eval cbv beta iota delta [Amult] in (Amult FT)
-  with AoppT := eval cbv beta iota delta [Aopp] in (Aopp FT)
-  with AinvT := eval cbv beta iota delta [Ainv] in (Ainv FT) in
+  let AT := get_component A FT
+  with AzeroT := get_component Azero FT
+  with AoneT := get_component Aone FT
+  with AplusT := get_component Aplus FT
+  with AmultT := get_component Amult FT
+  with AoppT := get_component Aopp FT
+  with AinvT := get_component Ainv FT in
   match constr:trm with
   | AzeroT => constr:EAzero
   | AoneT => constr:EAone
@@ -181,18 +182,17 @@ Ltac weak_reduce :=
 
 Ltac multiply mul :=
   match goal with
-  |  |- (interp_ExprA ?X1 ?X2 ?X3 = interp_ExprA ?X1 ?X2 ?X4) =>
-      let AzeroT := eval cbv beta iota delta [Azero X1] in (Azero X1) in
-      (cut (interp_ExprA X1 X2 mul <> AzeroT);
-        [ intro; let id := grep_mult in
-                 apply (mult_eq X1 X3 X4 mul X2 id)
+  |  |- (interp_ExprA ?FT ?X2 ?X3 = interp_ExprA ?FT ?X2 ?X4) =>
+      let AzeroT := get_component Azero FT in
+      (cut (interp_ExprA FT X2 mul <> AzeroT);
+        [ intro; let id := grep_mult in apply (mult_eq FT X3 X4 mul X2 id)
         | weak_reduce;
-           let AoneT := eval cbv beta iota delta [Aone X1] in (Aone X1)
-           with AmultT := eval cbv beta iota delta [Amult X1] in (Amult X1) in
+           let AoneT := get_component Aone ltac:(body_of FT)
+           with AmultT := get_component Amult ltac:(body_of FT) in
            (try
              match goal with
-             |  |- context [(AmultT _ AoneT)] => rewrite (AmultT_1r X1)
-             end; clear X1 X2) ])
+             |  |- context [(AmultT _ AoneT)] => rewrite (AmultT_1r FT)
+             end; clear FT X2) ])
   end.
 
 Ltac apply_multiply FT lvar trm :=
@@ -219,10 +219,10 @@ Ltac apply_inverse mul FT lvar trm :=
 Ltac strong_fail tac := first [ tac | fail 2 ].
 
 Ltac inverse_test_aux FT trm :=
-  let AplusT := eval cbv beta iota delta [Aplus] in (Aplus FT)
-  with AmultT := eval cbv beta iota delta [Amult] in (Amult FT)
-  with AoppT := eval cbv beta iota delta [Aopp] in (Aopp FT)
-  with AinvT := eval cbv beta iota delta [Ainv] in (Ainv FT) in
+  let AplusT := get_component Aplus FT
+  with AmultT := get_component Amult FT
+  with AoppT := get_component Aopp FT
+  with AinvT := get_component Ainv FT in
   match constr:trm with
   | (AinvT _) => fail 1
   | (AoppT ?X1) =>
@@ -235,7 +235,7 @@ Ltac inverse_test_aux FT trm :=
   end.
 
 Ltac inverse_test FT :=
-  let AplusT := eval cbv beta iota delta [Aplus] in (Aplus FT) in
+  let AplusT := get_component Aplus FT in
   match goal with
   |  |- (?X1 = ?X2) => inverse_test_aux FT (AplusT X1 X2)
   end.
@@ -253,27 +253,27 @@ Ltac apply_simplif sfun :=
    end.
 
 Ltac unfolds FT :=
-  match eval cbv beta iota delta [Aminus] in (Aminus FT) with
+  match get_component Aminus FT with
   | (Field_Some _ ?X1) => unfold X1 in |- *
   | _ => idtac
   end;
-   match eval cbv beta iota delta [Adiv] in (Adiv FT) with
+   match get_component Adiv FT with
    | (Field_Some _ ?X1) => unfold X1 in |- *
    | _ => idtac
    end.
 
 Ltac reduce FT :=
-  let AzeroT := eval cbv beta iota delta [Azero] in (Azero FT)
-  with AoneT := eval cbv beta iota delta [Aone] in (Aone FT)
-  with AplusT := eval cbv beta iota delta [Aplus] in (Aplus FT)
-  with AmultT := eval cbv beta iota delta [Amult] in (Amult FT)
-  with AoppT := eval cbv beta iota delta [Aopp] in (Aopp FT)
-  with AinvT := eval cbv beta iota delta [Ainv] in (Ainv FT) in
+  let AzeroT := get_component Azero FT
+  with AoneT := get_component Aone FT
+  with AplusT := get_component Aplus FT
+  with AmultT := get_component Amult FT
+  with AoppT := get_component Aopp FT
+  with AinvT := get_component Ainv FT in
   (cbv beta iota zeta delta -[AzeroT AoneT AplusT AmultT AoppT AinvT] in |- * ||
      compute in |- *).
 
 Ltac field_gen_aux FT :=
-  let AplusT := eval cbv beta iota delta [Aplus] in (Aplus FT) in
+  let AplusT := get_component Aplus FT in
   match goal with
   |  |- (?X1 = ?X2) =>
       let lvar := build_varlist FT (AplusT X1 X2) in
@@ -303,11 +303,11 @@ Ltac field_gen FT := unfolds FT; (inverse_test FT; ring) || field_gen_aux FT.
 
 Ltac init_exp FT trm :=
   let e :=
-   (match eval cbv beta iota delta [Aminus] in (Aminus FT) with
+   (match get_component Aminus FT with
     | (Field_Some _ ?X1) => eval cbv beta delta [X1] in trm
     | _ => trm
     end) in
-  match eval cbv beta iota delta [Adiv] in (Adiv FT) with
+  match get_component Adiv FT with
   | (Field_Some _ ?X1) => eval cbv beta delta [X1] in e
   | _ => e
   end.
