@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-(** Some facts and definitions about classical logic *)
+(** ** Some facts and definitions about classical logic *)
 
 (** [prop_degeneracy] (also referred as propositional completeness) *)
 (*  asserts (up to consistency) that there are only two distinct formulas *)
@@ -218,5 +218,139 @@ End Proof_irrelevance_CIC.
   cannot be refined.
 
   [Berardi] Stefano Berardi, "Type dependence and constructive mathematics",
-  Ph. D. thesis, Dipartimento Matematica, Universit� di Torino, 1990.
+  Ph. D. thesis, Dipartimento Matematica, Università di Torino, 1990.
 *)
+
+(** *** Standard facts about weak classical axioms *)
+
+(** **** Weak excluded-middle *)
+
+(** The weak classical logic based on [~~A \/ ~A] is refered to with
+    name KC in {[ChagrovZakharyaschev97]]
+
+   [[ChagrovZakharyaschev97]] Alexander Chagrov and Michael
+   Zakharyaschev, "Modal Logic", Clarendon Press, 1997.
+*)
+
+Definition weak_excluded_middle :=
+  forall A:Prop, ~~A \/ ~A.
+
+(** The interest in the equivalent variant
+    [weak_generalized_excluded_middle] is that it holds even in logic
+    without a primitive [False] connective (like Gödel-Dummett axiom) *)
+
+Definition weak_generalized_excluded_middle := 
+  forall A B:Prop, ((A -> B) -> B) \/ (A -> B).
+
+(** **** Gödel-Dummett axiom *)
+
+(** [(A->B) \/ (B->A)] is studied in [[Dummett59]] and is based on [[Gödel33]].
+
+    [[Dummett59]] Michael A. E. Dummett. "A Propositional Calculus
+    with a Denumerable Matrix", In the Journal of Symbolic Logic, Vol
+    24 No. 2(1959), pp 97-103.
+
+    [[Gödel33]] Kurt Gödel. "Zum intuitionistischen Aussagenkalkül",
+    Ergeb. Math. Koll. 4 (1933), pp. 34-38.
+ *)
+
+Definition GodelDummett := forall A B:Prop, (A -> B) \/ (B -> A).
+
+Lemma excluded_middle_Godel_Dummett : excluded_middle -> GodelDummett.
+Proof.
+intros EM A B. destruct (EM B) as [HB|HnotB].
+  left; intros _; exact HB.
+  right; intros HB; destruct (HnotB HB).
+Qed.
+
+(** [(A->B) \/ (B->A)] is equivalent to [(C -> A\/B) -> (C->A) \/ (C->B)]
+    (proof from [[Dummett59]]) *)
+
+Definition RightDistributivityImplicationOverDisjunction :=
+  forall A B C:Prop, (C -> A\/B) -> (C->A) \/ (C->B).
+
+Lemma Godel_Dummett_iff_right_distr_implication_over_disjunction :
+  GodelDummett <-> RightDistributivityImplicationOverDisjunction.
+Proof.
+split.
+  intros GD A B C HCAB.
+  destruct (GD B A) as [HBA|HAB]; [left|right]; intro HC; 
+    destruct (HCAB HC) as [HA|HB]; [ | apply HBA | apply HAB | ]; assumption.
+  intros Distr A B.
+  destruct (Distr A B (A\/B)) as [HABA|HABB].
+    intro HAB; exact HAB.
+    right; intro HB; apply HABA; right; assumption.
+    left; intro HA; apply HABB; left; assumption.
+Qed.
+
+(** [(A->B) \/ (B->A)] is stronger than the weak excluded middle *)
+
+Lemma Godel_Dummett_weak_excluded_middle : 
+  GodelDummett -> weak_excluded_middle.
+Proof.
+intros GD A. destruct (GD (~A) A) as [HnotAA|HAnotA].
+  left; intro HnotA; apply (HnotA (HnotAA HnotA)).
+  right; intro HA; apply (HAnotA HA HA).
+Qed.
+
+(** **** Independence of general premises and drinker's paradox *)
+
+(** Independence of general premises is the unconstrained, non
+    constructive, version of the Independence of Premises as
+    considered in [[Troelstra73]].
+
+    It is a generalization to predicate logic of the right
+    distributivity of implication over disjunction (hence of
+    Gödel-Dummett axiom) whose own constructive form (obtained by a
+    restricting the third formula to be negative) is called
+    Kreisel-Putnam principle [[KreiselPutnam57]].
+
+    [[KreiselPutnam57]], Georg Kreisel and Hilary Putnam. "Eine
+    Unableitsbarkeitsbeweismethode für den intuitionistischen
+    Aussagenkalkül". Archiv für Mathematische Logik und
+    Graundlagenforschung, 3:74- 78, 1957.
+
+    [[Troelstra73]], Anne Troelstra, editor. Metamathematical
+    Investigation of Intuitionistic Arithmetic and Analysis, volume
+    344 of Lecture Notes in Mathematics, Springer-Verlag, 1973.
+*)
+
+
+Notation "'inhabited' A" := A (at level 10, only parsing).
+
+Definition IndependenceOfGeneralPremises :=
+  forall (A:Type) (P:A -> Prop) (Q:Prop),
+    inhabited A -> (Q -> exists x, P x) -> exists x, Q -> P x.
+
+Lemma
+  independence_general_premises_right_distr_implication_over_disjunction :
+  IndependenceOfGeneralPremises -> RightDistributivityImplicationOverDisjunction.
+Proof.
+intros IP A B C HCAB.
+destruct (IP bool (fun b => if b then A else B) C true) as ([|],H).
+  intro HC; destruct (HCAB HC); [exists true|exists false]; assumption.
+  left; assumption.
+  right; assumption.
+Qed.
+
+Lemma independence_general_premises_Godel_Dummett :
+  IndependenceOfGeneralPremises -> GodelDummett.
+Proof.
+destruct Godel_Dummett_iff_right_distr_implication_over_disjunction.
+auto using independence_general_premises_right_distr_implication_over_disjunction.
+Qed.
+
+(** Independence of general premises is equivalent to the drinker's paradox *)
+
+Definition DrinkerParadox :=
+  forall (A:Type) (P:A -> Prop), 
+  inhabited A -> exists x, (exists x, P x) -> P x.
+
+Lemma independence_general_premises_drinker : 
+  IndependenceOfGeneralPremises <-> DrinkerParadox.
+Proof.
+split.
+  intros IP A P InhA; apply (IP A P (exists x, P x) InhA); intro Hx; exact Hx.
+  intros Drinker A P Q InhA H; destruct (Drinker A P InhA) as (x,Hx).
+    exists x; intro HQ; apply (Hx (H HQ)).
+Qed.
