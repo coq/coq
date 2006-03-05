@@ -1,3 +1,15 @@
+Changes from V8.0pl3 to V8.0pl?
+===============================
+
+Tactics
+
+- Compatibility of auto hints search order made compatible even when
+  compiled with ocaml >= 3.09.0
+
+Bug fixes
+
+- Fixed printing bug for notations exists and IF
+
 Changes from V8.0pl2 to V8.0pl3
 ===============================
 
