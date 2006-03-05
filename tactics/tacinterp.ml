@@ -299,10 +299,12 @@ let lookup_genarg_glob   id = let (f,_,_) = lookup_genarg id in f
 let lookup_interp_genarg id = let (_,f,_) = lookup_genarg id in f
 let lookup_genarg_subst  id = let (_,_,f) = lookup_genarg id in f
 
-(* Unboxes VRec *)
-let unrec = function
+(* Dynamically check that an argument is a tactic, possibly unboxing VRec *)
+let coerce_to_tactic loc id = function
   | VRec v -> !v
-  | a -> a
+  | VTactic _ | VFun _ | VRTactic _ as a -> a
+  | _ -> user_err_loc 
+  (loc, "", str "variable " ++  pr_id id ++ str " should be bound to a tactic")
 
 (*****************)
 (* Globalization *)
@@ -1096,13 +1098,13 @@ let interp_clause_pattern ist gl (l,occl) =
 (* Interprets a qualified name *)
 let interp_reference ist env = function
   | ArgArg (_,r) -> r
-  | ArgVar (loc,id) -> coerce_to_reference env (unrec (List.assoc id ist.lfun))
+  | ArgVar (loc,id) -> coerce_to_reference env (List.assoc id ist.lfun)
 
 let pf_interp_reference ist gl = interp_reference ist (pf_env gl)
 
 let interp_inductive ist = function
   | ArgArg r -> r
-  | ArgVar (_,id) -> coerce_to_inductive (unrec (List.assoc id ist.lfun))
+  | ArgVar (_,id) -> coerce_to_inductive (List.assoc id ist.lfun)
 
 let interp_evaluable ist env = function
   | ArgArg (r,Some (loc,id)) ->
@@ -1115,8 +1117,7 @@ let interp_evaluable ist env = function
 	  | EvalConstRef _ -> r
 	  | _ -> Pretype_errors.error_var_not_found_loc loc id)
   | ArgArg (r,None) -> r
-  | ArgVar (_,id) -> 
-      coerce_to_evaluable_ref env (unrec (List.assoc id ist.lfun))
+  | ArgVar (_,id) -> coerce_to_evaluable_ref env (List.assoc id ist.lfun)
 
 (* Interprets an hypothesis name *)
 let interp_hyp_location ist gl (id,occs,hl) = (interp_hyp ist gl id,occs,hl)
@@ -1411,21 +1412,24 @@ and eval_tactic ist = function
   | TacComplete tac -> tclCOMPLETE (interp_tactic ist tac)
   | TacArg a -> assert false
 
-and interp_ltac_reference isapplied ist gl = function
-  | ArgVar (loc,id) -> unrec (List.assoc id ist.lfun)
+and interp_ltac_reference isapplied mustbetac ist gl = function
+  | ArgVar (loc,id) ->
+      let v = List.assoc id ist.lfun in
+      if mustbetac then coerce_to_tactic loc id v else v
   | ArgArg (loc,r) ->
       let v = val_interp {lfun=[];debug=ist.debug} gl (lookup r) in
       if isapplied then v else locate_tactic_call loc v
 
 and interp_tacarg ist gl = function
   | TacVoid -> VVoid
-  | Reference r -> interp_ltac_reference false ist gl r
+  | Reference r -> interp_ltac_reference false false ist gl r
   | Integer n -> VInteger n
   | IntroPattern ipat -> VIntroPattern ipat
   | ConstrMayEval c -> VConstr (interp_constr_may_eval ist gl c)
   | MetaIdArg (loc,id) -> assert false
+  | TacCall (loc,r,[]) -> interp_ltac_reference false true ist gl r
   | TacCall (loc,f,l) ->
-      let fv = interp_ltac_reference true ist gl f
+      let fv = interp_ltac_reference true true ist gl f
       and largs = List.map (interp_tacarg ist gl) l in
       List.iter check_is_value largs;
       interp_app ist gl fv largs loc
