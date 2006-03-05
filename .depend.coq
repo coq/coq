@@ -70,23 +70,25 @@ theories/Init/Wf.vo: theories/Init/Wf.v theories/Init/Notations.vo theories/Init
 theories/Init/Tactics.vo: theories/Init/Tactics.v theories/Init/Notations.vo theories/Init/Logic.vo
 theories/Init/Prelude.vo: theories/Init/Prelude.v theories/Init/Notations.vo theories/Init/Logic.vo theories/Init/Datatypes.vo theories/Init/Specif.vo theories/Init/Peano.vo theories/Init/Wf.vo theories/Init/Tactics.vo
 theories/Logic/Hurkens.vo: theories/Logic/Hurkens.v
-theories/Logic/ProofIrrelevance.vo: theories/Logic/ProofIrrelevance.v theories/Logic/Hurkens.vo
+theories/Logic/ProofIrrelevance.vo: theories/Logic/ProofIrrelevance.v theories/Logic/ProofIrrelevanceFacts.vo
 theories/Logic/Classical.vo: theories/Logic/Classical.v theories/Logic/Classical_Prop.vo theories/Logic/Classical_Pred_Type.vo
 theories/Logic/Classical_Type.vo: theories/Logic/Classical_Type.v theories/Logic/Classical_Prop.vo theories/Logic/Classical_Pred_Type.vo
 theories/Logic/Classical_Pred_Set.vo: theories/Logic/Classical_Pred_Set.v theories/Logic/Classical_Pred_Type.vo
-theories/Logic/Eqdep.vo: theories/Logic/Eqdep.v
+theories/Logic/Eqdep.vo: theories/Logic/Eqdep.v theories/Logic/EqdepFacts.vo
 theories/Logic/Classical_Pred_Type.vo: theories/Logic/Classical_Pred_Type.v theories/Logic/Classical_Prop.vo
-theories/Logic/Classical_Prop.vo: theories/Logic/Classical_Prop.v theories/Logic/ProofIrrelevance.vo
-theories/Logic/ClassicalFacts.vo: theories/Logic/ClassicalFacts.v
+theories/Logic/Classical_Prop.vo: theories/Logic/Classical_Prop.v theories/Logic/ClassicalFacts.vo theories/Logic/EqdepFacts.vo
+theories/Logic/ClassicalFacts.vo: theories/Logic/ClassicalFacts.v theories/Logic/Hurkens.vo
 theories/Logic/ChoiceFacts.vo: theories/Logic/ChoiceFacts.v theories/Arith/Wf_nat.vo theories/Arith/Compare_dec.vo theories/Logic/Decidable.vo theories/Arith/Arith.vo
 theories/Logic/Berardi.vo: theories/Logic/Berardi.v
-theories/Logic/Eqdep_dec.vo: theories/Logic/Eqdep_dec.v
+theories/Logic/Eqdep_dec.vo: theories/Logic/Eqdep_dec.v theories/Logic/EqdepFacts.vo
 theories/Logic/Decidable.vo: theories/Logic/Decidable.v
 theories/Logic/JMeq.vo: theories/Logic/JMeq.v theories/Logic/Eqdep.vo
 theories/Logic/ClassicalDescription.vo: theories/Logic/ClassicalDescription.v theories/Logic/Classical.vo
 theories/Logic/ClassicalChoice.vo: theories/Logic/ClassicalChoice.v theories/Logic/ClassicalDescription.vo theories/Logic/RelationalChoice.vo theories/Logic/ChoiceFacts.vo
 theories/Logic/RelationalChoice.vo: theories/Logic/RelationalChoice.v
 theories/Logic/Diaconescu.vo: theories/Logic/Diaconescu.v theories/Logic/ClassicalFacts.vo theories/Logic/ChoiceFacts.vo theories/Bool/Bool.vo
+theories/Logic/EqdepFacts.vo: theories/Logic/EqdepFacts.v
+theories/Logic/ProofIrrelevanceFacts.vo: theories/Logic/ProofIrrelevanceFacts.v theories/Logic/EqdepFacts.vo
 theories/Arith/Arith.vo: theories/Arith/Arith.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Plus.vo theories/Arith/Gt.vo theories/Arith/Minus.vo theories/Arith/Mult.vo theories/Arith/Between.vo theories/Arith/Peano_dec.vo theories/Arith/Compare_dec.vo theories/Arith/Factorial.vo
 theories/Arith/Gt.vo: theories/Arith/Gt.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Plus.vo
 theories/Arith/Between.vo: theories/Arith/Between.v theories/Arith/Le.vo theories/Arith/Lt.vo

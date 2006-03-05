@@ -8,23 +8,34 @@
 
 (*i $Id$ i*)
 
-(** We prove that there is only one proof of [x=x], i.e [(refl_equal ? x)].
-   This holds if the equality upon the set of [x] is decidable.
-   A corollary of this theorem is the equality of the right projections
-   of two equal dependent pairs.
+(** We prove that there is only one proof of [x=x], i.e [refl_equal x].
+    This holds if the equality upon the set of [x] is decidable.
+    A corollary of this theorem is the equality of the right projections
+    of two equal dependent pairs.
 
-   Author:   Thomas Kleymann |<tms@dcs.ed.ac.uk>| in Lego
-             adapted to Coq by B. Barras
+    Author:   Thomas Kleymann |<tms@dcs.ed.ac.uk>| in Lego
+              adapted to Coq by B. Barras
 
-   Credit:   Proofs up to [K_dec] follows an outline by Michael Hedberg
+    Credit:   Proofs up to [K_dec] follow an outline by Michael Hedberg
+
+Table of contents:
+
+A. Streicher's K and injectivity of dependent pair hold on decidable types
+
+B.1. Definition of the functor that builds properties of dependent equalities
+     from a proof of decidability of equality for a set in Type
+
+B.2. Definition of the functor that builds properties of dependent equalities
+     from a proof of decidability of equality for a set in Set
+
 *)
 
-
-(** We need some dependent elimination schemes *)
+(************************************************************************)
+(** *** A. Streicher's K and injectivity of dependent pair hold on decidable types *)
 
 Set Implicit Arguments.
 
-Section DecidableEqDep.
+Section EqdepDec.
 
   Variable A : Type.
 
@@ -84,7 +95,6 @@ elim eq_proofs_unicity with x (refl_equal x) p.
 trivial.
 Qed.
 
-
   (** The corollary *)
 
   Let proj (P:A -> Prop) (exP:ex P) (def:P x) : P x :=
@@ -114,20 +124,173 @@ case H.
 reflexivity.
 Qed.
 
-End DecidableEqDep.
+End EqdepDec.
 
-  (** We deduce the [K] axiom for (decidable) Set *)
+Require Import EqdepFacts.
+
+  (** We deduce axiom [K] for (decidable) types *)
+  Theorem K_dec_type :
+   forall A:Type,
+     (forall x y:A, {x = y} + {x <> y}) ->
+     forall (x:A) (P:x = x -> Prop), P (refl_equal x) -> forall p:x = x, P p.
+intros A eq_dec x P H p.
+elim p using K_dec; intros.
+case (eq_dec x0 y); [left|right]; assumption.
+trivial.
+Qed.
+
   Theorem K_dec_set :
    forall A:Set,
      (forall x y:A, {x = y} + {x <> y}) ->
      forall (x:A) (P:x = x -> Prop), P (refl_equal x) -> forall p:x = x, P p.
-intros.
-elim p using K_dec.
-intros.
-case (H x0 y); intros.
-elim e; left; reflexivity.
+  Proof fun A => K_dec_type (A:=A).
 
-right; red in |- *; intro neq; apply n; elim neq; reflexivity.
-
-trivial.
+  (** We deduce the [eq_rect_eq] axiom for (decidable) types *)
+  Theorem eq_rect_eq_dec :
+    forall A:Type,
+     (forall x y:A, {x = y} + {x <> y}) ->
+     forall (p:A) (Q:A -> Type) (x:Q p) (h:p = p), x = eq_rect p Q x p h.
+intros A eq_dec.
+apply (Streicher_K__eq_rect_eq A (K_dec_type eq_dec)).
 Qed.
+
+Unset Implicit Arguments.
+
+(************************************************************************)
+(** *** B.1. Definition of the functor that builds properties of dependent equalities on decidable sets in Type *)
+
+(** The signature of decidable sets in [Type] *)
+
+Module Type DecidableType.
+
+  Parameter U:Type.
+  Axiom eq_dec : forall x y:U, {x = y} + {x <> y}.
+
+End DecidableType.
+
+(** The module [DecidableEqDep] collects equality properties for decidable 
+    set in [Type] *)
+
+Module DecidableEqDep (M:DecidableType).
+
+  Import M.
+
+  (** Invariance by Substitution of Reflexive Equality Proofs *)
+
+  Lemma eq_rect_eq :
+    forall (p:U) (Q:U -> Type) (x:Q p) (h:p = p), x = eq_rect p Q x p h.
+  Proof eq_rect_eq_dec eq_dec.
+
+  (** Injectivity of Dependent Equality *)
+
+  Theorem eq_dep_eq :
+    forall (P:U->Type) (p:U) (x y:P p), eq_dep U P p x p y -> x = y.
+  Proof (eq_rect_eq__eq_dep_eq U eq_rect_eq).
+
+  (** Uniqueness of Identity Proofs (UIP) *)
+
+  Lemma UIP : forall (x y:U) (p1 p2:x = y), p1 = p2.
+  Proof (eq_dep_eq__UIP U eq_dep_eq).
+
+  (** Uniqueness of Reflexive Identity Proofs *)
+
+  Lemma UIP_refl : forall (x:U) (p:x = x), p = refl_equal x.
+  Proof (UIP__UIP_refl U UIP).
+
+  (** Streicher's axiom K *)
+
+  Lemma Streicher_K :
+    forall (x:U) (P:x = x -> Prop), P (refl_equal x) -> forall p:x = x, P p.
+  Proof (K_dec_type eq_dec).
+
+  (** Injectivity of equality on dependent pairs in [Type] *)
+
+  Lemma inj_pairT2 :
+    forall (P:U -> Type) (p:U) (x y:P p),
+      existT P p x = existT P p y -> x = y.
+  Proof eq_dep_eq__inj_pairT2 U eq_dep_eq.
+
+  (** Proof-irrelevance on subsets of decidable sets *)
+
+  Lemma inj_pairP2 :
+    forall (P:U -> Prop) (x:U) (p q:P x),
+      ex_intro P x p = ex_intro P x q -> p = q.
+  intros.
+  apply inj_right_pair with (A:=U).
+  intros x0 y0; case (eq_dec x0 y0); [left|right]; assumption.
+  assumption.
+  Qed.
+
+End DecidableEqDep.
+
+(************************************************************************)
+(** *** B.2 Definition of the functor that builds properties of dependent equalities on decidable sets in Set *)
+
+(** The signature of decidable sets in [Set] *)
+
+Module Type DecidableSet.
+
+  Parameter U:Set.
+  Axiom eq_dec : forall x y:U, {x = y} + {x <> y}.
+
+End DecidableSet.
+
+(** The module [DecidableEqDepSet] collects equality properties for decidable 
+    set in [Set] *)
+
+Module DecidableEqDepSet (M:DecidableSet).
+
+  Import M.
+  Module N:=DecidableEqDep(M).
+
+  (** Invariance by Substitution of Reflexive Equality Proofs *)
+
+  Lemma eq_rect_eq :
+    forall (p:U) (Q:U -> Type) (x:Q p) (h:p = p), x = eq_rect p Q x p h.
+  Proof eq_rect_eq_dec eq_dec.
+
+  (** Injectivity of Dependent Equality *)
+
+  Theorem eq_dep_eq :
+    forall (P:U->Type) (p:U) (x y:P p), eq_dep U P p x p y -> x = y.
+  Proof N.eq_dep_eq.
+
+  (** Uniqueness of Identity Proofs (UIP) *)
+
+  Lemma UIP : forall (x y:U) (p1 p2:x = y), p1 = p2.
+  Proof N.UIP.
+
+  (** Uniqueness of Reflexive Identity Proofs *)
+
+  Lemma UIP_refl : forall (x:U) (p:x = x), p = refl_equal x.
+  Proof N.UIP_refl.
+
+  (** Streicher's axiom K *)
+
+  Lemma Streicher_K :
+    forall (x:U) (P:x = x -> Prop), P (refl_equal x) -> forall p:x = x, P p.
+  Proof N.Streicher_K.
+
+  (** Injectivity of equality on dependent pairs with second component
+      in [Type] *)
+
+  Lemma inj_pairT2 :
+    forall (P:U -> Type) (p:U) (x y:P p),
+      existT P p x = existT P p y -> x = y.
+  Proof N.inj_pairT2.
+
+  (** Proof-irrelevance on subsets of decidable sets *)
+
+  Lemma inj_pairP2 :
+    forall (P:U -> Prop) (x:U) (p q:P x),
+      ex_intro P x p = ex_intro P x q -> p = q.
+  Proof N.inj_pairP2.
+
+  (** Injectivity of equality on dependent pairs in [Set] *)
+
+  Lemma inj_pair2 :
+    forall (P:U -> Set) (p:U) (x y:P p),
+      existS P p x = existS P p y -> x = y.
+  Proof eq_dep_eq__inj_pair2 U N.eq_dep_eq.
+
+End DecidableEqDepSet.

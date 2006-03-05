@@ -137,7 +137,7 @@ LIBRARY=\
   library/nameops.cmo library/libnames.cmo library/libobject.cmo \
   library/summary.cmo library/nametab.cmo library/global.cmo library/lib.cmo \
   library/declaremods.cmo library/library.cmo library/states.cmo \
-  library/decl_kinds.cmo library/dischargedhypsmap.cmo library/goptions.cmo 
+  library/decl_kinds.cmo library/dischargedhypsmap.cmo library/goptions.cmo
 
 PRETYPING=\
   pretyping/termops.cmo pretyping/evd.cmo \
@@ -790,7 +790,8 @@ LOGICVO=\
  theories/Logic/Berardi.vo       	theories/Logic/Eqdep_dec.vo \
  theories/Logic/Decidable.vo            theories/Logic/JMeq.vo \
  theories/Logic/ClassicalDescription.vo theories/Logic/ClassicalChoice.vo \
- theories/Logic/RelationalChoice.vo     theories/Logic/Diaconescu.vo
+ theories/Logic/RelationalChoice.vo     theories/Logic/Diaconescu.vo \
+ theories/Logic/EqdepFacts.vo           theories/Logic/ProofIrrelevanceFacts.vo
 
 ARITHVO=\
  theories/Arith/Arith.vo        theories/Arith/Gt.vo          \
