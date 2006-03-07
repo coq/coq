@@ -2,6 +2,9 @@ open Pp
 open Rawterm
 open Util
 open Names
+(* Ocaml 3.06 Map.S does not handle is_empty *)
+let idmap_is_empty m = m = Idmap.empty
+
 (* 
    Some basic functions to rebuild rawconstr
    In each of them the location is Util.dummy_loc
@@ -129,7 +132,7 @@ let change_vars =
       | RDynamic _ -> error "Not handled RDynamic"
   and change_vars_br mapping ((loc,idl,patl,res) as br) = 
     let new_mapping = List.fold_right Idmap.remove idl mapping in 
-    if Idmap.is_empty new_mapping 
+    if idmap_is_empty new_mapping 
     then br 
     else (loc,idl,patl,change_vars new_mapping res)
   in
@@ -278,7 +281,7 @@ let rec alpha_rt excluded rt =
 	in
 	let new_nal = List.rev rev_new_nal in 
 	let new_rto,new_t,new_b = 
-	  if Idmap.is_empty mapping
+	  if idmap_is_empty mapping
 	  then rto,t,b
 	  else let replace = change_vars mapping in 
 	  (option_app replace rto,replace t,replace b)

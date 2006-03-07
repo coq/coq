@@ -122,7 +122,7 @@ let rec change_vars_in_binder mapping = function
   | (bt,t)::l ->
       let new_mapping = List.fold_right Idmap.remove (ids_of_binder bt) mapping in 
       (bt,change_vars mapping t)::
-	(if Idmap.is_empty new_mapping
+	(if idmap_is_empty new_mapping
 	 then l 
 	 else change_vars_in_binder new_mapping l
 	)

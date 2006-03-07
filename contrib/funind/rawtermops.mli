@@ -1,5 +1,9 @@
 open Rawterm
 
+(* Ocaml 3.06 Map.S does not handle is_empty *)
+val idmap_is_empty : 'a Names.Idmap.t -> bool
+
+
 (* [get_pattern_id pat] returns a list of all the variable appearing in [pat] *)
 val get_pattern_id : cases_pattern -> Names.identifier list
 
