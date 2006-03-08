@@ -8,27 +8,10 @@
 
 (*i $Id$ i*)
 
+open Cdglobals
 open Index
 
-(*s Target language *)
-
-type target_language = LaTeX | HTML | TeXmacs
-
-let target_language = ref HTML
-
 (*s Low level output *)
-
-let out_channel = ref stdout
-let output_is_file = ref false
-let output_dir = ref ""
-
-let set_out_file f = 
-  let f = if !output_dir <> "" then Filename.concat !output_dir f else f in
-  out_channel := open_out f;
-  output_is_file := true
-
-let close () =
-  if !output_is_file then close_out !out_channel
 
 let output_char c = Pervasives.output_char !out_channel c
 
@@ -38,43 +21,6 @@ let printf s = Printf.fprintf !out_channel s
 
 let sprintf = Printf.sprintf
 
-let dump_file f =
-  let ch = open_in f in
-  try
-    while true do
-      Pervasives.output_char !out_channel (input_char ch)
-    done
-  with End_of_file -> close_in ch
-
-(*s Options *)
-
-let header_trailer = ref true
-let quiet = ref false
-let light = ref false
-let short = ref false
-let index = ref true
-let multi_index = ref false
-let toc = ref false
-let page_title = ref ""
-let title = ref ""
-let externals = ref true
-let coqlib = ref "http://coq.inria.fr/library/"
-let raw_comments = ref false
-
-let charset = ref "iso-8859-1"
-let inputenc = ref ""
-let latin1 = ref false
-let utf8 = ref false
-
-let set_latin1 () =
-  charset := "iso-8859-1";
-  inputenc := "latin1";
-  latin1 := true
-
-let set_utf8 () =
-  charset := "utf-8";
-  inputenc := "utf8";
-  utf8 := true
 
 (*s Coq keywords *)
 
@@ -85,9 +31,9 @@ let build_table l =
 
 let is_keyword = 
   build_table
-    [ "Add"; "AddPath"; "Axiom"; "Chapter"; "CoFixpoint";
+    [ "AddPath"; "Axiom"; "Chapter"; "CoFixpoint";
       "CoInductive"; "Defined"; "Definition"; 
-      "End"; "Export"; "Fact"; "Fix"; "Fixpoint"; "Global"; "Grammar"; "Hint";
+      "End"; "Export"; "Fact"; "Fix"; "Fixpoint"; "Global"; "Grammar"; "Goal"; "Hint";
       "Hypothesis"; "Hypotheses"; 
       "Immediate"; "Implicit"; "Import"; "Inductive"; 
       "Infix"; "Lemma"; "Let"; "Load"; "Local"; "Ltac"; 
@@ -508,14 +454,14 @@ module Html = struct
   let separate_index navig i =
     let idx = i.idx_name in
     let one_letter ((c,l) as cl) =
-      set_out_file (sprintf "index_%s_%c.html" idx c);
+      open_out_file (sprintf "index_%s_%c.html" idx c);
       header ();
       navig ();
       printf "<hr/>";
       letter_index true idx cl;
       if List.length l > 30 then begin printf "<hr/>"; navig () end;
       trailer ();
-      close ()
+      close_out_file ()
     in
     List.iter one_letter i.idx_entries
 
@@ -556,43 +502,26 @@ module Html = struct
     printf "</table>\n"
 
   let make_index () =
-    if !index then begin
-      let idxl = 
-	let glob,bt = Index.all_entries () in
+    let idxl = 
+      let glob,bt = Index.all_entries () in
 	format_global_index glob ::
-	List.map format_bytype_index bt 
-      in
-      let navig () = navig_index idxl in 
-      set_out_file "index.html";
+	  List.map format_bytype_index bt 
+    in
+    let navig () = navig_index idxl in 
       current_module := "Index";
-      page_title := (if !title <> "" then !title else "Index");
-      header ();
+      let one_index i =
+	if i.idx_size > 0 then begin
+	  printf "<hr/>\n<h1>%s Index</h1>\n" (String.capitalize i.idx_name);
+	  all_letters i
+	end
+	in
       if !title <> "" then printf "<h1>%s</h1>\n" !title;
       navig ();
-      if !multi_index then begin
-	trailer (); 
-	close ();
-	List.iter (separate_index navig) idxl;
-      end else begin
-	let one_index i =
-	  if i.idx_size > 0 then begin
-	    printf "<hr/>\n<h1>%s Index</h1>\n" (String.capitalize i.idx_name);
-	    all_letters i
-	  end
-	in
-	List.iter one_index idxl;
-	printf "<hr/>";
-	navig ();
-	trailer ();
-	close ()
-      end;
-    end
+      List.iter one_index idxl;
+      printf "<hr/>";
+      navig ()
 
   let make_toc () = 
-    set_out_file "toc.html";
-    page_title := (if !title <> "" then !title else "Table of contents");
-    header ();
-    if !title <> "" then printf "<h1>%s</h1>\n" !title;
     let make_toc_entry = function
       | Toc_library m -> 
 	  stop_item ();
@@ -603,9 +532,6 @@ module Html = struct
     in
     Queue.iter make_toc_entry toc_q;
     stop_item ();
-    if !index then printf "<a href=\"index.html\"><h2>Index</h2></a>";
-    trailer ();
-    close ()
 
 end
 

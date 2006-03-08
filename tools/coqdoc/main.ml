@@ -18,6 +18,7 @@
  * It may be removed or abbreviated as far as I am concerned.
  *)
 
+open Cdglobals
 open Filename
 open Printf
 open Output
@@ -33,6 +34,7 @@ let usage () =
   prerr_endline "  --texmacs           produce a TeXmacs document";
   prerr_endline "  --dvi               output the DVI";
   prerr_endline "  --ps                output the PostScript";
+  prerr_endline "  --stdout            write output to stdout";
   prerr_endline "  -o <file>           write output in file <file>";
   prerr_endline "  -d <dir>            output files into directory <dir>";
   prerr_endline "  -g                  (gallina) skip proofs";
@@ -71,7 +73,12 @@ let banner () =
   eprintf "This is coqdoc version %s, compiled on %s\n"
     Coq_config.version Coq_config.compile_date;
   flush stderr
-    
+
+let target_full_name f = 
+  let basefile = chop_suffix f ".v" in
+    match !target_language with
+      | HTML -> basefile ^ ".html"
+      | _ -> basefile ^ ".tex"
 
 (*s \textbf{Separation of files.} Files given on the command line are
     separated according to their type, which is determined by their
@@ -232,8 +239,10 @@ let parse () =
 	multi_index := true; parse_rec rem
     | ("-toc" | "--toc" | "--table-of-contents") :: rem ->
 	toc := true; parse_rec rem
+    | ("-stdout" | "--stdout") :: rem ->
+	out_to := StdOut; parse_rec rem
     | ("-o" | "--output") :: f :: rem ->
-	output_file := f; parse_rec rem
+	out_to := File f; parse_rec rem
     | ("-o" | "--output") :: [] -> 
 	usage ()
     | ("-d" | "--directory") :: dir :: rem ->
@@ -251,30 +260,29 @@ let parse () =
     | ("-t" | "-title" | "--title") :: [] ->
 	usage ()
     | ("-latex" | "--latex") :: rem ->
-	Output.target_language := LaTeX; parse_rec rem
+	Cdglobals.target_language := LaTeX; parse_rec rem
     | ("-dvi" | "--dvi") :: rem ->
-	Output.target_language := LaTeX; dvi := true; parse_rec rem
+	Cdglobals.target_language := LaTeX; dvi := true; parse_rec rem
     | ("-ps" | "--ps") :: rem ->
-	Output.target_language := LaTeX; ps := true; parse_rec rem
+	Cdglobals.target_language := LaTeX; ps := true; parse_rec rem
     | ("-html" | "--html") :: rem ->
-	Output.target_language := HTML; parse_rec rem
+	Cdglobals.target_language := HTML; parse_rec rem
     | ("-texmacs" | "--texmacs") :: rem ->
-	Output.target_language := TeXmacs; parse_rec rem
-
+	Cdglobals.target_language := TeXmacs; parse_rec rem
     | ("-charset" | "--charset") :: s :: rem ->
-	Output.charset := s; parse_rec rem
+	Cdglobals.charset := s; parse_rec rem
     | ("-charset" | "--charset") :: [] ->
 	usage ()
     | ("-inputenc" | "--inputenc") :: s :: rem ->
-	Output.inputenc := s; parse_rec rem
+	Cdglobals.inputenc := s; parse_rec rem
     | ("-inputenc" | "--inputenc") :: [] ->
 	usage ()
     | ("-raw-comments" | "--raw-comments") :: rem ->
-	Output.raw_comments := true; parse_rec rem
+	Cdglobals.raw_comments := true; parse_rec rem
     | ("-latin1" | "--latin1") :: rem ->
-	Output.set_latin1 (); parse_rec rem
+	Cdglobals.set_latin1 (); parse_rec rem
     | ("-utf8" | "--utf8") :: rem ->
-	Output.set_utf8 (); parse_rec rem
+	Cdglobals.set_utf8 (); parse_rec rem
 
     | ("-q" | "-quiet" | "--quiet") :: rem ->
 	quiet := true; parse_rec rem
@@ -298,7 +306,6 @@ let parse () =
 	parse_rec rem
     | ("-files" | "--files") :: [] ->
 	usage ()
-
     | "-R" :: path :: log :: rem -> 
 	add_path path log; parse_rec rem
     | "-R" :: ([] | [_]) ->
@@ -308,12 +315,11 @@ let parse () =
     | ("-glob-from" | "--glob-from") :: [] ->
 	usage ()
     | ("--no-externals" | "-no-externals" | "-noexternals") :: rem ->
-	Output.externals := false; parse_rec rem
+	Cdglobals.externals := false; parse_rec rem
     | ("--coqlib" | "-coqlib") :: u :: rem ->
-	Output.coqlib := u; parse_rec rem
+	Cdglobals.coqlib := u; parse_rec rem
     | ("--coqlib" | "-coqlib") :: [] ->
 	usage ()
-
     | f :: rem -> 
 	add_file (what_file f); parse_rec rem
   in 
@@ -360,52 +366,114 @@ let copy src dst =
   with End_of_file ->
     close_in cin; close_out cout
 
+(*s Functions for generating output files *)
+
+let gen_one_file l =
+  let file = function
+    | Vernac_file (f,m) -> 
+	set_module m; coq_file f m
+    | Latex_file _ -> ()
+  in
+    header ();
+    if !toc then make_toc ();
+    List.iter file l;
+    if !index then make_index();
+    trailer ()
+      
+let gen_mult_files l =
+  let file = function
+    | Vernac_file (f,m) -> 
+	set_module m;
+	let hf = target_full_name f in
+	  open_out_file hf;
+	  header (); 
+	  if !toc then make_toc ();
+	  coq_file f m; 
+	  trailer ();
+	  close_out_file()
+    | Latex_file _ -> ()
+  in
+    List.iter file l;
+    if (!index && !target_language=HTML) then begin
+      open_out_file "index.html"; 
+      page_title := (if !title <> "" then !title else "Index");
+      header (); make_index (); trailer ();
+      close_out_file()
+    end;
+    if (!toc && !target_language=HTML) then begin
+      open_out_file "toc.html"; 
+      page_title := (if !title <> "" then !title else "Table of contents");
+      header ();
+      if !title <> "" then printf "<h1>%s</h1>\n" !title;
+      make_toc (); 
+      trailer ();
+      close_out_file()
+    end 
+      (* Rq: pour latex et texmacs, une toc ou un index séparé n'a pas de sens... *)
+
+
+let index_module = function
+  | Vernac_file (_,m) -> Index.add_module m
+  | Latex_file _ -> ()
+
+let produce_document l =
+  List.iter index_module l;
+  match !out_to with
+    | StdOut -> 
+	Cdglobals.out_channel := stdout;
+	gen_one_file l
+    | File f ->
+	open_out_file f;
+	gen_one_file l;
+	close_out_file()
+    | MultFiles ->
+	gen_mult_files l
+
 let produce_output fl =
   if not (!dvi || !ps) then begin
-    if !output_file <> "" then set_out_file !output_file;
     produce_document fl
   end else begin
     let texfile = temp_file "coqdoc" ".tex" in
     let basefile = chop_suffix texfile ".tex" in
-    set_out_file texfile;
-    produce_document fl;
-    let command = 
-      let file = basename texfile in
-      let file = 
-	if !quiet then sprintf "'\\nonstopmode\\input{%s}'" file else file 
-      in
-      sprintf "(latex %s && latex %s) 1>&2 %s" file file
-	(if !quiet then "> /dev/null" else "")
-    in
-    let res = locally (dirname texfile) Sys.command command in
-    if res <> 0 then begin
-      eprintf "Couldn't run LaTeX successfully\n"; 
-      clean_and_exit basefile res
-    end;
-    let dvifile = basefile ^ ".dvi" in
-    if !dvi then begin
-      if !output_file <> "" then 
-	(* we cannot use Sys.rename accross file systems *)
-	copy dvifile !output_file 
-      else 
-	cat dvifile
-    end;
-    if !ps then begin
-      let psfile = 
-	if !output_file <> "" then !output_file else basefile ^ ".ps" 
-      in
+      open_out_file texfile;
+      produce_document fl;
       let command = 
-	sprintf "dvips %s -o %s %s" dvifile psfile 
-	  (if !quiet then "> /dev/null 2>&1" else "")
+	let file = basename texfile in
+	let file = 
+	  if !quiet then sprintf "'\\nonstopmode\\input{%s}'" file else file 
+	in
+	  sprintf "(latex %s && latex %s) 1>&2 %s" file file
+	    (if !quiet then "> /dev/null" else "")
       in
-      let res = Sys.command command in
-      if res <> 0 then begin
-	eprintf "Couldn't run dvips successfully\n"; 
-	clean_and_exit basefile res
-      end;
-      if !output_file = "" then cat psfile
-    end;
-    clean_temp_files basefile
+      let res = locally (dirname texfile) Sys.command command in
+	if res <> 0 then begin
+	  eprintf "Couldn't run LaTeX successfully\n"; 
+	  clean_and_exit basefile res
+	end;
+	let dvifile = basefile ^ ".dvi" in
+	  if !dvi then begin
+	    if !output_file <> "" then 
+	      (* we cannot use Sys.rename accross file systems *)
+	      copy dvifile !output_file 
+	    else 
+	      cat dvifile
+	  end;
+	  if !ps then begin
+	    let psfile = 
+	      if !output_file <> "" then !output_file else basefile ^ ".ps" 
+	    in
+	    let command = 
+	      sprintf "dvips %s -o %s %s" dvifile psfile 
+		(if !quiet then "> /dev/null 2>&1" else "")
+	    in
+	    let res = Sys.command command in
+	      if res <> 0 then begin
+		eprintf "Couldn't run dvips successfully\n"; 
+		clean_and_exit basefile res
+	      end;
+	      if !output_file = "" then cat psfile
+	  end;
+	  clean_temp_files basefile
   end
 
 

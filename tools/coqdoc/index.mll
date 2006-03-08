@@ -14,7 +14,7 @@ open Filename
 open Lexing 
 open Printf
 
-type coq_module = string
+open Cdglobals
 
 type loc = int
 

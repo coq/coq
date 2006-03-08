@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-type coq_module = string
+open Cdglobals
 
 type loc = int
 

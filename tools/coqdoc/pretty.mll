@@ -12,6 +12,7 @@
 
 {
 
+  open Cdglobals
   open Printf
   open Index
   open Lexing 
@@ -56,43 +57,7 @@
 
   let backtrack lexbuf = lexbuf.lex_curr_pos <- lexbuf.lex_start_pos
 
-  (* Gallina (skipping proofs). This is a three states automaton. *)   
-
-  let gallina = ref false
-
-  type gallina_state = Nothing | AfterDot | Proof
-
-  let gstate = ref AfterDot
-
-  let glet = ref false
-
-  let is_proof = 
-    let t = Hashtbl.create 13 in
-    List.iter (fun s -> Hashtbl.add t s true)
-      [ "Theorem"; "Lemma"; "Fact"; "Remark"; "Goal"; "Let";
-	"Correctness"; "Definition"; "Morphism" ];
-    fun s -> try Hashtbl.find t s with Not_found -> false
-
-  let gallina_id id = 
-    if !gstate = AfterDot then
-      if is_proof id then gstate := Proof else 
-	if id <> "Add" then gstate := Nothing
-
-  let gallina_symbol s = 
-    if !gstate = AfterDot then 
-      gstate := Nothing
-    else
-      if (!gstate = Proof && s = ":=") then 
-	if !glet then glet := false else gstate := Nothing
-
   let is_space = function ' ' | '\t' | '\n' | '\r' -> true | _ -> false
-
-  let gallina_char c = 
-    if c = '.' then
-      (let skip = !gstate = Proof in gstate := AfterDot; skip)
-    else
-      (if !gstate = AfterDot && not (is_space c) then gstate := Nothing;
-       false)
 
   (* saving/restoring the PP state *)
 
@@ -126,9 +91,7 @@
 
   let reset () =
     formatted := false;
-    brackets := 0;
-    gstate := AfterDot;
-    glet := false
+    brackets := 0
 
   (* erasing of Section/End *)
 
@@ -222,6 +185,100 @@ let symbolchar_no_brackets =
 let symbolchar = symbolchar_no_brackets | '[' | ']'
 let token = symbolchar+ | '[' [^ '[' ']' ':']* ']'
 
+
+let thm_token = 
+  "Theorem" 
+  | "Lemma" 
+  | "Fact" 
+  | "Remark" 
+  | "Corollary" 
+  | "Proposition" 
+  | "Property"
+  | "Goal"
+
+let def_token = 
+  "Definition" 
+  | "Let" 
+  | "SubClass" 
+  | "Example"
+  | "Local" 
+  | "Fixpoint" 
+  | "CoFixpoint" 
+  | "Record" 
+  | "Structure" 
+  | "Scheme"
+  | "Inductive"
+  | "CoInductive"
+
+let decl_token = 
+  "Hypothesis" 
+  | "Hypotheses" 
+  | "Parameter" 
+  | "Axiom" 's'? 
+  | "Conjecture"
+
+let gallina_ext =
+  "Module" 
+  | "Declare"
+  | "Transparent"
+  | "Opaque"
+  | "Canonical"
+  | "Coercion"
+  | "Identity"
+  | "Implicit"
+  | "Notation"
+  | "Infix"
+  | "Tactic" space+ "Notation"
+  | "Reserved" space+ "Notation"
+
+let commands = 
+  "Pwd"
+  | "Cd"
+  | "Drop"
+  | "ProtectedLoop"
+  | "Quit"
+  | "Load"
+  | "Add"
+  | "Remove" space+ "Loadpath"
+  | "Print"
+  | "Inspect"
+  | "About"
+  | "Search"
+  | "Eval"
+  | "Reset"
+  | "Check"
+  | "Type"
+
+let extraction = 
+  "Extraction"
+  | "Recursive" space+ "Extraction" 
+  | "Extract"
+
+let gallina_kw = thm_token | def_token | decl_token | gallina_ext | commands | extraction
+
+let gallina_kw_to_hide =
+  "Implicit"
+  | "Ltac"
+  | "Require"
+  | "Import"
+  | "Export"
+  | "Load" 
+  | "Hint"
+  | "Open"
+  | "Close"
+  | "Delimit"
+  | "Transparent"
+  | "Opaque"
+  | ("Declare" space+ ("Morphism" | "Step") )
+  | "Section"
+  | "Chapter"
+  | "Variable" 's'?
+  | ("Hypothesis" | "Hypotheses")
+  | "End"
+  | ("Set" | "Unset") space+ "Printing" space+ "Coercions"
+  | "Declare" space+ ("Left" | "Right") space+ "Step" 
+
+
 (* tokens with balanced brackets *)
 let token_brackets =
   ( symbolchar_no_brackets+ ('[' symbolchar_no_brackets* ']')* 
@@ -241,21 +298,7 @@ let begin_verb = "(*" space* "begin" space+ "verb" space* "*)"
 let end_verb = "(*" space* "end" space+ "verb" space* "*)"
 *)
 
-let coq_command_to_hide =
-  "Implicit" space |
-  "Ltac" space | 
-  "Require" space | 
-  "Load" space |
-  "Hint" space |
-  "Transparent" space |
-  "Opaque" space |
-  ("Declare" space+ ("Morphism" | "Step") space) |
-  "Section" space | 
-  "Variable" 's'? space | 
-  ("Hypothesis" | "Hypotheses") space | 
-  "End" space |
-  ("Set" | "Unset") space+ "Printing" space+ "Coercions" space |
-  "Declare" space+ ("Left" | "Right") space+ "Step" space
+
 
 (*s Scanning Coq, at beginning of line *)
 
@@ -265,8 +308,8 @@ rule coq_bol = parse
   | space* "(**" space_nl
       { end_coq (); start_doc (); 
 	let eol = doc_bol lexbuf in
-	end_doc (); start_coq (); 
-	if eol then coq_bol lexbuf else coq lexbuf }
+	  end_doc (); start_coq (); 
+	  if eol then coq_bol lexbuf else coq lexbuf }
   | space* "Comments" space_nl
       { end_coq (); start_doc (); comments lexbuf; end_doc (); 
 	start_coq (); coq lexbuf }
@@ -276,28 +319,35 @@ rule coq_bol = parse
       { begin_show (); coq_bol lexbuf }
   | space* end_show
       { end_show (); coq_bol lexbuf }
-  | space* coq_command_to_hide
+  | space* gallina_kw_to_hide
       { let s = lexeme lexbuf in
-	if !light && section_or_end s then begin 
-	  skip_to_dot lexbuf; 
-	  coq_bol lexbuf 
-	end else begin
-	  indentation (count_spaces s); 
-	  backtrack lexbuf; 
-	  coq lexbuf 
-	end }
+	  if !light && section_or_end s then begin 
+	    skip_to_dot lexbuf; 
+	    coq_bol lexbuf 
+	  end else begin
+	    indentation (count_spaces s); 
+	    ident s (lexeme_start lexbuf); 
+	    let eol= body lexbuf in 
+	      if eol then coq_bol lexbuf else coq lexbuf
+	  end }
+  | space* gallina_kw
+      { let s = lexeme lexbuf in 
+	  indentation (count_spaces s);
+	  ident s (lexeme_start lexbuf); 
+	  let eol= body lexbuf in
+	    if eol then coq_bol lexbuf else coq lexbuf }
   | space* "(**" space+ "printing" space+ (identifier | token) space+
       { let tok = lexeme lexbuf in
 	let s = printing_token lexbuf in
-	add_printing_token tok s;
-	coq_bol lexbuf }
+	  add_printing_token tok s;
+	  coq_bol lexbuf }
   | space* "(**" space+ "printing" space+
       { eprintf "warning: bad 'printing' command at character %d\n" 
 	  (lexeme_start lexbuf); flush stderr;
 	ignore (comment lexbuf);
 	coq_bol lexbuf }
   | space* "(**" space+ "remove" space+ "printing" space+ 
-    (identifier | token) space* "*)"
+      (identifier | token) space* "*)"
       { remove_printing_token (lexeme lexbuf);
 	coq_bol lexbuf }
   | space* "(**" space+ "remove" space+ "printing" space+
@@ -307,24 +357,28 @@ rule coq_bol = parse
 	coq_bol lexbuf }
   | space* "(*"
       { let eol = comment lexbuf in
-	if eol then coq_bol lexbuf else coq lexbuf }
-  | space+
-      { indentation (count_spaces (lexeme lexbuf)); coq lexbuf }
+	  if eol then coq_bol lexbuf else coq lexbuf }
   | eof 
       { () }
-  | _ 
-      { backtrack lexbuf; indentation 0; coq lexbuf }
+  | _
+      { let eol = 
+	  if not !gallina then 
+	    begin backtrack lexbuf; indentation 0; body_bol lexbuf end 
+	  else 
+	    skip_to_dot lexbuf 
+	in
+	  if eol then coq_bol lexbuf else coq lexbuf }
 
 (*s Scanning Coq elsewhere *)
 
 and coq = parse
   | "\n" 
-      { line_break (); coq_bol lexbuf }
+      { line_break(); coq_bol lexbuf }
   | "(**" space_nl
       { end_coq (); start_doc (); 
 	let eol = doc_bol lexbuf in
-	end_doc (); start_coq (); 
-	if eol then coq_bol lexbuf else coq lexbuf }
+	  end_doc (); start_coq (); 
+	  if eol then coq_bol lexbuf else coq lexbuf }
   | "(*"
       { let eol = comment lexbuf in
 	  if eol then begin line_break(); coq_bol lexbuf end 
@@ -334,45 +388,44 @@ and coq = parse
       { if not !formatted then begin symbol (lexeme lexbuf); coq lexbuf end }
   | eof 
       { () }
-  | "let" { let s = lexeme lexbuf in
-	      glet:=true; ident s (lexeme_start lexbuf); coq lexbuf }
-  | token
+  | gallina_kw_to_hide
       { let s = lexeme lexbuf in
-	if !gallina then gallina_symbol s;
-	symbol s;
-	coq lexbuf }
-  | "with" space+ "Module" | "Module" space+ "Type" | "Declare" space+ "Module"
-    (* hack to avoid making Type a keyword *)
-      { let s = lexeme lexbuf in
-	if !gallina then gallina_id s;
-        ident s (lexeme_start lexbuf); coq lexbuf }
-  | "(" space* identifier space* ":=" 
-      { let id = extract_ident (lexeme lexbuf) in
-	symbol "("; ident id (lexeme_start lexbuf); symbol ":="; coq lexbuf }
-  | (identifier '.')* identifier
-      { let id = lexeme lexbuf in
-	if !gallina then gallina_id id;
-	ident id (lexeme_start lexbuf); coq lexbuf }
-  | _ 
-      { let c = lexeme_char lexbuf 0 in 
-	char c;
-	if !gallina && gallina_char c then skip_proof lexbuf;
-	coq lexbuf }
-
+	  if !light && section_or_end s then begin 
+	    let eol = skip_to_dot lexbuf in
+	      if eol then coq_bol lexbuf else coq lexbuf 
+	  end else begin
+	    ident s (lexeme_start lexbuf); 
+	    let eol=body lexbuf in 
+	      if eol then coq_bol lexbuf else coq lexbuf
+	  end }
+  | gallina_kw
+      { let s = lexeme lexbuf in 
+	  ident s (lexeme_start lexbuf); 
+	  let eol = body lexbuf in
+	    if eol then coq_bol lexbuf else coq lexbuf }
+  | space+ { char ' '; coq lexbuf }
+  | _ { let eol = 
+	  if not !gallina then 
+	    begin backtrack lexbuf; indentation 0; body_bol lexbuf end 
+	  else 
+	    skip_to_dot lexbuf 
+	in 
+	  if eol then coq_bol lexbuf else coq lexbuf}
+      
 (*s Scanning documentation, at beginning of line *)
-
+      
 and doc_bol = parse
   | space* "\n" '\n'*
       { paragraph (); doc_bol lexbuf }
   | space* section [^')'] ([^'\n' '*'] | '*' [^'\n'')'])*
-      { let lev, s = sec_title (lexeme lexbuf) in 
-	section lev (fun () -> ignore (doc (from_string s))); 
-	doc lexbuf }
-  | space* '-'+
-      { let n = count_dashes (lexeme lexbuf) in
-	if n >= 4 then rule () else item n;
-	doc lexbuf }
-  | "<<" space*
+{ let lev, s = sec_title (lexeme lexbuf) in 
+    section lev (fun () -> ignore (doc (from_string s))); 
+    doc lexbuf }
+| space* '-'+
+     { let n = count_dashes (lexeme lexbuf) in
+	 if n >= 4 then rule () else item n;
+	 doc lexbuf }
+| "<<" space*
       { start_verbatim (); verbatim lexbuf; doc_bol lexbuf }
   | eof 
       { false }
@@ -491,22 +544,29 @@ and comment = parse
   | eof  { false }
   | _    { comment lexbuf }
 
-(*s Skip proofs *)
-
-and skip_proof = parse
-  | "(*" { ignore (comment lexbuf); skip_proof lexbuf }
-  | "Save" | "Qed" | "Defined"
-  | "Abort" | "Proof" | "Admitted" { skip_to_dot lexbuf }
-  | "Proof" space* '.' { skip_proof lexbuf }
-  | identifier { skip_proof lexbuf } (* to avoid keywords within idents *)
-  | eof { () }
-  | _ { skip_proof lexbuf }
-
 and skip_to_dot = parse
-  | eof | '.' space { if !gallina then gstate := AfterDot }
-  | ".\n" { if !gallina then gstate := AfterDot; line_break(); }
+  | '.' space* '\n' { true }
+  | eof | '.' space+ { false}
   | "(*" { ignore (comment lexbuf); skip_to_dot lexbuf }
   | _ { skip_to_dot lexbuf }
+
+and body_bol = parse
+  | space+
+      { indentation (count_spaces (lexeme lexbuf)); body lexbuf }
+  | _ { backtrack lexbuf; body lexbuf }
+
+and body = parse
+  | '\n' {line_break(); body_bol lexbuf}
+  | eof { false }
+  | '.' space* '\n' { char '.'; line_break(); true }      
+  | '.' space+ { char '.'; char ' '; false }
+  | "(*" { let eol = comment lexbuf in 
+	     if eol then body_bol lexbuf else body lexbuf }
+  | identifier 
+      { let s = lexeme lexbuf in 
+	  ident s (lexeme_start lexbuf); body lexbuf }
+  | _ { let c = lexeme_char lexbuf 0 in 
+	  char c; body lexbuf }
 
 and skip_hide = parse
   | eof | end_hide { () }
@@ -526,10 +586,6 @@ and printing_token = parse
 
 {
 
-  type file =
-    | Vernac_file of string * coq_module
-    | Latex_file of string
-
   let coq_file f m =
     reset ();
     Index.scan_file f m;
@@ -538,60 +594,6 @@ and printing_token = parse
     let lb = from_channel c in
     start_coq (); coq_bol lb; end_coq ();
     close_in c
-
-  (* LaTeX document *)
-
-  let latex_document l = 
-    let file = function
-      | Vernac_file (f,m) -> set_module m; coq_file f m
-      | Latex_file f -> dump_file f
-    in
-    header ();
-    if !toc then make_toc ();
-    List.iter file l;
-    trailer ();
-    close ()
-
-  (* HTML document *)      
-
-  let html_document l =
-    let file = function
-      | Vernac_file (f,m) -> 
-	  set_module m;
-	  let hf = m ^ ".html" in
-	  set_out_file hf;
-	  header ();
-	  coq_file f m;
-	  trailer ();
-	  close ()
-      | Latex_file _ -> ()
-    in
-    List.iter file l;
-    make_index ();
-    if !toc then make_toc ()
-
-  (* TeXmacs document *)
-
-  let texmacs_document l = 
-    let file = function
-      | Vernac_file (f,m) -> set_module m; coq_file f m
-      | Latex_file f -> dump_file f
-    in
-    header ();
-    List.iter file l;
-    trailer ();
-    close ()
-
-  let index_module = function
-    | Vernac_file (_,m) -> Index.add_module m
-    | Latex_file _ -> ()
-
-  let produce_document l =
-    List.iter index_module l;
-    (match !target_language with
-       | LaTeX -> latex_document 
-       | HTML -> html_document
-       | TeXmacs -> texmacs_document) l
 
 }
 

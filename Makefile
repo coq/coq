@@ -1115,9 +1115,9 @@ $(COQWC): tools/coqwc.cmo
 
 beforedepend:: tools/coqdoc/pretty.ml tools/coqdoc/index.ml
 
-COQDOCCMO=$(CONFIG) tools/coqdoc/alpha.cmo tools/coqdoc/index.cmo \
-          tools/coqdoc/output.cmo tools/coqdoc/pretty.cmo \
-	  tools/coqdoc/main.cmo
+COQDOCCMO=$(CONFIG) tools/coqdoc/cdglobals.cmo tools/coqdoc/alpha.cmo \
+	tools/coqdoc/index.cmo tools/coqdoc/output.cmo \
+	tools/coqdoc/pretty.cmo tools/coqdoc/main.cmo
 
 $(COQDOC): $(COQDOCCMO)
 	$(SHOW)'OCAMLC -o $@'
