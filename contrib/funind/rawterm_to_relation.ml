@@ -798,7 +798,7 @@ let build_inductive parametrize funnames funsargs  returned_types (rtl:rawconstr
   Impargs.make_strict_implicit_args false;
   Impargs.make_contextual_implicit_args false;
   try 
-    Command.build_mutual rel_inds true;
+    Options.silently (Command.build_mutual rel_inds) true;
     Impargs.make_implicit_args old_implicit_args;
     Impargs.make_strict_implicit_args old_strict_implicit_args;
     Impargs.make_contextual_implicit_args old_contextual_implicit_args;
