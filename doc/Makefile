@@ -30,15 +30,15 @@ all: all-html all-pdf all-ps
 
 all-html:\
   tutorial/Tutorial.v.html refman/html/index.html \
-  faq/html/index.html stdlib/html/index.html
+  faq/html/index.html stdlib/html/index.html RecTutorial/RecTutorial.v.html
 
 all-pdf:\
   tutorial/Tutorial.v.pdf refman/Reference-Manual.pdf \
-  faq/FAQ.v.pdf stdlib/Library.pdf
+  faq/FAQ.v.pdf stdlib/Library.pdf RecTutorial/RecTutorial.v.pdf
 
 all-ps:\
   tutorial/Tutorial.v.ps refman/Reference-Manual.ps \
-  faq/FAQ.v.ps stdlib/Library.ps
+  faq/FAQ.v.ps stdlib/Library.ps RecTutorial/RecTutorial.v.ps
 
 refman:\
   refman/html/index.html refman/Reference-Manual.ps refman/Reference-Manual.pdf
@@ -51,6 +51,10 @@ stdlib:\
 
 faq:\
   faq/html/index.html faq/FAQ.v.ps faq/FAQ.v.pdf
+
+rectutorial:\
+  RecTutorial/RecTutorial.v.html \
+  RecTutorial/RecTutorial.v.ps RecTutorial/RecTutorial.v.pdf
 
 ######################################################################
 ### Implicit rules
@@ -206,9 +210,6 @@ LIBDIRS=\
   Lists Strings IntMap Sorting \
   Sets Relations Wellfounded 
 
-$(GLOBDUMP): $(COQDOC)
-	(cd $(COQTOP); $(MAKE) GLOB="-dump-glob $(GLOBDUMP)" coqlib)
-
 ### Standard library (browsable html format)
 
 stdlib/index-body.html: $(GLOBDUMP)
@@ -244,6 +245,24 @@ stdlib/Library.pdf: $(COMMON) stdlib/Library.coqdoc.tex stdlib/Library.dvi
 	(cd stdlib; $(PDFLATEX) Library)
 
 ######################################################################
+# Tutorial on inductive types
+######################################################################
+
+RecTutorial/RecTutorial.v.dvi: common/version.tex common/title.tex RecTutorial/RecTutorial.v.tex
+	(cd RecTutorial;\
+	 $(LATEX) RecTutorial.v;\
+	 $(BIBTEX) RecTutorial.v;\
+	 $(LATEX) RecTutorial.v;\
+	 $(LATEX) RecTutorial.v)
+
+RecTutorial/RecTutorial.v.pdf: common/version.tex common/title.tex RecTutorial/RecTutorial.v.dvi
+	(cd RecTutorial; $(PDFLATEX) RecTutorial.v.tex)
+
+RecTutorial/RecTutorial.v.html: RecTutorial/RecTutorial.v.tex
+	(cd RecTutorial; hevea -exec xxdate.exe RecTutorial.v)
+
+
+######################################################################
 # Install all documentation files
 ######################################################################
 
@@ -266,6 +285,7 @@ install-doc-html: all-html
 	cp -r refman/html $(HTMLINSTALLDIR)/refman
 	cp -r stdlib/html $(HTMLINSTALLDIR)/stdlib
 	cp -r tutorial/tutorial.html $(HTMLINSTALLDIR)/
+	cp -r RecTutorial/RecTutorial.html $(HTMLINSTALLDIR)/
 	cp -r faq/html $(HTMLINSTALLDIR)/faq
 
 install-doc-printable: all-pdf all-ps
@@ -273,8 +293,10 @@ install-doc-printable: all-pdf all-ps
 	cp -r refman/Reference-manual.pdf $(PRINTABLEINSTALLDIR)
 	cp -r stdlib/Library.pdf $(PRINTABLEINSTALLDIR)
 	cp -r tutorial/Tutorial.v.pdf $(PRINTABLEINSTALLDIR)/Tutorial.pdf
+	cp -r RecTutorial/RecTutorial.v.pdf $(PRINTABLEINSTALLDIR)/RecTutorial.pdf
 	cp -r faq/FAQ.v.pdf $(PRINTABLEINSTALLDIR)/FAQ.pdf
 	cp -r refman/Reference-manual.ps $(PRINTABLEINSTALLDIR)
 	cp -r stdlib/Library.ps $(PRINTABLEINSTALLDIR)
 	cp -r tutorial/Tutorial.v.ps $(PRINTABLEINSTALLDIR)/Tutorial.ps
+	cp -r RecTutorial/RecTutorial.v.ps $(PRINTABLEINSTALLDIR)/RecTutorial.ps
 	cp -r faq/FAQ.v.ps $(PRINTABLEINSTALLDIR)/FAQ.ps
