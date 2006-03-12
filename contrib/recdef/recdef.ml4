@@ -1265,7 +1265,7 @@ let prove_principle tcc_lemma_ref is_mes functional_ref
   fun g -> 
     let type_of_goal = pf_concl g in 
     let goal_ids = pf_ids_of_hyps g in 
-    let goal_elim_infos = compute_elim_sig  (mkRel 0,Rawterm.NoBindings) type_of_goal in 
+    let goal_elim_infos = compute_elim_sig type_of_goal in 
     let params_names,ids = List.fold_left 
       (fun (params_names,avoid) (na,_,_) -> 
 	 let new_id = fresh_id avoid na in 

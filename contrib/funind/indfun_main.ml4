@@ -74,7 +74,7 @@ TACTIC EXTEND newfunind
 	     )
 	 with _ -> assert false)
 	 in
-	 Tactics.compute_elim_sig (mkRel 0,Rawterm.NoBindings) princ_type
+	 Tactics.compute_elim_sig princ_type
        in
 (* 	   msg *)
 (* 	     (str "computing non parameters argument for " ++ *)

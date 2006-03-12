@@ -194,13 +194,15 @@ val cut_and_apply         : constr -> tactic
 (* [rel_contexts] and [rel_declaration] actually contain triples, and
    lists are actually in reverse order to fit [compose_prod]. *)
 type elim_scheme = { 
-  elimc: Term.constr * constr Rawterm.bindings;
+  elimc: (Term.constr * constr Rawterm.bindings) option;
   elimt: types;
   indref: global_reference option;
   params: rel_context;     (* (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *)
   nparams: int;            (* number of parameters *)
   predicates: rel_context; (* (Qq, (Tq_1 -> Tq_2 ->...-> Tq_nq)), (Q1,...) *)
-  branches: rel_context;    (* branchr,...,branch1 *)
+  npredicates: int;        (* Number of predicates *)
+  branches: rel_context;   (* branchr,...,branch1 *)
+  nbranches: int;          (* Number of branches *) 
   args: rel_context;       (* (xni, Ti_ni) ... (x1, Ti_1) *)
   nargs: int;              (* number of arguments *)
   indarg: rel_declaration option; (* Some (H,I prm1..prmp x1...xni) 
@@ -211,7 +213,8 @@ type elim_scheme = {
   farg_in_concl: bool;     (* true if (f...) appears at the end of conclusion *)
 }
 
-val compute_elim_sig : Term.constr * constr Rawterm.bindings -> types -> elim_scheme
+
+val compute_elim_sig : ?elimc: (Term.constr * constr Rawterm.bindings) -> types -> elim_scheme
 
 val general_elim  :
   constr with_bindings -> constr with_bindings -> ?allow_K:bool -> tactic
