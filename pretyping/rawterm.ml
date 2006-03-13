@@ -34,8 +34,6 @@ type patvar = identifier
 
 type rawsort = RProp of Term.contents | RType of Univ.universe option
 
-type fix_kind = RFix of (int array * int) | RCoFix of int
-
 type binder_kind = BProd | BLambda | BLetIn
 
 type quantified_hypothesis = AnonHyp of int | NamedHyp of identifier
@@ -72,6 +70,10 @@ type rawconstr =
   | RDynamic of loc * Dyn.t
 
 and rawdecl = name * rawconstr option * rawconstr
+
+and fix_recursion_order = RStructRec | RWfRec of rawconstr
+
+and fix_kind = RFix of ((int * fix_recursion_order) array * int) | RCoFix of int
 
 let cases_predicate_names tml =
   List.flatten (List.map (function

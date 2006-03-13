@@ -7,6 +7,7 @@
 (************************************************************************)
 
 (* $Id$ *)
+(*i camlp4deps: "parsing/grammar.cma" i*)
 
 open Pp
 open Util
@@ -211,11 +212,11 @@ GEXTEND Gram
   (* (co)-fixpoints *)
   rec_definition:
     [ [ id = ident; bl = LIST1 binder_let;
-        annot = OPT rec_annotation; type_ = type_cstr; 
+        annot = rec_annotation; type_ = type_cstr; 
 	":="; def = lconstr; ntn = decl_notation ->
           let names = List.map snd (names_of_local_assums bl) in
           let ni =
-            match annot with
+            match fst annot with
                 Some id ->
                   (try list_index (Name id) names - 1
                   with Not_found ->  Util.user_err_loc
@@ -227,7 +228,7 @@ GEXTEND Gram
                       (loc,"Fixpoint",
                        Pp.str "the recursive argument needs to be specified");
                   0 in
-	  ((id, ni, bl, type_, def),ntn) ] ]
+	  ((id, (ni, snd annot), bl, type_, def),ntn) ] ]
   ;
   corec_definition:
     [ [ id = ident; bl = LIST0 binder_let; c = type_cstr; ":=";
@@ -235,7 +236,10 @@ GEXTEND Gram
           (id,bl,c ,def) ] ]
   ;
   rec_annotation:
-    [ [ "{"; IDENT "struct"; id=IDENT; "}" -> id_of_string id ] ]
+    [ [ "{"; IDENT "struct"; id=IDENT; "}" -> (Some (id_of_string id), CStructRec)
+      | "{"; IDENT "wf"; id=IDENT; rel=lconstr; "}" -> (Some (id_of_string id), CWfRec rel) 
+      | ->  (None, CStructRec)
+      ] ]
   ;
   type_cstr:
     [ [ ":"; c=lconstr -> c 

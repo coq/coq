@@ -31,7 +31,7 @@ parsing/q_util.ml:
 parsing/q_coqast.ml: 
 parsing/g_prim.ml: 
 parsing/g_minicoq.ml: 
-parsing/g_vernac.ml: 
+parsing/g_vernac.ml: parsing/grammar.cma
 parsing/g_proofs.ml: 
 parsing/g_xml.ml: 
 parsing/g_constr.ml: 

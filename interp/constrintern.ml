@@ -785,18 +785,29 @@ let internalise sigma globalenv env allow_soapp lvar c =
 	    raise (InternalisationError (locid,UnboundFixName (false,iddef)))
 	in
         let idl = Array.map
-          (fun (id,n,bl,ty,bd) ->
-            let ((ids',_,_),rbl) =
-              List.fold_left intern_local_binder (env,[]) bl in
+          (fun (id,(n,order),bl,ty,bd) ->
+	    let ro, ((ids',_,_),rbl) =
+	      (match order with
+		   CStructRec -> 
+		     RStructRec,
+		     List.fold_left intern_local_binder (env,[]) bl
+		 | CWfRec c -> 
+		     let before, after = list_chop (succ n) bl in
+		     let ((ids',_,_),rafter) =
+		       List.fold_left intern_local_binder (env,[]) after in
+		     let ro = RWfRec (intern (ids', tmp_scope, scopes) c) in
+		       ro, List.fold_left intern_local_binder (env,rafter) before)
+	    in
 	    let ids'' = List.fold_right Idset.add lf ids' in
-            (List.rev rbl,
+	     ((n, ro), List.rev rbl, 
              intern_type (ids',tmp_scope,scopes) ty,
              intern (ids'',None,scopes) bd)) dl in
-	RRec (loc,RFix (Array.map (fun (_,n,_,_,_) -> n) dl,n),
+	RRec (loc,RFix 
+	      (Array.map (fun (ro,_,_,_) -> ro) idl,n),
               Array.of_list lf,
-              Array.map (fun (bl,_,_) -> bl) idl,
-              Array.map (fun (_,ty,_) -> ty) idl,
-              Array.map (fun (_,_,bd) -> bd) idl)
+              Array.map (fun (_,bl,_,_) -> bl) idl,
+              Array.map (fun (_,_,ty,_) -> ty) idl,
+              Array.map (fun (_,_,_,bd) -> bd) idl)
     | CCoFix (loc, (locid,iddef), dl) ->
         let lf = List.map (fun (id,_,_,_) -> id) dl in
         let dl = Array.of_list dl in

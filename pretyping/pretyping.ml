@@ -232,8 +232,8 @@ let rec pretype tycon env isevars lvar = function
       evar_type_fixpoint loc env isevars names ftys vdefj;
       let fixj =
 	match fixkind with
-	  | RFix (vn,i as vni) ->
-	      let fix = (vni,(names,ftys,Array.map j_val vdefj)) in
+	  | RFix (vn,i) ->
+	      let fix = ((Array.map fst vn, i),(names,ftys,Array.map j_val vdefj)) in
 	      (try check_fix env fix with e -> Stdpp.raise_with_loc loc e);
 	      make_judge (mkFix fix) ftys.(i)
 	  | RCoFix i -> 

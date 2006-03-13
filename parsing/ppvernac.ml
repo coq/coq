@@ -549,7 +549,7 @@ let rec pr_vernac = function
         | LocalRawAssum (nal,_) -> nal
         | LocalRawDef (_,_) -> [] in
       let pr_onerec = function
-        | (id,n,bl,type_,def),ntn ->
+        | (id,(n,ro),bl,type_,def),ntn ->
             let (bl',def,type_) =
               if Options.do_translate() then extract_def_binders def type_
               else ([],def,type_) in
@@ -561,9 +561,13 @@ let rec pr_vernac = function
                 warn (str "non-printable fixpoint \""++pr_id id++str"\"");
                 Anonymous in
             let annot =
-              if List.length ids > 1 then 
-                spc() ++ str "{struct " ++ pr_name name ++ str"}"
-              else mt() in
+	      match (ro : Topconstr.recursion_order_expr) with
+		  CStructRec -> 
+		    if List.length ids > 1 then 
+                      spc() ++ str "{struct " ++ pr_name name ++ str"}"
+		    else mt()
+		| CWfRec c -> spc() ++ str "{wf " ++ pr_name name ++ spc() ++ pr_lconstr_expr c ++ str"}"
+	    in
             pr_id id ++ pr_binders_arg bl ++ annot ++ spc()
             ++ pr_type_option (fun c -> spc() ++ pr_lconstr_expr c) type_
             ++ str" :=" ++ brk(1,1) ++ pr_lconstr def ++ 

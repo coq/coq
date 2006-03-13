@@ -28,6 +28,9 @@ open Reductionops
 val new_meta : unit -> metavariable
 val mk_new_meta : unit -> constr
 
+(* [new_untyped_evar] is a generator of unique evar keys *)
+val new_untyped_evar : unit -> existential_key
+
 (***********************************************************)
 (* Creating a fresh evar given their type and context *)
 val new_evar :

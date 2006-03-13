@@ -415,7 +415,7 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
         CT_cofixc(xlate_ident id,
 	  (CT_cofix_rec_list (strip_mutcorec lm, List.map strip_mutcorec lmi)))
    | CFix (_, (_, id), lm::lmi) ->       
-     let strip_mutrec (fid, n, bl, arf, ardef) =
+     let strip_mutrec (fid, (n, ro), bl, arf, ardef) =
         let (struct_arg,bl,arf,ardef) =
          if bl = [] then
            let (bl,arf,ardef) = Ppconstr.split_fix (n+1) arf ardef in
@@ -1860,7 +1860,7 @@ let rec xlate_vernac =
 	  (CT_co_ind co_or_ind, CT_ind_spec_list (List.map strip_mutind lmi))
    | VernacFixpoint ([],_) -> xlate_error "mutual recursive"
    | VernacFixpoint ((lm :: lmi),boxed) ->
-      let strip_mutrec ((fid, n, bl, arf, ardef), ntn) =
+      let strip_mutrec ((fid, (n, ro), bl, arf, ardef), ntn) =
         let (struct_arg,bl,arf,ardef) =
          if bl = [] then
            let (bl,arf,ardef) = Ppconstr.split_fix (n+1) arf ardef in

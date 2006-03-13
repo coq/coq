@@ -374,13 +374,18 @@ let pr_recursive_decl pr pr_dangling dangling_with_for id bl annot t c =
   pr_opt_type_spc pr t ++ str " :=" ++
   pr_sep_com (fun () -> brk(1,2)) (pr_body ltop) c
 
-let pr_fixdecl pr prd dangling_with_for (id,n,bl,t,c) =
+let pr_fixdecl pr prd dangling_with_for (id,(n,ro),bl,t,c) =
   let annot =
     let ids = names_of_local_assums bl in
-    if List.length ids > 1 then 
-      spc() ++ str "{struct " ++ pr_name (snd (List.nth ids n)) ++ str"}"
-    else mt() in
-  pr_recursive_decl pr prd dangling_with_for id bl annot t c
+      match ro with
+	  CStructRec ->
+	    if List.length ids > 1 then 
+	      spc() ++ str "{struct " ++ pr_name (snd (List.nth ids n)) ++ str"}"
+	    else mt() 
+	| CWfRec c ->
+	    spc () ++ str "{wf " ++ pr lsimple c ++ pr_name (snd (List.nth ids n)) ++ str"}"
+  in
+    pr_recursive_decl pr prd dangling_with_for id bl annot t c
 
 let pr_cofixdecl pr prd dangling_with_for (id,bl,t,c) =
   pr_recursive_decl pr prd dangling_with_for id bl (mt()) t c

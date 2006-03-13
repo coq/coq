@@ -96,7 +96,7 @@ let eterm evm t =
 	   y' :: l) 
       [] evl 
   in 
-  let t' = (* Substitute evar refs in the term to De Bruijn indices *)
+  let t' = (* Substitute evar refs in the term by De Bruijn indices *)
     subst_evars evts 0 t 
   in
   let t'' = 
@@ -106,8 +106,6 @@ let eterm evm t =
 	 mkLambda (Name (id_of_string ("Evar" ^ string_of_int id)),
 		   c, acc))
       t' evts
-      
-
   in
   let _declare_evar (id, c) =
     let id = id_of_string ("Evar" ^ string_of_int id) in
@@ -120,8 +118,8 @@ let eterm evm t =
   in
     msgnl (str "Term constructed in Eterm" ++
 	   Termops.print_constr_env (Global.env ()) t'');
-   Tactics.apply_term (Reduction.nf_betaiota t'') (map (fun _ -> Evarutil.mk_new_meta ()) evts)
-       
+    Tactics.apply_term t'' (List.map (fun _ -> Evarutil.mk_new_meta ()) evts)
+     
 open Tacmach
 
 let etermtac (evm, t) = eterm evm t

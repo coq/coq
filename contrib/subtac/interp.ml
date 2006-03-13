@@ -30,6 +30,7 @@ open Rawterm
 open Evarconv
 open Pattern
 open Dyn
+open Pretyping
 
 open Subtac_coercion
 open Scoq
@@ -178,9 +179,9 @@ let my_print_tycon env = function
 (* in environment [env], with existential variables [(evars_of isevars)] and *)
 (* the type constraint tycon *)
 let rec pretype tycon env isevars lvar c = 
-(*   trace (str "pretype for " ++ (my_print_rawconstr env c) ++  *)
-(* 	   str " and tycon "++ my_print_tycon env tycon ++  *)
-(* 	   str " in environment: " ++ my_print_env env); *)
+  trace (str "pretype for " ++ (my_print_rawconstr env c) ++
+	   str " and tycon "++ my_print_tycon env tycon ++
+	   str " in environment: " ++ my_print_env env);
   match c with
 
   | RRef (loc,ref) ->
@@ -255,8 +256,8 @@ let rec pretype tycon env isevars lvar c =
       evar_type_fixpoint loc env isevars names ftys vdefj;
       let fixj =
 	match fixkind with
-	  | RFix (vn,i as vni) ->
-	      let fix = (vni,(names,ftys,Array.map j_val vdefj)) in
+	  | RFix (vn,i) ->
+	      let fix = ((Array.map fst vn, i),(names,ftys,Array.map j_val vdefj)) in
 	      (try check_fix env fix with e -> Stdpp.raise_with_loc loc e);
 	      make_judge (mkFix fix) ftys.(i)
 	  | RCoFix i -> 
@@ -444,7 +445,7 @@ let rec pretype tycon env isevars lvar c =
       Cases.compile_cases loc
 	((fun vtyc env -> pretype vtyc env isevars lvar),isevars)
 	tycon env (* loc *) (po,tml,eqns)
-
+    
   | RCast(loc,c,k,t) ->
       let tj = pretype_type empty_tycon env isevars lvar t in
       let cj = pretype (mk_tycon tj.utj_val) env isevars lvar c in
@@ -497,7 +498,88 @@ and pretype_type valcon env isevars lvar = function
                  (loc_of_rawconstr c) env (evars_of !isevars) tj.utj_val v)
 
 
-type typing_constraint = OfType of types option | IsType
+
+let merge_evms x y = 
+  Evd.fold (fun ev evi evm -> Evd.add evm ev evi) x y
+
+let interp env isevars c tycon = 
+  let j = pretype tycon env isevars ([],[]) c in
+    j.uj_val, j.uj_type
+
+let find_with_index x l =
+  let rec aux i = function
+      (y, _, _) as t :: tl -> if x = y then i, t else aux (succ i) tl
+    | [] -> raise Not_found
+  in aux 0 l
+
+let list_split_at index l = 
+  let rec aux i acc = function
+      hd :: tl when i = index -> (List.rev acc), tl
+    | hd :: tl -> aux (succ i) (hd :: acc) tl
+    | [] -> failwith "list_split_at: Invalid argument"
+  in aux 0 [] l
+
+open Vernacexpr
+
+let coqintern evd env : Topconstr.constr_expr -> Rawterm.rawconstr = Constrintern.intern_constr (evars_of evd) env
+let coqinterp evd env : Topconstr.constr_expr -> Term.constr = Constrintern.interp_constr (evars_of evd) env
+
+let env_with_binders env isevars l =
+  let rec aux ((env, rels) as acc) = function
+      Topconstr.LocalRawDef ((loc, name), def) :: tl -> 
+	let rawdef = coqintern !isevars env def in
+	let coqdef, deftyp = interp env isevars rawdef empty_tycon in
+	let reldecl = (name, Some coqdef, deftyp) in
+	  aux  (push_rel reldecl env, reldecl :: rels) tl
+    | Topconstr.LocalRawAssum (bl, typ) :: tl ->
+	let rawtyp = coqintern !isevars env typ in
+	let coqtyp, typtyp = interp env isevars rawtyp empty_tycon in
+	let acc = 
+	  List.fold_left (fun (env, rels) (loc, name) -> 
+			    let reldecl = (name, None, coqtyp) in
+			      (push_rel reldecl env, 
+			       reldecl :: rels))
+	    (env, rels) bl
+	in aux acc tl
+    | [] -> acc
+  in aux (env, []) l
+
+let subtac_process env isevars id l c tycon =
+  let evars () = evars_of !isevars in
+  let _ = trace (str "Creating env with binders") in
+  let env_binders, binders_rel = env_with_binders env isevars l in
+  let _ = trace (str "New env created:" ++ my_print_context env_binders) in
+  let tycon = 
+    match tycon with
+	None -> empty_tycon
+      | Some t -> 
+	  let t = coqintern !isevars env_binders t in
+	  let _ = trace (str "Internalized specification: " ++ my_print_rawconstr env_binders t) in
+	  let coqt, ttyp = interp env_binders isevars t empty_tycon in
+	  let _ = trace (str "Interpreted type: " ++ my_print_constr env_binders coqt) in
+	    mk_tycon coqt
+  in    
+  let c = coqintern !isevars env_binders c in
+  let _ = trace (str "Internalized term: " ++ my_print_rawconstr env c) in
+  let coqc, ctyp = interp env_binders isevars c tycon in
+  let _ = trace (str "Interpreted term: " ++ my_print_constr env_binders coqc ++ spc () ++
+		 str "Coq type: " ++ my_print_constr env_binders ctyp)
+  in
+  let _ = trace (str "Original evar map: " ++ Evd.pr_evar_map (evars ())) in
+    
+  let fullcoqc = it_mkLambda_or_LetIn coqc binders_rel 
+  and fullctyp = it_mkProd_or_LetIn ctyp binders_rel
+  in
+  let fullcoqc = Evarutil.nf_evar (evars_of !isevars) fullcoqc in
+  let fullctyp = Evarutil.nf_evar (evars_of !isevars) fullctyp in
+
+  let _ = trace (str "After evar normalization: " ++ spc () ++
+		 str "Coq term: " ++ my_print_constr env fullcoqc ++ spc ()
+		 ++ str "Coq type: " ++ my_print_constr env fullctyp) 
+  in
+  let evm = non_instanciated_map env isevars in
+  let _ = trace (str "Non instanciated evars map: " ++ Evd.pr_evar_map evm) in
+    evm, fullcoqc, fullctyp
 
 let pretype_gen isevars env lvar kind c =
   let c' = match kind with
@@ -520,6 +602,10 @@ let check_evars env initial_sigma isevars c =
           assert (Evd.in_dom sigma ev);
 	  if not (Evd.in_dom initial_sigma ev) then
             let (loc,k) = evar_source ev !isevars in
+	    let _ = trace (str "Evar " ++ int ev ++ str " not solved, applied to args : " ++
+			   Scoq.print_args env args ++ str " in evar map: " ++
+			   Evd.pr_evar_map sigma) 
+	    in
 	    error_unsolvable_implicit loc env sigma k
       | _ -> iter_constr proc_rec c
   in
@@ -542,256 +628,39 @@ let check_evars env initial_sigma isevars c =
        retourne aussi le nouveau sigma...
 *)
 
-let understand_judgment sigma env c =
-  let isevars = ref (create_evar_defs sigma) in
+let understand_judgment isevars env c =
   let j = pretype empty_tycon env isevars ([],[]) c in
   let j = j_nf_evar (evars_of !isevars) j in
-  check_evars env sigma isevars (mkCast(j.uj_val,DEFAULTcast, j.uj_type));
+  check_evars env (Evd.evars_of !isevars) isevars (mkCast(j.uj_val,DEFAULTcast, j.uj_type));
   j
 
 (* Raw calls to the unsafe inference machine: boolean says if we must
    fail on unresolved evars; the unsafe_judgment list allows us to
    extend env with some bindings *)
 
-let ise_pretype_gen fail_evar sigma env lvar kind c =
-  let isevars = ref (create_evar_defs sigma) in
+let ise_pretype_gen fail_evar isevars env lvar kind c : Evd.open_constr =
   let c = pretype_gen isevars env lvar kind c in
-  if fail_evar then check_evars env sigma isevars c;
-  (!isevars, c)
+  if fail_evar then check_evars env (Evd.evars_of !isevars) isevars c;
+    let c = nf_evar (evars_of !isevars) c in
+    let evm = non_instanciated_map env isevars in
+      (evm, c)
 
 (** Entry points of the high-level type synthesis algorithm *)
 
-type var_map = (identifier * unsafe_judgment) list
-type unbound_ltac_var_map = (identifier * identifier option) list
+let understand_gen kind isevars env c =
+  ise_pretype_gen false isevars env ([],[]) kind c
 
-let understand_gen kind sigma env c =
-  snd (ise_pretype_gen true sigma env ([],[]) kind c)
+let understand isevars env ?expected_type:exptyp c =
+  ise_pretype_gen false isevars env ([],[]) (OfType exptyp) c
 
-let understand sigma env ?expected_type:exptyp c =
-  snd (ise_pretype_gen true sigma env ([],[]) (OfType exptyp) c)
+let understand_type isevars env c =
+  ise_pretype_gen false isevars env ([],[]) IsType c
 
-let understand_type sigma env c =
-  snd (ise_pretype_gen true sigma env ([],[]) IsType c)
+let understand_ltac isevars env lvar kind c =
+  ise_pretype_gen false isevars env lvar kind c
 
-let understand_ltac sigma env lvar kind c =
-  ise_pretype_gen false sigma env lvar kind c
+let understand_tcc isevars env ?expected_type:exptyp c =
+  ise_pretype_gen false isevars env ([],[]) (OfType exptyp) c
 
-let understand_tcc sigma env ?expected_type:exptyp c =
-  let evars,c = ise_pretype_gen false sigma env ([],[]) (OfType exptyp) c in
-  evars_of evars,c
 
-(** Miscellaneous interpretation functions *)
-
-let interp_sort = function
-  | RProp c -> Prop c
-  | RType _ -> new_Type_sort ()
-
-let interp_elimination_sort = function
-  | RProp Null -> InProp
-  | RProp Pos  -> InSet
-  | RType _ -> InType
-	    
-let global_kind = Decl_kinds.IsDefinition Decl_kinds.Definition
-let goal_kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Definition
-  
-let make_fixpoint t id term = 
-  let term = it_mkLambda_or_LetIn term t.args_after in
-  let term' = mkLambda (Name id, t.f_fulltype, term) in
-    mkApp (Lazy.force fixsub, 
-	   [| t.arg_type; t.wf_relation; t.wf_proof; t.f_type; 
-	      mkLambda (t.arg_name, t.arg_type, term') |])       
-
-let merge_evms x y = 
-  Evd.fold (fun ev evi evm -> Evd.add evm ev evi) x y
-
-let interp env isevars c tycon = 
-  let j = pretype tycon env isevars ([],[]) c in
-    j.uj_val, j.uj_type
-
-let find_with_index x l =
-  let rec aux i = function
-      (y, _, _) as t :: tl -> if x = y then i, t else aux (succ i) tl
-    | [] -> raise Not_found
-  in aux 0 l
-
-let require_library dirpath =
-  let qualid = (dummy_loc, qualid_of_dirpath (dirpath_of_string dirpath)) in
-    Library.require_library [qualid] None
-
-let list_split_at index l = 
-  let rec aux i acc = function
-      hd :: tl when i = index -> (List.rev acc), tl
-    | hd :: tl -> aux (succ i) (hd :: acc) tl
-    | [] -> failwith "list_split_at: Invalid argument"
-  in aux 0 [] l
-
-let subtac' recursive id l env (s, t) =
-  check_required_library ["Coq";"Init";"Datatypes"];
-  check_required_library ["Coq";"Init";"Specif"];
-  require_library "Coq.subtac.FixSub";
-  try
-    let evd = ref (create_evar_defs Evd.empty) in
-    let coqintern evd env = Constrintern.intern_constr (evars_of evd) env in
-    let coqinterp evd env = Constrintern.interp_constr (evars_of evd) env in
-    let rec env_with_binders ((env, rels) as acc) = function
-	Topconstr.LocalRawDef ((loc, name), def) :: tl -> 
-	  let rawdef = coqintern !evd env def in
-	  let coqdef, deftyp = interp env evd rawdef empty_tycon in
-	  let reldecl = (name, Some coqdef, deftyp) in
-	    env_with_binders (push_rel reldecl env, reldecl :: rels) tl
-      | Topconstr.LocalRawAssum (bl, typ) :: tl ->
-	  let rawtyp = coqintern !evd env typ in
-	  let coqtyp, typtyp = interp env evd rawtyp empty_tycon in
-	  let acc = 
-	    List.fold_left (fun (env, rels) (loc, name) -> 
-			      let reldecl = (name, None, coqtyp) in
-				(push_rel reldecl env, 
-				 reldecl :: rels))
-	      (env, rels) bl
-	  in
-	    env_with_binders acc tl
-      | [] -> acc
-    in
-    trace (str "Creating env with binders");
-    let env', binders_rel = env_with_binders (env, []) l in
-    trace (str "New env created:" ++ my_print_context env');
-    let s = coqintern !evd env' s in
-    trace (str "Internalized specification: " ++ my_print_rawconstr env s);
-    let coqtype, rec_info, env', binders_type, binders_term =
-      match recursive with
-	  Some (Some (StructRec _) | None) -> assert(false)
-	| Some (Some (WfRec (rel, (loc, n)))) ->
-	    let index, ((n, def, ntype) as nrel) = find_with_index n (rel_context env') in
-	    let after, before = list_split_at index (rel_context env') in
-	    let envbefore = push_rel_context before env in
-	    let typeenv = env' in
-	    let coqrel = coqinterp !evd envbefore rel in
-	    let coqs, styp = interp env' evd s empty_tycon in
-	    let fullcoqs = it_mkProd_or_LetIn coqs after in
-	    let ntype = lift index ntype in
-	    let ftype = mkLambda (n, ntype,  fullcoqs) in
-	    (*let termenv = 
-	      push_rel_context (subst_ctx (mkApp ((Lazy.force _sig).proj1, mkRel 1)) after) *)
-		
-	    let argtype = 
-	      mkApp ((Lazy.force sig_).typ, 
-		     [| ntype;
-			mkLambda (n, ntype, 
-				  mkApp (coqrel, [| mkRel 1; mkRel (index + 2)|])) |])
-	    in
-	    let fulltype = mkProd (n, argtype, fullcoqs) in
-	    let proof = 
-	      let wf_rel = mkApp (Lazy.force well_founded, [| ntype; coqrel |]) in
-		make_existential dummy_loc envbefore evd wf_rel
-	    in
-	    let rec_info = 
-	      { arg_name = n;
-		arg_type = ntype;
-		args_after = after;
-		wf_relation = coqrel;
-		wf_proof = proof;
-		f_type = ftype;
-		f_fulltype = fulltype;
-	      }
-	    in 
-	    let env' = push_rel (Name id, None, fulltype) env' in 
-	      coqs, Some rec_info, env', binders_rel, before
-	| None ->
-	    let coqs, _ = interp env' evd s empty_tycon in
-	      coqs, None, env', binders_rel, binders_rel
-    in
-    (match rec_info with 
-	 Some rec_info -> trace (str "Got recursion info: " ++ my_print_rec_info env rec_info)
-       | None -> ());
-    trace (str "Interpreted type: " ++ my_print_constr env' coqtype);
-    let tycon = mk_tycon coqtype in
-    let t = coqintern !evd env' t in
-    trace (str "Internalized term: " ++ my_print_rawconstr env t);   
-    let coqt, ttyp = interp env' evd t tycon in
-    trace (str "Interpreted term: " ++ my_print_constr env' coqt ++ spc () ++
-	   str "Infered type: " ++ my_print_constr env' ttyp);
-    let coercespec = Subtac_coercion.coerce dummy_loc env' evd ttyp coqtype in
-    trace (str "Specs coercion successfull");
-    let realt = app_opt coercespec coqt in
-    trace (str "Term Specs coercion successfull: " ++ my_print_constr env' realt);
-    let realt = 
-      match rec_info with
-	  Some t -> make_fixpoint t id realt
-	| None -> realt
-    in
-    (try trace (str "Original evar map: " ++ Evd.pr_evar_map (evars_of !evd));
-     with Not_found -> trace (str "Not found in pr_evar_map"));
-    let realt = it_mkLambda_or_LetIn realt binders_term and
-      coqtype = it_mkProd_or_LetIn coqtype binders_type
-    in
-    let realt = Evarutil.nf_evar (evars_of !evd) realt in
-    let coqtype = Evarutil.nf_evar (evars_of !evd) coqtype in
-    trace (str "Coq term: " ++ my_print_constr env realt ++ spc ()
-	   ++ str "Coq type: " ++ my_print_constr env coqtype);
-    let evm = non_instanciated_map env evd in
-      (try trace (str "Non instanciated evars map: " ++ Evd.pr_evar_map evm);
-       with Not_found -> trace (str "Not found in pr_evar_map"));
-    let tac = Eterm.etermtac (evm, realt) in 
-    msgnl (str "Starting proof");
-    Command.start_proof id goal_kind coqtype (fun _ _ -> ());
-    msgnl (str "Started proof");
-    Pfedit.by tac
-  with 
-    | Typing_error e ->
-	msg_warning (str "Type error in Program tactic:");
-	let cmds = 
-	  (match e with
-	     | NonFunctionalApp (loc, x, mux, e) ->
-		 str "non functional application of term " ++ 
-		 e ++ str " to function " ++ x ++ str " of (mu) type " ++ mux
-	     | NonSigma (loc, t) ->
-		 str "Term is not of Sigma type: " ++ t
-	     | NonConvertible (loc, x, y) ->
-		 str "Unconvertible terms:" ++ spc () ++
-		   x ++ spc () ++ str "and" ++ spc () ++ y
-	     | IllSorted (loc, t) ->
-		 str "Term is ill-sorted:" ++ spc () ++ t
-	  )
-	in msg_warning cmds
-	     
-    | Subtyping_error e ->
-	msg_warning (str "(Program tactic) Subtyping error:");
-	let cmds = 
-	  match e with
-	    | UncoercibleInferType (loc, x, y) ->
-		str "Uncoercible terms:" ++ spc ()
-		++ x ++ spc () ++ str "and" ++ spc () ++ y
-	    | UncoercibleInferTerm (loc, x, y, tx, ty) ->
-		str "Uncoercible terms:" ++ spc ()
-		++ tx ++ spc () ++ str "of" ++ spc () ++ str "type" ++ spc () ++ x
-		++ str "and" ++ spc() ++ ty ++ spc () ++ str "of" ++ spc () ++ str "type" ++ spc () ++ y
-	    | UncoercibleRewrite (x, y) ->
-		str "Uncoercible terms:" ++ spc ()
-		++ x ++ spc () ++ str "and" ++ spc () ++ y
-	in msg_warning cmds
     
-    | Type_errors.TypeError (env, e) ->
-	debug 2 (Himsg.explain_type_error env e)
-	  
-    | Pretype_errors.PretypeError (env, e) ->
-	debug 2 (Himsg.explain_pretype_error env e)
-	  
-    | Stdpp.Exc_located (loc, e) ->
-	debug 2 (str "Parsing exception: ");
-	(match e with
-	   | Type_errors.TypeError (env, e) ->
-	       debug 2 (Himsg.explain_type_error env e)
-		 
-	   | Pretype_errors.PretypeError (env, e) ->
-	       debug 2 (Himsg.explain_pretype_error env e)
-	   | e -> raise e)
-  
-    | e -> 
-	msg_warning (str "Uncatched exception: " ++ str (Printexc.to_string e));
-	raise e
-	
-	  
-	
-
-let subtac recursive id l env (s, t) =
-  subtac' recursive id l (Global.env ()) (s, t)

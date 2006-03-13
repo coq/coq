@@ -421,7 +421,7 @@ and detype_fix isgoal avoid env (vn,_ as nvn) (names,tys,bodies) =
   let v = array_map3
     (fun c t i -> share_names isgoal (i+1) [] def_avoid def_env c (lift n t))
     bodies tys vn in
-  RRec(dl,RFix nvn,Array.of_list (List.rev lfi),
+  RRec(dl,RFix (Array.map (fun i -> i, RStructRec) (fst nvn), snd nvn),Array.of_list (List.rev lfi),
        Array.map (fun (bl,_,_) -> bl) v,
        Array.map (fun (_,_,ty) -> ty) v,
        Array.map (fun (_,bd,_) -> bd) v)

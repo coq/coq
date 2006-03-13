@@ -501,7 +501,7 @@ let build_recursive (lnameargsardef:(fixpoint_expr *decl_notation) list)
   let recdecls = (Array.map (fun id -> Name id) namerec, arrec, recvec) in
   let rec declare i fi =
     let ce = 
-      { const_entry_body = mkFix ((nvrec,i),recdecls);
+      { const_entry_body = mkFix ((Array.map fst nvrec,i),recdecls); (* ignore rec order *)
         const_entry_type = Some arrec.(i);
         const_entry_opaque = false;
         const_entry_boxed = boxed} in

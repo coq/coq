@@ -57,29 +57,29 @@ let rec mkCLambdaN loc bll c =
   | [] -> c
   | LocalRawAssum ([],_) :: bll -> mkCLambdaN loc bll c
 
-let rec index_of_annot loc bl ann =
+let rec index_and_rec_order_of_annot loc bl ann =
   match names_of_local_assums bl,ann with
-    | [_], None -> 0
-    | lids, Some x ->
+    | [_], (None, r) -> 0, r
+    | lids, (Some x, ro) ->
         let ids = List.map snd lids in
-        (try list_index (snd x) ids - 1
+        (try list_index (snd x) ids - 1, ro
         with Not_found ->
           user_err_loc(fst x,"index_of_annot", Pp.str"no such fix variable"))
     | _ -> user_err_loc(loc,"index_of_annot",
       Pp.str "cannot guess decreasing argument of fix")
 
 let mk_fixb (id,bl,ann,body,(loc,tyc)) =
-  let n = index_of_annot (fst id) bl ann in
+  let n,ro = index_and_rec_order_of_annot (fst id) bl ann in
   let ty = match tyc with
       Some ty -> ty
     | None -> CHole loc in
-  (snd id,n,bl,ty,body)
+  (snd id,(n,ro),bl,ty,body)
 
 let mk_cofixb (id,bl,ann,body,(loc,tyc)) =
   let _ = option_app (fun (aloc,_) ->
     Util.user_err_loc
       (aloc,"Constr:mk_cofixb",
-       Pp.str"Annotation forbidden in cofix expression")) ann in
+       Pp.str"Annotation forbidden in cofix expression")) (fst ann) in
   let ty = match tyc with
       Some ty -> ty
     | None -> CHole loc in
@@ -243,8 +243,10 @@ GEXTEND Gram
         c=operconstr LEVEL "200" -> (id,bl,ann,c,ty) ] ]
   ;
   fixannot:
-    [ [ "{"; IDENT "struct"; id=name; "}" -> Some id
-      | -> None ] ]
+    [ [ "{"; IDENT "struct"; id=name; "}" -> (Some id, CStructRec)
+      | "{"; IDENT "wf"; id=name; rel=lconstr; "}" -> (Some id, CWfRec rel)
+      | ->  (None, CStructRec)
+      ] ]
   ;
   match_constr:
     [ [ "match"; ci=LIST1 case_item SEP ","; ty=OPT case_type; "with";

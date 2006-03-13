@@ -187,12 +187,31 @@ and interp_xml_decl_alias s x =
 and interp_xml_def x = interp_xml_decl_alias "def" x
 and interp_xml_decl x = interp_xml_decl_alias "decl" x
 
+and interp_xml_recursionOrder x =
+  let (loc, al, l) = interp_xml_tag "RecursionOrder" x in
+  let (locs, s) = get_xml_attr "type" al in
+    match s with
+	"Structural" -> 
+	  (match l with [] -> RStructRec
+	     | _ -> user_err_loc (loc, "", str "wrong number of arguments (expected none)"))
+      | "WellFounded" -> 
+	  (match l with
+	       [c] -> RWfRec (interp_xml_type c)
+	     | _ -> user_err_loc (loc, "", str "wrong number of arguments (expected one)"))
+      | _ ->
+          user_err_loc (locs,"",str "invalid recursion order")
+
+
 and interp_xml_FixFunction x =
   match interp_xml_tag "FixFunction" x with
-  | (loc,al,[x1;x2]) ->
-      (nmtoken (get_xml_attr "recIndex" al),
+  | (loc,al,[x1;x2;x3]) ->
+      ((nmtoken (get_xml_attr "recIndex" al),
+	interp_xml_recursionOrder x1),
+       (get_xml_ident al, interp_xml_type x2, interp_xml_body x3))
+  | (loc,al,[x1;x2]) -> (* For backwards compatibility *)
+      ((nmtoken (get_xml_attr "recIndex" al), RStructRec),
        (get_xml_ident al, interp_xml_type x1, interp_xml_body x2))
-    | (loc,_,_) -> 
+  | (loc,_,_) -> 
         user_err_loc (loc,"",str "wrong number of arguments (expect one)")
 
 and interp_xml_CoFixFunction x =

@@ -114,10 +114,14 @@ type constr_expr =
   | CDynamic of loc * Dyn.t
 
 and fixpoint_expr =
-    identifier * int * local_binder list * constr_expr * constr_expr
+    identifier * (int * recursion_order_expr) * local_binder list * constr_expr * constr_expr
 
 and cofixpoint_expr =
     identifier * local_binder list * constr_expr * constr_expr
+
+and recursion_order_expr = 
+  | CStructRec
+  | CWfRec of constr_expr
 
 and local_binder =
   | LocalRawDef of name located * constr_expr
@@ -156,6 +160,9 @@ val local_binders_length : local_binder list -> int
 
 (* Does not take let binders into account *)
 val names_of_local_assums : local_binder list -> name located list
+
+(* With let binders *)
+val names_of_local_binders : local_binder list -> name located list
 
 (* Used in correctness and interface; absence of var capture not guaranteed *)
 (* in pattern-matching clauses and in binders of the form [x,y:T(x)] *)

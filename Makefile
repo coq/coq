@@ -299,6 +299,9 @@ SUBTACCMO=\
 	contrib/subtac/subtac_errors.cmo \
 	contrib/subtac/subtac_coercion.cmo \
 	contrib/subtac/interp.cmo \
+	contrib/subtac/interp_fixpoint.cmo \
+	contrib/subtac/subtac_command.cmo \
+	contrib/subtac/subtac.cmo \
 	contrib/subtac/sparser.cmo
 
 

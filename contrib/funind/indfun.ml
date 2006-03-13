@@ -304,7 +304,7 @@ let do_generate_principle fixpoint_exprl  =
 			 snd
 			 (Topconstr.names_of_local_assums args) 
 		     in 
-		     let annot = Util.list_index (Name id) names - 1 in 
+		     let annot = Util.list_index (Name id) names - 1, Topconstr.CStructRec in 
  		     (name,annot,args,types,body),(None:Vernacexpr.decl_notation) 
 		 | (name,None,args,types,body),recdef -> 
 		     let names =  (Topconstr.names_of_local_assums args) in
@@ -313,7 +313,7 @@ let do_generate_principle fixpoint_exprl  =
 			 (Util.dummy_loc,"GenFixpoint",
 			  Pp.str "the recursive argument needs to be specified")
 		     else 
-		       (name,0,args,types,body),(None:Vernacexpr.decl_notation)
+		       (name,(0, Topconstr.CStructRec),args,types,body),(None:Vernacexpr.decl_notation)
 		 | (_,Some (Wf _),_,_,_),_ | (_,Some (Mes _),_,_,_),_-> 
 		     error 
 		       ("Cannot use mutual definition with well-founded recursion")

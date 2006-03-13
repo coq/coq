@@ -29,110 +29,53 @@ open Topconstr
  *)
 
 module Gram = Pcoq.Gram
-module Constr = Pcoq.Constr
-module Tactic = Pcoq.Tactic
-module Prim = Pcoq.Prim
+module Vernac = Pcoq.Vernac_
 
-module Subtac =
-  struct
-    let gec s = Gram.Entry.create ("Subtac."^s)
-    (* types *)
-    let subtac_wf_proof_type : Scoq.wf_proof_type Gram.Entry.e = gec "subtac_wf_proof_type"
-    let subtac_binders : Scoq.binders Gram.Entry.e = gec "subtac_binders"
-    let subtac_fixannot : Scoq.recursion_order option Gram.Entry.e = gec "subtac_fixannot"
+module SubtacGram =
+struct
+  let gec s = Gram.Entry.create ("Subtac."^s)
+		(* types *)
+  let subtac_gallina_loc : Vernacexpr.vernac_expr located Gram.Entry.e = gec "subtac_gallina_loc"
+end
 
-    (* Hack to parse "(x:=t)" as an explicit argument without conflicts with the *)
-    (* admissible notation "(x t)" 
-       taken from g_constrnew.ml4 *)
-    let test_lpar_id_coloneq =
-      Gram.Entry.of_parser "test_lpar_id_coloneq"
-	(fun strm ->
-	   Pp.msgnl (Pp.str ("Testing lpar_id_coloneq:" ^ 
-			       (snd (List.hd (Stream.npeek 1 strm)))));
-	   
-	   match Stream.npeek 1 strm with
-             | [("","(")] ->
-		 (match Stream.npeek 2 strm with
-		    | [_; ("IDENT",s)] ->
-			(match Stream.npeek 3 strm with
-			   | [_; _; ("", ":=")] ->
-                               Stream.junk strm; Stream.junk strm; Stream.junk strm;
-			       Pp.msgnl (Pp.str "Success");
-                               Names.id_of_string s
-			   | _ -> raise Stream.Failure)
-		    | _ -> raise Stream.Failure)
-             | _ -> raise Stream.Failure)
-
-    let test_id_coloneq =
-      Gram.Entry.of_parser "test_id_coloneq"
-	(fun strm ->
-	   Pp.msgnl (Pp.str ("Testing id_coloneq:" ^ 
-			       (snd (List.hd (Stream.npeek 1 strm)))));
-	   
-	   (match Stream.npeek 1 strm with
-	      | [("IDENT",s)] ->
-		  (match Stream.npeek 2 strm with
-		     | [_; ("", ":=")] ->
-                         Stream.junk strm; Stream.junk strm;
-			 Pp.msgnl (Pp.str "Success");
-                         Names.id_of_string s
-		     | _ -> raise Stream.Failure)
-	      | _ -> raise Stream.Failure))
-end 
-
-open Subtac
+open SubtacGram 
 open Util
 
 GEXTEND Gram
-  GLOBAL: subtac_wf_proof_type subtac_binders subtac_fixannot;
+  GLOBAL: subtac_gallina_loc;
  
-  subtac_wf_proof_type:
-    [ [ IDENT "proof"; t = Constr.constr -> 
-	  Scoq.ManualProof t
-      | IDENT "auto" -> Scoq.AutoProof
-      | -> Scoq.ExistentialProof
-      ]
-    ]
+  subtac_gallina_loc:
+    [ [ g = Vernac.gallina -> loc, g ] ]
     ;
-  
-  subtac_fixannot:
-    [ [ "{"; IDENT "struct"; id=Prim.name; "}" -> Some (Scoq.StructRec id)
-      | "{"; IDENT "wf"; rel= Constr.constr; id=Prim.name; "}" -> Some (Scoq.WfRec (rel, id))
-      | -> None ] ]
-  ;
-
-  subtac_binders: [ [ bl = LIST0 Constr.binder_let -> bl ] ]
-  ;
   END
 
-type wf_proof_type_argtype = (Scoq.wf_proof_type, constr_expr, Tacexpr.raw_tactic_expr) Genarg.abstract_argument_type
+(* type wf_proof_type_argtype = (Scoq.wf_proof_type, constr_expr, Tacexpr.raw_tactic_expr) Genarg.abstract_argument_type *)
 
-let (wit_subtac_wf_proof_type : wf_proof_type_argtype),
-  (globwit_subtac_wf_proof_type : wf_proof_type_argtype),
-  (rawwit_subtac_wf_proof_type : wf_proof_type_argtype) =
-  Genarg.create_arg "subtac_wf_proof_type"
+(* let (wit_subtac_wf_proof_type : wf_proof_type_argtype), *)
+(*   (globwit_subtac_wf_proof_type : wf_proof_type_argtype), *)
+(*   (rawwit_subtac_wf_proof_type : wf_proof_type_argtype) = *)
+(*   Genarg.create_arg "subtac_wf_proof_type" *)
 
-type subtac_binders_argtype = (Scoq.binders, constr_expr, Tacexpr.raw_tactic_expr) Genarg.abstract_argument_type
+type gallina_loc_argtype = (Vernacexpr.vernac_expr located, constr_expr, Tacexpr.raw_tactic_expr) Genarg.abstract_argument_type
 
-let (wit_subtac_binders : subtac_binders_argtype),
-  (globwit_subtac_binders : subtac_binders_argtype),
-  (rawwit_subtac_binders : subtac_binders_argtype) =
-  Genarg.create_arg "subtac_binders"
+let (wit_subtac_gallina_loc : gallina_loc_argtype),
+  (globwit_subtac_gallina_loc : gallina_loc_argtype),
+  (rawwit_subtac_gallina_loc : gallina_loc_argtype) =
+  Genarg.create_arg "subtac_gallina_loc"
 
-type subtac_fixannot_argtype = (Scoq.recursion_order option, constr_expr, Tacexpr.raw_tactic_expr) Genarg.abstract_argument_type
+(* type subtac_recdef_argtype = (Scoq.recursion_order option, constr_expr, Tacexpr.raw_tactic_expr) Genarg.abstract_argument_type *)
 
-let (wit_subtac_fixannot : subtac_fixannot_argtype),
-  (globwit_subtac_fixannot : subtac_fixannot_argtype),
-  (rawwit_subtac_fixannot : subtac_fixannot_argtype) =
-  Genarg.create_arg "subtac_fixannot"
+(* let (wit_subtac_recdef : subtac_recdef_argtype), *)
+(*   (globwit_subtac_recdef : subtac_recdef_argtype), *)
+(*   (rawwit_subtac_recdef : subtac_recdef_argtype) = *)
+(*   Genarg.create_arg "subtac_recdef" *)
 
-VERNAC COMMAND EXTEND SubtacRec
-[ "Recursive" "program" ident(id) subtac_binders(l) subtac_fixannot(f)
-    ":" lconstr(s) ":=" lconstr(t) ] -> 
-  [ Interp.subtac (Some f) id l Environ.empty_env (s, t) ]
-END
+(* VERNAC COMMAND EXTEND SubtacRec *)
+(* [ "Recursive" "program" ident(id) subtac_binders(l) subtac_recdef(f) ] ->  *)
+(*   [ Interp.subtac id l Environ.empty_env f ] *)
+(* END *)
   
 VERNAC COMMAND EXTEND Subtac
-[ "Program" ident(id) subtac_binders(l) ":" lconstr(s) ":=" lconstr(t) ] -> 
-  [ Interp.subtac None id l Environ.empty_env (s, t) ]
+[ "Program" subtac_gallina_loc(g) ] -> 
+  [ Subtac.subtac g ]
 END

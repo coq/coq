@@ -530,8 +530,9 @@ type constr_expr =
   | CDelimiters of loc * string * constr_expr
   | CDynamic of loc * Dyn.t
 
+
 and fixpoint_expr =
-    identifier * int * local_binder list * constr_expr * constr_expr
+    identifier * (int * recursion_order_expr) * local_binder list * constr_expr * constr_expr
 
 and local_binder =
   | LocalRawDef of name located * constr_expr
@@ -539,6 +540,10 @@ and local_binder =
 
 and cofixpoint_expr =
     identifier * local_binder list * constr_expr * constr_expr
+
+and recursion_order_expr = 
+  | CStructRec
+  | CWfRec of constr_expr
 
 (***********************)
 (* For binders parsing *)
@@ -550,6 +555,9 @@ let rec local_binders_length = function
 
 let names_of_local_assums bl =
   List.flatten (List.map (function LocalRawAssum(l,_)->l|_->[]) bl)
+
+let names_of_local_binders bl =
+  List.flatten (List.map (function LocalRawAssum(l,_)->l|LocalRawDef(l,_)->[l]) bl)
 
 (**********************************************************************)
 (* Functions on constr_expr *)

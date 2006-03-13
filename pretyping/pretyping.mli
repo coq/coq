@@ -75,8 +75,8 @@ val constr_out : Dyn.t -> constr
  *)
 val pretype : 
   type_constraint -> env -> evar_defs ref -> 
-    var_map * (identifier * identifier option) list ->
-    rawconstr -> unsafe_judgment
+  var_map * (identifier * identifier option) list ->
+  rawconstr -> unsafe_judgment
 
 val pretype_type : 
   val_constraint -> env -> evar_defs ref ->

@@ -719,7 +719,8 @@ let rec extern inctx scopes vars r =
                  let (ids,bl) = extern_local_binder scopes vars bl in
                  let vars0 = List.fold_right (name_fold Idset.add) ids vars in
                  let vars1 = List.fold_right (name_fold Idset.add) ids vars' in
-		 (fi,nv.(i), bl, extern_typ scopes vars0 ty,
+		 let n, ro = fst nv.(i), extern_recursion_order scopes vars (snd nv.(i)) in
+		 (fi, (n, ro), bl, extern_typ scopes vars0 ty,
                   extern false scopes vars1 def)) idv
 	     in 
 	     CFix (loc,(loc,idv.(n)),Array.to_list listdecl)
@@ -833,6 +834,11 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
 	  (List.map (extern true allscopes vars) args)
       with
 	  No_match -> extern_symbol allscopes vars t rules
+
+and extern_recursion_order scopes vars = function
+    RStructRec -> CStructRec
+  | RWfRec c -> CWfRec (extern true scopes vars c)
+
 
 let extern_rawconstr vars c =
   extern false (None,Notation.current_scopes()) vars c
