@@ -19,10 +19,10 @@ obviously no meaning for \CoqIDE{} being ignored.
 \begin{center}
 %HEVEA\imgsrc{coqide.png}
 %BEGIN LATEX
-\ifx\pdfoutput\undefined   % si on est pas en pdflatex
-\includegraphics[width=1.0\textwidth]{coqide.eps}
-\else
+\ifpdf   % si on est en pdflatex
 \includegraphics[width=1.0\textwidth]{coqide.png}
+\else
+\includegraphics[width=1.0\textwidth]{coqide.eps}
 \fi
 %END LATEX
 \end{center}
@@ -124,10 +124,10 @@ arguments.
 \begin{center}
 %HEVEA\imgsrc{coqide-queries.png}
 %BEGIN LATEX
-\ifx\pdfoutput\undefined   % si on est pas en pdflatex
-\includegraphics[width=1.0\textwidth]{coqide-queries.eps}
-\else
+\ifpdf  % si on est en pdflatex
 \includegraphics[width=1.0\textwidth]{coqide-queries.png}
+\else
+\includegraphics[width=1.0\textwidth]{coqide-queries.eps}
 \fi
 %END LATEX
 \end{center}

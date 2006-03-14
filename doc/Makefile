@@ -7,6 +7,9 @@
 # Pdf: pdflatex
 # Html: hevea (http://hevea.inria.fr) >= 1.05
 
+include ../config/Makefile
+
+
 LATEX=latex
 BIBTEX=bibtex -min-crossrefs=10
 MAKEINDEX=makeindex
@@ -19,7 +22,6 @@ DOCCOQTOP=$(COQTOP)/bin/coqtop
 COQTEX=$(COQTOP)/bin/coq-tex -n 72 -image $(DOCCOQTOP) -v -sl -small
 COQDOC=$(COQTOP)/bin/coqdoc
 
-VERSION=8.0pl3
 #VERSION=POSITIONNEZ-CETTE-VARIABLE
 
 ######################################################################
@@ -62,13 +64,13 @@ rectutorial:\
 
 .SUFFIXES: .dvi .tex .v.tex .ps .pdf .eps .png
 
-.tex.v.tex:
+%.v.tex: %.tex
 	(cd `dirname $<`; $(COQTEX) `basename $<`)
 
-.dvi.ps:
+%.ps: %.dvi
 	(cd `dirname $<`; dvips -o `basename $@` `basename $<`)
 
-.png.eps:
+%.eps: %.png
 	pngtopnm $< | pnmtops -equalpixels -noturn -rle > $@
 
 clean:
@@ -145,13 +147,13 @@ refman/Reference-Manual.dvi: $(REFMANFILES)
 	$(LATEX) Reference-Manual;\
 	$(LATEX) Reference-Manual)
 
-refman/Reference-Manual.pdf: refman/Reference-Manual.dvi
+refman/Reference-Manual.pdf: refman/Reference-Manual.tex
 	(cd refman; $(PDFLATEX) Reference-Manual.tex)
 
 ### Reference Manual (browsable format)
 
 refman/Reference-Manual.html: refman/Reference-Manual.dvi # to ensure bbl file
-	(cd refman; hevea -fix -nosymb -exec xxdate.exe ./Reference-Manual.tex)
+	(cd refman; hevea -fix -exec xxdate.exe ./Reference-Manual.tex)
 
 refman/html/index.html: refman/Reference-Manual.html $(REFMANPNGFILES) \
                         refman/cover.html refman/index.html
@@ -191,7 +193,7 @@ faq/FAQ.v.pdf: common/version.tex common/title.tex faq/FAQ.v.dvi faq/axioms.png
 	(cd faq; $(PDFLATEX) FAQ.v.tex)
 
 faq/FAQ.v.html: faq/FAQ.v.dvi # to ensure FAQ.v.bbl
-	(cd faq; hevea -fix -nosymb FAQ.v.tex)
+	(cd faq; hevea -fix FAQ.v.tex)
 
 faq/html/index.html: faq/FAQ.v.html
 	- rm -rf faq/html
@@ -205,10 +207,7 @@ faq/html/index.html: faq/FAQ.v.html
 
 GLOBDUMP=$(COQTOP)/glob.dump
 
-LIBDIRS=\
-  Logic Bool Arith ZArith Reals \
-  Lists Strings IntMap Sorting \
-  Sets Relations Wellfounded 
+LIBDIRS= Logic Bool Arith ZArith Reals Lists Sets Relations Sorting Wellfounded IntMap
 
 ### Standard library (browsable html format)
 
@@ -228,13 +227,10 @@ stdlib/html/index.html: stdlib/index-list.html stdlib/index-body.html stdlib/ind
 
 ### Standard library (printable format - produces > 350 pages)
 
-stdlib/library.files:
-	(cd stdlib; GALLINA=gallina ./make-library-files)
-
-stdlib/Library.coqdoc.tex: stdlib/library.files
-	WHERE=`pwd`/stdlib; cd $(COQTOP)/theories; \
-	$(COQDOC) -q --body-only --latex -o $$WHERE/Library.coqdoc.tex \
-         -R `pwd`/$(COQTOP)/theories Coq `cat $$WHERE/library.files`
+stdlib/Library.coqdoc.tex: 
+	(for dir in $(LIBDIRS) ; do \
+	  $(COQDOC) -q --gallina --body-only --latex --stdout \
+            -R $(COQTOP)/theories Coq "$(COQTOP)/theories/$$dir/"*.v >> $@ ; done)
 
 stdlib/Library.dvi: $(COMMON) stdlib/Library.coqdoc.tex stdlib/Library.tex
 	(cd stdlib;\

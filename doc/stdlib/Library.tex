@@ -28,26 +28,25 @@ of this library). It provides a set of modules directly available
 through the \verb!Require! command.
 
 The standard library is composed of the following subdirectories:
-\medskip
-\begin{tabular}{lp{12cm}}
-  {\bf Logic}   & Classical logic and dependent equality \\
-  {\bf Bool}    & Booleans (basic functions and results) \\
-  {\bf Arith}   & Basic Peano arithmetic \\
-  {\bf ZArith}  & Basic integer arithmetic \\
-  {\bf Reals}   & Classical Real Numbers and Analysis \\
-  {\bf Lists}   & Monomorphic and polymorphic lists (basic functions and
+\begin{description}
+  \item[Logic]  Classical logic and dependent equality
+  \item[Bool]   Booleans (basic functions and results)
+  \item[Arith]  Basic Peano arithmetic
+  \item[ZArith] Basic integer arithmetic
+  \item[Reals]  Classical Real Numbers and Analysis
+  \item[Lists]  Monomorphic and polymorphic lists (basic functions and
                   results), Streams (infinite sequences defined 
-                  with co-inductive types) \\
-  {\bf Sets}    & Sets (classical, constructive, finite, infinite, power set,
-                  etc.) \\
-  {\bf Relations}   & Relations (definitions and basic results). \\
-  {\bf Sorting}  & Sorted list (basic definitions and heapsort correctness). \\
-  {\bf Wellfounded} & Well-founded relations (basic results). \\
-  {\bf IntMap}      & Representation of finite sets by an efficient
-                      structure of map (trees indexed by binary integers).\\
+                  with co-inductive types)
+  \item[Sets]   Sets (classical, constructive, finite, infinite, power set,
+                  etc.)
+  \item[Relations] Relations (definitions and basic results).
+  \item[Sorting] Sorted list (basic definitions and heapsort
+                 correctness). 
+  \item[Wellfounded] Well-founded relations (basic results).
+  \item[IntMap]       Representation of finite sets by an efficient
+                     structure of map (trees indexed by binary integers).
+\end{description}
 
-\end{tabular}
-\medskip
 
 Each of these subdirectories contains a set of modules, whose
 specifications (\gallina{} files) have

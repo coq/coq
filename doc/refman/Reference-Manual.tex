@@ -1,8 +1,10 @@
-\ifx\pdfoutput\undefined   % si on est pas en pdflatex
-\documentclass[11pt,a4paper]{book}
+\RequirePackage{ifpdf}
+\ifpdf
+  \documentclass[11pt,a4paper,pdftex]{book}
 \else
-\documentclass[11pt,a4paper,pdftex]{book}
+  \documentclass[11pt,a4paper]{book}
 \fi
+
 \usepackage[latin1]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{times}
@@ -13,11 +15,13 @@
 \usepackage{alltt}
 \usepackage{hevea}
 
+\usepackage{ifpdf}
+
 % for coqide
-\ifx\pdfoutput\undefined   % si on est pas en pdflatex
-  \usepackage[dvips]{graphicx}
-\else
+\ifpdf   % si on est pas en pdflatex
   \usepackage[pdftex]{graphicx}
+\else
+  \usepackage[dvips]{graphicx}
 \fi
 
 

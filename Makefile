@@ -1240,19 +1240,25 @@ install-latex:
 # Literate programming (with ocamlweb)
 ###########################################################################
 
-.PHONY: doc
+.PHONY: doc devdoc
 
-doc: doc/coq.tex
-	$(MAKE) -C doc coq.ps minicoq.dvi
+doc: coq
+	(cd doc; make all)
 
-doc/coq.tex:
+clean::
+	(cd doc; make clean)
+
+devdoc: dev/doc/coq.tex
+	$(MAKE) -C dev/doc coq.ps minicoq.dvi
+
+dev/doc/coq.tex:
 	ocamlweb -p "\usepackage{epsfig}" \
-	doc/macros.tex doc/intro.tex \
+	dev/doc/macros.tex dev/doc/intro.tex \
 	lib/{doc.tex,*.mli} kernel/{doc.tex,*.mli} library/{doc.tex,*.mli} \
 	pretyping/{doc.tex,*.mli} interp/{doc.tex,*.mli} \
 	parsing/{doc.tex,*.mli} proofs/{doc.tex,*.mli} \
 	tactics/{doc.tex,*.mli} toplevel/{doc.tex,*.mli} \
-	-o doc/coq.tex
+	-o dev/doc/coq.tex
 
 clean::
 	rm -f doc/coq.tex

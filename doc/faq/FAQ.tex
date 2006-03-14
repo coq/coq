@@ -1,7 +1,8 @@
-\ifx\pdfoutput\undefined   % si on est pas en pdflatex
-\documentclass[a4paper]{article}
-\else
+\RequirePackage{ifpdf}
+\ifpdf   % si on est en pdflatex
 \documentclass[a4paper,pdftex]{article}
+\else
+\documentclass[a4paper]{article}
 \fi
 \pagestyle{plain}
 
@@ -15,10 +16,10 @@
 \usepackage[latin1]{inputenc}
 \usepackage[english]{babel}
 
-\ifx\pdfoutput\undefined   % si on est pas en pdflatex
-  \usepackage[dvips]{graphicx}
-\else
+\ifpdf   % si on est en pdflatex
   \usepackage[pdftex]{graphicx}
+\else
+  \usepackage[dvips]{graphicx}
 \fi
 
 %\input{../macros.tex}
@@ -475,10 +476,10 @@ proofs can be found in directory {\tt Logic} of the standard library.
 
 %HEVEA\imgsrc{axioms.png}
 %BEGIN LATEX
-\ifx\pdfoutput\undefined   % si on est pas en pdflatex
-\includegraphics[width=1.0\textwidth]{axioms.eps}
-\else
+\ifpdf   % si on est en pdflatex
 \includegraphics[width=1.0\textwidth]{axioms.png}
+\else
+\includegraphics[width=1.0\textwidth]{axioms.eps}
 \fi
 %END LATEX
 
