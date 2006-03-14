@@ -1111,7 +1111,8 @@ let (com_eqn : identifier ->
      Command.save_named true);;
 
 
-let recursive_definition is_mes f type_of_f r rec_arg_num eq generate_induction_principle : unit =
+let recursive_definition is_mes f type_of_f r rec_arg_num eq 
+    generate_induction_principle : unit =
   let function_type = interp_constr Evd.empty (Global.env()) type_of_f in
   let env = push_rel (Name f,None,function_type) (Global.env()) in
   let res_vars,eq' = decompose_prod (interp_constr Evd.empty env eq) in 

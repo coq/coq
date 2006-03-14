@@ -1,9 +1,9 @@
 
-val generate_new_structural_principle : 
+val generate_functional_principle : 
   (* do we accept interactive proving *)
   bool ->
   (* induction principle on rel *) 
-  Names.constant ->
+  Term.types ->
   (* Name of the new principle *) 
   (Names.identifier) option -> 
   (* the compute functions to use   *)
@@ -13,11 +13,16 @@ val generate_new_structural_principle :
   (* The tactic to use to make the proof w.r
      the number of params
   *)
-  (int -> Tacmach.tactic) -> 
+  (Term.constr array -> int -> Tacmach.tactic) -> 
   unit
 
 
 
 (* val my_reflexivity : Tacmach.tactic  *)
 
-val prove_princ_for_struct : int -> Names.constant array -> int -> Tacmach.tactic
+val prove_princ_for_struct : 
+  bool -> 
+  int -> Names.constant array -> Term.constr array -> int -> Tacmach.tactic
+
+
+val compute_new_princ_type_from_rel : Term.constr array -> Term.types -> Term.types

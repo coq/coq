@@ -101,7 +101,8 @@ let prepare_body (name,annot,args,types,body) rt =
   (fun_args,rt')
 
 
-let generate_principle fix_rec_l recdefs  interactive_proof parametrize continue_proof   =
+let generate_principle fix_rec_l recdefs  interactive_proof parametrize 
+    (continue_proof : int -> Names.constant array -> Term.constr array -> int -> Tacmach.tactic)  =
   let names = List.map (function (name,_,_,_,_) -> name) fix_rec_l in
   let fun_bodies = List.map2 prepare_body fix_rec_l recdefs in
   let funs_args = List.map fst fun_bodies in
@@ -127,13 +128,17 @@ let generate_principle fix_rec_l recdefs  interactive_proof parametrize continue
   let _ = 
     Util.list_map_i
       (fun i x ->
-	 New_arg_principle.generate_new_structural_principle
+	 let princ = destConst (Indrec.lookup_eliminator (ind_kn,i) (InProp)) in 
+	 let princ_type = 
+	   (Global.lookup_constant princ).Declarations.const_type
+	 in
+	 New_arg_principle.generate_functional_principle
 	   interactive_proof 
-	   (destConst (Indrec.lookup_eliminator (ind_kn,i) (InProp)))
+	   princ_type
 	   None
 	   funs_kn
 	   i
-	  (continue_proof i funs_kn)
+	   (continue_proof  0 [|funs_kn.(i)|]) 
       )
       0
       fix_rec_l
@@ -161,7 +166,7 @@ let register_struct is_rec fixpoint_exprl =
 
 let generate_correction_proof_wf tcc_lemma_ref   
     is_mes f_ref eq_ref rec_arg_num rec_arg_type nb_args relation
-    (_: int) (_:Names.constant array) (_:int) : Tacmach.tactic = 
+    (_: int) (_:Names.constant array) (_:Term.constr array) (_:int) : Tacmach.tactic = 
   Recdef.prove_principle  tcc_lemma_ref
     is_mes f_ref eq_ref rec_arg_num rec_arg_type nb_args relation
 
@@ -266,7 +271,7 @@ let register_mes fname wf_mes_expr wf_arg args ret_type body =
 
 
 
-let do_generate_principle fixpoint_exprl  = 
+let do_generate_principle interactive_proof fixpoint_exprl  = 
   let recdefs = build_newrecursive fixpoint_exprl in 
   let _is_struct = 
     match fixpoint_exprl with 
@@ -329,9 +334,9 @@ let do_generate_principle fixpoint_exprl  =
 	  generate_principle 
 	    fixpoint_exprl
 	    recdefs 
-	    false
+	    interactive_proof
 	    true
-	    (New_arg_principle.prove_princ_for_struct);
+	    (New_arg_principle.prove_princ_for_struct interactive_proof);
 	  true
 						 
   in

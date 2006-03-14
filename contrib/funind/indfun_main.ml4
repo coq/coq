@@ -48,6 +48,43 @@ TACTIC EXTEND newfuninv
      ]
 END
 
+
+
+TACTIC EXTEND newfunind
+   ["new" "functional" "induction" constr(c) ] -> 
+     [
+       let f,args = decompose_app c in 
+       let fname = 
+	 match kind_of_term f with 
+	   | Const c' -> 
+	       id_of_label (con_label c') 
+	   | _ -> Util.error "Must be used with a function" 
+       in
+       fun g -> 
+       let princ_name = 
+	   (
+	     Indrec.make_elimination_ident
+	       fname
+	       (Tacticals.elimination_sort_of_goal g)
+	   )
+       in
+       let princ = const_of_id princ_name in
+       let args_as_induction_constr =
+	 List.map (fun c -> Tacexpr.ElimOnConstr c) (args@[c]) 
+       in 
+       let princ' = Some (mkConst princ,Rawterm.NoBindings) in 
+       Tactics.new_induct args_as_induction_constr princ' Genarg.IntroAnonymous g
+(*        Tacticals.tclTHEN  *)
+(* 	 (Hiddentac.h_reduce  *)
+(* 	    (Rawterm.Pattern (List.map (fun e -> ([],e)) (frealargs@[c]))) *)
+(* 	    Tacticals.onConcl *)
+(* 	 ) *)
+(* 	 (Hiddentac.h_apply (mkConst princ,Rawterm.NoBindings)) *)
+(*      	 g *)
+     ]
+END
+
+(*
 TACTIC EXTEND newfunind
    ["new" "functional" "induction" constr(c) ] -> 
      [
@@ -116,6 +153,10 @@ TACTIC EXTEND newfunind
      	 g
      ]
 END
+*)
+
+
+
 
 VERNAC ARGUMENT EXTEND rec_annotation2
   [ "{"  "struct" ident(id)  "}"] -> [ Struct id ]
@@ -173,5 +214,41 @@ END
 
 VERNAC COMMAND EXTEND GenFixpoint
    ["GenFixpoint" rec_definitions2(recsl)] ->
-	[ do_generate_principle recsl]
-      END
+	[ do_generate_principle false  recsl]
+END
+
+VERNAC COMMAND EXTEND IGenFixpoint
+   ["IGenFixpoint" rec_definitions2(recsl)] ->
+	[ do_generate_principle true  recsl]
+END
+
+VERNAC COMMAND EXTEND NewFunctionalScheme
+   ["New" "Functional" "Scheme" ident(name) ident_list(funs)  "using" ident(scheme)] ->
+    [
+      let id_to_constr id = 
+	Tacinterp.constr_of_id (Global.env ())  id
+      in 
+      let funs =
+	Array.of_list (List.map id_to_constr funs) 
+      in 
+      let scheme = id_to_constr scheme in 
+      let scheme_type = Typing.type_of (Global.env ()) Evd.empty scheme in 
+      New_arg_principle.generate_functional_principle false 
+	scheme_type 
+	(Some name) 
+	(Array.map destConst funs)
+	0
+	(New_arg_principle.prove_princ_for_struct false 0 (Array.map destConst funs))
+
+      
+
+(*       let res = New_arg_principle.compute_new_princ_type_from_rel  *)
+(* 	funs  *)
+(* 	scheme_type *)
+(*       in  *)
+      
+(*       Pp.msgnl (str "result := "++Printer.pr_lconstr res++fnl ()) *)
+	      
+    ]
+END
+
