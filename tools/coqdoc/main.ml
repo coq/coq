@@ -75,10 +75,9 @@ let banner () =
   flush stderr
 
 let target_full_name f = 
-  let basefile = chop_suffix f ".v" in
-    match !target_language with
-      | HTML -> basefile ^ ".html"
-      | _ -> basefile ^ ".tex"
+  match !target_language with
+    | HTML -> f ^ ".html"
+    | _ -> f ^ ".tex"
 
 (*s \textbf{Separation of files.} Files given on the command line are
     separated according to their type, which is determined by their
@@ -384,12 +383,12 @@ let gen_mult_files l =
   let file = function
     | Vernac_file (f,m) -> 
 	set_module m;
-	let hf = target_full_name f in
+	let hf = target_full_name m in
 	  open_out_file hf;
-	  header (); 
+	  if (!header_trailer) then header (); 
 	  if !toc then make_toc ();
 	  coq_file f m; 
-	  trailer ();
+	  if (!header_trailer) then trailer ();
 	  close_out_file()
     | Latex_file _ -> ()
   in
@@ -397,16 +396,18 @@ let gen_mult_files l =
     if (!index && !target_language=HTML) then begin
       open_out_file "index.html"; 
       page_title := (if !title <> "" then !title else "Index");
-      header (); make_index (); trailer ();
+      if (!header_trailer) then header (); 
+      make_index (); 
+      if (!header_trailer) then trailer ();
       close_out_file()
     end;
     if (!toc && !target_language=HTML) then begin
       open_out_file "toc.html"; 
       page_title := (if !title <> "" then !title else "Table of contents");
-      header ();
+      if (!header_trailer) then header ();
       if !title <> "" then printf "<h1>%s</h1>\n" !title;
       make_toc (); 
-      trailer ();
+      if (!header_trailer) then trailer ();
       close_out_file()
     end 
       (* Rq: pour latex et texmacs, une toc ou un index séparé n'a pas de sens... *)

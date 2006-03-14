@@ -303,7 +303,7 @@ let end_verb = "(*" space* "end" space+ "verb" space* "*)"
 (*s Scanning Coq, at beginning of line *)
 
 rule coq_bol = parse
-  | '\n'+
+  | space* '\n'+
       { empty_line_of_code (); coq_bol lexbuf }
   | space* "(**" space_nl
       { end_coq (); start_doc (); 
@@ -404,9 +404,11 @@ and coq = parse
 	  let eol = body lexbuf in
 	    if eol then coq_bol lexbuf else coq lexbuf }
   | space+ { char ' '; coq lexbuf }
+  |  eof 
+      { () }
   | _ { let eol = 
 	  if not !gallina then 
-	    begin backtrack lexbuf; indentation 0; body_bol lexbuf end 
+	    begin backtrack lexbuf; indentation 0; body lexbuf end 
 	  else 
 	    skip_to_dot lexbuf 
 	in 
@@ -558,7 +560,7 @@ and body_bol = parse
 and body = parse
   | '\n' {line_break(); body_bol lexbuf}
   | eof { false }
-  | '.' space* '\n' { char '.'; line_break(); true }      
+  | '.' space* '\n' | '.' space* eof { char '.'; line_break(); true }      
   | '.' space+ { char '.'; char ' '; false }
   | "(*" { let eol = comment lexbuf in 
 	     if eol then body_bol lexbuf else body lexbuf }
