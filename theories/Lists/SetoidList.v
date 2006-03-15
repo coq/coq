@@ -233,10 +233,10 @@ Section Remove.
 
 Hypothesis eqA_dec : forall x y : A, {eqA x y}+{~(eqA x y)}.
 
-Fixpoint removeA : (x : A) (l : list A){struct l} : list A :=
+Fixpoint removeA (x : A) (l : list A){struct l} : list A :=
   match l with
     | nil => nil
-    | y::tl => if (eqA_dec x y) then removeA tl else y::(removeA tl)
+    | y::tl => if (eqA_dec x y) then removeA x tl else y::(removeA x tl)
   end.
 
 End Remove.
