@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: FSet.v,v 1.2 2004/12/08 19:19:24 letouzey Exp $ *)
 
 Require Export FMapInterface.
 Require Export FMapList.

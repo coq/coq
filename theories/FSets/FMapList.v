@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: FSetList.v,v 1.12 2006/03/10 10:49:48 letouzey Exp $ *)
 
 (** * Finite map library *)
 
@@ -22,44 +22,44 @@ Unset Strict Implicit.
 
 Arguments Scope list [type_scope].
 
-Module Raw (XOrderedType).
+Module Raw (X:OrderedType).
 
-Module E = X.
-Module MX = OrderedTypeFacts X.
-Module PX = PairOrderedType X.
+Module E := X.
+Module MX := OrderedTypeFacts X.
+Module PX := PairOrderedType X.
 Import MX. 
 Import PX. 
 
-Definition key = X.t.
-Definition t (eltSet) := list (X.t * elt).
+Definition key := X.t.
+Definition t (elt:Set) := list (X.t * elt).
 
 Section Elt.
-Variable elt  Set.
+Variable elt : Set.
 
-(* Now in PairOrderedtype 
-Definition eqk (p p'key*elt) := X.eq (fst p) (fst p').
-Definition eqke (p p'key*elt) := 
+(* Now in PairOrderedtype: 
+Definition eqk (p p':key*elt) := X.eq (fst p) (fst p').
+Definition eqke (p p':key*elt) := 
         X.eq (fst p) (fst p') /\ (snd p) = (snd p').
-Definition ltk (p p'key*elt) := X.lt (fst p) (fst p').
-Definition MapsTo (kkey)(e:elt):= InA eqke (k,e).
-Definition In k m = exists e:elt, MapsTo k e m.
+Definition ltk (p p':key*elt) := X.lt (fst p) (fst p').
+Definition MapsTo (k:key)(e:elt):= InA eqke (k,e).
+Definition In k m := exists e:elt, MapsTo k e m.
 *)
 
-Notation eqk = (eqk (elt:=elt)).   
-Notation eqke = (eqke (elt:=elt)).
-Notation ltk = (ltk (elt:=elt)).
-Notation MapsTo = (MapsTo (elt:=elt)).
-Notation In = (In (elt:=elt)).
-Notation Sort = (sort ltk).
-Notation Inf = (lelistA (ltk)).
+Notation eqk := (eqk (elt:=elt)).   
+Notation eqke := (eqke (elt:=elt)).
+Notation ltk := (ltk (elt:=elt)).
+Notation MapsTo := (MapsTo (elt:=elt)).
+Notation In := (In (elt:=elt)).
+Notation Sort := (sort ltk).
+Notation Inf := (lelistA (ltk)).
 
 (** * [empty] *)
 
-Definition empty  t elt := nil.
+Definition empty : t elt := nil.
 
-Definition Empty m = forall (a : key)(e:elt) , ~ MapsTo a e m.
+Definition Empty m := forall (a : key)(e:elt) , ~ MapsTo a e m.
 
-Lemma empty_1  Empty empty.
+Lemma empty_1 : Empty empty.
 Proof.  
  unfold Empty,empty.
  intros a e.
@@ -68,25 +68,25 @@ Proof.
 Qed.
 Hint Resolve empty_1.
 
-Lemma empty_sorted  Sort empty.
+Lemma empty_sorted : Sort empty.
 Proof. 
  unfold empty; auto.
 Qed.
 
 (** * [is_empty] *)
 
-Definition is_empty (l  t elt) : bool := if l then true else false.
+Definition is_empty (l : t elt) : bool := if l then true else false.
 
-Lemma is_empty_1 forall m, Empty m -> is_empty m = true. 
+Lemma is_empty_1 :forall m, Empty m -> is_empty m = true. 
 Proof.
  unfold Empty, PX.MapsTo.
  intros m.
  case m;auto.
  intros (k,e) l inlist.
- absurd (InA eqke (k, e) ((k, e) : l));auto.
+ absurd (InA eqke (k, e) ((k, e) :: l));auto.
 Qed.
 
-Lemma is_empty_2  forall m, is_empty m = true -> Empty m.
+Lemma is_empty_2 : forall m, is_empty m = true -> Empty m.
 Proof.  
  intros m.
  case m;auto.
@@ -96,10 +96,10 @@ Qed.
 
 (** * [mem] *)
 
-Fixpoint mem (k  key) (s : t elt) {struct s} : bool :=
+Fixpoint mem (k : key) (s : t elt) {struct s} : bool :=
  match s with
   | nil => false
-  | (k',_) : l =>
+  | (k',_) :: l =>
      match X.compare k k' with
       | Lt _ => false
       | Eq _ => true
@@ -107,14 +107,14 @@ Fixpoint mem (k  key) (s : t elt) {struct s} : bool :=
      end
  end.
 
-Lemma mem_1  forall m (Hm:Sort m) x, In x m -> mem x m = true.
+Lemma mem_1 : forall m (Hm:Sort m) x, In x m -> mem x m = true.
 Proof.  
  intros m Hm x; generalize Hm; clear Hm.      
  functional induction mem x m;intros sorted belong1;trivial.
  
  inversion belong1. inversion H.
  
- absurd (In k ((k', e) : l));try assumption.
+ absurd (In k ((k', e) :: l));try assumption.
  apply Sort_Inf_NotIn with e;auto.
 
  apply H.
@@ -124,7 +124,7 @@ Proof.
  absurd (X.eq k k');auto.
 Qed. 
 
-Lemma mem_2  forall m (Hm:Sort m) x, mem x m = true -> In x m. 
+Lemma mem_2 : forall m (Hm:Sort m) x, mem x m = true -> In x m. 
 Proof.
  intros m Hm x; generalize Hm; clear Hm; unfold PX.In,PX.MapsTo.
  functional induction mem x m; intros sorted hyp;try ((inversion hyp);fail).
@@ -136,10 +136,10 @@ Qed.
 
 (** * [find] *)
 
-Fixpoint find (kkey) (s: t elt) {struct s} : option elt :=
+Fixpoint find (k:key) (s: t elt) {struct s} : option elt :=
  match s with
   | nil => None
-  | (k',x):s' => 
+  | (k',x)::s' => 
      match X.compare k k' with
       | Lt _ => None
       | Eq _ => Some x
@@ -147,13 +147,13 @@ Fixpoint find (kkey) (s: t elt) {struct s} : option elt :=
      end
  end.
 
-Lemma find_2   forall m x e, find x m = Some e -> MapsTo x e m.
+Lemma find_2 :  forall m x e, find x m = Some e -> MapsTo x e m.
 Proof.
  intros m x. unfold PX.MapsTo.
  functional induction find x m;simpl;intros e' eqfind; inversion eqfind; auto.
 Qed.
 
-Lemma find_1   forall m (Hm:Sort m) x e, MapsTo x e m -> find x m = Some e. 
+Lemma find_1 :  forall m (Hm:Sort m) x e, MapsTo x e m -> find x m = Some e. 
 Proof.
  intros m Hm x e; generalize Hm; clear Hm; unfold PX.MapsTo.
  functional induction find x m;simpl; subst; try clear H_eq_1.
@@ -174,25 +174,25 @@ Qed.
 
 (** * [add] *)
 
-Fixpoint add (k  key) (x : elt) (s : t elt) {struct s} : t elt :=
+Fixpoint add (k : key) (x : elt) (s : t elt) {struct s} : t elt :=
  match s with
-  | nil => (k,x) : nil
-  | (k',y) : l =>
+  | nil => (k,x) :: nil
+  | (k',y) :: l =>
      match X.compare k k' with
-      | Lt _ => (k,x):s
-      | Eq _ => (k,x):l
-      | Gt _ => (k',y) : add k x l
+      | Lt _ => (k,x)::s
+      | Eq _ => (k,x)::l
+      | Gt _ => (k',y) :: add k x l
      end
  end.
 
-Lemma add_1  forall m x y e, X.eq x y -> MapsTo y e (add x e m).
+Lemma add_1 : forall m x y e, X.eq x y -> MapsTo y e (add x e m).
 Proof.
  intros m x y e; generalize y; clear y.
  unfold PX.MapsTo.
  functional induction add x e m;simpl;auto.
 Qed.
 
-Lemma add_2  forall m x y e e', 
+Lemma add_2 : forall m x y e e', 
   ~ X.eq x y -> MapsTo y e m -> MapsTo y e (add x e' m).
 Proof.
  intros m x  y e e'. 
@@ -205,7 +205,7 @@ Proof.
  intros y' e' eqky'; inversion_clear 1; intuition.
 Qed.
   
-Lemma add_3  forall m x y e e',
+Lemma add_3 : forall m x y e e',
   ~ X.eq x y -> MapsTo y e (add x e' m) -> MapsTo y e m.
 Proof.
  intros m x y e e'. generalize y e; clear y e; unfold PX.MapsTo.
@@ -216,7 +216,7 @@ Proof.
  inversion_clear H1; auto.
 Qed.
 
-Lemma add_Inf  forall (m:t elt)(x x':key)(e e':elt), 
+Lemma add_Inf : forall (m:t elt)(x x':key)(e e':elt), 
   Inf (x',e') m -> ltk (x',e') (x,e) -> Inf (x',e') (add x e m).
 Proof.
  induction m.  
@@ -229,7 +229,7 @@ Proof.
 Qed.
 Hint Resolve add_Inf.
 
-Lemma add_sorted  forall m (Hm:Sort m) x e, Sort (add x e m).
+Lemma add_sorted : forall m (Hm:Sort m) x e, Sort (add x e m).
 Proof.
  induction m.
  simpl; intuition.
@@ -242,18 +242,18 @@ Qed.
 
 (** * [remove] *)
 
-Fixpoint remove (k  key) (s : t elt) {struct s} : t elt :=
+Fixpoint remove (k : key) (s : t elt) {struct s} : t elt :=
  match s with
   | nil => nil
-  | (k',x) : l =>
+  | (k',x) :: l =>
      match X.compare k k' with
       | Lt _ => s
       | Eq _ => l
-      | Gt _ => (k',x) : remove k l
+      | Gt _ => (k',x) :: remove k l
      end
  end.  
 
-Lemma remove_1  forall m (Hm:Sort m) x y, X.eq x y -> ~ In y (remove x m).
+Lemma remove_1 : forall m (Hm:Sort m) x y, X.eq x y -> ~ In y (remove x m).
 Proof.
  intros m Hm x y; generalize Hm; clear Hm.
  functional induction remove x m;simpl;intros;subst;try clear H_eq_1.
@@ -268,14 +268,14 @@ Proof.
  apply Inf_eq with (k',x);auto; compute; apply X.eq_trans with k; auto.
 
  inversion_clear Hm.
- assert (notin~ In y (remove k l)) by auto.
+ assert (notin:~ In y (remove k l)) by auto.
  intros (x0,abs).
  inversion_clear abs. 
  compute in H3; destruct H3; order.
  apply notin; exists x0; auto.
 Qed.
 
-Lemma remove_2  forall m (Hm:Sort m) x y e, 
+Lemma remove_2 : forall m (Hm:Sort m) x y e, 
   ~ X.eq x y -> MapsTo y e m -> MapsTo y e (remove x m).
 Proof.
  intros m Hm x y e; generalize Hm; clear Hm; unfold PX.MapsTo.
@@ -286,7 +286,7 @@ Proof.
  inversion_clear 1; inversion_clear 2; auto.
 Qed.
 
-Lemma remove_3  forall m (Hm:Sort m) x y e, 
+Lemma remove_3 : forall m (Hm:Sort m) x y e, 
   MapsTo y e (remove x m) -> MapsTo y e m.
 Proof.
  intros m Hm x y e; generalize Hm; clear Hm; unfold PX.MapsTo.
@@ -294,7 +294,7 @@ Proof.
  inversion_clear 1; inversion_clear 1; auto.
 Qed.
 
-Lemma remove_Inf  forall (m:t elt)(Hm : Sort m)(x x':key)(e':elt), 
+Lemma remove_Inf : forall (m:t elt)(Hm : Sort m)(x x':key)(e':elt), 
   Inf (x',e') m -> Inf (x',e') (remove x m).
 Proof.
  induction m.  
@@ -309,7 +309,7 @@ Proof.
 Qed.
 Hint Resolve remove_Inf.
 
-Lemma remove_sorted  forall m (Hm:Sort m) x, Sort (remove x m).
+Lemma remove_sorted : forall m (Hm:Sort m) x, Sort (remove x m).
 Proof.
  induction m.
  simpl; intuition.
@@ -320,35 +320,35 @@ Qed.
 
 (** * [elements] *)
 
-Definition elements (m t elt) := m.
+Definition elements (m: t elt) := m.
 
-Lemma elements_1  forall m x e, 
+Lemma elements_1 : forall m x e, 
   MapsTo x e m -> InA eqke (x,e) (elements m).
 Proof.
  auto.
 Qed.
 
-Lemma elements_2  forall m x e, 
+Lemma elements_2 : forall m x e, 
   InA eqke (x,e) (elements m) -> MapsTo x e m.
 Proof. 
  auto.
 Qed.
 
-Lemma elements_3  forall m (Hm:Sort m), sort ltk (elements m). 
+Lemma elements_3 : forall m (Hm:Sort m), sort ltk (elements m). 
 Proof. 
  auto.
 Qed.
 
 (** * [fold] *)
 
-Fixpoint fold (ASet)(f:key->elt->A->A)(m:t elt) {struct m} : A -> A :=
+Fixpoint fold (A:Set)(f:key->elt->A->A)(m:t elt) {struct m} : A -> A :=
   fun acc => 
   match m with
    | nil => acc
-   | (k,e):m' => fold f m' (f k e acc)
+   | (k,e)::m' => fold f m' (f k e acc)
   end.
 
-Lemma fold_1  forall m (A:Set)(i:A)(f:key->elt->A->A),
+Lemma fold_1 : forall m (A:Set)(i:A)(f:key->elt->A->A),
   fold f m i = fold_left (fun a p => f (fst p) (snd p) a) (elements m) i.
 Proof. 
  intros; functional induction fold A f m i; auto.
@@ -356,10 +356,10 @@ Qed.
 
 (** * [equal] *)
 
-Fixpoint equal (cmpelt->elt->bool)(m m' : t elt) { struct m } : bool := 
+Fixpoint equal (cmp:elt->elt->bool)(m m' : t elt) { struct m } : bool := 
   match m, m' with 
    | nil, nil => true
-   | (x,e):l, (x',e')::l' => 
+   | (x,e)::l, (x',e')::l' => 
       match X.compare x x' with 
        | Eq _ => cmp e e' && equal cmp l l'
        | _    => false
@@ -367,11 +367,11 @@ Fixpoint equal (cmpelt->elt->bool)(m m' : t elt) { struct m } : bool :=
    | _, _ => false 
   end.
 
-Definition Equal cmp m m' = 
+Definition Equal cmp m m' := 
   (forall k, In k m <-> In k m') /\ 
   (forall k e e', MapsTo k e m -> MapsTo k e' m' -> cmp e e' = true).  
 
-Lemma equal_1  forall m (Hm:Sort m) m' (Hm': Sort m') cmp, 
+Lemma equal_1 : forall m (Hm:Sort m) m' (Hm': Sort m') cmp, 
   Equal cmp m m' -> equal cmp m m' = true. 
 Proof. 
  intros m Hm m' Hm' cmp; generalize Hm Hm'; clear Hm Hm'.
@@ -390,7 +390,7 @@ Proof.
  inversion H.
 
  destruct (H0 x).
- assert (In x ((x',e'):l')). 
+ assert (In x ((x',e')::l')). 
   apply H; auto.
   exists e; auto.
  destruct (In_inv H3).
@@ -408,7 +408,7 @@ Proof.
  inversion_clear Hm'; auto.
  unfold Equal; intuition.
  destruct (H1 k).
- assert (In k ((x,e) :l)).
+ assert (In k ((x,e) ::l)).
   destruct H3 as (e'', hyp); exists e''; auto.
  destruct (In_inv (H4 H6)); auto.
  inversion_clear Hm.
@@ -416,7 +416,7 @@ Proof.
  destruct H3 as (e'', hyp); exists e''; auto.
  apply MapsTo_eq with k; auto; order.
  destruct (H1 k).
- assert (In k ((x',e') :l')).
+ assert (In k ((x',e') ::l')).
   destruct H3 as (e'', hyp); exists e''; auto.
  destruct (In_inv (H5 H6)); auto.
  inversion_clear Hm'.
@@ -426,7 +426,7 @@ Proof.
  apply H2 with k; destruct (eq_dec x k); auto.
 
  destruct (H0 x').
- assert (In x' ((x,e):l)). 
+ assert (In x' ((x,e)::l)). 
   apply H2; auto.
   exists e'; auto.
  destruct (In_inv H3).
@@ -437,7 +437,7 @@ Proof.
  elim (Sort_Inf_NotIn H5 H7 H4).
 Qed.
 
-Lemma equal_2  forall m (Hm:Sort m) m' (Hm:Sort m') cmp, 
+Lemma equal_2 : forall m (Hm:Sort m) m' (Hm:Sort m') cmp, 
   equal cmp m m' = true -> Equal cmp m m'.
 Proof.
  intros m Hm m' Hm' cmp; generalize Hm Hm'; clear Hm Hm'.
@@ -476,9 +476,9 @@ Qed.
 
 (** This lemma isn't part of the spec of [Equal], but is used in [FMapAVL] *)
 
-Lemma equal_cons  forall cmp l1 l2 x y, Sort (x::l1) -> Sort (y::l2) ->
+Lemma equal_cons : forall cmp l1 l2 x y, Sort (x::l1) -> Sort (y::l2) ->
   eqk x y -> cmp (snd x) (snd y) = true -> 
-  (Equal cmp l1 l2 <-> Equal cmp (x : l1) (y :: l2)).
+  (Equal cmp l1 l2 <-> Equal cmp (x :: l1) (y :: l2)).
 Proof.
  intros.
  inversion H; subst.
@@ -497,20 +497,20 @@ Proof.
  rewrite H2; simpl; auto.
 Qed.
 
-Variable elt'Set.
+Variable elt':Set.
 
 (** * [map] and [mapi] *)
   
-Fixpoint map (felt -> elt') (m:t elt) {struct m} : t elt' :=
+Fixpoint map (f:elt -> elt') (m:t elt) {struct m} : t elt' :=
   match m with
    | nil => nil
-   | (k,e):m' => (k,f e) :: map f m'
+   | (k,e)::m' => (k,f e) :: map f m'
   end.
 
-Fixpoint mapi (f key -> elt -> elt') (m:t elt) {struct m} : t elt' :=
+Fixpoint mapi (f: key -> elt -> elt') (m:t elt) {struct m} : t elt' :=
   match m with
    | nil => nil
-   | (k,e):m' => (k,f k e) :: mapi f m'
+   | (k,e)::m' => (k,f k e) :: mapi f m'
   end.
 
 End Elt.
@@ -518,11 +518,11 @@ Section Elt2.
 (* A new section is necessary for previous definitions to work 
    with different [elt], especially [MapsTo]... *)
   
-Variable elt elt'  Set.
+Variable elt elt' : Set.
 
 (** Specification of [map] *)
 
-Lemma map_1  forall (m:t elt)(x:key)(e:elt)(f:elt->elt'), 
+Lemma map_1 : forall (m:t elt)(x:key)(e:elt)(f:elt->elt'), 
   MapsTo x e m -> MapsTo x (f e) (map f m).
 Proof.
  intros m x e f.
@@ -539,7 +539,7 @@ Proof.
  unfold MapsTo in *; auto.
 Qed.
 
-Lemma map_2  forall (m:t elt)(x:key)(f:elt->elt'), 
+Lemma map_2 : forall (m:t elt)(x:key)(f:elt->elt'), 
   In x (map f m) -> In x m.
 Proof.
  intros m x f. 
@@ -560,7 +560,7 @@ Proof.
  constructor 2; auto.
 Qed.
 
-Lemma map_lelistA  forall (m: t elt)(x:key)(e:elt)(e':elt')(f:elt->elt'),
+Lemma map_lelistA : forall (m: t elt)(x:key)(e:elt)(e':elt')(f:elt->elt'),
   lelistA (@ltk elt) (x,e) m -> 
   lelistA (@ltk elt') (x,e') (map f m).
 Proof. 
@@ -572,7 +572,7 @@ Qed.
 
 Hint Resolve map_lelistA.
 
-Lemma map_sorted  forall (m: t elt)(Hm : sort (@ltk elt) m)(f:elt -> elt'), 
+Lemma map_sorted : forall (m: t elt)(Hm : sort (@ltk elt) m)(f:elt -> elt'), 
   sort (@ltk elt') (map f m).
 Proof.   
  induction m; simpl; auto.
@@ -585,7 +585,7 @@ Qed.
  
 (** Specification of [mapi] *)
 
-Lemma mapi_1  forall (m:t elt)(x:key)(e:elt)(f:key->elt->elt'), 
+Lemma mapi_1 : forall (m:t elt)(x:key)(e:elt)(f:key->elt->elt'), 
   MapsTo x e m -> 
   exists y, X.eq y x /\ MapsTo x (f y e) (mapi f m).
 Proof.
@@ -607,7 +607,7 @@ Proof.
 Qed.  
 
 
-Lemma mapi_2  forall (m:t elt)(x:key)(f:key->elt->elt'), 
+Lemma mapi_2 : forall (m:t elt)(x:key)(f:key->elt->elt'), 
   In x (mapi f m) -> In x m.
 Proof.
  intros m x f. 
@@ -628,7 +628,7 @@ Proof.
  constructor 2; auto.
 Qed.
 
-Lemma mapi_lelistA  forall (m: t elt)(x:key)(e:elt)(f:key->elt->elt'),
+Lemma mapi_lelistA : forall (m: t elt)(x:key)(e:elt)(f:key->elt->elt'),
   lelistA (@ltk elt) (x,e) m -> 
   lelistA (@ltk elt') (x,f x e) (mapi f m).
 Proof. 
@@ -640,7 +640,7 @@ Qed.
 
 Hint Resolve mapi_lelistA.
 
-Lemma mapi_sorted  forall m (Hm : sort (@ltk elt) m)(f: key ->elt -> elt'), 
+Lemma mapi_sorted : forall m (Hm : sort (@ltk elt) m)(f: key ->elt -> elt'), 
   sort (@ltk elt') (mapi f m).
 Proof.
  induction m; simpl; auto.
@@ -654,35 +654,35 @@ Section Elt3.
 
 (** * [map2] *)
 
-Variable elt elt' elt''  Set.
-Variable f  option elt -> option elt' -> option elt''.
+Variable elt elt' elt'' : Set.
+Variable f : option elt -> option elt' -> option elt''.
 
-Definition option_cons (ASet)(k:key)(o:option A)(l:list (key*A)) := 
+Definition option_cons (A:Set)(k:key)(o:option A)(l:list (key*A)) := 
   match o with 
-   | Some e => (k,e):l
+   | Some e => (k,e)::l
    | None => l
   end.
 
-Fixpoint map2_l (m  t elt) : t elt'' := 
+Fixpoint map2_l (m : t elt) : t elt'' := 
   match m with 
    | nil => nil 
-   | (k,e):l => option_cons k (f (Some e) None) (map2_l l)
+   | (k,e)::l => option_cons k (f (Some e) None) (map2_l l)
   end. 
 
-Fixpoint map2_r (m'  t elt') : t elt'' := 
+Fixpoint map2_r (m' : t elt') : t elt'' := 
   match m' with 
    | nil => nil 
-   | (k,e'):l' => option_cons k (f None (Some e')) (map2_r l')
+   | (k,e')::l' => option_cons k (f None (Some e')) (map2_r l')
   end. 
 
-Fixpoint map2 (m  t elt) : t elt' -> t elt'' :=
+Fixpoint map2 (m : t elt) : t elt' -> t elt'' :=
   match m with
    | nil => map2_r 
-   | (k,e) : l =>
-      fix map2_aux (m'  t elt') : t elt'' :=
+   | (k,e) :: l =>
+      fix map2_aux (m' : t elt') : t elt'' :=
         match m' with
          | nil => map2_l m
-         | (k',e') : l' =>
+         | (k',e') :: l' =>
             match X.compare k k' with
              | Lt _ => option_cons k (f (Some e) None) (map2 l m')
              | Eq _ => option_cons k (f (Some e) (Some e')) (map2 l l')
@@ -691,33 +691,33 @@ Fixpoint map2 (m  t elt) : t elt' -> t elt'' :=
         end
   end.      
 
-Notation oee' = (option elt * option elt')%type.
+Notation oee' := (option elt * option elt')%type.
 
-Fixpoint combine (m  t elt) : t elt' -> t oee' :=
+Fixpoint combine (m : t elt) : t elt' -> t oee' :=
   match m with
    | nil => map (fun e' => (None,Some e'))
-   | (k,e) : l =>
-      fix combine_aux (m't elt') : list (key * oee') :=
+   | (k,e) :: l =>
+      fix combine_aux (m':t elt') : list (key * oee') :=
         match m' with
          | nil => map (fun e => (Some e,None)) m
-         | (k',e') : l' =>
+         | (k',e') :: l' =>
             match X.compare k k' with
-             | Lt _ => (k,(Some e, None)):combine l m'
-             | Eq _ => (k,(Some e, Some e')):combine l l'
-             | Gt _ => (k',(None,Some e')):combine_aux l'
+             | Lt _ => (k,(Some e, None))::combine l m'
+             | Eq _ => (k,(Some e, Some e'))::combine l l'
+             | Gt _ => (k',(None,Some e'))::combine_aux l'
             end
         end
   end. 
 
-Definition fold_right_pair (A B CSet)(f: A->B->C->C)(l:list (A*B))(i:C) := 
+Definition fold_right_pair (A B C:Set)(f: A->B->C->C)(l:list (A*B))(i:C) := 
   List.fold_right (fun p => f (fst p) (snd p)) i l.
 
-Definition map2_alt m m' = 
-  let m0  t oee' := combine m m' in 
-  let m1  t (option elt'') := map (fun p => f (fst p) (snd p)) m0 in 
-  fold_right_pair (option_cons (A=elt'')) m1 nil.
+Definition map2_alt m m' := 
+  let m0 : t oee' := combine m m' in 
+  let m1 : t (option elt'') := map (fun p => f (fst p) (snd p)) m0 in 
+  fold_right_pair (option_cons (A:=elt'')) m1 nil.
 
-Lemma map2_alt_equiv  forall m m', map2_alt m m' = map2 m m'.
+Lemma map2_alt_equiv : forall m m', map2_alt m m' = map2 m m'.
 Proof.
  unfold map2_alt.
  induction m.
@@ -741,8 +741,8 @@ Proof.
  apply IHm'.
 Qed.
 
-Lemma combine_lelistA  
-  forall m m' (xkey)(e:elt)(e':elt')(e'':oee'), 
+Lemma combine_lelistA : 
+  forall m m' (x:key)(e:elt)(e':elt')(e'':oee'), 
   lelistA (@ltk elt) (x,e) m -> 
   lelistA (@ltk elt') (x,e') m' -> 
   lelistA (@ltk oee') (x,e'') (combine m m').
@@ -754,8 +754,8 @@ Proof.
  induction m'. 
  intros.
  destruct a.
- replace (combine ((t0, e0) : m) nil) with 
-             (map (fun e => (Some e,None (A=elt'))) ((t0,e0)::m)); auto.
+ replace (combine ((t0, e0) :: m) nil) with 
+             (map (fun e => (Some e,None (A:=elt'))) ((t0,e0)::m)); auto.
  exact (map_lelistA _ _ H).
  intros.
  simpl.
@@ -767,8 +767,8 @@ Proof.
 Qed.
 Hint Resolve combine_lelistA.
 
-Lemma combine_sorted  
-  forall m (Hm  sort (@ltk elt) m) m' (Hm' : sort (@ltk elt') m'), 
+Lemma combine_sorted : 
+  forall m (Hm : sort (@ltk elt) m) m' (Hm' : sort (@ltk elt') m'), 
   sort (@ltk oee') (combine m m').
 Proof.
  induction m. 
@@ -778,8 +778,8 @@ Proof.
  induction m'. 
  intros; clear Hm'.
  destruct a.
- replace (combine ((t0, e) : m) nil) with 
-             (map (fun e => (Some e,None (A=elt'))) ((t0,e)::m)); auto.
+ replace (combine ((t0, e) :: m) nil) with 
+             (map (fun e => (Some e,None (A:=elt'))) ((t0,e)::m)); auto.
  apply map_sorted; auto.
  intros.
  simpl.
@@ -787,32 +787,32 @@ Proof.
  destruct (X.compare k k').
  inversion_clear Hm.
  constructor; auto.
- assert (lelistA (ltk (elt=elt')) (k, e') ((k',e')::m')) by auto.
+ assert (lelistA (ltk (elt:=elt')) (k, e') ((k',e')::m')) by auto.
  exact (combine_lelistA _ H0 H1). 
  inversion_clear Hm; inversion_clear Hm'.
  constructor; auto.
- assert (lelistA (ltk (elt=elt')) (k, e') m') by apply Inf_eq with (k',e'); auto.
+ assert (lelistA (ltk (elt:=elt')) (k, e') m') by apply Inf_eq with (k',e'); auto.
  exact (combine_lelistA _ H0 H3). 
  inversion_clear Hm; inversion_clear Hm'.
  constructor; auto.
- change (lelistA (ltk (elt=oee')) (k', (None, Some e'))
-                 (combine ((k,e):m) m')).
- assert (lelistA (ltk (elt=elt)) (k', e) ((k,e)::m)) by auto.
+ change (lelistA (ltk (elt:=oee')) (k', (None, Some e'))
+                 (combine ((k,e)::m) m')).
+ assert (lelistA (ltk (elt:=elt)) (k', e) ((k,e)::m)) by auto.
  exact (combine_lelistA _  H3 H2).
 Qed.
 
-Lemma map2_sorted  
-  forall m (Hm  sort (@ltk elt) m) m' (Hm' : sort (@ltk elt') m'), 
+Lemma map2_sorted : 
+  forall m (Hm : sort (@ltk elt) m) m' (Hm' : sort (@ltk elt') m'), 
   sort (@ltk elt'') (map2 m m').
 Proof.
  intros.
  rewrite <- map2_alt_equiv.
  unfold map2_alt.
- assert (H0=combine_sorted Hm Hm').
- set (l0=combine m m') in *; clearbody l0.
- set (f'= fun p : oee' => f (fst p) (snd p)).
- assert (H1=map_sorted (elt' := option elt'') H0 f').
- set (l1=map f' l0) in *; clearbody l1. 
+ assert (H0:=combine_sorted Hm Hm').
+ set (l0:=combine m m') in *; clearbody l0.
+ set (f':= fun p : oee' => f (fst p) (snd p)).
+ assert (H1:=map_sorted (elt' := option elt'') H0 f').
+ set (l1:=map f' l0) in *; clearbody l1. 
  clear f' f H0 l0 Hm Hm' m m'.
  induction l1.
  simpl; auto.
@@ -829,17 +829,17 @@ Proof.
  red in H1; simpl in H1.
  inversion_clear H.
  apply IHl1; auto.
- apply Inf_lt with (t1, None (A=elt'')); auto.
+ apply Inf_lt with (t1, None (A:=elt'')); auto.
 Qed.
  
-Definition at_least_one (ooption elt)(o':option elt') := 
+Definition at_least_one (o:option elt)(o':option elt') := 
   match o, o' with 
    | None, None => None 
    | _, _  => Some (o,o')
   end.
 
-Lemma combine_1  
-  forall m (Hm  sort (@ltk elt) m) m' (Hm' : sort (@ltk elt') m') (x:key), 
+Lemma combine_1 : 
+  forall m (Hm : sort (@ltk elt) m) m' (Hm' : sort (@ltk elt') m') (x:key), 
   find x (combine m m') = at_least_one (find x m) (find x m'). 
 Proof.
  induction m.
@@ -869,37 +869,37 @@ Proof.
  rewrite IHm; auto; simpl; elim_comp; auto.
  rewrite IHm; auto; simpl; elim_comp; auto.
  rewrite IHm; auto; simpl; elim_comp; auto.
- change (find x (combine ((k, e) : m) m') = at_least_one None (find x m')).
+ change (find x (combine ((k, e) :: m) m') = at_least_one None (find x m')).
  rewrite IHm'; auto. 
  simpl find; elim_comp; auto.
- change (find x (combine ((k, e) : m) m') = Some (Some e, find x m')).
+ change (find x (combine ((k, e) :: m) m') = Some (Some e, find x m')).
  rewrite IHm'; auto. 
  simpl find; elim_comp; auto.
- change (find x (combine ((k, e) : m) m') = 
+ change (find x (combine ((k, e) :: m) m') = 
          at_least_one (find x m) (find x m')).
  rewrite IHm'; auto. 
  simpl find; elim_comp; auto.
 Qed.
 
-Definition at_least_one_then_f (ooption elt)(o':option elt') := 
+Definition at_least_one_then_f (o:option elt)(o':option elt') := 
   match o, o' with 
    | None, None => None 
    | _, _  => f o o'
   end.
 
-Lemma map2_0  
-  forall m (Hm  sort (@ltk elt) m) m' (Hm' : sort (@ltk elt') m') (x:key), 
+Lemma map2_0 : 
+  forall m (Hm : sort (@ltk elt) m) m' (Hm' : sort (@ltk elt') m') (x:key), 
   find x (map2 m m') = at_least_one_then_f (find x m) (find x m'). 
 Proof.
  intros.
  rewrite <- map2_alt_equiv.
  unfold map2_alt.
- assert (H=combine_1 Hm Hm' x).
- assert (H2=combine_sorted Hm Hm').
- set (f'= fun p : oee' => f (fst p) (snd p)).
- set (m0 = combine m m') in *; clearbody m0.
- set (o=find x m) in *; clearbody o. 
- set (o'=find x m') in *; clearbody o'.
+ assert (H:=combine_1 Hm Hm' x).
+ assert (H2:=combine_sorted Hm Hm').
+ set (f':= fun p : oee' => f (fst p) (snd p)).
+ set (m0 := combine m m') in *; clearbody m0.
+ set (o:=find x m) in *; clearbody o. 
+ set (o':=find x m') in *; clearbody o'.
  clear Hm Hm' m m'.
  generalize H; clear H.
  match goal with |- ?m=?n -> ?p=?q =>
@@ -916,7 +916,7 @@ Proof.
  destruct (IHm0 H0) as (H2,_); apply H2; auto.
  rewrite <- H.
  case_eq (find x m0); intros; auto.
- assert (ltk (elt=oee') (x,(oo,oo')) (k,(oo,oo'))).
+ assert (ltk (elt:=oee') (x,(oo,oo')) (k,(oo,oo'))).
   red; auto.
  destruct (Sort_Inf_NotIn H0 (Inf_lt H4 H1)).
  exists p; apply find_2; auto.
@@ -929,7 +929,7 @@ Proof.
  elim_comp; auto.
  destruct (IHm0 H0) as (_,H4); apply H4; auto.
  case_eq (find x m0); intros; auto.
- assert (eqk (elt=oee') (k,(oo,oo')) (x,(oo,oo'))).
+ assert (eqk (elt:=oee') (k,(oo,oo')) (x,(oo,oo'))).
   red; auto.
  destruct (Sort_Inf_NotIn H0 (Inf_eq (eqk_sym H5) H1)).
  exists p; apply find_2; auto.
@@ -951,7 +951,7 @@ Proof.
  elim_comp; auto.
  destruct (IHm0 H0) as (_,H4); apply H4; auto.
  case_eq (find x m0); intros; auto.
- assert (ltk (elt=oee') (x,(oo,oo')) (k,(oo,oo'))).
+ assert (ltk (elt:=oee') (x,(oo,oo')) (k,(oo,oo'))).
   red; auto.
  destruct (Sort_Inf_NotIn H0 (Inf_lt H3 H1)).
  exists p; apply find_2; auto.
@@ -967,8 +967,8 @@ Qed.
 
 (** Specification of [map2] *)
 
-Lemma map2_1  
-  forall m (Hm  sort (@ltk elt) m) m' (Hm' : sort (@ltk elt') m')(x:key),
+Lemma map2_1 : 
+  forall m (Hm : sort (@ltk elt) m) m' (Hm' : sort (@ltk elt') m')(x:key),
   In x m \/ In x m' -> 
   find x (map2 m m') = f (find x m) (find x m'). 
 Proof.
@@ -981,8 +981,8 @@ Proof.
  destruct (find x m); simpl; auto.
 Qed.
  
-Lemma map2_2  
-  forall m (Hm  sort (@ltk elt) m) m' (Hm' : sort (@ltk elt') m')(x:key), 
+Lemma map2_2 : 
+  forall m (Hm : sort (@ltk elt) m) m' (Hm' : sort (@ltk elt') m')(x:key), 
   In x (map2 m m') -> In x m \/ In x m'. 
 Proof.
  intros.
@@ -1002,109 +1002,109 @@ Qed.
 End Elt3.
 End Raw.
 
-Module Make (X OrderedType) <: S with Module E := X.
-Module Raw = Raw X. 
-Module E = X.
+Module Make (X: OrderedType) <: S with Module E := X.
+Module Raw := Raw X. 
+Module E := X.
 
-Definition key = X.t.
+Definition key := X.t.
 
-Record slist (eltSet) : Set :=  
-  {this > Raw.t elt; sorted : sort (@Raw.PX.ltk elt) this}.
-Definition t (eltSet) := slist elt. 
+Record slist (elt:Set) : Set :=  
+  {this :> Raw.t elt; sorted : sort (@Raw.PX.ltk elt) this}.
+Definition t (elt:Set) := slist elt. 
 
 Section Elt. 
- Variable elt elt' elt''Set. 
+ Variable elt elt' elt'':Set. 
 
- Implicit Types m  t elt.
+ Implicit Types m : t elt.
 
- Definition empty = Build_slist (Raw.empty_sorted elt).
- Definition is_empty m = Raw.is_empty m.(this).
- Definition add x e m = Build_slist (Raw.add_sorted m.(sorted) x e).
- Definition find x m = Raw.find x m.(this).
- Definition remove x m = Build_slist (Raw.remove_sorted m.(sorted) x). 
- Definition mem x m = Raw.mem x m.(this).
- Definition map f m  t elt' := Build_slist (Raw.map_sorted m.(sorted) f).
- Definition mapi f m  t elt' := Build_slist (Raw.mapi_sorted m.(sorted) f).
- Definition map2 f m (m't elt') : t elt'' := 
+ Definition empty := Build_slist (Raw.empty_sorted elt).
+ Definition is_empty m := Raw.is_empty m.(this).
+ Definition add x e m := Build_slist (Raw.add_sorted m.(sorted) x e).
+ Definition find x m := Raw.find x m.(this).
+ Definition remove x m := Build_slist (Raw.remove_sorted m.(sorted) x). 
+ Definition mem x m := Raw.mem x m.(this).
+ Definition map f m : t elt' := Build_slist (Raw.map_sorted m.(sorted) f).
+ Definition mapi f m : t elt' := Build_slist (Raw.mapi_sorted m.(sorted) f).
+ Definition map2 f m (m':t elt') : t elt'' := 
  Build_slist (Raw.map2_sorted f m.(sorted) m'.(sorted)).
- Definition elements m = @Raw.elements elt m.(this).
- Definition fold A f m i = @Raw.fold elt A f m.(this) i.
- Definition equal cmp m m' = @Raw.equal elt cmp m.(this) m'.(this).
+ Definition elements m := @Raw.elements elt m.(this).
+ Definition fold A f m i := @Raw.fold elt A f m.(this) i.
+ Definition equal cmp m m' := @Raw.equal elt cmp m.(this) m'.(this).
 
- Definition MapsTo x e m = Raw.PX.MapsTo x e m.(this).
- Definition In x m = Raw.PX.In x m.(this).
- Definition Empty m = Raw.Empty m.(this).
- Definition Equal cmp m m' = @Raw.Equal elt cmp m.(this) m'.(this).
+ Definition MapsTo x e m := Raw.PX.MapsTo x e m.(this).
+ Definition In x m := Raw.PX.In x m.(this).
+ Definition Empty m := Raw.Empty m.(this).
+ Definition Equal cmp m m' := @Raw.Equal elt cmp m.(this) m'.(this).
 
- Definition eq_key = Raw.PX.eqk.
- Definition eq_key_elt = Raw.PX.eqke.
- Definition lt_key = Raw.PX.ltk.
+ Definition eq_key := Raw.PX.eqk.
+ Definition eq_key_elt := Raw.PX.eqke.
+ Definition lt_key := Raw.PX.ltk.
 
- Definition MapsTo_1 m = @Raw.PX.MapsTo_eq elt m.(this).
+ Definition MapsTo_1 m := @Raw.PX.MapsTo_eq elt m.(this).
 
- Definition mem_1 m = @Raw.mem_1 elt m.(this) m.(sorted).
- Definition mem_2 m = @Raw.mem_2 elt m.(this) m.(sorted).
+ Definition mem_1 m := @Raw.mem_1 elt m.(this) m.(sorted).
+ Definition mem_2 m := @Raw.mem_2 elt m.(this) m.(sorted).
 
- Definition empty_1 = @Raw.empty_1.
+ Definition empty_1 := @Raw.empty_1.
 
- Definition is_empty_1 m = @Raw.is_empty_1 elt m.(this).
- Definition is_empty_2 m = @Raw.is_empty_2 elt m.(this).
+ Definition is_empty_1 m := @Raw.is_empty_1 elt m.(this).
+ Definition is_empty_2 m := @Raw.is_empty_2 elt m.(this).
 
- Definition add_1 m = @Raw.add_1 elt m.(this).
- Definition add_2 m = @Raw.add_2 elt m.(this).
- Definition add_3 m = @Raw.add_3 elt m.(this).
+ Definition add_1 m := @Raw.add_1 elt m.(this).
+ Definition add_2 m := @Raw.add_2 elt m.(this).
+ Definition add_3 m := @Raw.add_3 elt m.(this).
 
- Definition remove_1 m = @Raw.remove_1 elt m.(this) m.(sorted).
- Definition remove_2 m = @Raw.remove_2 elt m.(this) m.(sorted).
- Definition remove_3 m = @Raw.remove_3 elt m.(this) m.(sorted).
+ Definition remove_1 m := @Raw.remove_1 elt m.(this) m.(sorted).
+ Definition remove_2 m := @Raw.remove_2 elt m.(this) m.(sorted).
+ Definition remove_3 m := @Raw.remove_3 elt m.(this) m.(sorted).
 
- Definition find_1 m = @Raw.find_1 elt m.(this) m.(sorted).
- Definition find_2 m = @Raw.find_2 elt m.(this).
+ Definition find_1 m := @Raw.find_1 elt m.(this) m.(sorted).
+ Definition find_2 m := @Raw.find_2 elt m.(this).
 
- Definition elements_1 m = @Raw.elements_1 elt m.(this). 
- Definition elements_2 m = @Raw.elements_2 elt m.(this). 
- Definition elements_3 m = @Raw.elements_3 elt m.(this) m.(sorted). 
+ Definition elements_1 m := @Raw.elements_1 elt m.(this). 
+ Definition elements_2 m := @Raw.elements_2 elt m.(this). 
+ Definition elements_3 m := @Raw.elements_3 elt m.(this) m.(sorted). 
 
- Definition fold_1 m = @Raw.fold_1 elt m.(this).
+ Definition fold_1 m := @Raw.fold_1 elt m.(this).
 
- Definition map_1 m = @Raw.map_1 elt elt' m.(this).
- Definition map_2 m = @Raw.map_2 elt elt' m.(this).
+ Definition map_1 m := @Raw.map_1 elt elt' m.(this).
+ Definition map_2 m := @Raw.map_2 elt elt' m.(this).
 
- Definition mapi_1 m = @Raw.mapi_1 elt elt' m.(this).
- Definition mapi_2 m = @Raw.mapi_2 elt elt' m.(this).
+ Definition mapi_1 m := @Raw.mapi_1 elt elt' m.(this).
+ Definition mapi_2 m := @Raw.mapi_2 elt elt' m.(this).
 
- Definition map2_1 m (m't elt') x f := 
+ Definition map2_1 m (m':t elt') x f := 
   @Raw.map2_1 elt elt' elt'' f m.(this) m.(sorted) m'.(this) m'.(sorted) x.
- Definition map2_2 m (m't elt') x f := 
+ Definition map2_2 m (m':t elt') x f := 
   @Raw.map2_2 elt elt' elt'' f m.(this) m.(sorted) m'.(this) m'.(sorted) x.
 
- Definition equal_1 m m' = 
+ Definition equal_1 m m' := 
   @Raw.equal_1 elt m.(this) m.(sorted) m'.(this) m'.(sorted).
- Definition equal_2 m m' = 
+ Definition equal_2 m m' := 
   @Raw.equal_2 elt m.(this) m.(sorted) m'.(this) m'.(sorted).
 
  End Elt.
 End Make.
 
-Module Make_ord (X OrderedType)(D : OrderedType) <: 
-Sord with Module Data = D 
-        with Module MapS.E = X.
+Module Make_ord (X: OrderedType)(D : OrderedType) <: 
+Sord with Module Data := D 
+        with Module MapS.E := X.
 
-Module Data = D.
-Module MapS = Make(X). 
+Module Data := D.
+Module MapS := Make(X). 
 Import MapS.
 
-Module MD = OrderedTypeFacts(D).
+Module MD := OrderedTypeFacts(D).
 Import MD.
 
-Definition t = MapS.t D.t. 
+Definition t := MapS.t D.t. 
 
-Definition cmp e e' = match D.compare e e' with Eq _ => true | _ => false end.
+Definition cmp e e' := match D.compare e e' with Eq _ => true | _ => false end.
 
-Fixpoint eq_list (m m'  list (X.t * D.t)) { struct m } : Prop := 
+Fixpoint eq_list (m m' : list (X.t * D.t)) { struct m } : Prop := 
   match m, m' with 
    | nil, nil => True
-   | (x,e):l, (x',e')::l' => 
+   | (x,e)::l, (x',e')::l' => 
       match X.compare x x' with 
        | Eq _ => D.eq e e' /\ eq_list l l'
        | _       => False
@@ -1112,14 +1112,14 @@ Fixpoint eq_list (m m'  list (X.t * D.t)) { struct m } : Prop :=
    | _, _ => False
   end.
 
-Definition eq m m' = eq_list m.(this) m'.(this).
+Definition eq m m' := eq_list m.(this) m'.(this).
 
-Fixpoint lt_list (m m'  list (X.t * D.t)) {struct m} : Prop := 
+Fixpoint lt_list (m m' : list (X.t * D.t)) {struct m} : Prop := 
   match m, m' with 
    | nil, nil => False
    | nil, _  => True
    | _, nil  => False
-   | (x,e):l, (x',e')::l' => 
+   | (x,e)::l, (x',e')::l' => 
       match X.compare x x' with 
        | Lt _ => True
        | Gt _ => False
@@ -1127,9 +1127,9 @@ Fixpoint lt_list (m m'  list (X.t * D.t)) {struct m} : Prop :=
       end
   end.
 
-Definition lt m m' = lt_list m.(this) m'.(this).
+Definition lt m m' := lt_list m.(this) m'.(this).
 
-Lemma eq_equal  forall m m', eq m m' <-> equal cmp m m' = true.
+Lemma eq_equal : forall m m', eq m m' <-> equal cmp m m' = true.
 Proof.
  intros (l,Hl); induction l.
  intros (l',Hl'); unfold eq; simpl.
@@ -1157,7 +1157,7 @@ Proof.
  unfold equal, eq in H6; simpl in H6; auto.
 Qed.
 
-Lemma eq_1  forall m m', Equal cmp m m' -> eq m m'.
+Lemma eq_1 : forall m m', Equal cmp m m' -> eq m m'.
 Proof.
  intros.
  generalize (@equal_1 D.t m m' cmp).
@@ -1165,7 +1165,7 @@ Proof.
  intuition.
 Qed.
 
-Lemma eq_2  forall m m', eq m m' -> Equal cmp m m'.
+Lemma eq_2 : forall m m', eq m m' -> Equal cmp m m'.
 Proof.
  intros.
  generalize (@equal_2 D.t m m' cmp).
@@ -1173,7 +1173,7 @@ Proof.
  intuition.
 Qed.
 
-Lemma eq_refl  forall m : t, eq m m.
+Lemma eq_refl : forall m : t, eq m m.
 Proof.
  intros (m,Hm); induction m; unfold eq; simpl; auto.
  destruct a.
@@ -1186,7 +1186,7 @@ Proof.
  apply (MapS.Raw.MX.lt_antirefl l); auto.
 Qed.
 
-Lemma  eq_sym  forall m1 m2 : t, eq m1 m2 -> eq m2 m1.
+Lemma  eq_sym : forall m1 m2 : t, eq m1 m2 -> eq m2 m1.
 Proof.
  intros (m,Hm); induction m; 
  intros (m', Hm'); destruct m'; unfold eq; simpl;
@@ -1196,7 +1196,7 @@ Proof.
  apply (IHm H0 (Build_slist H4)); auto.
 Qed.
 
-Lemma eq_trans  forall m1 m2 m3 : t, eq m1 m2 -> eq m2 m3 -> eq m1 m3.
+Lemma eq_trans : forall m1 m2 m3 : t, eq m1 m2 -> eq m2 m3 -> eq m1 m3.
 Proof. 
  intros (m1,Hm1); induction m1; 
  intros (m2, Hm2); destruct m2; 
@@ -1213,7 +1213,7 @@ Proof.
  apply (IHm1 H1 (Build_slist H6) (Build_slist H8)); intuition.
 Qed.
 
-Lemma lt_trans  forall m1 m2 m3 : t, lt m1 m2 -> lt m2 m3 -> lt m1 m3.
+Lemma lt_trans : forall m1 m2 m3 : t, lt m1 m2 -> lt m2 m3 -> lt m1 m3.
 Proof.
  intros (m1,Hm1); induction m1; 
  intros (m2, Hm2); destruct m2; 
@@ -1235,7 +1235,7 @@ Proof.
  apply (IHm1 H2 (Build_slist H6) (Build_slist H8)); intuition.
 Qed.
 
-Lemma lt_not_eq  forall m1 m2 : t, lt m1 m2 -> ~ eq m1 m2.
+Lemma lt_not_eq : forall m1 m2 : t, lt m1 m2 -> ~ eq m1 m2.
 Proof.
  intros (m1,Hm1); induction m1; 
  intros (m2, Hm2); destruct m2; unfold eq, lt; simpl; 
@@ -1248,9 +1248,9 @@ Proof.
  apply (IHm1 H0 (Build_slist H5)); intuition.
 Qed.
 
-Ltac cmp_solve = unfold eq, lt; simpl; try Raw.MX.elim_comp; auto.
+Ltac cmp_solve := unfold eq, lt; simpl; try Raw.MX.elim_comp; auto.
 
-Definition compare  forall m1 m2, Compare lt eq m1 m2.
+Definition compare : forall m1 m2, Compare lt eq m1 m2.
 Proof.
  intros (m1,Hm1); induction m1; 
  intros (m2, Hm2); destruct m2; 
@@ -1260,9 +1260,9 @@ Proof.
   [ apply Lt | | apply Gt ]; cmp_solve.
  destruct (D.compare e e'); 
   [ apply Lt | | apply Gt ]; cmp_solve.
- assert (Hm11  sort (Raw.PX.ltk (elt:=D.t)) m1).
+ assert (Hm11 : sort (Raw.PX.ltk (elt:=D.t)) m1).
   inversion_clear Hm1; auto.
- assert (Hm22  sort (Raw.PX.ltk (elt:=D.t)) m2).
+ assert (Hm22 : sort (Raw.PX.ltk (elt:=D.t)) m2).
   inversion_clear Hm2; auto.
  destruct (IHm1 Hm11 (Build_slist Hm22)); 
   [ apply Lt | apply Eq | apply Gt ]; cmp_solve.
