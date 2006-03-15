@@ -841,7 +841,8 @@ ZARITHVO=\
 LISTSVO=\
  theories/Lists/MonoList.vo \
  theories/Lists/ListSet.vo   	theories/Lists/Streams.vo \
- theories/Lists/TheoryList.vo   theories/Lists/List.vo
+ theories/Lists/TheoryList.vo   theories/Lists/List.vo \
+ theories/Lists/MoreList.vo     theories/Lists/SetoidList.vo
 
 STRINGSVO=\
  theories/Strings/Ascii.vo      theories/Strings/String.vo
@@ -858,6 +859,19 @@ SETSVO=\
  theories/Sets/Integers.vo          theories/Sets/Relations_3.vo \
  theories/Sets/Multiset.vo          theories/Sets/Relations_3_facts.vo \
  theories/Sets/Partial_Order.vo     theories/Sets/Uniset.vo
+
+FSETSVO=\
+ theories/FSets/DecidableType.vo     theories/FSets/OrderedType.vo \
+ theories/FSets/FSetInterface.vo     theories/FSets/FSetList.vo \
+ theories/FSets/FSetBridge.vo        theories/FSets/FSetFacts.vo \
+ theories/FSets/FSetProperties.vo    theories/FSets/FSetEqProperties.vo \
+ theories/FSets/FSet.vo \
+ theories/FSets/FSetWeakInterface.vo theories/FSets/FSetWeakList.vo \
+ theories/FSets/FSetWeak.vo \
+ theories/FSets/FMapInterface.vo     theories/FSets/FMapList.vo \
+ theories/FSets/FMap.vo \
+ theories/FSets/FMapWeakInterface.vo theories/FSets/FMapWeakList.vo \
+ theories/FSets/FMapWeak.vo
 
 INTMAPVO=\
  theories/IntMap/Adalloc.vo    theories/IntMap/Mapcanon.vo \
@@ -930,7 +944,7 @@ SETOIDSVO=theories/Setoids/Setoid.vo
 
 THEORIESVO =\
   $(INITVO) $(LOGICVO) $(ARITHVO) $(BOOLVO) $(NARITHVO) $(ZARITHVO) \
-  $(LISTSVO) $(STRINGSVO) $(SETSVO) $(INTMAPVO) $(RELATIONSVO) \
+  $(LISTSVO) $(STRINGSVO) $(SETSVO) $(FSETSVO) $(INTMAPVO) $(RELATIONSVO) \
   $(WELLFOUNDEDVO) $(REALSVO) $(SETOIDSVO) $(SORTINGVO)
 
 THEORIESLIGHTVO = $(INITVO) $(LOGICVO) $(ARITHVO)
@@ -946,6 +960,7 @@ zarith: $(ZARITHVO)
 lists: $(LISTSVO)
 strings: $(STRINGSVO)
 sets: $(SETSVO)
+fsets: $(FSETSVO)
 intmap: $(INTMAPVO)
 relations: $(RELATIONSVO)
 wellfounded: $(WELLFOUNDEDVO)
@@ -955,7 +970,7 @@ allreals: $(ALLREALS)
 setoids: $(SETOIDSVO)
 sorting: $(SORTINGVO)
 
-noreal: logic arith bool zarith lists sets intmap relations wellfounded \
+noreal: logic arith bool zarith lists sets fsets intmap relations wellfounded \
 	setoids sorting
 
 ###########################################################################

@@ -1,0 +1,873 @@
+(***********************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
+(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
+(*   \VV/  *************************************************************)
+(*    //   *      This file is distributed under the terms of the      *)
+(*         *       GNU Lesser General Public License Version 2.1       *)
+(***********************************************************************)
+
+(* $Id: FSetWeakList.v,v 1.8 2006/03/09 18:34:51 letouzey Exp $ *)
+
+(** * Finite sets library *)
+
+(** This file proposes an implementation of the non-dependant 
+    interface [FSetWeakInterface.S] using lists without redundancy. *)
+
+Require Import FSetWeakInterface.
+Set Implicit Arguments.
+Unset Strict Implicit.
+
+(** * Functions over lists
+
+   First, we provide sets as lists which are (morally) without redundancy.
+   The specs are proved under the additional condition of no redundancy. 
+   And the functions returning sets are proved to preserve this invariant. *)
+
+Module Raw (X: DecidableType).
+ 
+  Module E := X.
+
+  Definition elt := X.t.
+  Definition t := list elt.
+
+  Definition empty : t := nil.
+
+  Definition is_empty (l : t) : bool := if l then true else false.
+
+  (** ** The set operations. *)
+
+  Fixpoint mem (x : elt) (s : t) {struct s} : bool :=
+    match s with
+    | nil => false
+    | y :: l =>
+           if X.eq_dec x y then true else mem x l
+    end.
+
+  Fixpoint add (x : elt) (s : t) {struct s} : t :=
+    match s with
+    | nil => x :: nil
+    | y :: l =>
+        if X.eq_dec x y then s else y :: add x l
+    end.
+
+  Definition singleton (x : elt) : t := x :: nil. 
+
+  Fixpoint remove (x : elt) (s : t) {struct s} : t :=
+    match s with
+    | nil => nil
+    | y :: l =>
+        if X.eq_dec x y then l else y :: remove x l
+    end.
+
+  Fixpoint fold (B : Set) (f : elt -> B -> B) (s : t) {struct s} : 
+   B -> B := fun i => match s with
+                      | nil => i
+                      | x :: l => fold f l (f x i)
+                      end.  
+
+  Definition union (s : t) : t -> t := fold add s.
+  
+  Definition diff (s s' : t) : t := fold remove s' s.
+
+  Definition inter (s s': t) : t := 
+    fold (fun x s => if mem x s' then add x s else s) s nil.
+
+  Definition subset (s s' : t) : bool := is_empty (diff s s').
+
+  Definition equal (s s' : t) : bool := andb (subset s s') (subset s' s). 
+
+  Fixpoint filter (f : elt -> bool) (s : t) {struct s} : t :=
+    match s with
+    | nil => nil
+    | x :: l => if f x then x :: filter f l else filter f l
+    end.  
+
+  Fixpoint for_all (f : elt -> bool) (s : t) {struct s} : bool :=
+    match s with
+    | nil => true
+    | x :: l => if f x then for_all f l else false
+    end.  
+ 
+  Fixpoint exists_ (f : elt -> bool) (s : t) {struct s} : bool :=
+    match s with
+    | nil => false
+    | x :: l => if f x then true else exists_ f l
+    end.
+
+  Fixpoint partition (f : elt -> bool) (s : t) {struct s} : 
+   t * t :=
+    match s with
+    | nil => (nil, nil)
+    | x :: l =>
+        let (s1, s2) := partition f l in
+        if f x then (x :: s1, s2) else (s1, x :: s2)
+    end.
+
+  Definition cardinal (s : t) : nat := length s.
+
+  Definition elements (s : t) : list elt := s.
+
+  Definition choose (s : t) : option elt := 
+     match s with 
+      | nil => None
+      | x::_ => Some x
+     end.
+
+  (** ** Proofs of set operation specifications. *)
+
+  Notation NoRedun := (noredunA X.eq).
+  Notation In := (InA X.eq).
+
+  Definition Equal s s' := forall a : elt, In a s <-> In a s'.
+  Definition Subset s s' := forall a : elt, In a s -> In a s'.
+  Definition Empty s := forall a : elt, ~ In a s.
+  Definition For_all (P : elt -> Prop) s := forall x, In x s -> P x.
+  Definition Exists (P : elt -> Prop) s := exists x, In x s /\ P x.
+
+  Lemma In_eq :
+    forall (s : t) (x y : elt), X.eq x y -> In x s -> In y s.
+  Proof.
+  intros s x y; do 2 setoid_rewrite InA_alt; firstorder eauto.
+  Qed.
+  Hint Immediate In_eq.
+
+  Lemma mem_1 :
+   forall (s : t)(x : elt), In x s -> mem x s = true. 
+  Proof.
+  induction s; intros.
+  inversion H.
+  simpl; destruct (X.eq_dec x a); trivial.
+  inversion_clear H; auto.
+  Qed.
+
+  Lemma mem_2 : forall (s : t) (x : elt), mem x s = true -> In x s.
+  Proof.
+  induction s. 
+  intros; inversion H.
+  intros x; simpl.
+  destruct (X.eq_dec x a); firstorder; discriminate.
+  Qed.
+
+  Lemma add_1 :
+   forall (s : t) (Hs : NoRedun s) (x y : elt), X.eq x y -> In y (add x s).
+  Proof.
+  induction s. 
+  simpl; intuition.
+  simpl; intros; case (X.eq_dec x a); intuition; inversion_clear Hs;
+   firstorder.
+  eauto.
+  Qed.
+
+  Lemma add_2 :
+   forall (s : t) (Hs : NoRedun s) (x y : elt), In y s -> In y (add x s).
+  Proof.
+  induction s. 
+  simpl; intuition.
+  simpl; intros; case (X.eq_dec x a); intuition.
+  inversion_clear Hs; eauto; inversion_clear H; intuition.
+  Qed.
+
+  Lemma add_3 :
+   forall (s : t) (Hs : NoRedun s) (x y : elt),
+   ~ X.eq x y -> In y (add x s) -> In y s.
+  Proof.
+  induction s. 
+  simpl; intuition.
+  inversion_clear H0; firstorder; absurd (X.eq x y); auto.
+  simpl; intros Hs x y; case (X.eq_dec x a); intros;
+   inversion_clear H0; inversion_clear Hs; firstorder; 
+   absurd (X.eq x y); auto.
+  Qed.
+
+  Lemma add_unique :
+   forall (s : t) (Hs : NoRedun s)(x:elt), NoRedun (add x s).
+  Proof.
+  induction s.  
+  simpl; intuition.
+  constructor; auto.
+  intro H0; inversion H0.
+  intros.
+  inversion_clear Hs.
+  simpl.
+  destruct (X.eq_dec x a).
+  constructor; auto.
+  constructor; auto.
+  intro H1; apply H.
+  eapply add_3; eauto.
+  Qed.
+
+  Lemma remove_1 :
+   forall (s : t) (Hs : NoRedun s) (x y : elt), X.eq x y -> ~ In y (remove x s).
+  Proof.
+  simple induction s. 
+  simpl; red; intros; inversion H0.
+  simpl; intros; case (X.eq_dec x a); intuition; inversion_clear Hs. 
+  elim H2.
+  apply In_eq with y; eauto.
+  inversion_clear H1; eauto.
+  Qed.
+
+  Lemma remove_2 :
+   forall (s : t) (Hs : NoRedun s) (x y : elt),
+   ~ X.eq x y -> In y s -> In y (remove x s).
+  Proof.
+  simple induction s. 
+  simpl; intuition.
+  simpl; intros; case (X.eq_dec x a); intuition; inversion_clear Hs;
+   inversion_clear H1; auto. 
+  absurd (X.eq x y); eauto. 
+  Qed.
+
+  Lemma remove_3 :
+   forall (s : t) (Hs : NoRedun s) (x y : elt), In y (remove x s) -> In y s.
+  Proof.
+  simple induction s. 
+  simpl; intuition.
+  simpl; intros a l Hrec Hs x y; case (X.eq_dec x a); intuition.
+  inversion_clear Hs; inversion_clear H; firstorder.
+  Qed.
+
+  Lemma remove_unique :
+   forall (s : t) (Hs : NoRedun s) (x : elt), NoRedun (remove x s).
+  Proof.
+  simple induction s.
+  simpl; intuition.
+  simpl; intros; case (X.eq_dec x a); intuition; inversion_clear Hs;
+   auto.
+  constructor; auto.
+  intro H2; elim H0.
+  eapply remove_3; eauto.
+  Qed. 
+
+  Lemma singleton_unique : forall x : elt, NoRedun (singleton x).
+  Proof.
+  unfold singleton; simpl; constructor; auto; intro H; inversion H.
+  Qed.
+
+  Lemma singleton_1 : forall x y : elt, In y (singleton x) -> X.eq x y.
+  Proof.
+  unfold singleton; simpl; intuition.
+  inversion_clear H; auto; inversion H0.
+  Qed. 
+
+  Lemma singleton_2 : forall x y : elt, X.eq x y -> In y (singleton x).
+  Proof.
+  unfold singleton; simpl; intuition.
+  Qed. 
+  
+  Lemma empty_unique : NoRedun empty.
+  Proof.
+  unfold empty; constructor.
+  Qed.
+
+  Lemma empty_1 : Empty empty.
+  Proof.
+  unfold Empty, empty; intuition; inversion H.
+  Qed. 
+
+  Lemma is_empty_1 : forall s : t, Empty s -> is_empty s = true.
+  Proof.
+  unfold Empty; intro s; case s; simpl; intuition.
+  elim (H e); auto.
+  Qed.
+  
+  Lemma is_empty_2 : forall s : t, is_empty s = true -> Empty s. 
+  Proof.
+  unfold Empty; intro s; case s; simpl; intuition;
+   inversion H0.
+  Qed.
+
+  Lemma elements_1 : forall (s : t) (x : elt), In x s -> In x (elements s).
+  Proof.
+  unfold elements; auto.
+  Qed.
+
+  Lemma elements_2 : forall (s : t) (x : elt), In x (elements s) -> In x s.
+  Proof. 
+  unfold elements; auto.
+  Qed.
+ 
+  Lemma elements_3 : forall (s : t) (Hs : NoRedun s), NoRedun (elements s).  
+  Proof. 
+  unfold elements; auto.
+  Qed.
+
+  Lemma fold_1 :
+   forall (s : t) (Hs : NoRedun s) (A : Set) (i : A) (f : elt -> A -> A),
+   fold f s i = fold_left (fun a e => f e a) (elements s) i.
+  Proof.
+  induction s; simpl; auto; intros.
+  inversion_clear Hs; auto.
+  Qed.
+
+  Lemma union_unique :
+   forall (s s' : t) (Hs : NoRedun s) (Hs' : NoRedun s'), NoRedun (union s s').
+  Proof.
+  unfold union; induction s; simpl; auto; intros.
+  inversion_clear Hs.
+  apply IHs; auto.
+  apply add_unique; auto.
+  Qed.
+  
+  Lemma union_1 :
+   forall (s s' : t) (Hs : NoRedun s) (Hs' : NoRedun s') (x : elt),
+   In x (union s s') -> In x s \/ In x s'.
+  Proof.
+  unfold union; induction s; simpl; auto; intros.
+  inversion_clear Hs.
+  destruct (X.eq_dec x a).
+  left; auto.
+  destruct (IHs (add a s') H1 (add_unique Hs' a) x); intuition.
+  right; eapply add_3; eauto.
+  Qed.
+
+  Lemma union_0 : 
+   forall (s s' : t) (Hs : NoRedun s) (Hs' : NoRedun s') (x : elt),
+   In x s \/ In x s' -> In x (union s s').
+  Proof.
+  unfold union; induction s; simpl; auto; intros.
+  inversion_clear H; auto.
+  inversion_clear H0.
+  inversion_clear Hs.
+  apply IHs; auto.
+  apply add_unique; auto.
+  destruct H.
+  inversion_clear H; auto.
+  right; apply add_1; auto.
+  right; apply add_2; auto.
+  Qed.
+
+  Lemma union_2 :
+   forall (s s' : t) (Hs : NoRedun s) (Hs' : NoRedun s') (x : elt),
+   In x s -> In x (union s s').
+  Proof.
+  intros; apply union_0; auto.
+  Qed.
+
+  Lemma union_3 :
+   forall (s s' : t) (Hs : NoRedun s) (Hs' : NoRedun s') (x : elt),
+   In x s' -> In x (union s s').
+  Proof.
+  intros; apply union_0; auto.
+  Qed.
+
+  Lemma inter_unique :
+   forall (s s' : t) (Hs : NoRedun s) (Hs' : NoRedun s'), NoRedun (inter s s').
+  Proof.
+  unfold inter; intros s.
+  set (acc := nil (A:=elt)).
+  assert (NoRedun acc) by (unfold acc; auto).
+  clearbody acc; generalize H; clear H; generalize acc; clear acc. 
+  induction s; simpl; auto; intros.
+  inversion_clear Hs.
+  apply IHs; auto.
+  destruct (mem a s'); intros; auto.
+  apply add_unique; auto.
+  Qed.  
+  
+  Lemma inter_0  :
+   forall (s s' : t) (Hs : NoRedun s) (Hs' : NoRedun s') (x : elt),
+   In x (inter s s') -> In x s /\ In x s'.
+  Proof.
+  unfold inter; intros.
+  set (acc := nil (A:=elt)) in *.
+  assert (NoRedun acc) by (unfold acc; auto).
+  cut ((In x s /\ In x s') \/ In x acc).
+    destruct 1; auto.
+    inversion H1.
+  clearbody acc. 
+  generalize H0 H Hs' Hs; clear H0 H Hs Hs'.
+  generalize acc x s'; clear acc x s'.
+  induction s; simpl; auto; intros.
+  inversion_clear Hs.
+  case_eq (mem a s'); intros H3; rewrite H3 in H; simpl in H.
+  destruct (IHs _ _ _ (add_unique H0 a) H); auto.
+  left; intuition.
+  destruct (X.eq_dec x a); auto.
+  left; intuition.
+  apply In_eq with a; eauto.
+  apply mem_2; auto.
+  right; eapply add_3; eauto.
+  destruct (IHs _ _ _ H0 H); auto.
+  left; intuition.
+  Qed.
+
+  Lemma inter_1  :
+   forall (s s' : t) (Hs : NoRedun s) (Hs' : NoRedun s') (x : elt),
+   In x (inter s s') -> In x s.
+  Proof.
+  intros; cut (In x s /\ In x s'); [ intuition | apply inter_0; auto ].
+  Qed.
+
+  Lemma inter_2 :
+   forall (s s' : t) (Hs : NoRedun s) (Hs' : NoRedun s') (x : elt),
+   In x (inter s s') -> In x s'.
+  Proof.
+  intros; cut (In x s /\ In x s'); [ intuition | apply inter_0; auto ].
+  Qed.
+
+  Lemma inter_3 :
+   forall (s s' : t) (Hs : NoRedun s) (Hs' : NoRedun s') (x : elt),
+   In x s -> In x s' -> In x (inter s s').
+  Proof.
+  intros s s' Hs Hs' x.
+  cut (((In x s /\ In x s')\/ In x (nil (A:=elt))) -> In x (inter s s')).
+  intuition.
+  unfold inter.
+  set (acc := nil (A:=elt)) in *.
+  assert (NoRedun acc) by (unfold acc; auto).
+  clearbody acc. 
+  generalize H Hs' Hs; clear H Hs Hs'.
+  generalize acc x s'; clear acc x s'.
+  induction s; simpl; auto; intros.
+  destruct H0; auto.
+  destruct H0; inversion H0.
+  inversion_clear Hs.
+  case_eq (mem a s'); intros H3; apply IHs; auto.
+  apply add_unique; auto.
+  destruct H0.
+  destruct H0.
+  inversion_clear H0.
+  right; apply add_1; auto.
+  left; auto.
+  right; apply add_2; auto.
+  destruct H0; auto.
+  destruct H0.
+  inversion_clear H0; auto.
+  absurd (In x s'); auto.
+  red; intros.
+  rewrite (mem_1 (In_eq H5 H0)) in H3.
+  discriminate.
+  Qed.
+
+  Lemma diff_unique :
+   forall (s s' : t) (Hs : NoRedun s) (Hs' : NoRedun s'), NoRedun (diff s s').
+  Proof.
+  unfold diff; intros s s' Hs; generalize s Hs; clear Hs s.
+  induction s'; simpl; auto; intros.
+  inversion_clear Hs'.
+  apply IHs'; auto.
+  apply remove_unique; auto.
+  Qed.  
+  
+  Lemma diff_0 :
+   forall (s s' : t) (Hs : NoRedun s) (Hs' : NoRedun s') (x : elt),
+   In x (diff s s') -> In x s /\ ~ In x s'.
+  Proof.
+  unfold diff; intros s s' Hs; generalize s Hs; clear Hs s.
+  induction s'; simpl; auto; intros.
+  inversion_clear Hs'.
+  split; auto; intro H1; inversion H1.
+  inversion_clear Hs'.
+  destruct (IHs' (remove a s) (remove_unique Hs a) H1 x H).
+  split. 
+  eapply remove_3; eauto.
+  red; intros.
+  inversion_clear H4; auto.
+  destruct (remove_1 Hs (X.eq_sym H5) H2).
+  Qed.
+
+  Lemma diff_1 :
+   forall (s s' : t) (Hs : NoRedun s) (Hs' : NoRedun s') (x : elt),
+   In x (diff s s') -> In x s.
+  Proof.
+  intros; cut (In x s /\ ~ In x s'); [ intuition | apply diff_0; auto]. 
+  Qed.
+
+  Lemma diff_2 :
+   forall (s s' : t) (Hs : NoRedun s) (Hs' : NoRedun s') (x : elt),
+   In x (diff s s') -> ~ In x s'.
+  Proof.
+  intros; cut (In x s /\ ~ In x s'); [ intuition | apply diff_0; auto]. 
+  Qed.
+
+  Lemma diff_3 :
+   forall (s s' : t) (Hs : NoRedun s) (Hs' : NoRedun s') (x : elt),
+   In x s -> ~ In x s' -> In x (diff s s').
+  Proof.
+  unfold diff; intros s s' Hs; generalize s Hs; clear Hs s.
+  induction s'; simpl; auto; intros.
+  inversion_clear Hs'.
+  apply IHs'; auto.
+  apply remove_unique; auto.
+  apply remove_2; auto.
+  Qed.  
+  
+  Lemma subset_1 :
+   forall (s s' : t) (Hs : NoRedun s) (Hs' : NoRedun s'),
+   Subset s s' -> subset s s' = true.
+  Proof.
+  unfold subset, Subset; intros.
+  apply is_empty_1.
+  unfold Empty; intros.
+  intro.
+  destruct (diff_2 Hs Hs' H0).
+  apply H.
+  eapply diff_1; eauto.
+  Qed.
+
+  Lemma subset_2 : forall (s s' : t)(Hs : NoRedun s) (Hs' : NoRedun s'), 
+     subset s s' = true -> Subset s s'.
+  Proof.
+  unfold subset, Subset; intros.
+  generalize (is_empty_2 H); clear H; unfold Empty; intros.
+  generalize (@mem_1 s' a) (@mem_2 s' a); destruct (mem a s').
+  intuition.
+  intros.
+  destruct (H a).
+  apply diff_3; intuition.
+  Qed.
+
+  Lemma equal_1 :
+   forall (s s' : t) (Hs : NoRedun s) (Hs' : NoRedun s'),
+   Equal s s' -> equal s s' = true.
+  Proof.
+  unfold Equal, equal; intros.
+  apply andb_true_intro; split; apply subset_1; firstorder.
+  Qed.
+
+  Lemma equal_2 : forall (s s' : t)(Hs : NoRedun s) (Hs' : NoRedun s'),  
+     equal s s' = true -> Equal s s'.
+  Proof.
+  unfold Equal, equal; intros.
+  destruct (andb_prop _ _ H); clear H.
+  split; apply subset_2; auto.
+  Qed.  
+
+  Definition choose_1 :
+    forall (s : t) (x : elt), choose s = Some x -> In x s.
+  Proof.
+  destruct s; simpl; intros; inversion H; auto.
+  Qed.  
+
+  Definition choose_2 : forall s : t, choose s = None -> Empty s.
+  Proof.
+  destruct s; simpl; intros.
+  intros x H0; inversion H0.
+  inversion H.
+  Qed.  
+
+  Lemma cardinal_1 :
+   forall (s : t) (Hs : NoRedun s), cardinal s = length (elements s).
+  Proof.
+  auto.
+  Qed.
+
+  Lemma filter_1 :
+   forall (s : t) (x : elt) (f : elt -> bool),
+   In x (filter f s) -> In x s.
+  Proof.
+  simple induction s; simpl.
+  intros; inversion H.
+  intros x l Hrec a f.
+  case (f x); simpl.
+  inversion_clear 1.
+  constructor; auto.
+  constructor 2; apply (Hrec a f); trivial.
+  constructor 2; apply (Hrec a f); trivial.
+  Qed.
+
+   Lemma filter_2 :
+    forall (s : t) (x : elt) (f : elt -> bool),
+    compat_bool X.eq f -> In x (filter f s) -> f x = true.   
+   Proof.
+  simple induction s; simpl.
+  intros; inversion H0.
+  intros x l Hrec a f Hf.
+  generalize (Hf x); case (f x); simpl; auto.
+  inversion_clear 2; auto.
+  symmetry; auto.
+  Qed.
+ 
+  Lemma filter_3 :
+   forall (s : t) (x : elt) (f : elt -> bool),
+   compat_bool X.eq f -> In x s -> f x = true -> In x (filter f s).     
+  Proof.
+  simple induction s; simpl.
+  intros; inversion H0.
+  intros x l Hrec a f Hf.
+  generalize (Hf x); case (f x); simpl.
+  inversion_clear 2; auto.
+  inversion_clear 2; auto.
+  rewrite <- (H a (X.eq_sym H1)); intros; discriminate.
+  Qed.
+
+  Lemma filter_unique :
+   forall (s : t) (Hs : NoRedun s) (f : elt -> bool), NoRedun (filter f s).
+  Proof.
+  simple induction s; simpl.
+  auto.
+  intros x l Hrec Hs f; inversion_clear Hs.
+  case (f x); auto.
+  constructor; auto.
+  intro H1; apply H.
+  eapply filter_1; eauto.
+  Qed.
+
+
+  Lemma for_all_1 :
+   forall (s : t) (f : elt -> bool),
+   compat_bool X.eq f ->
+   For_all (fun x => f x = true) s -> for_all f s = true.
+  Proof. 
+  simple induction s; simpl; auto; unfold For_all.
+  intros x l Hrec f Hf. 
+  generalize (Hf x); case (f x); simpl.
+  auto.
+  intros; rewrite (H x); auto.
+  Qed.
+
+  Lemma for_all_2 :
+   forall (s : t) (f : elt -> bool),
+   compat_bool X.eq f ->
+   for_all f s = true -> For_all (fun x => f x = true) s.
+  Proof. 
+  simple induction s; simpl; auto; unfold For_all.
+  intros; inversion H1.
+  intros x l Hrec f Hf. 
+  intros A a; intros. 
+  assert (f x = true).
+   generalize A; case (f x); auto.
+  rewrite H0 in A; simpl in A.
+  inversion_clear H; auto.
+  rewrite (Hf a x); auto.
+  Qed.
+
+  Lemma exists_1 :
+   forall (s : t) (f : elt -> bool),
+   compat_bool X.eq f -> Exists (fun x => f x = true) s -> exists_ f s = true.
+  Proof.
+  simple induction s; simpl; auto; unfold Exists.
+  intros.
+  elim H0; intuition. 
+  inversion H2.
+  intros x l Hrec f Hf. 
+  generalize (Hf x); case (f x); simpl.
+  auto.
+  destruct 2 as [a (A1,A2)].
+  inversion_clear A1.
+  rewrite <- (H a (X.eq_sym H0)) in A2; discriminate.
+  apply Hrec; auto.
+  exists a; auto.
+  Qed.
+
+  Lemma exists_2 :
+   forall (s : t) (f : elt -> bool),
+   compat_bool X.eq f -> exists_ f s = true -> Exists (fun x => f x = true) s.
+  Proof. 
+  simple induction s; simpl; auto; unfold Exists.
+  intros; discriminate.
+  intros x l Hrec f Hf.
+  case_eq (f x); intros.
+  exists x; auto.
+  destruct (Hrec f Hf H0) as [a (A1,A2)].
+  exists a; auto.
+  Qed.
+
+  Lemma partition_1 :
+   forall (s : t) (f : elt -> bool),
+   compat_bool X.eq f -> Equal (fst (partition f s)) (filter f s).
+  Proof.
+  simple induction s; simpl; auto; unfold Equal.
+  firstorder.
+  intros x l Hrec f Hf.
+  generalize (Hrec f Hf); clear Hrec.
+  case (partition f l); intros s1 s2; simpl; intros.
+  case (f x); simpl; firstorder; inversion H0; intros; firstorder. 
+  Qed.
+   
+  Lemma partition_2 :
+   forall (s : t) (f : elt -> bool),
+   compat_bool X.eq f ->
+   Equal (snd (partition f s)) (filter (fun x => negb (f x)) s).
+  Proof.
+  simple induction s; simpl; auto; unfold Equal.
+  firstorder.
+  intros x l Hrec f Hf. 
+  generalize (Hrec f Hf); clear Hrec.
+  case (partition f l); intros s1 s2; simpl; intros.
+  case (f x); simpl; firstorder; inversion H0; intros; firstorder. 
+  Qed.
+
+  Lemma partition_aux_1 : 
+   forall (s : t) (Hs : NoRedun s) (f : elt -> bool)(x:elt), 
+    In x (fst (partition f s)) -> In x s.
+  Proof.
+  induction s; simpl; auto; intros.
+  inversion_clear Hs.
+  generalize (IHs H1 f x).
+  destruct (f a); destruct (partition f s); simpl in *; auto.
+  inversion_clear H; auto.
+  Qed. 
+     
+  Lemma partition_aux_2 : 
+   forall (s : t) (Hs : NoRedun s) (f : elt -> bool)(x:elt), 
+    In x (snd (partition f s)) -> In x s.
+  Proof.
+  induction s; simpl; auto; intros.
+  inversion_clear Hs.
+  generalize (IHs H1 f x).
+  destruct (f a); destruct (partition f s); simpl in *; auto.
+  inversion_clear H; auto.
+  Qed. 
+  
+  Lemma partition_unique_1 :
+   forall (s : t) (Hs : NoRedun s) (f : elt -> bool), NoRedun (fst (partition f s)).
+  Proof.
+  simple induction s; simpl.
+  auto.
+  intros x l Hrec Hs f; inversion_clear Hs.
+  generalize (@partition_aux_1 _ H0 f x).
+  generalize (Hrec H0 f).
+  case (f x); case (partition f l); simpl; auto.
+  Qed.
+  
+  Lemma partition_unique_2 :
+   forall (s : t) (Hs : NoRedun s) (f : elt -> bool), NoRedun (snd (partition f s)).
+  Proof.
+  simple induction s; simpl.
+  auto.
+  intros x l Hrec Hs f; inversion_clear Hs.
+  generalize (@partition_aux_2 _ H0 f x).
+  generalize (Hrec H0 f).
+  case (f x); case (partition f l); simpl; auto.
+  Qed.
+ 
+  Definition eq : t -> t -> Prop := Equal.
+
+  Lemma eq_refl : forall s : t, eq s s. 
+  Proof. 
+  unfold eq, Equal; intuition.
+  Qed.
+
+  Lemma eq_sym : forall s s' : t, eq s s' -> eq s' s.
+  Proof. 
+  unfold eq, Equal; firstorder.
+  Qed.
+
+  Lemma eq_trans : forall s s' s'' : t, eq s s' -> eq s' s'' -> eq s s''.
+  Proof. 
+  unfold eq, Equal; firstorder.
+  Qed.
+
+End Raw.
+
+(** * Encapsulation
+
+   Now, in order to really provide a functor implementing [S], we 
+   need to encapsulate everything into a type of lists without redundancy. *)
+
+Module Make (X: DecidableType) <: S with Module E := X.
+
+ Module E := X.
+ Module Raw := Raw X. 
+
+ Record slist : Set :=  {this :> Raw.t; unique : noredunA X.eq this}.
+ Definition t := slist. 
+ Definition elt := X.t.
+ 
+ Definition In (x : elt) (s : t) := InA X.eq x s.(this).
+ Definition Equal s s' := forall a : elt, In a s <-> In a s'.
+ Definition Subset s s' := forall a : elt, In a s -> In a s'.
+ Definition Empty s := forall a : elt, ~ In a s.
+ Definition For_all (P : elt -> Prop) (s : t) :=
+   forall x : elt, In x s -> P x.
+ Definition Exists (P : elt -> Prop) (s : t) := exists x : elt, In x s /\ P x.
+  
+ Definition In_1 (s : t) := Raw.In_eq (s:=s).
+ 
+ Definition mem (x : elt) (s : t) := Raw.mem x s.
+ Definition mem_1 (s : t) := Raw.mem_1 (s:=s). 
+ Definition mem_2 (s : t) := Raw.mem_2 (s:=s).
+
+ Definition add x s := Build_slist (Raw.add_unique (unique s) x).
+ Definition add_1 (s : t) := Raw.add_1 (unique s).
+ Definition add_2 (s : t) := Raw.add_2 (unique s).
+ Definition add_3 (s : t) := Raw.add_3 (unique s).
+
+ Definition remove x s := Build_slist (Raw.remove_unique (unique s) x).
+ Definition remove_1 (s : t) := Raw.remove_1 (unique s).
+ Definition remove_2 (s : t) := Raw.remove_2 (unique s).
+ Definition remove_3 (s : t) := Raw.remove_3 (unique s).
+ 
+ Definition singleton x := Build_slist (Raw.singleton_unique x).
+ Definition singleton_1 := Raw.singleton_1.
+ Definition singleton_2 := Raw.singleton_2.
+  
+ Definition union (s s' : t) :=
+   Build_slist (Raw.union_unique (unique s) (unique s')). 
+ Definition union_1 (s s' : t) := Raw.union_1 (unique s) (unique s').
+ Definition union_2 (s s' : t) := Raw.union_2 (unique s) (unique s').
+ Definition union_3 (s s' : t) := Raw.union_3 (unique s) (unique s').
+
+ Definition inter (s s' : t) :=
+   Build_slist (Raw.inter_unique (unique s) (unique s')). 
+ Definition inter_1 (s s' : t) := Raw.inter_1 (unique s) (unique s').
+ Definition inter_2 (s s' : t) := Raw.inter_2 (unique s) (unique s').
+ Definition inter_3 (s s' : t) := Raw.inter_3 (unique s) (unique s').
+ 
+ Definition diff (s s' : t) :=
+   Build_slist (Raw.diff_unique (unique s) (unique s')). 
+ Definition diff_1 (s s' : t) := Raw.diff_1 (unique s) (unique s').
+ Definition diff_2 (s s' : t) := Raw.diff_2 (unique s) (unique s').
+ Definition diff_3 (s s' : t) := Raw.diff_3 (unique s) (unique s').
+ 
+ Definition equal (s s' : t) := Raw.equal s s'. 
+ Definition equal_1 (s s' : t) := Raw.equal_1 (unique s) (unique s').  
+ Definition equal_2 (s s' : t) := Raw.equal_2 (unique s) (unique s').
+ 
+ Definition subset (s s' : t) := Raw.subset s s'.
+ Definition subset_1 (s s' : t) := Raw.subset_1 (unique s) (unique s').  
+ Definition subset_2 (s s' : t) := Raw.subset_2 (unique s) (unique s').
+
+ Definition empty := Build_slist Raw.empty_unique.
+ Definition empty_1 := Raw.empty_1.
+ 
+ Definition is_empty (s : t) := Raw.is_empty s.
+ Definition is_empty_1 (s : t) := Raw.is_empty_1 (s:=s).
+ Definition is_empty_2 (s : t) := Raw.is_empty_2 (s:=s).
+
+ Definition elements (s : t) := Raw.elements s.
+ Definition elements_1 (s : t) := Raw.elements_1 (s:=s).
+ Definition elements_2 (s : t) := Raw.elements_2 (s:=s).
+ Definition elements_3 (s : t) := Raw.elements_3 (unique s).
+  
+ Definition choose (s:t) := Raw.choose s.
+ Definition choose_1 (s : t) := Raw.choose_1 (s:=s).
+ Definition choose_2 (s : t) := Raw.choose_2 (s:=s).
+  
+ Definition fold (B : Set) (f : elt -> B -> B) (s : t) := Raw.fold (B:=B) f s. 
+ Definition fold_1 (s : t) := Raw.fold_1 (unique s). 
+ 
+ Definition cardinal (s : t) := Raw.cardinal s.
+ Definition cardinal_1 (s : t) := Raw.cardinal_1 (unique s). 
+ 
+ Definition filter (f : elt -> bool) (s : t) :=
+   Build_slist (Raw.filter_unique (unique s) f).
+ Definition filter_1 (s : t)(x:elt)(f: elt -> bool)(H:compat_bool X.eq f) := 
+    @Raw.filter_1 s x f.
+ Definition filter_2 (s : t) := Raw.filter_2 (s:=s).
+ Definition filter_3 (s : t) := Raw.filter_3 (s:=s).
+ 
+ Definition for_all (f : elt -> bool) (s : t) := Raw.for_all f s.
+ Definition for_all_1 (s : t) := Raw.for_all_1 (s:=s). 
+ Definition for_all_2 (s : t) := Raw.for_all_2 (s:=s). 
+
+ Definition exists_ (f : elt -> bool) (s : t) := Raw.exists_ f s.
+ Definition exists_1 (s : t) := Raw.exists_1 (s:=s). 
+ Definition exists_2 (s : t) := Raw.exists_2 (s:=s). 
+
+ Definition partition (f : elt -> bool) (s : t) :=
+   let p := Raw.partition f s in
+   (Build_slist (this:=fst p) (Raw.partition_unique_1 (unique s) f),
+   Build_slist (this:=snd p) (Raw.partition_unique_2 (unique s) f)).
+ Definition partition_1 (s : t) := Raw.partition_1 s.
+ Definition partition_2 (s : t) := Raw.partition_2 s. 
+
+ Definition eq (s s' : t) := Raw.eq s s'.
+ Definition eq_refl (s : t) := Raw.eq_refl s.
+ Definition eq_sym (s s' : t) := Raw.eq_sym (s:=s) (s':=s').
+ Definition eq_trans (s s' s'' : t) :=
+   Raw.eq_trans (s:=s) (s':=s') (s'':=s'').
+
+End Make.
