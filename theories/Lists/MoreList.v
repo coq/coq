@@ -469,10 +469,10 @@ Section Remove.
 
 Hypothesis eq_dec : forall x y : A, {x = y}+{x <> y}.
 
-Fixpoint remove : (x : A) (l : list A){struct l} : list A :=
+Fixpoint remove (x : A) (l : list A){struct l} : list A :=
   match l with
     | nil => nil
-    | y::tl => if (eq_dec x y) then remove tl else y::(remove tl)
+    | y::tl => if (eq_dec x y) then remove x tl else y::(remove x tl)
   end.
 
 End Remove.
