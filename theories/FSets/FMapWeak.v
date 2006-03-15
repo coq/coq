@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id: FSet.v,v 1.2 2004/12/08 19:19:24 letouzey Exp $ *)
+(* $Id$ *)
 
 Require Export FMapWeakInterface.
 Require Export FMapWeakList.

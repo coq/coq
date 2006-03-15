@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id: DecidableType.v,v 1.3 2006/03/03 18:48:37 letouzey Exp $ *)
+(* $Id$ *)
 
 Require Export SetoidList.
 Set Implicit Arguments.
@@ -16,15 +16,15 @@ Unset Strict Implicit.
 
 Module Type DecidableType. 
 
-  Parameter t : Set.
+  Parameter t  Set.
 
-  Parameter eq : t -> t -> Prop.
+  Parameter eq  t -> t -> Prop.
 
-  Axiom eq_refl : forall x : t, eq x x.
-  Axiom eq_sym : forall x y : t, eq x y -> eq y x.
-  Axiom eq_trans : forall x y z : t, eq x y -> eq y z -> eq x z.
+  Axiom eq_refl  forall x : t, eq x x.
+  Axiom eq_sym  forall x y : t, eq x y -> eq y x.
+  Axiom eq_trans  forall x y z : t, eq x y -> eq y z -> eq x z.
 
-  Parameter eq_dec : forall x y : t, { eq x y } + { ~ eq x y }.
+  Parameter eq_dec  forall x y : t, { eq x y } + { ~ eq x y }.
 
   Hint Immediate eq_sym.
   Hint Resolve eq_refl eq_trans.
@@ -32,15 +32,15 @@ Module Type DecidableType.
 End DecidableType. 
 
 
-Module PairDecidableType(D:DecidableType).
+Module PairDecidableType(DDecidableType).
  Import D.
 
  Section Elt.
- Variable elt : Set.
- Notation key:=t.
+ Variable elt  Set.
+ Notation key=t.
 
-  Definition eqk (p p':key*elt) := eq (fst p) (fst p').
-  Definition eqke (p p':key*elt) := 
+  Definition eqk (p p'key*elt) := eq (fst p) (fst p').
+  Definition eqke (p p'key*elt) := 
           eq (fst p) (fst p') /\ (snd p) = (snd p').
 
   Hint Unfold eqk eqke.
@@ -48,29 +48,29 @@ Module PairDecidableType(D:DecidableType).
 
    (* eqke is stricter than eqk *)
  
-   Lemma eqke_eqk : forall x x', eqke x x' -> eqk x x'.
+   Lemma eqke_eqk  forall x x', eqke x x' -> eqk x x'.
    Proof.
      unfold eqk, eqke; intuition.
    Qed.
 
   (* eqk, eqke are equalities *)
  
-  Lemma eqk_refl : forall e, eqk e e.
+  Lemma eqk_refl  forall e, eqk e e.
   Proof. auto. Qed.
 
-  Lemma eqke_refl : forall e, eqke e e.
+  Lemma eqke_refl  forall e, eqke e e.
   Proof. auto. Qed.
 
-  Lemma eqk_sym : forall e e', eqk e e' -> eqk e' e.
+  Lemma eqk_sym  forall e e', eqk e e' -> eqk e' e.
   Proof. auto. Qed.
 
-  Lemma eqke_sym : forall e e', eqke e e' -> eqke e' e.
+  Lemma eqke_sym  forall e e', eqke e e' -> eqke e' e.
   Proof. unfold eqke; intuition. Qed.
 
-  Lemma eqk_trans : forall e e' e'', eqk e e' -> eqk e' e'' -> eqk e e''.
+  Lemma eqk_trans  forall e e' e'', eqk e e' -> eqk e' e'' -> eqk e e''.
   Proof. eauto. Qed.
 
-  Lemma eqke_trans : forall e e' e'', eqke e e' -> eqke e' e'' -> eqke e e''.
+  Lemma eqke_trans  forall e e' e'', eqke e e' -> eqke e' e'' -> eqke e e''.
   Proof.
     unfold eqke; intuition; [ eauto | congruence ].
   Qed.
@@ -78,26 +78,26 @@ Module PairDecidableType(D:DecidableType).
   Hint Resolve eqk_trans eqke_trans eqk_refl eqke_refl.
   Hint Immediate eqk_sym eqke_sym.
 
-  Lemma InA_eqke_eqk : 
+  Lemma InA_eqke_eqk  
      forall x m, InA eqke x m -> InA eqk x m.
   Proof.
     unfold eqke; induction 1; intuition.
   Qed.
   Hint Resolve InA_eqke_eqk.
 
-  Lemma InA_eqk : forall p q m, eqk p q -> InA eqk p m -> InA eqk q m.
+  Lemma InA_eqk  forall p q m, eqk p q -> InA eqk p m -> InA eqk q m.
   Proof.
    intros; apply InA_eqA with p; auto; apply eqk_trans; auto.
   Qed.
 
-  Definition MapsTo (k:key)(e:elt):= InA eqke (k,e).
-  Definition In k m := exists e:elt, MapsTo k e m.
+  Definition MapsTo (kkey)(e:elt):= InA eqke (k,e).
+  Definition In k m = exists e:elt, MapsTo k e m.
 
   Hint Unfold MapsTo In.
 
   (* An alternative formulation for [In k l] is [exists e, InA eqk (k,e) l] *)
 
-  Lemma In_alt : forall k l, In k l <-> exists e, InA eqk (k,e) l.
+  Lemma In_alt  forall k l, In k l <-> exists e, InA eqk (k,e) l.
   Proof.
   firstorder.
   exists x; auto.
@@ -108,31 +108,31 @@ Module PairDecidableType(D:DecidableType).
   exists e; auto.
   Qed.
 
-  Lemma MapsTo_eq : forall l x y e, eq x y -> MapsTo x e l -> MapsTo y e l.
+  Lemma MapsTo_eq  forall l x y e, eq x y -> MapsTo x e l -> MapsTo y e l.
   Proof.
   intros; unfold MapsTo in *; apply InA_eqA with (x,e); eauto.
   Qed.
 
-  Lemma In_eq : forall l x y, eq x y -> In x l -> In y l.
+  Lemma In_eq  forall l x y, eq x y -> In x l -> In y l.
   Proof.
   destruct 2 as (e,E); exists e; eapply MapsTo_eq; eauto.
   Qed. 
 
-  Lemma In_inv : forall k k' e l, In k ((k',e) :: l) -> eq k k' \/ In k l.
+  Lemma In_inv  forall k k' e l, In k ((k',e) :: l) -> eq k k' \/ In k l.
   Proof.
     inversion 1.
     inversion_clear H0; eauto.
     destruct H1; simpl in *; intuition.
   Qed.      
 
-  Lemma In_inv_2 : forall k k' e e' l, 
-      InA eqk (k, e) ((k', e') :: l) -> ~ eq k k' -> InA eqk (k, e) l.
+  Lemma In_inv_2  forall k k' e e' l, 
+      InA eqk (k, e) ((k', e') : l) -> ~ eq k k' -> InA eqk (k, e) l.
   Proof.  
    inversion_clear 1; compute in H0; intuition.
   Qed.
 
-  Lemma In_inv_3 : forall x x' l, 
-      InA eqke x (x' :: l) -> ~ eqk x x' -> InA eqke x l.
+  Lemma In_inv_3  forall x x' l, 
+      InA eqke x (x' : l) -> ~ eqk x x' -> InA eqke x l.
   Proof.
    inversion_clear 1; compute in H0; intuition.
   Qed.
