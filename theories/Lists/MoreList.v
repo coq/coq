@@ -419,7 +419,7 @@ Qed.
 
 (** [filter] *)
 
-Fixpoint filter (l:list A) {struct l} : list A := 
+Fixpoint filter (l:list A) : list A := 
  match l with 
   | nil => nil
   | x :: l => if f x then x::(filter l) else filter l
@@ -433,7 +433,50 @@ intros.
 case_eq (f a); intros; simpl; intuition congruence.
 Qed.
 
+Fixpoint find (l:list A) : option A :=
+  match l with
+    | nil => None
+    | x :: tl => if f x then Some x else find tl
+  end.
+
+Fixpoint partition (l:list A) {struct l} : list A * list A := 
+  match l with
+    | nil => (nil, nil)
+    | x :: tl => let (g,d) := partition tl in 
+      if f x then (x::g,d) else (g,x::d)
+  end.
+
 End Bool.
+
+Section Split.
+
+Fixpoint split  (l:list (A*B)) : list A * list B :=
+  match l with
+    | nil => (nil, nil)
+    | (x,y) :: tl => let (g,d) := split tl in (x::g, y::d)
+  end.
+
+(** [combine] stops on the shorter list *)
+Fixpoint combine (l : list A) (l' : list B){struct l} : list (A*B) :=
+  match l,l' with
+    | x::tl, y::tl' => (x,y)::(combine tl tl')
+    | _, _ => nil
+  end.
+
+End Split.
+
+Section Remove.
+
+Hypothesis eq_dec : forall x y : A, {x = y}+{x <> y}.
+
+Fixpoint remove : (x : A) (l : list A){struct l} : list A :=
+  match l with
+    | nil => nil
+    | y::tl => if (eq_dec x y) then remove tl else y::(remove tl)
+  end.
+
+End Remove.
+
 
 End MoreLists.
 

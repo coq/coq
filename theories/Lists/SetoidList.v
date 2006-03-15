@@ -229,6 +229,18 @@ Proof.
  destruct l2; auto.
 Qed.
 
+Section Remove.
+
+Hypothesis eqA_dec : forall x y : A, {eqA x y}+{~(eqA x y)}.
+
+Fixpoint removeA : (x : A) (l : list A){struct l} : list A :=
+  match l with
+    | nil => nil
+    | y::tl => if (eqA_dec x y) then removeA tl else y::(removeA tl)
+  end.
+
+End Remove.
+
 End Type_with_equality.
 
 Hint Constructors InA.
