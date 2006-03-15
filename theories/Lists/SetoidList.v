@@ -44,20 +44,13 @@ Proof.
  firstorder; subst; auto.
 Qed.
 
-(** A list without redundancy. *)
-
-Inductive noredun : list A -> Prop := 
- | noredun_nil : noredun nil 
- | noredun_cons : forall x l, ~ In x l -> noredun l -> noredun (x::l). 
-
-
 (** Similarly, a list without redundancy modulo the equality over [A]. *)
 
-Inductive noredunA : list A -> Prop :=
-  | noredunA_nil : noredunA nil
-  | noredunA_cons : forall x l, ~ InA x l -> noredunA l -> noredunA (x::l).
+Inductive NoDupA : list A -> Prop :=
+  | NoDupA_nil : NoDupA nil
+  | NoDupA_cons : forall x l, ~ InA x l -> NoDupA l -> NoDupA (x::l).
 
-Hint Constructors noredunA.
+Hint Constructors NoDupA.
 
 
 (** Results concerning lists modulo [eqA] *)
@@ -147,7 +140,7 @@ intros; eapply SortA_InfA_InA; eauto.
 apply InA_InfA.
 Qed.
 
-Lemma SortA_noredunA : forall l, SortA l -> noredunA l.
+Lemma SortA_NoDupA : forall l, SortA l -> NoDupA l.
 Proof.
  simple induction l; auto.
  intros x l' H H0.
@@ -158,9 +151,9 @@ Proof.
  elim (ltA_not_eqA H3); auto.
 Qed.
 
-Lemma noredunA_app : forall l l', noredunA l -> noredunA l' -> 
+Lemma NoDupA_app : forall l l', NoDupA l -> NoDupA l' -> 
   (forall x, InA x l -> InA x l' -> False) -> 
-  noredunA (l++l').
+  NoDupA (l++l').
 Proof.
 induction l; simpl; auto; intros.
 inversion_clear H.
@@ -180,13 +173,13 @@ apply (H1 x); auto.
 Qed.
 
 
-Lemma noredunA_rev : forall l, noredunA l -> noredunA (rev l).
+Lemma NoDupA_rev : forall l, NoDupA l -> NoDupA (rev l).
 Proof.
 induction l.
 simpl; auto.
 simpl; intros.
 inversion_clear H.
-apply noredunA_app; auto.
+apply NoDupA_app; auto.
 constructor; auto.
 intro H2; inversion H2.
 intros x.
@@ -244,6 +237,6 @@ End Remove.
 End Type_with_equality.
 
 Hint Constructors InA.
-Hint Constructors noredunA. 
+Hint Constructors NoDupA. 
 Hint Constructors sort.
 Hint Constructors lelistA.

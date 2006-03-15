@@ -477,6 +477,15 @@ Fixpoint remove (x : A) (l : list A){struct l} : list A :=
 
 End Remove.
 
+Section NoDuplicates.
+
+(** A list without redundancy. *)
+
+Inductive NoDup : list A -> Prop := 
+ | NoDup_nil : NoDup nil 
+ | NoDup_cons : forall x l, ~ In x l -> NoDup l -> NoDup (x::l). 
+
+End NoDuplicates.
 
 End MoreLists.
 

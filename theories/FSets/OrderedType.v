@@ -316,7 +316,7 @@ Ltac false_order := elimtype False; order.
 Notation In:=(InA eq).
 Notation Inf:=(lelistA lt).
 Notation Sort:=(sort lt).
-Notation NoRedun:=(noredunA eq).
+Notation NoDup:=(NoDupA eq).
 
 Lemma In_eq : forall l x y, eq x y -> In x l -> In y l.
 Proof. exact (InA_eqA eq_sym eq_trans). Qed.
@@ -343,10 +343,10 @@ Lemma Inf_alt :
  forall l x, Sort l -> (Inf x l <-> (forall y, In y l -> lt x y)).
 Proof. exact (InfA_alt eq_refl eq_sym lt_trans lt_eq eq_lt). Qed.
 
-Lemma Sort_NoRedun : forall l, Sort l -> NoRedun l.
-Proof. exact (SortA_noredunA eq_refl eq_sym lt_trans lt_not_eq lt_eq eq_lt) . Qed.
+Lemma Sort_NoDup : forall l, Sort l -> NoDup l.
+Proof. exact (SortA_NoDupA eq_refl eq_sym lt_trans lt_not_eq lt_eq eq_lt) . Qed.
 
-Hint Resolve ListIn_In Sort_NoRedun Inf_lt. 
+Hint Resolve ListIn_In Sort_NoDup Inf_lt. 
 Hint Immediate In_eq Inf_lt. 
 
 End OrderedTypeFacts.
@@ -502,9 +502,9 @@ Module PairOrderedType(O:OrderedType).
     red; simpl; auto.
   Qed.
 
-  Lemma Sort_noredunA: forall l, Sort l -> noredunA eqk l.
+  Lemma Sort_NoDupA: forall l, Sort l -> NoDupA eqk l.
   Proof. 
-  exact (SortA_noredunA eqk_refl eqk_sym ltk_trans ltk_not_eqk ltk_eqk eqk_ltk).
+  exact (SortA_NoDupA eqk_refl eqk_sym ltk_trans ltk_not_eqk ltk_eqk eqk_ltk).
   Qed.
 
   Lemma Sort_In_cons_1 : forall e l e', Sort (e::l) -> InA eqk e' l -> ltk e e'.

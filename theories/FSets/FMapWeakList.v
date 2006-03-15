@@ -44,7 +44,7 @@ Notation eqk := (eqk (elt:=elt)).
 Notation eqke := (eqke (elt:=elt)).
 Notation MapsTo := (MapsTo (elt:=elt)).
 Notation In := (In (elt:=elt)).
-Notation noredunA := (noredunA eqk).
+Notation NoDupA := (NoDupA eqk).
 
 (** * [empty] *)
 
@@ -62,7 +62,7 @@ Qed.
 
 Hint Resolve empty_1.
 
-Lemma empty_noredun : noredunA empty.
+Lemma empty_NoDup : NoDupA empty.
 Proof. 
  unfold empty; auto.
 Qed.
@@ -97,12 +97,12 @@ Fixpoint mem (k : key) (s : t elt) {struct s} : bool :=
    | (k',_) :: l => if X.eq_dec k k' then true else mem k l
   end.
 
-Lemma mem_1 : forall m (Hm:noredunA m) x, In x m -> mem x m = true.
+Lemma mem_1 : forall m (Hm:NoDupA m) x, In x m -> mem x m = true.
 Proof.
  intros m Hm x; generalize Hm; clear Hm.      
- functional induction mem x m;intros noredun belong1;trivial.
+ functional induction mem x m;intros NoDup belong1;trivial.
  inversion belong1. inversion H.
- inversion_clear noredun.
+ inversion_clear NoDup.
  inversion_clear belong1.
  inversion_clear H3.
  compute in H4; destruct H4.
@@ -111,12 +111,12 @@ Proof.
  exists x; auto.
 Qed. 
 
-Lemma mem_2 : forall m (Hm:noredunA m) x, mem x m = true -> In x m. 
+Lemma mem_2 : forall m (Hm:NoDupA m) x, mem x m = true -> In x m. 
 Proof.
  intros m Hm x; generalize Hm; clear Hm; unfold PX.In,PX.MapsTo.
- functional induction mem x m; intros noredun hyp; try discriminate.
+ functional induction mem x m; intros NoDup hyp; try discriminate.
  exists e; auto. 
- inversion_clear noredun.
+ inversion_clear NoDup.
  destruct H0; auto.
  exists x; auto.
 Qed.
@@ -135,7 +135,7 @@ Proof.
  functional induction find x m;simpl;intros e' eqfind; inversion eqfind; auto.
 Qed.
 
-Lemma find_1 : forall m (Hm:noredunA m) x e, 
+Lemma find_1 : forall m (Hm:NoDupA m) x e, 
   MapsTo x e m -> find x m = Some e. 
 Proof.
  intros m Hm x e; generalize Hm; clear Hm; unfold PX.MapsTo.
@@ -153,7 +153,7 @@ Qed.
 
 (* Not part of the exported specifications, used later for [combine]. *)
 
-Lemma find_eq : forall m (Hm:noredunA m) x x', 
+Lemma find_eq : forall m (Hm:NoDupA m) x x', 
    X.eq x x' -> find x m = find x' m.
 Proof.
  induction m; simpl; auto; destruct a; intros.
@@ -213,7 +213,7 @@ Proof.
  inversion_clear 2; auto.
 Qed.
 
-Lemma add_noredun : forall m (Hm:noredunA m) x e, noredunA (add x e m).
+Lemma add_NoDup : forall m (Hm:NoDupA m) x e, NoDupA (add x e m).
 Proof.
  induction m.
  simpl; constructor; auto; red; inversion 1.
@@ -229,22 +229,22 @@ Qed.
 
 (* Not part of the exported specifications, used later for [combine]. *)
 
-Lemma add_eq : forall m (Hm:noredunA m) x a e, 
+Lemma add_eq : forall m (Hm:NoDupA m) x a e, 
    X.eq x a -> find x (add a e m) = Some e.
 Proof.
  intros.
  apply find_1; auto.
- apply add_noredun; auto.
+ apply add_NoDup; auto.
  apply add_1; auto.
 Qed.
 
-Lemma add_not_eq : forall m (Hm:noredunA m) x a e, 
+Lemma add_not_eq : forall m (Hm:NoDupA m) x a e, 
   ~X.eq x a -> find x (add a e m) = find x m.
 Proof.
  intros.
  case_eq (find x m); intros.
  apply find_1; auto.
- apply add_noredun; auto.
+ apply add_NoDup; auto.
  apply add_2; auto.
  apply find_2; auto.
  case_eq (find x (add a e m)); intros; auto.
@@ -263,7 +263,7 @@ Fixpoint remove (k : key) (s : t elt) {struct s} : t elt :=
    | (k',x) :: l => if X.eq_dec k k' then l else (k',x) :: remove k l
   end.  
 
-Lemma remove_1 : forall m (Hm:noredunA m) x y, X.eq x y -> ~ In y (remove x m).
+Lemma remove_1 : forall m (Hm:NoDupA m) x y, X.eq x y -> ~ In y (remove x m).
 Proof.
  intros m Hm x y; generalize Hm; clear Hm.
  functional induction remove x m;simpl;intros;auto.
@@ -286,7 +286,7 @@ Proof.
  exists e; auto.
 Qed.
   
-Lemma remove_2 : forall m (Hm:noredunA m) x y e, 
+Lemma remove_2 : forall m (Hm:NoDupA m) x y e, 
   ~ X.eq x y -> MapsTo y e m -> MapsTo y e (remove x m).
 Proof.
  intros m Hm x y e; generalize Hm; clear Hm; unfold PX.MapsTo.
@@ -298,7 +298,7 @@ Proof.
  inversion_clear 1; inversion_clear 2; auto.
 Qed.
 
-Lemma remove_3 : forall m (Hm:noredunA m) x y e, 
+Lemma remove_3 : forall m (Hm:NoDupA m) x y e, 
   MapsTo y e (remove x m) -> MapsTo y e m.
 Proof.
  intros m Hm x y e; generalize Hm; clear Hm; unfold PX.MapsTo.
@@ -306,7 +306,7 @@ Proof.
  do 2 inversion_clear 1; auto.
 Qed.
 
-Lemma remove_3' : forall m (Hm:noredunA m) x y e, 
+Lemma remove_3' : forall m (Hm:NoDupA m) x y e, 
   InA eqk (y,e) (remove x m) -> InA eqk (y,e) m.
 Proof.
  intros m Hm x y e; generalize Hm; clear Hm; unfold PX.MapsTo.
@@ -314,7 +314,7 @@ Proof.
  do 2 inversion_clear 1; auto.
 Qed.
 
-Lemma remove_noredun : forall m (Hm:noredunA m) x, noredunA (remove x m).
+Lemma remove_NoDup : forall m (Hm:NoDupA m) x, NoDupA (remove x m).
 Proof.
  induction m.
  simpl; intuition.
@@ -340,7 +340,7 @@ Proof.
 auto.
 Qed.
 
-Lemma elements_3 : forall m (Hm:noredunA m), noredunA (elements m). 
+Lemma elements_3 : forall m (Hm:NoDupA m), NoDupA (elements m). 
 Proof. 
  auto.
 Qed.
@@ -382,7 +382,7 @@ Definition Equal cmp m m' :=
   (forall k, In k m <-> In k m') /\ 
   (forall k e e', MapsTo k e m -> MapsTo k e' m' -> cmp e e' = true).  
 
-Lemma submap_1 : forall m (Hm:noredunA m) m' (Hm': noredunA m') cmp, 
+Lemma submap_1 : forall m (Hm:NoDupA m) m' (Hm': NoDupA m') cmp, 
   Submap cmp m m' -> submap cmp m m' = true. 
 Proof.
  unfold Submap, submap.
@@ -403,7 +403,7 @@ Proof.
  apply H0 with k; auto.
 Qed.
    
-Lemma submap_2 : forall m (Hm:noredunA m) m' (Hm': noredunA m') cmp, 
+Lemma submap_2 : forall m (Hm:NoDupA m) m' (Hm': NoDupA m') cmp, 
   submap cmp m m' = true -> Submap cmp m m'. 
 Proof.
  unfold Submap, submap.
@@ -444,7 +444,7 @@ Qed.
 
 (** Specification of [equal] *)
 
-Lemma equal_1 : forall m (Hm:noredunA m) m' (Hm': noredunA m') cmp, 
+Lemma equal_1 : forall m (Hm:NoDupA m) m' (Hm': NoDupA m') cmp, 
   Equal cmp m m' -> equal cmp m m' = true. 
 Proof. 
  unfold Equal, equal.
@@ -452,7 +452,7 @@ Proof.
  apply andb_true_intro; split; apply submap_1; unfold Submap; firstorder.
 Qed.
 
-Lemma equal_2 : forall m (Hm:noredunA m) m' (Hm':noredunA m') cmp, 
+Lemma equal_2 : forall m (Hm:NoDupA m) m' (Hm':NoDupA m') cmp, 
   equal cmp m m' = true -> Equal cmp m m'.
 Proof.
  unfold Equal, equal.
@@ -526,8 +526,8 @@ Proof.
  constructor 2; auto.
 Qed.
 
-Lemma map_noredun : forall m (Hm : noredunA (@eqk elt) m)(f:elt->elt'), 
-  noredunA (@eqk elt') (map f m).
+Lemma map_NoDup : forall m (Hm : NoDupA (@eqk elt) m)(f:elt->elt'), 
+  NoDupA (@eqk elt') (map f m).
 Proof.   
  induction m; simpl; auto.
  intros.
@@ -586,8 +586,8 @@ Proof.
  constructor 2; auto.
 Qed.
 
-Lemma mapi_noredun : forall m (Hm : noredunA (@eqk elt) m)(f: key->elt->elt'), 
-  noredunA (@eqk elt') (mapi f m).
+Lemma mapi_NoDup : forall m (Hm : NoDupA (@eqk elt) m)(f: key->elt->elt'), 
+  NoDupA (@eqk elt') (mapi f m).
 Proof.
  induction m; simpl; auto.
  intros.
@@ -622,28 +622,28 @@ Definition combine (m:t elt)(m':t elt') : t oee' :=
   let r := combine_r m m' in 
   fold_right_pair (add (elt:=oee')) l r.
 
-Lemma fold_right_pair_noredun : 
-  forall l r (Hl: noredunA (eqk (elt:=oee')) l) 
-    (Hl: noredunA (eqk (elt:=oee')) r), 
-    noredunA (eqk (elt:=oee')) (fold_right_pair (add (elt:=oee')) l r).
+Lemma fold_right_pair_NoDup : 
+  forall l r (Hl: NoDupA (eqk (elt:=oee')) l) 
+    (Hl: NoDupA (eqk (elt:=oee')) r), 
+    NoDupA (eqk (elt:=oee')) (fold_right_pair (add (elt:=oee')) l r).
 Proof.
  induction l; simpl; auto.
  destruct a; simpl; auto.
  inversion_clear 1.
- intros; apply add_noredun; auto.
+ intros; apply add_NoDup; auto.
 Qed.
-Hint Resolve fold_right_pair_noredun.
+Hint Resolve fold_right_pair_NoDup.
 
-Lemma combine_noredun : 
-  forall m (Hm:noredunA (@eqk elt) m) m' (Hm':noredunA (@eqk elt') m'), 
-  noredunA (@eqk oee') (combine m m').
+Lemma combine_NoDup : 
+  forall m (Hm:NoDupA (@eqk elt) m) m' (Hm':NoDupA (@eqk elt') m'), 
+  NoDupA (@eqk oee') (combine m m').
 Proof.
  unfold combine, combine_r, combine_l.
  intros.
  set (f1 := fun (k : key) (e : elt) => (Some e, find k m')).
  set (f2 := fun (k : key) (e' : elt') => (find k m, Some e')).
- generalize (mapi_noredun Hm f1).
- generalize (mapi_noredun Hm' f2).
+ generalize (mapi_NoDup Hm f1).
+ generalize (mapi_NoDup Hm' f2).
  set (l := mapi f1 m); clearbody l.
  set (r := mapi f2 m'); clearbody r.
  auto.
@@ -662,7 +662,7 @@ Definition at_least_right (o:option elt)(o':option elt') :=
   end.
 
 Lemma combine_l_1 : 
-  forall m (Hm:noredunA (@eqk elt) m) m' (Hm':noredunA (@eqk elt') m')(x:key), 
+  forall m (Hm:NoDupA (@eqk elt) m) m' (Hm':NoDupA (@eqk elt') m')(x:key), 
   find x (combine_l m m') = at_least_left (find x m) (find x m'). 
 Proof.
  unfold combine_l.
@@ -670,7 +670,7 @@ Proof.
  case_eq (find x m); intros.
  simpl.
  apply find_1.
- apply mapi_noredun; auto.
+ apply mapi_NoDup; auto.
  destruct (mapi_1 (fun k e => (Some e, find k m')) (find_2 H)) as (y,(H0,H1)).
  rewrite (find_eq Hm' (X.eq_sym H0)); auto.
  simpl.
@@ -681,7 +681,7 @@ Proof.
 Qed.
 
 Lemma combine_r_1 : 
-  forall m (Hm:noredunA (@eqk elt) m) m' (Hm':noredunA (@eqk elt') m')(x:key), 
+  forall m (Hm:NoDupA (@eqk elt) m) m' (Hm':NoDupA (@eqk elt') m')(x:key), 
   find x (combine_r m m') = at_least_right (find x m) (find x m'). 
 Proof.
  unfold combine_r.
@@ -689,7 +689,7 @@ Proof.
  case_eq (find x m'); intros.
  simpl.
  apply find_1.
- apply mapi_noredun; auto.
+ apply mapi_NoDup; auto.
  destruct (mapi_1 (fun k e => (find k m, Some e)) (find_2 H)) as (y,(H0,H1)).
  rewrite (find_eq Hm (X.eq_sym H0)); auto.
  simpl.
@@ -706,17 +706,17 @@ Definition at_least_one (o:option elt)(o':option elt') :=
   end.
 
 Lemma combine_1 : 
-  forall m (Hm:noredunA (@eqk elt) m) m' (Hm':noredunA (@eqk elt') m')(x:key), 
+  forall m (Hm:NoDupA (@eqk elt) m) m' (Hm':NoDupA (@eqk elt') m')(x:key), 
   find x (combine m m') = at_least_one (find x m) (find x m'). 
 Proof.
  unfold combine.
  intros.
  generalize (combine_r_1 Hm Hm' x).
  generalize (combine_l_1 Hm Hm' x).
- assert (noredunA (eqk (elt:=oee')) (combine_l m m')).
-  unfold combine_l; apply mapi_noredun; auto.
- assert (noredunA (eqk (elt:=oee')) (combine_r m m')).
-  unfold combine_r; apply mapi_noredun; auto.
+ assert (NoDupA (eqk (elt:=oee')) (combine_l m m')).
+  unfold combine_l; apply mapi_NoDup; auto.
+ assert (NoDupA (eqk (elt:=oee')) (combine_r m m')).
+  unfold combine_r; apply mapi_NoDup; auto.
  set (l := combine_l m m') in *; clearbody l.
  set (r := combine_r m m') in *; clearbody r.
  set (o := find x m); clearbody o.
@@ -749,16 +749,16 @@ Definition map2 m m' :=
   let m1 : t (option elt'') := map (fun p => f (fst p) (snd p)) m0 in 
   fold_right_pair (option_cons (A:=elt'')) m1 nil.
 
-Lemma map2_noredun : 
-  forall m (Hm:noredunA (@eqk elt) m) m' (Hm':noredunA (@eqk elt') m'), 
-  noredunA (@eqk elt'') (map2 m m').
+Lemma map2_NoDup : 
+  forall m (Hm:NoDupA (@eqk elt) m) m' (Hm':NoDupA (@eqk elt') m'), 
+  NoDupA (@eqk elt'') (map2 m m').
 Proof.
  intros.
  unfold map2.
- assert (H0:=combine_noredun Hm Hm').
+ assert (H0:=combine_NoDup Hm Hm').
  set (l0:=combine m m') in *; clearbody l0.
  set (f':= fun p : oee' => f (fst p) (snd p)).
- assert (H1:=map_noredun (elt' := option elt'') H0 f').
+ assert (H1:=map_NoDup (elt' := option elt'') H0 f').
  set (l1:=map f' l0) in *; clearbody l1. 
  clear f' f H0 l0 Hm Hm' m m'.
  induction l1.
@@ -782,13 +782,13 @@ Definition at_least_one_then_f (o:option elt)(o':option elt') :=
   end.
 
 Lemma map2_0 : 
-  forall m (Hm:noredunA (@eqk elt) m) m' (Hm':noredunA (@eqk elt') m')(x:key), 
+  forall m (Hm:NoDupA (@eqk elt) m) m' (Hm':NoDupA (@eqk elt') m')(x:key), 
   find x (map2 m m') = at_least_one_then_f (find x m) (find x m'). 
 Proof.
  intros.
  unfold map2.
  assert (H:=combine_1 Hm Hm' x).
- assert (H2:=combine_noredun Hm Hm').
+ assert (H2:=combine_NoDup Hm Hm').
  set (f':= fun p : oee' => f (fst p) (snd p)).
  set (m0 := combine m m') in *; clearbody m0.
  set (o:=find x m) in *; clearbody o. 
@@ -839,7 +839,7 @@ Qed.
 
 (** Specification of [map2] *)
 Lemma map2_1 : 
-  forall m (Hm:noredunA (@eqk elt) m) m' (Hm':noredunA (@eqk elt') m')(x:key),
+  forall m (Hm:NoDupA (@eqk elt) m) m' (Hm':NoDupA (@eqk elt') m')(x:key),
   In x m \/ In x m' -> 
   find x (map2 m m') = f (find x m) (find x m'). 
 Proof.
@@ -853,13 +853,13 @@ Proof.
 Qed.
  
 Lemma map2_2 : 
-  forall m (Hm:noredunA (@eqk elt) m) m' (Hm':noredunA (@eqk elt') m')(x:key), 
+  forall m (Hm:NoDupA (@eqk elt) m) m' (Hm':NoDupA (@eqk elt') m')(x:key), 
   In x (map2 m m') -> In x m \/ In x m'. 
 Proof.
  intros.
  destruct H as (e,H).
  generalize (map2_0 Hm Hm' x).
- rewrite (find_1 (map2_noredun Hm Hm') H).
+ rewrite (find_1 (map2_NoDup Hm Hm') H).
  generalize (@find_2 _ m x).
  generalize (@find_2 _ m' x).
  destruct (find x m); 
@@ -881,7 +881,7 @@ Module Make (X: DecidableType) <: S with Module E:=X.
  Definition key := X.t. 
 
  Record slist (elt:Set) : Set :=  
-  {this :> Raw.t elt; noredun : noredunA (@Raw.PX.eqk elt) this}.
+  {this :> Raw.t elt; NoDup : NoDupA (@Raw.PX.eqk elt) this}.
  Definition t (elt:Set) := slist elt. 
 
  Section Elt. 
@@ -889,16 +889,16 @@ Module Make (X: DecidableType) <: S with Module E:=X.
 
  Implicit Types m : t elt.
 
- Definition empty := Build_slist (Raw.empty_noredun elt).
+ Definition empty := Build_slist (Raw.empty_NoDup elt).
  Definition is_empty m := Raw.is_empty m.(this).
- Definition add x e m := Build_slist (Raw.add_noredun m.(noredun) x e).
+ Definition add x e m := Build_slist (Raw.add_NoDup m.(NoDup) x e).
  Definition find x m := Raw.find x m.(this).
- Definition remove x m := Build_slist (Raw.remove_noredun m.(noredun) x). 
+ Definition remove x m := Build_slist (Raw.remove_NoDup m.(NoDup) x). 
  Definition mem x m := Raw.mem x m.(this).
- Definition map f m : t elt' := Build_slist (Raw.map_noredun m.(noredun) f).
- Definition mapi f m : t elt' := Build_slist (Raw.mapi_noredun m.(noredun) f).
+ Definition map f m : t elt' := Build_slist (Raw.map_NoDup m.(NoDup) f).
+ Definition mapi f m : t elt' := Build_slist (Raw.mapi_NoDup m.(NoDup) f).
  Definition map2 f m (m':t elt') : t elt'' := 
- Build_slist (Raw.map2_noredun f m.(noredun) m'.(noredun)).
+ Build_slist (Raw.map2_NoDup f m.(NoDup) m'.(NoDup)).
  Definition elements m := @Raw.elements elt m.(this).
  Definition fold A f m i := @Raw.fold elt A f m.(this) i.
  Definition equal cmp m m' := @Raw.equal elt cmp m.(this) m'.(this).
@@ -915,8 +915,8 @@ Module Make (X: DecidableType) <: S with Module E:=X.
 
  Definition MapsTo_1 m := @Raw.PX.MapsTo_eq elt m.(this).
 
- Definition mem_1 m := @Raw.mem_1 elt m.(this) m.(noredun).
- Definition mem_2 m := @Raw.mem_2 elt m.(this) m.(noredun).
+ Definition mem_1 m := @Raw.mem_1 elt m.(this) m.(NoDup).
+ Definition mem_2 m := @Raw.mem_2 elt m.(this) m.(NoDup).
 
  Definition empty_1 := @Raw.empty_1.
 
@@ -927,16 +927,16 @@ Module Make (X: DecidableType) <: S with Module E:=X.
  Definition add_2 m := @Raw.add_2 elt m.(this).
  Definition add_3 m := @Raw.add_3 elt m.(this).
 
- Definition remove_1 m := @Raw.remove_1 elt m.(this) m.(noredun).
- Definition remove_2 m := @Raw.remove_2 elt m.(this) m.(noredun).
- Definition remove_3 m := @Raw.remove_3 elt m.(this) m.(noredun).
+ Definition remove_1 m := @Raw.remove_1 elt m.(this) m.(NoDup).
+ Definition remove_2 m := @Raw.remove_2 elt m.(this) m.(NoDup).
+ Definition remove_3 m := @Raw.remove_3 elt m.(this) m.(NoDup).
 
- Definition find_1 m := @Raw.find_1 elt m.(this) m.(noredun).
+ Definition find_1 m := @Raw.find_1 elt m.(this) m.(NoDup).
  Definition find_2 m := @Raw.find_2 elt m.(this).
 
  Definition elements_1 m := @Raw.elements_1 elt m.(this).
  Definition elements_2 m := @Raw.elements_2 elt m.(this).
- Definition elements_3 m := @Raw.elements_3 elt m.(this) m.(noredun).
+ Definition elements_3 m := @Raw.elements_3 elt m.(this) m.(NoDup).
 
  Definition fold_1 m := @Raw.fold_1 elt m.(this).
 
@@ -947,12 +947,12 @@ Module Make (X: DecidableType) <: S with Module E:=X.
  Definition mapi_2 m := @Raw.mapi_2 elt elt' m.(this).
 
  Definition map2_1 m (m':t elt') x f := 
-  @Raw.map2_1 elt elt' elt'' f m.(this) m.(noredun) m'.(this) m'.(noredun) x.
+  @Raw.map2_1 elt elt' elt'' f m.(this) m.(NoDup) m'.(this) m'.(NoDup) x.
  Definition map2_2 m (m':t elt') x f := 
-  @Raw.map2_2 elt elt' elt'' f m.(this) m.(noredun) m'.(this) m'.(noredun) x.
+  @Raw.map2_2 elt elt' elt'' f m.(this) m.(NoDup) m'.(this) m'.(NoDup) x.
 
- Definition equal_1 m m' := @Raw.equal_1 elt m.(this) m.(noredun) m'.(this) m'.(noredun).
- Definition equal_2 m m' := @Raw.equal_2 elt m.(this) m.(noredun) m'.(this) m'.(noredun).
+ Definition equal_1 m m' := @Raw.equal_1 elt m.(this) m.(NoDup) m'.(this) m'.(NoDup).
+ Definition equal_2 m m' := @Raw.equal_2 elt m.(this) m.(NoDup) m'.(this) m'.(NoDup).
 
  End Elt.
 End Make.

@@ -449,15 +449,15 @@ Module Properties (M: S).
     remove_diff_singleton diff_inter_empty diff_inter_all Add_add Add_remove
     Equal_remove : set.
 
-  Notation NoRedun := (noredunA E.eq).
+  Notation NoDup := (NoDupA E.eq).
 
-  Section noredunA_Remove.
+  Section NoDupA_Remove.
 
   Definition remove_list x l := MoreList.filter (fun y => negb (eqb x y)) l.
 
   Lemma remove_list_correct :
-    forall s x, NoRedun s -> 
-    NoRedun (remove_list x s) /\
+    forall s x, NoDup s -> 
+    NoDup (remove_list x s) /\
     (forall y : elt, ME.In y (remove_list x s) <-> ME.In y s /\ ~ E.eq x y).
   Proof.
    simple induction s; simpl; intros.
@@ -486,7 +486,7 @@ Module Properties (M: S).
   Let ListEq l l' := forall y : elt, ME.In y l <-> ME.In y l'.
 
   Lemma remove_list_equal :
-    forall s s' x, NoRedun (x :: s) -> NoRedun s' -> 
+    forall s s' x, NoDup (x :: s) -> NoDup s' -> 
     ListEq (x :: s) s' -> ListEq s (remove_list x s').
   Proof.  
    unfold ListEq; intros. 
@@ -505,7 +505,7 @@ Module Properties (M: S).
   Let ListAdd x l l' := forall y : elt, ME.In y l' <-> E.eq x y \/ ME.In y l.
 
   Lemma remove_list_add :
-    forall s s' x x', NoRedun s -> NoRedun (x' :: s') ->
+    forall s s' x x', NoDup s -> NoDup (x' :: s') ->
     ~ E.eq x x' -> ~ ME.In x s -> 
     ListAdd x s (x' :: s') -> ListAdd x (remove_list x' s) s'.
   Proof.
@@ -534,7 +534,7 @@ Module Properties (M: S).
   Variables (i:A).
 
   Lemma remove_list_fold_right_0 :
-    forall s x, NoRedun s -> ~ME.In x s ->
+    forall s x, NoDup s -> ~ME.In x s ->
     eqA (fold_right f i s) (fold_right f i (remove_list x s)).
   Proof.
    simple induction s; simpl; intros.
@@ -546,7 +546,7 @@ Module Properties (M: S).
   Qed.   
 
   Lemma remove_list_fold_right :
-    forall s x, NoRedun s -> ME.In x s ->
+    forall s x, NoDup s -> ME.In x s ->
     eqA (fold_right f i s) (f x (fold_right f i (remove_list x s))).
   Proof.
    simple induction s; simpl.  
@@ -563,7 +563,7 @@ Module Properties (M: S).
   Qed.   
 
   Lemma fold_right_equal :
-    forall s s', NoRedun s -> NoRedun s' ->
+    forall s s', NoDup s -> NoDup s' ->
     ListEq s s' -> eqA (fold_right f i s) (fold_right f i s').
   Proof.
    simple induction s.
@@ -586,7 +586,7 @@ Module Properties (M: S).
   Qed.
 
   Lemma fold_right_add :
-    forall s' s x, NoRedun s -> NoRedun s' -> ~ ME.In x s ->
+    forall s' s x, NoDup s -> NoDup s' -> ~ ME.In x s ->
     ListAdd x s s' -> eqA (fold_right f i s') (f x (fold_right f i s)).
   Proof.   
    simple induction s'.
@@ -625,7 +625,7 @@ Module Properties (M: S).
    destruct H; auto; destruct n; auto.
   Qed.
 
-  End noredunA_Remove.
+  End NoDupA_Remove.
 
   (** * Alternative (weaker) specifications for [fold] *)
 
@@ -638,12 +638,12 @@ Module Properties (M: S).
   Lemma fold_0 : 
       forall s (A : Set) (i : A) (f : elt -> A -> A),
       exists l : list elt,
-        NoRedun l /\
+        NoDup l /\
         (forall x : elt, In x s <-> InA E.eq x l) /\
         fold f s i = fold_right f i l.
   Proof.
   intros; exists (rev (elements s)); split.
-  apply noredunA_rev; auto.
+  apply NoDupA_rev; auto.
   exact E.eq_trans.
   split; intros.
   rewrite elements_iff; do 2 rewrite InA_alt.
@@ -694,7 +694,7 @@ Module Properties (M: S).
 
   Lemma cardinal_0 :
      forall s, exists l : list elt,
-        noredunA E.eq l /\
+        NoDupA E.eq l /\
         (forall x : elt, In x s <-> InA E.eq x l) /\ 
         cardinal s = length l.
   Proof. 
