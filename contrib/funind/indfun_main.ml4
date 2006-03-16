@@ -5,35 +5,7 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
-(**************************************************************************)
-(*                                                                        *)
-(* function induction / functional inversion / new version                *)
-(*                                                                        *)
-(* Julien Forest (INRIA Sophia-Antipolis, France)                         *)
-(*                                                                        *)
-(**************************************************************************)
-
 (*i camlp4deps: "parsing/grammar.cma" i*)
-
-(* open Indfun_common *)
-(* open Pp *)
-(* open Libnames *)
-(* open Names *)
-(* open Term *)
-
-
-(* open Pcoq *)
-
-(* open Genarg *)
-(* open Vernac_ *)
-(* open Prim *)
-(* open Constr *)
-(* open G_constr *)
-(* open G_vernac *)
-(* open Indfun *)
-(* open Topconstr *)
-
-(* open Tacinterp *)
 open Term
 open Names
 open Pp
@@ -74,89 +46,8 @@ TACTIC EXTEND newfunind
        in 
        let princ' = Some (mkConst princ,Rawterm.NoBindings) in 
        Tactics.new_induct args_as_induction_constr princ' Genarg.IntroAnonymous g
-(*        Tacticals.tclTHEN  *)
-(* 	 (Hiddentac.h_reduce  *)
-(* 	    (Rawterm.Pattern (List.map (fun e -> ([],e)) (frealargs@[c]))) *)
-(* 	    Tacticals.onConcl *)
-(* 	 ) *)
-(* 	 (Hiddentac.h_apply (mkConst princ,Rawterm.NoBindings)) *)
-(*      	 g *)
      ]
 END
-
-(*
-TACTIC EXTEND newfunind
-   ["new" "functional" "induction" constr(c) ] -> 
-     [
-       let f,args = decompose_app c in 
-       let fname = 
-	 match kind_of_term f with 
-	   | Const c' -> 
-	       id_of_label (con_label c') 
-	   | _ -> Util.error "Must be used with a function" 
-       in
-       fun g -> 
-       let princ_name = 
-	   (
-	     Indrec.make_elimination_ident
-	       fname
-	       (Tacticals.elimination_sort_of_goal g)
-	   )
-       in
-       let princ = const_of_id princ_name in
-       let princ_info = 
-	 let princ_type = 
-	(try (match (Global.lookup_constant princ) with
-		  {Declarations.const_type=t} -> t
-	     )
-	 with _ -> assert false)
-	 in
-	 Tactics.compute_elim_sig princ_type
-       in
-(* 	   msg *)
-(* 	     (str "computing non parameters argument for " ++ *)
-(* 		Ppconstr.pr_id princ_name ++ fnl () ++ *)
-(* 		str "detected params are : " ++ *)
-(* 		Util.prlist_with_sep spc (fun (id,_,_) -> Ppconstr.pr_name id) princ_info.Tactics.params ++ fnl ()++ *)
-(* 		str  "detected arguments are " ++ *)
-(* 		Util.prlist_with_sep spc (Printer.pr_lconstr_env (Tacmach.pf_env g))  args ++ fnl ()  *)
-(* 	      ++ str " number of predicates " ++ *)
-(* 		str (string_of_int (List.length princ_info.Tactics.predicates))++ fnl () ++ *)
-(* 		str " number of branches " ++ *)
-(* 		str (string_of_int (List.length princ_info.Tactics.branches)) *)
-(* 	     ); *)
-
-       let frealargs = 
-	 try
-	   snd (Util.list_chop (List.length princ_info.Tactics.params) args)
-	 with _ -> 
-	   msg_warning
-	     (str "computing non parameters argument for " ++
-		Ppconstr.pr_id princ_name ++ fnl () ++
-		str " detected params number is : " ++
-		str (string_of_int (List.length princ_info.Tactics.params)) ++ fnl ()++
-		str  " while number of arguments is " ++
-		str (string_of_int (List.length args)) ++ fnl () 
-(* 		str " number of predicates " ++  *)
-(* 		str (string_of_int (List.length princ_info.predicates))++ fnl () ++ *)
-(* 		str " number of branches " ++  *)
-(* 		str (string_of_int (List.length princ_info.branches)) *)
-	     );args
-	     
-       in
-       Tacticals.tclTHEN 
-	 (Hiddentac.h_reduce 
-	    (Rawterm.Pattern (List.map (fun e -> ([],e)) (frealargs@[c])))
-	    Tacticals.onConcl
-	 )
-	 (Hiddentac.h_apply (mkConst princ,Rawterm.NoBindings))
-     	 g
-     ]
-END
-*)
-
-
-
 
 VERNAC ARGUMENT EXTEND rec_annotation2
   [ "{"  "struct" ident(id)  "}"] -> [ Struct id ]
@@ -196,9 +87,7 @@ VERNAC ARGUMENT EXTEND rec_definition2
      let ni =
        match annot with
          | None ->
-(* 	     check_one_name (); *)
              annot
-	     
 	 | Some an ->
 	     check_exists_args an
      in
@@ -239,16 +128,6 @@ VERNAC COMMAND EXTEND NewFunctionalScheme
 	(Array.map destConst funs)
 	0
 	(New_arg_principle.prove_princ_for_struct false 0 (Array.map destConst funs))
-
-      
-
-(*       let res = New_arg_principle.compute_new_princ_type_from_rel  *)
-(* 	funs  *)
-(* 	scheme_type *)
-(*       in  *)
-      
-(*       Pp.msgnl (str "result := "++Printer.pr_lconstr res++fnl ()) *)
-	      
     ]
 END
 
