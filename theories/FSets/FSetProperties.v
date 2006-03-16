@@ -450,138 +450,90 @@ Module Properties (M: S).
     Equal_remove : set.
 
   Notation NoDup := (NoDupA E.eq).
+  Notation EqList := (eqlistA E.eq).
 
   Section NoDupA_Remove.
 
-  Definition remove_list x l := MoreList.filter (fun y => negb (eqb x y)) l.
-
-  Lemma remove_list_correct :
-    forall s x, NoDup s -> 
-    NoDup (remove_list x s) /\
-    (forall y : elt, ME.In y (remove_list x s) <-> ME.In y s /\ ~ E.eq x y).
-  Proof.
-   simple induction s; simpl; intros.
-   repeat (split; trivial).
-   inversion H0.
-   destruct 1; inversion H0.
-   inversion_clear H0.
-   destruct (H x H2) as (H3,H4); clear H.
-   unfold eqb; destruct (eq_dec x a); simpl; trivial.  
-   split; auto; intros.
-   rewrite H4; clear H4.
-   split; destruct 1; split; auto.
-   inversion_clear H; auto; order.
-   split; auto; intros.
-   constructor; auto.
-   rewrite H4; intuition.
-   split.
-   inversion_clear 1.
-   split; auto; order.
-   rewrite (H4 y) in H0; destruct H0; auto.
-   destruct 1.
-   inversion_clear H; auto.
-   constructor 2; rewrite H4; auto.
-  Qed. 
-
-  Let ListEq l l' := forall y : elt, ME.In y l <-> ME.In y l'.
-
-  Lemma remove_list_equal :
-    forall s s' x, NoDup (x :: s) -> NoDup s' -> 
-    ListEq (x :: s) s' -> ListEq s (remove_list x s').
-  Proof.  
-   unfold ListEq; intros. 
-   inversion_clear H.
-   destruct (remove_list_correct x H0).
-   destruct (H4 y); clear H4.
-   destruct (H1 y); clear H1.
-   split; intros.
-   apply H6; split; auto. 
-   swap H2; apply In_eq with y; auto; order.
-   destruct (H5 H1); intros.
-   generalize (H7 H8); inversion_clear 1; auto.
-   destruct H9; auto.
-  Qed. 
-
   Let ListAdd x l l' := forall y : elt, ME.In y l' <-> E.eq x y \/ ME.In y l.
 
-  Lemma remove_list_add :
+  Lemma removeA_add :
     forall s s' x x', NoDup s -> NoDup (x' :: s') ->
     ~ E.eq x x' -> ~ ME.In x s -> 
-    ListAdd x s (x' :: s') -> ListAdd x (remove_list x' s) s'.
+    ListAdd x s (x' :: s') -> ListAdd x (removeA eq_dec x' s) s'.
   Proof.
    unfold ListAdd; intros.
    inversion_clear H0.
-   destruct (remove_list_correct x' H).
-   destruct (H6 y); clear H6.
-   destruct (H3 y); clear H3.
+   rewrite removeA_InA; auto; [apply E.eq_trans|].
    split; intros.
-   destruct H6; auto.
    destruct (eq_dec x y); auto; intros.
-   right; apply H8; split; auto.
+   right; split; auto.
+   destruct (H3 y); clear H3.
+   destruct H6; intuition.
    swap H4; apply In_eq with y; auto.
-   destruct H3.
-   assert (ME.In y (x' :: s')). auto.
-   inversion_clear H10; auto.
-   destruct H1; order.
-   destruct (H7 H3).
-   assert (ME.In y (x' :: s')). auto.
-   inversion_clear H12; auto.
-   destruct H11; auto. 
+   destruct H0.
+   assert (ME.In y (x' :: s')) by rewrite H3; auto.
+   inversion_clear H6; auto.
+   elim H1; apply E.eq_trans with y; auto.
+   destruct H0.
+   assert (ME.In y (x' :: s')) by rewrite H3; auto.
+   inversion_clear H7; auto.
+   elim H6; auto.
   Qed.
 
   Variables (A:Set)(eqA:A->A->Prop)(st:Setoid_Theory _ eqA).
   Variables (f:elt->A->A)(Comp:compat_op E.eq eqA f)(Ass:transpose eqA f).
   Variables (i:A).
 
-  Lemma remove_list_fold_right_0 :
+  Lemma removeA_fold_right_0 :
     forall s x, NoDup s -> ~ME.In x s ->
-    eqA (fold_right f i s) (fold_right f i (remove_list x s)).
+    eqA (fold_right f i s) (fold_right f i (removeA eq_dec x s)).
   Proof.
    simple induction s; simpl; intros.
    refl_st.
    inversion_clear H0.
-   unfold eqb; destruct (eq_dec x a); simpl; intros.
+   destruct (eq_dec x a); simpl; intros.
    absurd_hyp e; auto.
    apply Comp; auto. 
   Qed.   
 
-  Lemma remove_list_fold_right :
+  Lemma removeA_fold_right :
     forall s x, NoDup s -> ME.In x s ->
-    eqA (fold_right f i s) (f x (fold_right f i (remove_list x s))).
+    eqA (fold_right f i s) (f x (fold_right f i (removeA eq_dec x s))).
   Proof.
    simple induction s; simpl.  
    inversion_clear 2.
    intros.
    inversion_clear H0.
-   unfold eqb; destruct (eq_dec x a); simpl; intros.
+   destruct (eq_dec x a); simpl; intros.
    apply Comp; auto. 
-   apply remove_list_fold_right_0; auto.
+   apply removeA_fold_right_0; auto.
    swap H2; apply ME.In_eq with x; auto.
    inversion_clear H1. 
    destruct n; auto.
-   trans_st (f a (f x (fold_right f i (remove_list x l)))).
+   trans_st (f a (f x (fold_right f i (removeA eq_dec x l)))).
   Qed.   
 
   Lemma fold_right_equal :
     forall s s', NoDup s -> NoDup s' ->
-    ListEq s s' -> eqA (fold_right f i s) (fold_right f i s').
+    EqList s s' -> eqA (fold_right f i s) (fold_right f i s').
   Proof.
    simple induction s.
    destruct s'; simpl.
    intros; refl_st; auto.
-   unfold ListEq; intros.
+   unfold eqlistA; intros.
    destruct (H1 t0).
    assert (X : ME.In t0 nil); auto; inversion X.
    intros x l Hrec s' N N' E; simpl in *.
-   trans_st (f x (fold_right f i (remove_list x s'))).
+   trans_st (f x (fold_right f i (removeA eq_dec x s'))).
    apply Comp; auto.
    apply Hrec; auto.
    inversion N; auto.
-   destruct (remove_list_correct x N'); auto.
-   apply remove_list_equal; auto.
+   apply removeA_NoDupA; auto; apply E.eq_trans.
+   apply removeA_eqlistA; auto; [apply E.eq_trans|].
+   inversion_clear N; auto.
    sym_st.
-   apply remove_list_fold_right; auto.
-   unfold ListEq in E.
+   apply removeA_fold_right; auto.
+   unfold eqlistA in E.
    rewrite <- E; auto.
   Qed.
 
@@ -599,28 +551,26 @@ Module Properties (M: S).
    apply Comp; auto.
    apply fold_right_equal; auto.
    inversion_clear N'; trivial.
-   unfold ListEq; unfold ListAdd in EQ; intros.
-   destruct (EQ y); clear EQ.
+   unfold eqlistA; unfold ListAdd in EQ; intros.
+   destruct (EQ x0); clear EQ.
    split; intros.
    destruct H; auto.
    inversion_clear N'.
-   destruct H2; apply In_eq with y; auto; order.
-   assert (X:ME.In y (x' :: l')); auto; inversion_clear X; auto.
-   destruct IN; apply In_eq with y; auto; order.
+   destruct H2; apply In_eq with x0; auto; order.
+   assert (X:ME.In x0 (x' :: l')); auto; inversion_clear X; auto.
+   destruct IN; apply In_eq with x0; auto; order.
    (* else x<>x' *)   
-   trans_st (f x' (f x (fold_right f i (remove_list x' s)))).
+   trans_st (f x' (f x (fold_right f i (removeA eq_dec x' s)))).
    apply Comp; auto.
    apply Hrec; auto.
-   destruct (remove_list_correct x' N); auto.
+   apply removeA_NoDupA; auto; apply E.eq_trans.
    inversion_clear N'; auto.
-   destruct (remove_list_correct x' N).
-   rewrite H0; clear H0.
-   intuition.
-   apply remove_list_add; auto.
-   trans_st (f x (f x' (fold_right f i (remove_list x' s)))).
+   rewrite removeA_InA; auto; [apply E.eq_trans|intuition].
+   apply removeA_add; auto.
+   trans_st (f x (f x' (fold_right f i (removeA eq_dec x' s)))).
    apply Comp; auto.
    sym_st.
-   apply remove_list_fold_right; auto.
+   apply removeA_fold_right; auto.
    destruct (EQ x'). 
    destruct H; auto; destruct n; auto.
   Qed.

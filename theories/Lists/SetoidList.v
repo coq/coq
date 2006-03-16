@@ -44,7 +44,7 @@ Proof.
  firstorder; subst; auto.
 Qed.
 
-(** Similarly, a list without redundancy modulo the equality over [A]. *)
+(** A list without redundancy modulo the equality over [A]. *)
 
 Inductive NoDupA : list A -> Prop :=
   | NoDupA_nil : NoDupA nil
@@ -52,6 +52,9 @@ Inductive NoDupA : list A -> Prop :=
 
 Hint Constructors NoDupA.
 
+(** lists with same elements modulo [eqA] *)
+
+Definition eqlistA l l' := forall x, InA x l <-> InA x l'.
 
 (** Results concerning lists modulo [eqA] *)
 
@@ -231,6 +234,62 @@ Fixpoint removeA (x : A) (l : list A){struct l} : list A :=
     | nil => nil
     | y::tl => if (eqA_dec x y) then removeA x tl else y::(removeA x tl)
   end.
+
+Lemma removeA_filter : forall x l, 
+  removeA x l = filter (fun y => if eqA_dec x y then false else true) l.
+Proof.
+induction l; simpl; auto.
+destruct (eqA_dec x a); auto.
+rewrite IHl; auto.
+Qed.
+
+Lemma removeA_InA : forall l x y, InA y (removeA x l) <-> InA y l /\ ~eqA x y.
+Proof.
+induction l; simpl; auto.
+split.
+inversion_clear 1.
+destruct 1; inversion_clear H.
+intros.
+destruct (eqA_dec x a); simpl; auto.
+rewrite IHl; split; destruct 1; split; auto.
+inversion_clear H; auto.
+destruct H0; apply eqA_trans with a; auto.
+split.
+inversion_clear 1.
+split; auto.
+swap n.
+apply eqA_trans with y; auto.
+rewrite (IHl x y) in H0; destruct H0; auto.
+destruct 1; inversion_clear H; auto.
+constructor 2; rewrite IHl; auto.
+Qed.
+
+Lemma removeA_NoDupA :
+  forall s x, NoDupA s ->  NoDupA (removeA x s).
+Proof.
+simple induction s; simpl; intros.
+auto.
+inversion_clear H0.
+destruct (eqA_dec x a); simpl; auto. 
+constructor; auto.
+rewrite removeA_InA.
+intuition.
+Qed. 
+
+Lemma removeA_eqlistA : forall l l' x, 
+  ~InA x l -> eqlistA (x :: l) l' -> eqlistA l (removeA x l').
+Proof.  
+unfold eqlistA; intros. 
+rewrite removeA_InA.
+split; intros.
+rewrite <- H0; split; auto.
+swap H.
+apply InA_eqA with x0; auto.
+rewrite <- (H0 x0) in H1.
+destruct H1.
+inversion_clear H1; auto.
+elim H2; auto.
+Qed.
 
 End Remove.
 
