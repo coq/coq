@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id: FSetInterface.v,v 1.11 2006/03/10 10:49:48 letouzey Exp $ *)
+(* $Id$ *)
 
 (** * Finite set library *)
 

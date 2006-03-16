@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id: FMapInterface.v,v 1.13 2006/02/27 15:39:43 letouzey Exp $ *)
+(* $Id$ *)
 
 (** * Finite map library *)  
 

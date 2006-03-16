@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id: FSetWeakList.v,v 1.8 2006/03/09 18:34:51 letouzey Exp $ *)
+(* $Id$ *)
 
 (** * Finite sets library *)
 

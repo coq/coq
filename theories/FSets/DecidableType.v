@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id: DecidableType.v,v 1.3 2006/03/03 18:48:37 letouzey Exp $ *)
+(* $Id$ *)
 
 Require Export SetoidList.
 Set Implicit Arguments.

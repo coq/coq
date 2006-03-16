@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id: FMapWeakInterface.v,v 1.4 2006/02/27 15:39:43 letouzey Exp $ *)
+(* $Id$ *)
 
 (** * Finite map library *) 
 

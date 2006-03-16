@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id: OrderedType.v,v 1.4 2006/03/10 10:49:48 letouzey Exp $ *)
+(* $Id$ *)
 
 Require Export SetoidList.
 Set Implicit Arguments.

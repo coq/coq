@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id: MoreList.v,v 1.4 2006/03/13 04:59:24 letouzey Exp $ *)
+(* $Id$ *)
 
 (** This file contains some complements to [List.v], in particular
   results about lengths of the different lists operations (but not only)

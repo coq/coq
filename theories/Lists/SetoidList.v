@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id: Lib.v,v 1.2 2006/02/26 15:59:48 letouzey Exp $ *)
+(* $Id$ *)
 
 Require Export List.
 Require Export MoreList.
