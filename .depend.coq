@@ -187,7 +187,8 @@ theories/FSets/FSetEqProperties.vo: theories/FSets/FSetEqProperties.v theories/F
 theories/FSets/FSet.vo: theories/FSets/FSet.v theories/FSets/OrderedType.vo theories/FSets/FSetInterface.vo theories/FSets/FSetBridge.vo theories/FSets/FSetProperties.vo theories/FSets/FSetEqProperties.vo theories/FSets/FSetList.vo
 theories/FSets/FSetWeakInterface.vo: theories/FSets/FSetWeakInterface.v theories/Bool/Bool.vo theories/FSets/DecidableType.vo
 theories/FSets/FSetWeakList.vo: theories/FSets/FSetWeakList.v theories/FSets/FSetWeakInterface.vo
-theories/FSets/FSetWeak.vo: theories/FSets/FSetWeak.v theories/FSets/DecidableType.vo theories/FSets/FSetWeakInterface.vo theories/FSets/FSetWeakList.vo
+theories/FSets/FSetWeakFacts.vo: theories/FSets/FSetWeakFacts.v theories/FSets/FSetWeakInterface.vo
+theories/FSets/FSetWeak.vo: theories/FSets/FSetWeak.v theories/FSets/DecidableType.vo theories/FSets/FSetWeakInterface.vo theories/FSets/FSetFacts.vo theories/FSets/FSetWeakList.vo
 theories/FSets/FMapInterface.vo: theories/FSets/FMapInterface.v theories/FSets/FSetInterface.vo
 theories/FSets/FMapList.vo: theories/FSets/FMapList.v theories/FSets/FSetInterface.vo theories/FSets/FMapInterface.vo
 theories/FSets/FMap.vo: theories/FSets/FMap.v theories/FSets/FMapInterface.vo theories/FSets/FMapList.vo

@@ -38,7 +38,18 @@ Module Type S.
   Definition elt := E.t.
 
   Parameter t : Set. (** the abstract type of sets *)
- 
+
+  (** Logical predicates *)
+  Parameter In : elt -> t -> Prop.
+  Definition Equal s s' := forall a : elt, In a s <-> In a s'.
+  Definition Subset s s' := forall a : elt, In a s -> In a s'.
+  Definition Empty s := forall a : elt, ~ In a s.
+  Definition For_all (P : elt -> Prop) s := forall x, In x s -> P x.
+  Definition Exists (P : elt -> Prop) s := exists x, In x s /\ P x.
+  
+  Notation "s [=] t" := (Equal s t) (at level 70, no associativity).
+  Notation "s [<=] t" := (Subset s t) (at level 70, no associativity).
+
   Parameter empty : t.
   (** The empty set. *)
 
@@ -123,13 +134,6 @@ Module Type S.
 
   Variable s s' s'' : t.
   Variable x y z : elt.
-
-  Parameter In : elt -> t -> Prop.
-  Definition Equal s s' := forall a : elt, In a s <-> In a s'.
-  Definition Subset s s' := forall a : elt, In a s -> In a s'.
-  Definition Empty s := forall a : elt, ~ In a s.
-  Definition For_all (P : elt -> Prop) s := forall x, In x s -> P x.
-  Definition Exists (P : elt -> Prop) s := exists x, In x s /\ P x.
 
   (** Specification of [In] *)
   Parameter In_1 : E.eq x y -> In x s -> In y s.

@@ -10,4 +10,5 @@
 
 Require Export DecidableType.
 Require Export FSetWeakInterface.
+Require Export FSetFacts.
 Require Export FSetWeakList.
