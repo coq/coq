@@ -75,39 +75,96 @@ let recarg_length p j =
 
 let subst_wf_paths sub p = Rtree.smartmap (subst_recarg sub) p
 
-(* [mind_typename] is the name of the inductive; [mind_arity] is
-   the arity generalized over global parameters; [mind_lc] is the list
-   of types of constructors generalized over global parameters and
-   relative to the global context enriched with the arities of the
-   inductives *) 
+(**********************************************************************)
+(* Representation of mutual inductive types in the kernel             *)
+(*
+   Inductive I1 (params) : U1 := c11 : T11 | ... | c1p1 : T1p1
+   ...
+   with      In (params) : Un := cn1 : Tn1 | ... | cnpn : Tnpn
+*)
 
 type one_inductive_body = {
+
+(* Primitive datas *)
+
+ (* Name of the type: [Ii] *)
     mind_typename : identifier;
-    mind_nrealargs : int;
-    mind_nf_arity : types;
+
+ (* Arity of [Ii] with parameters: [forall params, Ui] *)
     mind_user_arity : types;
-    mind_sort : sorts;
-    mind_kelim : sorts_family list;
+
+ (* Names of the constructors: [cij] *)
     mind_consnames : identifier array;
-    mind_consnrealargs : int array;
-    mind_nf_lc : types array; (* constrs and arity with pre-expanded ccl *)
+
+ (* Types of the constructors with parameters: [forall params, Tij],
+    where the Ik are replaced by de Bruijn index in the context
+    I1:forall params, U1 ..  In:forall params, Un *)
     mind_user_lc : types array;
+
+(* Derived datas *)
+
+ (* Head normalized arity so that the conclusion is a sort *)
+    mind_nf_arity : types;
+
+ (* Number of expected real arguments of the type (no let, no params) *)
+    mind_nrealargs : int;
+
+ (* Conclusion of the arity *)
+    mind_sort : sorts;
+
+ (* List of allowed elimination sorts *)
+    mind_kelim : sorts_family list;
+
+ (* Head normalized constructor types so that their conclusion is atomic *)
+    mind_nf_lc : types array;
+
+ (* Number of expected (real) arg of the constructors (no let, no params) *)
+    mind_consnrealargs : int array;
+
+ (* Signature of recursive arguments in the constructors *)
     mind_recargs : wf_paths;
-    mind_nb_constant : int; (* number of constant constructor *)
-    mind_nb_args : int; (* number of no constant constructor *)
+
+(* Datas for bytecode compilation *)
+
+ (* number of constant constructor *)
+    mind_nb_constant : int;
+
+ (* number of no constant constructor *)
+    mind_nb_args : int;
+
     mind_reloc_tbl :  Cbytecodes.reloc_table; 
   }
 
 type mutual_inductive_body = {
-    mind_record : bool;
-    mind_finite : bool;
-    mind_ntypes : int;
-    mind_hyps : section_context;
-    mind_nparams : int;
-    mind_nparams_rec : int;
-    mind_params_ctxt : rel_context;
+
+  (* The component of the mutual inductive block *)
     mind_packets : one_inductive_body array;
+
+  (* Whether the inductive type has been declared as a record *)
+    mind_record : bool;
+
+  (* Whether the type is inductive or coinductive *)
+    mind_finite : bool;
+
+  (* Number of types in the block *)
+    mind_ntypes : int;
+
+  (* Section hypotheses on which the block depends *)
+    mind_hyps : section_context;
+
+  (* Number of expected parameters *)
+    mind_nparams : int;
+
+  (* Number of non recursively uniform parameters *)
+    mind_nparams_rec : int;
+
+  (* The context of parameters (includes let-in declaration) *)
+    mind_params_ctxt : rel_context;
+
+  (* Universes constraints enforced by the inductive declaration *)
     mind_constraints : constraints;
+
+  (* Source of the inductive block when aliased in a module *)
     mind_equiv : kernel_name option
   }
 
