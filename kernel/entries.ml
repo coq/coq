@@ -32,9 +32,9 @@ type local_entry =
 
 (* Assume the following definition in concrete syntax:
 \begin{verbatim}
-Inductive I1 [x1:X1;...;xn:Xn] : A1 := c11 : T11 | ... | c1n1 : T1n1
+Inductive I1 (x1:X1) ... (xn:Xn) : A1 := c11 : T11 | ... | c1n1 : T1n1
 ...
-with  Ip [x1:X1;...;xn:Xn] : Ap := cp1 : Tp1 | ... | cpnp : Tpnp.
+with      Ip (x1:X1) ... (xn:Xn) : Ap := cp1 : Tp1 | ... | cpnp : Tpnp.
 \end{verbatim}
 then, in $i^{th}$ block, [mind_entry_params] is [[xn:Xn;...;x1:X1]];
 [mind_entry_arity] is [Ai], defined in context [[[x1:X1;...;xn:Xn]];
