@@ -378,20 +378,30 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _naprams : 
        let true_params = List.rev params in
        let avoid = ref avoid in 
        let res = list_fold_left_i
-	 (fun i acc id  -> 
+	 (fun i acc pte_id  -> 
 	    let this_fix_id = fresh_id !avoid "fix___" in 
 	    avoid := this_fix_id::!avoid;
 (* 	    let this_body = substl (List.rev fnames_as_constr) ca.(i) in  *)
 	    let this_body = substl (List.rev (Array.to_list all_funs)) ca.(i) in 
 	    let new_type = prod_applist typearray.(i) true_params 
 	    and new_body = Reductionops.nf_beta (applist(this_body,true_params)) in
+	    let new_type_args,_ = decompose_prod new_type in 
+	    let nargs = List.length new_type_args in
+	    let pte_args = 
+	      (* 	      let rev_args = List.rev_map (fun (id,_,_) -> mkVar id) new_type_args in  *)
+	      let f = applist(all_funs.(i),true_params) in
+	      let app_f = mkApp(f,Array.init nargs (fun i -> mkRel(nargs - i))) in 
+	      (Array.to_list (Array.init nargs (fun i -> mkRel(nargs - i))))@[app_f]
+	    in
+	    let app_pte = applist(mkVar pte_id,pte_args) in 
+	    let new_type = compose_prod new_type_args app_pte in 
 	    let fix_info = idxs.(i) - offset + 1,new_body,this_fix_id ,new_type in 
-	    pte_to_fix := Idmap.add  id fix_info !pte_to_fix;
+	    pte_to_fix := Idmap.add  pte_id fix_info !pte_to_fix;
 	    fix_info::acc
 	 )
 	 0 
 	 []
-	 (List.rev predicates)
+	 predicates
        in
        !avoid,List.rev res
      in     
@@ -443,15 +453,15 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _naprams : 
 	 match kind_of_term (pf_concl g) with 
 	   | App(pte,pte_args) when isVar pte -> 
 	       begin
-		 let pte = destVar pte in 
+		 let pte = destVar pte in
 		 try
-		  let (_idx,_new_body,_this_fix_id,_new_type) =
-		    try Idmap.find pte pte_to_fix with _ -> raise Not_Rec
-		  in
+		   let (_idx,_new_body,_this_fix_id,_new_type) =
+		     try Idmap.find pte pte_to_fix with _ -> raise Not_Rec
+		   in
 		 let nparams = List.length !params in
 		 let args_as_constr = List.map mkVar  args in
 		  let rec_num,new_body =
-		    let idx' = list_index pte !predicates  - 1 in 
+		    let idx' = list_index pte (List.rev !predicates)  - 1 in 
 		    let f = fnames.(idx') in 
 		    let body_with_params = match !fbody_with_params with Some f -> f | _ -> anomaly "" 
 		    in
@@ -484,7 +494,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _naprams : 
 				    Printer.pr_lconstr_env (pf_env g) applied_body  ++ 
 				    str " rec_arg_num is " ++ str (string_of_int rec_num)
 				 );
-			 Equality.replace (array_last pte_args) applied_body g
+			 (Equality.replace (array_last pte_args) applied_body) g
 		      )
 		      [
 			do_prove;
@@ -495,13 +505,11 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _naprams : 
 			     [(h_simplest_case id);
 			      Tactics.intros_reflexivity
 			     ])
-			   with _ -> tclIDTAC
+			with _ -> tclIDTAC
 			
 		      ]
 		  in
-(* 		  tclTHEN *)
-		    (observe_tac "doing replacement" replace_and_prove)
-		    g 
+		  (observe_tac "doing replacement" ( replace_and_prove)) g 
 		 with Not_Rec -> 
 		   let fname = destConst (fst (decompose_app (array_last pte_args))) in 
 		   tclTHEN 
@@ -526,8 +534,13 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _naprams : 
 	 (fun g -> observe_tac "introducing predicate" (intro_with_remembrance predicates  princ_info.npredicates) g);
 	 (fun g -> observe_tac "introducing branches" (intro_with_remembrance branches princ_info.nbranches) g);
 	 (fun g -> observe_tac "declaring fix(es)" mk_fixes g);
-	 (fun g -> observe_tac "introducing args" (intro_with_remembrance args princ_info.nargs) g);
-	 (fun g -> observe_tac "proving" (fun  g -> do_prove !pte_to_fix !args g)  g)
+	 (fun g -> 
+	    let args = ref [] in 
+	    tclTHEN 
+	      (fun g -> observe_tac "introducing args" (intro_with_remembrance args princ_info.nargs) g)
+	      (fun g -> observe_tac "proving" (fun  g -> do_prove !pte_to_fix !args g) g)
+	      g
+	 )
        ]
        goal
 
@@ -547,20 +560,26 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _naprams : 
 exception Toberemoved_with_rel of int*constr
 exception Toberemoved
   
-let compute_new_princ_type_from_rel rel_to_fun princ_type =
+let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   let princ_type_info = compute_elim_sig princ_type in 
   let env = Global.env () in 
-  let type_sort = (Termops.new_sort_in_family InType) in 
-  let change_predicate_sort (x,_,t) = 
+(*   let type_sort = (Termops.new_sort_in_family InType) in  *)
+  let change_predicate_sort i (x,_,t) = 
+    let new_sort = sorts.(i) in
     let args,_ = decompose_prod t in 
     let real_args = 
       if princ_type_info.indarg_in_concl 
       then List.tl args 
       else args
     in
-    x,None,compose_prod real_args (mkSort type_sort) 
+    x,None,compose_prod real_args (mkSort new_sort) 
   in
-  let new_predicates = List.map change_predicate_sort princ_type_info.predicates in
+  let new_predicates = 
+    list_map_i
+      change_predicate_sort 
+      0
+      princ_type_info.predicates
+  in
   let env_with_params_and_predicates = 
     Environ.push_rel_context 
       new_predicates
@@ -756,33 +775,41 @@ let change_property_sort toSort princ princName =
 
 let generate_functional_principle 
     interactive_proof
-    old_princ_type new_princ_name funs i proof_tac 
+    old_princ_type sorts new_princ_name funs i proof_tac 
     = 
-  let type_sort = (Termops.new_sort_in_family InType) in 
   let f = funs.(i) in 
+  let type_sort = Termops.new_sort_in_family InType in 
+  let new_sorts = 
+    match sorts with 
+      | None -> Array.make (Array.length funs) (type_sort)
+      | Some a -> a
+  in
   (* First we get the type of the old graph principle *)
   let mutr_nparams = (compute_elim_sig old_princ_type).nparams in 
   (* First we get the type of the old graph principle *)
    let new_principle_type =
     compute_new_princ_type_from_rel
       (Array.map mkConst funs)
+      new_sorts
       old_princ_type
   in
 (*   let tim2 = Sys.time ()  in *)
 (*   Pp.msgnl (str ("Time to compute type: ") ++ str (string_of_float (tim2 -. tim1))) ; *)
 (*   msgnl (str "new principle type :"++ pr_lconstr  new_principle_type); *)
-  let new_princ_name =
+  let base_new_princ_name,new_princ_name =
     match new_princ_name with
-      | Some (id) -> id
+      | Some (id) -> id,id
       | None ->
 	  let id_of_f = id_of_label (con_label f) in
-	  Indrec.make_elimination_ident id_of_f (family_of_sort type_sort)
+	  id_of_f,Indrec.make_elimination_ident id_of_f (family_of_sort type_sort)
   in
   let hook _ _  =
-    let id_of_f = id_of_label (con_label f) in
+    if sorts = None 
+    then
+(*     let id_of_f = id_of_label (con_label f) in *)
     let register_with_sort fam_sort =
       let s = Termops.new_sort_in_family  fam_sort in
-      let name = Indrec.make_elimination_ident id_of_f fam_sort in
+      let name = Indrec.make_elimination_ident base_new_princ_name fam_sort in
       let value =
 	change_property_sort s new_principle_type new_princ_name
       in
@@ -839,3 +866,125 @@ let generate_functional_principle
 
 
 
+let get_funs_constant mp dp = 
+  let rec get_funs_constant const e : (Names.constant*int) array = 
+    match kind_of_term (snd (decompose_lam e)) with 
+      | Fix((_,(na,_,_))) -> 
+	  Array.mapi 
+	    (fun i na -> 
+	       match na with 
+		 | Name id -> 
+		     let const = make_con mp dp (label_of_id id) in 
+		     const,i
+		 | Anonymous -> 
+		     anomaly "Anonymous fix" 
+	    )
+	    na
+      | _ -> [|const,0|]
+  in
+  function const -> 
+    let find_constant_body const = 
+      match (Global.lookup_constant const ).const_body with
+	| Some b ->
+	    let body = force b in
+	    let body = Tacred.cbv_norm_flags
+	      (Closure.RedFlags.mkflags [Closure.RedFlags.fZETA])
+	      (Global.env ())
+	      (Evd.empty)
+	      body
+	    in
+	    body
+	| None -> error ( "Cannot define a principle over an axiom ")
+    in
+    let f = find_constant_body const in
+    let l_const = get_funs_constant const f in 
+    (* 
+       We need to check that all the functions found are in the same block 
+       to prevent Reset stange thing
+    *) 
+    let l_bodies = List.map find_constant_body (Array.to_list (Array.map fst l_const)) in 
+    let l_params,l_fixes = List.split (List.map decompose_lam l_bodies) in 
+    (* all the paremeter must be equal*) 
+    let _check_params = 
+      let first_params = List.hd l_params  in 
+      List.iter 
+	(fun params -> 
+	   if not ((=) first_params params) 
+	   then error "Not a mutal recursive block"
+	)
+	l_params
+    in
+    (* The bodies has to be very similar *) 
+    let _check_bodies = 
+      let extract_info body = 
+	match kind_of_term body with 
+	  | Fix((idxs,_),(na,ta,ca)) -> (idxs,na,ta,ca)
+	  | _ -> error "Not a mutal recursive block"
+      in
+      let first_infos = extract_info (List.hd l_bodies) in 
+      let check body  = (* Hope this is correct *)
+	if not (first_infos = (extract_info body)) 
+	then  error "Not a mutal recursive block"
+      in 
+      List.iter check l_bodies
+    in
+    l_const
+	
+let make_scheme fas = 
+  let env = Global.env () 
+  and sigma = Evd.empty in
+  let id_to_constr id = 
+    Tacinterp.constr_of_id env  id
+  in 
+  let funs = List.map (fun (_,f,_) -> id_to_constr f) fas in 
+  let first_fun = destConst (List.hd funs) in 
+  let funs_mp,funs_dp,first_fun_id = Names.repr_con first_fun in 
+  let first_fun_rel_id = mk_rel_id (id_of_label first_fun_id) in 
+  let first_fun_kn = 
+    (* Fixme: take into accour funs_mp and funs_dp *)
+    fst (destInd (id_to_constr first_fun_rel_id))
+  in
+  let this_block_funs_indexes = get_funs_constant funs_mp funs_dp first_fun in
+  let this_block_funs = Array.map fst this_block_funs_indexes in 
+  let prop_sort = InProp in
+  let funs_indexes = 
+    let this_block_funs_indexes = Array.to_list this_block_funs_indexes in 
+    List.map
+      (function const -> List.assoc (destConst const) this_block_funs_indexes)
+      funs
+  in
+  let ind_list = 
+    List.map 
+      (fun (idx) -> 
+	 let ind = first_fun_kn,idx in 
+	 let (mib,mip) = Global.lookup_inductive ind in
+	 ind,mib,mip,true,prop_sort
+      )
+      funs_indexes
+  in
+  let l_schemes = Indrec.build_mutual_indrec env sigma ind_list in 
+  let i = ref (-1) in
+  let sorts = 
+    List.rev_map (fun (_,_,x) -> 
+		Termops.new_sort_in_family (Pretyping.interp_elimination_sort x)
+	     ) 
+      fas 
+  in
+  let _ = List.map2
+    (fun princ_name scheme_type -> 
+       incr i;
+       observe (str "Generating " ++ Ppconstr.pr_id princ_name ++str " with " ++
+	       Printer.pr_lconstr scheme_type);
+       generate_functional_principle 
+	 false
+	 (Typing.type_of env sigma scheme_type)
+	 (Some (Array.of_list sorts))
+	 (Some princ_name)
+	 this_block_funs
+	 !i 
+	 (prove_princ_for_struct false !i (Array.of_list (List.map destConst funs)))
+    )
+    (List.map (fun (x,_,_) -> x) fas) 
+    l_schemes 
+  in
+  ()

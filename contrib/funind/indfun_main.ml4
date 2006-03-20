@@ -111,23 +111,20 @@ VERNAC COMMAND EXTEND IGenFixpoint
 	[ do_generate_principle true  recsl]
 END
 
+
+VERNAC ARGUMENT EXTEND fun_scheme_arg
+| [ ident(princ_name) ":=" "Induction" "for" ident(fun_name) "Sort" sort(s) ] -> [ (princ_name,fun_name,s) ] 
+END 
+
+VERNAC ARGUMENT EXTEND fun_scheme_args
+| [ fun_scheme_arg(fa) ] -> [ [fa] ] 
+| [ fun_scheme_arg(fa) "with" fun_scheme_args(fas) ] -> [fa::fas]
+END 
+
 VERNAC COMMAND EXTEND NewFunctionalScheme
-   ["New" "Functional" "Scheme" ident(name) ident_list(funs)  "using" ident(scheme)] ->
+   ["New" "Functional" "Scheme" fun_scheme_args(fas) ] ->
     [
-      let id_to_constr id = 
-	Tacinterp.constr_of_id (Global.env ())  id
-      in 
-      let funs =
-	Array.of_list (List.map id_to_constr funs) 
-      in 
-      let scheme = id_to_constr scheme in 
-      let scheme_type = Typing.type_of (Global.env ()) Evd.empty scheme in 
-      New_arg_principle.generate_functional_principle false 
-	scheme_type 
-	(Some name) 
-	(Array.map destConst funs)
-	0
-	(New_arg_principle.prove_princ_for_struct false 0 (Array.map destConst funs))
+      New_arg_principle.make_scheme fas
     ]
 END
 

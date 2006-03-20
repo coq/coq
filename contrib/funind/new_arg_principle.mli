@@ -4,6 +4,8 @@ val generate_functional_principle :
   bool ->
   (* induction principle on rel *) 
   Term.types ->
+  (* *)
+  Term.sorts array option -> 
   (* Name of the new principle *) 
   (Names.identifier) option -> 
   (* the compute functions to use   *)
@@ -25,4 +27,7 @@ val prove_princ_for_struct :
   int -> Names.constant array -> Term.constr array -> int -> Tacmach.tactic
 
 
-val compute_new_princ_type_from_rel : Term.constr array -> Term.types -> Term.types
+val compute_new_princ_type_from_rel : Term.constr array -> Term.sorts array -> 
+  Term.types -> Term.types
+
+val make_scheme : (Names.identifier*Names.identifier*Rawterm.rawsort) list ->  unit

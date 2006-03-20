@@ -136,6 +136,7 @@ let generate_principle fix_rec_l recdefs  interactive_proof parametrize
 	   interactive_proof 
 	   princ_type
 	   None
+	   None 
 	   funs_kn
 	   i
 	   (continue_proof  0 [|funs_kn.(i)|]) 
