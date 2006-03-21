@@ -1660,7 +1660,7 @@ and fTACTIC_COM = function
    fID x2;
    fNODE "move_after" 2
 | CT_new_destruct(x1, x2, x3) ->
-   fFORMULA_OR_INT x1;
+   (List.iter fFORMULA_OR_INT x1); (* Julien F. Est-ce correct? *)
    fUSING x2;
    fINTRO_PATT_OPT x3;
    fNODE "new_destruct" 3
@@ -1708,10 +1708,12 @@ and fTACTIC_COM = function
 | CT_repeat(x1) ->
    fTACTIC_COM x1;
    fNODE "repeat" 1
-| CT_replace_with(x1, x2) ->
+| CT_replace_with(x1, x2,x3,x4) ->
    fFORMULA x1;
    fFORMULA x2;
-   fNODE "replace_with" 2
+   fID_OPT x3;
+   fTACTIC_OPT x4;
+   fNODE "replace_with" 4
 | CT_rewrite_lr(x1, x2, x3) ->
    fFORMULA x1;
    fSPEC_LIST x2;

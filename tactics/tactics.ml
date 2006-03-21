@@ -2058,7 +2058,7 @@ let new_induct_destruct_l isrec lc elim names =
       
 
 let new_induct = new_induct_destruct_l true
-let new_destruct c = new_induct_destruct_l false [c]
+let new_destruct c = new_induct_destruct_l false c
 
 (* The registered tactic, which calls the default elimination
  * if no elimination constant is provided. *)

@@ -691,7 +691,8 @@ and pr_atom1 env = function
       hov 1 (str "simple destruct" ++ pr_arg pr_quantified_hypothesis h)
   | TacNewDestruct (h,e,ids) ->
       hov 1 (str "destruct" ++ spc () ++
-             pr_induction_arg (pr_constr env) h ++ pr_with_names ids ++
+             prlist_with_sep spc (pr_induction_arg (pr_constr env)) h ++ 
+	     pr_with_names ids ++
              pr_opt (pr_eliminator env) e)
   | TacDoubleInduction (h1,h2) ->
       hov 1

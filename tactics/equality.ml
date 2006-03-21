@@ -128,9 +128,10 @@ let rewriteRL_clause = function
 (* eq,sym_eq : equality on Type and its symmetry theorem
    c2 c1 : c1 is to be replaced by c2
    unsafe : If true, do not check that c1 and c2 are convertible
+   tac : Used to prove the equality c1 = c2 
    gl : goal *)
 
-let abstract_replace clause c2 c1 unsafe gl =
+let abstract_replace clause c2 c1 unsafe tac gl =
   let t1 = pf_type_of gl c1 
   and t2 = pf_type_of gl c2 in
   if unsafe or (pf_conv_x gl t1 t2) then
@@ -142,14 +143,32 @@ let abstract_replace clause c2 c1 unsafe gl =
 	tclTHEN 
 	  (tclTRY (rewriteRL_clause clause (mkVar id,NoBindings)))
 	  (clear [id]));
-       tclORELSE assumption 
-	(tclTRY (tclTHEN (apply sym) assumption))] gl
+       tclFIRST
+	 [assumption;
+	  tclTHEN (apply sym) assumption;
+	  tclTRY (tclCOMPLETE tac)
+	 ]
+      ] gl
   else
     error "terms does not have convertible types"
 
-let replace c2 c1 gl = abstract_replace None c2 c1 false gl
 
-let replace_in id c2 c1 gl = abstract_replace (Some id) c2 c1 false gl
+let replace c2 c1 gl = abstract_replace None c2 c1 false tclIDTAC gl
+
+let replace_in id c2 c1 gl = abstract_replace (Some id) c2 c1 false tclIDTAC gl
+
+let replace_by c2 c1 tac gl = abstract_replace None c2 c1 false tac gl
+
+let replace_in_by id c2 c1 tac gl = abstract_replace (Some id) c2 c1 false tac gl
+
+
+let new_replace c2 c1 id tac_opt gl = 
+  let tac = 
+    match tac_opt with 
+      | Some tac -> tac 
+      | _ -> tclIDTAC
+  in
+  abstract_replace id c2 c1 false tac gl
 
 (* End of Eduardo's code. The rest of this file could be improved
    using the functions match_with_equation, etc that I defined

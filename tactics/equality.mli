@@ -49,7 +49,9 @@ val conditional_rewrite_in :
 
 val replace    : constr -> constr -> tactic
 val replace_in : identifier -> constr -> constr -> tactic
-
+val replace_by : constr -> constr -> tactic -> tactic 
+val replace_in_by : identifier -> constr -> constr -> tactic -> tactic 
+val new_replace : constr -> constr -> identifier option -> tactic option -> tactic
 val discr        : identifier -> tactic
 val discrConcl   : tactic
 val discrClause  : clause -> tactic

@@ -330,7 +330,7 @@ let rec mlexpr_of_atomic_tactic = function
   | Tacexpr.TacNewDestruct (c,cbo,ids) ->
       let cbo = mlexpr_of_option mlexpr_of_constr_with_binding cbo in
       let ids = mlexpr_of_intro_pattern ids in
-      <:expr< Tacexpr.TacNewDestruct $mlexpr_of_induction_arg c$ $cbo$ $ids$ >>
+      <:expr< Tacexpr.TacNewDestruct $mlexpr_of_list mlexpr_of_induction_arg c$ $cbo$ $ids$ >>
 
   (* Context management *)
   | Tacexpr.TacClear (b,l) ->

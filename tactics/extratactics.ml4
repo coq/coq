@@ -32,15 +32,82 @@ END
 
 let h_rewriteLR x = h_rewrite true (x,Rawterm.NoBindings)
 
+(* Julien: Mise en commun des differentes version de replace with in by 
+   TODO: améliorer l'affichage et deplacer dans extraargs
+
+*)
+
+
+let pr_by_arg_tac prc _ _ opt_c = 
+  match opt_c with 
+    | None -> mt ()
+    | Some c -> spc () ++ hov 2 (str "by" ++ spc ()  )
+
+(* Julien Forest: on voudrait pouvoir passer la loc mais je 
+n'ai pas reussi 
+*)
+
+let pr_in_arg_hyp  = 
+fun prc _ _ opt_c->
+  match opt_c with 
+    | None -> mt ()
+    | Some c -> 
+	spc () ++ hov 2 (str "by" ++ spc () ++ 
+			   Pptactic.pr_or_var (fun _ -> mt ()) 
+			   (ArgVar(Util.dummy_loc,c))
+			)
+
+
+
+
+ARGUMENT EXTEND by_arg_tac
+  TYPED AS tactic_opt
+  PRINTED BY pr_by_arg_tac
+| [ "by" tactic(c) ] -> [ Some c ]
+| [ ] -> [ None ]
+END
+ 
+ARGUMENT EXTEND in_arg_hyp
+  TYPED AS ident_opt
+  PRINTED BY pr_in_arg_hyp
+| [ "in" int_or_var(c) ] -> 
+    [ match c with
+	| ArgVar(_,c) ->  Some (c)
+	| _ -> Util.error "in must be used with an identifier" 
+    ]
+| [ ] -> [ None ]
+END
+
+TACTIC EXTEND replace 
+| ["replace" constr(c1) "with" constr(c2) in_arg_hyp(in_hyp)  by_arg_tac(tac)  ] ->
+    [ new_replace c1 c2 in_hyp (Util.option_app Tacinterp.eval_tactic tac)  ]
+END
+
+(* Julien:
+  old version  
+
 TACTIC EXTEND replace
 | [ "replace" constr(c1) "with" constr(c2) ] ->
     [ replace c1 c2 ]
+END
+
+TACTIC EXTEND replace_by
+|  [ "replace" constr(c1) "with" constr(c2) "by" tactic(tac) ] ->
+    [ replace_by c1 c2 (snd tac)  ]
+ 
 END
 
 TACTIC EXTEND replace_in
 | [ "replace" constr(c1) "with" constr(c2) "in" hyp(h) ] ->
     [ replace_in h c1 c2 ]
 END
+
+TACTIC EXTEND replace_in_by
+| [ "replace" constr(c1) "with" constr(c2) "in" hyp(h) "by" tactic(tac) ] ->
+    [ replace_in_by h c1 c2 (snd tac) ]
+END
+
+*)
 
 TACTIC EXTEND replace_term_left
   [ "replace" "->" constr(c)  ] -> [ replace_term_left c ]

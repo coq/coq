@@ -235,7 +235,7 @@ val general_case_analysis : constr with_bindings ->  tactic
 val simplest_case         : constr -> tactic
 
 val simple_destruct          : quantified_hypothesis -> tactic
-val new_destruct : constr induction_arg -> constr with_bindings option ->
+val new_destruct : constr induction_arg list -> constr with_bindings option ->
   intro_pattern_expr -> tactic
 
 (*s Eliminations giving the type instead of the proof. *)

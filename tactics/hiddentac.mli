@@ -60,7 +60,7 @@ val h_new_induction   :
   constr induction_arg list -> constr with_bindings option ->
   intro_pattern_expr -> tactic
 val h_new_destruct    :
-  constr induction_arg -> constr with_bindings option -> 
+  constr induction_arg list -> constr with_bindings option -> 
   intro_pattern_expr -> tactic
 val h_specialize      : int option -> constr with_bindings -> tactic
 val h_lapply          : constr -> tactic

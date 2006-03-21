@@ -63,7 +63,7 @@ let coercion_description t = !coercion_description_holder t;;
 let set_coercion_description f =
  coercion_description_holder:=f; ();;
 
-let xlate_error s = failwith ("Translation error: " ^ s);;
+let xlate_error s = print_endline ("xlate_error : "^s);failwith ("Translation error: " ^ s);;
 
 let ctf_STRING_OPT_NONE = CT_coerce_NONE_to_STRING_OPT CT_none;;
 
@@ -957,10 +957,22 @@ and xlate_tac =
     | TacRight bindl -> CT_right (xlate_bindings bindl)
     | TacSplit (false,bindl) -> CT_split (xlate_bindings bindl)
     | TacSplit (true,bindl) -> CT_exists (xlate_bindings bindl)
-    | TacExtend (_,"replace", [c1; c2]) ->
-     let c1 = xlate_formula (out_gen rawwit_constr c1) in
-     let c2 = xlate_formula (out_gen rawwit_constr c2) in
-     CT_replace_with (c1, c2)
+    | TacExtend (_,"replace", [c1; c2;id_opt;tac_opt]) ->
+	let c1 = xlate_formula (out_gen rawwit_constr c1) in
+	let c2 = xlate_formula (out_gen rawwit_constr c2) in
+	let id_opt = 
+	  match out_gen Extratactics.rawwit_in_arg_hyp id_opt with 
+	  | None -> ctv_ID_OPT_NONE
+	  | Some id ->   ctf_ID_OPT_SOME (xlate_ident id)
+	in
+	let tac_opt = 
+	  match out_gen (Extratactics.rawwit_by_arg_tac) tac_opt with
+	    | None -> CT_coerce_NONE_to_TACTIC_OPT  CT_none
+	    | Some tac ->
+		let tac =  xlate_tactic tac in
+		CT_coerce_TACTIC_COM_to_TACTIC_OPT tac
+	in 
+	CT_replace_with (c1, c2,id_opt,tac_opt)
     | TacExtend (_,"rewrite", [b; cbindl]) ->
      let b = out_gen Extraargs.rawwit_orient b in
      let (c,bindl) = out_gen rawwit_constr_with_bindings cbindl in
@@ -1157,8 +1169,8 @@ and xlate_tac =
     | TacDAuto (a, b) ->
 	CT_dauto(xlate_int_or_var_opt_to_int_opt a, xlate_int_opt b)
     | TacNewDestruct(a,b,c) ->
-	CT_new_destruct
-	  (xlate_int_or_constr a, xlate_using b, 
+	CT_new_destruct (* Julien F. : est-ce correct *)
+	  (List.map  xlate_int_or_constr a, xlate_using b, 
 	   xlate_with_names c)
     | TacNewInduction(a,b,c) ->
 	CT_new_induction (* Pierre C. : est-ce correct *)
@@ -1195,6 +1207,7 @@ and xlate_tac =
 	     (List.map xlate_formula
 		(out_gen (wit_list0 rawwit_constr) args)))
     | TacExtend (_,id, l) ->
+	print_endline ("Extratactics : "^ id);
      CT_user_tac (CT_ident id, CT_targ_list (List.map coerce_genarg_to_TARG l))
     | TacAlias _ -> xlate_error "Alias not supported"
 

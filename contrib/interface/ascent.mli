@@ -670,7 +670,7 @@ and ct_TACTIC_COM =
   | CT_match_context_reverse of ct_CONTEXT_RULE * ct_CONTEXT_RULE list
   | CT_match_tac of ct_TACTIC_COM * ct_MATCH_TAC_RULES
   | CT_move_after of ct_ID * ct_ID
-  | CT_new_destruct of ct_FORMULA_OR_INT * ct_USING * ct_INTRO_PATT_OPT
+  | CT_new_destruct of ct_FORMULA_OR_INT list * ct_USING * ct_INTRO_PATT_OPT
   | CT_new_induction of ct_FORMULA_OR_INT list * ct_USING * ct_INTRO_PATT_OPT
   | CT_omega
   | CT_orelse of ct_TACTIC_COM * ct_TACTIC_COM
@@ -684,7 +684,7 @@ and ct_TACTIC_COM =
   | CT_reflexivity
   | CT_rename of ct_ID * ct_ID
   | CT_repeat of ct_TACTIC_COM
-  | CT_replace_with of ct_FORMULA * ct_FORMULA
+  | CT_replace_with of ct_FORMULA * ct_FORMULA * ct_ID_OPT * ct_TACTIC_OPT
   | CT_rewrite_lr of ct_FORMULA * ct_SPEC_LIST * ct_ID_OPT
   | CT_rewrite_rl of ct_FORMULA * ct_SPEC_LIST * ct_ID_OPT
   | CT_right of ct_SPEC_LIST

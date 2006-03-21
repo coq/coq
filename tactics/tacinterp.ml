@@ -677,7 +677,7 @@ let rec intern_atomic lf ist x =
   | TacSimpleDestruct h ->
       TacSimpleDestruct (intern_quantified_hypothesis ist h)
   | TacNewDestruct (c,cbo,ids) ->
-      TacNewDestruct (intern_induction_arg ist c,
+      TacNewDestruct (List.map (intern_induction_arg ist) c,
                option_app (intern_constr_with_bindings ist) cbo,
 	       (intern_intro_pattern lf ist ids))
   | TacDoubleInduction (h1,h2) ->
@@ -1780,7 +1780,7 @@ and interp_atomic ist gl = function
   | TacSimpleDestruct h ->
       h_simple_destruct (interp_quantified_hypothesis ist h)
   | TacNewDestruct (c,cbo,ids) -> 
-      h_new_destruct (interp_induction_arg ist gl c)
+      h_new_destruct (List.map (interp_induction_arg ist gl) c)
         (option_app (interp_constr_with_bindings ist gl) cbo)
         (interp_intro_pattern ist ids)
   | TacDoubleInduction (h1,h2) ->
@@ -2037,7 +2037,7 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
                option_app (subst_raw_with_bindings subst) cbo, ids)
   | TacSimpleDestruct h as x -> x
   | TacNewDestruct (c,cbo,ids) ->
-      TacNewDestruct (subst_induction_arg subst c,
+      TacNewDestruct (List.map (subst_induction_arg subst) c,  (* Julien F. est-ce correct? *)
                option_app (subst_raw_with_bindings subst) cbo, ids)
   | TacDoubleInduction (h1,h2) as x -> x
   | TacDecomposeAnd c -> TacDecomposeAnd (subst_rawconstr subst c)

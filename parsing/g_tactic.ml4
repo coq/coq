@@ -363,8 +363,8 @@ GEXTEND Gram
 	  h2 = quantified_hypothesis -> TacDoubleInduction (h1,h2)
       | IDENT "simple"; IDENT"destruct"; h = quantified_hypothesis ->
           TacSimpleDestruct h
-      | IDENT "destruct"; c = induction_arg; ids = with_names; 
-	  el = OPT eliminator -> TacNewDestruct (c,el,ids)
+      | IDENT "destruct"; lc = LIST1 induction_arg; ids = with_names; 
+	  el = OPT eliminator -> TacNewDestruct (lc,el,ids)
       | IDENT "decompose"; IDENT "record" ; c = constr -> TacDecomposeAnd c
       | IDENT "decompose"; IDENT "sum"; c = constr -> TacDecomposeOr c
       | IDENT "decompose"; "["; l = LIST1 global; "]"; c = constr
