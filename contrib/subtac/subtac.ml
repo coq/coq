@@ -114,6 +114,7 @@ let subtac_end_proof = function
     | Some ((_,id),Some kind) -> save_anonymous_with_strength kind is_opaque id
 
 	*)
+
 let subtac (loc, command) =
   check_required_library ["Coq";"Init";"Datatypes"];
   check_required_library ["Coq";"Init";"Specif"];
@@ -139,7 +140,7 @@ let subtac (loc, command) =
 		     Pfedit.by tac)
       | VernacFixpoint (l, b) -> 
 	  let _ = trace (str "Building fixpoint") in
-	  ignore(Subtac_command.build_recursive l b)
+	    ignore(Subtac_command.build_recursive l b)
       (*| VernacEndProof e -> 
 	  subtac_end_proof e*)
 

@@ -50,8 +50,9 @@ let interp_gen kind isevars env
                ?(impls=([],[])) ?(allow_soapp=false) ?(ltacvars=([],[]))
                c =
   let c' = Constrintern.intern_gen (kind=IsType) ~impls ~allow_soapp ~ltacvars (Evd.evars_of !isevars) env c in
-  let c'' = Subtac_interp_fixpoint.rewrite_cases c' in
-    Evd.evars_of !isevars, SPretyping.pretype_gen isevars env ([],[]) kind c''
+  let c' = Subtac_interp_fixpoint.rewrite_cases env c' in
+  let c' = SPretyping.pretype_gen isevars env ([],[]) kind c' in
+    non_instanciated_map env isevars, c'
     
 let interp_constr isevars env c =
   interp_gen (OfType None) isevars env c 

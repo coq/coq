@@ -183,7 +183,7 @@ let rewrite_cases_aux (loc, po, tml, eqns) =
 		let c' = 
 		  List.fold_left 
 		    (fun acc (n, t) ->
-		       RLambda (dummy_loc, n, t, acc))
+		       RLambda (dummy_loc, n, mkHole, acc))
 		    c eqs_types
 		in (loc, idl, cpl, c'))
       eqns
@@ -204,3 +204,7 @@ let rec rewrite_cases c =
 	   | _ -> assert(false))
     | _ -> map_rawconstr rewrite_cases c
 	  
+let rewrite_cases env c =
+  let c' = rewrite_cases c in
+  let _ = trace (str "Rewrote cases: " ++ spc () ++ my_print_rawconstr env c') in
+    c'

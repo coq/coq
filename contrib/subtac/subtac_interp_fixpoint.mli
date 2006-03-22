@@ -39,4 +39,5 @@ val rewrite_cases_aux :
   (Util.loc * Names.identifier list * Rawterm.cases_pattern list *
    Rawterm.rawconstr)
   list -> Rawterm.rawconstr
-val rewrite_cases : Rawterm.rawconstr -> Rawterm.rawconstr
+
+val rewrite_cases : Environ.env -> Rawterm.rawconstr -> Rawterm.rawconstr

@@ -27,7 +27,10 @@ module type S =
 sig
 
   module Cases : Cases.S
-  
+    
+  (* Allow references to syntaxically inexistent variables (i.e., if applied on an inductive) *)
+  val allow_anonymous_refs : bool ref
+
   (* Generic call to the interpreter from rawconstr to open_constr, leaving
      unresolved holes as evars and returning the typing contexts of
      these evars. Work as [understand_gen] for the rest. *)

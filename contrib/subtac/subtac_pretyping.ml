@@ -40,7 +40,10 @@ open Context
 open Eterm
 
 module Pretyping = Pretyping.Pretyping_F(Subtac_coercion.Coercion)
+
 open Pretyping
+
+let _ = Pretyping.allow_anonymous_refs := true
 
 type recursion_info = {
   arg_name: name;

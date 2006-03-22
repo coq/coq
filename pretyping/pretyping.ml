@@ -63,6 +63,9 @@ sig
 
   module Cases : Cases.S
   
+  (* Allow references to syntaxically inexistent variables (i.e., if applied on an inductive) *)
+  val allow_anonymous_refs : bool ref
+
   (* Generic call to the interpreter from rawconstr to open_constr, leaving
      unresolved holes as evars and returning the typing contexts of
      these evars. Work as [understand_gen] for the rest. *)
@@ -133,6 +136,9 @@ end
 module Pretyping_F (Coercion : Coercion.S) = struct
 
   module Cases = Cases.Cases_F(Coercion)
+
+  (* Allow references to syntaxically inexistent variables (i.e., if applied on an inductive) *)
+  let allow_anonymous_refs = ref false
 
   let evd_comb0 f isevars =
     let (evd',x) = f !isevars in
@@ -422,8 +428,12 @@ module Pretyping_F (Coercion : Coercion.S) = struct
               (List.rev nal) cs.cs_args in
 	    let env_f = push_rels fsign env in
 	      (* Make dependencies from arity signature impossible *)
-	    let arsgn,_ = get_arity env indf in
-	    let arsgn = List.map (fun (_,b,t) -> (Anonymous,b,t)) arsgn in
+	    let arsgn =
+	      let arsgn,_ = get_arity env indf in
+		if not !allow_anonymous_refs then
+		  List.map (fun (_,b,t) -> (Anonymous,b,t)) arsgn
+		else arsgn
+	    in
 	    let psign = (na,None,build_dependent_inductive env indf)::arsgn in
 	    let nar = List.length arsgn in
 	      (match po with
@@ -477,9 +487,13 @@ module Pretyping_F (Coercion : Coercion.S) = struct
             user_err_loc (loc,"",
 			  str "If is only for inductive types with two constructors");
 
-	  (* Make dependencies from arity signature impossible *)
-	  let arsgn,_ = get_arity env indf in
-	  let arsgn = List.map (fun (_,b,t) -> (Anonymous,b,t)) arsgn in
+	  let arsgn = 
+	    let arsgn,_ = get_arity env indf in
+	      if not !allow_anonymous_refs then
+		(* Make dependencies from arity signature impossible *)
+		List.map (fun (_,b,t) -> (Anonymous,b,t)) arsgn 
+	      else arsgn
+	  in
 	  let nar = List.length arsgn in
 	  let psign = (na,None,build_dependent_inductive env indf)::arsgn in
 	  let pred,p = match po with
@@ -500,7 +514,17 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	    let n = rel_context_length cs.cs_args in
 	    let pi = liftn n 2 pred in
 	    let pi = beta_applist (pi, [build_dependent_constructor cs]) in
-	    let csgn = List.map (fun (_,b,t) -> (Anonymous,b,t)) cs.cs_args in
+	    let csgn = 
+	      if not !allow_anonymous_refs then
+		List.map (fun (_,b,t) -> (Anonymous,b,t)) cs.cs_args 
+	      else 
+		List.map 
+		  (fun (n, b, t) ->
+		     match n with
+                         Name _ -> (n, b, t)
+                       | Anonymous -> (Name (id_of_string "H"), b, t))
+		cs.cs_args
+	    in
 	    let env_c = push_rels csgn env in 
 	    let bj = pretype (Some pi) env_c isevars lvar b in
 	      it_mkLambda_or_LetIn bj.uj_val cs.cs_args in
