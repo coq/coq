@@ -21,7 +21,7 @@ End FixPoint.
 
 End Well_founded.
 
-Check Fix_sub.
+(*Check Fix_sub.*)
 
 Notation "'forall' { x : A | P } , Q" :=
   (forall x:{x:A|P}, (fun x => Q) (proj1_sig x))

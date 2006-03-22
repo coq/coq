@@ -33,7 +33,7 @@ open Dyn
 open Vernacexpr
 
 open Subtac_coercion
-open Scoq
+open Subtac_utils
 open Coqlib
 open Printer
 open Subtac_errors
@@ -46,7 +46,7 @@ let require_library dirpath =
 
 let subtac_one_fixpoint env isevars (f, decl) = 
   let ((id, n, bl, typ, body), decl) = 
-    Interp_fixpoint.rewrite_fixpoint env [] (f, decl) 
+    Subtac_interp_fixpoint.rewrite_fixpoint env [] (f, decl) 
   in
   let _ = trace (str "Working on a single fixpoint rewritten as: " ++ spc () ++
 		 Ppconstr.pr_constr_expr body)
@@ -125,13 +125,13 @@ let subtac (loc, command) =
 	  let isevars = ref (create_evar_defs Evd.empty) in
 	    (match expr with
 		 ProveBody (bl, c) -> 
-		   let evm, c, ctyp = Interp.subtac_process env isevars id bl c None in
+		   let evm, c, ctyp = Subtac_pretyping.subtac_process env isevars id bl c None in
 		     trace (str "Starting proof");
 		     Command.start_proof id goal_kind c hook;
 		     trace (str "Started proof");	     
 		     
 	       | DefineBody (bl, _, c, tycon) -> 
-		   let evm, c, ctyp = Interp.subtac_process env isevars id bl c tycon in
+		   let evm, c, ctyp = Subtac_pretyping.subtac_process env isevars id bl c tycon in
 		   let tac = Eterm.etermtac (evm, c) in 
 		     trace (str "Starting proof");
 		     Command.start_proof id goal_kind ctyp hook;

@@ -63,6 +63,19 @@ let error_wrong_predicate_arity_loc loc env c n1 n2 =
 let error_needs_inversion env x t =
   raise (PatternMatchingError (env, NeedsInversion (x,t)))
 
+module type S = sig
+  val compile_cases :
+    loc ->
+    (type_constraint -> env -> rawconstr -> unsafe_judgment) *    
+      Evd.evar_defs ref ->
+    type_constraint -> 
+    env ->
+    rawconstr option *
+      (rawconstr * (name * (loc * inductive * name list) option)) list *
+      (loc * identifier list * cases_pattern list * rawconstr) list ->
+    unsafe_judgment
+end
+
 (************************************************************************)
 (*            Pattern-matching compilation (Cases)                      *)
 (************************************************************************)
@@ -370,6 +383,9 @@ let evd_comb2 f isevars x y =
   let (evd',y) = f !isevars x y in
   isevars := evd';
   y
+
+
+module Cases_F(Coercion : Coercion.S) : S = struct
 
 let adjust_tomatch_to_pattern pb ((current,typ),deps) =
   (* Ideally, we could find a common inductive type to which both the
@@ -1654,46 +1670,47 @@ let prepare_predicate loc typing_fun isevars env tomatchs sign tycon = function
 
 (**************************************************************************)
 (* Main entry of the matching compilation                                 *)
-
-let compile_cases loc (typing_fun,isevars) tycon env (predopt, tomatchl, eqns)=
-
-  (* We build the matrix of patterns and right-hand-side *)
-  let matx = matx_of_eqns env tomatchl eqns in
-
-  (* We build the vector of terms to match consistently with the *)
-  (* constructors found in patterns *)
-  let tomatchs = coerce_to_indtype typing_fun isevars env matx tomatchl in
-
-  (* We build the elimination predicate if any and check its consistency *)
-  (* with the type of arguments to match *)
-  let tmsign = List.map snd tomatchl in
-  let pred = prepare_predicate loc typing_fun isevars env tomatchs tmsign tycon predopt in
-
-  (* We deal with initial aliases *)
-  let matx = prepare_initial_aliases (known_dependent pred) tomatchs matx in 
-
-  (* We push the initial terms to match and push their alias to rhs' envs *)
-  (* names of aliases will be recovered from patterns (hence Anonymous here) *)
-  let initial_pushed = List.map (fun tm -> Pushed (tm,[])) tomatchs in
- 
-  let pb =
-    { env      = env;
-      isevars  = isevars;
-      pred     = pred;
-      tomatch  = initial_pushed;
-      history  = start_history (List.length initial_pushed);
-      mat      = matx;
-      caseloc  = loc;
-      typing_function = typing_fun } in
   
-  let _, j = compile pb in
-
-  (* We check for unused patterns *)
-  List.iter (check_unused_pattern env) matx;
-  
-  match tycon with
-    | Some p ->
-	let (evd',j) = Coercion.inh_conv_coerce_to loc env !isevars j p in
-        isevars := evd';
-        j
-    | None -> j
+  let compile_cases loc (typing_fun, isevars) tycon env (predopt, tomatchl, eqns)=
+    
+    (* We build the matrix of patterns and right-hand-side *)
+    let matx = matx_of_eqns env tomatchl eqns in
+      
+    (* We build the vector of terms to match consistently with the *)
+    (* constructors found in patterns *)
+    let tomatchs = coerce_to_indtype typing_fun isevars env matx tomatchl in
+      
+    (* We build the elimination predicate if any and check its consistency *)
+    (* with the type of arguments to match *)
+    let tmsign = List.map snd tomatchl in
+    let pred = prepare_predicate loc typing_fun isevars env tomatchs tmsign tycon predopt in
+      
+    (* We deal with initial aliases *)
+    let matx = prepare_initial_aliases (known_dependent pred) tomatchs matx in 
+      
+    (* We push the initial terms to match and push their alias to rhs' envs *)
+    (* names of aliases will be recovered from patterns (hence Anonymous here) *)
+    let initial_pushed = List.map (fun tm -> Pushed (tm,[])) tomatchs in
+      
+    let pb =
+      { env      = env;
+	isevars  = isevars;
+	pred     = pred;
+	tomatch  = initial_pushed;
+	history  = start_history (List.length initial_pushed);
+	mat      = matx;
+	caseloc  = loc;
+	typing_function = typing_fun } in
+      
+    let _, j = compile pb in
+      
+      (* We check for unused patterns *)
+      List.iter (check_unused_pattern env) matx;
+      
+      match tycon with
+	| Some p ->
+	    let (evd',j) = Coercion.inh_conv_coerce_to loc env !isevars j p in
+              isevars := evd';
+              j
+	| None -> j
+end

@@ -45,6 +45,7 @@ open Printer
 open Inductiveops
 open Syntax_def
 open Pretyping
+open Pretyping.Default
 
 let error_syntactic_metavariables_not_allowed loc =
   user_err_loc 

@@ -28,7 +28,7 @@ let w_refine env ev rawc evd =
   let e_info = Evd.map (evars_of evd) ev in
   let env = Evd.evar_env e_info in
   let sigma,typed_c = 
-    Pretyping.understand_tcc (evars_of evd) env 
+    Pretyping.Default.understand_tcc (evars_of evd) env 
       ~expected_type:e_info.evar_concl rawc in
   evar_define ev typed_c (evars_reset_evd sigma evd)
 

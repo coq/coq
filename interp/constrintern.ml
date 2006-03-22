@@ -18,6 +18,7 @@ open Impargs
 open Rawterm
 open Pattern
 open Pretyping
+open Cases
 open Topconstr
 open Nametab
 open Notation
@@ -387,12 +388,12 @@ let check_constructor_length env loc cstr pl pl0 =
   let nargs = Inductiveops.constructor_nrealargs env cstr in
   let nhyps = Inductiveops.constructor_nrealhyps env cstr in
   if n <> nargs && n <> nhyps (* i.e. with let's *) then
-    Cases.error_wrong_numarg_constructor_loc loc env cstr nargs
+    error_wrong_numarg_constructor_loc loc env cstr nargs
 
 let check_inductive_length env (loc,ind,nal) =
   let n = Inductiveops.inductive_nargs env ind in
   if n <> List.length nal then
-    Cases.error_wrong_numarg_inductive_loc loc env ind n
+    error_wrong_numarg_inductive_loc loc env ind n
 
 (* Manage multiple aliases *)
 
@@ -1068,7 +1069,7 @@ let intern_ltac isarity ltacvars sigma env c =
 let interp_gen kind sigma env 
                ?(impls=([],[])) ?(allow_soapp=false) ?(ltacvars=([],[]))
                c =
-  understand_gen kind sigma env 
+  Default.understand_gen kind sigma env 
     (intern_gen (kind=IsType) ~impls ~allow_soapp ~ltacvars sigma env c)
 
 let interp_constr sigma env c =
@@ -1081,10 +1082,10 @@ let interp_casted_constr sigma env ?(impls=([],[])) c typ =
   interp_gen (OfType (Some typ)) sigma env ~impls c 
 
 let interp_open_constr sigma env c =
-  understand_tcc sigma env (intern_constr sigma env c)
+  Default.understand_tcc sigma env (intern_constr sigma env c)
 
 let interp_constr_judgment sigma env c =
-  understand_judgment sigma env (intern_constr sigma env c)
+  Default.understand_judgment sigma env (intern_constr sigma env c)
 
 type ltac_sign = identifier list * unbound_ltac_var_map
 
@@ -1109,7 +1110,7 @@ let interp_aconstr impls vars a =
 
 let interp_binder sigma env na t =
   let t = intern_gen true sigma env t in
-  understand_type sigma env (locate_if_isevar (loc_of_rawconstr t) na t)
+  Default.understand_type sigma env (locate_if_isevar (loc_of_rawconstr t) na t)
 
 open Environ
 open Term

@@ -34,7 +34,7 @@ let get_hyp_by_name g name =
   let evd = project g in
   let env = pf_env g in
   try (let judgment = 
-         Pretyping.understand_judgment 
+         Pretyping.Default.understand_judgment 
           evd env (RVar(zz, name)) in
        ("hyp",judgment.uj_type))
 (* je sais, c'est pas beau, mais je ne sais pas trop me servir de look_up...

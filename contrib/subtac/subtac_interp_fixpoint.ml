@@ -23,7 +23,7 @@ open Dyn
 open Topconstr
 
 open Subtac_coercion
-open Scoq
+open Subtac_utils
 open Coqlib
 open Printer
 open Subtac_errors

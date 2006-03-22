@@ -23,5 +23,5 @@ TACTIC EXTEND eterm
   [ "eterm" ] -> [ 
     (fun gl ->
        let evm = Tacmach.project gl and t = Tacmach.pf_concl gl in
-         Eterm.etermtac (Global.env ()) (evm, t) gl) ]
+         Eterm.etermtac (evm, t) gl) ]
 END

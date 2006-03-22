@@ -49,7 +49,7 @@ GEXTEND Gram
     ;
   END
 
-(* type wf_proof_type_argtype = (Scoq.wf_proof_type, constr_expr, Tacexpr.raw_tactic_expr) Genarg.abstract_argument_type *)
+(* type wf_proof_type_argtype = (Subtac_utils.wf_proof_type, constr_expr, Tacexpr.raw_tactic_expr) Genarg.abstract_argument_type *)
 
 (* let (wit_subtac_wf_proof_type : wf_proof_type_argtype), *)
 (*   (globwit_subtac_wf_proof_type : wf_proof_type_argtype), *)
@@ -63,7 +63,7 @@ let (wit_subtac_gallina_loc : gallina_loc_argtype),
   (rawwit_subtac_gallina_loc : gallina_loc_argtype) =
   Genarg.create_arg "subtac_gallina_loc"
 
-(* type subtac_recdef_argtype = (Scoq.recursion_order option, constr_expr, Tacexpr.raw_tactic_expr) Genarg.abstract_argument_type *)
+(* type subtac_recdef_argtype = (Subtac_utils.recursion_order option, constr_expr, Tacexpr.raw_tactic_expr) Genarg.abstract_argument_type *)
 
 (* let (wit_subtac_recdef : subtac_recdef_argtype), *)
 (*   (globwit_subtac_recdef : subtac_recdef_argtype), *)

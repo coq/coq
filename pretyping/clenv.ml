@@ -31,7 +31,7 @@ open Mod_subst
 (* *)
 let w_coerce env c ctyp target evd =
   let j = make_judge c ctyp in
-  let (evd',j') = Coercion.inh_conv_coerce_to dummy_loc env evd j target in
+  let (evd',j') = Coercion.Default.inh_conv_coerce_to dummy_loc env evd j target in
   (evd',j'.uj_val)
 
 let pf_env gls = Global.env_of_context gls.it.evar_hyps

@@ -38,13 +38,17 @@ val error_wrong_numarg_inductive_loc : loc -> env -> inductive -> int -> 'a
 
 (*s Compilation of pattern-matching. *)
 
-val compile_cases :
-  loc ->
-  (type_constraint -> env -> rawconstr -> unsafe_judgment) *
-  evar_defs ref ->
-  type_constraint -> 
-  env ->
-  rawconstr option *
-  (rawconstr * (name * (loc * inductive * name list) option)) list *
-  (loc * identifier list * cases_pattern list * rawconstr) list ->
-  unsafe_judgment
+module type S = sig
+  val compile_cases :
+    loc ->
+    (type_constraint -> env -> rawconstr -> unsafe_judgment) *    
+      evar_defs ref ->
+    type_constraint -> 
+    env ->
+    rawconstr option *
+      (rawconstr * (name * (loc * inductive * name list) option)) list *
+      (loc * identifier list * cases_pattern list * rawconstr) list ->
+    unsafe_judgment
+end
+
+module Cases_F(C : Coercion.S) : S

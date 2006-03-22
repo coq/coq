@@ -130,7 +130,7 @@ let mk_open_instance id gl m t=
 	      RLambda(loc,name,RHole (dummy_loc,Evd.BinderType name),t1)
 	| _-> anomaly "can't happen" in
   let ntt=try 
-    Pretyping.understand evmap env (raux m rawt)
+    Pretyping.Default.understand evmap env (raux m rawt)
   with _ -> 
     error "Untypable instance, maybe higher-order non-prenex quantification" in
     Sign.decompose_lam_n_assum m ntt

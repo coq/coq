@@ -34,15 +34,14 @@ open Mod_subst
 open Printer
 open Inductiveops
 open Syntax_def
-open Pretyping
 
 open Tacinterp
 open Vernacexpr
 open Notation
 
-open Interp
-open Scoq
-
+module SPretyping = Subtac_pretyping.Pretyping
+open Subtac_utils
+open Pretyping
 
 (*********************************************************************)
 (* Functions to parse and interpret constructions *)
@@ -50,11 +49,10 @@ open Scoq
 let interp_gen kind isevars env 
                ?(impls=([],[])) ?(allow_soapp=false) ?(ltacvars=([],[]))
                c =
-  let c' = Constrintern.intern_gen (kind=Pretyping.IsType) ~impls ~allow_soapp ~ltacvars (Evd.evars_of !isevars) env c in
-  let c'' = Interp_fixpoint.rewrite_cases c' in
-    understand_gen kind isevars env c''
+  let c' = Constrintern.intern_gen (kind=IsType) ~impls ~allow_soapp ~ltacvars (Evd.evars_of !isevars) env c in
+  let c'' = Subtac_interp_fixpoint.rewrite_cases c' in
+    Evd.evars_of !isevars, SPretyping.pretype_gen isevars env ([],[]) kind c''
     
-
 let interp_constr isevars env c =
   interp_gen (OfType None) isevars env c 
 
@@ -65,10 +63,14 @@ let interp_casted_constr isevars env ?(impls=([],[])) c typ =
   interp_gen (OfType (Some typ)) isevars env ~impls c 
 
 let interp_open_constr isevars env c =
-  understand_tcc isevars env (Constrintern.intern_constr (Evd.evars_of !isevars) env c)
+  SPretyping.pretype_gen isevars env ([], []) (OfType None) 
+    (Constrintern.intern_constr (Evd.evars_of !isevars) env c)
 
 let interp_constr_judgment isevars env c =
-  understand_judgment isevars env (Constrintern.intern_constr (Evd.evars_of !isevars) env c)
+  let s, j = SPretyping.understand_judgment_tcc (Evd.evars_of !isevars) env
+    (Constrintern.intern_constr (Evd.evars_of !isevars) env c)
+  in 
+    Evd.create_evar_defs s, j
 
 (* try to find non recursive definitions *)
 
@@ -118,7 +120,7 @@ let build_recursive (lnameargsardef:(fixpoint_expr * decl_notation) list) boxed 
   and protos = List.map (fun ((f, n, _, _, _),_) -> f,n) lnameargsardef
   in 
   let lnameargsardef = 
-    List.map (fun (f, d) -> Interp_fixpoint.rewrite_fixpoint env0 protos (f, d))
+    List.map (fun (f, d) -> Subtac_interp_fixpoint.rewrite_fixpoint env0 protos (f, d))
       lnameargsardef
   in
   let lrecnames = List.map (fun ((f,_,_,_,_),_) -> f) lnameargsardef 
