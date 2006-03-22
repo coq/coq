@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(*i camlp4deps: "parsing/grammar.cma parsing/q_constr.cmo" i*)
+
 (* $Id$ *)
 
 open Pp
@@ -40,7 +42,6 @@ type 'a matching_function = constr -> 'a option
 type testing_function  = constr -> bool
 
 let mkmeta n = Nameops.make_ident "X" (Some n)
-let mkPMeta n = PMeta (Some (mkmeta n))
 let meta1 = mkmeta 1
 let meta2 = mkmeta 2
 let meta3 = mkmeta 3
@@ -133,21 +134,9 @@ let is_unit_type t = op2bool (match_with_unit_type t)
    inductive binary relation R, so that R has only one constructor
    establishing its reflexivity.  *)
 
-(* ["(A : ?)(x:A)(? A x x)"] and ["(x : ?)(? x x)"] *)
-let x = Name (id_of_string "x")
-let y = Name (id_of_string "y")
-let name_A = Name (id_of_string "A")
-let coq_refl_rel1_pattern =
-  PProd
-    (name_A, PMeta None,
-    PProd (x, PRel 1, PApp (PMeta None, [|PRel 2; PRel 1; PRel 1|])))
-let coq_refl_rel2_pattern =
-  PProd (x, PMeta None, PApp (PMeta None, [|PRel 1; PRel 1|]))
-
-let coq_refl_reljm_pattern =
-PProd
-    (name_A, PMeta None,
-    PProd (x, PRel 1, PApp (PMeta None, [|PRel 2; PRel 1; PRel 2;PRel 1|])))
+let coq_refl_rel1_pattern  = PATTERN [ forall A:_, forall x:A, _ A x x ]
+let coq_refl_rel2_pattern  = PATTERN [ forall x:_, _ x x ]
+let coq_refl_reljm_pattern = PATTERN [ forall A:_, forall x:A, _ A x A x ]
 
 let match_with_equation t =
   let (hdapp,args) = decompose_app t in
@@ -168,9 +157,8 @@ let match_with_equation t =
 
 let is_equation t = op2bool (match_with_equation  t)
 
-(* ["(?1 -> ?2)"] *)
-let imp a b = PProd (Anonymous, a, b)
-let coq_arrow_pattern = imp (mkPMeta 1) (mkPMeta 2)
+let coq_arrow_pattern = PATTERN [ ?X1 -> ?X2 ]
+
 let match_arrow_pattern t =
   match matches coq_arrow_pattern t with
     | [(m1,arg);(m2,mind)] -> assert (m1=meta1 & m2=meta2); (arg, mind)
@@ -253,10 +241,8 @@ let rec first_match matcher = function
 (*** Equality *)
 
 (* Patterns "(eq ?1 ?2 ?3)" and "(identity ?1 ?2 ?3)" *)
-let coq_eq_pattern_gen eq = 
-  lazy (PApp(PRef (Lazy.force eq), [|mkPMeta 1;mkPMeta 2;mkPMeta 3|]))
+let coq_eq_pattern_gen eq = lazy PATTERN [ %eq ?X1 ?X2 ?X3 ]
 let coq_eq_pattern = coq_eq_pattern_gen coq_eq_ref
-(*let coq_eqT_pattern = coq_eq_pattern_gen coq_eqT_ref*)
 let coq_identity_pattern = coq_eq_pattern_gen coq_identity_ref
 
 let match_eq eqn eq_pat =
@@ -292,8 +278,7 @@ let dest_nf_eq gls eqn =
 (*** Sigma-types *)
 
 (* Patterns "(existS ?1 ?2 ?3 ?4)" and "(existT ?1 ?2 ?3 ?4)" *)
-let coq_ex_pattern_gen ex =
-  lazy(PApp(PRef (Lazy.force ex), [|mkPMeta 1;mkPMeta 2;mkPMeta 3;mkPMeta 4|]))
+let coq_ex_pattern_gen ex = lazy PATTERN [ %ex ?X1 ?X2 ?X3 ?X4 ]
 let coq_existS_pattern = coq_ex_pattern_gen coq_existS_ref
 let coq_existT_pattern = coq_ex_pattern_gen coq_existT_ref
 
@@ -311,8 +296,7 @@ let find_sigma_data_decompose ex = (* fails with PatternMatchingFailure *)
      coq_existT_pattern, build_sigma_type]
 
 (* Pattern "(sig ?1 ?2)" *)
-let coq_sig_pattern = 
-  lazy (PApp (PRef (Lazy.force coq_sig_ref), [| (mkPMeta 1); (mkPMeta 2) |]))
+let coq_sig_pattern = lazy PATTERN [ %coq_sig_ref ?X1 ?X2 ]
 
 let match_sigma t =
   match matches (Lazy.force coq_sig_pattern) t with
@@ -323,43 +307,47 @@ let is_matching_sigma t = is_matching (Lazy.force coq_sig_pattern) t
 
 (*** Decidable equalities *)
 
-(* Pattern "(sumbool (eq ?1 ?2 ?3) ?4)" *)
-let coq_eqdec_partial_pattern =
-  lazy
-    (PApp
-       (PRef (Lazy.force coq_sumbool_ref),
-	[| Lazy.force coq_eq_pattern; (mkPMeta 4) |]))
-
-let match_eqdec_partial t =
-  match matches (Lazy.force coq_eqdec_partial_pattern) t with
-    | [_; (_,lhs); (_,rhs); _] -> (lhs,rhs)
-    | _ -> anomaly "Unexpected pattern"
-
 (* The expected form of the goal for the tactic Decide Equality *)
 
-(* Pattern "(x,y:?1){<?1>x=y}+{~(<?1>x=y)}" *)
-(* i.e. "(x,y:?1)(sumbool (eq ?1 x y) ~(eq ?1 x y))" *)
-let x = Name (id_of_string "x")
-let y = Name (id_of_string "y")
+(* Pattern "{<?1>x=y}+{~(<?1>x=y)}" *)
+(* i.e. "(sumbool (eq ?1 x y) ~(eq ?1 x y))" *)
+
+let coq_eqdec_inf_pattern =
+ lazy PATTERN [ { ?X2 = ?X3 :> ?X1 } + { ~ ?X2 = ?X3 :> ?X1 } ]
+
+let coq_eqdec_inf_rev_pattern =
+ lazy PATTERN [ { ~ ?X2 = ?X3 :> ?X1 } + { ?X2 = ?X3 :> ?X1 } ]
+
 let coq_eqdec_pattern =
-  lazy
-    (PProd (x, (mkPMeta 1), PProd (y, (mkPMeta 1), 
-    PApp (PRef (Lazy.force coq_sumbool_ref),
-	  [| PApp (PRef (Lazy.force coq_eq_ref),
-		   [| (mkPMeta 1); PRel 2; PRel 1 |]);
-	     PApp (PRef (Lazy.force coq_not_ref), 
-		   [|PApp (PRef (Lazy.force coq_eq_ref),
- 			   [| (mkPMeta 1); PRel 2; PRel 1 |])|]) |]))))
+ lazy PATTERN [ %coq_or_ref (?X2 = ?X3 :> ?X1) (~ ?X2 = ?X3 :> ?X1) ]
+
+let coq_eqdec_rev_pattern =
+ lazy PATTERN [ %coq_or_ref (~ ?X2 = ?X3 :> ?X1) (?X2 = ?X3 :> ?X1) ]
+
+let op_or = coq_or_ref
+let op_sum = coq_sumbool_ref
 
 let match_eqdec t =
-  match matches (Lazy.force coq_eqdec_pattern) t with
-    | [(_,typ)] -> typ
-    | _ -> anomaly "Unexpected pattern"
+  let eqonleft,op,subst =
+    try true,op_sum,matches (Lazy.force coq_eqdec_inf_pattern) t
+    with PatternMatchingFailure -> 
+    try false,op_sum,matches (Lazy.force coq_eqdec_inf_rev_pattern) t
+    with PatternMatchingFailure -> 
+    try true,op_or,matches (Lazy.force coq_eqdec_pattern) t
+    with PatternMatchingFailure -> 
+        false,op_or,matches (Lazy.force coq_eqdec_rev_pattern) t in
+  match subst with
+  | [(_,typ);(_,c1);(_,c2)] -> 
+      eqonleft, Libnames.constr_of_global (Lazy.force op), c1, c2, typ
+  | _ -> anomaly "Unexpected pattern"
 
 (* Patterns "~ ?" and "? -> False" *)
-let coq_not_pattern = lazy(PApp(PRef (Lazy.force coq_not_ref), [|PMeta None|]))
-let coq_imp_False_pattern =
-  lazy (imp (PMeta None) (PRef (Lazy.force coq_False_ref)))
+let coq_not_pattern = lazy PATTERN [ ~ _ ]
+let coq_imp_False_pattern = lazy PATTERN [ _ -> %coq_False_ref ]
 
 let is_matching_not t = is_matching (Lazy.force coq_not_pattern) t
 let is_matching_imp_False t = is_matching (Lazy.force coq_imp_False_pattern) t
+
+(* Remark: patterns that have references to the standard library must
+   be evaluated lazily (i.e. at the time they are used, not a the time
+   coqtop starts) *)

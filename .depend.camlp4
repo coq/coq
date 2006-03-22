@@ -4,6 +4,7 @@ tactics/extraargs.ml: parsing/grammar.cma
 tactics/extratactics.ml: parsing/grammar.cma
 tactics/eauto.ml: parsing/grammar.cma
 toplevel/whelp.ml: parsing/grammar.cma
+tactics/hipattern.ml: parsing/grammar.cma parsing/q_constr.cmo
 contrib/omega/g_omega.ml: parsing/grammar.cma
 contrib/romega/g_romega.ml: parsing/grammar.cma
 contrib/ring/g_quote.ml: parsing/grammar.cma
@@ -40,6 +41,7 @@ parsing/g_ltac.ml:
 parsing/argextend.ml: 
 parsing/tacextend.ml: 
 parsing/vernacextend.ml: 
+parsing/q_constr.ml: 
 toplevel/mltop.ml: 
 lib/pp.ml: 
 lib/compat.ml: 

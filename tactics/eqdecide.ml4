@@ -46,11 +46,11 @@ open Coqlib
    2. Try discrimination to solve those goals where x and y has
       been introduced by different constructors.
    3. If x and y have been introduced by the same constructor,
-      then analyse one by one the correspoing pairs of arguments.
+      then analyse one by one the corresponding pairs of arguments.
       If they are equal, rewrite one into the other. If they are
       not, derive a contradiction from the injectiveness of the
       constructor. 
-   4. Once all the arguments have been rewritten, solve the left half 
+   4. Once all the arguments have been rewritten, solve the remaining half 
       of the disjunction by reflexivity.
 
    Eduardo Gimenez (30/3/98).
@@ -58,35 +58,36 @@ open Coqlib
 
 let clear_last = (tclLAST_HYP (fun c -> (clear [destVar c])))
 
-let mkBranches = 
+let choose_eq eqonleft = 
+  if eqonleft then h_simplest_left else h_simplest_right
+let choose_noteq eqonleft =
+  if eqonleft then h_simplest_right else h_simplest_left
+
+let mkBranches c1 c2 = 
   tclTHENSEQ
-    [intro; 
-     tclLAST_HYP h_simplest_elim;
-     clear_last;
-     intros ;
+    [generalize [c2];
+     h_simplest_elim c1;
+     intros;
      tclLAST_HYP h_simplest_case;
      clear_last;
      intros]
 
-let solveRightBranch  = 
-  tclTHEN h_simplest_right
+let solveNoteqBranch side = 
+  tclTHEN (choose_noteq side)
     (tclTHEN (intro_force true)
       (onLastHyp (fun id -> Extratactics.h_discrHyp (Rawterm.NamedHyp id))))
 
-let h_solveRightBranch =
-  Refiner.abstract_extended_tactic "solveRightBranch" [] solveRightBranch
-
-(*
-let h_solveRightBranch =
-  hide_atomic_tactic "solveRightBranch" solveRightBranch
-*)
+let h_solveNoteqBranch side =
+  Refiner.abstract_extended_tactic "solveNoteqBranch" [] 
+    (solveNoteqBranch side)
 
 (* Constructs the type {c1=c2}+{~c1=c2} *)
 
-let mkDecideEqGoal rectype c1 c2 g = 
+let mkDecideEqGoal eqonleft op rectype c1 c2 g = 
   let equality    = mkApp(build_coq_eq(), [|rectype; c1; c2|]) in
   let disequality = mkApp(build_coq_not (), [|equality|]) in
-  mkApp(build_coq_sumbool (), [|equality; disequality |])
+  if eqonleft then mkApp(op, [|equality; disequality |])
+  else mkApp(op, [|disequality; equality |])
 
 
 (* Constructs the type (x1,x2:R){x1=x2}+{~x1=x2} *)
@@ -97,42 +98,45 @@ let mkGenDecideEqGoal rectype g =
   and yname    = next_ident_away (id_of_string "y") hypnames in
   (mkNamedProd xname rectype 
      (mkNamedProd yname rectype 
-        (mkDecideEqGoal rectype (mkVar xname) (mkVar yname) g)))
+        (mkDecideEqGoal true (build_coq_sumbool ())
+          rectype (mkVar xname) (mkVar yname) g)))
 
-let eqCase  tac = 
+let eqCase tac = 
   (tclTHEN intro  
   (tclTHEN (tclLAST_HYP Extratactics.h_rewriteLR)
   (tclTHEN clear_last 
   tac)))
 
-let diseqCase = 
+let diseqCase eqonleft =
   let diseq  = id_of_string "diseq" in
   let absurd = id_of_string "absurd" in 
   (tclTHEN (intro_using diseq)
-  (tclTHEN  h_simplest_right
+  (tclTHEN (choose_noteq eqonleft)
   (tclTHEN  red_in_concl
   (tclTHEN  (intro_using absurd)
   (tclTHEN  (h_simplest_apply (mkVar diseq))
   (tclTHEN  (Extratactics.h_injHyp (Rawterm.NamedHyp absurd))
             (full_trivial [])))))))
 
-let solveArg a1 a2 tac  g = 
+let solveArg eqonleft op a1 a2 tac g = 
   let rectype = pf_type_of g a1 in
-  let decide  = mkDecideEqGoal rectype a1 a2 g in  
-  (tclTHENS
-     (h_elim_type decide) 
-     [(eqCase tac);diseqCase;default_auto]) g
+  let decide  = mkDecideEqGoal eqonleft op rectype a1 a2 g in
+  let subtacs = 
+    if eqonleft then [eqCase tac;diseqCase eqonleft;default_auto] 
+    else [diseqCase eqonleft;eqCase tac;default_auto] in
+  (tclTHENS (h_elim_type decide) subtacs) g
 
-let solveLeftBranch rectype g =
+let solveEqBranch rectype g =
   try
-    let (lhs,rhs) = match_eqdec_partial (pf_concl g) in
+    let (eqonleft,op,lhs,rhs,_) = match_eqdec (pf_concl g) in
     let (mib,mip) = Global.lookup_inductive rectype in
     let nparams   = mib.mind_nparams in
     let getargs l = list_skipn nparams (snd (decompose_app l)) in
     let rargs   = getargs rhs
     and largs   = getargs lhs in 
     List.fold_right2 
-      solveArg largs rargs (tclTHEN h_simplest_left h_reflexivity) g
+      (solveArg eqonleft op) largs rargs
+      (tclTHEN (choose_eq eqonleft) h_reflexivity) g
   with PatternMatchingFailure -> error "Unexpected conclusion!"
 
 (* The tactic Decide Equality *)
@@ -143,31 +147,33 @@ let hd_app c = match kind_of_term c with
 
 let decideGralEquality g =
   try
-    let typ = match_eqdec (pf_concl g) in
+    let eqonleft,_,c1,c2,typ = match_eqdec (pf_concl g) in
     let headtyp = hd_app (pf_compute g typ) in
     let rectype =
       match kind_of_term headtyp with
         | Ind mi -> mi
 	| _ -> error "This decision procedure only works for inductive objects"
-    in 
+    in
     (tclTHEN
-      mkBranches 
-      (tclORELSE h_solveRightBranch (solveLeftBranch rectype))) g
+      (mkBranches c1 c2)
+      (tclORELSE (h_solveNoteqBranch eqonleft) (solveEqBranch rectype)))
+    g
   with PatternMatchingFailure ->
-    error "The goal does not have the expected form"
+    error "The goal must be of the form {x<>y}+{x=y} or {x=y}+{x<>y}"
 
+let decideEqualityGoal = tclTHEN intros decideGralEquality
 
 let decideEquality c1 c2 g = 
   let rectype = (pf_type_of g c1) in     
   let decide  = mkGenDecideEqGoal rectype g in  
-  (tclTHENS (cut decide) [default_auto;decideGralEquality]) g
+  (tclTHENS (cut decide) [default_auto;decideEqualityGoal]) g
 
 
 (* The tactic Compare *)
 
 let compare c1 c2 g = 
   let rectype = pf_type_of g c1 in
-  let decide  = mkDecideEqGoal rectype c1 c2 g in  
+  let decide  = mkDecideEqGoal true (build_coq_sumbool ()) rectype c1 c2 g in  
   (tclTHENS (cut decide) 
             [(tclTHEN  intro 
              (tclTHEN (tclLAST_HYP simplest_case)
@@ -179,10 +185,9 @@ let compare c1 c2 g =
 
 TACTIC EXTEND decide_equality
   [ "decide" "equality" constr(c1) constr(c2) ] -> [ decideEquality c1 c2 ]
-| [ "decide" "equality" ] -> [ decideGralEquality ]
+| [ "decide" "equality" ] -> [ decideEqualityGoal ]
 END
 
 TACTIC EXTEND compare
 | [ "compare" constr(c1) constr(c2) ] -> [ compare c1 c2 ]
 END
-

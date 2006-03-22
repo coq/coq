@@ -208,7 +208,7 @@ HIGHTACTICS=\
 SPECTAC= tactics/tauto.ml4 tactics/eqdecide.ml4
 USERTAC = $(SPECTAC)
 ML4FILES += $(USERTAC) tactics/extraargs.ml4 tactics/extratactics.ml4 \
-	tactics/eauto.ml4 toplevel/whelp.ml4
+	tactics/eauto.ml4 toplevel/whelp.ml4 tactics/hipattern.ml4
 
 USERTACCMO=$(USERTAC:.ml4=.cmo)
 USERTACCMX=$(USERTAC:.ml4=.cmx)
@@ -1413,7 +1413,7 @@ ML4FILES +=parsing/g_minicoq.ml4 \
 	   parsing/g_xml.ml4 parsing/g_constr.ml4 \
 	   parsing/g_tactic.ml4 parsing/g_ltac.ml4 \
 	   parsing/argextend.ml4 parsing/tacextend.ml4 \
-	   parsing/vernacextend.ml4
+	   parsing/vernacextend.ml4 parsing/q_constr.ml4
 
 # beforedepend:: $(GRAMMARCMO)
 
