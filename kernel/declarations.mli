@@ -105,8 +105,8 @@ type one_inductive_body = {
  (* Head normalized constructor types so that their conclusion is atomic *)
     mind_nf_lc : types array;
 
- (* Number of expected (real) arg of the constructors (no let, no params) *)
-    mind_consnrealargs : int array;
+ (* Length of the signature of the constructors (with let, w/o params) *)
+    mind_consnrealdecls : int array;
 
  (* Signature of recursive arguments in the constructors *)
     mind_recargs : wf_paths;
@@ -142,7 +142,7 @@ type mutual_inductive_body = {
   (* Number of expected parameters *)
     mind_nparams : int;
 
-  (* Number of non recursively uniform parameters *)
+  (* Number of recursively uniform (i.e. ordinary) parameters *)
     mind_nparams_rec : int;
 
   (* The context of parameters (includes let-in declaration) *)

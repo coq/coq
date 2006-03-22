@@ -114,7 +114,7 @@ let constructor_nrealargs env (ind,j) =
 
 let constructor_nrealhyps env (ind,j) =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  mip.mind_consnrealargs.(j-1) - rel_context_length (mib.mind_params_ctxt)
+  mip.mind_consnrealdecls.(j-1)
 
 (* Length of arity (w/o local defs) *)
 
@@ -131,7 +131,7 @@ let make_case_info env ind style pats_source =
       source    = pats_source } in
   { ci_ind     = ind;
     ci_npar    = mib.mind_nparams;
-    ci_cstr_nargs = mip.mind_consnrealargs;
+    ci_cstr_nargs = mip.mind_consnrealdecls;
     ci_pp_info = print_info }
 
 let make_default_case_info env style ind =

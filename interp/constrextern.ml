@@ -904,7 +904,7 @@ let rec raw_of_pat env = function
       let mib,mip = lookup_mind_specif (Global.env()) ind in
       let k = mip.Declarations.mind_nrealargs in
       let nparams = mib.Declarations.mind_nparams in
-      let cstrnargs = mip.Declarations.mind_consnrealargs in
+      let cstrnargs = mip.Declarations.mind_consnrealdecls in
       Detyping.detype_case false (raw_of_pat env) (raw_of_eqns env)
 	(fun _ _ -> false (* lazy: don't try to display pattern with "if" *))
 	avoid (ind,cs,nparams,cstrnargs,k) typopt tm bv

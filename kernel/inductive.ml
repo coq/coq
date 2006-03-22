@@ -278,7 +278,7 @@ let check_case_info env indsp ci =
   if
     (indsp <> ci.ci_ind) or
     (mib.mind_nparams <> ci.ci_npar) or
-    (mip.mind_consnrealargs <> ci.ci_cstr_nargs)
+    (mip.mind_consnrealdecls <> ci.ci_cstr_nargs)
   then raise (TypeError(env,WrongCaseInfo(indsp,ci)))
 
 (************************************************************************)

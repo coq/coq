@@ -543,7 +543,8 @@ let build_inductive env env_ar params isrecord isfinite inds nmr recargs cst =
     let nf_lc = Array.map (fun (d,b) -> it_mkProd_or_LetIn b d) splayed_lc in
     let nf_lc = if nf_lc = lc then lc else nf_lc in
     let consnrealargs =
-      Array.map (fun (d,b) -> rel_context_nhyps d - nparamargs) splayed_lc in
+      Array.map (fun (d,_) -> rel_context_length d - rel_context_length params)
+	splayed_lc in
     (* Elimination sorts *)
     let isunit = isunit && ntypes = 1 && (not (is_recursive recargs.(0))) in
     let kelim = allowed_sorts env issmall isunit ar_sort in
@@ -568,7 +569,7 @@ let build_inductive env env_ar params isrecord isfinite inds nmr recargs cst =
       mind_sort = ar_sort;
       mind_kelim = kelim;
       mind_consnames = Array.of_list cnames;
-      mind_consnrealargs = consnrealargs;
+      mind_consnrealdecls = consnrealargs;
       mind_user_lc = lc;
       mind_nf_lc = nf_lc;
       mind_recargs = recarg;    

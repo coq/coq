@@ -57,3 +57,17 @@ Check
      | nil'' => 0
      | cons'' n l0 => S (length (mult2 n) l0)
      end).
+
+(* Check let-in in both parameters and in constructors *)
+
+Inductive list''' (A:Set) (B:=(A*A)%type) (a:A) : B -> Set :=
+  | nil''' : list''' A a (a,a)
+  | cons''' : 
+     forall a' : A, let m := (a',a) in list''' A a m -> list''' A a (a,a).
+
+Fixpoint length''' (A:Set) (B:=(A*A)%type) (a:A) (m:B) (l:list''' A a m) 
+  {struct l} : nat :=
+  match l with
+  | nil''' => 0
+  | cons''' _ m l0 => S (length''' A a m l0)
+  end.
