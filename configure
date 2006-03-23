@@ -6,8 +6,8 @@
 # 
 ##################################
 
-VERSION=8.0cvs
-DATE="Apr 2004"
+VERSION=trunk
+DATE="Mar 2006"
 
 # a local which command for sh
 which () {

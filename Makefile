@@ -1258,7 +1258,7 @@ install-latex:
 
 .PHONY: doc devdoc
 
-doc: coq
+doc: glob.dump
 	(cd doc; make all)
 
 clean::
