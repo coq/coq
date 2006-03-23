@@ -512,7 +512,7 @@ let product new_eq_id dark_shadow low high =
          accu high)
     [] low
 
-let fourier_motzkin (_,new_eq_id,print_var) dark_shadow system =
+let fourier_motzkin (new_eq_id,_,print_var) dark_shadow system =
   let v = select_variable system in
   let (ineq_out, ineq_low,ineq_high) = classify v system in
   let expanded = ineq_out @ product new_eq_id dark_shadow ineq_low ineq_high in

@@ -2624,6 +2624,10 @@ Fixpoint decompose_solve (s : e_step) (h : hyps) {struct s} : lhyps :=
            decompose_solve s1 (Tnot x :: h) ++
            decompose_solve s2 (Tnot y :: h)
           else h :: nil
+      | Timp x y => 
+          if decidability x then 
+            decompose_solve s1 (Tnot x :: h) ++ decompose_solve s2 (y :: h)
+          else h::nil
       | _ => h :: nil
       end
   | E_EXTRACT i dl s1 =>
@@ -2647,13 +2651,19 @@ intro s; apply goal_valid; unfold valid_list_hyps in |- *; elim s;
           | simpl in |- *; auto ]
        | intros p1 p2 H2; apply append_valid; simpl in |- *; elim H2;
           [ intros H3; left; apply H; simpl in |- *; auto
-          | intros H3; right; apply H0; simpl in |- *; auto ] ]
+          | intros H3; right; apply H0; simpl in |- *; auto ] 
+       | intros p1 p2 H2;
+         pattern (decidability p1) in |- *; apply bool_ind2;
+          [ intro H3; generalize (decidable_correct ep e1 p1 H3); intro H4;
+             apply append_valid; elim H4; intro H5; 
+             [ right; apply H0; simpl in |- *; tauto
+             | left; apply H; simpl in |- *; tauto ]
+          | simpl in |- *; auto ] ]
     | elim (extract_valid l); intros H2 H3; apply H2; apply nth_valid; auto ]
  | intros; apply H; simpl in |- *; split;
     [ elim (extract_valid l); intros H2 H3; apply H2; apply nth_valid; auto
     | auto ]
  | apply omega_valid with (1 := H) ].
-
 Qed.
 
 (* \subsection{La dernière étape qui élimine tous les séquents inutiles} *)

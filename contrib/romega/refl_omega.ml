@@ -204,7 +204,7 @@ let new_environment () = {
 }
 
 (* Génération d'un nom d'équation *)
-let new_eq_id env =
+let new_connector_id env =  
    env.cnt_connectors <- succ env.cnt_connectors; env.cnt_connectors
 
 (* Calcul de la branche complémentaire *)
@@ -229,9 +229,23 @@ let print_env_reification env =
 
 (* \subsection{Gestion des environnements de variable pour Omega} *)
 (* generation d'identifiant d'equation pour Omega *)
-let new_omega_id = let cpt = ref 0 in function () -> incr cpt; !cpt
+
+let new_omega_eq, rst_omega_eq = 
+  let cpt = ref 0 in 
+  (function () -> incr cpt; !cpt), 
+  (function () -> cpt:=0)
+
+(* generation d'identifiant de variable pour Omega *)
+
+let new_omega_var, rst_omega_var = 
+  let cpt = ref 0 in 
+  (function () -> incr cpt; !cpt), 
+  (function () -> cpt:=0)
+
 (* Affichage des variables d'un système *)
-let display_omega_id i = Printf.sprintf "O%d" i
+
+let display_omega_var i = Printf.sprintf "OV%d" i
+
 (* Recherche la variable codant un terme pour Omega et crée la variable dans
    l'environnement si il n'existe pas. Cas ou la variable dans Omega représente
    le terme d'un monome (le plus souvent un atome) *)
@@ -239,7 +253,7 @@ let display_omega_id i = Printf.sprintf "O%d" i
 let intern_omega env t =
   begin try List.assoc t env.om_vars
   with Not_found -> 
-    let v = new_omega_id () in 
+    let v = new_omega_var () in 
     env.om_vars <- (t,v) :: env.om_vars; v
   end
 
@@ -335,7 +349,7 @@ let omega_of_oformula env kind =
     | Oplus(Omult(v,Oint n),r) -> 
 	loop ({v=intern_omega env v; c=n} :: accu) r
     | Oint n ->
-	let id = new_omega_id () in
+	let id = new_omega_eq () in
 	(*i tag_equation name id; i*)
 	{kind = kind; body = List.rev accu; 
 	 constant = n; id = id}
@@ -443,7 +457,7 @@ let reified_of_omega env body c  =
   begin try 
     reified_of_omega env body c 
   with e -> 
-    display_eq display_omega_id (body,c); raise e 
+    display_eq display_omega_var (body,c); raise e 
   end
 
 (* \section{Opérations sur les équations}
@@ -728,7 +742,7 @@ and  binop env c t1 t2 =
 
 and  binprop env (neg2,depends,origin,path) 
              add_to_depends neg1 gl c t1 t2 =
-  let i = new_eq_id env in
+  let i = new_connector_id env in
   let depends1 = if add_to_depends then Left i::depends else depends in
   let depends2 = if add_to_depends then Right i::depends else depends in
   if add_to_depends then
@@ -875,7 +889,7 @@ let display_systems syst_list =
   let display_omega om_e = 
     Printf.printf "  E%d : %a %s 0\n"
       om_e.id
-      (fun _ -> display_eq display_omega_id) 
+      (fun _ -> display_eq display_omega_var) 
       (om_e.body, om_e.constant)
       (operator_of_eq om_e.kind) in
 
@@ -1209,14 +1223,14 @@ let resolution env full_reified_goal systems_list =
     let system = List.map (fun eq -> eq.e_omega) list_eq in
     let trace = 
       simplify_strong 
-	((fun () -> new_eq_id env),new_omega_id,display_omega_id) 
+	(new_omega_eq,new_omega_var,display_omega_var) 
 	system in 
     (* calcule les hypotheses utilisées pour la solution *)
     let vars = hyps_used_in_trace trace in
     let splits = get_eclatement env vars in
     if !debug then begin
       Printf.printf "SYSTEME %d\n" index;
-      display_action display_omega_id trace;
+      display_action display_omega_var trace;
       print_string "\n  Depend :";
       List.iter (fun i -> Printf.printf " %d" i) vars;
       print_string "\n  Split points :";
@@ -1309,6 +1323,8 @@ let resolution env full_reified_goal systems_list =
 
 let total_reflexive_omega_tactic gl = 
   Coqlib.check_required_library ["Coq";"romega";"ROmega"];
+  rst_omega_eq (); 
+  rst_omega_var ();
   try
   let env = new_environment () in
   let full_reified_goal = reify_gl env gl in
