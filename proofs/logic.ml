@@ -627,7 +627,7 @@ let prim_extractor subfun vl pft =
     (* Structural and conversion rules do not produce any proof *)
     | Some (Prim (Convert_concl (t,k)),[pf]) ->
 	if k = DEFAULTcast then subfun vl pf
-	else mkCast (subfun vl pf,k,cl)
+	else mkCast (subfun vl pf,k,subst_proof_vars vl cl)
     | Some (Prim (Convert_hyp _),[pf]) ->
 	subfun vl pf
 
