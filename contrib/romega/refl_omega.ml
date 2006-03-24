@@ -1318,7 +1318,13 @@ let resolution env full_reified_goal systems_list =
   Tactics.change_in_concl None reified >> 
   Tactics.apply (app coq_do_omega [|decompose_tactic; normalization_trace|]) >>
   show_goal >>
-  Tactics.normalise_in_concl >>
+  Tactics.normalise_vm_in_concl >>
+  (*i Alternatives to the previous line: 
+   - Normalisation without VM: 
+      Tactics.normalise_in_concl
+   - Skip the conversion check and rely directly on the QED: 
+      Tacmach.convert_concl_no_check (Lazy.force coq_True) Term.VMcast >> 
+  i*)
   Tactics.apply (Lazy.force coq_I)
 
 let total_reflexive_omega_tactic gl = 
