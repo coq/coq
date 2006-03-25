@@ -404,7 +404,7 @@ and coq = parse
 	  let eol = body lexbuf in
 	    if eol then coq_bol lexbuf else coq lexbuf }
   | space+ { char ' '; coq lexbuf }
-  |  eof 
+  | eof 
       { () }
   | _ { let eol = 
 	  if not !gallina then 
@@ -567,6 +567,9 @@ and body = parse
   | identifier 
       { let s = lexeme lexbuf in 
 	  ident s (lexeme_start lexbuf); body lexbuf }
+  | token
+      { let s = lexeme lexbuf in
+	  symbol s; body lexbuf }
   | _ { let c = lexeme_char lexbuf 0 in 
 	  char c; body lexbuf }
 
