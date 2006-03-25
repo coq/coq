@@ -6,7 +6,10 @@ FILE=$1
 
 cp -f $FILE.template tmp
 echo -n Building file index-list.prehtml ...
-for i in $COQTOP/theories/*; do
+
+for i in ../theories/*; do
+    echo $i
+
   d=`basename $i`
   if [ "$d" != "Num" -a "$d" != "CVS" ]; then
   for j in $i/*.v; do
@@ -15,7 +18,7 @@ for i in $COQTOP/theories/*; do
     grep -q theories/$d/$b.v tmp
     a=$?
     if [ $a = 0 ]; then
-      sed -e "s/theories\/$d\/$b.v/<a href=\"Coq.$d.$b.html\">$b<\/a>/g" tmp > tmp2
+      sed -e "s:theories/$d/$b.v:<a href=\"Coq.$d.$b.html\">$b</a>:g" tmp > tmp2
       mv -f tmp2 tmp
     else
       echo Warning: theories/$d/$b.v is missing in the template file

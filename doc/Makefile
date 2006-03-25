@@ -207,7 +207,7 @@ faq/html/index.html: faq/FAQ.v.html
 
 GLOBDUMP=$(COQTOP)/glob.dump
 
-LIBDIRS= Logic Bool Arith ZArith Reals Lists Sets Relations Sorting Wellfounded IntMap
+LIBDIRS= Logic Bool Arith ZArith Reals Lists Sets Relations Sorting Wellfounded IntMap FSets
 
 ### Standard library (browsable html format)
 
@@ -220,7 +220,7 @@ stdlib/index-body.html: $(GLOBDUMP)
 	mv stdlib/html/index.html stdlib/index-body.html
 
 stdlib/index-list.html: stdlib/index-list.html.template
-	./stdlib/make-library-index stdlib/index-list.html
+	COQTOP=$(COQTOP) ./stdlib/make-library-index stdlib/index-list.html
 
 stdlib/html/index.html: stdlib/index-list.html stdlib/index-body.html stdlib/index-trailer.html
 	cat $^ > $@
