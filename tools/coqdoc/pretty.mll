@@ -325,17 +325,22 @@ rule coq_bol = parse
 	    skip_to_dot lexbuf; 
 	    coq_bol lexbuf 
 	  end else begin
-	    indentation (count_spaces s); 
-	    ident s (lexeme_start lexbuf); 
-	    let eol= body lexbuf in 
-	      if eol then coq_bol lexbuf else coq lexbuf
+	    let s = lexeme lexbuf in 
+	    let nbsp = count_spaces s in
+	      indentation nbsp; 
+	      let s = String.sub s nbsp (String.length s - nbsp) in
+		ident s (lexeme_start lexbuf + nbsp); 
+		let eol= body lexbuf in 
+		  if eol then coq_bol lexbuf else coq lexbuf
 	  end }
   | space* gallina_kw
       { let s = lexeme lexbuf in 
-	  indentation (count_spaces s);
-	  ident s (lexeme_start lexbuf); 
-	  let eol= body lexbuf in
-	    if eol then coq_bol lexbuf else coq lexbuf }
+	let nbsp = count_spaces s in
+	  indentation nbsp;
+	  let s = String.sub s nbsp (String.length s - nbsp)  in
+	    ident s (lexeme_start lexbuf + nbsp); 
+	    let eol= body lexbuf in
+	      if eol then coq_bol lexbuf else coq lexbuf }
   | space* "(**" space+ "printing" space+ (identifier | token) space+
       { let tok = lexeme lexbuf in
 	let s = printing_token lexbuf in
