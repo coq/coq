@@ -26,7 +26,7 @@ open Hipattern
 open Libnames
 open Declarations
 
-let debug = ref true
+let debug = ref false
 
 let logic_dir = ["Coq";"Logic";"Decidable"]
 let coq_modules =
@@ -369,8 +369,7 @@ and axiomatize_body env r id d = match r with
 	      (match d with
 		 | DeclPred (id, _, []) ->
 		     let value = tr_formula tv [] env b in
-		     [id, And (Imp (Fatom (Pred (id, [])), value),
-			       Imp (value, Fatom (Pred (id, []))))]
+		     [id, Iff (Fatom (Pred (id, [])), value)]
 		 | DeclFun (id, _, [], _) ->
 		     let value = tr_term tv [] env b in
 		     [id, Fatom (Eq (Fol.App (id, []), value))]
@@ -420,10 +419,7 @@ and axiomatize_body env r id d = match r with
 			   end
 		       | DeclPred _ ->
 			   let value = tr_formula tv bv env t in
-			   let p = 
-			     And (Imp (Fatom (Pred (id, fol_vars)), value),
-				  Imp (value, Fatom (Pred (id, fol_vars))))
-			   in
+			   let p = Iff (Fatom (Pred (id, fol_vars)), value) in
 			   [id, foralls vars p]
 		       | _ ->
 			   assert false
@@ -655,8 +651,9 @@ let call_simplify fwhy =
   r
 
 let call_zenon fwhy =
-  if Sys.command (sprintf "why --zenon %s" fwhy) <> 0 then
-    anomaly ("call to why --zenon " ^ fwhy ^ " failed; please report");
+  let cmd = sprintf "why --no-prelude --no-zenon-prelude --zenon %s" fwhy in
+  if Sys.command cmd <> 0 then
+    anomaly ("call to " ^ cmd ^ " failed; please report");
   let fznn = Filename.chop_suffix fwhy ".why" ^ "_why.znn" in
   let cmd = 
     sprintf "timeout 10 zenon %s > out 2>&1 && grep -q PROOF-FOUND out" fznn

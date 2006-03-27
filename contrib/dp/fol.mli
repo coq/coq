@@ -24,6 +24,7 @@ and atom =
 and form = 
   | Fatom of atom
   | Imp of form * form
+  | Iff of form * form
   | And of form * form
   | Or of form * form
   | Not of form

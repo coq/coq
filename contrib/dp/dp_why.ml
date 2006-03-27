@@ -77,6 +77,8 @@ let rec print_predicate fmt p =
       fprintf fmt "@[%a(%a)@]" ident id print_terms tl
   | Imp (a, b) ->
       fprintf fmt "@[(%a ->@ %a)@]" pp a pp b
+  | Iff (a, b) ->
+      fprintf fmt "@[(%a <->@ %a)@]" pp a pp b
   | And (a, b) ->
       fprintf fmt "@[(%a and@ %a)@]" pp a pp b
   | Or (a, b) ->
