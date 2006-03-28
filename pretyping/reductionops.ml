@@ -632,7 +632,7 @@ let splay_lambda env sigma =
 let splay_prod_assum env sigma = 
   let rec prodec_rec env l c =
     let t = whd_betadeltaiota_nolet env sigma c in
-    match kind_of_term c with
+    match kind_of_term t with
     | Prod (x,t,c)  ->
 	prodec_rec (push_rel (x,None,t) env)
 	  (Sign.add_rel_decl (x, None, t) l) c
@@ -661,6 +661,13 @@ let decomp_n_prod env sigma n =
       | _                      -> error "decomp_n_prod: Not enough products"
   in 
   decrec env n Sign.empty_rel_context
+
+exception NotASort
+
+let decomp_sort env sigma t =
+  match kind_of_term (whd_betadeltaiota env sigma t) with
+  | Sort s -> s
+  | _ -> raise NotASort
 
 (* One step of approximation *)
 
