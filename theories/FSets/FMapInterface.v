@@ -229,7 +229,7 @@ Module Type Sord.
   Axiom lt_trans : forall m1 m2 m3 : t, lt m1 m2 -> lt m2 m3 -> lt m1 m3.
   Axiom lt_not_eq : forall m1 m2 : t, lt m1 m2 -> ~ eq m1 m2.
 
-  Definition cmp e e' := match Data.compare e e' with Eq _ => true | _ => false end.	
+  Definition cmp e e' := match Data.compare e e' with EQ _ => true | _ => false end.	
 
   Parameter eq_1 : forall m m', Equal cmp m m' -> eq m m'.
   Parameter eq_2 : forall m m', eq m m' -> Equal cmp m m'.

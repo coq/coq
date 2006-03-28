@@ -22,9 +22,9 @@ Unset Strict Implicit.
 (** * Ordered types *)
 
 Inductive Compare (X : Set) (lt eq : X -> X -> Prop) (x y : X) : Set :=
-  | Lt : lt x y -> Compare lt eq x y
-  | Eq : eq x y -> Compare lt eq x y
-  | Gt : lt y x -> Compare lt eq x y.
+  | LT : lt x y -> Compare lt eq x y
+  | EQ : eq x y -> Compare lt eq x y
+  | GT : lt y x -> Compare lt eq x y.
 
 Module Type OrderedType.
 
@@ -144,61 +144,61 @@ Ltac abstraction := match goal with
  | _ => idtac
 end.
 
-Ltac do_eq a b Eq := match goal with 
+Ltac do_eq a b EQ := match goal with 
  | |- lt ?x ?y -> _ => let H := fresh "H" in 
      (intro H; 
-      (generalize (eq_lt (eq_sym Eq) H); clear H; intro H) ||
-      (generalize (lt_eq H Eq); clear H; intro H) || 
+      (generalize (eq_lt (eq_sym EQ) H); clear H; intro H) ||
+      (generalize (lt_eq H EQ); clear H; intro H) || 
       idtac); 
-      do_eq a b Eq
+      do_eq a b EQ
  | |- ~lt ?x ?y -> _ => let H := fresh "H" in 
      (intro H; 
-      (generalize (eq_le (eq_sym Eq) H); clear H; intro H) ||
-      (generalize (le_eq H Eq); clear H; intro H) || 
+      (generalize (eq_le (eq_sym EQ) H); clear H; intro H) ||
+      (generalize (le_eq H EQ); clear H; intro H) || 
       idtac); 
-      do_eq a b Eq 
+      do_eq a b EQ 
  | |- eq ?x ?y -> _ => let H := fresh "H" in 
      (intro H; 
-      (generalize (eq_trans (eq_sym Eq) H); clear H; intro H) ||
-      (generalize (eq_trans H Eq); clear H; intro H) || 
+      (generalize (eq_trans (eq_sym EQ) H); clear H; intro H) ||
+      (generalize (eq_trans H EQ); clear H; intro H) || 
       idtac); 
-      do_eq a b Eq 
+      do_eq a b EQ 
  | |- ~eq ?x ?y -> _ => let H := fresh "H" in 
      (intro H; 
-      (generalize (eq_neq (eq_sym Eq) H); clear H; intro H) ||
-      (generalize (neq_eq H Eq); clear H; intro H) || 
+      (generalize (eq_neq (eq_sym EQ) H); clear H; intro H) ||
+      (generalize (neq_eq H EQ); clear H; intro H) || 
       idtac); 
-      do_eq a b Eq 
- | |- lt a ?y => apply eq_lt with b; [exact Eq|]
- | |- lt ?y a => apply lt_eq with b; [|exact (eq_sym Eq)]
- | |- eq a ?y => apply eq_trans with b; [exact Eq|]
- | |- eq ?y a => apply eq_trans with b; [|exact (eq_sym Eq)]
+      do_eq a b EQ 
+ | |- lt a ?y => apply eq_lt with b; [exact EQ|]
+ | |- lt ?y a => apply lt_eq with b; [|exact (eq_sym EQ)]
+ | |- eq a ?y => apply eq_trans with b; [exact EQ|]
+ | |- eq ?y a => apply eq_trans with b; [|exact (eq_sym EQ)]
  | _ => idtac
  end.
 
 Ltac propagate_eq := abstraction; clear; match goal with 
  (* the abstraction tactic leaves equality facts in head position...*)
  | |- eq ?a ?b -> _ => 
-     let Eq := fresh "Eq" in (intro Eq; do_eq a b Eq; clear Eq); 
+     let EQ := fresh "EQ" in (intro EQ; do_eq a b EQ; clear EQ); 
      propagate_eq 
  | _ => idtac
 end.
 
-Ltac do_lt x y Lt := match goal with 
- (* Lt *)
- | |- lt x y -> _ => intros _; do_lt x y Lt
+Ltac do_lt x y LT := match goal with 
+ (* LT *)
+ | |- lt x y -> _ => intros _; do_lt x y LT
  | |- lt y ?z -> _ => let H := fresh "H" in 
-     (intro H; generalize (lt_trans Lt H); intro); do_lt x y Lt
+     (intro H; generalize (lt_trans LT H); intro); do_lt x y LT
  | |- lt ?z x -> _ => let H := fresh "H" in 
-     (intro H; generalize (lt_trans H Lt); intro); do_lt x y Lt
- | |- lt _ _ -> _ => intro; do_lt x y Lt
+     (intro H; generalize (lt_trans H LT); intro); do_lt x y LT
+ | |- lt _ _ -> _ => intro; do_lt x y LT
  (* Ge *)
- | |- ~lt y x -> _ => intros _; do_lt x y Lt
+ | |- ~lt y x -> _ => intros _; do_lt x y LT
  | |- ~lt x ?z -> _ => let H := fresh "H" in 
-     (intro H; generalize (le_lt_trans H Lt); intro); do_lt x y Lt
+     (intro H; generalize (le_lt_trans H LT); intro); do_lt x y LT
  | |- ~lt ?z y -> _ => let H := fresh "H" in 
-     (intro H; generalize (lt_le_trans Lt H); intro); do_lt x y Lt
- | |- ~lt _ _ -> _ => intro; do_lt x y Lt
+     (intro H; generalize (lt_le_trans LT H); intro); do_lt x y LT
+ | |- ~lt _ _ -> _ => intro; do_lt x y LT
  | _ => idtac
  end.
 
@@ -207,8 +207,8 @@ Definition hide_lt := lt.
 Ltac propagate_lt := abstraction; match goal with 
  (* when no [=] remains, the abstraction tactic leaves [<] facts first. *)
  | |- lt ?x ?y -> _ => 
-     let Lt := fresh "Lt" in (intro Lt; do_lt x y Lt; 
-     change (hide_lt x y) in Lt); 
+     let LT := fresh "LT" in (intro LT; do_lt x y LT; 
+     change (hide_lt x y) in LT); 
      propagate_lt 
  | _ => unfold hide_lt in *
 end.
@@ -249,7 +249,7 @@ Ltac false_order := elimtype False; order.
 
   Lemma elim_compare_eq :
    forall x y : t,
-   eq x y -> exists H : eq x y, compare x y = Eq _ H.
+   eq x y -> exists H : eq x y, compare x y = EQ _ H.
   Proof. 
    intros; case (compare x y); intros H'; try solve [false_order].
    exists H'; auto.   
@@ -257,7 +257,7 @@ Ltac false_order := elimtype False; order.
 
   Lemma elim_compare_lt :
    forall x y : t,
-   lt x y -> exists H : lt x y, compare x y = Lt _ H.
+   lt x y -> exists H : lt x y, compare x y = LT _ H.
   Proof. 
    intros; case (compare x y); intros H'; try solve [false_order].
    exists H'; auto. 
@@ -265,7 +265,7 @@ Ltac false_order := elimtype False; order.
 
   Lemma elim_compare_gt :
    forall x y : t,
-   lt y x -> exists H : lt y x, compare x y = Gt _ H.
+   lt y x -> exists H : lt y x, compare x y = GT _ H.
   Proof. 
    intros; case (compare x y); intros H'; try solve [false_order].
    exists H'; auto.   
@@ -306,7 +306,7 @@ Ltac false_order := elimtype False; order.
   Definition eqb x y : bool := if eq_dec x y then true else false.
 
   Lemma eqb_alt : 
-    forall x y, eqb x y = match compare x y with Eq _ => true | _ => false end. 
+    forall x y, eqb x y = match compare x y with EQ _ => true | _ => false end. 
   Proof.
   unfold eqb; intros; destruct (eq_dec x y); elim_comp; auto.
   Qed.

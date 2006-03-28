@@ -101,9 +101,9 @@ Fixpoint mem (k : key) (s : t elt) {struct s} : bool :=
   | nil => false
   | (k',_) :: l =>
      match X.compare k k' with
-      | Lt _ => false
-      | Eq _ => true
-      | Gt _ => mem k l
+      | LT _ => false
+      | EQ _ => true
+      | GT _ => mem k l
      end
  end.
 
@@ -141,9 +141,9 @@ Fixpoint find (k:key) (s: t elt) {struct s} : option elt :=
   | nil => None
   | (k',x)::s' => 
      match X.compare k k' with
-      | Lt _ => None
-      | Eq _ => Some x
-      | Gt _ => find k s'
+      | LT _ => None
+      | EQ _ => Some x
+      | GT _ => find k s'
      end
  end.
 
@@ -179,9 +179,9 @@ Fixpoint add (k : key) (x : elt) (s : t elt) {struct s} : t elt :=
   | nil => (k,x) :: nil
   | (k',y) :: l =>
      match X.compare k k' with
-      | Lt _ => (k,x)::s
-      | Eq _ => (k,x)::l
-      | Gt _ => (k',y) :: add k x l
+      | LT _ => (k,x)::s
+      | EQ _ => (k,x)::l
+      | GT _ => (k',y) :: add k x l
      end
  end.
 
@@ -247,9 +247,9 @@ Fixpoint remove (k : key) (s : t elt) {struct s} : t elt :=
   | nil => nil
   | (k',x) :: l =>
      match X.compare k k' with
-      | Lt _ => s
-      | Eq _ => l
-      | Gt _ => (k',x) :: remove k l
+      | LT _ => s
+      | EQ _ => l
+      | GT _ => (k',x) :: remove k l
      end
  end.  
 
@@ -361,7 +361,7 @@ Fixpoint equal (cmp:elt->elt->bool)(m m' : t elt) { struct m } : bool :=
    | nil, nil => true
    | (x,e)::l, (x',e')::l' => 
       match X.compare x x' with 
-       | Eq _ => cmp e e' && equal cmp l l'
+       | EQ _ => cmp e e' && equal cmp l l'
        | _    => false
       end 
    | _, _ => false 
@@ -684,9 +684,9 @@ Fixpoint map2 (m : t elt) : t elt' -> t elt'' :=
          | nil => map2_l m
          | (k',e') :: l' =>
             match X.compare k k' with
-             | Lt _ => option_cons k (f (Some e) None) (map2 l m')
-             | Eq _ => option_cons k (f (Some e) (Some e')) (map2 l l')
-             | Gt _ => option_cons k' (f None (Some e')) (map2_aux l')
+             | LT _ => option_cons k (f (Some e) None) (map2 l m')
+             | EQ _ => option_cons k (f (Some e) (Some e')) (map2 l l')
+             | GT _ => option_cons k' (f None (Some e')) (map2_aux l')
             end
         end
   end.      
@@ -702,9 +702,9 @@ Fixpoint combine (m : t elt) : t elt' -> t oee' :=
          | nil => map (fun e => (Some e,None)) m
          | (k',e') :: l' =>
             match X.compare k k' with
-             | Lt _ => (k,(Some e, None))::combine l m'
-             | Eq _ => (k,(Some e, Some e'))::combine l l'
-             | Gt _ => (k',(None,Some e'))::combine_aux l'
+             | LT _ => (k,(Some e, None))::combine l m'
+             | EQ _ => (k,(Some e, Some e'))::combine l l'
+             | GT _ => (k',(None,Some e'))::combine_aux l'
             end
         end
   end. 
@@ -1099,14 +1099,14 @@ Import MD.
 
 Definition t := MapS.t D.t. 
 
-Definition cmp e e' := match D.compare e e' with Eq _ => true | _ => false end.
+Definition cmp e e' := match D.compare e e' with EQ _ => true | _ => false end.
 
 Fixpoint eq_list (m m' : list (X.t * D.t)) { struct m } : Prop := 
   match m, m' with 
    | nil, nil => True
    | (x,e)::l, (x',e')::l' => 
       match X.compare x x' with 
-       | Eq _ => D.eq e e' /\ eq_list l l'
+       | EQ _ => D.eq e e' /\ eq_list l l'
        | _       => False
       end 
    | _, _ => False
@@ -1121,9 +1121,9 @@ Fixpoint lt_list (m m' : list (X.t * D.t)) {struct m} : Prop :=
    | _, nil  => False
    | (x,e)::l, (x',e')::l' => 
       match X.compare x x' with 
-       | Lt _ => True
-       | Gt _ => False
-       | Eq _ => D.lt e e' \/ (D.eq e e' /\ lt_list l l')
+       | LT _ => True
+       | GT _ => False
+       | EQ _ => D.lt e e' \/ (D.eq e e' /\ lt_list l l')
       end
   end.
 
@@ -1254,18 +1254,18 @@ Definition compare : forall m1 m2, Compare lt eq m1 m2.
 Proof.
  intros (m1,Hm1); induction m1; 
  intros (m2, Hm2); destruct m2; 
-  [ apply Eq | apply Lt | apply Gt | ]; cmp_solve.
+  [ apply EQ | apply LT | apply GT | ]; cmp_solve.
  destruct a as (x,e); destruct p as (x',e'). 
  destruct (X.compare x x'); 
-  [ apply Lt | | apply Gt ]; cmp_solve.
+  [ apply LT | | apply GT ]; cmp_solve.
  destruct (D.compare e e'); 
-  [ apply Lt | | apply Gt ]; cmp_solve.
+  [ apply LT | | apply GT ]; cmp_solve.
  assert (Hm11 : sort (Raw.PX.ltk (elt:=D.t)) m1).
   inversion_clear Hm1; auto.
  assert (Hm22 : sort (Raw.PX.ltk (elt:=D.t)) m2).
   inversion_clear Hm2; auto.
  destruct (IHm1 Hm11 (Build_slist Hm22)); 
-  [ apply Lt | apply Eq | apply Gt ]; cmp_solve.
+  [ apply LT | apply EQ | apply GT ]; cmp_solve.
 Qed.
 
 End Make_ord. 

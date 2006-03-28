@@ -866,11 +866,11 @@ FSETSVO=\
  theories/FSets/FSetInterface.vo     theories/FSets/FSetList.vo \
  theories/FSets/FSetBridge.vo        theories/FSets/FSetFacts.vo \
  theories/FSets/FSetProperties.vo    theories/FSets/FSetEqProperties.vo \
- theories/FSets/FSet.vo \
+ theories/FSets/FSets.vo \
  theories/FSets/FSetWeakInterface.vo theories/FSets/FSetWeakList.vo \
  theories/FSets/FSetWeakFacts.vo     theories/FSets/FSetWeak.vo \
  theories/FSets/FMapInterface.vo     theories/FSets/FMapList.vo \
- theories/FSets/FMap.vo \
+ theories/FSets/FMaps.vo \
  theories/FSets/FMapWeakInterface.vo theories/FSets/FMapWeakList.vo \
  theories/FSets/FMapWeak.vo
 

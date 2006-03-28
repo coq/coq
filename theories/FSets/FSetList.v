@@ -43,9 +43,9 @@ Module Raw (X: OrderedType).
     | nil => false
     | y :: l =>
         match X.compare x y with
-        | Lt _ => false
-        | Eq _ => true
-        | Gt _ => mem x l
+        | LT _ => false
+        | EQ _ => true
+        | GT _ => mem x l
         end
     end.
 
@@ -54,9 +54,9 @@ Module Raw (X: OrderedType).
     | nil => x :: nil
     | y :: l =>
         match X.compare x y with
-        | Lt _ => x :: s
-        | Eq _ => s
-        | Gt _ => y :: add x l
+        | LT _ => x :: s
+        | EQ _ => s
+        | GT _ => y :: add x l
         end
     end.
 
@@ -67,9 +67,9 @@ Module Raw (X: OrderedType).
     | nil => nil
     | y :: l =>
         match X.compare x y with
-        | Lt _ => s
-        | Eq _ => l
-        | Gt _ => y :: remove x l
+        | LT _ => s
+        | EQ _ => l
+        | GT _ => y :: remove x l
         end
     end.  
   
@@ -82,9 +82,9 @@ Module Raw (X: OrderedType).
            | nil => s
            | x' :: l' =>
                match X.compare x x' with
-               | Lt _ => x :: union l s'
-               | Eq _ => x :: union l l'
-               | Gt _ => x' :: union_aux l'
+               | LT _ => x :: union l s'
+               | EQ _ => x :: union l l'
+               | GT _ => x' :: union_aux l'
                end
            end)
     end.      
@@ -98,9 +98,9 @@ Module Raw (X: OrderedType).
            | nil => nil
            | x' :: l' =>
                match X.compare x x' with
-               | Lt _ => inter l s'
-               | Eq _ => x :: inter l l'
-               | Gt _ => inter_aux l'
+               | LT _ => inter l s'
+               | EQ _ => x :: inter l l'
+               | GT _ => inter_aux l'
                end
            end)
     end.  
@@ -114,9 +114,9 @@ Module Raw (X: OrderedType).
            | nil => s
            | x' :: l' =>
                match X.compare x x' with
-               | Lt _ => x :: diff l s'
-               | Eq _ => diff l l'
-               | Gt _ => diff_aux l'
+               | LT _ => x :: diff l s'
+               | EQ _ => diff l l'
+               | GT _ => diff_aux l'
                end
            end)
     end.  
@@ -127,7 +127,7 @@ Module Raw (X: OrderedType).
     | nil, nil => true
     | x :: l, x' :: l' =>
         match X.compare x x' with
-        | Eq _ => equal l l'
+        | EQ _ => equal l l'
         | _ => false
         end
     | _, _ => false
@@ -138,9 +138,9 @@ Module Raw (X: OrderedType).
     | nil, _ => true
     | x :: l, x' :: l' =>
         match X.compare x x' with
-        | Lt _ => false
-        | Eq _ => subset l l'
-        | Gt _ => subset s l'
+        | LT _ => false
+        | EQ _ => subset l l'
+        | GT _ => subset s l'
         end
     | _, _ => false
     end.
