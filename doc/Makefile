@@ -215,7 +215,7 @@ stdlib/index-body.html: $(GLOBDUMP)
 	- rm -rf stdlib/html
 	mkdir stdlib/html
 	(cd stdlib/html;\
-	 $(COQDOC) -q --multi-index --body-only --html --glob-from $(GLOBDUMP)\
+	 $(COQDOC) -q --multi-index --html --glob-from $(GLOBDUMP)\
 	  -R $(COQTOP)/theories Coq $(COQTOP)/theories/*/*.v)
 	mv stdlib/html/index.html stdlib/index-body.html
 
@@ -223,7 +223,9 @@ stdlib/index-list.html: stdlib/index-list.html.template
 	COQTOP=$(COQTOP) ./stdlib/make-library-index stdlib/index-list.html
 
 stdlib/html/index.html: stdlib/index-list.html stdlib/index-body.html stdlib/index-trailer.html
-	cat $^ > $@
+	cat stdlib/index-list.html > $@
+	sed -n -e '/<table>/,/<\/table>/p' stdlib/index-body.html >> $@
+	cat stdlib/index-trailer.html >> $@
 
 ### Standard library (printable format - produces > 350 pages)
 

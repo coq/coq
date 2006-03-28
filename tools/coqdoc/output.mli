@@ -62,5 +62,6 @@ val stop_latex_math : unit -> unit
 val start_verbatim : unit -> unit
 val stop_verbatim : unit -> unit
 
+val make_multi_index : unit -> unit
 val make_index : unit -> unit
 val make_toc : unit -> unit

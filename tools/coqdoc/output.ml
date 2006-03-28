@@ -255,6 +255,8 @@ module Latex = struct
 
   let end_inline_coq () = ()
 
+  let make_multi_index () = ()
+
   let make_index () = ()
 
   let make_toc () = printf "\\tableofcontents\n"
@@ -451,20 +453,8 @@ module Html = struct
 		
   let all_letters i = List.iter (letter_index false i.idx_name) i.idx_entries
 
-  let separate_index navig i =
-    let idx = i.idx_name in
-    let one_letter ((c,l) as cl) =
-      open_out_file (sprintf "index_%s_%c.html" idx c);
-      header ();
-      navig ();
-      printf "<hr/>";
-      letter_index true idx cl;
-      if List.length l > 30 then begin printf "<hr/>"; navig () end;
-      trailer ();
-      close_out_file ()
-    in
-    List.iter one_letter i.idx_entries
-
+  (* Construction d'une liste des index (1 index global, puis 1
+     index par catégorie) *)
   let format_global_index =
     Index.map 
       (fun s (m,t) -> 
@@ -472,7 +462,7 @@ module Html = struct
 	   "[library]", m ^ ".html"
 	 else
 	   sprintf "[%s, in <a href=\"%s.html\">%s</a>]" (entry_type t) m m ,
-	   sprintf "%s.html#%s" m s)
+	 sprintf "%s.html#%s" m s)
 
   let format_bytype_index = function
     | Library, idx ->
@@ -481,9 +471,10 @@ module Html = struct
 	Index.map 
 	  (fun s m -> 
 	     let text = sprintf "[in <a href=\"%s.html\">%s</a>]" m m in
-	     (text, sprintf "%s.html#%s" m s)) idx
+	       (text, sprintf "%s.html#%s" m s)) idx
 
-  let navig_one_index i =
+  (* Impression de la table d'index *)
+  let print_index_table_item i =
     printf "<tr>\n<td>%s Index</td>\n" (String.capitalize i.idx_name);
     List.iter 
       (fun (c,l) -> 
@@ -493,34 +484,57 @@ module Html = struct
 	   printf "<td>%c</td>\n" c)
       i.idx_entries;
     let n = i.idx_size in
-    printf "<td>(%d %s)</td>\n" n (if n > 1 then "entries" else "entry");
-    printf "</tr>\n"
+      printf "<td>(%d %s)</td>\n" n (if n > 1 then "entries" else "entry");
+      printf "</tr>\n"
 
-  let navig_index il = 
+  let print_index_table idxl = 
     printf "<table>\n";
-    List.iter navig_one_index il;
+    List.iter print_index_table_item idxl;
     printf "</table>\n"
-
-  let make_index () =
-    let idxl = 
-      let glob,bt = Index.all_entries () in
-	format_global_index glob ::
-	  List.map format_bytype_index bt 
+	
+  let make_one_multi_index prt_tbl i =
+    (* Attn: make_one_multi_index créé un nouveau fichier... *)
+    let idx = i.idx_name in
+    let one_letter ((c,l) as cl) =
+      open_out_file (sprintf "index_%s_%c.html" idx c);
+      if (!header_trailer) then header ();
+      prt_tbl (); printf "<hr/>";
+      letter_index true idx cl;
+      if List.length l > 30 then begin printf "<hr/>"; prt_tbl () end;
+      if (!header_trailer) then trailer ();
+      close_out_file ()
     in
-    let navig () = navig_index idxl in 
-      current_module := "Index";
-      let one_index i =
-	if i.idx_size > 0 then begin
-	  printf "<hr/>\n<h1>%s Index</h1>\n" (String.capitalize i.idx_name);
-	  all_letters i
-	end
-	in
-      if !title <> "" then printf "<h1>%s</h1>\n" !title;
-      navig ();
-      List.iter one_index idxl;
-      printf "<hr/>";
-      navig ()
+      List.iter one_letter i.idx_entries
 
+  let make_multi_index () = 
+    let all_index = 
+      let glob,bt = Index.all_entries () in
+	(format_global_index glob) ::
+	  (List.map format_bytype_index bt) in
+    let print_table () = print_index_table all_index in
+      List.iter (make_one_multi_index print_table) all_index
+	
+  let make_index () =
+    let all_index = 
+      let glob,bt = Index.all_entries () in
+	(format_global_index glob) ::
+	  (List.map format_bytype_index bt) in
+    let print_table () = print_index_table all_index in
+    let print_one_index i =
+      if i.idx_size > 0 then begin
+	printf "<hr/>\n<h1>%s Index</h1>\n" (String.capitalize i.idx_name);
+	all_letters i
+      end
+    in
+      current_module := "Index";
+      if !title <> "" then printf "<h1>%s</h1>\n" !title;
+      print_table ();
+      if not (!multi_index) then 
+	begin
+	  List.iter print_one_index all_index;
+	  printf "<hr/>"; print_table ()
+	end
+	    
   let make_toc () = 
     let make_toc_entry = function
       | Toc_library m -> 
@@ -669,6 +683,8 @@ module TeXmacs = struct
 
   let end_inline_coq () = printf "]>"
 
+  let make_multi_index () = ()
+
   let make_index () = ()
 
   let make_toc () = ()
@@ -737,5 +753,6 @@ let verbatim_char =
   select output_char Html.char TeXmacs.char
 let hard_verbatim_char = output_char
 
+let make_multi_index = select Latex.make_multi_index Html.make_multi_index TeXmacs.make_multi_index
 let make_index = select Latex.make_index Html.make_index TeXmacs.make_index
 let make_toc = select Latex.make_toc Html.make_toc TeXmacs.make_toc

@@ -1,7 +1,7 @@
 <html>
 
 <head>
-<link rel="stylesheet" href="style.css" type="text/css">
+<link rel="stylesheet" href="coqdoc.css" type="text/css">
 <title>The Coq Standard Library
 </head>
 

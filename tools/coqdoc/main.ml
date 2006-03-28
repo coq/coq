@@ -60,8 +60,6 @@ let usage () =
   prerr_endline "  --charset <string>  set HTML charset";
   prerr_endline "  --inputenc <string> set LaTeX input encoding";
   prerr_endline "";
-  prerr_endline 
-    "On-line documentation at http://www.lri.fr/~filliatr/coqdoc/\n";
   exit 1
 
 (*s \textbf{Banner.} Always printed. Notice that it is printed on error
@@ -365,6 +363,7 @@ let copy src dst =
   with End_of_file ->
     close_in cin; close_out cout
 
+
 (*s Functions for generating output files *)
 
 let gen_one_file l =
@@ -373,11 +372,11 @@ let gen_one_file l =
 	set_module m; coq_file f m
     | Latex_file _ -> ()
   in
-    header ();
+    if (!header_trailer) then header ();
     if !toc then make_toc ();
     List.iter file l;
     if !index then make_index();
-    trailer ()
+    if (!header_trailer) then trailer ()
       
 let gen_mult_files l =
   let file = function
@@ -394,6 +393,7 @@ let gen_mult_files l =
   in
     List.iter file l;
     if (!index && !target_language=HTML) then begin
+      if (!multi_index) then make_multi_index (); 
       open_out_file "index.html"; 
       page_title := (if !title <> "" then !title else "Index");
       if (!header_trailer) then header (); 
