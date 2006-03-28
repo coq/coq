@@ -455,7 +455,7 @@ cut (x <= y).
 intro.
 generalize (dicho_lb_cv x y (fun z:R => cond_positivity (f z)) H3). 
 generalize (dicho_up_cv x y (fun z:R => cond_positivity (f z)) H3). 
-intros.
+intros X X0.
 elim X; intros.
 elim X0; intros.
 assert (H4 := cv_dicho _ _ _ _ _ H3 p0 p).

@@ -128,7 +128,8 @@ Lemma NewtonInt_P5 :
    Newton_integrable f a b ->
    Newton_integrable g a b ->
    Newton_integrable (fun x:R => l * f x + g x) a b.
-unfold Newton_integrable in |- *; intros; elim X; intros; elim X0; intros;
+unfold Newton_integrable in |- *; intros f g l a b X X0;
+ elim X; intros; elim X0; intros;
  exists (fun y:R => l * x y + x0 y).
 elim p; intro.
 elim p0; intro.

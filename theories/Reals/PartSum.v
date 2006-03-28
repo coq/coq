@@ -430,7 +430,7 @@ Lemma cv_cauchy_1 :
  forall An:nat -> R,
    sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 An N) l) ->
    Cauchy_crit_series An.
-intros.
+intros An X.
 elim X; intros.
 unfold Un_cv in p.
 unfold Cauchy_crit_series in |- *; unfold Cauchy_crit in |- *.

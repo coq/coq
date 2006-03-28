@@ -20,13 +20,13 @@ Require Import Exp_prop. Open Local Scope R_scope.
 Lemma derivable_pt_inv :
  forall (f:R -> R) (x:R),
    f x <> 0 -> derivable_pt f x -> derivable_pt (/ f) x.
-intros; cut (derivable_pt (fct_cte 1 / f) x -> derivable_pt (/ f) x).
-intro; apply X0.
+intros f x H X; cut (derivable_pt (fct_cte 1 / f) x -> derivable_pt (/ f) x).
+intro X0; apply X0.
 apply derivable_pt_div.
 apply derivable_pt_const.
 assumption.
 assumption.
-unfold div_fct, inv_fct, fct_cte in |- *; intro; elim X0; intros;
+unfold div_fct, inv_fct, fct_cte in |- *; intro X0; elim X0; intros;
  unfold derivable_pt in |- *; apply existT with x0;
  unfold derivable_pt_abs in |- *; unfold derivable_pt_lim in |- *;
  unfold derivable_pt_abs in p; unfold derivable_pt_lim in p; 
@@ -76,8 +76,8 @@ Qed.
 (**********)
 Lemma derivable_inv :
  forall f:R -> R, (forall x:R, f x <> 0) -> derivable f -> derivable (/ f).
-intros.
-unfold derivable in |- *; intro.
+intros f H X.
+unfold derivable in |- *; intro x.
 apply derivable_pt_inv.
 apply (H x).
 apply (X x).

@@ -453,7 +453,7 @@ Qed.
 
 Theorem derivable_continuous_pt :
  forall f (x:R), derivable_pt f x -> continuity_pt f x.
-intros.
+intros f x X.
 generalize (derivable_derive f x X); intro.
 elim H; intros l H1.
 cut (l = fct_cte l x).
@@ -468,7 +468,7 @@ unfold fct_cte in |- *; reflexivity.
 Qed.
 
 Theorem derivable_continuous : forall f, derivable f -> continuity f.
-unfold derivable, continuity in |- *; intros.
+unfold derivable, continuity in |- *; intros f X x.
 apply (derivable_continuous_pt f x (X x)).
 Qed.
 
@@ -661,7 +661,7 @@ Qed.
 Lemma derivable_pt_plus :
  forall f1 f2 (x:R),
    derivable_pt f1 x -> derivable_pt f2 x -> derivable_pt (f1 + f2) x.
-unfold derivable_pt in |- *; intros.
+unfold derivable_pt in |- *; intros f1 f2 x X X0.
 elim X; intros.
 elim X0; intros.
 apply existT with (x0 + x1).
@@ -670,7 +670,7 @@ Qed.
 
 Lemma derivable_pt_opp :
  forall f (x:R), derivable_pt f x -> derivable_pt (- f) x.
-unfold derivable_pt in |- *; intros.
+unfold derivable_pt in |- *; intros f x X.
 elim X; intros.
 apply existT with (- x0).
 apply derivable_pt_lim_opp; assumption.
@@ -679,7 +679,7 @@ Qed.
 Lemma derivable_pt_minus :
  forall f1 f2 (x:R),
    derivable_pt f1 x -> derivable_pt f2 x -> derivable_pt (f1 - f2) x.
-unfold derivable_pt in |- *; intros.
+unfold derivable_pt in |- *; intros f1 f2 x X X0.
 elim X; intros.
 elim X0; intros.
 apply existT with (x0 - x1).
@@ -689,7 +689,7 @@ Qed.
 Lemma derivable_pt_mult :
  forall f1 f2 (x:R),
    derivable_pt f1 x -> derivable_pt f2 x -> derivable_pt (f1 * f2) x.
-unfold derivable_pt in |- *; intros.
+unfold derivable_pt in |- *; intros f1 f2 x X X0.
 elim X; intros.
 elim X0; intros.
 apply existT with (x0 * f2 x + f1 x * x1).
@@ -704,7 +704,7 @@ Qed.
 
 Lemma derivable_pt_scal :
  forall f (a x:R), derivable_pt f x -> derivable_pt (mult_real_fct a f) x.
-unfold derivable_pt in |- *; intros.
+unfold derivable_pt in |- *; intros f1 a x X.
 elim X; intros.
 apply existT with (a * x0).
 apply derivable_pt_lim_scal; assumption.
@@ -724,7 +724,7 @@ Qed.
 Lemma derivable_pt_comp :
  forall f1 f2 (x:R),
    derivable_pt f1 x -> derivable_pt f2 (f1 x) -> derivable_pt (f2 o f1) x.
-unfold derivable_pt in |- *; intros.
+unfold derivable_pt in |- *; intros f1 f2 x X X0.
 elim X; intros.
 elim X0; intros.
 apply existT with (x1 * x0).
@@ -733,24 +733,24 @@ Qed.
 
 Lemma derivable_plus :
  forall f1 f2, derivable f1 -> derivable f2 -> derivable (f1 + f2).
-unfold derivable in |- *; intros.
+unfold derivable in |- *; intros f1 f2 X X0 x.
 apply (derivable_pt_plus _ _ x (X _) (X0 _)).
 Qed.
 
 Lemma derivable_opp : forall f, derivable f -> derivable (- f).
-unfold derivable in |- *; intros.
+unfold derivable in |- *; intros f X x.
 apply (derivable_pt_opp _ x (X _)).
 Qed.
 
 Lemma derivable_minus :
  forall f1 f2, derivable f1 -> derivable f2 -> derivable (f1 - f2).
-unfold derivable in |- *; intros.
+unfold derivable in |- *; intros f1 f2 X X0 x.
 apply (derivable_pt_minus _ _ x (X _) (X0 _)).
 Qed.
 
 Lemma derivable_mult :
  forall f1 f2, derivable f1 -> derivable f2 -> derivable (f1 * f2).
-unfold derivable in |- *; intros.
+unfold derivable in |- *; intros f1 f2 X X0 x.
 apply (derivable_pt_mult _ _ x (X _) (X0 _)).
 Qed.
 
@@ -761,7 +761,7 @@ Qed.
 
 Lemma derivable_scal :
  forall f (a:R), derivable f -> derivable (mult_real_fct a f).
-unfold derivable in |- *; intros.
+unfold derivable in |- *; intros f a X x.
 apply (derivable_pt_scal _ a x (X _)).
 Qed.
 
@@ -775,7 +775,7 @@ Qed.
 
 Lemma derivable_comp :
  forall f1 f2, derivable f1 -> derivable f2 -> derivable (f2 o f1).
-unfold derivable in |- *; intros.
+unfold derivable in |- *; intros f1 f2 X X0 x.
 apply (derivable_pt_comp _ _ x (X _) (X0 _)).
 Qed.
 

@@ -30,7 +30,7 @@ intros An H H0.
 cut
  (sigT (fun l:R => is_lub (EUn (fun N:nat => sum_f_R0 An N)) l) ->
   sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 An N) l)).
-intro; apply X.
+intro X; apply X.
 apply completeness.
 unfold Un_cv in H0; unfold bound in |- *; cut (0 < / 2);
  [ intro | apply Rinv_0_lt_compat; prove_sup0 ].
@@ -107,7 +107,7 @@ red in |- *; intro; assert (H8 := H n); rewrite H7 in H8;
 replace (S x + 0)%nat with (S x); [ reflexivity | ring ].
 symmetry  in |- *; apply tech2; assumption.
 exists (sum_f_R0 An 0); unfold EUn in |- *; exists 0%nat; reflexivity.
-intro; elim X; intros.
+intro X; elim X; intros.
 apply existT with x; apply tech10;
  [ unfold Un_growing in |- *; intro; rewrite tech5;
     pattern (sum_f_R0 An n) at 1 in |- *; rewrite <- Rplus_0_r;
@@ -418,7 +418,7 @@ intros An k Hyp H H0.
 cut
  (sigT (fun l:R => is_lub (EUn (fun N:nat => sum_f_R0 An N)) l) ->
   sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 An N) l)).
-intro; apply X.
+intro X; apply X.
 apply completeness.
 assert (H1 := tech13 _ _ Hyp H0).
 elim H1; intros.
@@ -517,7 +517,7 @@ rewrite H10 in H11; elim (Rlt_irrefl _ H11).
 replace (S x0 + 0)%nat with (S x0); [ reflexivity | ring ].
 symmetry  in |- *; apply tech2; assumption.
 exists (sum_f_R0 An 0); unfold EUn in |- *; exists 0%nat; reflexivity.
-intro; elim X; intros.
+intro X; elim X; intros.
 apply existT with x; apply tech10;
  [ unfold Un_growing in |- *; intro; rewrite tech5;
     pattern (sum_f_R0 An n) at 1 in |- *; rewrite <- Rplus_0_r;
@@ -559,11 +559,11 @@ rewrite <- Rabs_mult.
 rewrite Rabs_Rabsolu.
 unfold Rdiv in H3; apply H3; assumption.
 apply H0.
-intro.
+intro X.
 elim X; intros.
 apply existT with x.
 assumption.
-intro.
+intro X.
 elim X; intros.
 apply existT with x.
 assumption.
@@ -581,7 +581,7 @@ intros.
 cut
  (sigT
     (fun l:R => Un_cv (fun N:nat => sum_f_R0 (fun i:nat => An i * x ^ i) N) l)).
-intro.
+intro X.
 elim X; intros.
 apply existT with x0.
 apply tech12; assumption.

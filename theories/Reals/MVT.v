@@ -27,7 +27,7 @@ Theorem MVT :
 intros; assert (H2 := Rlt_le _ _ H).
 set (h := fun y:R => (g b - g a) * f y - (f b - f a) * g y).
 cut (forall c:R, a < c < b -> derivable_pt h c).
-intro; cut (forall c:R, a <= c <= b -> continuity_pt h c).
+intro X; cut (forall c:R, a <= c <= b -> continuity_pt h c).
 intro; assert (H4 := continuity_ab_maj h a b H2 H3).
 assert (H5 := continuity_ab_min h a b H2 H3).
 elim H4; intros Mx H6.
@@ -142,9 +142,9 @@ Lemma MVT_cor1 :
    a < b ->
     exists c : R, f b - f a = derive_pt f c (pr c) * (b - a) /\ a < c < b.
 intros f a b pr H; cut (forall c:R, a < c < b -> derivable_pt f c);
- [ intro | intros; apply pr ].
+ [ intro X | intros; apply pr ].
 cut (forall c:R, a < c < b -> derivable_pt id c);
- [ intro | intros; apply derivable_pt_id ].
+ [ intro X0 | intros; apply derivable_pt_id ].
 cut (forall c:R, a <= c <= b -> continuity_pt f c);
  [ intro | intros; apply derivable_continuous_pt; apply pr ].
 cut (forall c:R, a <= c <= b -> continuity_pt id c);
@@ -166,11 +166,11 @@ Theorem MVT_cor2 :
    (forall c:R, a <= c <= b -> derivable_pt_lim f c (f' c)) ->
     exists c : R, f b - f a = f' c * (b - a) /\ a < c < b.
 intros f f' a b H H0; cut (forall c:R, a <= c <= b -> derivable_pt f c).
-intro; cut (forall c:R, a < c < b -> derivable_pt f c).
-intro; cut (forall c:R, a <= c <= b -> continuity_pt f c).
+intro X; cut (forall c:R, a < c < b -> derivable_pt f c).
+intro X0; cut (forall c:R, a <= c <= b -> continuity_pt f c).
 intro; cut (forall c:R, a <= c <= b -> derivable_pt id c).
-intro; cut (forall c:R, a < c < b -> derivable_pt id c).
-intro; cut (forall c:R, a <= c <= b -> continuity_pt id c).
+intro X1; cut (forall c:R, a < c < b -> derivable_pt id c).
+intro X2; cut (forall c:R, a <= c <= b -> continuity_pt id c).
 intro; elim (MVT f id a b X0 X2 H H1 H2); intros; elim H3; clear H3; intros;
  exists x; split.
 cut (derive_pt id x (X2 x x0) = 1).
@@ -595,7 +595,7 @@ Lemma IAF_var :
    g b - g a <= f b - f a.
 intros.
 cut (derivable (g - f)).
-intro.
+intro X.
 cut (forall c:R, a <= c <= b -> derive_pt (g - f) c (X c) <= 0).
 intro. 
 assert (H2 := IAF (g - f)%F a b 0 X H H1).

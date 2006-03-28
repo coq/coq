@@ -20,9 +20,9 @@ Theorem derivable_pt_lim_div :
    derivable_pt_lim f2 x l2 ->
    f2 x <> 0 ->
    derivable_pt_lim (f1 / f2) x ((l1 * f2 x - l2 * f1 x) / Rsqr (f2 x)).
-intros.
+intros f1 f2 x l1 l2 H H0 H1.
 cut (derivable_pt f2 x);
- [ intro | unfold derivable_pt in |- *; apply existT with l2; exact H0 ].
+ [ intro X | unfold derivable_pt in |- *; apply existT with l2; exact H0 ].
 assert (H2 := continuous_neq_0 _ _ (derivable_continuous_pt _ _ X) H1).
 elim H2; clear H2; intros eps_f2 H2.
 unfold div_fct in |- *.
@@ -756,7 +756,7 @@ Lemma derivable_pt_div :
    derivable_pt f1 x ->
    derivable_pt f2 x -> f2 x <> 0 -> derivable_pt (f1 / f2) x.
 unfold derivable_pt in |- *.
-intros.
+intros f1 f2 x X X0 H.
 elim X; intros.
 elim X0; intros.
 apply existT with ((x0 * f2 x - x1 * f1 x) / Rsqr (f2 x)).
@@ -767,7 +767,7 @@ Lemma derivable_div :
  forall f1 f2:R -> R,
    derivable f1 ->
    derivable f2 -> (forall x:R, f2 x <> 0) -> derivable (f1 / f2).
-unfold derivable in |- *; intros.
+unfold derivable in |- *; intros f1 f2 X X0 H x.
 apply (derivable_pt_div _ _ _ (X x) (X0 x) (H x)).
 Qed.
 
