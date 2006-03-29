@@ -12,10 +12,11 @@
 
 (** This file proposes an interface for finite maps *)
 
+(* begin hide *)
 Set Implicit Arguments.
 Unset Strict Implicit.
 Require Import FSetInterface. 
-
+(* end hide *)
 
 (** When compared with Ocaml Map, this signature has been split in two: 
    - The first part [S] contains the usual operators (add, find, ...)
@@ -204,10 +205,12 @@ Module Type S.
 	(x:key)(f:option elt->option elt'->option elt''), 
         In x (map2 f m m') -> In x m \/ In x m'.
 
+  (* begin hide *)
   Hint Immediate MapsTo_1 mem_2 is_empty_2.
   
   Hint Resolve mem_1 is_empty_1 is_empty_2 add_1 add_2 add_3 remove_1
     remove_2 remove_3 find_1 find_2 fold_1 map_1 map_2 mapi_1 mapi_2. 
+  (* end hide *)
 
 End S.
 

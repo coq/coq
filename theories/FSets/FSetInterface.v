@@ -12,10 +12,12 @@
 
 (** Set interfaces *)
 
+(* begin hide *)
 Require Export Bool.
 Require Export OrderedType.
 Set Implicit Arguments.
 Unset Strict Implicit.
+(* end hide *)
 
 (** Compatibility of a  boolean function with respect to an equality. *)
 Definition compat_bool (A:Set)(eqA: A->A->Prop)(f: A-> bool) :=
@@ -276,6 +278,7 @@ Module Type S.
   End Filter.
   End Spec.
 
+  (* begin hide *)
   Hint Immediate In_1.
   
   Hint Resolve mem_1 mem_2 equal_1 equal_2 subset_1 subset_2 empty_1
@@ -284,6 +287,7 @@ Module Type S.
     inter_2 inter_3 diff_1 diff_2 diff_3 filter_1 filter_2 filter_3 for_all_1
     for_all_2 exists_1 exists_2 partition_1 partition_2 elements_1 elements_2
     elements_3 min_elt_1 min_elt_2 min_elt_3 max_elt_1 max_elt_2 max_elt_3.
+  (* end hide *)
 
 End S.
 
