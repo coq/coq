@@ -367,21 +367,18 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 			  (join_loc floc argloc) env (evars_of !isevars)
 	      		  resj [hj]
 
-	in let resj = apply_rec env 1 fj args in
-	  (*
-	    let apply_one_arg (floc,tycon,jl) c =
-	    let (dom,rng) = split_tycon floc env isevars tycon in
-	    let cj = pretype dom env isevars lvar c in
-	    let rng_tycon =
-	    option_app (subst1 cj.uj_val) rng in
-	    let argloc = loc_of_rawconstr c in
-	    (join_loc floc argloc,rng_tycon,(argloc,cj)::jl)  in
-	    let _,_,jl =
-	    List.fold_left apply_one_arg (floc,mk_tycon j.uj_type,[]) args in
-	    let jl = List.rev jl in
-	    let resj = inh_apply_rel_list loc env isevars jl (floc,j) tycon in
-	  *)
-	  inh_conv_coerce_to_tycon loc env isevars resj tycon
+	in 
+	let resj = j_nf_evar (evars_of !isevars) (apply_rec env 1 fj args) in
+	let resj =
+	  match kind_of_term resj.uj_val with
+	  | App (f,args) when isInd f ->
+	      let sigma = evars_of !isevars in
+	      let t = Retyping.type_of_applied_inductive env sigma (destInd f) args in
+	      let s = snd (splay_arity env sigma t) in
+	      on_judgment_type (set_inductive_level env s) resj
+		(* Rem: no need to send sigma: no head evar, it's an arity *)
+	  | _ -> resj in
+	inh_conv_coerce_to_tycon loc env isevars resj tycon
 
     | RLambda(loc,name,c1,c2)      ->
 	let (name',dom,rng) = evd_comb1 (split_tycon loc env) isevars tycon in

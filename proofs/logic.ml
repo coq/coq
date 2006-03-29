@@ -283,7 +283,11 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 	mk_refgoals sigma goal goalacc ty t
 
     | App (f,l) ->
-	let (acc',hdty) = mk_hdgoals sigma goal goalacc f in
+	let (acc',hdty) =
+	  if isInd f 
+	  then (goalacc,type_of_applied_inductive env sigma (destInd f) l)
+	  else mk_hdgoals sigma goal goalacc f
+	in
 	let (acc'',conclty') =
 	  mk_arggoals sigma goal acc' hdty (Array.to_list l) in
 	check_conv_leq_goal env sigma trm conclty' conclty;
@@ -321,7 +325,11 @@ and mk_hdgoals sigma goal goalacc trm =
 	mk_refgoals sigma goal goalacc ty t
 
     | App (f,l) ->
-	let (acc',hdty) = mk_hdgoals sigma goal goalacc f in
+	let (acc',hdty) = 
+	  if isInd f 
+	  then (goalacc,type_of_applied_inductive env sigma (destInd f) l)
+	  else mk_hdgoals sigma goal goalacc f
+	in
 	mk_arggoals sigma goal acc' hdty (Array.to_list l)
 
     | Case (_,p,c,lf) ->

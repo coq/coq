@@ -59,13 +59,10 @@ let ind_subst mind mib =
 (* Instantiate inductives in constructor type *)
 let constructor_instantiate mind mib c =
   let s = ind_subst mind mib in
-  type_app (substl s) c
+  substl s c
 
-(* Instantiate the parameters of the inductive type *)
-(* TODO: verify the arg of LetIn correspond to the value in the
-   signature ? *)
-let instantiate_params t args sign =
-  let fail () =
+let instantiate_params full t args sign =
+  let fail () = 
     anomaly "instantiate_params: type, ctxt and args mismatch" in
   let (rem_args, subs, ty) =
     Sign.fold_rel_context
@@ -73,25 +70,124 @@ let instantiate_params t args sign =
         match (copt, largs, kind_of_term ty) with
           | (None, a::args, Prod(_,_,t)) -> (args, a::subs, t)
           | (Some b,_,LetIn(_,_,_,t))    -> (largs, (substl subs b)::subs, t)
-	  | _                            -> fail())
+	  | (_,[],_)                -> if full then fail() else ([], subs, ty)
+	  | _                       -> fail ())
       sign
       ~init:(args,[],t) 
   in
   if rem_args <> [] then fail();
-  type_app (substl subs) ty
+  substl subs ty
+
+let instantiate_partial_params = instantiate_params false
 
 let full_inductive_instantiate mib params t =
-  instantiate_params t params mib.mind_params_ctxt
+  instantiate_params true t params mib.mind_params_ctxt
 
 let full_constructor_instantiate (((mind,_),mib,_),params) =
   let inst_ind = constructor_instantiate mind mib in
   (fun t ->
-    instantiate_params (inst_ind t) params mib.mind_params_ctxt)
+    instantiate_params true (inst_ind t) params mib.mind_params_ctxt)
 
 (************************************************************************)
 (************************************************************************)
 
 (* Functions to build standard types related to inductive *)
+
+(* For each inductive type of a block that is of level u_i, we have
+   the constraints that u_i >= v_i where v_i is the type level of the
+   types of the constructors of this inductive type. Each v_i depends
+   of some of the u_i and of an extra (maybe non variable) universe,
+   say w_i. Typically, for three inductive types, we could have
+
+   u1,u2,u3,w1 <= u1
+   u1       w2 <= u2
+      u2,u3,w3 <= u3
+
+   From this system of inequations, we shall deduce
+
+   w1,w2,w3 <= u1
+   w1,w2 <= u2
+   w1,w2,w3 <= u3
+*)   
+
+let number_of_inductives mib = Array.length mib.mind_packets
+let number_of_constructors mip = Array.length mip.mind_consnames
+
+(* 
+Computing the actual sort of an applied or partially applied inductive type:
+
+I_i: forall uniformparams:utyps, forall otherparams:otyps, Type(a)
+uniformargs : utyps 
+otherargs : otyps
+I_1:forall ...,s_1;...I_n:forall ...,s_n |- sort(C_kj(uniformargs)) = s_kj
+s'_k = max(..s_kj..)
+merge(..s'_k..) = ..s''_k..
+--------------------------------------------------------------------
+Gamma |- I_i uniformargs otherargs : phi(s''_i)
+
+where
+
+- if p=0, phi() = Prop
+- if p=1, phi(s) = s
+- if p<>1, phi(s) = sup(Set,s)
+
+Remark: Set (predicative) is encoded as Type(0)
+*)
+
+let find_constraint levels level_bounds i nci =
+  if nci = 0 then mk_Prop
+  else
+    let level_bounds' = solve_constraints_system levels level_bounds in
+    let level = level_bounds'.(i) in
+    if nci = 1 & is_empty_universe level then mk_Prop
+    else if Univ.is_base level then mk_Set else Type level
+
+let find_inductive_level env (mib,mip) (_,i) levels level_bounds =
+  find_constraint levels level_bounds i (number_of_constructors mip)
+
+let set_inductive_level env s t = 
+  let sign,s' = dest_prod_assum env t in
+  if family_of_sort s <> family_of_sort (destSort s') then
+    (* This induces reductions if user_arity <> nf_arity *)
+    mkArity (sign,s)
+  else
+    t
+
+let constructor_instances env (mib,mip) (_,i) args =
+  let nargs = Array.length args in
+  let args = Array.to_list args in
+  let uargs = 
+    if nargs > mib.mind_nparams_rec then
+      fst (list_chop mib.mind_nparams_rec args)
+    else args in
+  let arities =
+    Array.map (fun mip -> destArity mip.mind_nf_arity) mib.mind_packets in
+  (* Compute the minimal type *)
+  let levels = Array.init 
+    (number_of_inductives mib) (fun _ -> fresh_local_univ ()) in
+  let arities = list_tabulate (fun i -> 
+    let ctx,s = arities.(i) in
+    let s = match s with Type _ -> Type (levels.(i)) | s -> s in
+    (Name mib.mind_packets.(i).mind_typename,None,mkArity (ctx,s)))
+    (number_of_inductives mib) in
+             (* Remark: all arities are closed hence no need for lift *)
+  let env_ar = push_rel_context (List.rev arities) env in
+  let uargs = List.map (lift (number_of_inductives mib)) uargs in
+  let lc =
+    Array.map (fun mip ->
+        Array.map (fun c -> 
+	    instantiate_partial_params c uargs mib.mind_params_ctxt)
+          mip.mind_nf_lc)
+      mib.mind_packets in
+  env_ar, lc, levels
+
+let is_small_inductive (mip,mib) = is_small (snd (destArity mib.mind_nf_arity))
+
+let max_inductive_sort v =
+  let v = Array.map (function
+    | Type u -> u
+    | _ -> anomaly "Only type levels when computing the minimal sort of an inductive type") v in
+  Univ.sup_array v
 
 (* Type of an inductive type *)
 

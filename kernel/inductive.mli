@@ -69,3 +69,17 @@ val scrape_mind : env -> mutual_inductive -> mutual_inductive
 (*s Guard conditions for fix and cofix-points. *)
 val check_fix : env -> fixpoint -> unit
 val check_cofix : env -> cofixpoint -> unit
+
+(*s Support for sort-polymorphic inductive types *)
+
+val constructor_instances : env -> mind_specif -> inductive -> 
+  constr array -> env * types array array * universe array
+
+val set_inductive_level : env -> sorts -> types -> types
+
+val find_inductive_level : env -> mind_specif -> inductive -> 
+  universe array -> universe array -> sorts
+
+val is_small_inductive : mind_specif -> bool
+
+val max_inductive_sort : sorts array -> universe

@@ -18,11 +18,6 @@ open Environ
 open Typeops
 open Declarations
 
-let outsort env sigma t =
-  match kind_of_term (whd_betadeltaiota env sigma t) with
-    | Sort s -> s
-    | _ -> anomaly "Retyping: found a type of type which is not a sort"
-
 let rec subst_type env sigma typ = function
   | [] -> typ
   | h::rest ->
@@ -38,9 +33,9 @@ let rec subst_type env sigma typ = function
 let sort_of_atomic_type env sigma ft args =
   let rec concl_of_arity env ar =
     match kind_of_term (whd_betadeltaiota env sigma ar) with
-      | Prod (na, t, b) -> concl_of_arity (push_rel (na,None,t) env) b
-      | Sort s -> s
-      | _ -> outsort env sigma (subst_type env sigma ft (Array.to_list args))
+    | Prod (na, t, b) -> concl_of_arity (push_rel (na,None,t) env) b
+    | Sort s -> s
+    | _ -> decomp_sort env sigma (subst_type env sigma ft (Array.to_list args))
   in concl_of_arity env ft
 
 let typeur sigma metamap =
@@ -78,7 +73,10 @@ let typeur sigma metamap =
          subst1 b (type_of (push_rel (name,Some b,c1) env) c2)
     | Fix ((_,i),(_,tys,_)) -> tys.(i)
     | CoFix (i,(_,tys,_)) -> tys.(i)
-    | App(f,args)->
+    | App(f,args) when isInd f ->
+	let t = type_of_applied_inductive env (destInd f) args in
+        strip_outer_cast (subst_type env sigma t (Array.to_list args))
+    | App(f,args) ->
         strip_outer_cast
           (subst_type env sigma (type_of env f) (Array.to_list args))
     | Cast (c,_, t) -> t
@@ -95,12 +93,17 @@ let typeur sigma metamap =
           | Prop _, (Prop Pos as s) -> s
           | Type _, (Prop Pos as s) when
               Environ.engagement env = Some ImpredicativeSet -> s
-          | Type _ as s, Prop Pos -> s
-	  | _, (Type u2 as s) -> s (*Type Univ.dummy_univ*))
+          | Type u1, Prop Pos -> Type (Univ.sup u1 Univ.base_univ)
+	  | Prop Pos, (Type u2) -> Type (Univ.sup Univ.base_univ u2)
+	  | Prop Null, (Type _ as s) -> s
+	  | Type u1, Type u2 -> Type (Univ.sup u1 u2))
+    | App(f,args) when isInd f ->
+	let t = type_of_applied_inductive env (destInd f) args in
+        sort_of_atomic_type env sigma t args
     | App(f,args) -> sort_of_atomic_type env sigma (type_of env f) args
     | Lambda _ | Fix _ | Construct _ ->
         anomaly "sort_of: Not a type (1)"
-    | _ -> outsort env sigma (type_of env t)
+    | _ -> decomp_sort env sigma (type_of env t)
 
   and sort_family_of env t =
     match kind_of_term t with
@@ -112,16 +115,31 @@ let typeur sigma metamap =
        family_of_sort (sort_of_atomic_type env sigma (type_of env f) args)
     | Lambda _ | Fix _ | Construct _ ->
         anomaly "sort_of: Not a type (1)"
-    | _ -> family_of_sort (outsort env sigma (type_of env t))
+    | _ -> family_of_sort (decomp_sort env sigma (type_of env t))
 
-  in type_of, sort_of, sort_family_of
+  and type_of_applied_inductive env ind args =
+    let specif = lookup_mind_specif env ind in
+    let t = Inductive.type_of_inductive specif in
+    if is_small_inductive specif then
+      (* No polymorphism *)
+      t
+    else
+      (* Retyping constructor with the actual arguments *)
+      let env',llc,ls0 = constructor_instances env specif ind args in
+      let lls = Array.map (Array.map (sort_of env')) llc in
+      let ls = Array.map max_inductive_sort lls in
+      set_inductive_level env (find_inductive_level env specif ind ls0 ls) t
 
-let get_type_of env sigma c = let f,_,_ = typeur sigma [] in f env c
-let get_sort_of env sigma t = let _,f,_ = typeur sigma [] in f env t
-let get_sort_family_of env sigma c = let _,_,f = typeur sigma [] in f env c
+  in type_of, sort_of, sort_family_of, type_of_applied_inductive
+
+let get_type_of env sigma c = let f,_,_,_ = typeur sigma [] in f env c
+let get_sort_of env sigma t = let _,f,_,_ = typeur sigma [] in f env t
+let get_sort_family_of env sigma c = let _,_,f,_ = typeur sigma [] in f env c
+let type_of_applied_inductive env sigma ind args =
+  let _,_,_,f = typeur sigma [] in f env ind args
 
 let get_type_of_with_meta env sigma metamap = 
-  let f,_,_ = typeur sigma metamap in f env
+  let f,_,_,_ = typeur sigma metamap in f env
 
 (* Makes an assumption from a constr *)
 let get_assumption_of env evc c = c

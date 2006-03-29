@@ -36,7 +36,7 @@ let conv_leq_vecti env v1 v2 =
 
 (* This should be a type (a priori without intension to be an assumption) *)
 let type_judgment env j =
-  match kind_of_term(whd_betadeltaiota env (body_of_type j.uj_type)) with
+  match kind_of_term(whd_betadeltaiota env j.uj_type) with
     | Sort s -> {utj_val = j.uj_val; utj_type = s }
     | _ -> error_not_type env j
 
@@ -47,11 +47,9 @@ let assumption_of_judgment env j =
   with TypeError _ ->
     error_assumption env j
 
-(*
-let aojkey = Profile.declare_profile "assumption_of_judgment";;
-let assumption_of_judgment env j
-  = Profile.profile2 aojkey assumption_of_judgment env j;;
-*)
+let sort_judgment env j = (type_judgment env j).utj_type
+
+let on_judgment_type f j = { j with uj_type = f j.uj_type }
 
 (************************************************)
 (* Incremental typing rules: builds a typing judgement given the *)
@@ -62,11 +60,11 @@ let assumption_of_judgment env j
 (* Prop and Set *)
 
 let judge_of_prop =
-  { uj_val = body_of_type mkProp;
+  { uj_val = mkProp;
     uj_type = mkSort type_0 }
 
 let judge_of_set =
-  { uj_val = body_of_type mkSet;
+  { uj_val = mkSet;
     uj_type = mkSort type_0 }
 
 let judge_of_prop_contents = function
@@ -77,7 +75,7 @@ let judge_of_prop_contents = function
 
 let judge_of_type u =
   let uu = super u in
-  { uj_val = body_of_type (mkType u);
+  { uj_val = mkType u;
     uj_type = mkType uu }
 
 (*s Type of a de Bruijn index. *)
@@ -89,12 +87,6 @@ let judge_of_relative env n =
       uj_type = type_app (lift n) typ }
   with Not_found -> 
     error_unbound_rel env n
-
-(*
-let relativekey = Profile.declare_profile "judge_of_relative";;
-let judge_of_relative env n =
-  Profile.profile2 relativekey judge_of_relative env n;;
-*)
 
 (* Type of variables *)
 let judge_of_variable env id =
@@ -142,12 +134,6 @@ let judge_of_constant env cst =
     let ce = lookup_constant cst env in
     check_args env constr ce.const_hyps in 
   make_judge constr (constant_type env cst)
-
-(*
-let tockey = Profile.declare_profile "type_of_constant";;
-let type_of_constant env c 
-  = Profile.profile3 tockey type_of_constant env c;;
-*)
 
 (* Type of a lambda-abstraction. *)
 
@@ -214,9 +200,11 @@ let sort_of_product env domsort rangsort =
           rangsort
         else
           (* Rule is (Type_i,Set,Type_i) in the Set-predicative calculus *)
-          domsort
+          Type (sup u1 base_univ)
     (* Product rule (Prop,Type_i,Type_i) *)
-    | (Prop _,  Type _)  -> rangsort
+    | (Prop Pos,  Type u2)  -> Type (sup base_univ u2)
+    (* Product rule (Prop,Type_i,Type_i) *)
+    | (Prop Null, Type _)  -> rangsort
     (* Product rule (Type_i,Type_i,Type_i) *) 
     | (Type u1, Type u2) -> Type (sup u1 u2)
 
@@ -266,12 +254,6 @@ let judge_of_inductive env i =
   let specif = lookup_mind_specif env i in
   make_judge constr (type_of_inductive specif)
 
-(*
-let toikey = Profile.declare_profile "judge_of_inductive";;
-let judge_of_inductive env i
-  = Profile.profile2 toikey judge_of_inductive env i;;
-*)
-
 (* Constructors. *)
 
 let judge_of_constructor env c =
@@ -282,12 +264,6 @@ let judge_of_constructor env c =
     check_args env constr mib.mind_hyps in 
   let specif = lookup_mind_specif env (inductive_of_constructor c) in
   make_judge constr (type_of_constructor c specif)
-
-(*
-let tockey = Profile.declare_profile "judge_of_constructor";;
-let judge_of_constructor env cstr
-  = Profile.profile2 tockey judge_of_constructor env cstr;;
-*)
 
 (* Case. *)
 
@@ -311,12 +287,6 @@ let judge_of_case env ci pj cj lfj =
                        Array.map j_val lfj);
      uj_type = rslty },
   Constraint.union univ univ')
-
-(*
-let tocasekey = Profile.declare_profile "judge_of_case";;
-let judge_of_case env ci pj cj lfj
-  = Profile.profile6 tocasekey judge_of_case env ci pj cj lfj;;
-*)
 
 (* Fixpoints. *)
 
@@ -366,8 +336,12 @@ let rec execute env cstr cu =
     | App (f,args) ->
 	let (j,cu1) = execute env f cu in
         let (jl,cu2) = execute_array env args cu1 in
-	univ_combinator cu2
-	  (judge_of_apply env j jl)
+	let (j',cu) = univ_combinator cu2 (judge_of_apply env j jl) in
+	if isInd f then
+	  (* Sort-polymorphism of inductive types *)
+	  adjust_inductive_level env (destInd f) args (j',cu)
+	else
+	  (j',cu)
 	    
     | Lambda (name,c1,c2) -> 
         let (varj,cu1) = execute_type env c1 cu in
@@ -395,6 +369,7 @@ let rec execute env cstr cu =
         let (tj,cu2) = execute_type env t cu1 in
 	univ_combinator cu2
           (judge_of_cast env cj k tj)
+
     (* Inductive types *)
     | Ind ind ->
 	(judge_of_inductive env ind, cu)
@@ -442,18 +417,25 @@ and execute_recdef env (names,lar,vdef) i cu =
   univ_combinator cu2
     ((lara.(i),(names,lara,vdefv)),cst)
 
-and execute_array env v cu =
-  let (jl,cu1) = execute_list env (Array.to_list v) cu in
-  (Array.of_list jl, cu1)
+and execute_array env = array_fold_map' (execute env)
 
-and execute_list env l cu =
-  match l with
-  | [] -> 
-      ([], cu)
-  | c::r -> 
-      let (j,cu1) = execute env c cu in 
-      let (jr,cu2) = execute_list env r cu1 in
-      (j::jr, cu2)
+and execute_list env = list_fold_map' (execute env) 
+
+and adjust_inductive_level env ind args (j,cu) =
+  let specif = lookup_mind_specif env ind in
+  if is_small_inductive specif then
+    (* No polymorphism *)
+    (j,cu)
+  else
+    (* Retyping constructor with the actual arguments *)
+    let env',llc,ls0 = constructor_instances env specif ind args in
+    let (llj,cu1) = array_fold_map' (execute_array env') llc cu in
+    let ls =
+      Array.map (fun lj ->
+	max_inductive_sort (Array.map (sort_judgment env) lj)) llj
+    in
+    let s = find_inductive_level env specif ind ls0 ls in
+    (on_judgment_type (set_inductive_level env s) j, cu1)
 
 (* Derived functions *)
 let infer env constr =

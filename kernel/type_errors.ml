@@ -103,7 +103,7 @@ let error_cant_apply_not_functional env rator randl =
   raise (TypeError (env, CantApplyNonFunctional (rator,randl)))
 
 let error_cant_apply_bad_type env t rator randl =
-  raise(TypeError (env, CantApplyBadType (t,rator,randl)))
+  raise (TypeError (env, CantApplyBadType (t,rator,randl)))
 
 let error_ill_formed_rec_body env why lna i =
   raise (TypeError (env, IllFormedRecBody (why,lna,i)))

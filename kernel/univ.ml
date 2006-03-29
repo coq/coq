@@ -36,11 +36,11 @@ open Util
  *)
 
 type universe_level =
-    { u_mod : Names.dir_path;
-      u_num : int }
+  | Base
+  | Level of Names.dir_path * int
 
 type universe =
-  | Variable of universe_level
+  | Atom of universe_level
   | Max of universe_level list * universe_level list
   
 module UniverseOrdered = struct
@@ -48,30 +48,31 @@ module UniverseOrdered = struct
   let compare = Pervasives.compare
 end
 
-let string_of_univ_level u =
-  Names.string_of_dirpath u.u_mod^"."^string_of_int u.u_num
+let string_of_univ_level = function
+  | Base -> "0"
+  | Level (d,n) -> Names.string_of_dirpath d^"."^string_of_int n
 
-let make_univ (m,n) = Variable { u_mod=m; u_num=n }
+let make_univ (m,n) = Atom (Level (m,n))
 
 let pr_uni_level u = str (string_of_univ_level u)
 
 let pr_uni = function
-  | Variable u -> 
+  | Atom u -> 
       pr_uni_level u
-  | Max ([],[]) ->
+  | Max ([],[Base]) ->
       int 1
   | Max (gel,gtl) ->
-      str "max(" ++ 
-      prlist_with_sep pr_coma pr_uni_level gel ++
-      (if gel <> [] & gtl <> [] then pr_coma () else mt ()) ++
-      prlist_with_sep pr_coma
-	(fun x -> str "(" ++ pr_uni_level x ++ str ")+1") gtl ++
+      str "max(" ++ hov 0
+       (prlist_with_sep pr_coma pr_uni_level gel ++
+	  (if gel <> [] & gtl <> [] then pr_coma () else mt ()) ++
+	prlist_with_sep pr_coma
+	  (fun x -> str "(" ++ pr_uni_level x ++ str ")+1") gtl) ++
       str ")"
 
 (* Returns the formal universe that lies juste above the universe variable u.
    Used to type the sort u. *)
 let super = function
-  | Variable u -> 
+  | Atom u -> 
       Max ([],[u])
   | Max _ ->
       anomaly ("Cannot take the successor of a non variable universes:\n"^
@@ -79,13 +80,19 @@ let super = function
 
 (* Returns the formal universe that is greater than the universes u and v.
    Used to type the products. *)
-let sup u v = 
+let sup u v =
   match u,v with
-    | Variable u, Variable v -> Max ((if u = v then [u] else [u;v]),[])
-    | Variable u, Max (gel,gtl) -> Max (list_add_set u gel,gtl)
-    | Max (gel,gtl), Variable v -> Max (list_add_set v gel,gtl)
+    | Atom u, Atom v -> if u = v then Atom u else Max ([u;v],[])
+    | u, Max ([],[]) -> u
+    | Max ([],[]), v -> v
+    | Atom u, Max (gel,gtl) -> Max (list_add_set u gel,gtl)
+    | Max (gel,gtl), Atom v -> Max (list_add_set v gel,gtl)
     | Max (gel,gtl), Max (gel',gtl') ->
-	Max (list_union gel gel',list_union gtl gtl')
+	let gel'' = list_union gel gel' in
+	let gtl'' = list_union gtl gtl' in
+	Max (list_subtract gel'' gtl'',gtl'')
+
+let sup_array ls = Array.fold_right sup ls (Max ([],[]))
 
 (* Comparison on this type is pointer equality *)
 type canonical_arc =
@@ -115,11 +122,19 @@ let declare_univ u g =
   else
     g
 
-(* When typing Prop and Set, there is no constraint on the level,
-   hence the definition of prop_univ *)
+(* The level of Set *)
+let base_univ = Atom Base
+
+let is_base = function
+  | Atom Base -> true
+  | Max ([Base],[]) -> warning "Non canonical Set"; true
+  | u -> false
+
+(* When typing [Prop] and [Set], there is no constraint on the level,
+   hence the definition of [prop_univ], the type of [Prop] *)
 
 let initial_universes = UniverseMap.empty
-let prop_univ = Max ([],[])
+let prop_univ = Max ([],[Base])
 
 (* Every universe_level has a unique canonical arc representative *)
 
@@ -377,22 +392,83 @@ type constraints = Constraint.t
 type constraint_function = 
     universe -> universe -> constraints -> constraints
 
+let constraint_add_leq v u c =
+  if v = Base then c else Constraint.add (v,Leq,u) c
+
 let enforce_geq u v c =
-  match u with
-    | Variable u -> (match v with
-	| Variable v -> Constraint.add (v,Leq,u) c
-	| Max (l1, l2) ->
-	    let d = List.fold_right (fun v -> Constraint.add (v,Leq,u)) l1 c in
-	    List.fold_right (fun v -> Constraint.add (v,Lt,u)) l2 d) 
-    | Max _ -> anomaly "A universe bound can only be a variable"
+  match u, v with
+  | Atom u, Atom v -> constraint_add_leq v u c
+  | Atom u, Max (gel,gtl) ->
+      let d = List.fold_right (fun v -> constraint_add_leq v u) gel c in
+      List.fold_right (fun v -> Constraint.add (v,Lt,u)) gtl d
+  | _ -> anomaly "A universe bound can only be a variable"
 
 let enforce_eq u v c =
   match (u,v) with
-    | Variable u, Variable v -> Constraint.add (u,Eq,v) c
+    | Atom u, Atom v -> Constraint.add (u,Eq,v) c
     | _ -> anomaly "A universe comparison can only happen between variables"
 
 let merge_constraints c g =
   Constraint.fold enforce_constraint c g
+
+(**********************************************************************)
+(* Tools for sort-polymorphic inductive types                         *)
+
+(* Temporary inductive type levels *)
+
+let fresh_level =
+  let n = ref 0 in fun () -> incr n; Level (Names.make_dirpath [],!n)
+
+let fresh_local_univ () = Atom (fresh_level ())
+
+(* Miscellaneous functions to remove or test local univ assumed to
+   occur only in the le constraints *)
+
+let make_max = function
+  | ([u],[]) -> Atom u
+  | (le,lt) -> Max (le,lt)
+
+let remove_constraint u = function
+  | Atom u' as x -> if u = u' then Max ([],[]) else x
+  | Max (le,lt) -> make_max (list_remove u le,lt)
+
+let is_empty_universe = function
+  | Max ([],[]) -> true
+  | _ -> false
+
+let is_direct_constraint u = function
+  | Atom u' -> u = u'
+  | Max (le,lt) -> List.mem u le
+
+(* 
+   Solve a system of universe constraint of the form
+
+   u_s11, ..., u_s1p1, w1 <= u1
+   ...
+   u_sn1, ..., u_snpn, wn <= un
+
+where 
+
+  - the ui (1 <= i <= n) are universe variables,
+  - the sjk select subsets of the ui for each equations, 
+  - the wi are arbitrary complex universes that do not mention the ui.
+*)
+
+let solve_constraints_system levels level_bounds =
+  let levels = 
+    Array.map (function Atom u -> u | _ -> anomaly "expects Atom") levels in
+  let v = Array.copy level_bounds in
+  let nind = Array.length v in
+  for i=0 to nind-1 do
+    for j=0 to nind-1 do
+      if i<>j & is_direct_constraint levels.(j) v.(i) then
+	v.(i) <- sup v.(i) v.(j)
+    done;
+    for j=0 to nind-1 do
+      v.(i) <- remove_constraint levels.(j) v.(i)
+    done
+  done;
+  v
 
 (* Pretty-printing *)
 
@@ -446,19 +522,23 @@ let dump_universes output g =
   in
     UniverseMap.iter dump_arc g 
 
+(* Hash-consing *)
+
 module Huniv =
   Hashcons.Make(
     struct
       type t = universe
       type u = Names.dir_path -> Names.dir_path
-      let hash_aux hdir u = { u with u_mod=hdir u.u_mod }
+      let hash_aux hdir = function
+	| Base -> Base
+	| Level (d,n) -> Level (hdir d,n)
       let hash_sub hdir = function
-	| Variable u -> Variable (hash_aux hdir u)
+	| Atom u -> Atom (hash_aux hdir u)
 	| Max (gel,gtl) ->
 	    Max (List.map (hash_aux hdir) gel, List.map (hash_aux hdir) gtl)
       let equal u v =
 	match u, v with
-	  | Variable u, Variable v -> u == v
+	  | Atom u, Atom v -> u == v
 	  | Max (gel,gtl), Max (gel',gtl') ->
 	      (list_for_all2eq (==) gel gel') &&
               (list_for_all2eq (==) gtl gtl')
@@ -469,4 +549,3 @@ module Huniv =
 let hcons1_univ u =
   let _,_,hdir,_,_,_ = Names.hcons_names() in
   Hashcons.simple_hcons Huniv.f hdir u
-
