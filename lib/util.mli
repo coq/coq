@@ -106,6 +106,8 @@ val list_fold_right_and_left :
     ('a -> 'b -> 'b list -> 'a) -> 'b list -> 'a -> 'a
 val list_for_all_i : (int -> 'a -> bool) -> int -> 'a list -> bool
 val list_except : 'a -> 'a list -> 'a list
+val list_remove : 'a -> 'a list -> 'a list
+val list_remove_first : 'a -> 'a list -> 'a list
 val list_for_all2eq : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 val list_sep_last : 'a list -> 'a * 'a list
 val list_try_find_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b
@@ -127,8 +129,8 @@ val list_share_tails : 'a list -> 'a list -> 'a list * 'a list * 'a list
 val list_join_map : ('a -> 'b list) -> 'a list -> 'b list
 (* [list_fold_map f e_0 [l_1...l_n] = e_n,[k_1...k_n]]
    where [(e_i,k_i)=f e_{i-1} l_i] *)
-val list_fold_map : 
-  ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list 
+val list_fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
+val list_fold_map' : ('b -> 'a -> 'c * 'a) -> 'b list -> 'a -> 'c list * 'a
 val list_map_assoc : ('a -> 'b) -> ('c * 'a) list -> ('c * 'b) list
 
 (*s Arrays. *)
@@ -167,6 +169,7 @@ val array_map3 :
 val array_map_left : ('a -> 'b) -> 'a array -> 'b array
 val array_map_left_pair : ('a -> 'b) -> 'a array -> ('c -> 'd) -> 'c array ->
   'b array * 'd array
+val array_fold_map' : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
 
 (*s Matrices *)
 

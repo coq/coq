@@ -250,6 +250,13 @@ let list_for_all_i p =
 
 let list_except x l = List.filter (fun y -> not (x = y)) l
 
+let list_remove = list_except (* Alias *)
+
+let rec list_remove_first a = function
+  | b::l when a = b -> l
+  | b::l -> b::list_remove_first a l
+  | [] -> raise Not_found
+
 let list_for_all2eq f l1 l2 = try List.for_all2 f l1 l2 with Failure _ -> false
 
 let list_map_i f = 
@@ -361,12 +368,12 @@ let list_share_tails l1 l2 =
 
 let list_join_map f l = List.flatten (List.map f l)
 
-let rec list_fold_map f e = function 
+let rec list_fold_map f e = function
   |  []  -> (e,[])
-  |  h::t -> 
+  |  h::t ->
        let e',h' = f e h in
        let e'',t' = list_fold_map f e' t in
-	 e'',h'::t'
+         e'',h'::t'
 
 (* (* tail-recursive version of the above function *)
 let list_fold_map f e l = 
@@ -377,6 +384,10 @@ let list_fold_map f e l =
   let (e',lrev) = List.fold_left g (e,[]) l in
     (e',List.rev lrev)
 *)
+
+(* The same, based on fold_right, with the effect accumulated on the right *)
+let list_fold_map' f l e =
+  List.fold_right (fun x (l,e) -> let (y,e) = f x e in (y::l,e)) l ([],e)
 
 let list_map_assoc f = List.map (fun (x,a) -> (x,f a))
 
@@ -594,6 +605,20 @@ let array_map_left_pair f a g b =
     done;
     r, s
   end
+
+let pure_functional = false
+
+let array_fold_map' f v e =
+if pure_functional then
+  let (l,e) =
+    Array.fold_right 
+      (fun x (l,e) -> let (y,e) = f x e in (y::l,e))
+      v ([],e) in
+  (Array.of_list l,e)
+else
+  let e' = ref e in
+  let v' = Array.map (fun x -> let (y,e) = f x !e' in e' := e; y) v in
+  (v',!e')
 
 (* Matrices *)
 

@@ -385,11 +385,6 @@ let implicits_of_global r =
 
 (* Declare manual implicits *)
 
-let rec list_remove a = function
-  | b::l when a = b -> l
-  | b::l -> b::list_remove a l
-  | [] -> raise Not_found
-
 let set_implicit id imp =
   Some (id,match imp with None -> Manual | Some imp -> imp)
 
@@ -403,9 +398,9 @@ let declare_manual_implicits r l =
   let rec merge k l = function
     | (Name id,imp)::imps ->
 	let l',imp =
-	  try list_remove (ExplByPos k) l, set_implicit id imp
+	  try list_remove_first (ExplByPos k) l, set_implicit id imp
 	  with Not_found ->
-	  try list_remove (ExplByName id) l, set_implicit id imp
+	  try list_remove_first (ExplByName id) l, set_implicit id imp
 	  with Not_found ->
 	  l, None in
 	imp :: merge (k+1) l' imps
