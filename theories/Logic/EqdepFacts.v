@@ -302,6 +302,10 @@ Lemma eq_rect_eq :
   forall (p:U) (Q:U -> Type) (x:Q p) (h:p = p), x = eq_rect p Q x p h.
 Proof M.eq_rect_eq U.
 
+Lemma eq_rec_eq :
+  forall (p:U) (Q:U -> Set) (x:Q p) (h:p = p), x = eq_rect p Q x p h.
+Proof (fun p Q => M.eq_rect_eq U p Q).
+
 (** Injectivity of Dependent Equality *)
 
 Lemma eq_dep_eq : forall (P:U->Type) (p:U) (x y:P p), eq_dep p x p y -> x = y.
