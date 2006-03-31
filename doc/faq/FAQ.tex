@@ -176,12 +176,13 @@ answers, feel free to write to us\ldots
 The {\Coq} tool is a formal proof management system: a proof done with {\Coq} is mechanically checked by the machine. 
 In particular, {\Coq} allows:
 \begin{itemize}
-    \item the definition of functions or predicates,
+    \item the definition of mathematical objects and programming objects,
     \item to state mathematical theorems and software specifications,
-    \item to develop interactively formal proofs of these theorems,
-    \item to check these proofs by a small certification "kernel".
+    \item to interactively develop formal proofs of these theorems,
+    \item to check these proofs by a small certification ``kernel''.
 \end{itemize}
-{\Coq} is based on a logical framework called "Calculus of Inductive Constructions" extended by a modular development system for theories.
+{\Coq} is based on a logical framework called ``Calculus of Inductive
+Constructions'' extended by a modular development system for theories.
 
 \Question{Did you really need to name it like that?}
 Some French computer scientists have a tradition of naming their
@@ -192,17 +193,17 @@ it is based.
 
 \Question{Is {\Coq} a theorem prover?}
 
-{\Coq} comes with a few decision procedures (on propositional
-calculus, Presburger's arithmetic, ring and field simplification,
-resolution, ...) but the main style for proving theorems is
-interactively by using LCF-style tactics.
+{\Coq} comes with decision and semi-decision procedures (
+propositional calculus, Presburger's arithmetic, ring and field
+simplification, resolution, ...) but the main style for proving
+theorems is interactively by using LCF-style tactics.
 
 
 \Question{What are the other theorem provers?} 
 Many other theorem provers are available for use nowadays. 
 Isabelle, HOL, HOL Light, Lego, Nuprl, PVS are examples of provers that are fairly similar
 to {\Coq} by the way they interact with the user. Other relatives of
-{\Coq} are ACL2, Alfa, Elf, Kiv, Mizar, NqThm, 
+{\Coq} are ACL2, Agda/Alfa, Twelf, Kiv, Mizar, NqThm, 
 \begin{htmlonly}%
 Omega\ldots
 \end{htmlonly}
@@ -210,14 +211,14 @@ Omega\ldots
 {$\Omega$}mega\ldots
 \end{latexonly}
 
-\Question{Who do I have to trust when I see a proof checked by Coq?}
+\Question{What do I have to trust when I see a proof checked by Coq?}
 
 You have to trust:
 
 \begin{description}
 \item[The theory behind Coq] The theory of {\Coq} version 8.0 is
 generally admitted to be consistent wrt Zermelo-Fraenkel set theory +
-inaccessibles cardinals. Proofs of consistency of subsystems of the
+inaccessible cardinals. Proofs of consistency of subsystems of the
 theory of Coq can be found in the literature.
 \item[The Coq kernel implementation] You have to trust that the
 implementation of the {\Coq} kernel mirrors the theory behind {\Coq}. The
@@ -266,9 +267,9 @@ mechanism or use dedicated tools, such as
 \ahref{http://why.lri.fr/caduceus/index.en.html}{\Caduceus}, to prove
 annotated programs written in other languages.
 
-\Question{How many {\Coq} users are there?}
-
-An estimation is about 100 regular users.
+%\Question{How many {\Coq} users are there?}
+%
+%An estimation is about 100 regular users.
 
 \Question{How old is {\Coq}?}
 
@@ -279,18 +280,30 @@ was distributed in 1989.
 
 \Question{What are the \Coq-related tools?}
 
+There are graphical user interfaces:
 \begin{description}
 \item[Coqide] A GTK based GUI for \Coq.
 \item[Pcoq] A GUI for {\Coq} with proof by pointing and pretty printing.
+\item[coqwc] A tool similar to {\tt wc} to count lines in {\Coq} files.
+\item[Proof General] A emacs mode for {\Coq} and many other proof assistants.
+\end{description}
+
+There are documentation and browsing tools:
+
+\begin{description}
 \item[Helm/Mowgli] A rendering, searching and publishing tool.
+\item[coq-tex] A tool to insert {\Coq} examples within .tex files. 
+\item[coqdoc] A documentation tool for \Coq.
+\end{description}
+
+There are front-ends for specific languages:
+
+\begin{description}
 \item[Why] A back-end generator of verification conditions.
 \item[Krakatoa] A Java code certification tool that uses both {\Coq} and {\Why} to verify the soundness of implementations with regards to the specifications.
 \item[Caduceus] A C code certification tool that uses both {\Coq} and \Why.
-\item[coqwc] A tool similar to {\tt wc} to count lines in {\Coq} files.
-\item[coq-tex] A tool to insert {\Coq} examples within .tex files. 
-\item[coqdoc] A documentation tool for \Coq.
-\item[Proof General] A emacs mode for {\Coq} and many other proof assistants.
-\item[Foc] The \ahref{http://www-spi.lip6.fr/foc/index-en.html}{Foc} project aims at building an environment to develop certified computer algebra libraries. 
+\item[Zenon] A first-order theorem prover.
+\item[Focal] The \ahref{http://focal.inria.fr}{Focal} project aims at building an environment to develop certified computer algebra libraries. 
 \end{description}
 
 \Question{What are the high-level tactics of \Coq}
@@ -314,7 +327,7 @@ was distributed in 1989.
 \end{itemize}
 
 
-\Question{What are the academic applications for {\Coq}?}
+\Question{What are the mathematical applications for {\Coq}?}
 
 {\Coq} is used for formalizing mathematical theories, for teaching,
 and for proving properties of algorithms or programs libraries.
@@ -324,11 +337,13 @@ of Nijmegen (see the
 \ahref{http://vacuumcleaner.cs.kun.nl/c-corn}{Constructive Coq
 Repository at Nijmegen}).
 
+A symbolic step has also been obtained by formalizing in full a proof
+of the Four Color Theorem.
 
 \Question{What are the industrial applications for {\Coq}?}
 
 {\Coq} is used e.g. to prove properties of the JavaCard system
-(especially by the companies Schlumberger and Trusted Logic). It has
+(especially by Schlumberger and Trusted Logic). It has
 also been used to formalize the semantics of the Lucid-Synchrone
 data-flow synchronous calculus used by Esterel-Technologies.
 
@@ -357,15 +372,15 @@ This FAQ is unfinished (in the sense that there are some obvious
 sections that are missing). Please send contributions to \texttt{Florent.Kirchner at lix.polytechnique.fr} and \texttt{Julien.Narboux at inria.fr}.
 
 \Question{Is there any mailing list about {\Coq}?} 
-The main {\Coq} mailing list is \url{coq-club@coq.inria.fr}, which
+The main {\Coq} mailing list is \url{coq-club@pauillac.inria.fr}, which
 broadcasts questions and suggestions about the implementation, the
 logical formalism or proof developments. See
-\ahref{http://coq.inria.fr/mailman/listinfo/coq-club}{\url{http://coq.inria.fr/mailman/listinfo/coq-club}} for
+\ahref{http://coq.inria.fr/mailman/listinfo/coq-club}{\url{http://pauillac.inria.fr/mailman/listinfo/coq-club}} for
 subscription. For bugs reports see question \ref{coqbug}.
 
 \Question{Where can I find an archive of the list?}
 The archives of the {\Coq} mailing list are available at
-\ahref{http://coq.inria.fr/pipermail/coq-club}{\url{http://coq.inria.fr/pipermail/coq-club}}.
+\ahref{http://pauillac.inria.fr/pipermail/coq-club}{\url{http://coq.inria.fr/pipermail/coq-club}}.
 
 
 \Question{How can I be kept informed of new releases of {\Coq}?}
@@ -374,6 +389,7 @@ New versions of {\Coq} are announced on the coq-club mailing list. If you only w
 
 
 \Question{Is there any book about {\Coq}?}
+
 The first book on \Coq, Yves Bertot and Pierre Castéran's Coq'Art has been published by Springer-Verlag in 2004:
 \begin{quote}
 ``This book provides a pragmatic introduction to the development of
@@ -393,8 +409,7 @@ You can also find large developments using
 
 \Question{How can I report a bug?}\label{coqbug}
 
-You can use the web interface at \ahref{http://coq.inria.fr/bin/coq-bugs}{\url{http://coq.inria.fr/bin/coq-bugs}}.
-
+You can use the web interface accessible at \ahref{http://coq.inria.fr}{\url{http://coq.inria.fr}}, link ``contacts''.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -402,17 +417,19 @@ You can use the web interface at \ahref{http://coq.inria.fr/bin/coq-bugs}{\url{h
 \section{Installation}
 
 \Question{What is the license of {\Coq}?}
-The main files are distributed under the GNU Lesser General License
-(LGPL). A few contributions are GPL.
+{\Coq} is distributed under the GNU Lesser General License
+(LGPL).
 
 \Question{Where can I find the sources of {\Coq}?}
 The sources of {\Coq} can be found online in the tar.gz'ed packages
-(\ahref{http://coq.inria.fr/distrib-eng.html}{\url{http://coq.inria.fr/distrib-eng.html}}). Development sources can
-be accessed via anonymous CVS: \ahref{http://coqcvs.inria.fr/}{\url{http://coqcvs.inria.fr/}}
+(\ahref{http://coq.inria.fr}{\url{http://coq.inria.fr}}, link
+``download''). Development sources can be accessed at
+\ahref{http://coq.gforge.inria.fr/}{\url{http://coq.gforge.inria.fr/}}
 
 \Question{On which platform is {\Coq} available?}
-Compiled binaries are available for Linux, MacOS X, Solaris, and
-Windows. The sources can be easily compiled on all platforms supporting Objective Caml.
+Compiled binaries are available for Linux, MacOS X, and Windows. The
+sources can be easily compiled on all platforms supporting Objective
+Caml.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -423,22 +440,26 @@ Windows. The sources can be easily compiled on all platforms supporting Objectiv
 \Question{What is the logic of \Coq?}
 
 {\Coq} is based on an axiom-free type theory called
-the Calculus of Inductive Constructions (see Coquand \cite{CoHu86}
+the Calculus of Inductive Constructions (see Coquand \cite{CoHu86},
+Luo~\cite{Luo90}
 and Coquand--Paulin-Mohring \cite{CoPa89}). It includes higher-order
 functions and predicates, inductive and co-inductive datatypes and
 predicates, and a stratified hierarchy of sets.
 
 \Question{Is \Coq's logic intuitionistic or classical?}
 
-{\Coq} theory is basically intuitionistic
-(i.e. excluded-middle $A\vee\neg A$ is not granted by default) with
-the possibility to reason classically on demand by requiring an
-optional axiom stating $A\vee\neg A$.
+{\Coq}'s logic is modular. The core logic is intuitionistic
+(i.e. excluded-middle $A\vee\neg A$ is not granted by default). It can
+be extended to classical logic on demand by requiring an
+optional module stating $A\vee\neg A$.
 
 \Question{Can I define non-terminating programs in \Coq?}
 
-No, all programs in {\Coq} are terminating. Especially, loops
-must come with an evidence of their termination.
+All programs in {\Coq} are terminating. Especially, loops
+must come with an evidence of their termination. 
+
+Non-terminating programs can be simulated by passing around a
+bound on how long the program is allowed to run before dying.
 
 \Question{How is equational reasoning working in {\Coq}?}
 
@@ -463,16 +484,19 @@ standard library of {\Coq}. The most interesting ones are
 
 \begin{itemize}
 \item Excluded-middle: $\forall A:Prop, A \vee \neg A$
-\item Proof-irrelevance: $\forall A:Prop, \forall p_1 p_2:A, p_1=p_2$
-\item Unicity of equality proofs (or equivalently Streicher's axiom $K$)
-\item The principle of description: $\forall x, \exists! y, R(x,y) \rightarrow \exists f, \forall x, R(x,f(x))$
-\item The functional axiom of choice: $\forall x, \exists y, R(x,y) \rightarrow \exists f, \forall x, R(x,f(x))$
+\item Proof-irrelevance: $\forall A:Prop \forall p_1 p_2:A, p_1=p_2$
+\item Unicity of equality proofs (or equivalently Streicher's axiom $K$):
+$\forall A \forall x y:A \forall p_1 p_2:x=y, p_1=p_2$
+\item The axiom of unique choice: $\forall x \exists! y R(x,y) \rightarrow \exists f \forall x R(x,f(x))$
+\item The functional axiom of choice: $\forall x \exists y R(x,y) \rightarrow \exists f \forall x R(x,f(x))$
 \item Extensionality of predicates: $\forall P Q:A\rightarrow Prop, (\forall x, P(x) \leftrightarrow Q(x)) \rightarrow P=Q$
 \item Extensionality of functions: $\forall f g:A\rightarrow B, (\forall x, f(x)=g(x)) \rightarrow f=g$
 \end{itemize}
 
 Here is a summary of the relative strength of these axioms, most
 proofs can be found in directory {\tt Logic} of the standard library.
+The justification of their validity relies on the interpretability in
+set theory.
 
 %HEVEA\imgsrc{axioms.png}
 %BEGIN LATEX
@@ -485,7 +509,7 @@ proofs can be found in directory {\tt Logic} of the standard library.
 
 \Question{What standard axioms are inconsistent with {\Coq}?}
 
-The axiom of description together with classical logic
+The axiom of unique choice together with classical logic
 (e.g. excluded-middle) are inconsistent in the variant of the Calculus
 of Inductive Constructions where {\Set} is impredicative.
 
@@ -505,8 +529,8 @@ classical logic, axiom of choice and predicate extensionality added.
 \Question{What is Streicher's axiom $K$}
 \label{Streicher}
 
-Streicher's axiom $K$ \cite{HofStr98} asserts dependent
-elimination of reflexive equality proofs.
+Streicher's axiom $K$~\cite{HofStr98} is an axiom that asserts
+dependent elimination of reflexive equality proofs.
 
 \begin{coq_example*}
 Axiom Streicher_K :
@@ -565,12 +589,11 @@ $$
 $$ 
 
 Proof-irrelevance (in {\Prop}) can be assumed without contradiction in
-{\Coq}. It corresponds to a model where provability, whatever the
-proof is, is more important than the computational content of the
-proof. This is in harmony with the common purely logical
-interpretation of {\Prop}. Contrastingly, proof-irrelevance is
-inconsistent in {\Set} in harmony with the computational meaning of
-the sort {\Set}.
+{\Coq}. It expresses that only provability matters, whatever the exact
+form of the proof is. This is in harmony with the common purely
+logical interpretation of {\Prop}. Contrastingly, proof-irrelevance is
+inconsistent in {\Set} since there are types in {\Set}, such as the
+type of booleans, that are provably more than 2 elements.
 
 Proof-irrelevance (in {\Prop}) is a consequence of classical logic
 (see proofs in file \vfile{\LogicClassical}{Classical} and
@@ -579,22 +602,21 @@ consequence of propositional extensionality (i.e.  \coqtt{(A {\coqequiv} B)
 {\coqimp} A=B}, see the proof in file
 \vfile{\LogicClassicalFacts}{ClassicalFacts}).
 
-Conversely, proof-irrelevance directly implies Streicher's axiom $K$.
+Proof-irrelevance directly implies Streicher's axiom $K$.
 
 \Question{What about functional extensionality?}
 
-Extensionality of functions is an axiom in, say set theory, but from a
-programing point of view, extensionality cannot be {\em a priori}
-accepted since it would identify, say programs such as mergesort and
-quicksort.
+Extensionality of functions is admittedly consistent with the
+Set-predicative Calculus of Inductive Constructions.
 
 %\begin{coq_example*}
 %  Axiom extensionality : (A,B:Set)(f,g:(A->B))(x:A)(f x)=(g x)->f=g.
 %\end{coq_example*}
 
 Let {\tt A}, {\tt B} be types. To deal with extensionality on 
-\verb=A->B=, the recommended approach is to define one's
-own extensional equality on \verb=A->B=.
+\verb=A->B= without relying on a general extensionality axiom, 
+a possible approach is to define one's own extensional equality on
+\verb=A->B=.
 
 \begin{coq_eval}
 Variables A B : Set.
@@ -728,9 +750,9 @@ is consistent on some large inductive types not expressive enough to
 encode known paradoxes (such as type I above).
 
 
-\Question{What is a "large inductive definition"?}
+\Question{What is a ``large inductive definition''?}
 
- An inductive definition in {\Prop} pr {\Set} is called large
+An inductive definition in {\Prop} or {\Set} is called large
 if its constructors embed sets or propositions. As an example, here is
 a large inductive type:
 
@@ -859,7 +881,7 @@ Qed.
 
 
 
-\Question{My goal contains False as an hypotheses, how can I prove it?}
+\Question{My goal contains False as an hypothesis, how can I prove it?}
 
 You can use the {\contradiction} or {\intuition} tactics.
 
@@ -1420,7 +1442,7 @@ Use the {\inversion} tactic.
 
 \Question{How can I prove that 2 terms in an inductive set are equal? Or different?}
 
-Have a look at "decide equality" and "discriminate" in the \ahref{http://coq.inria.fr/doc/main.html}{Reference Manual}.
+Have a look at \coqtt{decide equality} and \coqtt{discriminate} in the \ahref{http://coq.inria.fr/doc/main.html}{Reference Manual}.
 
 \Question{Why is the proof of \coqtt{0+n=n} on natural numbers
 trivial but the proof of \coqtt{n+0=n} is not?}
