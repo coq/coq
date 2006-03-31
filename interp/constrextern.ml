@@ -638,6 +638,8 @@ let rec extern inctx scopes vars r =
 
   | RVar (loc,id) -> CRef (Ident (loc,id))
 
+  | REvar (loc,n,None) when !print_meta_as_hole -> CHole loc
+
   | REvar (loc,n,_) -> (* we drop args *) extern_evar loc n
 
   | RPatVar (loc,n) -> if !print_meta_as_hole then CHole loc else CPatVar (loc,n)
