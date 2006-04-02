@@ -837,55 +837,28 @@ let swapEquandsInHyp id gls =
     (tclTHEN swapEquandsInConcl) gls
 
 (* find_elim determines which elimination principle is necessary to
-   eliminate lbeq on sort_of_gl. It yields the boolean true if
-   it is a dependent elimination principle (as idT.rect) and false
-   otherwise *)
+   eliminate lbeq on sort_of_gl.
+   This is somehow an artificial choice as we could take eq_rect in
+   all cases (eq_ind - and eq_rec - are instances of eq_rect) [HH 2/4/06].
+*)
 
 let find_elim sort_of_gl lbeq =
   match kind_of_term sort_of_gl  with
-    | Sort(Prop Null)  (* Prop *)  -> (lbeq.ind, false)  
-    | Sort(Prop Pos)   (* Set *)   ->  
-	(match lbeq.rrec with
-           | Some eq_rec -> (eq_rec, false) 
-	   | None -> errorlabstrm "find_elim"
-		 (str "this type of elimination is not allowed"))
-    | _ (* Type *) -> 
+    | Sort(Prop Null)  (* Prop *)  -> lbeq.ind
+    | _ (* Set/Type *) -> 
         (match lbeq.rect with
-           | Some eq_rect -> (eq_rect, true) 
+           | Some eq_rect -> eq_rect
            | None -> errorlabstrm "find_elim"
-		 (str "this type of elimination is not allowed"))
+		 (str "this type of substitution is not allowed"))
 
-(* builds a predicate [e:t][H:(lbeq t e t1)](body e)
-   to be used as an argument for equality dependent elimination principle:
-   Preconditon: dependent body (mkRel 1) *)
+(* Refine from [|- P e2] to [|- P e1] and [|- e1=e2:>t] (body is P (Rel 1)) *)
 
-let build_dependent_rewrite_predicate (t,t1,t2) body lbeq gls =
-  let e = pf_get_new_id  (id_of_string "e") gls in 
-  let h = pf_get_new_id  (id_of_string "HH") gls in 
-  let eq_term = lbeq.eq in
-  (mkNamedLambda e t 
-     (mkNamedLambda h (applist (eq_term, [t;t1;(mkRel 1)])) 
-        (lift 1 body))) 
-
-(* builds a predicate [e:t](body e)
-   to be used as an argument for equality non-dependent elimination principle:
-   Preconditon: dependent body (mkRel 1) *)
-
-let build_non_dependent_rewrite_predicate (t,t1,t2) body gls =
-  lambda_create (pf_env gls) (t,body)
-
-let bareRevSubstInConcl lbeq body (t,e1,e2 as eq) gls =
-  let (eq_elim,dep) =
-    try 
-      find_elim (pf_type_of gls (pf_concl gls)) lbeq  
-    with e when catchable_exception e -> 
-      errorlabstrm "RevSubstIncConcl"
-        (str "this type of substitution is not allowed")  
-  in 
-  let p =
-    if dep then build_dependent_rewrite_predicate eq body lbeq gls
-    else build_non_dependent_rewrite_predicate eq body gls
-  in
+let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
+  (* find substitution scheme *)
+  let eq_elim = find_elim (pf_type_of gls (pf_concl gls)) lbeq in
+  (* build substitution predicate *)
+  let p = lambda_create (pf_env gls) (t,body) in
+  (* apply substitution scheme *)
   refine (applist(eq_elim,[t;e1;p;Evarutil.mk_new_meta();
                            e2;Evarutil.mk_new_meta()])) gls
 
