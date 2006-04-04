@@ -10,7 +10,7 @@ Mathematics} and MoWGLI\footnote{Mathematics on the Web, Get it by
 Logic and Interfaces} projects mainly at the University of Bologna and
 partly at INRIA-Sophia Antipolis.
 
-\asubsection{Practical use of the XML exportation tool}
+\subsection{Practical use of the XML exportation tool}
 
 The basic way to export the logical content of a file into XML format
 is to use {\tt coqc} with option {\tt -xml}. 
@@ -48,7 +48,7 @@ the output is done on the standard output. Also, the files are
 compressed using {\tt gzip} after creation. This is to save disk space
 since the XML format is very verbose.
 
-\asubsection{Reflection of the logical structure into the file system}
+\subsection{Reflection of the logical structure into the file system}
 
 For each {\Coq} logical object, several independent files associated
 to this object are created.  The structure of the long name of the
@@ -58,7 +58,7 @@ E.g. an object of long name {\tt
 subdirectory {{\ident$_1$}/{\ldots}/{\ident$_n$}} of the directory 
 bound to the environment variable {\tt COQ\_XML\_LIBRARY\_ROOT}.
 
-\asubsection{What is exported?}
+\subsection{What is exported?}
 
 The XML exportation tool exports the logical content of {\Coq}
 theories. This covers global definitions (including lemmas, theorems,
@@ -108,13 +108,13 @@ types are called inner types and are exported to files of suffix {\tt
 
 
 % Deactivated
-%% \asubsection{Proof trees}
+%% \subsection{Proof trees}
 
 %% For each definition or theorem that has been built with tactics, an
 %% extra file of suffix {\tt proof\_tree.xml} is created. It contains the
 %% proof scripts and is used for rendering the proof.
 
-\asubsection{Inner types}
+\subsection{Inner types}
 \label{inner-types}
 
 The type of a subterm of a construction is called an {\em inner type}
@@ -138,11 +138,11 @@ lot of disk/memory space: removing the 3$^{rd}$ condition leads to XML
 file that are two times as big as the ones exported applying the 3$^{rd}$
 condition.
 
-\asubsection{Interactive exportation commands}
+\subsection{Interactive exportation commands}
 
 There are also commands to be used interactively in {\tt coqtop}.
 
-\asubsubsection{\tt Print XML {\qualid}}
+\subsubsection{\tt Print XML {\qualid}}
 \comindex{Print XML}
 
 If the variable {\tt COQ\_XML\_LIBRARY\_ROOT} is set, this command creates
@@ -156,7 +156,7 @@ This writes the logical content of {\qualid} in XML format to files
 whose prefix is {\str}.
 \end{Variants}
 
-\asubsubsection{{\tt Show XML Proof}}
+\subsubsection{{\tt Show XML Proof}}
 \comindex{Show XML Proof}
 
 If the variable {\tt COQ\_XML\_LIBRARY\_ROOT} is set, this command creates
@@ -170,7 +170,7 @@ logical content of {\qualid} in XML format to files whose prefix is
 {\str}. 
 \end{Variants}
 
-\asubsection{Applications: rendering, searching and publishing}
+\subsection{Applications: rendering, searching and publishing}
 
 The HELM team at the University of Bologna has developed tools
 exploiting the XML exportation of {\Coq} libraries. This covers
@@ -189,9 +189,9 @@ publishing your development. To this aim, follow the instructions on
 Notice that the HELM server already hosts a copy of the standard
 library of {\Coq} and of the {\Coq} user contributions.
 
-\asubsection{Technical informations}
+\subsection{Technical informations}
 
-\asubsubsection{CIC with Explicit Named Substitutions}
+\subsubsection{CIC with Explicit Named Substitutions}
                                                                                
 The exported files are XML encoding of the lambda-terms used by the
 \Coq\ system. The implementative details of the \Coq\ system are hidden as much
@@ -273,7 +273,7 @@ Further details on the typing and reduction rules of the calculus can be
 found in Claudio Sacerdoti Coen PhD. dissertation, where the consistency
 of the calculus is also proved.
  
-\asubsubsection{The CIC with Explicit Named Substitutions XML DTD}
+\subsubsection{The CIC with Explicit Named Substitutions XML DTD}
  
 A copy of the DTD can be found in the file ``\verb+cic.dtd+'' in the
 \verb+contrib/xml+ source directory of \Coq.
