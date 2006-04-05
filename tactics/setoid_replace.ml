@@ -1717,32 +1717,41 @@ let check_evar_map_of_evars_defs evd =
          check_freemetas_is_empty rebus2 freemetas2
    ) metas
 
-let relation_rewrite c1 c2 (input_direction,cl) ~new_goals gl =
- let but = pf_concl gl in
- let (sigma,hyp,c1,c2) =
-   let (env',c1) =
+(* For a correct meta-aware "rewrite in", we split unification 
+   apart from the actual rewriting (Pierre L, 05/04/06) *)
+   
+(* [unification_rewrite] searchs a match for [c1] in [but] and then 
+   returns the modified objects (in particular [c1] and [c2]) *)  
+
+let unification_rewrite c1 c2 cl but gl = 
+  let (env',c1) =
     try
-     (* ~mod_delta:false to allow to mark occurences that must not be
-        rewritten simply by replacing them with let-defined definitions
-        in the context *)
-     w_unify_to_subterm ~mod_delta:false (pf_env gl) (c1,but) cl.env
+      (* ~mod_delta:false to allow to mark occurences that must not be
+         rewritten simply by replacing them with let-defined definitions
+         in the context *)
+      w_unify_to_subterm ~mod_delta:false (pf_env gl) (c1,but) cl.env
     with
-     Pretype_errors.PretypeError _ ->
-      (* ~mod_delta:true to make Ring work (since it really
-          exploits conversion) *)
-      w_unify_to_subterm ~mod_delta:true (pf_env gl) (c1,but) cl.env
-   in
-   let cl' = {cl with env = env' } in
-   let c2 = Clenv.clenv_nf_meta cl' c2 in
-    check_evar_map_of_evars_defs env' ;
-    env',(input_direction,Clenv.clenv_value cl'), c1, c2
- in
+	Pretype_errors.PretypeError _ ->
+	  (* ~mod_delta:true to make Ring work (since it really
+             exploits conversion) *)
+	  w_unify_to_subterm ~mod_delta:true (pf_env gl) (c1,but) cl.env
+  in
+  let cl' = {cl with env = env' } in
+  let c2 = Clenv.clenv_nf_meta cl' c2 in
+  check_evar_map_of_evars_defs env' ;
+  env',Clenv.clenv_value cl', c1, c2
+
+(* no unification is performed in this function. [sigma] is the 
+ substitution obtained from an earlier unification. *)
+
+let relation_rewrite_no_unif c1 c2 hyp ~new_goals sigma gl = 
+  let but = pf_concl gl in 
   try
    let input_relation =
     relation_class_that_matches_a_constr "Setoid_rewrite"
      new_goals (Typing.mtype_of (pf_env gl) sigma (snd hyp)) in
    let output_relation,output_direction,marked_but =
-    mark_occur gl ~new_goals c1 but input_relation input_direction in
+    mark_occur gl ~new_goals c1 but input_relation (fst hyp) in
    let cic_output_direction = cic_direction_of_direction output_direction in
    let if_output_relation_is_iff gl =
     let th =
@@ -1776,7 +1785,11 @@ let relation_rewrite c1 c2 (input_direction,cl) ~new_goals gl =
      if_output_relation_is_if gl
   with
     Optimize ->
-      !general_rewrite (input_direction = Left2Right) (snd hyp) gl
+      !general_rewrite (fst hyp = Left2Right) (snd hyp) gl
+
+let relation_rewrite c1 c2 (input_direction,cl) ~new_goals gl =
+ let (sigma,cl,c1,c2) = unification_rewrite c1 c2 cl (pf_concl gl) gl in 
+ relation_rewrite_no_unif c1 c2 (input_direction,cl) ~new_goals sigma gl 
 
 let analyse_hypothesis gl c =
  let ctype = pf_type_of gl c in
@@ -1791,15 +1804,16 @@ let analyse_hypothesis gl c =
   eqclause,mkApp (equiv, Array.of_list others),c1,c2
 
 let general_s_rewrite lft2rgt c ~new_goals gl =
- let direction = if lft2rgt then Left2Right else Right2Left in
- let eqclause,_,c1,c2 = analyse_hypothesis gl c in
-  match direction with
-     Left2Right -> relation_rewrite c1 c2 (direction,eqclause) ~new_goals gl
-   | Right2Left -> relation_rewrite c2 c1 (direction,eqclause) ~new_goals gl
+  let eqclause,_,c1,c2 = analyse_hypothesis gl c in
+  if lft2rgt then 
+    relation_rewrite c1 c2 (Left2Right,eqclause) ~new_goals gl
+  else 
+    relation_rewrite c2 c1 (Right2Left,eqclause) ~new_goals gl
 
-let general_s_rewrite_in id lft2rgt c ~new_goals gl =
- let _,_,c1,c2 = analyse_hypothesis gl c in
+let relation_rewrite_in id c1 c2 (direction,eqclause) ~new_goals gl = 
  let hyp = pf_type_of gl (mkVar id) in
+ (* first, we find a match for c1 in the hyp *)
+ let (sigma,cl,c1,c2) = unification_rewrite c1 c2 eqclause hyp gl in 
  (* since we will actually rewrite in the opposite direction, we also need
     to replace every occurrence of c2 (resp. c1) in hyp with something that
     is convertible but not syntactically equal. To this aim we introduce a
@@ -1808,20 +1822,22 @@ let general_s_rewrite_in id lft2rgt c ~new_goals gl =
   let t' = lift 1 t in
   let in_t' = lift 1 in_t in
    mkLetIn (Anonymous,t,pf_type_of gl t,subst_term t' in_t') in
- let mangled_new_hyp,new_hyp =
-  if lft2rgt then
-   Termops.replace_term c1 c2 (let_in_abstract c2 hyp),
-   Termops.replace_term c1 c2 hyp
-  else
-   Termops.replace_term c2 c1 (let_in_abstract c1 hyp),
-   Termops.replace_term c2 c1 hyp
- in
-  cut_replacing id new_hyp
+ let mangled_new_hyp = Termops.replace_term c1 c2 (let_in_abstract c2 hyp) in
+ let new_hyp = Termops.replace_term c1 c2 hyp in 
+ let oppdir = opposite_direction direction in 
+ cut_replacing id new_hyp
    (tclTHENLAST
-     (tclTHEN (change_in_concl None mangled_new_hyp)
-              (tclTHEN intro
-                       (general_s_rewrite (not lft2rgt) c ~new_goals))))
+      (tclTHEN (change_in_concl None mangled_new_hyp)
+         (tclTHEN intro
+            (relation_rewrite_no_unif c2 c1 (oppdir,cl) ~new_goals sigma))))
    gl
+
+let general_s_rewrite_in id lft2rgt c ~new_goals gl =
+  let eqclause,_,c1,c2 = analyse_hypothesis gl c in
+  if lft2rgt then 
+    relation_rewrite_in id c1 c2 (Left2Right,eqclause) ~new_goals gl
+  else 
+    relation_rewrite_in id c2 c1 (Right2Left,eqclause) ~new_goals gl
 
 let setoid_replace relation c1 c2 ~new_goals gl =
  try
