@@ -299,7 +299,7 @@ Qed.
 
 Add Setoid t Equal Equal_ST as EqualSetoid.
 
-Add Morphism In : In_m.
+Add Morphism In with signature E.eq ==> Equal ==> iff as In_m.
 Proof.
 unfold Equal; intros x y H s s' H0.
 rewrite (In_eq_iff s H); auto.
@@ -322,7 +322,7 @@ destruct H1 as (_,H1).
 exact (H1 (refl_equal true) _ Ha).
 Qed.
 
-Add Morphism Empty : Empty_m.
+Add Morphism Empty with signature Equal ==> iff as Empty_m.
 Proof. 
 intros; do 2 rewrite is_empty_iff; rewrite H; intuition.
 Qed.
@@ -373,7 +373,7 @@ unfold Equal; intros s s' H s'' s''' H0 a.
 do 2 rewrite diff_iff; rewrite H; rewrite H0; intuition.
 Qed.
 
-Add Morphism Subset : Subset_m.
+Add Morphism Subset with signature Equal ==> Equal ==> iff as  Subset_m.
 Proof. 
 unfold Equal, Subset; firstorder.
 Qed.
