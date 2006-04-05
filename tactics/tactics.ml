@@ -1615,7 +1615,7 @@ let compute_elim_sig ?elimc elimt =
   let concl_with_args = it_mkProd_or_LetIn ccl args_indargs in  
   let nparams = Intset.cardinal (free_rels concl_with_args) in
   let preds,params = cut_list (List.length params_preds - nparams) params_preds in
-
+  
   (* A first approximation, further anlysis will tweak it *)
   let res = ref { empty_scheme with
     (* This fields are ok: *)
@@ -1848,24 +1848,26 @@ let induction_tac_felim indvars (* (elimc,lbindelimc) elimt *) scheme gl =
    FIXME: REUNIF AVEC induction_tac_felim? *)
 let induction_from_context_l isrec elim_info lid names gl =
   let indsign,scheme = elim_info in
-  (* hyp0 is the first element of the list of variables on which to
-     induct. It is most probably the first of them appearing in the
-     context. So it seems to be a good value for hyp0, which is used
-     for re-introducing hyps at the right place afterward. *)
+  (* number of all args, counting farg and indarg if present. *)
+  let nargs_indarg_farg = scheme.nargs
+    + (if scheme.farg_in_concl then 1 else 0) 
+    + (if scheme.indarg <> None then 1 else 0) in
+  (* Number of given induction args must be exact. *)
+  if List.length lid <> nargs_indarg_farg + scheme.nparams then 
+    error "not the right number of arguments given to induction scheme";  
   let env = pf_env gl in
+  (* hyp0 is used for re-introducing hyps at the right place afterward.
+     We chose the first element of the list of variables on which to
+     induct. It is probably the first of them appearing in the
+     context. *)
   let hyp0,indvars,lid_params = 
     match lid with
       | []  -> anomaly "induction_from_context_l"
       | e::l -> 
-	  let nargs_without_indarg = 
-	    scheme.nargs - 1
-	    + (if scheme.farg_in_concl then 1 else 0) 
-	    + (if scheme.indarg <> None then 1 else 0) in
-	  let ivs,lp = cut_list nargs_without_indarg l in
+	  let nargs_without_first = nargs_indarg_farg - 1 in
+	  let ivs,lp = cut_list nargs_without_first l in
 	  e, ivs, lp in
-  let statlists,lhyp0,indhyps,deps = 
-    (* if scheme.indarg<>None then cook_sign (Some hyp0) indvars env 
-    else *) cook_sign None (hyp0::indvars) env in
+  let statlists,lhyp0,indhyps,deps = cook_sign None (hyp0::indvars) env in
   let tmpcl = it_mkNamedProd_or_LetIn (pf_concl gl) deps in
   let names = compute_induction_names (Array.length indsign) names in
   let dephyps = List.map (fun (id,_,_) -> id) deps in
@@ -1948,11 +1950,10 @@ let induction_from_context isrec elim_info hyp0 names gl =
 
 
 
-exception TryNewInduct
+exception TryNewInduct of exn
 
 let induction_with_atomization_of_ind_arg isrec elim names hyp0 gl =
-  let (indsign,scheme as elim_info) =
-    find_elim_signature isrec elim hyp0 gl in
+  let (indsign,scheme as elim_info) = find_elim_signature isrec elim hyp0 gl in
   if scheme.indarg = None then (* This is not a standard induction scheme (the
 				  argument is probably a parameter) So try the
 				  more general induction mechanism. *)
@@ -2009,56 +2010,69 @@ let new_induct_gen_l isrec elim names lc gl =
 	    | _ ->
 		let x = 
 		  id_of_name_using_hdchar (Global.env()) (pf_type_of gl c) Anonymous in
+		
 		let id = fresh_id [] x gl in
+		let newl' =(* List.map (replace_term c (mkVar id)) *) l' in
 		let _ = newlc:=id::!newlc in
 		tclTHEN 
 		  (letin_tac true (Name id) c allClauses)
-		  (atomize_list l') gl in
+		  (*(tclTHEN (assert_tac (mkEq typofc c (mkVar id)))
+		    (tclLAST_HYP generalize_dep)
+		  )*)
+		  (atomize_list newl') gl in
   tclTHEN
     (atomize_list lc)
     (fun gl' -> (* recompute each time to have the new value of newlc *)
       induction_without_atomization isrec elim names !newlc gl') gl
 
 
+let induct_destruct_l isrec lc elim names = 
+  (* Several induction hyps: induction scheme is mandatory *)
+  let _ = 
+    if elim = None 
+    then 
+      error ("Induction scheme must be given when several induction hypothesis.\n"
+      ^ "Example: induction x1 x2 x3 using my_scheme.") in
+  let newlc = 
+    List.map
+      (fun x -> 
+	match x with (* FIXME: should we deal with ElimOnIdent? *)
+	  | ElimOnConstr x -> x
+	  | _ -> error "don't know where to find some argument")
+      lc in
+  new_induct_gen_l isrec elim names newlc
+
+
 (* Induction either over a term, over a quantified premisse, or over
    several quantified premisses (like with functional induction
-   principles). *)
-let new_induct_destruct_l isrec lc elim names = 
+   principles). 
+   TODO: really unify induction with one and induction with several
+   args *)
+let induct_destruct isrec lc elim names = 
   assert (List.length lc > 0); (* ensured by syntax, but if called inside caml? *)
-  try 
-    if List.length lc = 1 then (* induction on one arg *)
-      try 
-	let c = List.hd lc in
-	match c with
-	  | ElimOnConstr c -> new_induct_gen isrec elim names c
-	  | ElimOnAnonHyp n ->
-	      tclTHEN (intros_until_n n)
-		(tclLAST_HYP (new_induct_gen isrec elim names))
-		(* Identifier apart because id can be quantified in goal and not typable *)
-	  | ElimOnIdent (_,id) ->
-	      tclTHEN (tclTRY (intros_until_id id))
-		(new_induct_gen isrec elim names (mkVar id))
-      with _ -> raise TryNewInduct
-    else raise TryNewInduct
-  with TryNewInduct -> 
-    (* Several induction hyps: induction scheme is mandatory *)
-    let _ = 
-      if elim = None 
-      then 
-	error ("Induction scheme must be given when several induction hypothesis.\n"
-	^ "Example: induction x1 x2 x3 using my_scheme.") in
-    let newlc = 
-      List.map
-	(fun x -> 
-	  match x with (* FIXME: should we deal with ElimOnIdent? *)
-	    | ElimOnConstr x -> x
-	    | _ -> error "don't know where to find some argument")
-	lc in
-    new_induct_gen_l isrec elim names newlc
+  if List.length lc = 1 then (* induction on one arg: use old mechanism *)
+    let _ = print_string "\nOne arg\n" in
+    try 
+      let c = List.hd lc in
+      match c with
+	| ElimOnConstr c -> new_induct_gen isrec elim names c
+	| ElimOnAnonHyp n ->
+	    tclTHEN (intros_until_n n)
+	      (tclLAST_HYP (new_induct_gen isrec elim names))
+	      (* Identifier apart because id can be quantified in goal and not typable *)
+	| ElimOnIdent (_,id) ->
+	    tclTHEN (tclTRY (intros_until_id id))
+	      (new_induct_gen isrec elim names (mkVar id))
+    with (* If this fails, try with new mechanism but if it fails too,
+	    then the exception is the first one. *)
+      | x -> (print_string "\nfailed\n";try induct_destruct_l isrec lc elim names with _  -> raise x)
+  else induct_destruct_l isrec lc elim names
+
+
       
 
-let new_induct = new_induct_destruct_l true
-let new_destruct c = new_induct_destruct_l false c
+let new_induct = induct_destruct true
+let new_destruct = induct_destruct false
 
 (* The registered tactic, which calls the default elimination
  * if no elimination constant is provided. *)
