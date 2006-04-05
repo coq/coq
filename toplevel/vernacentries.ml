@@ -568,14 +568,8 @@ let vernac_solve_existential = instantiate_nth_evar_com
 let vernac_set_end_tac tac =
   if not (refining ()) then
     error "Unknown command of the non proof-editing mode";
-  let pfs = top_of_tree (get_pftreestate()) in
-  let pf = proof_of_pftreestate pfs in
-    if (is_leaf_proof pf) then
-      if tac <> (Tacexpr.TacId []) then set_end_tac (Tacinterp.interp tac) else ()
-	(* TO DO verifier s'il faut pas mettre exist s | TacId s ici*)
-    else
-      errorlabstrm "Vernacentries.ExactProof"
-	(str "Command 'Proof ...' can only be used at the beginning of the proof")
+  if tac <> (Tacexpr.TacId []) then set_end_tac (Tacinterp.interp tac) else ()
+      (* TO DO verifier s'il faut pas mettre exist s | TacId s ici*)
 	
 (*****************************)
 (* Auxiliary file management *)
