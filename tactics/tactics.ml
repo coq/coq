@@ -2051,7 +2051,6 @@ let induct_destruct_l isrec lc elim names =
 let induct_destruct isrec lc elim names = 
   assert (List.length lc > 0); (* ensured by syntax, but if called inside caml? *)
   if List.length lc = 1 then (* induction on one arg: use old mechanism *)
-    let _ = print_string "\nOne arg\n" in
     try 
       let c = List.hd lc in
       match c with
@@ -2065,7 +2064,7 @@ let induct_destruct isrec lc elim names =
 	      (new_induct_gen isrec elim names (mkVar id))
     with (* If this fails, try with new mechanism but if it fails too,
 	    then the exception is the first one. *)
-      | x -> (print_string "\nfailed\n";try induct_destruct_l isrec lc elim names with _  -> raise x)
+      | x -> (try induct_destruct_l isrec lc elim names with _  -> raise x)
   else induct_destruct_l isrec lc elim names
 
 
