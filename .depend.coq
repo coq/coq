@@ -150,8 +150,7 @@ theories/Lists/ListSet.vo: theories/Lists/ListSet.v theories/Lists/List.vo
 theories/Lists/Streams.vo: theories/Lists/Streams.v
 theories/Lists/TheoryList.vo: theories/Lists/TheoryList.v theories/Lists/List.vo theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Minus.vo theories/Bool/DecBool.vo
 theories/Lists/List.vo: theories/Lists/List.v theories/Arith/Le.vo
-theories/Lists/MoreList.vo: theories/Lists/MoreList.v theories/Lists/List.vo theories/Arith/Arith.vo theories/Bool/Bool.vo
-theories/Lists/SetoidList.vo: theories/Lists/SetoidList.v theories/Lists/List.vo theories/Lists/MoreList.vo theories/Sorting/Sorting.vo theories/Setoids/Setoid.vo
+theories/Lists/SetoidList.vo: theories/Lists/SetoidList.v theories/Lists/List.vo theories/Sorting/Sorting.vo theories/Setoids/Setoid.vo
 theories/Strings/Ascii.vo: theories/Strings/Ascii.v theories/Bool/Bool.vo theories/NArith/BinPos.vo
 theories/Strings/String.vo: theories/Strings/String.v theories/Arith/Arith.vo theories/Strings/Ascii.vo
 theories/Sets/Classical_sets.vo: theories/Sets/Classical_sets.v theories/Sets/Ensembles.vo theories/Sets/Constructive_sets.vo theories/Logic/Classical_Type.vo
@@ -199,7 +198,7 @@ theories/IntMap/Adalloc.vo: theories/IntMap/Adalloc.v theories/Bool/Bool.vo theo
 theories/IntMap/Mapcanon.vo: theories/IntMap/Mapcanon.v theories/Bool/Bool.vo theories/Bool/Sumbool.vo theories/Arith/Arith.vo theories/ZArith/ZArith.vo theories/IntMap/Addr.vo theories/IntMap/Adist.vo theories/IntMap/Addec.vo theories/IntMap/Map.vo theories/IntMap/Mapaxioms.vo theories/IntMap/Mapiter.vo theories/IntMap/Fset.vo theories/Lists/List.vo theories/IntMap/Lsort.vo theories/IntMap/Mapsubset.vo theories/IntMap/Mapcard.vo
 theories/IntMap/Addec.vo: theories/IntMap/Addec.v theories/Bool/Bool.vo theories/Bool/Sumbool.vo theories/ZArith/ZArith.vo theories/IntMap/Addr.vo
 theories/IntMap/Mapcard.vo: theories/IntMap/Mapcard.v theories/Bool/Bool.vo theories/Bool/Sumbool.vo theories/Arith/Arith.vo theories/ZArith/ZArith.vo theories/IntMap/Addr.vo theories/IntMap/Adist.vo theories/IntMap/Addec.vo theories/IntMap/Map.vo theories/IntMap/Mapaxioms.vo theories/IntMap/Mapiter.vo theories/IntMap/Fset.vo theories/IntMap/Mapsubset.vo theories/Lists/List.vo theories/IntMap/Lsort.vo theories/Arith/Peano_dec.vo
-theories/IntMap/Addr.vo: theories/IntMap/Addr.v theories/Bool/Bool.vo theories/ZArith/ZArith.vo
+theories/IntMap/Addr.vo: theories/IntMap/Addr.v theories/Bool/Bool.vo theories/NArith/NArith.vo theories/ZArith/ZArith.vo
 theories/IntMap/Mapc.vo: theories/IntMap/Mapc.v theories/Bool/Bool.vo theories/Bool/Sumbool.vo theories/Arith/Arith.vo theories/ZArith/ZArith.vo theories/IntMap/Addr.vo theories/IntMap/Adist.vo theories/IntMap/Addec.vo theories/IntMap/Map.vo theories/IntMap/Mapaxioms.vo theories/IntMap/Fset.vo theories/IntMap/Mapiter.vo theories/IntMap/Mapsubset.vo theories/Lists/List.vo theories/IntMap/Lsort.vo theories/IntMap/Mapcard.vo theories/IntMap/Mapcanon.vo
 theories/IntMap/Adist.vo: theories/IntMap/Adist.v theories/Bool/Bool.vo theories/ZArith/ZArith.vo theories/Arith/Arith.vo theories/Arith/Min.vo theories/IntMap/Addr.vo
 theories/IntMap/Mapfold.vo: theories/IntMap/Mapfold.v theories/Bool/Bool.vo theories/Bool/Sumbool.vo theories/ZArith/ZArith.vo theories/IntMap/Addr.vo theories/IntMap/Adist.vo theories/IntMap/Addec.vo theories/IntMap/Map.vo theories/IntMap/Fset.vo theories/IntMap/Mapaxioms.vo theories/IntMap/Mapiter.vo theories/IntMap/Lsort.vo theories/IntMap/Mapsubset.vo theories/Lists/List.vo

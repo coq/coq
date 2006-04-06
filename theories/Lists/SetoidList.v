@@ -9,7 +9,6 @@
 (* $Id$ *)
 
 Require Export List.
-Require Export MoreList.
 Require Export Sorting.
 Require Export Setoid.
 Set Implicit Arguments.

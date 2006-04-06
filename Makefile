@@ -843,7 +843,7 @@ LISTSVO=\
  theories/Lists/MonoList.vo \
  theories/Lists/ListSet.vo   	theories/Lists/Streams.vo \
  theories/Lists/TheoryList.vo   theories/Lists/List.vo \
- theories/Lists/MoreList.vo     theories/Lists/SetoidList.vo
+ theories/Lists/SetoidList.vo
 
 STRINGSVO=\
  theories/Strings/Ascii.vo      theories/Strings/String.vo
