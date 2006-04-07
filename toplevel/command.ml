@@ -337,8 +337,9 @@ let interp_mutual lparams lnamearconstrs finite =
   let fs = States.freeze() in
   (* Declare the notations for the inductive types pushed in local context*)
   try
-  List.iter (fun (df,c,scope) -> (* No scope for tmp notation *)
-    Metasyntax.add_notation_interpretation df ind_impls c None) notations;
+  List.iter (fun (df,c,scope) ->
+    silently (Metasyntax.add_notation_interpretation df ind_impls c) scope)
+    notations;
   let ind_env_params = push_rel_context params ind_env in
 
   let mispecvec = 
@@ -494,8 +495,10 @@ let build_recursive (lnameargsardef:(fixpoint_expr *decl_notation) list)  =
     let fs = States.freeze() in
     let def = 
       try
-	List.iter (fun (df,c,scope) -> (* No scope for tmp notation *)
-	 Metasyntax.add_notation_interpretation df rec_impls c None) notations;
+	List.iter (fun (df,c,scope) ->
+	  silently 
+	    (Metasyntax.add_notation_interpretation df rec_impls c) scope)
+	  notations;
 	List.map2
 	  (fun ((_,_,bl,_,def),_) arity ->
             let def = abstract_rawconstr def bl in
