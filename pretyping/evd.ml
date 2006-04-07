@@ -408,6 +408,13 @@ let is_undefined_evar isevars c = match kind_of_term c with
   | Evar ev -> not (is_defined_evar isevars ev)
   | _ -> false
 
+let undefined_evars isevars = 
+  let evd = 
+    fold (fun ev evi sigma -> if evi.evar_body = Evar_empty then 
+	    add sigma ev evi else sigma) 
+      isevars.evars empty
+  in 
+    { isevars with evars = evd }
 
 (* extracts conversion problems that satisfy predicate p *)
 (* Note: conv_pbs not satisying p are stored back in reverse order *)

@@ -12,10 +12,6 @@ val mkProj2 :
 val list_of_local_binders :
   Topconstr.local_binder list ->
   (Names.name Util.located * Topconstr.constr_expr) list
-val abstract_constr_expr_bl :
-  Topconstr.constr_expr ->
-  (Names.name Util.located * Topconstr.constr_expr) list ->
-  Topconstr.constr_expr
 val pr_binder_list :
   (('a * Names.name) * Topconstr.constr_expr) list -> Pp.std_ppcmds
 val rewrite_rec_calls : 'a -> 'b -> 'b

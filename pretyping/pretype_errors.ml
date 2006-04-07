@@ -157,6 +157,9 @@ let error_unsolvable_implicit loc env sigma e =
 let error_cannot_unify env sigma (m,n) =
   raise (PretypeError (env_ise sigma env,CannotUnify (m,n)))
 
+let error_cannot_coerce env sigma (m,n) =
+  raise (PretypeError (env_ise sigma env,CannotUnify (m,n)))
+
 (*s Ml Case errors *)
 
 let error_cant_find_case_type_loc loc env sigma expr =

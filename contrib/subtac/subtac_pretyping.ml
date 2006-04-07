@@ -71,7 +71,8 @@ let merge_evms x y =
 
 let interp env isevars c tycon = 
   let j = pretype tycon env isevars ([],[]) c in
-    j.uj_val, j.uj_type
+  let evm = evars_of !isevars in    
+    nf_evar evm j.uj_val, nf_evar evm j.uj_type
 
 let find_with_index x l =
   let rec aux i = function

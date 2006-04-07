@@ -38,6 +38,9 @@ sig
   val understand_tcc :
     evar_map -> env -> ?expected_type:types -> rawconstr -> open_constr
     
+  val understand_tcc_evars :
+    evar_defs ref -> env -> typing_constraint -> rawconstr -> constr
+
   (* More general entry point with evars from ltac *)
     
   (* Generic call to the interpreter from rawconstr to constr, failing
@@ -73,7 +76,7 @@ sig
   val understand_judgment : evar_map -> env -> rawconstr -> unsafe_judgment
 
   (* Idem but do not fail on unresolved evars *)
-  val understand_judgment_tcc : evar_map -> env -> rawconstr -> evar_map * unsafe_judgment
+  val understand_judgment_tcc : evar_defs ref -> env -> rawconstr -> unsafe_judgment
 
        
   (*i*)

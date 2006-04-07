@@ -8,6 +8,8 @@ open Decl_kinds
 open Topconstr
 open Rawterm
 open Util
+open Evarutil
+open Names
 
 val contrib_name : string
 val subtac_dir : string list
@@ -36,15 +38,22 @@ val natind : constr lazy_t
 val intind : constr lazy_t
 val existSind : constr lazy_t
 val existS : coq_sigma_data lazy_t
+val prod : coq_sigma_data lazy_t
+
 val well_founded : constr lazy_t
 val fix : constr lazy_t
+val acc : constr lazy_t
+val acc_inv : constr lazy_t
 val extconstr : constr -> constr_expr
 val extsort : sorts -> constr_expr
 val my_print_constr : env -> constr -> std_ppcmds
+val my_print_evardefs : evar_defs -> std_ppcmds
 val my_print_context : env -> std_ppcmds
 val my_print_env : env -> std_ppcmds
 val my_print_rawconstr : env -> rawconstr -> std_ppcmds
-val debug_level : int ref
+val my_print_tycon_type : env -> type_constraint_type -> std_ppcmds
+
+
 val debug : int -> std_ppcmds -> unit
 val debug_msg : int -> std_ppcmds -> std_ppcmds
 val trace : std_ppcmds -> unit
@@ -61,3 +70,15 @@ val global_kind : logical_kind
 val goal_kind : locality_flag * goal_object_kind
 val global_fix_kind : logical_kind
 val goal_fix_kind : locality_flag * goal_object_kind
+
+val mkSubset : name -> constr -> constr -> constr
+val mkProj1 : constr -> constr -> constr -> constr
+val mkProj1 : constr -> constr -> constr -> constr
+val mk_ex_pi1 : constr -> constr -> constr -> constr
+val mk_ex_pi1 : constr -> constr -> constr -> constr
+
+val build_dependent_sum : (identifier * types) list -> constr * Proof_type.tactic * types
+val and_tac : (identifier * 'a * constr * Proof_type.tactic) list ->  
+  ((constr -> (identifier * 'a * constr * constr) list) -> Tacexpr.declaration_hook) -> unit
+
+val destruct_ex : constr -> constr -> constr list

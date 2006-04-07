@@ -38,8 +38,14 @@ module type S = sig
      [t]; i.e. it inserts a coercion into [j], if needed, in such a way [t] and
      [j.uj_type] are convertible; it fails if no coercion is applicable *)
   val inh_conv_coerce_to : loc -> 
-    env -> evar_defs -> unsafe_judgment -> types -> evar_defs * unsafe_judgment
-    
+    env -> evar_defs -> unsafe_judgment -> type_constraint_type -> evar_defs * unsafe_judgment
+
+  (* [inh_conv_coerces_to loc env isevars t t'] checks if an object of type [t]
+     is coercible to an object of type [t'] adding evar constraints if needed;
+     it fails if no coercion exists *)
+  val inh_conv_coerces_to : loc -> 
+    env -> evar_defs -> types -> type_constraint_type -> evar_defs
+   
   (* [inh_pattern_coerce_to loc env isevars pat ind1 ind2] coerces the Cases
      pattern [pat] typed in [ind1] into a pattern typed in [ind2];
      raises [Not_found] if no coercion found *)

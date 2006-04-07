@@ -94,6 +94,8 @@ type coq_sigma_data = {
 
 val build_sigma_set : coq_sigma_data delayed
 val build_sigma_type : coq_sigma_data delayed
+(* Non-dependent pairs in Set from Datatypes *)
+val build_prod : coq_sigma_data delayed
 
 type coq_leibniz_eq_data = {
   eq   : constr;

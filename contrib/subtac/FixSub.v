@@ -21,8 +21,10 @@ End FixPoint.
 
 End Well_founded.
 
-(*Check Fix_sub.*)
-
 Notation "'forall' { x : A | P } , Q" :=
-  (forall x:{x:A|P}, (fun x => Q) (proj1_sig x))
+  (forall x:{x:A|P}, Q)
+  (at level 200, x ident, right associativity).
+
+Notation "'fun' { x : A | P } => Q" :=
+  (fun x:{x:A|P} => Q)
   (at level 200, x ident, right associativity).

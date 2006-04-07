@@ -166,6 +166,13 @@ let build_sigma_type () =
     intro = init_constant ["Specif"] "existT";
     typ = init_constant ["Specif"] "sigT" }
 
+let build_prod () =
+  { proj1 = init_constant ["Datatypes"] "fst";
+    proj2 = init_constant ["Datatypes"] "snd";
+    elim = init_constant ["Datatypes"] "prod_rec";
+    intro = init_constant ["Datatypes"] "pair";
+    typ = init_constant ["Datatypes"] "prod" }
+
 (* Equalities *)
 type coq_leibniz_eq_data = {
   eq   : constr;

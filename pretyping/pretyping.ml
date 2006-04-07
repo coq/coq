@@ -72,6 +72,9 @@ sig
   
   val understand_tcc :
     evar_map -> env -> ?expected_type:types -> rawconstr -> open_constr
+
+  val understand_tcc_evars :
+    evar_defs ref -> env -> typing_constraint -> rawconstr -> constr
     
   (* More general entry point with evars from ltac *)
     
@@ -109,7 +112,7 @@ sig
 
   (* Idem but do not fail on unresolved evars *)
 
-  val understand_judgment_tcc : evar_map -> env -> rawconstr -> evar_map * unsafe_judgment
+  val understand_judgment_tcc : evar_defs ref -> env -> rawconstr -> unsafe_judgment
 
   (*i*)
   (* Internal of Pretyping...
@@ -189,7 +192,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
   (* coerce to tycon if any *)
   let inh_conv_coerce_to_tycon loc env isevars j = function
     | None -> j
-    | Some typ -> evd_comb2 (Coercion.inh_conv_coerce_to loc env) isevars j typ
+    | Some t -> evd_comb2 (Coercion.inh_conv_coerce_to loc env) isevars j t
 
   let push_rels vars env = List.fold_right push_rel vars env
 
@@ -256,8 +259,14 @@ module Pretyping_F (Coercion : Coercion.S) = struct
   (* [pretype tycon env isevars lvar lmeta cstr] attempts to type [cstr] *)
   (* in environment [env], with existential variables [(evars_of isevars)] and *)
   (* the type constraint tycon *)
-  let rec pretype tycon env isevars lvar = function
-
+  let rec pretype (tycon : type_constraint) env isevars lvar c =
+(*    (try 
+       msgnl (str "pretype with tycon: " ++
+	      Evarutil.pr_tycon env tycon ++ str " with evars: " ++ spc () ++
+	      Evd.pr_evar_defs !isevars ++ str " in env: " ++ spc () ++
+	      Termops.print_env env);
+     with _ -> ());*)
+    match c with
     | RRef (loc,ref) ->
 	inh_conv_coerce_to_tycon loc env isevars
 	  (pretype_ref isevars env ref)
@@ -285,8 +294,8 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     | RHole (loc,k) ->
 	let ty =
           match tycon with 
-            | Some ty -> ty
-            | None ->
+            | Some (n, ty) when n = 0 -> ty
+            | None | Some _ ->
 		e_new_evar isevars env ~src:(loc,InternalHole) (new_Type ()) in
 	  { uj_val = e_new_evar isevars env ~src:(loc,k) ty; uj_type = ty }
 
@@ -344,31 +353,48 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	inh_conv_coerce_to_tycon loc env isevars (pretype_sort s) tycon
 
     | RApp (loc,f,args) -> 
-	let fj = pretype empty_tycon env isevars lvar f in
-	let floc = loc_of_rawconstr f in
-	let rec apply_rec env n resj = function
+	let length = List.length args in	 
+	let ftycon = 
+	  match tycon with
+	      None -> None
+	    | Some (n, ty) ->
+		if n = 0 then mk_abstr_tycon length ty
+		else Some (n + length, ty)
+	in
+	let fj = pretype ftycon env isevars lvar f in
+ 	let floc = loc_of_rawconstr f in
+	let rec apply_rec env n resj tycon = function
 	  | [] -> resj
 	  | c::rest ->
 	      let argloc = loc_of_rawconstr c in
 	      let resj = evd_comb1 (Coercion.inh_app_fun env) isevars resj in
-              let resty =
-		whd_betadeltaiota env (evars_of !isevars) resj.uj_type in
+              let resty = whd_betadeltaiota env (evars_of !isevars) resj.uj_type in
       		match kind_of_term resty with
 		  | Prod (na,c1,c2) ->
 		      let hj = pretype (mk_tycon c1) env isevars lvar c in
-		      let newresj =
-      			{ uj_val = applist (j_val resj, [j_val hj]);
-			  uj_type = subst1 hj.uj_val c2 } in
-			apply_rec env (n+1) newresj rest
+		      let value, typ = applist (j_val resj, [j_val hj]), subst1 hj.uj_val c2 in
+		      let typ' = nf_isevar !isevars typ in
+		      let tycon = 
+			match tycon with
+			    Some (abs, ty) ->
+			      isevars := Coercion.inh_conv_coerces_to loc env !isevars typ' 
+			      (abs, ty);			      
+			      Some (pred abs, nf_isevar !isevars ty)
+			  | None -> None
+		      in 
+			apply_rec env (n+1) 
+			  { uj_val = nf_isevar !isevars value;
+			    uj_type = nf_isevar !isevars typ' }
+			  tycon rest
 
 		  | _ ->
 		      let hj = pretype empty_tycon env isevars lvar c in
 			error_cant_apply_not_functional_loc 
 			  (join_loc floc argloc) env (evars_of !isevars)
 	      		  resj [hj]
-
-	in 
-	let resj = j_nf_evar (evars_of !isevars) (apply_rec env 1 fj args) in
+	in
+	let ftycon = lift_tycon (-1) ftycon in
+	let resj = j_nf_evar (evars_of !isevars) (apply_rec env 1 fj ftycon args) in
 	let resj =
 	  match kind_of_term resj.uj_val with
 	  | App (f,args) when isInd f ->
@@ -402,7 +428,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	let j = pretype empty_tycon env isevars lvar c1 in
 	let t = refresh_universes j.uj_type in
 	let var = (name,Some j.uj_val,t) in
-        let tycon = option_app (lift 1) tycon in
+        let tycon = lift_tycon 1 tycon in
 	let j' = pretype tycon (push_rel var env) isevars lvar c2 in
 	  { uj_val = mkLetIn (name, j.uj_val, t, j'.uj_val) ;
 	    uj_type = subst1 j.uj_val j'.uj_type }
@@ -454,7 +480,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		       { uj_val = v; uj_type = substl (realargs@[cj.uj_val]) ccl }
 
 		 | None -> 
-		     let tycon = option_app (lift cs.cs_nargs) tycon in
+		     let tycon = lift_tycon cs.cs_nargs tycon in
 		     let fj = pretype tycon env_f isevars lvar d in
 		     let f = it_mkLambda_or_LetIn fj.uj_val fsign in
 		     let ccl = nf_evar (evars_of !isevars) fj.uj_type in
@@ -499,17 +525,24 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		let pj = pretype_type empty_valcon env_p isevars lvar p in
 		let ccl = nf_evar (evars_of !isevars) pj.utj_val in
 		let pred = it_mkLambda_or_LetIn ccl psign in
-		  pred, lift (- nar) (beta_applist (pred,[cj.uj_val]))
+		let typ = lift (- nar) (beta_applist (pred,[cj.uj_val])) in
+		let jtyp = inh_conv_coerce_to_tycon loc env isevars {uj_val = pred;
+								     uj_type = typ} tycon 
+		in
+		  jtyp.uj_val, jtyp.uj_type
 	    | None -> 
 		let p = match tycon with
-		  | Some ty -> ty
-		  | None ->
+		  | Some (n, ty) when n = 0 -> ty
+		  | None | Some _ ->
                       e_new_evar isevars env ~src:(loc,InternalHole) (new_Type ())
 		in
 		  it_mkLambda_or_LetIn (lift (nar+1) p) psign, p in
+	  let pred = nf_evar (evars_of !isevars) pred in
+	  let p = nf_evar (evars_of !isevars) p in
+	 (*   msgnl (str "Pred is: " ++ Termops.print_constr_env env pred);*)
 	  let f cs b =
 	    let n = rel_context_length cs.cs_args in
-	    let pi = liftn n 2 pred in
+	    let pi = lift n pred in (* liftn n 2 pred ? *)
 	    let pi = beta_applist (pi, [build_dependent_constructor cs]) in
 	    let csgn = 
 	      if not !allow_anonymous_refs then
@@ -523,12 +556,11 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		cs.cs_args
 	    in
 	    let env_c = push_rels csgn env in 
-	    let bj = pretype (Some pi) env_c isevars lvar b in
+(* 	      msgnl (str "Pi is: " ++ Termops.print_constr_env env_c pi); *)
+	    let bj = pretype (mk_tycon pi) env_c isevars lvar b in
 	      it_mkLambda_or_LetIn bj.uj_val cs.cs_args in
 	  let b1 = f cstrs.(0) b1 in
 	  let b2 = f cstrs.(1) b2 in
-	  let pred = nf_evar (evars_of !isevars) pred in
-	  let p = nf_evar (evars_of !isevars) p in
 	  let v =
 	    let mis,_ = dest_ind_family indf in
 	    let ci = make_default_case_info env IfStyle mis in
@@ -542,7 +574,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	  tycon env (* loc *) (po,tml,eqns)
 
     | RCast(loc,c,k,t) ->
-	let tj = pretype_type empty_tycon env isevars lvar t in
+	let tj = pretype_type empty_valcon env isevars lvar t in
 	let cj = pretype (mk_tycon tj.utj_val) env isevars lvar c in
 	  (* User Casts are for helping pretyping, experimentally not to be kept*)
 	  (* ... except for Correctness *)
@@ -641,22 +673,21 @@ module Pretyping_F (Coercion : Coercion.S) = struct
       check_evars env sigma isevars (mkCast(j.uj_val,DEFAULTcast, j.uj_type));
       j
 
-  let understand_judgment_tcc sigma env c =
-    let isevars = ref (create_evar_defs sigma) in
+  let understand_judgment_tcc isevars env c =
     let j = pretype empty_tycon env isevars ([],[]) c in
     let sigma = evars_of !isevars in
     let j = j_nf_evar sigma j in
-      sigma, j
+      j
 
   (* Raw calls to the unsafe inference machine: boolean says if we must
      fail on unresolved evars; the unsafe_judgment list allows us to
      extend env with some bindings *)
 
   let ise_pretype_gen fail_evar sigma env lvar kind c =
-    let isevars = ref (create_evar_defs sigma) in
+    let isevars = ref (Evd.create_evar_defs sigma) in
     let c = pretype_gen isevars env lvar kind c in
       if fail_evar then check_evars env sigma isevars c;
-      (!isevars, c)
+      !isevars, c
 
   (** Entry points of the high-level type synthesis algorithm *)
 
@@ -671,10 +702,13 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 
   let understand_ltac sigma env lvar kind c =
     ise_pretype_gen false sigma env lvar kind c
+      
+  let understand_tcc_evars isevars env kind c =
+    pretype_gen isevars env ([],[]) kind c
 
   let understand_tcc sigma env ?expected_type:exptyp c =
-    let evars,c = ise_pretype_gen false sigma env ([],[]) (OfType exptyp) c in
-      evars_of evars,c
+    let ev, t = ise_pretype_gen false sigma env ([],[]) (OfType exptyp) c in
+      Evd.evars_of ev, t
 end
 
 module Default : S = Pretyping_F(Coercion.Default)

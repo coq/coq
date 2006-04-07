@@ -51,8 +51,8 @@ let list_of_local_binders l =
     | [] -> List.rev acc
   in aux [] l
        
-let abstract_constr_expr_bl c bl =
-  List.fold_right (fun (n, t) c -> mkLambdaC ([n], t, c)) bl c
+let abstract_constr_expr_bl abs c bl =
+  List.fold_right (fun (n, t) c -> abs ([n], t, c)) bl c
 
 let pr_binder_list b = 
   List.fold_right (fun ((loc, name), t) acc -> Nameops.pr_name name ++ str " : " ++
@@ -73,14 +73,14 @@ let rewrite_fixpoint env l (f, decl) =
 			 Ppconstr.pr_constr_expr typ ++ str " := " ++ spc () ++
 			 Ppconstr.pr_constr_expr body)
 	  in
-	  let after, before = list_chop n bls in
+	  let before, after = list_chop n bls in
 	  let _ = trace (str "Binders before the recursion arg: " ++ spc () ++
 			 pr_binder_list before ++ str "; after the recursion arg: " ++
 			 pr_binder_list after)
 	  in
-	  let ((locn, name), ntyp), before = match before with
+	  let ((locn, name) as lnid, ntyp), after = match after with
 	      hd :: tl -> hd, tl
-	    | _ -> assert(false) (* Rec arg must be in before *)
+	    | _ -> assert(false) (* Rec arg must be in after *)
 	  in
 	  let nid = match name with
 	      Name id -> id
@@ -96,27 +96,36 @@ let rewrite_fixpoint env l (f, decl) =
 	      id_of_string (nid ^ "'"), id_of_string ("Acc_" ^ nid)
 	  in
 	  let lnid', laccproofid = (dummy_loc, Name nid'), (dummy_loc, Name accproofid) in
-	  let coqP = abstract_constr_expr_bl typ after in
+	  let wf_prop = (mkAppC (wfrel, [ mkIdentC nid'; mkIdentC nid ])) in
+	  let lam_wf_prop = mkLambdaC ([lnid'], ntyp, wf_prop) in
+	  let typnid' = mkSubset lnid' ntyp wf_prop in
+	  let internal_type = 
+	    abstract_constr_expr_bl mkProdC 
+	      (mkProdC ([lnid'], typnid', 
+			mkLetInC (lnid, mkProj1 ntyp lam_wf_prop (mkIdentC nid'), 
+				  abstract_constr_expr_bl mkProdC typ after)))
+	      before
+	  in
 	  let body' =
-	    let prop = (mkAppC (wfrel, [ mkIdentC nid'; mkIdentC nid ])) in
-	    let lamprop = mkLambdaC ([lnid'], ntyp, prop) in
-	    let typnid' = mkSubset lnid' ntyp prop in
+	    let body =
+	      (* cast or we will loose some info at pretyping time as body
+		 is a function *)
+	      CCast (dummy_loc, body,  DEFAULTcast, typ) 
+	    in
 	    let body' = (* body abstracted by rec call *)
-	      mkLambdaC ([(dummy_loc, Name id)], 
-			 mkProdC ([lnid'], typnid', coqP),
-			 body)
+	      mkLambdaC ([(dummy_loc, Name id)], internal_type, body)
 	    in
 	      mkAppC (body',
 		      [mkLambdaC 
 			 ([lnid'], typnid',
 			  mkAppC (mkIdentC id, 
-				  [mkProj1 ntyp lamprop (mkIdentC nid');
+				  [mkProj1 ntyp lam_wf_prop (mkIdentC nid');
 				   (mkAppExplC (acc_inv_ref,
 						[ ntyp; wfrel;
 						  mkIdentC nid;
 						  mkIdentC accproofid;
-						  mkProj1 ntyp lamprop (mkIdentC nid');
-						  mkProj2 ntyp lamprop (mkIdentC nid') ])) ]))])
+						  mkProj1 ntyp lam_wf_prop (mkIdentC nid');
+						  mkProj2 ntyp lam_wf_prop (mkIdentC nid') ])) ]))])
 	  in
 	  let acctyp = mkAppExplC (acc_ref, [ ntyp; wfrel; mkIdentC nid ]) in
 	  let bl' = 
@@ -127,12 +136,12 @@ let rewrite_fixpoint env l (f, decl) =
 		  let rec aux' bl' = function
 		      ((loc, name') as x) :: tl ->
 			if name' = name then
-			  LocalRawAssum (List.rev (x :: bl'), typ) ::
-			    LocalRawAssum ([(dummy_loc, Name accproofid)], acctyp) ::
-			    if tl = [] then [] else [LocalRawAssum (tl, typ)]
+			  (if tl = [] then [] else [LocalRawAssum (tl, typ)]) @
+			  LocalRawAssum ([(dummy_loc, Name accproofid)], acctyp) ::
+			    [LocalRawAssum (List.rev (x :: bl'), typ)]
 			else aux' (x :: bl') tl
 		    | [] -> [assum]
-		  in aux (acc @ List.rev (aux' [] bl)) tl
+		  in aux (aux' [] bl @ acc) tl
 	      | [] -> List.rev acc
 	    in aux [] bl
 	  in
@@ -173,7 +182,7 @@ let rewrite_cases_aux (loc, po, tml, eqns) =
   let po = 
     List.fold_right
       (fun (n,t) acc ->
-	 RProd (dummy_loc, n, t, acc))
+	 RProd (dummy_loc, Anonymous, t, acc))
       eqs_types (match po with 
 		     Some e -> e
 		   | None -> mkHole)

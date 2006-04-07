@@ -10,10 +10,14 @@ open Names
 open Evd
 open List
 open Pp
+open Util
 
 let reverse_array arr = 
   Array.of_list (List.rev (Array.to_list arr))
     
+let trace s = 
+  if !Options.debug then msgnl s
+  else ()
 
 (** Utilities to find indices in lists *)
 let list_index x l =
@@ -37,14 +41,14 @@ let subst_evars evs n t =
       | [] -> raise Not_found
     in 
     let (idx, hyps, v) = aux 0 evs in
-      idx + 1, hyps
+      n + idx + 1, hyps
   in
   let rec substrec depth c = match kind_of_term c with
     | Evar (k, args) ->
 	(try 
 	   let index, hyps = evar_info k in
-	     msgnl (str "Evar " ++ int k ++ str " found, applied to " ++ int (Array.length args) ++ str "arguments," ++
-		      int (List.length hyps) ++ str " hypotheses");
+	     trace (str "Evar " ++ int k ++ str " found, applied to " ++ int (Array.length args) ++ str "arguments," ++
+		    int (List.length hyps) ++ str " hypotheses");
 
 	   let ex = mkRel (index + depth) in
 	     (* Evar arguments are created in inverse order, 
@@ -63,8 +67,7 @@ let subst_evars evs n t =
 	   in
 	     mkApp (ex, Array.of_list args)
 	 with Not_found -> 
-	   msgnl (str "Evar " ++ int k ++ str " not found!!!");
-	   c)
+	   anomaly ("eterm: existential variable " ^ string_of_int k ^ " not found"))
     | _ -> map_constr_with_binders succ substrec depth c
   in 
     substrec 0 t
@@ -100,29 +103,33 @@ let etype_of_evar evs ev hyps =
 
 open Tacticals
     
-let eterm evm t = 
+let eterm_term evm t tycon = 
   (* 'Serialize' the evars, we assume that the types of the existentials
      refer to previous existentials in the list only *)
   let evl = to_list evm in
   let evts = 
     (* Remove existential variables in types and build the corresponding products *)
-    fold_left 
-      (fun l (id, ev) ->
+    fold_right 
+      (fun (id, ev) l ->
 	 let hyps = Environ.named_context_of_val ev.evar_hyps in
 	 let y' = (id, hyps, etype_of_evar l ev hyps) in
 	   y' :: l) 
-      [] evl 
+      evl []
   in 
   let t' = (* Substitute evar refs in the term by De Bruijn indices *)
     subst_evars evts 0 t 
   in
-  let t'' = 
-    (* Make the lambdas 'generalizing' the existential variables *)
-    fold_left
-      (fun acc (id, _, c) ->
-	 mkLambda (Name (id_of_string ("Evar" ^ string_of_int id)),
-		   c, acc))
-      t' evts
+  let evar_names = 
+    List.map (fun (id, _, c) -> (id_of_string ("Evar" ^ string_of_int id)), c) evts
+  in
+  let evar_bl =
+    List.map (fun (id, c) -> Name id, None, c) evar_names
+  in
+  let anon_evar_bl = List.map (fun (_, x, y) -> (Anonymous, x, y)) evar_bl in
+    (* Generalize over the existential variables *)
+  let t'' = Termops.it_mkLambda_or_LetIn t' evar_bl 
+  and tycon = option_app 
+		(fun typ -> Termops.it_mkProd_wo_LetIn typ anon_evar_bl) tycon
   in
   let _declare_evar (id, c) =
     let id = id_of_string ("Evar" ^ string_of_int id) in
@@ -133,12 +140,29 @@ let eterm evm t =
     let id = id_of_string ("Evar" ^ string_of_int id) in
       tclTHEN acc (Tactics.assert_tac false (Name id) c)
   in
-    msgnl (str "Term given to eterm" ++ spc () ++
+    trace (str "Term given to eterm" ++ spc () ++
 	   Termops.print_constr_env (Global.env ()) t);
-    msgnl (str "Term constructed in eterm" ++ spc () ++
+    trace (str "Term constructed in eterm" ++ spc () ++
 	   Termops.print_constr_env (Global.env ()) t'');
-    Tactics.apply_term t'' (List.map (fun _ -> Evarutil.mk_new_meta ()) evts)
+    ignore(option_app 
+	     (fun typ ->
+		trace (str "Type :" ++ spc () ++
+		       Termops.print_constr_env (Global.env ()) typ))
+	     tycon);
+    t'', tycon, evar_names
+
+let mkMetas n = 
+  let rec aux i acc = 
+    if i > 0 then aux (pred i) (Evarutil.mk_new_meta () :: acc)
+    else acc
+  in aux n []
+
+let eterm evm t (tycon : types option) = 
+  let t, tycon, evs = eterm_term evm t tycon in
+    match tycon with
+	Some typ -> Tactics.apply_term (mkCast (t, DEFAULTcast, typ)) []
+      | None -> Tactics.apply_term t (mkMetas (List.length evs))
      
 open Tacmach
 
-let etermtac (evm, t) = eterm evm t
+let etermtac (evm, t) = eterm evm t None

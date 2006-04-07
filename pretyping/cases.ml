@@ -352,7 +352,7 @@ let find_tomatch_tycon isevars env loc = function
   | Some (_,ind,_),_ 
   (* Otherwise try to get constraints from (the 1st) constructor in clauses *)
   | None, Some (_,(ind,_)) ->
-      Some (inductive_template isevars env loc ind)
+      Some (0, inductive_template isevars env loc ind)
   | None, None -> 
       empty_tycon
 
@@ -412,7 +412,7 @@ let adjust_tomatch_to_pattern pb ((current,typ),deps) =
 		current
 	      else
 		(evd_comb2 (Coercion.inh_conv_coerce_to dummy_loc pb.env)
-		  pb.isevars (make_judge current typ) indt).uj_val in
+		  pb.isevars (make_judge current typ) (0, indt)).uj_val in
 	    let sigma = Evd.evars_of !(pb.isevars) in
 	    let typ = IsInd (indt,find_rectype pb.env sigma indt) in
 	    ((current,typ),deps))
@@ -1571,8 +1571,9 @@ let prepare_predicate_from_tycon loc dep env isevars tomatchs c =
       e_new_evar isevars env  ~src:(loc, Evd.CasesType)
         (Retyping.get_type_of env (Evd.evars_of !isevars) c)
     else
-      map_constr_with_full_binders push_rel build_skeleton env c in
-  names, build_skeleton env (lift n c)
+      map_constr_with_full_binders push_rel build_skeleton env c 
+  in
+    names, build_skeleton env (lift n c)
   
 (* Here, [pred] is assumed to be in the context built from all *)
 (* realargs and terms to match *)
@@ -1639,6 +1640,15 @@ let extract_arity_signature env0 tomatchl tmsign =
     | _ -> assert false
   in List.rev (buildrec 0 (tomatchl,tmsign))
 
+let inh_conv_coerce_to_tycon loc env isevars j tycon =
+  match tycon with
+    | Some p ->
+	let (evd',j) = Coercion.inh_conv_coerce_to loc env !isevars j p in
+          isevars := evd';
+          j
+    | None -> j
+
+
 (* Builds the predicate. If the predicate is dependent, its context is
  * made of 1+nrealargs assumptions for each matched term in an inductive
  * type and 1 assumption for each term not _syntactically_ in an
@@ -1653,11 +1663,11 @@ let prepare_predicate loc typing_fun isevars env tomatchs sign tycon = function
   (* No type annotation *)
   | None ->
       (match tycon with
-       | None -> None
-       | Some t ->
-	 let names,pred = 
-	   prepare_predicate_from_tycon loc false env isevars tomatchs t in
-	 Some (build_initial_predicate false names pred))
+       | Some (0, t) ->
+	   let names,pred = 
+	     prepare_predicate_from_tycon loc false env isevars tomatchs t 
+	   in Some (build_initial_predicate false names pred)
+       | _ -> None)
 
   (* Some type annotation *)
   | Some rtntyp ->
@@ -1665,52 +1675,52 @@ let prepare_predicate loc typing_fun isevars env tomatchs sign tycon = function
       let arsign = extract_arity_signature env tomatchs sign in
       let env = List.fold_right push_rels arsign env in
       let allnames = List.rev (List.map (List.map pi1) arsign) in
-      let predccl = (typing_fun (mk_tycon (new_Type ())) env rtntyp).uj_val in
-      Some (build_initial_predicate true allnames predccl)
+      let predcclj = typing_fun (mk_tycon (new_Type ())) env rtntyp in
+      let _ = 
+	option_app (fun tycon -> 
+		      isevars := Coercion.inh_conv_coerces_to loc env !isevars predcclj.uj_val tycon)
+	  tycon
+      in
+      let predccl = (j_nf_isevar !isevars predcclj).uj_val in      
+	Some (build_initial_predicate true allnames predccl)
 
 (**************************************************************************)
 (* Main entry of the matching compilation                                 *)
   
-  let compile_cases loc (typing_fun, isevars) tycon env (predopt, tomatchl, eqns)=
+let compile_cases loc (typing_fun, isevars) (tycon : Evarutil.type_constraint) env (predopt, tomatchl, eqns)=
+  
+  (* We build the matrix of patterns and right-hand-side *)
+  let matx = matx_of_eqns env tomatchl eqns in
     
-    (* We build the matrix of patterns and right-hand-side *)
-    let matx = matx_of_eqns env tomatchl eqns in
-      
-    (* We build the vector of terms to match consistently with the *)
-    (* constructors found in patterns *)
-    let tomatchs = coerce_to_indtype typing_fun isevars env matx tomatchl in
-      
-    (* We build the elimination predicate if any and check its consistency *)
-    (* with the type of arguments to match *)
-    let tmsign = List.map snd tomatchl in
-    let pred = prepare_predicate loc typing_fun isevars env tomatchs tmsign tycon predopt in
-      
-    (* We deal with initial aliases *)
-    let matx = prepare_initial_aliases (known_dependent pred) tomatchs matx in 
-      
-    (* We push the initial terms to match and push their alias to rhs' envs *)
-    (* names of aliases will be recovered from patterns (hence Anonymous here) *)
-    let initial_pushed = List.map (fun tm -> Pushed (tm,[])) tomatchs in
-      
-    let pb =
-      { env      = env;
-	isevars  = isevars;
-	pred     = pred;
-	tomatch  = initial_pushed;
-	history  = start_history (List.length initial_pushed);
-	mat      = matx;
-	caseloc  = loc;
-	typing_function = typing_fun } in
-      
-    let _, j = compile pb in
-      
-      (* We check for unused patterns *)
-      List.iter (check_unused_pattern env) matx;
-      
-      match tycon with
-	| Some p ->
-	    let (evd',j) = Coercion.inh_conv_coerce_to loc env !isevars j p in
-              isevars := evd';
-              j
-	| None -> j
+  (* We build the vector of terms to match consistently with the *)
+  (* constructors found in patterns *)
+  let tomatchs = coerce_to_indtype typing_fun isevars env matx tomatchl in
+    
+  (* We build the elimination predicate if any and check its consistency *)
+  (* with the type of arguments to match *)
+  let tmsign = List.map snd tomatchl in
+  let pred = prepare_predicate loc typing_fun isevars env tomatchs tmsign tycon predopt in
+    
+  (* We deal with initial aliases *)
+  let matx = prepare_initial_aliases (known_dependent pred) tomatchs matx in 
+    
+  (* We push the initial terms to match and push their alias to rhs' envs *)
+  (* names of aliases will be recovered from patterns (hence Anonymous here) *)
+  let initial_pushed = List.map (fun tm -> Pushed (tm,[])) tomatchs in
+    
+  let pb =
+    { env      = env;
+      isevars  = isevars;
+      pred     = pred;
+      tomatch  = initial_pushed;
+      history  = start_history (List.length initial_pushed);
+      mat      = matx;
+      caseloc  = loc;
+      typing_function = typing_fun } in
+    
+  let _, j = compile pb in
+    (* We check for unused patterns *)
+    List.iter (check_unused_pattern env) matx;
+    inh_conv_coerce_to_tycon loc env isevars j tycon
 end
+  

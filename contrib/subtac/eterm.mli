@@ -9,5 +9,12 @@
 (*i $Id$ i*)
 
 open Tacmach
+open Term
+open Evd
+open Names
 
-val etermtac : Evd.open_constr -> tactic
+val mkMetas : int -> constr list
+
+val eterm_term : evar_map -> constr -> types option -> constr * types option * (identifier * types) list
+
+val etermtac : open_constr -> tactic

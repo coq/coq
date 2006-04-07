@@ -16,26 +16,26 @@ val interp_gen :
   ?impls:full_implicits_env ->
   ?allow_soapp:bool ->
   ?ltacvars:ltac_sign ->
-  constr_expr -> evar_map * constr
+  constr_expr -> constr
 val interp_constr :
   evar_defs ref ->
-  env -> constr_expr -> evar_map * constr
+  env -> constr_expr -> constr
 val interp_type :
   evar_defs ref ->
   env ->
   ?impls:full_implicits_env ->
-  constr_expr -> evar_map * constr
+  constr_expr -> constr
 val interp_casted_constr :
   evar_defs ref ->
   env ->
   ?impls:full_implicits_env ->
-  constr_expr -> types -> evar_map * constr
+  constr_expr -> types -> constr
 val interp_open_constr :
   evar_defs ref -> env -> constr_expr -> constr
 val interp_constr_judgment :
   evar_defs ref ->
   env ->
-  constr_expr -> evar_defs * unsafe_judgment
+  constr_expr -> unsafe_judgment
 val list_chop_hd : int -> 'a list -> 'a list * 'a * 'a list
 val recursive_message : global_reference array -> std_ppcmds
 val build_recursive :

@@ -67,6 +67,17 @@ let nf_evar_info evc info =
     evar_hyps = map_named_val (Reductionops.nf_evar evc) info.evar_hyps;
     evar_body = info.evar_body}
 
+let nf_evars evm = Evd.fold (fun ev evi evm' -> Evd.add evm' ev (nf_evar_info evm evi))
+		     evm Evd.empty
+
+let nf_evar_defs isevars = Evd.evars_reset_evd (nf_evars (Evd.evars_of isevars)) isevars
+
+let nf_isevar isevars = nf_evar (Evd.evars_of isevars)
+let j_nf_isevar isevars = j_nf_evar (Evd.evars_of isevars)
+let jl_nf_isevar isevars = jl_nf_evar (Evd.evars_of isevars)
+let jv_nf_isevar isevars = jv_nf_evar (Evd.evars_of isevars)
+let tj_nf_isevar isevars = tj_nf_evar (Evd.evars_of isevars)
+
 (**********************)
 (* Creating new metas *)
 (**********************)
@@ -545,7 +556,9 @@ let solve_simple_eqn conv_algo env isevars (pbty,(n1,args1 as ev1),t2) =
 
 (* Operations on value/type constraints *)
 
-type type_constraint = constr option
+type type_constraint_type = int * constr
+type type_constraint = type_constraint_type option
+
 type val_constraint = constr option
 
 (* Old comment...
@@ -565,8 +578,13 @@ type val_constraint = constr option
 (* The empty type constraint *)
 let empty_tycon = None
 
+let mk_tycon_type c = (0, c)
+let mk_abstr_tycon_type n c = (n, c)
+
 (* Builds a type constraint *)
-let mk_tycon ty = Some ty
+let mk_tycon ty = Some (mk_tycon_type ty)
+
+let mk_abstr_tycon n ty = Some (mk_abstr_tycon_type n ty)
 
 (* Constrains the value of a type *)
 let empty_valcon = None
@@ -579,7 +597,7 @@ let mk_valcon c = Some c
 (* Declaring any type to be in the sort Type shouldn't be harmful since
    cumulativity now includes Prop and Set in Type...
    It is, but that's not too bad *)
-let define_evar_as_arrow evd (ev,args) =
+let define_evar_as_abstraction abs evd (ev,args) =
   let evi = Evd.map (evars_of evd) ev in
   let evenv = evar_env evi in
   let (evd1,dom) = new_evar evd evenv (new_Type()) in
@@ -589,13 +607,19 @@ let define_evar_as_arrow evd (ev,args) =
   let newenv = push_named (nvar, None, dom) evenv in
   let (evd2,rng) =
     new_evar evd1 newenv ~src:(evar_source ev evd1) (new_Type()) in
-  let prod = mkProd (Name nvar, dom, subst_var nvar rng) in
+  let prod = abs (Name nvar, dom, subst_var nvar rng) in
   let evd3 = Evd.evar_define ev prod evd2 in
   let evdom = fst (destEvar dom), args in
   let evrng =
     fst (destEvar rng), array_cons (mkRel 1) (Array.map (lift 1) args) in
-  let prod' = mkProd (Name nvar, mkEvar evdom, mkEvar evrng) in
+  let prod' = abs (Name nvar, mkEvar evdom, mkEvar evrng) in
   (evd3,prod')
+
+let define_evar_as_arrow evd (ev,args) =
+  define_evar_as_abstraction (fun t -> mkProd t) evd (ev,args)
+
+let define_evar_as_lambda evd (ev,args) =
+  define_evar_as_abstraction (fun t -> mkLambda t) evd (ev,args)
 
 let define_evar_as_sort isevars (ev,args) =
   let s = new_Type () in
@@ -612,20 +636,44 @@ let judge_of_new_Type () = Typeops.judge_of_type (new_univ ())
    constraint on its domain and codomain. If the input constraint is
    an evar instantiate it with the product of 2 new evars. *)
 
-let split_tycon loc env isevars = function
-  | None -> isevars,(Anonymous,None,None)
-  | Some c ->
-      let sigma = evars_of isevars in
-      let t = whd_betadeltaiota env sigma c in
+let split_tycon loc env isevars tycon = 
+  let rec real_split c = 
+    let sigma = evars_of isevars in
+    let t = whd_betadeltaiota env sigma c in
       match kind_of_term t with
-        | Prod (na,dom,rng) -> isevars, (na, Some dom, Some rng)
+	| Prod (na,dom,rng) -> isevars, (na, mk_tycon dom, mk_tycon rng)
 	| Evar ev when not (Evd.is_defined_evar isevars ev) ->
 	    let (isevars',prod) = define_evar_as_arrow isevars ev in
-            let (_,dom,rng) = destProd prod in
-	    isevars',(Anonymous, Some dom, Some rng)
+	    let (_,dom,rng) = destProd prod in
+	      isevars',(Anonymous, mk_tycon dom, mk_tycon rng)
 	| _ -> error_not_product_loc loc env sigma c
+  in
+    match tycon with
+      | None -> isevars,(Anonymous,None,None)
+      | Some (abs, c) ->
+	  if abs = 0 then real_split c
+	  else if abs = 1 then 
+		isevars, (Anonymous, None, mk_tycon c)
+	      else
+		isevars, (Anonymous, None, Some (pred abs, c))
 
-let valcon_of_tycon x = x
+let valcon_of_tycon x = 
+  match x with
+    | Some (0, t) -> Some t
+    | _ -> None
+	
+let lift_tycon_type n (abs, c) = 
+  let abs' = abs + n in 
+    if abs' < 0 then raise (Invalid_argument "lift_tycon_type")
+    else (abs', c)
 
-let lift_tycon = option_app (lift 1)
+let lift_tycon n = option_app (lift_tycon_type n)
+
+let pr_tycon_type env (abs, t) =
+  if abs = 0 then Termops.print_constr_env env t
+  else str "Abstract " ++ int abs ++ str " " ++ Termops.print_constr_env env t
+
+let pr_tycon env = function
+    None -> str "None"
+  | Some t -> pr_tycon_type env t
 

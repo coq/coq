@@ -126,6 +126,7 @@ type hole_kind =
   | TomatchTypeParameter of inductive * int
 val is_defined_evar :  evar_defs -> existential -> bool
 val is_undefined_evar :  evar_defs -> constr -> bool
+val undefined_evars : evar_defs -> evar_defs
 val evar_declare :
   Environ.named_context_val -> evar -> types -> ?src:loc * hole_kind ->
   evar_defs -> evar_defs

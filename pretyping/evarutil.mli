@@ -79,6 +79,7 @@ val solve_simple_eqn :
     evar_defs * bool
 
 val define_evar_as_arrow : evar_defs -> existential -> evar_defs * types
+val define_evar_as_lambda : evar_defs -> existential -> evar_defs * types
 val define_evar_as_sort : evar_defs -> existential -> evar_defs * sorts
 
 (***********************************************************)
@@ -86,11 +87,16 @@ val define_evar_as_sort : evar_defs -> existential -> evar_defs * sorts
 
 val judge_of_new_Type : unit -> unsafe_judgment
 
-type type_constraint = constr option
+type type_constraint_type = int * constr
+type type_constraint = type_constraint_type option
+
 type val_constraint = constr option
 
 val empty_tycon : type_constraint
+val mk_tycon_type : constr -> type_constraint_type
+val mk_abstr_tycon_type : int -> constr -> type_constraint_type
 val mk_tycon : constr -> type_constraint
+val mk_abstr_tycon : int -> constr -> type_constraint
 val empty_valcon : val_constraint
 val mk_valcon : constr -> val_constraint
 
@@ -100,7 +106,8 @@ val split_tycon :
 
 val valcon_of_tycon : type_constraint -> val_constraint
 
-val lift_tycon : type_constraint -> type_constraint
+val lift_tycon_type : int -> type_constraint_type -> type_constraint_type
+val lift_tycon : int -> type_constraint -> type_constraint
 
 (***********************************************************)
 
@@ -117,8 +124,27 @@ val tj_nf_evar :
    evar_map -> unsafe_type_judgment -> unsafe_type_judgment
 
 val nf_evar_info : evar_map -> evar_info -> evar_info
+val nf_evars : evar_map -> evar_map
+
+(* Same for evar defs *)
+val nf_isevar :  evar_defs -> constr -> constr
+val j_nf_isevar :  evar_defs -> unsafe_judgment -> unsafe_judgment
+val jl_nf_isevar :
+   evar_defs -> unsafe_judgment list -> unsafe_judgment list
+val jv_nf_isevar :
+   evar_defs -> unsafe_judgment array -> unsafe_judgment array
+val tj_nf_isevar :
+   evar_defs -> unsafe_type_judgment -> unsafe_type_judgment
+
+val nf_evar_defs : evar_defs -> evar_defs
 
 (* Replacing all evars *)
 exception Uninstantiated_evar of existential_key
 val whd_ise :  evar_map -> constr -> constr
 val whd_castappevar :  evar_map -> constr -> constr
+
+(*********************************************************************)
+(* debug pretty-printer: *)
+
+val pr_tycon_type : env -> type_constraint_type -> Pp.std_ppcmds
+val pr_tycon : env -> type_constraint -> Pp.std_ppcmds

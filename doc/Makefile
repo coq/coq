@@ -112,7 +112,7 @@ REFMANCOQTEXFILES=\
   refman/RefMan-tacex.v.tex refman/RefMan-syn.v.tex \
   refman/RefMan-oth.v.tex \
   refman/Cases.v.tex refman/Coercion.v.tex refman/Extraction.v.tex \
-  refman/Omega.v.tex refman/Polynom.v.tex \
+  refman/Program.v.tex refman/Omega.v.tex refman/Polynom.v.tex \
   refman/Setoid.v.tex refman/Helm.tex # refman/Natural.v.tex
 
 REFMANTEXFILES=\

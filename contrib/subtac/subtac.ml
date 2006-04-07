@@ -119,6 +119,7 @@ let subtac (loc, command) =
   check_required_library ["Coq";"Init";"Datatypes"];
   check_required_library ["Coq";"Init";"Specif"];
   require_library "Coq.subtac.FixSub";
+  require_library "Coq.subtac.Utils";
   try
     match command with
 	VernacDefinition (defkind, (locid, id), expr, hook) -> 
