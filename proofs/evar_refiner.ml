@@ -147,7 +147,9 @@ let instantiate n c ido gl =
       | Some (id,_,_) -> 
 	  let (_,_,typ)=Sign.lookup_named id gl.it.evar_hyps in
 	    evars_of wc.sigma typ in
-    if List.length evl < n then error "not enough evars";
+    if List.length evl < n then
+      error "not enough uninstantiated existential variables";
+    if n <= 0 then error "incorrect existential variable index";
     let (n,_) as k = destEvar (List.nth evl (n-1)) in 
       if Evd.is_defined wc.sigma n then 
 	error "Instantiate called on already-defined evar";
