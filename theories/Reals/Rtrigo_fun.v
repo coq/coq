@@ -61,10 +61,10 @@ intro; elim (IZN (up (/ eps - 1)) H0); intros; split with x; intros;
  rewrite (Rabs_Rabsolu (/ INR (S n))); cut (/ INR (S n) > 0).
 intro; rewrite (Rabs_pos_eq (/ INR (S n))).
 cut (/ eps - 1 < INR x).
-intro;
+intro ;
  generalize
   (Rlt_le_trans (/ eps - 1) (INR x) (INR n) H4
-     (le_INR x n ((fun (n m:nat) (H:(m >= n)%nat) => H) x n H2))); 
+     (le_INR x n H2)); 
  clear H4; intro; unfold Rminus in H4;
  generalize (Rplus_lt_compat_l 1 (/ eps + -1) (INR n) H4);
  replace (1 + (/ eps + -1)) with (/ eps); [ clear H4; intro | ring ].
