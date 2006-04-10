@@ -352,7 +352,7 @@ let find_tomatch_tycon isevars env loc = function
   | Some (_,ind,_),_ 
   (* Otherwise try to get constraints from (the 1st) constructor in clauses *)
   | None, Some (_,(ind,_)) ->
-      Some (0, inductive_template isevars env loc ind)
+      mk_tycon (inductive_template isevars env loc ind)
   | None, None -> 
       empty_tycon
 
@@ -412,7 +412,7 @@ let adjust_tomatch_to_pattern pb ((current,typ),deps) =
 		current
 	      else
 		(evd_comb2 (Coercion.inh_conv_coerce_to dummy_loc pb.env)
-		  pb.isevars (make_judge current typ) (0, indt)).uj_val in
+		  pb.isevars (make_judge current typ) (mk_tycon_type indt)).uj_val in
 	    let sigma = Evd.evars_of !(pb.isevars) in
 	    let typ = IsInd (indt,find_rectype pb.env sigma indt) in
 	    ((current,typ),deps))
@@ -1663,7 +1663,7 @@ let prepare_predicate loc typing_fun isevars env tomatchs sign tycon = function
   (* No type annotation *)
   | None ->
       (match tycon with
-       | Some (0, t) ->
+       | Some (None, t) ->
 	   let names,pred = 
 	     prepare_predicate_from_tycon loc false env isevars tomatchs t 
 	   in Some (build_initial_predicate false names pred)

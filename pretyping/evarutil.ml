@@ -556,7 +556,7 @@ let solve_simple_eqn conv_algo env isevars (pbty,(n1,args1 as ev1),t2) =
 
 (* Operations on value/type constraints *)
 
-type type_constraint_type = int * constr
+type type_constraint_type = (int * int) option * constr
 type type_constraint = type_constraint_type option
 
 type val_constraint = constr option
@@ -578,8 +578,9 @@ type val_constraint = constr option
 (* The empty type constraint *)
 let empty_tycon = None
 
-let mk_tycon_type c = (0, c)
-let mk_abstr_tycon_type n c = (n, c)
+let mk_tycon_type c = (None, c)
+let mk_abstr_tycon_type n c = (Some (n, n), c) (* First component is initial abstraction, second
+						  is current abstraction *)
 
 (* Builds a type constraint *)
 let mk_tycon ty = Some (mk_tycon_type ty)
@@ -651,28 +652,35 @@ let split_tycon loc env isevars tycon =
     match tycon with
       | None -> isevars,(Anonymous,None,None)
       | Some (abs, c) ->
-	  if abs = 0 then real_split c
-	  else if abs = 1 then 
-		isevars, (Anonymous, None, mk_tycon c)
-	      else
-		isevars, (Anonymous, None, Some (pred abs, c))
+	  (match abs with
+	       None -> real_split c
+	     | Some (init, cur) ->
+	       if cur = 1 then isevars, (Anonymous, None, 
+					 Some (Some (init, 0), c))
+	       else
+		 isevars, (Anonymous, None, Some (Some (init, pred cur), c)))
 
 let valcon_of_tycon x = 
   match x with
-    | Some (0, t) -> Some t
+    | Some (None, t) -> Some t
     | _ -> None
 	
-let lift_tycon_type n (abs, c) = 
-  let abs' = abs + n in 
-    if abs' < 0 then raise (Invalid_argument "lift_tycon_type")
-    else (abs', c)
+let lift_tycon_type n (abs, t) =
+  abs, lift n t
+(*  match abs with 
+      None -> (abs, lift n t)
+    | Some (init, abs) ->
+	let abs' = abs + n in 
+	  if abs' < 0 then raise (Invalid_argument "lift_tycon_type")
+	  else (Some (init, abs'), lift n t)*)
 
 let lift_tycon n = option_app (lift_tycon_type n)
 
 let pr_tycon_type env (abs, t) =
-  if abs = 0 then Termops.print_constr_env env t
-  else str "Abstract " ++ int abs ++ str " " ++ Termops.print_constr_env env t
-
+  match abs with 
+      None -> Termops.print_constr_env env t
+    | Some (init, cur) -> str "Abstract (" ++ int init ++ str ","  ++ int cur ++ str ") " ++ Termops.print_constr_env env t
+	
 let pr_tycon env = function
     None -> str "None"
   | Some t -> pr_tycon_type env t

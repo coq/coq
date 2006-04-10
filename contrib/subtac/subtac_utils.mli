@@ -47,6 +47,7 @@ val acc_inv : constr lazy_t
 val extconstr : constr -> constr_expr
 val extsort : sorts -> constr_expr
 val my_print_constr : env -> constr -> std_ppcmds
+val my_print_constr_expr : constr_expr -> std_ppcmds
 val my_print_evardefs : evar_defs -> std_ppcmds
 val my_print_context : env -> std_ppcmds
 val my_print_env : env -> std_ppcmds

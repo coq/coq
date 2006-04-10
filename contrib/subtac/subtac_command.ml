@@ -56,6 +56,7 @@ let interp_gen kind isevars env
                c =
   let c' = Constrintern.intern_gen (kind=IsType) ~impls ~allow_soapp ~ltacvars (Evd.evars_of !isevars) env c in
   let c' = Subtac_interp_fixpoint.rewrite_cases env c' in
+    msgnl (str "Pretyping " ++ my_print_constr_expr c);
   let c' = SPretyping.pretype_gen isevars env ([],[]) kind c' in
     evar_nf isevars c'
     
@@ -69,9 +70,10 @@ let interp_casted_constr isevars env ?(impls=([],[])) c typ =
   interp_gen (OfType (Some typ)) isevars env ~impls c 
 
 let interp_open_constr isevars env c =
-  let c = SPretyping.pretype_gen isevars env ([], []) (OfType None) 
-	    (Constrintern.intern_constr (Evd.evars_of !isevars) env c) in
-    evar_nf isevars c
+    msgnl (str "Pretyping " ++ my_print_constr_expr c);
+  let c = Constrintern.intern_constr (Evd.evars_of !isevars) env c in
+  let c' = SPretyping.pretype_gen isevars env ([], []) (OfType None) c in
+    evar_nf isevars c'
 
 let interp_constr_judgment isevars env c =
   let j = 
@@ -204,22 +206,22 @@ let build_recursive (lnameargsardef:(fixpoint_expr * decl_notation) list) boxed 
 			       Ppconstr.pr_constr_expr body)
 		in
 		let env', binders_rel = interp_context isevars env0 bl in
-		let before, ((argname, _, argtyp) as arg), after = list_chop_hd n binders_rel in
+		let after, ((argname, _, argtyp) as arg), before = list_chop_hd n binders_rel in
 		let argid = match argname with Name n -> n | _ -> assert(false) in
 		let after' = List.map (fun (n, c, t) -> (n, option_app (lift 1) c, lift 1 t)) after in
 		let envwf = push_rel_context before env0 in
 		let wf_rel = interp_constr isevars envwf r in
 		let accarg_id = id_of_string ("Acc_" ^ string_of_id argid) in
-		let accarg = (Name accarg_id, None, mkApp (Lazy.force acc_inv, [| wf_rel; mkRel 1 |])) in
+		let accarg = (Name accarg_id, None, mkApp (Lazy.force acc_inv, [| argtyp; wf_rel; mkRel 1 |])) in
 		let argid' = id_of_string (string_of_id argid ^ "'") in
 		let before_length, after_length = List.length before, List.length after in
 		let full_length = before_length + 1 + after_length in
-		let wfarg = (Name argid, None, 
-			     mkSubset (Name argid') argtyp 
-			       (mkApp (wf_rel, [|mkRel 1; mkRel (full_length + 1)|])))
+		let wfarg len = (Name argid, None, 
+				 mkSubset (Name argid') argtyp 
+				   (mkApp (wf_rel, [|mkRel 1; mkRel (len + 1)|])))
 		in
-		let new_bl = before @ (arg :: accarg :: after')
-		and intern_bl =  before @ (wfarg :: after)
+		let new_bl = after' @ (accarg :: arg :: before)
+		and intern_bl =  after @ (wfarg (before_length + 1) :: before)
 		in
 		let intern_env = push_rel_context intern_bl env0 in
 		let env' = push_rel_context new_bl env0 in
@@ -227,7 +229,15 @@ let build_recursive (lnameargsardef:(fixpoint_expr * decl_notation) list) boxed 
 		let intern_arity = it_mkProd_or_LetIn arity intern_bl in
 		let arity' = interp_type isevars env' arityc in
 		let arity' = it_mkProd_or_LetIn arity' new_bl in
-		let fun_bl = before @ (arg :: (Name recname, None, arity) :: after') in
+		let fun_bl = after @ ((Name recname, None, intern_arity) :: arg :: before) in
+		let _ = 
+		  let pr c = my_print_constr env c in
+		  let prr = Printer.pr_rel_context env in
+		    trace (str "Fun bl: " ++ prr fun_bl ++ spc () ++
+			     str "Intern bl" ++ prr intern_bl ++ spc () ++
+			     str "Extern bl" ++ prr new_bl ++ spc () ++
+			     str "Intern arity: " ++ pr intern_arity)
+		in
 		let impl = 
 		  if Impargs.is_implicit_args()
 		  then Impargs.compute_implicits intern_env arity'
@@ -256,11 +266,11 @@ let build_recursive (lnameargsardef:(fixpoint_expr * decl_notation) list) boxed 
 		   let def = abstract_constr_expr def bl in
 		     isevars, info, interp_casted_constr isevars rec_sign ~impls:([],rec_impls)
 		       def arity
-	       | Some (n, artyp, wfrel, bl, intern_bl, intern_arity) ->
-		   let rec_sign = push_rel_context bl rec_sign in
+	       | Some (n, artyp, wfrel, fun_bl, intern_bl, intern_arity) ->
+		   let rec_sign = push_rel_context fun_bl rec_sign in
 		   let cstr = interp_casted_constr isevars rec_sign ~impls:([],rec_impls)
 				def intern_arity
-		   in isevars, info, cstr)
+		   in isevars, info, it_mkLambda_or_LetIn cstr fun_bl)
           lnameargsardef arityl
       with e ->
 	States.unfreeze fs; raise e in
@@ -328,19 +338,13 @@ let build_recursive (lnameargsardef:(fixpoint_expr * decl_notation) list) boxed 
       let evm = Evd.evars_of isevars in
       let _, _, typ = arrec.(i) in
       let id = namerec.(i) in
-      let def = 
-	match info with 
-	    Some (n, artyp, wfrel, funbl, bl, arity) ->
-	      def (* mkApp (def, *)
-
-	  | None -> def
-		     in
-	(* Generalize by the recursive prototypes  *)
+      let evars_def, evars_typ, evars = Eterm.eterm_term evm def (Some typ) in 	
+      (* Generalize by the recursive prototypes  *)
       let def = 
 	Termops.it_mkNamedLambda_or_LetIn def (Environ.named_context rec_sign)
       and typ = 
-	Termops.it_mkNamedProd_or_LetIn typ (Environ.named_context rec_sign) in
-      let evars_def, evars_typ, evars = Eterm.eterm_term evm def (Some typ) in 
+	Termops.it_mkNamedProd_or_LetIn typ (Environ.named_context rec_sign) 
+      in
       (*let evars_typ = match evars_typ with Some t -> t | None -> assert(false) in*)
       (*let fi = id_of_string (string_of_id id ^ "_evars") in*)
       (*let ce = 

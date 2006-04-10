@@ -429,21 +429,22 @@ module Coercion = struct
 	      Evd.pr_evar_defs isevars ++ str " in env: " ++ spc () ++
 	      Termops.print_env env);
      with _ -> ());
-    if n = 0 then
-      let (evd', val', type') = 
-	try 
-	  inh_conv_coerce_to_fail loc env isevars (Some cj.uj_val) cj.uj_type t
-	with NoCoercion ->
-	  let sigma = evars_of isevars in
-	    try
-	      coerce_itf loc env isevars (Some cj.uj_val) cj.uj_type t
-	    with NoSubtacCoercion ->
-	      error_actual_type_loc loc env sigma cj t
-      in
-      let val' = match val' with Some v -> v | None -> assert(false) in
-	(evd',{ uj_val = val'; uj_type = t })
-    else
-      (isevars, cj)
+    match n with
+	None ->
+	  let (evd', val', type') = 
+	    try 
+	      inh_conv_coerce_to_fail loc env isevars (Some cj.uj_val) cj.uj_type t
+	    with NoCoercion ->
+	      let sigma = evars_of isevars in
+		try
+		  coerce_itf loc env isevars (Some cj.uj_val) cj.uj_type t
+		with NoSubtacCoercion ->
+		  error_actual_type_loc loc env sigma cj t
+	  in
+	  let val' = match val' with Some v -> v | None -> assert(false) in
+	    (evd',{ uj_val = val'; uj_type = t })
+      | Some (init, cur) ->
+	  (isevars, cj)
 
   let inh_conv_coerces_to loc env isevars t ((abs, t') as tycon) =
     (try 
@@ -453,20 +454,25 @@ module Coercion = struct
 	      Evd.pr_evar_defs isevars ++ str " in env: " ++ spc () ++
 	      Termops.print_env env);
      with _ -> ());
+    let nabsinit, nabs = 
+      match abs with
+	  None -> 0, 0
+	| Some (init, cur) -> init, cur
+    in
     let (rels, rng) = 
       (* a little more effort to get products is needed *) 
-      try decompose_prod_n abs t
+      try decompose_prod_n nabs t
       with _ -> 
 	trace (str "decompose_prod_n failed");
 	raise (Invalid_argument "Subtac_coercion.inh_conv_coerces_to")
     in
       (* The final range free variables must have been replaced by evars, we accept only that evars
 	 in rng are applied to free vars. *)
-      if noccur_with_meta 0 (succ abs) rng then (
-	trace (str "No occur between 0 and " ++ int (succ abs));
+      if noccur_with_meta 0 (succ (nabsinit - nabs)) rng then (
+	trace (str "No occur between 0 and " ++ int (succ (nabsinit - nabs)));
 	let env', t, t' = 
 	  let env' = List.fold_right (fun (n, t) env -> push_rel (n, None, t) env) rels env in
-	    env', rng, lift abs t'
+	    env', rng, lift nabs t'
 	in
 	  try 
 	    pi1 (try inh_conv_coerce_to_fail loc env' isevars None t t'

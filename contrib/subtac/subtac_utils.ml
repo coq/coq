@@ -74,6 +74,7 @@ let extsort s = Constrextern.extern_constr true (Global.env ()) (mkSort s)
 open Pp
 
 let my_print_constr = Termops.print_constr_env
+let my_print_constr_expr = Ppconstr.pr_constr_expr
 let my_print_context = Termops.print_rel_context
 let my_print_env = Termops.print_env
 let my_print_rawconstr = Printer.pr_rawconstr_env

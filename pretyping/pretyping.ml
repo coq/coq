@@ -259,14 +259,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
   (* [pretype tycon env isevars lvar lmeta cstr] attempts to type [cstr] *)
   (* in environment [env], with existential variables [(evars_of isevars)] and *)
   (* the type constraint tycon *)
-  let rec pretype (tycon : type_constraint) env isevars lvar c =
-(*    (try 
-       msgnl (str "pretype with tycon: " ++
-	      Evarutil.pr_tycon env tycon ++ str " with evars: " ++ spc () ++
-	      Evd.pr_evar_defs !isevars ++ str " in env: " ++ spc () ++
-	      Termops.print_env env);
-     with _ -> ());*)
-    match c with
+  let rec pretype (tycon : type_constraint) env isevars lvar = function
     | RRef (loc,ref) ->
 	inh_conv_coerce_to_tycon loc env isevars
 	  (pretype_ref isevars env ref)
@@ -294,7 +287,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     | RHole (loc,k) ->
 	let ty =
           match tycon with 
-            | Some (n, ty) when n = 0 -> ty
+            | Some (None, ty) -> ty
             | None | Some _ ->
 		e_new_evar isevars env ~src:(loc,InternalHole) (new_Type ()) in
 	  { uj_val = e_new_evar isevars env ~src:(loc,k) ty; uj_type = ty }
@@ -357,9 +350,9 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	let ftycon = 
 	  match tycon with
 	      None -> None
-	    | Some (n, ty) ->
-		if n = 0 then mk_abstr_tycon length ty
-		else Some (n + length, ty)
+	    | Some (None, ty) -> mk_abstr_tycon length ty
+	    | Some (Some (init, cur), ty) ->
+		Some (Some (length + init, cur), ty)
 	in
 	let fj = pretype ftycon env isevars lvar f in
  	let floc = loc_of_rawconstr f in
@@ -375,11 +368,17 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		      let value, typ = applist (j_val resj, [j_val hj]), subst1 hj.uj_val c2 in
 		      let typ' = nf_isevar !isevars typ in
 		      let tycon = 
-			match tycon with
+			match tycon with			    
 			    Some (abs, ty) ->
-			      isevars := Coercion.inh_conv_coerces_to loc env !isevars typ' 
-			      (abs, ty);			      
-			      Some (pred abs, nf_isevar !isevars ty)
+			      (match abs with
+				   None ->
+				     isevars := Coercion.inh_conv_coerces_to loc env !isevars typ' 
+				       (abs, ty);
+				     Some (None, nf_isevar !isevars ty)
+				 | Some (init, cur) ->
+				     isevars := Coercion.inh_conv_coerces_to loc env !isevars typ' 
+				       (abs, ty);
+				     Some (Some (init, pred cur), nf_isevar !isevars ty))
 			  | None -> None
 		      in 
 			apply_rec env (n+1) 
@@ -532,7 +531,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		  jtyp.uj_val, jtyp.uj_type
 	    | None -> 
 		let p = match tycon with
-		  | Some (n, ty) when n = 0 -> ty
+		  | Some (None, ty) -> ty
 		  | None | Some _ ->
                       e_new_evar isevars env ~src:(loc,InternalHole) (new_Type ())
 		in

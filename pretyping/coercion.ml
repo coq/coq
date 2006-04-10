@@ -160,13 +160,6 @@ module Default = struct
       with Reduction.NotConvertible -> raise NoCoercion
   open Pp
   let rec inh_conv_coerce_to_fail loc env isevars v t c1 =
-(*     (try *)
-(*        msgnl (str "inh_conv_coerces_to_fail called for " ++ *)
-(* 	      Termops.print_constr_env env t ++ str " and "++ spc () ++ *)
-(* 	      Termops.print_constr_env env c1 ++ str " with evars: " ++ spc () ++ *)
-(* 	      Evd.pr_evar_defs isevars ++ str " in env: " ++ spc () ++ *)
-(* 	      Termops.print_env env); *)
-(*      with _ -> ()); *)
     try (the_conv_x_leq env t c1 isevars, v, t)
     with Reduction.NotConvertible ->
       (try 
@@ -225,18 +218,20 @@ module Default = struct
 	
   (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
   let inh_conv_coerce_to loc env isevars cj (n, t) =
-    if n = 0 then
-      let (evd', val', type') = 
-	try 
-	  inh_conv_coerce_to_fail loc env isevars (Some cj.uj_val) cj.uj_type t
-	with NoCoercion ->
-	  let sigma = evars_of isevars in
-	    error_actual_type_loc loc env sigma cj t
-      in
-      let val' = match val' with Some v -> v | None -> assert(false) in
-	(evd',{ uj_val = val'; uj_type = t })
-    else
-      (isevars, cj)
+    match n with
+	None ->
+	  let (evd', val', type') = 
+	    try 
+	      inh_conv_coerce_to_fail loc env isevars (Some cj.uj_val) cj.uj_type t
+	    with NoCoercion ->
+	      let sigma = evars_of isevars in
+		error_actual_type_loc loc env sigma cj t
+	  in
+	  let val' = match val' with Some v -> v | None -> assert(false) in
+	    (evd',{ uj_val = val'; uj_type = t })
+      | Some (init, cur) -> (isevars, cj)
+      
+      
 
   open Pp
   let inh_conv_coerces_to loc env isevars t (abs, t') = isevars

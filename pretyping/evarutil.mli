@@ -87,7 +87,7 @@ val define_evar_as_sort : evar_defs -> existential -> evar_defs * sorts
 
 val judge_of_new_Type : unit -> unsafe_judgment
 
-type type_constraint_type = int * constr
+type type_constraint_type = (int * int) option * constr
 type type_constraint = type_constraint_type option
 
 type val_constraint = constr option
