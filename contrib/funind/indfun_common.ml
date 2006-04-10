@@ -91,8 +91,11 @@ let chop_rlambda_n  =
       then List.rev acc,rt
       else
 	match rt with
-	  | Rawterm.RLambda(_,name,t,b) -> chop_lambda_n ((name,t)::acc) (n-1) b
-	  | _ -> raise (Util.UserError("chop_rlambda_n",str "chop_rlambda_n: Not enough Lambdas"))
+	  | Rawterm.RLambda(_,name,t,b) -> chop_lambda_n ((name,t,false)::acc) (n-1) b
+	  | Rawterm.RLetIn(_,name,v,b) -> chop_lambda_n ((name,v,true)::acc) (n-1) b
+	  | _ -> 
+	      raise (Util.UserError("chop_rlambda_n",
+				    str "chop_rlambda_n: Not enough Lambdas"))
   in
   chop_lambda_n []
 

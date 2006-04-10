@@ -28,7 +28,7 @@ val list_add_set_eq :
   ('a -> 'a -> bool) -> 'a -> 'a list -> 'a list
 
 val chop_rlambda_n : int -> Rawterm.rawconstr ->
-  (name*Rawterm.rawconstr) list * Rawterm.rawconstr
+  (name*Rawterm.rawconstr*bool) list * Rawterm.rawconstr
 
 val chop_rprod_n : int -> Rawterm.rawconstr ->
   (name*Rawterm.rawconstr) list * Rawterm.rawconstr

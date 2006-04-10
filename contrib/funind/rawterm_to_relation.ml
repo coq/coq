@@ -8,6 +8,14 @@ open Indfun_common
 open Util
 open Rawtermops
 
+let observe strm =  
+  if Tacinterp.get_debug () <> Tactic_debug.DebugOff  && false 
+  then Pp.msgnl strm 
+  else ()
+let observennl strm =  
+  if Tacinterp.get_debug () <> Tactic_debug.DebugOff  &&false 
+  then Pp.msg strm 
+  else ()
 
 (* type binder_type =  *)
 (*   | Lambda  *)
@@ -44,7 +52,7 @@ let compose_raw_context =
 
 (* 
    The main part deals with building a list of raw constructor expressions
-   from a rhs of a fixpoint equation. 
+   from the rhs of a fixpoint equation. 
    
    
 *)
@@ -325,6 +333,75 @@ let make_discr_match brl =
 	   make_discr_match_brl i brl)
   
 
+
+let rec make_pattern_eq_precond id e pat : identifier * (binder_type * Rawterm.rawconstr) list = 
+  match pat with 
+    | PatVar(_,Anonymous) -> assert false 
+    | PatVar(_,Name x) -> 
+	id,[Prod (Name x),mkRHole ();Prod Anonymous,raw_make_eq (mkRVar x) e]
+    | PatCstr(_,constr,patternl,_) -> 
+	let new_id,new_patternl,patternl_eq_precond = 
+	  List.fold_right 
+	    (fun pat' (id,new_patternl,preconds) -> 
+	       match pat' with 
+		 | PatVar (_,Name id) -> (id,id::new_patternl,preconds)
+		 | _ -> 
+		     let new_id = Nameops.lift_ident id in 
+		     let new_id',pat'_precond = 
+		       make_pattern_eq_precond new_id (mkRVar id) pat' 
+		     in
+		     (new_id',id::new_patternl,preconds@pat'_precond)
+	    )
+	    patternl
+	    (id,[],[])
+	in
+	let cst_narg = 
+	  Inductiveops.mis_constructor_nargs_env
+	    (Global.env ())
+	    constr
+	in
+	let implicit_args =  
+	  Array.to_list 
+	    (Array.init 
+	       (cst_narg - List.length patternl)
+	       (fun _ -> mkRHole ())
+	    )
+	in
+	let cst_as_term =      
+	  mkRApp(mkRRef(Libnames.ConstructRef constr),
+		 implicit_args@(List.map mkRVar new_patternl)
+		)
+	in
+	let precond' = 
+	  (Prod Anonymous, raw_make_eq cst_as_term  e)::patternl_eq_precond 
+	in
+	let precond'' = 
+	  List.fold_right 
+	    (fun id acc ->
+	       (Prod (Name id),(mkRHole ()))::acc
+	    )
+	    new_patternl
+	    precond'
+	in
+	new_id,precond''
+
+let pr_name = function
+  | Name id -> Ppconstr.pr_id id
+  | Anonymous -> str "_"
+
+let make_pattern_eq_precond id e pat = 
+  let res = make_pattern_eq_precond id e pat in 
+  observe 
+    (prlist_with_sep spc  
+       (function (Prod na,t) -> 
+	  str "forall " ++ pr_name na ++ str ":" ++ pr_rawconstr t
+	| _ -> assert false
+       )
+       (snd res)
+    );
+  res
+
+
 let rec build_entry_lc funnames avoid rt  : rawconstr build_entry_return = 
 (*   Pp.msgnl (str " Entering : " ++ Printer.pr_rawconstr rt); *)
   match rt with 
@@ -400,9 +477,14 @@ let rec build_entry_lc funnames avoid rt  : rawconstr build_entry_return =
 	    | RProd _ -> error "Cannot apply a type"
 	end
     | RLambda(_,n,t,b) ->
-	let b_res = build_entry_lc funnames  avoid b in
+	let b_res = build_entry_lc funnames avoid b in
 	let t_res = build_entry_lc funnames avoid t  in
-	combine_results (combine_lam n) t_res b_res
+	let new_n = 
+	  match n with 
+	    | Name _ -> n 
+	    | Anonymous -> Name (Indfun_common.fresh_id [] "_x")
+	in
+	combine_results (combine_lam new_n) t_res b_res
     | RProd(_,n,t,b) ->
 	let b_res = build_entry_lc funnames avoid b in
 	let t_res = build_entry_lc funnames avoid t in
@@ -485,42 +567,55 @@ and build_entry_lc_from_case_term funname make_discr patterns_to_prevent brl avo
 	    avoid
 	    matched_expr
 	in
-	let ids = List.map (fun id -> Prod (Name id),mkRHole ()) idl in 
+(* 	let ids = List.map (fun id -> Prod (Name id),mkRHole ()) idl in *)
       	let those_pattern_preconds =
-	  (
+(	  List.flatten
+	    (
 	    List.map2
-	      (fun pat e -> 
-		 let pat_as_term = pattern_to_term pat in 
-		 (Prod Anonymous,raw_make_eq pat_as_term e)
+	      (fun pat e ->
+		 let this_pat_ids = ids_of_pat pat in 
+		 let pat_as_term = pattern_to_term pat in
+		 List.fold_right 
+		   (fun id  acc -> 
+		      if Idset.mem id this_pat_ids 
+		      then (Prod (Name id),mkRHole ())::acc
+		      else acc
+			
+		   )
+		   idl
+		   [(Prod Anonymous,raw_make_eq pat_as_term e)]
 	      )
 	      patl
 	      matched_expr.value
 	  )
+)
 	  @
-	    ( if List.exists (function (unifl,neql) -> 
-		let (unif,eqs) = 
-		  List.split (List.map2 (fun x y -> x y) unifl patl)
-		in
-		List.for_all (fun x -> x) unif) patterns_to_prevent
-	      then 
-		let i = List.length patterns_to_prevent in 
-		[(Prod Anonymous,make_discr (List.map pattern_to_term patl) i  )]
-	      else 
-		[]
-	      )
+	    (if List.exists (function (unifl,neql) ->
+			       let (unif,eqs) = 
+				 List.split (List.map2 (fun x y -> x y) unifl patl)
+			       in
+			       List.for_all (fun x -> x) unif) patterns_to_prevent
+	     then 
+	       let i = List.length patterns_to_prevent in 
+	       [(Prod Anonymous,make_discr (List.map pattern_to_term patl) i  )]
+	     else 
+	       []
+	    )
 	in
 	let return_res = build_entry_lc funname new_avoid return in
 	let this_branch_res =
 	  List.map
 	    (fun res  ->
 	       { context = 
-		   matched_expr.context@ids@those_pattern_preconds@res.context ;
+		   matched_expr.context@
+(* 		     ids@ *)
+		     those_pattern_preconds@res.context ;
 		 value = res.value}
 	    )
 	    return_res.result
 	in
 	{ brl'_res with result = this_branch_res@brl'_res.result }
-
+	  
 	  
 let is_res id = 
   try
@@ -528,9 +623,9 @@ let is_res id =
   with Invalid_argument _ -> false 
 
 (* rebuild the raw constructors expression. 
-   eliminates some meaningless equality, applies some rewrites......
+   eliminates some meaningless equalities, applies some rewrites......
 *)
-let rec rebuild_cons relname args crossed_types rt = 
+let rec rebuild_cons nb_args relname args crossed_types depth rt = 
   match rt with 
     | RProd(_,n,t,b) -> 
 	let not_free_in_t id = not (is_free_in id t) in 
@@ -541,7 +636,12 @@ let rec rebuild_cons relname args crossed_types rt =
 		begin
 		  match args' with 
 		    | (RVar(_,this_relname))::args' -> 
-			let new_b,id_to_exclude =  rebuild_cons relname args new_crossed_types b in 
+			let new_b,id_to_exclude =  
+			  rebuild_cons 
+			    nb_args relname
+			    args new_crossed_types
+			    (depth + 1) b
+			in 
 			let new_t = 
 			  mkRApp(mkRVar(mk_rel_id this_relname),args'@[res_rt]) 
 			in mkRProd(n,new_t,new_b),
@@ -553,7 +653,7 @@ let rec rebuild_cons relname args crossed_types rt =
 		when  eq_as_ref = Lazy.force Coqlib.coq_eq_ref  
 		  -> 
 		let is_in_b = is_free_in id b in
-		let keep_eq = 
+		let _keep_eq = 
 		  not (List.exists (is_free_in id) args) || is_in_b  || 
 		    List.exists (is_free_in id) crossed_types 
 		in 
@@ -561,36 +661,70 @@ let rec rebuild_cons relname args crossed_types rt =
 		let subst_b = 
 		  if is_in_b then b else  replace_var_by_term id rt b 
 		in 
-		let new_b,id_to_exclude =  rebuild_cons relname new_args new_crossed_types subst_b in 
-		if keep_eq then mkRProd(n,t,new_b),id_to_exclude 
-		else new_b, Idset.add id id_to_exclude
+		let new_b,id_to_exclude =  
+		  rebuild_cons 
+		    nb_args relname
+		    new_args new_crossed_types
+		    (depth + 1) subst_b
+		in 
+		mkRProd(n,t,new_b),id_to_exclude
+(*  		if keep_eq then *)
+(* 		  mkRProd(n,t,new_b),id_to_exclude *)
+(* 		else new_b, Idset.add id id_to_exclude *)
 	    | _ -> 
-		let new_b,id_to_exclude =  rebuild_cons relname args new_crossed_types b in 
+		let new_b,id_to_exclude =  
+		  rebuild_cons 
+		    nb_args relname
+		    args new_crossed_types
+		    (depth + 1) b
+		in 
 		match n with
-		  | Name id when Idset.mem id id_to_exclude ->
+		  | Name id when Idset.mem id id_to_exclude && depth >= nb_args ->
 		      new_b,Idset.remove id 
 			(Idset.filter not_free_in_t id_to_exclude)
 		  | _ -> mkRProd(n,t,new_b),Idset.filter not_free_in_t id_to_exclude
 	end
     | RLambda(_,n,t,b) ->
 	begin
-	  let not_free_in_t id = not (is_free_in id t) in 
-	  let new_crossed_types = t :: crossed_types in 
-	  let new_b,id_to_exclude = rebuild_cons relname args new_crossed_types b in
+(* 	  let not_free_in_t id = not (is_free_in id t) in  *)
+(* 	  let new_crossed_types = t :: crossed_types in  *)
+(* 	  let new_b,id_to_exclude = rebuild_cons relname args new_crossed_types b in *)
+(* 	  match n with *)
+(* 	    | Name id when Idset.mem id id_to_exclude -> *)
+(* 		new_b, *)
+(* 		Idset.remove id (Idset.filter not_free_in_t id_to_exclude) *)
+(* 	    | _ ->  *)
+(* 		RProd(dummy_loc,n,t,new_b),Idset.filter not_free_in_t id_to_exclude *)
+	  let not_free_in_t id = not (is_free_in id t) in
+	  let new_crossed_types = t :: crossed_types in
+(* 	  let new_b,id_to_exclude = rebuild_cons relname (args new_crossed_types b in *)
 	  match n with
-	    | Name id when Idset.mem id id_to_exclude ->
-		new_b,
-		Idset.remove id (Idset.filter not_free_in_t id_to_exclude)
-	    | _ -> 
-		RProd(dummy_loc,n,t,new_b),Idset.filter not_free_in_t id_to_exclude
+	    | Name id ->
+		let new_b,id_to_exclude = 
+		  rebuild_cons 
+		    nb_args relname
+		    (args@[mkRVar id])new_crossed_types
+		    (depth + 1 ) b 
+		in
+		if Idset.mem id id_to_exclude && depth >= nb_args
+		then 
+		  new_b, Idset.remove id (Idset.filter not_free_in_t id_to_exclude)
+		else
+		  RProd(dummy_loc,n,t,new_b),Idset.filter not_free_in_t id_to_exclude
+	    | _ -> anomaly "Should not have an anonymous function here" 
+		(* We have renamed all the anonymous functions during alpha_renaming phase *)
+	  
 	end
     | RLetIn(_,n,t,b) -> 
 	begin
 	  let not_free_in_t id = not (is_free_in id t) in 
 	  let new_b,id_to_exclude = 
-	    rebuild_cons relname args (t::crossed_types) b in
+	    rebuild_cons 
+	      nb_args relname
+	      args (t::crossed_types)
+	      (depth + 1 ) b in
 	  match n with 
-	    | Name id when Idset.mem id id_to_exclude -> 
+	    | Name id when Idset.mem id id_to_exclude && depth >= nb_args  -> 
 		new_b,Idset.remove id (Idset.filter not_free_in_t id_to_exclude)
 	    | _ -> RLetIn(dummy_loc,n,t,new_b),
 		Idset.filter not_free_in_t id_to_exclude
@@ -600,10 +734,17 @@ let rec rebuild_cons relname args crossed_types rt =
 	begin
 	  let not_free_in_t id = not (is_free_in id t) in 
 	  let new_t,id_to_exclude' = 
-	    rebuild_cons relname args (crossed_types) t 
+	    rebuild_cons 
+	      nb_args
+	      relname 
+	      args (crossed_types) 
+	      depth t 
 	  in
 	  let new_b,id_to_exclude = 
-	    rebuild_cons relname args (t::crossed_types) b 
+	    rebuild_cons 
+	      nb_args relname
+	      args (t::crossed_types) 
+	      (depth + 1) b 
 	  in
 (* 	  match n with  *)
 (* 	    | Name id when Idset.mem id id_to_exclude ->  *)
@@ -617,6 +758,14 @@ let rec rebuild_cons relname args crossed_types rt =
     | _ -> mkRApp(mkRVar  relname,args@[rt]),Idset.empty
 
 
+let rebuild_cons nb_args relname args crossed_types rt = 
+  observennl  (str "rebuild_cons : rt := "++ pr_rawconstr rt ++ 
+		 str "nb_args := " ++ str (string_of_int nb_args));
+  let res = 
+    rebuild_cons nb_args relname args crossed_types 0 rt 
+  in
+  observe (str " leads to "++ pr_rawconstr (fst res));
+  res
 
 let rec compute_cst_params relnames params = function 
   | RRef _ | RVar _ | REvar _ | RPatVar _ -> params
@@ -636,12 +785,12 @@ let rec compute_cst_params relnames params = function
 and compute_cst_params_from_app acc (params,rtl) = 
   match params,rtl with 
     | _::_,[] -> assert false (* the rel has at least nargs + 1 arguments ! *)
-    | ((Name id,_) as param)::params',(RVar(_,id'))::rtl' 
-	when id_ord id id' == 0 -> 
+    | ((Name id,_,is_defined) as param)::params',(RVar(_,id'))::rtl' 
+	when id_ord id id' == 0 && not is_defined -> 
 	compute_cst_params_from_app (param::acc) (params',rtl')
     | _  -> List.rev acc 
    
-let compute_params_name relnames args csts =  
+let compute_params_name relnames (args : (Names.name * Rawterm.rawconstr * bool) list array) csts =  
   let rels_params = 
     Array.mapi 
       (fun i args -> 
@@ -656,11 +805,11 @@ let compute_params_name relnames args csts =
   let _ = 
     try 
       list_iter_i
-	(fun i ((n,nt) as param) -> 
+	(fun i ((n,nt,is_defined) as param) -> 
 	   if array_for_all 
 	     (fun l -> 
-		let (n',nt') = List.nth l i in 
-		n = n' && Topconstr.eq_rawconstr nt nt')
+		let (n',nt',is_defined') = List.nth l i in 
+		n = n' && Topconstr.eq_rawconstr nt nt' && is_defined = is_defined')
 	     rels_params
 	   then 
 	     l := param::!l
@@ -671,9 +820,26 @@ let compute_params_name relnames args csts =
   in 
   List.rev !l
 
+(*      (Topconstr.CProdN
+	 (dummy_loc,
+	  [[(dummy_loc,Anonymous)],returned_types.(i)],
+	  Topconstr.CSort(dummy_loc, RProp Null )
+	 )
+      )
+*)
+let rec rebuild_return_type rt = 
+  match rt with 
+    | Topconstr.CProdN(loc,n,t') -> 
+	Topconstr.CProdN(loc,n,rebuild_return_type t') 
+    | Topconstr.CArrow(loc,t,t') -> 
+	Topconstr.CArrow(loc,t,rebuild_return_type t')
+    | Topconstr.CLetIn(loc,na,t,t') -> 
+	Topconstr.CLetIn(loc,na,t,rebuild_return_type t') 
+    | _ -> Topconstr.CArrow(dummy_loc,rt,Topconstr.CSort(dummy_loc, RProp Null))
 
 
-let build_inductive parametrize funnames funsargs  returned_types (rtl:rawconstr list) =
+let build_inductive parametrize funnames (funsargs: (Names.name * rawconstr * bool) list list)  returned_types (rtl:rawconstr list) =
+(*   Pp.msgnl (prlist_with_sep fnl Printer.pr_rawconstr rtl); *)
   let funnames_as_set = List.fold_right Idset.add funnames Idset.empty in
   let funnames = Array.of_list funnames in  
   let funsargs = Array.of_list funsargs in 
@@ -687,14 +853,18 @@ let build_inductive parametrize funnames funsargs  returned_types (rtl:rawconstr
     List.map 
       (function result (* (args',concl') *) -> 
 	 let rt = compose_raw_context result.context result.value in 
+	 let nb_args = List.length funsargs.(i) in 
 (* 	 Pp.msgnl (str "raw constr " ++ pr_rawconstr rt); *)
 	 fst (
-	   rebuild_cons relnames.(i)
-	     (List.map (function 
-			    (Anonymous,_) -> mkRVar(fresh_id res.to_avoid "x__") 
-			  | Name id, _ -> mkRVar id
-		       )
-		funsargs.(i)) 
+	   rebuild_cons nb_args relnames.(i)
+(* 	     (List.map  *)
+(* 		(function  *)
+(* 		     (Anonymous,_,_) -> mkRVar(fresh_id res.to_avoid "x__")  *)
+(* 		   | Name id, _,_ -> mkRVar id *)
+(* 		) *)
+(* 		funsargs.(i) *)
+(* 	     )  *)
+	     []
 	     []
 	     rt 
 	 )
@@ -723,29 +893,41 @@ let build_inductive parametrize funnames funsargs  returned_types (rtl:rawconstr
     rel_constructors
   in
   let rel_arity i funargs = 
-    let rel_first_args :(Names.name * Rawterm.rawconstr) list  = (snd (list_chop nrel_params funargs)) in 
+    let rel_first_args :(Names.name * Rawterm.rawconstr * bool ) list  = 
+      (snd (list_chop nrel_params funargs))
+    in 
     List.fold_right
-      (fun (n,t) acc -> 
-	 Topconstr.CProdN
+      (fun (n,t,is_defined) acc -> 
+	 if is_defined
+	 then 
+	   Topconstr.CLetIn(dummy_loc,(dummy_loc, n),Constrextern.extern_rawconstr Idset.empty t,
+			    acc)
+	 else
+	   Topconstr.CProdN
 	   (dummy_loc,
 	    [[(dummy_loc,n)],Constrextern.extern_rawconstr Idset.empty t],
 	    acc
 	   )
       )
       rel_first_args
-      (Topconstr.CProdN
-	 (dummy_loc,
-	  [[(dummy_loc,Anonymous)],returned_types.(i)],
-	  Topconstr.CSort(dummy_loc, RProp Null )
-	 )
-      )
+      (rebuild_return_type returned_types.(i))
+(*       (Topconstr.CProdN *)
+(* 	 (dummy_loc, *)
+(* 	  [[(dummy_loc,Anonymous)],returned_types.(i)], *)
+(* 	  Topconstr.CSort(dummy_loc, RProp Null ) *)
+(* 	 ) *)
+(* ) *)
   in
   let rel_arities = Array.mapi rel_arity funsargs in
   let old_rawprint = !Options.raw_print in 
   Options.raw_print := true;
   let rel_params =  
     List.map 
-      (fun (n,t) -> 
+      (fun (n,t,is_defined) -> 
+	 if is_defined 
+	 then
+	   Topconstr.LocalRawDef((dummy_loc,n), Constrextern.extern_rawconstr Idset.empty t)
+	 else
 	 Topconstr.LocalRawAssum 
 	   ([(dummy_loc,n)], Constrextern.extern_rawconstr Idset.empty t)
       )
@@ -764,33 +946,29 @@ let build_inductive parametrize funnames funsargs  returned_types (rtl:rawconstr
     rel_params,
     rel_arities.(i),
     ext_rel_constructors
-  in 
-  let rel_inds = Array.to_list (Array.mapi rel_ind ext_rels_constructors) in 
-(*   msgnl ( *)
-(*     match rel_ind with  *)
-(* 	(_,id),_,params,ar,constr ->  *)
-(* 	  str "Inductive" ++ spc () ++ Ppconstr.pr_id id ++ *)
-(* 	    spc () ++  *)
-(* 	    prlist_with_sep  *)
-(* 	    spc *)
-(* 	    (function *)
-(* 	       | (Topconstr.LocalRawAssum([_,n],t)) ->  *)
-(* 		   str "(" ++ Ppconstr.pr_name n ++ str":" ++  *)
-(* 		     Ppconstr.pr_type t ++ str ")" *)
-(* 	       | _ -> assert false *)
-(* 	    ) *)
-(* 	    params ++ *)
-(* 	    spc () ++ str ":" ++ spc () ++ *)
-(* 	    Ppconstr.pr_type rel_arity ++  *)
-(* 	    spc () ++  str ":=" ++ spc () ++ *)
-(* 	    prlist_with_sep  *)
-(* 	    (fun () -> fnl () ++ spc () ++ str "|" ++ spc ())  *)
-(* 	    (function (_,((_,id),t)) ->  *)
-(* 	       Ppconstr.pr_id id ++ spc () ++ str ":"++spc () ++ *)
-(* 		 Ppconstr.pr_type t *)
-(* 	    ) *)
-(* 	    ext_rel_constructors *)
-(*   ); *)
+  in
+  let ext_rel_constructors = (Array.mapi rel_ind ext_rels_constructors) in 
+  let rel_inds = Array.to_list ext_rel_constructors in 
+  let _ = 
+    observe (
+      str "Inductive" ++ spc () ++
+	prlist_with_sep 
+	(fun () -> fnl ()++spc () ++ str "with" ++ spc ()) 
+	(function ((_,id),_,params,ar,constr) -> 
+	   Ppconstr.pr_id id ++ spc () ++ 
+	     Ppconstr.pr_binders params ++ spc () ++
+	     str ":" ++ spc () ++ 
+	     Ppconstr.pr_lconstr_expr ar ++ spc () ++ 
+	     prlist_with_sep 
+	     (fun _ -> fnl () ++ spc () ++ str "|" ++ spc ())
+	     (function (_,((_,id),t)) -> 
+		Ppconstr.pr_id id ++ spc () ++ str ":" ++ spc () ++
+		  Ppconstr.pr_lconstr_expr t)
+	     constr
+	)
+	rel_inds
+    )
+  in
   let old_implicit_args = Impargs.is_implicit_args ()
   and old_strict_implicit_args =  Impargs.is_strict_implicit_args ()
   and old_contextual_implicit_args = Impargs.is_contextual_implicit_args () in
@@ -809,24 +987,26 @@ let build_inductive parametrize funnames funsargs  returned_types (rtl:rawconstr
 	Impargs.make_strict_implicit_args old_strict_implicit_args;
 	Impargs.make_contextual_implicit_args old_contextual_implicit_args;
 	Options.raw_print := old_rawprint;
+	let msg = 		     
+	  str "while trying to define"++ spc () ++
+	    Ppvernac.pr_vernac (Vernacexpr.VernacInductive(true,rel_inds)) ++ fnl () ++
+	    msg
+	in
+	observe (msg);
 	raise 
-	  (UserError(s,
-		     str "while trying to define"++ spc () ++
-		       Ppvernac.pr_vernac (Vernacexpr.VernacInductive(true,rel_inds)) ++ fnl () ++
-		       msg
-		    )
-	  )
+	  (UserError(s, msg))
     | e -> 
 	Impargs.make_implicit_args old_implicit_args;
 	Impargs.make_strict_implicit_args old_strict_implicit_args;
 	Impargs.make_contextual_implicit_args old_contextual_implicit_args;
 	Options.raw_print := old_rawprint;
+	let msg = 		     
+	  str "while trying to define"++ spc () ++
+	    Ppvernac.pr_vernac (Vernacexpr.VernacInductive(true,rel_inds)) ++ fnl () ++
+	    Cerrors.explain_exn e
+	in
+ 	observe msg;
 	raise 
-	  (UserError("",
-		     str "while trying to define"++ spc () ++
-		       Ppvernac.pr_vernac (Vernacexpr.VernacInductive(true,rel_inds)) ++ fnl () ++
-		       Cerrors.explain_exn e
-		    )
-	  )
+	  (UserError("",msg))
 
 

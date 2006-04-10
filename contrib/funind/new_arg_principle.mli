@@ -31,3 +31,4 @@ val compute_new_princ_type_from_rel : Term.constr array -> Term.sorts array ->
   Term.types -> Term.types
 
 val make_scheme : (Names.identifier*Names.identifier*Rawterm.rawsort) list ->  unit
+val make_case_scheme : (Names.identifier*Names.identifier*Rawterm.rawsort)  ->  unit

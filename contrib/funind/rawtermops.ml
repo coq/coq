@@ -48,7 +48,7 @@ let raw_decompose_app =
 
 
 
-(* [raw_make_eq t1 t2] build the rawconstr corresponding to [t1 = t2] *) 
+(* [raw_make_eq t1 t2] build the rawconstr corresponding to [t2 = t1] *) 
 let raw_make_eq t1 t2  = 
   mkRApp(mkRRef (Lazy.force Coqlib.coq_eq_ref),[mkRHole ();t2;t1])
 
@@ -210,9 +210,11 @@ let rec alpha_rt excluded rt =
     match rt with   
       | RRef _ | RVar _ | REvar _ | RPatVar _ -> rt
       | RLambda(loc,Anonymous,t,b) -> 
-	  let new_t = alpha_rt excluded t in 
-	  let new_b = alpha_rt excluded b in 
-	  RLambda(loc,Anonymous,new_t,new_b)
+	  let new_id = Nameops.next_ident_away (id_of_string "_x") excluded in 
+	  let new_excluded = new_id :: excluded in 
+	  let new_t = alpha_rt new_excluded t in 
+	  let new_b = alpha_rt new_excluded b in 
+	  RLambda(loc,Name new_id,new_t,new_b)
       | RProd(loc,Anonymous,t,b) -> 
 	let new_t = alpha_rt excluded t in 
 	let new_b = alpha_rt excluded b in 
@@ -308,7 +310,7 @@ let rec alpha_rt excluded rt =
 	     List.map (alpha_rt excluded) args
 	    )
   in 
-  if Tacinterp.get_debug () <> Tactic_debug.DebugOff 
+  if Tacinterp.get_debug () <> Tactic_debug.DebugOff  && false 
   then
     Pp.msgnl (str "debug: alpha_rt(" ++ str "[" ++
 	      prlist_with_sep (fun _ -> str";") Ppconstr.pr_id excluded ++
@@ -510,3 +512,14 @@ let eq_cases_pattern pat1 pat2 =
     eq_cases_pattern_aux [pat1,pat2];
     true
   with NotUnifiable -> false
+
+
+
+let ids_of_pat = 
+  let rec ids_of_pat ids = function 
+    | PatVar(_,Anonymous) -> ids 
+    | PatVar(_,Name id) -> Idset.add id ids 
+    | PatCstr(_,_,patl,_) -> List.fold_left ids_of_pat ids patl
+  in
+  ids_of_pat Idset.empty 
+  

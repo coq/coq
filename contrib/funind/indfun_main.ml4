@@ -12,6 +12,7 @@ open Pp
 open Topconstr
 open Indfun_common 
 open Indfun
+open Genarg
 
 TACTIC EXTEND newfuninv
    [ "functional" "inversion" ident(hyp) ident(fname) ] -> 
@@ -21,33 +22,91 @@ TACTIC EXTEND newfuninv
 END
 
 
+let pr_fun_ind_using  prc _ _ opt_c = 
+  match opt_c with 
+    | None -> mt ()
+    | Some c -> spc () ++ hov 2 (str "using" ++ spc () ++ prc c)
+
+ARGUMENT EXTEND fun_ind_using
+  TYPED AS constr_opt
+  PRINTED BY pr_fun_ind_using
+| [ "using" constr(c) ] -> [ Some c ]
+| [ ] -> [ None ]
+END
+
+let pr_intro_as_pat prc _ _ pat = 
+  str "as" ++ spc () ++ pr_intro_pattern pat
+
+
+
+
+
+ARGUMENT EXTEND with_names TYPED AS intro_pattern PRINTED BY pr_intro_as_pat
+|   [ "as"  simple_intropattern(ipat) ] -> [ ipat ] 
+| []  ->[ IntroAnonymous ] 
+END
+
+
+let is_rec scheme_info = 
+  let test_branche min acc (_,_,br) = 
+    acc ||
+      (let new_branche = Sign.it_mkProd_or_LetIn mkProp (fst (Sign.decompose_prod_assum br)) in 
+      let free_rels_in_br = Termops.free_rels new_branche in 
+      let max = min + scheme_info.Tactics.npredicates in 
+      Util.Intset.exists (fun i -> i >= min && i< max) free_rels_in_br)
+  in
+  Util.list_fold_left_i test_branche 1 false (List.rev scheme_info.Tactics.branches)
+
+
+let choose_dest_or_ind scheme_info =
+    if is_rec scheme_info
+    then Tactics.new_induct
+    else
+      Tactics.new_destruct
+
 
 TACTIC EXTEND newfunind
-   ["new" "functional" "induction" constr(c) ] -> 
+   ["new" "functional" "induction" constr(c) fun_ind_using(princl) with_names(pat)] -> 
      [
        let f,args = decompose_app c in 
-       let fname = 
-	 match kind_of_term f with 
-	   | Const c' -> 
-	       id_of_label (con_label c') 
-	   | _ -> Util.error "Must be used with a function" 
-       in
        fun g -> 
-       let princ_name = 
-	   (
-	     Indrec.make_elimination_ident
-	       fname
-	       (Tacticals.elimination_sort_of_goal g)
-	   )
-       in
-       let princ = const_of_id princ_name in
-       let args_as_induction_constr =
-	 List.map (fun c -> Tacexpr.ElimOnConstr c) (args@[c]) 
-       in 
-       let princ' = Some (mkConst princ,Rawterm.NoBindings) in 
-       Tactics.new_induct args_as_induction_constr princ' Genarg.IntroAnonymous g
+	 let princ = 
+	   match princl with 
+	     | None -> (* No principle is given let's find the good one *)
+		 let fname = 
+		   match kind_of_term f with 
+		     | Const c' -> 
+			 id_of_label (con_label c') 
+		     | _ -> Util.error "Must be used with a function" 
+		 in
+		 let princ_name = 
+		   (
+		     Indrec.make_elimination_ident
+		       fname
+		       (Tacticals.elimination_sort_of_goal g)
+		   )
+		 in
+		 mkConst(const_of_id princ_name )
+	     | Some princ -> princ 
+	 in
+	 let princ_type = Tacmach.pf_type_of g princ in 
+	 let princ_infos = Tactics.compute_elim_sig princ_type in 
+	 let args_as_induction_constr =
+	   let c_list = 
+	     if princ_infos.Tactics.farg_in_concl 
+	     then [c] else [] 
+	   in
+	   List.map (fun c -> Tacexpr.ElimOnConstr c) (args@c_list) 
+	 in 
+	 let princ' = Some (princ,Rawterm.NoBindings) in 
+	 choose_dest_or_ind 
+	   princ_infos
+	   args_as_induction_constr
+	   princ'
+	   pat g
      ]
 END
+
 
 VERNAC ARGUMENT EXTEND rec_annotation2
   [ "{"  "struct" ident(id)  "}"] -> [ Struct id ]
@@ -128,3 +187,15 @@ VERNAC COMMAND EXTEND NewFunctionalScheme
     ]
 END
 
+
+VERNAC COMMAND EXTEND NewFunctionalCase
+   ["New" "Functional" "Case" fun_scheme_arg(fas) ] ->
+    [
+      New_arg_principle.make_case_scheme fas
+    ]
+END
+
+
+VERNAC COMMAND EXTEND GenerateGraph 
+["Generate" "graph" "for" ident(c)] -> [ make_graph c ]
+END

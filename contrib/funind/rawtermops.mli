@@ -38,7 +38,7 @@ val raw_compose_prod : rawconstr -> (Names.name*rawconstr) list  ->  rawconstr
 val raw_decompose_app : rawconstr -> rawconstr*(rawconstr list)
 
 
-(* [raw_make_eq t1 t2] build the rawconstr corresponding to [t1 = t2] *) 
+(* [raw_make_eq t1 t2] build the rawconstr corresponding to [t2 = t1] *) 
 val  raw_make_eq : rawconstr -> rawconstr -> rawconstr
 (* [raw_make_neq t1 t2] build the rawconstr corresponding to [t1 <> t2] *) 
 val  raw_make_neq : rawconstr -> rawconstr -> rawconstr
@@ -101,3 +101,11 @@ val is_free_in : Names.identifier -> rawconstr -> bool
 
 val are_unifiable : cases_pattern -> cases_pattern -> bool 
 val eq_cases_pattern : cases_pattern -> cases_pattern -> bool
+
+
+
+(* 
+   ids_of_pat : cases_pattern -> Idset.t 
+   returns the set of variables appearing in a pattern 
+*)
+val   ids_of_pat : cases_pattern -> Names.Idset.t 
