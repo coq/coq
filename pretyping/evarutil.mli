@@ -106,6 +106,8 @@ val split_tycon :
 
 val valcon_of_tycon : type_constraint -> val_constraint
 
+val lift_abstr_tycon_type : int -> type_constraint_type -> type_constraint_type
+
 val lift_tycon_type : int -> type_constraint_type -> type_constraint_type
 val lift_tycon : int -> type_constraint -> type_constraint
 

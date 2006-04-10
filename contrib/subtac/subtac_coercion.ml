@@ -423,7 +423,7 @@ module Coercion = struct
   (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
   let inh_conv_coerce_to loc env isevars cj ((n, t) as tycon) =
     (try 
-       trace (str "inh_conv_coerce_to called for " ++
+       trace (str "Subtac_coercion.inh_conv_coerce_to called for " ++
 	      Termops.print_constr_env env cj.uj_type ++ str " and "++ spc () ++ 
 	      Evarutil.pr_tycon_type env tycon ++ str " with evars: " ++ spc () ++
 	      Evd.pr_evar_defs isevars ++ str " in env: " ++ spc () ++
@@ -448,7 +448,7 @@ module Coercion = struct
 
   let inh_conv_coerces_to loc env isevars t ((abs, t') as tycon) =
     (try 
-       trace (str "inh_conv_coerces_to called for " ++
+       trace (str "Subtac_coercion.inh_conv_coerces_to called for " ++
 	      Termops.print_constr_env env t ++ str " and "++ spc () ++ 
 	      Evarutil.pr_tycon_type env tycon ++ str " with evars: " ++ spc () ++
 	      Evd.pr_evar_defs isevars ++ str " in env: " ++ spc () ++
@@ -468,8 +468,8 @@ module Coercion = struct
     in
       (* The final range free variables must have been replaced by evars, we accept only that evars
 	 in rng are applied to free vars. *)
-      if noccur_with_meta 0 (succ (nabsinit - nabs)) rng then (
-	trace (str "No occur between 0 and " ++ int (succ (nabsinit - nabs)));
+      if noccur_with_meta 0 (succ nabsinit) rng then (
+	trace (str "No occur between 0 and " ++ int (succ nabsinit));
 	let env', t, t' = 
 	  let env' = List.fold_right (fun (n, t) env -> push_rel (n, None, t) env) rels env in
 	    env', rng, lift nabs t'

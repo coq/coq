@@ -20,11 +20,3 @@ Definition Fix_sub (x : A) := Fix_F_sub x (Rwf x).
 End FixPoint.
 
 End Well_founded.
-
-Notation "'forall' { x : A | P } , Q" :=
-  (forall x:{x:A|P}, Q)
-  (at level 200, x ident, right associativity).
-
-Notation "'fun' { x : A | P } => Q" :=
-  (fun x:{x:A|P} => Q)
-  (at level 200, x ident, right associativity).

@@ -352,9 +352,9 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	      None -> None
 	    | Some (None, ty) -> mk_abstr_tycon length ty
 	    | Some (Some (init, cur), ty) ->
-		Some (Some (length + init, cur), ty)
+		Some (Some (length + init, length + cur), ty)
 	in
-	let fj = pretype ftycon env isevars lvar f in
+	let fj = pretype empty_tycon env isevars lvar f in
  	let floc = loc_of_rawconstr f in
 	let rec apply_rec env n resj tycon = function
 	  | [] -> resj
@@ -368,23 +368,23 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		      let value, typ = applist (j_val resj, [j_val hj]), subst1 hj.uj_val c2 in
 		      let typ' = nf_isevar !isevars typ in
 		      let tycon = 
-			match tycon with			    
-			    Some (abs, ty) ->
-			      (match abs with
-				   None ->
-				     isevars := Coercion.inh_conv_coerces_to loc env !isevars typ' 
-				       (abs, ty);
-				     Some (None, nf_isevar !isevars ty)
-				 | Some (init, cur) ->
-				     isevars := Coercion.inh_conv_coerces_to loc env !isevars typ' 
-				       (abs, ty);
-				     Some (Some (init, pred cur), nf_isevar !isevars ty))
-			  | None -> None
+			option_app 
+			  (fun (abs, ty) ->
+			     match abs with
+				 None ->
+				   isevars := Coercion.inh_conv_coerces_to loc env !isevars typ'
+				     (abs, ty);
+				   (abs, ty)
+			       | Some (init, cur) ->
+				   isevars := Coercion.inh_conv_coerces_to loc env !isevars typ' 
+				     (abs, ty);
+				   (Some (init, pred cur), ty))
+			  tycon
 		      in 
 			apply_rec env (n+1) 
 			  { uj_val = nf_isevar !isevars value;
 			    uj_type = nf_isevar !isevars typ' }
-			  tycon rest
+			  (option_app (fun (abs, c) -> abs, nf_isevar !isevars c) tycon) rest
 
 		  | _ ->
 		      let hj = pretype empty_tycon env isevars lvar c in
@@ -392,7 +392,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 			  (join_loc floc argloc) env (evars_of !isevars)
 	      		  resj [hj]
 	in
-	let ftycon = lift_tycon (-1) ftycon in
+	let ftycon = option_app (lift_abstr_tycon_type (-1)) ftycon in
 	let resj = j_nf_evar (evars_of !isevars) (apply_rec env 1 fj ftycon args) in
 	let resj =
 	  match kind_of_term resj.uj_val with

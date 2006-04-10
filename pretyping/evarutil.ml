@@ -642,38 +642,43 @@ let split_tycon loc env isevars tycon =
     let sigma = evars_of isevars in
     let t = whd_betadeltaiota env sigma c in
       match kind_of_term t with
-	| Prod (na,dom,rng) -> isevars, (na, mk_tycon dom, mk_tycon rng)
+	| Prod (na,dom,rng) -> isevars, (na, dom, rng)
 	| Evar ev when not (Evd.is_defined_evar isevars ev) ->
 	    let (isevars',prod) = define_evar_as_arrow isevars ev in
 	    let (_,dom,rng) = destProd prod in
-	      isevars',(Anonymous, mk_tycon dom, mk_tycon rng)
+	      isevars',(Anonymous, dom, rng)
 	| _ -> error_not_product_loc loc env sigma c
   in
     match tycon with
       | None -> isevars,(Anonymous,None,None)
       | Some (abs, c) ->
 	  (match abs with
-	       None -> real_split c
+	       None -> 
+		 let isevars', (n, dom, rng) = real_split c in
+		   isevars', (n, mk_tycon dom, mk_tycon rng)
 	     | Some (init, cur) ->
-	       if cur = 1 then isevars, (Anonymous, None, 
-					 Some (Some (init, 0), c))
-	       else
-		 isevars, (Anonymous, None, Some (Some (init, pred cur), c)))
+		 if cur = 0 then 
+		   let isevars', (x, dom, rng) = real_split c in
+		     isevars, (Anonymous, 
+			       Some (Some (init, 0), dom), 
+			       Some (Some (init, 0), rng))
+		 else
+		   isevars, (Anonymous, None, Some (Some (init, pred cur), c)))
 
 let valcon_of_tycon x = 
   match x with
     | Some (None, t) -> Some t
     | _ -> None
 	
-let lift_tycon_type n (abs, t) =
-  abs, lift n t
-(*  match abs with 
-      None -> (abs, lift n t)
+let lift_abstr_tycon_type n (abs, t) =
+  match abs with 
+      None -> raise (Invalid_argument "lift_abstr_tycon_type: not an abstraction")
     | Some (init, abs) ->
 	let abs' = abs + n in 
-	  if abs' < 0 then raise (Invalid_argument "lift_tycon_type")
-	  else (Some (init, abs'), lift n t)*)
+	  if abs' < 0 then raise (Invalid_argument "lift_abstr_tycon_type")
+	  else (Some (init, abs'), t)
 
+let lift_tycon_type n (abs, t) = (abs, lift n t)
 let lift_tycon n = option_app (lift_tycon_type n)
 
 let pr_tycon_type env (abs, t) =
