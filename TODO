@@ -45,4 +45,7 @@ Doc:
 - Documenter Dependent Rewrite et CutRewrite ?
 - Ajouter les motifs sous-termes de ltac
 
-
+- ajouter doc de GenFixpoint (mais avant: changer syntaxe) (J. Forest ou Pierre C.)
+- mettre à jour la doc de induction (arguments multiples) (Pierre C.)
+- mettre à jour la doc de functional induction/scheme (J. Forest ou Pierre C.)
+--> mettre à jour le CHANGES (vers la ligne 72)
