@@ -122,10 +122,21 @@ let rec do_renum avoid gl = function
       let id = fresh_id_of_name avoid gl n in
       pr_id id ++ spc () ++ do_renum (id :: avoid) gl l
 
+(* Transforms a product term (x1:T1)..(xn:Tn)T into the pair
+   ([(xn,Tn);...;(x1,T1)],T), where T is not a product nor a letin *)
+let decompose_prod_letins = 
+  let rec prodec_rec l c = match kind_of_term c with
+    | Prod (x,t,c) -> prodec_rec ((x,t)::l) c
+    | LetIn (x,b,t,c) -> prodec_rec ((x,t)::l) c
+    | Cast (c,_,_)   -> prodec_rec l c
+    | _              -> l,c
+  in 
+  prodec_rec []
+
 let show_intro all =
   let pf = get_pftreestate() in
   let gl = nth_goal_of_pftreestate 1 pf in
-  let l,_= decompose_prod (strip_outer_cast (pf_concl gl)) in
+  let l,_= decompose_prod_letins (strip_outer_cast (pf_concl gl)) in
   let nl = List.rev_map fst l in
   if all then msgnl (hov 0 (do_renum [] gl nl))
   else try 
