@@ -303,6 +303,8 @@ let intro_force force_flag = intro_gen (IntroAvoid []) None force_flag
 let intro = intro_force false
 let introf = intro_force true
 
+let intro_avoiding l = intro_gen (IntroAvoid l) None false 
+
 let introf_move_name destopt = intro_gen (IntroAvoid []) destopt true
 
 (* For backwards compatibility *)

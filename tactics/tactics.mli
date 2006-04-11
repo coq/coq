@@ -63,6 +63,9 @@ val intro                : tactic
 val introf               : tactic
 val intro_force          : bool -> tactic
 val intro_move           : identifier option -> identifier option -> tactic
+  (* [intro_avoiding idl] acts as intro but prevents the new identifier
+     to belong to [idl] *)
+val intro_avoiding       : identifier list -> tactic
 
 val intro_replacing      : identifier -> tactic
 val intro_using          : identifier -> tactic
