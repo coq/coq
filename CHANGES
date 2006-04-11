@@ -9,6 +9,8 @@ Tactics
 Bug fixes
 
 - Fixed printing bug for notations exists and IF
+- Activation of scope in "where" notations fixed (possible source of
+  local incompatibilities)
 
 Changes from V8.0pl2 to V8.0pl3
 ===============================
