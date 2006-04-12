@@ -1994,6 +1994,32 @@ let new_induct_gen isrec elim names c gl =
 	  (letin_tac true (Name id) c allClauses)
 	  (induction_with_atomization_of_ind_arg isrec elim names id) gl
 
+(* The two following functions should already exist, but found nowhere *)
+(* Unfolds x by its definition everywhere *)
+let unfold_body x gl =
+  let hyps = pf_hyps gl in
+  let xval =
+    match Sign.lookup_named x hyps with
+        (_,Some xval,_) -> xval
+      | _ -> errorlabstrm "unfold_body"
+          (pr_id x ++ str" is not a defined hypothesis") in
+  let aft = afterHyp x gl in
+  let hl = List.fold_right (fun (y,yval,_) cl -> (y,[],InHyp) :: cl) aft [] in
+  let xvar = mkVar x in
+  let rfun _ _ c = replace_term xvar xval c in
+  tclTHENLIST
+    [tclMAP (fun h -> reduct_in_hyp rfun h) hl;
+     reduct_in_concl (rfun,DEFAULTcast)] gl
+
+(* Unfolds x by its definition everywhere and clear x. This may raise
+   an error if x is not defined. *)
+let unfold_all x gl =
+  let (_,xval,_) = pf_get_hyp gl x in
+  (* If x has a body, simply replace x with body and clear x *)
+  if xval <> None then tclTHEN (unfold_body x) (clear [x]) gl
+  else tclIDTAC gl
+
+
 (* Induction on a list of arguments. First make induction arguments
    atomic (using letins), then do induction. The specificity here is
    that all arguments and parameters of the scheme are given
@@ -2001,6 +2027,7 @@ let new_induct_gen isrec elim names c gl =
     parameters of the inductive type as in new_induct_gen. *)
 let new_induct_gen_l isrec elim names lc gl =
   let newlc = ref [] in
+  let letids = ref [] in
   let rec atomize_list l gl =
     match l with
       | [] -> tclIDTAC gl
@@ -2009,23 +2036,29 @@ let new_induct_gen_l isrec elim names lc gl =
 	    | Var id when not (mem_named_context id (Global.named_context())) -> 
 		let _ = newlc:= id::!newlc in
 		atomize_list l' gl
+
 	    | _ ->
 		let x = 
 		  id_of_name_using_hdchar (Global.env()) (pf_type_of gl c) Anonymous in
 		
 		let id = fresh_id [] x gl in
-		let newl' =(* List.map (replace_term c (mkVar id)) *) l' in
+		let newl' = List.map (replace_term c (mkVar id)) l' in
 		let _ = newlc:=id::!newlc in
+		let _ = letids:=id::!letids in
 		tclTHEN 
 		  (letin_tac true (Name id) c allClauses)
-		  (*(tclTHEN (assert_tac (mkEq typofc c (mkVar id)))
-		    (tclLAST_HYP generalize_dep)
-		  )*)
 		  (atomize_list newl') gl in
-  tclTHEN
-    (atomize_list lc)
-    (fun gl' -> (* recompute each time to have the new value of newlc *)
-      induction_without_atomization isrec elim names !newlc gl') gl
+  tclTHENLIST 
+    [
+      (atomize_list lc);
+      (fun gl' -> (* recompute each time to have the new value of newlc *)
+	induction_without_atomization isrec elim names !newlc gl') ;
+      (* after induction, try to unfold all letins created by atomize_list
+         FIXME: unfold_all does not exist anywhere else? *)
+      (fun gl' -> (* recompute each time to have the new value of letids *)
+	tclMAP (fun x -> tclTRY (unfold_all x)) !letids gl')
+    ]
+    gl
 
 
 let induct_destruct_l isrec lc elim names = 
