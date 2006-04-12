@@ -67,34 +67,45 @@ let make_refl_eq type_of_t t  =
   mkApp(refl_equal_term,[|type_of_t;t|])
 
 
-let congruence g = 
+type static_fix_info = 
+    {
+      idx : int;
+      name : identifier;
+      types : types
+    }
+
+type static_infos = 
+    {
+      fixes_ids : identifier list; 
+      ptes_to_fixes : static_fix_info Idmap.t
+    }
+
+type 'a dynamic_info = 
+    { 
+      nb_rec_hyps : int;
+      rec_hyps : identifier list ; 
+      eq_hyps : identifier list;
+      info : 'a
+    }
+
+let finish_proof dynamic_infos g = 
   observe_tac "finish" 
-(*     (Auto.default_auto)  *)
-(*     (Eauto.gen_eauto false (false,5) [] (Some [])) *)
     h_assumption
     g
 	  
 
 let refine c = 
-  if do_observe () 
-  then Tacmach.refine c 
-  else Tacmach.refine_no_check c
+  Tacmach.refine_no_check c
 
 let thin l = 
-  if do_observe () 
-  then Tacmach.thin l
-  else Tacmach.thin_no_check l
+  Tacmach.thin_no_check l
   
 
 let cut_replacing id t tac :tactic= 
-  if do_observe () 
-  then 
-    Tactics.cut_replacing id t (fun _ -> tac )
-  else 
-    tclTHENS (cut t)
-      [ tclTHEN (thin_no_check [id]) (introduction_no_check id);
-	tac 
-      ]
+  tclTHENS (cut t)
+    [ tclTHEN (thin_no_check [id]) (introduction_no_check id);
+      tac 
+    ]
 
 let intro_erasing id = tclTHEN (thin [id]) (introduction id)
 
@@ -126,17 +137,15 @@ let is_incompatible_eq t =
 	incompatible_constructor_terms t1 t2
     | _ -> false 
 
-let change_hyp_with_using hyp_id t tac = cut_replacing hyp_id t tac
-(*   let prov_id = id_of_string  "_____" in  *)
-(*   tclTHENLIST *)
-(*     [ *)
-(*        (forward   *)
-(*        (Some (tclCOMPLETE prove_equiv)) *)
-(*        (Genarg.IntroIdentifier prov_id) *)
-(*        new_hyp_typ) ; *)
-(*      clear [hyp_id]; *)
-(*      rename_hyp prov_id hyp_id *)
-(*     ] *)
+let change_hyp_with_using hyp_id t tac = 
+  fun g -> 
+    let prov_id = pf_get_new_id hyp_id g in 
+    tclTHENLIST 
+      [
+	forward (Some tac) (Genarg.IntroIdentifier prov_id) t;
+	thin [hyp_id];
+	h_rename prov_id hyp_id
+      ] g
 
 exception TOREMOVE
 
@@ -362,12 +371,12 @@ let change_eq env sigma hyp_id (context:Sign.rel_context) x t end_of_type  =
 
 
 
-let is_property ptes_to_fix t_x = 
+let is_property static_info t_x = 
   if isApp t_x 
   then 
     let pte,args = destApp t_x in 
     if isVar pte && array_for_all closed0 args 
-    then Idmap.mem (destVar pte) ptes_to_fix
+    then Idmap.mem (destVar pte) static_info.ptes_to_fixes
     else false 
   else false 
 
@@ -377,7 +386,106 @@ let isLetIn t =
     | _ -> false 
 
 
-let rec clean_hyp_with_heq fixes_ids ptes_to_fix  hyp_id env sigma = 
+let h_reduce_with_zeta = 	 
+  h_reduce 
+    (Rawterm.Cbv
+       {Rawterm.all_flags 
+	with Rawterm.rDelta = false; 		 
+       })
+  
+(* 
+let rewrite_until_var arg_num : tactic =
+  let constr_eq =  Lazy.force eq in 
+  let replace_if_unify arg (pat,cl,id,lhs)  : tactic =
+    fun g ->
+      try
+	let (evd,matched) =
+	  Unification.w_unify_to_subterm
+	    (pf_env g) ~mod_delta:false (pat,arg) cl.Clenv.env
+	in
+	let cl' = {cl with Clenv.env = evd } in
+	let c2 = Clenv.clenv_nf_meta cl' lhs in
+	(Equality.replace matched c2) g
+      with _ -> tclFAIL 0 (str "") g
+  in
+  let rewrite_on_step equalities : tactic =
+    fun g ->
+      match kind_of_term (pf_concl g) with
+	| App(_,args) when (not (test_var args arg_num)) ->
+(* 	    tclFIRST (List.map (fun a -> observe_tac (str "replace_if_unify") (replace_if_unify args.(arg_num) a)) equalities) g *)
+	    tclFIRST (List.map (replace_if_unify args.(arg_num)) equalities) g
+	| _ ->
+	    raise (Util.UserError("", (str "No more rewrite" ++
+					 pr_lconstr_env (pf_env g) (pf_concl g))))
+  in
+  fun g ->
+    let equalities =
+      List.filter
+	(
+	  fun (_,_,id_t) ->
+	    match kind_of_term id_t with
+	      | App(f,_) -> eq_constr f constr_eq
+	      | _ -> false
+	)
+	(pf_hyps g)
+    in
+    let f (id,_,ctype)  =
+      let c = mkVar id in
+      let eqclause = Clenv.make_clenv_binding g (c,ctype) Rawterm.NoBindings in
+      let clause_type = Clenv.clenv_type eqclause in
+      let f,args = decompose_app (clause_type) in
+      let rec split_last_two = function
+	| [c1;c2] -> (c1, c2)
+	| x::y::z ->
+	    split_last_two (y::z)
+	| _ ->
+	    error ("The term provided is not an equivalence")
+      in
+      let (c1,c2) = split_last_two args in
+      (c2,eqclause,id,c1)
+    in
+    let matching_hyps = List.map f equalities in
+    tclTRY (tclREPEAT (tclPROGRESS (rewrite_on_step matching_hyps))) g
+
+*)
+
+
+let rewrite_until_var arg_num eq_ids : tactic =
+  let test_var g = 
+    let _,args = destApp (pf_concl g) in 
+    isVar args.(arg_num)
+  in
+  let rec do_rewrite eq_ids g  = 
+    if test_var g 
+    then tclIDTAC g
+    else
+      match eq_ids with 
+	| [] -> anomaly "Cannot find a way to prove recursive property";
+	| eq_id::eq_ids -> 
+	    tclTHEN 
+	      (tclTRY (Equality.rewriteRL (mkVar eq_id)))
+	      (do_rewrite eq_ids)
+	      g
+  in
+  do_rewrite eq_ids
+
+let prove_rec_hyp eq_hyps fix_info =
+  tclTHEN 
+    (rewrite_until_var (fix_info.idx - 1) eq_hyps)
+    (fun g -> 
+       let _,pte_args = destApp (pf_concl g) in 
+       let rec_hyp_proof = 
+	 mkApp(mkVar fix_info.name,array_get_start pte_args) 
+       in
+       refine rec_hyp_proof g
+    )
+
+	 
+
+
+
+let rec_pte_id = id_of_string "Hrec" 
+let clean_hyp_with_heq static_infos eq_hyps hyp_id env sigma = 
   let coq_False = Coqlib.build_coq_False () in 
   let coq_True = Coqlib.build_coq_True () in 
   let coq_I = Coqlib.build_coq_I () in 
@@ -391,11 +499,7 @@ let rec clean_hyp_with_heq fixes_ids ptes_to_fix  hyp_id env sigma =
       in
         tclTHENLIST 
 	[
-	  h_reduce 
-	    (Rawterm.Cbv
-	       {Rawterm.all_flags 
-		with Rawterm.rDelta = false; 		 
-	       })
+	  h_reduce_with_zeta
 	    (Tacticals.onHyp hyp_id)
 	  ;
 	  scan_type new_context new_typ_of_hyp 
@@ -405,10 +509,10 @@ let rec clean_hyp_with_heq fixes_ids ptes_to_fix  hyp_id env sigma =
     then 
       begin 
 	let (x,t_x,t') = destProd type_of_hyp in
-	if is_property ptes_to_fix t_x then
+	if is_property static_infos t_x then
 	  begin
 	    let pte,pte_args =  (destApp t_x) in 
-	    let (_,_,fix_id,_) = Idmap.find (destVar pte) ptes_to_fix in 
+	    let fix_info = Idmap.find (destVar pte) static_infos.ptes_to_fixes in 
 	    let popped_t' = pop t' in 
 	    let real_type_of_hyp = it_mkProd_or_LetIn ~init:popped_t' context in 
 	    let prove_new_type_of_hyp = 
@@ -421,13 +525,21 @@ let rec clean_hyp_with_heq fixes_ids ptes_to_fix  hyp_id env sigma =
 		       fst (list_chop ~msg:"rec hyp : context_hyps"
 			      context_length (pf_ids_of_hyps g))
 		     in
-		     let rec_hyp_proof = mkApp(mkVar fix_id,array_get_start pte_args) in
+		     let rec_pte_id = pf_get_new_id rec_pte_id g in 
 		     let to_refine = 
 		       applist(mkVar hyp_id,
-			       List.rev_map mkVar (context_hyps_ids)@[rec_hyp_proof]
+			       List.rev_map mkVar (rec_pte_id::context_hyps_ids)
 			      )
 		     in
-		     refine to_refine g
+		     tclTHENLIST
+		       [ 
+			 forward 
+			   (Some (prove_rec_hyp eq_hyps fix_info))
+			   (Genarg.IntroIdentifier rec_pte_id)
+			   t_x;
+			 refine to_refine
+		       ]
+		       g
 		  )
 		]
 	    in
@@ -514,9 +626,7 @@ let rec clean_hyp_with_heq fixes_ids ptes_to_fix  hyp_id env sigma =
     thin [hyp_id],[]
 
 
-let clean_goal_with_heq 
-    fixes_ids ptes_to_fix continue_tac hyps body heq_id
-    = 
+let clean_goal_with_heq static_infos continue_tac dyn_infos  = 
   fun g -> 
     let env = pf_env g 
     and sigma = project g 
@@ -524,83 +634,87 @@ let clean_goal_with_heq
     let tac,new_hyps = 
       List.fold_left ( 
 	fun (hyps_tac,new_hyps) hyp_id ->
-	  
 	  let hyp_tac,new_hyp = 
-	    clean_hyp_with_heq fixes_ids ptes_to_fix hyp_id env sigma 
+	    clean_hyp_with_heq static_infos dyn_infos.eq_hyps hyp_id env sigma 
 	  in
 	  (tclTHEN hyp_tac hyps_tac),new_hyp@new_hyps
       )
 	(tclIDTAC,[])
-	hyps
+	dyn_infos.rec_hyps
+    in
+    let new_infos = 
+      { dyn_infos with 
+	  rec_hyps = new_hyps; 
+	  nb_rec_hyps  = List.length new_hyps
+      }
     in
     tclTHENLIST 
       [
 	tac ;
-	(continue_tac new_hyps body)
+	(continue_tac new_infos)
       ]
       g    
 
-let treat_new_case fixes_ids ptes_to_fix nb_prod continue_tac hyps term body = 
-  tclTHENLIST
-    [ 
-      (* We first introduce the variables *) 
-      tclDO (nb_prod - 1) intro;
-      (* Then the equation itself *)
-      intro;
-      (fun g' -> 
-	 (* We get infos on the equations introduced*)
-	 let (heq_id,_,new_term_value_eq)  = pf_last_hyp g' in
-	 (* compute the new value of the body *)
-	 let new_term_value =
-	   match kind_of_term new_term_value_eq with
-	     | App(f,[| _;_;args2 |]) -> args2
-	     | _ ->
-		 observe (pr_gls g' ++ fnl () ++ str "last hyp is" ++
-			    pr_lconstr_env (pf_env g') new_term_value_eq
-			 );
+let heq_id = id_of_string "Heq"
+
+let treat_new_case static_infos nb_prod continue_tac term dyn_infos = 
+  fun g -> 
+    let heq_id = pf_get_new_id heq_id g in 
+    let nb_first_intro = nb_prod - 1 - dyn_infos.nb_rec_hyps in
+    tclTHENLIST
+      [ 
+	(* We first introduce the variables *) 
+	tclDO nb_first_intro (intro_avoiding dyn_infos.rec_hyps);
+	(* Then the equation itself *)
+	introduction_no_check heq_id;
+	(* Then the new hypothesis *) 
+	tclMAP introduction_no_check dyn_infos.rec_hyps;
+	observe_tac "after_introduction" (fun g' -> 
+	   (* We get infos on the equations introduced*)
+	   let new_term_value_eq = pf_type_of g' (mkVar heq_id) in 
+	   (* compute the new value of the body *)
+	   let new_term_value =
+	     match kind_of_term new_term_value_eq with
+	       | App(f,[| _;_;args2 |]) -> args2
+	       | _ ->
+		   observe (pr_gls g' ++ fnl () ++ str "last hyp is" ++
+			      pr_lconstr_env (pf_env g') new_term_value_eq
+			   );
 		   assert false
-	 in
+	   in
 	 let fun_body =
-	   mkLambda(Anonymous,pf_type_of g' term,replace_term term (mkRel 1) body)
+	   mkLambda(Anonymous,
+		    pf_type_of g' term,
+		    replace_term term (mkRel 1) dyn_infos.info
+		   )
 	 in
 	 let new_body = pf_nf_betaiota g' (mkApp(fun_body,[| new_term_value |])) in
-	 (* and 
-	    1- rewrite heq in all hyps 
-	    2- call the cleanning tactic 
-	 *)
-	 let tac_rew hyp_id = 
-	   tclTHENLIST
-	    [ h_reduce 
-	     (Rawterm.Cbv
-		{Rawterm.all_flags 
-		 with Rawterm.rDelta = false; 		 
-	       })
-	     (Tacticals.onHyp hyp_id)
-	   ;
-	   tclTRY (Equality.general_rewrite_in true hyp_id (mkVar heq_id))
-	    ]
+	 let new_infos = 
+	   {dyn_infos with 
+	      info = new_body;
+	      eq_hyps = heq_id::dyn_infos.eq_hyps
+	   }
 	 in 
-	 tclTHENLIST
-	   [
-	     tclMAP tac_rew hyps;
-	     ( clean_goal_with_heq fixes_ids ptes_to_fix continue_tac hyps new_body heq_id)
-	   ]
-	   g'
+	 clean_goal_with_heq static_infos continue_tac new_infos  g'
       )
     ]
+      g
 
-let rec new_do_prove_princ_for_struct 
+let do_prove_princ_for_struct 
     (interactive_proof:bool)
     (fnames:constant list)
-    (ptes:identifier list) 
-    (fixes:(int*constr*identifier*constr) Idmap.t)
-    (hyps: identifier list)
-    (term:constr) : tactic =
-  let fixes_ids = Idmap.fold (fun _ (_,_,id,_) acc -> id::acc) fixes [] in
-  let rec do_prove_princ_for_struct_aux do_finalize hyps term = 
+    static_infos
+(*     (ptes:identifier list)  *)
+(*     (fixes:(int*constr*identifier*constr) Idmap.t) *)
+(*     (hyps: identifier list) *)
+(*     (term:constr) *)
+    dyn_infos
+    : tactic =
+(*   let fixes_ids = Idmap.fold (fun _ (_,_,id,_) acc -> id::acc) fixes [] in *)
+  let rec do_prove_princ_for_struct_aux do_finalize dyn_infos : tactic = 
     fun g -> 
 (*      observe (str "proving on " ++ Printer.pr_lconstr_env (pf_env g) term);*)
-	match kind_of_term term with 
+	match kind_of_term dyn_infos.info with 
 	  | Case(_,_,t,_) -> 
 	      let g_nb_prod = nb_prod (pf_concl g) in
 	      let type_of_term = pf_type_of g t in
@@ -609,19 +723,20 @@ let rec new_do_prove_princ_for_struct
 	      in
   	      tclTHENSEQ
 		[
-		  h_generalize [term_eq];
+		  h_generalize (term_eq::List.map mkVar dyn_infos.rec_hyps);
+		  thin dyn_infos.rec_hyps;
 		  pattern_option [[-1],t] None;
-		  simplest_case t;
+		  h_simplest_case t;
 		  (fun g' -> 
 		     let g'_nb_prod = nb_prod (pf_concl g') in 
 		     let nb_instanciate_partial = g'_nb_prod - g_nb_prod in 
-		     treat_new_case  
-		       fixes_ids fixes
+		     observe_tac "treat_new_case" 
+		       (treat_new_case  
+		       static_infos
 		       nb_instanciate_partial 
 		       (do_prove_princ_for_struct do_finalize) 
-		       hyps 
 		       t 
-		       term
+		       dyn_infos)
 		       g'
 		  )
 		  
@@ -634,471 +749,104 @@ let rec new_do_prove_princ_for_struct
 			intro
 			(fun g' ->
 			   let (id,_,_) = pf_last_hyp g' in
-			   let new_term = pf_nf_betaiota g' (mkApp(term,[|mkVar id|])) in
-			   do_prove_princ_for_struct do_finalize hyps new_term g'
+			   let new_term = 
+			     pf_nf_betaiota g' 
+			       (mkApp(dyn_infos.info,[|mkVar id|])) 
+			   in
+			   let new_infos = {dyn_infos with info = new_term} in
+			   do_prove_princ_for_struct do_finalize new_infos g'
 			) g
 		  | _ ->
-		      do_finalize hyps term g 
+		      do_finalize dyn_infos g 
 	      end
-	  | Cast(t,_,_) -> do_prove_princ_for_struct do_finalize hyps t g
+	  | Cast(t,_,_) -> 
+	      do_prove_princ_for_struct do_finalize {dyn_infos with info = t} g
 	  | Const _ | Var _ | Meta _ | Evar _ | Sort _ | Construct _ | Ind _ ->
-	      do_finalize hyps term g
+	      do_finalize dyn_infos g
 	  | App(_,_) ->
-	      let f,args = decompose_app term in
+	      let f,args = decompose_app dyn_infos.info in
 	      begin
 		match kind_of_term f with
 		  | Var _ | Construct _ | Rel _ | Evar _ | Meta _  | Ind _ ->
-		      do_prove_princ_for_struct_args do_finalize hyps f args  g
+		      let new_infos = 
+			{ dyn_infos with 
+			    info = (f,args)
+			}
+		      in
+		      do_prove_princ_for_struct_args do_finalize new_infos  g
 		  | Const c when not (List.mem c fnames) ->
-		      do_prove_princ_for_struct_args do_finalize hyps f args  g
+		      let new_infos = 
+			{ dyn_infos with 
+			    info = (f,args)
+			}
+		      in
+		      do_prove_princ_for_struct_args do_finalize new_infos g
 		  | Const _ ->
-		      do_finalize hyps term  g
+		      do_finalize dyn_infos  g
 		  | _ ->
-		      observe
-			(str "Applied binders not yet implemented: in "++ fnl () ++
-			   pr_lconstr_env (pf_env g) term ++ fnl () ++
-			   pr_lconstr_env (pf_env g) f ++ spc () ++ str "is applied") ;
+(* 		      observe *)
+(* 			(str "Applied binders not yet implemented: in "++ fnl () ++ *)
+(* 			   pr_lconstr_env (pf_env g) term ++ fnl () ++ *)
+(* 			   pr_lconstr_env (pf_env g) f ++ spc () ++ str "is applied") ; *)
 		      tclFAIL 0 (str "TODO : Applied binders not yet implemented") g
 	      end
 	  | Fix _ | CoFix _ ->
 	      error ( "Anonymous local (co)fixpoints are not handled yet")
 
 	  | Prod _ -> assert false
+	  | LetIn _ -> 
+	      let new_infos = 
+		{ dyn_infos with 
+		    info = nf_betaoiotazeta dyn_infos.info 
+		}
+	      in 
 
-	  | LetIn (Name id,v,t,b) ->
-	      do_prove_princ_for_struct do_finalize hyps (subst1 v b)  g
-	  | LetIn(Anonymous,_,_,b) ->
-	      do_prove_princ_for_struct do_finalize hyps (pop  b) g
+	      tclTHENLIST 
+		[tclMAP 
+		   (fun hyp_id -> h_reduce_with_zeta (Tacticals.onHyp hyp_id)) 
+		   dyn_infos.rec_hyps;
+		 h_reduce_with_zeta Tacticals.onConcl;
+		 do_prove_princ_for_struct do_finalize new_infos
+		] g
 	  | _ ->
 	      errorlabstrm "" (str "in do_prove_princ_for_struct found : "(* ++ *)
 (* 				 pr_lconstr_env (pf_env g) term *)
 			      )
-  and do_prove_princ_for_struct do_finalize hyps term g =
+  and do_prove_princ_for_struct do_finalize dyn_infos g =
 (*     observe (str "proving with "++Printer.pr_lconstr term++ str " on goal " ++ pr_gls g); *)
-    do_prove_princ_for_struct_aux do_finalize hyps term g
-  and do_prove_princ_for_struct_args do_finalize hyps f_args' args :tactic =
+    do_prove_princ_for_struct_aux do_finalize dyn_infos g
+  and do_prove_princ_for_struct_args do_finalize dyn_infos (* f_args'  args *) :tactic =
     fun g ->
 (*      if Tacinterp.get_debug () <> Tactic_debug.DebugOff  *)
 (*      then msgnl (str "do_prove_princ_for_struct_args with "  ++  *)
 (* 		   pr_lconstr_env (pf_env g) f_args' *)
 (* 		); *)
+      let (f_args',args) = dyn_infos.info in 
       let tac =
 	match args with
 	  | []  ->
-	      do_finalize hyps f_args'
+	      do_finalize {dyn_infos with info = f_args'}
 	  | arg::args ->
-	      let do_finalize hyps new_arg =
+	      let do_finalize dyn_infos =
+		let new_arg = dyn_infos.info in 
 		tclTRYD
 		  (do_prove_princ_for_struct_args
 		     do_finalize
-		     hyps 
-		     (mkApp(f_args',[|new_arg|]))
-		     args
+		     {dyn_infos with info = (mkApp(f_args',[|new_arg|])), args}
 		  )
 	      in
-	      do_prove_princ_for_struct do_finalize hyps arg
+	      do_prove_princ_for_struct do_finalize 
+		{dyn_infos with info = arg }
       in
       tclTRYD(tac ) g
   in
-  do_prove_princ_for_struct (fun hyps term -> congruence) hyps term 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-type rewrite_dir =
-  | LR
-  | RL
-
-let rew_all ?(rev_order=false) lr : tactic =
-  let rew =
-    match lr with
-      | LR -> Equality.rewriteLR
-      | RL ->  Equality.rewriteRL
+  let do_finish_proof dyn_infos = 
+    clean_goal_with_heq 
+      static_infos
+      finish_proof dyn_infos
   in
-  let order =
-    if rev_order then List.rev else fun x -> x
-  in
-  fun g ->
-    onHyps
-      pf_hyps
-      (fun l -> tclMAP (fun (id,_,_) ->  tclTRY (rew (mkVar id))) (order l))
-      g
-let rew_all_in_list ?(rev_order=false) idl lr : tactic =
-  let rew =
-    match lr with
-      | LR -> Equality.rewriteLR
-      | RL ->  Equality.rewriteRL
-  in
-  let order =
-    if rev_order then List.rev else fun x -> x
-  in
-  fun g ->
-    tclMAP (fun id -> tclTRY (rew (mkVar id))) (order idl) g
-
-
-let rewrite_and_try_tac ?(rev_order=false) lr tac eqs : tactic =
-  let rew =
-    match lr with
-      | LR -> Equality.rewriteLR
-      | RL ->  Equality.rewriteRL
-  in
-  let order =
-    if rev_order then List.rev else fun x -> x
-  in
-  let rec rewrite_and_try_tac =   function
-    | [] -> tclCOMPLETE tac
-    | id::idl ->
-	let other_tac = rewrite_and_try_tac idl in
-	tclFIRST
-	  [
-	    other_tac;
-	    
-
-	    tclTHEN
-	      (rew (mkVar id))
-	      (tclFIRST
-		 [
-		   other_tac;
-		   tclCOMPLETE tac
-		 ]
-	      )
-	  ]
-  in
-  rewrite_and_try_tac (order eqs)
-
-
-      
-let test_var args arg_num =
-  isVar args.(arg_num)
-   
-
-
-let rewrite_until_var arg_num : tactic =
-  let constr_eq =  (Coqlib.build_coq_eq_data ()).Coqlib.eq in
-  let replace_if_unify arg (pat,cl,id,lhs)  : tactic =
-    fun g ->
-      try
-	let (evd,matched) =
-	  Unification.w_unify_to_subterm
-	    (pf_env g) ~mod_delta:false (pat,arg) cl.Clenv.env
-	in
-	let cl' = {cl with Clenv.env = evd } in
-	let c2 = Clenv.clenv_nf_meta cl' lhs in
-	(Equality.replace matched c2) g
-      with _ -> tclFAIL 0 (str "") g
-  in
-  let rewrite_on_step equalities : tactic =
-    fun g ->
-      match kind_of_term (pf_concl g) with
-	| App(_,args) when (not (test_var args arg_num)) ->
-(* 	    tclFIRST (List.map (fun a -> observe_tac (str "replace_if_unify") (replace_if_unify args.(arg_num) a)) equalities) g *)
-	    tclFIRST (List.map (replace_if_unify args.(arg_num)) equalities) g
-	| _ ->
-	    raise (Util.UserError("", (str "No more rewrite" ++
-					 pr_lconstr_env (pf_env g) (pf_concl g))))
-  in
-  fun g ->
-    let equalities =
-      List.filter
-	(
-	  fun (_,_,id_t) ->
-	    match kind_of_term id_t with
-	      | App(f,_) -> eq_constr f constr_eq
-	      | _ -> false
-	)
-	(pf_hyps g)
-    in
-    let f (id,_,ctype)  =
-      let c = mkVar id in
-      let eqclause = Clenv.make_clenv_binding g (c,ctype) Rawterm.NoBindings in
-      let clause_type = Clenv.clenv_type eqclause in
-      let f,args = decompose_app (clause_type) in
-      let rec split_last_two = function
-	| [c1;c2] -> (c1, c2)
-	| x::y::z ->
-	    split_last_two (y::z)
-	| _ ->
-	    error ("The term provided is not an equivalence")
-      in
-      let (c1,c2) = split_last_two args in
-      (c2,eqclause,id,c1)
-    in
-    let matching_hyps = List.map f equalities in
-    tclTRY (tclREPEAT (tclPROGRESS (rewrite_on_step matching_hyps))) g
-
-
-
-let case_eq  tac eqs body term g =
-(*   msgnl (str "case_eq on " ++ pr_lconstr_env (pf_env g) term); *)
-  let type_of_term = pf_type_of g term in
-  let term_eq =
-    make_refl_eq type_of_term term
-  in
-  let ba_fun ba  : tactic =
-    fun g ->
-      tclTHENSEQ
-	[intro_patterns [](* ba.branchnames *);
-	 fun g ->
-	   let (id,_,new_term_value_eq)  = pf_last_hyp g in
-	   let new_term_value =
-	     match kind_of_term new_term_value_eq with
-	       | App(f,[| _;_;args2 |]) -> args2
-	     | _ ->
-		 Pp.msgnl (pr_gls g ++ fnl () ++ str "last hyp is" ++
-			     pr_lconstr_env (pf_env g) new_term_value_eq
-			  );
-		 assert false
-	   in
-	   let fun_body =
-	     mkLambda(Anonymous,type_of_term,replace_term term (mkRel 1) body)
-	   in
-	   let new_body = mkApp(fun_body,[| new_term_value |]) in
-	   tac (pf_nf_betaiota g new_body) (id::eqs) g
-	]
-	g
-  in
-    (
-      tclTHENSEQ
-	[
-	  h_generalize [term_eq];
-	  pattern_option [[-1],term] None;
-	  case_then_using Genarg.IntroAnonymous (ba_fun) None ([],[]) term
-	]
-    )
-    g
-
-
-
-(* let my_reflexivity : tactic = *)
-(*   let test_eq = *)
-(*     lazy (eq_constr (Coqlib.build_coq_eq ())) *)
-(*   in *)
-(*   let build_reflexivity  = *)
-(*     lazy (fun ty t -> mkApp((Coqlib.build_coq_eq_data ()).Coqlib.refl,[|ty;t|])) *)
-(*   in *)
-(*   fun g -> *)
-(*     begin *)
-(*     match kind_of_term (pf_concl g) with *)
-(*       | App(eq,[|ty;t1;t2|]) when (Lazy.force test_eq) eq -> *)
-(* 	    if not (Termops.occur_existential t1) *)
-(* 	    then tclTHEN (h_change None (mkApp(eq,[|ty;t1;t1|]))  onConcl ) (apply ((Lazy.force build_reflexivity) ty t1)) *)
-(* 	    else if not (Termops.occur_existential t2) *)
-(* 	    then   tclTHEN (h_change None (mkApp(eq,[|ty;t2;t2|])) onConcl ) (apply ((Lazy.force build_reflexivity) ty t2)) *)
-(* 	    else tclFAIL 0 (str "") *)
-	      
-(*       | _ -> tclFAIL 0 (str "") *)
-(*     end g *)
-
-let eauto : tactic  =
-  fun g ->
-  tclFIRST
-    [
-      Eauto.e_assumption
-      ;
-      h_exact  (Coqlib.build_coq_I ());
-      tclCOMPLETE
-	(Eauto.gen_eauto false (false,1) [] (Some []))
-    ]
-    g
-
-let do_eauto eqs :tactic =
-  tclFIRST
-    [
-(*       rewrite_and_try_tac LR eauto eqs; *)
-(*       rewrite_and_try_tac RL eauto eqs; *)
-      rewrite_and_try_tac ~rev_order:true LR eauto eqs;
-(*       rewrite_and_try_tac ~rev_order:true RL eauto eqs *)
-    ]
-
-let conclude fixes eqs g =
-(*   let clear_fixes =  *)
-(*     let l = Idmap.fold (fun _ (_,_,id,_) acc -> id::acc) fixes [] in  *)
-(*     h_clear false l  *)
-(*   in   *)
-  match kind_of_term (pf_concl g) with
-    | App(pte,args) ->
-	let tac =
-	  if isVar pte
-	  then
-	    try
-	      let idxs,body,this_fix_id,new_type = Idmap.find (destVar pte) fixes
-	      in
-	      let idx = idxs - 1 in
-	      tclTHEN
-		(rewrite_until_var idx)
-		(* If we have an IH then with use the fixpoint *)
-		(Eauto.e_resolve_constr (mkVar this_fix_id))
-		(* And left the generated subgoals to eauto *)
-	    with Not_found -> (* this is not a pte *)
-	      tclIDTAC
-	  else tclIDTAC
-	in
-	tclTHENSEQ [tac; do_eauto eqs ]
-	  g
-    | _ -> do_eauto eqs g
-	
-	     
-let finalize_proof interactive_proof fixes hyps fnames term eqs =
-  tclORELSE
-    (
-      tclFIRST
-(* 	( *)
-(* 	  (List.map  *)
-(* 	     (fun id -> tclTHEN (Eauto.e_resolve_constr (mkVar id))  *)
-(* 		(tclCOMPLETE (conclude fixes eqs))) hyps *)
-(* 	  )@ *)
-	    (List.map
-	       (fun id ->
-		  let tac =
-		    tclTHENLIST
-		      [
-			(Eauto.e_resolve_constr (mkVar id));
-			(tclCOMPLETE (conclude fixes eqs))
-		      ]
-		  in
-		  rewrite_and_try_tac RL tac eqs
-	       )
-	       hyps
-	    )
-	
-    )
-    (if interactive_proof then tclIDTAC else tclFAIL 0 (str ""))
-    
-    
-
-
-let do_prove_princ_for_struct interactive_proof
-    (* (rec_pos:int option) *)  (fnames:constant list)
-    (ptes:identifier list) (fixes:(int*constr*identifier*constr) Idmap.t) (hyps: identifier list)
-      (term:constr) : tactic =
-  let finalize_proof term eqs =
-    finalize_proof (* rec_pos *) interactive_proof fixes hyps fnames term eqs
-  in
-  let rec do_prove_princ_for_struct do_finalize term eqs g =
-(*      if Tacinterp.get_debug () <> Tactic_debug.DebugOff  *)
-(*      then msgnl (str "Proving with body : " ++ pr_lconstr_env (pf_env g) term); *)
-    let tac =
-      fun g ->
-	match kind_of_term term with
-	  | Case(_,_,t,_) ->
-	      observe_tac "case_eq"
-	      (case_eq (do_prove_princ_for_struct do_finalize) eqs term t) g
-	  | Lambda(n,t,b) ->
-	      begin
-		match kind_of_term( pf_concl g) with
-		  | Prod _ ->
-		      tclTHEN
-			intro
-			(fun g' ->
-			   let (id,_,_) = pf_last_hyp g' in
-			   let new_term = pf_nf_betaiota g' (mkApp(term,[|mkVar id|])) in
-			   do_prove_princ_for_struct do_finalize new_term eqs g'
-			) g
-		  | _ ->
-		      do_finalize term eqs g
-	      end
-	  | Cast(t,_,_) -> do_prove_princ_for_struct do_finalize t eqs g
-	  | Const _ | Var _ | Meta _ | Evar _ | Sort _ | Construct _ | Ind _ ->
-	      do_finalize term eqs g
-	  | App(_,_) ->
-	      let f,args = decompose_app term in
-	      begin
-		match kind_of_term f with
-		  | Var _ | Construct _ | Rel _ | Evar _ | Meta _  | Ind _ ->
-		      do_prove_princ_for_struct_args do_finalize f args eqs g
-		  | Const c when not (List.mem c fnames) ->
-		      do_prove_princ_for_struct_args do_finalize f args eqs g
-		  | Const _ ->
-		      do_finalize term eqs g
-		  | _ ->
-		      observe
-			(str "Applied binders not yet implemented: in "++ fnl () ++
-			   pr_lconstr_env (pf_env g) term ++ fnl () ++
-			   pr_lconstr_env (pf_env g) f ++ spc () ++ str "is applied") ;
-		      tclFAIL 0 (str "TODO : Applied binders not yet implemented") g
-	      end
-	  | Fix _ | CoFix _ ->
-	      error ( "Anonymous local (co)fixpoints are not handled yet")
-	  | Prod _ -> assert false
-	  | LetIn (Name id,v,t,b) ->
-	      do_prove_princ_for_struct do_finalize (subst1 v b) eqs g
-	  | LetIn(Anonymous,_,_,b) ->
-	      do_prove_princ_for_struct do_finalize (pop  b) eqs g
-	  | _ ->
-	      errorlabstrm "" (str "in do_prove_princ_for_struct found : "(* ++ *)
-(* 				 pr_lconstr_env (pf_env g) term *)
-			      )
-
-      in
-       tac g
-  and do_prove_princ_for_struct_args do_finalize f_args' args eqs :tactic =
-    fun g ->
-(*      if Tacinterp.get_debug () <> Tactic_debug.DebugOff  *)
-(*      then msgnl (str "do_prove_princ_for_struct_args with "  ++  *)
-(* 		   pr_lconstr_env (pf_env g) f_args' *)
-(* 		); *)
-      let tac =
-	match args with
-	  | []  ->
-	      do_finalize f_args'
-	  | arg::args ->
-	      let do_finalize new_arg eqs =
-		tclTRYD
-		  (do_prove_princ_for_struct_args
-		     do_finalize
-		     (mkApp(f_args',[|new_arg|]))
-		     args
-		     eqs
-		  )
-	      in
-	      do_prove_princ_for_struct do_finalize arg
-      in
-      tclTRYD(tac eqs) g
-	
-  in
-  do_prove_princ_for_struct
-    (finalize_proof)
-    term
-    []
-
-
-let do_prove_princ_for_struct
-    (interactive_proof:bool)
-    (fnames:constant list)
-    (ptes:identifier list) 
-    (fixes:(int*constr*identifier*constr) Idmap.t)
-    (hyps: identifier list)
-    (term:constr)
- = 
-  observe (str "start_proof");
-  new_do_prove_princ_for_struct
-    (interactive_proof:bool)
-    (fnames:constant list)
-    (ptes:identifier list) 
-    (fixes:(int*constr*identifier*constr) Idmap.t)
-    (hyps: identifier list)
-    (term:constr)
+  observe_tac "do_prove_princ_for_struct"
+    (do_prove_princ_for_struct do_finish_proof dyn_infos) 
 
 let is_pte_type t =
   isSort (snd (decompose_prod t))
@@ -1114,9 +862,16 @@ let instanciate_hyps_with_args (do_prove:identifier list -> tactic) hyps args_id
   let instanciate_one_hyp hid = 
     tclORELSE
       ( (* we instanciate the hyp if possible  *)
-	tclTHENLIST
-	  [h_generalize [mkApp(mkVar hid,args)];
-	   intro_erasing hid]
+(* 	tclTHENLIST *)
+(* 	  [h_generalize [mkApp(mkVar hid,args)]; *)
+(* 	   intro_erasing hid] *)
+	fun g -> 
+	  let prov_hid = pf_get_new_id hid g in
+	  tclTHENLIST[
+	    forward None (Genarg.IntroIdentifier prov_hid) (mkApp(mkVar hid,args));
+	    thin [hid];
+	    h_rename prov_hid hid
+	  ] g
       )
       ( (*
 	  if not then we are in a mutual function block 
@@ -1134,19 +889,26 @@ let instanciate_hyps_with_args (do_prove:identifier list -> tactic) hyps args_id
   in
   (* if no args then no instanciation ! *)     
   if args_id = []  
-  then do_prove hyps
+  then 
+    tclTHENLIST [
+      tclMAP (fun hyp_id -> h_reduce_with_zeta (Tacticals.onHyp hyp_id)) hyps;
+      do_prove hyps
+    ]
   else
-    tclTHEN
-      (tclMAP instanciate_one_hyp hyps)
-      (fun g ->  
-	 let all_g_hyps_id = 
-	   List.fold_right Idset.add (pf_ids_of_hyps g) Idset.empty
-	 in 
-	 let remaining_hyps = 
-	   List.filter (fun id -> Idset.mem id all_g_hyps_id) hyps
-	 in
-	 do_prove remaining_hyps g
-      )
+    tclTHENLIST
+      [
+	tclMAP (fun hyp_id -> h_reduce_with_zeta (Tacticals.onHyp hyp_id)) hyps;
+	tclMAP instanciate_one_hyp hyps;
+	(fun g ->  
+	   let all_g_hyps_id = 
+	     List.fold_right Idset.add (pf_ids_of_hyps g) Idset.empty
+	   in 
+	   let remaining_hyps = 
+	     List.filter (fun id -> Idset.mem id all_g_hyps_id) hyps
+	   in
+	   do_prove remaining_hyps g
+	  )
+      ]
     
 
 let prove_princ_for_struct interactive_proof fun_num fnames all_funs _naprams : tactic =
@@ -1200,9 +962,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _naprams : 
 	    let this_fix_id = fresh_id !avoid "fix___" in
 	    avoid := this_fix_id::!avoid;
 (* 	    let this_body = substl (List.rev fnames_as_constr) ca.(i) in  *)
-	    let this_body = substl (List.rev (Array.to_list all_funs)) ca.(i) in
-	    let new_type = prod_applist typearray.(i) true_params
-	    and new_body = Reductionops.nf_beta (applist(this_body,true_params)) in
+	    let new_type = prod_applist typearray.(i) true_params in
 	    let new_type_args,_ = decompose_prod new_type in
 	    let nargs = List.length new_type_args in
 	    let pte_args =
@@ -1213,7 +973,13 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _naprams : 
 	    in
 	    let app_pte = applist(mkVar pte_id,pte_args) in
 	    let new_type = compose_prod new_type_args app_pte in
-	    let fix_info = idxs.(i) - offset + 1,new_body,this_fix_id ,new_type in
+	    let fix_info = 
+	      {
+		idx = idxs.(i) - offset + 1;
+		name = this_fix_id; 
+		types = new_type
+	      }
+	    in
 	    pte_to_fix := Idmap.add  pte_id fix_info !pte_to_fix;
 	    fix_info::acc
 	 )
@@ -1254,30 +1020,40 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _naprams : 
 	 let pre_info,infos = list_chop fun_num infos in
 	 match pre_info,infos with
 	   | [],[] -> tclIDTAC g
-	   | _,(idx,_,fix_id,_)::infos' ->
+	   | _,this_fix_info::infos' ->
 	       let other_fix_info =
-		 List.map (fun (idx,_,fix_id,fix_typ) -> fix_id,idx,fix_typ) (pre_info@infos')
+		 List.map 
+		   (fun fix_info -> fix_info.name,fix_info.idx,fix_info.types) 
+		   (pre_info@infos')
 	       in
 	       tclORELSE
-		 (h_mutual_fix fix_id idx other_fix_info)
-		 (tclFAIL 1000 (str "bad index" ++ str (string_of_int idx) ++
+		 (h_mutual_fix this_fix_info.name this_fix_info.idx other_fix_info)
+		 (tclFAIL 1000 (str "bad index" ++ 
+				  str (string_of_int this_fix_info.idx) ++
 				  str "offset := " ++
 				  (str (string_of_int offset))))
 		 g
 	   | _,[] -> anomaly "Not a valid information"
      in
-     let do_prove pte_to_fix args branches : tactic =
+     let do_prove ptes_to_fixes args branches : tactic =
        fun g ->
+	 let static_infos = 
+	   {
+	     ptes_to_fixes = ptes_to_fixes;
+	     fixes_ids = 
+	       Idmap.fold 
+		 (fun _ fix_info acc -> fix_info.name::acc) 
+		 ptes_to_fixes []
+	   }
+	 in
 	 match kind_of_term (pf_concl g) with
 	   | App(pte,pte_args) when isVar pte ->
 	       begin
 		 let pte = destVar pte in
 		 try
-		   let (_idx,_new_body,_this_fix_id,_new_type) =
-		     try Idmap.find pte pte_to_fix with _ -> raise Not_Rec
-		   in
-		 let nparams = List.length !params in
-		 let args_as_constr = List.map mkVar  args in
+		   if not (Idmap.mem pte ptes_to_fixes) then raise Not_Rec;
+		   let nparams = List.length !params in
+		   let args_as_constr = List.map mkVar  args in
 		  let rec_num,new_body =
 		    let idx' = list_index pte (List.rev !predicates)  - 1 in
 		    let f = fnames.(idx') in
@@ -1294,12 +1070,11 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _naprams : 
 		    Reductionops.nf_beta
 		      (applist(new_body,List.rev args_as_constr))
 		  in
-		  let do_prove =
+		  let do_prove branches applied_body =
 		    do_prove_princ_for_struct
 		      interactive_proof
 		      (Array.to_list fnames)
-		      !predicates
-		      pte_to_fix
+		      static_infos
 		      branches
 		      applied_body
 		  in
@@ -1315,10 +1090,17 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _naprams : 
 			 (Equality.replace (array_last pte_args) applied_body) g
 		      )
 		      [
-			do_prove;
+			clean_goal_with_heq 
+			  static_infos do_prove 
+			  {
+			    nb_rec_hyps = List.length branches;
+			    rec_hyps = branches;
+			    info = applied_body;
+			    eq_hyps = [];
+			  } ;
 			try
 			  let id = List.nth (List.rev args_as_constr) (rec_num) in
-(* 			  observe (str "choosen var := "++ pr_lconstr id); *)
+			  (* observe (str "choosen var := "++ pr_lconstr id); *)
 			  (tclTHENSEQ
 			     [(h_simplest_case id);
 			      Tactics.intros_reflexivity
@@ -1332,16 +1114,26 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _naprams : 
 		   let fname = destConst (fst (decompose_app (array_last pte_args))) in
 		   tclTHEN
 		     (unfold_in_concl [([],Names.EvalConstRef fname)])
-		     (observe_tac "" (fun g' ->
-					do_prove_princ_for_struct
-					  interactive_proof
-					  (Array.to_list fnames)
-					  !predicates
-					  pte_to_fix
-					  branches
-					  (array_last (snd (destApp (pf_concl g'))))
-					  g'
-				     ))
+		     (observe_tac "" 
+			(fun g' ->
+			   let body = array_last (snd (destApp (pf_concl g'))) in 
+			   let dyn_infos = 
+			     { nb_rec_hyps = List.length branches;
+			       rec_hyps = branches;
+			       info = body;
+			       eq_hyps = []
+			     }
+			   in
+			   let do_prove = 
+			     do_prove_princ_for_struct
+			       interactive_proof
+			       (Array.to_list fnames)
+			       static_infos
+			   in
+			   clean_goal_with_heq static_infos
+			     do_prove dyn_infos g'
+			)
+		     )
 		     g
 	       end
 	   | _ -> assert false
@@ -1352,16 +1144,6 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _naprams : 
 	 (fun g -> observe_tac "introducing predicate" (intro_with_remembrance predicates  princ_info.npredicates) g);
 	 (fun g -> observe_tac "introducing branches" (intro_with_remembrance branches princ_info.nbranches) g);
 	 (fun g -> observe_tac "declaring fix(es)" mk_fixes g);
-(* 	 (fun g -> *)
-(* 	    let args = ref [] in *)
-(* 	    tclTHENLIST *)
-(* 	      [ *)
-(* 		(fun g -> observe_tac "introducing args" (intro_with_remembrance args princ_info.nargs) g); *)
-(* 		(fun g -> observe_tac "instanciating rec hyps" (instanciate_hyps_with_args !branches (List.rev !args)) g); *)
-(* 		(fun g -> observe_tac "proving" (fun  g -> do_prove !pte_to_fix !args g) g) *)
-(* 	      ] *)
-(* 	      g *)
-(* 	 ) *)
 	 (fun g -> 
 	    let nb_prod_g = nb_prod (pf_concl g) in 
 	    tclTHENLIST [
@@ -1758,24 +1540,19 @@ let generate_functional_principle
       hook
     ;
     try
-      let tim1 = System.get_time ()  in
+      let _tim1 = System.get_time ()  in
       Pfedit.by  (proof_tac (Array.map mkConst funs) mutr_nparams);
-      let tim2 =  System.get_time ()  in
-      let _ =       if do_observe () 
-      then
-	begin
-	  let dur1 = System.time_difference tim1 tim2 in
-	  Pp.msgnl (str ("Time to compute proof: ") ++ str (string_of_float dur1));
-	end
-      in
+      let _tim2 =  System.get_time ()  in
+(* 	begin *)
+(* 	  let dur1 = System.time_difference tim1 tim2 in *)
+(* 	  Pp.msgnl (str ("Time to compute proof: ") ++ str (string_of_float dur1)); *)
+(* 	end; *)
       let do_save =  not (do_observe ()) && not interactive_proof in 
       let _ = 
 	try 
 	  Options.silently Command.save_named true;
-	  let dur2 = System.time_difference tim2 (System.get_time ()) in
-	  if do_observe () 
-	  then
-	    Pp.msgnl (str ("Time to check proof: ") ++ str (string_of_float dur2));
+	  let _dur2 = System.time_difference _tim2 (System.get_time ()) in
+(* 	  Pp.msgnl (str ("Time to check proof: ") ++ str (string_of_float dur2)); *)
 	  Options.if_verbose 
 	    (fun () -> 
 	       Pp.msgnl (
