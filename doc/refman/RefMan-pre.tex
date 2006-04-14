@@ -485,7 +485,7 @@ tactics.
 
 Benjamin Monate is the developer of the \CoqIDE{} graphical
 interface with contributions by Jean-Christophe Filliâtre, Pierre
-Letouzey and Claude Marché.
+Letouzey, Claude Marché and Bruno Barras.
 
 Claude Marché coordinated the edition of the Reference Manual for
  \Coq{} V8.0.
@@ -497,14 +497,77 @@ Jean-Christophe Filliâtre, Pierre Letouzey, Hugo Herbelin and
 contributors from Sophia-Antipolis and Nijmegen participated to the
 extension of the library.
 
+Julien Narboux built a NSIS-based automatic {\Coq} installation tool for
+the Windows platform.
+
 Hugo Herbelin and Christine Paulin coordinated the development which
 was under the responsability of Christine Paulin.
 
 \begin{flushright}
 Palaiseau \& Orsay, Apr. 2004\\
-Hugo Herbelin \& Christine Paulin
+Hugo Herbelin \& Christine Paulin\\
+(updated Apr. 2006)
 \end{flushright}
 
+\section*{Credits: version 8.1}
+
+{\Coq} version 8.1 adds various new functionalities.
+
+Benjamin Grégoire implemented an alternative algorithm to check the
+convertibility of terms in the {\Coq} type-checker. This alternative
+algorithm works by compilation to an efficient bytecode that is
+interpreted in an abstract machine similar to Xavier Leroy's ZINC
+machine.  Convertibility is performed by comparing the normal
+forms. This alternative algorithm is specifically interesting for
+proofs by reflection. More generally, it is convenient in case of
+intensive computations.
+
+Christine Paulin implemented an extension of inductive types allowing
+recursively non uniform parameters. Hugo Herbelin implemented
+sort-polymorphism for inductive types.
+
+Claudio Sacerdoti Coen improved the tactics for rewriting on arbitrary
+compatible equivalence relations. He also generalized rewriting to
+arbitrary transition systems.
+
+Claudio Sacerdoti Coen added new features to the module system. 
+
+Benjamin Grégoire, Assia Mahboubi and Bruno Barras developed a new
+more efficient and more general simplification algorithm on rings and
+semi-rings.
+
+Hugo Herbelin, Pierre Letouzey and Claudio Sacerdoti Coen added new
+tactic features.
+
+Hugo Herbelin implemented matching on disjunctive patterns.
+
+New mechanisms made easier the communication between {\Coq} and external
+provers. Nicolas Ayache and Jean-Christophe Filliâtre implemented
+connections with the provers {\sc cvcl}, {\sc Simplify} and {\sc
+zenon}. Hugo Herbelin implemented an experimental protocol for calling
+external tools from the tactic language.
+
+%Matthieu Sozeau developed an experimental language to reason over subtypes.
+
+A mechanism to automatically use some specific tactic to solve
+unresolved implicit has been implemented by Hugo Herbelin.
+
+Laurent Théry's contribution on strings and Pierre Letouzey and
+Jean-Christophe Filliâtre's contribution on finite maps have been
+integrated to the {\Coq} standard library. Pierre Letouzey developed a
+library about finite sets ``à la Objective Caml'' and extended the
+lists library.
+
+Pierre Corbineau extended his tactic for solving first-order
+statements. He wrote a reflexion-based intuitionistic tautology
+solver.
+
+Jean-Marc Notin took care of the general maintenance of the system.
+
+\begin{flushright}
+Palaiseau, Apr. 2006\\
+Hugo Herbelin
+\end{flushright}
 
 %\newpage
 

@@ -63,6 +63,7 @@ val nf_betaiota : local_reduction_function
 val nf_betadeltaiota : reduction_function
 val nf_evar : evar_map -> constr -> constr
 
+val nf_betaiotaevar_preserving_vm_cast : reduction_function
 (* Lazy strategy, weak head reduction *)
 val whd_evar :  evar_map -> constr -> constr
 val whd_beta : local_reduction_function
@@ -111,7 +112,7 @@ val whd_betadeltaiotaeta_stack :  stack_reduction_function
 val whd_betadeltaiotaeta_state :  state_reduction_function
 val whd_betadeltaiotaeta :  reduction_function
 
-val whd_betaiotaevar_preserving_vm_cast : reduction_function
+
 
 
 
