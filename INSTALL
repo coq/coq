@@ -1,12 +1,12 @@
 
-            INSTALLATION PROCEDURES FOR THE COQ V8.0 SYSTEM
+            INSTALLATION PROCEDURES FOR THE COQ V8.1 SYSTEM
             -----------------------------------------------
 
 WHAT DO YOU NEED ?
 ==================
 
    Coq is designed to work on computers equipped with the Unix operating 
-   system. In order to compile Coq V8.0 you need:
+   system. In order to compile Coq V8.1 you need:
 
      - Objective Caml version 3.06 or later
        (available at http://caml.inria.fr/)

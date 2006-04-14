@@ -6,7 +6,7 @@
 # 
 ##################################
 
-VERSION=trunk
+VERSION=8.1-alpha
 DATE="Mar 2006"
 
 # a local which command for sh
@@ -467,7 +467,7 @@ PRINTF=`which printf`
 
 # Subdirectories of theories/ added in coq_config.ml
 subdirs () {
-    (cd $1; find * -type d ! -name CVS -exec $PRINTF "\"%s\";\n" {} \; | grep -v extraction/test | grep -v correctness >> $mlconfig_file)
+    (cd $1; find * -type d ! -name .svn -exec $PRINTF "\"%s\";\n" {} \; | grep -v extraction/test | grep -v correctness >> $mlconfig_file)
 }
 
 echo "let theories_dirs = [" >> $mlconfig_file
