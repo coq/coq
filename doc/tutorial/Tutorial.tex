@@ -96,7 +96,6 @@ of the system, called respectively \verb:Prop:, \verb:Set:, and
 Every valid expression $e$ in Gallina is associated with a specification,
 itself a valid expression, called its {\sl type} $\tau(E)$. We write
 $e:\tau(E)$ for the judgment that $e$ is of type $E$. 
-%CP Le role de \tau n'est pas clair.
 You may request \Coq~ to return to you the type of a valid expression by using
 the command \verb:Check::
 
@@ -271,7 +270,6 @@ Goal (A -> B -> C) -> (A -> B) -> A -> C.
 The system displays the current goal below a double line, local hypotheses
 (there are none initially) being displayed above the line. We call 
 the combination of local hypotheses with a goal a {\sl judgment}.
-%The new prompt \verb:Unnamed_thm <: indicates that.
 We are now in an inner 
 loop of the system, in proof mode. 
 New commands are available in this
@@ -286,10 +284,6 @@ of the application to the list of local hypotheses:
 \begin{coq_example}
 intro H.
 \end{coq_example}
-
-%{\bf Warning} to users of \Coq~ previous versions: The display of a sequent in
-%older versions of \Coq~ is inverse of this convention: the goal is displayed
-%above the double line, the hypotheses below.
 
 Several introductions may be done in one step:
 \begin{coq_example}
@@ -337,16 +331,13 @@ Save trivial_lemma.
 \end{coq_example}
 
 As a comment, the system shows the proof script listing all tactic
-commands used in the proof. % ligne blanche apres exact HA??
+commands used in the proof. 
 
 Let us redo the same proof with a few variations. First of all we may name
 the initial goal as a conjectured lemma:
 \begin{coq_example}
 Lemma distr_impl : (A -> B -> C) -> (A -> B) -> A -> C.
 \end{coq_example}
-
-%{\bf Warning} to users of \Coq~ older versions: In order to enter the proof
-%engine, at this point a dummy \verb:Goal.: command had to be typed in.
 
 Next, we may omit the names of local assumptions created by the introduction
 tactics, they can be automatically created by the proof engine as new
@@ -407,7 +398,7 @@ backtrack n steps.
 
 We end this section by showing a useful command, \verb:Inspect n.:,
 which inspects the global \Coq~ environment, showing the last \verb:n: declared
-notions: % Attention ici ??
+notions: 
 \begin{coq_example}
 Inspect 3.
 \end{coq_example}
@@ -522,8 +513,6 @@ such a simple tautology. The reason is that we want to keep
 
 A complete tactic for propositional
 tautologies is indeed available in \Coq~ as the \verb:tauto: tactic. 
-%In order to get this facility, we have to import a library module 
-%called ``Dyckhoff'':
 \begin{coq_example}
 Restart.
 tauto.
@@ -1024,7 +1013,6 @@ more specialised properties.
 
 Assume that we want to develop the theory of sets represented as characteristic
 predicates over some universe \verb:U:. For instance:
-%CP Une petite explication pour le codage de element ?
 \begin{coq_example}
 Variable U : Type.
 Definition set := U -> Prop.
@@ -1099,9 +1087,6 @@ mathematical justification of a logical development relies only on
 
 Conversely, ordinary mathematical definitions can be unfolded at will, they
 are {\sl transparent}. 
-%It is possible to enforce the reverse convention by
-%declaring a definition as {\sl opaque} or a lemma as {\sl transparent}.
-
 \chapter{Induction}
 
 \section{Data Types as Inductively Defined Mathematical Collections}
@@ -1244,8 +1229,7 @@ Reset bool.
 
 
 \subsection{Simple proofs by induction}
-%CP  Pourquoi ne pas commencer par des preuves d'egalite entre termes
-%    convertibles. 
+
 \begin{coq_eval}
 Reset Initial.
 \end{coq_eval}
@@ -1427,7 +1411,6 @@ elim n_le_m.
 What happens here is similar to the behaviour of \verb:elim: on natural
 numbers: it appeals to the relevant induction principle, here \verb:le_ind:,
 which generates the two subgoals, which may then be solved easily
-%as if ``backchaining'' the current goal
 with the help of the defining clauses of \verb:le:.
 \begin{coq_example}
 apply le_n; trivial.
@@ -1519,8 +1502,6 @@ development is not type-checked again.
 You may create your own modules, by writing \Coq~ commands in a file,
 say \verb:my_module.v:. Such a module may be simply loaded in the current
 context, with command \verb:Load my_module:. It may also be compiled,
-%using the command \verb:Compile Module my_module: directly at the
-%\Coq~ toplevel, or else 
 in ``batch'' mode, using the UNIX command
 \verb:coqc:. Compiling the module \verb:my_module.v: creates a 
 file \verb:my_module.vo:{} that can be reloaded with command
@@ -1559,16 +1540,6 @@ provides usual infix notations for arithmetic operators.
 SearchPattern (_ + _ = _).
 \end{coq_example}
 
-% The argument to give is a type and it searches in the current context all
-% constants having the same type modulo certain notion of
-% \textit{isomorphism}. For example~:
-
-% \begin{coq_example}
-% Require Arith.
-% SearchIsos nat -> nat -> Prop.
-% SearchIsos (x,y,z:nat)(le x y) -> (le y z) -> (le x z).
-% \end{coq_example} 
- 
 \section{Now you are on your own}
 
 This tutorial is necessarily incomplete. If you wish to pursue serious
