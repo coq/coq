@@ -793,7 +793,7 @@ let prepare_unif_pb typ cs =
   let typ' =
     if noccur_between_without_evar 1 n typ then lift (-n) typ
     else (* TODO4-1 *)
-      error "Inference of annotation not yet implemented in this case" in
+      error "Unable to infer return clause of this pattern-matching problem" in
   let args = extended_rel_list (-n) cs.cs_args in
   let ci = applist (mkConstruct cs.cs_cstr, cs.cs_params@args) in
 
