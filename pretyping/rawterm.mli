@@ -70,7 +70,7 @@ and rawdecl = name * rawconstr option * rawconstr
 
 and fix_recursion_order = RStructRec | RWfRec of rawconstr
 
-and fix_kind = RFix of ((int * fix_recursion_order) array * int) | RCoFix of int
+and fix_kind = RFix of ((int option * fix_recursion_order) array * int) | RCoFix of int
 
 val cases_predicate_names : 
   (rawconstr * (name * (loc * inductive * name list) option)) list -> name list

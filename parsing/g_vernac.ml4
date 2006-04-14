@@ -218,16 +218,15 @@ GEXTEND Gram
           let ni =
             match fst annot with
                 Some id ->
-                  (try list_index (Name id) names - 1
-                  with Not_found ->  Util.user_err_loc
-                      (loc,"Fixpoint",
-                       Pp.str "No argument named " ++ Nameops.pr_id id))
+                  (try Some (list_index (Name id) names - 1)
+                   with Not_found ->  Util.user_err_loc
+                     (loc,"Fixpoint",
+                      Pp.str "No argument named " ++ Nameops.pr_id id))
               | None -> 
-                  if List.length names > 1 then
-                    Util.user_err_loc
-                      (loc,"Fixpoint",
-                       Pp.str "the recursive argument needs to be specified");
-                  0 in
+		  (* If there is only one argument, it is the recursive one, 
+		     otherwise, we search the recursive index later *)
+		  if List.length names = 1 then Some 0 else None	  
+	  in 
 	  ((id, (ni, snd annot), bl, type_, def),ntn) ] ]
   ;
   corec_definition:

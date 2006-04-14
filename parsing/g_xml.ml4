@@ -205,11 +205,11 @@ and interp_xml_recursionOrder x =
 and interp_xml_FixFunction x =
   match interp_xml_tag "FixFunction" x with
   | (loc,al,[x1;x2;x3]) ->
-      ((nmtoken (get_xml_attr "recIndex" al),
+      ((Some (nmtoken (get_xml_attr "recIndex" al)),
 	interp_xml_recursionOrder x1),
        (get_xml_ident al, interp_xml_type x2, interp_xml_body x3))
   | (loc,al,[x1;x2]) -> (* For backwards compatibility *)
-      ((nmtoken (get_xml_attr "recIndex" al), RStructRec),
+      ((Some (nmtoken (get_xml_attr "recIndex" al)), RStructRec),
        (get_xml_ident al, interp_xml_type x1, interp_xml_body x2))
   | (loc,_,_) -> 
         user_err_loc (loc,"",str "wrong number of arguments (expect one)")

@@ -317,7 +317,7 @@ let do_generate_principle register_built interactive_proof fixpoint_exprl  =
 			 (Topconstr.names_of_local_assums args) 
 		     in 
 		     let annot = 
-		       try Util.list_index (Name id) names - 1, Topconstr.CStructRec 
+		       try Some (Util.list_index (Name id) names - 1), Topconstr.CStructRec 
 		       with Not_found -> raise (UserError("",str "Cannot find argument " ++ Ppconstr.pr_id id)) 
 		     in 
  		     (name,annot,args,types,body),(None:Vernacexpr.decl_notation) 
@@ -328,7 +328,7 @@ let do_generate_principle register_built interactive_proof fixpoint_exprl  =
 			 (Util.dummy_loc,"GenFixpoint",
 			  Pp.str "the recursive argument needs to be specified")
 		     else 
-		       (name,(0, Topconstr.CStructRec),args,types,body),(None:Vernacexpr.decl_notation)
+		       (name,(Some 0, Topconstr.CStructRec),args,types,body),(None:Vernacexpr.decl_notation)
 		 | (_,Some (Wf _),_,_,_),_ | (_,Some (Mes _),_,_,_),_-> 
 		     error 
 		       ("Cannot use mutual definition with well-founded recursion")
@@ -417,7 +417,7 @@ let make_graph (id:identifier) =
 			 )
 		     in 
 		     let rec_id = 
-		       match List.nth nal n  with |(_,Name id) -> id | _ -> anomaly ""
+		       match List.nth nal (out_some n)  with |(_,Name id) -> id | _ -> anomaly ""
 		     in
 		     (id, Some (Struct rec_id),bl,t,b)
 		  )

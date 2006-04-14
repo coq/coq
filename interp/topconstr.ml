@@ -532,7 +532,7 @@ type constr_expr =
 
 
 and fixpoint_expr =
-    identifier * (int * recursion_order_expr) * local_binder list * constr_expr * constr_expr
+    identifier * (int option * recursion_order_expr) * local_binder list * constr_expr * constr_expr
 
 and local_binder =
   | LocalRawDef of name located * constr_expr

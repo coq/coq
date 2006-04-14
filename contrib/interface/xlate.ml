@@ -298,9 +298,11 @@ let rec decompose_last = function
 let make_fix_struct (n,bl) =
   let names = names_of_local_assums bl in
   let nn = List.length names in
-  if nn = 1 then ctv_ID_OPT_NONE
-  else if n < nn then xlate_id_opt(List.nth names n)
-  else xlate_error "unexpected result of parsing for Fixpoint";;
+  if nn = 1 || n = None then ctv_ID_OPT_NONE
+  else 
+    let n = out_some n in 
+    if n < nn then xlate_id_opt(List.nth names n)
+    else xlate_error "unexpected result of parsing for Fixpoint";;
 
 
 let rec xlate_binder = function
@@ -417,7 +419,10 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
    | CFix (_, (_, id), lm::lmi) ->       
      let strip_mutrec (fid, (n, ro), bl, arf, ardef) =
         let (struct_arg,bl,arf,ardef) =
+	 (* Pierre L: could the case [n=None && bl=[]] happen ? Normally not *)
+	 (* By the way, how could [bl = []] happen in V8 syntax ?  *)
          if bl = [] then
+	   let n = out_some n in 
            let (bl,arf,ardef) = Ppconstr.split_fix (n+1) arf ardef in
            (xlate_id_opt(List.nth (names_of_local_assums bl) n),bl,arf,ardef)
          else (make_fix_struct (n, bl),bl,arf,ardef) in
@@ -1875,7 +1880,10 @@ let rec xlate_vernac =
    | VernacFixpoint ((lm :: lmi),boxed) ->
       let strip_mutrec ((fid, (n, ro), bl, arf, ardef), ntn) =
         let (struct_arg,bl,arf,ardef) =
+	 (* Pierre L: could the case [n=None && bl=[]] happen ? Normally not *)
+	 (* By the way, how could [bl = []] happen in V8 syntax ?  *)
          if bl = [] then
+	   let n = out_some n in 
            let (bl,arf,ardef) = Ppconstr.split_fix (n+1) arf ardef in
            (xlate_id_opt(List.nth (names_of_local_assums bl) n),bl,arf,ardef)
          else (make_fix_struct (n, bl),bl,arf,ardef) in

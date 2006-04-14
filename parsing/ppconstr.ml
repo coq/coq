@@ -379,11 +379,11 @@ let pr_fixdecl pr prd dangling_with_for (id,(n,ro),bl,t,c) =
     let ids = names_of_local_assums bl in
       match ro with
 	  CStructRec ->
-	    if List.length ids > 1 then 
-	      spc() ++ str "{struct " ++ pr_name (snd (List.nth ids n)) ++ str"}"
+	    if List.length ids > 1 && n <> None then 
+	      spc() ++ str "{struct " ++ pr_name (snd (List.nth ids (out_some n))) ++ str"}"
 	    else mt() 
 	| CWfRec c ->
-	    spc () ++ str "{wf " ++ pr lsimple c ++ pr_name (snd (List.nth ids n)) ++ str"}"
+	    spc () ++ str "{wf " ++ pr lsimple c ++ pr_name (snd (List.nth ids (out_some n))) ++ str"}"
   in
     pr_recursive_decl pr prd dangling_with_for id bl annot t c
 

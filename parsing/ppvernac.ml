@@ -555,18 +555,23 @@ let rec pr_vernac = function
               else ([],def,type_) in
             let bl = bl @ bl' in
             let ids = List.flatten (List.map name_of_binder bl) in
-            let name =
-              try snd (List.nth ids n)
-              with Failure _ ->
-                warn (str "non-printable fixpoint \""++pr_id id++str"\"");
-                Anonymous in
             let annot =
-	      match (ro : Topconstr.recursion_order_expr) with
-		  CStructRec -> 
-		    if List.length ids > 1 then 
-                      spc() ++ str "{struct " ++ pr_name name ++ str"}"
-		    else mt()
-		| CWfRec c -> spc() ++ str "{wf " ++ pr_name name ++ spc() ++ pr_lconstr_expr c ++ str"}"
+	      match n with 
+		| None -> mt () 
+		| Some n -> 
+		    let name =
+		      try snd (List.nth ids n)
+		      with Failure _ ->
+			warn (str "non-printable fixpoint \""++pr_id id++str"\"");
+			Anonymous in
+		    match (ro : Topconstr.recursion_order_expr) with
+			CStructRec -> 
+			  if List.length ids > 1 then 
+			    spc() ++ str "{struct " ++ pr_name name ++ str"}"
+			  else mt()
+		      | CWfRec c -> 
+			  spc() ++ str "{wf " ++ pr_name name ++ spc() ++ 
+			    pr_lconstr_expr c ++ str"}"
 	    in
             pr_id id ++ pr_binders_arg bl ++ annot ++ spc()
             ++ pr_type_option (fun c -> spc() ++ pr_lconstr_expr c) type_

@@ -73,7 +73,7 @@ and rawdecl = name * rawconstr option * rawconstr
 
 and fix_recursion_order = RStructRec | RWfRec of rawconstr
 
-and fix_kind = RFix of ((int * fix_recursion_order) array * int) | RCoFix of int
+and fix_kind = RFix of ((int option * fix_recursion_order) array * int) | RCoFix of int
 
 let cases_predicate_names tml =
   List.flatten (List.map (function

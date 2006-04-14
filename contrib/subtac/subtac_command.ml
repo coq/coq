@@ -200,6 +200,7 @@ let build_recursive (lnameargsardef:(fixpoint_expr * decl_notation) list) boxed 
 		let impls' =(recname,([],impl,compute_arguments_scope arity))::impls in
 		  (Environ.push_named (recname,None,arity) env, impls', (isevars, None, arity)::arl)
 	    | CWfRec r -> 		    
+		let n = out_some n in 
 		let _ = trace (str "Rewriting fixpoint: " ++ Ppconstr.pr_id recname ++ 
 			       Ppconstr.pr_binders bl ++ str " : " ++ 
 			       Ppconstr.pr_constr_expr arityc ++ str " := " ++ spc () ++
@@ -279,7 +280,7 @@ let build_recursive (lnameargsardef:(fixpoint_expr * decl_notation) list) boxed 
 
   let (lnonrec,(namerec,defrec,arrec,nvrec)) = 
     collect_non_rec env0 lrecnames recdef arityl nv in
-  let nvrec' = Array.map fst nvrec in(* ignore rec order *)
+  let nvrec' = Array.map (function (Some n,_) -> n | _ -> 0) nvrec in(* ignore rec order *)
   let declare arrec defrec =
     let recvec = 
       Array.map (subst_vars (List.rev (Array.to_list namerec))) defrec in

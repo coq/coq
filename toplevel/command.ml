@@ -457,7 +457,9 @@ let build_recursive (lnameargsardef:(fixpoint_expr *decl_notation) list)
   let lrecnames = List.map (fun ((f,_,_,_,_),_) -> f) lnameargsardef 
   and sigma = Evd.empty
   and env0 = Global.env()
-  and nv = Array.of_list (List.map (fun ((_,n,_,_,_),_) -> n) lnameargsardef) in
+  and nv = Array.of_list (List.map (fun ((_,n,_,_,_),_) -> n) lnameargsardef)
+  and bl = Array.of_list (List.map (fun ((_,_,bl,_,_),_) -> bl) lnameargsardef) 
+  in 
   (* Build the recursive context and notations for the recursive types *)
   let (rec_sign,rec_impls,arityl) = 
     List.fold_left 
@@ -502,9 +504,24 @@ let build_recursive (lnameargsardef:(fixpoint_expr *decl_notation) list)
   let recvec = 
     Array.map (subst_vars (List.rev (Array.to_list namerec))) defrec in
   let recdecls = (Array.map (fun id -> Name id) namerec, arrec, recvec) in
+  let nvrec = Array.mapi 
+    (fun i (n,_) -> match n with 
+       | Some n -> n 
+       | None -> 
+	   (* Recursive argument was not given by the user : 
+	      We check that there is only one inductive argument *)
+	   let ctx = snd (interp_context sigma env0 bl.(i)) in 
+	   let isIndApp t = isInd (fst (decompose_app (strip_head_cast t))) in 
+	   (* This could be more precise (e.g. do some delta) *)
+	   let lb = List.rev_map (fun (_,_,t) -> isIndApp t) ctx in
+	   try (list_unique_index true lb) - 1
+	   with Not_found -> 
+	     error "the recursive argument needs to be specified")
+    nvrec
+  in  
   let rec declare i fi =
     let ce = 
-      { const_entry_body = mkFix ((Array.map fst nvrec,i),recdecls); (* ignore rec order *)
+      { const_entry_body = mkFix ((nvrec,i),recdecls); (* ignore rec order *)
         const_entry_type = Some arrec.(i);
         const_entry_opaque = false;
         const_entry_boxed = boxed} in

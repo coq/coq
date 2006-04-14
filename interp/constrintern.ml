@@ -793,7 +793,7 @@ let internalise sigma globalenv env allow_soapp lvar c =
 		     RStructRec,
 		     List.fold_left intern_local_binder (env,[]) bl
 		 | CWfRec c -> 
-		     let before, after = list_chop (succ n) bl in
+		     let before, after = list_chop (succ (out_some n)) bl in
 		     let ((ids',_,_),rafter) =
 		       List.fold_left intern_local_binder (env,[]) after in
 		     let ro = RWfRec (intern (ids', tmp_scope, scopes) c) in

@@ -214,6 +214,16 @@ let list_index x =
   in 
   index_x 1
 
+let list_unique_index x = 
+  let rec index_x n = function
+    | y::l -> 
+	if x = y then 
+	  if List.mem x l then raise Not_found
+	  else n 
+	else index_x (succ n) l
+    | [] -> raise Not_found 
+  in index_x 1
+
 let list_fold_left_i f = 
   let rec it_list_f i a = function
     | [] -> a 

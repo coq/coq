@@ -100,6 +100,8 @@ val list_map2_i :
 val list_map3 :
   ('a -> 'b -> 'c -> 'd) -> 'a list -> 'b list -> 'c list -> 'd list
 val list_index : 'a -> 'a list -> int
+(* [list_unique_index x l] returns [Not_found] if [x] doesn't occur exactly once *)
+val list_unique_index : 'a -> 'a list -> int 
 val list_iter_i :  (int -> 'a -> unit) -> 'a list -> unit
 val list_fold_left_i :  (int -> 'a -> 'b -> 'a) -> int -> 'a -> 'b list -> 'a
 val list_fold_right_and_left :

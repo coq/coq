@@ -329,18 +329,35 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		 { uj_val = it_mkLambda_or_LetIn j.uj_val ctxt;
 		   uj_type = it_mkProd_or_LetIn j.uj_type ctxt })
             ctxtv vdef in
-	  evar_type_fixpoint loc env isevars names ftys vdefj;
-	  let fixj =
-	    match fixkind with
-	      | RFix (vn,i) ->
-		  let fix = ((Array.map fst vn, i),(names,ftys,Array.map j_val vdefj)) in
-		    (try check_fix env fix with e -> Stdpp.raise_with_loc loc e);
-		    make_judge (mkFix fix) ftys.(i)
-	      | RCoFix i -> 
-		  let cofix = (i,(names,ftys,Array.map j_val vdefj)) in
-		    (try check_cofix env cofix with e -> Stdpp.raise_with_loc loc e);
-		    make_judge (mkCoFix cofix) ftys.(i) in
-	    inh_conv_coerce_to_tycon loc env isevars fixj tycon
+	evar_type_fixpoint loc env isevars names ftys vdefj;
+	let fixj = match fixkind with
+	  | RFix (vn,i) ->
+	      let guard_indexes = Array.mapi 
+		(fun i (n,_) -> match n with 
+		   | Some n -> n 
+		   | None -> 
+		       (* Recursive argument was not given by the user : We
+			  check that there is only one inductive argument *)
+		       let ctx = ctxtv.(i) in 
+		       let isIndApp t = 
+			 isInd (fst (decompose_app (strip_head_cast t))) in
+			 (* This could be more precise (e.g. do some delta) *)
+		       let lb = List.rev_map (fun (_,_,t) -> isIndApp t) ctx in
+		       try (list_unique_index true lb) - 1
+		       with Not_found -> 
+			 Util.user_err_loc
+			   (loc,"pretype",
+			    Pp.str "cannot guess decreasing argument of fix"))
+		vn 
+	      in
+	      let fix = ((guard_indexes, i),(names,ftys,Array.map j_val vdefj)) in
+	      (try check_fix env fix with e -> Stdpp.raise_with_loc loc e);
+	      make_judge (mkFix fix) ftys.(i)
+	  | RCoFix i -> 
+	      let cofix = (i,(names,ftys,Array.map j_val vdefj)) in
+	      (try check_cofix env cofix with e -> Stdpp.raise_with_loc loc e);
+	      make_judge (mkCoFix cofix) ftys.(i) in
+	inh_conv_coerce_to_tycon loc env isevars fixj tycon
 
     | RSort (loc,s) ->
 	inh_conv_coerce_to_tycon loc env isevars (pretype_sort s) tycon

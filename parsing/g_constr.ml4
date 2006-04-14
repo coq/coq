@@ -59,14 +59,13 @@ let rec mkCLambdaN loc bll c =
 
 let rec index_and_rec_order_of_annot loc bl ann =
   match names_of_local_assums bl,ann with
-    | [_], (None, r) -> 0, r
+    | [_], (None, r) -> Some 0, r
     | lids, (Some x, ro) ->
         let ids = List.map snd lids in
-        (try list_index (snd x) ids - 1, ro
+        (try Some (list_index (snd x) ids - 1), ro
         with Not_found ->
           user_err_loc(fst x,"index_of_annot", Pp.str"no such fix variable"))
-    | _ -> user_err_loc(loc,"index_of_annot",
-      Pp.str "cannot guess decreasing argument of fix")
+    | _, (None, r) -> None, r
 
 let mk_fixb (id,bl,ann,body,(loc,tyc)) =
   let n,ro = index_and_rec_order_of_annot (fst id) bl ann in
