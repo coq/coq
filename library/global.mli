@@ -64,12 +64,10 @@ val set_engagement : engagement -> unit
    of the started module / module type *)
 
 val start_module : 
-  identifier -> (mod_bound_id * module_type_entry) list 
-    -> module_type_entry option 
-      -> module_path
+  identifier -> (mod_bound_id * module_type_entry) list -> module_path
 
 val end_module :
-  identifier -> module_path
+  identifier -> module_type_entry option -> module_path
 
 val start_modtype :
   identifier -> (mod_bound_id * module_type_entry) list

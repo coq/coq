@@ -30,7 +30,6 @@ type modvariant =
   | NONE 
   | SIG of (* funsig params *) (mod_bound_id * module_type_body) list 
   | STRUCT of (* functor params *) (mod_bound_id * module_type_body) list
-      * (* optional result type *) module_type_body option
   | LIBRARY of dir_path
 
 type module_info = 
@@ -224,7 +223,7 @@ let add_module l me senv =
 
 (* Interactive modules *)
 
-let start_module l params result senv = 
+let start_module l params senv = 
   check_label l senv.labset; 
   let rec trans_params env = function 
     | [] -> env,[] 
@@ -237,20 +236,13 @@ let start_module l params result senv =
 	env, (mbid,mtb)::transrest
   in
   let env,params_body = trans_params senv.env params in
-  let check_sig mtb = match scrape_modtype env mtb with
-    | MTBsig _ -> ()
-    | MTBfunsig _ -> error_result_must_be_signature mtb 
-    | _ -> anomaly "start_module: modtype not scraped"
-  in
-  let result_body = option_app (translate_modtype env) result in
-  ignore (option_app check_sig result_body);
   let msid = make_msid senv.modinfo.seed (string_of_label l) in
   let mp = MPself msid in
   let modinfo = { msid = msid;
 		  modpath = mp;
 		  seed = senv.modinfo.seed;
 		  label = l;
-		  variant = STRUCT(params_body,result_body) }
+		  variant = STRUCT params_body }
   in
   mp, { old = senv;
 	env = env;
@@ -263,13 +255,14 @@ let start_module l params result senv =
 
 
 
-let end_module l senv = 
+let end_module l restype senv = 
   let oldsenv = senv.old in
   let modinfo = senv.modinfo in
-  let params, restype = 
+  let restype = option_app (translate_modtype senv.env) restype in
+  let params = 
     match modinfo.variant with
       | NONE | LIBRARY _ | SIG _ -> error_no_module_to_end ()
-      | STRUCT(params,restype) -> (params,restype)
+      | STRUCT params -> params
   in
   if l <> modinfo.label then error_incompatible_labels l modinfo.label;
   if not (empty_context senv.env) then error_local_context None;

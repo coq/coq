@@ -41,7 +41,7 @@ let error_incompatible_labels l l' =
   error ("Opening and closing labels are not the same: "
 	 ^string_of_label l^" <> "^string_of_label l'^" !")
 
-let error_result_must_be_signature mtb = 
+let error_result_must_be_signature () = 
   error "The result module type must be a signature"
 
 let error_signature_expected mtb =

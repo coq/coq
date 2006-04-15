@@ -73,11 +73,11 @@ val set_engagement : engagement -> safe_environment -> safe_environment
 (*s Interactive module functions *)
 val start_module : 
   label -> (mod_bound_id * module_type_entry) list 
-    -> module_type_entry option 
       -> safe_environment -> module_path * safe_environment
 
 val end_module :
-  label -> safe_environment -> module_path * safe_environment 
+  label -> module_type_entry option 
+      -> safe_environment -> module_path * safe_environment 
 
 
 val start_modtype :
