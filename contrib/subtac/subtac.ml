@@ -115,16 +115,44 @@ let subtac_end_proof = function
 
 	*)
 
+open Pp
+open Ppconstr
+open Decl_kinds
+
+let start_proof_com env isevars sopt kind (bl,t) hook =
+  let id = match sopt with
+    | Some id ->
+        (* We check existence here: it's a bit late at Qed time *)
+        if Nametab.exists_cci (Lib.make_path id) or is_section_variable id then
+          errorlabstrm "start_proof" (pr_id id ++ str " already exists");
+        id
+    | None ->
+	next_global_ident_away false (id_of_string "Unnamed_thm")
+ 	  (Pfedit.get_all_proof_names ())
+  in
+  let evm, c, typ = 
+    Subtac_pretyping.subtac_process env isevars id [] (Command.generalize_constr_expr t bl) None 
+  in
+  let _ = Typeops.infer_type env c in
+    Command.start_proof id kind c hook
+      
+let print_subgoals () = Options.if_verbose (fun () -> msg (Printer.pr_open_subgoals ())) ()
+
+let start_proof_and_print env isevars idopt k t hook =
+  start_proof_com env isevars idopt k t hook;
+  print_subgoals ()
+  (*if !pcoq <> None then (out_some !pcoq).start_proof ()*)
+
 let subtac (loc, command) =
   check_required_library ["Coq";"Init";"Datatypes"];
   check_required_library ["Coq";"Init";"Specif"];
   require_library "Coq.subtac.FixSub";
   require_library "Coq.subtac.Utils";
+  let env = Global.env () in
+  let isevars = ref (create_evar_defs Evd.empty) in
   try
     match command with
 	VernacDefinition (defkind, (locid, id), expr, hook) -> 
-	  let env = Global.env () in
-	  let isevars = ref (create_evar_defs Evd.empty) in
 	    (match expr with
 		 ProveBody (bl, c) -> 
 		   let evm, c, ctyp = Subtac_pretyping.subtac_process env isevars id bl c None in
@@ -142,6 +170,19 @@ let subtac (loc, command) =
       | VernacFixpoint (l, b) -> 
 	  let _ = trace (str "Building fixpoint") in
 	    ignore(Subtac_command.build_recursive l b)
+
+      | VernacStartTheoremProof (thkind, (locid, id), (bl, t), lettop, hook) ->
+	  if not(Pfedit.refining ()) then
+	    if lettop then
+	      errorlabstrm "Subtac_command.StartProof"
+		(str "Let declarations can only be used in proof editing mode");
+	  if Lib.is_modtype () then
+	    errorlabstrm "Subtac_command.StartProof"
+	      (str "Proof editing mode not supported in module types");
+	  start_proof_and_print env isevars (Some id) (Global, Proof thkind) (bl,t) hook
+
+
+
       (*| VernacEndProof e -> 
 	  subtac_end_proof e*)
 
