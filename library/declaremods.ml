@@ -446,47 +446,34 @@ let rec get_some_body mty env = match mty with
       replace_module (get_some_body mty env) id (Environ.lookup_module mp env)
 
 
-let intern_args interp_modtype (env,oldargs,oldsubst) (idl,arg) = 
+let intern_args interp_modtype (idl,arg) = 
   let lib_dir = Lib.library_dp() in
   let mbids = List.map (fun (_,id) -> make_mbid lib_dir (string_of_id id)) idl in
-  let mty = interp_modtype env arg in
+  let mty = interp_modtype (Global.env()) arg in
   let dirs = List.map (fun (_,id) -> make_dirpath [id]) idl in
-  let mps = List.map (fun mbid -> MPbound mbid) mbids in
   let substobjs = get_modtype_substobjs mty in
-  let substituted's =
-    List.map2 
-      (fun dir mp -> dir, mp, substobjs, subst_substobjs dir mp substobjs) 
-      dirs mps 
-  in
-  let body = Modops.module_body_of_type (get_some_body mty env) in
-  let env = 
-    List.fold_left (fun env mp -> Modops.add_module mp body env) env mps
-  in
-    env, List.map (fun mbid -> mbid,mty) mbids :: oldargs, 
-        substituted's :: oldsubst
-
-let load_args_object (dir,mp,substobjs,substituted) =
-  do_module false "interp" load_objects 1 dir mp substobjs substituted
+  List.map2
+    (fun dir mbid -> 
+      Global.add_module_parameter mbid mty;
+      let mp = MPbound mbid in
+      let substituted = subst_substobjs dir mp substobjs in
+      do_module false "interp" load_objects 1 dir mp substobjs substituted;
+      (mbid,mty))
+    dirs mbids
 
 let start_module interp_modtype export id args res_o =
   let fs = Summary.freeze_summaries () in
-  let env = Global.env () in
-  let env,arg_entries_revlist,substituted_revlist = 
-    List.fold_left (intern_args interp_modtype) (env,[],[]) args 
-  in
-  let arg_entries = List.concat (List.rev arg_entries_revlist) in
 
-  let mp = Global.start_module id arg_entries in
-
-  List.iter (List.iter load_args_object) (List.rev substituted_revlist);
+  let mp = Global.start_module id in
+  let arg_entries = List.concat (List.map (intern_args interp_modtype) args) in
 
   let res_entry_o, sub_body_o = match res_o with
       None -> None, None
     | Some (res, restricted) ->
 	(* we translate the module here to catch errors as early as possible *)
-	let mte = interp_modtype env res in
-	check_sig_entry env mte;
-	if restricted then 
+	let mte = interp_modtype (Global.env()) res in
+	check_sig_entry (Global.env()) mte;
+	if restricted then
 	  Some mte, None
 	else
 	  let mtb = Mod_typing.translate_modtype (Global.env()) mte in
@@ -496,9 +483,8 @@ let start_module interp_modtype export id args res_o =
 		let arg_t = Mod_typing.translate_modtype (Global.env()) arg_t
 		in MTBfunsig(arg_id,arg_t,mte))
 	      arg_entries mtb
-	in
-	None, Some sub_mtb
-
+	  in
+	  None, Some sub_mtb
   in
 
   let mbids = List.map fst arg_entries in
@@ -659,15 +645,9 @@ let import_module export mp =
 
 let start_modtype interp_modtype id args =
   let fs = Summary.freeze_summaries () in
-  let env = Global.env () in
-  let env,arg_entries_revlist,substituted_revlist = 
-    List.fold_left (intern_args interp_modtype) (env,[],[]) args 
-  in
-  let arg_entries = List.concat (List.rev arg_entries_revlist) in
 
-  let mp = Global.start_modtype id arg_entries in
-
-  List.iter (List.iter load_args_object) (List.rev substituted_revlist);
+  let mp = Global.start_modtype id in
+  let arg_entries = List.concat (List.map (intern_args interp_modtype) args) in
 
   let mbids = List.map fst arg_entries in
   openmodtype_info := mbids;
@@ -702,25 +682,11 @@ let end_modtype id =
 
 let declare_modtype interp_modtype id args mty = 
   let fs = Summary.freeze_summaries () in
-  let env = Global.env () in
-  let env,arg_entries_revlist,substituted_revlist = 
-    List.fold_left (intern_args interp_modtype) (env,[],[]) args 
-  in
-  let arg_entries = List.concat (List.rev arg_entries_revlist) in
 
-  (* Too strong: may depend of the logical object which are not registered,
-     while only names are needed in the constraint and the body;
-     The example
+  let _ = Global.start_modtype id in
+  let arg_entries = List.concat (List.map (intern_args interp_modtype) args) in
 
-     Module Type T. Record t : Set := { a : nat }. Parameter b:Set. End T.
-     Module A.      Record t : Set := { a : nat }. Definition b:=t. End A.
-     Module F (X:T) : T with Definition b:=X.t := A.
-
-     fails (15 Apr 2006) *)
-
-  List.iter (List.iter load_args_object) (List.rev substituted_revlist);
-
-  let base_mty = interp_modtype env mty in
+  let base_mty = interp_modtype (Global.env()) mty in
   let entry = 
     List.fold_right 
       (fun (arg_id,arg_t) mte -> MTEfunsig(arg_id,arg_t,mte))
@@ -760,15 +726,10 @@ let rec get_module_substobjs env = function
 
 
 let declare_module interp_modtype interp_modexpr id args mty_o mexpr_o =
-
   let fs = Summary.freeze_summaries () in
-  let env = Global.env () in
-  let env,arg_entries_revlist,substituted_revlist = 
-    List.fold_left (intern_args interp_modtype) (env,[],[]) args 
-  in
-  let arg_entries = List.concat (List.rev arg_entries_revlist) in
 
-  List.iter (List.iter load_args_object) (List.rev substituted_revlist);
+  let _ = Global.start_module id in
+  let arg_entries = List.concat (List.map (intern_args interp_modtype) args) in
 
   let mty_entry_o, mty_sub_o = match mty_o with
       None -> None, None
@@ -776,14 +737,14 @@ let declare_module interp_modtype interp_modexpr id args mty_o mexpr_o =
 	Some (List.fold_right 
 		(fun (arg_id,arg_t) mte -> MTEfunsig(arg_id,arg_t,mte))
 		arg_entries 
-		(interp_modtype env mty)), 
+		(interp_modtype (Global.env()) mty)), 
 	None
     | (Some (mty, false)) -> 
 	None, 
 	Some (List.fold_right 
 		(fun (arg_id,arg_t) mte -> MTEfunsig(arg_id,arg_t,mte))
 		arg_entries 
-		(interp_modtype env mty))
+		(interp_modtype (Global.env()) mty))
   in
   let mexpr_entry_o = match mexpr_o with
       None -> None
@@ -791,12 +752,13 @@ let declare_module interp_modtype interp_modexpr id args mty_o mexpr_o =
 	Some (List.fold_right 
 		(fun (mbid,mte) me -> MEfunctor(mbid,mte,me))
 		arg_entries
-		(interp_modexpr env mexpr))
+		(interp_modexpr (Global.env()) mexpr))
   in
   let entry = 
     {mod_entry_type = mty_entry_o;	    
      mod_entry_expr = mexpr_entry_o }
   in
+  let env = Global.env() in
   let substobjs =
     match entry with
       | {mod_entry_type = Some mte} -> get_modtype_substobjs mte

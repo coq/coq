@@ -73,12 +73,12 @@ let add_constraints c = global_env := add_constraints c !global_env
 
 let set_engagement c = global_env := set_engagement c !global_env
 
-let start_module id params =
+let start_module id =
   let l = label_of_id id in
-  let mp,newenv = start_module l params !global_env in
+  let mp,newenv = start_module l !global_env in
     global_env := newenv;
     mp
-  
+
 let end_module id mtyo =
   let l = label_of_id id in
   let mp,newenv = end_module l mtyo !global_env in
@@ -86,9 +86,14 @@ let end_module id mtyo =
     mp
 
 
-let start_modtype id params = 
+let add_module_parameter mbid mte =
+  let newenv = add_module_parameter mbid mte !global_env in
+    global_env := newenv
+
+
+let start_modtype id =
   let l = label_of_id id in
-  let mp,newenv = start_modtype l params !global_env in
+  let mp,newenv = start_modtype l !global_env in
     global_env := newenv;
     mp
 

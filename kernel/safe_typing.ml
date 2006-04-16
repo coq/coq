@@ -223,37 +223,24 @@ let add_module l me senv =
 
 (* Interactive modules *)
 
-let start_module l params senv = 
+let start_module l senv = 
   check_label l senv.labset; 
-  let rec trans_params env = function 
-    | [] -> env,[] 
-    | (mbid,mte)::rest -> 
-	let mtb = translate_modtype env mte in
-	let env = 
-	  full_add_module (MPbound mbid) (module_body_of_type mtb) env 
-	in
-	let env,transrest = trans_params env rest in
-	env, (mbid,mtb)::transrest
-  in
-  let env,params_body = trans_params senv.env params in
   let msid = make_msid senv.modinfo.seed (string_of_label l) in
   let mp = MPself msid in
   let modinfo = { msid = msid;
 		  modpath = mp;
 		  seed = senv.modinfo.seed;
 		  label = l;
-		  variant = STRUCT params_body }
+		  variant = STRUCT [] }
   in
   mp, { old = senv;
-	env = env;
+	env = senv.env;
 	modinfo = modinfo;
 	labset = Labset.empty;
 	revsign = [];
 	revstruct = [];
 	imports = senv.imports;
 	loads = [] }
-
-
 
 let end_module l restype senv = 
   let oldsenv = senv.old in
@@ -266,9 +253,10 @@ let end_module l restype senv =
   in
   if l <> modinfo.label then error_incompatible_labels l modinfo.label;
   if not (empty_context senv.env) then error_local_context None;
-  let functorize_type = 
-    List.fold_right 
-      (fun (arg_id,arg_b) mtb -> MTBfunsig (arg_id,arg_b,mtb))
+  let functorize_type tb = 
+    List.fold_left
+      (fun mtb (arg_id,arg_b) -> MTBfunsig (arg_id,arg_b,mtb))
+      tb
       params
   in
   let auto_tb = MTBsig (modinfo.msid, List.rev senv.revsign) in
@@ -319,31 +307,44 @@ let end_module l restype senv =
 	loads = senv.loads@oldsenv.loads }
 
 
+(* Adding parameters to modules or module types *)
+
+let add_module_parameter mbid mte senv =
+  if senv.revsign <> [] or senv.revstruct <> [] or senv.loads <> [] then
+    anomaly "Cannot add a module parameter to a non empty module";
+  let mtb = translate_modtype senv.env mte in
+  let env = full_add_module (MPbound mbid) (module_body_of_type mtb) senv.env 
+  in
+  let new_variant = match senv.modinfo.variant with
+    | STRUCT params -> STRUCT ((mbid,mtb) :: params)
+    | SIG params -> SIG ((mbid,mtb) :: params)
+    | _ -> 
+	anomaly "Module parameters can only be added to modules or signatures"
+  in
+  { old = senv.old;
+    env = env;
+    modinfo = { senv.modinfo with variant = new_variant };
+    labset = senv.labset;
+    revsign = [];
+    revstruct = [];
+    imports = senv.imports;
+    loads = [] }
+
+
 (* Interactive module types *)
 
-let start_modtype l params senv = 
+let start_modtype l senv = 
   check_label l senv.labset; 
-  let rec trans_params env = function 
-    | [] -> env,[] 
-    | (mbid,mte)::rest -> 
-	let mtb = translate_modtype env mte in
-	let env = 
-	  full_add_module (MPbound mbid) (module_body_of_type mtb) env 
-	in
-	let env,transrest = trans_params env rest in
-	env, (mbid,mtb)::transrest
-  in
-  let env,params_body = trans_params senv.env params in
   let msid = make_msid senv.modinfo.seed (string_of_label l) in
   let mp = MPself msid in
   let modinfo = { msid = msid;
 		  modpath = mp;
 		  seed = senv.modinfo.seed;
 		  label = l;
-		  variant = SIG params_body }
+		  variant = SIG [] }
   in
   mp, { old = senv;
-	env = env;
+	env = senv.env;
 	modinfo = modinfo;
 	labset = Labset.empty;
 	revsign = [];
@@ -363,10 +364,10 @@ let end_modtype l senv =
   if not (empty_context senv.env) then error_local_context None;
   let res_tb = MTBsig (modinfo.msid, List.rev senv.revsign) in
   let mtb = 
-    List.fold_right 
-      (fun (arg_id,arg_b) mtb -> MTBfunsig (arg_id,arg_b,mtb))
-      params
+    List.fold_left
+      (fun mtb (arg_id,arg_b) -> MTBfunsig (arg_id,arg_b,mtb))
       res_tb
+      params
   in
   let kn = make_kn oldsenv.modinfo.modpath empty_dirpath l in
   let newenv = oldsenv.env in
