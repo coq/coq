@@ -106,7 +106,7 @@ let rec pp_type par vl t =
     | Tarr (t1,t2) ->
 	pp_par par 
 	  (pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ pp_rec false t2)
-    | Tdummy -> str "()"
+    | Tdummy _ -> str "()"
     | Tunknown -> str "()"
     | Taxiom -> str "() -- AXIOM TO BE REALIZED\n"
  in 

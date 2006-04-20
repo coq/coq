@@ -111,7 +111,7 @@ let rec mgu = function
        List.iter mgu (List.combine l l')
   | Tvar i, Tvar j when i = j -> ()
   | Tvar' i, Tvar' j when i = j -> ()
-  | Tdummy, Tdummy -> ()
+  | Tdummy _, Tdummy _ -> ()
   | Tunknown, Tunknown -> ()
   | _ -> raise Impossible
 
@@ -252,7 +252,6 @@ type abbrev_map = global_reference -> ml_type option
 (*s Delta-reduction of type constants everywhere in a ML type [t].
    [env] is a function of type [ml_type_env]. *)
 
-
 let type_expand env t = 
   let rec expand = function
     | Tmeta {contents = Some t} -> expand t
@@ -281,34 +280,39 @@ let type_weak_expand env t =
     | a -> a
   in expand t
 
-(*s Equality over ML types modulo delta-reduction *)
-
-let type_eq env t t' = (type_expand env t = type_expand env t')
-
-let type_neq env t t' = (type_expand env t <> type_expand env t')
-
 (*s Generating a signature from a ML type. *)
 
-let type_to_sign env t = 
+let type_to_sign env t = match type_expand env t with 
+  | Tdummy d -> Kill d 
+  | _ -> Keep
+
+let type_to_signature env t = 
   let rec f = function 
     | Tmeta {contents = Some t} -> f t 
-    | Tarr (a,b) -> (Tdummy <> a) :: (f b)
+    | Tarr (Tdummy d, b) -> Kill d :: f b
+    | Tarr (_, b) -> Keep :: f b
     | _ -> [] 
   in f (type_expand env t)
+
+let isKill = function Kill _ -> true | _ -> false
+
+let isDummy = function Tdummy _ -> true | _ -> false
+
+let sign_of_id i = if i = dummy_name then Kill Kother else Keep
 
 (*s Removing [Tdummy] from the top level of a ML type. *)
 
 let type_expunge env t = 
-  let s = type_to_sign env t in 
+  let s = type_to_signature env t in 
   if s = [] then t 
-  else if List.mem true s then 
+  else if List.mem Keep s then 
     let rec f t s = 
-      if List.mem false s then 
+      if List.exists isKill s then 
 	match t with 
 	  | Tmeta {contents = Some t} -> f t s
 	  | Tarr (a,b) -> 
 	      let t = f b (List.tl s) in 
-	      if List.hd s then Tarr (a, t) else t  
+	      if List.hd s = Keep then Tarr (a, t) else t  
 	  | Tglob (r,l) ->
 	      (match env r with 
 		 | Some mlt -> f (type_subst_list l mlt) s
@@ -316,7 +320,9 @@ let type_expunge env t =
 	  | _ -> assert false
       else t 
     in f t s 
-  else Tarr (Tdummy, snd (type_decomp (type_weak_expand env t))) 
+  else if List.mem (Kill Kother) s then 
+    Tarr (Tdummy Kother, snd (type_decomp (type_weak_expand env t))) 
+  else snd (type_decomp (type_weak_expand env t))
 
 (*S Generic functions over ML ast terms. *)
 
@@ -536,8 +542,8 @@ let rec dummy_lams a = function
 
 let rec anonym_or_dummy_lams a = function 
   | [] -> a 
-  | true :: s -> MLlam(anonymous, anonym_or_dummy_lams a s)
-  | false :: s -> MLlam(dummy_name, anonym_or_dummy_lams a s)
+  | Keep :: s -> MLlam(anonymous, anonym_or_dummy_lams a s)
+  | Kill _ :: s -> MLlam(dummy_name, anonym_or_dummy_lams a s)
 
 (*S Operations concerning eta. *)
 
@@ -550,8 +556,8 @@ let rec eta_args n =
 
 let rec eta_args_sign n = function 
   | [] -> [] 
-  | true :: s -> (MLrel n) :: (eta_args_sign (n-1) s) 
-  | false :: s -> eta_args_sign (n-1) s
+  | Keep :: s -> (MLrel n) :: (eta_args_sign (n-1) s) 
+  | Kill _ :: s -> eta_args_sign (n-1) s
 
 (*s This one tests [MLrel (n+k); ... ;MLrel (1+k)] *)
 
@@ -820,33 +826,33 @@ let rec post_simpl = function
 (*S Local prop elimination. *) 
 (* We try to eliminate as many [prop] as possible inside an [ml_ast]. *)
 
-(*s In a list, it selects only the elements corresponding to a [true] 
+(*s In a list, it selects only the elements corresponding to a [Keep] 
    in the boolean list [l]. *)
 
 let rec select_via_bl l args = match l,args with 
   | [],_ -> args
-  | true::l,a::args -> a :: (select_via_bl l args)
-  | false::l,a::args -> select_via_bl l args
+  | Keep::l,a::args -> a :: (select_via_bl l args)
+  | Kill _::l,a::args -> select_via_bl l args
   | _ -> assert false 
 
-(*s [kill_some_lams] removes some head lambdas according to the bool list [bl].
+(*s [kill_some_lams] removes some head lambdas according to the signature [bl].
    This list is build on the identifier list model: outermost lambda
-   is on the right. [true] means "to keep" and [false] means "to eliminate". 
+   is on the right. 
    [Rels] corresponding to removed lambdas are supposed not to occur, and 
    the other [Rels] are made correct via a [gen_subst].
    Output is not directly a [ml_ast], compose with [named_lams] if needed. *)
 
 let kill_some_lams bl (ids,c) =
   let n = List.length bl in
-  let n' = List.fold_left (fun n b -> if b then (n+1) else n) 0 bl in 
+  let n' = List.fold_left (fun n b -> if b=Keep then (n+1) else n) 0 bl in 
   if n = n' then ids,c
   else if n' = 0 then [],ast_lift (-n) c 
   else begin
     let v = Array.make n MLdummy in 
     let rec parse_ids i j = function 
       | [] -> ()
-      | true :: l -> v.(i) <- MLrel j; parse_ids (i+1) (j+1) l
-      | false :: l -> parse_ids (i+1) j l
+      | Keep :: l -> v.(i) <- MLrel j; parse_ids (i+1) (j+1) l
+      | Kill _ :: l -> parse_ids (i+1) j l
     in parse_ids 0 1 bl ; 
     select_via_bl bl ids, gen_subst v (n'-n) c
   end
@@ -857,8 +863,8 @@ let kill_some_lams bl (ids,c) =
 
 let kill_dummy_lams c = 
   let ids,c = collect_lams c in 
-  let bl = List.map ((<>) dummy_name) ids in 
-  if (List.mem true bl) && (List.mem false bl) then 
+  let bl = List.map sign_of_id ids in
+  if (List.mem Keep bl) && (List.exists isKill bl) then 
     let ids',c = kill_some_lams bl (ids,c) in 
     ids, named_lams ids' c
   else raise Impossible
@@ -866,7 +872,7 @@ let kill_dummy_lams c =
 (*s [eta_expansion_sign] takes a function [fun idn ... id1 -> c] 
    and a signature [s] and builds a eta-long version. *)
 
-(* For example, if [s = [true;true;false;true]] then the output is :
+(* For example, if [s = [Keep;Keep;Kill Prop;Keep]] then the output is :
    [fun idn ... id1 x x _ x -> (c' 4 3 __ 1)]  with [c' = lift 4 c] *)
 
 let eta_expansion_sign s (ids,c) =
@@ -874,13 +880,13 @@ let eta_expansion_sign s (ids,c) =
     | [] -> 
 	let a = List.rev_map (function MLrel x -> MLrel (i-x) | a -> a) rels
 	in ids, MLapp (ast_lift (i-1) c, a) 
-    | true :: l -> abs (anonymous :: ids) (MLrel i :: rels) (i+1) l 
-    | false :: l -> abs (dummy_name :: ids) (MLdummy :: rels) (i+1) l
+    | Keep :: l -> abs (anonymous :: ids) (MLrel i :: rels) (i+1) l 
+    | Kill _ :: l -> abs (dummy_name :: ids) (MLdummy :: rels) (i+1) l
   in abs ids [] 1 s
 
 (*s If [s = [b1; ... ; bn]] then [case_expunge] decomposes [e] 
   in [n] lambdas (with eta-expansion if needed) and removes all dummy lambdas 
-  corresponding to [false] in [s]. *)
+  corresponding to [Del] in [s]. *)
 
 let case_expunge s e = 
   let m = List.length s in 
@@ -892,13 +898,14 @@ let case_expunge s e =
 (*s [term_expunge] takes a function [fun idn ... id1 -> c] 
   and a signature [s] and remove dummy lams. The difference 
   with [case_expunge] is that we here leave one dummy lambda 
-  if all lambdas are dummy. *)
+  if all lambdas are logical dummy. *)
 
 let term_expunge s (ids,c) =
   if s = [] then c 
   else 
     let ids,c = kill_some_lams (List.rev s) (ids,c) in 
-    if ids = [] then MLlam (dummy_name, ast_lift 1 c)
+    if ids = [] && List.mem (Kill Kother) s then 
+      MLlam (dummy_name, ast_lift 1 c)
     else named_lams ids c
 
 (*s [kill_dummy_args ids t0 t] looks for occurences of [t0] in [t] and 
@@ -907,7 +914,7 @@ let term_expunge s (ids,c) =
 
 let kill_dummy_args ids t0 t =
   let m = List.length ids in 
-  let bl = List.rev_map ((<>) dummy_name) ids in
+  let bl = List.rev_map sign_of_id ids in
   let rec killrec n = function 
     | MLapp(e, a) when e = ast_lift n t0 -> 
 	let k = max 0 (m - (List.length a)) in 

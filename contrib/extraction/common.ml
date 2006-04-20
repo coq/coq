@@ -393,8 +393,8 @@ let print_structure_to_file f prm struc =
   in 
   let print_dummys =
     (struct_ast_search ((=) MLdummy) struc, 
-     struct_type_search Tdummy struc, 
-     struct_type_search Tunknown struc)
+     struct_type_search Mlutil.isDummy struc, 
+     struct_type_search ((=) Tunknown) struc)
   in 
   let print_magic = 
     if lang () <> Haskell then false 
