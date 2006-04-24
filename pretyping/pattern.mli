@@ -39,8 +39,9 @@ type constr_pattern =
   | PLetIn of name * constr_pattern * constr_pattern
   | PSort of rawsort
   | PMeta of patvar option
-  | PCase of (inductive option * case_style)
-      * constr_pattern option * constr_pattern * constr_pattern array
+  | PIf of constr_pattern * constr_pattern * constr_pattern
+  | PCase of (case_style * int array * inductive option * int option)
+      * constr_pattern * constr_pattern * constr_pattern array
   | PFix of fixpoint
   | PCoFix of cofixpoint
 
@@ -76,3 +77,5 @@ val pattern_of_rawconstr : rawconstr ->
 
 val instantiate_pattern :
   (identifier * constr_pattern) list -> constr_pattern -> constr_pattern
+
+val lift_pattern : int -> constr_pattern -> constr_pattern

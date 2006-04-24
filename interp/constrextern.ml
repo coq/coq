@@ -873,6 +873,13 @@ let extern_type at_top env t =
 (******************************************************************)
 (* Main translation function from pattern -> constr_expr *)
 
+let it_destPLambda n c =
+  let rec aux n nal c =
+    if n=0 then (nal,c) else match c with
+      | PLambda (na,_,c) -> aux (n-1) (na::nal) c
+      | _ -> anomaly "it_destPLambda" in
+  aux n [] c
+
 let rec raw_of_pat env = function
   | PRef ref -> RRef (loc,ref)
   | PVar id -> RVar (loc,id)
@@ -897,20 +904,30 @@ let rec raw_of_pat env = function
       RLetIn (loc,na,raw_of_pat env t, raw_of_pat (na::env) c)
   | PLambda (na,t,c) ->
       RLambda (loc,na,raw_of_pat env t, raw_of_pat (na::env) c)
-  | PCase ((_,cs),typopt,tm,[||]) ->
-      if typopt <> None then failwith "TODO: PCase to RCases";
-      RCases (loc,(*(option_app (raw_of_pat env) typopt,*)None,
-         [raw_of_pat env tm,(Anonymous,None)],[])
-  | PCase ((Some ind,cs),typopt,tm,bv) ->
-      let avoid = List.fold_right (name_fold (fun x l -> x::l)) env [] in
-      let mib,mip = lookup_mind_specif (Global.env()) ind in
-      let k = mip.Declarations.mind_nrealargs in
-      let nparams = mib.Declarations.mind_nparams in
-      let cstrnargs = mip.Declarations.mind_consnrealdecls in
-      Detyping.detype_case false (raw_of_pat env) (raw_of_eqns env)
-	(fun _ _ -> false (* lazy: don't try to display pattern with "if" *))
-	avoid (ind,cs,nparams,cstrnargs,k) typopt tm bv
-  | PCase _ -> error "Unsupported case-analysis while printing pattern"
+  | PIf (c,b1,b2) ->
+      RIf (loc, raw_of_pat env c, (Anonymous,None), 
+           raw_of_pat env b1, raw_of_pat env b2)
+  | PCase ((LetStyle,[|n|],ind,None),PMeta None,tm,[|b|]) ->
+      let nal,b = it_destPLambda n b in
+      RLetTuple (loc,nal,(Anonymous,None),raw_of_pat env tm,raw_of_pat env b)
+  | PCase ((_,cstr_nargs,ind,ind_nargs),p,tm,bv) ->
+      let brs =
+	array_map2_i (fun i n b ->
+	  let nal,c = it_destPLambda n b in
+	  let mkPatVar na = PatVar (loc,na) in
+             (* ind is None only if no branch and no return type *) 
+	  let cs = (out_some ind,i+1) in
+	  let p = PatCstr (loc,cs,List.map mkPatVar nal,Anonymous) in
+	  let ids = map_succeed out_name nal in
+	  (loc,ids,[p],raw_of_pat (nal@env) c)) cstr_nargs bv in
+      let decompose_pred n p =
+	let nal,p = it_destPLambda (n+1) p in
+	(List.hd nal, Some (loc,out_some ind,List.tl nal)),
+	Some (raw_of_pat env p) in
+      let indnames,pred =
+	if p = PMeta None then (Anonymous,None),None
+	else decompose_pred (out_some ind_nargs) p in
+      RCases (loc,pred,[raw_of_pat env tm,indnames],Array.to_list brs)
   | PFix f -> Detyping.detype false [] env (mkFix f)
   | PCoFix c -> Detyping.detype false [] env (mkCoFix c)
   | PSort s -> RSort (loc,s)

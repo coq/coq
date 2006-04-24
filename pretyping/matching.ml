@@ -17,6 +17,7 @@ open Termops
 open Reductionops
 open Term
 open Rawterm
+open Sign
 open Environ
 open Pattern
 (*i*)
@@ -70,6 +71,11 @@ let memb_metavars m n =
 
 let eq_context ctxt1 ctxt2 = array_for_all2 eq_constr ctxt1 ctxt2
 
+let same_case_structure (_,cs1,ind,_) ci2 br1 br2 =
+  match ind with
+  | Some ind -> ind = ci2.ci_ind
+  | None -> cs1 = ci2.ci_cstr_nargs
+
 let matches_core convert allow_partial_app pat c = 
   let rec sorec stk sigma p t =
     let cT = strip_outer_cast t in
@@ -79,7 +85,7 @@ let matches_core convert allow_partial_app pat c =
 	    List.map
 	      (function
 		 | PRel n -> n
-		 | _ -> error "Only bound indices are currently allowed in second order pattern matching")
+		 | _ -> error "Only bound indices allowed in second order pattern matching")
 	      args in
 	  let frels = Intset.elements (free_rels cT) in
 	  if list_subset frels relargs then
@@ -150,15 +156,27 @@ let matches_core convert allow_partial_app pat c =
 	  if is_conv env evars c cT then sigma
 	  else raise PatternMatchingFailure
 
-      | PCase (_,_,a1,br1), Case (_,_,a2,br2) ->
-	  (* On ne teste pas le prédicat *)
-          if (Array.length br1) = (Array.length br2) then
-  	    array_fold_left2 (sorec stk) (sorec stk sigma a1 a2) br1 br2
+      | PIf (a1,b1,b1'), Case (ci,_,a2,[|b2;b2'|]) ->
+	  let ctx,b2 = decompose_prod_n_assum ci.ci_cstr_nargs.(0) b2 in
+	  let ctx',b2' = decompose_prod_n_assum ci.ci_cstr_nargs.(1) b2' in
+	  let n = List.length ctx and n' = List.length ctx' in
+	  if noccur_between 1 n b2 & noccur_between 1 n' b2' then
+	    let s = List.fold_left (fun l (na,_,t) -> (na,t)::l) stk ctx in
+	    let s' = List.fold_left (fun l (na,_,t) -> (na,t)::l) stk ctx' in
+	    let b1 = lift_pattern n b1 and b1' = lift_pattern n' b1' in
+  	    sorec s' (sorec s (sorec stk sigma a1 a2) b1 b2) b1' b2'
           else
             raise PatternMatchingFailure
-      (* À faire *)
-      |	PFix f0, Fix f1 when f0 = f1 -> sigma
-      |	PCoFix c0, CoFix c1 when c0 = c1 -> sigma
+
+      | PCase (ci1,p1,a1,br1), Case (ci2,p2,a2,br2) ->
+	  if same_case_structure ci1 ci2 br1 br2 then
+  	    array_fold_left2 (sorec stk) 
+	      (sorec stk (sorec stk sigma a1 a2) p1 p2) br1 br2
+          else
+            raise PatternMatchingFailure
+
+      |	PFix c1, Fix _ when eq_constr (mkFix c1) cT -> sigma
+      |	PCoFix c1, CoFix _ when eq_constr (mkCoFix c1) cT -> sigma
       | _ -> raise PatternMatchingFailure
 
   in 
