@@ -436,17 +436,27 @@ let pr_match_pattern pr_pat = function
   | Subterm (Some id,a) ->
       str "context " ++ pr_id id ++ str "[" ++ pr_pat a ++ str "]"
 
-let pr_match_hyps pr_pat = function
-  | Hyp (nal,mp) -> pr_lname nal ++ str ":" ++ pr_match_pattern pr_pat mp
+let pr_match_hyps pr_pat (Hyp (nal,mp)) =
+  pr_lname nal ++ str ":" ++ pr_match_pattern pr_pat mp
 
 let pr_match_rule m pr pr_pat = function
   | Pat ([],mp,t) when m ->
       pr_match_pattern pr_pat mp ++
       spc () ++ str "=>" ++ brk (1,4) ++ pr t
+(*
   | Pat (rl,mp,t) ->
-      prlist_with_sep (fun () -> str",") (pr_match_hyps pr_pat) rl ++
-      spc () ++ str "|-" ++ spc () ++ pr_match_pattern pr_pat mp ++ spc () ++
-      str "=>" ++ brk (1,4) ++ pr t
+      hv 0 (prlist_with_sep pr_coma (pr_match_hyps pr_pat) rl ++
+        (if rl <> [] then spc () else mt ()) ++ 
+         hov 0 (str "|-" ++ spc () ++ pr_match_pattern pr_pat mp ++ spc () ++
+	 str "=>" ++ brk (1,4) ++ pr t))
+*)
+  | Pat (rl,mp,t) ->
+      hov 0 (
+	hv 0 (prlist_with_sep pr_coma (pr_match_hyps pr_pat) rl) ++
+        (if rl <> [] then spc () else mt ()) ++ 
+        hov 0 (
+	  str "|-" ++ spc () ++ pr_match_pattern pr_pat mp ++ spc () ++
+	  str "=>" ++ brk (1,4) ++ pr t))
   | All t -> str "_" ++ spc () ++ str "=>" ++ brk (1,4) ++ pr t
 
 let pr_funvar = function
@@ -936,7 +946,7 @@ let rec raw_printers =
     (pr_raw_tactic_level, 
      drop_env pr_constr_expr,
      drop_env pr_lconstr_expr,
-     pr_pattern_expr,
+     pr_lpattern_expr,
      drop_env pr_reference,
      drop_env pr_reference,
      pr_reference,
@@ -956,7 +966,7 @@ let rec glob_printers =
     (pr_glob_tactic_level, 
      (fun env -> pr_and_constr_expr (pr_rawconstr_env env)),
      (fun env -> pr_and_constr_expr (pr_lrawconstr_env env)),
-     (fun c -> pr_constr_pattern_env (Global.env()) c),
+     (fun c -> pr_lconstr_pattern_env (Global.env()) c),
      (fun env -> pr_or_var (pr_and_short_name (pr_evaluable_reference_env env))),
      (fun env -> pr_or_var (pr_inductive env)),
      pr_ltac_or_var (pr_located pr_ltac_constant),
@@ -975,7 +985,7 @@ let ((pr_tactic_level:Environ.env -> tolerability -> Proof_type.tactic_expr -> s
     (pr_glob_tactic_level,
      pr_constr_env,
      pr_lconstr_env,
-     pr_constr_pattern,
+     pr_lconstr_pattern,
      pr_evaluable_reference_env,
      pr_inductive,
      pr_ltac_constant,

@@ -50,6 +50,9 @@ val pr_lrawconstr          : rawconstr -> std_ppcmds
 val pr_rawconstr_env       : env -> rawconstr -> std_ppcmds
 val pr_rawconstr           : rawconstr -> std_ppcmds
 
+val pr_lconstr_pattern_env : env -> constr_pattern -> std_ppcmds
+val pr_lconstr_pattern     : constr_pattern -> std_ppcmds
+
 val pr_constr_pattern_env  : env -> constr_pattern -> std_ppcmds
 val pr_constr_pattern      : constr_pattern -> std_ppcmds
 

@@ -64,6 +64,7 @@ val pr_sort : rawsort -> std_ppcmds
 
 val pr_binders : local_binder list -> std_ppcmds
 val pr_pattern_expr : Tacexpr.pattern_expr -> std_ppcmds
+val pr_lpattern_expr : Tacexpr.pattern_expr -> std_ppcmds
 val pr_constr_expr : constr_expr -> std_ppcmds
 val pr_lconstr_expr : constr_expr -> std_ppcmds
 val pr_cases_pattern_expr : cases_pattern_expr -> std_ppcmds

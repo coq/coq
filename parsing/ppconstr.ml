@@ -619,6 +619,8 @@ let rec strip_context n iscast t =
 let pr_constr_expr c = pr lsimple c
 let pr_lconstr_expr c = pr ltop c
 let pr_pattern_expr c = pr lsimple c
+let pr_lpattern_expr c = pr ltop c
+
 let pr_cases_pattern_expr = pr_patt ltop
 
 let pr_binders = pr_undelimited_binders (pr ltop)
