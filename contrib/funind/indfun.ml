@@ -78,24 +78,28 @@ let compute_annot (name,annot,args,types,body) =
     | Some r -> (name,r,args,types,body)
 
 
-
 let rec is_rec names = 
   let names = List.fold_right Idset.add names Idset.empty in 
-  let check_id id =  Idset.mem id names in 
-  let rec lookup = function 
-    | RVar(_,id) -> check_id id
+  let check_id id names =  Idset.mem id names in 
+  let rec lookup names = function 
+    | RVar(_,id) -> check_id id names
     | RRef _ | REvar _ | RPatVar _ | RSort _ |  RHole _ | RDynamic _ -> false
-    | RCast(_,b,_,_) -> lookup b
+    | RCast(_,b,_,_) -> lookup names b
     | RRec _ -> assert false 
-    | RIf _ -> failwith "Rif not implemented"
-    | RLetIn(_,_,t,b) | RLambda(_,_,t,b) | RProd(_,_,t,b) | RLetTuple(_,_,_,t,b) -> 
-	lookup t || lookup b
-    | RApp(_,f,args) -> List.exists lookup (f::args)
+    | RIf(_,b,_,lhs,rhs) -> 
+	(lookup names b) || (lookup names lhs) || (lookup names rhs)
+    | RLetIn(_,na,t,b) | RLambda(_,na,t,b) | RProd(_,na,t,b)  -> 
+	lookup names t || lookup (Nameops.name_fold Idset.remove na names) b
+    | RLetTuple(_,_,_,t,b) -> error "RLetTuple not handled"
+    | RApp(_,f,args) -> List.exists (lookup names) (f::args)
     | RCases(_,_,el,brl) -> 
-	List.exists (fun (e,_) -> lookup e) el ||
-	  List.exists (fun (_,_,_,ret)-> lookup ret) brl
+	List.exists (fun (e,_) -> lookup names e) el ||
+	  List.exists (lookup_br names) brl
+  and lookup_br names (_,idl,_,rt) = 
+    let new_names = List.fold_right Idset.remove idl names in 
+    lookup new_names rt
   in
-  lookup 
+  lookup names
 
 let prepare_body (name,annot,args,types,body) rt = 
   let n = (Topconstr.local_binders_length args) in 
@@ -326,7 +330,7 @@ let do_generate_principle register_built interactive_proof fixpoint_exprl  =
 		     if  is_one_rec recdef  && List.length names > 1 then
 		       Util.user_err_loc
 			 (Util.dummy_loc,"GenFixpoint",
-			  Pp.str "the recursive argument needs to be specified")
+			  Pp.str "the recursive argument needs to be specified in GenFixpoint")
 		     else 
 		       (name,(Some 0, Topconstr.CStructRec),args,types,body),(None:Vernacexpr.decl_notation)
 		 | (_,Some (Wf _),_,_,_),_ | (_,Some (Mes _),_,_,_),_-> 
@@ -367,8 +371,6 @@ let make_graph (id:identifier) =
     | Some b ->
 	let env = Global.env () in
 	let body = (force b) in
-
-
 	let extern_body,extern_type = 
 	  let old_implicit_args = Impargs.is_implicit_args ()
 	  and old_strict_implicit_args =  Impargs.is_strict_implicit_args ()

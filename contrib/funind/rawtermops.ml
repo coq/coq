@@ -123,7 +123,13 @@ let change_vars =
 		 List.map (fun (e,x) -> (change_vars mapping e,x)) el, 
 		 List.map (change_vars_br mapping) brl
 		)
-      | RIf _ -> error "Not handled RIf"
+      | RIf(loc,b,(na,e_option),lhs,rhs) -> 
+	  RIf(loc,
+	      change_vars mapping b,
+	      (na,option_app (change_vars mapping) e_option),
+	      change_vars mapping lhs,
+	      change_vars mapping rhs
+	     )
       | RRec _ -> error "Not handled RRec"
       | RSort _ -> rt 
       | RHole _ -> rt 
@@ -297,7 +303,12 @@ let rec alpha_rt excluded rt =
 	  List.map (function (rt,i) -> alpha_rt excluded rt, i) el 
 	in 
 	RCases(loc,infos,new_el,List.map (alpha_br excluded) brl) 
-    | RIf _ -> error "Not handled RIf"
+    | RIf(loc,b,(na,e_o),lhs,rhs) -> 
+	RIf(loc,alpha_rt excluded b,
+	    (na,option_app (alpha_rt excluded) e_o),
+	    alpha_rt excluded lhs,
+	    alpha_rt excluded rhs
+	   )
     | RRec _ -> error "Not handled RRec"
     | RSort _ -> rt 
     | RHole _ -> rt 
@@ -449,7 +460,12 @@ let replace_var_by_term x_id term =
 		 List.map (fun (e,x) -> (replace_var_by_pattern e,x)) el, 
 		 List.map replace_var_by_pattern_br brl
 		)
-      | RIf _ -> raise (UserError("",str "Not handled RIf"))
+      | RIf(loc,b,(na,e_option),lhs,rhs) -> 
+	  RIf(loc, replace_var_by_pattern b,
+	      (na,option_app replace_var_by_pattern e_option),
+	      replace_var_by_pattern lhs,
+	      replace_var_by_pattern rhs
+	     )
       | RRec _ -> raise (UserError("",str "Not handled RRec"))
       | RSort _ -> rt 
       | RHole _ -> rt 

@@ -145,37 +145,6 @@ let rec replace_var_by_term_in_binder x_id term = function
 
 let add_bt_names bt = List.append (ids_of_binder bt)
 
-(* let rec replace_var_by_term_in_binder x_id term = function  *)
-(*   | [] -> []  *)
-(*   | (bt,Name id,t)::l when id_ord id x_id = 0 ->  *)
-(*       (bt,Name id,replace_var_by_term x_id term t)::l *)
-(*   | (bt,na,t)::l ->  *)
-(*       (bt,na,replace_var_by_term x_id term t)::(replace_var_by_term_in_binder x_id term l) *)
-
-(* let rec change_vars_in_binder mapping = function *)
-(*   | [] -> [] *)
-(*   | (bt,(Name id as na),t)::l when Idmap.mem id mapping -> *)
-(*       (bt,na,change_vars mapping t):: l *)
-(*   | (bt,na,t)::l -> *)
-(*       (bt,na,change_vars mapping t):: *)
-(* 	(change_vars_in_binder mapping l) *)
-
-   
-(* let alpha_ctxt avoid b = *)
-(*   let rec alpha_ctxt = function *)
-(*     | [] -> [],b *)
-(*     | (bt,n,t)::ctxt -> *)
-(* 	let new_ctxt,new_b = alpha_ctxt ctxt in *)
-(* 	match n with *)
-(* 	  | Name id when List.mem id avoid -> *)
-(* 	      let new_id = Nameops.next_ident_away id avoid in *)
-(* 	      let mapping = Idmap.add id new_id Idmap.empty in *)
-(* 	      (bt,Name new_id,t):: *)
-(* 		(change_vars_in_binder mapping new_ctxt), *)
-(* 	      change_vars mapping new_b *)
-(* 	  | _ -> (bt,n,t)::new_ctxt,new_b *)
-(*   in *)
-(*   alpha_ctxt *)
 let apply_args ctxt body args = 
   let need_convert_id avoid id = 
     List.exists (is_free_in id) args || List.mem id avoid 
@@ -183,11 +152,6 @@ let apply_args ctxt body args =
   let need_convert avoid  bt =  
     List.exists (need_convert_id avoid) (ids_of_binder bt)
   in
-(*   let add_name na avoid =  *)
-(*     match na with  *)
-(*       | Anonymous -> avoid  *)
-(*       | Name id -> id::avoid  *)
-(*   in *)
   let next_name_away (na:name) (mapping: identifier Idmap.t) (avoid: identifier list) = 
     match na with 
        | Name id when List.mem id avoid -> 
@@ -206,17 +170,6 @@ let apply_args ctxt body args =
       | Lambda na -> 
 	  let new_na,mapping,new_avoid = next_name_away na Idmap.empty avoid  in 
 	  Lambda new_na,mapping,new_avoid
-(*       | LetTuple (nal,na) ->  *)
-(* 	  let rev_new_nal,mapping,new_avoid =  *)
-(* 	    List.fold_left *)
-(* 	      (fun (nal,mapping,(avoid:identifier list)) na ->  *)
-(* 		 let new_na,new_mapping,new_avoid = next_name_away na mapping avoid in *)
-(* 		 (new_na::nal,new_mapping,new_avoid) *)
-(* 	      ) *)
-(* 	      ([],Idmap.empty,avoid) *)
-(* 	      nal *)
-(* 	  in  *)
-(* 	  (LetTuple(List.rev rev_new_nal,na),mapping,new_avoid) *)
   in
   let rec do_apply avoid ctxt body args = 
     match ctxt,args with  
@@ -402,6 +355,73 @@ let make_pattern_eq_precond id e pat =
   res
 
 
+let build_constructors_of_type msg ind' = 
+  let (mib,ind) = Inductive.lookup_mind_specif (Global.env()) ind' in
+  let npar = mib.Declarations.mind_nparams in
+  Array.mapi (fun i _ ->
+		let construct = ind',i+1 in 
+		let constructref = ConstructRef(construct) in 
+		let _implicit_positions_of_cst =
+		  Impargs.implicits_of_global constructref
+		in
+		let cst_narg = 
+		  Inductiveops.mis_constructor_nargs_env
+		    (Global.env ())
+		    construct
+		in 
+		let pat_as_term = 
+		  mkRApp(mkRRef (ConstructRef(ind',i+1)),
+			 Array.to_list 
+			   (Array.init (cst_narg - npar) (fun _ -> mkRHole ())
+			   )
+			)
+		in
+(* 		Pp.msgnl (str "new constructor := " ++ Printer.pr_rawconstr pat_as_term); *)
+		cases_pattern_of_rawconstr Anonymous pat_as_term
+	     )
+    ind.Declarations.mind_consnames
+
+let find_constructors_of_raw_type msg t =
+  let ind,args = raw_decompose_app t in
+  match ind with
+    | RRef(_,IndRef ind')  ->
+(* 	let _,ind = Global.lookup_inductive ind' in *)
+	build_constructors_of_type msg ind'
+    | _ -> error msg
+	
+
+
+let rec find_type_of b = 
+  let f,_ = raw_decompose_app b in 
+  match f with 
+    | RRef(_,ref) -> 
+	begin 
+	  let ind_type  = 
+	    match ref with 
+	      | VarRef _ | ConstRef _ -> 
+		  let constr_of_ref = constr_of_global ref in  
+		  let type_of_ref = Typing.type_of (Global.env ()) Evd.empty constr_of_ref in 
+		  let (_,ret_type) = Reduction.dest_prod (Global.env ()) type_of_ref in 
+		  let ret_type,_ = decompose_app ret_type in 
+		  if not (isInd ret_type) then 
+		    begin
+(* 		      Pp.msgnl (str "not an inductive" ++ pr_lconstr ret_type); *)
+		      raise (Invalid_argument "not an inductive")
+		    end;
+		  destInd ret_type
+	      | IndRef ind -> ind
+	      | ConstructRef c -> fst c 
+	  in
+	  let _,ind_type_info = Inductive.lookup_mind_specif (Global.env()) ind_type in 
+	  if not (Array.length ind_type_info.Declarations.mind_consnames = 2 )
+	  then raise (Invalid_argument "find_type_of : not an if inductive");
+	  ind_type	   
+	end
+    | RCast(_,b,_,_) -> find_type_of b 
+    | RApp _ -> assert false (* we have decomposed any application via raw_decompose_app *)
+    | _ -> raise (Invalid_argument "not a ref")
+    
+
 let rec build_entry_lc funnames avoid rt  : rawconstr build_entry_return = 
 (*   Pp.msgnl (str " Entering : " ++ Printer.pr_rawconstr rt); *)
   match rt with 
@@ -466,13 +486,13 @@ let rec build_entry_lc funnames avoid rt  : rawconstr build_entry_return =
 		  funnames 
 		  avoid
 		  (mkRLetIn(new_n,t,mkRApp(new_b,args)))
-	    | RCases _ | RLambda _  -> 
+	    | RCases _ | RLambda _ | RIf _ -> 
 		let f_res = build_entry_lc funnames  args_res.to_avoid f in
 		combine_results combine_app f_res  args_res
 	    | RDynamic _ ->error "Not handled RDynamic"
-	    | RCast _ -> error "Not handled RCast"
+	    | RCast(_,b,_,_) -> 
+		build_entry_lc funnames  avoid (mkRApp(b,args))
 	    | RRec _ -> error "Not handled RRec"
-	    | RIf _ -> error "Not handled RIf"
 	    | RLetTuple _ -> error "Not handled RLetTuple"
 	    | RProd _ -> error "Cannot apply a type"
 	end
@@ -496,10 +516,49 @@ let rec build_entry_lc funnames avoid rt  : rawconstr build_entry_return =
     | RCases(_,_,el,brl) -> 
 	let make_discr = make_discr_match brl in 
 	build_entry_lc_from_case funnames make_discr el brl avoid
-    | RIf _ -> error "Not handled RIf"
+    | RIf(_,b,(na,e_option),lhs,rhs) -> 
+	begin
+	  match b with 
+	    | RCast(_,b,_,t) -> 
+		let msg = "If construction must be used with cast" in 
+		let case_pat = find_constructors_of_raw_type msg t in 
+		assert (Array.length case_pat = 2);
+		let brl = 
+		  list_map_i
+		    (fun i x -> (dummy_loc,[],[case_pat.(i)],x)) 
+		    0
+		    [lhs;rhs]
+		in 
+		let match_expr =
+		  mkRCases(None,[(b,(Anonymous,None))],brl)
+		in
+(* 		Pp.msgnl (str "new case := " ++ Printer.pr_rawconstr match_expr); *)
+		build_entry_lc funnames avoid match_expr
+	    | _ ->  
+		try 
+		  let ind = find_type_of b in 
+		  let case_pat = build_constructors_of_type (str "") ind in 
+		  let brl = 
+		  list_map_i
+		    (fun i x -> (dummy_loc,[],[case_pat.(i)],x)) 
+		    0
+		    [lhs;rhs]
+		in 
+		let match_expr =
+		  mkRCases(None,[(b,(Anonymous,None))],brl)
+		in
+		(* 		Pp.msgnl (str "new case := " ++ Printer.pr_rawconstr match_expr); *)
+		build_entry_lc funnames avoid match_expr
+		with Invalid_argument s -> 
+		  let msg = "If construction must be used with cast : "^ s in 
+		  error msg
+		  
+	end
+	
     | RLetTuple _ -> error "Not handled RLetTuple"
     | RRec _ -> error "Not handled RRec"
-    | RCast _ -> error "Not handled RCast"
+    | RCast(_,b,_,_) -> 
+	build_entry_lc funnames  avoid b
     | RDynamic _ -> error "Not handled RDynamic"
 and build_entry_lc_from_case funname make_discr
     (el:(Rawterm.rawconstr *
@@ -839,6 +898,7 @@ let rec rebuild_return_type rt =
 
 
 let build_inductive parametrize funnames (funsargs: (Names.name * rawconstr * bool) list list)  returned_types (rtl:rawconstr list) =
+  let _time1 = System.get_time () in
 (*   Pp.msgnl (prlist_with_sep fnl Printer.pr_rawconstr rtl); *)
   let funnames_as_set = List.fold_right Idset.add funnames Idset.empty in
   let funnames = Array.of_list funnames in  
@@ -975,14 +1035,25 @@ let build_inductive parametrize funnames (funsargs: (Names.name * rawconstr * bo
   Impargs.make_implicit_args false;
   Impargs.make_strict_implicit_args false;
   Impargs.make_contextual_implicit_args false;
+  let _time2 = System.get_time () in 
+(*   Pp.msgnl (str "Bulding Inductive : " ++ str (string_of_float (System.time_difference time1 time2))); *)
   try 
     Options.silently (Command.build_mutual rel_inds) true;
+    let _time3 = System.get_time () in 
+(*     Pp.msgnl (str "Bulding Done: "++ str (string_of_float (System.time_difference time2 time3)));  *)
+(* 	let msg = *)
+(* 	  str "while trying to define"++ spc () ++ *)
+(* 	    Ppvernac.pr_vernac (Vernacexpr.VernacInductive(true,rel_inds)) ++ fnl () *)
+(* 	in *)
+(*  	Pp.msgnl msg; *)
     Impargs.make_implicit_args old_implicit_args;
     Impargs.make_strict_implicit_args old_strict_implicit_args;
     Impargs.make_contextual_implicit_args old_contextual_implicit_args;
     Options.raw_print := old_rawprint;
   with
-    | UserError(s,msg) -> 
+    | UserError(s,msg) ->
+	let _time3 = System.get_time () in
+(* 	Pp.msgnl (str "error : "++ str (string_of_float (System.time_difference time2 time3))); *)
 	Impargs.make_implicit_args old_implicit_args;
 	Impargs.make_strict_implicit_args old_strict_implicit_args;
 	Impargs.make_contextual_implicit_args old_contextual_implicit_args;
@@ -996,6 +1067,8 @@ let build_inductive parametrize funnames (funsargs: (Names.name * rawconstr * bo
 	raise 
 	  (UserError(s, msg))
     | e -> 
+	let _time3 = System.get_time () in
+(* 	Pp.msgnl (str "error : "++ str (string_of_float (System.time_difference time2 time3))); *)
 	Impargs.make_implicit_args old_implicit_args;
 	Impargs.make_strict_implicit_args old_strict_implicit_args;
 	Impargs.make_contextual_implicit_args old_contextual_implicit_args;
@@ -1008,5 +1081,6 @@ let build_inductive parametrize funnames (funsargs: (Names.name * rawconstr * bo
  	observe msg;
 	raise 
 	  (UserError("",msg))
+
 
 
