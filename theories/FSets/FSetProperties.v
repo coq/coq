@@ -154,6 +154,11 @@ Module Properties (M: S).
   Proof.
   unfold Subset; intuition.
   Qed.
+ 
+  Lemma double_inclusion : s1[=]s2 <-> s1[<=]s2 /\ s2[<=]s1.
+  Proof.
+  unfold Subset, Equal; split; intros; intuition; generalize (H a); intuition.
+  Qed.
 
   (** properties of [empty] *)
 
