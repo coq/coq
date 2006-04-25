@@ -138,14 +138,9 @@ type 'a lifted = int * 'a
 
 let insert_lifted a = (0,a);;
 
-(* The pattern variables for [it] are in [user_ids] and the variables
-   to avoid are in [other_ids]. 
-*)
-
 type rhs =
     { rhs_env    : env;
-      other_ids  : identifier list;
-      user_ids   : identifier list;
+      avoid_ids  : identifier list;
       rhs_lift   : int;
       it         : rawconstr }
 
@@ -701,7 +696,7 @@ let get_names env sign eqns =
   (* Otherwise, we take names from the parameters of the constructor but
      avoiding conflicts with user ids *)
   let allvars =
-    List.fold_left (fun l (_,eqn) -> list_union l eqn.rhs.other_ids) [] eqns in
+    List.fold_left (fun l (_,eqn) -> list_union l eqn.rhs.avoid_ids) [] eqns in
   let names4,_ =
     List.fold_left2
       (fun (l,avoid) d na ->
@@ -1368,78 +1363,16 @@ substituer après par les initiaux *)
 (**************************************************************************)
 (* Preparation of the pattern-matching problem                            *)
 
-(* Qu'est-ce qui faut pas faire pour traiter les alias ... *)
-
-(* On ne veut pas ajouter de primitive à Environ et le problème, c'est
-   donc de faire un renommage en se contraignant à parcourir l'env
-   dans le sens croissant. Ici, subst renomme des variables repérées
-   par leur numéro et seen_ids collecte celles dont on sait que les
-   variables de subst annule le scope *)
-let rename_env subst env =
-  let n = ref (rel_context_length (rel_context env)) in
-  let seen_ids = ref [] in
-  process_rel_context
-    (fun (na,c,t as d) env ->
-       let d =
-	 try
-	   let id = List.assoc !n subst in
-	   seen_ids := id :: !seen_ids;
-	   (Name id,c,t)
-	 with Not_found ->
-	   match na with
-	     | Name id when List.mem id !seen_ids -> (Anonymous,c,t)
-	     | _ -> d in
-       decr n;
-       push_rel d env) env
-
-let is_dependent_indtype = function
-  | NotInd _ -> false
-  | IsInd (_, IndType(_,realargs)) -> realargs <> []
-
-let prepare_initial_alias_eqn isdep tomatchl eqn =
-  let (subst, pats) = 
-  List.fold_right2
-    (fun pat (tm,tmtyp) (subst, stripped_pats) ->
-       match alias_of_pat pat with
-	 | Anonymous -> (subst, pat::stripped_pats)
-	 | Name idpat ->
-	     match kind_of_term tm with
-	       | Rel n when not (is_dependent_indtype tmtyp) & not isdep
-		   -> (n, idpat)::subst, (unalias_pat pat::stripped_pats)
-	       | _ -> (subst, pat::stripped_pats))
-    eqn.patterns tomatchl ([], []) in
-  let env = rename_env subst eqn.rhs.rhs_env in
-  { eqn with patterns = pats; rhs = { eqn.rhs with rhs_env = env } }
-
-let prepare_initial_aliases isdep tomatchl mat = mat
-(*  List.map (prepare_initial_alias_eqn isdep tomatchl) mat*)
-
-(*
-let prepare_initial_alias lpat tomatchl rhs =
-  List.fold_right2
-    (fun pat tm (stripped_pats, rhs) ->
-       match alias_of_pat pat with
-	 | Anonymous -> (pat::stripped_pats, rhs)
-	 | Name _ as na ->
-	     match tm with
-	       | RVar _ -> 
-		   (unalias_pat pat::stripped_pats, 
-		    RLetIn (dummy_loc, na, tm, rhs))
-	       | _ -> (pat::stripped_pats, rhs))
-    lpat tomatchl ([], rhs)
-*)
 (* builds the matrix of equations testing that each eqn has n patterns
  * and linearizing the _ patterns.
  * Syntactic correctness has already been done in astterm *)
 let matx_of_eqns env tomatchl eqns =
   let build_eqn (loc,ids,lpat,rhs) =
-(*    let initial_lpat,initial_rhs = prepare_initial_alias lpat tomatchl rhs in*)
     let initial_lpat,initial_rhs = lpat,rhs in
     let initial_rhs = rhs in
     let rhs =
       { rhs_env = env;
-	other_ids = ids@(ids_of_named_context (named_context env));
-	user_ids = ids;
+	avoid_ids = ids@(ids_of_named_context (named_context env));
 	rhs_lift = 0;
 	it = initial_rhs } in
     { dependencies = [];
