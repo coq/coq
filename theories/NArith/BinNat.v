@@ -29,6 +29,12 @@ Arguments Scope Npos [positive_scope].
 
 Open Local Scope N_scope.
 
+Definition Ndiscr : forall n:N, { p:positive | n = Npos p } + { n = N0 }.
+Proof.
+ destruct n; auto.
+ left; exists p; auto.
+Defined.
+
 (** Operation x -> 2*x+1 *)
 
 Definition Ndouble_plus_one x :=
@@ -39,10 +45,11 @@ Definition Ndouble_plus_one x :=
 
 (** Operation x -> 2*x *)
 
-Definition Ndouble n := match n with
-                        | N0 => N0
-                        | Npos p => Npos (xO p)
-                        end.
+Definition Ndouble n := 
+  match n with
+  | N0 => N0
+  | Npos p => Npos (xO p)
+  end.
 
 (** Successor *)
 
@@ -85,6 +92,34 @@ Definition Ncompare n m :=
   end.
 
 Infix "?=" := Ncompare (at level 70, no associativity) : N_scope.
+
+(** convenient induction principles *)
+
+Lemma N_ind_double :
+ forall (a:N) (P:N -> Prop),
+   P N0 ->
+   (forall a, P a -> P (Ndouble a)) ->
+   (forall a, P a -> P (Ndouble_plus_one a)) -> P a.
+Proof.
+  intros; elim a. trivial.
+  simple induction p. intros. 
+  apply (H1 (Npos p0)); trivial.
+  intros; apply (H0 (Npos p0)); trivial.
+  intros; apply (H1 N0); assumption.
+Qed.
+
+Lemma N_rec_double :
+ forall (a:N) (P:N -> Set),
+   P N0 ->
+   (forall a, P a -> P (Ndouble a)) ->
+   (forall a, P a -> P (Ndouble_plus_one a)) -> P a.
+Proof.
+  intros; elim a. trivial.
+  simple induction p. intros. 
+  apply (H1 (Npos p0)); trivial.
+  intros; apply (H0 (Npos p0)); trivial.
+  intros; apply (H1 N0); assumption.
+Qed.
 
 (** Peano induction on binary natural numbers *)
 
@@ -210,4 +245,36 @@ Proof.
 destruct n as [| n]; destruct m as [| m]; simpl in |- *; intro H;
  reflexivity || (try discriminate H).
   rewrite (Pcompare_Eq_eq n m H); reflexivity.
+Qed.
+
+(** Dividing by 2 *)
+
+Definition Ndiv2 (n:N) :=
+  match n with
+  | N0 => N0
+  | Npos 1 => N0
+  | Npos (xO p) => Npos p
+  | Npos (xI p) => Npos p
+  end.
+
+Lemma Ndouble_div2 : forall n:N, Ndiv2 (Ndouble n) = n.
+Proof.
+  destruct n; trivial.
+Qed.
+
+Lemma Ndouble_plus_one_div2 :
+ forall n:N, Ndiv2 (Ndouble_plus_one n) = n.
+Proof.
+  destruct n; trivial.
+Qed.
+
+Lemma Ndouble_inj : forall n m, Ndouble n = Ndouble m -> n = m.
+Proof.
+  intros. rewrite <- (Ndouble_div2 n). rewrite H. apply Ndouble_div2.
+Qed.
+
+Lemma Ndouble_plus_one_inj :
+ forall n m, Ndouble_plus_one n = Ndouble_plus_one m -> n = m.
+Proof.
+  intros. rewrite <- (Ndouble_plus_one_div2 n). rewrite H. apply Ndouble_plus_one_div2.
 Qed.

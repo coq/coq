@@ -10,10 +10,9 @@
 Require Import Bool.
 Require Import Sumbool.
 Require Import Arith.
-Require Import ZArith.
-Require Import Addr.
-Require Import Adist.
-Require Import Addec.
+Require Import NArith.
+Require Import Ndigits.
+Require Import Ndec.
 Require Import Map.
 Require Import Mapaxioms.
 Require Import Mapiter.
@@ -57,37 +56,37 @@ Section MapCanon.
    forall m0 m1 m2 m3:Map A,
      eqmap A (M2 A m0 m1) (M2 A m2 m3) -> eqmap A m0 m2.
   Proof.
-    unfold eqmap, eqm in |- *. intros. rewrite <- (ad_double_div_2 a).
-    rewrite <- (MapGet_M2_bit_0_0 A _ (ad_double_bit_0 a) m0 m1).
-    rewrite <- (MapGet_M2_bit_0_0 A _ (ad_double_bit_0 a) m2 m3).
-    exact (H (ad_double a)).
+    unfold eqmap, eqm in |- *. intros. rewrite <- (Ndouble_div2 a).
+    rewrite <- (MapGet_M2_bit_0_0 A _ (Ndouble_bit0 a) m0 m1).
+    rewrite <- (MapGet_M2_bit_0_0 A _ (Ndouble_bit0 a) m2 m3).
+    exact (H (Ndouble a)).
   Qed.
 
   Lemma M2_eqmap_2 :
    forall m0 m1 m2 m3:Map A,
      eqmap A (M2 A m0 m1) (M2 A m2 m3) -> eqmap A m1 m3.
   Proof.
-    unfold eqmap, eqm in |- *. intros. rewrite <- (ad_double_plus_un_div_2 a).
-    rewrite <- (MapGet_M2_bit_0_1 A _ (ad_double_plus_un_bit_0 a) m0 m1).
-    rewrite <- (MapGet_M2_bit_0_1 A _ (ad_double_plus_un_bit_0 a) m2 m3).
-    exact (H (ad_double_plus_un a)).
+    unfold eqmap, eqm in |- *. intros. rewrite <- (Ndouble_plus_one_div2 a).
+    rewrite <- (MapGet_M2_bit_0_1 A _ (Ndouble_plus_one_bit0 a) m0 m1).
+    rewrite <- (MapGet_M2_bit_0_1 A _ (Ndouble_plus_one_bit0 a) m2 m3).
+    exact (H (Ndouble_plus_one a)).
   Qed.
 
   Lemma mapcanon_unique :
    forall m m':Map A, mapcanon m -> mapcanon m' -> eqmap A m m' -> m = m'.
   Proof.
     simple induction m. simple induction m'. trivial.
-    intros a y H H0 H1. cut (NONE A = MapGet A (M1 A a y) a). simpl in |- *. rewrite (ad_eq_correct a).
+    intros a y H H0 H1. cut (None = MapGet A (M1 A a y) a). simpl in |- *. rewrite (Neqb_correct a).
     intro. discriminate H2.
     exact (H1 a).
     intros. cut (2 <= MapCard A (M0 A)). intro. elim (le_Sn_O _ H4).
     rewrite (MapCard_ext A _ _ H3). exact (mapcanon_M2 _ _ H2).
-    intros a y. simple induction m'. intros. cut (MapGet A (M1 A a y) a = NONE A). simpl in |- *.
-    rewrite (ad_eq_correct a). intro. discriminate H2.
+    intros a y. simple induction m'. intros. cut (MapGet A (M1 A a y) a = None). simpl in |- *.
+    rewrite (Neqb_correct a). intro. discriminate H2.
     exact (H1 a).
     intros a0 y0 H H0 H1. cut (MapGet A (M1 A a y) a = MapGet A (M1 A a0 y0) a). simpl in |- *.
-    rewrite (ad_eq_correct a). intro. elim (sumbool_of_bool (ad_eq a0 a)). intro H3.
-    rewrite H3 in H2. inversion H2. rewrite (ad_eq_complete _ _ H3). reflexivity.
+    rewrite (Neqb_correct a). intro. elim (sumbool_of_bool (Neqb a0 a)). intro H3.
+    rewrite H3 in H2. inversion H2. rewrite (Neqb_complete _ _ H3). reflexivity.
     intro H3. rewrite H3 in H2. discriminate H2.
     exact (H1 a).
     intros. cut (2 <= MapCard A (M1 A a y)). intro. elim (le_Sn_O _ (le_S_n _ _ H4)).
@@ -109,19 +108,19 @@ Section MapCanon.
   Lemma MapPut1_canon :
    forall (p:positive) (a a':ad) (y y':A), mapcanon (MapPut1 A a y a' y' p).
   Proof.
-    simple induction p. simpl in |- *. intros. case (ad_bit_0 a). apply M2_canon. apply M1_canon.
+    simple induction p. simpl in |- *. intros. case (Nbit0 a). apply M2_canon. apply M1_canon.
     apply M1_canon.
     apply le_n.
     apply M2_canon. apply M1_canon.
     apply M1_canon.
     apply le_n.
-    simpl in |- *. intros. case (ad_bit_0 a). apply M2_canon. apply M0_canon.
+    simpl in |- *. intros. case (Nbit0 a). apply M2_canon. apply M0_canon.
     apply H.
     simpl in |- *. rewrite MapCard_Put1_equals_2. apply le_n.
     apply M2_canon. apply H.
     apply M0_canon.
     simpl in |- *. rewrite MapCard_Put1_equals_2. apply le_n.
-    simpl in |- *. simpl in |- *. intros. case (ad_bit_0 a). apply M2_canon. apply M1_canon.
+    simpl in |- *. simpl in |- *. intros. case (Nbit0 a). apply M2_canon. apply M1_canon.
     apply M1_canon.
     simpl in |- *. apply le_n.
     apply M2_canon. apply M1_canon.
@@ -134,28 +133,28 @@ Section MapCanon.
      mapcanon m -> forall (a:ad) (y:A), mapcanon (MapPut A m a y).
   Proof.
     simple induction m. intros. simpl in |- *. apply M1_canon.
-    intros a0 y0 H a y. simpl in |- *. case (ad_xor a0 a). apply M1_canon.
+    intros a0 y0 H a y. simpl in |- *. case (Nxor a0 a). apply M1_canon.
     intro. apply MapPut1_canon.
     intros. simpl in |- *. elim a. apply M2_canon. apply H. exact (mapcanon_M2_1 m0 m1 H1).
     exact (mapcanon_M2_2 m0 m1 H1).
     simpl in |- *. apply le_trans with (m := MapCard A m0 + MapCard A m1). exact (mapcanon_M2 _ _ H1).
-    apply plus_le_compat. exact (MapCard_Put_lb A m0 ad_z y).
+    apply plus_le_compat. exact (MapCard_Put_lb A m0 N0 y).
     apply le_n.
     intro. case p. intro. apply M2_canon. exact (mapcanon_M2_1 m0 m1 H1).
     apply H0. exact (mapcanon_M2_2 m0 m1 H1).
     simpl in |- *. apply le_trans with (m := MapCard A m0 + MapCard A m1).
     exact (mapcanon_M2 m0 m1 H1).
-    apply plus_le_compat_l. exact (MapCard_Put_lb A m1 (ad_x p0) y).
+    apply plus_le_compat_l. exact (MapCard_Put_lb A m1 (Npos p0) y).
     intro. apply M2_canon. apply H. exact (mapcanon_M2_1 m0 m1 H1).
     exact (mapcanon_M2_2 m0 m1 H1).
     simpl in |- *. apply le_trans with (m := MapCard A m0 + MapCard A m1).
     exact (mapcanon_M2 m0 m1 H1).
-    apply plus_le_compat_r. exact (MapCard_Put_lb A m0 (ad_x p0) y).
+    apply plus_le_compat_r. exact (MapCard_Put_lb A m0 (Npos p0) y).
     apply M2_canon. apply (mapcanon_M2_1 m0 m1 H1).
     apply H0. apply (mapcanon_M2_2 m0 m1 H1).
     simpl in |- *. apply le_trans with (m := MapCard A m0 + MapCard A m1).
     exact (mapcanon_M2 m0 m1 H1).
-    apply plus_le_compat_l. exact (MapCard_Put_lb A m1 ad_z y).
+    apply plus_le_compat_l. exact (MapCard_Put_lb A m1 N0 y).
   Qed.
 
   Lemma MapPut_behind_canon :
@@ -163,37 +162,37 @@ Section MapCanon.
      mapcanon m -> forall (a:ad) (y:A), mapcanon (MapPut_behind A m a y).
   Proof.
     simple induction m. intros. simpl in |- *. apply M1_canon.
-    intros a0 y0 H a y. simpl in |- *. case (ad_xor a0 a). apply M1_canon.
+    intros a0 y0 H a y. simpl in |- *. case (Nxor a0 a). apply M1_canon.
     intro. apply MapPut1_canon.
     intros. simpl in |- *. elim a. apply M2_canon. apply H. exact (mapcanon_M2_1 m0 m1 H1).
     exact (mapcanon_M2_2 m0 m1 H1).
     simpl in |- *. apply le_trans with (m := MapCard A m0 + MapCard A m1). exact (mapcanon_M2 _ _ H1).
-    apply plus_le_compat. rewrite MapCard_Put_behind_Put. exact (MapCard_Put_lb A m0 ad_z y).
+    apply plus_le_compat. rewrite MapCard_Put_behind_Put. exact (MapCard_Put_lb A m0 N0 y).
     apply le_n.
     intro. case p. intro. apply M2_canon. exact (mapcanon_M2_1 m0 m1 H1).
     apply H0. exact (mapcanon_M2_2 m0 m1 H1).
     simpl in |- *. apply le_trans with (m := MapCard A m0 + MapCard A m1).
     exact (mapcanon_M2 m0 m1 H1).
-    apply plus_le_compat_l. rewrite MapCard_Put_behind_Put. exact (MapCard_Put_lb A m1 (ad_x p0) y).
+    apply plus_le_compat_l. rewrite MapCard_Put_behind_Put. exact (MapCard_Put_lb A m1 (Npos p0) y).
     intro. apply M2_canon. apply H. exact (mapcanon_M2_1 m0 m1 H1).
     exact (mapcanon_M2_2 m0 m1 H1).
     simpl in |- *. apply le_trans with (m := MapCard A m0 + MapCard A m1).
     exact (mapcanon_M2 m0 m1 H1).
-    apply plus_le_compat_r. rewrite MapCard_Put_behind_Put. exact (MapCard_Put_lb A m0 (ad_x p0) y).
+    apply plus_le_compat_r. rewrite MapCard_Put_behind_Put. exact (MapCard_Put_lb A m0 (Npos p0) y).
     apply M2_canon. apply (mapcanon_M2_1 m0 m1 H1).
     apply H0. apply (mapcanon_M2_2 m0 m1 H1).
     simpl in |- *. apply le_trans with (m := MapCard A m0 + MapCard A m1).
     exact (mapcanon_M2 m0 m1 H1).
-    apply plus_le_compat_l. rewrite MapCard_Put_behind_Put. exact (MapCard_Put_lb A m1 ad_z y).
+    apply plus_le_compat_l. rewrite MapCard_Put_behind_Put. exact (MapCard_Put_lb A m1 N0 y).
   Qed.
 
   Lemma makeM2_canon :
    forall m m':Map A, mapcanon m -> mapcanon m' -> mapcanon (makeM2 A m m').
   Proof.
     intro. case m. intro. case m'. intros. exact M0_canon.
-    intros a y H H0. exact (M1_canon (ad_double_plus_un a) y).
+    intros a y H H0. exact (M1_canon (Ndouble_plus_one a) y).
     intros. simpl in |- *. apply M2_canon; try assumption. exact (mapcanon_M2 m0 m1 H0).
-    intros a y m'. case m'. intros. exact (M1_canon (ad_double a) y).
+    intros a y m'. case m'. intros. exact (M1_canon (Ndouble a) y).
     intros a0 y0 H H0. simpl in |- *. apply M2_canon; try assumption. apply le_n.
     intros. simpl in |- *. apply M2_canon; try assumption.
     apply le_trans with (m := MapCard A (M2 A m0 m1)). exact (mapcanon_M2 _ _ H0).
@@ -216,7 +215,7 @@ Section MapCanon.
     intros. simpl in |- *. unfold eqmap, eqm in |- *. intro.
     rewrite (makeM2_M2 A (MapCanonicalize m0) (MapCanonicalize m1) a).
     rewrite MapGet_M2_bit_0_if. rewrite MapGet_M2_bit_0_if.
-    rewrite <- (H (ad_div_2 a)). rewrite <- (H0 (ad_div_2 a)). reflexivity.
+    rewrite <- (H (Ndiv2 a)). rewrite <- (H0 (Ndiv2 a)). reflexivity.
   Qed.
 
   Lemma mapcanon_exists_2 : forall m:Map A, mapcanon (MapCanonicalize m).
@@ -237,9 +236,9 @@ Section MapCanon.
    forall m:Map A, mapcanon m -> forall a:ad, mapcanon (MapRemove A m a).
   Proof.
     simple induction m. intros. exact M0_canon.
-    intros a y H a0. simpl in |- *. case (ad_eq a a0). exact M0_canon.
+    intros a y H a0. simpl in |- *. case (Neqb a a0). exact M0_canon.
     assumption.
-    intros. simpl in |- *. case (ad_bit_0 a). apply makeM2_canon. exact (mapcanon_M2_1 _ _ H1).
+    intros. simpl in |- *. case (Nbit0 a). apply makeM2_canon. exact (mapcanon_M2_1 _ _ H1).
     apply H0. exact (mapcanon_M2_2 _ _ H1).
     apply makeM2_canon. apply H. exact (mapcanon_M2_1 _ _ H1).
     exact (mapcanon_M2_2 _ _ H1).
@@ -265,12 +264,13 @@ Section MapCanon.
    forall m m':Map A, mapcanon m -> mapcanon m' -> mapcanon (MapDelta A m m').
   Proof.
     simple induction m. intros. exact H0.
-    simpl in |- *. intros a y m' H H0. case (MapGet A m' a). exact (MapPut_canon m' H0 a y).
+    simpl in |- *. intros a y m' H H0. case (MapGet A m' a).
     intro. exact (MapRemove_canon m' H0 a).
+    exact (MapPut_canon m' H0 a y).
     simple induction m'. intros. exact H1.
-    unfold MapDelta in |- *. intros a y H1 H2. case (MapGet A (M2 A m0 m1) a).
-    exact (MapPut_canon _ H1 a y).
+    unfold MapDelta in |- *. intros a y H1 H2. case (MapGet A (M2 A m0 m1) a). 
     intro. exact (MapRemove_canon _ H1 a).
+    exact (MapPut_canon _ H1 a y).
     intros. simpl in |- *. apply makeM2_canon. apply H. exact (mapcanon_M2_1 _ _ H3).
     exact (mapcanon_M2_1 _ _ H4).
     apply H0. exact (mapcanon_M2_2 _ _ H3).
@@ -284,11 +284,13 @@ Section MapCanon.
      mapcanon m -> forall m':Map B, mapcanon (MapDomRestrTo A B m m').
   Proof.
     simple induction m. intros. exact M0_canon.
-    simpl in |- *. intros a y H m'. case (MapGet B m' a). exact M0_canon.
+    simpl in |- *. intros a y H m'. case (MapGet B m' a). 
     intro. apply M1_canon.
+    exact M0_canon.
     simple induction m'. exact M0_canon.
-    unfold MapDomRestrTo in |- *. intros a y. case (MapGet A (M2 A m0 m1) a). exact M0_canon.
+    unfold MapDomRestrTo in |- *. intros a y. case (MapGet A (M2 A m0 m1) a). 
     intro. apply M1_canon.
+    exact M0_canon.
     intros. simpl in |- *. apply makeM2_canon. apply H. exact (mapcanon_M2_1 m0 m1 H1).
     apply H0. exact (mapcanon_M2_2 m0 m1 H1).
   Qed.
@@ -298,10 +300,10 @@ Section MapCanon.
      mapcanon m -> forall m':Map B, mapcanon (MapDomRestrBy A B m m').
   Proof.
     simple induction m. intros. exact M0_canon.
-    simpl in |- *. intros a y H m'. case (MapGet B m' a). assumption.
+    simpl in |- *. intros a y H m'. case (MapGet B m' a); try assumption.
     intro. exact M0_canon.
     simple induction m'. exact H1.
-    intros a y. simpl in |- *. case (ad_bit_0 a). apply makeM2_canon. exact (mapcanon_M2_1 _ _ H1).
+    intros a y. simpl in |- *. case (Nbit0 a). apply makeM2_canon. exact (mapcanon_M2_1 _ _ H1).
     apply MapRemove_canon. exact (mapcanon_M2_2 _ _ H1).
     apply makeM2_canon. apply MapRemove_canon. exact (mapcanon_M2_1 _ _ H1).
     exact (mapcanon_M2_2 _ _ H1).

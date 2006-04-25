@@ -105,3 +105,139 @@ Qed.
 Theorem not_lt : forall n m, ~ n < m -> n >= m.
 intros x y H; exact (not_gt y x H). 
 Qed.
+
+
+(** A ternary comparison function in the spirit of [Zcompare]. *)
+
+Definition nat_compare (n m:nat) :=
+ match lt_eq_lt_dec n m with 
+  | inleft (left _) => Lt
+  | inleft (right _) => Eq
+  | inright _ => Gt
+ end.
+
+Lemma nat_compare_S : forall n m, nat_compare (S n) (S m) = nat_compare n m.
+Proof.
+ unfold nat_compare; intros.
+ simpl; destruct (lt_eq_lt_dec n m) as [[H|H]|H]; simpl; auto.
+Qed.
+
+Lemma nat_compare_eq : forall n m, nat_compare n m = Eq -> n = m.
+Proof.
+  induction n; destruct m; simpl; auto.
+  unfold nat_compare; destruct (lt_eq_lt_dec 0 (S m)) as [[H|H]|H]; 
+    auto; intros; try discriminate.
+  unfold nat_compare; destruct (lt_eq_lt_dec (S n) 0) as [[H|H]|H]; 
+    auto; intros; try discriminate.
+  rewrite nat_compare_S; auto.
+Qed.
+
+Lemma nat_compare_lt : forall n m, n<m <-> nat_compare n m = Lt.
+Proof.
+  induction n; destruct m; simpl.
+  unfold nat_compare; simpl; intuition; [inversion H | discriminate H].
+  split; auto with arith.
+  split; [inversion 1 |].
+  unfold nat_compare; destruct (lt_eq_lt_dec (S n) 0) as [[H|H]|H]; 
+    auto; intros; try discriminate.
+  rewrite nat_compare_S.
+  generalize (IHn m); clear IHn; intuition.
+Qed.
+
+Lemma nat_compare_gt : forall n m, n>m <-> nat_compare n m = Gt.
+Proof.
+  induction n; destruct m; simpl.
+  unfold nat_compare; simpl; intuition; [inversion H | discriminate H].
+  split; [inversion 1 |].
+  unfold nat_compare; destruct (lt_eq_lt_dec 0 (S m)) as [[H|H]|H]; 
+    auto; intros; try discriminate.
+  split; auto with arith.
+  rewrite nat_compare_S.
+  generalize (IHn m); clear IHn; intuition.
+Qed.
+
+Lemma nat_compare_le : forall n m, n<=m <-> nat_compare n m <> Gt.
+Proof.
+  split.
+  intros.
+  intro.
+  destruct (nat_compare_gt n m).
+  generalize (le_lt_trans _ _ _ H (H2 H0)).
+  exact (lt_irrefl n).
+  intros.
+  apply not_gt.
+  swap H.
+  destruct (nat_compare_gt n m); auto.
+Qed.  
+
+Lemma nat_compare_ge : forall n m, n>=m <-> nat_compare n m <> Lt.
+Proof.
+  split.
+  intros.
+  intro.
+  destruct (nat_compare_lt n m).
+  generalize (le_lt_trans _ _ _ H (H2 H0)).
+  exact (lt_irrefl m).
+  intros.
+  apply not_lt.
+  swap H.
+  destruct (nat_compare_lt n m); auto.
+Qed.  
+
+(** A boolean version of [le] over [nat]. *)
+
+Fixpoint leb (m:nat) : nat -> bool :=
+  match m with
+  | O => fun _:nat => true
+  | S m' =>
+      fun n:nat => match n with
+                   | O => false
+                   | S n' => leb m' n'
+                   end
+  end.
+
+Lemma leb_correct : forall m n:nat, m <= n -> leb m n = true.
+Proof.
+  induction m as [| m IHm]. trivial.
+  destruct n. intro H. elim (le_Sn_O _ H).
+  intros. simpl in |- *. apply IHm. apply le_S_n. assumption.
+Qed.
+
+Lemma leb_complete : forall m n:nat, leb m n = true -> m <= n.
+Proof.
+  induction m. trivial with arith.
+  destruct n. intro H. discriminate H.
+  auto with arith.
+Qed.
+
+Lemma leb_correct_conv : forall m n:nat, m < n -> leb n m = false.
+Proof.
+  intros. 
+  generalize (leb_complete n m).
+  destruct (leb n m); auto.
+  intros.
+  elim (lt_irrefl _ (lt_le_trans _ _ _ H (H0 (refl_equal true)))).
+Qed.
+
+Lemma leb_complete_conv : forall m n:nat, leb n m = false -> m < n.
+Proof.
+  intros. elim (le_or_lt n m). intro. conditional trivial rewrite leb_correct in H. discriminate H.
+  trivial.
+Qed.
+
+Lemma leb_compare : forall n m, leb n m = true <-> nat_compare n m <> Gt.
+Proof.
+ induction n; destruct m; simpl.
+ unfold nat_compare; simpl.
+ intuition; discriminate.
+ split; auto with arith.
+ unfold nat_compare; destruct (lt_eq_lt_dec 0 (S m)) as [[H|H]|H]; 
+  intuition; try discriminate.
+ inversion H.
+ split; try (intros; discriminate).
+ unfold nat_compare; destruct (lt_eq_lt_dec (S n) 0) as [[H|H]|H]; 
+  intuition; try discriminate.
+ inversion H.
+ rewrite nat_compare_S; auto.
+Qed. 
+

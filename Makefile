@@ -822,7 +822,9 @@ BOOLVO=\
 
 NARITHVO=\
  theories/NArith/BinPos.vo	theories/NArith/Pnat.vo \
- theories/NArith/BinNat.vo	theories/NArith/NArith.vo
+ theories/NArith/BinNat.vo	theories/NArith/NArith.vo \
+ theories/NArith/Nnat.vo	theories/NArith/Ndigits.vo \
+ theories/NArith/Ndec.vo	theories/NArith/Ndist.vo 
 
 ZARITHVO=\
  theories/ZArith/BinInt.vo      theories/ZArith/Wf_Z.vo \
@@ -876,9 +878,8 @@ FSETSVO=\
 
 INTMAPVO=\
  theories/IntMap/Adalloc.vo    theories/IntMap/Mapcanon.vo \
- theories/IntMap/Addec.vo      theories/IntMap/Mapcard.vo \
- theories/IntMap/Addr.vo       theories/IntMap/Mapc.vo \
- theories/IntMap/Adist.vo      theories/IntMap/Mapfold.vo \
+ theories/IntMap/Mapfold.vo \
+ theories/IntMap/Mapcard.vo    theories/IntMap/Mapc.vo \
  theories/IntMap/Allmaps.vo    theories/IntMap/Mapiter.vo \
  theories/IntMap/Fset.vo       theories/IntMap/Maplists.vo \
  theories/IntMap/Lsort.vo      theories/IntMap/Mapsubset.vo \

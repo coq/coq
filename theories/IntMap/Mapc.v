@@ -10,10 +10,7 @@
 Require Import Bool.
 Require Import Sumbool.
 Require Import Arith.
-Require Import ZArith.
-Require Import Addr.
-Require Import Adist.
-Require Import Addec.
+Require Import NArith.
 Require Import Map.
 Require Import Mapaxioms.
 Require Import Fset.
