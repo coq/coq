@@ -1634,9 +1634,6 @@ let compile_cases loc (typing_fun, isevars) (tycon : Evarutil.type_constraint) e
   let tmsign = List.map snd tomatchl in
   let pred = prepare_predicate loc typing_fun isevars env tomatchs tmsign tycon predopt in
     
-  (* We deal with initial aliases *)
-  let matx = prepare_initial_aliases (known_dependent pred) tomatchs matx in 
-    
   (* We push the initial terms to match and push their alias to rhs' envs *)
   (* names of aliases will be recovered from patterns (hence Anonymous here) *)
   let initial_pushed = List.map (fun tm -> Pushed (tm,[])) tomatchs in
