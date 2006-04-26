@@ -17,51 +17,24 @@ Require Import BinNat.
 
 (** [xor] *)
 
-Fixpoint Pxor (p p2:positive) {struct p} : N :=
-  match p with
-  | xH =>
-      match p2 with
-      | xH => N0
-      | xO p'2 => Npos (xI p'2)
-      | xI p'2 => Npos (xO p'2)
-      end
-  | xO p' =>
-      match p2 with
-      | xH => Npos (xI p')
-      | xO p'2 =>
-          match Pxor p' p'2 with
-          | N0 => N0
-          | Npos p'' => Npos (xO p'')
-          end
-      | xI p'2 =>
-          match Pxor p' p'2 with
-          | N0 => Npos 1
-          | Npos p'' => Npos (xI p'')
-          end
-      end
-  | xI p' =>
-      match p2 with
-      | xH => Npos (xO p')
-      | xO p'2 =>
-          match Pxor p' p'2 with
-          | N0 => Npos 1
-          | Npos p'' => Npos (xI p'')
-          end
-      | xI p'2 =>
-          match Pxor p' p'2 with
-          | N0 => N0
-          | Npos p'' => Npos (xO p'')
-          end
-      end
+Fixpoint Pxor (p1 p2:positive) {struct p1} : N :=
+  match p1, p2 with
+  | xH, xH => N0
+  | xH, xO p2 => Npos (xI p2)
+  | xH, xI p2 => Npos (xO p2)
+  | xO p1, xH => Npos (xI p1)
+  | xO p1, xO p2 => Ndouble (Pxor p1 p2)
+  | xO p1, xI p2 => Ndouble_plus_one (Pxor p1 p2)
+  | xI p1, xH => Npos (xO p1)
+  | xI p1, xO p2 => Ndouble_plus_one (Pxor p1 p2)
+  | xI p1, xI p2 => Ndouble (Pxor p1 p2) 
   end.
 
 Definition Nxor (n n':N) :=
-  match n with
-  | N0 => n'
-  | Npos p => match n' with
-              | N0 => n
-              | Npos p' => Pxor p p'
-              end
+  match n, n' with
+  | N0, _ => n'
+  | _, N0 => n
+  | Npos p, Npos p' => Pxor p p'
   end.
 
 Lemma Nxor_neutral_left : forall n:N, Nxor N0 n = n.
@@ -646,15 +619,100 @@ simpl; auto.
 induction p; simpl in *; auto; rewrite IHp; simpl; auto.
 Qed.
 
-(* how to formulate N2Bv_Bv2N, i.e. something like 
-  Lemma N2Bv_Bv2N : forall n (bv:Bvector n), 
-    exists p, Vextend _ _ _ (N2Bv (Bv2N n bv)) (Bvect_false p) = bv.
-*)
+(** The opposite composition is not so simple: if the considered 
+  bit vector has some zeros on its right, they will disappear during 
+  the return [Bv2N] translation: *)
 
-(* How to prove this ?
-Lemma Nbit0_Blow : forall n (bv:Bvector (S n)), 
+Lemma Bv2N_Nsize : forall n (bv:Bvector n), Nsize (Bv2N n bv) <= n.
+Proof.
+induction n; intros.
+rewrite (V0_eq _ bv); simpl; auto.
+rewrite (VSn_eq _ _ bv); simpl.
+generalize (IHn (Vtail _ _ bv)); clear IHn.
+destruct (Vhead _ _ bv); 
+ destruct (Bv2N n (Vtail bool n bv)); 
+  simpl; auto with arith.
+Qed.
+
+(** In the previous lemma, we can only replace the inequality by
+  an equality whenever the highest bit is non-null. *)
+
+Lemma Bv2N_Nsize_1 : forall n (bv:Bvector (S n)), 
+  Bsign _ bv = true <-> 
+  Nsize (Bv2N _ bv) = (S n).
+Proof.
+induction n; intro.
+rewrite (VSn_eq _ _ bv); simpl.
+rewrite (V0_eq _ (Vtail _ _ bv)); simpl.
+destruct (Vhead _ _ bv); simpl; intuition; try discriminate.
+rewrite (VSn_eq _ _ bv); simpl.
+generalize (IHn (Vtail _ _ bv)); clear IHn.
+destruct (Vhead _ _ bv); 
+ destruct (Bv2N (S n) (Vtail bool (S n) bv)); 
+  simpl; intuition; try discriminate.
+Qed.
+
+(** To state nonetheless a second result about composition of 
+ conversions, we define a conversion on a given number of bits : *) 
+
+Fixpoint N2Bv_gen (n:nat)(a:N) { struct n } : Bvector n := 
+ match n return Bvector n with 
+   | 0 => Bnil
+   | S n => match a with 
+       | N0 => Bvect_false (S n)
+       | Npos xH => Bcons true _ (Bvect_false n)
+       | Npos (xO p) => Bcons false _ (N2Bv_gen n (Npos p))
+       | Npos (xI p) => Bcons true _ (N2Bv_gen n (Npos p))
+      end
+  end.
+
+(** The first [N2Bv] is then a special case of [N2Bv_gen] *)
+
+Lemma N2Bv_N2Bv_gen : forall (a:N), N2Bv a = N2Bv_gen (Nsize a) a.
+Proof.
+destruct a; simpl.
+auto.
+induction p; simpl; intros; auto; congruence.
+Qed.
+
+(** In fact, if [k] is large enough, [N2Bv_gen k a] contains all digits of 
+   [a] plus some zeros. *)
+
+Lemma N2Bv_N2Bv_gen_above : forall (a:N)(k:nat), 
+ N2Bv_gen (Nsize a + k) a = Vextend _ _ _ (N2Bv a) (Bvect_false k).
+Proof.
+destruct a; simpl.
+destruct k; simpl; auto.
+induction p; simpl; intros;unfold Bcons; f_equal; auto.
+Qed.
+
+(** Here comes now the second composition result. *)
+
+Lemma N2Bv_Bv2N : forall n (bv:Bvector n), 
+   N2Bv_gen n (Bv2N n bv) = bv.
+Proof.
+induction n; intros.
+rewrite (V0_eq _ bv); simpl; auto.
+rewrite (VSn_eq _ _ bv); simpl.
+generalize (IHn (Vtail _ _ bv)); clear IHn.
+unfold Bcons.
+destruct (Bv2N _ (Vtail _ _ bv)); 
+ destruct (Vhead _ _ bv); intro H; rewrite <- H; simpl; trivial; 
+  induction n; simpl; auto.
+Qed.
+
+(** accessing some precise bits. *)
+
+Lemma Nbit0_Blow : forall n, forall (bv:Bvector (S n)), 
   Nbit0 (Bv2N _ bv) = Blow _ bv.
-*)
+Proof.
+intros.
+unfold Blow.
+pattern bv at 1; rewrite (VSn_eq _ _ bv).
+simpl.
+destruct (Bv2N n (Vtail bool n bv)); simpl; 
+ destruct (Vhead bool n bv); auto.
+Qed.
 
 Definition Bnth (n:nat)(bv:Bvector n)(p:nat) : p<n -> bool.
 Proof.
@@ -692,7 +750,18 @@ induction n; simpl in *; intros; destruct p; auto with arith.
 inversion H; inversion H1.
 Qed.
 
-(* How to prove this one ? 
+(** Xor is the same in the two worlds. *)
+
 Lemma Nxor_BVxor : forall n (bv bv' : Bvector n), 
   Bv2N _ (BVxor _ bv bv') = Nxor (Bv2N _ bv) (Bv2N _ bv').
-*)
+Proof.
+induction n.
+intros.
+rewrite (V0_eq _ bv); rewrite (V0_eq _ bv'); simpl; auto.
+intros.
+rewrite (VSn_eq _ _ bv); rewrite (VSn_eq _ _ bv'); simpl; auto.
+rewrite IHn.
+destruct (Vhead bool n bv); destruct (Vhead bool n bv'); 
+ destruct (Bv2N n (Vtail bool n bv)); destruct (Bv2N n (Vtail bool n bv')); simpl; auto.
+Qed.
+
