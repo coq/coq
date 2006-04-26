@@ -1,7 +1,7 @@
 #!/bin/sh
 
 echo -------------- Producing translated files ---------------------
-rm */*/*.v8
+rm */*/*.v8 >& /dev/null
 make COQ_XML=-translate theories || { echo ---- Failed to translate; exit 1; }
 if [ -e translated ]; then rm -r translated; fi
 if [ -e successful-translation ]; then rm -r successful-translation; fi
@@ -13,7 +13,7 @@ cd translated
 for i in */*.v
 do
   mkdir ../theories/`dirname $i` >& /dev/null
-  cp "$i"8 ../theories/$i
+  mv "$i"8 ../theories/$i
 done
 cd ..
 echo --------------- Recompiling translated files ------------------
