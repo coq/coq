@@ -111,7 +111,7 @@ END
 VERNAC ARGUMENT EXTEND rec_annotation2
   [ "{"  "struct" ident(id)  "}"] -> [ Struct id ]
 | [ "{" "wf" constr(r) ident_opt(id) "}" ] -> [ Wf(r,id) ]
-| [ "{" "mes" constr(r) ident_opt(id) "}" ] -> [ Mes(r,id) ] 
+| [ "{" "measure" constr(r) ident_opt(id) "}" ] -> [ Mes(r,id) ] 
 END
 
 
@@ -130,7 +130,7 @@ VERNAC ARGUMENT EXTEND rec_definition2
      let check_one_name () =
        if List.length names > 1 then
          Util.user_err_loc
-           (Util.dummy_loc,"GenFixpoint",
+           (Util.dummy_loc,"Function",
             Pp.str "the recursive argument needs to be specified");
      in
      let check_exists_args an =
@@ -138,7 +138,7 @@ VERNAC ARGUMENT EXTEND rec_definition2
 	 let id = match an with Struct id -> id | Wf(_,Some id) -> id | Mes(_,Some id) -> id | Wf(_,None) | Mes(_,None) -> failwith "check_exists_args" in 
 	 (try ignore(Util.list_index (Name id) names - 1); annot
 	  with Not_found ->  Util.user_err_loc
-            (Util.dummy_loc,"GenFixpoint",
+            (Util.dummy_loc,"Function",
              Pp.str "No argument named " ++ Nameops.pr_id id)
 	 )
        with Failure "check_exists_args" ->  check_one_name ();annot
@@ -160,14 +160,9 @@ VERNAC ARGUMENT EXTEND rec_definitions2
 END
 
 
-VERNAC COMMAND EXTEND GenFixpoint
-   ["GenFixpoint" rec_definitions2(recsl)] ->
+VERNAC COMMAND EXTEND Function
+   ["Function" rec_definitions2(recsl)] ->
 	[ do_generate_principle false  recsl]
-END
-
-VERNAC COMMAND EXTEND IGenFixpoint
-   ["IGenFixpoint" rec_definitions2(recsl)] ->
-	[ do_generate_principle true  recsl]
 END
 
 

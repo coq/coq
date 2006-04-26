@@ -71,7 +71,7 @@ let compute_annot (name,annot,args,types,body) =
     | None ->
         if List.length names > 1 then
           user_err_loc
-            (dummy_loc,"GenFixpoint",
+            (dummy_loc,"Function",
              Pp.str "the recursive argument needs to be specified");
         let new_annot = (id_of_name (List.hd names)) in
 	(name,Struct new_annot,args,types,body)
@@ -329,8 +329,8 @@ let do_generate_principle register_built interactive_proof fixpoint_exprl  =
 		     let names =  (Topconstr.names_of_local_assums args) in
 		     if  is_one_rec recdef  && List.length names > 1 then
 		       Util.user_err_loc
-			 (Util.dummy_loc,"GenFixpoint",
-			  Pp.str "the recursive argument needs to be specified in GenFixpoint")
+			 (Util.dummy_loc,"Function",
+			  Pp.str "the recursive argument needs to be specified in Function")
 		     else 
 		       (name,(Some 0, Topconstr.CStructRec),args,types,body),(None:Vernacexpr.decl_notation)
 		 | (_,Some (Wf _),_,_,_),_ | (_,Some (Mes _),_,_,_),_-> 
