@@ -19,6 +19,7 @@ open Tacexpr
 open Libnames
 
 open Nametab
+open Detyping
 
 (* Generic xml parser without raw data *)
 
@@ -95,7 +96,9 @@ let sort_of_cdata (loc,a) = match a with
 
 let get_xml_sort al = sort_of_cdata (get_xml_attr "value" al)
 
-let get_xml_inductive_kn al = inductive_of_cdata (get_xml_attr "uri" al)
+let get_xml_inductive_kn al =
+  inductive_of_cdata (* uriType apparent synonym of uri *)
+    (try get_xml_attr "uri" al with _ -> get_xml_attr "uriType" al)
 
 let get_xml_constant al = constant_of_cdata (get_xml_attr "uri" al)
 
@@ -112,6 +115,16 @@ let get_xml_name al =
 let get_xml_ident al = ident_of_cdata (get_xml_attr "binder" al)
 
 let get_xml_noFun al = nmtoken (get_xml_attr "noFun" al)
+
+(* A leak in the xml dtd: arities of constructor need to know global env *)
+
+let compute_branches_lengths ind =
+  let (_,mip) = Inductive.lookup_mind_specif (Global.env()) ind in
+  mip.Declarations.mind_consnrealdecls
+
+let compute_predicate_length ind =
+  let (_,mip) = Inductive.lookup_mind_specif (Global.env()) ind in
+  mip.Declarations.mind_nrealargs
 
 (* Interpreting constr as a rawconstr *)
 
@@ -134,14 +147,16 @@ let rec interp_xml_constr = function
       failwith "META: TODO"
   | XmlTag (loc,"CONST",al,[]) ->
       RRef (loc, ConstRef (get_xml_constant al))
-  | XmlTag (loc,"MUTCASE",al,x::y::yl) -> (* BUGGE *)
-      failwith "XML MUTCASE TO DO";
-(*
-      ROrderedCase (loc,RegularStyle,Some (interp_xml_patternsType x),
-      interp_xml_inductiveTerm y,
-      Array.of_list (List.map interp_xml_pattern yl),
-      ref None)
-*)
+  | XmlTag (loc,"MUTCASE",al,x::y::yl) ->
+      let ind = get_xml_inductive al in
+      let p = interp_xml_patternsType x in
+      let tm = interp_xml_inductiveTerm y in
+      let brs = List.map interp_xml_pattern yl in
+      let brns = Array.to_list (compute_branches_lengths ind) in
+      let mat = simple_cases_matrix_of_branches ind brns brs in
+      let n = compute_predicate_length ind in
+      let nal,rtn = return_type_of_predicate ind n p in
+      RCases (loc,rtn,[tm,nal],mat)
   | XmlTag (loc,"MUTIND",al,[]) ->
       RRef (loc, IndRef (get_xml_inductive al))
   | XmlTag (loc,"MUTCONSTRUCT",al,[]) ->

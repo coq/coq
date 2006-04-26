@@ -44,6 +44,8 @@ type 'a bindings =
 
 type 'a with_bindings = 'a * 'a bindings
 
+type predicate_pattern = name * (loc * inductive * name list) option
+
 type rawconstr = 
   | RRef of (loc * global_reference)
   | RVar of (loc * identifier)
@@ -53,9 +55,7 @@ type rawconstr =
   | RLambda of loc * name * rawconstr * rawconstr
   | RProd of loc * name * rawconstr * rawconstr
   | RLetIn of loc * name * rawconstr * rawconstr
-  | RCases of loc * rawconstr option *
-      (rawconstr * (name * (loc * inductive * name list) option)) list * 
-      (loc * identifier list * cases_pattern list * rawconstr) list
+  | RCases of loc * rawconstr option * tomatch_tuple * cases_clauses
   | RLetTuple of loc * name list * (name * rawconstr option) * 
       rawconstr * rawconstr
   | RIf of loc * rawconstr * (name * rawconstr option) * rawconstr * rawconstr
@@ -70,10 +70,16 @@ and rawdecl = name * rawconstr option * rawconstr
 
 and fix_recursion_order = RStructRec | RWfRec of rawconstr
 
-and fix_kind = RFix of ((int option * fix_recursion_order) array * int) | RCoFix of int
+and fix_kind =
+  | RFix of ((int option * fix_recursion_order) array * int)
+  | RCoFix of int
 
-val cases_predicate_names : 
-  (rawconstr * (name * (loc * inductive * name list) option)) list -> name list
+and tomatch_tuple = (rawconstr * predicate_pattern) list
+
+and cases_clauses =
+    (loc * identifier list * cases_pattern list * rawconstr) list
+
+val cases_predicate_names : tomatch_tuple -> name list
 
 (*i - if PRec (_, names, arities, bodies) is in env then arities are
    typed in env too and bodies are typed in env enriched by the

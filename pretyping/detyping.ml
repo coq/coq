@@ -277,6 +277,25 @@ let extract_nondep_branches test c b n =
       | _ -> assert false in
   if test c n then Some (strip n b) else None
 
+let it_destRLambda_or_LetIn_names n c =
+  let rec aux n nal c =
+    if n=0 then (List.rev nal,c) else match c with
+      | RLambda (_,na,_,c) -> aux (n-1) (na::nal) c
+      | RLetIn (_,na,_,c) -> aux (n-1) (na::nal) c
+      | _ ->
+          (* eta-expansion *)
+	  let rec next l =
+	    let x = Nameops.next_ident_away (id_of_string "x") l in
+	    (* Not efficient but unusual and no function to get free rawvars *)
+	    if occur_rawconstr x c then next (x::l) else x in
+	  let x = next [] in 
+	  let a = RVar (dl,x) in
+	  aux (n-1) (Name x :: nal) 
+            (match c with
+              | RApp (loc,p,l) -> RApp (loc,c,l@[a])
+              | _ -> (RApp (dl,c,[a])))
+  in aux n [] c
+
 let detype_case computable detype detype_eqns testdep avoid data p c bl =
   let (indsp,st,nparams,consnargsl,k) = data in
   let synth_type = synthetize_type () in
@@ -289,21 +308,7 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
       match option_app detype p with
         | None -> Anonymous, None, None
         | Some p ->
-            let decompose_lam k c =
-              let rec lamdec_rec l avoid k c =
-                if k = 0 then List.rev l,c else match c with
-                  | RLambda (_,x,t,c) -> 
-                      lamdec_rec (x::l) (name_cons x avoid) (k-1) c
-                  | c -> 
-                      let x = next_ident_away (id_of_string "x") avoid in
-                      lamdec_rec ((Name x)::l) (x::avoid) (k-1)
-                        (let a = RVar (dl,x) in
-                          match c with
-                          | RApp (loc,p,l) -> RApp (loc,p,l@[a])
-                          | _ -> (RApp (dl,c,[a])))
-              in 
-              lamdec_rec [] [] k c in
-            let nl,typ = decompose_lam k p in
+            let nl,typ = it_destRLambda_or_LetIn_names k p in
 	    let n,typ = match typ with 
               | RLambda (_,x,t,c) -> x, c
 	      | _ -> Anonymous, typ in
@@ -331,22 +336,7 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
   match tag with
   | LetStyle when aliastyp = None -> 
       let bl' = Array.map detype bl in
-      let rec decomp_lam_force n avoid l p =
-	if n = 0 then (List.rev l,p) else
-          match p with
-            | RLambda (_,na,_,c) -> 
-		decomp_lam_force (n-1) (name_cons na avoid) (na::l) c
-            | RLetIn (_,na,_,c) -> 
-		decomp_lam_force (n-1) (name_cons na avoid) (na::l) c
-            | _ ->
-		let x = Nameops.next_ident_away (id_of_string "x") avoid in
-		decomp_lam_force (n-1) (x::avoid) (Name x :: l) 
-                  (* eta-expansion *)
-                  (let a = RVar (dl,x) in
-                  match p with
-                    | RApp (loc,p,l) -> RApp (loc,p,l@[a])
-                    | _ -> (RApp (dl,p,[a]))) in
-      let (nal,d) = decomp_lam_force consnargsl.(0) avoid [] bl'.(0) in
+      let (nal,d) = it_destRLambda_or_LetIn_names consnargsl.(0) bl'.(0) in
       RLetTuple (dl,nal,(alias,pred),tomatch,d)
   | IfStyle when aliastyp = None ->
       let bl' = Array.map detype bl in
@@ -645,3 +635,18 @@ let rec subst_rawconstr subst raw =
 	  RCast (loc,r1',k,r2')
 
   | RDynamic _ -> raw
+
+(* Utilities to transform kernel cases to simple pattern-matching problem *)
+
+let simple_cases_matrix_of_branches ind brns brs =
+  list_map2_i (fun i n b ->
+      let nal,c = it_destRLambda_or_LetIn_names n b in
+      let mkPatVar na = PatVar (dummy_loc,na) in
+      let p = PatCstr (dummy_loc,(ind,i+1),List.map mkPatVar nal,Anonymous) in
+      let ids = map_succeed Nameops.out_name nal in
+      (dummy_loc,ids,[p],c))
+    0 brns brs
+
+let return_type_of_predicate ind n pred =
+  let nal,p = it_destRLambda_or_LetIn_names (n+1) pred in
+  (List.hd nal, Some (dummy_loc,ind,List.tl nal)), Some p

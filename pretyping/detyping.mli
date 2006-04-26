@@ -47,3 +47,12 @@ val force_wildcard : unit -> bool
 val synthetize_type : unit -> bool
 val force_if : case_info -> bool
 val force_let : case_info -> bool
+
+(* Utilities to transform kernel cases to simple pattern-matching problem *)
+
+val it_destRLambda_or_LetIn_names : int -> rawconstr -> name list * rawconstr
+val simple_cases_matrix_of_branches : 
+  inductive -> int list -> rawconstr list -> cases_clauses
+val return_type_of_predicate :
+  inductive -> int -> rawconstr -> predicate_pattern * rawconstr option
+

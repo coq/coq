@@ -27,6 +27,7 @@ open Pattern
 open Nametab
 open Notation
 open Reserve
+open Detyping
 (*i*)
 
 (* Translation from rawconstr to front constr *)
@@ -908,26 +909,20 @@ let rec raw_of_pat env = function
       RIf (loc, raw_of_pat env c, (Anonymous,None), 
            raw_of_pat env b1, raw_of_pat env b2)
   | PCase ((LetStyle,[|n|],ind,None),PMeta None,tm,[|b|]) ->
-      let nal,b = it_destPLambda n b in
-      RLetTuple (loc,nal,(Anonymous,None),raw_of_pat env tm,raw_of_pat env b)
-  | PCase ((_,cstr_nargs,ind,ind_nargs),p,tm,bv) ->
-      let brs =
-	array_map2_i (fun i n b ->
-	  let nal,c = it_destPLambda n b in
-	  let mkPatVar na = PatVar (loc,na) in
-             (* ind is None only if no branch and no return type *) 
-	  let cs = (out_some ind,i+1) in
-	  let p = PatCstr (loc,cs,List.map mkPatVar nal,Anonymous) in
-	  let ids = map_succeed out_name nal in
-	  (loc,ids,[p],raw_of_pat (nal@env) c)) cstr_nargs bv in
-      let decompose_pred n p =
-	let nal,p = it_destPLambda (n+1) p in
-	(List.hd nal, Some (loc,out_some ind,List.tl nal)),
-	Some (raw_of_pat env p) in
-      let indnames,pred =
+      let nal,b = it_destRLambda_or_LetIn_names n (raw_of_pat env b) in
+      RLetTuple (loc,nal,(Anonymous,None),raw_of_pat env tm,b)
+  | PCase ((_,cstr_nargs,indo,ind_nargs),p,tm,bv) ->
+      let brs = Array.to_list (Array.map (raw_of_pat env) bv) in
+      let brns = Array.to_list cstr_nargs in
+        (* ind is None only if no branch and no return type *)
+      let ind = out_some indo in
+      let mat = simple_cases_matrix_of_branches ind brns brs in
+      let indnames,rtn =
 	if p = PMeta None then (Anonymous,None),None
-	else decompose_pred (out_some ind_nargs) p in
-      RCases (loc,pred,[raw_of_pat env tm,indnames],Array.to_list brs)
+	else 
+	  let n = out_some ind_nargs in
+	  return_type_of_predicate ind n (raw_of_pat env p) in
+      RCases (loc,rtn,[raw_of_pat env tm,indnames],mat)
   | PFix f -> Detyping.detype false [] env (mkFix f)
   | PCoFix c -> Detyping.detype false [] env (mkCoFix c)
   | PSort s -> RSort (loc,s)
