@@ -239,7 +239,7 @@ let parse () =
     | ("-stdout" | "--stdout") :: rem ->
 	out_to := StdOut; parse_rec rem
     | ("-o" | "--output") :: f :: rem ->
-	out_to := File f; parse_rec rem
+	out_to := File (Filename.basename f); output_dir := Filename.dirname f; parse_rec rem
     | ("-o" | "--output") :: [] -> 
 	usage ()
     | ("-d" | "--directory") :: dir :: rem ->
