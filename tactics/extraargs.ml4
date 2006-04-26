@@ -34,7 +34,8 @@ ARGUMENT EXTEND orient TYPED AS bool PRINTED BY pr_orient
 END
 
 (* For Setoid rewrite *)
-let pr_morphism_signature _ _ _ = Setoid_replace.pr_morphism_signature
+let pr_morphism_signature _ _ _ s =
+  spc () ++ Setoid_replace.pr_morphism_signature s
 
 ARGUMENT EXTEND morphism_signature
  TYPED AS morphism_signature

@@ -828,6 +828,13 @@ and pr_extend s cl =
   try
     let rls = List.assoc s (Egrammar.get_extend_vernac_grammars()) in
     let rl = match_vernac_rule (List.map Genarg.genarg_tag cl) rls in
+    let start,rl,cl =
+      match rl with
+	| Egrammar.TacTerm s :: rl -> str s, rl, cl
+	| Egrammar.TacNonTerm _ :: rl ->
+	    (* Will put an unnecessary extra space in front *)
+	    pr_gen (Global.env()) (List.hd cl), rl, List.tl cl 
+	| [] -> anomaly "Empty entry" in
     let (pp,_) =
       List.fold_left
         (fun (strm,args) pi ->
@@ -836,7 +843,7 @@ and pr_extend s cl =
                 (strm ++ pr_gen (Global.env()) (List.hd args),
                 List.tl args)
             | Egrammar.TacTerm s -> (strm ++ spc() ++ str s, args))
-        (mt(),cl) rl in
+        (start,cl) rl in
     hov 1 pp
   with Not_found ->
     hov 1 (str ("TODO("^s) ++ prlist_with_sep sep pr_arg cl ++ str ")")

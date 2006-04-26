@@ -617,6 +617,7 @@ let rec pr_atom0 env = function
   | TacTrivial ([],Some []) -> str "trivial"
   | TacAuto (None,[],Some []) -> str "auto"
   | TacReflexivity -> str "reflexivity"
+  | TacClear (true,[]) -> str "clear"
   | t -> str "(" ++ pr_atom1 env t ++ str ")"
 
   (* Main tactic printer *)
@@ -696,6 +697,7 @@ and pr_atom1 env = function
   | TacNewInduction (h,e,ids) ->
       hov 1 (str "induction" ++ spc () ++
 	     prlist_with_sep spc (pr_induction_arg (pr_constr env)) h ++
+	     pr_with_names ids ++
              pr_opt (pr_eliminator env) e)
   | TacSimpleDestruct h ->
       hov 1 (str "simple destruct" ++ pr_arg pr_quantified_hypothesis h)
@@ -736,6 +738,7 @@ and pr_atom1 env = function
       hov 1 (str "auto" ++ pr_opt (pr_or_var int) n ++ str "decomp" ++ pr_opt int p)
 
   (* Context management *)
+  | TacClear (true,[]) as t -> pr_atom0 env t
   | TacClear (keep,l) ->
       hov 1 (str "clear" ++ spc () ++ (if keep then str "- " else mt ()) ++
              prlist_with_sep spc pr_ident l)

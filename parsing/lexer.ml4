@@ -383,6 +383,7 @@ let rec next_token = parser bp
       (("METAIDENT", get_buff len), (bp,ep))
   | [< ''.' as c; t = parse_after_dot bp c >] ep ->
       comment_stop bp;
+      if Options.do_translate() & t=("",".") then between_com := true;
       (t, (bp,ep))
   | [< ' ('a'..'z' | 'A'..'Z' | '_' as c);
        len = ident_tail (store 0 c) >] ep ->
