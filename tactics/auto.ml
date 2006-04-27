@@ -778,7 +778,7 @@ let gen_auto n lems dbnames =
   | None -> full_auto n lems
   | Some l -> auto n lems l
 
-let inj_or_var = option_app (fun n -> Genarg.ArgArg n)
+let inj_or_var = option_map (fun n -> Genarg.ArgArg n)
 
 let h_auto n lems l =
   Refiner.abstract_tactic (TacAuto (inj_or_var n,lems,l)) (gen_auto n lems l)

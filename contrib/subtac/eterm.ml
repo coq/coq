@@ -128,7 +128,7 @@ let eterm_term evm t tycon =
   let anon_evar_bl = List.map (fun (_, x, y) -> (Anonymous, x, y)) evar_bl in
     (* Generalize over the existential variables *)
   let t'' = Termops.it_mkLambda_or_LetIn t' evar_bl 
-  and tycon = option_app 
+  and tycon = option_map 
 		(fun typ -> Termops.it_mkProd_wo_LetIn typ anon_evar_bl) tycon
   in
   let _declare_evar (id, c) =
@@ -144,7 +144,7 @@ let eterm_term evm t tycon =
 	   Termops.print_constr_env (Global.env ()) t);
     trace (str "Term constructed in eterm" ++ spc () ++
 	   Termops.print_constr_env (Global.env ()) t'');
-    ignore(option_app 
+    ignore(option_map 
 	     (fun typ ->
 		trace (str "Type :" ++ spc () ++
 		       Termops.print_constr_env (Global.env ()) typ))

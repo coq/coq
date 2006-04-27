@@ -113,7 +113,7 @@ type recipe = {
   d_modlist : work_list }
 
 let on_body f = 
-  option_app (fun c -> Declarations.from_val (f (Declarations.force c)))
+  option_map (fun c -> Declarations.from_val (f (Declarations.force c)))
 
 let cook_constant env r =
   let cb = r.d_from in

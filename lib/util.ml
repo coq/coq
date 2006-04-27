@@ -682,7 +682,7 @@ let out_some = function
   | Some x -> x
   | None -> failwith "out_some"
 
-let option_app f = function
+let option_map f = function
   | None -> None
   | Some x -> Some (f x)
 

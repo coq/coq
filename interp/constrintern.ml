@@ -879,21 +879,21 @@ let internalise sigma globalenv env allow_soapp lvar c =
 	    let (tm,ind),nal = intern_case_item env citm in
 	    (tm,ind)::inds,List.fold_left (push_name_env lvar) env nal)
 	  tms ([],env) in
-        let rtnpo = option_app (intern_type env') rtnpo in
+        let rtnpo = option_map (intern_type env') rtnpo in
         let eqns' = List.map (intern_eqn (List.length tms) env) eqns in
 	RCases (loc, rtnpo, tms, List.flatten eqns')
     | CLetTuple (loc, nal, (na,po), b, c) ->
 	let env' = reset_tmp_scope env in
         let ((b',(na',_)),ids) = intern_case_item env' (b,(na,None)) in
         let env'' = List.fold_left (push_name_env lvar) env ids in
-        let p' = option_app (intern_type env'') po in
+        let p' = option_map (intern_type env'') po in
         RLetTuple (loc, nal, (na', p'), b',
                    intern (List.fold_left (push_name_env lvar) env nal) c)
     | CIf (loc, c, (na,po), b1, b2) ->
 	let env' = reset_tmp_scope env in
         let ((c',(na',_)),ids) = intern_case_item env' (c,(na,None)) in
         let env'' = List.fold_left (push_name_env lvar) env ids in
-        let p' = option_app (intern_type env'') po in
+        let p' = option_map (intern_type env'') po in
         RIf (loc, c', (na', p'), intern env b1, intern env b2)
     | CHole loc -> 
 	RHole (loc, Evd.QuestionMark)

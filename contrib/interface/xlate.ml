@@ -1818,7 +1818,7 @@ let rec xlate_vernac =
 	CT_theorem_goal (CT_coerce_THM_to_DEFN_OR_THM (xlate_thm k), xlate_ident s,
            xlate_binder_list bl, xlate_formula c))
   | VernacSuspend -> CT_suspend
-  | VernacResume idopt -> CT_resume (xlate_ident_opt (option_app snd idopt))
+  | VernacResume idopt -> CT_resume (xlate_ident_opt (option_map snd idopt))
   | VernacDefinition (k,(_,s),ProveBody (bl,typ),_) ->
       CT_coerce_THEOREM_GOAL_to_COMMAND
 	(CT_theorem_goal
@@ -1860,7 +1860,7 @@ let rec xlate_vernac =
       (_, (add_coercion, (_,s)), binders, c1,
        rec_constructor_or_none, field_list) ->
       let record_constructor =
-        xlate_ident_opt (option_app snd rec_constructor_or_none) in
+        xlate_ident_opt (option_map snd rec_constructor_or_none) in
       CT_record
        ((if add_coercion then CT_coercion_atm else
           CT_coerce_NONE_to_COERCION_OPT(CT_none)),

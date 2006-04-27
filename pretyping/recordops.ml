@@ -67,7 +67,7 @@ let subst_structure (_,subst,((kn,i),id,kl,projs as obj)) =
 
 let discharge_structure (_,(ind,id,kl,projs)) =
   Some (Lib.discharge_inductive ind, id, kl,
-        List.map (option_app Lib.discharge_con) projs)
+        List.map (option_map Lib.discharge_con) projs)
 
 let (inStruc,outStruc) =
   declare_object {(default_object "STRUCTURE") with 

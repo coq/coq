@@ -211,7 +211,7 @@ let resolver_of_environment mbid modtype mp env =
          if constant.Declarations.const_opaque then
           None
          else
-          option_app Declarations.force
+          option_map Declarations.force
            constant.Declarations.const_body
       with Not_found -> error_no_such_label (con_label con')
      in

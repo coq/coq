@@ -460,7 +460,7 @@ let open_section id =
 
 let discharge_item = function
   | ((sp,_ as oname),Leaf lobj) ->
-      option_app (fun o -> (basename sp,o)) (discharge_object (oname,lobj))
+      option_map (fun o -> (basename sp,o)) (discharge_object (oname,lobj))
   | _ ->
       None
 

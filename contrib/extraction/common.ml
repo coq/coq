@@ -401,7 +401,7 @@ let print_structure_to_file f prm struc =
     else struct_ast_search (function MLmagic _ -> true | _ -> false) struc
   in
   (* print the implementation *)
-  let cout = option_app (fun (f,_) -> open_out f) f in 
+  let cout = option_map (fun (f,_) -> open_out f) f in 
   let ft = match cout with 
     | None -> !Pp_control.std_ft
     | Some cout -> Pp_control.with_output_to cout in 

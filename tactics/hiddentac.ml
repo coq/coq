@@ -23,7 +23,7 @@ let inj_id id = (dummy_loc,id)
 
 (* Basic tactics *)
 let h_intro_move x y =
-  abstract_tactic (TacIntroMove (x, option_app inj_id y)) (intro_move x y)
+  abstract_tactic (TacIntroMove (x, option_map inj_id y)) (intro_move x y)
 let h_intro x        = h_intro_move (Some x) None
 let h_intros_until x = abstract_tactic (TacIntrosUntil x) (intros_until x)
 let h_assumption     = abstract_tactic TacAssumption assumption

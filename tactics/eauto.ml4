@@ -107,7 +107,7 @@ let e_split = e_constructor_tac (Some 1) 1
 TACTIC EXTEND econstructor
   [ "econstructor" integer(n) "with" bindings(c) ] -> [ e_constructor_tac None n c ]
 | [ "econstructor" integer(n) ] -> [ e_constructor_tac None n NoBindings ]
-| [ "econstructor" tactic_opt(t) ] -> [ e_any_constructor (option_app Tacinterp.eval_tactic t) ] 
+| [ "econstructor" tactic_opt(t) ] -> [ e_any_constructor (option_map Tacinterp.eval_tactic t) ] 
       END
 
 TACTIC EXTEND eleft

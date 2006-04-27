@@ -80,7 +80,7 @@ END
 
 TACTIC EXTEND replace 
 | ["replace" constr(c1) "with" constr(c2) in_arg_hyp(in_hyp)  by_arg_tac(tac)  ] ->
-    [ new_replace c1 c2 in_hyp (Util.option_app Tacinterp.eval_tactic tac)  ]
+    [ new_replace c1 c2 in_hyp (Util.option_map Tacinterp.eval_tactic tac)  ]
 END
 
 (* Julien:

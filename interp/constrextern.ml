@@ -680,7 +680,7 @@ let rec extern inctx scopes vars r =
       let vars' = 
 	List.fold_right (name_fold Idset.add)
 	  (cases_predicate_names tml) vars in
-      let rtntypopt' = option_app (extern_typ scopes vars') rtntypopt in
+      let rtntypopt' = option_map (extern_typ scopes vars') rtntypopt in
       let tml = List.map (fun (tm,(na,x)) ->
         let na' = match na,tm with
             Anonymous, RVar (_,id) when 
@@ -690,7 +690,7 @@ let rec extern inctx scopes vars r =
           | Name id, RVar (_,id') when id=id' -> None
           | Name _, _ -> Some na in
 	(sub_extern false scopes vars tm,
-	(na',option_app (fun (loc,ind,nal) ->
+	(na',option_map (fun (loc,ind,nal) ->
 	  let args = List.map (function
 	    | Anonymous -> RHole (dummy_loc,Evd.InternalHole) 
 	    | Name id -> RVar (dummy_loc,id)) nal in
@@ -701,15 +701,15 @@ let rec extern inctx scopes vars r =
 
   | RLetTuple (loc,nal,(na,typopt),tm,b) ->
       CLetTuple (loc,nal,
-        (option_app (fun _ -> na) typopt,
-         option_app (extern_typ scopes (add_vname vars na)) typopt),
+        (option_map (fun _ -> na) typopt,
+         option_map (extern_typ scopes (add_vname vars na)) typopt),
         sub_extern false scopes vars tm,
         extern false scopes (List.fold_left add_vname vars nal) b)
 
   | RIf (loc,c,(na,typopt),b1,b2) ->
       CIf (loc,sub_extern false scopes vars c,
-        (option_app (fun _ -> na) typopt,
-         option_app (extern_typ scopes (add_vname vars na)) typopt),
+        (option_map (fun _ -> na) typopt,
+         option_map (extern_typ scopes (add_vname vars na)) typopt),
         sub_extern false scopes vars b1, sub_extern false scopes vars b2)
 
   | RRec (loc,fk,idv,blv,tyv,bv) ->

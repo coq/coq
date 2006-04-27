@@ -113,7 +113,7 @@ let change_vars =
       | RLetTuple(loc,nal,(na,rto),b,e) -> 
 	  RLetTuple(loc,
 		    nal, 
-		    (na, option_app (change_vars mapping) rto), 
+		    (na, option_map (change_vars mapping) rto), 
 		    change_vars mapping b,
 		    change_vars mapping e
 		   )
@@ -126,7 +126,7 @@ let change_vars =
       | RIf(loc,b,(na,e_option),lhs,rhs) -> 
 	  RIf(loc,
 	      change_vars mapping b,
-	      (na,option_app (change_vars mapping) e_option),
+	      (na,option_map (change_vars mapping) e_option),
 	      change_vars mapping lhs,
 	      change_vars mapping rhs
 	     )
@@ -292,11 +292,11 @@ let rec alpha_rt excluded rt =
 	  if idmap_is_empty mapping
 	  then rto,t,b
 	  else let replace = change_vars mapping in 
-	  (option_app replace rto,replace t,replace b)
+	  (option_map replace rto,replace t,replace b)
 	in
 	let new_t = alpha_rt new_excluded new_t in 
 	let new_b = alpha_rt new_excluded new_b in 
-	let new_rto = option_app (alpha_rt new_excluded) new_rto  in
+	let new_rto = option_map (alpha_rt new_excluded) new_rto  in
 	RLetTuple(loc,new_nal,(na,new_rto),new_t,new_b)
     | RCases(loc,infos,el,brl) -> 
 	let new_el = 
@@ -305,7 +305,7 @@ let rec alpha_rt excluded rt =
 	RCases(loc,infos,new_el,List.map (alpha_br excluded) brl) 
     | RIf(loc,b,(na,e_o),lhs,rhs) -> 
 	RIf(loc,alpha_rt excluded b,
-	    (na,option_app (alpha_rt excluded) e_o),
+	    (na,option_map (alpha_rt excluded) e_o),
 	    alpha_rt excluded lhs,
 	    alpha_rt excluded rhs
 	   )
@@ -450,7 +450,7 @@ let replace_var_by_term x_id term =
       | RLetTuple(loc,nal,(na,rto),def,b) -> 
 	  RLetTuple(loc,
 		    nal,
-		    (na,option_app replace_var_by_pattern rto),
+		    (na,option_map replace_var_by_pattern rto),
 		    replace_var_by_pattern def,
 		    replace_var_by_pattern b
 		   )
@@ -462,7 +462,7 @@ let replace_var_by_term x_id term =
 		)
       | RIf(loc,b,(na,e_option),lhs,rhs) -> 
 	  RIf(loc, replace_var_by_pattern b,
-	      (na,option_app replace_var_by_pattern e_option),
+	      (na,option_map replace_var_by_pattern e_option),
 	      replace_var_by_pattern lhs,
 	      replace_var_by_pattern rhs
 	     )

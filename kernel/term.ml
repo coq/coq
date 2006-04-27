@@ -643,7 +643,7 @@ let body_of_type ty = ty
 type named_declaration = identifier * constr option * types
 type rel_declaration = name * constr option * types
 
-let map_named_declaration f (id, v, ty) = (id, option_app f v, f ty)
+let map_named_declaration f (id, v, ty) = (id, option_map f v, f ty)
 let map_rel_declaration = map_named_declaration
 
 (****************************************************************************)

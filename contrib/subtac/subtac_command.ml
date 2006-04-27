@@ -209,7 +209,7 @@ let build_recursive (lnameargsardef:(fixpoint_expr * decl_notation) list) boxed 
 		let env', binders_rel = interp_context isevars env0 bl in
 		let after, ((argname, _, argtyp) as arg), before = list_chop_hd n binders_rel in
 		let argid = match argname with Name n -> n | _ -> assert(false) in
-		let after' = List.map (fun (n, c, t) -> (n, option_app (lift 1) c, lift 1 t)) after in
+		let after' = List.map (fun (n, c, t) -> (n, option_map (lift 1) c, lift 1 t)) after in
 		let envwf = push_rel_context before env0 in
 		let wf_rel = interp_constr isevars envwf r in
 		let accarg_id = id_of_string ("Acc_" ^ string_of_id argid) in

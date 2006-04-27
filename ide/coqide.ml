@@ -948,7 +948,7 @@ object(self)
       self#insert_message s;
       message_view#misc#draw None;
       if localize then 
-	(match Util.option_app Util.unloc loc with 
+	(match Util.option_map Util.unloc loc with 
 	  | None -> ()
 	  | Some (start,stop) ->
 	      let convert_pos = byte_offset_to_char_offset phrase in

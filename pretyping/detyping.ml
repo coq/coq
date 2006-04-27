@@ -305,7 +305,7 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
     then 
       Anonymous, None, None
     else
-      match option_app detype p with
+      match option_map detype p with
         | None -> Anonymous, None, None
         | Some p ->
             let nl,typ = it_destRLambda_or_LetIn_names k p in

@@ -152,7 +152,7 @@ let rec inst lvar = function
   | PProd (n,a,b) -> PProd (n,inst lvar a,inst lvar b)
   | PLetIn (n,a,b) -> PLetIn (n,inst lvar a,inst lvar b)
   | PCase (ci,po,p,pl) ->
-      PCase (ci,option_app (inst lvar) po,inst lvar p,Array.map (inst lvar) pl)
+      PCase (ci,option_map (inst lvar) po,inst lvar p,Array.map (inst lvar) pl)
   (* Non recursive *)
   | (PEvar _ | PRel _ | PRef _  | PSort _  | PMeta _ as x) -> x 
   (* Bound to terms *)

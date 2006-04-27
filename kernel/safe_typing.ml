@@ -245,7 +245,7 @@ let start_module l senv =
 let end_module l restype senv = 
   let oldsenv = senv.old in
   let modinfo = senv.modinfo in
-  let restype = option_app (translate_modtype senv.env) restype in
+  let restype = option_map (translate_modtype senv.env) restype in
   let params = 
     match modinfo.variant with
       | NONE | LIBRARY _ | SIG _ -> error_no_module_to_end ()
@@ -514,9 +514,9 @@ let import (dp,mb,depends,engmt) digest senv =
  
 let rec lighten_module mb =
   { mb with
-    mod_expr = option_app lighten_modexpr mb.mod_expr;
+    mod_expr = option_map lighten_modexpr mb.mod_expr;
     mod_type = lighten_modtype mb.mod_type;
-    mod_user_type = option_app lighten_modtype mb.mod_user_type }
+    mod_user_type = option_map lighten_modtype mb.mod_user_type }
 
 and lighten_modtype = function
   | MTBident kn as x -> x

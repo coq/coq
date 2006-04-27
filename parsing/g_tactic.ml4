@@ -102,7 +102,7 @@ let mk_fix_tac (loc,id,bl,ann,ty) =
   (id,n,CProdN(loc,bl,ty))
 
 let mk_cofix_tac (loc,id,bl,ann,ty) =
-  let _ = option_app (fun (aloc,_) ->
+  let _ = option_map (fun (aloc,_) ->
     Util.user_err_loc
       (aloc,"Constr:mk_cofix_tac",
        Pp.str"Annotation forbidden in cofix expression")) ann in

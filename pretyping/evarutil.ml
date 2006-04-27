@@ -209,7 +209,7 @@ let push_rel_context_to_named_context env =
        let id = next_name_away na avoid in
        ((mkVar id)::subst,
         id::avoid,
-	push_named (id,option_app (substl subst) c,
+	push_named (id,option_map (substl subst) c,
                         type_app (substl subst) t)
 	  env))
     (rel_context env) ~init:([],ids_of_named_context (named_context env),env)
@@ -679,7 +679,7 @@ let lift_abstr_tycon_type n (abs, t) =
 	  else (Some (init, abs'), t)
 
 let lift_tycon_type n (abs, t) = (abs, lift n t)
-let lift_tycon n = option_app (lift_tycon_type n)
+let lift_tycon n = option_map (lift_tycon_type n)
 
 let pr_tycon_type env (abs, t) =
   match abs with 

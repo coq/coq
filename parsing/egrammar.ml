@@ -160,7 +160,7 @@ type grammar_tactic_production =
 
 let make_prod_item = function
   | TacTerm s -> (Gramext.Stoken (Lexer.terminal s), None)
-  | TacNonTerm (_,(nont,t), po) -> (nont, option_app (fun p -> (p,t)) po)
+  | TacNonTerm (_,(nont,t), po) -> (nont, option_map (fun p -> (p,t)) po)
 
 (* Tactic grammar extensions *)
 
@@ -232,7 +232,7 @@ let make_vprod_item n univ = function
   | VTerm s -> (Gramext.Stoken (Lexer.terminal s), None)
   | VNonTerm (loc, nt, po) ->
       let (etyp, e) = interp_entry_name n univ nt in
-      e, option_app (fun p -> (p,etyp)) po
+      e, option_map (fun p -> (p,etyp)) po
 
 let get_tactic_entry n =
   if n = 0 then

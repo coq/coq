@@ -429,7 +429,7 @@ GEXTEND Gram
       (* Implicit *)
       | IDENT "Implicit"; IDENT "Arguments"; qid = global; 
          pos = OPT [ "["; l = LIST0 ident; "]" -> l ] ->
-	   let pos = option_app (List.map (fun id -> ExplByName id)) pos in
+	   let pos = option_map (List.map (fun id -> ExplByName id)) pos in
 	   VernacDeclareImplicits (qid,pos)
 
       | IDENT "Implicit"; ["Type" | IDENT "Types"];

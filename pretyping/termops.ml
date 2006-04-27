@@ -961,7 +961,7 @@ let assums_of_rel_context sign =
 let lift_rel_context n sign =
   let rec liftrec k = function
     | (na,c,t)::sign ->
-	(na,option_app (liftn n k) c,type_app (liftn n k) t)
+	(na,option_map (liftn n k) c,type_app (liftn n k) t)
 	::(liftrec (k-1) sign)
     | [] -> []
   in

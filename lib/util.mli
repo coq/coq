@@ -201,7 +201,7 @@ val interval : int -> int -> int list
 
 val in_some : 'a -> 'a option
 val out_some : 'a option -> 'a
-val option_app : ('a -> 'b) -> 'a option -> 'b option
+val option_map : ('a -> 'b) -> 'a option -> 'b option
 val option_cons : 'a option -> 'a list -> 'a list
 val option_fold_right : ('a -> 'b -> 'b) -> 'a option -> 'b -> 'b
 val option_fold_left2 : ('a -> 'b -> 'c -> 'a) -> 'a -> 'b option ->

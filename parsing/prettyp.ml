@@ -401,7 +401,7 @@ let print_context with_values =
     | h::rest when n = None or out_some n > 0 -> 
 	(match print_library_entry with_values h with
 	  | None -> prec n rest
-	  | Some pp -> prec (option_app ((+) (-1)) n) rest ++ pp ++ fnl ())
+	  | Some pp -> prec (option_map ((+) (-1)) n) rest ++ pp ++ fnl ())
     | _ -> mt ()
   in 
   prec
