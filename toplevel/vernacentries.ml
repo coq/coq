@@ -345,7 +345,7 @@ let vernac_start_proof kind sopt (bl,t) lettop hook =
 let vernac_end_proof = function
   | Admitted -> admit ()
   | Proved (is_opaque,idopt) ->
-    if_verbose show_script ();
+    if not !Options.print_emacs then if_verbose show_script ();
     match idopt with
     | None -> save_named is_opaque
     | Some ((_,id),None) -> save_anonymous is_opaque id
