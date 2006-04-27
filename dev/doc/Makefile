@@ -1,7 +1,7 @@
 
 # Makefile for doc/
 
-all:: newparse 
+all:: newparse coq.ps minicop.ps
 #newsyntax.dvi minicoq.dvi
 
 
@@ -10,19 +10,19 @@ OBJS=lex.cmo ast.cmo parse.cmo syntax.cmo
 newparse: $(OBJS) syntax.mli lex.ml syntax.ml
 	ocamlc -o newparse $(OBJS)
 
-.ml.cmo:
+%.cmo: %.ml
 	ocamlc -c $<
 
-.mli.cmi:
+%.cmi: %.mli
 	ocamlc -c $<
 
-.mll.ml:
+%.ml: %.mll
 	ocamllex $<
 
-.mly.ml:
+%.ml: %.mly
 	ocamlyacc -v $<
 
-.mly.mli:
+%.mli: %.mly
 	ocamlyacc -v $<
 
 clean::
@@ -43,7 +43,14 @@ coq.dvi: coq.tex
 	latex coq
 
 coq.tex::
-	make -C .. doc/coq.tex
+	ocamlweb -p "\usepackage{epsfig}" \
+	macros.tex intro.tex \
+	../../lib/{doc.tex,*.mli} ../../kernel/{doc.tex,*.mli} ../../library/{doc.tex,*.mli} \
+	../../pretyping/{doc.tex,*.mli} ../../interp/{doc.tex,*.mli} \
+	../../parsing/{doc.tex,*.mli} ../../proofs/{doc.tex,*.mli} \
+	../../tactics/{doc.tex,*.mli} ../../toplevel/{doc.tex,*.mli} \
+	-o coq.tex
+
 
 depend:: kernel.dep.ps library.dep.ps pretyping.dep.ps parsing.dep.ps \
          proofs.dep.ps tactics.dep.ps toplevel.dep.ps interp.dep.ps
@@ -59,9 +66,10 @@ clean::
 
 .SUFFIXES: .tex .dvi .ps .cmo .cmi .mli .ml .mll .mly
 
-.tex.dvi:
+%.dvi: %.tex
 	latex $< && latex $<
 
-.dvi.ps:
+%.ps: %.dvi
 	dvips $< -o $@
+
 
