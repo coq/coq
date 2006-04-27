@@ -47,8 +47,11 @@ let resynch_buffer ibuf =
         ibuf.start <- ibuf.start + ll
     | _ -> ()
 
+
 (* Read a char in an input channel, displaying a prompt at every
    beginning of line. *)
+
+let emacs_prompt_endstring = String.make 1 (Char.chr 249)
 
 let prompt_char ic ibuf count =
   let bol = match ibuf.bols with
@@ -204,7 +207,6 @@ let make_prompt () =
 *)
 let make_emacs_prompt() =
   let statnum = string_of_int (Lib.current_command_label ()) in
-  let endchar = String.make 1 (Char.chr 249) in
   let dpth = Pfedit.current_proof_depth() in
   let pending = Pfedit.get_all_proof_names() in
   let pendingprompt = 
@@ -212,7 +214,7 @@ let make_emacs_prompt() =
       (fun acc x -> acc ^ (if acc <> "" then "|" else "") ^ Names.string_of_id x)
       "" pending in
   let proof_info = if dpth >= 0 then string_of_int dpth else "0" in
-  statnum ^ " |" ^ pendingprompt ^ "| " ^ proof_info ^ " < " ^ endchar
+  statnum ^ " |" ^ pendingprompt ^ "| " ^ proof_info ^ " < " ^ emacs_prompt_endstring
 
 (* A buffer to store the current command read on stdin. It is
  * initialized when a vernac command is immediately followed by "\n",

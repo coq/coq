@@ -242,7 +242,7 @@ let parse_args is_ide =
     | "-debug" :: rem -> set_debug (); parse rem
 
     | "-vm" :: rem -> use_vm := true; parse rem
-    | "-emacs" :: rem -> Options.print_emacs := true; parse rem
+    | "-emacs" :: rem -> Options.print_emacs := true; Pp.make_pp_emacs(); parse rem
 	  
     | "-where" :: _ -> print_endline Coq_config.coqlib; exit 0
 
