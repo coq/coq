@@ -66,13 +66,10 @@ let error_needs_inversion env x t =
 module type S = sig
   val compile_cases :
     loc ->
-    (type_constraint -> env -> rawconstr -> unsafe_judgment) *    
+    (type_constraint -> env -> rawconstr -> unsafe_judgment) *
       Evd.evar_defs ref ->
     type_constraint -> 
-    env ->
-    rawconstr option *
-      (rawconstr * (name * (loc * inductive * name list) option)) list *
-      (loc * identifier list * cases_pattern list * rawconstr) list ->
+    env -> rawconstr option * tomatch_tuple * cases_clauses ->
     unsafe_judgment
 end
 
@@ -344,7 +341,7 @@ let unify_tomatch_with_patterns isevars env typ tm =
 
 let find_tomatch_tycon isevars env loc = function
   (* Try first if some 'in I ...' is present and can be used as a constraint *)
-  | Some (_,ind,_),_ 
+  | Some (_,ind,_,_),_ 
   (* Otherwise try to get constraints from (the 1st) constructor in clauses *)
   | None, Some (_,(ind,_)) ->
       mk_tycon (inductive_template isevars env loc ind)
@@ -1539,7 +1536,7 @@ let extract_arity_signature env0 tomatchl tmsign =
       | NotInd (bo,typ) -> 
 	  (match t with
 	    | None -> [na,option_map (lift n) bo,lift n typ]
-	    | Some (loc,_,_) -> 
+	    | Some (loc,_,_,_) -> 
  	    user_err_loc (loc,"",
 	    str "Unexpected type annotation for a term of non inductive type"))
       | IsInd (_,IndType(indf,realargs)) ->
@@ -1548,18 +1545,9 @@ let extract_arity_signature env0 tomatchl tmsign =
 	  let nrealargs = List.length realargs in
 	  let realnal =
 	    match t with
-	      | Some (loc,ind',nal) ->
-		  let nparams = List.length params in
-		  if ind <> ind' then
+	      | Some (loc,ind',nparams,realnal) ->
+		  if ind <> ind' or List.length params <> nparams then
 		    user_err_loc (loc,"",str "Wrong inductive type");
-		  let nindargs = nparams + nrealargs in
-		  (* Normally done at interning time *)
-		  if List.length nal <> nindargs then
-		    error_wrong_numarg_inductive_loc loc env0 ind' nindargs;
-		  let parnal,realnal = list_chop nparams nal in
-		  if List.exists ((<>) Anonymous) parnal then
-		    user_err_loc (loc,"",
-		    str "The parameters of inductive type must be implicit");
 		  List.rev realnal
 	      | None -> list_tabulate (fun _ -> Anonymous) nrealargs in
 	  let arsign = fst (get_arity env0 indf') in

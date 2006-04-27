@@ -44,8 +44,6 @@ type 'a bindings =
 
 type 'a with_bindings = 'a * 'a bindings
 
-type predicate_pattern = name * (loc * inductive * name list) option
-
 type rawconstr = 
   | RRef of (loc * global_reference)
   | RVar of (loc * identifier)
@@ -73,6 +71,9 @@ and fix_recursion_order = RStructRec | RWfRec of rawconstr
 and fix_kind =
   | RFix of ((int option * fix_recursion_order) array * int)
   | RCoFix of int
+
+and predicate_pattern =
+    name * (loc * inductive * int * name list) option
 
 and tomatch_tuple = (rawconstr * predicate_pattern) list
 

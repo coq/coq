@@ -40,7 +40,7 @@ type constr_pattern =
   | PSort of rawsort
   | PMeta of patvar option
   | PIf of constr_pattern * constr_pattern * constr_pattern
-  | PCase of (case_style * int array * inductive option * int option)
+  | PCase of (case_style * int array * inductive option * (int * int) option)
       * constr_pattern * constr_pattern * constr_pattern array
   | PFix of fixpoint
   | PCoFix of cofixpoint

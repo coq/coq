@@ -120,7 +120,7 @@ let constructor_nrealhyps env (ind,j) =
 
 let inductive_nargs env ind =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  mip.mind_nrealargs + rel_context_nhyps mib.mind_params_ctxt
+  mib.mind_nparams, mip.mind_nrealargs
 
 (* Annotation for cases *)
 let make_case_info env ind style pats_source =

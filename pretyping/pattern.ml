@@ -39,7 +39,7 @@ type constr_pattern =
   | PSort of rawsort
   | PMeta of patvar option
   | PIf of constr_pattern * constr_pattern * constr_pattern
-  | PCase of (case_style * int array * inductive option * int option)
+  | PCase of (case_style * int array * inductive option * (int * int) option)
       * constr_pattern * constr_pattern * constr_pattern array
   | PFix of fixpoint
   | PCoFix of cofixpoint
@@ -107,7 +107,8 @@ let rec pattern_of_constr t =
     | Evar (n,ctxt) -> PEvar (n,Array.map pattern_of_constr ctxt)
     | Case (ci,p,a,br) ->
 	let cip = ci.ci_pp_info in
-	PCase ((cip.style,ci.ci_cstr_nargs,Some ci.ci_ind,Some cip.ind_nargs),
+	let no = Some (ci.ci_npar,cip.ind_nargs) in
+	PCase ((cip.style,ci.ci_cstr_nargs,Some ci.ci_ind,no),
 	       pattern_of_constr p,pattern_of_constr a,
 	       Array.map pattern_of_constr br)
     | Fix f -> PFix f
@@ -142,23 +143,6 @@ let rec liftn_pattern k n = function
   | c -> map_pattern_with_binders succ (liftn_pattern k) n c
 
 let lift_pattern k = liftn_pattern k 1
-
-(*
-let rec inst lvar = function
-  | PVar id as x -> (try List.assoc id lvar with Not_found -> x)
-  | PApp (p,pl) -> PApp (inst lvar p, Array.map (inst lvar) pl)
-  | PSoApp (n,pl) -> PSoApp (n, List.map (inst lvar) pl)
-  | PLambda (n,a,b) -> PLambda (n,inst lvar a,inst lvar b)
-  | PProd (n,a,b) -> PProd (n,inst lvar a,inst lvar b)
-  | PLetIn (n,a,b) -> PLetIn (n,inst lvar a,inst lvar b)
-  | PCase (ci,po,p,pl) ->
-      PCase (ci,option_map (inst lvar) po,inst lvar p,Array.map (inst lvar) pl)
-  (* Non recursive *)
-  | (PEvar _ | PRel _ | PRef _  | PSort _  | PMeta _ as x) -> x 
-  (* Bound to terms *)
-  | (PFix _ | PCoFix _) ->
-      error ("Not instantiable pattern")
-*)
 
 let rec subst_pattern subst pat = match pat with
   | PRef ref ->
@@ -263,9 +247,9 @@ let rec pat_of_raw metas vars = function
              [|pat_of_raw metas vars c|])
   | RCases (loc,p,[c,(na,indnames)],brs) ->
       let pred,ind_nargs, ind = match p,indnames with
-	| Some p, Some (_,ind,nal) ->
+	| Some p, Some (_,ind,n,nal) ->
 	    rev_it_mkPLambda nal (mkPLambda na (pat_of_raw metas vars p)),
-	    Some (List.length nal),Some ind
+	    Some (n,List.length nal),Some ind
 	| _ -> PMeta None, None, None in
       let ind = match ind with Some _ -> ind | None ->
 	match brs with

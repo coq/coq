@@ -47,8 +47,6 @@ type 'a bindings =
 
 type 'a with_bindings = 'a * 'a bindings
 
-type predicate_pattern = name * (loc * inductive * name list) option
-
 type rawconstr = 
   | RRef of (loc * global_reference)
   | RVar of (loc * identifier)
@@ -77,6 +75,9 @@ and fix_kind =
   | RFix of ((int option * fix_recursion_order) array * int)
   | RCoFix of int
 
+and predicate_pattern =
+    name * (loc * inductive * int * name list) option
+
 and tomatch_tuple = (rawconstr * predicate_pattern) list
 
 and cases_clauses =
@@ -85,7 +86,7 @@ and cases_clauses =
 let cases_predicate_names tml =
   List.flatten (List.map (function
     | (tm,(na,None)) -> [na]
-    | (tm,(na,Some (_,_,nal))) -> na::nal) tml)
+    | (tm,(na,Some (_,_,_,nal))) -> na::nal) tml)
 
 (*i - if PRec (_, names, arities, bodies) is in env then arities are
    typed in env too and bodies are typed in env enriched by the

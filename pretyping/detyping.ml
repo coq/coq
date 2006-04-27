@@ -314,9 +314,7 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
 	      | _ -> Anonymous, typ in
 	    let aliastyp =
 	      if List.for_all ((=) Anonymous) nl then None
-	      else 
-		let pars = list_tabulate (fun _ -> Anonymous) nparams in
-		Some (dl,indsp,pars@nl) in
+	      else Some (dl,indsp,nparams,nl) in
             n, aliastyp, Some typ
   in
   let constructs = Array.init (Array.length bl) (fun i -> (indsp,i+1)) in
@@ -577,9 +575,9 @@ let rec subst_rawconstr subst raw =
         let a' = subst_rawconstr subst a in
         let (n,topt) = x in 
         let topt' = option_smartmap
-          (fun (loc,(sp,i),x as t) ->
+          (fun (loc,(sp,i),x,y as t) ->
             let sp' = subst_kn subst sp in
-            if sp == sp' then t else (loc,(sp',i),x)) topt in
+            if sp == sp' then t else (loc,(sp',i),x,y)) topt in
         if a == a' && topt == topt' then y else (a',(n,topt'))) rl
       and branches' = list_smartmap 
 			(fun (loc,idl,cpl,r as branch) ->
@@ -647,6 +645,6 @@ let simple_cases_matrix_of_branches ind brns brs =
       (dummy_loc,ids,[p],c))
     0 brns brs
 
-let return_type_of_predicate ind n pred =
+let return_type_of_predicate ind nparams n pred =
   let nal,p = it_destRLambda_or_LetIn_names (n+1) pred in
-  (List.hd nal, Some (dummy_loc,ind,List.tl nal)), Some p
+  (List.hd nal, Some (dummy_loc, ind, nparams, List.tl nal)), Some p

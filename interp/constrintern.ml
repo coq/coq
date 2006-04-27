@@ -22,6 +22,7 @@ open Cases
 open Topconstr
 open Nametab
 open Notation
+open Inductiveops
 
 (* To interpret implicits and arg scopes of recursive variables in
    inductive types and recursive definitions *)
@@ -381,11 +382,6 @@ let check_constructor_length env loc cstr pl pl0 =
   let nhyps = Inductiveops.constructor_nrealhyps env cstr in
   if n <> nargs && n <> nhyps (* i.e. with let's *) then
     error_wrong_numarg_constructor_loc loc env cstr nargs
-
-let check_inductive_length env (loc,ind,nal) =
-  let n = Inductiveops.inductive_nargs env ind in
-  if n <> List.length nal then
-    error_wrong_numarg_inductive_loc loc env ind n
 
 (* Manage multiple aliases *)
 
@@ -950,18 +946,25 @@ let internalise sigma globalenv env allow_soapp lvar c =
 	let tids = names_of_cases_indtype t in
 	let tids = List.fold_right Idset.add tids Idset.empty in
 	let t = intern_type (tids,None,scopes) t in
-	let (_,_,nal as indsign) =
+	let (_,_,_,nal as indsign) =
 	  match t with
-	  | RRef (loc,IndRef ind) -> (loc,ind,[])
+	  | RRef (loc,IndRef ind) -> (loc,ind,0,[])
 	  | RApp (loc,RRef (_,IndRef ind),l) ->
+	      let nparams, nrealargs = inductive_nargs globalenv ind in
+	      let nindargs = nparams + nrealargs in
+	      if List.length l <> nindargs then
+		error_wrong_numarg_inductive_loc loc globalenv ind nindargs;
 	      let nal = List.map (function
 		| RHole _ -> Anonymous
 		| RVar (_,id) -> Name id
 		| c ->
 		    user_err_loc (loc_of_rawconstr c,"",str "Not a name")) l in
-	      (loc,ind,nal)
+	      let parnal,realnal = list_chop nparams nal in
+	      if List.exists ((<>) Anonymous) parnal then
+		user_err_loc (loc,"",
+		  str "The parameters of inductive type must be implicit");
+	      (loc,ind,nparams,nal)
 	  | _ -> error_bad_inductive_type (loc_of_rawconstr t) in
-	check_inductive_length globalenv indsign;
 	nal, Some indsign
     | None -> 
 	[], None in

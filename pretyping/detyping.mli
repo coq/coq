@@ -54,5 +54,5 @@ val it_destRLambda_or_LetIn_names : int -> rawconstr -> name list * rawconstr
 val simple_cases_matrix_of_branches : 
   inductive -> int list -> rawconstr list -> cases_clauses
 val return_type_of_predicate :
-  inductive -> int -> rawconstr -> predicate_pattern * rawconstr option
+  inductive -> int -> int -> rawconstr -> predicate_pattern * rawconstr option
 

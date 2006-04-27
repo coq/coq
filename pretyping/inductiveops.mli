@@ -60,7 +60,8 @@ val mis_constructor_nargs_env : env -> constructor -> int
 val constructor_nrealargs : env -> constructor -> int
 val constructor_nrealhyps : env -> constructor -> int
 
-val inductive_nargs : env -> inductive -> int
+(* Return number of expected parameters and of expected real arguments *)
+val inductive_nargs : env -> inductive -> int * int
 
 type constructor_summary = {
   cs_cstr : constructor;

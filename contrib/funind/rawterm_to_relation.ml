@@ -561,10 +561,8 @@ let rec build_entry_lc funnames avoid rt  : rawconstr build_entry_return =
 	build_entry_lc funnames  avoid b
     | RDynamic _ -> error "Not handled RDynamic"
 and build_entry_lc_from_case funname make_discr
-    (el:(Rawterm.rawconstr *
-	   (Names.name * (loc * Names.inductive * Names.name list) option) )
-       list)
-    (brl:(loc * identifier list * cases_pattern list * rawconstr) list) avoid : 
+    (el:tomatch_tuple)
+    (brl:Rawterm.cases_clauses) avoid : 
     rawconstr build_entry_return = 
   match el with 
     | [] -> assert false (* matched on Nothing !*) 

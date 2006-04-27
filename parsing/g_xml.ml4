@@ -84,7 +84,7 @@ let global_of_cdata (loc,a) = Nametab.locate (uri_of_data a)
 
 let inductive_of_cdata a = match global_of_cdata a with
     | IndRef (kn,_) -> kn
-    | _ -> failwith "kn"
+    | _ -> anomaly "XML parser: not an inductive"
 
 let ltacref_of_cdata (loc,a) = (loc,locate_tactic (uri_of_data a))
 
@@ -108,13 +108,17 @@ let get_xml_inductive al =
 let get_xml_constructor al =
   (get_xml_inductive al, nmtoken (get_xml_attr "noConstr" al))
 
-let get_xml_name al =
+let get_xml_binder al =
   try Name (ident_of_cdata (List.assoc "binder" al))
   with Not_found -> Anonymous
 
 let get_xml_ident al = ident_of_cdata (get_xml_attr "binder" al)
 
+let get_xml_name al = ident_of_cdata (get_xml_attr "name" al)
+
 let get_xml_noFun al = nmtoken (get_xml_attr "noFun" al)
+
+let get_xml_no al = nmtoken (get_xml_attr "no" al)
 
 (* A leak in the xml dtd: arities of constructor need to know global env *)
 
@@ -122,29 +126,36 @@ let compute_branches_lengths ind =
   let (_,mip) = Inductive.lookup_mind_specif (Global.env()) ind in
   mip.Declarations.mind_consnrealdecls
 
-let compute_predicate_length ind =
-  let (_,mip) = Inductive.lookup_mind_specif (Global.env()) ind in
-  mip.Declarations.mind_nrealargs
+let compute_inductive_nargs ind =
+  Inductiveops.inductive_nargs (Global.env()) ind
 
 (* Interpreting constr as a rawconstr *)
 
 let rec interp_xml_constr = function
   | XmlTag (loc,"REL",al,[]) ->
       RVar (loc, get_xml_ident al)
-  | XmlTag (loc,"VAR",al,[]) -> failwith ""
-  | XmlTag (loc,"LAMBDA",al,[x1;x2]) ->
-      let na,t = interp_xml_decl x1 in
-      RLambda (loc, na, t, interp_xml_target x2)
-  | XmlTag (loc,"PROD",al,[x1;x2]) ->
-      let na,t = interp_xml_decl x1 in
-      RProd (loc, na, t, interp_xml_target x2)
+  | XmlTag (loc,"VAR",al,[]) -> 
+      error "XML parser: unable to interp free variables"
+  | XmlTag (loc,"LAMBDA",al,(_::_ as xl)) ->
+      let body,decls = list_sep_last xl in
+      let ctx = List.map interp_xml_decl decls in
+      List.fold_right (fun (na,t) b -> RLambda (loc, na, t, b))
+	ctx (interp_xml_target body)
+  | XmlTag (loc,"PROD",al,(_::_ as xl)) ->
+      let body,decls = list_sep_last xl in
+      let ctx = List.map interp_xml_decl decls in
+      List.fold_right (fun (na,t) b -> RProd (loc, na, t, b))
+	ctx (interp_xml_target body)
   | XmlTag (loc,"LETIN",al,[x1;x2]) ->
       let na,t = interp_xml_def x1 in
       RLetIn (loc, na, t, interp_xml_target x2) 
   | XmlTag (loc,"APPLY",_,x::xl) ->
       RApp (loc, interp_xml_constr x, List.map interp_xml_constr xl)
+  | XmlTag (loc,"instantiate",_,
+      (XmlTag (_,("CONST"|"MUTIND"|"MUTCONSTRUCT"),_,_) as x)::xl) ->
+      RApp (loc, interp_xml_constr x, List.map interp_xml_arg xl)
   | XmlTag (loc,"META",al,xl) ->
-      failwith "META: TODO"
+      REvar (loc, get_xml_no al, Some (List.map interp_xml_substitution xl))
   | XmlTag (loc,"CONST",al,[]) ->
       RRef (loc, ConstRef (get_xml_constant al))
   | XmlTag (loc,"MUTCASE",al,x::y::yl) ->
@@ -154,8 +165,8 @@ let rec interp_xml_constr = function
       let brs = List.map interp_xml_pattern yl in
       let brns = Array.to_list (compute_branches_lengths ind) in
       let mat = simple_cases_matrix_of_branches ind brns brs in
-      let n = compute_predicate_length ind in
-      let nal,rtn = return_type_of_predicate ind n p in
+      let nparams,n = compute_inductive_nargs ind in
+      let nal,rtn = return_type_of_predicate ind nparams n p in
       RCases (loc,rtn,[tm,nal],mat)
   | XmlTag (loc,"MUTIND",al,[]) ->
       RRef (loc, IndRef (get_xml_inductive al))
@@ -164,7 +175,8 @@ let rec interp_xml_constr = function
   | XmlTag (loc,"FIX",al,xl) ->
       let li,lnct = List.split (List.map interp_xml_FixFunction xl) in
       let ln,lc,lt = list_split3 lnct in
-      RRec (loc, RFix (Array.of_list li, get_xml_noFun al), Array.of_list ln, [||], Array.of_list lc, Array.of_list lt)
+      let lctx = List.map (fun _ -> []) ln in
+      RRec (loc, RFix (Array.of_list li, get_xml_noFun al), Array.of_list ln, Array.of_list lctx, Array.of_list lc, Array.of_list lt)
   | XmlTag (loc,"COFIX",al,xl) ->
       let ln,lc,lt = list_split3 (List.map interp_xml_CoFixFunction xl) in
       RRec (loc, RCoFix (get_xml_noFun al), Array.of_list ln, [||], Array.of_list lc, Array.of_list lt)
@@ -192,10 +204,13 @@ and interp_xml_body x = interp_xml_constr_alias "body" x
 and interp_xml_pattern x = interp_xml_constr_alias "pattern" x
 and interp_xml_patternsType x = interp_xml_constr_alias "patternsType" x
 and interp_xml_inductiveTerm x = interp_xml_constr_alias "inductiveTerm" x
+and interp_xml_arg x = interp_xml_constr_alias "arg" x
+and interp_xml_substitution x = interp_xml_constr_alias "substitution" x
+                     (* no support for empty substitution from official dtd *)
 
 and interp_xml_decl_alias s x =
   match interp_xml_tag s x with
-    | (_,al,[x]) -> (get_xml_name al, interp_xml_constr x)
+    | (_,al,[x]) -> (get_xml_binder al, interp_xml_constr x)
     | (loc,_,_) -> 
         user_err_loc (loc,"",str "wrong number of arguments (expect one)")
 
@@ -216,23 +231,22 @@ and interp_xml_recursionOrder x =
       | _ ->
           user_err_loc (locs,"",str "invalid recursion order")
 
-
 and interp_xml_FixFunction x =
   match interp_xml_tag "FixFunction" x with
-  | (loc,al,[x1;x2;x3]) ->
+  | (loc,al,[x1;x2;x3]) -> (* Not in official cic.dtd, not in constr *)
       ((Some (nmtoken (get_xml_attr "recIndex" al)),
 	interp_xml_recursionOrder x1),
-       (get_xml_ident al, interp_xml_type x2, interp_xml_body x3))
-  | (loc,al,[x1;x2]) -> (* For backwards compatibility *)
+       (get_xml_name al, interp_xml_type x2, interp_xml_body x3))
+  | (loc,al,[x1;x2]) ->
       ((Some (nmtoken (get_xml_attr "recIndex" al)), RStructRec),
-       (get_xml_ident al, interp_xml_type x1, interp_xml_body x2))
+       (get_xml_name al, interp_xml_type x1, interp_xml_body x2))
   | (loc,_,_) -> 
         user_err_loc (loc,"",str "wrong number of arguments (expect one)")
 
 and interp_xml_CoFixFunction x =
   match interp_xml_tag "CoFixFunction" x with
   | (loc,al,[x1;x2]) ->
-      (get_xml_ident al, interp_xml_type x1, interp_xml_body x2)
+      (get_xml_name al, interp_xml_type x1, interp_xml_body x2)
     | (loc,_,_) -> 
         user_err_loc (loc,"",str "wrong number of arguments (expect one)")
 

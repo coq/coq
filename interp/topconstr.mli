@@ -34,7 +34,7 @@ type aconstr =
   | AProd of name * aconstr * aconstr
   | ALetIn of name * aconstr * aconstr
   | ACases of aconstr option *
-      (aconstr * (name * (inductive * name list) option)) list *
+      (aconstr * (name * (inductive * int * name list) option)) list *
       (identifier list * cases_pattern list * aconstr) list
   | ALetTuple of name list * (name * aconstr option) * aconstr * aconstr
   | AIf of aconstr * (name * aconstr option) * aconstr * aconstr

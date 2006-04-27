@@ -260,7 +260,7 @@ let rec same_raw c d =
         (fun (t1,(al1,oind1)) (t2,(al2,oind2)) ->
           same_raw t1 t2;
           if al1 <> al2 then failwith "RCases";
-          option_iter2(fun (_,i1,nl1) (_,i2,nl2) ->
+          option_iter2(fun (_,i1,_,nl1) (_,i2,_,nl2) ->
             if i1<>i2 || nl1 <> nl2 then failwith "RCases") oind1 oind2) c1 c2;
       List.iter2 (fun (_,_,pl1,b1) (_,_,pl2,b2) ->
         List.iter2 same_patt pl1 pl2;
@@ -690,11 +690,13 @@ let rec extern inctx scopes vars r =
           | Name id, RVar (_,id') when id=id' -> None
           | Name _, _ -> Some na in
 	(sub_extern false scopes vars tm,
-	(na',option_map (fun (loc,ind,nal) ->
+	(na',option_map (fun (loc,ind,n,nal) ->
+	  let params = list_tabulate
+	    (fun _ -> RHole (dummy_loc,Evd.InternalHole)) n in
 	  let args = List.map (function
 	    | Anonymous -> RHole (dummy_loc,Evd.InternalHole) 
 	    | Name id -> RVar (dummy_loc,id)) nal in
-	  let t = RApp (dummy_loc,RRef (dummy_loc,IndRef ind),args) in
+	  let t = RApp (dummy_loc,RRef (dummy_loc,IndRef ind),params@args) in
 	  (extern_typ scopes vars t)) x))) tml in
       let eqns = List.map (extern_eqn (rtntypopt<>None) scopes vars) eqns in 
       CCases (loc,rtntypopt',tml,eqns)
@@ -920,8 +922,8 @@ let rec raw_of_pat env = function
       let indnames,rtn =
 	if p = PMeta None then (Anonymous,None),None
 	else 
-	  let n = out_some ind_nargs in
-	  return_type_of_predicate ind n (raw_of_pat env p) in
+	  let nparams,n = out_some ind_nargs in
+	  return_type_of_predicate ind nparams n (raw_of_pat env p) in
       RCases (loc,rtn,[raw_of_pat env tm,indnames],mat)
   | PFix f -> Detyping.detype false [] env (mkFix f)
   | PCoFix c -> Detyping.detype false [] env (mkCoFix c)
