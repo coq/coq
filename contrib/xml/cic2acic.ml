@@ -64,7 +64,7 @@ let get_uri_of_var v pvars =
   in
   let rec search_in_open_sections =
    function
-      [] -> Util.error "Variable not found"
+      [] -> Util.error ("Variable "^v^" not found")
     | he::tl as modules ->
        let dirpath = N.make_dirpath modules in
         if List.mem (N.id_of_string v) (D.last_section_hyps dirpath) then
