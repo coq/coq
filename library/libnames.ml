@@ -78,6 +78,10 @@ let dirpath_prefix p = match repr_dirpath p with
 let is_dirpath_prefix_of d1 d2 =
   list_prefix_of (List.rev (repr_dirpath d1)) (List.rev (repr_dirpath d2))
 
+let chop_dirpath n d =
+  let d1,d2 = list_chop n (List.rev (repr_dirpath d)) in
+  make_dirpath (List.rev d1), make_dirpath (List.rev d2)
+
 (* To know how qualified a name should be to be understood in the current env*)
 let add_dirpath_prefix id d = make_dirpath (repr_dirpath d @ [id])
 
