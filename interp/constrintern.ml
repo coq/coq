@@ -138,21 +138,13 @@ let coqdoc_unfreeze (lt,tn,lp) =
   last_pos := lp
 
 let add_glob loc ref = 
-(*i
-  let sp = Nametab.sp_of_global (Global.env ()) ref in
-  let dir,_ = repr_path sp in
-  let rec find_module d = 
-    try 
-      let qid = let dir,id = split_dirpath d in make_qualid dir id in
-      let _ = Nametab.locate_loaded_library qid in d
-    with Not_found -> find_module (dirpath_prefix d) 
-  in
-  let s = string_of_dirpath (find_module dir) in
-  i*)
   let sp = Nametab.sp_of_global ref in
-  let id = let _,id = repr_path sp in string_of_id id in
-  let dp = string_of_dirpath (Lib.library_part ref) in
-  dump_string (Printf.sprintf "R%d %s.%s\n" (fst (unloc loc)) dp id)
+  let modqid,id = repr_path sp in
+  let file_prefix_length = List.length (repr_dirpath (Lib.library_dp())) in
+  let file,fields = chop_dirpath file_prefix_length modqid in
+  let filepath = string_of_dirpath file in
+  let modpath = string_of_qualid (make_qualid fields id) in
+  dump_string (Printf.sprintf "R%d %s.%s\n" (fst (unloc loc)) filepath modpath)
 
 let loc_of_notation f loc args ntn =
   if args=[] or ntn.[0] <> '_' then fst (unloc loc)
