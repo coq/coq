@@ -1277,6 +1277,83 @@ Fixpoint tree_size (t:tree) : nat :=
 A generic command {\tt Scheme} is useful to build automatically various
 mutual induction principles. It is described in Section~\ref{Scheme}.
 
+
+\subsubsection{\tt Function {\ident} {\params} {\tt \{struct|measure|wf}
+  \ident$_0$ {\tt \}} : type$_0$ := \term$_0$.
+\comindex{Function}
+\label{Function}}
+
+This \emph{experimental} command allows to define a function by
+writing its \emph{fixpoint equality}. It is actually a wrapper for
+several ways of defining a function and other useful related objects.
+The meaning of this declaration is to define a not necessarily
+(structural) recursive function {\it ident} with arguments specified
+by {\params$_1$}\ldots{\params$_n$} such that {\it ident} applied to
+arguments corresponding to these binders has type \type$_0$, and is
+\emph{provably equal} to the expression \term$_0$.  The type of the
+{\ident} is consequently {\tt forall {\params} {\tt,} \type$_0$}.
+
+
+\paragraph{If the function is not recursive}
+\label{sec:if-function-not-rec}
+then it is defined as if declared with \texttt{Definition}, and a
+scheme {\tt\ident\_ind} is generated, which reflects the pattern
+matching structure of \term$_0$. {\tt \{ \}} flag is ignored.
+
+
+\paragraph{If the function is structurally recursive}
+\label{sec:if-funct-struct}
+then the decreasing argument must be declared using the {\tt \{struct}
+\ident$_0$ {\tt \}} flag as for a \texttt{Fixpoint} definition. The
+function is actually be declared as a fixpoint, and an induction
+scheme {\tt\ident\_ind} is generated, which reflects the recursive
+structure of \term$_0$.
+
+
+\paragraph{If the function is not structurally recursive}
+\label{sec:if-function-not-struct-rec}
+then the decreasing criteria given between {\tt \{ \}} must be one of
+the following:
+\begin{itemize}
+\item {\tt \{measure} \ident$_0$ {\tt \}} with \ident$_0$ being a
+  function from type of arguments to \texttt{nat},
+\item {\tt \{wf} \ident$_0$ {\tt \}} in which case \ident$_0$ is an
+  ordering relation on the type of arguments.
+\end{itemize}
+. Depending on the decreasing criteria, the user is
+left with some proof obligations that will be used to define the
+function. These proofs are: proofs that each recursive call is
+actually decreasing with respect to the given criteria, and (if the
+criteria is \texttt{wf}) a proof that the ordering relation is well
+founded.
+
+%Completer sur measure et wf
+
+The fixpoint equality \texttt{\ident\_eq}, which is not trivial to
+prove in this case, is automatically generated and proved, together
+with an induction scheme {\tt\ident\_ind}, which reflects the recursive
+structure of \term$_0$.
+
+
+
+%Complete!!
+The way this recursive function is defined is the subject of several
+papers by Yves Bertot, Julien forest, David Pichardie.
+
+%Exemples ok ici
+
+\paragraph{Limitations}
+\label{sec:Function-limitations}
+\term$_0$ must be build as an imbrication of pattern matchings
+(\texttt{match...with}) with $\lambda$-abstraction and applications only
+\emph{at the end} of each branch.
+
+%Exemples faux ici
+
+
+
+
+
 \subsubsection{\tt CoFixpoint {\ident} : \type$_0$ := \term$_0$.
 \comindex{CoFixpoint}
 \label{CoFixpoint}}
