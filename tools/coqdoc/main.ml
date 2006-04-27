@@ -71,12 +71,12 @@ let banner () =
   eprintf "This is coqdoc version %s, compiled on %s\n"
     Coq_config.version Coq_config.compile_date;
   flush stderr
-
+    
 let target_full_name f = 
   match !target_language with
     | HTML -> f ^ ".html"
     | _ -> f ^ ".tex"
-
+	
 (*s \textbf{Separation of files.} Files given on the command line are
     separated according to their type, which is determined by their
     suffix.  Coq files have suffixe \verb!.v! or \verb!.g! and \LaTeX\
@@ -87,11 +87,11 @@ let check_if_file_exists f =
     eprintf "\ncoqdoc: %s: no such file\n" f;
     exit 1
   end
-
+    
 let paths = ref []
-
+  
 let add_path m l = paths := (m,l) :: !paths
-
+  
 let exists_dir dir =
   try let _ = Unix.opendir dir in true with Unix.Unix_error _ -> false
 
@@ -99,72 +99,72 @@ let add_rec_path f l =
   let rec traverse abs rel =
     add_path abs rel;
     let dirh = Unix.opendir abs in
-    try
-      while true do
-	let f = Unix.readdir dirh in
-	if f <> "" && f.[0] <> '.' && f <> "CVS" then
-	  let abs' = Filename.concat abs f in
-	  try 
-	    if exists_dir abs' then  traverse abs' (rel ^ "." ^ f)
-	  with Unix.Unix_error _ -> 
-	    ()
-      done
-    with End_of_file ->
-      Unix.closedir dirh
+      try
+	while true do
+	  let f = Unix.readdir dirh in
+	    if f <> "" && f.[0] <> '.' && f <> "CVS" then
+	      let abs' = Filename.concat abs f in
+		try 
+		  if exists_dir abs' then  traverse abs' (rel ^ "." ^ f)
+		with Unix.Unix_error _ -> 
+		  ()
+	done
+      with End_of_file ->
+	Unix.closedir dirh
   in
-  if exists_dir f then traverse f l
+    if exists_dir f then traverse f l
 
 (* turn A/B/C into A.B.C *)
 let make_path = Str.global_replace (Str.regexp "/") ".";;
 
 let coq_module file = 
-(* TODO
- * LEM:
- * We should also remove things like "/./" in the middle of the filename,
- * rewrite "/foo/../bar" to "/bar", recognise different paths that lead
- * to the same file / directory (via symlinks), etc. The best way to do
- * all this would be to use the libc function realpath() on _both_ p and
- * file / f before comparing them.
- *
- * The semantics of realpath() on file symlinks might not be what we
- * want... (But it is what we want on directory symlinks.) So, we would
- * have to cook up our own version of realpath()?
- *
- * Do all target platforms have realpath()?
- *)
+  (* TODO
+   * LEM:
+   * We should also remove things like "/./" in the middle of the filename,
+   * rewrite "/foo/../bar" to "/bar", recognise different paths that lead
+   * to the same file / directory (via symlinks), etc. The best way to do
+   * all this would be to use the libc function realpath() on _both_ p and
+   * file / f before comparing them.
+   *
+   * The semantics of realpath() on file symlinks might not be what we
+   * want... (But it is what we want on directory symlinks.) So, we would
+   * have to cook up our own version of realpath()?
+   *
+   * Do all target platforms have realpath()?
+   *)
   let f = chop_extension file in
-  (* remove leading ./ and any number of slashes after *)
+    (* remove leading ./ and any number of slashes after *)
   let f = Str.replace_first (Str.regexp "^\\./+") "" f in
-  if (Str.string_before f 1) = "/" then
-    (* f is an absolute path. Prefixes must be matched with the beginning of f,
-     * not prepended
-     *)
-    let rec trypath = function
-     | [] -> make_path f
-     | (p, lg) :: r ->
-         (* make sure p ends with a single '/'
-          * This guarantees that we don't match a file whose name is
-          * of the form p ^ "foo". It means we may miss p itself,
-          * but this does not matter: coqdoc doesn't do anything
-          * of a directory anyway. *)
-         let p = (Str.replace_first (Str.regexp "/*$") "/" p) in
-         let p_quoted = (Str.quote p) in
-         if (Str.string_match (Str.regexp p_quoted) f 0) then
-           make_path (Filename.concat lg (Str.replace_first (Str.regexp (p_quoted ^ "/*")) "" f))
-        else
-           trypath r
-    in trypath !paths
-  else (* f is a relative path *)
-    let rec trypath = function
-      | [] -> 
-	  make_path f
-      | (p,lg) :: r ->
-	  let p_file = Filename.concat p file in
-	  if Sys.file_exists p_file then
-	    make_path (Filename.concat lg f)
-	  else
-	    trypath r
-    in trypath !paths;;
+    if (Str.string_before f 1) = "/" then
+      (* f is an absolute path. Prefixes must be matched with the beginning of f,
+       * not prepended
+       *)
+      let rec trypath = function
+	| [] -> make_path f
+	| (p, lg) :: r ->
+            (* make sure p ends with a single '/'
+             * This guarantees that we don't match a file whose name is
+             * of the form p ^ "foo". It means we may miss p itself,
+             * but this does not matter: coqdoc doesn't do anything
+             * of a directory anyway. *)
+            let p = (Str.replace_first (Str.regexp "/*$") "/" p) in
+            let p_quoted = (Str.quote p) in
+              if (Str.string_match (Str.regexp p_quoted) f 0) then
+		make_path (Filename.concat lg (Str.replace_first (Str.regexp (p_quoted ^ "/*")) "" f))
+              else
+		trypath r
+      in trypath !paths
+    else (* f is a relative path *)
+      let rec trypath = function
+	| [] -> 
+	    make_path f
+	| (p,lg) :: r ->
+	    let p_file = Filename.concat p file in
+	      if Sys.file_exists p_file then
+		make_path (Filename.concat lg f)
+	      else
+		trypath r
+      in trypath !paths;;
 
 let what_file f =
   check_if_file_exists f;
@@ -176,43 +176,43 @@ let what_file f =
     eprintf "\ncoqdoc: don't know what to do with %s\n" f;
     exit 1
   end
-
+    
 (*s \textbf{Reading file names from a file.} 
-    File names may be given
-    in a file instead of being given on the command
-    line. [(files_from_file f)] returns the list of file names contained
-    in the file named [f]. These file names must be separated by spaces,
-    tabulations or newlines.
+ *  File names may be given
+ *  in a file instead of being given on the command
+ *  line. [(files_from_file f)] returns the list of file names contained
+ *  in the file named [f]. These file names must be separated by spaces,
+ *  tabulations or newlines.
  *)
 
 let files_from_file f =
   let files_from_channel ch =
     let buf = Buffer.create 80 in
     let l = ref [] in
-    try
-      while true do
-	match input_char ch with
-	  | ' ' | '\t' | '\n' ->
-	      if Buffer.length buf > 0 then l := (Buffer.contents buf) :: !l;
-	      Buffer.clear buf
-	  | c -> 
-	      Buffer.add_char buf c
-      done; []
-    with End_of_file ->
-      List.rev !l
+      try
+	while true do
+	  match input_char ch with
+	    | ' ' | '\t' | '\n' ->
+		if Buffer.length buf > 0 then l := (Buffer.contents buf) :: !l;
+		Buffer.clear buf
+	    | c -> 
+		Buffer.add_char buf c
+	done; []
+      with End_of_file ->
+	List.rev !l
   in
-  try
-    check_if_file_exists f;
-    let ch = open_in f in
-    let l = files_from_channel ch in
-    close_in ch;l
-  with Sys_error s -> begin
-    eprintf "\ncoqdoc: cannot read from file %s (%s)\n" f s;
-    exit 1
-  end
-
+    try
+      check_if_file_exists f;
+      let ch = open_in f in
+      let l = files_from_channel ch in
+	close_in ch;l
+    with Sys_error s -> begin
+      eprintf "\ncoqdoc: cannot read from file %s (%s)\n" f s;
+      exit 1
+    end
+      
 (*s \textbf{Parsing of the command line.} *)
-
+      
 let output_file = ref ""
 let dvi = ref false
 let ps = ref false
@@ -222,9 +222,9 @@ let parse () =
   let add_file f = files := f :: !files in
   let rec parse_rec = function
     | [] -> ()
-
+	
     | ("-nopreamble" | "--nopreamble" | "--no-preamble"
-    |  "-bodyonly"   | "--bodyonly"   | "--body-only") :: rem ->
+      |  "-bodyonly"   | "--bodyonly"   | "--body-only") :: rem ->
 	header_trailer := false; parse_rec rem
     | ("-p" | "--preamble") :: s :: rem ->
 	push_in_preamble s; parse_rec rem
@@ -280,10 +280,10 @@ let parse () =
 	Cdglobals.set_latin1 (); parse_rec rem
     | ("-utf8" | "--utf8") :: rem ->
 	Cdglobals.set_utf8 (); parse_rec rem
-
+	  
     | ("-q" | "-quiet" | "--quiet") :: rem ->
 	quiet := true; parse_rec rem
-
+	  
     | ("-h" | "-help" | "-?" | "--help") :: rem ->
 	banner (); usage ()
     | ("-v" | "-version" | "--version") :: _ ->
@@ -320,10 +320,10 @@ let parse () =
     | f :: rem -> 
 	add_file (what_file f); parse_rec rem
   in 
-  parse_rec (List.tl (Array.to_list Sys.argv));
-  List.rev !files
+    parse_rec (List.tl (Array.to_list Sys.argv));
+    List.rev !files
 
-
+      
 (*s The following function produces the output. The default output is
     the \LaTeX\ document: in that case, we just call [Web.produce_document]. 
     If option \verb!-dvi!, \verb!-ps! or \verb!-html! is invoked, then
@@ -331,41 +331,41 @@ let parse () =
 
 let locally dir f x =
   let cwd = Sys.getcwd () in
-  try
-    Sys.chdir dir; let y = f x in Sys.chdir cwd; y
-  with e ->
-    Sys.chdir cwd; raise e
+    try
+      Sys.chdir dir; let y = f x in Sys.chdir cwd; y
+    with e ->
+      Sys.chdir cwd; raise e
 
 let clean_temp_files basefile =
   let remove f = try Sys.remove f with _ -> () in
-  remove (basefile ^ ".tex");
-  remove (basefile ^ ".log");
-  remove (basefile ^ ".aux");
-  remove (basefile ^ ".dvi");
-  remove (basefile ^ ".ps");
-  remove (basefile ^ ".haux");
-  remove (basefile ^ ".html")
-
+    remove (basefile ^ ".tex");
+    remove (basefile ^ ".log");
+    remove (basefile ^ ".aux");
+    remove (basefile ^ ".dvi");
+    remove (basefile ^ ".ps");
+    remove (basefile ^ ".haux");
+    remove (basefile ^ ".html")
+      
 let clean_and_exit file res = clean_temp_files file; exit res
-
+  
 let cat file =
   let c = open_in file in
-  try
-    while true do print_char (input_char c) done
-  with End_of_file ->
-    close_in c
+    try
+      while true do print_char (input_char c) done
+    with End_of_file ->
+      close_in c
 
 let copy src dst =
   let cin = open_in src 
   and cout = open_out dst in
-  try
-    while true do Pervasives.output_char cout (input_char cin) done
-  with End_of_file ->
-    close_in cin; close_out cout
+    try
+      while true do Pervasives.output_char cout (input_char cin) done
+    with End_of_file ->
+      close_in cin; close_out cout
 
 
 (*s Functions for generating output files *)
-
+	
 let gen_one_file l =
   let file = function
     | Vernac_file (f,m) -> 
@@ -416,19 +416,19 @@ let gen_mult_files l =
 let index_module = function
   | Vernac_file (_,m) -> Index.add_module m
   | Latex_file _ -> ()
-
+      
 let produce_document l =
   List.iter index_module l;
   (if !target_language=HTML then
-    let src = (Filename.concat Coq_config.coqlib "/tools/coqdoc/coqdoc.css") in
-    let dst = if !output_dir <> "" then Filename.concat !output_dir "coqdoc.css" else "coqdoc.css" in
-      copy src dst);
+     let src = (Filename.concat Coq_config.coqlib "/tools/coqdoc/coqdoc.css") in
+     let dst = if !output_dir <> "" then Filename.concat !output_dir "coqdoc.css" else "coqdoc.css" in
+       copy src dst);
   (if !target_language=LaTeX then
-    let src = (Filename.concat Coq_config.coqlib "/tools/coqdoc/coqdoc.sty") in
-    let dst = if !output_dir <> "" then 
-      Filename.concat !output_dir "coqdoc.sty" 
-    else "coqdoc.sty" in
-      copy src dst);
+     let src = (Filename.concat Coq_config.coqlib "/tools/coqdoc/coqdoc.sty") in
+     let dst = if !output_dir <> "" then 
+       Filename.concat !output_dir "coqdoc.sty" 
+     else "coqdoc.sty" in
+       copy src dst);
   match !out_to with
     | StdOut -> 
 	Cdglobals.out_channel := stdout;
@@ -439,7 +439,7 @@ let produce_document l =
 	close_out_file()
     | MultFiles ->
 	gen_mult_files l
-
+	  
 let produce_output fl =
   if not (!dvi || !ps) then begin
     produce_document fl
@@ -493,7 +493,7 @@ let produce_output fl =
 
 let main () =
   let files = parse () in
-  if not !quiet then banner ();
-  if files <> [] then produce_output files
-
+    if not !quiet then banner ();
+    if files <> [] then produce_output files
+      
 let _ = Printexc.catch main ()

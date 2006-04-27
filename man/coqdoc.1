@@ -1,4 +1,4 @@
-.TH coqdoc 1 "December, 2005"
+.TH coqdoc 1 "April, 2006"
 
 .SH NAME
 coqdoc \- A documentation tool for the Coq proof assistant
@@ -43,6 +43,9 @@ Select a PostScript output.
 .B \-\-texmacs
 Select a TeXmacs output.
 .TP
+.B \-\-stdout
+Redirect the output to stdout
+.TP
 .BI \-o \ file, \-\-output \ file
 Redirect the output into the file 
 .I file.
@@ -81,7 +84,7 @@ Be quiet. Do not print anything except errors.
 .B \-h, \ \-\-help
 Give a short summary of the options and exit.
 .TP
-.BI
+.B
 \-v, \ \-\-version
 Print the version and exit.
 
@@ -168,7 +171,7 @@ http://www.ctan.org/tex-archive/macros/latex/contrib/supported/unicode/.
 Give a LATEX input encoding, as an option to LATEX package inputenc.
 
 .TP
-.BI --charset string
+.BI --charset \ string
 Specify the HTML character set, to be inserted in the HTML header.
 
 
