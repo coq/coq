@@ -57,9 +57,19 @@ let new_meta =
   let meta_ctr = ref 0 in
   fun () -> incr meta_ctr; !meta_ctr
 
+let nf_evar_info evc info =
+  { evar_concl = Reductionops.nf_evar evc info.evar_concl;
+    evar_hyps = List.map (map_named_declaration (Reductionops.nf_evar evc)) info.evar_hyps;
+    evar_body = info.evar_body}
+
+let nf_evars evm = 
+  List.fold_right (fun (ev,evi) evm' -> Evd.add evm' ev (nf_evar_info evm evi))
+    (Evd.to_list evm) Evd.empty
+
 (* replaces a mapping of existentials into a mapping of metas.
    Problem if an evar appears in the type of another one (pops anomaly) *)
 let exist_to_meta sigma (emap, c) =
+  let emap = nf_evars emap in
   let metamap = ref [] in
   let change_exist evar =
     let ty = nf_betaiota (nf_evar emap (existential_type emap evar)) in
