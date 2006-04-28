@@ -47,7 +47,7 @@ let nf_evar sigma ~preserve =
                 | _ -> T.mkApp (c', l')
               )
            | _ -> T.mkApp (c', l'))
-     | T.Evar (e,l) when Evd.in_dom sigma e & Evd.is_defined sigma e ->
+     | T.Evar (e,l) when Evd.mem sigma e & Evd.is_defined sigma e ->
 	aux (Evd.existential_value sigma (e,l))
      | T.Evar (e,l) -> T.mkEvar (e, Array.map aux l)
      | T.Case (ci,p,c,bl) -> T.mkCase (ci, aux p, aux c, Array.map aux bl)

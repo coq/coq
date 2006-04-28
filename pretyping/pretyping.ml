@@ -273,7 +273,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     | REvar (loc, ev, instopt) ->
 	(* Ne faudrait-il pas s'assurer que hyps est bien un
 	   sous-contexte du contexte courant, et qu'il n'y a pas de Rel "caché" *)
-	let hyps = evar_context (Evd.map (evars_of !isevars) ev) in
+	let hyps = evar_context (Evd.find (evars_of !isevars) ev) in
 	let args = match instopt with
           | None -> instance_from_named_context hyps
           | Some inst -> failwith "Evar subtitutions not implemented" in
@@ -657,8 +657,8 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     let rec proc_rec c =
       match kind_of_term c with
 	| Evar (ev,args) ->
-            assert (Evd.in_dom sigma ev);
-	    if not (Evd.in_dom initial_sigma ev) then
+            assert (Evd.mem sigma ev);
+	    if not (Evd.mem initial_sigma ev) then
               let (loc,k) = evar_source ev !isevars in
 		error_unsolvable_implicit loc env sigma k
 	| _ -> iter_constr proc_rec c

@@ -43,10 +43,9 @@ val empty : evar_map
 val add : evar_map -> evar -> evar_info -> evar_map
 
 val dom : evar_map -> evar list
-val map : evar_map -> evar -> evar_info
-val rmv : evar_map -> evar -> evar_map
-val remap : evar_map -> evar -> evar_info -> evar_map
-val in_dom : evar_map -> evar -> bool
+val find : evar_map -> evar -> evar_info
+val remove : evar_map -> evar -> evar_map
+val mem : evar_map -> evar -> bool
 val to_list : evar_map -> (evar * evar_info) list
 val fold : (evar -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
 

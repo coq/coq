@@ -259,7 +259,7 @@ let w_merge env with_types mod_delta metas evars evd =
             end
 
   and mimick_evar evd mod_delta hdc nargs sp =
-    let ev = Evd.map (evars_of evd) sp in
+    let ev = Evd.find (evars_of evd) sp in
     let sp_env = Global.env_of_context ev.evar_hyps in
     let (evd', c) = applyHead sp_env evd nargs hdc in
     let (mc,ec) =

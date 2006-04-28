@@ -1194,11 +1194,11 @@ let solve_remaining_evars env initial_sigma evars c =
   let isevars = ref evars in
   let rec proc_rec c =
     match kind_of_term (Reductionops.whd_evar (evars_of !isevars) c) with
-      | Evar (ev,args as k) when not (Evd.in_dom initial_sigma ev) ->
+      | Evar (ev,args as k) when not (Evd.mem initial_sigma ev) ->
             let (loc,src) = evar_source ev !isevars in
 	    let sigma = evars_of !isevars in
 	    (try 
-	      let evi = Evd.map sigma ev in
+	      let evi = Evd.find sigma ev in
 	      let c = solvable_by_tactic env evi k src in
 	      isevars := Evd.evar_define ev c !isevars;
 	      c

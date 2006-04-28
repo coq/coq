@@ -96,9 +96,11 @@ Notations
 - no more automatic printing box in case of user-provided printing "format".
 - new notation "exists! x:A, P" for unique existence.
 
-Library
+Libraries
 
 - Small extension of Zmin.V, new Zmax.v, new Zminmax.v
+- Reworking of the files on classical logic and description principles
+  (possible incompatibilities)
 - New library on String and Ascii characters (contributed by L. Thery)
 - Few other improvements in ZArith potentially exceptionally breaking the
   compatibility (useless hypothesys of Zgt_square_simpl and

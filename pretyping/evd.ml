@@ -48,17 +48,16 @@ let empty = Evarmap.empty
 
 let to_list evc = Evarmap.fold (fun ev x acc -> (ev,x)::acc) evc []
 let dom evc = Evarmap.fold (fun ev _ acc -> ev::acc) evc []
-let map evc k = Evarmap.find k evc
-let rmv evc k = Evarmap.remove k evc
-let remap evc k i = Evarmap.add k i evc
-let in_dom evc k = Evarmap.mem k evc
+let find evc k = Evarmap.find k evc
+let remove evc k = Evarmap.remove k evc
+let mem evc k = Evarmap.mem k evc
 let fold = Evarmap.fold
 
 let add evd ev newinfo =  Evarmap.add ev newinfo evd
 
 let define evd ev body = 
   let oldinfo =
-    try map evd ev
+    try find evd ev
     with Not_found -> error "Evd.define: cannot define undeclared evar" in
   let newinfo =
     { evar_concl = oldinfo.evar_concl;
@@ -68,10 +67,10 @@ let define evd ev body =
     | Evar_empty -> Evarmap.add ev newinfo evd
     | _ -> anomaly "Evd.define: cannot define an isevar twice"
     
-let is_evar sigma ev = in_dom sigma ev
+let is_evar sigma ev = mem sigma ev
 
 let is_defined sigma ev =
-  let info = map sigma ev in 
+  let info = find sigma ev in 
   not (info.evar_body = Evar_empty)
 
 let evar_body ev = ev.evar_body
@@ -112,7 +111,7 @@ let instantiate_evar sign c args =
 
 let existential_type sigma (n,args) =
   let info =
-    try map sigma n
+    try find sigma n
     with Not_found ->
       anomaly ("Evar "^(string_of_existential n)^" was not declared") in
   let hyps = evar_context info in
@@ -121,7 +120,7 @@ let existential_type sigma (n,args) =
 exception NotInstantiatedEvar
 
 let existential_value sigma (n,args) =
-  let info = map sigma n in
+  let info = find sigma n in
   let hyps = evar_context info in
   match evar_body info with
     | Evar_defined c ->
@@ -270,10 +269,9 @@ type evar_map = evar_map1 * sort_constraints
 let empty = empty, UniverseMap.empty
 let add (sigma,sm) k v = (add sigma k v, sm)
 let dom (sigma,_) = dom sigma
-let map (sigma,_) = map sigma
-let rmv (sigma,sm) k = (rmv sigma k, sm)
-let remap (sigma,sm) k v = (remap sigma k v, sm)
-let in_dom (sigma,_) = in_dom sigma
+let find (sigma,_) = find sigma
+let remove (sigma,sm) k = (remove sigma k, sm)
+let mem (sigma,_) = mem sigma
 let to_list (sigma,_) = to_list sigma
 let fold f (sigma,_) = fold f sigma
 let define (sigma,sm) k v = (define sigma k v, sm)

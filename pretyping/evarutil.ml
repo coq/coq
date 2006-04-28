@@ -35,7 +35,7 @@ exception Uninstantiated_evar of existential_key
 
 let rec whd_ise sigma c =
   match kind_of_term c with
-    | Evar (ev,args) when Evd.in_dom sigma ev ->
+    | Evar (ev,args) when Evd.mem sigma ev ->
 	if Evd.is_defined sigma ev then
           whd_ise sigma (existential_value sigma (ev,args))
 	else raise (Uninstantiated_evar ev)
@@ -46,7 +46,7 @@ let rec whd_ise sigma c =
 let whd_castappevar_stack sigma c = 
   let rec whrec (c, l as s) =
     match kind_of_term c with
-      | Evar (ev,args) when Evd.in_dom sigma ev & Evd.is_defined sigma ev -> 
+      | Evar (ev,args) when Evd.mem sigma ev & Evd.is_defined sigma ev -> 
 	  whrec (existential_value sigma (ev,args), l)
       | Cast (c,_,_) -> whrec (c, l)
       | App (f,args) -> whrec (f, Array.fold_right (fun a l -> a::l) args l)
@@ -93,7 +93,7 @@ let collect_evars emap c =
   let rec collrec acc c =
     match kind_of_term c with
       | Evar (k,_) ->
-	  if Evd.in_dom emap k & not (Evd.is_defined emap k) then k::acc
+	  if Evd.mem emap k & not (Evd.is_defined emap k) then k::acc
 	  else (* No recursion on the evar instantiation *) acc
       | _         ->
 	  fold_constr collrec acc c in
@@ -103,13 +103,14 @@ let push_dependent_evars sigma emap =
   Evd.fold (fun ev {evar_concl = ccl} (sigma',emap') ->
     List.fold_left 
       (fun (sigma',emap') ev -> 
-	(Evd.add sigma' ev (Evd.map emap' ev),Evd.rmv emap' ev))
+	(Evd.add sigma' ev (Evd.find emap' ev),Evd.remove emap' ev))
       (sigma',emap') (collect_evars emap' ccl))
     emap (sigma,emap)
     
 (* replaces a mapping of existentials into a mapping of metas.
    Problem if an evar appears in the type of another one (pops anomaly) *)
 let evars_to_metas sigma (emap, c) =
+  let emap = nf_evars emap in
   let sigma',emap' = push_dependent_evars sigma emap in
   let change_exist evar =
     let ty = nf_betaiota (nf_evar emap (existential_type emap evar)) in
@@ -117,7 +118,7 @@ let evars_to_metas sigma (emap, c) =
     mkCast (mkMeta n, DEFAULTcast, ty) in
   let rec replace c =
     match kind_of_term c with
-        Evar (k,_ as ev) when Evd.in_dom emap' k -> change_exist ev
+        Evar (k,_ as ev) when Evd.mem emap' k -> change_exist ev
       | _ -> map_constr replace c in
   (sigma', replace c)
 
@@ -297,7 +298,7 @@ let is_defined_equation env evd (ev,inst) rhs =
   is_pattern inst &&
   not (occur_evar ev rhs) &&
   try
-    let evi = Evd.map (evars_of evd) ev in
+    let evi = Evd.find (evars_of evd) ev in
     let (evd',body) = inverse_instance env evd ev evi inst rhs in
     evar_well_typed_body evd' ev evi body
   with Failure _ -> false
@@ -313,7 +314,7 @@ let is_defined_equation env evd (ev,inst) rhs =
 
 let do_restrict_hyps evd ev args =
   let args = Array.to_list args in
-  let evi = Evd.map (evars_of !evd) ev in
+  let evi = Evd.find (evars_of !evd) ev in
   let env = evar_env evi in
   let hyps = evar_context evi in
   let (sign,ncargs) = list_filter2 (fun _ a -> closed0 a) (hyps,args) in
@@ -395,7 +396,7 @@ let evar_define env (ev,argsv) rhs isevars =
   if occur_evar ev rhs
   then error_occur_check env (evars_of isevars) ev rhs;
   let args = Array.to_list argsv in 
-  let evi = Evd.map (evars_of isevars) ev in
+  let evi = Evd.find (evars_of isevars) ev in
   (* the bindings to invert *)
   let worklist = make_subst (evar_env evi) args in
   let (isevars',body) = real_clean env isevars ev evi worklist rhs in
@@ -502,7 +503,7 @@ let status_changed lev (pbty,t1,t2) =
 
 let solve_refl conv_algo env isevars ev argsv1 argsv2 =
   if argsv1 = argsv2 then (isevars,[]) else
-  let evd = Evd.map (evars_of isevars) ev in
+  let evd = Evd.find (evars_of isevars) ev in
   let hyps = evar_context evd in
   let (isevars',_,rsign) = 
     array_fold_left2
@@ -599,7 +600,7 @@ let mk_valcon c = Some c
    cumulativity now includes Prop and Set in Type...
    It is, but that's not too bad *)
 let define_evar_as_abstraction abs evd (ev,args) =
-  let evi = Evd.map (evars_of evd) ev in
+  let evi = Evd.find (evars_of evd) ev in
   let evenv = evar_env evi in
   let (evd1,dom) = new_evar evd evenv (new_Type()) in
   let nvar =

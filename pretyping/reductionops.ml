@@ -428,13 +428,13 @@ let whd_betadeltaiota_nolet env sigma x =
 let rec whd_evar sigma c =
   match kind_of_term c with
     | Evar (ev,args)
-        when Evd.in_dom sigma ev & Evd.is_defined sigma ev ->
+        when Evd.mem sigma ev & Evd.is_defined sigma ev ->
 	whd_evar sigma (Evd.existential_value sigma (ev,args))
     | Sort s when is_sort_variable sigma s -> whd_sort_variable sigma c
     | _ -> collapse_appl c
 
-let nf_evar evd =
-  local_strong (whd_evar evd)
+let nf_evar sigma =
+  local_strong (whd_evar sigma)
 
 (* lazy reduction functions. The infos must be created for each term *)
 let clos_norm_flags flgs env sigma t =

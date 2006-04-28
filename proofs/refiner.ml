@@ -263,7 +263,7 @@ let extract_open_proof sigma pf =
     let meta_cnt = ref 0 in
     let rec f () =
       incr meta_cnt; 
-      if in_dom sigma (existential_of_int !meta_cnt) then f ()
+      if Evd.mem sigma (existential_of_int !meta_cnt) then f ()
       else !meta_cnt
     in f
   in

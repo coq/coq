@@ -14,7 +14,7 @@
     As ClassicalDescription.v, it implies the double-negation of
     excluded-middle in Set and implies a strongly classical
     world. Especially it conflicts with impredicativity of Set, knowing
-    that true<>false in Set.
+    that [true<>false] in Set.
 *)
 
 Require Export ClassicalDescription.
