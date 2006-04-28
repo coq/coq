@@ -54,6 +54,7 @@ val extend_dirpath : dir_path -> module_ident -> dir_path
 val add_dirpath_prefix : module_ident -> dir_path -> dir_path
 
 val chop_dirpath : int -> dir_path -> dir_path * dir_path
+val drop_dirpath_prefix : dir_path -> dir_path -> dir_path
 val extract_dirpath_prefix : int -> dir_path -> dir_path
 val is_dirpath_prefix_of : dir_path -> dir_path -> bool
 

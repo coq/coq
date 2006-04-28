@@ -363,7 +363,19 @@ let list_prefix_of prefl l =
     | ([], _) -> true
     | (_, _) -> false
   in 
-  prefrec (prefl,l)
+    prefrec (prefl,l)
+
+let list_drop_prefix p l =
+(* if l=p++t then return t else l *)
+  let rec list_drop_prefix_rec = function
+    | ([], tl) -> Some tl
+    | (_, []) -> None
+    | (h1::tp, h2::tl) -> 
+	if h1 = h2 then list_drop_prefix_rec (tp,tl) else None
+  in
+    match list_drop_prefix_rec (p,l) with
+      | Some r -> r
+      | None -> l
 
 let list_map_append f l = List.flatten (List.map f l)
 
