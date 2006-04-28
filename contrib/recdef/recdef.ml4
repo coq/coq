@@ -850,6 +850,7 @@ let open_new_goal ref goal_name (gls_type,decompose_and_tac,nb_goal)   =
     gls_type 
     hook ;
   by (decompose_and_tac);
+  pp (Printer.pr_open_subgoals());
   ()
     
 let com_terminate ref is_mes fonctional_ref input_type relation rec_arg_num
