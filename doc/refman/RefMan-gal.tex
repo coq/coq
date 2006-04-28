@@ -1277,55 +1277,123 @@ Fixpoint tree_size (t:tree) : nat :=
 A generic command {\tt Scheme} is useful to build automatically various
 mutual induction principles. It is described in Section~\ref{Scheme}.
 
-
-\subsubsection{\tt Function {\ident} {\params} {\tt \{struct|measure|wf}
-  \ident$_0$ {\tt \}} : type$_0$ := \term$_0$.
+\subsubsection{\tt Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
+ {\tt \{}decrease\_annot{\tt\}} : type$_0$ := \term$_0$.
 \comindex{Function}
 \label{Function}}
 
-This \emph{experimental} command allows to define a function by
-writing its \emph{fixpoint equality}. It is actually a wrapper for
-several ways of defining a function and other useful related objects.
-The meaning of this declaration is to define a not necessarily
-(structural) recursive function {\it ident} with arguments specified
-by {\params$_1$}\ldots{\params$_n$} such that {\it ident} applied to
-arguments corresponding to these binders has type \type$_0$, and is
-\emph{provably equal} to the expression \term$_0$.  The type of the
-{\ident} is consequently {\tt forall {\params} {\tt,} \type$_0$}.
+This \emph{experimental} command can be seen as a generalization of
+{\tt Fixpoint}.  It is actually a wrapper for several ways of defining
+a function \emph{and other useful related objects}, namely: an
+induction principle that reflects the recursive structure of the
+function (see \ref{FunInduction}), and its fixpoint equality (not
+always, see below).  The meaning of this declaration is to define a
+function {\it ident}, similarly to {\tt Fixpoint}. Like in {\tt
+Fixpoint}, the decreasing argument must be given (unless the function
+is not recursive), but it must not necessary be \emph{structurally}
+decreasing. The point of the {\tt
+\{\}} annotation is to name the decreasing argument \emph{and} to
+describe which kind of decreasing criteria must be used to ensure
+termination of recursive calls.
+
+The {\tt Function} construction enjoys also the {\tt with} extension
+to define mutually recursive definitions. However, this feature does
+not work for non structural recursive functions. % VRAI??
+
+See the documentation of {\tt functional induction} (section
+\ref{FunInduction}) and {\tt Functional Scheme} (section
+\ref{FunScheme-examples}) for how to use the induction principle to
+easily reason about the function.
+
+\noindent {\bf Remark: } To obtain the right principle, it is better
+to put rigid parameters of the function as first arguments. For
+example it is better to define plus like this:
+
+\begin{coq_example*}
+Function plus (m n : nat) {struct n} : nat :=
+  match n with
+  | 0 => m
+  | S p => S (plus m p)
+  end.
+\end{coq_example*}
+\noindent than like this:
+\begin{coq_eval}
+Reset plus.
+\end{coq_eval}
+\begin{coq_example*}
+Function plus (n m : nat) {struct n} : nat :=
+  match n with
+  | 0 => m
+  | S p => S (plus p m)
+  end.
+\end{coq_example*}
+
+\paragraph{Limitations}
+\label{sec:Function-limitations}
+\term$_0$ must be build as an imbrication of pattern matchings
+(\texttt{match...with}) with $\lambda$-abstraction and applications only
+\emph{at the end} of each branch.
+
+\SeeAlso{\ref{FunScheme},\ref{FunScheme-examples},\ref{FunInduction}}
+
+Depending on the {\tt \{\}} annotation, different definition
+mechanisms are used by {\tt Function}. More precise description
+given below.
+
+\subsubsection{\tt Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
+ : type$_0$ := \term$_0$.
+\comindex{Function}
+}
+
+Defines the not recursive function \ident\ as if declared with
+\texttt{Definition}. An induction scheme {\tt\ident\_ind} is generated, which
+reflects the pattern matching structure of \term$_0$.
 
 
-\paragraph{If the function is not recursive}
-\label{sec:if-function-not-rec}
-then it is defined as if declared with \texttt{Definition}, and a
-scheme {\tt\ident\_ind} is generated, which reflects the pattern
-matching structure of \term$_0$. {\tt \{ \}} flag is ignored.
+\subsubsection{\tt Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
+ {\tt \{}{\tt struct} \ident$_0${\tt\}} : type$_0$ := \term$_0$.
+\comindex{Function}
+}
 
+Defines the structural recursive function \ident\ as if declared with
+\texttt{Fixpoint} . An induction scheme {\tt\ident\_ind} is
+generated, which reflects the recursive structure of \term$_0$. When
+there is only one parameter, {\tt \{struct} \ident$_0${\tt\}} can be
+omitted.
 
-\paragraph{If the function is structurally recursive}
-\label{sec:if-funct-struct}
-then the decreasing argument must be declared using the {\tt \{struct}
-\ident$_0$ {\tt \}} flag as for a \texttt{Fixpoint} definition. The
-function is actually be declared as a fixpoint, and an induction
-scheme {\tt\ident\_ind} is generated, which reflects the recursive
-structure of \term$_0$.
+\subsubsection{\tt Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
+ {\tt \{}{\tt measure \term$_1$} \ident$_0${\tt\}} : type$_0$ := \term$_0$.
+\comindex{Function}}
 
+\subsubsection{\tt Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
+ {\tt \{}{\tt wf \term$_1$} \ident$_0${\tt\}} : type$_0$ := \term$_0$.
+\comindex{Function}}
 
-\paragraph{If the function is not structurally recursive}
-\label{sec:if-function-not-struct-rec}
-then the decreasing criteria given between {\tt \{ \}} must be one of
+Defines a recursive function by well founded recursion. \textbf{The
+module \texttt{Recdef} of the standard library must be loaded for this
+feature}. The {\tt \{\}} annotation is mandatory and must be one of
 the following:
 \begin{itemize}
-\item {\tt \{measure} \ident$_0$ {\tt \}} with \ident$_0$ being a
-  function from type of arguments to \texttt{nat},
-\item {\tt \{wf} \ident$_0$ {\tt \}} in which case \ident$_0$ is an
-  ordering relation on the type of arguments.
-\end{itemize}
-. Depending on the decreasing criteria, the user is
-left with some proof obligations that will be used to define the
-function. These proofs are: proofs that each recursive call is
-actually decreasing with respect to the given criteria, and (if the
-criteria is \texttt{wf}) a proof that the ordering relation is well
-founded.
+\item {\tt \{measure} \term$_1$ \ident$_0${\tt\}} with \ident$_0$
+      being the decreasing argument and \term$_1$ being a function
+      from type of \ident$_0$ to \texttt{nat} for which value on the
+      decreasing argument decreases (for the {\tt lt} order on {\tt
+      nat}) at each recursive call of \term$_0$, parameters of the
+      function are bound in  \term$_0$;
+\item {\tt \{wf} \term$_1$ \ident$_0${\tt\}} with \ident$_0$ being
+      the decreasing argument and \term$_1$ an ordering relation on
+      the type of \ident$_0$ (i.e. of type T$_{\ident_0}$
+      $\rightarrow$ T$_{\ident_0}$ $\rightarrow$ {\tt Prop}) for which
+      the decreasing argument decreases at each recursive call of
+      \term$_0$. The order must be well founded. parameters of the
+      function are bound in  \term$_0$.
+\end{itemize} 
+
+Depending on the annotation, the user is left with some proof
+obligations that will be used to define the function. These proofs
+are: proofs that each recursive call is actually decreasing with
+respect to the given criteria, and (if the criteria is \texttt{wf}) a
+proof that the ordering relation is well founded.
 
 %Completer sur measure et wf
 
@@ -1342,11 +1410,15 @@ papers by Yves Bertot, Julien forest, David Pichardie.
 
 %Exemples ok ici
 
-\paragraph{Limitations}
-\label{sec:Function-limitations}
-\term$_0$ must be build as an imbrication of pattern matchings
-(\texttt{match...with}) with $\lambda$-abstraction and applications only
-\emph{at the end} of each branch.
+\bigskip
+
+\noindent {\bf Remark: } Proof obligations are presented as several
+subgoals. These subgoals are independent which means that in order to
+abort them you will have to abort each separately.
+
+
+
+%The decreasing argument cannot be dependent of another??
 
 %Exemples faux ici
 
