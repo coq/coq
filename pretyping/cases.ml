@@ -1546,8 +1546,11 @@ let extract_arity_signature env0 tomatchl tmsign =
 	  let realnal =
 	    match t with
 	      | Some (loc,ind',nparams,realnal) ->
-		  if ind <> ind' or List.length params <> nparams then
+		  if ind <> ind' then
 		    user_err_loc (loc,"",str "Wrong inductive type");
+		  if List.length params <> nparams
+		    or nrealargs <> List.length realnal then
+		      anomaly "Ill-formed 'in' clause in cases";
 		  List.rev realnal
 	      | None -> list_tabulate (fun _ -> Anonymous) nrealargs in
 	  let arsign = fst (get_arity env0 indf') in

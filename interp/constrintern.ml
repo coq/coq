@@ -963,7 +963,7 @@ let internalise sigma globalenv env allow_soapp lvar c =
 	      if List.exists ((<>) Anonymous) parnal then
 		user_err_loc (loc,"",
 		  str "The parameters of inductive type must be implicit");
-	      (loc,ind,nparams,nal)
+	      (loc,ind,nparams,realnal)
 	  | _ -> error_bad_inductive_type (loc_of_rawconstr t) in
 	nal, Some indsign
     | None -> 
