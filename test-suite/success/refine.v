@@ -64,3 +64,14 @@ intro P.
  refine (P _ _).
 reflexivity.
 Abort.
+
+(* Submitted by Jacek Chrzaszcz (bug #1102) *)
+
+(* le problème a été résolu ici par normalisation des evars présentes
+   dans les types d'evars, mais le problème reste a priori ouvert dans
+   le cas plus général d'evars non instanciées dans les types d'autres
+   evars *)
+
+Goal exists n:nat, n=n.
+refine (ex_intro _ _ _).
+Abort.
