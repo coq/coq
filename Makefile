@@ -863,8 +863,9 @@ SETSVO=\
  theories/Sets/Multiset.vo          theories/Sets/Relations_3_facts.vo \
  theories/Sets/Partial_Order.vo     theories/Sets/Uniset.vo
 
-FSETSVO=\
+FSETSBASEVO=\
  theories/FSets/DecidableType.vo     theories/FSets/OrderedType.vo \
+ theories/FSets/OrderedTypeEx.vo     theories/FSets/OrderedTypeAlt.vo \
  theories/FSets/FSetInterface.vo     theories/FSets/FSetList.vo \
  theories/FSets/FSetBridge.vo        theories/FSets/FSetFacts.vo \
  theories/FSets/FSetProperties.vo    theories/FSets/FSetEqProperties.vo \
@@ -874,7 +875,18 @@ FSETSVO=\
  theories/FSets/FMapInterface.vo     theories/FSets/FMapList.vo \
  theories/FSets/FMaps.vo \
  theories/FSets/FMapWeakInterface.vo theories/FSets/FMapWeakList.vo \
- theories/FSets/FMapWeak.vo
+ theories/FSets/FMapWeak.vo          theories/FSets/FMapPositive.vo \
+ theories/FSets/FMapIntMap.vo        theories/FSets/FSetToFiniteSet.vo \
+ theories/FSets/Int.vo \
+
+FSETS_basic=
+
+FSETS_all=\
+ theories/FSets/FMapAVL.vo           theories/FSets/FSetAVL.vo \
+
+FSETSVO=$(FSETSBASEVO) $(FSETS_$(FSETS))
+
+ALLFSETS=$(FSETSBASEVO) $(FSETS_all)
 
 INTMAPVO=\
  theories/IntMap/Adalloc.vo    theories/IntMap/Mapcanon.vo \
@@ -963,6 +975,7 @@ lists: $(LISTSVO)
 strings: $(STRINGSVO)
 sets: $(SETSVO)
 fsets: $(FSETSVO)
+allfsets: $(ALLFSETS)
 intmap: $(INTMAPVO)
 relations: $(RELATIONSVO)
 wellfounded: $(WELLFOUNDEDVO)
@@ -1610,7 +1623,7 @@ alldepend: depend dependcoq
 
 dependcoq:: beforedepend
 	$(COQDEP) -coqlib . -R theories Coq -R contrib Coq $(COQINCLUDES) \
-	 $(ALLREALS:.vo=.v) $(ALLVO:.vo=.v) > .depend.coq
+	 $(ALLFSETS:.vo=.v) $(ALLREALS:.vo=.v) $(ALLVO:.vo=.v) > .depend.coq
 
 # Build dependencies ignoring failures in building ml files from ml4 files
 # This is useful to rebuild dependencies when they are strongly corrupted:

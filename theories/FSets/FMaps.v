@@ -8,5 +8,10 @@
 
 (* $Id$ *)
 
+Require Export OrderedType.
+Require Export OrderedTypeEx.
+Require Export OrderedTypeAlt.
 Require Export FMapInterface.
 Require Export FMapList.
+Require Export FMapPositive.
+Require Export FMapIntMap.

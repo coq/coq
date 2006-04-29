@@ -36,6 +36,8 @@ mandir_spec=no
 emacslib_spec=no
 emacs_spec=no
 coqdocdir_spec=no
+fsets_opt=no
+fsets=all
 reals_opt=no
 reals=all
 arch_spec=no
@@ -69,6 +71,8 @@ while : ; do
 		    emacslib=$COQTOP/tools/emacs
 		    coqdocdir_spec=yes
 		    coqdocdir=$COQTOP/tools/coqdoc
+		    fsets_opt=yes
+		    fsets=all
 		    reals_opt=yes
 		    reals=all;;
     -src|--src) COQTOP=$2
@@ -97,6 +101,9 @@ while : ; do
     -opt|--opt) bytecamlc=ocamlc.opt
                 camlp4o=camlp4o  # can't add .opt since dyn load'll be required
                 nativecamlc=ocamlopt.opt;;
+    -fsets|--fsets) fsets_opt=yes
+                    fsets=$2
+		    shift;;
     -reals|--reals) reals_opt=yes
 		    reals=$2
 		    shift;;
@@ -217,6 +224,18 @@ case $coqdocdir_spec in
 	    *) true;;
 	esac;;
     yes) COQDOCDIR=$coqdocdir;;
+esac
+
+case $fsets_opt in
+    no) echo "Should I compile the complete theory of finite sets [Y/N, default is Y] ?"
+	read fsets_ans
+
+	case $fsets_ans in
+	    "N"|"n"|"No"|"NO"|"no")
+		    fsets=basic;;
+		*) fsets=all;;
+	esac;;
+    yes) true;;
 esac
 
 case $reals_opt in
@@ -410,6 +429,11 @@ echo "  Objective-Caml/Camlp4 version     : $CAMLVERSION"
 echo "  Objective-Caml/Camlp4 binaries in : $CAMLBIN"
 echo "  Objective-Caml library in         : $CAMLLIB"
 echo "  Camlp4 library in                 : $CAMLP4LIB"
+if test "$fsets" = "all"; then
+echo "  FSets theory                      : All"
+else
+echo "  FSets theory                      : Basic"
+fi
 if test "$reals" = "all"; then
 echo "  Reals theory                      : All"
 else
@@ -523,6 +547,7 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|BYTECAMLC|$bytecamlc|" \
     -e "s|NATIVECAMLC|$nativecamlc|" \
     -e "s|STRIPCOMMAND|$STRIPCOMMAND|" \
+    -e "s|FSETSOPT|$fsets|" \
     -e "s|REALSOPT|$reals|" \
     -e "s|COQIDEOPT|$COQIDE|" \
       $COQTOP/config/Makefile.template > $COQTOP/config/Makefile
