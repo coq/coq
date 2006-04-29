@@ -247,6 +247,18 @@ destruct n as [| n]; destruct m as [| m]; simpl in |- *; intro H;
   rewrite (Pcompare_Eq_eq n m H); reflexivity.
 Qed.
 
+Lemma Ncompare_refl : forall n, (n ?= n) = Eq.
+Proof.
+destruct n; simpl; auto.
+apply Pcompare_refl.
+Qed.
+
+Lemma Ncompare_antisym : forall n m, CompOpp (n ?= m) = (m ?= n).
+Proof.
+destruct n; destruct m; simpl; auto.
+exact (Pcompare_antisym p p0 Eq).
+Qed.
+
 (** Dividing by 2 *)
 
 Definition Ndiv2 (n:N) :=
