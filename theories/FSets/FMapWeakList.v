@@ -24,7 +24,7 @@ Arguments Scope list [type_scope].
 
 Module Raw (X:DecidableType).
 
-Module PX := PairDecidableType X.
+Module PX := KeyDecidableType X.
 Import PX.
 
 Definition key := X.t.
@@ -34,7 +34,7 @@ Section Elt.
 
 Variable elt : Set.
 
-(* now in PairDecidableType:
+(* now in KeyDecidableType:
 Definition eqk (p p':key*elt) := X.eq (fst p) (fst p').
 Definition eqke (p p':key*elt) := 
           X.eq (fst p) (fst p') /\ (snd p) = (snd p').

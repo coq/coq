@@ -351,7 +351,7 @@ Hint Immediate In_eq Inf_lt.
 
 End OrderedTypeFacts.
 
-Module PairOrderedType(O:OrderedType).
+Module KeyOrderedType(O:OrderedType).
  Import O.
  Module MO:=OrderedTypeFacts(O).
  Import MO.
@@ -561,6 +561,6 @@ Module PairOrderedType(O:OrderedType).
  Hint Resolve Sort_Inf_NotIn.
  Hint Resolve In_inv_2 In_inv_3.
 
-End PairOrderedType.
+End KeyOrderedType.
 
 

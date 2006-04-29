@@ -32,7 +32,7 @@ Module Type DecidableType.
 End DecidableType. 
 
 
-Module PairDecidableType(D:DecidableType).
+Module KeyDecidableType(D:DecidableType).
  Import D.
 
  Section Elt.
@@ -148,4 +148,4 @@ Module PairDecidableType(D:DecidableType).
  Hint Resolve In_inv_2 In_inv_3.
 
 
-End PairDecidableType.
+End KeyDecidableType.
