@@ -1078,9 +1078,12 @@ let letin_tac with_eq name c occs gl =
   
 (* Tactics "pose proof" (usetac=None) and "assert" (otherwise) *)
 let forward usetac ipat c gl =
-  let tac = match usetac with None -> exact_no_check c | Some tac -> tac in
-  let t = refresh_universes (pf_type_of gl c) in
-  tclTHENFIRST (assert_as true ipat t) tac gl
+  match usetac with
+  | None -> 
+      let t = refresh_universes (pf_type_of gl c) in
+      tclTHENFIRST (assert_as true ipat t) (exact_no_check c) gl
+  | Some tac -> 
+      tclTHENFIRST (assert_as true ipat c) tac gl
 
 (*****************************)
 (* High-level induction      *)
