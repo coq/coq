@@ -425,11 +425,11 @@ let index_module = function
 let produce_document l =
   List.iter index_module l;
   (if !target_language=HTML then
-    let src = (Filename.concat Coq_config.coqlib "/tools/coqdoc/coqdoc.css") in
+    let src = (Filename.concat !Cdglobals.coqlib_path "/tools/coqdoc/coqdoc.css") in
     let dst = if !output_dir <> "" then Filename.concat !output_dir "coqdoc.css" else "coqdoc.css" in
       copy src dst);
   (if !target_language=LaTeX then
-    let src = (Filename.concat Coq_config.coqlib "/tools/coqdoc/coqdoc.sty") in
+    let src = (Filename.concat !Cdglobals.coqlib_path "/tools/coqdoc/coqdoc.sty") in
     let dst = if !output_dir <> "" then 
       Filename.concat !output_dir "coqdoc.sty" 
     else "coqdoc.sty" in
