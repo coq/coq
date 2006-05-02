@@ -978,19 +978,12 @@ and xlate_tac =
 		CT_coerce_TACTIC_COM_to_TACTIC_OPT tac
 	in 
 	CT_replace_with (c1, c2,id_opt,tac_opt)
-    | TacExtend (_,"rewrite", [b; cbindl]) ->
-     let b = out_gen Extraargs.rawwit_orient b in
-     let (c,bindl) = out_gen rawwit_constr_with_bindings cbindl in
-     let c = xlate_formula c and bindl = xlate_bindings bindl in
-     if b then CT_rewrite_lr (c, bindl, ctv_ID_OPT_NONE)
-     else CT_rewrite_rl (c, bindl, ctv_ID_OPT_NONE)
-    | TacExtend (_,"rewrite_in", [b; cbindl; id]) ->
-     let b = out_gen Extraargs.rawwit_orient b in
-     let (c,bindl) = out_gen rawwit_constr_with_bindings cbindl in
-     let c = xlate_formula c and bindl = xlate_bindings bindl in
-     let id = ctf_ID_OPT_SOME (xlate_ident (snd (out_gen rawwit_var id))) in
-     if b then CT_rewrite_lr (c, bindl, id)
-     else CT_rewrite_rl (c, bindl, id)
+    | TacRewrite(b,cbindl,cl) -> 
+     let cl = xlate_clause cl 
+     and c = xlate_formula (fst cbindl) 
+     and bindl = xlate_bindings (snd cbindl) in
+     if b then CT_rewrite_lr (c, bindl, cl)
+     else CT_rewrite_rl (c, bindl, cl)
     | TacExtend (_,"conditional_rewrite", [t; b; cbindl]) ->
      let t = out_gen rawwit_main_tactic t in
      let b = out_gen Extraargs.rawwit_orient b in

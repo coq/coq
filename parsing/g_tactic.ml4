@@ -261,6 +261,11 @@ GEXTEND Gram
     [ [ "in"; idl = LIST1 id_or_meta -> idl
       | -> [] ] ]
   ;
+  orient: 
+    [ [ "->" -> true 
+      | "<-" -> false
+      | -> true ]]
+  ; 
   fixdecl:
     [ [ "("; id = ident; bl=LIST0 Constr.binder; ann=fixannot;
         ":"; ty=lconstr; ")" -> (loc,id,bl,ann,ty) ] ]
@@ -411,6 +416,8 @@ GEXTEND Gram
       | IDENT "transitivity"; c = constr -> TacTransitivity c
 
       (* Equality and inversion *)
+      | IDENT "rewrite"; b = orient; c = constr_with_bindings ; cl = clause -> 
+	  TacRewrite (b,c,cl)
       | IDENT "dependent"; k =
 	  [ IDENT "simple"; IDENT "inversion" -> SimpleInversion
 	  | IDENT "inversion" -> FullInversion

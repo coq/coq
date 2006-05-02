@@ -418,6 +418,8 @@ let pr_clause_pattern pr_id = function
 	  ++ spc () ++ pr_id id) l ++
         pr_opt (fun nl -> prlist_with_sep spc int nl ++ str " Goal") glopt
 
+let pr_orient b = if b then mt () else str " <-"
+
 let pr_induction_arg prc = function
   | ElimOnConstr c -> prc c
   | ElimOnIdent (loc,id) -> pr_with_comments loc (pr_id id)
@@ -787,6 +789,9 @@ and pr_atom1 env = function
   | TacTransitivity c -> str "transitivity" ++ pr_constrarg env c
 
   (* Equality and inversion *)
+  | TacRewrite (b,c,cl) -> 
+      hov 1 (str "rewrite" ++ pr_orient b ++ spc() ++ pr_with_bindings env c ++ 
+             pr_clauses pr_ident cl) 
   | TacInversion (DepInversion (k,c,ids),hyp) ->
       hov 1 (str "dependent " ++ pr_induction_kind k ++ spc () ++
       pr_quantified_hypothesis hyp ++

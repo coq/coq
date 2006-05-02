@@ -685,8 +685,8 @@ and ct_TACTIC_COM =
   | CT_rename of ct_ID * ct_ID
   | CT_repeat of ct_TACTIC_COM
   | CT_replace_with of ct_FORMULA * ct_FORMULA * ct_ID_OPT * ct_TACTIC_OPT
-  | CT_rewrite_lr of ct_FORMULA * ct_SPEC_LIST * ct_ID_OPT
-  | CT_rewrite_rl of ct_FORMULA * ct_SPEC_LIST * ct_ID_OPT
+  | CT_rewrite_lr of ct_FORMULA * ct_SPEC_LIST * ct_CLAUSE
+  | CT_rewrite_rl of ct_FORMULA * ct_SPEC_LIST * ct_CLAUSE
   | CT_right of ct_SPEC_LIST
   | CT_ring of ct_FORMULA_LIST
   | CT_simple_user_tac of ct_ID * ct_TACTIC_ARG_LIST

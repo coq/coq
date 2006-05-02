@@ -119,6 +119,37 @@ let general_rewrite_bindings_in l2r id =
 let general_rewrite_in l2r id c = 
   general_rewrite_bindings_clause (Some id) l2r (c,NoBindings)
 
+
+let general_multi_rewrite l2r c cl = 
+  let rec do_hyps = function 
+    | [] -> tclIDTAC
+    | (id,_,_) :: l -> 
+	tclTHENFIRST (general_rewrite_bindings_in l2r id c) (do_hyps l)
+  in 
+  let rec try_do_hyps = function 
+    | [] -> tclIDTAC 
+    | id :: l -> 
+	tclTHENFIRST 
+	  (tclTRY (general_rewrite_bindings_in l2r id c)) 
+	  (try_do_hyps l)
+  in 
+  if cl.concl_occs <> [] then 
+    error "The \"at\" syntax isn't available yet for the rewrite tactic"
+  else 
+    tclTHENFIRST 
+      (if cl.onconcl then general_rewrite_bindings l2r c else tclIDTAC)
+      (match cl.onhyps with 
+	 | Some l -> do_hyps l
+	 | None -> 
+	     fun gl -> 
+	       (* try to rewrite in all hypothesis 
+		  (except maybe the rewritten one) *)
+	       let ids = match kind_of_term (fst c) with 
+		 | Var id -> list_remove id (pf_ids_of_hyps gl)
+		 | _ -> pf_ids_of_hyps gl
+	       in try_do_hyps ids gl)
+
+
 (* Conditional rewriting, the success of a rewriting is related 
    to the resolution of the conditions by a given tactic *)
 

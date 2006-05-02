@@ -1717,12 +1717,12 @@ and fTACTIC_COM = function
 | CT_rewrite_lr(x1, x2, x3) ->
    fFORMULA x1;
    fSPEC_LIST x2;
-   fID_OPT x3;
+   fCLAUSE x3;
    fNODE "rewrite_lr" 3
 | CT_rewrite_rl(x1, x2, x3) ->
    fFORMULA x1;
    fSPEC_LIST x2;
-   fID_OPT x3;
+   fCLAUSE x3;
    fNODE "rewrite_rl" 3
 | CT_right(x1) ->
    fSPEC_LIST x1;

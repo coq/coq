@@ -103,7 +103,7 @@ let mkGenDecideEqGoal rectype g =
 
 let eqCase tac = 
   (tclTHEN intro  
-  (tclTHEN (tclLAST_HYP Extratactics.h_rewriteLR)
+  (tclTHEN (tclLAST_HYP Equality.rewriteLR)
   (tclTHEN clear_last 
   tac)))
 

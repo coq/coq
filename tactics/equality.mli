@@ -43,6 +43,9 @@ val general_rewrite_bindings_in :
 val general_rewrite_in          :
   bool -> identifier -> constr -> tactic
 
+val general_multi_rewrite : 
+  bool -> constr with_bindings -> clause -> tactic
+
 val conditional_rewrite : bool -> tactic -> constr with_bindings -> tactic
 val conditional_rewrite_in :
   bool -> identifier -> tactic -> constr with_bindings -> tactic

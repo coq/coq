@@ -15,7 +15,6 @@ open Rawterm
 
 val h_discrHyp : quantified_hypothesis -> tactic
 val h_injHyp : quantified_hypothesis -> tactic
-val h_rewriteLR : constr -> tactic
 
 val refine_tac : Genarg.open_constr -> tactic
 

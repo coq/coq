@@ -720,6 +720,9 @@ let rec intern_atomic lf ist x =
   | TacTransitivity c -> TacTransitivity (intern_constr ist c)
 
   (* Equality and inversion *)
+  | TacRewrite (b,c,cl) -> 
+      TacRewrite (b,intern_constr_with_bindings ist c,
+		  clause_app (intern_hyp_location ist) cl)
   | TacInversion (inv,hyp) ->
       TacInversion (intern_inversion_strength lf ist inv,
         intern_quantified_hypothesis ist hyp)
@@ -1568,7 +1571,7 @@ and interp_match_context ist g lz lr lmr =
            db_matched_concl ist.debug (pf_env goal) concl;
            apply_hyps_context ist env lz goal mt [] lgoal mhyps hyps
         with e when is_match_catchable e ->
-          (match e with
+         (match e with
             | PatternMatchingFailure -> db_matching_failure ist.debug
             | Eval_fail s -> db_eval_failure ist.debug s
             | _ -> db_logic_failure ist.debug e);
@@ -1828,6 +1831,10 @@ and interp_atomic ist gl = function
   | TacTransitivity c -> h_transitivity (pf_interp_constr ist gl c)
 
   (* Equality and inversion *)
+  | TacRewrite (b,c,cl) -> 
+      Equality.general_multi_rewrite b 
+	(interp_constr_with_bindings ist gl c) 
+	(interp_clause ist gl cl)
   | TacInversion (DepInversion (k,c,ids),hyp) ->
       Inv.dinv k (option_map (pf_interp_constr ist gl) c)
         (interp_intro_pattern ist ids)
@@ -2073,6 +2080,7 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacTransitivity c -> TacTransitivity (subst_rawconstr subst c)
 
   (* Equality and inversion *)
+  | TacRewrite (b,c,cl) -> TacRewrite (b, subst_raw_with_bindings subst c,cl)
   | TacInversion (DepInversion (k,c,l),hyp) ->
      TacInversion (DepInversion (k,option_map (subst_rawconstr subst) c,l),hyp)
   | TacInversion (NonDepInversion _,_) as x -> x

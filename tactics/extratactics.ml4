@@ -20,6 +20,9 @@ open Names
 (* Equality *)
 open Equality
 
+(* Pierre L: for an easy implementation of "rewrite ... in <clause>", rewrite
+  has moved to g_tactics.ml4
+
 TACTIC EXTEND rewrite
 | [ "rewrite" orient(b) constr_with_bindings(c) ] ->
     [general_rewrite_bindings b c]
@@ -30,7 +33,8 @@ TACTIC EXTEND rewrite_in
     [general_rewrite_bindings_in b h c]
 END
 
-let h_rewriteLR x = h_rewrite true (x,Rawterm.NoBindings)
+let h_rewriteLR x = h_rewrite true (x,Rawterm.NoBindings) 
+*)
 
 (* Julien: Mise en commun des differentes version de replace with in by 
    TODO: améliorer l'affichage et deplacer dans extraargs
