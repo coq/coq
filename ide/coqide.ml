@@ -3358,7 +3358,10 @@ let start () =
   ignore (
     Glib.Message.set_log_handler ~domain:"Gtk" ~levels:[`ERROR;`FLAG_FATAL;
 							`WARNING;`CRITICAL]
-	    (fun ~level msg -> failwith ("Coqide internal error: " ^ msg)));
+	    (fun ~level msg -> 
+              if level land Glib.Message.log_level `WARNING <> 0
+              then Pp.warning msg
+              else failwith ("Coqide internal error: " ^ msg)));
   Command_windows.main ();
   Blaster_window.main 9;
   main files;
