@@ -232,6 +232,7 @@ stdlib/html/index.html: stdlib/index-list.html stdlib/index-body.html stdlib/ind
 stdlib/Library.coqdoc.tex: 
 	(for dir in $(LIBDIRS) ; do \
 	  $(COQDOC) -q --gallina --body-only --latex --stdout \
+	    --coqlib_path $(COQTOP) \
             -R $(COQTOP)/theories Coq "$(COQTOP)/theories/$$dir/"*.v >> $@ ; done)
 
 stdlib/Library.dvi: $(COMMON) stdlib/Library.coqdoc.tex stdlib/Library.tex

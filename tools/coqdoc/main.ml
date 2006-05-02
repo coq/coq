@@ -54,6 +54,7 @@ let usage () =
   prerr_endline "  --no-externals      no links to Coq standard library";
   prerr_endline "  --coqlib <url>      set URL for Coq standard library";
   prerr_endline "                      (default is http://coq.inria.fr/library/)";
+  prerr_endline "  --coqlib_path <dir> set the path where Coq files are installed";
   prerr_endline "  -R <dir> <coqdir>   map physical dir to Coq dir";
   prerr_endline "  --latin1            set ISO-8859-1 input language";
   prerr_endline "  --utf8              set UTF-8 input language";
@@ -316,6 +317,10 @@ let parse () =
     | ("--coqlib" | "-coqlib") :: u :: rem ->
 	Cdglobals.coqlib := u; parse_rec rem
     | ("--coqlib" | "-coqlib") :: [] ->
+	usage ()
+    | ("--coqlib_path" | "-coqlib_path") :: d :: rem ->
+	Cdglobals.coqlib_path := d; parse_rec rem
+    | ("--coqlib_path" | "-coqlib_path") :: [] ->
 	usage ()
     | f :: rem -> 
 	add_file (what_file f); parse_rec rem
