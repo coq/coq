@@ -75,3 +75,6 @@ val add_setoid :
 
 val new_named_morphism :
  Names.identifier -> constr_expr -> morphism_signature option -> unit
+
+val relation_table_find : constr -> relation
+val relation_table_mem : constr -> bool
