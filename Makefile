@@ -276,7 +276,9 @@ JPROVERCMO=\
 FUNINDCMO=\
   contrib/funind/tacinvutils.cmo contrib/funind/tacinv.cmo \
   contrib/funind/indfun_common.cmo contrib/funind/rawtermops.cmo \
-  contrib/funind/rawterm_to_relation.cmo contrib/funind/new_arg_principle.cmo \
+  contrib/funind/rawterm_to_relation.cmo \
+  contrib/funind/functional_principles_proofs.cmo \
+  contrib/funind/functional_principles_types.cmo \
   contrib/funind/invfun.cmo contrib/funind/indfun.cmo \
   contrib/funind/indfun_main.cmo
 

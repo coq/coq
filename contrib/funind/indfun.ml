@@ -1,7 +1,6 @@
 open Util
 open Names
 open Term
-
 open Pp
 open Indfun_common
 open Libnames
@@ -29,6 +28,11 @@ let interp_casted_constr_with_implicits sigma env impls c  =
   Constrintern.intern_gen false sigma env ~impls:([],impls) 
     ~allow_soapp:false  ~ltacvars:([],[]) c
 
+
+(* 
+   Construct a fixpoint as a Rawterm 
+   and not as a constr
+*)
 let build_newrecursive
 (lnameargsardef)  =
   let env0 = Global.env()
@@ -78,6 +82,7 @@ let compute_annot (name,annot,args,types,body) =
     | Some r -> (name,r,args,types,body)
 
 
+(* Checks whether or not the mutual bloc is recursive *) 
 let rec is_rec names = 
   let names = List.fold_right Idset.add names Idset.empty in 
   let check_id id names =  Idset.mem id names in 
@@ -85,7 +90,7 @@ let rec is_rec names =
     | RVar(_,id) -> check_id id names
     | RRef _ | REvar _ | RPatVar _ | RSort _ |  RHole _ | RDynamic _ -> false
     | RCast(_,b,_,_) -> lookup names b
-    | RRec _ -> assert false 
+    | RRec _ -> error "RRec not handled"
     | RIf(_,b,_,lhs,rhs) -> 
 	(lookup names b) || (lookup names lhs) || (lookup names rhs)
     | RLetIn(_,na,t,b) | RLambda(_,na,t,b) | RProd(_,na,t,b)  -> 
@@ -143,7 +148,7 @@ let generate_principle
 	       let princ_type = 
 		 (Global.lookup_constant princ).Declarations.const_type
 	       in
-	       New_arg_principle.generate_functional_principle
+	       Functional_principles_types.generate_functional_principle
 		 interactive_proof 
 		 princ_type
 		 None
@@ -175,12 +180,12 @@ let register_struct is_rec fixpoint_exprl =
     | _ -> 
 	Command.build_recursive fixpoint_exprl (Options.boxed_definitions())
 
-
-let generate_correction_proof_wf tcc_lemma_ref   
-    is_mes f_ref eq_ref rec_arg_num rec_arg_type nb_args relation
+let generate_correction_proof_wf f_ref tcc_lemma_ref   
+    is_mes functional_ref eq_ref rec_arg_num rec_arg_type nb_args relation
     (_: int) (_:Names.constant array) (_:Term.constr array) (_:int) : Tacmach.tactic = 
-  Recdef.prove_principle  tcc_lemma_ref
-    is_mes f_ref eq_ref rec_arg_num rec_arg_type nb_args relation
+  Functional_principles_proofs.prove_principle_for_gen
+    (f_ref,functional_ref,eq_ref)
+    tcc_lemma_ref is_mes  rec_arg_num rec_arg_type relation
 
 
 let register_wf ?(is_mes=false) fname wf_rel_expr wf_arg args ret_type body
@@ -218,11 +223,11 @@ let register_wf ?(is_mes=false) fname wf_rel_expr wf_arg args ret_type body
 		    [(f_app_args,None);(body,None)])
   in
   let eq = Command.generalize_constr_expr unbounded_eq args in 
-  let hook tcc_lemma_ref f_ref eq_ref rec_arg_num rec_arg_type nb_args relation =
+  let hook f_ref tcc_lemma_ref functional_ref eq_ref rec_arg_num rec_arg_type nb_args relation =
     try 
       pre_hook 
-	(generate_correction_proof_wf tcc_lemma_ref is_mes
-	   f_ref eq_ref rec_arg_num rec_arg_type nb_args relation
+	(generate_correction_proof_wf f_ref tcc_lemma_ref is_mes
+	   functional_ref eq_ref rec_arg_num rec_arg_type nb_args relation
 	);
       Command.save_named true
     with e -> 
@@ -351,7 +356,7 @@ let do_generate_principle register_built interactive_proof fixpoint_exprl  =
 	    recdefs 
 	    interactive_proof
 	    true
-	    (New_arg_principle.prove_princ_for_struct interactive_proof);
+	    (Functional_principles_proofs.prove_princ_for_struct interactive_proof);
 	  true
 						 
   in

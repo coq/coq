@@ -61,8 +61,7 @@ let is_rec scheme_info =
 let choose_dest_or_ind scheme_info =
     if is_rec scheme_info
     then Tactics.new_induct
-    else
-      Tactics.new_destruct
+    else Tactics.new_destruct
 
 
 TACTIC EXTEND newfunind
@@ -178,7 +177,7 @@ END
 VERNAC COMMAND EXTEND NewFunctionalScheme
    ["New" "Functional" "Scheme" fun_scheme_args(fas) ] ->
     [
-      New_arg_principle.make_scheme fas
+      Functional_principles_types.make_scheme fas
     ]
 END
 
@@ -186,7 +185,7 @@ END
 VERNAC COMMAND EXTEND NewFunctionalCase
    ["New" "Functional" "Case" fun_scheme_arg(fas) ] ->
     [
-      New_arg_principle.make_case_scheme fas
+      Functional_principles_types.make_case_scheme fas
     ]
 END
 

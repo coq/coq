@@ -378,7 +378,7 @@ let rec proofPrinc mi: constr funind =
   (* <pcase> Cases b of arrPt end.*)
   | Case (cinfo, pcase, b, arrPt) -> 
      let prod_pcase,_ = decompose_lam pcase in
-     let nmeb,_ = List.hd prod_pcase in
+     let _nmeb,_ = List.hd prod_pcase in
      let newb'= apply_leqtrpl_t b mi.lst_eqs in
      let type_of_b = Typing.type_of mi.env mi.sigma b in
      (* Replace the recursive calls to the function by calls to the constant *)
@@ -428,7 +428,7 @@ let rec proofPrinc mi: constr funind =
      let varnames = List.map snd mi.lst_vars in
      let nb_vars = List.length varnames in
      let nb_eqs = List.length mi.lst_eqs in
-     let eqrels = List.map fst mi.lst_eqs in
+     let _eqrels = List.map fst mi.lst_eqs in
      (* [terms_recs]: appel rec du fixpoint, On concatène les appels recs
         trouvés dans les let in et les Cases avec ceux trouves dans u (ie
         mi.mimick). *)

@@ -50,15 +50,16 @@ let h_intros l =
   tclMAP h_intro l
 
 let do_observe_tac s tac g =
-  let goal = begin try (Printer.pr_goal (sig_it g)) with _ -> assert false end in
+  let goal = begin (Printer.pr_goal (sig_it g)) end in
  try let v = tac g in msgnl (goal ++ fnl () ++ (str s)++(str " ")++(str "finished")); v
  with e ->
    msgnl (str "observation "++str s++str " raised exception " ++ 
-	    Cerrors.explain_exn e ++ str "on goal " ++ goal ); 
+	    Cerrors.explain_exn e ++ str " on goal " ++ goal ); 
    raise e;;
 
 
-let observe_tac s tac g = tac g
+let observe_tac s tac g = 
+  tac g
 
 
 let hyp_ids = List.map id_of_string
@@ -121,7 +122,6 @@ let rec (find_call_occs:
  fun f expr ->
   match (kind_of_term expr) with
     App (g, args) when g = f -> 
-      (* For now we suppose that the function takes only one argument. *)
       (fun l -> List.hd l), [Array.to_list args]
   | App (g, args) ->
      let (largs: constr list) = Array.to_list args in
@@ -222,8 +222,8 @@ let lt = function () -> (coq_constant "lt")
 
 let  mkCaseEq a  : tactic =
      (fun g ->
-(* commentaire de Yves: on pourra avoir des problemes si
-   a n'est pas bien type dans l'environnement du but *)
+	(* commentaire de Yves: on pourra avoir des problemes si
+	   a n'est pas bien type dans l'environnement du but *)
        let type_of_a = pf_type_of g a in
        (tclTHEN (generalize [mkApp(delayed_force refl_equal, [| type_of_a; a|])])
 	  (tclTHEN 
@@ -426,8 +426,8 @@ let rec introduce_all_values is_mes acc_inv func context_fn
     (match args with
     [] -> 
       tclTHENLIST
-	[split(ImplicitBindings
-		 [context_fn (List.map mkVar (List.rev values))]);
+	[observe_tac "split" (split(ImplicitBindings
+		 [context_fn (List.map mkVar (List.rev values))]));
 	 observe_tac "introduce_all_equalities" (introduce_all_equalities func eqs
 	   (List.rev values) (List.rev specs) (delayed_force coq_O) [] [])]
   | arg::args ->
@@ -436,23 +436,25 @@ let rec introduce_all_values is_mes acc_inv func context_fn
 	let rec_res = next_global_ident_away true rec_res_id ids in
         let ids = rec_res::ids in
 	let hspec = next_global_ident_away true hspec_id ids in
-	let tac = introduce_all_values is_mes acc_inv func context_fn eqs 
-	  hrec args
-	  (rec_res::values)(hspec::specs) in
+	let tac =  
+	  observe_tac "introduce_all_values" (
+	    introduce_all_values is_mes acc_inv func context_fn eqs
+	      hrec args
+	      (rec_res::values)(hspec::specs)) in
 	(tclTHENS
-	   (simplest_elim (mkApp(mkVar hrec, Array.of_list arg)))
+	   (observe_tac "elim h_rec" (simplest_elim (mkApp(mkVar hrec, Array.of_list arg))))
 	   [tclTHENLIST [h_intros [rec_res; hspec];
 			 tac]; 
 	    (tclTHENS
-		 (apply (Lazy.force acc_inv))
-		 [ h_assumption
+		 (observe_tac "acc_inv" (apply (Lazy.force acc_inv)))
+		 [ observe_tac "h_assumption" h_assumption
 		 ;
-		   (fun g ->  
-		      tclUSER
-			is_mes
-			(Some (hrec::hspec::(retrieve_acc_var g)@specs))
-			g
-		   )
+		  observe_tac "user proof"  (fun g ->  
+					       tclUSER
+						 is_mes
+						 (Some (hrec::hspec::(retrieve_acc_var g)@specs))
+						 g
+					    )
 		 ]
 	    )
 	   ]) g)
@@ -466,48 +468,6 @@ let rec_leaf_terminate is_mes acc_inv hrec (func:global_reference) eqs expr =
       observe_tac "introduce_all_values" 
 	(introduce_all_values is_mes acc_inv func context_fn eqs  hrec args  [] [])
 
-(* 
-let rec proveterminate is_mes acc_inv (hrec:identifier)  
-  (f_constr:constr) (func:global_reference) (eqs:constr list) (expr:constr)  =
-try
-(*  let _ = msgnl (str "entering proveterminate") in *)
-  let v =
-  match (kind_of_term expr) with
-      Case (_, t, a, l) -> 
-	(match find_call_occs f_constr a with
-	     _,[] ->
-      	       tclTHENS (fun g ->
-(* 			   let _ = msgnl(str "entering mkCaseEq") in *)
-			   let v = (mkCaseEq a) g in 
-(* 			   let _ = msgnl (str "exiting mkCaseEq") in *)
-			   v
-			)
-   	         (List.map (mk_intros_and_continue true
-                              (proveterminate is_mes acc_inv hrec f_constr func)
-                              eqs)
-	            (Array.to_list l))
-	   | _, _::_ -> 
-	       (
-		 match find_call_occs  f_constr expr with
-	     	     _,[] -> observe_tac "base_leaf" (base_leaf func eqs expr)
-		   | _, _:: _ -> 
-		       observe_tac "rec_leaf" (rec_leaf is_mes acc_inv hrec  func eqs expr)
-	       )
-	)
-    | _ ->  (match find_call_occs  f_constr expr with
-	     	_,[] -> 
-		  (try 
-		    observe_tac "base_leaf" (base_leaf func eqs expr)
-		   with e -> (msgerrnl (str "failure in base case");raise e ))
-	       | _, _::_ -> 
-		   observe_tac "rec_leaf" (rec_leaf is_mes acc_inv hrec  func eqs expr)
-	 ) in
-  (*  let _ = msgnl(str "exiting proveterminate") in *)
-  v
-with e -> 
-  msgerrnl(str "failure in proveterminate"); 
-  raise e
-*)
 let proveterminate is_mes acc_inv (hrec:identifier)  
   (f_constr:constr) (func:global_reference) base_leaf rec_leaf = 
   let rec proveterminate (eqs:constr list) (expr:constr)  =
@@ -691,7 +651,7 @@ let whole_start is_mes func input_type relation rec_arg_num  : tactic =
       let f_id =
 	match f_name with
 	  | Name f_id -> next_global_ident_away true f_id ids
-	  | Anonymous -> assert false 
+	  | Anonymous -> anomaly "Anonymous function"
       in
       let n_names_types,_ = decompose_lam body1 in 
       let n_ids,ids = 
@@ -701,7 +661,7 @@ let whole_start is_mes func input_type relation rec_arg_num  : tactic =
 	       | Name id -> 
 		   let n_id = next_global_ident_away true id ids in 
 		   n_id::n_ids,n_id::ids
-	       | _ -> assert false
+	       | _ -> anomaly "anonymous argument"
 	  )
 	  ([],(f_id::ids))
 	  n_names_types
@@ -747,7 +707,7 @@ let build_and_l l =
   let mk_and p1 p2 = 
     Term.mkApp(and_constr,[|p1;p2|]) in 
   let rec f  = function 
-    | [] -> assert false 
+    | [] -> anomaly "empty list of subgoals!" 
     | [p] -> p,tclIDTAC,1 
     | p1::pl -> 
 	let c,tac,nb = f pl in 
@@ -764,43 +724,6 @@ let build_new_goal_type () =
   let res = build_and_l sub_gls_types in 
   res
   
-
-
-let interpretable_as_section_decl d1 d2 = match d1,d2 with
-  | (_,Some _,_), (_,None,_) -> false
-  | (_,Some b1,t1), (_,Some b2,t2) -> eq_constr b1 b2 & eq_constr t1 t2
-  | (_,None,t1), (_,_,t2) -> eq_constr t1 t2
-
-
-
-
-(* let final_decompose lemma n : tactic =   *)
-(*   fun gls ->  *)
-(*     let hid = next_global_ident_away true h_id (pf_ids_of_hyps gls) in  *)
-(*     tclTHENSEQ  *)
-(*       [ *)
-(* 	generalize [lemma]; *)
-(* 	tclDO  *)
-(* 	  n  *)
-(* 	  (tclTHENSEQ  *)
-(* 	     [h_intro hid; *)
-(* 	      h_case (mkVar hid,Rawterm.NoBindings);  *)
-(* 	      clear [hid];  *)
-(* 	      intro_patterns [Genarg.IntroWildcard] *)
-(* 	     ] *)
-(* 	  ); *)
-(* 	h_intro hid; *)
-(* 	tclTRY  *)
-(* 	  (tclTHENSEQ [h_case (mkVar hid,Rawterm.NoBindings);  *)
-(* 		       clear [hid];  *)
-(* 		       h_intro hid; *)
-(* 		       intro_patterns [Genarg.IntroWildcard] *)
-(* 		      ]); *)
-(* 	e_resolve_constr (mkVar hid); *)
-(* 	e_assumption *)
-(*       ] *)
-(*       gls *)
-
 
     
 let prove_with_tcc lemma _ : tactic = 
@@ -823,20 +746,14 @@ let open_new_goal ref goal_name (gls_type,decompose_and_tac,nb_goal)   =
   let name = match goal_name with 
     | Some s -> s 
     | None   ->  
-	try (add_suffix current_proof_name "_subproof") with _ -> assert false 
-	  
+	try (add_suffix current_proof_name "_subproof") 
+	with _ -> anomaly "open_new_goal with an unamed theorem"
   in  
   let sign = Global.named_context () in
   let sign = clear_proofs sign in
   let na = next_global_ident_away false name [] in
   if occur_existential gls_type then
     Util.error "\"abstract\" cannot handle existentials";
-  (*   let v =     let lemme =  mkConst (Lib.make_con na) in  *)
-(*     Tactics.exact_no_check  *)
-(*       (applist (lemme,  *)
-(* 		List.rev (Array.to_list (Sign.instance_from_named_context sign)))) *)
-(*       gls in  *)
-  
   let hook _ _ = 
     let lemma = mkConst (Lib.make_con na) in 
     Array.iteri (fun i _ -> by (observe_tac "tac" (prove_with_tcc lemma i))) (Array.make nb_goal ());
@@ -850,10 +767,10 @@ let open_new_goal ref goal_name (gls_type,decompose_and_tac,nb_goal)   =
     gls_type 
     hook ;
   by (decompose_and_tac);
-  pp (Printer.pr_open_subgoals());
+  if Options.is_verbose () then (pp (Printer.pr_open_subgoals()));
   ()
     
-let com_terminate ref is_mes fonctional_ref input_type relation rec_arg_num
+let com_terminate tcc_lemma_name tcc_lemma_ref is_mes fonctional_ref input_type relation rec_arg_num
     thm_name hook =
   let (evmap, env) = Command.get_current_context() in
   start_proof thm_name
@@ -861,9 +778,9 @@ let com_terminate ref is_mes fonctional_ref input_type relation rec_arg_num
     (hyp_terminates fonctional_ref) hook;
   by (observe_tac "whole_start" (whole_start is_mes fonctional_ref
 				       input_type relation rec_arg_num ));
-  open_new_goal ref
-     None
-     (build_new_goal_type ())
+  open_new_goal tcc_lemma_ref
+    (Some tcc_lemma_name)
+    (build_new_goal_type ())
   
 
     
@@ -1115,10 +1032,10 @@ let (com_eqn : identifier ->
      Command.save_named true);;
 
 
-let recursive_definition is_mes f type_of_f r rec_arg_num eq 
+let recursive_definition is_mes function_name type_of_f r rec_arg_num eq 
     generate_induction_principle : unit =
   let function_type = interp_constr Evd.empty (Global.env()) type_of_f in
-  let env = push_rel (Name f,None,function_type) (Global.env()) in
+  let env = push_rel (Name function_name,None,function_type) (Global.env()) in
   let res_vars,eq' = decompose_prod (interp_constr Evd.empty env eq) in 
   let res = 
 (*     Pp.msgnl (str "res_var :=" ++ Printer.pr_lconstr_env (push_rel_context (List.map (function (x,t) -> (x,None,t)) res_vars) env) eq'); *)
@@ -1126,17 +1043,16 @@ let recursive_definition is_mes f type_of_f r rec_arg_num eq
 (*     Pp.msgnl (str "eq' := " ++ str (string_of_int rec_arg_num)); *)
     match kind_of_term eq' with 
       | App(e,[|_;_;eq_fix|]) -> 
-		  mkLambda (Name f,function_type,compose_lam res_vars eq_fix)
+		  mkLambda (Name function_name,function_type,compose_lam res_vars eq_fix)
       | _ -> failwith "Recursive Definition (res not eq)"
   in
   let pre_rec_args,function_type_before_rec_arg = decompose_prod_n (rec_arg_num - 1) function_type in 
   let (_, rec_arg_type, _) = destProd function_type_before_rec_arg in
   let arg_types = List.rev_map snd (fst (decompose_prod_n (List.length res_vars) function_type)) in
-  let equation_id = add_suffix f "_equation" in
-  let functional_id =  add_suffix f "_F" in
-  let term_id = add_suffix f "_terminate" in
+  let equation_id = add_suffix function_name "_equation" in
+  let functional_id =  add_suffix function_name "_F" in
+  let term_id = add_suffix function_name "_terminate" in
   let functional_ref = declare_fun functional_id (IsDefinition Definition) res in
-(*   let _ = Pp.msgnl (str "res := " ++ Printer.pr_lconstr res) in *)
   let env_with_pre_rec_args = push_rel_context(List.map (function (x,t) -> (x,None,t)) pre_rec_args) env in 
   let relation = 
     interp_constr
@@ -1144,242 +1060,61 @@ let recursive_definition is_mes f type_of_f r rec_arg_num eq
       env_with_pre_rec_args
       r
   in 
+  let tcc_lemma_name = add_suffix function_name "_tcc" in
   let tcc_lemma_constr = ref None in 
 (*   let _ = Pp.msgnl (str "relation := " ++ Printer.pr_lconstr_env env_with_pre_rec_args relation) in *)
   let hook _ _ =   
     let term_ref = Nametab.locate (make_short_qualid term_id) in
-    let f_ref = declare_f f (IsProof Lemma) arg_types term_ref in
-(*     let _ = message "start second proof" in *)
-    com_eqn equation_id functional_ref f_ref term_ref eq;
+    let f_ref = declare_f function_name (IsProof Lemma) arg_types term_ref in
+(*     message "start second proof"; *)
+    begin 
+      try com_eqn equation_id functional_ref f_ref term_ref eq
+      with e -> 
+	begin 
+	  ignore(try Vernacentries.vernac_reset_name (Util.dummy_loc,functional_id) with _ -> ());
+	  raise e 
+	end
+    end;
     let eq_ref = Nametab.locate (make_short_qualid equation_id ) in
-    generate_induction_principle tcc_lemma_constr
+    let f_ref = destConst (constr_of_reference f_ref) 
+    and functional_ref = destConst (constr_of_reference functional_ref) 
+    and eq_ref = destConst (constr_of_reference eq_ref) in
+    generate_induction_principle f_ref tcc_lemma_constr
       functional_ref eq_ref rec_arg_num rec_arg_type (nb_prod res) relation;
     ()
 
   in
-  com_terminate 
-    tcc_lemma_constr
-    is_mes functional_ref
-    rec_arg_type
-    relation rec_arg_num
-    term_id
-    hook 
-;;
-
-
-
-(* let observe_tac = do_observe_tac  *)
-
-let base_leaf_princ eq_cst functional_ref eqs expr = 
-  tclTHENSEQ 
-    [rewriteLR (mkConst eq_cst);
-     tclTRY (list_rewrite true eqs);
-     gen_eauto(* default_eauto *) false (false,5) [] (Some [])
-    ]
-
-
-
-let prove_with_tcc tcc_lemma_constr eqs : tactic = 
-  match !tcc_lemma_constr with 
-    | None -> tclIDTAC_MESSAGE (str "No tcc proof !!")
-    | Some lemma -> 
-	fun gls ->
-	  let hid = next_global_ident_away true h_id (pf_ids_of_hyps gls) in 
-	  tclTHENSEQ 
-	    [
-	      generalize [lemma];
-	      h_intro hid;
-	      Elim.h_decompose_and (mkVar hid); 
-	      tclTRY(list_rewrite true eqs);
-	      gen_eauto(* default_eauto *) false (false,5) [] (Some [])
-       (* 	      default_auto *)
-	    ]
-	    gls
-	    
-	    
-
-let finalize_rec_leaf_princ_with tcc_lemma_constr is_mes hrec acc_inv  eqs br = 
-  fun g -> 
-    tclTHENSEQ [
-      Eauto.e_resolve_constr (mkVar br);
-      tclFIRST
-	[
-	  e_assumption;
-	  reflexivity;
-	  tclTHEN (apply (mkVar hrec))
-	  (tclTHENS
-	     (* (try *) (observe_tac "applying inversion" (apply (Lazy.force acc_inv))) 
-(* 	      with e -> Pp.msgnl (Printer.pr_lconstr (Lazy.force acc_inv));raise e *)
-(* 	     ) *)
-	     [ h_assumption
-	     ;
-	      tclTHEN
-		(fun g ->
-		   tclUSER
-		     is_mes
-		     (Some (hrec::(retrieve_acc_var g)))
-		     g
-		)
-		(fun g -> prove_with_tcc tcc_lemma_constr eqs g)
-	     ]
-	  );
-	  gen_eauto(* default_eauto *) false (false,5) [] (Some []);
-	(fun g -> tclIDTAC_MESSAGE (str "here" ++ Printer.pr_goal (sig_it g)) g)
-      ]
-    ]
-      g
-    
-let rec_leaf_princ
-    tcc_lemma_constr
-    eq_cst
-    branches_names 
-    is_mes
-    acc_inv
-    hrec
-    (functional_ref:global_reference) 
-    eqs
-    expr
-    = 
-  fun g -> 
-  tclTHENSEQ 
-    [ rewriteLR (mkConst eq_cst);
-      list_rewrite true eqs;
-      tclFIRST 
-	(List.map (finalize_rec_leaf_princ_with tcc_lemma_constr is_mes hrec acc_inv eqs) branches_names)
-    ]
-    g
-
-let fresh_id avoid na = 
-  let id =  
-    match na with 
-      | Name id -> id 
-      | Anonymous -> h_id 
-  in 
-  next_global_ident_away true id avoid
-
-
-
-let prove_principle tcc_lemma_ref is_mes functional_ref 
-    eq_ref rec_arg_num rec_arg_type nb_args relation = 
-(*  f_ref eq_ref rec_arg_num rec_arg_type nb_args relation *)
-  let eq_cst =   
-    match eq_ref with 
-	ConstRef sp -> sp 
-      | _ -> assert false 
-  in
-  fun g -> 
-    let type_of_goal = pf_concl g in 
-    let goal_ids = pf_ids_of_hyps g in 
-    let goal_elim_infos = compute_elim_sig type_of_goal in 
-    let params_names,ids = List.fold_left 
-      (fun (params_names,avoid) (na,_,_) -> 
-	 let new_id = fresh_id avoid na in 
-	 (new_id::params_names,new_id::avoid)
-      )
-      ([],goal_ids)
-      goal_elim_infos.params
-    in
-    let predicates_names,ids = 
-      List.fold_left 
-	(fun (predicates_names,avoid) (na,_,_) -> 
-	   let new_id = fresh_id avoid na in 
-	   (new_id::predicates_names,new_id::avoid)
-	)
-	([],ids)
-	goal_elim_infos.predicates
-    in
-    let branches_names,ids = 
-      List.fold_left 
-	(fun (branches_names,avoid) (na,_,_) -> 
-	   let new_id = fresh_id avoid na in 
-	   (new_id::branches_names,new_id::avoid)
-	)
-	([],ids)
-	goal_elim_infos.branches
-    in
-    let to_intro = params_names@predicates_names@branches_names in 
-    let nparams = List.length params_names in 
-    let rec_arg_num = rec_arg_num - nparams in 
-    begin 
-      tclTHEN 
-	(h_intros to_intro)
-	(observe_tac (string_of_int (rec_arg_num)) 
-	   (fun g -> 
-	      let ids = ids_of_named_context (pf_hyps g) in
-	      let func_body = (def_of_const (constr_of_reference functional_ref)) in
-(* 	      let _ = Pp.msgnl (Printer.pr_lconstr func_body) in  *)
-	      let (f_name, _, body1) = destLambda func_body in
-	      let f_id =
-		match f_name with
-		  | Name f_id -> next_global_ident_away true f_id ids
-		  | Anonymous -> assert false 
-	      in
-	      let n_names_types,_ = decompose_lam body1 in 
-	      let n_ids,ids = 
-		List.fold_left 
-		  (fun (n_ids,ids) (n_name,_) -> 
-		     match n_name with 
-		       | Name id -> 
-			   let n_id = next_global_ident_away true id ids in 
-			   n_id::n_ids,n_id::ids
-		       | _ -> assert false
-		  )
-		  ([],(f_id::ids))
-		  n_names_types
-	      in
-	      let rec_arg_id = List.nth n_ids (rec_arg_num - 1 ) in
-	      let expr = 
-		instantiate_lambda func_body
-		  (mkVar f_id::(List.map mkVar n_ids)) 
-	      in 
-	      start 
-		is_mes
-		rec_arg_type
-		ids
-		(snd (list_chop nparams n_ids))
-		(substl (List.map mkVar params_names) relation)
-		(rec_arg_num)
-		rec_arg_id
-		(fun hrec acc_inv g ->  
-		   (proveterminate 
-		      is_mes
-		      acc_inv 
-		      hrec
-		      (mkVar f_id)
-		      functional_ref
-		      (base_leaf_princ eq_cst)
-		      (rec_leaf_princ tcc_lemma_ref eq_cst branches_names)
-		      []
-		      expr
-		   )
-		     g 
-		)
-		(if is_mes 
-		 then 
-		   tclUSER_if_not_mes 
-		 else fun _ -> prove_with_tcc tcc_lemma_ref [])
-	   
-		g 
-	   )
-	)
+  try 
+    com_terminate 
+      tcc_lemma_name
+      tcc_lemma_constr
+      is_mes functional_ref
+      rec_arg_type
+      relation rec_arg_num
+      term_id
+      hook 
+  with e -> 
+    begin
+      try Vernacentries.vernac_reset_name (Util.dummy_loc,functional_id) with _ -> ();
+	raise e 
     end
-      g
-
 
 
 VERNAC COMMAND EXTEND RecursiveDefinition
   [ "Recursive" "Definition" ident(f) constr(type_of_f) constr(r) constr(wf)
      constr(proof) integer_opt(rec_arg_num) constr(eq) ] ->
-  [ ignore(proof);ignore(wf);
+  [ 
+    warning "Recursive Definition is obsolete. Use Function instead";
+    ignore(proof);ignore(wf);
     let rec_arg_num = 
       match rec_arg_num with 
 	| None -> 1
 	| Some n -> n 
     in
-    recursive_definition false f type_of_f r rec_arg_num eq (fun _ _ _ _ _  _ _ -> ())]
+    recursive_definition false f type_of_f r rec_arg_num eq (fun _ _ _ _ _  _ _ _ -> ())]
 | [ "Recursive" "Definition" ident(f) constr(type_of_f) constr(r) constr(wf)
      "[" ne_constr_list(proof) "]" constr(eq) ] ->
-  [ ignore(proof);ignore(wf);recursive_definition false f type_of_f r 1 eq  (fun  _ _  _ _ _ _ _ -> ())]
+  [ ignore(proof);ignore(wf);recursive_definition false f type_of_f r 1 eq  (fun  _ _  _ _ _ _ _ _ -> ())]
 END
 
 

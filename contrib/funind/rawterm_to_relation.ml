@@ -17,18 +17,11 @@ let observennl strm =
   then Pp.msg strm 
   else ()
 
-(* type binder_type =  *)
-(*   | Lambda  *)
-(*   | Prod  *)
-(*   | LetIn *)
-  
-(* type raw_context = (binder_type*name*rawconstr) list *)
 
 type binder_type =
   | Lambda of name 
   | Prod of name 
   | LetIn of name
-(*   | LetTuple of name list * name  *)
 
 type raw_context = (binder_type*rawconstr) list
 
@@ -44,8 +37,6 @@ let compose_raw_context =
       | Lambda n -> mkRLambda(n,t,acc)
       | Prod n -> mkRProd(n,t,acc)
       | LetIn n -> mkRLetIn(n,t,acc)
-(*       | LetTuple (nal,na) ->  *)
-(* 	  RLetTuple(dummy_loc,nal,(na,None),t,acc) *)
   in
   List.fold_right compose_binder
   
@@ -245,11 +236,6 @@ let combine_prod n t b =
 let combine_letin n t b = 
   { context = t.context@((LetIn n,t.value)::b.context); value = b.value}
 
-(* let combine_tuple nal na b in_e =  *)
-(*   {  *)
-(*     context = b.context@(LetTuple(nal,na),b.value)::in_e.context;  *)
-(*     value = in_e.value *)
-(*   } *)
 
 let mk_result ctxt value avoid = 
   { 
@@ -624,7 +610,6 @@ and build_entry_lc_from_case_term funname make_discr patterns_to_prevent brl avo
 	    avoid
 	    matched_expr
 	in
-(* 	let ids = List.map (fun id -> Prod (Name id),mkRHole ()) idl in *)
       	let those_pattern_preconds =
 (	  List.flatten
 	    (
