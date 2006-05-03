@@ -291,10 +291,18 @@ and eqappr cv_pb infos appr1 appr2 cuniv =
            convert_stacks infos lft1 lft2 v1 v2 u2
          else raise NotConvertible
 
-    | ( (FLetIn _, _) | (_, FLetIn _) | (FCases _,_) | (_,FCases _)
-      | (FApp _,_) | (_,FApp _) | (FCLOS _, _) | (_,FCLOS _)
-      | (FLIFT _, _) | (_,FLIFT _) | (FLOCKED,_) | (_,FLOCKED)) ->
-        anomaly "Unexpected term returned by fhnf"
+    (* Can happen because whd_stack on one arg may have side-effects
+       on the other arg and coulb be no more in hnf... *)
+    | ( (FLetIn _, _) | (FCases _,_) | (FApp _,_)
+      | (FCLOS _, _) | (FLIFT _, _)) ->
+        eqappr cv_pb infos (lft1, whd_stack infos hd1 v1) appr2 cuniv
+
+    | ( (_, FLetIn _) | (_,FCases _) | (_,FApp _)
+      | (_,FCLOS _) | (_,FLIFT _)) ->
+        eqappr cv_pb infos (lft1, whd_stack infos hd1 v1) appr2 cuniv
+
+    (* Should not happen because whd_stack unlocks references *)
+    | ((FLOCKED,_) | (_,FLOCKED)) -> assert false
 
      | _ -> raise NotConvertible
 

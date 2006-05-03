@@ -559,7 +559,7 @@ let rec lft_fconstr n ft =
     | FFix(fx,e) -> {norm=Cstr; term=FFix(fx,subs_shft(n,e))}
     | FCoFix(cfx,e) -> {norm=Cstr; term=FCoFix(cfx,subs_shft(n,e))}
     | FLIFT(k,m) -> lft_fconstr (n+k) m
-    | FLOCKED -> anomaly "lft_constr found locked term"
+    | FLOCKED -> assert false
     | _ -> {norm=ft.norm; term=FLIFT(n,ft)}
 let lift_fconstr k f =
   if k=0 then f else lft_fconstr k f
@@ -781,8 +781,7 @@ let rec to_constr constr_fun lfts v =
         let fr = mk_clos2 env t in
         let unfv = update v (fr.norm,fr.term) in
         to_constr constr_fun lfts unfv
-    | FLOCKED -> (*anomaly "Closure.to_constr: found locked term"*)
-mkVar(id_of_string"_LOCK_")
+    | FLOCKED -> assert false (*mkVar(id_of_string"_LOCK_")*)
 
 (* This function defines the correspondance between constr and
    fconstr. When we find a closure whose substitution is the identity,
@@ -958,7 +957,7 @@ let contract_fix_vect fix =
           (bds.(i),
 	   (fun j -> { norm = Cstr; term = FCoFix ((j,rdcl),env) }),
 	   env, Array.length bds)
-      | _ -> anomaly "Closure.contract_fix_vect: not a (co)fixpoint" 
+      | _ -> assert false
   in
   let rec subst_bodies_from_i i env =
     if i = nfix then
@@ -978,7 +977,7 @@ let rec knh m stk =
   match m.term with
     | FLIFT(k,a) -> knh a (zshift k stk)
     | FCLOS(t,e) -> knht e t (zupdate m stk)
-    | FLOCKED -> anomaly "Closure.knh: found lock"
+    | FLOCKED -> assert false
     | FApp(a,b) -> knh a (append_stack b (zupdate m stk))
     | FCases(ci,p,t,br) -> knh t (Zcase(ci,p,br)::zupdate m stk)
     | FFix(((ri,n),(_,_,_)),_) ->
