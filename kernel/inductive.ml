@@ -176,7 +176,7 @@ let is_correct_arity env c pj ind mip params =
             try conv env a1 a1'
             with NotConvertible -> raise (LocalArity None) in
           srec (push_rel (na1,None,a1) env) a2 a2' (Constraint.union u univ)
-      | Prod (_,a1,a2), _ -> 
+      | Prod (_,a1,a2), _ -> (* whnf of t was not needed here! *)
           let k = whd_betadeltaiota env a2 in 
           let ksort = match kind_of_term k with
             | Sort s -> family_of_sort s 
@@ -429,6 +429,7 @@ let inductive_of_fix env recarg body =
 *)
 
 let rec subterm_specif renv t ind = 
+  (* maybe reduction is not always necessary! *)
   let f,l = decompose_app (whd_betadeltaiota renv.env t) in
   match kind_of_term f with 
     | Rel k -> subterm_var k renv
@@ -486,12 +487,16 @@ let rec subterm_specif renv t ind =
 and case_branches_specif renv c ind lbr = 
   let c_spec = subterm_specif renv c ind in
   let rec push_branch_args renv lrec c = 
-    let c' = strip_outer_cast (whd_betadeltaiota renv.env c) in 
-    match lrec, kind_of_term c' with 
-      |	(ra::lr,Lambda (x,a,b)) ->
-          let renv' = push_var renv (x,a,ra) in
-          push_branch_args renv' lr b
-      | (_,_) -> (renv,c') in
+    match lrec with
+        ra::lr ->
+          let c' = whd_betadeltaiota renv.env c in
+          (match kind_of_term c' with
+              Lambda(x,a,b) ->
+                let renv' = push_var renv (x,a,ra) in
+                push_branch_args renv' lr b
+            | _ -> (* branch not in eta-long form: cannot perform rec. calls *)
+                (renv,c'))
+      | [] -> (renv, c) in
   match c_spec with
       Subterm (_,t) ->
         let sub_spec = Array.map (List.map spec_of_tree) (dest_subterms t) in
@@ -605,12 +610,11 @@ let check_one_fix renv recpos def =
             array_for_all (fun b -> b) ok_vect
 
       | Const kn as c -> 
-          (try List.for_all (check_rec_call renv) l
-           with (FixGuardError _ ) as e ->
-             if evaluable_constant kn renv.env then 
-	       check_rec_call renv
-                 (applist(constant_value renv.env kn, l))
-	     else raise e)
+          if evaluable_constant kn renv.env then 
+            try List.for_all (check_rec_call renv) l
+            with (FixGuardError _ ) as e ->
+	      check_rec_call renv(applist(constant_value renv.env kn, l))
+	  else List.for_all (check_rec_call renv) l
 
       (* The cases below simply check recursively the condition on the
          subterms *)
