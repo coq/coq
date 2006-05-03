@@ -46,6 +46,9 @@ open Eauto
 open Genarg
 
 
+let qed () = Command.save_named true 
+let defined () = Command.save_named false
+
 let h_intros l = 
   tclMAP h_intro l
 
@@ -60,7 +63,6 @@ let do_observe_tac s tac g =
 
 let observe_tac s tac g = 
   tac g
-
 
 let hyp_ids = List.map id_of_string
     ["x";"v";"k";"def";"p";"h";"n";"h'"; "anonymous"; "teq"; "rec_res";
@@ -371,16 +373,21 @@ let rec introduce_all_equalities func eqs values specs bound le_proofs
 	   observe_tac "introduce_all_equalities_final intro k" (h_intro  k);
 	   tclTHENS
 	     (observe_tac "introduce_all_equalities_final case k" (simplest_case (mkVar k)))
-	     [tclTHENLIST[h_intro h';
-			  simplest_elim(mkApp(delayed_force lt_n_O,[|s_max|]));
-			  default_full_auto]; tclIDTAC];
+	     [
+	       tclTHENLIST[h_intro h';
+			   simplest_elim(mkApp(delayed_force lt_n_O,[|s_max|]));
+			   default_full_auto];
+	       tclIDTAC
+	     ];
 	   observe_tac "clearing k " (clear [k]);
-	   h_intros [k;h';def];
-	   simpl_iter();
-	   unfold_in_concl[([1],evaluable_of_global_reference func)];
-	   list_rewrite true eqs;
-           list_cond_rewrite  k def bound cond_eqs le_proofs;
-	   apply (delayed_force refl_equal)] g
+	   observe_tac "intros k h' def" (h_intros [k;h';def]);
+	   observe_tac "simple_iter" (simpl_iter());
+	   observe_tac "unfold functionnal" 
+	     (unfold_in_concl[([1],evaluable_of_global_reference func)]);
+	   observe_tac "rewriting equations" 
+	     (list_rewrite true eqs);
+           observe_tac "cond rewrite" (list_cond_rewrite  k def bound cond_eqs le_proofs);
+	   observe_tac "refl equal" (apply (delayed_force refl_equal))] g
   | spec1::specs ->
       fun g ->
 	let ids = ids_of_named_context (pf_hyps g) in
@@ -758,7 +765,7 @@ let open_new_goal ref goal_name (gls_type,decompose_and_tac,nb_goal)   =
     let lemma = mkConst (Lib.make_con na) in 
     Array.iteri (fun i _ -> by (observe_tac "tac" (prove_with_tcc lemma i))) (Array.make nb_goal ());
     ref := Some lemma ;
-    Command.save_named true;
+    defined ();
   in
   start_proof
     na
@@ -1029,7 +1036,7 @@ let (com_eqn : identifier ->
 	       )
 	  )
        );
-     Command.save_named true);;
+     defined ());;
 
 
 let recursive_definition is_mes function_name type_of_f r rec_arg_num eq 

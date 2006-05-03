@@ -564,7 +564,7 @@ and build_entry_lc_from_case funname make_discr
 	in
 	let results =
 	  List.map 
-	    (build_entry_lc_from_case_term funname make_discr []  brl case_resl.to_avoid) 
+	    (build_entry_lc_from_case_term funname (make_discr (List.map fst el)) []  brl case_resl.to_avoid) 
 	    case_resl.result 
 	in 
 	{ 
@@ -639,7 +639,7 @@ and build_entry_lc_from_case_term funname make_discr patterns_to_prevent brl avo
 			       List.for_all (fun x -> x) unif) patterns_to_prevent
 	     then 
 	       let i = List.length patterns_to_prevent in 
-	       [(Prod Anonymous,make_discr (List.map pattern_to_term patl) i  )]
+	       [(Prod Anonymous,make_discr  i  )]
 	     else 
 	       []
 	    )
