@@ -166,7 +166,7 @@ let parse_args () =
         parse ((List.rev(List.flatten (List.map (fun d -> ["-I";d])
 					 (all_subdirs a))))@op,fl) rem
     | "-R" :: [] -> usage ()
-    | ("-noassert"|"-compact"|"-g"|"-p"|"-thread" as o) :: rem ->
+    | ("-noassert"|"-compact"|"-g"|"-p"|"-thread"|"-dtypes" as o) :: rem ->
         parse (o::op,fl) rem
     | ("-h"|"--help") :: _ -> usage ()
     | f :: rem ->

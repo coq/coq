@@ -73,8 +73,8 @@ LOCALINCLUDES=-I config -I tools -I tools/coqdoc \
 
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
-BYTEFLAGS=$(MLINCLUDES) $(CAMLDEBUG)
-OPTFLAGS=$(MLINCLUDES) $(CAMLTIMEPROF) -noassert
+BYTEFLAGS=$(MLINCLUDES) $(CAMLDEBUG) $(USERFLAGS)
+OPTFLAGS=$(MLINCLUDES) $(CAMLTIMEPROF) $(USERFLAGS) -noassert
 OCAMLDEP=ocamldep
 DEPFLAGS=$(LOCALINCLUDES)
 
@@ -1696,5 +1696,6 @@ devel:
 clean::
 	find . -name "\.#*" -exec rm -f {} \;
 	find . -name "*~" -exec rm -f {} \;
+	find . -name "*.annot" -exec rm -f {} \;
 
 ###########################################################################

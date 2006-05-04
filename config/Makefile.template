@@ -60,6 +60,9 @@ CAMLMKTOP=ocamlmktop
 # Compilation debug flag
 CAMLDEBUG=COQDEBUGFLAG
 
+# User compilation flag
+USERFLAGS=
+
 # Compilation profile flag
 CAMLTIMEPROF=COQPROFILEFLAG
 
