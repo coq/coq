@@ -362,6 +362,63 @@ let do_generate_principle register_built interactive_proof fixpoint_exprl  =
   in
   ()
 
+open Topconstr
+let rec add_args id new_args b = 
+  match b with 
+  | CRef r -> 
+      begin      match r with 
+	| Libnames.Ident(loc,fname) when fname = id -> 
+	    CAppExpl(dummy_loc,(None,r),new_args)
+	| _ -> b
+      end
+  | CFix  _  | CCoFix _ -> anomaly "add_args : todo"
+  | CArrow(loc,b1,b2) -> 
+      CArrow(loc,add_args id new_args  b1, add_args id new_args b2)
+  | CProdN(loc,nal,b1) -> 
+      CProdN(loc,List.map (fun (nal,b2) -> (nal,add_args id new_args b2)) nal, add_args id new_args  b1)
+  | CLambdaN(loc,nal,b1) -> 
+      CLambdaN(loc,List.map (fun (nal,b2) -> (nal,add_args id new_args  b2)) nal, add_args id new_args  b1)
+  | CLetIn(loc,na,b1,b2) -> 
+      CLetIn(loc,na,add_args id new_args b1,add_args id new_args b2)
+  | CAppExpl(loc,(pf,r),exprl) -> 
+      begin 
+	match r with 
+	| Libnames.Ident(loc,fname) when fname = id -> 
+	    CAppExpl(loc,(pf,r),new_args@(List.map (add_args id new_args) exprl))
+	| _ -> CAppExpl(loc,(pf,r),List.map (add_args id new_args) exprl)
+      end
+  | CApp(loc,(pf,b),bl) -> 
+      CApp(loc,(pf,add_args id new_args b), List.map (fun (e,o) -> add_args id new_args e,o) bl)
+  | CCases(loc,b_option,cel,cal) -> 
+      CCases(loc,Util.option_map (add_args id new_args) b_option,
+	     List.map (fun (b,(na,b_option)) -> add_args id new_args b,(na,Util.option_map (add_args id new_args) b_option)) cel, 
+	     List.map (fun (loc,cpl,e) -> (loc,cpl,add_args id new_args e)) cal
+	    )
+  | CLetTuple(loc,nal,(na,b_option),b1,b2) -> 
+      CLetTuple(loc,nal,(na,Util.option_map (add_args id new_args) b_option),
+		add_args id new_args b1,
+		add_args id new_args b2
+	       )
+		
+  | CIf(loc,b1,(na,b_option),b2,b3) -> 
+      CIf(loc,add_args id new_args b1, 
+	  (na,Util.option_map (add_args id new_args) b_option),
+	  add_args id new_args b2,
+	  add_args id new_args b3
+	 )
+  | CHole _ -> b
+  | CPatVar _ -> b
+  | CEvar _ -> b
+  | CSort _ -> b
+  | CCast(loc,b1,ck,b2)  -> 
+      CCast(loc,add_args id new_args b1,ck,add_args id new_args b2)
+  | CNotation _ -> anomaly "add_args : CNotation"
+  | CPrim _ -> b
+  | CDelimiters _ -> anomaly "add_args : CDelimiters"
+  | CDynamic _ -> anomaly "add_args : CDynamic"
+
+
+
 let make_graph (id:identifier) =
  let c_body = 
     try
@@ -407,68 +464,102 @@ let make_graph (id:identifier) =
 		Options.raw_print := old_rawprint;
 		raise e
 	in
-	let expr_list = 
-	  match extern_body with 
-	    | Topconstr.CFix(loc,l_id,fixexprl) -> 
-	      let l = 
-		List.map
-		  (fun (id,(n,recexp),bl,t,b) -> 
-		     let nal =  
-		       List.flatten 
-			 (List.map 
-			    (function 
-			       | Topconstr.LocalRawDef (na,_)-> []
-			       | Topconstr.LocalRawAssum (nal,_) -> nal
-			    )
-			    bl
-			 )
-		     in 
-		     let rec_id = 
-		       match List.nth nal (out_some n)  with |(_,Name id) -> id | _ -> anomaly ""
-		     in
-		     (id, Some (Struct rec_id),bl,t,b)
-		  )
-		  fixexprl
-	      in
-	      l
-	    | _ ->  
-		let rec get_args b t : Topconstr.local_binder list * 
-		    Topconstr.constr_expr * Topconstr.constr_expr = 
-(* 		  Pp.msgnl (str "body: " ++Ppconstr.pr_lconstr_expr b); *)
-(* 		  Pp.msgnl (str "type: " ++ Ppconstr.pr_lconstr_expr t); *)
-(* 		  Pp.msgnl (fnl ()); *)
-		  match b with 
-		    | Topconstr.CLambdaN (loc, (nal_ta), b') -> 
-			begin
-			  let n = 
-			    (List.fold_left (fun n (nal,_) -> 
-					       n+List.length nal) 0 nal_ta )
-			  in
-			  let rec chop_n_arrow n t = 
-			    if n > 0 
-			    then 
-			      match t with 
-				| Topconstr.CArrow(_,_,t) -> chop_n_arrow (n-1) t 
-				| Topconstr.CProdN(_,nal_ta',t') -> 
-				    let n' = 
-				      List.fold_left 
-					(fun n (nal,t'') -> 
-					   n+List.length nal) n nal_ta' 
-				    in
-				    assert (n'<= n); 
-				    chop_n_arrow (n - n') t'
-				| _ -> anomaly "Not enough products"
-			    else t
-			  in 
-			  let nal_tas,b'',t'' = get_args b' (chop_n_arrow n t) in 
-			  (List.map (fun (nal,ta) -> (Topconstr.LocalRawAssum (nal,ta))) nal_ta)@nal_tas, b'',t'' 
-			end
-		    | _ -> [],b,t
-		in
-		let nal_tas,b,t = get_args extern_body extern_type in
-		[(id,None,nal_tas,t,b)]
-		  
+	let rec get_args b t : Topconstr.local_binder list * 
+	    Topconstr.constr_expr * Topconstr.constr_expr = 
+(* 	  Pp.msgnl (str "body: " ++Ppconstr.pr_lconstr_expr b); *)
+(* 	  Pp.msgnl (str "type: " ++ Ppconstr.pr_lconstr_expr t); *)
+(* 	  Pp.msgnl (fnl ()); *)
+	  match b with 
+	    | Topconstr.CLambdaN (loc, (nal_ta), b') -> 
+		begin
+		  let n = 
+		    (List.fold_left (fun n (nal,_) -> 
+				       n+List.length nal) 0 nal_ta )
+		  in
+		  let rec chop_n_arrow n t = 
+		    if n > 0 
+		    then 
+		      match t with 
+			| Topconstr.CArrow(_,_,t) -> chop_n_arrow (n-1) t 
+			| Topconstr.CProdN(_,nal_ta',t') -> 
+			    let n' = 
+			      List.fold_left 
+				(fun n (nal,t'') -> 
+				   n+List.length nal) n nal_ta' 
+			    in
+			    assert (n'<= n); 
+			    chop_n_arrow (n - n') t'
+			| _ -> anomaly "Not enough products"
+		    else t
+		  in 
+		  let nal_tas,b'',t'' = get_args b' (chop_n_arrow n t) in 
+		  (List.map (fun (nal,ta) -> (Topconstr.LocalRawAssum (nal,ta))) nal_ta)@nal_tas, b'',t'' 
+		end
+	    | _ -> [],b,t
 	in
+	let (nal_tas,b,t)  = get_args extern_body extern_type in
+	let expr_list = 
+	  match b with 
+	    | Topconstr.CFix(loc,l_id,fixexprl) -> 
+		let l = 
+		  List.map
+		    (fun (id,(n,recexp),bl,t,b) -> 
+(* 		       let nal =   *)
+(* 			 List.flatten  *)
+(* 			   (List.map  *)
+(* 			      (function  *)
+(* 				 | Topconstr.LocalRawDef (na,_)-> [] *)
+(* 				 | Topconstr.LocalRawAssum (nal,_) -> nal *)
+(* 			      ) *)
+(* 			      (nal_tas@bl) *)
+(* 			   ) *)
+(* 		       in  *)
+		       let bl' =  
+			 List.flatten 
+			   (List.map 
+			      (function 
+				 | Topconstr.LocalRawDef (na,_)-> []
+				 | Topconstr.LocalRawAssum (nal,_) -> nal
+			      )
+			      bl
+			   )
+		       in 
+		       let rec_id = 
+			 match List.nth bl' (out_some n)  with |(_,Name id) -> id | _ -> anomaly ""
+		       in
+		       let new_args = 
+			 List.flatten 
+			   (List.map 
+			      (function
+ 				 | Topconstr.LocalRawDef (na,_)-> []
+			      	 | Topconstr.LocalRawAssum (nal,_) -> List.map (fun (loc,n) -> CRef(Libnames.Ident(loc, Nameops.out_name n))) nal
+			      )
+			      nal_tas
+			   )
+		       in
+		       let b' = add_args id new_args b in 
+		       (id, Some (Struct rec_id),nal_tas@bl,t,b')
+		    )
+		    fixexprl
+		in
+		l
+	    | _ ->   
+		[(id,None,nal_tas,t,b)]
+	in
+(* 	List.iter (fun (id,rec_arg,bl,t,b) ->  *)
+(* 		     Pp.msgnl *)
+(* 		     (Ppconstr.pr_id id ++  *)
+(* 		       Ppconstr.pr_binders bl ++  *)
+(* 		       begin		       match rec_arg with  *)
+(* 			 | Some (Struct id) ->  str " { struct " ++ Ppconstr.pr_id id ++ str " }" *)
+(* 			 | _ -> (mt ()) *)
+(* 		      end ++  *)
+(* 		       str " : " ++ Ppconstr.pr_lconstr_expr t ++  *)
+(* 		       str " := " ++  *)
+(* 		       Ppconstr.pr_lconstr_expr b *)
+(* 		     ) *)
+(* 		  ) *)
+(* 	  expr_list; *)
 	do_generate_principle false false expr_list
 (* let make_graph _ = assert false	 *)
 	  
