@@ -1817,12 +1817,20 @@ let relation_rewrite_in id c1 c2 (direction,eqclause) ~new_goals gl =
  (* since we will actually rewrite in the opposite direction, we also need
     to replace every occurrence of c2 (resp. c1) in hyp with something that
     is convertible but not syntactically equal. To this aim we introduce a
-    let-in and then we will use the intro tactic to get rid of it *)
- let let_in_abstract t in_t =
-  let t' = lift 1 t in
-  let in_t' = lift 1 in_t in
-   mkLetIn (Anonymous,t,pf_type_of gl t,subst_term t' in_t') in
- let mangled_new_hyp = Termops.replace_term c1 c2 (let_in_abstract c2 hyp) in
+    let-in and then we will use the intro tactic to get rid of it.
+    Quite tricky to do properly since c1 can occur in c2 or vice-versa ! *)
+ let mangled_new_hyp = 
+   let hyp = lift 2 hyp in 
+   (* first, we backup every occurences of c1 in newly allocated (Rel 1) *)
+   let hyp = Termops.replace_term (lift 2 c1) (mkRel 1) hyp in 
+   (* then, we factorize every occurences of c2 into (Rel 2) *)
+   let hyp = Termops.replace_term (lift 2 c2) (mkRel 2) hyp in 
+   (* Now we substitute (Rel 1) (i.e. c1) for c2 *)
+   let hyp = subst1 (lift 1 c2) hyp in 
+   (* Since subst1 has killed Rel 1 and decreased the other Rels, 
+      Rel 1 is now coding for c2, we can build the let-in factorizing c2 *)
+   mkLetIn (Anonymous,c2,pf_type_of gl c2,hyp) 
+ in 
  let new_hyp = Termops.replace_term c1 c2 hyp in 
  let oppdir = opposite_direction direction in 
  cut_replacing id new_hyp
