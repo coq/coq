@@ -430,6 +430,65 @@ Lemma Zgcd_is_gcd : forall a b:Z, Zis_gcd a b (Zgcd a b).
 intros a b; unfold Zgcd in |- *; case (Zgcd_spec a b); tauto.
 Qed.
 
+(** A version of gcd that stores coefficients (used for fraction reduction) *)
+
+Definition Zgcd_gen_pos :
+  forall a:Z,
+    0 <= a -> forall b:Z, {p : Z*(Z*Z) | let (g,p):=p in let (aa,bb):=p in 
+                                       0 <= a -> Zis_gcd a b g /\ g >= 0 /\ a=g*aa /\ b=g*bb}.
+Proof.
+intros a Ha.
+pattern a; apply Zlt_0_rec; try assumption.
+intro x; case x.
+intros _ _ b; exists (Zabs b,(0,Zsgn b)).
+  elim (Z_le_lt_eq_dec _ _ (Zabs_pos b)).
+    intros H0; split.
+    apply Zabs_ind.
+    intros; apply Zis_gcd_sym; apply Zis_gcd_0; auto.
+    intros; apply Zis_gcd_opp; apply Zis_gcd_0; auto.
+    repeat split; auto with zarith.
+    symmetry; apply Zabs_Zsgn.
+    
+    intros H0; rewrite <- H0.
+    rewrite <- (Zabs_Zsgn b); rewrite <- H0; simpl in |- *.
+    split; [ apply Zis_gcd_0 | idtac ]; auto with zarith.
+  
+intros p Hrec _ b.
+generalize (Z_div_mod b (Zpos p)).
+case (Zdiv_eucl b (Zpos p)); intros q r Hqr.
+elim Hqr; clear Hqr; intros; auto with zarith.
+destruct (Hrec r H0 (Zpos p)) as ((g,(rr,pp)),Hgkl).
+destruct H0.
+destruct (Hgkl H0) as (H3,(H4,(H5,H6))).
+exists (g,(pp,pp*q+rr)); intros.
+split; auto.
+rewrite H.
+apply Zis_gcd_for_euclid2; auto.
+repeat split; auto.
+rewrite H; rewrite H6; rewrite H5; ring.
+
+intros p _ H b.
+elim H; auto.
+Defined.
+
+Definition Zgcd_gen_spec : 
+ forall a b:Z, {p : Z*(Z*Z) |  let (g,p):=p in let (aa,bb):=p in 
+                                          Zis_gcd a b g /\ g >= 0 /\ a=g*aa /\ b=g*bb}.
+Proof.
+intros a; case (Z_gt_le_dec 0 a).
+intros; assert (0 <= - a).
+omega.
+destruct (Zgcd_gen_pos (- a) H b) as ((g,(aa,bb)),Hgkl).
+exists (g,(-aa,bb)).
+intuition.
+rewrite <- Zopp_mult_distr_r.
+rewrite <- H2; auto with zarith.
+intros Ha b; elim (Zgcd_gen_pos a Ha b); intros p; exists p.
+ repeat destruct p; intuition.
+Defined.
+
+Definition Zgcd_gen (a b:Z) := let (p, _) := Zgcd_gen_spec a b in p.
+
 (** * Relative primality *)
 
 Definition rel_prime (a b:Z) : Prop := Zis_gcd a b 1.
