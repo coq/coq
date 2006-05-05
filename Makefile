@@ -803,6 +803,7 @@ ARITHVO=\
  theories/Arith/Euclid.vo       theories/Arith/Plus.vo        \
  theories/Arith/Wf_nat.vo  	theories/Arith/Max.vo	      \
  theories/Arith/Bool_nat.vo	theories/Arith/Factorial.vo   \
+ theories/Arith/Power.vo 
 # theories/Arith/Div.vo 
 
 SORTINGVO=\

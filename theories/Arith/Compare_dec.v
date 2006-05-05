@@ -93,9 +93,19 @@ intros x y H; elim (le_gt_dec x y);
  [ intros H1; absurd (x <= y); assumption | trivial with arith ].
 Qed.
 
+Theorem not_le_lt : forall n m, ~ n <= m -> m < n.
+intros x y H; elim (le_gt_dec x y);
+ [ intros H1; absurd (x <= y); assumption | trivial with arith ].
+Qed.
+
 Theorem not_gt : forall n m, ~ n > m -> n <= m.
 intros x y H; elim (le_gt_dec x y);
  [ trivial with arith | intros H1; absurd (x > y); assumption ].
+Qed.
+
+Theorem not_lt_le : forall n m, ~ n < m -> m <= n.
+intros x y H; elim (le_lt_dec y x);
+ [ trivial | intro; absurd (x < y); assumption ].
 Qed.
 
 Theorem not_ge : forall n m, ~ n >= m -> n < m.

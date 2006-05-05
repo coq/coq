@@ -18,3 +18,4 @@ Require Export Between.
 Require Export Peano_dec.
 Require Export Compare_dec.
 Require Export Factorial.
+Require Export Power.

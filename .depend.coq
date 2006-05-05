@@ -87,7 +87,7 @@ theories/Logic/ClassicalDescription.vo: theories/Logic/ClassicalDescription.v th
 theories/Logic/ClassicalChoice.vo: theories/Logic/ClassicalChoice.v theories/Logic/ClassicalDescription.vo theories/Logic/RelationalChoice.vo theories/Logic/ChoiceFacts.vo
 theories/Logic/RelationalChoice.vo: theories/Logic/RelationalChoice.v
 theories/Logic/Diaconescu.vo: theories/Logic/Diaconescu.v theories/Logic/ClassicalFacts.vo theories/Logic/ChoiceFacts.vo theories/Bool/Bool.vo
-theories/Arith/Arith.vo: theories/Arith/Arith.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Plus.vo theories/Arith/Gt.vo theories/Arith/Minus.vo theories/Arith/Mult.vo theories/Arith/Between.vo theories/Arith/Peano_dec.vo theories/Arith/Compare_dec.vo theories/Arith/Factorial.vo
+theories/Arith/Arith.vo: theories/Arith/Arith.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Plus.vo theories/Arith/Gt.vo theories/Arith/Minus.vo theories/Arith/Mult.vo theories/Arith/Between.vo theories/Arith/Peano_dec.vo theories/Arith/Compare_dec.vo theories/Arith/Factorial.vo theories/Arith/Power.vo
 theories/Arith/Gt.vo: theories/Arith/Gt.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Plus.vo
 theories/Arith/Between.vo: theories/Arith/Between.v theories/Arith/Le.vo theories/Arith/Lt.vo
 theories/Arith/Le.vo: theories/Arith/Le.v
@@ -107,6 +107,7 @@ theories/Arith/Wf_nat.vo: theories/Arith/Wf_nat.v theories/Arith/Lt.vo
 theories/Arith/Max.vo: theories/Arith/Max.v theories/Arith/Arith.vo
 theories/Arith/Bool_nat.vo: theories/Arith/Bool_nat.v theories/Arith/Compare_dec.vo theories/Arith/Peano_dec.vo theories/Bool/Sumbool.vo
 theories/Arith/Factorial.vo: theories/Arith/Factorial.v theories/Arith/Plus.vo theories/Arith/Mult.vo theories/Arith/Lt.vo
+theories/Arith/Power.vo: theories/Arith/Power.v theories/Arith/Plus.vo theories/Arith/Mult.vo theories/Arith/Lt.vo theories/Arith/Le.vo theories/Arith/Compare_dec.vo
 theories/Bool/Bool.vo: theories/Bool/Bool.v
 theories/Bool/IfProp.vo: theories/Bool/IfProp.v theories/Bool/Bool.vo
 theories/Bool/Zerob.vo: theories/Bool/Zerob.v theories/Arith/Arith.vo theories/Bool/Bool.vo
@@ -153,24 +154,18 @@ theories/Strings/String.vo: theories/Strings/String.v theories/Arith/Arith.vo th
 theories/Sets/Classical_sets.vo: theories/Sets/Classical_sets.v theories/Sets/Ensembles.vo theories/Sets/Constructive_sets.vo theories/Logic/Classical_Type.vo
 theories/Sets/Permut.vo: theories/Sets/Permut.v
 theories/Sets/Constructive_sets.vo: theories/Sets/Constructive_sets.v theories/Sets/Ensembles.vo
-theories/Sets/Powerset.vo: theories/Sets/Powerset.v theories/Sets/Ensembles.vo theories/Sets/Relations_1.vo theories/Sets/Relations_1_facts.vo theories/Sets/Partial_Order.vo theories/Sets/Cpo.vo
-theories/Sets/Cpo.vo: theories/Sets/Cpo.v theories/Sets/Ensembles.vo theories/Sets/Relations_1.vo theories/Sets/Partial_Order.vo
-theories/Sets/Powerset_Classical_facts.vo: theories/Sets/Powerset_Classical_facts.v theories/Sets/Ensembles.vo theories/Sets/Constructive_sets.vo theories/Sets/Relations_1.vo theories/Sets/Relations_1_facts.vo theories/Sets/Partial_Order.vo theories/Sets/Cpo.vo theories/Sets/Powerset.vo theories/Sets/Powerset_facts.vo theories/Logic/Classical_Type.vo theories/Sets/Classical_sets.vo
+theories/Sets/Powerset.vo: theories/Sets/Powerset.v theories/Sets/Ensembles.vo theories/Relations/Relations_1.vo theories/Relations/Relations_1_facts.vo theories/Sets/Partial_Order.vo theories/Sets/Cpo.vo
+theories/Sets/Cpo.vo: theories/Sets/Cpo.v theories/Sets/Ensembles.vo theories/Relations/Relations_1.vo theories/Sets/Partial_Order.vo
+theories/Sets/Powerset_Classical_facts.vo: theories/Sets/Powerset_Classical_facts.v theories/Sets/Ensembles.vo theories/Sets/Constructive_sets.vo theories/Relations/Relations_1.vo theories/Relations/Relations_1_facts.vo theories/Sets/Partial_Order.vo theories/Sets/Cpo.vo theories/Sets/Powerset.vo theories/Sets/Powerset_facts.vo theories/Logic/Classical_Type.vo theories/Sets/Classical_sets.vo
 theories/Sets/Ensembles.vo: theories/Sets/Ensembles.v
-theories/Sets/Powerset_facts.vo: theories/Sets/Powerset_facts.v theories/Sets/Ensembles.vo theories/Sets/Constructive_sets.vo theories/Sets/Relations_1.vo theories/Sets/Relations_1_facts.vo theories/Sets/Partial_Order.vo theories/Sets/Cpo.vo theories/Sets/Powerset.vo
+theories/Sets/Powerset_facts.vo: theories/Sets/Powerset_facts.v theories/Sets/Ensembles.vo theories/Sets/Constructive_sets.vo theories/Relations/Relations_1.vo theories/Relations/Relations_1_facts.vo theories/Sets/Partial_Order.vo theories/Sets/Cpo.vo theories/Sets/Powerset.vo
 theories/Sets/Finite_sets.vo: theories/Sets/Finite_sets.v theories/Sets/Ensembles.vo theories/Sets/Constructive_sets.vo
-theories/Sets/Relations_1.vo: theories/Sets/Relations_1.v
 theories/Sets/Finite_sets_facts.vo: theories/Sets/Finite_sets_facts.v theories/Sets/Finite_sets.vo theories/Sets/Constructive_sets.vo theories/Logic/Classical_Type.vo theories/Sets/Classical_sets.vo theories/Sets/Powerset.vo theories/Sets/Powerset_facts.vo theories/Sets/Powerset_Classical_facts.vo theories/Arith/Gt.vo theories/Arith/Lt.vo
-theories/Sets/Relations_1_facts.vo: theories/Sets/Relations_1_facts.v theories/Sets/Relations_1.vo
 theories/Sets/Image.vo: theories/Sets/Image.v theories/Sets/Finite_sets.vo theories/Sets/Constructive_sets.vo theories/Logic/Classical_Type.vo theories/Sets/Classical_sets.vo theories/Sets/Powerset.vo theories/Sets/Powerset_facts.vo theories/Sets/Powerset_Classical_facts.vo theories/Arith/Gt.vo theories/Arith/Lt.vo theories/Arith/Le.vo theories/Sets/Finite_sets_facts.vo
-theories/Sets/Relations_2.vo: theories/Sets/Relations_2.v theories/Sets/Relations_1.vo
 theories/Sets/Infinite_sets.vo: theories/Sets/Infinite_sets.v theories/Sets/Finite_sets.vo theories/Sets/Constructive_sets.vo theories/Logic/Classical_Type.vo theories/Sets/Classical_sets.vo theories/Sets/Powerset.vo theories/Sets/Powerset_facts.vo theories/Sets/Powerset_Classical_facts.vo theories/Arith/Gt.vo theories/Arith/Lt.vo theories/Arith/Le.vo theories/Sets/Finite_sets_facts.vo theories/Sets/Image.vo
-theories/Sets/Relations_2_facts.vo: theories/Sets/Relations_2_facts.v theories/Sets/Relations_1.vo theories/Sets/Relations_1_facts.vo theories/Sets/Relations_2.vo
-theories/Sets/Integers.vo: theories/Sets/Integers.v theories/Sets/Finite_sets.vo theories/Sets/Constructive_sets.vo theories/Logic/Classical_Type.vo theories/Sets/Classical_sets.vo theories/Sets/Powerset.vo theories/Sets/Powerset_facts.vo theories/Sets/Powerset_Classical_facts.vo theories/Arith/Gt.vo theories/Arith/Lt.vo theories/Arith/Le.vo theories/Sets/Finite_sets_facts.vo theories/Sets/Image.vo theories/Sets/Infinite_sets.vo theories/Arith/Compare_dec.vo theories/Sets/Relations_1.vo theories/Sets/Partial_Order.vo theories/Sets/Cpo.vo
-theories/Sets/Relations_3.vo: theories/Sets/Relations_3.v theories/Sets/Relations_1.vo theories/Sets/Relations_2.vo
+theories/Sets/Integers.vo: theories/Sets/Integers.v theories/Sets/Finite_sets.vo theories/Sets/Constructive_sets.vo theories/Logic/Classical_Type.vo theories/Sets/Classical_sets.vo theories/Sets/Powerset.vo theories/Sets/Powerset_facts.vo theories/Sets/Powerset_Classical_facts.vo theories/Arith/Gt.vo theories/Arith/Lt.vo theories/Arith/Le.vo theories/Sets/Finite_sets_facts.vo theories/Sets/Image.vo theories/Sets/Infinite_sets.vo theories/Arith/Compare_dec.vo theories/Relations/Relations_1.vo theories/Sets/Partial_Order.vo theories/Sets/Cpo.vo
 theories/Sets/Multiset.vo: theories/Sets/Multiset.v theories/Sets/Permut.vo theories/Arith/Plus.vo
-theories/Sets/Relations_3_facts.vo: theories/Sets/Relations_3_facts.v theories/Sets/Relations_1.vo theories/Sets/Relations_1_facts.vo theories/Sets/Relations_2.vo theories/Sets/Relations_2_facts.vo theories/Sets/Relations_3.vo
-theories/Sets/Partial_Order.vo: theories/Sets/Partial_Order.v theories/Sets/Ensembles.vo theories/Sets/Relations_1.vo
+theories/Sets/Partial_Order.vo: theories/Sets/Partial_Order.v theories/Sets/Ensembles.vo theories/Relations/Relations_1.vo
 theories/Sets/Uniset.vo: theories/Sets/Uniset.v theories/Bool/Bool.vo theories/Sets/Permut.vo
 theories/IntMap/Adalloc.vo: theories/IntMap/Adalloc.v theories/Bool/Bool.vo theories/Bool/Sumbool.vo theories/ZArith/ZArith.vo theories/Arith/Arith.vo theories/IntMap/Addr.vo theories/IntMap/Adist.vo theories/IntMap/Addec.vo theories/IntMap/Map.vo theories/IntMap/Fset.vo
 theories/IntMap/Mapcanon.vo: theories/IntMap/Mapcanon.v theories/Bool/Bool.vo theories/Bool/Sumbool.vo theories/Arith/Arith.vo theories/ZArith/ZArith.vo theories/IntMap/Addr.vo theories/IntMap/Adist.vo theories/IntMap/Addec.vo theories/IntMap/Map.vo theories/IntMap/Mapaxioms.vo theories/IntMap/Mapiter.vo theories/IntMap/Fset.vo theories/Lists/List.vo theories/IntMap/Lsort.vo theories/IntMap/Mapsubset.vo theories/IntMap/Mapcard.vo
@@ -188,12 +183,10 @@ theories/IntMap/Lsort.vo: theories/IntMap/Lsort.v theories/Bool/Bool.vo theories
 theories/IntMap/Mapsubset.vo: theories/IntMap/Mapsubset.v theories/Bool/Bool.vo theories/Bool/Sumbool.vo theories/Arith/Arith.vo theories/ZArith/ZArith.vo theories/IntMap/Addr.vo theories/IntMap/Adist.vo theories/IntMap/Addec.vo theories/IntMap/Map.vo theories/IntMap/Fset.vo theories/IntMap/Mapaxioms.vo theories/IntMap/Mapiter.vo
 theories/IntMap/Mapaxioms.vo: theories/IntMap/Mapaxioms.v theories/Bool/Bool.vo theories/Bool/Sumbool.vo theories/ZArith/ZArith.vo theories/IntMap/Addr.vo theories/IntMap/Adist.vo theories/IntMap/Addec.vo theories/IntMap/Map.vo theories/IntMap/Fset.vo
 theories/IntMap/Map.vo: theories/IntMap/Map.v theories/Bool/Bool.vo theories/Bool/Sumbool.vo theories/ZArith/ZArith.vo theories/IntMap/Addr.vo theories/IntMap/Adist.vo theories/IntMap/Addec.vo
-theories/Relations/Newman.vo: theories/Relations/Newman.v theories/Relations/Rstar.vo
 theories/Relations/Operators_Properties.vo: theories/Relations/Operators_Properties.v theories/Relations/Relation_Definitions.vo theories/Relations/Relation_Operators.vo
 theories/Relations/Relation_Definitions.vo: theories/Relations/Relation_Definitions.v
 theories/Relations/Relation_Operators.vo: theories/Relations/Relation_Operators.v theories/Relations/Relation_Definitions.vo theories/Lists/List.vo
 theories/Relations/Relations.vo: theories/Relations/Relations.v theories/Relations/Relation_Definitions.vo theories/Relations/Relation_Operators.vo theories/Relations/Operators_Properties.vo
-theories/Relations/Rstar.vo: theories/Relations/Rstar.v
 theories/Wellfounded/Disjoint_Union.vo: theories/Wellfounded/Disjoint_Union.v theories/Relations/Relation_Operators.vo
 theories/Wellfounded/Inclusion.vo: theories/Wellfounded/Inclusion.v theories/Relations/Relation_Definitions.vo
 theories/Wellfounded/Inverse_Image.vo: theories/Wellfounded/Inverse_Image.v
