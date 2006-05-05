@@ -18,8 +18,8 @@ open Termops
 open Declarations
 open Inductive
 open Environ
-open Reductionops
 open Closure
+open Reductionops
 open Cbv
 open Rawterm
 

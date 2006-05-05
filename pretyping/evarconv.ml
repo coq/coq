@@ -11,9 +11,9 @@
 open Util
 open Names
 open Term
+open Closure
 open Reduction
 open Reductionops
-open Closure
 open Environ
 open Typing
 open Classops

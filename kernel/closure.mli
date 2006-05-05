@@ -91,33 +91,6 @@ val info_flags: 'a infos -> reds
 val create: ('a infos -> constr -> 'a) -> reds -> env -> 'a infos
 
 (************************************************************************)
-(*s A [stack] is a context of arguments, arguments are pushed by
-   [append_stack] one array at a time but popped with [decomp_stack]
-   one by one *)
-
-type 'a stack_member =
-  | Zapp of 'a list
-  | Zcase of case_info * 'a * 'a array
-  | Zfix of 'a * 'a stack
-  | Zshift of int
-  | Zupdate of 'a
-
-and 'a stack = 'a stack_member list
-
-val empty_stack : 'a stack
-val append_stack : 'a array -> 'a stack -> 'a stack
-
-val decomp_stack : 'a stack -> ('a * 'a stack) option
-val list_of_stack : 'a stack -> 'a list
-val array_of_stack : 'a stack -> 'a array
-val stack_assign : 'a stack -> int -> 'a -> 'a stack
-val stack_args_size : 'a stack -> int
-val app_stack : constr * constr stack -> constr
-val stack_tail : int -> 'a stack -> 'a stack
-val stack_nth : 'a stack -> int -> 'a
-val zip_term : ('a -> constr) -> constr -> 'a stack -> constr
-
-(************************************************************************)
 (*s Lazy reduction. *)
 
 (* [fconstr] is the type of frozen constr *)
@@ -146,17 +119,43 @@ type fterm =
   | FCLOS of constr * fconstr subs
   | FLOCKED
 
+(************************************************************************)
+(*s A [stack] is a context of arguments, arguments are pushed by
+   [append_stack] one array at a time but popped with [decomp_stack]
+   one by one *)
+
+type stack_member =
+  | Zapp of fconstr array
+  | Zcase of case_info * fconstr * fconstr array
+  | Zfix of fconstr * stack
+  | Zshift of int
+  | Zupdate of fconstr
+
+and stack = stack_member list
+
+val empty_stack : stack
+val append_stack : fconstr array -> stack -> stack
+
+val decomp_stack : stack -> (fconstr * stack) option
+val array_of_stack : stack -> fconstr array
+val stack_assign : stack -> int -> fconstr -> stack
+val stack_args_size : stack -> int
+val stack_tail : int -> stack -> stack
+val stack_nth : stack -> int -> fconstr
+val zip_term : (fconstr -> constr) -> constr -> stack -> constr
+
 (* To lazy reduce a constr, create a [clos_infos] with
    [create_clos_infos], inject the term to reduce with [inject]; then use
    a reduction function *)
 
 val inject : constr -> fconstr
+(* mk_atom: prevents a term from being evaluated *)
+val mk_atom : constr -> fconstr
+
 val fterm_of : fconstr -> fterm
 val term_of_fconstr : fconstr -> constr
 val destFLambda :
   (fconstr subs -> constr -> fconstr) -> fconstr -> name * fconstr * fconstr
-(* mk_atom: prevents a term from being evaluated *)
-val mk_atom : constr -> fconstr
 
 (* Global and local constant cache *)
 type clos_infos
@@ -173,7 +172,7 @@ val whd_val : clos_infos -> fconstr -> constr
 (* [whd_stack] performs weak head normalization in a given stack. It
    stops whenever a reduction is blocked. *)
 val whd_stack :
-  clos_infos -> fconstr -> fconstr stack -> fconstr * fconstr stack
+  clos_infos -> fconstr -> stack -> fconstr * stack
 
 (* Conversion auxiliary functions to do step by step normalisation *)
 
@@ -195,8 +194,8 @@ val mk_clos_deep :
   (fconstr subs -> constr -> fconstr) ->
    fconstr subs -> constr -> fconstr
 
-val kni: clos_infos -> fconstr -> fconstr stack -> fconstr * fconstr stack
-val knr: clos_infos -> fconstr -> fconstr stack -> fconstr * fconstr stack
+val kni: clos_infos -> fconstr -> stack -> fconstr * stack
+val knr: clos_infos -> fconstr -> stack -> fconstr * stack
 val kl : clos_infos -> fconstr -> constr
 
 val to_constr : (lift -> fconstr -> constr) -> lift -> fconstr -> constr

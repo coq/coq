@@ -21,6 +21,34 @@ open Closure
 
 exception Elimconst
 
+(************************************************************************)
+(*s A [stack] is a context of arguments, arguments are pushed by
+   [append_stack] one array at a time but popped with [decomp_stack]
+   one by one *)
+
+type 'a stack_member =
+  | Zapp of 'a list
+  | Zcase of case_info * 'a * 'a array
+  | Zfix of 'a * 'a stack
+  | Zshift of int
+  | Zupdate of 'a
+
+and 'a stack = 'a stack_member list
+
+val empty_stack : 'a stack
+val append_stack : 'a array -> 'a stack -> 'a stack
+
+val decomp_stack : 'a stack -> ('a * 'a stack) option
+val list_of_stack : 'a stack -> 'a list
+val array_of_stack : 'a stack -> 'a array
+val stack_assign : 'a stack -> int -> 'a -> 'a stack
+val stack_args_size : 'a stack -> int
+val app_stack : constr * constr stack -> constr
+val stack_tail : int -> 'a stack -> 'a stack
+val stack_nth : 'a stack -> int -> 'a
+
+(************************************************************************)
+
 type state = constr * constr stack
 
 type contextual_reduction_function = env -> evar_map -> constr -> constr

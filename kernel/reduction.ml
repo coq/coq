@@ -41,14 +41,24 @@ let compare_stack_shape stk1 stk2 =
       ([],[]) -> bal=0
     | ((Zupdate _|Zshift _)::s1, _) -> compare_rec bal s1 stk2
     | (_, (Zupdate _|Zshift _)::s2) -> compare_rec bal stk1 s2
-    | (Zapp l1::s1, _) -> compare_rec (bal+List.length l1) s1 stk2
-    | (_, Zapp l2::s2) -> compare_rec (bal-List.length l2) stk1 s2
+    | (Zapp l1::s1, _) -> compare_rec (bal+Array.length l1) s1 stk2
+    | (_, Zapp l2::s2) -> compare_rec (bal-Array.length l2) stk1 s2
     | (Zcase(c1,_,_)::s1, Zcase(c2,_,_)::s2) ->
         bal=0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
     | (Zfix(_,a1)::s1, Zfix(_,a2)::s2) ->
         bal=0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
     | (_,_) -> false in
   compare_rec 0 stk1 stk2
+
+type lft_constr_stack_elt =
+    Zlapp of (lift * fconstr) array
+  | Zlfix of (lift * fconstr) * lft_constr_stack
+  | Zlcase of case_info * lift * fconstr * fconstr array
+and lft_constr_stack = lft_constr_stack_elt list
+
+let rec zlapp v = function
+    Zlapp v2 :: s -> zlapp (Array.append v v2) s
+  | s -> Zlapp v :: s
 
 let pure_stack lfts stk =
   let rec pure_rec lfts stk =
@@ -58,15 +68,13 @@ let pure_stack lfts stk =
           (match (zi,pure_rec lfts s) with
               (Zupdate _,lpstk)  -> lpstk
             | (Zshift n,(l,pstk)) -> (el_shft n l, pstk)
-            | (Zapp a1,(l,Zapp a2::pstk)) ->
-                (l,Zapp (List.map (fun t -> (l,t)) a1 @ a2)::pstk)
             | (Zapp a, (l,pstk)) ->
-                (l,Zapp (List.map (fun t -> (l,t)) a)::pstk)
+                (l,zlapp (Array.map (fun t -> (l,t)) a) pstk)
             | (Zfix(fx,a),(l,pstk)) ->
                 let (lfx,pa) = pure_rec l a in
-                (l, Zfix((lfx,fx),pa)::pstk)
+                (l, Zlfix((lfx,fx),pa)::pstk)
             | (Zcase(ci,p,br),(l,pstk)) ->
-                (l,Zcase(ci,(l,p),Array.map (fun t -> (l,t)) br)::pstk)) in
+                (l,Zlcase(ci,l,p,br)::pstk)) in
   snd (pure_rec lfts stk)
 
 (****************************************************************************)
@@ -98,10 +106,10 @@ let whd_betadeltaiota_nolet env t =
 
 let beta_appvect c v =
   let rec stacklam env t stack =
-    match (decomp_stack stack,kind_of_term t) with
-      | Some (h,stacktl), Lambda (_,_,c) -> stacklam (h::env) c stacktl
-      | _ -> app_stack (substl env t, stack) in
-  stacklam [] c (append_stack v empty_stack)
+    match kind_of_term t, stack with
+        Lambda(_,_,c), arg::stacktl -> stacklam (arg::env) c stacktl
+      | _ -> applist (substl env t, stack) in
+  stacklam [] c (Array.to_list v)
 
 (********************************************************************)
 (*                         Conversion                               *)
@@ -117,17 +125,17 @@ let compare_stacks f fmind lft1 stk1 lft2 stk2 cuniv =
   let rec cmp_rec pstk1 pstk2 cuniv =
     match (pstk1,pstk2) with
       | (z1::s1, z2::s2) ->
-          let c1 = cmp_rec s1 s2 cuniv in
+          let cu1 = cmp_rec s1 s2 cuniv in
           (match (z1,z2) with
-            | (Zapp a1,Zapp a2) -> List.fold_right2 f a1 a2 c1
-            | (Zfix(fx1,a1),Zfix(fx2,a2)) ->
-                let c2 = f fx1 fx2 c1 in
-                cmp_rec a1 a2 c2
-            | (Zcase(ci1,p1,br1),Zcase(ci2,p2,br2)) ->
+            | (Zlapp a1,Zlapp a2) -> array_fold_right2 f a1 a2 cu1
+            | (Zlfix(fx1,a1),Zlfix(fx2,a2)) ->
+                let cu2 = f fx1 fx2 cu1 in
+                cmp_rec a1 a2 cu2
+            | (Zlcase(ci1,l1,p1,br1),Zlcase(ci2,l2,p2,br2)) ->
                 if not (fmind ci1.ci_ind ci2.ci_ind) then
 		  raise NotConvertible;
-		let c2 = f p1 p2 c1 in
-                array_fold_right2 f br1 br2 c2
+		let cu2 = f (l1,p1) (l2,p2) cu1 in
+                array_fold_right2 (fun c1 c2 -> f (l1,c1) (l2,c2)) br1 br2 cu2
             | _ -> assert false)
       | _ -> cuniv in
   if compare_stack_shape stk1 stk2 then

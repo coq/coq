@@ -23,6 +23,91 @@ open Reduction
 
 exception Elimconst
 
+
+(**********************************************************************)
+(* The type of (machine) stacks (= lambda-bar-calculus' contexts)     *) 
+
+type 'a stack_member =
+  | Zapp of 'a list
+  | Zcase of case_info * 'a * 'a array
+  | Zfix of 'a * 'a stack
+  | Zshift of int
+  | Zupdate of 'a
+
+and 'a stack = 'a stack_member list
+
+let empty_stack = []
+let append_stack_list = function
+  | ([],s) -> s
+  | (l1, Zapp l :: s) -> Zapp (l1@l) :: s
+  | (l1, s) -> Zapp l1 :: s
+let append_stack v s = append_stack_list (Array.to_list v, s)
+
+(* Collapse the shifts in the stack *)
+let zshift n s =
+  match (n,s) with
+      (0,_) -> s
+    | (_,Zshift(k)::s) -> Zshift(n+k)::s
+    | _ -> Zshift(n)::s
+
+let rec stack_args_size = function
+  | Zapp l::s -> List.length l + stack_args_size s
+  | Zshift(_)::s -> stack_args_size s
+  | Zupdate(_)::s -> stack_args_size s
+  | _ -> 0
+
+(* When used as an argument stack (only Zapp can appear) *)
+let rec decomp_stack = function
+  | Zapp[v]::s -> Some (v, s)
+  | Zapp(v::l)::s -> Some (v, (Zapp l :: s))
+  | Zapp [] :: s -> decomp_stack s
+  | _ -> None
+let rec decomp_stackn = function
+  | Zapp [] :: s -> decomp_stackn s
+  | Zapp l :: s -> (Array.of_list l, s)
+  | _ -> assert false
+let array_of_stack s =
+  let rec stackrec = function
+  | [] -> []
+  | Zapp args :: s -> args :: (stackrec s)
+  | _ -> assert false
+  in Array.of_list (List.concat (stackrec s))
+let rec list_of_stack = function
+  | [] -> []
+  | Zapp args :: s -> args @ (list_of_stack s)
+  | _ -> assert false
+let rec app_stack = function
+  | f, [] -> f
+  | f, (Zapp [] :: s) -> app_stack (f, s)
+  | f, (Zapp args :: s) -> 
+      app_stack (applist (f, args), s)
+  | _ -> assert false
+let rec stack_assign s p c = match s with
+  | Zapp args :: s ->
+      let q = List.length args in 
+      if p >= q then
+	Zapp args :: stack_assign s (p-q) c
+      else
+        (match list_chop p args with
+            (bef, _::aft) -> Zapp (bef@c::aft) :: s
+          | _ -> assert false)
+  | _ -> s
+let rec stack_tail p s =
+  if p = 0 then s else
+    match s with
+      | Zapp args :: s ->
+	  let q = List.length args in
+	  if p >= q then stack_tail (p-q) s
+	  else Zapp (list_skipn p args) :: s
+      | _ -> failwith "stack_tail"
+let rec stack_nth s p = match s with
+  | Zapp args :: s ->
+      let q = List.length args in
+      if p >= q then stack_nth s (p-q)
+      else List.nth args p
+  | _ -> raise Not_found
+
+(**************************************************************)
 (* The type of (machine) states (= lambda-bar-calculus' cuts) *) 
 type state = constr * constr stack
 
