@@ -650,7 +650,10 @@ with forest : Set :=
 The inductive declaration in \Coq\ is slightly different from the one
 we described theoretically. The difference is that in the type of
 constructors the inductive definition is explicitly applied to the
-parameters variables. The \Coq\ type-checker verifies that all
+parameters variables.
+%% FIXME: TODO: The paragraph below is wrong with the new inductive
+%% types implemented by Christine. The indtype below IS accepted.
+The \Coq\ type-checker verifies that all
 parameters are applied in the correct manner in each recursive call.
 In particular, the following definition will not be accepted because 
 there is an occurrence of \List\ which is not applied to the parameter
@@ -928,20 +931,31 @@ by the $u_1\ldots u_p$ according to the $\iota$-reduction.
 
 Actually, for type-checking a \kw{match\ldots with\ldots end}
 expression we also need to know the predicate $P$ to be proved by case
-analysis.  \Coq{} can sometimes infer this predicate but sometimes
-not. The concrete syntax for describing this predicate uses the
-\kw{as\ldots return} construction. 
-The predicate is made explicit using the syntax~:
-\[\kw{match}~m~\kw{as}~ x~ \kw{return}~ (P~ x) ~\kw{with}~ (c_1~x_{11}~...~x_{1p_1}) \Ra f_1 ~|~\ldots~|~
+analysis. In the general case where $I$ is an inductively defined
+$n$-ary relation, $P$ is a $n+1$-ary relation: the $n$ first arguments
+correspond to the arguments of $I$ (parameters excluded), and the last
+one corresponds to object $m$. \Coq{} can sometimes infer this
+predicate but sometimes not. The concrete syntax for describing this
+predicate uses the \kw{as\ldots in\ldots return} construction. For
+instance, let us assume that $I$ is an unary predicate with one
+parameter. The predicate is made explicit using the syntax~:
+\[\kw{match}~m~\kw{as}~ x~ \kw{in}~ I~\verb!_!~a~ \kw{return}~ (P~ x)
+ ~\kw{with}~ (c_1~x_{11}~...~x_{1p_1}) \Ra f_1 ~|~\ldots~|~
   (c_n~x_{n1}...x_{np_n}) \Ra f_n \kw{end}\]
+The \kw{as} part can be omitted if either the result type does not
+depend on $m$ (non-dependent elimination) or $m$ is a variable (in
+this case, the result type can depend on $m$). The \kw{in} part can be
+omitted if the result type does not depend on the arguments of
+$I$. Note that the arguments of $I$ corresponding to parameters
+\emph{must} be \verb!_!, because the result type is not generalized to
+all possible values of the parameters. The expression after \kw{in}
+must be seen as an \emph{inductive type pattern}. As a final remark,
+expansion of implicit arguments and notations apply to this pattern.
+
 For the purpose of presenting the inference rules, we use a more
 compact notation~:
-\[ \Case{(\lb x \mto P)}{m}{ \lb x_{11}~...~x_{1p_1} \mto f_1 ~|~\ldots~|~
+\[ \Case{(\lb a x \mto P)}{m}{ \lb x_{11}~...~x_{1p_1} \mto f_1 ~|~\ldots~|~
   \lb x_{n1}...x_{np_n} \mto f_n}\]
-
-This is the basic idea which is generalized to the case where $I$ is
-an inductively defined $n$-ary relation (in which case the property
-$P$ to be proved will be a $n+1$-ary relation).
 
 
 \paragraph{Non-dependent elimination.}
