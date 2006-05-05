@@ -75,3 +75,15 @@ Abort.
 Goal exists n:nat, n=n.
 refine (ex_intro _ _ _).
 Abort.
+
+(* Used to failed with error not clean *)
+
+Definition div :
+  forall x:nat, (forall y:nat, forall n:nat, {q:nat | y = q*n}) -> 
+     forall n:nat, {q:nat | x = q*n}.
+refine
+  (fun m div_rec n =>
+     match div_rec m n with
+     | exist _ _ => _
+     end).
+Abort.
