@@ -48,12 +48,6 @@ let observe_tac s tac g =
   then do_observe_tac (str s) tac g
   else tac g
 
-(* let observe_stream_tac s tac g = *)
-(*   if do_observe () *)
-(*   then do_observe_tac s tac g *)
-(*   else tac g *)
-
-
 
 let tclTRYD tac = 
   if  !Options.debug  || do_observe ()
@@ -1036,8 +1030,8 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _naprams : 
 			      let id = try List.nth (List.rev args_as_constr) (rec_num) with _ -> anomaly ("Cannot find recursive argument of function ! ") in
 			      let id_as_induction_constr = Tacexpr.ElimOnConstr id in 
 			      (tclTHENSEQ
-				 [Tactics.new_destruct [id_as_induction_constr] None Genarg.IntroAnonymous;(* (h_simplest_case id) *)
-				  Tactics.intros_reflexivity
+				 [new_destruct [id_as_induction_constr] None Genarg.IntroAnonymous;(* (h_simplest_case id) *)
+				  intros_reflexivity
 				 ])
 			    ]
 			in
@@ -1222,7 +1216,7 @@ let prove_principle_for_gen
   fun g -> 
     let type_of_goal = pf_concl g in 
     let goal_ids = pf_ids_of_hyps g in 
-    let goal_elim_infos = Tactics.compute_elim_sig type_of_goal in 
+    let goal_elim_infos = compute_elim_sig type_of_goal in 
     let params_names,ids = List.fold_left 
       (fun (params_names,avoid) (na,_,_) -> 
 	 let new_id = fresh_id avoid na in 

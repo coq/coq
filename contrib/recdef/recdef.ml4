@@ -62,7 +62,9 @@ let do_observe_tac s tac g =
 
 
 let observe_tac s tac g = 
-  tac g
+  if Tacinterp.get_debug () <> Tactic_debug.DebugOff
+  then do_observe_tac s tac g
+  else tac g
 
 let hyp_ids = List.map id_of_string
     ["x";"v";"k";"def";"p";"h";"n";"h'"; "anonymous"; "teq"; "rec_res";
@@ -99,8 +101,11 @@ let def_of_const t =
       (try (match (Global.lookup_constant sp) with
              {const_body=Some c} -> Declarations.force c
 	     |_ -> assert false)
-       with _ -> anomaly ("Cannot find definition of constant "^(string_of_id (id_of_label (con_label sp)))))
-    |_ -> assert false
+       with _ -> 
+	 anomaly ("Cannot find definition of constant "^
+		    (string_of_id (id_of_label (con_label sp))))
+      )
+     |_ -> assert false
 
 let type_of_const t =
    match (kind_of_term t) with
@@ -252,8 +257,12 @@ let rec  mk_intros_and_continue (extra_eqn:bool)
     | _ -> 
  	if extra_eqn then
 	  let teq = next_global_ident_away true teq_id ids in
-	    tclTHEN (h_intro teq)	
-	      (cont_function (mkVar teq::eqs) expr) g
+	    tclTHENLIST
+	      [ h_intro teq;
+		tclMAP (fun eq -> tclTRY (Equality.general_rewrite_in true teq eq)) (List.rev eqs);
+	        cont_function (mkVar teq::eqs) expr
+	      ]
+	      g
 	else
 	  cont_function eqs expr g
 
@@ -413,19 +422,15 @@ let rec introduce_all_equalities func eqs values specs bound le_proofs
 let string_match  s =
  try 
   for i = 0 to 3  do
-    if String.get s i <> String.get "Acc_" i then failwith ""
+    if String.get s i <> String.get "Acc_" i then failwith "string_match"
   done;
- with Invalid_argument _ -> failwith ""
+ with Invalid_argument _ -> failwith "string_match"
 	  
 let retrieve_acc_var g = 
   (* Julien: I don't like this version .... *) 
   let hyps = pf_ids_of_hyps g  in 
   map_succeed 
-    (fun id -> 
-       try 
-	 string_match (string_of_id id);
-	 id
-       with _ -> failwith "")
+    (fun id -> string_match (string_of_id id);id)
     hyps 
 
 let rec introduce_all_values is_mes acc_inv func context_fn
@@ -518,8 +523,10 @@ let proveterminate is_mes acc_inv (hrec:identifier)
       (*  let _ = msgnl(str "exiting proveterminate") in *)
       v
     with e -> 
-      msgerrnl(str "failure in proveterminate"); 
-      raise e
+      begin 
+	msgerrnl(str "failure in proveterminate"); 
+	raise e
+      end
   in 
   proveterminate 
 
@@ -774,10 +781,17 @@ let open_new_goal ref goal_name (gls_type,decompose_and_tac,nb_goal)   =
     gls_type 
     hook ;
   by (decompose_and_tac);
-  if Options.is_verbose () then (pp (Printer.pr_open_subgoals()));
-  ()
+  if Options.is_verbose () then (pp (Printer.pr_open_subgoals()))
+  
     
-let com_terminate tcc_lemma_name tcc_lemma_ref is_mes fonctional_ref input_type relation rec_arg_num
+let com_terminate 
+    tcc_lemma_name 
+    tcc_lemma_ref 
+    is_mes 
+    fonctional_ref
+    input_type
+    relation 
+    rec_arg_num
     thm_name hook =
   let (evmap, env) = Command.get_current_context() in
   start_proof thm_name
@@ -1079,7 +1093,7 @@ let recursive_definition is_mes function_name type_of_f r rec_arg_num eq
       with e -> 
 	begin 
 	  ignore(try Vernacentries.vernac_reset_name (Util.dummy_loc,functional_id) with _ -> ());
-	  raise e 
+	  anomaly "Cannot create equation Lemma"
 	end
     end;
     let eq_ref = Nametab.locate (make_short_qualid equation_id ) in
@@ -1089,7 +1103,6 @@ let recursive_definition is_mes function_name type_of_f r rec_arg_num eq
     generate_induction_principle f_ref tcc_lemma_constr
       functional_ref eq_ref rec_arg_num rec_arg_type (nb_prod res) relation;
     ()
-
   in
   try 
     com_terminate 
@@ -1102,8 +1115,9 @@ let recursive_definition is_mes function_name type_of_f r rec_arg_num eq
       hook 
   with e -> 
     begin
-      try Vernacentries.vernac_reset_name (Util.dummy_loc,functional_id) with _ -> ();
-	raise e 
+      ignore(try Vernacentries.vernac_reset_name (Util.dummy_loc,functional_id) with _ -> ());
+(*       anomaly "Cannot create termination Lemma" *)
+      raise e
     end
 
 
