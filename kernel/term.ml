@@ -752,19 +752,17 @@ let rec lift_substituend depth s =
 
 let make_substituend c = { sinfo=Unknown; sit=c }
 
-let substn_many lamv n =
+let substn_many lamv n c =
   let lv = Array.length lamv in 
-  let rec substrec depth c = match kind_of_term c with
-    | Rel k     ->
-        if k<=depth then 
-	  c
-        else if k-depth <= lv then
-          lift_substituend depth lamv.(k-depth-1)
-        else 
-	  mkRel (k-lv)
-    | _ -> map_constr_with_binders succ substrec depth c
-  in 
-  substrec n
+  if lv = 0 then c
+  else 
+    let rec substrec depth c = match kind_of_term c with
+      | Rel k     ->
+          if k<=depth then c
+          else if k-depth <= lv then lift_substituend depth lamv.(k-depth-1)
+          else mkRel (k-lv)
+      | _ -> map_constr_with_binders succ substrec depth c in 
+    substrec n c
 
 (*
 let substkey = Profile.declare_profile "substn_many";;

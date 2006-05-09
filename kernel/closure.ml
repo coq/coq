@@ -645,9 +645,9 @@ and compact_v acc s v k i =
 let optimise_closure env c =
   if is_subs_id env then (env,c) else
     let (c',(_,s)) = compact_constr (0,[]) c 1 in
-    let env' = List.fold_left
-      (fun subs i -> subs_cons (clos_rel env i, subs)) (ESID 0) s in
-    (env',c')
+    let env' =
+      Array.map (fun i -> clos_rel env i) (Array.of_list s) in
+    (subs_cons (env', ESID 0),c')
 
 let mk_lambda env t =
   let (env,t) = optimise_closure env t in
@@ -876,18 +876,14 @@ let rec get_args n tys f e stk =
         get_args n tys f (subs_shft (k,e)) s
     | Zapp l :: s ->
         let na = Array.length l in
-        if n == na then
-          let e' = Array.fold_left (fun e arg -> subs_cons(arg,e)) e l in
-          (Inl e',s)
+        if n == na then (Inl (subs_cons(l,e)),s)
         else if n < na then (* more arguments *)
           let args = Array.sub l 0 n in
           let eargs = Array.sub l n (na-n) in
-          let e' = Array.fold_left (fun e arg -> subs_cons(arg,e)) e args in
-          (Inl e', Zapp eargs :: s)
+          (Inl (subs_cons(args,e)), Zapp eargs :: s)
         else (* more lambdas *)
           let (_,etys) = list_chop na tys in
-          let e' = Array.fold_left (fun e arg -> subs_cons(arg,e)) e l in
-          get_args (n-na) etys f e' s
+          get_args (n-na) etys f (subs_cons(l,e)) s
     | _ -> (Inr {norm=Cstr;term=FLambda(n,tys,f,e)}, stk)
 
 
@@ -939,13 +935,7 @@ let contract_fix_vect fix =
 	   env, Array.length bds)
       | _ -> assert false
   in
-  let rec subst_bodies_from_i i env =
-    if i = nfix then
-      (env, thisbody)
-    else
-      subst_bodies_from_i (i+1) (subs_cons (make_body i, env))
-  in       
-  subst_bodies_from_i 0 env
+  (subs_cons(Array.init nfix make_body, env), thisbody)
 
 
 (*********************************************************************)
@@ -1025,7 +1015,7 @@ let rec knr info m stk =
             knit info fxe fxbd (args@stk')
         | (_,args,s) -> (m,args@s))
   | FLetIn (_,v,_,bd,e) when red_set info.i_flags fZETA ->
-      knit info (subs_cons(v,e)) bd stk
+      knit info (subs_cons([|v|],e)) bd stk
   | _ -> (m,stk)
 
 (* Computes the weak head normal form of a term *)

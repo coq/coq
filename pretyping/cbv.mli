@@ -29,19 +29,19 @@ val cbv_norm         : cbv_infos -> constr -> constr
 (*i This is for cbv debug *)
 type cbv_value =
   | VAL of int * constr
-  | LAM of name * constr * constr * cbv_value subs
-  | FIXP of fixpoint * cbv_value subs * cbv_value list
-  | COFIXP of cofixpoint * cbv_value subs * cbv_value list
-  | CONSTR of constructor * cbv_value list
+  | LAM of int * (name * constr) list * constr * cbv_value subs
+  | FIXP of fixpoint * cbv_value subs * cbv_value array
+  | COFIXP of cofixpoint * cbv_value subs * cbv_value array
+  | CONSTR of constructor * cbv_value array
 
 val shift_value : int -> cbv_value -> cbv_value
 
 type cbv_stack =
   | TOP
-  | APP of cbv_value list * cbv_stack
+  | APP of cbv_value array * cbv_stack
   | CASE of constr * constr array * case_info * cbv_value subs * cbv_stack
 
-val stack_app : cbv_value list -> cbv_stack -> cbv_stack
+val stack_app : cbv_value array -> cbv_stack -> cbv_stack
 val strip_appl : cbv_value -> cbv_stack -> cbv_value * cbv_stack
 
 (* recursive functions... *)

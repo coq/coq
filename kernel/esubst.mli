@@ -22,21 +22,22 @@ val el_lift : lift -> lift
 val reloc_rel : int -> lift -> int
 val is_lift_id : lift -> bool
 
-(*s Explicit substitutions of type ['a]. [ESID n] = %n~END = bounded identity. 
-  [CONS(t,S)] = $S.t$ i.e. parallel substitution. [SHIFT(n,S)] = 
-  $(\uparrow n~o~S)$ i.e. terms in S are relocated with n vars. 
-  [LIFT(n,S)] = $(\%n~S)$ stands for $((\uparrow n~o~S).n...1)$. *)
+(*s Explicit substitutions of type ['a]. *)
 type 'a subs =
-  | ESID of int
-  | CONS of 'a * 'a subs
-  | SHIFT of int * 'a subs
-  | LIFT of int * 'a subs
+  | ESID of int            (* ESID(n)    = %n END   bounded identity *)
+  | CONS of 'a array * 'a subs
+                           (* CONS([|t1..tn|],S)  =
+                              (S.t1...tn)    parallel substitution
+                              beware of the order *)
+  | SHIFT of int * 'a subs (* SHIFT(n,S) = (^n o S) terms in S are relocated *)
+                           (*                        with n vars *)
+  | LIFT of int * 'a subs  (* LIFT(n,S) = (%n S) stands for ((^n o S).n...1) *)
 
-val subs_cons: 'a * 'a subs -> 'a subs
+val subs_cons: 'a array * 'a subs -> 'a subs
 val subs_shft: int * 'a subs -> 'a subs
 val subs_lift: 'a subs -> 'a subs
 val subs_liftn: int -> 'a subs -> 'a subs
-val subs_shift_cons: int * 'a subs * 'a -> 'a subs
+val subs_shift_cons: int * 'a subs * 'a array -> 'a subs
 val expand_rel: int -> 'a subs -> (int * 'a, int * int option) Util.union
 val is_subs_id: 'a subs -> bool
 val comp : ('a subs * 'a -> 'a) -> 'a subs -> 'a subs -> 'a subs
