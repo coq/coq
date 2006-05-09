@@ -721,7 +721,7 @@ let build_and_l l =
   let mk_and p1 p2 = 
     Term.mkApp(and_constr,[|p1;p2|]) in 
   let rec f  = function 
-    | [] -> anomaly "empty list of subgoals!" 
+    | [] -> failwith "empty list of subgoals!" 
     | [p] -> p,tclIDTAC,1 
     | p1::pl -> 
 	let c,tac,nb = f pl in 
@@ -799,10 +799,14 @@ let com_terminate
     (hyp_terminates fonctional_ref) hook;
   by (observe_tac "whole_start" (whole_start is_mes fonctional_ref
 				       input_type relation rec_arg_num ));
-  open_new_goal tcc_lemma_ref
-    (Some tcc_lemma_name)
-    (build_new_goal_type ())
-  
+  try 
+    let new_goal_type = build_new_goal_type () in 
+    open_new_goal tcc_lemma_ref
+      (Some tcc_lemma_name)
+      (new_goal_type)
+  with Failure "empty list of subgoals!" -> 
+    (* a non recursive function declared with measure ! *)
+    defined ()
 
     
 
@@ -1050,7 +1054,8 @@ let (com_eqn : identifier ->
 	       )
 	  )
        );
-     defined ());;
+     defined (); 
+    );;
 
 
 let recursive_definition is_mes function_name type_of_f r rec_arg_num eq 
@@ -1101,8 +1106,13 @@ let recursive_definition is_mes function_name type_of_f r rec_arg_num eq
     and functional_ref = destConst (constr_of_reference functional_ref) 
     and eq_ref = destConst (constr_of_reference eq_ref) in
     generate_induction_principle f_ref tcc_lemma_constr
-      functional_ref eq_ref rec_arg_num rec_arg_type (nb_prod res) relation;
-    ()
+     functional_ref eq_ref rec_arg_num rec_arg_type (nb_prod res) relation;
+     if Options.is_verbose ()
+     then msgnl (h 1 (Ppconstr.pr_id function_name ++ 
+			spc () ++ str"is defined" )++ fnl () ++ 
+		   h 1 (Ppconstr.pr_id equation_id ++ 
+			  spc () ++ str"is defined" )
+		  )
   in
   try 
     com_terminate 
