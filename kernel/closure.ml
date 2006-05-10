@@ -882,7 +882,7 @@ let rec get_args n tys f e stk =
           let eargs = Array.sub l n (na-n) in
           (Inl (subs_cons(args,e)), Zapp eargs :: s)
         else (* more lambdas *)
-          let (_,etys) = list_chop na tys in
+          let etys = list_skipn na tys in
           get_args (n-na) etys f (subs_cons(l,e)) s
     | _ -> (Inr {norm=Cstr;term=FLambda(n,tys,f,e)}, stk)
 

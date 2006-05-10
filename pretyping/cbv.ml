@@ -58,14 +58,15 @@ type cbv_value =
  *)
 let rec shift_value n = function
   | VAL (k,v) -> VAL ((k+n),v)
-  | LAM (n,ctxt,b,s) -> LAM (n,ctxt,b,subs_shft (n,s))
+  | LAM (nlams,ctxt,b,s) -> LAM (nlams,ctxt,b,subs_shft (n,s))
   | FIXP (fix,s,args) ->
       FIXP (fix,subs_shft (n,s), Array.map (shift_value n) args)
   | COFIXP (cofix,s,args) ->
       COFIXP (cofix,subs_shft (n,s), Array.map (shift_value n) args)
   | CONSTR (c,args) ->
       CONSTR (c, Array.map (shift_value n) args)
-	
+let shift_value n v =
+  if n = 0 then v else shift_value n v
 
 (* Contracts a fixpoint: given a fixpoint and a bindings,
  * returns the corresponding fixpoint body, and the bindings in which
@@ -220,7 +221,7 @@ let rec norm_head info env t stack =
   (* non-neutral cases *)
   | Lambda _ ->
       let ctxt,b = decompose_lam t in
-      (LAM(List.length ctxt, ctxt,b,env), stack)
+      (LAM(List.length ctxt, List.rev ctxt,b,env), stack)
   | Fix fix -> (FIXP(fix,env,[||]), stack)
   | CoFix cofix -> (COFIXP(cofix,env,[||]), stack)
   | Construct c -> (CONSTR(c, [||]), stack)
@@ -258,7 +259,7 @@ and cbv_stack_term info stack env t =
           let eargs = Array.sub args nlams (nargs-nlams) in
           cbv_stack_term info (APP(eargs,stk)) env' b
         else
-          let (_,ctxt') = list_chop nargs ctxt in
+          let ctxt' = list_skipn nargs ctxt in
           LAM(nlams-nargs,ctxt', b, subs_cons(args,env))
 
     (* a Fix applied enough -> IOTA *)
@@ -324,8 +325,8 @@ and cbv_norm_value info = function (* reduction under binders *)
   | LAM (n,ctxt,b,env) ->
       let nctxt =
         list_map_i (fun i (x,ty) ->
-          (x,cbv_norm_term info (subs_liftn (n-i) env) ty)) 0 ctxt in
-      compose_lam nctxt (cbv_norm_term info (subs_liftn n env) b)
+          (x,cbv_norm_term info (subs_liftn i env) ty)) 0 ctxt in
+      compose_lam (List.rev nctxt) (cbv_norm_term info (subs_liftn n env) b)
   | FIXP ((lij,(names,lty,bds)),env,args) ->
       mkApp
         (mkFix (lij,
