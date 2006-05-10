@@ -296,13 +296,16 @@ Implicit arguments
 
 Grammar extensions
 
-- UTF-8 encoded unicode blocks 0380-03FF (greek letters) and 2100-214F
-  (letter-like, including aleph and double N,Z,Q,R) are supported
-  identifiers; UTF-8 unicode blocs 2200-22FF (mathematical operators),
-  2A00-2AFF (supplemental mathematical operators) 2300-23FF
-  (miscellaneous technical, including sqrt symbol), 2600-26FF
-  (miscellaneous symbols) 2190-21FF (arrows A) and 2900-297F (arrows B)
-  are supported symbols
+- Many newly supported UTF-8 encoded unicode blocks
+  - Greek letters (0380-03FF), Hebrew letters (U05D0-05EF), letter-like
+  symbols (2100-214F, that includes double N,Z,Q,R), prime
+  signs (from 2080-2089) and characters from many written languages
+  are valid in identifiers
+  - mathematical operators (2200-22FF), supplemental mathematical
+  operators (2A00-2AFF), miscellaneous technical (2300-23FF that
+  includes sqrt symbol), miscellaneous symbols (2600-26FF), arrows
+  (2190-21FF and 2900-297F), invisible mathematical operators (from
+  2080-2089), ... are valid symbols
 
 Library
 

@@ -4,6 +4,9 @@
 
 (* Check Greek letters *)
 Definition test_greek : nat -> nat := fun Δ => Δ.
+Parameter ℝ : Set.
+Parameter π : ℝ.
 
 (* Check indices *)
 Definition test_indices : nat -> nat := fun x₁ => x₁.
+Definition π₂ := snd.
