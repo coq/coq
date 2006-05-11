@@ -489,6 +489,111 @@ Defined.
 
 Definition Zgcd_gen (a b:Z) := let (p, _) := Zgcd_gen_spec a b in p.
 
+(** a last version of  [Zgcd] that can compute within Coq.
+   We use an explicit measure in [nat], that should at least be 
+   bigger than the absolute value of the first argument.
+   (in fact, bigger than the log of the first argument should be enough
+    ...TO CHECK) 
+*)
+
+Fixpoint Zgcd_gen' (n:nat) : Z -> Z -> (Z*(Z*Z)) := fun a b => 
+ match n with 
+  | O => (Zabs b,(0,Zsgn b))
+  | S n => match a with 
+     | Z0 => (Zabs b,(0,Zsgn b))
+     | Zpos _ => 
+               let (q,r) := Zdiv_eucl b a in   (* b = q*a+r *)
+               let (g,p) := Zgcd_gen' n r a in 
+               let (rr,aa) := p in        (* r = g *rr /\ a = g * aa *)
+               (g,(aa,q*aa+rr))
+     | Zneg a => 
+               let (q,r) := Zdiv_eucl b (Zpos a) in  (* b = q*(-a)+r *)
+               let (g,p) := Zgcd_gen' n r (Zpos a) in 
+               let (rr,aa) := p in         (* r = g*rr /\ (-a) = g * aa *)  
+               (g,(-aa,q*aa+rr))
+     end
+   end.
+
+Lemma Zgcd_gen'_correct : forall n a b, 
+ Zabs a <= Z_of_nat n -> 
+ let (g,p) := Zgcd_gen' n a b in 
+ let (aa,bb):=p in 
+ Zis_gcd a b g /\ g >= 0 /\ a=g*aa /\ b=g*bb.
+Proof.
+induction n.
+simpl; intros.
+destruct a; simpl in *; [|elim H|elim H]; auto.
+  elim (Z_le_lt_eq_dec _ _ (Zabs_pos b)).
+    intros H0; split.
+    apply Zabs_ind.
+    intros; apply Zis_gcd_sym; apply Zis_gcd_0; auto.
+    intros; apply Zis_gcd_opp; apply Zis_gcd_0; auto.
+    repeat split; auto with zarith.
+    symmetry; apply Zabs_Zsgn.
+    
+    intros H0; rewrite <- H0.
+    rewrite <- (Zabs_Zsgn b); rewrite <- H0; simpl in |- *.
+    split; [ apply Zis_gcd_0 | idtac ]; auto with zarith.
+destruct a.
+clear IHn; intros b _; simpl.
+  elim (Z_le_lt_eq_dec _ _ (Zabs_pos b)).
+    intros H0; split.
+    apply Zabs_ind.
+    intros; apply Zis_gcd_sym; apply Zis_gcd_0; auto.
+    intros; apply Zis_gcd_opp; apply Zis_gcd_0; auto.
+    repeat split; auto with zarith.
+    symmetry; apply Zabs_Zsgn.
+    
+    intros H0; rewrite <- H0.
+    rewrite <- (Zabs_Zsgn b); rewrite <- H0; simpl in |- *.
+    split; [ apply Zis_gcd_0 | idtac ]; auto with zarith.
+intros; simpl.
+ generalize (Z_div_mod b (Zpos p)).
+ destruct (Zdiv_eucl b (Zpos p)) as (q,r).
+ destruct 1; auto with zarith.
+ rewrite inj_S in H; simpl Zabs in H.
+ assert (Zabs r <= Z_of_nat n) by
+  rewrite Zabs_eq; auto with zarith.
+ generalize (IHn r (Zpos p) H2).
+ destruct (Zgcd_gen' n r (Zpos p)) as (g,(rr,aa)).
+ intros (H3,(H4,(H5,H6))).
+ split. 
+ rewrite H0.
+ apply Zis_gcd_for_euclid2; auto.
+ repeat split; auto.
+ rewrite H0; rewrite H6; rewrite H5; ring.
+intros; simpl.
+ generalize (Z_div_mod b (Zpos p)).
+ destruct (Zdiv_eucl b (Zpos p)) as (q,r).
+ destruct 1; auto with zarith.
+ rewrite inj_S in H; simpl Zabs in H.
+ assert (Zabs r <= Z_of_nat n) by
+  rewrite Zabs_eq; auto with zarith.
+ generalize (IHn r (Zpos p) H2).
+ destruct (Zgcd_gen' n r (Zpos p)) as (g,(rr,aa)).
+ intros (H3,(H4,(H5,H6))).
+ split. 
+ rewrite H0.
+ apply Zis_gcd_minus.
+ apply Zis_gcd_sym; simpl Zopp.
+ apply Zis_gcd_for_euclid2; auto.
+ repeat split; auto.
+ replace (Zneg p) with (- Zpos p) by auto.
+ rewrite H6; ring.
+ rewrite H0; rewrite H6; rewrite H5; ring.
+Qed.
+ 
+(** To speedup things, one way is to factor first the binary 0 digits 
+  TO BE USED. *)
+
+Fixpoint Pfactor_twos (p p':positive) {struct p} : (positive*(positive*positive)) := 
+ match p, p' with 
+  | xO p, xO p' => let (g,p) := Pfactor_twos p p' in 
+                            let (a,b) := p in 
+                            (xO g,(a,b))
+  | _, _ => (xH,(p,p'))
+ end.
+
 (** * Relative primality *)
 
 Definition rel_prime (a b:Z) : Prop := Zis_gcd a b 1.
