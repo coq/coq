@@ -11,25 +11,16 @@
 Require Import Relations.
 Require Import List.
 Require Import Multiset.
+Require Import Arith.
+
 
 Set Implicit Arguments.
 
 Section defs.
 
 Variable A : Set.
-Variable leA : relation A.
 Variable eqA : relation A.
-
-Let gtA (x y:A) := ~ leA x y.
-
-Hypothesis leA_dec : forall x y:A, {leA x y} + {~ leA x y}.
 Hypothesis eqA_dec : forall x y:A, {eqA x y} + {~ eqA x y}.
-Hypothesis leA_refl : forall x y:A, eqA x y -> leA x y.
-Hypothesis leA_trans : forall x y z:A, leA x y -> leA y z -> leA x z.
-Hypothesis leA_antisym : forall x y:A, leA x y -> leA y x -> eqA x y.
-
-Hint Resolve leA_refl: default.
-Hint Immediate eqA_dec leA_dec leA_antisym: default.
 
 Let emptyBag := EmptyBag A.
 Let singletonBag := SingletonBag _ eqA_dec.
@@ -63,6 +54,12 @@ unfold permutation in |- *; auto with datatypes.
 Qed.
 Hint Resolve permut_refl.
 
+Lemma permut_sym :
+ forall l1 l2 : list A, permutation l1 l2 -> permutation l2 l1.
+Proof.
+unfold permutation, meq; intros; apply sym_eq; trivial.
+Qed.
+
 Lemma permut_tran :
  forall l m n:list A, permutation l m -> permutation m n -> permutation l n.
 Proof.
@@ -70,13 +67,13 @@ unfold permutation in |- *; intros.
 apply meq_trans with (list_contents m); auto with datatypes.
 Qed.
 
-Lemma permut_right :
+Lemma permut_cons :
  forall l m:list A,
    permutation l m -> forall a:A, permutation (a :: l) (a :: m).
 Proof.
 unfold permutation in |- *; simpl in |- *; auto with datatypes.
 Qed.
-Hint Resolve permut_right.
+Hint Resolve permut_cons.
 
 Lemma permut_app :
  forall l l' m m':list A,
@@ -92,16 +89,6 @@ apply meq_trans with (munion (list_contents l') (list_contents m));
 Qed.
 Hint Resolve permut_app.
 
-Lemma permut_cons :
- forall l m:list A,
-   permutation l m -> forall a:A, permutation (a :: l) (a :: m).
-Proof.
-intros l m H a.
-change (permutation ((a :: nil) ++ l) ((a :: nil) ++ m)) in |- *.
-apply permut_app; auto with datatypes.
-Qed.
-Hint Resolve permut_cons.
-
 Lemma permut_middle :
  forall (l m:list A) (a:A), permutation (a :: l ++ m) (l ++ a :: m).
 Proof.
@@ -116,5 +103,93 @@ apply munion_perm_left; auto with datatypes.
 Qed.
 Hint Resolve permut_middle.
 
+Lemma permut_add_inside :
+ forall a l1 l2 l3 l4, 
+  permutation (l1 ++ l2) (l3 ++ l4) ->
+  permutation (l1 ++ a :: l2) (l3 ++ a :: l4).
+Proof.
+unfold permutation, meq in *; intros.
+generalize (H a0); clear H.
+do 4 rewrite list_contents_app.
+simpl.
+destruct (eqA_dec a a0); simpl; auto with arith.
+do 2 rewrite <- plus_n_Sm; f_equal; auto.
+Qed.
+
+Lemma permut_add_cons_inside :
+ forall a l l1 l2, 
+  permutation l (l1 ++ l2) ->
+  permutation (a :: l) (l1 ++ a :: l2).
+Proof.
+intros;
+replace (a :: l) with (nil ++ a :: l); trivial;
+apply permut_add_inside; trivial.
+Qed.
+
+Lemma permut_sym_app :
+ forall l1 l2, permutation (l1 ++ l2) (l2 ++ l1).
+Proof.
+intros l1 l2;
+unfold permutation, meq; 
+intro a; do 2 rewrite list_contents_app; simpl; 
+auto with arith.
+Qed.
+
+Lemma permut_rev : 
+ forall l, permutation l (rev l).
+Proof.
+induction l.
+simpl; auto.
+simpl.
+apply permut_add_cons_inside.
+rewrite <- app_nil_end; auto.
+Qed.
+
+(** Some inversion results. *)
+Lemma permut_conv_inv :
+  forall e l1 l2, permutation (e :: l1) (e :: l2) -> permutation l1 l2.
+Proof.
+intros e l1 l2; unfold permutation, meq; simpl; intros H a;
+generalize (H a); apply plus_reg_l.
+Qed.
+
+Lemma permut_app_inv1 : 
+  forall l l1 l2, permutation (l1 ++ l) (l2 ++ l) -> permutation l1 l2.
+Proof.
+intros l l1 l2; unfold permutation, meq; simpl;
+intros H a; generalize (H a); clear H.
+do 2 rewrite list_contents_app.
+simpl.
+intros; apply plus_reg_l with (multiplicity (list_contents l) a).
+rewrite plus_comm; rewrite H; rewrite plus_comm.
+trivial.
+Qed.
+
+Lemma permut_app_inv2 : 
+  forall l l1 l2, permutation (l ++ l1) (l ++ l2) -> permutation l1 l2.
+Proof.
+intros l l1 l2; unfold permutation, meq; simpl;
+intros H a; generalize (H a); clear H.
+do 2 rewrite list_contents_app.
+simpl.
+intros; apply plus_reg_l with (multiplicity (list_contents l) a).
+trivial.
+Qed.
+
+Lemma permut_remove_hd :
+  forall l l1 l2 a,   
+  permutation (a :: l) (l1 ++ a :: l2) -> permutation l (l1 ++ l2).
+Proof.
+intros l l1 l2 a; unfold permutation, meq; simpl; intros H a0; generalize (H a0); clear H.
+do 2 rewrite list_contents_app; simpl; intro H.
+apply plus_reg_l with (if eqA_dec a a0 then 1 else 0).
+rewrite H; clear H.
+symmetry; rewrite plus_comm.
+repeat rewrite <- plus_assoc; f_equal.
+apply plus_comm.
+Qed.
+
 End defs.
+(* For compatibilty *) 
+Notation permut_right := permut_cons.
 Unset Implicit Arguments.
