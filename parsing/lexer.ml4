@@ -118,6 +118,10 @@ let lookup_utf8_tail c cs =
     match unicode land 0x1F000 with
     | 0x0 ->
     begin match unicode with
+    (* utf-8 Latin-1 non breaking space U00A0 *)
+    | 0x00A0 -> Utf8Letter n
+    (* utf-8 Latin-1 symbols U00A1-00BF *)
+    | x when 0x00A0 <= x & x <= 0x00BF -> Utf8Symbol
     (* utf-8 Latin-1 letters U00C0-00D6 *)
     | x when 0x00C0 <= x & x <= 0x00D6 -> Utf8Letter n
     (* utf-8 Latin-1 symbol U00D7 *)
@@ -168,7 +172,7 @@ let lookup_utf8_tail c cs =
     | x when 0x2010 <= x & x <= 0x2011 -> Utf8Letter n 
     (* Dashes and other symbols *)
     | x when 0x2012 <= x & x <= 0x2027 -> Utf8Symbol
-    (* Per mille and per ten thousant signs *)
+    (* Per mille and per ten thousand signs *)
     | x when 0x2030 <= x & x <= 0x2031 -> Utf8Symbol
     (* Prime letters *)
     | x when 0x2032 <= x & x <= 0x2034 or x = 0x2057 -> Utf8IdentPart n
