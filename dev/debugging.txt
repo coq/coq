@@ -1,4 +1,3 @@
-
 Debugging from Coq toplevel using Caml trace mechanism
 ======================================================
 
@@ -19,7 +18,6 @@ Debugging from Coq toplevel using Caml trace mechanism
 Debugging from Caml debugger
 ============================
 
-   Preferably use ocaml 3.06 (pretty-printing is broken with ocaml 3.07/3.08)
    Needs tuareg mode in Emacs
    Coq must be configured with -debug and -local (./configure -debug -local)
 
@@ -44,13 +42,30 @@ Debugging from Caml debugger
      Vernac.vernac_com at the with clause of the "try ... interp com
      with ..." block, then go "back" a few steps to find where the
      failure/error/anomaly has been raised
-   - If "source db" fails, first recompile top_printers.ml with
-     "make dev/top_printers.cmo"
+   - Alternatively, for an error or an anomaly, add breakpoints in the middle  
+     of each of error* functions or anomaly* functions in lib/util.ml
+   - If "source db" fails, recompile printers.cma with
+     "make dev/printers.cma" and try again
 
-Profiling
-=========
+Global gprof-based profiling
+============================
 
    Coq must be configured with option -profile
 
    1. Run native Coq which must end normally (use Quit or option -batch)
    2. gprof ./coqtop gmon.out
+
+Per function profiling
+======================
+
+   1. To profile function foo in file bar.ml, add the following lines, just
+      after the definition of the function:
+
+     let fookey = Profile.declare_profile "foo";;
+     let foo a b c = Profile.profile3 fookey foo a b c;;
+
+     where foo is assumed to have three arguments (adapt using
+     Profile.profile1, Profile. profile2, etc).
+
+     This has the effect to cumulate the time passed in foo under a
+     line of name "foo" which is displayed at the time coqtop exits.
