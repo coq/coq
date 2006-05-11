@@ -290,6 +290,149 @@ inversion_clear H1; auto.
 elim H2; auto.
 Qed.
 
+Let addlistA x l l' := forall y, InA y l' <-> eqA x y \/ InA y l.
+
+Lemma removeA_add :
+  forall s s' x x', NoDupA s -> NoDupA (x' :: s') ->
+  ~ eqA x x' -> ~ InA x s -> 
+  addlistA x s (x' :: s') -> addlistA x (removeA x' s) s'.
+Proof.
+unfold addlistA; intros.
+inversion_clear H0.
+rewrite removeA_InA; auto.
+split; intros.
+destruct (eqA_dec x y); auto; intros.
+right; split; auto.
+destruct (H3 y); clear H3.
+destruct H6; intuition.
+swap H4; apply InA_eqA with y; auto.
+destruct H0.
+assert (InA y (x' :: s')) by rewrite H3; auto.
+inversion_clear H6; auto.
+elim H1; apply eqA_trans with y; auto.
+destruct H0.
+assert (InA y (x' :: s')) by rewrite H3; auto.
+inversion_clear H7; auto.
+elim H6; auto.
+Qed.
+
+Section Fold.
+
+Variable B:Set.
+Variable eqB:B->B->Prop.
+
+(** Two-argument functions that allow to reorder its arguments. *)
+Definition transpose (f : A -> B -> B) :=
+  forall (x y : A) (z : B), eqB (f x (f y z)) (f y (f x z)). 
+
+(** Compatibility of a two-argument function with respect to two equalities. *)
+Definition compat_op (f : A -> B -> B) :=
+  forall (x x' : A) (y y' : B), eqA x x' -> eqB y y' -> eqB (f x y) (f x' y').
+
+(** Compatibility of a function upon natural numbers. *)
+Definition compat_nat (f : A -> nat) :=
+  forall x x' : A, eqA x x' -> f x = f x'.
+
+Variable st:Setoid_Theory _ eqB.
+Variable f:A->B->B.
+Variable Comp:compat_op f.
+Variable Ass:transpose f.
+Variable i:B.
+
+Lemma removeA_fold_right_0 :
+  forall s x, ~InA x s ->
+  eqB (fold_right f i s) (fold_right f i (removeA x s)).
+Proof.
+ simple induction s; simpl; intros.
+ refl_st.
+ destruct (eqA_dec x a); simpl; intros.
+ absurd_hyp e; auto.
+ apply Comp; auto. 
+Qed.   
+
+Lemma removeA_fold_right :
+  forall s x, NoDupA s -> InA x s ->
+  eqB (fold_right f i s) (f x (fold_right f i (removeA x s))).
+Proof.
+ simple induction s; simpl.  
+ inversion_clear 2.
+ intros.
+ inversion_clear H0.
+ destruct (eqA_dec x a); simpl; intros.
+ apply Comp; auto. 
+ apply removeA_fold_right_0; auto.
+ swap H2; apply InA_eqA with x; auto.
+ inversion_clear H1. 
+ destruct n; auto.
+ trans_st (f a (f x (fold_right f i (removeA x l)))).
+Qed.   
+
+Lemma fold_right_equal :
+  forall s s', NoDupA s -> NoDupA s' ->
+  eqlistA s s' -> eqB (fold_right f i s) (fold_right f i s').
+Proof.
+ simple induction s.
+ destruct s'; simpl.
+ intros; refl_st; auto.
+ unfold eqlistA; intros.
+ destruct (H1 a).
+ assert (X : InA a nil); auto; inversion X.
+ intros x l Hrec s' N N' E; simpl in *.
+ trans_st (f x (fold_right f i (removeA x s'))).
+ apply Comp; auto.
+ apply Hrec; auto.
+ inversion N; auto.
+ apply removeA_NoDupA; auto; apply eqA_trans.
+ apply removeA_eqlistA; auto.
+ inversion_clear N; auto.
+ sym_st.
+ apply removeA_fold_right; auto.
+ unfold eqlistA in E.
+ rewrite <- E; auto.
+Qed.
+
+Lemma fold_right_add :
+  forall s' s x, NoDupA s -> NoDupA s' -> ~ InA x s ->
+  addlistA x s s' -> eqB (fold_right f i s') (f x (fold_right f i s)).
+Proof.   
+ simple induction s'.
+ unfold addlistA; intros.
+ destruct (H2 x); clear H2.
+ assert (X : InA x nil); auto; inversion X.
+ intros x' l' Hrec s x N N' IN EQ; simpl.
+ (* if x=x' *)
+ destruct (eqA_dec x x').
+ apply Comp; auto.
+ apply fold_right_equal; auto.
+ inversion_clear N'; trivial.
+ unfold eqlistA; unfold addlistA in EQ; intros.
+ destruct (EQ x0); clear EQ.
+ split; intros.
+ destruct H; auto.
+ inversion_clear N'.
+ destruct H2; apply InA_eqA with x0; auto.
+ apply eqA_trans with x; auto.
+ assert (X:InA x0 (x' :: l')); auto; inversion_clear X; auto.
+ destruct IN; apply InA_eqA with x0; auto.
+ apply eqA_trans with x'; auto.
+ (* else x<>x' *)   
+ trans_st (f x' (f x (fold_right f i (removeA x' s)))).
+ apply Comp; auto.
+ apply Hrec; auto.
+ apply removeA_NoDupA; auto; apply eqA_trans.
+ inversion_clear N'; auto.
+ rewrite removeA_InA; intuition.
+ apply removeA_add; auto.
+ trans_st (f x (f x' (fold_right f i (removeA x' s)))).
+ apply Comp; auto.
+ sym_st.
+ apply removeA_fold_right; auto.
+ destruct (EQ x'). 
+ destruct H; auto; destruct n; auto.
+Qed.
+
+End Fold.
+
 End Remove.
 
 End Type_with_equality.

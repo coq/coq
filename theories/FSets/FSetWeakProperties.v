@@ -10,14 +10,17 @@
 
 (** * Finite sets library *)
 
-(** This functor derives additional properties from [FSetInterface.S].
-    Contrary to the functor in [FSetEqProperties] it uses 
+(** NB: this file is a clone of [FSetProperties] for weak sets
+     and should remain so until we find a way to share the two. *)
+
+(** This functor derives additional properties from [FSetWeakInterface.S].
+    Contrary to the functor in [FSetWeakEqProperties] it uses 
     predicates over sets instead of sets operations, i.e.
     [In x s] instead of [mem x s=true], 
     [Equal s s'] instead of [equal s s'=true], etc. *)
 
-Require Export FSetInterface. 
-Require Import FSetFacts.
+Require Export FSetWeakInterface. 
+Require Import FSetWeakFacts.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
@@ -25,8 +28,6 @@ Hint Unfold transpose compat_op.
 Hint Extern 1 (Setoid_Theory _ _) => constructor; congruence.
 
 Module Properties (M: S).
-  Module ME:=OrderedTypeFacts(M.E).
-  Import ME. (* for ME.eq_dec *)
   Import M.E.
   Import M.
   Import Logic. (* to unmask [eq] *)  

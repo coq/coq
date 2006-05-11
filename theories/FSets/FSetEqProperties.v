@@ -704,6 +704,11 @@ assert (f a || g a = true <-> f a = true \/ g a = true).
 tauto.
 Qed.
 
+Lemma filter_union: forall s s', filter f (union s s') [=] union (filter f s) (filter f s').
+Proof.
+unfold Equal; intros; set_iff; repeat rewrite filter_iff; auto; set_iff; tauto.
+Qed.
+
 (** Properties of [for_all] *)
 
 Lemma for_all_mem_1: forall s, 

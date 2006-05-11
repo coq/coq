@@ -662,3 +662,26 @@ Implicit Arguments Setoid_Theory [].
 Implicit Arguments Seq_refl [].
 Implicit Arguments Seq_sym [].
 Implicit Arguments Seq_trans [].
+
+
+(* Some tactics for manipulating Setoid Theory not officially 
+   declared as Setoid. *)
+
+Ltac trans_st x := match goal with 
+  | H : Setoid_Theory _ ?eqA |- ?eqA _ _ => 
+     apply (Seq_trans _ _ H) with x; auto
+ end.
+
+Ltac sym_st := match goal with 
+  | H : Setoid_Theory _ ?eqA |- ?eqA _ _ => 
+     apply (Seq_sym _ _ H); auto
+ end.
+
+Ltac refl_st := match goal with 
+  | H : Setoid_Theory _ ?eqA |- ?eqA _ _ => 
+     apply (Seq_refl _ _ H); auto
+ end.
+
+Definition gen_st : forall A : Set, Setoid_Theory _ (@eq A).
+Proof. constructor; congruence. Qed.
+

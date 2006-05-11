@@ -229,6 +229,7 @@ Module Type S.
   (** Specification of [elements] *)
   Parameter elements_1 : In x s -> InA E.eq x (elements s).
   Parameter elements_2 : InA E.eq x (elements s) -> In x s.
+  Parameter elements_3 : NoDupA E.eq (elements s).
 
   (** Specification of [choose] *)
   Parameter choose_1 : choose s = Some x -> In x s.
@@ -243,6 +244,7 @@ Module Type S.
     is_empty_1 is_empty_2 choose_1 choose_2 add_1 add_2 add_3 remove_1
     remove_2 remove_3 singleton_1 singleton_2 union_1 union_2 union_3 inter_1
     inter_2 inter_3 diff_1 diff_2 diff_3 filter_1 filter_2 filter_3 for_all_1
-    for_all_2 exists_1 exists_2 partition_1 partition_2 elements_1 elements_2.
+    for_all_2 exists_1 exists_2 partition_1 partition_2 elements_1 elements_2
+    elements_3.
 
 End S.

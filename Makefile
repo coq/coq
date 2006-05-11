@@ -871,7 +871,7 @@ FSETSBASEVO=\
  theories/FSets/FSetInterface.vo     theories/FSets/FSetList.vo \
  theories/FSets/FSetBridge.vo        theories/FSets/FSetFacts.vo \
  theories/FSets/FSetProperties.vo    theories/FSets/FSetEqProperties.vo \
- theories/FSets/FSets.vo \
+ theories/FSets/FSets.vo             theories/FSets/FSetWeakProperties.vo \
  theories/FSets/FSetWeakInterface.vo theories/FSets/FSetWeakList.vo \
  theories/FSets/FSetWeakFacts.vo     theories/FSets/FSetWeak.vo \
  theories/FSets/FMapInterface.vo     theories/FSets/FMapList.vo \
