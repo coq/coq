@@ -228,6 +228,18 @@ Section Remove.
 
 Hypothesis eqA_dec : forall x y : A, {eqA x y}+{~(eqA x y)}.
 
+Lemma InA_dec : forall x l, { InA x l } + { ~ InA x l }.
+Proof.
+induction l.
+right; auto.
+red; inversion 1.
+destruct (eqA_dec x a).
+left; auto.
+destruct IHl.
+left; auto.
+right; red; inversion_clear 1; tauto.
+Qed.
+
 Fixpoint removeA (x : A) (l : list A){struct l} : list A :=
   match l with
     | nil => nil
