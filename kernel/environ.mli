@@ -140,6 +140,9 @@ val add_mind : mutual_inductive -> mutual_inductive_body -> env -> env
 (* raises [Not_found] if the required path is not found *)
 val lookup_mind : mutual_inductive -> env -> mutual_inductive_body
 
+(* Find the ultimate inductive in the [mind_equiv] chain *)
+val scrape_mind : env -> mutual_inductive -> mutual_inductive
+
 (************************************************************************)
 (*s Modules *)
 val add_modtype : kernel_name -> module_type_body -> env -> env

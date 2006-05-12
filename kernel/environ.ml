@@ -186,6 +186,8 @@ let evaluable_constant cst env =
 
 (* Mutual Inductives *)
 let lookup_mind = lookup_mind
+let scrape_mind = scrape_mind
+
 
 let add_mind kn mib env =
   let new_inds = KNmap.add kn mib env.env_globals.env_inductives in

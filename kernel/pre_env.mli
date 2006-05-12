@@ -83,4 +83,7 @@ val lookup_constant : constant -> env -> constant_body
 (* Mutual Inductives *)
 val lookup_mind : mutual_inductive -> env -> mutual_inductive_body
 
+(* Find the ultimate inductive in the [mind_equiv] chain *)
+val scrape_mind : env -> mutual_inductive -> mutual_inductive
+
 

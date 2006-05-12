@@ -62,10 +62,6 @@ val type_case_branches :
    given inductive type. *)
 val check_case_info : env -> inductive -> case_info -> unit
 
-(* Find the ultimate inductive in the [mind_equiv] chain *)
-
-val scrape_mind : env -> mutual_inductive -> mutual_inductive
-
 (*s Guard conditions for fix and cofix-points. *)
 val check_fix : env -> fixpoint -> unit
 val check_cofix : env -> cofixpoint -> unit
@@ -83,3 +79,27 @@ val find_inductive_level : env -> mind_specif -> inductive ->
 val is_small_inductive : mind_specif -> bool
 
 val max_inductive_sort : sorts array -> universe
+
+(***************************************************************)
+(* Debug *)
+
+type size = Large | Strict
+type subterm_spec =
+    Subterm of (size * wf_paths)
+  | Dead_code
+  | Not_subterm
+type guard_env =
+  { env     : env;
+    (* dB of last fixpoint *)
+    rel_min : int;
+    (* inductive of recarg of each fixpoint *)
+    inds    : inductive array;
+    (* the recarg information of inductive family *)
+    recvec  : wf_paths array;
+    (* dB of variables denoting subterms *)
+    genv    : subterm_spec list;
+  }
+
+val subterm_specif : guard_env -> constr -> subterm_spec
+val case_branches_specif : guard_env -> constr -> inductive ->
+  constr array -> (guard_env * constr) array
