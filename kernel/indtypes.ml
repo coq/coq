@@ -116,8 +116,6 @@ let is_info_type env t =
 
 let is_small infos = List.for_all (fun (logic,small) -> small) infos
 let is_logic_constr infos = List.for_all (fun (logic,small) -> logic) infos
-let is_logic_arity infos =
-  List.for_all (fun (logic,small) -> logic || small) infos
 
 (* An inductive definition is a "unit" if it has only one constructor
    and that all arguments expected by this constructor are 
@@ -505,19 +503,29 @@ let is_recursive = Rtree.is_infinite
   array_exists one_is_rec
 *)
 
+(* Allowed eliminations *)
+
 let all_sorts = [InProp;InSet;InType]
-let impredicative_sorts = [InProp;InSet]
+let small_sorts = [InProp;InSet]
 let logical_sorts = [InProp]
 
-let allowed_sorts env issmall isunit = function
+let allowed_sorts issmall isunit = function
+  (* Type: all elimination allowed *)
   | Type _ -> all_sorts
-  | Prop Pos -> 
-      if issmall then all_sorts
-      else impredicative_sorts
-  | Prop Null -> 
-(* 29/1/02: added InType which is derivable when the type is unit and small *)
-      if isunit then all_sorts
-      else logical_sorts
+
+  (* Small Set is predicative: all elimination allowed *)
+  | Prop Pos when issmall -> all_sorts
+
+  (* Large Set is necessarily impredicative: forbids large elimination *)
+  | Prop Pos -> small_sorts
+
+  (* Unitary/empty Prop: elimination to all sorts are realizable *)
+  (* unless the type is large. If it is large, forbids large elimination *)
+  (* which otherwise allows to simulate the inconsistent system Type:Type *)
+  | Prop Null when isunit -> if issmall then all_sorts else small_sorts
+
+  (* Other propositions: elimination only to Prop *)
+  | Prop Null -> logical_sorts
 
 let fold_inductive_blocks f =
   Array.fold_left (fun acc (_,ar,_,_,_,lc) -> f (Array.fold_left f acc lc) ar)
@@ -547,7 +555,7 @@ let build_inductive env env_ar params isrecord isfinite inds nmr recargs cst =
 	splayed_lc in
     (* Elimination sorts *)
     let isunit = isunit && ntypes = 1 && (not (is_recursive recargs.(0))) in
-    let kelim = allowed_sorts env issmall isunit ar_sort in
+    let kelim = allowed_sorts issmall isunit ar_sort in
     let nconst, nblock = ref 0, ref 0 in 
     let transf num =
       let arity = List.length (dest_subterms recarg).(num) in
