@@ -697,7 +697,7 @@ destruct a; unfold Zmod; simpl; intros; auto;
  destruct (Zggcdn n r (Zpos p)) as (g,(rr,aa)); simpl; auto.
 Qed.
 
-Lemma Zggcd_gcdn : forall a b, fst (Zggcd a b) = Zgcd a b.
+Lemma Zggcd_gcd : forall a b, fst (Zggcd a b) = Zgcd a b.
 Proof.
 intros; unfold Zggcd, Zgcd; apply Zggcdn_gcdn; auto.
 Qed.
