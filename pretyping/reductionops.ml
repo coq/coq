@@ -847,26 +847,6 @@ let is_arity env sigma c =
     | Sort _ -> true
     | _ -> false
  
-let info_arity env sigma c =
-  match find_conclusion env sigma c with
-    | Sort (Prop Null) -> false 
-    | Sort (Prop Pos) -> true 
-    | _ -> raise IsType
-    
-let is_info_arity env sigma c =
-  try (info_arity env sigma c) with IsType -> true
-  
-let is_type_arity env sigma c = 
-  match find_conclusion env sigma c with
-    | Sort (Type _) -> true
-    | _ -> false
-
-let is_info_type env sigma t =
-  let s = t.utj_type in
-  (s = Prop Pos) ||
-  (s <> Prop Null && 
-   try info_arity env sigma t.utj_val with IsType -> true)
-
 (*************************************)
 (* Metas *)
 

@@ -175,13 +175,6 @@ val reduce_mind_case : constr miota_args -> constr
 
 val find_conclusion : env -> evar_map -> constr -> (constr,constr) kind_of_term
 val is_arity : env ->  evar_map -> constr -> bool
-val is_info_type : env ->  evar_map -> unsafe_type_judgment -> bool
-val is_info_arity : env ->  evar_map -> constr -> bool
-(*i Pour l'extraction
-val is_type_arity : env -> 'a evar_map -> constr -> bool
-val is_info_cast_type : env -> 'a evar_map -> constr -> bool
-val contents_of_cast_type : env -> 'a evar_map -> constr -> contents
-i*)
 
 val whd_programs :  reduction_function
 
