@@ -421,7 +421,7 @@ Definition Zgcd a b := Zgcdn (Zgcd_bound a) a b.
 
 (** A first obvious fact : [Zgcd a b] is positive. *)
 
-Lemma Zgcdn_pos : forall n a b, 
+Lemma Zgcdn_is_pos : forall n a b, 
   0 <= Zgcdn n a b.
 Proof.
 induction n.
@@ -429,9 +429,9 @@ simpl; auto with zarith.
 destruct a; simpl; intros; auto with zarith; auto.
 Qed.
 
-Lemma Zgcd_pos : forall a b, 0 <= Zgcd a b.
+Lemma Zgcd_is_pos : forall a b, 0 <= Zgcd a b.
 Proof.
-intros; unfold Zgcd; apply Zgcdn_pos; auto.
+intros; unfold Zgcd; apply Zgcdn_is_pos; auto.
 Qed.
 
 (** We now prove that Zgcd is indeed a gcd. *)
