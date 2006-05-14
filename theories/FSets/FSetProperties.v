@@ -21,7 +21,7 @@ Require Import FSetFacts.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Hint Unfold transpose compat_op.
+Hint Unfold transpose compat_op compat_nat.
 Hint Extern 1 (Setoid_Theory _ _) => constructor; congruence.
 
 Module Properties (M: S).
