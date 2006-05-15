@@ -80,6 +80,17 @@ Proof.
 Qed.
 Hint Resolve In_InA.
 
+Lemma InA_split : forall l x, InA x l -> 
+ exists l1, exists y, exists l2, 
+ eqA x y /\ l = l1++y::l2.
+Proof.
+induction l; inversion_clear 1.
+exists (@nil A); exists a; exists l; auto.
+destruct (IHl x H0) as (l1,(y,(l2,(H1,H2)))).
+exists (a::l1); exists y; exists l2; auto.
+split; simpl; f_equal; auto.
+Qed.
+
 (** Results concerning lists modulo [eqA] and [ltA] *)
 
 Variable ltA : A -> A -> Prop.
