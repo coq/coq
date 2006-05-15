@@ -153,7 +153,7 @@ Module Type S.
   Section Spec. 
 
   Variable s s' s'' : t.
-  Variable x y z : elt.
+  Variable x y : elt.
 
   (** Specification of [In] *)
   Parameter In_1 : E.eq x y -> In x s -> In y s.
@@ -254,6 +254,8 @@ Module Type S.
   Parameter partition_2 : compat_bool E.eq f -> 
       snd (partition f s) [=] filter (fun x => negb (f x)) s.
 
+  End Filter.
+
   (** Specification of [elements] *)
   Parameter elements_1 : In x s -> InA E.eq x (elements s).
   Parameter elements_2 : InA E.eq x (elements s) -> In x s.
@@ -275,7 +277,6 @@ Module Type S.
 (*  Parameter choose_equal: 
       (equal s s')=true -> E.eq (choose s) (choose s'). *)
 
-  End Filter.
   End Spec.
 
   (* begin hide *)
