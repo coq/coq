@@ -9,6 +9,7 @@
 (* $Id$ *)
 
 Require Export DecidableType.
+Require Export DecidableTypeEx.
 Require Export FSetWeakInterface.
 Require Export FSetFacts.
 Require Export FSetProperties.

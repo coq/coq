@@ -31,6 +31,7 @@ Module Type DecidableType.
 
 End DecidableType. 
 
+(** * Additional notions about keys and datas used in FMap *)
 
 Module KeyDecidableType(D:DecidableType).
  Import D.
@@ -147,5 +148,9 @@ Module KeyDecidableType(D:DecidableType).
  Hint Unfold MapsTo In.
  Hint Resolve In_inv_2 In_inv_3.
 
-
 End KeyDecidableType.
+
+
+
+
+

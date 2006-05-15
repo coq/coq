@@ -13,13 +13,13 @@ theories/FSets/FSetWeakProperties.vo: theories/FSets/FSetWeakProperties.v theori
 theories/FSets/FSetWeakInterface.vo: theories/FSets/FSetWeakInterface.v theories/Bool/Bool.vo theories/FSets/DecidableType.vo
 theories/FSets/FSetWeakList.vo: theories/FSets/FSetWeakList.v theories/FSets/FSetWeakInterface.vo
 theories/FSets/FSetWeakFacts.vo: theories/FSets/FSetWeakFacts.v theories/FSets/FSetWeakInterface.vo
-theories/FSets/FSetWeak.vo: theories/FSets/FSetWeak.v theories/FSets/DecidableType.vo theories/FSets/FSetWeakInterface.vo theories/FSets/FSetFacts.vo theories/FSets/FSetProperties.vo theories/FSets/FSetWeakList.vo
+theories/FSets/FSetWeak.vo: theories/FSets/FSetWeak.v theories/FSets/DecidableType.vo theories/FSets/DecidableTypeEx.vo theories/FSets/FSetWeakInterface.vo theories/FSets/FSetFacts.vo theories/FSets/FSetProperties.vo theories/FSets/FSetWeakList.vo
 theories/FSets/FMapInterface.vo: theories/FSets/FMapInterface.v theories/FSets/FSetInterface.vo
 theories/FSets/FMapList.vo: theories/FSets/FMapList.v theories/FSets/FSetInterface.vo theories/FSets/FMapInterface.vo
 theories/FSets/FMaps.vo: theories/FSets/FMaps.v theories/FSets/OrderedType.vo theories/FSets/OrderedTypeEx.vo theories/FSets/OrderedTypeAlt.vo theories/FSets/FMapInterface.vo theories/FSets/FMapList.vo theories/FSets/FMapPositive.vo theories/FSets/FMapIntMap.vo
 theories/FSets/FMapWeakInterface.vo: theories/FSets/FMapWeakInterface.v theories/FSets/FSetInterface.vo theories/FSets/FSetWeakInterface.vo
 theories/FSets/FMapWeakList.vo: theories/FSets/FMapWeakList.v theories/FSets/FSetInterface.vo theories/FSets/FSetWeakInterface.vo theories/FSets/FMapWeakInterface.vo
-theories/FSets/FMapWeak.vo: theories/FSets/FMapWeak.v theories/FSets/FMapWeakInterface.vo theories/FSets/FMapWeakList.vo
+theories/FSets/FMapWeak.vo: theories/FSets/FMapWeak.v theories/FSets/DecidableType.vo theories/FSets/DecidableTypeEx.vo theories/FSets/FMapWeakInterface.vo theories/FSets/FMapWeakList.vo
 theories/FSets/FMapPositive.vo: theories/FSets/FMapPositive.v theories/ZArith/ZArith.vo theories/FSets/OrderedType.vo theories/FSets/FMapInterface.vo
 theories/FSets/FMapIntMap.vo: theories/FSets/FMapIntMap.v theories/Bool/Bool.vo theories/NArith/NArith.vo theories/NArith/Ndigits.vo theories/NArith/Ndec.vo theories/NArith/Nnat.vo theories/IntMap/Allmaps.vo theories/FSets/OrderedType.vo theories/FSets/OrderedTypeEx.vo theories/FSets/FMapInterface.vo theories/FSets/FMapList.vo
 theories/FSets/FSetToFiniteSet.vo: theories/FSets/FSetToFiniteSet.v theories/Sets/Ensembles.vo theories/Sets/Finite_sets.vo theories/FSets/FSetInterface.vo theories/FSets/FSetProperties.vo theories/FSets/OrderedTypeEx.vo
@@ -181,7 +181,7 @@ theories/Lists/MonoList.vo: theories/Lists/MonoList.v theories/Arith/Le.vo
 theories/Lists/ListSet.vo: theories/Lists/ListSet.v theories/Lists/List.vo
 theories/Lists/Streams.vo: theories/Lists/Streams.v
 theories/Lists/TheoryList.vo: theories/Lists/TheoryList.v theories/Lists/List.vo theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Minus.vo theories/Bool/DecBool.vo
-theories/Lists/List.vo: theories/Lists/List.v theories/Arith/Le.vo theories/Arith/Minus.vo theories/Arith/Min.vo theories/Bool/Bool.vo
+theories/Lists/List.vo: theories/Lists/List.v theories/Arith/Le.vo theories/Arith/Gt.vo theories/Arith/Minus.vo theories/Arith/Min.vo theories/Bool/Bool.vo
 theories/Lists/SetoidList.vo: theories/Lists/SetoidList.v theories/Lists/List.vo theories/Sorting/Sorting.vo theories/Setoids/Setoid.vo
 theories/Strings/Ascii.vo: theories/Strings/Ascii.v theories/Bool/Bool.vo theories/NArith/BinPos.vo
 theories/Strings/String.vo: theories/Strings/String.v theories/Arith/Arith.vo theories/Strings/Ascii.vo
@@ -222,13 +222,13 @@ theories/FSets/FSetWeakProperties.vo: theories/FSets/FSetWeakProperties.v theori
 theories/FSets/FSetWeakInterface.vo: theories/FSets/FSetWeakInterface.v theories/Bool/Bool.vo theories/FSets/DecidableType.vo
 theories/FSets/FSetWeakList.vo: theories/FSets/FSetWeakList.v theories/FSets/FSetWeakInterface.vo
 theories/FSets/FSetWeakFacts.vo: theories/FSets/FSetWeakFacts.v theories/FSets/FSetWeakInterface.vo
-theories/FSets/FSetWeak.vo: theories/FSets/FSetWeak.v theories/FSets/DecidableType.vo theories/FSets/FSetWeakInterface.vo theories/FSets/FSetFacts.vo theories/FSets/FSetProperties.vo theories/FSets/FSetWeakList.vo
+theories/FSets/FSetWeak.vo: theories/FSets/FSetWeak.v theories/FSets/DecidableType.vo theories/FSets/DecidableTypeEx.vo theories/FSets/FSetWeakInterface.vo theories/FSets/FSetFacts.vo theories/FSets/FSetProperties.vo theories/FSets/FSetWeakList.vo
 theories/FSets/FMapInterface.vo: theories/FSets/FMapInterface.v theories/FSets/FSetInterface.vo
 theories/FSets/FMapList.vo: theories/FSets/FMapList.v theories/FSets/FSetInterface.vo theories/FSets/FMapInterface.vo
 theories/FSets/FMaps.vo: theories/FSets/FMaps.v theories/FSets/OrderedType.vo theories/FSets/OrderedTypeEx.vo theories/FSets/OrderedTypeAlt.vo theories/FSets/FMapInterface.vo theories/FSets/FMapList.vo theories/FSets/FMapPositive.vo theories/FSets/FMapIntMap.vo
 theories/FSets/FMapWeakInterface.vo: theories/FSets/FMapWeakInterface.v theories/FSets/FSetInterface.vo theories/FSets/FSetWeakInterface.vo
 theories/FSets/FMapWeakList.vo: theories/FSets/FMapWeakList.v theories/FSets/FSetInterface.vo theories/FSets/FSetWeakInterface.vo theories/FSets/FMapWeakInterface.vo
-theories/FSets/FMapWeak.vo: theories/FSets/FMapWeak.v theories/FSets/FMapWeakInterface.vo theories/FSets/FMapWeakList.vo
+theories/FSets/FMapWeak.vo: theories/FSets/FMapWeak.v theories/FSets/DecidableType.vo theories/FSets/DecidableTypeEx.vo theories/FSets/FMapWeakInterface.vo theories/FSets/FMapWeakList.vo
 theories/FSets/FMapPositive.vo: theories/FSets/FMapPositive.v theories/ZArith/ZArith.vo theories/FSets/OrderedType.vo theories/FSets/FMapInterface.vo
 theories/FSets/FMapIntMap.vo: theories/FSets/FMapIntMap.v theories/Bool/Bool.vo theories/NArith/NArith.vo theories/NArith/Ndigits.vo theories/NArith/Ndec.vo theories/NArith/Nnat.vo theories/IntMap/Allmaps.vo theories/FSets/OrderedType.vo theories/FSets/OrderedTypeEx.vo theories/FSets/FMapInterface.vo theories/FSets/FMapList.vo
 theories/FSets/FSetToFiniteSet.vo: theories/FSets/FSetToFiniteSet.v theories/Sets/Ensembles.vo theories/Sets/Finite_sets.vo theories/FSets/FSetInterface.vo theories/FSets/FSetProperties.vo theories/FSets/OrderedTypeEx.vo
@@ -270,7 +270,7 @@ theories/Reals/DiscrR.vo: theories/Reals/DiscrR.v theories/Reals/RIneq.vo contri
 theories/Reals/Rbase.vo: theories/Reals/Rbase.v theories/Reals/Rdefinitions.vo theories/Reals/Raxioms.vo theories/Reals/RIneq.vo theories/Reals/DiscrR.vo
 theories/Setoids/Setoid.vo: theories/Setoids/Setoid.v theories/Relations/Relation_Definitions.vo
 theories/Sorting/Heap.vo: theories/Sorting/Heap.v theories/Lists/List.vo theories/Sets/Multiset.vo theories/Sorting/Permutation.vo theories/Relations/Relations.vo theories/Sorting/Sorting.vo
-theories/Sorting/Permutation.vo: theories/Sorting/Permutation.v theories/Relations/Relations.vo theories/Lists/List.vo theories/Sets/Multiset.vo
+theories/Sorting/Permutation.vo: theories/Sorting/Permutation.v theories/Relations/Relations.vo theories/Lists/List.vo theories/Sets/Multiset.vo theories/Arith/Arith.vo
 theories/Sorting/Sorting.vo: theories/Sorting/Sorting.v theories/Lists/List.vo theories/Sets/Multiset.vo theories/Sorting/Permutation.vo theories/Relations/Relations.vo
 contrib/omega/OmegaLemmas.vo: contrib/omega/OmegaLemmas.v theories/ZArith/ZArith_base.vo
 contrib/omega/Omega.vo: contrib/omega/Omega.v theories/ZArith/ZArith_base.vo contrib/omega/OmegaLemmas.vo theories/ZArith/Zhints.vo

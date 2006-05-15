@@ -8,5 +8,7 @@
 
 (* $Id$ *)
 
+Require Export DecidableType.
+Require Export DecidableTypeEx.
 Require Export FMapWeakInterface.
 Require Export FMapWeakList.
