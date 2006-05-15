@@ -866,7 +866,8 @@ SETSVO=\
  theories/Sets/Partial_Order.vo     theories/Sets/Uniset.vo
 
 FSETSBASEVO=\
- theories/FSets/DecidableType.vo     theories/FSets/OrderedType.vo \
+ theories/FSets/DecidableType.vo     theories/FSets/DecidableTypeEx.vo \
+ theories/FSets/OrderedType.vo \
  theories/FSets/OrderedTypeEx.vo     theories/FSets/OrderedTypeAlt.vo \
  theories/FSets/FSetInterface.vo     theories/FSets/FSetList.vo \
  theories/FSets/FSetBridge.vo        theories/FSets/FSetFacts.vo \

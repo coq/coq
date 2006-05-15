@@ -1,4 +1,5 @@
 theories/FSets/DecidableType.vo: theories/FSets/DecidableType.v theories/Lists/SetoidList.vo
+theories/FSets/DecidableTypeEx.vo: theories/FSets/DecidableTypeEx.v theories/FSets/DecidableType.vo theories/FSets/OrderedType.vo theories/FSets/OrderedTypeEx.vo
 theories/FSets/OrderedType.vo: theories/FSets/OrderedType.v theories/Lists/SetoidList.vo
 theories/FSets/OrderedTypeEx.vo: theories/FSets/OrderedTypeEx.v theories/FSets/OrderedType.vo theories/ZArith/ZArith.vo theories/NArith/NArith.vo theories/NArith/Ndec.vo theories/Arith/Compare_dec.vo
 theories/FSets/OrderedTypeAlt.vo: theories/FSets/OrderedTypeAlt.v theories/FSets/OrderedType.vo
@@ -208,6 +209,7 @@ theories/Sets/Relations_3_facts.vo: theories/Sets/Relations_3_facts.v theories/S
 theories/Sets/Partial_Order.vo: theories/Sets/Partial_Order.v theories/Sets/Ensembles.vo theories/Sets/Relations_1.vo
 theories/Sets/Uniset.vo: theories/Sets/Uniset.v theories/Bool/Bool.vo theories/Sets/Permut.vo
 theories/FSets/DecidableType.vo: theories/FSets/DecidableType.v theories/Lists/SetoidList.vo
+theories/FSets/DecidableTypeEx.vo: theories/FSets/DecidableTypeEx.v theories/FSets/DecidableType.vo theories/FSets/OrderedType.vo theories/FSets/OrderedTypeEx.vo
 theories/FSets/OrderedType.vo: theories/FSets/OrderedType.v theories/Lists/SetoidList.vo
 theories/FSets/OrderedTypeEx.vo: theories/FSets/OrderedTypeEx.v theories/FSets/OrderedType.vo theories/ZArith/ZArith.vo theories/NArith/NArith.vo theories/NArith/Ndec.vo theories/Arith/Compare_dec.vo
 theories/FSets/OrderedTypeAlt.vo: theories/FSets/OrderedTypeAlt.v theories/FSets/OrderedType.vo
