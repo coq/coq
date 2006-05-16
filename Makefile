@@ -814,7 +814,8 @@ ARITHVO=\
 
 SORTINGVO=\
  theories/Sorting/Heap.vo	theories/Sorting/Permutation.vo \
- theories/Sorting/Sorting.vo
+ theories/Sorting/Sorting.vo	theories/Sorting/PermutSetoid.vo \
+ theories/Sorting/PermutEq.vo
  
 BOOLVO=\
  theories/Bool/Bool.vo  	theories/Bool/IfProp.vo \

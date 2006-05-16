@@ -147,13 +147,20 @@ Section Facts.
     unfold not in |- *; intros a H; inversion_clear H.
   Qed.
 
+  Lemma In_split : forall x (l:list A), In x l -> exists l1, exists l2, l = l1++x::l2.
+  Proof.
+  induction l; simpl; destruct 1.
+  subst a; auto.
+  exists (@nil A); exists l; auto.
+  destruct (IHl H) as (l1,(l2,H0)).
+  exists (a::l1); exists l2; simpl; f_equal; auto.
+  Qed.
 
   (** Inversion *)
   Theorem in_inv : forall (a b:A) (l:list A), In b (a :: l) -> a = b \/ In b l.
   Proof.
     intros a b l H; inversion_clear H; auto.
   Qed.
-
 
   (** Decidability of [In] *)
   Theorem In_dec :
@@ -753,6 +760,22 @@ Section ListOps.
       apply Permutation_trans with (l' := y :: x :: l' ++ l); constructor.
       apply Permutation_trans with (l' := x :: l ++ l'); auto.
     Qed.
+  
+    Theorem Permutation_cons_app : forall (l l1 l2:list A) a,
+      Permutation l (l1 ++ l2) -> Permutation (a :: l) (l1 ++ a :: l2).
+    Proof.
+    intros l l1; revert l.
+    induction l1.
+    simpl.
+    intros; apply perm_skip; auto.
+    simpl; intros.
+    apply perm_trans with (a0::a::l1++l2).
+    apply perm_skip; auto.
+    apply perm_trans with (a::a0::l1++l2).
+    apply perm_swap; auto.
+    apply perm_skip; auto.
+    Qed.
+    Hint Resolve Permutation_cons_app.
 
     Theorem Permutation_length : forall (l l' : list A), Permutation l l' -> length l = length l'.
     Proof.
@@ -766,6 +789,108 @@ Section ListOps.
       apply Permutation_trans with (l' := (x::nil)++rev l).
       simpl; auto.
       apply Permutation_app_swap.
+    Qed.
+
+    Theorem Permutation_ind_bis : 
+     forall P : list A -> list A -> Prop,
+       P (@nil A) (@nil A) ->
+       (forall x l l', Permutation l l' -> P l l' -> P (x :: l) (x :: l')) ->
+       (forall x y l l', Permutation l l' -> P l l' -> P (y :: x :: l) (x :: y :: l')) ->
+       (forall l l' l'', Permutation l l' -> P l l' -> Permutation l' l'' -> P l' l'' -> P l l'') ->
+       forall l l', Permutation l l' -> P l l'.
+    Proof.
+    intros P Hnil Hskip Hswap Htrans.
+    induction 1; auto.
+    apply Htrans with (x::y::l); auto.
+    apply Hswap; auto.
+    induction l; auto.
+    apply Hskip; auto.
+    apply Hskip; auto.
+    induction l; auto.
+    eauto.
+    Qed.
+
+    Ltac break_list l x l' H := 
+     destruct l as [|x l']; simpl in *; 
+     injection H; intros; subst; clear H.
+
+    Theorem Permutation_app_inv : forall (l1 l2 l3 l4:list A) a,
+      Permutation (l1++a::l2) (l3++a::l4) -> Permutation (l1++l2) (l3 ++ l4).
+    Proof.
+    set (P:=fun l l' =>  
+             forall a l1 l2 l3 l4, l=l1++a::l2 -> l'=l3++a::l4 -> Permutation (l1++l2) (l3++l4)).
+    cut (forall l l', Permutation l l' -> P l l').
+    intros; apply (H _ _ H0 a); auto.
+    intros; apply (Permutation_ind_bis P); unfold P; clear P; try clear H l l'; simpl; auto.
+    (* nil *)
+    intros; destruct l1; simpl in *; discriminate.
+    (* skip *)
+    intros x l l' H IH; intros.
+    break_list l1 b l1' H0; break_list l3 c l3' H1.
+    auto.
+    apply perm_trans with (l3'++c::l4); auto.
+    apply perm_trans with (l1'++a::l2); auto.
+    apply perm_skip.
+    apply (IH a l1' l2 l3' l4); auto.
+    (* swap *)
+    intros x y l l' Hp IH; intros.
+    break_list l1 b l1' H; break_list l3 c l3' H0.
+    auto.
+    break_list l3' b l3'' H.
+    auto.
+    apply perm_trans with (c::l3''++b::l4); auto.
+    break_list l1' c l1'' H1. 
+    auto.
+    apply perm_trans with (b::l1''++c::l2); auto.
+    break_list l3' d l3'' H; break_list l1' e l1'' H1. 
+    auto.
+    apply perm_trans with (e::a::l1''++l2); auto.
+    apply perm_trans with (e::l1''++a::l2); auto.
+    apply perm_trans with (d::a::l3''++l4); auto.
+    apply perm_trans with (d::l3''++a::l4); auto.
+    apply perm_trans with (e::d::l1''++l2); auto.
+    apply perm_skip; apply perm_skip.
+    apply (IH a l1'' l2 l3'' l4); auto.
+    (*trans*)
+    intros.
+    destruct (In_split a l') as (l'1,(l'2,H6)).
+    apply (Permutation_in a H).
+    subst l.
+    apply in_or_app; right; red; auto.
+    apply perm_trans with (l'1++l'2).
+    apply (H0 _ _ _ _ _ H3 H6).
+    apply (H2 _ _ _ _ _ H6 H4).
+    Qed.
+
+    Theorem Permutation_cons_inv : 
+       forall l l' a, Permutation (a::l) (a::l') -> Permutation l l'.
+    Proof.
+    intros; exact (Permutation_app_inv (@nil _) l (@nil _) l' a H). 
+    Qed.
+
+    Theorem Permutation_cons_app_inv :
+       forall l l1 l2 a, Permutation (a :: l) (l1 ++ a :: l2) -> Permutation l (l1 ++ l2).
+    Proof.
+    intros; exact (Permutation_app_inv (@nil _) l l1 l2 a H). 
+    Qed.
+    
+    Theorem Permutation_app_inv_l : 
+        forall l l1 l2, Permutation (l ++ l1) (l ++ l2) -> Permutation l1 l2.
+    Proof.    
+    induction l; simpl; auto.
+    intros.
+    apply IHl.
+    apply Permutation_cons_inv with a; auto.
+    Qed.
+
+    Theorem Permutation_app_inv_r : 
+       forall l l1 l2, Permutation (l1 ++ l) (l2 ++ l) -> Permutation l1 l2.
+    Proof.
+    induction l.
+    intros l1 l2; do 2 rewrite <- app_nil_end; auto.
+    intros.
+    apply IHl.
+    apply Permutation_app_inv with a; auto.
     Qed.
 
   End Permutation.
@@ -848,6 +973,13 @@ Section Map.
     rewrite IHl; auto.
   Qed.
 
+  Hint Constructors Permutation.
+
+  Lemma Permutation_map : 
+    forall l l', Permutation l l' -> Permutation (map l) (map l').
+  Proof. 
+  induction 1; simpl; auto; eauto.
+  Qed.
 
   (** [flat_map] *)
 
@@ -890,7 +1022,6 @@ Proof.
   induction l; simpl; auto.
   rewrite H; rewrite IHl; auto.
 Qed.
-
 
 
 (************************************)
@@ -1467,8 +1598,58 @@ Section ReDun.
     | NoDup_nil : NoDup nil 
     | NoDup_cons : forall x l, ~ In x l -> NoDup l -> NoDup (x::l). 
 
-End ReDun.
+  Lemma NoDup_remove_1 : forall l l' a, NoDup (l++a::l') -> NoDup (l++l').
+  Proof.
+  induction l; simpl.
+  inversion_clear 1; auto.
+  inversion_clear 1.
+  constructor.
+  swap H0.
+  apply in_or_app; destruct (in_app_or _ _ _ H); simpl; tauto.
+  apply IHl with a0; auto.
+  Qed.
 
+  Lemma NoDup_remove_2 : forall l l' a, NoDup (l++a::l') -> ~In a (l++l').
+  Proof.
+  induction l; simpl.
+  inversion_clear 1; auto.
+  inversion_clear 1.
+  swap H0.
+  destruct H.
+  subst a0.
+  apply in_or_app; right; red; auto.
+  destruct (IHl _ _ H1); auto.
+  Qed.
+
+  Lemma NoDup_Permutation : forall l l', 
+    NoDup l -> NoDup l' -> (forall x, In x l <-> In x l') -> Permutation l l'.
+  Proof.
+  induction l. 
+  destruct l'; simpl; intros.
+  apply perm_nil.
+  destruct (H1 a) as (_,H2); destruct H2; auto.
+  intros.
+  destruct (In_split a l') as (l'1,(l'2,H2)).
+  destruct (H1 a) as (H2,H3); simpl in *; auto.
+  subst l'.
+  apply Permutation_cons_app.
+  inversion_clear H.
+  apply IHl; auto.
+  apply NoDup_remove_1 with a; auto.
+  intro x; split; intros.
+  assert (In x (l'1++a::l'2)).
+   destruct (H1 x); simpl in *; auto.
+  apply in_or_app; destruct (in_app_or _ _ _ H4); auto.
+  destruct H5; auto.
+  subst x; destruct H2; auto.
+  assert (In x (l'1++a::l'2)).
+    apply in_or_app; destruct (in_app_or _ _ _ H); simpl; auto.
+  destruct (H1 x) as (_,H5); destruct H5; auto. 
+  subst x.
+  destruct (NoDup_remove_2 _ _ _ H0 H).
+  Qed.
+
+End ReDun.
 
 
 (***********************************)

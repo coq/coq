@@ -13,6 +13,24 @@ Require Import List.
 Require Import Multiset.
 Require Import Arith.
 
+(** This file define a notion of permutation for lists, based on multisets: 
+     there exists a permutation between two lists iff every elements have 
+     the same multiplicities in the two lists. 
+
+     Unlike [List.Permutation], the present notion of permutation requires
+     a decidable equality. At the same time, this definition can be used 
+     with a non-standard equality, whereas [List.Permutation] cannot.
+      
+     The present file contains basic results, obtained without any particular
+     assumption on the decidable equality used.
+	
+     File [PermutSetoid] contains additional results about permutations 
+     with respect to an setoid equality (i.e. an equivalence relation). 
+
+     Finally, file [PermutEq] concerns Coq equality : this file is similar 
+     to the previous one, but proves in addition that [List.Permutation]
+     and [permutation] are equivalent in this context.
+*)
 
 Set Implicit Arguments.
 
@@ -80,28 +98,14 @@ Lemma permut_app :
    permutation l l' -> permutation m m' -> permutation (l ++ m) (l' ++ m').
 Proof.
 unfold permutation in |- *; intros.
-apply meq_trans with (munion (list_contents l) (list_contents m));
+apply meq_trans with (munion (list_contents l) (list_contents m)); 
  auto with datatypes.
-apply meq_trans with (munion (list_contents l') (list_contents m'));
+apply meq_trans with (munion (list_contents l') (list_contents m')); 
  auto with datatypes.
 apply meq_trans with (munion (list_contents l') (list_contents m));
  auto with datatypes.
 Qed.
 Hint Resolve permut_app.
-
-Lemma permut_middle :
- forall (l m:list A) (a:A), permutation (a :: l ++ m) (l ++ a :: m).
-Proof.
-unfold permutation in |- *.
-simple induction l; simpl in |- *; auto with datatypes.
-intros.
-apply meq_trans with
- (munion (singletonBag a)
-    (munion (singletonBag a0) (list_contents (l0 ++ m))));
- auto with datatypes.
-apply munion_perm_left; auto with datatypes.
-Qed.
-Hint Resolve permut_middle.
 
 Lemma permut_add_inside :
  forall a l1 l2 l3 l4, 
@@ -125,6 +129,13 @@ intros;
 replace (a :: l) with (nil ++ a :: l); trivial;
 apply permut_add_inside; trivial.
 Qed.
+
+Lemma permut_middle :
+ forall (l m:list A) (a:A), permutation (a :: l ++ m) (l ++ a :: m).
+Proof.
+intros; apply permut_add_cons_inside; auto.
+Qed.
+Hint Resolve permut_middle.
 
 Lemma permut_sym_app :
  forall l1 l2, permutation (l1 ++ l2) (l2 ++ l1).

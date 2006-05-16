@@ -274,6 +274,8 @@ theories/Setoids/Setoid.vo: theories/Setoids/Setoid.v theories/Relations/Relatio
 theories/Sorting/Heap.vo: theories/Sorting/Heap.v theories/Lists/List.vo theories/Sets/Multiset.vo theories/Sorting/Permutation.vo theories/Relations/Relations.vo theories/Sorting/Sorting.vo
 theories/Sorting/Permutation.vo: theories/Sorting/Permutation.v theories/Relations/Relations.vo theories/Lists/List.vo theories/Sets/Multiset.vo theories/Arith/Arith.vo
 theories/Sorting/Sorting.vo: theories/Sorting/Sorting.v theories/Lists/List.vo theories/Sets/Multiset.vo theories/Sorting/Permutation.vo theories/Relations/Relations.vo
+theories/Sorting/PermutSetoid.vo: theories/Sorting/PermutSetoid.v contrib/omega/Omega.vo theories/Relations/Relations.vo theories/Lists/List.vo theories/Sets/Multiset.vo theories/Sorting/Permutation.vo theories/Lists/SetoidList.vo
+theories/Sorting/PermutEq.vo: theories/Sorting/PermutEq.v contrib/omega/Omega.vo theories/Relations/Relations.vo theories/Setoids/Setoid.vo theories/Lists/List.vo theories/Sets/Multiset.vo theories/Sorting/Permutation.vo
 contrib/omega/OmegaLemmas.vo: contrib/omega/OmegaLemmas.v theories/ZArith/ZArith_base.vo
 contrib/omega/Omega.vo: contrib/omega/Omega.v theories/ZArith/ZArith_base.vo contrib/omega/OmegaLemmas.vo theories/ZArith/Zhints.vo
 contrib/romega/ReflOmegaCore.vo: contrib/romega/ReflOmegaCore.v theories/Arith/Arith.vo theories/Lists/List.vo theories/Bool/Bool.vo theories/ZArith/ZArith_base.vo contrib/omega/OmegaLemmas.vo theories/Logic/Decidable.vo
