@@ -517,7 +517,7 @@ Section Elts.
   (** ** Counting occurences of a element *)
   (****************************************)
 
-  Axiom eqA_dec : forall x y : A, {x = y}+{x <> y}.
+  Hypotheses eqA_dec : forall x y : A, {x = y}+{x <> y}.
   
   Fixpoint count_occ (l : list A) (x : A){struct l} : nat :=
     match l with 
@@ -960,6 +960,8 @@ Section ListOps.
   (***********************************)
   (** ** Decidable equality on lists *)
   (***********************************)
+
+  Hypotheses eqA_dec : forall (x y : A), {x = y}+{x <> y}.
 
   Lemma list_eq_dec :
     forall l l':list A, {l = l'} + {l <> l'}.
