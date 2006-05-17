@@ -157,8 +157,8 @@ let matches_core convert allow_partial_app pat c =
 	  else raise PatternMatchingFailure
 
       | PIf (a1,b1,b1'), Case (ci,_,a2,[|b2;b2'|]) ->
-	  let ctx,b2 = decompose_prod_n_assum ci.ci_cstr_nargs.(0) b2 in
-	  let ctx',b2' = decompose_prod_n_assum ci.ci_cstr_nargs.(1) b2' in
+	  let ctx,b2 = decompose_lam_n_assum ci.ci_cstr_nargs.(0) b2 in
+	  let ctx',b2' = decompose_lam_n_assum ci.ci_cstr_nargs.(1) b2' in
 	  let n = List.length ctx and n' = List.length ctx' in
 	  if noccur_between 1 n b2 & noccur_between 1 n' b2' then
 	    let s = List.fold_left (fun l (na,_,t) -> (na,t)::l) stk ctx in
