@@ -1333,6 +1333,7 @@ Function plus (n m : nat) {struct n} : nat :=
 \term$_0$ must be build as an imbrication of pattern matchings
 (\texttt{match...with}) with $\lambda$-abstraction and applications only
 \emph{at the end} of each branch.
+For now dependent cases are not treated.
 
 \SeeAlso{\ref{FunScheme},\ref{FunScheme-examples},\ref{FunInduction}}
 
@@ -1345,9 +1346,11 @@ given below.
 \comindex{Function}
 }
 
-Defines the not recursive function \ident\ as if declared with
-\texttt{Definition}. An induction scheme {\tt\ident\_ind} is generated, which
-reflects the pattern matching structure of \term$_0$.
+Defines  the  not  recursive  function  \ident\ as  if  declared  with
+\texttt{Definition}.    Three  induction   schemes  {\tt\ident\_rect},
+{\tt\ident\_rec}   and  {\tt\ident\_ind}   are   generated  (see   the
+documentation of {\tt  Inductive} \ref{Inductive}), which reflect the
+pattern matching structure of \term$_0$.
 
 
 \subsubsection{\tt Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
@@ -1355,11 +1358,12 @@ reflects the pattern matching structure of \term$_0$.
 \comindex{Function}
 }
 
-Defines the structural recursive function \ident\ as if declared with
-\texttt{Fixpoint} . An induction scheme {\tt\ident\_ind} is
-generated, which reflects the recursive structure of \term$_0$. When
-there is only one parameter, {\tt \{struct} \ident$_0${\tt\}} can be
-omitted.
+Defines the structural recursive  function \ident\ as if declared with
+\texttt{Fixpoint}   .  Three   induction   schemes  {\tt\ident\_rect},
+{\tt\ident\_rec}   and  {\tt\ident\_ind}   are   generated  (see   the
+documentation of {\tt  Inductive} \ref{Inductive}), which reflect the
+recursive structure  of \term$_0$. When  there is only  one parameter,
+{\tt \{struct} \ident$_0${\tt\}} can be omitted.
 
 \subsubsection{\tt Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
  {\tt \{}{\tt measure \term$_1$} \ident$_0${\tt\}} : type$_0$ := \term$_0$.
@@ -1397,24 +1401,26 @@ proof that the ordering relation is well founded.
 
 %Completer sur measure et wf
 
-The fixpoint equality \texttt{\ident\_eq}, which is not trivial to
-prove in this case, is automatically generated and proved, together
-with an induction scheme {\tt\ident\_ind}, which reflects the recursive
-structure of \term$_0$.
+The fixpoint equality  \texttt{\ident\_equation}, which is not trivial
+to prove in this case, is automatically generated and proved, together
+with three  induction schemes {\tt\ident\_rect},  {\tt\ident\_rec} and
+{\tt\ident\_ind}  are   generated  (see  the   documentation  of  {\tt
+  Inductive} \ref{Inductive}), which  reflect the recursive structure
+of \term$_0$.
 
 
 
 %Complete!!
 The way this recursive function is defined is the subject of several
-papers by Yves Bertot, Julien forest, David Pichardie.
+papers by Yves Bertot, Julien Forest, David Pichardie.
 
 %Exemples ok ici
 
 \bigskip
 
 \noindent {\bf Remark: } Proof obligations are presented as several
-subgoals. These subgoals are independent which means that in order to
-abort them you will have to abort each separately.
+subgoals belonging to a Lemma {\ident}{\tt\_tcc}. % These subgoals are independent which means that in order to
+% abort them you will have to abort each separately.
 
 
 
