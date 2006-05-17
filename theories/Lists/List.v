@@ -9,6 +9,7 @@
   (*i $Id$ i*)
 
 Require Import Le Gt Minus Min Bool.
+Require Import Setoid.
 
 Set Implicit Arguments.
 
@@ -511,6 +512,66 @@ Section Elts.
     exists (a::l'); exists a'; auto.
   Qed.
 
+  
+  (****************************************)
+  (** ** Counting occurences of a element *)
+  (****************************************)
+
+  Axiom eqA_dec : forall x y : A, {x = y}+{x <> y}.
+  
+  Fixpoint count_occ (l : list A) (x : A){struct l} : nat :=
+    match l with 
+      | nil => 0
+      | y :: tl => 
+	let n := count_occ tl x in 
+	  if eqA_dec y x then S n else n
+    end.
+  
+  (** Compatibility of count_occ with operations on list *)
+  Theorem count_occ_In : forall (l : list A) (x : A), In x l <-> count_occ l x > 0.
+  Proof.
+    induction l as [|y l].
+    simpl; intros; split; [destruct 1 | apply gt_irrefl].
+    simpl. intro x; destruct (eqA_dec y x) as [Heq|Hneq].
+    rewrite Heq; intuition. 
+    rewrite <- (IHl x).
+    tauto.
+  Qed.
+  
+  Theorem count_occ_inv_nil : forall (l : list A), (forall x:A, count_occ l x = 0) <-> l = nil.
+  Proof.
+    split.
+    (* Case -> *)
+    induction l as [|x l].
+    trivial.
+    intro H.
+    elim (O_S (count_occ l x)).
+    apply sym_eq.
+    generalize (H x).
+    simpl. destruct (eqA_dec x x) as [|HF].
+    trivial.
+    elim HF; reflexivity.
+    (* Case <- *)
+    intro H; rewrite H; simpl; reflexivity.
+  Qed.
+  
+  Lemma count_occ_nil : forall (x : A), count_occ nil x = 0.
+  Proof.
+    intro x; simpl; reflexivity.
+  Qed.
+
+  Lemma count_occ_cons_eq : forall (l : list A) (x y : A), x = y -> count_occ (x::l) y = S (count_occ l y).
+  Proof.
+    intros l x y H; simpl.
+    destruct (eqA_dec x y); [reflexivity | contradiction].
+  Qed.
+  
+  Lemma count_occ_cons_neq : forall (l : list A) (x y : A), x <> y -> count_occ (x::l) y = count_occ l y.
+  Proof.
+    intros l x y H; simpl.
+    destruct (eqA_dec x y); [contradiction | reflexivity]. 
+  Qed.
+
 End Elts.
 
 
@@ -901,9 +962,8 @@ Section ListOps.
   (***********************************)
 
   Lemma list_eq_dec :
-    (forall x y:A, {x = y} + {x <> y}) -> forall l l':list A, {l = l'} + {l <> l'}.
+    forall l l':list A, {l = l'} + {l <> l'}.
   Proof.
-    intro eqA_dec.
     induction l as [| x l IHl]; destruct l' as [| y l'].
     left; trivial.
     right; apply nil_cons. 
