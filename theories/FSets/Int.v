@@ -23,10 +23,10 @@
 
 Require Import ZArith. 
 Require Import ROmega. 
+Delimit Scope Int_scope with I.
 
 Module Type Int.
 
- Delimit Scope Int_scope with I.
  Open Scope Int_scope.
 
  Parameter int : Set. 
