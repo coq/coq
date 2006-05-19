@@ -38,6 +38,8 @@ val detype_case :
   identifier list -> inductive * case_style * int * int array * int ->
     'a option -> 'a -> 'a array -> rawconstr
 
+val detype_sort : sorts -> rawsort
+
 (* look for the index of a named var or a nondep var as it is renamed *)
 val lookup_name_as_renamed  : env -> constr -> identifier -> int option
 val lookup_index_as_renamed : env -> constr -> int -> int option

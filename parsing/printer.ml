@@ -87,6 +87,8 @@ let pr_lconstr_pattern t =
 let pr_constr_pattern t =
   pr_constr_expr (extern_constr_pattern empty_names_context t)
 
+let pr_sort s = pr_rawsort (extern_sort s)
+
 let _ = Termops.set_print_constr pr_lconstr_env
 
 (**********************************************************************)

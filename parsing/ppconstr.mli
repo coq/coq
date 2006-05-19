@@ -60,7 +60,7 @@ val pr_may_eval :
   ('a -> std_ppcmds) -> ('a -> std_ppcmds) -> ('b -> std_ppcmds) ->
     ('a,'b) may_eval -> std_ppcmds
 
-val pr_sort : rawsort -> std_ppcmds
+val pr_rawsort : rawsort -> std_ppcmds
 
 val pr_binders : local_binder list -> std_ppcmds
 val pr_pattern_expr : Tacexpr.pattern_expr -> std_ppcmds

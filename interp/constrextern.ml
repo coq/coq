@@ -623,6 +623,11 @@ let extern_optimal_prim_token scopes r r' =
 (**********************************************************************)
 (* mapping rawterms to constr_expr                                    *)
 
+let extern_rawsort = function
+  | RProp _ as s -> s
+  | RType (Some _) as s when !print_universes -> s
+  | RType _ -> RType None
+
 let rec extern inctx scopes vars r =
   let r' = remove_coercions inctx r in
   try 
@@ -740,12 +745,7 @@ let rec extern inctx scopes vars r =
 	     in
 	     CCoFix (loc,(loc,idv.(n)),Array.to_list listdecl))
 
-  | RSort (loc,s) ->
-      let s = match s with
-	 | RProp _ -> s
-	 | RType (Some _) when !print_universes -> s
-	 | RType _ -> RType None in
-      CSort (loc,s)
+  | RSort (loc,s) -> CSort (loc,extern_rawsort s)
 
   | RHole (loc,e) -> CHole loc
 
@@ -872,6 +872,8 @@ let extern_type at_top env t =
   let avoid = if at_top then ids_of_context env else [] in
   let r = Detyping.detype at_top avoid (names_of_rel_context env) t in
   extern_rawtype (vars_of_env env) r
+
+let extern_sort s = extern_rawsort (detype_sort s)
 
 (******************************************************************)
 (* Main translation function from pattern -> constr_expr *)

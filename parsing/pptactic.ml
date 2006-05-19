@@ -139,7 +139,7 @@ let rec pr_raw_generic prc prlc prtac prref x =
   | IdentArgType -> pr_arg pr_id (out_gen rawwit_ident x)
   | VarArgType -> pr_arg (pr_located pr_id) (out_gen rawwit_var x)
   | RefArgType -> pr_arg prref (out_gen rawwit_ref x)
-  | SortArgType -> pr_arg pr_sort (out_gen rawwit_sort x)
+  | SortArgType -> pr_arg pr_rawsort (out_gen rawwit_sort x)
   | ConstrArgType -> pr_arg prc (out_gen rawwit_constr x)
   | ConstrMayEvalArgType ->
       pr_arg (pr_may_eval prc prlc prref)
@@ -182,7 +182,7 @@ let rec pr_glob_generic prc prlc prtac x =
   | IdentArgType -> pr_arg pr_id (out_gen globwit_ident x)
   | VarArgType -> pr_arg (pr_located pr_id) (out_gen globwit_var x)
   | RefArgType -> pr_arg (pr_or_var (pr_located pr_global)) (out_gen globwit_ref x)
-  | SortArgType -> pr_arg pr_sort (out_gen globwit_sort x)
+  | SortArgType -> pr_arg pr_rawsort (out_gen globwit_sort x)
   | ConstrArgType -> pr_arg prc (out_gen globwit_constr x)
   | ConstrMayEvalArgType ->
       pr_arg (pr_may_eval prc prlc
@@ -228,7 +228,7 @@ let rec pr_generic prc prlc prtac x =
   | IdentArgType -> pr_arg pr_id (out_gen wit_ident x)
   | VarArgType -> pr_arg pr_id (out_gen wit_var x)
   | RefArgType -> pr_arg pr_global (out_gen wit_ref x)
-  | SortArgType -> pr_arg prc (Term.mkSort (out_gen wit_sort x))
+  | SortArgType -> pr_arg pr_sort (out_gen wit_sort x)
   | ConstrArgType -> pr_arg prc (out_gen wit_constr x)
   | ConstrMayEvalArgType ->
       pr_arg prc (out_gen wit_constr_may_eval x)

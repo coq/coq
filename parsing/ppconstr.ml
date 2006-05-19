@@ -117,7 +117,7 @@ let pr_optc pr = function
 
 let pr_universe = Univ.pr_uni 
 
-let pr_sort = function
+let pr_rawsort = function
   | RProp Term.Null -> str "Prop"
   | RProp Term.Pos -> str "Set"
   | RType u -> str "Type" ++ pr_opt pr_universe u
@@ -563,7 +563,7 @@ let rec pr sep inherited a =
   | CHole _ -> str "_", latom
   | CEvar (_,n) -> str (Evd.string_of_existential n), latom
   | CPatVar (_,(_,p)) -> str "?" ++ pr_patvar p, latom
-  | CSort (_,s) -> pr_sort s, latom
+  | CSort (_,s) -> pr_rawsort s, latom
   | CCast (_,a,_,b) ->
       hv 0 (pr mt (lcast,L) a ++ cut () ++ str ":" ++ pr mt (-lcast,E) b),
       lcast

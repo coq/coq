@@ -348,6 +348,10 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
   | _ ->
       RCases (dl,pred,[tomatch,(alias,aliastyp)],eqnl)
 
+let detype_sort = function
+  | Prop c -> RProp c
+  | Type u -> RType (Some u)
+
 (**********************************************************************)
 (* Main detyping function                                             *)
 
@@ -368,8 +372,7 @@ let rec detype isgoal avoid env t =
 	  let _ = Global.lookup_named id in RRef (dl, VarRef id)
 	 with _ ->
 	  RVar (dl, id))
-    | Sort (Prop c) -> RSort (dl,RProp c)
-    | Sort (Type u) -> RSort (dl,RType (Some u))
+    | Sort s -> RSort (dl,detype_sort s)
     | Cast (c1,k,c2) ->
 	RCast(dl,detype isgoal avoid env c1, k,
               detype isgoal avoid env c2)
