@@ -1140,6 +1140,8 @@ let subst_all gl =
   let test (_,c) =
     try
       let (_,x,y) = snd (find_eq_data_decompose c) in
+      (* J.F.: added to prevent failure on goal containing x=x as an hyp *)
+      if eq_constr x y then failwith "caught";
       match kind_of_term x with Var x -> x | _ -> 
       match kind_of_term y with Var y -> y | _ -> failwith "caught"
     with PatternMatchingFailure -> failwith "caught"
