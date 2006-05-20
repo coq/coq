@@ -15,6 +15,7 @@
 
 Require Import OrderedType.
 Require Import ZArith.
+Require Import Omega.
 Require Import NArith Ndec.
 Require Import Compare_dec.
 
@@ -85,10 +86,10 @@ Module Z_as_OT <: UsualOrderedType.
   Definition lt (x y:Z) := (x<y).
 
   Lemma lt_trans : forall x y z, x<y -> y<z -> x<z.
-  Proof. auto with zarith. Qed.
+  Proof. intros; omega. Qed.
 
   Lemma lt_not_eq : forall x y, x<y -> ~ x=y.
-  Proof. auto with zarith. Qed.
+  Proof. intros; omega. Qed.
 
   Definition compare : forall x y, Compare lt eq x y.
   Proof.
@@ -99,7 +100,6 @@ Module Z_as_OT <: UsualOrderedType.
   Defined.
 
 End Z_as_OT.
-
 
 (** [positive] is an ordered type with respect to the usual order on natural numbers. *) 
 
@@ -118,7 +118,7 @@ Module Positive_as_OT <: UsualOrderedType.
   Proof. 
   unfold lt; intros x y z.
   change ((Zpos x < Zpos y)%Z -> (Zpos y < Zpos z)%Z -> (Zpos x < Zpos z)%Z).
-  auto with zarith.
+  omega.
   Qed.
 
   Lemma lt_not_eq : forall x y : t, lt x y -> ~ eq x y.
