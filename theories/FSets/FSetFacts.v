@@ -131,7 +131,7 @@ Proof.
 split; [apply exists_1 | apply exists_2]; auto.
 Qed.
 
-Lemma elements_iff : In x s <-> ME.In x (elements s).
+Lemma elements_iff : In x s <-> InA E.eq x (elements s).
 Proof. 
 split; [apply elements_1 | apply elements_2].
 Qed.

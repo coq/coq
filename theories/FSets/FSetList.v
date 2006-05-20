@@ -199,6 +199,8 @@ Module Raw (X: OrderedType).
 
   (** ** Proofs of set operation specifications. *)
 
+  Section ForNotations.
+
   Notation Sort := (sort X.lt).
   Notation Inf := (lelistA X.lt).
   Notation In := (InA X.eq).
@@ -1020,6 +1022,9 @@ Module Raw (X: OrderedType).
   destruct (e1 a0); auto.
   Defined.
 
+  End ForNotations. 
+  Hint Constructors lt.
+
 End Raw.
 
 (** * Encapsulation
@@ -1030,209 +1035,208 @@ End Raw.
 Module Make (X: OrderedType) <: S with Module E := X.
 
  Module Raw := Raw X. 
- Import Raw.
  Module E := X.
 
- Record slist : Set :=  {this :> Raw.t; sorted : sort X.lt this}.
+ Record slist : Set :=  {this :> Raw.t; sorted : sort E.lt this}.
  Definition t := slist. 
- Definition elt := X.t.
+ Definition elt := E.t.
  
- Definition In (x : elt) (s : t) : Prop := InA X.eq x s.(this).
+ Definition In (x : elt) (s : t) : Prop := InA E.eq x s.(this).
  Definition Equal (s s':t) : Prop := forall a : elt, In a s <-> In a s'.
  Definition Subset (s s':t) : Prop := forall a : elt, In a s -> In a s'.
  Definition Empty (s:t) : Prop := forall a : elt, ~ In a s.
  Definition For_all (P : elt -> Prop)(s:t) : Prop := forall x, In x s -> P x.
  Definition Exists (P : elt -> Prop)(s:t) : Prop := exists x, In x s /\ P x.
 
- Definition mem (x : elt) (s : t) : bool := mem x s.
- Definition add (x : elt)(s : t) : t := Build_slist (add_sort (sorted s) x).
- Definition remove (x : elt)(s : t) : t := Build_slist (remove_sort (sorted s) x).
- Definition singleton (x : elt) : t  := Build_slist (singleton_sort x).
+ Definition mem (x : elt) (s : t) : bool := Raw.mem x s.
+ Definition add (x : elt)(s : t) : t := Build_slist (Raw.add_sort (sorted s) x).
+ Definition remove (x : elt)(s : t) : t := Build_slist (Raw.remove_sort (sorted s) x).
+ Definition singleton (x : elt) : t  := Build_slist (Raw.singleton_sort x).
  Definition union (s s' : t) : t :=
-   Build_slist (union_sort (sorted s) (sorted s')). 
+   Build_slist (Raw.union_sort (sorted s) (sorted s')). 
  Definition inter (s s' : t) : t :=
-   Build_slist (inter_sort (sorted s) (sorted s')). 
+   Build_slist (Raw.inter_sort (sorted s) (sorted s')). 
  Definition diff (s s' : t) : t :=
-   Build_slist (diff_sort (sorted s) (sorted s')). 
- Definition equal (s s' : t) : bool := equal s s'. 
- Definition subset (s s' : t) : bool := subset s s'.
- Definition empty : t := Build_slist empty_sort.
- Definition is_empty (s : t) : bool := is_empty s.
- Definition elements (s : t) : list elt := elements s.
- Definition min_elt (s : t) : option elt := min_elt s.
- Definition max_elt (s : t) : option elt := max_elt s.
- Definition choose (s : t) : option elt  := choose s.
- Definition fold (B : Set) (f : elt -> B -> B) (s : t) : B -> B := fold (B:=B) f s. 
- Definition cardinal (s : t) : nat := cardinal s.
+   Build_slist (Raw.diff_sort (sorted s) (sorted s')). 
+ Definition equal (s s' : t) : bool := Raw.equal s s'. 
+ Definition subset (s s' : t) : bool := Raw.subset s s'.
+ Definition empty : t := Build_slist Raw.empty_sort.
+ Definition is_empty (s : t) : bool := Raw.is_empty s.
+ Definition elements (s : t) : list elt := Raw.elements s.
+ Definition min_elt (s : t) : option elt := Raw.min_elt s.
+ Definition max_elt (s : t) : option elt := Raw.max_elt s.
+ Definition choose (s : t) : option elt  := Raw.choose s.
+ Definition fold (B : Set) (f : elt -> B -> B) (s : t) : B -> B := Raw.fold (B:=B) f s. 
+ Definition cardinal (s : t) : nat := Raw.cardinal s.
  Definition filter (f : elt -> bool) (s : t) : t :=
-   Build_slist (filter_sort (sorted s) f).
- Definition for_all (f : elt -> bool) (s : t) : bool := for_all f s.
- Definition exists_ (f : elt -> bool) (s : t) : bool := exists_ f s.
+   Build_slist (Raw.filter_sort (sorted s) f).
+ Definition for_all (f : elt -> bool) (s : t) : bool := Raw.for_all f s.
+ Definition exists_ (f : elt -> bool) (s : t) : bool := Raw.exists_ f s.
  Definition partition (f : elt -> bool) (s : t) : t * t :=
-   let p := partition f s in
-   (Build_slist (this:=fst p) (partition_sort_1 (sorted s) f),
-   Build_slist (this:=snd p) (partition_sort_2 (sorted s) f)).
- Definition eq (s s' : t) : Prop := eq s s'.
- Definition lt (s s' : t) : Prop := lt s s'.
+   let p := Raw.partition f s in
+   (Build_slist (this:=fst p) (Raw.partition_sort_1 (sorted s) f),
+   Build_slist (this:=snd p) (Raw.partition_sort_2 (sorted s) f)).
+ Definition eq (s s' : t) : Prop := Raw.eq s s'.
+ Definition lt (s s' : t) : Prop := Raw.lt s s'.
 
  Section Spec. 
   Variable s s' s'': t.
   Variable x y : elt.
 
-  Lemma In_1 : X.eq x y -> In x s -> In y s. 
-  Proof. exact (fun H H' => MX.In_eq H H'). Qed.
+  Lemma In_1 : E.eq x y -> In x s -> In y s. 
+  Proof. exact (fun H H' => Raw.MX.In_eq H H'). Qed.
  
   Lemma mem_1 : In x s -> mem x s = true.
-  Proof. exact (fun H => mem_1 s.(sorted) H). Qed.
+  Proof. exact (fun H => Raw.mem_1 s.(sorted) H). Qed.
   Lemma mem_2 : mem x s = true -> In x s. 
-  Proof. exact (fun H => mem_2 H). Qed.
+  Proof. exact (fun H => Raw.mem_2 H). Qed.
  
   Lemma equal_1 : Equal s s' -> equal s s' = true.
-  Proof. exact (equal_1 s.(sorted) s'.(sorted)). Qed.
+  Proof. exact (Raw.equal_1 s.(sorted) s'.(sorted)). Qed.
   Lemma equal_2 : equal s s' = true -> Equal s s'.
-  Proof. exact (fun H => equal_2 H). Qed.
+  Proof. exact (fun H => Raw.equal_2 H). Qed.
 
   Lemma subset_1 : Subset s s' -> subset s s' = true.
-  Proof. exact (subset_1 s.(sorted) s'.(sorted)). Qed.
+  Proof. exact (Raw.subset_1 s.(sorted) s'.(sorted)). Qed.
   Lemma subset_2 : subset s s' = true -> Subset s s'.
-  Proof. exact (fun H => subset_2 H). Qed.
+  Proof. exact (fun H => Raw.subset_2 H). Qed.
 
   Lemma empty_1 : Empty empty.
-  Proof. exact empty_1. Qed.
+  Proof. exact Raw.empty_1. Qed.
 
   Lemma is_empty_1 : Empty s -> is_empty s = true. 
-  Proof. exact (fun H => is_empty_1 H). Qed.
+  Proof. exact (fun H => Raw.is_empty_1 H). Qed.
   Lemma is_empty_2 : is_empty s = true -> Empty s.
-  Proof. exact (fun H => is_empty_2 H). Qed.
+  Proof. exact (fun H => Raw.is_empty_2 H). Qed.
  
-  Lemma add_1 : X.eq x y -> In y (add x s).
-  Proof. exact (fun H => add_1 s.(sorted) H). Qed.
+  Lemma add_1 : E.eq x y -> In y (add x s).
+  Proof. exact (fun H => Raw.add_1 s.(sorted) H). Qed.
   Lemma add_2 : In y s -> In y (add x s).
-  Proof. exact (fun H => add_2 s.(sorted) x H). Qed.
-  Lemma add_3 : ~ X.eq x y -> In y (add x s) -> In y s. 
-  Proof. exact (fun H => add_3 s.(sorted) H). Qed.
+  Proof. exact (fun H => Raw.add_2 s.(sorted) x H). Qed.
+  Lemma add_3 : ~ E.eq x y -> In y (add x s) -> In y s. 
+  Proof. exact (fun H => Raw.add_3 s.(sorted) H). Qed.
 
-  Lemma remove_1 : X.eq x y -> ~ In y (remove x s).
-  Proof. exact (fun H => remove_1 s.(sorted) H). Qed.
-  Lemma remove_2 : ~ X.eq x y -> In y s -> In y (remove x s).
-  Proof. exact (fun H H' => remove_2 s.(sorted) H H'). Qed.
+  Lemma remove_1 : E.eq x y -> ~ In y (remove x s).
+  Proof. exact (fun H => Raw.remove_1 s.(sorted) H). Qed.
+  Lemma remove_2 : ~ E.eq x y -> In y s -> In y (remove x s).
+  Proof. exact (fun H H' => Raw.remove_2 s.(sorted) H H'). Qed.
   Lemma remove_3 : In y (remove x s) -> In y s.
-  Proof. exact (fun H => remove_3 s.(sorted) H). Qed.
+  Proof. exact (fun H => Raw.remove_3 s.(sorted) H). Qed.
 
-  Lemma singleton_1 : In y (singleton x) -> X.eq x y. 
-  Proof. exact (fun H => singleton_1 H). Qed.
-  Lemma singleton_2 : X.eq x y -> In y (singleton x). 
-  Proof. exact (fun H => singleton_2 H). Qed.
+  Lemma singleton_1 : In y (singleton x) -> E.eq x y. 
+  Proof. exact (fun H => Raw.singleton_1 H). Qed.
+  Lemma singleton_2 : E.eq x y -> In y (singleton x). 
+  Proof. exact (fun H => Raw.singleton_2 H). Qed.
 
   Lemma union_1 : In x (union s s') -> In x s \/ In x s'.
-  Proof. exact (fun H => union_1 s.(sorted) s'.(sorted) H). Qed.
+  Proof. exact (fun H => Raw.union_1 s.(sorted) s'.(sorted) H). Qed.
   Lemma union_2 : In x s -> In x (union s s'). 
-  Proof. exact (fun H => union_2 s.(sorted) s'.(sorted) H). Qed.
+  Proof. exact (fun H => Raw.union_2 s.(sorted) s'.(sorted) H). Qed.
   Lemma union_3 : In x s' -> In x (union s s').
-  Proof. exact (fun H => union_3 s.(sorted) s'.(sorted) H). Qed.
+  Proof. exact (fun H => Raw.union_3 s.(sorted) s'.(sorted) H). Qed.
 
   Lemma inter_1 : In x (inter s s') -> In x s.
-  Proof. exact (fun H => inter_1 s.(sorted) s'.(sorted) H). Qed.
+  Proof. exact (fun H => Raw.inter_1 s.(sorted) s'.(sorted) H). Qed.
   Lemma inter_2 : In x (inter s s') -> In x s'.
-  Proof. exact (fun H => inter_2 s.(sorted) s'.(sorted) H). Qed.
+  Proof. exact (fun H => Raw.inter_2 s.(sorted) s'.(sorted) H). Qed.
   Lemma inter_3 : In x s -> In x s' -> In x (inter s s').
-  Proof. exact (fun H => inter_3 s.(sorted) s'.(sorted) H). Qed.
+  Proof. exact (fun H => Raw.inter_3 s.(sorted) s'.(sorted) H). Qed.
 
   Lemma diff_1 : In x (diff s s') -> In x s. 
-  Proof. exact (fun H => diff_1 s.(sorted) s'.(sorted) H). Qed.
+  Proof. exact (fun H => Raw.diff_1 s.(sorted) s'.(sorted) H). Qed.
   Lemma diff_2 : In x (diff s s') -> ~ In x s'.
-  Proof. exact (fun H => diff_2 s.(sorted) s'.(sorted) H). Qed.
+  Proof. exact (fun H => Raw.diff_2 s.(sorted) s'.(sorted) H). Qed.
   Lemma diff_3 : In x s -> ~ In x s' -> In x (diff s s').
-  Proof. exact (fun H => diff_3 s.(sorted) s'.(sorted) H). Qed.
+  Proof. exact (fun H => Raw.diff_3 s.(sorted) s'.(sorted) H). Qed.
  
   Lemma fold_1 : forall (A : Set) (i : A) (f : elt -> A -> A),
       fold f s i = fold_left (fun a e => f e a) (elements s) i.
-  Proof. exact (fold_1 s.(sorted)). Qed.
+  Proof. exact (Raw.fold_1 s.(sorted)). Qed.
 
   Lemma cardinal_1 : cardinal s = length (elements s).
-  Proof. exact (cardinal_1 s.(sorted)). Qed.
+  Proof. exact (Raw.cardinal_1 s.(sorted)). Qed.
 
   Section Filter.
   
   Variable f : elt -> bool.
 
-  Lemma filter_1 : compat_bool X.eq f -> In x (filter f s) -> In x s. 
-  Proof. exact (@filter_1 s x f). Qed.
-  Lemma filter_2 : compat_bool X.eq f -> In x (filter f s) -> f x = true. 
-  Proof. exact (@filter_2 s x f). Qed.
+  Lemma filter_1 : compat_bool E.eq f -> In x (filter f s) -> In x s. 
+  Proof. exact (@Raw.filter_1 s x f). Qed.
+  Lemma filter_2 : compat_bool E.eq f -> In x (filter f s) -> f x = true. 
+  Proof. exact (@Raw.filter_2 s x f). Qed.
   Lemma filter_3 :
-      compat_bool X.eq f -> In x s -> f x = true -> In x (filter f s).
-  Proof. exact (@filter_3 s x f). Qed.
+      compat_bool E.eq f -> In x s -> f x = true -> In x (filter f s).
+  Proof. exact (@Raw.filter_3 s x f). Qed.
 
   Lemma for_all_1 :
-      compat_bool X.eq f ->
+      compat_bool E.eq f ->
       For_all (fun x => f x = true) s -> for_all f s = true.
-  Proof. exact (@for_all_1 s f). Qed.
+  Proof. exact (@Raw.for_all_1 s f). Qed.
   Lemma for_all_2 :
-      compat_bool X.eq f ->
+      compat_bool E.eq f ->
       for_all f s = true -> For_all (fun x => f x = true) s.
-  Proof. exact (@for_all_2 s f). Qed.
+  Proof. exact (@Raw.for_all_2 s f). Qed.
 
   Lemma exists_1 :
-      compat_bool X.eq f ->
+      compat_bool E.eq f ->
       Exists (fun x => f x = true) s -> exists_ f s = true.
-  Proof. exact (@exists_1 s f). Qed.
+  Proof. exact (@Raw.exists_1 s f). Qed.
   Lemma exists_2 :
-      compat_bool X.eq f ->
+      compat_bool E.eq f ->
       exists_ f s = true -> Exists (fun x => f x = true) s.
-  Proof. exact (@exists_2 s f). Qed.
+  Proof. exact (@Raw.exists_2 s f). Qed.
 
   Lemma partition_1 :
-      compat_bool X.eq f -> Equal (fst (partition f s)) (filter f s).
-  Proof. exact (@partition_1 s f). Qed.
+      compat_bool E.eq f -> Equal (fst (partition f s)) (filter f s).
+  Proof. exact (@Raw.partition_1 s f). Qed.
   Lemma partition_2 :
-      compat_bool X.eq f ->
+      compat_bool E.eq f ->
       Equal (snd (partition f s)) (filter (fun x => negb (f x)) s).
-  Proof. exact (@partition_2 s f). Qed.
+  Proof. exact (@Raw.partition_2 s f). Qed.
 
   End Filter.
 
-  Lemma elements_1 : In x s -> InA X.eq x (elements s).
-  Proof. exact (fun H => elements_1 H). Qed.
-  Lemma elements_2 : InA X.eq x (elements s) -> In x s.
-  Proof. exact (fun H => elements_2 H). Qed.
-  Lemma elements_3 : sort X.lt (elements s).
-  Proof. exact (elements_3 s.(sorted)). Qed.
+  Lemma elements_1 : In x s -> InA E.eq x (elements s).
+  Proof. exact (fun H => Raw.elements_1 H). Qed.
+  Lemma elements_2 : InA E.eq x (elements s) -> In x s.
+  Proof. exact (fun H => Raw.elements_2 H). Qed.
+  Lemma elements_3 : sort E.lt (elements s).
+  Proof. exact (Raw.elements_3 s.(sorted)). Qed.
 
   Lemma min_elt_1 : min_elt s = Some x -> In x s. 
-  Proof. exact (fun H => min_elt_1 H). Qed.
-  Lemma min_elt_2 : min_elt s = Some x -> In y s -> ~ X.lt y x. 
-  Proof. exact (fun H => min_elt_2 s.(sorted) H). Qed.
+  Proof. exact (fun H => Raw.min_elt_1 H). Qed.
+  Lemma min_elt_2 : min_elt s = Some x -> In y s -> ~ E.lt y x. 
+  Proof. exact (fun H => Raw.min_elt_2 s.(sorted) H). Qed.
   Lemma min_elt_3 : min_elt s = None -> Empty s.
-  Proof. exact (fun H => min_elt_3 H). Qed.
+  Proof. exact (fun H => Raw.min_elt_3 H). Qed.
 
   Lemma max_elt_1 : max_elt s = Some x -> In x s. 
-  Proof. exact (fun H => max_elt_1 H). Qed.
-  Lemma max_elt_2 : max_elt s = Some x -> In y s -> ~ X.lt x y. 
-  Proof. exact (fun H => max_elt_2 s.(sorted) H). Qed.
+  Proof. exact (fun H => Raw.max_elt_1 H). Qed.
+  Lemma max_elt_2 : max_elt s = Some x -> In y s -> ~ E.lt x y. 
+  Proof. exact (fun H => Raw.max_elt_2 s.(sorted) H). Qed.
   Lemma max_elt_3 : max_elt s = None -> Empty s.
-  Proof. exact (fun H => max_elt_3 H). Qed.
+  Proof. exact (fun H => Raw.max_elt_3 H). Qed.
 
   Lemma choose_1 : choose s = Some x -> In x s.
-  Proof. exact (fun H => choose_1 H). Qed.
+  Proof. exact (fun H => Raw.choose_1 H). Qed.
   Lemma choose_2 : choose s = None -> Empty s.
-  Proof. exact (fun H => choose_2 H). Qed.
+  Proof. exact (fun H => Raw.choose_2 H). Qed.
 
   Lemma eq_refl : eq s s.
-  Proof. exact (eq_refl s). Qed.
+  Proof. exact (Raw.eq_refl s). Qed.
   Lemma eq_sym : eq s s' -> eq s' s.
-  Proof. exact (@eq_sym s s'). Qed.
+  Proof. exact (@Raw.eq_sym s s'). Qed.
   Lemma eq_trans : eq s s' -> eq s' s'' -> eq s s''.
-  Proof. exact (@eq_trans s s' s''). Qed.
+  Proof. exact (@Raw.eq_trans s s' s''). Qed.
 
   Lemma lt_trans : lt s s' -> lt s' s'' -> lt s s''.
-  Proof. exact (@lt_trans s s' s''). Qed.
+  Proof. exact (@Raw.lt_trans s s' s''). Qed.
   Lemma lt_not_eq : lt s s' -> ~ eq s s'.
-  Proof. exact (lt_not_eq s.(sorted) s'.(sorted)). Qed.
+  Proof. exact (Raw.lt_not_eq s.(sorted) s'.(sorted)). Qed.
 
   Definition compare : Compare lt eq s s'.
   Proof.
-  elim (compare s.(sorted) s'.(sorted));
+  elim (Raw.compare s.(sorted) s'.(sorted));
    [ constructor 1 | constructor 2 | constructor 3 ]; 
    auto. 
   Defined.

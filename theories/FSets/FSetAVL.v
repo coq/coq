@@ -1785,19 +1785,19 @@ Qed.
 (** Induction over cardinals *)
 
 Lemma sorted_subset_cardinal : forall l' l : list X.t,
- MX.Sort l -> MX.Sort l' ->
- (forall x : elt, MX.In x l -> MX.In x l') -> (length l <= length l')%nat.
+ sort X.lt l -> sort X.lt l' ->
+ (forall x : elt, InA X.eq x l -> InA X.eq x l') -> (length l <= length l')%nat.
 Proof.
  simple induction l'; simpl in |- *; intuition.
  destruct l; trivial; intros.
- absurd (MX.In t nil); intuition.
+ absurd (InA X.eq t nil); intuition.
  inversion_clear H2.
  inversion_clear H1.
  destruct l0; simpl in |- *; intuition.
  inversion_clear H0.
  apply le_n_S.
  case (X.compare t a); intro.
- absurd (MX.In t (a :: l)).
+ absurd (InA X.eq t (a :: l)).
  intro.
  inversion_clear H0.
  order.
@@ -1807,7 +1807,7 @@ Proof.
  firstorder.
  apply H; auto.
  intros.
- assert (MX.In x (a :: l)).
+ assert (InA X.eq x (a :: l)).
  apply H2; auto.
  inversion_clear H6; auto.
  assert (X.lt t x).
@@ -1817,7 +1817,7 @@ Proof.
  simpl in |- *; omega.
  apply (H (t :: l0)); auto.
  intros.
- assert (MX.In x (a :: l)); firstorder.
+ assert (InA X.eq x (a :: l)); firstorder.
  inversion_clear H6; auto.
  assert (X.lt a x).
  apply MX.Sort_Inf_In with (t :: l0); auto.
@@ -2208,7 +2208,7 @@ Hint Constructors sorted_e.
 
 Lemma in_app :
  forall (x : elt) (l1 l2 : list elt),
- L.MX.In x (l1 ++ l2) -> L.MX.In x l1 \/ L.MX.In x l2.
+ InA X.eq x (l1 ++ l2) -> InA X.eq x l1 \/ InA X.eq x l2.
 Proof.
  simple induction l1; simpl in |- *; intuition.
  inversion_clear H0; auto.
@@ -2216,7 +2216,7 @@ Proof.
 Qed.
 
 Lemma in_flatten_e :
- forall (x : elt) (e : enumeration), L.MX.In x (flatten_e e) -> In_e x e.
+ forall (x : elt) (e : enumeration), InA X.eq x (flatten_e e) -> In_e x e.
 Proof.
  simple induction e; simpl in |- *; intuition.
  inversion_clear H.
@@ -2226,9 +2226,9 @@ Proof.
 Qed.
 
 Lemma sort_app :
- forall l1 l2 : list elt, L.MX.Sort l1 -> L.MX.Sort l2 ->
- (forall x y : elt, L.MX.In x l1 -> L.MX.In y l2 -> X.lt x y) ->
- L.MX.Sort (l1 ++ l2).
+ forall l1 l2 : list elt, sort X.lt l1 -> sort X.lt l2 ->
+ (forall x y : elt, InA X.eq x l1 -> InA X.eq y l2 -> X.lt x y) ->
+ sort X.lt (l1 ++ l2).
 Proof.
  simple induction l1; simpl in |- *; intuition.
  apply cons_sort; auto.
@@ -2240,7 +2240,7 @@ Proof.
 Qed.
 
 Lemma sorted_flatten_e :
- forall e : enumeration, sorted_e e -> L.MX.Sort (flatten_e e).
+ forall e : enumeration, sorted_e e -> sort X.lt (flatten_e e).
 Proof.
  simple induction e; simpl in |- *; intuition.
  apply cons_sort.

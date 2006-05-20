@@ -109,7 +109,7 @@ Module DepOfNodep (M: S) <: Sdep with Module E := M.E.
 
   Definition elements :
     forall s : t,
-    {l : list elt | ME.Sort l /\ (forall x : elt, In x s <-> ME.In x l)}.
+    {l : list elt | sort E.lt l /\ (forall x : elt, In x s <-> InA E.eq x l)}.
    Proof.
      intros; exists (elements s); intuition.   
    Defined. 
@@ -394,17 +394,17 @@ Module NodepOfDep (M: Sdep) <: S with Module E := M.E.
 
   Definition elements (s : t) : list elt := let (l, _) := elements s in l. 
  
-  Lemma elements_1 : forall (s : t) (x : elt), In x s -> ME.In x (elements s).
+  Lemma elements_1 : forall (s : t) (x : elt), In x s -> InA E.eq x (elements s).
   Proof. 
     intros; unfold elements in |- *; case (M.elements s); firstorder.
   Qed.
 
-  Lemma elements_2 : forall (s : t) (x : elt), ME.In x (elements s) -> In x s.
+  Lemma elements_2 : forall (s : t) (x : elt), InA E.eq x (elements s) -> In x s.
   Proof. 
     intros s x; unfold elements in |- *; case (M.elements s); firstorder.
   Qed.
 
-  Lemma elements_3 : forall s : t, ME.Sort (elements s).  
+  Lemma elements_3 : forall s : t, sort E.lt (elements s).  
   Proof. 
     intros; unfold elements in |- *; case (M.elements s); firstorder.
   Qed.
