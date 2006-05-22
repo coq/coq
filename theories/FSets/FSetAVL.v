@@ -2558,94 +2558,93 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
 
  Module E := X.
  Module Raw := Raw I X. 
- Import Raw.
 
- Record bbst : Set := Bbst {this :> t; is_bst : bst this; is_avl: avl this}.
+ Record bbst : Set := Bbst {this :> Raw.t; is_bst : Raw.bst this; is_avl: Raw.avl this}.
  Definition t := bbst. 
- Definition elt := X.t.
+ Definition elt := E.t.
  
- Definition In (x : elt) (s : t) := In x s.
- Definition Equal s s' := forall a : elt, In a s <-> In a s'.
- Definition Subset s s' := forall a : elt, In a s -> In a s'.
- Definition Empty s := forall a : elt, ~ In a s.
- Definition For_all (P : elt -> Prop) s := forall x, In x s -> P x.
- Definition Exists (P : elt -> Prop) s := exists x, In x s /\ P x.
-
- Implicit Types s : t.
- Implicit Types x y : elt.
+ Definition In (x : elt) (s : t) : Prop := Raw.In x s.
+ Definition Equal (s s':t) : Prop := forall a : elt, In a s <-> In a s'.
+ Definition Subset (s s':t) : Prop := forall a : elt, In a s -> In a s'.
+ Definition Empty (s:t) : Prop := forall a : elt, ~ In a s.
+ Definition For_all (P : elt -> Prop) (s:t) : Prop := forall x, In x s -> P x.
+ Definition Exists (P : elt -> Prop) (s:t) : Prop := exists x, In x s /\ P x.
   
- Definition In_1 s := In_1 s.
+ Lemma In_1 : forall (s:t)(x y:elt), E.eq x y -> In x s -> In y s. 
+ Proof. intro s; exact (Raw.In_1 s). Qed.
  
- Definition mem x s := mem x s.
+ Definition mem (x:elt)(s:t) : bool := Raw.mem x s.
 
- Definition empty := Bbst _ empty_bst empty_avl.
- Definition is_empty s := is_empty s.
- Definition singleton x := Bbst _ (singleton_bst x) (singleton_avl x).
- Definition add x s := 
-   Bbst _ (add_bst s x (is_bst s) (is_avl s)) 
-          (add_avl s x (is_avl s)). 
- Definition remove x s := 
-   Bbst _ (remove_bst s x (is_bst s) (is_avl s)) 
-          (remove_avl s x (is_avl s)). 
- Definition inter s s' := 
-   Bbst _ (inter_bst _ _ (is_bst s) (is_avl s) (is_bst s') (is_avl s'))  
-          (inter_avl _ _ (is_avl s) (is_avl s')).
- Definition diff s s' := 
-   Bbst _ (diff_bst _ _ (is_bst s) (is_avl s) (is_bst s') (is_avl s'))  
-          (diff_avl _ _ (is_avl s) (is_avl s')).
- Definition elements s := elements s.
- Definition min_elt s := min_elt s.
- Definition max_elt s := max_elt s.
- Definition choose s := choose s.
- Definition fold (B : Set) (f : elt -> B -> B) s := fold f s. 
- Definition cardinal s := cardinal s.
- Definition filter (f : elt -> bool) s := 
-   Bbst _ (filter_bst f _ (is_bst s) (is_avl s))
-          (filter_avl f _ (is_avl s)). 
- Definition for_all (f : elt -> bool) s := for_all f s.
- Definition exists_ (f : elt -> bool) s := exists_ f s.
- Definition partition (f : elt -> bool) s :=
-   let p := partition f s in
-   (Bbst (fst p) (partition_bst_1 f _ (is_bst s) (is_avl s)) 
-                 (partition_avl_1 f _ (is_avl s)),
-    Bbst (snd p) (partition_bst_2 f _ (is_bst s) (is_avl s)) 
-                 (partition_avl_2 f _ (is_avl s))).
+ Definition empty : t := Bbst _ Raw.empty_bst Raw.empty_avl.
+ Definition is_empty (s:t) : bool := Raw.is_empty s.
+ Definition singleton (x:elt) : t := Bbst _ (Raw.singleton_bst x) (Raw.singleton_avl x).
+ Definition add (x:elt)(s:t) : t := 
+   Bbst _ (Raw.add_bst s x (is_bst s) (is_avl s)) 
+          (Raw.add_avl s x (is_avl s)). 
+ Definition remove (x:elt)(s:t) : t := 
+   Bbst _ (Raw.remove_bst s x (is_bst s) (is_avl s)) 
+          (Raw.remove_avl s x (is_avl s)). 
+ Definition inter (s s':t) : t := 
+   Bbst _ (Raw.inter_bst _ _ (is_bst s) (is_avl s) (is_bst s') (is_avl s'))  
+          (Raw.inter_avl _ _ (is_avl s) (is_avl s')).
+ Definition diff (s s':t) : t := 
+   Bbst _ (Raw.diff_bst _ _ (is_bst s) (is_avl s) (is_bst s') (is_avl s'))  
+          (Raw.diff_avl _ _ (is_avl s) (is_avl s')).
+ Definition elements (s:t) : list elt := Raw.elements s.
+ Definition min_elt (s:t) : option elt := Raw.min_elt s.
+ Definition max_elt (s:t) : option elt := Raw.max_elt s.
+ Definition choose (s:t) : option elt := Raw.choose s.
+ Definition fold (B : Set) (f : elt -> B -> B) (s:t) : B -> B := Raw.fold f s. 
+ Definition cardinal (s:t) : nat := Raw.cardinal s.
+ Definition filter (f : elt -> bool) (s:t) : t := 
+   Bbst _ (Raw.filter_bst f _ (is_bst s) (is_avl s))
+          (Raw.filter_avl f _ (is_avl s)). 
+ Definition for_all (f : elt -> bool) (s:t) : bool := Raw.for_all f s.
+ Definition exists_ (f : elt -> bool) (s:t) : bool := Raw.exists_ f s.
+ Definition partition (f : elt -> bool) (s:t) : t * t :=
+   let p := Raw.partition f s in
+   (Bbst (fst p) (Raw.partition_bst_1 f _ (is_bst s) (is_avl s)) 
+                 (Raw.partition_avl_1 f _ (is_avl s)),
+    Bbst (snd p) (Raw.partition_bst_2 f _ (is_bst s) (is_avl s)) 
+                 (Raw.partition_avl_2 f _ (is_avl s))).
 
- Definition union s s' :=
-   let (u,p) := union _ _ (is_bst s) (is_avl s) (is_bst s') (is_avl s') in 
+ Definition union (s s':t) : t :=
+   let (u,p) := Raw.union _ _ (is_bst s) (is_avl s) (is_bst s') (is_avl s') in 
    let (b,p) := p in 
    let (a,_) := p in 
    Bbst u b a.
 
- Definition union' s s' := 
-   Bbst _ (union'_bst _ _ (is_bst s) (is_avl s) (is_bst s') (is_avl s'))  
-          (union'_avl _ _ (is_avl s) (is_avl s')).
+ Definition union' (s s' : t) : t := 
+   Bbst _ (Raw.union'_bst _ _ (is_bst s) (is_avl s) (is_bst s') (is_avl s'))  
+          (Raw.union'_avl _ _ (is_avl s) (is_avl s')).
 
- Definition equal s s':= if equal _ _ (is_bst s) (is_bst s') then true else false. 
- Definition equal' s s' := equal' s s'.
+ Definition equal (s s': t) : bool := if Raw.equal _ _ (is_bst s) (is_bst s') then true else false. 
+ Definition equal' (s s':t) : bool := Raw.equal' s s'.
 
- Definition subset s s':= if subset _ _ (is_bst s) (is_bst s') then true else false.
- Definition subset' s s' := subset' s s'.
+ Definition subset (s s':t) : bool := if Raw.subset _ _ (is_bst s) (is_bst s') then true else false.
+ Definition subset' (s s':t) : bool := Raw.subset' s s'.
 
- Definition eq s s' := eq s s'.
- Definition lt s s' := lt s s'.
+ Definition eq (s s':t) : Prop := Raw.eq s s'.
+ Definition lt (s s':t) : Prop := Raw.lt s s'.
 
- Definition compare  s s' : Compare lt eq s s'.
+ Definition compare  (s s':t) : Compare lt eq s s'.
  Proof.
- intros; elim (compare _ _ (is_bst s) (is_bst s'));
+ intros; elim (Raw.compare _ _ (is_bst s) (is_bst s'));
   [ constructor 1 | constructor 2 | constructor 3 ]; 
   auto. 
  Defined.
 
  (* specs *)
  Section Specs. 
- Variable s s' : t. 
+ Variable s s' s'': t. 
  Variable x y : elt.
 
  Hint Resolve is_bst is_avl.
  
- Definition mem_1 := mem_1 s x (is_bst s). 
- Definition mem_2 := mem_2 s x.
+ Lemma mem_1 : In x s -> mem x s = true. 
+ Proof. exact (Raw.mem_1 s x (is_bst s)). Qed.
+ Lemma mem_2 : mem x s = true -> In x s.
+ Proof. exact (Raw.mem_2 s x). Qed.
 
  Lemma equal_1 : Equal s s' -> equal s s' = true.
  Proof. 
@@ -2657,10 +2656,10 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  unfold equal; destruct (Raw.equal s s'); simpl; intuition; discriminate.
  Qed.
 
- Definition equal'_1 s s' :=
-  equal'_1 _ _ (is_bst s) (is_avl s) (is_bst s') (is_avl s').
- Definition equal'_2 s s' :=
-  equal'_2 _ _ (is_bst s) (is_avl s) (is_bst s') (is_avl s').
+ Lemma equal'_1 : Equal s s' -> equal' s s' = true.
+ Proof. exact (Raw.equal'_1 _ _ (is_bst s) (is_avl s) (is_bst s') (is_avl s')). Qed.
+ Lemma equal'_2 : equal' s s' = true -> Equal s s'.
+ Proof. exact (Raw.equal'_2 _ _ (is_bst s) (is_avl s) (is_bst s') (is_avl s')). Qed.
 
  Lemma subset_1 : Subset s s' -> subset s s' = true.
  Proof. 
@@ -2672,49 +2671,54 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  unfold subset; destruct (Raw.subset s s'); simpl; intuition discriminate.
  Qed.
 
- Definition subset'_1 s s' := 
-  subset'_1 _ _ (is_bst s) (is_avl s) (is_bst s') (is_avl s').
- Definition subset'_2 s s' := 
-  subset'_2 _ _ (is_bst s) (is_avl s) (is_bst s') (is_avl s').
+ Lemma subset'_1 : Subset s s' -> subset' s s' = true. 
+ Proof. exact (Raw.subset'_1 _ _ (is_bst s) (is_avl s) (is_bst s') (is_avl s')). Qed.
+ Lemma subset'_2 : subset' s s' = true -> Subset s s'.
+ Proof. exact (Raw.subset'_2 _ _ (is_bst s) (is_avl s) (is_bst s') (is_avl s')). Qed.
 
- Definition empty_1 : Empty empty := empty_1.
+ Lemma empty_1 : Empty empty.
+ Proof. exact Raw.empty_1. Qed.
 
- Definition is_empty_1 : Empty s -> is_empty s = true  := is_empty_1 s.
- Definition is_empty_2 : is_empty s = true -> Empty s  := is_empty_2 s.
+ Lemma is_empty_1 : Empty s -> is_empty s = true.
+ Proof. exact (Raw.is_empty_1 s). Qed.
+ Lemma is_empty_2 : is_empty s = true -> Empty s. 
+ Proof. exact (Raw.is_empty_2 s). Qed.
  
- Lemma add_1 : X.eq x y -> In y (add x s).
+ Lemma add_1 : E.eq x y -> In y (add x s).
  Proof. 
- unfold add, In; simpl; rewrite add_in; auto.
+ unfold add, In; simpl; rewrite Raw.add_in; auto.
  Qed.
 
  Lemma add_2 : In y s -> In y (add x s).
  Proof.
- unfold add, In; simpl; rewrite add_in; auto.
+ unfold add, In; simpl; rewrite Raw.add_in; auto.
  Qed.
 
- Lemma add_3 : ~ X.eq x y -> In y (add x s) -> In y s. 
+ Lemma add_3 : ~ E.eq x y -> In y (add x s) -> In y s. 
  Proof. 
- unfold add, In; simpl; rewrite add_in; intuition.
+ unfold add, In; simpl; rewrite Raw.add_in; intuition.
  elim H; auto.
  Qed.
 
  Lemma remove_1 : E.eq x y -> ~ In y (remove x s).
  Proof. 
- unfold remove, In; simpl; rewrite remove_in; intuition.
+ unfold remove, In; simpl; rewrite Raw.remove_in; intuition.
  Qed.
 
  Lemma remove_2 : ~ E.eq x y -> In y s -> In y (remove x s).
  Proof. 
- unfold remove, In; simpl; rewrite remove_in; intuition.
+ unfold remove, In; simpl; rewrite Raw.remove_in; intuition.
  Qed.
 
  Lemma remove_3 : In y (remove x s) -> In y s.
  Proof. 
- unfold remove, In; simpl; rewrite remove_in; intuition.
+ unfold remove, In; simpl; rewrite Raw.remove_in; intuition.
  Qed.
 
- Definition singleton_1 := singleton_1 x y.
- Definition singleton_2 := singleton_2 x y. 
+ Lemma singleton_1 : In y (singleton x) -> E.eq x y. 
+ Proof. exact (Raw.singleton_1 x y). Qed.
+ Lemma singleton_2 : E.eq x y -> In y (singleton x). 
+ Proof. exact (Raw.singleton_2 x y). Qed.
 
  Lemma union_1 : In x (union s s') -> In x s \/ In x s'.
  Proof.
@@ -2742,58 +2746,58 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
 
  Lemma union'_1 : In x (union' s s') -> In x s \/ In x s'.
  Proof.
- unfold union', In; simpl; rewrite union'_in; intuition.
+ unfold union', In; simpl; rewrite Raw.union'_in; intuition.
  Qed.
 
  Lemma union'_2 : In x s -> In x (union' s s'). 
  Proof.
- unfold union', In; simpl; rewrite union'_in; intuition.
+ unfold union', In; simpl; rewrite Raw.union'_in; intuition.
  Qed.
 
  Lemma union'_3 : In x s' -> In x (union' s s').
  Proof.
- unfold union', In; simpl; rewrite union'_in; intuition.
+ unfold union', In; simpl; rewrite Raw.union'_in; intuition.
  Qed.
 
  Lemma inter_1 : In x (inter s s') -> In x s.
  Proof.
- unfold inter, In; simpl; rewrite inter_in; intuition.
+ unfold inter, In; simpl; rewrite Raw.inter_in; intuition.
  Qed.
 
  Lemma inter_2 : In x (inter s s') -> In x s'.
  Proof. 
- unfold inter, In; simpl; rewrite inter_in; intuition.
+ unfold inter, In; simpl; rewrite Raw.inter_in; intuition.
  Qed.
 
  Lemma inter_3 : In x s -> In x s' -> In x (inter s s').
  Proof. 
- unfold inter, In; simpl; rewrite inter_in; intuition.
+ unfold inter, In; simpl; rewrite Raw.inter_in; intuition.
  Qed.
  
  Lemma diff_1 : In x (diff s s') -> In x s. 
  Proof. 
- unfold diff, In; simpl; rewrite diff_in; intuition.
+ unfold diff, In; simpl; rewrite Raw.diff_in; intuition.
  Qed.
 
  Lemma diff_2 : In x (diff s s') -> ~ In x s'.
  Proof. 
- unfold diff, In; simpl; rewrite diff_in; intuition.
+ unfold diff, In; simpl; rewrite Raw.diff_in; intuition.
  Qed.
 
  Lemma diff_3 : In x s -> ~ In x s' -> In x (diff s s').
  Proof. 
- unfold diff, In; simpl; rewrite diff_in; intuition.
+ unfold diff, In; simpl; rewrite Raw.diff_in; intuition.
  Qed.
  
  Lemma fold_1 : forall (A : Set) (i : A) (f : elt -> A -> A),
       fold A f s i = fold_left (fun a e => f e a) (elements s) i.
  Proof. 
- unfold fold, elements; intros; apply fold_1; auto.
+ unfold fold, elements; intros; apply Raw.fold_1; auto.
  Qed.
 
  Lemma cardinal_1 : cardinal s = length (elements s).
  Proof. 
- unfold cardinal, elements; intros; apply cardinal_elements_1; auto.
+ unfold cardinal, elements; intros; apply Raw.cardinal_elements_1; auto.
  Qed.
 
  Section Filter.
@@ -2801,39 +2805,43 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
 
  Lemma filter_1 : compat_bool E.eq f -> In x (filter f s) -> In x s. 
  Proof. 
- intro; unfold filter, In; simpl; rewrite filter_in; intuition.
+ intro; unfold filter, In; simpl; rewrite Raw.filter_in; intuition.
  Qed.
 
  Lemma filter_2 : compat_bool E.eq f -> In x (filter f s) -> f x = true. 
  Proof. 
- intro; unfold filter, In; simpl; rewrite filter_in; intuition.
+ intro; unfold filter, In; simpl; rewrite Raw.filter_in; intuition.
  Qed.
 
  Lemma filter_3 : compat_bool E.eq f -> In x s -> f x = true -> In x (filter f s).
  Proof. 
- intro; unfold filter, In; simpl; rewrite filter_in; intuition.
+ intro; unfold filter, In; simpl; rewrite Raw.filter_in; intuition.
  Qed.
 
- Definition for_all_1 := for_all_1 f s.
- Definition for_all_2 := for_all_2 f s.
+ Lemma for_all_1 : compat_bool E.eq f -> For_all (fun x => f x = true) s -> for_all f s = true.
+ Proof. exact (Raw.for_all_1 f s). Qed.
+ Lemma for_all_2 : compat_bool E.eq f -> for_all f s = true -> For_all (fun x => f x = true) s.
+ Proof. exact (Raw.for_all_2 f s). Qed.
 
- Definition exists_1 := exists_1 f s.
- Definition exists_2 := exists_2 f s.
+ Lemma exists_1 : compat_bool E.eq f -> Exists (fun x => f x = true) s -> exists_ f s = true.
+ Proof. exact (Raw.exists_1 f s). Qed.
+ Lemma exists_2 : compat_bool E.eq f -> exists_ f s = true -> Exists (fun x => f x = true) s.
+ Proof. exact (Raw.exists_2 f s). Qed.
 
  Lemma partition_1 : compat_bool E.eq f -> 
   Equal (fst (partition f s)) (filter f s).
  Proof.
  unfold partition, filter, Equal, In; simpl ;intros H a.
- rewrite partition_in_1; auto.
- rewrite filter_in; intuition.
+ rewrite Raw.partition_in_1; auto.
+ rewrite Raw.filter_in; intuition.
  Qed.
 
  Lemma partition_2 : compat_bool E.eq f -> 
   Equal (snd (partition f s)) (filter (fun x => negb (f x)) s).
  Proof.
  unfold partition, filter, Equal, In; simpl ;intros H a.
- rewrite partition_in_2; auto.
- rewrite filter_in; intuition.
+ rewrite Raw.partition_in_2; auto.
+ rewrite Raw.filter_in; intuition.
  red; intros.
  f_equal; auto.
  destruct (f a); auto.
@@ -2844,33 +2852,47 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
 
  Lemma elements_1 : In x s -> InA E.eq x (elements s).
  Proof. 
- unfold elements, In; rewrite elements_in; auto.
+ unfold elements, In; rewrite Raw.elements_in; auto.
  Qed.
 
  Lemma elements_2 : InA E.eq x (elements s) -> In x s.
  Proof. 
- unfold elements, In; rewrite elements_in; auto.
+ unfold elements, In; rewrite Raw.elements_in; auto.
  Qed.
 
- Definition elements_3 : sort E.lt (elements s) := elements_sort _ (is_bst s).
+ Lemma elements_3 : sort E.lt (elements s).
+ Proof. exact (Raw.elements_sort _ (is_bst s)). Qed.
 
- Definition min_elt_1 := min_elt_1 s x.
- Definition min_elt_2 := min_elt_2 s x y (is_bst s). 
- Definition min_elt_3 := min_elt_3 s.
+ Lemma min_elt_1 : min_elt s = Some x -> In x s. 
+ Proof. exact (Raw.min_elt_1 s x). Qed.
+ Lemma min_elt_2 : min_elt s = Some x -> In y s -> ~ E.lt y x.
+ Proof. exact (Raw.min_elt_2 s x y (is_bst s)). Qed.
+ Lemma min_elt_3 : min_elt s = None -> Empty s.
+ Proof. exact (Raw.min_elt_3 s). Qed.
 
- Definition max_elt_1 := max_elt_1 s x.
- Definition max_elt_2 := max_elt_2 s x y (is_bst s).
- Definition max_elt_3 := max_elt_3 s.
+ Lemma max_elt_1 : max_elt s = Some x -> In x s. 
+ Proof. exact (Raw.max_elt_1 s x). Qed.
+ Lemma max_elt_2 : max_elt s = Some x -> In y s -> ~ E.lt x y.
+ Proof. exact (Raw.max_elt_2 s x y (is_bst s)). Qed.
+ Lemma max_elt_3 : max_elt s = None -> Empty s.
+ Proof. exact (Raw.max_elt_3 s). Qed.
 
- Definition choose_1 := choose_1 s x.
- Definition choose_2 := choose_2 s.
+ Lemma choose_1 : choose s = Some x -> In x s.
+ Proof. exact (Raw.choose_1 s x). Qed.
+ Lemma choose_2 : choose s = None -> Empty s.
+ Proof. exact (Raw.choose_2 s). Qed.
 
- Definition eq_refl s := eq_refl s.
- Definition eq_sym s s' := eq_sym s s'.
- Definition eq_trans s s' s'' := eq_trans s s' s''.
+ Lemma eq_refl : eq s s. 
+ Proof. exact (Raw.eq_refl s). Qed.
+ Lemma eq_sym : eq s s' -> eq s' s.
+ Proof. exact (Raw.eq_sym s s'). Qed.
+ Lemma eq_trans : eq s s' -> eq s' s'' -> eq s s''.
+ Proof. exact (Raw.eq_trans s s' s''). Qed.
   
- Definition lt_trans s s' s'' := lt_trans s s' s''.
- Definition lt_not_eq s s' := lt_not_eq _ _ (is_bst s) (is_bst s').
+ Lemma lt_trans : lt s s' -> lt s' s'' -> lt s s''.
+ Proof. exact (Raw.lt_trans s s' s''). Qed.
+ Lemma lt_not_eq : lt s s' -> ~eq s s'.
+ Proof. exact (Raw.lt_not_eq _ _ (is_bst s) (is_bst s')). Qed.
 
  End Specs.
 End IntMake.
