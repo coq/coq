@@ -107,10 +107,12 @@ Lemma RmaxLess2 : forall r1 r2, r2 <= Rmax r1 r2.
 intros r1 r2; unfold Rmax in |- *; case (Rle_dec r1 r2); auto with real.
 Qed.
  
-Lemma RmaxSym : forall p q:R, Rmax p q = Rmax q p.
+Lemma Rmax_comm : forall p q:R, Rmax p q = Rmax q p.
 intros p q; unfold Rmax in |- *; case (Rle_dec p q); case (Rle_dec q p); auto;
  intros H1 H2; apply Rle_antisym; auto with real.
 Qed.
+
+Notation RmaxSym := Rmax_comm (only parsing).
 
 Lemma RmaxRmult :
  forall (p q:R) r, 0 <= r -> Rmax (r * p) (r * q) = r * Rmax p q.
