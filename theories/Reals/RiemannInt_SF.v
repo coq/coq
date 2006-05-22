@@ -218,17 +218,10 @@ Qed.
 Lemma StepFun_P5 :
  forall (a b:R) (f:R -> R) (l:Rlist),
    is_subdivision f a b l -> is_subdivision f b a l.
-unfold is_subdivision in |- *; intros; elim X; intros; exists x;
- unfold adapted_couple in p; decompose [and] p; clear p;
- unfold adapted_couple in |- *; repeat split; try assumption.
-rewrite H1; unfold Rmin in |- *; case (Rle_dec a b); intro;
- case (Rle_dec b a); intro; try reflexivity.
-apply Rle_antisym; assumption.
-apply Rle_antisym; auto with real.
-rewrite H0; unfold Rmax in |- *; case (Rle_dec a b); intro;
- case (Rle_dec b a); intro; try reflexivity.
-apply Rle_antisym; assumption.
-apply Rle_antisym; auto with real.
+destruct 1 as (x,(H0,(H1,(H2,(H3,H4))))); exists x;
+  repeat split; try assumption.
+rewrite H1; apply Rmin_comm.
+rewrite H2; apply Rmax_comm.
 Qed.
 
 Lemma StepFun_P6 :
@@ -1483,19 +1476,16 @@ Lemma StepFun_P26 :
    is_subdivision f a b l1 ->
    is_subdivision g a b l1 ->
    is_subdivision (fun x:R => f x + l * g x) a b l1.
-intros a b l f g l1; unfold is_subdivision in |- *; intros; elim X; elim X0;
- intros; clear X X0; unfold adapted_couple in p, p0; 
- decompose [and] p; decompose [and] p0; clear p p0;
- apply existT with (FF l1 (fun x:R => f x + l * g x));
- unfold adapted_couple in |- *; repeat split; try assumption.
-apply StepFun_P20; apply neq_O_lt; red in |- *; intro; rewrite <- H8 in H7;
- discriminate.
-intros; unfold constant_D_eq, open_interval in |- *;
- unfold constant_D_eq, open_interval in H9, H4; intros;
+Proof.
+intros a b l f g l1 (x0,(H0,(H1,(H2,(H3,H4))))) 
+                    (x,(_,(_,(_,(_,H9))))).
+ exists (FF l1 (fun x:R => f x + l * g x)); repeat split; try assumption.
+apply StepFun_P20; rewrite H3; auto with arith.
+intros i H8 x1 H10; unfold open_interval in H10, H9, H4; 
  rewrite (H9 _ H8 _ H10); rewrite (H4 _ H8 _ H10); 
  assert (H11 : l1 <> nil).
-red in |- *; intro; rewrite H11 in H8; elim (lt_n_O _ H8).
-assert (H12 := RList_P19 _ H11); elim H12; clear H12; intros r [r0 H12];
+red in |- *; intro H11; rewrite H11 in H8; elim (lt_n_O _ H8).
+destruct (RList_P19 _ H11) as (r,(r0,H12));
  rewrite H12; unfold FF in |- *;
  change
    (pos_Rl x0 i + l * pos_Rl x i =
@@ -2142,18 +2132,16 @@ Qed.
 Lemma StepFun_P41 :
  forall (f:R -> R) (a b c:R),
    a <= b -> b <= c -> IsStepFun f a b -> IsStepFun f b c -> IsStepFun f a c.
-unfold IsStepFun in |- *; unfold is_subdivision in |- *; intros; elim X;
- clear X; intros l1 [lf1 H1]; elim X0; clear X0; intros l2 [lf2 H2];
- case (total_order_T a b); intro.
-elim s; intro.
-case (total_order_T b c); intro.
-elim s0; intro.
-split with (cons_Rlist l1 l2); split with (FF (cons_Rlist l1 l2) f);
+Proof.
+intros f a b c H H0 (l1,(lf1,H1)) (l2,(lf2,H2));
+ destruct (total_order_T a b) as [[Hltab|Hab]|Hgtab].
+ destruct (total_order_T b c) as [[Hltbc|Hbc]|Hgtbc].
+exists (cons_Rlist l1 l2); exists (FF (cons_Rlist l1 l2) f);
  apply StepFun_P40 with b lf1 lf2; assumption.
-split with l1; split with lf1; rewrite b0 in H1; assumption.
-elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H0 r)).
-split with l2; split with lf2; rewrite <- b0 in H2; assumption.
-elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H r)).
+exists l1; exists lf1; rewrite Hbc in H1; assumption.
+elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H0 Hgtbc)).
+exists l2; exists lf2; rewrite <- Hab in H2; assumption.
+elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H Hgtab)).
 Qed.
 
 Lemma StepFun_P42 :
@@ -2431,14 +2419,14 @@ elim H; clear H; intros; unfold IsStepFun in X; unfold is_subdivision in X;
      adapted_couple f a b l1 lf1 ->
      a <= c <= b ->
      sigT (fun l:Rlist => sigT (fun l0:Rlist => adapted_couple f a c l l0))).
-intros; unfold IsStepFun in |- *; unfold is_subdivision in |- *; eapply X.
+intro X; unfold IsStepFun in |- *; unfold is_subdivision in |- *; eapply X.
 apply H2.
 split; assumption.
 clear f a b c H0 H H1 H2 l1 lf1; simple induction l1.
 intros; unfold adapted_couple in H; decompose [and] H; clear H; simpl in H4;
  discriminate.
 simple induction r0.
-intros; assert (H1 : a = b).
+intros X lf1 a b c f H H0; assert (H1 : a = b).
 unfold adapted_couple in H; decompose [and] H; clear H; simpl in H3;
  simpl in H2; assert (H7 : a <= b).
 elim H0; intros; apply Rle_trans with c; assumption.
@@ -2452,7 +2440,7 @@ unfold Rmin in |- *; case (Rle_dec a b); intro;
 split with (cons r nil); split with lf1; assert (H2 : c = b).
 rewrite H1 in H0; elim H0; intros; apply Rle_antisym; assumption.
 rewrite H2; assumption.
-intros; clear X; induction  lf1 as [| r3 lf1 Hreclf1].
+intros r1 r2 _ X0 lf1 a b c f H H0; induction  lf1 as [| r3 lf1 Hreclf1].
 unfold adapted_couple in H; decompose [and] H; clear H; simpl in H4;
  discriminate.
 clear Hreclf1; assert (H1 : {c <= r1} + {r1 < c}).
@@ -2546,13 +2534,13 @@ elim H; clear H; intros; unfold IsStepFun in X; unfold is_subdivision in X;
      adapted_couple f a b l1 lf1 ->
      a <= c <= b ->
      sigT (fun l:Rlist => sigT (fun l0:Rlist => adapted_couple f c b l l0))).
-intros; unfold IsStepFun in |- *; unfold is_subdivision in |- *; eapply X;
+intro X; unfold IsStepFun in |- *; unfold is_subdivision in |- *; eapply X;
  [ apply H2 | split; assumption ].
 clear f a b c H0 H H1 H2 l1 lf1; simple induction l1.
 intros; unfold adapted_couple in H; decompose [and] H; clear H; simpl in H4;
  discriminate.
 simple induction r0.
-intros; assert (H1 : a = b).
+intros X lf1 a b c f H H0; assert (H1 : a = b).
 unfold adapted_couple in H; decompose [and] H; clear H; simpl in H3;
  simpl in H2; assert (H7 : a <= b).
 elim H0; intros; apply Rle_trans with c; assumption.
@@ -2566,7 +2554,7 @@ unfold Rmin in |- *; case (Rle_dec a b); intro;
 split with (cons r nil); split with lf1; assert (H2 : c = b).
 rewrite H1 in H0; elim H0; intros; apply Rle_antisym; assumption.
 rewrite <- H2 in H1; rewrite <- H1; assumption.
-intros; clear X; induction  lf1 as [| r3 lf1 Hreclf1].
+intros r1 r2 _ X0 lf1 a b c f H H0; induction  lf1 as [| r3 lf1 Hreclf1].
 unfold adapted_couple in H; decompose [and] H; clear H; simpl in H4;
  discriminate.
 clear Hreclf1; assert (H1 : {c <= r1} + {r1 < c}).
