@@ -341,7 +341,7 @@ let make_pattern_eq_precond id e pat =
   res
 
 
-let build_constructors_of_type msg ind' = 
+let build_constructors_of_type msg ind' argl = 
   let (mib,ind) = Inductive.lookup_mind_specif (Global.env()) ind' in
   let npar = mib.Declarations.mind_nparams in
   Array.mapi (fun i _ ->
@@ -355,29 +355,33 @@ let build_constructors_of_type msg ind' =
 		    (Global.env ())
 		    construct
 		in 
+		let argl = 
+		  if argl = [] 
+		  then
+ 		    Array.to_list 
+		      (Array.init (cst_narg - npar) (fun _ -> mkRHole ())
+		      )
+		  else argl
+		in
 		let pat_as_term = 
-		  mkRApp(mkRRef (ConstructRef(ind',i+1)),
-			 Array.to_list 
-			   (Array.init (cst_narg - npar) (fun _ -> mkRHole ())
-			   )
-			)
+		  mkRApp(mkRRef (ConstructRef(ind',i+1)),argl)
 		in
 (* 		Pp.msgnl (str "new constructor := " ++ Printer.pr_rawconstr pat_as_term); *)
 		cases_pattern_of_rawconstr Anonymous pat_as_term
 	     )
     ind.Declarations.mind_consnames
 
-let find_constructors_of_raw_type msg t =
+let find_constructors_of_raw_type msg t argl : Rawterm.cases_pattern array  =
   let ind,args = raw_decompose_app t in
   match ind with
     | RRef(_,IndRef ind')  ->
 (* 	let _,ind = Global.lookup_inductive ind' in *)
-	build_constructors_of_type msg ind'
+	build_constructors_of_type msg ind' argl
     | _ -> error msg
 	
 
 
-let rec find_type_of b = 
+let rec find_type_of nb b = 
   let f,_ = raw_decompose_app b in 
   match f with 
     | RRef(_,ref) -> 
@@ -399,11 +403,11 @@ let rec find_type_of b =
 	      | ConstructRef c -> fst c 
 	  in
 	  let _,ind_type_info = Inductive.lookup_mind_specif (Global.env()) ind_type in 
-	  if not (Array.length ind_type_info.Declarations.mind_consnames = 2 )
-	  then raise (Invalid_argument "find_type_of : not an if inductive");
+	  if not (Array.length ind_type_info.Declarations.mind_consnames = nb )
+	  then raise (Invalid_argument "find_type_of : not a valid inductive");
 	  ind_type	   
 	end
-    | RCast(_,b,_,_) -> find_type_of b 
+    | RCast(_,b,_,_) -> find_type_of nb b 
     | RApp _ -> assert false (* we have decomposed any application via raw_decompose_app *)
     | _ -> raise (Invalid_argument "not a ref")
     
@@ -472,14 +476,13 @@ let rec build_entry_lc funnames avoid rt  : rawconstr build_entry_return =
 		  funnames 
 		  avoid
 		  (mkRLetIn(new_n,t,mkRApp(new_b,args)))
-	    | RCases _ | RLambda _ | RIf _ -> 
+	    | RCases _ | RLambda _ | RIf _ | RLetTuple _ -> 
 		let f_res = build_entry_lc funnames  args_res.to_avoid f in
 		combine_results combine_app f_res  args_res
 	    | RDynamic _ ->error "Not handled RDynamic"
 	    | RCast(_,b,_,_) -> 
 		build_entry_lc funnames  avoid (mkRApp(b,args))
 	    | RRec _ -> error "Not handled RRec"
-	    | RLetTuple _ -> error "Not handled RLetTuple"
 	    | RProd _ -> error "Cannot apply a type"
 	end
     | RLambda(_,n,t,b) ->
@@ -507,7 +510,7 @@ let rec build_entry_lc funnames avoid rt  : rawconstr build_entry_return =
 	  match b with 
 	    | RCast(_,b,_,t) -> 
 		let msg = "If construction must be used with cast" in 
-		let case_pat = find_constructors_of_raw_type msg t in 
+		let case_pat = find_constructors_of_raw_type msg t [] in 
 		assert (Array.length case_pat = 2);
 		let brl = 
 		  list_map_i
@@ -522,8 +525,8 @@ let rec build_entry_lc funnames avoid rt  : rawconstr build_entry_return =
 		build_entry_lc funnames avoid match_expr
 	    | _ ->  
 		try 
-		  let ind = find_type_of b in 
-		  let case_pat = build_constructors_of_type (str "") ind in 
+		  let ind = find_type_of 2 b in 
+		  let case_pat = build_constructors_of_type (str "") ind [] in 
 		  let brl = 
 		  list_map_i
 		    (fun i x -> (dummy_loc,[],[case_pat.(i)],x)) 
@@ -540,8 +543,43 @@ let rec build_entry_lc funnames avoid rt  : rawconstr build_entry_return =
 		  error msg
 		  
 	end
-	
-    | RLetTuple _ -> error "Not handled RLetTuple"
+    | RLetTuple(_,nal,_,b,e) ->  
+	begin 
+	  let nal_as_rawconstr = 
+	    List.map 
+	      (function 
+		   Name id -> mkRVar id 
+		 | Anonymous -> mkRHole ()
+	      )
+	      nal 
+	  in
+	  match b with 
+	    | RCast(_,b,_,t) -> 
+		let case_pat = 
+		  find_constructors_of_raw_type 
+		    "LetTuple construction must be used with cast" t nal_as_rawconstr in
+		assert (Array.length case_pat = 1);
+		let br = 
+		  (dummy_loc,[],[case_pat.(0)],e) 
+		in
+		let match_expr = mkRCases(None,[b,(Anonymous,None)],[br]) in 
+		build_entry_lc funnames avoid match_expr
+	    | _ -> 
+		try 
+		  let ind = find_type_of 1 b in 
+		  let case_pat = 
+		    build_constructors_of_type 
+		      (str "LetTuple construction must be used with cast") ind nal_as_rawconstr in 
+		  let br = 
+		    (dummy_loc,[],[case_pat.(0)],e) 
+		  in
+		  let match_expr = mkRCases(None,[b,(Anonymous,None)],[br]) in 
+		  build_entry_lc funnames avoid match_expr
+		with Invalid_argument s -> 
+		  let msg = "LetTuple construction must be used with cast : "^ s in 
+		  error msg
+		
+	end
     | RRec _ -> error "Not handled RRec"
     | RCast(_,b,_,_) -> 
 	build_entry_lc funnames  avoid b

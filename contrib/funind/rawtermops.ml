@@ -109,7 +109,9 @@ let change_vars =
 		 change_vars mapping def,
 		 change_vars mapping b
 		)
-      | RLetTuple(_,nal,(na,_),_,_) when List.exists (function Name id -> Idmap.mem id mapping | _ -> false) (na::nal) -> rt 
+      | RLetTuple(_,nal,(na,_),_,_) when 
+	  List.exists (function Name id -> Idmap.mem id mapping | _ -> false) (na::nal) -> 
+	  rt 
       | RLetTuple(loc,nal,(na,rto),b,e) -> 
 	  RLetTuple(loc,
 		    nal, 

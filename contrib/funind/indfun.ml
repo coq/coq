@@ -95,7 +95,14 @@ let rec is_rec names =
 	(lookup names b) || (lookup names lhs) || (lookup names rhs)
     | RLetIn(_,na,t,b) | RLambda(_,na,t,b) | RProd(_,na,t,b)  -> 
 	lookup names t || lookup (Nameops.name_fold Idset.remove na names) b
-    | RLetTuple(_,_,_,t,b) -> error "RLetTuple not handled"
+    | RLetTuple(_,nal,_,t,b) -> lookup names t || 
+	lookup 
+	  (List.fold_left 
+	     (fun acc na -> Nameops.name_fold Idset.remove na acc)
+	     names
+	     nal
+	  )
+	  b
     | RApp(_,f,args) -> List.exists (lookup names) (f::args)
     | RCases(_,_,el,brl) -> 
 	List.exists (fun (e,_) -> lookup names e) el ||
