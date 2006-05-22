@@ -3,6 +3,22 @@ Open Scope Z_scope.
 
 (* Pierre L: examples gathered while debugging romega. *)
 
+Lemma test_romega_0 : 
+ forall m m', 
+  0<= m <= 1 -> 0<= m' <= 1 -> (0 < m <-> 0 < m') -> m = m'.
+Proof.
+intros.
+(*omega.*)
+Admitted.
+
+Lemma test_romega_0b : 
+ forall m m', 
+  0<= m <= 1 -> 0<= m' <= 1 -> (0 < m <-> 0 < m') -> m = m'.
+Proof.
+intros m m'.
+(*omega.*)
+Admitted.
+
 Lemma test_romega_1 : 
  forall (z z1 z2 : Z), 
     z2 <= z1 ->
