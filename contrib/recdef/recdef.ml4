@@ -250,13 +250,13 @@ let rec  mk_intros_and_continue (extra_eqn:bool)
       	      Name x -> x
             | Anonymous -> ano_id
 	in
-     	let new_n = next_global_ident_away true n1 ids in
+     	let new_n = pf_get_new_id n1 g in
 	  tclTHEN (h_intro new_n)
 	    (mk_intros_and_continue extra_eqn cont_function eqs 
 	       (subst1 (mkVar new_n) b)) g
     | _ -> 
  	if extra_eqn then
-	  let teq = next_global_ident_away true teq_id ids in
+	  let teq = pf_get_new_id teq_id g in
 	    tclTHENLIST
 	      [ h_intro teq;
 		tclMAP (fun eq -> tclTRY (Equality.general_rewrite_in true teq eq)) (List.rev eqs);
@@ -302,13 +302,11 @@ let list_rewrite (rev:bool) (eqs: constr list) =
 let base_leaf_terminate (func:global_reference) eqs expr =
 (*  let _ = msgnl (str "entering base_leaf") in *)
   (fun g ->
-     let ids = pf_ids_of_hyps g in
-     let k' = next_global_ident_away true k_id ids in
-     let h = next_global_ident_away true h_id (k'::ids) in
-       tclTHENLIST [observe_tac "first split" (split (ImplicitBindings [expr]));
-		    observe_tac "second split" (split (ImplicitBindings [delayed_force coq_O]));
-		    observe_tac "intro k" (h_intro k');
-                    observe_tac "case on k" 
+     let [k';h] = pf_get_new_ids [k_id;h_id] g in 
+     tclTHENLIST [observe_tac "first split" (split (ImplicitBindings [expr]));
+		  observe_tac "second split" (split (ImplicitBindings [delayed_force coq_O]));
+		  observe_tac "intro k" (h_intro k');
+                  observe_tac "case on k" 
 		      (tclTHENS 
 			 (simplest_case (mkVar k'))
 			 [(tclTHEN (h_intro h) 
@@ -316,17 +314,17 @@ let base_leaf_terminate (func:global_reference) eqs expr =
 					 (mkApp (delayed_force gt_antirefl,
 						 [| delayed_force coq_O |])))
 				default_auto)); tclIDTAC ]);
-                    intros;
-
-		    simpl_iter();
-		    unfold_constr func;
-                    list_rewrite true eqs;
-		    default_auto ] g);;
+                  intros;
+		  simpl_iter();
+		  unfold_constr func;
+                  list_rewrite true eqs;
+		  default_auto ] g);;
 
 (* La fonction est donnee en premier argument a la 
    fonctionnelle suivie d'autres Lambdas et de Case ...
    Pour recuperer la fonction f a partir de la 
    fonctionnelle *)
+
 let get_f foncl = 
   match (kind_of_term (def_of_const foncl)) with
       Lambda (Name f, _, _) -> f  
@@ -356,14 +354,35 @@ let rec list_cond_rewrite k def pmax cond_eqs le_proofs =
   match cond_eqs with
     [] -> tclIDTAC
   | eq::eqs ->
-      tclTHENS
-	(general_rewrite_bindings false
-	 (mkVar eq,
-	    ExplicitBindings[dummy_loc,   NamedHyp k_id, mkVar k;
-			     dummy_loc,   NamedHyp def_id, mkVar def]))
-	[list_cond_rewrite k def pmax eqs le_proofs;
-         make_lt_proof pmax le_proofs];;
-
+      (fun g -> 
+	 let eq_t = pf_type_of g (mkVar eq) in 
+	 let (na,_,eq_t') = destProd eq_t in 
+	 let _,_,eq_t'' = destProd eq_t' in 
+	 let na',_,_ = destProd eq_t'' in 
+	 msgnl (str "eq_id := " ++ Ppconstr.pr_id eq);
+	 let k_id = 
+	   match na with 
+	     | Name id -> 
+		 msgnl (str "k_id := "++ Ppconstr.pr_id id);
+		 id 
+	     | _ -> anomaly "k_id"
+	 in
+	 let def_id = 
+	   match na' with 
+	     | Name id -> id 
+	     | _ -> anomaly "def_id"
+	 in	     
+	 msgnl (str "k_id := "++ Ppconstr.pr_id k_id);
+	 msgnl (str "def_id := "++ Ppconstr.pr_id def_id);
+	 msgnl (str "eq_t := "++ Printer.pr_lconstr_env (pf_env g)  eq_t);
+	 tclTHENS
+	   (general_rewrite_bindings false
+	      (mkVar eq,
+	       ExplicitBindings[dummy_loc, NamedHyp k, mkVar k;
+				dummy_loc, NamedHyp def, mkVar def]))
+	   [list_cond_rewrite k def pmax eqs le_proofs;
+            make_lt_proof pmax le_proofs] g
+      ) 
 
 let rec introduce_all_equalities func eqs values specs bound le_proofs 
     cond_eqs =
@@ -391,7 +410,7 @@ let rec introduce_all_equalities func eqs values specs bound le_proofs
 	   observe_tac "clearing k " (clear [k]);
 	   observe_tac "intros k h' def" (h_intros [k;h';def]);
 	   observe_tac "simple_iter" (simpl_iter());
-	   observe_tac "unfold functionnal" 
+	   observe_tac "unfold functional" 
 	     (unfold_in_concl[([1],evaluable_of_global_reference func)]);
 	   observe_tac "rewriting equations" 
 	     (list_rewrite true eqs);
@@ -965,9 +984,9 @@ let rec introduce_all_values_eq  cont_tac functional termine
 		     (general_rewrite_bindings false
 			(mkVar heq,
 			 ExplicitBindings
-			   [dummy_loc, NamedHyp k_id,
+			   [dummy_loc, NamedHyp (next_global_ident_away true k_id ids),
 			    f_S(mkVar pmax');
-			    dummy_loc, NamedHyp def_id, f]))
+			    dummy_loc, NamedHyp (next_global_ident_away true def_id ids), f]))
 		     [tclIDTAC;
 		      tclTHENLIST
 			[apply (delayed_force le_lt_n_Sm);
@@ -1069,7 +1088,7 @@ let recursive_definition is_mes function_name type_of_f r rec_arg_num eq
 (*     Pp.msgnl (str "eq' := " ++ str (string_of_int rec_arg_num)); *)
     match kind_of_term eq' with 
       | App(e,[|_;_;eq_fix|]) -> 
-		  mkLambda (Name function_name,function_type,compose_lam res_vars eq_fix)
+	  mkLambda (Name function_name,function_type,compose_lam res_vars eq_fix)
       | _ -> failwith "Recursive Definition (res not eq)"
   in
   let pre_rec_args,function_type_before_rec_arg = decompose_prod_n (rec_arg_num - 1) function_type in 
