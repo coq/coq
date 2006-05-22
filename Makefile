@@ -877,7 +877,8 @@ FSETSBASEVO=\
  theories/FSets/FSetWeakInterface.vo theories/FSets/FSetWeakList.vo \
  theories/FSets/FSetWeakFacts.vo     theories/FSets/FSetWeak.vo \
  theories/FSets/FMapInterface.vo     theories/FSets/FMapList.vo \
- theories/FSets/FMaps.vo \
+ theories/FSets/FMaps.vo             theories/FSets/FMapFacts.vo \
+ theories/FSets/FMapWeakFacts.vo \
  theories/FSets/FMapWeakInterface.vo theories/FSets/FMapWeakList.vo \
  theories/FSets/FMapWeak.vo          theories/FSets/FMapPositive.vo \
  theories/FSets/FMapIntMap.vo        theories/FSets/FSetToFiniteSet.vo \

@@ -464,3 +464,52 @@ Hint Constructors InA.
 Hint Constructors NoDupA. 
 Hint Constructors sort.
 Hint Constructors lelistA.
+
+Section Find. 
+Variable A B : Set. 
+Variable eqA : A -> A -> Prop. 
+Hypothesis eqA_sym : forall x y, eqA x y -> eqA y x.
+Hypothesis eqA_trans : forall x y z, eqA x y -> eqA y z -> eqA x z.
+Hypothesis eqA_dec : forall x y : A, {eqA x y}+{~(eqA x y)}.
+
+Fixpoint findA (f : A -> bool) (l:list (A*B)) : option B := 
+ match l with  
+  | nil => None 
+  | (a,b)::l => if f a then Some b else findA f l
+ end.
+
+Lemma findA_NoDupA : 
+ forall l a b, 
+ NoDupA (fun p p' => eqA (fst p) (fst p')) l -> 
+ (InA (fun p p' => eqA (fst p) (fst p') /\ snd p = snd p') (a,b) l <->
+  findA (fun a' => if eqA_dec a a' then true else false) l = Some b).
+Proof.
+induction l; simpl; intros.
+split; intros; try discriminate.
+inversion H0.
+destruct a as (a',b'); rename a0 into a.
+inversion_clear H.
+split; intros.
+inversion_clear H.
+simpl in *; destruct H2; subst b'.
+destruct (eqA_dec a a'); intuition.
+destruct (eqA_dec a a'); simpl.
+destruct H0.
+generalize e H2 eqA_trans eqA_sym; clear.
+induction l.
+inversion 2.
+inversion_clear 2; intros; auto.
+destruct a0.
+compute in H; destruct H.
+subst b.
+constructor 1; auto.
+simpl.
+apply eqA_trans with a; auto.
+rewrite <- IHl; auto.
+destruct (eqA_dec a a'); simpl in *.
+inversion H; clear H; intros; subst b'; auto.
+constructor 2.
+rewrite IHl; auto.
+Qed.
+
+End Find. 

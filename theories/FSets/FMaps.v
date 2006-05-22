@@ -15,3 +15,4 @@ Require Export FMapInterface.
 Require Export FMapList.
 Require Export FMapPositive.
 Require Export FMapIntMap.
+Require Export FMapFacts.
