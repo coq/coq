@@ -233,12 +233,22 @@ let change_eq env sigma hyp_id (context:Sign.rel_context) x t end_of_type  =
     in
     let sub = compute_substitution Intmap.empty t1 t2 in 
     let end_of_type_with_pop = pop end_of_type in (*the equation will be removed *) 
-    let new_end_of_type =
-      Intmap.fold
-	(fun i t end_of_type -> lift 1 (substnl  [t] (i-1) end_of_type))
-	sub
+    let new_end_of_type = 
+      (* Ugly hack to prevent Map.fold order change between ocaml-3.08.3 and ocaml-3.08.4 
+	 Can be safely replaced by the next comment for Ocaml >= 3.08.4
+      *)
+      let sub' = Intmap.fold (fun i t acc = (i,t)::acc) sub [] in 
+      let sub'' = List.sort (fun (x,_) (y,_) -> Pervasives.compare x y) sub' in 
+      List.fold_left (fun end_of_type (i,t)  -> lift 1 (substnl  [t] (i-1) end_of_type))
 	end_of_type_with_pop
+	sub
     in
+    (* let new_end_of_type =  *)
+    (*  Intmap.fold *)
+    (* 	(fun i t end_of_type -> lift 1 (substnl  [t] (i-1) end_of_type)) *)
+    (* 	sub *)
+    (* 	end_of_type_with_pop *)
+    (*     in *)
     let old_context_length = List.length context + 1 in
     let witness_fun = 
       mkLetIn(Anonymous,make_refl_eq t1_typ t1,t,
