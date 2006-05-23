@@ -39,6 +39,108 @@
 #install_printer  (* bigint *) ppbigint;;
 #install_printer  (* loc *) pploc;;
 
+(* Open main files *)
+
+open Names
+open Term
+open Typeops
+open Univ
+open Inductive
+open Indtypes
+open Cooking
+open Closure
+open Reduction
+open Safe_typing
+open Declare
+open Declaremods
+open Impargs
+open Libnames
+open Nametab
+open Library
+
+open Cases
+open Pattern
+open Cbv
+open Classops
+open Pretyping
+open Cbv
+open Classops
+open Pretyping
+open Clenv
+open Rawterm
+open Coercion
+open Recordops
+open Detyping
+open Reductionops
+open Evarconv
+open Retyping
+open Evarutil
+open Tacred
+open Evd
+open Termops
+open Indrec
+open Typing
+open Inductiveops
+open Unification
+
+open Constrextern
+open Constrintern
+open Coqlib
+open Genarg
+open Modintern
+open Notation
+open Ppextend
+open Reserve
+open Syntax_def
+open Topconstr
+
+open Clenvtac
+open Evar_refiner
+open Logic
+open Pfedit
+open Proof_trees
+open Proof_type
+open Redexpr
+open Refiner
+open Tacmach
+
+open Auto
+open Autorewrite
+open Contradiction
+open Dhyp
+open Eauto
+open Elim
+open Equality
+open Evar_tactics
+open Extraargs
+open Extratactics
+open Hiddentac
+open Hipattern
+open Inv
+open Leminv
+open Refine
+open Setoid_replace
+open Tacinterp
+open Tacticals
+open Tactics
+
+open Cerrors
+open Class
+open Command
+open Coqinit
+open Coqtop
+open Discharge
+open Himsg
+open Metasyntax
+open Mltop
+open Record
+open Toplevel
+open Vernacentries
+open Vernacinterp
+open Vernac
+
+(* Various utilities *)
+
 let qid = Libnames.qualid_of_string;;
 
 (* parsing of terms *)
