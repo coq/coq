@@ -624,12 +624,12 @@ let reset_initial () =
 
 (* Misc *)
 
-let library_part ref =
+let remove_section_part ref =
   let sp = Nametab.sp_of_global ref in
   let dir,_ = repr_path sp in
   match ref with
   | VarRef id -> 
-      anomaly "library_part not supported on local variables"
+      anomaly "remove_section_part not supported on local variables"
   | _ ->
       if is_dirpath_prefix_of dir (cwd ()) then
         (* Not yet (fully) discharged *)

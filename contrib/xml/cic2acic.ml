@@ -167,10 +167,10 @@ let token_list_of_kernel_name tag =
        N.id_of_label (N.label kn), Lib.cwd ()
    | Constant con -> 
        N.id_of_label (N.con_label con),
-       Lib.library_part (LN.ConstRef con)
+       Lib.remove_section_part (LN.ConstRef con)
    | Inductive kn ->
        N.id_of_label (N.label kn),
-       Lib.library_part (LN.IndRef (kn,0))
+       Lib.remove_section_part (LN.IndRef (kn,0))
  in
  token_list_of_path dir id (etag_of_tag tag)
 ;;
