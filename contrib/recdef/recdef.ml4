@@ -359,22 +359,6 @@ let rec list_cond_rewrite k def pmax cond_eqs le_proofs =
 	 let (na,_,eq_t') = destProd eq_t in 
 	 let _,_,eq_t'' = destProd eq_t' in 
 	 let na',_,_ = destProd eq_t'' in 
-	 msgnl (str "eq_id := " ++ Ppconstr.pr_id eq);
-	 let k_id = 
-	   match na with 
-	     | Name id -> 
-		 msgnl (str "k_id := "++ Ppconstr.pr_id id);
-		 id 
-	     | _ -> anomaly "k_id"
-	 in
-	 let def_id = 
-	   match na' with 
-	     | Name id -> id 
-	     | _ -> anomaly "def_id"
-	 in	     
-	 msgnl (str "k_id := "++ Ppconstr.pr_id k_id);
-	 msgnl (str "def_id := "++ Ppconstr.pr_id def_id);
-	 msgnl (str "eq_t := "++ Printer.pr_lconstr_env (pf_env g)  eq_t);
 	 tclTHENS
 	   (general_rewrite_bindings false
 	      (mkVar eq,
