@@ -39,8 +39,8 @@ let interning_grammar = ref false
 let for_grammar f x =
   interning_grammar := true;
   let a = f x in
-  interning_grammar := false;
-  a
+    interning_grammar := false;
+    a
 
 let variables_bind = ref false
 
@@ -140,7 +140,7 @@ let coqdoc_unfreeze (lt,tn,lp) =
 
 let add_glob loc ref = 
   let sp = Nametab.sp_of_global ref in
-  let lib_dp = Lib.library_dp() in
+  let lib_dp = Lib.library_part ref in
   let mod_dp,id = repr_path sp in
   let mod_dp_trunc =  drop_dirpath_prefix lib_dp mod_dp in
   let filepath = string_of_dirpath lib_dp in

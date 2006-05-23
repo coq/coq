@@ -198,6 +198,10 @@ let con_label = label
 let pr_con = pr_kn
 let con_modpath = modpath
 
+let mind_modpath = modpath
+let ind_modpath ind = mind_modpath (fst ind)
+let constr_modpath c = ind_modpath (fst c)
+
 let ith_mutual_inductive (kn,_) i = (kn,i)
 let ith_constructor_of_inductive ind i = (ind,i)
 let inductive_of_constructor (ind,i) = ind

@@ -134,6 +134,10 @@ val con_label : constant -> label
 val con_modpath : constant -> module_path
 val pr_con : constant -> Pp.std_ppcmds
 
+val mind_modpath : mutual_inductive -> module_path
+val ind_modpath : inductive -> module_path
+val constr_modpath : constructor -> module_path
+
 val ith_mutual_inductive : inductive -> int -> inductive
 val ith_constructor_of_inductive : inductive -> int -> constructor
 val inductive_of_constructor : constructor -> inductive
