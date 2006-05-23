@@ -1,3 +1,49 @@
+=========================================
+= CHANGES BETWEEN COQ V8.0 AND COQ V8.1 =
+=========================================
+
+A few differences in Coq ML interfaces between Coq V8.0 and V8.1
+================================================================
+
+** Functions
+
+Util: option_app -> option_map
+Term: substl_decl -> subst_named_decl
+Lib: library_part -> remove_section_part
+Printer: prterm -> pr_lconstr
+Printer: prterm_env -> pr_lconstr_env
+Ppconstr: pr_sort -> pr_rawsort
+
+** Constructors
+
+Declarations: mind_consnrealargs -> mind_consnrealdecls
+NoRedun -> NoDup
+
+** Modules
+
+module Decl_kinds: new interface
+module Bigint: new interface
+module Tacred spawned module Redexpr
+module Symbols -> Notation
+module Coqast, Ast, Esyntax, Termast, and all other modules related to old
+  syntax are removed
+
+** Internal names
+
+OBJDEF and OBJDEF1 -> CANONICAL-STRUCTURE
+
+
+=========================================
+= CHANGES BETWEEN COQ V7.4 AND COQ V8.0 =
+=========================================
+
+See files in dev/syntax-v8
+
+
+==============================================
+= MAIN CHANGES BETWEEN COQ V7.3 AND COQ V7.4 =
+==============================================
+
 CHANGES DUE TO INTRODUCTION OF MODULES
 ======================================
 
@@ -183,8 +229,8 @@ Uses Declaremods to actually communicate with Global and to register
 objects.
 
 
-MAIN CHANGES FROM COQ V7.3
-==========================
+OTHER CHANGES
+=============
 
 Internal representation of tactics bindings has changed (see type
 Rawterm.substitution).
@@ -228,8 +274,10 @@ Tactics about False and not now in tactics/contradiction.ml
 Tactics depending on Init now tactics/*.ml4 (no longer in tactics/*.v)
 File tacinterp.ml moved from proofs to directory tactics
 
-MAIN CHANGES FROM COQ V7.1 TO COQ V7.2
-======================================
+
+==========================================
+= MAIN CHANGES FROM COQ V7.1 TO COQ V7.2 =
+==========================================
 
 The core of Coq (kernel) has meen minimized with the following effects:
 
@@ -242,8 +290,9 @@ the prefixes "Is" ans "IsMut" have been dropped from kind_of_term constructors,
 e.g. IsRel is now Rel, IsMutCase is now Case, etc.
 
 
-PRINCIPAUX CHANGEMENTS ENTRE COQ V6.3.1 ET COQ V7.0
-===================================================
+=======================================================
+= PRINCIPAUX CHANGEMENTS ENTRE COQ V6.3.1 ET COQ V7.0 =
+=======================================================
 
 Changements d'organisation / modules :
 --------------------------------------

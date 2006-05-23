@@ -25,6 +25,8 @@ style.txt:     a few style recommendations for writing Coq ML files
 debugging.txt: help for debugging or profiling
 universes.txt: help to debug universes
 translate.txt: help to use coq translator
+extensions.txt: some help about TACTIC EXTEND
+
 header:        standard header for Coq ML files
 perf-analysis: analysis of perfs measured on the compilation of user contribs
 cic.dtd:       official dtd of the calc. of ind. constr. for im/ex-portation
