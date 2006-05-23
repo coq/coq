@@ -88,14 +88,16 @@ let rec execute env evd cstr =
 	judge_of_type u
 	  
     | App (f,args) ->
-	let j = execute env evd f in
         let jl = execute_array env evd args in
-	let (j,_) = judge_of_apply env j jl in
+	let j =
 	if isInd f then
 	  (* Sort-polymorphism of inductive types *)
-	  adjust_inductive_level env evd (destInd f) args j
+	  judge_of_applied_inductive env (destInd f)
+	    (jv_nf_evar (evars_of evd) jl)
 	else
-	  j
+	  execute env evd f
+	in
+	fst (judge_of_apply env j jl)
 	    
     | Lambda (name,c1,c2) -> 
         let j = execute env evd c1 in
@@ -140,25 +142,6 @@ and execute_recdef env evd (names,lar,vdef) =
 and execute_array env evd = Array.map (execute env evd)
 
 and execute_list env evd = List.map (execute env evd)
-
-and adjust_inductive_level env evd ind args j =
-  let specif = lookup_mind_specif env ind in
-  if is_small_inductive specif then
-    (* No polymorphism *)
-    j
-  else
-    (* Retyping constructor with the actual arguments *)
-    let env',llc,ls0 = constructor_instances env specif ind args in
-    let llj = Array.map (execute_array env' evd) llc in
-    let ls =
-      Array.map (fun lj ->
-	let ls =
-	  Array.map (fun c -> decomp_sort env (evars_of evd) c.uj_type) lj
-	in
-	max_inductive_sort ls) llj
-    in
-    let s = find_inductive_level env specif ind ls0 ls in
-    on_judgment_type (set_inductive_level env s) j
 
 let mcheck env evd c t =
   let sigma = Evd.evars_of evd in

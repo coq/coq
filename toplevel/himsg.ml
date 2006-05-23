@@ -81,14 +81,14 @@ let rec pr_disjunction pr = function
   | a::l -> pr a ++ str "," ++ spc () ++ pr_disjunction pr l
   | [] -> assert false
 
-let explain_elim_arity ctx ind aritylst c pj okinds = 
+let explain_elim_arity ctx ind sorts c pj okinds = 
   let ctx = make_all_name_different ctx in
   let pi = pr_inductive ctx ind in
   let pc = pr_lconstr_env ctx c in
   let msg = match okinds with
   | Some(kp,ki,explanation) ->
-      let pki = pr_lconstr_env ctx ki in
-      let pkp = pr_lconstr_env ctx kp in
+      let pki = pr_sort_family ki in
+      let pkp = pr_sort_family kp in
       let explanation =	match explanation with
 	| NonInformativeToInformative ->
           "proofs can be eliminated only to build proofs"
@@ -107,13 +107,10 @@ let explain_elim_arity ctx ind aritylst c pj okinds =
   hov 0 (
   str "Incorrect elimination of" ++ spc() ++ pc ++ spc () ++
   str "in the inductive type " ++ spc() ++ quote pi ++ 
-  (let sorts = List.map (fun x -> mkSort (new_sort_in_family x))
-      (list_uniquize (List.map (fun ar ->
-      family_of_sort (destSort (snd (decompose_prod_assum ar)))) aritylst)) in
-    let ppar = pr_disjunction (pr_lconstr_env ctx) sorts in
-    let ppt = pr_lconstr_env ctx (snd (decompose_prod_assum pj.uj_type)) in
-    str "," ++ spc() ++ str "the return type has sort" ++ spc() ++ ppt ++ 
-    spc () ++ str "while it should be " ++ ppar))
+  (let ppar = pr_disjunction (fun s -> quote (pr_sort_family s)) sorts in
+   let ppt = pr_lconstr_env ctx (snd (decompose_prod_assum pj.uj_type)) in
+   str "," ++ spc() ++ str "the return type has sort" ++ spc() ++ ppt ++ 
+   spc () ++ str "while it should be " ++ ppar))
   ++ fnl () ++ msg
 
 let explain_case_not_inductive ctx cj =
@@ -565,14 +562,14 @@ let error_bad_entry () =
 
 let error_not_allowed_case_analysis dep kind i =
   str (if dep then "Dependent" else "Non Dependent") ++
-  str " case analysis on sort: " ++ print_sort kind ++ fnl () ++
+  str " case analysis on sort: " ++ pr_sort kind ++ fnl () ++
   str "is not allowed for inductive definition: " ++
   pr_inductive (Global.env()) i
 
 let error_bad_induction dep indid kind =
   str (if dep then "Dependent" else "Non dependent") ++
   str " induction for type " ++ pr_id indid ++
-  str " and sort " ++ print_sort kind ++ spc () ++
+  str " and sort " ++ pr_sort kind ++ spc () ++
   str "is not allowed"
 
 let error_not_mutual_in_scheme () =

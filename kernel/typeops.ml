@@ -245,14 +245,16 @@ let judge_of_cast env cj k tj =
 
 (* Inductive types. *)
 
-let judge_of_inductive env i =
-  let constr = mkInd i in
-  let _ =
-    let (kn,_) = i in
-    let mib = lookup_mind kn env in
-    check_args env constr mib.mind_hyps in 
-  let specif = lookup_mind_specif env i in
-  make_judge constr (type_of_inductive specif)
+let judge_of_applied_inductive env ind jl =
+  let c = mkInd ind in
+  let (mib,mip) = lookup_mind_specif env ind in
+  check_args env c mib.mind_hyps;
+  let paramstyp = Array.map (fun j -> j.uj_type) jl in
+  let t = Inductive.type_of_applied_inductive env mip paramstyp in
+  make_judge c t
+
+let judge_of_inductive env ind =
+  judge_of_applied_inductive env ind [||]
 
 (* Constructors. *)
 
@@ -334,14 +336,15 @@ let rec execute env cstr cu =
 
     (* Lambda calculus operators *)
     | App (f,args) ->
-	let (j,cu1) = execute env f cu in
-        let (jl,cu2) = execute_array env args cu1 in
-	let (j',cu) = univ_combinator cu2 (judge_of_apply env j jl) in
-	if isInd f then
-	  (* Sort-polymorphism of inductive types *)
-	  adjust_inductive_level env (destInd f) args (j',cu)
-	else
-	  (j',cu)
+        let (jl,cu1) = execute_array env args cu in
+	let (j,cu2) =
+	  if isInd f then
+	    (* Sort-polymorphism of inductive types *)
+	    judge_of_applied_inductive env (destInd f) jl, cu1
+	  else
+	    execute env f cu1
+	in
+	univ_combinator cu2 (judge_of_apply env j jl)
 	    
     | Lambda (name,c1,c2) -> 
         let (varj,cu1) = execute_type env c1 cu in
@@ -420,22 +423,6 @@ and execute_recdef env (names,lar,vdef) i cu =
 and execute_array env = array_fold_map' (execute env)
 
 and execute_list env = list_fold_map' (execute env) 
-
-and adjust_inductive_level env ind args (j,cu) =
-  let specif = lookup_mind_specif env ind in
-  if is_small_inductive specif then
-    (* No polymorphism *)
-    (j,cu)
-  else
-    (* Retyping constructor with the actual arguments *)
-    let env',llc,ls0 = constructor_instances env specif ind args in
-    let (llj,cu1) = array_fold_map' (execute_array env') llc cu in
-    let ls =
-      Array.map (fun lj ->
-	max_inductive_sort (Array.map (sort_judgment env) lj)) llj
-    in
-    let s = find_inductive_level env specif ind ls0 ls in
-    (on_judgment_type (set_inductive_level env s) j, cu1)
 
 (* Derived functions *)
 let infer env constr =

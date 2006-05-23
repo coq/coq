@@ -316,9 +316,10 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
     (* their type var list. *)
     let packets = 
       Array.map 
-	(fun mip -> 
-	   let b = mip.mind_sort <> (Prop Null) in 
-	   let s,v = if b then type_sign_vl env mip.mind_nf_arity else [],[] in
+	(fun mip ->
+	   let b = snd (mind_arity mip) <> InProp in
+	   let ar = Inductive.type_of_inductive (mib,mip) in
+	   let s,v = if b then type_sign_vl env ar else [],[] in
 	   let t = Array.make (Array.length mip.mind_nf_lc) [] in 
 	   { ip_typename = mip.mind_typename;
 	     ip_consnames = mip.mind_consnames;
@@ -397,7 +398,8 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	(* Is this record officially declared with its projections ? *)
 	(* If so, we use this information. *)
 	begin try 
-	  let n = nb_default_params env mip0.mind_nf_arity in
+	  let n = nb_default_params env (Inductive.type_of_inductive(mib,mip0))
+	  in
 	  List.iter 
 	    (option_iter 
 	       (fun kn -> if Cset.mem kn !projs then add_projection n kn))

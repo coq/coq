@@ -460,8 +460,11 @@ val substnl : constr list -> int -> constr -> constr
 val substl : constr list -> constr -> constr
 val subst1 : constr -> constr -> constr
 
-val substl_decl : constr list -> named_declaration -> named_declaration
-val subst1_decl : constr -> named_declaration -> named_declaration
+val substnl_decl : constr list -> int -> rel_declaration -> rel_declaration
+val substl_decl : constr list -> rel_declaration -> rel_declaration
+val subst1_decl : constr -> rel_declaration -> rel_declaration
+
+val subst1_named_decl : constr -> named_declaration -> named_declaration
 
 val replace_vars : (identifier * constr) list -> constr -> constr
 val subst_var : identifier -> constr -> constr

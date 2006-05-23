@@ -342,8 +342,8 @@ let constr_type_of_idkey env idkey =
       mkRel n, lift n ty
 
 let type_of_ind env ind = 
-  let (_,mip) = Inductive.lookup_mind_specif env ind in
-  mip.mind_nf_arity
+  let specif = Inductive.lookup_mind_specif env ind in
+  Inductive.type_of_inductive specif
 
 let build_branches_type (mind,_ as _ind) mib mip params dep p rtbl =
   (* [build_one_branch i cty] construit le type de la ieme branche (commence
@@ -461,7 +461,8 @@ and nf_stk env c t stk  =
 	in 
 	let aux = 
 	  nf_predicate env (type_of_switch sw) 
-	    (hnf_prod_applist env mip.mind_nf_arity (Array.to_list params)) in
+	    (hnf_prod_applist env (type_of_ind env ind) (Array.to_list params))
+	in
 	!dep,aux in
       (* Calcul du type des branches *)
       let btypes = 

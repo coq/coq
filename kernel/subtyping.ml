@@ -89,14 +89,15 @@ let check_inductive cst env msid1 l info1 mib2 spec2 =
       (* nf_arity later *)
       (* user_lc ignored *)
       (* user_arity ignored *)
-      let cst = check_conv cst conv_sort env p1.mind_sort p2.mind_sort in
       check (fun p -> p.mind_nrealargs);
       (* kelim ignored *)
       (* listrec ignored *)
       (* finite done *)
       (* nparams done *)
       (* params_ctxt done *)
-      let cst = check_conv cst conv env p1.mind_nf_arity p2.mind_nf_arity in
+      (* Don't check the sort of the type if polymorphic *)
+      let cst = check_conv cst conv env (type_of_inductive (mib1,p1)) (type_of_inductive (mib2,p2))
+      in
 	cst
   in
   let check_cons_types i cst p1 p2 =
@@ -181,7 +182,7 @@ let check_constant cst env msid1 l info1 cb2 spec2 =
        "name.") ;
       assert (mind1.mind_hyps=[] && cb2.const_hyps=[]) ;
       if cb2.const_body <> None then error () ;
-      let arity1 = mind1.mind_packets.(i).mind_user_arity in
+      let arity1 = type_of_inductive (mind1,mind1.mind_packets.(i)) in
        check_conv cst conv_leq env arity1 cb2.const_type
    | IndConstr (((kn,i),j) as cstr,mind1) ->
       Util.error ("The kernel does not recognize yet that a parameter can be " ^

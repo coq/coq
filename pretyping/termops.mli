@@ -24,7 +24,7 @@ val refresh_universes : types -> types
 
 (* printers *)
 val print_sort : sorts -> std_ppcmds
-val print_sort_family : sorts_family -> std_ppcmds
+val pr_sort_family : sorts_family -> std_ppcmds
 (* debug printer: do not use to display terms to the casual user... *)
 val set_print_constr : (env -> constr -> std_ppcmds) -> unit
 val print_constr     : constr -> std_ppcmds

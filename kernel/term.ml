@@ -769,17 +769,16 @@ let substkey = Profile.declare_profile "substn_many";;
 let substn_many lamv n c = Profile.profile3 substkey substn_many lamv n c;;
 *)
 
-let substnl laml k =
-  substn_many (Array.map make_substituend (Array.of_list laml)) k
-let substl laml =
-  substn_many (Array.map make_substituend (Array.of_list laml)) 0
+let substnl laml n =
+  substn_many (Array.map make_substituend (Array.of_list laml)) n
+let substl laml = substnl laml 0
 let subst1 lam = substl [lam]
 
-let substl_decl laml (id,bodyopt,typ) =
-  match bodyopt with
-    | None -> (id,None,substl laml typ)
-    | Some body -> (id, Some (substl laml body), type_app (substl laml) typ)
+let substnl_decl laml k (id,bodyopt,typ) =
+  (id,option_map (substnl laml k) bodyopt,substnl laml k typ)
+let substl_decl laml = substnl_decl laml 0
 let subst1_decl lam = substl_decl [lam]
+let subst1_named_decl = subst1_decl
 
 (* (thin_val sigma) removes identity substitutions from sigma *)
 

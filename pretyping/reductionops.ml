@@ -846,7 +846,7 @@ let is_arity env sigma c =
   match find_conclusion env sigma c with
     | Sort _ -> true
     | _ -> false
- 
+
 (*************************************)
 (* Metas *)
 

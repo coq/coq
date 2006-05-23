@@ -14,18 +14,16 @@ type universe
 
 val base_univ : universe
 val prop_univ : universe
+val neutral_univ : universe
 val make_univ : Names.dir_path * int -> universe
 
-val is_base : universe -> bool
+val is_base_univ : universe -> bool
 
 (* The type of a universe *)
 val super : universe -> universe
 
 (* The max of 2 universes *)
 val sup   : universe -> universe -> universe
-
-(* The max of an array of universes *)
-val sup_array : universe array -> universe
 
 (*s Graphs of universes. *)
 
@@ -58,10 +56,15 @@ val merge_constraints : constraints -> universes -> universes
 
 val fresh_local_univ : unit -> universe
 
-val solve_constraints_system : universe array -> universe array -> 
+val solve_constraints_system : universe option array -> universe array -> 
   universe array
 
-val is_empty_universe : universe -> bool
+val is_empty_univ : universe -> bool
+
+val subst_large_constraint : universe -> universe -> universe -> universe
+
+val subst_large_constraints : 
+  (universe * universe) list -> universe -> universe
 
 (*s Pretty-printing of universes. *)
 

@@ -86,7 +86,7 @@ let rec def_const_in_term_rec vl x =
    | Sort(c) -> c
    | Ind(ind) ->
           let (mib, mip) = Global.lookup_inductive ind in
-          mip.mind_sort
+	  new_sort_in_family (inductive_sort_family mip)
    | Construct(c) ->
           def_const_in_term_rec vl (mkInd (inductive_of_constructor c))
    | Case(_,x,t,a) 

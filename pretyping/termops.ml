@@ -25,7 +25,7 @@ let print_sort = function
   | Prop Null -> (str "Prop")
   | Type u -> (str "Type(" ++ Univ.pr_uni u ++ str ")")
 
-let print_sort_family = function
+let pr_sort_family = function
   | InSet -> (str "Set")
   | InProp -> (str "Prop")
   | InType -> (str "Type")

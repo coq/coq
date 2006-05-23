@@ -70,6 +70,20 @@ val subst_wf_paths : substitution -> wf_paths -> wf_paths
 \end{verbatim}
 *)
 
+type polymorphic_inductive_arity = {
+  mind_param_levels : universe option list;
+  mind_level : universe;
+}
+
+type monomorphic_inductive_arity = {
+  mind_user_arity : constr;
+  mind_sort : sorts;
+}
+
+type inductive_arity = 
+| Monomorphic of monomorphic_inductive_arity
+| Polymorphic of polymorphic_inductive_arity
+
 type one_inductive_body = {
 
 (* Primitive datas *)
@@ -77,8 +91,11 @@ type one_inductive_body = {
  (* Name of the type: [Ii] *)
     mind_typename : identifier;
 
- (* Arity of [Ii] with parameters: [forall params, Ui] *)
-    mind_user_arity : types;
+ (* Arity context of [Ii] with parameters: [forall params, Ui] *)
+    mind_arity_ctxt : rel_context;
+
+ (* Arity sort and original user arity if monomorphic *)
+    mind_arity : inductive_arity;
 
  (* Names of the constructors: [cij] *)
     mind_consnames : identifier array;
@@ -90,14 +107,8 @@ type one_inductive_body = {
 
 (* Derived datas *)
 
- (* Head normalized arity so that the conclusion is a sort *)
-    mind_nf_arity : types;
-
  (* Number of expected real arguments of the type (no let, no params) *)
     mind_nrealargs : int;
-
- (* Conclusion of the arity *)
-    mind_sort : sorts;
 
  (* List of allowed elimination sorts *)
     mind_kelim : sorts_family list;

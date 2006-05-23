@@ -719,7 +719,7 @@ let rec nsortrec vl x =
    | Sort(c) -> c
    | Ind(ind) ->
           let (mib,mip) = lookup_mind_specif vl ind in
-          mip.mind_sort
+	  new_sort_in_family (inductive_sort_family mip)
    | Construct(c) ->
           nsortrec vl (mkInd (inductive_of_constructor c))
    | Case(_,x,t,a) 

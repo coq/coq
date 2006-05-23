@@ -38,6 +38,8 @@ val lookup_mind_specif : env -> inductive -> mind_specif
 
 val type_of_inductive : mind_specif -> types
 
+val elim_sorts : mind_specif -> sorts_family list
+
 (* Return type as quoted by the user *)
 val type_of_constructor : constructor -> mind_specif -> types
 
@@ -58,6 +60,11 @@ val type_case_branches :
   env -> inductive * constr list -> unsafe_judgment -> constr
     -> types array * types * constraints
 
+(* Return the arity of an inductive type *)
+val mind_arity : one_inductive_body -> Sign.rel_context * sorts_family
+
+val inductive_sort_family : one_inductive_body -> sorts_family
+
 (* Check a [case_info] actually correspond to a Case expression on the
    given inductive type. *)
 val check_case_info : env -> inductive -> case_info -> unit
@@ -68,15 +75,10 @@ val check_cofix : env -> cofixpoint -> unit
 
 (*s Support for sort-polymorphic inductive types *)
 
-val constructor_instances : env -> mind_specif -> inductive -> 
-  constr array -> env * types array array * universe array
+val type_of_applied_inductive :
+  env -> one_inductive_body -> types array -> types
 
 val set_inductive_level : env -> sorts -> types -> types
-
-val find_inductive_level : env -> mind_specif -> inductive -> 
-  universe array -> universe array -> sorts
-
-val is_small_inductive : mind_specif -> bool
 
 val max_inductive_sort : sorts array -> universe
 

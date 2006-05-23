@@ -313,16 +313,21 @@ let rec find_row_ind = function
   | PatCstr(loc,c,_,_) :: _ -> Some (loc,c)
 
 let inductive_template isevars env tmloc ind =
-  let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  let (ntys,_) = splay_prod env (Evd.evars_of !isevars) mip.mind_nf_arity in
+  let arsign = get_full_arity_sign env ind in
   let hole_source = match tmloc with 
     | Some loc -> fun i -> (loc, Evd.TomatchTypeParameter (ind,i))
     | None -> fun _ -> (dummy_loc, Evd.InternalHole) in
-   let (evarl,_) =
+   let (_,evarl,_) =
     List.fold_right
-      (fun (na,ty) (evl,n) ->
-	(e_new_evar isevars env ~src:(hole_source n) (substl evl ty))::evl,n+1)
-      ntys ([],1) in
+      (fun (na,b,ty) (subst,evarl,n) ->
+	match b with
+        | None ->
+	    let ty' = substl subst ty in
+	    let e = e_new_evar isevars env ~src:(hole_source n) ty' in
+	    (e::subst,e::evarl,n+1) 
+	| Some b ->
+	    (b::subst,evarl,n+1))
+      arsign ([],[],1) in
    applist (mkInd ind,List.rev evarl)
 
 let inh_coerce_to_ind isevars env ty tyi =

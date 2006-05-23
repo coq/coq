@@ -8,6 +8,10 @@
 
 (* $Id$ *)
 
+(* Initial Caml version originates from CoC 4.8 [Dec 1988] *)
+(* Extension with algebraic universes by HH [Sep 2001] *)
+(* Additional support for sort-polymorphic inductive types by HH [Mar 2006] *)
+
 (* Universes are stratified by a partial ordering $\le$.
    Let $\~{}$ be the associated equivalence. We also have a strict ordering
    $<$ between equivalence classes, and we maintain that $<$ is acyclic,
@@ -92,7 +96,7 @@ let sup u v =
 	let gtl'' = list_union gtl gtl' in
 	Max (list_subtract gel'' gtl'',gtl'')
 
-let sup_array ls = Array.fold_right sup ls (Max ([],[]))
+let neutral_univ = Max ([],[])
 
 (* Comparison on this type is pointer equality *)
 type canonical_arc =
@@ -125,7 +129,7 @@ let declare_univ u g =
 (* The level of Set *)
 let base_univ = Atom Base
 
-let is_base = function
+let is_base_univ = function
   | Atom Base -> true
   | Max ([Base],[]) -> warning "Non canonical Set"; true
   | u -> false
@@ -428,11 +432,11 @@ let make_max = function
   | ([u],[]) -> Atom u
   | (le,lt) -> Max (le,lt)
 
-let remove_constraint u = function
+let remove_large_constraint u = function
   | Atom u' as x -> if u = u' then Max ([],[]) else x
   | Max (le,lt) -> make_max (list_remove u le,lt)
 
-let is_empty_universe = function
+let is_empty_univ = function
   | Max ([],[]) -> true
   | _ -> false
 
@@ -454,21 +458,39 @@ where
   - the wi are arbitrary complex universes that do not mention the ui.
 *)
 
+let is_direct_sort_constraint s v = match s with
+  | Some u -> is_direct_constraint u v
+  | None -> false
+
 let solve_constraints_system levels level_bounds =
   let levels = 
-    Array.map (function Atom u -> u | _ -> anomaly "expects Atom") levels in
+    Array.map (option_map (function Atom u -> u | _ -> anomaly "expects Atom"))
+      levels in
   let v = Array.copy level_bounds in
   let nind = Array.length v in
   for i=0 to nind-1 do
     for j=0 to nind-1 do
-      if i<>j & is_direct_constraint levels.(j) v.(i) then
-	v.(i) <- sup v.(i) v.(j)
+      if i<>j & is_direct_sort_constraint levels.(j) v.(i) then
+	v.(i) <- sup v.(i) level_bounds.(j)
     done;
     for j=0 to nind-1 do
-      v.(i) <- remove_constraint levels.(j) v.(i)
+      match levels.(j) with
+      | Some u -> v.(i) <- remove_large_constraint u v.(i)
+      | None -> ()
     done
   done;
   v
+
+let subst_large_constraint u u' v =
+  match u with 
+  | Atom u ->
+      if is_direct_constraint u v then sup u' (remove_large_constraint u v)
+      else v
+  | _ ->
+      anomaly "expect a universe level"
+
+let subst_large_constraints =
+  List.fold_right (fun (u,u') -> subst_large_constraint u u')
 
 (* Pretty-printing *)
 

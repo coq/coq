@@ -118,17 +118,9 @@ let typeur sigma metamap =
     | _ -> family_of_sort (decomp_sort env sigma (type_of env t))
 
   and type_of_applied_inductive env ind args =
-    let specif = lookup_mind_specif env ind in
-    let t = Inductive.type_of_inductive specif in
-    if is_small_inductive specif then
-      (* No polymorphism *)
-      t
-    else
-      (* Retyping constructor with the actual arguments *)
-      let env',llc,ls0 = constructor_instances env specif ind args in
-      let lls = Array.map (Array.map (sort_of env')) llc in
-      let ls = Array.map max_inductive_sort lls in
-      set_inductive_level env (find_inductive_level env specif ind ls0 ls) t
+    let (_,mip) = lookup_mind_specif env ind in
+    let argtyps = Array.map (fun c -> nf_evar sigma (type_of env c)) args in
+    Inductive.type_of_applied_inductive env mip argtyps
 
   in type_of, sort_of, sort_family_of, type_of_applied_inductive
 

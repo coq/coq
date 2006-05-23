@@ -219,7 +219,7 @@ let declare_one_elimination ind =
   let elim_scheme = Indrec.build_indrec env sigma ind in
   let npars = mib.mind_nparams_rec in
   let make_elim s = Indrec.instantiate_indrec_scheme s npars elim_scheme in
-  let kelim = mip.mind_kelim in
+  let kelim = elim_sorts (mib,mip) in
   (* in case the inductive has a type elimination, generates only one
      induction scheme, the other ones share the same code with the
      apropriate type *)

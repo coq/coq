@@ -112,7 +112,8 @@ let contents_first_level mp =
 		      | Extraction.Term -> add false (id_of_label l))
 	       | (_, SPBmind mib) ->
 		   Array.iter 
-		     (fun mip -> if mip.mind_sort <> (Prop Null) then begin
+		     (fun mip -> if snd (Inductive.mind_arity mip) <> InProp
+		      then begin
 			add upper_type mip.mind_typename; 
 			Array.iter (add true) mip.mind_consnames
 		      end)

@@ -282,14 +282,15 @@ let compute_mib_implicits kn =
   let ar =
     Array.to_list
       (Array.map  (* No need to lift, arities contain no de Bruijn *)
-        (fun mip -> (Name mip.mind_typename, None, mip.mind_user_arity))
+        (fun mip -> (Name mip.mind_typename, None, type_of_inductive (mib,mip)))
         mib.mind_packets) in
   let env_ar = push_rel_context ar env in
   let imps_one_inductive i mip =
     let ind = (kn,i) in
-    ((IndRef ind,auto_implicits env (body_of_type mip.mind_user_arity)),
+    let ar = type_of_inductive (mib,mip) in
+    ((IndRef ind,auto_implicits env ar),
      Array.mapi (fun j c -> (ConstructRef (ind,j+1),auto_implicits env_ar c))
-       mip.mind_user_lc)
+       mip.mind_nf_lc)
   in
   Array.mapi imps_one_inductive mib.mind_packets
 

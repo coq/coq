@@ -438,7 +438,7 @@ let dest_prod_assum env =
   prodec_rec env Sign.empty_rel_context
 
 let dest_arity env c =
-  let l, c = dest_prod env c in
+  let l, c = dest_prod_assum env c in
   match kind_of_term c with
     | Sort s -> l,s
     | _ -> error "not an arity"

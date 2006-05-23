@@ -191,3 +191,4 @@ let decompose_lam_n_assum n =
     | c -> error "decompose_lam_n_assum: not enough abstractions"
   in 
   lamdec_rec empty_rel_context n 
+

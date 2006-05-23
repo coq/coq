@@ -45,6 +45,13 @@ type constant_body = {
 (*s Inductive types (internal representation with redundant
     information). *)
 
+let subst_rel_declaration sub (id,copt,t as x) =
+  let copt' = option_smartmap (subst_mps sub) copt in
+  let t' = subst_mps sub t in
+  if copt == copt' & t == t' then x else (id,copt',t')
+
+let subst_rel_context sub = list_smartmap (subst_rel_declaration sub)
+
 type recarg = 
   | Norec 
   | Mrec of int 
@@ -83,6 +90,20 @@ let subst_wf_paths sub p = Rtree.smartmap (subst_recarg sub) p
    with      In (params) : Un := cn1 : Tn1 | ... | cnpn : Tnpn
 *)
 
+type polymorphic_inductive_arity = {
+  mind_param_levels : universe option list;
+  mind_level : universe;
+}
+
+type monomorphic_inductive_arity = {
+  mind_user_arity : constr;
+  mind_sort : sorts;
+}
+
+type inductive_arity = 
+| Monomorphic of monomorphic_inductive_arity
+| Polymorphic of polymorphic_inductive_arity
+
 type one_inductive_body = {
 
 (* Primitive datas *)
@@ -90,8 +111,11 @@ type one_inductive_body = {
  (* Name of the type: [Ii] *)
     mind_typename : identifier;
 
- (* Arity of [Ii] with parameters: [forall params, Ui] *)
-    mind_user_arity : types;
+ (* Arity context of [Ii] with parameters: [forall params, Ui] *)
+    mind_arity_ctxt : rel_context;
+
+ (* Arity sort, original user arity, and allowed elim sorts, if monomorphic *)
+    mind_arity : inductive_arity;
 
  (* Names of the constructors: [cij] *)
     mind_consnames : identifier array;
@@ -103,14 +127,8 @@ type one_inductive_body = {
 
 (* Derived datas *)
 
- (* Head normalized arity so that the conclusion is a sort *)
-    mind_nf_arity : types;
-
  (* Number of expected real arguments of the type (no let, no params) *)
     mind_nrealargs : int;
-
- (* Conclusion of the arity *)
-    mind_sort : sorts;
 
  (* List of allowed elimination sorts *)
     mind_kelim : sorts_family list;
@@ -172,23 +190,28 @@ type mutual_inductive_body = {
 let subst_const_body sub cb = {
     const_hyps = (assert (cb.const_hyps=[]); []);
     const_body = option_map (subst_constr_subst sub) cb.const_body;
-    const_type = type_app (subst_mps sub) cb.const_type;
+    const_type = subst_mps sub cb.const_type;
     const_body_code = Cemitcodes.subst_to_patch_subst sub cb.const_body_code;
     (*const_type_code = Cemitcodes.subst_to_patch sub cb.const_type_code;*)
     const_constraints = cb.const_constraints;
     const_opaque = cb.const_opaque } 
 
+let subst_arity sub = function
+| Monomorphic s ->
+    Monomorphic {
+      mind_user_arity = subst_mps sub s.mind_user_arity;
+      mind_sort = s.mind_sort;
+    }
+| Polymorphic s as x -> x
+
 let subst_mind_packet sub mbp = 
   { mind_consnames = mbp.mind_consnames;
     mind_consnrealdecls = mbp.mind_consnrealdecls;
     mind_typename = mbp.mind_typename;
-    mind_nf_lc = 
-      array_smartmap (type_app (subst_mps sub)) mbp.mind_nf_lc;
-    mind_nf_arity = type_app (subst_mps sub) mbp.mind_nf_arity;
-    mind_user_lc = 
-      array_smartmap (type_app (subst_mps sub)) mbp.mind_user_lc;
-    mind_user_arity = type_app (subst_mps sub) mbp.mind_user_arity;
-    mind_sort = mbp.mind_sort;
+    mind_nf_lc = array_smartmap (subst_mps sub) mbp.mind_nf_lc;
+    mind_arity_ctxt = subst_rel_context sub mbp.mind_arity_ctxt;
+    mind_arity = subst_arity sub mbp.mind_arity;
+    mind_user_lc = array_smartmap (subst_mps sub) mbp.mind_user_lc;
     mind_nrealargs = mbp.mind_nrealargs;
     mind_kelim = mbp.mind_kelim;
     mind_recargs = subst_wf_paths sub mbp.mind_recargs (*wf_paths*); 

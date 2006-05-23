@@ -1001,7 +1001,7 @@ let letin_abstract id c occs gl =
 		then raise (RefinerError (DoesNotOccurIn (c,hyp)))
 		else raise Not_found
               else 
-		(subst1_decl (mkVar id) newdecl, true)
+		(subst1_named_decl (mkVar id) newdecl, true)
 	with Not_found -> 
 	  (d,List.exists
 	      (fun ((id,_,_),dep) -> dep && occur_var_in_decl env id d) ctxt)
@@ -1053,7 +1053,7 @@ let letin_abstract id c occs gl =
 	    then raise (RefinerError (DoesNotOccurIn (c,hyp)))
 	    else depdecls
           else 
-	    (subst1_decl (mkVar id) newdecl)::depdecls in 
+	    (subst1_named_decl (mkVar id) newdecl)::depdecls in 
   let depdecls = fold_named_context compute_dependency env ~init:[] in
   let ccl = match occurrences_of_goal occs with
     | None -> pf_concl gl
