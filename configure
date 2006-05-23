@@ -575,11 +575,6 @@ if test "$coq_debug_flag" = "-g" ; then
   chmod a-w,a+x $OCAMLDEBUGCOQ
 fi
 
-# Compatibility with previous name
-if [ ! -f $COQTOP/dev/ocamldebug-v7 ] ; then
-  ln -s `basename $OCAMLDEBUGCOQ` $COQTOP/dev/ocamldebug-v7
-fi
-
 ##################################################
 # Fixing lablgtk types
 ####################################################
