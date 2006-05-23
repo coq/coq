@@ -177,18 +177,6 @@ let isAppConstruct t =
 let nf_betaiotazeta = Reductionops.local_strong Reductionops.whd_betaiotazeta 
   
 
-let rec subst_rel_map sub t = 
-  match kind_of_term t with
-  | Rel k -> 
-      begin 
-	try 
-	  Intmap.find (k+1) sub
-	with Not_found -> 
-	  t
-      end
-  | _ -> map_constr (subst_rel_map sub) t
-     
-
 let change_eq env sigma hyp_id (context:Sign.rel_context) x t end_of_type  = 
   let nochange msg  = 
     begin 
@@ -237,11 +225,11 @@ let change_eq env sigma hyp_id (context:Sign.rel_context) x t end_of_type  =
       (* Ugly hack to prevent Map.fold order change between ocaml-3.08.3 and ocaml-3.08.4 
 	 Can be safely replaced by the next comment for Ocaml >= 3.08.4
       *)
-      let sub' = Intmap.fold (fun i t acc = (i,t)::acc) sub [] in 
+      let sub' = Intmap.fold (fun i t acc -> (i,t)::acc) sub [] in 
       let sub'' = List.sort (fun (x,_) (y,_) -> Pervasives.compare x y) sub' in 
       List.fold_left (fun end_of_type (i,t)  -> lift 1 (substnl  [t] (i-1) end_of_type))
 	end_of_type_with_pop
-	sub
+	sub''
     in
     (* let new_end_of_type =  *)
     (*  Intmap.fold *)

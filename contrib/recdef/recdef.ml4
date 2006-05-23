@@ -49,6 +49,16 @@ open Genarg
 let qed () = Command.save_named true 
 let defined () = Command.save_named false
 
+let pf_get_new_ids idl g = 
+  let ids = pf_ids_of_hyps g in 
+  List.fold_right
+    (fun id acc -> next_global_ident_away false id (acc@ids)::acc)
+    idl 
+    []
+
+let pf_get_new_id id g = 
+  List.hd (pf_get_new_ids [id] g)
+
 let h_intros l = 
   tclMAP h_intro l
 
@@ -242,7 +252,6 @@ let  mkCaseEq a  : tactic =
 
 let rec  mk_intros_and_continue (extra_eqn:bool)
     cont_function (eqs:constr list) (expr:constr) g =
-  let ids = pf_ids_of_hyps g in
   match kind_of_term expr with
     | Lambda (n, _, b) -> 
      	let n1 = 
@@ -302,6 +311,7 @@ let list_rewrite (rev:bool) (eqs: constr list) =
 let base_leaf_terminate (func:global_reference) eqs expr =
 (*  let _ = msgnl (str "entering base_leaf") in *)
   (fun g ->
+     
      let [k';h] = pf_get_new_ids [k_id;h_id] g in 
      tclTHENLIST [observe_tac "first split" (split (ImplicitBindings [expr]));
 		  observe_tac "second split" (split (ImplicitBindings [delayed_force coq_O]));
@@ -355,15 +365,11 @@ let rec list_cond_rewrite k def pmax cond_eqs le_proofs =
     [] -> tclIDTAC
   | eq::eqs ->
       (fun g -> 
-	 let eq_t = pf_type_of g (mkVar eq) in 
-	 let (na,_,eq_t') = destProd eq_t in 
-	 let _,_,eq_t'' = destProd eq_t' in 
-	 let na',_,_ = destProd eq_t'' in 
 	 tclTHENS
 	   (general_rewrite_bindings false
 	      (mkVar eq,
-	       ExplicitBindings[dummy_loc, NamedHyp k, mkVar k;
-				dummy_loc, NamedHyp def, mkVar def]))
+	       ExplicitBindings[dummy_loc, NamedHyp k_id, mkVar k;
+				dummy_loc, NamedHyp def_id, mkVar def]))
 	   [list_cond_rewrite k def pmax eqs le_proofs;
             make_lt_proof pmax le_proofs] g
       ) 
@@ -968,9 +974,9 @@ let rec introduce_all_values_eq  cont_tac functional termine
 		     (general_rewrite_bindings false
 			(mkVar heq,
 			 ExplicitBindings
-			   [dummy_loc, NamedHyp (next_global_ident_away true k_id ids),
+			   [dummy_loc, NamedHyp k_id,
 			    f_S(mkVar pmax');
-			    dummy_loc, NamedHyp (next_global_ident_away true def_id ids), f]))
+			    dummy_loc, NamedHyp def_id, f]))
 		     [tclIDTAC;
 		      tclTHENLIST
 			[apply (delayed_force le_lt_n_Sm);
