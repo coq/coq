@@ -129,7 +129,7 @@ Lemma permut_nil :
  forall l, permutation l nil -> l = nil.
 Proof.
 intro l; destruct l as [ | e l ]; trivial.
-assert (In e (e::l)) by red; auto.
+assert (In e (e::l)) by (red; auto).
 intro Abs; generalize (permut_In_In _ Abs H).
 inversion 1.
 Qed.

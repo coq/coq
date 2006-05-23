@@ -760,8 +760,8 @@ Module Properties (M: S).
    forall s p, fold (fun _ => S) s p = fold (fun _ => S) s 0 + p.
   Proof.
   assert (st := gen_st nat).
-  assert (fe : compat_op E.eq (@eq _) (fun _ => S)) by unfold compat_op; auto. 
-  assert (fp : transpose (@eq _) (fun _:elt => S)) by unfold transpose; auto.
+  assert (fe : compat_op E.eq (@eq _) (fun _ => S)) by (unfold compat_op; auto). 
+  assert (fp : transpose (@eq _) (fun _:elt => S)) by (unfold transpose; auto).
   intros s p; pattern s; apply set_induction; clear s; intros.
   rewrite (fold_1 st p (fun _ => S) H).
   rewrite (fold_1 st 0 (fun _ => S) H); trivial.

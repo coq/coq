@@ -160,7 +160,7 @@ Proof.
  inversion_clear H0.
  constructor; auto.  
  intro.
- assert (ltA x x) by eapply SortA_InfA_InA; eauto.
+ assert (ltA x x) by (eapply SortA_InfA_InA; eauto).
  elim (ltA_not_eqA H3); auto.
 Qed.
 
@@ -330,11 +330,11 @@ destruct (H3 y); clear H3.
 destruct H6; intuition.
 swap H4; apply InA_eqA with y; auto.
 destruct H0.
-assert (InA y (x' :: s')) by rewrite H3; auto.
+assert (InA y (x' :: s')) by (rewrite H3; auto).
 inversion_clear H6; auto.
 elim H1; apply eqA_trans with y; auto.
 destruct H0.
-assert (InA y (x' :: s')) by rewrite H3; auto.
+assert (InA y (x' :: s')) by (rewrite H3; auto).
 inversion_clear H7; auto.
 elim H6; auto.
 Qed.

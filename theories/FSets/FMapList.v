@@ -791,7 +791,7 @@ Proof.
  exact (combine_lelistA _ H0 H1). 
  inversion_clear Hm; inversion_clear Hm'.
  constructor; auto.
- assert (lelistA (ltk (elt:=elt')) (k, e') m') by apply Inf_eq with (k',e'); auto.
+ assert (lelistA (ltk (elt:=elt')) (k, e') m') by (apply Inf_eq with (k',e'); auto).
  exact (combine_lelistA _ H0 H3). 
  inversion_clear Hm; inversion_clear Hm'.
  constructor; auto.

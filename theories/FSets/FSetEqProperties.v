@@ -276,7 +276,7 @@ Lemma is_empty_cardinal: is_empty s = zerob (cardinal s).
 Proof.
 intros; apply bool_1; split; intros.
 rewrite cardinal_1; simpl; auto.
-assert (cardinal s = 0) by apply zerob_true_elim; auto.
+assert (cardinal s = 0) by (apply zerob_true_elim; auto).
 auto.
 Qed.
 
@@ -672,7 +672,7 @@ unfold Add, MP.Add; intros.
 repeat rewrite filter_iff; auto.
 rewrite H0; clear H0.
 assert (E.eq x y -> f y = true) by 
- intro H0; rewrite <- (Comp _ _ H0); auto.
+ (intro H0; rewrite <- (Comp _ _ H0); auto).
 tauto.
 Qed.
 

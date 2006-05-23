@@ -451,8 +451,7 @@ destruct a; intros; simpl;
  destruct (Zdiv_eucl b (Zpos p)) as (q,r);
  intros (H0,H1); 
  rewrite inj_S in H; simpl Zabs in H; 
- (assert (H2: Zabs r < Z_of_nat n) by
-  rewrite Zabs_eq; auto with zarith);  
+ assert (H2: Zabs r < Z_of_nat n) by (rewrite Zabs_eq; auto with zarith);  
  assert (IH:=IHn r (Zpos p) H2); clear IHn; 
  simpl in IH |- *; 
  rewrite H0.
@@ -527,7 +526,7 @@ destruct (Zle_lt_or_eq _ _ H2).
 generalize (IHn _ _ (conj H4 H3)).
 intros H5 H6 H7. 
 replace (fibonacci (S (S m))) with (fibonacci (S m) + fibonacci m) by auto.
-assert (r = Zpos p * (-q) + b) by rewrite H1; ring.
+assert (r = Zpos p * (-q) + b) by (rewrite H1; ring).
 destruct H5; auto.
 pattern r at 1; rewrite H8.
 apply Zis_gcd_sym.
@@ -541,9 +540,9 @@ ring (Zpos p * 1); auto.
 apply Zmult_le_compat_l.
 destruct q.
 omega.
-assert (0 < Zpos p0) by compute; auto.
+assert (0 < Zpos p0) by (compute; auto).
 omega.
-assert (Zpos p * Zneg p0 < 0) by compute; auto.
+assert (Zpos p * Zneg p0 < 0) by (compute; auto).
 omega. 
 compute; intros; discriminate.
 (* r=0 *)
