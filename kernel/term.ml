@@ -779,6 +779,7 @@ let substnl_decl laml k (id,bodyopt,typ) =
 let substl_decl laml = substnl_decl laml 0
 let subst1_decl lam = substl_decl [lam]
 let subst1_named_decl = subst1_decl
+let substl_named_decl = substl_decl
 
 (* (thin_val sigma) removes identity substitutions from sigma *)
 
