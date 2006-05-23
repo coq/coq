@@ -1,5 +1,10 @@
-Changes from V8.0
-=================
+Changes from V8.0 to V8.1
+=========================
+
+Logic
+
+- Added sort-polymorphism on inductive families
+- Allowance for recursively non uniform parameters in inductive types
 
 Syntax
 
@@ -134,6 +139,7 @@ Libraries
   compatibility (useless hypothesys of Zgt_square_simpl and
   Zlt_square_simpl removed; fixed names mentioning letter O instead of
   digit 0; weaken premises in Z_lt_induction)
+- Restructuration of Eqdep_dec.v and Eqdep.v: more lemmas in Type.
 - Znumtheory now contains a gcd function that can compute within Coq
 - More lemmas stated on Type in Wf.v, removal of redundant Fix_F
 - Coq.List.In_dec has been set transparent (this may exceptionally break
