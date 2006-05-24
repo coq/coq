@@ -145,7 +145,7 @@ let add_glob loc ref =
   let mod_dp_trunc =  drop_dirpath_prefix lib_dp mod_dp in
   let filepath = string_of_dirpath lib_dp in
   let fullname = string_of_qualid (make_qualid mod_dp_trunc id) in
-  dump_string (Printf.sprintf "R%d %s.%s\n" (fst (unloc loc)) filepath fullname)
+  dump_string (Printf.sprintf "R%d %s %s\n" (fst (unloc loc)) filepath fullname)
 
 let loc_of_notation f loc args ntn =
   if args=[] or ntn.[0] <> '_' then fst (unloc loc)

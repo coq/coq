@@ -83,7 +83,7 @@ let ref_module loc s =
     let n = String.length s in
     let i = String.rindex s ' ' in 
     let id = String.sub s (i+1) (n-i-1) in
-    add_mod !current_module (loc+i+1) (Hashtbl.find modules id) id
+      add_mod !current_module (loc+i+1) (Hashtbl.find modules id) id
   with Not_found -> 
     ()
 
@@ -104,25 +104,25 @@ let compare_entries (s1,_) (s2,_) = Alpha.compare_string s1 s2
 
 let sort_entries el =
   let t = Hashtbl.create 97 in
-  List.iter 
-    (fun c -> Hashtbl.add t c [])
-    ['A'; 'B'; 'C'; 'D'; 'E'; 'F'; 'G'; 'H'; 'I'; 'J'; 'K'; 'L'; 'M'; 'N'; 
-     'O'; 'P'; 'Q'; 'R'; 'S'; 'T'; 'U'; 'V'; 'W'; 'X'; 'Y'; 'Z'; '_'];  
-  List.iter 
-    (fun ((s,_) as e) -> 
-       let c = Alpha.norm_char s.[0] in 
-       let l = try Hashtbl.find t c with Not_found -> [] in
-       Hashtbl.replace t c (e :: l)) 
-    el;
-  let res = ref [] in
-  Hashtbl.iter 
-    (fun c l -> res := (c, List.sort compare_entries l) :: !res) t;
-  List.sort (fun (c1,_) (c2,_) -> Alpha.compare_char c1 c2) !res
-    
+    List.iter 
+      (fun c -> Hashtbl.add t c [])
+      ['A'; 'B'; 'C'; 'D'; 'E'; 'F'; 'G'; 'H'; 'I'; 'J'; 'K'; 'L'; 'M'; 'N'; 
+       'O'; 'P'; 'Q'; 'R'; 'S'; 'T'; 'U'; 'V'; 'W'; 'X'; 'Y'; 'Z'; '_'];  
+    List.iter 
+      (fun ((s,_) as e) -> 
+	 let c = Alpha.norm_char s.[0] in 
+	 let l = try Hashtbl.find t c with Not_found -> [] in
+	   Hashtbl.replace t c (e :: l)) 
+      el;
+    let res = ref [] in
+      Hashtbl.iter 
+	(fun c l -> res := (c, List.sort compare_entries l) :: !res) t;
+      List.sort (fun (c1,_) (c2,_) -> Alpha.compare_char c1 c2) !res
+	
 let index_size = List.fold_left (fun s (_,l) -> s + List.length l) 0
-
+  
 let hashtbl_elements h = Hashtbl.fold (fun x y l -> (x,y)::l) h []
-
+  
 let type_name = function
   | Library -> "library"
   | Module -> "module"
@@ -133,28 +133,28 @@ let type_name = function
   | Variable -> "variable"
   | Axiom -> "axiom"
   | TacticDefinition -> "tactic"
-
+      
 let all_entries () =
   let gl = ref [] in
   let add_g s m t = gl := (s,(m,t)) :: !gl in
   let bt = Hashtbl.create 11 in
   let add_bt t s m =
     let l = try Hashtbl.find bt t with Not_found -> [] in
-    Hashtbl.replace bt t ((s,m) :: l)
+      Hashtbl.replace bt t ((s,m) :: l)
   in
   let classify (m,_) e = match e with 
     | Def (s,t) -> add_g s m t; add_bt t s m
     | Ref _ | Mod _ -> ()
   in
-  Hashtbl.iter classify table;
-  Hashtbl.iter (fun id m -> add_g id m Library; add_bt Library id m) modules;
-  { idx_name = "global"; 
-    idx_entries = sort_entries !gl; 
-    idx_size = List.length !gl },
-  Hashtbl.fold (fun t e l -> (t, { idx_name = type_name t; 
+    Hashtbl.iter classify table;
+    Hashtbl.iter (fun id m -> add_g id m Library; add_bt Library id m) modules;
+    { idx_name = "global"; 
+      idx_entries = sort_entries !gl; 
+      idx_size = List.length !gl },
+    Hashtbl.fold (fun t e l -> (t, { idx_name = type_name t; 
 				   idx_entries = sort_entries e; 
 				   idx_size = List.length e }) :: l) bt []
-
+    
 }
 
 (*s Shortcuts for regular expressions. *)
@@ -165,15 +165,15 @@ let firstchar =
   ['$' 'A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255']
 let identchar = 
   ['$' 'A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' 
-   '\'' '0'-'9']
+     '\'' '0'-'9']
 let ident = 
   firstchar identchar*
-
+    
 let begin_hide = "(*" space* "begin" space+ "hide" space* "*)"
 let end_hide = "(*" space* "end" space+ "hide" space* "*)"
-
+  
 (*s Indexing entry point. *)
-
+  
 rule traverse = parse
   | "Definition" space
       { current_type := Definition; index_ident lexbuf; traverse lexbuf }
@@ -234,12 +234,12 @@ and index_idents = parse
       { () }
   | _
       { skip_until_point lexbuf }
-
+      
 (*s Index identifiers in an inductive definition (types and constructors). *)
-
+      
 and inductive = parse
   | '|' | ":=" space* '|'? 
-      { current_type := Constructor; index_ident lexbuf; inductive lexbuf }
+	{ current_type := Constructor; index_ident lexbuf; inductive lexbuf }
   | "with" space
       { current_type := Inductive; index_ident lexbuf; inductive lexbuf }
   | '.'    
@@ -248,9 +248,9 @@ and inductive = parse
       { () }
   | _      
       { inductive lexbuf }
-
+      
 (*s Index identifiers in a Fixpoint declaration. *)
-
+      
 and fixpoint = parse
   | "with" space
       { index_ident lexbuf; fixpoint lexbuf }
@@ -260,9 +260,9 @@ and fixpoint = parse
       { () }
   | _      
       { fixpoint lexbuf }
-
+      
 (*s Skip a possibly nested comment. *)
-
+      
 and comment = parse
   | "*)" { () }
   | "(*" { comment lexbuf; comment lexbuf }
@@ -271,19 +271,19 @@ and comment = parse
   | _    { comment lexbuf }
 
 (*s Skip a constant string. *)
-
+      
 and string = parse
   | '"'  { () }
   | eof  { eprintf " *** Unterminated string while indexing" }
   | _    { string lexbuf }
 
 (*s Skip everything until the next dot. *)
-
+      
 and skip_until_point = parse
   | '.'  { () }
   | eof  { () }
   | _    { skip_until_point lexbuf }
-
+      
 (*s Skip everything until [(* end hide *)] *)
 
 and skip_hide = parse
@@ -306,10 +306,11 @@ and skip_hide = parse
 	    | 'R' ->
 		(try
 		   let i = String.index s ' ' in
+		   let j = String.index_from s (i+1) ' ' in 
 		   let loc = int_of_string (String.sub s 1 (i - 1)) in
-		   let sp = String.sub s (i + 1) (n - i - 1) in
-		   let m',id = split_sp sp in
-		   add_ref !cur_mod loc m' id
+		   let lib_dp = String.sub s (i + 1) (j - i - 1) in
+		   let full_id = String.sub s (j + 1) (n - j - 1) in
+		     add_ref !cur_mod loc lib_dp full_id
 		 with Not_found -> 
 		   ())
 	    | _ -> ()
@@ -317,11 +318,11 @@ and skip_hide = parse
       done
     with End_of_file -> 
       close_in c
-
+	
   let scan_file f m = 
     current_module := m;
     let c = open_in f in
     let lb = from_channel c in
-    traverse lb;
-    close_in c
+      traverse lb;
+      close_in c
 }

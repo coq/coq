@@ -173,8 +173,11 @@ let firstchar =
   (* utf-8 letterlike symbols *) 
   '\226' ('\132' ['\128'-'\191'] | '\133' ['\128'-'\143'])
 let identchar = 
-  firstchar | ['\'' '0'-'9' '@']
-let identifier = firstchar identchar*
+  firstchar | ['\'' '0'-'9' '@' ]
+let id = firstchar identchar*
+let pfx_id = (id '.')*
+let identifier = 
+  id | pfx_id id
 
 let symbolchar_no_brackets =
   ['!' '$' '%' '&' '*' '+' ',' '@' '^' '#'
