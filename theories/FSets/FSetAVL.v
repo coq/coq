@@ -939,7 +939,7 @@ Proof.
  inversion_clear 1.
  destruct t0.
  inversion 1; subst.
- assert (X.lt x y) by apply H3; auto.
+ assert (X.lt x y) by (apply H3; auto).
  inversion_clear 1; auto; order.
  assert (X.lt t1 y) by auto.
  inversion_clear 2; auto; 
@@ -986,7 +986,7 @@ Proof.
  inversion_clear 1.
  destruct t2.
  inversion 1; subst.
- assert (X.lt y x) by apply H4; auto.
+ assert (X.lt y x) by (apply H4; auto).
  inversion_clear 1; auto; order.
  assert (X.lt y t1) by auto.
  inversion_clear 2; auto; 
@@ -2064,7 +2064,7 @@ Proof.
  clear H; right; red; firstorder.
  clear H; right; red; inv bst; intuition.
  apply n; red; intros.
- assert (In a (Node l2 x2 r2 h2)) by inv In; auto.
+ assert (In a (Node l2 x2 r2 h2)) by (inv In; auto).
  intuition_in; order.
  (* x1 = x2 *)
  case (H l1 l2); inv bst; auto; intros.
@@ -2090,7 +2090,7 @@ Proof.
  clear H; right; red; firstorder.
  clear H; right; red; inv bst; intuition.
  apply n; red; intros.
- assert (In a (Node l2 x2 r2 h2)) by inv In; auto.
+ assert (In a (Node l2 x2 r2 h2)) by (inv In; auto).
  intuition_in; order.
 Qed.
 
