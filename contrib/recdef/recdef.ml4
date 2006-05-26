@@ -311,8 +311,11 @@ let list_rewrite (rev:bool) (eqs: constr list) =
 let base_leaf_terminate (func:global_reference) eqs expr =
 (*  let _ = msgnl (str "entering base_leaf") in *)
   (fun g ->
-     
-     let [k';h] = pf_get_new_ids [k_id;h_id] g in 
+     let k',h = 
+       match pf_get_new_ids [k_id;h_id] g with 
+	   [k';h] -> k',h
+	 | _ -> assert false
+     in
      tclTHENLIST [observe_tac "first split" (split (ImplicitBindings [expr]));
 		  observe_tac "second split" (split (ImplicitBindings [delayed_force coq_O]));
 		  observe_tac "intro k" (h_intro k');
