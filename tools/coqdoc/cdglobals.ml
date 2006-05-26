@@ -70,4 +70,3 @@ type file =
   | Vernac_file of string * coq_module
   | Latex_file of string
       
-

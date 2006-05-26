@@ -336,12 +336,12 @@ module Html = struct
 	raw_ident s
     i*)
 
-  let ident_ref m s = match find_module m with
+  let ident_ref m fid s = match find_module m with
     | Local ->
-	printf "<a class=\"idref\" href=\"%s.html#%s\">" m s; raw_ident s; printf "</a>"
+	printf "<a class=\"idref\" href=\"%s.html#%s\">" m fid; raw_ident s; printf "</a>"
     | Coqlib when !externals ->
 	let m = Filename.concat !coqlib m in
-	printf "<a class=\"idref\" href=\"%s.html#%s\">" m s; raw_ident s; printf "</a>"
+	printf "<a class=\"idref\" href=\"%s.html#%s\">" m fid; raw_ident s; printf "</a>"
     | Coqlib | Unknown ->
 	raw_ident s
 
@@ -351,18 +351,20 @@ module Html = struct
       raw_ident s; 
       printf "</span>"
     end else 
-      try
-	(match Index.find !current_module loc with
-	   | Def _ -> 
-	       printf "<a name=\"%s\"></a>" s; raw_ident s
-           | Mod (m,s') when s = s' ->
-	       module_ref m s
-	   | Ref (m,s') when s = s' -> 
-	       ident_ref m s
-	   | Mod _ | Ref _ ->
-	       raw_ident s)
-      with Not_found ->
-	raw_ident s
+      begin
+	try
+	  (match Index.find !current_module loc with
+	     | Def (fullid,_) -> 
+		 printf "<a name=\"%s\"></a>" fullid; raw_ident s
+             | Mod (m,s') when s = s' ->
+		 module_ref m s
+	     | Ref (m,fullid) -> 
+		 ident_ref m fullid s
+	     | Mod _ | Ref _ ->
+		 raw_ident s)
+	with Not_found ->
+	  raw_ident s
+      end
 	  
   let with_html_printing f tok =
     try 

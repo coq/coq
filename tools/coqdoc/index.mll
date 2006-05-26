@@ -34,11 +34,14 @@ type index_entry =
   | Ref of coq_module * string
   | Mod of coq_module * string
 
+let current_type = ref Library
+let current_library = ref ""
+  (** referes to the file being parsed *)
+
 let table = Hashtbl.create 97
+  (** [table] is used to store references and definitions *)
 
-let current_module = ref ""
-
-let add_def loc ty id = Hashtbl.add table (!current_module, loc) (Def (id, ty))
+let add_def loc ty id = Hashtbl.add table (!current_library, loc) (Def (id, ty))
 
 let add_ref m loc m' id = Hashtbl.add table (m, loc) (Ref (m', id))
 
@@ -46,7 +49,55 @@ let add_mod m loc m' id = Hashtbl.add table (m, loc) (Mod (m', id))
 
 let find m l = Hashtbl.find table (m, l)
 
-let current_type = ref Library
+
+(*s Manipulating path prefixes *) 
+
+type stack = string list 
+
+let rec string_of_stack st =
+  match st with
+    | [] -> ""
+    | x::[] -> x
+    | x::tl -> (string_of_stack tl) ^ "." ^ x
+
+let empty_stack = []
+
+let module_stack = ref empty_stack
+let section_stack = ref empty_stack
+
+let init_stack () =
+  module_stack := empty_stack; section_stack := empty_stack
+
+let push st p = st := p::!st
+let pop st = 
+  match !st with 
+    | [] -> ()
+    | _::tl -> st := tl
+	
+let head st =
+  match st with
+    | [] -> ""
+    | x::_ -> x
+
+let begin_module m = push module_stack m
+let begin_section s = push section_stack s
+
+let end_block id =
+  (** determines if it ends a module or a section and pops the stack *)
+  if ((String.compare (head !module_stack) id ) == 0) then
+    pop module_stack
+  else if ((String.compare (head !section_stack) id) == 0) then
+    pop section_stack
+  else
+    ()
+
+let make_fullid id = 
+  (** prepends the current module path to an id *)
+  let path = string_of_stack !module_stack in
+    if String.length path > 0 then
+      path ^ "." ^ id
+    else 
+      id
 
 (* Coq modules *)
 
@@ -83,7 +134,7 @@ let ref_module loc s =
     let n = String.length s in
     let i = String.rindex s ' ' in 
     let id = String.sub s (i+1) (n-i-1) in
-      add_mod !current_module (loc+i+1) (Hashtbl.find modules id) id
+      add_mod !current_library (loc+i+1) (Hashtbl.find modules id) id
   with Not_found -> 
     ()
 
@@ -166,9 +217,8 @@ let firstchar =
 let identchar = 
   ['$' 'A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' 
      '\'' '0'-'9']
-let ident = 
-  firstchar identchar*
-    
+let ident = firstchar identchar*
+
 let begin_hide = "(*" space* "begin" space+ "hide" space* "*)"
 let end_hide = "(*" space* "end" space+ "hide" space* "*)"
   
@@ -192,13 +242,15 @@ rule traverse = parse
   | "Record" space
       { current_type := Inductive; index_ident lexbuf; traverse lexbuf }
   | "Module" (space+ "Type")? space
-      { current_type := Module; index_ident lexbuf; traverse lexbuf }
+      { current_type := Module; module_ident lexbuf; traverse lexbuf }
 (*i***
   | "Variable" 's'? space
       { current_type := Variable; index_idents lexbuf; traverse lexbuf }
 ***i*)
   | "Require" (space+ ("Export"|"Import"))? space+ ident
       { ref_module (lexeme_start lexbuf) (lexeme lexbuf); traverse lexbuf }
+  | "End" space+ 
+      { end_ident lexbuf; traverse lexbuf }
   | begin_hide 
       { skip_hide lexbuf; traverse lexbuf }
   | "(*" 
@@ -216,7 +268,16 @@ and index_ident = parse
   | space+ 
       { index_ident lexbuf }
   | ident  
-      { add_def (lexeme_start lexbuf) !current_type (lexeme lexbuf) }
+      { let fullid = 
+	  let id = lexeme lexbuf in
+	    match !current_type with
+	      | Definition
+	      | Inductive
+	      | Constructor 
+	      | Lemma -> make_fullid id
+	      | _ -> id 
+	in 
+	  add_def (lexeme_start lexbuf) !current_type fullid }
   | eof    
       { () }
   | _      
@@ -290,6 +351,29 @@ and skip_hide = parse
   | eof | end_hide { () }
   | _ { skip_hide lexbuf }
 
+and end_ident = parse
+  | space+ 
+      { end_ident lexbuf }
+  | ident  
+      { let id = lexeme lexbuf in end_block id }
+  | eof    
+      { () }
+  | _      
+      { () }
+
+and module_ident = parse
+  | space+
+      { module_ident lexbuf }
+  | ident space* ":="
+      { () }
+  | ident
+      { let id = lexeme lexbuf in
+	  begin_module id; add_def (lexeme_start lexbuf) !current_type id }
+  | eof
+      { () }
+  | _
+      { () }
+
 {
   
   let read_glob f = 
@@ -320,7 +404,7 @@ and skip_hide = parse
       close_in c
 	
   let scan_file f m = 
-    current_module := m;
+    init_stack (); current_library := m;
     let c = open_in f in
     let lb = from_channel c in
       traverse lb;
