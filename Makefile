@@ -381,7 +381,13 @@ clean ::
 # Main targets (coqmktop, coqtop.opt, coqtop.byte)
 ###########################################################################
 
+COQMKTOPBYTE=bin/coqmktop.byte$(EXE)
+COQMKTOPOPT=bin/coqmktop.opt$(EXE)
+BESTCOQMKTOP=bin/coqmktop.$(BEST)$(EXE)
 COQMKTOP=bin/coqmktop$(EXE) 
+COQCBYTE=bin/coqc.byte$(EXE)
+COQCOPT=bin/coqc.opt$(EXE)
+BESTCOQC=bin/coqc.$(BEST)$(EXE)
 COQC=bin/coqc$(EXE)
 COQTOPBYTE=bin/coqtop.byte$(EXE)
 COQTOPOPT=bin/coqtop.opt$(EXE)
@@ -415,11 +421,20 @@ $(COQTOP):
 # coqmktop 
 
 COQMKTOPCMO=$(CONFIG) scripts/tolink.cmo scripts/coqmktop.cmo 
+COQMKTOPCMX=config/coq_config.cmx scripts/tolink.cmx scripts/coqmktop.cmx 
 
-$(COQMKTOP): $(COQMKTOPCMO)
+$(COQMKTOPBYTE): $(COQMKTOPCMO)
 	$(SHOW)'OCAMLC -o $@'	
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ -custom str.cma unix.cma \
           $(COQMKTOPCMO) $(OSDEPLIBS)
+
+$(COQMKTOPOPT): $(COQMKTOPCMX)
+	$(SHOW)'OCAMLOPT -o $@'	
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ str.cmxa unix.cmxa \
+          $(COQMKTOPCMX) $(OSDEPLIBS)
+
+$(COQMKTOP): $(BESTCOQMKTOP)
+	cd bin; ln -sf coqmktop.$(BEST)$(EXE) coqmktop$(EXE)
 
 
 scripts/tolink.ml: Makefile
@@ -434,10 +449,19 @@ beforedepend:: scripts/tolink.ml
 # coqc
 
 COQCCMO=$(CONFIG) toplevel/usage.cmo scripts/coqc.cmo
+COQCCMX=config/coq_config.cmx toplevel/usage.cmx scripts/coqc.cmx
 
-$(COQC): $(COQCCMO) $(COQTOPBYTE) $(BESTCOQTOP)
+$(COQCBYTE): $(COQCCMO) $(COQTOPBYTE) $(BESTCOQTOP)
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ -custom unix.cma $(COQCCMO) $(OSDEPLIBS)
+
+$(COQCOPT): $(COQCCMX) $(COQTOPOPT) $(BESTCOQTOP)
+	$(SHOW)'OCAMLOPT -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ unix.cmxa $(COQCCMX) $(OSDEPLIBS)
+
+$(COQC): $(BESTCOQC)
+	cd bin; ln -sf coqc.$(BEST)$(EXE) coqc$(EXE)
+
 
 clean::
 	rm -f scripts/tolink.ml
