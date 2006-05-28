@@ -1011,7 +1011,7 @@ Implicit Arguments Vnil [A].
 Implicit Arguments Vhead [A n].
 Implicit Arguments Vtail [A n].
 
-Definition Vid : forall (A : Set)(n:nat), vector A n -> vector A n.
+Definition Vid : forall (A : Type)(n:nat), vector A n -> vector A n.
 Proof.
  destruct n; intro v.
  exact Vnil.
@@ -1024,7 +1024,7 @@ Eval simpl in (fun (A:Set)(v:vector A 0) => v).
 
 
 
-Lemma Vid_eq : forall (n:nat) (A:Set)(v:vector A n), v=(Vid _ n v).
+Lemma Vid_eq : forall (n:nat) (A:Type)(v:vector A n), v=(Vid _ n v).
 Proof.
  destruct v. 
  reflexivity.
