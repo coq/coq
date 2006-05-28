@@ -59,7 +59,7 @@ Check
 
 (* Check instantiation of nested evars (bug #1089) *)
 
-Check (fun f:(forall (v:Set->Set), v (v nat) -> nat) => f _ (Some (Some O))).
+Check (fun f:(forall (v:Type->Type), v (v nat) -> nat) => f _ (Some (Some O))).
 
 (* This used to fail with anomaly "evar was not declared" in V8.0pl3 *)
 
