@@ -339,7 +339,7 @@ with Morphism_Context_List_rect2 := Induction for Morphism_Context_List Sort Typ
 Definition product_of_arguments : Arguments -> Type.
  induction 1.
    exact (carrier_of_relation_class a).
-   exact (prodT (carrier_of_relation_class a) IHX).
+   exact (prod (carrier_of_relation_class a) IHX).
 Defined.
 
 Definition get_rewrite_direction: rewrite_direction -> Argument_Class -> rewrite_direction.

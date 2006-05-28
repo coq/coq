@@ -8,6 +8,7 @@
 
 (* $Id$ *)
 
+Require Import List.
 Require Import Ring.
 Require Export Field_Compl.
 Require Export Field_Theory.
@@ -20,8 +21,8 @@ Ltac body_of s := eval cbv beta iota delta [s] in s.
 
 Ltac mem_assoc var lvar :=
   match constr:lvar with
-  | (nilT _) => constr:false
-  | (consT _ ?X1 ?X2) =>
+  | nil => constr:false
+  | ?X1 :: ?X2 =>
       match constr:(X1 = var) with
       | (?X1 = ?X1) => constr:true
       | _ => mem_assoc var X2
@@ -31,10 +32,10 @@ Ltac mem_assoc var lvar :=
 Ltac number lvar := 
   let rec number_aux lvar cpt :=
     match constr:lvar with
-    | (nilT ?X1) => constr:(nilT (prodT X1 nat))
-    | (consT ?X1 ?X2 ?X3) =>
+    | (@nil ?X1) => constr:(@nil (prod X1 nat))
+    | ?X2 :: ?X3 =>
         let l2 := number_aux X3 (S cpt) in
-        constr:(consT (prodT X1 nat) (pairT X1 nat X2 cpt) l2) 
+        constr:((X2,cpt) :: l2) 
     end
   in number_aux lvar 0.
 
@@ -62,17 +63,17 @@ Ltac build_varlist FT trm :=
         let res := mem_assoc X1 lvar in
         match constr:res with
         | true => lvar
-        | false => constr:(consT AT X1 lvar)
+        | false => constr:(X1 :: lvar)
         end
     end in
   let AT := get_component A FT in
-  let lvar := seek_var (nilT AT) trm in
+  let lvar := seek_var (@nil AT) trm in
   number lvar.
 
 Ltac assoc elt lst :=
   match constr:lst with
-  | (nilT _) => fail
-  | (consT (prodT _ nat) (pairT _ nat ?X1 ?X2) ?X3) =>
+  | nil => fail
+  | (?X1,?X2) :: ?X3 =>
       match constr:(elt = X1) with
       | (?X1 = ?X1) => constr:X2
       | _ => assoc elt X3
@@ -113,32 +114,31 @@ Ltac interp_A FT lvar trm :=
 
 Ltac remove e l :=
   match constr:l with
-  | (nilT _) => l
-  | (consT ?X1 e ?X2) => constr:X2
-  | (consT ?X1 ?X2 ?X3) => let nl := remove e X3 in
-                           constr:(consT X1 X2 nl)
+  | nil => l
+  | e :: ?X2 => constr:X2
+  | ?X2 :: ?X3 => let nl := remove e X3 in constr:(X2 :: nl)
   end.
 
 Ltac union l1 l2 :=
   match constr:l1 with
-  | (nilT _) => l2
-  | (consT ?X1 ?X2 ?X3) =>
+  | nil => l2
+  | ?X2 :: ?X3 =>
       let nl2 := remove X2 l2 in
       let nl := union X3 nl2 in
-      constr:(consT X1 X2 nl)
+      constr:(X2 :: nl)
   end.
 
 Ltac raw_give_mult trm :=
   match constr:trm with
-  | (EAinv ?X1) => constr:(consT ExprA X1 (nilT ExprA))
+  | (EAinv ?X1) => constr:(X1 :: nil)
   | (EAopp ?X1) => raw_give_mult X1
   | (EAplus ?X1 ?X2) =>
       let l1 := raw_give_mult X1 with l2 := raw_give_mult X2 in
       union l1 l2
   | (EAmult ?X1 ?X2) =>
       let l1 := raw_give_mult X1 with l2 := raw_give_mult X2 in
-      eval compute in (appT ExprA l1 l2)
-  | _ => constr:(nilT ExprA)
+      eval compute in (app l1 l2)
+  | _ => constr:(@nil ExprA)
   end.
 
 Ltac give_mult trm :=
@@ -254,13 +254,13 @@ Ltac apply_simplif sfun :=
 
 Ltac unfolds FT :=
   match get_component Aminus FT with
-  | (Field_Some _ ?X1) => unfold X1 in |- *
+  | Some ?X1 => unfold X1 in |- *
   | _ => idtac
   end;
-   match get_component Adiv FT with
-   | (Field_Some _ ?X1) => unfold X1 in |- *
-   | _ => idtac
-   end.
+  match get_component Adiv FT with
+  | Some ?X1 => unfold X1 in |- *
+  | _ => idtac
+  end.
 
 Ltac reduce FT :=
   let AzeroT := get_component Azero FT
@@ -304,11 +304,11 @@ Ltac field_gen FT := unfolds FT; (inverse_test FT; ring) || field_gen_aux FT.
 Ltac init_exp FT trm :=
   let e :=
    (match get_component Aminus FT with
-    | (Field_Some _ ?X1) => eval cbv beta delta [X1] in trm
+    | Some ?X1 => eval cbv beta delta [X1] in trm
     | _ => trm
     end) in
   match get_component Adiv FT with
-  | (Field_Some _ ?X1) => eval cbv beta delta [X1] in e
+  | Some ?X1 => eval cbv beta delta [X1] in e
   | _ => e
   end.
 
@@ -341,21 +341,21 @@ Ltac simpl_inv trm :=
 
 Ltac map_tactic fcn lst :=
   match constr:lst with
-  | (nilT _) => lst
-  | (consT ?X1 ?X2 ?X3) =>
+  | nil => lst
+  | ?X2 :: ?X3 =>
       let r := fcn X2 with t := map_tactic fcn X3 in
-      constr:(consT X1 r t)
+      constr:(r :: t)
   end.
 
 Ltac build_monom_aux lst trm :=
   match constr:lst with
-  | (nilT _) => eval compute in (assoc trm)
-  | (consT _ ?X1 ?X2) => build_monom_aux X2 (EAmult trm X1)
+  | nil => eval compute in (assoc trm)
+  | ?X1 :: ?X2 => build_monom_aux X2 (EAmult trm X1)
   end.
 
 Ltac build_monom lnum lden :=
   let ildn := map_tactic ltac:(fun e => constr:(EAinv e)) lden in
-  let ltot := eval compute in (appT ExprA lnum ildn) in
+  let ltot := eval compute in (app lnum ildn) in
   let trm := build_monom_aux ltot EAone in
   match constr:trm with
   | (EAmult _ ?X1) => constr:X1
@@ -370,7 +370,7 @@ Ltac simpl_monom_aux lnum lden trm :=
       | true =>
           let newlnum := remove X1 lnum in
           simpl_monom_aux newlnum lden X2
-      | false => simpl_monom_aux lnum (consT ExprA X1 lden) X2
+      | false => simpl_monom_aux lnum (X1 :: lden) X2
       end
   | (EAmult ?X1 ?X2) =>
       let mma := mem_assoc X1 lden in
@@ -378,7 +378,7 @@ Ltac simpl_monom_aux lnum lden trm :=
       | true =>
           let newlden := remove X1 lden in
           simpl_monom_aux lnum newlden X2
-      | false => simpl_monom_aux (consT ExprA X1 lnum) lden X2
+      | false => simpl_monom_aux (X1 :: lnum) lden X2
       end
   | (EAinv ?X1) =>
       let mma := mem_assoc X1 lnum in
@@ -386,7 +386,7 @@ Ltac simpl_monom_aux lnum lden trm :=
       | true =>
           let newlnum := remove X1 lnum in
           build_monom newlnum lden
-      | false => build_monom lnum (consT ExprA X1 lden)
+      | false => build_monom lnum (X1 :: lden)
       end
   | ?X1 =>
       let mma := mem_assoc X1 lden in
@@ -394,11 +394,11 @@ Ltac simpl_monom_aux lnum lden trm :=
       | true =>
           let newlden := remove X1 lden in
           build_monom lnum newlden
-      | false => build_monom (consT ExprA X1 lnum) lden
+      | false => build_monom (X1 :: lnum) lden
       end
   end.
 
-Ltac simpl_monom trm := simpl_monom_aux (nilT ExprA) (nilT ExprA) trm.
+Ltac simpl_monom trm := simpl_monom_aux (@nil ExprA) (@nil ExprA) trm.
 
 Ltac simpl_all_monomials trm :=
   match constr:trm with

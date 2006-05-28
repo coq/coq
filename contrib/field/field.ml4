@@ -22,19 +22,22 @@ open Vernacinterp
 open Vernacexpr
 open Tacexpr
 open Mod_subst
+open Coqlib
 
 (* Interpretation of constr's *)
 let constr_of c = Constrintern.interp_constr Evd.empty (Global.env()) c
 
 (* Construction of constants *)
-let constant dir s = Coqlib.gen_constant "Field" ("field"::dir) s
+let constant dir s = gen_constant "Field" ("field"::dir) s
+let init_constant s = gen_constant_in_modules "Field" init_modules s
 
 (* To deal with the optional arguments *)
 let constr_of_opt a opt =
   let ac = constr_of a in
+  let ac3 = mkArrow ac (mkArrow ac ac) in
   match opt with
-  | None -> mkApp ((constant ["Field_Compl"] "Field_None"),[|ac|])
-  | Some f -> mkApp ((constant ["Field_Compl"] "Field_Some"),[|ac;constr_of f|])
+  | None -> mkApp (init_constant "None",[|ac3|])
+  | Some f -> mkApp (init_constant "Some",[|ac3;constr_of f|])
 
 (* Table of theories *)
 let th_tab = ref (Gmap.empty : (constr,constr) Gmap.t)

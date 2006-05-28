@@ -101,7 +101,7 @@ open Coqlib
 val find_eq_data_decompose : constr -> 
   coq_leibniz_eq_data * (constr * constr * constr)
 
-(* Match a term of the form [(existS A P t p)] or [(existT A P t p)] *)
+(* Match a term of the form [(existT A P t p)] *)
 (* Returns associated lemmas and [A,P,t,p] *)
 val find_sigma_data_decompose : constr -> 
   coq_sigma_data * (constr * constr * constr * constr)

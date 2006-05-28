@@ -547,8 +547,7 @@ let discrHyp id gls = discrClause (onHyp id) gls
 
 let find_sigma_data s =
   match s with  
-    | Prop Pos  -> build_sigma_set ()                    (* Set *) 
-    | Type _    -> build_sigma_type ()                   (* Type *)
+    | Prop Pos  | Type _    -> build_sigma_type ()          (* Set/Type *)
     | Prop Null -> error "find_sigma_data"
 
 (* [make_tuple env sigma (rterm,rty) lind] assumes [lind] is the lesser
@@ -556,7 +555,7 @@ let find_sigma_data s =
 
    Then we build the term
 
-     [(existS A P (mkRel lind) rterm)] of type [(sigS A P)]
+     [(existT A P (mkRel lind) rterm)] of type [(sigS A P)]
 
    where [A] is the type of [mkRel lind] and [P] is [\na:A.rty{1/lind}]
  *)
@@ -687,7 +686,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
    [make_iterated_tuple sigma env (term,typ) (z,zty)] is to build the
    tuple
 
-   [existS [xn]Pn Rel(in) .. (existS [x2]P2 Rel(i2) (existS [x1]P1 Rel(i1) z))]
+   [existT [xn]Pn Rel(in) .. (existT [x2]P2 Rel(i2) (existT [x1]P1 Rel(i1) z))]
 
    where P1 is zty[i1/x1], P2 is {x1 | P1[i2/x2]} etc.
 
@@ -702,7 +701,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
    need also to construct a default value for the other branches of
    the destructor. As default value, we take a tuple of the form
 
-    [existS [xn]Pn ?n (... existS [x2]P2 ?2 (existS [x1]P1 ?1 term))]
+    [existT [xn]Pn ?n (... existT [x2]P2 ?2 (existT [x1]P1 ?1 term))]
 
    but for this we have to solve the following unification problem:
 
@@ -917,7 +916,7 @@ let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
 
    Given that dep_pair looks like:
 
-   (existS e1 (existS e2 ... (existS en en+1) ... ))
+   (existT e1 (existT e2 ... (existT en en+1) ... ))
 
    and B might contain instances of the ei, we will return the term:
 

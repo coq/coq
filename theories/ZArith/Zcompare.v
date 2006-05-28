@@ -383,7 +383,7 @@ Qed.
 (** Reverting [x ?= y] to trichotomy *)
 
 Lemma rename :
- forall (A:Set) (P:A -> Prop) (x:A), (forall y:A, x = y -> P y) -> P x.
+ forall (A:Type) (P:A -> Prop) (x:A), (forall y:A, x = y -> P y) -> P x.
 Proof.
 auto with arith. 
 Qed.

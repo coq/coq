@@ -19,42 +19,45 @@ Require Import Logic.
 (** Subsets and Sigma-types *)
 
 (** [(sig A P)], or more suggestively [{x:A | P x}], denotes the subset 
-    of elements of the Set [A] which satisfy the predicate [P].
+    of elements of the type [A] which satisfy the predicate [P].
     Similarly [(sig2 A P Q)], or [{x:A | P x & Q x}], denotes the subset 
-    of elements of the Set [A] which satisfy both [P] and [Q]. *)
+    of elements of the type [A] which satisfy both [P] and [Q]. *)
 
-Inductive sig (A:Set) (P:A -> Prop) : Set :=
-    exist : forall x:A, P x -> sig (A:=A) P.
+Inductive sig (A:Type) (P:A -> Prop) : Type :=
+    exist : forall x:A, P x -> sig P.
 
-Inductive sig2 (A:Set) (P Q:A -> Prop) : Set :=
-    exist2 : forall x:A, P x -> Q x -> sig2 (A:=A) P Q.
+Inductive sig2 (A:Type) (P Q:A -> Prop) : Type :=
+    exist2 : forall x:A, P x -> Q x -> sig2 P Q.
 
-(** [(sigS A P)], or more suggestively [{x:A & (P x)}] is a Sigma-type. 
-    It is a variant of subset where [P] is now of type [Set].
-    Similarly for [(sigS2 A P Q)], also written [{x:A & (P x) & (Q x)}]. *)
-     
-Inductive sigS (A:Set) (P:A -> Set) : Set :=
-    existS : forall x:A, P x -> sigS (A:=A) P.
+(** [(sigT A P)], or more suggestively [{x:A & (P x)}] is a Sigma-type. 
+    Similarly for [(sigT2 A P Q)], also written [{x:A & (P x) & (Q x)}]. *)
 
-Inductive sigS2 (A:Set) (P Q:A -> Set) : Set :=
-    existS2 : forall x:A, P x -> Q x -> sigS2 (A:=A) P Q.
+Inductive sigT (A:Type) (P:A -> Type) : Type :=
+    existT : forall x:A, P x -> sigT P.
+
+Inductive sigT2 (A:Type) (P Q:A -> Type) : Type :=
+    existT2 : forall x:A, P x -> Q x -> sigT2 P Q.
+
+(* Notations *)
 
 Arguments Scope sig [type_scope type_scope].
 Arguments Scope sig2 [type_scope type_scope type_scope].
-Arguments Scope sigS [type_scope type_scope].
-Arguments Scope sigS2 [type_scope type_scope type_scope].
+Arguments Scope sigT [type_scope type_scope].
+Arguments Scope sigT2 [type_scope type_scope type_scope].
 
+Notation "{ x  |  P }" := (sig (fun x => P)) : type_scope.
+Notation "{ x  |  P  &  Q }" := (sig2 (fun x => P) (fun x => Q)) : type_scope.
 Notation "{ x : A  |  P }" := (sig (fun x:A => P)) : type_scope.
 Notation "{ x : A  |  P  &  Q }" := (sig2 (fun x:A => P) (fun x:A => Q)) :
   type_scope.
-Notation "{ x : A  &  P }" := (sigS (fun x:A => P)) : type_scope.
-Notation "{ x : A  &  P  &  Q }" := (sigS2 (fun x:A => P) (fun x:A => Q)) :
+Notation "{ x : A  &  P }" := (sigT (fun x:A => P)) : type_scope.
+Notation "{ x : A  &  P  &  Q }" := (sigT2 (fun x:A => P) (fun x:A => Q)) :
   type_scope.
 
 Add Printing Let sig.
 Add Printing Let sig2.
-Add Printing Let sigS.
-Add Printing Let sigS2.
+Add Printing Let sigT.
+Add Printing Let sigT2.
 
 
 (** Projections of [sig]
@@ -67,7 +70,7 @@ Add Printing Let sigS2.
 
 Section Subset_projections.
 
-  Variable A : Set.
+  Variable A : Type.
   Variable P : A -> Prop.
 
   Definition proj1_sig (e:sig P) := match e with
@@ -82,24 +85,24 @@ Section Subset_projections.
 End Subset_projections.
 
 
-(** Projections of [sigS]
+(** Projections of [sigT]
 
     An element [x] of a sigma-type [{y:A & P y}] is a dependent pair
     made of an [a] of type [A] and an [h] of type [P a].  Then,
-    [(projS1 x)] is the first projection and [(projS2 x)] is the
-    second projection, the type of which depends on the [projS1]. *)
+    [(projT1 x)] is the first projection and [(projT2 x)] is the
+    second projection, the type of which depends on the [projT1]. *)
 
 Section Projections.
 
-  Variable A : Set.
-  Variable P : A -> Set.
+  Variable A : Type.
+  Variable P : A -> Type.
 
-  Definition projS1 (x:sigS P) : A := match x with
-                                      | existS a _ => a
+  Definition projT1 (x:sigT P) : A := match x with
+                                      | existT a _ => a
                                       end.
-  Definition projS2 (x:sigS P) : P (projS1 x) :=
-    match x return P (projS1 x) with
-    | existS _ h => h
+  Definition projT2 (x:sigT P) : P (projT1 x) :=
+    match x return P (projT1 x) with
+    | existT _ h => h
     end.
 
 End Projections.
@@ -118,7 +121,7 @@ Add Printing If sumbool.
 (** [sumor] is an option type equipped with the justification of why
     it may not be a regular value *)
 
-Inductive sumor (A:Set) (B:Prop) : Set :=
+Inductive sumor (A:Type) (B:Prop) : Type :=
   | inleft : A -> A + {B}
   | inright : B -> A + {B} 
  where "A + { B }" := (sumor A B) : type_scope.
@@ -146,12 +149,12 @@ Section Choice_lemmas.
   Qed.
 
   Lemma Choice2 :
-   (forall x:S, sigS (fun y:S' => R' x y)) ->
-   sigS (fun f:S -> S' => forall z:S, R' z (f z)).
+   (forall x:S, sigT (fun y:S' => R' x y)) ->
+   sigT (fun f:S -> S' => forall z:S, R' z (f z)).
   Proof.
     intro H.
     exists (fun z:S => match H z with
-                       | existS y _ => y
+                       | existT y _ => y
                        end).
     intro z; destruct (H z); trivial.
   Qed.
@@ -176,7 +179,7 @@ End Choice_lemmas.
  (** A result of type [(Exc A)] is either a normal value of type [A] or 
      an [error] :
 
-     [Inductive Exc [A:Set] : Set := value : A->(Exc A) | error : (Exc A)].
+     [Inductive Exc [A:Type] : Type := value : A->(Exc A) | error : (Exc A)].
 
      It is implemented using the option type. *) 
 
@@ -199,24 +202,18 @@ Qed.
 
 Hint Resolve left right inleft inright: core v62.
 
-(** Sigma-type for types in [Type] *)
+(* Compatibility *)
 
-Inductive sigT (A:Type) (P:A -> Type) : Type :=
-    existT : forall x:A, P x -> sigT (A:=A) P.
+Notation sigS := sigT (only parsing).
+Notation existS := existT (only parsing).
+Notation sigS_rect := sigT_rect (only parsing).
+Notation sigS_rec := sigT_rec (only parsing).
+Notation sigS_ind := sigT_ind (only parsing).
+Notation projS1 := projT1 (only parsing).
+Notation projS2 := projT2 (only parsing).
 
-Section projections_sigT.
-
-  Variable A : Type.
-  Variable P : A -> Type.
-
-  Definition projT1 (H:sigT P) : A := match H with
-                                      | existT x _ => x
-                                      end.
-   
-  Definition projT2 : forall x:sigT P, P (projT1 x) :=
-    fun H:sigT P => match H return P (projT1 H) with
-                    | existT x h => h
-                    end.
-
-End projections_sigT.
-
+Notation sigS2 := sigT2 (only parsing).
+Notation existS2 := existT2 (only parsing).
+Notation sigS2_rect := sigT2_rect (only parsing).
+Notation sigS2_rec := sigT2_rec (only parsing).
+Notation sigS2_ind := sigT2_ind (only parsing).

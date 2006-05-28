@@ -8,6 +8,7 @@
 
 (* $Id$ *)
 
+Require Import List.
 Require Import Peano_dec.
 Require Import Ring.
 Require Import Field_Compl.
@@ -21,8 +22,8 @@ Record Field_Theory : Type :=
    Aopp : A -> A;
    Aeq : A -> A -> bool;
    Ainv : A -> A;
-   Aminus : field_rel_option A;
-   Adiv : field_rel_option A;
+   Aminus : option (A -> A -> A);
+   Adiv : option (A -> A -> A);
    RT : Ring_Theory Aplus Amult Aone Azero Aopp Aeq;
    Th_inv_def : forall n:A, n <> Azero -> Amult (Ainv n) n = Aone}.
 
@@ -66,10 +67,10 @@ Definition eqExprA := Eval compute in eqExprA_O.
 
 (**** Generation of the multiplier ****)
 
-Fixpoint mult_of_list (e:listT ExprA) : ExprA :=
+Fixpoint mult_of_list (e:list ExprA) : ExprA :=
   match e with
-  | nilT => EAone
-  | consT e1 l1 => EAmult e1 (mult_of_list l1)
+  | nil => EAone
+  | e1 :: l1 => EAmult e1 (mult_of_list l1)
   end.
 
 Section Theory_of_fields.
@@ -191,7 +192,7 @@ Qed.
 
 (**** ExprA --> A ****)
 
-Fixpoint interp_ExprA (lvar:listT (prodT AT nat)) (e:ExprA) {struct e} :
+Fixpoint interp_ExprA (lvar:list (AT * nat)) (e:ExprA) {struct e} :
  AT :=
   match e with
   | EAzero => AzeroT
@@ -257,7 +258,7 @@ Fixpoint assoc (e:ExprA) : ExprA :=
   end.
 
 Lemma merge_mult_correct1 :
- forall (e1 e2 e3:ExprA) (lvar:listT (prodT AT nat)),
+ forall (e1 e2 e3:ExprA) (lvar:list (AT * nat)),
    interp_ExprA lvar (merge_mult (EAmult e1 e2) e3) =
    interp_ExprA lvar (EAmult e1 (merge_mult e2 e3)).
 Proof.
@@ -271,7 +272,7 @@ unfold merge_mult at 1 in |- *; fold merge_mult in |- *;
 Qed.
 
 Lemma merge_mult_correct :
- forall (e1 e2:ExprA) (lvar:listT (prodT AT nat)),
+ forall (e1 e2:ExprA) (lvar:list (AT * nat)),
    interp_ExprA lvar (merge_mult e1 e2) = interp_ExprA lvar (EAmult e1 e2).
 Proof.
 simple induction e1; auto; intros.
@@ -290,7 +291,7 @@ ring.
 Qed.
 
 Lemma assoc_mult_correct1 :
- forall (e1 e2:ExprA) (lvar:listT (prodT AT nat)),
+ forall (e1 e2:ExprA) (lvar:list (AT * nat)),
    AmultT (interp_ExprA lvar (assoc_mult e1))
      (interp_ExprA lvar (assoc_mult e2)) =
    interp_ExprA lvar (assoc_mult (EAmult e1 e2)).
@@ -302,7 +303,7 @@ rewrite <- (H e0 lvar); simpl in |- *; rewrite merge_mult_correct;
 Qed.
 
 Lemma assoc_mult_correct :
- forall (e:ExprA) (lvar:listT (prodT AT nat)),
+ forall (e:ExprA) (lvar:list (AT * nat)),
    interp_ExprA lvar (assoc_mult e) = interp_ExprA lvar e.
 Proof.
 simple induction e; auto; intros.
@@ -325,7 +326,7 @@ simpl in |- *; rewrite (H0 lvar); auto.
 Qed.
 
 Lemma merge_plus_correct1 :
- forall (e1 e2 e3:ExprA) (lvar:listT (prodT AT nat)),
+ forall (e1 e2 e3:ExprA) (lvar:list (AT * nat)),
    interp_ExprA lvar (merge_plus (EAplus e1 e2) e3) =
    interp_ExprA lvar (EAplus e1 (merge_plus e2 e3)).
 Proof.
@@ -339,7 +340,7 @@ unfold merge_plus at 1 in |- *; fold merge_plus in |- *;
 Qed.
 
 Lemma merge_plus_correct :
- forall (e1 e2:ExprA) (lvar:listT (prodT AT nat)),
+ forall (e1 e2:ExprA) (lvar:list (AT * nat)),
    interp_ExprA lvar (merge_plus e1 e2) = interp_ExprA lvar (EAplus e1 e2).
 Proof.
 simple induction e1; auto; intros.
@@ -358,7 +359,7 @@ ring.
 Qed.
 
 Lemma assoc_plus_correct :
- forall (e1 e2:ExprA) (lvar:listT (prodT AT nat)),
+ forall (e1 e2:ExprA) (lvar:list (AT * nat)),
    AplusT (interp_ExprA lvar (assoc e1)) (interp_ExprA lvar (assoc e2)) =
    interp_ExprA lvar (assoc (EAplus e1 e2)).
 Proof.
@@ -369,7 +370,7 @@ rewrite <- (H e0 lvar); simpl in |- *; rewrite merge_plus_correct;
 Qed.
 
 Lemma assoc_correct :
- forall (e:ExprA) (lvar:listT (prodT AT nat)),
+ forall (e:ExprA) (lvar:list (AT * nat)),
    interp_ExprA lvar (assoc e) = interp_ExprA lvar e.
 Proof.
 simple induction e; auto; intros.
@@ -448,7 +449,7 @@ Fixpoint distrib_main (e:ExprA) : ExprA :=
 Definition distrib (e:ExprA) : ExprA := distrib_main (distrib_EAopp e).
 
 Lemma distrib_mult_right_correct :
- forall (e1 e2:ExprA) (lvar:listT (prodT AT nat)),
+ forall (e1 e2:ExprA) (lvar:list (AT * nat)),
    interp_ExprA lvar (distrib_mult_right e1 e2) =
    AmultT (interp_ExprA lvar e1) (interp_ExprA lvar e2).
 Proof.
@@ -458,7 +459,7 @@ rewrite AmultT_sym; rewrite AmultT_AplusT_distr; rewrite (H e2 lvar);
 Qed.
 
 Lemma distrib_mult_left_correct :
- forall (e1 e2:ExprA) (lvar:listT (prodT AT nat)),
+ forall (e1 e2:ExprA) (lvar:list (AT * nat)),
    interp_ExprA lvar (distrib_mult_left e1 e2) =
    AmultT (interp_ExprA lvar e1) (interp_ExprA lvar e2).
 Proof.
@@ -480,7 +481,7 @@ rewrite distrib_mult_right_correct; simpl in |- *; apply AmultT_sym.
 Qed.
 
 Lemma distrib_correct :
- forall (e:ExprA) (lvar:listT (prodT AT nat)),
+ forall (e:ExprA) (lvar:list (AT * nat)),
    interp_ExprA lvar (distrib e) = interp_ExprA lvar e.
 Proof.
 simple induction e; intros; auto.
@@ -496,7 +497,7 @@ Qed.
 (**** Multiplication by the inverse product ****)
 
 Lemma mult_eq :
- forall (e1 e2 a:ExprA) (lvar:listT (prodT AT nat)),
+ forall (e1 e2 a:ExprA) (lvar:list (AT * nat)),
    interp_ExprA lvar a <> AzeroT ->
    interp_ExprA lvar (EAmult a e1) = interp_ExprA lvar (EAmult a e2) ->
    interp_ExprA lvar e1 = interp_ExprA lvar e2.
@@ -520,7 +521,7 @@ Definition multiply (e:ExprA) : ExprA :=
   end.
 
 Lemma multiply_aux_correct :
- forall (a e:ExprA) (lvar:listT (prodT AT nat)),
+ forall (a e:ExprA) (lvar:list (AT * nat)),
    interp_ExprA lvar (multiply_aux a e) =
    AmultT (interp_ExprA lvar a) (interp_ExprA lvar e).
 Proof.
@@ -530,7 +531,7 @@ simple induction e; simpl in |- *; intros; try rewrite merge_mult_correct;
 Qed.
 
 Lemma multiply_correct :
- forall (e:ExprA) (lvar:listT (prodT AT nat)),
+ forall (e:ExprA) (lvar:list (AT * nat)),
    interp_ExprA lvar (multiply e) = interp_ExprA lvar e.
 Proof.
   simple induction e; simpl in |- *; auto.
@@ -578,7 +579,7 @@ Fixpoint inverse_simplif (a e:ExprA) {struct e} : ExprA :=
   end.
 
 Lemma monom_remove_correct :
- forall (e a:ExprA) (lvar:listT (prodT AT nat)),
+ forall (e a:ExprA) (lvar:list (AT * nat)),
    interp_ExprA lvar a <> AzeroT ->
    interp_ExprA lvar (monom_remove a e) =
    AmultT (interp_ExprA lvar a) (interp_ExprA lvar e).
@@ -608,7 +609,7 @@ unfold monom_remove in |- *; case (eqExprA (EAvar n) (EAinv a)); intros;
 Qed.
 
 Lemma monom_simplif_rem_correct :
- forall (a e:ExprA) (lvar:listT (prodT AT nat)),
+ forall (a e:ExprA) (lvar:list (AT * nat)),
    interp_ExprA lvar a <> AzeroT ->
    interp_ExprA lvar (monom_simplif_rem a e) =
    AmultT (interp_ExprA lvar a) (interp_ExprA lvar e).
@@ -622,7 +623,7 @@ ring.
 Qed.
 
 Lemma monom_simplif_correct :
- forall (e a:ExprA) (lvar:listT (prodT AT nat)),
+ forall (e a:ExprA) (lvar:list (AT * nat)),
    interp_ExprA lvar a <> AzeroT ->
    interp_ExprA lvar (monom_simplif a e) = interp_ExprA lvar e.
 Proof.
@@ -633,7 +634,7 @@ simpl in |- *; trivial.
 Qed.
 
 Lemma inverse_correct :
- forall (e a:ExprA) (lvar:listT (prodT AT nat)),
+ forall (e a:ExprA) (lvar:list (AT * nat)),
    interp_ExprA lvar a <> AzeroT ->
    interp_ExprA lvar (inverse_simplif a e) = interp_ExprA lvar e.
 Proof.

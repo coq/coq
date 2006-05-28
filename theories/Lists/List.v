@@ -22,9 +22,9 @@ Set Implicit Arguments.
 
 Section Lists.
 
-  Variable A : Set.
+  Variable A : Type.
 
-  Inductive list : Set :=
+  Inductive list : Type :=
     | nil : list
     | cons : A -> list -> list.
 
@@ -90,7 +90,7 @@ Bind Scope list_scope with list.
 
 Section Facts.
 
-  Variable A : Set.
+  Variable A : Type.
 
 
   (** *** Genereric facts *)
@@ -168,7 +168,7 @@ Section Facts.
     (forall x y:A, {x = y} + {x <> y}) ->
     forall (a:A) (l:list A), {In a l} + {~ In a l}.
   Proof.
-    induction l as [| a0 l IHl].
+    intro H; induction l as [| a0 l IHl].
     right; apply in_nil.
     destruct (H a0 a); simpl in |- *; auto.
     destruct IHl; simpl in |- *; auto. 
@@ -332,7 +332,7 @@ Hint Resolve in_eq in_cons in_inv in_nil in_app_or in_or_app: datatypes v62.
 
 Section Elts.
 
-  Variable A : Set.
+  Variable A : Type.
 
   (*****************************)
   (** ** Nth element of a list *)
@@ -582,7 +582,7 @@ End Elts.
 
 Section ListOps.
 
-  Variable A : Set.
+  Variable A : Type.
 
   (*************************)
   (** ** Reverse           *)
@@ -988,7 +988,7 @@ End ListOps.
 (************)
 
 Section Map.
-  Variables A B : Set.
+  Variables A B : Type.
   Variable f : A -> B.
   
   Fixpoint map (l:list A) : list B :=
@@ -1071,7 +1071,7 @@ Section Map.
 
 End Map. 
 
-Lemma map_map : forall (A B C:Set)(f:A->B)(g:B->C) l, 
+Lemma map_map : forall (A B C:Type)(f:A->B)(g:B->C) l, 
   map g (map f l) = map (fun x => g (f x)) l.
 Proof.
   induction l; simpl; auto.
@@ -1079,7 +1079,7 @@ Proof.
 Qed.
 
 Lemma map_ext : 
-  forall (A B : Set)(f g:A->B), (forall a, f a = g a) -> forall l, map f l = map g l.
+  forall (A B : Type)(f g:A->B), (forall a, f a = g a) -> forall l, map f l = map g l.
 Proof.
   induction l; simpl; auto.
   rewrite H; rewrite IHl; auto.
@@ -1091,7 +1091,7 @@ Qed.
 (************************************)
 
 Section Fold_Left_Recursor.
-  Variables A B : Set.
+  Variables A B : Type.
   Variable f : A -> B -> A.
   
   Fixpoint fold_left (l:list B) (a0:A) {struct l} : A :=
@@ -1113,7 +1113,7 @@ Section Fold_Left_Recursor.
 End Fold_Left_Recursor.
 
 Lemma fold_left_length : 
-  forall (A:Set)(l:list A), fold_left (fun x _ => S x) l 0 = length l.
+  forall (A:Type)(l:list A), fold_left (fun x _ => S x) l 0 = length l.
 Proof.
   intro A.
   cut (forall (l:list A) n, fold_left (fun x _ => S x) l n = n + length l).
@@ -1129,7 +1129,7 @@ Qed.
 (************************************)
 
 Section Fold_Right_Recursor.
-  Variables A B : Set.
+  Variables A B : Type.
   Variable f : B -> A -> A.
   Variable a0 : A.
   
@@ -1141,7 +1141,7 @@ Section Fold_Right_Recursor.
 
 End Fold_Right_Recursor.
 
-  Lemma fold_right_app : forall (A B:Set)(f:A->B->B) l l' i, 
+  Lemma fold_right_app : forall (A B:Type)(f:A->B->B) l l' i, 
     fold_right f i (l++l') = fold_right f (fold_right f i l') l.
   Proof.
     induction l.
@@ -1150,7 +1150,7 @@ End Fold_Right_Recursor.
     f_equal; auto.
   Qed.
 
-  Lemma fold_left_rev_right : forall (A B:Set)(f:A->B->B) l i, 
+  Lemma fold_left_rev_right : forall (A B:Type)(f:A->B->B) l i, 
     fold_right f i (rev l) = fold_left (fun x y => f y x) l i.
   Proof.
     induction l.
@@ -1161,7 +1161,7 @@ End Fold_Right_Recursor.
   Qed.
 
   Theorem fold_symmetric :
-    forall (A:Set) (f:A -> A -> A),
+    forall (A:Type) (f:A -> A -> A),
       (forall x y z:A, f x (f y z) = f (f x y) z) ->
       (forall x y:A, f x y = f y x) ->
       forall (a0:A) (l:list A), fold_left f l a0 = fold_right f a0 l.
@@ -1187,7 +1187,7 @@ End Fold_Right_Recursor.
   (** [(list_power x y)] is [y^x], or the set of sequences of elts of [y]
       indexed by elts of [x], sorted in lexicographic order. *)
 
-  Fixpoint list_power (A B:Set)(l:list A) (l':list B) {struct l} :
+  Fixpoint list_power (A B:Type)(l:list A) (l':list B) {struct l} :
     list (list (A * B)) :=
     match l with
       | nil => cons nil nil
@@ -1202,7 +1202,7 @@ End Fold_Right_Recursor.
   (*************************************)
 
   Section Bool. 
-    Variable A : Set.
+    Variable A : Type.
     Variable f : A -> bool.
 
   (** find whether a boolean function can be satisfied by an 
@@ -1301,7 +1301,7 @@ End Fold_Right_Recursor.
   (******************************************************)
 
   Section ListPairs.
-    Variables A B : Set.
+    Variables A B : Type.
     
   (** [split] derives two lists from a list of pairs *)
 
@@ -1495,7 +1495,7 @@ End Fold_Right_Recursor.
 (******************************)
 
 Section length_order.
-  Variable A : Set.
+  Variable A : Type.
 
   Definition lel (l m:list A) := length l <= length m.
 
@@ -1548,7 +1548,7 @@ Hint Resolve lel_refl lel_cons_cons lel_cons lel_nil lel_nil nil_cons:
 
 Section SetIncl.
 
-  Variable A : Set.
+  Variable A : Type.
 
   Definition incl (l m:list A) := forall a:A, In a l -> In a m.
   Hint Unfold incl.
@@ -1617,7 +1617,7 @@ Hint Resolve incl_refl incl_tl incl_tran incl_appl incl_appr incl_cons
 
 Section Cutting.
 
-  Variable A : Set.
+  Variable A : Type.
 
   Fixpoint firstn (n:nat)(l:list A) {struct n} : list A := 
     match n with 
@@ -1654,7 +1654,7 @@ End Cutting.
 
 Section ReDun.
 
-  Variable A : Set.
+  Variable A : Type.
   
   Inductive NoDup : list A -> Prop := 
     | NoDup_nil : NoDup nil 
@@ -1777,5 +1777,3 @@ Hint Rewrite <-
 
 Ltac simpl_list := autorewrite with list.
 Ltac ssimpl_list := autorewrite with list using simpl.
-
-

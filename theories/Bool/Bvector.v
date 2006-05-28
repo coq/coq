@@ -46,9 +46,9 @@ Une fonction binaire sur A génère une fonction des couple de vecteurs
 de taille n dans les vecteurs de taille n en appliquant f terme à terme.
 *)
 
-Variable A : Set.
+Variable A : Type.
 
-Inductive vector : nat -> Set :=
+Inductive vector : nat -> Type :=
   | Vnil : vector 0
   | Vcons : forall (a:A) (n:nat), vector n -> vector (S n).
 
@@ -59,7 +59,7 @@ Defined.
 
 Definition Vtail : forall n:nat, vector (S n) -> vector n.
 Proof.
-	intros n v; inversion v; exact H0.
+	intros n v; inversion v as [|_ n0 H0 H1]; exact H0.
 Defined.
 
 Definition Vlast : forall n:nat, vector (S n) -> A.
@@ -68,7 +68,7 @@ Proof.
 	inversion v.
 	exact a.
 
-	inversion v.
+	inversion v as [| n0 a H0 H1].
 	exact (f H0).
 Defined.
 
@@ -85,7 +85,7 @@ Proof.
 	induction n as [| n f]; intro v.
 	exact Vnil.
 
-	inversion v.
+	inversion v as [| a n0 H0 H1].
 	exact (Vcons a n (f H0)).
 Defined.
 
@@ -94,7 +94,7 @@ Proof.
 	induction n as [| n f]; intros a v.
 	exact (Vcons a 0 v).
 
-	inversion v.
+	inversion v as [| a0 n0 H0 H1 ].
 	exact (Vcons a (S n) (f a H0)).
 Defined.
 
@@ -104,7 +104,7 @@ Proof.
 	inversion v.
 	exact (Vcons a 1 v).
 
-	inversion v.
+	inversion v as [| a n0 H0 H1 ].
 	exact (Vcons a (S (S n)) (f H0)).
 Defined.
 
@@ -128,7 +128,7 @@ Proof.
 	induction n as [| n f]; intros p v v0.
 	simpl in |- *; exact v0.
 
-	inversion v.
+	inversion v as [| a n0 H0 H1].
 	simpl in |- *; exact (Vcons a (n + p) (f p H0 v0)).
 Defined.
 
@@ -139,7 +139,7 @@ Proof.
 	induction n as [| n g]; intro v.
 	exact Vnil.
 
-	inversion v.
+	inversion v as [| a n0 H0 H1].
 	exact (Vcons (f a) n (g H0)).
 Defined.
 
@@ -150,15 +150,15 @@ Proof.
 	induction n as [| n h]; intros v v0.
 	exact Vnil.
 
-	inversion v; inversion v0.
+	inversion v as [| a n0 H0 H1]; inversion v0 as [| a0 n1 H2 H3].
 	exact (Vcons (g a a0) n (h H0 H2)).
 Defined.
 
 Definition Vid : forall n:nat, vector n -> vector n.
 Proof.
-destruct n; intros.
+destruct n; intro X.
 exact Vnil.
-exact (Vcons (Vhead _ H) _ (Vtail _ H)).
+exact (Vcons (Vhead _ X) _ (Vtail _ X)).
 Defined.
 
 Lemma Vid_eq : forall (n:nat) (v:vector n), v=(Vid n v).

@@ -20,32 +20,6 @@ Require Export Logic.
 
 Definition notT (A:Type) := A -> False.
 
-(** Conjunction of types in [Type] *)
-
-Inductive prodT (A B:Type) : Type :=
-    pairT : A -> B -> prodT A B.
-
-Section prodT_proj.
-
-  Variables A B : Type.
-
-  Definition fstT (H:prodT A B) := match H with
-                                   | pairT x _ => x
-                                   end.
-  Definition sndT (H:prodT A B) := match H with
-                                   | pairT _ y => y
-                                   end.
-
-End prodT_proj.
-
-Definition prodT_uncurry (A B C:Type) (f:prodT A B -> C) 
-  (x:A) (y:B) : C := f (pairT x y).
-
-Definition prodT_curry (A B C:Type) (f:A -> B -> C) 
-  (p:prodT A B) : C := match p with
-                       | pairT x y => f x y
-                       end.
-
 (** Properties of [identity] *)
 
 Section identity_is_a_congruence.
