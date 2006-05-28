@@ -164,7 +164,7 @@ let instantiate_inductive_with_param_levels env ar mip paramtyps =
   let subst = make_subst env ar.mind_param_levels args in
   sort_of_instantiated_universe mip subst ar.mind_level
 
-let type_of_applied_inductive env mip paramtyps =
+let type_of_inductive_knowing_parameters env mip paramtyps =
   match mip.mind_arity with
   | Monomorphic s ->
       s.mind_user_arity

@@ -245,16 +245,28 @@ let judge_of_cast env cj k tj =
 
 (* Inductive types. *)
 
-let judge_of_applied_inductive env ind jl =
+(* The type is parametric over the uniform parameters whose conclusion
+   is in Type; to enforce the internal constraints between the
+   parameters and the instances of Type occurring in the type of the
+   constructors, we use the level variables _statically_ assigned to
+   the conclusions of the parameters as mediators: e.g. if a parameter
+   has conclusion Type(alpha), static constraints of the form alpha<=v
+   exist between alpha and the Type's occurring in the constructor
+   types; when the parameters is finally instantiated by a term of
+   conclusion Type(u), then the constraints u<=alpha is computed in
+   the App case of execute; from this constraints, the expected
+   dynamic constraints of the form u<=v are enforced *)
+
+let judge_of_inductive_knowing_parameters env ind jl =
   let c = mkInd ind in
   let (mib,mip) = lookup_mind_specif env ind in
   check_args env c mib.mind_hyps;
   let paramstyp = Array.map (fun j -> j.uj_type) jl in
-  let t = Inductive.type_of_applied_inductive env mip paramstyp in
+  let t = Inductive.type_of_inductive_knowing_parameters env mip paramstyp in
   make_judge c t
 
 let judge_of_inductive env ind =
-  judge_of_applied_inductive env ind [||]
+  judge_of_inductive_knowing_parameters env ind [||]
 
 (* Constructors. *)
 
@@ -340,7 +352,7 @@ let rec execute env cstr cu =
 	let (j,cu2) =
 	  if isInd f then
 	    (* Sort-polymorphism of inductive types *)
-	    judge_of_applied_inductive env (destInd f) jl, cu1
+	    judge_of_inductive_knowing_parameters env (destInd f) jl, cu1
 	  else
 	    execute env f cu1
 	in

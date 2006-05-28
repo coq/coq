@@ -34,5 +34,5 @@ val get_assumption_of : env -> evar_map -> constr -> types
 (* Makes an unsafe judgment from a constr *)
 val get_judgment_of : env -> evar_map -> constr -> unsafe_judgment
 
-val type_of_applied_inductive : env -> evar_map -> inductive -> 
+val type_of_inductive_knowing_parameters : env -> evar_map -> inductive -> 
   constr array -> types

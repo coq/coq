@@ -164,8 +164,8 @@ let small_unit constrsinfos =
 *)   
 
 let inductive_levels arities inds =
-  let levels = Array.map (function _,_,Type u -> Some u | _ -> None) arities in
-  let cstrs_levels = Array.map (fun (_,_,_,_,_,lev) -> lev) inds in
+  let levels = Array.map pi3 arities in
+  let cstrs_levels = Array.map (fun (_,_,_,_,lev) -> lev) inds in
   (* Take the transitive closure of the system of constructors *)
   (* level constraints and remove the recursive dependencies *)
   solve_constraints_system levels cstrs_levels
@@ -217,7 +217,12 @@ let typecheck_inductive env mie =
 	 let cst = Constraint.union cst cst2 in
 	 let id = ind.mind_entry_typename in
 	 let env_ar' = push_rel (Name id, None, full_arity) env_ar in
-	 let lev = snd (dest_arity env_params arity.utj_val) in
+	 let lev =
+	   (* Decide that if the conclusion is not explicitly Type *)
+	   (* then the inductive type is not polymorphic *)
+	   match kind_of_term (snd (decompose_prod_assum arity.utj_val)) with
+	   | Sort (Type u) -> Some u
+	   | _ -> None in
          (cst,env_ar',(id,full_arity,lev)::l))
       (cst1,env,[])
       mie.mind_entry_inds in
@@ -227,11 +232,11 @@ let typecheck_inductive env mie =
   (* Now, we type the constructors (without params) *)
   let inds,cst =
     List.fold_right2
-      (fun ind (id,full_arity,_) (inds,cst) ->
+      (fun ind arity_data (inds,cst) ->
 	 let (info,lc',cstrs_univ,cst') =
 	   infer_constructor_packet env_arities params ind.mind_entry_lc in
 	 let consnames = ind.mind_entry_consnames in
-	 let ind' = (id,full_arity,consnames,info,lc',cstrs_univ) in
+	 let ind' = (arity_data,consnames,info,lc',cstrs_univ) in
 	 (ind'::inds, Constraint.union cst cst'))
       mie.mind_entry_inds
       arity_list
@@ -249,23 +254,25 @@ let typecheck_inductive env mie =
 
   (* Compute/check the sorts of the inductive types *)
   let ind_min_levels = inductive_levels arities inds in
-  let inds =
-    array_map2 (fun (id,full_arity,cn,info,lc,_) lev ->
+  let inds, cst =
+    array_fold_map2' (fun ((id,full_arity,ar_level),cn,info,lc,_) lev cst ->
       let sign, s = dest_arity env full_arity in
-      let status = match s with
-      | Type _ ->
+      let status,cst = match s with
+      | Type _ when ar_level <> None (* Explicitly polymorphic *) ->
 	  (* The polymorphic level is a function of the level of the *)
 	  (* conclusions of the parameters *)
-	  Inr (param_ccls, lev)
+	  Inr (param_ccls, lev), cst
+      | Type u (* Not an explicit occurrence of Type *) ->
+	  Inl (info,full_arity,s), enforce_geq u lev cst
       | Prop Pos when engagement env <> Some ImpredicativeSet ->
 	  (* Predicative set: check that the content is indeed predicative *)
 	  if not (is_empty_univ lev) & not (is_base_univ lev) then
 	    error "Large non-propositional inductive types must be in Type";
-	  Inl (info,full_arity,s)
+	  Inl (info,full_arity,s), cst
       | Prop _ ->
-	  Inl (info,full_arity,s) in
-      (id,cn,lc,(sign,status)))
-      inds ind_min_levels in
+	  Inl (info,full_arity,s), cst in
+      (id,cn,lc,(sign,status)),cst)
+      inds ind_min_levels cst in
 
   (env_arities, params, inds, cst)
 

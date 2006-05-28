@@ -75,7 +75,7 @@ val check_cofix : env -> cofixpoint -> unit
 
 (*s Support for sort-polymorphic inductive types *)
 
-val type_of_applied_inductive :
+val type_of_inductive_knowing_parameters :
   env -> one_inductive_body -> types array -> types
 
 val set_inductive_level : env -> sorts -> types -> types

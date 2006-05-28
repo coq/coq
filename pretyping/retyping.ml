@@ -74,7 +74,7 @@ let typeur sigma metamap =
     | Fix ((_,i),(_,tys,_)) -> tys.(i)
     | CoFix (i,(_,tys,_)) -> tys.(i)
     | App(f,args) when isInd f ->
-	let t = type_of_applied_inductive env (destInd f) args in
+	let t = type_of_inductive_knowing_parameters env (destInd f) args in
         strip_outer_cast (subst_type env sigma t (Array.to_list args))
     | App(f,args) ->
         strip_outer_cast
@@ -98,7 +98,7 @@ let typeur sigma metamap =
 	  | Prop Null, (Type _ as s) -> s
 	  | Type u1, Type u2 -> Type (Univ.sup u1 u2))
     | App(f,args) when isInd f ->
-	let t = type_of_applied_inductive env (destInd f) args in
+	let t = type_of_inductive_knowing_parameters env (destInd f) args in
         sort_of_atomic_type env sigma t args
     | App(f,args) -> sort_of_atomic_type env sigma (type_of env f) args
     | Lambda _ | Fix _ | Construct _ ->
@@ -117,17 +117,17 @@ let typeur sigma metamap =
         anomaly "sort_of: Not a type (1)"
     | _ -> family_of_sort (decomp_sort env sigma (type_of env t))
 
-  and type_of_applied_inductive env ind args =
+  and type_of_inductive_knowing_parameters env ind args =
     let (_,mip) = lookup_mind_specif env ind in
     let argtyps = Array.map (fun c -> nf_evar sigma (type_of env c)) args in
-    Inductive.type_of_applied_inductive env mip argtyps
+    Inductive.type_of_inductive_knowing_parameters env mip argtyps
 
-  in type_of, sort_of, sort_family_of, type_of_applied_inductive
+  in type_of, sort_of, sort_family_of, type_of_inductive_knowing_parameters
 
 let get_type_of env sigma c = let f,_,_,_ = typeur sigma [] in f env c
 let get_sort_of env sigma t = let _,f,_,_ = typeur sigma [] in f env t
 let get_sort_family_of env sigma c = let _,_,f,_ = typeur sigma [] in f env c
-let type_of_applied_inductive env sigma ind args =
+let type_of_inductive_knowing_parameters env sigma ind args =
   let _,_,_,f = typeur sigma [] in f env ind args
 
 let get_type_of_with_meta env sigma metamap = 

@@ -415,7 +415,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	  match kind_of_term resj.uj_val with
 	  | App (f,args) when isInd f ->
 	      let sigma = evars_of !isevars in
-	      let t = Retyping.type_of_applied_inductive env sigma (destInd f) args in
+	      let t = Retyping.type_of_inductive_knowing_parameters env sigma (destInd f) args in
 	      let s = snd (splay_arity env sigma t) in
 	      on_judgment_type (set_inductive_level env s) resj
 		(* Rem: no need to send sigma: no head evar, it's an arity *)

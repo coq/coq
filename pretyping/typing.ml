@@ -92,7 +92,7 @@ let rec execute env evd cstr =
 	let j =
 	if isInd f then
 	  (* Sort-polymorphism of inductive types *)
-	  judge_of_applied_inductive env (destInd f)
+	  judge_of_inductive_knowing_parameters env (destInd f)
 	    (jv_nf_evar (evars_of evd) jl)
 	else
 	  execute env evd f

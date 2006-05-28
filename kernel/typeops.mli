@@ -78,7 +78,7 @@ val judge_of_cast :
 
 val judge_of_inductive : env -> inductive -> unsafe_judgment
 
-val judge_of_applied_inductive : 
+val judge_of_inductive_knowing_parameters : 
   env -> inductive -> unsafe_judgment array -> unsafe_judgment
 
 val judge_of_constructor : env -> constructor -> unsafe_judgment
