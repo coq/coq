@@ -4,4 +4,4 @@
 # in order to have all the facilities of dev/Makefile.dir
 
 TOPDIR=../..
-include $(TOPDIR)/dev/Makefile.dir
+include $(TOPDIR)/dev/tools/Makefile.dir
