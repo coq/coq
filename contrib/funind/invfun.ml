@@ -88,18 +88,9 @@ let gen_fargs fargs : tactic =
       g 
       
 
-let invfun (hypname:identifier) (fid:identifier) : tactic=
+let invfun (hypname:identifier) fname princ : tactic=
   fun g -> 
     let nprod_goal = nb_prod (pf_concl g) in
-    let f_ind_id =  
-      (
-	Indrec.make_elimination_ident
-	  fid 
-	  (Tacticals.elimination_sort_of_goal g)
-      )
-    in
-    let fname = const_of_id fid in
-    let princ = const_of_id f_ind_id in
     let princ_info = 
       let princ_type = 
 	(try (match (Global.lookup_constant princ) with

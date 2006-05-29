@@ -13,19 +13,14 @@ open Topconstr
 open Indfun_common 
 open Indfun
 open Genarg
-
-TACTIC EXTEND newfuninv
-   [ "functional" "inversion" ident(hyp) ident(fname) ] -> 
-     [
-       Invfun.invfun hyp fname
-     ]
-END
+open Pcoq
 
 
 let pr_fun_ind_using  prc _ _ opt_c = 
   match opt_c with 
     | None -> mt ()
     | Some c -> spc () ++ hov 2 (str "using" ++ spc () ++ prc c)
+
 
 ARGUMENT EXTEND fun_ind_using
   TYPED AS constr_opt
@@ -34,11 +29,33 @@ ARGUMENT EXTEND fun_ind_using
 | [ ] -> [ None ]
 END
 
+
+TACTIC EXTEND newfuninv
+   [ "functional" "inversion" ident(hyp) ident(fname) fun_ind_using(princl)] -> 
+     [
+       fun g -> 
+	 let fconst = const_of_id fname in
+	 let princ = 
+	   match princl with 
+	     | None -> 
+		 let f_ind_id =  
+		   (
+		     Indrec.make_elimination_ident
+		       fname 
+		       (Tacticals.elimination_sort_of_goal g)
+		   )
+	       in
+		 let princ = const_of_id f_ind_id in
+		 princ
+	     | Some princ -> destConst princ
+	 in       
+	 Invfun.invfun hyp fconst princ g
+     ]
+END
+
+
 let pr_intro_as_pat prc _ _ pat = 
   str "as" ++ spc () ++ pr_intro_pattern pat
-
-
-
 
 
 ARGUMENT EXTEND with_names TYPED AS intro_pattern PRINTED BY pr_intro_as_pat
