@@ -47,6 +47,10 @@ type 'a bindings =
 
 type 'a with_bindings = 'a * 'a bindings
 
+type cast_type =
+  | CastConv of cast_kind
+  | CastCoerce (* Cast to a base type (eg, an underlying inductive type) *)
+
 type rawconstr = 
   | RRef of (loc * global_reference)
   | RVar of (loc * identifier)
@@ -64,7 +68,7 @@ type rawconstr =
       rawconstr array * rawconstr array
   | RSort of loc * rawsort
   | RHole of (loc * hole_kind)
-  | RCast of loc * rawconstr * cast_kind * rawconstr
+  | RCast of loc * rawconstr * cast_type * rawconstr
   | RDynamic of loc * Dyn.t
 
 and rawdecl = name * rawconstr option * rawconstr

@@ -374,7 +374,7 @@ let rec detype isgoal avoid env t =
 	  RVar (dl, id))
     | Sort s -> RSort (dl,detype_sort s)
     | Cast (c1,k,c2) ->
-	RCast(dl,detype isgoal avoid env c1, k,
+	RCast(dl,detype isgoal avoid env c1, CastConv k,
               detype isgoal avoid env c2)
     | Prod (na,ty,c) -> detype_binder isgoal BProd avoid env na ty c
     | Lambda (na,ty,c) -> detype_binder isgoal BLambda avoid env na ty c

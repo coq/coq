@@ -30,10 +30,7 @@ open Rawterm
 open Evarconv
 open Pattern
 open Dyn
-
-type typing_constraint = OfType of types option | IsType
-type var_map = (identifier * unsafe_judgment) list
-type unbound_ltac_var_map = (identifier * identifier option) list
+open Pretyping
 
 (************************************************************************)
 (* This concerns Cases *)
@@ -41,102 +38,7 @@ open Declarations
 open Inductive
 open Inductiveops
 
-(************************************************************************)
-
-(* To embed constr in rawconstr *)
-let ((constr_in : constr -> Dyn.t),
-     (constr_out : Dyn.t -> constr)) = create "constr"
-
-(** Miscellaneous interpretation functions *)
-  
-let interp_sort = function
-  | RProp c -> Prop c
-  | RType _ -> new_Type_sort ()
-      
-let interp_elimination_sort = function
-  | RProp Null -> InProp
-  | RProp Pos  -> InSet
-  | RType _ -> InType
-
-module type S = 
-sig
-
-  module Cases : Cases.S
-  
-  (* Allow references to syntaxically inexistent variables (i.e., if applied on an inductive) *)
-  val allow_anonymous_refs : bool ref
-
-  (* Generic call to the interpreter from rawconstr to open_constr, leaving
-     unresolved holes as evars and returning the typing contexts of
-     these evars. Work as [understand_gen] for the rest. *)
-  
-  val understand_tcc :
-    evar_map -> env -> ?expected_type:types -> rawconstr -> open_constr
-
-  val understand_tcc_evars :
-    evar_defs ref -> env -> typing_constraint -> rawconstr -> constr
-    
-  (* More general entry point with evars from ltac *)
-    
-  (* Generic call to the interpreter from rawconstr to constr, failing
-     unresolved holes in the rawterm cannot be instantiated.
-     
-     In [understand_ltac sigma env ltac_env constraint c],
-     
-     sigma : initial set of existential variables (typically dependent subgoals)
-     ltac_env : partial substitution of variables (used for the tactic language)
-     constraint : tell if interpreted as a possibly constrained term or a type 
-  *)
-    
-  val understand_ltac :
-    evar_map -> env -> var_map * unbound_ltac_var_map ->
-    typing_constraint -> rawconstr -> evar_defs * constr
-    
-  (* Standard call to get a constr from a rawconstr, resolving implicit args *)
-    
-  val understand : evar_map -> env -> ?expected_type:Term.types ->
-    rawconstr -> constr
-    
-  (* Idem but the rawconstr is intended to be a type *)
-    
-  val understand_type : evar_map -> env -> rawconstr -> constr
-    
-  (* A generalization of the two previous case *)
-    
-  val understand_gen : typing_constraint -> evar_map -> env -> 
-    rawconstr -> constr
-    
-  (* Idem but returns the judgment of the understood term *)
-    
-  val understand_judgment : evar_map -> env -> rawconstr -> unsafe_judgment
-
-  (* Idem but do not fail on unresolved evars *)
-
-  val understand_judgment_tcc : evar_defs ref -> env -> rawconstr -> unsafe_judgment
-
-  (*i*)
-  (* Internal of Pretyping...
-   * Unused outside, but useful for debugging
-   *)
-  val pretype : 
-    type_constraint -> env -> evar_defs ref -> 
-    var_map * (identifier * identifier option) list ->
-    rawconstr -> unsafe_judgment
-    
-  val pretype_type : 
-    val_constraint -> env -> evar_defs ref ->
-    var_map * (identifier * identifier option) list ->
-    rawconstr -> unsafe_type_judgment
-
-  val pretype_gen :
-    evar_defs ref -> env -> 
-    var_map * (identifier * identifier option) list ->
-    typing_constraint -> rawconstr -> constr
-
-    (*i*)
-end
-
-module Pretyping_F (Coercion : Coercion.S) = struct
+module SubtacPretyping_F (Coercion : Coercion.S) = struct
 
   module Cases = Cases.Cases_F(Coercion)
 
@@ -363,9 +265,17 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	inh_conv_coerce_to_tycon loc env isevars (pretype_sort s) tycon
 
     | RApp (loc,f,args) -> 
-	let fj = pretype empty_tycon env isevars lvar f in
+	let length = List.length args in	 
+	let ftycon = 
+	  match tycon with
+	      None -> None
+	    | Some (None, ty) -> mk_abstr_tycon length ty
+	    | Some (Some (init, cur), ty) ->
+		Some (Some (length + init, length + cur), ty)
+	in
+	let fj = pretype ftycon env isevars lvar f in
  	let floc = loc_of_rawconstr f in
-	let rec apply_rec env n resj = function
+	let rec apply_rec env n resj tycon = function
 	  | [] -> resj
 	  | c::rest ->
 	      let argloc = loc_of_rawconstr c in
@@ -376,17 +286,33 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		      let hj = pretype (mk_tycon c1) env isevars lvar c in
 		      let value, typ = applist (j_val resj, [j_val hj]), subst1 hj.uj_val c2 in
 		      let typ' = nf_isevar !isevars typ in
+		      let tycon = 
+			option_map 
+			  (fun (abs, ty) ->
+			     match abs with
+				 None ->
+				   isevars := Coercion.inh_conv_coerces_to loc env !isevars typ'
+				     (abs, ty);
+				   (abs, ty)
+			       | Some (init, cur) ->
+				   isevars := Coercion.inh_conv_coerces_to loc env !isevars typ' 
+				     (abs, ty);
+				   (Some (init, pred cur), ty))
+			  tycon
+		      in 
 			apply_rec env (n+1) 
 			  { uj_val = nf_isevar !isevars value;
-			    uj_type = typ' }
-			  rest
+			    uj_type = nf_isevar !isevars typ' }
+			  (option_map (fun (abs, c) -> abs, nf_isevar !isevars c) tycon) rest
+
 		  | _ ->
 		      let hj = pretype empty_tycon env isevars lvar c in
 			error_cant_apply_not_functional_loc 
 			  (join_loc floc argloc) env (evars_of !isevars)
 	      		  resj [hj]
 	in
-	let resj = j_nf_evar (evars_of !isevars) (apply_rec env 1 fj args) in
+	let ftycon = option_map (lift_abstr_tycon_type (-1)) ftycon in
+	let resj = j_nf_evar (evars_of !isevars) (apply_rec env 1 fj ftycon args) in
 	let resj =
 	  match kind_of_term resj.uj_val with
 	  | App (f,args) when isInd f ->
@@ -710,4 +636,4 @@ module Pretyping_F (Coercion : Coercion.S) = struct
       Evd.evars_of ev, t
 end
 
-module Default : S = Pretyping_F(Coercion.Default)
+module Default : S = SubtacPretyping_F(Coercion.Default)

@@ -301,6 +301,7 @@ SUBTACCMO=\
 	contrib/subtac/context.cmo \
 	contrib/subtac/subtac_errors.cmo \
 	contrib/subtac/subtac_coercion.cmo \
+	contrib/subtac/subtac_pretyping_F.cmo \
 	contrib/subtac/subtac_pretyping.cmo \
 	contrib/subtac/subtac_interp_fixpoint.cmo \
 	contrib/subtac/subtac_command.cmo \

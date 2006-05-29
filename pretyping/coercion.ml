@@ -35,6 +35,12 @@ module type S = sig
      type a sort; it fails if no coercion is applicable *)
   val inh_coerce_to_sort : loc ->
     env -> evar_defs -> unsafe_judgment -> evar_defs * unsafe_type_judgment
+
+  (* [inh_coerce_to_base env isevars j] coerces [j] to its base type; i.e. it
+     inserts a coercion into [j], if needed, in such a way it gets as
+     type its base type (the notion depends on the coercion system) *)
+  val inh_coerce_to_base : loc ->
+    env -> evar_defs -> unsafe_judgment -> evar_defs * unsafe_judgment
     
   (* [inh_conv_coerce_to loc env isevars j t] coerces [j] to an object of type 
      [t]; i.e. it inserts a coercion into [j], if needed, in such a way [t] and
@@ -142,6 +148,8 @@ module Default = struct
 	      (isevars',{ utj_val = j.uj_val; utj_type = s })
 	| _ ->
 	    inh_tosort_force loc env isevars j
+
+  let inh_coerce_to_base loc env isevars j = (isevars, j)
 
   let inh_coerce_to_fail env isevars c1 v t =
     let v', t' =

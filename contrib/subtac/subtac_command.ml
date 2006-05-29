@@ -55,8 +55,8 @@ let interp_gen kind isevars env
                ?(impls=([],[])) ?(allow_soapp=false) ?(ltacvars=([],[]))
                c =
   let c' = Constrintern.intern_gen (kind=IsType) ~impls ~allow_soapp ~ltacvars (Evd.evars_of !isevars) env c in
-  let c' = Subtac_interp_fixpoint.rewrite_cases env c' in
-    msgnl (str "Pretyping " ++ my_print_constr_expr c);
+  let c' = Subtac_utils.rewrite_cases env c' in
+    trace (str "Pretyping " ++ my_print_constr_expr c);
   let c' = SPretyping.pretype_gen isevars env ([],[]) kind c' in
     evar_nf isevars c'
     
@@ -339,13 +339,13 @@ let build_recursive (lnameargsardef:(fixpoint_expr * decl_notation) list) boxed 
       let evm = Evd.evars_of isevars in
       let _, _, typ = arrec.(i) in
       let id = namerec.(i) in
-      let evars_def, evars_typ, evars = Eterm.eterm_term evm def (Some typ) in 	
       (* Generalize by the recursive prototypes  *)
       let def = 
 	Termops.it_mkNamedLambda_or_LetIn def (Environ.named_context rec_sign)
       and typ = 
 	Termops.it_mkNamedProd_or_LetIn typ (Environ.named_context rec_sign) 
       in
+      let evars_def, evars_typ, evars = Eterm.eterm_term evm def (Some typ) in 	
       (*let evars_typ = match evars_typ with Some t -> t | None -> assert(false) in*)
       (*let fi = id_of_string (string_of_id id ^ "_evars") in*)
       (*let ce = 

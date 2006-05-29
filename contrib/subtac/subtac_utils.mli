@@ -83,3 +83,5 @@ val and_tac : (identifier * 'a * constr * Proof_type.tactic) list ->
   ((constr -> (identifier * 'a * constr * constr) list) -> Tacexpr.declaration_hook) -> unit
 
 val destruct_ex : constr -> constr -> constr list
+
+val rewrite_cases : Environ.env -> Rawterm.rawconstr -> Rawterm.rawconstr

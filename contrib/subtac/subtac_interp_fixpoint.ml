@@ -110,7 +110,7 @@ let rewrite_fixpoint env l (f, decl) =
 	    let body =
 	      (* cast or we will loose some info at pretyping time as body
 		 is a function *)
-	      CCast (dummy_loc, body,  DEFAULTcast, typ) 
+	      CCast (dummy_loc, body,  CastConv DEFAULTcast, typ) 
 	    in
 	    let body' = (* body abstracted by rec call *)
 	      mkLambdaC ([(dummy_loc, Name id)], internal_type, body)
@@ -151,69 +151,3 @@ let rewrite_fixpoint env l (f, decl) =
 			 Ppconstr.pr_constr_expr body')
 	  in (id, (succ n, ro), bl', typ, body'), decl
 
-let list_mapi f = 
-  let rec aux i = function 
-      hd :: tl -> f i hd :: aux (succ i) tl 
-    | [] -> []
-  in aux 0
-
-let rewrite_cases_aux (loc, po, tml, eqns) =
-  let tml = list_mapi (fun i (c, (n, opt)) -> c, 
-		       ((match n with
-			    Name id -> (match c with
-					  | RVar (_, id') when id = id' ->
-					      Name (id_of_string (string_of_id id ^ "'"))
-					  | _ -> n)
-			  | Anonymous -> Name (id_of_string ("x" ^ string_of_int i))),
-			opt)) tml 
-  in
-  let mkHole = RHole (dummy_loc, InternalHole) in
-  let mkeq c n = RApp (dummy_loc, RRef (dummy_loc, (Lazy.force eqind_ref)),
-		       [mkHole; c; n])
-  in
-  let eqs_types = 
-    List.map
-      (fun (c, (n, _)) ->
-	 let id = match n with Name id -> id | _ -> assert false in
-	 let heqid = id_of_string ("Heq" ^ string_of_id id) in
-	   Name heqid, mkeq c (RVar (dummy_loc, id)))
-      tml
-  in
-  let po = 
-    List.fold_right
-      (fun (n,t) acc ->
-	 RProd (dummy_loc, Anonymous, t, acc))
-      eqs_types (match po with 
-		     Some e -> e
-		   | None -> mkHole)
-  in
-  let eqns =   
-    List.map (fun (loc, idl, cpl, c) ->
-		let c' = 
-		  List.fold_left 
-		    (fun acc (n, t) ->
-		       RLambda (dummy_loc, n, mkHole, acc))
-		    c eqs_types
-		in (loc, idl, cpl, c'))
-      eqns
-  in
-  let mk_refl_equal c = RApp (dummy_loc, RRef (dummy_loc, Lazy.force refl_equal_ref),
-			      [mkHole; c])
-  in
-  let refls = List.map (fun (c, _) -> mk_refl_equal c) tml in
-  let case = RCases (loc,Some po,tml,eqns) in
-  let app = RApp (dummy_loc, case, refls) in
-    app
-
-let rec rewrite_cases c = 
-  match c with 
-      RCases _ -> let c' = map_rawconstr rewrite_cases c in
-	(match c' with 
-	   | RCases (x, y, z, w) -> rewrite_cases_aux (x,y,z,w)
-	   | _ -> assert(false))
-    | _ -> map_rawconstr rewrite_cases c
-	  
-let rewrite_cases env c =
-  let c' = rewrite_cases c in
-  let _ = trace (str "Rewrote cases: " ++ spc () ++ my_print_rawconstr env c') in
-    c'

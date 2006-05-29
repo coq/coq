@@ -39,7 +39,7 @@ open Subtac_errors
 open Context
 open Eterm
 
-module Pretyping = Pretyping.Pretyping_F(Subtac_coercion.Coercion)
+module Pretyping = Subtac_pretyping_F.SubtacPretyping_F(Subtac_coercion.Coercion)
 
 open Pretyping
 
@@ -128,6 +128,7 @@ let subtac_process env isevars id l c tycon =
 	    mk_tycon coqt
   in    
   let c = coqintern !isevars env_binders c in
+  let c = Subtac_utils.rewrite_cases env c in
   let _ = trace (str "Internalized term: " ++ my_print_rawconstr env c) in
   let coqc, ctyp = interp env_binders isevars c tycon in
   let _ = trace (str "Interpreted term: " ++ my_print_constr env_binders coqc ++ spc () ++

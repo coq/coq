@@ -57,7 +57,7 @@ let natind = lazy (init_constant ["Init"; "Datatypes"] "nat")
 let intind = lazy (init_constant ["ZArith"; "binint"] "Z")
 let existSind = lazy (init_constant ["Init"; "Specif"] "sigS")
   
-let existS = lazy (build_sigma_set ())
+let existS = lazy (build_sigma_type ())
 
 let prod = lazy (build_prod ())
 
@@ -244,3 +244,79 @@ let destruct_ex ext ex =
   in aux ex ext
 
 
+let list_mapi f = 
+  let rec aux i = function 
+      hd :: tl -> f i hd :: aux (succ i) tl 
+    | [] -> []
+  in aux 0
+
+open Rawterm
+
+let rewrite_cases_aux (loc, po, tml, eqns) =
+  let tml' = list_mapi (fun i (c, (n, opt)) -> c, 
+		       ((match n with
+			    Name id -> (match c with
+					  | RVar (_, id') when id = id' ->
+					      id, (id_of_string (string_of_id id ^ "Heq_id"))
+					  | RVar (_, id') ->
+					      id', id
+					  | _ -> id_of_string (string_of_id id ^ "Heq_id"), id)
+			   | Anonymous -> 
+			       let str = "Heq_id" ^ string_of_int i in
+				 id_of_string str, id_of_string (str ^ "'")),
+			opt)) tml 
+  in
+  let mkHole = RHole (dummy_loc, InternalHole) in
+  let mkCoerceCast c = RCast (dummy_loc, c, CastCoerce, mkHole) in
+  let mkeq c n = RApp (dummy_loc, RRef (dummy_loc, (Lazy.force eqind_ref)),
+		       [mkHole; c; n])
+  in
+  let eqs_types = 
+    List.map
+      (fun (c, ((id, id'), _)) ->
+	 let heqid = id_of_string ("Heq" ^ string_of_id id) in
+	   Name heqid, mkeq (RVar (dummy_loc, id')) c)
+      tml'
+  in
+  let po = 
+    List.fold_right
+      (fun (n,t) acc ->
+	 RProd (dummy_loc, Anonymous, t, acc))
+      eqs_types (match po with 
+		     Some e -> e
+		   | None -> mkHole)
+  in
+  let eqns =   
+    List.map (fun (loc, idl, cpl, c) ->
+		let c' = 
+		  List.fold_left 
+		    (fun acc (n, t) ->
+		       RLambda (dummy_loc, n, mkHole, acc))
+		    c eqs_types
+		in (loc, idl, cpl, c'))
+      eqns
+  in
+  let mk_refl_equal c = RApp (dummy_loc, RRef (dummy_loc, Lazy.force refl_equal_ref),
+			      [mkHole; c])
+  in
+  let refls = List.map (fun (c, ((id, _), _)) -> mk_refl_equal (mkCoerceCast c)) tml' in
+  let tml'' = List.map (fun (c, ((id, id'), opt)) -> c, (Name id', opt)) tml' in
+  let case = RCases (loc,Some po,tml'',eqns) in
+  let app = RApp (dummy_loc, case, refls) in
+(*   let letapp = List.fold_left (fun acc (c, ((id, id'), opt)) -> RLetIn (dummy_loc, Name id, c, acc)) *)
+(* 		 app tml' *)
+(*   in *)
+    app
+
+let rec rewrite_cases c = 
+  match c with 
+      RCases _ -> let c' = map_rawconstr rewrite_cases c in
+	(match c' with 
+	   | RCases (x, y, z, w) -> rewrite_cases_aux (x,y,z,w)
+	   | _ -> assert(false))
+    | _ -> map_rawconstr rewrite_cases c
+	  
+let rewrite_cases env c =
+  let c' = rewrite_cases c in
+  let _ = trace (str "Rewrote cases: " ++ spc () ++ my_print_rawconstr env c') in
+    c'

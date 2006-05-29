@@ -26,10 +26,3 @@ val rewrite_fixpoint :
    Topconstr.local_binder list * Topconstr.constr_expr *
    Topconstr.constr_expr) *
   'c
-val list_mapi : (int -> 'a -> 'b) -> 'a list -> 'b list
-val rewrite_cases_aux :
-  Util.loc * Rawterm.rawconstr option * 
-  Rawterm.tomatch_tuple * Rawterm.cases_clauses
-  -> Rawterm.rawconstr
-
-val rewrite_cases : Environ.env -> Rawterm.rawconstr -> Rawterm.rawconstr

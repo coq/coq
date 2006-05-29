@@ -1482,7 +1482,7 @@ let set_arity_signature dep n arsign tomatchl pred x =
   in
   decomp_block [] pred (tomatchl,arsign)
 
-let prepare_predicate_from_tycon loc dep env isevars tomatchs c =
+let prepare_predicate_from_tycon loc dep env isevars tomatchs sign c =
   let cook (n, l, env, signs) = function
     | c,IsInd (_,IndType(indf,realargs)) ->
 	let indf' = lift_inductive_family n indf in
@@ -1594,7 +1594,7 @@ let prepare_predicate loc typing_fun isevars env tomatchs sign tycon = function
       (match tycon with
        | Some (None, t) ->
 	   let names,pred = 
-	     prepare_predicate_from_tycon loc false env isevars tomatchs t 
+	     prepare_predicate_from_tycon loc false env isevars tomatchs sign t 
 	   in Some (build_initial_predicate false names pred)
        | _ -> None)
 
@@ -1607,7 +1607,8 @@ let prepare_predicate loc typing_fun isevars env tomatchs sign tycon = function
       let predcclj = typing_fun (mk_tycon (new_Type ())) env rtntyp in
       let _ = 
 	option_map (fun tycon -> 
-		      isevars := Coercion.inh_conv_coerces_to loc env !isevars predcclj.uj_val tycon)
+		      isevars := Coercion.inh_conv_coerces_to loc env !isevars predcclj.uj_val 
+		      (lift_tycon_type (List.length arsign) tycon))
 	  tycon
       in
       let predccl = (j_nf_isevar !isevars predcclj).uj_val in      

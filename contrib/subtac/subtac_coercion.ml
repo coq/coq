@@ -97,7 +97,7 @@ module Coercion = struct
 		       app_opt f (mkApp ((Lazy.force sig_).proj1, 
 					 [| u; p; x |]))),
 	       ct)
-	| None -> (None, t)
+	| None -> (None, v)
     in aux t
 
   and coerce loc env isevars (x : Term.constr) (y : Term.constr) 
@@ -153,7 +153,7 @@ module Coercion = struct
 			 if i = Term.destInd existS.typ 
 			 then
 			   begin 
-			     debug 1 (str "In coerce sigma types");
+			     trace (str "In coerce sigma types");
 			     let (a, pb), (a', pb') = 
 			       pair_of_array l, pair_of_array l' 
 			     in
@@ -338,6 +338,13 @@ module Coercion = struct
 	      (isevars',{ utj_val = j.uj_val; utj_type = s })
 	| _ ->
 	    inh_tosort_force loc env isevars j
+
+  let inh_coerce_to_base loc env isevars j =
+    let typ = whd_betadeltaiota env (evars_of isevars) j.uj_type in
+    let ct, typ' = mu env isevars typ in
+      isevars, { uj_val = app_opt ct j.uj_val; 
+		 uj_type = typ' }
+
 
   let inh_coerce_to_fail env isevars c1 v t =
     let v', t' =
