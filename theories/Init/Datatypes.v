@@ -139,6 +139,9 @@ Definition CompOpp (r:comparison) :=
 
 Notation prodT := prod (only parsing).
 Notation pairT := pair (only parsing).
+Notation prodT_rect := prod_rect (only parsing).
+Notation prodT_rec := prod_rec (only parsing).
+Notation prodT_ind := prod_ind (only parsing).
 Notation fstT := fst (only parsing).
 Notation sndT := snd (only parsing).
 Notation prodT_uncurry := prod_uncurry (only parsing).
