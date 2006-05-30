@@ -115,8 +115,8 @@ type tactic_reduction = env -> evar_map -> constr -> constr
 val reduct_in_hyp     : tactic_reduction -> hyp_location -> tactic
 val reduct_option     : tactic_reduction * cast_kind -> simple_clause -> tactic
 val reduct_in_concl   : tactic_reduction * cast_kind -> tactic
-val change_in_concl   : constr occurrences option -> constr -> tactic
-val change_in_hyp     : constr occurrences option -> constr -> hyp_location ->
+val change_in_concl   : (int list * constr) option -> constr -> tactic
+val change_in_hyp     : (int list * constr) option -> constr -> hyp_location ->
   tactic
 val red_in_concl      : tactic
 val red_in_hyp        : hyp_location        -> tactic
@@ -139,7 +139,7 @@ val unfold_option     :
     -> tactic
 val reduce            : red_expr -> clause -> tactic
 val change            :
-  constr occurrences option -> constr -> clause -> tactic
+  (int list * constr) option -> constr -> clause -> tactic
 
 val unfold_constr     : global_reference -> tactic
 val pattern_option  : (int list * constr) list -> simple_clause -> tactic

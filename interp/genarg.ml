@@ -44,7 +44,6 @@ type argument_type =
   | PairArgType of argument_type * argument_type
   | ExtraArgType of string
 
-type 'a or_var = ArgArg of 'a | ArgVar of identifier located
 type 'a and_short_name = 'a * identifier located option
 type rawconstr_and_expr = rawconstr * constr_expr option
 

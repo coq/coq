@@ -153,8 +153,8 @@ let pr_lname = function
   | lna -> pr_located pr_name lna
 
 let pr_or_var pr = function
-  | Genarg.ArgArg x -> pr x
-  | Genarg.ArgVar (loc,s) -> pr_lident (loc,s)
+  | ArgArg x -> pr x
+  | ArgVar (loc,s) -> pr_lident (loc,s)
 
 let pr_prim_token = function
   | Numeral n -> Bigint.pr_bigint n
@@ -625,15 +625,10 @@ let pr_cases_pattern_expr = pr_patt ltop
 
 let pr_binders = pr_undelimited_binders (pr ltop)
 
-let pr_pattern_occ prc = function
-    ([],c) -> prc c
-  | (nl,c) -> hov 1 (prc c ++ spc() ++ str"at " ++
-                     hov 0 (prlist_with_sep spc int nl))
-
-let pr_unfold_occ pr_ref = function
-    ([],qid) -> pr_ref qid
-  | (nl,qid) -> hov 1 (pr_ref qid ++ spc() ++ str"at " ++
-                       hov 0 (prlist_with_sep spc int nl))
+let pr_with_occurrences pr = function
+    ([],c) -> pr c
+  | (nl,c) -> hov 1 (pr c ++ spc() ++ str"at " ++
+                     hov 0 (prlist_with_sep spc (pr_or_var int) nl))
 
 let pr_red_flag pr r =
   (if r.rBeta then pr_arg str "beta" else mt ()) ++
@@ -653,7 +648,7 @@ let pr_metaid id = str"?" ++ pr_id id
 let pr_red_expr (pr_constr,pr_lconstr,pr_ref) = function
   | Red false -> str "red"
   | Hnf -> str "hnf"
-  | Simpl o -> str "simpl" ++ pr_opt (pr_pattern_occ pr_constr) o  
+  | Simpl o -> str "simpl" ++ pr_opt (pr_with_occurrences pr_constr) o  
   | Cbv f ->
       if f = {rBeta=true;rIota=true;rZeta=true;rDelta=true;rConst=[]} then
 	str "compute"
@@ -663,11 +658,11 @@ let pr_red_expr (pr_constr,pr_lconstr,pr_ref) = function
       hov 1 (str "lazy" ++ pr_red_flag pr_ref f)
   | Unfold l ->
       hov 1 (str "unfold" ++ spc() ++
-             prlist_with_sep pr_coma (pr_unfold_occ pr_ref) l)
+             prlist_with_sep pr_coma (pr_with_occurrences pr_ref) l)
   | Fold l -> hov 1 (str "fold" ++ prlist (pr_arg pr_constr) l)
   | Pattern l ->
       hov 1 (str "pattern" ++
-        pr_arg (prlist_with_sep pr_coma (pr_pattern_occ pr_constr)) l)
+        pr_arg (prlist_with_sep pr_coma (pr_with_occurrences pr_constr)) l)
         
   | Red true -> error "Shouldn't be accessible from user"
   | ExtraRedExpr s -> str s

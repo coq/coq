@@ -105,7 +105,7 @@ let invfun (hypname:identifier) fname princ : tactic=
       let frealargs = (snd (array_chop (List.length princ_info.params) fargs))  
       in
       let pat_args = 
-	(List.map (fun e -> ([-1],e)) (Array.to_list frealargs)) @ [[],appf] 
+	(List.map (fun e -> ([Rawterm.ArgArg (-1)],e)) (Array.to_list frealargs)) @ [[],appf] 
       in
       tclTHENSEQ 
 	[

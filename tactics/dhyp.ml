@@ -265,10 +265,10 @@ let match_dpat dp cls gls =
     | ({onhyps=lo;onconcl=false},HypLocation(_,hypd,concld)) ->
         let hl = match lo with
             Some l -> l
-          | None -> List.map (fun id -> (id,[],InHyp)) (pf_ids_of_hyps gls) in
+          | None -> List.map (fun id -> (([],id),InHyp)) (pf_ids_of_hyps gls) in
         if not
           (List.for_all
-            (fun (id,_,hl) ->
+            (fun ((_,id),hl) ->
               let cltyp = pf_get_hyp_typ gls id in
               let cl = pf_concl gls in
               (hl=InHyp) &
@@ -297,7 +297,7 @@ let applyDestructor cls discard dd gls =
   let tacl =
     List.map (fun cl ->
       match cl, dd.d_code with
-        | Some (id,_,_), (Some x, tac) -> 
+        | Some ((_,id),_), (Some x, tac) -> 
 	    let arg =
               ConstrMayEval(ConstrTerm (RRef(dummy_loc,VarRef id),None)) in
             TacLetIn ([(dummy_loc, x), None, arg], tac)
@@ -308,7 +308,7 @@ let applyDestructor cls discard dd gls =
   let discard_0 =
     List.map (fun cl ->
       match (cl,dd.d_pat) with
-        | (Some (id,_,_),HypLocation(discardable,_,_)) ->
+        | (Some ((_,id),_),HypLocation(discardable,_,_)) ->
             if discard & discardable then thin [id] else tclIDTAC
         | (None,ConclLocation _) -> tclIDTAC
         | _ -> error "ApplyDestructor" ) cll in
@@ -356,7 +356,7 @@ let rec search n =
      (tclTHEN  
         (Tacticals.tryAllClauses 
            (function 
-              | Some (id,_,_) -> (dHyp id)
+              | Some ((_,id),_) -> (dHyp id)
               | None    ->  dConcl ))
         (search (n-1)))]
     

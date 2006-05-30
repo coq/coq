@@ -119,13 +119,13 @@ type clause = identifier gclause
 
 let allClauses = { onhyps=None; onconcl=true; concl_occs=[] }
 let allHyps = { onhyps=None; onconcl=false; concl_occs=[] }
-let onHyp id = { onhyps=Some[(id,[],InHyp)]; onconcl=false; concl_occs=[] }
+let onHyp id = { onhyps=Some[(([],id),InHyp)]; onconcl=false; concl_occs=[] }
 let onConcl = { onhyps=Some[]; onconcl=true; concl_occs=[] }
 
 let simple_clause_list_of cl gls =
   let hyps =
     match cl.onhyps with 
-        None -> List.map (fun id -> Some(id,[],InHyp)) (pf_ids_of_hyps gls)
+        None -> List.map (fun id -> Some(([],id),InHyp)) (pf_ids_of_hyps gls)
       | Some l -> List.map (fun h -> Some h) l in
   if cl.onconcl then None::hyps else hyps
 
@@ -167,7 +167,7 @@ let nth_clause n gl =
 let clause_type cls gl =
   match simple_clause_of cls with
     | None    -> pf_concl gl
-    | Some (id,_,_) -> pf_get_hyp_typ gl id
+    | Some ((_,id),_) -> pf_get_hyp_typ gl id
 
 (* Functions concerning matching of clausal environments *)
 
@@ -217,7 +217,7 @@ let onAllClausesLR tac = onClausesLR tac allClauses
 let onNthLastHyp n tac gls = tac (nth_clause n gls) gls
 
 let tryAllHyps     tac =
-  tryClauses (function Some(id,_,_) -> tac id | _ -> assert false) allHyps
+  tryClauses (function Some((_,id),_) -> tac id | _ -> assert false) allHyps
 let onNLastHyps n  tac     = onHyps (nLastHyps n) (tclMAP tac)
 let onLastHyp      tac gls = tac (lastHyp gls) gls
 

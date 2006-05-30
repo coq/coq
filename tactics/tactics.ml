@@ -147,7 +147,7 @@ type tactic_reduction = env -> evar_map -> constr -> constr
 let reduct_in_concl (redfun,sty) gl = 
   convert_concl_no_check (pf_reduce redfun gl (pf_concl gl)) sty gl
 
-let reduct_in_hyp redfun (id,_,where) gl =
+let reduct_in_hyp redfun ((_,id),where) gl =
   let (_,c, ty) = pf_get_hyp gl id in
   let redfun' = (*under_casts*) (pf_reduce redfun gl) in
   match c with
@@ -967,19 +967,21 @@ let quantify lconstr =
    the left of each x1, ...).
 *)
 
-
+let out_arg = function
+  | ArgVar _ -> anomaly "Unevaluated or_var variable"
+  | ArgArg x -> x
 
 let occurrences_of_hyp id cls =
   let rec hyp_occ = function
       [] -> None
-    | (id',occs,hl)::_ when id=id' -> Some occs
+    | ((occs,id'),hl)::_ when id=id' -> Some (List.map out_arg occs)
     | _::l -> hyp_occ l in
   match cls.onhyps with
       None -> Some []
     | Some l -> hyp_occ l
 
 let occurrences_of_goal cls =
-  if cls.onconcl then Some cls.concl_occs else None
+  if cls.onconcl then Some (List.map out_arg cls.concl_occs) else None
 
 let in_every_hyp cls = (cls.onhyps=None)
 
@@ -2004,7 +2006,7 @@ let unfold_body x gl =
       | _ -> errorlabstrm "unfold_body"
           (pr_id x ++ str" is not a defined hypothesis") in
   let aft = afterHyp x gl in
-  let hl = List.fold_right (fun (y,yval,_) cl -> (y,[],InHyp) :: cl) aft [] in
+  let hl = List.fold_right (fun (y,yval,_) cl -> (([],y),InHyp) :: cl) aft [] in
   let xvar = mkVar x in
   let rfun _ _ c = replace_term xvar xval c in
   tclTHENLIST
@@ -2191,7 +2193,7 @@ let dAnd cls =
   onClauses
     (function
       | None    -> simplest_split
-      | Some (id,_,_) -> andE id)
+      | Some ((_,id),_) -> andE id)
     cls
 
 let orE id gl =
@@ -2205,7 +2207,7 @@ let orE id gl =
 let dorE b cls =
   onClauses
     (function
-      | (Some (id,_,_)) -> orE id
+      | (Some ((_,id),_)) -> orE id
       |  None     -> (if b then right else left) NoBindings)
     cls
 
@@ -2225,7 +2227,7 @@ let dImp cls =
   onClauses
     (function
       | None    -> intro
-      | Some (id,_,_) -> impE id)
+      | Some ((_,id),_) -> impE id)
     cls
 
 (************************************************)
@@ -2300,7 +2302,7 @@ let intros_symmetry =
   onClauses
     (function
       | None -> tclTHEN intros symmetry
-      | Some (id,_,_) -> symmetry_in id)
+      | Some ((_,id),_) -> symmetry_in id)
 
 (* Transitivity tactics *)
 

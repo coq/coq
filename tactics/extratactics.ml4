@@ -58,7 +58,7 @@ fun prc _ _ opt_c->
     | Some c -> 
 	spc () ++ hov 2 (str "by" ++ spc () ++ 
 			   Pptactic.pr_or_var (fun _ -> mt ()) 
-			   (ArgVar(Util.dummy_loc,c))
+			   (Rawterm.ArgVar(Util.dummy_loc,c))
 			)
 
 
@@ -76,7 +76,7 @@ ARGUMENT EXTEND in_arg_hyp
   PRINTED BY pr_in_arg_hyp
 | [ "in" int_or_var(c) ] -> 
     [ match c with
-	| ArgVar(_,c) ->  Some (c)
+	| Rawterm.ArgVar(_,c) ->  Some (c)
 	| _ -> Util.error "in must be used with an identifier" 
     ]
 | [ ] -> [ None ]

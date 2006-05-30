@@ -17,6 +17,8 @@ open Reductionops
 
 type red_expr = (constr, evaluable_global_reference) red_expr_gen
 
+val out_with_occurrences : 'a with_occurrences -> int list * 'a
+
 val reduction_of_red_expr : red_expr -> reduction_function * cast_kind
 (* [true] if we should use the vm to verify the reduction *)
 

@@ -23,7 +23,7 @@ type let_clause_kind =
   | LETCLAUSE of
       (Names.identifier Util.located * raw_tactic_expr option * raw_tactic_arg)
 
-let fail_default_value = Genarg.ArgArg 0
+let fail_default_value = ArgArg 0
 
 let out_letin_clause loc = function
   | LETTOPCLAUSE _ -> user_err_loc (loc, "", (str "Syntax Error"))

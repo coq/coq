@@ -56,7 +56,7 @@ type hyp_location_flag = (* To distinguish body and type of local defs *)
   | InHypTypeOnly
   | InHypValueOnly
 
-type 'a raw_hyp_location = 'a * int list * hyp_location_flag
+type 'a raw_hyp_location = 'a with_occurrences * hyp_location_flag
 
 type 'a induction_arg =
   | ElimOnConstr of 'a
@@ -80,6 +80,7 @@ type 'id message_token =
   | MsgInt of int
   | MsgIdent of 'id
 
+
 type 'id gsimple_clause = ('id raw_hyp_location) option
 (* onhyps:
      [None] means *on every hypothesis*
@@ -87,7 +88,7 @@ type 'id gsimple_clause = ('id raw_hyp_location) option
 type 'id gclause =
   { onhyps : 'id raw_hyp_location list option;
     onconcl : bool;
-    concl_occs :int list }
+    concl_occs : int or_var list }
 
 let nowhere = {onhyps=Some[]; onconcl=false; concl_occs=[]}
 
@@ -175,8 +176,7 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
 
   (* Conversion *)
   | TacReduce of ('constr,'cst) red_expr_gen * 'id gclause
-  | TacChange of
-      'constr occurrences option * 'constr * 'id gclause
+  | TacChange of 'constr with_occurrences option * 'constr * 'id gclause
 
   (* Equivalence relations *)
   | TacReflexivity

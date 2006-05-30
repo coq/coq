@@ -53,11 +53,13 @@ val pr_id : identifier -> std_ppcmds
 val pr_name : name -> std_ppcmds
 val pr_qualid : qualid -> std_ppcmds
 
+val pr_with_occurrences :
+  ('a -> std_ppcmds) -> 'a with_occurrences -> std_ppcmds
 val pr_red_expr :
-  ('a -> std_ppcmds) * ('a -> std_ppcmds) *  ('b -> std_ppcmds) ->
+  ('a -> std_ppcmds) * ('a -> std_ppcmds) * ('b -> std_ppcmds) ->
     ('a,'b) red_expr_gen -> std_ppcmds
 val pr_may_eval :
-  ('a -> std_ppcmds) -> ('a -> std_ppcmds) -> ('b -> std_ppcmds) ->
+  ('a -> std_ppcmds) -> ('a -> std_ppcmds) -> ('b -> std_ppcmds) -> 
     ('a,'b) may_eval -> std_ppcmds
 
 val pr_rawsort : rawsort -> std_ppcmds

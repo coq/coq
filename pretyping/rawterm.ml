@@ -263,22 +263,24 @@ type 'a raw_red_flag = {
 let all_flags =
   {rBeta = true; rIota = true; rZeta = true; rDelta = true; rConst = []}
 
-type 'a occurrences = int list * 'a
+type 'a or_var = ArgArg of 'a | ArgVar of identifier located
+
+type 'a with_occurrences = int or_var list * 'a
 
 type ('a,'b) red_expr_gen =
   | Red of bool
   | Hnf
-  | Simpl of 'a occurrences option
+  | Simpl of 'a with_occurrences option
   | Cbv of 'b raw_red_flag
   | Lazy of 'b raw_red_flag
-  | Unfold of 'b occurrences list
+  | Unfold of 'b with_occurrences list
   | Fold of 'a list
-  | Pattern of 'a occurrences list
+  | Pattern of 'a with_occurrences list
   | ExtraRedExpr of string
   | CbvVm
 
 type ('a,'b) may_eval =
   | ConstrTerm of 'a
-  | ConstrEval of ('a, 'b) red_expr_gen * 'a
+  | ConstrEval of ('a,'b) red_expr_gen * 'a
   | ConstrContext of (loc * identifier) * 'a
   | ConstrTypeOf of 'a

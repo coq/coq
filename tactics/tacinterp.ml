@@ -529,8 +529,8 @@ let intern_inversion_strength lf ist = function
       InversionUsing (intern_constr ist c, List.map (intern_hyp_or_metaid ist) idl)
 
 (* Interprets an hypothesis name *)
-let intern_hyp_location ist (id,occs,hl) =
-  (intern_hyp ist (skip_metaid id), occs, hl)
+let intern_hyp_location ist ((occs,id),hl) =
+  ((List.map (intern_int_or_var ist) occs,intern_hyp ist (skip_metaid id)), hl)
 
 let interp_constrpattern_gen sigma env ltacvar c =
   let c = intern_gen false ~allow_soapp:true ~ltacvars:(ltacvar,[])
@@ -1124,7 +1124,9 @@ let interp_evaluable ist env = function
   | ArgVar (_,id) -> coerce_to_evaluable_ref env (List.assoc id ist.lfun)
 
 (* Interprets an hypothesis name *)
-let interp_hyp_location ist gl (id,occs,hl) = (interp_hyp ist gl id,occs,hl)
+let interp_hyp_location ist gl ((occs,id),hl) =
+  ((List.map (fun n -> ArgArg (interp_int_or_var ist n)) occs,
+    interp_hyp ist gl id),hl)
 
 let interp_clause ist gl { onhyps=ol; onconcl=b; concl_occs=occs } =
   { onhyps=option_map(List.map (interp_hyp_location ist gl)) ol;
@@ -1264,7 +1266,9 @@ let interp_unfold ist env (l,qid) =
 let interp_flag ist env red =
   { red with rConst = List.map (interp_evaluable ist env) red.rConst }
 
-let interp_pattern ist sigma env (l,c) = (l,interp_constr ist sigma env c)
+let interp_pattern ist sigma env (l,c) = 
+  (List.map (fun n -> ArgArg (interp_int_or_var ist n)) l,
+   interp_constr ist sigma env c)
 
 let pf_interp_pattern ist gl = interp_pattern ist (project gl) (pf_env gl)
 
@@ -1945,7 +1949,7 @@ let subst_and_short_name f (c,n) =
 
 let subst_or_var f =  function
   | ArgVar _ as x -> x
-  | ArgArg (x) -> ArgArg (f x)
+  | ArgArg x -> ArgArg (f x)
 
 let subst_located f (_loc,id) = (loc,f id)
 

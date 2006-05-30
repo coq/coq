@@ -123,7 +123,7 @@ let general_rewrite_in l2r id c =
 let general_multi_rewrite l2r c cl = 
   let rec do_hyps = function 
     | [] -> tclIDTAC
-    | (id,_,_) :: l -> 
+    | ((_,id),_) :: l -> 
 	tclTHENFIRST (general_rewrite_bindings_in l2r id c) (do_hyps l)
   in 
   let rec try_do_hyps = function 
@@ -523,7 +523,7 @@ let onNegatedEquality tac gls =
 
 let discrSimpleClause = function
   | None -> onNegatedEquality discrEq
-  | Some (id,_,_) -> onEquality discrEq id
+  | Some ((_,id),_) -> onEquality discrEq id
 
 let discr = onEquality discrEq
 
@@ -1060,7 +1060,7 @@ let unfold_body x gl =
       | _ -> errorlabstrm "unfold_body"
           (pr_id x ++ str" is not a defined hypothesis") in
   let aft = afterHyp x gl in
-  let hl = List.fold_right (fun (y,yval,_) cl -> (y,[],InHyp) :: cl) aft [] in
+  let hl = List.fold_right (fun (y,yval,_) cl -> (([],y),InHyp) :: cl) aft [] in
   let xvar = mkVar x in
   let rfun _ _ c = replace_term xvar xval c in
   tclTHENLIST

@@ -121,8 +121,8 @@ GEXTEND Gram
   simple_intropattern;
 
   int_or_var:
-    [ [ n = integer  -> Genarg.ArgArg n
-      | id = identref -> Genarg.ArgVar id ] ]
+    [ [ n = integer  -> Rawterm.ArgArg n
+      | id = identref -> Rawterm.ArgVar id ] ]
   ;
   (* An identifier or a quotation meta-variable *)
   id_or_meta:
@@ -155,11 +155,11 @@ GEXTEND Gram
   conversion:
     [ [ c = constr -> (None, c)
       | c1 = constr; "with"; c2 = constr -> (Some ([],c1), c2)
-      | c1 = constr; "at"; nl = LIST1 integer; "with"; c2 = constr ->
+      | c1 = constr; "at"; nl = LIST1 int_or_var; "with"; c2 = constr ->
 	  (Some (nl,c1), c2) ] ]
   ;
   occurrences:
-    [ [ "at"; nl = LIST1 integer -> nl
+    [ [ "at"; nl = LIST1 int_or_var -> nl
       | -> [] ] ]
   ;
   pattern_occ:
@@ -240,7 +240,7 @@ GEXTEND Gram
     ] ]
   ;
   hypident_occ:
-    [ [ (id,l)=hypident; occs=occurrences -> (id,occs,l) ] ]
+    [ [ (id,l)=hypident; occs=occurrences -> ((occs,id),l) ] ]
   ;
   clause:
     [ [ "in"; "*"; occs=occurrences ->

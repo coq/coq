@@ -142,8 +142,7 @@ let rec pr_raw_generic prc prlc prtac prref x =
   | SortArgType -> pr_arg pr_rawsort (out_gen rawwit_sort x)
   | ConstrArgType -> pr_arg prc (out_gen rawwit_constr x)
   | ConstrMayEvalArgType ->
-      pr_arg (pr_may_eval prc prlc prref)
-        (out_gen rawwit_constr_may_eval x)
+      pr_arg (pr_may_eval prc prlc prref) (out_gen rawwit_constr_may_eval x)
   | QuantHypArgType ->
       pr_arg pr_quantified_hypothesis (out_gen rawwit_quant_hyp x)
   | RedExprArgType ->
@@ -186,7 +185,8 @@ let rec pr_glob_generic prc prlc prtac x =
   | ConstrArgType -> pr_arg prc (out_gen globwit_constr x)
   | ConstrMayEvalArgType ->
       pr_arg (pr_may_eval prc prlc
-        (pr_or_var (pr_and_short_name pr_evaluable_reference))) (out_gen globwit_constr_may_eval x)
+        (pr_or_var (pr_and_short_name pr_evaluable_reference)))
+        (out_gen globwit_constr_may_eval x)
   | QuantHypArgType ->
       pr_arg pr_quantified_hypothesis (out_gen globwit_quant_hyp x)
   | RedExprArgType ->
@@ -381,17 +381,14 @@ let pr_by_tactic prt = function
   | TacId [] -> mt ()
   | tac -> spc() ++ str "by " ++ prt tac
 
-let pr_occs pp = function
-    [] -> pp
-  | nl -> hov 1 (pp ++ spc() ++ str"at " ++
-                 hov 0 (prlist_with_sep spc int nl))
-
 let pr_hyp_location pr_id = function
-  | id, occs, InHyp -> spc () ++ pr_occs (pr_id id) occs
-  | id, occs, InHypTypeOnly ->
-      spc () ++ pr_occs (str "(type of " ++ pr_id id ++ str ")") occs
-  | id, occs, InHypValueOnly ->
-      spc () ++ pr_occs (str "(value of " ++ pr_id id ++ str ")") occs
+  | occs, InHyp -> spc () ++ pr_with_occurrences pr_id occs
+  | occs, InHypTypeOnly ->
+      spc () ++ 
+      pr_with_occurrences (fun id -> str "(type of " ++ pr_id id ++ str ")") occs
+  | occs, InHypValueOnly ->
+      spc () ++ 
+      pr_with_occurrences (fun id -> str "(value of " ++ pr_id id ++ str ")") occs
 
 let pr_in pp = spc () ++ hov 0 (str "in" ++ pp)
 
@@ -401,11 +398,11 @@ let pr_simple_clause pr_id = function
 
 let pr_clauses pr_id = function
     { onhyps=None; onconcl=true; concl_occs=nl } ->
-      pr_in (pr_occs (str " *") nl)
+      pr_in (pr_with_occurrences (fun () -> str " *") (nl,()))
   | { onhyps=None; onconcl=false } -> pr_in (str " * |-")
   | { onhyps=Some l; onconcl=true; concl_occs=nl } -> 
       pr_in (prlist_with_sep (fun () -> str",") (pr_hyp_location pr_id) l
-             ++ pr_occs (str" |- *") nl)
+             ++ pr_with_occurrences (fun () -> str" |- *") (nl,()))
   | { onhyps=Some l; onconcl=false } ->
       pr_in (prlist_with_sep (fun()->str",") (pr_hyp_location pr_id) l)
 
@@ -779,7 +776,8 @@ and pr_atom1 env = function
         | Some([],c1) -> hov 1 (pr_constr env c1 ++ spc() ++ str "with ")
         | Some(ocl,c1) ->
             hov 1 (pr_constr env c1 ++ spc() ++
-	           str "at " ++ prlist_with_sep spc int ocl) ++ spc() ++
+	           str "at " ++ prlist_with_sep spc (pr_or_var int) ocl) ++
+                   spc() ++
 	           str "with ") ++
       pr_constr env c ++ pr_clauses pr_ident h)
 

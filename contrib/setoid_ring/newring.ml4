@@ -204,7 +204,7 @@ let protect_tac =
   Tactics.reduct_option (protect_red,DEFAULTcast) None ;;
 
 let protect_tac_in id =
-  Tactics.reduct_option (protect_red,DEFAULTcast) (Some(id,[],InHyp));;
+  Tactics.reduct_option (protect_red,DEFAULTcast) (Some(([],id),InHyp));;
 
 
 TACTIC EXTEND protect_fv
@@ -442,10 +442,10 @@ let add_theory name rth eqth morphth cst_tac =
     | None ->
         (match kind with
             Some true ->
-              let t = Genarg.ArgArg(dummy_loc,Lazy.force ltac_inv_morphN) in
+              let t = ArgArg(dummy_loc,Lazy.force ltac_inv_morphN) in
               TacArg(TacCall(dummy_loc,t,List.map carg [zero;one;add;mul]))
           | Some false ->
-              let t = Genarg.ArgArg(dummy_loc, Lazy.force ltac_inv_morphZ) in
+              let t = ArgArg(dummy_loc, Lazy.force ltac_inv_morphZ) in
               TacArg(TacCall(dummy_loc,t,List.map carg [zero;one;add;mul;opp]))
           | _ -> error"a tactic must be specified for an almost_ring") in
   let _ =
@@ -495,7 +495,7 @@ let ring gl =
          spc()++str"\""++pr_constr req++str"\"") in
   Tacinterp.eval_tactic
     (TacArg(TacCall(dummy_loc,
-      Genarg.ArgArg(dummy_loc, Lazy.force ltac_setoid_ring),
+      ArgArg(dummy_loc, Lazy.force ltac_setoid_ring),
       Tacexp e.ring_cst_tac::
       List.map carg [e.ring_lemma1;e.ring_lemma2;e.ring_req])))
     gl
@@ -512,7 +512,7 @@ let ring_rewrite rl =
     (lapp coq_nil [|ty|]) in
   Tacinterp.eval_tactic
     (TacArg(TacCall(dummy_loc,
-      Genarg.ArgArg(dummy_loc, Lazy.force ltac_setoid_ring_rewrite),
+      ArgArg(dummy_loc, Lazy.force ltac_setoid_ring_rewrite),
       Tacexp e.ring_cst_tac::List.map carg [e.ring_lemma2;e.ring_req;rl])))
 
 let setoid_ring = function

@@ -113,8 +113,16 @@ let nums_to_int_list_aux l = List.map (fun x -> CT_int x) l;;
 
 let nums_to_int_list l =  CT_int_list(nums_to_int_list_aux l);;
 
-let nums_to_int_ne_list n l =
-  CT_int_ne_list(CT_int n, nums_to_int_list_aux l);;
+let num_or_var_to_int = function
+  | ArgArg x -> CT_int x
+  | _ -> xlate_error "TODO: nums_to_int_list_aux ArgVar";;
+
+let nums_or_var_to_int_list_aux l = List.map num_or_var_to_int l;;
+
+let nums_or_var_to_int_list l = CT_int_list(nums_or_var_to_int_list_aux l);;
+
+let nums_or_var_to_int_ne_list n l =
+  CT_int_ne_list(num_or_var_to_int n, nums_or_var_to_int_list_aux l);;
 
 type iTARG =   Targ_command of ct_FORMULA
              | Targ_intropatt of ct_INTRO_PATT_LIST
@@ -474,18 +482,19 @@ let xlate_hyp = function
 
 let xlate_hyp_location =
  function
-  | AI (_,id), nums, InHypTypeOnly ->
-      CT_intype(xlate_ident id, nums_to_int_list nums)
-  | AI (_,id), nums, InHypValueOnly ->
-      CT_invalue(xlate_ident id, nums_to_int_list nums)
-  | AI (_,id), [], InHyp ->
+  | (nums, AI (_,id)), InHypTypeOnly ->
+      CT_intype(xlate_ident id, nums_or_var_to_int_list nums)
+  | (nums, AI (_,id)), InHypValueOnly ->
+      CT_invalue(xlate_ident id, nums_or_var_to_int_list nums)
+  | ([], AI (_,id)), InHyp ->
       CT_coerce_UNFOLD_to_HYP_LOCATION 
 	(CT_coerce_ID_to_UNFOLD (xlate_ident id))
-  | AI (_,id), a::l, InHyp ->
+  | (a::l, AI (_,id)), InHyp ->
       CT_coerce_UNFOLD_to_HYP_LOCATION 
 	(CT_unfold_occ (xlate_ident id, 
-			CT_int_ne_list(CT_int a, nums_to_int_list_aux l)))
-  | MetaId _, _,_ -> 
+			CT_int_ne_list(num_or_var_to_int a, 
+                                       nums_or_var_to_int_list_aux l)))
+  | (_, MetaId _),_ -> 
       xlate_error "MetaId not supported in xlate_hyp_location (should occur only in quotations)"
 
 let xlate_clause cls =
@@ -666,7 +675,8 @@ let xlate_using = function
 let xlate_one_unfold_block = function
     ([],qid) -> CT_coerce_ID_to_UNFOLD(tac_qualid_to_ct_ID qid)
   | (n::nums, qid) ->
-      CT_unfold_occ(tac_qualid_to_ct_ID qid, nums_to_int_ne_list n nums);;
+      CT_unfold_occ(tac_qualid_to_ct_ID qid, nums_or_var_to_int_ne_list n nums)
+;;
 
 let xlate_with_names = function
     IntroAnonymous -> CT_coerce_ID_OPT_to_INTRO_PATT_OPT ctv_ID_OPT_NONE
@@ -728,7 +738,7 @@ and xlate_red_tactic =
       CT_simpl 
 	(CT_coerce_PATTERN_to_PATTERN_OPT
 	   (CT_pattern_occ
-	      (CT_int_list(List.map (fun n -> CT_int n) l), xlate_formula c)))
+	      (CT_int_list(nums_or_var_to_int_list_aux l), xlate_formula c)))
   | Cbv flag_list ->
      let conv_flags, red_ids = get_flag flag_list in
      CT_cbv (CT_conversion_flag_list conv_flags, red_ids)
@@ -745,7 +755,7 @@ and xlate_red_tactic =
   | Pattern l ->
      let pat_list = List.map (fun (nums,c) ->
           CT_pattern_occ
-           (CT_int_list (List.map (fun x -> CT_int x) nums),
+           (CT_int_list (nums_or_var_to_int_list_aux nums),
             xlate_formula c)) l in
      (match pat_list with
       | first :: others -> CT_pattern (CT_pattern_ne_list (first, others))
@@ -903,7 +913,7 @@ and xlate_tac =
     | TacChange (Some(l,c), f, b) -> 
 	(* TODO LATER: combine with other constructions of pattern_occ *)
 	CT_change_local(
-	  CT_pattern_occ(CT_int_list(List.map (fun n -> CT_int n) l), 
+	  CT_pattern_occ(CT_int_list(nums_or_var_to_int_list_aux l), 
 			 xlate_formula c),
 	  xlate_formula f,
 	  xlate_clause b)

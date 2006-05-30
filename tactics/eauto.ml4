@@ -149,7 +149,7 @@ let rec prolog l n gl =
 let prolog_tac l n gl =
   let n =
     match n with
-      |  Genarg.ArgArg n -> n
+      |  ArgArg n -> n
       | _ -> error "Prolog called with a non closed argument"
   in
   try (prolog l n gl)
@@ -383,12 +383,12 @@ let gen_eauto d np lems = function
 
 let make_depth = function
   | None -> !default_search_depth 
-  | Some (Genarg.ArgArg d) -> d
+  | Some (ArgArg d) -> d
   | _ -> error "EAuto called with a non closed argument"
 
 let make_dimension n = function
   | None -> (true,make_depth n)
-  | Some (Genarg.ArgArg d) -> (false,d)
+  | Some (ArgArg d) -> (false,d)
   | _ -> error "EAuto called with a non closed argument"
 
 open Genarg
