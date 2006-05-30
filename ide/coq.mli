@@ -50,6 +50,7 @@ val concl_menu : concl -> (string * string) list
 
 val is_in_coq_lib : string -> bool
 val is_in_coq_path : string -> bool
+val is_in_loadpath : string -> bool
 
 val make_cases : string -> string list list
 

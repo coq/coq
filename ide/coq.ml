@@ -89,6 +89,8 @@ let is_in_coq_lib dir =
       Coq_config.theories_dirs
   with _ -> prerr_endline " No(because of a global exn)";false
 
+let is_in_loadpath dir = Library.is_in_load_paths (System.physical_path_of_string dir)
+
 let is_in_coq_path f = 
   try 
   let base = Filename.chop_extension (Filename.basename f) in

@@ -57,7 +57,6 @@ let canonical_path_name p =
     (* We give up to find a canonical name and just simplify it... *)
     strip_path p
 
-
 let find_logical_path phys_dir = 
   let phys_dir = canonical_path_name phys_dir in
   match list_filter2 (fun p d -> p = phys_dir) !load_paths with
@@ -65,38 +64,44 @@ let find_logical_path phys_dir =
   | _,[] -> Nameops.default_root_prefix
   | _,l -> anomaly ("Two logical paths are associated to "^phys_dir)
 
+let is_in_load_paths phys_dir =
+  let dir = canonical_path_name phys_dir in
+  let lp = get_load_paths () in
+  let check_p = fun p -> (String.compare dir p) == 0 in
+    List.exists check_p lp 
+
 let remove_load_path dir =
   load_paths := list_filter2 (fun p d -> p <> dir) !load_paths
 
 let add_load_path (phys_path,coq_path) =
   let phys_path = canonical_path_name phys_path in
-  match list_filter2 (fun p d -> p = phys_path) !load_paths with
-  | _,[dir] ->
-      if coq_path <> dir 
-        (* If this is not the default -I . to coqtop *)
-        && not
-        (phys_path = canonical_path_name Filename.current_dir_name
-         && coq_path = Nameops.default_root_prefix)
-      then
-	begin
-          (* Assume the user is concerned by library naming *)
-	  if dir <> Nameops.default_root_prefix then
-	    (Options.if_verbose warning (phys_path^" was previously bound to "
-	    ^(string_of_dirpath dir)
-	    ^("\nIt is remapped to "^(string_of_dirpath coq_path)));
-             flush_all ());
-	  remove_load_path phys_path;
-	  load_paths := (phys_path::fst !load_paths, coq_path::snd !load_paths)
-	end
-  | _,[] ->
-      load_paths := (phys_path :: fst !load_paths, coq_path :: snd !load_paths)
-  | _ -> anomaly ("Two logical paths are associated to "^phys_path)
+    match list_filter2 (fun p d -> p = phys_path) !load_paths with
+      | _,[dir] ->
+	  if coq_path <> dir 
+            (* If this is not the default -I . to coqtop *)
+            && not
+            (phys_path = canonical_path_name Filename.current_dir_name
+		&& coq_path = Nameops.default_root_prefix)
+	  then
+	    begin
+              (* Assume the user is concerned by library naming *)
+	      if dir <> Nameops.default_root_prefix then
+		(Options.if_verbose warning (phys_path^" was previously bound to "
+					     ^(string_of_dirpath dir)
+					     ^("\nIt is remapped to "^(string_of_dirpath coq_path)));
+		 flush_all ());
+	      remove_load_path phys_path;
+	      load_paths := (phys_path::fst !load_paths, coq_path::snd !load_paths)
+	    end
+      | _,[] ->
+	  load_paths := (phys_path :: fst !load_paths, coq_path :: snd !load_paths)
+      | _ -> anomaly ("Two logical paths are associated to "^phys_path)
 
 let physical_paths (dp,lp) = dp
 
 let load_paths_of_dir_path dir =
   fst (list_filter2 (fun p d -> d = dir) !load_paths)
-
+    
 let get_full_load_paths () = List.combine (fst !load_paths) (snd !load_paths)
 
 (************************************************************************)
