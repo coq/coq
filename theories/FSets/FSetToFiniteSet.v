@@ -82,7 +82,7 @@ Module S_to_Finite_set (U:UsualOrderedType)(M:S with Module E := U).
  Lemma add_Add : forall x s, !!(add x s) === Add _ (!!s) x.
  Proof.
  unfold Same_set, Included, mkEns, In.
- split; intro; set_iff; inversion 1; auto with sets.
+ split; intro; set_iff; inversion 1; unfold E.eq; auto with sets.
  inversion H0.
  constructor 2; constructor.
  constructor 1; auto.
@@ -97,7 +97,7 @@ Module S_to_Finite_set (U:UsualOrderedType)(M:S with Module E := U).
  inversion H0.
  constructor 2; constructor.
  constructor 1; auto.
- red in H; rewrite H.
+ red in H; rewrite H; unfold E.eq in *.
  inversion H0; auto.
  inversion H1; auto.
  Qed.
@@ -105,7 +105,7 @@ Module S_to_Finite_set (U:UsualOrderedType)(M:S with Module E := U).
  Lemma remove_Subtract : forall x s, !!(remove x s) === Subtract _ (!!s) x.
  Proof.
  unfold Same_set, Included, mkEns, In.
- split; intro; set_iff; inversion 1; auto with sets.
+ split; intro; set_iff; inversion 1; unfold E.eq in *; auto with sets.
  split; auto.
  swap H1.
  inversion H2; auto.

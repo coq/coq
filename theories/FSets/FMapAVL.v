@@ -1702,107 +1702,111 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
 
  Module E := X.
  Module Raw := Raw I X. 
- Import Raw.
 
- Record bbst (elt:Set) : Set := Bbst {this :> tree elt; is_bst : bst this; is_avl: avl this}.
+ Record bbst (elt:Set) : Set := 
+  Bbst {this :> Raw.tree elt; is_bst : Raw.bst this; is_avl: Raw.avl this}.
  
  Definition t := bbst. 
- Definition key := X.t.
+ Definition key := E.t.
  
  Section Elt. 
  Variable elt elt' elt'': Set.
 
  Implicit Types m : t elt.
+ Implicit Types x y : key. 
+ Implicit Types e : elt. 
 
- Definition empty := Bbst (empty_bst elt) (empty_avl elt).
- Definition is_empty m := is_empty m.(this).
- Definition add x e m := 
-  Bbst (add_bst x e m.(is_bst) m.(is_avl)) (add_avl x e m.(is_avl)).
- Definition remove x m := 
-  Bbst (remove_bst x m.(is_bst) m.(is_avl)) (remove_avl x m.(is_avl)).  
- Definition mem x m := mem x m.(this).
- Definition find x m := find x m.(this).
+ Definition empty : t elt := Bbst (Raw.empty_bst elt) (Raw.empty_avl elt).
+ Definition is_empty m : bool := Raw.is_empty m.(this).
+ Definition add x e m : t elt := 
+  Bbst (Raw.add_bst x e m.(is_bst) m.(is_avl)) (Raw.add_avl x e m.(is_avl)).
+ Definition remove x m : t elt := 
+  Bbst (Raw.remove_bst x m.(is_bst) m.(is_avl)) (Raw.remove_avl x m.(is_avl)). 
+ Definition mem x m : bool := Raw.mem x m.(this).
+ Definition find x m : option elt := Raw.find x m.(this).
  Definition map f m : t elt' := 
-  Bbst (map_bst f m.(is_bst)) (map_avl f m.(is_avl)).
- Definition mapi f m : t elt' := 
-  Bbst (mapi_bst f m.(is_bst)) (mapi_avl f m.(is_avl)).
+  Bbst (Raw.map_bst f m.(is_bst)) (Raw.map_avl f m.(is_avl)).
+ Definition mapi (f:key->elt->elt') m : t elt' := 
+  Bbst (Raw.mapi_bst f m.(is_bst)) (Raw.mapi_avl f m.(is_avl)).
  Definition map2 f m (m':t elt') : t elt'' := 
-  Bbst (map2_bst f m m') (map2_avl f m m').
- Definition elements m := elements m.(this).
- Definition fold (A:Set) f m i := fold (A:=A) f m.(this) i.
- Definition equal cmp m m' := 
-   if (equal cmp m.(is_bst) m'.(is_bst)) then true else false.
+  Bbst (Raw.map2_bst f m m') (Raw.map2_avl f m m').
+ Definition elements m : list (key*elt) := Raw.elements m.(this).
+ Definition fold (A:Set) (f:key->elt->A->A) m i := Raw.fold (A:=A) f m.(this) i.
+ Definition equal cmp m m' : bool := 
+   if (Raw.equal cmp m.(is_bst) m'.(is_bst)) then true else false.
 
- Definition MapsTo x e m := MapsTo x e m.(this).
- Definition In x m := In0 x m.(this).
- Definition Empty m := Empty m.(this).
+ Definition MapsTo x e m : Prop := Raw.MapsTo x e m.(this).
+ Definition In x m : Prop := Raw.In0 x m.(this).
+ Definition Empty m : Prop := Raw.Empty m.(this).
 
- Definition eq_key := @Raw.PX.eqk elt.
- Definition eq_key_elt := @Raw.PX.eqke elt.
- Definition lt_key := @Raw.PX.ltk elt.
+ Definition eq_key : (key*elt) -> (key*elt) -> Prop := @Raw.PX.eqk elt.
+ Definition eq_key_elt : (key*elt) -> (key*elt) -> Prop := @Raw.PX.eqke elt.
+ Definition lt_key : (key*elt) -> (key*elt) -> Prop := @Raw.PX.ltk elt.
 
- Definition MapsTo_1 m := @MapsTo_1 _ m.(this).
+ Lemma MapsTo_1 : forall m x y e, E.eq x y -> MapsTo x e m -> MapsTo y e m.
+ Proof. intros m; exact (@Raw.MapsTo_1 _ m.(this)). Qed.
  
  Lemma mem_1 : forall m x, In x m -> mem x m = true.
  Proof.
- unfold In, mem; intros m x; rewrite In_alt; simpl; apply mem_1; auto.
+ unfold In, mem; intros m x; rewrite Raw.In_alt; simpl; apply Raw.mem_1; auto.
  apply m.(is_bst).
  Qed.
  
  Lemma mem_2 : forall m x, mem x m = true -> In x m. 
  Proof.
- unfold In, mem; intros m x; rewrite In_alt; simpl; apply mem_2; auto.
+ unfold In, mem; intros m x; rewrite Raw.In_alt; simpl; apply Raw.mem_2; auto.
  Qed.
 
- Definition empty_1 := empty_1.
+ Lemma empty_1 : Empty empty.
+ Proof. exact (@Raw.empty_1 elt). Qed.
 
- Definition is_empty_1 m := @is_empty_1 _ m.(this).
- Definition is_empty_2 m := @is_empty_2 _ m.(this).
+ Lemma is_empty_1 : forall m, Empty m -> is_empty m = true.
+ Proof. intros m; exact (@Raw.is_empty_1 _ m.(this)). Qed.
+ Lemma is_empty_2 : forall m, is_empty m = true -> Empty m.
+ Proof. intros m; exact (@Raw.is_empty_2 _ m.(this)). Qed.
 
- Definition add_1 m x y e := @add_1 elt m.(this) x y e m.(is_avl).
- Definition add_2 m x y e e':= @add_2 elt m.(this) x y e e' m.(is_avl).
- Definition add_3 m x y e e' := @add_3 elt m.(this) x y e e' m.(is_avl).
+ Lemma add_1 : forall m x y e, E.eq x y -> MapsTo y e (add x e m).
+ Proof. intros m x y e; exact (@Raw.add_1 elt _ x y e m.(is_avl)). Qed.
+ Lemma add_2 : forall m x y e e', ~ E.eq x y -> MapsTo y e m -> MapsTo y e (add x e' m).
+ Proof. intros m x y e e'; exact (@Raw.add_2 elt _ x y e e' m.(is_avl)). Qed.
+ Lemma add_3 : forall m x y e e', ~ E.eq x y -> MapsTo y e (add x e' m) -> MapsTo y e m.
+ Proof. intros m x y e e'; exact (@Raw.add_3 elt _ x y e e' m.(is_avl)). Qed.
 
  Lemma remove_1 : forall m x y, E.eq x y -> ~ In y (remove x m).
  Proof.
- unfold In, remove; intros m x y; rewrite In_alt; simpl; apply remove_1; auto.
+ unfold In, remove; intros m x y; rewrite Raw.In_alt; simpl; apply Raw.remove_1; auto.
  apply m.(is_bst).
  apply m.(is_avl).
  Qed.
+ Lemma remove_2 : forall m x y e, ~ E.eq x y -> MapsTo y e m -> MapsTo y e (remove x m).
+ Proof. intros m x y e; exact (@Raw.remove_2 elt _ x y e m.(is_bst) m.(is_avl)). Qed.
+ Lemma remove_3 : forall m x y e, MapsTo y e (remove x m) -> MapsTo y e m.
+ Proof. intros m x y e; exact (@Raw.remove_3 elt _ x y e m.(is_bst) m.(is_avl)). Qed.
 
- Definition remove_2 m x y e := @remove_2 elt m.(this) x y e m.(is_bst) m.(is_avl).
- Definition remove_3 m x y e := @remove_3 elt m.(this) x y e m.(is_bst) m.(is_avl).
 
- Definition find_1 m x e := @find_1 elt m.(this) x e m.(is_bst).
- Definition find_2 m x e := @find_2 elt m.(this) x e.
+ Lemma find_1 : forall m x e, MapsTo x e m -> find x m = Some e. 
+ Proof. intros m x e; exact (@Raw.find_1 elt _ x e m.(is_bst)). Qed.
+ Lemma find_2 : forall m x e, find x m = Some e -> MapsTo x e m.
+ Proof. intros m; exact (@Raw.find_2 elt m.(this)). Qed.
 
- Definition fold_1 m := @fold_1 elt m.(this) m.(is_bst).
-
- Definition map_1 m x e f := @map_1 elt elt' f m.(this) x e.
- Lemma map_2 : forall m x f, In0 x (map f m) -> In0 x m.
- Proof.
- intros m x f; do 2 rewrite In_alt; simpl; apply map_2; auto.
- Qed. 
-
- Definition mapi_1 m x e f := @mapi_1 elt elt' f m.(this) x e.
- Lemma mapi_2 : forall m x f, In0 x (mapi f m) -> In0 x m.
- Proof.
- intros m x f; do 2 rewrite In_alt; simpl; apply mapi_2; auto.
- Qed. 
+ Lemma fold_1 : forall m (A : Set) (i : A) (f : key -> elt -> A -> A),
+        fold f m i = fold_left (fun a p => f (fst p) (snd p) a) (elements m) i.
+ Proof. intros m; exact (@Raw.fold_1 elt m.(this) m.(is_bst)). Qed.
 
  Lemma elements_1 : forall m x e,       
    MapsTo x e m -> InA eq_key_elt (x,e) (elements m).
  Proof.
- intros; unfold elements, MapsTo, eq_key_elt; rewrite elements_mapsto; auto.
+ intros; unfold elements, MapsTo, eq_key_elt; rewrite Raw.elements_mapsto; auto.
  Qed.
 
  Lemma elements_2 : forall m x e,   
    InA eq_key_elt (x,e) (elements m) -> MapsTo x e m.
  Proof.
- intros; unfold elements, MapsTo, eq_key_elt; rewrite <- elements_mapsto; auto.
+ intros; unfold elements, MapsTo, eq_key_elt; rewrite <- Raw.elements_mapsto; auto.
  Qed.
- 
- Definition elements_3 m := @elements_sort elt m.(this) m.(is_bst).
+
+ Lemma elements_3 : forall m, sort lt_key (elements m).  
+ Proof. intros m; exact (@Raw.elements_sort elt m.(this) m.(is_bst)). Qed.
 
  Definition Equal cmp m m' := 
    (forall k, In k m <-> In k m') /\ 
@@ -1811,10 +1815,10 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Lemma Equal_Equal : forall cmp m m', Equal cmp m m' <-> Raw.Equal cmp m m'.
  Proof. 
  intros; unfold Equal, Raw.Equal, In; intuition.
- generalize (H0 k); do 2 rewrite In_alt; intuition.
- generalize (H0 k); do 2 rewrite In_alt; intuition.
- generalize (H0 k); do 2 rewrite <- In_alt; intuition.
- generalize (H0 k); do 2 rewrite <- In_alt; intuition.
+ generalize (H0 k); do 2 rewrite Raw.In_alt; intuition.
+ generalize (H0 k); do 2 rewrite Raw.In_alt; intuition.
+ generalize (H0 k); do 2 rewrite <- Raw.In_alt; intuition.
+ generalize (H0 k); do 2 rewrite <- Raw.In_alt; intuition.
  Qed. 
 
  Lemma equal_1 : forall m m' cmp, 
@@ -1833,13 +1837,33 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
 
  End Elt.
 
+ Lemma map_1 : forall (elt elt':Set)(m: t elt)(x:key)(e:elt)(f:elt->elt'), 
+        MapsTo x e m -> MapsTo x (f e) (map f m).
+ Proof. intros elt elt' m x e f; exact (@Raw.map_1 elt elt' f m.(this) x e). Qed.
+
+ Lemma map_2 : forall (elt elt':Set)(m:t elt)(x:key)(f:elt->elt'), In x (map f m) -> In x m.
+ Proof.
+ intros elt elt' m x f; do 2 unfold In in *; do 2 rewrite Raw.In_alt; simpl.
+ apply Raw.map_2; auto.
+ Qed. 
+
+ Lemma mapi_1 : forall (elt elt':Set)(m: t elt)(x:key)(e:elt)
+        (f:key->elt->elt'), MapsTo x e m -> 
+        exists y, E.eq y x /\ MapsTo x (f y e) (mapi f m).
+ Proof. intros elt elt' m x e f; exact (@Raw.mapi_1 elt elt' f m.(this) x e). Qed.
+ Lemma mapi_2 : forall (elt elt':Set)(m: t elt)(x:key)
+        (f:key->elt->elt'), In x (mapi f m) -> In x m.
+ Proof.
+ intros elt elt' m x f; unfold In in *; do 2 rewrite Raw.In_alt; simpl; apply Raw.mapi_2; auto.
+ Qed. 
+
  Lemma map2_1 : forall (elt elt' elt'':Set)(m: t elt)(m': t elt')
     (x:key)(f:option elt->option elt'->option elt''), 
     In x m \/ In x m' -> 
     find x (map2 f m m') = f (find x m) (find x m'). 
  Proof. 
  unfold find, map2, In; intros elt elt' elt'' m m' x f.
- do 2 rewrite In_alt; intros; simpl; apply map2_1; auto.
+ do 2 rewrite Raw.In_alt; intros; simpl; apply Raw.map2_1; auto.
  apply m.(is_bst).
  apply m'.(is_bst).
  Qed.
@@ -1849,7 +1873,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
      In x (map2 f m m') -> In x m \/ In x m'.
  Proof. 
  unfold In, map2; intros elt elt' elt'' m m' x f.
- do 3 rewrite In_alt; intros; simpl in *; eapply map2_2; eauto.
+ do 3 rewrite Raw.In_alt; intros; simpl in *; eapply Raw.map2_2; eauto.
  apply m.(is_bst).
  apply m'.(is_bst).
  Qed.

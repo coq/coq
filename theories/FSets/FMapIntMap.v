@@ -437,11 +437,11 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
   red; auto.
   case_eq (find x m); intros.
   apply find_1.
-  apply add_2; auto.
+  apply add_2; unfold E.eq in *; auto.
   case_eq (find x (add y e m)); auto; intros.
   rewrite <- H; symmetry.
   apply find_1; auto.
-  apply (@add_3 _ m y x a e); auto.
+  apply (@add_3 _ m y x a e); unfold E.eq in *; auto.
   Qed.
   
   Lemma anti_elements_mapsto_aux : forall (A:Set)(l:list (key*A)) m k e,
@@ -482,10 +482,10 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
   red; auto.
   inversion_clear H.
   destruct (ME.eq_dec k0 k).
-  subst.
+  unfold E.eq in *; subst.
   destruct (H0 k); eauto.
   red; eauto.
-  right; apply add_2; auto.
+  right; apply add_2; unfold E.eq in *; auto.
   Qed.
   
   Lemma anti_elements_mapsto : forall (A:Set) l k e, NoDupA (eq_key (A:=A)) l ->

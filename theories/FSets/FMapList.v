@@ -1006,84 +1006,126 @@ Module Make (X: OrderedType) <: S with Module E := X.
 Module Raw := Raw X. 
 Module E := X.
 
-Definition key := X.t.
+Definition key := E.t.
 
 Record slist (elt:Set) : Set :=  
   {this :> Raw.t elt; sorted : sort (@Raw.PX.ltk elt) this}.
-Definition t (elt:Set) := slist elt. 
+Definition t (elt:Set) : Set := slist elt. 
 
 Section Elt. 
  Variable elt elt' elt'':Set. 
 
  Implicit Types m : t elt.
+ Implicit Types x y : key. 
+ Implicit Types e : elt.
 
- Definition empty := Build_slist (Raw.empty_sorted elt).
- Definition is_empty m := Raw.is_empty m.(this).
- Definition add x e m := Build_slist (Raw.add_sorted m.(sorted) x e).
- Definition find x m := Raw.find x m.(this).
- Definition remove x m := Build_slist (Raw.remove_sorted m.(sorted) x). 
- Definition mem x m := Raw.mem x m.(this).
+ Definition empty : t elt := Build_slist (Raw.empty_sorted elt).
+ Definition is_empty m : bool := Raw.is_empty m.(this).
+ Definition add x e m : t elt := Build_slist (Raw.add_sorted m.(sorted) x e).
+ Definition find x m : option elt := Raw.find x m.(this).
+ Definition remove x m : t elt := Build_slist (Raw.remove_sorted m.(sorted) x). 
+ Definition mem x m : bool := Raw.mem x m.(this).
  Definition map f m : t elt' := Build_slist (Raw.map_sorted m.(sorted) f).
- Definition mapi f m : t elt' := Build_slist (Raw.mapi_sorted m.(sorted) f).
+ Definition mapi (f:key->elt->elt') m : t elt' := Build_slist (Raw.mapi_sorted m.(sorted) f).
  Definition map2 f m (m':t elt') : t elt'' := 
- Build_slist (Raw.map2_sorted f m.(sorted) m'.(sorted)).
- Definition elements m := @Raw.elements elt m.(this).
- Definition fold A f m i := @Raw.fold elt A f m.(this) i.
- Definition equal cmp m m' := @Raw.equal elt cmp m.(this) m'.(this).
+   Build_slist (Raw.map2_sorted f m.(sorted) m'.(sorted)).
+ Definition elements m : list (key*elt) := @Raw.elements elt m.(this).
+ Definition fold (A:Set)(f:key->elt->A->A) m (i:A) : A := @Raw.fold elt A f m.(this) i.
+ Definition equal cmp m m' : bool := @Raw.equal elt cmp m.(this) m'.(this).
 
- Definition MapsTo x e m := Raw.PX.MapsTo x e m.(this).
- Definition In x m := Raw.PX.In x m.(this).
- Definition Empty m := Raw.Empty m.(this).
- Definition Equal cmp m m' := @Raw.Equal elt cmp m.(this) m'.(this).
+ Definition MapsTo x e m : Prop := Raw.PX.MapsTo x e m.(this).
+ Definition In x m : Prop := Raw.PX.In x m.(this).
+ Definition Empty m : Prop := Raw.Empty m.(this).
+ Definition Equal cmp m m' : Prop := @Raw.Equal elt cmp m.(this) m'.(this).
 
- Definition eq_key := Raw.PX.eqk.
- Definition eq_key_elt := Raw.PX.eqke.
- Definition lt_key := Raw.PX.ltk.
+ Definition eq_key : (key*elt) -> (key*elt) -> Prop := @Raw.PX.eqk elt.
+ Definition eq_key_elt : (key*elt) -> (key*elt) -> Prop:= @Raw.PX.eqke elt.
+ Definition lt_key : (key*elt) -> (key*elt) -> Prop := @Raw.PX.ltk elt.
 
- Definition MapsTo_1 m := @Raw.PX.MapsTo_eq elt m.(this).
+ Lemma MapsTo_1 : forall m x y e, E.eq x y -> MapsTo x e m -> MapsTo y e m.
+ Proof. intros m; exact (@Raw.PX.MapsTo_eq elt m.(this)). Qed.
 
- Definition mem_1 m := @Raw.mem_1 elt m.(this) m.(sorted).
- Definition mem_2 m := @Raw.mem_2 elt m.(this) m.(sorted).
+ Lemma mem_1 : forall m x, In x m -> mem x m = true.
+ Proof. intros m; exact (@Raw.mem_1 elt m.(this) m.(sorted)). Qed.
+ Lemma mem_2 : forall m x, mem x m = true -> In x m.
+ Proof. intros m; exact (@Raw.mem_2 elt m.(this) m.(sorted)). Qed.
 
- Definition empty_1 := @Raw.empty_1.
+ Lemma empty_1 : Empty empty.
+ Proof. exact (@Raw.empty_1 elt). Qed.
 
- Definition is_empty_1 m := @Raw.is_empty_1 elt m.(this).
- Definition is_empty_2 m := @Raw.is_empty_2 elt m.(this).
+ Lemma is_empty_1 : forall m, Empty m -> is_empty m = true.
+ Proof. intros m; exact (@Raw.is_empty_1 elt m.(this)). Qed.
+ Lemma is_empty_2 :  forall m, is_empty m = true -> Empty m.
+ Proof. intros m; exact (@Raw.is_empty_2 elt m.(this)). Qed.
 
- Definition add_1 m := @Raw.add_1 elt m.(this).
- Definition add_2 m := @Raw.add_2 elt m.(this).
- Definition add_3 m := @Raw.add_3 elt m.(this).
+ Lemma add_1 : forall m x y e, E.eq x y -> MapsTo y e (add x e m).
+ Proof. intros m; exact (@Raw.add_1 elt m.(this)). Qed.
+ Lemma add_2 : forall m x y e e', ~ E.eq x y -> MapsTo y e m -> MapsTo y e (add x e' m).
+ Proof. intros m; exact (@Raw.add_2 elt m.(this)). Qed.
+ Lemma add_3 : forall m x y e e', ~ E.eq x y -> MapsTo y e (add x e' m) -> MapsTo y e m.
+ Proof. intros m; exact (@Raw.add_3 elt m.(this)). Qed.
 
- Definition remove_1 m := @Raw.remove_1 elt m.(this) m.(sorted).
- Definition remove_2 m := @Raw.remove_2 elt m.(this) m.(sorted).
- Definition remove_3 m := @Raw.remove_3 elt m.(this) m.(sorted).
+ Lemma remove_1 : forall m x y, E.eq x y -> ~ In y (remove x m).
+ Proof. intros m; exact (@Raw.remove_1 elt m.(this) m.(sorted)). Qed.
+ Lemma remove_2 : forall m x y e, ~ E.eq x y -> MapsTo y e m -> MapsTo y e (remove x m).
+ Proof. intros m; exact (@Raw.remove_2 elt m.(this) m.(sorted)). Qed.
+ Lemma remove_3 : forall m x y e, MapsTo y e (remove x m) -> MapsTo y e m.
+ Proof. intros m; exact (@Raw.remove_3 elt m.(this) m.(sorted)). Qed.
 
- Definition find_1 m := @Raw.find_1 elt m.(this) m.(sorted).
- Definition find_2 m := @Raw.find_2 elt m.(this).
+ Lemma find_1 : forall m x e, MapsTo x e m -> find x m = Some e. 
+ Proof. intros m; exact (@Raw.find_1 elt m.(this) m.(sorted)). Qed.
+ Lemma find_2 : forall m x e, find x m = Some e -> MapsTo x e m.
+ Proof. intros m; exact (@Raw.find_2 elt m.(this)). Qed.
 
- Definition elements_1 m := @Raw.elements_1 elt m.(this). 
- Definition elements_2 m := @Raw.elements_2 elt m.(this). 
- Definition elements_3 m := @Raw.elements_3 elt m.(this) m.(sorted). 
+ Lemma elements_1 : forall m x e, MapsTo x e m -> InA eq_key_elt (x,e) (elements m).
+ Proof. intros m; exact (@Raw.elements_1 elt m.(this)). Qed.
+ Lemma elements_2 : forall m x e, InA eq_key_elt (x,e) (elements m) -> MapsTo x e m.
+ Proof. intros m; exact (@Raw.elements_2 elt m.(this)). Qed.
+ Lemma elements_3 : forall m, sort lt_key (elements m).  
+ Proof. intros m; exact (@Raw.elements_3 elt m.(this) m.(sorted)). Qed.
 
- Definition fold_1 m := @Raw.fold_1 elt m.(this).
+ Lemma fold_1 : forall m (A : Set) (i : A) (f : key -> elt -> A -> A),
+        fold f m i = fold_left (fun a p => f (fst p) (snd p) a) (elements m) i.
+ Proof. intros m; exact (@Raw.fold_1 elt m.(this)). Qed.
 
- Definition map_1 m := @Raw.map_1 elt elt' m.(this).
- Definition map_2 m := @Raw.map_2 elt elt' m.(this).
-
- Definition mapi_1 m := @Raw.mapi_1 elt elt' m.(this).
- Definition mapi_2 m := @Raw.mapi_2 elt elt' m.(this).
-
- Definition map2_1 m (m':t elt') x f := 
-  @Raw.map2_1 elt elt' elt'' f m.(this) m.(sorted) m'.(this) m'.(sorted) x.
- Definition map2_2 m (m':t elt') x f := 
-  @Raw.map2_2 elt elt' elt'' f m.(this) m.(sorted) m'.(this) m'.(sorted) x.
-
- Definition equal_1 m m' := 
-  @Raw.equal_1 elt m.(this) m.(sorted) m'.(this) m'.(sorted).
- Definition equal_2 m m' := 
-  @Raw.equal_2 elt m.(this) m.(sorted) m'.(this) m'.(sorted).
+ Lemma equal_1 : forall m m' cmp, Equal cmp m m' -> equal cmp m m' = true. 
+ Proof. intros m m'; exact (@Raw.equal_1 elt m.(this) m.(sorted) m'.(this) m'.(sorted)). Qed.
+ Lemma equal_2 : forall m m' cmp, equal cmp m m' = true -> Equal cmp m m'.
+ Proof. intros m m'; exact (@Raw.equal_2 elt m.(this) m.(sorted) m'.(this) m'.(sorted)). Qed.
 
  End Elt.
+ 
+ Lemma map_1 : forall (elt elt':Set)(m: t elt)(x:key)(e:elt)(f:elt->elt'), 
+        MapsTo x e m -> MapsTo x (f e) (map f m).
+ Proof. intros elt elt' m; exact (@Raw.map_1 elt elt' m.(this)). Qed.
+ Lemma map_2 : forall (elt elt':Set)(m: t elt)(x:key)(f:elt->elt'), 
+        In x (map f m) -> In x m. 
+ Proof. intros elt elt' m; exact (@Raw.map_2 elt elt' m.(this)). Qed.
+
+ Lemma mapi_1 : forall (elt elt':Set)(m: t elt)(x:key)(e:elt)
+        (f:key->elt->elt'), MapsTo x e m -> 
+        exists y, E.eq y x /\ MapsTo x (f y e) (mapi f m).
+ Proof. intros elt elt' m; exact (@Raw.mapi_1 elt elt' m.(this)). Qed.
+ Lemma mapi_2 : forall (elt elt':Set)(m: t elt)(x:key)
+        (f:key->elt->elt'), In x (mapi f m) -> In x m.
+ Proof. intros elt elt' m; exact (@Raw.mapi_2 elt elt' m.(this)). Qed.
+
+ Lemma map2_1 : forall (elt elt' elt'':Set)(m: t elt)(m': t elt')
+	(x:key)(f:option elt->option elt'->option elt''), 
+	In x m \/ In x m' -> 
+        find x (map2 f m m') = f (find x m) (find x m').       
+ Proof. 
+ intros elt elt' elt'' m m' x f; 
+ exact (@Raw.map2_1 elt elt' elt'' f m.(this) m.(sorted) m'.(this) m'.(sorted) x).
+ Qed.
+ Lemma map2_2 : forall (elt elt' elt'':Set)(m: t elt)(m': t elt')
+	(x:key)(f:option elt->option elt'->option elt''), 
+        In x (map2 f m m') -> In x m \/ In x m'.
+ Proof. 
+ intros elt elt' elt'' m m' x f;  
+ exact (@Raw.map2_2 elt elt' elt'' f m.(this) m.(sorted) m'.(this) m'.(sorted) x).
+ Qed.
+
 End Make.
 
 Module Make_ord (X: OrderedType)(D : OrderedType) <: 
