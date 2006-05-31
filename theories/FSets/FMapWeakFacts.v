@@ -326,6 +326,22 @@ rewrite <- H0; rewrite H2; rewrite H1; auto.
 auto.
 Qed.
 
+Lemma empty_o : forall x, find x (empty elt) = None.
+Proof.
+intros.
+case_eq (find x (empty elt)); intros; auto.
+generalize (find_2 H).
+rewrite empty_mapsto_iff; intuition.
+Qed.
+
+Lemma empty_a : forall x, mem x (empty elt) = false.
+Proof.
+intros.
+case_eq (mem x (empty elt)); intros; auto.
+generalize (mem_2 H).
+rewrite empty_in_iff; intuition.
+Qed.
+
 Lemma add_eq_o : forall m x y e, 
  E.eq x y -> find y (add x e m) = Some e.
 Proof.
