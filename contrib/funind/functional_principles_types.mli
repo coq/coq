@@ -24,5 +24,8 @@ val generate_functional_principle :
 val compute_new_princ_type_from_rel : constr array -> sorts array -> 
   types -> types
 
+
+exception No_graph_found
+
 val make_scheme : (identifier*identifier*Rawterm.rawsort) list ->  unit
 val make_case_scheme : (identifier*identifier*Rawterm.rawsort)  ->  unit

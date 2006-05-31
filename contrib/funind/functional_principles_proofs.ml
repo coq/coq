@@ -322,7 +322,7 @@ let h_reduce_with_zeta =
 let rewrite_until_var arg_num eq_ids : tactic =
   let test_var g = 
     let _,args = destApp (pf_concl g) in 
-    isVar args.(arg_num)
+    not (isConstruct args.(arg_num))
   in
   let rec do_rewrite eq_ids g  = 
     if test_var g 
@@ -532,9 +532,9 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
 	     match kind_of_term new_term_value_eq with
 	       | App(f,[| _;_;args2 |]) -> args2
 	       | _ ->
-(* 		   observe (pr_gls g' ++ fnl () ++ str "last hyp is" ++ *)
-(* 			      pr_lconstr_env (pf_env g') new_term_value_eq *)
-(* 			   ); *)
+		   observe (str "cannot compute new term value : " ++ pr_gls g' ++ fnl () ++ str "last hyp is" ++
+			      pr_lconstr_env (pf_env g') new_term_value_eq
+			   );
 		   anomaly "cannot compute new term value"
 	   in
 	 let fun_body =
@@ -622,9 +622,9 @@ let build_proof
 	      let term_eq =
 		make_refl_eq type_of_term t
 	      in
-  	      tclTHENSEQ
+	      tclTHENSEQ
 		[
-		  h_generalize (term_eq::List.map mkVar dyn_infos.rec_hyps);
+		  h_generalize (term_eq::(List.map mkVar dyn_infos.rec_hyps));
 		  thin dyn_infos.rec_hyps;
 		  pattern_option [[-1],t] None;
 		  h_simplest_case t;
@@ -744,7 +744,7 @@ let build_proof
 		] g
 	  | Rel _ -> anomaly "Free var in goal conclusion !" 
   and build_proof do_finalize dyn_infos g =
-(*     observe (str "proving with "++Printer.pr_lconstr term++ str " on goal " ++ pr_gls g); *)
+(*     observe (str "proving with "++Printer.pr_lconstr dyn_infos.info++ str " on goal " ++ pr_gls g); *)
      (build_proof_aux do_finalize dyn_infos) g
   and build_proof_args do_finalize dyn_infos (* f_args'  args *) :tactic =
     fun g ->
@@ -813,8 +813,9 @@ type static_fix_info =
       nb_realargs : int
     }
 
-let prove_rec_hyp fix_info  =
-  { proving_tac = 
+
+
+let prove_rec_hyp_for_struct fix_info = 
       (fun  eq_hyps -> tclTHEN 
 	(rewrite_until_var (fix_info.idx - 1) eq_hyps)
 	(fun g -> 
@@ -824,6 +825,9 @@ let prove_rec_hyp fix_info  =
 	   in
 	   refine rec_hyp_proof g
 	))
+
+let prove_rec_hyp fix_info  =
+  { proving_tac = prove_rec_hyp_for_struct fix_info
   ;
     is_valid = fun _ -> true 
   }
@@ -831,7 +835,26 @@ let prove_rec_hyp fix_info  =
 
 exception Not_Rec
     
-
+let generalize_non_dep hyp g = 
+  let hyps = [hyp] in 
+  let env = Global.env () in 
+  let hyp_typ = pf_type_of g (mkVar hyp) in 
+  let to_revert,_ = 
+    Environ.    fold_named_context_reverse (fun (clear,keep) (hyp,_,_ as decl) ->
+      if List.mem hyp hyps
+	or List.exists (occur_var_in_decl env hyp) keep
+	or occur_var env hyp hyp_typ
+	or Termops.is_section_variable hyp (* should be dangerous *) 
+      then (clear,decl::keep)
+      else (hyp::clear,keep))
+      ~init:([],[]) (pf_env g)
+  in
+  observe (str "to_revert := " ++ prlist_with_sep spc Ppconstr.pr_id to_revert);
+  tclTHEN 
+    (observe_tac "h_generalize" (h_generalize (List.map mkVar to_revert)))
+    (observe_tac "thin" (thin to_revert))
+    g
+  
 let prove_princ_for_struct interactive_proof fun_num fnames all_funs _naprams : tactic =
    fun goal ->
 (*      observe (str "Proving principle for "++ str (string_of_int fun_num) ++ str "th function : " ++  *)
@@ -974,7 +997,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _naprams : 
 		      try
 			if not (Idmap.mem pte ptes_to_fixes) then raise Not_Rec;
 			let nparams = List.length !params in
-			let args_as_constr = List.map mkVar  args in
+			let args_as_constr = List.map mkVar args in
 			let other_args = fst (list_chop nb_intros_to_do (pf_ids_of_hyps g)) in 
 			let other_args_as_constr = List.map mkVar  other_args in 
 			let rec_num,new_body =
@@ -982,7 +1005,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _naprams : 
 			  let f = fnames.(idx') in
 			  let body_with_params = match !fbody_with_params with Some f -> f | _ -> anomaly ""
 			  in
-			  let name_of_f = Name ( id_of_label (con_label f)) in
+			  let name_of_f = Name (id_of_label (con_label f)) in
 			  let ((rec_nums,_),(na,_,bodies)) = destFix body_with_params in
 			  let idx'' = list_index name_of_f (Array.to_list na) - 1 in
 			  let body = substl (List.rev (Array.to_list all_funs)) bodies.(idx'') in
@@ -1002,11 +1025,11 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _naprams : 
 (* 			observe (str "applied_body := "++ pr_lconstr_env (pf_env g) applied_body); *)
 			let do_prove branches applied_body =
 			  build_proof
-			    interactive_proof
-			    (Array.to_list fnames)
-			    (Idmap.map prove_rec_hyp ptes_to_fixes)
-			    branches
-			    applied_body
+			       interactive_proof
+			       (Array.to_list fnames)
+			       (Idmap.map prove_rec_hyp ptes_to_fixes)
+			       branches
+			       applied_body
 			in
 			let replace_and_prove =
 			  tclTHENS
@@ -1025,11 +1048,18 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _naprams : 
 				      info = applied_body_with_real_args;
 				      eq_hyps = [];
 				    } ];
-			      let id = try List.nth (List.rev args_as_constr) (rec_num) with _ -> anomaly ("Cannot find recursive argument of function ! ") in
-			      let id_as_induction_constr = Tacexpr.ElimOnConstr id in 
+			      let id = 
+				try
+				  List.nth (List.rev args_as_constr) (rec_num) 
+				with _ -> anomaly ("Cannot find recursive argument of function ! ") 
+			      in
 			      (tclTHENSEQ
-				 [new_destruct [id_as_induction_constr] None Genarg.IntroAnonymous;(* (h_simplest_case id) *)
-				  intros_reflexivity
+				 [ 
+				   keep (!params@(List.map destVar args_as_constr));
+				   observe_tac "generalizing" (generalize_non_dep (destVar id));
+				   observe_tac "new_destruct" 
+				    (h_case (id,Rawterm.NoBindings));
+				  observe_tac "intros_reflexivity" intros_reflexivity
 				 ])
 			    ]
 			in
@@ -1077,7 +1107,8 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _naprams : 
 		let fix_info = Idmap.find (destVar pte) !pte_to_fix in
 		fix_info.nb_realargs
 	      with Not_found -> (* Not a recursive function *) 
-		nb_prod (pf_concl g)
+		nb_lam (Util.out_some !fbody_with_params)
+(* 		nb_prod (pf_concl g) *)
 	    in 
 	    observe_tac "" (tclTHEN
 	      (tclDO nb_real_args (observe_tac "intro" intro)) 

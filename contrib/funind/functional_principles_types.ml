@@ -439,6 +439,8 @@ let get_funs_constant mp dp =
       with Not_Rec -> ()
     in
     l_const
+
+exception No_graph_found 
 	
 let make_scheme fas = 
   let env = Global.env () 
@@ -451,8 +453,10 @@ let make_scheme fas =
   let funs_mp,funs_dp,first_fun_id = Names.repr_con first_fun in 
   let first_fun_rel_id = mk_rel_id (id_of_label first_fun_id) in 
   let first_fun_kn = 
-    (* Fixme: take into accour funs_mp and funs_dp *)
+    try 
+    (* Fixme: take into account funs_mp and funs_dp *)
     fst (destInd (id_to_constr first_fun_rel_id))
+    with Not_found -> raise No_graph_found
   in
   let this_block_funs_indexes = get_funs_constant funs_mp funs_dp first_fun in
   let this_block_funs = Array.map fst this_block_funs_indexes in 

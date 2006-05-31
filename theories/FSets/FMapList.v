@@ -96,7 +96,7 @@ Qed.
 
 (** * [mem] *)
 
-Fixpoint mem (k : key) (s : t elt) {struct s} : bool :=
+Function mem (k : key) (s : t elt) {struct s} : bool :=
  match s with
   | nil => false
   | (k',_) :: l =>
@@ -110,33 +110,33 @@ Fixpoint mem (k : key) (s : t elt) {struct s} : bool :=
 Lemma mem_1 : forall m (Hm:Sort m) x, In x m -> mem x m = true.
 Proof.  
  intros m Hm x; generalize Hm; clear Hm.      
- functional induction mem x m;intros sorted belong1;trivial.
+ functional induction (mem x m);intros sorted belong1;trivial.
  
- inversion belong1. inversion H.
+ inversion belong1. inversion H0.
  
- absurd (In k ((k', e) :: l));try assumption.
- apply Sort_Inf_NotIn with e;auto.
+ absurd (In x ((k', _x) :: l));try assumption.
+ apply Sort_Inf_NotIn with _x;auto.
 
- apply H.
+ apply IHb.
  elim (sort_inv sorted);auto.
  elim (In_inv belong1);auto.
  intro abs.
- absurd (X.eq k k');auto.
+ absurd (X.eq x k');auto.
 Qed. 
 
 Lemma mem_2 : forall m (Hm:Sort m) x, mem x m = true -> In x m. 
 Proof.
  intros m Hm x; generalize Hm; clear Hm; unfold PX.In,PX.MapsTo.
- functional induction mem x m; intros sorted hyp;try ((inversion hyp);fail).
- exists e; auto. 
- induction H; auto.
- exists x; auto.
+ functional induction (mem x m); intros sorted hyp;try ((inversion hyp);fail).
+ exists _x; auto. 
+ induction IHb; auto.
+ exists x0; auto.
  inversion_clear sorted; auto.
 Qed.
 
 (** * [find] *)
 
-Fixpoint find (k:key) (s: t elt) {struct s} : option elt :=
+Function find (k:key) (s: t elt) {struct s} : option elt :=
  match s with
   | nil => None
   | (k',x)::s' => 
@@ -150,31 +150,31 @@ Fixpoint find (k:key) (s: t elt) {struct s} : option elt :=
 Lemma find_2 :  forall m x e, find x m = Some e -> MapsTo x e m.
 Proof.
  intros m x. unfold PX.MapsTo.
- functional induction find x m;simpl;intros e' eqfind; inversion eqfind; auto.
+ functional induction (find x m);simpl;intros e' eqfind; inversion eqfind; auto.
 Qed.
 
 Lemma find_1 :  forall m (Hm:Sort m) x e, MapsTo x e m -> find x m = Some e. 
 Proof.
  intros m Hm x e; generalize Hm; clear Hm; unfold PX.MapsTo.
- functional induction find x m;simpl; subst; try clear H_eq_1.
+ functional induction (find x m);simpl; subst; try clear H_eq_1.
 
  inversion 2.
 
  inversion_clear 2.
- compute in H0; destruct H0; order.
- generalize (Sort_In_cons_1 Hm (InA_eqke_eqk H0)); compute; order.
+ clear H0;compute in H1; destruct H1;order.
+ clear H0;generalize (Sort_In_cons_1 Hm (InA_eqke_eqk H1)); compute; order.
 
- inversion_clear 2.
+ clear H0;inversion_clear 2.
  compute in H0; destruct H0; intuition congruence. 
  generalize (Sort_In_cons_1 Hm (InA_eqke_eqk H0)); compute; order.
  
- do 2 inversion_clear 1; auto.
- compute in H3; destruct H3; order.
+ clear H0; do 2 inversion_clear 1; auto.
+ compute in H2; destruct H2; order.
 Qed.
 
 (** * [add] *)
 
-Fixpoint add (k : key) (x : elt) (s : t elt) {struct s} : t elt :=
+Function add (k : key) (x : elt) (s : t elt) {struct s} : t elt :=
  match s with
   | nil => (k,x) :: nil
   | (k',y) :: l =>
@@ -189,7 +189,7 @@ Lemma add_1 : forall m x y e, X.eq x y -> MapsTo y e (add x e m).
 Proof.
  intros m x y e; generalize y; clear y.
  unfold PX.MapsTo.
- functional induction add x e m;simpl;auto.
+ functional induction (add x e m);simpl;auto.
 Qed.
 
 Lemma add_2 : forall m x y e e', 
@@ -197,24 +197,28 @@ Lemma add_2 : forall m x y e e',
 Proof.
  intros m x  y e e'. 
  generalize y e; clear y e; unfold PX.MapsTo.
- functional induction add x e' m;simpl;auto; clear H_eq_1.
- intros y' e' eqky';  inversion_clear 1; destruct H0; simpl in *.
+ functional induction (add x e' m) ;simpl;auto;  clear H0.
+ subst;auto.
+
+ intros y' e'' eqky';  inversion_clear 1; destruct H1; simpl in *.
  order.
  auto.
  auto.
- intros y' e' eqky'; inversion_clear 1; intuition.
+ intros y' e'' eqky'; inversion_clear 1; intuition.
 Qed.
   
+
 Lemma add_3 : forall m x y e e',
   ~ X.eq x y -> MapsTo y e (add x e' m) -> MapsTo y e m.
 Proof.
  intros m x y e e'. generalize y e; clear y e; unfold PX.MapsTo.
- functional induction add x e' m;simpl; intros.
- apply (In_inv_3 H0); compute; auto.
- apply (In_inv_3 H0); compute; auto.
- constructor 2; apply (In_inv_3 H0); compute; auto. 
- inversion_clear H1; auto.
+ functional induction (add x e' m);simpl; intros.
+ apply (In_inv_3 H1); compute; auto.
+ subst s;apply (In_inv_3 H2); compute; auto.
+ constructor 2; apply (In_inv_3 H2); compute; auto. 
+ inversion_clear H2; auto.
 Qed.
+
 
 Lemma add_Inf : forall (m:t elt)(x x':key)(e e':elt), 
   Inf (x',e') m -> ltk (x',e') (x,e) -> Inf (x',e') (add x e m).
@@ -242,7 +246,7 @@ Qed.
 
 (** * [remove] *)
 
-Fixpoint remove (k : key) (s : t elt) {struct s} : t elt :=
+Function remove (k : key) (s : t elt) {struct s} : t elt :=
  match s with
   | nil => nil
   | (k',x) :: l =>
@@ -256,30 +260,36 @@ Fixpoint remove (k : key) (s : t elt) {struct s} : t elt :=
 Lemma remove_1 : forall m (Hm:Sort m) x y, X.eq x y -> ~ In y (remove x m).
 Proof.
  intros m Hm x y; generalize Hm; clear Hm.
- functional induction remove x m;simpl;intros;subst;try clear H_eq_1.
+ functional induction (remove x m);simpl;intros;subst.
  
  red; inversion 1; inversion H1.
 
- apply Sort_Inf_NotIn with x; auto.
- constructor; compute; order.
+ apply Sort_Inf_NotIn with x0; auto.
+ clear H0;constructor; compute; order.
  
- inversion_clear Hm.
- apply Sort_Inf_NotIn with x; auto. 
- apply Inf_eq with (k',x);auto; compute; apply X.eq_trans with k; auto.
+ clear H0;inversion_clear Hm.
+ apply Sort_Inf_NotIn with x0; auto. 
+ apply Inf_eq with (k',x0);auto; compute; apply X.eq_trans with x; auto.
 
- inversion_clear Hm.
- assert (notin:~ In y (remove k l)) by auto.
- intros (x0,abs).
+ clear H0;inversion_clear Hm.
+ assert (notin:~ In y (remove x l)) by auto.
+ intros (x1,abs).
  inversion_clear abs. 
- compute in H3; destruct H3; order.
- apply notin; exists x0; auto.
+ compute in H2; destruct H2; order.
+ apply notin; exists x1; auto.
 Qed.
+
 
 Lemma remove_2 : forall m (Hm:Sort m) x y e, 
   ~ X.eq x y -> MapsTo y e m -> MapsTo y e (remove x m).
 Proof.
  intros m Hm x y e; generalize Hm; clear Hm; unfold PX.MapsTo.
- functional induction remove x m;auto; try clear H_eq_1.
+ functional induction (remove x m);subst;auto; 
+   match goal with 
+     | [H: X.compare _ _ = _ |- _ ] => clear H
+     | _ => idtac
+   end.
+
  inversion_clear 3; auto.
  compute in H1; destruct H1; order.
  
@@ -290,7 +300,7 @@ Lemma remove_3 : forall m (Hm:Sort m) x y e,
   MapsTo y e (remove x m) -> MapsTo y e m.
 Proof.
  intros m Hm x y e; generalize Hm; clear Hm; unfold PX.MapsTo.
- functional induction remove x m;auto.
+ functional induction (remove x m);subst;auto.
  inversion_clear 1; inversion_clear 1; auto.
 Qed.
 
@@ -341,8 +351,7 @@ Qed.
 
 (** * [fold] *)
 
-Fixpoint fold (A:Set)(f:key->elt->A->A)(m:t elt) {struct m} : A -> A :=
-  fun acc => 
+Function fold (A:Set)(f:key->elt->A->A)(m:t elt) (acc:A) {struct m} :  A :=
   match m with
    | nil => acc
    | (k,e)::m' => fold f m' (f k e acc)
@@ -351,12 +360,12 @@ Fixpoint fold (A:Set)(f:key->elt->A->A)(m:t elt) {struct m} : A -> A :=
 Lemma fold_1 : forall m (A:Set)(i:A)(f:key->elt->A->A),
   fold f m i = fold_left (fun a p => f (fst p) (snd p) a) (elements m) i.
 Proof. 
- intros; functional induction fold A f m i; auto.
+ intros; functional induction (fold f m i); auto.
 Qed.
 
 (** * [equal] *)
 
-Fixpoint equal (cmp:elt->elt->bool)(m m' : t elt) { struct m } : bool := 
+Function equal (cmp:elt->elt->bool)(m m' : t elt) { struct m } : bool := 
   match m, m' with 
    | nil, nil => true
    | (x,e)::l, (x',e')::l' => 
@@ -375,20 +384,41 @@ Lemma equal_1 : forall m (Hm:Sort m) m' (Hm': Sort m') cmp,
   Equal cmp m m' -> equal cmp m m' = true. 
 Proof. 
  intros m Hm m' Hm' cmp; generalize Hm Hm'; clear Hm Hm'.
- functional induction equal cmp m m'; simpl; auto; unfold Equal;
- intuition; subst; try clear H_eq_3.
+ functional induction (equal cmp m m'); simpl; subst;auto; unfold Equal;
+ intuition; subst;   match goal with 
+     | [H: X.compare _ _ = _ |- _ ] => clear H
+     | _ => idtac
+   end.
 
- destruct p as (k,e).
+
+
+ assert (cmp_e_e':cmp e e' = true).
+  apply H2 with x; auto.
+ rewrite cmp_e_e'; simpl.
+ apply IHb; auto.
+ inversion_clear Hm; auto.
+ inversion_clear Hm'; auto.
+ unfold Equal; intuition.
  destruct (H0 k).
- destruct H2.
- exists e; auto.
- inversion H2.
+ assert (In k ((x,e) ::l)).
+  destruct H as (e'', hyp); exists e''; auto.
+ destruct (In_inv (H1 H4)); auto.
+ inversion_clear Hm.
+ elim (Sort_Inf_NotIn H6 H7).
+ destruct H as (e'', hyp); exists e''; auto.
+ apply MapsTo_eq with k; auto; order.
+ destruct (H0 k).
+ assert (In k ((x',e') ::l')).
+  destruct H as (e'', hyp); exists e''; auto.
+ destruct (In_inv (H3 H4)); auto.
+ inversion_clear Hm'.
+ elim (Sort_Inf_NotIn H6 H7).
+ destruct H as (e'', hyp); exists e''; auto.
+ apply MapsTo_eq with k; auto; order.
+ apply H2 with k; destruct (eq_dec x k); auto.
 
- destruct (H0 x).
- destruct H.
- exists e; auto.
- inversion H.
 
+ destruct (X.compare x x'); try contradiction;clear H2.
  destruct (H0 x).
  assert (In x ((x',e')::l')). 
   apply H; auto.
@@ -399,31 +429,6 @@ Proof.
  assert (Inf (x,e) l').
  apply Inf_lt with (x',e'); auto.
  elim (Sort_Inf_NotIn H5 H7 H4).
- 
- assert (cmp e e' = true).
-  apply H2 with x; auto.
- rewrite H0; simpl.
- apply H; auto.
- inversion_clear Hm; auto.
- inversion_clear Hm'; auto.
- unfold Equal; intuition.
- destruct (H1 k).
- assert (In k ((x,e) ::l)).
-  destruct H3 as (e'', hyp); exists e''; auto.
- destruct (In_inv (H4 H6)); auto.
- inversion_clear Hm.
- elim (Sort_Inf_NotIn H8 H9).
- destruct H3 as (e'', hyp); exists e''; auto.
- apply MapsTo_eq with k; auto; order.
- destruct (H1 k).
- assert (In k ((x',e') ::l')).
-  destruct H3 as (e'', hyp); exists e''; auto.
- destruct (In_inv (H5 H6)); auto.
- inversion_clear Hm'.
- elim (Sort_Inf_NotIn H8 H9).
- destruct H3 as (e'', hyp); exists e''; auto.
- apply MapsTo_eq with k; auto; order.
- apply H2 with k; destruct (eq_dec x k); auto.
 
  destruct (H0 x').
  assert (In x' ((x,e)::l)). 
@@ -435,43 +440,70 @@ Proof.
  assert (Inf (x',e') l).
   apply Inf_lt with (x,e); auto.
  elim (Sort_Inf_NotIn H5 H7 H4).
+
+ destruct _x;
+ destruct _x0;try contradiction.
+ 
+ clear H1;destruct p as (k,e).
+ destruct (H0 k).
+ destruct H1.
+ exists e; auto.
+ inversion H1.
+
+ destruct p as (x,e).
+ destruct (H0 x).
+ destruct H.
+ exists e; auto.
+ inversion H.
+
+ destruct p;destruct p0;contradiction.
 Qed.
+
 
 Lemma equal_2 : forall m (Hm:Sort m) m' (Hm:Sort m') cmp, 
   equal cmp m m' = true -> Equal cmp m m'.
 Proof.
  intros m Hm m' Hm' cmp; generalize Hm Hm'; clear Hm Hm'.
- functional induction equal cmp m m'; simpl; auto; unfold Equal; 
-  intuition; try discriminate; subst; try clear H_eq_3; 
-  try solve [inversion H0]; destruct (andb_prop _ _ H0); clear H0; 
-  inversion_clear Hm; inversion_clear Hm'.
+ functional induction (equal cmp m m'); simpl; subst;auto; unfold Equal; 
+  intuition; try discriminate; subst; match goal with 
+     | [H: X.compare _ _ = _ |- _ ] => clear H
+     | _ => idtac
+   end. 
 
- destruct (H H0 H5 H3).
- destruct (In_inv H1).
+ inversion H0.
+
+ inversion_clear Hm;inversion_clear Hm'.
+ destruct (andb_prop _ _ H); clear H. 
+ destruct (IHb H1 H3 H6).
+ destruct (In_inv H0).
  exists e'; constructor; split; trivial; apply X.eq_trans with x; auto.
- destruct (H7 k).
- destruct (H10 H9) as (e'',hyp).
+ destruct (H k).
+ destruct (H9 H8) as (e'',hyp).
  exists e''; auto.
 
- destruct (H H0 H5 H3).
- destruct (In_inv H1).
+ inversion_clear Hm;inversion_clear Hm'.
+ destruct (andb_prop _ _ H); clear H. 
+ destruct (IHb H1 H3 H6).
+ destruct (In_inv H0).
  exists e; constructor; split; trivial; apply X.eq_trans with x'; auto.
- destruct (H7 k).
- destruct (H11 H9) as (e'',hyp).
+ destruct (H k).
+ destruct (H10 H8) as (e'',hyp).
  exists e''; auto.
 
- destruct (H H0 H6 H4).
- inversion_clear H1.
- destruct H10; simpl in *; subst.
+ inversion_clear Hm;inversion_clear Hm'.
+ destruct (andb_prop _ _ H); clear H. 
+ destruct (IHb H1 H4 H7).
+ inversion_clear H0.
+ destruct H9; simpl in *; subst.
  inversion_clear H2. 
- destruct H10; simpl in *; subst; auto.
- elim (Sort_Inf_NotIn H6 H7).
+ destruct H9; simpl in *; subst; auto.
+ elim (Sort_Inf_NotIn H4 H5).
  exists e'0; apply MapsTo_eq with k; auto; order.
  inversion_clear H2. 
- destruct H1; simpl in *; subst; auto.
- elim (Sort_Inf_NotIn H0 H5).
- exists e1; apply MapsTo_eq with k; auto; order.
- apply H9 with k; auto.
+ destruct H0; simpl in *; subst; auto.
+ elim (Sort_Inf_NotIn H1 H3).
+ exists e0; apply MapsTo_eq with k; auto; order.
+ apply H8 with k; auto.
 Qed. 
 
 (** This lemma isn't part of the spec of [Equal], but is used in [FMapAVL] *)

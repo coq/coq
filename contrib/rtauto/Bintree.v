@@ -18,7 +18,7 @@ Open Scope positive_scope.
 Ltac clean := try (simpl; congruence). 
 Ltac caseq t := generalize (refl_equal t); pattern t at -1; case t.
 
-Functional Scheme Pcompare_ind := Induction for Pcompare.
+Functional Scheme Pcompare_ind := Induction for Pcompare Sort Prop.
 
 Lemma Prect : forall P : positive -> Type,
        P 1 ->
@@ -31,13 +31,13 @@ Qed.
 
 Lemma Gt_Eq_Gt : forall p q cmp,
        (p ?= q) Eq = Gt -> (p ?= q) cmp = Gt.
-apply (Pcompare_ind (fun p q cmp => (p ?= q) Eq = Gt -> (p ?= q) cmp = Gt));
+apply (Pcompare_ind (fun p q cmp _ => (p ?= q) Eq = Gt -> (p ?= q) cmp = Gt));
 simpl;auto;congruence.
 Qed.
 
 Lemma Gt_Lt_Gt : forall p q cmp,
        (p ?= q) Lt = Gt -> (p ?= q) cmp = Gt.
-apply (Pcompare_ind (fun p q cmp => (p ?= q) Lt = Gt -> (p ?= q) cmp = Gt));
+apply (Pcompare_ind (fun p q cmp _ => (p ?= q) Lt = Gt -> (p ?= q) cmp = Gt));
 simpl;auto;congruence.
 Qed.
 

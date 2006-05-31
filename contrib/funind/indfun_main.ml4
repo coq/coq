@@ -82,8 +82,13 @@ let choose_dest_or_ind scheme_info =
 
 
 TACTIC EXTEND newfunind
-   ["new" "functional" "induction" constr(c) fun_ind_using(princl) with_names(pat)] -> 
+   ["functional" "induction" ne_constr_list(cl) fun_ind_using(princl) with_names(pat)] -> 
      [
+       let c = match cl with 
+	 | [] -> assert false
+	 | [c] -> c 
+	 | c::cl -> applist(c,cl)
+       in 
        let f,args = decompose_app c in 
        fun g -> 
 	 let princ = 
@@ -192,15 +197,26 @@ VERNAC ARGUMENT EXTEND fun_scheme_args
 END 
 
 VERNAC COMMAND EXTEND NewFunctionalScheme
-   ["New" "Functional" "Scheme" fun_scheme_args(fas) ] ->
+   ["Functional" "Scheme" fun_scheme_args(fas) ] ->
     [
-      Functional_principles_types.make_scheme fas
+      try 
+	Functional_principles_types.make_scheme fas
+      with Functional_principles_types.No_graph_found -> 
+	match fas with 
+	  | (_,fun_name,_)::_ -> 
+	      begin
+		make_graph fun_name;
+		try Functional_principles_types.make_scheme fas
+		with Functional_principles_types.No_graph_found -> 
+		  Util.error ("Cannot generate induction principle(s)")
+	      end
+	  | _ -> assert false (* we can only have non empty  list *)
     ]
 END
 
 
 VERNAC COMMAND EXTEND NewFunctionalCase
-   ["New" "Functional" "Case" fun_scheme_arg(fas) ] ->
+   ["Functional" "Case" fun_scheme_arg(fas) ] ->
     [
       Functional_principles_types.make_case_scheme fas
     ]

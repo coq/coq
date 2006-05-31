@@ -772,11 +772,6 @@ let invfun_verif c l dorew gl =
    else error "wrong number of arguments for the function"
 
 
-TACTIC EXTEND functional_induction
-  [ "functional" "induction" constr(c)  ne_constr_list(l) ] 
-     -> [ invfun_verif c l true ]
-END
-
 
 
 (* Construction of the functional scheme. *)
@@ -847,15 +842,20 @@ let declareFunScheme f fname mutflist =
 
 
 
+TACTIC EXTEND functional_induction
+  [ "old" "functional" "induction" constr(c)  ne_constr_list(l) ] 
+     -> [ invfun_verif c l true ]
+END
+
 VERNAC COMMAND EXTEND FunctionalScheme
- [ "Functional" "Scheme" ident(na) ":=" "Induction" "for" 
+ [ "Old" "Functional" "Scheme" ident(na) ":=" "Induction" "for" 
     ident(c) "with" ne_ident_list(l) ] 
   -> [ declareFunScheme c na l ]
-| [ "Functional" "Scheme" ident(na) ":=" "Induction" "for" ident (c) ]
+| [ "Old" "Functional" "Scheme" ident(na) ":=" "Induction" "for" ident (c) ]
   -> [ declareFunScheme c na [] ]
 END
 
- 
+
 
 
 

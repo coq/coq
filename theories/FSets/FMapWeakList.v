@@ -91,7 +91,7 @@ Qed.
 
 (** * [mem] *)
 
-Fixpoint mem (k : key) (s : t elt) {struct s} : bool :=
+Function mem (k : key) (s : t elt) {struct s} : bool :=
   match s with
    | nil => false
    | (k',_) :: l => if X.eq_dec k k' then true else mem k l
@@ -100,30 +100,30 @@ Fixpoint mem (k : key) (s : t elt) {struct s} : bool :=
 Lemma mem_1 : forall m (Hm:NoDupA m) x, In x m -> mem x m = true.
 Proof.
  intros m Hm x; generalize Hm; clear Hm.      
- functional induction mem x m;intros NoDup belong1;trivial.
- inversion belong1. inversion H.
+ functional induction (mem x m);intros NoDup belong1;trivial.
+ inversion belong1. inversion H0.
  inversion_clear NoDup.
  inversion_clear belong1.
  inversion_clear H3.
  compute in H4; destruct H4.
  elim H; auto.
- apply H0; auto.
- exists x; auto.
+ apply IHb; auto.
+ exists x0; auto.
 Qed. 
 
 Lemma mem_2 : forall m (Hm:NoDupA m) x, mem x m = true -> In x m. 
 Proof.
  intros m Hm x; generalize Hm; clear Hm; unfold PX.In,PX.MapsTo.
- functional induction mem x m; intros NoDup hyp; try discriminate.
- exists e; auto. 
+ functional induction (mem x m); intros NoDup hyp; try discriminate.
+ exists _x; auto. 
  inversion_clear NoDup.
- destruct H0; auto.
- exists x; auto.
+ destruct IHb; auto.
+ exists x0; auto.
 Qed.
 
 (** * [find] *)
 
-Fixpoint find (k:key) (s: t elt) {struct s} : option elt :=
+Function find (k:key) (s: t elt) {struct s} : option elt :=
   match s with
    | nil => None
    | (k',x)::s' => if X.eq_dec k k' then Some x else find k s'
@@ -132,23 +132,23 @@ Fixpoint find (k:key) (s: t elt) {struct s} : option elt :=
 Lemma find_2 : forall m x e, find x m = Some e -> MapsTo x e m.
 Proof.
  intros m x. unfold PX.MapsTo.
- functional induction find x m;simpl;intros e' eqfind; inversion eqfind; auto.
+ functional induction (find x m);simpl;intros e' eqfind; inversion eqfind; auto.
 Qed.
 
 Lemma find_1 : forall m (Hm:NoDupA m) x e, 
   MapsTo x e m -> find x m = Some e. 
 Proof.
  intros m Hm x e; generalize Hm; clear Hm; unfold PX.MapsTo.
- functional induction find x m;simpl; subst; try clear H_eq_1.
+ functional induction (find x m);simpl; subst; try clear H_eq_1.
 
  inversion 2.
 
  do 2 inversion_clear 1.
  compute in H3; destruct H3; subst; trivial.
- elim H0; apply InA_eqk with (k,e); auto.
+ elim H; apply InA_eqk with (x,e); auto.
 
  do 2 inversion_clear 1; auto.
- compute in H4; destruct H4; elim H; auto.
+ compute in H3; destruct H3; elim _x; auto.
 Qed.
 
 (* Not part of the exported specifications, used later for [combine]. *)
@@ -166,7 +166,7 @@ Qed.
 
 (** * [add] *)
 
-Fixpoint add (k : key) (x : elt) (s : t elt) {struct s} : t elt :=
+Function add (k : key) (x : elt) (s : t elt) {struct s} : t elt :=
   match s with
    | nil => (k,x) :: nil
    | (k',y) :: l => if X.eq_dec k k' then (k,x)::l else (k',y)::add k x l
@@ -175,28 +175,28 @@ Fixpoint add (k : key) (x : elt) (s : t elt) {struct s} : t elt :=
 Lemma add_1 : forall m x y e, X.eq x y -> MapsTo y e (add x e m).
 Proof.
  intros m x y e; generalize y; clear y; unfold PX.MapsTo.
- functional induction add x e m;simpl;auto.
+ functional induction (add x e m);simpl;auto.
 Qed.
 
 Lemma add_2 : forall m x y e e', 
   ~ X.eq x y -> MapsTo y e m -> MapsTo y e (add x e' m).
 Proof.
  intros m x  y e e'; generalize y e; clear y e; unfold PX.MapsTo.
- functional induction add x e' m;simpl;auto.
- intros y' e' eqky';  inversion_clear 1.
- destruct H1; simpl in *.
+ functional induction (add x e' m);simpl;auto.
+ intros y' e'' eqky';  inversion_clear 1.
+ destruct H2; simpl in *.
  elim eqky'; apply X.eq_trans with k'; auto.
  auto.
- intros y' e' eqky'; inversion_clear 1; intuition.
+ intros y' e'' eqky'; inversion_clear 1; intuition.
 Qed.
   
 Lemma add_3 : forall m x y e e',
   ~ X.eq x y -> MapsTo y e (add x e' m) -> MapsTo y e m.
 Proof.
  intros m x y e e'. generalize y e; clear y e; unfold PX.MapsTo.
- functional induction add x e' m;simpl;auto.
- intros; apply (In_inv_3 H0); auto.
- constructor 2; apply (In_inv_3 H1); auto.
+ functional induction (add x e' m);simpl;auto.
+ intros; apply (In_inv_3 H1); auto.
+ constructor 2; apply (In_inv_3 H2); auto.
  inversion_clear 2; auto.
 Qed.
 
@@ -204,12 +204,12 @@ Lemma add_3' : forall m x y e e',
   ~ X.eq x y -> InA eqk (y,e) (add x e' m) -> InA eqk (y,e) m. 
 Proof.
  intros m x y e e'. generalize y e; clear y e.
- functional induction add x e' m;simpl;auto.
+ functional induction (add x e' m);simpl;auto.
  inversion_clear 2.
- compute in H1; elim H; auto.
- inversion H1. 
- constructor 2; inversion_clear H1; auto.
  compute in H2; elim H0; auto.
+ inversion H2. 
+ constructor 2; inversion_clear H2; auto.
+ compute in H3; elim H1; auto.
  inversion_clear 2; auto.
 Qed.
 
@@ -257,7 +257,7 @@ Qed.
 
 (** * [remove] *)
 
-Fixpoint remove (k : key) (s : t elt) {struct s} : t elt :=
+Function remove (k : key) (s : t elt) {struct s} : t elt :=
   match s with
    | nil => nil
    | (k',x) :: l => if X.eq_dec k k' then l else (k',x) :: remove k l
@@ -266,23 +266,23 @@ Fixpoint remove (k : key) (s : t elt) {struct s} : t elt :=
 Lemma remove_1 : forall m (Hm:NoDupA m) x y, X.eq x y -> ~ In y (remove x m).
 Proof.
  intros m Hm x y; generalize Hm; clear Hm.
- functional induction remove x m;simpl;intros;auto.
+ functional induction (remove x m);simpl;intros;auto.
 
- red; inversion 1; inversion H1.
+ red; inversion 1; inversion H2.
 
  inversion_clear Hm.
  subst.
- swap H1.
- destruct H3 as (e,H3); unfold PX.MapsTo in H3.
+ swap H2.
+ destruct H as (e,H); unfold PX.MapsTo in H.
  apply InA_eqk with (y,e); auto.
- compute; apply X.eq_trans with k; auto.
+ compute; apply X.eq_trans with x; auto.
   
  intro H2.
  destruct H2 as (e,H2); inversion_clear H2.
  compute in H3; destruct H3.
- elim H; apply X.eq_trans with y; auto.
+ elim _x; apply X.eq_trans with y; auto.
  inversion_clear Hm.
- elim (H0 H4 H1).
+ elim (IHt0 H4 H1).
  exists e; auto.
 Qed.
   
@@ -290,10 +290,10 @@ Lemma remove_2 : forall m (Hm:NoDupA m) x y e,
   ~ X.eq x y -> MapsTo y e m -> MapsTo y e (remove x m).
 Proof.
  intros m Hm x y e; generalize Hm; clear Hm; unfold PX.MapsTo.
- functional induction remove x m;auto.
+ functional induction (remove x m);auto.
  inversion_clear 3; auto.
- compute in H2; destruct H2.
- elim H0; apply X.eq_trans with k'; auto.
+ compute in H3; destruct H3.
+ elim H1; apply X.eq_trans with k'; auto.
   
  inversion_clear 1; inversion_clear 2; auto.
 Qed.
@@ -302,7 +302,7 @@ Lemma remove_3 : forall m (Hm:NoDupA m) x y e,
   MapsTo y e (remove x m) -> MapsTo y e m.
 Proof.
  intros m Hm x y e; generalize Hm; clear Hm; unfold PX.MapsTo.
- functional induction remove x m;auto.
+ functional induction (remove x m);auto.
  do 2 inversion_clear 1; auto.
 Qed.
 
@@ -310,7 +310,7 @@ Lemma remove_3' : forall m (Hm:NoDupA m) x y e,
   InA eqk (y,e) (remove x m) -> InA eqk (y,e) m.
 Proof.
  intros m Hm x y e; generalize Hm; clear Hm; unfold PX.MapsTo.
- functional induction remove x m;auto.
+ functional induction (remove x m);auto.
  do 2 inversion_clear 1; auto.
 Qed.
 
@@ -347,8 +347,7 @@ Qed.
 
 (** * [fold] *)
 
-Fixpoint fold (A:Set)(f:key->elt->A->A)(m:t elt) {struct m} : A -> A :=
-  fun acc => 
+Function fold (A:Set)(f:key->elt->A->A)(m:t elt) (acc : A) {struct m} :  A :=
   match m with
    | nil => acc
    | (k,e)::m' => fold f m' (f k e acc)
@@ -357,7 +356,7 @@ Fixpoint fold (A:Set)(f:key->elt->A->A)(m:t elt) {struct m} : A -> A :=
 Lemma fold_1 : forall m (A:Set)(i:A)(f:key->elt->A->A),
   fold f m i = fold_left (fun a p => f (fst p) (snd p) a) (elements m) i.
 Proof. 
- intros; functional induction fold A f m i; auto.
+ intros; functional induction (@fold A f m i); auto.
 Qed.
 
 (** * [equal] *)
