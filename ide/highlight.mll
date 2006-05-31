@@ -21,29 +21,35 @@
   let is_keyword =
     let h = Hashtbl.create 97 in
     List.iter (fun s -> Hashtbl.add h s ())
-      [  "Add" ; "Defined" ; 
-	 "End" ; "Export" ; "Extraction" ; "Hint" ; "Hints" ;
+      [  "Add" ; "Check"; "Defined" ; 
+	 "End" ; "Eval"; "Export" ; "Extraction" ; "Hint" ; "Hints" ;
 	 "Implicits" ; "Import" ; 
-	 "Infix" ; "Load" ; "match" ; "Module" ;
-	 "Proof" ; "Qed" ;
-	 "Require" ; "Save" ; "Scheme" ;
+	 "Infix" ; "Load" ; "Module" ;
+	 "Notation"; "Proof" ; "Print"; "Qed" ;
+	 "Require" ; "Reset"; "Undo"; "Save" ;
 	 "Section" ; "Unset" ;
 	 "Set" ; "Notation"
       ];
     Hashtbl.mem h
 
+  let is_constr_kw =
+    let h = Hashtbl.create 97 in
+      List.iter (fun s -> Hashtbl.add h s ())
+	[ "forall"; "fun"; "match"; "fix"; "cofix"; "with"; "for"; 
+	  "end"; "as"; "let"; "if"; "then"; "else"; "return";
+	  "Prop"; "Set"; "Type"]; 
+      Hashtbl.mem h
+
   let is_declaration =
     let h = Hashtbl.create 97 in
-    List.iter (fun s -> Hashtbl.add h s ())
-      [ "Lemma" ; "Axiom" ; "CoFixpoint" ; "Definition"  ;
-	"Fixpoint" ; "Hypothesis" ; 
-	"Hypotheses" ; "Axioms" ; "Parameters" ; "Subclass" ;
-	"Remark" ; "Fact" ; "Conjecture" ; "Let" ;
-	"CoInductive" ; "Record" ; "Structure" ;
-	"Inductive" ; "Parameter" ; "Theorem" ; 
-	"Variable" ; "Variables" 
-      ];
-    Hashtbl.mem h
+      List.iter (fun s -> Hashtbl.add h s ())
+	[ "Theorem" ; "Lemma" ; "Fact" ; "Remark" ; "Corollary" ; "Proposition" ; "Property" ;
+	  "Definition" ; "Let" ; "Example" ; "SubClass" ; "Inductive" ; "CoInductive" ; 
+	  "Record" ; "Structure" ; "Fixpoint" ; "CoFixpoint";  
+	  "Hypothesis" ; "Variable" ; "Axiom" ; "Parameter" ; "Conjecture" ;
+	  "Hypotheses" ; "Variables" ; "Axioms" ; "Parameters"
+	];
+      Hashtbl.mem h
 
 }
 
@@ -55,24 +61,41 @@ let identchar =
   ['$' 'A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 let ident = firstchar identchar*
 
+let thm_token = "Theorem" | "Lemma" | "Fact" | "Remark" | "Corollary" | "Proposition" | "Property"
+
+let def_token = "Definition" | "Let" | "Example" | "SubClass"
+
+let assumption = "Hypothesis" | "Variable" | "Axiom" | "Parameter" | "Conjecture" |
+  "Hypotheses" | "Variables" | "Axioms" | "Parameters"
+
 let declaration = 
-  "Lemma" | "Axiom" | "CoFixpoint" | "Definition"  |
-  "Fixpoint" | "Hypothesis" | 
-  "Inductive" | "Parameter" | "Theorem" | 
-  "Variable" | "Variables" | "Declare" space+ "Module"
+  "Theorem" | "Lemma" | "Fact" | "Remark" | "Corollary" | "Proposition" | "Property" |
+  "Definition" | "Let" | "Example" | "SubClass" |
+  "Inductive" | "CoInductive" | 
+  "Record" | "Structure" |
+  "Fixpoint" | "CoFixpoint"
 
 rule next_order = parse
   | "(*" 
       { comment_start := lexeme_start lexbuf; comment lexbuf }
   | "Module Type"
-      { lexeme_start lexbuf,lexeme_end lexbuf, "kwd" }
+      { lexeme_start lexbuf, lexeme_end lexbuf, "kwd" }
   | ident as id 
       { if is_keyword id then 
-	  lexeme_start lexbuf,lexeme_end lexbuf, "kwd" 
-	else
-	  next_order lexbuf }
-  | declaration space+ ident (space* ',' space* ident)* 
-            { lexeme_start lexbuf, lexeme_end lexbuf, "decl" } 
+	    lexeme_start lexbuf, lexeme_end lexbuf, "kwd" 
+	else 
+	    begin
+	      if is_constr_kw id then
+		lexeme_start lexbuf, lexeme_end lexbuf, "kwd"
+	      else
+		begin
+		  if is_declaration id then
+		    lexeme_start lexbuf, lexeme_end lexbuf, "decl"
+		  else
+		    next_order lexbuf 
+		end
+	    end
+      }
   | _    { next_order lexbuf}
   | eof  { raise End_of_file }
 
