@@ -9,7 +9,7 @@
 (*i $Id$ i*)
 
 (***********************************************************)
-(** Binary Integers (Pierre Crégut, CNET, Lannion, France) *)
+(** Binary Integers (Pierre CrÃ©gut, CNET, Lannion, France) *)
 (***********************************************************)
 
 Require Export BinPos.
@@ -703,6 +703,12 @@ Qed.
 (**********************************************************************)
 (** Properties of multiplication on binary integer numbers *)
 
+Theorem Zpos_mult_morphism : 
+ forall p q:positive, Zpos (p*q) = Zpos p * Zpos q.
+Proof.
+auto.
+Qed.
+
 (** One is neutral for multiplication *)
 
 Theorem Zmult_1_l : forall n:Z, Zpos 1 * n = n.
@@ -934,6 +940,8 @@ Lemma Zmult_succ_l_reverse : forall n m:Z, n * m + m = Zsucc n * m.
 Proof.
 intros; symmetry  in |- *; apply Zmult_succ_l.
 Qed.
+
+
 
 (** Misc redundant properties *)
 

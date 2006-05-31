@@ -869,6 +869,11 @@ ZARITHVO=\
  theories/ZArith/Zbool.vo	theories/ZArith/Zbinary.vo \
  theories/ZArith/Znumtheory.vo
 
+QARITHVO=\
+ theories/QArith/QArith_base.vo theories/QArith/Qreduction.vo \
+ theories/QArith/Qring.vo       theories/QArith/Qreals.vo \
+ theories/QArith/QArith.vo
+
 LISTSVO=\
  theories/Lists/MonoList.vo \
  theories/Lists/ListSet.vo   	theories/Lists/Streams.vo \
@@ -989,7 +994,7 @@ SETOIDSVO=theories/Setoids/Setoid.vo
 THEORIESVO =\
   $(INITVO) $(LOGICVO) $(ARITHVO) $(BOOLVO) $(NARITHVO) $(ZARITHVO) \
   $(SETOIDSVO) $(LISTSVO) $(STRINGSVO) $(SETSVO) $(FSETSVO) $(INTMAPVO) \
-  $(RELATIONSVO) $(WELLFOUNDEDVO) $(REALSVO)  $(SORTINGVO) 
+  $(RELATIONSVO) $(WELLFOUNDEDVO) $(REALSVO)  $(SORTINGVO) $(QARITHVO)
 
 THEORIESLIGHTVO = $(INITVO) $(LOGICVO) $(ARITHVO)
 
@@ -1001,6 +1006,7 @@ arith: $(ARITHVO)
 bool: $(BOOLVO)
 narith: $(NARITHVO)
 zarith: $(ZARITHVO)
+qarith: $(QARITHVO)
 lists: $(LISTSVO)
 strings: $(STRINGSVO)
 sets: $(SETSVO)
@@ -1015,8 +1021,8 @@ allreals: $(ALLREALS)
 setoids: $(SETOIDSVO)
 sorting: $(SORTINGVO)
 
-noreal: logic arith bool zarith lists sets fsets intmap relations wellfounded \
-	setoids sorting
+noreal: logic arith bool zarith qarith lists sets fsets intmap relations \
+	wellfounded setoids sorting
 
 ###########################################################################
 # contribs (interface not included)

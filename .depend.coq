@@ -280,6 +280,11 @@ theories/Sorting/Permutation.vo: theories/Sorting/Permutation.v theories/Relatio
 theories/Sorting/Sorting.vo: theories/Sorting/Sorting.v theories/Lists/List.vo theories/Sets/Multiset.vo theories/Sorting/Permutation.vo theories/Relations/Relations.vo
 theories/Sorting/PermutSetoid.vo: theories/Sorting/PermutSetoid.v contrib/omega/Omega.vo theories/Relations/Relations.vo theories/Lists/List.vo theories/Sets/Multiset.vo theories/Sorting/Permutation.vo theories/Lists/SetoidList.vo
 theories/Sorting/PermutEq.vo: theories/Sorting/PermutEq.v contrib/omega/Omega.vo theories/Relations/Relations.vo theories/Setoids/Setoid.vo theories/Lists/List.vo theories/Sets/Multiset.vo theories/Sorting/Permutation.vo
+theories/QArith/QArith_base.vo: theories/QArith/QArith_base.v theories/ZArith/ZArith.vo contrib/ring/ZArithRing.vo theories/Setoids/Setoid.vo
+theories/QArith/Qreduction.vo: theories/QArith/Qreduction.v theories/QArith/QArith_base.vo theories/ZArith/Znumtheory.vo
+theories/QArith/Qring.vo: theories/QArith/Qring.v contrib/ring/Ring.vo contrib/ring/Setoid_ring.vo theories/QArith/QArith_base.vo
+theories/QArith/Qreals.vo: theories/QArith/Qreals.v theories/Reals/Rbase.vo theories/QArith/QArith_base.vo
+theories/QArith/QArith.vo: theories/QArith/QArith.v theories/QArith/QArith_base.vo theories/QArith/Qring.vo theories/QArith/Qreduction.vo
 contrib/omega/OmegaLemmas.vo: contrib/omega/OmegaLemmas.v theories/ZArith/ZArith_base.vo
 contrib/omega/Omega.vo: contrib/omega/Omega.v theories/ZArith/ZArith_base.vo contrib/omega/OmegaLemmas.vo theories/ZArith/Zhints.vo
 contrib/romega/ReflOmegaCore.vo: contrib/romega/ReflOmegaCore.v theories/Arith/Arith.vo theories/Lists/List.vo theories/Bool/Bool.vo theories/ZArith/ZArith_base.vo contrib/omega/OmegaLemmas.vo theories/Logic/Decidable.vo
@@ -295,9 +300,9 @@ contrib/ring/Quote.vo: contrib/ring/Quote.v
 contrib/ring/Setoid_ring_normalize.vo: contrib/ring/Setoid_ring_normalize.v contrib/ring/Setoid_ring_theory.vo contrib/ring/Quote.vo
 contrib/ring/Setoid_ring.vo: contrib/ring/Setoid_ring.v contrib/ring/Setoid_ring_theory.vo contrib/ring/Quote.vo contrib/ring/Setoid_ring_normalize.vo
 contrib/ring/Setoid_ring_theory.vo: contrib/ring/Setoid_ring_theory.v theories/Bool/Bool.vo theories/Setoids/Setoid.vo
-contrib/field/Field_Compl.vo: contrib/field/Field_Compl.v
-contrib/field/Field_Theory.vo: contrib/field/Field_Theory.v theories/Arith/Peano_dec.vo contrib/ring/Ring.vo contrib/field/Field_Compl.vo
-contrib/field/Field_Tactic.vo: contrib/field/Field_Tactic.v contrib/ring/Ring.vo contrib/field/Field_Compl.vo contrib/field/Field_Theory.vo
+contrib/field/Field_Compl.vo: contrib/field/Field_Compl.v theories/Lists/List.vo
+contrib/field/Field_Theory.vo: contrib/field/Field_Theory.v theories/Lists/List.vo theories/Arith/Peano_dec.vo contrib/ring/Ring.vo contrib/field/Field_Compl.vo
+contrib/field/Field_Tactic.vo: contrib/field/Field_Tactic.v theories/Lists/List.vo contrib/ring/Ring.vo contrib/field/Field_Compl.vo contrib/field/Field_Theory.vo
 contrib/field/Field.vo: contrib/field/Field.v contrib/field/Field_Compl.vo contrib/field/Field_Theory.vo contrib/field/Field_Tactic.vo
 contrib/fourier/Fourier_util.vo: contrib/fourier/Fourier_util.v theories/Reals/Rbase.vo
 contrib/fourier/Fourier.vo: contrib/fourier/Fourier.v contrib/ring/quote.cmo contrib/ring/ring.cmo contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo contrib/field/field.cmo contrib/fourier/Fourier_util.vo contrib/field/Field.vo theories/Reals/DiscrR.vo
