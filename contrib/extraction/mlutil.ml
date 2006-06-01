@@ -972,7 +972,8 @@ let general_optimize_fix f ids n args m c =
   let v = Array.make n 0 in 
   for i=0 to (n-1) do v.(i)<-i done;
   let aux i = function 
-    | MLrel j when v.(j-1)>=0 -> v.(j-1)<-(-i-1)
+    | MLrel j when v.(j-1)>=0 -> 
+	if ast_occurs (j+1) c then raise Impossible else v.(j-1)<-(-i-1)
     | _ -> raise Impossible
   in list_iter_i aux args; 
   let args_f = List.rev_map (fun i -> MLrel (i+m+1)) (Array.to_list v) in
@@ -999,8 +1000,7 @@ let optimize_fix a =
 		 -> a'
 	     | MLfix(_,[|f|],[|c|]) -> 
 		 (try general_optimize_fix f ids n args m c
-		  with Impossible -> 
-		    named_lams ids (MLapp (MLfix (0,[|f|],[|c|]),args))) 
+		  with Impossible -> a)
 	     | _ -> a)
       | _ -> a
 
