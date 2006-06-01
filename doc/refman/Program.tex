@@ -1,36 +1,87 @@
 \def\Program{\textsc{Program}}
-\def\Russel{\textsc{Russel}}
+\def\Russell{\textsc{Russell}}
+\def\PVS{\textsc{PVS}}
 
-\achapter{The \Program{} tactic}
+\achapter{\Program{}}
 \label{Program}
 \aauthor{Matthieu Sozeau}
 \index{Program}
 
 \begin{flushleft}
-  \em The status of \Program is experimental.
+  \em The status of \Program\ is experimental.
 \end{flushleft}
 
-We present here the \Coq\ \Program tactic commands, used to build certified
-\Coq programs, elaborating them from their algorithmic skeleton and a
-rich specification. It can be sought of as a dual of extraction \ref{Extraction}.
+We present here the new \Program\ tactic commands, used to build certified
+\Coq\ programs, elaborating them from their algorithmic skeleton and a
+rich specification. It can be sought of as a dual of extraction
+(chapter \ref{Extraction}). The goal of \Program~is to program as in a regular
+functional programming language whilst using as rich a specification as 
+desired and proving that the code meets the specification using the whole \Coq{} proof
+apparatus. This is done using a technique originating from the
+``Predicate subtyping'' mechanism of \PVS \cite{Rushby98}, which generates type-checking
+conditions while typing a term constrained to a particular type. 
+Here we insert existential variables in the term, which must be filled
+with proofs to get a complete \Coq\ term. \Program\ replaces the
+\Program\ tactic by Catherine Parent \cite{Parent95b} which had a similar goal but is no longer
+maintained.
+
 The languages available as input are currently restricted to \Coq's term
 language, but may be extended to \ocaml{}, \textsc{Haskell} and others
-in the future. Input terms and types are typed in an extended system (\Russel) and
+in the future. We use the same syntax as \Coq\ and permit to use implicit
+arguments and the existing coercion mechanism.
+Input terms and types are typed in an extended system (\Russell) and
 interpreted into \Coq\ terms. The interpretation process may produce
 some proof obligations which need to be resolved to create the final term.
 
 \asection{Elaborating programs}
-\comindex{Program Fixpoint}
+The main difference from \Coq\ is that an object in a type $T : \Set$
+can be considered as an object of type $\{ x : T~|~P\}$ for any
+wellformed $P : \Prop$. 
+If we go from $T$ to the subset of $T$ verifying property $P$, we must
+prove that the object under consideration verifies it. \Russell\ will
+generate an obligation for every such coercion. In the other direction,
+\Russell\ will automatically insert a projection.
 
-The next two commands are similar to they standard counterparts
-\ref{Simpl-definitions} and \ref{Fixpoint} in that
+Another distinction is the treatment of pattern-matching. Apart from the
+following differences, it is equivalent to the standard {\tt match}
+operation (section \ref{Caseexpr}).
+\begin{itemize}
+\item Generation of equalities. A {\tt match} expression is always
+  generalized by the corresponding equality. As an example,
+  the expression: 
+
+\begin{coq_example*}
+  match x with
+  | 0 => t
+  | S n => u
+  end.
+\end{coq_example*}
+will be first rewrote to:
+\begin{coq_example*}
+  (match x as y return (x = y -> _) with
+  | 0 => fun H : x = 0 -> t
+  | S n => fun H : x = S n -> u
+  end) (refl_equal n).
+\end{coq_example*}
+  
+  This permits to get the proper equalities in the context of proof
+  obligations inside clauses, without which reasoning is very limited.
+  
+\item Coercion. If the object being matched is coercible to an inductive
+  type, the corresponding coercion will be automatically inserted. This also
+  works with the previous mechanism.
+\end{itemize}
+
+The next two commands are similar to their standard counterparts
+Definition (section \ref{Simpl-definitions}) and Fixpoint (section \ref{Fixpoint}) in that
 they define constants. However, they may require the user to prove some
-goals to construct the final definitions.
+goals to construct the final definitions. {\em Note:} every subtac
+definition must end with the {\tt Defined} vernacular.
 
-\section{\tt Program Definition {\ident} := {\term}.
+\subsection{\tt Program Definition {\ident} := {\term}.
   \comindex{Program Definition}\label{ProgramDefinition}}
 
-This command types the value {\term} in \Russel and generate subgoals
+This command types the value {\term} in \Russell\ and generate subgoals
 corresponding to proof obligations. Once solved, it binds the final
 \Coq\ term to the name {\ident} in the environment.
 
@@ -65,62 +116,35 @@ corresponding to proof obligations. Once solved, it binds the final
 
 \SeeAlso Sections \ref{Opaque}, \ref{Transparent}, \ref{unfold}
 
-\section{\tt Program Fixpoint {\ident} {\params} {\tt \{order\}} : type$_0$ := \term$_0$ 
+\subsection{\tt Program Fixpoint {\ident} {\params} {\tt \{order\}} : type := \term
   \comindex{Program Fixpoint}
   \label{ProgramFixpoint}}
 
-This command allows to define objects using a fixed point
-construction. The meaning of this declaration is to define {\it ident}
-a recursive function with arguments specified by
-{\binder$_1$}\ldots{\binder$_n$} such that {\it ident} applied to
-arguments corresponding to these binders has type \type$_0$, and is
-equivalent to the expression \term$_0$. The type of the {\ident} is
-consequently {\tt forall {\params} {\tt,} \type$_0$}
-and the value is equivalent to {\tt fun {\params} {\tt =>} \term$_0$}.
-
-There are two ways to define fixpoints with \Program{}, structural and
-well-founded recursion.
-
-\subsection{\tt Program Fixpoint {\ident} {\params} {\tt \{struct}
-  \ident$_0$ {\tt \}} : type$_0$ := \term$_0$  
-  \comindex{Program Fixpoint Struct}
-  \label{ProgramFixpointStruct}}
-
-To be accepted, a structural {\tt Fixpoint} definition has to satisfy some
-syntactical constraints on a special argument called the decreasing
-argument. They are needed to ensure that the {\tt Fixpoint} definition
-always terminates. The point of the {\tt \{struct \ident {\tt \}}}
-annotation is to let the user tell the system which argument decreases
-along the recursive calls. This annotation may be left implicit for
-fixpoints with one argument. For instance, one can define the identity
-function on naturals as :
+The structural fixpoint operator behaves just like the one of Coq
+(section \ref{Fixpoint}), except it may also generate obligations.
 
 \begin{coq_example}
-Program Fixpoint id (n : nat) : { x : nat | x = n } :=
+Program Fixpoint div2 (n : nat) : { x : nat | n = 2 * x \/ n = 2 * x + 1 } :=
   match n with
-  | O => O
-  | S p => S (id p)
+  | S (S p) => S (div2 p)
+  | _ => O
   end.
 \end{coq_example}
 
-The {\tt match} operator matches a value (here \verb:n:) with the
-various constructors of its (inductive) type. The remaining arguments
-give the respective values to be returned, as functions of the
-parameters of the corresponding constructor. Thus here when \verb:n:
-equals \verb:O: we return \verb:0:, and when \verb:n: equals 
-\verb:(S p): we return \verb:(S (id p)):.
-
-The {\tt match} operator is formally described
-in detail in Section~\ref{Caseexpr}.  The system recognizes that in
-the inductive call {\tt (id p)} the argument actually
-decreases because it is a {\em pattern variable} coming from {\tt match
-  n with}.
-
-Here again, proof obligations may be generated. In our example, we would
-have one for each branch:
+Here we have one obligation for each branch (branches for \verb:0: and \verb:(S 0): are
+automatically generated by the pattern-matching compilation algorithm):
 \begin{coq_example}
-Show.
+  Show.
 \end{coq_example}
+
+\subsection{\tt Program Lemma {\ident} : type.
+  \comindex{Program Lemma}
+  \label{ProgramLemma}}
+
+The \Russell\ language can also be used to type statements of logical
+properties. It will currently fail if the traduction to \Coq\
+generates obligations though it can be useful to insert automatic coercions.
+
 
 % \subsection{\tt Program Fixpoint {\ident} {(\ident_$_0$ : \type_$_0$)
 %     \cdots (\ident_$_n$ : \type_$_n$)} {\tt \{wf}
