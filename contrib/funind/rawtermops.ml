@@ -68,7 +68,10 @@ let rec raw_make_or_list = function
   | e::l -> raw_make_or e (raw_make_or_list l)
 
   
-
+let remove_name_from_mapping mapping na = 
+  match na with 
+    | Anonymous -> mapping 
+    | Name id -> Idmap.remove id mapping
 
 let change_vars = 
   let rec change_vars mapping rt = 
@@ -88,36 +91,31 @@ let change_vars =
 	       change_vars mapping rt',
 	       List.map (change_vars mapping) rtl
 	      )
-      | RLambda(_,Name id,_,_) when Idmap.mem id mapping -> rt
       | RLambda(loc,name,t,b) -> 
 	  RLambda(loc,
 		  name,
 		  change_vars mapping t,
-		  change_vars mapping b
+		  change_vars (remove_name_from_mapping mapping name) b
 		 )
-      | RProd(_,Name id,_,_) when Idmap.mem id mapping -> rt
       | RProd(loc,name,t,b) -> 
 	  RProd(loc,
 		  name,
 		  change_vars mapping t,
-		  change_vars mapping b
+		  change_vars (remove_name_from_mapping mapping name) b
 		 )
-      | RLetIn(_,Name id,_,_) when Idmap.mem id mapping -> rt
       | RLetIn(loc,name,def,b) -> 
 	  RLetIn(loc,
 		 name,
 		 change_vars mapping def,
-		 change_vars mapping b
+		 change_vars (remove_name_from_mapping mapping name) b
 		)
-      | RLetTuple(_,nal,(na,_),_,_) when 
-	  List.exists (function Name id -> Idmap.mem id mapping | _ -> false) (na::nal) -> 
-	  rt 
       | RLetTuple(loc,nal,(na,rto),b,e) -> 
+	  let new_mapping = List.fold_left remove_name_from_mapping mapping nal in 
 	  RLetTuple(loc,
-		    nal, 
+		    nal,
 		    (na, option_map (change_vars mapping) rto), 
-		    change_vars mapping b,
-		    change_vars mapping e
+		    change_vars mapping b, 
+		    change_vars new_mapping e
 		   )
       | RCases(loc,infos,el,brl) -> 
 	  RCases(loc,
@@ -238,7 +236,7 @@ let rec alpha_rt excluded rt =
 	  then t,b
 	  else 
 	    let replace = change_vars (Idmap.add id new_id Idmap.empty) in 
-	    (replace t,replace b)
+	    (t,replace b)
 	in
 	let new_excluded = new_id::excluded in 
 	let new_t = alpha_rt new_excluded t in 
@@ -252,7 +250,7 @@ let rec alpha_rt excluded rt =
 	  then t,b
 	  else 
 	    let replace = change_vars (Idmap.add id new_id Idmap.empty) in 
-	    (replace t,replace b)
+	    (t,replace b)
 	in
 	let new_t = alpha_rt new_excluded t in 
 	let new_b = alpha_rt new_excluded b in 
@@ -264,7 +262,7 @@ let rec alpha_rt excluded rt =
 	  then t,b
 	  else 
 	    let replace = change_vars (Idmap.add id new_id Idmap.empty) in 
-	    (replace t,replace b)
+	    (t,replace b)
 	in
 	let new_excluded = new_id::excluded in 
 	let new_t = alpha_rt new_excluded t in 
@@ -294,7 +292,7 @@ let rec alpha_rt excluded rt =
 	  if idmap_is_empty mapping
 	  then rto,t,b
 	  else let replace = change_vars mapping in 
-	  (option_map replace rto,replace t,replace b)
+	  (option_map replace rto, t,replace b)
 	in
 	let new_t = alpha_rt new_excluded new_t in 
 	let new_b = alpha_rt new_excluded new_b in 
