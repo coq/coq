@@ -56,7 +56,7 @@ let interp_gen kind isevars env
                c =
   let c' = Constrintern.intern_gen (kind=IsType) ~impls ~allow_soapp ~ltacvars (Evd.evars_of !isevars) env c in
   let c' = Subtac_utils.rewrite_cases env c' in
-    trace (str "Pretyping " ++ my_print_constr_expr c);
+    (try trace (str "Pretyping " ++ my_print_constr_expr c) with _ -> ());
   let c' = SPretyping.pretype_gen isevars env ([],[]) kind c' in
     evar_nf isevars c'
     
@@ -201,10 +201,12 @@ let build_recursive (lnameargsardef:(fixpoint_expr * decl_notation) list) boxed 
 		  (Environ.push_named (recname,None,arity) env, impls', (isevars, None, arity)::arl)
 	    | CWfRec r -> 		    
 		let n = out_some n in 
-		let _ = trace (str "Rewriting fixpoint: " ++ Ppconstr.pr_id recname ++ 
-			       Ppconstr.pr_binders bl ++ str " : " ++ 
-			       Ppconstr.pr_constr_expr arityc ++ str " := " ++ spc () ++
-			       Ppconstr.pr_constr_expr body)
+		let _ = 
+		  try trace (str "Rewriting fixpoint: " ++ Ppconstr.pr_id recname ++ 
+			     Ppconstr.pr_binders bl ++ str " : " ++ 
+			     Ppconstr.pr_constr_expr arityc ++ str " := " ++ spc () ++
+			     Ppconstr.pr_constr_expr body)
+		  with _ -> ()
 		in
 		let env', binders_rel = interp_context isevars env0 bl in
 		let after, ((argname, _, argtyp) as arg), before = list_chop_hd n binders_rel in
@@ -234,10 +236,11 @@ let build_recursive (lnameargsardef:(fixpoint_expr * decl_notation) list) boxed 
 		let _ = 
 		  let pr c = my_print_constr env c in
 		  let prr = Printer.pr_rel_context env in
-		    trace (str "Fun bl: " ++ prr fun_bl ++ spc () ++
-			     str "Intern bl" ++ prr intern_bl ++ spc () ++
-			     str "Extern bl" ++ prr new_bl ++ spc () ++
-			     str "Intern arity: " ++ pr intern_arity)
+		    try trace (str "Fun bl: " ++ prr fun_bl ++ spc () ++
+			       str "Intern bl" ++ prr intern_bl ++ spc () ++
+			       str "Extern bl" ++ prr new_bl ++ spc () ++
+			       str "Intern arity: " ++ pr intern_arity)
+		    with _ -> ()
 		in
 		let impl = 
 		  if Impargs.is_implicit_args()
@@ -286,8 +289,9 @@ let build_recursive (lnameargsardef:(fixpoint_expr * decl_notation) list) boxed 
       Array.map (subst_vars (List.rev (Array.to_list namerec))) defrec in
     let recdecls = (Array.map (fun id -> Name id) namerec, arrec, recvec) in
     let rec declare i fi =
-      trace (str "Declaring: " ++ pr_id fi ++ spc () ++
-	     my_print_constr env0 (recvec.(i)));
+      (try trace (str "Declaring: " ++ pr_id fi ++ spc () ++
+		  my_print_constr env0 (recvec.(i)));
+       with _ -> ());
       let ce = 
 	{ const_entry_body = mkFix ((nvrec',i),recdecls); 
           const_entry_type = Some arrec.(i);
@@ -332,10 +336,10 @@ let build_recursive (lnameargsardef:(fixpoint_expr * decl_notation) list) boxed 
   let rec collect_evars i acc = 
     if i < recdefs then
       let (isevars, info, def) = defrec.(i) in
-      let _ = trace (str "In solve evars, isevars is: " ++ Evd.pr_evar_defs !isevars) in
+      let _ = try trace (str "In solve evars, isevars is: " ++ Evd.pr_evar_defs !isevars) with _ -> () in
       let def = evar_nf isevars def in
       let isevars = Evd.undefined_evars !isevars in
-      let _ = trace (str "In solve evars, undefined is: " ++ Evd.pr_evar_defs isevars) in
+      let _ = try trace (str "In solve evars, undefined is: " ++ Evd.pr_evar_defs isevars) with _ -> () in
       let evm = Evd.evars_of isevars in
       let _, _, typ = arrec.(i) in
       let id = namerec.(i) in
@@ -358,10 +362,16 @@ let build_recursive (lnameargsardef:(fixpoint_expr * decl_notation) list) boxed 
 	trace (str (string_of_id fi) ++ str " is defined");*)
 	let evar_sum =
 	  if evars = [] then None
-	  else 
+	  else (
+	    (try trace (str "Building evars sum for : ");
+	       List.iter
+		 (fun (n, t) -> trace (str "Evar " ++ str (string_of_id n) ++ spc () ++ my_print_constr env0 t))
+		 evars;
+	     with _ -> ());
 	    let sum = Subtac_utils.build_dependent_sum evars in
-	      trace (str "Evars sum: " ++ my_print_constr env0 (pi1 sum));
-	      Some sum
+	      (try trace (str "Evars sum: " ++ my_print_constr env0 (snd sum));
+	       with _ -> ());
+	      Some sum)
 	in
 	  collect_evars (succ i) ((id, evars_def, evar_sum) :: acc)
     else acc
@@ -371,32 +381,34 @@ let build_recursive (lnameargsardef:(fixpoint_expr * decl_notation) list) boxed 
   (* Solve evars then create the definitions *)
   let real_evars = 
     filter_map (fun (id, kn, sum) ->
-		  match sum with Some (sumg, sumtac, _) -> Some (id, kn, sumg, sumtac) | None -> None)
+		  match sum with Some (sumtac, sumg) -> Some (id, kn, sumg, sumtac) | None -> None)
       defs
   in
     Subtac_utils.and_tac real_evars
       (fun f _ gr ->
-	 let _ = trace (str "Got a proof of: " ++ pr_global gr) in
+	 let _ = trace (str "Got a proof of: " ++ pr_global gr ++
+			str "type: " ++ my_print_constr (Global.env ()) (Global.type_of_global gr)) in
 	 let constant = match gr with Libnames.ConstRef c -> c
 	   | _ -> assert(false)
 	 in
 	   try
 	     (*let value = Environ.constant_value (Global.env ()) constant in*)
 	     let pis = f (mkConst constant) in
-	       trace (str "Accessors: " ++
-		      List.fold_right (fun (_, _, _, c) acc -> my_print_constr env0 c ++ spc () ++ acc)
-			pis (mt()));
-	       trace (str "Applied existentials: " ++
-		      (List.fold_right
-			 (fun (id, kn, sumg, pi) acc ->
-			    let args = Subtac_utils.destruct_ex pi sumg in
-			      my_print_constr env0 (mkApp (kn, Array.of_list args)))
-			 pis (mt ())));
+	       (try (trace (str "Accessors: " ++
+			   List.fold_right (fun (_, _, _, c) acc -> my_print_constr env0 c ++ spc () ++ acc)
+			     pis (mt()));
+		    trace (str "Applied existentials: " ++
+			   (List.fold_right
+			      (fun (id, kn, sumg, pi) acc ->
+				 let args = Subtac_utils.destruct_ex pi sumg in
+				   my_print_constr env0 (mkApp (kn, Array.of_list args)))
+			      pis (mt ()))))
+	       with _ -> ());
 	       let rec aux pis acc = function
 		   (id, kn, sum) :: tl ->
 		     (match sum with 
 			  None -> aux pis (kn :: acc) tl
-			| Some (sumg, _, _) -> 
+			| Some (_, sumg) -> 
 			    let (id, kn, sumg, pi), pis = List.hd pis, List.tl pis in
 			    let args = Subtac_utils.destruct_ex pi sumg in
 			    let args = 

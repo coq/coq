@@ -48,8 +48,10 @@ let subtac_one_fixpoint env isevars (f, decl) =
   let ((id, n, bl, typ, body), decl) = 
     Subtac_interp_fixpoint.rewrite_fixpoint env [] (f, decl) 
   in
-  let _ = trace (str "Working on a single fixpoint rewritten as: " ++ spc () ++
-		 Ppconstr.pr_constr_expr body)
+  let _ = 
+    try trace (str "Working on a single fixpoint rewritten as: " ++ spc () ++
+	       Ppconstr.pr_constr_expr body)
+    with _ -> ()
   in ((id, n, bl, typ, body), decl)
     
 	      

@@ -118,8 +118,8 @@ let print_args env args =
 let make_existential loc env isevars c =
   let evar = Evarutil.e_new_evar isevars env ~src:(loc, QuestionMark) c in
   let (key, args) = destEvar evar in
-    debug 2 (str "Constructed evar " ++ int key ++ str " applied to args: " ++
-	     print_args env args);
+    (try debug 2 (str "Constructed evar " ++ int key ++ str " applied to args: " ++
+		  print_args env args) with _ -> ());
     evar
 
 let make_existential_expr loc env c =
@@ -160,26 +160,27 @@ open Tactics
 open Tacticals
 
 let build_dependent_sum l =
-  let rec aux (acc, tac, typ) = function
+  let rec aux (tac, typ) = function
       (n, t) :: tl ->
 	let t' = mkLambda (Name n, t, typ) in
-	  trace (str ("treating " ^ string_of_id n) ++
-		 str "assert: " ++ my_print_constr (Global.env ()) t);
+	  trace (spc () ++ str ("treating evar " ^ string_of_id n));
+	  (try trace (str " assert: " ++ my_print_constr (Global.env ()) t)
+	   with _ -> ());
 	let tac' = 
-	  tclTHEN (assert_tac true (Name n) t) 
-	    (tclTHENLIST
-	       [intros;
-		(tclTHENSEQ 
-		   [tclTRY (constructor_tac (Some 1) 1 
-		       (Rawterm.ImplicitBindings [mkVar n]));
-		    tac]);
-	       ])
+	  tclTHENS (assert_tac true (Name n) t) 
+	    ([intros;
+	      (tclTHENSEQ 
+		 [constructor_tac (Some 1) 1 
+		    (Rawterm.ImplicitBindings [mkVar n]);
+		  tac]);
+	     ])
 	in
-	  aux (mkApp (Lazy.force ex_ind, [| t; t'; |]), tac', t') tl
-    | [] -> acc, tac, typ
+	let newt = mkApp (Lazy.force ex_ind, [| t; t'; |]) in
+	  aux (tac', newt) tl
+    | [] -> tac, typ
   in 
     match l with 
-	(_, hd) :: tl -> aux (hd, intros, hd) tl
+	(_, hd) :: tl -> aux (intros, hd) tl
       | [] -> raise (Invalid_argument "build_dependent_sum")
 
 open Proof_type
@@ -218,7 +219,8 @@ let and_tac l hook =
   let and_proof_id, and_goal, and_tac, and_extract = 
     match l with
       | [] -> raise (Invalid_argument "and_tac: empty list of goals")
-      | (hdid, x, hdg, hdt) :: tl -> aux (string_of_id hdid, hdg, hdt, [hdid, x, hdg, (fun c -> c)]) tl
+      | (hdid, x, hdg, hdt) :: tl -> 
+	  aux (string_of_id hdid, hdg, hdt, [hdid, x, hdg, (fun c -> c)]) tl
   in
   let and_proofid = id_of_string (and_proof_id ^ "_and_proof") in
     Command.start_proof and_proofid goal_kind and_goal
@@ -238,7 +240,13 @@ let destruct_ex ext ex =
 		   try (args.(0), args.(1))
 		   with _ -> assert(false)
 		 in
-		   (mk_ex_pi1 dom rng acc) :: aux rng (mk_ex_pi2 dom rng acc)
+		 let pi1 = (mk_ex_pi1 dom rng acc) in
+		 let rng_body = 
+		   match kind_of_term rng with
+		       Lambda (_, _, t) -> subst1 pi1 t
+		     | t -> rng
+		 in
+		   pi1 :: aux rng_body (mk_ex_pi2 dom rng acc)
 	     | _ -> [acc])
       | _ -> [acc]
   in aux ex ext

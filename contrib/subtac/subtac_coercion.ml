@@ -53,7 +53,8 @@ module Coercion = struct
       | _ -> None
 	  
   and disc_exist env x =
-    trace (str "Disc_exist: " ++ my_print_constr env x);
+    (try trace (str "Disc_exist: " ++ my_print_constr env x)
+     with _ -> ());
     match kind_of_term x with
       | App (c, l) ->
 	  (match kind_of_term c with
@@ -66,7 +67,8 @@ module Coercion = struct
 
 
   let disc_proj_exist env x =
-    trace (str "disc_proj_exist: " ++ my_print_constr env x);
+    (try trace (str "disc_proj_exist: " ++ my_print_constr env x);
+     with _ -> ());
     match kind_of_term x with
       | App (c, l) ->
 	  (if Term.eq_constr c (Lazy.force sig_).proj1 
@@ -104,23 +106,27 @@ module Coercion = struct
       : (Term.constr -> Term.constr) option 
       =
     let x = nf_evar (evars_of !isevars) x and y = nf_evar (evars_of !isevars) y in
-      trace (str "Coerce called for " ++ (my_print_constr env x) ++ 
-	     str " and "++ my_print_constr env y ++ 
-	     str " with evars: " ++ spc () ++
-	     my_print_evardefs !isevars);
+      (try trace (str "Coerce called for " ++ (my_print_constr env x) ++ 
+		  str " and "++ my_print_constr env y ++ 
+		  str " with evars: " ++ spc () ++
+		  my_print_evardefs !isevars);
+       with _ -> ());
     let rec coerce_unify env x y =
-      trace (str "coerce_unify from " ++ (my_print_constr env x) ++ 
-	     str " to "++ my_print_constr env y);
+      (try trace (str "coerce_unify from " ++ (my_print_constr env x) ++ 
+		  str " to "++ my_print_constr env y)
+       with _ -> ());
       try 
 	isevars := the_conv_x_leq env x y !isevars;
-	trace (str "Unified " ++ (my_print_constr env x) ++ 
-	       str " and "++ my_print_constr env y);
+	(try (trace (str "Unified " ++ (my_print_constr env x) ++ 
+		     str " and "++ my_print_constr env y));
+	 with _ -> ());
 	None
       with Reduction.NotConvertible -> coerce' env (hnf env isevars x) (hnf env isevars y)
     and coerce' env x y : (Term.constr -> Term.constr) option =
       let subco () = subset_coerce env isevars x y in
-	trace (str "coerce' from " ++ (my_print_constr env x) ++ 
-		 str " to "++ my_print_constr env y);
+	(try trace (str "coerce' from " ++ (my_print_constr env x) ++ 
+		    str " to "++ my_print_constr env y);
+	 with _ -> ());
 	match (kind_of_term x, kind_of_term y) with
 	  | Sort s, Sort s' -> 
 	      (match s, s' with

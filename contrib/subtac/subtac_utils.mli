@@ -78,7 +78,7 @@ val mkProj1 : constr -> constr -> constr -> constr
 val mk_ex_pi1 : constr -> constr -> constr -> constr
 val mk_ex_pi1 : constr -> constr -> constr -> constr
 
-val build_dependent_sum : (identifier * types) list -> constr * Proof_type.tactic * types
+val build_dependent_sum : (identifier * types) list -> Proof_type.tactic * types
 val and_tac : (identifier * 'a * constr * Proof_type.tactic) list ->  
   ((constr -> (identifier * 'a * constr * constr) list) -> Tacexpr.declaration_hook) -> unit
 

@@ -43,7 +43,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
   module Cases = Cases.Cases_F(Coercion)
 
   (* Allow references to syntaxically inexistent variables (i.e., if applied on an inductive) *)
-  let allow_anonymous_refs = ref false
+  let allow_anonymous_refs = ref true
 
   let evd_comb0 f isevars =
     let (evd',x) = f !isevars in
