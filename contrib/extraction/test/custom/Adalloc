@@ -1,2 +1,2 @@
-Require Import Addr.
-Extraction NoInline ad_double ad_double_plus_un.
+Require Import BinNat.
+Extraction NoInline Ndouble Ndouble_plus_one.
