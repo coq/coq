@@ -22,6 +22,15 @@ unfold not in |- *; intros; elim (classic p); auto.
 intro NP; elim (H NP).
 Qed.
 
+(** Peirce's law states [forall P Q:Prop, ((P -> Q) -> P) -> P]. 
+    Thanks to [forall P, False -> P], it is equivalent to the
+    following form *)
+
+Lemma Peirce : forall P:Prop, ((P -> False) -> P) -> P.
+Proof.
+intros P H; destruct (classic P); auto.
+Qed.
+
 Lemma not_imply_elim : forall P Q:Prop, ~ (P -> Q) -> P.
 Proof.
 intros; apply NNPP; red in |- *.

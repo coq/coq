@@ -813,16 +813,17 @@ INITVO=\
 init: $(INITVO)
 
 LOGICVO=\
- theories/Logic/Hurkens.vo          	theories/Logic/ProofIrrelevance.vo\
- theories/Logic/Classical.vo          	theories/Logic/Classical_Type.vo \
- theories/Logic/Classical_Pred_Set.vo   theories/Logic/Eqdep.vo          \
- theories/Logic/Classical_Pred_Type.vo  theories/Logic/Classical_Prop.vo \
- theories/Logic/ClassicalFacts.vo       theories/Logic/ChoiceFacts.vo \
- theories/Logic/Berardi.vo       	theories/Logic/Eqdep_dec.vo \
- theories/Logic/Decidable.vo            theories/Logic/JMeq.vo \
- theories/Logic/ClassicalDescription.vo theories/Logic/ClassicalChoice.vo \
- theories/Logic/RelationalChoice.vo     theories/Logic/Diaconescu.vo \
- theories/Logic/EqdepFacts.vo           theories/Logic/ProofIrrelevanceFacts.vo
+ theories/Logic/Hurkens.vo            theories/Logic/ProofIrrelevance.vo\
+ theories/Logic/Classical.vo          theories/Logic/Classical_Type.vo \
+ theories/Logic/Classical_Pred_Set.vo theories/Logic/Eqdep.vo          \
+ theories/Logic/Classical_Prop.vo     theories/Logic/Classical_Pred_Type.vo \
+ theories/Logic/ClassicalFacts.vo     theories/Logic/ChoiceFacts.vo \
+ theories/Logic/Berardi.vo            theories/Logic/Eqdep_dec.vo \
+ theories/Logic/Decidable.vo          theories/Logic/JMeq.vo \
+ theories/Logic/ClassicalChoice.vo    theories/Logic/ClassicalDescription.vo \
+ theories/Logic/RelationalChoice.vo   theories/Logic/Diaconescu.vo \
+ theories/Logic/EqdepFacts.vo         theories/Logic/ProofIrrelevanceFacts.vo \
+ theories/Logic/ClassicalEpsilon.vo   theories/Logic/ClassicalUniqueChoice.vo 
 
 ARITHVO=\
  theories/Arith/Arith.vo        theories/Arith/Gt.vo          \

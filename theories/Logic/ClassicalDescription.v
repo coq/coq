@@ -10,69 +10,91 @@
 
 (** This file provides classical logic and definite description *)
 
-(** Classical logic and definite description, as shown in [1],
-    implies the double-negation of excluded-middle in Set, hence it
-    implies a strongly classical world. Especially it conflicts with
-    impredicativity of Set, knowing that true<>false in Set.
+(** Classical definite description operator (i.e. iota) implies
+    excluded-middle in [Set] and leads to a classical world populated
+    with non computable functions. It conflicts with the
+    impredicativity of [Set] *)
 
-    [1] Laurent Chicli, Loïc Pottier, Carlos Simpson, Mathematical
-    Quotients and Quotient Types in Coq, Proceedings of TYPES 2002,
-    Lecture Notes in Computer Science 2646, Springer Verlag.
-*)
+Set Implicit Arguments.
 
 Require Export Classical.
+Require Import ChoiceFacts.
 
-Axiom
-  dependent_description :
+Notation Local "'inhabited' A" := A (at level 200, only parsing).
+
+Axiom constructive_definite_description :
+  forall (A : Type) (P : A->Prop), (exists! x : A, P x) -> { x : A | P x }.
+
+(** The idea for the following proof comes from [ChicliPottierSimpson02] *)
+
+Theorem excluded_middle_informative : forall P:Prop, {P} + {~ P}.
+Proof.
+apply 
+  (constructive_definite_descr_excluded_middle 
+   constructive_definite_description classic).
+Qed.
+
+Theorem classical_definite_description : 
+  forall (A : Type) (P : A->Prop), inhabited A ->
+  { x : A | (exists! x : A, P x) -> P x }.
+Proof.
+intros A P i.
+destruct (excluded_middle_informative (exists! x, P x)) as [Hex|HnonP].
+  apply constructive_definite_description with (P:= fun x => (exists! x : A, P x) -> P x).
+  destruct Hex as (x,(Hx,Huni)).
+  exists x; split.
+    intros _; exact Hx.
+    firstorder.
+exists i; tauto.
+Qed.
+
+(** Church's iota operator *)
+
+Definition iota (A : Type) (i:inhabited A) (P : A->Prop) : A
+  := proj1_sig (classical_definite_description P i).
+
+Definition iota_spec (A : Type) (i:inhabited A) (P : A->Prop) : 
+  (exists! x:A, P x) -> P (iota i P)
+  := proj2_sig (classical_definite_description P i).
+
+(** Weaker lemmas (compatibility lemmas) *)
+
+Unset Implicit Arguments.
+
+Lemma dependent_description :
     forall (A:Type) (B:A -> Type) (R:forall x:A, B x -> Prop),
-      (forall x:A,
-          exists y : B x, R x y /\ (forall y':B x, R x y' -> y = y')) ->
-       exists f : forall x:A, B x, (forall x:A, R x (f x)).
-
-(** Principle of definite descriptions (aka axiom of unique choice) *)
+      (forall x:A, exists! y : B x, R x y) ->
+      (exists f : (forall x:A, B x), forall x:A, R x (f x)).
+Proof.
+intros A B R H.
+assert (Hexuni:forall x, exists! y, R x y).
+  intro x. apply H.
+exists (fun x => proj1_sig (constructive_definite_description (R x) (Hexuni x))).
+intro x.
+apply (proj2_sig (constructive_definite_description (R x) (Hexuni x))).
+Qed.
 
 Theorem description :
  forall (A B:Type) (R:A -> B -> Prop),
-   (forall x:A,  exists y : B, R x y /\ (forall y':B, R x y' -> y = y')) ->
-    exists f : A -> B, (forall x:A, R x (f x)).
+   (forall x : A,  exists! y : B, R x y) ->
+   (exists f : A->B, forall x:A, R x (f x)).
 Proof.
 intros A B.
 apply (dependent_description A (fun _ => B)).
 Qed.
 
-(** The followig proof comes from [1] *)
+(** Axiom of unique "choice" (functional reification of functional relations) *)
 
-Theorem classic_set : ((forall P:Prop, {P} + {~ P}) -> False) -> False.
+Set Implicit Arguments.
+
+Require Import Setoid.
+
+Theorem unique_choice :
+ forall (A B:Type) (R:A -> B -> Prop),
+   (forall x:A,  exists! y : B, R x y) ->
+   (exists f : A -> B, forall x:A, R x (f x)).
 Proof.
-intro HnotEM.
-set (R := fun A b => A /\ true = b \/ ~ A /\ false = b).
-assert (H :  exists f : Prop -> bool, (forall A:Prop, R A (f A))).
-apply description.
-intro A.
-destruct (classic A) as [Ha| Hnota].
-  exists true; split.
-    left; split; [ assumption | reflexivity ].
-    intros y [[_ Hy]| [Hna _]].
-      assumption.
-      contradiction.
-  exists false; split.
-    right; split; [ assumption | reflexivity ].
-    intros y [[Ha _]| [_ Hy]].
-      contradiction.
-      assumption.
-destruct H as [f Hf].
-apply HnotEM.
-intro P.
-assert (HfP := Hf P).
-(* Elimination from Hf to Set is not allowed but from f to Set yes ! *)
-destruct (f P).
-  left.
-  destruct HfP as [[Ha _]| [_ Hfalse]].
-    assumption.
-    discriminate.
-  right.
-  destruct HfP as [[_ Hfalse]| [Hna _]].
-    discriminate.
-    assumption.
+intros A B R H.
+apply (description A B).
+intro x. apply H.
 Qed.
- 
