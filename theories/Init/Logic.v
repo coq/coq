@@ -285,17 +285,18 @@ Hint Immediate sym_eq sym_not_eq: core v62.
 Definition subrelation (A B : Type) (R R' : A->B->Prop) :=
   forall x y, R x y -> R' x y.
 
-Definition singleton (A : Type) (P : A->Prop) (x:A) :=
+Definition unique (A : Type) (P : A->Prop) (x:A) :=
   P x /\ forall (x':A), P x' -> x=x'.
 
 Definition uniqueness (A:Type) (P:A->Prop) := forall x y, P x -> P y -> x = y.
 
 (** Unique existence *)
 
-Notation "'exists' ! x , P" := (exists x', singleton (fun x => P) x')
+Notation "'exists' ! x , P" := (exists x', unique (fun x => P) x')
   (at level 200, x ident, right associativity,
    format "'[' 'exists' !  '/  ' x ,  '/  ' P ']'") : type_scope.
-Notation "'exists' ! x : A , P" := (exists x':A, singleton (fun x:A => P) x')
+Notation "'exists' ! x : A , P" := 
+  (exists x':A, unique (fun x:A => P) x')
   (at level 200, x ident, right associativity,
    format "'[' 'exists' !  '/  ' x  :  A ,  '/  ' P ']'") : type_scope.
 
