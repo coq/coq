@@ -444,7 +444,7 @@ Inductive LE : nat -> nat -> Prop :=
 \end{coq_example}
 
 We can use multiple patterns to write  the proof of the lemma
- \texttt{(n,m:nat) (LE n m)}\verb=\/=\texttt{(LE m n)}:
+ \texttt{forall (n m:nat), (LE n m)}\verb=\/=\texttt{(LE m n)}:
 
 \begin{coq_example}
 Fixpoint dec (n m:nat) {struct n} : LE n m \/ LE m n :=

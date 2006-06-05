@@ -851,7 +851,8 @@ The type {\tt nat} is defined as the least \verb:Set: containing {\tt
   O} and closed by the {\tt S} constructor. The constants {\tt nat},
 {\tt O} and {\tt S} are added to the environment.
 
-Now let us have a look at the elimination principles. They are three :
+Now let us have a look at the elimination principles. They are three
+of them:
 {\tt nat\_ind}, {\tt nat\_rec} and {\tt nat\_rect}.  The type of {\tt
   nat\_ind} is:
 \begin{coq_example}
@@ -880,8 +881,9 @@ Reset Initial.
 Inductive nat : Set := O | S (_:nat).
 \end{coq_example*}
 In the case where inductive types have no annotations (next section
-gives an example of such annotations), the positivity condition
-implies that a constructor can be defined by only giving the type of
+gives an example of such annotations), 
+%the positivity condition implies that 
+a constructor can be defined by only giving the type of
 its arguments.
 \end{Variants}
 
@@ -910,13 +912,13 @@ Check even_ind.
 \end{coq_example}
 
 From a mathematical point of view it asserts that the natural numbers
-satisfying the predicate {\tt even} are exactly the naturals satisfying
-the clauses {\tt even\_0} or {\tt even\_SS}. This is why, when we want
-to prove any predicate {\tt P} over elements of {\tt even}, it is
-enough to prove it for {\tt O} and to prove that if any natural number
-{\tt n} satisfies {\tt P} its double successor {\tt (S (S n))}
-satisfies also {\tt P}. This is indeed analogous to the structural
-induction principle we got for {\tt nat}.
+satisfying the predicate {\tt even} are exactly in the smallest set of
+naturals satisfying the clauses {\tt even\_0} or {\tt even\_SS}. This
+is why, when we want to prove any predicate {\tt P} over elements of
+{\tt even}, it is enough to prove it for {\tt O} and to prove that if
+any natural number {\tt n} satisfies {\tt P} its double successor {\tt
+  (S (S n))} satisfies also {\tt P}. This is indeed analogous to the
+structural induction principle we got for {\tt nat}.
 
 \begin{ErrMsgs}
 \item \errindex{Non strictly positive occurrence of {\ident} in {\type}}
@@ -925,11 +927,17 @@ built from {\ident}}
 \end{ErrMsgs}
 
 \subsubsection{Parameterized inductive types}
+In the previous example, each constructor introduces a
+different instance of the predicate {\tt even}. In some cases, 
+all the constructors introduces the same generic instance of the
+inductive definition, in which case, instead of an annotation, we use
+a context of parameters which are binders shared by all the
+constructors of the definition.
 
-Inductive types may be parameterized. Parameters differ from inductive
-type annotations in the fact that recursive invokations of inductive
-types must always be done with the same values of parameters as its
-specification.
+% Inductive types may be parameterized. Parameters differ from inductive
+% type annotations in the fact that recursive invokations of inductive
+% types must always be done with the same values of parameters as its
+% specification.
 
 The general scheme is:
 \begin{center}
@@ -937,6 +945,11 @@ The general scheme is:
     {\ident$_1$}: {\term$_1$} | {\ldots} | {\ident$_n$}: \term$_n$
 {\tt .}
 \end{center}
+Parameters differ from inductive type annotations in the fact that the
+conclusion of each type of constructor {\term$_i$} invoke the inductive
+type with the same values of parameters as its specification.
+
+
 
 A typical example is the definition of polymorphic lists:
 \begin{coq_example*}
@@ -972,7 +985,39 @@ arguments of the constructors rather than their full type.
 \item \errindex{The {\num}th argument of {\ident} must be {\ident'} in {\type}}
 \end{ErrMsgs}
 
-\SeeAlso Sections~\ref{Cic-inductive-definitions} and~\ref{elim}.
+\paragraph{New from \Coq{} V8.1} The condition on parameters for
+inductive definitions has been relaxed since \Coq{} V8.1. It is now
+possible in the type of a constructor, to invoke recursively the
+inductive definition on an argument which is not the parameter itself.
+
+One can define~:
+\begin{coq_example}
+Inductive list2 (A:Set) : Set :=
+  | nil2 : list2 A
+  | cons2 : A -> list2 (A*A) -> list2 A.
+\end{coq_example}
+\begin{coq_eval}
+Reset list2.
+\end{coq_eval}
+that can also be written by specifying only the type of the arguments:
+\begin{coq_example*}
+Inductive list2 (A:Set) : Set := nil2 | cons2 (_:A) (_:list2 (A*A)).
+\end{coq_example*}
+But the following definition will give an error:
+\begin{coq_example}
+Inductive listw (A:Set) : Set :=
+  | nilw : listw (A*A)
+  | consw : A -> listw (A*A) -> listw (A*A).
+\end{coq_example}
+Because the conclusion of the type of constructors should be {\tt
+  listw A} in both cases. 
+
+A parameterized inductive definition can be defined using
+annotations instead of parameters but it will sometimes give a
+different (bigger) sort for the inductive definition and will produce
+a less convenient rule for case elimination.
+
+\SeeAlso Sections~\ref{Cic-inductive-definitions} and~\ref{Tac-induction}.
 
 
 \subsubsection{Mutually defined inductive types
@@ -1091,7 +1136,7 @@ definition.
 
 The objects of an inductive type are well-founded with respect to the
 constructors of the type. In other words, such objects contain only a
-{\it finite} number constructors. Co-inductive types arise from
+{\it finite} number of constructors. Co-inductive types arise from
 relaxing this condition, and admitting types whose objects contain an
 infinity of constructors. Infinite objects are introduced by a
 non-ending (but effective) process of construction, defined in terms
@@ -1130,7 +1175,7 @@ CoInductive EqSt : Stream -> Stream -> Prop :=
 \end{coq_example}
 
 In order to prove the extensionally equality of two streams $s_1$ and
-$s_2$ we have to construct and infinite proof of equality, that is,
+$s_2$ we have to construct an infinite proof of equality, that is,
 an infinite object of type $(\texttt{EqSt}\;s_1\;s_2)$. We will see
 how to introduce infinite objects in Section~\ref{CoFixpoint}.
 
@@ -1146,8 +1191,9 @@ how to introduce infinite objects in Section~\ref{CoFixpoint}.
 
 This command allows to define inductive objects using a fixed point
 construction. The meaning of this declaration is to define {\it ident}
-a recursive function with arguments specified by
-{\binder$_1$}\ldots{\binder$_n$} such that {\it ident} applied to
+a recursive function with arguments specified by the binders in
+\params{} % {\binder$_1$}\ldots{\binder$_n$} 
+such that {\it ident} applied to
 arguments corresponding to these binders has type \type$_0$, and is
 equivalent to the expression \term$_0$. The type of the {\ident} is
 consequently {\tt forall {\params} {\tt,} \type$_0$}
