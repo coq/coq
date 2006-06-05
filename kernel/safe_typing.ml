@@ -269,10 +269,10 @@ let end_module l restype senv =
 	    mtb, Some mtb, cst
   in
   let mexpr = 
-    List.fold_right
-      (fun (arg_id,arg_b) mtb -> MEBfunctor (arg_id,arg_b,mtb))
-      params
+    List.fold_left
+      (fun mtb (arg_id,arg_b) -> MEBfunctor (arg_id,arg_b,mtb))
       (MEBstruct (modinfo.msid, List.rev senv.revstruct)) 
+      params
   in
   let mb = 
     { mod_expr = Some mexpr;
