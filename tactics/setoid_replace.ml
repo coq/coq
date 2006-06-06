@@ -763,6 +763,8 @@ let unify_relation_class_carrier_with_type env rel t =
   | Leibniz None -> Leibniz (Some t)
   | Relation rel -> Relation (unify_relation_carrier_with_type env rel t)
 
+exception Impossible
+
 (* first order matching with a bit of conversion *)
 (* Note: the type checking operations performed by the function could  *)
 (* be done once and for all abstracting the morphism structure using   *)
@@ -772,27 +774,28 @@ let unify_relation_class_carrier_with_type env rel t =
 let unify_morphism_with_arguments gl (c,av)
      {args=args; output=output; lem=lem; morphism_theory=morphism_theory} t
 =
- let al = Array.to_list av in
+ let avlen = Array.length av in 
  let argsno = List.length args in
- let quantifiers,al' = Util.list_chop (List.length al - argsno) al in
+ if avlen < argsno then raise Impossible; (* partial application *)
+ let al = Array.to_list av in
+ let quantifiers,al' = Util.list_chop (avlen - argsno) al in
  let quantifiersv = Array.of_list quantifiers in
  let c' = mkApp (c,quantifiersv) in
- if dependent t c' then None else (
-  (* these are pf_type_of we could avoid *)
-  let al'_type = List.map (Tacmach.pf_type_of gl) al' in
-  let args' =
+ if dependent t c' then raise Impossible; 
+ (* these are pf_type_of we could avoid *)
+ let al'_type = List.map (Tacmach.pf_type_of gl) al' in
+ let args' =
    List.map2
-    (fun (var,rel) ty ->
-      var,unify_relation_class_carrier_with_type (pf_env gl) rel ty)
-    args al'_type in
-  (* this is another pf_type_of we could avoid *)
-  let ty = Tacmach.pf_type_of gl (mkApp (c,av)) in
-  let output' = unify_relation_class_carrier_with_type (pf_env gl) output ty in
-  let lem' = mkApp (lem,quantifiersv) in
-  let morphism_theory' = mkApp (morphism_theory,quantifiersv) in
-   Some
-    ({args=args'; output=output'; lem=lem'; morphism_theory=morphism_theory'},
-     c',Array.of_list al'))
+     (fun (var,rel) ty ->
+	var,unify_relation_class_carrier_with_type (pf_env gl) rel ty)
+     args al'_type in
+ (* this is another pf_type_of we could avoid *)
+ let ty = Tacmach.pf_type_of gl (mkApp (c,av)) in
+ let output' = unify_relation_class_carrier_with_type (pf_env gl) output ty in
+ let lem' = mkApp (lem,quantifiersv) in
+ let morphism_theory' = mkApp (morphism_theory,quantifiersv) in
+ ({args=args'; output=output'; lem=lem'; morphism_theory=morphism_theory'},
+  c',Array.of_list al')
 
 let new_morphism m signature id hook =
  if Nametab.exists_cci (Lib.make_path id) or is_section_variable id then
@@ -1383,10 +1386,9 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
           let mors_and_cs_and_als =
            List.fold_left
             (fun l (m,c,al) ->
-              match unify_morphism_with_arguments gl (c,al) m t with
-                 Some res -> res::l
-               | None -> l
-            ) [] mors_and_cs_and_als
+	       try (unify_morphism_with_arguments gl (c,al) m t) :: l
+	       with Impossible -> l
+	    ) [] mors_and_cs_and_als
           in
            List.filter
             (fun (mor,_,_) -> subrelation gl mor.output output_relation)
