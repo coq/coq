@@ -453,7 +453,7 @@ let make_scheme fas =
       (fun (_,f,_) -> 
 	 try id_to_constr f     
 	 with Not_found -> 
-	   Util.error ("Cannot find "^ string_of_id id)
+	   Util.error ("Cannot find "^ string_of_id f)
       )
       fas
   in 
