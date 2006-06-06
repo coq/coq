@@ -130,7 +130,7 @@ let change_vars =
 	      change_vars mapping lhs,
 	      change_vars mapping rhs
 	     )
-      | RRec _ -> error "Not handled RRec"
+      | RRec _ -> error "Local (co)fixes are not supported"
       | RSort _ -> rt 
       | RHole _ -> rt 
       | RCast(loc,b,k,t) -> 

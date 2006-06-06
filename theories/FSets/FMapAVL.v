@@ -512,7 +512,7 @@ Proof.
  (* LT *)
  inv avl.
  rewrite bal_in; auto.
- rewrite (IHt H2); intuition_in.
+ rewrite (IHt H1); intuition_in.
  (* EQ *)  
  inv avl.
  firstorder_in.
@@ -520,7 +520,7 @@ Proof.
  (* GT *)
  inv avl.
  rewrite bal_in; auto.
- rewrite (IHt H3); intuition_in.
+ rewrite (IHt H2); intuition_in.
 Qed.
 
 Lemma add_bst : forall elt (m:t elt) x e, bst m -> avl m -> bst (add x e m).
@@ -528,15 +528,15 @@ Proof.
  intros elt m x e; functional induction (add x e m); 
    intros; inv bst; inv avl; auto; apply bal_bst; auto.
  (* lt_tree -> lt_tree (add ...) *)
- red; red in H5.
+ red; red in H4.
  intros.
- rewrite (add_in x y0 e H1) in H2.
+ rewrite (add_in x y0 e H) in H1.
  intuition.
  eauto.
  (* gt_tree -> gt_tree (add ...) *)
  red; red in H5.
  intros.
- rewrite (add_in x y0 e H7) in H2.
+ rewrite (add_in x y0 e H6) in H1.
  intuition.
  apply lt_eq with x; auto.
 Qed.
@@ -588,7 +588,7 @@ Proof.
  inv avl; simpl in *; split; auto.
  avl_nns; omega_max.
  (* l = Node *)
- inversion_clear H1.
+ inversion_clear H.
  destruct (IHp lh); auto.
  split; simpl in *. 
  rewrite_all H0. simpl in *.
@@ -609,14 +609,14 @@ Proof.
  intros elt l x e r; functional induction (remove_min l x e r); simpl in *; intros.
  intuition_in.
  (* l = Node *)
- inversion_clear H1.
- generalize (remove_min_avl H2).
+ inversion_clear H.
+ generalize (remove_min_avl H1).
  
  rewrite_all H0; simpl; intros.
  rewrite bal_in; auto.
- generalize (IHp lh y H2).
+ generalize (IHp lh y H1).
  intuition.
- inversion_clear H9; intuition.
+ inversion_clear H8; intuition.
 Qed.
 
 Lemma remove_min_mapsto : forall elt (l:t elt) x e r h y e', avl (Node l x e r h) -> 
@@ -627,15 +627,15 @@ Proof.
  intros elt l x e r; functional induction (remove_min l x e r); simpl in *; intros.
  intuition_in; subst; auto.
  (* l = Node *)
- inversion_clear H1.
- generalize (remove_min_avl H2).
+ inversion_clear H.
+ generalize (remove_min_avl H1).
  rewrite_all H0; simpl; intros.
  rewrite bal_mapsto; auto; unfold create.
  simpl in *;destruct (IHp lh y e').
  auto.
  intuition.
- inversion_clear H4; intuition.
- inversion_clear H11; intuition.
+ inversion_clear H3; intuition.
+ inversion_clear H10; intuition.
 Qed.
 
 Lemma remove_min_bst : forall elt (l:t elt) x e r h, 
@@ -643,14 +643,14 @@ Lemma remove_min_bst : forall elt (l:t elt) x e r h,
 Proof.
  intros elt l x e r; functional induction (remove_min l x e r); simpl in *; intros.
  inv bst; auto.
- inversion_clear H1; inversion_clear H2.
+ inversion_clear H; inversion_clear H1.
  apply bal_bst; auto.
  rewrite_all H0;simpl in *;firstorder.
  intro; intros.
- generalize (remove_min_in y H1).
+ generalize (remove_min_in y H).
  rewrite_all H0; simpl in *.
  destruct 1.
- apply H5; intuition.
+ apply H4; intuition.
 Qed.
 
 Lemma remove_min_gt_tree : forall elt (l:t elt) x e r h, 
@@ -659,15 +659,15 @@ Lemma remove_min_gt_tree : forall elt (l:t elt) x e r h,
 Proof.
  intros elt l x e r; functional induction (remove_min l x e r); simpl in *; intros.
  inv bst; auto.
- inversion_clear H1; inversion_clear H2.
+ inversion_clear H; inversion_clear H1.
  intro; intro.
  rewrite_all H0;simpl in *.
- generalize (IHp lh H3 H1); clear H9 H8 IHp.
- generalize (remove_min_avl H1).
- generalize (remove_min_in (fst m) H1).
+ generalize (IHp lh H2 H); clear H7 H8 IHp.
+ generalize (remove_min_avl H).
+ generalize (remove_min_in (fst m) H).
  rewrite H0; simpl; intros.
- rewrite (bal_in x e y H9 H7) in H2.
- destruct H8.
+ rewrite (bal_in x e y H8 H6) in H1.
+ destruct H7.
  firstorder.
  apply lt_eq with x; auto.
  apply X.lt_trans with x; auto.
@@ -694,13 +694,13 @@ Lemma merge_avl_1 : forall elt (s1 s2:t elt), avl s1 -> avl s2 ->
  avl (merge s1 s2) /\ 
  0<= height (merge s1 s2) - max (height s1) (height s2) <=1.
 Proof.
- intros elt s1 s2; functional induction (merge s1 s2); simpl in *; intros;subst.
+ intros elt s1 s2; functional induction (merge s1 s2); simpl in *; intros.
  split; auto; avl_nns; omega_max.
- destruct _x;try contradiction;clear H1.
+ destruct s1;try contradiction;clear H1.
  split; auto; avl_nns; simpl in *; omega_max.
- destruct _x;try contradiction;clear H1.
- generalize (remove_min_avl_1 H4).
-rewrite H2; simpl;destruct 1.
+ destruct s1;try contradiction;clear H1.
+ generalize (remove_min_avl_1 H0).
+ rewrite H2; simpl;destruct 1.
  split.
  apply bal_avl; auto.
  simpl; omega_max.
@@ -716,10 +716,10 @@ Qed.
 Lemma merge_in : forall elt (s1 s2:t elt) y, bst s1 -> avl s1 -> bst s2 -> avl s2 -> 
  (In y (merge s1 s2) <-> In y s1 \/ In y s2).
 Proof. 
- intros elt s1 s2; functional induction (merge s1 s2); subst;simpl in *; intros.
+ intros elt s1 s2; functional induction (merge s1 s2);intros.
  intuition_in.
  intuition_in.
- destruct _x;try contradiction;clear H1.
+ destruct s1;try contradiction;clear H1.
 (*  rewrite H_eq_2; rewrite H_eq_2 in H_eq_1; clear H_eq_2. *)
  replace s2' with (fst (remove_min l2 x2 e2 r2)); [|rewrite H2; auto].
  rewrite bal_in; auto.
@@ -731,10 +731,10 @@ Qed.
 Lemma merge_mapsto : forall elt (s1 s2:t elt) y e, bst s1 -> avl s1 -> bst s2 -> avl s2 -> 
   (MapsTo y e (merge s1 s2) <-> MapsTo y e s1 \/ MapsTo y e s2).
 Proof.
- intros elt s1 s2; functional induction (@merge elt s1 s2); subst; simpl in *; intros.
+ intros elt s1 s2; functional induction (@merge elt s1 s2); intros.
  intuition_in.
  intuition_in.
- destruct _x;try contradiction;clear H1.
+ destruct s1;try contradiction;clear H1.
  replace s2' with (fst (remove_min l2 x2 e2 r2)); [|rewrite H2; auto].
  rewrite bal_mapsto; auto; unfold create.
  generalize (remove_min_avl H4); rewrite H2; simpl; auto.
@@ -747,16 +747,16 @@ Lemma merge_bst : forall elt (s1 s2:t elt), bst s1 -> avl s1 -> bst s2 -> avl s2
  (forall y1 y2 : key, In y1 s1 -> In y2 s2 -> X.lt y1 y2) -> 
  bst (merge s1 s2). 
 Proof.
- intros elt s1 s2; functional induction (@merge elt s1 s2); subst;simpl in *; intros; auto.
+ intros elt s1 s2; functional induction (@merge elt s1 s2); intros; auto.
 
  apply bal_bst; auto.
- destruct _x;try contradiction.
+ destruct s1;try contradiction.
  generalize (remove_min_bst H3); rewrite H2; simpl in *; auto.
- destruct _x;try contradiction.
+ destruct s1;try contradiction.
  intro; intro.
  apply H5; auto.
  generalize (remove_min_in x H4); rewrite H2; simpl; intuition.
- destruct _x;try contradiction.
+ destruct s1;try contradiction.
  generalize (remove_min_gt_tree H3); rewrite H2; simpl; auto.
 Qed. 
 
@@ -775,7 +775,7 @@ Function remove (elt:Set)(x:key)(s:t elt) { struct s } : t elt := match s with
 Lemma remove_avl_1 : forall elt (s:t elt) x, avl s -> 
  avl (remove x s) /\ 0 <= height s - height (remove x s) <= 1.
 Proof.
- intros elt s x; functional induction (@remove elt x s); subst;simpl; intros.
+ intros elt s x; functional induction (@remove elt x s); intros.
  split; auto; omega_max.
  (* LT *)
  inv avl.
@@ -811,20 +811,20 @@ Proof.
  (* LT *)
  inv avl; inv bst; clear H0.
  rewrite bal_in; auto.
- generalize (IHt y0 H2); intuition; [ order | order | intuition_in ].
+ generalize (IHt y0 H1); intuition; [ order | order | intuition_in ].
  (* EQ *)
  inv avl; inv bst; clear H0.
  rewrite merge_in; intuition; [ order | order | intuition_in ].
- elim H10; eauto.
+ elim H9; eauto.
  (* GT *)
  inv avl; inv bst; clear H0.
  rewrite bal_in; auto.
- generalize (IHt y0 H7); intuition; [ order | order | intuition_in ].
+ generalize (IHt y0 H6); intuition; [ order | order | intuition_in ].
 Qed.
 
 Lemma remove_bst : forall elt (s:t elt) x, bst s -> avl s -> bst (remove x s).
 Proof. 
- intros elt s x; functional induction (@remove elt x s); subst;simpl; intros.
+ intros elt s x; functional induction (@remove elt x s); simpl; intros.
  auto.
  (* LT *)
  inv avl; inv bst.

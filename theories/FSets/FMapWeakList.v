@@ -101,12 +101,12 @@ Lemma mem_1 : forall m (Hm:NoDupA m) x, In x m -> mem x m = true.
 Proof.
  intros m Hm x; generalize Hm; clear Hm.      
  functional induction (mem x m);intros NoDup belong1;trivial.
- inversion belong1. inversion H0.
+ inversion belong1. inversion H.
  inversion_clear NoDup.
  inversion_clear belong1.
- inversion_clear H3.
- compute in H4; destruct H4.
- elim H; auto.
+ inversion_clear H2.
+ compute in H3; destruct H3.
+ contradiction.
  apply IHb; auto.
  exists x0; auto.
 Qed. 
@@ -184,7 +184,7 @@ Proof.
  intros m x  y e e'; generalize y e; clear y e; unfold PX.MapsTo.
  functional induction (add x e' m);simpl;auto.
  intros y' e'' eqky';  inversion_clear 1.
- destruct H2; simpl in *.
+ destruct H1; simpl in *.
  elim eqky'; apply X.eq_trans with k'; auto.
  auto.
  intros y' e'' eqky'; inversion_clear 1; intuition.
@@ -195,8 +195,8 @@ Lemma add_3 : forall m x y e e',
 Proof.
  intros m x y e e'. generalize y e; clear y e; unfold PX.MapsTo.
  functional induction (add x e' m);simpl;auto.
- intros; apply (In_inv_3 H1); auto.
- constructor 2; apply (In_inv_3 H2); auto.
+ intros; apply (In_inv_3 H0); auto.
+ constructor 2; apply (In_inv_3 H1); auto.
  inversion_clear 2; auto.
 Qed.
 
@@ -206,10 +206,10 @@ Proof.
  intros m x y e e'. generalize y e; clear y e.
  functional induction (add x e' m);simpl;auto.
  inversion_clear 2.
- compute in H2; elim H0; auto.
- inversion H2. 
- constructor 2; inversion_clear H2; auto.
- compute in H3; elim H1; auto.
+ compute in H1; elim H; auto.
+ inversion H1. 
+ constructor 2; inversion_clear H1; auto.
+ compute in H2; elim H; auto.
  inversion_clear 2; auto.
 Qed.
 
@@ -268,21 +268,21 @@ Proof.
  intros m Hm x y; generalize Hm; clear Hm.
  functional induction (remove x m);simpl;intros;auto.
 
- red; inversion 1; inversion H2.
+ red; inversion 1; inversion H1.
 
  inversion_clear Hm.
  subst.
- swap H2.
- destruct H as (e,H); unfold PX.MapsTo in H.
+ swap H1.
+ destruct H3 as (e,H3); unfold PX.MapsTo in H3.
  apply InA_eqk with (y,e); auto.
  compute; apply X.eq_trans with x; auto.
   
  intro H2.
  destruct H2 as (e,H2); inversion_clear H2.
- compute in H3; destruct H3.
+ compute in H1; destruct H1.
  elim _x; apply X.eq_trans with y; auto.
  inversion_clear Hm.
- elim (IHt0 H4 H1).
+ elim (IHt0 H3 H).
  exists e; auto.
 Qed.
   
@@ -292,8 +292,8 @@ Proof.
  intros m Hm x y e; generalize Hm; clear Hm; unfold PX.MapsTo.
  functional induction (remove x m);auto.
  inversion_clear 3; auto.
- compute in H3; destruct H3.
- elim H1; apply X.eq_trans with k'; auto.
+ compute in H2; destruct H2.
+ elim H; apply X.eq_trans with k'; auto.
   
  inversion_clear 1; inversion_clear 2; auto.
 Qed.

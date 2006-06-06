@@ -55,12 +55,14 @@ END
 
 
 let pr_intro_as_pat prc _ _ pat = 
-  str "as" ++ spc () ++ pr_intro_pattern pat
+  match pat with 
+    | Some pat -> spc () ++ str "as" ++ spc () ++ pr_intro_pattern pat
+    | None -> mt ()
 
 
-ARGUMENT EXTEND with_names TYPED AS intro_pattern PRINTED BY pr_intro_as_pat
-|   [ "as"  simple_intropattern(ipat) ] -> [ ipat ] 
-| []  ->[ IntroAnonymous ] 
+ARGUMENT EXTEND with_names TYPED AS intro_pattern_opt PRINTED BY pr_intro_as_pat
+|   [ "as"  simple_intropattern(ipat) ] -> [ Some ipat ] 
+| []  ->[ None ] 
 END
 
 
@@ -84,6 +86,11 @@ let choose_dest_or_ind scheme_info =
 TACTIC EXTEND newfunind
    ["functional" "induction" ne_constr_list(cl) fun_ind_using(princl) with_names(pat)] -> 
      [
+       let pat = 
+	 match pat with 
+	   | None -> IntroAnonymous
+	   | Some pat -> pat
+       in
        let c = match cl with 
 	 | [] -> assert false
 	 | [c] -> c 
@@ -120,11 +127,45 @@ TACTIC EXTEND newfunind
 	   List.map (fun c -> Tacexpr.ElimOnConstr c) (args@c_list) 
 	 in 
 	 let princ' = Some (princ,Rawterm.NoBindings) in 
-	 choose_dest_or_ind 
+	 let princ_vars = 
+	   List.fold_right 
+	     (fun a acc -> 
+		try Idset.add (destVar a) acc
+		with _ -> acc
+	     )
+	     args
+	     Idset.empty
+	 in
+	 let old_idl = List.fold_right Idset.add (Tacmach.pf_ids_of_hyps g) Idset.empty in 
+	 let old_idl = Idset.diff old_idl princ_vars in 
+	 let subst_and_reduce g = 
+	   let idl = 
+	     Util.map_succeed 
+	       (fun id -> 
+		  if Idset.mem id old_idl then failwith "";
+		  id 
+	       )
+	       (Tacmach.pf_ids_of_hyps g)
+	   in 
+	   let flag = 
+	     Rawterm.Cbv
+	       {Rawterm.all_flags 
+		with Rawterm.rDelta = false; 		 
+	       }
+	   in
+	   Tacticals.tclTHEN
+	     (Tacticals.tclMAP (fun id -> Tacticals.tclTRY (Equality.subst [id])) idl )
+	     (Hiddentac.h_reduce flag Tacticals.allClauses)
+	     g
+	 in
+	 Tacticals.tclTHEN
+	   (choose_dest_or_ind 
 	   princ_infos
 	   args_as_induction_constr
 	   princ'
-	   pat g
+	   pat)
+	   subst_and_reduce
+	   g
      ]
 END
 

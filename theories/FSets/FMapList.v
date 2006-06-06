@@ -112,7 +112,7 @@ Proof.
  intros m Hm x; generalize Hm; clear Hm.      
  functional induction (mem x m);intros sorted belong1;trivial.
  
- inversion belong1. inversion H0.
+ inversion belong1. inversion H.
  
  absurd (In x ((k', _x) :: l));try assumption.
  apply Sort_Inf_NotIn with _x;auto.
@@ -200,7 +200,7 @@ Proof.
  functional induction (add x e' m) ;simpl;auto;  clear H0.
  subst;auto.
 
- intros y' e'' eqky';  inversion_clear 1; destruct H1; simpl in *.
+ intros y' e'' eqky';  inversion_clear 1;  destruct H0; simpl in *.
  order.
  auto.
  auto.
@@ -213,10 +213,10 @@ Lemma add_3 : forall m x y e e',
 Proof.
  intros m x y e e'. generalize y e; clear y e; unfold PX.MapsTo.
  functional induction (add x e' m);simpl; intros.
+ apply (In_inv_3 H0); compute; auto.
  apply (In_inv_3 H1); compute; auto.
- subst s;apply (In_inv_3 H2); compute; auto.
- constructor 2; apply (In_inv_3 H2); compute; auto. 
- inversion_clear H2; auto.
+ constructor 2; apply (In_inv_3 H1); compute; auto. 
+ inversion_clear H1; auto.
 Qed.
 
 
@@ -441,8 +441,8 @@ Proof.
   apply Inf_lt with (x,e); auto.
  elim (Sort_Inf_NotIn H5 H7 H4).
 
- destruct _x;
- destruct _x0;try contradiction.
+ destruct m;
+ destruct m';try contradiction.
  
  clear H1;destruct p as (k,e).
  destruct (H0 k).

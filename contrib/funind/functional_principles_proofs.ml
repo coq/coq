@@ -810,14 +810,16 @@ type static_fix_info =
       idx : int;
       name : identifier;
       types : types;
-      nb_realargs : int
+      offset : int;
+      nb_realargs : int;
+      body_with_param : constr 
     }
 
 
 
 let prove_rec_hyp_for_struct fix_info = 
       (fun  eq_hyps -> tclTHEN 
-	(rewrite_until_var (fix_info.idx - 1) eq_hyps)
+	(rewrite_until_var (fix_info.idx) eq_hyps)
 	(fun g -> 
 	   let _,pte_args = destApp (pf_concl g) in 
 	   let rec_hyp_proof = 
@@ -849,282 +851,360 @@ let generalize_non_dep hyp g =
       else (hyp::clear,keep))
       ~init:([],[]) (pf_env g)
   in
-  observe (str "to_revert := " ++ prlist_with_sep spc Ppconstr.pr_id to_revert);
+(*   observe (str "to_revert := " ++ prlist_with_sep spc Ppconstr.pr_id to_revert); *)
   tclTHEN 
     (observe_tac "h_generalize" (h_generalize (List.map mkVar to_revert)))
     (observe_tac "thin" (thin to_revert))
     g
   
-let prove_princ_for_struct interactive_proof fun_num fnames all_funs _naprams : tactic =
-   fun goal ->
-(*      observe (str "Proving principle for "++ str (string_of_int fun_num) ++ str "th function : " ++  *)
-(* 		pr_lconstr (mkConst fnames.(fun_num))); *)
-     let princ_type = pf_concl goal in
-     let princ_info = compute_elim_sig princ_type in
-     let get_body const =
-       match (Global.lookup_constant const ).const_body with
-	 | Some b ->
+let id_of_decl (na,_,_) =  (Nameops.out_name na)
+let var_of_decl decl = mkVar (id_of_decl decl)
+let revert idl = 
+  tclTHEN 
+    (generalize (List.map mkVar idl)) 
+    (thin idl)
+
+
+let do_replace params rec_arg_num rev_args_id fun_to_replace body = 
+  fun g ->
+    let nb_intro_to_do = nb_prod (pf_concl g) in
+    tclTHEN
+      (tclDO nb_intro_to_do intro)
+      (
+	fun g' -> 
+	  let just_introduced = nLastHyps nb_intro_to_do g' in 
+	  let just_introduced_id = List.map (fun (id,_,_) -> id) just_introduced in 
+	  let old_rev_args_id = rev_args_id in 
+	  let rev_args_id = just_introduced_id@rev_args_id in 
+	  let to_replace = 
+	    Reductionops.nf_betaiota (substl (List.map mkVar rev_args_id) fun_to_replace )
+	  and by = 
+	    Reductionops.nf_betaiota (applist(body,List.rev_map mkVar rev_args_id)) 
+	  in 
+(* 	  observe (str "to_replace := " ++ pr_lconstr_env (pf_env g') to_replace); *)
+(* 	  observe (str "by := " ++ pr_lconstr_env (pf_env g') by); *)
+	  let prove_replacement = 
+	    let rec_id = List.nth (List.rev old_rev_args_id) (rec_arg_num) in 
+	    observe_tac "prove_replacement"
+	      (tclTHENSEQ
+		 [ 
+		   revert just_introduced_id;
+		   keep ((List.map id_of_decl params)@ old_rev_args_id);
+		   generalize_non_dep rec_id;
+		   observe_tac "h_case" (h_case(mkVar rec_id,Rawterm.NoBindings)); 
+		   intros_reflexivity
+		 ]
+	      )
+	  in
+	  tclTHENS
+	    (observe_tac "replacement" (Equality.replace to_replace by))
+	    [ revert just_introduced_id;
+	     tclSOLVE [prove_replacement]]
+	    g'
+      )
+      g
+    
+
+
+let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : tactic =
+  fun g -> 
+    let princ_type = pf_concl g in 
+    let princ_info = compute_elim_sig princ_type in 
+    let fresh_id = 
+      let avoid = ref (pf_ids_of_hyps g) in 
+      (fun na -> 
+	 let new_id = 
+	   match na with 
+	       Name id -> fresh_id !avoid (string_of_id id) 
+	     | Anonymous -> fresh_id !avoid "H"
+	 in
+	 avoid := new_id :: !avoid; 
+	 (Name new_id)
+      )
+    in
+    let fresh_decl = 
+      (fun (na,b,t) -> 
+	 (fresh_id na,b,t)
+      )
+    in
+    let princ_info : elim_scheme = 
+      { princ_info with 
+	  params = List.map fresh_decl princ_info.params;
+	  predicates = List.map fresh_decl princ_info.predicates; 
+	  branches = List.map fresh_decl princ_info.branches; 
+	  args = List.map fresh_decl princ_info.args
+      }
+    in
+    let get_body const =
+      match (Global.lookup_constant const ).const_body with
+	| Some b ->
 	     let body = force b in
 	     Tacred.cbv_norm_flags
 	       (Closure.RedFlags.mkflags [Closure.RedFlags.fZETA])
 	       (Global.env ())
 	       (Evd.empty)
 	       body
-	 | None -> error ( "Cannot define a principle over an axiom ")
-     in
-     let fbody = get_body fnames.(fun_num) in
-     let params : identifier list ref = ref [] in
-     let predicates : identifier list ref = ref [] in
-     let args : identifier list ref = ref [] in
-     let branches : identifier list ref = ref [] in
-     let pte_to_fix = ref Idmap.empty in
-     let fbody_with_params = ref None in
-     let intro_with_remembrance  ref number : tactic =
-       tclTHEN
-	 ( tclDO number intro )
-	 (fun g ->
-	    let last_n = list_chop number (pf_hyps g) in
-	    ref :=  List.map (fun (id,_,_) -> id) (fst last_n)@ !ref;
-	    tclIDTAC g
-	 )
-     in
-     let rec partial_combine body params =
-       match kind_of_term body,params with
-	 | Lambda (x,t,b),param::params ->
-	     partial_combine (subst1 param b) params
-	 | Fix(infos),_ ->
-	     body,params, Some (infos)
-	 | _ -> body,params,None
-     in
-     let build_pte_to_fix (offset:int) params predicates
-	 ((idxs,fix_num),(na,typearray,ca))  (avoid,_) =
-(*        let true_params,_ =  list_chop offset params  in  *)
-       let true_params = List.rev params in
-       let avoid = ref avoid in
-       let res = list_fold_left_i
-	 (fun i acc pte_id  ->
-	    let this_fix_id = fresh_id !avoid "fix___" in
-	    avoid := this_fix_id::!avoid;
-(* 	    let this_body = substl (List.rev fnames_as_constr) ca.(i) in  *)
-	    let realargs,_ = decompose_lam ca.(i) in 
-	    let n_realargs = List.length realargs - List.length params in 
-(* 	    observe (str "n_realargs := " ++ str (string_of_int n_realargs)); *)
-(* 	    observe (str "n_fix := " ++ str (string_of_int(Array.length ca))); *)
-(* 	    observe (str "body := " ++ pr_lconstr ca.(i)); *)
-
-	    let new_type = prod_applist typearray.(i) true_params in
-	    let new_type_args,_ = decompose_prod new_type in
-	    let nargs = List.length new_type_args in
-	    let pte_args =
-	      (* 	      let rev_args = List.rev_map (fun (id,_,_) -> mkVar id) new_type_args in  *)
-	      let f = applist((* all_funs *)mkConst fnames.(i),true_params) in
-	      let app_f = mkApp(f,Array.init nargs (fun i -> mkRel(nargs - i))) in
-	      (Array.to_list (Array.init nargs (fun i -> mkRel(nargs - i))))@[app_f]
+	| None -> error ( "Cannot define a principle over an axiom ")
+    in
+    let fbody = get_body fnames.(fun_num) in
+    let f_ctxt,f_body = decompose_lam fbody in 
+    let f_ctxt_length = List.length f_ctxt in 
+    let diff_params = princ_info.nparams - f_ctxt_length in 
+    let full_params,princ_params,fbody_with_full_params = 
+      if diff_params > 0
+      then 
+	let princ_params,full_params = 
+	  list_chop  diff_params princ_info.params 
+	in 
+	(full_params, (* real params *)
+	 princ_params, (* the params of the principle which are not params of the function *)
+	 substl (* function instanciated with real params *)
+	   (List.map var_of_decl full_params)
+	   f_body
+	)
+      else
+	let f_ctxt_other,f_ctxt_params = 
+	  list_chop (- diff_params) f_ctxt in 
+	let f_body = compose_lam f_ctxt_other f_body in 
+	(princ_info.params, (* real params *)
+	 [],(* all params are full params *)
+	 substl (* function instanciated with real params *)
+	   (List.map var_of_decl princ_info.params)
+	   f_body
+	)
+    in
+(*     observe (str "full_params := " ++  *)
+(* 	       prlist_with_sep spc (fun (na,_,_) -> Ppconstr.pr_id (Nameops.out_name na)) *)
+(* 	       full_params *)
+(* 	    );  *)
+(*     observe (str "princ_params := " ++  *)
+(* 	       prlist_with_sep spc (fun (na,_,_) -> Ppconstr.pr_id (Nameops.out_name na)) *)
+(* 	       princ_params *)
+(* 	    );  *)
+(*     observe (str "fbody_with_full_params := " ++  *)
+(* 	       pr_lconstr fbody_with_full_params *)
+(* 	    );  *)
+    let all_funs_with_full_params = 
+      Array.map (fun f -> applist(f, List.rev_map var_of_decl full_params)) all_funs
+    in
+    let fix_offset = List.length princ_params in 
+    let ptes_to_fix,infos = 
+      match kind_of_term fbody_with_full_params with 
+	| Fix((idxs,i),(names,typess,bodies)) -> 
+	    let bodies_with_all_params = 
+	      Array.map 
+		(fun body -> 
+		   Reductionops.nf_betaiota 
+		     (applist(substl (List.rev (Array.to_list all_funs_with_full_params)) body,
+			      List.rev_map var_of_decl princ_params))
+		)
+		bodies
 	    in
-	    let app_pte = applist(mkVar pte_id,pte_args) in
-	    let new_type = compose_prod new_type_args app_pte in
-	    
-	    let fix_info = 
-	      {
-		idx = idxs.(i) - offset + 1;
-		name = this_fix_id; 
-		types = new_type;
-		nb_realargs = n_realargs
-	      }
+	    let info_array = 
+	      Array.mapi 
+		(fun i types -> 
+		   let types = prod_applist types (List.rev_map var_of_decl princ_params) in
+		   { idx = idxs.(i)  - fix_offset;
+		     name = Nameops.out_name (fresh_id names.(i));
+		     types = types; 
+		     offset = fix_offset;
+		     nb_realargs = 
+		       List.length 
+			 (fst (decompose_lam bodies.(i))) - fix_offset;
+		     body_with_param = bodies_with_all_params.(i)
+		   }
+		)
+		typess
 	    in
-	    pte_to_fix := Idmap.add  pte_id fix_info !pte_to_fix;
-	    fix_info::acc
-	 )
-	 0
-	 []
-	 predicates
-       in
-       !avoid,List.rev res
-     in
-     let mk_fixes : tactic =
-       fun g ->
-	 let body_p,params',fix_infos =
-	   partial_combine fbody (List.rev_map mkVar  !params)
-	 in
-	 fbody_with_params := Some body_p;
-	 let offset  = List.length params' in
-	 let not_real_param,true_params =
-	   list_chop
-	     ((List.length !params ) - offset)
-	     !params
-	 in
-	 params := true_params; args := not_real_param;
-(* 	 observe (str "mk_fixes : params are "++  *)
-(* 		    prlist_with_sep spc *)
-(* 		    (fun id -> pr_lconstr (mkVar id)) *)
-(* 		    !params *)
-(* 		 ); *)
-	 let new_avoid,infos =
-	   option_fold_right
-	     (build_pte_to_fix
-		offset
-		(List.map mkVar !params)
-		(List.rev !predicates)
-	     )
-	     fix_infos
-	     ((pf_ids_of_hyps g),[])
-	 in
-	 let pre_info,infos = list_chop fun_num infos in
-	 match pre_info,infos with
-	   | [],[] -> tclIDTAC g
-	   | _,this_fix_info::infos' ->
-	       let other_fix_info =
-		 List.map 
-		   (fun fix_info -> fix_info.name,fix_info.idx,fix_info.types) 
-		   (pre_info@infos')
-	       in
-	       if other_fix_info = []
-		  then h_fix (Some this_fix_info.name) this_fix_info.idx g
-		  else h_mutual_fix this_fix_info.name this_fix_info.idx other_fix_info g
-	   | _,[] -> anomaly "Not a valid information"
-     in
-     let do_prove ptes_to_fixes args branches : tactic =
-       fun g ->
-	 let nb_intros_to_do = List.length (fst (Sign.decompose_prod_assum (pf_concl g))) in 
-(* 	 observe (str "nb_intros_to_do " ++ str (string_of_int nb_intros_to_do)); *)
-	 tclTHEN 
-	   (tclDO nb_intros_to_do intro)
-	   (fun g -> 
-	      match kind_of_term (pf_concl g) with
-		| App(pte,pte_args) when isVar pte ->
-		    begin
-		      let pte = destVar pte in
-		      try
-			if not (Idmap.mem pte ptes_to_fixes) then raise Not_Rec;
-			let nparams = List.length !params in
-			let args_as_constr = List.map mkVar args in
-			let other_args = fst (list_chop nb_intros_to_do (pf_ids_of_hyps g)) in 
-			let other_args_as_constr = List.map mkVar  other_args in 
-			let rec_num,new_body =
-			  let idx' = list_index pte (List.rev !predicates)  - 1 in
-			  let f = fnames.(idx') in
-			  let body_with_params = match !fbody_with_params with Some f -> f | _ -> anomaly ""
-			  in
-			  let name_of_f = Name (id_of_label (con_label f)) in
-			  let ((rec_nums,_),(na,_,bodies)) = destFix body_with_params in
-			  let idx'' = list_index name_of_f (Array.to_list na) - 1 in
-			  let body = substl (List.rev (Array.to_list all_funs)) bodies.(idx'') in
-			  let body = Reductionops.nf_beta (applist(body,(List.rev_map mkVar !params))) in
-			  rec_nums.(idx'') - nparams ,body
-			in
-			let applied_body_with_real_args =
-			  Reductionops.nf_betaiota
-			    (applist(new_body,List.rev args_as_constr))
-			in
-			let applied_body = 
-(* 			  Reductionops.nf_beta *)
-			  Reductionops.nf_betaiota 
-			    (applist(applied_body_with_real_args,List.rev other_args_as_constr))
-			in
-(* 			observe (str "applied_body_with_real_args := "++ pr_lconstr_env (pf_env g) applied_body_with_real_args); *)
-(* 			observe (str "applied_body := "++ pr_lconstr_env (pf_env g) applied_body); *)
-			let do_prove branches applied_body =
-			  build_proof
-			       interactive_proof
-			       (Array.to_list fnames)
-			       (Idmap.map prove_rec_hyp ptes_to_fixes)
-			       branches
-			       applied_body
-			in
-			let replace_and_prove =
-			  tclTHENS
-			    (fun g -> (Equality.replace (array_last pte_args) applied_body) g)
-			    [
-			      tclTHENLIST 
-				[
-				  generalize other_args_as_constr;
-				  thin other_args;
-				  clean_goal_with_heq 
-				    (Idmap.map prove_rec_hyp ptes_to_fixes)
-				    do_prove 
-				    {
-				      nb_rec_hyps = List.length branches;
-				      rec_hyps = branches;
-				      info = applied_body_with_real_args;
-				      eq_hyps = [];
-				    } ];
-			      let id = 
-				try
-				  List.nth (List.rev args_as_constr) (rec_num) 
-				with _ -> anomaly ("Cannot find recursive argument of function ! ") 
-			      in
-			      (tclTHENSEQ
-				 [ 
-				   keep (!params@(List.map destVar args_as_constr));
-				   observe_tac "generalizing" (generalize_non_dep (destVar id));
-				   observe_tac "new_destruct" 
-				    (h_case (id,Rawterm.NoBindings));
-				  observe_tac "intros_reflexivity" intros_reflexivity
-				 ])
-			    ]
-			in
-			(observe_tac "doing replacement" ( replace_and_prove)) g
-		      with Not_Rec ->
-			let fname = destConst (fst (decompose_app (array_last pte_args))) in
-			tclTHEN
-		     (unfold_in_concl [([],Names.EvalConstRef fname)])
-			  (observe_tac "" 
-			     (fun g' ->
-				let body = array_last (snd (destApp (pf_concl g'))) in 
-				let dyn_infos = 
-				  { nb_rec_hyps = List.length branches;
-				    rec_hyps = branches;
-				    info = body;
-				    eq_hyps = []
-				  }
-				in
-				let do_prove = 
-				  build_proof
-				    interactive_proof
-				    (Array.to_list fnames)
-				    (Idmap.map prove_rec_hyp ptes_to_fixes)
-				in
-				clean_goal_with_heq (Idmap.map prove_rec_hyp ptes_to_fixes)
-				  do_prove dyn_infos g'
-			     )
-			  )
-			  g
-		    end
-		| _ -> assert false
-	   ) g
-     in
-     tclTHENSEQ
-       [
-	 (fun g -> observe_tac "introducing params" (intro_with_remembrance  params princ_info.nparams) g);
-	 (fun g -> observe_tac "introducing predicate" (intro_with_remembrance predicates  princ_info.npredicates) g);
-	 (fun g -> observe_tac "introducing branches" (intro_with_remembrance branches princ_info.nbranches) g);
-	 (fun g -> observe_tac "declaring fix(es)" mk_fixes g);
-	 (fun g -> 
-	    let nb_real_args = 
-	      let pte_app = snd (Sign.decompose_prod_assum (pf_concl g)) in 
-	      let pte = fst (decompose_app pte_app) in
-	      try 
-		let fix_info = Idmap.find (destVar pte) !pte_to_fix in
-		fix_info.nb_realargs
-	      with Not_found -> (* Not a recursive function *) 
-		nb_lam (Util.out_some !fbody_with_params)
-(* 		nb_prod (pf_concl g) *)
+	    let pte_to_fix,rev_info = 
+	      list_fold_left_i 
+		(fun i (acc_map,acc_info) (pte,_,_) -> 
+		   let infos = info_array.(i) in 
+		   let type_args,_ = decompose_prod infos.types in 
+		   let nargs = List.length type_args in 
+		   let f = applist(mkConst fnames.(i), List.rev_map var_of_decl princ_info.params) in
+		   let first_args = Array.init nargs (fun i -> mkRel (nargs -i)) in
+		   let app_f = mkApp(f,first_args) in
+		   let pte_args = (Array.to_list first_args)@[app_f] in 
+		   let app_pte = applist(mkVar (Nameops.out_name pte),pte_args) in 
+		   let body_with_param = 
+		     let body = get_body fnames.(i) in 
+		     let body_with_full_params = 
+		       Reductionops.nf_betaiota (
+			 applist(body,List.rev_map var_of_decl full_params))
+		     in
+		     match kind_of_term body_with_full_params with 
+		       | Fix((_,num),(_,_,bs)) -> 
+			       Reductionops.nf_betaiota
+				 (
+				   (applist
+				      (substl 
+					 (List.rev 
+					    (Array.to_list all_funs_with_full_params)) 
+					 bs.(num),
+				       List.rev_map var_of_decl princ_params))
+				 )
+			 | _ -> error "Not a mutual block"
+		   in
+		   let info = 
+		     {infos with 
+			types = compose_prod type_args app_pte;
+			 body_with_param = body_with_param
+		     }
+		   in 
+(* 		   observe (str "binding " ++ Ppconstr.pr_id (Nameops.out_name pte) ++  *)
+(* 			      str " to " ++ Ppconstr.pr_id info.name); *)
+		   (Idmap.add (Nameops.out_name pte) info acc_map,info::acc_info)
+		   )
+		0 
+		(Idmap.empty,[]) 
+		(List.rev princ_info.predicates)
+	    in
+	    pte_to_fix,List.rev rev_info
+	| _ -> Idmap.empty,[]
+    in
+    let mk_fixes : tactic = 
+      let pre_info,infos = list_chop fun_num infos in 
+      match pre_info,infos with 
+	| [],[] -> tclIDTAC
+	| _, this_fix_info::others_infos -> 
+	    let other_fix_infos =
+	      List.map
+		(fun fi -> fi.name,fi.idx + 1 ,fi.types) 
+		(pre_info@others_infos)
 	    in 
-	    observe_tac "" (tclTHEN
-	      (tclDO nb_real_args (observe_tac "intro" intro)) 
-	      (fun g' -> 
-		 let realargs_ids = fst (list_chop ~msg:"args" nb_real_args (pf_ids_of_hyps g')) in 
-		 let do_prove_on_branches branches : tactic =
-		   observe_tac "proving" (do_prove !pte_to_fix ( realargs_ids) branches)
+	    if other_fix_infos = [] 
+	    then
+	      observe_tac ("h_fix") (h_fix (Some this_fix_info.name) (this_fix_info.idx +1))
+	    else
+	      h_mutual_fix this_fix_info.name (this_fix_info.idx + 1)
+		other_fix_infos
+	| _ -> anomaly "Not a valid information"
+    in
+    let first_tac : tactic = (* every operations until fix creations *)
+      tclTHENSEQ 
+	[ observe_tac "introducing params" (intros_using (List.rev_map id_of_decl princ_info.params)); 
+	  observe_tac "introducing predictes" (intros_using (List.rev_map id_of_decl princ_info.predicates)); 
+	  observe_tac "introducing branches" (intros_using (List.rev_map id_of_decl princ_info.branches)); 
+	  observe_tac "building fixes" mk_fixes;
+	]
+    in
+    let intros_after_fixes : tactic = 
+      fun gl -> 
+	let ctxt,pte_app =  (Sign.decompose_prod_assum (pf_concl gl)) in
+	let pte,pte_args = (decompose_app pte_app) in
+	try
+	  let pte = try destVar pte with _ -> anomaly "Property is not a variable"  in 
+	  let fix_info = Idmap.find  pte ptes_to_fix in
+	  let nb_args = fix_info.nb_realargs in 
+	  tclTHENSEQ
+	    [
+	      observe_tac ("introducing args") (tclDO nb_args intro);
+	      (fun g -> (* replacement of the function by its body *)
+		 let args = nLastHyps nb_args g in 
+		 let fix_body = fix_info.body_with_param in
+(* 		 observe (str "fix_body := "++ pr_lconstr_env (pf_env gl) fix_body); *)
+		 let args_id = List.map (fun (id,_,_) -> id) args in
+		 let dyn_infos = 
+		   {
+		     nb_rec_hyps = -100;
+		     rec_hyps = [];
+		     info = 
+		       Reductionops.nf_betaiota 
+			 (applist(fix_body,List.rev_map mkVar args_id));
+		     eq_hyps = []
+		   }
 		 in
-		 observe_tac "instanciating rec hyps"
-		   (instanciate_hyps_with_args do_prove_on_branches !branches  (List.rev realargs_ids))
-		   g'
-	      ))
-	      g
-	 )
-       ]
-       goal
+		 tclTHENSEQ
+		   [
+		     observe_tac "do_replace" 
+		       (do_replace princ_info.params fix_info.idx args_id
+			  (List.hd (List.rev pte_args)) fix_body);
+		     let do_prove = 
+		       build_proof 
+			 interactive_proof
+			 (Array.to_list fnames) 
+			 (Idmap.map prove_rec_hyp ptes_to_fix)
+		     in
+		     let prove_tac branches  = 
+		       let dyn_infos = 
+			 {dyn_infos with 
+			    rec_hyps = branches;
+			    nb_rec_hyps = List.length branches
+			 }
+		       in
+		       clean_goal_with_heq
+			 (Idmap.map prove_rec_hyp ptes_to_fix) 
+			 do_prove 
+			 dyn_infos
+		     in
+(* 		     observe (str "branches := " ++  *)
+(* 				prlist_with_sep spc (fun decl -> Ppconstr.pr_id (id_of_decl decl)) princ_info.branches); *)
+		     observe_tac "instancing" (instanciate_hyps_with_args prove_tac 
+		       (List.rev_map id_of_decl princ_info.branches) 
+		       (List.rev args_id))
+		   ]
+		   g
+	      );
+	    ] gl
+	with Not_found ->
+	  let nb_args = min (princ_info.nargs) (List.length ctxt) in
+	  tclTHENSEQ
+	    [
+	      tclDO nb_args intro;
+	      (fun g -> (* replacement of the function by its body *)
+		 let args = nLastHyps nb_args g in 
+		 let args_id = List.map (fun (id,_,_) -> id) args in
+		 let dyn_infos = 
+		   {
+		     nb_rec_hyps = -100;
+		     rec_hyps = [];
+		     info = 
+		       Reductionops.nf_betaiota 
+			 (applist(fbody_with_full_params,
+				  (List.rev_map var_of_decl princ_params)@
+				    (List.rev_map mkVar args_id)
+				 ));
+		     eq_hyps = []
+		   }
+		 in
+		 let fname = destConst (fst (decompose_app (List.hd (List.rev pte_args)))) in
+		 tclTHENSEQ
+		   [unfold_in_concl [([],Names.EvalConstRef fname)];
+		    let do_prove = 
+		      build_proof 
+			interactive_proof
+			(Array.to_list fnames) 
+			 (Idmap.map prove_rec_hyp ptes_to_fix)
+		    in
+		    let prove_tac branches  = 
+		      let dyn_infos = 
+			 {dyn_infos with 
+			    rec_hyps = branches;
+			    nb_rec_hyps = List.length branches
+			 }
+		      in
+		       clean_goal_with_heq
+			 (Idmap.map prove_rec_hyp ptes_to_fix) 
+			 do_prove 
+			 dyn_infos
+		    in
+		    instanciate_hyps_with_args prove_tac 
+		       (List.rev_map id_of_decl princ_info.branches) 
+		      (List.rev args_id)
+		   ]
+		   g
+	      )
+	    ] 
+	  gl
+    in
+    tclTHEN 
+      first_tac
+      intros_after_fixes
+      g
+	    
+
+
 
 
 
