@@ -446,7 +446,10 @@ let make_scheme fas =
   let env = Global.env () 
   and sigma = Evd.empty in
   let id_to_constr id = 
-    Tacinterp.constr_of_id env  id
+    try
+      Tacinterp.constr_of_id env  id
+    with Not_found -> 
+      Util.error ("Cannot find "^ string_of_id id)
   in 
   let funs = List.map (fun (_,f,_) -> id_to_constr f) fas in 
   let first_fun = destConst (List.hd funs) in 
