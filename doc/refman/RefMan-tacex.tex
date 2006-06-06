@@ -706,7 +706,7 @@ theorem \texttt{simplify\_ok: (f:formula)(interp\_f (simplify f)) ->
 \end{verbatim}
 But there is a problem with leafs: in the example above one cannot
 write a function that implements, for example, the logical simplifications 
-$A \wedge A \ra A$ or $A \wedge \neg A \ra \texttt{False}$. This is
+$A \land A \ra A$ or $A \land \lnot A \ra \texttt{False}$. This is
 because the \Prop{} is impredicative.
 
 It is better to use that type of formulas:
@@ -724,7 +724,7 @@ Inductive formula : Set :=
 \end{coq_example*}
 
 \texttt{index} is defined in module \texttt{quote}. Equality on that
-type is decidable so we are able to simplify $A \wedge A$ into $A$ at
+type is decidable so we are able to simplify $A \land A$ into $A$ at
 the abstract level. 
 
 When there are variables, there are bindings, and \texttt{quote}

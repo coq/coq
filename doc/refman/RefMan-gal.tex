@@ -1325,8 +1325,9 @@ mutual induction principles. It is described in Section~\ref{Scheme}.
 
 \subsubsection{\tt Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
  {\tt \{}decrease\_annot{\tt\}} : type$_0$ := \term$_0$.
+}
 \comindex{Function}
-\label{Function}}
+\label{Function}
 
 This \emph{experimental} command can be seen as a generalization of
 {\tt Fixpoint}.  It is actually a wrapper for several ways of defining
@@ -1376,16 +1377,39 @@ Function plus (n m : nat) {struct n} : nat :=
 
 \paragraph{Limitations}
 \label{sec:Function-limitations}
-\term$_0$ must be build as an imbrication of pattern matchings
+\term$_0$ must be build as a \emph{pure pattern-matching tree}
 (\texttt{match...with}) with $\lambda$-abstraction and applications only
-\emph{at the end} of each branch.
-For now dependent cases are not treated.
+\emph{at the end} of each branch.  For now dependent cases are not
+treated.
+
+
+\ErrMsg 
+
+\errindex{while trying to define Inductive R\_\ident ...}
+
+The generation of the graph relation \texttt{(R\_\ident)} used to
+compute the induction scheme of \ident raised a typing error, the
+definition of \ident was aborted. You can use \texttt{Fixpoint}
+instead of \texttt{Function}, but the scheme will not be generated.
+
+This error happens generally when: 
+
+\begin{itemize}
+\item the definition uses pattern matching on dependent types, which
+  \texttt{Function} cannot deal with yet.
+\item the definition is not a \emph{pattern-matching tree} as
+  explained above.
+\end{itemize}
+
+
 
 \SeeAlso{\ref{FunScheme},\ref{FunScheme-examples},\ref{FunInduction}}
 
 Depending on the {\tt \{\}} annotation, different definition
 mechanisms are used by {\tt Function}. More precise description
 given below.
+
+
 
 \subsubsection{\tt Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
  : type$_0$ := \term$_0$.
@@ -1433,7 +1457,7 @@ the following:
 \item {\tt \{wf} \term$_1$ \ident$_0${\tt\}} with \ident$_0$ being
       the decreasing argument and \term$_1$ an ordering relation on
       the type of \ident$_0$ (i.e. of type T$_{\ident_0}$
-      $\rightarrow$ T$_{\ident_0}$ $\rightarrow$ {\tt Prop}) for which
+      $\to$ T$_{\ident_0}$ $\to$ {\tt Prop}) for which
       the decreasing argument decreases at each recursive call of
       \term$_0$. The order must be well founded. parameters of the
       function are bound in  \term$_0$.
