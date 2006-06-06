@@ -579,8 +579,46 @@ inductively as being an inductive family of type $\Set\ra\Set$:
 \[\NInd{}{\List:\Set\ra\Set}{\Nil:(A:\Set)(\List~A),\cons : (A:\Set)A
   \ra (\List~A) \ra (\List~A)}\]
 There are drawbacks to this point of view. The
-information which says that $(\List~\nat)$ is an inductively defined
+information which says that for any $A$, $(\List~A)$ is an inductively defined
 \Set\ has been lost.
+So we introduce two important definitions.
+
+\paragraph{Inductive parameters, real arguments.}
+An inductive definition $\NInd{\Gamma}{\Gamma_I}{\Gamma_C}$ admits 
+$r$ inductive parameters if each type of constructors $(c:C)$ in
+$\Gamma_C$ is such that 
+\[C\equiv \forall
+p_1:P_1,\ldots,\forall p_r:P_r,\forall a_1:A_1, \ldots \forall a_n:A_n,
+(I~p_1~\ldots p_r~t_1\ldots t_q)\]
+with $I$ one of the inductive definitions in $\Gamma_I$. 
+We say that $n$ is the number of real arguments of the constructor
+$c$. 
+\paragraph{Context of parameters}
+If an inductive definition $\NInd{\Gamma}{\Gamma_I}{\Gamma_C}$ admits 
+$r$ inductive parameters, then there exists a context $\Gamma_P$ of
+size $r$, suche that $\Gamma_p=p_1:P_1;\ldots;\forall p_r:P_r$ and 
+if $(t:A)\in\Gamma_I,\Gamma_C$ then $A$ can be written as 
+$\forall p_1:P_1,\ldots \forall p_r:P_r,A'$. 
+We call $\Gamma_P$ the context of parameters of the inductive
+definition and use the notation $A=\forall \Gamma_P,A'$.
+\paragraph{Remark.}
+If we have a term $t$ in an instance of an
+inductive definition $I$ which starts with a constructor $c$, then the
+$r$ first arguments of $c$ (the parameter) can be deduced from the
+type $T$ of $t$: these are exactly the $r$ first arguments of $I$ in
+the head normal form of $T$.
+\paragraph{Examples.}
+The \List{} definition has $1$ parameter:
+\[\NInd{}{\List:\Set\ra\Set}{\Nil:(A:\Set)(\List~A),\cons : (A:\Set)A
+  \ra (\List~A) \ra (\List~A)}\]
+This is also the case for this more complex definition where there is
+a recursive argument on a different instance of \List: 
+\[\NInd{}{\List:\Set\ra\Set}{\Nil:(A:\Set)(\List~A),\cons : (A:\Set)A
+           \ra (\List~A\ra A) \ra (\List~A)}\]
+But the following definition has $0$ parameters:
+\[\NInd{}{\List:\Set\ra\Set}{\Nil:(A:\Set)(\List~A),\cons : (A:\Set)A
+           \ra (\List~A) \ra (\List~A*A)}\]
+
 %\footnote{
 %The interested reader may look at the compare the above definition with the two 
 %following ones which have very different logical meaning:\\
@@ -588,37 +626,49 @@ information which says that $(\List~\nat)$ is an inductively defined
 %  \ra \List \ra \List}$ \\
 %$\NInd{}{\List:\Set\ra\Set}{\Nil:(A:\Set)(\List~A),\cons : (A:\Set)A
 %  \ra (\List~A\ra A) \ra (\List~A)}$.}
+\paragraph{Concrete syntax.}
+In the Coq system, the context of parameters is given explicitely
+after the name of the inductive definitions and is shared beween the
+arities and the type of constructors.
 
-In the system, we keep track in the syntax of the context of
-parameters. The idea of these parameters is that they can be
-instantiated and still we have an inductive definition for which we
-know the specification.
+% The vernacular declaration of polymorphic trees and forests will be:\\
+% \begin{coq_example*}
+% Inductive Tree (A:Set) : Set := 
+%    Node : A -> Forest A -> Tree A
+% with Forest (A : Set) : Set := 
+%    Empty : Forest A
+%  | Cons  : Tree A -> Forest A -> Forest A
+% \end{coq_example*}
+% will correspond in our formalism to:
+% \[\NInd{}{{\tt Tree}:\Set\ra\Set;{\tt Forest}:\Set\ra \Set}
+%   {{\tt Node} : \forall A:\Set, A \ra {\tt Forest}~A \ra {\tt Tree}~A,
+%    {\tt Empty} : \forall A:\Set, {\tt Forest}~A,
+%    {\tt Cons} : \forall A:\Set, {\tt Tree}~A \ra {\tt Forest}~A \ra
+%    {\tt Forest}~A}\]
+In the system, we keep track in the syntax of the number of
+parameters. 
 
 Formally the representation of an inductive declaration
 will be 
-\Ind{\Gamma}{\Gamma_P}{\Gamma_I}{\Gamma_C} for an inductive
-definition valid in a context $\Gamma$ with parameters $\Gamma_P$, a
+\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C} for an inductive
+definition valid in a context $\Gamma$ with $p$ parameters, a
 context of definitions $\Gamma_I$ and a context of constructors
 $\Gamma_C$.
-The occurrences of the variables of $\Gamma_P$ in the contexts
-$\Gamma_I$ and $\Gamma_C$ are bound.
 
-The definition \Ind{\Gamma}{\Gamma_P}{\Gamma_I}{\Gamma_C} will be
-well-formed exactly when \NInd{\Gamma,\Gamma_P}{\Gamma_I}{\Gamma_C} is.
-If $\Gamma_P$ is $[p_1:P_1;\ldots;p_r:P_r]$, an object in 
-\Ind{\Gamma}{\Gamma_P}{\Gamma_I}{\Gamma_C} applied to $q_1,\ldots,q_r$
-will behave as the corresponding object of 
-\NInd{\Gamma}{\substs{\Gamma_I}{p_i}{q_i}{i=1..r}}{\substs{\Gamma_C}{p_i}{q_i}{i=1..r}}.
+The definition \Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C} will be
+well-formed exactly when \NInd{\Gamma}{\Gamma_I}{\Gamma_C} is and 
+when $p$ is the number of parameters in
+\NInd{\Gamma}{\Gamma_I}{\Gamma_C}. 
 
 \paragraph{Examples}
 The declaration for parameterized lists is:
-\[\Ind{}{A:\Set}{\List:\Set}{\Nil:\List,\cons : A \ra \List \ra
-  \List}\]
+\[\Ind{}{1}{\List:\Set\ra\Set}{\Nil:\forall A:\Set,\List~A,\cons : \forall
+  A:\Set, A \ra \List~A \ra   \List~A}\]
 
 The declaration for the length of lists is:
-\[\Ind{}{A:\Set}{\Length:(\List~A)\ra \nat\ra\Prop}
-      {\LNil:(\Length~(\Nil~A)~\nO),\\ 
-     \LCons :\forall a:A, \forall l:(\List~A),\forall n:\nat, (\Length~l~n)\ra (\Length~(\cons~A~a~l)~(\nS~n))}\]
+\[\Ind{}{1}{\Length:\forall A:\Set, (\List~A)\ra \nat\ra\Prop}
+      {\LNil:\forall A:\Set, \Length~A~(\Nil~A)~\nO,\\ 
+     \LCons :\forall A:\Set,\forall a:A, \forall l:(\List~A),\forall n:\nat, (\Length~A~l~n)\ra (\Length~A~(\cons~A~a~l)~(\nS~n))}\]
 
 The declaration for a mutual inductive definition of forests and trees is:
 \[\NInd{}{\tree:\Set,\forest:\Set}
@@ -647,17 +697,19 @@ with forest : Set :=
   | emptyf : forest
   | consf : tree -> forest -> forest.
 \end{coq_example*}
-The inductive declaration in \Coq\ is slightly different from the one
-we described theoretically. The difference is that in the type of
-constructors the inductive definition is explicitly applied to the
-parameters variables.
+% The inductive declaration in \Coq\ is slightly different from the one
+% we described theoretically. The difference is that in the type of
+% constructors the inductive definition is explicitly applied to the
+% parameters variables.
 %% FIXME: TODO: The paragraph below is wrong with the new inductive
 %% types implemented by Christine. The indtype below IS accepted.
 The \Coq\ type-checker verifies that all
-parameters are applied in the correct manner in each recursive call.
+parameters are applied in the correct manner in the conclusion of the
+type of each constructors~:
+
 In particular, the following definition will not be accepted because 
 there is an occurrence of \List\ which is not applied to the parameter
-variable:
+variable in the conclusion of the type of {\tt cons'}:
 \begin{coq_eval}
 Set Printing Depth 50.
 (********** The following is not correct and should produce **********)
@@ -666,25 +718,33 @@ Set Printing Depth 50.
 \begin{coq_example}
 Inductive list' (A:Set) : Set :=
   | nil' : list' A
-  | cons' : A -> list' (A -> A) -> list' A.
+  | cons' : A -> list' A -> list' (A*A).
 \end{coq_example}
+Since \Coq{} version 8.1, there is no restriction about parameters in
+the types of arguments of constructors. The following definition is
+valid:
+\begin{coq_example}
+Inductive list' (A:Set) : Set :=
+  | nil' : list' A
+  | cons' : A -> list' (A->A) -> list' A.
+\end{coq_example}
+
 
 \subsection{Types of inductive objects}
 We have to give the type of constants in an environment $E$ which
 contains an inductive declaration.
 
 \begin{description}
-\item[Ind-Const] Assuming $\Gamma_P$ is $[p_1:P_1;\ldots;p_r:P_r]$,
+\item[Ind-Const] Assuming 
   $\Gamma_I$ is $[I_1:A_1;\ldots;I_k:A_k]$, and $\Gamma_C$ is
   $[c_1:C_1;\ldots;c_n:C_n]$,
    
-\inference{\frac{\Ind{\Gamma}{\Gamma_P}{\Gamma_I}{\Gamma_C} \in E
-    ~~j=1\ldots k}{(I_j:\forall~p_1:P_1,\ldots\forall p_r:P_r,A_j) \in E}}
+\inference{\frac{\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C} \in E
+    ~~j=1\ldots k}{(I_j:A_j) \in E}}
 
-\inference{\frac{\Ind{\Gamma}{\Gamma_P}{\Gamma_I}{\Gamma_C} \in E
+\inference{\frac{\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C} \in E
     ~~~~i=1.. n}
-   {(c_i:\forall~p_1:P_1,\ldots \forall p_r:P_r,\subst{C_i}{I_j}{(I_j~p_1\ldots
-       p_r)}_{j=1\ldots k})\in E}}
+   {(c_i:C_i)\in E}}
 \end{description}
 
 \paragraph{Example.}
@@ -748,10 +808,13 @@ following cases:
   type $U$ but occurs strictly positively in type $V$
 \item $T$ converts to $(I~a_1 \ldots ~a_m ~ t_1 \ldots ~t_p)$ where
   $I$ is the name of an inductive declaration of the form
-  $\Ind{\Gamma}{p_1:P_1;\ldots;p_m:P_m}{I:A}{c_1:C_1;\ldots;c_n:C_n}$
+  $\Ind{\Gamma}{m}{I:A}{c_1:\forall p_1:P_1,\ldots \forall
+    p_m:P_m,C_1;\ldots;c_n:\forall p_1:P_1,\ldots \forall
+    p_m:P_m,C_n}$ 
   (in particular, it is not mutually defined and it has $m$
   parameters) and $X$ does not occur in any of the $t_i$, and the
-  types of constructor $C_i\{p_j/a_j\}_{j=1\ldots m}$ of $I$ satisfy
+  (instantiated) types of constructor $C_i\{p_j/a_j\}_{j=1\ldots m}$
+  of $I$ satisfy 
   the nested positivity condition for $X$
 %\item more generally, when $T$ is not a type, $X$ occurs strictly
 %positively in $T[x:U]u$ if $X$ does not occur in $U$ but occurs
@@ -763,15 +826,16 @@ positivity condition} for a constant $X$ in the following
 cases:
 
 \begin{itemize}
-\item $T=(I~t_1\ldots ~t_n)$ and $X$ does not occur in
-any $t_i$
+\item $T=(I~b_1\ldots b_m~u_1\ldots ~u_{p})$, $I$ is an inductive
+  definition with $m$ parameters and $X$ does not occur in
+any $u_i$
 \item $T=\forall~x:U,V$ and $X$ occurs only strictly positively in $U$ and
 the type $V$ satisfies the nested positivity condition for $X$
 \end{itemize}
 
 \paragraph{Example}
 
-$X$ occurs strictly positively in $A\ra X$ or $X*A$ or $({\tt list}
+$X$ occurs strictly positively in $A\ra X$ or $X*A$ or $({\tt list}~
 X)$ but not in $X \ra A$ or $(X \ra A)\ra A$ nor $({\tt neg}~A)$
 assuming the notion of product and lists were already defined and {\tt
   neg} is an inductive definition with declaration \Ind{}{A:\Set}{{\tt
@@ -787,17 +851,20 @@ inductive definition.
 \begin{description}
 \item[W-Ind] Let $E$ be an environment and
   $\Gamma,\Gamma_P,\Gamma_I,\Gamma_C$ are contexts such that
-  $\Gamma_I$ is $[I_1:A_1;\ldots;I_k:A_k]$ and $\Gamma_C$ is
-  $[c_1:C_1;\ldots;c_n:C_n]$. 
+  $\Gamma_I$ is $[I_1:\forall \Gamma_p,A_1;\ldots;I_k:\forall
+  \Gamma_P,A_k]$ and $\Gamma_C$ is 
+  $[c_1:\forall \Gamma_p,C_1;\ldots;c_n:\forall \Gamma_p,C_n]$. 
 \inference{
   \frac{
   (\WTE{\Gamma;\Gamma_P}{A_j}{s'_j})_{j=1\ldots  k}
-  ~~ (\WTE{\Gamma;\Gamma_P;\Gamma_I}{C_i}{s_{p_i}})_{i=1\ldots  n}
+  ~~ (\WTE{\Gamma;\Gamma_I;\Gamma_P}{C_i}{s_{p_i}})_{i=1\ldots  n}
 }
-  {\WF{E;\Ind{\Gamma}{\Gamma_P}{\Gamma_I}{\Gamma_C}}{\Gamma}}}
+  {\WF{E;\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C}}{\Gamma}}}
 providing the following side conditions hold:
 \begin{itemize}
 \item $k>0$, $I_j$, $c_i$ are different names for $j=1\ldots  k$ and $i=1\ldots  n$,
+\item $p$ is the number of parameters of \NInd{\Gamma}{\Gamma_I}{\Gamma_C}
+  and $\Gamma_P$ is the context of parameters, 
 \item for $j=1\ldots  k$ we have $A_j$ is an arity of sort $s_j$ and $I_j
   \notin \Gamma \cup E$,
 \item for $i=1\ldots  n$ we have $C_i$ is a type of constructor of
@@ -812,7 +879,7 @@ constructors which will always be satisfied for the impredicative sort
 on sort \Set{} and generate constraints between universes for
 inductive definitions in types.
 
-\paragraph{Examples}
+\paragraph{Examples.}
 It is well known that existential quantifier can be encoded as an
 inductive definition.
 The following declaration introduces the second-order existential
@@ -865,7 +932,7 @@ ourselves to primitive recursive functions and functionals.
 
 For instance, assuming a parameter $A:\Set$ exists in the context, we
 want to build a function \length\ of type $\ListA\ra \nat$ which
-computes the length of the list, so such that $(\length~\Nil) = \nO$
+computes the length of the list, so such that $(\length~(\Nil~A)) = \nO$
 and $(\length~(\cons~A~a~l)) = (\nS~(\length~l))$.  We want these
 equalities to be recognized implicitly and taken into account in the
 conversion rule.
@@ -886,7 +953,7 @@ principles.
 For instance, in order to prove $\forall l:\ListA,(\LengthA~l~(\length~l))$
 it is enough to prove:
 
-\noindent $(\LengthA~\Nil~(\length~\Nil))$ and
+\noindent $(\LengthA~(\Nil~A)~(\length~(\Nil~A)))$ and
 
 \smallskip
 $\forall a:A, \forall l:\ListA, (\LengthA~l~(\length~l)) \ra
@@ -895,7 +962,7 @@ $\forall a:A, \forall l:\ListA, (\LengthA~l~(\length~l)) \ra
 
 \noindent which given the conversion equalities satisfied by \length\ is the
 same as proving:
-$(\LengthA~\Nil~\nO)$ and $\forall a:A, \forall l:\ListA, 
+$(\LengthA~(\Nil~A)~\nO)$ and $\forall a:A, \forall l:\ListA, 
 (\LengthA~l~(\length~l)) \ra
 (\LengthA~(\cons~A~a~l)~(\nS~(\length~l)))$.
 
@@ -1009,7 +1076,7 @@ $I$.
     s_2 \in \Sort}{\compat{I:s_1}{I\ra s_2}}}
 \end{description}
 
-The case of Inductive Definitions of sort \Prop{} is a bit more
+The case of Inductive definitions of sort \Prop{} is a bit more
 complicated, because of our interpretation of this sort. The only
 harmless allowed elimination, is the one when predicate $P$ is also of
 sort \Prop.
