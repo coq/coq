@@ -162,8 +162,12 @@ let sort () =
       try
 	while true do
 	  match coq_action lb with
-	    | Require (_, s) ->
-		(try loop (List.assoc s !vKnown) with Not_found -> ())
+	    | Require (_, sl) ->
+		List.iter 
+		  (fun s -> 
+		    try loop (List.assoc s !vKnown) 
+		    with Not_found -> ())
+		sl
 	    | RequireString (_, s) -> loop s
 	    | _ -> ()
 	done
@@ -184,17 +188,18 @@ let traite_fichier_Coq verbose f =
       while true do
       	let tok = coq_action buf in
 	match tok with
-	  | Require (spec,str) ->
-	      if not (List.mem str !deja_vu_v) then begin
-	        addQueue deja_vu_v str;
-                try
-                  let file_str = safe_assoc verbose f str in
-                  printf " %s%s" (canonize file_str)
-                    (if spec then !suffixe_spec else !suffixe)
-                with Not_found -> 
-		  if verbose && not (List.mem_assoc str !coqlibKnown) then
-                    warning_module_notfound f str
-       	      end
+	  | Require (spec,strl) ->
+	      List.iter (fun str ->
+		if not (List.mem str !deja_vu_v) then begin
+	          addQueue deja_vu_v str;
+                  try
+                    let file_str = safe_assoc verbose f str in
+                    printf " %s%s" (canonize file_str)
+                      (if spec then !suffixe_spec else !suffixe)
+                  with Not_found -> 
+		    if verbose && not (List.mem_assoc str !coqlibKnown) then
+                      warning_module_notfound f str
+       		end) strl
 	  | RequireString (spec,s) -> 
 	      let str = Filename.basename s in
 	      if not (List.mem [str] !deja_vu_v) then begin
@@ -523,6 +528,7 @@ let coqdep () =
   List.iter 
     (fun (s,_) -> add_coqlib_directory s)
     (all_subdirs (!coqlib/"contrib") "Coq");
+  add_coqlib_directory (!coqlib/"user-contrib");
   mliKnown := !mliKnown @ (List.map (fun (f,_,d) -> (f,d)) !mliAccu);
   mlKnown  := !mlKnown @ (List.map (fun (f,_,d) -> (f,d)) !mlAccu);
   warning_mult ".mli" !mliKnown;
