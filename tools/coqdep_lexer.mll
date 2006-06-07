@@ -18,7 +18,7 @@
   type spec = bool
 		
   type coq_token = 
-    | Require of spec * string list
+    | Require of spec * string list list
     | RequireString of spec * string
     | Declare of string list
     | Load of string
@@ -27,7 +27,8 @@
  
   exception Fin_fichier
     
-  let module_name = ref []
+  let module_current_name = ref []
+  let module_names = ref []
   let ml_module_name = ref ""
 		      
   let specif = ref false
@@ -48,13 +49,11 @@ let dot = '.' ( space+ | eof)
 
 rule coq_action = parse
   | "Require" space+
-      { specif := false; opened_file lexbuf }
+      { specif := false; module_names := []; opened_file lexbuf }
   | "Require" space+ "Export" space+
-      { specif := false; opened_file lexbuf}
-  | "Require" space+ "Syntax" space+
-      { specif := false; opened_file lexbuf}
+      { specif := false; module_names := []; opened_file lexbuf}
   | "Require" space+ "Import" space+
-      { specif := false; opened_file lexbuf}
+      { specif := false; module_names := []; opened_file lexbuf}
   | "Declare" space+ "ML" space+ "Module" space+
       { mllist := []; modules lexbuf}
   | "Load" space+
@@ -175,7 +174,7 @@ and opened_file = parse
   | "Specification"
                 { specif := true; opened_file lexbuf }
   | coq_ident
-       	       	{ module_name := [Lexing.lexeme lexbuf];
+       	       	{ module_current_name := [Lexing.lexeme lexbuf];
                   opened_file_fields lexbuf }
 
   | '"' [^'"']* '"'   { (*'"'*)
@@ -186,23 +185,28 @@ and opened_file = parse
                             Filename.chop_suffix str ".v"
                           else str in
 			RequireString (!specif, str) }
-  | eof		      { raise Fin_fichier }
-  | _		      { opened_file lexbuf }
+  | eof         { raise Fin_fichier }
+  | _           { opened_file lexbuf }
 
 and opened_file_fields = parse
   | "(*" (* "*)" *)
                 { comment_depth := 1; comment lexbuf;
                   opened_file_fields lexbuf }
   | space+
-      	       	{ opened_file_fields lexbuf }
+                { opened_file_fields lexbuf }
   | coq_field
-       	       	{ module_name :=
-                    field_name (Lexing.lexeme lexbuf) :: !module_name;
+                { module_current_name :=
+                    field_name (Lexing.lexeme lexbuf) :: !module_current_name;
                   opened_file_fields lexbuf }
-  | dot               { Require (!specif, List.rev !module_name) }
-  | eof		      { raise Fin_fichier }
-  | _		      { opened_file_fields lexbuf }
-
+  | coq_ident   { module_names := 
+                    List.rev !module_current_name :: !module_names;
+                  module_current_name := [Lexing.lexeme lexbuf];
+                  opened_file_fields lexbuf }
+  | dot         { module_names :=
+                    List.rev !module_current_name :: !module_names;
+                  Require (!specif, List.rev !module_names) }
+  | eof         { raise Fin_fichier }
+  | _           { opened_file_fields lexbuf }
 
 and modules = parse
   | space+              { modules lexbuf }
