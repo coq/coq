@@ -307,10 +307,10 @@ type closed_raw_generic_argument =
     (constr_expr,raw_tactic_expr) generic_argument
 
 type 'a raw_abstract_argument_type =
-    ('a,constr_expr,raw_tactic_expr) abstract_argument_type
+    ('a,rlevel,raw_tactic_expr) abstract_argument_type
 
 type 'a glob_abstract_argument_type =
-    ('a,rawconstr_and_expr,glob_tactic_expr) abstract_argument_type
+    ('a,glevel,glob_tactic_expr) abstract_argument_type
 
 type open_generic_argument =
     (Term.constr,glob_tactic_expr) generic_argument

@@ -82,88 +82,99 @@ ExtraArgType of string         '_a                      '_b
 \end{verbatim}
 *)
 
+(* All of [rlevel], [glevel] and [tlevel] must be non convertible 
+   to ensure the injectivity of the type inference from type
+   [('co,'ta) generic_argument] to [('a,'co,'ta) abstract_argument_type]
+   is injective; this guarantees that, for 'b fixed, the type of
+   out_gen is monomorphic over 'a, hence type-safe 
+*)
+
+type rlevel = constr_expr
+type glevel = rawconstr_and_expr
+type tlevel = constr
+
 type ('a,'co,'ta) abstract_argument_type
 
-val rawwit_bool : (bool,'co,'ta) abstract_argument_type
-val globwit_bool : (bool,'co,'ta) abstract_argument_type
-val wit_bool : (bool,'co,'ta) abstract_argument_type
+val rawwit_bool : (bool,rlevel,'ta) abstract_argument_type
+val globwit_bool : (bool,glevel,'ta) abstract_argument_type
+val wit_bool : (bool,tlevel,'ta) abstract_argument_type
 
-val rawwit_int : (int,'co,'ta) abstract_argument_type
-val globwit_int : (int,'co,'ta) abstract_argument_type
-val wit_int : (int,'co,'ta) abstract_argument_type
+val rawwit_int : (int,rlevel,'ta) abstract_argument_type
+val globwit_int : (int,glevel,'ta) abstract_argument_type
+val wit_int : (int,tlevel,'ta) abstract_argument_type
 
-val rawwit_int_or_var : (int or_var,'co,'ta) abstract_argument_type
-val globwit_int_or_var : (int or_var,'co,'ta) abstract_argument_type
-val wit_int_or_var : (int or_var,'co,'ta) abstract_argument_type
+val rawwit_int_or_var : (int or_var,rlevel,'ta) abstract_argument_type
+val globwit_int_or_var : (int or_var,glevel,'ta) abstract_argument_type
+val wit_int_or_var : (int or_var,tlevel,'ta) abstract_argument_type
 
-val rawwit_string : (string,'co,'ta) abstract_argument_type
-val globwit_string : (string,'co,'ta) abstract_argument_type
-val wit_string : (string,'co,'ta) abstract_argument_type
+val rawwit_string : (string,rlevel,'ta) abstract_argument_type
+val globwit_string : (string,glevel,'ta) abstract_argument_type
+val wit_string : (string,tlevel,'ta) abstract_argument_type
 
-val rawwit_pre_ident : (string,'co,'ta) abstract_argument_type
-val globwit_pre_ident : (string,'co,'ta) abstract_argument_type
-val wit_pre_ident : (string,'co,'ta) abstract_argument_type
+val rawwit_pre_ident : (string,rlevel,'ta) abstract_argument_type
+val globwit_pre_ident : (string,glevel,'ta) abstract_argument_type
+val wit_pre_ident : (string,tlevel,'ta) abstract_argument_type
 
-val rawwit_intro_pattern : (intro_pattern_expr,'co,'ta) abstract_argument_type
-val globwit_intro_pattern : (intro_pattern_expr,'co,'ta) abstract_argument_type
-val wit_intro_pattern : (intro_pattern_expr,'co,'ta) abstract_argument_type
+val rawwit_intro_pattern : (intro_pattern_expr,rlevel,'ta) abstract_argument_type
+val globwit_intro_pattern : (intro_pattern_expr,glevel,'ta) abstract_argument_type
+val wit_intro_pattern : (intro_pattern_expr,tlevel,'ta) abstract_argument_type
 
-val rawwit_ident : (identifier,'co,'ta) abstract_argument_type
-val globwit_ident : (identifier,'co,'ta) abstract_argument_type
-val wit_ident : (identifier,'co,'ta) abstract_argument_type
+val rawwit_ident : (identifier,rlevel,'ta) abstract_argument_type
+val globwit_ident : (identifier,glevel,'ta) abstract_argument_type
+val wit_ident : (identifier,tlevel,'ta) abstract_argument_type
 
-val rawwit_var : (identifier located,'co,'ta) abstract_argument_type
-val globwit_var : (identifier located,'co,'ta) abstract_argument_type
-val wit_var : (identifier,'co,'ta) abstract_argument_type
+val rawwit_var : (identifier located,rlevel,'ta) abstract_argument_type
+val globwit_var : (identifier located,glevel,'ta) abstract_argument_type
+val wit_var : (identifier,tlevel,'ta) abstract_argument_type
 
-val rawwit_ref : (reference,constr_expr,'ta) abstract_argument_type
-val globwit_ref : (global_reference located or_var,rawconstr_and_expr,'ta) abstract_argument_type
-val wit_ref : (global_reference,constr,'ta) abstract_argument_type
+val rawwit_ref : (reference,rlevel,'ta) abstract_argument_type
+val globwit_ref : (global_reference located or_var,glevel,'ta) abstract_argument_type
+val wit_ref : (global_reference,tlevel,'ta) abstract_argument_type
 
-val rawwit_quant_hyp : (quantified_hypothesis,'co,'ta) abstract_argument_type
-val globwit_quant_hyp : (quantified_hypothesis,'co,'ta) abstract_argument_type
-val wit_quant_hyp : (quantified_hypothesis,'co,'ta) abstract_argument_type
+val rawwit_quant_hyp : (quantified_hypothesis,rlevel,'ta) abstract_argument_type
+val globwit_quant_hyp : (quantified_hypothesis,glevel,'ta) abstract_argument_type
+val wit_quant_hyp : (quantified_hypothesis,tlevel,'ta) abstract_argument_type
 
-val rawwit_sort : (rawsort,constr_expr,'ta) abstract_argument_type
-val globwit_sort : (rawsort,rawconstr_and_expr,'ta) abstract_argument_type
-val wit_sort : (sorts,constr,'ta) abstract_argument_type
+val rawwit_sort : (rawsort,rlevel,'ta) abstract_argument_type
+val globwit_sort : (rawsort,glevel,'ta) abstract_argument_type
+val wit_sort : (sorts,tlevel,'ta) abstract_argument_type
 
-val rawwit_constr : (constr_expr,constr_expr,'ta) abstract_argument_type
-val globwit_constr : (rawconstr_and_expr,rawconstr_and_expr,'ta) abstract_argument_type
-val wit_constr : (constr,constr,'ta) abstract_argument_type
+val rawwit_constr : (constr_expr,rlevel,'ta) abstract_argument_type
+val globwit_constr : (rawconstr_and_expr,glevel,'ta) abstract_argument_type
+val wit_constr : (constr,tlevel,'ta) abstract_argument_type
 
-val rawwit_constr_may_eval : ((constr_expr,reference) may_eval,constr_expr,'ta) abstract_argument_type
-val globwit_constr_may_eval : ((rawconstr_and_expr,evaluable_global_reference and_short_name or_var) may_eval,rawconstr_and_expr,'ta) abstract_argument_type
-val wit_constr_may_eval : (constr,constr,'ta) abstract_argument_type
+val rawwit_constr_may_eval : ((constr_expr,reference) may_eval,rlevel,'ta) abstract_argument_type
+val globwit_constr_may_eval : ((rawconstr_and_expr,evaluable_global_reference and_short_name or_var) may_eval,glevel,'ta) abstract_argument_type
+val wit_constr_may_eval : (constr,tlevel,'ta) abstract_argument_type
 
-val rawwit_open_constr_gen : bool -> (open_constr_expr,constr_expr,'ta) abstract_argument_type
-val globwit_open_constr_gen : bool -> (open_rawconstr,rawconstr_and_expr,'ta) abstract_argument_type
-val wit_open_constr_gen : bool -> (open_constr,constr,'ta) abstract_argument_type
+val rawwit_open_constr_gen : bool -> (open_constr_expr,rlevel,'ta) abstract_argument_type
+val globwit_open_constr_gen : bool -> (open_rawconstr,glevel,'ta) abstract_argument_type
+val wit_open_constr_gen : bool -> (open_constr,tlevel,'ta) abstract_argument_type
 
-val rawwit_open_constr : (open_constr_expr,constr_expr,'ta) abstract_argument_type
-val globwit_open_constr : (open_rawconstr,rawconstr_and_expr,'ta) abstract_argument_type
-val wit_open_constr : (open_constr,constr,'ta) abstract_argument_type
+val rawwit_open_constr : (open_constr_expr,rlevel,'ta) abstract_argument_type
+val globwit_open_constr : (open_rawconstr,glevel,'ta) abstract_argument_type
+val wit_open_constr : (open_constr,tlevel,'ta) abstract_argument_type
 
-val rawwit_casted_open_constr : (open_constr_expr,constr_expr,'ta) abstract_argument_type
-val globwit_casted_open_constr : (open_rawconstr,rawconstr_and_expr,'ta) abstract_argument_type
-val wit_casted_open_constr : (open_constr,constr,'ta) abstract_argument_type
+val rawwit_casted_open_constr : (open_constr_expr,rlevel,'ta) abstract_argument_type
+val globwit_casted_open_constr : (open_rawconstr,glevel,'ta) abstract_argument_type
+val wit_casted_open_constr : (open_constr,tlevel,'ta) abstract_argument_type
 
-val rawwit_constr_with_bindings : (constr_expr with_bindings,constr_expr,'ta) abstract_argument_type
-val globwit_constr_with_bindings : (rawconstr_and_expr with_bindings,rawconstr_and_expr,'ta) abstract_argument_type
-val wit_constr_with_bindings : (constr with_bindings,constr,'ta) abstract_argument_type
+val rawwit_constr_with_bindings : (constr_expr with_bindings,rlevel,'ta) abstract_argument_type
+val globwit_constr_with_bindings : (rawconstr_and_expr with_bindings,glevel,'ta) abstract_argument_type
+val wit_constr_with_bindings : (constr with_bindings,tlevel,'ta) abstract_argument_type
 
-val rawwit_bindings : (constr_expr bindings,constr_expr,'ta) abstract_argument_type
-val globwit_bindings : (rawconstr_and_expr bindings,rawconstr_and_expr,'ta) abstract_argument_type
-val wit_bindings : (constr bindings,constr,'ta) abstract_argument_type
+val rawwit_bindings : (constr_expr bindings,rlevel,'ta) abstract_argument_type
+val globwit_bindings : (rawconstr_and_expr bindings,glevel,'ta) abstract_argument_type
+val wit_bindings : (constr bindings,tlevel,'ta) abstract_argument_type
 
-val rawwit_red_expr : ((constr_expr,reference) red_expr_gen,constr_expr,'ta) abstract_argument_type
-val globwit_red_expr : ((rawconstr_and_expr,evaluable_global_reference and_short_name or_var) red_expr_gen,rawconstr_and_expr,'ta) abstract_argument_type
-val wit_red_expr : ((constr,evaluable_global_reference) red_expr_gen,constr,'ta) abstract_argument_type
+val rawwit_red_expr : ((constr_expr,reference) red_expr_gen,rlevel,'ta) abstract_argument_type
+val globwit_red_expr : ((rawconstr_and_expr,evaluable_global_reference and_short_name or_var) red_expr_gen,glevel,'ta) abstract_argument_type
+val wit_red_expr : ((constr,evaluable_global_reference) red_expr_gen,tlevel,'ta) abstract_argument_type
 
 (* TODO: transformer tactic en extra arg *)
-val rawwit_tactic : int -> ('ta,constr_expr,'ta) abstract_argument_type
-val globwit_tactic : int -> ('ta,rawconstr_and_expr,'ta) abstract_argument_type
-val wit_tactic : int -> ('ta,constr,'ta) abstract_argument_type
+val rawwit_tactic : int -> ('ta,rlevel,'ta) abstract_argument_type
+val globwit_tactic : int -> ('ta,glevel,'ta) abstract_argument_type
+val wit_tactic : int -> ('ta,tlevel,'ta) abstract_argument_type
 
 val wit_list0 :
   ('a,'co,'ta) abstract_argument_type -> ('a list,'co,'ta) abstract_argument_type
@@ -216,9 +227,9 @@ val app_pair :
    polymorphism, on aimerait que 'b et 'c restent polymorphes à l'appel
    de create *)
 val create_arg : string ->
-      ('a,'co,'ta) abstract_argument_type
-      * ('globa,'globco,'globta) abstract_argument_type
-      * ('rawa,'rawco,'rawta) abstract_argument_type
+      ('a,tlevel,'ta) abstract_argument_type
+      * ('globa,glevel,'globta) abstract_argument_type
+      * ('rawa,rlevel,'rawta) abstract_argument_type
 
 val exists_argtype : string -> bool
 

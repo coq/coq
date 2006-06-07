@@ -77,7 +77,7 @@ val force_entry_type :
 
 val create_constr_entry :
   string * gram_universe -> string -> constr_expr Gram.Entry.e
-val create_generic_entry : string -> ('a, constr_expr,raw_tactic_expr) abstract_argument_type -> 'a Gram.Entry.e
+val create_generic_entry : string -> ('a, rlevel,raw_tactic_expr) abstract_argument_type -> 'a Gram.Entry.e
 val get_generic_entry : string -> grammar_object Gram.Entry.e
 val get_generic_entry_type : string * gram_universe -> string -> Genarg.argument_type
 
