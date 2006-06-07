@@ -223,8 +223,8 @@ either $x:T$ is an assumption in $\Gamma$ or that there exists some $t$ such
 that $x:=t:T$ is a definition in $\Gamma$. If $\Gamma$ defines some
 $x:=t:T$, we also write $(x:=t:T)\in\Gamma$.  Contexts must be
 themselves {\em well formed}.  For the rest of the chapter, the
-notation $\Gamma::(y:T)$ (resp $\Gamma::(y:=t:T)$) denotes the context
-$\Gamma$ enriched with the declaration $y:T$ (resp $y:=t:T$). The
+notation $\Gamma::(y:T)$ (resp. $\Gamma::(y:=t:T)$) denotes the context
+$\Gamma$ enriched with the declaration $y:T$ (resp. $y:=t:T$). The
 notation $[]$ denotes the empty context.  \index{Context}
 
 % Does not seem to be used further...
@@ -596,15 +596,15 @@ $c$.
 \paragraph{Context of parameters}
 If an inductive definition $\NInd{\Gamma}{\Gamma_I}{\Gamma_C}$ admits 
 $r$ inductive parameters, then there exists a context $\Gamma_P$ of
-size $r$, suche that $\Gamma_p=p_1:P_1;\ldots;\forall p_r:P_r$ and 
+size $r$, such that $\Gamma_P=p_1:P_1;\ldots;\forall p_r:P_r$ and 
 if $(t:A)\in\Gamma_I,\Gamma_C$ then $A$ can be written as 
 $\forall p_1:P_1,\ldots \forall p_r:P_r,A'$. 
 We call $\Gamma_P$ the context of parameters of the inductive
-definition and use the notation $A=\forall \Gamma_P,A'$.
+definition and use the notation $\forall \Gamma_P,A'$ for the term $A$.
 \paragraph{Remark.}
 If we have a term $t$ in an instance of an
 inductive definition $I$ which starts with a constructor $c$, then the
-$r$ first arguments of $c$ (the parameter) can be deduced from the
+$r$ first arguments of $c$ (the parameters) can be deduced from the
 type $T$ of $t$: these are exactly the $r$ first arguments of $I$ in
 the head normal form of $T$.
 \paragraph{Examples.}
@@ -620,17 +620,16 @@ But the following definition has $0$ parameters:
            \ra (\List~A) \ra (\List~A*A)}\]
 
 %\footnote{
-%The interested reader may look at the compare the above definition with the two 
+%The interested reader may compare the above definition with the two 
 %following ones which have very different logical meaning:\\
 %$\NInd{}{\List:\Set}{\Nil:\List,\cons : (A:\Set)A
 %  \ra \List \ra \List}$ \\
 %$\NInd{}{\List:\Set\ra\Set}{\Nil:(A:\Set)(\List~A),\cons : (A:\Set)A
 %  \ra (\List~A\ra A) \ra (\List~A)}$.}
 \paragraph{Concrete syntax.}
-In the Coq system, the context of parameters is given explicitely
-after the name of the inductive definitions and is shared beween the
+In the Coq system, the context of parameters is given explicitly
+after the name of the inductive definitions and is shared between the
 arities and the type of constructors.
-
 % The vernacular declaration of polymorphic trees and forests will be:\\
 % \begin{coq_example*}
 % Inductive Tree (A:Set) : Set := 
@@ -645,7 +644,7 @@ arities and the type of constructors.
 %    {\tt Empty} : \forall A:\Set, {\tt Forest}~A,
 %    {\tt Cons} : \forall A:\Set, {\tt Tree}~A \ra {\tt Forest}~A \ra
 %    {\tt Forest}~A}\]
-In the system, we keep track in the syntax of the number of
+We keep track in the syntax of the number of
 parameters. 
 
 Formally the representation of an inductive declaration
@@ -657,7 +656,7 @@ $\Gamma_C$.
 
 The definition \Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C} will be
 well-formed exactly when \NInd{\Gamma}{\Gamma_I}{\Gamma_C} is and 
-when $p$ is the number of parameters in
+when $p$ is (less or equal than) the number of parameters in
 \NInd{\Gamma}{\Gamma_I}{\Gamma_C}. 
 
 \paragraph{Examples}
@@ -701,8 +700,6 @@ with forest : Set :=
 % we described theoretically. The difference is that in the type of
 % constructors the inductive definition is explicitly applied to the
 % parameters variables.
-%% FIXME: TODO: The paragraph below is wrong with the new inductive
-%% types implemented by Christine. The indtype below IS accepted.
 The \Coq\ type-checker verifies that all
 parameters are applied in the correct manner in the conclusion of the
 type of each constructors~:
@@ -1024,20 +1021,25 @@ compact notation~:
 \[ \Case{(\lb a x \mto P)}{m}{ \lb x_{11}~...~x_{1p_1} \mto f_1 ~|~\ldots~|~
   \lb x_{n1}...x_{np_n} \mto f_n}\]
 
+%% CP 06/06 Obsolete avec la nouvelle syntaxe et incompatible avec la
+%% presentation theorique qui suit
+% \paragraph{Non-dependent elimination.}
+%
+% When defining a function of codomain $C$ by case analysis over an
+% object in an inductive type $I$, we build an object of type $I
+% \ra C$. The minimality principle on an inductively defined logical
+% predicate $I$ of type $A \ra \Prop$ is often used to prove a property
+% $\forall x:A,(I~x)\ra (C~x)$.  These are particular cases of the dependent
+% principle that we stated before with a predicate which does not depend
+% explicitly on the object in the inductive definition.
 
-\paragraph{Non-dependent elimination.}
-When defining a function by case analysis, we build an object of type $I
-\ra C$ and the minimality principle on an inductively defined logical
-predicate of type $A \ra \Prop$ is often used to prove a property
-$\forall x:A,(I~x)\ra (C~x)$.  This is a particular case of the dependent
-principle that we stated before with a predicate which does not depend
-explicitly on the object in the inductive definition.
-
-For instance, a function testing whether a list is empty 
-can be
-defined as:
-
-\[\lb~l:\ListA \mto\Case{\bool}{l}{\Nil~ \Ra~\true~ |~ (\cons~a~m)~ \Ra~\false}\]
+% For instance, a function testing whether a list is empty 
+% can be
+% defined as:
+% \[\kw{fun} l:\ListA \Ra \kw{match}~l~\kw{with}~ \Nil \Ra \true~
+% |~(\cons~a~m) \Ra \false \kw{end}\]
+% represented by
+% \[\lb~l:\ListA \mto\Case{\bool}{l}{\true~ |~ \lb a~m,~\false}\]
 %\noindent {\bf Remark. } 
 
 % In the system \Coq\ the expression above, can be
@@ -1054,9 +1056,9 @@ what can be the type of $P$ with respect to the type of the inductive
 definitions.
 
 We define now a relation \compat{I:A}{B} between an inductive
-definition $I$ of type $A$, an arity $B$ which says that an object in
-the inductive definition $I$ can be eliminated for proving a property
-$P$ of type $B$.
+definition $I$ of type $A$ and an arity $B$. This relation states that
+an object in the inductive definition $I$ can be eliminated for
+proving a property $P$ of type $B$.
 
 The case of inductive definitions in sorts \Set\ or \Type{} is simple.
 There is no restriction on the sort of the predicate to be
@@ -1242,10 +1244,10 @@ following typing rule
   \WTEG{P}{B}~~\compat{(I~q_1\ldots  q_r)}{B}
  ~~
 (\WTEG{f_i}{\CI{(c_{p_i}~q_1\ldots  q_r)}{P}})_{i=1\ldots  l}}
-{\WTEG{\Case{P}{c}{f_1\ldots  f_l}}{(P\ t_1\ldots  t_s\ c)}}}%\\[3mm]
+{\WTEG{\Case{P}{c}{f_1|\ldots  |f_l}}{(P\ t_1\ldots  t_s\ c)}}}%\\[3mm]
 
 provided $I$ is an inductive type in a declaration
-\Ind{\Delta}{\Gamma_P}{\Gamma_I}{\Gamma_C} with $|\Gamma_P| = r$,
+\Ind{\Delta}{r}{\Gamma_I}{\Gamma_C} with 
 $\Gamma_C = [c_1:C_1;\ldots;c_n:C_n]$ and $c_{p_1}\ldots  c_{p_l}$ are the
 only constructors of $I$.
 \end{description}
@@ -1257,7 +1259,7 @@ context being the same in all the judgments).
 
 \[\frac{l:\ListA~~P:\ListA\ra s~~~f_1:(P~(\Nil~A))~~
       f_2:\forall a:A, \forall l:\ListA, (P~(\cons~A~a~l))}
-    {\Case{P}{l}{f_1~f_2}:(P~l)}\]
+    {\Case{P}{l}{f_1~|~f_2}:(P~l)}\]
 
 \[\frac{
      \begin{array}[b]{@{}c@{}} 
@@ -1267,21 +1269,21 @@ H:(\LengthA~L~N) \\ P:\forall l:\ListA, \forall n:\nat, (\LengthA~l~n)\ra
    f_2:\forall a:A, \forall l:\ListA, \forall n:\nat, \forall
   h:(\LengthA~l~n), (P~(\cons~A~a~n)~(\nS~n)~(\LCons~A~a~l~n~h)) 
       \end{array}}
-    {\Case{P}{H}{f_1~f_2}:(P~L~N~H)}\]
+    {\Case{P}{H}{f_1~|~f_2}:(P~L~N~H)}\]
 
 \paragraph{Definition of $\iota$-reduction.}\label{iotared}
 \index{iota-reduction@$\iota$-reduction}
 We still have to define the $\iota$-reduction in the general case.
 
 A $\iota$-redex is a term of the following form:
-\[\Case{P}{(c_{p_i}~q_1\ldots  q_r~a_1\ldots  a_m)}{f_1\ldots 
+\[\Case{P}{(c_{p_i}~q_1\ldots  q_r~a_1\ldots  a_m)}{f_1|\ldots |
     f_l}\]
 with $c_{p_i}$ the $i$-th constructor of the inductive type $I$ with $r$
 parameters.
 
 The $\iota$-contraction of this term is $(f_i~a_1\ldots a_m)$ leading
 to the general reduction rule:
-\[ \Case{P}{(c_{p_i}~q_1\ldots  q_r~a_1\ldots  a_m)}{f_1\ldots 
+\[ \Case{P}{(c_{p_i}~q_1\ldots  q_r~a_1\ldots  a_m)}{f_1|\ldots |
     f_n} \triangleright_{\iota} (f_i~a_1\ldots a_m) \]
 
 \subsection{Fixpoint definitions}
@@ -1326,13 +1328,13 @@ calls are done on variables coming from patterns and representing subterms.
 
 For instance in the case of natural numbers, a proof of the induction
 principle of type 
-\[\forall P:\nat\ra\Prop, (P~\nO)\ra((n:\nat)(P~n)\ra(P~(\nS~n)))\ra
+\[\forall P:\nat\ra\Prop, (P~\nO)\ra(\forall n:\nat, (P~n)\ra(P~(\nS~n)))\ra
 \forall n:\nat, (P~n)\]
 can be represented by the term:
 \[\begin{array}{l}
 \lb P:\nat\ra\Prop\mto\lb f:(P~\nO)\mto \lb g:(\forall n:\nat,
 (P~n)\ra(P~(\nS~n))) \mto\\
-\Fix{h}{h:\forall n:\nat, (P~n):=\lb n:\nat\mto \Case{P}{n}{f~\lb
+\Fix{h}{h:\forall n:\nat, (P~n):=\lb n:\nat\mto \Case{P}{n}{f~|~\lb
     p:\nat\mto (g~p~(h~p))}}
 \end{array}
 \]
@@ -1361,8 +1363,8 @@ syntactically recognized as structurally smaller than $y_{k_i}$
 The definition of being structurally smaller is a bit technical.
 One needs first to  define the notion of 
 {\em recursive arguments of a constructor}\index{Recursive arguments}.
-For an inductive definition \Ind{\Gamma}{\Gamma_P}{\Gamma_I}{\Gamma_C},
-the type of a constructor $c$ have the form
+For an inductive definition \Ind{\Gamma}{r}{\Gamma_I}{\Gamma_C},
+the type of a constructor $c$ has the form
 $\forall p_1:P_1,\ldots \forall p_r:P_r, 
 \forall x_1:T_1, \ldots \forall x_r:T_r, (I_j~p_1\ldots 
 p_r~t_1\ldots  t_s)$ the recursive arguments will correspond to $T_i$ in
@@ -1372,7 +1374,7 @@ which one of the $I_l$ occurs.
 The main rules for being structurally smaller are the following:\\
 Given a variable $y$ of type an inductive
 definition in a declaration 
-\Ind{\Gamma}{\Gamma_P}{\Gamma_I}{\Gamma_C}
+\Ind{\Gamma}{r}{\Gamma_I}{\Gamma_C}
 where $\Gamma_I$ is $[I_1:A_1;\ldots;I_k:A_k]$, and $\Gamma_C$ is
   $[c_1:C_1;\ldots;c_n:C_n]$.
 The terms structurally smaller than $y$ are:
@@ -1384,7 +1386,7 @@ The terms structurally smaller than $y$ are:
   definition $I_p$ part of the inductive
   declaration corresponding to $y$. 
   Each $f_i$ corresponds to a type of constructor $C_q \equiv
-  \forall y_1:B_1, \ldots \forall y_k:B_k, (I~a_1\ldots a_k)$ 
+  \forall p_1:P_1,\ldots,\forall p_r:P_r, \forall y_1:B_1, \ldots \forall y_k:B_k, (I~a_1\ldots a_k)$ 
   and can consequently be
   written $\lb y_1:B'_1\mto \ldots \lb y_k:B'_k\mto g_i$.
   ($B'_i$ is obtained from $B_i$ by substituting parameters variables)
@@ -1501,7 +1503,7 @@ The implementation contains also coinductive definitions, which are
 types inhabited by infinite objects. 
 More information on coinductive definitions can be found
 in~\cite{Gimenez95b,Gim98}.
-%They are described inchapter~\ref{Coinductives}.
+%They are described in chapter~\ref{Coinductives}.
 
 \section{\iCIC : the Calculus of Inductive Construction with
   impredicative \Set}\label{impredicativity}
