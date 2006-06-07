@@ -28,6 +28,8 @@ Vernacular commands
 - Added "Print Canonical Projections" (doc TODO)
 - Added "Example" as synonym of "Definition"
 - Added "Property", "Proposition" and "Corollary" as extra synonyms of "Lemma"
+- New command "Whelp" to send requests to the Helm database of proofs
+  formalized in the Calculus of Inductive Constructions
 
 Gallina
 
