@@ -81,6 +81,7 @@ Tactics
 - Better support for coercions to Sortclass in tactics expecting type arguments
 - Low-priority term printer made available in ML-written tactic extensions
 - Tactic "assert" now accepts "as" intro patterns and "by" tactic clauses
+- Tactic "replace" now accepts a "by" tactic clause
 - New tactic "pose proof" that generalizes "assert (id:=p)" with intro patterns
 - New introduction pattern "?" for letting Coq choose a name
 - Added "eassumption"
