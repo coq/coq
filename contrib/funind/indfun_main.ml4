@@ -15,17 +15,33 @@ open Indfun
 open Genarg
 open Pcoq
 
+let pr_binding prc = function
+  | loc, Rawterm.NamedHyp id, c -> hov 1 (Ppconstr.pr_id id ++ str " := " ++ cut () ++ prc c)
+  | loc, Rawterm.AnonHyp n, c -> hov 1 (int n ++ str " := " ++ cut () ++ prc c)
 
-let pr_fun_ind_using  prc _ _ opt_c = 
-  match opt_c with 
+let pr_bindings prc prlc = function
+  | Rawterm.ImplicitBindings l ->
+      brk (1,1) ++ str "with" ++ brk (1,1) ++
+      Util.prlist_with_sep spc prc l
+  | Rawterm.ExplicitBindings l ->
+      brk (1,1) ++ str "with" ++ brk (1,1) ++ 
+        Util.prlist_with_sep spc (fun b -> str"(" ++ pr_binding prlc b ++ str")") l
+  | Rawterm.NoBindings -> mt ()
+
+
+let pr_with_bindings prc prlc (c,bl) =
+  prc c ++ hv 0 (pr_bindings prc prlc bl)
+
+
+let pr_fun_ind_using  prc prlc _ opt_c = 
+  match opt_c with
     | None -> mt ()
-    | Some c -> spc () ++ hov 2 (str "using" ++ spc () ++ prc c)
-
+    | Some c -> spc () ++ hov 2 (str "using" ++ spc () ++ pr_with_bindings prc prlc c)
 
 ARGUMENT EXTEND fun_ind_using
-  TYPED AS constr_opt
+  TYPED AS constr_with_bindings_opt
   PRINTED BY pr_fun_ind_using
-| [ "using" constr(c) ] -> [ Some c ]
+| [ "using" constr_with_bindings(c) ] -> [ Some c ]
 | [ ] -> [ None ]
 END
 
@@ -47,7 +63,7 @@ TACTIC EXTEND newfuninv
 	       in
 		 let princ = const_of_id f_ind_id in
 		 princ
-	     | Some princ -> destConst princ
+	     | Some princ -> destConst (fst princ)
 	 in       
 	 Invfun.invfun hyp fconst princ g
      ]
@@ -98,7 +114,7 @@ TACTIC EXTEND newfunind
        in 
        let f,args = decompose_app c in 
        fun g -> 
-	 let princ = 
+	 let princ,bindings = 
 	   match princl with 
 	     | None -> (* No principle is given let's find the good one *)
 		 let fname = 
@@ -114,7 +130,7 @@ TACTIC EXTEND newfunind
 		       (Tacticals.elimination_sort_of_goal g)
 		   )
 		 in
-		 mkConst(const_of_id princ_name )
+		 mkConst(const_of_id princ_name ),Rawterm.NoBindings
 	     | Some princ -> princ 
 	 in
 	 let princ_type = Tacmach.pf_type_of g princ in 
@@ -126,7 +142,7 @@ TACTIC EXTEND newfunind
 	   in
 	   List.map (fun c -> Tacexpr.ElimOnConstr c) (args@c_list) 
 	 in 
-	 let princ' = Some (princ,Rawterm.NoBindings) in 
+	 let princ' = Some (princ,bindings) in 
 	 let princ_vars = 
 	   List.fold_right 
 	     (fun a acc -> 
