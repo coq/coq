@@ -314,8 +314,8 @@ let same_file f1 f2 =
     let s1 = Unix.stat f1
     and s2 = Unix.stat f2 
     in
-    (s1.Unix.st_dev = s2.Unix.st_dev) &&
-    (s1.Unix.st_ino = s2.Unix.st_ino) 
+      (s1.Unix.st_dev = s2.Unix.st_dev) &&
+	(s1.Unix.st_ino = s2.Unix.st_ino) 
   with
       Unix.Unix_error _ -> false
 

@@ -72,21 +72,21 @@ let is_in_coq_lib dir =
   prerr_endline ("Is it a coq theory ? : "^dir);
   try
     let stat = Unix.stat dir in
-    List.exists 
-      (fun s -> 
-	 try
-	   let fdir = Filename.concat 
-			Coq_config.coqlib 
-			(Filename.concat "theories" s) 
-	   in
-	   prerr_endline (" Comparing to: "^fdir);
-	   let fstat = Unix.stat fdir in 
-	   (fstat.Unix.st_dev = stat.Unix.st_dev) &&
-	   (fstat.Unix.st_ino = stat.Unix.st_ino) && 
-           (prerr_endline " YES";true)
-	 with _ -> prerr_endline " No(because of a local exn)";false
-      )
-      Coq_config.theories_dirs
+      List.exists 
+	(fun s -> 
+	   try
+	     let fdir = Filename.concat 
+	       Coq_config.coqlib 
+	       (Filename.concat "theories" s) 
+	     in
+	       prerr_endline (" Comparing to: "^fdir);
+	       let fstat = Unix.stat fdir in 
+		 (fstat.Unix.st_dev = stat.Unix.st_dev) &&
+		   (fstat.Unix.st_ino = stat.Unix.st_ino) && 
+		   (prerr_endline " YES";true)
+	   with _ -> prerr_endline " No(because of a local exn)";false
+	)
+	Coq_config.theories_dirs
   with _ -> prerr_endline " No(because of a global exn)";false
 
 let is_in_loadpath dir = Library.is_in_load_paths (System.physical_path_of_string dir)

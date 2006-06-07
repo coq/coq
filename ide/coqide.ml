@@ -252,7 +252,8 @@ let do_if_not_computing text f x =
     then 
       begin
 	let w = Blaster_window.blaster_window () in
-	  if not (Mutex.try_lock w#lock) then begin 
+	  if not (Mutex.try_lock w#lock) then 
+	    begin 
 	      break ();
 	      let lck = Mutex.create () in
 		Mutex.lock lck;
@@ -260,7 +261,9 @@ let do_if_not_computing text f x =
 		Condition.wait w#blaster_killed lck;
 		prerr_endline "Waiting on blaster ok";
 		Mutex.unlock lck
-	    end else Mutex.unlock w#lock;
+	    end 
+	  else 
+	    Mutex.unlock w#lock;
 	  let idle = 
 	    Glib.Timeout.add ~ms:300
 	      ~callback:(fun () -> async !pulse ();true) in
@@ -280,7 +283,8 @@ let do_if_not_computing text f x =
       end 
     else 
       prerr_endline 
-	"Discarded order (computations are ongoing)" in
+	"Discarded order (computations are ongoing)" 
+  in
     prerr_endline ("Launching thread " ^ text);
     ignore (Thread.create threaded_task ())
 
