@@ -1378,14 +1378,14 @@ Function plus (n m : nat) {struct n} : nat :=
 \paragraph{Limitations}
 \label{sec:Function-limitations}
 \term$_0$ must be build as a \emph{pure pattern-matching tree}
-(\texttt{match...with}) with $\lambda$-abstraction and applications only
+(\texttt{match...with}) with $\lambda$-abstractions and applications only
 \emph{at the end} of each branch.  For now dependent cases are not
 treated.
 
 \paragraph{Difference with \texttt{Functional Scheme}} 
 There is a difference between obtaining an induction scheme for a
 function by using \texttt{Function} (section~\ref{Function}) and
-by using \texttt{Functional Scheme} after a normal definition using
+by using \texttt{Functional Scheme} after a usual definition using
 \texttt{Fixpoint} or \texttt{Definition}. Indeed \texttt{Function}
 generally produces smaller principles, closer to the definition
 written by the user. This is because \texttt{Functional Scheme} works
@@ -1399,8 +1399,8 @@ analyzes the pseudo-term \emph{before} pattern matching expansion.
 \errindex{while trying to define Inductive R\_\ident ...}
 
 The generation of the graph relation \texttt{(R\_\ident)} used to
-compute the induction scheme of \ident raised a typing error, the
-definition of \ident was aborted. You can use \texttt{Fixpoint}
+compute the induction scheme of \ident\ raised a typing error, the
+definition of \ident\ was aborted. You can use \texttt{Fixpoint}
 instead of \texttt{Function}, but the scheme will not be generated.
 
 This error happens generally when: 
@@ -1427,10 +1427,10 @@ given below.
 \comindex{Function}
 }
 
-Defines  the  not  recursive  function  \ident\ as  if  declared  with
-\texttt{Definition}.    Three  induction   schemes  {\tt\ident\_rect},
-{\tt\ident\_rec}   and  {\tt\ident\_ind}   are   generated  (see   the
-documentation of {\tt  Inductive} \ref{Inductive}), which reflect the
+Defines the not recursive function \ident\ as if declared with
+\texttt{Definition}.  Three elimination schemes {\tt\ident\_rect},
+{\tt\ident\_rec} and {\tt\ident\_ind} are generated (see the
+documentation of {\tt Inductive} \ref{Inductive}), which reflect the
 pattern matching structure of \term$_0$.
 
 
@@ -1485,7 +1485,7 @@ proof that the ordering relation is well founded.
 The fixpoint equality  \texttt{\ident\_equation}, which is not trivial
 to prove in this case, is automatically generated and proved, together
 with three  induction schemes {\tt\ident\_rect},  {\tt\ident\_rec} and
-{\tt\ident\_ind}  are   generated  (see  the   documentation  of  {\tt
+{\tt\ident\_ind} as explained above  (see  the   documentation  of  {\tt
   Inductive} \ref{Inductive}), which  reflect the recursive structure
 of \term$_0$.
 
