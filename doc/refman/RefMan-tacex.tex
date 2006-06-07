@@ -289,10 +289,8 @@ Require Import Arith.
 Fixpoint div2 (n:nat) : nat :=
   match n with
   | O => 0
-  | S n0 => match n0 with
-            | O => 0
-            | S n' => S (div2 n')
-            end
+  | S O => 0
+  | S (S n') => S (div2 n')
   end.
 \end{coq_example*}
 
@@ -300,7 +298,7 @@ The definition of a principle of induction corresponding to the
 recursive structure of \texttt{div2} is defined by the command:
 
 \begin{coq_example}
-Functional Scheme div2_ind := Induction for div2.
+Functional Scheme div2_ind := Induction for div2 Sort Prop.
 \end{coq_example}
 
 You may now look at the type of {\tt div2\_ind}:
@@ -315,7 +313,7 @@ We can now prove the following lemma using this principle:
 \begin{coq_example*}
 Lemma div2_le' : forall n:nat, div2 n <= n.
 intro n.
- pattern n.
+ pattern n , (div2 n).
 \end{coq_example*}
 
 
@@ -330,18 +328,17 @@ simpl; auto with arith.
 Qed.
 \end{coq_example*}
 
-Since \texttt{div2} is not mutually recursive, we can use
-directly the \texttt{functional induction} tactic instead of
-building the principle:
+We can use directly the \texttt{functional induction}
+(\ref{FunInduction}) tactic instead of the pattern/apply trick:
 
 \begin{coq_example*}
-Reset div2_ind.
+Reset div2_le'.
 Lemma div2_le : forall n:nat, div2 n <= n.
 intro n.
 \end{coq_example*}
 
 \begin{coq_example}
-functional induction div2 n.
+functional induction (div2 n).
 \end{coq_example}
 
 \begin{coq_example*}
@@ -351,14 +348,11 @@ auto with arith.
 Qed.
 \end{coq_example*}
 
-\paragraph{remark:} \texttt{functional induction} makes no use of
-an induction principle, so be warned that each time it is
-applied, a term mimicking the structure of \texttt{div2} (roughly
-the size of {\tt div2\_ind}) is built. Using \texttt{Functional
-  Scheme} is generally faster and less memory consuming.  On the
-other hand \texttt{functional induction} performs some extra
-simplifications that \texttt{Functional Scheme} does not, and as
-it is a tactic it can be used in tactic definitions.
+\Rem There is a difference between obtaining an induction scheme for a
+function by using \texttt{Function} (section~\ref{Function}) and by
+using \texttt{Functional Scheme} after a normal definition using
+\texttt{Fixpoint} or \texttt{Definition}. See \ref{Function} for
+details.
 
 
 \example{Induction scheme for \texttt{tree\_size}}
@@ -398,14 +392,14 @@ recursive structure of \texttt{tree\_size} is defined by the
 command:
 
 \begin{coq_example*}
-Functional Scheme treeInd := Induction for tree_size
- with tree_size forest_size.
+Functional Scheme tree_size_ind := Induction for tree_size Sort Prop
+with forest_size_ind := Induction for forest_size Sort Prop.
 \end{coq_example*}
 
-You may now look at the type of {\tt treeInd}:
+You may now look at the type of {\tt tree\_size\_ind}:
 
 \begin{coq_example}
-Check treeInd.
+Check tree_size_ind.
 \end{coq_example}
 
 

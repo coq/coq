@@ -1349,8 +1349,8 @@ not work for non structural recursive functions. % VRAI??
 
 See the documentation of {\tt functional induction} (section
 \ref{FunInduction}) and {\tt Functional Scheme} (section
-\ref{FunScheme-examples}) for how to use the induction principle to
-easily reason about the function.
+\ref{FunScheme} and \ref{FunScheme-examples}) for how to use the 
+induction principle to easily reason about the function.
 
 \noindent {\bf Remark: } To obtain the right principle, it is better
 to put rigid parameters of the function as first arguments. For
@@ -1381,6 +1381,17 @@ Function plus (n m : nat) {struct n} : nat :=
 (\texttt{match...with}) with $\lambda$-abstraction and applications only
 \emph{at the end} of each branch.  For now dependent cases are not
 treated.
+
+\paragraph{Difference with \texttt{Functional Scheme}} 
+There is a difference between obtaining an induction scheme for a
+function by using the \texttt{Function} (section~\ref{Function}) and
+by using Functional Scheme after a normal definition using
+\texttt{Fixpoint} or \texttt{Definition}. Indeed \texttt{Function}
+generally produces smaller principles, closer to the definition
+written by the user. This is because \texttt{Functional Scheme} works
+by analyzing the term \texttt{div2} after the compilation of pattern
+matching into exhaustive expanded ones, whereas \texttt{Function}
+analyzes the pseudo-term \emph{before} pattern matching expansion.
 
 
 \ErrMsg 
