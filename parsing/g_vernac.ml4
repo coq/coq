@@ -319,8 +319,8 @@ GEXTEND Gram
 	  VernacDeclareModuleType (id, bl, mty_o)
 	  
       | IDENT "Declare"; IDENT "Module"; export = export_token; id = identref; 
-	bl = LIST0 module_binder; mty_o = of_module_type ->
-	  VernacDeclareModule (export, id, bl, mty_o)
+	bl = LIST0 module_binder; ":"; mty = module_type ->
+	  VernacDeclareModule (export, id, bl, (mty,true))
       (* Section beginning *)
       | IDENT "Section"; id = identref -> VernacBeginSection id
       | IDENT "Chapter"; id = identref -> VernacBeginSection id
