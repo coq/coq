@@ -1102,7 +1102,7 @@ and xlate_tac =
 				  List.map (fun x -> CT_ident x) l))))
     | TacExtend (_,"prolog", [cl; n]) ->
       let cl = List.map xlate_formula (out_gen (wit_list0 rawwit_constr) cl) in
-      (match out_gen wit_int_or_var n with
+      (match out_gen rawwit_int_or_var n with
 	| ArgVar _ -> xlate_error ""
 	| ArgArg n -> CT_prolog (CT_formula_list cl, CT_int  n))
     | TacExtend (_,"eapply", [cbindl]) ->
