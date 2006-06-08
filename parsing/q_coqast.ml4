@@ -182,7 +182,6 @@ let rec mlexpr_of_argtype loc = function
   | Genarg.ConstrWithBindingsArgType -> <:expr< Genarg.ConstrWithBindingsArgType >>
   | Genarg.BindingsArgType -> <:expr< Genarg.BindingsArgType >>
   | Genarg.RedExprArgType -> <:expr< Genarg.RedExprArgType >>
-  | Genarg.TacticArgType n -> <:expr< Genarg.TacticArgType $mlexpr_of_int n$ >>
   | Genarg.SortArgType -> <:expr< Genarg.SortArgType >>
   | Genarg.ConstrArgType -> <:expr< Genarg.ConstrArgType >>
   | Genarg.ConstrMayEvalArgType -> <:expr< Genarg.ConstrMayEvalArgType >>

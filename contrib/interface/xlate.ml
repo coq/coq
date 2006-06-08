@@ -682,7 +682,7 @@ let xlate_with_names = function
     IntroAnonymous -> CT_coerce_ID_OPT_to_INTRO_PATT_OPT ctv_ID_OPT_NONE
   | fp -> CT_coerce_INTRO_PATT_to_INTRO_PATT_OPT (xlate_intro_pattern fp)
 
-let rawwit_main_tactic = rawwit_tactic Pcoq.Tactic.tactic_main_level
+let rawwit_main_tactic = Pcoq.rawwit_tactic Pcoq.tactic_main_level
 
 let rec (xlate_tacarg:raw_tactic_arg -> ct_TACTIC_ARG) =
   function
@@ -1271,14 +1271,15 @@ and coerce_genarg_to_TARG x =
       (CT_coerce_FORMULA_to_SCOMMENT_CONTENT (xlate_formula (out_gen rawwit_constr x)))
   | ConstrMayEvalArgType -> xlate_error"TODO: generic constr-may-eval argument"
   | QuantHypArgType ->xlate_error"TODO: generic quantified hypothesis argument"
-  | TacticArgType n ->
-      let t = xlate_tactic (out_gen (rawwit_tactic n) x) in
-      CT_coerce_TACTIC_COM_to_TARG t
   | OpenConstrArgType b -> 
       CT_coerce_SCOMMENT_CONTENT_to_TARG
       	(CT_coerce_FORMULA_to_SCOMMENT_CONTENT(xlate_formula
 					 (snd (out_gen
 					    (rawwit_open_constr_gen b) x))))
+  | ExtraArgType s as y when Pcoq.is_tactic_genarg y ->
+      let n = out_some (Pcoq.tactic_genarg_level s) in
+      let t = xlate_tactic (out_gen (Pcoq.rawwit_tactic n) x) in
+      CT_coerce_TACTIC_COM_to_TARG t
   | ConstrWithBindingsArgType -> xlate_error "TODO: generic constr with bindings"
   | BindingsArgType -> xlate_error "TODO: generic with bindings"
   | RedExprArgType -> xlate_error "TODO: generic red expr"
@@ -1368,8 +1369,9 @@ let coerce_genarg_to_VARG x =
       (CT_coerce_FORMULA_to_FORMULA_OPT (xlate_formula (out_gen rawwit_constr x)))
   | ConstrMayEvalArgType -> xlate_error"TODO: generic constr-may-eval argument"
   | QuantHypArgType ->xlate_error"TODO: generic quantified hypothesis argument"
-  | TacticArgType n ->
-      let t = xlate_tactic (out_gen (rawwit_tactic n) x) in
+  | ExtraArgType s as y when Pcoq.is_tactic_genarg y ->
+      let n = out_some (Pcoq.tactic_genarg_level s) in
+      let t = xlate_tactic (out_gen (Pcoq.rawwit_tactic n) x) in
       CT_coerce_TACTIC_OPT_to_VARG (CT_coerce_TACTIC_COM_to_TACTIC_OPT t)
   | OpenConstrArgType _ -> xlate_error "TODO: generic open constr"
   | ConstrWithBindingsArgType -> xlate_error "TODO: generic constr with bindings"

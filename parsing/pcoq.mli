@@ -81,6 +81,42 @@ val create_generic_entry : string -> ('a, rlevel,raw_tactic_expr) abstract_argum
 val get_generic_entry : string -> grammar_object Gram.Entry.e
 val get_generic_entry_type : string * gram_universe -> string -> Genarg.argument_type
 
+(* Tactics as arguments *)
+
+val tactic_main_level : int
+
+val rawwit_tactic : int -> (raw_tactic_expr,rlevel,raw_tactic_expr) abstract_argument_type
+val globwit_tactic : int -> (glob_tactic_expr,glevel,glob_tactic_expr) abstract_argument_type
+val wit_tactic : int -> (glob_tactic_expr,tlevel,glob_tactic_expr) abstract_argument_type
+
+val rawwit_tactic0 : (raw_tactic_expr,rlevel,raw_tactic_expr) abstract_argument_type
+val globwit_tactic0 : (glob_tactic_expr,glevel,glob_tactic_expr) abstract_argument_type
+val wit_tactic0 : (glob_tactic_expr,tlevel,glob_tactic_expr) abstract_argument_type
+
+val rawwit_tactic1 : (raw_tactic_expr,rlevel,raw_tactic_expr) abstract_argument_type
+val globwit_tactic1 : (glob_tactic_expr,glevel,glob_tactic_expr) abstract_argument_type
+val wit_tactic1 : (glob_tactic_expr,tlevel,glob_tactic_expr) abstract_argument_type
+
+val rawwit_tactic2 : (raw_tactic_expr,rlevel,raw_tactic_expr) abstract_argument_type
+val globwit_tactic2 : (glob_tactic_expr,glevel,glob_tactic_expr) abstract_argument_type
+val wit_tactic2 : (glob_tactic_expr,tlevel,glob_tactic_expr) abstract_argument_type
+
+val rawwit_tactic3 : (raw_tactic_expr,rlevel,raw_tactic_expr) abstract_argument_type
+val globwit_tactic3 : (glob_tactic_expr,glevel,glob_tactic_expr) abstract_argument_type
+val wit_tactic3 : (glob_tactic_expr,tlevel,glob_tactic_expr) abstract_argument_type
+
+val rawwit_tactic4 : (raw_tactic_expr,rlevel,raw_tactic_expr) abstract_argument_type
+val globwit_tactic4 : (glob_tactic_expr,glevel,glob_tactic_expr) abstract_argument_type
+val wit_tactic4 : (glob_tactic_expr,tlevel,glob_tactic_expr) abstract_argument_type
+
+val rawwit_tactic5 : (raw_tactic_expr,rlevel,raw_tactic_expr) abstract_argument_type
+val globwit_tactic5 : (glob_tactic_expr,glevel,glob_tactic_expr) abstract_argument_type
+val wit_tactic5 : (glob_tactic_expr,tlevel,glob_tactic_expr) abstract_argument_type
+
+val is_tactic_genarg : argument_type -> bool
+
+val tactic_genarg_level : string -> int option
+
 (* The main entry: reads an optional vernac command *)
 
 val main_entry : (loc * vernac_expr) option Gram.Entry.e
@@ -148,7 +184,6 @@ module Tactic :
     val simple_intropattern : Genarg.intro_pattern_expr Gram.Entry.e
     val tactic_arg : raw_tactic_arg Gram.Entry.e
     val tactic_expr : raw_tactic_expr Gram.Entry.e
-    val tactic_main_level : int
     val tactic : raw_tactic_expr Gram.Entry.e
     val tactic_eoi : raw_tactic_expr Gram.Entry.e
   end

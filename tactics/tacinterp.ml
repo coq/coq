@@ -46,6 +46,7 @@ open Inductiveops
 open Syntax_def
 open Pretyping
 open Pretyping.Default
+open Pcoq
 
 let error_syntactic_metavariables_not_allowed loc =
   user_err_loc 
@@ -867,9 +868,6 @@ and intern_genarg ist x =
         (intern_quantified_hypothesis ist (out_gen rawwit_quant_hyp x))
   | RedExprArgType ->
       in_gen globwit_red_expr (intern_redexp ist (out_gen rawwit_red_expr x))
-  | TacticArgType n ->
-      in_gen (globwit_tactic n) (intern_tactic ist
-	(out_gen (rawwit_tactic n) x))
   | OpenConstrArgType b ->
       in_gen (globwit_open_constr_gen b)
         ((),intern_constr ist (snd (out_gen (rawwit_open_constr_gen b) x)))
@@ -883,7 +881,14 @@ and intern_genarg ist x =
   | List1ArgType _ -> app_list1 (intern_genarg ist) x
   | OptArgType _ -> app_opt (intern_genarg ist) x
   | PairArgType _ -> app_pair (intern_genarg ist) (intern_genarg ist) x
-  | ExtraArgType s -> lookup_genarg_glob s ist x
+  | ExtraArgType s ->
+      match tactic_genarg_level s with
+      | Some n -> 
+          (* Special treatment of tactic arguments *)
+          in_gen (globwit_tactic n) (intern_tactic ist
+	    (out_gen (rawwit_tactic n) x))
+      | None ->
+          lookup_genarg_glob s ist x
 
 (************* End globalization ************)
 
@@ -1659,7 +1664,6 @@ and interp_genarg ist goal x =
           (out_gen globwit_quant_hyp x))
   | RedExprArgType ->
       in_gen wit_red_expr (pf_redexp_interp ist goal (out_gen globwit_red_expr x))
-  | TacticArgType n -> in_gen (wit_tactic n) (out_gen (globwit_tactic n) x)
   | OpenConstrArgType casted ->
       in_gen (wit_open_constr_gen casted) 
         (pf_interp_open_constr casted ist goal 
@@ -1674,7 +1678,13 @@ and interp_genarg ist goal x =
   | List1ArgType _ -> app_list1 (interp_genarg ist goal) x
   | OptArgType _ -> app_opt (interp_genarg ist goal) x
   | PairArgType _ -> app_pair (interp_genarg ist goal) (interp_genarg ist goal) x
-  | ExtraArgType s -> lookup_interp_genarg s ist goal x
+  | ExtraArgType s -> 
+      match tactic_genarg_level s with
+      | Some n -> 
+          (* Special treatment of tactic arguments *)
+          in_gen (wit_tactic n) (out_gen (globwit_tactic n) x)
+      | None -> 
+          lookup_interp_genarg s ist goal x
 
 (* Interprets the Match expressions *)
 and interp_match ist g lz constr lmr =
@@ -1879,13 +1889,17 @@ and interp_atomic ist gl = function
     | ConstrMayEvalArgType ->
 	VConstr
           (interp_constr_may_eval ist gl (out_gen globwit_constr_may_eval x))
-    | TacticArgType n -> 
-	val_interp ist gl (out_gen (globwit_tactic n) x)
+    | ExtraArgType s when tactic_genarg_level s <> None ->
+          (* Special treatment of tactic arguments *)
+	val_interp ist gl 
+          (out_gen (globwit_tactic (out_some (tactic_genarg_level s))) x)
     | StringArgType | BoolArgType
     | QuantHypArgType | RedExprArgType 
-    | OpenConstrArgType _ | ConstrWithBindingsArgType | BindingsArgType 
-    | ExtraArgType _ | List0ArgType _ | List1ArgType _ | OptArgType _ | PairArgType _ 
+    | OpenConstrArgType _ | ConstrWithBindingsArgType 
+    | ExtraArgType _ | BindingsArgType 
+    | List0ArgType _ | List1ArgType _ | OptArgType _ | PairArgType _ 
 	-> error "This generic type is not supported in alias"
+        
     in
     let lfun = (List.map (fun (x,c) -> (x,f c)) l)@ist.lfun in
     let v = locate_tactic_call loc (val_interp { ist with lfun=lfun } gl body)
@@ -2184,9 +2198,6 @@ and subst_genarg subst (x:glob_generic_argument) =
           (out_gen globwit_quant_hyp x))
   | RedExprArgType ->
       in_gen globwit_red_expr (subst_redexp subst (out_gen globwit_red_expr x))
-  | TacticArgType n ->
-      in_gen (globwit_tactic n)
-        (subst_tactic subst (out_gen (globwit_tactic n) x))
   | OpenConstrArgType b ->
       in_gen (globwit_open_constr_gen b)
         ((),subst_rawconstr subst (snd (out_gen (globwit_open_constr_gen b) x)))
@@ -2200,7 +2211,14 @@ and subst_genarg subst (x:glob_generic_argument) =
   | List1ArgType _ -> app_list1 (subst_genarg subst) x
   | OptArgType _ -> app_opt (subst_genarg subst) x
   | PairArgType _ -> app_pair (subst_genarg subst) (subst_genarg subst) x
-  | ExtraArgType s -> lookup_genarg_subst s subst x
+  | ExtraArgType s ->
+      match tactic_genarg_level s with
+      | Some n -> 
+          (* Special treatment of tactic arguments *)
+          in_gen (globwit_tactic n)
+            (subst_tactic subst (out_gen (globwit_tactic n) x))
+      | None -> 
+          lookup_genarg_subst s subst x
 
 (***************************************************************************)
 (* Tactic registration *)

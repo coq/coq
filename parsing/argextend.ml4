@@ -30,7 +30,6 @@ let rec make_rawwit loc = function
   | ConstrArgType -> <:expr< Genarg.rawwit_constr >>
   | ConstrMayEvalArgType -> <:expr< Genarg.rawwit_constr_may_eval >>
   | QuantHypArgType -> <:expr< Genarg.rawwit_quant_hyp >>
-  | TacticArgType n -> <:expr< Genarg.rawwit_tactic $mlexpr_of_int n$ >>
   | RedExprArgType -> <:expr< Genarg.rawwit_red_expr >>
   | OpenConstrArgType b -> <:expr< Genarg.rawwit_open_constr_gen $mlexpr_of_bool b$ >>
   | ConstrWithBindingsArgType -> <:expr< Genarg.rawwit_constr_with_bindings >>
@@ -56,7 +55,6 @@ let rec make_globwit loc = function
   | SortArgType -> <:expr< Genarg.globwit_sort >>
   | ConstrArgType -> <:expr< Genarg.globwit_constr >>
   | ConstrMayEvalArgType -> <:expr< Genarg.globwit_constr_may_eval >>
-  | TacticArgType n -> <:expr< Genarg.globwit_tactic  $mlexpr_of_int n$ >>
   | RedExprArgType -> <:expr< Genarg.globwit_red_expr >>
   | OpenConstrArgType b -> <:expr< Genarg.globwit_open_constr_gen $mlexpr_of_bool b$ >>
   | ConstrWithBindingsArgType -> <:expr< Genarg.globwit_constr_with_bindings >>
@@ -82,7 +80,6 @@ let rec make_wit loc = function
   | SortArgType -> <:expr< Genarg.wit_sort >>
   | ConstrArgType -> <:expr< Genarg.wit_constr >>
   | ConstrMayEvalArgType -> <:expr< Genarg.wit_constr_may_eval >>
-  | TacticArgType n -> <:expr< Genarg.wit_tactic $mlexpr_of_int n$ >>
   | RedExprArgType -> <:expr< Genarg.wit_red_expr >>
   | OpenConstrArgType b -> <:expr< Genarg.wit_open_constr_gen $mlexpr_of_bool b$ >>
   | ConstrWithBindingsArgType -> <:expr< Genarg.wit_constr_with_bindings >>
@@ -193,6 +190,9 @@ let rec interp_entry_name loc s =
     OptArgType t, <:expr< Gramext.Sopt $g$ >>
   else 
     let t, se =
+      if tactic_genarg_level s <> None then
+        Some (ExtraArgType s), <:expr< Tactic. tactic >>
+      else
       match Pcoq.entry_type (Pcoq.get_univ "prim") s with
 	| Some _ as x -> x, <:expr< Prim. $lid:s$ >>
 	| None -> 

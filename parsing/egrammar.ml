@@ -210,7 +210,7 @@ let rec interp_entry_name up_level u s =
   else
     try 
       let i = find_index "tactic" s in
-      TacticArgType i, 
+      ExtraArgType s, 
       if i=up_level then Gramext.Sself else
       if i=up_level-1 then Gramext.Snext else
       Gramext.Snterml(Pcoq.Gram.Entry.obj Tactic.tactic_expr,string_of_int i)

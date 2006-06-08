@@ -72,7 +72,6 @@ RefArgType                     reference                global_reference
 ConstrArgType                  constr_expr              constr
 ConstrMayEvalArgType           constr_expr may_eval     constr
 QuantHypArgType                quantified_hypothesis    quantified_hypothesis
-TacticArgType                  raw_tactic_expr          tactic
 OpenConstrArgType              constr_expr              open_constr
 ConstrBindingsArgType      constr_expr with_bindings constr with_bindings
 List0ArgType of argument_type
@@ -171,11 +170,6 @@ val rawwit_red_expr : ((constr_expr,reference) red_expr_gen,rlevel,'ta) abstract
 val globwit_red_expr : ((rawconstr_and_expr,evaluable_global_reference and_short_name or_var) red_expr_gen,glevel,'ta) abstract_argument_type
 val wit_red_expr : ((constr,evaluable_global_reference) red_expr_gen,tlevel,'ta) abstract_argument_type
 
-(* TODO: transformer tactic en extra arg *)
-val rawwit_tactic : int -> ('ta,rlevel,'ta) abstract_argument_type
-val globwit_tactic : int -> ('ta,glevel,'ta) abstract_argument_type
-val wit_tactic : int -> ('ta,tlevel,'ta) abstract_argument_type
-
 val wit_list0 :
   ('a,'co,'ta) abstract_argument_type -> ('a list,'co,'ta) abstract_argument_type
 
@@ -249,7 +243,6 @@ type argument_type =
   | ConstrArgType
   | ConstrMayEvalArgType
   | QuantHypArgType
-  | TacticArgType of int
   | OpenConstrArgType of bool
   | ConstrWithBindingsArgType
   | BindingsArgType

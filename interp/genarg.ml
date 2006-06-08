@@ -33,7 +33,6 @@ type argument_type =
   | ConstrArgType
   | ConstrMayEvalArgType
   | QuantHypArgType
-  | TacticArgType of int
   | OpenConstrArgType of bool
   | ConstrWithBindingsArgType
   | BindingsArgType
@@ -144,10 +143,6 @@ let wit_constr = ConstrArgType
 let rawwit_constr_may_eval = ConstrMayEvalArgType
 let globwit_constr_may_eval = ConstrMayEvalArgType
 let wit_constr_may_eval = ConstrMayEvalArgType
-
-let rawwit_tactic n = TacticArgType n
-let globwit_tactic n = TacticArgType n
-let wit_tactic n = TacticArgType n
 
 let rawwit_open_constr_gen b = OpenConstrArgType b
 let globwit_open_constr_gen b = OpenConstrArgType b 

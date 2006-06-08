@@ -239,9 +239,9 @@ and checked_then: report_holder -> glob_tactic_expr -> glob_tactic_expr -> tacti
    by the list of integers given as extra arguments.
  *)
 
-let rawwit_main_tactic = rawwit_tactic Pcoq.Tactic.tactic_main_level
-let globwit_main_tactic = globwit_tactic Pcoq.Tactic.tactic_main_level
-let wit_main_tactic = wit_tactic Pcoq.Tactic.tactic_main_level
+let rawwit_main_tactic = Pcoq.rawwit_tactic Pcoq.tactic_main_level
+let globwit_main_tactic = Pcoq.globwit_tactic Pcoq.tactic_main_level
+let wit_main_tactic = Pcoq.wit_tactic Pcoq.tactic_main_level
 
 
 let on_then = function [t1;t2;l] ->

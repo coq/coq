@@ -36,8 +36,6 @@ let rec make_when loc = function
       <:expr< Genarg.genarg_tag $lid:p$ = $t$ && $l$ >>
   | _::l -> make_when loc l
 
-let is_tactic_arg = function TacticArgType _ -> true | _ -> false
-
 let rec make_let e = function
   | [] -> e
   | TacNonTerm(loc,t,_,Some p)::l ->
@@ -47,7 +45,7 @@ let rec make_let e = function
       let v = 
         (* Special case for tactics which must be stored in algebraic
            form to avoid marshalling closures and to be reprinted *)
-        if is_tactic_arg t then
+        if Pcoq.is_tactic_genarg t then
           <:expr< ($v$, Tacinterp.eval_tactic $v$) >>
         else v in
       <:expr< let $lid:p$ = $v$ in $e$ >>
@@ -84,7 +82,7 @@ let rec make_args = function
 
 let rec make_eval_tactic e = function
   | [] -> e
-  | TacNonTerm(loc,TacticArgType _,_,Some p)::l ->
+  | TacNonTerm(loc,tag,_,Some p)::l when Pcoq.is_tactic_genarg tag ->
       let loc = join_loc loc (MLast.loc_of_expr e) in
       let e = make_eval_tactic e l in
         (* Special case for tactics which must be stored in algebraic

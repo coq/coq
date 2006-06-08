@@ -147,7 +147,6 @@ let rec pr_raw_generic prc prlc prtac prref (x:(Genarg.rlevel, Tacexpr.raw_tacti
       pr_arg pr_quantified_hypothesis (out_gen rawwit_quant_hyp x)
   | RedExprArgType ->
       pr_arg (pr_red_expr (prc,prlc,prref)) (out_gen rawwit_red_expr x)
-  | TacticArgType n -> pr_arg (prtac (n,E)) (out_gen (rawwit_tactic n) x)
   | OpenConstrArgType b -> pr_arg prc (snd (out_gen (rawwit_open_constr_gen b) x))
   | ConstrWithBindingsArgType -> 
       pr_arg (pr_with_bindings prc prlc) (out_gen rawwit_constr_with_bindings x)
@@ -193,7 +192,6 @@ let rec pr_glob_generic prc prlc prtac x =
       pr_arg (pr_red_expr 
         (prc,prlc,pr_or_var (pr_and_short_name pr_evaluable_reference)))
         (out_gen globwit_red_expr x)
-  | TacticArgType n -> pr_arg (prtac (n,E)) (out_gen (globwit_tactic n) x)
   | OpenConstrArgType b -> pr_arg prc (snd (out_gen (globwit_open_constr_gen b) x))
   | ConstrWithBindingsArgType -> 
       pr_arg (pr_with_bindings prc prlc) (out_gen globwit_constr_with_bindings x)
@@ -237,7 +235,6 @@ let rec pr_generic prc prlc prtac x =
   | RedExprArgType ->
       pr_arg (pr_red_expr (prc,prlc,pr_evaluable_reference)) 
         (out_gen wit_red_expr x)
-  | TacticArgType n -> pr_arg (prtac (n,E)) (out_gen (wit_tactic n) x)
   | OpenConstrArgType b -> pr_arg prc (snd (out_gen (wit_open_constr_gen b) x))
   | ConstrWithBindingsArgType -> 
       pr_arg (pr_with_bindings prc prlc) (out_gen wit_constr_with_bindings x)
@@ -1020,3 +1017,14 @@ let _ = Tactic_debug.set_match_pattern_printer
 let _ = Tactic_debug.set_match_rule_printer
   (fun rl ->
     pr_match_rule false (pr_glob_tactic (Global.env())) pr_constr_pattern rl)
+
+open Pcoq
+
+let pr_tac_polymorphic n _ _ prtac = prtac (n,E)
+
+let _ = for i=0 to 5 do
+  declare_extra_genarg_pprule
+  (rawwit_tactic i, pr_tac_polymorphic i)
+  (globwit_tactic i, pr_tac_polymorphic i)
+  (wit_tactic i, pr_tac_polymorphic i)
+done
