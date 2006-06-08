@@ -108,14 +108,16 @@ let add_compile verbose s =
   compile_list := (verbose,s) :: !compile_list
 let compile_files () =
   let init_state = States.freeze() in
-  List.iter
-    (fun (v,f) ->
-      States.unfreeze init_state;
-      if Options.do_translate () then
-	with_option translate_file (Vernac.compile v) f
-      else
-	Vernac.compile v f)
-    (List.rev !compile_list)
+  let coqdoc_init_state = Constrintern.coqdoc_freeze () in
+    List.iter
+      (fun (v,f) ->
+	 States.unfreeze init_state;
+	 Constrintern.coqdoc_unfreeze coqdoc_init_state;
+	 if Options.do_translate () then
+	   with_option translate_file (Vernac.compile v) f
+	 else
+	   Vernac.compile v f)
+      (List.rev !compile_list)
 
 let re_exec_version = ref ""
 let set_byte () = re_exec_version := "byte"

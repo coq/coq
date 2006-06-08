@@ -126,27 +126,30 @@ let rec vernac_com interpfun (loc,com) =
         (* end translator state *)
         (* coqdoc state *)
         let cds = Constrintern.coqdoc_freeze() in
-        if !Options.translate_file then begin
-          let _,f = find_file_in_path (Library.get_load_paths ())
-            (make_suffix fname ".v") in
-          chan_translate := open_out (f^"8");
-          Pp.comments := []
-        end;
-        begin try
-          read_vernac_file verbosely (make_suffix fname ".v");
-          if !Options.translate_file then close_out !chan_translate;
-          chan_translate := ch;
-          Lexer.restore_com_state cs;
-          Pp.comments := cl;
-          Constrintern.coqdoc_unfreeze cds;
-        with e ->
-          if !Options.translate_file then close_out !chan_translate;
-          chan_translate := ch;
-          Lexer.restore_com_state cs;
-          Pp.comments := cl;
-          Constrintern.coqdoc_unfreeze cds;
-          raise e end;
-
+          if !Options.translate_file then 
+	    begin
+              let _,f = find_file_in_path (Library.get_load_paths ())
+		(make_suffix fname ".v") in
+		chan_translate := open_out (f^"8");
+		Pp.comments := []
+            end;
+          begin 
+	    try
+	      read_vernac_file verbosely (make_suffix fname ".v");
+              if !Options.translate_file then close_out !chan_translate;
+              chan_translate := ch;
+              Lexer.restore_com_state cs;
+              Pp.comments := cl;
+              Constrintern.coqdoc_unfreeze cds
+	    with e -> 
+	      if !Options.translate_file then close_out !chan_translate;
+              chan_translate := ch;
+              Lexer.restore_com_state cs;
+              Pp.comments := cl;
+              Constrintern.coqdoc_unfreeze cds;
+	      raise e
+	  end
+	      
     | VernacList l -> List.iter (fun (_,v) -> interp v) l
 
     | VernacTime v ->

@@ -550,10 +550,10 @@ let func cs =
     Stream.from
       (fun i ->
          let (tok, loc) = next_token cs in
-	 loct_add loct i loc; Some tok)
+	   loct_add loct i loc; Some tok)
   in
-  current_location_table := loct;
-  (ts, loct_func loct)
+    current_location_table := loct;
+    (ts, loct_func loct)
 
 type location_table = (int * int) option array array ref
 let location_table () = !current_location_table
