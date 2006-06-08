@@ -268,8 +268,6 @@ module StdParams = struct
 
   let globals () = !global_ids
 
-  (* TODO: remettre des conditions [lang () = Haskell] disant de qualifier. *)
-
   let unquote s = 
     if lang () <> Scheme then s 
     else 
@@ -289,23 +287,28 @@ module StdParams = struct
     let mp = modpath_of_r r in 
     let ls = 
       if mp = List.hd mpl then [s] (* simpliest situation *)
-      else 
-	try (* has [mp] something in common with one of those in [mpl] ? *)
-	  let pref = common_prefix_from_list mp mpl in 
-	  (*i TODO: possibilité de clash i*)
-	  list_firstn ((mp_length mp)-(mp_length pref)+1) ls
-	with Not_found -> (* [mp] is othogonal with every element of [mp]. *)
-	  let base = base_mp mp in 
-	  if !modular &&  
-	    (at_toplevel mp) && 
-	    not (Refset.mem r !to_qualify) && 
-	    not (clash base [] s mpl) 
-	  then snd (list_sep_last ls)
-	  else ls
+      else match lang () with 
+	| Scheme -> [s] (* no modular Scheme extraction... *)
+	| Toplevel -> [s] (* idem *)
+	| Haskell -> ls (* for the moment we always qualify in Haskell *)
+	| Ocaml -> 
+	    try (* has [mp] something in common with one of those in [mpl] ? *)
+	      let pref = common_prefix_from_list mp mpl in 
+	      (*i TODO: possibilité de clash i*)
+	      list_firstn ((mp_length mp)-(mp_length pref)+1) ls
+	    with Not_found -> (* [mp] is othogonal with every element of [mp]. *)
+	      let base = base_mp mp in 
+	      if !modular &&  
+		(at_toplevel mp) && 
+		not (Refset.mem r !to_qualify) && 
+		not (clash base [] s mpl) 
+	      then snd (list_sep_last ls)
+	      else ls
     in 
     add_module_contents mp s; (* update the visible environment *)
     str (dottify ls)
 
+  (* The next function is used only in Ocaml extraction...*)
   let pp_module mpl mp = 
     let ls = 
       if !modular 
