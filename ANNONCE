@@ -1,11 +1,15 @@
-The main features of Coq version 8.1 are
 
-- the implementation of an alternative algorithm for checking the
+It is more than two years since the last release of Coq. We're glad
+to now announce the beta release of Coq version 8.1.
+
+The main features of Coq version 8.1 (beta) are
+
+- the implementation of an auxiliary algorithm for checking the
   convertibility of types, specially dedicated to fast type-checking
   of reflexion-based proofs, and more generally to intensive
   computation
 
-- richer inductive types
+- inductive types
 
   - support for recursively non uniform parameters
   - support for a strong form of sort-polymorphism
@@ -14,14 +18,32 @@ The main features of Coq version 8.1 are
 
   - new implementation of setoid rewrite (contributed by C. Sacerdoti Coen)
   - new implementation of ring (contributed by B. Grégoire and A. Mahboubi)
-  - and several other new tactic features
+  - and several other new tactic features (see attached file CHANGES)
 
-- new libraries
+- libraries
  
   - finite sets and finite maps (by J.-C. Filliâtre and P. Letouzey)
   - strings (by L. Théry)
   - significative extensions of the library on lists
-  - a few other extensions
+  - some other extensions (see attached file CHANGES)
+  - rational numbers (as a quotient over Z/Z+* -- an alternative
+    library based on the canonical Stern-Brocot representation is
+    available in the user contributions)
 
-- improved module system
+- experimental features
 
+  - new command to generate proof obligations from definitions of
+    programs required to meet their specification (see chapter 19 of
+    the reference manual)
+
+and many other features mentioned in the CHANGES file.
+
+Most of known bugs have been fixed (see coq-bugs at coq.inria.fr for details).
+
+Coq version 8.1 hopefully comes with only a few incompatibilities. One
+purpose of this beta version is to estimate to which extent the final
+version 8.1 may provide better support for compatibility.
+
+Coq version 8.1 is based on new Coq version 8.0. Users migrating from
+Coq version 7.x and older must first translate their developments from
+the old syntax using the translator provided with Coq version 8.0.
