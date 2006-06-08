@@ -337,7 +337,7 @@ let mL_dependencies () =
        flush stdout)
     (List.rev !mlAccu);
   List.iter
-    (fun ((name,ext,dirname) as pairname) ->
+    (fun ((name,ext,dirname)) ->
        let fullname = file_name ([name],dirname) in
        let (dep,_) = traite_fichier_ML fullname ext in
        printf "%s.cmi: %s%s" fullname fullname ext;
