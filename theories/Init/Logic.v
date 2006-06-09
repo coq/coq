@@ -292,11 +292,11 @@ Definition uniqueness (A:Type) (P:A->Prop) := forall x y, P x -> P y -> x = y.
 
 (** Unique existence *)
 
-Notation "'exists' ! x , P" := (exists x', unique (fun x => P) x')
+Notation "'exists' ! x , P" := (ex (unique (fun x => P)))
   (at level 200, x ident, right associativity,
    format "'[' 'exists' !  '/  ' x ,  '/  ' P ']'") : type_scope.
 Notation "'exists' ! x : A , P" := 
-  (exists x':A, unique (fun x:A => P) x')
+  (ex (unique (fun x:A => P)))
   (at level 200, x ident, right associativity,
    format "'[' 'exists' !  '/  ' x  :  A ,  '/  ' P ']'") : type_scope.
 
