@@ -809,6 +809,7 @@ let extract_fixpoint env vkn (fi,ti,ci) =
       types.(i) <- t;
     end 
   done; 
+  current_fixpoints := [];
   Dfix (Array.map (fun kn -> ConstRef kn) vkn, terms, types) 
 		 
 let extract_constant env kn cb = 
