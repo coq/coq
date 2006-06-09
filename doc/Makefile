@@ -207,7 +207,7 @@ faq/html/index.html: faq/FAQ.v.html
 
 GLOBDUMP=$(COQTOP)/glob.dump
 
-LIBDIRS= Logic Bool Arith ZArith Reals Lists Sets Relations Sorting Wellfounded IntMap FSets
+LIBDIRS= Logic Bool Arith ZArith QArith Reals Lists Sets Relations Sorting Wellfounded IntMap FSets
 
 ### Standard library (browsable html format)
 
