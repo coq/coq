@@ -2108,6 +2108,17 @@ datatype: see~\ref{quote-examples} for the full details.
 % En attente d'un moyen de valoriser les fichiers de demos
 % \SeeAlso file \texttt{theories/DEMOS/DemoQuote.v} in the distribution
 
+\section{Classical tactics}
+\label{ClassicalTactics}
+
+In order to ease the proving process, when the {\tt Classical} module is loaded. A few more tactics are available. Make sure to load the module using the \texttt{Require Import} command.
+
+\subsection{{\tt classical\_left, classical\_right} \tacindex{classical\_left} \tacindex{classical\_right}}
+
+The tactics \texttt{classical\_left} and \texttt{classical\_right} are the analog of the \texttt{left} and \texttt{right} but using classical logic. They can only be used for disjunctions.
+Use  \texttt{classical\_left} to prove the left part of the disjunction with the assumption that the negation of right part holds. 
+Use \texttt{classical\_left} to prove the right part of the disjunction with the assumption that the negation of left part holds. 
+
 \section{Automatizing
 \label{Automatizing}}
 
