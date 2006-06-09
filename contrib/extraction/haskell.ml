@@ -210,7 +210,7 @@ and pp_function env f t =
   (f ++ pr_binding (List.rev bl) ++
      str " =" ++ fnl () ++ str "  " ++
      hov 2 (pp_expr false env' [] t'))
-	
+
 (*s Pretty-printing of inductive types declaration. *)
 
 let pp_comment s = str "-- " ++ s ++ fnl ()
@@ -289,12 +289,16 @@ let pp_decl mpl =
 	    else str "=" ++ spc () ++ pp_type false l t
 	in 
 	hov 2 (str "type " ++ pp_global r ++ spc () ++ st) ++ fnl () ++ fnl ()
-  | Dfix (rv, defs,_) ->
-      let ppv = Array.map pp_global rv in 
-      prlist_with_sep (fun () -> fnl () ++ fnl ())
-	(fun (pi,ti) -> pp_function (empty_env ()) pi ti)
-	(List.combine (Array.to_list ppv) (Array.to_list defs)) 
-      ++ fnl () ++ fnl ()
+  | Dfix (rv, defs, typs) ->
+      let max = Array.length rv in 
+      let rec iter i = 
+	if i = max then mt () 
+	else
+	  let e = pp_global rv.(i) in 
+	  e ++ str " :: " ++ pp_type false [] typs.(i) ++ fnl () 
+	  ++ pp_function (empty_env ()) e defs.(i) ++ fnl () ++ fnl () 
+	  ++ iter (i+1)
+      in iter 0
   | Dterm (r, a, t) ->
       if is_inline_custom r then mt () 
       else 

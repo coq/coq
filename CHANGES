@@ -98,9 +98,12 @@ Tactics
 
 Extraction
  
-- all type parts should now disappear instead of sometimes producing _ 
+- All type parts should now disappear instead of sometimes producing _ 
   (for instance in Map.empty).
-- TODO bug fixes...
+- Haskell extraction: types of functions are now printed, better 
+  unsafeCoerce mechanism, both for hugs and ghc
+- Scheme extraction improved, see http://www.pps.jussieu.fr/~letouzey/scheme
+- Many bug fixes
 
 Modules
 
@@ -124,7 +127,7 @@ Notations
 Libraries
 
 - New library on String and Ascii characters (contributed by L. Thery)
-- New library FSets+FMaps of finite sets and maps (TODO doc quelque part)
+- New library FSets+FMaps of finite sets and maps (TODO doc)
 - New library QArith on rational numbers
 - Small extension of Zmin.V, new Zmax.v, new Zminmax.v
 - Reworking of the files on classical logic and description principles

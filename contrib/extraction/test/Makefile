@@ -10,7 +10,7 @@ AXIOMSVO:= \
 theories/Reals/% \
 theories/Num/%
 
-DIRS:= $(shell (cd $(TOPDIR);find theories -type d ! -name .svn))
+DIRS:= $(shell (cd $(TOPDIR);find theories -type d ! -path \*.svn\*))
 
 INCL:= $(patsubst %,-I %,$(DIRS))
 

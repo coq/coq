@@ -35,6 +35,9 @@ exception I of inductive_info
    to avoid loops in [extract_inductive] *)
 let internal_call = ref KNset.empty
 
+(* A set of all fixpoint functions currently being extracted *)
+let current_fixpoints = ref ([] : constant list)
+
 let none = Evd.empty
 
 let type_of env c = Retyping.get_type_of env none (strip_outer_cast c)
@@ -574,12 +577,18 @@ and extract_cst_app env mle mlt kn args =
   (* First, the [ml_schema] of the constant, in expanded version. *) 
   let nb,t = record_constant_type env kn None in 
   let schema = nb, expand env t in 
+  (* Can we instantiate types variables for this constant ? *)
+  (* In Ocaml, inside the definition of this constant, the answer is no. *)
+  let instantiated = 
+    if lang () = Ocaml && List.mem kn !current_fixpoints then var2var' (snd schema)
+    else instantiation schema
+  in 
   (* Then the expected type of this constant. *)
-  let metas = List.map new_meta args in 
+  let a = new_meta () in 
   (* We compare stored and expected types in two steps. *)
   (* First, can [kn] be applied to all args ? *)
-  let a = new_meta () in 
-  let magic1 = needs_magic (type_recomp (metas, a), instantiation schema) in 
+  let metas = List.map new_meta args in 
+  let magic1 = needs_magic (type_recomp (metas, a), instantiated) in 
   (* Second, is the resulting type compatible with the expected type [mlt] ? *)
   let magic2 = needs_magic (a, mlt) in 
   (* The internal head receives a magic if [magic1] *)
@@ -789,8 +798,10 @@ let extract_fixpoint env vkn (fi,ti,ci) =
   let n = Array.length vkn in 
   let types = Array.make n (Tdummy Kother)
   and terms = Array.make n MLdummy in 
+  let kns = Array.to_list vkn in 
+  current_fixpoints := kns; 
   (* for replacing recursive calls [Rel ..] by the corresponding [Const]: *)
-  let sub = List.rev_map mkConst (Array.to_list vkn) in 
+  let sub = List.rev_map mkConst kns in 
   for i = 0 to n-1 do 
     if sort_of env ti.(i) <> InProp then begin 
       let e,t = extract_std_constant env vkn.(i) (substl sub ci.(i)) ti.(i) in

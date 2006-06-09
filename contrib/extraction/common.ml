@@ -290,7 +290,10 @@ module StdParams = struct
       else match lang () with 
 	| Scheme -> [s] (* no modular Scheme extraction... *)
 	| Toplevel -> [s] (* idem *)
-	| Haskell -> ls (* for the moment we always qualify in Haskell *)
+	| Haskell -> 
+	    if !modular then 
+	      ls (* for the moment we always qualify in modular Haskell *)
+	    else [s]
 	| Ocaml -> 
 	    try (* has [mp] something in common with one of those in [mpl] ? *)
 	      let pref = common_prefix_from_list mp mpl in 

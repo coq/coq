@@ -242,6 +242,16 @@ theories/FSets/fSetProperties.cmx: theories/Init/specif.cmx \
     theories/FSets/fSetProperties.cmi 
 theories/FSets/fSets.cmo: theories/FSets/fSets.cmi 
 theories/FSets/fSets.cmx: theories/FSets/fSets.cmi 
+theories/FSets/fSetToFiniteSet.cmo: theories/Init/specif.cmi \
+    theories/Setoids/setoid.cmi theories/FSets/orderedTypeEx.cmi \
+    theories/FSets/orderedType.cmi theories/Lists/list.cmi \
+    theories/FSets/fSetProperties.cmi theories/Init/datatypes.cmi \
+    theories/FSets/fSetToFiniteSet.cmi 
+theories/FSets/fSetToFiniteSet.cmx: theories/Init/specif.cmx \
+    theories/Setoids/setoid.cmx theories/FSets/orderedTypeEx.cmx \
+    theories/FSets/orderedType.cmx theories/Lists/list.cmx \
+    theories/FSets/fSetProperties.cmx theories/Init/datatypes.cmx \
+    theories/FSets/fSetToFiniteSet.cmi 
 theories/FSets/fSetWeakFacts.cmo: theories/Init/specif.cmi \
     theories/Setoids/setoid.cmi theories/FSets/fSetWeakInterface.cmi \
     theories/Init/datatypes.cmi theories/FSets/fSetWeakFacts.cmi 
@@ -440,14 +450,20 @@ theories/Lists/theoryList.cmx: theories/Init/specif.cmx \
     theories/Lists/theoryList.cmi 
 theories/Logic/berardi.cmo: theories/Logic/berardi.cmi 
 theories/Logic/berardi.cmx: theories/Logic/berardi.cmi 
-theories/Logic/choiceFacts.cmo: theories/Logic/choiceFacts.cmi 
-theories/Logic/choiceFacts.cmx: theories/Logic/choiceFacts.cmi 
+theories/Logic/choiceFacts.cmo: theories/Init/specif.cmi \
+    theories/Init/datatypes.cmi theories/Logic/choiceFacts.cmi 
+theories/Logic/choiceFacts.cmx: theories/Init/specif.cmx \
+    theories/Init/datatypes.cmx theories/Logic/choiceFacts.cmi 
 theories/Logic/classicalChoice.cmo: theories/Logic/classicalChoice.cmi 
 theories/Logic/classicalChoice.cmx: theories/Logic/classicalChoice.cmi 
-theories/Logic/classicalDescription.cmo: \
-    theories/Logic/classicalDescription.cmi 
-theories/Logic/classicalDescription.cmx: \
-    theories/Logic/classicalDescription.cmi 
+theories/Logic/classicalDescription.cmo: theories/Init/specif.cmi \
+    theories/Logic/choiceFacts.cmi theories/Logic/classicalDescription.cmi 
+theories/Logic/classicalDescription.cmx: theories/Init/specif.cmx \
+    theories/Logic/choiceFacts.cmx theories/Logic/classicalDescription.cmi 
+theories/Logic/classicalEpsilon.cmo: theories/Init/specif.cmi \
+    theories/Logic/choiceFacts.cmi theories/Logic/classicalEpsilon.cmi 
+theories/Logic/classicalEpsilon.cmx: theories/Init/specif.cmx \
+    theories/Logic/choiceFacts.cmx theories/Logic/classicalEpsilon.cmi 
 theories/Logic/classicalFacts.cmo: theories/Logic/classicalFacts.cmi 
 theories/Logic/classicalFacts.cmx: theories/Logic/classicalFacts.cmi 
 theories/Logic/classical.cmo: theories/Logic/classical.cmi 
@@ -464,10 +480,16 @@ theories/Logic/classical_Prop.cmx: theories/Logic/eqdepFacts.cmx \
     theories/Logic/classical_Prop.cmi 
 theories/Logic/classical_Type.cmo: theories/Logic/classical_Type.cmi 
 theories/Logic/classical_Type.cmx: theories/Logic/classical_Type.cmi 
+theories/Logic/classicalUniqueChoice.cmo: \
+    theories/Logic/classicalUniqueChoice.cmi 
+theories/Logic/classicalUniqueChoice.cmx: \
+    theories/Logic/classicalUniqueChoice.cmi 
 theories/Logic/decidable.cmo: theories/Logic/decidable.cmi 
 theories/Logic/decidable.cmx: theories/Logic/decidable.cmi 
-theories/Logic/diaconescu.cmo: theories/Logic/diaconescu.cmi 
-theories/Logic/diaconescu.cmx: theories/Logic/diaconescu.cmi 
+theories/Logic/diaconescu.cmo: theories/Init/specif.cmi \
+    theories/Logic/diaconescu.cmi 
+theories/Logic/diaconescu.cmx: theories/Init/specif.cmx \
+    theories/Logic/diaconescu.cmi 
 theories/Logic/eqdep_dec.cmo: theories/Init/specif.cmi \
     theories/Logic/eqdep_dec.cmi 
 theories/Logic/eqdep_dec.cmx: theories/Init/specif.cmx \
@@ -921,6 +943,10 @@ theories/FSets/fSetList.cmi: theories/Init/specif.cmi \
 theories/FSets/fSetProperties.cmi: theories/Init/specif.cmi \
     theories/Setoids/setoid.cmi theories/Lists/list.cmi \
     theories/FSets/fSetInterface.cmi theories/Init/datatypes.cmi 
+theories/FSets/fSetToFiniteSet.cmi: theories/Init/specif.cmi \
+    theories/Setoids/setoid.cmi theories/FSets/orderedTypeEx.cmi \
+    theories/FSets/orderedType.cmi theories/Lists/list.cmi \
+    theories/Init/datatypes.cmi 
 theories/FSets/fSetWeakFacts.cmi: theories/Init/specif.cmi \
     theories/Setoids/setoid.cmi theories/FSets/fSetWeakInterface.cmi \
     theories/Init/datatypes.cmi 
@@ -994,6 +1020,13 @@ theories/Lists/setoidList.cmi: theories/Init/specif.cmi \
 theories/Lists/streams.cmi: theories/Init/datatypes.cmi 
 theories/Lists/theoryList.cmi: theories/Init/specif.cmi \
     theories/Lists/list.cmi theories/Init/datatypes.cmi 
+theories/Logic/choiceFacts.cmi: theories/Init/specif.cmi \
+    theories/Init/datatypes.cmi 
+theories/Logic/classicalDescription.cmi: theories/Init/specif.cmi \
+    theories/Logic/choiceFacts.cmi 
+theories/Logic/classicalEpsilon.cmi: theories/Init/specif.cmi \
+    theories/Logic/choiceFacts.cmi 
+theories/Logic/diaconescu.cmi: theories/Init/specif.cmi 
 theories/Logic/eqdep_dec.cmi: theories/Init/specif.cmi 
 theories/NArith/binNat.cmi: theories/Init/specif.cmi \
     theories/Init/datatypes.cmi theories/NArith/binPos.cmi 
