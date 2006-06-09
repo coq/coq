@@ -823,7 +823,8 @@ LOGICVO=\
  theories/Logic/ClassicalChoice.vo    theories/Logic/ClassicalDescription.vo \
  theories/Logic/RelationalChoice.vo   theories/Logic/Diaconescu.vo \
  theories/Logic/EqdepFacts.vo         theories/Logic/ProofIrrelevanceFacts.vo \
- theories/Logic/ClassicalEpsilon.vo   theories/Logic/ClassicalUniqueChoice.vo 
+ theories/Logic/ClassicalEpsilon.vo   theories/Logic/ClassicalUniqueChoice.vo \
+ theories/Logic/DecidableType.vo      theories/Logic/DecidableTypeEx.vo 
 
 ARITHVO=\
  theories/Arith/Arith.vo        theories/Arith/Gt.vo          \
@@ -868,7 +869,7 @@ ZARITHVO=\
  theories/ZArith/Zdiv.vo	theories/ZArith/Zsqrt.vo \
  theories/ZArith/Zwf.vo		theories/ZArith/ZArith_base.vo \
  theories/ZArith/Zbool.vo	theories/ZArith/Zbinary.vo \
- theories/ZArith/Znumtheory.vo
+ theories/ZArith/Znumtheory.vo  theories/ZArith/Int.vo
 
 QARITHVO=\
  theories/QArith/QArith_base.vo theories/QArith/Qreduction.vo \
@@ -898,7 +899,6 @@ SETSVO=\
  theories/Sets/Partial_Order.vo     theories/Sets/Uniset.vo
 
 FSETSBASEVO=\
- theories/FSets/DecidableType.vo     theories/FSets/DecidableTypeEx.vo \
  theories/FSets/OrderedType.vo \
  theories/FSets/OrderedTypeEx.vo     theories/FSets/OrderedTypeAlt.vo \
  theories/FSets/FSetInterface.vo     theories/FSets/FSetList.vo \
@@ -912,8 +912,7 @@ FSETSBASEVO=\
  theories/FSets/FMapWeakFacts.vo \
  theories/FSets/FMapWeakInterface.vo theories/FSets/FMapWeakList.vo \
  theories/FSets/FMapWeak.vo          theories/FSets/FMapPositive.vo \
- theories/FSets/FMapIntMap.vo        theories/FSets/FSetToFiniteSet.vo \
- theories/FSets/Int.vo \
+ theories/FSets/FMapIntMap.vo        theories/FSets/FSetToFiniteSet.vo
 
 FSETS_basic=
 

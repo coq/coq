@@ -6,9 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id:$ i*)
+(*i $Id$ i*)
 
-(** This file provides classical logic and indefinite description
+(** *** This file provides classical logic and indefinite description
     (Hilbert's epsilon operator) *)
 
 (** Classical epsilon's operator (i.e. indefinite description) implies
@@ -25,7 +25,7 @@ Notation Local "'inhabited' A" := A (at level 200, only parsing).
 
 Axiom constructive_indefinite_description :
   forall (A : Type) (P : A->Prop), 
-  (exists x : A, P x) -> { x : A | P x }.
+  (ex P) -> { x : A | P x }.
 
 Lemma constructive_definite_description :
   forall (A : Type) (P : A->Prop), 
@@ -43,11 +43,11 @@ Qed.
 
 Theorem classical_indefinite_description : 
   forall (A : Type) (P : A->Prop), inhabited A ->
-  { x : A | (exists x : A, P x) -> P x }.
+  { x : A | ex P -> P x }.
 Proof.
 intros A P i.
 destruct (excluded_middle_informative (exists x, P x)) as [Hex|HnonP].
-  apply constructive_indefinite_description with (P:= fun x => (exists x, P x) -> P x).
+  apply constructive_indefinite_description with (P:= fun x => ex P -> P x).
   destruct Hex as (x,Hx).
     exists x; intros _; exact Hx.
     firstorder.
@@ -59,8 +59,10 @@ Definition epsilon (A : Type) (i:inhabited A) (P : A->Prop) : A
   := proj1_sig (classical_indefinite_description P i).
 
 Definition epsilon_spec (A : Type) (i:inhabited A) (P : A->Prop) : 
-  (exists x:A, P x) -> P (epsilon i P)
+  (ex P) -> P (epsilon i P)
   := proj2_sig (classical_indefinite_description P i).
+
+Opaque epsilon.
 
 (** Open question: is classical_indefinite_description constructively
     provable from [relational_choice] and
@@ -70,7 +72,10 @@ Definition epsilon_spec (A : Type) (i:inhabited A) (P : A->Prop) :
     [classical_indefinite_description] is provable (see
     [relative_non_contradiction_of_indefinite_desc]). *)
 
-(** Weaker lemmas (compatibility lemmas) *)
+(** Remark: we use [ex P] rather than [exists x, P x] (which is [ex
+    (fun x => P x)] to ease unification *)
+
+(** *** Weaker lemmas (compatibility lemmas) *)
 
 Theorem choice :
  forall (A B : Type) (R : A->B->Prop),
@@ -78,7 +83,8 @@ Theorem choice :
    (exists f : A->B, forall x : A, R x (f x)).
 Proof.
 intros A B R H.
-exists (fun x => proj1_sig (constructive_indefinite_description (R x) (H x))).
+exists (fun x => proj1_sig (constructive_indefinite_description (H x))).
 intro x.
-apply (proj2_sig (constructive_indefinite_description (R x) (H x))).
+apply (proj2_sig (constructive_indefinite_description  (H x))).
 Qed.
+
