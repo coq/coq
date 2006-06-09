@@ -42,6 +42,7 @@ reals_opt=no
 reals=all
 arch_spec=no
 coqide_spec=no
+with_geoproof=true
 
 COQTOP=`pwd`
 
@@ -110,6 +111,12 @@ while : ; do
     -coqide|--coqide) coqide_spec=yes
 		      COQIDE=$2
 		      shift;;
+    -with-geoproof|--with-geoproof) 
+	  case $2 in
+	      yes) with_geoproof=true;;
+	      no) with_geoproof=false;;
+	  esac
+	  shift;;
     -byte-only|-byteonly|--byteonly|--byte-only) best_compiler=byte;;
     -debug|--debug) coq_debug_flag=-g;;
     -profile|--profile) coq_profile_flag=-p;;
@@ -483,6 +490,7 @@ let versionsi = "$VERSIONSI"
 let date = "$DATE"
 let compile_date = "$COMPILEDATE"
 let exec_extension = "$EXE"
+let with_geoproof = ref $with_geoproof
 
 END_OF_COQ_CONFIG
 

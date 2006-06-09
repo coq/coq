@@ -3366,7 +3366,7 @@ let start () =
     Command_windows.main ();
     Blaster_window.main 9;
     main files;
-    ignore (Thread.create check_for_geoproof_input ()); 
+    if !Coq_config.with_geoproof then ignore (Thread.create check_for_geoproof_input ()); 
     while true do 
       try 
 	GtkThread.main ()	

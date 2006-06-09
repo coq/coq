@@ -174,7 +174,11 @@ let ide_args = ref []
 let parse_args is_ide =
   let rec parse = function
     | [] -> ()
-
+    | "-with-geoproof" :: s :: rem -> 
+	if s = "yes" then Coq_config.with_geoproof := true
+	else if s = "no" then Coq_config.with_geoproof := false
+	else usage ();
+	parse rem
     | "-impredicative-set" :: rem -> 
         set_engagement Declarations.ImpredicativeSet; parse rem
 
