@@ -589,9 +589,10 @@ let is_ident_not_keyword s =
     | _ -> false
 
 let is_number s =
-  match s.[0] with
-    | '0'..'9' -> true
-    | _ -> false
+  let rec aux i =
+    String.length s = i or 
+    match s.[i] with '0'..'9' -> aux (i+1) | _ -> false
+  in aux 0
 
 let strip s =
   let len =
