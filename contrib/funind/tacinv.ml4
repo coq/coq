@@ -1,16 +1,10 @@
 (*i camlp4deps: "parsing/grammar.cma" i*)
 
 (*s FunInv Tactic: inversion following the shape of a function.  *)
-(* Use:
-   \begin{itemize}
-   \item The Tacinv directory must be in the path (-I <path> option)
-   \item use the bytecode version of coqtop or coqc (-byte option), or make a
-         coqtop 
-   \item Do [Require Tacinv] to be able to use it.
-   \item For syntax see Tacinv.v
-   \end{itemize}
-*)
 
+(* Deprecated: see indfun_main.ml4 instead *)
+
+(* Don't delete this file yet, it may be used for other purposes *)
 
 (*i*)
 open Termops
@@ -862,7 +856,6 @@ END
 (* 
 *** Local Variables: ***
 *** compile-command: "make -C ../.. contrib/funind/tacinv.cmo" ***
-*** tab-width: 1 ***
 *** tuareg-default-indent:1 ***
 *** tuareg-begin-indent:1 ***
 *** tuareg-let-indent:1 ***
