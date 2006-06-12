@@ -201,7 +201,7 @@ let abstract_replace clause c2 c1 unsafe tac gl =
 	 ]
       ] gl
   else
-    error "terms does not have convertible types"
+    error "terms do not have convertible types"
 
 
 let replace c2 c1 gl = abstract_replace None c2 c1 false tclIDTAC gl
