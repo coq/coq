@@ -27,7 +27,7 @@ Vernacular commands
 - New command "Whelp" to send requests to the Helm database of proofs
   formalized in the Calculus of Inductive Constructions (doc TODO)
 - Command "functional induction" has been re-implemented from the new
-  "definition" command.
+  "Function" command.
 
 Ltac and tactic syntactic extensions
 
