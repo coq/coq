@@ -571,3 +571,97 @@ let make_graph (id:identifier) =
 (* let make_graph _ = assert false	 *)
 	  
 let do_generate_principle = do_generate_principle true 
+
+
+
+
+let is_rec_info scheme_info = 
+  let test_branche min acc (_,_,br) = 
+    acc || (
+      let new_branche = 
+	Sign.it_mkProd_or_LetIn mkProp (fst (Sign.decompose_prod_assum br)) in 
+      let free_rels_in_br = Termops.free_rels new_branche in 
+      let max = min + scheme_info.Tactics.npredicates in 
+      Util.Intset.exists (fun i -> i >= min && i< max) free_rels_in_br
+    )
+  in
+  Util.list_fold_left_i test_branche 1 false (List.rev scheme_info.Tactics.branches)
+
+
+let choose_dest_or_ind scheme_info =
+    if is_rec_info scheme_info
+    then Tactics.new_induct
+    else Tactics.new_destruct
+
+
+let functional_induction c princl pat =
+  let f,args = decompose_app c in 
+  fun g -> 
+    let princ,bindings = 
+      match princl with 
+	| None -> (* No principle is given let's find the good one *)
+	    let fname = 
+	      match kind_of_term f with 
+		| Const c' -> 
+		    id_of_label (con_label c') 
+		| _ -> Util.error "Must be used with a function" 
+	    in
+	    let princ_name = 
+	      (
+		Indrec.make_elimination_ident
+		  fname
+		  (Tacticals.elimination_sort_of_goal g)
+	      )
+	    in
+	    mkConst(const_of_id princ_name ),Rawterm.NoBindings
+	| Some princ -> princ 
+    in
+    let princ_type = Tacmach.pf_type_of g princ in 
+    let princ_infos = Tactics.compute_elim_sig princ_type in 
+    let args_as_induction_constr =
+      let c_list = 
+	if princ_infos.Tactics.farg_in_concl 
+	then [c] else [] 
+      in
+      List.map (fun c -> Tacexpr.ElimOnConstr c) (args@c_list) 
+    in 
+    let princ' = Some (princ,bindings) in 
+    let princ_vars = 
+      List.fold_right 
+	(fun a acc -> 
+	  try Idset.add (destVar a) acc
+	  with _ -> acc
+	)
+	args
+	Idset.empty
+    in
+    let old_idl = List.fold_right Idset.add (Tacmach.pf_ids_of_hyps g) Idset.empty in 
+    let old_idl = Idset.diff old_idl princ_vars in 
+    let subst_and_reduce g = 
+      let idl = 
+	Util.map_succeed 
+	  (fun id -> 
+	    if Idset.mem id old_idl then failwith "";
+	    id 
+	  )
+	  (Tacmach.pf_ids_of_hyps g)
+      in 
+      let flag = 
+	Rawterm.Cbv
+	  {Rawterm.all_flags 
+	  with Rawterm.rDelta = false; 		 
+	  }
+      in
+      Tacticals.tclTHEN
+	(Tacticals.tclMAP (fun id -> Tacticals.tclTRY (Equality.subst [id])) idl )
+	(Hiddentac.h_reduce flag Tacticals.allClauses)
+	g
+    in
+    Tacticals.tclTHEN
+      (choose_dest_or_ind 
+	princ_infos
+	args_as_induction_constr
+	princ'
+	pat)
+      subst_and_reduce
+      g
