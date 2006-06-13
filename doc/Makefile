@@ -161,7 +161,7 @@ refman/html/index.html: refman/Reference-Manual.html $(REFMANPNGFILES) \
 	mkdir refman/html
 	cp $(REFMANPNGFILES) refman/html
 	(cd refman/html; hacha -o toc.html ../Reference-Manual.html)
-	cp refman/cover.html refman/html
+	cp refman/cover.html refman/menu.html refman/html
 	cp refman/index.html refman/html
 
 ######################################################################
