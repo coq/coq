@@ -97,7 +97,7 @@ TACTIC EXTEND newfunind
 	 | [c] -> c 
 	 | c::cl -> applist(c,cl)
        in 
-       functional_induction c princl pat ]
+       functional_induction true c princl pat ]
 END
 
 

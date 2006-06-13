@@ -594,7 +594,7 @@ let choose_dest_or_ind scheme_info =
     else Tactics.new_destruct
 
 
-let functional_induction c princl pat =
+let functional_induction with_clean c princl pat =
   let f,args = decompose_app c in 
   fun g -> 
     let princ,bindings = 
@@ -652,10 +652,14 @@ let functional_induction c princl pat =
 	  with Rawterm.rDelta = false; 		 
 	  }
       in
-      Tacticals.tclTHEN
-	(Tacticals.tclMAP (fun id -> Tacticals.tclTRY (Equality.subst [id])) idl )
-	(Hiddentac.h_reduce flag Tacticals.allClauses)
-	g
+      if with_clean 
+      then
+	Tacticals.tclTHEN
+	  (Tacticals.tclMAP (fun id -> Tacticals.tclTRY (Equality.subst [id])) idl )
+	  (Hiddentac.h_reduce flag Tacticals.allClauses)	
+	  g
+      else Tacticals.tclIDTAC g 
+
     in
     Tacticals.tclTHEN
       (choose_dest_or_ind 
