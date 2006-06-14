@@ -134,8 +134,8 @@ Libraries
 - New library FSets+FMaps of finite sets and maps.
 - New library QArith on rational numbers.
 - Small extension of Zmin.V, new Zmax.v, new Zminmax.v.
-- Reworking of the files on classical logic and description principles
-  (possible incompatibilities).
+- Reworking and extension of the files on classical logic and
+  description principles (possible incompatibilities)
 - Few other improvements in ZArith potentially exceptionally breaking the
   compatibility (useless hypothesys of Zgt_square_simpl and
   Zlt_square_simpl removed; fixed names mentioning letter O instead of
@@ -144,6 +144,11 @@ Libraries
 - Znumtheory now contains a gcd function that can compute within Coq.
 - More lemmas stated on Type in Wf.v, removal of redundant Fix_F.
 - Change of the internal names of lemmas in OmegaLemmas.
+- Acc in Wf.v and clos_refl_trans in Relation_Operators.v now rely on
+  the allowance for recursively non uniform parameters (possible
+  source of incompatibilities: explicit pattern-matching on these
+  types may require to remove the occurrence associated to their
+  recursively non uniform parameter).
 - Coq.List.In_dec has been set transparent (this may exceptionally break
   proof scripts, set it locally opaque for compatibility).
 - More on permutations of lists in List.v and Permutation.v.
