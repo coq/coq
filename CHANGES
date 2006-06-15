@@ -59,16 +59,17 @@ Tactics
    rewrite H in H1,H2 |- * means rewrite H in H1; rewrite H in H2; rewrite H
    rewrite H in * |-  will do try rewrite H in Hi for all hypothesis Hi <> H 
   (doc TODO).
+- Added "dependent rewrite term" and "dependent rewrite term in hyp" (doc TODO)
+- Added "autorewrite with ... in hyp [using ...]" (doc TODO).
+- Tactic "replace" now accepts a "by" tactic clause (doc TODO).
 - Added "clear - id" to clear all hypotheses except the ones depending in id
   (doc TODO).
-- Added "dependent rewrite term" and "dependent rewrite term in hyp" (doc TODO)
 - The argument of Declare Left Step and Declare Right Step is now a term
   (it used to be a reference) (doc TODO).
 - Omega now handles arbitrary precision integers.
 - Several bug fixes in Reflexive Omega (romega).
 - Idtac can now be left implicit in a [...|...] construct: for instance, 
   [ foo | | bar ] stands for [ foo | idtac | bar ] (doc TODO).
-- Added "autorewrite with ... in hyp [using ...]" (doc TODO).
 - Fixed a "fold" bug (non critical but possible source of incompatibilities).
 - Added classical_left and classical_right which transforms |- A \/ B into 
   ~B |- A and ~A |- B respectively.
@@ -78,12 +79,16 @@ Tactics
   arguments.
 - Tactic "assert" now accepts "as" intro patterns and "by" tactic clauses
   (doc TODO).
-- Tactic "replace" now accepts a "by" tactic clause (doc TODO).
 - New tactic "pose proof" that generalizes "assert (id:=p)" with intro patterns
   (doc TODO).
 - New introduction pattern "?" for letting Coq choose a name (doc TODO).
 - Added "eassumption" (doc TODO).
 - Added option 'using lemmas' to auto, trivial and eauto (doc TODO).
+- Tactic "congruence" is now complete for its intended scope (ground
+  equalities and inequalities with constructors). Furthermore, it
+  tries to equates goal and hypotheses.
+- New tactic "rtauto" solves pure propositional logic and gives a
+  reflective version of the available proof.
 - Numbering of "pattern", "unfold", "simpl", ... occurrences in "match
   with" made consistent with the printing of the return clause after
   the term to match in the "match-with" construct (use "Set Printing All"
@@ -127,6 +132,9 @@ Notations
 - Added insertion of spaces by default in recursive notations w/o separators.
 - No more automatic printing box in case of user-provided printing "format".
 - New notation "exists! x:A, P" for unique existence.
+- Notations for specific numerals now compatible with generic notations of
+  numerals (e.g. "1" can be used to denote the unit of a group without
+  hiding 1%nat)
 
 Libraries
 
