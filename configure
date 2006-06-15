@@ -31,6 +31,7 @@ best_compiler=opt
 
 local=false
 src_spec=no
+prefix_spec=no
 bindir_spec=no
 libdir_spec=no
 mandir_spec=no
@@ -53,35 +54,17 @@ with_geoproof=true
 while : ; do
   case "$1" in
     "") break;;
-    -prefix|--prefix) bindir_spec=yes
-                      bindir=$2/bin
-                      libdir_spec=yes
-		      libdir=$2/lib/coq
-                      mandir_spec=yes
-		      mandir=$2/man
-		      coqdocdir_spec=yes
-		      coqdocdir=$2/share/texmf/tex/latex/misc
+    -prefix|--prefix) prefix_spec=yes
+                      prefix="$2"
 		      shift;;
     -local|--local) local=true
-                    bindir_spec=yes
-                    bindir=$COQTOP/bin
-                    libdir_spec=yes
-		    libdir=$COQTOP
-                    mandir_spec=yes
-		    mandir=$COQTOP/man
-                    emacslib_spec=yes
-		    emacslib=$COQTOP/tools/emacs
-		    coqdocdir_spec=yes
-		    coqdocdir=$COQTOP/tools/coqdoc
-		    fsets_opt=yes
-		    fsets=all
 		    reals_opt=yes
 		    reals=all;;
     -src|--src) src_spec=yes
-	        COQTOP="$2"
+                COQTOP="$2"
 	        shift;;
     -bindir|--bindir) bindir_spec=yes
-                      bindir=$2
+                      bindir="$2"
 		      shift;;
     -libdir|--libdir) libdir_spec=yes
                       libdir="$2"
@@ -127,6 +110,11 @@ while : ; do
   shift
 done
 
+if [ $prefix_spec = yes -a $local = true ] ; then
+  echo "Options -prefix and -local are incompatible"
+  echo "Configure script failed!"
+  exit 1
+fi
 
 # compile date
 DATEPGM=`which date`
@@ -162,143 +150,6 @@ case $arch_spec in
     yes) ARCH=$arch
 esac
 
-# bindir, libdir, mandir, etc.
-
-###########################################
-# bindir, libdir, mandir, etc.
-
-canonical_pwd () {
-ocaml 2>&1 1>/dev/null <<EOF
-  prerr_endline(Sys.getcwd());;
-EOF
-}
-
-case $src_spec in
-  no) COQTOP=`canonical_pwd`
-esac
-
-case $ARCH in
-  win32)
-	 bindir_def=C:\\coq\\bin
-	 libdir_def=C:\\coq\\lib
-	 mandir_def=C:\\coq\\man
-	 emacslib_def=C:\\coq\\emacs;;
-  *)
-	 bindir_def=/usr/local/bin
-	 libdir_def=/usr/local/lib/coq
-	 mandir_def=/usr/local/man
-	 emacslib_def=/usr/share/emacs/site-lisp
-         coqdocdir_def=/usr/share/texmf/tex/latex/misc;;
-esac
-
-emacs_def=emacs
-
-case $bindir_spec in
-    no) echo "Where should I install the Coq binaries [$bindir_def] ?"
-        read BINDIR
-	
-	case $BINDIR in
-	    "") BINDIR=$bindir_def;;
-	    *) true;;
-	esac;;
-    yes) BINDIR=$bindir;;
-esac
-
-case $libdir_spec in
-    no) echo "Where should I install the Coq library [$libdir_def] ?"
-        read LIBDIR
-	
-	case $LIBDIR in
-	    "") LIBDIR=$libdir_def;;
-	    *) true;;
-	esac;;
-    yes) LIBDIR=$libdir;;
-esac
-
-case $mandir_spec in
-    no) echo "Where should I install the Coq man pages [$mandir_def] ?"
-        read MANDIR
-	
-	case $MANDIR in
-	    "") MANDIR=$mandir_def;;
-	    *) true;;
-	esac;;
-    yes) MANDIR=$mandir;;
-esac
-
-case $emacslib_spec in
-    no) echo "Where should I install the Coq Emacs mode [$emacslib_def] ?"
-        read EMACSLIB
-	
-	case $EMACSLIB in
-	    "") EMACSLIB=$emacslib_def;;
-	    *) true;;
-	esac;;
-    yes) EMACSLIB=$emacslib;;
-esac
-
-case $coqdocdir_spec in
-    no) echo "Where should I install Coqdoc TeX/LaTeX files [$coqdocdir_def] ?"
-        read COQDOCDIR
-	
-	case $COQDOCDIR in
-	    "") COQDOCDIR=$coqdocdir_def;;
-	    *) true;;
-	esac;;
-    yes) COQDOCDIR=$coqdocdir;;
-esac
-
-case $fsets_opt in
-    no) echo "Should I compile the complete theory of finite sets [Y/N, default is Y] ?"
-	read fsets_ans
-
-	case $fsets_ans in
-	    "N"|"n"|"No"|"NO"|"no")
-		    fsets=basic;;
-		*) fsets=all;;
-	esac;;
-    yes) true;;
-esac
-
-case $reals_opt in
-    no) echo "Should I compile the complete theory of real analysis [Y/N, default is Y] ?"
-	read reals_ans
-
-	case $reals_ans in
-	    "N"|"n"|"No"|"NO"|"no")
-		    reals=basic;;
-		*) reals=all;;
-	esac;;
-    yes) true;;
-esac
-
-# case $emacs_spec in
-#     no) echo "Which Emacs command should I use to compile coq.el [$emacs_def] ?"
-#         read EMACS
-	
-# 	case $EMACS in
-# 	    "") EMACS=$emacs_def;;
-# 	    *) true;;
-# 	esac;;
-#     yes) EMACS=$emacs;;
-# esac
-
-# OS dependent libraries
-
-case $ARCH in
-  sun4*) OS=`uname -r`
-	case $OS in
-	   5*) OS="Sun Solaris $OS"
-	       OSDEPLIBS="-cclib -lunix -cclib -lnsl -cclib -lsocket";;
-	   *) OS="Sun OS $OS"
-	      OSDEPLIBS="-cclib -lunix"
-        esac;;
-  alpha) OSDEPLIBS="-cclib -lunix";;
-  win32) OS="Win32" 
-	 OSDEPLIBS="-cclib -lunix";;
-  *) OSDEPLIBS="-cclib -lunix"
-esac
-
 # executable extension
 
 case $ARCH in
@@ -320,6 +171,7 @@ case $ARCH in
     fi
 esac
 
+#########################################
 # Objective Caml programs
 
 CAMLC=`which $bytecamlc`
@@ -401,6 +253,22 @@ CAMLP4BIN=${CAMLBIN}
 #    CAMLP4LIB=${CAMLLIB}/camlp4
 #esac
 
+# OS dependent libraries
+
+case $ARCH in
+  sun4*) OS=`uname -r`
+	case $OS in
+	   5*) OS="Sun Solaris $OS"
+	       OSDEPLIBS="-cclib -lunix -cclib -lnsl -cclib -lsocket";;
+	   *) OS="Sun OS $OS"
+	      OSDEPLIBS="-cclib -lunix"
+        esac;;
+  alpha) OSDEPLIBS="-cclib -lunix";;
+  win32) OS="Win32" 
+	 OSDEPLIBS="-cclib -lunix";;
+  *) OSDEPLIBS="-cclib -lunix"
+esac
+
 # lablgtk2 and CoqIDE
 
 if [ "$coqide_spec" = "no" ] ; then
@@ -452,6 +320,132 @@ esac
 #    "") MKTEXLSR=true;;
 #esac
 
+###########################################
+# bindir, libdir, mandir, etc.
+
+canonical_pwd () {
+ocaml 2>&1 1>/dev/null <<EOF
+  prerr_endline(Sys.getcwd());;
+EOF
+}
+
+case $src_spec in
+  no) COQTOP=`canonical_pwd`
+esac
+
+case $ARCH in
+  win32)
+	 bindir_def='C:\coq\bin'
+	 libdir_def='C:\coq\lib'
+	 mandir_def='C:\coq\man'
+	 emacslib_def='C:\coq\emacs'
+         coqdocdir_def='C:\coq\latex';;
+  *)
+	 bindir_def=/usr/local/bin
+	 libdir_def=/usr/local/lib/coq
+	 mandir_def=/usr/local/man
+	 emacslib_def=/usr/share/emacs/site-lisp
+         coqdocdir_def=/usr/share/texmf/tex/latex/misc;;
+esac
+
+emacs_def=emacs
+
+case $bindir_spec/$prefix_spec/$local in
+    yes/*/*) BINDIR=$bindir ;;
+    */yes/*) BINDIR=$prefix/bin ;;
+    */*/true) BINDIR=$COQTOP/bin ;;
+    *) echo "Where should I install the Coq binaries [$bindir_def] ?"
+        read BINDIR
+	case $BINDIR in
+	    "") BINDIR=$bindir_def;;
+	    *) true;;
+	esac;;
+esac
+
+case $libdir_spec/$prefix_spec/$local in
+    yes/*/*) LIBDIR=$libdir;;
+    */yes/*)
+        case $ARCH in
+          win32) LIBDIR=$prefix ;;
+          *)  LIBDIR=$prefix/lib/coq ;;
+        esac ;;
+    */*/true) LIBDIR=$COQTOP ;;
+    *)  echo "Where should I install the Coq library [$libdir_def] ?"
+        read LIBDIR
+	case $LIBDIR in
+	    "") LIBDIR=$libdir_def;;
+	    *) true;;
+	esac;;
+esac
+
+case $mandir_spec/$prefix_spec/$local in
+    yes/*/*) MANDIR=$mandir;;
+    */yes/*) MANDIR=$prefix/man ;;
+    */*/true) MANDIR=$COQTOP/man ;;
+    *)  echo "Where should I install the Coq man pages [$mandir_def] ?"
+        read MANDIR
+	case $MANDIR in
+	    "") MANDIR=$mandir_def;;
+	    *) true;;
+	esac;;
+esac
+
+case $emacslib_spec/$prefix_spec/$local in
+    yes/*/*) EMACSLIB=$emacslib;;
+    */yes/*)
+        case $ARCH in
+          win32) EMACSLIB=$prefix/emacs ;;
+          *)  EMACSLIB=$prefix/share/emacs/site-lisp ;;
+        esac ;;
+    */*/true) EMACSLIB=$COQTOP/tools/emacs ;;
+    *) echo "Where should I install the Coq Emacs mode [$emacslib_def] ?"
+        read EMACSLIB
+	case $EMACSLIB in
+	    "") EMACSLIB=$emacslib_def;;
+	    *) true;;
+	esac;;
+esac
+
+case $coqdocdir_spec/$prefix_spec/$local in
+    yes/*/*) COQDOCDIR=$coqdocdir;;
+    */yes/*)
+        case $ARCH in
+          win32) COQDOCDIR=$prefix/latex ;;
+          *)  COQDOCDIR=$prefix/share/emacs/site-lisp ;;
+        esac ;;
+    */*/true) COQDOCDIR=$COQTOP/tools/coqdoc ;;
+    *) echo "Where should I install Coqdoc TeX/LaTeX files [$coqdocdir_def] ?"
+        read COQDOCDIR
+	case $COQDOCDIR in
+	    "") COQDOCDIR=$coqdocdir_def;;
+	    *) true;;
+	esac;;
+esac
+
+case $reals_opt in
+    no) echo "Should I compile the complete theory of real analysis [Y/N, default is Y] ?"
+	read reals_ans
+
+	case $reals_ans in
+	    "N"|"n"|"No"|"NO"|"no")
+		    reals=basic;;
+		*) reals=all;;
+	esac;;
+    yes) true;;
+esac
+
+# case $emacs_spec in
+#     no) echo "Which Emacs command should I use to compile coq.el [$emacs_def] ?"
+#         read EMACS
+	
+# 	case $EMACS in
+# 	    "") EMACS=$emacs_def;;
+# 	    *) true;;
+# 	esac;;
+#     yes) EMACS=$emacs;;
+# esac
+
+###########################################
 # Summary of the configuration
 
 echo ""
