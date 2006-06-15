@@ -30,6 +30,7 @@ coq_profile_flag=
 best_compiler=opt
 
 local=false
+src_spec=no
 bindir_spec=no
 libdir_spec=no
 mandir_spec=no
@@ -44,7 +45,7 @@ arch_spec=no
 coqide_spec=no
 with_geoproof=true
 
-COQTOP=`pwd`
+# COQTOP=`pwd`
 
 
 # Parse command-line arguments
@@ -76,25 +77,26 @@ while : ; do
 		    fsets=all
 		    reals_opt=yes
 		    reals=all;;
-    -src|--src) COQTOP=$2
+    -src|--src) src_spec=yes
+	        COQTOP="$2"
 	        shift;;
     -bindir|--bindir) bindir_spec=yes
                       bindir=$2
 		      shift;;
     -libdir|--libdir) libdir_spec=yes
-                      libdir=$2
+                      libdir="$2"
 		      shift;;
     -mandir|--mandir) mandir_spec=yes
-                      mandir=$2
+                      mandir="$2"
 		      shift;;
     -emacslib|--emacslib) emacslib_spec=yes
-                          emacslib=$2
+                          emacslib="$2"
 			  shift;;
     -emacs |--emacs) emacs_spec=yes
-		     emacs=$2
+		     emacs="$2"
 		     shift;;
     -coqdocdir|--coqdocdir) coqdocdir_spec=yes
-	              coqdocdir=$2
+	              coqdocdir="$2"
 		      shift;;
     -arch|--arch) arch_spec=yes
                   arch=$2
@@ -161,6 +163,19 @@ case $arch_spec in
 esac
 
 # bindir, libdir, mandir, etc.
+
+###########################################
+# bindir, libdir, mandir, etc.
+
+canonical_pwd () {
+ocaml 2>&1 1>/dev/null <<EOF
+  prerr_endline(Sys.getcwd());;
+EOF
+}
+
+case $src_spec in
+  no) COQTOP=`canonical_pwd`
+esac
 
 case $ARCH in
   win32)
@@ -289,6 +304,20 @@ esac
 case $ARCH in
     win32) EXE=".exe";;
     *) EXE=""
+esac
+
+# strip command
+
+case $ARCH in
+    win32)
+	# true -> strip : it exists under cygwin !
+	STRIPCOMMAND="strip";; 
+    *)
+    if [ "$coq_profile_flag" = "-p" ] ; then
+	STRIPCOMMAND="true"
+    else
+	STRIPCOMMAND="strip"
+    fi
 esac
 
 # Objective Caml programs
@@ -522,29 +551,40 @@ rm -f $COQTOP/config/Makefile
 # damned backslashes under M$Windows (bis)
 case $ARCH in
     win32)
-	BINDIR=`echo $BINDIR |sed -e 's|\\\|\\\\\\\|g'`
-	LIBDIR=`echo $LIBDIR |sed -e 's|\\\|\\\\\\\|g'`
-  	MANDIR=`echo $MANDIR |sed -e 's|\\\|\\\\\\\|g'`
-   	EMACSLIB=`echo $EMACSLIB |sed -e 's|\\\|\\\\\\\|g'`
+	ESCCOQTOP=`echo $COQTOP |sed -e 's|\\\|\\\\\\\|g'`
+	ESCBINDIR=`echo $BINDIR |sed -e 's|\\\|\\\\\\\|g'`
+	ESCLIBDIR=`echo $LIBDIR |sed -e 's|\\\|\\\\\\\|g'`
+  	ESCMANDIR=`echo $MANDIR |sed -e 's|\\\|\\\\\\\|g'`
+   	ESCEMACSLIB=`echo $EMACSLIB |sed -e 's|\\\|\\\\\\\|g'`
+   	ESCCOQDOCDIR=`echo $COQDOCDIR |sed -e 's|\\\|\\\\\\\|g'`
+   	ESCCAMLP4BIN=`echo $CAMLP4BIN |sed -e 's|\\\|\\\\\\\|g'`
 	;;
+    *)
+        ESCCOQTOP="$COQTOP"
+	ESCBINDIR="$BINDIR"
+	ESCLIBDIR="$LIBDIR"
+  	ESCMANDIR="$MANDIR"
+   	ESCEMACSLIB="$EMACSLIB"
+   	ESCCOQDOCDIR="$COQDOCDIR"
+   	ESCCAMLP4BIN="$CAMLP4BIN" ;;
 esac
 
 sed -e "s|LOCALINSTALLATION|$local|" \
-    -e "s|COQTOPDIRECTORY|$COQTOP|" \
+    -e "s|COQTOPDIRECTORY|$ESCCOQTOP|" \
     -e "s|COQVERSION|$VERSION|" \
-    -e "s|BINDIRDIRECTORY|$BINDIR|" \
-    -e "s|COQLIBDIRECTORY|$LIBDIR|" \
-    -e "s|MANDIRDIRECTORY|$MANDIR|" \
-    -e "s|EMACSLIBDIRECTORY|$EMACSLIB|" \
+    -e "s|BINDIRDIRECTORY|$ESCBINDIR|" \
+    -e "s|COQLIBDIRECTORY|$ESCLIBDIR|" \
+    -e "s|MANDIRDIRECTORY|$ESCMANDIR|" \
+    -e "s|EMACSLIBDIRECTORY|$ESCEMACSLIB|" \
     -e "s|EMACSCOMMAND|$EMACS|" \
-    -e "s|COQDOCDIRECTORY|$COQDOCDIR|" \
+    -e "s|COQDOCDIRECTORY|$ESCCOQDOCDIR|" \
     -e "s|MKTEXLSRCOMMAND|$MKTEXLSR|" \
     -e "s|ARCHITECTURE|$ARCH|" \
     -e "s|OSDEPENDENTLIBS|$OSDEPLIBS|" \
     -e "s|OSDEPENDENTP4OPTFLAGS|$OSDEPP4OPTFLAGS|" \
     -e "s|CAMLLIBDIRECTORY|$CAMLLIB|" \
     -e "s|CAMLTAG|$CAMLTAG|" \
-    -e "s|CAMLP4BINDIRECTORY|$CAMLP4BIN|" \
+    -e "s|CAMLP4BINDIRECTORY|$ESCCAMLP4BIN|" \
     -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIB|" \
     -e "s|CAMLP4TOOL|$camlp4o|" \
     -e "s|CAMLP4COMPATFLAGS|$CAMLP4COMPAT|" \
