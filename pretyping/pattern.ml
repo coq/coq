@@ -132,7 +132,7 @@ let map_pattern_with_binders g f l = function
 let map_pattern f = map_pattern_with_binders (fun () -> ()) (fun () -> f) ()
 
 let rec instantiate_pattern lvar = function
-  | PVar id as x -> (try List.assoc id lvar with Not_found -> x)
+  | PVar id as x -> (try Lazy.force(List.assoc id lvar) with Not_found -> x)
   | (PFix _ | PCoFix _) -> error ("Not instantiable pattern")
   | c -> map_pattern (instantiate_pattern lvar) c
 

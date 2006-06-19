@@ -916,7 +916,7 @@ let give_context ctxt = function
 
 (* Reads a pattern by substituing vars of lfun *)
 let eval_pattern lfun c = 
-  let lvar = List.map (fun (id,c) -> (id,pattern_of_constr c)) lfun in
+  let lvar = List.map (fun (id,c) -> (id,lazy(pattern_of_constr c))) lfun in
   instantiate_pattern lvar c
 
 let read_pattern evc env lfun = function
