@@ -222,7 +222,7 @@ let build_wellfounded (recname, n, bl,arityc,body) r notation boxed =
   let projection = 
     mkApp (proj, [| argtyp ;
 		    (mkLambda (Name argid', argtyp,
-			       (mkApp (wf_rel, [|mkRel 1; mkRel 2|])))) ;
+			       (mkApp (wf_rel, [|mkRel 1; mkRel 3|])))) ;
 		    mkRel 1
 		 |])
   in
@@ -277,16 +277,54 @@ let build_wellfounded (recname, n, bl,arityc,body) r notation boxed =
   let fullctyp = Evarutil.nf_isevar !isevars typ in
   let _ = try trace (str "After evar normalization: " ++ spc () ++
 		 str "Coq term: " ++ my_print_constr env fullcoqc ++ spc ()
-		 ++ str "Coq type: " ++ my_print_constr env fullctyp) 
+		     ++ str "Coq type: " ++ my_print_constr env fullctyp) 
      with _ -> () 
   in
   let evm = non_instanciated_map env isevars in
   let _ = try trace (str "Non instanciated evars map: " ++ Evd.pr_evar_map evm)  with _ -> () in
-  let tac = Eterm.etermtac (evm, fullcoqc) in 
-    trace (str "Starting proof of goal: " ++ my_print_constr env fullctyp);
-    Command.start_proof recname goal_kind fullctyp (fun _ _ -> ());
-    trace (str "Started proof");
-    Pfedit.by tac
+  let evars_def, evars_typ, evars = Eterm.eterm_term evm fullcoqc (Some fullctyp) in 	
+  let evars_typ = out_some evars_typ in
+  let evars_sum =
+    if evars = [] then None
+    else (
+      (try trace (str "Building evars sum for : ");
+	 List.iter
+	   (fun (n, t) -> trace (str "Evar " ++ str (string_of_id n) ++ spc () ++ my_print_constr env t))
+	   evars;
+       with _ -> ());
+      let sum = Subtac_utils.build_dependent_sum evars in
+	(try trace (str "Evars sum: " ++ my_print_constr env (snd sum));
+	   trace (str "Evars type: " ++ my_print_constr env evars_typ);
+	 with _ -> ());
+	Some sum)
+  in
+    match evars_sum with
+      | Some (sum_tac, sumg) -> 
+	  let proofid = id_of_string (string_of_id recname ^ "_evars_proof") in
+	    Command.start_proof proofid goal_kind sumg
+	      (fun _ gr -> 
+		 let constant = match gr with Libnames.ConstRef c -> c
+		   | _ -> assert(false)
+		 in
+		 let def = mkConst constant in
+		 let args = Subtac_utils.destruct_ex def sumg in
+		 let args = 
+		   List.map (fun c -> 
+			       try Reductionops.whd_betadeltaiota (Global.env ()) Evd.empty c
+			       with Not_found ->
+				 trace (str "Not_found while reducing " ++
+					my_print_constr (Global.env ()) c);
+				 c
+			    ) args		  
+		 in
+		 let _, newdef = decompose_lam_n (List.length args) evars_def in
+		 let constr = Term.substl (List.rev args) newdef in
+		   debug 1 (str "Applied existentials : " ++ my_print_constr env constr));
+	    trace (str "Started existentials proof");
+	    Pfedit.by sum_tac;
+	    trace (str "Applied sum tac")
+      | None -> ()
+
     
 let build_mutrec l boxed =
   let sigma = Evd.empty

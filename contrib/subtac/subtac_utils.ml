@@ -167,7 +167,7 @@ let build_dependent_sum l =
       (n, t) :: tl ->
 	let t' = mkLambda (Name n, t, typ) in
 	  trace (spc () ++ str ("treating evar " ^ string_of_id n));
-	  (try trace (str " assert: " ++ my_print_constr (Global.env ()) t)
+	  (try trace (str " assert: " ++ my_print_constr (Global.env ()) t)	    	     
 	   with _ -> ());
 	let tac' = 
 	  tclTHENS (assert_tac true (Name n) t) 
@@ -186,6 +186,39 @@ let build_dependent_sum l =
 	(_, hd) :: tl -> aux (intros, hd) tl
       | [] -> raise (Invalid_argument "build_dependent_sum")
 
+let id x = x
+
+let build_dependent_sum l =
+  let rec aux names conttac conttype = function
+      (n, t) :: ((_ :: _) as tl) ->
+	let hyptype = substl names t in
+	  trace (spc () ++ str ("treating evar " ^ string_of_id n));
+	  (try trace (str " assert: " ++ my_print_constr (Global.env ()) hyptype)
+	   with _ -> ());
+	let tac = assert_tac true (Name n) hyptype in
+	let conttac = 
+	  (fun cont -> 
+	     conttac
+	     (tclTHENS tac
+		([intros;
+		  (tclTHENSEQ 
+		     [constructor_tac (Some 1) 1 
+			(Rawterm.ImplicitBindings [mkVar n]);
+		      cont]);
+		 ])))
+	in
+	let conttype = 
+	  (fun typ -> 
+	     let tex = mkLambda (Name n, t, typ) in
+	       conttype
+		 (mkApp (Lazy.force ex_ind, [| t; tex |])))
+	in
+	  aux (mkVar n :: names) conttac conttype tl
+    | (n, t) :: [] -> 
+	(conttac intros, conttype t)
+    | [] -> raise (Invalid_argument "build_dependent_sum")
+  in aux [] id id (List.rev l)       
+	  
 open Proof_type
 open Tacexpr
 
