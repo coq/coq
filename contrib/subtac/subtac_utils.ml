@@ -22,12 +22,14 @@ let fixsub = lazy (init_constant fixsub_module "Fix_sub")
 let ex_pi1 = lazy (init_constant utils_module "ex_pi1")
 let ex_pi2 = lazy (init_constant utils_module "ex_pi2")
 
-let make_ref s =  Qualid (dummy_loc, (qualid_of_string s))
-let well_founded_ref = make_ref "Init.Wf.Well_founded"
-let acc_ref = make_ref "Init.Wf.Acc"
-let acc_inv_ref = make_ref "Init.Wf.Acc_inv"
-let fix_sub_ref = make_ref "Coq.subtac.FixSub.Fix_sub"
-let lt_wf_ref = make_ref "Coq.Wf_nat.lt_wf"
+let make_ref l s = lazy (init_reference l s)
+let well_founded_ref = make_ref ["Init";"Wf"] "Well_founded"
+let acc_ref = make_ref  ["Init";"Wf"] "Acc"
+let acc_inv_ref = make_ref  ["Init";"Wf"] "Acc_inv"
+let fix_sub_ref = make_ref ["subtac";"FixSub"] "Fix_sub"
+let lt_wf_ref = make_ref ["Wf_nat"] "lt_wf"
+
+let make_ref s = Qualid (dummy_loc, qualid_of_string s)
 let sig_ref = make_ref "Init.Specif.sig"
 let proj1_sig_ref = make_ref "Init.Specif.proj1_sig"
 let proj2_sig_ref = make_ref "Init.Specif.proj2_sig"
@@ -82,18 +84,19 @@ let my_print_evardefs = Evd.pr_evar_defs
 
 let my_print_tycon_type = Evarutil.pr_tycon_type
 
+let debug_level = 2
 
 let debug n s = 
-  if !Options.debug then
+  if !Options.debug && n >= debug_level then
     msgnl s
   else ()
 
 let debug_msg n s = 
-  if !Options.debug then s
+  if !Options.debug  && n >= debug_level then s
   else mt ()
 
 let trace s = 
-  if !Options.debug then msgnl s
+  if !Options.debug  && debug_level > 0 then msgnl s
   else ()
 
 let wf_relations = Hashtbl.create 10

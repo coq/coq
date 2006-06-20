@@ -60,7 +60,7 @@ let pr_binder_list b =
 
 
 let rec rewrite_rec_calls l c = c
-
+(*
 let rewrite_fixpoint env l (f, decl) = 
   let (id, (n, ro), bl, typ, body) = f in
   let body = rewrite_rec_calls l body in
@@ -151,3 +151,4 @@ let rewrite_fixpoint env l (f, decl) =
 			 Ppconstr.pr_constr_expr body')
 	  in (id, (succ n, ro), bl', typ, body'), decl
 
+*)

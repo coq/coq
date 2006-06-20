@@ -18,12 +18,11 @@ val fixsub_module : string list
 val init_constant : string list -> string -> constr
 val init_reference : string list -> string -> global_reference
 val fixsub : constr lazy_t
-val make_ref : string -> reference
-val well_founded_ref : reference
-val acc_ref : reference
-val acc_inv_ref : reference
-val fix_sub_ref : reference
-val lt_wf_ref : reference
+val well_founded_ref : global_reference lazy_t
+val acc_ref : global_reference lazy_t
+val acc_inv_ref : global_reference lazy_t
+val fix_sub_ref : global_reference lazy_t
+val lt_wf_ref : global_reference lazy_t
 val sig_ref : reference
 val proj1_sig_ref : reference
 val proj2_sig_ref : reference

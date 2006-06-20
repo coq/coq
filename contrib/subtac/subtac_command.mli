@@ -38,5 +38,6 @@ val interp_constr_judgment :
   constr_expr -> unsafe_judgment
 val list_chop_hd : int -> 'a list -> 'a list * 'a * 'a list
 val recursive_message : global_reference array -> std_ppcmds
+
 val build_recursive :
   (fixpoint_expr * decl_notation) list -> bool -> unit

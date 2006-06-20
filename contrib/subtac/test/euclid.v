@@ -12,8 +12,8 @@ reflexivity.
 Defined.
 
 Extraction testsig.
-Extraction sigS.
-Extract Inductive sigS => "" [ "" ].
+Extraction sig.
+Extract Inductive sig => "" [ "" ].
 Extraction testsig.
 
 Require Import Coq.Arith.Compare_dec.

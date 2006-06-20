@@ -173,82 +173,146 @@ let list_of_local_binders l =
     | [] -> List.rev acc
   in aux [] l
 
-let build_recursive (lnameargsardef:(fixpoint_expr * decl_notation) list) boxed =
+let lift_binders k n l =
+  let rec aux n = function
+    | (id, t, c) :: tl -> (id, option_map (liftn k n) t, liftn k n c) :: aux (pred n) tl
+    | [] -> []
+  in aux n l
+
+let rec gen_rels = function
+    0 -> []
+  | n -> mkRel n :: gen_rels (pred n)
+
+let build_wellfounded (recname, n, bl,arityc,body) r notation boxed =
+  let sigma = Evd.empty in
+  let isevars = ref (Evd.create_evar_defs sigma) in
+  let env = Global.env() in 
+  let n = out_some n in 
+  let pr c = my_print_constr env c in
+  let prr = Printer.pr_rel_context env in
+  let pr_rel env = Printer.pr_rel_context env in
+  let _ = 
+    try debug 2 (str "Rewriting fixpoint: " ++ Ppconstr.pr_id recname ++ 
+		 Ppconstr.pr_binders bl ++ str " : " ++ 
+		 Ppconstr.pr_constr_expr arityc ++ str " := " ++ spc () ++
+		 Ppconstr.pr_constr_expr body)
+    with _ -> ()
+  in
+  let env', binders_rel = interp_context isevars env bl in
+  let after, ((argname, _, argtyp) as arg), before = list_chop_hd (succ n) binders_rel in
+  let before_length, after_length = List.length before, List.length after in
+  let argid = match argname with Name n -> n | _ -> assert(false) in
+  let liftafter = lift_binders 1 after_length after in
+  let envwf = push_rel_context before env in
+  let wf_rel = interp_constr isevars envwf r in
+  let wf_proof = mkApp (Lazy.force well_founded, [| argtyp ; wf_rel |]) in
+  let argid' = id_of_string (string_of_id argid ^ "'") in
+  let full_length = before_length + 1 + after_length in
+  let wfarg len = (Name argid', None, 
+		   mkSubset (Name argid') argtyp 
+		     (mkApp (wf_rel, [|mkRel 1; mkRel (len + 1)|])))
+  in
+  let top_bl = after @ (arg :: before) in
+  let intern_bl = after @ (wfarg 1 :: arg :: before) in
+  let top_env = push_rel_context top_bl env in
+  let intern_env = push_rel_context intern_bl env in
+  let top_arity = interp_type isevars top_env arityc in
+  (try debug 2 (str "Intern bl: " ++ prr intern_bl) with _ -> ());
+  let proj = (Lazy.force sig_).Coqlib.proj1 in
+  let projection = 
+    mkApp (proj, [| argtyp ;
+		    (mkLambda (Name argid', argtyp,
+			       (mkApp (wf_rel, [|mkRel 1; mkRel 2|])))) ;
+		    mkRel 1
+		 |])
+  in
+  (try debug 2 (str "Top arity: " ++ my_print_constr top_env top_arity) with _ -> ());
+  let intern_arity = substnl [projection] after_length top_arity in 
+  (try debug 2 (str "Top arity after subst: " ++ my_print_constr intern_env intern_arity) with _ -> ());
+  let intern_arity_prod = it_mkProd_or_LetIn intern_arity intern_bl in
+  let intern_before_env = push_rel_context before env in
+  let intern_fun_bl = after @ [wfarg 1]  in
+  (try debug 2 (str "Intern fun bl: " ++ prr intern_fun_bl) with _ -> ());
+  let intern_fun_arity = intern_arity in
+  (try debug 2 (str "Intern fun arity: " ++ 
+		  my_print_constr intern_env intern_fun_arity) with _ -> ());
+  let intern_fun_arity_prod = it_mkProd_or_LetIn intern_fun_arity intern_fun_bl in
+  let intern_fun_binder = (Name recname, None, intern_fun_arity_prod) in
+  let fun_bl = after @ (intern_fun_binder :: [arg]) in
+  (try debug 2 (str "Fun bl: " ++ pr_rel intern_before_env fun_bl ++ spc ()) with _ -> ());
+  let fun_env = push_rel_context fun_bl intern_before_env in
+  let fun_arity = interp_type isevars fun_env arityc in
+  let intern_body = interp_casted_constr isevars fun_env body fun_arity in
+  let intern_body_lam = it_mkLambda_or_LetIn intern_body fun_bl in
+  let _ = 
+      try debug 2 (str "Fun bl: " ++ prr fun_bl ++ spc () ++
+		   str "Intern bl" ++ prr intern_bl ++ spc () ++
+		   str "Top bl" ++ prr top_bl ++ spc () ++
+		   str "Intern arity: " ++ pr intern_arity ++
+		   str "Top arity: " ++ pr top_arity ++ spc () ++
+		   str "Intern body " ++ pr intern_body_lam)
+      with _ -> ()
+  in
+  let impl = 
+    if Impargs.is_implicit_args()
+    then Impargs.compute_implicits top_env top_arity
+    else [] 
+  in
+  let prop = mkLambda (Name argid, argtyp, it_mkProd_or_LetIn top_arity after) in
+  let fix_def =
+    mkApp (constr_of_reference (Lazy.force fix_sub_ref), 
+	  [| argtyp ;
+	     wf_rel ;
+	     make_existential dummy_loc intern_before_env isevars wf_proof ;
+	     prop ;
+	     intern_body_lam |])
+  in
+  let def_appl = applist (fix_def, gen_rels (after_length + 1)) in
+  let def = it_mkLambda_or_LetIn def_appl binders_rel in
+  let typ = it_mkProd_or_LetIn top_arity binders_rel in
+    debug 2 (str "Constructed def");
+    debug 2 (my_print_constr intern_before_env def);
+    debug 2 (str "Type: " ++ my_print_constr env typ);
+  let fullcoqc = Evarutil.nf_isevar !isevars def in
+  let fullctyp = Evarutil.nf_isevar !isevars typ in
+  let _ = try trace (str "After evar normalization: " ++ spc () ++
+		 str "Coq term: " ++ my_print_constr env fullcoqc ++ spc ()
+		 ++ str "Coq type: " ++ my_print_constr env fullctyp) 
+     with _ -> () 
+  in
+  let evm = non_instanciated_map env isevars in
+  let _ = try trace (str "Non instanciated evars map: " ++ Evd.pr_evar_map evm)  with _ -> () in
+  let tac = Eterm.etermtac (evm, fullcoqc) in 
+    trace (str "Starting proof of goal: " ++ my_print_constr env fullctyp);
+    Command.start_proof recname goal_kind fullctyp (fun _ _ -> ());
+    trace (str "Started proof");
+    Pfedit.by tac
+    
+let build_mutrec l boxed =
   let sigma = Evd.empty
   and env0 = Global.env()
-  in 
+  in ()
+(*
   let lnameargsardef =
     (*List.map (fun (f, d) -> Subtac_interp_fixpoint.rewrite_fixpoint env0 protos (f, d))*)
-      lnameargsardef
+    lnameargsardef
   in
   let lrecnames = List.map (fun ((f,_,_,_,_),_) -> f) lnameargsardef 
   and nv = List.map (fun ((_,n,_,_,_),_) -> n) lnameargsardef
   in
-  (* Build the recursive context and notations for the recursive types *)
+    (* Build the recursive context and notations for the recursive types *)
   let (rec_sign,rec_impls,arityl) = 
     List.fold_left 
-      (fun (env,impls,arl) ((recname,(n, ro),bl,arityc,body),_) -> 
-	let isevars = ref (Evd.create_evar_defs sigma) in	  
-	  match ro with
-	      CStructRec ->
-		let arityc = Command.generalize_constr_expr arityc bl in
-		let arity = interp_type isevars env0 arityc in
-		let impl = 
-		  if Impargs.is_implicit_args()
-		  then Impargs.compute_implicits env0 arity
-		  else [] in
-		let impls' =(recname,([],impl,compute_arguments_scope arity))::impls in
-		  (Environ.push_named (recname,None,arity) env, impls', (isevars, None, arity)::arl)
-	    | CWfRec r -> 		    
-		let n = out_some n in 
-		let _ = 
-		  try trace (str "Rewriting fixpoint: " ++ Ppconstr.pr_id recname ++ 
-			     Ppconstr.pr_binders bl ++ str " : " ++ 
-			     Ppconstr.pr_constr_expr arityc ++ str " := " ++ spc () ++
-			     Ppconstr.pr_constr_expr body)
-		  with _ -> ()
-		in
-		let env', binders_rel = interp_context isevars env0 bl in
-		let after, ((argname, _, argtyp) as arg), before = list_chop_hd n binders_rel in
-		let argid = match argname with Name n -> n | _ -> assert(false) in
-		let after' = List.map (fun (n, c, t) -> (n, option_map (lift 1) c, lift 1 t)) after in
-		let envwf = push_rel_context before env0 in
-		let wf_rel = interp_constr isevars envwf r in
-		let accarg_id = id_of_string ("Acc_" ^ string_of_id argid) in
-		let accarg = (Name accarg_id, None, mkApp (Lazy.force acc_inv, [| argtyp; wf_rel; mkRel 1 |])) in
-		let argid' = id_of_string (string_of_id argid ^ "'") in
-		let before_length, after_length = List.length before, List.length after in
-		let full_length = before_length + 1 + after_length in
-		let wfarg len = (Name argid, None, 
-				 mkSubset (Name argid') argtyp 
-				   (mkApp (wf_rel, [|mkRel 1; mkRel (len + 1)|])))
-		in
-		let new_bl = after' @ (accarg :: arg :: before)
-		and intern_bl =  after @ (wfarg (before_length + 1) :: before)
-		in
-		let intern_env = push_rel_context intern_bl env0 in
-		let env' = push_rel_context new_bl env0 in
-		let arity = interp_type isevars intern_env arityc in
-		let intern_arity = it_mkProd_or_LetIn arity intern_bl in
-		let arity' = interp_type isevars env' arityc in
-		let arity' = it_mkProd_or_LetIn arity' new_bl in
-		let fun_bl = after @ ((Name recname, None, intern_arity) :: arg :: before) in
-		let _ = 
-		  let pr c = my_print_constr env c in
-		  let prr = Printer.pr_rel_context env in
-		    try trace (str "Fun bl: " ++ prr fun_bl ++ spc () ++
-			       str "Intern bl" ++ prr intern_bl ++ spc () ++
-			       str "Extern bl" ++ prr new_bl ++ spc () ++
-			       str "Intern arity: " ++ pr intern_arity)
-		    with _ -> ()
-		in
-		let impl = 
-		  if Impargs.is_implicit_args()
-		  then Impargs.compute_implicits intern_env arity'
-		  else [] in
-		let impls' = (recname,([],impl,compute_arguments_scope arity'))::impls in
-		  (Environ.push_named (recname,None,arity') env, impls', 
-		   (isevars, Some (full_length - n, argtyp, wf_rel, fun_bl, intern_bl, intern_arity), arity')::arl))
+      (fun (env,impls,arl) ((recname, n, bl,arityc,body),_) -> 
+	 let isevars = ref (Evd.create_evar_defs sigma) in	  
+	 let arityc = Command.generalize_constr_expr arityc bl in
+	 let arity = interp_type isevars env0 arityc in
+	 let impl = 
+	   if Impargs.is_implicit_args()
+	   then Impargs.compute_implicits env0 arity
+	   else [] in
+	 let impls' =(recname,([],impl,compute_arguments_scope arity))::impls in
+	   (Environ.push_named (recname,None,arity) env, impls', (isevars, None, arity)::arl))
       (env0,[],[]) lnameargsardef in
   let arityl = List.rev arityl in
   let notations = 
@@ -430,6 +494,24 @@ let build_recursive (lnameargsardef:(fixpoint_expr * decl_notation) list) boxed 
 	     match cer with
 		 Environ.NoBody -> trace (str "Constant has no body")
 	       | Environ.Opaque -> trace (str "Constant is opaque")
-      )
+      )*)
+
+let build_recursive (lnameargsardef:(fixpoint_expr * decl_notation) list) boxed =
+  match lnameargsardef with
+    | ((id, (n, CWfRec r), bl, typ, body), no) :: [] -> 
+	(*let body = Subtac_utils.rewrite_cases env body in*)
+	  build_wellfounded (id, n, bl, typ, body) r no boxed
+    | l -> 
+	let lnameargsardef = 
+	  List.map (fun ((id, (n, ro), bl, typ, body), no) ->
+		 match ro with
+		     CStructRec -> (id, n, bl, typ, body), no
+		   | CWfRec _ -> 
+		       errorlabstrm "Subtac_command.build_recursive"
+			 (str "Well-founded fixpoints not allowed in mutually recursive blocks"))
+	    lnameargsardef
+	in
+	  build_mutrec lnameargsardef boxed;
+	  assert(false)
       
       
