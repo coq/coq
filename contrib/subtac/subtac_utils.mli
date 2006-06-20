@@ -68,6 +68,8 @@ val string_of_hole_kind : hole_kind -> string
 val non_instanciated_map : env -> evar_defs ref -> evar_map
 val global_kind : logical_kind
 val goal_kind : locality_flag * goal_object_kind
+val global_proof_kind : logical_kind
+val goal_proof_kind : locality_flag * goal_object_kind
 val global_fix_kind : logical_kind
 val goal_fix_kind : locality_flag * goal_object_kind
 

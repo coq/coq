@@ -301,25 +301,24 @@ let build_wellfounded (recname, n, bl,arityc,body) r notation boxed =
     match evars_sum with
       | Some (sum_tac, sumg) -> 
 	  let proofid = id_of_string (string_of_id recname ^ "_evars_proof") in
-	    Command.start_proof proofid goal_kind sumg
-	      (fun _ gr -> 
-		 let constant = match gr with Libnames.ConstRef c -> c
-		   | _ -> assert(false)
-		 in
-		 let def = mkConst constant in
+	    Command.start_proof proofid goal_proof_kind sumg
+	      (fun strength gr -> 
+		 debug 2 (str "Proof finished");
+		 let def = constr_of_global gr in
 		 let args = Subtac_utils.destruct_ex def sumg in
-		 let args = 
-		   List.map (fun c -> 
-			       try Reductionops.whd_betadeltaiota (Global.env ()) Evd.empty c
-			       with Not_found ->
-				 trace (str "Not_found while reducing " ++
-					my_print_constr (Global.env ()) c);
-				 c
-			    ) args		  
-		 in
 		 let _, newdef = decompose_lam_n (List.length args) evars_def in
 		 let constr = Term.substl (List.rev args) newdef in
-		   debug 1 (str "Applied existentials : " ++ my_print_constr env constr));
+		 debug 2 (str "Applied existentials : " ++ my_print_constr env constr);
+		 let ce = 
+		   { const_entry_body = constr;
+		     const_entry_type = Some fullctyp;
+		     const_entry_opaque = false;
+		     const_entry_boxed = boxed} 
+		 in
+		 let constant = Declare.declare_constant 
+		   recname (DefinitionEntry ce,IsDefinition Definition)
+		 in
+		 definition_message recname);
 	    trace (str "Started existentials proof");
 	    Pfedit.by sum_tac;
 	    trace (str "Applied sum tac")

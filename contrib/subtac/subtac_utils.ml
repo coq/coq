@@ -156,6 +156,9 @@ let non_instanciated_map env evd =
 let global_kind = Decl_kinds.IsDefinition Decl_kinds.Definition
 let goal_kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Definition
 
+let global_proof_kind = Decl_kinds.IsProof Decl_kinds.Lemma
+let goal_proof_kind = Decl_kinds.Global, Decl_kinds.Proof Decl_kinds.Lemma
+
 let global_fix_kind = Decl_kinds.IsDefinition Decl_kinds.Fixpoint
 let goal_fix_kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Fixpoint
 
