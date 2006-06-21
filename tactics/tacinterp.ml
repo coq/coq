@@ -1018,11 +1018,11 @@ let interp_ident ist id =
   try match List.assoc id ist.lfun with
   | VIntroPattern (IntroIdentifier id) -> id
   | VConstr c when isVar c ->
-      (* This happends e.g. in definitions like "Tac H = Clear H; Intro H" *)
+      (* This happens e.g. in definitions like "Tac H = Clear H; Intro H" *)
       (* c is then expected not to belong to the proof context *)
       (* would be checkable if env were known from interp_ident *)
       destVar c
-  | _ -> user_err_loc(loc,"interp_ident", str "An ltac name (" ++ pr_id id ++ 
+  | _ -> user_err_loc(loc,"", str "An ltac name (" ++ pr_id id ++ 
          str ") should have been bound to an identifier")
   with Not_found -> id
 
@@ -1037,11 +1037,11 @@ let interp_intro_pattern_var ist id =
   try match List.assoc id ist.lfun with
   | VIntroPattern ipat -> ipat
   | VConstr c when isVar c ->
-      (* This happends e.g. in definitions like "Tac H = Clear H; Intro H" *)
+      (* This happens e.g. in definitions like "Tac H = Clear H; Intro H" *)
       (* c is then expected not to belong to the proof context *)
-      (* would be checkable if env were known from interp_ident *)
+      (* would be checkable if env were known from interp_intro_pattern_var *)
       IntroIdentifier (destVar c)
-  | _ -> user_err_loc(loc,"interp_ident", str "An ltac name (" ++ pr_id id ++ 
+  | _ -> user_err_loc(loc,"", str "An ltac name (" ++ pr_id id ++ 
          str ") should have been bound to an introduction pattern")
   with Not_found -> IntroIdentifier id
 
@@ -1437,7 +1437,7 @@ and interp_tacarg ist gl = function
   | TacVoid -> VVoid
   | Reference r -> interp_ltac_reference false false ist gl r
   | Integer n -> VInteger n
-  | IntroPattern ipat -> VIntroPattern ipat
+  | IntroPattern ipat -> VIntroPattern (interp_intro_pattern ist ipat)
   | ConstrMayEval c -> VConstr (interp_constr_may_eval ist gl c)
   | MetaIdArg (loc,id) -> assert false
   | TacCall (loc,r,[]) -> interp_ltac_reference false true ist gl r
@@ -1874,9 +1874,11 @@ and interp_atomic ist gl = function
     | PreIdentArgType ->
 	failwith "pre-identifiers cannot be bound"
     | IntroPatternArgType ->
-	VIntroPattern (out_gen globwit_intro_pattern x)
+	VIntroPattern 
+	  (interp_intro_pattern ist (out_gen globwit_intro_pattern x))
     | IdentArgType -> 
-        VIntroPattern (IntroIdentifier (out_gen globwit_ident x))
+        VIntroPattern 
+	  (IntroIdentifier (interp_ident ist (out_gen globwit_ident x)))
     | VarArgType ->
 	VConstr (mkVar (interp_hyp ist gl (out_gen globwit_var x)))
     | RefArgType -> 
