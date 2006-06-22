@@ -775,17 +775,22 @@ let internalise sigma globalenv env allow_soapp lvar c =
 	in
         let idl = Array.map
           (fun (id,(n,order),bl,ty,bd) ->
-	    let ro, ((ids',_,_),rbl) =
-	      (match order with
-		   CStructRec -> 
-		     RStructRec,
-		     List.fold_left intern_local_binder (env,[]) bl
-		 | CWfRec c -> 
-		     let before, after = list_chop (succ (out_some n)) bl in
-		     let ((ids',_,_),rafter) =
-		       List.fold_left intern_local_binder (env,[]) after in
-		     let ro = RWfRec (intern (ids', tmp_scope, scopes) c) in
-		       ro, List.fold_left intern_local_binder (env,rafter) before)
+	     let intern_ro_arg c f =
+	       let before, after = list_chop (succ (out_some n)) bl in
+	       let ((ids',_,_),rafter) =
+		 List.fold_left intern_local_binder (env,[]) after in
+	       let ro = (intern (ids', tmp_scope, scopes) c) in
+		 f ro, List.fold_left intern_local_binder (env,rafter) before
+	     in
+	     let ro, ((ids',_,_),rbl) =
+	       (match order with
+		    CStructRec -> 
+		      RStructRec,
+		      List.fold_left intern_local_binder (env,[]) bl
+		  | CWfRec c ->
+		      intern_ro_arg c (fun r -> RWfRec r)
+		  | CMeasureRec c ->
+		      intern_ro_arg c (fun r -> RMeasureRec r))
 	    in
 	    let ids'' = List.fold_right Idset.add lf ids' in
 	     ((n, ro), List.rev rbl, 

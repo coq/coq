@@ -572,6 +572,9 @@ let rec pr_vernac = function
 		      | CWfRec c -> 
 			  spc() ++ str "{wf " ++ pr_name name ++ spc() ++ 
 			    pr_lconstr_expr c ++ str"}"
+		      | CMeasureRec c -> 
+			  spc() ++ str "{measure " ++ pr_name name ++ spc() ++ 
+			    pr_lconstr_expr c ++ str"}"
 	    in
             pr_id id ++ pr_binders_arg bl ++ annot ++ spc()
             ++ pr_type_option (fun c -> spc() ++ pr_lconstr_expr c) type_

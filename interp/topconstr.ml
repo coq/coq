@@ -544,6 +544,7 @@ and cofixpoint_expr =
 and recursion_order_expr = 
   | CStructRec
   | CWfRec of constr_expr
+  | CMeasureRec of constr_expr
 
 (***********************)
 (* For binders parsing *)

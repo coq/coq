@@ -228,6 +228,10 @@ and interp_xml_recursionOrder x =
 	  (match l with
 	       [c] -> RWfRec (interp_xml_type c)
 	     | _ -> user_err_loc (loc, "", str "wrong number of arguments (expected one)"))
+      | "Measure" -> 
+	  (match l with
+	       [c] -> RMeasureRec (interp_xml_type c)
+	     | _ -> user_err_loc (loc, "", str "wrong number of arguments (expected one)"))
       | _ ->
           user_err_loc (locs,"",str "invalid recursion order")
 
