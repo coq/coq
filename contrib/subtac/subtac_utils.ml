@@ -27,6 +27,8 @@ let well_founded_ref = make_ref ["Init";"Wf"] "Well_founded"
 let acc_ref = make_ref  ["Init";"Wf"] "Acc"
 let acc_inv_ref = make_ref  ["Init";"Wf"] "Acc_inv"
 let fix_sub_ref = make_ref ["subtac";"FixSub"] "Fix_sub"
+let fix_measure_sub_ref = make_ref ["subtac";"FixSub"] "Fix_measure_sub"
+let lt_ref = make_ref ["Init";"Peano"] "lt"
 let lt_wf_ref = make_ref ["Wf_nat"] "lt_wf"
 
 let make_ref s = Qualid (dummy_loc, qualid_of_string s)

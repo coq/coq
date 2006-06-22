@@ -117,7 +117,8 @@ let interp_context sigma env params =
 
 let list_chop_hd i l = match list_chop i l with
   | (l1,x::l2) -> (l1,x,l2)
-  | _ -> assert false
+  | (x :: [], l2) -> ([], x, [])
+  | _ -> assert(false)
 
 let collect_non_rec env = 
   let rec searchrec lnonrec lnamerec ldefrec larrec nrec = 
@@ -183,11 +184,10 @@ let rec gen_rels = function
     0 -> []
   | n -> mkRel n :: gen_rels (pred n)
 
-let build_wellfounded (recname, n, bl,arityc,body) r notation boxed =
+let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
   let sigma = Evd.empty in
   let isevars = ref (Evd.create_evar_defs sigma) in
   let env = Global.env() in 
-  let n = out_some n in 
   let pr c = my_print_constr env c in
   let prr = Printer.pr_rel_context env in
   let pr_rel env = Printer.pr_rel_context env in
@@ -202,12 +202,24 @@ let build_wellfounded (recname, n, bl,arityc,body) r notation boxed =
   let after, ((argname, _, argtyp) as arg), before = list_chop_hd (succ n) binders_rel in
   let before_length, after_length = List.length before, List.length after in
   let argid = match argname with Name n -> n | _ -> assert(false) in
-  let liftafter = lift_binders 1 after_length after in
+  let _liftafter = lift_binders 1 after_length after in
   let envwf = push_rel_context before env in
-  let wf_rel = interp_constr isevars envwf r in
-  let wf_proof = mkApp (Lazy.force well_founded, [| argtyp ; wf_rel |]) in
+  let wf_rel, measure_fn = 
+    let rconstr = interp_constr isevars envwf r in
+    if measure then
+      let lt_rel = constr_of_global (Lazy.force lt_ref) in
+      let name s = Name (id_of_string s) in
+	mkLambda (name "x", argtyp,
+		  mkLambda (name "y", argtyp,
+			    mkApp (lt_rel,
+				   [| mkApp (rconstr, [| mkRel 2 |]) ;
+				      mkApp (rconstr, [| mkRel 1 |]) |]))),
+	Some rconstr
+    else rconstr, None
+  in
+  let wf_proof = mkApp (Lazy.force well_founded, [| argtyp ; wf_rel |])
+  in
   let argid' = id_of_string (string_of_id argid ^ "'") in
-  let full_length = before_length + 1 + after_length in
   let wfarg len = (Name argid', None, 
 		   mkSubset (Name argid') argtyp 
 		     (mkApp (wf_rel, [|mkRel 1; mkRel (len + 1)|])))
@@ -229,7 +241,6 @@ let build_wellfounded (recname, n, bl,arityc,body) r notation boxed =
   (try debug 2 (str "Top arity: " ++ my_print_constr top_env top_arity) with _ -> ());
   let intern_arity = substnl [projection] after_length top_arity in 
   (try debug 2 (str "Top arity after subst: " ++ my_print_constr intern_env intern_arity) with _ -> ());
-  let intern_arity_prod = it_mkProd_or_LetIn intern_arity intern_bl in
   let intern_before_env = push_rel_context before env in
   let intern_fun_bl = after @ [wfarg 1]  in
   (try debug 2 (str "Intern fun bl: " ++ prr intern_fun_bl) with _ -> ());
@@ -253,19 +264,25 @@ let build_wellfounded (recname, n, bl,arityc,body) r notation boxed =
 		   str "Intern body " ++ pr intern_body_lam)
       with _ -> ()
   in
-  let impl = 
+  let _impl = 
     if Impargs.is_implicit_args()
     then Impargs.compute_implicits top_env top_arity
     else [] 
   in
   let prop = mkLambda (Name argid, argtyp, it_mkProd_or_LetIn top_arity after) in
   let fix_def =
-    mkApp (constr_of_reference (Lazy.force fix_sub_ref), 
-	  [| argtyp ;
-	     wf_rel ;
-	     make_existential dummy_loc intern_before_env isevars wf_proof ;
-	     prop ;
-	     intern_body_lam |])
+    match measure_fn with
+	None ->
+	  mkApp (constr_of_reference (Lazy.force fix_sub_ref), 
+		 [| argtyp ;
+		    wf_rel ;
+		    make_existential dummy_loc intern_before_env isevars wf_proof ;
+		    prop ;
+		    intern_body_lam |])
+      | Some f ->
+	  mkApp (constr_of_reference (Lazy.force fix_measure_sub_ref), 
+		 [| argtyp ; f ; prop ;
+		    intern_body_lam |])
   in
   let def_appl = applist (fix_def, gen_rels (after_length + 1)) in
   let def = it_mkLambda_or_LetIn def_appl binders_rel in
@@ -284,55 +301,45 @@ let build_wellfounded (recname, n, bl,arityc,body) r notation boxed =
   let _ = try trace (str "Non instanciated evars map: " ++ Evd.pr_evar_map evm)  with _ -> () in
   let evars_def, evars_typ, evars = Eterm.eterm_term evm fullcoqc (Some fullctyp) in 	
   let evars_typ = out_some evars_typ in
-  let evars_sum =
-    if evars = [] then None
-    else (
-      (try trace (str "Building evars sum for : ");
-	 List.iter
-	   (fun (n, t) -> trace (str "Evar " ++ str (string_of_id n) ++ spc () ++ my_print_constr env t))
-	   evars;
-       with _ -> ());
-      let sum = Subtac_utils.build_dependent_sum evars in
-	(try trace (str "Evars sum: " ++ my_print_constr env (snd sum));
-	   trace (str "Evars type: " ++ my_print_constr env evars_typ);
-	 with _ -> ());
-	Some sum)
-  in
-    match evars_sum with
-      | Some (sum_tac, sumg) -> 
-	  let proofid = id_of_string (string_of_id recname ^ "_evars_proof") in
-	    Command.start_proof proofid goal_proof_kind sumg
-	      (fun strength gr -> 
-		 debug 2 (str "Proof finished");
-		 let def = constr_of_global gr in
-		 let args = Subtac_utils.destruct_ex def sumg in
-		 let _, newdef = decompose_lam_n (List.length args) evars_def in
-		 let constr = Term.substl (List.rev args) newdef in
-		 debug 2 (str "Applied existentials : " ++ my_print_constr env constr);
-		 let ce = 
-		   { const_entry_body = constr;
-		     const_entry_type = Some fullctyp;
-		     const_entry_opaque = false;
-		     const_entry_boxed = boxed} 
-		 in
-		 let constant = Declare.declare_constant 
-		   recname (DefinitionEntry ce,IsDefinition Definition)
-		 in
-		 definition_message recname);
-	    trace (str "Started existentials proof");
-	    Pfedit.by sum_tac;
-	    trace (str "Applied sum tac")
-      | None -> ()
+  (try trace (str "Building evars sum for : ");
+     List.iter
+       (fun (n, t) -> trace (str "Evar " ++ str (string_of_id n) ++ spc () ++ my_print_constr env t))
+       evars;
+   with _ -> ());
+  let (sum_tac, sumg) = Subtac_utils.build_dependent_sum evars in
+  (try trace (str "Evars sum: " ++ my_print_constr env sumg);
+     trace (str "Evars type: " ++ my_print_constr env evars_typ);
+   with _ -> ());
+  let proofid = id_of_string (string_of_id recname ^ "_evars_proof") in
+    Command.start_proof proofid goal_proof_kind sumg
+      (fun strength gr -> 
+	 debug 2 (str "Proof finished");
+	 let def = constr_of_global gr in
+	 let args = Subtac_utils.destruct_ex def sumg in
+	 let _, newdef = decompose_lam_n (List.length args) evars_def in
+	 let constr = Term.substl (List.rev args) newdef in
+	   debug 2 (str "Applied existentials : " ++ my_print_constr env constr);
+	   let ce = 
+	     { const_entry_body = constr;
+	       const_entry_type = Some fullctyp;
+	       const_entry_opaque = false;
+	       const_entry_boxed = boxed} 
+	   in
+	   let _constant = Declare.declare_constant 
+			    recname (DefinitionEntry ce,IsDefinition Definition)
+	   in
+	     definition_message recname);
+    trace (str "Started existentials proof");
+    Pfedit.by sum_tac;
+    trace (str "Applied sum tac")  
 
-    
-let build_mutrec l boxed =
+let build_mutrec l boxed = 
   let sigma = Evd.empty
   and env0 = Global.env()
-  in ()
-(*
+  in 
   let lnameargsardef =
     (*List.map (fun (f, d) -> Subtac_interp_fixpoint.rewrite_fixpoint env0 protos (f, d))*)
-    lnameargsardef
+    l
   in
   let lrecnames = List.map (fun ((f,_,_,_,_),_) -> f) lnameargsardef 
   and nv = List.map (fun ((_,n,_,_,_),_) -> n) lnameargsardef
@@ -384,7 +391,6 @@ let build_mutrec l boxed =
 
   let (lnonrec,(namerec,defrec,arrec,nvrec)) = 
     collect_non_rec env0 lrecnames recdef arityl nv in
-  let nvrec' = Array.map (function (Some n,_) -> n | _ -> 0) nvrec in(* ignore rec order *)
   let declare arrec defrec =
     let recvec = 
       Array.map (subst_vars (List.rev (Array.to_list namerec))) defrec in
@@ -394,7 +400,7 @@ let build_mutrec l boxed =
 		  my_print_constr env0 (recvec.(i)));
        with _ -> ());
       let ce = 
-	{ const_entry_body = mkFix ((nvrec',i),recdecls); 
+	{ const_entry_body = mkFix ((nvrec,i),recdecls); 
           const_entry_type = Some arrec.(i);
           const_entry_opaque = false;
           const_entry_boxed = boxed} in
@@ -485,6 +491,11 @@ let build_mutrec l boxed =
 		  match sum with Some (sumtac, sumg) -> Some (id, kn, sumg, sumtac) | None -> None)
       defs
   in
+    match real_evars with
+	[] -> declare (List.rev_map (fun (id, c, _) ->
+				   snd (decompose_lam_n recdefs c)) defs)
+      | l ->
+
     Subtac_utils.and_tac real_evars
       (fun f _ gr ->
 	 let _ = trace (str "Got a proof of: " ++ pr_global gr ++
@@ -531,19 +542,24 @@ let build_mutrec l boxed =
 	     match cer with
 		 Environ.NoBody -> trace (str "Constant has no body")
 	       | Environ.Opaque -> trace (str "Constant is opaque")
-      )*)
+      )
+
+let out_n = function
+    Some n -> n
+  | None -> 0
 
 let build_recursive (lnameargsardef:(fixpoint_expr * decl_notation) list) boxed =
   match lnameargsardef with
     | ((id, (n, CWfRec r), bl, typ, body), no) :: [] -> 
-	(*let body = Subtac_utils.rewrite_cases env body in*)
-	  build_wellfounded (id, n, bl, typ, body) r no boxed
+	build_wellfounded (id, out_n n, bl, typ, body) r false no boxed
+    | ((id, (n, CMeasureRec r), bl, typ, body), no) :: [] -> 
+	build_wellfounded (id, out_n n, bl, typ, body) r true no boxed
     | l -> 
 	let lnameargsardef = 
 	  List.map (fun ((id, (n, ro), bl, typ, body), no) ->
 		 match ro with
-		     CStructRec -> (id, n, bl, typ, body), no
-		   | CWfRec _ -> 
+		     CStructRec -> (id, out_n n, bl, typ, body), no
+		   | CWfRec _ | CMeasureRec _ -> 
 		       errorlabstrm "Subtac_command.build_recursive"
 			 (str "Well-founded fixpoints not allowed in mutually recursive blocks"))
 	    lnameargsardef
