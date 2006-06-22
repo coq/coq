@@ -2315,6 +2315,15 @@ incompatibilities.
 % En attente d'un moyen de valoriser les fichiers de demos
 %\SeeAlso file \texttt{contrib/Rocq/DEMOS/Demo\_tauto.v}
 
+
+\subsection{\tt rtauto
+\tacindex{rtauto}
+\label{rtauto}}
+
+The {\tt rtauto} tactic solves propositional tautologies similarly to what {\tt tauto} does. The main difference is that the proof term is built using a reflection scheme applied to a sequent calculus proof of the goal. The search procedure is also implemented using a different technique. 
+
+Users should be aware that this difference may result in faster proof-search but  slower proof-checking, and {\tt rtauto} might not solve goals that {\tt tauto} would be able to solve (e.g. goals involving universal quantifiers). 
+
 \subsection{{\tt firstorder}
 \tacindex{firstorder}
 \label{firstorder}}
@@ -2468,7 +2477,7 @@ equalities with uninterpreted symbols. It also include the constructor theory
 (see \ref{injection} and \ref{discriminate}).
 If the goal is a non-quantified equality, {\tt congruence} tries to
 prove it with non-quantified equalities in the context. Otherwise it
-tries to infer a discriminable equality from those in the context.
+tries to infer a discriminable equality from those in the context. Alternatively, congruence tries to prove that an hypothesis is equal to the goal or to the negation of another hypothesis.
 
 \begin{coq_eval}
 Reset Initial.
@@ -2498,14 +2507,28 @@ intros.
 congruence.
 \end{coq_example}
 
+\begin{Variants}
+\item {\tt congruence with \term$_1$ \dots\ \term$_n$}\\
+  Adds {\tt \term$_1$ \dots\ \term$_n$} to the pool of terms used by
+  {\tt congruence}. This helps in case you have partially applied
+  constructors in your goal.
+\end{Variants}
+
 \begin{ErrMsgs}
   \item \errindex{I don't know how to handle dependent equality} \\
     The decision procedure managed to find a proof of the goal or of
     a discriminable equality but this proof couldn't be built in Coq
     because of dependently-typed functions.
   \item \errindex{I couldn't solve goal} \\
-    The decision procedure didn't managed to find a proof of the goal or of
-    a discriminable equality.
+    The decision procedure didn't find any way to solve the goal.
+  \item \errindex{Goal is solvable by congruence but some arguments are missing. Try "congruence with \dots", replacing metavariables by arbitrary terms.} \\
+    The decision procedure could solve the goal with the provision
+    that additional arguments are supplied for some partially applied
+    constructors. Any term of an appropriate type will allow the
+    tactic to successfully solve the goal. Those additional arguments
+    can be given to {\tt congruence} by filling in the holes in the
+    terms given in the error message, using the {\tt with} variant
+    described below.
 \end{ErrMsgs}
 
 \subsection{\tt omega
