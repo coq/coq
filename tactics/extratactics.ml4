@@ -46,10 +46,6 @@ let pr_by_arg_tac _prc _prlc prtac opt_c =
     | None -> mt ()
     | Some t -> spc () ++ hov 2 (str "by" ++ spc () ++ prtac (3,Ppextend.E) t)
 
-(* Julien Forest: on voudrait pouvoir passer la loc mais je 
-n'ai pas reussi 
-*)
-
 let pr_in_hyp = function
   | None -> mt ()
   | Some id -> spc () ++ hov 2 (str "in" ++ spc () ++ Nameops.pr_id id)
