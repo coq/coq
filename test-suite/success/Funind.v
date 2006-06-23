@@ -206,7 +206,7 @@ Qed.
 Lemma iseq_eq : forall n m : nat, n = m -> nat_equal_bool n m = true.
 intros n m.
  functional induction nat_equal_bool n m; simpl in |- *; intros hyp; auto.
-rewrite <- hyp in H1; simpl in H1;tauto. 
+rewrite <- hyp in y; simpl in y;tauto. 
 inversion hyp.
 Qed.
  
@@ -280,14 +280,14 @@ destruct n. tauto.
 destruct n. inversion istr.
 destruct n. inversion istr.
 destruct n. tauto.
-simpl in *. inversion H1.
+simpl in *. inversion H0.
 Qed.
  
 Lemma toto' : forall n m : nat, n = 4 -> istrue (isononeorfour n).
 intros n.
  functional induction isononeorfour n; intros m istr; inversion istr.
 apply istrue0.
-rewrite H in H0; simpl in H0;tauto.
+rewrite H in y; simpl in y;tauto.
 Qed.
  
 Function ftest4 (n m : nat) : nat :=
