@@ -978,7 +978,7 @@ and xlate_tac =
 	let id_opt = 
 	  match out_gen Extratactics.rawwit_in_arg_hyp id_opt with 
 	  | None -> ctv_ID_OPT_NONE
-	  | Some id ->   ctf_ID_OPT_SOME (xlate_ident id)
+	  | Some (_,id) ->   ctf_ID_OPT_SOME (xlate_ident id)
 	in
 	let tac_opt = 
 	  match out_gen (Extratactics.rawwit_by_arg_tac) tac_opt with
