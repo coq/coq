@@ -31,20 +31,29 @@ proof tools.  For more advanced information, the reader could refer to
 the \Coq{} Reference Manual or the \textit{Coq'Art}, a new book by Y.
 Bertot and P. Castéran on practical uses of the \Coq{} system.
 
-We assume here that the potential user has installed \Coq~ on his workstation,
-that he calls \Coq~ from a standard teletype-like shell window, and that
-he does not use any special interface.
+Coq can be used from a standard teletype-like shell window but
+preferably through the graphical user interface
+CoqIde\footnote{Alternative graphical interfaces exist: Proof General
+and Pcoq.}.
+
 Instructions on installation procedures, as well as more comprehensive
 documentation, may be found in the standard distribution of \Coq,
 which may be obtained from \Coq{} web site \texttt{http://coq.inria.fr}.
 
-In the following, all examples preceded by the prompting sequence
-\verb:Coq < : represent user input, terminated by a period. The
-following lines usually show \Coq's answer as it appears on the users
-screen. The sequence of such examples is a valid \Coq~ session, unless
-otherwise specified. This version of the tutorial has been prepared 
-on a PC workstation running Linux.
-The standard invocation of \Coq\ delivers a message such as:
+In the following, we assume that \Coq~ is called from a standard
+teletype-like shell window. All examples preceded by the prompting
+sequence \verb:Coq < : represent user input, terminated by a
+period. 
+
+The following lines usually show \Coq's answer as it appears on the
+users screen. When used from a graphical user interface such as
+CoqIde, the prompt is not displayed: user input is given in one window
+and \Coq's answers are displayed in a different window.
+
+The sequence of such examples is a valid \Coq~
+session, unless otherwise specified. This version of the tutorial has
+been prepared on a PC workstation running Linux.  The standard
+invocation of \Coq\ delivers a message such as:
 
 \begin{small}
 \begin{flushleft}
