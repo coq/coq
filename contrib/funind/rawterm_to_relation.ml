@@ -900,13 +900,6 @@ let compute_params_name relnames (args : (Names.name * Rawterm.rawconstr * bool)
   in 
   List.rev !l
 
-(*      (Topconstr.CProdN
-	 (dummy_loc,
-	  [[(dummy_loc,Anonymous)],returned_types.(i)],
-	  Topconstr.CSort(dummy_loc, RProp Null )
-	 )
-      )
-*)
 let rec rebuild_return_type rt = 
   match rt with 
     | Topconstr.CProdN(loc,n,t') -> 
@@ -915,7 +908,7 @@ let rec rebuild_return_type rt =
 	Topconstr.CArrow(loc,t,rebuild_return_type t')
     | Topconstr.CLetIn(loc,na,t,t') -> 
 	Topconstr.CLetIn(loc,na,t,rebuild_return_type t') 
-    | _ -> Topconstr.CArrow(dummy_loc,rt,Topconstr.CSort(dummy_loc, RProp Null))
+    | _ -> Topconstr.CArrow(dummy_loc,rt,Topconstr.CSort(dummy_loc,RType None))
 
 
 let build_inductive parametrize funnames (funsargs: (Names.name * rawconstr * bool) list list)  returned_types (rtl:rawconstr list) =
@@ -938,13 +931,6 @@ let build_inductive parametrize funnames (funsargs: (Names.name * rawconstr * bo
 (* 	 Pp.msgnl (str "raw constr " ++ pr_rawconstr rt); *)
 	 fst (
 	   rebuild_cons nb_args relnames.(i)
-(* 	     (List.map  *)
-(* 		(function  *)
-(* 		     (Anonymous,_,_) -> mkRVar(fresh_id res.to_avoid "x__")  *)
-(* 		   | Name id, _,_ -> mkRVar id *)
-(* 		) *)
-(* 		funsargs.(i) *)
-(* 	     )  *)
 	     []
 	     []
 	     rt 

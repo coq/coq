@@ -104,8 +104,8 @@ Proof.
  inversion belong1. inversion H.
  inversion_clear NoDup.
  inversion_clear belong1.
- inversion_clear H2.
- compute in H3; destruct H3.
+ inversion_clear H1.
+ compute in H2; destruct H2.
  contradiction.
  apply IHb; auto.
  exists x0; auto.
@@ -144,11 +144,11 @@ Proof.
  inversion 2.
 
  do 2 inversion_clear 1.
- compute in H3; destruct H3; subst; trivial.
+ compute in H2; destruct H2; subst; trivial.
  elim H; apply InA_eqk with (x,e); auto.
 
  do 2 inversion_clear 1; auto.
- compute in H3; destruct H3; elim _x; auto.
+ compute in H2; destruct H2; elim _x; auto.
 Qed.
 
 (* Not part of the exported specifications, used later for [combine]. *)
@@ -184,7 +184,7 @@ Proof.
  intros m x  y e e'; generalize y e; clear y e; unfold PX.MapsTo.
  functional induction (add x e' m);simpl;auto.
  intros y' e'' eqky';  inversion_clear 1.
- destruct H1; simpl in *.
+ destruct H0; simpl in *.
  elim eqky'; apply X.eq_trans with k'; auto.
  auto.
  intros y' e'' eqky'; inversion_clear 1; intuition.
@@ -196,7 +196,7 @@ Proof.
  intros m x y e e'. generalize y e; clear y e; unfold PX.MapsTo.
  functional induction (add x e' m);simpl;auto.
  intros; apply (In_inv_3 H0); auto.
- constructor 2; apply (In_inv_3 H1); auto.
+ constructor 2; apply (In_inv_3 H0); auto.
  inversion_clear 2; auto.
 Qed.
 
@@ -208,8 +208,8 @@ Proof.
  inversion_clear 2.
  compute in H1; elim H; auto.
  inversion H1. 
- constructor 2; inversion_clear H1; auto.
- compute in H2; elim H; auto.
+ constructor 2; inversion_clear H0; auto.
+ compute in H1; elim H; auto.
  inversion_clear 2; auto.
 Qed.
 
@@ -272,17 +272,17 @@ Proof.
 
  inversion_clear Hm.
  subst.
- swap H1.
- destruct H3 as (e,H3); unfold PX.MapsTo in H3.
+ swap H0.
+ destruct H2 as (e,H2); unfold PX.MapsTo in H2.
  apply InA_eqk with (y,e); auto.
  compute; apply X.eq_trans with x; auto.
   
  intro H2.
  destruct H2 as (e,H2); inversion_clear H2.
- compute in H1; destruct H1.
+ compute in H0; destruct H0.
  elim _x; apply X.eq_trans with y; auto.
  inversion_clear Hm.
- elim (IHt0 H3 H).
+ elim (IHt0 H2 H).
  exists e; auto.
 Qed.
   
@@ -292,7 +292,7 @@ Proof.
  intros m Hm x y e; generalize Hm; clear Hm; unfold PX.MapsTo.
  functional induction (remove x m);auto.
  inversion_clear 3; auto.
- compute in H2; destruct H2.
+ compute in H1; destruct H1.
  elim H; apply X.eq_trans with k'; auto.
   
  inversion_clear 1; inversion_clear 2; auto.
