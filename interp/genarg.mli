@@ -67,7 +67,7 @@ StringArgType                  string (parsed w/ "")     string
 PreIdentArgType                string (parsed w/o "")    (vernac only)
 IdentArgType                   identifier                identifier
 IntroPatternArgType            intro_pattern_expr        intro_pattern_expr
-VarArgType                     identifier                identifier
+VarArgType                     identifier located        identifier
 RefArgType                     reference                 global_reference
 QuantHypArgType                quantified_hypothesis     quantified_hypothesis
 ConstrArgType                  constr_expr               constr
