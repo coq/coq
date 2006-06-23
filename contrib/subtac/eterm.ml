@@ -16,7 +16,7 @@ let reverse_array arr =
   Array.of_list (List.rev (Array.to_list arr))
     
 let trace s = 
-  if !Options.debug then msgnl s
+  if !Options.debug then (msgnl s; msgerr s)
   else ()
 
 (** Utilities to find indices in lists *)
@@ -37,7 +37,9 @@ let list_assoc_index x l =
 let subst_evars evs n t = 
   let evar_info id = 
     let rec aux i = function
-	(k, h, v) :: tl -> if k = id then (i, h, v) else aux (succ i) tl
+	(k, h, v) :: tl -> 
+	  trace (str "Searching for " ++ int id ++ str " found: " ++ int k);
+	  if k = id then (i, h, v) else aux (succ i) tl
       | [] -> raise Not_found
     in 
     let (idx, hyps, v) = aux 0 evs in
@@ -45,29 +47,29 @@ let subst_evars evs n t =
   in
   let rec substrec depth c = match kind_of_term c with
     | Evar (k, args) ->
-	(try 
-	   let index, hyps = evar_info k in
-	     (try trace (str "Evar " ++ int k ++ str " found, applied to " ++ int (Array.length args) ++ str "arguments," ++
-			 int (List.length hyps) ++ str " hypotheses"); 	      with _ -> () );
-		
-	   let ex = mkRel (index + depth) in
-	     (* Evar arguments are created in inverse order, 
-		and we must not apply to defined ones (i.e. LetIn's)
-	     *)
-	   let args =
-	     let rec aux hyps args acc =
-	       match hyps, args with
-		   ((_, None, _) :: tlh), (c :: tla) -> 
-		     aux tlh tla ((map_constr_with_binders succ substrec depth c) :: acc)
-		 | ((_, Some _, _) :: tlh), (_ :: tla) ->
-		     aux tlh tla acc
-		 | [], [] -> acc
-		 | _, _ -> failwith "subst_evars: invalid argument"
-	     in aux hyps (Array.to_list args) [] 
-	   in
-	     mkApp (ex, Array.of_list args)
-	 with Not_found -> 
-	   anomaly ("eterm: existential variable " ^ string_of_int k ^ " not found"))
+	(let index, hyps = 
+	   try evar_info k
+	   with Not_found -> 
+	     anomaly ("eterm: existential variable " ^ string_of_int k ^ " not found")
+	 in
+	 (try trace (str "Evar " ++ int k ++ str " found, applied to " ++ int (Array.length args) ++ str "arguments," ++
+		       int (List.length hyps) ++ str " hypotheses"); 	      with _ -> () );
+	 let ex = mkRel (index + depth) in
+	   (* Evar arguments are created in inverse order, 
+	      and we must not apply to defined ones (i.e. LetIn's)
+	   *)
+	 let args =
+	   let rec aux hyps args acc =
+	     match hyps, args with
+		 ((_, None, _) :: tlh), (c :: tla) -> 
+		   aux tlh tla ((map_constr_with_binders succ substrec depth c) :: acc)
+	       | ((_, Some _, _) :: tlh), (_ :: tla) ->
+		   aux tlh tla acc
+	       | [], [] -> acc
+	       | _, _ -> failwith "subst_evars: invalid argument"
+	   in aux hyps (Array.to_list args) [] 
+	 in
+	   mkApp (ex, Array.of_list args))
     | _ -> map_constr_with_binders succ substrec depth c
   in 
     substrec 0 t
@@ -106,11 +108,13 @@ open Tacticals
 let eterm_term evm t tycon = 
   (* 'Serialize' the evars, we assume that the types of the existentials
      refer to previous existentials in the list only *)
-  let evl = to_list evm in
+  let evl = List.rev (to_list evm) in
+    trace (str "Eterm, transformed to list");
   let evts = 
     (* Remove existential variables in types and build the corresponding products *)
     fold_right 
       (fun (id, ev) l ->
+	 trace (str "Eterm: " ++ str "treating evar: " ++ int id);
 	 let hyps = Environ.named_context_of_val ev.evar_hyps in
 	 let y' = (id, hyps, etype_of_evar l ev hyps) in
 	   y' :: l) 
