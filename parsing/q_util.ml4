@@ -85,6 +85,9 @@ let rec interp_entry_name loc s =
   else
     let s = if s = "hyp" then "var" else s in
     let t, se =
+      if tactic_genarg_level s <> None then
+        Some (ExtraArgType s), <:expr< Tactic. tactic >>
+      else
       match Pcoq.entry_type (Pcoq.get_univ "prim") s with
 	| Some _ as x -> x, <:expr< Prim. $lid:s$ >>
 	| None -> 
