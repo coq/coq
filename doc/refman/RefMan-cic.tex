@@ -596,7 +596,7 @@ $c$.
 \paragraph{Context of parameters}
 If an inductive definition $\NInd{\Gamma}{\Gamma_I}{\Gamma_C}$ admits 
 $r$ inductive parameters, then there exists a context $\Gamma_P$ of
-size $r$, such that $\Gamma_P=p_1:P_1;\ldots;\forall p_r:P_r$ and 
+size $r$, such that $\Gamma_P=p_1:P_1;\ldots;p_r:P_r$ and 
 if $(t:A)\in\Gamma_I,\Gamma_C$ then $A$ can be written as 
 $\forall p_1:P_1,\ldots \forall p_r:P_r,A'$. 
 We call $\Gamma_P$ the context of parameters of the inductive
@@ -848,16 +848,16 @@ inductive definition.
 \begin{description}
 \item[W-Ind] Let $E$ be an environment and
   $\Gamma,\Gamma_P,\Gamma_I,\Gamma_C$ are contexts such that
-  $\Gamma_I$ is $[I_1:\forall \Gamma_p,A_1;\ldots;I_k:\forall
+  $\Gamma_I$ is $[I_1:\forall \Gamma_P,A_1;\ldots;I_k:\forall
   \Gamma_P,A_k]$ and $\Gamma_C$ is 
-  $[c_1:\forall \Gamma_p,C_1;\ldots;c_n:\forall \Gamma_p,C_n]$. 
+  $[c_1:\forall \Gamma_P,C_1;\ldots;c_n:\forall \Gamma_P,C_n]$. 
 \inference{
   \frac{
   (\WTE{\Gamma;\Gamma_P}{A_j}{s'_j})_{j=1\ldots  k}
   ~~ (\WTE{\Gamma;\Gamma_I;\Gamma_P}{C_i}{s_{p_i}})_{i=1\ldots  n}
 }
   {\WF{E;\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C}}{\Gamma}}}
-providing the following side conditions hold:
+provided that the following side conditions hold:
 \begin{itemize}
 \item $k>0$, $I_j$, $c_i$ are different names for $j=1\ldots  k$ and $i=1\ldots  n$,
 \item $p$ is the number of parameters of \NInd{\Gamma}{\Gamma_I}{\Gamma_C}
@@ -874,7 +874,7 @@ arity of the inductive type and the sort of the type of its
 constructors which will always be satisfied for the impredicative sort
 (\Prop) but may fail to define inductive definition 
 on sort \Set{} and generate constraints between universes for
-inductive definitions in types.
+inductive definitions in the {\Type} hierarchy.
 
 \paragraph{Examples.}
 It is well known that existential quantifier can be encoded as an
@@ -906,6 +906,135 @@ Inductive exType (P:Type->Prop) : Type
 %annotated the type of constructors such that we know if the argument
 %is recursive or not.  We shall write the type $(x:_R T)C$ if it is 
 %a recursive argument and $(x:_P T)C$ if the argument is not recursive.
+
+\paragraph{Sort-polymorphism of inductive families.}
+\index{Sort-polymorphism of inductive families}
+
+From {\Coq} version 8.1, inductive families declared in {\Type} are
+polymorphic over their arguments in {\Type}.
+
+If $A$ is an arity and $s$ a sort, we write $A_{/s}$ for the arity
+obtained from $A$ by replacing its sort with $s$. Especially, if $A$
+is well-typed in some environment and context, then $A_{/s}$ is typable
+by typability of all products in the Calculus of Inductive Constructions.
+The following typing rule is added to the theory.
+
+\begin{description}
+\item[Ind-Family] Let $\Gamma_P$ be a context of parameters
+$[p_1:P_1;\ldots;p_{m'}:P_{m'}]$ and $m\leq m'$ be the length of the
+initial prefix of parameters that occur unchanged in the recursive
+occurrences of the constructor types. Assume that $\Gamma_I$ is
+$[I_1:\forall \Gamma_P,A_1;\ldots;I_k:\forall \Gamma_P,A_k]$ and
+$\Gamma_C$ is $[c_1:\forall \Gamma_P,C_1;\ldots;c_n:\forall
+\Gamma_P,C_n]$.
+
+Let $q_1$, \ldots, $q_r$, with $0\leq r\leq m$, be a possibly partial
+instantiation of the parameters in $\Gamma_P$. We have:
+
+\inference{\frac
+{\left\{\begin{array}{l}
+\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C} \in E\\
+(E[\Gamma] \vdash q_s : P'_s)_{s=1\ldots r}\\
+(E[\Gamma] \vdash \WTEGLECONV{P'_s}{\subst{P_s}{x_u}{q_u}_{u=1\ldots s-1}})_{s=1\ldots r}\\
+1 \leq j \leq k
+\end{array}
+\right.}
+{(I_j\,q_1\,\ldots\,q_r:\forall \Gamma^{r+1}_p, (A_j)_{/s})}
+}
+
+provided that the following side conditions hold:
+
+\begin{itemize}
+\item $\Gamma_{P'}$ is the context obtained from $\Gamma_P$ by
+replacing, each $P_s$ that is an arity with the
+sort of $P'_s$, as soon as $1\leq s \leq r$ (notice that
+$P_s$ arity implies $P'_s$ arity since $E[\Gamma]
+\vdash \WTEGLECONV{P'_s}{ \subst{P_s}{x_u}{q_u}_{u=1\ldots s-1}}$);
+\item there are sorts $s_i$, for $1 \leq i \leq k$ such that, for
+ $\Gamma_{I'}$ obtained from $\Gamma_I$ by changing each $A_i$ by $(A_i)_{/s_i}$,
+we have $(\WTE{\Gamma;\Gamma_{I'};\Gamma_{P'}}{C_i}{s_{p_i}})_{i=1\ldots  n}$;
+\item the sorts are such that all elimination are allowed (see
+section~\ref{elimdep}).
+\end{itemize}
+\end{description}
+
+Notice that if $I_j\,q_1\,\ldots\,q_r$ is typable using the rules {\bf
+Ind-Const} and {\bf App}, then it is typable using the rule {\bf
+Ind-Family}. Conversely, the extended theory is not stronger than the
+theory without {\bf Ind-Family}. We get an equiconsistency result by
+mapping each $\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C}$ occurring into a
+given derivation into as many fresh inductive types and constructors
+as the number of different (partial) replacements of sorts, needed for
+this derivation, in the parameters that are arities. That is, the
+changes in the types of each partial instance $q_1\,\ldots\,q_r$ can
+be characterized by the ordered sets of arity sorts among the types of
+parameters, and to each signature is associated a new inductive
+definition with fresh names. Conversion is preserved as any (partial)
+instance $I_j\,q_1\,\ldots\,q_r$ or $C_i\,q_1\,\ldots\,q_r$ is mapped
+to the names chosen in the specific instance of
+$\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C}$.
+
+\newcommand{\Single}{\mbox{\textsf{Set}}}
+
+In practice, the rule is used by {\Coq} only with in case the
+inductive type is declared with an arity of a sort in the $\Type$
+hierarchy, and, then, the polymorphism is over the parameters whose
+type is an arity in the {\Type} hierarchy. The sort $s_j$ are then
+chosen canonically so that each $s_j$ is minimal with respect to the
+hierarchy ${\Prop_u}\subset{\Set_p}\subset\Type$ where $\Set_p$ is
+predicative {\Set}, and ${\Prop_u}$ is the sort of small singleton
+inductive types (i.e. of inductive types with one single constructor
+and that contains either proofs or inhabitants of singleton types
+only). More precisely, a small singleton inductive family is set in
+{\Prop}, a small non singleton inductive family is set in {\Set} (even
+in case {\Set} is impredicative -- see section~\ref{impredicativity}),
+and otherwise in the {\Type} hierarchy.
+% TODO: clarify the case of a partial application ??
+
+Note that the side-condition about allowed elimination sorts in the
+rule~{\bf Ind-Family} is just to avoid to recompute the allowed
+elimination sorts at each instance of a pattern-matching (see
+section~\ref{elimdep}).
+
+As an example, let us consider the following definition:
+\begin{coq_example*}
+Inductive option (A:Type) : Type := 
+| None : option A 
+| Some : A -> option A.
+\end{coq_example*}
+
+As the definition is set in the {\Type} hierarchy, it is used
+polymorphically over its parameters whose types are arities of a sort
+in the {\Type} hierarchy. Here, the parameter $A$ has this property,
+hence, if \texttt{option} is applied to a type in {\Set}, the result is
+in {\Set}. Note that if \texttt{option} is applied to a type in {\Prop},
+then, the result is not set in \texttt{Prop} but in \texttt{Set}
+still. This is because \texttt{option} is not a singleton type (see
+section~\ref{singleton}) and it would loose the elimination to {\Set} and
+{\Type} if set in {\Prop}.
+
+\begin{coq_example}
+Check (fun A:Set => option A).
+Check (fun A:Prop => option A).
+\end{coq_example}
+
+Here is another example.
+
+\begin{coq_example*}
+Inductive prod (A B:Type) : Type := pair : A -> B -> prod A B.
+\end{coq_example*}
+
+As \texttt{prod} is a singleton type, it will be in {\Prop} if applied
+twice to propositions, in {\Set} if applied twice to at least one type
+in {\Set} and none in {\Type}, and in {\Type} otherwise. In all cases,
+the three kind of eliminations schemes are allowed.
+
+\begin{coq_example}
+Check (fun A:Set => prod A).
+Check (fun A:Prop => prod A A).
+Check (fun (A:Prop) (B:Set) => prod A B).
+Check (fun (A:Type) (B:Prop) => prod A B).
+\end{coq_example}
 
 \subsection{Destructors}
 The specification of inductive definitions with arities and
@@ -1049,6 +1178,7 @@ compact notation~:
 %  \mbox{\tt =>}~ \false}
 
 \paragraph{Allowed elimination sorts.}
+
 \index{Elimination sorts}
 
 An important question for building the typing rule for \kw{match} is
@@ -1158,6 +1288,7 @@ the two projections on this type.
 %{\tt Program} tactic or when extracting ML programs.
 
 \paragraph{Empty and singleton elimination}
+\label{singleton}
 \index{Elimination!Singleton elimination}
 \index{Elimination!Empty elimination}
 
