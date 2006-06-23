@@ -121,6 +121,8 @@ val eval_tactic : glob_tactic_expr -> tactic
 
 val interp : raw_tactic_expr -> tactic
 
+val eval_ltac_constr : goal sigma -> raw_tactic_expr -> constr
+
 val subst_tactic : substitution -> glob_tactic_expr -> glob_tactic_expr
 
 (* Hides interpretation for pretty-print *)

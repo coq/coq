@@ -1345,7 +1345,9 @@ let interp_quantified_hypothesis ist = function
   | AnonHyp n -> AnonHyp n
   | NamedHyp id ->
       try try_interp_ltac_var coerce_to_quantified_hypothesis ist None(dloc,id)
-      with Not_found -> NamedHyp id
+      with Not_found 
+      | Stdpp.Exc_located (_, UserError _) | UserError _ (*Compat provisoire*)
+   -> NamedHyp id
 
 (* Quantified named or numbered hypothesis or hypothesis in context *)
 (* (as in Inversion) *)
@@ -1911,6 +1913,10 @@ and interp_atomic ist gl = function
     try tactic_of_value v gl 
     with NotTactic -> user_err_loc (loc,"",str "not a tactic")
 
+let make_empty_glob_sign () =
+  { ltacvars = ([],[]); ltacrecvars = []; 
+    gsigma = Evd.empty; genv = Global.env() }
+
 (* Initial call for interpretation *)
 let interp_tac_gen lfun debug t gl = 
   interp_tactic { lfun=lfun; debug=debug } 
@@ -1921,6 +1927,10 @@ let interp_tac_gen lfun debug t gl =
 let eval_tactic t = interp_tactic { lfun=[]; debug=get_debug() } t
 
 let interp t = interp_tac_gen [] (get_debug()) t
+
+let eval_ltac_constr gl t =
+  interp_ltac_constr { lfun=[]; debug=get_debug() } gl
+    (intern_tactic (make_empty_glob_sign ()) t )
 
 (* Hides interpretation for pretty-print *)
 let hide_interp t ot gl =
@@ -2284,10 +2294,6 @@ let make_absolute_name (loc,id) =
     user_err_loc (loc,"Tacinterp.add_tacdef",
       str "There is already an Ltac named " ++ pr_id id);
   kn
-
-let make_empty_glob_sign () =
-  { ltacvars = ([],[]); ltacrecvars = []; 
-    gsigma = Evd.empty; genv = Global.env() }
 
 let add_tacdef isrec tacl =
 (*  let isrec = if !Options.p1 then isrec else true in*)
