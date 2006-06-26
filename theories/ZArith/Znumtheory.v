@@ -926,7 +926,12 @@ generalize (Pggcd_correct_divisors p p0); destruct (Pggcd p p0) as (g,(aa,bb));
 destruct 1; subst; auto.
 Qed.
 
-(** A version of [Zgcd] that doesn't use an explicit measure can be found 
-  in users's contribution [Orsay/QArith]. It is slightly more efficient after 
-  extraction, but cannot be used to compute within Coq. *)
+Theorem Zgcd_spec : forall x y : Z, {z : Z | Zis_gcd x y z /\ 0 <= z}.
+Proof.
+  intros x y; exists (Zgcd x y).
+  split; [apply Zgcd_is_gcd  | apply Zgcd_is_pos].
+Qed.
+
+
+
 
