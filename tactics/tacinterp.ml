@@ -999,7 +999,7 @@ let interp_ltac_var coerce ist env locid =
 let coerce_to_ident env = function
   | VIntroPattern (IntroIdentifier id) -> id
   | VConstr c when isVar c & not (is_variable env (destVar c)) ->
-      (* This happens e.g. in definitions like "Tac H = Clear H; Intro H" *)
+      (* This happens e.g. in definitions like "Tac H = clear H; intro H" *)
       destVar c
   | v -> raise (CannotCoerceTo "a fresh identifier")
 
@@ -1015,8 +1015,9 @@ let interp_name ist gl = function
 
 let coerce_to_intro_pattern env = function
   | VIntroPattern ipat -> ipat
-  | VConstr c when isVar c & not (is_variable env (destVar c)) ->
-      (* This happens e.g. in definitions like "Tac H = Clear H; Intro H" *)
+  | VConstr c when isVar c ->
+      (* This happens e.g. in definitions like "Tac H = clear H; intro H" *)
+      (* but also in "destruct H as (H,H')" *)
       IntroIdentifier (destVar c)
   | v -> raise (CannotCoerceTo "an introduction pattern")
 
