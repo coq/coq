@@ -173,9 +173,11 @@ let isAppConstruct t =
   then isConstruct (fst (destApp t))
   else false 
 
-
-let nf_betaiotazeta = Reductionops.local_strong Reductionops.whd_betaiotazeta 
-  
+let nf_betaiotazeta = (* Reductionops.local_strong Reductionops.whd_betaiotazeta  *)
+  let clos_norm_flags flgs env sigma t =
+    Closure.norm_val (Closure.create_clos_infos flgs env) (Closure.inject (Reductionops.nf_evar sigma t)) in
+  clos_norm_flags Closure.betaiotazeta  Environ.empty_env Evd.empty
+    
 
 let change_eq env sigma hyp_id (context:Sign.rel_context) x t end_of_type  = 
   let nochange msg  = 
@@ -231,12 +233,6 @@ let change_eq env sigma hyp_id (context:Sign.rel_context) x t end_of_type  =
 	end_of_type_with_pop
 	sub''
     in
-    (* let new_end_of_type =  *)
-    (*  Intmap.fold *)
-    (* 	(fun i t end_of_type -> lift 1 (substnl  [t] (i-1) end_of_type)) *)
-    (* 	sub *)
-    (* 	end_of_type_with_pop *)
-    (*     in *)
     let old_context_length = List.length context + 1 in
     let witness_fun = 
       mkLetIn(Anonymous,make_refl_eq t1_typ t1,t,
@@ -556,10 +552,17 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
       g
 
 
+let my_orelse tac1 tac2 g = 
+  try 
+    tac1 g 
+  with e -> 
+(*     observe (str "using snd tac since : " ++ Cerrors.explain_exn e); *)
+    tac2 g 
+
 let instanciate_hyps_with_args (do_prove:identifier list -> tactic) hyps args_id = 
   let args = Array.of_list (List.map mkVar  args_id) in 
   let instanciate_one_hyp hid = 
-    tclORELSE
+    my_orelse
       ( (* we instanciate the hyp if possible  *)
 	fun g -> 
 	  let prov_hid = pf_get_new_id hid g in
@@ -812,7 +815,8 @@ type static_fix_info =
       types : types;
       offset : int;
       nb_realargs : int;
-      body_with_param : constr 
+      body_with_param : constr;
+      num_in_block : int 
     }
 
 
@@ -838,11 +842,12 @@ let prove_rec_hyp fix_info  =
 exception Not_Rec
     
 let generalize_non_dep hyp g = 
+(*   observe (str "rec id := " ++ Ppconstr.pr_id hyp); *)
   let hyps = [hyp] in 
   let env = Global.env () in 
   let hyp_typ = pf_type_of g (mkVar hyp) in 
   let to_revert,_ = 
-    Environ.    fold_named_context_reverse (fun (clear,keep) (hyp,_,_ as decl) ->
+    Environ.fold_named_context_reverse (fun (clear,keep) (hyp,_,_ as decl) ->
       if List.mem hyp hyps
 	or List.exists (occur_var_in_decl env hyp) keep
 	or occur_var env hyp hyp_typ
@@ -853,7 +858,7 @@ let generalize_non_dep hyp g =
   in
 (*   observe (str "to_revert := " ++ prlist_with_sep spc Ppconstr.pr_id to_revert); *)
   tclTHEN 
-    (observe_tac "h_generalize" (h_generalize (List.map mkVar to_revert)))
+    (observe_tac "h_generalize" (h_generalize  (List.map mkVar to_revert) ))
     (observe_tac "thin" (thin to_revert))
     g
   
@@ -864,47 +869,77 @@ let revert idl =
     (generalize (List.map mkVar idl)) 
     (thin idl)
 
+let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
+(*   observe (str "nb_args := " ++ str (string_of_int nb_args)); *)
+(*   observe (str "nb_params := " ++ str (string_of_int nb_params)); *)
+(*   observe (str "rec_args_num := " ++ str (string_of_int (rec_args_num + 1) )); *)
+  let f_def = Global.lookup_constant (destConst f) in
+  let eq_lhs = mkApp(f,Array.init (nb_params + nb_args) (fun i -> mkRel(nb_params + nb_args - i))) in
+  let f_body =
+    force (out_some f_def.const_body)
+  in
+  let params,f_body_with_params = decompose_lam_n nb_params f_body in
+  let (_,num),(_,_,bodies) = destFix f_body_with_params in
+  let fnames_with_params =
+    let params = Array.init nb_params (fun i -> mkRel(nb_params - i)) in
+    let fnames = List.rev (Array.to_list (Array.map (fun f -> mkApp(f,params)) fnames)) in
+    fnames
+  in
+(*   observe (str "fnames_with_params " ++ prlist_with_sep fnl pr_lconstr fnames_with_params); *)
+(*   observe (str "body " ++ pr_lconstr bodies.(num)); *)
+  let f_body_with_params_and_other_fun  = substl fnames_with_params bodies.(num) in
+(*   observe (str "f_body_with_params_and_other_fun " ++  pr_lconstr f_body_with_params_and_other_fun); *)
+  let eq_rhs = nf_betaiotazeta (mkApp(compose_lam params f_body_with_params_and_other_fun,Array.init (nb_params + nb_args) (fun i -> mkRel(nb_params + nb_args - i)))) in
+(*   observe (str "eq_rhs " ++  pr_lconstr eq_rhs); *)
+  let type_ctxt,type_of_f = Sign.decompose_prod_n_assum (nb_params + nb_args) f_def.const_type in
+  let eqn = mkApp(Lazy.force eq,[|type_of_f;eq_lhs;eq_rhs|]) in
+  let lemma_type = it_mkProd_or_LetIn ~init:eqn type_ctxt in
+  let f_id = id_of_label (con_label (destConst f)) in
+  let prove_replacement =
+    tclTHENSEQ
+      [
+	tclDO (nb_params + rec_args_num + 1) intro;
+	observe_tac "" (fun g ->
+	   let rec_id = pf_nth_hyp_id g 1 in
+	   tclTHENSEQ
+	     [observe_tac "generalize_non_dep in generate_equation_lemma" (generalize_non_dep rec_id);
+	      observe_tac "h_case" (h_case(mkVar rec_id,Rawterm.NoBindings));
+	      intros_reflexivity] g
+	)
+      ]
+  in
+  Command.start_proof
+    (mk_equation_id f_id)
+    (Decl_kinds.Global,(Decl_kinds.Proof Decl_kinds.Theorem))
+    lemma_type
+    (fun _ _ -> ());
+  Pfedit.by (prove_replacement);
+  Command.save_named false
 
-let do_replace params rec_arg_num rev_args_id fun_to_replace body = 
-  fun g ->
-    let nb_intro_to_do = nb_prod (pf_concl g) in
+
+
+  
+let do_replace params rec_arg_num rev_args_id f fun_num all_funs g =
+  let f_id = id_of_label (con_label (destConst f)) in 
+  let equation_lemma_id = (mk_equation_id f_id) in 
+  let equation_lemma = 
+    try 
+      Tacinterp.constr_of_id (pf_env g) equation_lemma_id 
+    with Not_found -> 
+      generate_equation_lemma all_funs f fun_num (List.length params) (List.length rev_args_id) rec_arg_num;
+      Tacinterp.constr_of_id (pf_env g) equation_lemma_id
+  in
+(*   observe (Ppconstr.pr_id equation_lemma_id ++ str " has type " ++ pr_lconstr_env (pf_env g) (pf_type_of g equation_lemma)); *)
+  let nb_intro_to_do = nb_prod (pf_concl g) in
     tclTHEN
       (tclDO nb_intro_to_do intro)
       (
 	fun g' -> 
 	  let just_introduced = nLastHyps nb_intro_to_do g' in 
 	  let just_introduced_id = List.map (fun (id,_,_) -> id) just_introduced in 
-	  let old_rev_args_id = rev_args_id in 
-	  let rev_args_id = just_introduced_id@rev_args_id in 
-	  let to_replace = 
-	    Reductionops.nf_betaiota (substl (List.map mkVar rev_args_id) fun_to_replace )
-	  and by = 
-	    Reductionops.nf_betaiota (applist(body,List.rev_map mkVar rev_args_id)) 
-	  in 
-(* 	  observe (str "to_replace := " ++ pr_lconstr_env (pf_env g') to_replace); *)
-(* 	  observe (str "by := " ++ pr_lconstr_env (pf_env g') by); *)
-	  let prove_replacement = 
-	    let rec_id = List.nth (List.rev old_rev_args_id) (rec_arg_num) in 
-	    observe_tac "prove_replacement"
-	      (tclTHENSEQ
-		 [ 
-		   revert just_introduced_id;
-		   keep ((List.map id_of_decl params)@ old_rev_args_id);
-		   generalize_non_dep rec_id;
-		   observe_tac "h_case" (h_case(mkVar rec_id,Rawterm.NoBindings)); 
-		   intros_reflexivity
-		 ]
-	      )
-	  in
-	  tclTHENS
-	    (observe_tac "replacement" (Equality.replace to_replace by))
-	    [ revert just_introduced_id;
-	     tclSOLVE [prove_replacement]]
-	    g'
+	  tclTHEN (Equality.rewriteLR equation_lemma) (revert just_introduced_id) g'
       )
       g
-    
-
 
 let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : tactic =
   fun g -> 
@@ -1011,7 +1046,8 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 		     nb_realargs = 
 		       List.length 
 			 (fst (decompose_lam bodies.(i))) - fix_offset;
-		     body_with_param = bodies_with_all_params.(i)
+		     body_with_param = bodies_with_all_params.(i);
+		     num_in_block = i
 		   }
 		)
 		typess
@@ -1027,7 +1063,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 		   let app_f = mkApp(f,first_args) in
 		   let pte_args = (Array.to_list first_args)@[app_f] in 
 		   let app_pte = applist(mkVar (Nameops.out_name pte),pte_args) in 
-		   let body_with_param = 
+		   let body_with_param,num = 
 		     let body = get_body fnames.(i) in 
 		     let body_with_full_params = 
 		       Reductionops.nf_betaiota (
@@ -1043,13 +1079,14 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 					    (Array.to_list all_funs_with_full_params)) 
 					 bs.(num),
 				       List.rev_map var_of_decl princ_params))
-				 )
+				 ),num
 			 | _ -> error "Not a mutual block"
 		   in
 		   let info = 
 		     {infos with 
 			types = compose_prod type_args app_pte;
-			 body_with_param = body_with_param
+			 body_with_param = body_with_param;
+			 num_in_block = num
 		     }
 		   in 
 (* 		   observe (str "binding " ++ Ppconstr.pr_id (Nameops.out_name pte) ++  *)
@@ -1118,8 +1155,17 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 		 tclTHENSEQ
 		   [
 		     observe_tac "do_replace" 
-		       (do_replace princ_info.params fix_info.idx args_id
-			  (List.hd (List.rev pte_args)) fix_body);
+		       (do_replace 
+			  full_params 
+			  (fix_info.idx + List.length princ_params) 
+			  (args_id@(List.map (fun (id,_,_) -> Nameops.out_name id ) princ_params))
+			  (all_funs.(fix_info.num_in_block)) 
+			  fix_info.num_in_block 
+			  all_funs
+		       );
+(* 		     observe_tac "do_replace"  *)
+(* 		       (do_replace princ_info.params fix_info.idx args_id *)
+(* 			  (List.hd (List.rev pte_args)) fix_body); *)
 		     let do_prove = 
 		       build_proof 
 			 interactive_proof
@@ -1133,13 +1179,16 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 			    nb_rec_hyps = List.length branches
 			 }
 		       in
-		       clean_goal_with_heq
+		       observe_tac "cleaning" (clean_goal_with_heq
 			 (Idmap.map prove_rec_hyp ptes_to_fix) 
 			 do_prove 
-			 dyn_infos
+			 dyn_infos)
 		     in
-(* 		     observe (str "branches := " ++  *)
-(* 				prlist_with_sep spc (fun decl -> Ppconstr.pr_id (id_of_decl decl)) princ_info.branches); *)
+(* 		     observe (str "branches := " ++ *)
+(* 				prlist_with_sep spc (fun decl -> Ppconstr.pr_id (id_of_decl decl)) princ_info.branches ++  fnl () ++ *)
+(* 			   str "args := " ++ prlist_with_sep spc Ppconstr.pr_id  args_id *)
+			   
+(* 			   ); *)
 		     observe_tac "instancing" (instanciate_hyps_with_args prove_tac 
 		       (List.rev_map id_of_decl princ_info.branches) 
 		       (List.rev args_id))
