@@ -22,6 +22,23 @@ exception Toberemoved
 
 
 
+
+let pr_elim_scheme el = 
+  let env = Global.env () in 
+  let msg = str "params := " ++ Printer.pr_rel_context env el.params in 
+  let env = Environ.push_rel_context el.params env in 
+  let msg = msg ++ fnl () ++ str "predicates := "++ Printer.pr_rel_context env el.predicates in 
+  let env = Environ.push_rel_context el.predicates env in 
+  let msg = msg ++ fnl () ++ str "branches := " ++ Printer.pr_rel_context env el.branches in 
+  let env = Environ.push_rel_context el.branches env in 
+  let msg = msg ++ fnl () ++ str "args := " ++ Printer.pr_rel_context env el.args in 
+  let env = Environ.push_rel_context el.args env in 
+  msg ++ fnl () ++ str "concl := " ++ pr_lconstr_env env el.concl
+
+
+let observe s = if Functional_principles_proofs.do_observe () 
+then Pp.msgnl s 
+
 (* 
    Transform an inductive induction principle into 
    a functional one
@@ -29,6 +46,25 @@ exception Toberemoved
 let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   let princ_type_info = compute_elim_sig princ_type in 
   let env = Global.env () in 
+  let env_with_params = Environ.push_rel_context princ_type_info.params env in
+  let tbl = Hashtbl.create 792 in
+  let rec change_predicates_names (avoid:identifier list) (predicates:Sign.rel_context)  : Sign.rel_context = 
+    match predicates with 
+    | [] -> []
+    |(Name x,v,t)::predicates -> 
+       let id =  Nameops.next_ident_away x avoid in 
+       Hashtbl.add tbl id x;
+       (Name id,v,t)::(change_predicates_names (id::avoid) predicates)
+    | (Anonymous,_,_)::_ -> anomaly "Anonymous property binder "
+  in
+  let avoid = (Termops.ids_of_context env_with_params ) in
+  let princ_type_info = 
+    { princ_type_info with
+	predicates = change_predicates_names avoid princ_type_info.predicates
+    }
+  in 
+(*   observe (str "starting princ_type := " ++ pr_lconstr_env env princ_type); *)
+(*   observe (str "princ_infos : " ++ pr_elim_scheme princ_type_info); *)
   let change_predicate_sort i (x,_,t) = 
     let new_sort = sorts.(i) in
     let args,_ = decompose_prod t in 
@@ -37,7 +73,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
       then List.tl args 
       else args
     in
-    x,None,compose_prod real_args (mkSort new_sort) 
+    Nameops.out_name x,None,compose_prod real_args (mkSort new_sort) 
   in
   let new_predicates = 
     list_map_i
@@ -45,19 +81,20 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
       0
       princ_type_info.predicates
   in
-  let env_with_params_and_predicates = 
-    Environ.push_rel_context 
-      new_predicates
-      (Environ.push_rel_context 
-	 princ_type_info.params 
-	 env
-      )
-  in
+  let env_with_params_and_predicates = List.fold_right Environ.push_named new_predicates env_with_params in
   let rel_as_kn = 
     fst (match princ_type_info.indref with
 	   | Some (Libnames.IndRef ind) -> ind 
-	   | _ -> failwith "Not a valid predicate"
+	   | _ -> error "Not a valid predicate"
 	)
+  in
+  let ptes_vars = List.map (fun (id,_,_) -> id) new_predicates in
+  let is_pte = 
+    let set = List.fold_right Idset.add ptes_vars Idset.empty in 
+    fun t -> 
+      match kind_of_term t with 
+	| Var id -> Idset.mem id set 
+	| _ -> false 
   in
   let pre_princ = 
     it_mkProd_or_LetIn 
@@ -72,6 +109,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
       )
       princ_type_info.branches
   in
+  let pre_princ = substl (List.map mkVar ptes_vars) pre_princ in
   let is_dom c =
     match kind_of_term c with
       | Ind((u,_)) -> u = rel_as_kn
@@ -108,21 +146,15 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	| Prod(x,t,b) ->
 	    compute_new_princ_type_for_binder remove mkProd env x t b
 	| Lambda(x,t,b) ->
-	    compute_new_princ_type_for_binder remove mkLambda env x t b
+	    compute_new_princ_type_for_binder  remove mkLambda env x t b
 	| Ind _ | Construct _ when is_dom pre_princ -> raise Toberemoved
 	| App(f,args) when is_dom f ->
 	    let var_to_be_removed = destRel (array_last args) in
 	    let num = get_fun_num f in
 	    raise (Toberemoved_with_rel (var_to_be_removed,mk_replacement pre_princ num args))
 	| App(f,args) ->
-	    let is_pte = 
-	      match kind_of_term f with 
-		| Rel n ->  
-		    is_pte (Environ.lookup_rel n env)
-		| _ -> false 
-	    in
 	    let args = 
-	      if is_pte && remove 
+	      if is_pte f && remove 
 	      then array_get_start args 
 	      else args 
 	    in
@@ -138,15 +170,13 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	    compute_new_princ_type_for_letin remove env x v t b
 	| _ -> pre_princ,[]
     in
-(*     observennl ( *)
-(*       match kind_of_term pre_princ with  *)
-(* 	| Prod _ ->  *)
-(* 	    str "compute_new_princ_type for "++ *)
+(*     let _ = match kind_of_term pre_princ with *)
+(* 	| Prod _ -> *)
+(* 	    observe(str "compute_new_princ_type for "++ *)
 (* 	      pr_lconstr_env env pre_princ ++ *)
 (* 	      str" is "++ *)
-(* 	      pr_lconstr_env env new_princ_type ++ fnl () *)
-(* 	| _ -> str "" *)
-(*     ); *)
+(* 	      pr_lconstr_env env new_princ_type ++ fnl ()) *)
+(* 	| _ -> () in *)
     res
 	
   and compute_new_princ_type_for_binder remove bind_fun env x t b =
@@ -156,25 +186,25 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	let new_x : name = get_name (ids_of_context env) x in
 	let new_env = Environ.push_rel (x,None,t) env in
 	let new_b,binders_to_remove_from_b = compute_new_princ_type remove new_env b in
-	if List.exists (eq_constr (mkRel 1)) binders_to_remove_from_b
-	then (pop new_b),filter_map (eq_constr (mkRel 1)) pop binders_to_remove_from_b
-	else
-	  (
-	    bind_fun(new_x,new_t,new_b),
-	    list_union_eq
-	      eq_constr
-	      binders_to_remove_from_t
-	      (List.map pop binders_to_remove_from_b)
-	  )
-	
-      with
-	| Toberemoved ->
-(* 	    msgnl (str "Decl of "++Ppconstr.pr_name x ++ str " is removed "); *)
-	    let new_b,binders_to_remove_from_b = compute_new_princ_type  remove env (substnl [dummy_var] 1 b)  in
+	 if List.exists (eq_constr (mkRel 1)) binders_to_remove_from_b
+	 then (pop new_b),filter_map (eq_constr (mkRel 1)) pop binders_to_remove_from_b
+	 else
+	   (
+	     bind_fun(new_x,new_t,new_b),
+	     list_union_eq
+	       eq_constr
+	       binders_to_remove_from_t
+	       (List.map pop binders_to_remove_from_b)
+	   )
+
+       with
+	 | Toberemoved ->
+(* 	    observe (str "Decl of "++Ppconstr.pr_name x ++ str " is removed "); *)
+	    let new_b,binders_to_remove_from_b = compute_new_princ_type remove env (substnl [dummy_var] 1 b)  in
 	    new_b, List.map pop binders_to_remove_from_b
 	| Toberemoved_with_rel (n,c) ->
-(* 	    msgnl (str "Decl of "++Ppconstr.pr_name x ++ str " is removed "); *)
-	    let new_b,binders_to_remove_from_b = compute_new_princ_type  remove env (substnl [c] n b)  in
+(* 	    observe (str "Decl of "++Ppconstr.pr_name x ++ str " is removed "); *)
+	    let new_b,binders_to_remove_from_b = compute_new_princ_type remove env (substnl [c] n b)  in
 	    new_b, list_add_set_eq eq_constr (mkRel n) (List.map pop binders_to_remove_from_b)
     end
   and compute_new_princ_type_for_letin remove env x v t b =
@@ -184,7 +214,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	let new_v,binders_to_remove_from_v = compute_new_princ_type remove env v in
 	let new_x : name = get_name (ids_of_context env) x in
 	let new_env = Environ.push_rel (x,Some v,t) env in
-	let new_b,binders_to_remove_from_b = compute_new_princ_type remove  new_env b in
+	let new_b,binders_to_remove_from_b = compute_new_princ_type remove new_env b in
 	if List.exists (eq_constr (mkRel 1)) binders_to_remove_from_b
 	then (pop new_b),filter_map (eq_constr (mkRel 1)) pop binders_to_remove_from_b
 	else
@@ -198,24 +228,33 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	
       with
 	| Toberemoved ->
-(* 	    msgnl (str "Decl of "++Ppconstr.pr_name x ++ str " is removed "); *)
+(* 	    observe (str "Decl of "++Ppconstr.pr_name x ++ str " is removed "); *)
 	    let new_b,binders_to_remove_from_b = compute_new_princ_type remove env (substnl [dummy_var] 1 b)  in
 	    new_b, List.map pop binders_to_remove_from_b
 	| Toberemoved_with_rel (n,c) ->
-(* 	    msgnl (str "Decl of "++Ppconstr.pr_name x ++ str " is removed "); *)
+(* 	    observe (str "Decl of "++Ppconstr.pr_name x ++ str " is removed "); *)
 	    let new_b,binders_to_remove_from_b = compute_new_princ_type remove env (substnl [c] n b)  in
 	    new_b, list_add_set_eq eq_constr (mkRel n) (List.map pop binders_to_remove_from_b)
     end
   and  compute_new_princ_type_with_acc remove env e (c_acc,to_remove_acc)  =
-	      let new_e,to_remove_from_e = compute_new_princ_type remove env e
-	      in
-	      new_e::c_acc,list_union_eq eq_constr to_remove_from_e to_remove_acc
+    let new_e,to_remove_from_e = compute_new_princ_type remove env e
+    in
+    new_e::c_acc,list_union_eq eq_constr to_remove_from_e to_remove_acc
   in
 (*   observe (str "Computing new principe from " ++ pr_lconstr_env  env_with_params_and_predicates pre_princ); *)
   let pre_res,_ = 
-    compute_new_princ_type princ_type_info.indarg_in_concl env_with_params_and_predicates pre_princ in 
+    compute_new_princ_type princ_type_info.indarg_in_concl env_with_params_and_predicates pre_princ 
+  in 
+  let pre_res = 
+    replace_vars 
+      (list_map_i (fun i id -> (id, mkRel i)) 1 ptes_vars)
+      (lift (List.length ptes_vars) pre_res)
+  in
   it_mkProd_or_LetIn  	 
-    ~init:(it_mkProd_or_LetIn ~init:pre_res new_predicates)
+    ~init:(it_mkProd_or_LetIn 
+	     ~init:pre_res (List.map (fun (id,t,b) -> Name(Hashtbl.find tbl id), t,b) 
+			      new_predicates)
+	  )
     princ_type_info.params
     
   
@@ -245,10 +284,6 @@ let change_property_sort toSort princ princName =
 
 let pp_dur time time' = 
   str (string_of_float (System.time_difference time time'))
-
-(* End of things to be removed latter : just here to compare 
-   saving proof with and without  normalizing the proof 
-*)
 
 let qed () = Command.save_named true 
 let defined () = Command.save_named false

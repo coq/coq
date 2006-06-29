@@ -2,6 +2,9 @@ open Names
 open Pp
 
 val mk_rel_id : identifier -> identifier
+val mk_correct_id : identifier -> identifier
+val mk_complete_id : identifier -> identifier
+val mk_equation_id : identifier -> identifier
 
 val msgnl : std_ppcmds -> unit
 
