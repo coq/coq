@@ -186,12 +186,12 @@ let rec pr_patt sep inh p =
 
 let pr_patt = pr_patt mt
 
-
 let pr_eqn pr (loc,pl,rhs) =
   spc() ++ hov 4
     (pr_with_comments loc
       (str "| " ++
-      hov 0 (prlist_with_sep sep_v (pr_patt ltop) pl ++ str " =>") ++
+      hov 0 (prlist_with_sep pr_bar (prlist_with_sep sep_v (pr_patt ltop)) pl 
+             ++ str " =>") ++
       pr_sep_com spc (pr ltop) rhs))
 
 let begin_of_binder = function

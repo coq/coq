@@ -274,7 +274,8 @@ GEXTEND Gram
     [ [ OPT"|"; br=LIST0 eqn SEP "|" -> br ] ]
   ;
   eqn:
-    [ [ pl = LIST1 pattern SEP ","; "=>"; rhs = lconstr -> (loc,pl,rhs) ] ]
+    [ [ pll = LIST0 LIST1 pattern LEVEL "99" SEP "," SEP "|"; 
+        "=>"; rhs = lconstr -> (loc,pll,rhs) ] ]
   ;
   pattern:
     [ "200" RIGHTA [ ]
