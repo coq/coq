@@ -44,11 +44,7 @@ let compose_raw_context =
 (* 
    The main part deals with building a list of raw constructor expressions
    from the rhs of a fixpoint equation. 
-   
-   
 *)
-
-
 
 type 'a build_entry_pre_return = 
     {
@@ -61,7 +57,6 @@ type 'a build_entry_return =
       result : 'a build_entry_pre_return list; 
       to_avoid : identifier list
     }
-
 
 (*
   [combine_results combine_fun res1 res2] combine two results [res1] and [res2] 
@@ -113,8 +108,6 @@ let combine_args arg args =
 let ids_of_binder =  function 
   | LetIn Anonymous | Prod Anonymous | Lambda Anonymous -> []
   | LetIn (Name id)  | Prod (Name id) | Lambda (Name id) -> [id]
-(*   | LetTuple(nal,_) ->  *)
-(*       map_succeed (function Name id -> id | _ -> failwith "ids_of_binder") nal *)
 
 let rec change_vars_in_binder mapping = function 
     [] -> []
@@ -216,7 +209,6 @@ let combine_app f args =
     (* Note that the binding context of [args] MUST be placed before the one of 
        the applied value in order to preserve possible type dependencies 
     *)
-
       context = args.context@new_ctxt;
       value = new_value;
   }
@@ -245,10 +237,9 @@ let mk_result ctxt value avoid =
 	;
     to_avoid = avoid
   }
-
-
-let make_discr_match_el  = 
-  List.map (fun e -> (e,(Anonymous,None)))
+(*************************************************
+  Some functions to deal with overlapping patterns 
+**************************************************)
 
 let coq_True_ref = 
   lazy  (Coqlib.gen_reference "" ["Init";"Logic"] "True")
@@ -256,6 +247,25 @@ let coq_True_ref =
 let coq_False_ref = 
   lazy  (Coqlib.gen_reference "" ["Init";"Logic"] "False")
 
+(*
+  [make_discr_match_el \[e1,...en\]] builds match e1,...,en with
+  (the list of expresions on which we will do the matching)
+ *) 
+let make_discr_match_el  = 
+  List.map (fun e -> (e,(Anonymous,None)))
+
+(*
+  [make_discr_match_brl i \[pat_1,...,pat_n\]]  constructs a discrimination pattern matching on the ith expression. 
+  that is. 
+  match ?????? with \\
+  | pat_1 => False  \\
+  | pat_{i-1} => False \\
+  | pat_i => True \\
+  | pat_{i+1} => False \\
+  \vdots 
+  | pat_n => False
+  end
+*)
 let make_discr_match_brl i = 
   list_map_i 
     (fun j (_,idl,patl,_) -> 
@@ -264,83 +274,27 @@ let make_discr_match_brl i =
        else (dummy_loc,idl,patl, mkRRef (Lazy.force coq_False_ref))
     )
     0 
-    
+(* 
+   [make_discr_match brl el i] generates an hypothesis such that it reduce to true iff 
+   brl_{i} is the first branch matched by [el] 
+
+   Used when we want to simulate the coq pattern matching algorithm
+*)
 let make_discr_match brl = 
   fun el i -> 
   mkRCases(None,
 	   make_discr_match_el el,
 	   make_discr_match_brl i brl)
-  
-
-
-let rec make_pattern_eq_precond id e pat : identifier * (binder_type * Rawterm.rawconstr) list = 
-  match pat with 
-    | PatVar(_,Anonymous) -> assert false 
-    | PatVar(_,Name x) -> 
-	id,[Prod (Name x),mkRHole ();Prod Anonymous,raw_make_eq (mkRVar x) e]
-    | PatCstr(_,constr,patternl,_) -> 
-	let new_id,new_patternl,patternl_eq_precond = 
-	  List.fold_right 
-	    (fun pat' (id,new_patternl,preconds) -> 
-	       match pat' with 
-		 | PatVar (_,Name id) -> (id,id::new_patternl,preconds)
-		 | _ -> 
-		     let new_id = Nameops.lift_ident id in 
-		     let new_id',pat'_precond = 
-		       make_pattern_eq_precond new_id (mkRVar id) pat' 
-		     in
-		     (new_id',id::new_patternl,preconds@pat'_precond)
-	    )
-	    patternl
-	    (id,[],[])
-	in
-	let cst_narg = 
-	  Inductiveops.mis_constructor_nargs_env
-	    (Global.env ())
-	    constr
-	in
-	let implicit_args =  
-	  Array.to_list 
-	    (Array.init 
-	       (cst_narg - List.length patternl)
-	       (fun _ -> mkRHole ())
-	    )
-	in
-	let cst_as_term =      
-	  mkRApp(mkRRef(Libnames.ConstructRef constr),
-		 implicit_args@(List.map mkRVar new_patternl)
-		)
-	in
-	let precond' = 
-	  (Prod Anonymous, raw_make_eq cst_as_term  e)::patternl_eq_precond 
-	in
-	let precond'' = 
-	  List.fold_right 
-	    (fun id acc ->
-	       (Prod (Name id),(mkRHole ()))::acc
-	    )
-	    new_patternl
-	    precond'
-	in
-	new_id,precond''
 
 let pr_name = function
   | Name id -> Ppconstr.pr_id id
   | Anonymous -> str "_"
 
-let make_pattern_eq_precond id e pat = 
-  let res = make_pattern_eq_precond id e pat in 
-  observe 
-    (prlist_with_sep spc  
-       (function (Prod na,t) -> 
-	  str "forall " ++ pr_name na ++ str ":" ++ pr_rawconstr t
-	| _ -> assert false
-       )
-       (snd res)
-    );
-  res
+(**********************************************************************)
+(*  functions used to build case expression from lettuple and if ones *)
+(**********************************************************************)		
 
-
+(* [build_constructors_of_type] construct the array of pattern of its inductive argument*)	  
 let build_constructors_of_type msg ind' argl = 
   let (mib,ind) = Inductive.lookup_mind_specif (Global.env()) ind' in
   let npar = mib.Declarations.mind_nparams in
@@ -366,21 +320,20 @@ let build_constructors_of_type msg ind' argl =
 		let pat_as_term = 
 		  mkRApp(mkRRef (ConstructRef(ind',i+1)),argl)
 		in
-(* 		Pp.msgnl (str "new constructor := " ++ Printer.pr_rawconstr pat_as_term); *)
 		cases_pattern_of_rawconstr Anonymous pat_as_term
 	     )
     ind.Declarations.mind_consnames
 
+(* construction of the branches from an inductive*)    
 let find_constructors_of_raw_type msg t argl : Rawterm.cases_pattern array  =
   let ind,args = raw_decompose_app t in
   match ind with
     | RRef(_,IndRef ind')  ->
-(* 	let _,ind = Global.lookup_inductive ind' in *)
 	build_constructors_of_type msg ind' argl
     | _ -> error msg
 	
 
-
+(* [find_type_of] very naive attempts to discover the type of an if or a letin *)
 let rec find_type_of nb b = 
   let f,_ = raw_decompose_app b in 
   match f with 
@@ -412,17 +365,56 @@ let rec find_type_of nb b =
     | _ -> raise (Invalid_argument "not a ref")
     
 
+
+
+(******************)
+(* Main functions *)
+(******************)
+
+(* [build_entry_lc funnames avoid rt] construct the list (in fact a build_entry_return) 
+   of constructors corresponding to [rt] when replacing calls to [funnames] by calls to the 
+   corresponding graphs. 
+
+
+   The idea to transform a term [t] into a list of constructors [lc] is the following:
+   \begin{itemize} 
+   \item if the term is a binder (bind x, body) then first compute [lc'] the list corresponding 
+   to [body] and add (bind x. _) to each elements of [lc]
+   \item if the term has the form (g t1 ... ... tn) where g does not appears in (fnames) 
+   then compute [lc1] ... [lcn] the lists of constructors corresponding to [t1] ... [tn], 
+   then combine those lists and [g] as follows~: for each element [c1,...,cn] of [lc1\times...\times lcn], 
+   [g c1 ... cn] is an element of [lc]
+   \item if the term has the form (f t1 .... tn) where [f] appears in [fnames] then 
+   compute [lc1] ... [lcn] the lists of constructors corresponding to [t1] ... [tn], 
+   then compute those lists and [f] as follows~: for each element [c1,...,cn] of [lc1\times...\times lcn]
+   create a new variable [res] and [forall res, R_f c1 ... cn res] is in [lc]
+   \item if the term is a cast just treat its body part
+   \item 
+   if the term is a match, an if or a lettuple then compute the lists corresponding to each branch of the case 
+   and concatenate them (informally, each branch of a match produces a new constructor)
+   \end{itemize}
+   
+   WARNING: The terms constructed here are only USING the rawconstr syntax but are highly bad formed. 
+   We must wait to have complete all the current calculi to set the recursive calls. 
+   At this point, each term [f t1 ... tn]  (where f appears in [funnames]) is replaced by 
+   a pseudo term [forall res, res t1 ... tn, res]. A reconstruction phase is done later. 
+   We in fact not create a constructor list since then end of each constructor has not the expected form 
+   but only the value of the function 
+*)
+
+
 let rec build_entry_lc funnames avoid rt  : rawconstr build_entry_return = 
 (*   Pp.msgnl (str " Entering : " ++ Printer.pr_rawconstr rt); *)
   match rt with 
     | RRef _ | RVar _ | REvar _ | RPatVar _     | RSort _  | RHole _  -> 
-	mk_result [] rt avoid
+	(* do nothing (except changing type of course) *)
+	mk_result [] rt avoid 
     | RApp(_,_,_) ->
 	let f,args = raw_decompose_app rt in
 	let args_res : (rawconstr list) build_entry_return =
-	  List.fold_right
+	  List.fold_right (* create the arguments lists of constructors and combine them *)
 	    (fun arg ctxt_argsl ->
-	       let arg_res = build_entry_lc  funnames ctxt_argsl.to_avoid arg in
+	       let arg_res = build_entry_lc funnames ctxt_argsl.to_avoid arg in
 	       combine_results combine_args  arg_res ctxt_argsl
 	    )
 	    args
@@ -431,6 +423,13 @@ let rec build_entry_lc funnames avoid rt  : rawconstr build_entry_return =
 	begin
 	  match f with
 	    | RVar(_,id) when Idset.mem id funnames ->
+		(* if we have [f t1 ... tn] with [f]$\in$[fnames]
+		   then we create a fresh variable [res], 
+		   add [res] and its "value" (i.e. [res v1 ... vn]) to each 
+		   pseudo constructor build for the arguments (i.e. a pseudo context [ctxt] and 
+		   a pseudo value "v1 ... vn". 
+		   The "value" of this branch is then simply [res]
+		*)
 		let res = fresh_id args_res.to_avoid "res" in
 		let new_avoid = res::args_res.to_avoid in
 		let res_rt = mkRVar res in 
@@ -447,6 +446,11 @@ let rec build_entry_lc funnames avoid rt  : rawconstr build_entry_return =
 		in 
 		{ result = new_result; to_avoid = new_avoid }
 	    | RVar _ | REvar _ | RPatVar _ | RHole _ | RSort _ | RRef _ -> 
+		(* if have [g t1 ... tn] with [g] not appearing in [funnames] 
+		   then  
+		   foreach [ctxt,v1 ... vn] in [args_res] we return  
+		   [ctxt, g v1 .... vn]
+		*)
 		{
 		  args_res with 
 		    result = 
@@ -455,8 +459,12 @@ let rec build_entry_lc funnames avoid rt  : rawconstr build_entry_return =
 			 {args_res with value = mkRApp(f,args_res.value)})
 		      args_res.result
 		}
-	    | RApp _ -> assert false (* we have collected all the app *)
+	    | RApp _ -> assert false (* we have collected all the app in [raw_decompose_app] *)
        	    | RLetIn(_,n,t,b) -> 
+		(* if we have [(let x := v in b) t1 ... tn] , 
+		   we discard our work and compute the list of constructor for 
+		   [let x = v in (b t1 ... tn)] up to alpha conversion 
+		*)
 		let new_n,new_b,new_avoid = 
 		  match n with 
 		    | Name id when List.exists (is_free_in id) args -> 
@@ -477,15 +485,30 @@ let rec build_entry_lc funnames avoid rt  : rawconstr build_entry_return =
 		  avoid
 		  (mkRLetIn(new_n,t,mkRApp(new_b,args)))
 	    | RCases _ | RLambda _ | RIf _ | RLetTuple _ -> 
+		(* we have [(match e1, ...., en with ..... end) t1 tn]
+		   we first compute the result from the case and 
+		   then combine each of them with each of args one
+		*)
 		let f_res = build_entry_lc funnames  args_res.to_avoid f in
 		combine_results combine_app f_res  args_res
-	    | RDynamic _ ->error "Not handled RDynamic"
+	    | RDynamic _ ->error "Not handled RDynamic" 
 	    | RCast(_,b,_,_) -> 
+		(* for an applied cast we just trash the cast part 
+		   and restart the work. 
+
+		   WARNING: We need to restart since [b] itself should be an application term
+		*)
 		build_entry_lc funnames  avoid (mkRApp(b,args))
 	    | RRec _ -> error "Not handled RRec"
 	    | RProd _ -> error "Cannot apply a type"
-	end
+	end (* end of the application treatement *) 
+
     | RLambda(_,n,t,b) ->
+	(* we first compute the list of constructor 
+	   corresponding to the body of the function, 
+	   then the one corresponding to the type 
+	   and combine the two result
+	*)
 	let b_res = build_entry_lc funnames avoid b in
 	let t_res = build_entry_lc funnames avoid t  in
 	let new_n = 
@@ -495,17 +518,31 @@ let rec build_entry_lc funnames avoid rt  : rawconstr build_entry_return =
 	in
 	combine_results (combine_lam new_n) t_res b_res
     | RProd(_,n,t,b) ->
+	(* we first compute the list of constructor 
+	   corresponding to the body of the function, 
+	   then the one corresponding to the type 
+	   and combine the two result
+	*)
 	let b_res = build_entry_lc funnames avoid b in
 	let t_res = build_entry_lc funnames avoid t in
 	combine_results (combine_prod n) t_res b_res
     | RLetIn(_,n,t,b) ->
+	(* we first compute the list of constructor 
+	   corresponding to the body of the function, 
+	   then the one corresponding to the value [t] 
+	   and combine the two result
+	*)
 	let b_res = build_entry_lc funnames avoid b in
 	let t_res = build_entry_lc funnames avoid t in
 	combine_results (combine_letin n) t_res b_res
     | RCases(_,_,el,brl) -> 
+	(* we create the discrimination function 
+	   and treat the case itself 
+	*)
 	let make_discr = make_discr_match brl in 
 	build_entry_lc_from_case funnames make_discr el brl avoid
     | RIf(_,b,(na,e_option),lhs,rhs) -> 
+	(* Same as RCases but we need to compute the branches *)
 	begin
 	  match b with 
 	    | RCast(_,b,_,t) -> 
@@ -545,6 +582,7 @@ let rec build_entry_lc funnames avoid rt  : rawconstr build_entry_return =
 	end
     | RLetTuple(_,nal,_,b,e) ->  
 	begin 
+	(* Same as RCases but we need to compute the branches *)
 	  let nal_as_rawconstr = 
 	    List.map 
 	      (function 
@@ -589,8 +627,16 @@ and build_entry_lc_from_case funname make_discr
     (brl:Rawterm.cases_clauses) avoid : 
     rawconstr build_entry_return = 
   match el with 
-    | [] -> assert false (* matched on Nothing !*) 
+    | [] -> assert false (* this case correspond to match <nothing> with .... !*) 
     | el -> 
+	(* this case correspond to 
+	   match el with brl end
+	   we first compute the list of lists corresponding to [el] and 
+	   combine them . 
+	   Then for each elemeent of the combinations, 
+	   we compute the result we compute one list per branch in [brl] and 
+	   finally we just concatenate those list 
+	*)
 	let case_resl = 
 	    List.fold_right
 	    (fun (case_arg,_) ctxt_argsl ->
@@ -616,11 +662,12 @@ and build_entry_lc_from_case_term funname make_discr patterns_to_prevent brl avo
   match brl with
     | [] -> (* computed_branches  *) {result = [];to_avoid = avoid}
     | br::brl' ->
+	(* alpha convertion to prevent name clashes *)
 	let _,idl,patl,return = alpha_br avoid br in
-	let new_avoid  = idl@avoid in 
-(* 	let e_ctxt,el = (matched_expr.context,matched_expr.value) in *)
-(*  	if  (List.length patl) <> (List.length el) *)
-(* 	then error ("Pattern matching on product: not yet implemented"); *)
+	let new_avoid  = idl@avoid in 	(* for now we can no more use idl as an indentifier *)
+	(* building a list of precondition stating that we are not in this branch 
+	   (will be used in the following recursive calls)
+	*)
 	let not_those_patterns : (identifier list -> rawconstr -> rawconstr) list = 
 	  List.map 
 	    (fun pat -> 
@@ -634,11 +681,18 @@ and build_entry_lc_from_case_term funname make_discr patterns_to_prevent brl avo
 	    )
 	    patl
 	in
+	(* Checking if we can be in this branch 
+	   (will be used in the following recursive calls)
+	*)	   
 	let unify_with_those_patterns : (cases_pattern -> bool*bool) list =
 	  List.map 
 	    (fun pat pat' -> are_unifiable pat pat',eq_cases_pattern pat pat') 
 	    patl
 	in
+	(* 
+	   we first compute the other branch result (in ordrer to keep the order of the matching 
+	   as much as possible)
+	*)
 	let brl'_res =
 	  build_entry_lc_from_case_term
 	    funname
@@ -648,8 +702,15 @@ and build_entry_lc_from_case_term funname make_discr patterns_to_prevent brl avo
 	    avoid
 	    matched_expr
 	in
+	(* We know create the precondition of this branch i.e.
+
+	   1- the list of variable appearing in the different patterns of this branch and 
+	      the list of equation stating than el = patl (List.flatten ...)
+	   2- If there exists a previous branch which pattern unify with the one of this branch 
+              then a discrimination precond stating that we are not in a previous branch (if List.exists ...)
+	*)
       	let those_pattern_preconds =
-(	  List.flatten
+	  (List.flatten
 	    (
 	    List.map2
 	      (fun pat e ->
@@ -668,28 +729,27 @@ and build_entry_lc_from_case_term funname make_discr patterns_to_prevent brl avo
 	      patl
 	      matched_expr.value
 	  )
-)
+	  )
 	  @
-	    (if List.exists (function (unifl,neql) ->
-			       let (unif,eqs) = 
-				 List.split (List.map2 (fun x y -> x y) unifl patl)
-			       in
-			       List.for_all (fun x -> x) unif) patterns_to_prevent
-	     then 
-	       let i = List.length patterns_to_prevent in 
-	       [(Prod Anonymous,make_discr  i  )]
-	     else 
-	       []
-	    )
+	  (if List.exists (function (unifl,_) ->
+			     let (unif,_) = 
+			       List.split (List.map2 (fun x y -> x y) unifl patl)
+			     in
+			     List.for_all (fun x -> x) unif) patterns_to_prevent
+	   then 
+	     let i = List.length patterns_to_prevent in 
+	     [(Prod Anonymous,make_discr  i  )]
+	   else 
+	     []
+	  )
 	in
+	(* We compute the result of the value returned by the branch*)
 	let return_res = build_entry_lc funname new_avoid return in
+	(* and combine it with the preconds computed for this branch *)
 	let this_branch_res =
 	  List.map
 	    (fun res  ->
-	       { context = 
-		   matched_expr.context@
-(* 		     ids@ *)
-		     those_pattern_preconds@res.context ;
+	       { context = matched_expr.context@those_pattern_preconds@res.context ;
 		 value = res.value}
 	    )
 	    return_res.result
@@ -702,7 +762,9 @@ let is_res id =
     String.sub (string_of_id id) 0 3 = "res"
   with Invalid_argument _ -> false 
 
-(* rebuild the raw constructors expression. 
+(* 
+   The second phase which reconstruct the real type of the constructor. 
+   rebuild the raw constructors expression. 
    eliminates some meaningless equalities, applies some rewrites......
 *)
 let rec rebuild_cons nb_args relname args crossed_types depth rt = 
@@ -752,9 +814,11 @@ let rec rebuild_cons nb_args relname args crossed_types depth rt =
 		    (depth + 1) subst_b
 		in 
 		mkRProd(n,t,new_b),id_to_exclude
-(*  		if keep_eq then *)
-(* 		  mkRProd(n,t,new_b),id_to_exclude *)
-(* 		else new_b, Idset.add id id_to_exclude *)
+		  (* J.F:. keep this comment  it explain how to remove some meaningless equalities 
+		     if keep_eq then
+		     mkRProd(n,t,new_b),id_to_exclude
+		     else new_b, Idset.add id id_to_exclude
+		  *)
 	    | _ -> 
 		let new_b,id_to_exclude =  
 		  rebuild_cons 
@@ -770,18 +834,8 @@ let rec rebuild_cons nb_args relname args crossed_types depth rt =
 	end
     | RLambda(_,n,t,b) ->
 	begin
-(* 	  let not_free_in_t id = not (is_free_in id t) in  *)
-(* 	  let new_crossed_types = t :: crossed_types in  *)
-(* 	  let new_b,id_to_exclude = rebuild_cons relname args new_crossed_types b in *)
-(* 	  match n with *)
-(* 	    | Name id when Idset.mem id id_to_exclude -> *)
-(* 		new_b, *)
-(* 		Idset.remove id (Idset.filter not_free_in_t id_to_exclude) *)
-(* 	    | _ ->  *)
-(* 		RProd(dummy_loc,n,t,new_b),Idset.filter not_free_in_t id_to_exclude *)
 	  let not_free_in_t id = not (is_free_in id t) in
 	  let new_crossed_types = t :: crossed_types in
-(* 	  let new_b,id_to_exclude = rebuild_cons relname (args new_crossed_types b in *)
 	  match n with
 	    | Name id ->
 		let new_b,id_to_exclude = 
@@ -842,15 +896,24 @@ let rec rebuild_cons nb_args relname args crossed_types depth rt =
     | _ -> mkRApp(mkRVar  relname,args@[rt]),Idset.empty
 
 
+(* debuging wrapper *)
 let rebuild_cons nb_args relname args crossed_types rt = 
-  observennl  (str "rebuild_cons : rt := "++ pr_rawconstr rt ++ 
-		 str "nb_args := " ++ str (string_of_int nb_args));
+(*   observennl  (str "rebuild_cons : rt := "++ pr_rawconstr rt ++  *)
+(* 		 str "nb_args := " ++ str (string_of_int nb_args)); *)
   let res = 
     rebuild_cons nb_args relname args crossed_types 0 rt 
   in
-  observe (str " leads to "++ pr_rawconstr (fst res));
+(*   observe (str " leads to "++ pr_rawconstr (fst res)); *)
   res
 
+
+(* naive implementation of parameter detection. 
+
+   A parameter is an argument which is only preceded by parameters and whose 
+   calls are all syntaxically equal. 
+
+   TODO: Find a valid way to deal with implicit arguments here! 
+*)
 let rec compute_cst_params relnames params = function 
   | RRef _ | RVar _ | REvar _ | RPatVar _ -> params
   | RApp(_,RVar(_,relname'),rtl) when Idset.mem relname' relnames ->
@@ -915,13 +978,17 @@ let rec rebuild_return_type rt =
     | _ -> Topconstr.CArrow(dummy_loc,rt,Topconstr.CSort(dummy_loc,RType None))
 
 
-let build_inductive parametrize funnames (funsargs: (Names.name * rawconstr * bool) list list)  returned_types (rtl:rawconstr list) =
+let build_inductive 
+    parametrize funnames (funsargs: (Names.name * rawconstr * bool) list list)  
+    returned_types 
+    (rtl:rawconstr list) =
   let _time1 = System.get_time () in
 (*   Pp.msgnl (prlist_with_sep fnl Printer.pr_rawconstr rtl); *)
   let funnames_as_set = List.fold_right Idset.add funnames Idset.empty in
   let funnames = Array.of_list funnames in  
   let funsargs = Array.of_list funsargs in 
   let returned_types = Array.of_list returned_types in
+  (* alpha_renaming of the body to prevent variable capture during manipulation *)
   let rtl_alpha = List.map (function rt ->  (alpha_rt [] rt) ) rtl in
   let rta = Array.of_list rtl_alpha in
   (*i The next call to mk_rel_id is valid since we are constructing the graph
@@ -929,7 +996,9 @@ let build_inductive parametrize funnames (funsargs: (Names.name * rawconstr * bo
     i*) 
   let relnames = Array.map mk_rel_id funnames in
   let relnames_as_set = Array.fold_right Idset.add relnames Idset.empty in 
+  (* Construction of the pseudo constructors *)
   let resa = Array.map (build_entry_lc funnames_as_set []) rta in 
+  (* and of the real constructors*)
   let constr i res = 
     List.map 
       (function result (* (args',concl') *) -> 
@@ -945,7 +1014,8 @@ let build_inductive parametrize funnames (funsargs: (Names.name * rawconstr * bo
       ) 
       res.result 
   in 
-  let next_constructor_id = ref (-1) in 
+  (* adding names to constructors  *)
+ let next_constructor_id = ref (-1) in 
   let mk_constructor_id i = 
     incr next_constructor_id;
     (*i The next call to mk_rel_id is valid since we are constructing the graph
@@ -954,9 +1024,11 @@ let build_inductive parametrize funnames (funsargs: (Names.name * rawconstr * bo
     id_of_string ((string_of_id (mk_rel_id funnames.(i)))^"_"^(string_of_int !next_constructor_id))
   in
   let rel_constructors i rt : (identifier*rawconstr) list = 
+    next_constructor_id := (-1);
     List.map (fun constr -> (mk_constructor_id i),constr) (constr i rt)
   in
   let rel_constructors = Array.mapi rel_constructors resa in
+  (* Computing the set of parameters if asked *)
   let rels_params = 
     if parametrize 
     then
@@ -964,12 +1036,12 @@ let build_inductive parametrize funnames (funsargs: (Names.name * rawconstr * bo
     else []
   in
   let nrel_params = List.length rels_params in
-  let rel_constructors = 
+  let rel_constructors = (* Taking into account the parameters in constructors *)
     Array.map (List.map 
     (fun (id,rt) -> (id,snd (chop_rprod_n nrel_params rt))))
     rel_constructors
   in
-  let rel_arity i funargs = 
+  let rel_arity i funargs =  (* Reduilding arities (with parameters) *)
     let rel_first_args :(Names.name * Rawterm.rawconstr * bool ) list  = 
       (snd (list_chop nrel_params funargs))
     in 
@@ -988,13 +1060,11 @@ let build_inductive parametrize funnames (funsargs: (Names.name * rawconstr * bo
       )
       rel_first_args
       (rebuild_return_type returned_types.(i))
-(*       (Topconstr.CProdN *)
-(* 	 (dummy_loc, *)
-(* 	  [[(dummy_loc,Anonymous)],returned_types.(i)], *)
-(* 	  Topconstr.CSort(dummy_loc, RProp Null ) *)
-(* 	 ) *)
-(* ) *)
   in
+  (* We need to lift back our work topconstr but only with all information 
+     We mimick a Set Printing All. 
+     Then save the graphs and reset Printing options to their primitive values 
+  *)
   let rel_arities = Array.mapi rel_arity funsargs in
   let old_rawprint = !Options.raw_print in 
   Options.raw_print := true;
