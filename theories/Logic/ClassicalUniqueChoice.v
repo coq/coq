@@ -15,7 +15,7 @@
     excluded-middle in [Set], hence it implies a strongly classical
     world. Especially it conflicts with the impredicativity of [Set].
 
-    [ChicliPottierSimpson02] Laurent Chicli, LoÃ¯c Pottier, Carlos
+    [ChicliPottierSimpson02] Laurent Chicli, Loïc Pottier, Carlos
     Simpson, Mathematical Quotients and Quotient Types in Coq,
     Proceedings of TYPES 2002, Lecture Notes in Computer Science 2646,
     Springer Verlag.  *)
