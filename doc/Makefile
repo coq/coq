@@ -164,6 +164,12 @@ refman/html/index.html: refman/Reference-Manual.html $(REFMANPNGFILES) \
 	cp refman/cover.html refman/menu.html refman/html
 	cp refman/index.html refman/html
 
+refman-quick:
+	(cd refman; \
+	 $(PDFLATEX) Reference-Manual.tex; \
+	 hevea -fix -exec xxdate.exe ./Reference-Manual.tex)
+
+
 ######################################################################
 # Tutorial
 ######################################################################
