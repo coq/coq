@@ -49,7 +49,7 @@ END
 
 
 TACTIC EXTEND newfuninv
-   [ "functional" "inversion" ident(hyp) reference(fname) ] -> 
+   [ "functional" "inversion"  quantified_hypothesis(hyp) reference(fname) ] -> 
      [
        Invfun.invfun hyp fname
      ]

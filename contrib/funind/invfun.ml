@@ -918,7 +918,7 @@ let functional_inversion kn hid fconst f_correct : tactic =
 
 
 
-let invfun hid f gl =  
+let invfun qhyp f  =  
   let f = 
     match f with 
       | ConstRef f -> f 
@@ -929,7 +929,7 @@ let invfun hid f gl =
     let f_correct = mkConst(out_some finfos.correctness_lemma) 
     and kn = fst finfos.graph_ind
     in
-    functional_inversion kn hid (mkConst f)  f_correct gl 
+    Tactics.try_intros_until (fun hid -> functional_inversion kn hid (mkConst f)  f_correct) qhyp 
   with 
     | Not_found ->  error "No graph found" 
     | Failure "out_some"  -> error "Cannot use equivalence with graph!"

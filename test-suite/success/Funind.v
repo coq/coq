@@ -37,7 +37,7 @@ Qed.
 
 Lemma test3 : forall n m, ftest n m = 0 -> (n = 0 /\ m = 0)  \/ n <> 0.
 Proof.
-intros n m H;functional inversion H ftest;auto.
+functional inversion 1 ftest;auto.
 Qed.
 
 
