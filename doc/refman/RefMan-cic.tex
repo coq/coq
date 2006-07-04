@@ -218,10 +218,10 @@ either an assumption, written $x:T$ ($T$ is a type) or a definition,
 written $x:=t:T$.  We use brackets to write contexts. A
 typical example is $[x:T;y:=u:U;z:V]$.  Notice that the variables
 declared in a context must be distinct. If $\Gamma$ declares some $x$,
-we write $x \in\Gamma$. By writing $(x:T)\in\Gamma$ we mean that
+we write $x \in \Gamma$. By writing $(x:T) \in \Gamma$ we mean that
 either $x:T$ is an assumption in $\Gamma$ or that there exists some $t$ such
 that $x:=t:T$ is a definition in $\Gamma$. If $\Gamma$ defines some
-$x:=t:T$, we also write $(x:=t:T)\in\Gamma$.  Contexts must be
+$x:=t:T$, we also write $(x:=t:T) \in \Gamma$.  Contexts must be
 themselves {\em well formed}.  For the rest of the chapter, the
 notation $\Gamma::(y:T)$ (resp. $\Gamma::(y:=t:T)$) denotes the context
 $\Gamma$ enriched with the declaration $y:T$ (resp. $y:=t:T$). The
@@ -233,8 +233,8 @@ notation $[]$ denotes the empty context.  \index{Context}
 
 We define the inclusion of two contexts $\Gamma$ and $\Delta$ (written
 as $\Gamma \subset \Delta$) as the property, for all variable $x$,
-type $T$ and term $t$, if $(x:T) \in \Gamma$ then $(x:T)\in \Delta$
-and if $(x:=t:T) \in \Gamma$ then $(x:=t:T)\in \Delta$.  
+type $T$ and term $t$, if $(x:T) \in \Gamma$ then $(x:T) \in \Delta$
+and if $(x:=t:T) \in \Gamma$ then $(x:=t:T) \in \Delta$.  
 %We write
 % $|\Delta|$ for the length of the context $\Delta$, that is for the number
 % of declarations (assumptions or definitions) in $\Delta$.
@@ -288,28 +288,30 @@ be derived from the following rules.
 \begin{description}
 \item[W-E] \inference{\WF{[]}{[]}}
 \item[W-S]  % Ce n'est pas vrai : x peut apparaitre plusieurs fois dans Gamma
-\inference{\frac{\WTEG{T}{s}~~~~s\in \Sort~~~~x \not\in
+\inference{\frac{\WTEG{T}{s}~~~~s \in \Sort~~~~x \not\in
       \Gamma           % \cup E
       }
       {\WFE{\Gamma::(x:T)}}~~~~~
     \frac{\WTEG{t}{T}~~~~x \not\in
       \Gamma           % \cup E
      }{\WFE{\Gamma::(x:=t:T)}}}
-\item[Def] \inference{\frac{\WTEG{t}{T}~~~c \notin E\cup \Gamma}
+\item[Def] \inference{\frac{\WTEG{t}{T}~~~c \notin E \cup \Gamma}
                       {\WF{E;\Def{\Gamma}{c}{t}{T}}{\Gamma}}}
+\item[Assum] \inference{\frac{\WTEG{T}{s}~~~~s \in \Sort~~~~c \notin E \cup \Gamma}
+                      {\WF{E;\Assum{\Gamma}{c}{T}}{\Gamma}}}
 \item[Ax] \index{Typing rules!Ax}
 \inference{\frac{\WFE{\Gamma}}{\WTEG{\Prop}{\Type(p)}}~~~~~
 \frac{\WFE{\Gamma}}{\WTEG{\Set}{\Type(q)}}}
 \inference{\frac{\WFE{\Gamma}~~~~i<j}{\WTEG{\Type(i)}{\Type(j)}}}
 \item[Var]\index{Typing rules!Var}
- \inference{\frac{ \WFE{\Gamma}~~~~~(x:T)\in\Gamma~~\mbox{or}~~(x:=t:T)\in\Gamma~\mbox{for some $t$}}{\WTEG{x}{T}}}
+ \inference{\frac{ \WFE{\Gamma}~~~~~(x:T) \in \Gamma~~\mbox{or}~~(x:=t:T) \in \Gamma~\mbox{for some $t$}}{\WTEG{x}{T}}}
 \item[Const]  \index{Typing rules!Const}
-\inference{\frac{\WFE{\Gamma}~~~~(c:T) \in E}{\WTEG{c}{T}}}
+\inference{\frac{\WFE{\Gamma}~~~~(c:T) \in E~~\mbox{or}~~(c:=t:T) \in E~\mbox{for some $t$} }{\WTEG{c}{T}}}
 \item[Prod]  \index{Typing rules!Prod}
 \inference{\frac{\WTEG{T}{s}~~~~s \in \Sort~~~
     \WTE{\Gamma::(x:T)}{U}{\Prop}}
       { \WTEG{\forall~x:T,U}{\Prop}}} 
-\inference{\frac{\WTEG{T}{s}~~~~s\in\{\Prop, \Set\}~~~~~~
+\inference{\frac{\WTEG{T}{s}~~~~s \in\{\Prop, \Set\}~~~~~~
     \WTE{\Gamma::(x:T)}{U}{\Set}}
       { \WTEG{\forall~x:T,U}{\Set}}} 
 \inference{\frac{\WTEG{T}{\Type(i)}~~~~i\leq k~~~
@@ -373,7 +375,7 @@ environment. It is legal to identify such a reference with its value,
 that is to expand (or unfold) it into its value. This
 reduction is called $\delta$-reduction and shows as follows.
 
-$$\WTEGRED{x}{\triangleright_{\delta}}{t}~~~~~\mbox{if $(x:=t:T)\in\Gamma$}~~~~~~~~~\WTEGRED{c}{\triangleright_{\delta}}{t}~~~~~\mbox{if $(c:=t:T)\in E$}$$
+$$\WTEGRED{x}{\triangleright_{\delta}}{t}~~~~~\mbox{if $(x:=t:T) \in \Gamma$}~~~~~~~~~\WTEGRED{c}{\triangleright_{\delta}}{t}~~~~~\mbox{if $(c:=t:T) \in E$}$$
 
 
 \paragraph{$\zeta$-reduction.}
@@ -553,15 +555,13 @@ represented by:
   \List}\]
  Assuming 
   $\Gamma_I$ is $[I_1:A_1;\ldots;I_k:A_k]$, and $\Gamma_C$ is
-  $[c_1:C_1;\ldots;c_n:C_n]$, the general typing rules are:
+  $[c_1:C_1;\ldots;c_n:C_n]$, the general typing rules are, 
+  for $1\leq j\leq k$ and $1\leq i\leq n$:
 
 \bigskip
-\inference{\frac{\NInd{\Gamma}{\Gamma_I}{\Gamma_C} \in E
-    ~~j=1\ldots k}{(I_j:A_j) \in E}}
+\inference{\frac{\NInd{\Gamma}{\Gamma_I}{\Gamma_C} \in E}{(I_j:A_j) \in E}}
 
-\inference{\frac{\NInd{\Gamma}{\Gamma_I}{\Gamma_C} \in E
-    ~~~~i=1.. n}
-   {(c_i:C_i)\in E}}
+\inference{\frac{\NInd{\Gamma}{\Gamma_I}{\Gamma_C} \in E}{(c_i:C_i) \in E}}
 
 \subsubsection{Inductive definitions with parameters}
 
@@ -593,11 +593,11 @@ p_1:P_1,\ldots,\forall p_r:P_r,\forall a_1:A_1, \ldots \forall a_n:A_n,
 with $I$ one of the inductive definitions in $\Gamma_I$. 
 We say that $n$ is the number of real arguments of the constructor
 $c$. 
-\paragraph{Context of parameters}
+\paragraph{Context of parameters.}
 If an inductive definition $\NInd{\Gamma}{\Gamma_I}{\Gamma_C}$ admits 
 $r$ inductive parameters, then there exists a context $\Gamma_P$ of
 size $r$, such that $\Gamma_P=p_1:P_1;\ldots;p_r:P_r$ and 
-if $(t:A)\in\Gamma_I,\Gamma_C$ then $A$ can be written as 
+if $(t:A) \in \Gamma_I,\Gamma_C$ then $A$ can be written as 
 $\forall p_1:P_1,\ldots \forall p_r:P_r,A'$. 
 We call $\Gamma_P$ the context of parameters of the inductive
 definition and use the notation $\forall \Gamma_P,A'$ for the term $A$.
@@ -741,7 +741,7 @@ contains an inductive declaration.
 
 \inference{\frac{\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C} \in E
     ~~~~i=1.. n}
-   {(c_i:C_i)\in E}}
+   {(c_i:C_i) \in E}}
 \end{description}
 
 \paragraph{Example.}
@@ -1298,7 +1298,7 @@ eliminations are allowed.
 \item[\Prop-extended] 
 \inference{
    \frac{I \mbox{~is an empty or singleton
-       definition}~~~s\in\Sort}{\compat{I:\Prop}{I\ra s}}
+       definition}~~~s \in \Sort}{\compat{I:\Prop}{I\ra s}}
 }
 \end{description}
 
@@ -1661,7 +1661,7 @@ The major change in the theory concerns the rule for product formation
 in the sort \Set, which is extended to a domain in any sort~:
 \begin{description}
 \item [Prod]  \index{Typing rules!Prod (impredicative Set)}
-\inference{\frac{\WTEG{T}{s}~~~~s\in\Sort~~~~~~
+\inference{\frac{\WTEG{T}{s}~~~~s \in \Sort~~~~~~
     \WTE{\Gamma::(x:T)}{U}{\Set}}
       { \WTEG{\forall~x:T,U}{\Set}}} 
 \end{description}
