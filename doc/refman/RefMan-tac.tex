@@ -1555,10 +1555,10 @@ This happens if \term$_1$ does not occur in the goal.
 \item {\tt rewrite <- {\term}}\tacindex{rewrite <-}\\
   Uses the equality \term$_1${\tt=}\term$_2$ from right to left
 
-\item {\tt rewrite {\term} in {\clause}}
+\item {\tt rewrite {\term} in \textit{clause}}
   \tacindex{rewrite \dots\ in}\\
   Analogous to {\tt rewrite {\term}} but rewriting is done following
-  {\clause} (similarly to \ref{Conversion-tactic}). For instance:
+  \textit{clause} (similarly to \ref{Conversion-tactic}). For instance:
   \texttt{rewrite H in H1,H2 |- *} means \texttt{rewrite H in H1;
     rewrite H in H2; rewrite H} and \texttt{rewrite H in * |-} will do
   \texttt{try rewrite H in H$_i$} for all hypothesis \texttt{H$_i$ <>
