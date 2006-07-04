@@ -223,13 +223,14 @@ To deactivate the printing of projections, use
 \label{Mult-match}}
 
 The basic version of \verb+match+ allows pattern-matching on simple
-patterns. As an extension, multiple and nested patterns are
-allowed, as in ML-like languages.
+patterns. As an extension, multiple nested patterns or disjunction of
+patterns are allowed, as in ML-like languages.
 
 The extension just acts as a macro that is expanded during parsing
 into a sequence of {\tt match} on simple patterns. Especially, a
-construction defined using the extended {\tt match} is printed under
-its expanded form.
+construction defined using the extended {\tt match} is generally
+printed under its expanded form (see~\texttt{Set Printing Matching} in
+section~\ref{SetPrintingMatching}).
 
 \SeeAlso chapter \ref{Mult-match-full}.
 
@@ -330,11 +331,40 @@ The general equivalence for an inductive type with one constructors {\tt C} is
 $\equiv$~
 {\tt match {\term} \zeroone{\ifitem} with C {\ident}$_1$ {\ldots} {\ident}$_n$ \verb!=>! {\term}' end}
 
-\subsection{Options for pretty-printing of {\tt match}
+\subsection{Controlling pretty-printing of {\tt match} expressions
 \label{printing-options}}
 
-There are three options controlling the pretty-printing of {\tt match}
-expressions.
+The following commands give some control over the pretty-printing of
+{\tt match} expressions.
+
+\subsubsection{Printing nested patterns
+\label{SetPrintingMatching}
+\comindex{Set Printing Matching}
+\comindex{Unset Printing Matching}
+\comindex{Test Printing Matching}}
+
+The Calculus of Inductive Constructions knows pattern-matching only
+over simple patterns. It is however convenient to re-factorize nested
+pattern-matching into a single pattern-matching over a nested pattern.
+{\Coq}'s printer try to do such limited re-factorization.
+
+\begin{quote}
+{\tt Set Printing Matching.}
+\end{quote}
+This tells {\Coq} to try to use nested patterns. This is the default
+behavior.
+
+\begin{quote}
+{\tt Unset Printing Matching.}
+\end{quote}
+This tells {\Coq} to print only simple pattern-matching problems in
+the same way as the {\Coq} kernel handles them.
+
+\begin{quote}
+{\tt Test Printing Matching.}
+\end{quote}
+This tells if the printing matching mode is on or off. The default is
+on.
 
 \subsubsection{Printing of wildcard pattern
 \comindex{Set Printing Wildcard}

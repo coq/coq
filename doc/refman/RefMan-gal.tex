@@ -308,7 +308,9 @@ chapter \ref{Addoc-syntax}.
 &&\\
 {\returntype} & ::= & {\tt return} {\term} \\
 &&\\
-{\eqn} & ::= & \nelist{\pattern}{\tt ,} {\tt =>} {\term}\\
+{\eqn} & ::= & \nelist{\multpattern}{\tt |} {\tt =>} {\term}\\
+&&\\
+{\multpattern} & ::= & \nelist{\pattern}{\tt ,}\\
 &&\\
 {\pattern} & ::= & {\qualid} \nelist{\pattern}{}  \\
  & $|$ & {\pattern} {\tt as} {\ident}             \\
@@ -316,7 +318,9 @@ chapter \ref{Addoc-syntax}.
  & $|$ & {\qualid}                              \\
  & $|$ & {\tt \_}                                  \\
  & $|$ & {\num}                                 \\
- & $|$ & {\tt (} \nelist{\pattern}{,} {\tt )}     
+ & $|$ & {\tt (} \nelist{\orpattern}{,} {\tt )}     \\
+\\
+{\orpattern} & ::= & \nelist{\pattern}{\tt |}\\
 \end{tabular}
 \end{centerframe}
 \caption{Syntax of terms (continued)}
@@ -515,10 +519,11 @@ The expression {\tt match} {\term$_0$} {\returntype} {\tt with}
 {\pattern$_1$} {\tt =>} {\term$_1$} {\tt $|$} {\ldots} {\tt $|$}
 {\pattern$_n$} {\tt =>} {\term$_n$} {\tt end}, denotes a {\em
 pattern-matching} over the term {\term$_0$} (expected to be of an
-inductive type $I$). {\term$_1$}\ldots{\term$_n$} are called branches. In
+inductive type $I$). 
+The terms {\term$_1$}\ldots{\term$_n$} are called branches. In
 a simple pattern \qualid~\nelist{\ident}{}, the qualified identifier
 {\qualid} is intended to
-be a constructor. There should be a branch for every constructor of
+be a constructor. There should be one branch for every constructor of
 $I$.
 
 The {\returntype} is used to compute the resulting type of the whole
@@ -530,9 +535,8 @@ annotation has to be given when the resulting type of the whole {\tt
 match} depends on the actual {\term$_0$} matched.
 
 There are specific notations for case analysis on types with one or
-two constructors: {\tt if / then / else} and
-{\tt let (}\ldots{\tt ) :=} \ldots {\tt in}\ldots. \SeeAlso
-section~\ref{Mult-match} for details and examples.
+two constructors: {\tt if {\ldots} then {\ldots} else {\ldots}} and
+{\tt let (}\nelist{\ldots}{,}{\tt ) :=} {\ldots} {\tt in} {\ldots}.
 
 \SeeAlso Section~\ref{Mult-match} for details and examples.
 
