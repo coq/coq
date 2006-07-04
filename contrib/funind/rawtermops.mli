@@ -106,3 +106,9 @@ val eq_cases_pattern : cases_pattern -> cases_pattern -> bool
    returns the set of variables appearing in a pattern 
 *)
 val   ids_of_pat : cases_pattern -> Names.Idset.t 
+
+
+(* 
+   removing let_in construction in a rawterm 
+*)
+val zeta_normalize : Rawterm.rawconstr -> Rawterm.rawconstr

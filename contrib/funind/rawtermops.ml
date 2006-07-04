@@ -539,3 +539,63 @@ let ids_of_pat =
   in
   ids_of_pat Idset.empty 
   
+
+
+
+
+let zeta_normalize = 
+  let rec zeta_normalize_term rt = 
+    match rt with 
+      | RRef _ -> rt 
+      | RVar _ -> rt 
+      | REvar _ -> rt 
+      | RPatVar _ -> rt 
+      | RApp(loc,rt',rtl) -> 
+	  RApp(loc,
+	       zeta_normalize_term rt',
+	       List.map zeta_normalize_term rtl
+	      )
+      | RLambda(loc,name,t,b) -> 
+	  RLambda(loc,
+		  name,
+		  zeta_normalize_term t,
+		  zeta_normalize_term b
+		 )
+      | RProd(loc,name,t,b) -> 
+	  RProd(loc,
+		name, 		  
+		zeta_normalize_term t,
+		zeta_normalize_term b
+		 )
+      | RLetIn(_,Name id,def,b) -> 
+	  zeta_normalize_term (replace_var_by_term id def b)
+      | RLetIn(loc,Anonymous,def,b) -> zeta_normalize_term b
+      | RLetTuple(loc,nal,(na,rto),def,b) -> 
+	  RLetTuple(loc,
+		    nal,
+		    (na,option_map zeta_normalize_term rto),
+		    zeta_normalize_term def,
+		    zeta_normalize_term b
+		   )
+      | RCases(loc,infos,el,brl) -> 
+	  RCases(loc,
+		 infos,
+		 List.map (fun (e,x) -> (zeta_normalize_term e,x)) el, 
+		 List.map zeta_normalize_br brl
+		)
+      | RIf(loc,b,(na,e_option),lhs,rhs) -> 
+	  RIf(loc, zeta_normalize_term b,
+	      (na,option_map zeta_normalize_term e_option),
+	      zeta_normalize_term lhs,
+	      zeta_normalize_term rhs
+	     )
+      | RRec _ -> raise (UserError("",str "Not handled RRec"))
+      | RSort _ -> rt 
+      | RHole _ -> rt 
+      | RCast(loc,b,k,t) -> 
+	  RCast(loc,zeta_normalize_term b,k,zeta_normalize_term t)
+      | RDynamic _ -> raise (UserError("",str "Not handled RDynamic"))
+  and zeta_normalize_br (loc,idl,patl,res) = 
+    (loc,idl,patl,zeta_normalize_term res)
+  in
+  zeta_normalize_term 

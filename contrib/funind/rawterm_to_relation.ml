@@ -722,6 +722,10 @@ let rec rebuild_cons nb_args relname args crossed_types depth rt =
 			    args new_crossed_types
 			    (depth + 1) b
 			in 
+			(*i The next call to mk_rel_id is valid since we are constructing the graph
+			  Ensures by: obvious
+			  i*) 
+
 			let new_t = 
 			  mkRApp(mkRVar(mk_rel_id this_relname),args'@[res_rt]) 
 			in mkRProd(n,new_t,new_b),
@@ -920,6 +924,9 @@ let build_inductive parametrize funnames (funsargs: (Names.name * rawconstr * bo
   let returned_types = Array.of_list returned_types in
   let rtl_alpha = List.map (function rt ->  (alpha_rt [] rt) ) rtl in
   let rta = Array.of_list rtl_alpha in
+  (*i The next call to mk_rel_id is valid since we are constructing the graph
+    Ensures by: obvious
+    i*) 
   let relnames = Array.map mk_rel_id funnames in
   let relnames_as_set = Array.fold_right Idset.add relnames Idset.empty in 
   let resa = Array.map (build_entry_lc funnames_as_set []) rta in 
@@ -941,6 +948,9 @@ let build_inductive parametrize funnames (funsargs: (Names.name * rawconstr * bo
   let next_constructor_id = ref (-1) in 
   let mk_constructor_id i = 
     incr next_constructor_id;
+    (*i The next call to mk_rel_id is valid since we are constructing the graph
+      Ensures by: obvious
+      i*) 
     id_of_string ((string_of_id (mk_rel_id funnames.(i)))^"_"^(string_of_int !next_constructor_id))
   in
   let rel_constructors i rt : (identifier*rawconstr) list = 
@@ -1003,9 +1013,9 @@ let build_inductive parametrize funnames (funsargs: (Names.name * rawconstr * bo
   let ext_rels_constructors = 
     Array.map (List.map 
       (fun (id,t) -> 
-	 false,((dummy_loc,id),Constrextern.extern_rawtype Idset.empty t)
+	 false,((dummy_loc,id),Constrextern.extern_rawtype Idset.empty ((* zeta_normalize *) t))
       ))
-      rel_constructors
+      (rel_constructors)
   in
   let rel_ind i ext_rel_constructors = 
     (dummy_loc,relnames.(i)),

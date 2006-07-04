@@ -909,6 +909,9 @@ let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
       ]
   in
   Command.start_proof
+    (*i The next call to mk_equation_id is valid since we are constructing the lemma
+      Ensures by: obvious
+      i*) 
     (mk_equation_id f_id)
     (Decl_kinds.Global,(Decl_kinds.Proof Decl_kinds.Theorem))
     lemma_type
@@ -920,16 +923,33 @@ let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
 
   
 let do_replace params rec_arg_num rev_args_id f fun_num all_funs g =
-  let f_id = id_of_label (con_label (destConst f)) in 
-  let equation_lemma_id = (mk_equation_id f_id) in 
   let equation_lemma = 
     try 
-      Tacinterp.constr_of_id (pf_env g) equation_lemma_id 
-    with Not_found -> 
+      let finfos = find_Function_infos (destConst f) in 
+      mkConst (out_some finfos.equation_lemma)
+    with (Not_found | Failure "out_some" as e) -> 
+      let f_id = id_of_label (con_label (destConst f)) in 
+      (*i The next call to mk_equation_id is valid since we will construct the lemma
+	Ensures by: obvious
+	i*) 
+      let equation_lemma_id = (mk_equation_id f_id) in 
       generate_equation_lemma all_funs f fun_num (List.length params) (List.length rev_args_id) rec_arg_num;
+      let _ =
+	match e with 
+	  | Failure "out_some" -> 
+	      let finfos = find_Function_infos (destConst f) in 
+	      update_Function 
+		{finfos with
+		   equation_lemma = Some (match Nametab.locate (make_short_qualid equation_lemma_id) with
+					      ConstRef c -> c
+					    | _ -> Util.anomaly "Not a constant" 
+					 )
+		}
+	  | _ -> () 
+
+      in 
       Tacinterp.constr_of_id (pf_env g) equation_lemma_id
   in
-(*   observe (Ppconstr.pr_id equation_lemma_id ++ str " has type " ++ pr_lconstr_env (pf_env g) (pf_type_of g equation_lemma)); *)
   let nb_intro_to_do = nb_prod (pf_concl g) in
     tclTHEN
       (tclDO nb_intro_to_do intro)

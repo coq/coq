@@ -19,8 +19,21 @@ exception Toberemoved_with_rel of int*constr
 exception Toberemoved
 
 
+let pr_elim_scheme el = 
+  let env = Global.env () in 
+  let msg = str "params := " ++ Printer.pr_rel_context env el.params in 
+  let env = Environ.push_rel_context el.params env in 
+  let msg = msg ++ fnl () ++ str "predicates := "++ Printer.pr_rel_context env el.predicates in 
+  let env = Environ.push_rel_context el.predicates env in 
+  let msg = msg ++ fnl () ++ str "branches := " ++ Printer.pr_rel_context env el.branches in 
+  let env = Environ.push_rel_context el.branches env in 
+  let msg = msg ++ fnl () ++ str "args := " ++ Printer.pr_rel_context env el.args in 
+  let env = Environ.push_rel_context el.args env in 
+  msg ++ fnl () ++ str "concl := " ++ pr_lconstr_env env el.concl
 
 
+let observe s = if Functional_principles_proofs.do_observe () 
+then Pp.msgnl s 
 
 
 let pr_elim_scheme el = 
@@ -285,29 +298,59 @@ let change_property_sort toSort princ princName =
 let pp_dur time time' = 
   str (string_of_float (System.time_difference time time'))
 
-let qed () = Command.save_named true 
+(* let qed () = save_named true  *)
 let defined () = Command.save_named false
-let generate_functional_principle 
+
+
+
+
+
+let build_functional_principle interactive_proof old_princ_type sorts funs i proof_tac hook =
+  (* First we get the type of the old graph principle *)
+  let mutr_nparams = (compute_elim_sig old_princ_type).nparams in 
+  (*   let time1 = System.get_time ()  in *)
+  let new_principle_type =
+    compute_new_princ_type_from_rel
+      (Array.map mkConst funs)
+      sorts
+      old_princ_type
+  in
+  (*    let time2 = System.get_time ()  in *)
+  (*    Pp.msgnl (str "computing principle type := " ++ System.fmt_time_difference time1 time2); *)
+  (*    observe (str "new_principle_type : " ++ pr_lconstr new_principle_type); *)
+  let new_princ_name =
+    next_global_ident_away true (id_of_string "___________princ_________") []
+  in
+  begin
+    Command.start_proof
+      new_princ_name
+      (Decl_kinds.Global,(Decl_kinds.Proof Decl_kinds.Theorem))
+      new_principle_type
+      (hook new_principle_type)
+    ;
+    (*       let _tim1 = System.get_time ()  in *)
+    Pfedit.by  (proof_tac (Array.map mkConst funs) mutr_nparams);
+    (*       let _tim2 =  System.get_time ()  in *)
+    (* 	begin *)
+    (* 	  let dur1 = System.time_difference tim1 tim2 in *)
+    (* 	  Pp.msgnl (str ("Time to compute proof: ") ++ str (string_of_float dur1)); *)
+    (* 	end; *)
+    get_proof_clean true 
+  end
+
+
+
+let generate_functional_principle
     interactive_proof
-    old_princ_type sorts new_princ_name funs i proof_tac 
-    = 
-  let f = funs.(i) in 
-  let type_sort = Termops.new_sort_in_family InType in 
-  let new_sorts = 
-    match sorts with 
+    old_princ_type sorts new_princ_name funs i proof_tac
+    =
+  let f = funs.(i) in
+  let type_sort = Termops.new_sort_in_family InType in
+  let new_sorts =
+    match sorts with
       | None -> Array.make (Array.length funs) (type_sort)
       | Some a -> a
   in
-  (* First we get the type of the old graph principle *)
-  let mutr_nparams = (compute_elim_sig old_princ_type).nparams in 
-  (* First we get the type of the old graph principle *)
-   let new_principle_type =
-    compute_new_princ_type_from_rel
-      (Array.map mkConst funs)
-      new_sorts
-      old_princ_type
-   in
-(*    observe (str "new_principle_type : " ++ pr_lconstr new_principle_type); *)
   let base_new_princ_name,new_princ_name =
     match new_princ_name with
       | Some (id) -> id,id
@@ -315,93 +358,40 @@ let generate_functional_principle
 	  let id_of_f = id_of_label (con_label f) in
 	  id_of_f,Indrec.make_elimination_ident id_of_f (family_of_sort type_sort)
   in
-  let names = ref [new_princ_name] in 
-  let hook _ _  =
-    if sorts = None 
+  let names = ref [new_princ_name] in
+  let hook new_principle_type _ _  =
+    if sorts = None
     then
-(*     let id_of_f = id_of_label (con_label f) in *)
-    let register_with_sort fam_sort =
-      let s = Termops.new_sort_in_family  fam_sort in
-      let name = Indrec.make_elimination_ident base_new_princ_name fam_sort in
-      let value =
-	change_property_sort s new_principle_type new_princ_name
+      (*     let id_of_f = id_of_label (con_label f) in *)
+      let register_with_sort fam_sort =
+	let s = Termops.new_sort_in_family fam_sort in
+	let name = Indrec.make_elimination_ident base_new_princ_name fam_sort in
+	let value = change_property_sort s new_principle_type new_princ_name in
+	(*       Pp.msgnl (str "new principle := " ++ pr_lconstr value); *)
+	let ce =
+	  { const_entry_body = value;
+	    const_entry_type = None;
+	    const_entry_opaque = false;
+	    const_entry_boxed = Options.boxed_definitions()
+	  }
+	in
+	ignore(
+	  Declare.declare_constant
+	    name
+	    (Entries.DefinitionEntry ce,
+	     Decl_kinds.IsDefinition (Decl_kinds.Scheme)
+	    )
+	);
+	names := name :: !names
       in
-(*       Pp.msgnl (str "new principle := " ++ pr_lconstr value); *)
-      let ce =
-	{ const_entry_body = value;
-	  const_entry_type = None;
-	  const_entry_opaque = false;
-	  const_entry_boxed = Options.boxed_definitions()
-	}
-      in
-      ignore(
-	Declare.declare_constant
-	  name
-	  (Entries.DefinitionEntry ce,
-	   Decl_kinds.IsDefinition (Decl_kinds.Scheme)
-	  )
-      );
-      names := name :: !names
-    in
-    register_with_sort InProp;
-    register_with_sort InSet
+      register_with_sort InProp;
+      register_with_sort InSet
   in
-  begin
-    Command.start_proof
-      new_princ_name
-      (Decl_kinds.Global,(Decl_kinds.Proof Decl_kinds.Theorem))
-      new_principle_type
-      hook
-    ;
-    try
-      let _tim1 = System.get_time ()  in
-      Pfedit.by  (proof_tac (Array.map mkConst funs) mutr_nparams);
-      let _tim2 =  System.get_time ()  in
-(* 	begin *)
-(* 	  let dur1 = System.time_difference tim1 tim2 in *)
-(* 	  Pp.msgnl (str ("Time to compute proof: ") ++ str (string_of_float dur1)); *)
-(* 	end; *)
-      let do_save =  not (do_observe ()) && not interactive_proof in 
-      let _ = 
-	try 
-(* 	  Vernacentries.show_script (); *)
-	  Options.silently defined ();
-	  let _dur2 = System.time_difference _tim2 (System.get_time ()) in
-(* 	  Pp.msgnl (str ("Time to check proof: ") ++ str (string_of_float dur2)); *)
-	  Options.if_verbose 
-	    (fun () -> 
-	       Pp.msgnl (
-		 prlist_with_sep
-		   (fun () -> str" is defined " ++ fnl ()) 
-		   Ppconstr.pr_id
-		   (List.rev !names) ++ str" is defined " 
-	       )
-	    ) 
-	       ()
-	with e when do_save -> 
-	  msg_warning
-	    (
-	      Cerrors.explain_exn e
-	    );
-	  if not (do_observe ())
-	  then begin Vernacentries.interp (Vernacexpr.VernacAbort None);raise e end
-      in
-      ()
-
-(*       let tim3 = Sys.time ()  in *)
-(* Pp.msgnl (str ("Time to save proof: ") ++ str (string_of_float (tim3 -. tim2))); *)
-
-    with
-      | e ->
-	  msg_warning
-	    (
-	      Cerrors.explain_exn e
-	    );
-	  if not ( do_observe ())
-	  then begin Vernacentries.interp (Vernacexpr.VernacAbort None);raise e end
-  end
-
-
+  let (id,(entry,g_kind,hook)) =
+    build_functional_principle interactive_proof old_princ_type new_sorts funs i proof_tac hook 
+  in
+  save false new_princ_name entry g_kind hook
+(*   defined  () *)
 
 
 exception Not_Rec
@@ -476,30 +466,20 @@ let get_funs_constant mp dp =
     l_const
 
 exception No_graph_found 
-	
-let make_scheme fas = 
+exception Found_type of int 
+
+let make_scheme (fas : (constant*Rawterm.rawsort) list) : Entries.definition_entry list = 
   let env = Global.env () 
   and sigma = Evd.empty in
-  let id_to_constr id = 
-      Tacinterp.constr_of_id env  id
-  in 
-  let funs = 
-    List.map
-      (fun (_,f,_) -> 
-	 try id_to_constr f     
-	 with Not_found -> 
-	   Util.error ("Cannot find "^ string_of_id f)
-      )
-      fas
-  in 
-  let first_fun = destConst (List.hd funs) in 
-  let funs_mp,funs_dp,first_fun_id = Names.repr_con first_fun in 
-  let first_fun_rel_id = mk_rel_id (id_of_label first_fun_id) in 
+  let funs = List.map fst fas in 
+  let first_fun = List.hd funs in 
+
+
+  let funs_mp,funs_dp,_ = Names.repr_con first_fun in
   let first_fun_kn = 
     try 
-    (* Fixme: take into account funs_mp and funs_dp *)
-    fst (destInd (id_to_constr first_fun_rel_id))
-    with Not_found -> raise No_graph_found
+      fst (find_Function_infos  first_fun).graph_ind 
+    with Not_found -> raise No_graph_found 
   in
   let this_block_funs_indexes = get_funs_constant funs_mp funs_dp first_fun in
   let this_block_funs = Array.map fst this_block_funs_indexes in 
@@ -507,7 +487,7 @@ let make_scheme fas =
   let funs_indexes = 
     let this_block_funs_indexes = Array.to_list this_block_funs_indexes in 
     List.map
-      (function const -> List.assoc (destConst const) this_block_funs_indexes)
+      (function const -> List.assoc const this_block_funs_indexes)
       funs
   in
   let ind_list = 
@@ -519,49 +499,149 @@ let make_scheme fas =
       )
       funs_indexes
   in
-  let l_schemes = List.map (Typing.type_of env sigma ) (Indrec.build_mutual_indrec env sigma ind_list) in 
+  let l_schemes = 
+    List.map
+      (Typing.type_of env sigma) 
+      (Indrec.build_mutual_indrec env sigma ind_list)
+  in 
   let i = ref (-1) in
   let sorts = 
-    List.rev_map (fun (_,_,x) -> 
+    List.rev_map (fun (_,x) -> 
 		Termops.new_sort_in_family (Pretyping.interp_elimination_sort x)
 	     ) 
       fas 
   in
-  let princ_names = List.map (fun (x,_,_) -> x) fas in 
-  let _ = List.map2
-    (fun princ_name scheme_type -> 
-       incr i;
-(*        observe (str "Generating " ++ Ppconstr.pr_id princ_name ++str " with " ++ *)
-(* 	       pr_lconstr scheme_type ++ str " and " ++ (fun a -> prlist_with_sep spc (fun c -> pr_lconstr (mkConst c)) (Array.to_list a)) this_block_funs *)
-(* 	       ); *)
-       generate_functional_principle
-	 false
-	 scheme_type
-	 (Some (Array.of_list sorts))
-	 (Some princ_name)
-	 this_block_funs
-	 !i
-	 (prove_princ_for_struct false !i (Array.of_list (List.map destConst funs)))
-    )
-    princ_names
-    l_schemes 
+  (* We create the first priciple by tactic *)
+  let first_type,other_princ_types = 
+    match l_schemes with 
+	s::l_schemes -> s,l_schemes
+      | _ -> anomaly ""
   in
-  ()
+  let (_,(const,_,_)) = 
+    build_functional_principle false
+      first_type
+      (Array.of_list sorts)
+      this_block_funs
+      0
+      (prove_princ_for_struct false 0 (Array.of_list funs))
+      (fun _ _ _ -> ())
+  in      
+  incr i;
+  (* The others are just deduced *)
+  if other_princ_types = [] 
+  then
+    [const]
+  else
+    let other_fun_princ_types = 
+      let funs = Array.map mkConst this_block_funs in 
+      let sorts = Array.of_list sorts in 
+      List.map (compute_new_princ_type_from_rel funs sorts) other_princ_types
+    in
+    let first_princ_body,first_princ_type = const.Entries.const_entry_body, const.Entries.const_entry_type in 
+    let ctxt,fix = Sign.decompose_lam_assum first_princ_body in (* the principle has for forall ...., fix .*)
+    let (idxs,_),(_,ta,_ as decl) = destFix fix in 
+    let other_result = 
+      List.map (* we can now compute the other principles *)
+	(fun scheme_type -> 
+	   incr i;
+	   observe (Printer.pr_lconstr scheme_type);
+	   let type_concl = snd (Sign.decompose_prod_assum scheme_type) in 
+	   let applied_f = List.hd (List.rev (snd (decompose_app type_concl))) in 
+	   let f = fst (decompose_app applied_f) in
+	   try (* we search the number of the function in the fix block (name of the function) *)
+	     Array.iteri 
+	     (fun j t -> 
+		let t =  snd (Sign.decompose_prod_assum t) in 
+		let applied_g = List.hd (List.rev (snd (decompose_app t))) in 
+		let g = fst (decompose_app applied_g) in
+		if eq_constr f g
+		then raise (Found_type j); 
+		observe (Printer.pr_lconstr f ++ str " <> " ++
+			   Printer.pr_lconstr g)
+		  
+	     )
+	     ta;
+	   (* If we reach this point, the two principle are not mutually recursive 
+	      We fall back to the previous method 
+	   *)
+	     let (_,(const,_,_)) = 
+	       build_functional_principle
+		 false 
+		 (List.nth other_princ_types (!i - 1))
+		 (Array.of_list sorts)
+		 this_block_funs
+		 !i
+		 (prove_princ_for_struct false !i (Array.of_list funs))
+		 (fun _ _ _ -> ())
+	     in 
+	     const
+	 with Found_type i -> 
+	   let princ_body = 
+	     Termops.it_mkLambda_or_LetIn ~init:(mkFix((idxs,i),decl)) ctxt
+	   in 
+	   {const with 
+	      Entries.const_entry_body = princ_body; 
+	      Entries.const_entry_type = Some scheme_type
+	   }
+      )
+      other_fun_princ_types
+    in
+    const::other_result
 
-let make_case_scheme fa = 
+let build_scheme fas = 
+(*         (fun (f,_) ->  *)
+(* 	 try Libnames.constr_of_global (Nametab.global f) *)
+(* 	 with Not_found ->  *)
+(* 	   Util.error ("Cannot find "^ Libnames.string_of_reference f) *)
+(*       ) *)
+(*       fas *)
+
+  let bodies_types = 
+    make_scheme 
+      (List.map 
+	 (fun (_,f,sort) -> 
+	    let f_as_constant =
+	      try
+		match Nametab.global f with 
+		  | Libnames.ConstRef c -> c 
+		  | _ -> Util.error "Functional Scheme can only be used with functions"
+	      with Not_found ->
+	      	Util.error ("Cannot find "^ Libnames.string_of_reference f)
+	    in
+	    (f_as_constant,sort)
+	 ) 
+	 fas
+      ) 
+  in 
+  List.iter2 
+    (fun (princ_id,_,_) def_entry -> 
+       ignore (Declare.declare_constant 
+		 princ_id 
+		 (Entries.DefinitionEntry def_entry,Decl_kinds.IsProof Decl_kinds.Theorem));
+       Options.if_verbose (fun id -> Pp.msgnl (Ppconstr.pr_id id ++ str " is defined")) princ_id
+    )
+    fas
+    bodies_types
+  
+
+
+let build_case_scheme fa = 
   let env = Global.env () 
   and sigma = Evd.empty in
-  let id_to_constr id = 
-    Tacinterp.constr_of_id env  id
-  in 
-  let funs =  (fun (_,f,_) -> id_to_constr f) fa in 
+(*   let id_to_constr id =  *)
+(*     Tacinterp.constr_of_id env  id *)
+(*   in  *)
+  let funs =  (fun (_,f,_) ->  
+		 try Libnames.constr_of_global (Nametab.global f)
+		 with Not_found -> 
+		   Util.error ("Cannot find "^ Libnames.string_of_reference f)) fa in 
   let first_fun = destConst  funs in 
-  let funs_mp,funs_dp,first_fun_id = Names.repr_con first_fun in 
-  let first_fun_rel_id = mk_rel_id (id_of_label first_fun_id) in 
-  let first_fun_kn = 
-    (* Fixme: take into accour funs_mp and funs_dp *)
-    fst (destInd (id_to_constr first_fun_rel_id))
-  in
+
+  let funs_mp,funs_dp,_ = Names.repr_con first_fun in
+  let first_fun_kn = try fst (find_Function_infos  first_fun).graph_ind with Not_found -> raise No_graph_found in
+
+
+
   let this_block_funs_indexes = get_funs_constant funs_mp funs_dp first_fun in
   let this_block_funs = Array.map fst this_block_funs_indexes in 
   let prop_sort = InProp in
