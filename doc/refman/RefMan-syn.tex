@@ -444,9 +444,10 @@ Locate "'exists' _ , _".
 \SeeAlso Section \ref{Locate}.
 
 \begin{figure}
+\begin{small}
 \begin{centerframe}
 \begin{tabular}{lcl}
-{\sentence} & ::= &
+{\sentence} & ::= & 
    \texttt{Notation} \zeroone{\tt Local} {\str} \texttt{:=} {\term} 
    \zeroone{\modifiers} \zeroone{:{\scope}} .\\
   & $|$ & 
@@ -482,6 +483,7 @@ Locate "'exists' _ , _".
   & $|$ & {\tt format} {\str} 
 \end{tabular}
 \end{centerframe}
+\end{small}
 \caption{Syntax of the variants of {\tt Notation}}
 \label{notation-syntax}
 \end{figure}
@@ -641,7 +643,8 @@ instance the infix symbol \verb=+= can be used to denote distinct
 definitions of an additive operator. Depending on which interpretation
 scopes is currently open, the interpretation is different.
 Interpretation scopes can include an interpretation for
-numerals. However, this is only made possible at the {\ocaml} level.
+numerals and strings. However, this is only made possible at the
+{\ocaml} level.
 
 See Figure \ref{notation-syntax} for the syntax of notations including
 the possibility to declare them in a given scope.  Here is a typical
@@ -832,6 +835,21 @@ type {\tt positive} (binary strictly positive numbers). It is
 delimited by key {\tt positive} and comes with an interpretation for
 numerals as closed term of type {\tt positive}.
 
+\subsubsection{\tt Q\_scope}
+
+This includes the standard arithmetical operators and relations on
+type {\tt Q} (rational numbers defined as fractions of an integer and
+a strictly positive integer modulo the equality of the
+numerator-denominator cross-product). As for numerals, only $0$ and
+$1$ have an interpretation in scope {\tt Q\_scope} (their
+interpretations are $\frac{0}{1}$ and $\frac{1}{1}$ respectively).
+
+\subsubsection{\tt Qc\_scope}
+
+This includes the standard arithmetical operators and relations on the
+type {\tt Qc} of rational numbers defined as the type of irreducible
+fractions of an integer and a strictly positive integer.
+
 \subsubsection{\tt real\_scope}
 
 This includes the standard arithmetical operators and relations on
@@ -860,6 +878,25 @@ delimited by key {\tt list}.
 \subsubsection{\tt core\_scope}
 
 This includes the notation for pairs. It is delimited by key {\tt core}.
+
+\subsubsection{\tt string\_scope}
+
+This includes notation for strings as elements of the type {\tt
+string}.  Special characters and escaping follow {\Coq} conventions
+on strings (see page~\pageref{strings}). Especially, there is no
+convention to visualize non printable characters of a string.  The
+file {\tt String.v} shows an example that contains quotes, a newline
+and a beep (i.e. the ascii character of code 7).
+
+\subsubsection{\tt char\_scope}
+
+This includes interpretation for all strings of the form
+\verb!"!$c$\verb!"! where $c$ is an ascii character, or of the form
+\verb!"!$nnn$\verb!"! where $nnn$ is a three-digits number (possibly
+with leading 0's), or of the form \verb!""""!. Their respective
+denotations are the ascii code of $c$, the decimal ascii code $nnn$,
+or the ascii code of the character \verb!"! (i.e. the ascii code
+34), all of them being represented in the type {\tt ascii}.
 
 \subsection{Displaying informations about scopes}
 
@@ -956,11 +993,14 @@ tactic language\footnote{Tactic notations are just a simplification of
 the {\tt Grammar tactic simple\_tactic} command that existed in
 versions prior to version 8.0.}. Tactic notations obey the following
 syntax
+\medskip
 
+\noindent
 \begin{tabular}{lcl}
-{\sentence} & ::= & \texttt{Tactic Notation} {\str} \sequence{\proditem}{} \\
+{\sentence} & ::= & \texttt{Tactic Notation} {\taclevel} \sequence{\proditem}{} \\
 & & \texttt{:= {\tac} .}\\
 {\proditem} & ::= & {\str} $|$ {\tacargtype}{\tt ({\ident})} \\ 
+{\taclevel} & ::= & $|$ {\tt (at level} {\naturalnumber}{\tt )} \\
 {\tacargtype} & ::= &
 %{\tt preident} $|$
 {\tt ident} $|$
@@ -974,14 +1014,18 @@ syntax
 {\tt int\_or\_var} $|$
 {\tt tactic} $|$
 \end{tabular}
+\medskip
 
-A tactic notation {\tt Tactic Notation {\str} {\sequence{\proditem}{}}
-:= {\tac}} extends the parser and pretty-printer of tactics with a
-new rule made of the juxtaposition of the head name of the tactic
-{\str} and the list of its production items (in the syntax of
-production items, {\str} stands for a terminal symbol and {\tt
-\tacargtype({\ident}) for non terminal entries}. It then evaluates
-into the tactic expression {\tac}.
+A tactic notation {\tt Tactic Notation {\taclevel}
+{\sequence{\proditem}{}} := {\tac}} extends the parser and
+pretty-printer of tactics with a new rule made of the list of
+production items. It then evaluates into the tactic expression
+{\tac}. For simple tactics, it is recommended to use a terminal
+symbol, i.e. a {\str}, for the first production item.  The tactic
+level indicates the parsing precedence of the tactic notation. This
+information is particularly relevant for notations of tacticals.
+Levels 0 to 5 are available. To know the parsing precedences of the
+existing tacticals, use the command {\tt Print Grammar tactic.}
 
 Each type of tactic argument has a specific semantic regarding how it
 is parsed and how it is interpreted. The semantic is described in the
