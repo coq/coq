@@ -256,22 +256,12 @@ and interp_xml_CoFixFunction x =
 
 (* Interpreting tactic argument *)
 
-let rec (interp_xml_tactic_expr : xml -> glob_tactic_expr) = function
-  | XmlTag (loc,"TACARG",[],[x]) ->
-      TacArg (interp_xml_tactic_arg x)
-  | _ -> error "Ill-formed xml tree"
-
-and interp_xml_tactic_arg = function
+let rec interp_xml_tactic_arg = function
   | XmlTag (loc,"TERM",[],[x]) ->
       ConstrMayEval (ConstrTerm (interp_xml_constr x,None))
   | XmlTag (loc,"CALL",al,xl) ->
       let ltacref = ltacref_of_cdata (get_xml_attr "uri" al) in
       TacCall(loc,ArgArg ltacref,List.map interp_xml_tactic_arg xl)
-(*
-  | XmlTag (loc,"TACTIC",[],[x]) ->
-      Tacexp (interp_xml_tactic_expr x)
-  | _ -> error "Ill-formed xml tree"
-*)
   | XmlTag (loc,s,_,_) -> user_err_loc (loc,"", str "Unexpected tag " ++ str s)
 
 let parse_tactic_arg ch =
