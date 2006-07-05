@@ -64,15 +64,24 @@ That is, they are recognized by the following lexical class:
 \begin{center}
 \begin{tabular}{rcl} 
 {\firstletter} & ::= & {\tt a..z} $\mid$ {\tt A..Z} $\mid$ {\tt \_}
-% $\mid$ {\tt unicode-letter}  
+$\mid$ {\tt unicode-letter}  
 \\
 {\subsequentletter} & ::= & {\tt a..z} $\mid$ {\tt A..Z} $\mid$ {\tt 0..9}
 $\mid$ {\tt \_} % $\mid$ {\tt \$}
-$\mid$ {\tt '} \\
+$\mid$ {\tt '} 
+$\mid$ {\tt unicode-letter}  
+$\mid$ {\tt unicode-id-part} \\
 {\ident} & ::= & {\firstletter} \sequencewithoutblank{\subsequentletter}{}
 \end{tabular}
 \end{center}
-All characters are meaningful. In particular, identifiers are case-sensitive.
+All characters are meaningful. In particular, identifiers are
+case-sensitive.  The entry {\tt unicode-letter} non-exhaustively
+includes Latin, Greek, Gothic, Cyrillic, Arabic, Hebrew, Georgian,
+Hangul, Hiragana and Katakana characters, CJK ideographs, mathematical
+letter-like symbols, hyphens, non-breaking space, {\ldots} The entry
+{\tt unicode-id-part} non-exhaustively includes symbols for prime
+letters and subscripts.
+
 Access identifiers, written {\accessident}, are identifiers prefixed
 by \verb!.! (dot) without blank. They are used in the syntax of qualified
 identifiers.
@@ -765,6 +774,13 @@ environment, provided that {\term} is well-typed.
        {\binder$_1$}\ldots{\binder$_n$}{\tt ,}\,\term$_1$\,{\tt :=}}\,%
        {\tt fun}\,{\binder$_1$}\ldots{\binder$_n$}\,{\tt =>}\,{\term$_2$}\,%
        {\tt .}
+
+\item {\tt Example {\ident} := {\term}.}\\
+{\tt Example {\ident} {\tt :}{\term$_1$} := {\term$_2$}.}\\
+{\tt Example {\ident} {\binder$_1$}\ldots{\binder$_n$}
+       {\tt :}\term$_1$ {\tt :=} {\term$_2$}.}\\
+\comindex{Example}
+These are synonyms of the {\tt Definition} forms.
 \end{Variants}
 
 \begin{ErrMsgs}
@@ -1066,17 +1082,23 @@ inductive types The extended syntax is:
 
 \medskip
 {\tt 
-Inductive {{\ident$_1$} {\params} : {\type$_1$} :=  \\
-\mbox{}\hspace{0.4cm}  {\ident$_1^1$} : {\type$_1^1$} \\
-\mbox{}\hspace{0.1cm}| ..  \\
-\mbox{}\hspace{0.1cm}| {\ident$_{n_1}^1$} : {\type$_{n_1}^1$}  \\
+\begin{tabular}{l}
+Inductive {\ident$_1$} {\params} : {\type$_1$} :=  \\
+\begin{tabular}{clcl}
+   & {\ident$_1^1$}     &:& {\type$_1^1$} \\
+ | & {\ldots} && \\
+ | & {\ident$_{n_1}^1$} &:& {\type$_{n_1}^1$}
+\end{tabular}  \\
 with\\
-\mbox{}\hspace{0.1cm} .. \\
+~{\ldots} \\
 with {\ident$_m$} {\params} : {\type$_m$} := \\
-\mbox{}\hspace{0.4cm}{\ident$_1^m$} : {\type$_1^m$} \\
-\mbox{}\hspace{0.1cm}| .. \\
-\mbox{}\hspace{0.1cm}| {\ident$_{n_m}^m$} : {\type$_{n_m}^m$}.
-}}
+\begin{tabular}{clcl}
+   & {\ident$_1^m$}     &:& {\type$_1^m$} \\
+ | & {\ldots} \\
+ | & {\ident$_{n_m}^m$} &:& {\type$_{n_m}^m$}.
+\end{tabular}
+\end{tabular}
+}
 \medskip
 
 \Example
@@ -1610,9 +1632,13 @@ After a statement, {\Coq} needs a proof.
 
 \begin{Variants} 
 \item {\tt Lemma {\ident} : {\type}.}\\ 
-It is a synonymous of \texttt{Theorem}
-\item {\tt Remark {\ident} : {\type}.}\\ 
-It is a synonymous of \texttt{Theorem}
+      {\tt Remark {\ident} : {\type}.}\\ 
+      {\tt Fact {\ident} : {\type}.}\\ 
+      {\tt Corollary {\ident} : {\type}.}\\ 
+      {\tt Proposition {\ident} : {\type}.}\\ 
+\comindex{Proposition}
+\comindex{Corollary}
+All these commands are synonymous of \texttt{Theorem}
 % Same as {\tt Theorem} except
 % that if this statement is in one or more levels of sections then the
 % name {\ident} will be accessible only prefixed by the sections names
@@ -1620,8 +1646,6 @@ It is a synonymous of \texttt{Theorem}
 % closed.
 % %All proofs of  persistent objects (such as theorems) referring to {\ident}
 % %within the section will be replaced by the proof of  {\ident}.
- \item {\tt Fact {\ident} : {\type}.}\\ 
-It is a synonymous of \texttt{Theorem}
 % Same as {\tt Remark} except
 % that the innermost section name is dropped from the full name.
 \item {\tt Definition {\ident} : {\type}.} \\
