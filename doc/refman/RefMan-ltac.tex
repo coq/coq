@@ -706,7 +706,9 @@ the {\Coq} source archive.
 \section{Tactic toplevel definitions}
 \comindex{Ltac}
 
-Basically, tactics toplevel definitions are made as follows:
+\subsection{Defining {\ltac} functions}
+
+Basically, {\ltac} toplevel definitions are made as follows:
 %{\tt Tactic Definition} {\ident} {\tt :=} {\tacexpr}\\
 %
 %{\tacexpr} is evaluated to $v$ and $v$ is associated to {\ident}. Next, every
@@ -717,8 +719,8 @@ Basically, tactics toplevel definitions are made as follows:
 {\tt Ltac} {\ident} {\ident}$_1$ ... {\ident}$_n$ {\tt :=}
 {\tacexpr}
 \end{quote}
-This defines a new tactic that can be used in any tactic script or new
-tactic toplevel definition.
+This defines a new {\ltac} function that can be used in any tactic
+script or new {\ltac} toplevel definition.
 
 \Rem The preceding definition can equivalently be written:
 \begin{quote}
@@ -742,8 +744,49 @@ possible with the syntax:
 %usual except that the substitutions are lazily carried out (when an identifier
 %to be evaluated is the name of a recursive definition).
 
-\endinput
 
+\subsection{Printing {\ltac} tactics}
+\comindex{Print Ltac}
+
+Defined {\ltac} functions can be displayed using the command
+
+\begin{quote}
+{\tt Print Ltac {\qualid}.}
+\end{quote}
+
+\section{Debugging {\ltac} tactics}
+\comindex{Set Ltac Debug}
+\comindex{Unset Ltac Debug}
+\comindex{Test Ltac Debug}
+
+The {\ltac} interpreter comes with a step-by-step debugger. The
+debugger can be activated using the command
+
+\begin{quote}
+{\tt Set Ltac Debug.}
+\end{quote}
+
+\noindent and deactivated using the command
+
+\begin{quote}
+{\tt Unset Ltac Debug.}
+\end{quote}
+
+To know if the debugger is on, use the command \texttt{Test Ltac Debug}.
+When the debugger is activated, it stops at every step of the
+evaluation of the current {\ltac} expression and it prints information
+on what it is doing. The debugger stops, prompting for a command which
+can be one of the following:
+
+\medskip
+\begin{tabular}{ll}
+simple newline: & go to the next step\\
+h: & get help\\
+x: & exit current evaluation\\
+s: & continue current evaluation without stopping\\
+r$n$: & advance $n$ steps further\\
+\end{tabular}
+\endinput
 
 \subsection{Permutation on closed lists}
 
