@@ -24,5 +24,9 @@ Potential sources of incompatibilities between Coq V8.0 and V8.1
 - A few changes in the library (as mentioned in the CHANGES file) may
   imply the need for local adaptations.
 
+- Occurrence numbering order for unfold, pattern, etc changed for the
+  match construction: occurrences in the return clause now come after
+  the occurrences in the term matched; this was the opposite before.
+
 - For changes in the ML interfaces, see file dev/doc/changes.txt in
   the main archive.
