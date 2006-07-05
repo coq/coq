@@ -11,28 +11,26 @@ Syntax
 - No more support for version 7 syntax and for translation to version 8 syntax.
 - In fixpoints, the { struct ... } annotation is not mandatory any more when 
   only one of the arguments has an inductive type (doc TODO)
-- Added disjunctive patterns in match-with patterns (doc TODO)
-- Support for primitive interpretation of string literals (doc TODO)
-- Extended support for Unicode ranges (doc TODO)
+- Added disjunctive patterns in match-with patterns
+- Support for primitive interpretation of string literals
+- Extended support for Unicode ranges
 
 Vernacular commands
 
-- Added "Print Ltac qualid" to print a user defined tactic (doc TODO)
+- Added "Print Ltac qualid" to print a user defined tactic.
 - Added "Print Rewrite HintDb" to print the content of a DB used by
-  autorewrite (doc TODO)
-- Added "Print Canonical Projections" (doc TODO)
-- Added "Example" as synonym of "Definition" (doc TODO)
-- Added "Property", "Proposition" and "Corollary" as extra synonyms of "Lemma"
-  (doc TODO)
+  autorewrite (doc TODO).
+- Added "Print Canonical Projections" (doc TODO).
+- Added "Example" as synonym of "Definition".
+- Added "Proposition" and "Corollary" as extra synonyms of "Lemma".
 - New command "Whelp" to send requests to the Helm database of proofs
-  formalized in the Calculus of Inductive Constructions (doc TODO)
+  formalized in the Calculus of Inductive Constructions (doc TODO).
 - Command "functional induction" has been re-implemented from the new
   "Function" command.
 
 Ltac and tactic syntactic extensions
 
-- New primitive "external" for communication with tool external to Coq
-  (doc TODO).
+- New primitive "external" for communication with tool external to Coq.
 - New semantics for "match t with": if a clause returns a
   tactic, it is now applied to the current goal. If it fails, the next
   clause or next matching subterm is tried (i.e. it behaves as "match
@@ -41,7 +39,7 @@ Ltac and tactic syntactic extensions
 - Occurrence values can be parametric in unfold, pattern, etc.
 - Added entry constr_may_eval for tactic extensions.
 - Low-priority term printer made available in ML-written tactic extensions.
-- "Tactic Notation" extended to allow notations of tacticals (doc TODO).
+- "Tactic Notation" extended to allow notations of tacticals.
 
 Tactics
 
