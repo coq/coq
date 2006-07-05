@@ -652,8 +652,11 @@ GEXTEND Gram
 	  VernacBacktrack (n,m,p)
 
 (* Tactic Debugger *)
-      |	IDENT "Debug"; IDENT "On" -> VernacDebug true
-      |	IDENT "Debug"; IDENT "Off" -> VernacDebug false
+      |	IDENT "Debug"; IDENT "On" -> 
+          VernacSetOption (SecondaryTable ("Ltac","Debug"), BoolValue true)
+
+      |	IDENT "Debug"; IDENT "Off" ->
+          VernacSetOption (SecondaryTable ("Ltac","Debug"), BoolValue false)
 
  ] ];
     END

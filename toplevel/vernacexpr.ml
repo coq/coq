@@ -281,7 +281,6 @@ type vernac_expr =
   | VernacGo of goable
   | VernacShow of showable
   | VernacCheckGuard
-  | VernacDebug of bool
   | VernacProof of raw_tactic_expr
   (* Toplevel control *)
   | VernacToplevelControl of exn

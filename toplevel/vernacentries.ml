@@ -789,6 +789,17 @@ let _ =
       optread=Pp_control.get_margin;
       optwrite=Pp_control.set_margin }
 
+let vernac_debug b =
+  set_debug (if b then Tactic_debug.DebugOn 0 else Tactic_debug.DebugOff)
+
+let _ =
+  declare_bool_option
+    { optsync=false;
+      optkey=SecondaryTable("Ltac","Debug");
+      optname="Ltac debug";
+      optread=(fun () -> get_debug () <> Tactic_debug.DebugOff);
+      optwrite=vernac_debug }
+
 let vernac_set_opacity opaq locqid =
   match Nametab.global locqid with
     | ConstRef sp ->
@@ -1069,9 +1080,6 @@ let vernac_check_guard () =
   in 
   msgnl message
 
-let vernac_debug b =
-  set_debug (if b then Tactic_debug.DebugOn 0 else Tactic_debug.DebugOff)
-
 let interp c = match c with
   (* Control (done in vernac) *)
   | (VernacTime _ | VernacVar _ | VernacList _ | VernacLoad _) -> assert false
@@ -1175,7 +1183,6 @@ let interp c = match c with
   | VernacGo g -> vernac_go g
   | VernacShow s -> vernac_show s
   | VernacCheckGuard -> vernac_check_guard ()
-  | VernacDebug b -> vernac_debug b
   | VernacProof tac -> vernac_set_end_tac tac
   (* Toplevel control *)
   | VernacToplevelControl e -> raise e
