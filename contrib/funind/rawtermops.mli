@@ -25,7 +25,7 @@ val mkRLetIn : Names.name*rawconstr*rawconstr -> rawconstr
 val mkRCases : rawconstr option * tomatch_tuple * cases_clauses -> rawconstr
 val mkRSort : rawsort -> rawconstr 
 val mkRHole : unit -> rawconstr (* we only build Evd.BinderType Anonymous holes *)
-
+val mkRCast : rawconstr* rawconstr -> rawconstr 
 (*
   Some basic functions to decompose rawconstrs
   These are analogous to the ones constrs
@@ -36,7 +36,7 @@ val raw_decompose_app : rawconstr -> rawconstr*(rawconstr list)
 
 
 (* [raw_make_eq t1 t2] build the rawconstr corresponding to [t2 = t1] *) 
-val  raw_make_eq : rawconstr -> rawconstr -> rawconstr
+val  raw_make_eq : ?typ:rawconstr -> rawconstr -> rawconstr -> rawconstr
 (* [raw_make_neq t1 t2] build the rawconstr corresponding to [t1 <> t2] *) 
 val  raw_make_neq : rawconstr -> rawconstr -> rawconstr
 (* [raw_make_or P1 P2] build the rawconstr corresponding to [P1 \/ P2] *) 

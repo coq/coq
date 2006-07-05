@@ -18,7 +18,7 @@ let mkRLetIn(n,t,b) = RLetIn(dummy_loc,n,t,b)
 let mkRCases(rto,l,brl) = RCases(dummy_loc,rto,l,brl)
 let mkRSort s = RSort(dummy_loc,s)
 let mkRHole () = RHole(dummy_loc,Evd.BinderType Anonymous)
-
+let mkRCast(b,t) = RCast(dummy_loc,b,CastCoerce,t)
 
 (*
   Some basic functions to decompose rawconstrs
@@ -49,8 +49,8 @@ let raw_decompose_app =
 
 
 (* [raw_make_eq t1 t2] build the rawconstr corresponding to [t2 = t1] *) 
-let raw_make_eq t1 t2  = 
-  mkRApp(mkRRef (Lazy.force Coqlib.coq_eq_ref),[mkRHole ();t2;t1])
+let raw_make_eq ?(typ= mkRHole ()) t1 t2  = 
+  mkRApp(mkRRef (Lazy.force Coqlib.coq_eq_ref),[typ;t2;t1])
 
 (* [raw_make_neq t1 t2] build the rawconstr corresponding to [t1 <> t2] *) 
 let raw_make_neq t1 t2 = 
@@ -386,29 +386,31 @@ let is_free_in id =
       
 
 
-let rec pattern_to_term  = function 
+let rec pattern_to_term  = function
   | PatVar(loc,Anonymous) -> assert false
-  | PatVar(loc,Name id) -> 
+  | PatVar(loc,Name id) ->
 	mkRVar id
-  | PatCstr(loc,constr,patternl,_) -> 
-      let cst_narg = 
+  | PatCstr(loc,constr,patternl,_) ->
+      let cst_narg =
 	Inductiveops.mis_constructor_nargs_env
 	  (Global.env ())
 	  constr
       in
-      let implicit_args =  
-	Array.to_list 
-	  (Array.init 
+      let implicit_args =
+	Array.to_list
+	  (Array.init
 	     (cst_narg - List.length patternl)
 	     (fun _ -> mkRHole ())
 	  )
       in
-      let patl_as_term = 
+      let patl_as_term =
 	List.map pattern_to_term patternl
       in
       mkRApp(mkRRef(Libnames.ConstructRef constr),
 	     implicit_args@patl_as_term
 	    )
+
+  
 
 let replace_var_by_term x_id term = 
   let rec replace_var_by_pattern rt = 
