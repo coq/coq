@@ -113,6 +113,7 @@ is understood as
 & | & {\tt context} {\ident} {\tt [} {\term} {\tt ]}\\
 & | & {\tt eval} {\nterm{redexpr}} {\tt in} {\term}\\
 & | & {\tt type of} {\term}\\
+& | & {\tt external} {\qstring} {\qstring} \nelist{\tacarg}{}\\
 & | & {\tt constr :} {\term}\\
 & | & \atomictac\\
 & | & {\qualid} \nelist{\tacarg}{}\\
@@ -585,13 +586,6 @@ It evaluates to an identifier unbound in the goal, which is obtained
 by padding {\qstring} with a number if necessary. If no name is given,
 the prefix is {\tt H}.
 
-\subsubsection{{\tt type of} {\term}}
-%\tacindex{type of}
-\index{Ltac!type of}
-\index{type of!in Ltac}
-
-This tactic computes the type of {\term}.
-
 \subsubsection{Computing in a constr}
 \index{Ltac!eval}
 \index{eval!in Ltac}
@@ -604,6 +598,16 @@ where \nterm{redexpr} is a reduction tactic among {\tt red}, {\tt
 hnf}, {\tt compute}, {\tt simpl}, {\tt cbv}, {\tt lazy}, {\tt unfold},
 {\tt fold}, {\tt pattern}.
 
+\subsubsection{Type-checking a term}
+%\tacindex{type of}
+\index{Ltac!type of}
+\index{type of!in Ltac}
+
+The following returns the type of {\term}:
+
+\begin{quote}
+{\tt type of} {\term}
+\end{quote}
 
 \subsubsection{Accessing tactic decomposition}
 \tacindex{info}
@@ -634,6 +638,70 @@ without having to cut manually the proof in smaller lemmas.
 \end{Variants}
 
 \ErrMsg \errindex{Proof is not complete}
+
+\subsubsection{Calling an external tactic}
+\index{Ltac!external}
+
+The tactic {\tt external} allows to run an executable outside the
+{\Coq} executable. The communication is done via an XML encoding of
+constructions. The syntax of the command is
+
+\begin{quote}
+{\tt external} "\textsl{command}" "\textsl{request}" \nelist{\tacarg}{}
+\end{quote}
+
+The string \textsl{command}, to be interpreted in the default
+execution path of the operating system, is the name of the external
+command. The string \textsl{request} is the name of a request to be
+sent to the external command. Finally the list of tactic arguments
+have to evaluate to terms. An XML tree of the following form is sent
+to the standard input of the external command.
+\medskip
+
+\begin{tabular}{l}
+\texttt{<REQUEST req="}\textsl{request}\texttt{">}\\
+the XML tree of the first argument\\
+{\ldots}\\
+the XML tree of the last argument\\
+\texttt{</REQUEST>}\\
+\end{tabular}
+\medskip
+
+Conversely, the external command must send on its standard output an
+XML tree of the following forms:
+
+\medskip
+\begin{tabular}{l}
+\texttt{<TERM>}\\
+the XML tree of a term\\
+\texttt{</TERM>}\\
+\end{tabular}
+\medskip
+
+\noindent or 
+
+\medskip
+\begin{tabular}{l}
+\texttt{<CALL uri="}\textsl{ltac\_qualified\_ident}\texttt{">}\\
+the XML tree of a first argument\\
+{\ldots}\\
+the XML tree of a last argument\\
+\texttt{</CALL>}\\
+\end{tabular}
+
+\medskip
+\noindent where \textsl{ltac\_qualified\_ident} is the name of a
+defined {\ltac} function and each subsequent XML tree is recursively a
+\texttt{CALL} or a \texttt{TERM} node.
+
+The Document Type Definition (DTD) for terms of the Calculus of
+Inductive Constructions is the one developed as part of the MoWGLI
+European project. It can be found in the file {\tt dev/doc/cic.dtd} of
+the {\Coq} source archive.
+
+An example of parser for this DTD, written in the Objective Caml -
+Camlp4 language, can be found in the file {\tt parsing/g\_xml.ml4} of
+the {\Coq} source archive.
 
 \section{Tactic toplevel definitions}
 \comindex{Ltac}
