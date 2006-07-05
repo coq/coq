@@ -414,7 +414,6 @@ let rec pr_vernac = function
 	| ExplainTree l -> str"Explain Proof Tree" ++ spc() ++ prlist_with_sep sep int l 
       in pr_showable s
   | VernacCheckGuard -> str"Guarded"
-  | VernacDebug b -> pr_topcmd b
 
   (* Resetting *)
   | VernacResetName id -> str"Reset" ++ spc() ++ pr_lident id
