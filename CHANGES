@@ -10,7 +10,7 @@ Syntax
 
 - No more support for version 7 syntax and for translation to version 8 syntax.
 - In fixpoints, the { struct ... } annotation is not mandatory any more when 
-  only one of the arguments has an inductive type (doc TODO)
+  only one of the arguments has an inductive type (doc TODO-JMN)
 - Added disjunctive patterns in match-with patterns
 - Support for primitive interpretation of string literals
 - Extended support for Unicode ranges
@@ -19,12 +19,12 @@ Vernacular commands
 
 - Added "Print Ltac qualid" to print a user defined tactic.
 - Added "Print Rewrite HintDb" to print the content of a DB used by
-  autorewrite (doc TODO).
-- Added "Print Canonical Projections" (doc TODO).
+  autorewrite (doc TODO-JMN).
+- Added "Print Canonical Projections" (doc TODO-HH).
 - Added "Example" as synonym of "Definition".
 - Added "Proposition" and "Corollary" as extra synonyms of "Lemma".
 - New command "Whelp" to send requests to the Helm database of proofs
-  formalized in the Calculus of Inductive Constructions (doc TODO).
+  formalized in the Calculus of Inductive Constructions.
 - Command "functional induction" has been re-implemented from the new
   "Function" command.
 
@@ -34,7 +34,7 @@ Ltac and tactic syntactic extensions
 - New semantics for "match t with": if a clause returns a
   tactic, it is now applied to the current goal. If it fails, the next
   clause or next matching subterm is tried (i.e. it behaves as "match
-  goal with" does) (doc TODO).
+  goal with" does) (doc TODO-HH).
 - Hint base names can be parametric in auto and trivial.
 - Occurrence values can be parametric in unfold, pattern, etc.
 - Added entry constr_may_eval for tactic extensions.
@@ -65,17 +65,17 @@ Tactics
 - Omega now handles arbitrary precision integers.
 - Several bug fixes in Reflexive Omega (romega).
 - Idtac can now be left implicit in a [...|...] construct: for instance, 
-  [ foo | | bar ] stands for [ foo | idtac | bar ] (doc TODO).
+  [ foo | | bar ] stands for [ foo | idtac | bar ] (doc TODO-HH).
 - Fixed a "fold" bug (non critical but possible source of incompatibilities).
 - Added classical_left and classical_right which transforms |- A \/ B into 
   ~B |- A and ~A |- B respectively.
 - Added command "Declare Implicit Tactic" to set up a default tactic to be
-  used to solve unresolved subterms of term arguments of tactics (doc TODO).
+  used to solve unresolved subterms of term arguments of tactics (doc TODO-HH).
 - Better support for coercions to Sortclass in tactics expecting type 
   arguments.
 - Tactic "assert" now accepts "as" intro patterns and "by" tactic clauses.
 - New tactic "pose proof" that generalizes "assert (id:=p)" with intro patterns
-  (doc TODO).
+  (doc TODO-JMN).
 - New introduction pattern "?" for letting Coq choose a name.
 - Added "eassumption".
 - Added option 'using lemmas' to auto, trivial and eauto.
@@ -111,7 +111,7 @@ Extraction
 
 Modules
 
-- Added "Locate Module qualid" to get the full path of a module (TODO doc).
+- Added "Locate Module qualid" to get the full path of a module (doc TODO).
 - Module/Declare Module syntax made more uniform (doc TODO).
 - Added syntactic sugar "Declare Module Export/Import" and
   "Module Export/Import" (doc TODO).
@@ -177,7 +177,7 @@ Tools
   "make clean"
 - New environment variable COQREMOTEBROWSER to set the command invoked
   to start the remote browser both in Coq and coqide. Standard syntax:
-  "%s" is the placeholder for the URL (doc TODO)
+  "%s" is the placeholder for the URL.
 
 
 Changes from V8.0beta to V8.0
