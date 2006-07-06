@@ -2035,7 +2035,6 @@ let rec xlate_vernac =
   | VernacExtend (s, l) ->
       CT_user_vernac
        (CT_ident s, CT_varg_list (List.map coerce_genarg_to_VARG l))
-  | VernacDebug b -> xlate_error "Debug On/Off not supported"
   | VernacList((_, a)::l) -> 
       CT_coerce_COMMAND_LIST_to_COMMAND
 	(CT_command_list(xlate_vernac a, 
