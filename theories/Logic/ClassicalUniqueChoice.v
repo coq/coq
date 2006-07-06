@@ -39,7 +39,7 @@ intros A B.
 apply (dependent_unique_choice A (fun _ => B)).
 Qed.
 
-(** The followig proof comes from [ChicliPottierSimpson02] *)
+(** The following proof comes from [ChicliPottierSimpson02] *)
 
 Require Import Setoid.
 
