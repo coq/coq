@@ -135,13 +135,11 @@ Section Facts.
   Proof. 
     simpl in |- *; auto.
   Qed.
-  Hint Resolve in_eq.
   
   Theorem in_cons : forall (a b:A) (l:list A), In b l -> In b (a :: l).
   Proof. 
     simpl in |- *; auto.
   Qed.
-  Hint Resolve in_cons.
 
   Theorem in_nil : forall a:A, ~ In a nil.
   Proof.
@@ -197,8 +195,6 @@ Section Facts.
     induction l; simpl in |- *; auto.
     rewrite <- IHl; auto.
   Qed.
-  Hint Resolve app_nil_end.
-  
 
   (** [app] is associative *)
   Theorem app_ass : forall l m n:list A, (l ++ m) ++ n = l ++ m ++ n.
@@ -211,9 +207,8 @@ Section Facts.
 
   Theorem ass_app : forall l m n:list A, l ++ m ++ n = (l ++ m) ++ n.
   Proof. 
-    auto.
+    auto using app_ass.
   Qed.
-  Hint Resolve ass_app.
 
   (** [app] commutes with [cons] *) 
   Theorem app_comm_cons : forall (x y:list A) (a:A), a :: (x ++ y) = (a :: x) ++ y.
@@ -296,7 +291,6 @@ Section Facts.
     now_show ((a0 = a \/ In a y) \/ In a m).
     elim (H H1); auto.
   Qed.
-  Hint Immediate in_app_or.
 
   Lemma in_or_app : forall (l m:list A) (a:A), In a l \/ In a m -> In a (l ++ m).
   Proof. 
@@ -313,7 +307,6 @@ Section Facts.
     now_show (H = a \/ In a (y ++ m)).
     elim H2; auto.
   Qed.
-  Hint Resolve in_or_app.
 
 
 End Facts.
@@ -890,7 +883,7 @@ Section ListOps.
     break_list l1 b l1' H0; break_list l3 c l3' H1.
     auto.
     apply perm_trans with (l3'++c::l4); auto.
-    apply perm_trans with (l1'++a::l2); auto.
+    apply perm_trans with (l1'++a::l2); auto using Permutation_cons_app.
     apply perm_skip.
     apply (IH a l1' l2 l3' l4); auto.
     (* swap *)
