@@ -267,6 +267,12 @@ applied and $v_i$ is applied to the $i$-th generated subgoal by the
 application of $v_0$, for $=1,...,n$. It fails if the application of
 $v_0$ does not generate exactly $n$ subgoals.
 
+\variant If no tactic is given for the $i$-th generated subgoal, it
+behaves as if the tactic {\tt idtac} were given. For instance, {\tt
+split ; [ | auto ]} is a shortcut for
+{\tt split ; [ idtac | auto ]}.
+
+
 \subsubsection{For loop}
 \tacindex{do}
 \index{Tacticals!do@{\tt do}}

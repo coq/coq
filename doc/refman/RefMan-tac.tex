@@ -1567,7 +1567,7 @@ This happens if \term$_1$ does not occur in the goal.
 \item {\tt rewrite {\term} in \textit{clause}}
   \tacindex{rewrite \dots\ in}\\
   Analogous to {\tt rewrite {\term}} but rewriting is done following
-  \textit{clause} (similarly to \ref{Conversion-tactic}). For instance:
+  \textit{clause} (similarly to \ref{Conversion-tactics}). For instance:
   \texttt{rewrite H in H1,H2 |- *} means \texttt{rewrite H in H1;
     rewrite H in H2; rewrite H} and \texttt{rewrite H in * |-} will do
   \texttt{try rewrite H in H$_i$} for all hypothesis \texttt{H$_i$ <>
@@ -2801,50 +2801,17 @@ $ident_n$} applying {\tt \tac} to the main subgoal after each rewriting step.
 
 \end{Variant}
 
-\subsection{\tt Hint Rewrite \term$_1$ \dots \term$_n$ : \ident
-\comindex{Hint Rewrite}}
+\SeeAlso section \ref{HintRewrite} for feeding the database of lemmas used by {\tt autorewrite}.
 
-This vernacular command adds the terms {\tt \term$_1$ \dots \term$_n$}
-(their types must be equalities) in the rewriting base {\tt \ident}
-with the default orientation (left to right). Notice that the
-rewriting bases are distinct from the {\tt auto} hint bases and that
-{\tt auto} does not take them into account.
-
-This command is synchronous with the section mechanism (see \ref{Section}):
-when closing a section, all aliases created by \texttt{Hint Rewrite} in that
-section are lost. Conversely, when loading a module, all \texttt{Hint Rewrite}
-declarations at the global level of that module are loaded.
-
-\begin{Variants}
-\item {\tt Hint Rewrite -> \term$_1$ \dots \term$_n$ : \ident}\\
-This is strictly equivalent to the command above (we only make explicit the
-orientation which otherwise defaults to {\tt ->}).
-
-\item {\tt Hint Rewrite <- \term$_1$ \dots \term$_n$ : \ident}\\
-Adds the rewriting rules {\tt \term$_1$ \dots \term$_n$} with a right-to-left
-orientation in the base {\tt \ident}.
-
-\item {\tt Hint Rewrite \term$_1$ \dots \term$_n$ using {\tac} : {\ident}}\\
-When the rewriting rules {\tt \term$_1$ \dots \term$_n$} in {\tt \ident} will
-be used, the tactic {\tt \tac} will be applied to the generated subgoals, the
-main subgoal excluded.
-
-%% \item 
-%% {\tt Hint Rewrite [ \term$_1$ \dots \term$_n$ ] in \ident}\\
-%% {\tt Hint Rewrite [ \term$_1$ \dots \term$_n$ ] in {\ident} using {\tac}}\\
-%% These are deprecated syntactic variants for
-%% {\tt Hint Rewrite \term$_1$ \dots \term$_n$ : \ident} and
-%% {\tt Hint Rewrite \term$_1$ \dots \term$_n$ using {\tac} : {\ident}}.
-
-\end{Variants}
-
-\SeeAlso \ref{autorewrite-example} for examples showing the use of
+\SeeAlso section \ref{autorewrite-example} for examples showing the use of
 this tactic. 
 
 % En attente d'un moyen de valoriser les fichiers de demos
 %\SeeAlso file \texttt{contrib/Rocq/DEMOS/Demo\_AutoRewrite.v}
 
-\section{The hints databases for {\tt auto} and {\tt eauto}
+\section{Controlling automation}
+
+\subsection{The hints databases for {\tt auto} and {\tt eauto}
 \index{Hints databases}
 \label{Hints-databases}
 \comindex{Hint}}
@@ -3134,6 +3101,43 @@ every moment.
 
 \end{Variants}
 
+\subsection{\tt Hint Rewrite \term$_1$ \dots \term$_n$ : \ident
+\label{HintRewrite}
+\comindex{Hint Rewrite}}
+
+This vernacular command adds the terms {\tt \term$_1$ \dots \term$_n$}
+(their types must be equalities) in the rewriting base {\tt \ident}
+with the default orientation (left to right). Notice that the
+rewriting bases are distinct from the {\tt auto} hint bases and that
+{\tt auto} does not take them into account.
+
+This command is synchronous with the section mechanism (see \ref{Section}):
+when closing a section, all aliases created by \texttt{Hint Rewrite} in that
+section are lost. Conversely, when loading a module, all \texttt{Hint Rewrite}
+declarations at the global level of that module are loaded.
+
+\begin{Variants}
+\item {\tt Hint Rewrite -> \term$_1$ \dots \term$_n$ : \ident}\\
+This is strictly equivalent to the command above (we only make explicit the
+orientation which otherwise defaults to {\tt ->}).
+
+\item {\tt Hint Rewrite <- \term$_1$ \dots \term$_n$ : \ident}\\
+Adds the rewriting rules {\tt \term$_1$ \dots \term$_n$} with a right-to-left
+orientation in the base {\tt \ident}.
+
+\item {\tt Hint Rewrite \term$_1$ \dots \term$_n$ using {\tac} : {\ident}}\\
+When the rewriting rules {\tt \term$_1$ \dots \term$_n$} in {\tt \ident} will
+be used, the tactic {\tt \tac} will be applied to the generated subgoals, the
+main subgoal excluded.
+
+%% \item 
+%% {\tt Hint Rewrite [ \term$_1$ \dots \term$_n$ ] in \ident}\\
+%% {\tt Hint Rewrite [ \term$_1$ \dots \term$_n$ ] in {\ident} using {\tac}}\\
+%% These are deprecated syntactic variants for
+%% {\tt Hint Rewrite \term$_1$ \dots \term$_n$ : \ident} and
+%% {\tt Hint Rewrite \term$_1$ \dots \term$_n$ using {\tac} : {\ident}}.
+
+\end{Variants}
 
 \subsection{Hints and sections
 \label{Hint-and-Section}}
@@ -3143,6 +3147,42 @@ section. Conversely, all hints of a module \texttt{A} that are not
 defined inside a section (and not defined with option {\tt Local}) become
 available when the module {\tt A} is imported (using
 e.g. \texttt{Require Import A.}).
+
+\subsection{Setting implicit automation tactics}
+
+\subsubsection{\tt Proof with {\tac}.}
+\label{ProofWith}
+\comindex{Proof with}
+
+  This command may be used to start a proof. It defines a default
+  tactic to be used each time a tactic command {\tac$_1$} is ended by
+  ``\verb#...#''. In this case the tactic command typed by the user is
+  equivalent to \tac$_1$;{\tac}.
+
+\SeeAlso {\tt Proof.} in section~\ref{BeginProof}.
+
+\subsubsection{\tt Declare Implicit Tactic {\tac}.}
+\comindex{Declare Implicit Tactic}
+
+This command declares a tactic to be used to solve implicit arguments
+that {\Coq} does not know how to solve by unification. It is used
+every time the term argument of a tactic has one of its holes not
+fully resolved.
+
+Here is an example:
+
+\begin{coq_example}
+Parameter quo : nat -> forall n:nat, n<>0 -> nat.
+Notation "x // y" := (quo x y _) (at level 40).
+
+Declare Implicit Tactic assumption.
+Goal forall n m, m<>0 -> { q:nat & { r | q * m + r = n } }.
+intros.
+exists (n // m).
+\end{coq_example}
+
+The tactic {\tt exists (n // m)} did not fail. The hole was solved by
+{\tt assumption} so that it behaved as {\tt exists (quo n m H)}.
 
 \section{Generation of induction principles with {\tt Scheme}
 \label{Scheme}
