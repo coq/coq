@@ -269,6 +269,7 @@ let process_object oldenv olddir full_olddir newdir
 	  let mib = Environ.lookup_mind newkn (Global.env ()) in
 	  { s_CONST = info.s_CONST;
 	    s_PARAM = mib.mind_packets.(0).mind_nparams;
+	    s_PROJKIND = info.s_PROJKIND;
 	    s_PROJ = List.map (option_app (fun kn -> recalc_kn newdir kn)) info.s_PROJ } in
 	((Struc ((newkn,i),strobj))::ops, ids_to_discard, work_alist)
 

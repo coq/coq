@@ -21,7 +21,7 @@ open Topconstr
    [coers]; it returns the absolute names of projections *)
 
 val declare_projections :
-  inductive -> bool list -> rel_context -> constant option list
+  inductive -> bool list -> rel_context -> bool list * constant option list
 
 val definition_structure :
   lident with_coercion * local_binder list *
