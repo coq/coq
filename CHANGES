@@ -20,7 +20,7 @@ Vernacular commands
 - Added "Print Ltac qualid" to print a user defined tactic.
 - Added "Print Rewrite HintDb" to print the content of a DB used by
   autorewrite (doc TODO-JMN).
-- Added "Print Canonical Projections" (doc TODO-HH).
+- Added "Print Canonical Projections".
 - Added "Example" as synonym of "Definition".
 - Added "Proposition" and "Corollary" as extra synonyms of "Lemma".
 - New command "Whelp" to send requests to the Helm database of proofs
@@ -65,12 +65,12 @@ Tactics
 - Omega now handles arbitrary precision integers.
 - Several bug fixes in Reflexive Omega (romega).
 - Idtac can now be left implicit in a [...|...] construct: for instance, 
-  [ foo | | bar ] stands for [ foo | idtac | bar ] (doc TODO-HH).
+  [ foo | | bar ] stands for [ foo | idtac | bar ].
 - Fixed a "fold" bug (non critical but possible source of incompatibilities).
 - Added classical_left and classical_right which transforms |- A \/ B into 
   ~B |- A and ~A |- B respectively.
 - Added command "Declare Implicit Tactic" to set up a default tactic to be
-  used to solve unresolved subterms of term arguments of tactics (doc TODO-HH).
+  used to solve unresolved subterms of term arguments of tactics.
 - Better support for coercions to Sortclass in tactics expecting type 
   arguments.
 - Tactic "assert" now accepts "as" intro patterns and "by" tactic clauses.
