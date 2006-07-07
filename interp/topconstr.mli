@@ -159,6 +159,9 @@ val prod_constr_expr : constr_expr -> local_binder list -> constr_expr
 (* Includes let binders *)
 val local_binders_length : local_binder list -> int
 
+(* Excludes let binders *)
+val local_assums_length : local_binder list -> int
+
 (* Does not take let binders into account *)
 val names_of_local_assums : local_binder list -> name located list
 
