@@ -1231,8 +1231,8 @@ argument. They are needed to ensure that the {\tt Fixpoint} definition
 always terminates. The point of the {\tt \{struct \ident {\tt \}}}
 annotation is to let the user tell the system which argument decreases
 along the recursive calls. This annotation may be left implicit for
-fixpoints with one argument. For instance, one can define the addition
-function as :
+fixpoints where only one argument has an inductive type. For instance,
+one can define the addition function as :
 
 \begin{coq_example}
 Fixpoint add (n m:nat) {struct n} : nat :=

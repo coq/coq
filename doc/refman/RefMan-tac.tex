@@ -535,6 +535,11 @@ in the list of subgoals remaining to prove.
 
    This tactic behaves like \texttt{assert ({\ident} : {\form})}.
 
+\item \texttt{pose proof {\term} as {\ident}}
+
+  This tactic behaves like \texttt{assert ({\ident:T} by exact {\term}} where
+  \texttt{T} is the type of {\term}. 
+
 \end{Variants}
 
 % PAS CLAIR;
@@ -1274,6 +1279,10 @@ last introduced hypothesis.
 \Rem for an inductive type with one constructor, the pattern notation
 {\tt ($p_{1}$,\ldots,$p_{n}$)} can be used instead of
 {\tt [} $p_{1} $\ldots $p_{n}$ {\tt ]}.
+
+\item \texttt{pose proof {\term} as {\intropattern}}
+
+  This tactic behaves like \texttt{destruct {\term} as {\intropattern}}.
 
 \item{\tt destruct {\term} using {\qualid}}
 
