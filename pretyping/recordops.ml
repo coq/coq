@@ -31,6 +31,7 @@ open Classops
 type struc_typ = {
   s_CONST : identifier; 
   s_PARAM : int;
+  s_PROJKIND : bool list;
   s_PROJ : constant option list }
 
 let structure_table = ref (Indmap.empty : struc_typ Indmap.t)
@@ -61,8 +62,9 @@ let (inStruc,outStruc) =
 		    classify_function = (fun (_,x) -> Substitute x);
 		    export_function = (function x -> Some x)  }
 
-let add_new_struc (s,c,n,l) = 
-  Lib.add_anonymous_leaf (inStruc (s,{s_CONST=c;s_PARAM=n;s_PROJ=l}))
+let add_new_struc (s,c,n,kl,l) = 
+  Lib.add_anonymous_leaf
+    (inStruc (s,{s_CONST=c;s_PARAM=n;s_PROJ=l;s_PROJKIND=kl}))
 
 let find_structure indsp = Indmap.find indsp !structure_table
 

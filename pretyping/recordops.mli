@@ -21,10 +21,11 @@ open Library
 type struc_typ = {
   s_CONST : identifier; 
   s_PARAM : int;
+  s_PROJKIND : bool list;
   s_PROJ : constant option list }
 
 val add_new_struc : 
-  inductive * identifier * int * constant option list -> unit
+  inductive * identifier * int * bool list * constant option list -> unit
 
 (* [find_structure isp] returns the infos associated to inductive path
    [isp] if it corresponds to a structure, otherwise fails with [Not_found] *)

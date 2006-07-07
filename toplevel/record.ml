@@ -152,12 +152,12 @@ let declare_projections indsp coers fields =
   let paramargs = extended_rel_list 1 paramdecls in (*def in [[params;x:rp]]*)
   let x = Termops.named_hd (Global.env()) r Anonymous in
   let lifted_fields = lift_rel_context 1 fields in
-  let (_,sp_projs,_) =
+  let (_,kinds,sp_projs,_) =
     List.fold_left2
-      (fun (nfi,sp_projs,subst) coe (fi,optci,ti) ->
+      (fun (nfi,kinds,sp_projs,subst) coe (fi,optci,ti) ->
 	match fi with
 	| Anonymous ->
-	    (nfi-1, None::sp_projs,NoProjection fi::subst)
+	    (nfi-1,(optci=None)::kinds,None::sp_projs,NoProjection fi::subst)
 	| Name fid ->
             try
               let ccl = subst_projection fid subst ti in
@@ -196,18 +196,19 @@ let declare_projections indsp coers fields =
 	      end;
 	      let proj_args = (*Rel 1 refers to "x"*) paramargs@[mkRel 1] in
 	      let constr_fip = applist (constr_fi,proj_args) in
-	      (nfi-1, (Some kn)::sp_projs, Projection constr_fip::subst)
+	      (nfi-1,(optci=None)::kinds,(Some kn)::sp_projs, 
+              Projection constr_fip::subst)
             with NotDefinable why ->
 	      warning_or_error coe indsp why;
-	      (nfi-1, None::sp_projs,NoProjection fi::subst))
-      (List.length fields,[],[]) coers (List.rev fields)
-  in sp_projs
+	     (nfi-1,(optci=None)::kinds,None::sp_projs,NoProjection fi::subst))
+      (List.length fields,[],[],[]) coers (List.rev fields)
+  in (kinds,sp_projs)
 
 (* [fs] corresponds to fields and [ps] to parameters; [coers] is a boolean 
    list telling if the corresponding fields must me declared as coercion *)
 let definition_structure ((is_coe,(_,idstruc)),ps,cfs,idbuild,s) =
   let coers,fs = List.split cfs in
-  let nparams = local_binders_length ps in
+  let nparams = List.length (names_of_local_assums ps) in
   let extract_name acc = function
       Vernacexpr.AssumExpr((_,Name id),_) -> id::acc
     | Vernacexpr.DefExpr ((_,Name id),_,_) -> id::acc
@@ -231,7 +232,7 @@ let definition_structure ((is_coe,(_,idstruc)),ps,cfs,idbuild,s) =
       mind_entry_inds = [mie_ind] } in
   let sp = declare_mutual_with_eliminations true mie in
   let rsp = (sp,0) in (* This is ind path of idstruc *)
-  let sp_projs = declare_projections rsp coers fields in
+  let kinds,sp_projs = declare_projections rsp coers fields in
   let build = ConstructRef (rsp,1) in (* This is construct path of idbuild *)
   if is_coe then Class.try_add_new_coercion build Global;
-  Recordops.add_new_struc (rsp,idbuild,nparams,List.rev sp_projs)
+  Recordops.add_new_struc (rsp,idbuild,nparams,List.rev kinds,List.rev sp_projs)

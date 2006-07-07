@@ -47,7 +47,7 @@ let objdef_declare ref =
   let f,args = match kind_of_term t with
     | App (f,args) -> f,args 
     | _ -> objdef_err ref in
-  let { s_PARAM = p; s_PROJ = lpj } = 
+  let { s_PARAM = p; s_PROJ = lpj; s_PROJKIND = kl } = 
     try (find_structure
 	   (match kind_of_term f with
               | Construct (indsp,1) -> indsp
@@ -56,6 +56,7 @@ let objdef_declare ref =
   let params, projs =
     try list_chop p (Array.to_list args)
     with _ -> objdef_err ref in
+  let lpj = fst (list_filter2 (fun _ b -> b) (lpj,kl)) in
   let lps = 
     try List.combine lpj projs 
     with _ -> objdef_err ref in
