@@ -20,8 +20,6 @@ Require Import FMapInterface.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Arguments Scope list [type_scope].
-
 Module Raw (X:OrderedType).
 
 Module E := X.
