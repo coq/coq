@@ -9,11 +9,11 @@ open Util
 open Rawtermops
 
 let observe strm =  
-  if Tacinterp.get_debug () <> Tactic_debug.DebugOff  
+  if do_observe ()
   then Pp.msgnl strm 
   else ()
 let observennl strm =  
-  if Tacinterp.get_debug () <> Tactic_debug.DebugOff  
+  if do_observe ()
   then Pp.msg strm 
   else ()
 
@@ -416,6 +416,40 @@ let add_pat_variables pat typ env : Environ.env =
 
 
 
+
+let rec pattern_to_term_and_type env typ  = function
+  | PatVar(loc,Anonymous) -> assert false
+  | PatVar(loc,Name id) ->
+	mkRVar id
+  | PatCstr(loc,constr,patternl,_) ->
+      let cst_narg =
+	Inductiveops.mis_constructor_nargs_env
+	  (Global.env ())
+	  constr
+      in
+      let Inductiveops.IndType(indf,indargs) = 
+	try Inductiveops.find_rectype env Evd.empty typ
+	with Not_found -> assert false 
+      in
+      let constructors = Inductiveops.get_constructors env indf in 
+      let constructor  = List.find (fun cs -> cs.Inductiveops.cs_cstr = constr) (Array.to_list constructors) in 
+      let cs_args_types :types list = List.map (fun (_,_,t) -> t) constructor.Inductiveops.cs_args in 
+      let _,cstl = Inductiveops.dest_ind_family indf in 
+      let csta = Array.of_list cstl in 
+      let implicit_args =
+	Array.to_list
+	  (Array.init
+	     (cst_narg - List.length patternl)
+	     (fun i -> Detyping.detype false [] (Termops.names_of_rel_context env) csta.(i))
+	  )
+      in
+      let patl_as_term =
+	List.map2 (pattern_to_term_and_type env)  (List.rev cs_args_types)  patternl
+      in
+      mkRApp(mkRRef(Libnames.ConstructRef constr),
+	     implicit_args@patl_as_term
+	    )
+
 (* [build_entry_lc funnames avoid rt] construct the list (in fact a build_entry_return) 
    of constructors corresponding to [rt] when replacing calls to [funnames] by calls to the 
    corresponding graphs. 
@@ -689,7 +723,7 @@ and build_entry_lc_from_case env funname make_discr
 	  List.map 
 	    (build_entry_lc_from_case_term
 	       env types
-	       funname (make_discr (List.map fst el))
+	       funname (make_discr (* (List.map fst el) *))
 	       []  brl 
 	       case_resl.to_avoid) 
 	    case_resl.result 
@@ -799,7 +833,8 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 			     List.for_all (fun x -> x) unif) patterns_to_prevent
 	   then 
 	     let i = List.length patterns_to_prevent in 
-	     [(Prod Anonymous,make_discr i  )]
+	     let pats_as_constr = List.map2 (pattern_to_term_and_type new_env) types patl in
+	     [(Prod Anonymous,make_discr pats_as_constr i  )]
 	   else 
 	     []
 	  )

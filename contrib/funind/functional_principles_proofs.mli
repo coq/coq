@@ -16,5 +16,4 @@ val prove_principle_for_gen :
   Tacmach.tactic
 
 
-val is_pte  : rel_declaration -> bool 
-val do_observe : unit -> bool 
+(* val is_pte  : rel_declaration -> bool  *)

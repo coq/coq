@@ -238,6 +238,19 @@ let prepare_body (name,annot,args,types,body) rt =
   (fun_args,rt')
 
 
+let derive_inversion fix_names = 
+  try
+    Invfun.derive_correctness 
+      Functional_principles_types.make_scheme
+      functional_induction 
+	  (List.map (fun id -> destConst (Tacinterp.constr_of_id (Global.env ()) id)) fix_names)
+      (*i The next call to mk_rel_id is valid since we have just construct the graph 
+	Ensures by : register_built
+	i*) 
+      (List.map (fun id -> destInd (Tacinterp.constr_of_id (Global.env ()) (mk_rel_id id))) fix_names)
+  with e -> 
+    msg_warning (str "Cannot define correction of function and graph" ++ Cerrors.explain_exn e)
+	  
 let generate_principle 
     do_built fix_rec_l recdefs  interactive_proof parametrize 
     (continue_proof : int -> Names.constant array -> Term.constr array -> int -> Tacmach.tactic) : unit =
@@ -358,7 +371,7 @@ let register_wf ?(is_mes=false) fname wf_rel_expr wf_arg args ret_type body
 	(generate_correction_proof_wf f_ref tcc_lemma_ref is_mes
 	   functional_ref eq_ref rec_arg_num rec_arg_type nb_args relation
 	);
-      Command.save_named true
+      derive_inversion [fname]
     with e -> 
       (* No proof done *) 
       ()
@@ -486,23 +499,8 @@ let do_generate_principle register_built interactive_proof fixpoint_exprl  =
 	    interactive_proof
 	    true
 	    (Functional_principles_proofs.prove_princ_for_struct interactive_proof);
-	  if register_built 
-	  then
-	    begin
-	      try 
-		Invfun.derive_correctness 
-		  Functional_principles_types.make_scheme
-		  functional_induction 
-		  (List.map (fun id -> destConst (Tacinterp.constr_of_id (Global.env ()) id)) fix_names)
-		  (*i The next call to mk_rel_id is valid since we have just construct the graph 
-		    Ensures by : register_built
-		    i*) 
-		  (List.map (fun id -> destInd (Tacinterp.constr_of_id (Global.env ()) (mk_rel_id id))) fix_names)
-	      with e -> 
-		msg_warning (str "Cannot define correction of function and graph" ++ Cerrors.explain_exn e)
-	    end;
+	  if register_built then derive_inversion  fix_names;
 	  true;
-		  
   in
   ()
 

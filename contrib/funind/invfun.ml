@@ -66,10 +66,6 @@ let pr_elim_scheme el =
 (* The local debuging mechanism *)
 let msgnl = Pp.msgnl
 
-let do_observe () = 
-  Tacinterp.get_debug () <> Tactic_debug.DebugOff  
-
-
 let observe strm =
   if do_observe ()
   then Pp.msgnl strm
@@ -580,6 +576,14 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	tclTHENSEQ[
 	  tclMAP h_intro ids;
 	  Equality.rewriteLR (mkConst eq_lemma);
+	  (* Don't forget to $\zeta$ normlize the term since the principles have been $\zeta$-normalized *)
+	  h_reduce 
+	    (Rawterm.Cbv
+	       {Rawterm.all_flags 
+		with Rawterm.rDelta = false; 		 
+	       }) 
+	    onConcl
+	  ;
 	  h_generalize (List.map mkVar ids);
 	  thin ids
 	]
@@ -933,3 +937,43 @@ let invfun qhyp f  =
   with 
     | Not_found ->  error "No graph found" 
     | Failure "out_some"  -> error "Cannot use equivalence with graph!"
+
+
+let invfun qhyp f g = 
+  match f with 
+    | Some f -> invfun qhyp f g
+    | None -> 
+	Tactics.try_intros_until 
+	  (fun hid g -> 
+	     let hyp_typ = pf_type_of g (mkVar hid)  in 
+	     match kind_of_term hyp_typ with 
+	       | App(eq,args) when eq_constr eq (Coqlib.build_coq_eq ()) -> 
+		   begin
+		     let f1,_ = decompose_app args.(1) in 
+		     try 
+		       if not (isConst f1) then failwith "";
+		       let finfos = find_Function_infos (destConst f1) in 
+		       let f_correct = mkConst(out_some finfos.correctness_lemma) 
+		       and kn = fst finfos.graph_ind
+		       in
+		       functional_inversion kn hid f1 f_correct g
+		     with | Failure "" | Failure "out_some" | Not_found -> 
+		       try 
+			 let f2,_ = decompose_app args.(2) in 
+			 if not (isConst f2) then failwith "";
+			 let finfos = find_Function_infos (destConst f2) in 
+			 let f_correct = mkConst(out_some finfos.correctness_lemma) 
+			 and kn = fst finfos.graph_ind
+			 in
+			 functional_inversion kn hid  f2 f_correct g
+		       with
+			 | Failure "" -> 
+			     errorlabstrm "" (Ppconstr.pr_id hid ++ str " must contain at leat one function")
+			 | Failure "out_some"  ->  
+			     error "Cannot use equivalence with graph for any side of equality"
+			 | Not_found -> error "No graph found for any side of equality" 
+		   end
+	       | _ -> errorlabstrm "" (Ppconstr.pr_id hid ++ str " must be an equality ")
+	  )
+	  qhyp
+	  g

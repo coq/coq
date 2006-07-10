@@ -16,10 +16,7 @@ open Indfun_common
 open Libnames
 
 let msgnl = Pp.msgnl
-
-let do_observe () = 
-  Tacinterp.get_debug () <> Tactic_debug.DebugOff  
-
+  
 
 let observe strm =
   if do_observe ()
@@ -751,10 +748,6 @@ let build_proof
      (build_proof_aux do_finalize dyn_infos) g
   and build_proof_args do_finalize dyn_infos (* f_args'  args *) :tactic =
     fun g ->
-(*      if Tacinterp.get_debug () <> Tactic_debug.DebugOff  *)
-(*      then msgnl (str "build_proof_args with "  ++  *)
-(* 		   pr_lconstr_env (pf_env g) f_args' *)
-(* 		); *)
       let (f_args',args) = dyn_infos.info in 
       let tac : tactic =
 	fun g -> 

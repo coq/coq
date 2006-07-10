@@ -100,3 +100,6 @@ val update_Function : function_info -> unit
 val pr_info : function_info -> Pp.std_ppcmds
 val pr_table : unit -> Pp.std_ppcmds
 
+
+val function_debug : bool ref 
+val do_observe : unit -> bool

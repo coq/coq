@@ -442,3 +442,25 @@ let add_Function f =
   update_Function finfos
 
 let pr_table () = pr_table !function_table
+(*********************************)
+(* Debuging *)
+let function_debug = ref false 
+open Goptions
+
+let function_debug_sig =
+  {
+    optsync = false;
+    optname = "Function debug";
+    optkey =  PrimaryTable("Function_debug");
+    optread = (fun () -> !function_debug);
+    optwrite = (fun b -> function_debug := b)
+  }
+
+let _ = declare_bool_option function_debug_sig
+
+
+let do_observe () = 
+  !function_debug = true
+      
+      
+    

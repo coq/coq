@@ -32,8 +32,9 @@ let pr_elim_scheme el =
   msg ++ fnl () ++ str "concl := " ++ pr_lconstr_env env el.concl
 
 
-let observe s = if Functional_principles_proofs.do_observe () 
-then Pp.msgnl s 
+let observe s = 
+  if do_observe () 
+  then Pp.msgnl s 
 
 
 let pr_elim_scheme el = 
@@ -49,8 +50,9 @@ let pr_elim_scheme el =
   msg ++ fnl () ++ str "concl := " ++ pr_lconstr_env env el.concl
 
 
-let observe s = if Functional_principles_proofs.do_observe () 
-then Pp.msgnl s 
+let observe s = 
+  if do_observe () 
+  then Pp.msgnl s 
 
 (* 
    Transform an inductive induction principle into 

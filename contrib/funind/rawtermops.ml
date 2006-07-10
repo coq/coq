@@ -321,7 +321,7 @@ let rec alpha_rt excluded rt =
 	     List.map (alpha_rt excluded) args
 	    )
   in 
-  if Tacinterp.get_debug () <> Tactic_debug.DebugOff  && false 
+  if Indfun_common.do_observe ()  && false 
   then
     Pp.msgnl (str "debug: alpha_rt(" ++ str "[" ++
 	      prlist_with_sep (fun _ -> str";") Ppconstr.pr_id excluded ++
