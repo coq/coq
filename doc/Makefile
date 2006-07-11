@@ -110,7 +110,7 @@ REFMANCOQTEXFILES=\
   refman/RefMan-mod.v.tex refman/RefMan-tac.v.tex \
   refman/RefMan-cic.v.tex refman/RefMan-lib.v.tex \
   refman/RefMan-tacex.v.tex refman/RefMan-syn.v.tex \
-  refman/RefMan-oth.v.tex \
+  refman/RefMan-oth.v.tex refman/RefMan-ltac.v.tex \
   refman/Cases.v.tex refman/Coercion.v.tex refman/Extraction.v.tex \
   refman/Program.v.tex refman/Omega.v.tex refman/Polynom.v.tex \
   refman/Setoid.v.tex refman/Helm.tex # refman/Natural.v.tex
@@ -119,7 +119,7 @@ REFMANTEXFILES=\
   refman/headers.tex \
   refman/Reference-Manual.tex refman/RefMan-pre.tex \
   refman/RefMan-int.tex refman/RefMan-pro.tex \
-  refman/RefMan-com.tex refman/RefMan-ltac.tex \
+  refman/RefMan-com.tex \
   refman/RefMan-uti.tex refman/RefMan-ide.tex \
   refman/RefMan-add.tex refman/RefMan-modr.tex \
   $(REFMANCOQTEXFILES) \

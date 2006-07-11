@@ -103,12 +103,18 @@ is understood as
 {\tt match reverse goal with} \nelist{\contextrule}{\tt |} {\tt end}\\
 & | &
 {\tt match} {\tacexpr} {\tt with} \nelist{\matchrule}{\tt |} {\tt end}\\
+& | &
+{\tt lazymatch goal with} \nelist{\contextrule}{\tt |} {\tt end}\\
+& | &
+{\tt lazymatch reverse goal with} \nelist{\contextrule}{\tt |} {\tt end}\\
+& | &
+{\tt lazymatch} {\tacexpr} {\tt with} \nelist{\matchrule}{\tt |} {\tt end}\\
 & | & {\tt abstract} {\atom}\\
 & | & {\tt abstract} {\atom} {\tt using} {\ident} \\
 & | & {\tt first [} \nelist{\tacexpr}{\tt |} {\tt ]}\\
 & | & {\tt solve [} \nelist{\tacexpr}{\tt |} {\tt ]}\\
-& | & {\tt idtac} ~|~ {\tt idtac} {\qstring}\\
-& | & {\tt fail} ~|~ {\tt fail} {\naturalnumber} {\qstring}\\
+& | & {\tt idtac} \sequence{\messagetoken}{}\\
+& | & {\tt fail} \zeroone{\naturalnumber} \sequence{\messagetoken}{}\\
 & | & {\tt fresh} ~|~ {\tt fresh} {\qstring}\\
 & | & {\tt context} {\ident} {\tt [} {\term} {\tt ]}\\
 & | & {\tt eval} {\nterm{redexpr}} {\tt in} {\term}\\
@@ -123,6 +129,8 @@ is understood as
            {\qualid} \\
 & | & ()\\
 & | & {\tt (} {\tacexpr} {\tt )}\\
+\\
+{\messagetoken}\!\!\!\!\!\! & ::= & {\qstring} ~|~ {\term} ~|~ {\integer} \\
 \end{tabular}
 \end{centerframe}
 \caption{Syntax of the tactic language}
@@ -376,10 +384,13 @@ tries to apply $v_2$ and so on. It fails if there is no solving tactic.
 
 The constant {\tt idtac} is the identity tactic: it leaves any goal
 unchanged but it appears in the proof script.
-\begin{quote}
-{\tt idtac} and {\tt idtac "message"}
-\end{quote}
-The latter variant prints the string on the standard output.
+
+\variant {\tt idtac \nelist{\messagetoken}{}}
+
+This prints the given tokens. Strings and integers are printed
+literally. If a term is given, it is printed, its variables being
+interpreted in the current environment. In particular, if a variable
+is given, its value is printed.
 
 
 \subsubsection{Failing}
@@ -388,17 +399,24 @@ The latter variant prints the string on the standard output.
 
 The tactic {\tt fail} is the always-failing tactic: it does not solve
 any goal. It is useful for defining other tacticals since it can be
-catched by {\tt try} or {\tt match goal}. There are three variants:
-\begin{quote}
-{\tt fail $n$}, {\tt fail "message"} and {\tt fail $n$ "message"}
-\end{quote}
+catched by {\tt try} or {\tt match goal}. 
+
+\begin{Variants}
+\item {\tt fail $n$}\\
 The number $n$ is the failure level. If no level is specified, it
 defaults to $0$.  The level is used by {\tt try} and {\tt match goal}.
 If $0$, it makes {\tt match goal} considering the next clause
 (backtracking). If non zero, the current {\tt match goal} block or
 {\tt try} command is aborted and the level is decremented.
 
-\ErrMsg \errindex{Tactic Failure "message" (level $n$)}.
+\item {\tt fail \nelist{\messagetoken}{}}\\
+The given tokens are used for printing the failure message.
+
+\item {\tt fail $n$ \nelist{\messagetoken}{}}\\
+This is a combination of the previous variants.
+\end{Variants}
+
+\ErrMsg \errindex{Tactic Failure {\it message} (level $n$)}.
 
 \subsubsection{Local definitions}
 \index{Ltac!let}
@@ -471,10 +489,13 @@ The {\tacexpr} is evaluated and should yield a term which is matched
 pattern matching instantiations to the metavariables. If the matching
 with {\cpattern}$_1$ fails, {\cpattern}$_2$ is used and so on.  The
 pattern {\_} matches any term and shunts all remaining patterns if
-any. If {\tacexpr}$_1$ evaluates to a tactic, this tactic is not
-immediately applied to the current goal (in contrast with {\tt match
-goal}). If all clauses fail (in particular, there is no pattern {\_})
-then a no-matching error is raised.
+any. If {\tacexpr}$_1$ evaluates to a tactic and the {\tt match}
+expression is in position to be applied to a goal (e.g. it is not
+bound to a variable by a {\tt let in}, then this tactic is applied. If
+the tactic succeeds, the list of resulting subgoals is the result of
+the {\tt match} expression. On the opposite, if it fails, the next
+pattern is tried. If all clauses fail (in particular, there is no
+pattern {\_}) then a no-matching error is raised.
 
 \begin{ErrMsgs}
 
@@ -488,7 +509,8 @@ then a no-matching error is raised.
 
 \end{ErrMsgs}
 
-\index{context!in pattern}
+\begin{Variants}
+\item \index{context!in pattern}
 There is a special form of patterns to match a subterm against the
 pattern:
 \begin{quote}
@@ -500,11 +522,36 @@ is the initial term where the matched subterm is replaced by a
 hole. The definition of {\tt context} in expressions below will show
 how to use such term contexts.
 
-This operator never makes backtracking. If there are several subterms
-matching the pattern, only the first match is considered. Note that
-the order of matching is left unspecified.
-%% TODO: clarify this point! It *should* be specified
+If the evaluation of the right-hand-side of a valid match fails, the
+next matching subterm is tried. If no further subterm matches, the
+next clause is tried. Matching subterms are considered top-bottom and
+from left to right (with respect to the raw printing obtained by
+setting option {\tt Printing All}, see section~\ref{SetPrintingAll}).
 
+\begin{coq_example}
+Ltac f x :=
+  match x with
+    context f [S ?X] => 
+    idtac X;                    (* To display the evaluation order *)
+    assert (p := refl_equal 1 : X=1);    (* To filter the case X=1 *)
+    let x:= context f[O] in assert (x=O) (* To observe the context *)
+  end.
+Goal True.
+f (3+4).
+\end{coq_example}
+
+\item \index{lazymatch!in Ltac}
+\index{Ltac!lazymatch}
+Using {\tt lazymatch} instead of {\tt match} has an effect if the
+right-hand-side of a clause returns a tactic. With {\tt match}, the
+tactic is applied to the current goal (and the next clause is tried if
+it fails). With {\tt lazymatch}, the tactic is directly returned as
+the result of the whole {\tt lazymatch} block without being first
+tried to be applied to the goal. Typically, if the {\tt lazymatch}
+block is bound to some variable $x$ in a {\tt let in}, then tactic
+expression gets bound to the variable $x$.
+
+\end{Variants}
 
 \subsubsection{Pattern matching on goals}
 \index{Ltac!match goal}
@@ -528,8 +575,6 @@ We can make pattern matching on goals using the following expression:
 \end{tabbing}
 \end{quote}
 
-% TODO: specify order of hypothesis and explain reverse...
-
 If each hypothesis pattern $hyp_{1,i}$, with $i=1,...,m_1$
 is matched (non-linear first order unification) by an hypothesis of
 the goal and if {\cpattern}$_1$ is matched by the conclusion of the
@@ -542,7 +587,9 @@ hypotheses is tried with the same proof context pattern. If there is
 no other combination of hypotheses then the second proof context
 pattern is tried and so on. If the next to last proof context pattern
 fails then {\tacexpr}$_{n+1}$ is evaluated to $v_{n+1}$ and $v_{n+1}$
-is applied.
+is applied. Note also that matching against subterms (using the {\tt
+context} {\ident} {\tt [} {\cpattern} {\tt ]}) is available and may
+itself induce extra backtrackings.
 
 \ErrMsg \errindex{No matching clauses for match goal}
 
@@ -558,6 +605,36 @@ left (i.e. $hyp_{i,m_i}$ before $hyp_{i,1}$). For each hypothesis
 pattern, the goal hypothesis are matched in order (fresher hypothesis
 first), but it possible to reverse this order (older first) with
 the {\tt match reverse goal with} variant.
+
+\variant
+\index{lazymatch goal!in Ltac}
+\index{Ltac!lazymatch goal}
+\index{lazymatch reverse goal!in Ltac}
+\index{Ltac!lazymatch reverse goal}
+Using {\tt lazymatch} instead of {\tt match} has an effect if the
+right-hand-side of a clause returns a tactic. With {\tt match}, the
+tactic is applied to the current goal (and the next clause is tried if
+it fails). With {\tt lazymatch}, the tactic is directly returned as
+the result of the whole {\tt lazymatch} block without being first
+tried to be applied to the goal. Typically, if the {\tt lazymatch}
+block is bound to some variable $x$ in a {\tt let in}, then tactic
+expression gets bound to the variable $x$.
+
+\begin{coq_example}
+Ltac test_lazy :=
+  lazymatch goal with
+  | _ => idtac "here"; fail 
+  | _ => idtac "wasn't lazy"; trivial
+  end.
+Ltac test_eager :=
+  match goal with
+  | _ => idtac "here"; fail 
+  | _ => idtac "wasn't lazy"; trivial
+  end.
+Goal True.
+test_lazy || idtac "was lazy".
+test_eager || idtac "was lazy".
+\end{coq_example}
 
 \subsubsection{Filling a term context}
 \index{context!in expression}
