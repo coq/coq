@@ -784,9 +784,7 @@ These are synonyms of the {\tt Definition} forms.
 \end{Variants}
 
 \begin{ErrMsgs}
-\item \errindex{In environment {\dots} the term: {\term$_2$} does not have type
-    {\term$_1$}}.\\
-    \texttt{Actually, it has type {\term$_3$}}.
+\item \errindex{Error: The term ``{\term}'' has type "{\type}" while it is expected to have type ``{\type}''}
 \end{ErrMsgs}
 
 \SeeAlso Sections \ref{Opaque}, \ref{Transparent}, \ref{unfold}
@@ -1210,20 +1208,22 @@ how to introduce infinite objects in Section~\ref{CoFixpoint}.
 %%
 \subsection{Definition of recursive functions}
 
-\subsubsection{\tt Fixpoint {\ident} {\params} {\tt \{struct}
-  \ident$_0$ {\tt \}} : type$_0$ := \term$_0$ 
-\comindex{Fixpoint}
-\label{Fixpoint}}
+\subsubsection{Recursive functions over a inductive type}
 
-This command allows to define inductive objects using a fixed point
-construction. The meaning of this declaration is to define {\it ident}
-a recursive function with arguments specified by the binders in
-\params{} % {\binder$_1$}\ldots{\binder$_n$} 
-such that {\it ident} applied to
-arguments corresponding to these binders has type \type$_0$, and is
-equivalent to the expression \term$_0$. The type of the {\ident} is
-consequently {\tt forall {\params} {\tt,} \type$_0$}
-and the value is equivalent to {\tt fun {\params} {\tt =>} \term$_0$}.
+The command:
+\begin{center}
+  \texttt{Fixpoint {\ident} {\params} {\tt \{struct}
+  \ident$_0$ {\tt \}} : type$_0$ := \term$_0$ 
+  \comindex{Fixpoint}\label{Fixpoint}}
+\end{center}
+allows to define inductive objects using a fixed point construction.
+The meaning of this declaration is to define {\it ident} a recursive
+function with arguments specified by the binders in {\params} such
+that {\it ident} applied to arguments corresponding to these binders
+has type \type$_0$, and is equivalent to the expression \term$_0$. The
+type of the {\ident} is consequently {\tt forall {\params} {\tt,}
+  \type$_0$} and the value is equivalent to {\tt fun {\params} {\tt
+    =>} \term$_0$}.
 
 To be accepted, a {\tt Fixpoint} definition has to satisfy some
 syntactical constraints on a special argument called the decreasing
@@ -1349,23 +1349,25 @@ Fixpoint tree_size (t:tree) : nat :=
 A generic command {\tt Scheme} is useful to build automatically various
 mutual induction principles. It is described in Section~\ref{Scheme}.
 
-\subsubsection{\tt Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
- {\tt \{}decrease\_annot{\tt\}} : type$_0$ := \term$_0$.
-}
-\comindex{Function}
-\label{Function}
+\subsubsection{A more complex definition of recursive functions}
 
-This \emph{experimental} command can be seen as a generalization of
-{\tt Fixpoint}.  It is actually a wrapper for several ways of defining
-a function \emph{and other useful related objects}, namely: an
-induction principle that reflects the recursive structure of the
-function (see \ref{FunInduction}), and its fixpoint equality (not
-always, see below).  The meaning of this declaration is to define a
-function {\it ident}, similarly to {\tt Fixpoint}. Like in {\tt
-Fixpoint}, the decreasing argument must be given (unless the function
-is not recursive), but it must not necessary be \emph{structurally}
-decreasing. The point of the {\tt
-\{\}} annotation is to name the decreasing argument \emph{and} to
+The \emph{experimental} command 
+\begin{center}
+   \texttt{Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
+     \{decrease\_annot\} : type$_0$ := \term$_0$}
+   \comindex{Function}
+   \label{Function}
+\end{center}
+can be seen as a generalization of {\tt Fixpoint}.  It is actually a
+wrapper for several ways of defining a function \emph{and other useful
+  related objects}, namely: an induction principle that reflects the
+recursive structure of the function (see \ref{FunInduction}), and its
+fixpoint equality (not always, see below).  The meaning of this
+declaration is to define a function {\it ident}, similarly to {\tt
+  Fixpoint}. Like in {\tt Fixpoint}, the decreasing argument must be
+given (unless the function is not recursive), but it must not
+necessary be \emph{structurally} decreasing. The point of the {\tt
+  \{\}} annotation is to name the decreasing argument \emph{and} to
 describe which kind of decreasing criteria must be used to ensure
 termination of recursive calls.
 
@@ -1442,43 +1444,35 @@ This error happens generally when:
 
 \SeeAlso{\ref{FunScheme},\ref{FunScheme-examples},\ref{FunInduction}}
 
-Depending on the {\tt \{\}} annotation, different definition
+Depending on the {\tt \{$\ldots$\}} annotation, different definition
 mechanisms are used by {\tt Function}. More precise description
 given below.
 
+\begin{Variants}
+\item \texttt{ Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
+    : type$_0$ := \term$_0$}
 
+  Defines the not recursive function \ident\ as if declared with
+  \texttt{Definition}.  Three elimination schemes {\tt\ident\_rect},
+  {\tt\ident\_rec} and {\tt\ident\_ind} are generated (see the
+  documentation of {\tt Inductive} \ref{Inductive}), which reflect the
+  pattern matching structure of \term$_0$.
 
-\subsubsection{\tt Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
- : type$_0$ := \term$_0$.
-\comindex{Function}
-}
-
-Defines the not recursive function \ident\ as if declared with
-\texttt{Definition}.  Three elimination schemes {\tt\ident\_rect},
-{\tt\ident\_rec} and {\tt\ident\_ind} are generated (see the
-documentation of {\tt Inductive} \ref{Inductive}), which reflect the
-pattern matching structure of \term$_0$.
-
-
-\subsubsection{\tt Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
- {\tt \{}{\tt struct} \ident$_0${\tt\}} : type$_0$ := \term$_0$.
-\comindex{Function}
-}
-
-Defines the structural recursive  function \ident\ as if declared with
-\texttt{Fixpoint}   .  Three   induction   schemes  {\tt\ident\_rect},
-{\tt\ident\_rec}   and  {\tt\ident\_ind}   are   generated  (see   the
-documentation of {\tt  Inductive} \ref{Inductive}), which reflect the
-recursive structure  of \term$_0$. When  there is only  one parameter,
-{\tt \{struct} \ident$_0${\tt\}} can be omitted.
-
-\subsubsection{\tt Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
- {\tt \{}{\tt measure \term$_1$} \ident$_0${\tt\}} : type$_0$ := \term$_0$.
-\comindex{Function}}
-
-\subsubsection{\tt Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
- {\tt \{}{\tt wf \term$_1$} \ident$_0${\tt\}} : type$_0$ := \term$_0$.
-\comindex{Function}}
+\item \texttt{Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
+    {\tt \{}{\tt struct} \ident$_0${\tt\}} : type$_0$ := \term$_0$}
+  
+  Defines the structural recursive function \ident\ as if declared
+  with \texttt{Fixpoint}.  Three induction schemes {\tt\ident\_rect},
+  {\tt\ident\_rec} and {\tt\ident\_ind} are generated (see the
+  documentation of {\tt Inductive} \ref{Inductive}), which reflect the
+  recursive structure of \term$_0$. When there is only one parameter,
+  {\tt \{struct} \ident$_0${\tt\}} can be omitted.
+  
+\item \texttt{Function {\ident} {\binder$_1$}\ldots{\binder$_n$} {\tt
+      \{}{\tt measure \term$_1$} \ident$_0${\tt\}} : type$_0$ :=
+    \term$_0$}
+\item \texttt{Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
+ {\tt \{}{\tt wf \term$_1$} \ident$_0${\tt\}} : type$_0$ := \term$_0$}
 
 Defines a recursive function by well founded recursion. \textbf{The
 module \texttt{Recdef} of the standard library must be loaded for this
@@ -1534,21 +1528,21 @@ subgoals belonging to a Lemma {\ident}{\tt\_tcc}. % These subgoals are independe
 %The decreasing argument cannot be dependent of another??
 
 %Exemples faux ici
+\end{Variants}
 
 
+\subsubsection{Recursive functions over co-indcutive types}
 
-
-
-\subsubsection{\tt CoFixpoint {\ident} : \type$_0$ := \term$_0$.
-\comindex{CoFixpoint}
-\label{CoFixpoint}}
-
-The {\tt CoFixpoint} command introduces a method for constructing an
-infinite object of a coinduc\-tive type. For example, the stream
-containing all natural numbers can be introduced applying the
-following method to the number \texttt{O} (see
-Section~\ref{CoInductiveTypes} for the definition of {\tt Stream},
-{\tt hd} and {\tt tl}):
+The command:
+\begin{center}
+  \texttt{CoFixpoint {\ident} : \type$_0$ := \term$_0$}
+  \comindex{CoFixpoint}\label{CoFixpoint}
+\end{center}
+introduces a method for constructing an infinite object of a
+coinduc\-tive type. For example, the stream containing all natural
+numbers can be introduced applying the following method to the number
+\texttt{O} (see Section~\ref{CoInductiveTypes} for the definition of
+{\tt Stream}, {\tt hd} and {\tt tl}):
 \begin{coq_eval}
 Reset Initial.
 CoInductive Stream : Set :=

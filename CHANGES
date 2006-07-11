@@ -10,7 +10,7 @@ Syntax
 
 - No more support for version 7 syntax and for translation to version 8 syntax.
 - In fixpoints, the { struct ... } annotation is not mandatory any more when 
-  only one of the arguments has an inductive type (doc TODO-JMN)
+  only one of the arguments has an inductive type
 - Added disjunctive patterns in match-with patterns
 - Support for primitive interpretation of string literals
 - Extended support for Unicode ranges
@@ -19,7 +19,7 @@ Vernacular commands
 
 - Added "Print Ltac qualid" to print a user defined tactic.
 - Added "Print Rewrite HintDb" to print the content of a DB used by
-  autorewrite (doc TODO-JMN).
+  autorewrite.
 - Added "Print Canonical Projections".
 - Added "Example" as synonym of "Definition".
 - Added "Proposition" and "Corollary" as extra synonyms of "Lemma".
@@ -75,8 +75,7 @@ Tactics
 - Better support for coercions to Sortclass in tactics expecting type 
   arguments.
 - Tactic "assert" now accepts "as" intro patterns and "by" tactic clauses.
-- New tactic "pose proof" that generalizes "assert (id:=p)" with intro patterns
-  (doc TODO-JMN).
+- New tactic "pose proof" that generalizes "assert (id:=p)" with intro patterns.
 - New introduction pattern "?" for letting Coq choose a name.
 - Added "eassumption".
 - Added option 'using lemmas' to auto, trivial and eauto.
@@ -112,13 +111,13 @@ Extraction
 
 Modules
 
-- Added "Locate Module qualid" to get the full path of a module (doc TODO).
-- Module/Declare Module syntax made more uniform (doc TODO).
+- Added "Locate Module qualid" to get the full path of a module.
+- Module/Declare Module syntax made more uniform.
 - Added syntactic sugar "Declare Module Export/Import" and
-  "Module Export/Import" (doc TODO).
+  "Module Export/Import".
 - Added syntactic sugar "Module M(Export/Import X Y: T)" and
   "Module Type M(Export/Import X Y: T)"
-  (only for interactive definitions) (doc TODO)
+  (only for interactive definitions)
 - Construct "with" generalized to module paths:
    T with (Definition|Module) M1.M2....Mn.l := l' (doc TODO).
 
