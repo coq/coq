@@ -34,7 +34,8 @@ Ltac and tactic syntactic extensions
 - New semantics for "match t with": if a clause returns a
   tactic, it is now applied to the current goal. If it fails, the next
   clause or next matching subterm is tried (i.e. it behaves as "match
-  goal with" does) (doc TODO-HH).
+  goal with" does). The keyword "lazymatch" can be used to delay the 
+  evaluation of tactics occurring in matching clauses.
 - Hint base names can be parametric in auto and trivial.
 - Occurrence values can be parametric in unfold, pattern, etc.
 - Added entry constr_may_eval for tactic extensions.
