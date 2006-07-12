@@ -831,6 +831,38 @@ This command displays the current nesting depth used for display.
 %\subsection{\tt Abstraction ...}
 %Not yet documented.
 
+\section{Controlling the conversion algorithm}
+
+{\Coq} comes with two algorithms to check the convertibility of types
+(see section~\ref{convertibility}). The first algorithm lazily
+compares applicative terms while the other is a brute-force but efficient
+algorithm that first normalizes the terms before comparing them.  The
+second algorithm is based on a bytecode representation of terms
+similar to the bytecode representation used in the ZINC virtual
+machine~\cite{Leroy90}. It is specially useful for intensive
+computation of algebraic values, such as numbers, and for reflexion-based
+tactics.
+
+\subsection{\tt Set Virtual Machine
+\label{SetVirtualMachine}
+\comindex{Set Virtual Machine}}
+
+This activates the bytecode-based conversion algorithm.
+
+\subsection{\tt Unset Virtual Machine
+\comindex{Unset Virtual Machine}}
+
+This deactivates the bytecode-based conversion algorithm.
+
+\subsection{\tt Test Virtual Machine
+\comindex{Test Virtual Machine}}
+
+This tells if the bytecode-based conversion algorithm is
+activated. The default behavior is to have the bytecode-based
+conversion algorithm deactivated.
+
+\SeeAlso sections~\ref{vmcompute} and~\ref{vmoption}.
+
 % $Id$ 
 
 %%% Local Variables: 

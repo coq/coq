@@ -86,6 +86,7 @@ you move the \Coq\ binaries and library after installation.
 
 \section{Options}
 \index{Options of the command line}
+\label{vmoption}
 
 The following command-line options are recognized by the commands {\tt
   coqc} and {\tt coqtop}, unless stated otherwise:
@@ -238,6 +239,11 @@ The following command-line options are recognized by the commands {\tt
   This avoids loading in memory the proofs of opaque theorems
   resulting in a smaller memory requirement and faster compilation;
   warning: this invalidates some features such as the extraction tool.
+
+\item[{\tt -vm}]\ 
+
+  This activates the use of the bytecode-based conversion algorithm
+  for the current session (see section~\ref{SetVirtualMachine}).
 
 \item[{\tt -image} {\em file}]\ 
 
