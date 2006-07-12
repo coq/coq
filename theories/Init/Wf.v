@@ -146,6 +146,8 @@ Section Well_founded_2.
   Variable R : A * B -> A * B -> Prop.
 
   Variable P : A -> B -> Type. 
+
+  Section Acc_iter_2.
   Variable
     F :
       forall (x:A) (x':B),
@@ -156,6 +158,7 @@ Section Well_founded_2.
     F
       (fun (y:A) (y':B) (h:R (y, y') (x, x')) =>
          Acc_iter_2 (x:=y) (x':=y') (Acc_inv a (y, y') h)).
+  End Acc_iter_2.
 
   Hypothesis Rwf : well_founded R.
 

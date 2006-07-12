@@ -11,6 +11,7 @@
 (*i*)
 open Dyn
 open Pp
+open Util
 open Names
 open Proof_type
 open Tacmach
@@ -20,6 +21,7 @@ open Tacexpr
 open Genarg
 open Topconstr
 open Mod_subst
+open Redexpr
 (*i*)
 
 (* Values for interpretation *)
@@ -38,12 +40,6 @@ type value =
 and interp_sign =
   { lfun : (identifier * value) list;
     debug : debug_info }
-
-(* Gives the identifier corresponding to an Identifier [tactic_arg] *)
-val id_of_Identifier : Environ.env -> value -> identifier
-
-(* Gives the constr corresponding to a Constr [value] *)
-val constr_of_VConstr : Environ.env -> value -> constr
 
 (* Transforms an id into a constr if possible *)
 val constr_of_id : Environ.env -> identifier -> constr
@@ -103,16 +99,18 @@ val subst_rawconstr_and_expr :
 (* Interprets any expression *)
 val val_interp : interp_sign -> goal sigma -> glob_tactic_expr -> value
 
+(* Interprets an expression that evaluates to a constr *)
+val interp_ltac_constr : interp_sign -> goal sigma -> glob_tactic_expr -> 
+  constr
+
 (* Interprets redexp arguments *)
-val interp_redexp : Environ.env -> Evd.evar_map -> raw_red_expr
-  -> Redexpr.red_expr
+val interp_redexp : Environ.env -> Evd.evar_map -> raw_red_expr -> red_expr
 
 (* Interprets tactic expressions *)
 val interp_tac_gen : (identifier * value) list -> 
                  debug_info -> raw_tactic_expr -> tactic
 
-val interp_hyp :  interp_sign -> goal sigma -> 
-  identifier Util.located -> identifier
+val interp_hyp :  interp_sign -> goal sigma -> identifier located -> identifier
 
 (* Initial call for interpretation *)
 val glob_tactic : raw_tactic_expr -> glob_tactic_expr
@@ -122,6 +120,8 @@ val glob_tactic_env : identifier list -> Environ.env -> raw_tactic_expr -> glob_
 val eval_tactic : glob_tactic_expr -> tactic
 
 val interp : raw_tactic_expr -> tactic
+
+val eval_ltac_constr : goal sigma -> raw_tactic_expr -> constr
 
 val subst_tactic : substitution -> glob_tactic_expr -> glob_tactic_expr
 

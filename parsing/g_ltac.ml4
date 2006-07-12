@@ -134,7 +134,7 @@ GEXTEND Gram
       | "()" -> TacVoid ] ]
   ;
   match_key:
-    [ [ "match" -> false ] ]
+    [ [ "match" -> false | "lazymatch" -> true ] ]
   ;
   input_fun:
     [ [ "_" -> None 

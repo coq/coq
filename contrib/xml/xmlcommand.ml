@@ -474,7 +474,7 @@ let kind_of_global r =
   match r with
   | Ln.IndRef kn | Ln.ConstructRef (kn,_) -> 
       let isrecord =
-	try let _ = Recordops.lookup_structure kn in true
+	try let _ = Recordops.lookup_projections kn in true
         with Not_found -> false in
       kind_of_inductive isrecord (fst kn)
   | Ln.VarRef id -> kind_of_variable id

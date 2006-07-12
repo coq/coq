@@ -146,12 +146,14 @@ let lookup_utf8_tail c cs =
     (* utf-8 what do to with diacritics U0483-U0489 \ U0487 ? *)
     (* utf-8 Cyrillic letters U048A-U4F9 (Warning: 04CF) *)
     | x when 0x048A <= x & x <= 0x04F9 -> Utf8Letter n
-    (* utf-8 Cyrillic supplements letters U0500-U050F *)
+    (* utf-8 Cyrillic supplement letters U0500-U050F *)
     | x when 0x0500 <= x & x <= 0x050F -> Utf8Letter n
     (* utf-8 Hebrew letters U05D0-05EA *)
     | x when 0x05D0 <= x & x <= 0x05EA -> Utf8Letter n
-    (* utf-8 Hebrew letters U0621-064A *)
+    (* utf-8 Arabic letters U0621-064A *)
     | x when 0x0621 <= x & x <= 0x064A -> Utf8Letter n
+    (* utf-8 Arabic supplement letters U0750-076D *)
+    | x when 0x0750 <= x & x <= 0x076D -> Utf8Letter n
     | _ -> error_unsupported_unicode_character n cs
     end
     | 0x1000 ->
@@ -589,9 +591,10 @@ let is_ident_not_keyword s =
     | _ -> false
 
 let is_number s =
-  match s.[0] with
-    | '0'..'9' -> true
-    | _ -> false
+  let rec aux i =
+    String.length s = i or 
+    match s.[i] with '0'..'9' -> aux (i+1) | _ -> false
+  in aux 0
 
 let strip s =
   let len =

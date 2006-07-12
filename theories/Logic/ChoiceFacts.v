@@ -78,7 +78,7 @@ unpublished.
 [Bell93] John L. Bell, Hilbert's Epsilon Operator in Intuitionistic
 Type Theories, Mathematical Logic Quarterly, volume 39, 1993.
 
-[CarlstrÃ¸m05] Jesper CarlstrÃ¸m, Interpreting descriptions in
+[Carlstrøm05] Jesper Carlstrøm, Interpreting descriptions in
 intentional type theory, Journal of Symbolic Logic 70(2):488-514, 2005.
 *)
 
@@ -125,7 +125,7 @@ Definition FunctionalRelReification_on :=
 
 (** ID_epsilon (constructive version of indefinite description;
     combined with proof-irrelevance, it may be connected to
-    CarlstrÃ¸m's type theory with a constructive indefinite description
+    Carlstrøm's type theory with a constructive indefinite description
     operator) *)
 
 Definition ConstructiveIndefiniteDescription_on :=
@@ -133,7 +133,7 @@ Definition ConstructiveIndefiniteDescription_on :=
   (exists x, P x) -> { x:A | P x }.
 
 (** ID_iota (constructive version of definite description; combined
-    with proof-irrelevance, it may be connected to CarlstrÃ¸m's and
+    with proof-irrelevance, it may be connected to Carlstrøm's and
     Stenlund's type theory with a constructive definite description
     operator) *)
 
@@ -694,7 +694,7 @@ Qed.
     We adapt the proof to show that constructive definite description
     transports excluded-middle from [Prop] to [Set].
 
-    [ChicliPottierSimpson02] Laurent Chicli, LoÃƒÂ¯c Pottier, Carlos
+    [ChicliPottierSimpson02] Laurent Chicli, Loïc Pottier, Carlos
     Simpson, Mathematical Quotients and Quotient Types in Coq,
     Proceedings of TYPES 2002, Lecture Notes in Computer Science 2646,
     Springer Verlag.  *)

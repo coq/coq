@@ -5,29 +5,14 @@ open Libnames
 
 let mk_prefix pre id = id_of_string (pre^(string_of_id id))
 let mk_rel_id = mk_prefix "R_"
+let mk_correct_id id = Nameops.add_suffix id "_correct"
+let mk_complete_id id = Nameops.add_suffix id "_complete"
+let mk_equation_id id = Nameops.add_suffix id "_equation"
 
 let msgnl m =
   ()
 
 let invalid_argument s = raise (Invalid_argument s)
-
-(* let idtbl = Hashtbl.create 29 *)
-(* let reset_name () = Hashtbl.clear idtbl *)
-
-(* let fresh_id s = *)
-(*   try *)
-(*     let id = Hashtbl.find idtbl s in *)
-(*     incr id; *)
-(*     id_of_string (s^(string_of_int !id)) *)
-(*   with Not_found -> *)
-(*     Hashtbl.add idtbl s (ref (-1)); *)
-(*     id_of_string s *)
-
-(* let fresh_name s = Name (fresh_id s) *)
-(* let get_name ?(default="H") = function *)
-(*   | Anonymous -> fresh_name default *)
-(*   | Name n -> Name n *)
-
 
 
 let fresh_id avoid s = Termops.next_global_ident_away true (id_of_string s) avoid
@@ -159,161 +144,323 @@ let find_reference sl s =
 let eq = lazy(coq_constant "eq")
 let refl_equal = lazy(coq_constant "refl_equal")
 
-
-(* (\************************************************\)  *)
-(* (\* Should be removed latter                     *\) *)
-(* (\* Comes from new induction  (cf Pierre)        *\) *)
-(* (\************************************************\)  *)
-
-(* open Sign *)
-(* open Term *)
-
-(* type elim_scheme =  *)
-
-(* (\* { (\\* lists are in reverse order! *\\) *\) *)
-(* (\*   params: rel_context;     (\\* (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *\\) *\) *)
-(* (\*   predicates: rel_context; (\\* (Qq, (Tq_1 -> Tq_2 ->...-> Tq_nq)), (Q1,...) *\\) *\) *)
-(* (\*   branches: rel_context;    (\\* branchr,...,branch1 *\\) *\) *)
-(* (\*   args: rel_context;       (\\* (xni, Ti_ni) ... (x1, Ti_1) *\\) *\) *)
-(* (\*   indarg: rel_declaration option; (\\* Some (H,I prm1..prmp x1...xni) if present, None otherwise *\\) *\) *)
-(* (\*   concl: types;            (\\* Qi x1...xni HI, some prmis may not be present *\\) *\) *)
-(* (\*   indarg_in_concl:bool;    (\\* true if HI appears at the end of conclusion (dependent scheme) *\\) *\) *)
-(* (\* } *\) *)
+(*****************************************************************)
+(* Copy of the standart save mechanism but without the much too  *)
+(* slow reduction function                                       *) 
+(*****************************************************************)
+open Declarations
+open Entries
+open Decl_kinds
+open Declare
+let definition_message id =
+  Options.if_verbose message ((string_of_id id) ^ " is defined")
 
 
+let save with_clean id const (locality,kind) hook =
+  let {const_entry_body = pft;
+       const_entry_type = tpo;
+       const_entry_opaque = opacity } = const in
+  let l,r = match locality with
+    | Local when Lib.sections_are_opened () ->
+        let k = logical_kind_of_goal_kind kind in
+	let c = SectionLocalDef (pft, tpo, opacity) in
+	let _ = declare_variable id (Lib.cwd(), c, k) in
+	(Local, VarRef id)
+    | Local ->
+        let k = logical_kind_of_goal_kind kind in
+        let kn = declare_constant id (DefinitionEntry const, k) in
+	(Global, ConstRef kn)
+    | Global ->
+        let k = logical_kind_of_goal_kind kind in
+        let kn = declare_constant id (DefinitionEntry const, k) in
+	(Global, ConstRef kn) in
+  if with_clean then  Pfedit.delete_current_proof ();
+  hook l r;
+  definition_message id
 
-(* let occur_rel n c =  *)
-(*   let res = not (noccurn n c) in *)
-(*   res *)
 
-(* let list_filter_firsts f l = *)
-(*   let rec list_filter_firsts_aux f acc l = *)
-(*     match l with *)
-(*       | e::l' when f e -> list_filter_firsts_aux f (acc@[e]) l' *)
-(*       | _ -> acc,l *)
-(*   in *)
-(*   list_filter_firsts_aux f [] l *)
 
-(* let count_rels_from n c = *)
-(*   let rels = Termops.free_rels c in *)
-(*   let cpt,rg = ref 0, ref n in *)
-(*   while Util.Intset.mem !rg rels do *)
-(*     cpt:= !cpt+1; rg:= !rg+1; *)
-(*   done; *)
-(*   !cpt *)
 
-(* let count_nonfree_rels_from n c = *)
-(*   let rels = Termops.free_rels c in *)
-(*   if Util.Intset.exists (fun x -> x >= n) rels then *)
-(*     let cpt,rg = ref 0, ref n in *)
-(*     while not (Util.Intset.mem !rg rels) do *)
-(*       cpt:= !cpt+1; rg:= !rg+1; *)
-(*     done; *)
-(*     !cpt *)
-(*   else raise Not_found *)
+let extract_pftreestate pts =
+  let pfterm,subgoals = Refiner.extract_open_pftreestate pts in
+  let tpfsigma = Refiner.evc_of_pftreestate pts in 
+  let exl = Evarutil.non_instantiated tpfsigma  in
+  if subgoals <> [] or exl <> [] then
+    Util.errorlabstrm "extract_proof"
+      (if subgoals <> [] then
+        str "Attempt to save an incomplete proof"
+      else
+        str "Attempt to save a proof with existential variables still non-instantiated");
+  let env = Global.env_of_context (Refiner.proof_of_pftreestate pts).Proof_type.goal.Evd.evar_hyps in
+  env,tpfsigma,pfterm
 
-(* (\* cuts a list in two parts, first of size n. Size must be greater than n *\) *)
-(* let cut_list n l = *)
-(*   let rec cut_list_aux acc n l = *)
-(*     if n<=0 then acc,l *)
-(*     else match l with *)
-(*       | [] -> assert false *)
-(*       | e::l' -> cut_list_aux (acc@[e]) (n-1) l' in *)
-(*   let res = cut_list_aux [] n l in *)
-(*   res *)
 
-(* let exchange_hd_prod subst_hd t = *)
-(*   let hd,args= decompose_app t in mkApp (subst_hd,Array.of_list args) *)
+let nf_betaiotazeta =
+  let clos_norm_flags flgs env sigma t =
+    Closure.norm_val (Closure.create_clos_infos flgs env) (Closure.inject (Reductionops.nf_evar sigma t)) in
+  clos_norm_flags Closure.betaiotazeta  
 
-(* let compute_elim_sig elimt  = *)
-(*   (\* conclusion is the final (Qi ...) *\) *)
-(*   let hyps,conclusion = decompose_prod_assum elimt in *)
-(*   (\* ccl is conclusion where Qi (that is rel <something>) is replaced *)
-(*      by a constant (Prop) to avoid it being counted as an arg or *)
-(* parameter in the following. *\) *)
-(*   let ccl = exchange_hd_prod mkProp conclusion in *)
-(*   (\* indarg is the inductive argument if it exists. If it exists it is *)
-(* the last hyp before the conclusion, so it is the first element of *)
-(*      hyps. To know the first elmt is an inductive arg, we check if the *)
-(*      it appears in the conclusion (as rel 1). If yes, then it is not *)
-(*      an inductive arg, otherwise it is. There is a pathological case *)
-(*      with False_inf where Qi is rel 1, so we first get rid of Qi in *)
-(*      ccl. *\) *)
-(*   (\* if last arg of ccl is an application then this a functional ind *)
-(* principle *\) let last_arg_ccl =  *)
-(*     try List.hd (List.rev (snd (decompose_app ccl)))  *)
-(*     with Failure "hd" -> mkProp in (\* dummy constr that is not an app *)
-(* *\) let hyps',indarg,dep =  *)
-(*     if isApp last_arg_ccl  *)
-(*     then  *)
-(*       hyps,None , false (\* no HI at all *\) *)
-(*     else  *)
-(*       try  *)
-(* 	if noccurn 1 ccl (\* rel 1 does not occur in ccl *\) *)
-(* 	then *)
-(* 	  List.tl hyps , Some (List.hd hyps), false (\* it does not *)
-(* occur in concl *\) else *)
-(* 	  List.tl hyps , Some (List.hd hyps) , true (\* it does occur in concl *\)  *)
-(*       with Failure s -> Util.error "cannot recognise an induction schema" *)
-(*   in *)
+let nf_betaiota =
+  let clos_norm_flags flgs env sigma t =
+    Closure.norm_val (Closure.create_clos_infos flgs env) (Closure.inject (Reductionops.nf_evar sigma t)) in
+  clos_norm_flags Closure.betaiota  
 
-(*   (\* Arguments [xni...x1] must appear in the conclusion, so we count *)
-(*      successive rels appearing in conclusion **Qi is not considered a *)
-(* rel** *\) let nargs = count_rels_from  *)
-(*     (match indarg with *)
-(*       | None -> 1 *)
-(*       | Some _ -> 2) ccl in *)
-(*   let args,hyps'' = cut_list nargs hyps' in *)
-(*   let rel_is_pred (_,_,c) = isSort (snd(decompose_prod_assum c)) in *)
-(*   let branches,hyps''' =  *)
-(*     list_filter_firsts (function x -> not (rel_is_pred x)) hyps'' *)
-(*   in *)
-(*   (\* Now we want to know which hyps remaining are predicates and which *)
-(*      are parameters *\) *)
-(*   (\* We rebuild  *)
-     
-(*      forall (x1:Ti_1) (xni:Ti_ni) (HI:I prm1..prmp x1...xni), DUMMY *)
-(* x1...xni HI ^^^^^^^^^^^^^^^^^^^^^^^^^                  ^^ *)
-(*                                           optional *)
-(* opt *)
+let cook_proof do_reduce =
+  let pfs = Pfedit.get_pftreestate () 
+(*   and ident = Pfedit.get_current_proof_name ()  *)
+  and (ident,strength,concl,hook) = Pfedit.current_proof_statement ()  in
+  let env,sigma,pfterm = extract_pftreestate pfs in
+  let pfterm = 
+    if do_reduce
+    then nf_betaiota env sigma pfterm
+    else pfterm
+  in
+  (ident,
+   ({ const_entry_body = pfterm;
+      const_entry_type = Some concl;
+      const_entry_opaque = false;
+      const_entry_boxed = false},
+    strength, hook))
 
-(*      Free rels appearing in this term are parameters. We catch all of *)
-(*      them if HI is present. In this case the number of parameters is *)
-(*      the number of free rels. Otherwise (principle generated by *)
-(*      functional induction or by hand) WE GUESS that all parameters *)
-(*      appear in Ti_js, IS THAT TRUE??. *)
 
-(*      TODO: if we want to generalize to the case where arges are merged *)
-(*      with branches (?) and/or where several predicates are cited in *)
-(*      the conclusion, we should do something more precise than just *)
-(*      counting free rels. *)
-(*  *\) *)
-(*   let concl_with_indarg =  *)
-(*     match indarg with *)
-(*     | None -> ccl *)
-(*     | Some c -> it_mkProd_or_LetIn ccl [c] in *)
-(*   let concl_with_args = it_mkProd_or_LetIn concl_with_indarg args in *)
-(* (\*   let nparams2 = Util.Intset.cardinal (Termops.free_rels concl_with_args) in *\) *)
-(*   let nparams =  *)
-(*     try List.length (hyps'''@branches) - count_nonfree_rels_from 1 *)
-(*       concl_with_args with Not_found -> 0 in *)
-(*   let preds,params = cut_list (List.length hyps''' - nparams) hyps''' in *)
-(*   let elimscheme = { *)
-(*     params = params; *)
-(*     predicates = preds; *)
-(*     branches = branches; *)
-(*     args = args; *)
-(*     indarg = indarg; *)
-(*     concl = conclusion; *)
-(*     indarg_in_concl = dep; *)
-(*   } *)
-(*   in *)
-(*   elimscheme *)
+let new_save_named opacity =
+  let id,(const,persistence,hook) = cook_proof true  in
+  let const = { const with const_entry_opaque = opacity } in
+  save true id const persistence hook
 
-(* let get_params elimt =  *)
-(*   (compute_elim_sig elimt).params *)
-(* (\************************************************\)  *)
-(* (\* end of Should be removed latter              *\) *)
-(* (\* Comes from new induction  (cf Pierre)        *\) *)
-(* (\************************************************\)  *)
+let get_proof_clean do_reduce = 
+  let result = cook_proof do_reduce in 
+  Pfedit.delete_current_proof ();
+  result
 
+
+
+
+(**********************)
+
+type function_info = 
+    { 
+      function_constant : constant;
+      graph_ind : inductive;
+      equation_lemma : constant option;
+      correctness_lemma : constant option;
+      completeness_lemma : constant option; 
+      rect_lemma : constant option;
+      rec_lemma : constant option;
+      prop_lemma : constant option;
+    }
+      
+
+type function_db  = function_info list
+
+let function_table = ref ([] : function_db)
+  
+
+let rec do_cache_info finfo = function 
+  | [] -> raise Not_found 
+  | (finfo'::finfos as l) -> 
+      if finfo' == finfo then l 
+      else if finfo'.function_constant = finfo.function_constant 
+      then finfo::finfos
+      else
+	let res = do_cache_info finfo finfos in 
+	if res == finfos then l else  finfo'::l
+  
+
+let cache_Function (_,(finfos)) = 
+  let new_tbl = 
+    try do_cache_info finfos !function_table
+    with Not_found -> finfos::!function_table
+  in  
+  if new_tbl != !function_table 
+  then function_table := new_tbl
+
+let load_Function _  = cache_Function
+let open_Function _ = cache_Function
+let subst_Function (_,subst,finfos) = 
+  let do_subst_con c = fst (Mod_subst.subst_con subst c)
+  and do_subst_ind (kn,i) = (Mod_subst.subst_kn subst kn,i)
+  in
+  let function_constant' = do_subst_con finfos.function_constant in 
+  let graph_ind' = do_subst_ind finfos.graph_ind in 
+  let equation_lemma' = Util.option_smartmap do_subst_con finfos.equation_lemma in 
+  let correctness_lemma' = Util.option_smartmap do_subst_con finfos.correctness_lemma in 
+  let completeness_lemma' = Util.option_smartmap do_subst_con finfos.completeness_lemma in 
+  let rect_lemma' = Util.option_smartmap do_subst_con finfos.rect_lemma in
+  let rec_lemma' = Util.option_smartmap do_subst_con finfos.rec_lemma in 
+  let prop_lemma' =  Util.option_smartmap do_subst_con finfos.prop_lemma in 
+  if function_constant' == finfos.function_constant && 
+    graph_ind' == finfos.graph_ind && 
+    equation_lemma' == finfos.equation_lemma &&
+    correctness_lemma' == finfos.correctness_lemma && 
+    completeness_lemma' == finfos.completeness_lemma && 
+    rect_lemma' == finfos.rect_lemma && 
+    rec_lemma' == finfos.rec_lemma && 
+    prop_lemma' == finfos.prop_lemma 
+  then finfos 
+  else
+    { function_constant = function_constant';
+      graph_ind = graph_ind';
+      equation_lemma = equation_lemma' ;
+      correctness_lemma = correctness_lemma' ;
+      completeness_lemma = completeness_lemma' ;
+      rect_lemma = rect_lemma' ;
+      rec_lemma = rec_lemma';
+      prop_lemma = prop_lemma';
+    }
+
+let classify_Function (_,infos) = Libobject.Substitute infos
+
+let export_Function infos = Some infos
+
+
+let discharge_Function (_,finfos) = 
+  let function_constant' = Lib.discharge_con finfos.function_constant
+  and graph_ind' = Lib.discharge_inductive finfos.graph_ind 
+  and equation_lemma' = Util.option_smartmap Lib.discharge_con finfos.equation_lemma 
+  and correctness_lemma' = Util.option_smartmap Lib.discharge_con finfos.correctness_lemma 
+  and completeness_lemma' = Util.option_smartmap Lib.discharge_con finfos.completeness_lemma 
+  and rect_lemma' = Util.option_smartmap Lib.discharge_con finfos.rect_lemma 
+  and rec_lemma' = Util.option_smartmap Lib.discharge_con finfos.rec_lemma
+  and prop_lemma' = Util.option_smartmap Lib.discharge_con finfos.prop_lemma
+  in
+  if function_constant' == finfos.function_constant && 
+    graph_ind' == finfos.graph_ind && 
+    equation_lemma' == finfos.equation_lemma &&
+    correctness_lemma' == finfos.correctness_lemma && 
+    completeness_lemma' == finfos.completeness_lemma && 
+    rect_lemma' == finfos.rect_lemma && 
+    rec_lemma' == finfos.rec_lemma && 
+    prop_lemma' == finfos.prop_lemma 
+  then Some finfos 
+  else
+    Some { function_constant = function_constant' ;
+	   graph_ind = graph_ind' ;
+	   equation_lemma = equation_lemma' ;
+	   correctness_lemma = correctness_lemma' ;
+	   completeness_lemma = completeness_lemma';
+	   rect_lemma = rect_lemma';
+	   rec_lemma = rec_lemma';
+	   prop_lemma = prop_lemma' ;
+	 }    
+
+open Term
+let pr_info f_info = 
+  str "function_constant := " ++ Printer.pr_lconstr (mkConst f_info.function_constant)++ fnl () ++
+    str "function_constant_type := " ++ 
+    (try Printer.pr_lconstr (Global.type_of_global (ConstRef f_info.function_constant)) with _ -> mt ()) ++ fnl () ++
+    str "equation_lemma := " ++ (Util.option_fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.equation_lemma (mt ()) ) ++ fnl () ++
+    str "completeness_lemma :=" ++ (Util.option_fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.completeness_lemma (mt ()) ) ++ fnl () ++
+    str "correctness_lemma := " ++ (Util.option_fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.correctness_lemma (mt ()) ) ++ fnl () ++
+    str "rect_lemma := " ++ (Util.option_fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.rect_lemma (mt ()) ) ++ fnl () ++
+    str "rec_lemma := " ++ (Util.option_fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.rec_lemma (mt ()) ) ++ fnl () ++
+    str "prop_lemma := " ++ (Util.option_fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.prop_lemma (mt ()) ) ++ fnl () ++
+    str "graph_ind := " ++ Printer.pr_lconstr (mkInd f_info.graph_ind) ++ fnl () 
+
+let pr_table l = 
+  Util.prlist_with_sep fnl pr_info l
+
+let in_Function,out_Function = 
+  Libobject.declare_object
+    {(Libobject.default_object "FUNCTIONS_DB") with 
+       Libobject.cache_function = cache_Function;
+       Libobject.load_function  = load_Function;
+       Libobject.classify_function  = classify_Function;
+       Libobject.subst_function = subst_Function;
+       Libobject.export_function = export_Function;
+       Libobject.discharge_function = discharge_Function
+(*        Libobject.open_function = open_Function; *)
+    }
+
+
+
+(* Synchronisation with reset *)
+let freeze () = 
+  let tbl = !function_table in 
+(*   Pp.msgnl (str "freezing function_table : " ++ pr_table tbl); *)
+  tbl
+
+let unfreeze l = 
+(*   Pp.msgnl (str "unfreezing function_table : " ++ pr_table l); *)
+  function_table :=
+ l
+let init () = 
+(*   Pp.msgnl (str "reseting function_table");  *)
+  function_table := []
+
+let _ = 
+  Summary.declare_summary "functions_db_sum"
+    { Summary.freeze_function = freeze;
+      Summary.unfreeze_function = unfreeze;
+      Summary.init_function = init;
+      Summary.survive_module = false; 
+      Summary.survive_section = false }
+
+let find_or_none id = 
+  try Some 
+    (match Nametab.locate (make_short_qualid id) with ConstRef c -> c | _ -> Util.anomaly "Not a constant" 
+    ) 
+  with Not_found -> None
+
+
+
+let find_Function_infos f = 
+  List.find (fun finfo ->  finfo.function_constant = f) !function_table
+
+
+let find_Function_of_graph ind = 
+  List.find (fun finfo ->  finfo.graph_ind = ind) !function_table
+  
+let update_Function finfo = 
+(*   Pp.msgnl (pr_info finfo); *)
+  Lib.add_anonymous_leaf (in_Function finfo)
+      
+  
+let add_Function f = 
+  let f_id = id_of_label (con_label f) in 
+  let equation_lemma = find_or_none (mk_equation_id f_id)
+  and correctness_lemma = find_or_none (mk_correct_id f_id) 
+  and completeness_lemma = find_or_none (mk_complete_id f_id) 
+  and rect_lemma = find_or_none (Nameops.add_suffix f_id "_rect")
+  and rec_lemma = find_or_none (Nameops.add_suffix f_id "_rec")
+  and prop_lemma = find_or_none (Nameops.add_suffix f_id "_ind")
+  and graph_ind = 
+    match Nametab.locate (make_short_qualid (mk_rel_id f_id)) 
+    with | IndRef ind -> ind | _ -> Util.anomaly "Not an inductive"
+  in
+  let finfos = 
+    { function_constant = f;
+      equation_lemma = equation_lemma;
+      completeness_lemma = completeness_lemma;
+      correctness_lemma = correctness_lemma;
+      rect_lemma = rect_lemma;
+      rec_lemma = rec_lemma;
+      prop_lemma = prop_lemma;
+      graph_ind = graph_ind
+    }
+  in
+  update_Function finfos
+
+let pr_table () = pr_table !function_table
+(*********************************)
+(* Debuging *)
+let function_debug = ref false 
+open Goptions
+
+let function_debug_sig =
+  {
+    optsync = false;
+    optname = "Function debug";
+    optkey =  PrimaryTable("Function_debug");
+    optread = (fun () -> !function_debug);
+    optwrite = (fun b -> function_debug := b)
+  }
+
+let _ = declare_bool_option function_debug_sig
+
+
+let do_observe () = 
+  !function_debug = true
+      
+      
+    

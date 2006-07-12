@@ -15,14 +15,3 @@ val list_of_local_binders :
 val pr_binder_list :
   (('a * Names.name) * Topconstr.constr_expr) list -> Pp.std_ppcmds
 val rewrite_rec_calls : 'a -> 'b -> 'b
-val rewrite_fixpoint :
-  'a ->
-  'b ->
-  (Names.identifier * (int * Topconstr.recursion_order_expr) *
-   Topconstr.local_binder list * Topconstr.constr_expr *
-   Topconstr.constr_expr) *
-  'c ->
-  (Names.identifier * (int * Topconstr.recursion_order_expr) *
-   Topconstr.local_binder list * Topconstr.constr_expr *
-   Topconstr.constr_expr) *
-  'c

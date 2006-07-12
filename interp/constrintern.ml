@@ -81,9 +81,8 @@ let explain_non_linear_pattern id =
   str "The variable " ++ pr_id id ++ str " is bound several times in pattern"
 
 let explain_bad_patterns_number n1 n2 =
-  let s = if n1 > 1 then "s" else "" in
-  str "Expecting " ++ int n1 ++ str " pattern" ++ str s ++ str " but found "
-    ++ int n2
+  str "Expecting " ++ int n1 ++ str (plural n1 " pattern") ++
+  str " but found " ++ int n2
 
 let explain_bad_explicitation_number n po =
   match n with
@@ -357,7 +356,8 @@ let rec has_duplicate = function
   | x::l -> if List.mem x l then (Some x) else has_duplicate l
 
 let loc_of_lhs lhs = 
- join_loc (cases_pattern_loc (List.hd lhs)) (cases_pattern_loc (list_last lhs))
+ join_loc (cases_pattern_loc (List.hd (List.hd lhs)))
+          (cases_pattern_loc (list_last (list_last lhs)))
 
 let check_linearity lhs ids =
   match has_duplicate ids with
@@ -775,17 +775,22 @@ let internalise sigma globalenv env allow_soapp lvar c =
 	in
         let idl = Array.map
           (fun (id,(n,order),bl,ty,bd) ->
-	    let ro, ((ids',_,_),rbl) =
-	      (match order with
-		   CStructRec -> 
-		     RStructRec,
-		     List.fold_left intern_local_binder (env,[]) bl
-		 | CWfRec c -> 
-		     let before, after = list_chop (succ (out_some n)) bl in
-		     let ((ids',_,_),rafter) =
-		       List.fold_left intern_local_binder (env,[]) after in
-		     let ro = RWfRec (intern (ids', tmp_scope, scopes) c) in
-		       ro, List.fold_left intern_local_binder (env,rafter) before)
+	     let intern_ro_arg c f =
+	       let before, after = list_chop (succ (out_some n)) bl in
+	       let ((ids',_,_),rafter) =
+		 List.fold_left intern_local_binder (env,[]) after in
+	       let ro = (intern (ids', tmp_scope, scopes) c) in
+		 f ro, List.fold_left intern_local_binder (env,rafter) before
+	     in
+	     let ro, ((ids',_,_),rbl) =
+	       (match order with
+		    CStructRec -> 
+		      RStructRec,
+		      List.fold_left intern_local_binder (env,[]) bl
+		  | CWfRec c ->
+		      intern_ro_arg c (fun r -> RWfRec r)
+		  | CMeasureRec c ->
+		      intern_ro_arg c (fun r -> RMeasureRec r))
 	    in
 	    let ids'' = List.fold_right Idset.add lf ids' in
 	     ((n, ro), List.rev rbl, 
@@ -924,11 +929,24 @@ let internalise sigma globalenv env allow_soapp lvar c =
         ((name_fold Idset.add na ids,ts,sc),
          (na,Some(intern env def),RHole(loc,Evd.BinderType na))::bl)
 
-  and intern_eqn n (ids,tmp_scope,scopes as _env) (loc,lhs,rhs) =
+  (* Expands a multiple pattern into a disjunction of multiple patterns *)
+  and intern_multiple_pattern scopes pl =
     let idsl_pll = 
-      List.map (intern_cases_pattern globalenv scopes ([],[]) None) lhs in
+      List.map (intern_cases_pattern globalenv scopes ([],[]) None) pl in
+    product_of_cases_patterns [] idsl_pll
 
-    let eqn_ids,pll = product_of_cases_patterns [] idsl_pll in
+  (* Expands a disjunction of multiple pattern *)
+  and intern_disjunctive_multiple_pattern scopes loc mpl =
+    assert (mpl <> []);
+    let mpl' = List.map (intern_multiple_pattern scopes) mpl in
+    let (idsl,mpl') = List.split mpl' in
+    let ids = List.hd idsl in
+    check_or_pat_variables loc ids (List.tl idsl);
+    (ids,List.flatten mpl')
+
+  (* Expands a pattern-matching clause [lhs => rhs] *)
+  and intern_eqn n (ids,tmp_scope,scopes) (loc,lhs,rhs) =
+    let eqn_ids,pll = intern_disjunctive_multiple_pattern scopes loc lhs in
     (* Linearity implies the order in ids is irrelevant *)
     check_linearity lhs eqn_ids;
     check_number_of_pattern loc n (snd (List.hd pll));

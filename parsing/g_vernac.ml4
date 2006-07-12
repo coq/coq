@@ -237,6 +237,7 @@ GEXTEND Gram
   rec_annotation:
     [ [ "{"; IDENT "struct"; id=IDENT; "}" -> (Some (id_of_string id), CStructRec)
       | "{"; IDENT "wf"; id=IDENT; rel=lconstr; "}" -> (Some (id_of_string id), CWfRec rel) 
+      | "{"; IDENT "measure"; id=IDENT; rel=lconstr; "}" -> (Some (id_of_string id), CMeasureRec rel) 
       | ->  (None, CStructRec)
       ] ]
   ;
@@ -651,8 +652,11 @@ GEXTEND Gram
 	  VernacBacktrack (n,m,p)
 
 (* Tactic Debugger *)
-      |	IDENT "Debug"; IDENT "On" -> VernacDebug true
-      |	IDENT "Debug"; IDENT "Off" -> VernacDebug false
+      |	IDENT "Debug"; IDENT "On" -> 
+          VernacSetOption (SecondaryTable ("Ltac","Debug"), BoolValue true)
+
+      |	IDENT "Debug"; IDENT "Off" ->
+          VernacSetOption (SecondaryTable ("Ltac","Debug"), BoolValue false)
 
  ] ];
     END

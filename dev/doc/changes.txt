@@ -13,11 +13,23 @@ Lib: library_part -> remove_section_part
 Printer: prterm -> pr_lconstr
 Printer: prterm_env -> pr_lconstr_env
 Ppconstr: pr_sort -> pr_rawsort
+Evd: in_dom, etc got standard ocaml names (i.e. mem, etc)
+Pretyping: 
+ - understand_gen_tcc and understand_gen_ltac merged into understand_ltac
+ - type_constraints can now say typed by a sort (use OfType to get the
+   previous behavior)
+Library: import_library -> import_module
 
 ** Constructors
 
 Declarations: mind_consnrealargs -> mind_consnrealdecls
 NoRedun -> NoDup
+Cast and RCast have an extra argument: you can recover the previous
+  behavior by setting the extra argument to "CastConv DEFAULTcast" and
+  "DEFAULTcast" respectively
+Names: "kernel_name" is now "constant" when argument of Term.Const
+Tacexpr: TacTrueCut and TacForward(false,_,_) merged into new TacAssert
+Tacexpr: TacForward(true,_,_) branched to TacLetTac
 
 ** Modules
 
@@ -27,11 +39,20 @@ module Tacred spawned module Redexpr
 module Symbols -> Notation
 module Coqast, Ast, Esyntax, Termast, and all other modules related to old
   syntax are removed
+module Instantiate: integrated to Evd
+module Pretyping now a functor: use Pretyping.Default instead
 
 ** Internal names
 
 OBJDEF and OBJDEF1 -> CANONICAL-STRUCTURE
 
+** Tactic extensions
+
+- printers have an extra parameter which is a constr printer at high precedence
+- the tactic printers have an extra arg which is the expected precedence 
+- level is now a precedence in declare_extra_tactic_pprule
+- "interp" functions now of types the actual arg type, not its encapsulation
+  as a generic_argument
 
 =========================================
 = CHANGES BETWEEN COQ V7.4 AND COQ V8.0 =

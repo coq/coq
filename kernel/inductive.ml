@@ -135,16 +135,22 @@ let sort_as_univ = function
 | Prop Null -> neutral_univ
 | Prop Pos -> base_univ
 
+let cons_subst u su subst =
+  try (u, sup su (List.assoc u subst)) :: List.remove_assoc u subst
+  with Not_found -> (u, su) :: subst
+
 let rec make_subst env exp act =
   match exp, act with
   (* Bind expected levels of parameters to actual levels *)
   | None :: exp, _ :: act ->
       make_subst env exp act
-  | Some u :: exp, t :: act -> 
-      (u, sort_as_univ (snd (dest_arity env t))) :: make_subst env exp act
+  | Some u :: exp, t :: act ->
+      let su = sort_as_univ (snd (dest_arity env t)) in
+      cons_subst u su (make_subst env exp act)
   (* Not enough parameters, create a fresh univ *)
   | Some u :: exp, [] ->
-      (u, fresh_local_univ ()) :: make_subst env exp []
+      let su = fresh_local_univ () in
+      cons_subst u su (make_subst env exp [])
   | None :: exp, [] ->
       make_subst env exp []
   (* Uniform parameters are exhausted *)

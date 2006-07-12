@@ -70,7 +70,7 @@ type rawconstr =
 
 and rawdecl = name * rawconstr option * rawconstr
 
-and fix_recursion_order = RStructRec | RWfRec of rawconstr
+and fix_recursion_order = RStructRec | RWfRec of rawconstr | RMeasureRec of rawconstr
 
 and fix_kind =
   | RFix of ((int option * fix_recursion_order) array * int)

@@ -20,8 +20,6 @@ Require Import FMapInterface.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Arguments Scope list [type_scope].
-
 Module Raw (X:OrderedType).
 
 Module E := X.
@@ -161,14 +159,14 @@ Proof.
  inversion 2.
 
  inversion_clear 2.
- clear H0;compute in H1; destruct H1;order.
- clear H0;generalize (Sort_In_cons_1 Hm (InA_eqke_eqk H1)); compute; order.
+ clear e1;compute in H0; destruct H0;order.
+ clear e1;generalize (Sort_In_cons_1 Hm (InA_eqke_eqk H0)); compute; order.
 
- clear H0;inversion_clear 2.
+ clear e1;inversion_clear 2.
  compute in H0; destruct H0; intuition congruence. 
  generalize (Sort_In_cons_1 Hm (InA_eqke_eqk H0)); compute; order.
  
- clear H0; do 2 inversion_clear 1; auto.
+ clear e1; do 2 inversion_clear 1; auto.
  compute in H2; destruct H2; order.
 Qed.
 
@@ -197,7 +195,7 @@ Lemma add_2 : forall m x y e e',
 Proof.
  intros m x  y e e'. 
  generalize y e; clear y e; unfold PX.MapsTo.
- functional induction (add x e' m) ;simpl;auto;  clear H0.
+ functional induction (add x e' m) ;simpl;auto;  clear e0.
  subst;auto.
 
  intros y' e'' eqky';  inversion_clear 1;  destruct H0; simpl in *.
@@ -214,9 +212,9 @@ Proof.
  intros m x y e e'. generalize y e; clear y e; unfold PX.MapsTo.
  functional induction (add x e' m);simpl; intros.
  apply (In_inv_3 H0); compute; auto.
- apply (In_inv_3 H1); compute; auto.
- constructor 2; apply (In_inv_3 H1); compute; auto. 
- inversion_clear H1; auto.
+ apply (In_inv_3 H0); compute; auto.
+ constructor 2; apply (In_inv_3 H0); compute; auto. 
+ inversion_clear H0; auto.
 Qed.
 
 
@@ -265,13 +263,13 @@ Proof.
  red; inversion 1; inversion H1.
 
  apply Sort_Inf_NotIn with x0; auto.
- clear H0;constructor; compute; order.
+ clear e0;constructor; compute; order.
  
- clear H0;inversion_clear Hm.
+ clear e0;inversion_clear Hm.
  apply Sort_Inf_NotIn with x0; auto. 
  apply Inf_eq with (k',x0);auto; compute; apply X.eq_trans with x; auto.
 
- clear H0;inversion_clear Hm.
+ clear e0;inversion_clear Hm.
  assert (notin:~ In y (remove x l)) by auto.
  intros (x1,abs).
  inversion_clear abs. 
@@ -393,7 +391,7 @@ Proof.
 
 
  assert (cmp_e_e':cmp e e' = true).
-  apply H2 with x; auto.
+  apply H1 with x; auto.
  rewrite cmp_e_e'; simpl.
  apply IHb; auto.
  inversion_clear Hm; auto.
@@ -402,7 +400,7 @@ Proof.
  destruct (H0 k).
  assert (In k ((x,e) ::l)).
   destruct H as (e'', hyp); exists e''; auto.
- destruct (In_inv (H1 H4)); auto.
+ destruct (In_inv (H2 H4)); auto.
  inversion_clear Hm.
  elim (Sort_Inf_NotIn H6 H7).
  destruct H as (e'', hyp); exists e''; auto.
@@ -415,10 +413,10 @@ Proof.
  elim (Sort_Inf_NotIn H6 H7).
  destruct H as (e'', hyp); exists e''; auto.
  apply MapsTo_eq with k; auto; order.
- apply H2 with k; destruct (eq_dec x k); auto.
+ apply H1 with k; destruct (eq_dec x k); auto.
 
 
- destruct (X.compare x x'); try contradiction;clear H2.
+ destruct (X.compare x x'); try contradiction; clear y.
  destruct (H0 x).
  assert (In x ((x',e')::l')). 
   apply H; auto.
@@ -492,16 +490,16 @@ Proof.
 
  inversion_clear Hm;inversion_clear Hm'.
  destruct (andb_prop _ _ H); clear H. 
- destruct (IHb H1 H4 H7).
+ destruct (IHb H2 H4 H7).
  inversion_clear H0.
  destruct H9; simpl in *; subst.
- inversion_clear H2. 
+ inversion_clear H1. 
  destruct H9; simpl in *; subst; auto.
  elim (Sort_Inf_NotIn H4 H5).
  exists e'0; apply MapsTo_eq with k; auto; order.
- inversion_clear H2. 
+ inversion_clear H1. 
  destruct H0; simpl in *; subst; auto.
- elim (Sort_Inf_NotIn H1 H3).
+ elim (Sort_Inf_NotIn H2 H3).
  exists e0; apply MapsTo_eq with k; auto; order.
  apply H8 with k; auto.
 Qed. 

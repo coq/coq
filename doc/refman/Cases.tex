@@ -1,5 +1,5 @@
 \achapter{Extended pattern-matching}\defaultheaders
-\aauthor{Cristina Cornes}
+\aauthor{Cristina Cornes and Hugo Herbelin}
 
 \label{Mult-match-full}
 \ttindex{Cases}
@@ -17,32 +17,38 @@ pattern. It is recommended to start variable names by a lowercase
 letter.
 
 If a pattern has the form $(c~\vec{x})$ where $c$ is a constructor
-symbol and $\vec{x}$ is a linear vector of variables, it is called
-{\em simple}: it is the kind of pattern recognized by the basic
-version of {\tt match}. If a pattern is
-not simple we call it {\em nested}.
+symbol and $\vec{x}$ is a linear vector of (distinct) variables, it is
+called {\em simple}: it is the kind of pattern recognized by the basic
+version of {\tt match}. On the opposite, if it is a variable $x$ or
+has the form $(c~\vec{p})$ with $p$ not only made of variables, the
+pattern is called {\em nested}.
 
 A variable pattern matches any value, and the identifier is bound to
 that value. The pattern ``\texttt{\_}'' (called ``don't care'' or
-``wildcard'' symbol) also matches any value, but does not bind anything. It
-may occur an arbitrary number of times in a pattern. Alias patterns
-written \texttt{(}{\sl pattern} \texttt{as} {\sl identifier}\texttt{)} are
-also accepted. This pattern matches the same values as {\sl pattern}
-does and {\sl identifier} is bound to the matched value.  A list of
-patterns separated with commas 
-is also considered as a pattern and is called {\em multiple
-pattern}.
+``wildcard'' symbol) also matches any value, but does not bind
+anything. It may occur an arbitrary number of times in a
+pattern. Alias patterns written \texttt{(}{\sl pattern} \texttt{as}
+{\sl identifier}\texttt{)} are also accepted. This pattern matches the
+same values as {\sl pattern} does and {\sl identifier} is bound to the
+matched value.  
+A pattern of the form {\pattern}{\tt |}{\pattern} is called
+disjunctive. A list of patterns separated with commas is also
+considered as a pattern and is called {\em multiple pattern}. However
+multiple patterns can only occur at the root of pattern-matching
+equations. Disjunctions of {\em multiple pattern} are allowed though.
 
 Since extended {\tt match} expressions are compiled into the primitive
 ones, the expressiveness of the theory remains the same. Once the
-stage of parsing has finished only simple patterns remain. An easy way
-to see the result of the expansion is by printing the term with
-\texttt{Print} if the term is a constant, or using the command
+stage of parsing has finished only simple patterns remain.  Re-nesting
+of pattern is performed at printing time. An easy way to see the
+result of the expansion is to toggle off the nesting performed at
+printing (use here {\tt Set Printing Matching}), then by printing the term
+with \texttt{Print} if the term is a constant, or using the command
 \texttt{Check}.
 
 The extended \texttt{match} still accepts an optional {\em elimination
 predicate} given after the keyword \texttt{return}.  Given a pattern
-matching expression, if all the right hand sides of \texttt{=>} ({\em
+matching expression, if all the right-hand-sides of \texttt{=>} ({\em
 rhs} in short) have the same type, then this type can be sometimes
 synthesized, and so we can omit the \texttt{return} part. Otherwise 
 the predicate after \texttt{return} has to be provided, like for the basic
@@ -64,7 +70,9 @@ Fixpoint max (n m:nat) {struct m} : nat :=
   end.
 \end{coq_example}
 
-Using multiple patterns in the definition allows to write:
+\paragraph{Multiple patterns}
+
+Using multiple patterns in the definition of {\tt max} allows to write:
 
 \begin{coq_example}
 Reset max.
@@ -89,7 +97,9 @@ Check (fun x:nat => match x return nat with
                     end).
 \end{coq_example}
 
-We can also use ``\texttt{as} patterns'' to associate a name to a
+\paragraph{Aliasing subpatterns}
+
+We can also use ``\texttt{as} {\ident}'' to associate a name to a
 sub-pattern:
 
 \begin{coq_example}
@@ -101,6 +111,8 @@ Fixpoint max (n m:nat) {struct n} : nat :=
   | S n', S m' => S (max n' m')
   end.
 \end{coq_example}
+
+\paragraph{Nested patterns}
 
 Here is now an example of nested patterns:
 
@@ -157,7 +169,6 @@ Fixpoint lef (n m:nat) {struct m} : bool :=
   end.
 \end{coq_example}
 
-
 Here the last pattern superposes with the first two. Because
 of the priority rule, the last pattern 
 will be used only for values that do not match neither the  first nor
@@ -180,12 +191,50 @@ Check (fun x:nat =>
          end).
 \end{coq_example}
 
+\paragraph{Disjunctive patterns}
+
+Multiple patterns that share the same right-hand-side can be
+factorized using the notation \nelist{\multpattern}{\tt |}. For instance,
+{\tt max} can be rewritten as follows:
+
+\begin{coq_eval}
+Reset max.
+\end{coq_eval}
+\begin{coq_example}
+Fixpoint max (n m:nat) {struct m} : nat :=
+  match n, m with
+  | S n', S m' => S (max n' m')
+  | 0, p | p, 0 => p
+  end.
+\end{coq_example}
+
+Similarly, factorization of (non necessary multiple) patterns
+that share the same variables is possible by using the notation
+\nelist{\pattern}{\tt |}. Here is an example:
+
+\begin{coq_example}
+Definition filter_2_4 (n:nat) : nat :=
+  match n with
+  | 2 as m | 4 as m => m
+  | _ => 0
+  end.
+\end{coq_example}
+
+Here is another example using disjunctive subpatterns.
+
+\begin{coq_example}
+Definition filter_some_square_corners (p:nat*nat) : nat*nat :=
+  match p with
+  | ((2 as m | 4 as m), (3 as n | 5 as n)) => (m,n)
+  | _ => (0,0)
+  end.
+\end{coq_example}
+
 \asection{About patterns of parametric types}
 When matching objects of a parametric type, constructors in patterns
 {\em do not expect} the parameter arguments. Their value is deduced
 during expansion.
-
-Consider for example the polymorphic lists:
+Consider for example the type of polymorphic lists:
 
 \begin{coq_example}
 Inductive List (A:Set) : Set :=

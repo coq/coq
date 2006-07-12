@@ -32,65 +32,17 @@ Proof.
  simple destruct z; simpl in |- *; auto; intros; elim H; auto.
 Qed.
 
-(** A simple cancelation by powers of two *)
-
-Fixpoint Pfactor_twos (p p':positive) {struct p} : (positive*positive) := 
- match p, p' with 
-  | xO p, xO p' => Pfactor_twos p p'
-  | _, _ => (p,p')
- end.
-
-Definition Qfactor_twos (q:Q) := 
- let (p,q) := q in 
- match p with 
-   | Z0 => 0
-   | Zpos p => let (p,q) := Pfactor_twos p q in (Zpos p)#q
-   | Zneg p => let (p,q) := Pfactor_twos p q in (Zneg p)#q
- end.
-
-Lemma Pfactor_twos_correct : forall p p', 
-   (p*(snd (Pfactor_twos p p')))%positive = 
-   (p'*(fst (Pfactor_twos p p')))%positive.
-Proof.
-induction p; intros.
-simpl snd; simpl fst; rewrite Pmult_comm; auto.
-destruct p'.
-simpl snd; simpl fst; rewrite Pmult_comm; auto.
-simpl; f_equal; auto.
-simpl snd; simpl fst; rewrite Pmult_comm; auto.
-simpl snd; simpl fst; rewrite Pmult_comm; auto.
-Qed.
-
-Lemma Qfactor_twos_correct : forall q, Qfactor_twos q == q.
-Proof.
-intros (p,q).
-destruct p.
-red; simpl; auto.
-simpl.
-generalize (Pfactor_twos_correct p q); destruct (Pfactor_twos p q).
-red; simpl.
-intros; f_equal.
-rewrite H; apply Pmult_comm.
-simpl.
-generalize (Pfactor_twos_correct p q); destruct (Pfactor_twos p q).
-red; simpl.
-intros; f_equal.
-rewrite H; apply Pmult_comm.
-Qed.
-Hint Resolve Qfactor_twos_correct.
-
 (** Simplification of fractions using [Zgcd].
   This version can compute within Coq. *)
 
 Definition Qred (q:Q) := 
-  let (q1,q2) := Qfactor_twos q in 
-  let (r1,r2) := snd (Zggcd q1 (Zpos q2)) in r1#(Z2P r2).
+  let (q1,q2) := q in 
+  let (r1,r2) := snd (Zggcd q1 ('q2)) 
+  in r1#(Z2P r2).
 
 Lemma Qred_correct : forall q, (Qred q) == q.
 Proof.
-intros; apply Qeq_trans with (Qfactor_twos q); auto.
-unfold Qred.
-destruct (Qfactor_twos q) as (n,d); red; simpl.
+unfold Qred, Qeq; intros (n,d); simpl.
 generalize (Zggcd_gcd n ('d)) (Zgcd_is_pos n ('d)) 
   (Zgcd_is_gcd n ('d)) (Zggcd_correct_divisors n ('d)).
 destruct (Zggcd n (Zpos d)) as (g,(nn,dd)); simpl.
@@ -112,16 +64,8 @@ Qed.
 
 Lemma Qred_complete : forall p q,  p==q -> Qred p = Qred q.
 Proof.
-intros.
-assert (Qfactor_twos p == Qfactor_twos q).
- apply Qeq_trans with p; auto.
- apply Qeq_trans with q; auto.
- symmetry; auto.
-clear H.
-unfold Qred.
-destruct (Qfactor_twos p) as (a,b); 
-destruct (Qfactor_twos q) as (c,d); clear p q.
-unfold Qeq in *; simpl in *.
+intros (a,b) (c,d).
+unfold Qred, Qeq in *; simpl in *.
 Open Scope Z_scope.
 generalize (Zggcd_gcd a ('b)) (Zgcd_is_gcd a ('b)) 
  (Zgcd_is_pos a ('b)) (Zggcd_correct_divisors a ('b)).
@@ -194,47 +138,6 @@ Qed.
 Add Morphism Qred : Qred_comp. 
 Proof.
 intros q q' H.
-rewrite (Qred_correct q); auto.
-rewrite (Qred_correct q'); auto.
-Qed.
-
-(** Another version, dedicated to extraction *)
-
-Definition Qred_extr (q : Q) :=
-  let (q1, q2) := Qfactor_twos q in
-  let (p,_) := Zggcd_spec_pos (Zpos q2) (Zle_0_pos q2) q1 in  
-  let (r2,r1) := snd p in r1#(Z2P r2).
-
-Lemma Qred_extr_Qred : forall q, Qred_extr q = Qred q.
-Proof.
-unfold Qred, Qred_extr.
-intro q; destruct (Qfactor_twos q) as (n,p); clear q.
-Open Scope Z_scope.
-destruct (Zggcd_spec_pos (' p) (Zle_0_pos p) n) as ((g,(pp,nn)),H).
-generalize (H (Zle_0_pos p)); clear H; intros (Hg1,(Hg2,(Hg4,Hg3))).
-simpl.
-generalize (Zggcd_gcd n ('p)) (Zgcd_is_gcd n ('p)) 
- (Zgcd_is_pos n ('p)) (Zggcd_correct_divisors n ('p)).
-destruct (Zggcd n (Zpos p)) as (g',(nn',pp')); simpl.
-intro H; rewrite <- H; clear H.
-intros Hg'1 Hg'2 (Hg'3,Hg'4).
-assert (g<>0).
- intro; subst g; discriminate.
-destruct (Zis_gcd_uniqueness_apart_sign n ('p) g g'); auto.
-apply Zis_gcd_sym; auto.
-subst g'.
-f_equal.
-apply Zmult_reg_l with g; auto; congruence.
-f_equal.
-apply Zmult_reg_l with g; auto; congruence.
-elimtype False; omega.
-Open Scope Q_scope.
-Qed.
-
-Add Morphism Qred_extr : Qred_extr_comp. 
-Proof.
-intros q q' H.
-do 2 rewrite Qred_extr_Qred.
 rewrite (Qred_correct q); auto.
 rewrite (Qred_correct q'); auto.
 Qed.

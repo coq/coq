@@ -515,7 +515,7 @@ type constr_expr =
       (constr_expr * explicitation located option) list
   | CCases of loc * constr_expr option *
       (constr_expr * (name option * constr_expr option)) list *
-      (loc * cases_pattern_expr list * constr_expr) list
+      (loc * cases_pattern_expr list list * constr_expr) list
   | CLetTuple of loc * name list * (name option * constr_expr option) *
       constr_expr * constr_expr
   | CIf of loc * constr_expr * (name option * constr_expr option)
@@ -544,6 +544,7 @@ and cofixpoint_expr =
 and recursion_order_expr = 
   | CStructRec
   | CWfRec of constr_expr
+  | CMeasureRec of constr_expr
 
 (***********************)
 (* For binders parsing *)
@@ -551,6 +552,11 @@ and recursion_order_expr =
 let rec local_binders_length = function
   | [] -> 0
   | LocalRawDef _::bl -> 1 + local_binders_length bl
+  | LocalRawAssum (idl,_)::bl -> List.length idl + local_binders_length bl
+
+let rec local_assums_length = function
+  | [] -> 0
+  | LocalRawDef _::bl -> local_binders_length bl
   | LocalRawAssum (idl,_)::bl -> List.length idl + local_binders_length bl
 
 let names_of_local_assums bl =

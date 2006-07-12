@@ -18,7 +18,7 @@ let mkRLetIn(n,t,b) = RLetIn(dummy_loc,n,t,b)
 let mkRCases(rto,l,brl) = RCases(dummy_loc,rto,l,brl)
 let mkRSort s = RSort(dummy_loc,s)
 let mkRHole () = RHole(dummy_loc,Evd.BinderType Anonymous)
-
+let mkRCast(b,t) = RCast(dummy_loc,b,CastCoerce,t)
 
 (*
   Some basic functions to decompose rawconstrs
@@ -49,8 +49,8 @@ let raw_decompose_app =
 
 
 (* [raw_make_eq t1 t2] build the rawconstr corresponding to [t2 = t1] *) 
-let raw_make_eq t1 t2  = 
-  mkRApp(mkRRef (Lazy.force Coqlib.coq_eq_ref),[mkRHole ();t2;t1])
+let raw_make_eq ?(typ= mkRHole ()) t1 t2  = 
+  mkRApp(mkRRef (Lazy.force Coqlib.coq_eq_ref),[typ;t2;t1])
 
 (* [raw_make_neq t1 t2] build the rawconstr corresponding to [t1 <> t2] *) 
 let raw_make_neq t1 t2 = 
@@ -321,7 +321,7 @@ let rec alpha_rt excluded rt =
 	     List.map (alpha_rt excluded) args
 	    )
   in 
-  if Tacinterp.get_debug () <> Tactic_debug.DebugOff  && false 
+  if Indfun_common.do_observe ()  && false 
   then
     Pp.msgnl (str "debug: alpha_rt(" ++ str "[" ++
 	      prlist_with_sep (fun _ -> str";") Ppconstr.pr_id excluded ++
@@ -386,29 +386,31 @@ let is_free_in id =
       
 
 
-let rec pattern_to_term  = function 
+let rec pattern_to_term  = function
   | PatVar(loc,Anonymous) -> assert false
-  | PatVar(loc,Name id) -> 
+  | PatVar(loc,Name id) ->
 	mkRVar id
-  | PatCstr(loc,constr,patternl,_) -> 
-      let cst_narg = 
+  | PatCstr(loc,constr,patternl,_) ->
+      let cst_narg =
 	Inductiveops.mis_constructor_nargs_env
 	  (Global.env ())
 	  constr
       in
-      let implicit_args =  
-	Array.to_list 
-	  (Array.init 
+      let implicit_args =
+	Array.to_list
+	  (Array.init
 	     (cst_narg - List.length patternl)
 	     (fun _ -> mkRHole ())
 	  )
       in
-      let patl_as_term = 
+      let patl_as_term =
 	List.map pattern_to_term patternl
       in
       mkRApp(mkRRef(Libnames.ConstructRef constr),
 	     implicit_args@patl_as_term
 	    )
+
+  
 
 let replace_var_by_term x_id term = 
   let rec replace_var_by_pattern rt = 
@@ -539,3 +541,63 @@ let ids_of_pat =
   in
   ids_of_pat Idset.empty 
   
+
+
+
+
+let zeta_normalize = 
+  let rec zeta_normalize_term rt = 
+    match rt with 
+      | RRef _ -> rt 
+      | RVar _ -> rt 
+      | REvar _ -> rt 
+      | RPatVar _ -> rt 
+      | RApp(loc,rt',rtl) -> 
+	  RApp(loc,
+	       zeta_normalize_term rt',
+	       List.map zeta_normalize_term rtl
+	      )
+      | RLambda(loc,name,t,b) -> 
+	  RLambda(loc,
+		  name,
+		  zeta_normalize_term t,
+		  zeta_normalize_term b
+		 )
+      | RProd(loc,name,t,b) -> 
+	  RProd(loc,
+		name, 		  
+		zeta_normalize_term t,
+		zeta_normalize_term b
+		 )
+      | RLetIn(_,Name id,def,b) -> 
+	  zeta_normalize_term (replace_var_by_term id def b)
+      | RLetIn(loc,Anonymous,def,b) -> zeta_normalize_term b
+      | RLetTuple(loc,nal,(na,rto),def,b) -> 
+	  RLetTuple(loc,
+		    nal,
+		    (na,option_map zeta_normalize_term rto),
+		    zeta_normalize_term def,
+		    zeta_normalize_term b
+		   )
+      | RCases(loc,infos,el,brl) -> 
+	  RCases(loc,
+		 infos,
+		 List.map (fun (e,x) -> (zeta_normalize_term e,x)) el, 
+		 List.map zeta_normalize_br brl
+		)
+      | RIf(loc,b,(na,e_option),lhs,rhs) -> 
+	  RIf(loc, zeta_normalize_term b,
+	      (na,option_map zeta_normalize_term e_option),
+	      zeta_normalize_term lhs,
+	      zeta_normalize_term rhs
+	     )
+      | RRec _ -> raise (UserError("",str "Not handled RRec"))
+      | RSort _ -> rt 
+      | RHole _ -> rt 
+      | RCast(loc,b,k,t) -> 
+	  RCast(loc,zeta_normalize_term b,k,zeta_normalize_term t)
+      | RDynamic _ -> raise (UserError("",str "Not handled RDynamic"))
+  and zeta_normalize_br (loc,idl,patl,res) = 
+    (loc,idl,patl,zeta_normalize_term res)
+  in
+  zeta_normalize_term 

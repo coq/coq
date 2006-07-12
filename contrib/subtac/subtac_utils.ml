@@ -22,12 +22,16 @@ let fixsub = lazy (init_constant fixsub_module "Fix_sub")
 let ex_pi1 = lazy (init_constant utils_module "ex_pi1")
 let ex_pi2 = lazy (init_constant utils_module "ex_pi2")
 
-let make_ref s =  Qualid (dummy_loc, (qualid_of_string s))
-let well_founded_ref = make_ref "Init.Wf.Well_founded"
-let acc_ref = make_ref "Init.Wf.Acc"
-let acc_inv_ref = make_ref "Init.Wf.Acc_inv"
-let fix_sub_ref = make_ref "Coq.subtac.FixSub.Fix_sub"
-let lt_wf_ref = make_ref "Coq.Wf_nat.lt_wf"
+let make_ref l s = lazy (init_reference l s)
+let well_founded_ref = make_ref ["Init";"Wf"] "Well_founded"
+let acc_ref = make_ref  ["Init";"Wf"] "Acc"
+let acc_inv_ref = make_ref  ["Init";"Wf"] "Acc_inv"
+let fix_sub_ref = make_ref ["subtac";"FixSub"] "Fix_sub"
+let fix_measure_sub_ref = make_ref ["subtac";"FixSub"] "Fix_measure_sub"
+let lt_ref = make_ref ["Init";"Peano"] "lt"
+let lt_wf_ref = make_ref ["Wf_nat"] "lt_wf"
+
+let make_ref s = Qualid (dummy_loc, qualid_of_string s)
 let sig_ref = make_ref "Init.Specif.sig"
 let proj1_sig_ref = make_ref "Init.Specif.proj1_sig"
 let proj2_sig_ref = make_ref "Init.Specif.proj2_sig"
@@ -82,18 +86,19 @@ let my_print_evardefs = Evd.pr_evar_defs
 
 let my_print_tycon_type = Evarutil.pr_tycon_type
 
+let debug_level = 2
 
 let debug n s = 
-  if !Options.debug then
+  if !Options.debug && n >= debug_level then
     msgnl s
   else ()
 
 let debug_msg n s = 
-  if !Options.debug then s
+  if !Options.debug  && n >= debug_level then s
   else mt ()
 
 let trace s = 
-  if !Options.debug then msgnl s
+  if !Options.debug  && debug_level > 0 then msgnl s
   else ()
 
 let wf_relations = Hashtbl.create 10
@@ -153,6 +158,9 @@ let non_instanciated_map env evd =
 let global_kind = Decl_kinds.IsDefinition Decl_kinds.Definition
 let goal_kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Definition
 
+let global_proof_kind = Decl_kinds.IsProof Decl_kinds.Lemma
+let goal_proof_kind = Decl_kinds.Global, Decl_kinds.Proof Decl_kinds.Lemma
+
 let global_fix_kind = Decl_kinds.IsDefinition Decl_kinds.Fixpoint
 let goal_fix_kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Fixpoint
 
@@ -164,7 +172,7 @@ let build_dependent_sum l =
       (n, t) :: tl ->
 	let t' = mkLambda (Name n, t, typ) in
 	  trace (spc () ++ str ("treating evar " ^ string_of_id n));
-	  (try trace (str " assert: " ++ my_print_constr (Global.env ()) t)
+	  (try trace (str " assert: " ++ my_print_constr (Global.env ()) t)	    	     
 	   with _ -> ());
 	let tac' = 
 	  tclTHENS (assert_tac true (Name n) t) 
@@ -183,6 +191,39 @@ let build_dependent_sum l =
 	(_, hd) :: tl -> aux (intros, hd) tl
       | [] -> raise (Invalid_argument "build_dependent_sum")
 
+let id x = x
+
+let build_dependent_sum l =
+  let rec aux names conttac conttype = function
+      (n, t) :: ((_ :: _) as tl) ->
+	let hyptype = substl names t in
+	  trace (spc () ++ str ("treating evar " ^ string_of_id n));
+	  (try trace (str " assert: " ++ my_print_constr (Global.env ()) hyptype)
+	   with _ -> ());
+	let tac = assert_tac true (Name n) hyptype in
+	let conttac = 
+	  (fun cont -> 
+	     conttac
+	     (tclTHENS tac
+		([intros;
+		  (tclTHENSEQ 
+		     [constructor_tac (Some 1) 1 
+			(Rawterm.ImplicitBindings [mkVar n]);
+		      cont]);
+		 ])))
+	in
+	let conttype = 
+	  (fun typ -> 
+	     let tex = mkLambda (Name n, t, typ) in
+	       conttype
+		 (mkApp (Lazy.force ex_ind, [| t; tex |])))
+	in
+	  aux (mkVar n :: names) conttac conttype tl
+    | (n, t) :: [] -> 
+	(conttac intros, conttype t)
+    | [] -> raise (Invalid_argument "build_dependent_sum")
+  in aux [] id id (List.rev l)       
+	  
 open Proof_type
 open Tacexpr
 
@@ -251,6 +292,75 @@ let destruct_ex ext ex =
       | _ -> [acc]
   in aux ex ext
 
+open Rawterm
+
+
+let list_mapi f = 
+  let rec aux i = function 
+      hd :: tl -> f i hd :: aux (succ i) tl 
+    | [] -> []
+  in aux 0
+
+let rewrite_cases_aux (loc, po, tml, eqns) =
+  let tml = list_mapi (fun i (c, (n, opt)) -> c, 
+		       ((match n with
+			    Name id -> (match c with
+					  | RVar (_, id') when id = id' ->
+					      Name (id_of_string (string_of_id id ^ "'"))
+					  | _ -> n)
+			  | Anonymous -> Name (id_of_string ("x" ^ string_of_int i))),
+			opt)) tml 
+  in
+  let mkHole = RHole (dummy_loc, InternalHole) in
+  let mkeq c n = RApp (dummy_loc, RRef (dummy_loc, (Lazy.force eqind_ref)),
+		       [mkHole; c; n])
+  in
+  let eqs_types = 
+    List.map
+      (fun (c, (n, _)) ->
+	 let id = match n with Name id -> id | _ -> assert false in
+	 let heqid = id_of_string ("Heq" ^ string_of_id id) in
+	   Name heqid, mkeq c (RVar (dummy_loc, id)))
+      tml
+  in
+  let po = 
+    List.fold_right
+      (fun (n,t) acc ->
+	 RProd (dummy_loc, Anonymous, t, acc))
+      eqs_types (match po with 
+		     Some e -> e
+		   | None -> mkHole)
+  in
+  let eqns =   
+    List.map (fun (loc, idl, cpl, c) ->
+		let c' = 
+		  List.fold_left 
+		    (fun acc (n, t) ->
+		       RLambda (dummy_loc, n, mkHole, acc))
+		    c eqs_types
+		in (loc, idl, cpl, c'))
+      eqns
+  in
+  let mk_refl_equal c = RApp (dummy_loc, RRef (dummy_loc, Lazy.force refl_equal_ref),
+			      [mkHole; c])
+  in
+  let refls = List.map (fun (c, _) -> mk_refl_equal c) tml in
+  let case = RCases (loc,Some po,tml,eqns) in
+  let app = RApp (dummy_loc, case, refls) in
+    app
+
+let rec rewrite_cases c = 
+  match c with 
+      RCases _ -> let c' = map_rawconstr rewrite_cases c in
+	(match c' with 
+	   | RCases (x, y, z, w) -> rewrite_cases_aux (x,y,z,w)
+	   | _ -> assert(false))
+    | _ -> map_rawconstr rewrite_cases c
+	  
+let rewrite_cases env c =
+  let c' = rewrite_cases c in
+  let _ = trace (str "Rewrote cases: " ++ spc () ++ my_print_rawconstr env c') in
+    c'
 
 let list_mapi f = 
   let rec aux i = function 

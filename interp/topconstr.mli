@@ -98,7 +98,7 @@ type constr_expr =
         (constr_expr * explicitation located option) list
   | CCases of loc * constr_expr option *
       (constr_expr * (name option * constr_expr option)) list *
-      (loc * cases_pattern_expr list * constr_expr) list
+      (loc * cases_pattern_expr list list * constr_expr) list
   | CLetTuple of loc * name list * (name option * constr_expr option) *
       constr_expr * constr_expr
   | CIf of loc * constr_expr * (name option * constr_expr option)
@@ -122,6 +122,7 @@ and cofixpoint_expr =
 and recursion_order_expr = 
   | CStructRec
   | CWfRec of constr_expr
+  | CMeasureRec of constr_expr
 
 and local_binder =
   | LocalRawDef of name located * constr_expr
@@ -157,6 +158,9 @@ val prod_constr_expr : constr_expr -> local_binder list -> constr_expr
 
 (* Includes let binders *)
 val local_binders_length : local_binder list -> int
+
+(* Excludes let binders *)
+val local_assums_length : local_binder list -> int
 
 (* Does not take let binders into account *)
 val names_of_local_assums : local_binder list -> name located list

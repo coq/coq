@@ -76,6 +76,6 @@ val pattern_of_rawconstr : rawconstr ->
       patvar list * constr_pattern
 
 val instantiate_pattern :
-  (identifier * constr_pattern) list -> constr_pattern -> constr_pattern
+  (identifier * constr_pattern Lazy.t) list -> constr_pattern -> constr_pattern
 
 val lift_pattern : int -> constr_pattern -> constr_pattern

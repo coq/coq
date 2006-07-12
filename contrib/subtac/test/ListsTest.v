@@ -5,12 +5,13 @@ Variable A : Set.
 
 Program Definition myhd : forall { l : list A | length l <> 0 }, A :=  
   fun l =>
-    match l with
+    match `l with
     | nil => _
     | hd :: tl => hd
     end.
 Proof.
-  destruct l ; simpl ; intro H ; rewrite <- H in n ; intuition.
+  destruct l ; simpl ; intro H.
+  rewrite H in n ; intuition.
 Defined.
 
 
@@ -24,7 +25,7 @@ Program Definition mytail : forall { l : list A | length l <> 0 }, list A :=
     | hd :: tl => tl
     end.
 Proof.
-destruct l ; simpl ; intro H ; rewrite <- H in n ; intuition.
+destruct l ; simpl ; intro H ; rewrite H in n ; intuition.
 Defined.
 
 Extraction mytail.
@@ -50,7 +51,6 @@ Program Fixpoint append (l : list A) (l' : list A) { struct l } :
  | nil => l'
  | hd :: tl => hd :: (append tl l')
  end.
-simpl.
 subst ; auto.
 simpl ; rewrite (subset_simpl (append tl0 l')).
 simpl ; subst.

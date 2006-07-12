@@ -336,8 +336,8 @@ and
   | a::l -> CT_match_pattern_ne_list(xlate_match_pattern a, 
                                      List.map xlate_match_pattern l)
 and  translate_one_equation = function
-    (_,lp, a) -> CT_eqn ( xlate_match_pattern_ne_list lp,
-	     xlate_formula a)
+    (_,[lp], a) -> CT_eqn (xlate_match_pattern_ne_list lp, xlate_formula a)
+  | _ -> xlate_error "TODO: disjunctive multiple patterns"
 and 
   xlate_binder_ne_list = function
     [] -> assert false
@@ -978,7 +978,7 @@ and xlate_tac =
 	let id_opt = 
 	  match out_gen Extratactics.rawwit_in_arg_hyp id_opt with 
 	  | None -> ctv_ID_OPT_NONE
-	  | Some id ->   ctf_ID_OPT_SOME (xlate_ident id)
+	  | Some (_,id) ->   ctf_ID_OPT_SOME (xlate_ident id)
 	in
 	let tac_opt = 
 	  match out_gen (Extratactics.rawwit_by_arg_tac) tac_opt with
@@ -2035,7 +2035,6 @@ let rec xlate_vernac =
   | VernacExtend (s, l) ->
       CT_user_vernac
        (CT_ident s, CT_varg_list (List.map coerce_genarg_to_VARG l))
-  | VernacDebug b -> xlate_error "Debug On/Off not supported"
   | VernacList((_, a)::l) -> 
       CT_coerce_COMMAND_LIST_to_COMMAND
 	(CT_command_list(xlate_vernac a, 

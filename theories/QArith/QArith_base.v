@@ -43,12 +43,48 @@ Notation Qge := (fun x y : Q => Qle y x).
 
 Infix "==" := Qeq (at level 70, no associativity) : Q_scope. 
 Infix "<" := Qlt : Q_scope.
+Infix ">" := Qgt : Q_scope.
 Infix "<=" := Qle : Q_scope.
-Infix ">" := Qgt : Q_scope. 
-Infix ">=" := Qge : Q_scope. 
+Infix ">=" := Qge : Q_scope.
 Notation "x <= y <= z" := (x<=y/\y<=z) : Q_scope.
 
-Hint Unfold Qeq Qle Qlt: qarith.
+(** Another approach : using Qcompare for defining order relations. *)
+
+Definition Qcompare (p q : Q) := (Qnum p * QDen q ?= Qnum q * QDen p)%Z.
+Notation "p ?= q" := (Qcompare p q) : Q_scope.
+
+Lemma Qeq_alt : forall p q, (p == q) <-> (p ?= q) = Eq.
+Proof.
+unfold Qeq, Qcompare; intros; split; intros.
+rewrite H; apply Zcompare_refl.
+apply Zcompare_Eq_eq; auto.
+Qed.
+
+Lemma Qlt_alt : forall p q, (p<q) <-> (p?=q = Lt).
+Proof.
+unfold Qlt, Qcompare, Zlt; split; auto.
+Qed.
+
+Lemma Qgt_alt : forall p q, (p>q) <-> (p?=q = Gt).
+Proof.
+unfold Qlt, Qcompare, Zlt.
+intros; rewrite Zcompare_Gt_Lt_antisym; split; auto.
+Qed.
+
+Lemma Qle_alt : forall p q, (p<=q) <-> (p?=q <> Gt).
+Proof.
+unfold Qle, Qcompare, Zle; split; auto.
+Qed.
+
+Lemma Qge_alt : forall p q, (p>=q) <-> (p?=q <> Lt).
+Proof.
+unfold Qle, Qcompare, Zle.
+split; intros; swap H.
+rewrite Zcompare_Gt_Lt_antisym; auto.
+rewrite Zcompare_Gt_Lt_antisym in H0; auto.
+Qed.
+
+Hint Unfold Qeq Qlt Qle: qarith.
 Hint Extern 5 (?X1 <> ?X2) => intro; discriminate: qarith.
 
 (** Properties of equality. *)
@@ -235,6 +271,24 @@ apply Zlt_gt.
 apply Zmult_gt_0_lt_compat_l; auto with zarith.
 Open Scope Q_scope.
 Qed.
+
+
+Lemma Qcompare_egal_dec: forall n m p q : Q, 
+ (n<m -> p<q) -> (n==m -> p==q) -> (n>m -> p>q) -> ((n?=m) = (p?=q)).
+Proof.
+intros.
+do 2 rewrite Qeq_alt in H0.
+unfold Qeq, Qlt, Qcompare in *.
+apply Zcompare_egal_dec; auto.
+omega.
+Qed.
+
+
+Add Morphism Qcompare : Qcompare_comp.
+Proof.
+intros; apply Qcompare_egal_dec; rewrite H; rewrite H0; auto.
+Qed.
+
 
 (** [0] and [1] are apart *)
 

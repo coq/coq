@@ -55,6 +55,11 @@ This command is used to start an interactive module named {\ident}.
   {\modbindings}. The output module type is verified against the
   module type {\modtype}.
 
+\item\texttt{Module [Import|Export]}
+
+  Behaves like \texttt{Module}, but automatically imports or exports
+  the module.
+
 \end{Variants}
 
 \subsection{\tt End {\ident}
@@ -139,38 +144,9 @@ Defines a module type {\ident} equal to {\modtype}.
   {\modbindings} and returning {\modtype}.
 \end{Variants}
 
-\subsection{\tt Declare Module {\ident}}
-
-Starts an interactive module declaration. This command is available
-only in module types. 
-
-\begin{Variants}
-
-\item{\tt Declare Module {\ident} {\modbindings}}
-
-  Starts an interactive declaration of a functor with parameters given
-  by {\modbindings}.
-
-% Particular case of the next item
-%\item{\tt Declare Module {\ident} \verb.<:. {\modtype}}
-%
-%  Starts an interactive declaration of a module satisfying {\modtype}.
-
-\item{\tt Declare Module {\ident} {\modbindings} \verb.<:. {\modtype}}
-
-  Starts an interactive declaration of a functor with parameters given
-  by {\modbindings} (possibly none). The declared output module type is
-  verified against the module type {\modtype}.
-
-\end{Variants}
-
-\subsection{\tt End {\ident}}
-
-This command closes the interactive declaration of module {\ident}.
-
 \subsection{\tt Declare Module {\ident} : {\modtype}}
 
-Declares a module of {\ident} of type {\modtype}. This command is available
+Declares a module {\ident} of type {\modtype}. This command is available
 only in module types. 
 
 \begin{Variants}
@@ -188,6 +164,11 @@ only in module types.
 
   Declares a module equal to the module {\qualid}, verifying that the
   module type of the latter is a subtype of {\modtype}.
+
+\item\texttt{Declare Module [Import|Export] {\ident} := {\qualid}}
+
+  Declares a modules {\ident} of type {\modtype}, and imports or
+  exports it directly.
 
 \end{Variants}
 
@@ -388,6 +369,11 @@ Prints the module type and (optionally) the body of the module {\ident}.
 \comindex{Print Module Type}}
 
 Prints the module type corresponding to {\ident}.
+
+\subsection{\texttt{Locate Module {\qualid}}
+\comindex{Locate Module}}
+
+Prints the full name of the module {\qualid}.
 
 
 %%% Local Variables: 

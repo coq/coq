@@ -106,25 +106,25 @@ module Coercion = struct
       : (Term.constr -> Term.constr) option 
       =
     let x = nf_evar (evars_of !isevars) x and y = nf_evar (evars_of !isevars) y in
-      (try trace (str "Coerce called for " ++ (my_print_constr env x) ++ 
+      (try debug 1 (str "Coerce called for " ++ (my_print_constr env x) ++ 
 		  str " and "++ my_print_constr env y ++ 
 		  str " with evars: " ++ spc () ++
 		  my_print_evardefs !isevars);
        with _ -> ());
     let rec coerce_unify env x y =
-      (try trace (str "coerce_unify from " ++ (my_print_constr env x) ++ 
+      (try debug 1 (str "coerce_unify from " ++ (my_print_constr env x) ++ 
 		  str " to "++ my_print_constr env y)
        with _ -> ());
       try 
 	isevars := the_conv_x_leq env x y !isevars;
-	(try (trace (str "Unified " ++ (my_print_constr env x) ++ 
-		     str " and "++ my_print_constr env y));
+	(try debug 1 (str "Unified " ++ (my_print_constr env x) ++ 
+			str " and "++ my_print_constr env y);
 	 with _ -> ());
 	None
       with Reduction.NotConvertible -> coerce' env (hnf env isevars x) (hnf env isevars y)
     and coerce' env x y : (Term.constr -> Term.constr) option =
       let subco () = subset_coerce env isevars x y in
-	(try trace (str "coerce' from " ++ (my_print_constr env x) ++ 
+	(try debug 1 (str "coerce' from " ++ (my_print_constr env x) ++ 
 		    str " to "++ my_print_constr env y);
 	 with _ -> ());
 	match (kind_of_term x, kind_of_term y) with
@@ -370,7 +370,7 @@ module Coercion = struct
 
   let rec inh_conv_coerce_to_fail loc env isevars v t c1 =
     (try
-       trace (str "inh_conv_coerce_to_fail called for " ++
+       debug 1 (str "inh_conv_coerce_to_fail called for " ++
 	      Termops.print_constr_env env t ++ str " and "++ spc () ++
 	      Termops.print_constr_env env c1 ++ str " with evars: " ++ spc () ++
 	      Evd.pr_evar_defs isevars ++ str " in env: " ++ spc () ++
@@ -436,7 +436,7 @@ module Coercion = struct
   (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
   let inh_conv_coerce_to loc env isevars cj ((n, t) as tycon) =
     (try 
-       trace (str "Subtac_coercion.inh_conv_coerce_to called for " ++
+       debug 1 (str "Subtac_coercion.inh_conv_coerce_to called for " ++
 	      Termops.print_constr_env env cj.uj_type ++ str " and "++ spc () ++ 
 	      Evarutil.pr_tycon_type env tycon ++ str " with evars: " ++ spc () ++
 	      Evd.pr_evar_defs isevars ++ str " in env: " ++ spc () ++
@@ -461,7 +461,7 @@ module Coercion = struct
 
   let inh_conv_coerces_to loc env isevars t ((abs, t') as tycon) =
     (try 
-       trace (str "Subtac_coercion.inh_conv_coerces_to called for " ++
+       debug 1 (str "Subtac_coercion.inh_conv_coerces_to called for " ++
 	      Termops.print_constr_env env t ++ str " and "++ spc () ++ 
 	      Evarutil.pr_tycon_type env tycon ++ str " with evars: " ++ spc () ++
 	      Evd.pr_evar_defs isevars ++ str " in env: " ++ spc () ++

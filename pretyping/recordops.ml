@@ -32,7 +32,7 @@ open Mod_subst
 
 type struc_typ = {
   s_CONST : identifier; 
-  s_PARAM : int;
+  s_EXPECTEDPARAM : int;
   s_PROJKIND : bool list;
   s_PROJ : constant option list }
 
@@ -44,7 +44,7 @@ let option_fold_right f p e = match p with Some a -> f a e | None -> e
 let load_structure i (_,(ind,id,kl,projs)) =
   let n = (fst (Global.lookup_inductive ind)).Declarations.mind_nparams in
   let struc =
-    { s_CONST = id; s_PARAM = n; s_PROJ = projs; s_PROJKIND = kl } in
+    { s_CONST = id; s_EXPECTEDPARAM = n; s_PROJ = projs; s_PROJKIND = kl } in
   structure_table := Indmap.add ind struc !structure_table;
   projection_table := 
     List.fold_right (option_fold_right (fun proj -> Cmap.add proj struc))
@@ -83,8 +83,10 @@ let declare_structure (s,c,_,kl,pl) =
 
 let lookup_structure indsp = Indmap.find indsp !structure_table
 
+let lookup_projections indsp = (lookup_structure indsp).s_PROJ
+
 let find_projection_nparams = function
-  | ConstRef cst -> (Cmap.find cst !projection_table).s_PARAM
+  | ConstRef cst -> (Cmap.find cst !projection_table).s_EXPECTEDPARAM
   | _ -> raise Not_found
 
 
@@ -134,7 +136,7 @@ let compute_canonical_projections (con,ind) =
   let lt,t = Reductionops.splay_lambda (Global.env()) Evd.empty c in
   let lt = List.rev (List.map snd lt) in
   let args = snd (decompose_app t) in
-  let { s_PARAM = p; s_PROJ = lpj; s_PROJKIND = kl } = lookup_structure ind in
+  let { s_EXPECTEDPARAM = p; s_PROJ = lpj; s_PROJKIND = kl } = lookup_structure ind in
   let params, projs = list_chop p args in
   let lpj = keep_true_projections lpj kl in
   let lps = List.combine lpj projs in
@@ -202,7 +204,8 @@ let check_and_decompose_canonical_structure ref =
     | Construct (indsp,1) -> indsp
     | _ -> error_not_structure ref in
   let s = try lookup_structure indsp with Not_found -> error_not_structure ref in
-  if s.s_PARAM + List.length s.s_PROJ > Array.length args then
+  let ntrue_projs = List.length (List.filter (fun x -> x) s.s_PROJKIND) in
+  if s.s_EXPECTEDPARAM + ntrue_projs > Array.length args then
     error_not_structure ref;
   (sp,indsp)
 

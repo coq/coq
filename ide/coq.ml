@@ -124,7 +124,7 @@ let interp verbosely s =
 	  | VernacDeclareTacticDefinition _
 		when is_in_proof_mode () -> 
 		  user_error_loc loc (str "CoqIDE do not support nested goals")
-	  | VernacDebug _ ->
+	  | VernacSetOption (Goptions.SecondaryTable ("Ltac","Debug"), _) ->
 	      user_error_loc loc (str "Debug mode not available within CoqIDE")
 	  | VernacResetName _
 	  | VernacResetInitial 

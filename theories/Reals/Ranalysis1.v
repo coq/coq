@@ -27,6 +27,18 @@ Definition div_real_fct (a:R) f (x:R) : R := a / f x.
 Definition comp f1 f2 (x:R) : R := f1 (f2 x).
 Definition inv_fct f (x:R) : R := / f x.
 
+Delimit Scope Rfun_scope with F.
+
+Arguments Scope plus_fct [Rfun_scope Rfun_scope R_scope].
+Arguments Scope mult_fct [Rfun_scope Rfun_scope R_scope].
+Arguments Scope minus_fct [Rfun_scope Rfun_scope R_scope].
+Arguments Scope div_fct [Rfun_scope Rfun_scope R_scope].
+Arguments Scope inv_fct [Rfun_scope R_scope].
+Arguments Scope opp_fct [Rfun_scope R_scope].
+Arguments Scope mult_real_fct [R_scope Rfun_scope R_scope].
+Arguments Scope div_real_fct [R_scope Rfun_scope R_scope].
+Arguments Scope comp [Rfun_scope Rfun_scope R_scope].
+
 Infix "+" := plus_fct : Rfun_scope.
 Notation "- x" := (opp_fct x) : Rfun_scope.
 Infix "*" := mult_fct : Rfun_scope.
@@ -35,8 +47,6 @@ Infix "/" := div_fct : Rfun_scope.
 Notation Local "f1 'o' f2" := (comp f1 f2)
   (at level 20, right associativity) : Rfun_scope.
 Notation "/ x" := (inv_fct x) : Rfun_scope.
-
-Delimit Scope Rfun_scope with F.
 
 Definition fct_cte (a x:R) : R := a.
 Definition id (x:R) := x.

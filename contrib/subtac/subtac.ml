@@ -43,7 +43,7 @@ open Eterm
 let require_library dirpath =
   let qualid = (dummy_loc, qualid_of_dirpath (dirpath_of_string dirpath)) in
     Library.require_library [qualid] None
-
+(*
 let subtac_one_fixpoint env isevars (f, decl) = 
   let ((id, n, bl, typ, body), decl) = 
     Subtac_interp_fixpoint.rewrite_fixpoint env [] (f, decl) 
@@ -53,7 +53,7 @@ let subtac_one_fixpoint env isevars (f, decl) =
 	       Ppconstr.pr_constr_expr body)
     with _ -> ()
   in ((id, n, bl, typ, body), decl)
-    
+*)
 	      
 let subtac_fixpoint isevars l = 
   (* TODO: Copy command.build_recursive *)

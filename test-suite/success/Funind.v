@@ -29,6 +29,18 @@ intros n m.
  functional induction ftest n m; auto.
 Qed.
 
+Lemma test2 : forall m n, ~ 2 = ftest n m.
+Proof. 
+intros n m;intro H.
+functional inversion H ftest.
+Qed.
+
+Lemma test3 : forall n m, ftest n m = 0 -> (n = 0 /\ m = 0)  \/ n <> 0.
+Proof.
+functional inversion 1 ftest;auto.
+Qed.
+
+
 Require Import Arith.
 Lemma test11 : forall m : nat, ftest 0 m <= 2.
 intros m.
@@ -112,7 +124,8 @@ Function iseven (n : nat) : bool :=
   | S (S m) => iseven m
   | _ => false
   end.
- 
+
+
 Function funex (n : nat) : nat :=
   match iseven n with
   | true => n
@@ -122,6 +135,7 @@ Function funex (n : nat) : nat :=
              end
   end.
  
+
 Function nat_equal_bool (n m : nat) {struct n} : bool :=
   match n with
   | O => match m with
@@ -150,7 +164,6 @@ exact IHn0.
 Qed.
 
 (* reuse this lemma as a scheme:*)
-
 
 Function nested_lam (n : nat) : nat -> nat :=
   match n with
@@ -184,7 +197,6 @@ auto with arith.
  auto with arith.
 Qed.
 
- 
 Function plus_x_not_five'' (n m : nat) {struct n} : nat :=
   let x := nat_equal_bool m 5 in
   let y := 0 in
@@ -206,7 +218,7 @@ Qed.
 Lemma iseq_eq : forall n m : nat, n = m -> nat_equal_bool n m = true.
 intros n m.
  functional induction nat_equal_bool n m; simpl in |- *; intros hyp; auto.
-rewrite <- hyp in H1; simpl in H1;tauto. 
+rewrite <- hyp in y; simpl in y;tauto. 
 inversion hyp.
 Qed.
  
@@ -280,14 +292,14 @@ destruct n. tauto.
 destruct n. inversion istr.
 destruct n. inversion istr.
 destruct n. tauto.
-simpl in *. inversion H1.
+simpl in *. inversion H0.
 Qed.
  
 Lemma toto' : forall n m : nat, n = 4 -> istrue (isononeorfour n).
 intros n.
  functional induction isononeorfour n; intros m istr; inversion istr.
 apply istrue0.
-rewrite H in H0; simpl in H0;tauto.
+rewrite H in y; simpl in y;tauto.
 Qed.
  
 Function ftest4 (n m : nat) : nat :=
@@ -353,7 +365,7 @@ Function ftest2 (n m : nat) {struct n} : nat :=
   | S p => ftest2 p m
   end.
  
-Lemma test2 : forall n m : nat, ftest2 n m <= 2.
+Lemma test2' : forall n m : nat, ftest2 n m <= 2.
 intros n m.
  functional induction ftest2 n m; simpl in |- *; intros; auto.
 Qed.
@@ -367,7 +379,7 @@ Function ftest3 (n m : nat) {struct n} : nat :=
            end
   end.
  
-Lemma test3 : forall n m : nat, ftest3 n m <= 2.
+Lemma test3' : forall n m : nat, ftest3 n m <= 2.
 intros n m.
  functional induction ftest3 n m.
 intros.
@@ -442,10 +454,52 @@ intros n m.
  functional induction ftest6 n m; simpl in |- *; auto.
 Qed.
 
+(* Some tests with modules *) 
+Module M.
+Function test_m (n:nat) : nat := 
+  match n with 
+    | 0 => 0
+    | S n =>  S (S (test_m n))
+  end.
 
+Lemma test_m_is_double :  forall n, div2 (test_m n) = n.
+Proof.
+intros n.
+functional induction (test_m n).
+reflexivity.
+simpl;rewrite IHn0;reflexivity.
+Qed.
+End M.
+(* We redefine a new Function with the same name *) 
+Function test_m (n:nat) : nat := 
+  pred n.
 
+Lemma test_m_is_pred : forall n, test_m n = pred n.
+Proof. 
+intro n.
+functional induction (test_m n). (* the test_m_ind to use is the last defined  saying that test_m = pred*) 
+reflexivity.
+Qed.
 
+(* Checks if the dot notation are correctly treated in infos *)
+Lemma M_test_m_is_double : forall n, div2 (M.test_m n) = n.
+intro n.
+(* here we should apply M.test_m_ind *)
+functional induction (M.test_m n).
+reflexivity.
+simpl;rewrite IHn0;reflexivity.
+Qed.
 
+Import M.
+(* Now test_m is the one which defines double *)
+
+Lemma test_m_is_double : forall n, div2 (M.test_m n) = n.
+intro n.
+(* here we should apply M.test_m_ind *)
+functional induction (test_m n).
+reflexivity.
+simpl;rewrite IHn0;reflexivity.
+Qed.
 
 
 

@@ -64,15 +64,24 @@ That is, they are recognized by the following lexical class:
 \begin{center}
 \begin{tabular}{rcl} 
 {\firstletter} & ::= & {\tt a..z} $\mid$ {\tt A..Z} $\mid$ {\tt \_}
-% $\mid$ {\tt unicode-letter}  
+$\mid$ {\tt unicode-letter}  
 \\
 {\subsequentletter} & ::= & {\tt a..z} $\mid$ {\tt A..Z} $\mid$ {\tt 0..9}
 $\mid$ {\tt \_} % $\mid$ {\tt \$}
-$\mid$ {\tt '} \\
+$\mid$ {\tt '} 
+$\mid$ {\tt unicode-letter}  
+$\mid$ {\tt unicode-id-part} \\
 {\ident} & ::= & {\firstletter} \sequencewithoutblank{\subsequentletter}{}
 \end{tabular}
 \end{center}
-All characters are meaningful. In particular, identifiers are case-sensitive.
+All characters are meaningful. In particular, identifiers are
+case-sensitive.  The entry {\tt unicode-letter} non-exhaustively
+includes Latin, Greek, Gothic, Cyrillic, Arabic, Hebrew, Georgian,
+Hangul, Hiragana and Katakana characters, CJK ideographs, mathematical
+letter-like symbols, hyphens, non-breaking space, {\ldots} The entry
+{\tt unicode-id-part} non-exhaustively includes symbols for prime
+letters and subscripts.
+
 Access identifiers, written {\accessident}, are identifiers prefixed
 by \verb!.! (dot) without blank. They are used in the syntax of qualified
 identifiers.
@@ -308,7 +317,9 @@ chapter \ref{Addoc-syntax}.
 &&\\
 {\returntype} & ::= & {\tt return} {\term} \\
 &&\\
-{\eqn} & ::= & \nelist{\pattern}{\tt ,} {\tt =>} {\term}\\
+{\eqn} & ::= & \nelist{\multpattern}{\tt |} {\tt =>} {\term}\\
+&&\\
+{\multpattern} & ::= & \nelist{\pattern}{\tt ,}\\
 &&\\
 {\pattern} & ::= & {\qualid} \nelist{\pattern}{}  \\
  & $|$ & {\pattern} {\tt as} {\ident}             \\
@@ -316,7 +327,9 @@ chapter \ref{Addoc-syntax}.
  & $|$ & {\qualid}                              \\
  & $|$ & {\tt \_}                                  \\
  & $|$ & {\num}                                 \\
- & $|$ & {\tt (} \nelist{\pattern}{,} {\tt )}     
+ & $|$ & {\tt (} \nelist{\orpattern}{,} {\tt )}     \\
+\\
+{\orpattern} & ::= & \nelist{\pattern}{\tt |}\\
 \end{tabular}
 \end{centerframe}
 \caption{Syntax of terms (continued)}
@@ -515,10 +528,11 @@ The expression {\tt match} {\term$_0$} {\returntype} {\tt with}
 {\pattern$_1$} {\tt =>} {\term$_1$} {\tt $|$} {\ldots} {\tt $|$}
 {\pattern$_n$} {\tt =>} {\term$_n$} {\tt end}, denotes a {\em
 pattern-matching} over the term {\term$_0$} (expected to be of an
-inductive type $I$). {\term$_1$}\ldots{\term$_n$} are called branches. In
+inductive type $I$). 
+The terms {\term$_1$}\ldots{\term$_n$} are called branches. In
 a simple pattern \qualid~\nelist{\ident}{}, the qualified identifier
 {\qualid} is intended to
-be a constructor. There should be a branch for every constructor of
+be a constructor. There should be one branch for every constructor of
 $I$.
 
 The {\returntype} is used to compute the resulting type of the whole
@@ -530,9 +544,8 @@ annotation has to be given when the resulting type of the whole {\tt
 match} depends on the actual {\term$_0$} matched.
 
 There are specific notations for case analysis on types with one or
-two constructors: {\tt if / then / else} and
-{\tt let (}\ldots{\tt ) :=} \ldots {\tt in}\ldots. \SeeAlso
-section~\ref{Mult-match} for details and examples.
+two constructors: {\tt if {\ldots} then {\ldots} else {\ldots}} and
+{\tt let (}\nelist{\ldots}{,}{\tt ) :=} {\ldots} {\tt in} {\ldots}.
 
 \SeeAlso Section~\ref{Mult-match} for details and examples.
 
@@ -761,12 +774,17 @@ environment, provided that {\term} is well-typed.
        {\binder$_1$}\ldots{\binder$_n$}{\tt ,}\,\term$_1$\,{\tt :=}}\,%
        {\tt fun}\,{\binder$_1$}\ldots{\binder$_n$}\,{\tt =>}\,{\term$_2$}\,%
        {\tt .}
+
+\item {\tt Example {\ident} := {\term}.}\\
+{\tt Example {\ident} {\tt :}{\term$_1$} := {\term$_2$}.}\\
+{\tt Example {\ident} {\binder$_1$}\ldots{\binder$_n$}
+       {\tt :}\term$_1$ {\tt :=} {\term$_2$}.}\\
+\comindex{Example}
+These are synonyms of the {\tt Definition} forms.
 \end{Variants}
 
 \begin{ErrMsgs}
-\item \errindex{In environment {\dots} the term: {\term$_2$} does not have type
-    {\term$_1$}}.\\
-    \texttt{Actually, it has type {\term$_3$}}.
+\item \errindex{Error: The term ``{\term}'' has type "{\type}" while it is expected to have type ``{\type}''}
 \end{ErrMsgs}
 
 \SeeAlso Sections \ref{Opaque}, \ref{Transparent}, \ref{unfold}
@@ -1062,17 +1080,23 @@ inductive types The extended syntax is:
 
 \medskip
 {\tt 
-Inductive {{\ident$_1$} {\params} : {\type$_1$} :=  \\
-\mbox{}\hspace{0.4cm}  {\ident$_1^1$} : {\type$_1^1$} \\
-\mbox{}\hspace{0.1cm}| ..  \\
-\mbox{}\hspace{0.1cm}| {\ident$_{n_1}^1$} : {\type$_{n_1}^1$}  \\
+\begin{tabular}{l}
+Inductive {\ident$_1$} {\params} : {\type$_1$} :=  \\
+\begin{tabular}{clcl}
+   & {\ident$_1^1$}     &:& {\type$_1^1$} \\
+ | & {\ldots} && \\
+ | & {\ident$_{n_1}^1$} &:& {\type$_{n_1}^1$}
+\end{tabular}  \\
 with\\
-\mbox{}\hspace{0.1cm} .. \\
+~{\ldots} \\
 with {\ident$_m$} {\params} : {\type$_m$} := \\
-\mbox{}\hspace{0.4cm}{\ident$_1^m$} : {\type$_1^m$} \\
-\mbox{}\hspace{0.1cm}| .. \\
-\mbox{}\hspace{0.1cm}| {\ident$_{n_m}^m$} : {\type$_{n_m}^m$}.
-}}
+\begin{tabular}{clcl}
+   & {\ident$_1^m$}     &:& {\type$_1^m$} \\
+ | & {\ldots} \\
+ | & {\ident$_{n_m}^m$} &:& {\type$_{n_m}^m$}.
+\end{tabular}
+\end{tabular}
+}
 \medskip
 
 \Example
@@ -1184,20 +1208,22 @@ how to introduce infinite objects in Section~\ref{CoFixpoint}.
 %%
 \subsection{Definition of recursive functions}
 
-\subsubsection{\tt Fixpoint {\ident} {\params} {\tt \{struct}
-  \ident$_0$ {\tt \}} : type$_0$ := \term$_0$ 
-\comindex{Fixpoint}
-\label{Fixpoint}}
+\subsubsection{Recursive functions over a inductive type}
 
-This command allows to define inductive objects using a fixed point
-construction. The meaning of this declaration is to define {\it ident}
-a recursive function with arguments specified by the binders in
-\params{} % {\binder$_1$}\ldots{\binder$_n$} 
-such that {\it ident} applied to
-arguments corresponding to these binders has type \type$_0$, and is
-equivalent to the expression \term$_0$. The type of the {\ident} is
-consequently {\tt forall {\params} {\tt,} \type$_0$}
-and the value is equivalent to {\tt fun {\params} {\tt =>} \term$_0$}.
+The command:
+\begin{center}
+  \texttt{Fixpoint {\ident} {\params} {\tt \{struct}
+  \ident$_0$ {\tt \}} : type$_0$ := \term$_0$ 
+  \comindex{Fixpoint}\label{Fixpoint}}
+\end{center}
+allows to define inductive objects using a fixed point construction.
+The meaning of this declaration is to define {\it ident} a recursive
+function with arguments specified by the binders in {\params} such
+that {\it ident} applied to arguments corresponding to these binders
+has type \type$_0$, and is equivalent to the expression \term$_0$. The
+type of the {\ident} is consequently {\tt forall {\params} {\tt,}
+  \type$_0$} and the value is equivalent to {\tt fun {\params} {\tt
+    =>} \term$_0$}.
 
 To be accepted, a {\tt Fixpoint} definition has to satisfy some
 syntactical constraints on a special argument called the decreasing
@@ -1205,8 +1231,8 @@ argument. They are needed to ensure that the {\tt Fixpoint} definition
 always terminates. The point of the {\tt \{struct \ident {\tt \}}}
 annotation is to let the user tell the system which argument decreases
 along the recursive calls. This annotation may be left implicit for
-fixpoints with one argument. For instance, one can define the addition
-function as :
+fixpoints where only one argument has an inductive type. For instance,
+one can define the addition function as :
 
 \begin{coq_example}
 Fixpoint add (n m:nat) {struct n} : nat :=
@@ -1323,23 +1349,25 @@ Fixpoint tree_size (t:tree) : nat :=
 A generic command {\tt Scheme} is useful to build automatically various
 mutual induction principles. It is described in Section~\ref{Scheme}.
 
-\subsubsection{\tt Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
- {\tt \{}decrease\_annot{\tt\}} : type$_0$ := \term$_0$.
-}
-\comindex{Function}
-\label{Function}
+\subsubsection{A more complex definition of recursive functions}
 
-This \emph{experimental} command can be seen as a generalization of
-{\tt Fixpoint}.  It is actually a wrapper for several ways of defining
-a function \emph{and other useful related objects}, namely: an
-induction principle that reflects the recursive structure of the
-function (see \ref{FunInduction}), and its fixpoint equality (not
-always, see below).  The meaning of this declaration is to define a
-function {\it ident}, similarly to {\tt Fixpoint}. Like in {\tt
-Fixpoint}, the decreasing argument must be given (unless the function
-is not recursive), but it must not necessary be \emph{structurally}
-decreasing. The point of the {\tt
-\{\}} annotation is to name the decreasing argument \emph{and} to
+The \emph{experimental} command 
+\begin{center}
+   \texttt{Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
+     \{decrease\_annot\} : type$_0$ := \term$_0$}
+   \comindex{Function}
+   \label{Function}
+\end{center}
+can be seen as a generalization of {\tt Fixpoint}.  It is actually a
+wrapper for several ways of defining a function \emph{and other useful
+  related objects}, namely: an induction principle that reflects the
+recursive structure of the function (see \ref{FunInduction}), and its
+fixpoint equality (not always, see below).  The meaning of this
+declaration is to define a function {\it ident}, similarly to {\tt
+  Fixpoint}. Like in {\tt Fixpoint}, the decreasing argument must be
+given (unless the function is not recursive), but it must not
+necessary be \emph{structurally} decreasing. The point of the {\tt
+  \{\}} annotation is to name the decreasing argument \emph{and} to
 describe which kind of decreasing criteria must be used to ensure
 termination of recursive calls.
 
@@ -1416,43 +1444,35 @@ This error happens generally when:
 
 \SeeAlso{\ref{FunScheme},\ref{FunScheme-examples},\ref{FunInduction}}
 
-Depending on the {\tt \{\}} annotation, different definition
+Depending on the {\tt \{$\ldots$\}} annotation, different definition
 mechanisms are used by {\tt Function}. More precise description
 given below.
 
+\begin{Variants}
+\item \texttt{ Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
+    : type$_0$ := \term$_0$}
 
+  Defines the not recursive function \ident\ as if declared with
+  \texttt{Definition}.  Three elimination schemes {\tt\ident\_rect},
+  {\tt\ident\_rec} and {\tt\ident\_ind} are generated (see the
+  documentation of {\tt Inductive} \ref{Inductive}), which reflect the
+  pattern matching structure of \term$_0$.
 
-\subsubsection{\tt Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
- : type$_0$ := \term$_0$.
-\comindex{Function}
-}
-
-Defines the not recursive function \ident\ as if declared with
-\texttt{Definition}.  Three elimination schemes {\tt\ident\_rect},
-{\tt\ident\_rec} and {\tt\ident\_ind} are generated (see the
-documentation of {\tt Inductive} \ref{Inductive}), which reflect the
-pattern matching structure of \term$_0$.
-
-
-\subsubsection{\tt Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
- {\tt \{}{\tt struct} \ident$_0${\tt\}} : type$_0$ := \term$_0$.
-\comindex{Function}
-}
-
-Defines the structural recursive  function \ident\ as if declared with
-\texttt{Fixpoint}   .  Three   induction   schemes  {\tt\ident\_rect},
-{\tt\ident\_rec}   and  {\tt\ident\_ind}   are   generated  (see   the
-documentation of {\tt  Inductive} \ref{Inductive}), which reflect the
-recursive structure  of \term$_0$. When  there is only  one parameter,
-{\tt \{struct} \ident$_0${\tt\}} can be omitted.
-
-\subsubsection{\tt Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
- {\tt \{}{\tt measure \term$_1$} \ident$_0${\tt\}} : type$_0$ := \term$_0$.
-\comindex{Function}}
-
-\subsubsection{\tt Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
- {\tt \{}{\tt wf \term$_1$} \ident$_0${\tt\}} : type$_0$ := \term$_0$.
-\comindex{Function}}
+\item \texttt{Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
+    {\tt \{}{\tt struct} \ident$_0${\tt\}} : type$_0$ := \term$_0$}
+  
+  Defines the structural recursive function \ident\ as if declared
+  with \texttt{Fixpoint}.  Three induction schemes {\tt\ident\_rect},
+  {\tt\ident\_rec} and {\tt\ident\_ind} are generated (see the
+  documentation of {\tt Inductive} \ref{Inductive}), which reflect the
+  recursive structure of \term$_0$. When there is only one parameter,
+  {\tt \{struct} \ident$_0${\tt\}} can be omitted.
+  
+\item \texttt{Function {\ident} {\binder$_1$}\ldots{\binder$_n$} {\tt
+      \{}{\tt measure \term$_1$} \ident$_0${\tt\}} : type$_0$ :=
+    \term$_0$}
+\item \texttt{Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
+ {\tt \{}{\tt wf \term$_1$} \ident$_0${\tt\}} : type$_0$ := \term$_0$}
 
 Defines a recursive function by well founded recursion. \textbf{The
 module \texttt{Recdef} of the standard library must be loaded for this
@@ -1508,21 +1528,21 @@ subgoals belonging to a Lemma {\ident}{\tt\_tcc}. % These subgoals are independe
 %The decreasing argument cannot be dependent of another??
 
 %Exemples faux ici
+\end{Variants}
 
 
+\subsubsection{Recursive functions over co-indcutive types}
 
-
-
-\subsubsection{\tt CoFixpoint {\ident} : \type$_0$ := \term$_0$.
-\comindex{CoFixpoint}
-\label{CoFixpoint}}
-
-The {\tt CoFixpoint} command introduces a method for constructing an
-infinite object of a coinduc\-tive type. For example, the stream
-containing all natural numbers can be introduced applying the
-following method to the number \texttt{O} (see
-Section~\ref{CoInductiveTypes} for the definition of {\tt Stream},
-{\tt hd} and {\tt tl}):
+The command:
+\begin{center}
+  \texttt{CoFixpoint {\ident} : \type$_0$ := \term$_0$}
+  \comindex{CoFixpoint}\label{CoFixpoint}
+\end{center}
+introduces a method for constructing an infinite object of a
+coinduc\-tive type. For example, the stream containing all natural
+numbers can be introduced applying the following method to the number
+\texttt{O} (see Section~\ref{CoInductiveTypes} for the definition of
+{\tt Stream}, {\tt hd} and {\tt tl}):
 \begin{coq_eval}
 Reset Initial.
 CoInductive Stream : Set :=
@@ -1606,9 +1626,13 @@ After a statement, {\Coq} needs a proof.
 
 \begin{Variants} 
 \item {\tt Lemma {\ident} : {\type}.}\\ 
-It is a synonymous of \texttt{Theorem}
-\item {\tt Remark {\ident} : {\type}.}\\ 
-It is a synonymous of \texttt{Theorem}
+      {\tt Remark {\ident} : {\type}.}\\ 
+      {\tt Fact {\ident} : {\type}.}\\ 
+      {\tt Corollary {\ident} : {\type}.}\\ 
+      {\tt Proposition {\ident} : {\type}.}\\ 
+\comindex{Proposition}
+\comindex{Corollary}
+All these commands are synonymous of \texttt{Theorem}
 % Same as {\tt Theorem} except
 % that if this statement is in one or more levels of sections then the
 % name {\ident} will be accessible only prefixed by the sections names
@@ -1616,8 +1640,6 @@ It is a synonymous of \texttt{Theorem}
 % closed.
 % %All proofs of  persistent objects (such as theorems) referring to {\ident}
 % %within the section will be replaced by the proof of  {\ident}.
- \item {\tt Fact {\ident} : {\type}.}\\ 
-It is a synonymous of \texttt{Theorem}
 % Same as {\tt Remark} except
 % that the innermost section name is dropped from the full name.
 \item {\tt Definition {\ident} : {\type}.} \\

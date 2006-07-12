@@ -7,6 +7,124 @@ open Libnames
 open Rawterm
 open Declarations
 
+let is_rec_info scheme_info = 
+  let test_branche min acc (_,_,br) = 
+    acc || (
+      let new_branche = 
+	Sign.it_mkProd_or_LetIn mkProp (fst (Sign.decompose_prod_assum br)) in 
+      let free_rels_in_br = Termops.free_rels new_branche in 
+      let max = min + scheme_info.Tactics.npredicates in 
+      Util.Intset.exists (fun i -> i >= min && i< max) free_rels_in_br
+    )
+  in
+  Util.list_fold_left_i test_branche 1 false (List.rev scheme_info.Tactics.branches)
+
+
+let choose_dest_or_ind scheme_info =
+    if is_rec_info scheme_info
+    then Tactics.new_induct
+    else Tactics.new_destruct
+
+
+let functional_induction with_clean c princl pat =
+  let f,args = decompose_app c in 
+  fun g ->      
+    let princ,bindings, princ_type = 
+      match princl with 
+	| None -> (* No principle is given let's find the good one *)
+	    begin
+	      match kind_of_term f with
+		| Const c' ->
+		    let princ_option = 
+		      let finfo = (* we first try to find out a graph on f *)
+			try find_Function_infos c' 
+			with Not_found -> 
+			  errorlabstrm "" (str "Cannot find induction information on "++Printer.pr_lconstr (mkConst c') )
+		      in
+		      match Tacticals.elimination_sort_of_goal g with 
+			| InProp -> finfo.prop_lemma
+			| InSet -> finfo.rec_lemma
+			| InType -> finfo.rect_lemma
+		    in
+		    let princ =  (* then we get the principle *)
+		      try mkConst (out_some princ_option )
+		      with Failure "out_some" -> 
+			(*i If there is not default lemma defined then, we cross our finger and try to 
+		    find a lemma named f_ind (or f_rec, f_rect) i*)
+			let princ_name = 
+			  Indrec.make_elimination_ident
+			    (id_of_label (con_label c'))
+			    (Tacticals.elimination_sort_of_goal g)
+			in
+			try 
+			  mkConst(const_of_id princ_name )
+			with Not_found -> (* This one is neither defined ! *)
+			  errorlabstrm "" (str "Cannot find induction principle for "
+					   ++Printer.pr_lconstr (mkConst c') )
+		    in
+		    (princ,Rawterm.NoBindings, Tacmach.pf_type_of g princ)
+		| _ -> raise (UserError("",str "functional induction must be used with a function" ))
+		    
+	    end
+	| Some ((princ,binding)) -> 
+	    princ,binding,Tacmach.pf_type_of g princ
+    in
+    let princ_infos = Tactics.compute_elim_sig princ_type in 
+    let args_as_induction_constr =
+      let c_list = 
+	if princ_infos.Tactics.farg_in_concl 
+	then [c] else [] 
+      in
+      List.map (fun c -> Tacexpr.ElimOnConstr c) (args@c_list) 
+    in 
+    let princ' = Some (princ,bindings) in 
+    let princ_vars = 
+      List.fold_right 
+	(fun a acc -> 
+	  try Idset.add (destVar a) acc
+	  with _ -> acc
+	)
+	args
+	Idset.empty
+    in
+    let old_idl = List.fold_right Idset.add (Tacmach.pf_ids_of_hyps g) Idset.empty in 
+    let old_idl = Idset.diff old_idl princ_vars in 
+    let subst_and_reduce g = 
+      let idl = 
+	map_succeed 
+	  (fun id -> 
+	    if Idset.mem id old_idl then failwith "subst_and_reduce";
+	    id 
+	  )
+	  (Tacmach.pf_ids_of_hyps g)
+      in 
+      let flag = 
+	Rawterm.Cbv
+	  {Rawterm.all_flags 
+	  with Rawterm.rDelta = false; 		 
+	  }
+      in
+      if with_clean 
+      then
+	Tacticals.tclTHEN
+	  (Tacticals.tclMAP (fun id -> Tacticals.tclTRY (Equality.subst [id])) idl )
+	  (Hiddentac.h_reduce flag Tacticals.allClauses)	
+	  g
+      else Tacticals.tclIDTAC g 
+
+    in
+    Tacticals.tclTHEN
+      (choose_dest_or_ind 
+	princ_infos
+	args_as_induction_constr
+	princ'
+	pat)
+      subst_and_reduce
+      g
+
+
+
+
 type annot = 
     Struct of identifier 
   | Wf of Topconstr.constr_expr * identifier option
@@ -120,9 +238,22 @@ let prepare_body (name,annot,args,types,body) rt =
   (fun_args,rt')
 
 
+let derive_inversion fix_names = 
+  try
+    Invfun.derive_correctness 
+      Functional_principles_types.make_scheme
+      functional_induction 
+	  (List.map (fun id -> destConst (Tacinterp.constr_of_id (Global.env ()) id)) fix_names)
+      (*i The next call to mk_rel_id is valid since we have just construct the graph 
+	Ensures by : register_built
+	i*) 
+      (List.map (fun id -> destInd (Tacinterp.constr_of_id (Global.env ()) (mk_rel_id id))) fix_names)
+  with e -> 
+    msg_warning (str "Cannot define correction of function and graph" ++ Cerrors.explain_exn e)
+	  
 let generate_principle 
     do_built fix_rec_l recdefs  interactive_proof parametrize 
-    (continue_proof : int -> Names.constant array -> Term.constr array -> int -> Tacmach.tactic)  =
+    (continue_proof : int -> Names.constant array -> Term.constr array -> int -> Tacmach.tactic) : unit =
   let names = List.map (function (name,_,_,_,_) -> name) fix_rec_l in
   let fun_bodies = List.map2 prepare_body fix_rec_l recdefs in
   let funs_args = List.map fst fun_bodies in
@@ -133,6 +264,9 @@ let generate_principle
     if do_built 
     then
       begin
+	(*i The next call to mk_rel_id is valid since we have just construct the graph 
+	   Ensures by : do_built
+	i*) 
 	let f_R_mut = Ident (dummy_loc,mk_rel_id (List.nth names 0)) in
 	let ind_kn =
 	  fst (locate_with_msg
@@ -149,7 +283,7 @@ let generate_principle
 	in
 	let funs_kn = Array.of_list (List.map fname_kn fix_rec_l) in 
 	let _ = 
-	  Util.list_map_i
+	  list_map_i
 	    (fun i x ->
 	       let princ = destConst (Indrec.lookup_eliminator (ind_kn,i) (InProp)) in 
 	       let princ_type = 
@@ -167,6 +301,7 @@ let generate_principle
 	    0
 	    fix_rec_l
 	in 
+	Array.iter add_Function funs_kn;
 	()
       end
   with e -> 
@@ -210,7 +345,7 @@ let register_wf ?(is_mes=false) fname wf_rel_expr wf_arg args ret_type body
 	  if List.length names = 1 then 1
 	  else error "Recursive argument must be specified"
       | Some wf_arg -> 
-	  Util.list_index (Name wf_arg) names 
+	  list_index (Name wf_arg) names 
   in
   let unbounded_eq = 
     let f_app_args = 
@@ -236,7 +371,7 @@ let register_wf ?(is_mes=false) fname wf_rel_expr wf_arg args ret_type body
 	(generate_correction_proof_wf f_ref tcc_lemma_ref is_mes
 	   functional_ref eq_ref rec_arg_num rec_arg_type nb_args relation
 	);
-      Command.save_named true
+      derive_inversion [fname]
     with e -> 
       (* No proof done *) 
       ()
@@ -333,15 +468,15 @@ let do_generate_principle register_built interactive_proof fixpoint_exprl  =
 			 (Topconstr.names_of_local_assums args) 
 		     in 
 		     let annot = 
-		       try Some (Util.list_index (Name id) names - 1), Topconstr.CStructRec 
+		       try Some (list_index (Name id) names - 1), Topconstr.CStructRec 
 		       with Not_found -> raise (UserError("",str "Cannot find argument " ++ Ppconstr.pr_id id)) 
 		     in 
  		     (name,annot,args,types,body),(None:Vernacexpr.decl_notation) 
 		 | (name,None,args,types,body),recdef -> 
 		     let names =  (Topconstr.names_of_local_assums args) in
 		     if  is_one_rec recdef  && List.length names > 1 then
-		       Util.user_err_loc
-			 (Util.dummy_loc,"Function",
+		       user_err_loc
+			 (dummy_loc,"Function",
 			  Pp.str "the recursive argument needs to be specified in Function")
 		     else 
 		       (name,(Some 0, Topconstr.CStructRec),args,types,body),(None:Vernacexpr.decl_notation)
@@ -364,8 +499,8 @@ let do_generate_principle register_built interactive_proof fixpoint_exprl  =
 	    interactive_proof
 	    true
 	    (Functional_principles_proofs.prove_princ_for_struct interactive_proof);
-	  true
-						 
+	  if register_built then derive_inversion  fix_names;
+	  true;
   in
   ()
 
@@ -397,19 +532,19 @@ let rec add_args id new_args b =
   | CApp(loc,(pf,b),bl) -> 
       CApp(loc,(pf,add_args id new_args b), List.map (fun (e,o) -> add_args id new_args e,o) bl)
   | CCases(loc,b_option,cel,cal) -> 
-      CCases(loc,Util.option_map (add_args id new_args) b_option,
-	     List.map (fun (b,(na,b_option)) -> add_args id new_args b,(na,Util.option_map (add_args id new_args) b_option)) cel, 
+      CCases(loc,option_map (add_args id new_args) b_option,
+	     List.map (fun (b,(na,b_option)) -> add_args id new_args b,(na,option_map (add_args id new_args) b_option)) cel, 
 	     List.map (fun (loc,cpl,e) -> (loc,cpl,add_args id new_args e)) cal
 	    )
   | CLetTuple(loc,nal,(na,b_option),b1,b2) -> 
-      CLetTuple(loc,nal,(na,Util.option_map (add_args id new_args) b_option),
+      CLetTuple(loc,nal,(na,option_map (add_args id new_args) b_option),
 		add_args id new_args b1,
 		add_args id new_args b2
 	       )
 		
   | CIf(loc,b1,(na,b_option),b2,b3) -> 
       CIf(loc,add_args id new_args b1, 
-	  (na,Util.option_map (add_args id new_args) b_option),
+	  (na,option_map (add_args id new_args) b_option),
 	  add_args id new_args b2,
 	  add_args id new_args b3
 	 )
@@ -426,15 +561,17 @@ let rec add_args id new_args b =
 
 
 
-let make_graph (id:identifier) =
- let c_body = 
-    try
-      let c = const_of_id id  in
-      Global.lookup_constant c 
-    with Not_found -> 
-      raise (UserError ("",str "Cannot find " ++ Ppconstr.pr_id id) )
-  in
+let make_graph (f_ref:global_reference) =
+ let c,c_body = 
+      match f_ref with 
+	| ConstRef c -> 
+	    begin try c,Global.lookup_constant c 
+	    with Not_found -> 
+	      raise (UserError ("",str "Cannot find " ++ Printer.pr_lconstr (mkConst c)) )
+	    end
+	| _ -> raise (UserError ("", str "Not a function reference") )
 
+  in
   match c_body.const_body with
     | None -> error "Cannot build a graph over an axiom !"
     | Some b ->
@@ -494,7 +631,7 @@ let make_graph (id:identifier) =
 				(fun n (nal,t'') -> 
 				   n+List.length nal) n nal_ta' 
 			    in
-			    assert (n'<= n); 
+(* 			    assert (n'<= n);  *)
 			    chop_n_arrow (n - n') t'
 			| _ -> anomaly "Not enough products"
 		    else t
@@ -511,16 +648,6 @@ let make_graph (id:identifier) =
 		let l = 
 		  List.map
 		    (fun (id,(n,recexp),bl,t,b) -> 
-(* 		       let nal =   *)
-(* 			 List.flatten  *)
-(* 			   (List.map  *)
-(* 			      (function  *)
-(* 				 | Topconstr.LocalRawDef (na,_)-> [] *)
-(* 				 | Topconstr.LocalRawAssum (nal,_) -> nal *)
-(* 			      ) *)
-(* 			      (nal_tas@bl) *)
-(* 			   ) *)
-(* 		       in  *)
 		       let bl' =  
 			 List.flatten 
 			   (List.map 
@@ -539,7 +666,8 @@ let make_graph (id:identifier) =
 			   (List.map 
 			      (function
  				 | Topconstr.LocalRawDef (na,_)-> []
-			      	 | Topconstr.LocalRawAssum (nal,_) -> List.map (fun (loc,n) -> CRef(Libnames.Ident(loc, Nameops.out_name n))) nal
+			      	 | Topconstr.LocalRawAssum (nal,_) -> 
+				     List.map (fun (loc,n) -> CRef(Libnames.Ident(loc, Nameops.out_name n))) nal
 			      )
 			      nal_tas
 			   )
@@ -551,23 +679,17 @@ let make_graph (id:identifier) =
 		in
 		l
 	    | _ ->   
+		let id = id_of_label (con_label c) in 
 		[(id,None,nal_tas,t,b)]
 	in
-(* 	List.iter (fun (id,rec_arg,bl,t,b) ->  *)
-(* 		     Pp.msgnl *)
-(* 		     (Ppconstr.pr_id id ++  *)
-(* 		       Ppconstr.pr_binders bl ++  *)
-(* 		       begin		       match rec_arg with  *)
-(* 			 | Some (Struct id) ->  str " { struct " ++ Ppconstr.pr_id id ++ str " }" *)
-(* 			 | _ -> (mt ()) *)
-(* 		      end ++  *)
-(* 		       str " : " ++ Ppconstr.pr_lconstr_expr t ++  *)
-(* 		       str " := " ++  *)
-(* 		       Ppconstr.pr_lconstr_expr b *)
-(* 		     ) *)
-(* 		  ) *)
-(* 	  expr_list; *)
-	do_generate_principle false false expr_list
+	do_generate_principle false false expr_list;
+	(* We register the infos *)
+	let mp,dp,_ = repr_con c in 
+	List.iter (fun (id,_,_,_,_) -> add_Function (make_con mp dp (label_of_id id))) expr_list
+
+
 (* let make_graph _ = assert false	 *)
 	  
 let do_generate_principle = do_generate_principle true 
+
+

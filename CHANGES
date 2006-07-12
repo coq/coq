@@ -10,38 +10,37 @@ Syntax
 
 - No more support for version 7 syntax and for translation to version 8 syntax.
 - In fixpoints, the { struct ... } annotation is not mandatory any more when 
-  only one of the arguments has an inductive type (doc TODO)
-- Added disjunctive patterns in match-with patterns (doc TODO)
-- Support for primitive interpretation of string literals (doc TODO)
-- Extended support for Unicode ranges (doc TODO)
+  only one of the arguments has an inductive type
+- Added disjunctive patterns in match-with patterns
+- Support for primitive interpretation of string literals
+- Extended support for Unicode ranges
 
 Vernacular commands
 
-- Added "Print Ltac qualid" to print a user defined tactic (doc TODO)
+- Added "Print Ltac qualid" to print a user defined tactic.
 - Added "Print Rewrite HintDb" to print the content of a DB used by
-  autorewrite (doc TODO)
-- Added "Print Canonical Projections" (doc TODO)
-- Added "Example" as synonym of "Definition" (doc TODO)
-- Added "Property", "Proposition" and "Corollary" as extra synonyms of "Lemma"
-  (doc TODO)
+  autorewrite.
+- Added "Print Canonical Projections".
+- Added "Example" as synonym of "Definition".
+- Added "Proposition" and "Corollary" as extra synonyms of "Lemma".
 - New command "Whelp" to send requests to the Helm database of proofs
-  formalized in the Calculus of Inductive Constructions (doc TODO)
+  formalized in the Calculus of Inductive Constructions.
 - Command "functional induction" has been re-implemented from the new
-  "definition" command.
+  "Function" command.
 
 Ltac and tactic syntactic extensions
 
-- New primitive "external" for communication with tool external to Coq
-  (doc TODO).
+- New primitive "external" for communication with tool external to Coq.
 - New semantics for "match t with": if a clause returns a
   tactic, it is now applied to the current goal. If it fails, the next
   clause or next matching subterm is tried (i.e. it behaves as "match
-  goal with" does) (doc TODO).
+  goal with" does). The keyword "lazymatch" can be used to delay the 
+  evaluation of tactics occurring in matching clauses.
 - Hint base names can be parametric in auto and trivial.
 - Occurrence values can be parametric in unfold, pattern, etc.
 - Added entry constr_may_eval for tactic extensions.
 - Low-priority term printer made available in ML-written tactic extensions.
-- "Tactic Notation" extended to allow notations of tacticals (doc TODO).
+- "Tactic Notation" extended to allow notations of tacticals.
 
 Tactics
 
@@ -57,40 +56,41 @@ Tactics
 - "rewrite ... in" now accepts a clause as place where to rewrite instead of 
   juste a simple hypothesis name. For instance: 
    rewrite H in H1,H2 |- * means rewrite H in H1; rewrite H in H2; rewrite H
-   rewrite H in * |-  will do try rewrite H in Hi for all hypothesis Hi <> H 
-  (doc TODO).
-- Added "clear - id" to clear all hypotheses except the ones depending in id
-  (doc TODO).
+   rewrite H in * |-  will do try rewrite H in Hi for all hypothesis Hi <> H.
 - Added "dependent rewrite term" and "dependent rewrite term in hyp" (doc TODO)
+- Added "autorewrite with ... in hyp [using ...]".
+- Tactic "replace" now accepts a "by" tactic clause.
+- Added "clear - id" to clear all hypotheses except the ones depending in id.
 - The argument of Declare Left Step and Declare Right Step is now a term
-  (it used to be a reference) (doc TODO).
+  (it used to be a reference).
 - Omega now handles arbitrary precision integers.
 - Several bug fixes in Reflexive Omega (romega).
 - Idtac can now be left implicit in a [...|...] construct: for instance, 
-  [ foo | | bar ] stands for [ foo | idtac | bar ] (doc TODO).
-- Added "autorewrite with ... in hyp [using ...]" (doc TODO).
+  [ foo | | bar ] stands for [ foo | idtac | bar ].
 - Fixed a "fold" bug (non critical but possible source of incompatibilities).
 - Added classical_left and classical_right which transforms |- A \/ B into 
   ~B |- A and ~A |- B respectively.
 - Added command "Declare Implicit Tactic" to set up a default tactic to be
-  used to solve unresolved subterms of term arguments of tactics (doc TODO).
+  used to solve unresolved subterms of term arguments of tactics.
 - Better support for coercions to Sortclass in tactics expecting type 
   arguments.
-- Tactic "assert" now accepts "as" intro patterns and "by" tactic clauses
-  (doc TODO).
-- Tactic "replace" now accepts a "by" tactic clause (doc TODO).
-- New tactic "pose proof" that generalizes "assert (id:=p)" with intro patterns
-  (doc TODO).
-- New introduction pattern "?" for letting Coq choose a name (doc TODO).
-- Added "eassumption" (doc TODO).
-- Added option 'using lemmas' to auto, trivial and eauto (doc TODO).
+- Tactic "assert" now accepts "as" intro patterns and "by" tactic clauses.
+- New tactic "pose proof" that generalizes "assert (id:=p)" with intro patterns.
+- New introduction pattern "?" for letting Coq choose a name.
+- Added "eassumption".
+- Added option 'using lemmas' to auto, trivial and eauto.
+- Tactic "congruence" is now complete for its intended scope (ground
+  equalities and inequalities with constructors). Furthermore, it
+  tries to equates goal and hypotheses.
+- New tactic "rtauto" solves pure propositional logic and gives a
+  reflective version of the available proof.
 - Numbering of "pattern", "unfold", "simpl", ... occurrences in "match
   with" made consistent with the printing of the return clause after
   the term to match in the "match-with" construct (use "Set Printing All"
   to see hidden occurrences).
 - Generalization of induction "induction x1...xn using scheme" where
   scheme is an induction principle with complex predicates (like the
-  ones generated by function induction) (doc TODO).
+  ones generated by function induction).
 - Some small Ltac tactics has been added to the standard library 
   (file Tactics.v):
   * f_equal : instead of using the different f_equalX lemmas
@@ -111,13 +111,13 @@ Extraction
 
 Modules
 
-- Added "Locate Module qualid" to get the full path of a module (TODO doc).
-- Module/Declare Module syntax made more uniform (doc TODO).
+- Added "Locate Module qualid" to get the full path of a module.
+- Module/Declare Module syntax made more uniform.
 - Added syntactic sugar "Declare Module Export/Import" and
-  "Module Export/Import" (doc TODO).
+  "Module Export/Import".
 - Added syntactic sugar "Module M(Export/Import X Y: T)" and
   "Module Type M(Export/Import X Y: T)"
-  (only for interactive definitions) (doc TODO)
+  (only for interactive definitions)
 - Construct "with" generalized to module paths:
    T with (Definition|Module) M1.M2....Mn.l := l' (doc TODO).
 
@@ -127,6 +127,9 @@ Notations
 - Added insertion of spaces by default in recursive notations w/o separators.
 - No more automatic printing box in case of user-provided printing "format".
 - New notation "exists! x:A, P" for unique existence.
+- Notations for specific numerals now compatible with generic notations of
+  numerals (e.g. "1" can be used to denote the unit of a group without
+  hiding 1%nat)
 
 Libraries
 
@@ -134,8 +137,8 @@ Libraries
 - New library FSets+FMaps of finite sets and maps.
 - New library QArith on rational numbers.
 - Small extension of Zmin.V, new Zmax.v, new Zminmax.v.
-- Reworking of the files on classical logic and description principles
-  (possible incompatibilities).
+- Reworking and extension of the files on classical logic and
+  description principles (possible incompatibilities)
 - Few other improvements in ZArith potentially exceptionally breaking the
   compatibility (useless hypothesys of Zgt_square_simpl and
   Zlt_square_simpl removed; fixed names mentioning letter O instead of
@@ -144,6 +147,11 @@ Libraries
 - Znumtheory now contains a gcd function that can compute within Coq.
 - More lemmas stated on Type in Wf.v, removal of redundant Fix_F.
 - Change of the internal names of lemmas in OmegaLemmas.
+- Acc in Wf.v and clos_refl_trans in Relation_Operators.v now rely on
+  the allowance for recursively non uniform parameters (possible
+  source of incompatibilities: explicit pattern-matching on these
+  types may require to remove the occurrence associated to their
+  recursively non uniform parameter).
 - Coq.List.In_dec has been set transparent (this may exceptionally break
   proof scripts, set it locally opaque for compatibility).
 - More on permutations of lists in List.v and Permutation.v.
@@ -169,7 +177,7 @@ Tools
   "make clean"
 - New environment variable COQREMOTEBROWSER to set the command invoked
   to start the remote browser both in Coq and coqide. Standard syntax:
-  "%s" is the placeholder for the URL (doc TODO)
+  "%s" is the placeholder for the URL.
 
 
 Changes from V8.0beta to V8.0

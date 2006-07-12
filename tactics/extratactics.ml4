@@ -46,14 +46,15 @@ let pr_by_arg_tac _prc _prlc prtac opt_c =
     | None -> mt ()
     | Some t -> spc () ++ hov 2 (str "by" ++ spc () ++ prtac (3,Ppextend.E) t)
 
-(* Julien Forest: on voudrait pouvoir passer la loc mais je 
-n'ai pas reussi 
-*)
+let pr_in_hyp = function
+  | None -> mt ()
+  | Some id -> spc () ++ hov 2 (str "in" ++ spc () ++ Nameops.pr_id id)
 
 let pr_in_arg_hyp _prc _prlc _prtac opt_c =
-  match opt_c with 
-    | None -> mt ()
-    | Some id -> spc () ++ hov 2 (str "by" ++ spc () ++ Nameops.pr_id id)
+  pr_in_hyp (Util.option_map snd opt_c)
+
+let pr_in_arg_hyp_typed _prc _prlc _prtac =
+  pr_in_hyp
 
 ARGUMENT EXTEND by_arg_tac
   TYPED AS tactic_opt
@@ -63,9 +64,13 @@ ARGUMENT EXTEND by_arg_tac
 END
  
 ARGUMENT EXTEND in_arg_hyp
-  TYPED AS ident_opt
-  PRINTED BY pr_in_arg_hyp
-| [ "in" ident(c) ] -> [ Some (c) ]
+  TYPED AS var_opt
+  PRINTED BY pr_in_arg_hyp_typed
+  RAW_TYPED AS var_opt
+  RAW_PRINTED BY pr_in_arg_hyp
+  GLOB_TYPED AS var_opt
+  GLOB_PRINTED BY pr_in_arg_hyp
+| [ "in" hyp(c) ] -> [ Some (c) ]
 | [ ] -> [ None ]
 END
 
@@ -183,9 +188,9 @@ TACTIC EXTEND autorewrite
     [ autorewrite Refiner.tclIDTAC l ]
 | [ "autorewrite" "with" ne_preident_list(l) "using" tactic(t) ] ->
     [ autorewrite (snd t) l ]
-| [ "autorewrite" "with" ne_preident_list(l) "in" ident(id) ] ->
+| [ "autorewrite" "with" ne_preident_list(l) "in" hyp(id) ] ->
     [ autorewrite_in id Refiner.tclIDTAC l ]
-| [ "autorewrite" "with" ne_preident_list(l) "in" ident(id) "using" tactic(t) ] ->
+| [ "autorewrite" "with" ne_preident_list(l) "in" hyp(id) "using" tactic(t) ] ->
     [ autorewrite_in id (snd t) l ]
 END
 
@@ -283,7 +288,7 @@ END
 
 TACTIC EXTEND setoid_symmetry
    [ "setoid_symmetry" ] -> [ setoid_symmetry ]
- | [ "setoid_symmetry" "in" ident(n) ] -> [ setoid_symmetry_in n ]
+ | [ "setoid_symmetry" "in" hyp(n) ] -> [ setoid_symmetry_in n ]
 END
 
 TACTIC EXTEND setoid_reflexivity

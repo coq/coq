@@ -484,7 +484,11 @@ let default_levels =
    0,Gramext.RightA]
 
 let default_pattern_levels =
-  [10,Gramext.LeftA;
+  [200,Gramext.RightA;
+   100,Gramext.RightA;
+   99,Gramext.RightA;
+   10,Gramext.LeftA;
+   1,Gramext.LeftA;
    0,Gramext.RightA]
 
 let level_stack = 

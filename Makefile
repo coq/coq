@@ -874,7 +874,7 @@ ZARITHVO=\
 QARITHVO=\
  theories/QArith/QArith_base.vo theories/QArith/Qreduction.vo \
  theories/QArith/Qring.vo       theories/QArith/Qreals.vo \
- theories/QArith/QArith.vo
+ theories/QArith/QArith.vo	theories/QArith/Qcanon.vo 
 
 LISTSVO=\
  theories/Lists/MonoList.vo \
