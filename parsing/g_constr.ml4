@@ -283,16 +283,16 @@ GEXTEND Gram
       [ p = pattern; "|"; pl = LIST1 pattern SEP "|" -> CPatOr (loc,p::pl) ]
     | "99" RIGHTA [ ]
     | "10" LEFTA
-      [ p = pattern; lp = LIST1 (pattern LEVEL "0") ->
+      [ p = pattern; lp = LIST1 NEXT ->
         (match p with
           | CPatAtom (_, Some r) -> CPatCstr (loc, r, lp)
           | _ -> Util.user_err_loc 
               (cases_pattern_loc p, "compound_pattern",
                Pp.str "Constructor expected"))
       | p = pattern; "as"; id = ident ->
-	  CPatAlias (loc, p, id)
-      | c = pattern; "%"; key=IDENT -> 
-          CPatDelimiters (loc,key,c) ]
+	  CPatAlias (loc, p, id) ]
+    | "1" LEFTA
+      [ c = pattern; "%"; key=IDENT -> CPatDelimiters (loc,key,c) ]
     | "0"
       [ r = Prim.reference -> CPatAtom (loc,Some r)
       | "_" -> CPatAtom (loc,None)
