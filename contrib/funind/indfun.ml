@@ -629,7 +629,7 @@ let make_graph (f_ref:global_reference) =
 			    let n' = 
 			      List.fold_left 
 				(fun n (nal,t'') -> 
-				   n+List.length nal) n nal_ta' 
+				   n+List.length nal) 0 nal_ta' 
 			    in
 (* 			    assert (n'<= n);  *)
 			    chop_n_arrow (n - n') t'
