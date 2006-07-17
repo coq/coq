@@ -57,7 +57,7 @@ Lemma sqrt_lem_0 : forall x y:R, 0 <= x -> 0 <= y -> sqrt x = y -> y * y = x.
 intros; rewrite <- H1; apply (sqrt_sqrt x H).
 Qed.
 
-Lemma sqtr_lem_1 : forall x y:R, 0 <= x -> 0 <= y -> y * y = x -> sqrt x = y.
+Lemma sqrt_lem_1 : forall x y:R, 0 <= x -> 0 <= y -> y * y = x -> sqrt x = y.
 intros; apply Rsqr_inj;
  [ apply (sqrt_positivity x H)
  | assumption
