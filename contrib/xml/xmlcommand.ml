@@ -531,7 +531,7 @@ let print internal glob_ref kind xml_library_root =
             D.mind_finite=finite} = mib in
           Cic2acic.Inductive kn,mk_inductive_obj kn mib packs variables nparams hyps finite
     | Ln.ConstructRef _ ->
-       Util.anomaly ("print: this should not happen")
+       Util.error ("a single constructor cannot be printed in XML")
   in
   let fn = filename_of_path xml_library_root tag in
   let uri = Cic2acic.uri_of_kernel_name tag in
