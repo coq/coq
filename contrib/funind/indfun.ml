@@ -39,7 +39,8 @@ let functional_induction with_clean c princl pat =
 		      let finfo = (* we first try to find out a graph on f *)
 			try find_Function_infos c' 
 			with Not_found -> 
-			  errorlabstrm "" (str "Cannot find induction information on "++Printer.pr_lconstr (mkConst c') )
+			  errorlabstrm "" (str "Cannot find induction information on "++
+					     Printer.pr_lconstr (mkConst c') )
 		      in
 		      match Tacticals.elimination_sort_of_goal g with 
 			| InProp -> finfo.prop_lemma
@@ -49,8 +50,9 @@ let functional_induction with_clean c princl pat =
 		    let princ =  (* then we get the principle *)
 		      try mkConst (out_some princ_option )
 		      with Failure "out_some" -> 
-			(*i If there is not default lemma defined then, we cross our finger and try to 
-		    find a lemma named f_ind (or f_rec, f_rect) i*)
+			(*i If there is not default lemma defined then, 
+			  we cross our finger and try to find a lemma named f_ind 
+			  (or f_rec, f_rect) i*)
 			let princ_name = 
 			  Indrec.make_elimination_ident
 			    (id_of_label (con_label c'))
@@ -90,39 +92,39 @@ let functional_induction with_clean c princl pat =
     let old_idl = List.fold_right Idset.add (Tacmach.pf_ids_of_hyps g) Idset.empty in 
     let old_idl = Idset.diff old_idl princ_vars in 
     let subst_and_reduce g = 
-      let idl = 
-	map_succeed 
-	  (fun id -> 
-	    if Idset.mem id old_idl then failwith "subst_and_reduce";
-	    id 
-	  )
-	  (Tacmach.pf_ids_of_hyps g)
-      in 
-      let flag = 
-	Rawterm.Cbv
-	  {Rawterm.all_flags 
-	  with Rawterm.rDelta = false; 		 
-	  }
-      in
       if with_clean 
       then
+	let idl = 
+	  map_succeed 
+	    (fun id -> 
+	       if Idset.mem id old_idl then failwith "subst_and_reduce";
+	       id 
+	    )
+	    (Tacmach.pf_ids_of_hyps g)
+	in 
+	let flag = 
+	  Rawterm.Cbv
+	    {Rawterm.all_flags 
+	     with Rawterm.rDelta = false; 		 
+	    }
+	in
 	Tacticals.tclTHEN
 	  (Tacticals.tclMAP (fun id -> Tacticals.tclTRY (Equality.subst [id])) idl )
 	  (Hiddentac.h_reduce flag Tacticals.allClauses)	
 	  g
       else Tacticals.tclIDTAC g 
-
+	
     in
     Tacticals.tclTHEN
       (choose_dest_or_ind 
-	princ_infos
-	args_as_induction_constr
-	princ'
-	pat)
+	 princ_infos
+	 args_as_induction_constr
+	 princ'
+	 pat)
       subst_and_reduce
       g
-
-
+      
+      
 
 
 type annot = 
@@ -243,17 +245,22 @@ let derive_inversion fix_names =
     Invfun.derive_correctness 
       Functional_principles_types.make_scheme
       functional_induction 
-	  (List.map (fun id -> destConst (Tacinterp.constr_of_id (Global.env ()) id)) fix_names)
+      (List.map (fun id -> destConst (Tacinterp.constr_of_id (Global.env ()) id)) fix_names)
       (*i The next call to mk_rel_id is valid since we have just construct the graph 
 	Ensures by : register_built
 	i*) 
-      (List.map (fun id -> destInd (Tacinterp.constr_of_id (Global.env ()) (mk_rel_id id))) fix_names)
+      (List.map
+	 (fun id -> destInd (Tacinterp.constr_of_id (Global.env ()) (mk_rel_id id)))
+	 fix_names
+      )
   with e -> 
-    msg_warning (str "Cannot define correction of function and graph" ++ Cerrors.explain_exn e)
+    msg_warning 
+      (str "Cannot define correction of function and graph" ++ Cerrors.explain_exn e)
 	  
 let generate_principle 
     do_built fix_rec_l recdefs  interactive_proof parametrize 
-    (continue_proof : int -> Names.constant array -> Term.constr array -> int -> Tacmach.tactic) : unit =
+    (continue_proof : int -> Names.constant array -> Term.constr array -> int -> 
+      Tacmach.tactic) : unit =
   let names = List.map (function (name,_,_,_,_) -> name) fix_rec_l in
   let fun_bodies = List.map2 prepare_body fix_rec_l recdefs in
   let funs_args = List.map fst fun_bodies in
@@ -365,7 +372,8 @@ let register_wf ?(is_mes=false) fname wf_rel_expr wf_arg args ret_type body
 		    [(f_app_args,None);(body,None)])
   in
   let eq = Command.generalize_constr_expr unbounded_eq args in 
-  let hook f_ref tcc_lemma_ref functional_ref eq_ref rec_arg_num rec_arg_type nb_args relation =
+  let hook f_ref tcc_lemma_ref functional_ref eq_ref rec_arg_num rec_arg_type
+      nb_args relation =
     try 
       pre_hook 
 	(generate_correction_proof_wf f_ref tcc_lemma_ref is_mes
@@ -469,7 +477,9 @@ let do_generate_principle register_built interactive_proof fixpoint_exprl  =
 		     in 
 		     let annot = 
 		       try Some (list_index (Name id) names - 1), Topconstr.CStructRec 
-		       with Not_found -> raise (UserError("",str "Cannot find argument " ++ Ppconstr.pr_id id)) 
+		       with Not_found -> 
+			 raise (UserError("",str "Cannot find argument " ++ 
+					    Ppconstr.pr_id id)) 
 		     in 
  		     (name,annot,args,types,body),(None:Vernacexpr.decl_notation) 
 		 | (name,None,args,types,body),recdef -> 
@@ -479,7 +489,8 @@ let do_generate_principle register_built interactive_proof fixpoint_exprl  =
 			 (dummy_loc,"Function",
 			  Pp.str "the recursive argument needs to be specified in Function")
 		     else 
-		       (name,(Some 0, Topconstr.CStructRec),args,types,body),(None:Vernacexpr.decl_notation)
+		       (name,(Some 0, Topconstr.CStructRec),args,types,body),
+		     (None:Vernacexpr.decl_notation)
 		 | (_,Some (Wf _),_,_,_),_ | (_,Some (Mes _),_,_,_),_-> 
 		     error 
 		       ("Cannot use mutual definition with well-founded recursion")
@@ -517,9 +528,13 @@ let rec add_args id new_args b =
   | CArrow(loc,b1,b2) -> 
       CArrow(loc,add_args id new_args  b1, add_args id new_args b2)
   | CProdN(loc,nal,b1) -> 
-      CProdN(loc,List.map (fun (nal,b2) -> (nal,add_args id new_args b2)) nal, add_args id new_args  b1)
+      CProdN(loc,
+	     List.map (fun (nal,b2) -> (nal,add_args id new_args b2)) nal, 
+	     add_args id new_args  b1)
   | CLambdaN(loc,nal,b1) -> 
-      CLambdaN(loc,List.map (fun (nal,b2) -> (nal,add_args id new_args  b2)) nal, add_args id new_args  b1)
+      CLambdaN(loc,
+	       List.map (fun (nal,b2) -> (nal,add_args id new_args  b2)) nal, 
+	       add_args id new_args  b1)
   | CLetIn(loc,na,b1,b2) -> 
       CLetIn(loc,na,add_args id new_args b1,add_args id new_args b2)
   | CAppExpl(loc,(pf,r),exprl) -> 
@@ -530,10 +545,13 @@ let rec add_args id new_args b =
 	| _ -> CAppExpl(loc,(pf,r),List.map (add_args id new_args) exprl)
       end
   | CApp(loc,(pf,b),bl) -> 
-      CApp(loc,(pf,add_args id new_args b), List.map (fun (e,o) -> add_args id new_args e,o) bl)
+      CApp(loc,(pf,add_args id new_args b), 
+	   List.map (fun (e,o) -> add_args id new_args e,o) bl)
   | CCases(loc,b_option,cel,cal) -> 
       CCases(loc,option_map (add_args id new_args) b_option,
-	     List.map (fun (b,(na,b_option)) -> add_args id new_args b,(na,option_map (add_args id new_args) b_option)) cel, 
+	     List.map (fun (b,(na,b_option)) -> 
+			 add_args id new_args b,
+			 (na,option_map (add_args id new_args) b_option)) cel, 
 	     List.map (fun (loc,cpl,e) -> (loc,cpl,add_args id new_args e)) cal
 	    )
   | CLetTuple(loc,nal,(na,b_option),b1,b2) -> 
@@ -578,41 +596,16 @@ let make_graph (f_ref:global_reference) =
 	let env = Global.env () in
 	let body = (force b) in
 	let extern_body,extern_type = 
-	  let old_implicit_args = Impargs.is_implicit_args ()
-	  and old_strict_implicit_args =  Impargs.is_strict_implicit_args ()
-	  and old_contextual_implicit_args = Impargs.is_contextual_implicit_args () in
-	  let old_rawprint = !Options.raw_print in 
-	  Options.raw_print := true;
-	  Impargs.make_implicit_args false;
-	  Impargs.make_strict_implicit_args false;
-	  Impargs.make_contextual_implicit_args false;
-	  try 
-	    let res =  Constrextern.extern_constr false env body in 
-	    let res' = Constrextern.extern_type false env  c_body.const_type in 
-	    Impargs.make_implicit_args old_implicit_args;
-	    Impargs.make_strict_implicit_args old_strict_implicit_args;
-	    Impargs.make_contextual_implicit_args old_contextual_implicit_args;
-	    Options.raw_print := old_rawprint;
-	    res,res'
-	  with
-	    | UserError(s,msg) as e -> 
-		Impargs.make_implicit_args old_implicit_args;
-		Impargs.make_strict_implicit_args old_strict_implicit_args;
-		Impargs.make_contextual_implicit_args old_contextual_implicit_args;
-		Options.raw_print := old_rawprint;
-		raise e
-	    | e -> 
-		Impargs.make_implicit_args old_implicit_args;
-		Impargs.make_strict_implicit_args old_strict_implicit_args;
-		Impargs.make_contextual_implicit_args old_contextual_implicit_args;
-		Options.raw_print := old_rawprint;
-		raise e
+	  with_full_print 
+	    (fun () -> 
+	       (Constrextern.extern_constr false env body, 
+		Constrextern.extern_type false env  c_body.const_type
+	       )
+	    )
+	    ()
 	in
 	let rec get_args b t : Topconstr.local_binder list * 
 	    Topconstr.constr_expr * Topconstr.constr_expr = 
-(* 	  Pp.msgnl (str "body: " ++Ppconstr.pr_lconstr_expr b); *)
-(* 	  Pp.msgnl (str "type: " ++ Ppconstr.pr_lconstr_expr t); *)
-(* 	  Pp.msgnl (fnl ()); *)
 	  match b with 
 	    | Topconstr.CLambdaN (loc, (nal_ta), b') -> 
 		begin
@@ -637,7 +630,8 @@ let make_graph (f_ref:global_reference) =
 		    else t
 		  in 
 		  let nal_tas,b'',t'' = get_args b' (chop_n_arrow n t) in 
-		  (List.map (fun (nal,ta) -> (Topconstr.LocalRawAssum (nal,ta))) nal_ta)@nal_tas, b'',t'' 
+		  (List.map (fun (nal,ta) -> 
+			       (Topconstr.LocalRawAssum (nal,ta))) nal_ta)@nal_tas, b'',t'' 
 		end
 	    | _ -> [],b,t
 	in
@@ -659,7 +653,8 @@ let make_graph (f_ref:global_reference) =
 			   )
 		       in 
 		       let rec_id = 
-			 match List.nth bl' (out_some n)  with |(_,Name id) -> id | _ -> anomaly ""
+			 match List.nth bl' (out_some n)  with 
+			   |(_,Name id) -> id | _ -> anomaly ""
 		       in
 		       let new_args = 
 			 List.flatten 
@@ -667,7 +662,10 @@ let make_graph (f_ref:global_reference) =
 			      (function
  				 | Topconstr.LocalRawDef (na,_)-> []
 			      	 | Topconstr.LocalRawAssum (nal,_) -> 
-				     List.map (fun (loc,n) -> CRef(Libnames.Ident(loc, Nameops.out_name n))) nal
+				     List.map 
+				       (fun (loc,n) -> 
+					  CRef(Libnames.Ident(loc, Nameops.out_name n))) 
+				       nal
 			      )
 			      nal_tas
 			   )
@@ -685,7 +683,9 @@ let make_graph (f_ref:global_reference) =
 	do_generate_principle false false expr_list;
 	(* We register the infos *)
 	let mp,dp,_ = repr_con c in 
-	List.iter (fun (id,_,_,_,_) -> add_Function (make_con mp dp (label_of_id id))) expr_list
+	List.iter 
+	  (fun (id,_,_,_,_) -> add_Function (make_con mp dp (label_of_id id))) 
+	  expr_list
 
 
 (* let make_graph _ = assert false	 *)

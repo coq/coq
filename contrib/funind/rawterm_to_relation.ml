@@ -1108,19 +1108,7 @@ let build_inductive
       (function result (* (args',concl') *) -> 
 	 let rt = compose_raw_context result.context result.value in 
 	 let nb_args = List.length funsargs.(i) in 
-(* 	   let old_implicit_args = Impargs.is_implicit_args () *)
-(* 	   and old_strict_implicit_args =  Impargs.is_strict_implicit_args () *)
-(* 	   and old_contextual_implicit_args = Impargs.is_contextual_implicit_args () in *)
-(* 	   let old_rawprint = !Options.raw_print in  *)
-(* 	   Options.raw_print := true; *)
-(* 	   Impargs.make_implicit_args false; *)
-(* 	   Impargs.make_strict_implicit_args false; *)
-(* 	   Impargs.make_contextual_implicit_args false; *)
-(* 	   Pp.msgnl (str "raw constr " ++ pr_rawconstr rt); *)
-(* 	   Impargs.make_implicit_args old_implicit_args; *)
-(* 	   Impargs.make_strict_implicit_args old_strict_implicit_args; *)
-(* 	   Impargs.make_contextual_implicit_args old_contextual_implicit_args; *)
-(* 	   Options.raw_print := old_rawprint; *)
+	 (*  with_full_print (fun rt -> Pp.msgnl (str "raw constr " ++ pr_rawconstr rt)) rt; *)
 	 fst (
 	   rebuild_cons nb_args relnames.(i)
 	     []
@@ -1182,8 +1170,6 @@ let build_inductive
      Then save the graphs and reset Printing options to their primitive values 
   *)
   let rel_arities = Array.mapi rel_arity funsargs in
-  let old_rawprint = !Options.raw_print in 
-  Options.raw_print := true;
   let rel_params =  
     List.map 
       (fun (n,t,is_defined) -> 
@@ -1199,7 +1185,11 @@ let build_inductive
   let ext_rels_constructors = 
     Array.map (List.map 
       (fun (id,t) -> 
-	 false,((dummy_loc,id),Constrextern.extern_rawtype Idset.empty ((* zeta_normalize *) t))
+	 false,((dummy_loc,id),
+		Options.with_option
+		  Options.raw_print
+		  (Constrextern.extern_rawtype Idset.empty) ((* zeta_normalize *) t)
+	       )
       ))
       (rel_constructors)
   in
@@ -1232,58 +1222,27 @@ let build_inductive
 (* 	rel_inds *)
 (*     ) *)
 (*   in *)
-  let old_implicit_args = Impargs.is_implicit_args ()
-  and old_strict_implicit_args =  Impargs.is_strict_implicit_args ()
-  and old_contextual_implicit_args = Impargs.is_contextual_implicit_args () in
-  Impargs.make_implicit_args false;
-  Impargs.make_strict_implicit_args false;
-  Impargs.make_contextual_implicit_args false;
   let _time2 = System.get_time () in 
-(*   Pp.msgnl (str "Bulding Inductive : " ++ str (string_of_float (System.time_difference time1 time2))); *)
   try 
-    Options.silently (Command.build_mutual rel_inds) true;
-    let _time3 = System.get_time () in 
-(*     Pp.msgnl (str "Bulding Done: "++ str (string_of_float (System.time_difference time2 time3)));  *)
-(* 	let msg = *)
-(* 	  str "while trying to define"++ spc () ++ *)
-(* 	    Ppvernac.pr_vernac (Vernacexpr.VernacInductive(true,rel_inds)) ++ fnl () *)
-(* 	in *)
-(*  	Pp.msgnl msg; *)
-    Impargs.make_implicit_args old_implicit_args;
-    Impargs.make_strict_implicit_args old_strict_implicit_args;
-    Impargs.make_contextual_implicit_args old_contextual_implicit_args;
-    Options.raw_print := old_rawprint;
-  with
+    with_full_print (Options.silently (Command.build_mutual rel_inds)) true
+  with 
     | UserError(s,msg) ->
 	let _time3 = System.get_time () in
 (* 	Pp.msgnl (str "error : "++ str (string_of_float (System.time_difference time2 time3))); *)
-	Impargs.make_implicit_args old_implicit_args;
-	Impargs.make_strict_implicit_args old_strict_implicit_args;
-	Impargs.make_contextual_implicit_args old_contextual_implicit_args;
-	Options.raw_print := old_rawprint;
 	let msg = 		     
 	  str "while trying to define"++ spc () ++
 	    Ppvernac.pr_vernac (Vernacexpr.VernacInductive(true,rel_inds)) ++ fnl () ++
 	    msg
 	in
 	observe (msg);
-	raise 
-	  (UserError(s, msg))
+	raise (UserError(s, msg))
     | e -> 
 	let _time3 = System.get_time () in
 (* 	Pp.msgnl (str "error : "++ str (string_of_float (System.time_difference time2 time3))); *)
-	Impargs.make_implicit_args old_implicit_args;
-	Impargs.make_strict_implicit_args old_strict_implicit_args;
-	Impargs.make_contextual_implicit_args old_contextual_implicit_args;
-	Options.raw_print := old_rawprint;
 	let msg = 		     
 	  str "while trying to define"++ spc () ++
 	    Ppvernac.pr_vernac (Vernacexpr.VernacInductive(true,rel_inds)) ++ fnl () ++
 	    Cerrors.explain_exn e
 	in
  	observe msg;
-	raise 
-	  (UserError("",msg))
-
-
-
+	raise (UserError("",msg))

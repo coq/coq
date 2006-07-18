@@ -73,6 +73,12 @@ val get_proof_clean : bool ->
     
 
 
+(* [with_full_print f a] applies [f] to [a] in full printing environment 
+   
+   This function preserves the print settings 
+*)
+val with_full_print : ('a -> 'b) -> 'a -> 'b
+
 
 (*****************)
 
@@ -103,3 +109,4 @@ val pr_table : unit -> Pp.std_ppcmds
 
 val function_debug : bool ref 
 val do_observe : unit -> bool
+

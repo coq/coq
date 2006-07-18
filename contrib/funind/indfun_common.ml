@@ -233,6 +233,32 @@ let get_proof_clean do_reduce =
   Pfedit.delete_current_proof ();
   result
 
+let with_full_print f a = 
+  let old_implicit_args = Impargs.is_implicit_args ()
+  and old_strict_implicit_args =  Impargs.is_strict_implicit_args ()
+  and old_contextual_implicit_args = Impargs.is_contextual_implicit_args () in
+  let old_rawprint = !Options.raw_print in 
+  Options.raw_print := true;
+  Impargs.make_implicit_args false;
+  Impargs.make_strict_implicit_args false;
+  Impargs.make_contextual_implicit_args false;
+  try 
+    let res = f a in 
+    Impargs.make_implicit_args old_implicit_args;
+    Impargs.make_strict_implicit_args old_strict_implicit_args;
+    Impargs.make_contextual_implicit_args old_contextual_implicit_args;
+    Options.raw_print := old_rawprint;
+    res
+  with  
+    | e -> 
+	Impargs.make_implicit_args old_implicit_args;
+	Impargs.make_strict_implicit_args old_strict_implicit_args;
+	Impargs.make_contextual_implicit_args old_contextual_implicit_args;
+	Options.raw_print := old_rawprint;
+	raise e
+
+
+
 
 
 
