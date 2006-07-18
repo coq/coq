@@ -1648,8 +1648,13 @@ let compute_elim_sig ?elimc elimt =
 	| hiname,Some _,hi -> error "cannot recognize an induction schema"
 	| hiname,None,hi -> 
 	    let hi_ind, hi_args = decompose_app hi in
-	    let hi_is_ind = (* hi est d'un type inductif *)
-	      match kind_of_term hi_ind with | Ind (mind,_)  -> true | _ -> false in
+	    let hi_is_ind = (* hi est d'un type globalisable *)
+	      match kind_of_term hi_ind with
+		| Ind (mind,_)  -> true 
+		| Var _ -> true 
+		| Const _ -> true 
+		| Construct _ -> true 
+		| _ -> false in
 	    let hi_args_enough = (* hi a le bon nbre d'arguments *)
 	      List.length hi_args = List.length params + !res.nargs -1 in
 	    (* FIXME: Ces deux tests ne sont pas suffisants. *)
@@ -1827,6 +1832,7 @@ let recolle_clenv scheme lid elimclause gl =
     elimclause
 
 
+
 (* Unification of the goal and the principle applied to meta variables:
    (elimc ?i ?j ?k...?l). This solves partly meta variables (and may
     produce new ones). Then refine with the resulting term with holes.
@@ -1858,7 +1864,7 @@ let induction_from_context_l isrec elim_info lid names gl =
     + (if scheme.indarg <> None then 1 else 0) in
   (* Number of given induction args must be exact. *)
   if List.length lid <> nargs_indarg_farg + scheme.nparams then 
-    error "not the right number of arguments given to induction scheme";  
+      error "not the right number of arguments given to induction scheme";  
   let env = pf_env gl in
   (* hyp0 is used for re-introducing hyps at the right place afterward.
      We chose the first element of the list of variables on which to
