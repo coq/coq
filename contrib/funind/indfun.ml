@@ -576,7 +576,63 @@ let rec add_args id new_args b =
   | CPrim _ -> b
   | CDelimiters _ -> anomaly "add_args : CDelimiters"
   | CDynamic _ -> anomaly "add_args : CDynamic"
+exception Stop of  Topconstr.constr_expr
 
+
+(* [chop_n_arrow n t] chops the [n] first arrows in [t] 
+   Acts on Topconstr.constr_expr 
+*)
+let rec chop_n_arrow n t = 
+  if n <= 0 
+  then t (* If we have already removed all the arrows then return the type *)
+  else (* If not we check the form of [t] *) 
+    match t with 
+      | Topconstr.CArrow(_,_,t) ->  (* If we have an arrow, we discard it and recall [chop_n_arrow] *)
+	  chop_n_arrow (n-1) t
+      | Topconstr.CProdN(_,nal_ta',t') -> (* If we have a forall, to result are possible : 
+					     either we need to discard more than the number of arrows contained
+					     in this product declaration then we just recall [chop_n_arrow] on
+					     the remaining number of arrow to chop and [t'] we discard it and 
+					     recall [chop_n_arrow], either this product contains more arrows 
+					     than the number we need to chop and then we return the new type
+					  *)
+	  begin 
+	    try 
+	      let new_n =
+		let rec aux (n:int) = function 
+		    [] -> n
+		| (nal,t'')::nal_ta' -> 
+		    let nal_l = List.length nal in 
+		    if n >= nal_l
+		    then 
+		      aux (n - nal_l) nal_ta'
+		    else 
+		      let new_t' = Topconstr.CProdN(dummy_loc,((snd (list_chop n nal)),t'')::nal_ta',t')
+		      in 
+		      raise (Stop new_t')
+		in
+		aux n nal_ta'
+	    in 
+	      chop_n_arrow new_n t'
+	    with Stop t -> t
+	  end
+      | _ -> anomaly "Not enough products"
+  
+
+let rec get_args b t : Topconstr.local_binder list * 
+    Topconstr.constr_expr * Topconstr.constr_expr = 
+  match b with 
+    | Topconstr.CLambdaN (loc, (nal_ta), b') -> 
+	begin
+	  let n = 
+	    (List.fold_left (fun n (nal,_) -> 
+			       n+List.length nal) 0 nal_ta )
+	  in
+	  let nal_tas,b'',t'' = get_args b' (chop_n_arrow n t) in 
+	  (List.map (fun (nal,ta) -> 
+		       (Topconstr.LocalRawAssum (nal,ta))) nal_ta)@nal_tas, b'',t'' 
+	end
+    | _ -> [],b,t
 
 
 let make_graph (f_ref:global_reference) =
@@ -603,37 +659,6 @@ let make_graph (f_ref:global_reference) =
 	       )
 	    )
 	    ()
-	in
-	let rec get_args b t : Topconstr.local_binder list * 
-	    Topconstr.constr_expr * Topconstr.constr_expr = 
-	  match b with 
-	    | Topconstr.CLambdaN (loc, (nal_ta), b') -> 
-		begin
-		  let n = 
-		    (List.fold_left (fun n (nal,_) -> 
-				       n+List.length nal) 0 nal_ta )
-		  in
-		  let rec chop_n_arrow n t = 
-		    if n > 0 
-		    then 
-		      match t with 
-			| Topconstr.CArrow(_,_,t) -> chop_n_arrow (n-1) t 
-			| Topconstr.CProdN(_,nal_ta',t') -> 
-			    let n' = 
-			      List.fold_left 
-				(fun n (nal,t'') -> 
-				   n+List.length nal) 0 nal_ta' 
-			    in
-(* 			    assert (n'<= n);  *)
-			    chop_n_arrow (n - n') t'
-			| _ -> anomaly "Not enough products"
-		    else t
-		  in 
-		  let nal_tas,b'',t'' = get_args b' (chop_n_arrow n t) in 
-		  (List.map (fun (nal,ta) -> 
-			       (Topconstr.LocalRawAssum (nal,ta))) nal_ta)@nal_tas, b'',t'' 
-		end
-	    | _ -> [],b,t
 	in
 	let (nal_tas,b,t)  = get_args extern_body extern_type in
 	let expr_list = 
