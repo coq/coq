@@ -58,6 +58,7 @@ val cofix           : identifier option -> tactic
 (*s Introduction tactics. *)
 
 val fresh_id : identifier list -> identifier -> goal sigma -> identifier
+val find_intro_names : rel_context -> goal sigma -> identifier list
 
 val intro                : tactic
 val introf               : tactic

@@ -278,6 +278,14 @@ let find_name decl gl = function
       if id' <> id then error ((string_of_id id)^" is already used");
       id'
 
+let find_intro_names ctxt gl = 
+  List.rev 
+    (List.fold_right 
+    (fun decl idl -> find_name decl gl (IntroAvoid idl)::idl)
+    ctxt
+    [])
+
+
 let build_intro_tac id = function
   | None      -> introduction id
   | Some dest -> tclTHEN (introduction id) (move_hyp true id dest)

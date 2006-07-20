@@ -111,39 +111,19 @@ let print_subgoals () = if_verbose (fun () -> msg (pr_open_subgoals ())) ()
 
   (* Simulate the Intro(s) tactic *)
 
-let fresh_id_of_name avoid gl = function
-    Anonymous -> Tactics.fresh_id avoid (id_of_string "H") gl
-  | Name id   -> Tactics.fresh_id avoid id gl
-
-let rec do_renum avoid gl = function
-    [] -> mt ()
-  | [n] -> pr_id (fresh_id_of_name avoid gl n)
-  | n :: l ->
-      let id = fresh_id_of_name avoid gl n in
-      pr_id id ++ spc () ++ do_renum (id :: avoid) gl l
-
-(* Transforms a product term (x1:T1)..(xn:Tn)T into the pair
-   ([(xn,Tn);...;(x1,T1)],T), where T is not a product nor a letin *)
-let decompose_prod_letins = 
-  let rec prodec_rec l c = match kind_of_term c with
-    | Prod (x,t,c) -> prodec_rec ((x,t)::l) c
-    | LetIn (x,b,t,c) -> prodec_rec ((x,t)::l) c
-    | Cast (c,_,_)   -> prodec_rec l c
-    | _              -> l,c
-  in 
-  prodec_rec []
-
 let show_intro all =
   let pf = get_pftreestate() in
   let gl = nth_goal_of_pftreestate 1 pf in
-  let l,_= decompose_prod_letins (strip_outer_cast (pf_concl gl)) in
-  let nl = List.rev_map fst l in
-  if all then msgnl (hov 0 (do_renum [] gl nl))
-  else try 
-    let n = List.hd nl in
-    msgnl (pr_id (fresh_id_of_name [] gl n))
-  with Failure "hd" -> message "" 
-
+  let l,_= Sign.decompose_prod_assum (strip_outer_cast (pf_concl gl)) in
+  if all 
+  then 
+    let lid = Tactics.find_intro_names l gl in 
+    msgnl (hov 0 (prlist_with_sep  spc pr_id lid))
+  else  
+    try  
+      let n = list_last l in
+      msgnl (pr_id (List.hd (Tactics.find_intro_names [n] gl)))
+    with Failure "list_last" -> message ""
 
 let id_of_name = function 
   | Names.Anonymous -> id_of_string "x" 
