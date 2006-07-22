@@ -43,7 +43,6 @@ extern int drawinstr;
 /* interp state */
 
 extern value * coq_sp;
-extern value forcable;
 /* Some predefined pointer code */ 
 extern code_t accumulate;
 

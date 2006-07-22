@@ -566,8 +566,9 @@ let rec pr sep inherited a =
   | CEvar (_,n) -> str (Evd.string_of_existential n), latom
   | CPatVar (_,(_,p)) -> str "?" ++ pr_patvar p, latom
   | CSort (_,s) -> pr_rawsort s, latom
-  | CCast (_,a,_,b) ->
-      hv 0 (pr mt (lcast,L) a ++ cut () ++ str ":" ++ pr mt (-lcast,E) b),
+  | CCast (_,a,k,b) ->
+      let s = match k with CastConv  VMcast -> "<:" | _ -> ":" in
+      hv 0 (pr mt (lcast,L) a ++ cut () ++ str s ++ pr mt (-lcast,E) b),
       lcast
   | CNotation (_,"( _ )",[t]) ->
       pr (fun()->str"(") (max_int,L) t ++ str")", latom

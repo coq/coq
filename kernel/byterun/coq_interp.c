@@ -55,7 +55,7 @@ sp is a local copy of the global variable extern_sp. */
 #  define Next break
 #endif 
 
-/* #define _COQ_DEBUG_ */
+/*#define _COQ_DEBUG_ */
 
 #ifdef _COQ_DEBUG_ 
 #   define print_instr(s) /*if (drawinstr)*/ printf("%s\n",s)
@@ -164,7 +164,7 @@ value coq_interprete
 #else 
   opcode_t curr_instr;
 #endif
-    print_instr("Enter Interpreter");
+  print_instr("Enter Interpreter");
   if (coq_pc == NULL) {           /* Interpreter is initializing */
     print_instr("Interpreter is initializing");
 #ifdef THREADED_CODE
@@ -383,6 +383,17 @@ value coq_interprete
 	coq_extra_args = 2;
 	goto check_stacks;
       }
+      /* Stack checks */
+      
+    check_stacks:
+      print_instr("check_stacks");
+      if (sp < coq_stack_threshold) {
+	coq_sp = sp;
+	realloc_coq_stack(Coq_stack_threshold);
+	sp = coq_sp;
+      }
+      Next;
+      /* Fall through CHECK_SIGNALS */
 
       Instruct(APPTERM) {
 	int nargs = *pc++;
@@ -438,6 +449,7 @@ value coq_interprete
       
       Instruct(RETURN) {
 	print_instr("RETURN");
+	print_int(*pc);
 	sp += *pc++;
 	if (coq_extra_args > 0) {
 	  coq_extra_args--;
@@ -485,30 +497,6 @@ value coq_interprete
 	Next;
       }
 
-      Instruct(COGRAB){
-	int required = *pc++;
-	print_instr("COGRAB");
-	if(forcable == Val_true) {
-	  print_instr("true");
-	  /* L'instruction précédante est FORCE */
-	  if (coq_extra_args > 0) coq_extra_args--;
-	  pc++;
-	  forcable = Val_false;
-	} else { /* L'instruction précédante est APPLY */
-	  mlsize_t num_args, i;
-	  num_args = 1 + coq_extra_args; /* arg1 + extra args */
-	  Alloc_small(accu, num_args + 2, Closure_tag); 
-	  Field(accu, 1) = coq_env;
-	  for (i = 0; i < num_args; i++) Field(accu, i + 2) = sp[i];
-	  Code_val(accu) = pc - 3; /* Point to the preceding RESTART instr. */
-	  sp += num_args;
-	  pc = (code_t)(sp[0]);
-	  coq_env = sp[1];
-	  coq_extra_args = Long_val(sp[2]);
-	  sp += 3;
-	}
-	Next;
-      }
       Instruct(GRABREC) { 
 	int rec_pos = *pc++; /* commence a zero */
 	print_instr("GRABREC");
@@ -607,7 +595,59 @@ value coq_interprete
 	accu = accu + 2 * start * sizeof(value);
 	Next;
       }
-     
+
+      Instruct(CLOSURECOFIX){ 
+	int nfunc = *pc++;
+	int nvars = *pc++;
+	int start = *pc++;
+	int i, j , size;
+	value * p;
+	print_instr("CLOSURECOFIX");
+	if (nvars > 0) *--sp = accu;
+	/* construction du vecteur de type */
+	Alloc_small(accu, nfunc, 0);
+	for(i = 0; i < nfunc; i++) {
+	  Field(accu,i) = (value)(pc+pc[i]);
+	}
+	pc += nfunc;
+	*--sp=accu;
+
+        /* Creation des blocks accumulate */
+        for(i=0; i < nfunc; i++) {
+	  Alloc_small(accu, 2, Accu_tag);
+	  Code_val(accu) = accumulate;
+	  Field(accu,1) = Val_int(1);
+	  *--sp=accu;
+	}
+	/* creation des fonction cofix */
+
+        p = sp;
+	size = nfunc + nvars + 2;
+	for (i=0; i < nfunc; i++) {
+
+	  Alloc_small(accu, size, Closure_tag);
+	  Code_val(accu) = pc+pc[i];
+	  for (j = 0; j < nfunc; j++) Field(accu, j+1) = p[j];
+	  Field(accu, size - 1) = p[nfunc];
+	  for (j = nfunc+1; j <= nfunc+nvars; j++) Field(accu, j) = p[j];
+	  *--sp = accu;
+          /* creation du block contenant le cofix */
+
+	  Alloc_small(accu,1, ATOM_COFIX_TAG);
+	  Field(accu, 0) = sp[0];
+	  *sp = accu;
+	  /* mise a jour du block accumulate */
+	  caml_modify(&Field(p[i], 1),*sp);
+	  sp++;
+	}
+	pc += nfunc;
+	accu = p[start];
+        sp = p + nfunc + 1 + nvars;
+	print_instr("ici4");
+	Next;
+      }
+
+    
       Instruct(PUSHOFFSETCLOSURE) {
 	print_instr("PUSHOFFSETCLOSURE");
 	*--sp = accu;
@@ -644,7 +684,7 @@ value coq_interprete
 /* Access to global variables */
 
       Instruct(PUSHGETGLOBAL) {
-	print_instr("PUSHGETGLOBAL");
+	print_instr("PUSH");
 	*--sp = accu;
       }
       /* Fallthrough */
@@ -703,38 +743,27 @@ value coq_interprete
 	accu = block;
 	Next;
       }
+      Instruct(MAKEBLOCK4) {
+	tag_t tag = *pc++;
+	value block;
+	print_instr("MAKEBLOCK4");
+	Alloc_small(block, 4, tag);
+	Field(block, 0) = accu;
+	Field(block, 1) = sp[0];
+	Field(block, 2) = sp[1];
+	Field(block, 3) = sp[2];
+	sp += 3;
+	accu = block;
+	Next;
+      }
 
   
 /* Access to components of blocks */
         
-	
-/* Branches and conditional branches */
-      Instruct(FORCE) {
-	print_instr("FORCE");
-	if (Is_block(accu) && Tag_val(accu) == Closure_tag) {
-	  forcable = Val_true;
-	  /* On pousse l'addresse de retour et l'argument */
-	  sp -= 3;
-	  sp[0] = (value) (pc - 1);
-	  sp[1] = coq_env;
-	  sp[2] = Val_long(coq_extra_args);
-	  /* On evalue le cofix */
-	  coq_extra_args = 0;
-	  pc = Code_val(accu);
-	  coq_env = accu;
-	  goto check_stacks;
-	} else {
-	  if (Is_block(accu)) print_int(Tag_val(accu));
-	  else print_instr("Not a block");
-	}
-	Next;
-      }
-           
-    
       Instruct(SWITCH) {
 	uint32 sizes = *pc++;
 	print_instr("SWITCH");
-	print_int(sizes);
+	print_int(sizes & 0xFFFF);
 	if (Is_block(accu)) {
 	  long index = Tag_val(accu);
 	  print_instr("block");
@@ -748,68 +777,56 @@ value coq_interprete
 	}
 	  Next;
       }
-      Instruct(PUSHFIELD){
+
+      Instruct(PUSHFIELDS){
 	int i;
 	int size = *pc++;
-	print_instr("PUSHFIELD");
+	print_instr("PUSHFIELDS");
 	sp -= size;
 	for(i=0;i<size;i++)sp[i] = Field(accu,i);
 	Next;
       }
-	
-      Instruct(MAKESWITCHBLOCK) {
-	mlsize_t sz;
-	int i, annot;
-	code_t typlbl,swlbl;
-	print_instr("MAKESWITCHBLOCK");
-	typlbl = (code_t)pc + *pc; 
-	pc++;
-	swlbl = (code_t)pc + *pc; 
-	pc++;
-	annot = *pc++;
-	sz = *pc++;
-	*--sp = accu;
-	*--sp=Field(coq_global_data, annot);
-	/* On sauve la pile */
-	if (sz == 0) accu = Atom(0);
-	else {
-	  Alloc_small(accu, sz, Default_tag);
-	  if (Field(*sp, 2) == Val_true) {
-	    for (i = 0; i < sz; i++) Field(accu, i) = sp[i+2];
-	  }else{
-	    for (i = 0; i < sz; i++) Field(accu, i) = sp[i+5];
-	  }
-	}
-	*--sp = accu;
-	/* On cree le zipper switch */
-	Alloc_small(accu, 5, Default_tag);
-	Field(accu, 0) =  (value)typlbl; Field(accu, 1) = (value)swlbl; 
-	Field(accu, 2) = sp[1]; Field(accu, 3) = sp[0]; 
-	Field(accu, 4) = coq_env;
-	sp++;sp[0] = accu;
-	/* On cree l'atome */
-	Alloc_small(accu, 2, ATOM_SWITCH_TAG);
-	Field(accu, 0) = sp[1]; Field(accu, 1) = sp[0];
-	sp++;sp[0] = accu;
-	/* On cree l'accumulateur */
-	Alloc_small(accu, 2, Accu_tag);
-	Code_val(accu) = accumulate; 
-	Field(accu,1) = *sp++;
+      
+      Instruct(GETFIELD0){
+	print_instr("GETFIELD0");
+	accu = Field(accu, 0); 
 	Next;
       }
 
-      /* Stack checks */
-      
-    check_stacks:
-      print_instr("check_stacks");
-      if (sp < coq_stack_threshold) {
-	coq_sp = sp;
-	realloc_coq_stack(Coq_stack_threshold);
-	sp = coq_sp;
+      Instruct(GETFIELD1){
+	print_instr("GETFIELD1");
+	accu = Field(accu, 1);
+	Next;
       }
-      Next;
-      /* Fall through CHECK_SIGNALS */
 
+      Instruct(GETFIELD){
+	print_instr("GETFIELD");
+	accu = Field(accu, *pc); 
+	pc++; 
+	Next;
+      }
+      
+      Instruct(SETFIELD0){
+	print_instr("SETFIELD0");
+	caml_modify(&Field(accu, 0),*sp);
+	sp++;
+	Next;
+      }
+	
+      Instruct(SETFIELD1){
+	print_instr("SETFIELD1");
+	caml_modify(&Field(accu, 1),*sp);
+	sp++;
+	Next;
+      }
+      
+      Instruct(SETFIELD){
+	print_instr("SETFIELD");
+	caml_modify(&Field(accu, *pc),*sp);
+	sp++; pc++;
+	Next;
+      }	
+   
 /* Integer constants */
 
       Instruct(CONST0){
@@ -854,14 +871,7 @@ value coq_interprete
 	Next;
       }
 
-/* Debugging and machine control */
-
-      Instruct(STOP){
-	print_instr("STOP");
-	coq_sp = sp;
-	return accu;
-      }
-      
+      /* Special operations for reduction of open term */
       Instruct(ACCUMULATECOND) {
 	int i, num;
 	print_instr("ACCUMULATECOND");
@@ -869,7 +879,7 @@ value coq_interprete
 	pc++;
 	if (Field(coq_global_boxed, num) == Val_false || coq_all_transp) {
 	  /*	  printf ("false\n");
-	    printf ("tag = %d", Tag_val(Field(accu,1))); */
+		  printf ("tag = %d", Tag_val(Field(accu,1))); */
 	  num = Wosize_val(coq_env);
 	  for(i = 2; i < num; i++) *--sp = Field(accu,i);
 	  coq_extra_args = coq_extra_args + (num - 2);
@@ -881,7 +891,7 @@ value coq_interprete
 	};
 	/*	printf ("true\n"); */
       }
-
+      
       Instruct(ACCUMULATE) {
 	mlsize_t i, size;
 	print_instr("ACCUMULATE");
@@ -896,7 +906,86 @@ value coq_interprete
 	sp += 3;
 	Next;
       }  
-            
+      Instruct(MAKESWITCHBLOCK) {
+	print_instr("MAKESWITCHBLOCK");
+	*--sp = accu;
+	accu = Field(accu,1);
+	switch (Tag_val(accu)) {
+	case ATOM_COFIX_TAG: 
+	  {
+	    mlsize_t i, nargs;
+	    print_instr("COFIX_TAG");
+	    sp-=2;
+	    pc++;
+	    sp[0] = (value) (pc + *pc);
+	    sp[1] = coq_env;
+	    coq_env = Field(accu,0);
+	    accu = sp[2];
+	    sp[2] = Val_long(coq_extra_args);
+	    nargs = Wosize_val(accu) - 2;
+	    sp -= nargs;
+	    for (i = 0; i < nargs; i++) sp[i] = Field(accu, i + 2);
+	    *--sp = accu;
+	    print_int(nargs);
+	    coq_extra_args = nargs;
+	    pc = Code_val(coq_env);
+	    goto check_stacks;
+	  }
+	case ATOM_COFIXEVALUATED_TAG: 
+	  {
+	    print_instr("COFIX_EVAL_TAG");
+	    accu = Field(accu,1);
+	    pc++;
+	    pc = pc + *pc;
+	    sp++;
+	    Next;
+	  }
+	default: 
+	  {  
+	    mlsize_t sz;
+	    int i, annot;
+	    code_t typlbl,swlbl;
+	    print_instr("MAKESWITCHBLOCK");
+	    
+	    typlbl = (code_t)pc + *pc; 
+	    pc++;
+	    swlbl = (code_t)pc + *pc; 
+	    pc++;
+	    annot = *pc++;
+	    sz = *pc++;
+	    *--sp=Field(coq_global_data, annot);
+	    /* On sauve la pile */
+	    if (sz == 0) accu = Atom(0);
+	    else {
+	      Alloc_small(accu, sz, Default_tag);
+	      if (Field(*sp, 2) == Val_true) {
+		for (i = 0; i < sz; i++) Field(accu, i) = sp[i+2];
+	      }else{
+		for (i = 0; i < sz; i++) Field(accu, i) = sp[i+5];
+	      }
+	    }
+	    *--sp = accu;
+	    /* On cree le zipper switch */
+	    Alloc_small(accu, 5, Default_tag);
+	    Field(accu, 0) =  (value)typlbl; Field(accu, 1) = (value)swlbl; 
+	    Field(accu, 2) = sp[1]; Field(accu, 3) = sp[0]; 
+	    Field(accu, 4) = coq_env;
+	    sp++;sp[0] = accu;
+	    /* On cree l'atome */
+	    Alloc_small(accu, 2, ATOM_SWITCH_TAG);
+	    Field(accu, 0) = sp[1]; Field(accu, 1) = sp[0];
+	    sp++;sp[0] = accu;
+	    /* On cree l'accumulateur */
+	    Alloc_small(accu, 2, Accu_tag);
+	    Code_val(accu) = accumulate; 
+	    Field(accu,1) = *sp++;
+	  }
+	}
+	Next;
+      }
+
+	
+         
       Instruct(MAKEACCU) {
 	int i;
 	print_instr("MAKEACCU");
@@ -921,6 +1010,15 @@ value coq_interprete
 	Next;
       }
       
+/* Debugging and machine control */
+
+      Instruct(STOP){
+	print_instr("STOP");
+	coq_sp = sp;
+	return accu;
+      }
+      
+  
 #ifndef THREADED_CODE
     default:
       /*fprintf(stderr, "%d\n", *pc);*/

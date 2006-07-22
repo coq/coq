@@ -14,11 +14,20 @@
 #include "alloc.h"
 #include "mlvalues.h"
 
+#define Default_tag 0
+#define Accu_tag 0
+
+
+
+#define ATOM_ID_TAG 0
+#define ATOM_IDDEF_TAG 1
+#define ATOM_INDUCTIVE_TAG 2
 #define ATOM_FIX_TAG 3
 #define ATOM_SWITCH_TAG 4
+#define ATOM_COFIX_TAG 5
+#define ATOM_COFIXEVALUATED_TAG 6
 
-#define Accu_tag 0
-#define Default_tag 0
+
 
 /* Les blocs accumulate */
 #define Is_accu(v) (Is_block(v) && (Tag_val(v) == Accu_tag))

@@ -91,7 +91,7 @@ UNBOXEDVALUES=  # is "-unboxed-values" to use unboxed values
 COQOPTS=$(GLOB) $(COQ_XML) $(VM) $(UNBOXEDVALUES)
 TIME=           # is "'time -p'" to get compilation time of .v 
 
-BOOTCOQTOP= $(TIME) $(BESTCOQTOP) -boot $(COQOPTS)
+BOOTCOQTOP= $(TIME) $(BESTCOQTOP) -boot $(COQOPTS) 
 
 
 ###########################################################################
@@ -141,7 +141,7 @@ LIBRARY=\
 
 PRETYPING=\
   pretyping/termops.cmo pretyping/evd.cmo \
-  pretyping/reductionops.cmo pretyping/inductiveops.cmo \
+  pretyping/reductionops.cmo pretyping/vnorm.cmo pretyping/inductiveops.cmo \
   pretyping/retyping.cmo pretyping/cbv.cmo \
   pretyping/pretype_errors.cmo pretyping/recordops.cmo pretyping/typing.cmo \
   pretyping/tacred.cmo \

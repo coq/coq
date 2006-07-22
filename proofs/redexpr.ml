@@ -24,7 +24,7 @@ open RedFlags
 (* call by value normalisation function using the virtual machine *)
 let cbv_vm env _ c =
   let ctyp = (fst (Typeops.infer env c)).Environ.uj_type in
-  Vconv.cbv_vm env c ctyp
+  Vnorm.cbv_vm env c ctyp
 
 
 let set_opaque_const sp = 

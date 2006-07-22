@@ -27,31 +27,31 @@ void init_arity () {
   /* instruction with zero operand */
   arity[ACC0]=arity[ACC1]=arity[ACC2]=arity[ACC3]=arity[ACC4]=arity[ACC5]=
     arity[ACC6]=arity[ACC7]=arity[PUSH]=arity[PUSHACC0]=arity[PUSHACC1]=
-    arity[PUSHACC2]=arity[PUSHACC3]=arity[PUSHACC4]=arity[PUSHACC5]=arity[PUSHACC6]=
-    arity[PUSHACC7]=arity[ENVACC1]=arity[ENVACC2]=arity[ENVACC3]=arity[ENVACC4]=
-    arity[PUSHENVACC1]=arity[PUSHENVACC2]=arity[PUSHENVACC3]=arity[PUSHENVACC4]=
-    arity[APPLY1]=arity[APPLY2]=arity[APPLY3]=arity[RESTART]=arity[OFFSETCLOSUREM2]=
+    arity[PUSHACC2]=arity[PUSHACC3]=arity[PUSHACC4]=arity[PUSHACC5]=
+    arity[PUSHACC6]=arity[PUSHACC7]=arity[ENVACC1]=arity[ENVACC2]=
+    arity[ENVACC3]=arity[ENVACC4]=arity[PUSHENVACC1]=arity[PUSHENVACC2]=
+    arity[PUSHENVACC3]=arity[PUSHENVACC4]=arity[APPLY1]=arity[APPLY2]=
+    arity[APPLY3]=arity[RESTART]=arity[OFFSETCLOSUREM2]=
     arity[OFFSETCLOSURE0]=arity[OFFSETCLOSURE2]=arity[PUSHOFFSETCLOSUREM2]=
     arity[PUSHOFFSETCLOSURE0]=arity[PUSHOFFSETCLOSURE2]=
+    arity[GETFIELD0]=arity[GETFIELD1]=arity[SETFIELD0]=arity[SETFIELD1]=
     arity[CONST0]=arity[CONST1]=arity[CONST2]=arity[CONST3]=
     arity[PUSHCONST0]=arity[PUSHCONST1]=arity[PUSHCONST2]=arity[PUSHCONST3]=
-    arity[ACCUMULATE]=arity[STOP]=arity[FORCE]=arity[MAKEPROD]= 0;
+    arity[ACCUMULATE]=arity[STOP]=arity[MAKEPROD]= 0;
   /* instruction with one operand */
   arity[ACC]=arity[PUSHACC]=arity[POP]=arity[ENVACC]=arity[PUSHENVACC]=
-    arity[PUSH_RETADDR]=
-    arity[APPLY]=arity[APPTERM1]=arity[APPTERM2]=arity[APPTERM3]=arity[RETURN]=
-    arity[GRAB]=arity[COGRAB]=
-    arity[OFFSETCLOSURE]=arity[PUSHOFFSETCLOSURE]=
-    arity[GETGLOBAL]=arity[PUSHGETGLOBAL]=
-    arity[MAKEBLOCK1]=arity[MAKEBLOCK2]=arity[MAKEBLOCK3]=arity[MAKEACCU]=
-    arity[CONSTINT]=arity[PUSHCONSTINT]=arity[GRABREC]=arity[PUSHFIELD]=
-    arity[ACCUMULATECOND]= 1;
+    arity[PUSH_RETADDR]=arity[APPLY]=arity[APPTERM1]=arity[APPTERM2]=
+    arity[APPTERM3]=arity[RETURN]=arity[GRAB]=arity[OFFSETCLOSURE]=
+    arity[PUSHOFFSETCLOSURE]=arity[GETGLOBAL]=arity[PUSHGETGLOBAL]=
+    arity[MAKEBLOCK1]=arity[MAKEBLOCK2]=arity[MAKEBLOCK3]=arity[MAKEBLOCK4]=
+    arity[MAKEACCU]=arity[CONSTINT]=arity[PUSHCONSTINT]=arity[GRABREC]=
+    arity[PUSHFIELDS]=arity[GETFIELD]=arity[SETFIELD]=arity[ACCUMULATECOND]= 1;
   /* instruction with two operands */
   arity[APPTERM]=arity[MAKEBLOCK]=arity[CLOSURE]=2;
   /* instruction with four operands */ 
   arity[MAKESWITCHBLOCK]=4;
   /* instruction with arbitrary operands */
-  arity[CLOSUREREC]=arity[SWITCH]=0;
+  arity[CLOSUREREC]=arity[CLOSURECOFIX]=arity[SWITCH]=0;
 }
 
 #endif /*  THREADED_CODE */
@@ -150,7 +150,7 @@ value coq_tcode_of_code (value code, value size) {
       block_size = sizes >> 16;
       sizes = const_size + block_size;
       for(i=0; i<sizes; i++) { COPY32(q,p); p++; q++; };
-    } else if (instr == CLOSUREREC) {
+    } else if (instr == CLOSUREREC || instr==CLOSURECOFIX) {
       uint32 i, n;
       COPY32(q,p); p++; /* ndefs */
       n = 3 + 2*(*q);  /* ndefs, nvars, start, typlbls,lbls*/

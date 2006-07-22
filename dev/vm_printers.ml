@@ -65,8 +65,6 @@ and ppatom a =
       print_string (string_of_kn sp);
       print_string ","; print_int i;
       print_string ")"
-  | Afix_app _ -> print_vfix_app ()
-  | Aswitch _ -> print_vswith()
 
 and ppwhd whd =
   match whd with 
@@ -74,9 +72,7 @@ and ppwhd whd =
   | Vprod _ -> print_string "product"
   | Vfun _ -> print_string "function"
   | Vfix _ -> print_vfix()
-  | Vfix_app _ -> print_vfix_app()
   | Vcofix _ -> print_string "cofix"
-  | Vcofix_app _ -> print_string "cofix_app"
   | Vconstr_const i -> print_string "C(";print_int i;print_string")"
   | Vconstr_block b -> ppvblock b      
   | Vatom_stk(a,s) ->

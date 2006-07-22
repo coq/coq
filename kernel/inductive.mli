@@ -35,6 +35,7 @@ type mind_specif = mutual_inductive_body * one_inductive_body
 val lookup_mind_specif : env -> inductive -> mind_specif
 
 (*s Functions to build standard types related to inductive *)
+val ind_subst : mutual_inductive -> mutual_inductive_body -> constr list
 
 val type_of_inductive : mind_specif -> types
 
@@ -48,6 +49,7 @@ val arities_of_constructors : inductive -> mind_specif -> types array
 
 (* Transforms inductive specification into types (in nf) *)
 val arities_of_specif : mutual_inductive -> mind_specif -> types array 
+
 
 (* [type_case_branches env (I,args) (p:A) c] computes useful types
    about the following Cases expression:

@@ -3,6 +3,14 @@ open Term
 
 type tag = int 
 
+let id_tag = 0
+let iddef_tag = 1
+let ind_tag = 2
+let fix_tag = 3
+let switch_tag = 4
+let cofix_tag = 5
+let cofix_evaluated_tag = 6
+
 type structured_constant =
   | Const_sorts of sorts
   | Const_ind of inductive
@@ -39,18 +47,20 @@ type instruction =
   | Krestart
   | Kgrab of int                        (* number of arguments *)
   | Kgrabrec of int                     (* rec arg *)
-  | Kcograb of int                      (* number of arguments *)
   | Kclosure of Label.t * int           (* label, number of free variables *)
   | Kclosurerec of int * int * Label.t array * Label.t array 
+                   (* nb fv, init, lbl types, lbl bodies *)
+  | Kclosurecofix of int * int * Label.t array * Label.t array 
                    (* nb fv, init, lbl types, lbl bodies *)
   | Kgetglobal of constant
   | Kconst of structured_constant
   | Kmakeblock of int * tag             (* size, tag *)
   | Kmakeprod 
   | Kmakeswitchblock of Label.t * Label.t * annot_switch * int
-  | Kforce
   | Kswitch of Label.t array * Label.t array (* consts,blocks *)
-  | Kpushfield of int 
+  | Kpushfields of int 
+  | Kfield of int
+  | Ksetfield of int
   | Kstop
   | Ksequence of bytecodes * bytecodes
 
@@ -79,7 +89,6 @@ let rec instruction ppf = function
   | Krestart -> fprintf ppf "\trestart"
   | Kgrab n -> fprintf ppf "\tgrab %i" n
   | Kgrabrec n -> fprintf ppf "\tgrabrec %i" n
-  | Kcograb n -> fprintf ppf "\tcograb %i" n
   | Kclosure(lbl, n) ->
       fprintf ppf "\tclosure L%i, %i" lbl n
   | Kclosurerec(fv,init,lblt,lblb) ->
@@ -89,7 +98,13 @@ let rec instruction ppf = function
       Array.iter (fun lbl -> fprintf ppf " %i" lbl) lblt;
       print_string " bodies = ";
       Array.iter (fun lbl -> fprintf ppf " %i" lbl) lblb;
-                   (* nb fv, init, lbl types, lbl bodies *)
+  | Kclosurecofix (fv,init,lblt,lblb) ->
+      fprintf ppf "\tclosurecofix";
+      fprintf ppf " %i , %i, " fv init;
+      print_string "types = ";
+      Array.iter (fun lbl -> fprintf ppf " %i" lbl) lblt;
+      print_string " bodies = ";
+      Array.iter (fun lbl -> fprintf ppf " %i" lbl) lblb;
   | Kgetglobal id -> fprintf ppf "\tgetglobal %s" (Names.string_of_con id)
   | Kconst cst ->
       fprintf ppf "\tconst"
@@ -98,13 +113,13 @@ let rec instruction ppf = function
   | Kmakeprod -> fprintf ppf "\tmakeprod"
   | Kmakeswitchblock(lblt,lbls,_,sz) ->
       fprintf ppf "\tmakeswitchblock %i, %i, %i" lblt lbls sz
-  | Kforce -> fprintf ppf "\tforce"
   | Kswitch(lblc,lblb) -> 
       fprintf ppf "\tswitch";
       Array.iter (fun lbl -> fprintf ppf " %i" lbl) lblc;
       Array.iter (fun lbl -> fprintf ppf " %i" lbl) lblb;
-  | Kpushfield n -> 
-      fprintf ppf "\tpushfield %i" n
+  | Kpushfields n -> fprintf ppf "\tpushfields %i" n
+  | Ksetfield n -> fprintf ppf "\tsetfield %i" n
+  | Kfield  n -> fprintf ppf "\tgetfield %i" n
   | Kstop -> fprintf ppf "\tstop"
   | Ksequence (c1,c2) ->
       fprintf ppf "%a@ %a" instruction_list c1 instruction_list c2 

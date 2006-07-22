@@ -34,7 +34,6 @@ int drawinstr;
 
 long coq_saved_sp_offset;
 value * coq_sp;
-value forcable;
 /* Some predefined pointer code */ 
 code_t accumulate;
 
@@ -135,7 +134,6 @@ value init_coq_vm(value unit) /* ML */
     init_coq_atom_tbl(40);
     /* Initialing the interpreter */
     coq_all_transp = 0;
-    forcable = Val_false;
     init_coq_interpreter();
     
     /* Some predefined pointer code */
@@ -266,8 +264,9 @@ value coq_set_drawinstr(value unit)
   return Val_unit;
 }
 
-value coq_set_forcable (value unit)
+
+value coq_print_pointer(value p)
 {
-  forcable = Val_true;
+  printf("pointer = %X\n", p);
   return Val_unit;
 }

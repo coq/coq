@@ -155,8 +155,14 @@ GEXTEND Gram
     [ "200" RIGHTA
       [ c = binder_constr -> c ]
     | "100" RIGHTA
-      [ c1 = operconstr; ":"; c2 = binder_constr -> CCast(loc,c1, CastConv DEFAULTcast,c2)
-      | c1 = operconstr; ":"; c2 = SELF -> CCast(loc,c1,CastConv DEFAULTcast,c2) ]
+      [ c1 = operconstr; "<:"; c2 = binder_constr -> 
+                 CCast(loc,c1, CastConv VMcast,c2)
+      | c1 = operconstr; "<:"; c2 = SELF -> 
+                 CCast(loc,c1, CastConv VMcast,c2)
+      | c1 = operconstr; ":";c2 = binder_constr -> 
+                 CCast(loc,c1, CastConv DEFAULTcast,c2)
+      | c1 = operconstr; ":"; c2 = SELF -> 
+                 CCast(loc,c1, CastConv DEFAULTcast,c2) ]
     | "99" RIGHTA [ ]
     | "90" RIGHTA
       [ c1 = operconstr; "->"; c2 = binder_constr -> CArrow(loc,c1,c2)

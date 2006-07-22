@@ -149,12 +149,17 @@ let emit_instr = function
       out opGRAB; out_int n
   | Kgrabrec(rec_arg) -> 
       out opGRABREC; out_int rec_arg
-  | Kcograb n -> 
-      out opCOGRAB; out_int n
   | Kclosure(lbl, n) -> 
       out opCLOSURE; out_int n; out_label lbl
   | Kclosurerec(nfv,init,lbl_types,lbl_bodies) ->
       out opCLOSUREREC;out_int (Array.length lbl_bodies);
+      out_int nfv; out_int init;
+      let org = !out_position in
+      Array.iter (out_label_with_orig org) lbl_types;
+      let org = !out_position in
+      Array.iter (out_label_with_orig org) lbl_bodies
+  | Kclosurecofix(nfv,init,lbl_types,lbl_bodies) ->
+      out opCLOSURECOFIX;out_int (Array.length lbl_bodies);
       out_int nfv; out_int init;
       let org = !out_position in
       Array.iter (out_label_with_orig org) lbl_types;
@@ -178,16 +183,20 @@ let emit_instr = function
       out opMAKESWITCHBLOCK;
       out_label typlbl; out_label swlbl;
       slot_for_annot annot;out_int sz
-  | Kforce -> 
-      out opFORCE
   | Kswitch (tbl_const, tbl_block) ->
       out opSWITCH;
       out_int (Array.length tbl_const + (Array.length tbl_block lsl 16));
       let org = !out_position in
       Array.iter (out_label_with_orig org) tbl_const;
       Array.iter (out_label_with_orig org) tbl_block
-  | Kpushfield n ->
-      out opPUSHFIELD;out_int n
+  | Kpushfields n ->
+      out opPUSHFIELDS;out_int n
+  | Kfield n ->
+      if n <= 1 then out (opGETFIELD0+n)
+      else (out opGETFIELD;out_int n)
+  | Ksetfield n ->
+      if n <= 1 then out (opSETFIELD0+n) 
+      else (out opSETFIELD;out_int n)
   | Kstop -> 
       out opSTOP
   | Ksequence _ -> raise (Invalid_argument "Cemitcodes.emit_instr")

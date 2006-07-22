@@ -30,8 +30,8 @@ let lookup_mind_specif env (kn,tyi) =
 let find_rectype env c =
   let (t, l) = decompose_app (whd_betadeltaiota env c) in
   match kind_of_term t with
-    | Ind ind -> (ind, l)
-    | _ -> raise Not_found
+  | Ind ind -> (ind, l)
+  | _ -> raise Not_found
 
 let find_inductive env c =
   let (t, l) = decompose_app (whd_betadeltaiota env c) in
