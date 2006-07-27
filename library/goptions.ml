@@ -253,7 +253,7 @@ let declare_option cast uncast
 	       unfreeze_function = write;
 	       init_function = (fun () -> write default);
 	       survive_module = false;
-	       survive_section = true}
+	       survive_section = false}
     in 
     fun v -> add_anonymous_leaf (decl_obj v)
   else write
