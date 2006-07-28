@@ -245,20 +245,23 @@ let unfold_constr = function
 (*         Introduction tactics            *)
 (*******************************************)
 
+let fresh_id_avoid avoid id =
+  next_global_ident_away true id avoid
+
 let fresh_id avoid id gl =
-  next_global_ident_away true id (avoid@(pf_ids_of_hyps gl))
+  fresh_id_avoid (avoid@(pf_ids_of_hyps gl)) id
 
 let id_of_name_with_default s = function
   | Anonymous -> id_of_string s
   | Name id   -> id
 
-let default_id gl = function
+let default_id env sigma = function
   | (name,None,t) ->
-      (match kind_of_term (pf_whd_betadeltaiota gl (pf_type_of gl t)) with
-	| Sort (Prop _) -> (id_of_name_with_default "H" name)
-	| Sort (Type _) -> (id_of_name_with_default "X" name)
+      (match Typing.sort_of env sigma t with
+	| Prop _ -> (id_of_name_with_default "H" name)
+	| Type _ -> (id_of_name_with_default "X" name)
 	| _                   -> anomaly "Wrong sort")
-  | (name,Some b,_) -> id_of_name_using_hdchar (pf_env gl) b name
+  | (name,Some b,_) -> id_of_name_using_hdchar env b name
 
 (* Non primitive introduction tactics are treated by central_intro
    There is possibly renaming, with possibly names to avoid and 
@@ -270,20 +273,31 @@ type intro_name_flag =
   | IntroMustBe of identifier
 
 let find_name decl gl = function
-  | IntroAvoid idl        -> 
-      let id = fresh_id idl (default_id gl decl) gl in id
+  | IntroAvoid idl -> 
+      (* this case must be compatible with [find_intro_names] below. *)
+      let id = fresh_id idl (default_id (pf_env gl) gl.sigma decl) gl in id
   | IntroBasedOn (id,idl) -> fresh_id idl id gl
   | IntroMustBe id        -> 
       let id' = fresh_id [] id gl in
       if id' <> id then error ((string_of_id id)^" is already used");
       id'
 
+(* Returns the names that would be created by intros, without doing
+   intros.  This function is supposed to be compatible with an
+   iteration of [find_name] above. As [default_id] checks the sort of
+   the type to build hyp names, we maintain an environment to be able
+   to type dependent hyps. *)
 let find_intro_names ctxt gl = 
-  List.rev 
-    (List.fold_right 
-    (fun decl idl -> find_name decl gl (IntroAvoid idl)::idl)
-    ctxt
-    [])
+  let _, res = List.fold_right 
+    (fun decl acc -> 
+      let wantedname,x,typdecl = decl in
+      let env,idl = acc in
+      let name = fresh_id_avoid idl (default_id env gl.sigma decl) in
+      let newenv = push_rel (wantedname,x,typdecl) env in
+      (* 	let newgl = List.hd ((fst (intro gl)).) in *)
+      (newenv,(name::idl)))
+    ctxt (pf_env gl , []) in
+  List.rev res 
 
 
 let build_intro_tac id = function
