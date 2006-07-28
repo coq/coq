@@ -21,18 +21,16 @@ open Coqinit
 
 let get_version_date () =
   try
-    let ch = open_in (Coq_config.coqtop^"/make.result") in
-    let l = input_line ch in
-    let i = String.index l ' ' in
-    let j = String.index_from l (i+1) ' ' in
-    "checked out on "^(String.sub l (i+1) (j-i-1))
-  with _ -> Coq_config.date
+    let ch = open_in (Coq_config.coqtop^"/revision") in
+    let ver = input_line ch in
+    let rev = input_line ch in
+      (ver,rev)
+  with _ -> (Coq_config.version,Coq_config.date)
 
 let print_header () =
-  Printf.printf "Welcome to Coq %s (%s)\n" 
-    Coq_config.version 
-    (get_version_date ());
-  flush stdout
+  let (ver,rev) = (get_version_date ()) in
+    Printf.printf "Welcome to Coq %s (%s)\n" ver rev;
+    flush stdout
 
 let memory_stat = ref false
 

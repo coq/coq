@@ -53,18 +53,24 @@ let version () =
   let date =
     if Glib.Utf8.validate Coq_config.date
     then Coq_config.date
-    else "<date not printable>"
-  in
-  Printf.sprintf 
-    "The Coq Proof Assistant, version %s (%s)\
-   \nConfigured on %s\
-   \nArchitecture %s running %s operating system\
-   \nGtk version is %s\
-   \nThis is the %s version (%s is the best one for this architecture and OS)\
-   \n"
-    Coq_config.version date Coq_config.compile_date
-    Coq_config.arch Sys.os_type
-    (let x,y,z = GMain.Main.version in Printf.sprintf "%d.%d.%d" x y z)
+    else "<date not printable>" in
+  let get_version_date () =
+    try
+      let ch = open_in (Coq_config.coqtop^"/revision") in
+      let ver = input_line ch in
+      let rev = input_line ch in
+	(ver,rev)
+    with _ -> (Coq_config.version,date) in
+  let (rev,ver) = get_version_date () in
+    Printf.sprintf 
+      "The Coq Proof Assistant, version %s (%s)\
+       \nArchitecture %s running %s operating system\
+       \nGtk version is %s\
+       \nThis is the %s version (%s is the best one for this architecture and OS)\
+       \n"
+      rev ver
+      Coq_config.arch Sys.os_type
+      (let x,y,z = GMain.Main.version in Printf.sprintf "%d.%d.%d" x y z)
     (if Mltop.get () = Mltop.Native then "native" else "bytecode") 
     (if Coq_config.best="opt" then "native" else "bytecode") 
 

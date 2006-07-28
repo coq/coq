@@ -37,7 +37,7 @@ NOARG:
 	@echo "For make to be verbose, add VERBOSE=1"
 
 # build and install the three subsystems: coq, coqide, pcoq
-world: coq coqide pcoq
+world: revision coq coqide pcoq
 
 install: install-coq install-coqide install-pcoq
 #install-manpages: install-coq-manpages install-pcoq-manpages
@@ -92,7 +92,6 @@ COQOPTS=$(GLOB) $(COQ_XML) $(VM) $(UNBOXEDVALUES)
 TIME=           # is "'time -p'" to get compilation time of .v 
 
 BOOTCOQTOP= $(TIME) $(BESTCOQTOP) -boot $(COQOPTS) 
-
 
 ###########################################################################
 # Objects files 
@@ -351,7 +350,12 @@ CINCLUDES= -I $(CAMLHLIB)
 CC=gcc
 AR=ar
 RANLIB=ranlib
-BYTECCCOMPOPTS=-fno-defer-pop -Wall -Wno-unused
+
+ifeq ($(CAMLVERSION),OCAML307)
+  CFLAGS=-fno-defer-pop -Wall -Wno-unused -DOCAML_307
+else
+  CFLAGS=-fno-defer-pop -Wall -Wno-unused
+endif
 
 # libcoqrun.a 
 

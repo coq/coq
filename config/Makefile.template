@@ -113,5 +113,21 @@ REALS=REALSOPT
 # CoqIde (no/byte/opt)
 HASCOQIDE=COQIDEOPT
 
+# Defining REVISION
+CHECKEDOUT=CHECKEDOUTSOURCETREE
+
+.PHONY: revision
+
+revision:
+ifeq ($(CHECKEDOUT),1)
+	- /bin/rm -f revision
+	sed -ne '/url/s/^.*\/\([^\/]\+\)"$$/\1/p' .svn/entries > revision
+	sed -ne '/revision/s/^.*"\([0-9]\+\)".*$$/r\1/p' .svn/entries >> revision
+endif
+
+archclean::
+	/bin/rm -f revision
+
 # make or sed are bogus and believe lines not terminating by a return
 # are inexistent
+
