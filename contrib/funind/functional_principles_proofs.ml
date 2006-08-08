@@ -1450,7 +1450,7 @@ let prove_principle_for_gen
     let wf_tac = 
       if is_mes 
       then 
-	Recdef.tclUSER_if_not_mes 
+	(fun b -> Recdef.tclUSER_if_not_mes b None)
       else fun _ -> prove_with_tcc tcc_lemma_ref []
     in
     let start_tac g = 

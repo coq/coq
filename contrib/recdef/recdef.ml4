@@ -574,11 +574,11 @@ let hyp_terminates func =
 	     
 
 
-let tclUSER_if_not_mes is_mes = 
+let tclUSER_if_not_mes is_mes names_to_suppress = 
   if is_mes 
   then 
     tclCOMPLETE (h_apply (delayed_force well_founded_ltof,Rawterm.NoBindings))
-  else tclUSER is_mes None
+  else tclUSER is_mes names_to_suppress
 
 let start is_mes input_type ids args_id relation rec_arg_num rec_arg_id tac wf_tac : tactic = 
   begin 
@@ -631,7 +631,7 @@ let start is_mes input_type ids args_id relation rec_arg_num rec_arg_id tac wf_t
 	       )
 	       [ 
 		 (* interactive proof of the well_foundness of the relation *) 
-		 wf_tac is_mes;
+		 wf_tac is_mes (Some args_id);
 		 (* well_foundness -> Acc for any element *)
 		 observe_tac 
 		   "apply wf_thm" 
