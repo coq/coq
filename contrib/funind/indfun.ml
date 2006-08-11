@@ -258,7 +258,7 @@ let derive_inversion fix_names =
       (str "Cannot define correction of function and graph" ++ Cerrors.explain_exn e)
 	  
 let generate_principle 
-    do_built fix_rec_l recdefs  interactive_proof parametrize 
+    is_general do_built fix_rec_l recdefs  interactive_proof parametrize 
     (continue_proof : int -> Names.constant array -> Term.constr array -> int -> 
       Tacmach.tactic) : unit =
   let names = List.map (function (name,_,_,_,_) -> name) fix_rec_l in
@@ -308,7 +308,7 @@ let generate_principle
 	    0
 	    fix_rec_l
 	in 
-	Array.iter add_Function funs_kn;
+	Array.iter (add_Function is_general) funs_kn;
 	()
       end
   with e -> 
@@ -442,6 +442,7 @@ let do_generate_principle register_built interactive_proof fixpoint_exprl  =
       | [((name,Some (Wf (wf_rel,wf_x)),args,types,body))] -> 
 	  let pre_hook = 
 	    generate_principle 
+	      true
 	      register_built
 	      fixpoint_exprl 
 	      recdefs
@@ -453,6 +454,7 @@ let do_generate_principle register_built interactive_proof fixpoint_exprl  =
       | [((name,Some (Mes (wf_mes,wf_x)),args,types,body))] -> 
 	  let pre_hook = 
 	    generate_principle 
+	      true
 	      register_built
 	      fixpoint_exprl 
 	      recdefs
@@ -504,6 +506,7 @@ let do_generate_principle register_built interactive_proof fixpoint_exprl  =
 	  let is_rec = List.exists (is_rec fix_names) recdefs in
 	  if register_built then register_struct is_rec old_fixpoint_exprl;
 	  generate_principle
+	    false
 	    register_built
 	    fixpoint_exprl
 	    recdefs 
@@ -709,7 +712,7 @@ let make_graph (f_ref:global_reference) =
 	(* We register the infos *)
 	let mp,dp,_ = repr_con c in 
 	List.iter 
-	  (fun (id,_,_,_,_) -> add_Function (make_con mp dp (label_of_id id))) 
+	  (fun (id,_,_,_,_) -> add_Function false (make_con mp dp (label_of_id id))) 
 	  expr_list
 
 

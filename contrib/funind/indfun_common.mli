@@ -92,12 +92,13 @@ type function_info =
       rect_lemma : constant option;
       rec_lemma : constant option;
       prop_lemma : constant option;
+      is_general : bool;
     }
 
 val find_Function_infos : constant -> function_info
 val find_Function_of_graph : inductive -> function_info
 (* WARNING: To be used just after the graph definition !!! *)
-val add_Function : constant -> unit
+val add_Function : bool -> constant -> unit
 
 val update_Function : function_info -> unit 
 

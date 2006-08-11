@@ -274,6 +274,7 @@ type function_info =
       rect_lemma : constant option;
       rec_lemma : constant option;
       prop_lemma : constant option;
+      is_general : bool; (* Has this function been defined using general recursive definition *)
     }
       
 
@@ -333,6 +334,7 @@ let subst_Function (_,subst,finfos) =
       rect_lemma = rect_lemma' ;
       rec_lemma = rec_lemma';
       prop_lemma = prop_lemma';
+      is_general = finfos.is_general
     }
 
 let classify_Function (_,infos) = Libobject.Substitute infos
@@ -368,6 +370,7 @@ let discharge_Function (_,finfos) =
 	   rect_lemma = rect_lemma';
 	   rec_lemma = rec_lemma';
 	   prop_lemma = prop_lemma' ;
+	   is_general = finfos.is_general
 	 }    
 
 open Term
@@ -442,7 +445,7 @@ let update_Function finfo =
   Lib.add_anonymous_leaf (in_Function finfo)
       
   
-let add_Function f = 
+let add_Function is_general f = 
   let f_id = id_of_label (con_label f) in 
   let equation_lemma = find_or_none (mk_equation_id f_id)
   and correctness_lemma = find_or_none (mk_correct_id f_id) 
@@ -462,7 +465,9 @@ let add_Function f =
       rect_lemma = rect_lemma;
       rec_lemma = rec_lemma;
       prop_lemma = prop_lemma;
-      graph_ind = graph_ind
+      graph_ind = graph_ind;
+      is_general = is_general
+      
     }
   in
   update_Function finfos

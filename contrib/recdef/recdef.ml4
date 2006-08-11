@@ -287,14 +287,14 @@ let simpl_iter () =
     onConcl
     
 let tclUSER is_mes l g = 
-  let b,l = 
+  let clear_tac = 
     match l with 
-	None -> true,[]
-      | Some l -> false,l
+      | None -> h_clear true []
+      | Some l -> tclMAP (fun id -> tclTRY (h_clear false [id])) (List.rev l)
   in
   tclTHENSEQ 
     [
-      (h_clear b l);
+      clear_tac;
       if is_mes 
       then unfold_in_concl [([], evaluable_of_global_reference (delayed_force ltof_ref))]
       else tclIDTAC
@@ -631,7 +631,7 @@ let start is_mes input_type ids args_id relation rec_arg_num rec_arg_id tac wf_t
 	       )
 	       [ 
 		 (* interactive proof of the well_foundness of the relation *) 
-		 wf_tac is_mes (Some args_id);
+		 observe_tac "wf_tac" (wf_tac is_mes (Some args_id));
 		 (* well_foundness -> Acc for any element *)
 		 observe_tac 
 		   "apply wf_thm" 

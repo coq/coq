@@ -179,10 +179,11 @@ let nf_betaiotazeta = (* Reductionops.local_strong Reductionops.whd_betaiotazeta
 let change_eq env sigma hyp_id (context:Sign.rel_context) x t end_of_type  = 
   let nochange msg  = 
     begin 
-(*       observe (str ("Not treating ( "^msg^" )") ++ pr_lconstr t    ); *)
+      observe (str ("Not treating ( "^msg^" )") ++ pr_lconstr t    );
       failwith "NoChange"; 
     end
   in    
+  let eq_constr = Reductionops.is_conv env sigma in 
   if not (noccurn 1 end_of_type)
   then nochange "dependent"; (* if end_of_type depends on this term we don't touch it  *)
     if not (isApp t) then nochange "not an equality";
@@ -194,6 +195,7 @@ let change_eq env sigma hyp_id (context:Sign.rel_context) x t end_of_type  =
     in 
     if not (closed0 t1) then nochange "not a closed lhs";    
     let rec compute_substitution sub t1 t2 = 
+      observe (str "compute_substitution : " ++ pr_lconstr t1 ++ str " === " ++ pr_lconstr t2);
       if isRel t2 
       then 
 	let t2 = destRel t2  in 
@@ -499,7 +501,7 @@ let clean_goal_with_heq ptes_infos continue_tac dyn_infos  =
     tclTHENLIST 
       [
 	tac ;
-	(continue_tac new_infos)
+	observe_tac "clean_hyp_with_heq continue" (continue_tac new_infos)
       ]
       g    
 
@@ -779,7 +781,7 @@ let build_proof
       finish_proof dyn_infos)
   in
   observe_tac "build_proof"
-    (build_proof do_finish_proof dyn_infos) 
+    (build_proof (clean_goal_with_heq ptes_infos do_finish_proof) dyn_infos) 
 
 
 
