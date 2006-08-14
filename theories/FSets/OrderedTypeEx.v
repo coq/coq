@@ -66,7 +66,7 @@ Module Nat_as_OT <: UsualOrderedType.
     constructor 1; auto.
     constructor 2; auto.
     intro; constructor 3; auto.
-  Qed.
+  Defined.
 
 End Nat_as_OT.
 
@@ -182,7 +182,7 @@ Module N_as_OT <: UsualOrderedType.
    destruct (Nle x y); auto.
    destruct (x ?= y)%N; simpl; try discriminate.
    intros (H0,_); elim H0; auto.
-  Qed.
+  Defined.
 
 End N_as_OT.
 
@@ -242,7 +242,7 @@ Module PairOrderedType(O1 O2:OrderedType) <: OrderedType.
  apply EQ; unfold eq; auto.
  apply GT; unfold lt; auto.
  apply GT; unfold lt; auto.
- Qed.
+ Defined.
 
 End PairOrderedType.
 
