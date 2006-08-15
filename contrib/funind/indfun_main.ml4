@@ -214,7 +214,7 @@ END
 (* FINDUCTION *)
 
 (* comment this line to see debug msgs *)
-(* let msg x = () ;; let pr_lconstr c = str "" *)
+let msg x = () ;; let pr_lconstr c = str ""
   (* uncomment this to see debugging *)
 let prconstr c =  msg (str"  " ++ Printer.pr_lconstr c ++ str"\n")
 let prlistconstr lc = List.iter prconstr lc
@@ -266,6 +266,55 @@ let rec hdMatchSub inu (test: constr -> bool) : fapp_info list =
     max_rel = max_rel; onlyvars = List.for_all isVar args } 
     ::subres
 
+let mkEq typ c1 c2 = 
+  mkApp (Coqlib.build_coq_eq(),[| typ; c1; c2|])
+
+
+let poseq_unsafe idunsafe cstr gl =
+  let typ = Tacmach.pf_type_of gl cstr in
+  tclTHEN
+    (Tactics.letin_tac true (Name idunsafe) cstr allClauses)
+    (tclTHENFIRST 
+      (Tactics.assert_as true IntroAnonymous (mkEq typ (mkVar idunsafe) cstr)) 
+      Tactics.reflexivity)
+    gl
+  
+
+let poseq id cstr gl =
+  let x = Tactics.fresh_id [] id gl in
+  poseq_unsafe x cstr gl
+
+(* dirty? *)
+
+let list_constr_largs = ref []
+
+let rec poseq_list_ids_rec lcstr gl =
+  match lcstr with
+    | [] -> tclIDTAC gl
+    | c::lcstr' -> 
+	match kind_of_term c with
+	  | Var _ -> 
+	      (list_constr_largs:=c::!list_constr_largs ; poseq_list_ids_rec lcstr' gl)
+	  | _ -> 
+	      let _ = prstr "c = " in
+	      let _ = prconstr c in
+	      let _ = prstr "\n" in
+	      let typ = Tacmach.pf_type_of gl c in
+	      let cname = Termops.id_of_name_using_hdchar (Global.env()) typ Anonymous in
+	      let x = Tactics.fresh_id [] cname gl in
+	      let _ = list_constr_largs:=mkVar x :: !list_constr_largs in
+	      let _ = prstr " list_constr_largs = " in
+	      let _ = prlistconstr !list_constr_largs in
+	      let _ = prstr "\n" in
+
+	      tclTHEN
+		(poseq_unsafe x c)
+		(poseq_list_ids_rec lcstr')
+		gl
+
+let poseq_list_ids lcstr gl = 
+  let _ = list_constr_largs := [] in
+  poseq_list_ids_rec lcstr gl
 
 (** [find_fapp test g] returns the list of [app_info] of all calls to
     functions that satisfy [test] in the conclusion of goal g. Trivial
@@ -296,11 +345,17 @@ let finduction (oid:identifier option) (heuristic: fapp_info list -> fapp_info l
   if List.length ordered_info_list = 0 then Util.error "function not found in goal\n";
   let taclist: Proof_type.tactic list = 
     List.map 
-      (fun info -> 
-	(tclTHEN 
-	  (functional_induction true (applist (info.fname, info.largs)) 
-	    None IntroAnonymous) 
+      (fun info ->
+	(tclTHEN
+	  (tclTHEN (poseq_list_ids info.largs)
+	    (
+	      fun gl -> 
+		  (functional_induction 
+		    true (applist (info.fname, List.rev !list_constr_largs)) 
+		    None IntroAnonymous) gl)) 
 	  nexttac)) ordered_info_list in
+  (* we try each (f t u v) until one does not fail *)
+  (* TODO: try also to mix functional schemes *)
   tclFIRST taclist g
 
 
@@ -313,9 +368,8 @@ let chose_heuristic (oi:int option) : fapp_info list -> fapp_info list =
   match oi with
     | Some i -> (fun l -> [ List.nth l (i-1) ]) (* occurrence was given by the user *)
     | None -> 
-	(* Default heuristic: keep only occurrence where all arguments
+	(* Default heuristic: put first occurrences where all arguments
 	   are *bound* (meaning already introduced) variables *)
-	(* TODO: put other funcalls at the end instead of deleting them *)
 	let ordering x y =
 	  if x.free && x.onlyvars && y.free && y.onlyvars then 0 (* both pertinent *)
 	  else if x.free && x.onlyvars then -1
@@ -323,6 +377,7 @@ let chose_heuristic (oi:int option) : fapp_info list -> fapp_info list =
 	  else 0 (* both not pertinent *)
 	in
 	List.sort ordering
+
 
 
 TACTIC EXTEND finduction
@@ -351,5 +406,11 @@ TACTIC EXTEND fauto
 	finduction None heuristic tclIDTAC
       ]
 
+END
+
+
+TACTIC EXTEND poseq
+  [ "poseq" ident(x) constr(c) ] -> 
+      [ poseq x c ]
 END
 
