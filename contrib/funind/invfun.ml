@@ -424,11 +424,10 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
       let params_bindings,avoid =
 	List.fold_left2
 	  (fun (bindings,avoid) (x,_,_) p ->
-	     let id = (* Termops.next_global_ident_away false (Nameops.out_name x) avoid *) 
-	       Nameops.next_ident_away (Nameops.out_name x) avoid in
+	     let id = Nameops.next_ident_away (Nameops.out_name x) avoid in
 	     (dummy_loc,Rawterm.NamedHyp id,p)::bindings,id::avoid
 	  )
-	  ([],[])
+	  ([],pf_ids_of_hyps g)
 	  princ_infos.params
 	  (List.rev params)
       in
@@ -436,7 +435,6 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	List.rev (fst  (List.fold_left2
 	  (fun (bindings,avoid) (x,_,_) p ->
 	     let id = Nameops.next_ident_away (Nameops.out_name x) avoid in 
-(* Termops.next_global_ident_away false (Nameops.out_name x) avoid in *)
 	     (dummy_loc,Rawterm.NamedHyp id,nf_zeta p)::bindings,id::avoid)
 	  ([],avoid)
 	  princ_infos.predicates

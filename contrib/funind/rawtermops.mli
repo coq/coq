@@ -112,3 +112,6 @@ val   ids_of_pat : cases_pattern -> Names.Idset.t
    removing let_in construction in a rawterm 
 *)
 val zeta_normalize : Rawterm.rawconstr -> Rawterm.rawconstr
+
+
+val expand_as : rawconstr -> rawconstr

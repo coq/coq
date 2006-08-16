@@ -789,7 +789,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 	    avoid
 	    matched_expr
 	in
-	(* We know create the precondition of this branch i.e.
+	(* We now create the precondition of this branch i.e.
 
 	   1- the list of variable appearing in the different patterns of this branch and 
 	      the list of equation stating than el = patl (List.flatten ...)
@@ -1085,7 +1085,7 @@ let build_inductive
   let funsargs = Array.of_list funsargs in 
   let returned_types = Array.of_list returned_types in
   (* alpha_renaming of the body to prevent variable capture during manipulation *)
-  let rtl_alpha = List.map (function rt ->  (alpha_rt [] rt) ) rtl in
+  let rtl_alpha = List.map (function rt ->  expand_as (alpha_rt [] rt)) rtl in
   let rta = Array.of_list rtl_alpha in
   (*i The next call to mk_rel_id is valid since we are constructing the graph
     Ensures by: obvious

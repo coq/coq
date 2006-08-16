@@ -745,8 +745,31 @@ let build_and_l l =
 	  ],nb+1
   in f l
 
+
+let is_rec_res id = 
+  let rec_res_name = string_of_id rec_res_id   in 
+  let id_name = string_of_id id in 
+  try 
+    String.sub id_name 0 (String.length rec_res_name) = rec_res_name 
+  with _ -> false
+
+let clear_goals = 
+  let rec clear_goal t = 
+    match kind_of_term t with 
+      | Prod(Name id as na,t,b) -> 
+	  let b' = clear_goal b in 
+	  if noccurn 1 b' && (is_rec_res id) 
+	  then pop b' 
+	  else if b' == b then t 
+	  else mkProd(na,t,b')
+      | _ -> map_constr clear_goal t
+  in 
+  List.map clear_goal 
+
+
 let build_new_goal_type () = 
   let sub_gls_types = get_current_subgoals_types () in 
+  let sub_gls_types = clear_goals sub_gls_types in 
   let res = build_and_l sub_gls_types in 
   res
   
