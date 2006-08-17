@@ -2170,9 +2170,11 @@ and subst_tacarg subst = function
       TacExternal (_loc,com,req,List.map (subst_tacarg subst) la)
   | (TacVoid | IntroPattern _ | Integer _ | TacFreshId _) as x -> x
   | Tacexp t -> Tacexp (subst_tactic subst t)
-  | TacDynamic(_,t) as x ->
+  | TacDynamic(the_loc,t) as x ->
       (match tag t with
-	| "tactic" | "value" | "constr" -> x
+	| "tactic" | "value" -> x
+        | "constr" -> 
+          TacDynamic(the_loc, constr_in (subst_mps subst (constr_out t)))
 	| s -> anomaly_loc (dloc, "Tacinterp.val_interp",
                  str "Unknown dynamic: <" ++ str s ++ str ">"))
 
