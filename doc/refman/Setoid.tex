@@ -493,12 +493,14 @@ unprefixed form.
   ~\zeroone{\texttt{using relation} \textit{term}}\\
   ~\zeroone{\texttt{generate side conditions}
   \textit{term}$_1$ \ldots \textit{term}$_n$}\\
+  ~\zeroone{\texttt{by} \textit{tactic}}
 \end{verse}
 
-The \texttt{generate side conditions} and \texttt{using relation} arguments cannot be
-passed to the unprefixed form. The latter argument tells the tactic what
-parametric relation should be used to replace the first tactic argument
-with the second one. If omitted, it defaults to Leibniz equality.
+The  \texttt{generate  side  conditions} and  \texttt{using  relation}
+arguments cannot be passed to the unprefixed form. The latter argument
+tells the  tactic what parametric  relation should be used  to replace
+the first tactic argument with the second one. If omitted, it defaults
+to Leibniz equality.
 
 Every derived tactic that is based on the unprefixed forms of the tactics
 considered above will also work up to user defined relations. For instance,

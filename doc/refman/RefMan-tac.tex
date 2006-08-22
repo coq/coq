@@ -725,11 +725,12 @@ can be either the conclusion, or an hypothesis. In the case of a
 defined hypothesis it is possible to specify if the conversion should
 occur on the type part, the body part or both (default).
 
-\index{Clauses}
-Clauses are written after a conversion tactic (tactic
-\texttt{set}~\ref{tactic:set} also uses clauses) and are introduced by
-the keyword \texttt{in}. If no clause is provided, the default is to
-perform the conversion only in the conclusion.
+\index{Clauses} Clauses are written after a conversion tactic (tactics
+\texttt{set}~\ref{tactic:set},          \texttt{rewrite}~\ref{rewrite},
+\texttt{replace}~\ref{tactic:replace}                               and
+\texttt{autorewrite}~\ref{tactic:autorewrite}  also  use clauses)  and
+are introduced by  the keyword \texttt{in}. If no  clause is provided,
+the default is to perform the conversion only in the conclusion.
 
 The syntax and description of the various clauses follows:
 \begin{description}
@@ -1603,6 +1604,7 @@ This tactic acts like {\tt replace {\term$_1$} with {\term$_2$}}
 (see below).
 
 \subsection{\tt replace {\term$_1$} with {\term$_2$}
+\label{tactic:replace}
 \tacindex{replace \dots\ with}}
 
 This tactic applies to any goal. It replaces all free occurrences of
@@ -1618,21 +1620,23 @@ n}| assumption || symmetry; try assumption]}.
 \end{ErrMsgs}
 
 \begin{Variants}
-  
-\item {\tt replace {\term$_1$} with {\term$_2$} in \ident}\\
-  This replaces {\term$_1$} with {\term$_2$} in the hypothesis named
-  {\ident}, and generates the subgoal {\term$_2$}{\tt =}{\term$_1$}. 
-
-%   \begin{ErrMsgs}
-%   \item \errindex{No such hypothesis} : {\ident}
-%   \item \errindex{Nothing to rewrite in {\ident}}
-%   \end{ErrMsgs}
-
-\item {\tt replace {\term$_1$} with  {\term$_2$} by \tac}\\ This acts as
-  {\tt  replace {\term$_1$}  with {\term$_2$}}  but try  to  solve the
+\item {\tt replace {\term$_1$} with {\term$_2$} by \tac}\\ This acts
+  as {\tt replace {\term$_1$} with {\term$_2$}} but try to solve the
   generated subgoal {\tt \term$_2$=\term$_1$} using {\tt \tac}.
-\item {\tt replace {\term$_1$} with {\term$_2$} in \ident by \tac}\\
-  This acts as {\tt replace {\term$_1$} with {\term$_2$} in \ident} but try to solve the generated subgoal {\tt \term$_2$=\term$_1$} using {\tt \tac}.
+\item {\tt replace {\term}}\\ Replace {\term} with {\term'} using the
+  first assumption which type has the form {\tt \term=\term'} or {\tt
+    \term'=\term}
+\item {\tt replace -> {\term}}\\ Replace {\term} with {\term'} using the
+  first assumption which type has the form {\tt \term=\term'}
+\item {\tt replace <- {\term}}\\ Replace {\term} with {\term'} using the
+  first assumption which type has the form {\tt \term'=\term}
+\item {\tt replace {\term$_1$} with {\term$_2$} \textit{clause} }\\
+    {\tt replace {\term$_1$} with {\term$_2$} \textit{clause} by \tac }\\ 
+    {\tt replace {\term} \textit{clause}}\\ 
+    {\tt replace -> {\term} \textit{clause}}\\ 
+    {\tt replace -> {\term} \textit{clause}}\\ 
+    Act as before but the replacements take place in \textit{clause}~\ref{Conversion-tactics} an not only in the conclusion of the goal.\\
+    The  \textit{clause} arg must  not contain  any \texttt{type  of} nor  \texttt{value  of}.
 \end{Variants}
 
 \subsection{\tt reflexivity
@@ -2780,6 +2784,7 @@ Reset Initial.
 \end{coq_eval}
 
 \subsection{\tt autorewrite with \ident$_1$ \dots \ident$_n$.
+\label{tactic:autorewrite}
 \tacindex{autorewrite}}
 
 This tactic \footnote{The behavior of this tactic has much changed compared to
@@ -2806,9 +2811,17 @@ command.
 Performs, in the same way, all the rewritings of the bases {\tt $ident_1$ $...$
 $ident_n$} applying {\tt \tac} to the main subgoal after each rewriting step.
 
-\item \texttt{autorewrite with {\ident} in {\qualid}}
+\item \texttt{autorewrite with {\ident$_1$} \dots \ident$_n$ in {\qualid}}
 
   Performs all the rewritings in hypothesis {\qualid}.
+\item \texttt{autorewrite with {\ident$_1$} \dots \ident$_n$ in {\qualid}}
+
+  Performs all  the rewritings  in hypothesis {\qualid}  applying {\tt
+    \tac} to the main subgoal after each rewriting step.
+
+\item \texttt{autorewrite with {\ident$_1$} \dots \ident$_n$ in \textit{clause}}
+  Performs all  the rewritings  in the clause \textit{clause}. \\
+  The  \textit{clause} arg must  not contain  any \texttt{type  of} nor  \texttt{value  of}.
 
 \end{Variant}
 

@@ -497,6 +497,8 @@ let xlate_hyp_location =
   | (_, MetaId _),_ -> 
       xlate_error "MetaId not supported in xlate_hyp_location (should occur only in quotations)"
 
+
+
 let xlate_clause cls =
   let hyps_info =
     match cls.onhyps with
@@ -972,22 +974,36 @@ and xlate_tac =
     | TacRight bindl -> CT_right (xlate_bindings bindl)
     | TacSplit (false,bindl) -> CT_split (xlate_bindings bindl)
     | TacSplit (true,bindl) -> CT_exists (xlate_bindings bindl)
-    | TacExtend (_,"replace", [c1; c2;id_opt;tac_opt]) ->
+    | TacExtend (_,"replace", [c1; c2;cl;tac_opt]) ->
 	let c1 = xlate_formula (out_gen rawwit_constr c1) in
 	let c2 = xlate_formula (out_gen rawwit_constr c2) in
-	let id_opt = 
-	  match out_gen Extratactics.rawwit_in_arg_hyp id_opt with 
-	  | None -> ctv_ID_OPT_NONE
-	  | Some (_,id) ->   ctf_ID_OPT_SOME (xlate_ident id)
-	in
+	let cl = 
+	  (* J.F. : 18/08/2006 
+	     Hack to coerce the "clause" argument of replace to a real clause 
+	     To be remove if we can reuse the clause grammar entrie defined in g_tactic
+	  *)
+	  let cl_as_clause = Extraargs.raw_in_arg_hyp_to_clause (out_gen Extraargs.rawwit_in_arg_hyp cl) in 
+	  let cl_as_xlate_arg = 
+	    {cl_as_clause with 
+	       Tacexpr.onhyps = 
+		option_map 
+		  (fun l -> 
+		     List.map (fun ((l,id),hyp_flag) -> ((l, Tacexpr.AI ((),id)) ,hyp_flag)) l
+		  )
+		  cl_as_clause.Tacexpr.onhyps
+	    }
+	  in
+	  cl_as_xlate_arg
+	in 
+	let cl = xlate_clause cl in 
 	let tac_opt = 
-	  match out_gen (Extratactics.rawwit_by_arg_tac) tac_opt with
+	  match out_gen (Extraargs.rawwit_by_arg_tac) tac_opt with
 	    | None -> CT_coerce_NONE_to_TACTIC_OPT  CT_none
 	    | Some tac ->
 		let tac =  xlate_tactic tac in
 		CT_coerce_TACTIC_COM_to_TACTIC_OPT tac
 	in 
-	CT_replace_with (c1, c2,id_opt,tac_opt)
+	CT_replace_with (c1, c2,cl,tac_opt)
     | TacRewrite(b,cbindl,cl) -> 
      let cl = xlate_clause cl 
      and c = xlate_formula (fst cbindl) 

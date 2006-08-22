@@ -124,3 +124,125 @@ ARGUMENT EXTEND hloc
    
  END
 
+
+
+
+
+
+
+(* Julien: Mise en commun des differentes version de replace with in by *)
+
+let pr_by_arg_tac _prc _prlc prtac opt_c = 
+  match opt_c with 
+    | None -> mt ()
+    | Some t -> spc () ++ hov 2 (str "by" ++ spc () ++ prtac (3,Ppextend.E) t)
+
+ARGUMENT EXTEND by_arg_tac
+  TYPED AS tactic_opt
+  PRINTED BY pr_by_arg_tac
+| [ "by" tactic3(c) ] -> [ Some c ]
+| [ ] -> [ None ]
+END
+ 
+
+let pr_in_hyp  pr_id (lo,concl) :  Pp.std_ppcmds = 
+  match lo,concl with 
+    | Some [],true -> mt ()
+    | None,true -> str "in" ++ spc () ++ str "*"
+    | None,false -> str "in" ++ spc () ++ str "*" ++ spc () ++ str "|-" 
+    | Some l,_ -> 
+	str "in" ++ spc () ++ 
+	  Util.prlist_with_sep spc pr_id l ++ 
+	  match concl with 
+	    | true -> spc () ++ str "|-" ++ spc () ++ str "*"
+	    | _ -> mt ()
+
+
+let pr_in_arg_hyp _ _ _ = pr_in_hyp (fun (_,id) -> Ppconstr.pr_id id)
+
+let pr_in_arg_hyp_typed  _ _  _  = pr_in_hyp Ppconstr.pr_id 
+
+
+let pr_var_list_gen pr_id = Util.prlist_with_sep (fun () -> str ",") pr_id 
+
+let pr_var_list_typed _ _ _ =  pr_var_list_gen Ppconstr.pr_id 
+
+let pr_var_list _ _ _ = pr_var_list_gen (fun (_,id) -> Ppconstr.pr_id id)
+
+
+ARGUMENT EXTEND comma_var_lne 
+  TYPED AS var list 
+  PRINTED BY pr_var_list_typed
+  RAW_TYPED AS var list 
+  RAW_PRINTED BY pr_var_list
+  GLOB_TYPED AS var list
+  GLOB_PRINTED BY pr_var_list
+| [ var(x) ] -> [ [x] ]
+| [ var(x) "," comma_var_lne(l) ] -> [x::l]
+END
+
+ARGUMENT EXTEND comma_var_l 
+  TYPED AS var list 
+  PRINTED BY pr_var_list_typed
+  RAW_TYPED AS var list 
+  RAW_PRINTED BY pr_var_list
+  GLOB_TYPED AS var list
+  GLOB_PRINTED BY pr_var_list
+| [  comma_var_lne(l) ] -> [l]
+| [] -> [ [] ]
+END
+
+let pr_in_concl _ _ _ = function true -> str "|- " ++ spc () ++ str "*" | _ -> str "|-" 
+
+ARGUMENT EXTEND inconcl  
+  TYPED AS bool 
+  PRINTED BY pr_in_concl
+| [ "|-" "*" ] -> [ true ]
+| [ "|-" ] -> [ false ]
+END
+
+
+
+ARGUMENT EXTEND in_arg_hyp
+  TYPED AS var list option * bool
+  PRINTED BY pr_in_arg_hyp_typed
+  RAW_TYPED AS var list option * bool 
+  RAW_PRINTED BY pr_in_arg_hyp
+  GLOB_TYPED AS var list option * bool
+  GLOB_PRINTED BY pr_in_arg_hyp
+| [ "in" "*" ] -> [(None,true)]
+| [ "in" "*" inconcl_opt(b) ] -> [let onconcl = match b with Some b -> b | None -> true in (None,onconcl)]
+| [ "in" comma_var_l(l) inconcl_opt(b) ] -> [ let onconcl = match b with Some b -> b | None -> false in 
+					      Some l, onconcl
+					   ]
+| [ ] -> [ (Some [],true) ]
+END
+
+
+let gen_in_arg_hyp_to_clause trad_id (hyps ,concl) : Tacticals.clause = 
+  {Tacexpr.onhyps=
+   Util.option_map 
+     (fun l -> 
+	List.map 
+	  (fun id -> ( ([],trad_id id) ,Tacexpr.InHyp))
+	  l
+     )
+     hyps;
+   Tacexpr.onconcl=concl;
+   Tacexpr.concl_occs = []}
+
+
+let raw_in_arg_hyp_to_clause = gen_in_arg_hyp_to_clause snd 
+let glob_in_arg_hyp_to_clause = gen_in_arg_hyp_to_clause (fun x -> x) 
+
+
+let pr_term_dir _ _ _ = function | true -> str "->" | false -> str  "<-" 
+
+
+ARGUMENT EXTEND replace_term_dir 
+  TYPED AS bool 
+  PRINTED BY pr_term_dir 
+  | ["->"] -> [ true ]
+  | ["<-"] -> [ false ]
+END
+

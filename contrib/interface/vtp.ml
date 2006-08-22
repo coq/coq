@@ -1711,7 +1711,7 @@ and fTACTIC_COM = function
 | CT_replace_with(x1, x2,x3,x4) ->
    fFORMULA x1;
    fFORMULA x2;
-   fID_OPT x3;
+   fCLAUSE x3;
    fTACTIC_OPT x4;
    fNODE "replace_with" 4
 | CT_rewrite_lr(x1, x2, x3) ->

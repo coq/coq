@@ -21,7 +21,7 @@ and ct_BINDING =
     CT_binding of ct_ID_OR_INT * ct_FORMULA
 and ct_BINDING_LIST =
     CT_binding_list of ct_BINDING list
-and ct_BOOL =
+and t_BOOL =
     CT_false
   | CT_true
 and ct_CASE =
@@ -684,7 +684,7 @@ and ct_TACTIC_COM =
   | CT_reflexivity
   | CT_rename of ct_ID * ct_ID
   | CT_repeat of ct_TACTIC_COM
-  | CT_replace_with of ct_FORMULA * ct_FORMULA * ct_ID_OPT * ct_TACTIC_OPT
+  | CT_replace_with of ct_FORMULA * ct_FORMULA * ct_CLAUSE * ct_TACTIC_OPT
   | CT_rewrite_lr of ct_FORMULA * ct_SPEC_LIST * ct_CLAUSE
   | CT_rewrite_rl of ct_FORMULA * ct_SPEC_LIST * ct_CLAUSE
   | CT_right of ct_SPEC_LIST

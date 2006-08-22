@@ -134,7 +134,7 @@ let general_multi_rewrite l2r c cl =
 	  (try_do_hyps l)
   in 
   if cl.concl_occs <> [] then 
-    error "The \"at\" syntax isn't available yet for the rewrite tactic"
+    error "The \"at\" syntax isn't available yet for the rewrite/replace tactic"
   else 
     tclTHENFIRST 
       (if cl.onconcl then general_rewrite_bindings l2r c else tclIDTAC)
@@ -182,7 +182,12 @@ let rewriteRL_clause = function
    tac : Used to prove the equality c1 = c2 
    gl : goal *)
 
-let abstract_replace clause c2 c1 unsafe tac gl =
+let multi_replace clause c2 c1 unsafe try_prove_eq_opt gl = 
+  let try_prove_eq = 
+    match try_prove_eq_opt with 
+      | None -> tclIDTAC
+      | Some tac ->  tclTRY (tclCOMPLETE tac)
+  in
   let t1 = pf_type_of gl c1 
   and t2 = pf_type_of gl c2 in
   if unsafe or (pf_conv_x gl t1 t2) then
@@ -192,34 +197,28 @@ let abstract_replace clause c2 c1 unsafe tac gl =
     tclTHENS (assert_tac false Anonymous eq)
       [onLastHyp (fun id -> 
 	tclTHEN 
-	  (tclTRY (rewriteRL_clause clause (mkVar id,NoBindings)))
+	  (tclTRY (general_multi_rewrite false (mkVar id,NoBindings) clause))
 	  (clear [id]));
        tclFIRST
 	 [assumption;
 	  tclTHEN (apply sym) assumption;
-	  tclTRY (tclCOMPLETE tac)
+	  try_prove_eq
 	 ]
       ] gl
   else
     error "terms do not have convertible types"
+  
 
+let replace c2 c1 gl = multi_replace onConcl c2 c1 false None gl
 
-let replace c2 c1 gl = abstract_replace None c2 c1 false tclIDTAC gl
+let replace_in id c2 c1 gl = multi_replace (onHyp id) c2 c1 false None gl
 
-let replace_in id c2 c1 gl = abstract_replace (Some id) c2 c1 false tclIDTAC gl
+let replace_by c2 c1 tac gl = multi_replace onConcl c2 c1 false (Some tac) gl
 
-let replace_by c2 c1 tac gl = abstract_replace None c2 c1 false tac gl
+let replace_in_by id c2 c1 tac gl = multi_replace (onHyp id) c2 c1 false (Some tac) gl
 
-let replace_in_by id c2 c1 tac gl = abstract_replace (Some id) c2 c1 false tac gl
-
-
-let new_replace c2 c1 id tac_opt gl = 
-  let tac = 
-    match tac_opt with 
-      | Some tac -> tac 
-      | _ -> tclIDTAC
-  in
-  abstract_replace id c2 c1 false tac gl
+let replace_in_clause_maybe_by c2 c1 cl tac_opt gl = 
+  multi_replace cl c2 c1 false tac_opt gl
 
 (* End of Eduardo's code. The rest of this file could be improved
    using the functions match_with_equation, etc that I defined
@@ -1147,27 +1146,9 @@ let subst_all gl =
   let ids = list_uniquize ids in
   subst ids gl
 
+
 (* Rewrite the first assumption for which the condition faildir does not fail 
    and gives the direction of the rewrite *)
-
-let rewrite_assumption_cond faildir gl =
-   let rec arec = function
-      | [] -> error "No such assumption"
-      | (id,_,t)::rest -> 
-	  (try let dir = faildir t gl in 
-	       general_rewrite dir (mkVar id) gl
-	   with Failure _ | UserError _  ->  arec rest)
-   in arec (pf_hyps gl)
-
-
-let rewrite_assumption_cond_in faildir hyp gl =
-   let rec arec = function
-      | [] -> error "No such assumption"
-      | (id,_,t)::rest -> 
-	  (try let dir = faildir t gl in 
-	       general_rewrite_in dir hyp (mkVar id) gl
-	   with Failure _ | UserError _ ->  arec rest)
-   in arec (pf_hyps gl)
 
 let cond_eq_term_left c t gl =
   try
@@ -1189,6 +1170,48 @@ let cond_eq_term c t gl =
     else failwith "not convertible"
   with PatternMatchingFailure -> failwith "not an equality"
 
+let rewrite_mutli_assumption_cond cond_eq_term cl gl = 
+  let rec arec = function 
+    | [] -> error "No such assumption"
+    | (id,_,t) ::rest -> 
+	begin 
+	  try 
+	    let dir = cond_eq_term t gl in 
+	    general_multi_rewrite dir (mkVar id,NoBindings) cl gl
+	  with | Failure _ | UserError _ -> arec rest
+	end
+  in 
+  arec (pf_hyps gl)
+
+let replace_multi_term dir_opt c  = 
+  let cond_eq_fun = 
+    match dir_opt with 
+      | None -> cond_eq_term c
+      | Some true -> cond_eq_term_left c
+      | Some false -> cond_eq_term_right c
+  in 
+  rewrite_mutli_assumption_cond cond_eq_fun 
+
+(* JF. old version 
+let rewrite_assumption_cond faildir gl =
+   let rec arec = function
+      | [] -> error "No such assumption"
+      | (id,_,t)::rest ->
+	  (try let dir = faildir t gl in
+	       general_rewrite dir (mkVar id) gl
+	   with Failure _ | UserError _  ->  arec rest)
+   in arec (pf_hyps gl)
+
+
+let rewrite_assumption_cond_in faildir hyp gl =
+   let rec arec = function
+      | [] -> error "No such assumption"
+      | (id,_,t)::rest ->
+	  (try let dir = faildir t gl in
+	       general_rewrite_in dir hyp (mkVar id) gl
+	   with Failure _ | UserError _ ->  arec rest)
+   in arec (pf_hyps gl)
+
 let replace_term_left t = rewrite_assumption_cond (cond_eq_term_left t)
 
 let replace_term_right t = rewrite_assumption_cond (cond_eq_term_right t)
@@ -1200,6 +1223,27 @@ let replace_term_in_left t = rewrite_assumption_cond_in (cond_eq_term_left t)
 let replace_term_in_right t = rewrite_assumption_cond_in (cond_eq_term_right t)
    
 let replace_term_in t = rewrite_assumption_cond_in (cond_eq_term t)
+*)
 
-let _ = Setoid_replace.register_replace replace
+let replace_term_left t = replace_multi_term (Some true) t Tacticals.onConcl
+
+let replace_term_right t = replace_multi_term (Some false) t Tacticals.onConcl
+
+let replace_term t = replace_multi_term None t Tacticals.onConcl
+
+let replace_term_in_left t hyp = replace_multi_term (Some true) t (Tacticals.onHyp hyp)
+
+let replace_term_in_right t hyp = replace_multi_term (Some false) t (Tacticals.onHyp hyp)
+
+let replace_term_in t hyp = replace_multi_term None t (Tacticals.onHyp hyp)
+
+
+
+
+
+
+
+
+
+let _ = Setoid_replace.register_replace (fun tac_opt c2 c1 gl ->  replace_in_clause_maybe_by c2 c1 onConcl tac_opt gl)
 let _ = Setoid_replace.register_general_rewrite general_rewrite

@@ -33,7 +33,7 @@ open Decl_kinds
 open Constrintern
 open Mod_subst
 
-let replace = ref (fun _ _ -> assert false)
+let replace = ref (fun _ _ _ -> assert false)
 let register_replace f = replace := f
 
 let general_rewrite = ref (fun _ _ -> assert false)
@@ -1849,8 +1849,27 @@ let general_s_rewrite_in id lft2rgt c ~new_goals gl =
   else 
     relation_rewrite_in id c2 c1 (Right2Left,eqclause) ~new_goals gl
 
-let setoid_replace relation c1 c2 ~new_goals gl =
- try
+
+(* 
+   [general_setoid_replace rewrite_tac try_prove_eq_tac_opt relation c1 c2 ~new_goals ]
+   common part of [setoid_replace] and [setoid_replace_in]  (distinction is done using rewrite_tac). 
+
+   Algorith sketch: 
+   1- find the (setoid) relation [rel] between [c1] and [c2] using [relation]
+   2- assert [H:rel c2 c1] 
+   3- replace [c1] with [c2] using [rewrite_tac] (should be [general_s_rewrite] if we want to replace in the 
+      goal, and [general_s_rewrite_in id] if we want to replace in the hypothesis [id]). Possibly generate
+      new_goals if asked (cf general_s_rewrite)
+   4- if [try_prove_eq_tac_opt] is [Some tac] try to complete [rel c2 c1] using tac and do nothing if 
+      [try_prove_eq_tac_opt] is [None]
+*)
+let general_setoid_replace rewrite_tac try_prove_eq_tac_opt relation c1 c2 ~new_goals gl =
+  let try_prove_eq_tac = 
+    match try_prove_eq_tac_opt with 
+      | None -> Tacticals.tclIDTAC
+      | Some tac ->  Tacticals.tclTRY (Tacticals.tclCOMPLETE tac )
+  in 
+  try
   let relation =
    match relation with
       Some rel ->
@@ -1873,23 +1892,29 @@ let setoid_replace relation c1 c2 ~new_goals gl =
     tclTHENS (assert_tac false Anonymous eq)
       [onLastHyp (fun id ->
         tclTHEN
-          (general_s_rewrite dir (mkVar id) ~new_goals)
+          (rewrite_tac dir (mkVar id) ~new_goals)
           (clear [id]));
-       Tacticals.tclIDTAC]
+       try_prove_eq_tac]
    in
     tclORELSE
      (replace true eq_left_to_right) (replace false eq_right_to_left) gl
  with
-  Optimize -> (!replace c1 c2) gl
+  Optimize -> (* (!replace tac_opt c1 c2) gl *)
+    let eq =  mkApp (Lazy.force  coq_eq, [| pf_type_of gl c1;c2 ; c1 |]) in 
+    tclTHENS (assert_tac false Anonymous eq)
+      [onLastHyp (fun id ->
+		    tclTHEN
+		      (rewrite_tac false (mkVar id) ~new_goals)
+		      (clear [id]));
+       try_prove_eq_tac] gl
+      
 
-let setoid_replace_in id relation c1 c2 ~new_goals gl =
- let hyp = pf_type_of gl (mkVar id) in
- let new_hyp = Termops.replace_term c1 c2 hyp in
- cut_replacing id new_hyp
-   (fun exact -> tclTHENLASTn
-     (setoid_replace relation c2 c1 ~new_goals)
-     [| exact; tclIDTAC |]) gl
 
+
+let setoid_replace = general_setoid_replace general_s_rewrite
+let setoid_replace_in  tac_opt id relation c1 c2 ~new_goals gl = 
+  general_setoid_replace (general_s_rewrite_in id)  tac_opt relation c1 c2 ~new_goals gl
+ 
 (* [setoid_]{reflexivity,symmetry,transitivity} tactics *)
 
 let setoid_reflexivity gl =
