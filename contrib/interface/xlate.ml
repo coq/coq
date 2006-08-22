@@ -1093,12 +1093,12 @@ and xlate_tac =
 	let first_n =
 	  match out_gen (wit_opt rawwit_int_or_var) nopt with
 	    | Some (ArgVar(_, s)) -> xlate_id_to_id_or_int_opt s
-	    | Some ArgArg n -> xlate_int_to_id_or_int_opt n
+	    | Some (ArgArg n) -> xlate_int_to_id_or_int_opt n
 	    | None -> none_in_id_or_int_opt in
 	let second_n =
 	  match out_gen (wit_opt rawwit_int_or_var) popt with
 	    | Some (ArgVar(_, s)) -> xlate_id_to_id_or_int_opt s
-	    | Some ArgArg n -> xlate_int_to_id_or_int_opt n
+	    | Some (ArgArg n) -> xlate_int_to_id_or_int_opt n
 	    | None -> none_in_id_or_int_opt in
 	let _lems =
 	  match out_gen Eauto.rawwit_auto_using lems with
@@ -1785,8 +1785,8 @@ let rec xlate_vernac =
   | VernacShow ShowScript -> CT_show_script
   | VernacShow(ShowMatch _) -> xlate_error "TODO: VernacShow(ShowMatch _)"
   | VernacGo arg -> CT_go (xlate_locn arg)
-  | VernacShow ExplainProof l -> CT_explain_proof (nums_to_int_list l)
-  | VernacShow ExplainTree l ->
+  | VernacShow (ExplainProof l) -> CT_explain_proof (nums_to_int_list l)
+  | VernacShow (ExplainTree l) ->
       CT_explain_prooftree (nums_to_int_list l)
   | VernacCheckGuard -> CT_guarded
   | VernacPrint p ->

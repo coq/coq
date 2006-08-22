@@ -820,7 +820,7 @@ let rec pr_vernac = function
 
   (* For extension *)
   | VernacExtend (s,c) -> pr_extend s c
-  | VernacProof Tacexpr.TacId _ -> str "Proof"
+  | VernacProof (Tacexpr.TacId _) -> str "Proof"
   | VernacProof te -> str "Proof with" ++ spc() ++ pr_raw_tactic te 
 
 and pr_extend s cl =
