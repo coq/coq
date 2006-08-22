@@ -30,10 +30,6 @@ Admitted.
 
 Add New Ring CoefRing : cRth Abstract. 
 
-(* Here the tactic that I would like to be implemented by 
-   "setoid ring" when it is applied on a "ceq _ _" goal.
-   This tactic was designed by copying what happens in newring.ml4 *)
-
 End abs_ring.
 Import abs_ring.
 
