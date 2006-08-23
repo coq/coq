@@ -50,9 +50,3 @@ val glob_in_arg_hyp_to_clause :  (Names.identifier list option * bool)  -> Tacti
 val by_arg_tac : Tacexpr.raw_tactic_expr option Pcoq.Gram.Entry.e
 val rawwit_by_arg_tac :  raw_tactic_expr option raw_abstract_argument_type
 val wit_by_arg_tac : glob_tactic_expr option closed_abstract_argument_type
-  
-
-
-val replace_term_dir : bool Pcoq.Gram.Entry.e
-val rawwit_replace_term_dir :  bool raw_abstract_argument_type
-val wit_replace_term_dir : bool closed_abstract_argument_type

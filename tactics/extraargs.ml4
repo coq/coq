@@ -236,13 +236,3 @@ let raw_in_arg_hyp_to_clause = gen_in_arg_hyp_to_clause snd
 let glob_in_arg_hyp_to_clause = gen_in_arg_hyp_to_clause (fun x -> x) 
 
 
-let pr_term_dir _ _ _ = function | true -> str "->" | false -> str  "<-" 
-
-
-ARGUMENT EXTEND replace_term_dir 
-  TYPED AS bool 
-  PRINTED BY pr_term_dir 
-  | ["->"] -> [ true ]
-  | ["<-"] -> [ false ]
-END
-

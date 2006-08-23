@@ -26,11 +26,20 @@ TACTIC EXTEND replace
 -> [ replace_in_clause_maybe_by c1 c2 (glob_in_arg_hyp_to_clause in_hyp) (Util.option_map Tacinterp.eval_tactic tac) ]
 END
 
-TACTIC EXTEND replace_term 
-| [ "replace" replace_term_dir_opt(dir) constr(c) in_arg_hyp(in_hyp) ] -> 
-  [ replace_multi_term dir c (glob_in_arg_hyp_to_clause in_hyp)  ]
+TACTIC EXTEND replace_term_left
+  [ "replace"  "->" constr(c) in_arg_hyp(in_hyp) ]
+  -> [ replace_multi_term (Some true) c (glob_in_arg_hyp_to_clause in_hyp)]
 END
 
+TACTIC EXTEND replace_term_right
+  [ "replace"  "<-" constr(c) in_arg_hyp(in_hyp) ]
+  -> [replace_multi_term (Some false) c (glob_in_arg_hyp_to_clause in_hyp)]
+END
+
+TACTIC EXTEND replace_term
+  [ "replace" constr(c) in_arg_hyp(in_hyp) ]
+  -> [ replace_multi_term None c (glob_in_arg_hyp_to_clause in_hyp) ]
+END
 
 TACTIC EXTEND simplify_eq
   [ "simplify_eq" quantified_hypothesis_opt(h) ] -> [ dEq h ]
