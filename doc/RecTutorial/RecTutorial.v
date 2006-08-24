@@ -1,3 +1,7 @@
+Check (forall A:Type, (exists x:A, forall (y:A), x <> y) -> 2 = 3).
+
+
+
 Inductive nat : Set := 
  | O : nat 
  | S : nat->nat.
@@ -31,9 +35,16 @@ Qed.
 
 Lemma zero_lt_three : 0 < 3.
 Proof.
- unfold lt.
  repeat constructor. 
 Qed.
+
+Print zero_lt_three.
+
+Inductive le'(n:nat):nat -> Prop :=
+ | le'_n : le' n n
+ | le'_S : forall p, le' (S n) p -> le' n p.
+
+Hint Constructors le'.
 
 
 Require Import List.
@@ -46,12 +57,15 @@ Check (nil (A:=nat)).
 
 Check (nil (A:= nat -> nat)).
 
-Check (fun A: Set => (cons (A:=A))).
+Check (fun A: Type => (cons (A:=A))).
 
 Check (cons 3 (cons 2 nil)).
 
+Check (nat :: bool ::nil).
 
+Check ((3<=4) :: True ::nil).
 
+Check (Prop::Set::nil).
 
 Require Import Bvector.
 
@@ -59,21 +73,9 @@ Print vector.
 
 Check (Vnil nat).
 
-Check (fun (A:Set)(a:A)=> Vcons _ a _ (Vnil _)).
+Check (fun (A:Type)(a:A)=> Vcons _ a _ (Vnil _)).
 
 Check (Vcons _ 5 _ (Vcons _ 3 _ (Vnil _))).
-
-
-
-
-
-
-
-
-
-
-
-
 
 Lemma eq_3_3 : 2 + 1 = 3.
 Proof.
@@ -151,10 +153,10 @@ Extraction max.
 
 
 
-Inductive tree(A:Set)   : Set :=
+Inductive tree(A:Type)   : Type :=
     node : A -> forest A -> tree A 
 with
-  forest (A: Set)    : Set := 
+  forest (A: Type)    : Type := 
     nochild  : forest A |
     addchild : tree A -> forest A -> forest A.
 
@@ -315,13 +317,13 @@ Proof.
 Qed.
 
 Definition Vtail_total 
-   (A : Set) (n : nat) (v : vector A n) : vector A (pred n):=
+   (A : Type) (n : nat) (v : vector A n) : vector A (pred n):=
 match v in (vector _ n0) return (vector A (pred n0)) with
 | Vnil => Vnil A
 | Vcons _ n0 v0 => v0
 end.
 
-Definition Vtail' (A:Set)(n:nat)(v:vector A n) : vector A (pred n).
+Definition Vtail' (A:Type)(n:nat)(v:vector A n) : vector A (pred n).
  intros A n v; case v.  
  simpl.
  exact (Vnil A).
@@ -461,9 +463,7 @@ Inductive ltree  (A:Set) : Set :=
 Inductive prop : Prop :=
  prop_intro : Prop -> prop.
 
-Lemma prop_inject: prop.
-Proof prop_intro prop.
-
+Check (prop_intro prop).
 
 Inductive ex_Prop  (P : Prop -> Prop) : Prop :=
   exP_intro : forall X : Prop, P X -> ex_Prop P.
@@ -490,27 +490,6 @@ Elimination of an inductive object of sort "Prop"
 is not allowed on a predicate in sort "Type"
 because proofs can be eliminated only to build proofs
 
-*)
-
-(*
-Check (match prop_inject with (prop_intro P p) => P end).
-
-Error:
-Incorrect elimination of "prop_inject" in the inductive type  
-"prop", the return type has sort "Type" while it should be 
-"Prop"
-
-Elimination of an inductive object of sort "Prop"
-is not allowed on a predicate in sort "Type"
-because proofs can be eliminated only to build proofs
-
-*)
-Print prop_inject.
-
-(*
-prop_inject = 
-prop_inject = prop_intro prop (fun H : prop => H)
-     : prop
 *)
 
 
@@ -645,7 +624,7 @@ Qed.
  apply inj_pred with (n:= S n) (m := S m); assumption.
 Qed.
 
-Lemma list_inject : forall (A:Set)(a b :A)(l l':list A),
+Lemma list_inject : forall (A:Type)(a b :A)(l l':list A),
                      a :: b :: l = b :: a :: l' -> a = b /\ l = l'.
 Proof.
  intros A a b l l' e.
@@ -812,20 +791,20 @@ Fixpoint nat_double_ind (n m:nat){struct n} : P n m :=
 End Principle_of_Double_Induction.
 
 Section Principle_of_Double_Recursion.
-Variable    P               : nat -> nat -> Set.
+Variable    P               : nat -> nat -> Type.
 Hypothesis  base_case1      : forall x:nat, P 0 x.
 Hypothesis  base_case2      : forall x:nat, P (S x) 0.
 Hypothesis  inductive_step   : forall n m:nat, P n m -> P (S n) (S m).
-Fixpoint nat_double_rec (n m:nat){struct n} : P n m := 
+Fixpoint nat_double_rect (n m:nat){struct n} : P n m := 
   match n, m return P n m with 
          |   0 ,     x    =>  base_case1 x 
          |  (S x),    0   => base_case2 x
-         |  (S x), (S y)  => inductive_step x y (nat_double_rec x y)
+         |  (S x), (S y)  => inductive_step x y (nat_double_rect x y)
      end.
 End Principle_of_Double_Recursion.
 
 Definition min : nat -> nat -> nat  := 
-  nat_double_rec (fun (x y:nat) => nat)
+  nat_double_rect (fun (x y:nat) => nat)
                  (fun (x:nat) => 0)
                  (fun (y:nat) => 0)
                  (fun (x y r:nat) => S r).
@@ -846,10 +825,10 @@ Qed.
 Definition eq_nat_dec : forall n p:nat , {n=p}+{n <> p}.
 Proof.
  intros n p.
- apply nat_double_rec with (P:= fun (n q:nat) => {q=p}+{q <> p}).
+ apply nat_double_rect with (P:= fun (n q:nat) => {q=p}+{q <> p}).
 Undo.
  pattern p,n.
- elim n using nat_double_rec.
+ elim n using nat_double_rect.
  destruct x; auto.
  destruct x; auto.
  intros n0 m H; case H.
@@ -860,6 +839,28 @@ Defined.
 Definition eq_nat_dec' : forall n p:nat, {n=p}+{n <> p}.
  decide equality.
 Defined.
+
+
+
+Require Import Le.
+Lemma le'_le : forall n p, le' n p -> n <= p.
+Proof.
+ induction 1;auto with arith.
+Qed.
+
+Lemma le'_n_Sp : forall n p, le' n p -> le' n (S p).
+Proof.
+ induction 1;auto.
+Qed.
+
+Hint Resolve le'_n_Sp.
+
+ 
+Lemma le_le' : forall n p, n<=p -> le' n p.
+Proof.
+ induction 1;auto with arith.
+Qed. 
+
 
 Print Acc.
 
@@ -968,13 +969,13 @@ let rec div_aux x y =
            | Right -> div_aux (minus x y) y)
 *)
 
-Lemma vector0_is_vnil : forall (A:Set)(v:vector A 0), v = Vnil A.
+Lemma vector0_is_vnil : forall (A:Type)(v:vector A 0), v = Vnil A.
 Proof.
  intros A v;inversion v.
 Abort.
 
 (*
- Lemma vector0_is_vnil_aux : forall (A:Set)(n:nat)(v:vector A n), 
+ Lemma vector0_is_vnil_aux : forall (A:Type)(n:nat)(v:vector A n), 
                                   n= 0 -> v = Vnil A.
 
 Toplevel input, characters 40281-40287
@@ -990,7 +991,10 @@ The term "Vnil A" has type "vector A 0" while it is expected to have type
 *)
  Require Import JMeq.
 
-Lemma vector0_is_vnil_aux : forall (A:Set)(n:nat)(v:vector A n), 
+
+(* On devrait changer Set en Type ? *)
+
+Lemma vector0_is_vnil_aux : forall (A:Type)(n:nat)(v:vector A n), 
                                   n= 0 -> JMeq v (Vnil A).
 Proof.
  destruct v.
@@ -998,7 +1002,7 @@ Proof.
  intro; discriminate.
 Qed.
 
-Lemma vector0_is_vnil : forall (A:Set)(v:vector A 0), v = Vnil A.
+Lemma vector0_is_vnil : forall (A:Type)(v:vector A 0), v = Vnil A.
 Proof.
  intros a v;apply JMeq_eq.
  apply vector0_is_vnil_aux.
@@ -1011,20 +1015,20 @@ Implicit Arguments Vnil [A].
 Implicit Arguments Vhead [A n].
 Implicit Arguments Vtail [A n].
 
-Definition Vid : forall (A : Set)(n:nat), vector A n -> vector A n.
+Definition Vid : forall (A : Type)(n:nat), vector A n -> vector A n.
 Proof.
  destruct n; intro v.
  exact Vnil.
  exact (Vcons  (Vhead v) (Vtail v)).
 Defined.
 
-Eval simpl in (fun (A:Set)(v:vector A 0) => (Vid _ _ v)).
+Eval simpl in (fun (A:Type)(v:vector A 0) => (Vid _ _ v)).
 
-Eval simpl in (fun (A:Set)(v:vector A 0) => v).
+Eval simpl in (fun (A:Type)(v:vector A 0) => v).
 
 
 
-Lemma Vid_eq : forall (n:nat) (A:Set)(v:vector A n), v=(Vid _ n v).
+Lemma Vid_eq : forall (n:nat) (A:Type)(v:vector A n), v=(Vid _ n v).
 Proof.
  destruct v. 
  reflexivity.
@@ -1040,7 +1044,7 @@ Defined.
 
 
 Theorem decomp :
-  forall (A : Set) (n : nat) (v : vector A (S n)),
+  forall (A : Type) (n : nat) (v : vector A (S n)),
   v = Vcons (Vhead v) (Vtail v).
 Proof.
  intros.
@@ -1051,7 +1055,7 @@ Defined.
 
 
 Definition vector_double_rect : 
-    forall (A:Set) (P: forall (n:nat),(vector A n)->(vector A n) -> Type),
+    forall (A:Type) (P: forall (n:nat),(vector A n)->(vector A n) -> Type),
         P 0 Vnil Vnil ->
         (forall n (v1 v2 : vector A n) a b, P n v1 v2 ->
              P (S n) (Vcons a v1) (Vcons  b v2)) ->
@@ -1071,7 +1075,7 @@ Definition bitwise_or n v1 v2 : vector bool n :=
                         (fun n v1 v2 a b r => Vcons (orb a b) r) n v1 v2.
 
 
-Fixpoint vector_nth (A:Set)(n:nat)(p:nat)(v:vector A p){struct v}
+Fixpoint vector_nth (A:Type)(n:nat)(p:nat)(v:vector A p){struct v}
                   : option A :=
   match n,v  with
     _   , Vnil => None
@@ -1097,10 +1101,10 @@ Qed.
 
  Set Implicit Arguments.
 
- CoInductive Stream (A:Set) : Set   :=
+ CoInductive Stream (A:Type) : Type   :=
  |  Cons : A -> Stream A -> Stream A.
 
- CoInductive LList (A: Set) : Set :=
+ CoInductive LList (A: Type) : Type :=
  |  LNil : LList A
  |  LCons : A -> LList A -> LList A.
 
@@ -1108,25 +1112,25 @@ Qed.
  
 
 
- Definition head (A:Set)(s : Stream A) := match s with Cons a s' => a end.
+ Definition head (A:Type)(s : Stream A) := match s with Cons a s' => a end.
 
- Definition tail (A : Set)(s : Stream A) :=
+ Definition tail (A : Type)(s : Stream A) :=
       match s with Cons a s' => s' end.
 
- CoFixpoint repeat (A:Set)(a:A) : Stream A := Cons a (repeat a).
+ CoFixpoint repeat (A:Type)(a:A) : Stream A := Cons a (repeat a).
 
- CoFixpoint iterate (A: Set)(f: A -> A)(a : A) : Stream A:=
+ CoFixpoint iterate (A: Type)(f: A -> A)(a : A) : Stream A:=
     Cons a (iterate f (f a)).
 
- CoFixpoint map (A B:Set)(f: A -> B)(s : Stream A) : Stream B:=
+ CoFixpoint map (A B:Type)(f: A -> B)(s : Stream A) : Stream B:=
   match s with Cons a tl => Cons (f a) (map f tl) end.
 
-Eval simpl in (fun (A:Set)(a:A) => repeat a).
+Eval simpl in (fun (A:Type)(a:A) => repeat a).
 
-Eval simpl in (fun (A:Set)(a:A) => head (repeat a)).
+Eval simpl in (fun (A:Type)(a:A) => head (repeat a)).
 
 
-CoInductive EqSt (A: Set) : Stream A -> Stream A -> Prop :=
+CoInductive EqSt (A: Type) : Stream A -> Stream A -> Prop :=
   eqst : forall s1 s2: Stream A,
       head s1 = head s2 ->
       EqSt (tail s1) (tail s2) ->
@@ -1134,7 +1138,7 @@ CoInductive EqSt (A: Set) : Stream A -> Stream A -> Prop :=
 
 
 Section Parks_Principle.
-Variable A : Set.
+Variable A : Type.
 Variable    R      : Stream A -> Stream A -> Prop.
 Hypothesis  bisim1 : forall s1 s2:Stream A, R s1 s2 ->
                                           head s1 = head s2.
@@ -1149,7 +1153,7 @@ CoFixpoint park_ppl     : forall s1 s2:Stream A, R s1 s2 ->
 End Parks_Principle.
 
 
-Theorem map_iterate : forall (A:Set)(f:A->A)(x:A),
+Theorem map_iterate : forall (A:Type)(f:A->A)(x:A),
                        EqSt (iterate f (f x)) (map f (iterate f x)).
 Proof.
  intros A f x.
@@ -1167,7 +1171,7 @@ Ltac infiniteproof f :=
   cofix f; constructor; [clear f| simpl; try (apply f; clear f)].
 
 
-Theorem map_iterate' : forall (A:Set)(f:A->A)(x:A),
+Theorem map_iterate' : forall (A:Type)(f:A->A)(x:A),
                        EqSt (iterate f (f x)) (map f (iterate f x)).
 infiniteproof map_iterate'.
  reflexivity.
@@ -1176,12 +1180,12 @@ Qed.
 
 Implicit Arguments LNil [A].
 
-Lemma Lnil_not_Lcons : forall (A:Set)(a:A)(l:LList A),
+Lemma Lnil_not_Lcons : forall (A:Type)(a:A)(l:LList A),
                                LNil <> (LCons a l).
  intros;discriminate.
 Qed.
 
-Lemma injection_demo : forall (A:Set)(a b : A)(l l': LList A),
+Lemma injection_demo : forall (A:Type)(a b : A)(l l': LList A),
                        LCons a (LCons b l) = LCons b (LCons a l') ->
                        a = b /\ l = l'.
 Proof.
@@ -1189,19 +1193,19 @@ Proof.
 Qed.
 
 
-Inductive Finite (A:Set) : LList A -> Prop :=
+Inductive Finite (A:Type) : LList A -> Prop :=
 |  Lnil_fin : Finite (LNil (A:=A))
 |  Lcons_fin : forall a l, Finite l -> Finite (LCons a l).
 
-CoInductive Infinite  (A:Set) : LList A -> Prop :=
+CoInductive Infinite  (A:Type) : LList A -> Prop :=
 | LCons_inf : forall a l, Infinite l -> Infinite (LCons a l).
 
-Lemma LNil_not_Infinite : forall (A:Set), ~ Infinite (LNil (A:=A)).
+Lemma LNil_not_Infinite : forall (A:Type), ~ Infinite (LNil (A:=A)).
 Proof.
   intros A H;inversion H.
 Qed.
 
-Lemma Finite_not_Infinite : forall (A:Set)(l:LList A),
+Lemma Finite_not_Infinite : forall (A:Type)(l:LList A),
                                 Finite l -> ~ Infinite l.
 Proof.
  intros A l H; elim H.
@@ -1211,7 +1215,7 @@ Proof.
  trivial.
 Qed.
 
-Lemma Not_Finite_Infinite : forall (A:Set)(l:LList A),
+Lemma Not_Finite_Infinite : forall (A:Type)(l:LList A),
                             ~ Finite l -> Infinite l.
 Proof.
  cofix H.
@@ -1223,7 +1227,6 @@ Proof.
  constructor.
  trivial.
 Qed.
-
 
 
 

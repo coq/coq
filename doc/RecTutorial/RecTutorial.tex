@@ -518,7 +518,7 @@ of {\coq}, in which a general parameter $a$ of an inductive
 type $I$ had to appear only in applications of the form $I\,\dots\,a$.
 
 Since version $8.1$, if $a$ is a general parameter of an inductive 
-type $I$, the type of an argument of a construtor of $I$ may be
+type $I$, the type of an argument of a constructor of $I$ may be
 of the form  $I\,\dots\,t_a$ , where $t_a$ is any term.
 Notice that the final type of the constructors must be of the form
 $I\,\dots\,a$, since these constructors describe how to form 
@@ -2848,7 +2848,7 @@ For Acc_intro: Arguments A, R are implicit
 \dots
 \end{alltt}
 
-\noindent This inductive predicate characterize those elements $x$ of
+\noindent This inductive predicate characterizes those elements $x$ of
 $A$ such that any descending $R$-chain $\ldots x_2\;R\;x_1\;R\;x$
 starting from $x$ is finite. A well-founded relation is a relation
 such that all the elements of $A$ are accessible.  
@@ -3121,11 +3121,11 @@ equality \citecoq{JMeq} \cite{conor:motive}
 which allows us to consider terms of different types, even if this
 equality can only be proven for terms in the same type.
 The axiom \citecoq{JMeq\_eq}, from the library \citecoq{JMeq} allows us to convert a
-heterogeneous equality to a standard one \footnote{At this date (July 28th 2006), the type of JMeq still uses Set instead of Type; the two following theorems are thus less generic than we can expect}.
+heterogeneous equality to a standard one.
 
 \begin{alltt}
 Lemma vector0_is_vnil_aux : 
-   {\prodsym} (A:Set)(n:nat)(v:vector A n), 
+   {\prodsym} (A:Type)(n:nat)(v:vector A n), 
       n= 0 {\arrow} JMeq v (Vnil A).
 Proof.
  destruct v.
@@ -3137,7 +3137,7 @@ Qed.
 Our property of vectors of null length can be easily proven:
 
 \begin{alltt}
-Lemma vector0_is_vnil : {\prodsym} (A:Set)(v:vector A 0), v = Vnil A.
+Lemma vector0_is_vnil : {\prodsym} (A:Type)(v:vector A 0), v = Vnil A.
  intros a v;apply JMeq_eq.
  apply vector0_is_vnil_aux.
  trivial.
