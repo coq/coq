@@ -278,11 +278,14 @@ type function_info =
     }
       
 
-type function_db  = function_info list
+(* type function_db  = function_info list *)
 
-let function_table = ref ([] : function_db)
-  
+(* let function_table = ref ([] : function_db) *)
 
+
+let from_function = ref Cmap.empty
+let from_graph = ref Indmap.empty
+(*
 let rec do_cache_info finfo = function 
   | [] -> raise Not_found 
   | (finfo'::finfos as l) -> 
@@ -301,6 +304,12 @@ let cache_Function (_,(finfos)) =
   in  
   if new_tbl != !function_table 
   then function_table := new_tbl
+*)
+
+let cache_Function (_,finfos) = 
+  from_function := Cmap.add finfos.function_constant finfos !from_function;
+  from_graph := Indmap.add finfos.graph_ind finfos !from_graph
+
 
 let load_Function _  = cache_Function
 let open_Function _ = cache_Function
@@ -386,7 +395,8 @@ let pr_info f_info =
     str "prop_lemma := " ++ (Util.option_fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.prop_lemma (mt ()) ) ++ fnl () ++
     str "graph_ind := " ++ Printer.pr_lconstr (mkInd f_info.graph_ind) ++ fnl () 
 
-let pr_table l = 
+let pr_table tb = 
+  let l = Cmap.fold (fun k v acc -> v::acc) tb [] in 
   Util.prlist_with_sep fnl pr_info l
 
 let in_Function,out_Function = 
@@ -405,17 +415,16 @@ let in_Function,out_Function =
 
 (* Synchronisation with reset *)
 let freeze () = 
-  let tbl = !function_table in 
-(*   Pp.msgnl (str "freezing function_table : " ++ pr_table tbl); *)
-  tbl
-
-let unfreeze l = 
+  !from_function,!from_graph
+let unfreeze (functions,graphs) = 
 (*   Pp.msgnl (str "unfreezing function_table : " ++ pr_table l); *)
-  function_table :=
- l
+  from_function := functions;
+  from_graph := graphs
+
 let init () = 
 (*   Pp.msgnl (str "reseting function_table");  *)
-  function_table := []
+  from_function := Cmap.empty;
+  from_graph := Indmap.empty
 
 let _ = 
   Summary.declare_summary "functions_db_sum"
@@ -434,11 +443,11 @@ let find_or_none id =
 
 
 let find_Function_infos f = 
-  List.find (fun finfo ->  finfo.function_constant = f) !function_table
+  Cmap.find f !from_function
 
 
 let find_Function_of_graph ind = 
-  List.find (fun finfo ->  finfo.graph_ind = ind) !function_table
+  Indmap.find ind !from_graph
   
 let update_Function finfo = 
 (*   Pp.msgnl (pr_info finfo); *)
@@ -472,7 +481,7 @@ let add_Function is_general f =
   in
   update_Function finfos
 
-let pr_table () = pr_table !function_table
+let pr_table () = pr_table !from_function
 (*********************************)
 (* Debuging *)
 let function_debug = ref false 
@@ -495,3 +504,5 @@ let do_observe () =
       
       
     
+exception Building_graph of exn 
+exception Defining_principle of exn

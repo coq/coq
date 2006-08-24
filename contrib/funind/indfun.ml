@@ -240,23 +240,36 @@ let prepare_body (name,annot,args,types,body) rt =
   (fun_args,rt')
 
 
-let derive_inversion fix_names = 
-  try
-    Invfun.derive_correctness 
-      Functional_principles_types.make_scheme
-      functional_induction 
-      (List.map (fun id -> destConst (Tacinterp.constr_of_id (Global.env ()) id)) fix_names)
-      (*i The next call to mk_rel_id is valid since we have just construct the graph 
-	Ensures by : register_built
-	i*) 
-      (List.map
-	 (fun id -> destInd (Tacinterp.constr_of_id (Global.env ()) (mk_rel_id id)))
-	 fix_names
-      )
-  with e -> 
-    msg_warning 
-      (str "Cannot define correction of function and graph" ++ Cerrors.explain_exn e)
-	  
+let derive_inversion fix_names =
+  try 
+    (* we first transform the fix_names identifier into their corresponding constant *)
+    let fix_names_as_constant = 
+      List.map (fun id -> destConst (Tacinterp.constr_of_id (Global.env ()) id)) fix_names 
+    in 
+    (* 
+       Then we check that the graphs have been defined 
+       If one of the graphs haven't been defined 
+       we do nothing
+    *)
+    List.iter (fun c -> ignore (find_Function_infos c)) fix_names_as_constant ;
+    try
+      Invfun.derive_correctness 
+	Functional_principles_types.make_scheme
+	functional_induction 
+	fix_names_as_constant
+	(*i The next call to mk_rel_id is valid since we have just construct the graph 
+	  Ensures by : register_built
+	  i*) 
+	(List.map
+	   (fun id -> destInd (Tacinterp.constr_of_id (Global.env ()) (mk_rel_id id)))
+	   fix_names
+	)
+    with e -> 
+      msg_warning 
+	(str "Cannot define correction of function and graph" ++ 
+	   if do_observe () then Cerrors.explain_exn e else mt ())
+  with _ -> ()
+
 let generate_principle 
     is_general do_built fix_rec_l recdefs  interactive_proof parametrize 
     (continue_proof : int -> Names.constant array -> Term.constr array -> int -> 
@@ -312,8 +325,18 @@ let generate_principle
 	()
       end
   with e -> 
-    Pp.msg_warning (Cerrors.explain_exn e) 
-
+    match e with 
+      | Building_graph e -> 
+	    Pp.msg_warning 
+	    (str "Cannot define graph(s) for " ++ 
+	       h 1 (prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names) ++
+	       if do_observe () then Cerrors.explain_exn e else mt ())
+      | Defining_principle e -> 
+	    Pp.msg_warning
+	    (str "Cannot define principle(s) for "++ 
+	       h 1 (prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names) ++
+	       if do_observe () then Cerrors.explain_exn e else mt ())
+      | _ -> anomaly ""
 
 let register_struct is_rec fixpoint_exprl = 
   match fixpoint_exprl with 
@@ -513,7 +536,7 @@ let do_generate_principle register_built interactive_proof fixpoint_exprl  =
 	    interactive_proof
 	    true
 	    (Functional_principles_proofs.prove_princ_for_struct interactive_proof);
-	  if register_built then derive_inversion  fix_names;
+	  if register_built then derive_inversion fix_names;
 	  true;
   in
   ()

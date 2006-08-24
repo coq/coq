@@ -108,6 +108,10 @@ val pr_info : function_info -> Pp.std_ppcmds
 val pr_table : unit -> Pp.std_ppcmds
 
 
-val function_debug : bool ref 
+(* val function_debug : bool ref  *)
 val do_observe : unit -> bool
+
+(* To localize pb *)
+exception Building_graph of exn 
+exception Defining_principle of exn
 

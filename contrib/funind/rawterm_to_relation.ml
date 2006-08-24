@@ -1074,7 +1074,7 @@ let rec rebuild_return_type rt =
     | _ -> Topconstr.CArrow(dummy_loc,rt,Topconstr.CSort(dummy_loc,RType None))
 
 
-let build_inductive 
+let do_build_inductive 
     parametrize funnames (funsargs: (Names.name * rawconstr * bool) list list)  
     returned_types 
     (rtl:rawconstr list) =
@@ -1226,7 +1226,7 @@ let build_inductive
   try 
     with_full_print (Options.silently (Command.build_mutual rel_inds)) true
   with 
-    | UserError(s,msg) ->
+    | UserError(s,msg) as e ->
 	let _time3 = System.get_time () in
 (* 	Pp.msgnl (str "error : "++ str (string_of_float (System.time_difference time2 time3))); *)
 	let msg = 		     
@@ -1235,7 +1235,7 @@ let build_inductive
 	    msg
 	in
 	observe (msg);
-	raise (UserError(s, msg))
+	raise e
     | e -> 
 	let _time3 = System.get_time () in
 (* 	Pp.msgnl (str "error : "++ str (string_of_float (System.time_difference time2 time3))); *)
@@ -1245,4 +1245,13 @@ let build_inductive
 	    Cerrors.explain_exn e
 	in
  	observe msg;
-	raise (UserError("",msg))
+	raise e
+
+
+
+let build_inductive parametrize funnames funsargs returned_types rtl = 
+  try 
+    do_build_inductive  parametrize funnames funsargs returned_types rtl
+  with e -> raise (Building_graph e)
+      
+

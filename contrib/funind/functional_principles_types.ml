@@ -346,6 +346,7 @@ let generate_functional_principle
     interactive_proof
     old_princ_type sorts new_princ_name funs i proof_tac
     =
+  try 
   let f = funs.(i) in
   let type_sort = Termops.new_sort_in_family InType in
   let new_sorts =
@@ -393,6 +394,10 @@ let generate_functional_principle
     build_functional_principle interactive_proof old_princ_type new_sorts funs i proof_tac hook 
   in
   save false new_princ_name entry g_kind hook
+  with 
+    | Defining_principle _ as e -> raise e
+    | e -> raise (Defining_principle e)
+
 (*   defined  () *)
 
 
