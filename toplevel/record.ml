@@ -192,7 +192,6 @@ let declare_projections indsp coers fields =
    list telling if the corresponding fields must me declared as coercion *)
 let definition_structure ((is_coe,(_,idstruc)),ps,cfs,idbuild,s) =
   let coers,fs = List.split cfs in
-  let nparams = local_binders_length ps in
   let extract_name acc = function
       Vernacexpr.AssumExpr((_,Name id),_) -> id::acc
     | Vernacexpr.DefExpr ((_,Name id),_,_) -> id::acc
@@ -219,4 +218,4 @@ let definition_structure ((is_coe,(_,idstruc)),ps,cfs,idbuild,s) =
   let kinds,sp_projs = declare_projections rsp coers fields in
   let build = ConstructRef (rsp,1) in (* This is construct path of idbuild *)
   if is_coe then Class.try_add_new_coercion build Global;
-  Recordops.declare_structure(rsp,idbuild,nparams,List.rev kinds,List.rev sp_projs)
+  Recordops.declare_structure(rsp,idbuild,List.rev kinds,List.rev sp_projs)

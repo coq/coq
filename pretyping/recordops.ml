@@ -78,7 +78,7 @@ let (inStruc,outStruc) =
     discharge_function = discharge_structure;
     export_function = (function x -> Some x) }
 
-let declare_structure (s,c,_,kl,pl) = 
+let declare_structure (s,c,kl,pl) = 
   Lib.add_anonymous_leaf (inStruc (s,c,kl,pl))
 
 let lookup_structure indsp = Indmap.find indsp !structure_table

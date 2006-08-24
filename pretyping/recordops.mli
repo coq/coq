@@ -22,7 +22,7 @@ open Library
    constructor (the name of which defaults to Build_S) *)
 
 val declare_structure : 
-  inductive * identifier * int * bool list * constant option list -> unit
+  inductive * identifier * bool list * constant option list -> unit
 
 (* [lookup_projections isp] returns the projections associated to the
    inductive path [isp] if it corresponds to a structure, otherwise
