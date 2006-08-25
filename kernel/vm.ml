@@ -368,7 +368,7 @@ let decompose_vfun2 k vf1 vf2 =
 let first o = (offset_closure o (offset o))
 let last o = (Obj.field o (Obj.size o - 1))
 
-let current_fix vf = offset (Obj.repr vf) / 2
+let current_fix vf = - (offset (Obj.repr vf) / 2)
 
 let unsafe_fb_code fb i = tcode_of_obj (Obj.field (Obj.repr fb) (2 * i))
 
