@@ -39,12 +39,12 @@ let do_observe_tac s tac g =
 	    Cerrors.explain_exn e ++ str " on goal " ++ goal ); 
    raise e;;
 
-
-let observe_tac s tac g =
+let observe_tac_stream s tac g = 
   if do_observe ()
-  then do_observe_tac (str s) tac g
+  then do_observe_tac  s tac g
   else tac g
 
+let observe_tac s tac g = observe_tac_stream (str s) tac g
 
 let tclTRYD tac = 
   if  !Options.debug  || do_observe ()
@@ -315,9 +315,13 @@ let h_reduce_with_zeta =
 
 
 let rewrite_until_var arg_num eq_ids : tactic =
+  (* tests if the declares recursive argument is neither a Constructor nor 
+     an applied Constructor since such a form for the recursive argument 
+     will break the Guard when trying to save the Lemma. 
+  *)
   let test_var g = 
     let _,args = destApp (pf_concl g) in 
-    not (isConstruct args.(arg_num))
+    not ((isConstruct args.(arg_num)) || isAppConstruct args.(arg_num))
   in
   let rec do_rewrite eq_ids g  = 
     if test_var g 
@@ -1334,10 +1338,11 @@ let new_prove_with_tcc is_mes acc_inv hrec tcc_lemma_constr eqs : tactic =
 	      h_intro hid;
 	      Elim.h_decompose_and (mkVar hid); 
 	      backtrack_eqs_until_hrec hrec eqs;
-	      tclCOMPLETE (tclTHENS  (* We must have exactly ONE subgoal !*)
-		(apply (mkVar hrec))
-		[ tclTHENSEQ 
-		    [
+	      observe_tac ("new_prove_with_tcc ( applying "^(string_of_id hrec)^" )" )
+		(tclTHENS  (* We must have exactly ONE subgoal !*)
+		   (apply (mkVar hrec))
+		   [ tclTHENSEQ 
+		       [
 			 thin [hrec];
 			 apply (Lazy.force acc_inv);
 			 (fun g -> 
@@ -1346,11 +1351,12 @@ let new_prove_with_tcc is_mes acc_inv hrec tcc_lemma_constr eqs : tactic =
 			      unfold_in_concl [([], evaluable_of_global_reference (delayed_force ltof_ref))] g 
 			    else tclIDTAC g
 			 );
-			 tclTRY(Recdef.list_rewrite true eqs);
-			 observe_tac "finishing"  (tclCOMPLETE (Eauto.gen_eauto false (false,5) [] (Some [])))
+			 observe_tac "rew_and_finish"
+			   (tclTHEN 
+			      (tclTRY(Recdef.list_rewrite true eqs))
+			      (observe_tac "finishing"  (tclCOMPLETE (Eauto.gen_eauto false (false,5) [] (Some [])))))
 		       ]
-		]
-			  )
+		])
 	    ])
 	    gls
 
@@ -1545,7 +1551,7 @@ let prove_principle_for_gen
 		   let pte_info = 
 		     { proving_tac =
 			 (fun eqs -> 
-			    observe_tac "prove_with_tcc" 
+			    observe_tac "new_prove_with_tcc" 
 			      (new_prove_with_tcc is_mes acc_inv hrec  tcc_lemma_ref (List.map mkVar eqs))
 			 );
 		       is_valid = is_valid_hypothesis predicates_names 

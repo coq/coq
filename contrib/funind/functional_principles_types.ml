@@ -301,9 +301,18 @@ let pp_dur time time' =
   str (string_of_float (System.time_difference time time'))
 
 (* let qed () = save_named true  *)
-let defined () = Command.save_named false
-
-
+let defined () = 
+  try 
+    Command.save_named false 
+  with 
+    | UserError("extract_proof",msg) ->
+	Util.errorlabstrm
+	  "defined"
+	  ((try
+	      str "On goal : " ++ fnl () ++  pr_open_subgoals () ++ fnl ()
+	    with _ -> mt ()
+	   ) ++msg)
+    | e -> raise e
 
 
 
