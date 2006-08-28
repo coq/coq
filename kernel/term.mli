@@ -426,6 +426,9 @@ val under_outer_cast : (constr -> constr) -> constr -> constr
 
 (*s Occur checks *)
 
+(* [closedn n M] is true iff [M] is a (deBruijn) closed term under n binders *)
+val closedn : int -> constr -> bool
+
 (* [closed0 M] is true iff [M] is a (deBruijn) closed term *)
 val closed0 : constr -> bool
 

@@ -659,17 +659,16 @@ exception LocalOccur
 (* (closedn n M) raises FreeVar if a variable of height greater than n
    occurs in M, returns () otherwise *)
 
-let closedn = 
+let closedn n c = 
   let rec closed_rec n c = match kind_of_term c with
     | Rel m -> if m>n then raise LocalOccur
     | _ -> iter_constr_with_binders succ closed_rec n c
   in 
-  closed_rec
+  try closed_rec n c; true with LocalOccur -> false
 
 (* [closed0 M] is true iff [M] is a (deBruijn) closed term *)
 
-let closed0 term =
-  try closedn 0 term; true with LocalOccur -> false
+let closed0 = closedn 0
 
 (* (noccurn n M) returns true iff (Rel n) does NOT occur in term M  *)
 
