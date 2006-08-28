@@ -295,9 +295,11 @@ let list_try_find f =
   in 
   try_find_f
 
-let rec list_uniquize = function
-  | [] -> []
-  | h::t -> if List.mem h t then list_uniquize t else h::(list_uniquize t)
+let list_uniquize l =
+  let rec aux acc = function
+  | [] -> List.rev acc
+  | h::t -> if List.mem h acc then aux acc t else aux (h::acc) t
+  in aux [] l
 
 let rec list_distinct = function
   | h::t -> (not (List.mem h t)) && list_distinct t
