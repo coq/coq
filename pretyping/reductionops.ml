@@ -37,11 +37,12 @@ type 'a stack_member =
 and 'a stack = 'a stack_member list
 
 let empty_stack = []
-let append_stack_list = function
+let append_stack_list l s =
+  match (l,s) with
   | ([],s) -> s
   | (l1, Zapp l :: s) -> Zapp (l1@l) :: s
   | (l1, s) -> Zapp l1 :: s
-let append_stack v s = append_stack_list (Array.to_list v, s)
+let append_stack v s = append_stack_list (Array.to_list v) s
 
 (* Collapse the shifts in the stack *)
 let zshift n s =
@@ -227,6 +228,7 @@ open RedFlags
 
 (* Local *)
 let beta = mkflags [fbeta]
+let eta = mkflags [feta]
 let evar = mkflags [fevar]
 let betaevar = mkflags [fevar; fbeta]
 let betaiota = mkflags [fiota; fbeta]
@@ -251,7 +253,7 @@ let rec stacklam recfun env t stack =
     | _ -> recfun (substl env t, stack)
 
 let beta_applist (c,l) =
-  stacklam app_stack [] c (append_stack (Array.of_list l) empty_stack)
+  stacklam app_stack [] c (append_stack_list l empty_stack)
 
 (* Iota reduction tools *)
 
@@ -261,7 +263,7 @@ type 'a miota_args = {
   mci     : case_info;  (* special info to re-build pattern *)
   mcargs  : 'a list;    (* the constructor's arguments *)
   mlf     : 'a array }  (* the branch code vector *)
-		       
+
 let reducible_mind_case c = match kind_of_term c with
   | Construct _ | CoFix _ -> true
   | _  -> false
@@ -505,6 +507,10 @@ let whd_betadeltaiota_nolet_stack env sigma x =
 let whd_betadeltaiota_nolet env sigma x = 
   app_stack (whd_betadeltaiota_nolet_state env sigma (x, empty_stack))
 
+(* 3. Eta reduction Functions *)
+
+let whd_eta c = app_stack (local_whd_state_gen eta (c,empty_stack))
+
 (****************************************************************************)
 (*                   Reduction Functions                                    *)
 (****************************************************************************)
@@ -641,7 +647,7 @@ let is_fconv = function | CONV -> is_conv | CUMUL -> is_conv_leq
 let whd_meta metamap c = match kind_of_term c with
   | Meta p -> (try List.assoc p metamap with Not_found -> c)
   | _ -> c
-	
+
 (* Try to replace all metas. Does not replace metas in the metas' values
  * Differs from (strong whd_meta). *)
 let plain_instance s c = 
@@ -668,7 +674,7 @@ let plain_instance s c =
     | _ -> map_constr irec u
   in 
   if s = [] then c else irec c
-    
+
 (* Pourquoi ne fait-on pas nf_betaiota si s=[] ? *)
 let instance s c = 
   if s = [] then c else local_strong whd_betaiota (plain_instance s c)
@@ -746,7 +752,7 @@ let splay_arity env sigma c =
     | _ -> error "not an arity"
 
 let sort_of_arity env c = snd (splay_arity env Evd.empty c)
-  
+
 let decomp_n_prod env sigma n = 
   let rec decrec env m ln c = if m = 0 then (ln,c) else 
     match kind_of_term (whd_betadeltaiota env sigma c) with
@@ -764,7 +770,8 @@ let decomp_sort env sigma t =
   | Sort s -> s
   | _ -> raise NotASort
 
-(* One step of approximation *)
+(* reduction to head-normal-form allowing delta/zeta only in argument
+   of case/fix (heuristic used by evar_conv) *)
 
 let rec apprec env sigma s =
   let (t, stack as s) = whd_betaiota_state s in
@@ -781,8 +788,6 @@ let rec apprec env sigma s =
              | Reduced s -> apprec env sigma s
 	     | NotReducible -> s)
     | _ -> s
-
-let hnf env sigma c = apprec env sigma (c, empty_stack)
 
 (* A reduction function like whd_betaiota but which keeps casts
  * and does not reduce redexes containing existential variables.

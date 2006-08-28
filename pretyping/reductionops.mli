@@ -37,6 +37,7 @@ and 'a stack = 'a stack_member list
 
 val empty_stack : 'a stack
 val append_stack : 'a array -> 'a stack -> 'a stack
+val append_stack_list : 'a list -> 'a stack -> 'a stack
 
 val decomp_stack : 'a stack -> ('a * 'a stack) option
 val list_of_stack : 'a stack -> 'a list
@@ -140,6 +141,7 @@ val whd_betadeltaiotaeta_stack :  stack_reduction_function
 val whd_betadeltaiotaeta_state :  state_reduction_function
 val whd_betadeltaiotaeta :  reduction_function
 
+val whd_eta : constr -> constr
 
 
 
@@ -206,11 +208,8 @@ val whd_meta : (metavariable * constr) list -> constr -> constr
 val plain_instance : (metavariable * constr) list -> constr -> constr
 val instance : (metavariable * constr) list -> constr -> constr
 
-(*s Obsolete Reduction Functions *)
+(*s Heuristic for Conversion with Evar *)
 
-(*i
-val hnf : env -> 'a evar_map -> constr -> constr * constr list
-i*)
 val apprec :  state_reduction_function
 
 (*s Meta-related reduction functions *)
