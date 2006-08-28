@@ -1,3 +1,9 @@
+Changes from V8.1beta to V8.1
+=============================
+
+- Support for Miller-Pfenning's patterns unification in type synthesis
+  (e.g. can infer P such that P x y = phi(x,y))
+
 Changes from V8.0 to V8.1
 =========================
 

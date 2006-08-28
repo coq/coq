@@ -21,13 +21,6 @@ open Evd
 open Reductionops
 open Pretype_errors
 
-
-let rec filter_unique = function
-  | [] -> []
-  | x::l ->
-      if List.mem x l then filter_unique (List.filter (fun y -> x<>y) l)
-      else x::filter_unique l
-
 (* Expanding existential variables (pretyping.ml) *)
 (* 1- whd_ise fails if an existential is undefined *)
 
@@ -310,29 +303,45 @@ let is_defined_equation env evd (ev,inst) rhs =
  * ?3 <-- ?1          no pb: env of ?3 is larger than ?1's
  * ?1 <-- (list ?2)   pb: ?2 may depend on x, but not ?1.
  * What we do is that ?2 is defined by a new evar ?4 whose context will be
- * a prefix of ?2's env, included in ?1's env. *)
+ * a prefix of ?2's env, included in ?1's env.
 
-let do_restrict_hyps evd ev args =
+ Concretely, the assumptions are "env |- ev : T" and "Gamma |-
+ ev[hyps:=args]" for some Gamma whose de Bruijn context has length k.
+ We create "env' |- ev' : T" for some env' <= env and define ev:=ev'
+*)
+
+let do_restrict_hyps env k evd ev args =
   let args = Array.to_list args in
   let evi = Evd.find (evars_of !evd) ev in
-  let env = evar_env evi in
   let hyps = evar_context evi in
-  let (sign,ncargs) = list_filter2 (fun _ a -> closed0 a) (hyps,args) in
+  let (hyps',ncargs) = list_filter2 (fun _ a -> closedn k a) (hyps,args) in
   (* No care is taken in case the evar type uses vars filtered out!
-     Is it important ? *)
-  let nc =
-    let env =
-      Sign.fold_named_context push_named sign ~init:(reset_context env) in
-    e_new_evar evd env ~src:(evar_source ev !evd) evi.evar_concl in
+     Assuming that the restriction comes from a well-typed Flex/Flex
+     unification problem (see real_clean), the type of the evar cannot
+     depend on variables that are not in the scope of the other evar,
+     since this other evar has the same type (up to unification).
+     Since moreover, the evar contexts uses names only, the
+     restriction raise no de Bruijn reallocation problem *)
+  let env' =
+    Sign.fold_named_context push_named hyps' ~init:(reset_context env) in
+  let nc = e_new_evar evd env' ~src:(evar_source ev !evd) evi.evar_concl in
   evd := Evd.evar_define ev nc !evd;
   let (evn,_) = destEvar nc in
   mkEvar(evn,Array.of_list ncargs)
 
-
-let need_restriction isevars args = not (array_for_all closed0 args)
+let need_restriction k args = not (array_for_all (closedn k) args)
 
 (* We try to instantiate the evar assuming the body won't depend
- * on arguments that are not Rels or Vars, or appearing several times.
+ * on arguments that are not Rels or Vars, or appearing several times
+   (i.e. we tackle only Miller-Pfenning patterns unification) 
+
+  1) Let a unification problem "env |- ev[hyps:=args] = rhs"
+  2) We limit it to a patterns unification problem "env |- ev[subst] = rhs"
+     where only Rel's and Var's are relevant in subst
+  3) We recur on rhs, "imitating" the term failing if some Rel/Var not in scope
+
+  Note: we don't assume rhs in normal form, it may fail while it would
+  have succeeded after some reductions
  *)
 (* Note: error_not_clean should not be an error: it simply means that the
  * conversion test that lead to the faulty call to [real_clean] should return
@@ -341,36 +350,52 @@ let need_restriction isevars args = not (array_for_all closed0 args)
 
 let real_clean env isevars ev evi args rhs =
   let evd = ref isevars in
-  let subst = List.map (fun (x,y) -> (y,mkVar x)) (filter_unique args) in
+  let subst = List.map (fun (x,y) -> (y,mkVar x)) (list_uniquize args) in
   let rec subs rigid k t =
     match kind_of_term t with
       | Rel i ->
  	 if i<=k then t
- 	 else (try List.assoc (mkRel (i-k)) subst with Not_found -> t)
+ 	 else
+	   (* Flex/Rel problem: unifiable as a pattern iff Rel in ev scope *)
+	   (try List.assoc (mkRel (i-k)) subst 
+	    with Not_found -> if rigid then raise Exit else t)
       | Evar (ev,args) ->
           if Evd.is_defined_evar !evd (ev,args) then
             subs rigid k (existential_value (evars_of !evd) (ev,args))
           else
+	    (* Flex/Flex problem: restriction to a common scope *)
 	    let args' = Array.map (subs false k) args in
-	    if need_restriction !evd args' then
-              do_restrict_hyps evd ev args'
+	    if need_restriction k args' then
+              do_restrict_hyps (reset_context env) k evd ev args'
 	    else
 	      mkEvar (ev,args')
       | Var id ->
+	  (* Flex/Var problem: unifiable as a pattern iff Var in scope of ev *)
           (try List.assoc t subst
            with Not_found ->
              if
                not rigid 
+	     (* I don't understand this line: vars from evar_context evi
+		are private (especially some of them are freshly
+		generated in push_rel_context_to_named_context). They
+		have a priori nothing to do with the vars in env. I
+		remove the test [HH 25/8/06]
+
 		 or List.exists (fun (id',_,_) -> id=id') (evar_context evi)
+	     *)
              then t
-             else
-               error_not_clean env (evars_of !evd) ev rhs
-                 (evar_source ev !evd))
-      | _ -> map_constr_with_binders succ (subs rigid) k t
+             else raise Exit)
+               
+      | _ ->
+	  (* Flex/Rigid problem (or assimilated if not normal): we "imitate" *)
+	  map_constr_with_binders succ (subs rigid) k t
   in
-  let body = subs true 0 (nf_evar (evars_of isevars) rhs) in
-  if not (closed0 body)
-  then error_not_clean env (evars_of !evd) ev body (evar_source ev !evd);
+  let rhs = nf_evar (evars_of isevars) rhs in
+  let rhs = whd_beta rhs (* heuristic *) in
+  let body = 
+    try subs true 0 rhs
+    with Exit -> 
+      error_not_clean env (evars_of !evd) ev rhs (evar_source ev !evd) in
   (!evd,body)
 
 (* [evar_define] solves the problem lhs = rhs when lhs is an uninstantiated
@@ -463,6 +488,24 @@ let head_evar =
     | _                   -> failwith "headconstant"
   in 
   hrec 
+
+(* Check if an applied evar "?X[args] l" is a Miller's pattern; note
+   that we don't care whether args itself contains Rel's or even Rel's
+   distinct from the ones in l *)
+
+let is_unification_pattern l =
+  List.for_all isRel l & list_uniquize l = l
+
+(* From a unification problem "?X l1 = term1 l2" such that l1 is made
+   of distinct rel's, build "\x1...xn.(term1 l2)" (patterns unification) *)
+
+let solve_pattern_eqn env l1 c =
+  let c' = List.fold_right (fun a c ->
+    let c' = subst_term (lift 1 a) (lift 1 c) in
+    let n = destRel a in 
+    let (na,_,t) = lookup_rel n env (* if na defined, do as if assumption *) in
+    (mkLambda (na,lift n t,c'))) l1 c in
+  whd_eta c'
 
 (* This code (i.e. solve_pb, etc.) takes a unification
  * problem, and tries to solve it. If it solves it, then it removes

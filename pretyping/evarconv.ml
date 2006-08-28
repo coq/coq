@@ -8,12 +8,14 @@
 
 (* $Id$ *)
 
+open Pp
 open Util
 open Names
 open Term
 open Closure
 open Reduction
 open Reductionops
+open Termops
 open Environ
 open Typing
 open Classops
@@ -83,7 +85,7 @@ let evar_apprec env isevars stack c =
       | Evar (n,_ as ev) when Evd.is_defined sigma n ->
 	  aux (Evd.existential_value sigma ev, stack)
       | _ -> (t, list_of_stack stack)
-  in aux (c, append_stack (Array.of_list stack) empty_stack)
+  in aux (c, append_stack_list stack empty_stack)
 
 let apprec_nohdbeta env isevars c =
   let (t,stack as s) = Reductionops.whd_stack c in
@@ -125,7 +127,6 @@ let check_conv_record (t1,l1) (t2,l2) =
     c,bs,(params,params1),(us,us2),(extra_args1,extra_args2),c1
   with _ -> 
     raise Not_found
-
 
 (* Precondition: one of the terms of the pb is an uninstantiated evar,
  * possibly applied to arguments. *)
@@ -229,7 +230,17 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 
     | Flexible ev1, MaybeFlexible flex2 ->
 	let f1 i =
-          if List.length l1 <= List.length l2 then
+	  if 
+	    is_unification_pattern l1 & 
+	    not (occur_evar (fst ev1) (applist (term2,l2)))
+	  then
+	    (* Miller-Pfenning's patterns unification *)
+	    let t2 = solve_pattern_eqn env l1 (applist(term2,l2)) in
+	    solve_simple_eqn evar_conv_x env isevars (pbty,ev1,t2)
+	  else if
+            List.length l1 <= List.length l2
+	  then
+	  (* Try first-order unification *)
 	    let (deb2,rest2) =
               list_chop (List.length l2-List.length l1) l2 in
             ise_and i
@@ -248,7 +259,17 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 
     | MaybeFlexible flex1, Flexible ev2 ->
 	let f1 i =
-       	  if List.length l2 <= List.length l1 then
+	  if 
+	    is_unification_pattern l2 & 
+	    not (occur_evar (fst ev2) (applist (term1,l1)))
+	  then
+	    (* Miller-Pfenning's patterns unification *)
+	    let t1 = solve_pattern_eqn env l2 (applist(term1,l1)) in
+	    solve_simple_eqn evar_conv_x env isevars (pbty,ev2,t1)
+	  else if
+       	    List.length l2 <= List.length l1
+	  then
+	    (* Try first-order unification *)
             let (deb1,rest1) = list_chop (List.length l1-List.length l2) l1 in
             ise_and i
             (* First compare extra args for better failure message *)
@@ -273,8 +294,7 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	  (try conv_record env i
              (try check_conv_record appr1 appr2
 	      with Not_found -> check_conv_record appr2 appr1)
-(* TODO: remove this _ !!! *)
-           with _ -> (i,false))
+           with Not_found -> (i,false))
 	and f4 i =
           (* heuristic: unfold second argument first, exception made
              if the first argument is a beta-redex (expand a constant
@@ -295,7 +315,17 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	ise_try isevars [f2; f3; f4]
 
     | Flexible ev1, Rigid _ ->
-       	if (List.length l1 <= List.length l2) then
+	if 
+	  is_unification_pattern l1 & 
+	  not (occur_evar (fst ev1) (applist (term2,l2)))
+	then
+	  (* Miller-Pfenning's patterns unification *)
+	  let t2 = solve_pattern_eqn env l1 (applist(term2,l2)) in
+	  solve_simple_eqn evar_conv_x env isevars (pbty,ev1,t2)
+	else if
+       	  List.length l1 <= List.length l2
+	then
+	  (* Try first-order unification *)
        	  let (deb2,rest2) = list_chop (List.length l2-List.length l1) l2 in
           ise_and isevars
             (* First compare extra args for better failure message *)
@@ -308,8 +338,19 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	       else
 		 solve_simple_eqn evar_conv_x env i (pbty,ev1,t2))]
         else (isevars,false)
+
     | Rigid _, Flexible ev2 ->
-        if List.length l2 <= List.length l1 then
+	if 
+	  is_unification_pattern l2 & 
+	  not (occur_evar (fst ev2) (applist (term1,l1)))
+	then
+	  (* Miller-Pfenning's patterns unification *)
+	  let t1 = solve_pattern_eqn env l2 (applist(term1,l1)) in
+	  solve_simple_eqn evar_conv_x env isevars (pbty,ev2,t1)
+	else if
+	  List.length l2 <= List.length l1
+	then
+	  (* Try first-order unification *)
        	  let (deb1,rest1) = list_chop (List.length l1-List.length l2) l1 in
           ise_and isevars
             (* First compare extra args for better failure message *)
@@ -326,7 +367,7 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
     | MaybeFlexible flex1, Rigid _ ->
 	let f3 i =
 	  (try conv_record env i (check_conv_record appr1 appr2)
-           with _ -> (i,false))
+           with Not_found -> (i,false))
 	and f4 i =
 	  match eval_flexible_term env flex1 with
 	    | Some v1 ->
@@ -337,8 +378,8 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	     
     | Rigid _ , MaybeFlexible flex2 -> 
 	let f3 i = 
-	  (try (conv_record env i (check_conv_record appr2 appr1))
-           with _ -> (i,false))
+	  (try conv_record env i (check_conv_record appr2 appr1)
+           with Not_found -> (i,false))
 	and f4 i =
 	  match eval_flexible_term env flex2 with
 	    | Some v2 ->
@@ -468,7 +509,7 @@ and conv_record env isevars (c,bs,(params,params1),(us,us2),(ts,ts1),c1) =
          params1 params);
      (fun i -> ise_list2 i (fun i -> evar_conv_x env i CONV) ts ts1);
      (fun i -> evar_conv_x env i CONV c1 (applist (c,(List.rev ks))))]
-    
+
 let the_conv_x     env t1 t2 isevars =
   match evar_conv_x env isevars CONV  t1 t2 with
       (evd',true) -> evd'
