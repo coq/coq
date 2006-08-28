@@ -25,11 +25,11 @@ Notation Local "'inhabited' A" := A (at level 200, only parsing).
 
 Axiom constructive_indefinite_description :
   forall (A : Type) (P : A->Prop), 
-  (ex P) -> { x : A | P x }.
+  (exists x, P x) -> { x : A | P x }.
 
 Lemma constructive_definite_description :
   forall (A : Type) (P : A->Prop), 
-  (exists! x : A, P x) -> { x : A | P x }.
+  (exists! x, P x) -> { x : A | P x }.
 Proof.
 intros; apply constructive_indefinite_description; firstorder.
 Qed.
@@ -43,11 +43,12 @@ Qed.
 
 Theorem classical_indefinite_description : 
   forall (A : Type) (P : A->Prop), inhabited A ->
-  { x : A | ex P -> P x }.
+  { x : A | (exists x, P x) -> P x }.
 Proof.
 intros A P i.
 destruct (excluded_middle_informative (exists x, P x)) as [Hex|HnonP].
-  apply constructive_indefinite_description with (P:= fun x => ex P -> P x).
+  apply constructive_indefinite_description 
+    with (P:= fun x => (exists x, P x) -> P x).
   destruct Hex as (x,Hx).
     exists x; intros _; exact Hx.
     firstorder.
@@ -59,7 +60,7 @@ Definition epsilon (A : Type) (i:inhabited A) (P : A->Prop) : A
   := proj1_sig (classical_indefinite_description P i).
 
 Definition epsilon_spec (A : Type) (i:inhabited A) (P : A->Prop) : 
-  (ex P) -> P (epsilon i P)
+  (exists x, P x) -> P (epsilon i P)
   := proj2_sig (classical_indefinite_description P i).
 
 Opaque epsilon.
@@ -72,9 +73,6 @@ Opaque epsilon.
     [classical_indefinite_description] is provable (see
     [relative_non_contradiction_of_indefinite_desc]). *)
 
-(** Remark: we use [ex P] rather than [exists x, P x] (which is [ex
-    (fun x => P x)] to ease unification *)
-
 (** *** Weaker lemmas (compatibility lemmas) *)
 
 Theorem choice :
@@ -83,8 +81,8 @@ Theorem choice :
    (exists f : A->B, forall x : A, R x (f x)).
 Proof.
 intros A B R H.
-exists (fun x => proj1_sig (constructive_indefinite_description (H x))).
+exists (fun x => proj1_sig (constructive_indefinite_description _ (H x))).
 intro x.
-apply (proj2_sig (constructive_indefinite_description  (H x))).
+apply (proj2_sig (constructive_indefinite_description _ (H x))).
 Qed.
 
