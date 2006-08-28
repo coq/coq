@@ -31,6 +31,8 @@ type debug_info =
 (* An exception handler *)
 let explain_logic_error = ref (fun e -> mt())
 
+let explain_logic_error_no_anomaly = ref (fun e -> mt())
+
 (* Prints the goal *)
 let db_pr_goal g =
   msgnl (str "Goal:" ++ fnl () ++ Proof_trees.db_pr_goal (Refiner.sig_it g))

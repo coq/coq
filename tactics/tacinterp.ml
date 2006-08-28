@@ -48,6 +48,12 @@ open Pretyping
 open Pretyping.Default
 open Pcoq
 
+let safe_msgnl s =
+    try msgnl s with e -> 
+      msgnl 
+	(str "bug in the debugger : " ++
+         str "an exception is raised while printing debug information")
+
 let error_syntactic_metavariables_not_allowed loc =
   user_err_loc 
     (loc,"out_ident",
@@ -1296,11 +1302,39 @@ let interp_may_eval f ist gl = function
 	    user_err_loc (loc, "interp_may_eval",
 	    str "Unbound context identifier" ++ pr_id s))
   | ConstrTypeOf c -> pf_type_of gl (f ist gl c)
-  | ConstrTerm c -> f ist gl c
+  | ConstrTerm c -> 
+     try 
+	f ist gl c
+     with e -> 
+	begin 
+	  match ist.debug with 
+	    DebugOn lev -> 
+	    safe_msgnl (str "Level " ++ int lev ++
+                          str ": interpretation of term " ++ 
+			   Printer.pr_rawconstr_env (pf_env gl) (fst c) ++
+			   str " raised an exception" ++
+			   fnl() ++
+			   !Tactic_debug.explain_logic_error_no_anomaly e)
+	| _ -> ()
+     end;
+     raise e  
 
 (* Interprets a constr expression possibly to first evaluate *)
 let interp_constr_may_eval ist gl c =
-  let csr = interp_may_eval pf_interp_constr ist gl c in
+  let csr = 
+    try
+      interp_may_eval pf_interp_constr ist gl c
+    with e -> 
+      begin match ist.debug with
+	  DebugOn lev -> 
+	    safe_msgnl (str "Level " ++ int lev ++
+                           str ": evaluation of term raised an exception" ++
+			   fnl() ++
+			   !Tactic_debug.explain_logic_error_no_anomaly e)
+	| _ -> ()
+      end;
+      raise e
+  in
   begin
     db_constr ist.debug (pf_env gl) csr;
     csr
@@ -1481,7 +1515,31 @@ and interp_app ist gl fv largs loc =
     | VFun(olfun,var,body) ->
       let (newlfun,lvar,lval)=head_with_value (var,largs) in
       if lvar=[] then
-	let v = val_interp { ist with lfun=newlfun@olfun } gl body in
+	let v = 
+          let res = 
+	    try
+	      val_interp { ist with lfun=newlfun@olfun } gl body
+	    with e ->
+	      begin match ist.debug with
+		  DebugOn lev -> 
+		    safe_msgnl 
+		      (str "Level " ++ int lev ++ 
+			  str ": evaluation raises an exception" ++
+                          fnl() ++
+			  !Tactic_debug.explain_logic_error_no_anomaly e)
+		| _ -> ()
+	      end;
+	      raise e
+	  in
+	    (match ist.debug with
+		DebugOn lev -> 
+		  safe_msgnl (str "Level " ++ int lev ++ 
+				 str ": evaluation returns" ++ fnl() ++
+				 pr_value (Some (pf_env gl)) res)
+	      | _ -> ());
+	    res
+	in
+
         if lval=[] then locate_tactic_call loc v
 	else interp_app ist gl v lval loc
       else
@@ -1706,26 +1764,114 @@ and interp_match ist g lz constr lmr =
         (try eval_with_fail ist lz g t
          with e when is_match_catchable e -> apply_match ist csr [])
     | (Pat ([],Term c,mt))::tl ->
-        (try
-	  let lm = matches c csr in
-	  let lm = List.map (fun (id,c) -> (id,VConstr c)) lm in
-          eval_with_fail { ist with lfun=lm@ist.lfun } lz g mt
-         with e when is_match_catchable e -> apply_match ist csr tl)
+        (try let lm = 
+              (try matches c csr with 
+                e -> 
+                  (match ist.debug with
+                    DebugOn lev ->
+                      safe_msgnl (str "Level " ++ int lev ++
+                             str ": matching with pattern" ++ fnl() ++
+                         Printer.pr_constr_pattern_env (pf_env g) c ++ fnl() ++
+                         str "raised the exception" ++ fnl() ++
+                         !Tactic_debug.explain_logic_error_no_anomaly e)
+                  | _ -> ()); raise e) in
+            (try let lm = List.map (fun (id,c) -> (id,VConstr c)) lm in
+               eval_with_fail { ist with lfun=lm@ist.lfun } lz g mt
+            with e ->
+               (match ist.debug with
+                  DebugOn lev -> 
+                    safe_msgnl (str "rule body for pattern" ++ fnl() ++
+                    Printer.pr_constr_pattern_env (pf_env g) c ++ fnl() ++
+                    str "raised the exception" ++ fnl() ++
+                    !Tactic_debug.explain_logic_error_no_anomaly e)
+                | _ -> ()); raise e)
+         with e when is_match_catchable e ->
+            (match ist.debug with
+               DebugOn lev ->
+                 safe_msgnl (str "Level " ++ int lev ++ 
+                       str ":switching to the next rule");
+             | DebugOff -> ());
+            apply_match ist csr tl)
+
     | (Pat ([],Subterm (id,c),mt))::tl ->
         (try apply_match_subterm ist 0 (id,c) csr mt
          with PatternMatchingFailure -> apply_match ist csr tl)
     | _ ->
       errorlabstrm "Tacinterp.apply_match" (str
         "No matching clauses for match") in
-  let csr = interp_ltac_constr ist g constr in
+  let csr = 
+      try interp_ltac_constr ist g constr with
+        e -> (match ist.debug with
+               DebugOn lev ->
+               safe_msgnl (str "Level " ++ int lev ++ 
+                      str ": evaluation of the matched expression raised " ++
+                      str "the exception" ++ fnl() ++
+                      !Tactic_debug.explain_logic_error e)
+             | _ -> ()); raise e in
   let ilr = read_match_rule (fst (constr_list ist (pf_env g))) lmr in
-  apply_match ist csr ilr
+  let res = 
+     try apply_match ist csr ilr with
+       e -> 
+           begin match ist.debug with
+             DebugOn lev ->
+                safe_msgnl (str "Level " ++ int lev ++ 
+                        str ": match expression failed with error" ++ fnl() ++
+                    !Tactic_debug.explain_logic_error e)
+           | _ -> ()
+           end;
+           raise e in
+     (if ist.debug <> DebugOff then
+     safe_msgnl (str "match expression returns " ++
+            pr_value (Some (pf_env g)) res));
+     res
 
 (* Interprets tactic expressions : returns a "constr" *)
 and interp_ltac_constr ist gl e =
-  try constr_of_value (pf_env gl) (val_interp ist gl e)
+  let result = 
+  try (val_interp ist gl e) with Not_found -> 
+    begin match ist.debug with
+      DebugOn lev ->
+       safe_msgnl (str "Level " ++ int lev ++ 
+                   str ": evaluation failed for" ++ fnl() ++
+                       Pptactic.pr_glob_tactic (pf_env gl) e)
+    | _ -> ()
+    end;
+    raise Not_found in
+  try let cresult = constr_of_value (pf_env gl) result in
+    (if !debug <> DebugOff then 
+        safe_msgnl (Pptactic.pr_glob_tactic (pf_env gl) e ++ fnl() ++
+        str " has value " ++ fnl() ++ print_constr_env (pf_env gl) cresult);
+     cresult)
+        
   with Not_found ->
-    errorlabstrm "" (str "Must evaluate to a term")
+    errorlabstrm ""
+      (str "Must evaluate to a term" ++ fnl() ++ 
+	  str "offending expression: " ++ fnl() ++
+          Pptactic.pr_glob_tactic (pf_env gl) e ++ fnl() ++ str "this is a " ++
+          (match result with
+              VTactic _ -> str "VTactic"
+            | VRTactic _ -> str "VRTactic"
+            | VFun (il,ul,b) ->
+                (str "VFun with body " ++ fnl() ++
+                    Pptactic.pr_glob_tactic (pf_env gl) b ++ fnl() ++
+		    str "instantiated arguments " ++ fnl() ++
+                    List.fold_right 
+                    (fun p s ->
+                      let (i,v) = p in str (string_of_id i) ++ str ", " ++ s)
+                    il (str "") ++
+                    str "uninstantiated arguments " ++ fnl() ++
+                    List.fold_right
+                    (fun opt_id s ->
+                      (match opt_id with
+                          Some id -> str (string_of_id id)
+                        | None -> str "_") ++ str ", " ++ s)
+                    ul (str ""))
+            | VVoid -> str "VVoid"
+            | VInteger _ -> str "VInteger"
+            | VConstr _ -> str "VConstr"
+            | VIntroPattern _ -> str "VIntroPattern"
+            | VConstr_context _ -> str "VConstrr_context"
+            | VRec _ -> str "VRec"))
 
 (* Interprets tactic expressions : returns a "tactic" *)
 and interp_tactic ist tac gl =

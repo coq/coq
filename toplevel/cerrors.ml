@@ -28,19 +28,21 @@ let guill s = "\""^s^"\""
 let where s =
   if !Options.debug then  (str"in " ++ str s ++ str":" ++ spc ()) else (mt ())
 
+let anomaly_string () = str "Anomaly: "
+
 let report () = (str "." ++ spc () ++ str "Please report.")
 
 (* assumption : explain_sys_exn does NOT end with a 'FNL anymore! *)
 
-let rec explain_exn_default = function
+let rec explain_exn_default_aux anomaly_string report_fn = function
   | Stream.Failure -> 
-      hov 0 (str "Anomaly: uncaught Stream.Failure.")
+      hov 0 (anomaly_string () ++ str "uncaught Stream.Failure.")
   | Stream.Error txt -> 
       hov 0 (str "Syntax error: " ++ str txt)
   | Token.Error txt -> 
       hov 0 (str "Syntax error: " ++ str txt)
   | Sys_error msg -> 
-      hov 0 (str "Anomaly: uncaught exception Sys_error " ++ str (guill msg) ++ report ())
+      hov 0 (anomaly_string () ++ str "uncaught exception Sys_error " ++ str (guill msg) ++ report_fn ())
   | UserError(s,pps) -> 
       hov 1 (str "User error: " ++ where s ++ pps)
   | Out_of_memory -> 
@@ -48,22 +50,22 @@ let rec explain_exn_default = function
   | Stack_overflow -> 
       hov 0 (str "Stack overflow")
   | Anomaly (s,pps) -> 
-      hov 1 (str "Anomaly: " ++ where s ++ pps ++ report ())
+      hov 1 (anomaly_string () ++ where s ++ pps ++ report_fn ())
   | Match_failure(filename,pos1,pos2) ->
-      hov 1 (str "Anomaly: Match failure in file " ++ str (guill filename) ++ 
+      hov 1 (anomaly_string () ++ str "Match failure in file " ++ str (guill filename) ++ 
       if Sys.ocaml_version = "3.06" then
 		   (str " from character " ++ int pos1 ++ 
                     str " to " ++ int pos2)
 		 else
 		   (str " at line " ++ int pos1 ++
 		    str " character " ++ int pos2)
-	           ++ report ())
+	           ++ report_fn ())
   | Not_found -> 
-      hov 0 (str "Anomaly: uncaught exception Not_found" ++ report ())
+      hov 0 (anomaly_string () ++ str "uncaught exception Not_found" ++ report_fn ())
   | Failure s -> 
-      hov 0 (str "Anomaly: uncaught exception Failure " ++ str (guill s) ++ report ())
+      hov 0 (anomaly_string () ++ str "uncaught exception Failure " ++ str (guill s) ++ report_fn ())
   | Invalid_argument s -> 
-      hov 0 (str "Anomaly: uncaught exception Invalid_argument " ++ str (guill s) ++ report ())
+      hov 0 (anomaly_string () ++ str "uncaught exception Invalid_argument " ++ str (guill s) ++ report_fn ())
   | Sys.Break -> 
       hov 0 (fnl () ++ str "User Interrupt.")
   | Univ.UniverseInconsistency -> 
@@ -97,7 +99,7 @@ let rec explain_exn_default = function
   | Stdpp.Exc_located (loc,exc) ->
       hov 0 ((if loc = dummy_loc then (mt ())
                else (str"At location " ++ print_loc loc ++ str":" ++ fnl ()))
-               ++ explain_exn_default exc)
+               ++ explain_exn_default_aux anomaly_string report_fn exc)
   | Lexer.Error Illegal_character -> 
       hov 0 (str "Syntax error: Illegal character.")
   | Lexer.Error Unterminated_comment -> 
@@ -109,7 +111,7 @@ let rec explain_exn_default = function
   | Lexer.Error (Bad_token s) -> 
       hov 0 (str "Syntax error: Bad token" ++ spc () ++ str s ++ str ".")
   | Assert_failure (s,b,e) ->
-      hov 0 (str "Anomaly: assert failure" ++ spc () ++
+      hov 0 (anomaly_string () ++ str "assert failure" ++ spc () ++
 	       (if s <> "" then 
 		 if Sys.ocaml_version = "3.06" then
 		   (str ("(file \"" ^ s ^ "\", characters ") ++ 
@@ -120,15 +122,21 @@ let rec explain_exn_default = function
 		    int (e+6) ++ str ")")
 	       else
 		 (mt ())) ++
-	       report ())
+	       report_fn ())
   | reraise ->
-      hov 0 (str "Anomaly: Uncaught exception " ++ 
-	       str (Printexc.to_string reraise) ++ report ())
+      hov 0 (anomaly_string () ++ str "Uncaught exception " ++ 
+	       str (Printexc.to_string reraise) ++ report_fn ())
+
+let explain_exn_default =
+    explain_exn_default_aux (fun () -> str "Anomaly: ") report
 
 let raise_if_debug e =
   if !Options.debug then raise e
 
 let _ = Tactic_debug.explain_logic_error := explain_exn_default
+
+let _ = Tactic_debug.explain_logic_error_no_anomaly :=
+          explain_exn_default_aux (fun () -> mt()) (fun () -> mt())
 
 let explain_exn_function = ref explain_exn_default
 
