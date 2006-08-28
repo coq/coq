@@ -21,8 +21,6 @@ Require Import ChoiceFacts.
 
 Set Implicit Arguments.
 
-Notation Local "'inhabited' A" := A (at level 200, only parsing).
-
 Axiom constructive_indefinite_description :
   forall (A : Type) (P : A->Prop), 
   (exists x, P x) -> { x : A | P x }.
@@ -51,8 +49,11 @@ destruct (excluded_middle_informative (exists x, P x)) as [Hex|HnonP].
     with (P:= fun x => (exists x, P x) -> P x).
   destruct Hex as (x,Hx).
     exists x; intros _; exact Hx.
-    firstorder.
-Qed.
+  assert {x : A | True} as (a,_).
+    apply constructive_indefinite_description with (P := fun _ : A => True).
+    destruct i as (a); firstorder.
+  firstorder.
+Defined.
 
 (** Hilbert's epsilon operator *)
 
@@ -63,8 +64,6 @@ Definition epsilon_spec (A : Type) (i:inhabited A) (P : A->Prop) :
   (exists x, P x) -> P (epsilon i P)
   := proj2_sig (classical_indefinite_description P i).
 
-Opaque epsilon.
-
 (** Open question: is classical_indefinite_description constructively
     provable from [relational_choice] and
     [constructive_definite_description] (at least, using the fact that
@@ -72,6 +71,21 @@ Opaque epsilon.
     [unique_choice], we know that the double negation of
     [classical_indefinite_description] is provable (see
     [relative_non_contradiction_of_indefinite_desc]). *)
+
+(** A proof that if [P] is inhabited, [epsilon a P] does not depend on
+    the actual proof that the domain of [P] is inhabited
+    (proof idea kindly provided by Pierre Castéran) *)
+
+Lemma epsilon_inh_irrelevance : 
+   forall (A:Type) (i j : inhabited A) (P:A->Prop),
+   (exists x, P x) -> epsilon i P = epsilon j P.
+Proof.
+ intros.
+ unfold epsilon, classical_indefinite_description.
+ destruct (excluded_middle_informative (exists x : A, P x)) as [|[]]; trivial.
+Qed.
+
+Opaque epsilon.
 
 (** *** Weaker lemmas (compatibility lemmas) *)
 

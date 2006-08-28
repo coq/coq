@@ -312,4 +312,8 @@ intros A P; split.
       auto.
 Qed.
 
+(** Being inhabited *)
 
+Inductive inhabited (A:Type) : Prop := inhabits : A -> inhabited A.
+
+Hint Resolve inhabits: core.
