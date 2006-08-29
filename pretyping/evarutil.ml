@@ -503,9 +503,12 @@ let is_unification_pattern (_,args) l =
 let solve_pattern_eqn env l1 c =
   let c' = List.fold_right (fun a c ->
     let c' = subst_term (lift 1 a) (lift 1 c) in
-    let n = destRel a in 
-    let (na,_,t) = lookup_rel n env (* if na defined, do as if assumption *) in
-    (mkLambda (na,lift n t,c'))) l1 c in
+    match kind_of_term a with
+      (* Rem: if [a] links to a let-in, do as if it were an assumption *)
+      | Rel n -> let (na,_,t) = lookup_rel n env in mkLambda (na,lift n t,c')
+      | Var id -> let (id,_,t) = lookup_named id env in mkNamedLambda id t c'
+      | _ -> assert false) 
+    l1 c in
   whd_eta c'
 
 (* This code (i.e. solve_pb, etc.) takes a unification
