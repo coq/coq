@@ -75,7 +75,6 @@ MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
 BYTEFLAGS=$(MLINCLUDES) $(CAMLDEBUG) $(USERFLAGS)
 OPTFLAGS=$(MLINCLUDES) $(CAMLTIMEPROF) $(USERFLAGS)
-OCAMLDEP=ocamldep
 DEPFLAGS=$(LOCALINCLUDES)
 
 OCAMLC_P4O=$(OCAMLC) -pp $(CAMLP4O) $(BYTEFLAGS)
@@ -1322,6 +1321,24 @@ clean::
 	rm -f doc/coq.tex
 
 ###########################################################################
+# Documentation of the source code (using ocamldoc)
+###########################################################################
+
+SOURCEDOCDIR=dev/source-doc
+
+.PHONY: source-doc
+
+source-doc:
+	if !(test -d $(SOURCEDOCDIR)); then mkdir $(SOURCEDOCDIR); fi
+	$(OCAMLDOC) -html -rectypes $(LOCALINCLUDES) -d $(SOURCEDOCDIR) `find . -name "*.ml"`
+
+clean::
+	rm -rf $(SOURCEDOCDIR)
+
+
+
+
+###########################################################################
 # Emacs tags
 ###########################################################################
 
@@ -1580,15 +1597,15 @@ parsing/lexer.cmo: parsing/lexer.ml4
 
 .mll.ml:
 	$(SHOW)'OCAMLLEX  $<'
-	$(HIDE)ocamllex $<
+	$(HIDE)$(OCAMLLEX) $<
 
 .mly.ml:
 	$(SHOW)'OCAMLYACC $<'
-	$(HIDE)ocamlyacc $<
+	$(HIDE)$(OCAMLYACC) $<
 
 .mly.mli:
 	$(SHOW)'OCAMLYACC $<'
-	$(HIDE)ocamlyacc $<
+	$(HIDE)$(OCAMLYACC) $<
 
 .ml4.cmx:
 	$(SHOW)'OCAMLOPT4 $<'

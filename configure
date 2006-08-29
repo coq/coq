@@ -213,6 +213,11 @@ fi
 CAMLBIN=`dirname "$CAMLC"`
 bytecamlc="$CAMLC"
 nativecamlc=$CAMLBIN/$nativecamlc
+ocamldepexec=$CAMLBIN/ocamldep
+ocamldocexec=$CAMLBIN/ocamldoc
+ocamllexexec=$CAMLBIN/ocamllex
+ocamlyaccexec=$CAMLBIN/ocamlyacc
+camlmktopexec=$CAMLBIN/ocamlmktop
 
 CAMLVERSION=`"$bytecamlc" -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
 
@@ -609,6 +614,11 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|EXECUTEEXTENSION|$EXE|" \
     -e "s|BYTECAMLC|$bytecamlc|" \
     -e "s|NATIVECAMLC|$nativecamlc|" \
+    -e "s|OCAMLDEPEXEC|$ocamldepexec|" \
+    -e "s|OCAMLDOCEXEC|$ocamldocexec|" \
+    -e "s|OCAMLLEXEXEC|$ocamllexexec|" \
+    -e "s|OCAMLYACCEXEC|$ocamlyaccexec|" \
+    -e "s|CAMLMKTOPEXEC|$camlmktopexec|" \
     -e "s|STRIPCOMMAND|$STRIPCOMMAND|" \
     -e "s|FSETSOPT|$fsets|" \
     -e "s|REALSOPT|$reals|" \
