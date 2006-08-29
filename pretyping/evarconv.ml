@@ -235,7 +235,8 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	    not (occur_evar (fst ev1) (applist (term2,l2)))
 	  then
 	    (* Miller-Pfenning's patterns unification *)
-	    let t2 = solve_pattern_eqn env l1 (applist(term2,l2)) in
+	    let t2 = nf_evar (evars_of isevars) (applist(term2,l2)) in
+	    let t2 = solve_pattern_eqn env l1 t2 in
 	    solve_simple_eqn evar_conv_x env isevars (pbty,ev1,t2)
 	  else if
             List.length l1 <= List.length l2
@@ -264,7 +265,8 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	    not (occur_evar (fst ev2) (applist (term1,l1)))
 	  then
 	    (* Miller-Pfenning's patterns unification *)
-	    let t1 = solve_pattern_eqn env l2 (applist(term1,l1)) in
+	    let t1 = nf_evar (evars_of isevars) (applist(term1,l1)) in
+	    let t1 = solve_pattern_eqn env l2 t1 in
 	    solve_simple_eqn evar_conv_x env isevars (pbty,ev2,t1)
 	  else if
        	    List.length l2 <= List.length l1
@@ -320,7 +322,8 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	  not (occur_evar (fst ev1) (applist (term2,l2)))
 	then
 	  (* Miller-Pfenning's patterns unification *)
-	  let t2 = solve_pattern_eqn env l1 (applist(term2,l2)) in
+	  let t2 = nf_evar (evars_of isevars) (applist(term2,l2)) in
+	  let t2 = solve_pattern_eqn env l1 t2 in
 	  solve_simple_eqn evar_conv_x env isevars (pbty,ev1,t2)
 	else if
        	  List.length l1 <= List.length l2
@@ -345,7 +348,8 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	  not (occur_evar (fst ev2) (applist (term1,l1)))
 	then
 	  (* Miller-Pfenning's patterns unification *)
-	  let t1 = solve_pattern_eqn env l2 (applist(term1,l1)) in
+	  let t1 = nf_evar (evars_of isevars) (applist(term1,l1)) in
+	  let t1 = solve_pattern_eqn env l2 t1 in
 	  solve_simple_eqn evar_conv_x env isevars (pbty,ev2,t1)
 	else if
 	  List.length l2 <= List.length l1
