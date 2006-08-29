@@ -493,8 +493,9 @@ let head_evar =
    that we don't care whether args itself contains Rel's or even Rel's
    distinct from the ones in l *)
 
-let is_unification_pattern l =
-  List.for_all isRel l & list_uniquize l = l
+let is_unification_pattern (_,args) l =
+  let l' = Array.to_list args @ l in
+  List.for_all (fun a -> isRel a or isVar a) l' & list_uniquize l' = l'
 
 (* From a unification problem "?X l1 = term1 l2" such that l1 is made
    of distinct rel's, build "\x1...xn.(term1 l2)" (patterns unification) *)

@@ -82,7 +82,7 @@ val define_evar_as_arrow : evar_defs -> existential -> evar_defs * types
 val define_evar_as_lambda : evar_defs -> existential -> evar_defs * types
 val define_evar_as_sort : evar_defs -> existential -> evar_defs * sorts
 
-val is_unification_pattern : constr list -> bool
+val is_unification_pattern : existential -> constr list -> bool
 val solve_pattern_eqn : env -> constr list -> constr -> constr
 
 (***********************************************************)
