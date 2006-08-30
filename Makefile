@@ -346,9 +346,6 @@ OBJSCMO=$(CONFIG) $(LIBREP) $(KERNEL) $(LIBRARY) $(PRETYPING) $(INTERP) \
 ###########################################################################
 
 CINCLUDES= -I $(CAMLHLIB)
-CC=gcc
-AR=ar
-RANLIB=ranlib
 
 ifeq ($(CAMLVERSION),OCAML307)
   CFLAGS=-fno-defer-pop -Wall -Wno-unused -DOCAML_307
@@ -1724,8 +1721,8 @@ depend: beforedepend dependp4 ml4filesml
 	  echo `$(CAMLP4DEPS) $$f` >> .depend; \
 	done
 # 5.  We express dependencies of .o files
-	gcc -MM $(CINCLUDES) kernel/byterun/*.c >> .depend
-	gcc -MM  $(CINCLUDES) kernel/byterun/*.c | sed -e 's/\.o/.d.o/' >> \
+	$(CC) -MM $(CINCLUDES) kernel/byterun/*.c >> .depend
+	$(CC) -MM  $(CINCLUDES) kernel/byterun/*.c | sed -e 's/\.o/.d.o/' >> \
                     .depend
 # 6. Finally, we erase the generated .ml files
 	rm -f $(ML4FILESML)

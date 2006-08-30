@@ -81,6 +81,11 @@ P4DEP=$(COQTOP)/bin/$(ARCH)/camlp4dep
 # Can be obtain by UNIX command arch
 ARCH=ARCHITECTURE
 
+# Your C compiler and co
+CC="CCEXEC"
+AR="AREXEC"
+RANLIB="RANLIBEXEC"
+
 # Supplementary libs for some systems, currently:
 #  . Sun Solaris: -cclib -lunix -cclib -lnsl -cclib -lsocket
 #  . others     : -cclib -lunix

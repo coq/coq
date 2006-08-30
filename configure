@@ -29,6 +29,10 @@ coq_debug_flag=
 coq_profile_flag=
 best_compiler=opt
 
+gcc_exec=gcc
+ar_exec=ar
+ranlib_exec=ranlib
+
 local=false
 src_spec=no
 prefix_spec=no
@@ -106,10 +110,22 @@ while : ; do
 	      no) with_geoproof=false;;
 	  esac
 	  shift;;
+    -with-cc|-with-gcc|--with-cc|--with-gcc) 
+	  gcc_spec=yes
+	  gcc_exec=$2
+	  shift;;
+    -with-ar|--with-ar) 
+	  ar_spec=yes
+	  ar_exec=$2
+	  shift;;
+    -with-ranlib|--with-ranlib) 
+	  ranlib_spec=yes
+	  ranlib_exec=$2
+	  shift;;
     -byte-only|-byteonly|--byteonly|--byte-only) best_compiler=byte;;
     -debug|--debug) coq_debug_flag=-g;;
     -profile|--profile) coq_profile_flag=-p;;
-     *) echo "Unknown option \"$1\"." 1>&2; exit 2;;
+    *) echo "Unknown option \"$1\"." 1>&2; exit 2;;
   esac
   shift
 done
@@ -619,6 +635,9 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|OCAMLLEXEXEC|$ocamllexexec|" \
     -e "s|OCAMLYACCEXEC|$ocamlyaccexec|" \
     -e "s|CAMLMKTOPEXEC|$camlmktopexec|" \
+    -e "s|CCEXEC|$gcc_exec|" \
+    -e "s|AREXEC|$ar_exec|" \
+    -e "s|RANLIBEXEC|$ranlib_exec|" \
     -e "s|STRIPCOMMAND|$STRIPCOMMAND|" \
     -e "s|FSETSOPT|$fsets|" \
     -e "s|REALSOPT|$reals|" \
