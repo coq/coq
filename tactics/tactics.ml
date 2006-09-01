@@ -259,8 +259,7 @@ let default_id env sigma = function
   | (name,None,t) ->
       (match Typing.sort_of env sigma t with
 	| Prop _ -> (id_of_name_with_default "H" name)
-	| Type _ -> (id_of_name_with_default "X" name)
-	| _                   -> anomaly "Wrong sort")
+	| Type _ -> (id_of_name_with_default "X" name))
   | (name,Some b,_) -> id_of_name_using_hdchar env b name
 
 (* Non primitive introduction tactics are treated by central_intro
@@ -1167,13 +1166,18 @@ let consume_pattern avoid id gl = function
       (IntroIdentifier (fresh_id avoid id gl), names)
   | pat::names -> (pat,names)
 
+let re_intro_dependent_hypotheses tophyp (lstatus,rstatus) =
+  let newlstatus = (* if some IH has taken place at the top of hyps *)
+    List.map (function (hyp,None) -> (hyp,tophyp) | x -> x) lstatus in
+  tclTHEN
+    (intros_rmove rstatus)
+    (intros_move newlstatus)
+
 type elim_arg_kind = RecArg | IndArg | OtherArg
 
 let induct_discharge statuslists destopt avoid' (avoid,ra) names gl =
   let avoid = avoid @ avoid' in
-  let (lstatus,rstatus) = statuslists in
-  let tophyp = ref None in
-  let rec peel_tac ra names gl = match ra with
+  let rec peel_tac ra names tophyp gl = match ra with
     | (RecArg,recvarname) ::
         (IndArg,hyprecname) :: ra' ->
         let recpat,names = match names with
@@ -1182,36 +1186,35 @@ let induct_discharge statuslists destopt avoid' (avoid,ra) names gl =
 	      (pat, [IntroIdentifier id])
           | _ -> consume_pattern avoid recvarname gl names in
         let hyprec,names = consume_pattern avoid hyprecname gl names in
-	(* This is buggy for intro-or-patterns with different first hypnames *)
-	if !tophyp=None then tophyp := first_name_buggy hyprec;
+        (* IH stays at top: we need to update tophyp *)
+        (* This is buggy for intro-or-patterns with different first hypnames *)
+        (* Would need to pass peel_tac as a continuation of intros_patterns *)
+        (* (or to have hypotheses classified by blocks...) *)
+        let tophyp = if tophyp=None then first_name_buggy hyprec else tophyp in
         tclTHENLIST
 	  [ intros_patterns avoid [] destopt [recpat];
 	    intros_patterns avoid [] None [hyprec];
-	    peel_tac ra' names ] gl
+	    peel_tac ra' names tophyp] gl
     | (IndArg,hyprecname) :: ra' ->
 	(* Rem: does not happen in Coq schemes, only in user-defined schemes *)
         let pat,names = consume_pattern avoid hyprecname gl names in
-	tclTHEN (intros_patterns avoid [] destopt [pat]) (peel_tac ra' names) gl
+	tclTHEN (intros_patterns avoid [] destopt [pat])
+          (peel_tac ra' names tophyp) gl
     | (RecArg,recvarname) :: ra' ->
         let pat,names = consume_pattern avoid recvarname gl names in
-	tclTHEN (intros_patterns avoid [] destopt [pat]) (peel_tac ra' names) gl
+	tclTHEN (intros_patterns avoid [] destopt [pat]) 
+          (peel_tac ra' names tophyp) gl
     | (OtherArg,_) :: ra' ->
         let pat,names = match names with
           | [] -> IntroAnonymous, []
           | pat::names -> pat,names in
-	tclTHEN (intros_patterns avoid [] destopt [pat]) (peel_tac ra' names) gl
+	tclTHEN (intros_patterns avoid [] destopt [pat])
+          (peel_tac ra' names tophyp) gl
     | [] ->
         check_unused_names names;
-        tclIDTAC gl
+        re_intro_dependent_hypotheses tophyp statuslists gl
   in
-  let intros_move lstatus =
-    let newlstatus = (* if some IH has taken place at the top of hyps *)
-      List.map (function (hyp,None) -> (hyp,!tophyp) | x -> x) lstatus in
-    intros_move newlstatus
-  in 
-  tclTHENLIST [ peel_tac ra names;
-		intros_rmove rstatus;
-		intros_move lstatus ] gl
+  peel_tac ra names None gl
 
 (* - le recalcul de indtyp à chaque itération de atomize_one est pour ne pas
      s'embêter à regarder si un letin_tac ne fait pas des
