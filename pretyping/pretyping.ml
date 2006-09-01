@@ -114,6 +114,8 @@ sig
 
   val understand_judgment_tcc : evar_defs ref -> env -> rawconstr -> unsafe_judgment
 
+  val check_evars : env -> evar_map -> evar_defs ref -> constr -> unit
+
   (*i*)
   (* Internal of Pretyping...
    * Unused outside, but useful for debugging

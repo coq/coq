@@ -78,6 +78,7 @@ sig
   (* Idem but do not fail on unresolved evars *)
   val understand_judgment_tcc : evar_defs ref -> env -> rawconstr -> unsafe_judgment
 
+  val check_evars : env -> evar_map -> evar_defs ref -> constr -> unit
        
   (*i*)
   (* Internal of Pretyping...
