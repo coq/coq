@@ -107,10 +107,10 @@ let convert_one_inductive sp tyi =
   let env = Global.env () in
   let envpar = push_rel_context params env in
   let sp = sp_of_global (IndRef (sp, tyi)) in
-  ((dummy_loc,basename sp), None,
+  (((dummy_loc,basename sp),
    convert_env(List.rev params),
    (extern_constr true envpar arity),
-   convert_constructors envpar cstrnames cstrtypes);;
+   convert_constructors envpar cstrnames cstrtypes), None);;
 
 (* This function converts a Mutual inductive definition to a Coqast.t.
    It is obtained directly from print_mutual in pretty.ml.  However, all
