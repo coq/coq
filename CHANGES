@@ -3,9 +3,12 @@ Changes from V8.1beta to V8.1
 
 - Support for Miller-Pfenning's patterns unification in type synthesis
   (e.g. can infer P such that P x y = phi(x,y))
+- Support for implicit arguments in the types of parameters in
+  (co-)fixpoints and (co-)inductive declarations
+- Support for "where" clause in cofixpoint definitions
 
-Changes from V8.0 to V8.1
-=========================
+Changes from V8.0 to V8.1beta
+=============================
 
 Logic
 
