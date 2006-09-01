@@ -22,6 +22,51 @@ for i in $PATH; do
 done
 }
 
+usage () {
+    echo -e "Available options for configure are:\n"
+    echo "-help"
+    echo -e "\tDisplays this help page\n"
+    echo "-prefix <dir>"
+    echo -e "\tSet installation directory to <dir>\n"
+    echo "-local"
+    echo -e "\tSet installation directory to the current source tree\n"
+    echo "-src"
+    echo -e "\tSpecifies the source directory\n"
+    echo "-bindir"
+    echo "-libdir"
+    echo "-mandir"
+    echo -e "\tSpecifies where to install bin/lib/man files resp.\n"
+    echo "-emacslib"
+    echo "-emacs"
+    echo -e "\tSpecifies where emacs files are to be installed\n"
+    echo "-coqdocdir"
+    echo -e "\tSpecifies where Coqdoc style files are to be installed\n"
+    echo "-camldir"
+    echo -e "\tTells configure where to look for OCaml files\n"
+    echo "-arch"
+    echo -e "\tSpecifies the architecture\n"
+    echo "-opt"
+    echo -e "\tSpecifies whether or not to generate optimized executables\n"
+    echo "-fsets (all|basic)"
+    echo "-reals (all|basic)"
+    echo -e "Specifies whether or not to compile full FSets/Reals library\n"
+    echo "-coqide (opt|byte|no)"
+    echo -e "\tSpecifies whether or not to compile Coqide\n"
+    echo "-with-geoproof (yes|no)"
+    echo -e "\tSpecifies whether or not to use Geoproof binding\n"
+    echo "-with-cc <file>"
+    echo "-with-ar <file>"
+    echo "-with-ranlib <file>"
+    echo -e "\tTells configure where to find gcc/ar/ranlib executables\n"
+    echo "-byte-only"
+    echo -e "\tCompiles only bytecode version of Coq\n"
+    echo "-debug"
+    echo -e "\tAdd debugging information in the Coq executables\n"
+    echo "-profile"
+    echo -e "\tAdd profiling information in the Coq executables\n"
+}
+
+
 bytecamlc=ocamlc
 nativecamlc=ocamlopt
 camlp4o=camlp4o
@@ -59,6 +104,8 @@ COQSRC=`pwd`
 while : ; do
   case "$1" in
     "") break;;
+    -help|--help) usage
+	          exit;;
     -prefix|--prefix) prefix_spec=yes
                       prefix="$2"
 		      shift;;
@@ -96,13 +143,22 @@ while : ; do
                 camlp4o=camlp4o  # can't add .opt since dyn load'll be required
                 nativecamlc=ocamlopt.opt;;
     -fsets|--fsets) fsets_opt=yes
-                    fsets=$2
+                    case "$2" in
+			yes|all) fsets=all;;
+			*) fsets=basic
+		    esac
 		    shift;;
     -reals|--reals) reals_opt=yes
-		    reals=$2
+	            case "$2" in
+			yes|all) reals=all;;
+			*) reals=basic
+		    esac
 		    shift;;
     -coqide|--coqide) coqide_spec=yes
-		      COQIDE=$2
+		      case "$2" in
+			  byte|opt) COQIDE=$2;;
+			  *) COQIDE=no
+		      esac
 		      shift;;
     -with-geoproof|--with-geoproof) 
 	  case $2 in
@@ -125,7 +181,7 @@ while : ; do
     -byte-only|-byteonly|--byteonly|--byte-only) best_compiler=byte;;
     -debug|--debug) coq_debug_flag=-g;;
     -profile|--profile) coq_profile_flag=-p;;
-    *) echo "Unknown option \"$1\"." 1>&2; exit 2;;
+    *) echo "Unknown option \"$1\"." 1>&2; usage; exit 2;;
   esac
   shift
 done
