@@ -164,6 +164,7 @@ val decomp_n_prod :
 val splay_prod_assum :
   env ->  evar_map -> constr -> Sign.rel_context * constr
 val decomp_sort : env -> evar_map -> types -> sorts
+val is_sort : env -> evar_map -> types -> bool
 
 type 'a miota_args = {
   mP      : constr;     (* the result type *)

@@ -770,6 +770,10 @@ let decomp_sort env sigma t =
   | Sort s -> s
   | _ -> raise NotASort
 
+let is_sort env sigma arity =
+  try let _ = decomp_sort env sigma arity in true 
+  with NotASort -> false
+
 (* reduction to head-normal-form allowing delta/zeta only in argument
    of case/fix (heuristic used by evar_conv) *)
 
