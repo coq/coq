@@ -488,15 +488,14 @@ let vernac_end_section = Lib.close_section
 
 let vernac_end_segment id =
   check_no_pending_proofs ();
-  let o = 
-    try Lib.what_is_opened ()
-    with Not_found -> error "There is nothing to end." in
-  match o with
-    | _,Lib.OpenedModule (export,_,_) -> vernac_end_module export id
-    | _,Lib.OpenedModtype _ -> vernac_end_modtype id
-    | _,Lib.OpenedSection _ -> vernac_end_section id
-    | _ -> anomaly "No more opened things"
-      
+  let o = try Lib.what_is_opened () with 
+      Not_found -> error "There is nothing to end." in
+    match o with
+      | _,Lib.OpenedModule (export,_,_) -> vernac_end_module export id
+      | _,Lib.OpenedModtype _ -> vernac_end_modtype id
+      | _,Lib.OpenedSection _ -> vernac_end_section id
+      | _ -> anomaly "No more opened things"
+
 let vernac_require import _ qidl =
   let qidl = List.map qualid_of_reference qidl in
   Library.require_library qidl import

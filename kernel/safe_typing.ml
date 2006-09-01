@@ -134,21 +134,21 @@ let add_constant dir l decl senv =
   let kn = make_con senv.modinfo.modpath dir l in
   let cb = 
     match decl with 
-    | ConstantEntry ce -> translate_constant senv.env kn ce
-    | GlobalRecipe r ->
-	let cb = translate_recipe senv.env kn r in
-	if dir = empty_dirpath then hcons_constant_body cb else cb
+      | ConstantEntry ce -> translate_constant senv.env kn ce
+      | GlobalRecipe r ->
+	  let cb = translate_recipe senv.env kn r in
+	    if dir = empty_dirpath then hcons_constant_body cb else cb
   in
   let env' = Environ.add_constraints cb.const_constraints senv.env in
   let env'' = Environ.add_constant kn cb env' in
-  kn, { old = senv.old;
-	env = env'';
-	modinfo = senv.modinfo;
-	labset = Labset.add l senv.labset;
-	revsign = (l,SPBconst cb)::senv.revsign;
-	revstruct = (l,SEBconst cb)::senv.revstruct;
-	imports = senv.imports;
-	loads = senv.loads }
+    kn, { old = senv.old;
+	  env = env'';
+	  modinfo = senv.modinfo;
+	  labset = Labset.add l senv.labset;
+	  revsign = (l,SPBconst cb)::senv.revsign;
+	  revstruct = (l,SEBconst cb)::senv.revstruct;
+	  imports = senv.imports;
+	  loads = senv.loads }
     
 
 (* Insertion of inductive types. *)

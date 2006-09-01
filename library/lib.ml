@@ -186,9 +186,9 @@ let add_leaf id obj =
   if fst (current_prefix ()) = initial_path then 
     error ("No session module started (use -top dir)");
   let oname = make_oname id in
-  cache_object (oname,obj);
-  add_entry oname (Leaf obj);
-  oname
+    cache_object (oname,obj);
+    add_entry oname (Leaf obj);
+    oname
 
 let add_leaves id objs =
   let oname = make_oname id in
@@ -444,15 +444,15 @@ let open_section id =
   let dir = extend_dirpath olddir id in
   let prefix = dir, (mp, extend_dirpath oldsec id) in
   let name = make_path id, make_kn id (* this makes little sense however *) in
-  if Nametab.exists_section dir then
-    errorlabstrm "open_section" (pr_id id ++ str " already exists");
-  let sum = freeze_summaries() in
-  add_entry name (OpenedSection (prefix, sum));
-  (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
-  Nametab.push_dir (Nametab.Until 1) dir (DirOpenSection prefix);
-  path_prefix := prefix;
-  if !Options.xml_export then !xml_open_section id;
-  add_section ()
+    if Nametab.exists_section dir then
+      errorlabstrm "open_section" (pr_id id ++ str " already exists");
+    let sum = freeze_summaries() in
+      add_entry name (OpenedSection (prefix, sum));
+      (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
+      Nametab.push_dir (Nametab.Until 1) dir (DirOpenSection prefix);
+      path_prefix := prefix;
+      if !Options.xml_export then !xml_open_section id;
+      add_section ()
 
 
 (* Restore lib_stk and summaries as before the section opening, and
@@ -476,16 +476,16 @@ let close_section id =
       error "no opened section"
   in
   let (secdecls,_,before) = split_lib oname in
-  lib_stk := before;
-  let full_olddir = fst !path_prefix in
-  pop_path_prefix ();
-  add_entry (make_oname id) ClosedSection;
-  if !Options.xml_export then !xml_close_section id;
-  let newdecls = List.map discharge_item secdecls in
-  Summary.section_unfreeze_summaries fs;
-  List.iter (option_iter (fun (id,o) -> ignore (add_leaf id o))) newdecls;
-  Cooking.clear_cooking_sharing ();
-  Nametab.push_dir (Nametab.Until 1) full_olddir (DirClosedSection full_olddir)
+    lib_stk := before;
+    let full_olddir = fst !path_prefix in
+      pop_path_prefix ();
+      add_entry (make_oname id) ClosedSection;
+      if !Options.xml_export then !xml_close_section id;
+      let newdecls = List.map discharge_item secdecls in
+	Summary.section_unfreeze_summaries fs;
+	List.iter (option_iter (fun (id,o) -> ignore (add_leaf id o))) newdecls;
+	Cooking.clear_cooking_sharing ();
+	Nametab.push_dir (Nametab.Until 1) full_olddir (DirClosedSection full_olddir)
 
 (*****************)
 (* Backtracking. *)

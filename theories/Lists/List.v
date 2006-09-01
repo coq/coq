@@ -1336,14 +1336,14 @@ End Fold_Right_Recursor.
       rewrite IHl; simpl; auto.
     Qed.
 
-    Lemma split_lenght_l : forall (l:list (A*B)),
+    Lemma split_length_l : forall (l:list (A*B)),
       length (fst (split l)) = length l. 
     Proof.
       induction l; simpl; auto.
       destruct a; destruct (split l); simpl; auto.
     Qed.
 
-    Lemma split_lenght_r : forall (l:list (A*B)),
+    Lemma split_length_r : forall (l:list (A*B)),
       length (snd (split l)) = length l. 
     Proof.
       induction l; simpl; auto.

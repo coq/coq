@@ -144,7 +144,7 @@ let apply_dyn_fun deflt f lobj =
 	  else
 	    anomaly
 	      ("Cannot find library functions for an object with tag "^tag) in 
-  	f dodecl
+	f dodecl
     with
 	Failure "local to_apply_dyn_fun" -> deflt;;
 
