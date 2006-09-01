@@ -17,4 +17,7 @@ val mkMetas : int -> constr list
 
 val eterm_term : evar_map -> constr -> types option -> constr * types option * (identifier * types) list
 
+val eterm_obligations : identifier -> int -> evar_map -> constr -> types option -> 
+  (constr list -> constr) * (identifier * types) list
+
 val etermtac : open_constr -> tactic

@@ -156,19 +156,19 @@ let subtac (loc, command) =
     match command with
 	VernacDefinition (defkind, (locid, id), expr, hook) -> 
 	    (match expr with
-		 ProveBody (bl, c) -> 
-		   let evm, c, ctyp = Subtac_pretyping.subtac_process env isevars id bl c None in
-		     trace (str "Starting proof");
-		     Command.start_proof id goal_kind c hook;
-		     trace (str "Started proof");	     
+		 ProveBody (bl, c) -> Subtac_pretyping.subtac_proof env isevars id bl c None
+(* 		   let evm, c, ctyp =  in *)
+(* 		     trace (str "Starting proof"); *)
+(* 		     Command.start_proof id goal_kind c hook; *)
+(* 		     trace (str "Started proof");	      *)
 		     
 	       | DefineBody (bl, _, c, tycon) -> 
-		   let evm, c, ctyp = Subtac_pretyping.subtac_process env isevars id bl c tycon in
-		   let tac = Eterm.etermtac (evm, c) in 
-		     trace (str "Starting proof");
-		     Command.start_proof id goal_kind ctyp hook;
-		     trace (str "Started proof");
-		     Pfedit.by tac)
+		   Subtac_pretyping.subtac_proof env isevars id bl c tycon
+		     (* let tac = Eterm.etermtac (evm, c) in  *)
+		     (* 		     trace (str "Starting proof"); *)
+		     (* 		     Command.start_proof id goal_kind ctyp hook; *)
+		     (* 		     trace (str "Started proof"); *)
+		     (* 		     Pfedit.by tac) *))
       | VernacFixpoint (l, b) -> 
 	  let _ = trace (str "Building fixpoint") in
 	    ignore(Subtac_command.build_recursive l b)

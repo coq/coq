@@ -4,7 +4,7 @@ Notation "'fun' { x : A | P } => Q" :=
   (fun x:{x:A|P} => Q)
   (at level 200, x ident, right associativity).
 
-Notation "( x & y )" := (@existS _ _ x y) : core_scope.
+Notation "( x & y )" := (@exist _ _ x y) : core_scope.
 
 Definition ex_pi1 (A : Prop) (P : A -> Prop) (t : ex P) : A.
 intros.
@@ -44,3 +44,4 @@ end.
 
 Ltac destruct_exists := repeat (destruct_one_pair) .
 
+Extraction Inline proj1_sig.

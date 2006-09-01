@@ -65,13 +65,52 @@ let subst_evars evs n t =
 	       | ((_, Some _, _) :: tlh), (_ :: tla) ->
 		   aux tlh tla acc
 	       | [], [] -> acc
-	       | _, _ -> failwith "subst_evars: invalid argument"
+	       | _, _ -> acc (* failwith "subst_evars: invalid argument" *)
 	   in aux hyps (Array.to_list args) [] 
 	 in
 	   mkApp (ex, Array.of_list args))
     | _ -> map_constr_with_binders succ substrec depth c
   in 
     substrec 0 t
+
+let subst_evar_constr evs n t = 
+  let evar_info id = 
+    let rec aux i = function
+	(k, n, h, v) :: tl -> 
+	  if k = id then (n, h, v) else aux (succ i) tl
+      | [] -> raise Not_found
+    in 
+    let (c, hyps, v) = aux 0 evs in
+      c, hyps
+  in
+  let rec substrec depth c = match kind_of_term c with
+    | Evar (k, args) ->
+	(let ex, hyps = 
+	   try evar_info k
+	   with Not_found -> 
+	     anomaly ("eterm: existential variable " ^ string_of_int k ^ " not found")
+	 in
+	   (try trace (str "Evar " ++ int k ++ str " found, applied to " ++ int (Array.length args) ++ str "arguments," ++
+		       int (List.length hyps) ++ str " hypotheses"); 	      with _ -> () );
+	   (* Evar arguments are created in inverse order, 
+	      and we must not apply to defined ones (i.e. LetIn's)
+	   *)
+	 let args =
+	   let rec aux hyps args acc =
+	     match hyps, args with
+		 ((_, None, _) :: tlh), (c :: tla) -> 
+		   aux tlh tla ((map_constr_with_binders succ substrec depth c) :: acc)
+	       | ((_, Some _, _) :: tlh), (_ :: tla) ->
+		   aux tlh tla acc
+	       | [], [] -> acc
+	       | _, _ -> acc (*failwith "subst_evars: invalid argument"*)
+	   in aux hyps (Array.to_list args) [] 
+	 in
+	   mkApp (ex, Array.of_list args))
+    | _ -> map_constr_with_binders succ substrec depth c
+  in 
+    substrec 0 t
+
       
 (** Substitute variable references in t using De Bruijn indices, 
   where n binders were passed through. *)
@@ -151,6 +190,74 @@ let eterm_term evm t tycon =
 		tycon);
      with _ -> ());
     t'', tycon, evar_names
+
+let rec take n l = 
+  if n = 0 then [] else List.hd l :: take (pred n) (List.tl l)    
+
+let trunc_named_context n ctx = 
+  let len = List.length ctx in
+    take (len - n) ctx
+  
+let eterm_obligations name nclen evm t tycon = 
+  (* 'Serialize' the evars, we assume that the types of the existentials
+     refer to previous existentials in the list only *)
+  let evl = to_list evm in
+  trace (str "Eterm, transformed to list");
+  let evts = 
+    (* Remove existential variables in types and build the corresponding products *)
+    fold_right 
+      (fun (id, ev) l ->
+	 trace (str "Eterm: " ++ str "treating evar: " ++ int id);
+	 let hyps = Environ.named_context_of_val ev.evar_hyps in
+	 let hyps = trunc_named_context nclen hyps in
+	   trace (str "Named context is: " ++ Printer.pr_named_context (Global.env ()) hyps);
+	 let evtyp = etype_of_evar l ev hyps in
+	   trace (str "Evar's type is: " ++ Termops.print_constr_env (Global.env ()) evtyp);
+	 let y' = (id, hyps, evtyp) in
+	   y' :: l) 
+      evl []
+  in 
+  let evar_names = 
+    let i = ref 0 in
+      List.map (fun (id, h, c) -> incr i; 
+		  (id, id_of_string (string_of_id name ^ "_obligation_" ^ string_of_int !i), h, c)) evts
+  in
+  let t' = (* Substitute evar refs in the term by De Bruijn indices *)
+    subst_evar_constr (List.map (fun (id, n, h, c) -> id, mkVar n, h, c) evar_names) 0 t 
+  in
+  let _, evars =
+    fold_right
+      (fun (_, n, h, c) (acc, l) ->
+	 let evt = Termops.it_mkProd_wo_LetIn c acc in
+	   ((Name n, None, c) :: acc, (n, evt) :: l))
+      evar_names ([], [])
+  in
+    (try 
+       trace (str "Term given to eterm" ++ spc () ++
+		Termops.print_constr_env (Global.env ()) t);
+       trace (str "Term constructed in eterm" ++ spc () ++
+		Termops.print_constr_env (Global.env ()) t');
+       ignore(iter
+		(fun (n, typ) ->
+		   trace (str "Evar :" ++ spc () ++ str (string_of_id n) ++
+			    Termops.print_constr_env (Global.env ()) typ))
+		evars);
+     with _ -> ());
+    let subst_closure l = 
+      let l' = List.map2 (fun (id, _, h, c) cst -> (id, cst, h, c)) evar_names l in
+      let _, l'' = 
+	List.fold_right 
+	  (fun (id, cst, h, c) (acc, res) ->
+	     let cst' = applist (cst, List.rev acc) in
+	       (cst' :: acc, (id, cst', h, c) :: res))
+	  l' ([], [])
+      in
+      let t' = subst_evar_constr l'' 0 t in
+	trace (str "Term constructed in eterm" ++ spc () ++
+		 Termops.print_constr_env (Global.env ()) t');
+	t'
+    in
+      subst_closure, evars
 
 let mkMetas n = 
   let rec aux i acc = 

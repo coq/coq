@@ -40,15 +40,30 @@ end
 
 open SubtacGram 
 open Util
+open Pcoq
+
+let sigref = mkRefC (Qualid (dummy_loc, Libnames.qualid_of_string "Coq.Init.Specif.sig"))
 
 GEXTEND Gram
-  GLOBAL: subtac_gallina_loc;
+  GLOBAL: subtac_gallina_loc Constr.binder_let Constr.binder;
  
   subtac_gallina_loc:
     [ [ g = Vernac.gallina -> loc, g ] ]
     ;
-       
+
+  Constr.binder_let:
+    [ [ "("; id=Prim.name; ":"; t=Constr.lconstr; "|"; c=Constr.lconstr; ")" -> 
+	  let typ = mkAppC (sigref, [mkLambdaC ([id], t, c)]) in
+	    LocalRawAssum ([id], typ)
+    ] ];
+
+  Constr.binder:
+    [ [ "("; id=Prim.name; ":"; c=Constr.lconstr; "|"; p=Constr.lconstr; ")" ->
+	  let typ = mkAppC (sigref, [mkLambdaC ([id], c, p)]) in
+	    ([id], typ) ] ];
+
   END
+
 
 type ('a,'b) gallina_loc_argtype = (Vernacexpr.vernac_expr located, 'a, 'b) Genarg.abstract_argument_type
 

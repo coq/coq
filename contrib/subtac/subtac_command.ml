@@ -43,6 +43,7 @@ open Notation
 module SPretyping = Subtac_pretyping.Pretyping
 open Subtac_utils
 open Pretyping
+open Subtac_obligations
 
 (*********************************************************************)
 (* Functions to parse and interpret constructions *)
@@ -175,20 +176,18 @@ let rec gen_rels = function
     0 -> []
   | n -> mkRel n :: gen_rels (pred n)
 
-let id_of_name = function
-    Anonymous -> raise (Invalid_argument "id_of_name")
-  | Name n -> n
-
- 
 let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
   let sigma = Evd.empty in
   let isevars = ref (Evd.create_evar_defs sigma) in
   let env = Global.env() in 
   let pr c = my_print_constr env c in
   let prr = Printer.pr_rel_context env in
+  let prn = Printer.pr_named_context env in
   let pr_rel env = Printer.pr_rel_context env in
+  let nc = named_context env in
+  let nc_len = named_context_length nc in
   let _ = 
-    try debug 2 (str "Rewriting fixpoint: " ++ Ppconstr.pr_id recname ++ 
+    try debug 2 (str "In named context: " ++ prn (named_context env) ++ str "Rewriting fixpoint: " ++ Ppconstr.pr_id recname ++ 
 		 Ppconstr.pr_binders bl ++ str " : " ++ 
 		 Ppconstr.pr_constr_expr arityc ++ str " := " ++ spc () ++
 		 Ppconstr.pr_constr_expr body)
@@ -305,39 +304,22 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
   in
   let evm = non_instanciated_map env isevars in
   let _ = try trace (str "Non instanciated evars map: " ++ Evd.pr_evar_map evm)  with _ -> () in
-  let evars_def, evars_typ, evars = Eterm.eterm_term evm fullcoqc (Some fullctyp) in 	
-  let evars_typ = out_some evars_typ in
-  (try trace (str "Building evars sum for : ");
-     List.iter
-       (fun (n, t) -> trace (str "Evar " ++ str (string_of_id n) ++ spc () ++ my_print_constr env t))
-       evars;
-   with _ -> ());
-  let (sum_tac, sumg) = Subtac_utils.build_dependent_sum evars in
-  (try trace (str "Evars sum: " ++ my_print_constr env sumg);
-     trace (str "Evars type: " ++ my_print_constr env evars_typ);
-   with _ -> ());
-  let proofid = id_of_string (string_of_id recname ^ "_evars_proof") in
-    Command.start_proof proofid goal_proof_kind sumg
-      (fun strength gr -> 
-	 debug 2 (str "Proof finished");
-	 let def = constr_of_global gr in
-	 let args = Subtac_utils.destruct_ex def sumg in
-	 let _, newdef = decompose_lam_n (List.length args) evars_def in
-	 let constr = Term.substl (List.rev args) newdef in
-	   debug 2 (str "Applied existentials : " ++ my_print_constr env constr);
-	   let ce = 
-	     { const_entry_body = constr;
-	       const_entry_type = Some fullctyp;
-	       const_entry_opaque = false;
-	       const_entry_boxed = boxed} 
-	   in
-	   let _constant = Declare.declare_constant 
-			    recname (DefinitionEntry ce,IsDefinition Definition)
-	   in
-	     definition_message recname);
-    trace (str "Started existentials proof");
-    Pfedit.by sum_tac;
-    trace (str "Applied sum tac")  
+  let evars_def, evars = Eterm.eterm_obligations recname nc_len evm fullcoqc (Some fullctyp) in
+    (try trace (str "Generated obligations : ");
+       List.iter
+	 (fun (n, t) -> trace (str "Evar " ++ str (string_of_id n) ++ spc () ++ my_print_constr env t))
+	 evars;
+     with _ -> ());    
+    let prog = 
+      {  prg_name = recname;
+	 prg_body = evars_def;
+	 prg_type = fullctyp;
+	 prg_obligations = obligations_of_evars evars;
+      }
+    in
+      trace (str "Adding to obligations list");
+      Subtac_obligations.add_entry recname prog;
+      trace (str "Added to obligations list")
 
 let build_mutrec l boxed = 
   let sigma = Evd.empty

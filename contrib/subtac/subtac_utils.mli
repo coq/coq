@@ -10,6 +10,7 @@ open Rawterm
 open Util
 open Evarutil
 open Names
+open Sign
 
 val contrib_name : string
 val subtac_dir : string list
@@ -51,6 +52,7 @@ val my_print_constr : env -> constr -> std_ppcmds
 val my_print_constr_expr : constr_expr -> std_ppcmds
 val my_print_evardefs : evar_defs -> std_ppcmds
 val my_print_context : env -> std_ppcmds
+val my_print_named_context : env -> std_ppcmds
 val my_print_env : env -> std_ppcmds
 val my_print_rawconstr : env -> rawconstr -> std_ppcmds
 val my_print_tycon_type : env -> type_constraint_type -> std_ppcmds
@@ -88,7 +90,6 @@ val and_tac : (identifier * 'a * constr * Proof_type.tactic) list ->
 val destruct_ex : constr -> constr -> constr list
 
 val rewrite_cases : Environ.env -> Rawterm.rawconstr -> Rawterm.rawconstr
-
 val id_of_name : name -> identifier
 
 val definition_message : identifier -> unit

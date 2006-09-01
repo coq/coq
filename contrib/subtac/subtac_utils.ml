@@ -80,6 +80,7 @@ open Pp
 let my_print_constr = Termops.print_constr_env
 let my_print_constr_expr = Ppconstr.pr_constr_expr
 let my_print_context = Termops.print_rel_context
+let my_print_named_context = Termops.print_named_context
 let my_print_env = Termops.print_env
 let my_print_rawconstr = Printer.pr_rawconstr_env
 let my_print_evardefs = Evd.pr_evar_defs
