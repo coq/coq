@@ -8,7 +8,7 @@ WHAT DO YOU NEED ?
    Coq is designed to work on computers equipped with the Unix operating 
    system. In order to compile Coq V8.1 you need:
 
-     - Objective Caml version 3.06 or later
+     - Objective Caml version 3.07 or later
        (available at http://caml.inria.fr/)
   
    Until now, it has mainly been tested on Sun workstations running Solaris,
@@ -29,7 +29,7 @@ QUICK INSTALLATION PROCEDURE.
 INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
 =================================================
 
-1- Check that you have the Objective Caml compiler version 3.06 (or later)
+1- Check that you have the Objective Caml compiler version 3.07 (or later)
    installed on your computer and that "ocamlmktop" and "ocamlc" (or
    its native code version "ocamlc.opt") lie in a directory which is present
    in your $PATH environment variable. 
