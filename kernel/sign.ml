@@ -83,6 +83,9 @@ let map_context f l =
 let map_rel_context = map_context
 let map_named_context = map_context
 
+let iter_rel_context f = List.iter (fun (_,b,t) -> f t; option_iter f b)
+let iter_named_context f = List.iter (fun (_,b,t) -> f t; option_iter f b)
+
 (* Push named declarations on top of a rel context *)
 (* Bizarre. Should be avoided. *)
 let push_named_to_rel_context hyps ctxt =
