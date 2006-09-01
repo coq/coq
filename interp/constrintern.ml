@@ -1100,6 +1100,21 @@ let interp_open_constr sigma env c =
 let interp_constr_judgment sigma env c =
   Default.understand_judgment sigma env (intern_constr sigma env c)
 
+
+let interp_constr_evars_gen isevars env ?(impls=([],[])) kind c =
+  Default.understand_tcc_evars isevars env kind
+    (intern_gen (kind=IsType) ~impls (Evd.evars_of !isevars) env c)
+
+let interp_casted_constr_evars isevars env ?(impls=([],[])) c typ =
+  interp_constr_evars_gen isevars env ~impls (OfType (Some typ)) c
+
+let interp_type_evars isevars env ?(impls=([],[])) c =
+  interp_constr_evars_gen isevars env IsType ~impls c
+
+let interp_constr_judgment_evars isevars env c =
+  Default.understand_judgment_tcc isevars env
+    (intern_constr (Evd.evars_of !isevars) env c)
+
 type ltac_sign = identifier list * unbound_ltac_var_map
 
 let interp_constrpattern sigma env c =
@@ -1123,7 +1138,13 @@ let interp_aconstr impls vars a =
 
 let interp_binder sigma env na t =
   let t = intern_gen true sigma env t in
-  Default.understand_type sigma env (locate_if_isevar (loc_of_rawconstr t) na t)
+  let t' = locate_if_isevar (loc_of_rawconstr t) na t in
+  Default.understand_type sigma env t'
+
+let interp_binder_evars isevars env na t =
+  let t = intern_gen true (Evd.evars_of !isevars) env t in
+  let t' = locate_if_isevar (loc_of_rawconstr t) na t in
+  Default.understand_tcc_evars isevars env IsType t'
 
 open Environ
 open Term
@@ -1142,6 +1163,24 @@ let interp_context sigma env params =
 	  (push_rel_context ctx env, ctx@params)
       | LocalRawDef ((_,na),c) ->
 	  let c = interp_constr_judgment sigma env c in
+	  let d = (na, Some c.uj_val, c.uj_type) in
+	  (push_rel d env,d::params))
+    (env,[]) params
+
+let interp_context_evars isevars env params =
+  List.fold_left
+    (fun (env,params) d -> match d with
+      | LocalRawAssum ([_,na],(CHole _ as t)) ->
+	  let t = interp_binder_evars isevars env na t in
+	  let d = (na,None,t) in
+	  (push_rel d env, d::params)
+      | LocalRawAssum (nal,t) ->
+	  let t = interp_type_evars isevars env t in
+	  let ctx = list_map_i (fun i (_,na) -> (na,None,lift i t)) 0 nal in
+	  let ctx = List.rev ctx in
+	  (push_rel_context ctx env, ctx@params)
+      | LocalRawDef ((_,na),c) ->
+	  let c = interp_constr_judgment_evars isevars env c in
 	  let d = (na, Some c.uj_val, c.uj_type) in
 	  (push_rel d env,d::params))
     (env,[]) params
