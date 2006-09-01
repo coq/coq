@@ -29,6 +29,10 @@ Check (fun x => fst (f x)).
 Check (fun x => fst (f x)).
 Notation rhs := snd.
 Check (fun x => snd (f x)).
-(* V8 seulement 
-Check (fun x => @ rhs ? ? (f x)).
-*)
+Check (fun x => @ rhs _ _ (f x)).
+
+(* Implicit arguments in fixpoints and inductive declarations *)
+
+Fixpoint g n := match n with O => true | S n => g n end.
+
+Inductive P n : nat -> Prop := c : P n n.
