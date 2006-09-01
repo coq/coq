@@ -15,6 +15,7 @@ val coqlib : string     (* where the std library is installed *)
 
 val coqtop : string     (* where are the sources *)
 
+val camldir : string    (* base directory of OCaml binaries *)
 val camllib : string    (* for Dynlink *)
 
 val camlp4lib : string  (* where is the library of Camlp4 *)

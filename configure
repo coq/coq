@@ -272,8 +272,7 @@ case $camldir_spec in
 		esac
 	esac;;
     yes) CAMLC=$camldir/$bytecamlc
-	bytecamlc="$CAMLC"
-	nativecamlc=`dirname "$bytecamlc"`/$nativecamlc;;
+	bytecamlc="$CAMLC";;
 esac
 
 if test ! -f "$CAMLC" ; then
@@ -290,6 +289,7 @@ ocamldocexec=$CAMLBIN/ocamldoc
 ocamllexexec=$CAMLBIN/ocamllex
 ocamlyaccexec=$CAMLBIN/ocamlyacc
 camlmktopexec=$CAMLBIN/ocamlmktop
+camlp4o=$CAMLBIN/camlp4o
 
 CAMLVERSION=`"$bytecamlc" -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
 
@@ -585,10 +585,11 @@ escape_var () {
 EOF
 }
 
-export COQTOP BINDIR LIBDIR CAMLLIB
+export COQTOP BINDIR LIBDIR CAMLBIN CAMLLIB
 ESCCOQTOP="`VAR=COQTOP escape_var`"
 ESCBINDIR="`VAR=BINDIR escape_var`"
 ESCLIBDIR="`VAR=LIBDIR escape_var`"
+ESCCAMLDIR="`VAR=CAMLBIN escape_var`"
 ESCCAMLLIB="`VAR=CAMLLIB escape_var`"
 ESCCAMLP4LIB="$ESCCAMLLIB"/camlp4
 
@@ -601,6 +602,7 @@ let local = $local
 let bindir = "$ESCBINDIR" 
 let coqlib = "$ESCLIBDIR"
 let coqtop = "$ESCCOQTOP"
+let camldir = "$ESCCAMLDIR"
 let camllib = "$ESCCAMLLIB"
 let camlp4lib = "$ESCCAMLP4LIB"
 let best = "$best_compiler"

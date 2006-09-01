@@ -279,11 +279,11 @@ let main () =
     if !opt then begin
       (* native code *)
       if !top then failwith "no custom toplevel in native code !";
-      "ocamlopt -linkall"
+      Coq_config.camldir^"/ocamlopt -linkall"
     end else
       (* bytecode (we shunt ocamlmktop script which fails on win32) *)
       let ocamlmktoplib = " toplevellib.cma" in
-      let ocamlccustom = "ocamlc -custom -linkall" in
+      let ocamlccustom = Coq_config.camldir^"/ocamlc -custom -linkall" in
       (if !top then ocamlccustom^ocamlmktoplib else ocamlccustom)
   in
   (* files to link *)
