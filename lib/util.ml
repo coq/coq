@@ -194,7 +194,7 @@ let list_map_i f =
 let list_map2_i f i l1 l2 =  
   let rec map_i i = function
     | ([], []) -> []
-    | ((h1::t1), (h2::t2)) -> (f i h1 h2) :: (map_i (succ i) (t1,t2))
+    | ((h1::t1), (h2::t2)) -> let v = f i h1 h2 in v :: map_i (succ i) (t1,t2)
     | (_, _) -> invalid_arg "map2_i"
   in 
   map_i i (l1,l2)
@@ -202,7 +202,7 @@ let list_map2_i f i l1 l2 =
 let list_map3 f l1 l2 l3 =
   let rec map = function
     | ([], [], []) -> []
-    | ((h1::t1), (h2::t2), (h3::t3)) -> (f h1 h2 h3) :: (map (t1,t2,t3))
+    | ((h1::t1), (h2::t2), (h3::t3)) -> let v = f h1 h2 h3 in v::map (t1,t2,t3)
     | (_, _, _) -> invalid_arg "map3"
   in 
   map (l1,l2,l3)
