@@ -67,7 +67,7 @@ sp is a local copy of the global variable extern_sp. */
 
 /* Wrapper pour caml_modify */
 #ifdef OCAML_307
-#define CAML_MODIFY(a,b) caml_modify(a,b)
+#define CAML_MODIFY(a,b) modify(a,b)
 #else
 #define CAML_MODIFY(a,b) caml_modify(a,b)
 #endif
