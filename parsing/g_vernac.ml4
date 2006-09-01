@@ -191,9 +191,9 @@ GEXTEND Gram
     ;
   (* Inductives and records *)
   inductive_definition:
-    [ [ id = identref; indpar = LIST0 binder_let; ":"; c = lconstr; 
+    [ [ id = identref; indpar = LIST0 binder_let; ":"; c = lconstr;
         ":="; lc = constructor_list; ntn = decl_notation ->
-	  (id,ntn,indpar,c,lc) ] ]
+	  ((id,indpar,c,lc),ntn) ] ]
   ;
   constructor_list:
     [ [ "|"; l = LIST1 constructor SEP "|" -> l
@@ -212,7 +212,7 @@ GEXTEND Gram
   (* (co)-fixpoints *)
   rec_definition:
     [ [ id = ident; bl = LIST1 binder_let;
-        annot = rec_annotation; type_ = type_cstr; 
+        annot = rec_annotation; ty = type_cstr; 
 	":="; def = lconstr; ntn = decl_notation ->
           let names = List.map snd (names_of_local_assums bl) in
           let ni =
@@ -227,12 +227,12 @@ GEXTEND Gram
 		     otherwise, we search the recursive index later *)
 		  if List.length names = 1 then Some 0 else None	  
 	  in 
-	  ((id, (ni, snd annot), bl, type_, def),ntn) ] ]
+	  ((id,(ni,snd annot),bl,ty,def),ntn) ] ]
   ;
   corec_definition:
-    [ [ id = ident; bl = LIST0 binder_let; c = type_cstr; ":=";
-        def = lconstr ->
-          (id,bl,c ,def) ] ]
+    [ [ id = ident; bl = LIST0 binder_let; ty = type_cstr; ":=";
+        def = lconstr; ntn = decl_notation ->
+          ((id,bl,ty,def),ntn) ] ]
   ;
   rec_annotation:
     [ [ "{"; IDENT "struct"; id=IDENT; "}" -> (Some (id_of_string id), CStructRec)

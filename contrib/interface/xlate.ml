@@ -1890,7 +1890,7 @@ let rec xlate_vernac =
          build_record_field_list field_list)
    | VernacInductive (isind, lmi) ->
       let co_or_ind = if isind then "Inductive" else "CoInductive" in
-      let strip_mutind ((_,s), notopt, parameters, c, constructors) =
+      let strip_mutind (((_,s), parameters, c, constructors), notopt) =
           CT_ind_spec
             (xlate_ident s, xlate_binder_list parameters, xlate_formula c,
              build_constructors constructors,
@@ -1899,7 +1899,7 @@ let rec xlate_vernac =
 	  (CT_co_ind co_or_ind, CT_ind_spec_list (List.map strip_mutind lmi))
    | VernacFixpoint ([],_) -> xlate_error "mutual recursive"
    | VernacFixpoint ((lm :: lmi),boxed) ->
-      let strip_mutrec ((fid, (n, ro), bl, arf, ardef), ntn) =
+      let strip_mutrec ((fid, (n, ro), bl, arf, ardef), _ntn) =
         let (struct_arg,bl,arf,ardef) =
 	 (* Pierre L: could the case [n=None && bl=[]] happen ? Normally not *)
 	 (* By the way, how could [bl = []] happen in V8 syntax ?  *)
@@ -1919,7 +1919,7 @@ let rec xlate_vernac =
 	  (CT_fix_rec_list (strip_mutrec lm, List.map strip_mutrec lmi))
    | VernacCoFixpoint ([],boxed) -> xlate_error "mutual corecursive"
    | VernacCoFixpoint ((lm :: lmi),boxed) ->
-      let strip_mutcorec (fid, bl, arf, ardef) =
+      let strip_mutcorec ((fid, bl, arf, ardef), _ntn) =
 	CT_cofix_rec (xlate_ident fid, xlate_binder_list bl,
                       xlate_formula arf, xlate_formula ardef) in
         CT_cofix_decl

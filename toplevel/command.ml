@@ -381,10 +381,10 @@ let eq_local_binders bl1 bl2 =
 let extract_coercions indl =
   let mkqid (_,((_,id),_)) = make_short_qualid id in
   let extract lc = List.filter (fun (iscoe,_) -> iscoe) lc in
-  List.map mkqid (List.flatten(List.map (fun (_,_,_,_,lc) -> extract lc) indl))
+  List.map mkqid (List.flatten(List.map (fun (_,_,_,lc) -> extract lc) indl))
 
 let extract_params indl =
-  let paramsl = List.map (fun (_,_,params,_,_) -> params) indl in
+  let paramsl = List.map (fun (_,params,_,_) -> params) indl in
   match paramsl with
   | [] -> anomaly "empty list of inductive types"
   | params::paramsl ->
@@ -392,13 +392,13 @@ let extract_params indl =
 	"Parameters should be syntactically the same for each inductive type";
       params
 
-let prepare_inductive indl =
-  let ntnl,indl =
-    List.split (List.map (fun ((_,indname),ntn,_,ar,lc) -> ntn, { 
+let prepare_inductive ntnl indl =
+  let indl =
+    List.map (fun ((_,indname),_,ar,lc) -> { 
       ind_name = indname;
       ind_arity = ar;
       ind_lc = List.map (fun (_,((_,id),t)) -> (id,t)) lc
-    }) indl) in
+    }) indl in
   List.fold_right option_cons ntnl [], indl
 
 let declare_mutual_with_eliminations isrecord mie =
@@ -408,10 +408,11 @@ let declare_mutual_with_eliminations isrecord mie =
   declare_eliminations kn;
   kn
 
-let build_mutual indl finite =
+let build_mutual l finite =
+  let indl,ntnl = List.split l in
   let paramsl = extract_params indl in
   let coes = extract_coercions indl in
-  let notations,indl = prepare_inductive indl in
+  let notations,indl = prepare_inductive ntnl indl in
   let mie = interp_mutual paramsl indl notations finite in
   (* Declare the mutual inductive block with its eliminations *)
   ignore (declare_mutual_with_eliminations false mie);
@@ -604,8 +605,8 @@ let build_recursive l b =
   interp_recursive (IsFixpoint g) fixl b
 
 let build_corecursive l b =
-  let fixl = List.map (fun (id,bl,typ,def) -> 
-    ({fix_name = id; fix_binders = bl; fix_body = def; fix_type = typ},None))
+  let fixl = List.map (fun ((id,bl,typ,def),ntn) -> 
+    ({fix_name = id; fix_binders = bl; fix_body = def; fix_type = typ},ntn))
     l in
   interp_recursive IsCoFixpoint fixl b
 

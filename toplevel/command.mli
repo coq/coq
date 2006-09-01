@@ -39,14 +39,14 @@ val syntax_definition : identifier -> constr_expr -> bool -> bool -> unit
 val declare_assumption : identifier located list ->
   coercion_flag -> assumption_kind -> local_binder list -> constr_expr -> unit
 
-val build_mutual : inductive_expr list -> bool -> unit
+val build_mutual : (inductive_expr * decl_notation) list -> bool -> unit
 
 val declare_mutual_with_eliminations :
   bool -> Entries.mutual_inductive_entry -> mutual_inductive
 
 val build_recursive : (fixpoint_expr * decl_notation) list -> bool -> unit
 
-val build_corecursive : cofixpoint_expr list -> bool -> unit
+val build_corecursive : (cofixpoint_expr * decl_notation) list -> bool -> unit
 
 val build_scheme : (identifier located * bool * reference * rawsort) list -> unit
 

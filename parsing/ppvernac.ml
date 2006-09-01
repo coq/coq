@@ -530,7 +530,7 @@ let rec pr_vernac = function
             fnl() ++
             str (if List.length l = 1 then "   " else " | ") ++
             prlist_with_sep (fun _ -> fnl() ++ str" | ") pr_constructor l in
-      let pr_oneind key (id,ntn,indpar,s,lc) =
+      let pr_oneind key ((id,indpar,s,lc),ntn) =
 	hov 0 (
           str key ++ spc() ++
           pr_lident id ++ pr_and_type_binders_arg indpar ++ spc() ++ str":" ++ 
@@ -585,14 +585,16 @@ let rec pr_vernac = function
         prlist_with_sep (fun _ -> fnl() ++ fnl() ++ str"with ") pr_onerec recs)
 
   | VernacCoFixpoint (corecs,b) ->
-      let pr_onecorec (id,bl,c,def) =
+      let pr_onecorec ((id,bl,c,def),ntn) =
         let (bl',def,c) =
               if Options.do_translate() then extract_def_binders def c
               else ([],def,c) in
         let bl = bl @ bl' in
         pr_id id ++ spc() ++ pr_binders bl ++ spc() ++ str":" ++
         spc() ++ pr_lconstr_expr c ++
-        str" :=" ++ brk(1,1) ++ pr_lconstr def in
+        str" :=" ++ brk(1,1) ++ pr_lconstr def  ++ 
+	pr_decl_notation pr_constr ntn
+      in
       let start = if b then "Boxed CoFixpoint" else "CoFixpoint" in
       hov 1 (str start ++ spc() ++
       prlist_with_sep (fun _ -> fnl() ++ str"with ") pr_onecorec corecs)  
