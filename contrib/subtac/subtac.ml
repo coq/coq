@@ -229,18 +229,20 @@ let subtac (loc, command) =
     | Pretype_errors.PretypeError (env, e) ->
 	debug 2 (Himsg.explain_pretype_error env e)
 	  
-    | Stdpp.Exc_located (loc, e) ->
+    | (Stdpp.Exc_located (loc, e')) as e ->
 	debug 2 (str "Parsing exception: ");
-	(match e with
+	(match e' with
 	   | Type_errors.TypeError (env, e) ->
 	       debug 2 (Himsg.explain_type_error env e)
 		 
 	   | Pretype_errors.PretypeError (env, e) ->
 	       debug 2 (Himsg.explain_pretype_error env e)
 
-	   | e -> msg_warning (str "Unexplained exception: " ++ Cerrors.explain_exn e))
+	   | e'' -> msg_warning (str "Unexplained exception: " ++ Cerrors.explain_exn e'');
+	       raise e)
   
     | e -> 
-	msg_warning (str "Uncatched exception: " ++ Cerrors.explain_exn e)
+	msg_warning (str "Uncatched exception: " ++ Cerrors.explain_exn e);
+	raise e
 
 

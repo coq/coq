@@ -88,17 +88,25 @@ let my_print_tycon_type = Evarutil.pr_tycon_type
 
 let debug_level = 2
 
+let debug_on = false
+
 let debug n s = 
-  if !Options.debug && n >= debug_level then
-    msgnl s
+  if debug_on then
+    if !Options.debug && n >= debug_level then
+      msgnl s
+    else ()
   else ()
 
 let debug_msg n s = 
-  if !Options.debug  && n >= debug_level then s
+  if debug_on then
+    if !Options.debug  && n >= debug_level then s
+    else mt ()
   else mt ()
 
 let trace s = 
-  if !Options.debug  && debug_level > 0 then msgnl s
+  if debug_on then
+    if !Options.debug  && debug_level > 0 then msgnl s
+    else ()
   else ()
 
 let wf_relations = Hashtbl.create 10
@@ -166,30 +174,6 @@ let goal_fix_kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Fixp
 
 open Tactics
 open Tacticals
-
-let build_dependent_sum l =
-  let rec aux (tac, typ) = function
-      (n, t) :: tl ->
-	let t' = mkLambda (Name n, t, typ) in
-	  trace (spc () ++ str ("treating evar " ^ string_of_id n));
-	  (try trace (str " assert: " ++ my_print_constr (Global.env ()) t)	    	     
-	   with _ -> ());
-	let tac' = 
-	  tclTHENS (assert_tac true (Name n) t) 
-	    ([intros;
-	      (tclTHENSEQ 
-		 [constructor_tac (Some 1) 1 
-		    (Rawterm.ImplicitBindings [mkVar n]);
-		  tac]);
-	     ])
-	in
-	let newt = mkApp (Lazy.force ex_ind, [| t; t'; |]) in
-	  aux (tac', newt) tl
-    | [] -> tac, typ
-  in 
-    match l with 
-	(_, hd) :: tl -> aux (intros, hd) tl
-      | [] -> raise (Invalid_argument "build_dependent_sum")
 
 let id x = x
 
@@ -438,3 +422,17 @@ let rewrite_cases env c =
   let c' = rewrite_cases c in
   let _ = trace (str "Rewrote cases: " ++ spc () ++ my_print_rawconstr env c') in
     c'
+
+let id_of_name = function
+    Name n -> n
+  | Anonymous -> raise (Invalid_argument "id_of_name")
+
+let definition_message id =
+  Options.if_verbose message ((string_of_id id) ^ " is defined")
+
+let recursive_message v =
+  match Array.length v with
+    | 0 -> error "no recursive definition"
+    | 1 -> (Printer.pr_global v.(0) ++ str " is recursively defined")
+    | _ -> hov 0 (prvect_with_sep pr_coma Printer.pr_global v ++
+		    spc () ++ str "are recursively defined")

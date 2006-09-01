@@ -47,6 +47,7 @@ GEXTEND Gram
   subtac_gallina_loc:
     [ [ g = Vernac.gallina -> loc, g ] ]
     ;
+       
   END
 
 type ('a,'b) gallina_loc_argtype = (Vernacexpr.vernac_expr located, 'a, 'b) Genarg.abstract_argument_type
@@ -57,6 +58,7 @@ let (wit_subtac_gallina_loc : (Genarg.tlevel, Proof_type.tactic) gallina_loc_arg
   Genarg.create_arg "subtac_gallina_loc"
 
 VERNAC COMMAND EXTEND Subtac
-[ "Program" subtac_gallina_loc(g) ] -> 
-  [ Subtac.subtac g ]
+[ "Program" subtac_gallina_loc(g) ] -> [ Subtac.subtac g ]
+| [ "Obligation" integer(num) "of" ident(name) ] -> [ Subtac_obligations.subtac_obligation (num, Some name) ]
+| [ "Obligation" integer(num) ] -> [ Subtac_obligations.subtac_obligation (num, None) ]      
 END

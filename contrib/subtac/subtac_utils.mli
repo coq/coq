@@ -88,3 +88,8 @@ val and_tac : (identifier * 'a * constr * Proof_type.tactic) list ->
 val destruct_ex : constr -> constr -> constr list
 
 val rewrite_cases : Environ.env -> Rawterm.rawconstr -> Rawterm.rawconstr
+
+val id_of_name : name -> identifier
+
+val definition_message : identifier -> unit
+val recursive_message : global_reference array -> std_ppcmds

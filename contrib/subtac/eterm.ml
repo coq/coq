@@ -38,7 +38,6 @@ let subst_evars evs n t =
   let evar_info id = 
     let rec aux i = function
 	(k, h, v) :: tl -> 
-	  trace (str "Searching for " ++ int id ++ str " found: " ++ int k);
 	  if k = id then (i, h, v) else aux (succ i) tl
       | [] -> raise Not_found
     in 
@@ -96,7 +95,9 @@ let etype_of_evar evs ev hyps =
       (id, copt, t) :: tl ->
 	let t' = subst_evars evs n t in
 	let t'' = subst_vars acc 0 t' in
- 	  mkNamedProd_or_LetIn (id, copt, t'') (aux (id :: acc) (succ n) tl)
+	let copt' = option_map (subst_evars evs n) copt in
+	let copt' = option_map (subst_vars acc 0) copt' in
+ 	  mkNamedProd_or_LetIn (id, copt', t'') (aux (id :: acc) (succ n) tl)
     | [] ->
 	let t' = subst_evars evs n ev.evar_concl in
 	  subst_vars acc 0 t'	
@@ -108,7 +109,7 @@ open Tacticals
 let eterm_term evm t tycon = 
   (* 'Serialize' the evars, we assume that the types of the existentials
      refer to previous existentials in the list only *)
-  let evl = List.rev (to_list evm) in
+  let evl = to_list evm in
     trace (str "Eterm, transformed to list");
   let evts = 
     (* Remove existential variables in types and build the corresponding products *)
@@ -116,7 +117,9 @@ let eterm_term evm t tycon =
       (fun (id, ev) l ->
 	 trace (str "Eterm: " ++ str "treating evar: " ++ int id);
 	 let hyps = Environ.named_context_of_val ev.evar_hyps in
-	 let y' = (id, hyps, etype_of_evar l ev hyps) in
+	 let evtyp = etype_of_evar l ev hyps in
+	   trace (str "Evar's type is: " ++ Termops.print_constr_env (Global.env ()) evtyp);
+	 let y' = (id, hyps, evtyp) in
 	   y' :: l) 
       evl []
   in 
@@ -124,7 +127,8 @@ let eterm_term evm t tycon =
     subst_evars evts 0 t 
   in
   let evar_names = 
-    List.map (fun (id, _, c) -> (id_of_string ("Evar" ^ string_of_int id)), c) evts
+    let i = ref 0 in
+      List.map (fun (id, _, c) -> incr i; (id_of_string ("evar_" ^ string_of_int !i)), c) evts
   in
   let evar_bl =
     List.map (fun (id, c) -> Name id, None, c) evar_names
@@ -133,26 +137,17 @@ let eterm_term evm t tycon =
     (* Generalize over the existential variables *)
   let t'' = Termops.it_mkLambda_or_LetIn t' evar_bl 
   and tycon = option_map 
-		(fun typ -> Termops.it_mkProd_wo_LetIn typ anon_evar_bl) tycon
-  in
-  let _declare_evar (id, c) =
-    let id = id_of_string ("Evar" ^ string_of_int id) in
-      ignore(Declare.declare_variable id (Names.empty_dirpath, Declare.SectionLocalAssum c,
-					  Decl_kinds.IsAssumption Decl_kinds.Definitional))
-  in
-  let _declare_assert acc (id, c) =
-    let id = id_of_string ("Evar" ^ string_of_int id) in
-      tclTHEN acc (Tactics.assert_tac false (Name id) c)
+    (fun typ -> Termops.it_mkProd_wo_LetIn typ anon_evar_bl) tycon
   in
     (try 
        trace (str "Term given to eterm" ++ spc () ++
-	      Termops.print_constr_env (Global.env ()) t);
+		Termops.print_constr_env (Global.env ()) t);
        trace (str "Term constructed in eterm" ++ spc () ++
-	      Termops.print_constr_env (Global.env ()) t'');
+		Termops.print_constr_env (Global.env ()) t'');
        ignore(option_map 
 		(fun typ ->
 		   trace (str "Type :" ++ spc () ++
-			  Termops.print_constr_env (Global.env ()) typ))
+			    Termops.print_constr_env (Global.env ()) typ))
 		tycon);
      with _ -> ());
     t'', tycon, evar_names

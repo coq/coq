@@ -149,15 +149,6 @@ let collect_non_rec env =
   in 
   searchrec [] 
 
-let definition_message id =
-  Options.if_verbose message ((string_of_id id) ^ " is defined")
-
-let recursive_message v =
-  match Array.length v with
-    | 0 -> error "no recursive definition"
-    | 1 -> (Printer.pr_global v.(0) ++ str " is recursively defined")
-    | _ -> hov 0 (prvect_with_sep pr_coma Printer.pr_global v ++
-		    spc () ++ str "are recursively defined")
 
 let filter_map f l = 
   let rec aux acc = function
@@ -184,6 +175,11 @@ let rec gen_rels = function
     0 -> []
   | n -> mkRel n :: gen_rels (pred n)
 
+let id_of_name = function
+    Anonymous -> raise (Invalid_argument "id_of_name")
+  | Name n -> n
+
+ 
 let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
   let sigma = Evd.empty in
   let isevars = ref (Evd.create_evar_defs sigma) in
@@ -204,25 +200,35 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
   let argid = match argname with Name n -> n | _ -> assert(false) in
   let _liftafter = lift_binders 1 after_length after in
   let envwf = push_rel_context before env in
-  let wf_rel, measure_fn = 
-    let rconstr = interp_constr isevars envwf r in
-    if measure then
-      let lt_rel = constr_of_global (Lazy.force lt_ref) in
-      let name s = Name (id_of_string s) in
-	mkLambda (name "x", argtyp,
-		  mkLambda (name "y", argtyp,
-			    mkApp (lt_rel,
-				   [| mkApp (rconstr, [| mkRel 2 |]) ;
-				      mkApp (rconstr, [| mkRel 1 |]) |]))),
-	Some rconstr
-    else rconstr, None
+  let wf_rel, wf_rel_fun, measure_fn = 
+    let rconstr_body, rconstr = 
+      let app = mkAppC (r, [mkIdentC (id_of_name argname)]) in
+       let env = push_rel_context [arg] envwf in
+       let capp = interp_constr isevars env app in
+ 	capp, mkLambda (argname, argtyp, capp)
+     in
+       if measure then
+ 	let lt_rel = constr_of_global (Lazy.force lt_ref) in
+ 	let name s = Name (id_of_string s) in
+ 	let wf_rel_fun = 
+ 	  (fun x y ->
+ 	      mkApp (lt_rel, [| subst1 x rconstr_body; 
+ 				subst1 y rconstr_body |])) 
+ 	in
+ 	let wf_rel = 
+ 	  mkLambda (name "x", argtyp,
+ 		    mkLambda (name "y", lift 1 argtyp,
+ 			      wf_rel_fun (mkRel 2) (mkRel 1)))
+ 	in
+ 	  wf_rel, wf_rel_fun , Some rconstr
+       else rconstr, (fun x y -> mkApp (rconstr, [|x; y|])), None
   in
   let wf_proof = mkApp (Lazy.force well_founded, [| argtyp ; wf_rel |])
   in
   let argid' = id_of_string (string_of_id argid ^ "'") in
   let wfarg len = (Name argid', None, 
-		   mkSubset (Name argid') argtyp 
-		     (mkApp (wf_rel, [|mkRel 1; mkRel (len + 1)|])))
+  		   mkSubset (Name argid') argtyp 
+		     (wf_rel_fun (mkRel 1) (mkRel (len + 1))))
   in
   let top_bl = after @ (arg :: before) in
   let intern_bl = after @ (wfarg 1 :: arg :: before) in
@@ -234,7 +240,7 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
   let projection = 
     mkApp (proj, [| argtyp ;
 		    (mkLambda (Name argid', argtyp,
-			       (mkApp (wf_rel, [|mkRel 1; mkRel 3|])))) ;
+			       (wf_rel_fun (mkRel 1) (mkRel 3)))) ;
 		    mkRel 1
 		 |])
   in
