@@ -42,10 +42,6 @@ let map_first m =
     ProgMap.iter (fun _ v -> raise (Found v)) m;
     assert(false)
   with Found x -> x
-      
-let map_single m = 
-  if map_cardinal m = 1 then map_first m
-  else raise (Invalid_argument "map_single") 
     
 let from_prg : program_info ProgMap.t ref = ref ProgMap.empty
 
@@ -59,7 +55,8 @@ let _ =
       Summary.survive_module = false;
       Summary.survive_section = false }
     
-let add_entry _ e =
+let add_entry n e =
+  ppnl (str (string_of_id e.prg_name) ++ str " has type-checked, generating " ++ int (snd e.prg_obligations) ++ str " obligation(s)");
   from_prg := ProgMap.add e.prg_name e !from_prg
     
 let (theory_to_obj, obj_to_theory) = 
@@ -97,8 +94,11 @@ let subtac_obligation (user_num, name) =
     match name with
 	Some n -> ProgMap.find n prg_infos
       | None -> 
-	  (try map_single prg_infos 
-	   with _ -> error "More than one program with unsolved obligations")
+	  (let n = map_cardinal prg_infos in
+	     match n with 
+		 0 -> error "No obligations remaining"
+	       | 1 -> map_first prg_infos
+	       | _ -> error "More than one program with unsolved obligations")
   in
   let obls, rem = prg.prg_obligations in
     if num < Array.length obls then
