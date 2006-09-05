@@ -151,7 +151,7 @@ val set_end_tac : tactic -> unit
    current focused proof or raises a UserError if no proof is focused or
    if there is no [n]th subgoal *)
 
-val solve_nth : int -> tactic -> unit
+val solve_nth : ?spf_info:Scanproof.info -> int -> tactic -> unit
 
 (* [by tac] applies tactic [tac] to the 1st subgoal of the current
    focused proof or raises a UserError if there is no focused proof or

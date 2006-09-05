@@ -103,7 +103,8 @@ val top_goal_of_pftreestate : pftreestate -> goal sigma
 val nth_goal_of_pftreestate : int -> pftreestate -> goal sigma
 val traverse                : int -> pftreestate -> pftreestate
 val weak_undo_pftreestate   : pftreestate -> pftreestate
-val solve_nth_pftreestate   : int -> tactic -> pftreestate -> pftreestate
+val solve_nth_pftreestate   :
+  ?spf_info:Scanproof.info -> int -> tactic -> pftreestate -> pftreestate
 val solve_pftreestate       : tactic -> pftreestate -> pftreestate
 val mk_pftreestate          : goal -> pftreestate
 val extract_open_pftreestate : pftreestate -> constr * Termops.metamap

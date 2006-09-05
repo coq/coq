@@ -162,6 +162,7 @@ INTERP=\
 PROOFS=\
   proofs/tacexpr.cmo proofs/proof_type.cmo proofs/redexpr.cmo \
   proofs/proof_trees.cmo proofs/logic.cmo \
+  proofs/scanproof.cmo \
   proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
   proofs/pfedit.cmo proofs/tactic_debug.cmo \
   proofs/clenvtac.cmo
@@ -1420,7 +1421,8 @@ PRINTERSCMO=\
   interp/topconstr.cmo interp/notation.cmo interp/reserve.cmo		\
   library/impargs.cmo\
   interp/constrextern.cmo interp/syntax_def.cmo interp/constrintern.cmo	\
-  proofs/proof_trees.cmo proofs/logic.cmo proofs/refiner.cmo \
+  proofs/proof_trees.cmo proofs/logic.cmo proofs/scanproof.cmo \
+  proofs/refiner.cmo \
   proofs/tacexpr.cmo \
   proofs/evar_refiner.cmo proofs/pfedit.cmo proofs/tactic_debug.cmo	\
   parsing/ppconstr.cmo parsing/extend.cmo parsing/pcoq.cmo \

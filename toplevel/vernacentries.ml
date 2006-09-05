@@ -550,13 +550,13 @@ let vernac_identity_coercion stre id qids qidt =
 
 (***********)
 (* Solving *)
-let vernac_solve n tcom b =
+let vernac_solve ?spf_info n tcom b =
   if not (refining ()) then
     error "Unknown command of the non proof-editing mode";
   begin
     if b then 
-      solve_nth n (Tacinterp.hide_interp tcom (get_end_tac ()))
-    else solve_nth n (Tacinterp.hide_interp tcom None)
+      solve_nth ?spf_info n (Tacinterp.hide_interp tcom (get_end_tac ()))
+    else solve_nth ?spf_info n (Tacinterp.hide_interp tcom None)
   end;
   (* in case a strict subtree was completed, 
      go back to the top of the prooftree *) 
@@ -567,6 +567,29 @@ let vernac_solve n tcom b =
   end;
   print_subgoals();
   if !pcoq <> None then (out_some !pcoq).solve n
+
+let vernac_check_solve ngg cool n tac b =
+  let spfi = {
+      Scanproof.goal_num = n;
+      Scanproof.num_gg = ngg;
+      Scanproof.cool = (Tacinterp.hide_interp cool None);
+      Scanproof.res = Scanproof.Okay
+  }
+  in
+  vernac_solve ~spf_info:spfi n tac b;
+  begin match spfi.Scanproof.res with
+      Scanproof.Okay -> msgnl (str "OKAY")
+    | Scanproof.Wrong_num_gg goals_gen ->
+	msgnl (str "WRONG GOALS NUMBER : " ++ int (List.length goals_gen) ++ str " INSTEAD OF " ++ int ngg);
+	List.iter (fun x -> msgnl (Printer.pr_goal x)) goals_gen;
+	msgnl (str "WRONG GOALS NUMBER. END")
+    | Scanproof.Tac_failure e ->
+	msgnl (str "FAILURE BEGIN");
+	msgnl (Cerrors.explain_exn e);
+	msgnl (str "FAILURE END")
+    | Scanproof.Cancelled -> msgnl (str "CANCELLED")
+  end
+
 
   (* A command which should be a tactic. It has been
      added by Christine to patch an error in the design of the proof
@@ -1120,6 +1143,7 @@ let interp c = match c with
 
   (* Solving *)
   | VernacSolve (n,tac,b) -> vernac_solve n tac b
+  | VernacCheckSolve (ngg,cool,n,tac,b) -> vernac_check_solve ngg cool n tac b
   | VernacSolveExistential (n,c) -> vernac_solve_existential n c
 
   (* Auxiliary file and library management *)

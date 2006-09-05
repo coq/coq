@@ -677,6 +677,12 @@ let rec pr_vernac = function
       ++ (try if deftac & Pfedit.get_end_tac() <> None then str ".." else mt ()
       with UserError _|Stdpp.Exc_located _ -> mt())
 
+  | VernacCheckSolve (ngg,cool,n,tac,deftac) ->
+      (str "CHECKNBGOALS( " ++ int ngg ++ str ", " ++ pr_raw_tactic cool ++
+      str " ) "  ++ int n ++ str ": ") ++ pr_raw_tactic tac
+      ++ (try if deftac & Pfedit.get_end_tac() <> None then str ".." else mt ()
+      with UserError _|Stdpp.Exc_located _ -> mt())
+
   | VernacSolveExistential (i,c) ->
       str"Existential " ++ int i ++ pr_lconstrarg c
 

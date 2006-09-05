@@ -223,6 +223,7 @@ type vernac_expr =
       module_binder list * module_type_ast option
 
   (* Solving *)
+  | VernacCheckSolve of int * raw_tactic_expr * int * raw_tactic_expr * bool
   | VernacSolve of int * raw_tactic_expr * bool
   | VernacSolveExistential of int * constr_expr
 

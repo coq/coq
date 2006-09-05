@@ -353,7 +353,7 @@ contrib/field/Field_Tactic.vo: contrib/field/Field_Tactic.v theories/Lists/List.
 contrib/field/Field.vo: contrib/field/Field.v contrib/field/Field_Compl.vo contrib/field/Field_Theory.vo contrib/field/Field_Tactic.vo
 contrib/fourier/Fourier_util.vo: contrib/fourier/Fourier_util.v theories/Reals/Rbase.vo
 contrib/fourier/Fourier.vo: contrib/fourier/Fourier.v contrib/ring/quote.cmo contrib/ring/ring.cmo contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo contrib/field/field.cmo contrib/fourier/Fourier_util.vo contrib/field/Field.vo theories/Reals/DiscrR.vo
-contrib/subtac/FixSub.vo: contrib/subtac/FixSub.v theories/Init/Wf.vo
+contrib/subtac/FixSub.vo: contrib/subtac/FixSub.v theories/Init/Wf.vo theories/Arith/Wf_nat.vo theories/Arith/Lt.vo
 contrib/subtac/Utils.vo: contrib/subtac/Utils.v
 contrib/rtauto/Bintree.vo: contrib/rtauto/Bintree.v theories/Lists/List.vo theories/NArith/BinPos.vo
 contrib/rtauto/Rtauto.vo: contrib/rtauto/Rtauto.v theories/Lists/List.vo contrib/rtauto/Bintree.vo theories/Bool/Bool.vo theories/NArith/BinPos.vo

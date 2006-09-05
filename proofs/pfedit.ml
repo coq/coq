@@ -250,14 +250,15 @@ let start_proof na str sign concl hook =
     top_strength = str;
     top_hook = hook}
   in
+  Scanproof.reset();
   start(na,ts);
   set_current_proof na
 
 
-let solve_nth k tac =
+let solve_nth ?spf_info k tac =
   let pft = get_pftreestate () in
   if not (List.mem (-1) (cursor_of_pftreestate pft)) then
-    mutate (solve_nth_pftreestate k tac)
+    mutate (solve_nth_pftreestate ?spf_info k tac)
   else 
     error "cannot apply a tactic when we are descended behind a tactic-node"
 

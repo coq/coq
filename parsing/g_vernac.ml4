@@ -54,6 +54,12 @@ GEXTEND Gram
   vernac: FIRST
     [ [ IDENT "Time"; v = vernac  -> VernacTime v ] ]
   ;
+  vernac:
+    [ [ IDENT "CHECKNBGOALS";"("; ngg=natural ; "," ; cool = Tactic.tactic ; ")" ;
+	n=natural ; ":" ; tac = Tactic.tactic ;
+        use_dft_tac = [ "." -> false | "..." -> true ] ->
+      VernacCheckSolve(ngg, cool, n, tac, use_dft_tac) ] ]
+  ;
   vernac: LAST
     [ [ gln = OPT[n=natural; ":" -> n];
         tac = subgoal_command -> tac gln ] ]

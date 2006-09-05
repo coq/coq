@@ -21,6 +21,7 @@ open Type_errors
 open Proof_trees
 open Proof_type
 open Logic
+open Scanproof
 
 type transformation_tactic = proof_tree -> (goal list * validation)
 
@@ -713,21 +714,51 @@ let traverse n pts = match n with
 
 let change_constraints_pftreestate newgc pts = { pts with tpfsigma = newgc }
 
-let app_tac sigr tac p =
-  let (gll,v) = tac {it=p.goal;sigma= !sigr} in
-  sigr := gll.sigma;
-  v (List.map leaf gll.it)
+
+let app_tac ?spf_info sigr tac p = match spf_info with
+    None ->
+      let (gll,v) = tac {it=p.goal;sigma= !sigr} in
+	sigr := gll.sigma;
+	v (List.map leaf gll.it)
+  | Some spfi ->
+      let (gll,v) =
+	try
+	  let (gll2,v2) = tac {it=p.goal;sigma= !sigr} in
+	    if List.length gll2.it = spfi.num_gg then begin
+		spfi.res <- Okay;
+		keeping spfi.goal_num spfi.num_gg;
+		(gll2,v2) end
+	    else begin
+		spfi.res <- Wrong_num_gg gll2.it;
+		discarding spfi.goal_num spfi.num_gg;
+		spfi.cool {it=p.goal;sigma= !sigr}
+	      end
+	with
+	    e ->
+	      spfi.res <- Tac_failure e;
+	      discarding spfi.goal_num spfi.num_gg;
+	      spfi.cool {it=p.goal;sigma= !sigr}
+      in
+	(sigr := gll.sigma;
+	 v (List.map leaf gll.it))
 
 (* solve the nth subgoal with tactic tac *)
-let solve_nth_pftreestate n tac pts =
+let solve_nth_pftreestate ?spf_info n tac pts =
   let sigr = ref pts.tpfsigma in
-  let tpf' = frontier_map (app_tac sigr tac) n pts.tpf in
-  let tpf'' =
-    if !sigr == pts.tpfsigma then tpf'
-    else frontier_mapi (fun _ g -> app_tac sigr norm_evar_tac g) tpf' in
-  { tpf      = tpf'';
-    tpfsigma = !sigr;
-    tstack   = pts.tstack }
+  let n' = get_new_num n in
+  if n' = -1 then begin
+      assert (spf_info <> None);
+      (out_some spf_info).res <- Cancelled;
+      discarding (out_some spf_info).goal_num (out_some spf_info).num_gg;
+      pts end
+  else
+    let tpf' = frontier_map (app_tac ?spf_info sigr tac) n' pts.tpf in
+    let tpf'' =
+      if !sigr == pts.tpfsigma then tpf'
+      else frontier_mapi (fun _ g -> app_tac sigr norm_evar_tac g) tpf' in
+    { tpf      = tpf'';
+      tpfsigma = !sigr;
+      tstack   = pts.tstack }
 
 let solve_pftreestate = solve_nth_pftreestate 1
 
