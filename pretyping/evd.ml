@@ -46,7 +46,11 @@ type evar_map1 = evar_info Evarmap.t
 
 let empty = Evarmap.empty
 
-let to_list evc = Evarmap.fold (fun ev x acc -> (ev,x)::acc) evc []
+let to_list evc = (* Workaround for change in Map.fold behavior *)
+  let l = ref [] in 
+    Evarmap.iter (fun ev x -> l:=(ev,x)::!l) evc;
+    !l
+
 let dom evc = Evarmap.fold (fun ev _ acc -> ev::acc) evc []
 let find evc k = Evarmap.find k evc
 let remove evc k = Evarmap.remove k evc
