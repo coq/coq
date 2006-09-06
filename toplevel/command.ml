@@ -491,17 +491,17 @@ let check_mutuality env fixl =
   let po = partial_order preorder in
   match List.filter (function (_,Inr _) -> true | _ -> false) po with
     | (x,Inr xge)::(y,Inr yge)::_ ->
-	if_verbose msg_warning 
-	  (let reason = 
-	    if List.mem x yge then 
-	      string_of_id y^" depends on "^string_of_id x
-	      ^" but not conversely"
-	    else if List.mem y xge then 
-	      string_of_id x^" depends on "^string_of_id y
-	      ^" but not conversely"
-	    else string_of_id y^" and "^string_of_id x
-	  ^" are not mutually dependent" in
-	  str ("Not a fully mutually defined fixpoint\n  (e.g.: "^reason^")"))
+	let reason = 
+	  if List.mem x yge then 
+	    string_of_id y^" depends on "^string_of_id x
+	    ^" but not conversely"
+	  else if List.mem y xge then 
+	    string_of_id x^" depends on "^string_of_id y
+	    ^" but not conversely"
+	  else string_of_id y^" and "^string_of_id x
+	    ^" are not mutually dependent" in
+        error
+	  ("Not a fully mutually defined fixpoint\n  (e.g.: "^reason^")")
     | _ -> ()
 
 type fixpoint_kind =
