@@ -373,10 +373,11 @@ with forest : Set :=
 \end{coq_example*}
 
 We define the function \texttt{tree\_size} that computes the size
-of a tree or a forest.
+of a tree or a forest. Note that we use \texttt{Function} which
+generally produces better principles.
 
 \begin{coq_example*}                
-Fixpoint tree_size (t:tree) : nat :=
+Function tree_size (t:tree) : nat :=
   match t with
   | node A f => S (forest_size f)
   end
@@ -387,20 +388,28 @@ Fixpoint tree_size (t:tree) : nat :=
   end.
 \end{coq_example*}
 
-The definition of principle of mutual induction following the
-recursive structure of \texttt{tree\_size} is defined by the
-command:
-
-\begin{coq_example*}
-Functional Scheme tree_size_ind := Induction for tree_size Sort Prop
-with forest_size_ind := Induction for forest_size Sort Prop.
-\end{coq_example*}
-
-You may now look at the type of {\tt tree\_size\_ind}:
+Remark: \texttt{Function} generates itself non mutual induction
+principles {\tt tree\_size\_ind} and {\tt forest\_size\_ind}:
 
 \begin{coq_example}
 Check tree_size_ind.
 \end{coq_example}
+
+The definition of mutual induction principles following the recursive
+structure of \texttt{tree\_size} and \texttt{forest\_size} is defined
+by the command:
+
+\begin{coq_example*}
+Functional Scheme tree_size_ind2 := Induction for tree_size Sort Prop
+with forest_size_ind2 := Induction for forest_size Sort Prop.
+\end{coq_example*}
+
+You may now look at the type of {\tt tree\_size\_ind2}:
+
+\begin{coq_example}
+Check tree_size_ind2.
+\end{coq_example}
+
 
 
 

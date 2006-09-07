@@ -1362,7 +1362,7 @@ can be seen as a generalization of {\tt Fixpoint}.  It is actually a
 wrapper for several ways of defining a function \emph{and other useful
   related objects}, namely: an induction principle that reflects the
 recursive structure of the function (see \ref{FunInduction}), and its
-fixpoint equality (not always, see below).  The meaning of this
+fixpoint equality.  The meaning of this
 declaration is to define a function {\it ident}, similarly to {\tt
   Fixpoint}. Like in {\tt Fixpoint}, the decreasing argument must be
 given (unless the function is not recursive), but it must not
@@ -1406,40 +1406,43 @@ Function plus (n m : nat) {struct n} : nat :=
 \paragraph{Limitations}
 \label{sec:Function-limitations}
 \term$_0$ must be build as a \emph{pure pattern-matching tree}
-(\texttt{match...with}) with $\lambda$-abstractions and applications only
-\emph{at the end} of each branch.  For now dependent cases are not
-treated.
-
-\paragraph{Difference with \texttt{Functional Scheme}} 
-There is a difference between obtaining an induction scheme for a
-function by using \texttt{Function} (section~\ref{Function}) and
-by using \texttt{Functional Scheme} after a usual definition using
-\texttt{Fixpoint} or \texttt{Definition}. Indeed \texttt{Function}
-generally produces smaller principles, closer to the definition
-written by the user. This is because \texttt{Functional Scheme} works
-by analyzing the term \texttt{div2} after the compilation of pattern
-matching into exhaustive expanded ones, whereas \texttt{Function}
-analyzes the pseudo-term \emph{before} pattern matching expansion.
+(\texttt{match...with}) with applications only \emph{at the end} of
+each branch.  For now dependent cases are not treated.
 
 
-\ErrMsg 
 
-\errindex{while trying to define Inductive R\_\ident ...}
+\begin{ErrMsgs}
+\item \errindex{The recursive argument must be specified}
+\item \errindex{No argument name \ident}
+\item \errindex{Cannot use mutual definition with well-founded
+    recursion or measure}
 
-The generation of the graph relation \texttt{(R\_\ident)} used to
-compute the induction scheme of \ident\ raised a typing error, the
-definition of \ident\ was aborted. You can use \texttt{Fixpoint}
-instead of \texttt{Function}, but the scheme will not be generated.
+\item \errindex{Cannot define graph for \ident\dots} (warning)
 
-This error happens generally when: 
+  The generation of the graph relation \texttt{(R\_\ident)} used to
+  compute the induction scheme of \ident\ raised a typing error. Only
+  the ident is defined, the induction scheme will not be generated.
 
-\begin{itemize}
-\item the definition uses pattern matching on dependent types, which
-  \texttt{Function} cannot deal with yet.
-\item the definition is not a \emph{pattern-matching tree} as
-  explained above.
-\end{itemize}
+  This error happens generally when:
 
+  \begin{itemize}
+  \item the definition uses pattern matching on dependent types, which
+    \texttt{Function} cannot deal with yet.
+  \item the definition is not a \emph{pattern-matching tree} as
+    explained above.
+  \end{itemize}
+
+\item \errindex{Cannot define principle(s) for \ident\dots} (warning)
+
+  The generation of the graph relation \texttt{(R\_\ident)} succeeded
+  but the induction principle could not be built. Only the ident is
+  defined. Please report.
+
+\item \errindex{Cannot built inversion information} (warning)
+
+  \texttt{functional inversion} will not be available for the
+  function.
+\end{ErrMsgs}
 
 
 \SeeAlso{\ref{FunScheme},\ref{FunScheme-examples},\ref{FunInduction}}
@@ -1453,20 +1456,27 @@ given below.
     : type$_0$ := \term$_0$}
 
   Defines the not recursive function \ident\ as if declared with
-  \texttt{Definition}.  Three elimination schemes {\tt\ident\_rect},
-  {\tt\ident\_rec} and {\tt\ident\_ind} are generated (see the
-  documentation of {\tt Inductive} \ref{Inductive}), which reflect the
-  pattern matching structure of \term$_0$.
+  \texttt{Definition}.  Moreover the following are defined:
 
+  \begin{itemize}
+  \item {\tt\ident\_rect}, {\tt\ident\_rec} and {\tt\ident\_ind},
+    which reflect the pattern matching structure of \term$_0$ (see the
+    documentation of {\tt Inductive} \ref{Inductive});
+  \item The inductive \texttt{R\_\ident} corresponding to the graph of
+    \ident\ (silently);
+  \item \texttt{\ident\_complete} and \texttt{\ident\_correct} which are
+    inversion information linking the function and its graph.
+  \end{itemize}
 \item \texttt{Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
     {\tt \{}{\tt struct} \ident$_0${\tt\}} : type$_0$ := \term$_0$}
   
   Defines the structural recursive function \ident\ as if declared
-  with \texttt{Fixpoint}.  Three induction schemes {\tt\ident\_rect},
-  {\tt\ident\_rec} and {\tt\ident\_ind} are generated (see the
-  documentation of {\tt Inductive} \ref{Inductive}), which reflect the
-  recursive structure of \term$_0$. When there is only one parameter,
-  {\tt \{struct} \ident$_0${\tt\}} can be omitted.
+  with \texttt{Fixpoint}.  Moreover the following are defined:
+
+  \begin{itemize}
+  \item The same objects as above;
+  \item The fixpoint equation of \ident: \texttt{\ident\_equation}.
+  \end{itemize}
   
 \item \texttt{Function {\ident} {\binder$_1$}\ldots{\binder$_n$} {\tt
       \{}{\tt measure \term$_1$} \ident$_0${\tt\}} : type$_0$ :=
@@ -1502,12 +1512,16 @@ proof that the ordering relation is well founded.
 
 %Completer sur measure et wf
 
-The fixpoint equality  \texttt{\ident\_equation}, which is not trivial
-to prove in this case, is automatically generated and proved, together
-with three  induction schemes {\tt\ident\_rect},  {\tt\ident\_rec} and
-{\tt\ident\_ind} as explained above  (see  the   documentation  of  {\tt
-  Inductive} \ref{Inductive}), which  reflect the recursive structure
-of \term$_0$.
+Once proof obligations are discharged, the following objects are
+defined:
+
+\begin{itemize}
+\item The same objects as with the \texttt{struct};
+\item The lemma \texttt{\ident\_tcc} which collects all proof
+  obligations in one property;
+\item The lemmas \texttt{\ident\_terminate} and \texttt{\ident\_F}
+  which is needed to be inlined during extraction of \ident.
+\end{itemize}
 
 
 
