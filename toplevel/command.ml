@@ -482,7 +482,22 @@ let rec partial_order = function
       in link y
     in browse (partial_order rest) [] xge 
 
-let check_mutuality env fixl =
+let non_full_mutual_message x xge y yge kind rest =
+  let reason = 
+    if List.mem x yge then 
+      string_of_id y^" depends on "^string_of_id x^" but not conversely"
+    else if List.mem y xge then 
+      string_of_id x^" depends on "^string_of_id y^" but not conversely"
+    else
+      string_of_id y^" and "^string_of_id x^" are not mutually dependent" in
+  let e = if rest <> [] then "e.g.: "^reason else reason in
+  let k = if kind=Fixpoint then "fixpoint" else "cofixpoint" in
+  let w =
+    if kind=Fixpoint then "Well-foundedness check may fail unexpectedly.\n"
+    else "" in
+  "Not a fully mutually defined "^k^"\n("^e^").\n"^w
+
+let check_mutuality env kind fixl =
   let names = List.map fst fixl in
   let preorder =
     List.map (fun (id,def) -> 
@@ -490,18 +505,8 @@ let check_mutuality env fixl =
       fixl in
   let po = partial_order preorder in
   match List.filter (function (_,Inr _) -> true | _ -> false) po with
-    | (x,Inr xge)::(y,Inr yge)::_ ->
-	let reason = 
-	  if List.mem x yge then 
-	    string_of_id y^" depends on "^string_of_id x
-	    ^" but not conversely"
-	  else if List.mem y xge then 
-	    string_of_id x^" depends on "^string_of_id y
-	    ^" but not conversely"
-	  else string_of_id y^" and "^string_of_id x
-	    ^" are not mutually dependent" in
-        error
-	  ("Not a fully mutually defined fixpoint\n  (e.g.: "^reason^")")
+    | (x,Inr xge)::(y,Inr yge)::rest ->
+	if_verbose warning (non_full_mutual_message x xge y yge kind rest)
     | _ -> ()
 
 type fixpoint_kind =
@@ -555,6 +560,7 @@ let compute_guardness_evidence (n,_) fixl fixtype =
 let interp_recursive fixkind l boxed =
   let env = Global.env() in
   let fixl, ntnl = List.split l in
+  let kind = if fixkind <> IsCoFixpoint then Fixpoint else CoFixpoint in
   let fixnames = List.map (fun fix -> fix.fix_name) fixl in
 
   (* Interp arities allowing for unresolved types *)
@@ -576,7 +582,7 @@ let interp_recursive fixkind l boxed =
   (* Instantiate evars and check all are resolved *)
   let fixtypes = List.map (nf_evar (Evd.evars_of !isevars)) fixtypes in
   List.iter (check_evars env_rec Evd.empty isevars) fixdefs;
-  check_mutuality env (List.combine fixnames fixdefs);
+  check_mutuality env kind (List.combine fixnames fixdefs);
 
   (* Build the fix declaration block *)
   let fixdecls = prepare_recursive_declaration fixnames fixtypes fixdefs in
@@ -590,7 +596,6 @@ let interp_recursive fixkind l boxed =
   in
 
   (* Declare the recursive definitions *)
-  let kind = if fixkind <> IsCoFixpoint then Fixpoint else CoFixpoint in
   ignore (list_map3 (declare_fix boxed kind) fixnames fixdecls fixtypes);
   if_verbose ppnl (recursive_message kind fixnames);
 
