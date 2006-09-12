@@ -1617,52 +1617,52 @@ and interp_match_context ist g lz lr lmr =
   let rec apply_goal_sub ist env goal nocc (id,c) csr mt mhyps hyps =
     let (lgoal,ctxt) = match_subterm nocc c csr in
     let lctxt = give_context ctxt id in
-    try apply_hyps_context ist env lz goal mt lctxt lgoal mhyps hyps
-    with e when is_match_catchable e ->
-      apply_goal_sub ist env goal (nocc + 1) (id,c) csr mt mhyps hyps in
+      try apply_hyps_context ist env lz goal mt lctxt lgoal mhyps hyps
+      with e when is_match_catchable e ->
+	apply_goal_sub ist env goal (nocc + 1) (id,c) csr mt mhyps hyps in
   let rec apply_match_context ist env goal nrs lex lpt = 
     begin
-    if lex<>[] then db_pattern_rule ist.debug nrs (List.hd lex);
-    match lpt with
-    | (All t)::tl ->
-      begin
-        db_mc_pattern_success ist.debug;
-        try eval_with_fail ist lz goal t
-        with e when is_match_catchable e ->
-          apply_match_context ist env goal (nrs+1) (List.tl lex) tl
-      end
-    | (Pat (mhyps,mgoal,mt))::tl ->
-      let hyps = make_hyps (pf_hyps goal) in
-      let hyps = if lr then List.rev hyps else hyps in
-      let mhyps = List.rev mhyps (* Sens naturel *) in
-      let concl = pf_concl goal in
-      (match mgoal with
-      |	Term mg ->
-        (try
-           let lgoal = matches mg concl in
-           db_matched_concl ist.debug (pf_env goal) concl;
-           apply_hyps_context ist env lz goal mt [] lgoal mhyps hyps
-        with e when is_match_catchable e ->
-         (match e with
-            | PatternMatchingFailure -> db_matching_failure ist.debug
-            | Eval_fail s -> db_eval_failure ist.debug s
-            | _ -> db_logic_failure ist.debug e);
-          apply_match_context ist env goal (nrs+1) (List.tl lex) tl)
-      |	Subterm (id,mg) ->
-        (try apply_goal_sub ist env goal 0 (id,mg) concl mt mhyps hyps
-        with
-        | PatternMatchingFailure ->
-           apply_match_context ist env goal (nrs+1) (List.tl lex) tl))
-    | _ ->
-      errorlabstrm "Tacinterp.apply_match_context"
-        (v 0 (str "No matching clauses for match goal" ++
-        (if ist.debug=DebugOff then
-           fnl() ++ str "(use \"Debug On\" for more info)"
-         else mt())))
+      if lex<>[] then db_pattern_rule ist.debug nrs (List.hd lex);
+      match lpt with
+	| (All t)::tl ->
+	    begin
+              db_mc_pattern_success ist.debug;
+              try eval_with_fail ist lz goal t
+              with e when is_match_catchable e ->
+		apply_match_context ist env goal (nrs+1) (List.tl lex) tl
+	    end
+	| (Pat (mhyps,mgoal,mt))::tl ->
+	    let hyps = make_hyps (pf_hyps goal) in
+	    let hyps = if lr then List.rev hyps else hyps in
+	    let mhyps = List.rev mhyps (* Sens naturel *) in
+	    let concl = pf_concl goal in
+	      (match mgoal with
+		 | Term mg ->
+		     (try
+			let lgoal = matches mg concl in
+			  db_matched_concl ist.debug (pf_env goal) concl;
+			  apply_hyps_context ist env lz goal mt [] lgoal mhyps hyps
+		      with e when is_match_catchable e ->
+			(match e with
+			   | PatternMatchingFailure -> db_matching_failure ist.debug
+			   | Eval_fail s -> db_eval_failure ist.debug s
+			   | _ -> db_logic_failure ist.debug e);
+			apply_match_context ist env goal (nrs+1) (List.tl lex) tl)
+		 | Subterm (id,mg) ->
+		     (try apply_goal_sub ist env goal 0 (id,mg) concl mt mhyps hyps
+		      with
+			| PatternMatchingFailure ->
+			    apply_match_context ist env goal (nrs+1) (List.tl lex) tl))
+	| _ ->
+	    errorlabstrm "Tacinterp.apply_match_context"
+              (v 0 (str "No matching clauses for match goal" ++
+		      (if ist.debug=DebugOff then
+			 fnl() ++ str "(use \"Debug On\" for more info)"
+		       else mt())))
     end in
   let env = pf_env g in
-  apply_match_context ist env g 0 lmr
-    (read_match_rule (fst (constr_list ist env)) lmr)
+    apply_match_context ist env g 0 lmr
+      (read_match_rule (fst (constr_list ist env)) lmr)
 
 (* Tries to match the hypotheses in a Match Context *)
 and apply_hyps_context ist env lz goal mt lctxt lgmatch mhyps hyps =

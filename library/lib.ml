@@ -319,7 +319,7 @@ let end_compilation dir =
       | _, OpenedModtype _ -> error "There are some open module types"
       | _ -> assert false
     with
-	Not_found -> ()
+	Not_found -> () 
   in
   let module_p =
     function (_,CompilingLibrary _) -> true | x -> is_something_opened x
@@ -331,16 +331,17 @@ let end_compilation dir =
     with
 	Not_found -> anomaly "No module declared"
   in
-  let _ =  match !comp_name with
+  let _ =  
+    match !comp_name with
       | None -> anomaly "There should be a module name..."
       | Some m ->
 	  if m <> dir then anomaly 
 	    ("The current open module has name "^ (string_of_dirpath m) ^ 
-	     " and not " ^ (string_of_dirpath m));
+	       " and not " ^ (string_of_dirpath m));
   in
   let (after,_,before) = split_lib oname in
-  comp_name := None;
-  !path_prefix,after
+    comp_name := None;
+    !path_prefix,after
 
 (* Returns true if we are inside an opened module type *)
 let is_modtype () = 

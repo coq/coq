@@ -162,12 +162,12 @@ let rec vernac_com interpfun (loc,com) =
     | v -> if not !just_parsing then interpfun v
 
   in 
-  try
-    if do_translate () then pr_new_syntax loc (Some com);
-    interp com
-  with e -> 
-    Format.set_formatter_out_channel stdout;
-    raise (DuringCommandInterp (loc, e))
+    try
+      if do_translate () then pr_new_syntax loc (Some com);
+      interp com
+    with e -> 
+      Format.set_formatter_out_channel stdout;
+      raise (DuringCommandInterp (loc, e))
 
 and vernac interpfun input =
   vernac_com interpfun (parse_phrase input)
