@@ -49,7 +49,13 @@ let abstract_list_all env sigma typ c l =
 
 (**)
 
-let solve_pattern_eqn_array env l c = solve_pattern_eqn env (Array.to_list l) c
+let solve_pattern_eqn_array env f l c (metasubst,evarsubst) =
+  match kind_of_term f with
+    | Meta k -> 
+	(k,solve_pattern_eqn env (Array.to_list l) c)::metasubst,evarsubst
+    | Evar ev ->
+	metasubst,(f,solve_pattern_eqn env (Array.to_list l) c)::evarsubst
+    | _ -> assert false
 
 (*******************************)
 
@@ -100,12 +106,10 @@ let unify_0 env sigma cv_pb mod_delta m n =
       | App (f1,l1), App (f2,l2) ->
 	  if is_unification_pattern f1 l1 & not (dependent f1 cN)
 	  then
-	    (destMeta f1,solve_pattern_eqn_array env l1 cN)::metasubst,
-	    evarsubst
+	    solve_pattern_eqn_array env f1 l1 cN substn
 	  else if is_unification_pattern f2 l2 & not (dependent f2 cM)
 	  then
-	    (destMeta f2,solve_pattern_eqn_array env l2 cM)::metasubst,
-	    evarsubst
+	    solve_pattern_eqn_array env f2 l2 cM substn
 	  else
 	  let len1 = Array.length l1
 	  and len2 = Array.length l2 in
