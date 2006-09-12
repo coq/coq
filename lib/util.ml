@@ -651,6 +651,17 @@ let array_fold_map2' f v1 v2 e =
   in
   (v',!e')
 
+let array_distinct v =
+  try
+    for i=0 to Array.length v-1 do
+      for j=i+1 to Array.length v-1 do
+	if v.(i)=v.(j) then raise Exit
+      done
+    done;
+    true
+  with Exit ->
+    false
+
 (* Matrices *)
 
 let matrix_transpose mat =
