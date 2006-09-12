@@ -47,6 +47,9 @@ let abstract_list_all env sigma typ c l =
   with UserError _ ->
     raise (PretypeError (env,CannotGeneralize typ))
 
+(**)
+
+let solve_pattern_eqn_array env l c = solve_pattern_eqn env (Array.to_list l) c
 
 (*******************************)
 
@@ -72,7 +75,7 @@ let unify_0 env sigma cv_pb mod_delta m n =
   let trivial_unify pb substn m n =
     if (not(occur_meta m)) && (if mod_delta then is_fconv pb env sigma m n else eq_constr m n) then substn
     else error_cannot_unify env sigma (m,n) in
-  let rec unirec_rec pb ((metasubst,evarsubst) as substn) m n =
+  let rec unirec_rec env pb ((metasubst,evarsubst) as substn) m n =
     let cM = Evarutil.whd_castappevar sigma m
     and cN = Evarutil.whd_castappevar sigma n in 
     match (kind_of_term cM,kind_of_term cN) with
@@ -85,14 +88,25 @@ let unify_0 env sigma cv_pb mod_delta m n =
       | Evar _, _ -> metasubst,((cM,cN)::evarsubst)
       | _, Evar _ -> metasubst,((cN,cM)::evarsubst)
 
-      | Lambda (_,t1,c1), Lambda (_,t2,c2) ->
-	  unirec_rec CONV (unirec_rec CONV substn t1 t2) c1 c2
-      | Prod (_,t1,c1), Prod (_,t2,c2) ->
-	  unirec_rec pb (unirec_rec CONV substn t1 t2) c1 c2
-      | LetIn (_,b,_,c), _ -> unirec_rec pb substn (subst1 b c) cN
-      | _, LetIn (_,b,_,c) -> unirec_rec pb substn cM (subst1 b c)
+      | Lambda (na,t1,c1), Lambda (_,t2,c2) ->
+	  unirec_rec (push_rel_assum (na,t1) env) CONV 
+	    (unirec_rec env CONV substn t1 t2) c1 c2
+      | Prod (na,t1,c1), Prod (_,t2,c2) ->
+	  unirec_rec (push_rel_assum (na,t1) env) pb 
+	    (unirec_rec env CONV substn t1 t2) c1 c2
+      | LetIn (_,b,_,c), _ -> unirec_rec env pb substn (subst1 b c) cN
+      | _, LetIn (_,b,_,c) -> unirec_rec env pb substn cM (subst1 b c)
 
       | App (f1,l1), App (f2,l2) ->
+	  if is_unification_pattern f1 l1 & not (dependent f1 cN)
+	  then
+	    (destMeta f1,solve_pattern_eqn_array env l1 cN)::metasubst,
+	    evarsubst
+	  else if is_unification_pattern f2 l2 & not (dependent f2 cM)
+	  then
+	    (destMeta f2,solve_pattern_eqn_array env l2 cM)::metasubst,
+	    evarsubst
+	  else
 	  let len1 = Array.length l1
 	  and len2 = Array.length l2 in
           let (f1,l1,f2,l2) =
@@ -104,13 +118,13 @@ let unify_0 env sigma cv_pb mod_delta m n =
 	      let extras,restl1 = array_chop (len1-len2) l1 in 
               (appvect (f1,extras), restl1, f2, l2) in
           (try
-            array_fold_left2 (unirec_rec CONV)
-	      (unirec_rec CONV substn f1 f2) l1 l2
+            array_fold_left2 (unirec_rec env CONV)
+	      (unirec_rec env CONV substn f1 f2) l1 l2
 	  with ex when precatchable_exception ex ->
             trivial_unify pb substn cM cN)
       | Case (_,p1,c1,cl1), Case (_,p2,c2,cl2) ->
-          array_fold_left2 (unirec_rec CONV)
-	    (unirec_rec CONV (unirec_rec CONV substn p1 p2) c1 c2) cl1 cl2
+          array_fold_left2 (unirec_rec env CONV)
+	    (unirec_rec env CONV (unirec_rec env CONV substn p1 p2) c1 c2) cl1 cl2
 
       | _ -> trivial_unify pb substn cM cN
 
@@ -120,7 +134,7 @@ let unify_0 env sigma cv_pb mod_delta m n =
   then 
     ([],[])
   else 
-    let (mc,ec) = unirec_rec cv_pb ([],[]) m n in
+    let (mc,ec) = unirec_rec env cv_pb ([],[]) m n in
     ((*sort_eqns*) mc, (*sort_eqns*) ec)
 
 

@@ -48,3 +48,18 @@ Parameter t: L (unit + unit).
 Check (f (fun x : unit + unit =>
   sum_rec (fun _ : unit + unit => L unit)
     (fun y => c y) (fun y => c y) x) t).
+
+
+(* Test patterns unification in apply *)
+
+Require Import Arith.
+Parameter x y : nat.
+Parameter G:x=y->x=y->Prop.
+Parameter K:x<>y->x<>y->Prop.
+Lemma l3 : (forall f:x=y->Prop, forall g:x<>y->Prop,
+            match eq_nat_dec x y with left a => f a | right a => g a end)
+   -> match eq_nat_dec x y with left a => G a a | right a => K a a end.
+Proof.
+intros.
+apply H.
+Qed.
