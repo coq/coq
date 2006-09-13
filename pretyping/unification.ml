@@ -54,6 +54,7 @@ let solve_pattern_eqn_array env f l c (metasubst,evarsubst) =
     | Meta k -> 
 	(k,solve_pattern_eqn env (Array.to_list l) c)::metasubst,evarsubst
     | Evar ev ->
+      (* Currently unused: incompatible with eauto/eassumption backtracking *)
 	metasubst,(f,solve_pattern_eqn env (Array.to_list l) c)::evarsubst
     | _ -> assert false
 
@@ -104,10 +105,12 @@ let unify_0 env sigma cv_pb mod_delta m n =
       | _, LetIn (_,b,_,c) -> unirec_rec env pb substn cM (subst1 b c)
 
       | App (f1,l1), App (f2,l2) ->
-	  if is_unification_pattern f1 l1 & not (dependent f1 cN)
+	  if
+	    isMeta f1 & is_unification_pattern f1 l1 & not (dependent f1 cN)
 	  then
 	    solve_pattern_eqn_array env f1 l1 cN substn
-	  else if is_unification_pattern f2 l2 & not (dependent f2 cM)
+	  else if
+	    isMeta f2 & is_unification_pattern f2 l2 & not (dependent f2 cM)
 	  then
 	    solve_pattern_eqn_array env f2 l2 cM substn
 	  else
