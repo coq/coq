@@ -67,9 +67,18 @@ usage () {
 }
 
 
+# Default OCaml binaries
 bytecamlc=ocamlc
 nativecamlc=ocamlopt
-camlp4o=camlp4o
+ocamlexec=ocaml
+ocamldepexec=ocamldep
+ocamldocexec=ocamldoc
+ocamllexexec=ocamllex
+ocamlyaccexec=ocamlyacc
+ocamlmktopexec=ocamlmktop
+camlp4oexec=camlp4o
+
+
 coq_debug_flag=
 coq_profile_flag=
 best_compiler=opt
@@ -140,7 +149,7 @@ while : ; do
                   arch=$2
 		  shift;;
     -opt|--opt) bytecamlc=ocamlc.opt
-                camlp4o=camlp4o  # can't add .opt since dyn load'll be required
+                camlp4oexec=camlp4o  # can't add .opt since dyn load'll be required
                 nativecamlc=ocamlopt.opt;;
     -fsets|--fsets) fsets_opt=yes
                     case "$2" in
@@ -272,7 +281,17 @@ case $camldir_spec in
 		esac
 	esac;;
     yes) CAMLC=$camldir/$bytecamlc
-	bytecamlc="$CAMLC";;
+        
+         CAMLBIN=`dirname "$CAMLC"`
+	 bytecamlc="$CAMLC"
+	 nativecamlc=$CAMLBIN/$nativecamlc
+	 ocamlexec=$CAMLBIN/ocaml
+	 ocamldepexec=$CAMLBIN/ocamldep
+	 ocamldocexec=$CAMLBIN/ocamldoc
+	 ocamllexexec=$CAMLBIN/ocamllex
+	 ocamlyaccexec=$CAMLBIN/ocamlyacc
+	 camlmktopexec=$CAMLBIN/ocamlmktop
+	 camlp4oexec=$CAMLBIN/camlp4o
 esac
 
 if test ! -f "$CAMLC" ; then
@@ -281,15 +300,6 @@ if test ! -f "$CAMLC" ; then
     exit 1
 fi
 
-CAMLBIN=`dirname "$CAMLC"`
-bytecamlc="$CAMLC"
-nativecamlc=$CAMLBIN/$nativecamlc
-ocamldepexec=$CAMLBIN/ocamldep
-ocamldocexec=$CAMLBIN/ocamldoc
-ocamllexexec=$CAMLBIN/ocamllex
-ocamlyaccexec=$CAMLBIN/ocamlyacc
-camlmktopexec=$CAMLBIN/ocamlmktop
-camlp4o=$CAMLBIN/camlp4o
 
 CAMLVERSION=`"$bytecamlc" -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
 
@@ -580,7 +590,7 @@ echo ""
 
 # An escaped version of a variable
 escape_var () {
-"$CAMLBIN"/ocaml 2>&1 1>/dev/null <<EOF
+"$ocamlexec" 2>&1 1>/dev/null <<EOF
   prerr_endline(String.escaped(Sys.getenv"$VAR"));;
 EOF
 }
@@ -680,7 +690,7 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|CAMLTAG|$CAMLTAG|" \
     -e "s|CAMLP4BINDIRECTORY|$ESCCAMLP4BIN|" \
     -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIB|" \
-    -e "s|CAMLP4TOOL|$camlp4o|" \
+    -e "s|CAMLP4TOOL|$camlp4oexec|" \
     -e "s|CAMLP4COMPATFLAGS|$CAMLP4COMPAT|" \
     -e "s|COQDEBUGFLAG|$coq_debug_flag|" \
     -e "s|COQPROFILEFLAG|$coq_profile_flag|" \
