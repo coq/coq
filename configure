@@ -330,7 +330,7 @@ CAMLTAG=OCAML`echo $CAMLVERSION | sed -e "s/\([1-9]\)\.\([0-9]*\).*/\1\2/g"`
 # do we have a native compiler: test of ocamlopt and its version
 
 if [ "$best_compiler" = "opt" ] ; then
-  if test -e "$nativecamlc" ; then
+  if test -e `which "$nativecamlc"` ; then
       CAMLOPTVERSION=`"$nativecamlc" -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
       if [ "$CAMLOPTVERSION" != "$CAMLVERSION" ] ; then
 	  echo "native and bytecode compilers do not have the same version!"; fi
