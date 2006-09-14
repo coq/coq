@@ -102,7 +102,7 @@ EXE=EXECUTEEXTENSION
 MKDIR=mkdir -p
 
 # where to put the coqdoc.sty style file
-COQDOCDIR=COQDOCDIRECTORY
+COQDOCDIR="COQDOCDIRECTORY"
 
 # command to update TeX' kpathsea database
 #MKTEXLSR=MKTEXLSRCOMMAND
