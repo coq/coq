@@ -266,7 +266,7 @@ let derive_inversion fix_names =
 	)
     with e -> 
       msg_warning 
-	(str "Cannot define correction of function and graph" ++ 
+	(str "Cannot built inversion information" ++ 
 	   if do_observe () then Cerrors.explain_exn e else mt ())
   with _ -> ()
 
@@ -518,7 +518,7 @@ let do_generate_principle register_built interactive_proof fixpoint_exprl  =
 		     (None:Vernacexpr.decl_notation)
 		 | (_,Some (Wf _),_,_,_),_ | (_,Some (Mes _),_,_,_),_-> 
 		     error 
-		       ("Cannot use mutual definition with well-founded recursion")
+		       ("Cannot use mutual definition with well-founded recursion or measure")
 	      ) 
 	      (List.combine fixpoint_exprl recdefs)
 	  in
