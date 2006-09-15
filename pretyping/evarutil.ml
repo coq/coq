@@ -603,10 +603,27 @@ let solve_simple_eqn conv_algo env isevars (pbty,(n1,args1 as ev1),t2) =
     let (isevars,pbs) = get_conv_pbs isevars (status_changed lsp) in
     List.fold_left
       (fun (isevars,b as p) (pbty,t1,t2) ->
-        if b then conv_algo env isevars pbty t1 t2 else p) (isevars,true)
+	if b then conv_algo env isevars pbty t1 t2 else p) (isevars,true)
       pbs
   with e when precatchable_exception e ->
     (isevars,false)
+
+
+(* [check_evars] fails if some unresolved evar remains *)
+(* it assumes that the defined existentials have already been substituted *)
+
+let check_evars env initial_sigma isevars c =
+  let sigma = evars_of isevars in
+  let c = nf_evar sigma c in
+  let rec proc_rec c =
+    match kind_of_term c with
+      | Evar (ev,args) ->
+          assert (Evd.mem sigma ev);
+	  if not (Evd.mem initial_sigma ev) then
+            let (loc,k) = evar_source ev isevars in
+	    error_unsolvable_implicit loc env sigma k
+      | _ -> iter_constr proc_rec c
+  in proc_rec c
 
 (* Operations on value/type constraints *)
 

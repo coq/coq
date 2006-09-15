@@ -557,35 +557,6 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	  (pretype_type empty_valcon env isevars lvar c).utj_val in
       nf_evar (evars_of !isevars) c'
 
-  (* [check_evars] fails if some unresolved evar remains *)
-  (* it assumes that the defined existentials have already been substituted
-     (should be done in unsafe_infer and unsafe_infer_type) *)
-
-  let check_evars env initial_sigma isevars c =
-    let sigma = evars_of !isevars in
-    let rec proc_rec c =
-      match kind_of_term c with
-	| Evar (ev,args) ->
-            assert (Evd.mem sigma ev);
-	    if not (Evd.mem initial_sigma ev) then
-              let (loc,k) = evar_source ev !isevars in
-		error_unsolvable_implicit loc env sigma k
-	| _ -> iter_constr proc_rec c
-    in
-      proc_rec c(*;
-		  let (_,pbs) = get_conv_pbs !isevars (fun _ -> true) in
-		  if pbs <> [] then begin
-		  pperrnl
-		  (str"TYPING OF "++Termops.print_constr_env env c++fnl()++
-		  prlist_with_sep fnl
-		  (fun  (pb,c1,c2) ->
-		  Termops.print_constr c1 ++
-		  (if pb=Reduction.CUMUL then str " <="++ spc()
-		  else str" =="++spc()) ++
-		  Termops.print_constr c2)
-		  pbs ++ fnl())
-		  end*)
-
   (* TODO: comment faire remonter l'information si le typage a resolu des
      variables du sigma original. il faudrait que la fonction de typage
      retourne aussi le nouveau sigma...
@@ -595,6 +566,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
     let isevars = ref (create_evar_defs sigma) in
     let j = pretype empty_tycon env isevars ([],[]) c in
     let j = j_nf_evar (evars_of !isevars) j in
+    let isevars,_ = consider_remaining_unif_problems env !isevars in
       check_evars env sigma isevars (mkCast(j.uj_val,DEFAULTcast, j.uj_type));
       j
 
@@ -611,8 +583,10 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
   let ise_pretype_gen fail_evar sigma env lvar kind c =
     let isevars = ref (Evd.create_evar_defs sigma) in
     let c = pretype_gen isevars env lvar kind c in
+    let isevars,_ = consider_remaining_unif_problems env !isevars in
+    let c = nf_evar (evars_of isevars) c in
       if fail_evar then check_evars env sigma isevars c;
-      !isevars, c
+      isevars, c
 
   (** Entry points of the high-level type synthesis algorithm *)
 

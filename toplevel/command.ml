@@ -39,7 +39,8 @@ open Indtypes
 open Vernacexpr
 open Decl_kinds
 open Pretyping
-open Pretyping.Default
+open Evarutil
+open Evarconv
 open Notation
 
 let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,a,b))
@@ -338,7 +339,9 @@ let interp_mutual paramsl indl notations finite =
      () in
 
   (* Instantiate evars and check all are resolved *)
-  let sigma = Evd.evars_of !isevars in
+  let isevars,_ = consider_remaining_unif_problems env_params !isevars in
+  let sigma = Evd.evars_of isevars in
+  let constructors = List.map (fun (idl,cl) -> (idl,List.map (nf_evar sigma) cl)) constructors in
   let ctx_params = Sign.map_rel_context (nf_evar sigma) ctx_params in
   let arities = List.map (nf_evar sigma) arities in
   List.iter (check_evars env_params Evd.empty isevars) arities;
@@ -580,7 +583,9 @@ let interp_recursive fixkind l boxed =
       () in
 
   (* Instantiate evars and check all are resolved *)
-  let fixtypes = List.map (nf_evar (Evd.evars_of !isevars)) fixtypes in
+  let isevars,_ = consider_remaining_unif_problems env_rec !isevars in
+  let fixdefs = List.map (nf_evar (Evd.evars_of isevars)) fixdefs in
+  let fixtypes = List.map (nf_evar (Evd.evars_of isevars)) fixtypes in
   List.iter (check_evars env_rec Evd.empty isevars) fixdefs;
   check_mutuality env kind (List.combine fixnames fixdefs);
 

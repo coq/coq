@@ -68,3 +68,9 @@ Proof. trivial. Qed.
 Hint Resolve contradiction.
 Goal False.
 eauto.
+
+(* This used to fail in V8.1beta because first-order unification was
+   used before using type information *)
+
+Check (exist _ O (refl_equal 0) : {n:nat|n=0}).
+Check (exist _ O I : {n:nat|True}).

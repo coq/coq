@@ -78,6 +78,10 @@ val solve_simple_eqn :
   -> env ->  evar_defs -> conv_pb * existential * constr ->
     evar_defs * bool
 
+(* [check_evars env initial_sigma extended_sigma c] fails if some
+   new unresolved evar remains in [c] *)
+val check_evars : env -> evar_map -> evar_defs -> constr -> unit
+
 val define_evar_as_arrow : evar_defs -> existential -> evar_defs * types
 val define_evar_as_lambda : evar_defs -> existential -> evar_defs * types
 val define_evar_as_sort : evar_defs -> existential -> evar_defs * sorts
