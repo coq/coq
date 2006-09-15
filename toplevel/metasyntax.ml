@@ -50,7 +50,7 @@ let make_terminal_status = function
 let rec make_tags lev = function
   | VTerm s :: l -> make_tags lev l
   | VNonTerm (loc, nt, po) :: l ->
-      let (etyp, _) = Egrammar.interp_entry_name lev "tactic" nt in
+      let (etyp, _) = Egrammar.interp_entry_name lev nt in
       etyp :: make_tags lev l
   | [] -> []
 

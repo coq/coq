@@ -61,8 +61,7 @@ val get_extend_vernac_grammars :
 (*
 val reset_extend_grammars_v8 : unit -> unit
 *)
-val interp_entry_name : int -> string -> string -> 
-  entry_type * Token.t Gramext.g_symbol
+val interp_entry_name : int -> string -> entry_type * Token.t Gramext.g_symbol
 
 val recover_notation_grammar :
   notation -> (precedence * tolerability list) -> notation_grammar
