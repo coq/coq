@@ -381,14 +381,7 @@ let create_evar_defs sigma =
 let evars_of d = d.evars
 let evars_reset_evd evd d = {d with evars = evd}
 let reset_evd (sigma,mmap) d = {d with evars = sigma; metas=mmap}
-let add_conv_pb pb d =
-(*  let (pbty,c1,c2) = pb in
-  pperrnl
-    (Termops.print_constr c1 ++
-    (if pbty=Reduction.CUMUL then str " <="++ spc()
-    else str" =="++spc()) ++
-    Termops.print_constr c2);*)
-  {d with conv_pbs = pb::d.conv_pbs}
+let add_conv_pb pb d = {d with conv_pbs = pb::d.conv_pbs}
 let evar_source ev d =
   try List.assoc ev d.history
   with Not_found -> (dummy_loc, InternalHole)
@@ -552,14 +545,21 @@ let pr_evar_map sigma =
         h 0 (str(string_of_existential ev)++str"=="++ pr_evar_info evi))
       (to_list sigma))
 
+let pr_constraints pbs =
+  h 0
+    (prlist_with_sep pr_fnl (fun (pbty,t1,t2) ->
+      print_constr t1 ++ spc() ++
+      str (match pbty with
+	| Reduction.CONV -> "=="
+	| Reduction.CUMUL -> "<=") ++ 
+      spc() ++ print_constr t2) pbs)
+
 let pr_evar_defs evd =
   let pp_evm =
     if evd.evars = empty then mt() else
       str"EVARS:"++brk(0,1)++pr_evar_map evd.evars++fnl() in
-  let n = List.length evd.conv_pbs in
   let cstrs =
-    if n=0 then mt() else
-      str"=> " ++ int n ++ str" constraints" ++ fnl() ++ fnl() in
+    str"CONSTRAINTS:"++brk(0,1)++pr_constraints evd.conv_pbs++fnl() in
   let pp_met =
     if evd.metas = Metamap.empty then mt() else
       str"METAS:"++brk(0,1)++pr_meta_map evd.metas in
