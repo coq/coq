@@ -300,7 +300,14 @@ let rec  mk_intros_and_continue (extra_eqn:bool)
 		tclMAP 
 		  (fun eq -> tclTRY (Equality.general_rewrite_in true teq eq)) 
 		  (List.rev eqs);
-	        cont_function (mkVar teq::eqs) expr
+		(fun g1 -> 
+		   let ty_teq = pf_type_of g1 (mkVar teq) in 
+		   let teq_lhs,teq_rhs = 
+		     let _,args = destApp ty_teq in 
+		     args.(1),args.(2) 
+		   in
+	           cont_function (mkVar teq::eqs) (replace_term teq_lhs teq_rhs expr) g1
+		)
 	      ]
 	      g
 	else
