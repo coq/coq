@@ -3,8 +3,13 @@ Changes from V8.1beta to V8.1
 
 - Support for Miller-Pfenning's patterns unification in type synthesis
   (e.g. can infer P such that P x y = phi(x,y))
+- Support for Miller-Pfenning's patterns unification in apply/rewrite/...
+  (may lead to few incompatibilities - generally now useless tactic calls)
 - Support for implicit arguments in the types of parameters in
   (co-)fixpoints and (co-)inductive declarations
+- Improved type inference: use as much of possible general information
+  before applying irreversible unification heuristics (allow e.g. to
+  infer the predicate in "(exist _ 0 (refl_equal 0) : {n:nat | n=0 })")
 - Support for "where" clause in cofixpoint definitions
 
 Changes from V8.0 to V8.1beta
