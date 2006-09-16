@@ -394,6 +394,9 @@ let generate_functional_principle
 	     Decl_kinds.IsDefinition (Decl_kinds.Scheme)
 	    )
 	);
+	Options.if_verbose 
+	  (fun id -> Pp.msgnl (Ppconstr.pr_id id ++ str " is defined")) 
+	  name;
 	names := name :: !names
       in
       register_with_sort InProp;
@@ -605,13 +608,6 @@ let make_scheme (fas : (constant*Rawterm.rawsort) list) : Entries.definition_ent
     const::other_result
 
 let build_scheme fas = 
-(*         (fun (f,_) ->  *)
-(* 	 try Libnames.constr_of_global (Nametab.global f) *)
-(* 	 with Not_found ->  *)
-(* 	   Util.error ("Cannot find "^ Libnames.string_of_reference f) *)
-(*       ) *)
-(*       fas *)
-
   let bodies_types = 
     make_scheme 
       (List.map 

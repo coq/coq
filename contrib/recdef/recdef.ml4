@@ -1140,7 +1140,7 @@ let (com_eqn : identifier ->
 	       )
 	  )
        );
-     defined (); 
+     Options.silently defined (); 
     );;
 
 
