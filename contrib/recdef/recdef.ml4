@@ -763,7 +763,7 @@ let whole_start is_mes func input_type relation rec_arg_num  : tactic =
 	   )
 	     g 
 	)
-	tclUSER_if_not_mes
+	tclUSER_if_not_mes 
 	g 
   end
 
@@ -771,7 +771,7 @@ let whole_start is_mes func input_type relation rec_arg_num  : tactic =
 let get_current_subgoals_types () = 
   let pts =  get_pftreestate () in 
   let _,subs = extract_open_pftreestate pts in 
-  List.map snd subs 
+  List.map snd (List.sort (fun (x,_) (y,_) -> x -y )subs )
 
 
 let build_and_l l = 
@@ -837,7 +837,7 @@ let prove_with_tcc lemma _ : tactic =
       
 	     
 
-let open_new_goal ref goal_name (gls_type,decompose_and_tac,nb_goal)   = 
+let open_new_goal using_lemmas ref goal_name (gls_type,decompose_and_tac,nb_goal)   = 
   let current_proof_name = get_current_proof_name () in
   let name = match goal_name with 
     | Some s -> s 
@@ -866,8 +866,28 @@ let open_new_goal ref goal_name (gls_type,decompose_and_tac,nb_goal)   =
     sign
     gls_type 
     hook ;
-  by (decompose_and_tac);
-  if Options.is_verbose () then (pp (Printer.pr_open_subgoals()))
+  by (
+    fun g -> 
+      tclTHEN 
+	(decompose_and_tac)
+	(tclORELSE 
+	(tclFIRST 
+	   (List.map
+	      (fun c -> 
+		 tclTHENSEQ
+		   [intros; 
+		    h_apply (interp_constr Evd.empty (Global.env()) c,Rawterm.NoBindings); 
+		    tclCOMPLETE Auto.default_auto
+		   ]
+	      )
+	      using_lemmas)
+	) tclIDTAC)
+	g);
+  try
+    by tclIDTAC; (* raises UserError _ if the proof is complete *)
+    if Options.is_verbose () then (pp (Printer.pr_open_subgoals()))
+  with UserError _ -> 
+    defined ()
   
     
 let com_terminate 
@@ -878,7 +898,7 @@ let com_terminate
     input_type
     relation 
     rec_arg_num
-    thm_name hook =
+    thm_name using_lemmas hook =
   let (evmap, env) = Command.get_current_context() in
   start_proof thm_name
     (Global, Proof Lemma) (Environ.named_context_val env)
@@ -887,7 +907,7 @@ let com_terminate
 				       input_type relation rec_arg_num ));
   try 
     let new_goal_type = build_new_goal_type () in 
-    open_new_goal tcc_lemma_ref
+    open_new_goal using_lemmas tcc_lemma_ref
       (Some tcc_lemma_name)
       (new_goal_type)
   with Failure "empty list of subgoals!" -> 
@@ -969,9 +989,9 @@ let start_equation (f:global_reference) (term_f:global_reference)
   in
   tclTHENLIST [
     h_intros x;
-    unfold_constr f;
-    simplest_case (mkApp (terminate_constr, Array.of_list (List.map mkVar x)));
-    cont_tactic x] g
+    observe_tac "unfold_constr f" (unfold_constr f);
+    observe_tac "simplest_case" (simplest_case (mkApp (terminate_constr, Array.of_list (List.map mkVar x))));
+    observe_tac "prove_eq" (cont_tactic x)] g
 ;;
 
 let base_leaf_eq func eqs f_id g =
@@ -1095,8 +1115,8 @@ let rec prove_eq  (termine:constr) (f:constr)(functional:global_reference)
 	     _,[] -> 
 	       tclTHENS(mkCaseEq a)(* (simplest_case a) *)
 	  	 (List.map
-		    (mk_intros_and_continue true
-		       (prove_eq  termine f functional) eqs)
+		    (fun expr -> observe_tac "mk_intros_and_continue" (mk_intros_and_continue true
+		       (prove_eq  termine f functional) eqs expr))
 		    (Array.to_list l))
 	   | _,_::_ ->
                	(match find_call_occs f expr with
@@ -1119,13 +1139,13 @@ let rec prove_eq  (termine:constr) (f:constr)(functional:global_reference)
 
 let (com_eqn : identifier ->
        global_reference -> global_reference -> global_reference
-	 -> constr_expr -> unit) =
-  fun eq_name functional_ref f_ref terminate_ref eq ->
+	 -> constr -> unit) =
+  fun eq_name functional_ref f_ref terminate_ref equation_lemma_type ->
     let (evmap, env) = Command.get_current_context() in
-    let eq_constr = interp_constr evmap env eq in
     let f_constr = (constr_of_reference f_ref) in
+    let equation_lemma_type = subst1 f_constr equation_lemma_type in
     (start_proof eq_name (Global, Proof Lemma)
-       (Environ.named_context_val env) eq_constr (fun _ _ -> ());
+       (Environ.named_context_val env) equation_lemma_type (fun _ _ -> ());
      by
        (start_equation f_ref terminate_ref
 	  (fun x ->
@@ -1145,17 +1165,18 @@ let (com_eqn : identifier ->
 
 
 let recursive_definition is_mes function_name type_of_f r rec_arg_num eq 
-    generate_induction_principle : unit =
+    generate_induction_principle using_lemmas : unit =
   let function_type = interp_constr Evd.empty (Global.env()) type_of_f in
-  let env = push_rel (Name function_name,None,function_type) (Global.env()) in
-  let res_vars,eq' = decompose_prod (interp_constr Evd.empty env eq) in 
+  let env = push_named (function_name,None,function_type) (Global.env()) in
+  let equation_lemma_type = interp_constr Evd.empty env eq in 
+  let res_vars,eq' = decompose_prod equation_lemma_type in 
   let res = 
 (*     Pp.msgnl (str "res_var :=" ++ Printer.pr_lconstr_env (push_rel_context (List.map (function (x,t) -> (x,None,t)) res_vars) env) eq'); *)
 (*     Pp.msgnl (str "rec_arg_num := " ++ str (string_of_int rec_arg_num)); *)
 (*     Pp.msgnl (str "eq' := " ++ str (string_of_int rec_arg_num)); *)
     match kind_of_term eq' with 
       | App(e,[|_;_;eq_fix|]) -> 
-	  mkLambda (Name function_name,function_type,compose_lam res_vars eq_fix)
+	  mkLambda (Name function_name,function_type,subst_var function_name (compose_lam res_vars  eq_fix))
       | _ -> failwith "Recursive Definition (res not eq)"
   in
   let pre_rec_args,function_type_before_rec_arg = decompose_prod_n (rec_arg_num - 1) function_type in 
@@ -1180,9 +1201,11 @@ let recursive_definition is_mes function_name type_of_f r rec_arg_num eq
     let f_ref = declare_f function_name (IsProof Lemma) arg_types term_ref in
 (*     message "start second proof"; *)
     begin 
-      try com_eqn equation_id functional_ref f_ref term_ref eq
+      try com_eqn equation_id functional_ref f_ref term_ref (subst_var function_name equation_lemma_type)
       with e -> 
 	begin 
+	  if Tacinterp.get_debug () <> Tactic_debug.DebugOff
+	  then anomalylabstrm "" (str "Cannot create equation Lemma " ++ Cerrors.explain_exn e);
 	  ignore(try Vernacentries.vernac_reset_name (Util.dummy_loc,functional_id) with _ -> ());
 	  anomaly "Cannot create equation Lemma"
 	end
@@ -1208,6 +1231,7 @@ let recursive_definition is_mes function_name type_of_f r rec_arg_num eq
       rec_arg_type
       relation rec_arg_num
       term_id
+      using_lemmas
       hook 
   with e -> 
     begin
@@ -1228,10 +1252,10 @@ VERNAC COMMAND EXTEND RecursiveDefinition
 	| None -> 1
 	| Some n -> n 
     in
-    recursive_definition false f type_of_f r rec_arg_num eq (fun _ _ _ _ _  _ _ _ -> ())]
+    recursive_definition false f type_of_f r rec_arg_num eq (fun _ _ _ _ _  _ _ _ -> ()) []]
 | [ "Recursive" "Definition" ident(f) constr(type_of_f) constr(r) constr(wf)
      "[" ne_constr_list(proof) "]" constr(eq) ] ->
-  [ ignore(proof);ignore(wf);recursive_definition false f type_of_f r 1 eq  (fun  _ _  _ _ _ _ _ _ -> ())]
+  [ ignore(proof);ignore(wf);recursive_definition false f type_of_f r 1 eq  (fun  _ _  _ _ _ _ _ _ -> ()) []]
 END
 
 

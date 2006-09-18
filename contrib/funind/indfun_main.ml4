@@ -103,10 +103,28 @@ TACTIC EXTEND snewfunind
 END
 
 
+let pr_constr_coma_sequence prc _ _ = Util.prlist_with_sep Util.pr_coma prc
+
+ARGUMENT EXTEND constr_coma_sequence'
+  TYPED AS constr_list
+  PRINTED BY pr_constr_coma_sequence
+| [ constr(c) "," constr_coma_sequence'(l) ] -> [ c::l ]
+| [ constr(c) ] -> [ [c] ]
+END
+
+let pr_auto_using prc _prlc _prt = Pptactic.pr_auto_using prc
+
+ARGUMENT EXTEND auto_using'
+  TYPED AS constr_list
+  PRINTED BY pr_auto_using
+| [ "using" constr_coma_sequence'(l) ] -> [ l ]
+| [ ] -> [ [] ]
+END
+
 VERNAC ARGUMENT EXTEND rec_annotation2
   [ "{"  "struct" ident(id)  "}"] -> [ Struct id ]
-| [ "{" "wf" constr(r) ident_opt(id) "}" ] -> [ Wf(r,id) ]
-| [ "{" "measure" constr(r) ident_opt(id) "}" ] -> [ Mes(r,id) ] 
+| [ "{" "wf" constr(r) ident_opt(id) auto_using'(l) "}" ] -> [ Wf(r,id,l) ]
+| [ "{" "measure" constr(r) ident_opt(id) auto_using'(l) "}" ] -> [ Mes(r,id,l) ] 
 END
 
 
@@ -131,8 +149,8 @@ VERNAC ARGUMENT EXTEND rec_definition2
      let check_exists_args an =
        try 
 	 let id = match an with 
-	   | Struct id -> id | Wf(_,Some id) -> id | Mes(_,Some id) -> id 
-	   | Wf(_,None) | Mes(_,None) -> failwith "check_exists_args" 
+	   | Struct id -> id | Wf(_,Some id,_) -> id | Mes(_,Some id,_) -> id 
+	   | Wf(_,None,_) | Mes(_,None,_) -> failwith "check_exists_args" 
 	 in 
 	 (try ignore(Util.list_index (Name id) names - 1); annot
 	  with Not_found ->  Util.user_err_loc

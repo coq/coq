@@ -129,8 +129,8 @@ let functional_induction with_clean c princl pat =
 
 type annot = 
     Struct of identifier 
-  | Wf of Topconstr.constr_expr * identifier option
-  | Mes of Topconstr.constr_expr * identifier option
+  | Wf of Topconstr.constr_expr * identifier option * Topconstr.constr_expr list
+  | Mes of Topconstr.constr_expr * identifier option * Topconstr.constr_expr list
 
 
 type newfixpoint_expr =
@@ -360,7 +360,7 @@ let generate_correction_proof_wf f_ref tcc_lemma_ref
     tcc_lemma_ref is_mes  rec_arg_num rec_arg_type relation
 
 
-let register_wf ?(is_mes=false) fname wf_rel_expr wf_arg args ret_type body
+let register_wf ?(is_mes=false) fname wf_rel_expr wf_arg using_lemmas args ret_type body
     pre_hook 
     =  
   let type_of_f = Command.generalize_constr_expr ret_type args in 
@@ -414,9 +414,10 @@ let register_wf ?(is_mes=false) fname wf_rel_expr wf_arg args ret_type body
     rec_arg_num
     eq
     hook
+    using_lemmas
 
     
-let register_mes fname wf_mes_expr wf_arg args ret_type body = 
+let register_mes fname wf_mes_expr wf_arg using_lemmas args ret_type body = 
   let wf_arg_type,wf_arg = 
     match wf_arg with 
       | None -> 
@@ -455,14 +456,15 @@ let register_mes fname wf_mes_expr wf_arg args ret_type body =
   let wf_rel_from_mes = 
     Topconstr.mkAppC(Topconstr.mkRefC  ltof,[wf_arg_type;fun_from_mes])
   in
-  register_wf ~is_mes:true fname wf_rel_from_mes (Some wf_arg) args ret_type body
+  register_wf ~is_mes:true fname wf_rel_from_mes (Some wf_arg) 
+    using_lemmas args ret_type body
 	  
 
 let do_generate_principle register_built interactive_proof fixpoint_exprl  = 
   let recdefs = build_newrecursive fixpoint_exprl in 
   let _is_struct = 
     match fixpoint_exprl with 
-      | [((name,Some (Wf (wf_rel,wf_x)),args,types,body))] -> 
+      | [((name,Some (Wf (wf_rel,wf_x,using_lemmas)),args,types,body))] -> 
 	  let pre_hook = 
 	    generate_principle 
 	      true
@@ -472,9 +474,10 @@ let do_generate_principle register_built interactive_proof fixpoint_exprl  =
 	      true
 	      false
 	  in 
-	  if register_built then register_wf name wf_rel wf_x args types body pre_hook;
+	  if register_built 
+	  then register_wf name wf_rel wf_x using_lemmas args types body pre_hook;
 	  false
-      | [((name,Some (Mes (wf_mes,wf_x)),args,types,body))] -> 
+      | [((name,Some (Mes (wf_mes,wf_x,using_lemmas)),args,types,body))] -> 
 	  let pre_hook = 
 	    generate_principle 
 	      true
@@ -484,7 +487,8 @@ let do_generate_principle register_built interactive_proof fixpoint_exprl  =
 	      true
 	      false
 	  in 
-	  if register_built then register_mes name wf_mes wf_x args types body pre_hook;
+	  if register_built 
+	  then register_mes name wf_mes wf_x using_lemmas args types body pre_hook;
 	  false
       | _ -> 
 	  let fix_names = 
