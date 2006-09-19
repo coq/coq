@@ -1164,11 +1164,13 @@ let (com_eqn : identifier ->
     );;
 
 
-let recursive_definition is_mes function_name type_of_f r rec_arg_num eq 
+let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num eq 
     generate_induction_principle using_lemmas : unit =
   let function_type = interp_constr Evd.empty (Global.env()) type_of_f in
   let env = push_named (function_name,None,function_type) (Global.env()) in
-  let equation_lemma_type = interp_constr Evd.empty env eq in 
+(*   Pp.msgnl (str "function type := " ++ Printer.pr_lconstr function_type); *)
+  let equation_lemma_type = interp_gen (OfType None) Evd.empty env ~impls:([],rec_impls) eq in 
+(*   Pp.msgnl (Printer.pr_lconstr equation_lemma_type); *)
   let res_vars,eq' = decompose_prod equation_lemma_type in 
   let res = 
 (*     Pp.msgnl (str "res_var :=" ++ Printer.pr_lconstr_env (push_rel_context (List.map (function (x,t) -> (x,None,t)) res_vars) env) eq'); *)
@@ -1252,10 +1254,10 @@ VERNAC COMMAND EXTEND RecursiveDefinition
 	| None -> 1
 	| Some n -> n 
     in
-    recursive_definition false f type_of_f r rec_arg_num eq (fun _ _ _ _ _  _ _ _ -> ()) []]
+    recursive_definition false f [] type_of_f r rec_arg_num eq (fun _ _ _ _ _  _ _ _ -> ()) []]
 | [ "Recursive" "Definition" ident(f) constr(type_of_f) constr(r) constr(wf)
      "[" ne_constr_list(proof) "]" constr(eq) ] ->
-  [ ignore(proof);ignore(wf);recursive_definition false f type_of_f r 1 eq  (fun  _ _  _ _ _ _ _ _ -> ()) []]
+  [ ignore(proof);ignore(wf);recursive_definition false f [] type_of_f r 1 eq  (fun  _ _  _ _ _ _ _ _ -> ()) []]
 END
 
 
