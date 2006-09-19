@@ -10,10 +10,11 @@
 
 open Ccalgo
 open Names
+open Term
 
 type proof =
-    Ax of identifier
-  | SymAx of identifier
+    Ax of constr
+  | SymAx of constr
   | Refl of term
   | Trans of proof * proof
   | Congr of proof * proof
@@ -25,6 +26,6 @@ val build_proof :
   | `Prove of int * int ] -> proof
 
 val type_proof :
-  (identifier, (term * term)) Hashtbl.t -> proof -> term * term
+  (constr, (term * term)) Hashtbl.t -> proof -> term * term
 
 

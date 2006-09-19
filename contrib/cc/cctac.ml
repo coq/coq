@@ -63,7 +63,7 @@ let rec decompose_term env t=
 	  Constructor {ci_constr=c;
 		       ci_arity=nargs;
 		       ci_nhyps=nargs-oib.mind_nparams}
-    | _ ->(Symb t)
+    | _ ->if closed0 t then (Symb t) else raise Not_found
 	
 (* decompose equality in members and type *)
 	
@@ -79,34 +79,72 @@ let atom_of_constr env term =
 	  else `Other (decompose_term env term)
     | _ -> `Other (decompose_term env term)
 
-let rec litteral_of_constr env term=
+let rec pattern_of_constr env c =
+  match kind_of_term (whd env c) with
+      App (f,args)->
+	let pf = decompose_term env f in
+	let pargs,lrels = List.split 
+	  (array_map_to_list (pattern_of_constr env) args) in
+	  PApp (pf,List.rev pargs),
+	List.fold_left Intset.union Intset.empty lrels 
+    | Rel i -> PVar i,Intset.singleton i
+    | _ -> 
+	let pf = decompose_term env c in
+	  PApp (pf,[]),Intset.empty
+
+let non_trivial = function
+    PVar _ -> false
+  | _ -> true
+
+let patterns_of_constr env nrels term=
+  let f,args= 
+    try destApp (whd_delta env term) with _ -> raise Not_found in
+	if eq_constr f (Lazy.force _eq) && (Array.length args)=3 
+	then 
+	  let patt1,rels1 = pattern_of_constr env args.(1)
+	  and patt2,rels2 = pattern_of_constr env args.(2) in
+	  let valid1 = (Intset.cardinal rels1 = nrels && non_trivial patt1) 
+	  and valid2 = (Intset.cardinal rels2 = nrels && non_trivial patt2) in
+	    if valid1 || valid2 then 
+	      nrels,valid1,patt1,valid2,patt2
+	    else raise Not_found
+	else raise Not_found
+
+let rec quantified_atom_of_constr env nrels term =
   match kind_of_term (whd_delta env term) with
       Prod (_,atom,ff) -> 
+	if eq_constr ff (Lazy.force _False) then
+	  let patts=patterns_of_constr env nrels atom in
+	      `Nrule patts
+	else 
+	  quantified_atom_of_constr env (succ nrels) ff
+    | _ ->  
+	let patts=patterns_of_constr env nrels term in
+	    `Rule patts	  
+
+let litteral_of_constr env term=
+  match kind_of_term (whd_delta env term) with
+    | Prod (_,atom,ff) -> 
 	if eq_constr ff (Lazy.force _False) then
 	  match (atom_of_constr env atom) with
 	      `Eq(t,a,b) -> `Neq(t,a,b)
 	    | `Other(p) -> `Nother(p)
-	else 
-	  `Other (decompose_term env term)
-    | _ -> atom_of_constr env term
+	else
+	  begin
+	    try 
+	      quantified_atom_of_constr env 1 ff  
+	    with Not_found ->
+	      `Other (decompose_term env term)
+	  end
+    | _ -> 
+	atom_of_constr env term
 	
-(* rebuild a term from applicative format *)
-    
-let rec make_term = function
-    Symb s->s
-  | Eps -> anomaly "epsilon constant has no value" 
-  | Constructor cinfo -> mkConstruct cinfo.ci_constr 
-  | Appli (s1,s2)->
-      make_app [(make_term s2)] s1
-and make_app l=function
-    Appli (s1,s2)->make_app ((make_term s2)::l) s1    
-  | other -> applistc (make_term other) l 
 
 (* store all equalities from the context *)
 	
-let rec make_prb gls additionnal_terms =
+let rec make_prb gls depth additionnal_terms =
   let env=pf_env gls in
-  let state = empty () in
+  let state = empty depth in
   let pos_hyps = ref [] in
   let neg_hyps =ref [] in
     List.iter
@@ -116,21 +154,24 @@ let rec make_prb gls additionnal_terms =
     List.iter 
       (fun (id,_,e) ->
 	 begin
+	   let cid=mkVar id in
 	   match litteral_of_constr env e with
-	       `Eq (t,a,b) -> add_equality state id a b
-	     | `Neq (t,a,b) -> add_disequality state (Hyp id) a b
+	       `Eq (t,a,b) -> add_equality state cid a b
+	     | `Neq (t,a,b) -> add_disequality state (Hyp cid) a b
 	     | `Other ph ->
 		 List.iter 
-		   (fun (idn,nh) -> 
-		      add_disequality state (HeqnH (id,idn)) ph nh) 
+		   (fun (cidn,nh) -> 
+		      add_disequality state (HeqnH (cid,cidn)) ph nh) 
 		   !neg_hyps;
-		 pos_hyps:=(id,ph):: !pos_hyps
+		 pos_hyps:=(cid,ph):: !pos_hyps
 	     | `Nother nh ->
 		 List.iter 
-		   (fun (idp,ph) -> 
-		      add_disequality state (HeqnH (idp,id)) ph nh) 
+		   (fun (cidp,ph) -> 
+		      add_disequality state (HeqnH (cidp,cid)) ph nh) 
 		   !pos_hyps;
-		 neg_hyps:=(id,nh):: !neg_hyps
+		 neg_hyps:=(cid,nh):: !neg_hyps
+	     | `Rule patts -> add_quant state id true patts
+	     | `Nrule patts -> add_quant state id false patts
 	 end) (Environ.named_context_of_val gls.it.evar_hyps);
     begin
       match atom_of_constr env gls.it.evar_concl with
@@ -170,18 +211,18 @@ let build_projection intype outtype (cstr:constructor) special default gls=
 (* generate an adhoc tactic following the proof tree  *)
 
 let rec proof_tac axioms=function
-    Ax id->exact_check (mkVar id)
-  | SymAx id->tclTHEN symmetry (exact_check (mkVar id))
-  | Refl t->reflexivity
-  | Trans (p1,p2)->let t=(make_term (snd (type_proof axioms p1))) in
+    Ax c -> exact_check c
+  | SymAx c -> tclTHEN symmetry (exact_check c)
+  | Refl t -> reflexivity
+  | Trans (p1,p2)->let t=(constr_of_term (snd (type_proof axioms p1))) in
       (tclTHENS (transitivity t) 
 	 [(proof_tac axioms p1);(proof_tac axioms p2)])
   | Congr (p1,p2)->
       fun gls->
 	let (f1,f2)=(type_proof axioms p1) 
 	and (x1,x2)=(type_proof axioms p2) in
-        let tf1=make_term f1 and tx1=make_term x1 
-	and tf2=make_term f2 and tx2=make_term x2 in
+        let tf1=constr_of_term f1 and tx1=constr_of_term x1 
+	and tf2=constr_of_term f2 and tx2=constr_of_term x2 in
 	let typf=pf_type_of gls tf1 and typx=pf_type_of gls tx1
 	and typfx=pf_type_of gls (mkApp(tf1,[|tx1|])) in
 	let id=pf_get_new_id (id_of_string "f") gls in
@@ -204,52 +245,52 @@ let rec proof_tac axioms=function
       (fun gls ->
 	 let ti,tj=type_proof axioms prf in
 	 let ai,aj=type_proof axioms gprf in
-	 let cti=make_term ti in
-	 let ctj=make_term tj in
-	 let cai=make_term ai in
+	 let cti=constr_of_term ti in
+	 let ctj=constr_of_term tj in
+	 let cai=constr_of_term ai in
 	 let intype=pf_type_of gls cti in
 	 let outtype=pf_type_of gls cai in
 	 let special=mkRel (1+nargs-argind) in
-	 let default=make_term ai in
+	 let default=constr_of_term ai in
 	 let proj=build_projection intype outtype cstr special default gls in
 	 let injt=
 	   mkApp (Lazy.force _f_equal,[|intype;outtype;proj;cti;ctj|]) in 
 	   tclTHEN (apply injt) (proof_tac axioms prf) gls)
 
-let refute_tac axioms id t1 t2 p gls =      
-  let tt1=make_term t1 and tt2=make_term t2 in
+let refute_tac axioms c t1 t2 p gls =      
+  let tt1=constr_of_term t1 and tt2=constr_of_term t2 in
   let intype=pf_type_of gls tt1 in
   let neweq=
     mkApp(Lazy.force _eq,
 	  [|intype;tt1;tt2|]) in
   let hid=pf_get_new_id (id_of_string "Heq") gls in
-  let false_t=mkApp (mkVar id,[|mkVar hid|]) in
+  let false_t=mkApp (c,[|mkVar hid|]) in
     tclTHENS (true_cut (Name hid) neweq)
       [proof_tac axioms p; simplest_elim false_t] gls
 
-let convert_to_goal_tac axioms id t1 t2 p gls =
-  let tt1=make_term t1 and tt2=make_term t2 in
+let convert_to_goal_tac axioms c t1 t2 p gls =
+  let tt1=constr_of_term t1 and tt2=constr_of_term t2 in
   let sort=pf_type_of gls tt2 in
   let neweq=mkApp(Lazy.force _eq,[|sort;tt1;tt2|]) in 
   let e=pf_get_new_id (id_of_string "e") gls in
   let x=pf_get_new_id (id_of_string "X") gls in
   let identity=mkLambda (Name x,sort,mkRel 1) in 
   let endt=mkApp (Lazy.force _eq_rect,
-		  [|sort;tt1;identity;mkVar id;tt2;mkVar e|]) in
+		  [|sort;tt1;identity;c;tt2;mkVar e|]) in
     tclTHENS (true_cut (Name e) neweq) 
       [proof_tac axioms p;exact_check endt] gls
 
-let convert_to_hyp_tac axioms id1 t1 id2 t2 p gls =
-  let tt2=make_term t2 in
+let convert_to_hyp_tac axioms c1 t1 c2 t2 p gls =
+  let tt2=constr_of_term t2 in
   let h=pf_get_new_id (id_of_string "H") gls in
-  let false_t=mkApp (mkVar id2,[|mkVar h|]) in
+  let false_t=mkApp (c2,[|mkVar h|]) in
     tclTHENS (true_cut (Name h) tt2)
-      [convert_to_goal_tac axioms id1 t1 t2 p;
+      [convert_to_goal_tac axioms c1 t1 t2 p;
        simplest_elim false_t] gls
   
 let discriminate_tac axioms cstr p gls =
   let t1,t2=type_proof axioms p in 
-  let tt1=make_term t1 and tt2=make_term t2 in
+  let tt1=constr_of_term t1 and tt2=constr_of_term t2 in
   let intype=pf_type_of gls tt1 in
   let concl=pf_concl gls in
   let outsort=mkType (new_univ ()) in
@@ -273,15 +314,15 @@ let discriminate_tac axioms cstr p gls =
 	
 let build_term_to_complete uf meta pac =
   let cinfo = get_constructor_info uf pac.cnode in
-  let real_args = List.map (fun i -> make_term (term uf i)) pac.args in
+  let real_args = List.map (fun i -> constr_of_term (term uf i)) pac.args in
   let dummy_args = List.rev (list_tabulate meta pac.arity) in
   let all_args = List.rev_append real_args dummy_args in
     applistc (mkConstruct cinfo.ci_constr) all_args
       
-let cc_tactic additionnal_terms gls=
+let cc_tactic depth additionnal_terms gls=
   Coqlib.check_required_library ["Coq";"Init";"Logic"];
   let _ = debug Pp.msgnl (Pp.str "Reading subgoal ...") in
-  let state = make_prb gls additionnal_terms in
+  let state = make_prb gls depth additionnal_terms in
   let _ = debug Pp.msgnl (Pp.str "Problem built, solving ...") in
   let sol = execute true state in
   let _ = debug Pp.msgnl (Pp.str "Computation completed.") in
@@ -334,3 +375,8 @@ let cc_tactic additionnal_terms gls=
 
 let cc_fail gls =
   errorlabstrm  "Congruence" (Pp.str "congruence failed.")     
+
+let congruence_tac depth l = 
+  tclORELSE 
+    (tclTHEN (tclREPEAT introf) (cc_tactic depth l)) 
+    cc_fail

@@ -475,6 +475,17 @@ let array_last v =
 
 let array_cons e v = Array.append [|e|] v
 
+let array_rev t = 
+  let n=Array.length t in
+    if n <=0 then () 
+    else
+      let tmp=ref t.(0) in
+      for i=0 to pred (n/2) do 
+	tmp:=t.((pred n)-i);
+	t.((pred n)-i)<- t.(i);
+	t.(i)<- !tmp
+      done
+
 let array_fold_right_i f v a =
   let rec fold a n =
     if n=0 then a

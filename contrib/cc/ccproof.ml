@@ -13,11 +13,12 @@
 
 open Util
 open Names
+open Term
 open Ccalgo
   
 type proof=
-    Ax of identifier
-  | SymAx of identifier
+    Ax of constr
+  | SymAx of constr
   | Refl of term
   | Trans of proof*proof
   | Congr of proof*proof

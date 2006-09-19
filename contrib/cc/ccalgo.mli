@@ -23,6 +23,10 @@ type term =
   | Appli of term*term
   | Constructor of cinfo (* constructor arity + nhyps *)
 
+type ccpattern =
+    PApp of term * ccpattern list
+  | PVar of int 
+
 type pa_constructor =
     { cnode : int;
       arity : int;
@@ -36,14 +40,14 @@ type state
 
 type rule=
     Congruence
-  | Axiom of identifier * bool 
+  | Axiom of constr * bool 
   | Injection of int * pa_constructor * int * pa_constructor * int
 
 type from=
     Goal
-  | Hyp of identifier
-  | HeqG of identifier
-  | HeqnH of identifier * identifier
+  | Hyp of constr
+  | HeqG of constr
+  | HeqnH of constr*constr 
 
 type 'a eq = {lhs:int;rhs:int;rule:'a}
 
@@ -56,21 +60,27 @@ type explanation =
   | Contradiction of disequality
   | Incomplete
 
+val constr_of_term : term -> constr
+
 val debug : (Pp.std_ppcmds -> unit) -> Pp.std_ppcmds -> unit
 
 val forest : state -> forest
 
-val axioms : forest -> (identifier, term * term) Hashtbl.t
+val axioms : forest -> (constr, term * term) Hashtbl.t
 
 val epsilons : forest -> pa_constructor list
 
-val empty : unit -> state
+val empty : int -> state
 
 val add_term : state -> term -> int
 
-val add_equality : state -> identifier -> term -> term -> unit
+val add_equality : state -> constr -> term -> term -> unit
 
 val add_disequality : state -> from -> term -> term -> unit
+
+val add_quant : state -> identifier -> bool -> 
+  int * bool * ccpattern * bool * ccpattern -> unit
+
 
 val tail_pac : pa_constructor -> pa_constructor
 
@@ -86,6 +96,35 @@ val subterms : forest -> int -> int * int
 
 val join_path : forest -> int -> int -> 
   ((int * int) * equality) list * ((int * int) * equality) list
+
+type quant_eq=
+    {qe_hyp_id: identifier;
+     qe_pol: bool;
+     qe_nvars:int;
+     qe_lhs: ccpattern;
+     qe_lhs_valid:bool;
+     qe_rhs: ccpattern;
+     qe_rhs_valid:bool}
+
+
+type pa_fun=
+    {fsym:int;
+     fnargs:int}
+
+type matching_problem
+ 
+module PafMap: Map.S with type key = pa_fun
+
+val make_fun_table : state -> Intset.t PafMap.t 
+
+val do_match :  state ->
+    (quant_eq * int array) list ref -> matching_problem Stack.t -> unit
+
+val init_pb_stack : state -> matching_problem Stack.t
+
+val paf_of_patt : (term, int) Hashtbl.t -> ccpattern -> pa_fun
+
+val find_instances : state -> (quant_eq * int array) list
 
 val execute : bool -> state -> explanation option
 

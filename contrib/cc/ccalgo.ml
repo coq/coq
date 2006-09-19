@@ -55,6 +55,8 @@ module ST=struct
 	Hashtbl.replace st.tosign t sign
 	  
   let query sign st=Hashtbl.find st.toterm sign
+
+  let rev_query term st=Hashtbl.find st.tosign term
 	  
   let delete st t=
     try let sign=Hashtbl.find st.tosign t in
@@ -72,9 +74,21 @@ type pa_constructor=
       arity : int;
       args  : int list}
 
+type pa_fun=
+    {fsym:int;
+     fnargs:int}
+
+type pa_mark=
+    Fmark of pa_fun
+  | Cmark of pa_constructor
+
 module PacMap=Map.Make(struct 
 			 type t=pa_constructor 
 			 let compare=Pervasives.compare end) 
+
+module PafMap=Map.Make(struct 
+			 type t=pa_fun
+			 let compare=Pervasives.compare end)
 
 type cinfo=
     {ci_constr: constructor; (* inductive type *)
@@ -87,22 +101,35 @@ type term=
   | Appli of term*term
   | Constructor of cinfo (* constructor arity + nhyps *)
 
+type ccpattern =
+    PApp of term * ccpattern list (* arguments are reversed *)
+  | PVar of int 
+
 type rule=
     Congruence
-  | Axiom of identifier * bool 
+  | Axiom of constr * bool 
   | Injection of int * pa_constructor * int * pa_constructor * int
 
 type from=
     Goal
-  | Hyp of identifier
-  | HeqG of identifier
-  | HeqnH of identifier * identifier
+  | Hyp of constr
+  | HeqG of constr
+  | HeqnH of constr * constr
 
 type 'a eq = {lhs:int;rhs:int;rule:'a}
 
 type equality = rule eq
 
 type disequality = from eq
+
+type quant_eq =
+    {qe_hyp_id: identifier;
+     qe_pol: bool;
+     qe_nvars:int;
+     qe_lhs: ccpattern;
+     qe_lhs_valid:bool;
+     qe_rhs: ccpattern;
+     qe_rhs_valid:bool}
 
 let swap eq : equality =
   let swap_rule=match eq.rule with
@@ -122,6 +149,7 @@ type representative=
      mutable lfathers:Intset.t;
      mutable fathers:Intset.t;
      mutable inductive_status: inductive_status;
+     mutable functions: Intset.t PafMap.t;
      mutable constructors: int PacMap.t} (*pac -> term = app(constr,t) *)
 
 type cl = Rep of representative| Eqto of int*equality
@@ -138,7 +166,7 @@ type forest=
     {mutable max_size:int;
      mutable size:int;
      mutable map: node array;
-     axioms: (identifier,term*term) Hashtbl.t;
+     axioms: (constr,term*term) Hashtbl.t;
      mutable epsilons: pa_constructor list;
      syms:(term,int) Hashtbl.t}
 
@@ -147,9 +175,13 @@ type state =
      sigtable:ST.t;
      mutable terms: Intset.t; 
      combine: equality Queue.t; 
-     marks: (int * pa_constructor) Queue.t;
+     marks: (int * pa_mark) Queue.t;
      mutable diseq: disequality list;
-     mutable pa_classes: Intset.t}
+     mutable quant: quant_eq list;
+     mutable pa_classes: Intset.t;
+     q_history: (constr,unit) Hashtbl.t;
+     mutable rew_depth:int;
+     mutable changed:bool}
 
 let dummy_node =
   {clas=Eqto(min_int,{lhs=min_int;rhs=min_int;rule=Congruence});
@@ -157,7 +189,7 @@ let dummy_node =
    vertex=Leaf;
    term=Symb (mkRel min_int)}
 
-let empty ():state =
+let empty depth:state =
   {uf=
      {max_size=init_size;
       size=0;
@@ -170,7 +202,11 @@ let empty ():state =
   marks=Queue.create ();
   sigtable=ST.empty ();
   diseq=[];
-  pa_classes=Intset.empty}
+  quant=[];
+  pa_classes=Intset.empty;
+  q_history=Hashtbl.create init_size;
+  rew_depth=depth;
+  changed=false}
 
 let forest state = state.uf 
        
@@ -221,10 +257,18 @@ let append_pac t p =
 
 let tail_pac p=
   {p with arity=succ p.arity;args=List.tl p.args}
+
+let fsucc paf =
+  {paf with fnargs=succ paf.fnargs}
     
 let add_pac rep pac t =
   if not (PacMap.mem pac rep.constructors) then
     rep.constructors<-PacMap.add pac t rep.constructors
+
+let add_paf rep paf t =
+  let already = 
+    try PafMap.find paf rep.functions with Not_found -> Intset.empty in
+    rep.functions<- PafMap.add paf (Intset.add t already) rep.functions
 
 let term uf i=uf.map.(i).term
 		
@@ -256,8 +300,36 @@ let new_representative ()=
    lfathers=Intset.empty;
    fathers=Intset.empty;
    inductive_status=Unknown;
+   functions=PafMap.empty;
    constructors=PacMap.empty}
     
+(* rebuild a constr from an applicative term *)
+    
+let rec constr_of_term = function
+    Symb s->s
+  | Eps -> anomaly "epsilon constant has no value" 
+  | Constructor cinfo -> mkConstruct cinfo.ci_constr 
+  | Appli (s1,s2)->
+      make_app [(constr_of_term s2)] s1
+and make_app l=function
+    Appli (s1,s2)->make_app ((constr_of_term s2)::l) s1    
+  | other -> applistc (constr_of_term other) l 
+
+(* rebuild a term from a pattern and a substitution *)
+
+let build_subst uf subst =
+  Array.map (fun i -> 
+	       try term uf i 
+	       with _ -> anomaly "incomplete matching") subst
+
+let rec inst_pattern subst = function
+    PVar i -> 
+      subst.(pred i) 
+  | PApp (t, args) -> 
+      List.fold_right
+	(fun spat f -> Appli (f,inst_pattern subst spat))
+	   args t  
+
 let rec add_term state t= 
   let uf=state.uf in
     try Hashtbl.find uf.syms t with 
@@ -265,7 +337,16 @@ let rec add_term state t=
 	  let b=next uf in
 	  let new_node=
 	    match t with
-		Symb _ | Eps -> 
+		Symb _ ->
+		  let paf =
+		    {fsym=b;
+		     fnargs=0} in
+		    Queue.add (b,Fmark paf) state.marks;
+		    {clas= Rep (new_representative ());
+		     cpath= -1;
+		     vertex= Leaf;
+		     term= t}
+	      | Eps -> 
 		  {clas= Rep (new_representative ());
 		   cpath= -1;
 		   vertex= Leaf;
@@ -280,11 +361,15 @@ let rec add_term state t=
 		     vertex= Node(i1,i2);
 		     term= t}
 	      | Constructor cinfo ->
+		  let paf =
+		    {fsym=b;
+		     fnargs=0} in
+		    Queue.add (b,Fmark paf) state.marks;
 		  let pac =
 		    {cnode= b;
 		     arity= cinfo.ci_arity;
 		     args=[]} in
-		    Queue.add (b,pac) state.marks;
+		    Queue.add (b,Cmark pac) state.marks;
 		    {clas=Rep (new_representative ());
 		     cpath= -1;
 		     vertex=Leaf;
@@ -294,16 +379,53 @@ let rec add_term state t=
 	    Hashtbl.add uf.syms t b;
 	    b
 
-let add_equality state id s t=
+let add_equality state c s t=
   let i = add_term state s in
   let j = add_term state t in
-    Queue.add {lhs=i;rhs=j;rule=Axiom(id,false)} state.combine;
-    Hashtbl.add state.uf.axioms id (s,t)
+    Queue.add {lhs=i;rhs=j;rule=Axiom(c,false)} state.combine;
+    Hashtbl.add state.uf.axioms c (s,t)
 
 let add_disequality state from s t =
   let i = add_term state s in
   let j = add_term state t in
     state.diseq<-{lhs=i;rhs=j;rule=from}::state.diseq
+
+let add_quant state id pol (nvars,valid1,patt1,valid2,patt2) =
+  state.quant<-
+    {qe_hyp_id= id;
+     qe_pol= pol;
+     qe_nvars=nvars;
+     qe_lhs= patt1;
+     qe_lhs_valid=valid1;
+     qe_rhs= patt2;
+     qe_rhs_valid=valid2}::state.quant
+
+let add_inst state (inst,int_subst) = 
+  if state.rew_depth > 0 then 
+  let subst = build_subst (forest state) int_subst in
+  let prfhead= mkVar inst.qe_hyp_id in
+  let args = Array.map constr_of_term subst in
+  let _ = array_rev args in (* highest deBruijn index first *)
+  let prf= mkApp(prfhead,args) in
+    try Hashtbl.find state.q_history prf
+    with Not_found ->
+      (* this instance is new, we can go on *)
+      let s = inst_pattern subst inst.qe_lhs 
+      and t = inst_pattern subst inst.qe_rhs in
+	state.changed<-true;
+	state.rew_depth<-pred state.rew_depth;
+	if inst.qe_pol then
+	  begin
+	    debug msgnl 
+	      (str "adding new equality, depth="++ int state.rew_depth);
+	    add_equality state prf s t
+	  end
+	else
+	  begin
+	    debug msgnl (str "adding new disequality, depth="++ 
+			   int state.rew_depth);
+	    add_disequality state (Hyp prf) s t 
+	  end
 
 let link uf i j eq = (* links i -> j *)
   let node=uf.map.(i) in 
@@ -336,7 +458,13 @@ let union state i1 i2 eq=
       r2.lfathers<-Intset.union r1.lfathers r2.lfathers;
       ST.delete_set state.sigtable r1.fathers;
       state.terms<-Intset.union state.terms r1.fathers;       
-      PacMap.iter (fun pac b -> Queue.add (b,pac) state.marks) r1.constructors;
+      PacMap.iter 
+	(fun pac b -> Queue.add (b,Cmark pac) state.marks) 
+	r1.constructors;
+      PafMap.iter 
+	(fun paf -> Intset.iter 
+	   (fun b -> Queue.add (b,Fmark paf) state.marks)) 
+	r1.functions;
       match r1.inductive_status,r2.inductive_status with 
 	  Unknown,_ -> ()
 	| Partial pac,Unknown -> 
@@ -351,7 +479,7 @@ let union state i1 i2 eq=
 	    state.pa_classes<-Intset.remove i2 state.pa_classes;
 	    r2.inductive_status<-Partial_applied
 	| Total cpl,Unknown -> r2.inductive_status<-Total cpl;
-	| Total cpl,Total _ -> Queue.add cpl state.marks    
+	| Total (i,pac),Total _ -> Queue.add (i,Cmark pac) state.marks    
 	| _,_ -> () 
             
 let merge eq state = (* merge and no-merge *)
@@ -380,19 +508,22 @@ let update t state = (* update 1 and 2 *)
 	| _ -> ()
     end;
     PacMap.iter 
-      (fun pac _ -> Queue.add (t,append_pac v pac) state.marks) 
+      (fun pac _ -> Queue.add (t,Cmark (append_pac v pac)) state.marks) 
       rep.constructors; 
+    PafMap.iter 
+      (fun paf _ -> Queue.add (t,Fmark (fsucc paf)) state.marks) 
+      rep.functions; 
     try 
       let s = ST.query sign state.sigtable in 
 	Queue.add {lhs=t;rhs=s;rule=Congruence} state.combine
     with 
 	Not_found -> ST.enter t sign state.sigtable
 
-let process_mark t pac state =
-  debug msgnl 
-    (str "Processing mark for term " ++ int t ++ str ".");
-  let i=find state.uf t in
-  let rep=get_representative state.uf i in
+let process_function_mark t rep paf state  =
+  add_paf rep paf t;
+  state.terms<-Intset.union rep.lfathers state.terms
+    
+let process_constructor_mark t i rep pac state =
     match rep.inductive_status with
 	Total (s,opac) ->
 	  if pac.cnode <> opac.cnode then (* Conflict *) 
@@ -424,6 +555,15 @@ let process_mark t pac state =
 	      state.pa_classes<- Intset.add i state.pa_classes
 	    end
 
+let process_mark t m state = 
+  debug msgnl 
+    (str "Processing mark for term " ++ int t ++ str ".");
+  let i=find state.uf t in
+  let rep=get_representative state.uf i in
+    match m with
+	Fmark paf -> process_function_mark t rep paf state
+      | Cmark pac -> process_constructor_mark t i rep pac state
+
 type explanation =
     Discrimination of (int*pa_constructor*int*pa_constructor)
   | Contradiction of disequality
@@ -447,15 +587,21 @@ let check_disequalities state =
 let one_step state =
     try
       let eq = Queue.take state.combine in
-	merge eq state
+	merge eq state;
+	true
     with Queue.Empty -> 
       try 
 	let (t,m) = Queue.take state.marks in
-	  process_mark t m state
+	  process_mark t m state;
+	  true
       with Queue.Empty ->
+	try
 	  let t = Intset.choose state.terms in
 	    state.terms<-Intset.remove t state.terms;
-	    update t state
+	    update t state;
+	    true
+	with Not_found -> false
+	  
 
 let complete_one_class state i=
   match (get_representative state.uf i).inductive_status with
@@ -470,38 +616,162 @@ let complete_one_class state i=
 let complete state =
   Intset.iter (complete_one_class state) state.pa_classes
 
+type matching_problem = 
+{mp_subst : int array;
+ mp_inst : quant_eq;
+ mp_stack : (ccpattern*int) list }
+
+let make_fun_table state =
+  let uf= state.uf in
+  let funtab=ref PafMap.empty in
+  for cl=0 to pred uf.size do 
+    match uf.map.(cl).clas with
+	Rep rep ->
+	  PafMap.iter 
+	    (fun paf _ -> 
+	       let elem = 
+		 try PafMap.find paf !funtab 
+		 with Not_found -> Intset.empty in
+		 funtab:= PafMap.add paf (Intset.add cl elem) !funtab) 
+	    rep.functions
+      | _ -> ()   
+  done;
+    !funtab
+  
+
+let rec do_match state res pb_stack =
+  let mp=Stack.pop pb_stack in
+    match mp.mp_stack with
+	[] -> 
+	  res:= (mp.mp_inst,mp.mp_subst) :: !res
+      | (patt,cl)::remains ->
+	  let uf=state.uf in
+	    match patt with
+		PVar i -> 
+		  if mp.mp_subst.(pred i)<0 then  
+		    begin
+		      mp.mp_subst.(pred i)<- cl; (* no aliasing problem here *)
+		      Stack.push {mp with mp_stack=remains} pb_stack
+		    end
+		  else
+		    if mp.mp_subst.(pred i) = cl then
+		      Stack.push {mp with mp_stack=remains} pb_stack
+	      | PApp (f,[]) ->
+		  begin
+		    try let j=Hashtbl.find uf.syms f in
+		      if find uf j =cl then
+			Stack.push {mp with mp_stack=remains} pb_stack
+		    with Not_found -> ()
+		  end
+	      | PApp(f, ((last_arg::rem_args) as args)) ->
+		  try 
+		    let j=Hashtbl.find uf.syms f in
+		    let paf={fsym=j;fnargs=List.length args} in
+		    let rep=get_representative uf cl in
+		    let good_terms = PafMap.find paf rep.functions in
+		    let aux i = 
+		      let (s,t) = ST.rev_query i state.sigtable in
+			Stack.push 
+			  {mp with 
+			     mp_subst=Array.copy mp.mp_subst;
+			     mp_stack=
+			      (PApp(f,rem_args),s) :: 
+				(last_arg,t) :: remains} pb_stack in
+		      Intset.iter aux good_terms 
+		  with Not_found -> ()
+
+let paf_of_patt syms = function
+    PVar _ -> invalid_arg "paf_of_patt: pattern is trivial"
+  | PApp (f,args) ->
+      {fsym=Hashtbl.find syms f;
+       fnargs=List.length args}
+
+let init_pb_stack state = 
+  let syms= state.uf.syms in
+  let pb_stack = Stack.create () in
+  let funtab = make_fun_table state in
+  let aux inst =
+    begin
+      if inst.qe_lhs_valid then
+	try 
+	  let paf= paf_of_patt syms inst.qe_lhs in
+	  let good_classes = PafMap.find paf funtab in
+	    Intset.iter (fun i -> 
+			 Stack.push 
+			   {mp_subst = Array.make inst.qe_nvars (-1); 
+			    mp_inst=inst;
+			    mp_stack=[inst.qe_lhs,i]} pb_stack) good_classes
+	with Not_found -> ()
+    end;
+    begin 
+      if inst.qe_rhs_valid then
+	try 
+	  let paf= paf_of_patt syms inst.qe_rhs in
+	  let good_classes = PafMap.find paf funtab in
+	    Intset.iter (fun i -> 
+			   Stack.push 
+			     {mp_subst = Array.make inst.qe_nvars (-1); 
+			      mp_inst=inst;
+			      mp_stack=[inst.qe_rhs,i]} pb_stack) good_classes
+	with Not_found -> ()
+    end in
+    List.iter aux state.quant;
+    pb_stack
+
+let find_instances state = 
+  let pb_stack= init_pb_stack state in
+  let res =ref [] in
+  let _ =
+    debug msgnl (str "Running E-matching algorithm ... ");
+    try
+      while true do 
+	do_match state res pb_stack 
+      done;
+      anomaly "get out of here !"
+    with Stack.Empty -> () in
+    !res
+
 let rec execute first_run state =
   debug msgnl (str "Executing ... ");
   try
-    while true do 
-      one_step state
+    while one_step state do ()
     done;
-    anomaly "keep out of here" 
-  with 
-      Discriminable(s,spac,t,tpac) -> 
-	Some
-	begin
-	  if first_run then 
-	    Discrimination (s,spac,t,tpac)
-	  else
-	    Incomplete
-	end
-    | Not_found ->
-	match check_disequalities state with
-	    None -> 
-	      if not(Intset.is_empty state.pa_classes) then
-		begin 
-		  debug msgnl 
-		    (str "First run was incomplete, completing ... ");
-		  complete state;
-		  execute false state
-		end
-	      else None
-	  | Some dis -> Some
-	      begin
-		if first_run then 
-		  Contradiction dis
+    match check_disequalities state with
+	None -> 
+	  if not(Intset.is_empty state.pa_classes) then
+	    begin 
+	      debug msgnl (str "First run was incomplete, completing ... ");
+	      complete state;
+	      execute false state
+	    end
+	  else 
+	    if state.rew_depth>0 then
+	      let l=find_instances state in
+		List.iter (add_inst state) l;
+		if state.changed then 
+		  begin
+		    state.changed <- false;
+		    execute true state
+		  end
 		else
-		  Incomplete
+	      begin 
+		debug msgnl (str "Out of instances ... ");
+		None
 	      end
+	    else 
+	      begin 
+		debug msgnl (str "Out of depth ... ");
+		None
+	      end
+      | Some dis -> Some
+	  begin
+	    if first_run then Contradiction dis
+	    else Incomplete
+	  end
+  with Discriminable(s,spac,t,tpac) -> Some
+    begin
+      if first_run then Discrimination (s,spac,t,tpac)
+      else Incomplete
+    end
+
 
