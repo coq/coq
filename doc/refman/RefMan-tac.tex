@@ -120,7 +120,7 @@ subgoal is proved. Otherwise, it fails.
 \end{ErrMsgs}
 
 \begin{Variants}
-\tacindex{eassumption}}
+\tacindex{eassumption}
   \item \texttt{eassumption}
 
     This tactic behaves like \texttt{assumption} but is able to handle
@@ -1717,7 +1717,7 @@ accepted as regular setoids for {\tt rewrite} and {\tt
 \tacindex{stepr}
 \comindex{Declare Right Step}
 \begin{Variants}
-\item{\tt stepl {\term} by {\tac}}\\
+\item{\tt stepl {\term}{\sl n} by {\tac}}\\
 This applies {\tt stepl {\term}} then applies {\tac} to the second goal.
 
 \item{\tt stepr {\term}}\\
@@ -2601,6 +2601,8 @@ If the goal is a non-quantified equality, {\tt congruence} tries to
 prove it with non-quantified equalities in the context. Otherwise it
 tries to infer a discriminable equality from those in the context. Alternatively, congruence tries to prove that an hypothesis is equal to the goal or to the negation of another hypothesis.
 
+{\tt congruence} is also able to take advantage of hypotheses stating quantified equalities, you have to provide a bound for the number of extra equalities generated that way. Please note that one of the memebers of the equality must contain all the quantified variables in order for {\tt congruence} to match against it. 
+
 \begin{coq_eval}
 Reset Initial.
 Variable A:Set.
@@ -2628,6 +2630,12 @@ Theorem inj : f = pair a -> Some (f c) = Some (f d) -> c=d.
 intros.
 congruence.
 \end{coq_example}
+
+\begin{Variants}
+ \item {\tt congruence {\sl n}}\\
+  Tries to add at most {\tt \sl n} instances of hypotheses satting quantifiesd equalities to the problem in order to solve it. A bigger value of {\tt \sl n} does not make success slower, only failure. You might consider adding some lemmata as hypotheses using {\tt assert} in order for congruence to use them.
+
+\end{Variants}
 
 \begin{Variants}
 \item {\tt congruence with \term$_1$ \dots\ \term$_n$}\\
