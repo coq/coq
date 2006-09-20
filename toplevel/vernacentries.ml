@@ -20,6 +20,7 @@ open Term
 open Pfedit
 open Tacmach
 open Proof_trees
+open Decl_mode
 open Constrintern
 open Prettyp
 open Printer
@@ -93,7 +94,10 @@ let show_script () =
   let pts = get_pftreestate () in
   let pf = proof_of_pftreestate pts
   and evc = evc_of_pftreestate pts in
-  msgnl (print_treescript true evc (Global.named_context()) pf)
+  msgnl (print_treescript true evc pf)
+
+let show_thesis () =
+     msgnl (anomaly "TODO" )
 
 let show_top_evars () =
   let pfts = get_pftreestate () in 
@@ -532,6 +536,7 @@ let vernac_identity_coercion stre id qids qidt =
 let vernac_solve n tcom b =
   if not (refining ()) then
     error "Unknown command of the non proof-editing mode";
+  Decl_mode.check_not_proof_mode "Unknown proof instruction";
   begin
     if b then 
       solve_nth n (Tacinterp.hide_interp tcom (get_end_tac ()))
@@ -542,7 +547,7 @@ let vernac_solve n tcom b =
   if subtree_solved () then begin
     Options.if_verbose msgnl (str "Subgoal proved");
     make_focus 0;
-    reset_top_of_tree ()
+    reset_top_of_script ()
   end;
   print_subgoals();
   if !pcoq <> None then (out_some !pcoq).solve n
@@ -559,8 +564,35 @@ let vernac_set_end_tac tac =
   if not (refining ()) then
     error "Unknown command of the non proof-editing mode";
   if tac <> (Tacexpr.TacId []) then set_end_tac (Tacinterp.interp tac) else ()
-      (* TO DO verifier s'il faut pas mettre exist s | TacId s ici*)
-	
+    (* TO DO verifier s'il faut pas mettre exist s | TacId s ici*)
+
+(***********************)
+(* Proof Language Mode *)
+
+let vernac_decl_proof () = 
+  check_not_proof_mode "Already in Proof Mode";
+  if tree_solved () then 
+    error "Nothing left to prove here."
+  else
+    begin
+      Decl_proof_instr.go_to_proof_mode ();
+      print_subgoals ()
+    end
+
+let vernac_return () = 
+  match get_current_mode () with
+      Mode_tactic ->
+	Decl_proof_instr.return_from_tactic_mode ();
+	print_subgoals ()
+    | Mode_proof -> 
+	error "\"return\" is only used after \"escape\"."
+    | Mode_none -> 
+	error "There is no proof to end." 
+
+let vernac_proof_instr instr = 
+  Decl_proof_instr.proof_instr instr;
+  print_subgoals ()
+
 (*****************************)
 (* Auxiliary file management *)
 
@@ -993,13 +1025,16 @@ let vernac_backtrack snum pnum naborts =
   
 
   (* Est-ce normal que "Focus" ne semble pas se comporter comme "Focus 1" ? *)
-let vernac_focus = function
-  | None -> traverse_nth_goal 1; print_subgoals ()
-  | Some n -> traverse_nth_goal n; print_subgoals ()
-
+let vernac_focus gln =
+  check_not_proof_mode "No focussing or Unfocussing in Proof Mode.";
+  match gln with 
+    | None -> traverse_nth_goal 1; print_subgoals ()
+    | Some n -> traverse_nth_goal n; print_subgoals ()
+	
   (* Reset the focus to the top of the tree *)
 let vernac_unfocus () =
-  make_focus 0; reset_top_of_tree (); print_subgoals ()
+  check_not_proof_mode "No focussing or Unfocussing in Proof Mode.";
+  make_focus 0; reset_top_of_script (); print_subgoals ()
 
 let vernac_go = function
   | GoTo n -> Pfedit.traverse n;show_node()
@@ -1018,7 +1053,7 @@ let apply_subproof f occ =
   f evc (Global.named_context()) pf
 
 let explain_proof occ =
-  msg (apply_subproof (print_treescript true) occ)
+  msg (apply_subproof (fun evd _ -> print_treescript true evd) occ)
 
 let explain_tree occ =
   msg (apply_subproof print_proof occ)
@@ -1042,8 +1077,10 @@ let vernac_show = function
       msgnl (prlist_with_sep pr_spc pr_id (Pfedit.get_all_proof_names()))
   | ShowIntros all -> show_intro all
   | ShowMatch id -> show_match id
+  | ShowThesis -> show_thesis ()
   | ExplainProof occ -> explain_proof occ
   | ExplainTree occ -> explain_tree occ
+
 
 let vernac_check_guard () =
   let pts = get_pftreestate () in
@@ -1108,6 +1145,14 @@ let interp c = match c with
   (* Solving *)
   | VernacSolve (n,tac,b) -> vernac_solve n tac b
   | VernacSolveExistential (n,c) -> vernac_solve_existential n c
+
+  (* MMode *)
+
+  | VernacDeclProof -> vernac_decl_proof ()
+  | VernacReturn -> vernac_return ()
+  | VernacProofInstr stp -> vernac_proof_instr stp 
+
+  (* /MMode *)
 
   (* Auxiliary file and library management *)
   | VernacRequireFrom (exp,spec,f) -> vernac_require_from exp spec f

@@ -87,7 +87,7 @@ val pr_context_of          : env -> std_ppcmds
 (* Proofs *)
 
 val pr_goal                : goal -> std_ppcmds
-val pr_subgoals            : evar_map -> goal list -> std_ppcmds
+val pr_subgoals            : string option -> evar_map -> goal list -> std_ppcmds
 val pr_subgoal             : int -> goal list -> std_ppcmds
 
 val pr_open_subgoals       : unit -> std_ppcmds

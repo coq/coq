@@ -75,6 +75,7 @@ GEXTEND Gram
       | IDENT "Show"; IDENT "Intro" -> VernacShow (ShowIntros false)
       | IDENT "Show"; IDENT "Intros" -> VernacShow (ShowIntros true)
       | IDENT "Show"; IDENT "Match"; id = identref -> VernacShow (ShowMatch id)
+      | IDENT "Show"; IDENT "Thesis" -> VernacShow ShowThesis
       | IDENT "Explain"; IDENT "Proof"; l = LIST0 integer ->
 	  VernacShow (ExplainProof l)
       | IDENT "Explain"; IDENT "Proof"; IDENT "Tree"; l = LIST0 integer -> 

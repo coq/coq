@@ -56,9 +56,9 @@ let jv_nf_evar = Pretype_errors.jv_nf_evar
 let tj_nf_evar = Pretype_errors.tj_nf_evar
 
 let nf_evar_info evc info =
-  { evar_concl = Reductionops.nf_evar evc info.evar_concl;
-    evar_hyps = map_named_val (Reductionops.nf_evar evc) info.evar_hyps;
-    evar_body = info.evar_body}
+  { info with 
+      evar_concl = Reductionops.nf_evar evc info.evar_concl;
+      evar_hyps = map_named_val (Reductionops.nf_evar evc) info.evar_hyps}
 
 let nf_evars evm = Evd.fold (fun ev evi evm' -> Evd.add evm' ev (nf_evar_info evm evi))
 		     evm Evd.empty

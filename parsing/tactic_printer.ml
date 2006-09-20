@@ -15,6 +15,7 @@ open Evd
 open Tacexpr
 open Proof_type
 open Proof_trees
+open Decl_expr
 open Logic
 open Printer
 
@@ -25,9 +26,19 @@ let pr_tactic = function
   | t -> 
       Pptactic.pr_tactic (Global.env()) t
 
+let pr_proof_instr instr = 
+    Ppdecl_proof.pr_proof_instr (Global.env()) instr
+
 let pr_rule = function
   | Prim r -> hov 0 (pr_prim_rule r)
-  | Tactic (texp,_) -> hov 0 (pr_tactic texp)
+  | Nested(cmpd,_) ->
+      begin
+	match cmpd with 
+	    Tactic texp -> hov 0 (pr_tactic texp)
+	  | Proof_instr (_,instr) -> hov 0 (pr_proof_instr instr)
+      end
+  | Daimon -> str "<Daimon>"
+  | Decl_proof _ -> str "proof" 
   | Change_evars ->
       (* This is internal tactic and cannot be replayed at user-level.
          Function pr_rule_dot below is used when we want to hide
@@ -52,59 +63,145 @@ let thin_sign osign sign =
     sign ~init:Environ.empty_named_context_val
 
 let rec print_proof sigma osign pf =
-  let {evar_hyps=hyps; evar_concl=cl; 
-       evar_body=body} = pf.goal in
-  let hyps = Environ.named_context_of_val hyps in
+  let hyps = Environ.named_context_of_val pf.goal.evar_hyps in
   let hyps' = thin_sign osign hyps in
   match pf.ref with
     | None -> 
-	hov 0 (pr_goal {evar_hyps=hyps'; evar_concl=cl; evar_body=body})
+	hov 0 (pr_goal {pf.goal with evar_hyps=hyps'})
     | Some(r,spfl) ->
     	hov 0 
-	  (hov 0 (pr_goal {evar_hyps=hyps'; evar_concl=cl; evar_body=body}) ++
+	  (hov 0 (pr_goal {pf.goal with evar_hyps=hyps'}) ++
 	   spc () ++ str" BY " ++
 	   hov 0 (pr_rule r) ++ fnl () ++
 	   str"  " ++
-	   hov 0 (prlist_with_sep pr_fnl (print_proof sigma hyps) spfl)
-)
+	   hov 0 (prlist_with_sep pr_fnl (print_proof sigma hyps) spfl))
 	  
 let pr_change gl = 
-  str"Change " ++
+  str"change " ++
   pr_lconstr_env (Global.env_of_context gl.evar_hyps) gl.evar_concl ++ str"."
 
-let rec print_script nochange sigma osign pf =
-  let {evar_hyps=sign; evar_concl=cl} = pf.goal in
-  let sign = Environ.named_context_of_val sign in
+let rec print_decl_script tac_printer nochange sigma pf =
+  match pf.ref with
+    | None ->
+	(if nochange then 
+	   (str"<Your Proof Text here>")
+	 else 
+	   pr_change pf.goal)
+	++ fnl ()
+    | Some (Daimon,_) -> mt ()
+    | Some (Nested(Proof_instr (opened,instr),_) as rule,subprfs) ->
+	begin
+	  match instr.instr,subprfs with
+	    Pescape,[{ref=Some(_,subsubprfs)}] ->
+	      hov 7
+		(pr_rule_dot rule ++ fnl () ++
+		   prlist_with_sep pr_fnl tac_printer subsubprfs) ++ fnl () ++
+		if opened then mt () else str "return."
+	  | Pclaim _,[body;cont] ->
+	      hov 2
+		(pr_rule_dot rule ++ fnl () ++
+		   print_decl_script tac_printer nochange sigma body) ++ 
+		fnl () ++
+		if opened then mt () else str "end claim." ++ fnl () ++
+		  print_decl_script tac_printer nochange sigma cont
+	  | Pfocus _,[body;cont] ->
+	      hov 2 
+		(pr_rule_dot rule ++ fnl () ++
+		   print_decl_script tac_printer nochange sigma body) ++ 
+		fnl () ++
+		if opened then mt () else str "end focus." ++ fnl () ++
+		  print_decl_script tac_printer nochange sigma cont
+	  | (Psuppose _ |Pcase (_,_,_)),[body;cont] ->
+	      hov 2 
+		(pr_rule_dot rule ++ fnl () ++
+		   print_decl_script tac_printer nochange sigma body) ++ 
+		fnl () ++
+		print_decl_script tac_printer nochange sigma cont 
+	  | _,[next] ->
+	      pr_rule_dot rule ++ fnl () ++
+		print_decl_script tac_printer nochange sigma next
+	  | _,[] ->
+	      pr_rule_dot rule		
+	  | _,_ -> anomaly "unknown branching instruction"
+	end
+    | _ -> anomaly "Not Applicable"
+
+let rec print_script nochange sigma pf =
   match pf.ref with
     | None ->
         (if nochange then 
-	  (str"<Your Tactic Text here>") 
-	else 
-	  pr_change pf.goal)
+	   (str"<Your Tactic Text here>") 
+	 else 
+	   pr_change pf.goal)
 	++ fnl ()
-    | Some(r,spfl) ->
-        ((if nochange then (mt ()) else (pr_change pf.goal ++ fnl ())) ++
-           pr_rule_dot r ++ fnl () ++
-           prlist_with_sep pr_fnl
-             (print_script nochange sigma sign) spfl)
+    | Some(Decl_proof opened,script) ->
+	assert (List.length script = 1);
+	begin
+	  if nochange then (mt ()) else (pr_change pf.goal ++ fnl ()) 
+	end ++
+	  begin
+	    hov 0 (str "proof." ++ fnl () ++ 
+		     print_decl_script (print_script nochange sigma) 
+		     nochange sigma (List.hd script))
+	  end ++ fnl () ++
+	  begin
+	    if opened then mt () else (str "end proof." ++ fnl ())
+	  end
+    | Some(Daimon,spfl) ->
+	((if nochange then (mt ()) else (pr_change pf.goal ++ fnl ())) ++
+	   prlist_with_sep pr_fnl
+           (print_script nochange sigma) spfl )
+    | Some(rule,spfl) ->
+	((if nochange then (mt ()) else (pr_change pf.goal ++ fnl ())) ++
+	   pr_rule_dot rule ++ fnl () ++
+	   prlist_with_sep pr_fnl
+           (print_script nochange sigma) spfl )	
 
 (* printed by Show Script command *)
-let print_treescript nochange sigma _osign pf =
+
+let print_treescript nochange sigma pf =
   let rec aux top pf =
     match pf.ref with
     | None ->
         if nochange then 
-	  (str"<Your Tactic Text here>") 
+	  if pf.goal.evar_extra=None then
+	    (str"<Your Tactic Text here>")
+	  else (str"<Your Proof Text here>")
 	else 
 	  (pr_change pf.goal)
+    | Some(Decl_proof opened,script) ->
+	assert (List.length script = 1);
+	begin
+	  if nochange then (mt ()) else (pr_change pf.goal ++ fnl ())
+	end ++
+	  hov 0 
+	  begin str "proof." ++ fnl () ++
+	    print_decl_script (aux false)  
+	    nochange sigma (List.hd script) 
+	  end ++ fnl () ++ 
+	  begin
+	    if opened then mt () else (str "end proof." ++ fnl ())
+	  end
+    | Some(Daimon,spfl) ->
+	((if nochange then (mt ()) else (pr_change pf.goal ++ fnl ())) ++
+	   prlist_with_sep pr_fnl
+           (print_script nochange sigma) spfl )
     | Some(r,spfl) ->
         (if nochange then mt () else (pr_change pf.goal ++ fnl ())) ++
-	pr_rule_dot r ++
-	match spfl with
-	| [] -> mt ()
-	| [spf] -> fnl () ++ (if top then mt () else str "  ") ++ aux top spf
-	| _ -> fnl () ++ str " " ++
-	    hov 0 (prlist_with_sep fnl (aux false) spfl)
+	  pr_rule_dot r ++ fnl () ++
+	  begin
+	    if List.length spfl > 1 then
+	      fnl ()  ++ 
+		str " " ++  hov 0 (aux false (List.hd spfl)) ++ fnl () ++
+		hov 0 (prlist_with_sep fnl (aux false) (List.tl spfl))
+	    else
+	      match spfl with
+		| [] -> mt ()
+		| [spf] -> fnl () ++ 
+		    (if top then mt () else str "  ") ++ aux top spf
+		| _ -> fnl () ++ str " " ++
+		    hov 0 (prlist_with_sep fnl (aux false) spfl)
+	  end
   in hov 0 (aux true pf)
 
 let rec print_info_script sigma osign pf =

@@ -150,6 +150,14 @@ let subtree_solved () =
   is_complete_proof (proof_of_pftreestate pts) & 
   not (is_top_pftreestate pts)
 
+let tree_solved () = 
+  let pts = get_pftreestate () in
+  is_complete_proof (proof_of_pftreestate pts)
+
+let top_tree_solved () = 
+  let pts = get_pftreestate () in
+  is_complete_proof (proof_of_pftreestate (top_of_tree pts))
+
 (*********************************************************************)
 (*                 Undo functions                                    *)
 (*********************************************************************)
@@ -243,7 +251,7 @@ let set_end_tac tac =
 (*********************************************************************)
 
 let start_proof na str sign concl hook =
-  let top_goal = mk_goal sign concl in
+  let top_goal = mk_goal sign concl None in
   let ts = { 
     top_end_tac = None;
     top_goal = top_goal;
@@ -252,7 +260,6 @@ let start_proof na str sign concl hook =
   in
   start(na,ts);
   set_current_proof na
-
 
 let solve_nth k tac =
   let pft = get_pftreestate () in
@@ -309,7 +316,6 @@ let traverse_prev_unproven () = mutate prev_unproven
 
 let traverse_next_unproven () = mutate next_unproven
 
-
 (* The goal focused on *)
 let focus_n = ref 0
 let make_focus n = focus_n := n
@@ -317,5 +323,11 @@ let focus () = !focus_n
 let focused_goal () = let n = !focus_n in if n=0 then 1 else n
 
 let reset_top_of_tree () = 
-  let pts = get_pftreestate () in 
-  if not (is_top_pftreestate pts) then mutate top_of_tree
+  mutate top_of_tree
+ 
+let reset_top_of_script () = 
+  mutate (fun pts -> 
+	try
+	 up_until_matching_rule is_proof_instr pts
+	with Not_found -> top_of_tree pts)
+

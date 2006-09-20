@@ -16,6 +16,7 @@ open Libnames
 open Term
 open Util
 open Tacexpr
+open Decl_expr
 open Rawterm
 open Genarg
 open Nametab
@@ -46,7 +47,7 @@ type prim_rule =
              evar_body = Evar_Empty;
              evar_info = { pgm    : [The Realizer pgm if any]
                            lc     : [Set of evar num occurring in subgoal] }}
-   sigma = { stamp = [an int characterizing the ed field, for quick compare]
+   sigma = { stamp = [an int chardacterizing the ed field, for quick compare]
              ed : [A set of existential variables depending in the subgoal]
                number of first evar,
                it = { evar_concl = [the type of first evar]
@@ -80,8 +81,14 @@ type proof_tree = {
 
 and rule =
   | Prim of prim_rule
-  | Tactic of tactic_expr * proof_tree
+  | Nested of compound_rule * proof_tree 
+  | Decl_proof of bool
+  | Daimon
   | Change_evars
+
+and compound_rule= 
+  | Tactic of tactic_expr
+  | Proof_instr of bool * proof_instr
 
 and goal = evar_info
 

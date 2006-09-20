@@ -1073,6 +1073,14 @@ let intern_gen isarity sigma env
 
 let intern_constr sigma env c = intern_gen false sigma env c 
 
+let intern_pattern env patt =
+  try
+    intern_cases_pattern env [] ([],[]) None patt 
+  with 
+      InternalisationError (loc,e) ->
+	user_err_loc (loc,"internalize",explain_internalisation_error e)
+
+
 let intern_ltac isarity ltacvars sigma env c =
   intern_gen isarity sigma env ~ltacvars:ltacvars c
 

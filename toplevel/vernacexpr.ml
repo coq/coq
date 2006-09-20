@@ -99,6 +99,7 @@ type showable =
   | ShowProofNames
   | ShowIntros of bool
   | ShowMatch of lident
+  | ShowThesis
   | ExplainProof of int list
   | ExplainTree of int list
 
@@ -222,8 +223,16 @@ type vernac_expr =
       module_binder list * module_type_ast option
 
   (* Solving *)
+
   | VernacSolve of int * raw_tactic_expr * bool
   | VernacSolveExistential of int * constr_expr
+
+  (* Proof Mode *)
+
+  | VernacDeclProof
+  | VernacReturn
+  | VernacProofInstr of Decl_expr.raw_proof_instr
+
 
   (* Auxiliary file and library management *)
   | VernacRequireFrom of export_flag option * specif_flag option * lstring

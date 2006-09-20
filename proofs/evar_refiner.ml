@@ -22,7 +22,7 @@ open Refiner
 
 (* w_tactic pour instantiate *) 
 
-let w_refine env ev rawc evd =
+let w_refine ev rawc evd =
   if Evd.is_defined (evars_of evd) ev then 
     error "Instantiate called on already-defined evar";
   let e_info = Evd.find (evars_of evd) ev in
@@ -45,5 +45,5 @@ let instantiate_pf_com n com pfts =
   let env = Evd.evar_env evi in
   let rawc = Constrintern.intern_constr sigma env com in 
   let evd = create_evar_defs sigma in
-  let evd' = w_refine env sp rawc evd in
+  let evd' = w_refine sp rawc evd in
   change_constraints_pftreestate (evars_of evd') pfts

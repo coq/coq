@@ -6,22 +6,13 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
+(* $Id:$ *)
 
-(*i*)
-open Pp
-open Sign
-open Evd
-open Tacexpr
-open Proof_type
-(*i*)
+open Tacinterp
+open Decl_expr
+open Mod_subst
 
-(* These are the entry points for tactics, proof trees, ... *)
 
-val print_proof : evar_map -> named_context -> proof_tree -> std_ppcmds
-val pr_rule     : rule -> std_ppcmds
-val pr_tactic   : tactic_expr -> std_ppcmds
-val print_script :
-  bool -> evar_map -> proof_tree -> std_ppcmds
-val print_treescript :
-  bool -> evar_map -> proof_tree -> std_ppcmds
+val intern_proof_instr : glob_sign -> raw_proof_instr -> glob_proof_instr
+val interp_proof_instr : Decl_mode.pm_info ->
+  Evd.evar_map -> Environ.env -> glob_proof_instr -> proof_instr

@@ -88,7 +88,7 @@ let clear_hyps ids gl =
         if List.mem id' cleared_ids then
           error (string_of_id id'^" is used in conclusion"))
       (global_vars_set env ncl);
-  mk_goal nhyps ncl
+  mk_goal nhyps ncl gl.evar_extra
 
 (* The ClearBody tactic *)
 
@@ -264,6 +264,7 @@ let goal_type_of env sigma c =
 let rec mk_refgoals sigma goal goalacc conclty trm =
   let env = evar_env goal in
   let hyps = goal.evar_hyps in
+  let mk_goal hyps concl = mk_goal hyps concl goal.evar_extra in
 (*
    if  not (occur_meta trm) then
     let t'ty = (unsafe_machine env sigma trm).uj_type in 	
@@ -315,6 +316,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 and mk_hdgoals sigma goal goalacc trm =
   let env = evar_env goal in
   let hyps = goal.evar_hyps in
+  let mk_goal hyps concl = mk_goal hyps concl goal.evar_extra in
   match kind_of_term trm with
     | Cast (c,_, ty) when isMeta c ->
 	check_typability env sigma ty;
@@ -392,6 +394,7 @@ let prim_refiner r sigma goal =
   let env = evar_env goal in
   let sign = goal.evar_hyps in
   let cl = goal.evar_concl in
+  let mk_goal hyps concl = mk_goal hyps concl goal.evar_extra in
   match r with
     (* Logical rules *)
     | Intro id ->
@@ -474,7 +477,8 @@ let prim_refiner r sigma goal =
 		  let _ = find_coinductive env sigma b in ()
                 with Not_found -> 
 		  error ("All methods must construct elements " ^
-			  "in coinductive types")
+			  "in coinductiv-> goal
+e types")
 	in
 	let all = (f,cl)::others in
      	List.iter (fun (_,c) -> check_is_coind env c) all;

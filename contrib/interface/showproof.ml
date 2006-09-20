@@ -156,16 +156,16 @@ let seq_to_lnhyp sign sign' cl =
 
 let rule_is_complex r =
    match r with
-      Tactic (TacArg (Tacexp t),_) -> true  
-   |  Tactic (TacAtom (_,TacAuto _), _) -> true
-   |  Tactic (TacAtom (_,TacSymmetry _), _) -> true 
+       Nested (Tactic 
+		 (TacArg (Tacexp _)
+		 |TacAtom (_,(TacAuto _|TacSymmetry _))),_) -> true
    |_ -> false
 ;;
 
 let rule_to_ntactic r =
    let rt =
      (match r with
-       Tactic (t,_) -> t
+       Nested(Tactic t,_) -> t
      | Prim (Refine h) -> TacAtom (dummy_loc,TacExact h)
      | _ -> TacAtom (dummy_loc, TacIntroPattern [])) in
    if rule_is_complex r
@@ -234,17 +234,17 @@ let  to_nproof sigma osign pf =
               (List.map (fun x -> (to_nproof_rec sigma sign x).t_proof)
 		 spfl) in
 	  (match r with
-	    Tactic (TacAtom (_, TacAuto _),_) ->
-	      if spfl=[]
-	      then
-	      	{t_info="to_prove";
-	    	  t_goal= {newhyp=[];
-			    t_concl=concl ntree;
-			    t_full_concl=ntree.t_goal.t_full_concl;
-			    t_full_env=ntree.t_goal.t_full_env};
-		  t_proof= Proof (TacAtom (dummy_loc,TacExtend (dummy_loc,"InfoAuto",[])), [ntree])}
-	      else ntree
-	  | _ -> ntree))
+	       Nested(Tactic (TacAtom (_, TacAuto _)),_) ->
+		 if spfl=[]
+		 then
+	      	   {t_info="to_prove";
+	    	    t_goal= {newhyp=[];
+			     t_concl=concl ntree;
+			     t_full_concl=ntree.t_goal.t_full_concl;
+			     t_full_env=ntree.t_goal.t_full_env};
+		    t_proof= Proof (TacAtom (dummy_loc,TacExtend (dummy_loc,"InfoAuto",[])), [ntree])}
+		 else ntree
+	     | _ -> ntree))
       	else
 	  {t_info="to_prove";
 	    t_goal=(seq_to_lnhyp oldsign nsign cl);

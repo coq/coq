@@ -73,6 +73,9 @@ LOCALINCLUDES=-I config -I tools -I tools/coqdoc \
 
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
+OCAMLC += $(CAMLFLAGS)
+OCAMLOPT += $(CAMLFLAGS)
+
 BYTEFLAGS=$(MLINCLUDES) $(CAMLDEBUG) $(USERFLAGS)
 OPTFLAGS=$(MLINCLUDES) $(CAMLTIMEPROF) $(USERFLAGS)
 DEPFLAGS=$(LOCALINCLUDES)
@@ -162,20 +165,21 @@ PROOFS=\
   proofs/proof_trees.cmo proofs/logic.cmo \
   proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
   proofs/pfedit.cmo proofs/tactic_debug.cmo \
-  proofs/clenvtac.cmo
+  proofs/clenvtac.cmo proofs/decl_mode.cmo
 
 PARSING=\
   parsing/extend.cmo \
   parsing/pcoq.cmo parsing/egrammar.cmo parsing/g_xml.cmo \
   parsing/ppconstr.cmo parsing/printer.cmo \
-  parsing/pptactic.cmo parsing/tactic_printer.cmo \
+  parsing/pptactic.cmo parsing/ppdecl_proof.cmo parsing/tactic_printer.cmo \
   parsing/printmod.cmo parsing/prettyp.cmo parsing/search.cmo 
 
 HIGHPARSING=\
   parsing/g_constr.cmo parsing/g_vernac.cmo parsing/g_prim.cmo \
   parsing/g_proofs.cmo parsing/g_tactic.cmo parsing/g_ltac.cmo \
   parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo \
-  parsing/g_ascii_syntax.cmo parsing/g_string_syntax.cmo
+  parsing/g_ascii_syntax.cmo parsing/g_string_syntax.cmo \
+  parsing/g_decl_mode.cmo
 
 TACTICS=\
   tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
@@ -186,11 +190,12 @@ TACTICS=\
   tactics/dhyp.cmo tactics/auto.cmo \
   tactics/setoid_replace.cmo tactics/equality.cmo \
   tactics/contradiction.cmo tactics/inv.cmo tactics/leminv.cmo \
-  tactics/tacinterp.cmo tactics/autorewrite.cmo
+  tactics/tacinterp.cmo tactics/autorewrite.cmo \
+  tactics/decl_interp.cmo tactics/decl_proof_instr.cmo
 
 TOPLEVEL=\
   toplevel/himsg.cmo toplevel/cerrors.cmo toplevel/class.cmo \
-  toplevel/vernacexpr.cmo  toplevel/metasyntax.cmo \
+  toplevel/vernacexpr.cmo toplevel/metasyntax.cmo \
   toplevel/command.cmo toplevel/record.cmo \
   parsing/ppvernac.cmo \
   toplevel/vernacinterp.cmo toplevel/mltop.cmo \
@@ -1398,7 +1403,7 @@ GRAMMARNEEDEDCMO=\
   proofs/tacexpr.cmo \
   parsing/lexer.cmo parsing/extend.cmo \
   toplevel/vernacexpr.cmo parsing/pcoq.cmo parsing/q_util.cmo \
-  parsing/q_coqast.cmo
+  parsing/q_coqast.cmo 
 
 CAMLP4EXTENSIONSCMO=\
   parsing/argextend.cmo parsing/tacextend.cmo parsing/vernacextend.cmo 
@@ -1438,9 +1443,12 @@ PRINTERSCMO=\
   interp/constrextern.cmo interp/syntax_def.cmo interp/constrintern.cmo	\
   proofs/proof_trees.cmo proofs/logic.cmo proofs/refiner.cmo \
   proofs/tacexpr.cmo \
-  proofs/evar_refiner.cmo proofs/pfedit.cmo proofs/tactic_debug.cmo	\
+  proofs/evar_refiner.cmo proofs/pfedit.cmo proofs/tactic_debug.cmo \
+  proofs/decl_mode.cmo \
   parsing/ppconstr.cmo parsing/extend.cmo parsing/pcoq.cmo \
-  parsing/printer.cmo parsing/pptactic.cmo parsing/tactic_printer.cmo \
+  parsing/printer.cmo parsing/pptactic.cmo \
+  parsing/ppdecl_proof.cmo \
+  parsing/tactic_printer.cmo \
   parsing/egrammar.cmo toplevel/himsg.cmo \
   toplevel/cerrors.cmo toplevel/vernacexpr.cmo toplevel/vernacinterp.cmo \
   dev/top_printers.cmo
@@ -1468,7 +1476,9 @@ ML4FILES +=parsing/g_minicoq.ml4 \
 	   parsing/g_xml.ml4 parsing/g_constr.ml4 \
 	   parsing/g_tactic.ml4 parsing/g_ltac.ml4 \
 	   parsing/argextend.ml4 parsing/tacextend.ml4 \
-	   parsing/vernacextend.ml4 parsing/q_constr.ml4
+	   parsing/vernacextend.ml4 parsing/q_constr.ml4 \
+	   parsing/g_decl_mode.ml4
+
 
 # beforedepend:: $(GRAMMARCMO)
 

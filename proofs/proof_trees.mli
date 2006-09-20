@@ -21,7 +21,7 @@ open Proof_type
 (* This module declares readable constraints, and a few utilities on
    constraints and proof trees *)
 
-val mk_goal : named_context_val -> constr -> goal
+val mk_goal : named_context_val -> constr -> Dyn.t option -> goal
 
 val rule_of_proof     : proof_tree -> rule
 val ref_of_proof      : proof_tree -> (rule * proof_tree list)
@@ -36,6 +36,8 @@ val is_tactic_proof   : proof_tree -> bool
 val pf_lookup_name_as_renamed  : env -> constr -> identifier -> int option
 val pf_lookup_index_as_renamed : env -> constr -> int -> int option
 
+val is_proof_instr : rule -> bool
+val is_focussing_command : rule -> bool
 
 (*s Pretty printing functions. *)
 

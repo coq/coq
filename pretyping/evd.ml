@@ -30,7 +30,8 @@ type evar_body =
 type evar_info = {
   evar_concl : constr;
   evar_hyps : named_context_val;
-  evar_body : evar_body}
+  evar_body : evar_body;
+  evar_extra : Dyn.t option}
 
 let evar_context evi = named_context_of_val evi.evar_hyps
 
@@ -64,9 +65,8 @@ let define evd ev body =
     try find evd ev
     with Not_found -> error "Evd.define: cannot define undeclared evar" in
   let newinfo =
-    { evar_concl = oldinfo.evar_concl;
-      evar_hyps = oldinfo.evar_hyps;
-      evar_body = Evar_defined body} in
+    { oldinfo with
+      evar_body = Evar_defined body } in
   match oldinfo.evar_body with
     | Evar_empty -> Evarmap.add ev newinfo evd
     | _ -> anomaly "Evd.define: cannot define an isevar twice"
@@ -393,7 +393,10 @@ let evar_define sp body isevars =
 let evar_declare hyps evn ty ?(src=(dummy_loc,InternalHole)) evd =
   { evd with
     evars = add evd.evars evn
-      {evar_hyps=hyps; evar_concl=ty; evar_body=Evar_empty};
+      {evar_hyps=hyps; 
+       evar_concl=ty; 
+       evar_body=Evar_empty; 
+       evar_extra=None};
     history = (evn,src)::evd.history }
 
 let is_defined_evar isevars (n,_) = is_defined isevars.evars n

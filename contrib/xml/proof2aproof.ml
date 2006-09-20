@@ -63,21 +63,24 @@ let nf_evar sigma ~preserve =
 (* Warning: statuses, goals, prim_rules and tactic_exprs are not unshared! *)
 let rec unshare_proof_tree =
  let module PT = Proof_type in
-  function {PT.open_subgoals = status ; PT.goal = goal ; PT.ref = ref} ->
+  function {PT.open_subgoals = status ; 
+	    PT.goal = goal ; 
+	    PT.ref = ref} ->
    let unshared_ref =
     match ref with
        None -> None
      | Some (rule,pfs) ->
         let unshared_rule =
          match rule with
-            PT.Prim prim -> PT.Prim prim
-          | PT.Change_evars -> PT.Change_evars
-          | PT.Tactic (tactic_expr, pf) ->
-             PT.Tactic (tactic_expr, unshare_proof_tree pf)
-        in
+             PT.Nested (cmpd, pf) ->
+               PT.Nested (cmpd, unshare_proof_tree pf)
+	   | other -> other
+	in
          Some (unshared_rule, List.map unshare_proof_tree pfs)
    in
-    {PT.open_subgoals = status ; PT.goal = goal ; PT.ref = unshared_ref}
+    {PT.open_subgoals = status ; 
+     PT.goal = goal ; 
+     PT.ref = unshared_ref}
 ;;
 
 module ProofTreeHash =
@@ -103,7 +106,7 @@ let extract_open_proof sigma pf =
        {PT.ref=Some(PT.Prim _,_)} as pf ->
         L.prim_extractor proof_extractor vl pf
 	  
-     | {PT.ref=Some(PT.Tactic (_,hidden_proof),spfl)} ->
+     | {PT.ref=Some(PT.Nested (_,hidden_proof),spfl)} ->
 	 let sgl,v = Refiner.frontier hidden_proof in
 	 let flat_proof = v spfl in
          ProofTreeHash.add proof_tree_to_flattened_proof_tree node flat_proof ;

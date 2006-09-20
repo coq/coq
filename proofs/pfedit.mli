@@ -172,8 +172,12 @@ val make_focus : int -> unit
 val focus : unit -> int
 val focused_goal : unit -> int
 val subtree_solved : unit -> bool
+val tree_solved : unit -> bool
+val top_tree_solved : unit -> bool
 
 val reset_top_of_tree : unit -> unit
+val reset_top_of_script : unit -> unit
+
 val traverse : int -> unit
 val traverse_nth_goal : int -> unit
 val traverse_next_unproven : unit -> unit

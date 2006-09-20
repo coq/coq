@@ -16,6 +16,7 @@ open Libnames
 open Term
 open Util
 open Tacexpr
+open Decl_expr
 open Rawterm
 open Genarg
 open Nametab
@@ -52,8 +53,14 @@ type proof_tree = {
 
 and rule =
   | Prim of prim_rule
-  | Tactic of tactic_expr * proof_tree
+  | Nested of compound_rule * proof_tree 
+  | Decl_proof of bool
+  | Daimon
   | Change_evars
+
+and compound_rule=  
+  | Tactic of tactic_expr
+  | Proof_instr of bool*proof_instr (* the boolean is for focus restrictions *)
 
 and goal = evar_info
 

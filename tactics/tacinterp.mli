@@ -84,6 +84,9 @@ val interp_genarg :
 val intern_genarg :
   glob_sign -> raw_generic_argument -> glob_generic_argument
 
+val intern_tactic : 
+  glob_sign -> raw_tactic_expr -> glob_tactic_expr
+
 val intern_constr :
   glob_sign -> constr_expr -> rawconstr_and_expr
 

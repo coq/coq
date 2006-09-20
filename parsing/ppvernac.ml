@@ -410,6 +410,7 @@ let rec pr_vernac = function
 	| ShowProofNames -> str"Show Conjectures"
 	| ShowIntros b -> str"Show " ++ (if b then str"Intros" else str"Intro")
 	| ShowMatch id -> str"Show Match " ++ pr_lident id
+	| ShowThesis -> str "Show Thesis"
 	| ExplainProof l -> str"Explain Proof" ++ spc() ++ prlist_with_sep sep int l
 	| ExplainTree l -> str"Explain Proof Tree" ++ spc() ++ prlist_with_sep sep int l 
       in pr_showable s
@@ -680,6 +681,14 @@ let rec pr_vernac = function
 
   | VernacSolveExistential (i,c) ->
       str"Existential " ++ int i ++ pr_lconstrarg c
+
+  (* MMode *)
+ 
+  | VernacProofInstr instr -> anomaly "Not implemented"
+  | VernacDeclProof -> str "proof" 
+  | VernacReturn -> str "return"
+
+  (* /MMode *) 
 
   (* Auxiliary file and library management *)
   | VernacRequireFrom (exp,spe,f) -> hov 2

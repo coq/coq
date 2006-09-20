@@ -303,7 +303,6 @@ let rtauto_tac gls=
     end in
   let build_start_time=System.get_time () in
   let _ = step_count := 0; node_count := 0 in
-  let nhyps = List.length hyps in
   let main = mkApp (force node_count l_Reflect,
 		    [|build_env gamma;
 		      build_form formula;

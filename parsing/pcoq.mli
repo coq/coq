@@ -196,6 +196,13 @@ module Vernac_ :
     val command : vernac_expr Gram.Entry.e
     val syntax : vernac_expr Gram.Entry.e
     val vernac : vernac_expr Gram.Entry.e
+    
+  (* MMode *)
+
+    val proof_instr : Decl_expr.raw_proof_instr Gram.Entry.e
+
+  (*/ MMode *)
+
     val vernac_eoi : vernac_expr Gram.Entry.e
   end
 

@@ -42,6 +42,7 @@ parsing/argextend.ml:
 parsing/tacextend.ml: 
 parsing/vernacextend.ml: 
 parsing/q_constr.ml: 
+parsing/g_decl_mode.ml: parsing/grammar.cma
 toplevel/mltop.ml: 
 lib/pp.ml: 
 lib/compat.ml: 

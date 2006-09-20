@@ -1641,6 +1641,15 @@ let rec xlate_vernac =
 	CT_solve (CT_int n, xlate_tactic tac,
 		  if b then CT_dotdot
                   else CT_coerce_NONE_to_DOTDOT_OPT CT_none)
+
+(* MMode *)
+
+    | (VernacDeclProof | VernacReturn | VernacProofInstr _) -> 
+	anomaly "No MMode in CTcoq"
+
+
+(* /MMode *)
+
     | VernacFocus nopt -> CT_focus (xlate_int_opt nopt)
     | VernacUnfocus -> CT_unfocus
     |VernacExtend("Extraction", [f;l]) ->
@@ -1784,6 +1793,7 @@ let rec xlate_vernac =
   | VernacShow ShowExistentials -> CT_show_existentials
   | VernacShow ShowScript -> CT_show_script
   | VernacShow(ShowMatch _) -> xlate_error "TODO: VernacShow(ShowMatch _)"
+  | VernacShow(ShowThesis) -> xlate_error "TODO: VernacShow(ShowThesis _)"
   | VernacGo arg -> CT_go (xlate_locn arg)
   | VernacShow (ExplainProof l) -> CT_explain_proof (nums_to_int_list l)
   | VernacShow (ExplainTree l) ->

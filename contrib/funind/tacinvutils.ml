@@ -72,10 +72,11 @@ let  rec mkevarmap_from_listex lex =
 		  let _ = prstr ("evar n. " ^ string_of_int ex ^ " ") in
 		  let _ = prstr "OF TYPE: " in
 		  let _ = prconstr typ in*)
-		  let info ={
+		  let info = {
 			 evar_concl = typ;
 			 evar_hyps = empty_named_context_val;
-			 evar_body = Evar_empty} in
+			 evar_body = Evar_empty;
+		         evar_extra = None} in
 		  Evd.add (mkevarmap_from_listex lex') ex info
 
 let mkEq typ c1 c2 = 
