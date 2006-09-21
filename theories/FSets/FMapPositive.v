@@ -734,7 +734,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   Proof.
   intros.
   generalize (xelements_complete _ _ _ _ H); clear H; intros.
-  revert H; revert v; revert m; revert q; revert p0.
+  revert p0 q m v H.
   induction p; destruct p0; simpl; intros; eauto; try discriminate.
   Qed.
 
@@ -743,7 +743,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   Proof.
   intros.
   generalize (xelements_complete _ _ _ _ H); clear H; intros.
-  revert H; revert v; revert m; revert q; revert p0.
+  revert p0 q m v H.
   induction p; destruct p0; simpl; intros; eauto; try discriminate.
   Qed.
 

@@ -15,7 +15,16 @@ Require Import Logic.
 
 (* A shorter name for generalize + clear, can be seen as an anti-intro *)
 
-Ltac revert H := generalize H; clear H.
+Tactic Notation "revert" constr(a) := generalize a; clear a.
+Tactic Notation "revert" constr(a) constr(b) := generalize a b; clear a b.
+Tactic Notation "revert" constr(a) constr(b) constr(c) := generalize a b c; clear a b c.
+Tactic Notation "revert" constr(a) constr(b) constr(c) constr(d) := generalize a b c d; clear a b c d.
+Tactic Notation "revert" constr(a) constr(b) constr(c) constr(d) constr(e):= generalize a b c d e; clear a b c d e.
+Tactic Notation "revert" constr(a) constr(b) constr(c) constr(d) constr(e) constr(f):= generalize a b c d e f; clear a b c d e f.
+Tactic Notation "revert" constr(a) constr(b) constr(c) constr(d) constr(e) constr(f) constr(g) := generalize a b c d e f g; clear a b c d e f g.
+Tactic Notation "revert" constr(a) constr(b) constr(c) constr(d) constr(e) constr(f) constr(g) constr(h) := generalize a b c d e f g h; clear a b c d e f g h.
+Tactic Notation "revert" constr(a) constr(b) constr(c) constr(d) constr(e) constr(f) constr(g) constr(h) constr(i):= generalize a b c d e f g h i; clear a b c d e f g h i.
+Tactic Notation "revert" constr(a) constr(b) constr(c) constr(d) constr(e) constr(f) constr(g) constr(h) constr(i) constr(j):= generalize a b c d e f g h i j; clear a b c d e f g h i j.
 
 (* to contradict an hypothesis without copying its type. *)
 
