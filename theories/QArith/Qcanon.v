@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 Require Import QArith.
+Require Import Znumtheory.
 Require Import Eqdep_dec.
 
 (** [Qc] : A canonical representation of rational numbers. 

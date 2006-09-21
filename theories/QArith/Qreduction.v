@@ -11,7 +11,7 @@
 (** * Normalisation functions for rational numbers. *)
 
 Require Export QArith_base.
-Require Export Znumtheory.
+Require Import Znumtheory.
 
 (** First, a function that (tries to) build a positive back from a Z. *)
 
@@ -60,6 +60,7 @@ assert (0 < dd).
   rewrite <- H4; compute; auto.
 rewrite Z2P_correct; auto.
 ring.
+Close Scope Z_scope.
 Qed.
 
 Lemma Qred_complete : forall p q,  p==q -> Qred p = Qred q.
@@ -132,7 +133,7 @@ intro H2; elim (Zmult_integral _ _ H2); auto.
 replace (g'*g*(aa*dd)) with ((g*aa)*(g'*dd)); [|ring].
 replace (g'*g*(bb*cc)) with ((g'*cc)*(g*bb)); [|ring].
 rewrite <- Hg3; rewrite <- Hg4; rewrite <- Hg'3; rewrite <- Hg'4; auto.
-Open Scope Q_scope.
+Close Scope Z_scope.
 Qed.
 
 Add Morphism Qred : Qred_comp. 

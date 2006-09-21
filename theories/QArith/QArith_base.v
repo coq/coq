@@ -173,7 +173,7 @@ rewrite H.
 replace ('s2 * ('q2 * r1)) with (r1 * 's2 * 'q2) by ring.
 rewrite H0.
 ring.
-Open Scope Q_scope.
+Close Scope Z_scope.
 Qed.
 
 Add Morphism Qopp : Qopp_comp.
@@ -200,7 +200,7 @@ rewrite <- H.
 replace ('s2 * ('q2 * r1)) with (r1 * 's2 * 'q2) by ring.
 rewrite H0.
 ring.
-Open Scope Q_scope.
+Close Scope Z_scope.
 Qed.
 
 Add Morphism Qinv : Qinv_comp.
@@ -218,7 +218,7 @@ case q1; simpl; intros; try discriminate.
 rewrite (Pmult_comm p2 p); rewrite (Pmult_comm q2 p0); auto.
 case q1; simpl; intros; try discriminate.
 rewrite (Pmult_comm p2 p); rewrite (Pmult_comm q2 p0); auto.
-Open Scope Q_scope.
+Close Scope Z_scope.
 Qed.
 
 Add Morphism Qdiv : Qdiv_comp.
@@ -246,7 +246,7 @@ rewrite <- H0.
 replace (p1 * 'q2 * 's2 * 'r2) with ('q2 * 's2 * (p1 * 'r2)) by ring.
 replace (r1 * 's2 * 'q2 * 'p2) with ('q2 * 's2 * (r1 * 'p2)) by ring.
 auto with zarith.
-Open Scope Q_scope.
+Close Scope Z_scope.
 Qed.
 
 Add Morphism Qlt with signature Qeq ==> Qeq ==> iff as  Qlt_comp.
@@ -269,7 +269,7 @@ replace (p1 * 'q2 * 's2 * 'r2) with ('q2 * 's2 * (p1 * 'r2)) by ring.
 replace (r1 * 's2 * 'q2 * 'p2) with ('q2 * 's2 * (r1 * 'p2)) by ring. 
 apply Zlt_gt.
 apply Zmult_gt_0_lt_compat_l; auto with zarith.
-Open Scope Q_scope.
+Close Scope Z_scope.
 Qed.
 
 
@@ -455,7 +455,7 @@ apply Zmult_le_compat_r; auto with zarith.
 replace (y1 * 'x2 * 'z2) with (y1 * 'z2 * 'x2) by ring.
 replace (z1 * 'x2 * 'y2) with (z1 * 'y2 * 'x2) by ring.
 apply Zmult_le_compat_r; auto with zarith. 
-Open Scope Q_scope.
+Close Scope Z_scope.
 Qed.
 
 Lemma Qlt_not_eq : forall x y, x<y -> ~ x==y.
@@ -483,7 +483,7 @@ replace (z1 * 'x2 * 'y2) with (z1 * 'y2 * 'x2) by ring.
 apply Zmult_gt_compat_r; auto with zarith. 
 replace (x1 * 'z2 * 'y2) with (x1 * 'y2 * 'z2) by ring.
 apply Zmult_le_compat_r; auto with zarith. 
-Open Scope Q_scope.
+Close Scope Z_scope.
 Qed.
 
 Lemma Qlt_le_trans : forall x y z, x<y -> y<=z -> x<z.
@@ -499,7 +499,7 @@ replace (z1 * 'x2 * 'y2) with (z1 * 'y2 * 'x2) by ring.
 apply Zmult_le_compat_r; auto with zarith. 
 replace (x1 * 'z2 * 'y2) with (x1 * 'y2 * 'z2) by ring.
 apply Zmult_gt_compat_r; auto with zarith. 
-Open Scope Q_scope.
+Close Scope Z_scope.
 Qed.
 
 Lemma Qlt_trans : forall x y z, x<y -> y<z -> x<z.
@@ -587,7 +587,7 @@ apply Zmult_le_compat_r; auto with zarith.
 replace ('t2 * ('y2 * ('z2 * x1))) with (x1 * 'y2 * ('z2 * 't2)) by ring.
 replace ('z2 * ('x2 * ('t2 * y1))) with (y1 * 'x2 * ('z2 * 't2)) by ring.
 apply Zmult_le_compat_r; auto with zarith.
-Open Scope Q_scope.
+Close Scope Z_scope.
 Qed.
 
 Lemma Qmult_le_compat_r : forall x y z, x <= y -> 0 <= z -> x*z <= y*z.
@@ -598,7 +598,7 @@ intros; simpl_mult.
 replace (a1*c1*('b2*'c2)) with ((a1*'b2)*(c1*'c2)) by ring.
 replace (b1*c1*('a2*'c2)) with ((b1*'a2)*(c1*'c2)) by ring.
 apply Zmult_le_compat_r; auto with zarith.
-Open Scope Q_scope.
+Close Scope Z_scope.
 Qed.
 
 Lemma Qmult_lt_0_le_reg_r : forall x y z, 0 <  z  -> x*z <= y*z -> x <= y.
@@ -609,7 +609,7 @@ simpl_mult.
 replace (a1*c1*('b2*'c2)) with ((a1*'b2)*(c1*'c2)) by ring.
 replace (b1*c1*('a2*'c2)) with ((b1*'a2)*(c1*'c2)) by ring.
 intros; apply Zmult_le_reg_r with (c1*'c2); auto with zarith.
-Open Scope Q_scope.
+Close Scope Z_scope.
 Qed.
 
 Lemma Qmult_lt_compat_r : forall x y z, 0 < z  -> x < y -> x*z < y*z.
@@ -623,7 +623,7 @@ apply Zmult_lt_compat_r; auto with zarith.
 apply Zmult_lt_0_compat.
 omega.
 compute; auto.
-Open Scope Q_scope.
+Close Scope Z_scope.
 Qed.
 
 (** Rational to the n-th power *)
