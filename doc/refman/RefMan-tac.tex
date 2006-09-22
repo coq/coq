@@ -756,7 +756,8 @@ performs the conversion in hypotheses $H_1\ldots H_n$.
 \dots\ \flag$_n$} and {\tt compute}
 \tacindex{cbv}
 \tacindex{lazy}
-\tacindex{compute}}
+\tacindex{compute}
+\tacindex{vm\_compute}}
 \label{vmcompute}
 
 These parameterized reduction tactics apply to any goal and perform
@@ -2675,70 +2676,29 @@ integers. This tactic must be loaded by the command \texttt{Require Import
   Omega}. See the additional documentation about \texttt{omega}
 (chapter~\ref{OmegaChapter}).
 
-\subsection{\tt ring \term$_1$ \dots\ \term$_n$
+\subsection{{\tt ring} and {\tt ring\_simplify \term$_1$ \dots\ \term$_n$}
 \tacindex{ring}
-\comindex{Add Ring}
-\comindex{Add Semi Ring}}
+\tacindex{ring\_simplify}
+\comindex{Add Ring}}
 
-This tactic, written by Samuel Boutin and Patrick Loiseleur, applies
-associative commutative rewriting on every ring.  The tactic must be
-loaded by \texttt{Require Import Ring}. The ring must be declared in
-the \texttt{Add Ring} command (see \ref{ring}). The ring of booleans
-is predefined; if one wants to use the tactic on \texttt{nat} one must
-first require the module \texttt{ArithRing}; for \texttt{Z}, do
-\texttt{Require Import ZArithRing}; for \texttt{N}, do \texttt{Require
-Import NArithRing}.
+The {\tt ring} tactic solves equations upon polynomial expressions of
+a ring (or semi-ring) structure. It proceeds by normalizing both hand
+sides of the equation (w.r.t. associativity, commutativity and
+distributivity, constant propagation) and comparing syntactically the
+results.
 
-The terms \term$_1$, \dots, \term$_n$ must be subterms of the goal
-conclusion. The tactic \texttt{ring} normalizes these terms
-w.r.t. associativity and commutativity and replace them by their
-normal form.
+{\tt ring\_simplify} applies the normalization procedure described
+above to the terms given. The tactic then replaces all occurrences of
+the terms given in the conclusion of the goal by their normal
+forms. If no term is given, then the conclusion should be an equation
+and both hand sides are normalized.
 
-\begin{Variants}
-\item \texttt{ring} When the goal is an equality $t_1=t_2$, it
-  acts like \texttt{ring} $t_1$ $t_2$ and then simplifies or solves
-  the equality.
-
-\item \texttt{ring\_nat} is a tactic macro for \texttt{repeat rewrite
-    S\_to\_plus\_one; ring}. The theorem \texttt{S\_to\_plus\_one} is a
-  proof that \texttt{forall (n:nat), S n = plus (S O) n}.
-
-\end{Variants}
-
-\Example
-\begin{coq_eval}
-Reset Initial.
-Require Import ZArith.
-Open Scope Z_scope.
-\end{coq_eval}
-\begin{coq_example}
-Require Import ZArithRing.
-Goal forall a b c:Z,
-  (a + b + c) * (a + b + c) =
-  a * a + b * b + c * c + 2 * a * b + 2 * a * c + 2 * b * c.
-\end{coq_example}
-\begin{coq_example}
-intros; ring.
-\end{coq_example}
-\begin{coq_eval}
-Reset Initial.
-\end{coq_eval}
-
-You can have a look at the files \texttt{Ring.v},
-\texttt{ArithRing.v}, \texttt{ZArithRing.v} to see examples of the
-\texttt{Add Ring} command.
-
-\SeeAlso Chapter~\ref{ring} for more detailed explanations about this tactic.
+See chapter~\ref{ring} for more information on the tactic and how to
+declare new ring structures.
 
 \subsection{\tt field
-\tacindex{field}}
-
-This tactic written by David~Delahaye and Micaela~Mayero solves equalities
-using commutative field theory. Denominators have to be non equal to zero and,
-as this is not decidable in general, this tactic may generate side conditions
-requiring some expressions to be non equal to zero. This tactic must be loaded
-by {\tt Require Import Field}. Field theories are declared (as for {\tt ring}) with
-the {\tt Add Field} command.
+\tacindex{field}
+\comindex{Add Field}}
 
 \Example
 \begin{coq_example*}
@@ -2750,20 +2710,35 @@ Goal forall x y:R,
 \end{coq_example*}
 
 \begin{coq_example}
-intros; field.
+intros; legacy field.
 \end{coq_example}
 
 \begin{coq_eval}
 Reset Initial.
 \end{coq_eval}
 
-\subsection{\tt Add Field
-\comindex{Add Field}}
+\SeeAlso file {\tt theories/Reals/Rbase.v} for an example of instantiation,\\
+\phantom{\SeeAlso}theory {\tt theories/Reals} for many examples of use of {\tt
+field}.
+
+\subsection{\tt legacy field
+\tacindex{legacy field}}
+
+This tactic written by David~Delahaye and Micaela~Mayero solves equalities
+using commutative field theory. Denominators have to be non equal to zero and,
+as this is not decidable in general, this tactic may generate side conditions
+requiring some expressions to be non equal to zero. This tactic must be loaded
+by {\tt Require Import LegacyField}. Field theories are declared (as for
+{\tt legacy ring}) with
+the {\tt Add Legacy Field} command.
+
+\subsection{\tt Add Legacy Field
+\comindex{Add Legacy Field}}
 
 This vernacular command adds a commutative field theory to the database for the
 tactic {\tt field}. You must provide this theory as follows:
 \begin{flushleft}
-{\tt Add Field {\it A} {\it Aplus} {\it Amult} {\it Aone} {\it Azero} {\it
+{\tt Add Legacy Field {\it A} {\it Aplus} {\it Amult} {\it Aone} {\it Azero} {\it
 Aopp} {\it Aeq} {\it Ainv} {\it Rth} {\it Tinvl}}
 \end{flushleft}
 where {\tt {\it A}} is a term of type {\tt Type}, {\tt {\it Aplus}} is
@@ -2786,28 +2761,24 @@ Require Import Ring} if you want to call the {\tt ring} tactic.
 
 \begin{Variants}
 
-\item {\tt Add Field {\it A} {\it Aplus} {\it Amult} {\it Aone} {\it Azero}
+\item {\tt Add Legacy Field {\it A} {\it Aplus} {\it Amult} {\it Aone} {\it Azero}
 {\it Aopp} {\it Aeq} {\it Ainv} {\it Rth} {\it Tinvl}}\\
 {\tt \phantom{Add Field }with minus:={\it Aminus}}
 
 Adds also the term {\it Aminus} which must be a constant expressed by
 means of {\it Aopp}.
 
-\item {\tt Add Field {\it A} {\it Aplus} {\it Amult} {\it Aone} {\it Azero}
+\item {\tt Add Legacy Field {\it A} {\it Aplus} {\it Amult} {\it Aone} {\it Azero}
 {\it Aopp} {\it Aeq} {\it Ainv} {\it Rth} {\it Tinvl}}\\
-{\tt \phantom{Add Field }with div:={\it Adiv}}
+{\tt \phantom{Add Legacy Field }with div:={\it Adiv}}
 
 Adds also the term {\it Adiv} which must be a constant expressed by
 means of {\it Ainv}.
 
 \end{Variants}
 
-\SeeAlso file {\tt theories/Reals/Rbase.v} for an example of instantiation,\\
-\phantom{\SeeAlso}theory {\tt theories/Reals} for many examples of use of {\tt
-field}.
-
 \SeeAlso \cite{DelMay01} for more details regarding the implementation of {\tt
-field}.
+legacy field}.
 
 \subsection{\tt fourier
 \tacindex{fourier}}
