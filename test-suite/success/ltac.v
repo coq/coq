@@ -153,3 +153,18 @@ Ltac afi tac := intros; tac.
 Goal 1 = 2.
 afi ltac:auto.
 
+(* Tactic Notation avec listes *)
+
+Tactic Notation "pat" hyp(id) "occs" integer_list(l) := pattern id at l.
+
+Goal forall x, x=0 -> x=x.
+intro x.
+pat x occs 1 3.
+Abort.
+
+Tactic Notation "revert" ne_hyp_list(l) := generalize l; clear l.
+
+Goal forall a b c, a=0 -> b=c+a.
+intros.
+revert a b c H.
+Abort.
