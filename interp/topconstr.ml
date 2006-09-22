@@ -411,7 +411,8 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
   | RLetIn (_,na1,t1,b1), ALetIn (na2,t2,b2) ->
      match_binders alp metas na1 na2 (match_ alp metas sigma t1 t2) b1 b2
   | RCases (_,rtno1,tml1,eqnl1), ACases (rtno2,tml2,eqnl2) 
-      when List.length tml1 = List.length tml2 ->
+      when List.length tml1 = List.length tml2
+	 & List.length eqnl1 = List.length eqnl2 ->
       let rtno1' = abstract_return_type_context_rawconstr tml1 rtno1 in
       let rtno2' = abstract_return_type_context_aconstr tml2 rtno2 in
       let sigma = option_fold_left2 (match_ alp metas) sigma rtno1' rtno2' in
