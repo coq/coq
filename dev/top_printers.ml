@@ -145,9 +145,9 @@ let constr_display csr =
   | Fix ((t,i),(lna,tl,bl)) ->
       "Fix(([|"^(Array.fold_right (fun x i -> (string_of_int x)^(if not(i="")
         then (";"^i) else "")) t "")^"|],"^(string_of_int i)^"),"
-      ^(array_display tl)^","
+      ^(array_display tl)^",[|"
       ^(Array.fold_right (fun x i -> (name_display x)^(if not(i="")
-        then (";"^i) else "")) lna "")^","
+        then (";"^i) else "")) lna "")^"|],"
       ^(array_display bl)^")"
   | CoFix(i,(lna,tl,bl)) ->
       "CoFix("^(string_of_int i)^"),"
