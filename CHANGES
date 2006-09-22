@@ -11,6 +11,7 @@ Changes from V8.1beta to V8.1
   before applying irreversible unification heuristics (allow e.g. to
   infer the predicate in "(exist _ 0 (refl_equal 0) : {n:nat | n=0 })")
 - Support for "where" clause in cofixpoint definitions
+- Support for argument lists of arbitrary length in Tactic Notation
 
 Changes from V8.0 to V8.1beta
 =============================

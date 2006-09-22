@@ -81,6 +81,7 @@ type value =
                         (* later, as in "tac" in "Intro H; tac" *)
   | VConstr of constr   (* includes idents known to be bound and references *)
   | VConstr_context of constr
+  | VList of value list
   | VRec of value ref
 
 let locate_tactic_call loc = function
@@ -118,13 +119,16 @@ let constr_of_VConstr_context = function
     errorlabstrm "constr_of_VConstr_context" (str "not a context variable")
 
 (* Displays a value *)
-let pr_value env = function
+let rec pr_value env = function
   | VVoid -> str "()"
   | VInteger n -> int n
   | VIntroPattern ipat -> pr_intro_pattern ipat
   | VConstr c | VConstr_context c ->
       (match env with Some env -> pr_lconstr_env env c | _ -> str "a term")
   | (VTactic _ | VRTactic _ | VFun _ | VRec _) -> str "a tactic"
+  | VList [] -> str "an empty list"
+  | VList (a::_) ->
+      str "a list (first element is " ++ pr_value env a ++ str")"
 
 (* Transforms a named_context into a (string * constr) list *)
 let make_hyps = List.map (fun (id,_,typ) -> (id, typ))
@@ -533,7 +537,7 @@ let internalise_tacarg ch = G_xml.parse_tactic_arg ch
 let extern_tacarg ch env sigma = function
   | VConstr c -> !print_xml_term ch env sigma c
   | VTactic _ | VRTactic _ | VFun _ | VVoid | VInteger _ | VConstr_context _
-  | VIntroPattern _  | VRec _ ->
+  | VIntroPattern _  | VRec _ | VList _ ->
       error "Only externing of terms is implemented"
 
 let extern_request ch req gl la =
@@ -1051,6 +1055,19 @@ let interp_int_or_var ist = function
   | ArgVar locid -> interp_int ist locid
   | ArgArg n -> n
 
+let int_or_var_list_of_VList = function
+  | VList l -> List.map (fun n -> ArgArg (coerce_to_int n)) l
+  | _ -> raise Not_found
+
+let interp_int_or_var_as_list ist = function
+  | ArgVar (_,id as locid) -> 
+      (try int_or_var_list_of_VList (List.assoc id ist.lfun)
+       with Not_found | CannotCoerceTo _ -> [ArgArg (interp_int ist locid)])
+  | ArgArg n as x -> [x]
+
+let interp_int_or_var_list ist l =
+  List.flatten (List.map (interp_int_or_var_as_list ist) l)
+
 let constr_of_value env = function
   | VConstr csr -> csr
   | VIntroPattern (IntroIdentifier id) -> constr_of_id env id
@@ -1070,6 +1087,17 @@ let interp_hyp ist gl (loc,id as locid) =
   (* Then look if bound in the proof context at calling time *)
   if is_variable env id then id
   else user_err_loc (loc,"eval_variable",pr_id id ++ str " not found")
+
+let hyp_list_of_VList env = function
+  | VList l -> List.map (coerce_to_hyp env) l
+  | _ -> raise Not_found
+
+let interp_hyp_list_as_list ist gl (loc,id as x) =
+  try hyp_list_of_VList (pf_env gl) (List.assoc id ist.lfun)
+  with Not_found | CannotCoerceTo _ -> [interp_hyp ist gl x]
+
+let interp_hyp_list ist gl l =
+  List.flatten (List.map (interp_hyp_list_as_list ist gl) l)
 
 let interp_clause_pattern ist gl (l,occl) =
   let rec check acc = function
@@ -1132,8 +1160,7 @@ let interp_evaluable ist env = function
 
 (* Interprets an hypothesis name *)
 let interp_hyp_location ist gl ((occs,id),hl) =
-  ((List.map (fun n -> ArgArg (interp_int_or_var ist n)) occs,
-    interp_hyp ist gl id),hl)
+  ((interp_int_or_var_list ist occs,interp_hyp ist gl id),hl)
 
 let interp_clause ist gl { onhyps=ol; onconcl=b; concl_occs=occs } =
   { onhyps=option_map(List.map (interp_hyp_location ist gl)) ol;
@@ -1260,6 +1287,20 @@ let pf_interp_open_constr casted ist gl cc =
 let pf_interp_constr ist gl =
   interp_constr ist (project gl) (pf_env gl)
 
+let constr_list_of_VList env = function
+  | VList l -> List.map (constr_of_value env) l
+  | _ -> raise Not_found
+      
+let pf_interp_constr_list_as_list ist gl (c,_ as x) =
+  match c with
+    | RVar (_,id) ->
+        (try constr_list_of_VList (pf_env gl) (List.assoc id ist.lfun)
+        with Not_found -> [interp_constr ist (project gl) (pf_env gl) x])
+    | _ -> [interp_constr ist (project gl) (pf_env gl) x]
+
+let pf_interp_constr_list ist gl l =
+  List.flatten (List.map (pf_interp_constr_list_as_list ist gl) l)
+
 (* Interprets a type expression *)
 let pf_interp_type ist gl =
   interp_type ist (project gl) (pf_env gl)
@@ -1272,8 +1313,7 @@ let interp_flag ist env red =
   { red with rConst = List.map (interp_evaluable ist env) red.rConst }
 
 let interp_pattern ist sigma env (l,c) = 
-  (List.map (fun n -> ArgArg (interp_int_or_var ist n)) l,
-   interp_constr ist sigma env c)
+  (interp_int_or_var_list ist l, interp_constr ist sigma env c)
 
 let pf_interp_pattern ist gl = interp_pattern ist (project gl) (pf_env gl)
 
@@ -1346,6 +1386,7 @@ let message_of_value = function
   | VIntroPattern ipat -> pr_intro_pattern ipat
   | VConstr_context c | VConstr c -> pr_constr c
   | VRec _ | VTactic _ | VRTactic _ | VFun _ -> str "<tactic>"
+  | VList _ -> str "<list>"
 
 let rec interp_message ist = function
   | [] -> mt()
@@ -1414,11 +1455,15 @@ let interp_binding ist gl (loc,b,c) =
 
 let interp_bindings ist gl = function
 | NoBindings -> NoBindings
-| ImplicitBindings l -> ImplicitBindings (List.map (pf_interp_constr ist gl) l)
+| ImplicitBindings l -> ImplicitBindings (pf_interp_constr_list ist gl l)
 | ExplicitBindings l -> ExplicitBindings (List.map (interp_binding ist gl) l)
 
 let interp_constr_with_bindings ist gl (c,bl) =
   (pf_interp_constr ist gl c, interp_bindings ist gl bl)
+
+let mk_constr_value ist gl c = VConstr (pf_interp_constr ist gl c)
+let mk_hyp_value ist gl c = VConstr (mkVar (interp_hyp ist gl c))
+let mk_int_or_var_value ist c = VInteger (interp_int_or_var ist c)
 
 (* Interprets an l-tac expression into a value *)
 let rec val_interp ist gl (tac:glob_tactic_expr) =
@@ -1871,7 +1916,8 @@ and interp_ltac_constr ist gl e =
             | VConstr _ -> str "VConstr"
             | VIntroPattern _ -> str "VIntroPattern"
             | VConstr_context _ -> str "VConstrr_context"
-            | VRec _ -> str "VRec"))
+            | VRec _ -> str "VRec"
+            | VList _ -> str "VList"))
 
 (* Interprets tactic expressions : returns a "tactic" *)
 and interp_tactic ist tac gl =
@@ -1913,7 +1959,7 @@ and interp_atomic ist gl = function
       abstract_tactic (TacAssert (t,ipat,c))
         (Tactics.forward (option_map (interp_tactic ist) t)
 	  (interp_intro_pattern ist gl ipat) c)
-  | TacGeneralize cl -> h_generalize (List.map (pf_interp_constr ist gl) cl)
+  | TacGeneralize cl -> h_generalize (pf_interp_constr_list ist gl cl)
   | TacGeneralizeDep c -> h_generalize_dep (pf_interp_constr ist gl c)
   | TacLetTac (na,c,clp) ->
       let clp = interp_clause ist gl clp in
@@ -1927,11 +1973,11 @@ and interp_atomic ist gl = function
 *)
   (* Automation tactics *)
   | TacTrivial (lems,l) -> 
-      Auto.h_trivial (List.map (pf_interp_constr ist gl) lems)
+      Auto.h_trivial (pf_interp_constr_list ist gl lems)
 	(option_map (List.map (interp_hint_base ist)) l)
   | TacAuto (n,lems,l) ->
       Auto.h_auto (option_map (interp_int_or_var ist) n)
-      (List.map (pf_interp_constr ist gl) lems)
+      (pf_interp_constr_list ist gl lems)
       (option_map (List.map (interp_hint_base ist)) l)
   | TacAutoTDB n -> Dhyp.h_auto_tdb n
   | TacDestructHyp (b,id) -> Dhyp.h_destructHyp b (interp_hyp ist gl id)
@@ -1966,8 +2012,8 @@ and interp_atomic ist gl = function
   | TacLApply c -> h_lapply (pf_interp_constr ist gl c)
 
   (* Context management *)
-  | TacClear (b,l) -> h_clear b (List.map (interp_hyp ist gl) l)
-  | TacClearBody l -> h_clear_body (List.map (interp_hyp ist gl) l)
+  | TacClear (b,l) -> h_clear b (interp_hyp_list ist gl l)
+  | TacClearBody l -> h_clear_body (interp_hyp_list ist gl l)
   | TacMove (dep,id1,id2) ->
       h_move dep (interp_hyp ist gl id1) (interp_hyp ist gl id2)
   | TacRename (id1,id2) ->
@@ -2007,21 +2053,22 @@ and interp_atomic ist gl = function
   | TacInversion (NonDepInversion (k,idl,ids),hyp) ->
       Inv.inv_clause k 
         (interp_intro_pattern ist gl ids)
-        (List.map (interp_hyp ist gl) idl)
+        (interp_hyp_list ist gl idl)
         (interp_declared_or_quantified_hypothesis ist gl hyp)
   | TacInversion (InversionUsing (c,idl),hyp) ->
       Leminv.lemInv_clause (interp_declared_or_quantified_hypothesis ist gl hyp)
         (pf_interp_constr ist gl c)
-        (List.map (interp_hyp ist gl) idl)
+        (interp_hyp_list ist gl idl)
 
   (* For extensions *)
   | TacExtend (loc,opn,l) ->
       fun gl -> vernac_tactic (opn,List.map (interp_genarg ist gl) l) gl
   | TacAlias (loc,_,l,(_,body)) -> fun gl ->
     let rec f x = match genarg_tag x with
-    | IntArgType -> VInteger (out_gen globwit_int x)
-    | IntOrVarArgType -> 
-	VInteger (interp_int_or_var ist (out_gen globwit_int_or_var x))
+    | IntArgType -> 
+        VInteger (out_gen globwit_int x)
+    | IntOrVarArgType ->
+        mk_int_or_var_value ist (out_gen globwit_int_or_var x)
     | PreIdentArgType ->
 	failwith "pre-identifiers cannot be bound"
     | IntroPatternArgType ->
@@ -2031,14 +2078,14 @@ and interp_atomic ist gl = function
         VIntroPattern 
 	  (IntroIdentifier (interp_ident ist gl (out_gen globwit_ident x)))
     | VarArgType ->
-	VConstr (mkVar (interp_hyp ist gl (out_gen globwit_var x)))
+        mk_hyp_value ist gl (out_gen globwit_var x)
     | RefArgType -> 
         VConstr (constr_of_global 
           (pf_interp_reference ist gl (out_gen globwit_ref x)))
-    | SortArgType ->
-	VConstr (mkSort (interp_sort (out_gen globwit_sort x)))
+    | SortArgType -> 
+        VConstr (mkSort (interp_sort (out_gen globwit_sort x)))
     | ConstrArgType ->
-        VConstr (pf_interp_constr ist gl (out_gen globwit_constr x))
+        mk_constr_value ist gl (out_gen globwit_constr x)
     | ConstrMayEvalArgType ->
 	VConstr
           (interp_constr_may_eval ist gl (out_gen globwit_constr_may_eval x))
@@ -2046,11 +2093,36 @@ and interp_atomic ist gl = function
           (* Special treatment of tactic arguments *)
 	val_interp ist gl 
           (out_gen (globwit_tactic (out_some (tactic_genarg_level s))) x)
+    | List0ArgType ConstrArgType -> 
+        let wit = wit_list0 globwit_constr in
+        VList (List.map (mk_constr_value ist gl) (out_gen wit x))
+    | List0ArgType VarArgType -> 
+        let wit = wit_list0 globwit_var in
+        VList (List.map (mk_hyp_value ist gl) (out_gen wit x))
+    | List0ArgType IntArgType -> 
+        let wit = wit_list0 globwit_int in
+        VList (List.map (fun x -> VInteger x) (out_gen wit x))
+    | List0ArgType IntOrVarArgType -> 
+        let wit = wit_list0 globwit_int_or_var in
+        VList (List.map (mk_int_or_var_value ist) (out_gen wit x))
+    | List1ArgType ConstrArgType -> 
+        let wit = wit_list1 globwit_constr in
+        VList (List.map (mk_constr_value ist gl) (out_gen wit x))
+    | List1ArgType VarArgType -> 
+        let wit = wit_list1 globwit_var in
+        VList (List.map (mk_hyp_value ist gl) (out_gen wit x))
+    | List1ArgType IntArgType -> 
+        let wit = wit_list1 globwit_int in
+        VList (List.map (fun x -> VInteger x) (out_gen wit x))
+    | List1ArgType IntOrVarArgType -> 
+        let wit = wit_list1 globwit_int_or_var in
+        VList (List.map (mk_int_or_var_value ist) (out_gen wit x))
     | StringArgType | BoolArgType
     | QuantHypArgType | RedExprArgType 
     | OpenConstrArgType _ | ConstrWithBindingsArgType 
     | ExtraArgType _ | BindingsArgType 
-    | List0ArgType _ | List1ArgType _ | OptArgType _ | PairArgType _ 
+    | OptArgType _ | PairArgType _ 
+    | List0ArgType _ | List1ArgType _ 
 	-> error "This generic type is not supported in alias"
         
     in

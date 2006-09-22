@@ -34,6 +34,7 @@ type value =
   | VIntroPattern of intro_pattern_expr
   | VConstr of constr
   | VConstr_context of constr
+  | VList of value list
   | VRec of value ref
 
 (* Signature for interpretation: val\_interp and interpretation functions *)
