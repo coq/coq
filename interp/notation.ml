@@ -494,7 +494,7 @@ let make_notation_key symbols =
 let decompose_notation_key s =
   let len = String.length s in
   let rec decomp_ntn dirs n =
-    if n>=len then dirs else
+    if n>=len then List.rev dirs else
     let pos =
       try
 	String.index_from s n ' ' 

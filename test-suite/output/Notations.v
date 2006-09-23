@@ -71,6 +71,8 @@ Reserved Notation "( x ; y , .. , z )" (at level 0).
 Notation "( x ; y , .. , z )" := (pair .. (pair x y) .. z).
 Check (1;2,4).
 
+(* Check basic notations involving "match" *)
+
 Notation "'ifzero' n" := (match n with 0 => true | S _ => false end)
   (at level 0, n at level 0).
 Check (ifzero 3).
@@ -80,3 +82,15 @@ Notation "'pred' n" := (match n with 0 => 0 | S n' => n' end)
 Check (pred 3).
 Check (fun n => match n with 0 => 0 | S n => n end).
 Check (fun n => match n with S p as x => p | y => 0 end).
+
+(* Check correction of bug #1179 *)
+
+Notation "1 -" := true (at level 0).
+Check 1-.
+
+(* This is another aspect of bug #1179 (raises anomaly in 8.1) *)
+
+Require Import ZArith.
+Open Scope Z_scope.
+Notation "- 4" := (-2 + -2).
+Check -4.
