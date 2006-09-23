@@ -20,6 +20,7 @@ open Libobject
 open Library
 open Classops
 open Mod_subst
+open Reductionops
 
 (*s A structure S is a non recursive inductive type with a single
    constructor (the name of which defaults to Build_S) *)
@@ -197,7 +198,8 @@ let check_and_decompose_canonical_structure ref =
   let vc = match Environ.constant_opt_value env sp with
     | Some vc -> vc
     | None -> error_not_structure ref in
-  let f,args = match kind_of_term (snd (decompose_lam vc)) with
+  let body = snd (splay_lambda (Global.env()) Evd.empty vc) in
+  let f,args = match kind_of_term body with
     | App (f,args) -> f,args
     | _ -> error_not_structure ref in
   let indsp = match kind_of_term f with
