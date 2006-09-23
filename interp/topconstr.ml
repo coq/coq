@@ -366,6 +366,22 @@ let bind_env alp sigma var v =
     (* TODO: handle the case of multiple occs in different scopes *)
     (var,v)::sigma
 
+let match_names metas (alp,sigma) na1 na2 = match (na1,na2) with
+  | (Name id1,Name id2) when List.mem id2 metas ->
+      alp, bind_env alp sigma id2 (RVar (dummy_loc,id1))
+  | (Name id1,Name id2) -> (id1,id2)::alp,sigma
+  | (Anonymous,Anonymous) -> alp,sigma
+  | _ -> raise No_match
+
+let rec match_cases_pattern metas acc pat1 pat2 =
+  match (pat1,pat2) with
+  | PatVar (_,na1), PatVar (_,na2) -> match_names metas acc na1 na2
+  | PatCstr (_,c1,patl1,na1), PatCstr (_,c2,patl2,na2)
+      when c1 = c2 & List.length patl1 = List.length patl2 ->
+      List.fold_left2 (match_cases_pattern metas)
+	(match_names metas acc na1 na2) patl1 patl2
+  | _ -> raise No_match
+
 let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
   | r1, AVar id2 when List.mem id2 metas -> bind_env alp sigma id2 r1
   | RVar (_,id1), AVar id2 when alpha_var id1 id2 alp -> sigma
@@ -383,7 +399,8 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
   | RLetIn (_,na1,t1,b1), ALetIn (na2,t2,b2) ->
      match_binders alp metas (match_ alp metas sigma t1 t2) b1 b2 na1 na2
   | RCases (_,(po1,rtno1),tml1,eqnl1), ACases (po2,rtno2,tml2,eqnl2) 
-      when List.length tml1 = List.length tml2 ->
+      when List.length tml1 = List.length tml2
+	 & List.length eqnl1 = List.length eqnl2 ->
      let sigma = option_fold_left2 (match_ alp metas) sigma po1 po2 in
      (* TODO: match rtno' with their contexts *)
      let sigma = List.fold_left2 
@@ -423,18 +440,16 @@ and match_alist alp metas sigma l1 l2 x iter termin lassoc =
   let tl,sigma = match_alist_tail alp metas sigma [t1] rest in
   (x,encode_list_value (if lassoc then List.rev tl else tl))::sigma
 
-and match_binders alp metas sigma b1 b2 na1 na2 = match (na1,na2) with
-  | (Name id1,Name id2) when List.mem id2 metas ->
-      let sigma = bind_env alp sigma id2 (RVar (dummy_loc,id1)) in 
-      match_ alp metas sigma b1 b2
-  | (Name id1,Name id2) -> match_ ((id1,id2)::alp) metas sigma b1 b2
-  | (Anonymous,Anonymous) -> match_  alp metas sigma b1 b2
-  | _ -> raise No_match
+and match_binders alp metas sigma b1 b2 na1 na2 =
+  let (alp,sigma) = match_names metas (alp,sigma) na1 na2 in
+  match_ alp metas sigma b1 b2
 
-and match_equations alp metas sigma (_,idl1,pat1,rhs1) (idl2,pat2,rhs2) =
-  if idl1 = idl2 & pat1 = pat2 (* Useful to reason up to alpha ?? *) then
-    match_ alp metas sigma rhs1 rhs2
-  else raise No_match
+and match_equations alp metas sigma (_,_,patl1,rhs1) (_,patl2,rhs2) =
+  (* patl1 and patl2 have the same length because they respectively
+     correspond to some tml1 and tml2 that have the same length *)
+  let (alp,sigma) = 
+    List.fold_left2 (match_cases_pattern metas) (alp,sigma) patl1 patl2 in
+  match_ alp metas sigma rhs1 rhs2
 
 type scope_name = string
 
