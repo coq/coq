@@ -336,8 +336,8 @@ let inh_coerce_to_ind isevars env ty tyi =
         un inductif cela doit être égal *)
   let _ = e_cumul env isevars expected_typ ty in ()
 
-let unify_tomatch_with_patterns isevars env typ tm =
-  match find_row_ind tm with
+let unify_tomatch_with_patterns isevars env loc typ pats =
+  match find_row_ind pats with
     | None -> NotInd (None,typ)
     | Some (_,(ind,_)) ->
 	inh_coerce_to_ind isevars env typ ind;
@@ -345,29 +345,26 @@ let unify_tomatch_with_patterns isevars env typ tm =
 	with Not_found -> NotInd (None,typ)
 
 let find_tomatch_tycon isevars env loc = function
-  (* Try first if some 'in I ...' is present and can be used as a constraint *)
-  | Some (_,ind,_,_),_ 
-  (* Otherwise try to get constraints from (the 1st) constructor in clauses *)
-  | None, Some (_,(ind,_)) ->
-      mk_tycon (inductive_template isevars env loc ind)
-  | None, None -> 
-      empty_tycon
+  (* Try if some 'in I ...' is present and can be used as a constraint *)
+  | Some (_,ind,_,_) -> mk_tycon (inductive_template isevars env loc ind)
+  | None -> empty_tycon
 
-let coerce_row typing_fun isevars env cstropt (tomatch,(_,indopt)) =
+let coerce_row typing_fun isevars env pats (tomatch,(_,indopt)) =
   let loc = Some (loc_of_rawconstr tomatch) in
-  let tycon = find_tomatch_tycon isevars env loc (indopt,cstropt) in
+  let tycon = find_tomatch_tycon isevars env loc indopt in
   let j = typing_fun tycon env tomatch in
   let typ = nf_evar (Evd.evars_of !isevars) j.uj_type in
-  let t = 
+  let t =
     try IsInd (typ,find_rectype env (Evd.evars_of !isevars) typ)
-    with Not_found -> NotInd (None,typ) in
+    with Not_found ->
+      unify_tomatch_with_patterns isevars env loc typ pats in
   (j.uj_val,t)
 
 let coerce_to_indtype typing_fun isevars env matx tomatchl =
   let pats = List.map (fun r ->  r.patterns) matx in
   let matx' = match matrix_transpose pats with
-    | [] -> List.map (fun _ -> None) tomatchl (* no patterns at all *)
-    | m -> List.map find_row_ind m in
+    | [] -> List.map (fun _ -> []) tomatchl (* no patterns at all *)
+    | m -> m in
   List.map2 (coerce_row typing_fun isevars env) matx' tomatchl
 
 (************************************************************************)
