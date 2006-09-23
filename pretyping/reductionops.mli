@@ -121,6 +121,7 @@ val hnf_lam_appvect  : env ->  evar_map -> constr -> constr array -> constr
 val hnf_lam_applist  : env ->  evar_map -> constr -> constr list -> constr
 
 val splay_prod : env ->  evar_map -> constr -> (name * constr) list * constr
+val splay_lambda : env ->  evar_map -> constr -> (name * constr) list * constr
 val splay_arity : env ->  evar_map -> constr -> (name * constr) list * sorts
 val sort_of_arity : env -> constr -> sorts
 val decomp_n_prod : 
