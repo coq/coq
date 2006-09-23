@@ -42,7 +42,7 @@ let objdef_declare ref =
   let vc = match Environ.constant_opt_value env sp with
     | Some vc -> vc
     | None -> objdef_err ref in
-  let lt,t = decompose_lam vc in
+  let lt,t = Reductionops.splay_lambda (Global.env()) Evd.empty vc in
   let lt = List.rev (List.map snd lt) in
   let f,args = match kind_of_term t with
     | App (f,args) -> f,args 

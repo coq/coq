@@ -580,6 +580,14 @@ let splay_prod env sigma =
   in 
   decrec env []
 
+let splay_lambda env sigma = 
+  let rec decrec env m c =
+    let t = whd_betadeltaiota env sigma c in
+    match kind_of_term t with
+      | Lambda (n,a,c0) -> decrec (push_rel (n,None,a) env) ((n,a)::m) c0
+      | _ -> m,t
+  in decrec env []
+
 let splay_prod_assum env sigma = 
   let rec prodec_rec env l c =
     let t = whd_betadeltaiota_nolet env sigma c in
