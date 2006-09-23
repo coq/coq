@@ -1243,7 +1243,7 @@ let solve_remaining_evars env initial_sigma evars c =
 	      Pretype_errors.error_unsolvable_implicit loc env sigma src)
       | _ -> map_constr proc_rec c      
   in
-  map_constr proc_rec c
+  proc_rec c
 
 let interp_gen kind ist sigma env (c,ce) =
   let (ltacvars,unbndltacvars) = constr_list ist env in
