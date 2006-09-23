@@ -21,6 +21,7 @@ open Term
 open Termops
 open Rawterm
 open Decl_kinds
+open Declarations
 
 (* usage qque peu general: utilise aussi dans record *)
 
@@ -149,7 +150,10 @@ let lookup_pattern_path_between (s,t) =
 	   coe.coe_value.uj_val
        in 
        match kind_of_term c with
-	 | Construct sp -> (sp, coe.coe_param)
+	 | Construct (ind,j as cs) ->
+	     let (_,mip) = Inductive.lookup_mind_specif (Global.env()) ind in
+	     let nrealargs = recarg_length mip.mind_recargs j in
+	     (cs, nrealargs - 1)
 	 | _ -> raise Not_found) l
 
 
