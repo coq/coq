@@ -240,6 +240,8 @@ val prlist_with_sep :
 val prvect_with_sep :
    (unit -> std_ppcmds) -> ('b -> std_ppcmds) -> 'b array -> std_ppcmds
 val pr_vertical_list : ('b -> std_ppcmds) -> 'b list -> std_ppcmds
+val surround : std_ppcmds -> std_ppcmds
+
 
 (*s Size of an ocaml value (in words, bytes and kilobytes). *)
 

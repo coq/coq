@@ -261,8 +261,6 @@ let rec pr_tacarg_using_rule pr_gen = function
   | [], [] -> mt ()
   | _ -> failwith "Inconsistent arguments of extended tactic"
 
-let surround p = hov 1 (str"(" ++ p ++ str")")
-
 let pr_extend_gen prgen lev s l =
   try 
     let tags = List.map genarg_tag l in

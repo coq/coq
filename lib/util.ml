@@ -813,6 +813,8 @@ let prvect_with_sep sep elem v =
   let n = Array.length v in
   if n = 0 then mt () else pr (n - 1)
 
+let surround p = hov 1 (str"(" ++ p ++ str")")
+
 (*s Size of ocaml values. *)
 
 module Size = struct

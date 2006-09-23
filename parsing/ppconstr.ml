@@ -95,8 +95,6 @@ let pr_patnotation = pr_notation_gen decode_patlist_value
 let pr_delimiters key strm =
   strm ++ str ("%"^key)
 
-let surround p = hov 1 (str"(" ++ p ++ str")")
-
 let pr_located pr ((b,e),x) =
   if Options.do_translate() && (b,e)<>dummy_loc then
     let (b,e) = unloc (b,e) in

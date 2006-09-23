@@ -246,6 +246,7 @@ let print_safe_judgment env j =
 let print_named_def name body typ =
   let pbody = pr_lconstr body in
   let ptyp = pr_ltype typ in
+  let pbody = if isCast body then surround pbody else pbody in
   (str "*** [" ++ str name ++ str " " ++
      hov 0 (str ":=" ++ brk (1,2) ++ pbody ++ spc () ++
 	      str ":" ++ brk (1,2) ++ ptyp) ++
