@@ -118,6 +118,11 @@ let error_bad_inductive_type loc =
   user_err_loc (loc,"",str 
     "This should be an inductive type applied to names or \"_\"")
 
+let error_inductive_parameter_not_implicit loc =
+  user_err_loc (loc,"", str
+   ("The parameters of inductive types do not bind in\n"^
+    "the 'return' clauses; they must be replaced by '_' in the 'in' clauses."))
+
 (**********************************************************************)
 (* Dump of globalization (to be used by coqdoc)                       *)
 let token_number = ref 0
@@ -973,13 +978,12 @@ let internalise sigma globalenv env allow_soapp lvar c =
 	if List.length l <> nindargs then
 	  error_wrong_numarg_inductive_loc loc globalenv ind nindargs;
 	let nal = List.map (function
-	  | RHole _ -> Anonymous
+	  | RHole loc -> Anonymous
 	  | RVar (_,id) -> Name id
 	  | c -> user_err_loc (loc_of_rawconstr c,"",str "Not a name")) l in
 	let parnal,realnal = list_chop nparams nal in
 	if List.exists ((<>) Anonymous) parnal then
-	  user_err_loc (loc,"",
-	    str "The parameters of inductive type must be implicit");
+	  error_inductive_parameter_not_implicit loc;
 	realnal, Some (loc,ind,nparams,realnal)
     | None -> 
 	[], None in
