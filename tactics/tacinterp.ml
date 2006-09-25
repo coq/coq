@@ -1307,7 +1307,7 @@ let pf_interp_type ist gl =
 
 (* Interprets a reduction expression *)
 let interp_unfold ist env (l,qid) =
-  (l,interp_evaluable ist env qid)
+  (interp_int_or_var_list ist l,interp_evaluable ist env qid)
 
 let interp_flag ist env red =
   { red with rConst = List.map (interp_evaluable ist env) red.rConst }
