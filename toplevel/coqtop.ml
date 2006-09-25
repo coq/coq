@@ -21,7 +21,7 @@ open Coqinit
 
 let get_version_date () =
   try
-    let ch = open_in (Coq_config.coqtop^"/revision") in
+    let ch = open_in (Coq_config.coqlib^"/revision") in
     let ver = input_line ch in
     let rev = input_line ch in
       (ver,rev)
