@@ -1,7 +1,7 @@
 Set Implicit Arguments.
 Require Import Setoid.
 Require Import BinPos.
-Require Import Pol.
+Require Import Ring_polynom.
 Require Import BinList.
 Declare ML Module "newring".
 

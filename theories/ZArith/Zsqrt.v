@@ -8,7 +8,7 @@
 
 (* $Id$ *)
 
-Require Import NewZArithRing.
+Require Import ZArithRing.
 Require Import Omega.
 Require Export ZArith_base.
 Open Local Scope Z_scope.

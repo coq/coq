@@ -8,7 +8,7 @@
 
 (* $Id$ *)
 
-Require Import Ring_theory.
+Require Import LegacyRing_theory.
 Require Import Quote.
 Require Import Ring_normalize.
 

@@ -9,7 +9,7 @@
 (*i $Id$ i*)
 
 Require Import ZArith_base.
-Require Import NewZArithRing.
+Require Import ZArithRing.
 Require Import Zcomplements.
 Require Import Zdiv.
 Require Import Ndigits.

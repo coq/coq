@@ -13,9 +13,9 @@
 (***************************************************************************)
 
 Require Export Raxioms.
-Require Export NewZArithRing.
+Require Export ZArithRing.
 Require Import Omega.
-Require Export Field_tac. Import NewField.
+Require Export Field_tac. Import Field.
 
 Open Local Scope Z_scope.
 Open Local Scope R_scope.
@@ -88,7 +88,7 @@ apply Rlt_trans with (0 + 1).
   apply Rplus_0_l.
 Qed.
 
-Lemma Rgen_phiPOS : forall x, ZRing_th.gen_phiPOS1 1 Rplus Rmult x > 0.
+Lemma Rgen_phiPOS : forall x, InitialRing.gen_phiPOS1 1 Rplus Rmult x > 0.
 unfold Rgt in |- *.
 induction x; simpl in |- *; intros.
  apply Rlt_trans with (1 + 0).
@@ -111,7 +111,8 @@ induction x; simpl in |- *; intros.
 Qed.
 
 
-Lemma Rgen_phiPOS_not_0 : forall x, ZRing_th.gen_phiPOS1 1 Rplus Rmult x <> 0.
+Lemma Rgen_phiPOS_not_0 :
+  forall x, InitialRing.gen_phiPOS1 1 Rplus Rmult x <> 0.
 red in |- *; intros.
 specialize (Rgen_phiPOS x).
 rewrite H in |- *; intro.
@@ -119,8 +120,8 @@ apply (Rlt_asym 0 0); trivial.
 Qed.
 
 Lemma Zeq_bool_complete : forall x y, 
-  ZRing_th.gen_phiZ 0%R 1%R Rplus Rmult Ropp x =
-  ZRing_th.gen_phiZ 0%R 1%R Rplus Rmult Ropp y ->
+  InitialRing.gen_phiZ 0%R 1%R Rplus Rmult Ropp x =
+  InitialRing.gen_phiZ 0%R 1%R Rplus Rmult Ropp y ->
   Zeq_bool x y = true.
 Proof gen_phiZ_complete _ _ _ _ _ _ _ _ _ _ Rset Rext Rfield Rgen_phiPOS_not_0.
 

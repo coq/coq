@@ -43,7 +43,7 @@ let ring_dir = ["Coq";"ring"]
 let setoids_dir = ["Coq";"Setoids"]
 
 let ring_constant = Coqlib.gen_constant_in_modules "Ring"
-  [ring_dir@["Ring_theory"];
+  [ring_dir@["LegacyRing_theory"];
    ring_dir@["Setoid_ring_theory"];
    ring_dir@["Ring_normalize"];
    ring_dir@["Ring_abstract"];

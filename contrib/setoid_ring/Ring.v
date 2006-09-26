@@ -7,9 +7,9 @@
 (************************************************************************)
 
 Require Import Bool.
-Require Export Ring_th.
+Require Export Ring_theory.
 Require Export Ring_base.
-Require Import ZRing_th.
+Require Import InitialRing.
 Require Import Ring_equiv.
 
 Lemma BoolTheory :

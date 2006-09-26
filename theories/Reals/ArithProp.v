@@ -12,7 +12,7 @@ Require Import Rbase.
 Require Import Rbasic_fun.
 Require Import Even.
 Require Import Div2.
-Require Import NewArithRing.
+Require Import ArithRing.
 
 Open Local Scope Z_scope.
 Open Local Scope R_scope.

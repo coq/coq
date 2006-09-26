@@ -9,7 +9,7 @@
 (*i $Id$ i*)
 
 Require Export ZArith.
-Require Export NewZArithRing.
+Require Export ZArithRing.
 Require Export Setoid.
 
 (** * Definition of [Q] and basic properties *)

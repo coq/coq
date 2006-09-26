@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-Require Import NewField Field_tac.
+Require Import Field Field_tac.
 Require Import QArith.
 Require Import Znumtheory.
 Require Import Eqdep_dec.

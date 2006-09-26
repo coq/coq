@@ -151,8 +151,8 @@ let contrib_name = "setoid_ring"
 
 let ring_dir = ["Coq";contrib_name]
 let ring_modules = 
-  [ring_dir@["BinList"];ring_dir@["Ring_th"];ring_dir@["Pol"];
-   ring_dir@["Ring_tac"];ring_dir@["Field_tac"];ring_dir@["ZRing_th"]]
+  [ring_dir@["BinList"];ring_dir@["Ring_theory"];ring_dir@["Ring_polynom"];
+   ring_dir@["Ring_tac"];ring_dir@["Field_tac"];ring_dir@["InitialRing"]]
 let stdlib_modules =
   [["Coq";"Setoids";"Setoid"];
    ["Coq";"ZArith";"BinInt"];
@@ -165,20 +165,20 @@ let coq_constant c =
 let ring_constant c =
   lazy (Coqlib.gen_constant_in_modules "Ring" ring_modules c)
 let ringtac_constant m c =
-  lazy (Coqlib.gen_constant_in_modules "Ring" [ring_dir@["ZRing_th";m]] c)
+  lazy (Coqlib.gen_constant_in_modules "Ring" [ring_dir@["InitialRing";m]] c)
 
 let new_ring_path =
   make_dirpath (List.map id_of_string ["Ring_tac";contrib_name;"Coq"])
 let ltac s =
   lazy(make_kn (MPfile new_ring_path) (make_dirpath []) (mk_label s))
 let znew_ring_path =
-  make_dirpath (List.map id_of_string ["ZRing_th";contrib_name;"Coq"])
+  make_dirpath (List.map id_of_string ["InitialRing";contrib_name;"Coq"])
 let zltac s =
   lazy(make_kn (MPfile znew_ring_path) (make_dirpath []) (mk_label s))
 let carg c = TacDynamic(dummy_loc,Pretyping.constr_in c)
 
 let mk_cst l s = lazy (Coqlib.gen_constant "newring" l s);;
-let pol_cst s = mk_cst [contrib_name;"Pol"] s ;;
+let pol_cst s = mk_cst [contrib_name;"Ring_polynom"] s ;;
 
 (* Ring theory *)
 
@@ -714,11 +714,11 @@ TACTIC EXTEND setoid_ring
 END
 
 (***********************************************************************)
-let fld_cst s = mk_cst [contrib_name;"NewField"] s ;;
+let fld_cst s = mk_cst [contrib_name;"Field"] s ;;
 
 let field_modules = List.map
   (fun f -> ["Coq";contrib_name;f])
-  ["NewField";"Field_tac"]
+  ["Field";"Field_tac"]
 
 let new_field_path =
   make_dirpath (List.map id_of_string ["Field_tac";contrib_name;"Coq"])

@@ -1,6 +1,6 @@
+Require Import Setoid_ring_theory.
+Require Import LegacyRing_theory.
 Require Import Ring_theory.
-Require Import Coq.ring.Setoid_ring_theory.
-Require Import Ring_th.
 
 Set Implicit Arguments.
 

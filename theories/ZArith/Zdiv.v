@@ -22,7 +22,7 @@ Then only after proves the main required property.
 Require Export ZArith_base.
 Require Import Zbool.
 Require Import Omega.
-Require Import NewZArithRing.
+Require Import ZArithRing.
 Require Import Zcomplements.
 Open Local Scope Z_scope.
 

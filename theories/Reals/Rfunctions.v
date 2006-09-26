@@ -15,8 +15,8 @@
 (**          Definition of the sum functions            *)
 (*                                                      *)
 (********************************************************)
-Require Export ArithRing. (* for ring_nat... *)
-Require Export NewArithRing.
+Require Export LegacyArithRing. (* for ring_nat... *)
+Require Export ArithRing.
 
 Require Import Rbase.
 Require Export R_Ifp.

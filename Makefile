@@ -1035,22 +1035,22 @@ ROMEGAVO=\
  contrib/romega/ReflOmegaCore.vo contrib/romega/ROmega.vo 
 
 RINGVO=\
- contrib/ring/ArithRing.vo      contrib/ring/Ring_normalize.vo \
- contrib/ring/Ring_theory.vo    contrib/ring/LegacyRing.vo \
- contrib/ring/NArithRing.vo     \
- contrib/ring/ZArithRing.vo     contrib/ring/Ring_abstract.vo \
- contrib/ring/Quote.vo		contrib/ring/Setoid_ring_normalize.vo \
- contrib/ring/Setoid_ring.vo	contrib/ring/Setoid_ring_theory.vo
+ contrib/ring/LegacyArithRing.vo      	contrib/ring/Ring_normalize.vo \
+ contrib/ring/LegacyRing_theory.vo	contrib/ring/LegacyRing.vo \
+ contrib/ring/LegacyNArithRing.vo     \
+ contrib/ring/LegacyZArithRing.vo	contrib/ring/Ring_abstract.vo \
+ contrib/ring/Quote.vo			contrib/ring/Setoid_ring_normalize.vo \
+ contrib/ring/Setoid_ring.vo		contrib/ring/Setoid_ring_theory.vo
 
 NEWRINGVO=\
  contrib/setoid_ring/BinList.vo   contrib/setoid_ring/Ring_th.vo \
  contrib/setoid_ring/Pol.vo       contrib/setoid_ring/Ring_tac.vo \
  contrib/setoid_ring/ZRing_th.vo  contrib/setoid_ring/Ring_equiv.vo \
  contrib/setoid_ring/Ring_base.vo contrib/setoid_ring/Ring.vo \
- contrib/setoid_ring/NewArithRing.vo \
- contrib/setoid_ring/NewNArithRing.vo \
- contrib/setoid_ring/NewZArithRing.vo \
-contrib/setoid_ring/NewField.vo \
+ contrib/setoid_ring/ArithRing.vo \
+ contrib/setoid_ring/NArithRing.vo \
+ contrib/setoid_ring/ZArithRing.vo \
+contrib/setoid_ring/Field.vo \
 contrib/setoid_ring/Field_tac.vo \
 contrib/setoid_ring/RealField.vo
 

@@ -11,7 +11,7 @@ Require Import Setoid.
 Require Export BinList.
 Require Import BinPos.
 Require Import BinInt.
-Require Export Ring_th.
+Require Export Ring_theory.
 
 Import RingSyntax.
 

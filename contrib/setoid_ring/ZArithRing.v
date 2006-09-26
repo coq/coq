@@ -6,10 +6,27 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* This module gathers the necessary base to build an instance of the
-   ring tactic. Abstract rings need more theory, depending on
-   ZArith_base. *)
+Require Export Ring.
+Require Import ZArith_base.
+Import InitialRing.
+Set Implicit Arguments.
 
-Declare ML Module "newring".
-Require Export Ring_theory.
-Require Export Ring_tac.
+Ltac isZcst t :=
+  let t := eval hnf in t in
+  match t with
+    Z0 => constr:true
+  | Zpos ?p => isZcst p
+  | Zneg ?p => isZcst p
+  | xI ?p => isZcst p
+  | xO ?p => isZcst p
+  | xH => constr:true
+  | _ => constr:false
+  end.
+Ltac Zcst t :=
+  match isZcst t with
+    true => t
+  | _ => NotConstant
+  end.
+
+Add Ring Zr : Zth
+  (decidable Zeqb_ok, constants [Zcst], preprocess [unfold Zsucc]).

@@ -8,8 +8,7 @@
 
 (*i $Id$ i*)
 
-Require Import NewZArithRing.
-
+Require Import ZArithRing.
 Require Import ZArith_base.
 Require Import Omega.
 Require Import Wf_nat.

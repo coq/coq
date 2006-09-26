@@ -11,7 +11,7 @@ Require Import BinInt.
 Require Import BinNat.
 Require Import Setoid.
 Require Import Ring_base.
-Require Import Pol.
+Require Import Ring_polynom.
 Set Implicit Arguments.
 
 Import RingSyntax.

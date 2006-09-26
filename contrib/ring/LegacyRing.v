@@ -9,7 +9,7 @@
 (* $Id: Ring.v 5920 2004-07-16 20:01:26Z herbelin $ *)
 
 Require Export Bool.
-Require Export Ring_theory.
+Require Export LegacyRing_theory.
 Require Export Quote.
 Require Export Ring_normalize.
 Require Export Ring_abstract.
