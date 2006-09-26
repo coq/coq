@@ -71,6 +71,15 @@ open Vernacexpr
 open Pcoq
 open Genarg
 
+let modifiers e =
+<:expr<  Gramext.srules
+    [([], Gramext.action(fun _loc -> []));
+     ([Gramext.Stoken ("", "(");
+       Gramext.Slist1sep ($e$, Gramext.Stoken ("", ","));
+       Gramext.Stoken ("", ")")],
+      Gramext.action (fun _ l _ _loc -> l))]
+ >>
+
 let rec interp_entry_name loc s =
   let l = String.length s in
   if l > 8 & String.sub s 0 3 = "ne_" & String.sub s (l-5) 5 = "_list" then
@@ -82,6 +91,9 @@ let rec interp_entry_name loc s =
   else if l > 4 & String.sub s (l-4) 4 = "_opt" then
     let t, g = interp_entry_name loc (String.sub s 0 (l-4)) in
     OptArgType t, <:expr< Gramext.Sopt $g$ >>
+  else if l > 5 & String.sub s (l-5) 5 = "_mods" then
+    let t, g = interp_entry_name loc (String.sub s 0 (l-1)) in
+    List0ArgType t, modifiers g
   else
     let s = if s = "hyp" then "var" else s in
     let t, se, lev =

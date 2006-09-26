@@ -32,5 +32,5 @@ Definition ZTheory : Ring_Theory Zplus Zmult 1%Z 0%Z Zopp Zeq.
 Qed.
 
 (* NatConstants and NatTheory are defined in Ring_theory.v *)
-Add Ring Z Zplus Zmult 1%Z 0%Z Zopp Zeq ZTheory
+Add Legacy Ring Z Zplus Zmult 1%Z 0%Z Zopp Zeq ZTheory
  [ Zpos Zneg 0%Z xO xI 1%positive ].

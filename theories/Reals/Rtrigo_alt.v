@@ -119,8 +119,7 @@ replace 0 with (INR 0); [ apply le_INR; apply le_O_n | reflexivity ].
 apply INR_fact_neq_0.
 apply INR_fact_neq_0.
 simpl in |- *; ring.
-apply INR_eq; do 2 rewrite S_INR; do 2 rewrite plus_INR;
- do 2 rewrite mult_INR; repeat rewrite S_INR; ring.
+ring_nat.
 assert (H3 := cv_speed_pow_fact a); unfold Un in |- *; unfold Un_cv in H3;
  unfold R_dist in H3; unfold Un_cv in |- *; unfold R_dist in |- *; 
  intros; elim (H3 eps H4); intros N H5.
@@ -133,7 +132,7 @@ apply le_n_2n.
 apply (fun m n p:nat => mult_le_compat_l p n m); apply le_n_Sn.
 apply (fun m n p:nat => mult_le_compat_l p n m); apply le_n_S; assumption.
 apply le_n_Sn.
-apply INR_eq; rewrite S_INR; rewrite plus_INR; rewrite mult_INR; reflexivity.
+ring.
 assert (X := exist_sin (Rsqr a)); elim X; intros.
 cut (x = sin a / a).
 intro; rewrite H3 in p; unfold sin_in in p; unfold infinit_sum in p;
@@ -201,12 +200,10 @@ unfold Rdiv in |- *; ring.
 reflexivity.
 replace (2 * (n + 1))%nat with (S (S (2 * n))).
 reflexivity.
-apply INR_eq; do 2 rewrite S_INR; do 2 rewrite mult_INR; rewrite plus_INR;
- repeat rewrite S_INR; ring.
+ring.
 replace (2 * n + 1)%nat with (S (2 * n)).
 reflexivity.
-apply INR_eq; rewrite S_INR; rewrite plus_INR; rewrite mult_INR;
- repeat rewrite S_INR; ring.
+ring.
 intro; elim H1; intros.
 split.
 apply Rplus_le_reg_l with (- a).
@@ -219,12 +216,10 @@ unfold sin_term in |- *; simpl in |- *; unfold Rdiv in |- *; rewrite Rinv_1;
  ring.
 replace (2 * (n + 1))%nat with (S (S (2 * n))).
 apply lt_O_Sn.
-apply INR_eq; do 2 rewrite S_INR; do 2 rewrite mult_INR; rewrite plus_INR;
- repeat rewrite S_INR; ring.
+ring.
 replace (2 * n + 1)%nat with (S (2 * n)).
 apply lt_O_Sn.
-apply INR_eq; rewrite S_INR; rewrite plus_INR; rewrite mult_INR;
- repeat rewrite S_INR; ring.
+ring.
 inversion H; [ assumption | elim Hyp_a; symmetry  in |- *; assumption ].
 Qed.
 
@@ -318,8 +313,7 @@ replace 0 with (INR 0); [ apply le_INR; apply le_O_n | reflexivity ].
 apply INR_fact_neq_0.
 apply INR_fact_neq_0.
 simpl in |- *; ring.
-apply INR_eq; do 2 rewrite S_INR; do 2 rewrite mult_INR; repeat rewrite S_INR;
- ring.
+ring_nat.
 assert (H4 := cv_speed_pow_fact a0); unfold Un in |- *; unfold Un_cv in H4;
  unfold R_dist in H4; unfold Un_cv in |- *; unfold R_dist in |- *; 
  intros; elim (H4 eps H5); intros N H6; exists N; intros.
@@ -385,12 +379,10 @@ unfold Rdiv in |- *; ring.
 reflexivity.
 replace (2 * (n0 + 1))%nat with (S (S (2 * n0))).
 reflexivity.
-apply INR_eq; do 2 rewrite S_INR; do 2 rewrite mult_INR; rewrite plus_INR;
- repeat rewrite S_INR; ring.
+ring.
 replace (2 * n0 + 1)%nat with (S (2 * n0)).
 reflexivity.
-apply INR_eq; rewrite S_INR; rewrite plus_INR; rewrite mult_INR;
- repeat rewrite S_INR; ring.
+ring.
 intro; elim H2; intros; split.
 apply Rplus_le_reg_l with (-1).
 rewrite <- Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_l;
@@ -402,12 +394,10 @@ unfold cos_term in |- *; simpl in |- *; unfold Rdiv in |- *; rewrite Rinv_1;
  ring.
 replace (2 * (n0 + 1))%nat with (S (S (2 * n0))).
 apply lt_O_Sn.
-apply INR_eq; do 2 rewrite S_INR; do 2 rewrite mult_INR; rewrite plus_INR;
- repeat rewrite S_INR; ring.
+ring.
 replace (2 * n0 + 1)%nat with (S (2 * n0)).
 apply lt_O_Sn.
-apply INR_eq; rewrite S_INR; rewrite plus_INR; rewrite mult_INR;
- repeat rewrite S_INR; ring.
+ring.
 intros; case (total_order_T 0 a); intro.
 elim s; intro.
 apply H; [ left; assumption | assumption ].

@@ -13,6 +13,7 @@
 
 (* $Id$ *)
 
+Require Import Bool.
 Require Import ZArith.
 Require Import OrderedType.
 Require Import FMapInterface.

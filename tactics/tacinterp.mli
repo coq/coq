@@ -64,6 +64,14 @@ val add_tacdef :
   bool -> (identifier Util.located * raw_tactic_expr) list -> unit
 val add_primitive_tactic : string -> glob_tactic_expr -> unit
 
+(* Tactic extensions *)
+val add_tactic :
+  string -> (closed_generic_argument list -> tactic) -> unit
+val overwriting_add_tactic :
+  string -> (closed_generic_argument list -> tactic) -> unit
+val lookup_tactic :
+  string -> (closed_generic_argument list) -> tactic
+
 (* Adds an interpretation function for extra generic arguments *)
 type glob_sign = {
   ltacvars : identifier list * identifier list;

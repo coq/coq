@@ -9,7 +9,7 @@
 (*i $Id$ i*)
 
 Require Export ZArith.
-Require Export ZArithRing.
+Require Export NewZArithRing.
 Require Export Setoid.
 
 (** * Definition of [Q] and basic properties *)
@@ -104,8 +104,10 @@ Proof.
 unfold Qeq in |- *; intros.
 apply Zmult_reg_l with (QDen y). 
 auto with qarith.
-ring; rewrite H; ring.
-rewrite Zmult_assoc; rewrite H0; ring.
+transitivity (Qnum x * QDen y * QDen z)%Z; try ring.
+rewrite H.
+transitivity (Qnum y * QDen z * QDen x)%Z; try ring.
+rewrite H0; ring.
 Qed.
 
 (** Furthermore, this equality is decidable: *)
@@ -167,10 +169,10 @@ Proof.
 unfold Qeq, Qplus; simpl.
 Open Scope Z_scope.
 intros (p1, p2) (q1, q2) H (r1, r2) (s1, s2) H0; simpl in *.
-simpl_mult; ring.
-replace (p1 * ('s2 * 'q2)) with (p1 * 'q2 * 's2) by ring.
+simpl_mult; ring_simplify.
+replace (p1 * 'r2 * 'q2) with (p1 * 'q2 * 'r2) by ring.
 rewrite H.
-replace ('s2 * ('q2 * r1)) with (r1 * 's2 * 'q2) by ring.
+replace (r1 * 'p2 * 'q2 * 's2) with (r1 * 's2 * 'p2 * 'q2) by ring.
 rewrite H0.
 ring.
 Close Scope Z_scope.
@@ -179,7 +181,11 @@ Qed.
 Add Morphism Qopp : Qopp_comp.
 Proof.
 unfold Qeq, Qopp; simpl.
-intros; ring; rewrite H; ring.
+Open Scope Z_scope.
+intros.
+replace (- Qnum x1 * ' Qden x2) with (- (Qnum x1 * ' Qden x2)) by ring.
+rewrite H in |- *;  ring.
+Close Scope Z_scope.
 Qed.
 
 Add Morphism Qminus : Qminus_comp.
@@ -194,10 +200,10 @@ Proof.
 unfold Qeq; simpl.
 Open Scope Z_scope.
 intros (p1, p2) (q1, q2) H (r1, r2) (s1, s2) H0; simpl in *.
-intros; simpl_mult; ring.
-replace ('p2 * (q1 * s1)) with (q1 * 'p2 * s1) by ring.
+intros; simpl_mult; ring_simplify.
+replace (q1 * s1 * 'p2) with (q1 * 'p2 * s1) by ring.
 rewrite <- H.
-replace ('s2 * ('q2 * r1)) with (r1 * 's2 * 'q2) by ring.
+replace (p1 * r1 * 'q2 * 's2) with (r1 * 's2 * p1 * 'q2) by ring.
 rewrite H0.
 ring.
 Close Scope Z_scope.
@@ -579,14 +585,13 @@ unfold Qplus, Qle; intros (x1, x2) (y1, y2) (z1, z2) (t1, t2);
  simpl; simpl_mult.
 Open Scope Z_scope.
 intros.
-match goal with |- ?a <= ?b => ring a; ring b end.
+match goal with |- ?a <= ?b => ring_simplify a b end.
+rewrite Zplus_comm.
 apply Zplus_le_compat.
-replace ('t2 * ('y2 * (z1 * 'x2))) with (z1 * 't2 * ('y2 * 'x2)) by ring.
-replace ('z2 * ('x2 * (t1 * 'y2))) with (t1 * 'z2 * ('y2 * 'x2)) by ring.
-apply Zmult_le_compat_r; auto with zarith.
-replace ('t2 * ('y2 * ('z2 * x1))) with (x1 * 'y2 * ('z2 * 't2)) by ring.
-replace ('z2 * ('x2 * ('t2 * y1))) with (y1 * 'x2 * ('z2 * 't2)) by ring.
-apply Zmult_le_compat_r; auto with zarith.
+match goal with |- ?a <= ?b => ring_simplify z1 t1 ('z2) ('t2) a b end.
+auto with zarith.
+match goal with |- ?a <= ?b => ring_simplify x1 y1 ('x2) ('y2) a b end.
+auto with zarith.
 Close Scope Z_scope.
 Qed.
 

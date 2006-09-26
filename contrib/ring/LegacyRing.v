@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
+(* $Id: Ring.v 5920 2004-07-16 20:01:26Z herbelin $ *)
 
 Require Export Bool.
 Require Export Ring_theory.
@@ -32,5 +32,5 @@ destruct n; destruct m; destruct p; reflexivity.
 destruct x; destruct y; reflexivity || simpl in |- *; tauto.
 Defined.
 
-Add Ring bool xorb andb true false (fun b:bool => b) eqb BoolTheory
+Add Legacy Ring bool xorb andb true false (fun b:bool => b) eqb BoolTheory
  [ true false ].

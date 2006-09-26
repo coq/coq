@@ -323,7 +323,7 @@ apply Ropp_lt_cancel.
 apply Rplus_lt_reg_r with (r := y).
 replace (y + - (y * exp (- eps))) with (y * (1 - exp (- eps)));
  [ idtac | ring ].
-replace (y + - x) with (Rabs (x - y)); [ idtac | ring ].
+replace (y + - x) with (Rabs (x - y)).
 apply Rlt_le_trans with (1 := H5); apply Rmin_r.
 rewrite Rabs_left; [ ring | idtac ].
 apply (Rlt_minus _ _ Hxy).
@@ -345,7 +345,7 @@ apply H.
 rewrite Hxyy.
 apply Rplus_lt_reg_r with (r := - y).
 replace (- y + y * exp eps) with (y * (exp eps - 1)); [ idtac | ring ].
-replace (- y + x) with (Rabs (x - y)); [ idtac | ring ].
+replace (- y + x) with (Rabs (x - y)).
 apply Rlt_le_trans with (1 := H5); apply Rmin_l.
 rewrite Rabs_right; [ ring | idtac ].
 left; apply (Rgt_minus _ _ Hxy).
@@ -619,7 +619,7 @@ intros x H0; repeat split.
 assumption.
 apply D_in_ext with (f := fun x:R => / x * (z * exp (z * ln x))).
 unfold Rminus in |- *; rewrite Rpower_plus; rewrite Rpower_Ropp;
- rewrite (Rpower_1 _ H); ring.
+ rewrite (Rpower_1 _ H); unfold Rpower; ring.
 apply Dcomp with
  (f := ln)
  (g := fun x:R => exp (z * x))

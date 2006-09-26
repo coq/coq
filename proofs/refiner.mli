@@ -32,10 +32,6 @@ val apply_sig_tac :
 
 type transformation_tactic = proof_tree -> (goal list * validation)
 
-val add_tactic             : string -> (closed_generic_argument list -> tactic) -> unit
-val overwriting_add_tactic : string -> (closed_generic_argument list -> tactic) -> unit
-val lookup_tactic          : string -> (closed_generic_argument list) -> tactic
-
 (*s Hiding the implementation of tactics. *)
 
 (* [abstract_tactic tac] hides the (partial) proof produced by [tac] under
@@ -46,7 +42,6 @@ val abstract_tactic_expr : tactic_expr -> tactic -> tactic
 val abstract_extended_tactic : string -> closed_generic_argument list -> tactic -> tactic
 
 val refiner : rule -> tactic
-val vernac_tactic : string * closed_generic_argument list -> tactic
 val frontier : transformation_tactic
 val list_pf : proof_tree -> goal list
 val unTAC : tactic -> goal sigma -> proof_tree sigma

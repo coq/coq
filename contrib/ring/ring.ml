@@ -885,7 +885,7 @@ let match_with_equiv c = match (kind_of_term c) with
   | _ -> None
 
 let polynom lc gl =
-  Coqlib.check_required_library ["Coq";"ring";"Ring"];
+  Coqlib.check_required_library ["Coq";"ring";"LegacyRing"];
   match lc with 
    (* If no argument is given, try to recognize either an equality or
       a declared relation with arguments c1 ... cn, 

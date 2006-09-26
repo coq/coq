@@ -52,8 +52,9 @@ assert ((X1 * Y2)%R = (Y1 * X2)%R).
  unfold X1, X2, Y1, Y2 in |- *; do 2 rewrite <- mult_IZR.
  apply IZR_eq; auto.
 clear H.
-field; auto.
-rewrite <- H0; field; auto.
+field_simplify_eq; auto.
+ring_simplify X1 Y2 (Y2 * X1)%R.
+rewrite H0 in |- *;  ring.
 Qed.
 
 Lemma Rle_Qle : forall x y : Q, (Q2R x <= Q2R y)%R -> x<=y.
@@ -176,16 +177,11 @@ unfold Qinv, Q2R, Qeq in |- *; intros (x1, x2); unfold Qden, Qnum in |- *.
 case x1.
 simpl in |- *; intros; elim H; trivial.
 intros; field; auto.
-apply Rmult_integral_contrapositive; split; auto.
-apply Rmult_integral_contrapositive; split; auto.
-apply Rinv_neq_0_compat; auto.
-intros; field; auto.
-do 2 rewrite <- mult_IZR.
-simpl in |- *; rewrite Pmult_comm; auto.
-apply Rmult_integral_contrapositive; split; auto.
-apply Rmult_integral_contrapositive; split; auto.
-apply not_O_IZR; auto with qarith.
-apply Rinv_neq_0_compat; auto.
+intros; 
+  change (IZR (Zneg x2)) with (- IZR (' x2))%R in |- *;
+  change (IZR (Zneg p)) with (- IZR (' p))%R in |- *;
+  field; (*auto 8 with real.*)
+  repeat split; auto; auto with real.
 Qed.
 
 Lemma Q2R_div :

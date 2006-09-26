@@ -208,10 +208,7 @@ replace (2 * N)%nat with (S (N + pred N)).
 apply le_n_S.
 apply plus_le_compat_l; assumption.
 rewrite pred_of_minus.
-apply INR_eq; rewrite S_INR; rewrite plus_INR; rewrite mult_INR;
- rewrite minus_INR.
-repeat rewrite S_INR; ring.
-apply lt_le_S; assumption.
+omega.
 apply Rle_trans with
  (sum_f_R0
     (fun k:nat =>
@@ -234,31 +231,7 @@ unfold Rdiv in |- *;
 apply Rmult_le_compat_l.
 left; apply Rinv_0_lt_compat; apply INR_fact_lt_0.
 apply C_maj.
-apply (fun m n p:nat => mult_le_compat_l p n m).
-apply le_n_S.
-apply plus_le_compat_r.
-apply le_trans with (pred (N - n)).
-assumption.
-apply le_S_n.
-replace (S (pred (N - n))) with (N - n)%nat.
-apply le_trans with N.
-apply (fun p n m:nat => plus_le_reg_l n m p) with n.
-rewrite <- le_plus_minus.
-apply le_plus_r.
-apply le_trans with (pred N).
-assumption.
-apply le_pred_n.
-apply le_n_Sn.
-apply S_pred with 0%nat.
-apply plus_lt_reg_l with n.
-rewrite <- le_plus_minus.
-replace (n + 0)%nat with n; [ idtac | ring ].
-apply le_lt_trans with (pred N).
-assumption.
-apply lt_pred_n_n; assumption.
-apply le_trans with (pred N).
-assumption.
-apply le_pred_n.
+omega.
 right.
 unfold Rdiv in |- *; rewrite Rmult_comm.
 unfold Binomial.C in |- *.
@@ -270,9 +243,7 @@ rewrite Rinv_mult_distr.
 unfold Rsqr in |- *; reflexivity.
 apply INR_fact_neq_0.
 apply INR_fact_neq_0.
-apply INR_eq; rewrite S_INR; rewrite minus_INR.
-rewrite mult_INR; repeat rewrite S_INR; rewrite plus_INR; ring.
-apply le_n_2n.
+omega.
 apply INR_fact_neq_0.
 unfold Rdiv in |- *; rewrite Rmult_comm.
 unfold Binomial.C in |- *.
@@ -282,57 +253,7 @@ rewrite Rmult_1_l.
 replace (2 * S (N + n) - 2 * S (n0 + n))%nat with (2 * (N - n0))%nat.
 rewrite mult_INR.
 reflexivity.
-apply INR_eq; rewrite minus_INR.
-do 3 rewrite mult_INR; repeat rewrite S_INR; do 2 rewrite plus_INR;
- rewrite minus_INR.
-ring.
-apply le_trans with (pred (N - n)).
-assumption.
-apply le_S_n.
-replace (S (pred (N - n))) with (N - n)%nat.
-apply le_trans with N.
-apply (fun p n m:nat => plus_le_reg_l n m p) with n.
-rewrite <- le_plus_minus.
-apply le_plus_r.
-apply le_trans with (pred N).
-assumption.
-apply le_pred_n.
-apply le_n_Sn.
-apply S_pred with 0%nat.
-apply plus_lt_reg_l with n.
-rewrite <- le_plus_minus.
-replace (n + 0)%nat with n; [ idtac | ring ].
-apply le_lt_trans with (pred N).
-assumption.
-apply lt_pred_n_n; assumption.
-apply le_trans with (pred N).
-assumption.
-apply le_pred_n.
-apply (fun m n p:nat => mult_le_compat_l p n m).
-apply le_n_S.
-apply plus_le_compat_r.
-apply le_trans with (pred (N - n)).
-assumption.
-apply le_S_n.
-replace (S (pred (N - n))) with (N - n)%nat.
-apply le_trans with N.
-apply (fun p n m:nat => plus_le_reg_l n m p) with n.
-rewrite <- le_plus_minus.
-apply le_plus_r.
-apply le_trans with (pred N).
-assumption.
-apply le_pred_n.
-apply le_n_Sn.
-apply S_pred with 0%nat.
-apply plus_lt_reg_l with n.
-rewrite <- le_plus_minus.
-replace (n + 0)%nat with n; [ idtac | ring ].
-apply le_lt_trans with (pred N).
-assumption.
-apply lt_pred_n_n; assumption.
-apply le_trans with (pred N).
-assumption.
-apply le_pred_n.
+omega.
 apply INR_fact_neq_0.
 apply Rle_trans with
  (sum_f_R0 (fun k:nat => INR N / INR (fact (S N)) * C ^ (4 * N)) (pred N)).
@@ -352,24 +273,8 @@ unfold C in |- *; apply RmaxLess1.
 apply Rle_trans with (Rsqr (/ INR (fact (S (N + n)))) * INR N).
 apply Rmult_le_compat_l.
 apply Rle_0_sqr.
-replace (S (pred (N - n))) with (N - n)%nat.
 apply le_INR.
-apply (fun p n m:nat => plus_le_reg_l n m p) with n.
-rewrite <- le_plus_minus.
-apply le_plus_r.
-apply le_trans with (pred N).
-assumption.
-apply le_pred_n.
-apply S_pred with 0%nat.
-apply plus_lt_reg_l with n.
-rewrite <- le_plus_minus.
-replace (n + 0)%nat with n; [ idtac | ring ].
-apply le_lt_trans with (pred N).
-assumption.
-apply lt_pred_n_n; assumption.
-apply le_trans with (pred N).
-assumption.
-apply le_pred_n.
+omega.
 rewrite Rmult_comm; unfold Rdiv in |- *; apply Rmult_le_compat_l.
 apply pos_INR.
 apply Rle_trans with (/ INR (fact (S (N + n)))).
@@ -549,31 +454,7 @@ replace (2 * S (S (N + n)))%nat with
  (2 * (N - n0) + 1 + (2 * S (n0 + n) + 1))%nat.
 repeat rewrite pow_add.
 ring.
-apply INR_eq; repeat rewrite plus_INR; do 3 rewrite mult_INR.
-rewrite minus_INR.
-repeat rewrite S_INR; do 2 rewrite plus_INR; ring.
-apply le_trans with (pred (N - n)).
-exact H1.
-apply le_S_n.
-replace (S (pred (N - n))) with (N - n)%nat.
-apply le_trans with N.
-apply (fun p n m:nat => plus_le_reg_l n m p) with n.
-rewrite <- le_plus_minus.
-apply le_plus_r.
-apply le_trans with (pred N).
-assumption.
-apply le_pred_n.
-apply le_n_Sn.
-apply S_pred with 0%nat.
-apply plus_lt_reg_l with n.
-rewrite <- le_plus_minus.
-replace (n + 0)%nat with n; [ idtac | ring ].
-apply le_lt_trans with (pred N).
-assumption.
-apply lt_pred_n_n; assumption.
-apply le_trans with (pred N).
-assumption.
-apply le_pred_n.
+omega.
 apply INR_fact_neq_0.
 apply INR_fact_neq_0.
 apply Rle_ge; left; apply Rinv_0_lt_compat.
@@ -602,8 +483,7 @@ apply plus_le_compat_l.
 apply le_trans with (pred N).
 assumption.
 apply le_pred_n.
-apply INR_eq; do 2 rewrite S_INR; rewrite plus_INR; rewrite mult_INR.
-repeat rewrite S_INR; ring.
+ring_nat.
 apply Rle_trans with
  (sum_f_R0
     (fun k:nat =>
@@ -632,33 +512,8 @@ apply C_maj.
 apply le_trans with (2 * S (S (n0 + n)))%nat.
 replace (2 * S (S (n0 + n)))%nat with (S (2 * S (n0 + n) + 1)).
 apply le_n_Sn.
-apply INR_eq; rewrite S_INR; rewrite plus_INR; do 2 rewrite mult_INR;
- repeat rewrite S_INR; rewrite plus_INR; ring.
-apply (fun m n p:nat => mult_le_compat_l p n m).
-repeat apply le_n_S.
-apply plus_le_compat_r.
-apply le_trans with (pred (N - n)).
-assumption.
-apply le_S_n.
-replace (S (pred (N - n))) with (N - n)%nat.
-apply le_trans with N.
-apply (fun p n m:nat => plus_le_reg_l n m p) with n.
-rewrite <- le_plus_minus.
-apply le_plus_r.
-apply le_trans with (pred N).
-assumption.
-apply le_pred_n.
-apply le_n_Sn.
-apply S_pred with 0%nat.
-apply plus_lt_reg_l with n.
-rewrite <- le_plus_minus.
-replace (n + 0)%nat with n; [ idtac | ring ].
-apply le_lt_trans with (pred N).
-assumption.
-apply lt_pred_n_n; assumption.
-apply le_trans with (pred N).
-assumption.
-apply le_pred_n.
+ring_nat.
+omega.
 right.
 unfold Rdiv in |- *; rewrite Rmult_comm.
 unfold Binomial.C in |- *.
@@ -670,9 +525,7 @@ rewrite Rinv_mult_distr.
 unfold Rsqr in |- *; reflexivity.
 apply INR_fact_neq_0.
 apply INR_fact_neq_0.
-apply INR_eq; do 2 rewrite S_INR; rewrite minus_INR.
-rewrite mult_INR; repeat rewrite S_INR; rewrite plus_INR; ring.
-apply le_n_2n.
+omega.
 apply INR_fact_neq_0.
 unfold Rdiv in |- *; rewrite Rmult_comm.
 unfold Binomial.C in |- *.
@@ -683,62 +536,7 @@ replace (2 * S (S (N + n)) - (2 * S (n0 + n) + 1))%nat with
  (2 * (N - n0) + 1)%nat.
 rewrite mult_INR.
 reflexivity.
-apply INR_eq; rewrite minus_INR.
-do 2 rewrite plus_INR; do 3 rewrite mult_INR; repeat rewrite S_INR;
- do 2 rewrite plus_INR; rewrite minus_INR.
-ring.
-apply le_trans with (pred (N - n)).
-assumption.
-apply le_S_n.
-replace (S (pred (N - n))) with (N - n)%nat.
-apply le_trans with N.
-apply (fun p n m:nat => plus_le_reg_l n m p) with n.
-rewrite <- le_plus_minus.
-apply le_plus_r.
-apply le_trans with (pred N).
-assumption.
-apply le_pred_n.
-apply le_n_Sn.
-apply S_pred with 0%nat.
-apply plus_lt_reg_l with n.
-rewrite <- le_plus_minus.
-replace (n + 0)%nat with n; [ idtac | ring ].
-apply le_lt_trans with (pred N).
-assumption.
-apply lt_pred_n_n; assumption.
-apply le_trans with (pred N).
-assumption.
-apply le_pred_n.
-apply le_trans with (2 * S (S (n0 + n)))%nat.
-replace (2 * S (S (n0 + n)))%nat with (S (2 * S (n0 + n) + 1)).
-apply le_n_Sn.
-apply INR_eq; rewrite S_INR; rewrite plus_INR; do 2 rewrite mult_INR;
- repeat rewrite S_INR; rewrite plus_INR; ring.
-apply (fun m n p:nat => mult_le_compat_l p n m).
-repeat apply le_n_S.
-apply plus_le_compat_r.
-apply le_trans with (pred (N - n)).
-assumption.
-apply le_S_n.
-replace (S (pred (N - n))) with (N - n)%nat.
-apply le_trans with N.
-apply (fun p n m:nat => plus_le_reg_l n m p) with n.
-rewrite <- le_plus_minus.
-apply le_plus_r.
-apply le_trans with (pred N).
-assumption.
-apply le_pred_n.
-apply le_n_Sn.
-apply S_pred with 0%nat.
-apply plus_lt_reg_l with n.
-rewrite <- le_plus_minus.
-replace (n + 0)%nat with n; [ idtac | ring ].
-apply le_lt_trans with (pred N).
-assumption.
-apply lt_pred_n_n; assumption.
-apply le_trans with (pred N).
-assumption.
-apply le_pred_n.
+omega.
 apply INR_fact_neq_0.
 apply Rle_trans with
  (sum_f_R0 (fun k:nat => INR N / INR (fact (S (S N))) * C ^ (4 * S N))
@@ -761,22 +559,8 @@ apply Rmult_le_compat_l.
 apply Rle_0_sqr.
 replace (S (pred (N - n))) with (N - n)%nat.
 apply le_INR.
-apply (fun p n m:nat => plus_le_reg_l n m p) with n.
-rewrite <- le_plus_minus.
-apply le_plus_r.
-apply le_trans with (pred N).
-assumption.
-apply le_pred_n.
-apply S_pred with 0%nat.
-apply plus_lt_reg_l with n.
-rewrite <- le_plus_minus.
-replace (n + 0)%nat with n; [ idtac | ring ].
-apply le_lt_trans with (pred N).
-assumption.
-apply lt_pred_n_n; assumption.
-apply le_trans with (pred N).
-assumption.
-apply le_pred_n.
+omega.
+omega.
 rewrite Rmult_comm; unfold Rdiv in |- *; apply Rmult_le_compat_l.
 apply pos_INR.
 apply Rle_trans with (/ INR (fact (S (S (N + n))))).
@@ -806,8 +590,7 @@ rewrite <- Rinv_l_sym.
 rewrite Rmult_1_r.
 apply le_INR.
 apply fact_le.
-repeat apply le_n_S.
-apply le_plus_l.
+omega.
 apply INR_fact_neq_0.
 apply INR_fact_neq_0.
 rewrite sum_cte.

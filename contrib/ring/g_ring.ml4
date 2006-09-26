@@ -12,9 +12,10 @@
 
 open Quote
 open Ring
+open Tacticals
 
 TACTIC EXTEND ring
-  [ "ring" constr_list(l) ] -> [ polynom l ]
+| [ "legacy" "ring" constr_list(l) ] -> [ polynom l ]
 END
 
 (* The vernac commands "Add Ring" and co *)
@@ -23,7 +24,7 @@ let cset_of_constrarg_list l =
   List.fold_right ConstrSet.add (List.map constr_of l) ConstrSet.empty
 
 VERNAC COMMAND EXTEND AddRing
-  [ "Add" "Ring" 
+  [ "Add" "Legacy" "Ring" 
           constr(a) constr(aplus) constr(amult) constr(aone) constr(azero)
           constr(aopp) constr(aeq) constr(t) "[" ne_constr_list(l) "]" ] 
   -> [ add_theory true false false
@@ -40,7 +41,7 @@ VERNAC COMMAND EXTEND AddRing
 			 (constr_of t)
 			 (cset_of_constrarg_list l) ]
 
-| [ "Add" "Semi" "Ring" 
+| [ "Add" "Legacy" "Semi" "Ring" 
       	  constr(a) constr(aplus) constr(amult) constr(aone) constr(azero)
           constr(aeq) constr(t) "[" ne_constr_list(l) "]" ] 
   -> [ add_theory false false false
@@ -57,7 +58,7 @@ VERNAC COMMAND EXTEND AddRing
 			 (constr_of t)
 			 (cset_of_constrarg_list l) ]
 
-| [ "Add" "Abstract" "Ring" 
+| [ "Add" "Legacy" "Abstract" "Ring" 
     	  constr(a) constr(aplus) constr(amult) constr(aone)
           constr(azero) constr(aopp) constr(aeq) constr(t) ] 
   -> [ add_theory true true false
@@ -74,7 +75,7 @@ VERNAC COMMAND EXTEND AddRing
 			 (constr_of t)
 			 ConstrSet.empty ]
 
-| [ "Add" "Abstract" "Semi" "Ring" 
+| [ "Add" "Legacy" "Abstract" "Semi" "Ring" 
           constr(a) constr(aplus) constr(amult) constr(aone)
           constr(azero) constr(aeq) constr(t) ] 
   -> [ add_theory false true false
@@ -91,7 +92,7 @@ VERNAC COMMAND EXTEND AddRing
 			 (constr_of t)
 			 ConstrSet.empty ]
 
-| [ "Add" "Setoid" "Ring"
+| [ "Add" "Legacy" "Setoid" "Ring"
       	  constr(a) constr(aequiv) constr(asetth) constr(aplus) constr(amult) 
 	  constr(aone) constr(azero) constr(aopp) constr(aeq) constr(pm)
 	  constr(mm) constr(om) constr(t) "[" ne_constr_list(l) "]" ] 
@@ -112,7 +113,7 @@ VERNAC COMMAND EXTEND AddRing
 			 (constr_of t)
 			 (cset_of_constrarg_list l) ]
 
-| [ "Add" "Semi" "Setoid" "Ring" 
+| [ "Add" "Legacy" "Semi" "Setoid" "Ring" 
           constr(a) constr(aequiv) constr(asetth) constr(aplus)
 	  constr(amult) constr(aone) constr(azero) constr(aeq) 
           constr(pm) constr(mm) constr(t) "[" ne_constr_list(l) "]" ] 

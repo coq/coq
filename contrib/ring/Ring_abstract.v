@@ -129,7 +129,7 @@ Hint Resolve (SR_mult_zero_left T).
 Hint Resolve (SR_mult_zero_left2 T).
 Hint Resolve (SR_distr_left T).
 Hint Resolve (SR_distr_left2 T).
-Hint Resolve (SR_plus_reg_left T).
+(*Hint Resolve (SR_plus_reg_left T).*)
 Hint Resolve (SR_plus_permute T).
 Hint Resolve (SR_mult_permute T).
 Hint Resolve (SR_distr_right T).
@@ -140,7 +140,7 @@ Hint Resolve (SR_plus_zero_right T).
 Hint Resolve (SR_plus_zero_right2 T).
 Hint Resolve (SR_mult_one_right T).
 Hint Resolve (SR_mult_one_right2 T).
-Hint Resolve (SR_plus_reg_right T).
+(*Hint Resolve (SR_plus_reg_right T).*)
 Hint Resolve refl_equal sym_equal trans_equal.
 (*Hints Resolve refl_eqT sym_eqT trans_eqT.*)
 Hint Immediate T.
@@ -439,7 +439,7 @@ Hint Resolve (Th_mult_zero_left T).
 Hint Resolve (Th_mult_zero_left2 T).
 Hint Resolve (Th_distr_left T).
 Hint Resolve (Th_distr_left2 T).
-Hint Resolve (Th_plus_reg_left T).
+(*Hint Resolve (Th_plus_reg_left T).*)
 Hint Resolve (Th_plus_permute T).
 Hint Resolve (Th_mult_permute T).
 Hint Resolve (Th_distr_right T).
@@ -449,7 +449,7 @@ Hint Resolve (Th_plus_zero_right T).
 Hint Resolve (Th_plus_zero_right2 T).
 Hint Resolve (Th_mult_one_right T).
 Hint Resolve (Th_mult_one_right2 T).
-Hint Resolve (Th_plus_reg_right T).
+(*Hint Resolve (Th_plus_reg_right T).*)
 Hint Resolve refl_equal sym_equal trans_equal.
 (*Hints Resolve refl_eqT sym_eqT trans_eqT.*)
 Hint Immediate T.

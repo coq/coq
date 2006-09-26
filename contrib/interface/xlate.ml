@@ -1670,27 +1670,14 @@ let rec xlate_vernac =
 	CT_no_inline(CT_id_ne_list(loc_qualid_to_ct_ID fst,
 				List.map loc_qualid_to_ct_ID l2))
     | VernacExtend("Field", 
-		   [a;aplus;amult;aone;azero;aopp;aeq;ainv;fth;ainvl;minusdiv]) ->
+		   [fth;ainv;ainvl;div]) ->
 	(match List.map (fun v -> xlate_formula(out_gen rawwit_constr v))
-                   [a;aplus;amult;aone;azero;aopp;aeq;ainv;fth;ainvl]
+                   [fth;ainv;ainvl]
  	 with
-             [a1;aplus1;amult1;aone1;azero1;aopp1;aeq1;ainv1;fth1;ainvl1] ->
-	       let bind =
-		 match out_gen Field.rawwit_minus_div_arg minusdiv with
-		     None, None ->
-		       CT_binding_list[]
-		   | Some m, None ->
-		       CT_binding_list[
-			 CT_binding(CT_coerce_ID_to_ID_OR_INT (CT_ident "minus"), xlate_formula m)]
-		   | None, Some d ->
-		       CT_binding_list[
-			 CT_binding(CT_coerce_ID_to_ID_OR_INT (CT_ident "div"), xlate_formula d)]
-		   | Some m, Some d ->
-		       CT_binding_list[
-			 CT_binding(CT_coerce_ID_to_ID_OR_INT (CT_ident "minus"), xlate_formula m);
-			 CT_binding(CT_coerce_ID_to_ID_OR_INT (CT_ident "div"), xlate_formula d)] in
-		 CT_add_field(a1, aplus1, amult1, aone1, azero1, aopp1, aeq1,
-			      ainv1, fth1, ainvl1, bind)
+             [fth1;ainv1;ainvl1] ->
+	       let adiv1 =
+                 xlate_formula_opt (out_gen (wit_opt rawwit_constr) div) in
+	       CT_add_field(fth1, ainv1, ainvl1, adiv1)
 	   |_ -> assert false)
   | VernacExtend ("HintRewrite", o::f::([b]|[_;b] as args)) ->
       let orient = out_gen Extraargs.rawwit_orient o in

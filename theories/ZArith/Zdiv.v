@@ -22,7 +22,7 @@ Then only after proves the main required property.
 Require Export ZArith_base.
 Require Import Zbool.
 Require Import Omega.
-Require Import ZArithRing.
+Require Import NewZArithRing.
 Require Import Zcomplements.
 Open Local Scope Z_scope.
 
@@ -148,7 +148,7 @@ case (Zgt_bool b (2 * r)); rewrite BinInt.Zpos_xO;
  (split; [ ring | omega ]).
 
 generalize (Zge_cases b 2).
-case (Zge_bool b 2); (intros; split; [ ring | omega ]).
+case (Zge_bool b 2); (intros; split; [ try ring | omega ]).
 omega.
 Qed.
 

@@ -38,13 +38,9 @@ rewrite H1; simpl in |- *; rewrite <- minus_n_n; simpl in |- *; ring.
 replace (S n - k)%nat with (S (n - k)).
 simpl in |- *; replace (k + S (n - k))%nat with (S n).
 rewrite Hrecn; [ ring | assumption ].
-apply INR_eq; rewrite S_INR; rewrite plus_INR; rewrite S_INR;
- rewrite minus_INR; [ ring | assumption ].
-apply INR_eq; rewrite S_INR; repeat rewrite minus_INR.
-rewrite S_INR; ring.
-apply le_trans with n; [ assumption | apply le_n_Sn ].
-assumption.
-inversion H; [ left; reflexivity | right; assumption ].
+omega.
+omega.
+omega.
 Qed.
 
 (**********)
@@ -116,18 +112,8 @@ apply prod_SO_Rle; intros; split.
 apply pos_INR.
 apply le_INR; apply plus_le_compat_r; assumption.
 assumption.
-apply INR_eq; repeat rewrite minus_INR.
-rewrite mult_INR; repeat rewrite S_INR; ring.
-apply le_trans with N; [ assumption | apply le_n_2n ].
-apply (fun p n m:nat => plus_le_reg_l n m p) with k; rewrite <- le_plus_minus.
-replace (2 * N)%nat with (N + N)%nat; [ idtac | ring ].
-apply plus_le_compat_r; assumption.
-assumption.
-assumption.
-apply (fun p n m:nat => plus_le_reg_l n m p) with k; rewrite <- le_plus_minus.
-replace (2 * N)%nat with (N + N)%nat; [ idtac | ring ].
-apply plus_le_compat_r; assumption.
-assumption.
+omega.
+omega.
 rewrite <- (Rmult_comm (prod_f_SO (fun l:nat => INR l) k));
  rewrite (prod_SO_split (fun l:nat => INR l) k N).
 rewrite Rmult_assoc; apply Rmult_le_compat_l.
@@ -140,24 +126,11 @@ replace (N - (2 * N - k))%nat with (k - N)%nat.
 apply prod_SO_Rle; intros; split.
 apply pos_INR.
 apply le_INR; apply plus_le_compat_r.
-apply (fun p n m:nat => plus_le_reg_l n m p) with k; rewrite <- le_plus_minus.
-replace (2 * N)%nat with (N + N)%nat; [ idtac | ring ];
- apply plus_le_compat_r; assumption.
+omega.
+omega.
+omega.
 assumption.
-apply INR_eq; repeat rewrite minus_INR.
-rewrite mult_INR; do 2 rewrite S_INR; ring.
-assumption.
-apply (fun p n m:nat => plus_le_reg_l n m p) with k; rewrite <- le_plus_minus.
-replace (2 * N)%nat with (N + N)%nat; [ idtac | ring ];
- apply plus_le_compat_r; assumption.
-assumption.
-assumption.
-apply (fun p n m:nat => plus_le_reg_l n m p) with k; rewrite <- le_plus_minus.
-replace (2 * N)%nat with (N + N)%nat; [ idtac | ring ];
- apply plus_le_compat_r; assumption.
-assumption.
-assumption.
-elim (le_dec k N); intro; [ left; assumption | right; assumption ].
+omega.
 Qed.
 
 (**********)
@@ -186,6 +159,5 @@ assumption.
 reflexivity.
 rewrite mult_INR; apply prod_neq_R0; apply INR_fact_neq_0.
 apply prod_neq_R0; apply INR_fact_neq_0.
-apply INR_eq; rewrite minus_INR;
- [ rewrite mult_INR; do 2 rewrite S_INR; ring | apply le_n_2n ].
+omega.
 Qed.

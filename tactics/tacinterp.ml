@@ -248,6 +248,34 @@ let _ =
       Summary.survive_module = false;
       Summary.survive_section   = false }
 
+(* Tactics table (TacExtend). *)
+
+let tac_tab = Hashtbl.create 17
+
+let add_tactic s t =
+  if Hashtbl.mem tac_tab s then
+    errorlabstrm ("Refiner.add_tactic: ") 
+      (str ("Cannot redeclare tactic "^s));
+  Hashtbl.add tac_tab s t
+
+let overwriting_add_tactic s t =
+  if Hashtbl.mem tac_tab s then begin
+    Hashtbl.remove tac_tab s;
+    warning ("Overwriting definition of tactic "^s)
+  end;
+  Hashtbl.add tac_tab s t
+
+let lookup_tactic s =
+  try 
+    Hashtbl.find tac_tab s
+  with Not_found -> 
+    errorlabstrm "Refiner.lookup_tactic"
+      (str"The tactic " ++ str s ++ str" is not installed")
+(*
+let vernac_tactic (s,args) =
+  let tacfun = lookup_tactic s args in
+  abstract_extended_tactic s args tacfun
+*)
 (* Interpretation of extra generic arguments *)
 type glob_sign = {
   ltacvars : identifier list * identifier list;
@@ -2062,7 +2090,10 @@ and interp_atomic ist gl = function
 
   (* For extensions *)
   | TacExtend (loc,opn,l) ->
-      fun gl -> vernac_tactic (opn,List.map (interp_genarg ist gl) l) gl
+      let tac = lookup_tactic opn in
+      fun gl ->
+        let args = List.map (interp_genarg ist gl) l in
+        abstract_extended_tactic opn args (tac args) gl
   | TacAlias (loc,_,l,(_,body)) -> fun gl ->
     let rec f x = match genarg_tag x with
     | IntArgType -> 
@@ -2143,7 +2174,7 @@ let interp_tac_gen lfun debug t gl =
       ltacvars = (List.map fst lfun, []); ltacrecvars = [];
       gsigma = project gl; genv = pf_env gl } t) gl
 
-let eval_tactic t = interp_tactic { lfun=[]; debug=get_debug() } t
+let eval_tactic t gls = interp_tactic { lfun=[]; debug=get_debug() } t gls
 
 let interp t = interp_tac_gen [] (get_debug()) t
 
@@ -2191,7 +2222,7 @@ let subst_induction_arg subst = function
   | ElimOnIdent id as x -> x
 
 let subst_and_short_name f (c,n) =
-  assert (n=None); (* since tacdef are strictly globalized *)
+(*  assert (n=None); *)(* since tacdef are strictly globalized *)
   (f c,None)
 
 let subst_or_var f =  function

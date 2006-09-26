@@ -1,7 +1,15 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+
 Require Import Setoid.
- Set Implicit Arguments.
+Set Implicit Arguments.
 
-
+Module RingSyntax.
 Reserved Notation "x ?=! y" (at level 70, no associativity).
 Reserved Notation "x +! y " (at level 50, left associativity).
 Reserved Notation "x -! y" (at level 50, left associativity).
@@ -17,8 +25,8 @@ Reserved Notation "x ** y" (at level 40, left associativity).
 Reserved Notation "-- x" (at level 35, right associativity).
 
 Reserved Notation "x == y" (at level 70, no associativity).
-
-
+End RingSyntax.
+Import RingSyntax.
 
 Section DEFINITIONS.
  Variable R : Type.
@@ -42,7 +50,7 @@ Section DEFINITIONS.
   }.
   
  (** Almost Ring *)
-(*Almost ring are no ring : Ropp_def is missi**)
+(*Almost ring are no ring : Ropp_def is missing **)
  Record almost_ring_theory : Prop := mk_art {
     ARadd_0_l   : forall x, 0 + x == x;
     ARadd_sym   : forall x y, x + y == y + x;
@@ -342,6 +350,12 @@ Section ALMOST_RING.
 
  (** Usefull lemmas on almost ring *)
  Variable ARth : almost_ring_theory 0 1 radd rmul rsub ropp req.
+
+ Lemma ARth_SRth : semi_ring_theory 0 1 radd rmul req.
+Proof.
+elim ARth; intros.
+constructor; trivial.
+Qed.
 
  Lemma ARsub_ext :
       forall x1 x2, x1 == x2 -> forall y1 y2, y1 == y2 -> x1 - y1 == x2 - y2.

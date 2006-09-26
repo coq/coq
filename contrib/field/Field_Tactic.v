@@ -9,7 +9,7 @@
 (* $Id$ *)
 
 Require Import List.
-Require Import Ring.
+Require Import LegacyRing.
 Require Export Field_Compl.
 Require Export Field_Theory.
 
@@ -289,11 +289,12 @@ Ltac field_gen_aux FT :=
               apply_simplif ltac:(apply_inverse mul);
               let id := grep_mult in
               clear id; weak_reduce; clear ft vm; first
-              [ inverse_test FT; ring | field_gen_aux FT ]
+              [ inverse_test FT; legacy ring | field_gen_aux FT ]
            | idtac ] ])
   end.
 
-Ltac field_gen FT := unfolds FT; (inverse_test FT; ring) || field_gen_aux FT.
+Ltac field_gen FT :=
+  unfolds FT; (inverse_test FT; legacy ring) || field_gen_aux FT.
 
 (*****************************)
 (*    Term Simplification    *)
@@ -429,4 +430,4 @@ Ltac field_term FT exp :=
    simpl_all_monomials
     ltac:(assoc_distrib ltac:(simpl_all_monomials ltac:(simpl_inv tma))) in
   let trep := eval_weak_reduce (interp_ExprA FT lvar tsmp) in
-  (replace exp with trep; [ ring trep | field_gen FT ]).
+  (replace exp with trep; [ legacy ring trep | field_gen FT ]).

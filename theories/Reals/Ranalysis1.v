@@ -1114,7 +1114,7 @@ apply Ropp_gt_lt_contravar;
      Rmin (delta / 2) ((b + - c) / 2))) in |- *; apply Rplus_lt_le_0_compat;
  [ assumption
  | rewrite <- Ropp_0; apply Ropp_ge_le_contravar; apply Rle_ge; assumption ].
-ring.
+unfold Rminus; ring.
 rewrite <- Ropp_0; apply Ropp_lt_gt_contravar; assumption.
 replace
  ((f (c + Rmin (delta / 2) ((b - c) / 2)) - f c) /
@@ -1306,10 +1306,7 @@ prove_sup0.
 replace (2 * (c + (a - c) / 2)) with (a + c).
 rewrite double.
 apply Rplus_lt_compat_l; assumption.
-ring.
-rewrite <- Rplus_assoc.
-rewrite <- double_var.
-ring.
+field; discrR.
 assumption.
 unfold Rabs in |- *; case (Rcase_abs (Rmax (- (delta / 2)) ((a - c) / 2))).
 intro; generalize (RmaxLess1 (- (delta / 2)) ((a - c) / 2)); intro;

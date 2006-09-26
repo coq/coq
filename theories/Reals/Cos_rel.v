@@ -83,7 +83,6 @@ replace
             ((-1) ^ (n - l) / INR (fact (2 * (n - l) + 1)) *
              y ^ (2 * (n - l) + 1))) (pred (n - k))) (
     pred n)) with (Reste2 x y n).
-ring.
 replace
  (sum_f_R0
     (fun k:nat =>
@@ -98,7 +97,7 @@ replace
        sum_f_R0
          (fun l:nat => C (2 * k) (2 * l) * x ^ (2 * l) * y ^ (2 * (k - l))) k)
     (S n)).
-set
+pose
  (sin_nnn :=
   fun n:nat =>
     match n with
@@ -109,8 +108,10 @@ set
           (fun l:nat =>
              C (2 * S p) (S (2 * l)) * x ^ S (2 * l) * y ^ S (2 * (p - l))) p
     end).
+ring_simplify.
 replace
- (-
+(* (-   old ring compat *)
+ (-1 *
   sum_f_R0
     (fun k:nat =>
        sum_f_R0
@@ -123,19 +124,13 @@ unfold C1 in |- *.
 apply sum_eq; intros.
 induction  i as [| i Hreci].
 simpl in |- *.
-rewrite Rplus_0_l.
-replace (C 0 0) with 1.
-unfold Rdiv in |- *; rewrite Rinv_1.
-ring.
-unfold C in |- *.
-rewrite <- minus_n_n.
-simpl in |- *.
-unfold Rdiv in |- *; rewrite Rmult_1_r; rewrite Rinv_1; ring.
+unfold C in |- *; simpl in |- *.
+field; discrR.
 unfold sin_nnn in |- *.
 rewrite <- Rmult_plus_distr_l.
 apply Rmult_eq_compat_l.
 rewrite binomial.
-set (Wn := fun i0:nat => C (2 * S i) i0 * x ^ i0 * y ^ (2 * S i - i0)).
+pose (Wn := fun i0:nat => C (2 * S i) i0 * x ^ i0 * y ^ (2 * S i - i0)).
 replace
  (sum_f_R0
     (fun l:nat => C (2 * S i) (2 * l) * x ^ (2 * l) * y ^ (2 * (S i - l)))
@@ -145,42 +140,39 @@ replace
     (fun l:nat =>
        C (2 * S i) (S (2 * l)) * x ^ S (2 * l) * y ^ S (2 * (i - l))) i) with
  (sum_f_R0 (fun l:nat => Wn (S (2 * l))) i).
-rewrite Rplus_comm.
+(*rewrite Rplus_comm.*) (* compatibility old ring... *)
 apply sum_decomposition.
 apply sum_eq; intros.
 unfold Wn in |- *.
 apply Rmult_eq_compat_l.
 replace (2 * S i - S (2 * i0))%nat with (S (2 * (i - i0))).
 reflexivity.
-apply INR_eq.
-rewrite S_INR; rewrite mult_INR.
-repeat rewrite minus_INR.
-rewrite mult_INR; repeat rewrite S_INR.
-rewrite mult_INR; repeat rewrite S_INR; ring.
-replace (2 * S i)%nat with (S (S (2 * i))).
-apply le_n_S.
-apply le_trans with (2 * i)%nat.
-apply (fun m n p:nat => mult_le_compat_l p n m); assumption.
-apply le_n_Sn.
-apply INR_eq; do 2 rewrite S_INR; do 2 rewrite mult_INR; repeat rewrite S_INR;
- ring.
-assumption.
+omega.
 apply sum_eq; intros.
 unfold Wn in |- *.
 apply Rmult_eq_compat_l.
 replace (2 * S i - 2 * i0)%nat with (2 * (S i - i0))%nat.
 reflexivity.
-apply INR_eq.
-rewrite mult_INR.
-repeat rewrite minus_INR.
-rewrite mult_INR; repeat rewrite S_INR.
-rewrite mult_INR; repeat rewrite S_INR; ring.
-apply (fun m n p:nat => mult_le_compat_l p n m); assumption.
-assumption.
-rewrite <- (Ropp_involutive (sum_f_R0 sin_nnn (S n))).
-apply Ropp_eq_compat.
-replace (- sum_f_R0 sin_nnn (S n)) with (-1 * sum_f_R0 sin_nnn (S n));
- [ idtac | ring ].
+omega.
+replace (sum_f_R0 sin_nnn (S n)) with (-1 * (-1 * sum_f_R0 sin_nnn (S n))).
+(*replace (* compatibility old ring... *)
+ (-
+  sum_f_R0
+    (fun k:nat =>
+       sum_f_R0
+         (fun p:nat =>
+            (-1) ^ p / INR (fact (2 * p + 1)) * x ^ (2 * p + 1) *
+            ((-1) ^ (k - p) / INR (fact (2 * (k - p) + 1)) *
+             y ^ (2 * (k - p) + 1))) k) n) with
+ (-1 *
+  sum_f_R0
+    (fun k:nat =>
+       sum_f_R0
+         (fun p:nat =>
+            (-1) ^ p / INR (fact (2 * p + 1)) * x ^ (2 * p + 1) *
+            ((-1) ^ (k - p) / INR (fact (2 * (k - p) + 1)) *
+             y ^ (2 * (k - p) + 1))) k) n);[idtac|ring].*)
+apply Rmult_eq_compat_l.
 rewrite scal_sum.
 rewrite decomp_sum.
 replace (sin_nnn 0%nat) with 0.
@@ -218,25 +210,13 @@ replace (S (2 * i0)) with (2 * i0 + 1)%nat;
  [ apply Rmult_eq_compat_l | ring ].
 replace (2 * S i - (2 * i0 + 1))%nat with (2 * (i - i0) + 1)%nat.
 reflexivity.
-apply INR_eq.
-rewrite plus_INR; rewrite mult_INR; repeat rewrite minus_INR.
-rewrite plus_INR; do 2 rewrite mult_INR; repeat rewrite S_INR; ring.
-replace (2 * i0 + 1)%nat with (S (2 * i0)).
-replace (2 * S i)%nat with (S (S (2 * i))).
-apply le_n_S.
-apply le_trans with (2 * i)%nat.
-apply (fun m n p:nat => mult_le_compat_l p n m); assumption.
-apply le_n_Sn.
-apply INR_eq; do 2 rewrite S_INR; do 2 rewrite mult_INR; repeat rewrite S_INR;
- ring.
-apply INR_eq; rewrite S_INR; rewrite plus_INR; rewrite mult_INR;
- repeat rewrite S_INR; ring.
-assumption.
+omega.
 apply INR_fact_neq_0.
 apply INR_fact_neq_0.
 apply INR_fact_neq_0.
 reflexivity.
 apply lt_O_Sn.
+ring.
 apply sum_eq; intros.
 rewrite scal_sum.
 apply sum_eq; intros.
@@ -259,11 +239,7 @@ rewrite Rmult_1_l.
 rewrite Rinv_mult_distr.
 replace (2 * i - 2 * i0)%nat with (2 * (i - i0))%nat.
 reflexivity.
-apply INR_eq.
-rewrite mult_INR; repeat rewrite minus_INR.
-do 2 rewrite mult_INR; repeat rewrite S_INR; ring.
-apply (fun m n p:nat => mult_le_compat_l p n m); assumption.
-assumption.
+omega.
 apply INR_fact_neq_0.
 apply INR_fact_neq_0.
 apply INR_fact_neq_0.

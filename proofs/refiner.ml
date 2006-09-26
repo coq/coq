@@ -157,31 +157,6 @@ let leaf g =
     goal = g;
     ref = None }
 
-(* Tactics table. *)
-
-let tac_tab = Hashtbl.create 17
-
-let add_tactic s t =
-  if Hashtbl.mem tac_tab s then
-    errorlabstrm ("Refiner.add_tactic: ") 
-      (str ("Cannot redeclare tactic "^s));
-  Hashtbl.add tac_tab s t
-
-let overwriting_add_tactic s t =
-  if Hashtbl.mem tac_tab s then begin
-    Hashtbl.remove tac_tab s;
-    warning ("Overwriting definition of tactic "^s)
-  end;
-  Hashtbl.add tac_tab s t
-
-let lookup_tactic s =
-  try 
-    Hashtbl.find tac_tab s
-  with Not_found -> 
-    errorlabstrm "Refiner.lookup_tactic"
-      (str"The tactic " ++ str s ++ str" is not installed")
-
-
 (* refiner r is a tactic applying the rule r *)
 
 let check_subproof_connection gl spfl =
@@ -200,6 +175,11 @@ let abstract_operation syntax semantics gls =
 
 let abstract_tactic_expr te tacfun gls =
   abstract_operation (Tactic te) tacfun gls	
+
+let abstract_tactic te = abstract_tactic_expr (Tacexpr.TacAtom (dummy_loc,te))
+
+let abstract_extended_tactic s args = 
+  abstract_tactic (Tacexpr.TacExtend (dummy_loc, s, args))
 
 let refiner = function
   | Prim pr as r ->
@@ -253,20 +233,6 @@ let refiner = function
 let local_Constraints gl = refiner Change_evars gl
 
 let norm_evar_tac = local_Constraints
-
-(*
-let vernac_tactic (s,args) =
-  let tacfun = lookup_tactic s args in
-  abstract_extra_tactic s args tacfun
-*)
-let abstract_tactic te = abstract_tactic_expr (Tacexpr.TacAtom (dummy_loc,te))
-
-let abstract_extended_tactic s args = 
-  abstract_tactic (Tacexpr.TacExtend (dummy_loc, s, args))
-
-let vernac_tactic (s,args) =
-  let tacfun = lookup_tactic s args in
-  abstract_extended_tactic s args tacfun
 
 (* [extract_open_proof : proof_tree -> constr * (int * constr) list]
   takes a (not necessarly complete) proof and gives a pair (pfterm,obl)

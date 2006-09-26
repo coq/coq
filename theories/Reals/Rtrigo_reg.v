@@ -98,8 +98,7 @@ unfold Rsqr in |- *; ring.
 apply pow_nonzero; assumption.
 replace (2 * S n)%nat with (S (S (2 * n))).
 simpl in |- *; ring.
-apply INR_eq; do 2 rewrite S_INR; do 2 rewrite mult_INR; repeat rewrite S_INR;
- ring.
+ring_nat.
 apply Rle_ge; apply pow_le; left; apply (cond_pos r).
 apply Rle_ge; apply pow_le; left; apply (cond_pos r).
 apply Rabs_no_R0; apply pow_nonzero; assumption.
@@ -277,8 +276,7 @@ unfold Rsqr in |- *; ring.
 apply pow_nonzero; assumption.
 replace (2 * S n)%nat with (S (S (2 * n))).
 simpl in |- *; ring.
-apply INR_eq; do 2 rewrite S_INR; do 2 rewrite mult_INR; repeat rewrite S_INR;
- ring.
+ring_nat.
 apply Rle_ge; apply pow_le; left; apply (cond_pos r).
 apply Rle_ge; apply pow_le; left; apply (cond_pos r).
 apply Rabs_no_R0; apply pow_nonzero; assumption.

@@ -8,6 +8,7 @@
 
 (*i $Id$ i*)
 
+Require Import NewField Field_tac.
 Require Import QArith.
 Require Import Znumtheory.
 Require Import Eqdep_dec.
@@ -493,6 +494,7 @@ intros x y; unfold Qc_eq_bool in |- *; case (Qc_eq_dec x y); simpl in |- *; auto
 intros _ H; inversion H.
 Qed.
 
+(*
 Definition Qcrt : Ring_Theory Qcplus Qcmult 1 0 Qcopp Qc_eq_bool.
 Proof.
 constructor.
@@ -507,17 +509,41 @@ exact Qcmult_plus_distr_l.
 unfold Is_true; intros x y; generalize (Qc_eq_bool_correct x y);
  case (Qc_eq_bool x y); auto.
 Qed.
-
 Add Ring Qc Qcplus Qcmult 1 0 Qcopp Qc_eq_bool Qcrt [ Qcmake ].
+*)
+Definition Qcrt : ring_theory 0 1 Qcplus Qcmult Qcminus Qcopp (eq(A:=Qc)).
+Proof.
+constructor.
+ exact Qcplus_0_l.
+ exact Qcplus_comm.
+ exact Qcplus_assoc.
+ exact Qcmult_1_l.
+ exact Qcmult_comm.
+ exact Qcmult_assoc.
+ exact Qcmult_plus_distr_l.
+ reflexivity.
+ exact Qcplus_opp_r.
+Qed.
+
+Definition Qcft :
+  field_theory _ 0%Qc 1%Qc Qcplus Qcmult Qcminus Qcopp Qcdiv Qcinv (eq(A:=Qc)).
+Proof.
+constructor.
+ exact Qcrt.
+ exact Q_apart_0_1.
+ reflexivity.
+ exact Qcmult_inv_l.
+Qed.
+
+Add Field Qcfield : Qcft.
 
 (** A field tactic for rational numbers *)
 
-Require Import Field.
-
+(*
 Add Field Qc Qcplus Qcmult 1 0 Qcopp Qc_eq_bool Qcinv Qcrt Qcmult_inv_l
  with div:=Qcdiv.
-
-Example test_field : forall x y : Qc, y<>0 -> (x/y)*y = x.
+*)
+Example test_field : (forall x y : Qc, y<>0 -> (x/y)*y = x)%Qc.
 intros.
 field.
 auto.

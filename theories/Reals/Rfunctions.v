@@ -15,6 +15,8 @@
 (**          Definition of the sum functions            *)
 (*                                                      *)
 (********************************************************)
+Require Export ArithRing. (* for ring_nat... *)
+Require Export NewArithRing.
 
 Require Import Rbase.
 Require Export R_Ifp.
@@ -380,8 +382,7 @@ replace (2 * S n)%nat with (S (S (2 * n))).
 replace (x ^ S (S (2 * n))) with (x * x * x ^ (2 * n)).
 rewrite Hrecn; reflexivity.
 simpl in |- *; ring.
-apply INR_eq; do 2 rewrite S_INR; do 2 rewrite mult_INR; repeat rewrite S_INR;
- ring.
+ring_nat.
 Qed.
 
 Lemma pow_le : forall (a:R) (n:nat), 0 <= a -> 0 <= a ^ n.
@@ -429,7 +430,7 @@ do 2 rewrite pow_add.
 rewrite Hrecn2.
 simpl in |- *.
 ring.
-apply INR_eq; rewrite plus_INR; do 2 rewrite mult_INR; rewrite S_INR; ring.
+ring_nat.
 Qed.
 
 Lemma pow_incr : forall (x y:R) (n:nat), 0 <= x <= y -> x ^ n <= y ^ n.
@@ -747,7 +748,7 @@ Qed.
 (*********)
 Lemma R_dist_sym : forall x y:R, R_dist x y = R_dist y x.
 Proof.
-unfold R_dist in |- *; intros; split_Rabs; ring.
+unfold R_dist in |- *; intros; split_Rabs; try ring.
 generalize (Ropp_gt_lt_0_contravar (y - x) r); intro;
  rewrite (Ropp_minus_distr y x) in H; generalize (Rlt_asym (x - y) 0 r0);
  intro; unfold Rgt in H; elimtype False; auto.

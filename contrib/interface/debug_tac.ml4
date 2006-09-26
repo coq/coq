@@ -336,7 +336,7 @@ let debug_tac = function
 add_tactic "DebugTac" debug_tac;;
 *)
 
-Refiner.add_tactic "OnThen" on_then;;
+Tacinterp.add_tactic "OnThen" on_then;;
 
 let rec clean_path tac l = 
   match tac, l with

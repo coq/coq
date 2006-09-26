@@ -8,9 +8,9 @@
 
 (* $Id$ *)
 
+Require Import NewZArithRing.
 Require Import Omega.
 Require Export ZArith_base.
-Require Export ZArithRing.
 Open Local Scope Z_scope.
 
 (**********************************************************************)
@@ -86,7 +86,7 @@ refine
             end
         end
     end); clear sqrtrempos; repeat compute_POS;
- try (try rewrite Heq; ring; fail); try omega.
+ try (try rewrite Heq; ring); try omega.
 Defined.
 
 (** Define with integer input, but with a strong (readable) specification. *)
@@ -132,7 +132,7 @@ refine
                (fun r:Z => 0 = 0 * 0 + r /\ 0 * 0 <= 0 < (0 + 1) * (0 + 1)) 0
                _)
     end); try omega.
-split; [ omega | rewrite Heq; ring ((s + 1) * (s + 1)); omega ].
+split; [ omega | rewrite Heq; ring_simplify ((s + 1) * (s + 1)); omega ].
 Defined.
 
 (** Define a function of type Z->Z that computes the integer square root,

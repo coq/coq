@@ -317,10 +317,10 @@ ML4FILES += contrib/jprover/jprover.ml4 contrib/cc/g_congruence.ml4 \
 	contrib/funind/indfun_main.ml4 
 
 
-CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(DPCMO) $(FIELDCMO) \
+CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(NEWRINGCMO) $(DPCMO) $(FIELDCMO) \
 	$(FOURIERCMO) $(EXTRACTIONCMO) $(JPROVERCMO) $(XMLCMO) \
 	$(CCCMO)  $(FOCMO) $(SUBTACCMO) $(RTAUTOCMO) \
-        $(RECDEFCMO) $(FUNINDCMO) $(NEWRINGCMO)
+        $(RECDEFCMO) $(FUNINDCMO)
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
@@ -426,7 +426,7 @@ COQMKTOPCMX=config/coq_config.cmx scripts/tolink.cmx scripts/coqmktop.cmx
 
 $(COQMKTOPBYTE): $(COQMKTOPCMO)
 	$(SHOW)'OCAMLC -o $@'	
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ -custom str.cma unix.cma \
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma unix.cma \
           $(COQMKTOPCMO) $(OSDEPLIBS)
 
 $(COQMKTOPOPT): $(COQMKTOPCMX)
@@ -454,7 +454,7 @@ COQCCMX=config/coq_config.cmx toplevel/usage.cmx scripts/coqc.cmx
 
 $(COQCBYTE): $(COQCCMO) $(COQTOPBYTE) $(BESTCOQTOP)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ -custom unix.cma $(COQCCMO) $(OSDEPLIBS)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ unix.cma $(COQCCMO) $(OSDEPLIBS)
 
 $(COQCOPT): $(COQCCMX) $(COQTOPOPT) $(BESTCOQTOP)
 	$(SHOW)'OCAMLOPT -o $@'
@@ -754,14 +754,14 @@ PARSERCODE=contrib/interface/line_parser.cmo contrib/interface/vtp.cmo \
 PARSERCMO=$(PARSERREQUIRES) $(PARSERCODE)
 PARSERCMX= $(PARSERREQUIRESCMX) $(PARSERCODE:.cmo=.cmx)
 
-bin/parser$(EXE): $(PARSERCMO)
+bin/parser$(EXE):$(LIBCOQRUN) $(PARSERCMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) -linkall -custom -cclib -lunix $(BYTEFLAGS) -o $@ \
-	  dynlink.cma $(CMA) $(PARSERCMO)
+	$(HIDE)$(OCAMLC) -custom -linkall $(BYTEFLAGS) -o $@ \
+	  dynlink.cma $(LIBCOQRUN) $(CMA) $(PARSERCMO)
 
-bin/parser.opt$(EXE): $(PARSERCMX)
+bin/parser.opt$(EXE): $(LIBCOQRUN) $(PARSERCMX)
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) -linkall -cclib -lunix $(OPTFLAGS) -o $@ \
+	$(HIDE)$(OCAMLOPT) -linkall $(OPTFLAGS) -o $@ \
 	  $(LIBCOQRUN) $(CMXA) $(PARSERCMX)
 
 INTERFACEVO=
@@ -1036,7 +1036,7 @@ ROMEGAVO=\
 
 RINGVO=\
  contrib/ring/ArithRing.vo      contrib/ring/Ring_normalize.vo \
- contrib/ring/Ring_theory.vo    contrib/ring/Ring.vo \
+ contrib/ring/Ring_theory.vo    contrib/ring/LegacyRing.vo \
  contrib/ring/NArithRing.vo     \
  contrib/ring/ZArithRing.vo     contrib/ring/Ring_abstract.vo \
  contrib/ring/Quote.vo		contrib/ring/Setoid_ring_normalize.vo \
@@ -1045,11 +1045,18 @@ RINGVO=\
 NEWRINGVO=\
  contrib/setoid_ring/BinList.vo   contrib/setoid_ring/Ring_th.vo \
  contrib/setoid_ring/Pol.vo       contrib/setoid_ring/Ring_tac.vo \
- contrib/setoid_ring/ZRing_th.vo
+ contrib/setoid_ring/ZRing_th.vo  contrib/setoid_ring/Ring_equiv.vo \
+ contrib/setoid_ring/Ring_base.vo contrib/setoid_ring/Ring.vo \
+ contrib/setoid_ring/NewArithRing.vo \
+ contrib/setoid_ring/NewNArithRing.vo \
+ contrib/setoid_ring/NewZArithRing.vo \
+contrib/setoid_ring/NewField.vo \
+contrib/setoid_ring/Field_tac.vo \
+contrib/setoid_ring/RealField.vo
 
 FIELDVO=\
  contrib/field/Field_Compl.vo     contrib/field/Field_Theory.vo \
- contrib/field/Field_Tactic.vo    contrib/field/Field.vo
+ contrib/field/Field_Tactic.vo    contrib/field/LegacyField.vo
 
 XMLVO= 
 
@@ -1156,7 +1163,7 @@ COQDEPCMO=config/coq_config.cmo tools/coqdep_lexer.cmo tools/coqdep.cmo
 
 $(COQDEP): $(COQDEPCMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ unix.cma $(COQDEPCMO) $(OSDEPLIBS)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ unix.cma $(COQDEPCMO) $(OSDEPLIBS)
 
 beforedepend:: tools/coqdep_lexer.ml $(COQDEP)
 
@@ -1164,23 +1171,23 @@ GALLINACMO=tools/gallina_lexer.cmo tools/gallina.cmo
 
 $(GALLINA): $(GALLINACMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ $(GALLINACMO)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ $(GALLINACMO)
 
 beforedepend:: tools/gallina_lexer.ml
 
 $(COQMAKEFILE): tools/coq_makefile.cmo
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ tools/coq_makefile.cmo
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ tools/coq_makefile.cmo
 
 $(COQTEX): tools/coq-tex.cmo
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ str.cma tools/coq-tex.cmo
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma tools/coq-tex.cmo
 
 beforedepend:: tools/coqwc.ml
 
 $(COQWC): tools/coqwc.cmo
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ tools/coqwc.cmo
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ tools/coqwc.cmo
 
 beforedepend:: tools/coqdoc/pretty.ml tools/coqdoc/index.ml
 
@@ -1190,7 +1197,7 @@ COQDOCCMO=$(CONFIG) tools/coqdoc/cdglobals.cmo tools/coqdoc/alpha.cmo \
 
 $(COQDOC): $(COQDOCCMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ str.cma unix.cma $(COQDOCCMO)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma unix.cma $(COQDOCCMO)
 
 clean::
 	rm -f tools/coqdep_lexer.ml tools/gallina_lexer.ml
@@ -1212,7 +1219,7 @@ MINICOQ=bin/minicoq$(EXE)
 
 $(MINICOQ): $(MINICOQCMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ -custom $(CMA) $(MINICOQCMO) $(OSDEPLIBS)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ $(CMA) $(MINICOQCMO) $(OSDEPLIBS)
 
 archclean::
 	rm -f $(MINICOQ)

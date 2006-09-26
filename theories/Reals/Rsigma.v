@@ -52,21 +52,15 @@ apply (decomp_sum (fun i:nat => f (S k + i))).
 apply lt_minus_O_lt; assumption.
 apply sum_eq; intros; replace (S k + S i)%nat with (S (S k) + i)%nat.
 reflexivity.
-apply INR_eq; do 2 rewrite plus_INR; do 3 rewrite S_INR; ring.
+ring_nat.
 replace (high - S (S k))%nat with (high - S k - 1)%nat.
 apply pred_of_minus.
-apply INR_eq; repeat rewrite minus_INR.
-do 4 rewrite S_INR; ring.
-apply lt_le_S; assumption.
-apply lt_le_weak; assumption.
-apply lt_le_S; apply lt_minus_O_lt; assumption.
+omega.
 unfold sigma in |- *; replace (S k - low)%nat with (S (k - low)).
 pattern (S k) at 1 in |- *; replace (S k) with (low + S (k - low))%nat.
 symmetry  in |- *; apply (tech5 (fun i:nat => f (low + i))).
-apply INR_eq; rewrite plus_INR; do 2 rewrite S_INR; rewrite minus_INR.
-ring.
-assumption.
-apply minus_Sn_m; assumption.
+omega.
+omega.
 rewrite <- H2; unfold sigma in |- *; rewrite <- minus_n_n; simpl in |- *;
  replace (high - S low)%nat with (pred (high - low)).
 replace (sum_f_R0 (fun k0:nat => f (S (low + k0))) (pred (high - low))) with
@@ -76,14 +70,8 @@ apply lt_minus_O_lt.
 apply le_lt_trans with (S k); [ rewrite H2; apply le_n | assumption ].
 apply sum_eq; intros; replace (S (low + i)) with (low + S i)%nat.
 reflexivity.
-apply INR_eq; rewrite plus_INR; do 2 rewrite S_INR; rewrite plus_INR; ring.
-replace (high - S low)%nat with (high - low - 1)%nat.
-apply pred_of_minus.
-apply INR_eq; repeat rewrite minus_INR.
-do 2 rewrite S_INR; ring.
-apply lt_le_S; rewrite H2; assumption.
-rewrite H2; apply lt_le_weak; assumption.
-apply lt_le_S; apply lt_minus_O_lt; rewrite H2; assumption.
+ring_nat.
+omega.
 inversion H; [ right; reflexivity | left; assumption ].
 Qed.
 

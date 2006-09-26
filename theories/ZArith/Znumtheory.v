@@ -9,7 +9,7 @@
 (*i $Id$ i*)
 
 Require Import ZArith_base.
-Require Import ZArithRing.
+Require Import NewZArithRing.
 Require Import Zcomplements.
 Require Import Zdiv.
 Require Import Ndigits.
@@ -164,7 +164,7 @@ left; rewrite H0; rewrite e; ring.
 assert (Hqq0 : q0 * q = 1).
 apply Zmult_reg_l with a.
 assumption.
-ring.
+ring_simplify.
 pattern a at 2 in |- *; rewrite H2; ring.
 assert (q | 1).
 rewrite <- Hqq0; auto with zarith.

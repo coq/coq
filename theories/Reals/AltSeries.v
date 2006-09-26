@@ -88,11 +88,9 @@ rewrite Rplus_0_r;
  replace (Un (S (2 * S N)) + (-1 * Un (S (2 * S N)) + Un (S (S (2 * S N)))))
   with (Un (S (S (2 * S N)))); [ idtac | ring ].
 apply H.
-apply INR_eq; rewrite mult_INR; repeat rewrite S_INR; rewrite mult_INR;
- repeat rewrite S_INR; ring.
+ring_nat.
 apply HrecN.
-apply INR_eq; repeat rewrite S_INR; do 2 rewrite mult_INR;
- repeat rewrite S_INR; ring.
+ring_nat.
 Qed.
 
 (* A more general inequality *)
@@ -293,8 +291,7 @@ rewrite (Rmult_comm (INR (2 * S n + 1))); rewrite Rmult_assoc;
 do 2 rewrite Rmult_1_r; apply le_INR.
 replace (2 * S n + 1)%nat with (S (S (2 * n + 1))).
 apply le_trans with (S (2 * n + 1)); apply le_n_Sn.
-apply INR_eq; do 2 rewrite S_INR; do 2 rewrite plus_INR;
- do 2 rewrite mult_INR; repeat rewrite S_INR; ring.
+ring_nat.
 apply not_O_INR; discriminate.
 apply not_O_INR; replace (2 * n + 1)%nat with (S (2 * n));
  [ discriminate | ring ].

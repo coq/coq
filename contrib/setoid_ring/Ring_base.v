@@ -6,9 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
+(* This module gathers the necessary base to build an instance of the
+   ring tactic. Abstract rings need more theory, depending on
+   ZArith_base. *)
 
-Require Export Rdefinitions.
-Require Export Raxioms.
-Require Export RIneq.
-Require Export DiscrR.
+Declare ML Module "newring".
+Require Export Ring_th.
+Require Export Ring_tac.

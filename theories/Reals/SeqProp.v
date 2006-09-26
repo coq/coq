@@ -1228,8 +1228,8 @@ apply plus_lt_compat_r.
 apply lt_le_trans with 1%nat; [ apply lt_O_Sn | assumption ].
 apply INR_fact_neq_0.
 apply not_O_INR; discriminate.
-apply INR_eq; rewrite S_INR; do 3 rewrite plus_INR; reflexivity.
-apply INR_eq; do 3 rewrite plus_INR; do 2 rewrite S_INR; ring.
+ring_nat.
+ring_nat.
 unfold Vn in |- *; rewrite Rmult_assoc; unfold Rdiv in |- *;
  rewrite (Rmult_comm (Un 0%nat)); rewrite (Rmult_comm (Un n)).
 repeat apply Rmult_le_compat_l.
@@ -1253,12 +1253,11 @@ rewrite fact_simpl; rewrite mult_INR; rewrite Rmult_assoc;
 rewrite Rmult_1_r; apply Rle_trans with (INR M_nat).
 left; rewrite INR_IZR_INZ.
 rewrite <- H4; assert (H8 := archimed (Rabs x)); elim H8; intros; assumption.
-apply le_INR; apply le_trans with (S M_nat);
- [ apply le_n_Sn | apply le_n_S; apply le_plus_l ].
+apply le_INR; omega.
 apply INR_fact_neq_0.
 apply INR_fact_neq_0.
-apply INR_eq; rewrite S_INR; do 3 rewrite plus_INR; reflexivity.
-apply INR_eq; do 3 rewrite plus_INR; do 2 rewrite S_INR; ring.
+ring_nat.
+ring_nat.
 intro; unfold Un in |- *; unfold Rdiv in |- *; apply Rmult_lt_0_compat.
 apply pow_lt; assumption.
 apply Rinv_0_lt_compat; apply lt_INR_0; apply neq_O_lt; red in |- *; intro;

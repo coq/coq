@@ -17,7 +17,7 @@ Declare ML Module "fourierR".
 Declare ML Module "field".
 
 Require Export Fourier_util.
-Require Export Field.
+Require Export LegacyField.
 Require Export DiscrR.
 
 Ltac fourier := abstract (fourierz; field; discrR).

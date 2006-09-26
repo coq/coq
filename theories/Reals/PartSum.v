@@ -262,8 +262,7 @@ rewrite (tech5 An (S (2 * S N))).
 rewrite (tech5 An (2 * S N)).
 rewrite <- HrecN.
 ring.
-apply INR_eq; do 2 rewrite S_INR; do 2 rewrite mult_INR; repeat rewrite S_INR.
-ring.
+ring_nat.
 Qed.
 
 Lemma sum_Rle :

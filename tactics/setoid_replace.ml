@@ -155,7 +155,7 @@ let coq_MSCovariant = lazy(constant ["Setoid"] "MSCovariant")
 let coq_MSContravariant = lazy(constant ["Setoid"] "MSContravariant")
 
 let coq_singl = lazy(constant ["Setoid"] "singl")
-let coq_cons = lazy(constant ["Setoid"] "cons")
+let coq_cons = lazy(constant ["Setoid"] "necons")
 
 let coq_equality_morphism_of_asymmetric_areflexive_transitive_relation =
  lazy(constant ["Setoid"]

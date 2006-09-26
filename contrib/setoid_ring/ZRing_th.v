@@ -1,11 +1,20 @@
-Require Import Ring_th.
-Require Import Pol.
-Require Import Ring_tac.
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+
 Require Import ZArith_base.
 Require Import BinInt.
 Require Import BinNat.
 Require Import Setoid.
- Set Implicit Arguments.
+Require Import Ring_base.
+Require Import Pol.
+Set Implicit Arguments.
+
+Import RingSyntax.
 
 (** Z is a ring and a setoid*)
 
@@ -255,6 +264,14 @@ Lemma Neq_bool_ok : forall x y, Neq_bool x y = true -> x = y.
   rewrite H;trivial. 
  Qed.
 
+Lemma Neq_bool_complete : forall x y, Neq_bool x y = true -> x = y.
+ Proof.
+  intros x y;unfold Neq_bool.
+  assert (H:=Ncompare_Eq_eq x y); 
+   destruct (Ncompare x y);intros;try discriminate.
+  rewrite H;trivial. 
+ Qed.
+
 (**Same as above : definition of two,extensionaly equal, generic morphisms *)
 (**from N to any semi-ring*)
 Section NMORPHISM.
@@ -326,271 +343,9 @@ Section NMORPHISM.
  Qed.
 
 End NMORPHISM.
-(*
-Section NNMORPHISM.
-Variable R : Type.
- Variable (rO rI : R) (radd rmul rsub: R->R->R) (ropp : R -> R).
- Variable req : R -> R -> Prop.
-  Notation "0" := rO.  Notation "1" := rI.
-  Notation "x + y" := (radd x y).  Notation "x * y " := (rmul x y).
-  Notation "x - y " := (rsub x y).  Notation "- x" := (ropp x).
-  Notation "x == y" := (req x y).
-  Variable Rsth : Setoid_Theory R req.
-     Add Setoid R req Rsth as R_setoid5.
-     Ltac rrefl := gen_reflexivity Rsth.
- Variable Reqe : ring_eq_ext radd rmul ropp req.
-   Add Morphism radd : radd_ext5.  exact Reqe.(Radd_ext). Qed.
-   Add Morphism rmul : rmul_ext5.  exact Reqe.(Rmul_ext). Qed.
-   Add Morphism ropp : ropp_ext5.  exact Reqe.(Ropp_ext). Qed.
 
- Lemma SReqe : sring_eq_ext radd rmul req.
-  case Reqe; constructor; trivial.
- Qed.
-
- Variable ARth : almost_ring_theory 0 1 radd rmul rsub ropp req.
-   Add Morphism rsub : rsub_ext6. exact (ARsub_ext Rsth Reqe ARth). Qed.
-   Ltac norm := gen_srewrite 0 1 radd rmul rsub ropp req Rsth Reqe ARth.
-   Ltac add_push := gen_add_push radd Rsth Reqe ARth.
-
- Lemma SRth : semi_ring_theory 0 1 radd rmul req. 
-  case ARth; constructor; trivial.
- Qed.
-
-  Definition NN := prod N N.
-  Definition gen_phiNN (x:NN) :=
-    rsub (gen_phiN rO rI radd rmul (fst x)) (gen_phiN rO rI radd rmul (snd x)).
-  Notation "[ x ]" := (gen_phiNN x).   
-
-  Definition NNadd (x y : NN) : NN :=
-    (fst x + fst y, snd x + snd y)%N.
-  Definition NNmul (x y : NN) : NN :=
-    (fst x * fst y + snd x * snd y, fst y * snd x + fst x * snd y)%N.
-  Definition NNopp (x:NN) : NN := (snd x, fst x)%N.
-  Definition NNsub (x y:NN) : NN := (fst x + snd y, fst y + snd x)%N.
-
-
- Lemma gen_phiNN_add : forall x y, [NNadd x y] == [x] + [y].
- Proof.
-intros.
-unfold NNadd, gen_phiNN in |- *; simpl in |- *.
-repeat  rewrite (gen_phiN_add Rsth SReqe SRth).
-norm.
-add_push (- gen_phiN 0 1 radd rmul (snd x)).
-rrefl.
-Qed.
- 
-  Hypothesis ropp_involutive : forall x, - - x == x.
-
-
- Lemma gen_phiNN_mult : forall x y, [NNmul x y] == [x] * [y].
- Proof.
-intros.
-unfold NNmul, gen_phiNN in |- *; simpl in |- *.
-repeat  rewrite (gen_phiN_add Rsth SReqe SRth).
-repeat  rewrite (gen_phiN_mult Rsth SReqe SRth).
-norm.
-rewrite ropp_involutive.
-add_push (- (gen_phiN 0 1 radd rmul (fst y) * gen_phiN 0 1 radd rmul (snd x))).
-add_push ( gen_phiN 0 1 radd rmul (snd x) * gen_phiN 0 1 radd rmul (snd y)).
-rewrite (ARmul_sym ARth (gen_phiN 0 1 radd rmul (fst y))
-            (gen_phiN 0 1 radd rmul (snd x))).
-rrefl.
-Qed.
-
- Lemma gen_phiNN_sub : forall x y, [NNsub x y] == [x] - [y].
-intros.
-unfold NNsub, gen_phiNN; simpl.
-repeat rewrite (gen_phiN_add Rsth SReqe SRth).
-repeat rewrite (ARsub_def ARth).
-repeat rewrite (ARopp_add ARth).
-repeat rewrite (ARadd_assoc ARth).
-rewrite ropp_involutive.
-add_push (- gen_phiN 0 1 radd rmul (fst y)).
-add_push ( - gen_phiN 0 1 radd rmul (snd x)).
-rrefl.
-Qed.
-
-
-Definition NNeqbool (x y: NN) :=
-  andb (Neq_bool (fst x) (fst y)) (Neq_bool (snd x) (snd y)).
-
-Lemma NNeqbool_ok0 : forall x y,
-  NNeqbool x y = true -> x = y.
-unfold NNeqbool in |- *.
-intros.
-assert (Neq_bool (fst x) (fst y) = true).
- generalize H.
-   case (Neq_bool (fst x) (fst y)); simpl in |- *; trivial.
- assert (Neq_bool (snd x) (snd y) = true).
-   rewrite H0 in H; simpl in |- *; trivial.
-  generalize H0 H1.
-    destruct x; destruct y; simpl in |- *.
-    intros.
-     replace n with n1.
-    replace n2 with n0; trivial.
-     apply Neq_bool_ok; trivial.
-   symmetry  in |- *.
-     apply Neq_bool_ok; trivial.
-Qed.
-
-
-(*gen_phiN satisfies morphism specifications*)
- Lemma gen_phiNN_morph : ring_morph 0 1 radd rmul rsub ropp req
-                        (N0,N0) (Npos xH,N0) NNadd NNmul NNsub NNopp NNeqbool gen_phiNN.
- Proof.
-  constructor;intros;simpl; try rrefl.
-  apply gen_phiN_add. apply gen_phiN_sub.  apply gen_phiN_mult.
-  rewrite (Neq_bool_ok x y);trivial. rrefl.
- Qed.
-
-End NNMORPHISM.
-
-Section NSTARMORPHISM.
-Variable R : Type.
- Variable (rO rI : R) (radd rmul rsub: R->R->R) (ropp : R -> R).
- Variable req : R -> R -> Prop.
-  Notation "0" := rO.  Notation "1" := rI.
-  Notation "x + y" := (radd x y).  Notation "x * y " := (rmul x y).
-  Notation "x - y " := (rsub x y).  Notation "- x" := (ropp x).
-  Notation "x == y" := (req x y).
-  Variable Rsth : Setoid_Theory R req.
-     Add Setoid R req Rsth as R_setoid3.
-     Ltac rrefl := gen_reflexivity Rsth.
- Variable Reqe : ring_eq_ext radd rmul ropp req.
-   Add Morphism radd : radd_ext3.  exact Reqe.(Radd_ext). Qed.
-   Add Morphism rmul : rmul_ext3.  exact Reqe.(Rmul_ext). Qed.
-   Add Morphism ropp : ropp_ext3.  exact Reqe.(Ropp_ext). Qed.
-
- Lemma SReqe : sring_eq_ext radd rmul req.
-  case Reqe; constructor; trivial.
- Qed.
-
- Variable ARth : almost_ring_theory 0 1 radd rmul rsub ropp req.
-   Add Morphism rsub : rsub_ext7. exact (ARsub_ext Rsth Reqe ARth). Qed.
-   Ltac norm := gen_srewrite 0 1 radd rmul rsub ropp req Rsth Reqe ARth.
-   Ltac add_push := gen_add_push radd Rsth Reqe ARth.
-
- Lemma SRth : semi_ring_theory 0 1 radd rmul req. 
-  case ARth; constructor; trivial.
- Qed.
-
-  Inductive Nword : Set :=
-    Nlast (p:positive)
-  | Ndigit (n:N) (w:Nword).
-
-  Fixpoint opp_iter (n:nat) (t:R) {struct n} : R :=
-    match n with 
-      O => t
-    | S k => ropp (opp_iter k t)
-    end.
-
-  Fixpoint gen_phiNword (x:Nword) (n:nat) {struct x} : R :=
-    match x with
-      Nlast p => opp_iter n (gen_phi_pos p)
-    | Ndigit N0 w => gen_phiNword w (S n)
-    | Ndigit m w => radd (opp_iter n (gen_phiN m)) (gen_phiNword w (S n))
-    end.
-  Notation "[ x ]" := (gen_phiNword x).   
-
-  Fixpoint Nwadd (x y : Nword) {struct x} : Nword :=
-    match x, y with
-      Nlast p1, Nlast p2 => Nlast (p1+p2)%positive
-    | Nlast p1, Ndigit n w => Ndigit (Npos p1 + n)%N w
-    | Ndigit n w, Nlast p1 => Ndigit (n + Npos p1)%N w
-    | Ndigit n1 w1, Ndigit n2 w2 => Ndigit (n1+n2)%N (Nwadd w1 w2)
-    end.
-  Fixpoint Nwmulp (x:positive) (y:Nword) {struct y} : Nword :=
-    match y with
-      Nlast p => Nlast (x*p)%positive
-    | Ndigit n w => Ndigit (Npos x * n)%N (Nwmulp x w)
-    end.
-  Definition Nwmul (x y : Nword) {struct x} : Nword :=
-    match x with
-      Nlast k => Nmulp k y
-    | Ndigit N0 w => Ndigit N0 (Nwmul w y)
-    | Ndigit (Npos k) w =>
-        Nwadd (Nwmulp k y) (Ndigit N0 (Nwmul w y))
-   end.
-
-  Definition Nwopp (x:Nword) : Nword := Ndigit N0 x.
-  Definition Nwsub (x y:NN) : NN := (Nwadd x (Ndigit N0 y)).
-
-
- Lemma gen_phiNN_add : forall x y, [NNadd x y] == [x] + [y].
- Proof.
-intros.
-unfold NNadd, gen_phiNN in |- *; simpl in |- *.
-repeat  rewrite (gen_phiN_add Rsth SReqe SRth).
-norm.
-add_push (- gen_phiN 0 1 radd rmul (snd x)).
-rrefl.
-Qed.
-
- Lemma gen_phiNN_mult : forall x y, [NNmul x y] == [x] * [y].
- Proof.
-intros.
-unfold NNmul, gen_phiNN in |- *; simpl in |- *.
-repeat  rewrite (gen_phiN_add Rsth SReqe SRth).
-repeat  rewrite (gen_phiN_mult Rsth SReqe SRth).
-norm.
-rewrite ropp_involutive.
-add_push (- (gen_phiN 0 1 radd rmul (fst y) * gen_phiN 0 1 radd rmul (snd x))).
-add_push ( gen_phiN 0 1 radd rmul (snd x) * gen_phiN 0 1 radd rmul (snd y)).
-rewrite (ARmul_sym ARth (gen_phiN 0 1 radd rmul (fst y))
-            (gen_phiN 0 1 radd rmul (snd x))).
-rrefl.
-Qed.
-
- Lemma gen_phiNN_sub : forall x y, [NNsub x y] == [x] - [y].
-intros.
-unfold NNsub, gen_phiNN; simpl.
-repeat rewrite (gen_phiN_add Rsth SReqe SRth).
-repeat rewrite (ARsub_def ARth).
-repeat rewrite (ARopp_add ARth).
-repeat rewrite (ARadd_assoc ARth).
-rewrite ropp_involutive.
-add_push (- gen_phiN 0 1 radd rmul (fst y)).
-add_push ( - gen_phiN 0 1 radd rmul (snd x)).
-rrefl.
-Qed.
-
-
-Definition NNeqbool (x y: NN) :=
-  andb (Neq_bool (fst x) (fst y)) (Neq_bool (snd x) (snd y)).
-
-Lemma NNeqbool_ok0 : forall x y,
-  NNeqbool x y = true -> x = y.
-unfold NNeqbool in |- *.
-intros.
-assert (Neq_bool (fst x) (fst y) = true).
- generalize H.
-   case (Neq_bool (fst x) (fst y)); simpl in |- *; trivial.
- assert (Neq_bool (snd x) (snd y) = true).
-   rewrite H0 in H; simpl in |- *; trivial.
-  generalize H0 H1.
-    destruct x; destruct y; simpl in |- *.
-    intros.
-     replace n with n1.
-    replace n2 with n0; trivial.
-     apply Neq_bool_ok; trivial.
-   symmetry  in |- *.
-     apply Neq_bool_ok; trivial.
-Qed.
-
-
-(*gen_phiN satisfies morphism specifications*)
- Lemma gen_phiNN_morph : ring_morph 0 1 radd rmul rsub ropp req
-                        (N0,N0) (Npos xH,N0) NNadd NNmul NNsub NNopp NNeqbool gen_phiNN.
- Proof.
-  constructor;intros;simpl; try rrefl.
-  apply gen_phiN_add. apply gen_phiN_sub.  apply gen_phiN_mult.
-  rewrite (Neq_bool_ok x y);trivial. rrefl.
- Qed.
-
-End NSTARMORPHISM.
-*)
-
- (* syntaxification of constants in an abstract ring *)
+ (* syntaxification of constants in an abstract ring:
+    the inverse of gen_phiPOS *)
  Ltac inv_gen_phi_pos rI add mul t :=
    let rec inv_cst t :=
    match t with
@@ -600,7 +355,7 @@ End NSTARMORPHISM.
    | (mul (add rI rI) ?p) => (* 2p *)
        match inv_cst p with
          NotConstant => NotConstant
-       | 1%positive => NotConstant
+       | 1%positive => NotConstant (* 2*1 is not convertible to 2 *)
        | ?p => constr:(xO p)
        end
    | (add rI (mul (add rI rI) ?p)) => (* 1+2p *)
@@ -613,6 +368,7 @@ End NSTARMORPHISM.
    end in
    inv_cst t.
 
+(* The inverse of gen_phiN *)
  Ltac inv_gen_phiN rO rI add mul t :=
    match t with
      rO => constr:0%N
@@ -623,6 +379,7 @@ End NSTARMORPHISM.
      end
    end.
 
+(* The inverse of gen_phiZ *)
  Ltac inv_gen_phiZ rO rI add mul opp t :=
    match t with
      rO => constr:0%Z
@@ -637,6 +394,7 @@ End NSTARMORPHISM.
      | ?p => constr:(Zpos p)
      end
    end.
+
 (* coefs = Z (abstract ring) *)
 Module Zpol.
 
@@ -650,15 +408,7 @@ Definition ring_gen_correct
 
 Definition ring_rw_gen_correct
   R rO rI radd rmul rsub ropp req rSet req_th Rth :=
-  @Pphi_dev_ok  R rO rI radd rmul rsub ropp req rSet req_th
-                (Rth_ARth rSet req_th Rth)
-                Z 0%Z 1%Z Zplus Zmult Zminus Zopp Zeq_bool
-                (@gen_phiZ R rO rI radd rmul ropp)
-            (@gen_phiZ_morph R rO rI radd rmul rsub ropp req rSet req_th Rth).
-
-Definition ring_rw_gen_correct'
-  R rO rI radd rmul rsub ropp req rSet req_th Rth :=
-  @Pphi_dev_ok'  R rO rI radd rmul rsub ropp req rSet req_th
+  @Pphi_dev_ok   R rO rI radd rmul rsub ropp req rSet req_th
                  (Rth_ARth rSet req_th Rth)
                  Z 0%Z 1%Z Zplus Zmult Zminus Zopp Zeq_bool
                  (@gen_phiZ R rO rI radd rmul ropp)
@@ -670,10 +420,6 @@ Definition ring_gen_eq_correct R rO rI radd rmul rsub ropp Rth :=
 
 Definition ring_rw_gen_eq_correct R rO rI radd rmul rsub ropp Rth :=
   @ring_rw_gen_correct
-     R rO rI radd rmul rsub ropp (@eq R) (Eqsth R) (Eq_ext _ _ _) Rth.
-
-Definition ring_rw_gen_eq_correct' R rO rI radd rmul rsub ropp Rth :=
-  @ring_rw_gen_correct'
      R rO rI radd rmul rsub ropp (@eq R) (Eqsth R) (Eq_ext _ _ _) Rth.
 
 End Zpol.
@@ -692,16 +438,7 @@ Definition ring_gen_correct
 
 Definition ring_rw_gen_correct
   R rO rI radd rmul req rSet req_th SRth :=
-  @Pphi_dev_ok  R rO rI radd rmul (SRsub radd) (@SRopp R) req rSet
-                (SReqe_Reqe req_th)
-                (SRth_ARth rSet SRth)
-                N 0%N 1%N Nplus Nmult (SRsub Nplus) (@SRopp N) Neq_bool
-                (@gen_phiN R rO rI radd rmul)
-            (@gen_phiN_morph R rO rI radd rmul req rSet req_th SRth).
-
-Definition ring_rw_gen_correct'
-  R rO rI radd rmul req rSet req_th SRth :=
-  @Pphi_dev_ok'  R rO rI radd rmul (SRsub radd) (@SRopp R) req rSet
+  @Pphi_dev_ok   R rO rI radd rmul (SRsub radd) (@SRopp R) req rSet
                  (SReqe_Reqe req_th)
                  (SRth_ARth rSet SRth)
                  N 0%N 1%N Nplus Nmult (SRsub Nplus) (@SRopp N) Neq_bool
@@ -712,91 +449,8 @@ Definition ring_gen_eq_correct R rO rI radd rmul SRth :=
   @ring_gen_correct
      R rO rI radd rmul (@eq R) (Eqsth R) (Eq_s_ext _ _) SRth.
 
-Definition ring_rw_gen_eq_correct R rO rI radd rmul SRth :=
+Definition ring_rw_gen_eq_correct' R rO rI radd rmul SRth :=
   @ring_rw_gen_correct
      R rO rI radd rmul (@eq R) (Eqsth R) (Eq_s_ext _ _) SRth.
 
-Definition ring_rw_gen_eq_correct' R rO rI radd rmul SRth :=
-  @ring_rw_gen_correct'
-     R rO rI radd rmul (@eq R) (Eqsth R) (Eq_s_ext _ _) SRth.
-
 End Npol.
-
-(* Z *)
-
-Ltac isZcst t :=
-  match t with
-    Z0 => constr:true
-  | Zpos ?p => isZcst p
-  | Zneg ?p => isZcst p
-  | xI ?p => isZcst p
-  | xO ?p => isZcst p
-  | xH => constr:true
-  | _ => constr:false
-  end.
-Ltac Zcst t :=
-  match isZcst t with
-    true => t
-  | _ => NotConstant
-  end.
-
-Add New Ring Zr : Zth Computational Zeqb_ok Constant Zcst.
-
-(* N *)
-
-Ltac isNcst t :=
-  match t with
-    N0 => constr:true
-  | Npos ?p => isNcst p
-  | xI ?p => isNcst p
-  | xO ?p => isNcst p
-  | xH => constr:true
-  | _ => constr:false
-  end.
-Ltac Ncst t :=
-  match isNcst t with
-    true => t
-  | _ => NotConstant
-  end.
-
-Add New Ring Nr : Nth Computational Neq_bool_ok Constant Ncst.
-
-(* nat *)
-
-Ltac isnatcst t :=
-  match t with
-    O => true
-  | S ?p => isnatcst p
-  | _ => false
-  end.
-Ltac natcst t :=
-  match isnatcst t with
-    true => t
-  | _ => NotConstant
-  end.
-
- Lemma natSRth : semi_ring_theory O (S O) plus mult (@eq nat).
- Proof.
-  constructor. exact plus_0_l. exact plus_comm. exact plus_assoc.
-  exact mult_1_l. exact mult_0_l. exact mult_comm. exact mult_assoc.
-  exact mult_plus_distr_r. 
- Qed.
-
-
-Unboxed Fixpoint nateq (n m:nat) {struct m} : bool :=
-  match n, m with
-  | O, O => true
-  | S n', S m' => nateq n' m'
-  | _, _ => false
-  end.
-
-Lemma nateq_ok : forall n m:nat, nateq n m = true -> n = m.
-Proof.
-  simple induction n; simple induction m; simpl; intros; try discriminate.
-  trivial.
-  rewrite (H n1 H1).
-  trivial.
-Qed.
-
-Add New Ring natr : natSRth Computational nateq_ok Constant natcst.
-

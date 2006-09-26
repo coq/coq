@@ -83,8 +83,7 @@ intro; induction  N as [| N HrecN].
 reflexivity.
 replace (2 * S N)%nat with (S (S (2 * N))).
 simpl in |- *; simpl in HrecN; rewrite HrecN; reflexivity.
-apply INR_eq; do 2 rewrite S_INR; do 2 rewrite mult_INR; repeat rewrite S_INR;
- ring.
+ring_nat.
 Qed.
 
 Lemma div2_S_double : forall N:nat, div2 (S (2 * N)) = N.
@@ -92,8 +91,7 @@ intro; induction  N as [| N HrecN].
 reflexivity.
 replace (2 * S N)%nat with (S (S (2 * N))).
 simpl in |- *; simpl in HrecN; rewrite HrecN; reflexivity.
-apply INR_eq; do 2 rewrite S_INR; do 2 rewrite mult_INR; repeat rewrite S_INR;
- ring.
+ring_nat.
 Qed.
 
 Lemma div2_not_R0 : forall N:nat, (1 < N)%nat -> (0 < div2 N)%nat.
@@ -315,7 +313,7 @@ ring.
 replace N with (N0 + N0)%nat.
 symmetry  in |- *; apply minus_plus.
 rewrite H4.
-apply INR_eq; rewrite plus_INR; rewrite mult_INR; do 2 rewrite S_INR; ring.
+ring.
 apply INR_fact_neq_0.
 apply INR_fact_neq_0.
 apply INR_fact_neq_0.
@@ -362,8 +360,7 @@ apply H.
 apply le_trans with (pred N).
 apply H0.
 apply le_pred_n.
-apply INR_eq; rewrite H4.
-do 2 rewrite S_INR; do 2 rewrite mult_INR; repeat rewrite S_INR; ring.
+rewrite H4; ring_nat.
 cut (S N = (2 * S N0)%nat).
 intro.
 replace (C (S N) (S N0) / INR (fact (S N))) with (/ Rsqr (INR (fact (S N0)))).
@@ -384,8 +381,7 @@ apply INR_fact_neq_0.
 apply INR_fact_neq_0.
 apply INR_fact_neq_0.
 apply INR_fact_neq_0.
-apply INR_eq; rewrite H4; do 2 rewrite S_INR; do 2 rewrite mult_INR;
- repeat rewrite S_INR; ring.
+rewrite H4; ring_nat.
 unfold C, Rdiv in |- *.
 rewrite (Rmult_comm (INR (fact (S N)))).
 rewrite Rmult_assoc; rewrite <- Rinv_r_sym.
@@ -491,8 +487,7 @@ rewrite Rmult_1_r.
 simpl in |- *.
 pattern 1 at 1 in |- *; rewrite <- Rplus_0_r; apply Rplus_le_compat_l; left;
  apply Rlt_0_1.
-apply INR_eq; do 2 rewrite S_INR; do 2 rewrite mult_INR; repeat rewrite S_INR;
- ring.
+ring_nat.
 unfold Rsqr in |- *; apply prod_neq_R0; apply INR_fact_neq_0.
 unfold Rsqr in |- *; apply prod_neq_R0; apply not_O_INR; discriminate.
 assert (H0 := even_odd_cor N).
@@ -506,23 +501,14 @@ replace (pred (S (S (2 * pred N0)))) with (S (2 * pred N0)).
 rewrite div2_S_double.
 apply S_pred with 0%nat; apply H3.
 reflexivity.
-replace N0 with (S (pred N0)).
-apply INR_eq; do 2 rewrite S_INR; do 2 rewrite mult_INR; repeat rewrite S_INR;
- ring.
-symmetry  in |- *; apply S_pred with 0%nat; apply H3.
-rewrite H2 in H.
-apply neq_O_lt.
-red in |- *; intro.
-rewrite <- H3 in H.
-simpl in H.
-elim (lt_n_O _ H).
+omega.
+omega.
 rewrite H2.
 replace (pred (S (2 * N0))) with (2 * N0)%nat; [ idtac | reflexivity ].
 replace (S (S (2 * N0))) with (2 * S N0)%nat.
 do 2 rewrite div2_double.
 reflexivity.
-apply INR_eq; do 2 rewrite S_INR; do 2 rewrite mult_INR; repeat rewrite S_INR;
- ring.
+ring_nat.
 apply S_pred with 0%nat; apply H.
 Qed.
 
@@ -575,28 +561,15 @@ intro.
 rewrite H6.
 replace (pred (2 * N1)) with (S (2 * pred N1)).
 rewrite div2_S_double.
-replace (S (pred N1)) with N1.
-apply INR_le.
-right.
-do 3 rewrite mult_INR; repeat rewrite S_INR; ring.
-apply S_pred with 0%nat; apply H7.
-replace (2 * N1)%nat with (S (S (2 * pred N1))).
-reflexivity.
-pattern N1 at 2 in |- *; replace N1 with (S (pred N1)).
-apply INR_eq; do 2 rewrite S_INR; do 2 rewrite mult_INR; repeat rewrite S_INR;
- ring.
-symmetry  in |- *; apply S_pred with 0%nat; apply H7.
-apply INR_lt.
-apply Rmult_lt_reg_l with (INR 2).
-simpl in |- *; prove_sup0.
-rewrite Rmult_0_r; rewrite <- mult_INR.
-apply lt_INR_0.
-rewrite <- H6.
+omega.
+omega.
+assert (0 < n)%nat.
 apply lt_le_trans with 2%nat.
 apply lt_O_Sn.
 apply le_trans with (max (2 * S N0) 2).
 apply le_max_r.
 apply H3.
+omega.
 rewrite H6.
 replace (pred (S (2 * N1))) with (2 * N1)%nat.
 rewrite div2_double.
@@ -604,9 +577,8 @@ replace (4 * S N1)%nat with (2 * (2 * S N1))%nat.
 apply (fun m n p:nat => mult_le_compat_l p n m).
 replace (2 * S N1)%nat with (S (S (2 * N1))).
 apply le_n_Sn.
-apply INR_eq; do 2 rewrite S_INR; do 2 rewrite mult_INR; repeat rewrite S_INR;
- ring.
-ring.
+ring_nat.
+ring_nat.
 reflexivity.
 apply INR_fact_neq_0.
 apply INR_fact_neq_0.
@@ -643,8 +615,7 @@ apply S_pred with 0%nat; apply H8.
 replace (2 * N1)%nat with (S (S (2 * pred N1))).
 reflexivity.
 pattern N1 at 2 in |- *; replace N1 with (S (pred N1)).
-apply INR_eq; do 2 rewrite S_INR; do 2 rewrite mult_INR; repeat rewrite S_INR;
- ring.
+ring_nat.
 symmetry  in |- *; apply S_pred with 0%nat; apply H8.
 apply INR_lt.
 apply Rmult_lt_reg_l with (INR 2).
@@ -662,8 +633,7 @@ replace (pred (S (2 * N1))) with (2 * N1)%nat.
 rewrite div2_double.
 replace (2 * S N1)%nat with (S (S (2 * N1))).
 apply le_n_Sn.
-apply INR_eq; do 2 rewrite S_INR; do 2 rewrite mult_INR; repeat rewrite S_INR;
- ring.
+ring_nat.
 reflexivity.
 apply le_trans with (max (2 * S N0) 2).
 apply le_max_l.

@@ -13,9 +13,9 @@
 (***************************************************************************)
 
 Require Export Raxioms.
-Require Export ZArithRing.
+Require Export NewZArithRing.
 Require Import Omega.
-Require Export Field.
+Require Export Field_tac. Import NewField.
 
 Open Local Scope Z_scope.
 Open Local Scope R_scope.
@@ -26,25 +26,105 @@ Implicit Type r : R.
 (**       Instantiating Ring tactic on reals                               *)
 (***************************************************************************)
 
-Lemma RTheory : Ring_Theory Rplus Rmult 1 0 Ropp (fun x y:R => false).
-  split.
-  exact Rplus_comm.
-  symmetry  in |- *; apply Rplus_assoc.
-  exact Rmult_comm.
-  symmetry  in |- *; apply Rmult_assoc.
-  intro; apply Rplus_0_l.
-  intro; apply Rmult_1_l.
-  exact Rplus_opp_r.
-  intros.
-  rewrite Rmult_comm.
-  rewrite (Rmult_comm n p).
-  rewrite (Rmult_comm m p).
-  apply Rmult_plus_distr_l.
-  intros; contradiction.
-Defined.
+Lemma RTheory : ring_theory 0 1 Rplus Rmult Rminus Ropp (eq (A:=R)).
+Proof.
+constructor.
+ intro; apply Rplus_0_l.
+ exact Rplus_comm.
+ symmetry  in |- *; apply Rplus_assoc.
+ intro; apply Rmult_1_l.
+ exact Rmult_comm.
+ symmetry  in |- *; apply Rmult_assoc.
+ intros m n p.
+   rewrite Rmult_comm in |- *.
+   rewrite (Rmult_comm n p) in |- *.
+   rewrite (Rmult_comm m p) in |- *.
+   apply Rmult_plus_distr_l.
+ reflexivity.
+ exact Rplus_opp_r.
+Qed.
 
-Add Field R Rplus Rmult 1 0 Ropp (fun x y:R => false) Rinv RTheory Rinv_l
- with minus := Rminus div := Rdiv.
+Lemma Rfield :
+  field_theory R 0 1 Rplus Rmult Rminus Ropp Rdiv Rinv (eq(A:=R)).
+Proof.
+constructor.
+ exact RTheory.
+ exact R1_neq_R0.
+ reflexivity.
+ exact Rinv_l.
+Qed.
+
+Lemma Rlt_n_Sn : forall x, x < x + 1.
+Proof.
+intro.
+elim archimed with x; intros.
+destruct H0.
+ apply Rlt_trans with (IZR (up x)); trivial.
+    replace (IZR (up x)) with (x + (IZR (up x) - x))%R.
+  apply Rplus_lt_compat_l; trivial.
+  unfold Rminus in |- *.
+    rewrite (Rplus_comm (IZR (up x)) (- x)) in |- *.
+    rewrite <- Rplus_assoc in |- *.
+    rewrite Rplus_opp_r in |- *.
+    apply Rplus_0_l.
+ elim H0.
+   unfold Rminus in |- *.
+   rewrite (Rplus_comm (IZR (up x)) (- x)) in |- *.
+   rewrite <- Rplus_assoc in |- *.
+   rewrite Rplus_opp_r in |- *.
+   rewrite Rplus_0_l in |- *; trivial.
+Qed.
+
+Notation Rset := (Eqsth R).
+Notation Rext := (Eq_ext Rplus Rmult Ropp).
+
+Lemma Rlt_0_2 : 0 < 2.
+apply Rlt_trans with (0 + 1).
+ apply Rlt_n_Sn.
+ rewrite Rplus_comm in |- *.
+   apply Rplus_lt_compat_l.
+    replace 1 with (0 + 1).
+  apply Rlt_n_Sn.
+  apply Rplus_0_l.
+Qed.
+
+Lemma Rgen_phiPOS : forall x, ZRing_th.gen_phiPOS1 1 Rplus Rmult x > 0.
+unfold Rgt in |- *.
+induction x; simpl in |- *; intros.
+ apply Rlt_trans with (1 + 0).
+  rewrite Rplus_comm in |- *.
+    apply Rlt_n_Sn.
+  apply Rplus_lt_compat_l.
+    rewrite <- (Rmul_0_l Rset Rext RTheory 2) in |- *.
+    rewrite Rmult_comm in |- *.
+    apply Rmult_lt_compat_l.
+   apply Rlt_0_2.
+   trivial.
+ rewrite <- (Rmul_0_l Rset Rext RTheory 2) in |- *.
+   rewrite Rmult_comm in |- *.
+   apply Rmult_lt_compat_l.
+  apply Rlt_0_2.
+  trivial.
+  replace 1 with (0 + 1).
+  apply Rlt_n_Sn.
+  apply Rplus_0_l.
+Qed.
+
+
+Lemma Rgen_phiPOS_not_0 : forall x, ZRing_th.gen_phiPOS1 1 Rplus Rmult x <> 0.
+red in |- *; intros.
+specialize (Rgen_phiPOS x).
+rewrite H in |- *; intro.
+apply (Rlt_asym 0 0); trivial.
+Qed.
+
+Lemma Zeq_bool_complete : forall x y, 
+  ZRing_th.gen_phiZ 0%R 1%R Rplus Rmult Ropp x =
+  ZRing_th.gen_phiZ 0%R 1%R Rplus Rmult Ropp y ->
+  Zeq_bool x y = true.
+Proof gen_phiZ_complete _ _ _ _ _ _ _ _ _ _ Rset Rext Rfield Rgen_phiPOS_not_0.
+
+Add Field RField : Rfield (infinite Zeq_bool_complete).
 
 (**************************************************************************)
 (**  Relation between orders and equality                                 *)
@@ -259,7 +339,7 @@ Qed.
 (*********************************************************)
 
 Lemma Rplus_ne : forall r, r + 0 = r /\ 0 + r = r.
-intro; split; ring.
+split; ring.
 Qed.
 Hint Resolve Rplus_ne: real v62.
 
@@ -270,15 +350,16 @@ Hint Resolve Rplus_0_r: real.
 
 (**********)
 Lemma Rplus_opp_l : forall r, - r + r = 0.
-  intro; ring.
+intro; ring.
 Qed.
 Hint Resolve Rplus_opp_l: real.
 
 
 (**********)
 Lemma Rplus_opp_r_uniq : forall r1 r2, r1 + r2 = 0 -> r2 = - r1.
-  intros x y H; replace y with (- x + x + y);
-   [ rewrite Rplus_assoc; rewrite H; ring | ring ].
+  intros x y H;
+  replace y with (- x + x + y) by ring.
+  rewrite Rplus_assoc; rewrite H; ring.
 Qed.
 
 (*i New i*)
@@ -311,16 +392,16 @@ Qed.
 
 (**********)
 Lemma Rinv_r : forall r, r <> 0 -> r * / r = 1.
-  intros; rewrite Rmult_comm; auto with real.
+  intros; field; trivial.
 Qed.
 Hint Resolve Rinv_r: real.
 
 Lemma Rinv_l_sym : forall r, r <> 0 -> 1 = / r * r.
-  symmetry  in |- *; auto with real.
+  intros; field; trivial.
 Qed.
 
 Lemma Rinv_r_sym : forall r, r <> 0 -> 1 = r * / r.
-  symmetry  in |- *; auto with real.
+  intros; field; trivial.
 Qed.
 Hint Resolve Rinv_l_sym Rinv_r_sym: real.
 
@@ -359,10 +440,10 @@ Qed.
 (**********)
 Lemma Rmult_eq_reg_l : forall r r1 r2, r * r1 = r * r2 -> r <> 0 -> r1 = r2.
   intros; transitivity (/ r * r * r1).
-  rewrite Rinv_l; auto with real.
+  field; trivial.
   transitivity (/ r * r * r2).
   repeat rewrite Rmult_assoc; rewrite H; trivial.
-  rewrite Rinv_l; auto with real.
+  field; trivial.
 Qed.
 
 (**********)
@@ -481,7 +562,7 @@ Qed.
 Hint Resolve Rmult_opp_opp: real.
 
 Lemma Ropp_mult_distr_r_reverse : forall r1 r2, r1 * - r2 = - (r1 * r2).
-intros; rewrite <- Ropp_mult_distr_l_reverse; ring.
+intros; ring.
 Qed.
 
 (** Substraction *)
@@ -557,7 +638,7 @@ Qed.
 
 (** Inverse *)
 Lemma Rinv_1 : / 1 = 1.
-field; auto with real.
+field.
 Qed.
 Hint Resolve Rinv_1: real.
 
@@ -570,19 +651,19 @@ Hint Resolve Rinv_neq_0_compat: real.
 
 (*********)
 Lemma Rinv_involutive : forall r, r <> 0 -> / / r = r.
-intros; field; auto with real.
+intros; field; trivial.
 Qed.
 Hint Resolve Rinv_involutive: real.
 
 (*********)
 Lemma Rinv_mult_distr :
  forall r1 r2, r1 <> 0 -> r2 <> 0 -> / (r1 * r2) = / r1 * / r2.
-intros; field; auto with real.
+intros; field; auto.
 Qed.
 
 (*********)
 Lemma Ropp_inv_permute : forall r, r <> 0 -> - / r = / - r.
-intros; field; auto with real.
+intros; field; trivial.
 Qed.
 
 Lemma Rinv_r_simpl_r : forall r1 r2, r1 <> 0 -> r1 * / r1 * r2 = r2.
@@ -1602,7 +1683,7 @@ intro H4;
 rewrite Rmult_1_r; replace (2 * x) with (x + x).
 rewrite (Rplus_comm y); intro H5; apply Rplus_le_reg_l with x; assumption.
 ring. 
-replace 2 with (INR 2); [ apply not_O_INR; discriminate | ring ].
+replace 2 with (INR 2); [ apply not_O_INR; discriminate | reflexivity ].
 pattern y at 2 in |- *; replace y with (y / 2 + y / 2).
 unfold Rminus, Rdiv in |- *.
 repeat rewrite Rmult_plus_distr_r.

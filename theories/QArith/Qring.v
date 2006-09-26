@@ -8,8 +8,7 @@
 
 (*i $Id$ i*)
 
-Require Import Ring.
-Require Export Setoid_ring.
+Require Export Ring.
 Require Export QArith_base.
 
 (** * A ring tactic for rational numbers *)
@@ -22,25 +21,38 @@ intros x y; unfold Qeq_bool in |- *; case (Qeq_dec x y); simpl in |- *; auto.
 intros _ H; inversion H.
 Qed.
 
-Definition Qsrt : Setoid_Ring_Theory Qeq Qplus Qmult 1 0 Qopp Qeq_bool.
+Definition Qsrt : ring_theory 0 1 Qplus Qmult Qminus Qopp Qeq.
 Proof.
 constructor.
+exact Qplus_0_l.
 exact Qplus_comm.
 exact Qplus_assoc.
+exact Qmult_1_l.
 exact Qmult_comm.
 exact Qmult_assoc.
-exact Qplus_0_l.
-exact Qmult_1_l.
-exact Qplus_opp_r.
 exact Qmult_plus_distr_l.
-unfold Is_true; intros x y; generalize (Qeq_bool_correct x y);
- case (Qeq_bool x y); auto.
+reflexivity.
+exact Qplus_opp_r.
 Qed.
 
-Add Setoid Ring Q Qeq Q_Setoid Qplus Qmult 1 0 Qopp Qeq_bool
- Qplus_comp Qmult_comp Qopp_comp Qsrt
- [ Qmake (*inject_Z*)  Zpos 0%Z Zneg xI xO 1%positive ].
+Ltac isQcst t :=
+  let t := eval hnf in t in
+  match t with
+    Qmake ?n ?d =>
+      match isZcst n with
+        true => isZcst d
+      | _ => false
+      end
+  | _ => false
+  end.
 
+Ltac Qcst t :=
+  match isQcst t with
+    true => t
+  | _ => NotConstant
+  end.
+
+Add Ring Qring : Qsrt (decidable Qeq_bool_correct, constants [Qcst]).
 (** Exemple of use: *)
 
 Section Examples. 

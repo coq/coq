@@ -46,7 +46,7 @@ and ct_COMMAND =
   | CT_coerce_THEOREM_GOAL_to_COMMAND of ct_THEOREM_GOAL
   | CT_abort of ct_ID_OPT_OR_ALL
   | CT_abstraction of ct_ID * ct_FORMULA * ct_INT_LIST
-  | CT_add_field of ct_FORMULA * ct_FORMULA * ct_FORMULA * ct_FORMULA * ct_FORMULA * ct_FORMULA * ct_FORMULA * ct_FORMULA * ct_FORMULA * ct_FORMULA * ct_BINDING_LIST
+  | CT_add_field of ct_FORMULA * ct_FORMULA * ct_FORMULA * ct_FORMULA_OPT
   | CT_add_natural_feature of ct_NATURAL_FEATURE * ct_ID
   | CT_addpath of ct_STRING * ct_ID_OPT
   | CT_arguments_scope of ct_ID * ct_ID_OPT_LIST

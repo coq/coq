@@ -146,7 +146,7 @@ intros; unfold xr, yr in |- *;
     (- x1 * sin theta + y1 * cos theta - (- x2 * sin theta + y2 * cos theta))
     with (cos theta * (y1 - y2) + sin theta * (x2 - x1));
     [ repeat rewrite Rsqr_plus; repeat rewrite Rsqr_mult; repeat rewrite cos2;
-       ring; replace (x2 - x1) with (- (x1 - x2));
+       ring_simplify; replace (x2 - x1) with (- (x1 - x2));
        [ rewrite <- Rsqr_neg; ring | ring ]
     | ring ]
  | ring ].

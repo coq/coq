@@ -251,18 +251,24 @@ Qed.
 
 Lemma sin_period : forall (x:R) (k:nat), sin (x + 2 * INR k * PI) = sin x.
 intros x k; induction  k as [| k Hreck].
-cut (x + 2 * INR 0 * PI = x); [ intro; rewrite H; reflexivity | ring ].
-replace (x + 2 * INR (S k) * PI) with (x + 2 * INR k * PI + 2 * PI);
- [ rewrite sin_plus; rewrite sin_2PI; rewrite cos_2PI; ring; apply Hreck
- | rewrite S_INR; ring ].
+simpl in |- *;  ring_simplify (x + 2 * 0 * PI).
+trivial.
+
+replace (x + 2 * INR (S k) * PI) with (x + 2 * INR k * PI + 2 * PI).
+rewrite sin_plus in |- *; rewrite sin_2PI in |- *; rewrite cos_2PI in |- *.
+ring_simplify; trivial.
+rewrite S_INR in |- *;  ring.
 Qed.
 
 Lemma cos_period : forall (x:R) (k:nat), cos (x + 2 * INR k * PI) = cos x.
 intros x k; induction  k as [| k Hreck].
-cut (x + 2 * INR 0 * PI = x); [ intro; rewrite H; reflexivity | ring ].
-replace (x + 2 * INR (S k) * PI) with (x + 2 * INR k * PI + 2 * PI);
- [ rewrite cos_plus; rewrite sin_2PI; rewrite cos_2PI; ring; apply Hreck
- | rewrite S_INR; ring ].
+simpl in |- *;  ring_simplify (x + 2 * 0 * PI).
+trivial.
+
+replace (x + 2 * INR (S k) * PI) with (x + 2 * INR k * PI + 2 * PI).
+rewrite cos_plus in |- *; rewrite sin_2PI in |- *; rewrite cos_2PI in |- *.
+ring_simplify; trivial.
+rewrite S_INR in |- *;  ring.
 Qed.
 
 Lemma sin_shift : forall x:R, sin (PI / 2 - x) = cos x.
@@ -421,12 +427,10 @@ intro; apply Rplus_le_le_0_compat; repeat apply Rmult_le_pos;
 unfold x in |- *; replace 0 with (INR 0);
  [ apply le_INR; apply le_O_n | reflexivity ].
 prove_sup0.
-apply INR_eq; do 2 rewrite S_INR; do 3 rewrite plus_INR; rewrite mult_INR;
- repeat rewrite S_INR; ring.
+ring_nat.
 apply INR_fact_neq_0.
 apply INR_fact_neq_0.
-apply INR_eq; do 3 rewrite plus_INR; do 2 rewrite mult_INR;
- repeat rewrite S_INR; ring.
+ring_nat.
 Qed.
 
 Lemma SIN : forall a:R, 0 <= a -> a <= PI -> sin_lb a <= sin a <= sin_ub a.
@@ -1494,9 +1498,10 @@ Lemma cos_eq_0_0 :
  forall x:R, cos x = 0 ->  exists k : Z, x = IZR k * PI + PI / 2. 
 intros x H; rewrite cos_sin in H; generalize (sin_eq_0_0 (PI / INR 2 + x) H);
  intro H2; elim H2; intros x0 H3; exists (x0 - Z_of_nat 1)%Z;
- rewrite <- Z_R_minus; ring; rewrite Rmult_comm; rewrite <- H3;
- unfold INR in |- *.
-rewrite (double_var (- PI)); unfold Rdiv in |- *; ring.
+ rewrite <- Z_R_minus; simpl; ring_simplify;
+(* rewrite (Rmult_comm PI);*) (* old ring compat *)
+ rewrite <- H3; simpl;
+ field; repeat split; discrR.
 Qed.
 
 Lemma cos_eq_0_1 :

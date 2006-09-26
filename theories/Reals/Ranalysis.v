@@ -797,6 +797,6 @@ Ltac reg :=
             [ simplify_derive aux X2;
                try
                 unfold plus_fct, minus_fct, mult_fct, div_fct, id, fct_cte,
-                 inv_fct, opp_fct in |- *; try ring
+                 inv_fct, opp_fct in |- *; (ring || ring_simplify)
             | try apply pr_nu ]) || is_diff_pt))
   end.

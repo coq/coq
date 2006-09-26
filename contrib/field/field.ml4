@@ -139,7 +139,7 @@ ARGUMENT EXTEND minus_div_arg
 END
 
 VERNAC COMMAND EXTEND Field
-  [ "Add" "Field" 
+  [ "Add" "Legacy" "Field" 
       constr(a) constr(aplus) constr(amult) constr(aone)
       constr(azero) constr(aopp) constr(aeq)
       constr(ainv) constr(rth) constr(ainv_l) minus_div_arg(md) ]
@@ -153,7 +153,7 @@ END
 
 (* Guesses the type and calls field_gen with the right theory *)
 let field g =
-  Coqlib.check_required_library ["Coq";"field";"Field"];
+  Coqlib.check_required_library ["Coq";"field";"LegacyField"];
   let typ = 
     match Hipattern.match_with_equation (pf_concl g) with
       | Some (eq,t::args) when eq = (Coqlib.build_coq_eq_data()).Coqlib.eq -> t
@@ -187,7 +187,7 @@ let field_term l g =
 
 (* Declaration of Field *)
 
-TACTIC EXTEND field
-| [ "field" ] -> [ field ]
-| [ "field" ne_constr_list(l) ] -> [ field_term l ]
+TACTIC EXTEND legacy_field
+| [ "legacy" "field" ] -> [ field ]
+| [ "legacy" "field" ne_constr_list(l) ] -> [ field_term l ]
 END

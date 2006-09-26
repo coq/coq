@@ -63,6 +63,11 @@ Tactics
   setoid_symmetry, setoid_transitivity, setoid_reflexivity and autorewite).
   New syntax for declaring relations and morphisms (old syntax still working
   with minor modifications, but deprecated).
+- New implementation of the ring tactic with a built-in notion of coefficients
+  and a better usage of setoids. Previous implementation kept for compatibility
+  but is deprecated.
+- New conversion tactic "vm_compute": evaluates the goal (or an hypothesis)
+  with a call-by-value strategy, using the compiled version of terms. 
 - When rewriting H where H is not directly a Coq equality, search first H for 
   a registered setoid equality before starting to reduce in H. This is unlikely
   to break any script. Should this happen nonetheless, one can insert manually 

@@ -82,7 +82,7 @@ Lemma about_carrier_of_relation_class_and_relation_class_of_argument_class :
 
 Inductive nelistT (A : Type) : Type :=
    singl : A -> nelistT A
- | cons : A -> nelistT A -> nelistT A.
+ | necons : A -> nelistT A -> nelistT A.
 
 Definition Arguments := nelistT Argument_Class.
 
@@ -132,7 +132,7 @@ Record Morphism_Theory In Out : Type :=
 Definition list_of_Leibniz_of_list_of_types: nelistT Type -> Arguments.
  induction 1.
    exact (singl (Leibniz _ a)).
-   exact (cons (Leibniz _ a) IHX).
+   exact (necons (Leibniz _ a) IHX).
 Defined.
 
 (* every function is a morphism from Leibniz+ to Leibniz *)
@@ -175,7 +175,7 @@ Defined.
 Definition equality_morphism_of_symmetric_areflexive_transitive_relation:
  forall (A: Type)(Aeq: relation A)(sym: symmetric _ Aeq)(trans: transitive _ Aeq),
   let ASetoidClass := SymmetricAreflexive _ sym in
-   (Morphism_Theory (cons ASetoidClass (singl ASetoidClass)) Iff_Relation_Class).
+   (Morphism_Theory (necons ASetoidClass (singl ASetoidClass)) Iff_Relation_Class).
  intros.
  exists Aeq.
  unfold make_compatibility_goal; simpl; split; eauto.
@@ -184,7 +184,7 @@ Defined.
 Definition equality_morphism_of_symmetric_reflexive_transitive_relation:
  forall (A: Type)(Aeq: relation A)(refl: reflexive _ Aeq)(sym: symmetric _ Aeq)
   (trans: transitive _ Aeq), let ASetoidClass := SymmetricReflexive _ sym refl in
-   (Morphism_Theory (cons ASetoidClass (singl ASetoidClass)) Iff_Relation_Class).
+   (Morphism_Theory (necons ASetoidClass (singl ASetoidClass)) Iff_Relation_Class).
  intros.
  exists Aeq.
  unfold make_compatibility_goal; simpl; split; eauto.
@@ -194,7 +194,7 @@ Definition equality_morphism_of_asymmetric_areflexive_transitive_relation:
  forall (A: Type)(Aeq: relation A)(trans: transitive _ Aeq),
   let ASetoidClass1 := AsymmetricAreflexive Contravariant Aeq in
   let ASetoidClass2 := AsymmetricAreflexive Covariant Aeq in
-   (Morphism_Theory (cons ASetoidClass1 (singl ASetoidClass2)) Impl_Relation_Class).
+   (Morphism_Theory (necons ASetoidClass1 (singl ASetoidClass2)) Impl_Relation_Class).
  intros.
  exists Aeq.
  unfold make_compatibility_goal; simpl; unfold impl; eauto.
@@ -204,7 +204,7 @@ Definition equality_morphism_of_asymmetric_reflexive_transitive_relation:
  forall (A: Type)(Aeq: relation A)(refl: reflexive _ Aeq)(trans: transitive _ Aeq),
   let ASetoidClass1 := AsymmetricReflexive Contravariant refl in
   let ASetoidClass2 := AsymmetricReflexive Covariant refl in
-   (Morphism_Theory (cons ASetoidClass1 (singl ASetoidClass2)) Impl_Relation_Class).
+   (Morphism_Theory (necons ASetoidClass1 (singl ASetoidClass2)) Impl_Relation_Class).
  intros.
  exists Aeq.
  unfold make_compatibility_goal; simpl; unfold impl; eauto.
@@ -331,7 +331,7 @@ with Morphism_Context_List Hole dir :
        check_if_variance_is_respected (variance_of_argument_class S) dir' dir'' ->
         Morphism_Context Hole dir (relation_class_of_argument_class S) dir' ->
          Morphism_Context_List Hole dir dir'' L ->
-          Morphism_Context_List Hole dir dir'' (cons S L).
+          Morphism_Context_List Hole dir dir'' (necons S L).
 
 Scheme Morphism_Context_rect2 := Induction for Morphism_Context  Sort Type
 with Morphism_Context_List_rect2 := Induction for Morphism_Context_List Sort Type.

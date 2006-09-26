@@ -39,7 +39,7 @@ Record Semi_Ring_Theory : Prop :=
    SR_mult_one_left : forall n:A, 1 * n = n;
    SR_mult_zero_left : forall n:A, 0 * n = 0;
    SR_distr_left : forall n m p:A, (n + m) * p = n * p + m * p;
-   SR_plus_reg_left : forall n m p:A, n + m = n + p -> m = p;
+(*   SR_plus_reg_left : forall n m p:A, n + m = n + p -> m = p;*)
    SR_eq_prop : forall x y:A, Is_true (Aeq x y) -> x = y}.
 
 Variable T : Semi_Ring_Theory.
@@ -52,10 +52,10 @@ Let plus_zero_left := SR_plus_zero_left T.
 Let mult_one_left := SR_mult_one_left T. 
 Let mult_zero_left := SR_mult_zero_left T.
 Let distr_left := SR_distr_left T.
-Let plus_reg_left := SR_plus_reg_left T.
+(*Let plus_reg_left := SR_plus_reg_left T.*)
 
 Hint Resolve plus_comm plus_assoc mult_comm mult_assoc plus_zero_left
-  mult_one_left mult_zero_left distr_left plus_reg_left.
+  mult_one_left mult_zero_left distr_left (*plus_reg_left*).
 
 (* Lemmas whose form is x=y are also provided in form y=x because Auto does
   not symmetry *) 
@@ -126,11 +126,11 @@ Qed.
 Lemma SR_mult_one_right2 : forall n:A, n = n * 1.
 intro; elim mult_comm; auto.
 Qed.
-
+(*
 Lemma SR_plus_reg_right : forall n m p:A, m + n = p + n -> m = p.
 intros n m p; rewrite (plus_comm m n); rewrite (plus_comm p n); eauto.
 Qed.
-
+*)
 End Theory_of_semi_rings.
 
 Section Theory_of_rings.
@@ -320,7 +320,7 @@ symmetry  in |- *; apply Th_mult_opp_opp. Qed.
 Lemma Th_opp_zero : - 0 = 0.
 rewrite <- (plus_zero_left (- 0)).
 auto. Qed.
-
+(*
 Lemma Th_plus_reg_left : forall n m p:A, n + m = n + p -> m = p.
 intros; generalize (f_equal (fun z => - n + z) H).
 repeat rewrite plus_assoc.
@@ -336,7 +336,7 @@ rewrite (plus_comm n m).
 rewrite (plus_comm n p).
 auto.
 Qed.
-
+*)
 Lemma Th_distr_right : forall n m p:A, n * (m + p) = n * m + n * p.
 intros.
 repeat rewrite (mult_comm n).
@@ -349,7 +349,7 @@ Qed.
 
 End Theory_of_rings.
 
-Hint Resolve Th_mult_zero_left Th_plus_reg_left: core.
+Hint Resolve Th_mult_zero_left (*Th_plus_reg_left*): core.
 
 Unset Implicit Arguments.
 
