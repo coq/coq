@@ -1001,7 +1001,9 @@ let rec add_branch env ((id,_) as cpl) pats tree=
 			      br.(pred cnum) in
 			    Split (ids,ind,br)
 		      | Split (ids,ind0,br0) ->
-			  assert (ind=ind0);
+			  if (ind <> ind0) then error
+			    (* this can happen with coercions *)
+	                      "Case pattern belongs to wrong inductive type";
 			  let br=Array.copy br0 in
 			  let ca = constructor_arities env ind in
 			  let _= br.(pred cnum)<-
