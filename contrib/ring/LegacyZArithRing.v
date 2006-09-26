@@ -10,7 +10,7 @@
 
 (* Instantiation of the Ring tactic for the binary integers of ZArith *)
 
-Require Export ArithRing.
+Require Export LegacyArithRing.
 Require Export ZArith_base.
 Require Import Eqdep_dec.
 Require Import LegacyRing.

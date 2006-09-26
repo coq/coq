@@ -1042,21 +1042,19 @@ RINGVO=\
  contrib/ring/Quote.vo			contrib/ring/Setoid_ring_normalize.vo \
  contrib/ring/Setoid_ring.vo		contrib/ring/Setoid_ring_theory.vo
 
-NEWRINGVO=\
- contrib/setoid_ring/BinList.vo   contrib/setoid_ring/Ring_th.vo \
- contrib/setoid_ring/Pol.vo       contrib/setoid_ring/Ring_tac.vo \
- contrib/setoid_ring/ZRing_th.vo  contrib/setoid_ring/Ring_equiv.vo \
- contrib/setoid_ring/Ring_base.vo contrib/setoid_ring/Ring.vo \
- contrib/setoid_ring/ArithRing.vo contrib/setoid_ring/Ring_polynom.vo \
- contrib/setoid_ring/NArithRing.vo \
- contrib/setoid_ring/ZArithRing.vo \
-contrib/setoid_ring/Field.vo \
-contrib/setoid_ring/Field_tac.vo \
-contrib/setoid_ring/RealField.vo
-
 FIELDVO=\
  contrib/field/Field_Compl.vo     contrib/field/Field_Theory.vo \
  contrib/field/Field_Tactic.vo    contrib/field/LegacyField.vo
+
+NEWRINGVO=\
+ contrib/setoid_ring/BinList.vo   	contrib/setoid_ring/Ring_theory.vo \
+ contrib/setoid_ring/Ring_polynom.vo	contrib/setoid_ring/Ring_tac.vo \
+ contrib/setoid_ring/Ring_base.vo 	contrib/setoid_ring/InitialRing.vo \
+ contrib/setoid_ring/Ring_equiv.vo 	contrib/setoid_ring/Ring.vo \
+ contrib/setoid_ring/ArithRing.vo	contrib/setoid_ring/NArithRing.vo \
+ contrib/setoid_ring/ZArithRing.vo \
+ contrib/setoid_ring/Field.vo		contrib/setoid_ring/Field_tac.vo \
+ contrib/setoid_ring/RealField.vo
 
 XMLVO= 
 

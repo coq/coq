@@ -342,7 +342,7 @@ contrib/ring/Ring_normalize.vo: contrib/ring/Ring_normalize.v contrib/ring/Legac
 contrib/ring/LegacyRing_theory.vo: contrib/ring/LegacyRing_theory.v theories/Bool/Bool.vo
 contrib/ring/LegacyRing.vo: contrib/ring/LegacyRing.v theories/Bool/Bool.vo contrib/ring/LegacyRing_theory.vo contrib/ring/Quote.vo contrib/ring/Ring_normalize.vo contrib/ring/Ring_abstract.vo
 contrib/ring/LegacyNArithRing.vo: contrib/ring/LegacyNArithRing.v theories/Bool/Bool.vo contrib/ring/LegacyRing.vo theories/ZArith/ZArith_base.vo theories/NArith/NArith.vo theories/Logic/Eqdep_dec.vo
-contrib/ring/LegacyZArithRing.vo: contrib/ring/LegacyZArithRing.v contrib/setoid_ring/ArithRing.vo theories/ZArith/ZArith_base.vo theories/Logic/Eqdep_dec.vo
+contrib/ring/LegacyZArithRing.vo: contrib/ring/LegacyZArithRing.v contrib/ring/LegacyArithRing.vo theories/ZArith/ZArith_base.vo theories/Logic/Eqdep_dec.vo contrib/ring/LegacyRing.vo
 contrib/ring/Ring_abstract.vo: contrib/ring/Ring_abstract.v contrib/ring/LegacyRing_theory.vo contrib/ring/Quote.vo contrib/ring/Ring_normalize.vo
 contrib/ring/Quote.vo: contrib/ring/Quote.v
 contrib/ring/Setoid_ring_normalize.vo: contrib/ring/Setoid_ring_normalize.v contrib/ring/Setoid_ring_theory.vo contrib/ring/Quote.vo
@@ -360,13 +360,15 @@ contrib/rtauto/Bintree.vo: contrib/rtauto/Bintree.v theories/Lists/List.vo theor
 contrib/rtauto/Rtauto.vo: contrib/rtauto/Rtauto.v theories/Lists/List.vo contrib/rtauto/Bintree.vo theories/Bool/Bool.vo theories/NArith/BinPos.vo
 contrib/recdef/Recdef.vo: contrib/recdef/Recdef.v theories/Arith/Compare_dec.vo theories/Arith/Wf_nat.vo
 contrib/setoid_ring/BinList.vo: contrib/setoid_ring/BinList.v theories/NArith/BinPos.vo theories/Lists/List.vo
+contrib/setoid_ring/Ring_theory.vo: contrib/setoid_ring/Ring_theory.v theories/Setoids/Setoid.vo
+contrib/setoid_ring/Ring_polynom.vo: contrib/setoid_ring/Ring_polynom.v theories/Setoids/Setoid.vo contrib/setoid_ring/BinList.vo theories/NArith/BinPos.vo theories/ZArith/BinInt.vo contrib/setoid_ring/Ring_theory.vo
 contrib/setoid_ring/Ring_tac.vo: contrib/setoid_ring/Ring_tac.v theories/Setoids/Setoid.vo theories/NArith/BinPos.vo contrib/setoid_ring/Ring_polynom.vo contrib/setoid_ring/BinList.vo contrib/setoid_ring/newring.cmo
-contrib/setoid_ring/Ring_equiv.vo: contrib/setoid_ring/Ring_equiv.v contrib/ring/Setoid_ring_theory.vo contrib/ring/LegacyRing_theory.vo contrib/setoid_ring/Ring_theory.vo
 contrib/setoid_ring/Ring_base.vo: contrib/setoid_ring/Ring_base.v contrib/setoid_ring/newring.cmo contrib/setoid_ring/Ring_theory.vo contrib/setoid_ring/Ring_tac.vo
+contrib/setoid_ring/InitialRing.vo: contrib/setoid_ring/InitialRing.v theories/ZArith/ZArith_base.vo theories/ZArith/BinInt.vo theories/NArith/BinNat.vo theories/Setoids/Setoid.vo contrib/setoid_ring/Ring_base.vo contrib/setoid_ring/Ring_polynom.vo
+contrib/setoid_ring/Ring_equiv.vo: contrib/setoid_ring/Ring_equiv.v contrib/ring/Setoid_ring_theory.vo contrib/ring/LegacyRing_theory.vo contrib/setoid_ring/Ring_theory.vo
 contrib/setoid_ring/Ring.vo: contrib/setoid_ring/Ring.v theories/Bool/Bool.vo contrib/setoid_ring/Ring_theory.vo contrib/setoid_ring/Ring_base.vo contrib/setoid_ring/InitialRing.vo contrib/setoid_ring/Ring_equiv.vo
 contrib/setoid_ring/ArithRing.vo: contrib/setoid_ring/ArithRing.v theories/Arith/Arith.vo contrib/setoid_ring/Ring.vo
-contrib/setoid_ring/Ring_polynom.vo: contrib/setoid_ring/Ring_polynom.v theories/Setoids/Setoid.vo contrib/setoid_ring/BinList.vo theories/NArith/BinPos.vo theories/ZArith/BinInt.vo contrib/setoid_ring/Ring_theory.vo
-contrib/setoid_ring/NArithRing.vo: contrib/setoid_ring/NArithRing.v theories/NArith/NArith.vo contrib/setoid_ring/Ring.vo
+contrib/setoid_ring/NArithRing.vo: contrib/setoid_ring/NArithRing.v theories/NArith/NArith.vo contrib/setoid_ring/Ring.vo contrib/setoid_ring/InitialRing.vo
 contrib/setoid_ring/ZArithRing.vo: contrib/setoid_ring/ZArithRing.v contrib/setoid_ring/Ring.vo theories/ZArith/ZArith_base.vo
 contrib/setoid_ring/Field.vo: contrib/setoid_ring/Field.v contrib/setoid_ring/Ring.vo theories/ZArith/ZArith_base.vo
 contrib/setoid_ring/Field_tac.vo: contrib/setoid_ring/Field_tac.v contrib/setoid_ring/Ring_tac.vo contrib/setoid_ring/InitialRing.vo contrib/setoid_ring/Field.vo
