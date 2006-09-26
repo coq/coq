@@ -13,6 +13,7 @@
 Require Export ArithRing.
 Require Export ZArith_base.
 Require Import Eqdep_dec.
+Require Import LegacyRing.
 
 Unboxed Definition Zeq (x y:Z) :=
   match (x ?= y)%Z with

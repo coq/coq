@@ -8,6 +8,8 @@
 
 Require Import NArith.
 Require Export Ring.
+Require Import InitialRing.
+
 Set Implicit Arguments.
 
 Ltac isNcst t :=

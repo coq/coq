@@ -1047,7 +1047,7 @@ NEWRINGVO=\
  contrib/setoid_ring/Pol.vo       contrib/setoid_ring/Ring_tac.vo \
  contrib/setoid_ring/ZRing_th.vo  contrib/setoid_ring/Ring_equiv.vo \
  contrib/setoid_ring/Ring_base.vo contrib/setoid_ring/Ring.vo \
- contrib/setoid_ring/ArithRing.vo \
+ contrib/setoid_ring/ArithRing.vo contrib/setoid_ring/Ring_polynom.vo \
  contrib/setoid_ring/NArithRing.vo \
  contrib/setoid_ring/ZArithRing.vo \
 contrib/setoid_ring/Field.vo \
