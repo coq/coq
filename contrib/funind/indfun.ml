@@ -271,7 +271,7 @@ let derive_inversion fix_names =
   with _ -> ()
 
 let generate_principle 
-    is_general do_built fix_rec_l recdefs  interactive_proof parametrize 
+    is_general do_built fix_rec_l recdefs  interactive_proof 
     (continue_proof : int -> Names.constant array -> Term.constr array -> int -> 
       Tacmach.tactic) : unit =
   let names = List.map (function (name,_,_,_,_) -> name) fix_rec_l in
@@ -280,7 +280,7 @@ let generate_principle
   let funs_types =  List.map (function (_,_,_,types,_) -> types) fix_rec_l in
   try 
     (* We then register the Inductive graphs of the functions  *)
-    Rawterm_to_relation.build_inductive parametrize names funs_args funs_types recdefs;
+    Rawterm_to_relation.build_inductive names funs_args funs_types recdefs;
     if do_built 
     then
       begin
@@ -472,7 +472,6 @@ let do_generate_principle register_built interactive_proof fixpoint_exprl  =
 	      fixpoint_exprl 
 	      recdefs
 	      true
-	      false
 	  in 
 	  if register_built 
 	  then register_wf name rec_impls wf_rel wf_x using_lemmas args types body pre_hook;
@@ -485,11 +484,10 @@ let do_generate_principle register_built interactive_proof fixpoint_exprl  =
 	      fixpoint_exprl 
 	      recdefs
 	      true
-	      false
 	  in 
 	  if register_built 
 	  then register_mes name rec_impls wf_mes wf_x using_lemmas args types body pre_hook;
-	  false
+	  true
       | _ -> 
 	  let fix_names = 
 	    List.map (function (name,_,_,_,_) -> name) fixpoint_exprl 
@@ -538,7 +536,6 @@ let do_generate_principle register_built interactive_proof fixpoint_exprl  =
 	    fixpoint_exprl
 	    recdefs 
 	    interactive_proof
-	    true
 	    (Functional_principles_proofs.prove_princ_for_struct interactive_proof);
 	  if register_built then derive_inversion fix_names;
 	  true;

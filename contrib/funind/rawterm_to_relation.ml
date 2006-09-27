@@ -1075,7 +1075,7 @@ let rec rebuild_return_type rt =
 
 
 let do_build_inductive 
-    parametrize funnames (funsargs: (Names.name * rawconstr * bool) list list)  
+    funnames (funsargs: (Names.name * rawconstr * bool) list list)  
     returned_types 
     (rtl:rawconstr list) =
   let _time1 = System.get_time () in
@@ -1133,12 +1133,7 @@ let do_build_inductive
   in
   let rel_constructors = Array.mapi rel_constructors resa in
   (* Computing the set of parameters if asked *)
-  let rels_params = 
-    if parametrize 
-    then
-      compute_params_name relnames_as_set funsargs  rel_constructors 
-    else []
-  in
+  let rels_params = compute_params_name relnames_as_set funsargs  rel_constructors in
   let nrel_params = List.length rels_params in
   let rel_constructors = (* Taking into account the parameters in constructors *)
     Array.map (List.map 
@@ -1248,9 +1243,9 @@ let do_build_inductive
 
 
 
-let build_inductive parametrize funnames funsargs returned_types rtl = 
+let build_inductive funnames funsargs returned_types rtl = 
   try 
-    do_build_inductive  parametrize funnames funsargs returned_types rtl
+    do_build_inductive funnames funsargs returned_types rtl
   with e -> raise (Building_graph e)
       
 

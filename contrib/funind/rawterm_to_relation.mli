@@ -8,7 +8,6 @@
 *)
 
 val build_inductive :
-  bool -> (* if true try to detect parameter. Always use it as true except for debug *)
   Names.identifier list -> (* The list of function name *)
   (Names.name*Rawterm.rawconstr*bool) list list -> (* The list of function args *)
   Topconstr.constr_expr list -> (* The list of function returned type *)

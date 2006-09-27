@@ -1379,7 +1379,7 @@ let is_valid_hypothesis predicates_name =
 	| _ -> false 
   in
   is_valid_hypothesis 
-
+(*
 let fresh_id avoid na = 
   let id =  
     match na with 
@@ -1591,13 +1591,160 @@ let prove_principle_for_gen
 	 arg_tac;
 	 start_tac
 	] g
+*)
 
-
-
-
-
-
-
+let prove_principle_for_gen
+    (f_ref,functional_ref,eq_ref) tcc_lemma_ref is_mes
+    rec_arg_num rec_arg_type relation gl = 
+  let princ_type = pf_concl gl in 
+  let princ_info = compute_elim_sig princ_type in 
+  let fresh_id = 
+    let avoid = ref (pf_ids_of_hyps gl) in 
+    fun na -> 
+      let new_id = 
+	  match na with 
+	    | Name id -> fresh_id !avoid (string_of_id id) 
+	    | Anonymous -> fresh_id !avoid "H" 
+      in
+      avoid := new_id :: !avoid;
+      Name new_id
+  in
+  let fresh_decl (na,b,t) = (fresh_id na,b,t) in
+  let princ_info : elim_scheme = 
+    { princ_info with 
+	params = List.map fresh_decl princ_info.params;
+	predicates = List.map fresh_decl princ_info.predicates; 
+	branches = List.map fresh_decl princ_info.branches; 
+	args = List.map fresh_decl princ_info.args
+    }
+  in
+  let wf_tac = 
+    if is_mes 
+    then 
+      (fun b -> Recdef.tclUSER_if_not_mes b None)
+    else fun _ -> prove_with_tcc tcc_lemma_ref []
+  in
+  let real_rec_arg_num = rec_arg_num - princ_info.nparams in 
+  let npost_rec_arg = princ_info.nargs - real_rec_arg_num + 1 in 
+  let (post_rec_arg,pre_rec_arg) = 
+    Util.list_chop npost_rec_arg princ_info.args
+  in
+  let rec_arg_id = 
+    match post_rec_arg with 
+      | (Name id,_,_)::_ -> id 
+      | _ -> assert false 
+  in
+  let subst_constrs = List.map (fun (na,_,_) -> mkVar (Nameops.out_name na)) (pre_rec_arg@princ_info.params) in 
+  let relation = substl subst_constrs relation in 
+  let input_type = substl subst_constrs rec_arg_type in 
+  let wf_thm_id = Nameops.out_name (fresh_id (Name (id_of_string "wf_R"))) in 
+  let acc_rec_arg_id = 
+    Nameops.out_name (fresh_id (Name (id_of_string ("Acc_"^(string_of_id rec_arg_id)))))
+  in 
+  let revert l = 
+    tclTHEN (h_generalize (List.map mkVar l)) (clear l) 
+  in
+  let fix_id = Nameops.out_name (fresh_id (Name hrec_id)) in 
+  let prove_rec_arg_acc g = 
+      (observe_tac "prove_rec_arg_acc" 
+	 (tclCOMPLETE
+	    (tclTHEN
+	       (forward 
+		  (Some ((fun g -> observe_tac "prove wf" (tclCOMPLETE (wf_tac is_mes)) g)))
+		  (Genarg.IntroIdentifier wf_thm_id)
+		  (mkApp (delayed_force well_founded,[|input_type;relation|])))
+	       (
+		 observe_tac 
+		   "apply wf_thm" 
+		   (h_apply ((mkApp(mkVar wf_thm_id,
+				    [|mkVar rec_arg_id |])),Rawterm.NoBindings)
+		   )
+	       )
+	    )
+	 )
+      )
+      g
+  in
+  let args_ids = List.map (fun (na,_,_) -> Nameops.out_name na) princ_info.args in
+  tclTHENSEQ
+    [ 
+      h_intros 
+	(List.rev_map (fun (na,_,_) -> Nameops.out_name na) 
+	   (princ_info.args@princ_info.branches@princ_info.predicates@princ_info.params)
+	);
+      observe_tac "" (forward
+	 (Some (prove_rec_arg_acc))
+	 (Genarg.IntroIdentifier acc_rec_arg_id)
+ 	 (mkApp (delayed_force acc_rel,[|input_type;relation;mkVar rec_arg_id|]))
+      );
+      observe_tac "reverting" (revert (List.rev (acc_rec_arg_id::args_ids)));
+      observe_tac "h_fix" (h_fix (Some fix_id) (real_rec_arg_num + 1)); 
+      h_intros (List.rev (acc_rec_arg_id::args_ids));
+      Equality.rewriteLR (mkConst eq_ref);
+      observe_tac "finish" (fun gl' -> 
+	 let body = 
+	   let _,args = destApp (pf_concl gl') in 
+	   array_last args
+	 in
+	 let body_info rec_hyps = 
+	   {
+	     nb_rec_hyps = List.length rec_hyps;
+	     rec_hyps = rec_hyps;
+	     eq_hyps = [];
+	     info = body
+	   }
+	 in 
+	 let acc_inv = 
+	   lazy (
+	     mkApp (
+	       delayed_force acc_inv_id,
+	       [|input_type;relation;mkVar rec_arg_id|]
+	     )
+	   )
+	 in
+	 let acc_inv = lazy (mkApp(Lazy.force acc_inv, [|mkVar  acc_rec_arg_id|])) in
+	 let predicates_names = 
+	   List.map (fun (na,_,_) -> Nameops.out_name na) princ_info.predicates
+	 in
+	 let pte_info = 
+	   { proving_tac =
+	       (fun eqs -> 
+		  observe_tac "new_prove_with_tcc" 
+		    (new_prove_with_tcc 
+		       is_mes acc_inv fix_id tcc_lemma_ref (List.map mkVar eqs)
+		    )
+	       );
+	     is_valid = is_valid_hypothesis predicates_names
+	   }
+	 in
+	 let ptes_info : pte_info Idmap.t = 
+	   List.fold_left
+	     (fun map pte_id -> 
+		Idmap.add pte_id 
+		  pte_info			       
+		  map
+	     )
+	     Idmap.empty
+	     predicates_names
+	 in
+	 let make_proof rec_hyps = 
+	   build_proof 
+	     false 
+	     [f_ref]
+	     ptes_info
+	     (body_info rec_hyps)
+	 in
+	 observe_tac "instanciate_hyps_with_args" 
+	   (instanciate_hyps_with_args 
+	      make_proof
+	      (List.map (fun (na,_,_) -> Nameops.out_name na) princ_info.branches)
+	      (List.rev args_ids)
+	   )
+	   gl'
+      )
+			   
+    ]
+    gl    
 
 
 
