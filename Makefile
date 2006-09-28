@@ -1254,8 +1254,8 @@ install-opt::
 install-tools::
 	$(MKDIR) $(FULLBINDIR)
 	# recopie des fichiers de style pour coqide
-	$(MKDIR) $(COQLIB)/tools/coqdoc
-	cp tools/coqdoc/coqdoc.css tools/coqdoc/coqdoc.sty $(COQLIB)/tools/coqdoc
+	$(MKDIR) $(FULLCOQLIB)/tools/coqdoc
+	cp tools/coqdoc/coqdoc.css tools/coqdoc/coqdoc.sty $(FULLCOQLIB)/tools/coqdoc
 	cp $(TOOLS) $(FULLBINDIR)
 
 LIBFILES=$(THEORIESVO) $(CONTRIBVO)
