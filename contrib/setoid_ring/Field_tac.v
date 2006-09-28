@@ -7,7 +7,7 @@
 (************************************************************************)
 
 Require Import Ring_tac Ring_polynom InitialRing.
-Require Export Field.
+Require Export Field_theory.
 
  (* syntaxification *)
  Ltac mkFieldexpr C Cst radd rmul rsub ropp rdiv rinv t fv := 

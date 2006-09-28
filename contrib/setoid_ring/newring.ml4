@@ -714,11 +714,11 @@ TACTIC EXTEND setoid_ring
 END
 
 (***********************************************************************)
-let fld_cst s = mk_cst [contrib_name;"Field"] s ;;
+let fld_cst s = mk_cst [contrib_name;"Field_theory"] s ;;
 
 let field_modules = List.map
   (fun f -> ["Coq";contrib_name;f])
-  ["Field";"Field_tac"]
+  ["Field_theory";"Field_tac"]
 
 let new_field_path =
   make_dirpath (List.map id_of_string ["Field_tac";contrib_name;"Coq"])

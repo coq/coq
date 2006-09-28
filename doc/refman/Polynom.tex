@@ -110,9 +110,9 @@ The tactic must be loaded by \texttt{Require Import Ring}. The ring
 structures must be declared with the \texttt{Add Ring} command (see
 below). The ring of booleans is predefined; if one wants to use the
 tactic on \texttt{nat} one must first require the module
-\texttt{NewArithRing}; for \texttt{Z}, do \texttt{Require Import
-NewZArithRing}; for \texttt{N}, do \texttt{Require Import
-NewNArithRing}.
+\texttt{ArithRing}; for \texttt{Z}, do \texttt{Require Import
+ZArithRing}; for \texttt{N}, do \texttt{Require Import
+NArithRing}.
 
 \Example
 \begin{coq_eval}
@@ -121,7 +121,7 @@ Require Import ZArith.
 Open Scope Z_scope.
 \end{coq_eval}
 \begin{coq_example}
-Require Import NewZArithRing.
+Require Import ZArithRing.
 Goal forall a b c:Z,
   (a + b + c) * (a + b + c) =
   a * a + b * b + c * c + 2 * a * b + 2 * a * c + 2 * b * c.
@@ -159,11 +159,11 @@ avoided for terms belonging to the same ring theory.
 
 Declaring a new ring consists in proving that a ring signature (a
 carrier set, an equality, and ring operations: {\tt
-Ring\_th.ring\_theory} and {\tt Ring\_th.semi\_ring\_theory})
+Ring\_theory.ring\_theory} and {\tt Ring\_theory.semi\_ring\_theory})
 satisfies the ring axioms. Semi-rings (rings without $+$ inverse) are
 also supported. The equality can be either Leibniz equality, or any
 relation declared as a setoid (see~\ref{setoidtactics}). The definition
-of ring and semi-rings (see module {\tt Ring\_th}) is:
+of ring and semi-rings (see module {\tt Ring\_theory}) is:
 \begin{verbatim}
  Record ring_theory : Prop := mk_rt {
     Radd_0_l    : forall x, 0 + x == x;
@@ -251,13 +251,13 @@ describes their syntax and effects:
   the form {\tt forall x y, x?=!y = true $\rightarrow$ x == y}.
 \item[morphism \term] declares the ring as a customized one. \term{} is
   a proof that there exists a morphism between a set of coefficient
-  and the ring carrier (see {\tt Ring\_th.ring\_morph} and {\tt
-  Ring\_th.semi\_morph}).
+  and the ring carrier (see {\tt Ring\_theory.ring\_morph} and {\tt
+  Ring\_theory.semi\_morph}).
 \item[setoid \term$_1$ \term$_2$] forces the use of given
   setoid. \term$_1$ is a proof that the equality is indeed a setoid
   (see {\tt Setoid.Setoid\_Theory}), and \term$_2$ a proof that the
-  ring operations are morphisms (see {\tt Ring\_th.ring\_eq\_ext} and
-  {\tt Ring\_th.sring\_eq\_ext}). This modifier need not be used if the
+  ring operations are morphisms (see {\tt Ring\_theory.ring\_eq\_ext} and
+  {\tt Ring\_theory.sring\_eq\_ext}). This modifier need not be used if the
   setoid and morphisms have been declared.
 \item[constants [\ltac]] specifies a tactic expression that, given a term,
   returns either an object of the coefficient set that is mapped to
@@ -297,7 +297,7 @@ tactic we used \Coq\ as a programming language and also as a proof
 environment to build a tactic and to prove it correctness.
 
 The interested reader is strongly advised to have a look at the file
-\texttt{Pol.v}. Here a type for polynomials is defined: 
+\texttt{Ring_polynom.v}. Here a type for polynomials is defined: 
 
 \begin{small}
 \begin{flushleft}
@@ -402,9 +402,9 @@ associative commutative rewriting on every ring.  The tactic must be
 loaded by \texttt{Require Import LegacyRing}. The ring must be declared in
 the \texttt{Add Ring} command. The ring of booleans
 is predefined; if one wants to use the tactic on \texttt{nat} one must
-first require the module \texttt{ArithRing}; for \texttt{Z}, do
-\texttt{Require Import ZArithRing}; for \texttt{N}, do \texttt{Require
-Import NArithRing}.
+first require the module \texttt{LegacyArithRing}; for \texttt{Z}, do
+\texttt{Require Import LegacyZArithRing}; for \texttt{N}, do \texttt{Require
+Import LegacyNArithRing}.
 
 The terms \term$_1$, \dots, \term$_n$ must be subterms of the goal
 conclusion. The tactic \texttt{ring} normalizes these terms

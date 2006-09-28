@@ -28,7 +28,7 @@ theories/FSets/FMapAVL.vo: theories/FSets/FMapAVL.v theories/FSets/FSetInterface
 theories/FSets/FSetAVL.vo: theories/FSets/FSetAVL.v theories/FSets/FSetInterface.vo theories/FSets/FSetList.vo theories/ZArith/ZArith.vo theories/ZArith/Int.vo
 theories/Reals/Rdefinitions.vo: theories/Reals/Rdefinitions.v theories/ZArith/ZArith_base.vo
 theories/Reals/Raxioms.vo: theories/Reals/Raxioms.v theories/ZArith/ZArith_base.vo theories/Reals/Rdefinitions.vo
-theories/Reals/RIneq.vo: theories/Reals/RIneq.v theories/Reals/Raxioms.vo contrib/setoid_ring/ZArithRing.vo contrib/omega/Omega.vo contrib/setoid_ring/Field_tac.vo
+theories/Reals/RIneq.vo: theories/Reals/RIneq.v theories/Reals/Raxioms.vo contrib/setoid_ring/ZArithRing.vo contrib/omega/Omega.vo contrib/setoid_ring/RealField.vo contrib/field/LegacyField.vo
 theories/Reals/DiscrR.vo: theories/Reals/DiscrR.v theories/Reals/RIneq.vo contrib/omega/Omega.vo
 theories/Reals/Rbase.vo: theories/Reals/Rbase.v theories/Reals/Rdefinitions.vo theories/Reals/Raxioms.vo theories/Reals/RIneq.vo theories/Reals/DiscrR.vo
 theories/Reals/R_Ifp.vo: theories/Reals/R_Ifp.v theories/Reals/Rbase.vo contrib/omega/Omega.vo
@@ -271,7 +271,7 @@ theories/Wellfounded/Well_Ordering.vo: theories/Wellfounded/Well_Ordering.v theo
 theories/Wellfounded/Lexicographic_Product.vo: theories/Wellfounded/Lexicographic_Product.v theories/Logic/Eqdep.vo theories/Relations/Relation_Operators.vo theories/Wellfounded/Transitive_Closure.vo
 theories/Reals/Rdefinitions.vo: theories/Reals/Rdefinitions.v theories/ZArith/ZArith_base.vo
 theories/Reals/Raxioms.vo: theories/Reals/Raxioms.v theories/ZArith/ZArith_base.vo theories/Reals/Rdefinitions.vo
-theories/Reals/RIneq.vo: theories/Reals/RIneq.v theories/Reals/Raxioms.vo contrib/setoid_ring/ZArithRing.vo contrib/omega/Omega.vo contrib/setoid_ring/Field_tac.vo
+theories/Reals/RIneq.vo: theories/Reals/RIneq.v theories/Reals/Raxioms.vo contrib/setoid_ring/ZArithRing.vo contrib/omega/Omega.vo contrib/setoid_ring/RealField.vo contrib/field/LegacyField.vo
 theories/Reals/DiscrR.vo: theories/Reals/DiscrR.v theories/Reals/RIneq.vo contrib/omega/Omega.vo
 theories/Reals/Rbase.vo: theories/Reals/Rbase.v theories/Reals/Rdefinitions.vo theories/Reals/Raxioms.vo theories/Reals/RIneq.vo theories/Reals/DiscrR.vo
 theories/Reals/R_Ifp.vo: theories/Reals/R_Ifp.v theories/Reals/Rbase.vo contrib/omega/Omega.vo
@@ -332,7 +332,7 @@ theories/QArith/Qreduction.vo: theories/QArith/Qreduction.v theories/QArith/QAri
 theories/QArith/Qring.vo: theories/QArith/Qring.v contrib/setoid_ring/Ring.vo theories/QArith/QArith_base.vo
 theories/QArith/Qreals.vo: theories/QArith/Qreals.v theories/Reals/Rbase.vo theories/QArith/QArith_base.vo
 theories/QArith/QArith.vo: theories/QArith/QArith.v theories/QArith/QArith_base.vo theories/QArith/Qring.vo theories/QArith/Qreduction.vo
-theories/QArith/Qcanon.vo: theories/QArith/Qcanon.v contrib/setoid_ring/Field.vo contrib/setoid_ring/Field_tac.vo theories/QArith/QArith.vo theories/ZArith/Znumtheory.vo theories/Logic/Eqdep_dec.vo
+theories/QArith/Qcanon.vo: theories/QArith/Qcanon.v contrib/setoid_ring/Field.vo theories/QArith/QArith.vo theories/ZArith/Znumtheory.vo theories/Logic/Eqdep_dec.vo
 contrib/omega/OmegaLemmas.vo: contrib/omega/OmegaLemmas.v theories/ZArith/ZArith_base.vo
 contrib/omega/Omega.vo: contrib/omega/Omega.v theories/ZArith/ZArith_base.vo contrib/omega/OmegaLemmas.vo theories/ZArith/Zhints.vo
 contrib/romega/ReflOmegaCore.vo: contrib/romega/ReflOmegaCore.v theories/Arith/Arith.vo theories/Lists/List.vo theories/Bool/Bool.vo theories/ZArith/ZArith_base.vo contrib/omega/OmegaLemmas.vo theories/Logic/Decidable.vo
@@ -370,6 +370,7 @@ contrib/setoid_ring/Ring.vo: contrib/setoid_ring/Ring.v theories/Bool/Bool.vo co
 contrib/setoid_ring/ArithRing.vo: contrib/setoid_ring/ArithRing.v theories/Arith/Arith.vo contrib/setoid_ring/Ring.vo
 contrib/setoid_ring/NArithRing.vo: contrib/setoid_ring/NArithRing.v theories/NArith/NArith.vo contrib/setoid_ring/Ring.vo contrib/setoid_ring/InitialRing.vo
 contrib/setoid_ring/ZArithRing.vo: contrib/setoid_ring/ZArithRing.v contrib/setoid_ring/Ring.vo theories/ZArith/ZArith_base.vo
-contrib/setoid_ring/Field.vo: contrib/setoid_ring/Field.v contrib/setoid_ring/Ring.vo theories/ZArith/ZArith_base.vo
-contrib/setoid_ring/Field_tac.vo: contrib/setoid_ring/Field_tac.v contrib/setoid_ring/Ring_tac.vo contrib/setoid_ring/InitialRing.vo contrib/setoid_ring/Field.vo
-contrib/setoid_ring/RealField.vo: contrib/setoid_ring/RealField.v contrib/setoid_ring/Ring_polynom.vo contrib/setoid_ring/InitialRing.vo contrib/setoid_ring/Field.vo contrib/setoid_ring/Field_tac.vo contrib/setoid_ring/Ring.vo theories/Reals/Rdefinitions.vo theories/Reals/Raxioms.vo theories/Reals/RIneq.vo
+contrib/setoid_ring/Field_theory.vo: contrib/setoid_ring/Field_theory.v contrib/setoid_ring/Ring.vo theories/ZArith/ZArith_base.vo
+contrib/setoid_ring/Field_tac.vo: contrib/setoid_ring/Field_tac.v contrib/setoid_ring/Ring_tac.vo contrib/setoid_ring/Ring_polynom.vo contrib/setoid_ring/InitialRing.vo contrib/setoid_ring/Field_theory.vo
+contrib/setoid_ring/Field.vo: contrib/setoid_ring/Field.v contrib/setoid_ring/Field_theory.vo contrib/setoid_ring/Field_tac.vo
+contrib/setoid_ring/RealField.vo: contrib/setoid_ring/RealField.v theories/Reals/Raxioms.vo theories/Reals/Rdefinitions.vo contrib/setoid_ring/Ring.vo contrib/setoid_ring/Field.vo
