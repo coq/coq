@@ -6,9 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Ring_tac.
-Require Import InitialRing.
-Require Import Field.
+Require Import Ring_tac Ring_polynom InitialRing.
+Require Export Field.
 
  (* syntaxification *)
  Ltac mkFieldexpr C Cst radd rmul rsub ropp rdiv rinv t fv := 

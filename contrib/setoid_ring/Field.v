@@ -7,8 +7,7 @@
 (************************************************************************)
 
 Require Ring.
-Export Ring_polynom.
-Import Ring_theory InitialRing Setoid List.
+Import Ring_polynom Ring_theory InitialRing Setoid List.
 Require Import ZArith_base.
 
 Section MakeFieldPol.
