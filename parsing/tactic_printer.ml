@@ -188,7 +188,7 @@ let print_treescript nochange sigma pf =
            (print_script nochange sigma) spfl )
     | Some(r,spfl) ->
         (if nochange then mt () else (pr_change pf.goal ++ fnl ())) ++
-	  pr_rule_dot r ++ fnl () ++
+	  pr_rule_dot r ++
 	  begin
 	    if List.length spfl > 1 then
 	      fnl ()  ++ 
