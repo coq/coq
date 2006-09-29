@@ -1069,7 +1069,7 @@ object(self)
     in
       try
 	trash_bytes := "";
-	let phrase = Find_phrase.get (Lexing.from_function lexbuf_function) 
+	let _ = Find_phrase.get (Lexing.from_function lexbuf_function) 
 	in
 	  end_iter#nocopy#set_offset (start#offset + !Find_phrase.length);
 	  Some (start,end_iter)
@@ -1706,10 +1706,10 @@ end
 
 let create_input_tab filename =
   let b = GText.buffer () in 
-  let tablabel = GMisc.label () in 
+  let _ = GMisc.label () in 
   let v_box = GPack.hbox ~homogeneous:false () in
-  let image = GMisc.image ~packing:v_box#pack () in
-  let label = GMisc.label ~text:filename ~packing:v_box#pack () in
+  let _ = GMisc.image ~packing:v_box#pack () in
+  let _ = GMisc.label ~text:filename ~packing:v_box#pack () in
   let fr1 = GBin.frame ~shadow_type:`ETCHED_OUT
     ~packing:((notebook ())#append_page
 		~tab_label:v_box#coerce) () 
@@ -2032,7 +2032,7 @@ let main files =
 			    let s,_ = run_command av#insert_message cmd in
 			      !flash_info (cmd ^ if s = Unix.WEXITED 0 then " succeeded" else " failed")
 		  in
-		  let print_m = file_factory#add_item "_Print" ~callback:print_f in
+		  let _ = file_factory#add_item "_Print" ~callback:print_f in
 
 		  (* File/Export to Menu *)
 		  let export_f kind () =
@@ -2063,16 +2063,16 @@ let main files =
 		  let file_export_m =  file_factory#add_submenu "E_xport to" in
 
 		  let file_export_factory = new GMenu.factory ~accel_path:"<CoqIde MenuBar>/Export/" file_export_m ~accel_group in
-		  let export_html_m = 
+		  let _ = 
 		    file_export_factory#add_item "_Html" ~callback:(export_f "html") 
 		  in
-		  let export_latex_m = 
+		  let _ = 
 		    file_export_factory#add_item "_LaTeX" ~callback:(export_f "latex")
 		  in
-		  let export_dvi_m = 
+		  let _ = 
 		    file_export_factory#add_item "_Dvi" ~callback:(export_f "dvi") 
 		  in
-		  let export_ps_m = 
+		  let _ = 
 		    file_export_factory#add_item "_Ps" ~callback:(export_f "ps") 
 		  in
 
@@ -2105,7 +2105,7 @@ let main files =
 			  | _ -> ()
 		      else exit 0
 		    in
-		    let quit_m = file_factory#add_item "_Quit" ~key:GdkKeysyms._Q 
+		    let _ = file_factory#add_item "_Quit" ~key:GdkKeysyms._Q 
 		      ~callback:quit_f
 		    in
 		      ignore (w#event#connect#delete (fun _ -> quit_f (); true));
@@ -2170,7 +2170,7 @@ let main files =
 			  ~col_spacings:10 ~row_spacings:10 ~border_width:10
 			  ~homogeneous:false ~packing:find_w#add () in
 			  
-			let find_lbl = 
+			let _ = 
 			  GMisc.label ~text:"Find:"
 			    ~xalign:1.0
 			    ~packing:(find_box#attach ~left:0 ~top:0 ~fill:`X) () 
@@ -2180,7 +2180,7 @@ let main files =
 			  ~packing: (find_box#attach ~left:1 ~top:0 ~expand:`X)
 			  ()
 			in
-			let replace_lbl = 
+			let _ = 
 			  GMisc.label ~text:"Replace with:"
 			    ~xalign:1.0
 			    ~packing:(find_box#attach ~left:0 ~top:1 ~fill:`X) () 
@@ -2190,7 +2190,7 @@ let main files =
 			  ~packing: (find_box#attach ~left:1 ~top:1 ~expand:`X)
 			  ()
 			in
-			let case_sensitive_check = 
+			let _ = 
 			  GButton.check_button
 			    ~label:"case sensitive"
 			    ~active:true
@@ -2342,11 +2342,11 @@ let main files =
 			    find_w#present ();
 			    find_entry#misc#grab_focus ()
 			  in
-			  let find_i = edit_f#add_item "_Find in buffer"
+			  let _ = edit_f#add_item "_Find in buffer"
 			    ~key:GdkKeysyms._F
 			    ~callback:(find_f ~backward:false)
 			  in
-			  let find_back_i = edit_f#add_item "Find _backwards"
+			  let _ = edit_f#add_item "Find _backwards"
 			    ~key:GdkKeysyms._B
 			    ~callback:(find_f ~backward:true)
 			  in
@@ -2439,7 +2439,7 @@ let main files =
 			      in reset_auto_save_timer (); (* to enable statup preferences timer *)
 
 
-				let edit_prefs_m =
+				let _ =
 				  edit_f#add_item "_Preferences"
 				    ~callback:(fun () -> configure ();reset_revert_timer ())
 				in
@@ -2853,7 +2853,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 							  av#insert_message res
 							end
 					  in
-					  let compile_m = 
+					  let _ = 
 					    externals_factory#add_item "_Compile Buffer" ~callback:compile_f 
 					  in
 
@@ -2870,7 +2870,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 						last_make_index := 0;
 						!flash_info (!current.cmd_make ^ if s = Unix.WEXITED 0 then " succeeded" else " failed")
 					  in
-					  let make_m = externals_factory#add_item "_Make" 
+					  let _ = externals_factory#add_item "_Make" 
 					    ~key:GdkKeysyms._F6
 					    ~callback:make_f 
 					  in
@@ -2911,7 +2911,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					      let av = out_some v.analyzed_view in
 						av#set_message "No more errors.\n"
 					  in
-					  let next_error_m = 
+					  let _ = 
 					    externals_factory#add_item "_Next error" 
 					      ~key:GdkKeysyms._F7
 					      ~callback:next_error in
@@ -2931,7 +2931,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					  let configuration_menu = factory#add_submenu "_Windows" in
 					  let configuration_factory = new GMenu.factory configuration_menu ~accel_path:"<CoqIde MenuBar>/Windows" ~accel_group
 					  in
-					  let queries_show_m = 
+					  let _ = 
 					    configuration_factory#add_item 
 					      "Show _Query Window"
 					      (*
@@ -2939,14 +2939,14 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					      *)
 					      ~callback:(Command_windows.command_window ())#window#present
 					  in  
-					  let toolbar_show_m = 
+					  let _ = 
 					    configuration_factory#add_item 
 					      "Show/Hide _Toolbar"	       
 					      ~callback:(fun () ->  
 							   !current.show_toolbar <- not !current.show_toolbar; 
 							   !show_toolbar !current.show_toolbar) 
 					  in
-					  let detach_menu = configuration_factory#add_item 
+					  let _ = configuration_factory#add_item 
 					    "Detach _Script Window"
 					    ~callback:
 					    (do_if_not_computing "detach script window" (sync
@@ -2964,7 +2964,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 												  end	      
 											   )))
 					  in
-					  let detach_current_view = 
+					  let _ = 
 					    configuration_factory#add_item 
 					      "Detach _View"
 					      ~callback:
@@ -3251,7 +3251,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 						      let tv2 = GText.view ~packing:(sw2#add) () in
 							tv2#misc#set_name "GoalWindow";
 							let _ = tv2#set_editable false in
-							let tb2 = tv2#buffer in
+							let _ = tv2#buffer in
 							let tv3 = GText.view ~packing:(sw3#add) () in
 							  tv2#misc#set_name "MessageWindow";
 							  let _ = tv2#set_wrap_mode `CHAR in
