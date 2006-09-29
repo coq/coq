@@ -48,11 +48,19 @@ let resynch_buffer ibuf =
     | _ -> ()
 
 
+(* emacs special character for prompt end (fast) detection. Prefer
+   (Char.chr 6) since it does not interfere with utf8. For
+    compatibility we let (Char.chr 249) as default for a while. *)
+
+let emacs_prompt_startstring() = 
+  if !Options.print_emacs_safechar then "<prompt>" else ""
+
+let emacs_prompt_endstring() = 
+  if !Options.print_emacs_safechar then "</prompt>"
+  else String.make 1 (Char.chr 249)
+
 (* Read a char in an input channel, displaying a prompt at every
    beginning of line. *)
-
-let emacs_prompt_endstring = String.make 1 (Char.chr 249)
-
 let prompt_char ic ibuf count =
   let bol = match ibuf.bols with
     | ll::_ -> ibuf.len == ll
@@ -214,14 +222,16 @@ let make_emacs_prompt() =
       (fun acc x -> acc ^ (if acc <> "" then "|" else "") ^ Names.string_of_id x)
       "" pending in
   let proof_info = if dpth >= 0 then string_of_int dpth else "0" in
-  statnum ^ " |" ^ pendingprompt ^ "| " ^ proof_info ^ " < " ^ emacs_prompt_endstring
+  statnum ^ " |" ^ pendingprompt ^ "| " ^ proof_info ^ " < " ^ (emacs_prompt_endstring())
 
 (* A buffer to store the current command read on stdin. It is
  * initialized when a vernac command is immediately followed by "\n",
  * or after a Drop. *)
 let top_buffer =
   let pr() = 
-    make_prompt() ^ Printer.emacs_str (make_emacs_prompt())
+    Printer.emacs_str (emacs_prompt_startstring()) 
+    ^ make_prompt() 
+    ^ Printer.emacs_str (make_emacs_prompt())
   in
   { prompt = pr;
     str = "";
@@ -232,7 +242,10 @@ let top_buffer =
 
 let set_prompt prompt =
   top_buffer.prompt
-  <- (fun () -> (prompt ())^(Printer.emacs_str (String.make 1 (Char.chr 249))))
+  <- (fun () -> 
+    Printer.emacs_str (emacs_prompt_startstring())
+    ^ prompt ()
+    ^ Printer.emacs_str (emacs_prompt_endstring()))
 
 (* Removes and prints the location of the error. The following exceptions
    need not be located. *)

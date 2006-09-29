@@ -247,6 +247,8 @@ let parse_args is_ide =
 
     | "-vm" :: rem -> use_vm := true; parse rem
     | "-emacs" :: rem -> Options.print_emacs := true; Pp.make_pp_emacs(); parse rem
+    | "-emacs-U" :: rem -> Options.print_emacs := true; 
+	Options.print_emacs_safechar := true; Pp.make_pp_emacs(); parse rem
 	  
     | "-where" :: _ -> print_endline (getenv_else "COQLIB" Coq_config.coqlib); exit 0
 
