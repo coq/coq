@@ -1,6 +1,6 @@
 # make a link to this file if you are working hard in one directory of Coq
-#   ln -s ../dev/Makefile.dir Makefile
-# if you are working in a sub/dir/ make a link to dev/Makefile.subdir instead
+#   ln -s ../dev/tools/Makefile.dir Makefile
+# if you are working in a sub/dir/ make a link to dev/tools/Makefile.subdir instead
 # this Makefile provides many useful facilities to develop Coq
 # it is not completely compatible with .ml4 files unfortunately
 

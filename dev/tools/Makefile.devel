@@ -16,9 +16,9 @@ usage::
 usage::
 	@echo "  setup-devel	-- set the devel makefile"
 setup-devel:
-	@ln -sfv dev/Makefile.devel makefile
+	@ln -sfv dev/tools/Makefile.devel makefile
 	@(for i in $(SOURCEDIRS); do \
-	    (cd $(TOPDIR)/$$i; ln -sfv ../dev/Makefile.dir Makefile) \
+	    (cd $(TOPDIR)/$$i; ln -sfv ../dev/tools/Makefile.dir Makefile) \
 	done)
 
 
@@ -42,14 +42,14 @@ quick:
 
 include Makefile
 
-include $(TOPDIR)/dev/Makefile.common
+include $(TOPDIR)/dev/tools/Makefile.common
 
-# this file is better described in dev/Makefile.dir
+# this file is better described in dev/tools/Makefile.dir
 include .depend.devel
 
-#if dev/Makefile.local exists, it is included
-ifneq ($(wildcard $(TOPDIR)/dev/Makefile.local),)
-include $(TOPDIR)/dev/Makefile.local
+#if dev/tools/Makefile.local exists, it is included
+ifneq ($(wildcard $(TOPDIR)/dev/tools/Makefile.local),)
+include $(TOPDIR)/dev/tools/Makefile.local
 endif
 
 
