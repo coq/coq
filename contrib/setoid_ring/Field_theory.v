@@ -9,6 +9,7 @@
 Require Ring.
 Import Ring_polynom Ring_theory InitialRing Setoid List.
 Require Import ZArith_base.
+Set Implicit Arguments.
 
 Section MakeFieldPol.
 
@@ -139,8 +140,8 @@ Hint Resolve SRdiv_ext .
 Lemma rmul_reg_l : forall p q1 q2,
   ~ p == 0 -> p * q1 == p * q2 -> q1 == q2.
 intros.
-rewrite <- (rdiv_simpl q1 p) in |- *; trivial.
-rewrite <- (rdiv_simpl q2 p) in |- *; trivial.
+rewrite <- (@rdiv_simpl q1 p) in |- *; trivial.
+rewrite <- (@rdiv_simpl q2 p) in |- *; trivial.
 repeat rewrite rdiv_def in |- *.
 repeat rewrite (ARmul_assoc ARth) in |- *.
 auto.
@@ -913,7 +914,7 @@ Lemma ceqb_rect_complete : forall c1 c2 (A:Type) (x y:A) (P:A->Type),
 Proof.
 intros.
 generalize (fun h => X (morph_eq CRmorph c1 c2 h)).
-generalize (ceqb_complete c1 c2).
+generalize (@ceqb_complete c1 c2).
 case (c1 ?=! c2); auto; intros.
 apply X0.
 red in |- *; intro.
@@ -933,7 +934,7 @@ Theorem PFcons1_fcons_inv:
 intros l a; elim a; try (intros; apply PFcons0_fcons_inv; auto; fail).
  simpl in |- *; intros c l1.
    apply ceqb_rect_complete; intros.
-  elim (absurd_PCond_bottom l H0).
+  elim (@absurd_PCond_bottom l H0).
   split; trivial.
     rewrite <- (morph0 CRmorph) in |- *; trivial.
  intros p H p0 H0 l1 H1.
@@ -944,7 +945,7 @@ intros l a; elim a; try (intros; apply PFcons0_fcons_inv; auto; fail).
    apply field_is_integral_domain; trivial.
  simpl in |- *; intros p H l1.
    apply ceqb_rect_complete; intros.
-  elim (absurd_PCond_bottom l H1).
+  elim (@absurd_PCond_bottom l H1).
   destruct (H _ H1).
     split; trivial.
     apply ropp_neq_0; trivial.
@@ -996,13 +997,13 @@ End FieldAndSemiField.
 
 End MakeFieldPol.
 
-  Definition SF2AF R rO rI radd rmul rdiv rinv req Rsth 
-    (sf:semi_field_theory R rO rI radd rmul rdiv rinv req)  :=
-    mk_afield _ _ _ _ _ _ _ _ _ _
-      (SRth_ARth Rsth sf.(SF_SR _ _ _ _ _ _ _ _))
-      sf.(SF_1_neq_0 _ _ _ _ _ _ _ _)
-      sf.(SFdiv_def _ _ _ _ _ _ _ _)
-      sf.(SFinv_l _ _ _ _ _ _ _ _).
+  Definition SF2AF R (rO rI:R) radd rmul rdiv rinv req Rsth 
+    (sf:semi_field_theory rO rI radd rmul rdiv rinv req)  :=
+    mk_afield _ _
+      (SRth_ARth Rsth sf.(SF_SR))
+      sf.(SF_1_neq_0)
+      sf.(SFdiv_def)
+      sf.(SFinv_l).
 
 
 Section Complete.
@@ -1024,11 +1025,11 @@ Section Complete.
 
 Section AlmostField.
 
- Variable AFth : almost_field_theory R rO rI radd rmul rsub ropp rdiv rinv req.
- Let ARth := AFth.(AF_AR _ _ _ _ _ _ _ _ _ _).
- Let rI_neq_rO := AFth.(AF_1_neq_0 _ _ _ _ _ _ _ _ _ _).
- Let rdiv_def := AFth.(AFdiv_def _ _ _ _ _ _ _ _ _ _).
- Let rinv_l := AFth.(AFinv_l _ _ _ _ _ _ _ _ _ _).
+ Variable AFth : almost_field_theory rO rI radd rmul rsub ropp rdiv rinv req.
+ Let ARth := AFth.(AF_AR).
+ Let rI_neq_rO := AFth.(AF_1_neq_0).
+ Let rdiv_def := AFth.(AFdiv_def).
+ Let rinv_l := AFth.(AFinv_l).
 
 Hypothesis S_inj : forall x y, 1+x==1+y -> x==y.
 
@@ -1098,12 +1099,12 @@ End AlmostField.
 
 Section Field.
 
- Variable Fth : field_theory R rO rI radd rmul rsub ropp rdiv rinv req.
- Let Rth := Fth.(F_R _ _ _ _ _ _ _ _ _ _).
- Let rI_neq_rO := Fth.(F_1_neq_0 _ _ _ _ _ _ _ _ _ _).
- Let rdiv_def := Fth.(Fdiv_def _ _ _ _ _ _ _ _ _ _).
- Let rinv_l := Fth.(Finv_l _ _ _ _ _ _ _ _ _ _).
- Let AFth := F2AF _ _ _ _ _ _ _ _ _ _ Rsth Reqe Fth.
+ Variable Fth : field_theory rO rI radd rmul rsub ropp rdiv rinv req.
+ Let Rth := Fth.(F_R).
+ Let rI_neq_rO := Fth.(F_1_neq_0).
+ Let rdiv_def := Fth.(Fdiv_def).
+ Let rinv_l := Fth.(Finv_l).
+ Let AFth := F2AF Rsth Reqe Fth.
  Let ARth := Rth_ARth Rsth Reqe Rth.
 
 Lemma ring_S_inj : forall x y, 1+x==1+y -> x==y.

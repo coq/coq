@@ -1,5 +1,5 @@
 Require Import Raxioms.
-Require Export Rdefinitions.
+Require Import Rdefinitions.
 Require Import Ring Field.
 
 Open Local Scope R_scope.
@@ -22,8 +22,7 @@ constructor.
  exact Rplus_opp_r.
 Qed.
 
-Lemma Rfield :
-  field_theory R 0 1 Rplus Rmult Rminus Ropp Rdiv Rinv (eq(A:=R)).
+Lemma Rfield : field_theory 0 1 Rplus Rmult Rminus Ropp Rdiv Rinv (eq(A:=R)).
 Proof.
 constructor.
  exact RTheory.
@@ -101,6 +100,6 @@ Lemma Zeq_bool_complete : forall x y,
   InitialRing.gen_phiZ 0%R 1%R Rplus Rmult Ropp x =
   InitialRing.gen_phiZ 0%R 1%R Rplus Rmult Ropp y ->
   Zeq_bool x y = true.
-Proof gen_phiZ_complete _ _ _ _ _ _ _ _ _ _ Rset Rext Rfield Rgen_phiPOS_not_0.
+Proof gen_phiZ_complete Rset Rext Rfield Rgen_phiPOS_not_0.
 
 Add Field RField : Rfield (infinite Zeq_bool_complete).

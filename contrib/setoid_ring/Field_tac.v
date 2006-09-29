@@ -17,24 +17,24 @@ Require Export Field_theory.
         match t with 
         | (radd ?t1 ?t2) => 
           let e1 := mkP t1 in
-          let e2 := mkP t2 in constr:(FEadd C e1 e2)
+          let e2 := mkP t2 in constr:(FEadd e1 e2)
         | (rmul ?t1 ?t2) => 
           let e1 := mkP t1 in
-          let e2 := mkP t2 in constr:(FEmul C e1 e2)
+          let e2 := mkP t2 in constr:(FEmul e1 e2)
         | (rsub ?t1 ?t2) => 
           let e1 := mkP t1 in
-          let e2 := mkP t2 in constr:(FEsub C e1 e2)
+          let e2 := mkP t2 in constr:(FEsub e1 e2)
         | (ropp ?t1) =>
-          let e1 := mkP t1 in constr:(FEopp C e1)
+          let e1 := mkP t1 in constr:(FEopp e1)
         | (rdiv ?t1 ?t2) => 
           let e1 := mkP t1 in
-          let e2 := mkP t2 in constr:(FEdiv C e1 e2)
+          let e2 := mkP t2 in constr:(FEdiv e1 e2)
         | (rinv ?t1) =>
-          let e1 := mkP t1 in constr:(FEinv C e1)
+          let e1 := mkP t1 in constr:(FEinv e1)
         | _ =>
-          let p := Find_at t fv in constr:(FEX C p)
+          let p := Find_at t fv in constr:(@FEX C p)
         end
-    | ?c => constr:(FEc C c)
+    | ?c => constr:(FEc c)
     end
  in mkP t.
 
@@ -74,21 +74,21 @@ Ltac simpl_PCond req rO :=
   try (exact I);
   fold_field_cond req rO.
 
-(* Rewriting *)
+(* Rewriting (field_simplify) *)
 Ltac Field_rewrite_list lemma Cond_lemma req Cst_tac :=
   let Make_tac :=
     match type of lemma with
     | forall l fe nfe,
       _ = nfe -> 
-      PCond _ _ _ _ _ _ _ _ _ _ _ ->
-      req (FEeval ?R ?rO ?radd ?rmul ?rsub ?ropp ?rdiv ?rinv ?C ?phi l fe) _ =>
+      PCond _ _ _ _ _ _ _ _ _ ->
+      req (@FEeval ?R ?rO ?radd ?rmul ?rsub ?ropp ?rdiv ?rinv ?C ?phi l fe) _ =>
         let mkFV := FFV Cst_tac radd rmul rsub ropp rdiv rinv in
         let mkFE := mkFieldexpr C Cst_tac radd rmul rsub ropp rdiv rinv in
         let simpl_field H := (*protect_fv "field" in H*)
 unfold Pphi_dev in H;simpl in H in 
         (fun f => f mkFV mkFE simpl_field lemma req;
                   try (apply Cond_lemma; simpl_PCond req rO))
-    | _ => fail 1 "field anomaly: bad correctness lemma"
+    | _ => fail 1 "field anomaly: bad correctness lemma (rewr)"
     end in
   Make_tac ReflexiveRewriteTactic.
 (* Pb: second rewrite are applied to non-zero condition of first rewrite... *)
@@ -99,10 +99,10 @@ Ltac Field_Scheme FV_tac SYN_tac SIMPL_tac lemma Cond_lemma req :=
   let ParseLemma :=
     match type of lemma with
     | forall l fe1 fe2 nfe1 nfe2, _ = nfe1 -> _ = nfe2 -> _ -> 
-      PCond _ _ _ _ _ _ _ _ _ _ _ ->
-      req (FEeval ?R ?rO _ _ _ _ _ _ _ _ l fe1) _ =>
+      PCond _ _ _ _ _ _ _ _ _ ->
+      req (@FEeval ?R ?rO _ _ _ _ _ _ _ _ l fe1) _ =>
         (fun f => f R rO)
-    | _ => fail 1 "field anomaly: bad correctness lemma" 
+    | _ => fail 1 "field anomaly: bad correctness lemma (scheme)" 
     end in
   let ParseExpr2 ilemma :=
     match type of ilemma with
@@ -132,14 +132,14 @@ Ltac Field_Scheme FV_tac SYN_tac SIMPL_tac lemma Cond_lemma req :=
 Ltac ParseFieldComponents lemma req :=
   match type of lemma with
   | forall l fe1 fe2 nfe1 nfe2,
-    _ = nfe1 -> _ = nfe2 -> _ -> PCond _ _ _ _ _ _ _ _ _ _ _ ->
-    req (FEeval ?R ?rO ?add ?mul ?sub ?opp ?div ?inv ?C ?phi l fe1) _ =>
+    _ = nfe1 -> _ = nfe2 -> _ -> PCond _ _ _ _ _ _ _ _ _ ->
+    req (@FEeval ?R ?rO ?add ?mul ?sub ?opp ?div ?inv ?C ?phi l fe1) _ =>
       (fun f => f add mul sub opp div inv C)
-  | _ => fail 1 "field: bad correctness lemma"
+  | _ => fail 1 "field anomaly: bad correctness lemma (parse)"
   end.
 
 (* solve completely a field equation, leaving non-zero conditions to be
-   proved *)
+   proved (field) *)
 Ltac Make_field_tac lemma Cond_lemma req Cst_tac :=
   let Main radd rmul rsub ropp rdiv rinv C :=
     let mkFV := FFV Cst_tac radd rmul rsub ropp rdiv rinv in
@@ -150,7 +150,7 @@ Ltac Make_field_tac lemma Cond_lemma req Cst_tac :=
   ParseFieldComponents lemma req Main.
 
 (* transforms a field equation to an equivalent (simplified) ring equation,
-   and leaves non-zero conditions to be proved *)
+   and leaves non-zero conditions to be proved (field_simplify_eq) *)
 Ltac Make_field_simplify_eq_tac lemma Cond_lemma req Cst_tac :=
   let Main radd rmul rsub ropp rdiv rinv C :=
     let mkFV := FFV Cst_tac radd rmul rsub ropp rdiv rinv in

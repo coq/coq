@@ -526,7 +526,7 @@ constructor.
 Qed.
 
 Definition Qcft :
-  field_theory _ 0%Qc 1%Qc Qcplus Qcmult Qcminus Qcopp Qcdiv Qcinv (eq(A:=Qc)).
+  field_theory 0%Qc 1%Qc Qcplus Qcmult Qcminus Qcopp Qcdiv Qcinv (eq(A:=Qc)).
 Proof.
 constructor.
  exact Qcrt.
@@ -539,10 +539,6 @@ Add Field Qcfield : Qcft.
 
 (** A field tactic for rational numbers *)
 
-(*
-Add Field Qc Qcplus Qcmult 1 0 Qcopp Qc_eq_bool Qcinv Qcrt Qcmult_inv_l
- with div:=Qcdiv.
-*)
 Example test_field : (forall x y : Qc, y<>0 -> (x/y)*y = x)%Qc.
 intros.
 field.
