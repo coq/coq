@@ -279,13 +279,13 @@ let find_positions env sigma t1 t2 =
         (* both sides are fully applied constructors, so either we descend,
            or we can discriminate here. *)
 	  if sp1 = sp2 then
+	    let nrealargs = constructor_nrealargs env sp1 in
+	    let rargs1 = list_lastn nrealargs args1 in
+	    let rargs2 = list_lastn nrealargs args2 in
             List.flatten
-	      (list_map2_i
-		 (fun i arg1 arg2 ->
-		    findrec ((sp1,i)::posn) arg1 arg2)
-		 0 args1 args2)
+	      (list_map2_i (fun i -> findrec ((sp1,i)::posn)) 0 rargs1 rargs2)
 	  else
-	    raise (DiscrFound(List.rev posn,sp1,sp2))
+	    raise (DiscrFound (List.rev posn,sp1,sp2))
 
       | _ ->
 	  let t1_0 = applist (hd1,args1) 
@@ -296,12 +296,11 @@ let find_positions env sigma t1 t2 =
 	    let ty1_0 = get_type_of env sigma t1_0 in
 	    match get_sort_family_of env sigma ty1_0 with
 	      | InSet | InType -> [(List.rev posn,t1_0,t2_0)]
-	      | InProp -> []
-	  in 
-	  (try 
-	     Inr(findrec [] t1 t2)
-	   with DiscrFound (path,c1,c2) -> 
-	     Inl (path,c1,c2))
+	      | InProp -> [] in 
+  try
+    Inr (findrec [] t1 t2)
+  with DiscrFound (path,c1,c2) ->
+    Inl (path,c1,c2)
 
 let discriminable env sigma t1 t2 =
   match find_positions env sigma t1 t2 with
@@ -444,14 +443,8 @@ let construct_discriminator sigma env dirn c sort =
 let rec build_discriminator sigma env dirn c sort = function
   | [] -> construct_discriminator sigma env dirn c sort
   | ((sp,cnum),argnum)::l ->
-      let cty = type_of env sigma c in
-      let IndType (indf,_) =
-	try find_rectype env sigma cty with Not_found -> assert false in
-      let (ind,_) = dest_ind_family indf in
-      let (mib,mip) = lookup_mind_specif env ind in
-      let nparams = mib.mind_nparams  in
       let (cnum_nlams,cnum_env,kont) = descend_then sigma env c cnum in
-      let newc = mkRel(cnum_nlams-(argnum-nparams)) in
+      let newc = mkRel(cnum_nlams-argnum) in
       let subval = build_discriminator sigma cnum_env dirn newc sort l  in
       kont subval (build_coq_False (),mkSort (Prop Null))
 
@@ -722,15 +715,9 @@ let make_iterated_tuple env sigma dflt (z,zty) =
 let rec build_injrec sigma env dflt c = function
   | [] -> make_iterated_tuple env sigma dflt (c,type_of env sigma c)
   | ((sp,cnum),argnum)::l ->
-      let cty = type_of env sigma c in
-      let (ity,_) = find_mrectype env sigma cty in
-      let (mib,mip) = lookup_mind_specif env ity in
-      let nparams = mib.mind_nparams in
       let (cnum_nlams,cnum_env,kont) = descend_then sigma env c cnum in
-      let newc = mkRel(cnum_nlams-(argnum-nparams)) in
-      let (subval,tuplety,dfltval) =
-      	build_injrec sigma cnum_env dflt newc l
-      in
+      let newc = mkRel(cnum_nlams-argnum) in
+      let (subval,tuplety,dfltval) = build_injrec sigma cnum_env dflt newc l in
       (kont subval (dfltval,tuplety),
        tuplety,dfltval)
 
