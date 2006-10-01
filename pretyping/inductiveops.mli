@@ -66,6 +66,8 @@ val constructor_nrealhyps : env -> constructor -> int
 
 val get_full_arity_sign : env -> inductive -> rel_context
 
+val allowed_sorts : env -> inductive -> sorts_family list
+
 (* Extract information from an inductive family *)
 
 type constructor_summary = {

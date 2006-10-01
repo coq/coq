@@ -126,6 +126,10 @@ let inductive_nargs env ind =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   mib.mind_nparams, mip.mind_nrealargs
 
+let allowed_sorts env (kn,i as ind) =
+  let (mib,mip) = Inductive.lookup_mind_specif env ind in
+  mip.mind_kelim
+
 (* Annotation for cases *)
 let make_case_info env ind style pats_source =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
