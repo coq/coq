@@ -82,7 +82,7 @@ let elimination_sort_of_clause = function
 *)
 
 let general_rewrite_bindings_clause cls lft2rgt (c,l) gl =
-  let ctype = pf_type_of gl c in 
+  let ctype = pf_apply get_type_of gl c in 
   (* A delta-reduction would be here too strong, since it would 
      break search for a defined setoid relation in head position. *)
   let t = snd (decompose_prod (whd_betaiotazeta ctype)) in 
@@ -188,8 +188,8 @@ let multi_replace clause c2 c1 unsafe try_prove_eq_opt gl =
       | None -> tclIDTAC
       | Some tac ->  tclTRY (tclCOMPLETE tac)
   in
-  let t1 = pf_type_of gl c1 
-  and t2 = pf_type_of gl c2 in
+  let t1 = pf_apply get_type_of gl c1 
+  and t2 = pf_apply get_type_of gl c2 in
   if unsafe or (pf_conv_x gl t1 t2) then
     let e = build_coq_eq () in
     let sym = build_coq_sym_eq () in
@@ -268,7 +268,7 @@ exception DiscrFound of
   (constructor * int) list * constructor * constructor
 
 let find_positions env sigma t1 t2 =
-  let rec findrec posn t1 t2 =
+  let rec findrec sorts posn t1 t2 =
     let hd1,args1 = whd_betadeltaiota_stack env sigma t1 in
     let hd2,args2 = whd_betadeltaiota_stack env sigma t2 in
     match (kind_of_term hd1, kind_of_term hd2) with
@@ -282,10 +282,14 @@ let find_positions env sigma t1 t2 =
 	    let nrealargs = constructor_nrealargs env sp1 in
 	    let rargs1 = list_lastn nrealargs args1 in
 	    let rargs2 = list_lastn nrealargs args2 in
+	    let allowed_sorts = allowed_sorts env (fst sp1) in
+	    let sorts = list_intersect allowed_sorts sorts in
             List.flatten
-	      (list_map2_i (fun i -> findrec ((sp1,i)::posn)) 0 rargs1 rargs2)
-	  else
+	      (list_map2_i (fun i -> findrec sorts ((sp1,i)::posn))
+		0 rargs1 rargs2)
+	  else if List.mem InType (allowed_sorts env (fst sp1)) then
 	    raise (DiscrFound (List.rev posn,sp1,sp2))
+	  else []
 
       | _ ->
 	  let t1_0 = applist (hd1,args1) 
@@ -294,11 +298,11 @@ let find_positions env sigma t1 t2 =
 	    []
           else
 	    let ty1_0 = get_type_of env sigma t1_0 in
-	    match get_sort_family_of env sigma ty1_0 with
-	      | InSet | InType -> [(List.rev posn,t1_0,t2_0)]
-	      | InProp -> [] in 
+	    let s = get_sort_family_of env sigma ty1_0 in
+	    if List.mem s sorts then [(List.rev posn,t1_0,t2_0)] else [] in 
   try
-    Inr (findrec [] t1 t2)
+    (* Rem: to allow injection on proofs objects, just add InProp *)
+    Inr (findrec [InSet;InType] [] t1 t2)
   with DiscrFound (path,c1,c2) ->
     Inl (path,c1,c2)
 
@@ -369,6 +373,9 @@ let discriminable env sigma t1 t2 =
 
    the continuation then constructs the case-split.
  *)
+
+exception CannotDescend
+
 let descend_then sigma env head dirn =
   let IndType (indf,_) =
     try find_rectype env sigma (get_type_of env sigma head)
@@ -381,9 +388,7 @@ let descend_then sigma env head dirn =
   (dirn_nlams,
    dirn_env,
    (fun dirnval (dfltval,resty) ->
-      let arsign,_ = get_arity env indf in
-      let depind = build_dependent_inductive env indf in
-      let deparsign = (Anonymous,None,depind)::arsign in
+      let deparsign = make_arity_signature env true indf in
       let p =
 	it_mkLambda_or_LetIn (lift (mip.mind_nrealargs+1) resty) deparsign in
       let build_branch i =
@@ -414,7 +419,7 @@ let descend_then sigma env head dirn =
 
 let construct_discriminator sigma env dirn c sort =
   let IndType(indf,_) =
-    try find_rectype env sigma (type_of env sigma c)
+    try find_rectype env sigma (get_type_of env sigma c)
     with Not_found ->
        (* one can find Rel(k) in case of dependent constructors 
           like T := c : (A:Set)A->T and a discrimination 
@@ -426,10 +431,8 @@ let construct_discriminator sigma env dirn c sort =
 		 dependent types") in
   let (ind,_) = dest_ind_family indf in
   let (mib,mip) = lookup_mind_specif env ind in
-  let arsign,arsort = get_arity env indf in
   let (true_0,false_0,sort_0) = build_coq_True(),build_coq_False(),Prop Null in
-  let depind = build_dependent_inductive env indf in
-  let deparsign = (Anonymous,None,depind)::arsign in
+  let deparsign = make_arity_signature env true indf in
   let p = it_mkLambda_or_LetIn (mkSort sort_0) deparsign in
   let cstrs = get_constructors env indf in
   let build_branch i =
@@ -448,6 +451,15 @@ let rec build_discriminator sigma env dirn c sort = function
       let subval = build_discriminator sigma cnum_env dirn newc sort l  in
       kont subval (build_coq_False (),mkSort (Prop Null))
 
+let build_discriminator sigma env dirn c sort posn =
+  try build_discriminator sigma env dirn c sort posn
+  with CannotDescend ->
+    (* could be more clever: if some elimination is not allowed
+       because e.g. of a impredicative constructor in the path, the
+       discrimination combinator could be put out of the descent to the
+       discriminable positions *)
+    error "Unable to discriminable"
+
 let gen_absurdity id gl =
   if is_empty_type (clause_type (onHyp id) gl)
   then
@@ -458,12 +470,12 @@ let gen_absurdity id gl =
 
 (* Precondition: eq is leibniz equality
  
-  returns ((eq_elim t t1 P i t2), absurd_term)
-  where  P=[e:t]discriminator 
-         absurd_term=False
+   returns ((eq_elim t t1 P i t2), absurd_term)
+   where  P=[e:t]discriminator 
+          absurd_term=False
 *)
 
-let discrimination_pf e (t,t1,t2) discriminator lbeq gls =
+let discrimination_pf e (t,t1,t2) discriminator lbeq =
   let i           = build_coq_I () in
   let absurd_term = build_coq_False () in
   let eq_elim     = lbeq.ind in
@@ -471,28 +483,28 @@ let discrimination_pf e (t,t1,t2) discriminator lbeq gls =
 
 exception NotDiscriminable
 
-let discrEq (lbeq,(t,t1,t2)) id gls =
-  let sort = pf_type_of gls (pf_concl gls) in 
+let eq_baseid = id_of_string "e"
+
+let discr_positions env sigma (lbeq,(t,t1,t2)) id cpath dirn sort =
+  let e = next_ident_away eq_baseid (ids_of_context env) in
+  let e_env = push_named (e,None,t) env in
+  let discriminator =
+    build_discriminator sigma e_env dirn (mkVar e) sort cpath in
+  let (pf, absurd_term) = discrimination_pf e (t,t1,t2) discriminator lbeq in
+  tclCOMPLETE 
+    ((tclTHENS (cut_intro absurd_term)
+      [onLastHyp gen_absurdity; 
+       refine (mkApp (pf,[|mkVar id|]))]))
+
+let discrEq (lbeq,(t,t1,t2) as u) id gls =
   let sigma = project gls in
   let env = pf_env gls in
-  (match find_positions env sigma t1 t2 with
-     | Inr _ ->
-	 errorlabstrm "discr" (str" Not a discriminable equality")
-     | Inl (cpath, (_,dirn), _) ->
-	 let e = pf_get_new_id (id_of_string "ee") gls in
-	 let e_env = push_named (e,None,t) env in
-	 let discriminator =
-	   build_discriminator sigma e_env dirn (mkVar e) sort cpath in
-	 let (pf, absurd_term) =
-	   discrimination_pf e (t,t1,t2) discriminator lbeq gls 
-	 in
-	 tclCOMPLETE((tclTHENS (cut_intro absurd_term)
-			([onLastHyp gen_absurdity;
-			  refine (mkApp (pf, [| mkVar id |]))]))) gls)
-
-let not_found_message id =
-  (str "The variable" ++ spc () ++ str (string_of_id id) ++ spc () ++
-    str" was not found in the current environment")
+  match find_positions env sigma t1 t2 with
+    | Inr _ ->
+	errorlabstrm "discr" (str" Not a discriminable equality")
+    | Inl (cpath, (_,dirn), _) ->
+	let sort = pf_apply get_type_of gls (pf_concl gls) in 
+	discr_positions env sigma u id cpath dirn sort gls
 
 let onEquality tac id gls =
   let eqn = pf_whd_betadeltaiota gls (pf_get_hyp_typ gls id) in
@@ -525,7 +537,7 @@ let discrEverywhere =
   tclORELSE
     (Tacticals.tryAllClauses discrSimpleClause)
     (fun gls -> 
-       errorlabstrm "DiscrEverywhere" (str" No discriminable equalities"))
+       errorlabstrm "DiscrEverywhere" (str"No discriminable equalities"))
 
 let discr_tac = function
   | None -> discrEverywhere
@@ -722,7 +734,10 @@ let rec build_injrec sigma env dflt c = function
        tuplety,dfltval)
 
 let build_injector sigma env dflt c cpath =
-  let (injcode,resty,_) = build_injrec sigma env dflt c cpath in
+  let (injcode,resty,_) = 
+    try build_injrec sigma env dflt c cpath
+    with CannotDescend -> failwith "caught"
+  in
   (injcode,resty)
 
 let try_delta_expand env sigma t =
@@ -740,7 +755,28 @@ let try_delta_expand env sigma t =
    expands then only when the whdnf has a constructor of an inductive type
    in hd position, otherwise delta expansion is not done *)
 
-let injEq (eq,(t,t1,t2)) id gls =
+let inject_positions env sigma (eq,(t,t1,t2)) id posns =
+  let e = next_ident_away eq_baseid (ids_of_context env) in
+  let e_env = push_named (e,None,t) env in
+  let t1 = try_delta_expand env sigma t1 in
+  let t2 = try_delta_expand env sigma t2 in
+  let injectors =
+    map_succeed
+      (fun (cpath,t1',t2') ->
+        (* arbitrarily take t1' as the injector default value *)
+	let (injbody,resty) = build_injector sigma e_env t1' (mkVar e) cpath in
+	let injfun = mkNamedLambda e t injbody in
+	let pf = applist(eq.congr,[t;resty;injfun;t1;t2;mkVar id]) in
+	let ty = get_type_of env sigma pf in
+	(pf,ty))
+      posns in
+  if injectors = [] then
+    errorlabstrm "Equality.inj" (str "Failed to decompose the equality");
+  tclMAP
+    (fun (pf,ty) -> tclTHENS (cut ty) [tclIDTAC; refine pf])
+    injectors
+
+let injEq ipats (eq,(t,t1,t2) as u) id gls =
   let sigma = project gls in
   let env = pf_env gls in
   match find_positions env sigma t1 t2 with
@@ -752,100 +788,34 @@ let injEq (eq,(t,t1,t2)) id gls =
 	errorlabstrm "Equality.inj" 
 	   (str"Nothing to do, it is an equality between convertible terms")
     | Inr posns ->
-	let e = pf_get_new_id (id_of_string "e") gls in
-	let e_env = push_named (e,None,t) env in
-	let injectors =
-	  map_succeed
-	    (fun (cpath,t1_0,t2_0) ->
-	      try 
-		let (injbody,resty) =
-                  (* take arbitrarily t1_0 as the injector default value *)
-		  build_injector sigma e_env t1_0 (mkVar e) cpath in
-		let injfun = mkNamedLambda e t injbody in
-		let _ = type_of env sigma injfun in (injfun,resty)
-	      with e when catchable_exception e ->
-		(* may fail because ill-typed or because of a Prop argument *)
-		(* error "find_sigma_data" *)
-		failwith "caught")
-            posns
-	in
-	if injectors = [] then
-	  errorlabstrm "Equality.inj" 
-	    (str "Failed to decompose the equality");
-	tclMAP 
-	  (fun (injfun,resty) ->
-	     let pf = applist(eq.congr,
-			      [t;resty;injfun;
-			       try_delta_expand env sigma t1;
-			       try_delta_expand env sigma t2;
-			       mkVar id]) 
-	     in
-	     let ty =
-	       try pf_nf gls (pf_type_of gls pf)
-               with
-		 | UserError("refiner__fail",_) -> 
-		     errorlabstrm "InjClause" 
-		(str (string_of_id id) ++ str" Not a projectable equality")
-	     in ((tclTHENS  (cut  ty) ([tclIDTAC;refine pf]))))
-	  injectors
+	tclTHEN 
+	  (inject_positions env sigma u id posns)
+	  (intros_pattern None ipats)
 	  gls
 
-let inj = onEquality injEq
+let inj ipats = onEquality (injEq ipats)
 
-let injClause = function
-  | None -> onNegatedEquality injEq
-  | Some id -> try_intros_until inj id
+let injClause ipats = function
+  | None -> onNegatedEquality (injEq ipats)
+  | Some id -> try_intros_until (inj ipats) id
 
-let injConcl gls  = injClause None gls
-let injHyp id gls = injClause (Some id) gls
+let injConcl gls  = injClause [] None gls
+let injHyp id gls = injClause [] (Some id) gls
 
-let decompEqThen ntac (lbeq,(t,t1,t2)) id gls =
-  let sort = pf_type_of gls (pf_concl gls) in 
+let decompEqThen ntac (lbeq,(t,t1,t2) as u) id gls =
+  let sort = pf_apply get_type_of gls (pf_concl gls) in 
   let sigma = project gls in
   let env = pf_env gls in 
-  (match find_positions env sigma t1 t2 with
-     | Inl (cpath, (_,dirn), _) ->
-	 let e = pf_get_new_id (id_of_string "e") gls in
-	 let e_env = push_named (e,None,t) env in
-	 let discriminator =
-	   build_discriminator sigma e_env dirn (mkVar e) sort cpath in
-	 let (pf, absurd_term) =
-	   discrimination_pf e (t,t1,t2) discriminator lbeq gls in
-	 tclCOMPLETE
-	   ((tclTHENS (cut_intro absurd_term)
-	       ([onLastHyp gen_absurdity;
-		 refine (mkApp (pf, [| mkVar id |]))]))) gls
-     | Inr [] -> (* Change: do not fail, simplify clear this trivial hyp *)
-         ntac 0 gls
-     | Inr posns ->
-	 (let e = pf_get_new_id (id_of_string "e") gls in
-	  let e_env = push_named (e,None,t) env in
-	  let injectors =
-	    map_succeed
-	      (fun (cpath,t1_0,t2_0) ->
-		 let (injbody,resty) =
-                  (* take arbitrarily t1_0 as the injector default value *)
-		   build_injector sigma e_env t1_0 (mkVar e) cpath in
-		 let injfun = mkNamedLambda e t injbody in
-		 try 
-		   let _ = type_of env sigma injfun in (injfun,resty)
-		 with e when catchable_exception e -> failwith "caught")
-	      posns 
-	  in
-	  if injectors = [] then
-	    errorlabstrm "Equality.decompEqThen" 
-              (str "Discriminate failed to decompose the equality");
-	  (tclTHEN
-	      (tclMAP (fun (injfun,resty) ->
-			 let pf = applist(lbeq.congr,
-					  [t;resty;injfun;t1;t2;
-					   mkVar id]) in
-			 let ty = pf_nf gls (pf_type_of gls pf) in
-			 ((tclTHENS (cut ty) 
-			     ([tclIDTAC;refine pf]))))
-		 (List.rev injectors))
-	      (ntac (List.length injectors)))
-	  gls))
+  match find_positions env sigma t1 t2 with
+    | Inl (cpath, (_,dirn), _) ->
+	discr_positions env sigma u id cpath dirn sort gls
+    | Inr [] -> (* Change: do not fail, simplify clear this trivial hyp *)
+        ntac 0 gls
+    | Inr posns ->
+	tclTHEN
+	  (inject_positions env sigma u id (List.rev posns))
+	  (ntac (List.length posns))
+	  gls
 
 let dEqThen ntac = function
   | None -> onNegatedEquality (decompEqThen ntac)
@@ -889,7 +859,7 @@ let find_elim sort_of_gl lbeq =
 
 let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
   (* find substitution scheme *)
-  let eq_elim = find_elim (pf_type_of gls (pf_concl gls)) lbeq in
+  let eq_elim = find_elim (pf_apply get_type_of gls (pf_concl gls)) lbeq in
   (* build substitution predicate *)
   let p = lambda_create (pf_env gls) (t,body) in
   (* apply substitution scheme *)
@@ -999,7 +969,7 @@ let cutRewriteInHyp l2r eqn id = cutRewriteClause l2r eqn (Some id)
 let cutRewriteInConcl l2r eqn = cutRewriteClause l2r eqn None
 
 let substClause l2r c cls gls =
-  let eq = pf_type_of gls c in
+  let eq = pf_apply get_type_of gls c in
   tclTHENS (cutSubstClause l2r eq cls) [tclIDTAC; exact_no_check c] gls
 
 let rewriteClause l2r c cls = try_rewrite (substClause l2r c cls)

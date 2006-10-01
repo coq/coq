@@ -36,3 +36,29 @@ intros.
 exact (fun H => H).
 Qed.
 
+(* Test injection as *)
+
+Lemma l5 : forall x y z t : nat, (x,y) = (z,t) -> x=z.
+intros; injection H as Hyt Hxz.
+exact Hxz.
+Qed.
+
+(* Injection does not projects at positions in Prop... allow it?
+
+Inductive t (A:Prop) : Set := c : A -> t A.
+Goal forall p q : True\/True, c _ p = c _ q -> False.
+intros.
+injection H.
+Abort.
+
+*)
+
+(* Accept does not project on discriminable positions... allow it?
+
+Goal 1=2 -> 1=0.
+intro H.
+injection H.
+intro; assumption.
+Qed.
+
+ *)

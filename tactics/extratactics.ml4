@@ -52,7 +52,11 @@ END
 let h_discrHyp id = h_discriminate (Some id)
 
 TACTIC EXTEND injection
-  [ "injection" quantified_hypothesis_opt(h) ] -> [ injClause h ]
+  [ "injection" quantified_hypothesis_opt(h) ] -> [ injClause [] h ]
+END 
+TACTIC EXTEND injection_as
+  [ "injection" quantified_hypothesis_opt(h) 
+    "as" simple_intropattern_list(ipat)] -> [ injClause ipat h ]
 END
 
 let h_injHyp id = h_injection (Some id)

@@ -22,6 +22,7 @@ open Tacticals
 open Tactics
 open Tacexpr
 open Rawterm
+open Genarg
 (*i*)
 
 val general_rewrite_bindings : bool -> constr with_bindings -> tactic
@@ -62,8 +63,9 @@ val discrClause  : clause -> tactic
 val discrHyp     : identifier -> tactic
 val discrEverywhere     : tactic
 val discr_tac    : quantified_hypothesis option -> tactic
-val inj          : identifier -> tactic
-val injClause    : quantified_hypothesis option -> tactic
+val inj          : intro_pattern_expr list -> identifier -> tactic
+val injClause    : intro_pattern_expr list -> quantified_hypothesis option ->
+                   tactic
 
 val dEq : quantified_hypothesis option -> tactic
 val dEqThen : (int -> tactic) -> quantified_hypothesis option -> tactic

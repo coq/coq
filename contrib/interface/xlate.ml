@@ -939,6 +939,8 @@ and xlate_tac =
      CT_injection_eq
          (xlate_quantified_hypothesis_opt
 	    (out_gen (wit_opt rawwit_quant_hyp) idopt))
+    | TacExtend (_,"injection_as", [idopt;ipat]) ->
+	xlate_error "TODO: injection as"
     | TacFix (idopt, n) ->
      CT_fixtactic (xlate_ident_opt idopt, CT_int n, CT_fix_tac_list [])
     | TacMutualFix (id, n, fixtac_list) ->
