@@ -22,20 +22,29 @@ Ltac OnEquation req :=
   | _ => fail 1 "Goal is not an equation (of expected equality)"
   end.
 
+
+Ltac OnMainSubgoal H ty :=
+  match ty with
+  | _ -> ?ty' =>
+     let subtac := OnMainSubgoal H ty' in
+     (fun tac => (lapply H; [clear H; intro H; subtac tac | idtac]))
+  | _ => (fun tac => tac)
+  end.
+
 Ltac ApplyLemmaAndSimpl tac lemma pe:=
   let npe := fresh "ast_nf" in
   let H := fresh "eq_nf" in
   let Heq := fresh "thm" in
   let npe_spec :=
     match type of (lemma pe) with
-      forall (npe:_), ?npe_spec = npe -> _ => npe_spec
+      forall npe, ?npe_spec = npe -> _ => npe_spec
     | _ => fail 1 "ApplyLemmaAndSimpl: cannot find norm expression"
     end in
   (compute_assertion H npe npe_spec;
    (assert (Heq:=lemma _ _ H) || fail "anomaly: failed to apply lemma");
    clear H;
-   tac Heq;
-   rewrite Heq; clear Heq npe).
+   OnMainSubgoal Heq ltac:(type of Heq)
+     ltac:(tac Heq; rewrite Heq; clear Heq npe)).
 
 (* General scheme of reflexive tactics using of correctness lemma
    that involves normalisation of one expression *)

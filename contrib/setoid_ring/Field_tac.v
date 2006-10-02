@@ -70,24 +70,25 @@ Ltac fold_field_cond req rO :=
   end.
 
 Ltac simpl_PCond req rO :=
-  protect_fv "field";
+  protect_fv "field_cond";
   try (exact I);
   fold_field_cond req rO.
 
 (* Rewriting (field_simplify) *)
-Ltac Field_rewrite_list lemma Cond_lemma req Cst_tac :=
+Ltac Make_field_simplify_tac lemma Cond_lemma req Cst_tac :=
   let Make_tac :=
     match type of lemma with
     | forall l fe nfe,
       _ = nfe -> 
       PCond _ _ _ _ _ _ _ _ _ ->
-      req (@FEeval ?R ?rO ?radd ?rmul ?rsub ?ropp ?rdiv ?rinv ?C ?phi l fe) _ =>
+      req (FEeval ?rO ?radd ?rmul ?rsub ?ropp ?rdiv ?rinv (C:=?C) ?phi l fe)
+        _ =>
         let mkFV := FFV Cst_tac radd rmul rsub ropp rdiv rinv in
         let mkFE := mkFieldexpr C Cst_tac radd rmul rsub ropp rdiv rinv in
-        let simpl_field H := (*protect_fv "field" in H*)
-unfold Pphi_dev in H;simpl in H in 
-        (fun f => f mkFV mkFE simpl_field lemma req;
-                  try (apply Cond_lemma; simpl_PCond req rO))
+        let simpl_field H := protect_fv "field" in H in
+(*unfold Pphi_dev in H;simpl in H in *)
+        (fun f rl => (f mkFV mkFE simpl_field lemma req rl;
+                      try (apply Cond_lemma; simpl_PCond req rO)))
     | _ => fail 1 "field anomaly: bad correctness lemma (rewr)"
     end in
   Make_tac ReflexiveRewriteTactic.

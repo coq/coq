@@ -39,29 +39,30 @@ open Entries
 (****************************************************************************)
 (* controlled reduction *)
 
-let mark_arg i c = mkEvar(i,[|c|]);;
+let mark_arg i c = mkEvar(i,[|c|])
 let unmark_arg f c =
   match destEvar c with
     | (i,[|c|]) -> f i c
-    | _ -> assert false;;
+    | _ -> assert false
 
-type protect_flag = Eval|Prot|Rec ;;
+type protect_flag = Eval|Prot|Rec
 
-let tag_arg tag_rec map i c =
+let tag_arg tag_rec map subs i c =
   match map i with
-      Eval -> inject c
+      Eval -> mk_clos subs c
     | Prot -> mk_atom c
-    | Rec -> if i = -1 then inject c else tag_rec c
+    | Rec -> if i = -1 then mk_clos subs c else tag_rec c
 
-let rec mk_clos_but f_map t =
+let rec mk_clos_but f_map subs t =
   match f_map t with
-    | Some map -> tag_arg (mk_clos_but f_map) map (-1) t
+    | Some map -> tag_arg (mk_clos_but f_map subs) map subs (-1) t
     | None ->
         (match kind_of_term t with
-            App(f,args) -> mk_clos_app_but f_map f args 0
+            App(f,args) -> mk_clos_app_but f_map subs f args 0
+          | Prod _ -> mk_clos_deep (mk_clos_but f_map) subs t
           | _ -> mk_atom t)
 
-and mk_clos_app_but f_map f args n =
+and mk_clos_app_but f_map subs f args n =
   if n >= Array.length args then mk_atom(mkApp(f, args))
   else
     let fargs, args' = array_chop n args in
@@ -69,11 +70,11 @@ and mk_clos_app_but f_map f args n =
     match f_map f' with
         Some map ->
           mk_clos_deep
-            (fun _ -> unmark_arg (tag_arg (mk_clos_but f_map) map))
-            (Esubst.ESID 0)
+            (fun s' -> unmark_arg (tag_arg (mk_clos_but f_map s') map s'))
+            subs
             (mkApp (mark_arg (-1) f', Array.mapi mark_arg args'))
-      | None -> mk_clos_app_but f_map f args (n+1)
-;;
+      | None -> mk_clos_app_but f_map subs f args (n+1)
+
 
 let interp_map l c =
   try
@@ -97,7 +98,7 @@ let lookup_map map =
 
 let protect_red map env sigma c =
   kl (create_clos_infos betadeltaiota env)
-    (mk_clos_but (lookup_map map c) c);;
+    (mk_clos_but (lookup_map map c) (Esubst.ESID 0) c);;
 
 let protect_tac map =
   Tactics.reduct_option (protect_red map,DEFAULTcast) None ;;
@@ -227,12 +228,14 @@ let coq_nil = mk_cst list_dir "nil"
 
 let lapp f args = mkApp(Lazy.force f,args)
 
-let dest_rel t =
+let rec dest_rel t =
   match kind_of_term t with
       App(f,args) when Array.length args >= 2 ->
-        (mkApp(f,Array.sub args 0 (Array.length args - 2)),
-         args.(Array.length args - 2),
-         args.(Array.length args - 1))
+        let rel = mkApp(f,Array.sub args 0 (Array.length args - 2)) in
+        if closed0 rel then
+          (rel,args.(Array.length args - 2),args.(Array.length args - 1))
+        else error "ring: cannot find relation (not closed)"
+    | Prod(_,_,c) -> dest_rel c
     | _ -> error "ring: cannot find relation"
 
 (* Equality: do not evaluate but make recursive call on both sides *)
@@ -747,16 +750,22 @@ let _ = add_map "field"
   (map_with_eq
     [coq_cons,(function -1->Eval|2->Rec|_->Prot);
     coq_nil, (function -1->Eval|_ -> Prot);
-    (* Pphi_dev: evaluate polynomial and coef operations, protect
-       ring operations and make recursive call on the var map *)
-    pol_cst "Pphi_dev", (function -1|6|7|8|9|11->Eval|10->Rec|_->Prot);
+    (* display_linear: evaluate polynomials and coef operations, protect
+       field operations and make recursive call on the var map *)
+    fld_cst "display_linear",
+      (function -1|7|8|9|10|12|13->Eval|11->Rec|_->Prot);
     (* PEeval: evaluate morphism and polynomial, protect ring 
        operations and make recursive call on the var map *)
-    pol_cst "PEeval", (function -1|7|9->Eval|8->Rec|_->Prot);
-(*    fld_cst "FEeval", (function -1|9|11->Eval|10->Rec|_->Prot);*)
+    fld_cst "FEeval", (function -1|9|11->Eval|10->Rec|_->Prot)]);;
+
+
+let _ = add_map "field_cond"
+  (map_with_eq
+    [coq_cons,(function -1->Eval|2->Rec|_->Prot);
+     coq_nil, (function -1->Eval|_ -> Prot);
     (* PCond: evaluate morphism and denum list, protect ring
        operations and make recursive call on the var map *)
-    fld_cst "PCond", (function -1|8|10->Eval|9->Rec|_->Prot)]);;
+     fld_cst "PCond", (function -1|8|10->Eval|9->Rec|_->Prot)]);;
 
 
 let dest_field env sigma th_spec =

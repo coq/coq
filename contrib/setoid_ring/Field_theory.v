@@ -754,16 +754,19 @@ simpl; apply (morph0 CRmorph); auto.
 Qed.
 
 (* simplify a field expression into a fraction *)
+(* TODO: simplify when den is constant... *)
+Definition display_linear l num den :=
+  NPphi_dev l num / NPphi_dev l den.
+
 Theorem Pphi_dev_div_ok:
  forall l fe nfe,
  Fnorm fe = nfe ->
  PCond l (condition nfe) ->
- FEeval l fe ==
- NPphi_dev l (Nnorm (num nfe)) / NPphi_dev l (Nnorm (denum nfe)).
+ FEeval l fe == display_linear l (Nnorm (num nfe)) (Nnorm (denum nfe)).
 Proof.
   intros l fe nfe eq_nfe H; subst nfe.
   apply eq_trans with (1 := Fnorm_FEeval_PEeval _ _ H).
-  apply SRdiv_ext;
+  unfold display_linear; apply SRdiv_ext;
   apply (Pphi_dev_ok Rsth Reqe ARth CRmorph); reflexivity.
 Qed.
 
