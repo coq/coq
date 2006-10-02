@@ -1,4 +1,4 @@
-Require Import Setoid ZRing_th Ring_th.
+Require Import Setoid Ring Ring_theory.
 
 Module abs_ring.
 
@@ -28,7 +28,7 @@ Admitted.
 Definition cRth : ring_theory c0 c1 cadd cmul csub copp ceq.
 Admitted.
 
-Add New Ring CoefRing : cRth Abstract. 
+Add Ring CoefRing : cRth.
 
 End abs_ring.
 Import abs_ring.
@@ -36,5 +36,5 @@ Import abs_ring.
 Theorem check_setoid_ring_modules :
   forall a b, ceq (cadd a b) (cadd b a).
 intros.
-setoid ring.
+ring.
 Qed.
