@@ -146,9 +146,11 @@ let rec interp_xml_constr = function
       let ctx = List.map interp_xml_decl decls in
       List.fold_right (fun (na,t) b -> RProd (loc, na, t, b))
 	ctx (interp_xml_target body)
-  | XmlTag (loc,"LETIN",al,[x1;x2]) ->
-      let na,t = interp_xml_def x1 in
-      RLetIn (loc, na, t, interp_xml_target x2) 
+  | XmlTag (loc,"LETIN",al,(_::_ as xl)) ->
+      let body,defs = list_sep_last xl in
+      let ctx = List.map interp_xml_def defs in
+      List.fold_right (fun (na,t) b -> RLetIn (loc, na, t, b))
+        ctx (interp_xml_target body)
   | XmlTag (loc,"APPLY",_,x::xl) ->
       RApp (loc, interp_xml_constr x, List.map interp_xml_constr xl)
   | XmlTag (loc,"instantiate",_,
