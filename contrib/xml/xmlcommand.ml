@@ -547,14 +547,12 @@ let print_ref qid fn =
 (*  where dest is either None (for stdout) or (Some filename) *)
 (* pretty prints via Xml.pp the proof in progress on dest     *)
 let show_pftreestate internal fn (kind,pftst) id =
- let str = Names.string_of_id id in
  let pf = Tacmach.proof_of_pftreestate pftst in
  let typ = (Proof_trees.goal_of_proof pf).Evd.evar_concl in
  let val0,evar_map,proof_tree_to_constr,proof_tree_to_flattened_proof_tree,
      unshared_pf
  =
   Proof2aproof.extract_open_pftreestate pftst in
- let kn = Lib.make_kn id in
  let env = Global.env () in
  let obj =
   mk_current_proof_obj (fst kind = Decl_kinds.Local) id val0 typ evar_map env in
