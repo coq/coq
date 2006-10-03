@@ -87,29 +87,29 @@ let general_rewrite_bindings_clause cls lft2rgt (c,l) gl =
      break search for a defined setoid relation in head position. *)
   let t = snd (decompose_prod (whd_betaiotazeta ctype)) in 
   let head = if isApp t then fst (destApp t) else t in 
-  if relation_table_mem head && l = NoBindings then 
-    general_s_rewrite_clause cls lft2rgt c [] gl
-  else 
-    (* Original code. In particular, [splay_prod] performs delta-reduction. *)
-    let env = pf_env gl in
-    let sigma = project gl in 
-    let _,t = splay_prod env sigma t in
-    match match_with_equation t with
-      | None -> 
-	  if l = NoBindings
-	  then general_s_rewrite_clause cls lft2rgt c [] gl
-	  else error "The term provided does not end with an equation" 
-      | Some (hdcncl,_) -> 
-          let hdcncls = string_of_inductive hdcncl in 
-	  let suffix = elimination_suffix (elimination_sort_of_clause cls gl) in
-          let dir = if cls=None then lft2rgt else not lft2rgt in
-          let rwr_thm = if dir then hdcncls^suffix^"_r" else hdcncls^suffix in
-          let elim =
-	    try pf_global gl (id_of_string rwr_thm)
-            with Not_found ->
-              error ("Cannot find rewrite principle "^rwr_thm)
-          in 
-	  general_elim_clause cls (c,l) (elim,NoBindings) gl
+    if relation_table_mem head && l = NoBindings then 
+      general_s_rewrite_clause cls lft2rgt c [] gl
+    else 
+      (* Original code. In particular, [splay_prod] performs delta-reduction. *)
+      let env = pf_env gl in
+      let sigma = project gl in 
+      let _,t = splay_prod env sigma t in
+	match match_with_equation t with
+	  | None -> 
+	      if l = NoBindings
+	      then general_s_rewrite_clause cls lft2rgt c [] gl
+	      else error "The term provided does not end with an equation" 
+	  | Some (hdcncl,_) -> 
+              let hdcncls = string_of_inductive hdcncl in 
+	      let suffix = elimination_suffix (elimination_sort_of_clause cls gl) in
+              let dir = if cls=None then lft2rgt else not lft2rgt in
+              let rwr_thm = if dir then hdcncls^suffix^"_r" else hdcncls^suffix in
+              let elim =
+		try pf_global gl (id_of_string rwr_thm)
+		with Not_found ->
+		  error ("Cannot find rewrite principle "^rwr_thm)
+              in 
+		general_elim_clause cls (c,l) (elim,NoBindings) gl
 
 let general_rewrite_bindings = general_rewrite_bindings_clause None
 let general_rewrite l2r c = general_rewrite_bindings l2r (c,NoBindings)
@@ -133,21 +133,21 @@ let general_multi_rewrite l2r c cl =
 	  (tclTRY (general_rewrite_bindings_in l2r id c)) 
 	  (try_do_hyps l)
   in 
-  if cl.concl_occs <> [] then 
-    error "The \"at\" syntax isn't available yet for the rewrite/replace tactic"
-  else 
-    tclTHENFIRST 
-      (if cl.onconcl then general_rewrite_bindings l2r c else tclIDTAC)
-      (match cl.onhyps with 
-	 | Some l -> do_hyps l
-	 | None -> 
-	     fun gl -> 
-	       (* try to rewrite in all hypothesis 
-		  (except maybe the rewritten one) *)
-	       let ids = match kind_of_term (fst c) with 
-		 | Var id -> list_remove id (pf_ids_of_hyps gl)
-		 | _ -> pf_ids_of_hyps gl
-	       in try_do_hyps ids gl)
+    if cl.concl_occs <> [] then 
+      error "The \"at\" syntax isn't available yet for the rewrite/replace tactic"
+    else 
+      tclTHENFIRST 
+	(if cl.onconcl then general_rewrite_bindings l2r c else tclIDTAC)
+	(match cl.onhyps with 
+	   | Some l -> do_hyps l
+	   | None -> 
+	       fun gl -> 
+		 (* try to rewrite in all hypothesis 
+		    (except maybe the rewritten one) *)
+		 let ids = match kind_of_term (fst c) with 
+		   | Var id -> list_remove id (pf_ids_of_hyps gl)
+		   | _ -> pf_ids_of_hyps gl
+		 in try_do_hyps ids gl)
 
 
 (* Conditional rewriting, the success of a rewriting is related 

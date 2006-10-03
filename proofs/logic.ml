@@ -80,15 +80,15 @@ let clear_hyps ids gl =
               error (string_of_id id'^
 		        " is used in hypothesis "^string_of_id id))
 	  (global_vars_set_of_decl env d) in
-    clear_hyps ids fcheck gl.evar_hyps in
+      clear_hyps ids fcheck gl.evar_hyps in
   let ncl = gl.evar_concl in
-  if !check && cleared_ids<>[] then
-    Idset.iter
-      (fun id' ->
-        if List.mem id' cleared_ids then
-          error (string_of_id id'^" is used in conclusion"))
-      (global_vars_set env ncl);
-  mk_goal nhyps ncl gl.evar_extra
+    if !check && cleared_ids<>[] then
+      Idset.iter
+	(fun id' ->
+          if List.mem id' cleared_ids then
+            error (string_of_id id'^" is used in conclusion"))
+	(global_vars_set_drop_evar env ncl);
+    mk_goal nhyps ncl gl.evar_extra
 
 (* The ClearBody tactic *)
 
@@ -155,7 +155,7 @@ let split_sign hfrom hto l =
       	else 
 	  splitrec (d::left) (toleft or (hyp = hto)) right
   in 
-  splitrec [] false l
+    splitrec [] false l
 
 let move_after with_dep toleft (left,(idfrom,_,_ as declfrom),right) hto =
   let env = Global.env() in
@@ -214,19 +214,25 @@ let check_forward_dependencies id tail =
 		^ (string_of_id id')))
     tail
 
+let check_goal_dependency id cl =
+  let env = Global.env() in
+    if Idset.mem id (global_vars_set_drop_evar env cl) then
+      error (string_of_id id^" is used in conclusion")
 
 let rename_hyp id1 id2 sign =
   apply_to_hyp_and_dependent_on sign id1
     (fun (_,b,t) _ -> (id2,b,t))
     (fun d _ -> map_named_declaration (replace_vars [id1,mkVar id2]) d)
 
-let replace_hyp sign id d =
+let replace_hyp sign id d cl =
+  if !check then
+    check_goal_dependency id cl;
   apply_to_hyp sign id
     (fun sign _ tail ->
-       if !check then
-	 (check_backward_dependencies sign d;
-	  check_forward_dependencies id tail);
-       d)
+      if !check then
+	(check_backward_dependencies sign d;
+	 check_forward_dependencies id tail); 
+      d)
 
 (* why we dont check that id does not appear in tail ??? *)
 let insert_after_hyp sign id d =
@@ -419,12 +425,12 @@ let prim_refiner r sigma goal =
 	(match kind_of_term (strip_outer_cast cl) with
            | Prod (_,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
-	       let sign' = replace_hyp sign id (id,None,c1) in
+	       let sign' = replace_hyp sign id (id,None,c1) cl in
 	       let sg = mk_goal sign' (subst1 (mkVar id) b) in
 	       [sg]
            | LetIn (_,c1,t1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
-	       let sign' = replace_hyp sign id (id,Some c1,t1) in
+	       let sign' = replace_hyp sign id (id,Some c1,t1) cl in
 	       let sg = mk_goal sign' (subst1 (mkVar id) b) in
 	       [sg]
 	   | _ ->

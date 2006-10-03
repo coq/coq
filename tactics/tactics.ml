@@ -529,39 +529,46 @@ let apply_without_reduce c gl =
 
 let cut_and_apply c gl =
   let goal_constr = pf_concl gl in 
-  match kind_of_term (pf_hnf_constr gl (pf_type_of gl c)) with
-    | Prod (_,c1,c2) when not (dependent (mkRel 1) c2) ->
-	tclTHENLAST
-	  (apply_type (mkProd (Anonymous,c2,goal_constr)) [mkMeta(new_meta())])
-	  (apply_term c [mkMeta (new_meta())]) gl
-    | _ -> error "Imp_elim needs a non-dependent product"
+    match kind_of_term (pf_hnf_constr gl (pf_type_of gl c)) with
+      | Prod (_,c1,c2) when not (dependent (mkRel 1) c2) ->
+	  tclTHENLAST
+	    (apply_type (mkProd (Anonymous,c2,goal_constr)) [mkMeta(new_meta())])
+	    (apply_term c [mkMeta (new_meta())]) gl
+      | _ -> error "Imp_elim needs a non-dependent product"
 
 let cut c gl =
   match kind_of_term (hnf_type_of gl c) with
     | Sort _ ->
         let id=next_name_away_with_default "H" Anonymous (pf_ids_of_hyps gl) in
         let t = mkProd (Anonymous, c, pf_concl gl) in
-        tclTHENFIRST
-          (internal_cut_rev id c)
-          (tclTHEN (apply_type t [mkVar id]) (thin [id]))
-          gl
+          tclTHENFIRST
+            (internal_cut_rev id c)
+            (tclTHEN (apply_type t [mkVar id]) (thin [id]))
+            gl
     | _  -> error "Not a proposition or a type"
 
 let cut_intro t = tclTHENFIRST (cut t) intro
 
-let cut_replacing id t tac = 
+(* let cut_replacing id t tac = 
   tclTHENS (cut t)
     [tclORELSE
-      (intro_replacing id) 
-      (tclORELSE (intro_erasing id) (intro_using id));
-     tac (refine_no_check (mkVar id)) ]
+	(intro_replacing id) 
+	(tclORELSE (intro_erasing id) (intro_using id));
+     tac (refine_no_check (mkVar id)) ] *)
+
+(* cut_replacing échoue si l'hypothèse à remplacer apparaît dans le
+   but, ou dans une autre hypothèse *)
+let cut_replacing id t tac = 
+  tclTHENS (cut t) [
+      tclORELSE (intro_replacing id) (intro_erasing id); 
+      tac (refine_no_check (mkVar id)) ]
 
 let cut_in_parallel l = 
   let rec prec = function
     | [] -> tclIDTAC 
     | h::t -> tclTHENFIRST (cut h) (prec t)
   in 
-  prec (List.rev l)
+    prec (List.rev l)
 
 (********************************************************************)
 (*               Exact tactics                                      *)
@@ -738,7 +745,7 @@ let general_elim_clause elimtac (c,lbindc) (elimc,lbindelimc) gl =
   let indclause  = make_clenv_binding gl (c,t) lbindc  in
   let elimt      = pf_type_of gl elimc in
   let elimclause = make_clenv_binding gl (elimc,elimt) lbindelimc in 
-  elimtac elimclause indclause gl
+    elimtac elimclause indclause gl
 
 let general_elim c e ?(allow_K=true) =
   general_elim_clause (elimination_clause_scheme allow_K) c e
