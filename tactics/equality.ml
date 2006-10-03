@@ -275,19 +275,18 @@ let find_positions env sigma t1 t2 =
   	
       | Construct sp1, Construct sp2 
           when List.length args1 = mis_constructor_nargs_env env sp1
-          ->
-        (* both sides are fully applied constructors, so either we descend,
-           or we can discriminate here. *)
+            ->
+	  let sorts = list_intersect sorts (allowed_sorts env (fst sp1)) in
+          (* both sides are fully applied constructors, so either we descend,
+             or we can discriminate here. *)
 	  if sp1 = sp2 then
 	    let nrealargs = constructor_nrealargs env sp1 in
 	    let rargs1 = list_lastn nrealargs args1 in
 	    let rargs2 = list_lastn nrealargs args2 in
-	    let allowed_sorts = allowed_sorts env (fst sp1) in
-	    let sorts = list_intersect allowed_sorts sorts in
             List.flatten
 	      (list_map2_i (fun i -> findrec sorts ((sp1,i)::posn))
 		0 rargs1 rargs2)
-	  else if List.mem InType (allowed_sorts env (fst sp1)) then
+	  else if List.mem InType sorts then (* see build_discriminator *)
 	    raise (DiscrFound (List.rev posn,sp1,sp2))
 	  else []
 
@@ -374,8 +373,6 @@ let discriminable env sigma t1 t2 =
    the continuation then constructs the case-split.
  *)
 
-exception CannotDescend
-
 let descend_then sigma env head dirn =
   let IndType (indf,_) =
     try find_rectype env sigma (get_type_of env sigma head)
@@ -451,14 +448,16 @@ let rec build_discriminator sigma env dirn c sort = function
       let subval = build_discriminator sigma cnum_env dirn newc sort l  in
       kont subval (build_coq_False (),mkSort (Prop Null))
 
-let build_discriminator sigma env dirn c sort posn =
-  try build_discriminator sigma env dirn c sort posn
-  with CannotDescend ->
-    (* could be more clever: if some elimination is not allowed
-       because e.g. of a impredicative constructor in the path, the
-       discrimination combinator could be put out of the descent to the
-       discriminable positions *)
-    error "Unable to discriminable"
+(* Note: discrimination could be more clever: if some elimination is
+   not allowed because of a large impredicative constructor in the
+   path (see allowed_sorts in find_positions), the positions could
+   still be discrimated by projecting first instead of putting the
+   discrimination combinator inside the projecting combinator. Example
+   of relevant situation:
+
+   Inductive t:Set := c : forall A:Set, A -> nat -> t.
+   Goal ~ c _ 0 0 = c _ 0 1. intro. discriminate H.
+*)
 
 let gen_absurdity id gl =
   if is_empty_type (clause_type (onHyp id) gl)
@@ -734,12 +733,10 @@ let rec build_injrec sigma env dflt c = function
        tuplety,dfltval)
 
 let build_injector sigma env dflt c cpath =
-  let (injcode,resty,_) = 
-    try build_injrec sigma env dflt c cpath
-    with CannotDescend -> failwith "caught"
-  in
+  let (injcode,resty,_) = build_injrec sigma env dflt c cpath in
   (injcode,resty)
 
+(*
 let try_delta_expand env sigma t =
   let whdt = whd_betadeltaiota env sigma t  in 
   let rec hd_rec c  =
@@ -750,16 +747,22 @@ let try_delta_expand env sigma t =
       | _  -> t
   in 
   hd_rec whdt 
+*)
 
 (* Given t1=t2 Inj calculates the whd normal forms of t1 and t2 and it 
    expands then only when the whdnf has a constructor of an inductive type
    in hd position, otherwise delta expansion is not done *)
 
-let inject_positions env sigma (eq,(t,t1,t2)) id posns =
+let simplify_args env sigma t = 
+  (* Quick hack to reduce in arguments of eq only *)
+  match decompose_app t with
+    | eq, [t;c1;c2] -> applist (eq,[t;nf env sigma c1;nf env sigma c2])
+    | eq, [t1;c1;t2;c2] -> applist (eq,[t1;nf env sigma c1;t2;nf env sigma c2])
+    | _ -> t
+
+let inject_at_positions env sigma (eq,(t,t1,t2)) id posns =
   let e = next_ident_away eq_baseid (ids_of_context env) in
   let e_env = push_named (e,None,t) env in
-  let t1 = try_delta_expand env sigma t1 in
-  let t2 = try_delta_expand env sigma t2 in
   let injectors =
     map_succeed
       (fun (cpath,t1',t2') ->
@@ -767,7 +770,7 @@ let inject_positions env sigma (eq,(t,t1,t2)) id posns =
 	let (injbody,resty) = build_injector sigma e_env t1' (mkVar e) cpath in
 	let injfun = mkNamedLambda e t injbody in
 	let pf = applist(eq.congr,[t;resty;injfun;t1;t2;mkVar id]) in
-	let ty = get_type_of env sigma pf in
+	let ty = simplify_args env sigma (get_type_of env sigma pf) in
 	(pf,ty))
       posns in
   if injectors = [] then
@@ -776,7 +779,7 @@ let inject_positions env sigma (eq,(t,t1,t2)) id posns =
     (fun (pf,ty) -> tclTHENS (cut ty) [tclIDTAC; refine pf])
     injectors
 
-let injEq ipats (eq,(t,t1,t2) as u) id gls =
+let injEq ipats (eq,(t,t1,t2)) id gls =
   let sigma = project gls in
   let env = pf_env gls in
   match find_positions env sigma t1 t2 with
@@ -788,8 +791,12 @@ let injEq ipats (eq,(t,t1,t2) as u) id gls =
 	errorlabstrm "Equality.inj" 
 	   (str"Nothing to do, it is an equality between convertible terms")
     | Inr posns ->
+(* Est-ce utile à partir du moment où les arguments projetés subissent "nf" ?
+	let t1 = try_delta_expand env sigma t1 in
+	let t2 = try_delta_expand env sigma t2 in
+*)
 	tclTHEN 
-	  (inject_positions env sigma u id posns)
+	  (inject_at_positions env sigma (eq,(t,t1,t2)) id posns)
 	  (intros_pattern None ipats)
 	  gls
 
@@ -813,7 +820,7 @@ let decompEqThen ntac (lbeq,(t,t1,t2) as u) id gls =
         ntac 0 gls
     | Inr posns ->
 	tclTHEN
-	  (inject_positions env sigma u id (List.rev posns))
+	  (inject_at_positions env sigma (lbeq,(t,t1,t2)) id (List.rev posns))
 	  (ntac (List.length posns))
 	  gls
 
