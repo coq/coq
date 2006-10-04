@@ -1893,6 +1893,14 @@ introduced hypothesis.
   {\ident}}.
   
   \ErrMsg \errindex{goal does not satisfy the expected preconditions}
+
+\item \texttt{injection} \ident{} \texttt{as} \nelist{\intropattern}{}\\
+\texttt{injection} \num{} \texttt{as} {\intropattern} {\ldots} {\intropattern}\\
+\texttt{injection} \texttt{as} {\intropattern} {\ldots} {\intropattern}\\
+\tacindex{injection \ldots{} as}
+ 
+These variants apply \texttt{intros} \nelist{\intropattern}{} after the call to \texttt{injection}.
+
 \end{Variants}
 
 \subsection{\tt simplify\_eq {\ident}
