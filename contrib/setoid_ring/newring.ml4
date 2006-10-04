@@ -754,6 +754,9 @@ let _ = add_map "field"
        field operations and make recursive call on the var map *)
     fld_cst "display_linear",
       (function -1|7|8|9|10|12|13->Eval|11->Rec|_->Prot);
+    (* Pphi_dev: evaluate polynomial and coef operations, protect
+       ring operations and make recursive call on the var map *)
+    pol_cst "Pphi_dev", (function -1|6|7|8|9|11->Eval|10->Rec|_->Prot);
     (* PEeval: evaluate morphism and polynomial, protect ring 
        operations and make recursive call on the var map *)
     fld_cst "FEeval", (function -1|9|11->Eval|10->Rec|_->Prot)]);;

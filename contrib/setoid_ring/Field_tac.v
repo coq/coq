@@ -156,6 +156,6 @@ Ltac Make_field_simplify_eq_tac lemma Cond_lemma req Cst_tac :=
   let Main radd rmul rsub ropp rdiv rinv C :=
     let mkFV := FFV Cst_tac radd rmul rsub ropp rdiv rinv in
     let mkFE := mkFieldexpr C Cst_tac radd rmul rsub ropp rdiv rinv in
-    let Simpl := (unfold Pphi_dev; simpl) in
+    let Simpl := (protect_fv "field") in
     Field_Scheme mkFV mkFE Simpl lemma Cond_lemma req in
   ParseFieldComponents lemma req Main.
