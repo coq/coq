@@ -398,19 +398,22 @@ and coq = parse
       { () }
   | gallina_kw_to_hide
       { let s = lexeme lexbuf in
-	  if !light && section_or_end s then begin 
-	    let eol = skip_to_dot lexbuf in
-	      if eol then coq_bol lexbuf else coq lexbuf 
-	  end else begin
-	    ident s (lexeme_start lexbuf); 
-	    let eol=body lexbuf in 
-	      if eol then coq_bol lexbuf else coq lexbuf
-	  end }
+	  if !light && section_or_end s then 
+	    begin 
+	      let eol = skip_to_dot lexbuf in
+		if eol then coq_bol lexbuf else coq lexbuf 
+	    end 
+	  else 
+	    begin
+	      ident s (lexeme_start lexbuf); 
+	      let eol=body lexbuf in 
+		if eol then coq_bol lexbuf else coq lexbuf
+	    end }
   | gallina_kw
       { let s = lexeme lexbuf in 
 	  ident s (lexeme_start lexbuf); 
-	  let eol = body lexbuf in
-	    if eol then coq_bol lexbuf else coq lexbuf }
+	let eol = body lexbuf in
+	  if eol then coq_bol lexbuf else coq lexbuf }
   | space+ { char ' '; coq lexbuf }
   | eof 
       { () }

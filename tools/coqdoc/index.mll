@@ -364,6 +364,7 @@ and end_ident = parse
 and module_ident = parse
   | space+
       { module_ident lexbuf }
+  | '"' { string lexbuf; module_ident lexbuf }
   | ident space* ":="
       { () }
   | ident
