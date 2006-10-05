@@ -540,6 +540,8 @@ let tclIFTHENSELSE=ite_gen tclTHENS
 
 let tclIFTHENSVELSE=ite_gen tclTHENSV
 
+let tclIFTHENTRYELSEMUST tac1 tac2 gl = 
+  tclIFTHENELSE tac1 (tclTRY tac2) tac2 gl
 
 (* Fails if a tactic did not solve the goal *)
 let tclCOMPLETE tac = tclTHEN tac (tclFAIL_s "Proof is not complete.")

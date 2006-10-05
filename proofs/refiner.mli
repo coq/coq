@@ -144,6 +144,12 @@ val tclIFTHENELSE    : tactic -> tactic -> tactic -> tactic
 val tclIFTHENSELSE   : tactic -> tactic list -> tactic ->tactic
 val tclIFTHENSVELSE   : tactic -> tactic array -> tactic ->tactic
 
+(* [tclIFTHENTRYELSEMUST tac1 tac2 gls] applies [tac1] then [tac2]. If [tac1]
+   has been successful, then [tac2] may fail. Otherwise, [tac2] must succeed. 
+   Equivalent to [(tac1;try tac2)||tac2] *)
+
+val tclIFTHENTRYELSEMUST : tactic -> tactic -> tactic
+
 (*s Tactics handling a list of goals. *)
 
 type validation_list = proof_tree list -> proof_tree list

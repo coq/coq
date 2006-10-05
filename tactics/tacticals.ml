@@ -68,6 +68,7 @@ let tclTHENTRY       = tclTHENTRY
 let tclIFTHENELSE    = tclIFTHENELSE
 let tclIFTHENSELSE   = tclIFTHENSELSE
 let tclIFTHENSVELSE   = tclIFTHENSVELSE
+let tclIFTHENTRYELSEMUST = tclIFTHENTRYELSEMUST
 
 let unTAC            = unTAC
 

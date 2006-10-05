@@ -1584,20 +1584,30 @@ This happens if \term$_1$ does not occur in the goal.
 \item {\tt rewrite {\term} in \textit{clause}}
   \tacindex{rewrite \dots\ in}\\
   Analogous to {\tt rewrite {\term}} but rewriting is done following
-  \textit{clause} (similarly to \ref{Conversion-tactics}). For instance:
-  \texttt{rewrite H in H1,H2 |- *} means \texttt{rewrite H in H1;
-    rewrite H in H2; rewrite H} and \texttt{rewrite H in * |-} will do
-  \texttt{try rewrite H in H$_i$} for all hypothesis \texttt{H$_i$ <>
-    H}.
+  \textit{clause} (similarly to \ref{Conversion-tactics}). For
+  instance:
+  \begin{itemize}
+  \item \texttt{rewrite H in H1} will rewrites \texttt{H} in the hypothesis
+    \texttt{H1} instead of the current goal.
+  \item \texttt{rewrite H in H1,H2 |- *} means \texttt{rewrite H; rewrite H in H1;
+      rewrite H in H2}. In particular a failure will happen if any of
+    these three simplier tactics fails. 
+  \item \texttt{rewrite H in * |- } will do \texttt{rewrite H in
+      H$_i$} for all hypothesis \texttt{H$_i$ <> H}. A success will happen
+    as soon as at least one of these simplier tactics succeeds.
+  \item \texttt{rewrite H in *} is a combination of \texttt{rewrite H} 
+    and \texttt{rewrite H in * |-} that succeeds if at
+    least one of these two tactics succeeds. 
+  \end{itemize}
 
-\item {\tt rewrite -> {\term} in {\ident}}
+\item {\tt rewrite -> {\term} in \textit{clause}}
   \tacindex{rewrite -> \dots\ in}\\
-  Behaves as {\tt rewrite {\term} in {\ident}}.
+  Behaves as {\tt rewrite {\term} in \textit{clause}}.
  
-\item {\tt rewrite <- {\term} in {\ident}}\\
+\item {\tt rewrite <- {\term} in \textit{clause}}\\
   \tacindex{rewrite <- \dots\ in}
   Uses the equality \term$_1${\tt=}\term$_2$ from right to left to
-  rewrite in the hypothesis named {\ident}.
+  rewrite in \textit{clause} as explained above.
 \end{Variants}
 
 

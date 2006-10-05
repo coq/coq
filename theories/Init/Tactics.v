@@ -49,24 +49,7 @@ Ltac f_equal :=
    | _ => idtac
   end.
 
-(* Rewriting in all hypothesis. *)
+(* Rewriting in all hypothesis several times everywhere *)
 
-Ltac rewrite_all Eq := match type of Eq with
-  ?a = ?b =>
-     generalize Eq; clear Eq;
-     match goal with
-    | H : context [a] |- _ => intro Eq; rewrite Eq in H; rewrite_all Eq
-    | _ => intro Eq; try rewrite Eq
-    end
- end.
-
-Ltac rewrite_all_rev Eq := match type of Eq with
-  ?a = ?b =>
-     generalize Eq; clear Eq;
-     match goal with
-    | H : context [b] |- _ => intro Eq; rewrite <- Eq in H; rewrite_all_rev Eq
-    | _ => intro Eq; try rewrite <- Eq
-    end
- end.
-
-Tactic Notation "rewrite_all" "<-" constr(H) := rewrite_all_rev H.
+Tactic Notation "rewrite_all" constr(eq) := repeat rewrite eq in *.
+Tactic Notation "rewrite_all" "<-" constr(eq) := repeat rewrite <- eq in *.
