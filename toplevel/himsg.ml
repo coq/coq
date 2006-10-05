@@ -385,6 +385,14 @@ let explain_cannot_unify m n =
   str"Impossible to unify" ++ brk(1,1)  ++ pm ++ spc ()  ++
   str"with" ++ brk(1,1)  ++ pn
 
+let explain_cannot_unify_local env m n subn =
+  let pm = pr_lconstr m in 
+  let pn = pr_lconstr n in
+  let psubn = pr_lconstr_env env subn in
+    str"Impossible to unify" ++ brk(1,1)  ++ pm ++ spc ()  ++
+      str"with" ++ brk(1,1)  ++ pn ++ spc() ++ str"as" ++ brk(1,1) ++ 
+      psubn ++ str" contains local variables"
+
 let explain_refiner_cannot_generalize ty =
   str "Cannot find a well-typed generalisation of the goal with type : " ++ 
   pr_lconstr ty
@@ -455,6 +463,7 @@ let explain_pretype_error ctx err =
   | NotProduct c ->
       explain_not_product ctx c
   | CannotUnify (m,n) -> explain_cannot_unify m n
+  | CannotUnifyLocal (e,m,n,sn) -> explain_cannot_unify_local e m n sn
   | CannotGeneralize ty -> explain_refiner_cannot_generalize ty
   | NoOccurrenceFound c -> explain_no_occurrence_found c
   | CannotUnifyBindingType (m,n) -> explain_cannot_unify_binding_type m n
