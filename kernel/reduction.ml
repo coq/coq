@@ -249,14 +249,14 @@ and eqappr cv_pb infos appr1 appr2 cuniv =
 
     (* Inductive types:  MutInd MutConstruct Fix Cofix *)
 
-     | (FInd (kn1,i1), FInd (kn2,i2)) ->
-         if i1 = i2 && mind_equiv infos kn1 kn2
+     | (FInd ind1, FInd ind2) ->
+         if mind_equiv_infos infos ind1 ind2
 	 then
            convert_stacks infos lft1 lft2 v1 v2 cuniv
          else raise NotConvertible
 
-     | (FConstruct ((kn1,i1),j1), FConstruct ((kn2,i2),j2)) ->
-	 if i1 = i2 && j1 = j2 && mind_equiv infos kn1 kn2
+     | (FConstruct (ind1,j1), FConstruct (ind2,j2)) ->
+	 if j1 = j2 && mind_equiv_infos infos ind1 ind2
 	 then
            convert_stacks infos lft1 lft2 v1 v2 cuniv
          else raise NotConvertible
@@ -309,7 +309,7 @@ and eqappr cv_pb infos appr1 appr2 cuniv =
 and convert_stacks infos lft1 lft2 stk1 stk2 cuniv =
   compare_stacks
     (fun (l1,t1) (l2,t2) c -> ccnv CONV infos l1 l2 t1 t2 c)
-    (fun (mind1,i1) (mind2,i2) -> i1=i2 && mind_equiv infos mind1 mind2)
+    (mind_equiv_infos infos)
     lft1 stk1 lft2 stk2 cuniv
 
 and convert_vect infos lft1 lft2 v1 v2 cuniv =
