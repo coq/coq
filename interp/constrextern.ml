@@ -295,9 +295,6 @@ let same_rawconstr c d =
 (**********************************************************************)
 (* mapping patterns to cases_pattern_expr                                *)
 
-let make_current_scopes (scopt,scopes) = 
-  option_fold_right push_scope scopt scopes
-
 let has_curly_brackets ntn =
   String.length ntn >= 6 & (String.sub ntn 0 6 = "{ _ } " or
     String.sub ntn (String.length ntn - 6) 6 = " { _ }" or
@@ -363,6 +360,9 @@ let make_pat_notation loc ntn l =
     (fun (loc,p) -> CPatPrim (loc,p))
     destPatPrim l
 
+let find_arguments_scope ref =
+  List.map (option_map (fun sc -> LightTmpScope sc)) (find_arguments_scope ref)
+
 let bind_env sigma var v =
   try
     let vvar = List.assoc var sigma in
@@ -401,11 +401,11 @@ let match_aconstr_cases_pattern c (metas_scl,pat) =
   List.map (fun (x,scl) -> (find x subst,scl)) metas_scl
 
  (* Better to use extern_rawconstr composed with injection/retraction ?? *)
-let rec extern_cases_pattern_in_scope scopes vars pat =
+let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
   try 
     if !Options.raw_print or !print_no_symbol then raise No_match;
     let (na,sc,p) = uninterp_prim_token_cases_pattern pat in
-    match availability_of_prim_token sc (make_current_scopes scopes) with
+    match availability_of_prim_token sc scopes with
     | None -> raise No_match
     | Some key ->
       let loc = pattern_loc pat in
@@ -440,17 +440,17 @@ and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
 	(* Try availability of interpretation ... *)
         match keyrule with
           | NotationRule (sc,ntn) ->
-	      let scopes' = make_current_scopes (tmp_scope, scopes) in
-	      (match availability_of_notation (sc,ntn) scopes' with
+	      (match availability_of_notation (sc,ntn) allscopes with
                   (* Uninterpretation is not allowed in current context *)
               | None -> raise No_match
                   (* Uninterpretation is allowed in current context *)
 	      | Some (scopt,key) ->
-	          let scopes = make_current_scopes (scopt, scopes) in
+	          let scopes' =
+		    if (* recursive *) false then option_cons scopt scopes
+		    else scopes in
 	          let l =
 		    List.map (fun (c,(scopt,scl)) ->
-		      extern_cases_pattern_in_scope 
-		        (scopt,List.fold_right push_scope scl scopes) vars c)
+		      extern_cases_pattern_in_scope (scopt,scl@scopes') vars c)
                       subst in
 		  insert_pat_delimiters loc (make_pat_notation loc ntn l) key)
           | SynDefRule kn ->
@@ -460,7 +460,7 @@ and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
 	  No_match -> extern_symbol_pattern allscopes vars t rules
 
 let extern_cases_pattern vars p = 
-  extern_cases_pattern_in_scope (None,Notation.current_scopes()) vars p
+  extern_cases_pattern_in_scope (None,[]) vars p
 
 (**********************************************************************)
 (* Externalising applications *)
@@ -607,7 +607,7 @@ let rec share_fix_binders n rbl ty def =
 let extern_possible_prim_token scopes r =
   try
     let (sc,n) = uninterp_prim_token r in
-    match availability_of_prim_token sc (make_current_scopes scopes) with
+    match availability_of_prim_token sc scopes with
     | None -> None
     | Some key -> Some (insert_delimiters (CPrim (loc_of_rawconstr r,n)) key)
   with No_match ->
@@ -754,7 +754,8 @@ let rec extern inctx scopes vars r =
 
   | RDynamic (loc,d) -> CDynamic (loc,d)
 
-and extern_typ (_,scopes) = extern true (Some Notation.type_scope,scopes)
+and extern_typ (_,scopes) = 
+  extern true (Some (LightTmpScope (Notation.type_scope)),scopes)
 
 and sub_extern inctx (_,scopes) = extern inctx (None,scopes)
 
@@ -817,17 +818,18 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
         let e =
           match keyrule with
           | NotationRule (sc,ntn) ->
-	      let scopes' = make_current_scopes (tmp_scope, scopes) in
-	      (match availability_of_notation (sc,ntn) scopes' with
+	      (match availability_of_notation (sc,ntn) allscopes with
                   (* Uninterpretation is not allowed in current context *)
               | None -> raise No_match
                   (* Uninterpretation is allowed in current context *)
 	      | Some (scopt,key) ->
-	          let scopes = make_current_scopes (scopt, scopes) in
+	          let scopes' =
+		    if (* recursive *) false then option_cons scopt scopes
+		    else scopes in
 	          let l =
 		    List.map (fun (c,(scopt,scl)) ->
 		      extern (* assuming no overloading: *) true
-		        (scopt,List.fold_right push_scope scl scopes) vars c)
+		        (scopt,scl@scopes') vars c)
                       subst in
 	          insert_delimiters (make_notation loc ntn l) key)
           | SynDefRule kn ->
@@ -847,10 +849,10 @@ and extern_recursion_order scopes vars = function
 
 
 let extern_rawconstr vars c =
-  extern false (None,Notation.current_scopes()) vars c
+  extern false (None,[]) vars c
 
 let extern_rawtype vars c =
-  extern_typ (None,Notation.current_scopes()) vars c
+  extern_typ (None,[]) vars c
 
 (******************************************************************)
 (* Main translation function from constr -> constr_expr *)
@@ -861,10 +863,10 @@ let extern_constr_gen at_top scopt env t =
   let avoid = if at_top then ids_of_context env else [] in
   let r = Detyping.detype at_top avoid (names_of_rel_context env) t in
   let vars = vars_of_env env in
-  extern (not at_top) (scopt,Notation.current_scopes()) vars r
+  extern (not at_top) (scopt,[]) vars r
 
 let extern_constr_in_scope at_top scope env t =
-  extern_constr_gen at_top (Some scope) env t
+  extern_constr_gen at_top (Some (ExplicitTmpScope scope)) env t
 
 let extern_constr at_top env t =
   extern_constr_gen at_top None env t
@@ -962,5 +964,4 @@ and raw_of_eqn env constr construct_nargs branch =
   buildrec [] [] env construct_nargs branch
 
 let extern_constr_pattern env pat =
-  extern true (None,Notation.current_scopes()) Idset.empty
-    (raw_of_pat env pat)
+  extern true (None,[]) Idset.empty (raw_of_pat env pat)

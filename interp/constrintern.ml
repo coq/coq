@@ -221,7 +221,18 @@ let contract_pat_notation ntn l =
 (**********************************************************************)
 (* Remembering the parsing scope of variables in notations            *)
 
-let make_current_scope (scopt,scopes) = option_cons scopt scopes
+let make_light_tmp_scope = function
+  | Some sc -> Some (LightTmpScope sc) 
+  | None -> None
+
+let make_current_scope (tmp_scope,scopes) =
+  let scopes = if (* recursive *) false then scopes else [] in
+  match tmp_scope with
+  | Some (ExplicitTmpScope sc) -> sc :: scopes
+  | _ -> scopes
+
+let find_arguments_scope ref =
+  List.map make_light_tmp_scope (find_arguments_scope ref)
 
 let set_var_scope loc id (_,scopt,scopes) varscopes =
   let idscopes = List.assoc id varscopes in
@@ -231,7 +242,7 @@ let set_var_scope loc id (_,scopt,scopes) varscopes =
       user_err_loc (loc,"set_var_scope",
       pr_id id ++ str " already occurs in a different scope")
   else
-    idscopes := Some (scopt,scopes)
+    idscopes := Some (scopt,if (* recursive *) false then scopes else [])
 
 (**********************************************************************)
 (* Discriminating between bound variables and global references       *)
@@ -247,7 +258,7 @@ let intern_var (env,_,_ as genv) (ltacvars,vars2,vars3,(_,impls)) loc id =
     let l,impl,argsc = List.assoc id impls in
     let l = List.map 
       (fun id -> CRef (Ident (loc,id)), Some (loc,ExplByName id)) l in
-    RVar (loc,id), impl, argsc, l
+    RVar (loc,id), impl, List.map make_light_tmp_scope argsc, l
   with Not_found ->
   (* Is [id] bound in current env or is an ltac var bound to constr *)
   if Idset.mem id env or List.mem id vars1
@@ -558,21 +569,20 @@ let rec intern_cases_pattern genv scopes (ids,subst as aliases) tmp_scope =
       intern_cases_pattern genv scopes aliases tmp_scope a
   | CPatNotation (loc, ntn, args) ->
       let ntn,args = contract_pat_notation ntn args in
-      let scopes = option_cons tmp_scope scopes in
-      let ((ids,c),df) = Notation.interp_notation loc ntn scopes in
+      let ((ids,c),df) = Notation.interp_notation loc ntn (tmp_scope,scopes) in
       if !dump then dump_notation_location (patntn_loc loc args ntn) df;
       let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids args in
       subst_cases_pattern loc aliases (intern_cases_pattern genv) subst scopes 
 	c
   | CPatPrim (loc, p) ->
-      let scopes = option_cons tmp_scope scopes in
       let a = alias_of aliases in
-      let (c,df) = Notation.interp_prim_token_cases_pattern loc p a scopes in
+      let (c,df) = Notation.interp_prim_token_cases_pattern loc p a 
+	(tmp_scope,scopes) in
       if !dump then dump_notation_location (fst (unloc loc)) df;
       (ids,[subst,c])
   | CPatDelimiters (loc, key, e) ->
-      intern_cases_pattern genv (find_delimiters_scope loc key::scopes)
-        aliases None e
+      intern_cases_pattern genv scopes aliases 
+        (Some (ExplicitTmpScope (find_delimiters_scope loc key))) e
   | CPatAtom (loc, Some head) ->
       (match maybe_constructor head with
 	 | ConstrPat (c,args) ->
@@ -747,14 +757,13 @@ let rec subst_aconstr_in_rawconstr loc interp subst (ids,_,scopes as _env) =
 
 let intern_notation intern (_,tmp_scope,scopes as env) loc ntn args =
   let ntn,args = contract_notation ntn args in
-  let scopes = option_cons tmp_scope scopes in
-  let ((ids,c),df) = Notation.interp_notation loc ntn scopes in
+  let ((ids,c),df) = Notation.interp_notation loc ntn (tmp_scope,scopes) in
   if !dump then dump_notation_location (ntn_loc loc args ntn) df;
   let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids args in
   subst_aconstr_in_rawconstr loc intern subst env c
 
 let set_type_scope (ids,tmp_scope,scopes) =
-  (ids,Some Notation.type_scope,scopes)
+  (ids,Some (LightTmpScope Notation.type_scope),scopes)
 
 let reset_tmp_scope (ids,tmp_scope,scopes) =
   (ids,None,scopes)
@@ -849,12 +858,12 @@ let internalise sigma globalenv env allow_soapp lvar c =
     | CNotation (loc,ntn,args) ->
         intern_notation intern env loc ntn args
     | CPrim (loc, p) ->
-	let scopes = option_cons tmp_scope scopes in
-	let c,df = Notation.interp_prim_token loc p scopes in
+	let c,df = Notation.interp_prim_token loc p (tmp_scope,scopes) in
 	if !dump then dump_notation_location (fst (unloc loc)) df;
 	c
     | CDelimiters (loc, key, e) ->
-	intern (ids,None,find_delimiters_scope loc key::scopes) e
+	let tmp_scope = ExplicitTmpScope (find_delimiters_scope loc key) in
+	intern (ids,Some tmp_scope,scopes) e
     | CAppExpl (loc, (isproj,ref), args) ->
         let (f,_,args_scopes,_) = intern_reference env lvar ref in
 	check_projection isproj (List.length args) f;
@@ -918,8 +927,7 @@ let internalise sigma globalenv env allow_soapp lvar c =
 
     | CDynamic (loc,d) -> RDynamic (loc,d)
 
-  and intern_type (ids,_,scopes) =
-    intern (ids,Some Notation.type_scope,scopes)
+  and intern_type env = intern (set_type_scope env)
 
   and intern_local_binder ((ids,ts,sc as env),bl) = function
     | LocalRawAssum(nal,ty) ->
@@ -1068,7 +1076,8 @@ let extract_ids env =
 let intern_gen isarity sigma env
                ?(impls=([],[])) ?(allow_soapp=false) ?(ltacvars=([],[]))
                c =
-  let tmp_scope = if isarity then Some Notation.type_scope else None in
+  let tmp_scope = 
+    if isarity then Some (LightTmpScope Notation.type_scope) else None in
   internalise sigma env (extract_ids env, tmp_scope,[])
     allow_soapp (ltacvars,Environ.named_context env, [], impls) c
 

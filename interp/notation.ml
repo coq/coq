@@ -130,6 +130,17 @@ let push_scope sc scopes = Scope sc :: scopes
 
 let push_scopes = List.fold_right push_scope
 
+type local_scopes = tmp_scope_name option * scope_name list
+
+let make_current_scopes (tmp_scope,scopes) =
+  match tmp_scope with
+  | Some (ExplicitTmpScope sc) -> 
+      if (* recursive *) false 
+      then push_scope sc (push_scopes scopes !scope_stack)
+      else [Scope sc]
+  | Some (LightTmpScope sc) -> push_scope sc (push_scopes scopes !scope_stack)
+  | None -> push_scopes scopes !scope_stack
+
 (**********************************************************************)
 (* Delimiters *)
 
@@ -146,7 +157,7 @@ let declare_delimiters scope key =
   scope_map := Gmap.add scope sc !scope_map;
   if Gmap.mem key !delimiters_map then begin
     let oldsc = Gmap.find key !delimiters_map in
-    Options.if_verbose warning ("Hidding binding of key "^key^" to "^oldsc)
+    Options.if_verbose warning ("Hiding binding of key "^key^" to "^oldsc)
   end;
   delimiters_map := Gmap.add key scope !delimiters_map
 
@@ -336,9 +347,9 @@ let find_prim_token g loc p sc =
   check_required_module loc sc spdir;
   g (interp ()), (dirpath (fst spdir),"")
 
-let interp_prim_token_gen g loc p scopes =
-  let all_scopes = push_scopes scopes !scope_stack in
-  try find_interpretation (find_prim_token g loc p) all_scopes
+let interp_prim_token_gen g loc p local_scopes =
+  let scopes = make_current_scopes local_scopes in
+  try find_interpretation (find_prim_token g loc p) scopes
   with Not_found ->
     user_err_loc (loc,"interp_prim_token",
     (match p with
@@ -351,8 +362,9 @@ let interp_prim_token =
 let interp_prim_token_cases_pattern loc p name =
   interp_prim_token_gen (cases_pattern_of_rawconstr name) loc p
 
-let rec interp_notation loc ntn scopes =
-  try find_interpretation (find_notation ntn) (push_scopes scopes !scope_stack) 
+let rec interp_notation loc ntn local_scopes =
+  let scopes = make_current_scopes local_scopes in
+  try find_interpretation (find_notation ntn) scopes
   with Not_found ->
     user_err_loc
     (loc,"",str ("Unknown interpretation for notation \""^ntn^"\""))
@@ -366,7 +378,7 @@ let uninterp_cases_pattern_notations c =
 let availability_of_notation (ntn_scope,ntn) scopes =
   let f scope =
     Gmap.mem ntn (Gmap.find scope !scope_map).notations in
-  find_without_delimiters f (ntn_scope,Some ntn) scopes
+  find_without_delimiters f (ntn_scope,Some ntn) (make_current_scopes scopes)
 
 let uninterp_prim_token c =
   try 
@@ -387,8 +399,9 @@ let uninterp_prim_token_cases_pattern c =
       | Some n -> (na,sc,n)
   with Not_found -> raise No_match
 
-let availability_of_prim_token printer_scope scopes =
+let availability_of_prim_token printer_scope local_scopes =
   let f scope = Hashtbl.mem prim_token_interpreter_tab scope in
+  let scopes = make_current_scopes local_scopes in
   option_map snd (find_without_delimiters f (Some printer_scope,None) scopes)
 
 (* Miscellaneous *)

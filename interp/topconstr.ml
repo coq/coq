@@ -480,8 +480,12 @@ and match_equations alp metas sigma (_,_,patl1,rhs1) (_,patl2,rhs2) =
 
 type scope_name = string
 
+type tmp_scope_name = 
+  | LightTmpScope of scope_name
+  | ExplicitTmpScope of scope_name
+
 type interpretation = 
-    (identifier * (scope_name option * scope_name list)) list * aconstr
+    (identifier * (tmp_scope_name option * scope_name list)) list * aconstr
 
 let match_aconstr c (metas_scl,pat) =
   let subst = match_ [] (List.map fst metas_scl) [] c pat in

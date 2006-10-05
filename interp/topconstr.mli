@@ -60,11 +60,16 @@ val eq_rawconstr : rawconstr -> rawconstr -> bool
 exception No_match
 
 type scope_name = string
+
+type tmp_scope_name = 
+  | LightTmpScope of scope_name
+  | ExplicitTmpScope of scope_name
+
 type interpretation = 
-    (identifier * (scope_name option * scope_name list)) list * aconstr
+    (identifier * (tmp_scope_name option * scope_name list)) list * aconstr
 
 val match_aconstr : rawconstr -> interpretation ->
-      (rawconstr * (scope_name option * scope_name list)) list
+      (rawconstr * (tmp_scope_name option * scope_name list)) list
 
 (*s Concrete syntax for terms *)
 
