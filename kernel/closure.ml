@@ -383,13 +383,17 @@ let defined_rels flags env =
 (*  else (0,[])*)
 
 
-let rec mind_equiv info kn1 kn2 = 
-  kn1 = kn2 ||
-	match (lookup_mind kn1 info.i_env).mind_equiv with
-	    Some kn1' -> mind_equiv info kn2 kn1'
-	  | None -> match (lookup_mind kn2 info.i_env).mind_equiv with
-		Some kn2' -> mind_equiv info kn2' kn1
-	      | None -> false
+let rec mind_equiv env (kn1,i1) (kn2,i2) =
+  let rec equiv kn1 kn2 =
+    kn1 = kn2 ||
+      match (lookup_mind kn1 env).mind_equiv with
+	  Some kn1' -> equiv kn2 kn1'
+	| None -> match (lookup_mind kn2 env).mind_equiv with
+	      Some kn2' -> equiv kn2' kn1
+	    | None -> false in
+  i1 = i2 && equiv kn1 kn2
+
+let mind_equiv_infos info = mind_equiv info.i_env
 
 let create mk_cl flgs env =
   { i_flags = flgs;

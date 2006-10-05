@@ -543,12 +543,12 @@ let rec adjust_local_defs loc = function
   | [], [] -> []
   | _ -> raise NotAdjustable
 
-let check_and_adjust_constructor ind cstrs = function 
+let check_and_adjust_constructor env ind cstrs = function 
   | PatVar _ as pat -> pat
   | PatCstr (loc,((_,i) as cstr),args,alias) as pat ->
       (* Check it is constructor of the right type *)
       let ind' = inductive_of_constructor cstr in
-      if ind' = ind then
+      if Closure.mind_equiv env ind' ind then
 	(* Check the constructor has the right number of args *)
 	let ci = cstrs.(i-1) in
 	let nb_args_constr = ci.cs_nargs in
@@ -1183,7 +1183,7 @@ let group_equations pb mind current cstrs mat =
       (fun eqn () ->
 	 let rest = remove_current_pattern eqn in
 	 let pat = current_pattern eqn in
-	 match check_and_adjust_constructor mind cstrs pat with 
+	 match check_and_adjust_constructor pb.env mind cstrs pat with 
 	   | PatVar (_,name) -> 
 	       (* This is a default clause that we expand *)
 	       for i=1 to Array.length cstrs do

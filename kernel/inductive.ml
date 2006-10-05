@@ -260,7 +260,7 @@ let type_case_branches env (ind,largs) pj c =
 let check_case_info env indsp ci =
   let (mib,mip) = lookup_mind_specif env indsp in
   if
-    (indsp <> ci.ci_ind) or
+    not (Closure.mind_equiv env indsp ci.ci_ind) or
     (mip.mind_nparams <> ci.ci_npar)
   then raise (TypeError(env,WrongCaseInfo(indsp,ci)))
 
