@@ -6,8 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Arith.
-Require Export Ring.
+Require Import Mult.
+Require Import Ring_base.
 Set Implicit Arguments.
 
 Ltac isnatcst t :=

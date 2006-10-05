@@ -10,7 +10,6 @@ Require Import Bool.
 Require Export Ring_theory.
 Require Export Ring_base.
 Require Import InitialRing.
-Require Import Ring_equiv.
 
 Lemma BoolTheory :
   ring_theory false true xorb andb xorb (fun b:bool => b) (eq(A:=bool)).
