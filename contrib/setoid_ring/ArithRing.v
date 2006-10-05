@@ -23,13 +23,22 @@ Ltac natcst t :=
   | _ => NotConstant
   end.
 
+Ltac Ss_to_add f acc :=
+  match f with
+  | S ?f1 => Ss_to_add f1 (S acc)
+  | _ => constr:(acc + f)%nat
+  end.
+
 Ltac natprering :=
   match goal with
     |- context C [S ?p] =>
     match p with
       O => fail 1 (* avoid replacing 1 with 1+0 ! *)
-    | S _ => fail 1
-    | _ => fold (1+p)%nat; natprering
+    | p => match isnatcst p with 
+           | true => fail 1
+           | false => let v := Ss_to_add p (S 0) in
+                         fold v; natprering
+           end
     end
   | _ => idtac
   end.
