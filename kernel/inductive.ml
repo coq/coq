@@ -364,7 +364,7 @@ let inductive_equiv env (kn1,i1) (kn2,i2) =
 let check_case_info env indsp ci =
   let (mib,mip) = lookup_mind_specif env indsp in
   if
-    (indsp <> ci.ci_ind) or
+    not (Closure.mind_equiv env indsp ci.ci_ind) or
     (mib.mind_nparams <> ci.ci_npar) or
     (mip.mind_consnrealdecls <> ci.ci_cstr_nargs)
   then raise (TypeError(env,WrongCaseInfo(indsp,ci)))

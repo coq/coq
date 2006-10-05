@@ -83,7 +83,8 @@ and conv_whd pb k whd1 whd2 cu =
 and conv_atom pb k a1 stk1 a2 stk2 cu =
   match a1, a2 with
   | Aind (kn1,i1), Aind(kn2,i2) ->
-      if i1 = i2 && mind_equiv !infos kn1 kn2 && compare_stack stk1 stk2 then
+      if mind_equiv_infos !infos (kn1,i1) (kn2,i2) && compare_stack stk1 stk2
+      then
 	conv_stack k stk1 stk2 cu
       else raise NotConvertible
   | Aid ik1, Aid ik2 -> 
