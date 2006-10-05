@@ -698,18 +698,45 @@ let ring_rewrite rl gl =
   let env = pf_env gl in
   let sigma = project gl in
   let e = find_ring_structure env sigma rl (pf_concl gl) None in
-  let rl =
-    match rl with
-        [] -> let (_,t1,t2) = dest_rel (pf_concl gl) in [t1;t2]
-      | _ -> rl in
-  let rl = List.fold_right
-    (fun x l -> lapp coq_cons [|e.ring_carrier;x;l|]) rl
-    (lapp coq_nil [|e.ring_carrier|]) in
-  let main_tac =
-    ltac_call ltac_setoid_ring_rewrite
-      (Tacexp e.ring_cst_tac::List.map carg [e.ring_lemma2;e.ring_req;rl]) in
+  tclTHEN (Tacinterp.eval_tactic e.ring_pre_tac)
+    (tclTHEN
+        (fun gl ->
+	    let rl = 
+	      match rl with
+		  [] -> let (_,t1,t2) = dest_rel (pf_concl gl) in [t1;t2]
+		| _ -> rl in
+	    let rl = List.fold_right
+	      (fun x l -> lapp coq_cons [|e.ring_carrier;x;l|]) rl
+	      (lapp coq_nil [|e.ring_carrier|]) in
+	      Tacinterp.eval_tactic 
+		(TacArg(
+		    TacCall(dummy_loc,
+			   (ArgArg(dummy_loc,
+				  Lazy.force ltac_setoid_ring_rewrite)),
+			   (Tacexp e.ring_cst_tac::
+			       List.map carg 
+			       [e.ring_lemma2; e.ring_req; rl])))) gl)
+	(Tacinterp.eval_tactic e.ring_post_tac)) gl
+(*
   Tacinterp.eval_tactic
-    (TacThen(e.ring_pre_tac,TacThen(main_tac,e.ring_post_tac))) gl
+    (TacThen
+	(e.ring_pre_tac,
+	TacThen
+	  (TacArg(TacCall(dummy_loc,
+            (ArgArg(dumm_loc, 
+	      fun gl ->
+		let rl = 
+		  match rl with
+		      [] -> let (_,t1,t2) = dest_rel (pf_concl gl) in [t1;t2]
+		    | _ -> rl in
+		let rl = List.fold_right
+		  (fun x l -> lapp coq_cons [|e.ring_carrier;x;l|]) rl
+		  (lapp coq_nil [|e.ring_carrier|]) in
+	      Lazy.force ltac_setoid_ring_rewrite
+		(Tacexp e.ring_cst_tac::
+		    List.map carg [e.ring_lemma2; e.ring_req; rl]) gl)))),
+	    e.ring_post_tac))) gl
+*)
 
 TACTIC EXTEND setoid_ring
   [ "ring" ] -> [ ring ]
