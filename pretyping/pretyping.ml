@@ -194,13 +194,6 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     | None -> j
     | Some t -> evd_comb2 (Coercion.inh_conv_coerce_to loc env) isevars j t
 
-  let inh_conv_coerce_to_tycon loc env isevars j = function
-    | None -> j
-    | Some t -> 
-    let (evd',z) = Coercion.inh_conv_coerce_to loc env !isevars j t in
-      isevars := evd';
-      z
-
   let push_rels vars env = List.fold_right push_rel vars env
 
   (*

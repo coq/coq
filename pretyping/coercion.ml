@@ -20,6 +20,7 @@ open Evarutil
 open Evarconv
 open Retyping
 open Evd
+open Termops
 
 module type S = sig
   (*s Coercions. *)
@@ -66,7 +67,12 @@ module Default = struct
   (* Typing operations dealing with coercions *)
   exception NoCoercion
 
-  let class_of1 env sigma t = class_of env sigma (nf_evar sigma t)
+  let whd_app_evar sigma t =
+    match kind_of_term t with
+      | App (f,l) -> mkApp (whd_evar sigma f,l)
+      | _ -> whd_evar sigma t
+
+  let class_of1 env sigma t = class_of env sigma (whd_app_evar sigma t)
 
   (* Here, funj is a coercion therefore already typed in global context *)
   let apply_coercion_args env argl funj =
@@ -120,7 +126,7 @@ module Default = struct
     let t = whd_betadeltaiota env (evars_of isevars) j.uj_type in
       match kind_of_term t with
 	| Prod (_,_,_) -> (isevars,j)
-	| Evar ev when not (is_defined_evar isevars ev) ->
+	| Evar ev ->
 	    let (isevars',t) = define_evar_as_arrow isevars ev in
 	      (isevars',{ uj_val = j.uj_val; uj_type = t })
 	| _ ->
@@ -135,7 +141,8 @@ module Default = struct
       let t,i1 = class_of1 env (evars_of isevars) j.uj_type in
       let p = lookup_path_to_sort_from i1 in
       let j1 = apply_coercion env p j t in 
-	(isevars,type_judgment env (j_nf_evar (evars_of isevars) j1))
+      let j2 = on_judgment_type (whd_evar (evars_of isevars)) j1 in
+        (isevars,type_judgment env j2)
     with Not_found ->
       error_not_a_type_loc loc env (evars_of isevars) j
 
@@ -166,7 +173,7 @@ module Default = struct
     in
       try (the_conv_x_leq env t' c1 isevars, v', t')
       with Reduction.NotConvertible -> raise NoCoercion
-  open Pp
+
   let rec inh_conv_coerce_to_fail loc env isevars v t c1 =
     try (the_conv_x_leq env t c1 isevars, v, t)
     with Reduction.NotConvertible ->
@@ -223,7 +230,7 @@ module Default = struct
 			       (evd'', option_map (fun v2' -> mkLambda (name, u1, v2')) v2',
 				mkProd (name, u1, t2')))
 		| _ -> raise NoCoercion))
-	
+
   (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
   let inh_conv_coerce_to loc env isevars cj (n, t) =
     match n with
@@ -236,8 +243,7 @@ module Default = struct
 		error_actual_type_loc loc env sigma cj t
 	  in
 	  let val' = match val' with Some v -> v | None -> assert(false) in
-	  let nf = nf_isevar evd' in
-	    (evd',{ uj_val = nf val'; uj_type = nf t })
+	    (evd',{ uj_val = val'; uj_type = t })
       | Some (init, cur) -> (isevars, cj)
       
     let inh_conv_coerces_to loc env (isevars : evar_defs) t (abs, t') = isevars
