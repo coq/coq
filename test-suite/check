@@ -134,16 +134,16 @@ test_complexity() {
 
 # Programme principal
 
-#echo "Success tests"
-#test_success success
-#echo "Failure tests"
-#test_failure failure
-#echo "Output tests"
-#test_output output
-#echo "Parser tests"
-#test_parser parser
-#echo "Interactive tests"
-#test_interactive interactive
+echo "Success tests"
+test_success success
+echo "Failure tests"
+test_failure failure
+echo "Output tests"
+test_output output
+echo "Parser tests"
+test_parser parser
+echo "Interactive tests"
+test_interactive interactive
 echo "Complexity tests"
 test_complexity complexity
 echo "Module tests"
