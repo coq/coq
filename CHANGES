@@ -15,6 +15,9 @@ Changes from V8.1beta to V8.1
 - [rewrite ... in H] now fails if [H] is used either in an hypothesis
   or in the goal. 
 - The semantics of [rewrite ... in *] has been slightly modified (see doc). 
+- Support for "as" clause in tactic injection
+- Fix for notations involving basic "match" expressions
+- Numerous reported bugs solved (some of them leading to incompatibilities)
 
 
 Changes from V8.0 to V8.1beta
