@@ -33,8 +33,6 @@ val infer_local_decls :
 
 val assumption_of_judgment :  env -> unsafe_judgment -> types
 val type_judgment          :  env -> unsafe_judgment -> unsafe_type_judgment
-val on_judgment_type       :  
-  (types -> types) -> unsafe_judgment -> unsafe_judgment
 
 (*s Type of sorts. *)
 val judge_of_prop_contents : contents -> unsafe_judgment

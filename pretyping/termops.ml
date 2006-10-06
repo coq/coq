@@ -1020,3 +1020,9 @@ let rec rename_bound_var env l c =
   | Cast (c,k,t) -> mkCast (rename_bound_var env l c, k,t)
   | x -> c
 
+(* Combinators on judgments *)
+
+let on_judgment f j = { uj_val = f j.uj_val; uj_type = f j.uj_type }
+let on_judgment_value f j = { j with uj_val = f j.uj_val }
+let on_judgment_type f j = { j with uj_type = f j.uj_type }
+

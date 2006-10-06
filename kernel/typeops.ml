@@ -49,8 +49,6 @@ let assumption_of_judgment env j =
 
 let sort_judgment env j = (type_judgment env j).utj_type
 
-let on_judgment_type f j = { j with uj_type = f j.uj_type }
-
 (************************************************)
 (* Incremental typing rules: builds a typing judgement given the *)
 (* judgements for the subterms. *)
