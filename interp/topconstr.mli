@@ -61,9 +61,7 @@ exception No_match
 
 type scope_name = string
 
-type tmp_scope_name = 
-  | LightTmpScope of scope_name
-  | ExplicitTmpScope of scope_name
+type tmp_scope_name = scope_name
 
 type interpretation = 
     (identifier * (tmp_scope_name option * scope_name list)) list * aconstr

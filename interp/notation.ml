@@ -133,13 +133,7 @@ let push_scopes = List.fold_right push_scope
 type local_scopes = tmp_scope_name option * scope_name list
 
 let make_current_scopes (tmp_scope,scopes) =
-  match tmp_scope with
-  | Some (ExplicitTmpScope sc) -> 
-      if (* recursive *) false 
-      then push_scope sc (push_scopes scopes !scope_stack)
-      else [Scope sc]
-  | Some (LightTmpScope sc) -> push_scope sc (push_scopes scopes !scope_stack)
-  | None -> push_scopes scopes !scope_stack
+  option_fold_right push_scope tmp_scope (push_scopes scopes !scope_stack)
 
 (**********************************************************************)
 (* Delimiters *)

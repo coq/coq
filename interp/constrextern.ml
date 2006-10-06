@@ -360,9 +360,6 @@ let make_pat_notation loc ntn l =
     (fun (loc,p) -> CPatPrim (loc,p))
     destPatPrim l
 
-let find_arguments_scope ref =
-  List.map (option_map (fun sc -> LightTmpScope sc)) (find_arguments_scope ref)
-
 let bind_env sigma var v =
   try
     let vvar = List.assoc var sigma in
@@ -445,9 +442,7 @@ and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
               | None -> raise No_match
                   (* Uninterpretation is allowed in current context *)
 	      | Some (scopt,key) ->
-	          let scopes' =
-		    if (* recursive *) false then option_cons scopt scopes
-		    else scopes in
+	          let scopes' = option_cons scopt scopes in
 	          let l =
 		    List.map (fun (c,(scopt,scl)) ->
 		      extern_cases_pattern_in_scope (scopt,scl@scopes') vars c)
@@ -755,7 +750,7 @@ let rec extern inctx scopes vars r =
   | RDynamic (loc,d) -> CDynamic (loc,d)
 
 and extern_typ (_,scopes) = 
-  extern true (Some (LightTmpScope (Notation.type_scope)),scopes)
+  extern true (Some Notation.type_scope,scopes)
 
 and sub_extern inctx (_,scopes) = extern inctx (None,scopes)
 
@@ -823,9 +818,7 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
               | None -> raise No_match
                   (* Uninterpretation is allowed in current context *)
 	      | Some (scopt,key) ->
-	          let scopes' =
-		    if (* recursive *) false then option_cons scopt scopes
-		    else scopes in
+	          let scopes' = option_cons scopt scopes in
 	          let l =
 		    List.map (fun (c,(scopt,scl)) ->
 		      extern (* assuming no overloading: *) true
@@ -866,7 +859,7 @@ let extern_constr_gen at_top scopt env t =
   extern (not at_top) (scopt,[]) vars r
 
 let extern_constr_in_scope at_top scope env t =
-  extern_constr_gen at_top (Some (ExplicitTmpScope scope)) env t
+  extern_constr_gen at_top (Some scope) env t
 
 let extern_constr at_top env t =
   extern_constr_gen at_top None env t

@@ -480,9 +480,7 @@ and match_equations alp metas sigma (_,_,patl1,rhs1) (_,patl2,rhs2) =
 
 type scope_name = string
 
-type tmp_scope_name = 
-  | LightTmpScope of scope_name
-  | ExplicitTmpScope of scope_name
+type tmp_scope_name = scope_name
 
 type interpretation = 
     (identifier * (tmp_scope_name option * scope_name list)) list * aconstr
