@@ -194,6 +194,13 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     | None -> j
     | Some t -> evd_comb2 (Coercion.inh_conv_coerce_to loc env) isevars j t
 
+  let inh_conv_coerce_to_tycon loc env isevars j = function
+    | None -> j
+    | Some t -> 
+    let (evd',z) = Coercion.inh_conv_coerce_to loc env !isevars j t in
+      isevars := evd';
+      z
+
   let push_rels vars env = List.fold_right push_rel vars env
 
   (*
@@ -244,6 +251,9 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     let ccl = lift 1 (decomp n pj.uj_val) in
     let ccl' = mkLambda (Anonymous, ind, ccl) in
       {uj_val=lam_it ccl' sign; uj_type=prod_it s' sign} 
+
+  let evar_kind_of_term sigma c =
+    kind_of_term (whd_evar (Evd.evars_of sigma) c)
 
   (*************************************************************************)
   (* Main pretyping function                                               *)
@@ -375,10 +385,9 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		  | Prod (na,c1,c2) ->
 		      let hj = pretype (mk_tycon c1) env isevars lvar c in
 		      let value, typ = applist (j_val resj, [j_val hj]), subst1 hj.uj_val c2 in
-		      let typ' = nf_isevar !isevars typ in
 			apply_rec env (n+1) 
-			  { uj_val = nf_isevar !isevars value;
-			    uj_type = typ' }
+			  { uj_val = value;
+			    uj_type = typ }
 			  rest
 		  | _ ->
 		      let hj = pretype empty_tycon env isevars lvar c in
@@ -386,15 +395,19 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 			  (join_loc floc argloc) env (evars_of !isevars)
 	      		  resj [hj]
 	in
-	let resj = j_nf_evar (evars_of !isevars) (apply_rec env 1 fj args) in
+	let resj = apply_rec env 1 fj args in
 	let resj =
-	  match kind_of_term resj.uj_val with
-	  | App (f,args) when isInd f ->
-	      let sigma = evars_of !isevars in
-	      let t = Retyping.type_of_inductive_knowing_parameters env sigma (destInd f) args in
-	      let s = snd (splay_arity env sigma t) in
-	      on_judgment_type (set_inductive_level env s) resj
+	  match evar_kind_of_term !isevars resj.uj_val with
+	  | App (f,args) ->
+              begin match evar_kind_of_term !isevars f with
+              | Ind ind ->
+	          let sigma = evars_of !isevars in
+                  let args = Array.map (nf_evar sigma) args in
+	          let t = Retyping.type_of_inductive_knowing_parameters env sigma ind args in
+	          let s = snd (splay_arity env sigma t) in
+	          on_judgment_type (set_inductive_level env s) resj
 		(* Rem: no need to send sigma: no head evar, it's an arity *)
+              | _ -> resj end
 	  | _ -> resj in
 	inh_conv_coerce_to_tycon loc env isevars resj tycon
 
@@ -455,7 +468,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		 | Some p ->
 		     let env_p = push_rels psign env in
 		     let pj = pretype_type empty_valcon env_p isevars lvar p in
-		     let ccl = nf_evar (evars_of !isevars) pj.utj_val in
+		     let ccl = nf_isevar !isevars pj.utj_val in
 		     let psign = make_arity_signature env true indf in (* with names *)
 		     let p = it_mkLambda_or_LetIn ccl psign in
 		     let inst = 
@@ -475,7 +488,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		     let tycon = lift_tycon cs.cs_nargs tycon in
 		     let fj = pretype tycon env_f isevars lvar d in
 		     let f = it_mkLambda_or_LetIn fj.uj_val fsign in
-		     let ccl = nf_evar (evars_of !isevars) fj.uj_type in
+		     let ccl = nf_isevar !isevars fj.uj_type in
 		     let ccl =
 		       if noccur_between 1 cs.cs_nargs ccl then
 			 lift (- cs.cs_nargs) ccl 
