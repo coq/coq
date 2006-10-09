@@ -399,6 +399,10 @@ let is_operator s =
    s.[0] = '-' or s.[0] = '/' or s.[0] = '<' or s.[0] = '>' or
    s.[0] = '@' or s.[0] = '\\' or s.[0] = '&' or s.[0] = '~')
 
+let is_prod_ident = function
+  | Terminal s when is_letter s.[0] or s.[0] = '_' -> true
+  | _ -> false
+
 let rec is_non_terminal = function
   | NonTerminal _ | SProdList _ -> true
   | _ -> false
@@ -437,10 +441,11 @@ let make_hunks etyps symbols from =
 	  else 
 	    UnpTerminal s :: add_break 1 (make NoBreak prods)
 	else if is_ident_tail s.[String.length s - 1] then
+	  let sep = if is_prod_ident (List.hd prods) then "" else " " in
 	  if ws = CanBreak then
-	    add_break 1 (UnpTerminal (s^" ") :: make CanBreak prods)
+	    add_break 1 (UnpTerminal (s^sep) :: make CanBreak prods)
 	  else
-	    UnpTerminal (s^" ") :: make CanBreak prods
+	    UnpTerminal (s^sep) :: make CanBreak prods
 	else if ws = CanBreak then
 	  add_break 1 (UnpTerminal (s^" ") :: make CanBreak prods)
 	else
