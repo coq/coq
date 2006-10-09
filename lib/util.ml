@@ -737,6 +737,10 @@ let option_fold_left2 f e a b = match (a,b) with
   | Some x, Some y -> f e x y
   | _ -> e
 
+let option_fold_left f e a = match a with
+  | Some x -> f e x
+  | _ -> e
+
 let option_fold_right f a e = match a with
   | Some x -> f x e
   | _ -> e
