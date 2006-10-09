@@ -405,7 +405,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
     match availability_of_prim_token sc scopes with
     | None -> raise No_match
     | Some key ->
-      let loc = pattern_loc pat in
+      let loc = cases_pattern_loc pat in
       insert_pat_alias loc (insert_pat_delimiters loc (CPatPrim(loc,p)) key) na
   with No_match ->
   try 
@@ -754,7 +754,11 @@ and extern_typ (_,scopes) =
 
 and sub_extern inctx (_,scopes) = extern inctx (None,scopes)
 
-and factorize_prod scopes vars aty = function
+and factorize_prod scopes vars aty c =
+  try 
+    if !Options.raw_print or !print_no_symbol then raise No_match;
+    ([],extern_symbol scopes vars c (uninterp_notations c))
+  with No_match -> match c with
   | RProd (loc,(Name id as na),ty,c)
       when same aty (extern_typ scopes vars (anonymize_if_reserved na ty))
 	& not (occur_var_constr_expr id aty) (* avoid na in ty escapes scope *)
@@ -762,7 +766,11 @@ and factorize_prod scopes vars aty = function
            ((loc,Name id)::nal,c)
   | c -> ([],extern_typ scopes vars c)
 
-and factorize_lambda inctx scopes vars aty = function
+and factorize_lambda inctx scopes vars aty c =
+  try 
+    if !Options.raw_print or !print_no_symbol then raise No_match;
+    ([],extern_symbol scopes vars c (uninterp_notations c))
+  with No_match -> match c with
   | RLambda (loc,na,ty,c)
       when same aty (extern_typ scopes vars (anonymize_if_reserved na ty))
 	& not (occur_name na aty) (* To avoid na in ty' escapes scope *)

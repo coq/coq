@@ -28,6 +28,23 @@ Check forall n:nat, 0=0.
 End A.
 
 (**********************************************************************)
+(* Behaviour wrt to binding variables (cf bug report #1186)           *)
+
+Section B.
+
+Notation "# A" := (forall n:nat, n=n->A) (at level 60).
+Check forall n:nat, # (n=n).
+
+Notation "## A" := (forall n n0:nat, n=n0->A) (at level 60).
+Check forall n n0:nat, ## (n=n0).
+
+Notation "### A" :=
+ (forall n n0:nat, match n with O => True | S n => n=n0 end ->A) (at level 60).
+Check forall n n0:nat, ### (n=n0).
+
+End B.
+
+(**********************************************************************)
 (* Conflict between notation and notation below coercions             *)
 
 (* Case of a printer conflict *)

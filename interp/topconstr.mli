@@ -35,7 +35,7 @@ type aconstr =
   | ALetIn of name * aconstr * aconstr
   | ACases of aconstr option *
       (aconstr * (name * (inductive * int * name list) option)) list *
-      (identifier list * cases_pattern list * aconstr) list
+      (cases_pattern list * aconstr) list
   | ALetTuple of name list * (name * aconstr option) * aconstr * aconstr
   | AIf of aconstr * (name * aconstr option) * aconstr * aconstr
   | ASort of rawsort
@@ -43,20 +43,36 @@ type aconstr =
   | APatVar of patvar
   | ACast of aconstr * cast_type * aconstr
 
+(**********************************************************************)
+(* Translate a rawconstr into a notation given the list of variables  *)
+(* bound by the notation; also interpret recursive patterns           *) 
+
+val aconstr_of_rawconstr : identifier list -> rawconstr -> aconstr
+
+(* Name of the special identifier used to encode recursive notations  *)
+val ldots_var : identifier
+
+(* Equality of rawconstr (warning: only partially implemented) *)
+val eq_rawconstr : rawconstr -> rawconstr -> bool
+
+(**********************************************************************)
+(* Re-interpret a notation as a rawconstr, taking care of binders     *)
+
 val rawconstr_of_aconstr_with_binders : loc -> 
-  (identifier -> 'a -> identifier * 'a) ->
+  ('a -> identifier -> 'a * identifier) ->
   ('a -> aconstr -> rawconstr) -> 'a -> aconstr -> rawconstr
 
 val rawconstr_of_aconstr : loc -> aconstr -> rawconstr
 
-val subst_aconstr : substitution -> Names.identifier list -> aconstr -> aconstr
+(**********************************************************************)
+(* Substitution of kernel names, avoiding a list of bound identifiers *)
 
-val aconstr_of_rawconstr : identifier list -> rawconstr -> aconstr
+val subst_aconstr : substitution -> identifier list -> aconstr -> aconstr
 
-val eq_rawconstr : rawconstr -> rawconstr -> bool
+(**********************************************************************)
+(* [match_aconstr metas] matches a rawconstr against an aconstr with  *)
+(* metavariables in [metas]; raise [No_match] if the matching fails   *)
 
-(* [match_aconstr metas] match a rawconstr against an aconstr with
-   metavariables in [metas]; it raises [No_match] if the matching fails *)
 exception No_match
 
 type scope_name = string
@@ -69,7 +85,8 @@ type interpretation =
 val match_aconstr : rawconstr -> interpretation ->
       (rawconstr * (tmp_scope_name option * scope_name list)) list
 
-(*s Concrete syntax for terms *)
+(**********************************************************************)
+(*s Concrete syntax for terms                                         *)
 
 type notation = string
 
@@ -131,18 +148,21 @@ and local_binder =
   | LocalRawDef of name located * constr_expr
   | LocalRawAssum of name located list * constr_expr
 
+(**********************************************************************)
+(* Utilities on constr_expr                                           *)
 
 val constr_loc : constr_expr -> loc
 
-val cases_pattern_loc : cases_pattern_expr -> loc
+val cases_pattern_expr_loc : cases_pattern_expr -> loc
 
 val replace_vars_constr_expr :
   (identifier * identifier) list -> constr_expr -> constr_expr
 
+val free_vars_of_constr_expr : constr_expr -> Idset.t
 val occur_var_constr_expr : identifier -> constr_expr -> bool
 
 (* Specific function for interning "in indtype" syntax of "match" *)
-val names_of_cases_indtype : constr_expr -> identifier list
+val ids_of_cases_indtype : constr_expr -> identifier list
 
 val mkIdentC : identifier -> constr_expr
 val mkRefC : reference -> constr_expr
@@ -175,10 +195,11 @@ val names_of_local_binders : local_binder list -> name located list
 (* in pattern-matching clauses and in binders of the form [x,y:T(x)] *)
 
 val map_constr_expr_with_binders :
-  ('a -> constr_expr -> constr_expr) ->
-      (identifier -> 'a -> 'a) -> 'a -> constr_expr -> constr_expr
+  (identifier -> 'a -> 'a) -> ('a -> constr_expr -> constr_expr) ->
+      'a -> constr_expr -> constr_expr
 
-(* Concrete syntax for modules and modules types *)
+(**********************************************************************)
+(* Concrete syntax for modules and module types                       *)
 
 type with_declaration_ast = 
   | CWith_Module of identifier list located * qualid located
@@ -191,6 +212,3 @@ type module_type_ast =
 type module_ast = 
   | CMEident of qualid located
   | CMEapply of module_ast * module_ast
-
-(* Special identifier to encode recursive notations *)
-val ldots_var : identifier

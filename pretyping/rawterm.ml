@@ -26,7 +26,7 @@ type cases_pattern =
   | PatVar of loc * name
   | PatCstr of loc * constructor * cases_pattern list * name
 
-let pattern_loc = function
+let cases_pattern_loc = function
     PatVar(loc,_) -> loc
   | PatCstr(loc,_,_,_) -> loc
 

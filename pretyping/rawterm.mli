@@ -17,7 +17,8 @@ open Libnames
 open Nametab
 (*i*)
 
-(* Untyped intermediate terms, after ASTs and before constr. *)
+(**********************************************************************)
+(* The kind of patterns that occurs in "match ... with ... end"       *)
 
 (* locs here refers to the ident's location, not whole pat *)
 (* the last argument of PatCstr is a possible alias ident for the pattern *)
@@ -25,7 +26,13 @@ type cases_pattern =
   | PatVar of loc * name
   | PatCstr of loc * constructor * cases_pattern list * name
 
-val pattern_loc : cases_pattern -> loc
+val cases_pattern_loc : cases_pattern -> loc
+
+(**********************************************************************)
+(* Untyped intermediate terms, after constr_expr and before constr    *)
+(* Resolution of names, insertion of implicit arguments placeholder,  *)
+(* and notations are done, but coercions, inference of implicit       *)
+(* arguments and pattern-matching compilation are not                 *)
 
 type patvar = identifier
 

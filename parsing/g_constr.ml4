@@ -293,7 +293,7 @@ GEXTEND Gram
         (match p with
           | CPatAtom (_, Some r) -> CPatCstr (loc, r, lp)
           | _ -> Util.user_err_loc 
-              (cases_pattern_loc p, "compound_pattern",
+              (cases_pattern_expr_loc p, "compound_pattern",
                Pp.str "Constructor expected"))
       | p = pattern; "as"; id = ident ->
 	  CPatAlias (loc, p, id) ]

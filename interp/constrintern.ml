@@ -156,7 +156,7 @@ let loc_of_notation f loc args ntn =
   else snd (unloc (f (List.hd args)))
 
 let ntn_loc = loc_of_notation constr_loc
-let patntn_loc = loc_of_notation cases_pattern_loc
+let patntn_loc = loc_of_notation cases_pattern_expr_loc
 
 let dump_notation_location pos ((path,df),sc) =
   let rec next growing =
@@ -361,8 +361,8 @@ let rec has_duplicate = function
   | x::l -> if List.mem x l then (Some x) else has_duplicate l
 
 let loc_of_lhs lhs = 
- join_loc (cases_pattern_loc (List.hd (List.hd lhs)))
-          (cases_pattern_loc (list_last (list_last lhs)))
+ join_loc (cases_pattern_expr_loc (List.hd (List.hd lhs)))
+          (cases_pattern_expr_loc (list_last (list_last lhs)))
 
 let check_linearity lhs ids =
   match has_duplicate ids with
@@ -693,15 +693,20 @@ let extract_explicit_arg imps args =
 (**********************************************************************)
 (* Syntax extensions                                                  *)
 
-let traverse_binder subst id (ids,tmpsc,scopes as env) =
+let traverse_binder subst (renaming,(ids,tmpsc,scopes as env)) id =
   try
-    (* Binders bound in the notation are consider first-order object *)
-    (* and binders not bound in the notation do not capture variables *)
-    (* outside the notation *)
+    (* Binders bound in the notation are considered first-order objects *)
     let _,id' = coerce_to_id (fst (List.assoc id subst)) in
-    id', (Idset.add id' ids,tmpsc,scopes)
+    (renaming,(Idset.add id' ids,tmpsc,scopes)), id'
   with Not_found ->
-    id, env
+    (* Binders not bound in the notation do not capture variables *)
+    (* outside the notation (i.e. in the substitution) *)
+    let fvs1 = List.map (fun (_,(c,_)) -> free_vars_of_constr_expr c) subst in
+    let fvs2 = List.map snd renaming in
+    let fvs = List.flatten (List.map Idset.elements fvs1) @ fvs2 in
+    let id' = next_ident_away id fvs in
+    let renaming' = if id=id' then renaming else (id,id')::renaming in
+    (renaming',env), id'
 
 let decode_constrlist_value = function
   | CAppExpl (_,_,l) -> l
@@ -711,7 +716,7 @@ let rec subst_iterator y t = function
   | RVar (_,id) as x -> if id = y then t else x
   | x -> map_rawconstr (subst_iterator y t) x
 
-let rec subst_aconstr_in_rawconstr loc interp subst (ids,_,scopes as _env) =
+let rec subst_aconstr_in_rawconstr loc interp subst (renaming,(ids,_,scopes)) =
   function
   | AVar id ->
       begin
@@ -721,6 +726,9 @@ let rec subst_aconstr_in_rawconstr loc interp subst (ids,_,scopes as _env) =
 	  let (a,(scopt,subscopes)) = List.assoc id subst in
 	  interp (ids,scopt,subscopes@scopes) a
 	with Not_found -> 
+	try 
+	  RVar (loc,List.assoc id renaming)
+	with Not_found -> 
 	  (* Happens for local notation joint with inductive/fixpoint defs *)
 	  RVar (loc,id)
       end
@@ -729,27 +737,28 @@ let rec subst_aconstr_in_rawconstr loc interp subst (ids,_,scopes as _env) =
         (* All elements of the list are in scopes (scopt,subscopes) *)
 	let (a,(scopt,subscopes)) = List.assoc x subst in
         let termin = 
-          subst_aconstr_in_rawconstr loc interp subst (ids,None,scopes) 
-            terminator in
+          subst_aconstr_in_rawconstr loc interp subst 
+	    (renaming,(ids,None,scopes)) terminator in
         let l = decode_constrlist_value a in
 	List.fold_right (fun a t -> 
           subst_iterator ldots_var t
             (subst_aconstr_in_rawconstr loc interp 
               ((x,(a,(scopt,subscopes)))::subst)
-              (ids,None,scopes) iter))
+	      (renaming,(ids,None,scopes)) iter))
             (if lassoc then List.rev l else l) termin
       with Not_found -> 
           anomaly "Inconsistent substitution of recursive notation")
   | t ->
       rawconstr_of_aconstr_with_binders loc (traverse_binder subst)
-      (subst_aconstr_in_rawconstr loc interp subst) (ids,None,scopes) t
+      (subst_aconstr_in_rawconstr loc interp subst)
+      (renaming,(ids,None,scopes)) t
 
 let intern_notation intern (_,tmp_scope,scopes as env) loc ntn args =
   let ntn,args = contract_notation ntn args in
   let ((ids,c),df) = Notation.interp_notation loc ntn (tmp_scope,scopes) in
   if !dump then dump_notation_location (ntn_loc loc args ntn) df;
   let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids args in
-  subst_aconstr_in_rawconstr loc intern subst env c
+  subst_aconstr_in_rawconstr loc intern subst ([],env) c
 
 let set_type_scope (ids,tmp_scope,scopes) =
   (ids,Some Notation.type_scope,scopes)
@@ -962,7 +971,7 @@ let internalise sigma globalenv env allow_soapp lvar c =
     let tm' = intern env tm in
     let ids,typ = match t with
     | Some t -> 
-	let tids = names_of_cases_indtype t in
+	let tids = ids_of_cases_indtype t in
 	let tids = List.fold_right Idset.add tids Idset.empty in
 	let t = intern_type (tids,None,scopes) t in
 	let loc,ind,l = match t with

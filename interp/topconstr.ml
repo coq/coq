@@ -39,17 +39,24 @@ type aconstr =
   | ALetIn of name * aconstr * aconstr
   | ACases of aconstr option *
       (aconstr * (name * (inductive * int * name list) option)) list *
-      (identifier list * cases_pattern list * aconstr) list
+      (cases_pattern list * aconstr) list
   | ALetTuple of name list * (name * aconstr option) * aconstr * aconstr
   | AIf of aconstr * (name * aconstr option) * aconstr * aconstr
   | ASort of rawsort
   | AHole of Evd.hole_kind
   | APatVar of patvar
   | ACast of aconstr * cast_type * aconstr
-  
-let name_app f e = function
-  | Name id -> let (id, e) = f id e in (e, Name id)
-  | Anonymous -> e,Anonymous
+
+(**********************************************************************)
+(* Re-interpret a notation as a rawconstr, taking care of binders     *)
+
+let rec cases_pattern_fold_map loc g e = function
+  | PatVar (_,na) ->
+      let e',na' = name_fold_map g e na in e', PatVar (loc,na')
+  | PatCstr (_,cstr,patl,na) ->
+      let e',na' = name_fold_map g e na in
+      let e',patl' = list_fold_map (cases_pattern_fold_map loc g) e patl in
+      e', PatCstr (loc,cstr,patl',na')
 
 let rec subst_rawvars l = function
   | RVar (_,id) as r -> (try List.assoc id l with Not_found -> r)
@@ -67,32 +74,33 @@ let rawconstr_of_aconstr_with_binders loc g f e = function
       let outerl = (ldots_var,inner)::(if swap then [x,RVar(loc,y)] else []) in
       subst_rawvars outerl it
   | ALambda (na,ty,c) ->
-      let e,na = name_app g e na in RLambda (loc,na,f e ty,f e c)
+      let e,na = name_fold_map g e na in RLambda (loc,na,f e ty,f e c)
   | AProd (na,ty,c) ->
-      let e,na = name_app g e na in RProd (loc,na,f e ty,f e c)
+      let e,na = name_fold_map g e na in RProd (loc,na,f e ty,f e c)
   | ALetIn (na,b,c) ->
-      let e,na = name_app g e na in RLetIn (loc,na,f e b,f e c)
+      let e,na = name_fold_map g e na in RLetIn (loc,na,f e b,f e c)
   | ACases (rtntypopt,tml,eqnl) ->
       let e',tml' = List.fold_right (fun (tm,(na,t)) (e',tml') ->
 	let e',t' = match t with
 	| None -> e',None
 	| Some (ind,npar,nal) -> 
 	  let e',nal' = List.fold_right (fun na (e',nal) -> 
-	      let e',na' = name_app g e' na in e',na'::nal) nal (e',[]) in
+	      let e',na' = name_fold_map g e' na in e',na'::nal) nal (e',[]) in
 	  e',Some (loc,ind,npar,nal') in
-	let e',na' = name_app g e' na in
+	let e',na' = name_fold_map g e' na in
 	(e',(f e tm,(na',t'))::tml')) tml (e,[]) in
-      let fold id (idl,e) = let (id,e) = g id e in (id::idl,e) in
-      let eqnl' = List.map (fun (idl,pat,rhs) ->
-        let (idl,e) = List.fold_right fold idl ([],e) in
-	(loc,idl,pat,f e rhs)) eqnl in
+      let fold (idl,e) id = let (e,id) = g e id in ((id::idl,e),id) in
+      let eqnl' = List.map (fun (patl,rhs) ->
+	let ((idl,e),patl) =
+	  list_fold_map (cases_pattern_fold_map loc fold) ([],e) patl in
+	(loc,idl,patl,f e rhs)) eqnl in
       RCases (loc,option_map (f e') rtntypopt,tml',eqnl')
   | ALetTuple (nal,(na,po),b,c) ->
-      let e,nal = list_fold_map (name_app g) e nal in 
-      let e,na = name_app g e na in
+      let e,nal = list_fold_map (name_fold_map g) e nal in 
+      let e,na = name_fold_map g e na in
       RLetTuple (loc,nal,(na,option_map (f e) po),f e b,f e c)
   | AIf (c,(na,po),b1,b2) ->
-      let e,na = name_app g e na in
+      let e,na = name_fold_map g e na in
       RIf (loc,f e c,(na,option_map (f e) po),f e b1,f e b2)
   | ACast (c,k,t) -> RCast (loc,f e c, k,f e t)
   | ASort x -> RSort (loc,x)
@@ -102,17 +110,11 @@ let rawconstr_of_aconstr_with_binders loc g f e = function
 
 let rec rawconstr_of_aconstr loc x =
   let rec aux () x = 
-    rawconstr_of_aconstr_with_binders loc (fun id () -> (id,())) aux () x
+    rawconstr_of_aconstr_with_binders loc (fun () id -> ((),id)) aux () x
   in aux () x
 
-let rec subst_pat subst pat = 
-  match pat with
-  | PatVar _ -> pat
-  | PatCstr (loc,((kn,i),j),cpl,n) -> 
-      let kn' = subst_kn subst kn 
-      and cpl' = list_smartmap (subst_pat subst) cpl in
-        if kn' == kn && cpl' == cpl then pat else
-          PatCstr (loc,((kn',i),j),cpl',n)
+(****************************************************************************)
+(* Translating a rawconstr into a notation, interpreting recursive patterns *)
 
 let add_name r = function
   | Anonymous -> ()
@@ -179,9 +181,7 @@ let aconstr_and_vars_of_rawconstr a =
   | RProd (_,na,ty,c) -> add_name found na; AProd (na,aux ty,aux c)
   | RLetIn (_,na,b,c) -> add_name found na; ALetIn (na,aux b,aux c)
   | RCases (_,rtntypopt,tml,eqnl) ->
-      let f (_,idl,pat,rhs) =
-        found := idl@(!found);
-        (idl,pat,aux rhs) in
+      let f (_,idl,pat,rhs) = found := idl@(!found); (pat,aux rhs) in
       ACases (option_map aux rtntypopt,
         List.map (fun (tm,(na,x)) ->
 	  add_name found na;
@@ -246,8 +246,19 @@ let aconstr_of_rawconstr vars a =
   List.iter check_type vars;
   a
 
+(* Substitution of kernel names, avoiding a list of bound identifiers *)
+
 let aconstr_of_constr avoiding t =
  aconstr_of_rawconstr [] (Detyping.detype false avoiding [] t)
+
+let rec subst_pat subst pat = 
+  match pat with
+  | PatVar _ -> pat
+  | PatCstr (loc,((kn,i),j),cpl,n) -> 
+      let kn' = subst_kn subst kn 
+      and cpl' = list_smartmap (subst_pat subst) cpl in
+        if kn' == kn && cpl' == cpl then pat else
+          PatCstr (loc,((kn',i),j),cpl',n)
 
 let rec subst_aconstr subst bound raw =
   match raw with
@@ -265,22 +276,26 @@ let rec subst_aconstr subst bound raw =
 	  AApp(r',rl')
 
   | AList (id1,id2,r1,r2,b) -> 
-      let r1' = subst_aconstr subst bound r1 and r2' = subst_aconstr subst bound r2 in
+      let r1' = subst_aconstr subst bound r1
+      and r2' = subst_aconstr subst bound r2 in
 	if r1' == r1 && r2' == r2 then raw else
 	  AList (id1,id2,r1',r2',b)
 
   | ALambda (n,r1,r2) -> 
-      let r1' = subst_aconstr subst bound r1 and r2' = subst_aconstr subst bound r2 in
+      let r1' = subst_aconstr subst bound r1
+      and r2' = subst_aconstr subst bound r2 in
 	if r1' == r1 && r2' == r2 then raw else
 	  ALambda (n,r1',r2')
 
   | AProd (n,r1,r2) -> 
-      let r1' = subst_aconstr subst bound r1 and r2' = subst_aconstr subst bound r2 in
+      let r1' = subst_aconstr subst bound r1
+      and r2' = subst_aconstr subst bound r2 in
 	if r1' == r1 && r2' == r2 then raw else
 	  AProd (n,r1',r2')
 
   | ALetIn (n,r1,r2) -> 
-      let r1' = subst_aconstr subst bound r1 and r2' = subst_aconstr subst bound r2 in
+      let r1' = subst_aconstr subst bound r1 
+      and r2' = subst_aconstr subst bound r2 in
 	if r1' == r1 && r2' == r2 then raw else
 	  ALetIn (n,r1',r2')
 
@@ -295,11 +310,11 @@ let rec subst_aconstr subst bound raw =
 	  if a' == a && signopt' == signopt then x else (a',(n,signopt')))
         rl
       and branches' = list_smartmap 
-                        (fun (idl,cpl,r as branch) ->
+                        (fun (cpl,r as branch) ->
                            let cpl' = list_smartmap (subst_pat subst) cpl
                            and r' = subst_aconstr subst bound r in
                              if cpl' == cpl && r' == r then branch else
-                               (idl,cpl',r'))
+                               (cpl',r'))
                         branches
       in
         if rtntypopt' == rtntypopt && rtntypopt == rtntypopt' &
@@ -331,7 +346,8 @@ let rec subst_aconstr subst bound raw =
       Evd.InternalHole | Evd.TomatchTypeParameter _) -> raw
 
   | ACast (r1,k,r2) -> 
-      let r1' = subst_aconstr subst bound r1 and r2' = subst_aconstr subst bound r2 in
+      let r1' = subst_aconstr subst bound r1 
+      and r2' = subst_aconstr subst bound r2 in
 	if r1' == r1 && r2' == r2 then raw else
 	  ACast (r1',k,r2')
 
@@ -471,7 +487,7 @@ and match_binders alp metas na1 na2 sigma b1 b2 =
   let (alp,sigma) = match_names metas (alp,sigma) na1 na2 in
   match_ alp metas sigma b1 b2
 
-and match_equations alp metas sigma (_,_,patl1,rhs1) (_,patl2,rhs2) =
+and match_equations alp metas sigma (_,_,patl1,rhs1) (patl2,rhs2) =
   (* patl1 and patl2 have the same length because they respectively
      correspond to some tml1 and tml2 that have the same length *)
   let (alp,sigma) = 
@@ -606,7 +622,7 @@ let constr_loc = function
   | CDelimiters (loc,_,_) -> loc
   | CDynamic _ -> dummy_loc
 
-let cases_pattern_loc = function
+let cases_pattern_expr_loc = function
   | CPatAlias (loc,_,_) -> loc
   | CPatCstr (loc,_,_) -> loc
   | CPatAtom (loc,_) -> loc
@@ -619,35 +635,98 @@ let occur_var_constr_ref id = function
   | Ident (loc,id') -> id = id'
   | Qualid _ -> false
 
-let rec occur_var_constr_expr id = function
-  | CRef r -> occur_var_constr_ref id r
-  | CArrow (loc,a,b) -> occur_var_constr_expr id a or occur_var_constr_expr id b
-  | CAppExpl (loc,(_,r),l) ->
-      occur_var_constr_ref id r or List.exists (occur_var_constr_expr id) l
-  | CApp (loc,(_,f),l) ->
-      occur_var_constr_expr id f or
-      List.exists (fun (a,_) -> occur_var_constr_expr id a) l
-  | CProdN (_,l,b) -> occur_var_binders id b l
-  | CLambdaN (_,l,b) -> occur_var_binders id b l
-  | CLetIn (_,na,a,b) -> occur_var_binders id b [[na],a]
-  | CCast (loc,a,_,b) -> 
-    occur_var_constr_expr id a or occur_var_constr_expr id b
-  | CNotation (_,_,l) -> List.exists (occur_var_constr_expr id) l
-  | CDelimiters (loc,_,a) -> occur_var_constr_expr id a
-  | CHole _ | CEvar _ | CPatVar _ | CSort _ | CPrim _ | CDynamic _ -> false
-  | CCases (loc,_,_,_) 
-  | CLetTuple (loc,_,_,_,_) 
-  | CIf (loc,_,_,_,_) 
-  | CFix (loc,_,_) 
-  | CCoFix (loc,_,_) -> 
-      Pp.warning "Capture check in multiple binders not done"; false
+let ids_of_cases_indtype =
+  let add_var ids = function CRef (Ident (_,id)) -> id::ids | _ -> ids in
+  let rec vars_of = function
+    (* We deal only with the regular cases *)
+    | CApp (_,_,l) -> List.fold_left add_var [] (List.map fst l)
+    | CNotation (_,_,l)
+    (* assume the ntn is applicative and does not instantiate the head !! *)
+    | CAppExpl (_,_,l) -> List.fold_left add_var [] l
+    | CDelimiters(_,_,c) -> vars_of c
+    | _ -> [] in
+  vars_of
 
-and occur_var_binders id b = function
-  | (idl,a)::l -> 
-      occur_var_constr_expr id a or
-      (not (List.mem (Name id) (snd (List.split idl)))
-      & occur_var_binders id b l)
-  | [] -> occur_var_constr_expr id b
+let ids_of_cases_tomatch tms =
+  List.fold_right
+    (fun (_,(ona,indnal)) l ->
+      option_fold_right (fun t -> (@) (ids_of_cases_indtype t))
+      indnal (option_fold_right name_cons ona l))
+    tms []
+
+let is_constructor id =
+  try ignore (Nametab.extended_locate (make_short_qualid id)); true
+  with Not_found -> true
+ 
+let rec cases_pattern_fold_names f a = function
+  | CPatAlias (_,pat,id) -> f id a
+  | CPatCstr (_,_,patl) | CPatOr (_,patl) | CPatNotation (_,_,patl) ->
+      List.fold_left (cases_pattern_fold_names f) a patl
+  | CPatDelimiters (_,_,pat) -> cases_pattern_fold_names f a pat
+  | CPatAtom (_,Some (Ident (_,id))) when not (is_constructor id) -> f id a
+  | CPatPrim _ | CPatAtom _ -> a
+
+let ids_of_pattern_list =
+  List.fold_left (List.fold_left (cases_pattern_fold_names Idset.add))
+    Idset.empty
+
+let rec fold_constr_expr_binders g f n acc b = function
+  | (nal,t)::l ->
+      let nal = snd (List.split nal) in
+      let n' = List.fold_right (name_fold g) nal n in
+      f n (fold_constr_expr_binders g f n' acc b l) t
+  | [] ->
+      f n acc b
+
+let rec fold_local_binders g f n acc b = function
+  | LocalRawAssum (nal,t)::l ->
+      let nal = snd (List.split nal) in
+      let n' = List.fold_right (name_fold g) nal n in
+      f n (fold_local_binders g f n' acc b l) t
+  | LocalRawDef ((_,na),t)::l ->
+      f n (fold_local_binders g f (name_fold g na n) acc b l) t
+  | _ ->
+      f n acc b
+
+let fold_constr_expr_with_binders g f n acc = function
+  | CArrow (loc,a,b) -> f n (f n acc a) b
+  | CAppExpl (loc,(_,_),l) -> List.fold_left (f n) acc l
+  | CApp (loc,(_,t),l) -> List.fold_left (f n) (f n acc t) (List.map fst l)
+  | CProdN (_,l,b) | CLambdaN (_,l,b) -> fold_constr_expr_binders g f n acc b l
+  | CLetIn (_,na,a,b) -> fold_constr_expr_binders g f n acc b [[na],a]
+  | CCast (loc,a,_,b) -> f n (f n acc a) b
+  | CNotation (_,_,l) -> List.fold_left (f n) acc l
+  | CDelimiters (loc,_,a) -> f n acc a
+  | CHole _ | CEvar _ | CPatVar _ | CSort _ | CPrim _ | CDynamic _  | CRef _ ->
+      acc
+  | CCases (loc,rtnpo,al,bl) ->
+      let ids = ids_of_cases_tomatch al in
+      let acc = option_fold_left (f (List.fold_right g ids n)) acc rtnpo in
+      let acc = List.fold_left (f n) acc (List.map fst al) in
+      List.fold_right (fun (loc,patl,rhs) acc ->
+	let ids = ids_of_pattern_list patl in
+	f (Idset.fold g ids n) acc rhs) bl acc
+  | CLetTuple (loc,nal,(ona,po),b,c) ->
+      let n' = List.fold_right (name_fold g) nal n in
+      f (option_fold_right (name_fold g) ona n') (f n acc b) c
+  | CIf (_,c,(ona,po),b1,b2) ->
+      let acc = f n (f n (f n acc b1) b2) c in
+      option_fold_left (f (option_fold_right (name_fold g) ona n)) acc po
+  | CFix (loc,_,l) ->
+      let n' = List.fold_right (fun (id,_,_,_,_) -> g id) l n in
+      List.fold_right (fun (_,(_,o),lb,t,c) acc ->
+	fold_local_binders g f n' 
+	  (fold_local_binders g f n acc t lb) c lb) l acc
+  | CCoFix (loc,_,_) -> 
+      Pp.warning "Capture check in multiple binders not done"; acc
+
+let free_vars_of_constr_expr c = 
+  let rec aux bdvars l = function
+  | CRef (Ident (_,id)) -> if List.mem id bdvars then l else Idset.add id l
+  | c -> fold_constr_expr_with_binders (fun a l -> a::l) aux bdvars l c
+  in aux [] Idset.empty c
+
+let occur_var_constr_expr id c = Idset.mem id (free_vars_of_constr_expr c)
 
 let mkIdentC id  = CRef (Ident (dummy_loc, id))
 let mkRefC r     = CRef r
@@ -679,19 +758,6 @@ let coerce_to_id = function
 
 (* Used in correctness and interface *)
 
-
-let names_of_cases_indtype =
-  let add_var ids = function CRef (Ident (_,id)) -> id::ids | _ -> ids in
-  let rec vars_of = function
-    (* We deal only with the regular cases *)
-    | CApp (_,_,l) -> List.fold_left add_var [] (List.map fst l)
-    | CNotation (_,_,l)
-    (* assume the ntn is applicative and does not instantiate the head !! *)
-    | CAppExpl (_,_,l) -> List.fold_left add_var [] l
-    | CDelimiters(_,_,c) -> vars_of c
-    | _ -> [] in
-  vars_of
-
 let map_binder g e nal = List.fold_right (fun (_,na) -> name_fold g na) nal e
 
 let map_binders f g e bl =
@@ -710,7 +776,7 @@ let map_local_binders f g e bl =
   let (e,rbl) = List.fold_left h (e,[]) bl in
   (e, List.rev rbl)
 
-let map_constr_expr_with_binders f g e = function
+let map_constr_expr_with_binders g f e = function
   | CArrow (loc,a,b) -> CArrow (loc,f e a,f e b)
   | CAppExpl (loc,r,l) -> CAppExpl (loc,r,List.map (f e) l) 
   | CApp (loc,(p,a),l) -> 
@@ -728,18 +794,9 @@ let map_constr_expr_with_binders f g e = function
   | CCases (loc,rtnpo,a,bl) ->
       (* TODO: apply g on the binding variables in pat... *)
       let bl = List.map (fun (loc,pat,rhs) -> (loc,pat,f e rhs)) bl in
-      let e' = 
-	List.fold_right
-	  (fun (tm,(na,indnal)) e ->
-	    option_fold_right
-	      (fun t ->
-		let ids = names_of_cases_indtype t in
-		List.fold_right g ids)
-            indnal (option_fold_right (name_fold g) na e))
-	  a e
-      in
-      CCases (loc,option_map (f e') rtnpo,
-         List.map (fun (tm,x) -> (f e tm,x)) a,bl)
+      let ids = ids_of_cases_tomatch a in
+      let po = option_map (f (List.fold_right g ids e)) rtnpo in
+      CCases (loc, po, List.map (fun (tm,x) -> (f e tm,x)) a,bl)
   | CLetTuple (loc,nal,(ona,po),b,c) ->
       let e' = List.fold_right (name_fold g) nal e in
       let e'' = option_fold_right (name_fold g) ona e in
@@ -767,8 +824,8 @@ let map_constr_expr_with_binders f g e = function
 let rec replace_vars_constr_expr l = function
   | CRef (Ident (loc,id)) as x ->
       (try CRef (Ident (loc,List.assoc id l)) with Not_found -> x)
-  | c -> map_constr_expr_with_binders replace_vars_constr_expr 
-      (fun id l -> List.remove_assoc id l) l c
+  | c -> map_constr_expr_with_binders List.remove_assoc 
+           replace_vars_constr_expr l c
 
 (**********************************************************************)
 (* Concrete syntax for modules and modules types *)

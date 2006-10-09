@@ -178,7 +178,7 @@ let rec pr_patt sep inh p =
   | CPatPrim (_,p) -> pr_prim_token p, latom
   | CPatDelimiters (_,k,p) -> pr_delimiters k (pr_patt mt lsimple p), 1
   in
-  let loc = cases_pattern_loc p in
+  let loc = cases_pattern_expr_loc p in
   pr_with_comments loc
     (sep() ++ if prec_less prec inh then strm else surround strm)
 
