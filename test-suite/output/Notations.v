@@ -90,6 +90,8 @@ Check (1;2,4).
 
 (* Check basic notations involving "match" *)
 
+Section C.
+
 Notation "'ifzero' n" := (match n with 0 => true | S _ => false end)
   (at level 0, n at level 0).
 Check (ifzero 3).
@@ -99,6 +101,12 @@ Notation "'pred' n" := (match n with 0 => 0 | S n' => n' end)
 Check (pred 3).
 Check (fun n => match n with 0 => 0 | S n => n end).
 Check (fun n => match n with S p as x => p | y => 0 end).
+
+Notation "'ifn' x 'is' 'succ' n 'then' t 'else' u" := 
+  (match x with O => u | S n => t end) (at level 0, u at level 0).
+Check fun x => ifn x is succ n then n else 0.
+
+End C.
 
 (* Check correction of bug #1179 *)
 

@@ -38,6 +38,10 @@ fun n : nat => pred n
      : nat -> nat
 fun n : nat => pred n
      : nat -> nat
+Defining 'ifn' as keyword
+Defining 'is' as keyword
+fun x : nat => ifn x is succ n then n else 0
+     : nat -> nat
 1-
      : bool
 -4
