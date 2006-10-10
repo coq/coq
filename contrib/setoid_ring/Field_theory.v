@@ -198,6 +198,27 @@ apply (Radd_ext Reqe).
    transitivity (r2 * r3); auto.
 Qed.
 
+
+Theorem rdiv2b:
+ forall r1 r2 r3 r4 r5,
+ ~ (r2*r5) == 0 ->
+ ~ (r4*r5) == 0 ->
+ r1 / (r2*r5) + r3 / (r4*r5) == (r1 * r4 + r3 * r2) / (r2 * (r4 * r5)).
+Proof.
+intros r1 r2 r3 r4 r5 H H0.
+assert (HH1: ~ r2 == 0) by (intros HH; case H; rewrite HH; ring).
+assert (HH2: ~ r5 == 0) by (intros HH; case H; rewrite HH; ring).
+assert (HH3: ~ r4 == 0) by (intros HH; case H0; rewrite HH; ring).
+assert (HH4: ~ r2 * (r4 * r5) == 0) 
+   by complete (repeat apply field_is_integral_domain; trivial).
+apply rmul_reg_l with (r2 * (r4 * r5)); trivial.
+rewrite rdiv_simpl in |- *; trivial.
+rewrite (ARdistr_r Rsth Reqe ARth) in |- *.
+apply (Radd_ext Reqe).
+ transitivity ((r2 * r5) * (r1 / (r2 * r5)) * r4); [  ring | auto ].
+ transitivity ((r4 * r5) * (r3 / (r4 * r5)) * r2); [  ring | auto ].
+Qed.
+
 Theorem rdiv5: forall r1 r2,  - (r1 / r2) == - r1 / r2.
 intros r1 r2.
 transitivity (- (r1 * / r2)); auto.
@@ -217,6 +238,22 @@ transitivity (r1 / r2 + - r3 / r4); auto.
 transitivity ((r1 * r4 + - r3 * r2) / (r2 * r4)); auto.
 apply rdiv2; auto.
 apply SRdiv_ext; auto.
+transitivity (r1 * r4 + - (r3 * r2)); symmetry; auto.
+Qed.
+
+
+Theorem rdiv3b:
+ forall r1 r2 r3 r4 r5,
+ ~ (r2 * r5) == 0 ->
+ ~ (r4 * r5) == 0 ->
+ r1 / (r2*r5) - r3 / (r4*r5) == (r1 * r4 - r3 * r2) / (r2 * (r4 * r5)).
+Proof.
+intros r1 r2 r3 r4 r5 H H0.
+transitivity (r1 / (r2 * r5) + - (r3 / (r4 * r5))); auto.
+transitivity (r1 / (r2 * r5) + - r3 / (r4 * r5)); auto.
+transitivity ((r1 * r4 + - r3 * r2) / (r2 * (r4 * r5))).
+apply rdiv2b; auto; try ring.
+apply (SRdiv_ext); auto.
 transitivity (r1 * r4 + - (r3 * r2)); symmetry; auto.
 Qed.
 
@@ -547,24 +584,176 @@ Qed.
                                                                           
   ***************************************************************************)
 
-Fixpoint Fnorm (e : FExpr) : linear :=
+
+Fixpoint isIn (e1 e2: PExpr C) {struct e2}: option (PExpr C) :=
+  match e2 with
+  | PEmul e3 e4 =>
+       match isIn e1 e3 with
+         Some e5 => Some (NPEmul e5 e4)
+       | None => match isIn e1 e4 with
+                 | Some e5 => Some (NPEmul e3 e5)
+                 | None => None
+                 end
+       end
+  | _ =>
+       if PExpr_eq e1 e2 then Some (PEc cI) else None
+   end.
+
+Theorem isIn_correct: forall l e1 e2,
+  match isIn e1 e2 with 
+    (Some e3) => NPEeval l e2 == NPEeval l (NPEmul e1 e3)
+  |  _ => True
+  end.
+Proof.
+intros l e1 e2; elim e2; simpl; auto.
+  intros c;
+   generalize (PExpr_eq_semi_correct l e1 (PEc c));
+   case (PExpr_eq e1 (PEc c)); simpl; auto; intros H.
+   rewrite NPEmul_correct; simpl; auto.
+   rewrite H; auto; simpl. 
+   rewrite (morph1 CRmorph); rewrite (ARmul_1_r Rsth ARth); auto.
+  intros p;
+   generalize (PExpr_eq_semi_correct l e1 (PEX C p));
+   case (PExpr_eq e1 (PEX C p)); simpl; auto; intros H.
+   rewrite NPEmul_correct; simpl; auto.
+   rewrite H; auto; simpl. 
+   rewrite (morph1 CRmorph); rewrite (ARmul_1_r Rsth ARth); auto.
+ intros p Hrec p1 Hrec1.
+   generalize (PExpr_eq_semi_correct l e1 (PEadd p p1));
+   case (PExpr_eq e1 (PEadd p p1)); simpl; auto; intros H.
+   rewrite NPEmul_correct; simpl; auto.
+   rewrite H; auto; simpl. 
+   rewrite (morph1 CRmorph); rewrite (ARmul_1_r Rsth ARth); auto.
+ intros p Hrec p1 Hrec1.
+   generalize (PExpr_eq_semi_correct l e1 (PEsub p p1));
+   case (PExpr_eq e1 (PEsub p p1)); simpl; auto; intros H.
+   rewrite NPEmul_correct; simpl; auto.
+   rewrite H; auto; simpl. 
+   rewrite (morph1 CRmorph); rewrite (ARmul_1_r Rsth ARth); auto.
+ intros p; case (isIn e1 p).
+   intros p2 Hrec p1 Hrec1.
+   rewrite Hrec; auto; simpl. 
+   repeat (rewrite NPEmul_correct; simpl; auto).
+   intros _ p1; case (isIn e1 p1); auto.
+   intros p2 H; rewrite H.
+   repeat (rewrite NPEmul_correct; simpl; auto).
+   ring.
+  intros p;
+   generalize (PExpr_eq_semi_correct l e1 (PEopp p));
+   case (PExpr_eq e1 (PEopp p)); simpl; auto; intros H.
+   rewrite NPEmul_correct; simpl; auto.
+   rewrite H; auto; simpl. 
+   rewrite (morph1 CRmorph); rewrite (ARmul_1_r Rsth ARth); auto.
+Qed.
+
+Record rsplit : Type := mk_rsplit {
+   left : PExpr C;
+   common : PExpr C;
+   right : PExpr C}.
+
+
+Fixpoint split (e1 e2: PExpr C) {struct e1}: rsplit :=
+  match e1 with
+  | PEmul e3 e4 =>
+      let r1 := split e3 e2 in
+      let r2 := split e4 (right r1) in
+          mk_rsplit (NPEmul (left r1) (left r2))
+                    (NPEmul (common r1) (common r2))
+                    (right r2)
+  | _ => 
+       match isIn e1 e2 with
+         Some e3 => mk_rsplit (PEc cI) e1 e3
+       | None => mk_rsplit e1 (PEc cI) e2
+       end
+  end. 
+
+Theorem split_correct: forall l e1 e2,
+  NPEeval l e1 == NPEeval l (NPEmul (left (split e1 e2))
+                                   (common (split e1 e2)))
+/\
+  NPEeval l e2 == NPEeval l (NPEmul (right (split e1 e2))
+                                   (common (split e1 e2))).
+Proof.
+intros l e1; elim e1; simpl; auto.
+  intros c e2; generalize (isIn_correct l (PEc c) e2);
+    case (isIn (PEc c) e2); auto; intros p;
+    [intros Hp1; rewrite Hp1 | idtac];
+    simpl left; simpl common;  simpl right; auto;
+    repeat rewrite NPEmul_correct; simpl; split; 
+    try rewrite  (morph1 CRmorph); ring.
+  intros p e2; generalize (isIn_correct l (PEX C p) e2);
+    case (isIn (PEX C p) e2); auto; intros p1;
+    [intros Hp1; rewrite Hp1 | idtac];
+    simpl left; simpl common;  simpl right; auto;
+    repeat rewrite NPEmul_correct; simpl; split; 
+    try rewrite  (morph1 CRmorph); ring.
+  intros p1 _ p2 _ e2; generalize (isIn_correct l (PEadd p1 p2) e2);
+    case (isIn (PEadd p1 p2) e2); auto; intros p;
+    [intros Hp1; rewrite Hp1 | idtac];
+    simpl left; simpl common;  simpl right; auto;
+    repeat rewrite NPEmul_correct; simpl; split; 
+    try rewrite  (morph1 CRmorph); ring.
+  intros p1 _ p2 _ e2; generalize (isIn_correct l (PEsub p1 p2) e2);
+    case (isIn (PEsub p1 p2) e2); auto; intros p;
+    [intros Hp1; rewrite Hp1 | idtac];
+    simpl left; simpl common;  simpl right; auto;
+    repeat rewrite NPEmul_correct; simpl; split; 
+    try rewrite  (morph1 CRmorph); ring.
+  intros p1 Hp1 p2 Hp2 e2.
+    repeat rewrite NPEmul_correct; simpl; split.
+    case (Hp1 e2); case (Hp2 (right (split p1 e2))).
+    intros tmp1 _ tmp2 _; rewrite tmp1; rewrite tmp2.
+    repeat rewrite NPEmul_correct; simpl.
+    ring.
+    case (Hp1 e2); case (Hp2 (right (split p1 e2))).
+    intros _ tmp1 _ tmp2; rewrite tmp2;
+    repeat rewrite NPEmul_correct; simpl.
+    rewrite tmp1.
+    repeat rewrite NPEmul_correct; simpl.
+    ring.
+  intros p _ e2; generalize (isIn_correct l (PEopp p) e2);
+    case (isIn (PEopp p) e2); auto; intros p1;
+    [intros Hp1; rewrite Hp1 | idtac];
+    simpl left; simpl common;  simpl right; auto;
+    repeat rewrite NPEmul_correct; simpl; split; 
+    try rewrite  (morph1 CRmorph); ring.
+Qed.
+
+
+Theorem split_correct_l: forall l e1 e2,
+  NPEeval l e1 == NPEeval l (NPEmul (left (split e1 e2))
+                                   (common (split e1 e2))).
+Proof.
+intros l e1 e2; case (split_correct l e1 e2); auto.
+Qed.
+
+Theorem split_correct_r: forall l e1 e2,
+  NPEeval l e2 == NPEeval l (NPEmul (right (split e1 e2))
+                                   (common (split e1 e2))).
+Proof.
+intros l e1 e2; case (split_correct l e1 e2); auto.
+Qed.
+
+Fixpoint Fnorm (e : FExpr) : linear := 
   match e with
   | FEc c => mk_linear (PEc c) (PEc cI) nil
   | FEX x => mk_linear (PEX C x) (PEc cI) nil
   | FEadd e1 e2 =>
       let x := Fnorm e1 in
       let y := Fnorm e2 in
+      let s := split (denum x) (denum y) in
       mk_linear
-        (NPEadd (NPEmul (num x) (denum y)) (NPEmul (num y) (denum x)))
-        (NPEmul (denum x) (denum y))
+        (NPEadd (NPEmul (num x) (right s)) (NPEmul (num y) (left s)))
+        (NPEmul (left s) (NPEmul (right s) (common s)))
         (condition x ++ condition y)
+ 
   | FEsub e1 e2 =>
       let x := Fnorm e1 in
       let y := Fnorm e2 in
+      let s := split (denum x) (denum y) in
       mk_linear
-        (NPEsub (NPEmul (num x) (denum y))
-                (NPEmul (num y) (denum x)))
-        (NPEmul (denum x) (denum y))
+        (NPEsub (NPEmul (num x) (right s)) (NPEmul (num y) (left s)))
+        (NPEmul (left s) (NPEmul (right s) (common s)))
         (condition x ++ condition y)
   | FEmul e1 e2 =>
       let x := Fnorm e1 in
@@ -608,20 +797,26 @@ intros l e; elim e.
    rewrite NPEmul_correct in |- *.
    simpl in |- *.
    apply field_is_integral_domain.
-  apply Hrec1.
-    apply PCond_app_inv_l with (1 := Hcond).
-  apply Hrec2.
-    apply PCond_app_inv_r with (1 := Hcond).
+   intros HH; case Hrec1; auto.
+     apply PCond_app_inv_l with (1 := Hcond).
+   rewrite (split_correct_l l (denum (Fnorm e1)) (denum (Fnorm e2))).
+   rewrite NPEmul_correct; simpl; rewrite HH; ring.
+   intros HH; case Hrec2; auto.
+     apply PCond_app_inv_r with (1 := Hcond).
+   rewrite (split_correct_r l (denum (Fnorm e1)) (denum (Fnorm e2))); auto.
  intros e1 Hrec1 e2 Hrec2 Hcond.
    simpl condition in Hcond.
    simpl denum in |- *.
    rewrite NPEmul_correct in |- *.
    simpl in |- *.
    apply field_is_integral_domain.
-  apply Hrec1.
-    apply PCond_app_inv_l with (1 := Hcond).
-  apply Hrec2.
-    apply PCond_app_inv_r with (1 := Hcond).
+   intros HH; case Hrec1; auto.
+     apply PCond_app_inv_l with (1 := Hcond).
+   rewrite (split_correct_l l (denum (Fnorm e1)) (denum (Fnorm e2))).
+   rewrite NPEmul_correct; simpl; rewrite HH; ring.
+   intros HH; case Hrec2; auto.
+     apply PCond_app_inv_r with (1 := Hcond).
+   rewrite (split_correct_r l (denum (Fnorm e1)) (denum (Fnorm e2))); auto.
  intros e1 Hrec1 e2 Hrec2 Hcond.
    simpl condition in Hcond.
    simpl denum in |- *.
@@ -676,7 +871,13 @@ apply PCond_app_inv_r with ( 1 := HH ).
 rewrite (He1 HH1); rewrite (He2 HH2).
 rewrite NPEadd_correct; simpl.
 repeat rewrite NPEmul_correct; simpl.
-apply rdiv2; auto.
+generalize (split_correct_l l (denum (Fnorm e1)) (denum (Fnorm e2)))
+   (split_correct_r l (denum (Fnorm e1)) (denum (Fnorm e2))).
+repeat rewrite NPEmul_correct; simpl.
+intros U1 U2; rewrite U1; rewrite U2.
+apply rdiv2b; auto.
+  rewrite <- U1; auto.
+  rewrite <- U2; auto.
 
 intros e1 He1 e2 He2 HH.
 assert (HH1: PCond l (condition (Fnorm e1))).
@@ -686,7 +887,13 @@ apply PCond_app_inv_r with ( 1 := HH ).
 rewrite (He1 HH1); rewrite (He2 HH2).
 rewrite NPEsub_correct; simpl.
 repeat rewrite NPEmul_correct; simpl.
-apply rdiv3; auto.
+generalize (split_correct_l l (denum (Fnorm e1)) (denum (Fnorm e2)))
+   (split_correct_r l (denum (Fnorm e1)) (denum (Fnorm e2))).
+repeat rewrite NPEmul_correct; simpl.
+intros U1 U2; rewrite U1; rewrite U2.
+apply rdiv3b; auto.
+  rewrite <- U1; auto.
+  rewrite <- U2; auto.
 
 intros e1 He1 e2 He2 HH.
 assert (HH1: PCond l (condition (Fnorm e1))).
@@ -973,6 +1180,30 @@ Definition Pcond_simpl_complete :=
   fcons_correct _ PFcons2_fcons_inv.
 
 End Fcons_simpl.
+
+Let Mpc := MPcond_map cO cI cadd cmul csub copp ceqb.
+Let Mp := MPcond_dev rO rI radd rmul req cO cI ceqb phi.
+Let Subst := PNSubstL cO cI cadd cmul ceqb.
+
+(* simplification + rewriting *)
+Theorem Field_subst_correct :
+forall l ul fe m n,
+ PCond l (Fapp Fcons00 (condition (Fnorm fe)) BinList.nil) ->
+ Mp (Mpc ul) l ->
+ Peq ceqb (Subst (Nnorm (num (Fnorm fe))) (Mpc ul) m n) (Pc cO) = true ->
+ FEeval l fe == 0.
+intros l ul fe m n H H1 H2.
+assert (H3 := (Pcond_simpl_gen _ _ H)).
+apply eq_trans with (1 := Fnorm_FEeval_PEeval l fe 
+                           (Pcond_simpl_gen _ _ H)).
+apply rdiv8; auto.
+rewrite (PNSubstL_dev_ok Rsth Reqe ARth CRmorph m n
+              _ (num (Fnorm fe)) l H1).
+rewrite <-(Ring_polynom.Pphi_Pphi_dev Rsth Reqe ARth CRmorph).
+rewrite (fun x => Peq_ok Rsth Reqe CRmorph x (Pc cO)); auto.
+simpl; apply (morph0 CRmorph); auto.
+Qed.
+
 
 End AlmostField.
 
