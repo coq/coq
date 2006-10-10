@@ -552,7 +552,7 @@ let build_recursive (lnameargsardef:(fixpoint_expr * decl_notation) list) boxed 
 			 (str "Well-founded fixpoints not allowed in mutually recursive blocks"))
 	    lnameargsardef
 	in
-	  build_mutrec lnameargsardef boxed;
-	  assert(false)
+	  build_mutrec lnameargsardef boxed
+	  
       
       

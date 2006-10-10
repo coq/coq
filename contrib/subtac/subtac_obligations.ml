@@ -54,21 +54,6 @@ let _ =
         (fun () -> from_prg := ProgMap.empty);
       Summary.survive_module = false;
       Summary.survive_section = false }
-    
-let add_entry n e =
-  ppnl (str (string_of_id e.prg_name) ++ str " has type-checked, generating " ++ int (snd e.prg_obligations) ++ str " obligation(s)");
-  from_prg := ProgMap.add e.prg_name e !from_prg
-    
-let (theory_to_obj, obj_to_theory) = 
-  let cache_th (name,th) = add_entry name th
-  and export_th x = Some x in
-  declare_object
-    {(default_object "program-tcc") with
-      open_function = (fun i o -> if i=1 then cache_th o);
-      cache_function = cache_th;
-      subst_function = (fun _ -> assert(false));
-      classify_function = (fun (_,x) -> Dispose);
-      export_function = export_th }
 
 let declare_definition prg = 
   let obls_constrs = 
@@ -84,6 +69,31 @@ let declare_definition prg =
     prg.prg_name (DefinitionEntry ce,IsDefinition Definition)
   in
     Subtac_utils.definition_message prg.prg_name
+    
+let add_entry n e =
+  Options.if_verbose pp (str (string_of_id e.prg_name) ++ str " has type-checked");
+  let nobls = snd e.prg_obligations in
+    match nobls with
+	0 -> Options.if_verbose ppnl (str ".");
+	  declare_definition e
+      | 1 -> 
+	  Options.if_verbose ppnl (str ", generating one obligation");
+	  from_prg := ProgMap.add e.prg_name e !from_prg
+      | n -> 
+	  Options.if_verbose ppnl (str ", generating " ++ int n ++ str " obligations");
+	  from_prg := ProgMap.add e.prg_name e !from_prg
+	        
+let (theory_to_obj, obj_to_theory) = 
+  let cache_th (name,th) = add_entry name th
+  and export_th x = Some x in
+  declare_object
+    {(default_object "program-tcc") with
+      open_function = (fun i o -> if i=1 then cache_th o);
+      cache_function = cache_th;
+      subst_function = (fun _ -> assert(false));
+      classify_function = (fun (_,x) -> Dispose);
+      export_function = export_th }
+
 
 let error s = Util.error s
 

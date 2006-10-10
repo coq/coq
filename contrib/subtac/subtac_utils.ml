@@ -89,7 +89,7 @@ let my_print_tycon_type = Evarutil.pr_tycon_type
 
 let debug_level = 2
 
-let debug_on = false
+let debug_on = true
 
 let debug n s = 
   if debug_on then
