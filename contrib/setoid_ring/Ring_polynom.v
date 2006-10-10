@@ -8,7 +8,7 @@
 
 Set Implicit Arguments.
 Require Import Setoid.
-Require Export BinList.
+Require Import BinList.
 Require Import BinPos.
 Require Import BinInt.
 Require Export Ring_theory.

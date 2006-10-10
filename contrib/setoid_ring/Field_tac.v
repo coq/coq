@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Ring_tac Ring_polynom InitialRing.
+Require Import Ring_tac BinList Ring_polynom InitialRing.
 Require Export Field_theory.
 
  (* syntaxification *)
