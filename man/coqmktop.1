@@ -28,6 +28,44 @@ directly or through coqc(1), using the -image option.
 .BI \-h
 Help. List the available options.
 
+.TP
+.BI \-srcdir \ dir
+Specify where the Coq source files are
+
+.TP
+.BI \-o \ exec\-file
+Specify the name of the resulting toplevel
+
+.TP
+.B \-opt
+Compile in native code
+
+.TP
+.B \-full
+Link high level tactics
+
+.TP
+.B \-top
+Build Coq on a ocaml toplevel (incompatible with
+.BR \-opt )
+
+.TP
+.B \-searchisos
+Build a toplevel for SearchIsos
+
+.TP
+.B \-ide
+Build a toplevel for the Coq IDE
+
+.TP
+.BI \-R \ dir
+Specify recursively directories for Ocaml
+
+.TP
+.B \-v8
+Link with V8 grammar
+
+
 .SH SEE ALSO
 
 .BR coqtop (1),
