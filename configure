@@ -64,6 +64,8 @@ usage () {
     echo -e "\tAdd debugging information in the Coq executables\n"
     echo "-profile"
     echo -e "\tAdd profiling information in the Coq executables\n"
+    echo "-annotate"
+    echo -e "\tCompiles Coq with -dtypes option"
 }
 
 
@@ -81,6 +83,7 @@ camlp4oexec=camlp4o
 
 coq_debug_flag=
 coq_profile_flag=
+coq_annotate_flag=
 best_compiler=opt
 
 gcc_exec=gcc
@@ -190,6 +193,7 @@ while : ; do
     -byte-only|-byteonly|--byteonly|--byte-only) best_compiler=byte;;
     -debug|--debug) coq_debug_flag=-g;;
     -profile|--profile) coq_profile_flag=-p;;
+    -annotate|--annotate) coq_annotate_flag=-dtypes;;
     *) echo "Unknown option \"$1\"." 1>&2; usage; exit 2;;
   esac
   shift
@@ -279,7 +283,8 @@ case $camldir_spec in
 		    */) CAMLC="${CAMLC}"$bytecamlc;;
 		    *) CAMLC="${CAMLC}"/$bytecamlc;;
 		esac
-	esac;;
+	esac
+	CAMLBIN=`dirname "$CAMLC"`;;
     yes) CAMLC=$camldir/$bytecamlc
         
          CAMLBIN=`dirname "$CAMLC"`
@@ -694,6 +699,7 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|CAMLP4COMPATFLAGS|$CAMLP4COMPAT|" \
     -e "s|COQDEBUGFLAG|$coq_debug_flag|" \
     -e "s|COQPROFILEFLAG|$coq_profile_flag|" \
+    -e "s|CAMLANNOTATEFLAG|$coq_annotate_flag|" \
     -e "s|BESTCOMPILER|$best_compiler|" \
     -e "s|EXECUTEEXTENSION|$EXE|" \
     -e "s|BYTECAMLC|$bytecamlc|" \

@@ -26,7 +26,9 @@
 
 include config/Makefile
 
-NOARG:
+NOARG: world
+
+help:
 	@echo "Please use either"
 	@echo "   ./configure"
 	@echo "   make world"
@@ -35,6 +37,7 @@ NOARG:
 	@echo "or make archclean"
 	@echo
 	@echo "For make to be verbose, add VERBOSE=1"
+
 
 # build and install the three subsystems: coq, coqide, pcoq
 world: revision coq coqide pcoq
@@ -1582,6 +1585,19 @@ parsing/lexer.cmo: parsing/lexer.ml4
 	$(SHOW)'OCAMLC4   $<'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` pr_o.cmo -impl" -c -impl $<
 
+# pretty printing of the revision number when compiling a checked out
+# source tree
+.PHONY: revision
+
+revision:
+ifeq ($(CHECKEDOUT),1)
+	- /bin/rm -f revision
+	sed -ne '/url/s/^.*\/\([^\/]\+\)"$$/\1/p' .svn/entries > revision
+	sed -ne '/revision/s/^.*"\([0-9]\+\)".*$$/r\1/p' .svn/entries >> revision
+endif
+
+archclean::
+	/bin/rm -f revision
 
 
 ###########################################################################
@@ -1661,22 +1677,22 @@ archclean::
 clean:: archclean
 	rm -f *~ */*~ */*/*~
 	rm -f gmon.out core
-	rm -f config/*.cm[ioa]
-	rm -f lib/*.cm[ioa]
-	rm -f kernel/*.cm[ioa]
-	rm -f library/*.cm[ioa]
-	rm -f proofs/*.cm[ioa]
-	rm -f tactics/*.cm[ioa]
-	rm -f interp/*.cm[ioa]
-	rm -f parsing/*.cm[ioa] parsing/*.ppo
-	rm -f pretyping/*.cm[ioa]
-	rm -f toplevel/*.cm[ioa]
-	rm -f ide/*.cm[ioa]
-	rm -f ide/utils/*.cm[ioa]
-	rm -f tools/*.cm[ioa]
-	rm -f tools/*/*.cm[ioa]
-	rm -f scripts/*.cm[ioa]
-	rm -f dev/*.cm[ioa]
+	rm -f config/*.cm[ioa] config/*.annot
+	rm -f lib/*.cm[ioa] lib/*.annot
+	rm -f kernel/*.cm[ioa] kernel/*.annot
+	rm -f library/*.cm[ioa] library/*.annot
+	rm -f proofs/*.cm[ioa] proofs/*.annot
+	rm -f tactics/*.cm[ioa] tactics/*.annot
+	rm -f interp/*.cm[ioa] interp/*.annot
+	rm -f parsing/*.cm[ioa] parsing/*.ppo parsing/*.annot
+	rm -f pretyping/*.cm[ioa] pretyping/*.annot
+	rm -f toplevel/*.cm[ioa] toplevel/*.annot
+	rm -f ide/*.cm[ioa] ide/*.annot
+	rm -f ide/utils/*.cm[ioa] ide/utils/*.annot
+	rm -f tools/*.cm[ioa] tools/*.annot
+	rm -f tools/*/*.cm[ioa] tools/*/*.annot
+	rm -f scripts/*.cm[ioa] scripts/*.annot
+	rm -f dev/*.cm[ioa] dev/*.annot
 	rm -f */*.pp[iox] contrib/*/*.pp[iox]
 
 cleanconfig::
@@ -1760,7 +1776,5 @@ devel:
 
 clean::
 	find . -name "\.#*" -exec rm -f {} \;
-	find . -name "*~" -exec rm -f {} \;
-	find . -name "*.annot" -exec rm -f {} \;
 
 ###########################################################################
