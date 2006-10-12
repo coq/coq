@@ -176,19 +176,21 @@ let check_constant cst env msid1 l info1 cb2 spec2 =
       in
        cst
    | IndType ((kn,i),mind1) ->
-      Util.error ("The kernel does not recognize yet that a parameter can be " ^
+      ignore (Util.error (
+       "The kernel does not recognize yet that a parameter can be " ^
        "instantiated by an inductive type. Hint: you can rename the " ^
        "inductive type and give a definition to map the old name to the new " ^
-       "name.") ;
+       "name."));
       assert (mind1.mind_hyps=[] && cb2.const_hyps=[]) ;
       if cb2.const_body <> None then error () ;
       let arity1 = type_of_inductive (mind1,mind1.mind_packets.(i)) in
        check_conv cst conv_leq env arity1 cb2.const_type
    | IndConstr (((kn,i),j) as cstr,mind1) ->
-      Util.error ("The kernel does not recognize yet that a parameter can be " ^
+      ignore (Util.error (
+       "The kernel does not recognize yet that a parameter can be " ^
        "instantiated by a constructor. Hint: you can rename the " ^
        "constructor and give a definition to map the old name to the new " ^
-       "name.") ;
+       "name."));
       assert (mind1.mind_hyps=[] && cb2.const_hyps=[]) ;
       if cb2.const_body <> None then error () ;
       let ty1 = type_of_constructor cstr (mind1,mind1.mind_packets.(i)) in
