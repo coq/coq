@@ -647,10 +647,14 @@ intros l e1 e2; elim e2; simpl; auto.
 Qed.
 
 Record rsplit : Type := mk_rsplit {
-   left : PExpr C;
-   common : PExpr C;
-   right : PExpr C}.
+   rsplit_left : PExpr C;
+   rsplit_common : PExpr C;
+   rsplit_right : PExpr C}.
 
+(* Stupid name clash *)
+Let left := rsplit_left.
+Let right := rsplit_right.
+Let common := rsplit_common.
 
 Fixpoint split (e1 e2: PExpr C) {struct e1}: rsplit :=
   match e1 with
