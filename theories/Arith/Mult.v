@@ -29,6 +29,16 @@ Proof.
 reflexivity.
 Qed.
 
+(** Commutativity *)
+
+Lemma mult_comm : forall n m, n * m = m * n.
+Proof.
+intros; elim n; intros; simpl in |- *; auto with arith.
+elim mult_n_Sm.
+elim H; apply plus_comm.
+Qed.
+Hint Resolve mult_comm: arith v62.
+
 (** Distributivity *)
 
 Lemma mult_plus_distr_r : forall n m p, (n + m) * p = n * p + m * p.
@@ -52,6 +62,13 @@ elim minus_plus_simpl_l_reverse; auto with arith.
 Qed.
 Hint Resolve mult_minus_distr_r: arith v62.
 
+Lemma mult_minus_distr_l : forall n m p, n * (m - p) = n * m - n * p.
+Proof.
+  intros n m p. rewrite mult_comm. rewrite mult_minus_distr_r. 
+  rewrite (mult_comm m n); rewrite (mult_comm p n); reflexivity.
+Qed.
+Hint Resolve mult_minus_distr_l: arith v62.
+
 (** Associativity *)
 
 Lemma mult_assoc_reverse : forall n m p, n * m * p = n * (m * p).
@@ -67,16 +84,6 @@ Proof.
 auto with arith.
 Qed.
 Hint Resolve mult_assoc: arith v62.
-
-(** Commutativity *)
-
-Lemma mult_comm : forall n m, n * m = m * n.
-Proof.
-intros; elim n; intros; simpl in |- *; auto with arith.
-elim mult_n_Sm.
-elim H; apply plus_comm.
-Qed.
-Hint Resolve mult_comm: arith v62.
 
 (** 1 is neutral *)
 
