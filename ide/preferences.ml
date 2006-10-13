@@ -93,7 +93,9 @@ type pref =
       mutable use_utf8_notation : bool;
 *)
       mutable auto_complete : bool;
-    }
+      mutable stop_before : bool;
+      mutable lax_syntax : bool;
+}
 
 let (current:pref ref) = 
   ref {
@@ -143,7 +145,9 @@ let (current:pref ref) =
 (*
     use_utf8_notation = false;
 *)
-    auto_complete = false
+    auto_complete = false;
+    stop_before = true;
+    lax_syntax = true
   }
 
 
@@ -205,9 +209,11 @@ let save_pref () =
     add "query_window_height" [string_of_int p.query_window_height] ++
     add "query_window_width" [string_of_int p.query_window_width] ++
     add "auto_complete" [string_of_bool p.auto_complete] ++
+    add "stop_before" [string_of_bool p.stop_before] ++
+    add "lax_syntax" [string_of_bool p.lax_syntax] ++
     Config_lexer.print_file pref_file
   with _ -> prerr_endline "Could not save preferences."
-  
+ 
 
 let load_pref () =
   (try GtkData.AccelMap.load accel_file with _ -> ());
@@ -257,6 +263,8 @@ let load_pref () =
     set_int "query_window_width" (fun v -> np.query_window_width <- v);
     set_int "query_window_height" (fun v -> np.query_window_height <- v);
     set_bool "auto_complete" (fun v -> np.auto_complete <- v);
+    set_bool "stop_before" (fun v -> np.stop_before <- v);
+    set_bool "lax_syntax" (fun v -> np.lax_syntax <- v);
     current := np;
 (*
     Format.printf "in laod_pref: current.text_font = %s@." (Pango.Font.to_string !current.text_font);
@@ -385,6 +393,18 @@ let configure () =
       (string_of_int !current.auto_save_delay)
   in  
 
+  let stop_before =
+    bool
+      ~f:(fun s -> !current.stop_before <- s)
+      "Stop interpreting before the current point" !current.stop_before
+  in
+    
+  let lax_syntax =
+    bool
+      ~f:(fun s -> !current.lax_syntax <- s)
+      "Relax read-only constraint at end of command" !current.lax_syntax
+  in
+
   let encodings = 
     combo 
       "File charset encoding "
@@ -476,7 +496,7 @@ let configure () =
       "Contextual menus on goal" !current.contextual_menus_on_goal
   in 
 
-  let misc = [contextual_menus_on_goal;auto_complete] in
+  let misc = [contextual_menus_on_goal;auto_complete;stop_before;lax_syntax] in
    
 (* ATTENTION !!!!! L'onglet Fonts doit etre en premier pour eviter un bug !!!!
    (shame on Benjamin) *)

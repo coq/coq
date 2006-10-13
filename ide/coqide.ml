@@ -1224,20 +1224,29 @@ object(self)
 	      input_buffer#apply_tag_by_name ~start ~stop "to_process";
 	      input_view#set_editable false) ();
       !push_info "Coq is computing";
-      (try 
-	   while ((stop#compare self#get_start_of_input>=0) 
-		  && (self#process_next_phrase false false false))
-	   do Util.check_for_interrupt () done
-       with Sys.Break -> 
-	 prerr_endline "Interrupted during process_until_iter_or_error");
-      sync (fun _ ->
-	      self#show_goals;
-	      (* Start and stop might be invalid if an eol was added at eof *)
-	      let start = input_buffer#get_iter start' in
-	      let stop =  input_buffer#get_iter stop' in
-		input_buffer#remove_tag_by_name ~start ~stop "to_process" ;
-		input_view#set_editable true) ();
-      !pop_info()
+      let get_current () =
+	if !current.stop_before then
+          match self#find_phrase_starting_at self#get_start_of_input with
+            | None -> self#get_start_of_input
+            | Some (_, stop2) -> stop2
+	else begin
+            self#get_start_of_input
+	  end
+      in   
+	(try 
+	    while ((stop#compare (get_current())>=0) 
+		    && (self#process_next_phrase false false false))
+	    do Util.check_for_interrupt () done
+	  with Sys.Break -> 
+	    prerr_endline "Interrupted during process_until_iter_or_error");
+	sync (fun _ ->
+	  self#show_goals;
+	  (* Start and stop might be invalid if an eol was added at eof *)
+	  let start = input_buffer#get_iter start' in
+	  let stop =  input_buffer#get_iter stop' in
+	    input_buffer#remove_tag_by_name ~start ~stop "to_process" ;
+	    input_view#set_editable true) ();
+	!pop_info()
 
   method process_until_end_or_error = 
     self#process_until_iter_or_error input_buffer#end_iter

@@ -28,7 +28,11 @@ rule next_phrase = parse
 		 next_phrase lexbuf
 	       }
   | phrase_sep[' ''\n''\t''\r'] {
-      length := !length + 2; 
+	begin 
+	  if !Preferences.current.Preferences.lax_syntax 
+	  then length := !length + 1
+	  else length := !length + 2
+	end;
       Buffer.add_string buff (Lexing.lexeme lexbuf);
       Buffer.contents buff}
 
