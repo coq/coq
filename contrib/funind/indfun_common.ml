@@ -5,8 +5,8 @@ open Libnames
 
 let mk_prefix pre id = id_of_string (pre^(string_of_id id))
 let mk_rel_id = mk_prefix "R_"
-let mk_correct_id id = Nameops.add_suffix id "_correct"
-let mk_complete_id id = Nameops.add_suffix id "_complete"
+let mk_correct_id id = Nameops.add_suffix (mk_rel_id id) "_correct"
+let mk_complete_id id = Nameops.add_suffix (mk_rel_id id) "_complete"
 let mk_equation_id id = Nameops.add_suffix id "_equation"
 
 let msgnl m =
