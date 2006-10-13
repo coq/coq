@@ -12,17 +12,11 @@ Proof.
   autorewrite with base0 in H using try (apply H; reflexivity).
 Qed.
 
-Lemma ResAck1 : forall H:(Ack 2 2 = 7 -> False), H=H -> False.
+Lemma ResAck1 : forall H:(Ack 2 2 = 7 -> False), True -> False.
 Proof.
   intros.
-  autorewrite with base0 in H using try (apply H1; reflexivity).
-Qed.
-
-Lemma ResAck2 : forall H:(Ack 2 2 = 7 -> False), H=H  -> False.
-Proof.
-  intros.
-  autorewrite with base0 in *;
-    apply H1;reflexivity.
+  autorewrite with base0 in *.
+    apply H;reflexivity.
 Qed.
 
 
