@@ -9,20 +9,7 @@ CAMLBIN=CAMLBINDIRECTORY
 OCAMLDEBUG=$CAMLBIN/ocamldebug
 export CAMLP4LIB=`$CAMLBIN/camlp4 -where`
 
-args=""
-coqdebug="no"
-for op in $*
-    do case `basename $op` in
-	coq-debug-programs.out) 
-	    coqdebug="yes"
-	    args="-is programs.coq";;
-	*coq*) coqdebug="yes";;
-       esac
-done
-
-case $coqdebug in
-    yes)
-	exec $OCAMLDEBUG \
+exec $OCAMLDEBUG \
 	-I $CAMLP4LIB \
 	-I $COQTOP/config \
 	-I $COQTOP/lib -I $COQTOP/kernel \
@@ -30,13 +17,12 @@ case $coqdebug in
         -I $COQTOP/interp -I $COQTOP/proofs -I $COQTOP/tactics \
 	-I $COQTOP/toplevel -I $COQTOP/dev -I $COQTOP/config \
 	-I $COQTOP/translate \
-        -I $COQTOP/contrib/correctness \
         -I $COQTOP/contrib/extraction -I $COQTOP/contrib/field \
-        -I $COQTOP/contrib/fourier    -I $COQTOP/contrib/graphs \
+        -I $COQTOP/contrib/fourier    -I $COQTOP/contrib/first-order \
         -I $COQTOP/contrib/interface  -I $COQTOP/contrib/jprover \
         -I $COQTOP/contrib/omega      -I $COQTOP/contrib/romega \
         -I $COQTOP/contrib/ring       -I $COQTOP/contrib/xml \
 	-I $COQTOP/contrib/subtac     -I $COQTOP/contrib/funind \
-	$* $args;;
-    *) exec $OCAMLDEBUG $*;;
-esac
+        -I $COQTOP/contrib/rtauto     -I $COQTOP/contrib/setoid_ring \
+        -I $COQTOP/contrib/recdef     -I $COQTOP/contrib/dp \
+	$*
