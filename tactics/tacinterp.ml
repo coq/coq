@@ -2190,7 +2190,8 @@ let hide_interp t ot gl =
   let t = eval_tactic te in
   match ot with 
   | None -> abstract_tactic_expr (TacArg (Tacexp te)) t gl
-  | Some t' -> abstract_tactic_expr (TacArg (Tacexp te)) (tclTHEN t t') gl
+  | Some t' ->
+      abstract_tactic_expr ~dflt:true (TacArg (Tacexp te)) (tclTHEN t t') gl
 
 (***************************************************************************)
 (* Substitution at module closing time *)

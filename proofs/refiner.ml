@@ -173,13 +173,14 @@ let abstract_operation syntax semantics gls =
        goal = gls.it;
        ref = Some(Nested(syntax,hidden_proof),spfl)})
 
-let abstract_tactic_expr te tacfun gls =
-  abstract_operation (Tactic te) tacfun gls	
+let abstract_tactic_expr ?(dflt=false) te tacfun gls =
+  abstract_operation (Tactic(te,dflt)) tacfun gls	
 
-let abstract_tactic te = abstract_tactic_expr (Tacexpr.TacAtom (dummy_loc,te))
+let abstract_tactic ?(dflt=false) te =
+  abstract_tactic_expr ~dflt (Tacexpr.TacAtom (dummy_loc,te))
 
-let abstract_extended_tactic s args = 
-  abstract_tactic (Tacexpr.TacExtend (dummy_loc, s, args))
+let abstract_extended_tactic ?(dflt=false) s args = 
+  abstract_tactic ~dflt (Tacexpr.TacExtend (dummy_loc, s, args))
 
 let refiner = function
   | Prim pr as r ->

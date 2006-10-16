@@ -35,11 +35,12 @@ type transformation_tactic = proof_tree -> (goal list * validation)
 (*s Hiding the implementation of tactics. *)
 
 (* [abstract_tactic tac] hides the (partial) proof produced by [tac] under
-   a single proof node *)
+   a single proof node. The boolean tells if the default tactic is used. *)
 val abstract_operation : compound_rule -> tactic -> tactic
-val abstract_tactic : atomic_tactic_expr -> tactic -> tactic
-val abstract_tactic_expr : tactic_expr -> tactic -> tactic
-val abstract_extended_tactic : string -> closed_generic_argument list -> tactic -> tactic
+val abstract_tactic : ?dflt:bool -> atomic_tactic_expr -> tactic -> tactic
+val abstract_tactic_expr : ?dflt:bool -> tactic_expr -> tactic -> tactic
+val abstract_extended_tactic :
+  ?dflt:bool -> string -> closed_generic_argument list -> tactic -> tactic
 
 val refiner : rule -> tactic
 val frontier : transformation_tactic

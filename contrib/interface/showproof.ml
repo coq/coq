@@ -157,15 +157,15 @@ let seq_to_lnhyp sign sign' cl =
 let rule_is_complex r =
    match r with
        Nested (Tactic 
-		 (TacArg (Tacexp _)
-		 |TacAtom (_,(TacAuto _|TacSymmetry _))),_) -> true
+		 ((TacArg (Tacexp _)
+		 |TacAtom (_,(TacAuto _|TacSymmetry _))),_),_) -> true
    |_ -> false
 ;;
 
 let rule_to_ntactic r =
    let rt =
      (match r with
-       Nested(Tactic t,_) -> t
+       Nested(Tactic (t,_),_) -> t
      | Prim (Refine h) -> TacAtom (dummy_loc,TacExact h)
      | _ -> TacAtom (dummy_loc, TacIntroPattern [])) in
    if rule_is_complex r
@@ -234,7 +234,7 @@ let  to_nproof sigma osign pf =
               (List.map (fun x -> (to_nproof_rec sigma sign x).t_proof)
 		 spfl) in
 	  (match r with
-	       Nested(Tactic (TacAtom (_, TacAuto _)),_) ->
+	       Nested(Tactic (TacAtom (_, TacAuto _),_),_) ->
 		 if spfl=[]
 		 then
 	      	   {t_info="to_prove";

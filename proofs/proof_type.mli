@@ -72,7 +72,7 @@ type prim_rule =
   [ref] = [None] if the goal has still to be proved, 
   and [Some (r,l)] if the rule [r] was applied to the goal
   and gave [l] as subproofs to be completed. 
-  if [ref = (Some(Tactic (t,p),l))] then [p] is the proof 
+  if [ref = (Some(Nested(Tactic t,p),l))] then [p] is the proof 
   that the goal can be proven if the goals in [l] are solved. *)
 type proof_tree = {
   open_subgoals : int;
@@ -87,7 +87,8 @@ and rule =
   | Change_evars
 
 and compound_rule= 
-  | Tactic of tactic_expr
+  (* the boolean of Tactic tells if the default tactic is used *)
+  | Tactic of tactic_expr * bool
   | Proof_instr of bool * proof_instr
 
 and goal = evar_info

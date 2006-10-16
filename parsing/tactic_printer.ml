@@ -34,7 +34,7 @@ let pr_rule = function
   | Nested(cmpd,_) ->
       begin
 	match cmpd with 
-	    Tactic texp -> hov 0 (pr_tactic texp)
+	    Tactic (texp,_) -> hov 0 (pr_tactic texp)
 	  | Proof_instr (_,instr) -> hov 0 (pr_proof_instr instr)
       end
   | Daimon -> str "<Daimon>"
@@ -45,10 +45,15 @@ let pr_rule = function
          Change_evars *)
       str "Evar change"
 
+let uses_default_tac = function
+  | Nested(Tactic(_,dflt),_) -> dflt
+  | _ -> false
+
 (* Does not print change of evars *)
 let pr_rule_dot = function 
   | Change_evars -> mt ()
-  | r -> pr_rule r ++ str"."
+  | r ->
+      pr_rule r ++ if uses_default_tac r then str "..." else str"."
 
 exception Different
 
