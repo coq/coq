@@ -175,7 +175,7 @@ let guess_theory env evc = function
 
 (* Guesses the type and calls Field_Term with the right theory *)
 let field_term l g =
-  Coqlib.check_required_library ["Coq";"field";"Field"];
+  Coqlib.check_required_library ["Coq";"field";"LegacyField"];
   let env = (pf_env g)
   and evc = (project g) in
   let th = valueIn (VConstr (guess_theory env evc l))

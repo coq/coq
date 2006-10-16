@@ -59,7 +59,7 @@ expression in the \gallina\ language. For example in the ring
 \end{verbatim}
 \end{quotation}
 
-\noindent As a ring expression, is has 3 subterms. Give each subterm a
+\noindent As a ring expression, it has 3 subterms. Give each subterm a
 number in an arbitrary order:
 
 \begin{tabular}{ccl}
@@ -194,7 +194,7 @@ that can be parameterized. This can be used to improve the handling of
 closed expressions when operations are effective. It consists in
 introducing a type of \emph{coefficients} and an implementation of the
 ring operations, and a morphism from the coefficient type to the ring
-carrier type. The morphism need not be injective, nor surjective.  As
+carrier type. The morphism needs not be injective, nor surjective.  As
 an example, one can consider the real numbers. The set of coefficients
 could be the rational numbers, upon which the ring operations can be
 implemented. The fact that there exists a morphism is defined by the
@@ -257,7 +257,7 @@ describes their syntax and effects:
   setoid. \term$_1$ is a proof that the equality is indeed a setoid
   (see {\tt Setoid.Setoid\_Theory}), and \term$_2$ a proof that the
   ring operations are morphisms (see {\tt Ring\_theory.ring\_eq\_ext} and
-  {\tt Ring\_theory.sring\_eq\_ext}). This modifier need not be used if the
+  {\tt Ring\_theory.sring\_eq\_ext}). This modifier needs not be used if the
   setoid and morphisms have been declared.
 \item[constants [\ltac]] specifies a tactic expression that, given a term,
   returns either an object of the coefficient set that is mapped to
@@ -670,7 +670,7 @@ be significantly less efficient to replace them by tactics using
 reflection.
 
 Another idea suggested by Benjamin Werner: reflection could be used to
-couple a external tool (a rewriting program or a model checker) with
+couple an external tool (a rewriting program or a model checker) with
 \Coq. We define (in \Coq) a type of terms, a type of \emph{traces},
 and prove a correction theorem that states that \emph{replaying
 traces} is safe w.r.t some interpretation. Then we let the external
