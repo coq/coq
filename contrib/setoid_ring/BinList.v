@@ -8,7 +8,7 @@
 
 Set Implicit Arguments.
 Require Import BinPos.
-Require Import List.
+Require Export List.
 Open Scope positive_scope.
 
 Section LIST.
@@ -98,10 +98,6 @@ Section LIST.
  Qed.
 
 End LIST.
-Notation list := List.list.
-Notation tail := List.tail.
-Notation cons := List.cons.
-Notation nil := List.nil.
 
 Ltac list_fold_right fcons fnil l :=
   match l with

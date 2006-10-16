@@ -1192,7 +1192,7 @@ Let Subst := PNSubstL cO cI cadd cmul ceqb.
 (* simplification + rewriting *)
 Theorem Field_subst_correct :
 forall l ul fe m n,
- PCond l (Fapp Fcons00 (condition (Fnorm fe)) BinList.nil) ->
+ PCond l (Fapp Fcons00 (condition (Fnorm fe)) nil) ->
  Mp (Mpc ul) l ->
  Peq ceqb (Subst (Nnorm (num (Fnorm fe))) (Mpc ul) m n) (Pc cO) = true ->
  FEeval l fe == 0.
