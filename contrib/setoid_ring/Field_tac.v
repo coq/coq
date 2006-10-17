@@ -55,24 +55,31 @@ Ltac FFV Cst add mul sub opp div inv t fv :=
   end 
  in TFV t fv.
 
+Ltac ParseFieldComponents lemma req :=
+  match type of lemma with
+  | context [@FEeval ?R ?rO ?add ?mul ?sub ?opp ?div ?inv ?C ?phi _ _] =>
+      (fun f => f add mul sub opp div inv C)
+  | _ => fail 1 "field anomaly: bad correctness lemma (parse)"
+  end.
+
 (* simplifying the non-zero condition... *)
 
-Ltac fold_field_cond req rO :=
+Ltac fold_field_cond req :=
   let rec fold_concl t :=
     match t with
       ?x /\ ?y =>
         let fx := fold_concl x in let fy := fold_concl y in constr:(fx/\fy)
-    | req ?x rO -> False => constr:(~ req x rO)
+    | req ?x ?y -> False => constr:(~ req x y)
     | _ => t
     end in
   match goal with
     |- ?t => let ft := fold_concl t in change ft
   end.
 
-Ltac simpl_PCond req rO :=
+Ltac simpl_PCond req :=
   protect_fv "field_cond";
   try (exact I);
-  fold_field_cond req rO.
+  fold_field_cond req.
 
 (* Rewriting (field_simplify) *)
 Ltac Make_field_simplify_tac lemma Cond_lemma req Cst_tac :=
@@ -86,9 +93,8 @@ Ltac Make_field_simplify_tac lemma Cond_lemma req Cst_tac :=
         let mkFV := FFV Cst_tac radd rmul rsub ropp rdiv rinv in
         let mkFE := mkFieldexpr C Cst_tac radd rmul rsub ropp rdiv rinv in
         let simpl_field H := protect_fv "field" in H in
-(*unfold Pphi_dev in H;simpl in H in *)
         (fun f rl => (f mkFV mkFE simpl_field lemma req rl;
-                      try (apply Cond_lemma; simpl_PCond req rO)))
+                      try (apply Cond_lemma; simpl_PCond req)))
     | _ => fail 1 "field anomaly: bad correctness lemma (rewr)"
     end in
   Make_tac ReflexiveRewriteTactic.
@@ -115,21 +121,44 @@ Ltac Field_Scheme FV_tac SYN_tac SIMPL_tac lemma Cond_lemma req :=
     let fv := FV_tac r2 fv in
     let fe1 := SYN_tac r1 fv in
     let fe2 := SYN_tac r2 fv in
-    let nfrac1 := fresh "frac1" in 
-    let norm_hyp1 := fresh "norm_frac1" in
-    let nfrac2 := fresh "frac2" in 
-    let norm_hyp2 := fresh "norm_frac2" in
     ParseExpr2 (lemma fv fe1 fe2)
     ltac:(fun nfrac_val1 nfrac_val2 =>
+          (let nfrac1 := fresh "frac1" in 
+           let norm_hyp1 := fresh "norm_frac1" in
           (compute_assertion norm_hyp1 nfrac1 nfrac_val1;
-           compute_assertion norm_hyp2 nfrac2 nfrac_val2;
+           let nfrac2 := fresh "frac2" in 
+           let norm_hyp2 := fresh "norm_frac2" in
+          (compute_assertion norm_hyp2 nfrac2 nfrac_val2;
            (apply (lemma fv fe1 fe2 nfrac1 nfrac2 norm_hyp1 norm_hyp2)
             || fail "field anomaly: failed in applying lemma");
-           [ SIMPL_tac | apply Cond_lemma; simpl_PCond req rO];
-           try clear nfrac1 nfrac2 norm_hyp1 norm_hyp2)) in
+           [ SIMPL_tac | apply Cond_lemma; simpl_PCond req];
+           try clear nfrac1 nfrac2 norm_hyp1 norm_hyp2)))) in
   ParseLemma ltac:(OnEquation req Main).
 
-
+Ltac Field_Scheme_n FV_tac SYN_tac SIMPL_tac lemma Cond_lemma req :=
+  let R := match type of req with ?R -> _ => R end in
+  let rec ParseExpr ilemma :=
+    match type of ilemma with
+      forall nfe, ?fe = nfe -> _ =>
+        (fun t => 
+          (let x := fresh "fld_expr" in 
+           let H := fresh "norm_fld_expr" in
+           (compute_assertion H x fe;
+            ParseExpr (ilemma x H) t;
+            try clear x H)))
+    | _ => (fun t => t ilemma)
+    end in
+  let Main r1 r2 :=
+    let fv := FV_tac r1 (@List.nil R) in
+    let fv := FV_tac r2 fv in
+    let fe1 := SYN_tac r1 fv in
+    let fe2 := SYN_tac r2 fv in
+    ParseExpr (lemma fv fe1 fe2)
+    ltac:(fun ilemma =>
+           ((apply ilemma || fail "field anomaly: failed in applying lemma");
+           [ SIMPL_tac | apply Cond_lemma; simpl_PCond req])) in
+  OnEquation req Main.
+(*
 Ltac ParseFieldComponents lemma req :=
   match type of lemma with
   | forall l fe1 fe2 nfe1 nfe2,
@@ -138,7 +167,7 @@ Ltac ParseFieldComponents lemma req :=
       (fun f => f add mul sub opp div inv C)
   | _ => fail 1 "field anomaly: bad correctness lemma (parse)"
   end.
-
+*)
 (* solve completely a field equation, leaving non-zero conditions to be
    proved (field) *)
 Ltac Make_field_tac lemma Cond_lemma req Cst_tac :=
@@ -152,10 +181,18 @@ Ltac Make_field_tac lemma Cond_lemma req Cst_tac :=
 
 (* transforms a field equation to an equivalent (simplified) ring equation,
    and leaves non-zero conditions to be proved (field_simplify_eq) *)
-Ltac Make_field_simplify_eq_tac lemma Cond_lemma req Cst_tac :=
+Ltac Make_field_simplify_eq_old_tac lemma Cond_lemma req Cst_tac :=
   let Main radd rmul rsub ropp rdiv rinv C :=
     let mkFV := FFV Cst_tac radd rmul rsub ropp rdiv rinv in
     let mkFE := mkFieldexpr C Cst_tac radd rmul rsub ropp rdiv rinv in
     let Simpl := (protect_fv "field") in
     Field_Scheme mkFV mkFE Simpl lemma Cond_lemma req in
+  ParseFieldComponents lemma req Main.
+
+Ltac Make_field_simplify_eq_tac lemma Cond_lemma req Cst_tac :=
+  let Main radd rmul rsub ropp rdiv rinv C :=
+    let mkFV := FFV Cst_tac radd rmul rsub ropp rdiv rinv in
+    let mkFE := mkFieldexpr C Cst_tac radd rmul rsub ropp rdiv rinv in
+    let Simpl := (protect_fv "field") in
+    Field_Scheme_n mkFV mkFE Simpl lemma Cond_lemma req in
   ParseFieldComponents lemma req Main.

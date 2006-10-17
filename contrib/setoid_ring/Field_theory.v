@@ -998,7 +998,7 @@ Qed.
 
 (* simplify a field equation : generate the crossproduct and simplify
    polynomials *)
-Theorem Field_simplify_eq_correct :
+Theorem Field_simplify_eq_old_correct :
  forall l fe1 fe2 nfe1 nfe2,
  Fnorm fe1 = nfe1 ->
  Fnorm fe2 = nfe2 ->
@@ -1012,6 +1012,35 @@ apply Fnorm_crossproduct; trivial.
 rewrite (Pphi_dev_gen_ok Rsth Reqe ARth CRmorph) in |- *.
 rewrite (Pphi_dev_gen_ok Rsth Reqe ARth CRmorph) in |- *.
 trivial.
+Qed.
+
+Theorem Field_simplify_eq_correct :
+ forall l fe1 fe2,
+ forall nfe1, Fnorm fe1 = nfe1 ->
+ forall nfe2, Fnorm fe2 = nfe2 ->
+ forall den, split (denum nfe1) (denum nfe2) = den -> 
+ NPphi_dev l (Nnorm (PEmul (num nfe1) (right den))) ==
+ NPphi_dev l (Nnorm (PEmul (num nfe2) (left den))) ->
+ PCond l (condition nfe1 ++ condition nfe2) ->
+ FEeval l fe1 == FEeval l fe2.
+Proof.
+intros l fe1 fe2 nfe1 eq1 nfe2 eq2 den eq3 Hcrossprod Hcond;
+  subst nfe1 nfe2 den.
+apply Fnorm_crossproduct; trivial.
+simpl in |- *.
+elim (split_correct l (denum (Fnorm fe1)) (denum (Fnorm fe2))); intros.
+rewrite H in |- *.
+rewrite H0 in |- *.
+clear H H0.
+rewrite NPEmul_correct in |- *.
+rewrite NPEmul_correct in |- *.
+simpl in |- *.
+repeat rewrite (ARmul_assoc ARth) in |- *.
+rewrite <- (Pphi_dev_gen_ok Rsth Reqe ARth CRmorph) in Hcrossprod.
+rewrite <- (Pphi_dev_gen_ok Rsth Reqe ARth CRmorph) in Hcrossprod.
+simpl in Hcrossprod.
+rewrite Hcrossprod in |- *.
+reflexivity.
 Qed.
 
 Section Fcons_impl.
