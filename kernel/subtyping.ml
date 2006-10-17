@@ -94,7 +94,7 @@ let check_inductive cst env msid1 l info1 mib2 spec2 =
       (* listrec ignored *)
       (* finite done *)
       (* nparams done *)
-      (* params_ctxt done *)
+      (* params_ctxt done because part of the inductive types *)
       (* Don't check the sort of the type if polymorphic *)
       let cst = check_conv cst conv env (type_of_inductive (mib1,p1)) (type_of_inductive (mib2,p2))
       in
@@ -114,9 +114,12 @@ let check_inductive cst env msid1 l info1 mib2 spec2 =
   assert (Array.length mib1.mind_packets >= 1 
 	    && Array.length mib2.mind_packets >= 1);
 
-       (* TODO: we should allow renaming of parameters at least ! *)
+  (* Check that the expected numbers of uniform parameters are the same *)
+  (* No need to check the contexts of parameters: it is checked *)
+  (* at the time of checking the inductive arities in check_packet. *)
+  (* Notice that we don't expect the local definitions to match: only *)
+  (* the inductive types and constructors types have to be convertible *)
   check (fun mib -> mib.mind_nparams);
-  check (fun mib -> mib.mind_params_ctxt); 
 
   begin 
     match mib2.mind_equiv with
