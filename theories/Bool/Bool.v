@@ -477,41 +477,59 @@ Qed.
 (** * Properties of [xorb]       *)
 (*********************************)
 
-Lemma xorb_false : forall b:bool, xorb b false = b.
+(** [false] is neutral for [xorb] *)
+
+Lemma xorb_false_r : forall b:bool, xorb b false = b.
 Proof.
   destruct b; trivial.
 Qed.
 
-Lemma false_xorb : forall b:bool, xorb false b = b.
+Lemma xorb_false_l : forall b:bool, xorb false b = b.
 Proof.
   destruct b; trivial.
 Qed.
 
-Lemma xorb_true : forall b:bool, xorb b true = negb b.
+Notation xorb_false := xorb_false_r (only parsing).
+Notation false_xorb := xorb_false_l (only parsing).
+
+(** [true] is "complementing" for [xorb] *)
+
+Lemma xorb_true_r : forall b:bool, xorb b true = negb b.
 Proof.
   trivial.
 Qed.
 
-Lemma true_xorb : forall b:bool, xorb true b = negb b.
+Lemma xorb_true_l : forall b:bool, xorb true b = negb b.
 Proof.
   destruct b; trivial.
 Qed.
+
+Notation xorb_true := xorb_true_r (only parsing).
+Notation true_xorb := xorb_true_l (only parsing).
+
+(** Nilpotency (alternatively: identity is a inverse for [xorb]) *)
 
 Lemma xorb_nilpotent : forall b:bool, xorb b b = false.
 Proof.
   destruct b; trivial.
 Qed.
 
+(** Commutativity *)
+
 Lemma xorb_comm : forall b b':bool, xorb b b' = xorb b' b.
 Proof.
   destruct b; destruct b'; trivial.
 Qed.
 
-Lemma xorb_assoc :
+(** Associativity *)
+
+Lemma xorb_assoc_reverse :
   forall b b' b'':bool, xorb (xorb b b') b'' = xorb b (xorb b' b'').
 Proof.
   destruct b; destruct b'; destruct b''; trivial.
 Qed.
+
+Notation xorb_assoc := xorb_assoc_reverse (only parsing). (* Compatibility *)
 
 Lemma xorb_eq : forall b b':bool, xorb b b' = false -> b = b'.
 Proof.
@@ -551,21 +569,21 @@ Proof.
   intros b1 b2; case b1; case b2; intuition.
 Qed.
 
-Notation bool_1 := eq_true_iff_eq. (* Compatibility *)
+Notation bool_1 := eq_true_iff_eq (only parsing). (* Compatibility *)
 
 Lemma eq_true_negb_classical : forall b:bool, negb b <> true -> b = true.
 Proof.
   destruct b; intuition.
 Qed.
 
-Notation bool_3 := eq_true_negb_classical. (* Compatibility *)
+Notation bool_3 := eq_true_negb_classical (only parsing). (* Compatibility *)
 
 Lemma eq_true_not_negb : forall b:bool, b <> true -> negb b = true.  
 Proof.
   destruct b; intuition.
 Qed.
 
-Notation bool_6 := eq_true_not_negb. (* Compatibility *)
+Notation bool_6 := eq_true_not_negb (only parsing). (* Compatibility *)
 
 Hint Resolve eq_true_not_negb : bool.
 
