@@ -44,7 +44,7 @@
 *)
 
 (**********************************************************************)
-(** *** A. Pred. Ext. + Rel. Axiom of Choice -> Excluded-Middle       *)
+(** * Pred. Ext. + Rel. Axiom of Choice -> Excluded-Middle       *)
 
 Section PredExt_RelChoice_imp_EM.
 
@@ -156,7 +156,7 @@ Qed.
 End PredExt_RelChoice_imp_EM.
 
 (**********************************************************************)
-(** *** B. Proof-Irrel. + Rel. Axiom of Choice -> Excl.-Middle for Equality *)
+(** * B. Proof-Irrel. + Rel. Axiom of Choice -> Excl.-Middle for Equality *)
 
 (** This is an adaptation of Diaconescu's paradox exploiting that
     proof-irrelevance is some form of extensionality *)
@@ -263,7 +263,7 @@ Qed.
 End ProofIrrel_RelChoice_imp_EqEM.
 
 (**********************************************************************)
-(** *** B. Extensional Hilbert's epsilon description operator -> Excluded-Middle *)
+(** * Extensional Hilbert's epsilon description operator -> Excluded-Middle *)
 
 (** Proof sketch from Bell [Bell93] (with thanks to P. Castéran) *)
 
@@ -285,20 +285,20 @@ Notation Local eps := (epsilon bool true) (only parsing).
 
 Theorem extensional_epsilon_imp_EM : forall P:Prop, P \/ ~ P.
 Proof.
-intro P.
-pose (B := fun y => y=false \/ P).
-pose (C := fun y => y=true  \/ P).
-assert (B (eps B)) as [Hfalse|HP] 
-  by (apply epsilon_spec; exists false; left; reflexivity).
-assert (C (eps C)) as [Htrue|HP] 
-  by (apply epsilon_spec; exists true; left; reflexivity).
-  right; intro HP.
-  assert (forall y, B y <-> C y) by (intro y; split; intro; right; assumption).
-  rewrite epsilon_extensionality with (1:=H) in Hfalse.
-  rewrite Htrue in Hfalse.
-  discriminate.
-auto.
-auto.
+  intro P.
+  pose (B := fun y => y=false \/ P).
+  pose (C := fun y => y=true  \/ P).
+  assert (B (eps B)) as [Hfalse|HP] 
+    by (apply epsilon_spec; exists false; left; reflexivity).
+  assert (C (eps C)) as [Htrue|HP] 
+    by (apply epsilon_spec; exists true; left; reflexivity).
+    right; intro HP.
+    assert (forall y, B y <-> C y) by (intro y; split; intro; right; assumption).
+    rewrite epsilon_extensionality with (1:=H) in Hfalse.
+    rewrite Htrue in Hfalse.
+    discriminate.
+  auto.
+  auto.
 Qed.
 
 End ExtensionalEpsilon_imp_EM.

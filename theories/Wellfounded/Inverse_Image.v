@@ -19,6 +19,7 @@ Section Inverse_Image.
   Let Rof (x y:A) : Prop := R (f x) (f y).
 
   Remark Acc_lemma : forall y:B, Acc R y -> forall x:A, y = f x -> Acc Rof x.
+  Proof.
     induction 1 as [y _ IHAcc]; intros x H.
     apply Acc_intro; intros y0 H1.
     apply (IHAcc (f y0)); try trivial.
@@ -26,30 +27,34 @@ Section Inverse_Image.
   Qed.
 
   Lemma Acc_inverse_image : forall x:A, Acc R (f x) -> Acc Rof x.
+  Proof.
     intros; apply (Acc_lemma (f x)); trivial.
   Qed.
 
   Theorem wf_inverse_image : well_founded R -> well_founded Rof.
+  Proof.
     red in |- *; intros; apply Acc_inverse_image; auto.
   Qed.
 
   Variable F : A -> B -> Prop.
   Let RoF (x y:A) : Prop :=
-     exists2 b : B, F x b & (forall c:B, F y c -> R b c).
+    exists2 b : B, F x b & (forall c:B, F y c -> R b c).
 
-Lemma Acc_inverse_rel : forall b:B, Acc R b -> forall x:A, F x b -> Acc RoF x.
-induction 1 as [x _ IHAcc]; intros x0 H2.
-constructor; intros y H3.
-destruct H3.
-apply (IHAcc x1); auto.
-Qed.
-
-
-Theorem wf_inverse_rel : well_founded R -> well_founded RoF.
+  Lemma Acc_inverse_rel : forall b:B, Acc R b -> forall x:A, F x b -> Acc RoF x.
+  Proof.
+    induction 1 as [x _ IHAcc]; intros x0 H2.
+    constructor; intros y H3.
+    destruct H3.
+    apply (IHAcc x1); auto.
+  Qed.
+  
+  
+  Theorem wf_inverse_rel : well_founded R -> well_founded RoF.
+  Proof.
     red in |- *; constructor; intros.
     case H0; intros.
     apply (Acc_inverse_rel x); auto.
-Qed.
+  Qed.
 
 End Inverse_Image.
 

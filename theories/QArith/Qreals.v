@@ -11,7 +11,7 @@
 Require Export Rbase.
 Require Export QArith_base.
 
-(** * A field tactic for rational numbers. *)
+(** A field tactic for rational numbers. *)
 
 (** Since field cannot operate on setoid datatypes (yet?), 
   we translate Q goals into reals before applying field. *)

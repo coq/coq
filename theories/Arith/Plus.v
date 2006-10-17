@@ -8,7 +8,16 @@
 
 (*i $Id$ i*)
 
-(** Properties of addition *)
+(** Properties of addition. [add] is defined in [Init/Peano.v] as:
+<<
+Fixpoint plus (n m:nat) {struct n} : nat :=
+  match n with
+  | O => m
+  | S p => S (p + m)
+  end
+where "n + m" := (plus n m) : nat_scope.
+>>
+ *)
 
 Require Import Le.
 Require Import Lt.
@@ -17,126 +26,127 @@ Open Local Scope nat_scope.
 
 Implicit Types m n p q : nat.
 
-(** Zero is neutral *)
+(** * Zero is neutral *)
 
 Lemma plus_0_l : forall n, 0 + n = n.
 Proof.
-reflexivity.
+  reflexivity.
 Qed.
 
 Lemma plus_0_r : forall n, n + 0 = n.
 Proof.
-intro; symmetry  in |- *; apply plus_n_O.
+  intro; symmetry  in |- *; apply plus_n_O.
 Qed.
 
-(** Commutativity *)
+(** * Commutativity *)
 
 Lemma plus_comm : forall n m, n + m = m + n.
 Proof.
-intros n m; elim n; simpl in |- *; auto with arith.
-intros y H; elim (plus_n_Sm m y); auto with arith.
+  intros n m; elim n; simpl in |- *; auto with arith.
+  intros y H; elim (plus_n_Sm m y); auto with arith.
 Qed.
 Hint Immediate plus_comm: arith v62.
 
-(** Associativity *)
+(** * Associativity *)
 
 Lemma plus_Snm_nSm : forall n m, S n + m = n + S m.
-intros.
-simpl in |- *.
-rewrite (plus_comm n m).
-rewrite (plus_comm n (S m)).
-trivial with arith.
+Proof.
+  intros.
+  simpl in |- *.
+  rewrite (plus_comm n m).
+  rewrite (plus_comm n (S m)).
+  trivial with arith.
 Qed.
 
 Lemma plus_assoc : forall n m p, n + (m + p) = n + m + p.
 Proof.
-intros n m p; elim n; simpl in |- *; auto with arith.
+  intros n m p; elim n; simpl in |- *; auto with arith.
 Qed.
 Hint Resolve plus_assoc: arith v62.
 
 Lemma plus_permute : forall n m p, n + (m + p) = m + (n + p).
 Proof. 
-intros; rewrite (plus_assoc m n p); rewrite (plus_comm m n); auto with arith.
+  intros; rewrite (plus_assoc m n p); rewrite (plus_comm m n); auto with arith.
 Qed.
 
 Lemma plus_assoc_reverse : forall n m p, n + m + p = n + (m + p).
 Proof.
-auto with arith.
+  auto with arith.
 Qed.
 Hint Resolve plus_assoc_reverse: arith v62.
 
-(** Simplification *)
+(** * Simplification *)
 
 Lemma plus_reg_l : forall n m p, p + n = p + m -> n = m.
 Proof.
-intros m p n; induction n; simpl in |- *; auto with arith.
+  intros m p n; induction n; simpl in |- *; auto with arith.
 Qed.
 
 Lemma plus_le_reg_l : forall n m p, p + n <= p + m -> n <= m.
 Proof.
-induction p; simpl in |- *; auto with arith.
+  induction p; simpl in |- *; auto with arith.
 Qed.
 
 Lemma plus_lt_reg_l : forall n m p, p + n < p + m -> n < m.
 Proof.
-induction p; simpl in |- *; auto with arith.
+  induction p; simpl in |- *; auto with arith.
 Qed.
 
-(** Compatibility with order *)
+(** * Compatibility with order *)
 
 Lemma plus_le_compat_l : forall n m p, n <= m -> p + n <= p + m.
 Proof.
-induction p; simpl in |- *; auto with arith.
+  induction p; simpl in |- *; auto with arith.
 Qed.
 Hint Resolve plus_le_compat_l: arith v62.
 
 Lemma plus_le_compat_r : forall n m p, n <= m -> n + p <= m + p.
 Proof.
-induction 1; simpl in |- *; auto with arith.
+  induction 1; simpl in |- *; auto with arith.
 Qed.
 Hint Resolve plus_le_compat_r: arith v62.
 
 Lemma le_plus_l : forall n m, n <= n + m.
 Proof.
-induction n; simpl in |- *; auto with arith.
+  induction n; simpl in |- *; auto with arith.
 Qed.
 Hint Resolve le_plus_l: arith v62.
 
 Lemma le_plus_r : forall n m, m <= n + m.
 Proof.
-intros n m; elim n; simpl in |- *; auto with arith.
+  intros n m; elim n; simpl in |- *; auto with arith.
 Qed.
 Hint Resolve le_plus_r: arith v62.
 
 Theorem le_plus_trans : forall n m p, n <= m -> n <= m + p.
 Proof.
-intros; apply le_trans with (m := m); auto with arith.
+  intros; apply le_trans with (m := m); auto with arith.
 Qed.
 Hint Resolve le_plus_trans: arith v62.
 
 Theorem lt_plus_trans : forall n m p, n < m -> n < m + p.
 Proof.
-intros; apply lt_le_trans with (m := m); auto with arith.
+  intros; apply lt_le_trans with (m := m); auto with arith.
 Qed.
 Hint Immediate lt_plus_trans: arith v62.
 
 Lemma plus_lt_compat_l : forall n m p, n < m -> p + n < p + m.
 Proof.
-induction p; simpl in |- *; auto with arith.
+  induction p; simpl in |- *; auto with arith.
 Qed.
 Hint Resolve plus_lt_compat_l: arith v62.
 
 Lemma plus_lt_compat_r : forall n m p, n < m -> n + p < m + p.
 Proof.
-intros n m p H; rewrite (plus_comm n p); rewrite (plus_comm m p).
-elim p; auto with arith.
+  intros n m p H; rewrite (plus_comm n p); rewrite (plus_comm m p).
+  elim p; auto with arith.
 Qed.
 Hint Resolve plus_lt_compat_r: arith v62.
 
 Lemma plus_le_compat : forall n m p q, n <= m -> p <= q -> n + p <= m + q.
 Proof.
-intros n m p q H H0.
-elim H; simpl in |- *; auto with arith.
+  intros n m p q H H0.
+  elim H; simpl in |- *; auto with arith.
 Qed.
 
 Lemma plus_le_lt_compat : forall n m p q, n <= m -> p < q -> n + p < m + q.
@@ -156,7 +166,7 @@ Proof.
   apply lt_le_weak. assumption.
 Qed.
 
-(** Inversion lemmas *)
+(** * Inversion lemmas *)
 
 Lemma plus_is_O : forall n m, n + m = 0 -> n = 0 /\ m = 0.
 Proof.
@@ -173,7 +183,7 @@ Proof.
   simpl in H. discriminate H.
 Defined.
 
-(** Derived properties *)
+(** * Derived properties *)
 
 Lemma plus_permute_2_in_4 : forall n m p q, n + m + (p + q) = n + p + (m + q).
 Proof.
@@ -182,7 +192,7 @@ Proof.
   rewrite (plus_comm n p). rewrite <- (plus_assoc p n q). apply plus_assoc.
 Qed.
 
-(** Tail-recursive plus *)
+(** * Tail-recursive plus *)
 
 (** [tail_plus] is an alternative definition for [plus] which is 
     tail-recursive, whereas [plus] is not. This can be useful
@@ -190,8 +200,8 @@ Qed.
 
 Fixpoint plus_acc q n {struct n} : nat :=
   match n with
-  | O => q
-  | S p => plus_acc (S q) p
+    | O => q
+    | S p => plus_acc (S q) p
   end.
 
 Definition tail_plus n m := plus_acc m n.
@@ -201,27 +211,27 @@ unfold tail_plus in |- *; induction n as [| n IHn]; simpl in |- *; auto.
 intro m; rewrite <- IHn; simpl in |- *; auto.
 Qed.
 
-(** Discrimination *)
+(** * Discrimination *)
 
 Lemma succ_plus_discr : forall n m, n <> S (plus m n).
 Proof.
-intros n m; induction n as [|n IHn].
- discriminate.
- intro H; apply IHn; apply eq_add_S; rewrite H; rewrite <- plus_n_Sm; 
-   reflexivity.
+  intros n m; induction n as [|n IHn].
+  discriminate.
+  intro H; apply IHn; apply eq_add_S; rewrite H; rewrite <- plus_n_Sm; 
+    reflexivity.
 Qed.
 
 Lemma n_SSn : forall n, n <> S (S n).
 Proof.
-intro n; exact (succ_plus_discr n 1).
+  intro n; exact (succ_plus_discr n 1).
 Qed.
 
 Lemma n_SSSn : forall n, n <> S (S (S n)).
 Proof.
-intro n; exact (succ_plus_discr n 2).
+  intro n; exact (succ_plus_discr n 2).
 Qed.
 
 Lemma n_SSSSn : forall n, n <> S (S (S (S n))).
 Proof.
-intro n; exact (succ_plus_discr n 3).
+  intro n; exact (succ_plus_discr n 3).
 Qed.

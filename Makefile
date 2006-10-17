@@ -26,6 +26,8 @@
 
 include config/Makefile
 
+.PHONY: NOARG
+
 NOARG: world
 
 help:

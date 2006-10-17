@@ -118,7 +118,7 @@ module Latex = struct
 
   let header () =
     if !header_trailer then begin
-      printf "\\documentclass[12pt]{article}\n";
+      printf "\\documentclass[12pt]{report}\n";
       if !inputenc != "" then printf "\\usepackage[%s]{inputenc}\n" !inputenc;
       printf "\\usepackage[T1]{fontenc}\n";
       printf "\\usepackage{fullpage}\n";

@@ -8,7 +8,17 @@
 
 (*i $Id$ i*)
 
-(** Subtraction (difference between two natural numbers) *)
+(** [minus] (difference between two natural numbers) is defined in [Init/Peano.v] as:
+<<
+Fixpoint minus (n m:nat) {struct n} : nat :=
+  match n, m with
+  | O, _ => 0
+  | S k, O => S k
+  | S k, S l => k - l
+  end
+where "n - m" := (minus n m) : nat_scope.
+>>
+*)
 
 Require Import Lt.
 Require Import Le.
@@ -17,36 +27,37 @@ Open Local Scope nat_scope.
 
 Implicit Types m n p : nat.
 
-(** 0 is right neutral *)
+(** * 0 is right neutral *)
 
 Lemma minus_n_O : forall n, n = n - 0.
 Proof.
-induction n; simpl in |- *; auto with arith.
+  induction n; simpl in |- *; auto with arith.
 Qed.
 Hint Resolve minus_n_O: arith v62.
 
-(** Permutation with successor *)
+(** * Permutation with successor *)
 
 Lemma minus_Sn_m : forall n m, m <= n -> S (n - m) = S n - m.
 Proof.
-intros n m Le; pattern m, n in |- *; apply le_elim_rel; simpl in |- *;
- auto with arith.
+  intros n m Le; pattern m, n in |- *; apply le_elim_rel; simpl in |- *;
+    auto with arith.
 Qed.
 Hint Resolve minus_Sn_m: arith v62.
 
 Theorem pred_of_minus : forall n, pred n = n - 1.
-intro x; induction x; simpl in |- *; auto with arith.
+Proof.
+  intro x; induction x; simpl in |- *; auto with arith.
 Qed.
 
-(** Diagonal *)
+(** * Diagonal *)
 
 Lemma minus_n_n : forall n, 0 = n - n.
 Proof.
-induction n; simpl in |- *; auto with arith.
+  induction n; simpl in |- *; auto with arith.
 Qed.
 Hint Resolve minus_n_n: arith v62.
 
-(** Simplification *)
+(** * Simplification *)
 
 Lemma minus_plus_simpl_l_reverse : forall n m p, n - m = p + n - (p + m).
 Proof.
@@ -54,70 +65,71 @@ Proof.
 Qed.
 Hint Resolve minus_plus_simpl_l_reverse: arith v62.
 
-(** Relation with plus *)
+(** * Relation with plus *)
 
 Lemma plus_minus : forall n m p, n = m + p -> p = n - m.
 Proof.
-intros n m p; pattern m, n in |- *; apply nat_double_ind; simpl in |- *;
- intros.
-replace (n0 - 0) with n0; auto with arith.
-absurd (0 = S (n0 + p)); auto with arith.
-auto with arith.
+  intros n m p; pattern m, n in |- *; apply nat_double_ind; simpl in |- *;
+    intros.
+  replace (n0 - 0) with n0; auto with arith.
+  absurd (0 = S (n0 + p)); auto with arith.
+  auto with arith.
 Qed.
 Hint Immediate plus_minus: arith v62.
 
 Lemma minus_plus : forall n m, n + m - n = m.
-symmetry  in |- *; auto with arith.
+  symmetry  in |- *; auto with arith.
 Qed.
 Hint Resolve minus_plus: arith v62.
 
 Lemma le_plus_minus : forall n m, n <= m -> m = n + (m - n).
 Proof.
-intros n m Le; pattern n, m in |- *; apply le_elim_rel; simpl in |- *;
- auto with arith.
+  intros n m Le; pattern n, m in |- *; apply le_elim_rel; simpl in |- *;
+    auto with arith.
 Qed.
 Hint Resolve le_plus_minus: arith v62.
 
 Lemma le_plus_minus_r : forall n m, n <= m -> n + (m - n) = m.
 Proof.
-symmetry  in |- *; auto with arith.
+  symmetry  in |- *; auto with arith.
 Qed.
 Hint Resolve le_plus_minus_r: arith v62.
 
-(** Relation with order *)
+(** * Relation with order *)
 
 Theorem le_minus : forall n m, n - m <= n.
 Proof.
-intros i h; pattern i, h in |- *; apply nat_double_ind;
- [ auto
- | auto
- | intros m n H; simpl in |- *; apply le_trans with (m := m); auto ].
+  intros i h; pattern i, h in |- *; apply nat_double_ind;
+    [ auto
+      | auto
+      | intros m n H; simpl in |- *; apply le_trans with (m := m); auto ].
 Qed.
 
 Lemma lt_minus : forall n m, m <= n -> 0 < m -> n - m < n.
 Proof.
-intros n m Le; pattern m, n in |- *; apply le_elim_rel; simpl in |- *;
- auto with arith.
-intros; absurd (0 < 0); auto with arith.
-intros p q lepq Hp gtp.
-elim (le_lt_or_eq 0 p); auto with arith.
-auto with arith.
-induction 1; elim minus_n_O; auto with arith.
+  intros n m Le; pattern m, n in |- *; apply le_elim_rel; simpl in |- *;
+    auto with arith.
+  intros; absurd (0 < 0); auto with arith.
+  intros p q lepq Hp gtp.
+  elim (le_lt_or_eq 0 p); auto with arith.
+  auto with arith.
+  induction 1; elim minus_n_O; auto with arith.
 Qed.
 Hint Resolve lt_minus: arith v62.
 
 Lemma lt_O_minus_lt : forall n m, 0 < n - m -> m < n.
 Proof.
-intros n m; pattern n, m in |- *; apply nat_double_ind; simpl in |- *;
- auto with arith.
-intros; absurd (0 < 0); trivial with arith.
+  intros n m; pattern n, m in |- *; apply nat_double_ind; simpl in |- *;
+    auto with arith.
+  intros; absurd (0 < 0); trivial with arith.
 Qed.
 Hint Immediate lt_O_minus_lt: arith v62.
 
 Theorem not_le_minus_0 : forall n m, ~ m <= n -> n - m = 0.
-intros y x; pattern y, x in |- *; apply nat_double_ind;
- [ simpl in |- *; trivial with arith
- | intros n H; absurd (0 <= S n); [ assumption | apply le_O_n ]
- | simpl in |- *; intros n m H1 H2; apply H1; unfold not in |- *; intros H3;
-    apply H2; apply le_n_S; assumption ].
+Proof.
+  intros y x; pattern y, x in |- *; apply nat_double_ind;
+    [ simpl in |- *; trivial with arith
+      | intros n H; absurd (0 <= S n); [ assumption | apply le_O_n ]
+      | simpl in |- *; intros n m H1 H2; apply H1; unfold not in |- *; intros H3;
+	apply H2; apply le_n_S; assumption ].
 Qed.

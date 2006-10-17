@@ -8,6 +8,12 @@
 
 (*i $Id$ i*)
 
+(** Theorems about [gt] in [nat]. [gt] is defined in [Init/Peano.v] as:
+<<
+Definition gt (n m:nat) := m < n.
+>>
+*)
+
 Require Import Le.
 Require Import Lt.
 Require Import Plus.
@@ -15,7 +21,7 @@ Open Local Scope nat_scope.
 
 Implicit Types m n p : nat.
 
-(** Order and successor *)
+(** * Order and successor *)
 
 Theorem gt_Sn_O : forall n, S n > 0.
 Proof.
@@ -52,20 +58,20 @@ Proof.
 Qed.
 Hint Immediate gt_pred: arith v62.
 
-(** Irreflexivity *)
+(** * Irreflexivity *)
 
 Lemma gt_irrefl : forall n, ~ n > n.
 Proof lt_irrefl.
 Hint Resolve gt_irrefl: arith v62.
 
-(** Asymmetry *)
+(** * Asymmetry *)
 
 Lemma gt_asym : forall n m, n > m -> ~ m > n.
 Proof fun n m => lt_asym m n.
 
 Hint Resolve gt_asym: arith v62.
 
-(** Relating strict and large orders *)
+(** * Relating strict and large orders *)
 
 Lemma le_not_gt : forall n m, n <= m -> ~ n > m.
 Proof le_not_lt.
@@ -102,7 +108,7 @@ Proof.
 Qed.
 Hint Resolve le_gt_S: arith v62.
 
-(** Transitivity *)
+(** * Transitivity *)
 
 Theorem le_gt_trans : forall n m p, m <= n -> m > p -> n > p.
 Proof.
@@ -127,14 +133,14 @@ Qed.
 
 Hint Resolve gt_trans_S le_gt_trans gt_le_trans: arith v62.
 
-(** Comparison to 0 *)
+(** * Comparison to 0 *)
 
 Theorem gt_O_eq : forall n, n > 0 \/ 0 = n.
 Proof.
   intro n; apply gt_S; auto with arith.
 Qed.
 
-(** Simplification and compatibility *)
+(** * Simplification and compatibility *)
 
 Lemma plus_gt_reg_l : forall n m p, p + n > p + m -> n > m.
 Proof.

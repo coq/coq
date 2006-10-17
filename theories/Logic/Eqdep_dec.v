@@ -20,149 +20,153 @@
 
 Table of contents:
 
-A. Streicher's K and injectivity of dependent pair hold on decidable types
+1. Streicher's K and injectivity of dependent pair hold on decidable types
 
-B.1. Definition of the functor that builds properties of dependent equalities
+1.1. Definition of the functor that builds properties of dependent equalities
      from a proof of decidability of equality for a set in Type
 
-B.2. Definition of the functor that builds properties of dependent equalities
+1.2. Definition of the functor that builds properties of dependent equalities
      from a proof of decidability of equality for a set in Set
 
 *)
 
 (************************************************************************)
-(** *** A. Streicher's K and injectivity of dependent pair hold on decidable types *)
+(** * Streicher's K and injectivity of dependent pair hold on decidable types *)
 
 Set Implicit Arguments.
 
 Section EqdepDec.
 
   Variable A : Type.
-
+  
   Let comp (x y y':A) (eq1:x = y) (eq2:x = y') : y = y' :=
     eq_ind _ (fun a => a = y') eq2 _ eq1.
 
   Remark trans_sym_eq : forall (x y:A) (u:x = y), comp u u = refl_equal y.
-intros.
-case u; trivial.
-Qed.
-
-
+  Proof.
+    intros.
+    case u; trivial.
+  Qed.
 
   Variable eq_dec : forall x y:A, x = y \/ x <> y.
-
+  
   Variable x : A.
-
 
   Let nu (y:A) (u:x = y) : x = y :=
     match eq_dec x y with
-    | or_introl eqxy => eqxy
-    | or_intror neqxy => False_ind _ (neqxy u)
+      | or_introl eqxy => eqxy
+      | or_intror neqxy => False_ind _ (neqxy u)
     end.
 
   Let nu_constant : forall (y:A) (u v:x = y), nu u = nu v.
-intros.
-unfold nu in |- *.
-case (eq_dec x y); intros.
-reflexivity.
-
-case n; trivial.
-Qed.
+    intros.
+    unfold nu in |- *.
+    case (eq_dec x y); intros.
+    reflexivity.
+  
+    case n; trivial.
+  Qed.
 
 
   Let nu_inv (y:A) (v:x = y) : x = y := comp (nu (refl_equal x)) v.
-
+  
 
   Remark nu_left_inv : forall (y:A) (u:x = y), nu_inv (nu u) = u.
-intros.
-case u; unfold nu_inv in |- *.
-apply trans_sym_eq.
-Qed.
+  Proof.
+    intros.
+    case u; unfold nu_inv in |- *.
+    apply trans_sym_eq.
+  Qed.
 
 
   Theorem eq_proofs_unicity : forall (y:A) (p1 p2:x = y), p1 = p2.
-intros.
-elim nu_left_inv with (u := p1).
-elim nu_left_inv with (u := p2).
-elim nu_constant with y p1 p2.
-reflexivity.
-Qed.
+  Proof.
+    intros.
+    elim nu_left_inv with (u := p1).
+    elim nu_left_inv with (u := p2).
+    elim nu_constant with y p1 p2.
+    reflexivity.
+  Qed.
 
-  Theorem K_dec :
-   forall P:x = x -> Prop, P (refl_equal x) -> forall p:x = x, P p.
-intros.
-elim eq_proofs_unicity with x (refl_equal x) p.
-trivial.
-Qed.
+  Theorem K_dec : 
+    forall P:x = x -> Prop, P (refl_equal x) -> forall p:x = x, P p.
+  Proof.
+    intros.
+    elim eq_proofs_unicity with x (refl_equal x) p.
+    trivial.
+  Qed.
 
   (** The corollary *)
 
   Let proj (P:A -> Prop) (exP:ex P) (def:P x) : P x :=
     match exP with
-    | ex_intro x' prf =>
+      | ex_intro x' prf =>
         match eq_dec x' x with
-        | or_introl eqprf => eq_ind x' P prf x eqprf
-        | _ => def
+          | or_introl eqprf => eq_ind x' P prf x eqprf
+          | _ => def
         end
     end.
 
 
   Theorem inj_right_pair :
-   forall (P:A -> Prop) (y y':P x),
-     ex_intro P x y = ex_intro P x y' -> y = y'.
-intros.
-cut (proj (ex_intro P x y) y = proj (ex_intro P x y') y).
-simpl in |- *.
-case (eq_dec x x).
-intro e.
-elim e using K_dec; trivial.
-
-intros.
-case n; trivial.
-
-case H.
-reflexivity.
-Qed.
+    forall (P:A -> Prop) (y y':P x),
+      ex_intro P x y = ex_intro P x y' -> y = y'.
+  Proof.
+    intros.
+    cut (proj (ex_intro P x y) y = proj (ex_intro P x y') y).
+    simpl in |- *.
+    case (eq_dec x x).
+    intro e.
+    elim e using K_dec; trivial.
+    
+    intros.
+    case n; trivial.
+    
+    case H.
+    reflexivity.
+  Qed.
 
 End EqdepDec.
 
 Require Import EqdepFacts.
 
-  (** We deduce axiom [K] for (decidable) types *)
-  Theorem K_dec_type :
-   forall A:Type,
-     (forall x y:A, {x = y} + {x <> y}) ->
-     forall (x:A) (P:x = x -> Prop), P (refl_equal x) -> forall p:x = x, P p.
-intros A eq_dec x P H p.
-elim p using K_dec; intros.
-case (eq_dec x0 y); [left|right]; assumption.
-trivial.
+(** We deduce axiom [K] for (decidable) types *)
+Theorem K_dec_type :
+  forall A:Type,
+    (forall x y:A, {x = y} + {x <> y}) ->
+    forall (x:A) (P:x = x -> Prop), P (refl_equal x) -> forall p:x = x, P p.
+Proof.
+  intros A eq_dec x P H p.
+  elim p using K_dec; intros.
+  case (eq_dec x0 y); [left|right]; assumption.
+  trivial.
 Qed.
 
-  Theorem K_dec_set :
-   forall A:Set,
-     (forall x y:A, {x = y} + {x <> y}) ->
-     forall (x:A) (P:x = x -> Prop), P (refl_equal x) -> forall p:x = x, P p.
-  Proof fun A => K_dec_type (A:=A).
+Theorem K_dec_set :
+  forall A:Set,
+    (forall x y:A, {x = y} + {x <> y}) ->
+    forall (x:A) (P:x = x -> Prop), P (refl_equal x) -> forall p:x = x, P p.
+Proof fun A => K_dec_type (A:=A).
 
-  (** We deduce the [eq_rect_eq] axiom for (decidable) types *)
-  Theorem eq_rect_eq_dec :
-    forall A:Type,
-     (forall x y:A, {x = y} + {x <> y}) ->
-     forall (p:A) (Q:A -> Type) (x:Q p) (h:p = p), x = eq_rect p Q x p h.
-intros A eq_dec.
-apply (Streicher_K__eq_rect_eq A (K_dec_type eq_dec)).
+(** We deduce the [eq_rect_eq] axiom for (decidable) types *)
+Theorem eq_rect_eq_dec :
+  forall A:Type,
+    (forall x y:A, {x = y} + {x <> y}) ->
+    forall (p:A) (Q:A -> Type) (x:Q p) (h:p = p), x = eq_rect p Q x p h.
+Proof.
+  intros A eq_dec.
+  apply (Streicher_K__eq_rect_eq A (K_dec_type eq_dec)).
 Qed.
 
 Unset Implicit Arguments.
 
 (************************************************************************)
-(** *** B.1. Definition of the functor that builds properties of dependent equalities on decidable sets in Type *)
+(** ** Definition of the functor that builds properties of dependent equalities on decidable sets in Type *)
 
 (** The signature of decidable sets in [Type] *)
 
 Module Type DecidableType.
-
+  
   Parameter U:Type.
   Axiom eq_dec : forall x y:U, {x = y} + {x <> y}.
 
@@ -215,16 +219,17 @@ Module DecidableEqDep (M:DecidableType).
   Lemma inj_pairP2 :
     forall (P:U -> Prop) (x:U) (p q:P x),
       ex_intro P x p = ex_intro P x q -> p = q.
-  intros.
-  apply inj_right_pair with (A:=U).
-  intros x0 y0; case (eq_dec x0 y0); [left|right]; assumption.
-  assumption.
+  Proof.
+    intros.
+    apply inj_right_pair with (A:=U).
+    intros x0 y0; case (eq_dec x0 y0); [left|right]; assumption.
+    assumption.
   Qed.
 
 End DecidableEqDep.
 
 (************************************************************************)
-(** *** B.2 Definition of the functor that builds properties of dependent equalities on decidable sets in Set *)
+(** ** B Definition of the functor that builds properties of dependent equalities on decidable sets in Set *)
 
 (** The signature of decidable sets in [Set] *)
 

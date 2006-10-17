@@ -8,15 +8,15 @@
 
 (* $Id$ *)
 
-(* Contributed by Laurent Théry (INRIA);
-   Adapted to Coq V8 by the Coq Development Team *)
+(** Contributed by Laurent Théry (INRIA);
+    Adapted to Coq V8 by the Coq Development Team *)
 
 Require Import Bool.
 Require Import BinPos.
 
-(** *** Definition of ascii characters *)
+(** * Definition of ascii characters *)
 
-(* Definition of ascii character as a 8 bits constructor *)
+(** Definition of ascii character as a 8 bits constructor *)
  
 Inductive ascii : Set := Ascii (_ _ _ _ _ _ _ _ : bool).
 
@@ -29,86 +29,86 @@ Definition one := Ascii true false false false false false false false.
  
 Definition app1 (f : bool -> bool) (a : ascii) :=
   match a with
-  | Ascii a1 a2 a3 a4 a5 a6 a7 a8 =>
+    | Ascii a1 a2 a3 a4 a5 a6 a7 a8 =>
       Ascii (f a1) (f a2) (f a3) (f a4) (f a5) (f a6) (f a7) (f a8)
   end.
  
 Definition app2 (f : bool -> bool -> bool) (a b : ascii) :=
   match a, b with
-  | Ascii a1 a2 a3 a4 a5 a6 a7 a8, Ascii b1 b2 b3 b4 b5 b6 b7 b8 =>
+    | Ascii a1 a2 a3 a4 a5 a6 a7 a8, Ascii b1 b2 b3 b4 b5 b6 b7 b8 =>
       Ascii (f a1 b1) (f a2 b2) (f a3 b3) (f a4 b4) 
-        (f a5 b5) (f a6 b6) (f a7 b7) (f a8 b8)
+      (f a5 b5) (f a6 b6) (f a7 b7) (f a8 b8)
   end.
 
 Definition shift (c : bool) (a : ascii) :=
   match a with
-  | Ascii a1 a2 a3 a4 a5 a6 a7 a8 => Ascii c a1 a2 a3 a4 a5 a6 a7
+    | Ascii a1 a2 a3 a4 a5 a6 a7 a8 => Ascii c a1 a2 a3 a4 a5 a6 a7
   end.
 
-(* Definition of a decidable function that is effective *)
+(** Definition of a decidable function that is effective *)
  
 Definition ascii_dec : forall a b : ascii, {a = b} + {a <> b}.
- decide equality; apply bool_dec.
+  decide equality; apply bool_dec.
 Defined.
 
-(** *** Conversion between natural numbers modulo 256 and ascii characters *)
+(** * Conversion between natural numbers modulo 256 and ascii characters *)
 
-(* Auxillary function that turns a positive into an ascii by
+(** Auxillary function that turns a positive into an ascii by
    looking at the last n bits, ie z mod 2^n *)
 
 Fixpoint ascii_of_pos_aux (res acc : ascii) (z : positive) 
- (n : nat) {struct n} : ascii :=
+  (n : nat) {struct n} : ascii :=
   match n with
-  | O => res
-  | S n1 =>
+    | O => res
+    | S n1 =>
       match z with
-      | xH => app2 orb res acc
-      | xI z' => ascii_of_pos_aux (app2 orb res acc) (shift false acc) z' n1
-      | xO z' => ascii_of_pos_aux res (shift false acc) z' n1
+	| xH => app2 orb res acc
+	| xI z' => ascii_of_pos_aux (app2 orb res acc) (shift false acc) z' n1
+	| xO z' => ascii_of_pos_aux res (shift false acc) z' n1
       end
   end.
 
 
-(* Function that turns a positive into an ascii by
-   looking at the last 8 bits, ie a mod 8 *)
+(** Function that turns a positive into an ascii by
+    looking at the last 8 bits, ie a mod 8 *)
  
 Definition ascii_of_pos (a : positive) := ascii_of_pos_aux zero one a 8.
- 
-(* Function that turns a Peano number into an ascii by converting it
-   to positive *)
+
+(** Function that turns a Peano number into an ascii by converting it
+    to positive *)
 
 Definition ascii_of_nat (a : nat) :=
   match a with
-  | O => zero
-  | S a' => ascii_of_pos (P_of_succ_nat a')
+    | O => zero
+    | S a' => ascii_of_pos (P_of_succ_nat a')
   end.
  
-(* The opposite function *)
+(** The opposite function *)
 
 Definition nat_of_ascii (a : ascii) : nat :=
   let (a1, a2, a3, a4, a5, a6, a7, a8) := a in
-      2 *
+    2 *
+    (2 *
       (2 *
-       (2 *
         (2 *
-         (2 *
           (2 *
-           (2 * (if a8 then 1 else 0)
-            + (if a7 then 1 else 0))
-           + (if a6 then 1 else 0))
-          + (if a5 then 1 else 0))
-         + (if a4 then 1 else 0))
+            (2 *
+              (2 * (if a8 then 1 else 0)
+		+ (if a7 then 1 else 0))
+              + (if a6 then 1 else 0))
+            + (if a5 then 1 else 0))
+          + (if a4 then 1 else 0))
         + (if a3 then 1 else 0))
-       + (if a2 then 1 else 0))
-      + (if a1 then 1 else 0).
+      + (if a2 then 1 else 0))
+    + (if a1 then 1 else 0).
 
 Theorem ascii_nat_embedding : 
   forall a : ascii, ascii_of_nat (nat_of_ascii a) = a.
 Proof.
   destruct a as [[|][|][|][|][|][|][|][|]]; compute; reflexivity.
-Abort.
+Qed.
 
-(** *** Concrete syntax *)
+(** * Concrete syntax *)
 
 (**
   Ascii characters can be represented in scope char_scope as follows:

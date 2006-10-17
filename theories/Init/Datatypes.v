@@ -48,7 +48,7 @@ Inductive Empty_set : Set :=.
     sole inhabitant is denoted [refl_identity A a] *)
 
 Inductive identity (A:Type) (a:A) : A -> Type :=
-    refl_identity : identity (A:=A) a a.
+  refl_identity : identity (A:=A) a a.
 Hint Resolve refl_identity: core v62.
 
 Implicit Arguments identity_ind [A].
@@ -65,8 +65,8 @@ Implicit Arguments None [A].
 
 Definition option_map (A B:Type) (f:A->B) o :=
   match o with
-  | Some a => Some (f a)
-  | None => None
+    | Some a => Some (f a)
+    | None => None
   end.
 
 (** [sum A B], written [A + B], is the disjoint sum of [A] and [B] *)
@@ -81,7 +81,7 @@ Notation "x + y" := (sum x y) : type_scope.
     the pair [pair A B a b] of [a] and [b] is abbreviated [(a,b)] *)
 
 Inductive prod (A B:Type) : Type :=
-    pair : A -> B -> prod A B.
+  pair : A -> B -> prod A B.
 Add Printing Let prod.
 
 Notation "x * y" := (prod x y) : type_scope.
@@ -90,27 +90,27 @@ Notation "( x , y , .. , z )" := (pair .. (pair x y) .. z) : core_scope.
 Section projections.
   Variables A B : Type.
   Definition fst (p:A * B) := match p with
-                              | (x, y) => x
+				| (x, y) => x
                               end.
   Definition snd (p:A * B) := match p with
-                              | (x, y) => y
+				| (x, y) => y
                               end.
 End projections. 
 
 Hint Resolve pair inl inr: core v62.
 
 Lemma surjective_pairing :
- forall (A B:Type) (p:A * B), p = pair (fst p) (snd p).
+  forall (A B:Type) (p:A * B), p = pair (fst p) (snd p).
 Proof.
-destruct p; reflexivity.
+  destruct p; reflexivity.
 Qed.
 
 Lemma injective_projections :
- forall (A B:Type) (p1 p2:A * B),
-   fst p1 = fst p2 -> snd p1 = snd p2 -> p1 = p2.
+  forall (A B:Type) (p1 p2:A * B),
+    fst p1 = fst p2 -> snd p1 = snd p2 -> p1 = p2.
 Proof.
-destruct p1; destruct p2; simpl in |- *; intros Hfst Hsnd.
-rewrite Hfst; rewrite Hsnd; reflexivity. 
+  destruct p1; destruct p2; simpl in |- *; intros Hfst Hsnd.
+  rewrite Hfst; rewrite Hsnd; reflexivity. 
 Qed.
 
 Definition prod_uncurry (A B C:Type) (f:prod A B -> C) 
@@ -130,9 +130,9 @@ Inductive comparison : Set :=
 
 Definition CompOpp (r:comparison) :=
   match r with
-  | Eq => Eq
-  | Lt => Gt
-  | Gt => Lt
+    | Eq => Eq
+    | Lt => Gt
+    | Gt => Lt
   end.
 
 (* Compatibility *)
