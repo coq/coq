@@ -97,10 +97,12 @@ Add Legacy Abstract Ring AT AplusT AmultT AoneT AzeroT AoppT AeqT RTT.
 (*    Lemmas to be used    *)
 (***************************)
 
-Lemma AplusT_sym : forall r1 r2:AT, AplusT r1 r2 = AplusT r2 r1.
+Lemma AplusT_comm : forall r1 r2:AT, AplusT r1 r2 = AplusT r2 r1.
 Proof.
   intros; legacy ring.
 Qed.
+
+Notation AplusT_sym := AplusT_comm (only parsing). (* Compatibility *)
 
 Lemma AplusT_assoc :
  forall r1 r2 r3:AT, AplusT (AplusT r1 r2) r3 = AplusT r1 (AplusT r2 r3).
@@ -108,10 +110,12 @@ Proof.
   intros; legacy ring.
 Qed.
 
-Lemma AmultT_sym : forall r1 r2:AT, AmultT r1 r2 = AmultT r2 r1.
+Lemma AmultT_comm : forall r1 r2:AT, AmultT r1 r2 = AmultT r2 r1.
 Proof.
   intros; legacy ring.
 Qed.
+
+Notation AmultT_sym := AmultT_comm (only parsing). (* Compatibility *)
 
 Lemma AmultT_assoc :
  forall r1 r2 r3:AT, AmultT (AmultT r1 r2) r3 = AmultT r1 (AmultT r2 r3).
@@ -177,7 +181,7 @@ Qed.
  
 Lemma AinvT_r : forall r:AT, r <> AzeroT -> AmultT r (AinvT r) = AoneT.
 Proof.
-  intros; rewrite AmultT_sym; apply Th_inv_defT; auto.
+  intros; rewrite AmultT_comm; apply Th_inv_defT; auto.
 Qed.
  
 Lemma Rmult_neq_0_reg :
@@ -317,7 +321,7 @@ simpl in |- *; rewrite merge_mult_correct; simpl in |- *;
  rewrite assoc_mult_correct1; rewrite H2; simpl in |- *;
  rewrite <- assoc_mult_correct1 in H1; unfold interp_ExprA at 3 in H1;
  fold interp_ExprA in H1; rewrite (H0 lvar) in H1;
- rewrite (AmultT_sym (interp_ExprA lvar e3) (interp_ExprA lvar e1));
+ rewrite (AmultT_comm (interp_ExprA lvar e3) (interp_ExprA lvar e1));
  rewrite <- AmultT_assoc; rewrite H1; rewrite AmultT_assoc; 
  legacy ring.
 simpl in |- *; rewrite (H0 lvar); auto.
@@ -387,7 +391,7 @@ simpl in |- *; rewrite merge_plus_correct; simpl in |- *;
      (AplusT (AplusT (interp_ExprA lvar e2) (interp_ExprA lvar e3))
         (interp_ExprA lvar e1))); rewrite <- AplusT_assoc;
  rewrite
-  (AplusT_sym (interp_ExprA lvar (assoc e1)) (interp_ExprA lvar (assoc e2)))
+  (AplusT_comm (interp_ExprA lvar (assoc e1)) (interp_ExprA lvar (assoc e2)))
   ; rewrite assoc_plus_correct; rewrite H1; simpl in |- *; 
  rewrite (H0 lvar);
  rewrite <-
@@ -397,10 +401,10 @@ simpl in |- *; rewrite merge_plus_correct; simpl in |- *;
  rewrite
   (AplusT_assoc (interp_ExprA lvar e2) (interp_ExprA lvar e1)
      (interp_ExprA lvar e3));
- rewrite (AplusT_sym (interp_ExprA lvar e1) (interp_ExprA lvar e3));
+ rewrite (AplusT_comm (interp_ExprA lvar e1) (interp_ExprA lvar e3));
  rewrite <-
   (AplusT_assoc (interp_ExprA lvar e2) (interp_ExprA lvar e3)
-     (interp_ExprA lvar e1)); apply AplusT_sym.
+     (interp_ExprA lvar e1)); apply AplusT_comm.
 unfold assoc in |- *; fold assoc in |- *; unfold interp_ExprA in |- *;
  fold interp_ExprA in |- *; rewrite assoc_mult_correct; 
  rewrite (H0 lvar); simpl in |- *; auto.
@@ -454,7 +458,7 @@ Lemma distrib_mult_right_correct :
    AmultT (interp_ExprA lvar e1) (interp_ExprA lvar e2).
 Proof.
 simple induction e1; try intros; simpl in |- *; auto.
-rewrite AmultT_sym; rewrite AmultT_AplusT_distr; rewrite (H e2 lvar);
+rewrite AmultT_comm; rewrite AmultT_AplusT_distr; rewrite (H e2 lvar);
  rewrite (H0 e2 lvar); legacy ring.
 Qed.
 
@@ -466,18 +470,18 @@ Proof.
 simple induction e1; try intros; simpl in |- *.
 rewrite AmultT_Ol; rewrite distrib_mult_right_correct; simpl in |- *;
  apply AmultT_Or.
-rewrite distrib_mult_right_correct; simpl in |- *; apply AmultT_sym. 
-rewrite AmultT_sym;
+rewrite distrib_mult_right_correct; simpl in |- *; apply AmultT_comm. 
+rewrite AmultT_comm;
  rewrite
   (AmultT_AplusT_distr (interp_ExprA lvar e2) (interp_ExprA lvar e)
      (interp_ExprA lvar e0));
- rewrite (AmultT_sym (interp_ExprA lvar e2) (interp_ExprA lvar e));
- rewrite (AmultT_sym (interp_ExprA lvar e2) (interp_ExprA lvar e0));
+ rewrite (AmultT_comm (interp_ExprA lvar e2) (interp_ExprA lvar e));
+ rewrite (AmultT_comm (interp_ExprA lvar e2) (interp_ExprA lvar e0));
  rewrite (H e2 lvar); rewrite (H0 e2 lvar); auto.
-rewrite distrib_mult_right_correct; simpl in |- *; apply AmultT_sym.
-rewrite distrib_mult_right_correct; simpl in |- *; apply AmultT_sym.
-rewrite distrib_mult_right_correct; simpl in |- *; apply AmultT_sym.
-rewrite distrib_mult_right_correct; simpl in |- *; apply AmultT_sym.
+rewrite distrib_mult_right_correct; simpl in |- *; apply AmultT_comm.
+rewrite distrib_mult_right_correct; simpl in |- *; apply AmultT_comm.
+rewrite distrib_mult_right_correct; simpl in |- *; apply AmultT_comm.
+rewrite distrib_mult_right_correct; simpl in |- *; apply AmultT_comm.
 Qed.
 
 Lemma distrib_correct :
