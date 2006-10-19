@@ -261,7 +261,7 @@ type goal = hyp list * concl
 let prepare_hyp sigma env ((i,c,d) as a) =
   env, sigma,
   ((i,string_of_id i),c,d), 
-  (msg (pr_var_decl env a), msg (pr_lconstr_env_at_top env d))
+  (msg (pr_var_decl env a), msg (pr_ltype_env env d))
 
 let prepare_hyps sigma env =
   assert (rel_context env = []);
@@ -275,7 +275,7 @@ let prepare_hyps sigma env =
 let prepare_goal sigma g =
   let env = evar_env g in
   (prepare_hyps sigma env,
-   (env, sigma, g.evar_concl, msg (pr_lconstr_env_at_top env g.evar_concl)))
+   (env, sigma, g.evar_concl, msg (pr_ltype_env_at_top env g.evar_concl)))
 
 let prepare_hyps_filter info sigma env =
   assert (rel_context env = []);
@@ -291,7 +291,7 @@ let prepare_hyps_filter info sigma env =
 
 let prepare_meta sigma env (m,typ)  =
   env, sigma, 
-  (msg (str " ?" ++ int m ++ str " : " ++ pr_lconstr_env_at_top env typ))
+  (msg (str " ?" ++ int m ++ str " : " ++ pr_ltype_env_at_top env typ))
 
 let prepare_metas info sigma env =
   List.fold_right 
