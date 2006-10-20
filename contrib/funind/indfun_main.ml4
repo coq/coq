@@ -237,6 +237,12 @@ let msg x = () ;; let pr_lconstr c = str ""
 let prconstr c =  msg (str"  " ++ Printer.pr_lconstr c ++ str"\n")
 let prlistconstr lc = List.iter prconstr lc
 let prstr s = msg(str s)
+let prNamedConstr s c = 
+  begin
+    msg(str "");
+    msg(str(s^"==>\n ") ++ Printer.pr_lconstr c ++ str "\n<==\n");
+    msg(str "");
+  end
 
 
 
@@ -432,3 +438,32 @@ TACTIC EXTEND poseq
       [ poseq x c ]
 END
 
+(*
+VERNAC COMMAND EXTEND Showindinfo
+  [ "showindinfo" ident(x) ] -> [ Merge.showind x ]
+END
+
+VERNAC COMMAND EXTEND MergeFunind
+  [ "Mergeschemes" lconstr(c) "with" lconstr(c')  ] -> 
+     [ 
+       let c1 = Constrintern.interp_constr Evd.empty (Global.env()) c in
+       let c2 = Constrintern.interp_constr Evd.empty (Global.env()) c' in
+       let id1,args1 = 
+	 try 
+	   let hd,args = destApp c1 in
+	   if Term.isInd hd then hd , args 
+	   else raise (Util.error "Ill-formed (fst) argument")
+	 with Invalid_argument _ 
+	     -> Util.error ("Bad argument form for merging schemes") in
+       let id2,args2 = 
+	 try
+ 	   let hd,args = destApp c2 in
+	   if isInd hd then hd , args 
+	   else raise (Util.error "Ill-formed (snd) argument")
+	 with Invalid_argument _ 
+	     -> Util.error ("Bad argument form for merging schemes") in
+       (* TOFO: enlever le ignore et declarer l'inductif *)
+       ignore(Merge.merge c1 c2 args1 args2)
+     ]
+END
+*)
