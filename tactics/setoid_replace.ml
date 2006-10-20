@@ -1515,33 +1515,35 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
       | Prod (_, c1, c2) -> 
           if (dependent (mkRel 1) c2)
           then
-           errorlabstrm "Setoid_replace"
-            (str "Cannot rewrite in the type of a variable bound " ++
-             str "in a dependent product.")
+            if (occur_term t c2)
+	    then errorlabstrm "Setoid_replace"
+              (str "Cannot rewrite in the type of a variable bound " ++
+		  str "in a dependent product.")
+	    else [ToKeep (in_c,output_relation,output_direction)]
           else 
-           let typeofc1 = Tacmach.pf_type_of gl c1 in
-            if not (Tacmach.pf_conv_x gl typeofc1 mkProp) then
-             (* to avoid this error we should introduce an impl relation
-                whose first argument is Type instead of Prop. However,
-                the type of the new impl would be Type -> Prop -> Prop
-                that is no longer a Relation_Definitions.relation. Thus
-                the Coq part of the tactic should be heavily modified. *)
-             errorlabstrm "Setoid_replace"
-              (str "Rewriting in a product A -> B is possible only when A " ++
-               str "is a proposition (i.e. A is of type Prop). The type " ++
-               pr_lconstr c1 ++ str " has type " ++ pr_lconstr typeofc1 ++
-               str " that is not convertible to Prop.")
-            else
-             aux output_relation output_direction
-              (mkApp ((Lazy.force coq_impl),
-                [| c1 ; subst1 (mkRel 1 (*dummy*)) c2 |]))
+            let typeofc1 = Tacmach.pf_type_of gl c1 in
+              if not (Tacmach.pf_conv_x gl typeofc1 mkProp) then
+		(* to avoid this error we should introduce an impl relation
+                   whose first argument is Type instead of Prop. However,
+                   the type of the new impl would be Type -> Prop -> Prop
+                   that is no longer a Relation_Definitions.relation. Thus
+                   the Coq part of the tactic should be heavily modified. *)
+		errorlabstrm "Setoid_replace"
+		  (str "Rewriting in a product A -> B is possible only when A " ++
+		      str "is a proposition (i.e. A is of type Prop). The type " ++
+		      pr_lconstr c1 ++ str " has type " ++ pr_lconstr typeofc1 ++
+		      str " that is not convertible to Prop.")
+              else
+		aux output_relation output_direction
+		  (mkApp ((Lazy.force coq_impl),
+			 [| c1 ; subst1 (mkRel 1 (*dummy*)) c2 |]))
       | _ ->
-        if occur_term t in_c then
-         errorlabstrm "Setoid_replace"
-          (str "Trying to replace " ++ pr_lconstr t ++ str " in " ++ pr_lconstr in_c ++
-           str " that is not an applicative context.")
-        else
-         [ToKeep (in_c,output_relation,output_direction)]
+          if occur_term t in_c then
+            errorlabstrm "Setoid_replace"
+              (str "Trying to replace " ++ pr_lconstr t ++ str " in " ++ pr_lconstr in_c ++
+		  str " that is not an applicative context.")
+          else
+            [ToKeep (in_c,output_relation,output_direction)]
  in
   let aux2 output_relation output_direction =
    List.map
