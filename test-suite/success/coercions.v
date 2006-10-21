@@ -22,7 +22,7 @@ Coercion i : h >-> nat.
 Parameter C : nat -> nat -> nat.
 Coercion C : nat >-> Funclass.
 
-(* Remark: in the following example, it cannot be decide whether C is
+(* Remark: in the following example, it cannot be decided whether C is
    from nat to Funclass or from A to nat. An explicit Coercion command is
    expected 
 
@@ -30,3 +30,15 @@ Parameter A : nat -> Prop.
 Parameter C:> forall n:nat, A n -> nat.
 *)
 
+(* Check coercion between products based on eta-expansion *)
+(* (there was a de Bruijn bug until rev ) *)
+
+Section P.
+
+Variable E : Set.
+Variables C D : E -> Prop.
+Variable G :> forall x, C x -> D x.
+
+Check fun (H : forall y:E, y = y -> C y) => (H : forall y:E, y = y -> D y).
+
+End P.
