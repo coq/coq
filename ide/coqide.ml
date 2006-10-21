@@ -329,9 +329,10 @@ let remove_current_view_page () =
     ((notebook ())#get_nth_page c)#misc#hide ()
 
 
-let is_word_char c = 
-  Glib.Unichar.isalnum c || c = underscore || c = prime || c = arobase
-  
+let is_word_char c =
+  (* TODO: avoid num and prime at the head of a word *)
+  Glib.Unichar.isalnum c || c = underscore || c = prime
+
 let starts_word it = 
   prerr_endline ("Starts word ? '"^(Glib.Utf8.from_unichar it#char)^"'");
   (not it#copy#nocopy#backward_char ||
