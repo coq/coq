@@ -72,7 +72,9 @@ module Default = struct
       | App (f,l) -> mkApp (whd_evar sigma f,l)
       | _ -> whd_evar sigma t
 
-  let class_of1 env sigma t = class_of env sigma (whd_app_evar sigma t)
+  let class_of1 env isevars t =
+    let sigma = evars_of isevars in
+    class_of env sigma (whd_app_evar sigma t)
 
   (* Here, funj is a coercion therefore already typed in global context *)
   let apply_coercion_args env argl funj =
@@ -90,7 +92,6 @@ module Default = struct
       apply_rec [] funj.uj_type argl
 
   (* appliquer le chemin de coercions de patterns p *)
-
   let apply_pattern_coercion loc pat p =
     List.fold_left
       (fun pat (co,n) ->
@@ -106,7 +107,6 @@ module Default = struct
       apply_pattern_coercion loc pat p
 
   (* appliquer le chemin de coercions p à hj *)
-
   let apply_coercion env p hj typ_cl =
     try 
       fst (List.fold_left
@@ -131,14 +131,14 @@ module Default = struct
 	      (isevars',{ uj_val = j.uj_val; uj_type = t })
 	| _ ->
        	    (try
- 	       let t,i1 = class_of1 env (evars_of isevars) j.uj_type in
+ 	       let t,i1 = class_of1 env isevars j.uj_type in
       	       let p = lookup_path_to_fun_from i1 in
 		 (isevars,apply_coercion env p j t)
 	     with Not_found -> (isevars,j))
 
   let inh_tosort_force loc env isevars j =
     try
-      let t,i1 = class_of1 env (evars_of isevars) j.uj_type in
+      let t,i1 = class_of1 env isevars j.uj_type in
       let p = lookup_path_to_sort_from i1 in
       let j1 = apply_coercion env p j t in 
       let j2 = on_judgment_type (whd_evar (evars_of isevars)) j1 in
@@ -161,8 +161,8 @@ module Default = struct
   let inh_coerce_to_fail env isevars c1 v t =
     let v', t' =
       try 
-	let t1,i1 = class_of1 env (evars_of isevars) c1 in
-	let t2,i2 = class_of1 env (evars_of isevars) t in
+	let t1,i1 = class_of1 env isevars c1 in
+	let t2,i2 = class_of1 env isevars t in
 	let p = lookup_path_between (i2,i1) in
 	  match v with
 	      Some v -> 
