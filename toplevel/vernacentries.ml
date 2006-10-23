@@ -1025,7 +1025,6 @@ let vernac_backtrack snum pnum naborts =
   (try print_subgoals () with UserError _ -> ())
   
 
-  (* Est-ce normal que "Focus" ne semble pas se comporter comme "Focus 1" ? *)
 let vernac_focus gln =
   check_not_proof_mode "No focussing or Unfocussing in Proof Mode.";
   match gln with 

@@ -43,6 +43,31 @@ let and_status = List.fold_left (+) 0
 let pf_env gls = Global.env_of_context (sig_it gls).evar_hyps
 let pf_hyps gls = named_context_of_val (sig_it gls).evar_hyps
 
+
+let descend n p =
+  match p.ref with
+    | None        -> error "It is a leaf."
+    | Some(r,pfl) ->
+    	if List.length pfl >= n then
+	  (match list_chop (n-1) pfl with 
+	     | left,(wanted::right) ->
+		 (wanted,
+		  (fun pfl' ->
+                     if (List.length pfl' = 1) 
+		       & (List.hd pfl').goal = wanted.goal 
+		     then
+                       let pf'       = List.hd pfl' in
+                       let spfl      = left@(pf'::right) in
+                       let newstatus = and_status (List.map pf_status spfl) in
+                       { p with 
+			   open_subgoals = newstatus;
+			   ref           = Some(r,spfl) }
+                     else 
+		       error "descend: validation"))
+	     | _ -> assert false)
+    	else 
+	  error "Too few subproofs"
+
 (* Normalizing evars in a goal. Called by tactic Local_constraints
    (i.e. when the sigma of the proof tree changes). Detect if the
    goal is unchanged *)
@@ -234,6 +259,12 @@ let refiner = function
 let local_Constraints gl = refiner Change_evars gl
 
 let norm_evar_tac = local_Constraints
+
+let norm_evar_proof sigma pf =
+  let nf_subgoal i sgl =
+    let (gll,v) = norm_evar_tac {it=sgl.goal;sigma=sigma} in
+    v (List.map leaf gll.it) in
+  frontier_mapi nf_subgoal pf
 
 (* [extract_open_proof : proof_tree -> constr * (int * constr) list]
   takes a (not necessarly complete) proof and gives a pair (pfterm,obl)
@@ -621,7 +652,6 @@ let tactic_list_tactic tac gls =
 
 
 
-
 (* The type of proof-trees state and a few utilities 
    A proof-tree state is built from a proof-tree, a set of global
    constraints, and a stack which allows to navigate inside the
@@ -653,36 +683,14 @@ let nth_goal_of_pftreestate n pts =
   try {it = List.nth goals (n-1); sigma = pts.tpfsigma }
   with Invalid_argument _ | Failure _ -> non_existent_goal n
 
-let descend n p =
-  match p.ref with
-    | None        -> error "It is a leaf."
-    | Some(r,pfl) ->
-    	if List.length pfl >= n then
-	  (match list_chop (n-1) pfl with 
-	     | left,(wanted::right) ->
-		 (wanted,
-		  (fun pfl' ->
-                     if (List.length pfl' = 1) 
-		       & (List.hd pfl').goal = wanted.goal 
-		     then
-                       let pf'       = List.hd pfl' in
-                       let spfl      = left@(pf'::right) in
-                       let newstatus = and_status (List.map pf_status spfl) in
-                       { p with 
-			   open_subgoals = newstatus;
-			   ref           = Some(r,spfl) }
-                     else 
-		       error "descend: validation"))
-	     | _ -> assert false)
-    	else 
-	  error "Too few subproofs"
-
 let traverse n pts = match n with 
   | 0 -> (* go to the parent *)
       (match  pts.tstack with
 	 | [] -> error "traverse: no ancestors"
 	 | (_,v)::tl ->
-	     { tpf = v [pts.tpf];
+             let pf = v [pts.tpf] in
+             let pf = norm_evar_proof pts.tpfsigma pf in
+	     { tpf = pf;
 	       tstack = tl;
 	       tpfsigma = pts.tpfsigma })
   | -1 -> (* go to the hidden tactic-proof, if any, otherwise fail *)
@@ -712,8 +720,7 @@ let map_pftreestate f pts =
   let sigr = ref pts.tpfsigma in
   let tpf' = f sigr pts.tpf in
   let tpf'' =
-    if !sigr == pts.tpfsigma then tpf'
-    else frontier_mapi (fun _ g -> app_tac sigr norm_evar_tac g) tpf' in
+    if !sigr == pts.tpfsigma then tpf' else norm_evar_proof !sigr tpf' in
   { tpf      = tpf'';
     tpfsigma = !sigr;
     tstack   = pts.tstack }
