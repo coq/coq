@@ -1020,6 +1020,7 @@ let vernac_backtrack snum pnum naborts =
   for i = 1 to naborts do vernac_abort None done;
   undo_todepth pnum;
   vernac_backto snum;
+  Pp.flush_all();
   (* there may be no proof in progress, even if no abort *)
   (try print_subgoals () with UserError _ -> ())
   
