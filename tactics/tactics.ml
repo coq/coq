@@ -291,9 +291,8 @@ let find_intro_names ctxt gl =
     (fun decl acc -> 
       let wantedname,x,typdecl = decl in
       let env,idl = acc in
-      let name = fresh_id_avoid idl (default_id env gl.sigma decl) in
+      let name = fresh_id idl (default_id env gl.sigma decl) gl in
       let newenv = push_rel (wantedname,x,typdecl) env in
-      (* 	let newgl = List.hd ((fst (intro gl)).) in *)
       (newenv,(name::idl)))
     ctxt (pf_env gl , []) in
   List.rev res 
