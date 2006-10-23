@@ -2017,7 +2017,8 @@ let main files =
 		ignore (revert_m#connect#activate revert_f);
 		
 		(* File/Close Menu *)
-		let close_m = file_factory#add_item "_Close Buffer" in
+		let close_m =
+                  file_factory#add_item "_Close Buffer" ~key:GdkKeysyms._W in
 		let close_f () = 
 		  let v = out_some !active_view in
 		  let act = get_current_view_page () in
@@ -2042,7 +2043,9 @@ let main files =
 			    let s,_ = run_command av#insert_message cmd in
 			      !flash_info (cmd ^ if s = Unix.WEXITED 0 then " succeeded" else " failed")
 		  in
-		  let _ = file_factory#add_item "_Print" ~callback:print_f in
+		  let _ = file_factory#add_item "_Print"
+	            ~key:GdkKeysyms._P
+                    ~callback:print_f in
 
 		  (* File/Export to Menu *)
 		  let export_f kind () =
@@ -2501,9 +2504,13 @@ let main files =
 				  add_to_menu_toolbar 
 				    "_Save" 
 				    ~tooltip:"Save current buffer" 
-				    (* ~key:GdkKeysyms._Down *)
 				    ~callback:save_f
 				    `SAVE;
+				  add_to_menu_toolbar 
+				    "_Close" 
+				    ~tooltip:"Close current buffer" 
+				    ~callback:close_f
+				    `CLOSE;
 				  add_to_menu_toolbar 
 				    "_Forward" 
 				    ~tooltip:"Forward one command" 
