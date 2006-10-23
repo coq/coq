@@ -267,7 +267,7 @@ let run_command f c =
 
 let browse f url =
   let l,r = !current.cmd_browse in
-  let (s,res) = run_command f (l ^ url ^ r) in
+  let (_s,_res) = run_command f (l ^ url ^ r) in
   ()
 
 let url_for_keyword =
@@ -306,18 +306,27 @@ let tab = Glib.Utf8.to_unichar "\t" (ref 0)
 
 
 (*
-  checks if two file names refer to the same (existing) file
-*)
+  checks if two file names refer to the same (existing) file by
+  comparing their device and inode. 
+  It seems that under Windows, inode is always 0, so we cannot
+  accurately check if 
 
-let same_file f1 f2 =
+*)
+(* Optimised for partial application (in case many candidates must be
+   compared to f1). *)
+let same_file f1 =
   try
-    let s1 = Unix.stat f1
-    and s2 = Unix.stat f2 
-    in
-      (s1.Unix.st_dev = s2.Unix.st_dev) &&
-	(s1.Unix.st_ino = s2.Unix.st_ino) 
+    let s1 = Unix.stat f1 in
+    (fun f2 ->
+      try
+        let s2 = Unix.stat f2 in
+        s1.Unix.st_dev = s2.Unix.st_dev &&
+          if Sys.os_type = "Win32" then f1 = f2 
+          else s1.Unix.st_ino = s2.Unix.st_ino
+      with
+          Unix.Unix_error _ -> false)
   with
-      Unix.Unix_error _ -> false
+      Unix.Unix_error _ -> (fun _ -> false)
 
 let absolute_filename f =
   if Filename.is_relative f then 
