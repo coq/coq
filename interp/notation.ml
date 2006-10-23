@@ -300,8 +300,8 @@ let declare_notation_interpretation ntn scopt pat df =
   let scope = match scopt with Some s -> s | None -> default_scope in
   let sc = find_scope scope in
   if Gmap.mem ntn sc.notations && Options.is_verbose () then
-    warning ("Notation "^ntn^" was already used"^
-    (if scopt = None then "" else " in scope "^scope));
+    msg_warning (str ("Notation "^ntn^" was already used"^
+    (if scopt = None then "" else " in scope "^scope)));
   let sc = { sc with notations = Gmap.add ntn (pat,df) sc.notations } in
   scope_map := Gmap.add scope sc !scope_map;
   if scopt = None then scope_stack := SingleNotation ntn :: !scope_stack
