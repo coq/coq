@@ -53,3 +53,12 @@ Ltac f_equal :=
 
 Tactic Notation "rewrite_all" constr(eq) := repeat rewrite eq in *.
 Tactic Notation "rewrite_all" "<-" constr(eq) := repeat rewrite <- eq in *.
+
+(* Keeping a copy of an expression *)
+
+Ltac remembertac x a :=
+  let x := fresh x in
+  let H := fresh "Heq" x in
+  (set (x:=a) in *; assert (H: x=a) by reflexivity; clearbody x).
+
+Tactic Notation "remember" constr(c) "as" ident(x) := remembertac x c.
