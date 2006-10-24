@@ -127,6 +127,8 @@ let rec pr_message_token prid = function
   | MsgInt n -> int n
   | MsgIdent id -> prid id
 
+let pr_fresh_ids = prlist (fun s -> spc() ++ pr_or_var qs s)
+
 let rec pr_raw_generic prc prlc prtac prref (x:(Genarg.rlevel, Tacexpr.raw_tactic_expr) Genarg.generic_argument) =
   match Genarg.genarg_tag x with
   | BoolArgType -> pr_arg str (if out_gen rawwit_bool x then "true" else "false")
@@ -900,7 +902,7 @@ let rec pr_tac inherited tac =
       str "constr:" ++ pr_constr c, latom
   | TacArg(ConstrMayEval c) ->
       pr_may_eval pr_constr pr_lconstr pr_cst c, leval
-  | TacArg(TacFreshId sopt) -> str "fresh" ++ pr_opt qs sopt, latom
+  | TacArg(TacFreshId l) -> str "fresh" ++ pr_fresh_ids l, latom
   | TacArg(Integer n) -> int n, latom
   | TacArg(TacCall(loc,f,l)) ->
       pr_with_comments loc
@@ -921,7 +923,7 @@ and pr_tacarg = function
   | Reference r -> pr_ref r
   | ConstrMayEval c ->
       pr_may_eval pr_constr pr_lconstr pr_cst c
-  | TacFreshId sopt -> str "fresh" ++ pr_opt qs sopt
+  | TacFreshId l -> str "fresh" ++ pr_fresh_ids l
   | TacExternal (_,com,req,la) ->
       str "external" ++ spc() ++ qs com ++ spc() ++ qs req ++ 
       spc() ++ prlist_with_sep spc pr_tacarg la

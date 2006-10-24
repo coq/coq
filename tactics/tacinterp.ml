@@ -223,7 +223,7 @@ let _ =
       (fun (s,t) -> add_primitive_tactic s t)
       [ "idtac",TacId [];
         "fail", TacFail(ArgArg 0,[]);
-        "fresh", TacArg(TacFreshId None)
+        "fresh", TacArg(TacFreshId [])
       ]
  
 let lookup_atomic id = Idmap.find id !atomic_mactab
@@ -369,9 +369,9 @@ let intern_hyp ist (loc,id as locid) =
 
 let intern_hyp_or_metaid ist id = intern_hyp ist (skip_metaid id)
 
-let intern_int_or_var ist = function
+let intern_or_var ist = function
   | ArgVar locid -> ArgVar (intern_hyp ist locid)
-  | ArgArg n as x -> x
+  | ArgArg _ as x -> x
 
 let intern_inductive ist = function
   | Ident (loc,id) when find_var id ist -> ArgVar (loc,id)
@@ -533,7 +533,7 @@ let intern_inversion_strength lf ist = function
 
 (* Interprets an hypothesis name *)
 let intern_hyp_location ist ((occs,id),hl) =
-  ((List.map (intern_int_or_var ist) occs,intern_hyp ist (skip_metaid id)), hl)
+  ((List.map (intern_or_var ist) occs,intern_hyp ist (skip_metaid id)), hl)
 
 let interp_constrpattern_gen sigma env ltacvar c =
   let c = intern_gen false ~allow_soapp:true ~ltacvars:(ltacvar,[])
@@ -663,13 +663,13 @@ let rec intern_atomic lf ist x =
   (* Automation tactics *)
   | TacTrivial (lems,l) -> TacTrivial (List.map (intern_constr ist) lems,l)
   | TacAuto (n,lems,l) ->
-      TacAuto (option_map (intern_int_or_var ist) n,
+      TacAuto (option_map (intern_or_var ist) n,
         List.map (intern_constr ist) lems,l)
   | TacAutoTDB n -> TacAutoTDB n
   | TacDestructHyp (b,id) -> TacDestructHyp(b,intern_hyp ist id)
   | TacDestructConcl -> TacDestructConcl
   | TacSuperAuto (n,l,b1,b2) -> TacSuperAuto (n,l,b1,b2)
-  | TacDAuto (n,p) -> TacDAuto (option_map (intern_int_or_var ist) n,p)
+  | TacDAuto (n,p) -> TacDAuto (option_map (intern_or_var ist) n,p)
 
   (* Derived basic tactics *)
   | TacSimpleInduction h ->
@@ -767,7 +767,7 @@ and intern_tactic_seq ist = function
       ist.ltacvars, TacMatch (lz,intern_tactic ist c,intern_match_rule ist lmr)
   | TacId l -> ist.ltacvars, TacId (intern_message ist l)
   | TacFail (n,l) -> 
-      ist.ltacvars, TacFail (intern_int_or_var ist n,intern_message ist l)
+      ist.ltacvars, TacFail (intern_or_var ist n,intern_message ist l)
   | TacProgress tac -> ist.ltacvars, TacProgress (intern_tactic ist tac)
   | TacAbstract (tac,s) -> ist.ltacvars, TacAbstract (intern_tactic ist tac,s)
   | TacThen (t1,t2) ->
@@ -780,7 +780,7 @@ and intern_tactic_seq ist = function
       lfun',
       TacThens (t, List.map (intern_tactic { ist with ltacvars = lfun' }) tl)
   | TacDo (n,tac) -> 
-      ist.ltacvars, TacDo (intern_int_or_var ist n,intern_tactic ist tac)
+      ist.ltacvars, TacDo (intern_or_var ist n,intern_tactic ist tac)
   | TacTry tac -> ist.ltacvars, TacTry (intern_tactic ist tac)
   | TacInfo tac -> ist.ltacvars, TacInfo (intern_tactic ist tac)
   | TacRepeat tac -> ist.ltacvars, TacRepeat (intern_tactic ist tac)
@@ -815,7 +815,7 @@ and intern_tacarg strict ist = function
         List.map (intern_tacarg !strict_check ist) l)
   | TacExternal (loc,com,req,la) -> 
       TacExternal (loc,com,req,List.map (intern_tacarg !strict_check ist) la)
-  | TacFreshId _ as x -> x
+  | TacFreshId x -> TacFreshId (List.map (intern_or_var ist) x)
   | Tacexp t -> Tacexp (intern_tactic ist t)
   | TacDynamic(loc,t) as x ->
       (match tag t with
@@ -842,7 +842,7 @@ and intern_genarg ist x =
   | IntArgType -> in_gen globwit_int (out_gen rawwit_int x)
   | IntOrVarArgType ->
       in_gen globwit_int_or_var
-        (intern_int_or_var ist (out_gen rawwit_int_or_var x))
+        (intern_or_var ist (out_gen rawwit_int_or_var x))
   | StringArgType ->
       in_gen globwit_string (out_gen rawwit_string x)
   | PreIdentArgType ->
@@ -1219,10 +1219,24 @@ let rec intropattern_ids = function
       List.flatten (List.map intropattern_ids (List.flatten ll))
   | IntroWildcard | IntroAnonymous -> []
 
-let rec extract_ids = function
-  | (id,VIntroPattern ipat)::tl -> intropattern_ids ipat @ extract_ids tl
-  | _::tl -> extract_ids tl
+let rec extract_ids ids = function
+  | (id,VIntroPattern ipat)::tl when not (List.mem id ids) ->
+      intropattern_ids ipat @ extract_ids ids tl
+  | _::tl -> extract_ids ids tl
   | [] -> []
+
+let default_fresh_id = id_of_string "H"
+
+let interp_fresh_id ist gl l =
+  let ids = map_succeed (function ArgVar(_,id) -> id | _ -> failwith "") l in
+  let avoid = extract_ids ids ist.lfun in
+  let id = 
+    if l = [] then default_fresh_id 
+    else
+      id_of_string (String.concat "" (List.map (function
+	| ArgArg s -> s
+	| ArgVar (_,id) -> string_of_id (interp_ident ist gl id)) l)) in 
+  Tactics.fresh_id avoid id gl
 
 (* To retype a list of key*constr with undefined key *)
 let retype_list sigma env lst =
@@ -1561,9 +1575,8 @@ and interp_tacarg ist gl = function
       interp_app ist gl fv largs loc
   | TacExternal (loc,com,req,la) ->
       interp_external loc ist gl com req (List.map (interp_tacarg ist gl) la)
-  | TacFreshId idopt -> 
-      let s = match idopt with None -> "H" | Some s -> s in
-      let id = Tactics.fresh_id (extract_ids ist.lfun) (id_of_string s) gl in
+  | TacFreshId l -> 
+      let id = interp_fresh_id ist gl l in
       VIntroPattern (IntroIdentifier id)
   | Tacexp t -> val_interp ist gl t
   | TacDynamic(_,t) ->

@@ -115,7 +115,10 @@ GEXTEND Gram
   ;
   may_eval_arg:
     [ [ c = constr_eval -> ConstrMayEval c
-      | IDENT "fresh"; s = OPT STRING -> TacFreshId s ] ]
+      | IDENT "fresh"; l = LIST0 fresh_id -> TacFreshId l ] ]
+  ;
+  fresh_id:
+    [ [ s = STRING -> ArgArg s | id = ident -> ArgVar (loc,id) ] ]
   ;
   constr_eval:
     [ [ IDENT "eval"; rtc = red_expr; "in"; c = Constr.constr ->

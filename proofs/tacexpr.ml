@@ -234,7 +234,7 @@ and ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_arg =
       'ref * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_arg list
   | TacExternal of loc * string * string * 
       ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_arg list
-  | TacFreshId     of string option
+  | TacFreshId     of string or_var list
   | Tacexp of 'tac
 
 (* Globalized tactics *)
