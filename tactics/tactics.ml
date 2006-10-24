@@ -447,12 +447,9 @@ let rec intros_rmove = function
  		    move_to_rhyp destopt;
 		    intros_rmove rest ]
 
-(****************************************************)
-(*            Resolution tactics                    *)
-(****************************************************)
-
-(*  Refinement tactic: unification with the head of the head normal form
- *  of the type of a term. *)
+(**************************)
+(*  Refinement tactics    *)
+(**************************)
 
 let apply_type hdcty argl gl =
   refine (applist (mkCast (Evarutil.mk_new_meta(),DEFAULTcast, hdcty),argl)) gl
@@ -468,72 +465,9 @@ let bring_hyps hyps =
       let f = mkCast (Evarutil.mk_new_meta(),DEFAULTcast, newcl) in
       refine_no_check (mkApp (f, instance_from_named_context hyps)) gl)
 
-(* Resolution with missing arguments *)
-
-let apply_with_bindings (c,lbind) gl = 
-  (* The actual type of the theorem. It will be matched against the
-  goal. If this fails, then the head constant will be unfolded step by
-  step. *)
-  let thm_ty0 = nf_betaiota (pf_type_of gl c) in
-  let rec try_apply thm_ty =
-    try
-      let n = nb_prod thm_ty - nb_prod (pf_concl gl) in
-      if n<0 then error "Apply: theorem has not enough premisses.";
-      let clause = make_clenv_binding_apply gl n (c,thm_ty) lbind in
-      Clenvtac.res_pf clause gl
-    with (Pretype_errors.PretypeError _|RefinerError _|UserError _|Failure _) as exn ->
-      let red_thm =
-        try red_product (pf_env gl) (project gl) thm_ty
-        with (Redelimination | UserError _) -> raise exn in
-      try_apply red_thm in
-  try try_apply thm_ty0
-  with (Pretype_errors.PretypeError _|RefinerError _|UserError _|Failure _) ->
-    (* Last chance: if the head is a variable, apply may try
-       second order unification *)
-    let clause = make_clenv_binding_apply gl (-1) (c,thm_ty0) lbind in 
-    Clenvtac.res_pf clause gl
-
-let apply c = apply_with_bindings (c,NoBindings)
-
-let apply_list = function 
-  | c::l -> apply_with_bindings (c,ImplicitBindings l)
-  | _ -> assert false
-
-(* Resolution with no reduction on the type *)
-
-let apply_without_reduce c gl = 
-  let clause = mk_clenv_type_of gl c in 
-  res_pf clause gl
-
-(* A useful resolution tactic which, if c:A->B, transforms |- C into
-   |- B -> C and |- A
-
-   -------------------
-   Gamma |- c : A -> B      Gamma |- ?2 : A
-   ----------------------------------------
-           Gamma |- B                        Gamma |- ?1 : B -> C
-           -----------------------------------------------------
-                             Gamma |- ? : C
-
- Ltac lapply c :=
-  let ty := check c in
-  match eval hnf in ty with
-    ?A -> ?B => cut B; [ idtac | apply c ]
-  end.
-*)
-
 (**************************)
 (*     Cut tactics        *)
 (**************************)
-
-let cut_and_apply c gl =
-  let goal_constr = pf_concl gl in 
-    match kind_of_term (pf_hnf_constr gl (pf_type_of gl c)) with
-      | Prod (_,c1,c2) when not (dependent (mkRel 1) c2) ->
-	  tclTHENLAST
-	    (apply_type (mkProd (Anonymous,c2,goal_constr)) [mkMeta(new_meta())])
-	    (apply_term c [mkMeta (new_meta())]) gl
-      | _ -> error "Imp_elim needs a non-dependent product"
 
 let cut c gl =
   match kind_of_term (hnf_type_of gl c) with
@@ -568,6 +502,111 @@ let cut_in_parallel l =
     | h::t -> tclTHENFIRST (cut h) (prec t)
   in 
     prec (List.rev l)
+
+(****************************************************)
+(*            Resolution tactics                    *)
+(****************************************************)
+
+(* Resolution with missing arguments *)
+
+let apply_with_bindings (c,lbind) gl = 
+  (* The actual type of the theorem. It will be matched against the
+  goal. If this fails, then the head constant will be unfolded step by
+  step. *)
+  let thm_ty0 = nf_betaiota (pf_type_of gl c) in
+  let rec try_apply thm_ty =
+    try
+      let n = nb_prod thm_ty - nb_prod (pf_concl gl) in
+      if n<0 then error "Apply: theorem has not enough premisses.";
+      let clause = make_clenv_binding_apply gl n (c,thm_ty) lbind in
+      Clenvtac.res_pf clause gl
+    with (Pretype_errors.PretypeError _|RefinerError _|UserError _|Failure _) as exn ->
+      let red_thm =
+        try red_product (pf_env gl) (project gl) thm_ty
+        with (Redelimination | UserError _) -> raise exn in
+      try_apply red_thm in
+  try try_apply thm_ty0
+  with (Pretype_errors.PretypeError _|RefinerError _|UserError _|Failure _) ->
+    (* Last chance: if the head is a variable, apply may try
+       second order unification *)
+    let clause = make_clenv_binding gl (c,thm_ty0) lbind in 
+    Clenvtac.res_pf clause gl
+
+let apply c = apply_with_bindings (c,NoBindings)
+
+let apply_list = function 
+  | c::l -> apply_with_bindings (c,ImplicitBindings l)
+  | _ -> assert false
+
+(* Resolution with no reduction on the type *)
+
+let apply_without_reduce c gl = 
+  let clause = mk_clenv_type_of gl c in 
+  res_pf clause gl
+
+(* [apply_in hyp c] replaces
+
+   hyp : forall y1, ti -> t             hyp : rho(u)
+   ========================    with     ============  and the =======
+   goal                                 goal                  rho(ti)
+
+   assuming that [c] has type [forall x1..xn -> t' -> u] for some [t]
+   unifiable with [t'] with unifier [rho]
+*)
+
+let find_matching_clause unifier clause =
+  let rec find clause =
+    try unifier clause
+    with exn when catchable_exception exn ->
+    try find (clenv_push_prod clause)
+    with NotExtensibleClause -> error "Cannot apply"
+  in find clause
+
+let apply_in_once gls innerclause (d,lbind) =
+  let thm = nf_betaiota (pf_type_of gls d) in
+  let clause = make_clenv_binding gls (d,thm) lbind in
+  let ordered_metas = List.rev (clenv_independent clause) in
+  if ordered_metas = [] then error "Statement without assumptions";
+  let f mv = find_matching_clause (clenv_fchain mv clause) innerclause in
+  try list_try_find f ordered_metas
+  with Failure _ -> error "Unable to unify"
+
+let apply_in id lemmas gls =
+  let t' = pf_get_hyp_typ gls id in
+  let innermostclause = mk_clenv_from_n gls (Some 0) (mkVar id,t') in
+  let clause = List.fold_left (apply_in_once gls) innermostclause lemmas in
+  let new_hyp_prf  = clenv_value clause in
+  let new_hyp_typ  = clenv_type clause in
+  tclTHEN
+    (tclEVARS (evars_of clause.env))
+    (cut_replacing id new_hyp_typ
+      (fun x gls -> refine_no_check new_hyp_prf gls)) gls
+
+(* A useful resolution tactic which, if c:A->B, transforms |- C into
+   |- B -> C and |- A
+
+   -------------------
+   Gamma |- c : A -> B      Gamma |- ?2 : A
+   ----------------------------------------
+           Gamma |- B                        Gamma |- ?1 : B -> C
+           -----------------------------------------------------
+                             Gamma |- ? : C
+
+ Ltac lapply c :=
+  let ty := check c in
+  match eval hnf in ty with
+    ?A -> ?B => cut B; [ idtac | apply c ]
+  end.
+*)
+
+let cut_and_apply c gl =
+  let goal_constr = pf_concl gl in 
+    match kind_of_term (pf_hnf_constr gl (pf_type_of gl c)) with
+      | Prod (_,c1,c2) when not (dependent (mkRel 1) c2) ->
+	  tclTHENLAST
+	    (apply_type (mkProd (Anonymous,c2,goal_constr)) [mkMeta(new_meta())])
+	    (apply_term c [mkMeta (new_meta())]) gl
+      | _ -> error "Imp_elim needs a non-dependent product"
 
 (********************************************************************)
 (*               Exact tactics                                      *)
@@ -774,6 +813,14 @@ let elim (c,lbindc as cx) elim =
 let simplest_elim c = default_elim (c,NoBindings)
 
 (* Elimination in hypothesis *)
+(* Typically, elimclause := (eq_ind ?x ?P ?H ?y ?Heq : ?P ?y)
+              indclause : forall ..., hyps -> a=b    (to take place of ?Heq)
+              id : phi(a)                            (to take place of ?H)
+      and the result is to overwrite id with the proof of phi(b)
+
+   but this generalizes to any elimination scheme with one constructor
+   (e.g. it could replace id:A->B->C by id:C, knowing A/\B)
+*)
 
 let elimination_in_clause_scheme id elimclause indclause gl =
   let (hypmv,indmv) = 
@@ -784,8 +831,7 @@ let elimination_in_clause_scheme id elimclause indclause gl =
   let elimclause'  = clenv_fchain indmv elimclause indclause in 
   let hyp = mkVar id in
   let hyp_typ = pf_type_of gl hyp in
-  let hypclause =
-    mk_clenv_from_n gl (Some 0) (hyp, hyp_typ) in
+  let hypclause = mk_clenv_from_n gl (Some 0) (hyp, hyp_typ) in
   let elimclause'' = clenv_fchain hypmv elimclause' hypclause in  
   let new_hyp_prf  = clenv_value elimclause'' in
   let new_hyp_typ  = clenv_type elimclause'' in

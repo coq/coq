@@ -74,6 +74,26 @@ let clenv_get_type_of ce c =
       (meta_list ce.env) in
   Retyping.get_type_of_with_meta (cl_env ce) (cl_sigma ce) metamap c
 
+exception NotExtensibleClause
+
+let clenv_push_prod cl =
+  let typ = whd_betadeltaiota (cl_env cl) (cl_sigma cl) (clenv_type cl) in
+  let rec clrec typ = match kind_of_term typ with
+    | Cast (t,_,_) -> clrec t
+    | Prod (na,t,u) ->
+	let mv = new_meta () in
+	let dep = dependent (mkRel 1) u in
+	let na' = if dep then na else Anonymous in
+	let e' = meta_declare mv t ~name:na' cl.env in
+	let concl = if dep then subst1 (mkMeta mv) u else u in
+	let def = applist (cl.templval.rebus,[mkMeta mv]) in
+	{ templval = mk_freelisted def;
+	  templtyp = mk_freelisted concl;
+	  env = e';
+	  templenv = cl.templenv }
+    | _ -> raise NotExtensibleClause
+  in clrec typ
+
 let clenv_environments evd bound c =
   let rec clrec (e,metas) n c =
     match n, kind_of_term c with
@@ -258,7 +278,20 @@ let connect_clenv gls clenv =
  * resolution can cause unification of already-existing metavars, and
  * of the fresh ones which get created.  This operation is a composite
  * of operations which pose new metavars, perform unification on
- * terms, and make bindings.  *)
+ * terms, and make bindings. 
+
+   Otherwise said, from 
+
+     [clenv] = [env;sigma;metas |- c:T]
+     [clenv'] = [env';sigma';metas' |- d:U]
+     [mv] = [mi] of type [Ti] in [metas]
+
+   then, if the unification of [Ti] and [U] produces map [rho], the
+   chaining is [env';sigma';rho'(metas),rho(metas') |- c:rho'(T)] for
+   [rho'] being [rho;mi:=d].
+
+   In particular, it assumes that [env'] and [sigma'] extend [env] and [sigma].
+*)
 let clenv_fchain mv clenv nextclenv =
   (* Add the metavars of [nextclenv] to [clenv], with their name-environment *)
   let clenv' =
@@ -422,7 +455,7 @@ let make_clenv_binding_gen n gls (c,t) = function
   | NoBindings ->
       mk_clenv_from_n gls n (c,t)
 
-let make_clenv_binding_apply wc n = make_clenv_binding_gen (Some n) wc
+let make_clenv_binding_apply gls n = make_clenv_binding_gen (Some n) gls
 let make_clenv_binding = make_clenv_binding_gen None
 
 (****************************************************************)

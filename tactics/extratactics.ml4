@@ -399,3 +399,9 @@ VERNAC COMMAND EXTEND ImplicitTactic
 | [ "Declare" "Implicit" "Tactic" tactic(tac) ] ->
     [ Tacinterp.declare_implicit_tactic (Tacinterp.interp tac) ]
 END
+
+TACTIC EXTEND apply_in
+| ["apply" constr_with_bindings(c) "in" hyp(id) ] -> [ apply_in id [c] ]
+| ["apply" constr_with_bindings(c) "," constr_with_bindings_list_sep(cl,",") 
+   "in" hyp(id) ] -> [ apply_in id (c::cl) ]
+END

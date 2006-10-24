@@ -169,6 +169,8 @@ val apply_with_bindings   : constr with_bindings -> tactic
 
 val cut_and_apply         : constr -> tactic
 
+val apply_in              : identifier -> constr with_bindings list -> tactic
+
 (*s Elimination tactics. *)
 
 
