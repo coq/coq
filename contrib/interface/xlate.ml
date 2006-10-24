@@ -726,7 +726,9 @@ and (xlate_call_or_tacarg:raw_tactic_arg -> ct_TACTIC_COM) =
     | Reference (Ident (_,s)) -> ident_tac s
     | ConstrMayEval(ConstrTerm a) ->
 	CT_formula_marker(xlate_formula a)
-    | TacFreshId s -> CT_fresh(ctf_STRING_OPT s)
+    | TacFreshId [] -> CT_fresh(ctf_STRING_OPT None)
+    | TacFreshId [ArgArg s] -> CT_fresh(ctf_STRING_OPT (Some s))
+    | TacFreshId _ -> xlate_error "TODO: fresh with many args"
     | t -> xlate_error "TODO LATER: result other than tactic or constr"
 
 and xlate_red_tactic =
