@@ -106,7 +106,7 @@ reals_opt=no
 reals=all
 arch_spec=no
 coqide_spec=no
-with_geoproof=true
+with_geoproof=false
 
 # COQTOP=`pwd`
 COQSRC=`pwd`
