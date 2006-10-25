@@ -448,7 +448,7 @@ let clenv_constrain_missing_args mlist clause =
 let make_clenv_binding_gen hyps_only n gls (c,t) = function
   | ImplicitBindings largs ->
       let clause = mk_clenv_from_n gls n (c,t) in
-      clenv_constrain_dep_args (n <> None) clause largs
+      clenv_constrain_dep_args hyps_only clause largs
   | ExplicitBindings lbind ->
       let clause = mk_clenv_rename_from_n gls n (c,t) in
       clenv_match_args lbind clause
