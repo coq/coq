@@ -12,12 +12,6 @@ open Printf
 open Coqdep_lexer
 open Unix
 
-let (/) = Filename.concat
-
-let file_concat l =
-  if l=[] then "<empty>" else
-    List.fold_left (/) (List.hd l) (List.tl l)
-
 let stderr = Pervasives.stderr
 let stdout = Pervasives.stdout
 
@@ -28,11 +22,22 @@ let option_D = ref false
 let option_w = ref false
 let option_i = ref false
 let option_sort = ref false
+let option_slash = ref false
 
 let suffixe = ref ".vo"
 let suffixe_spec = ref ".vi"
 
 type dir = string option
+
+(* filename for printing *)
+let (//) s1 s2 =
+  if !option_slash then s1^"/"^s2 else Filename.concat s1 s2
+
+let (/) = Filename.concat
+
+let file_concat l =
+  if l=[] then "<empty>" else
+    List.fold_left (//) (List.hd l) (List.tl l)
 
 (* Files specified on the command line *)
 let mlAccu  = ref ([] : (string * string * dir) list) 
@@ -148,7 +153,7 @@ let cut_prefix p s =
   if ls >= lp && String.sub s 0 lp = p then String.sub s lp (ls - lp) else s
 
 let canonize f = match Sys.os_type with
-  | "Win32" -> cut_prefix ".\\" f
+  | "Win32" when not !option_slash -> cut_prefix ".\\" f
   | _ -> cut_prefix "./" f
 
 let sort () = 
@@ -517,6 +522,7 @@ let coqdep () =
       | "-coqlib" :: [] -> usage ()
       | "-suffix" :: (s :: ll) -> suffixe := s ; suffixe_spec := s; parse ll
       | "-suffix" :: [] -> usage ()
+      | "-slash" :: ll -> option_slash := true; parse ll
       | f :: ll -> treat None f; parse ll
       | [] -> ()
   in
