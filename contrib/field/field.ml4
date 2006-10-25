@@ -86,7 +86,7 @@ let add_field a aplus amult aone azero aopp aeq ainv aminus_o adiv_o rth
       Ring.add_theory true true false a None None None aplus amult aone azero
         (Some aopp) aeq rth Quote.ConstrSet.empty
      with | UserError("Add Semi Ring",_) -> ());
-    let th = mkApp ((constant ["Field_Theory"] "Build_Field_Theory"),
+    let th = mkApp ((constant ["LegacyField_Theory"] "Build_Field_Theory"),
       [|a;aplus;amult;aone;azero;aopp;aeq;ainv;aminus_o;adiv_o;rth;ainv_l|]) in
     begin
       let _ = type_of (Global.env ()) Evd.empty th in ();

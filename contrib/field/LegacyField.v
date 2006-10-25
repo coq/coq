@@ -8,8 +8,8 @@
 
 (* $Id$ *)
 
-Require Export Field_Compl.
-Require Export Field_Theory.
-Require Export Field_Tactic.
+Require Export LegacyField_Compl.
+Require Export LegacyField_Theory.
+Require Export LegacyField_Tactic.
 
 (* Command declarations are moved to the ML side *)

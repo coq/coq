@@ -348,10 +348,10 @@ contrib/ring/Quote.vo: contrib/ring/Quote.v
 contrib/ring/Setoid_ring_normalize.vo: contrib/ring/Setoid_ring_normalize.v contrib/ring/Setoid_ring_theory.vo contrib/ring/Quote.vo
 contrib/ring/Setoid_ring.vo: contrib/ring/Setoid_ring.v contrib/ring/Setoid_ring_theory.vo contrib/ring/Quote.vo contrib/ring/Setoid_ring_normalize.vo
 contrib/ring/Setoid_ring_theory.vo: contrib/ring/Setoid_ring_theory.v theories/Bool/Bool.vo theories/Setoids/Setoid.vo
-contrib/field/Field_Compl.vo: contrib/field/Field_Compl.v theories/Lists/List.vo
-contrib/field/Field_Theory.vo: contrib/field/Field_Theory.v theories/Lists/List.vo theories/Arith/Peano_dec.vo contrib/ring/LegacyRing.vo contrib/field/Field_Compl.vo
-contrib/field/Field_Tactic.vo: contrib/field/Field_Tactic.v theories/Lists/List.vo contrib/ring/LegacyRing.vo contrib/field/Field_Compl.vo contrib/field/Field_Theory.vo
-contrib/field/LegacyField.vo: contrib/field/LegacyField.v contrib/field/Field_Compl.vo contrib/field/Field_Theory.vo contrib/field/Field_Tactic.vo
+contrib/field/LegacyField_Compl.vo: contrib/field/LegacyField_Compl.v theories/Lists/List.vo
+contrib/field/LegacyField_Theory.vo: contrib/field/LegacyField_Theory.v theories/Lists/List.vo theories/Arith/Peano_dec.vo contrib/ring/LegacyRing.vo contrib/field/LegacyField_Compl.vo
+contrib/field/LegacyField_Tactic.vo: contrib/field/LegacyField_Tactic.v theories/Lists/List.vo contrib/ring/LegacyRing.vo contrib/field/LegacyField_Compl.vo contrib/field/LegacyField_Theory.vo
+contrib/field/LegacyField.vo: contrib/field/LegacyField.v contrib/field/LegacyField_Compl.vo contrib/field/LegacyField_Theory.vo contrib/field/LegacyField_Tactic.vo
 contrib/fourier/Fourier_util.vo: contrib/fourier/Fourier_util.v theories/Reals/Rbase.vo
 contrib/fourier/Fourier.vo: contrib/fourier/Fourier.v contrib/ring/quote.cmo contrib/ring/ring.cmo contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo contrib/field/field.cmo contrib/fourier/Fourier_util.vo contrib/field/LegacyField.vo theories/Reals/DiscrR.vo
 contrib/subtac/FixSub.vo: contrib/subtac/FixSub.v theories/Init/Wf.vo theories/Arith/Wf_nat.vo theories/Arith/Lt.vo
@@ -371,6 +371,6 @@ contrib/setoid_ring/ArithRing.vo: contrib/setoid_ring/ArithRing.v theories/Arith
 contrib/setoid_ring/NArithRing.vo: contrib/setoid_ring/NArithRing.v theories/NArith/BinPos.vo theories/NArith/BinNat.vo contrib/setoid_ring/Ring_base.vo contrib/setoid_ring/InitialRing.vo
 contrib/setoid_ring/ZArithRing.vo: contrib/setoid_ring/ZArithRing.v contrib/setoid_ring/Ring.vo theories/ZArith/ZArith_base.vo
 contrib/setoid_ring/Field_theory.vo: contrib/setoid_ring/Field_theory.v contrib/setoid_ring/Ring.vo theories/ZArith/ZArith_base.vo
-contrib/setoid_ring/Field_tac.vo: contrib/setoid_ring/Field_tac.v contrib/setoid_ring/Ring_tac.vo contrib/setoid_ring/Ring_polynom.vo contrib/setoid_ring/InitialRing.vo contrib/setoid_ring/Field_theory.vo
+contrib/setoid_ring/Field_tac.vo: contrib/setoid_ring/Field_tac.v contrib/setoid_ring/Ring_tac.vo contrib/setoid_ring/BinList.vo contrib/setoid_ring/Ring_polynom.vo contrib/setoid_ring/InitialRing.vo contrib/setoid_ring/Field_theory.vo
 contrib/setoid_ring/Field.vo: contrib/setoid_ring/Field.v contrib/setoid_ring/Field_theory.vo contrib/setoid_ring/Field_tac.vo
 contrib/setoid_ring/RealField.vo: contrib/setoid_ring/RealField.v theories/Reals/Raxioms.vo theories/Reals/Rdefinitions.vo contrib/setoid_ring/Ring.vo contrib/setoid_ring/Field.vo

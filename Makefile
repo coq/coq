@@ -1048,8 +1048,8 @@ RINGVO=\
  contrib/ring/Setoid_ring.vo		contrib/ring/Setoid_ring_theory.vo
 
 FIELDVO=\
- contrib/field/Field_Compl.vo     contrib/field/Field_Theory.vo \
- contrib/field/Field_Tactic.vo    contrib/field/LegacyField.vo
+ contrib/field/LegacyField_Compl.vo     contrib/field/LegacyField_Theory.vo \
+ contrib/field/LegacyField_Tactic.vo    contrib/field/LegacyField.vo
 
 NEWRINGVO=\
  contrib/setoid_ring/BinList.vo   	contrib/setoid_ring/Ring_theory.vo \
