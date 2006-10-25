@@ -168,3 +168,10 @@ Goal forall a b c, a=0 -> b=c+a.
 intros.
 revert a b c H.
 Abort.
+
+(* Used to fail until revision 9280 because of a parasitic App node with
+   empty args *)
+
+Goal True.
+match None with @None => exact I end.
+Abort.
