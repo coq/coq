@@ -518,7 +518,7 @@ let apply_with_bindings (c,lbind) gl =
     try
       let n = nb_prod thm_ty - nb_prod (pf_concl gl) in
       if n<0 then error "Apply: theorem has not enough premisses.";
-      let clause = make_clenv_binding_apply gl n (c,thm_ty) lbind in
+      let clause = make_clenv_binding_apply gl (Some n) (c,thm_ty) lbind in
       Clenvtac.res_pf clause gl
     with (Pretype_errors.PretypeError _|RefinerError _|UserError _|Failure _) as exn ->
       let red_thm =
@@ -529,7 +529,7 @@ let apply_with_bindings (c,lbind) gl =
   with (Pretype_errors.PretypeError _|RefinerError _|UserError _|Failure _) ->
     (* Last chance: if the head is a variable, apply may try
        second order unification *)
-    let clause = make_clenv_binding gl (c,thm_ty0) lbind in 
+    let clause = make_clenv_binding_apply gl None (c,thm_ty0) lbind in 
     Clenvtac.res_pf clause gl
 
 let apply c = apply_with_bindings (c,NoBindings)

@@ -46,7 +46,7 @@ END
 
 let e_resolve_with_bindings_tac  (c,lbind) gl = 
   let t = pf_hnf_constr gl (pf_type_of gl c) in 
-  let clause = make_clenv_binding_apply gl (-1) (c,t) lbind in 
+  let clause = make_clenv_binding_apply gl None (c,t) lbind in 
   Clenvtac.e_res_pf clause gl
 
 let e_resolve_constr c gls = e_resolve_with_bindings_tac (c,NoBindings) gls

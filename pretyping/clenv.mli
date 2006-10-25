@@ -17,6 +17,7 @@ open Environ
 open Evd
 open Evarutil
 open Mod_subst
+open Rawterm
 (*i*)
 
 (***************************************************************)
@@ -93,17 +94,19 @@ val clenv_missing : clausenv -> metavariable list
 
 (* defines metas corresponding to the name of the bindings *)
 val clenv_match_args :
-  constr Rawterm.explicit_bindings -> clausenv -> clausenv
+  constr explicit_bindings -> clausenv -> clausenv
 val clenv_constrain_with_bindings : arg_bindings -> clausenv -> clausenv
 
 (* start with a clenv to refine with a given term with bindings *)
 
-(* 1- the arity of the lemma is fixed *)
+(* the arity of the lemma is fixed *)
+(* the optional int tells how many prods of the lemma have to be used *)
+(* use all of them if None *)
 val make_clenv_binding_apply :
-  evar_info sigma -> int -> constr * constr -> constr Rawterm.bindings ->
+  evar_info sigma -> int option -> constr * constr -> constr bindings ->
    clausenv
 val make_clenv_binding :
-  evar_info sigma -> constr * constr -> constr Rawterm.bindings -> clausenv
+  evar_info sigma -> constr * constr -> constr bindings -> clausenv
 
 (* [clenv_environments sigma n t] returns [sigma',lmeta,ccl] where
    [lmetas] is a list of metas to be applied to a proof of [t] so that

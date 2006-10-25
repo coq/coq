@@ -445,7 +445,7 @@ let clenv_constrain_missing_args mlist clause =
 (****************************************************************)
 (* Clausal environment for an application *)
 
-let make_clenv_binding_gen n gls (c,t) = function
+let make_clenv_binding_gen hyps_only n gls (c,t) = function
   | ImplicitBindings largs ->
       let clause = mk_clenv_from_n gls n (c,t) in
       clenv_constrain_dep_args (n <> None) clause largs
@@ -455,8 +455,8 @@ let make_clenv_binding_gen n gls (c,t) = function
   | NoBindings ->
       mk_clenv_from_n gls n (c,t)
 
-let make_clenv_binding_apply gls n = make_clenv_binding_gen (Some n) gls
-let make_clenv_binding = make_clenv_binding_gen None
+let make_clenv_binding_apply gls n = make_clenv_binding_gen true n gls
+let make_clenv_binding = make_clenv_binding_gen false None
 
 (****************************************************************)
 (* Pretty-print *)
