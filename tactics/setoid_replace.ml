@@ -271,7 +271,9 @@ let find_relation_class rel =
    match kind_of_term rel with
     | App (eq,[|ty|]) when eq_constr eq (Lazy.force coq_eq) -> Leibniz (Some ty)
     | _ when eq_constr rel (Lazy.force coq_eq) -> Leibniz None
-    | _ -> raise Not_found
+    | _ -> errorlabstrm 
+	"Setoid_replace.find_relation_class"  
+	  (pr_lconstr rel ++ spc() ++ str "is not a registered relation.")
 
 let coq_iff_relation = lazy (find_relation_class (Lazy.force coq_iff))
 let coq_impl_relation = lazy (find_relation_class (Lazy.force coq_impl))
