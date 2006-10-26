@@ -102,8 +102,6 @@ Proof.
   intros; legacy ring.
 Qed.
 
-Notation AplusT_sym := AplusT_comm (only parsing). (* Compatibility *)
-
 Lemma AplusT_assoc :
  forall r1 r2 r3:AT, AplusT (AplusT r1 r2) r3 = AplusT r1 (AplusT r2 r3).
 Proof.
@@ -114,8 +112,6 @@ Lemma AmultT_comm : forall r1 r2:AT, AmultT r1 r2 = AmultT r2 r1.
 Proof.
   intros; legacy ring.
 Qed.
-
-Notation AmultT_sym := AmultT_comm (only parsing). (* Compatibility *)
 
 Lemma AmultT_assoc :
  forall r1 r2 r3:AT, AmultT (AmultT r1 r2) r3 = AmultT r1 (AmultT r2 r3).
@@ -648,3 +644,7 @@ unfold inverse_simplif in |- *; rewrite monom_simplif_correct; auto.
 Qed.
 
 End Theory_of_fields.
+
+(* Compatibility *)
+Notation AplusT_sym := AplusT_comm (only parsing).
+Notation AmultT_sym := AmultT_comm (only parsing).
