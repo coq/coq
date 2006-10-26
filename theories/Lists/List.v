@@ -39,6 +39,12 @@ Section Lists.
       | x :: _ => value x
     end.
 
+ Definition hd (default:A) (l:list) :=
+   match l with
+     | nil => default
+     | x :: _ => x
+   end. 
+
   Definition tail (l:list) : list :=
     match l with
       | nil => nil
@@ -670,21 +676,27 @@ Section ListOps.
 
   (**  An alternative tail-recursive definition for reverse *) 
 
-  Fixpoint rev_acc (l l': list A) {struct l} : list A := 
+  Fixpoint rev_append (l l': list A) {struct l} : list A := 
     match l with 
       | nil => l' 
-      | a::l => rev_acc l (a::l')
+      | a::l => rev_append l (a::l')
     end.
 
-  Lemma rev_acc_rev : forall l l', rev_acc l l' = rev l ++ l'.
+  Definition rev' l : list A := rev_append l nil.
+
+  Notation rev_acc := rev_append (only parsing).
+
+  Lemma rev_append_rev : forall l l', rev_acc l l' = rev l ++ l'.
   Proof.
     induction l; simpl; auto; intros.
     rewrite <- ass_app; firstorder.
   Qed.
 
-  Lemma rev_alt : forall l, rev l = rev_acc l nil.
+  Notation rev_acc_rev := rev_append_rev (only parsing).
+
+  Lemma rev_alt : forall l, rev l = rev_append l nil.
   Proof.
-    intros; rewrite rev_acc_rev.
+    intros; rewrite rev_append_rev.
     apply app_nil_end.
   Qed.
 

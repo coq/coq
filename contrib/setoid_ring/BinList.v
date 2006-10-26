@@ -9,13 +9,12 @@
 Set Implicit Arguments.
 Require Import BinPos.
 Require Export List.
+Require Export ListTactics.
 Open Scope positive_scope.
 
-Section LIST.
+Section MakeBinList.
  Variable A : Type.
  Variable default : A.
-
- Definition hd l := match l with hd :: _ => hd | _ => default end. 
 
  Fixpoint jump (p:positive) (l:list A) {struct p} : list A :=
   match p with
@@ -26,18 +25,10 @@ Section LIST.
 
  Fixpoint nth (p:positive) (l:list A) {struct p} : A:=
   match p with
-  | xH => hd l
+  | xH => hd default l
   | xO p => nth p (jump p l)
   | xI p => nth p (jump p (tail l))
   end. 
-
- Fixpoint rev_append (rev l : list A) {struct l} : list A :=
-  match l with
-  | nil => rev
-  | (cons h t) => rev_append (cons h rev) t 
-  end.
- 
- Definition rev l : list A := rev_append nil l.
 
  Lemma jump_tl : forall j l, tail (jump j l) = jump j (tail l).
  Proof. 
@@ -79,7 +70,7 @@ Section LIST.
  Qed.
 
  
- Lemma nth_jump : forall p l, nth p (tail l) = hd (jump p l).
+ Lemma nth_jump : forall p l, nth p (tail l) = hd default (jump p l).
  Proof.
   induction p;simpl;intros.
   rewrite <-jump_tl;rewrite IHp;trivial.
@@ -97,61 +88,4 @@ Section LIST.
   trivial.
  Qed.
 
-End LIST.
-
-Ltac list_fold_right fcons fnil l :=
-  match l with
-  | (cons ?x ?tl) => fcons x ltac:(list_fold_right fcons fnil tl)
-  | nil => fnil
-  end.
-
-Ltac list_fold_left fcons fnil l :=
-  match l with
-  | (cons ?x ?tl) => list_fold_left fcons ltac:(fcons x fnil) tl
-  | nil => fnil
-  end.
-
-Ltac list_iter f l :=
-  match l with
-  | (cons ?x ?tl) => f x; list_iter f tl
-  | nil => idtac
-  end.
-
-Ltac list_iter_gen seq f l :=
-  match l with
-  | (cons ?x ?tl) =>
-      let t1 _ := f x in
-      let t2 _ := list_iter_gen seq f tl in
-      seq t1 t2
-  | nil => idtac
-  end.
-
-Ltac AddFvTail a l :=
- match l with
- | nil          => constr:(cons a l)
- | (cons a _)   => l
- | (cons ?x ?l) => let l' := AddFvTail a l in constr:(cons x l')
- end.
-
-Ltac Find_at a l :=
- let rec find n l :=
-   match l with
-   | nil => fail 100 "anomaly: Find_at"
-   | (cons a _) => eval compute in n
-   | (cons _ ?l) => find (Psucc n) l
-   end
- in find 1%positive l.
-
-Ltac check_is_list t :=
-  match t with
-  | cons _ ?l => check_is_list l
-  | nil => idtac
-  | _ => fail 100 "anomaly: failed to build a canonical list"
-  end.
-
-Ltac check_fv l :=
-  check_is_list l;
-  match type of l with 
-  | list _ => idtac
-  | _ => fail 100 "anomaly: built an ill-typed list"
-  end.
+End MakeBinList.

@@ -1048,8 +1048,8 @@ Section MakeRingPol.
  Fixpoint add_mult_dev (rP:R) (P:Pol) (fv lm:list R) {struct P} : R :=
   (* rP + P@l * lm *)
   match P with
-  | Pc c => if c ?=! cI then mkadd_mult rP (rev lm) 
-    else mkadd_mult rP (cons [c] (rev lm))
+  | Pc c => if c ?=! cI then mkadd_mult rP (rev' lm) 
+    else mkadd_mult rP (cons [c] (rev' lm))
   | Pinj j Q => add_mult_dev rP Q (jump j fv) lm
   | PX P i Q => 
      let rP := add_mult_dev rP P fv (powl i (hd 0 fv) lm) in
@@ -1065,7 +1065,7 @@ Section MakeRingPol.
  Fixpoint mult_dev (P:Pol) (fv lm : list R) {struct P} : R :=
   (* P@l * lm *)							      
   match P with
-  | Pc c => if c ?=! cI then mkmult1 (rev lm) else mkmult [c] (rev lm)
+  | Pc c => if c ?=! cI then mkmult1 (rev' lm) else mkmult [c] (rev' lm)
   | Pinj j Q => mult_dev Q (jump j fv) lm
   | PX P i Q => 
      let rP := mult_dev P fv (powl i (hd 0 fv) lm) in
@@ -1099,7 +1099,7 @@ Section MakeRingPol.
  Qed.
 
  Lemma mkmult_rev_append : forall lm l r,
-  mkmult r (rev_append l lm) == mkmult (mkmult r l) lm.
+  mkmult r (rev_append lm l) == mkmult (mkmult r l) lm.
  Proof.
  induction lm; simpl in |- *; intros.
  rrefl.
@@ -1109,11 +1109,11 @@ Section MakeRingPol.
  Qed.
 
  Lemma powl_mkmult_rev : forall p r x lm,
-  mkmult r (rev (powl p x lm)) == mkmult (pow x p * r) (rev lm).
+  mkmult r (rev' (powl p x lm)) == mkmult (pow x p * r) (rev' lm).
  Proof.
   induction p;simpl;intros.
   repeat rewrite IHp.
-  unfold rev;simpl.
+  unfold rev';simpl.
   repeat rewrite mkmult_rev_append.
   simpl.
   setoid_replace (pow x p * (pow x p * r) * x) 
@@ -1122,18 +1122,18 @@ Section MakeRingPol.
   repeat rewrite IHp.
   setoid_replace (pow x p * (pow x p * r) ) 
     with (pow x p * pow x p * r);Esimpl.
-  unfold rev;simpl. repeat rewrite mkmult_rev_append;simpl.
+  unfold rev';simpl. repeat rewrite mkmult_rev_append;simpl.
   rewrite (ARmul_sym ARth);rrefl.
  Qed.
 
  Lemma Pphi_add_mult_dev : forall P rP fv lm, 
-    rP + P@fv * mkmult1 (rev lm) == add_mult_dev rP P fv lm.
+    rP + P@fv * mkmult1 (rev' lm) == add_mult_dev rP P fv lm.
  Proof.
   induction P;simpl;intros.
   assert (H := (morph_eq CRmorph) c cI).
    destruct (c ?=! cI).
     rewrite (H (refl_equal true));rewrite (morph1 CRmorph);Esimpl.
-    destruct (rev lm);Esimpl;rrefl.
+    destruct (rev' lm);Esimpl;rrefl.
     rewrite mkmult1_mkmult;rrefl.
    apply IHP.
    replace (match P3 with
@@ -1156,7 +1156,7 @@ Section MakeRingPol.
  Qed.
                                      
  Lemma Pphi_mult_dev : forall P fv lm,
-	 P@fv * mkmult1 (rev lm) == mult_dev P fv lm.
+	 P@fv * mkmult1 (rev' lm) == mult_dev P fv lm.
  Proof.
   induction P;simpl;intros.
    assert (H := (morph_eq CRmorph) c cI).
