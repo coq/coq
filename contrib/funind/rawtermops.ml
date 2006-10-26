@@ -35,6 +35,18 @@ let raw_decompose_prod =
 let raw_compose_prod = 
   List.fold_left (fun b (n,t) -> mkRProd(n,t,b))
 
+let raw_decompose_prod_n n = 
+  let rec raw_decompose_prod i args c = 
+    if i<=0 then args,c
+    else
+      match c with
+	| RProd(_,n,t,b) -> 
+	    raw_decompose_prod (i-1) ((n,t)::args) b 
+	| rt -> args,rt
+  in
+  raw_decompose_prod n []
+
+
 let raw_decompose_app = 
   let rec decompose_rapp acc rt =
 (*     msgnl (str "raw_decompose_app on : "++ Printer.pr_rawconstr rt); *)
@@ -526,6 +538,33 @@ let ids_of_pat =
     | PatCstr(_,_,patl,_) -> List.fold_left ids_of_pat ids patl
   in
   ids_of_pat Idset.empty 
+  
+let id_of_name = function 
+  | Names.Anonymous -> id_of_string "x" 
+  | Names.Name x -> x
+
+(* TODO: finish Rec caes *)
+let ids_of_rawterm c = 
+  let rec ids_of_rawterm acc c = 
+    let idof = id_of_name in
+    match c with
+      | RVar (_,id) -> id::acc
+      | RApp (loc,g,args) -> 
+          ids_of_rawterm [] g @ List.flatten (List.map (ids_of_rawterm []) args) @ acc
+      | RLambda (loc,na,ty,c) -> idof na :: ids_of_rawterm [] ty @ ids_of_rawterm [] c @ acc
+      | RProd (loc,na,ty,c) -> idof na :: ids_of_rawterm [] ty @ ids_of_rawterm [] c @ acc
+      | RLetIn (loc,na,b,c) -> idof na :: ids_of_rawterm [] b @ ids_of_rawterm [] c @ acc
+      | RCast (loc,c,k,t) -> ids_of_rawterm [] c @ ids_of_rawterm [] t @ acc
+      | RIf (loc,c,(na,po),b1,b2) -> ids_of_rawterm [] c @ ids_of_rawterm [] b1 @ ids_of_rawterm [] b2 @ acc
+      | RLetTuple (_,nal,(na,po),b,c) -> 
+          List.map idof nal @ ids_of_rawterm [] b @ ids_of_rawterm [] c @ acc
+      | RCases (loc,rtntypopt,tml,brchl) -> 
+	  List.flatten (List.map (fun (_,idl,patl,c) -> idl @ ids_of_rawterm [] c) brchl)
+      | RRec _ -> failwith "Fix inside a constructor branch"
+      | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) as x -> []
+  in
+  (* build the set *)
+  List.fold_left (fun acc x -> Idset.add x acc) Idset.empty (ids_of_rawterm [] c)
   
 
 

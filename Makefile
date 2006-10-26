@@ -288,7 +288,7 @@ FUNINDCMO=\
   contrib/funind/functional_principles_proofs.cmo \
   contrib/funind/functional_principles_types.cmo \
   contrib/funind/invfun.cmo contrib/funind/indfun.cmo \
-  contrib/funind/indfun_main.cmo
+  contrib/funind/merge.cmo contrib/funind/indfun_main.cmo
 
 RECDEFCMO=\
   contrib/recdef/recdef.cmo

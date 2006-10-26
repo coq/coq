@@ -438,13 +438,12 @@ TACTIC EXTEND poseq
       [ poseq x c ]
 END
 
-(*
 VERNAC COMMAND EXTEND Showindinfo
   [ "showindinfo" ident(x) ] -> [ Merge.showind x ]
 END
 
 VERNAC COMMAND EXTEND MergeFunind
-  [ "Mergeschemes" lconstr(c) "with" lconstr(c')  ] -> 
+  [ "Mergeschemes" lconstr(c) "with" lconstr(c') "using" ident(id) ] -> 
      [ 
        let c1 = Constrintern.interp_constr Evd.empty (Global.env()) c in
        let c2 = Constrintern.interp_constr Evd.empty (Global.env()) c' in
@@ -463,7 +462,6 @@ VERNAC COMMAND EXTEND MergeFunind
 	 with Invalid_argument _ 
 	     -> Util.error ("Bad argument form for merging schemes") in
        (* TOFO: enlever le ignore et declarer l'inductif *)
-       ignore(Merge.merge c1 c2 args1 args2)
+       ignore(Merge.merge c1 c2 args1 args2 id)
      ]
 END
-*)

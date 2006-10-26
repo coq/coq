@@ -31,6 +31,7 @@ val mkRCast : rawconstr* rawconstr -> rawconstr
   These are analogous to the ones constrs
 *)
 val raw_decompose_prod : rawconstr -> (Names.name*rawconstr) list * rawconstr
+val raw_decompose_prod_n : int -> rawconstr -> (Names.name*rawconstr) list * rawconstr
 val raw_compose_prod : rawconstr -> (Names.name*rawconstr) list  ->  rawconstr 
 val raw_decompose_app : rawconstr -> rawconstr*(rawconstr list)
 
@@ -107,6 +108,8 @@ val eq_cases_pattern : cases_pattern -> cases_pattern -> bool
 *)
 val   ids_of_pat : cases_pattern -> Names.Idset.t 
 
+(* TODO: finish this function (Fix not treated) *)
+val ids_of_rawterm: rawconstr -> Names.Idset.t
 
 (* 
    removing let_in construction in a rawterm 
