@@ -38,8 +38,9 @@ contrib/first-order
 contrib/fourier
   developed by Loïc Pottier (INRIA-Lemme, 2001)
 contrib/funind
-  developed by Pierre Courtieu (INRIA-Lemme, 2003-2004, CNAM, 2004-2006)
-  and Julien Forest, Benjamin Grégoire and Gilles Barthe (INRIA-Everest, 2006)
+  developed by Pierre Courtieu (INRIA-Lemme, 2003-2004, CNAM, 2004-2006),
+  Julien Forest (INRIA-Everest, 2006) and Yves Bertot (INRIA-Marelle, 2006),
+  based on joint work with David Pichardie, Gilles Barthe and Vlad Rusu.
 contrib/interface
   developed by Yves Bertot with contributions from Loïc Pottier and
   Laurence Rideau as part of the Pcoq project (INRIA-Lemme, 1997-2006)
@@ -55,8 +56,9 @@ contrib/romega
 contrib/rtauto
   developed by Pierre Corbineau (LRI, 2005)
 contrib/setoid_ring
-  developed by Benjamin Grégoire, Assia Mahboubi (INRIA-Marelle, 2005-2006)
-  and Bruno Barras (INRIA LogiCal, 2005-2006)
+  developed by Benjamin Grégoire (INRIA-Everest, 2005-2006), 
+  Assia Mahboubi, Laurent Théry (INRIA-Marelle, 2006) 
+  and Bruno Barras (INRIA LogiCal, 2005-2006),
 contrib/subtac
   developed by Matthieu Sozeau (LRI, 2005-2006)
 contrib/xml
@@ -94,6 +96,7 @@ of the Coq Proof assistant during the indicated time :
   Bruno Barras (INRIA, 1995-now)
   Jacek Chrzaszcz (LRI, 1998-2003)
   Thierry Coquand (INRIA, 1985-1989)
+  Pierre Corbineau (LRI, 2003-now)
   Cristina Cornes (INRIA, 1993-1996)
   Yann Coscoy (INRIA Sophia-Antipolis, 1995-1996)
   David Delahaye (INRIA, 1997-2002)
