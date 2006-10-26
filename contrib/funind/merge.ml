@@ -62,7 +62,7 @@ let isVarf f x =
 
 (** {2 Debugging} *)
 (* comment this line to see debug msgs *)
-let msg x = () ;; let pr_lconstr c = str ""
+(* let msg x = () ;; let pr_lconstr c = str "" *)
 (* uncomment this to see debugging *)
 let prconstr c =  msg (str"  " ++ Printer.pr_lconstr c ++ str"\n")
 let prlistconstr lc = List.iter prconstr lc
@@ -261,22 +261,13 @@ let pr_merginfo x =
       | Arg_stable i ->  i,"Arg_stable" in
   (Printf.sprintf "%s(%d)" s i)
 
-let mrgarg_linked x =
-  match x with Prm_linked _ | Arg_linked _ -> true | _ -> false
+let isPrm_stable x = match x with Prm_stable _ -> true | _ -> false
 
-let mrgarg_wasparm x =
-  match x with Prm_stable _ | Prm_linked _ | Prm_arg _ -> true | _ -> false
+let isArg_stable x = match x with Arg_stable _ -> true | _ -> false
 
-let mrgarg_wasarg x =
-  match x with Arg_stable _ | Arg_linked _ -> true | _ -> false
-  
-let mrgarg_stblparm x = match x with Prm_stable _ -> true | _ -> false
-
-let mrgarg_stblarg x = match x with Arg_stable _ -> true | _ -> false
-
-let filter_shift (lnk:int merged_arg array) (l:'a list): 'a list =
-  let prms = list_filteri (fun i _ -> mrgarg_stblparm lnk.(i)) l in
-  let args = list_filteri (fun i _ -> mrgarg_stblarg lnk.(i)) l in
+let filter_shift_stable (lnk:int merged_arg array) (l:'a list): 'a list =
+  let prms = list_filteri (fun i _ -> isPrm_stable lnk.(i)) l in
+  let args = list_filteri (fun i _ -> isArg_stable lnk.(i)) l in
   prms@args
 
 (** Reverse the link map, keeping only linked vars, elements are list
@@ -369,11 +360,12 @@ let shift_linked_params mib1 mib2 (lnk1:linked_var array) (lnk2:linked_var array
           | false , Linked j -> Arg_linked j (* Args of lnk2 lost *)
           | false , Unlinked -> Arg_stable i) (* Args of lnk2 remains *)
       lnk2 in
+
   let oib1 = mib1.mind_packets.(0) in
   let oib2 = mib2.mind_packets.(0) in
   (* count params remaining params *)
-  let n_params1 = array_prfx mlnk1 (fun i x -> not (mrgarg_stblparm x)) in
-  let n_params2 = array_prfx mlnk2 (fun i x -> not (mrgarg_stblparm x)) in
+  let n_params1 = array_prfx mlnk1 (fun i x -> not (isPrm_stable x)) in
+  let n_params2 = array_prfx mlnk2 (fun i x -> not (isPrm_stable x)) in
 
   let recprms1,otherprms1 = 
     list_fold_lefti
@@ -422,67 +414,47 @@ let shift_linked_params mib1 mib2 (lnk1:linked_var array) (lnk2:linked_var array
 exception NoMerge
 
 (* lnk is an link array of *all* args (from 1 and 2) *)
-let merge_app c1 c2 id1 id2 newid shift = 
+let merge_app c1 c2 id1 id2 shift = 
   let lnk = Array.append shift.lnk1 shift.lnk2 in
   match c1 , c2 with
-    | RApp(_,f1, arr1), RApp(_,f2,arr2) 
-        when isVarf id1 f1 && isVarf id2 f2 -> 
-        let args = filter_shift lnk (arr1 @ arr2) in
-        RApp (dummy_loc,RVar (dummy_loc,newid) , 
-             args)
+    | RApp(_,f1, arr1), RApp(_,f2,arr2) when isVarf id1 f1 && isVarf id2 f2 -> 
+        let args = filter_shift_stable lnk (arr1 @ arr2) in
+        RApp (dummy_loc,RVar (dummy_loc,shift.ident) , args)
     | RApp(_,f1, arr1), RApp(_,f2,arr2)  -> raise NoMerge
     | _ -> raise NoMerge
 
-let merge_app_unsafe c1 c2 newid shift = 
+let merge_app_unsafe c1 c2 shift = 
   let lnk = Array.append shift.lnk1 shift.lnk2 in
   match c1 , c2 with
     | RApp(_,f1, arr1), RApp(_,f2,arr2) -> 
-        let args = filter_shift lnk (arr1 @ arr2) in
-        RApp (dummy_loc,RVar(dummy_loc,newid) , args)
+        let args = filter_shift_stable lnk (arr1 @ arr2) in
+        RApp (dummy_loc,RVar(dummy_loc,shift.ident) , args)
     | _ -> raise NoMerge
 
 let onefoud = ref false
 
-let rec merge_rec_hyps_aux shift accrec (ltyp:(Names.name * Rawterm.rawconstr) list) =
+(* Heuristic when merging two lists of hypothesis: merge every rec
+   calls of nrach 1 with all rec calls of branch 2. *)
+let rec merge_rec_hyps shift accrec (ltyp:(Names.name * Rawterm.rawconstr) list) =
   match ltyp with
     | [] -> []
-    | (nme,t) as e ::lt -> 
-        match t with
-          | RApp(_,f, largs) when isVarf ind2name f ->               
-              let _ = onefoud := true in
-              let rechyps = 
-                List.map 
-                  (fun (nme,ind) -> 
-                    match ind with
-                      | RApp(_,i,args) -> 
-                          let newargs = 
-                            filter_shift (Array.append shift.lnk1 shift.lnk2) (args@largs)  in
-                          nme, RApp(dummy_loc,RVar(dummy_loc,shift.ident), newargs)
-                      | _ -> assert false)
-                  accrec in
-              rechyps @ merge_rec_hyps_aux shift accrec lt
-          | _ -> e :: merge_rec_hyps_aux shift accrec lt
+    | (nme,(RApp(_,f, largs) as t)) :: lt when isVarf ind2name f -> 
+        let _ = onefoud := true in
+        let rechyps = 
+          List.map 
+            (fun (nme,ind) -> 
+              match ind with
+                | RApp(_,i,args) -> nme, merge_app_unsafe t ind shift
+                | _ -> assert false)
+            accrec in
+        rechyps @ merge_rec_hyps shift accrec lt
+    | e::lt -> e :: merge_rec_hyps shift accrec lt
 
 
-let merge_rec_hyps shift accrec (ltyp:(Names.name * Rawterm.rawconstr) list) =
-  let l = merge_rec_hyps_aux shift accrec ltyp in
-  l
+let rec build_suppl_reccall (accrec:(name * rawconstr) list) concl2 shift = 
+  List.map (fun (nm,tp) -> (nm,merge_app_unsafe tp concl2 shift)) accrec
 
-let rec build_suppl_reccall nme (accrec:(name * rawconstr) list) concl2 shift = 
-  List.map (fun (nm,tp) -> (nm,merge_app_unsafe tp concl2 nme shift)) accrec
-
-
-
-(* 
-  match accrec with
-    | [] -> []
-    | (nm,tp)::l -> (nm,merge_app_unsafe tp concl2 nme lnk) 
-        :: build_suppl_reccall nme l concl2 shift
- *)
-
-
-
-
+(* TODO: reecrire cette heuristique *)
 let rec merge_types shift accrec1 (ltyp1:(name * rawconstr) list)
     concl1 (ltyp2:(name * rawconstr) list) concl2
     : (name * rawconstr) list * rawconstr = 
@@ -499,9 +471,8 @@ let rec merge_types shift accrec1 (ltyp1:(name * rawconstr) list)
            empty, create one with accrec1 + concl2  *)
         let suppl_rechyps = 
           if accrec1 = [] || !onefoud then []
-          else build_suppl_reccall shift.ident accrec1 concl2 shift in
-        rechyps @ suppl_rechyps
-          , merge_app concl1 concl2 ind1name ind2name shift.ident shift
+          else build_suppl_reccall accrec1 concl2 shift in
+        rechyps @ suppl_rechyps , merge_app concl1 concl2 ind1name ind2name shift
     | (nme,t1)as e ::lt1 -> 
         match t1 with
           | RApp(_,f,carr) when isVarf ind1name f -> 
@@ -566,9 +537,9 @@ let build_link_map allargs1 allargs2 lnk =
 
     TODO: return nothing if equalities (after linking) are contradictory. *)
 let merge_one_constructor (shift:merge_infos) (typcstr1:rawconstr)
-    (typcstr2:rawconstr) : rawconstr * (name * rawconstr) list =
+    (typcstr2:rawconstr) : rawconstr =
   (* -1 because last arg is functional result ?? *)
-  (* FIXME: les nomes des parametres corerspondent en principe au
+  (* FIXME: les noms des parametres corerspondent en principe au
      parametres du niveau mib, mais il faudrait s'en assurer *)
   let nargs1 = shift.mib1.mind_nparams + shift.oib1.mind_nrealargs -1 in
   let nargs2 = shift.mib2.mind_nparams + shift.oib2.mind_nrealargs -1 in
@@ -576,21 +547,19 @@ let merge_one_constructor (shift:merge_infos) (typcstr1:rawconstr)
   let allargs2,rest2 = raw_decompose_prod_n nargs2 typcstr2 in  
   (* Build map of linked args of [typcstr2], and apply it to [typcstr2]. *)
   let linked_map = build_link_map allargs1 allargs2 shift.lnk2 in
-  let allargs2_filtered = 
-    let lnk2nofunc,_ = list_chop (Array.length shift.lnk2 -1) 
-      (Array.to_list shift.lnk2) in
-    let comb = List.combine allargs2 lnk2nofunc in
-    let combres = List.filter (fun (arg,mrg) -> not (mrgarg_linked mrg)) comb in
-    fst (List.split combres) in
   let rest2 = change_vars linked_map rest2 in
   let hyps1,concl1 = raw_decompose_prod rest1 in
   let hyps2,concl2' = raw_decompose_prod rest2 in
   let ltyp,concl2 = merge_types shift [] (List.rev hyps1) concl1 (List.rev hyps2) concl2' in
   let typ = raw_compose_prod concl2 (List.rev ltyp) in
-  let args1 , params1 = list_chop_end shift.nrecprms1 allargs1 in
-  let args2 , params2 = list_chop_end shift.nrecprms2 allargs2_filtered in
-  let typwithprms = raw_compose_prod typ (args2@args1) in
-  typwithprms , (params2@params1) (* useless *)
+  let revargs1 = 
+    list_filteri (fun i _ -> isArg_stable shift.lnk1.(i)) (List.rev allargs1) in
+  let revargs2 = 
+    list_filteri (fun i _ -> isArg_stable shift.lnk2.(i)) (List.rev allargs2) in
+(*  let args1 , _ = list_chop_end shift.nrecprms1 allargs1 in
+  let args2 , _ = list_chop_end shift.nrecprms2 allargs2_filtered in *)
+  let typwithprms = raw_compose_prod typ (List.rev revargs2 @ List.rev revargs1) in
+  typwithprms (* useless *)
 
 let merge_constructor_id id1 id2:identifier = 
   let s1 = string_of_id id1 in
@@ -615,7 +584,7 @@ let rec merge_constructors (shift:merge_infos) (avoid:Idset.t)
               (* Avoid also rawtyp1 names *)
               let avoid2 = Idset.union avoid idsoftyp1 in
               let rawtyp2 = Detyping.detype false (Idset.elements avoid2) [] typ2 in
-              let typ,params = merge_one_constructor shift rawtyp1 rawtyp2 in
+              let typ = merge_one_constructor shift rawtyp1 rawtyp2 in
               let newcstror_id = merge_constructor_id id1 id2 in
               newcstror_id , typ)
             typcstr2)
@@ -727,8 +696,7 @@ let merge_inductive (ind1: inductive) (ind2: inductive)
   let _ = verify_inds mib1 mib2 in (* raises an exception if something wrong *)
   (* compute params that become ordinary args (because linked to ord. args) *)
   let shift_prm = shift_linked_params mib1 mib2 lnk1 lnk2 id in
-  let rawlist:(identifier * rawconstr) list = 
-    merge_mutual_inductive_body mib1 mib2 shift_prm in
+  let rawlist = merge_mutual_inductive_body mib1 mib2 shift_prm in
   let indexpr = rawterm_list_to_inductive_expr mib1 mib2 shift_prm rawlist in
   (* Declare inductive *)
   Command.build_mutual [(indexpr,None)] true (* means: not coinductive *)
