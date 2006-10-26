@@ -70,19 +70,41 @@ let declare_definition prg =
   in
     Subtac_utils.definition_message prg.prg_name
     
-let add_entry n e =
-  Options.if_verbose pp (str (string_of_id e.prg_name) ++ str " has type-checked");
-  let nobls = snd e.prg_obligations in
-    match nobls with
-	0 -> Options.if_verbose ppnl (str ".");
-	  declare_definition e
-      | 1 -> 
-	  Options.if_verbose ppnl (str ", generating one obligation");
-	  from_prg := ProgMap.add e.prg_name e !from_prg
-      | n -> 
-	  Options.if_verbose ppnl (str ", generating " ++ int n ++ str " obligations");
-	  from_prg := ProgMap.add e.prg_name e !from_prg
-	        
+open Evd
+
+let add_entry n b t obls =
+  Options.if_verbose pp (str (string_of_id n) ++ str " has type-checked");
+  let try_tactics e = 
+    List.fold_left 
+      (fun acc (n, t) ->
+	 let ev = { evar_concl = t ; evar_body = Evar_empty ; 
+		    evar_hyps = Environ.empty_named_context_val ; evar_extra = None } 
+	 in 
+	 let cstr = 
+	   try
+	     let c = Subtac_utils.solve_by_tac ev Auto.default_full_auto in	       
+	       Some c
+	   with _ -> None
+	 in { obl_name = n ; obl_type = t; obl_body = cstr } :: acc)
+      [] e
+  in
+    match obls with
+	[] -> Options.if_verbose ppnl (str ".");
+	  declare_definition { prg_name = n ; prg_body = b ; prg_type = t ; prg_obligations = ([||], 0) }
+      | l -> 
+	  let len = List.length l in
+	  let _ = Options.if_verbose ppnl (str ", generating " ++ int len ++ str " obligation(s)") in
+	  let obls = try_tactics l in
+	  let rem = List.fold_left (fun acc obl -> if obl.obl_body = None then succ acc else acc) 0 obls in
+	  let prg = { prg_name = n ; prg_body = b ; prg_type = t ; prg_obligations = (Array.of_list obls, rem) } in
+	    if rem < len then 
+	      Options.if_verbose ppnl (int rem ++ str " obligation(s) remaining.");
+	    if rem = 0 then 
+	      declare_definition prg
+	    else
+	      from_prg := ProgMap.add n prg !from_prg
+		
+(*		
 let (theory_to_obj, obj_to_theory) = 
   let cache_th (name,th) = add_entry name th
   and export_th x = Some x in
@@ -93,7 +115,7 @@ let (theory_to_obj, obj_to_theory) =
       subst_function = (fun _ -> assert(false));
       classify_function = (fun (_,x) -> Dispose);
       export_function = export_th }
-
+*)
 
 let error s = Util.error s
 

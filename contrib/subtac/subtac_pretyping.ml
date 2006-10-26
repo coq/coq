@@ -159,12 +159,5 @@ let subtac_proof env isevars id l c tycon =
   let nc_len = named_context_length nc in
   let evm, coqc, coqt = subtac_process env isevars id l c tycon in
   let evars_def, evars = Eterm.eterm_obligations id nc_len evm coqc (Some coqt) in
-  let prog = 
-    {  prg_name = id;
-       prg_body = evars_def;
-       prg_type = coqt;
-       prg_obligations = obligations_of_evars evars;
-    }
-  in
     trace (str "Adding to obligations list");
-    add_entry id prog
+    add_entry id evars_def coqt evars

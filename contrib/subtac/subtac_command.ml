@@ -310,15 +310,8 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
 	 (fun (n, t) -> trace (str "Evar " ++ str (string_of_id n) ++ spc () ++ my_print_constr env t))
 	 evars;
      with _ -> ());    
-    let prog = 
-      {  prg_name = recname;
-	 prg_body = evars_def;
-	 prg_type = fullctyp;
-	 prg_obligations = obligations_of_evars evars;
-      }
-    in
       trace (str "Adding to obligations list");
-      Subtac_obligations.add_entry recname prog;
+      Subtac_obligations.add_entry recname evars_def fullctyp evars;
       trace (str "Added to obligations list")
 
 let build_mutrec l boxed = 

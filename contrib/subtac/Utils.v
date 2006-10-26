@@ -4,7 +4,7 @@ Notation "'fun' { x : A | P } => Q" :=
   (fun x:{x:A|P} => Q)
   (at level 200, x ident, right associativity).
 
-Notation "( x & y )" := (@exist _ _ x y) : core_scope.
+Notation "( x & ? )" := (@exist _ _ x _) : core_scope.
 
 Definition ex_pi1 (A : Prop) (P : A -> Prop) (t : ex P) : A.
 intros.

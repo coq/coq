@@ -94,3 +94,5 @@ val id_of_name : name -> identifier
 
 val definition_message : identifier -> unit
 val recursive_message : global_reference array -> std_ppcmds
+
+val solve_by_tac : evar_info -> Tacmach.tactic -> constr

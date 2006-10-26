@@ -87,7 +87,7 @@ let my_print_evardefs = Evd.pr_evar_defs
 
 let my_print_tycon_type = Evarutil.pr_tycon_type
 
-let debug_level = 2
+let debug_level = 1
 
 let debug_on = true
 
@@ -437,3 +437,13 @@ let recursive_message v =
     | 1 -> (Printer.pr_global v.(0) ++ str " is recursively defined")
     | _ -> hov 0 (prvect_with_sep pr_coma Printer.pr_global v ++
 		    spc () ++ str "are recursively defined")
+
+(* Solve an obligation using tactics, return the corresponding proof term *)
+let solve_by_tac ev t =
+  debug 1 (str "Solving goal using tactics: " ++ Evd.pr_evar_info ev);
+  let goal = Proof_trees.mk_goal ev.evar_hyps ev.evar_concl None in
+  let ts = Tacmach.mk_pftreestate goal in
+  let solved_state = Tacmach.solve_pftreestate t ts in
+  let c = Tacmach.extract_pftreestate solved_state in
+    debug 1 (str "Term constructed in solve by tac: " ++ my_print_constr (Global.env ()) c);
+    c

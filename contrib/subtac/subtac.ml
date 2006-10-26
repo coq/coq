@@ -223,22 +223,26 @@ let subtac (loc, command) =
 		++ x ++ spc () ++ str "and" ++ spc () ++ y
 	in msg_warning cmds
     
-    | Type_errors.TypeError (env, e) ->
-	debug 2 (Himsg.explain_type_error env e)
+    | Type_errors.TypeError (env, exn) as e ->
+	debug 2 (Himsg.explain_type_error env exn);
+	raise e
 	  
-    | Pretype_errors.PretypeError (env, e) ->
-	debug 2 (Himsg.explain_pretype_error env e)
+    | Pretype_errors.PretypeError (env, exn) as e ->
+	debug 2 (Himsg.explain_pretype_error env exn);
+	raise e
 	  
     | (Stdpp.Exc_located (loc, e')) as e ->
 	debug 2 (str "Parsing exception: ");
 	(match e' with
-	   | Type_errors.TypeError (env, e) ->
-	       debug 2 (Himsg.explain_type_error env e)
+	   | Type_errors.TypeError (env, exn) ->
+	       debug 2 (Himsg.explain_type_error env exn);
+	       raise e
 		 
-	   | Pretype_errors.PretypeError (env, e) ->
-	       debug 2 (Himsg.explain_pretype_error env e)
+	   | Pretype_errors.PretypeError (env, exn) ->
+	       debug 2 (Himsg.explain_pretype_error env exn);
+	       raise e
 
-	   | e'' -> msg_warning (str "Unexplained exception: " ++ Cerrors.explain_exn e'');
+	   | e'' -> msg_warning (str "Unexpected exception: " ++ Cerrors.explain_exn e'');
 	       raise e)
   
     | e -> 

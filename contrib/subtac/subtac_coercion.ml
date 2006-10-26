@@ -91,7 +91,9 @@ module Coercion = struct
   let hnf env isevars c = whd_betadeltaiota env (evars_of !isevars) c
 
   let rec mu env isevars t =   
+    let isevars = ref isevars in
     let rec aux v = 
+      let v = hnf env isevars v in
       match disc_subset v with
 	  Some (u, p) -> 
 	    let f, ct = aux u in
@@ -135,8 +137,9 @@ module Coercion = struct
 		 | Type x, Type y when x = y -> None (* false *)
 		 | _ -> subco ())
 	  | Prod (name, a, b), Prod (name', a', b') ->
-	      let c1 = coerce_unify env a' a in
+	      let name' = Name (Nameops.next_ident_away (id_of_string "x") (Termops.ids_of_context env)) in
 	      let env' = push_rel (name', None, a') env in
+	      let c1 = coerce_unify env' (lift 1 a') (lift 1 a) in
 	      let c2 = coerce_unify env' b b' in
 		(match c1, c2 with
 		     None, None -> failwith "subtac.coerce': Should have detected equivalence earlier"
