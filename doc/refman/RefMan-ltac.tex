@@ -660,14 +660,17 @@ replaces the hole of the value of {\ident} by the value of
 Tactics sometimes have to generate new names for hypothesis. Letting
 the system decide a name with the {\tt intro} tactic is not so good
 since it is very awkward to retrieve the name the system gave.
-
-As before, the following expression returns a term:
+The following expression returns an identifier:
 \begin{quote}
-{\tt fresh} {\qstring}
+{\tt fresh} \nelist{\textrm{\textsl{component}}}{}
 \end{quote}
-It evaluates to an identifier unbound in the goal, which is obtained
-by padding {\qstring} with a number if necessary. If no name is given,
-the prefix is {\tt H}.
+It evaluates to an identifier unbound in the goal. This fresh
+identifier is obtained by concatenating the value of the
+\textrm{\textsl{component}}'s (each of them is, either an {\ident} which
+has to refer to a name, or directly a name denoted by a
+{\qstring}). If the resulting name is already used, it is padded
+with a number so that it becomes fresh. If no component is
+given, the name is a fresh derivative of the name {\tt H}.
 
 \subsubsection{Computing in a constr}
 \index{Ltac!eval}
