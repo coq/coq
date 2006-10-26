@@ -559,7 +559,7 @@ let find_matching_clause unifier clause =
     try unifier clause
     with exn when catchable_exception exn ->
     try find (clenv_push_prod clause)
-    with NotExtensibleClause -> error "Cannot apply"
+    with NotExtensibleClause -> failwith "Cannot apply"
   in find clause
 
 let apply_in_once gls innerclause (d,lbind) =
