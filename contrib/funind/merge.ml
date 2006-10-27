@@ -560,18 +560,19 @@ let merge_one_constructor (shift:merge_infos) (typcstr1:rawconstr)
   typwithprms
 
 
+(** Return true id [id] is linked in global environment *)
+let ident_global_exist id = 
+  try 
+    let ans = CRef (Libnames.Ident (dummy_loc,id)) in
+    let _ = ignore (Constrintern.intern_constr Evd.empty (Global.env()) ans) in
+    true
+  with _ -> false 
+    
 let next_ident_fresh (s:identifier) = 
     let res = ref s in
-    let _ = prstr (Printf.sprintf "\ns = %s" (string_of_id !res)) in
-    while 
-      (try
-          let ans = CRef (Libnames.Ident (dummy_loc,!res)) in
-          ignore (Constrintern.intern_constr Evd.empty (Global.env()) ans)
- (* ignore (Prettyp.locate_any_name Libnames.qualid_of_string (string_of_id !res)) *)
-      ; true 
-      with _ -> false)
-    do res := Nameops.lift_ident !res ; prstr (string_of_id !res) done;
-    let _ = prstr (Printf.sprintf "\ns = %s (out)" (string_of_id !res)) in
+    while ident_global_exist !res do
+      res := Nameops.lift_ident !res ; prstr (string_of_id !res) 
+    done;
     !res;;
 
 (*
