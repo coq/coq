@@ -327,6 +327,11 @@ val map_named_declaration :
 val map_rel_declaration :
   (constr -> constr) -> rel_declaration -> rel_declaration
 
+val fold_named_declaration :
+  (constr -> 'a -> 'a) -> named_declaration -> 'a -> 'a
+val fold_rel_declaration :
+  (constr -> 'a -> 'a) -> rel_declaration -> 'a -> 'a
+
 (* Constructs either [(x:t)c] or [[x=b:t]c] *)
 val mkProd_or_LetIn : rel_declaration -> types -> types
 val mkNamedProd_or_LetIn : named_declaration -> types -> types

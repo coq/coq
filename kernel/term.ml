@@ -646,6 +646,9 @@ type rel_declaration = name * constr option * types
 let map_named_declaration f (id, v, ty) = (id, option_map f v, f ty)
 let map_rel_declaration = map_named_declaration
 
+let fold_named_declaration f (_, v, ty) a = f ty (option_fold_right f v a)
+let fold_rel_declaration = fold_named_declaration
+
 (****************************************************************************)
 (*              Functions for dealing with constr terms                     *)
 (****************************************************************************)
