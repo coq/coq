@@ -139,44 +139,61 @@ let cons_subst u su subst =
   try (u, sup su (List.assoc u subst)) :: List.remove_assoc u subst
   with Not_found -> (u, su) :: subst
 
-let rec make_subst env exp act =
-  match exp, act with
-  (* Bind expected levels of parameters to actual levels *)
-  | None :: exp, _ :: act ->
-      make_subst env exp act
-  | Some u :: exp, t :: act ->
-      let su = sort_as_univ (snd (dest_arity env t)) in
-      cons_subst u su (make_subst env exp act)
-  (* Not enough parameters, create a fresh univ *)
-  | Some u :: exp, [] ->
-      let su = fresh_local_univ () in
-      cons_subst u su (make_subst env exp [])
-  | None :: exp, [] ->
-      make_subst env exp []
-  (* Uniform parameters are exhausted *)
-  | [], _ -> []
+let actualize_decl_level env lev t =
+  let sign,s = dest_arity env t in
+  mkArity (sign,lev)
 
-let sort_of_instantiated_universe mip subst level =
-  let level = subst_large_constraints subst level in
-  let nci = number_of_constructors mip in
-  if nci = 0 then mk_Prop
-  else
-    if is_empty_univ level then if nci = 1 then mk_Prop else mk_Set 
-    else if is_base_univ level then mk_Set
-    else Type level
+(* Bind expected levels of parameters to actual levels *)
+(* Propagate the new levels in the signature *)
+let rec make_subst env = function
+  | (_,Some _,_ as t)::sign, exp, args ->
+      let ctx,subst = make_subst env (sign, exp, args) in
+      t::ctx, subst
+  | d::sign, None::exp, args ->
+      let args = match args with _::args -> args | [] -> [] in
+      let ctx,subst = make_subst env (sign, exp, args) in
+      d::ctx, subst
+  | d::sign, Some u::exp, a::args ->
+      (* We recover the level of the argument, but we don't change the *)
+      (* level in the corresponding type in the arity; this level in the *)
+      (* arity is a global level which, at typing time, will be enforce *)
+      (* to be greater than the level of the argument; this is probably *)
+      (* a useless extra constraint *)
+      let s = sort_as_univ (snd (dest_arity env a)) in
+      let ctx,subst = make_subst env (sign, exp, args) in
+      d::ctx, cons_subst u s subst
+  | (na,None,t)::sign, Some u::exp, [] ->
+      (* No more argument here: we instantiate the type with a fresh level *)
+      (* which is first propagated to the corresponding premise in the arity *)
+      (* (actualize_decl_level), then to the conclusion of the arity (via *)
+      (* the substitution) *)
+      let s = fresh_local_univ () in
+      let t = actualize_decl_level env (Type s) t in
+      let ctx,subst = make_subst env (sign, exp, []) in
+      (na,None,t)::ctx, cons_subst u s subst
+  | sign, [], _ ->
+      (* Uniform parameters are exhausted *)
+      sign,[]
+  | [], _, _ ->
+      assert false
 
-let instantiate_inductive_with_param_levels env ar mip paramtyps =
-  let args = Array.to_list paramtyps in
-  let subst = make_subst env ar.mind_param_levels args in
-  sort_of_instantiated_universe mip subst ar.mind_level
+let instantiate_universes env ctx mip ar argsorts =
+  let args = Array.to_list argsorts in
+  let ctx,subst = make_subst env (ctx,ar.mind_param_levels,args) in
+  let level = subst_large_constraints subst ar.mind_level in
+  ctx,
+  if is_empty_univ level then mk_Prop
+  else if is_base_univ level then mk_Set
+  else Type level
 
 let type_of_inductive_knowing_parameters env mip paramtyps =
   match mip.mind_arity with
   | Monomorphic s ->
       s.mind_user_arity
   | Polymorphic ar ->
-      let s = instantiate_inductive_with_param_levels env ar mip paramtyps in
-      mkArity (mip.mind_arity_ctxt,s)
+      let ctx = List.rev mip.mind_arity_ctxt in
+      let ctx,s = instantiate_universes env ctx mip ar paramtyps in
+      mkArity (List.rev ctx,s)
 
 (* The max of an array of universes *)
 
@@ -190,15 +207,17 @@ let max_inductive_sort =
 
 (* Type of a (non applied) inductive type *)
 
-let type_of_inductive (_,mip) =
+let type_of_inductive (mib,mip) =
   match mip.mind_arity with
   | Monomorphic s -> s.mind_user_arity
   | Polymorphic s ->
-      let subst = map_succeed (function
-	| Some u -> (u, fresh_local_univ ())
-	| None -> failwith "") s.mind_param_levels in
-      let s = mkSort (sort_of_instantiated_universe mip subst s.mind_level) in
-      it_mkProd_or_LetIn s mip.mind_arity_ctxt
+      let s =
+        if mib.mind_nparams = 0 then 
+          if is_empty_univ s.mind_level then mk_Prop
+          else if is_base_univ s.mind_level then mk_Set
+          else Type s.mind_level
+        else Type s.mind_level in
+      mkArity (mip.mind_arity_ctxt,s)
 
 (************************************************************************)
 (* Type of a constructor *)

@@ -163,9 +163,13 @@ let small_unit constrsinfos =
    w1,w2,w3 <= u3
 *)   
 
+let extract_level (_,_,_,lc,lev) =
+  (* Enforce that the level is not in Prop if more than two constructors *)
+  if Array.length lc >= 2 then sup base_univ lev else lev
+
 let inductive_levels arities inds =
   let levels = Array.map pi3 arities in
-  let cstrs_levels = Array.map (fun (_,_,_,_,lev) -> lev) inds in
+  let cstrs_levels = Array.map extract_level inds in
   (* Take the transitive closure of the system of constructors *)
   (* level constraints and remove the recursive dependencies *)
   solve_constraints_system levels cstrs_levels
