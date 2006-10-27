@@ -93,3 +93,8 @@ val type_fixpoint : env -> name array -> types array
 (* Kernel safe typing but applicable to partial proofs *)
 val typing : env -> constr -> unsafe_judgment
 
+(* A virer *)
+val execute : Environ.env ->
+    Term.types ->
+    Univ.Constraint.t * Univ.universes ->
+    Environ.unsafe_judgment * (Univ.Constraint.t * Univ.universes)

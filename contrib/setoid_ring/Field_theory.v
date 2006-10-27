@@ -88,9 +88,9 @@ Let eq_refl := Setoid.Seq_refl _ _ Rsth.
 Hint Resolve eq_refl rdiv_def rinv_l rI_neq_rO CRmorph.(morph1) .
 Hint Resolve (Rmul_ext Reqe) (Rmul_ext Reqe) (Radd_ext Reqe)
              (ARsub_ext Rsth Reqe ARth) (Ropp_ext Reqe) SRinv_ext.
-Hint Resolve (ARadd_0_l  ARth) (ARadd_sym  ARth) (ARadd_assoc ARth)
+Hint Resolve (ARadd_0_l  ARth) (ARadd_comm  ARth) (ARadd_assoc ARth)
              (ARmul_1_l  ARth) (ARmul_0_l  ARth) 
-             (ARmul_sym  ARth) (ARmul_assoc ARth) (ARdistr_l  ARth)
+             (ARmul_comm  ARth) (ARmul_assoc ARth) (ARdistr_l  ARth)
              (ARopp_mul_l ARth) (ARopp_add  ARth) 
              (ARsub_def  ARth) .
 
@@ -172,7 +172,7 @@ Qed.
 Theorem rdiv_r_r : forall r, ~ r == 0 -> r / r == 1.
 intros.
 rewrite (AFdiv_def AFth) in |- *.
-rewrite (ARmul_sym ARth) in |- *.
+rewrite (ARmul_comm ARth) in |- *.
 apply (AFinv_l AFth).
 trivial.
 Qed.
@@ -317,7 +317,7 @@ transitivity (r1 / r2 * (r4 / r4)).
    apply (ARmul_1_r Rsth ARth).
  rewrite rdiv4 in |- *; trivial.
    rewrite H1 in |- *.
-   rewrite (ARmul_sym ARth r2 r4) in |- *.
+   rewrite (ARmul_comm ARth r2 r4) in |- *.
    rewrite <- rdiv4 in |- *; trivial.
    rewrite rdiv_r_r in |- *.
   trivial.
@@ -1384,7 +1384,7 @@ transitivity (x + (1 + - (1))).
   repeat rewrite <- (ARplus_assoc ARth) in |- *.
     repeat rewrite (ARadd_assoc ARth) in |- *.
     apply (Radd_ext Reqe).
-   repeat rewrite <- (ARadd_sym ARth 1) in |- *.
+   repeat rewrite <- (ARadd_comm ARth 1) in |- *.
      trivial.
    reflexivity.
   rewrite (Ropp_def Rth) in |- *.

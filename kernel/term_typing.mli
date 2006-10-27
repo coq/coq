@@ -24,7 +24,15 @@ val translate_local_def : env -> constr * types option ->
 
 val translate_local_assum : env -> types ->
   types * Univ.constraints
- 
+
+val infer_declaration : env -> constant_entry -> 
+   Declarations.constr_substituted option * Term.types * Univ.constraints *
+    bool * bool
+
+val build_constant_declaration : env ->    'a ->
+    Declarations.constr_substituted option * Term.types * Univ.constraints *
+    bool * bool -> Declarations.constant_body
+
 val translate_constant : env -> constant -> constant_entry -> constant_body
 
 val translate_mind : 

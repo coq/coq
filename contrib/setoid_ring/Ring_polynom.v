@@ -606,7 +606,7 @@ Section MakeRingPol.
   induction P';simpl;intros;Esimpl2.
   generalize P p l;clear P p l.
   induction P;simpl;intros.
-  Esimpl2;apply (ARadd_sym ARth).
+  Esimpl2;apply (ARadd_comm ARth).
   assert (H := ZPminus_spec p p0);destruct (ZPminus p p0).
   rewrite H;Esimpl. rewrite IHP';rrefl.
   rewrite H;Esimpl. rewrite IHP';Esimpl.
@@ -635,9 +635,9 @@ Section MakeRingPol.
   add_push (P3 @ (tail l));rrefl.
   assert (forall P k l, 
            (PaddX Padd P'1 k P) @ l == P@l + P'1@l * pow (hd 0 l) k).
-   induction P;simpl;intros;try apply (ARadd_sym ARth).
-   destruct p2;simpl;try apply (ARadd_sym ARth).
-   rewrite jump_Pdouble_minus_one;apply (ARadd_sym ARth).
+   induction P;simpl;intros;try apply (ARadd_comm ARth).
+   destruct p2;simpl;try apply (ARadd_comm ARth).
+   rewrite jump_Pdouble_minus_one;apply (ARadd_comm ARth).
     assert (H1 := ZPminus_spec p2 k);destruct (ZPminus p2 k);Esimpl2.
     rewrite IHP'1;rsimpl; rewrite H1;add_push (P5 @ (tail l0));rrefl.
     rewrite IHP'1;simpl;Esimpl.
@@ -659,7 +659,7 @@ Section MakeRingPol.
   induction P';simpl;intros;Esimpl2;trivial.
   generalize P p l;clear P p l.
   induction P;simpl;intros.
-  Esimpl2;apply (ARadd_sym ARth).
+  Esimpl2;apply (ARadd_comm ARth).
   assert (H := ZPminus_spec p p0);destruct (ZPminus p p0).
   rewrite H;Esimpl. rewrite IHP';rsimpl. 
   rewrite H;Esimpl. rewrite IHP';Esimpl.
@@ -689,11 +689,11 @@ Section MakeRingPol.
   assert (forall P k l, 
            (PsubX Psub P'1 k P) @ l == P@l + - P'1@l * pow (hd 0 l) k).
    induction P;simpl;intros.
-   rewrite Popp_ok;rsimpl;apply (ARadd_sym ARth);trivial.
+   rewrite Popp_ok;rsimpl;apply (ARadd_comm ARth);trivial.
    destruct p2;simpl;rewrite Popp_ok;rsimpl.
-   apply (ARadd_sym ARth);trivial.
-   rewrite jump_Pdouble_minus_one;apply (ARadd_sym ARth);trivial.
-   apply (ARadd_sym ARth);trivial.
+   apply (ARadd_comm ARth);trivial.
+   rewrite jump_Pdouble_minus_one;apply (ARadd_comm ARth);trivial.
+   apply (ARadd_comm ARth);trivial.
     assert (H1 := ZPminus_spec p2 k);destruct (ZPminus p2 k);Esimpl2;rsimpl.
     rewrite IHP'1;rsimpl;add_push (P5 @ (tail l0));rewrite H1;rrefl.
     rewrite IHP'1;rewrite H1;rewrite Pplus_comm.
@@ -715,7 +715,7 @@ Section MakeRingPol.
     (PmulI Pmul_aux P' p P) @ l == P @ l * P' @ (jump p l).
  Proof.
   induction P;simpl;intros.
-  Esimpl2;apply (ARmul_sym ARth).
+  Esimpl2;apply (ARmul_comm ARth).
   assert (H1 := ZPminus_spec p p0);destruct (ZPminus p p0);Esimpl2.
   rewrite H1; rewrite H;rrefl.
   rewrite H1; rewrite H.
@@ -745,13 +745,13 @@ Section MakeRingPol.
  Lemma Pmul_ok : forall P P' l, (P**P')@l == P@l * P'@l.
  Proof.
   destruct P;simpl;intros.
-  Esimpl2;apply (ARmul_sym ARth).
+  Esimpl2;apply (ARmul_comm ARth).
   rewrite (PmulI_ok P (Pmul_aux_ok P)).
-  apply (ARmul_sym ARth).
+  apply (ARmul_comm ARth).
   rewrite Padd_ok; Esimpl2.
   rewrite (PmulI_ok P3 (Pmul_aux_ok P3));trivial.
   rewrite Pmul_aux_ok;mul_push (P' @ l).
-  rewrite (ARmul_sym ARth (P' @ l));rrefl.
+  rewrite (ARmul_comm ARth (P' @ l));rrefl.
  Qed.
 
 
@@ -795,9 +795,9 @@ Section MakeRingPol.
      repeat rewrite mkPX_ok; simpl.
      rsimpl.  
      apply radd_ext; rsimpl.
-     rewrite (ARadd_sym ARth); rsimpl.
+     rewrite (ARadd_comm ARth); rsimpl.
      apply radd_ext; rsimpl.
-     rewrite (ARadd_sym ARth); rsimpl.
+     rewrite (ARadd_comm ARth); rsimpl.
      case j; simpl; auto; try intros j1; rsimpl.
      rewrite jump_Pdouble_minus_one; rsimpl.
    intros j M1.
@@ -808,12 +808,12 @@ Section MakeRingPol.
        rewrite H; rewrite mkPX_ok; rsimpl.
        repeat (rewrite <-(ARadd_assoc ARth)).
        apply radd_ext; rsimpl.
-       rewrite (ARadd_sym ARth); rsimpl.
+       rewrite (ARadd_comm ARth); rsimpl.
        apply radd_ext; rsimpl.
        repeat (rewrite <-(ARmul_assoc ARth)).
        rewrite mkZmon_ok.
        apply rmul_ext; rsimpl.
-       rewrite (ARmul_sym ARth); rsimpl.
+       rewrite (ARmul_comm ARth); rsimpl.
        generalize (Hrec1 (vmon (j - i) M1) l); 
              case (MFactor P2 (vmon (j - i) M1));
         simpl; intros P3 Q3 H; repeat rewrite mkPinj_ok; auto.
@@ -821,11 +821,11 @@ Section MakeRingPol.
        rewrite mkPX_ok; rsimpl.
        repeat (rewrite <-(ARadd_assoc ARth)).
        apply radd_ext; rsimpl.
-       rewrite (ARadd_sym ARth); rsimpl.
+       rewrite (ARadd_comm ARth); rsimpl.
        apply radd_ext; rsimpl.
        repeat (rewrite <-(ARmul_assoc ARth)).
        apply rmul_ext; rsimpl.
-       rewrite (ARmul_sym ARth); rsimpl.
+       rewrite (ARmul_comm ARth); rsimpl.
        apply rmul_ext; rsimpl.
        rewrite <- pow_Pplus.
        rewrite (Pplus_minus _ _ (ZC2 _ _ He)); rsimpl.
@@ -836,16 +836,16 @@ Section MakeRingPol.
        rewrite mkPX_ok; rsimpl.
        repeat (rewrite <-(ARadd_assoc ARth)).
        apply radd_ext; rsimpl.
-       rewrite (ARadd_sym ARth); rsimpl.
+       rewrite (ARadd_comm ARth); rsimpl.
        apply radd_ext; rsimpl.
        rewrite mkZmon_ok.
        repeat (rewrite <-(ARmul_assoc ARth)).
        apply rmul_ext; rsimpl.
-       rewrite (ARmul_sym ARth); rsimpl.
+       rewrite (ARmul_comm ARth); rsimpl.
        rewrite mkPX_ok; simpl; rsimpl.
        rewrite (morph0 CRmorph); rsimpl.
        repeat (rewrite <-(ARmul_assoc ARth)).
-       rewrite (ARmul_sym ARth (Q3@l)); rsimpl.
+       rewrite (ARmul_comm ARth (Q3@l)); rsimpl.
        apply rmul_ext; rsimpl.
        rewrite <- pow_Pplus.
        rewrite (Pplus_minus _ _ He); rsimpl.
@@ -1005,7 +1005,7 @@ Section MakeRingPol.
   | |- context [(?P1 ++ ?P2)@?l] => rewrite (Padd_ok P2 P1 l)
   | |- context [(?P1 -- ?P2)@?l] => rewrite (Psub_ok P2 P1 l)
   | |- context [(norm (PEopp ?pe))@?l] => rewrite (norm_PEopp l pe)
-  end;Esimpl2;try rrefl;try apply (ARadd_sym ARth).
+  end;Esimpl2;try rrefl;try apply (ARadd_comm ARth).
 
  Lemma norm_ok : forall l pe,  PEeval l pe == (norm pe)@l.
  Proof.
@@ -1104,7 +1104,7 @@ Section MakeRingPol.
  induction lm; simpl in |- *; intros.
  rrefl.
  rewrite IHlm; simpl in |- *.
-   repeat rewrite <- (ARmul_sym ARth a); rewrite <- mul_mkmult.
+   repeat rewrite <- (ARmul_comm ARth a); rewrite <- mul_mkmult.
    rrefl.
  Qed.
 
@@ -1123,7 +1123,7 @@ Section MakeRingPol.
   setoid_replace (pow x p * (pow x p * r) ) 
     with (pow x p * pow x p * r);Esimpl.
   unfold rev';simpl. repeat rewrite mkmult_rev_append;simpl.
-  rewrite (ARmul_sym ARth);rrefl.
+  rewrite (ARmul_comm ARth);rrefl.
  Qed.
 
  Lemma Pphi_add_mult_dev : forall P rP fv lm, 

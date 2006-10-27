@@ -32,6 +32,7 @@
 /* Les blocs accumulate */
 #define Is_accu(v) (Is_block(v) && (Tag_val(v) == Accu_tag))
 
+#define IS_EVALUATED_COFIX(v) (Is_accu(v) && Is_block(Field(v,1)) && (Tag_val(Field(v,1)) == ATOM_COFIXEVALUATED_TAG))
 #endif /* _COQ_VALUES_ */
 
 

@@ -196,7 +196,7 @@ Section ZMORPHISM.
   replace Eq with (CompOpp Eq);trivial.
   rewrite <- Pcompare_antisym;simpl.
   rewrite match_compOpp.    
-  rewrite (Radd_sym Rth).
+  rewrite (Radd_comm Rth).
   apply gen_phiZ1_add_pos_neg.
   rewrite (ARgen_phiPOS_add ARth); norm.
  Qed.

@@ -55,7 +55,7 @@ sp is a local copy of the global variable extern_sp. */
 #  define Next break
 #endif 
 
-/*#define _COQ_DEBUG_ */
+/* #define _COQ_DEBUG_ */
 
 #ifdef _COQ_DEBUG_ 
 #   define print_instr(s) /*if (drawinstr)*/ printf("%s\n",s)
@@ -821,11 +821,34 @@ value coq_interprete
       }
 	
       Instruct(SETFIELD1){
+        int i, j, size, size_aux;
 	print_instr("SETFIELD1");
 	CAML_MODIFY(&Field(accu, 1),*sp);
-	sp++;
-	Next;
+       	sp++;
+	Next; 
       }
+  
+      /* *sp = accu;
+	* Netoyage des cofix *
+        size = Wosize_val(accu);
+        for (i = 2; i < size; i++) {
+ 	  accu = Field(*sp, i);
+          if (IS_EVALUATED_COFIX(accu)) {
+            size_aux = Wosize_val(accu);
+            *--sp = accu;
+	    Alloc_small(accu, size_aux, Accu_tag);
+	    for(j = 0; j < size_aux; j++) Field(accu, j) = Field(*sp, j);
+	    *sp = accu;
+	    Alloc_small(accu, 1, ATOM_COFIX_TAG);
+	    Field(accu, 0) = Field(Field(*sp, 1), 0);
+	    CAML_MODIFY(&Field(*sp, 1), accu);
+	    accu = *sp; sp++;
+            CAML_MODIFY(&Field(*sp, i), accu);
+	  }
+	}
+	sp++;
+	Next; 
+	} */
       
       Instruct(SETFIELD){
 	print_instr("SETFIELD");
