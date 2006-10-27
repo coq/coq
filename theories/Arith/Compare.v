@@ -16,7 +16,7 @@ Notation not_eq_sym := sym_not_eq.
 
 Implicit Types m n p q : nat.
 
-Require Import Arith.
+Require Import Arith_base.
 Require Import Peano_dec.
 Require Import Compare_dec.
 

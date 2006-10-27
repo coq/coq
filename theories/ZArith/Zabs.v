@@ -9,7 +9,7 @@
 
 (** Binary Integers (Pierre Crégut (CNET, Lannion, France) *)
 
-Require Import Arith.
+Require Import Arith_base.
 Require Import BinPos.
 Require Import BinInt.
 Require Import Zorder.

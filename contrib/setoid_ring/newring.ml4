@@ -145,117 +145,6 @@ let _ = add_tacdef false ((dummy_loc,id_of_string"ring_closed_term"
 *)
 
 (****************************************************************************)
-(* Library linking *)
-
-let contrib_name = "setoid_ring"
-
-
-let ring_dir = ["Coq";contrib_name]
-let ring_modules = 
-  [ring_dir@["BinList"];ring_dir@["Ring_theory"];ring_dir@["Ring_polynom"];
-   ring_dir@["Ring_tac"];ring_dir@["Field_tac"];ring_dir@["InitialRing"]]
-let stdlib_modules =
-  [["Coq";"Setoids";"Setoid"];
-   ["Coq";"ZArith";"BinInt"];
-   ["Coq";"ZArith";"Zbool"];
-   ["Coq";"NArith";"BinNat"];
-   ["Coq";"NArith";"BinPos"]]
-
-let coq_constant c =
-  lazy (Coqlib.gen_constant_in_modules "Ring" stdlib_modules c)
-let ring_constant c =
-  lazy (Coqlib.gen_constant_in_modules "Ring" ring_modules c)
-let ringtac_constant m c =
-  lazy (Coqlib.gen_constant_in_modules "Ring" [ring_dir@["InitialRing";m]] c)
-
-let new_ring_path =
-  make_dirpath (List.map id_of_string ["Ring_tac";contrib_name;"Coq"])
-let ltac s =
-  lazy(make_kn (MPfile new_ring_path) (make_dirpath []) (mk_label s))
-let znew_ring_path =
-  make_dirpath (List.map id_of_string ["InitialRing";contrib_name;"Coq"])
-let zltac s =
-  lazy(make_kn (MPfile znew_ring_path) (make_dirpath []) (mk_label s))
-let carg c = TacDynamic(dummy_loc,Pretyping.constr_in c)
-
-let mk_cst l s = lazy (Coqlib.gen_constant "newring" l s);;
-let pol_cst s = mk_cst [contrib_name;"Ring_polynom"] s ;;
-
-(* Ring theory *)
-
-(* almost_ring defs *)
-let coq_almost_ring_theory = ring_constant "almost_ring_theory"
-let coq_ring_lemma1 = ring_constant "ring_correct"
-let coq_ring_lemma2 = ring_constant "Pphi_dev_ok"
-let ring_comp1 = ring_constant "ring_id_correct"
-let ring_comp2 = ring_constant "ring_rw_id_correct"
-let ring_abs1 = ringtac_constant "Zpol" "ring_gen_correct"
-let ring_abs2 = ringtac_constant "Zpol" "ring_rw_gen_correct"
-let sring_abs1 = ringtac_constant "Npol" "ring_gen_correct"
-let sring_abs2 = ringtac_constant "Npol" "ring_rw_gen_correct"
-
-(* setoid and morphism utilities *)
-let coq_mk_Setoid = coq_constant "Build_Setoid_Theory"
-let coq_eq_setoid = ring_constant "Eqsth"
-let coq_eq_morph = ring_constant "Eq_ext"
-
-(* ring -> almost_ring utilities *)
-let coq_ring_theory = ring_constant "ring_theory"
-let coq_ring_morph = ring_constant "ring_morph"
-let coq_Rth_ARth = ring_constant "Rth_ARth"
-let coq_mk_reqe = ring_constant "mk_reqe"
-
-(* semi_ring -> almost_ring utilities *)
-let coq_semi_ring_theory = ring_constant "semi_ring_theory"
-let coq_SRth_ARth = ring_constant "SRth_ARth"
-let coq_sring_morph = ring_constant "semi_morph"
-let coq_SRmorph_Rmorph = ring_constant "SRmorph_Rmorph"
-let coq_mk_seqe = ring_constant "mk_seqe"
-let coq_SRsub = ring_constant "SRsub"
-let coq_SRopp = ring_constant "SRopp"
-let coq_SReqe_Reqe = ring_constant "SReqe_Reqe"
-
-let ltac_setoid_ring = ltac"Ring"
-let ltac_setoid_ring_rewrite = ltac"Ring_simplify"
-let ltac_inv_morphZ = zltac"inv_gen_phiZ"
-let ltac_inv_morphN = zltac"inv_gen_phiN"
-
-
-let list_dir = ["Lists";"List"]
-(* let list_dir =[contrib_name;"BinList"] *)
-let coq_cons = mk_cst list_dir "cons"
-let coq_nil = mk_cst list_dir "nil"
-
-let lapp f args = mkApp(Lazy.force f,args)
-
-let rec dest_rel t =
-  match kind_of_term t with
-      App(f,args) when Array.length args >= 2 ->
-        let rel = mkApp(f,Array.sub args 0 (Array.length args - 2)) in
-        if closed0 rel then
-          (rel,args.(Array.length args - 2),args.(Array.length args - 1))
-        else error "ring: cannot find relation (not closed)"
-    | Prod(_,_,c) -> dest_rel c
-    | _ -> error "ring: cannot find relation"
-
-(* Equality: do not evaluate but make recursive call on both sides *)
-let map_with_eq arg_map c =
-  let (req,_,_) = dest_rel c in
-  interp_map
-    ((req,(function -1->Prot|_->Rec))::
-    List.map (fun (c,map) -> (Lazy.force c,map)) arg_map)
-;;
-
-let _ = add_map "ring"
-  (map_with_eq
-    [coq_cons,(function -1->Eval|2->Rec|_->Prot);
-    coq_nil, (function -1->Eval|_ -> Prot);
-    (* Pphi_dev: evaluate polynomial and coef operations, protect
-       ring operations and make recursive call on the var map *)
-    pol_cst "Pphi_dev", (function -1|6|7|8|9|11->Eval|10->Rec|_->Prot);
-    (* PEeval: evaluate morphism and polynomial, protect ring 
-       operations and make recursive call on the var map *)
-    pol_cst "PEeval", (function -1|7|9->Eval|8->Rec|_->Prot)]);;
 
 let ic c =
   let env = Global.env() and sigma = Evd.empty in
@@ -271,9 +160,133 @@ let decl_constant na c =
       const_entry_boxed = true}, 
     IsProof Lemma))
 
-
 let ltac_call tac args =
   TacArg(TacCall(dummy_loc, ArgArg(dummy_loc, Lazy.force tac),args))
+
+let ltac_lcall tac args =
+  TacArg(TacCall(dummy_loc, ArgVar(dummy_loc, id_of_string tac),args))
+
+let carg c = TacDynamic(dummy_loc,Pretyping.constr_in c)
+
+let dummy_goal env =
+  {Evd.it=
+    {Evd.evar_concl=mkProp;
+     Evd.evar_hyps=named_context_val env;
+     Evd.evar_body=Evd.Evar_empty;
+     Evd.evar_extra=None};
+   Evd.sigma=Evd.empty}
+
+let exec_tactic env n f args =
+  let lid = list_tabulate(fun i -> id_of_string("x"^string_of_int i)) n in
+  let res = ref [||] in
+  let get_res ist =
+    let l = List.map (fun id ->  List.assoc id ist.lfun) lid in
+    res := Array.of_list l;
+    TacId[] in
+  let getter =
+    Tacexp(TacFun(List.map(fun id -> Some id) lid,
+                  glob_tactic(tacticIn get_res))) in
+  let _ =
+    Tacinterp.eval_tactic(ltac_call f (args@[getter])) (dummy_goal env) in
+  !res
+
+let constr_of = function
+  | VConstr c -> c
+  | _ -> failwith "Ring.exec_tactic: anomaly"
+
+let stdlib_modules =
+  [["Coq";"Setoids";"Setoid"];
+   ["Coq";"Lists";"List"]
+  ]
+
+let coq_constant c =
+  lazy (Coqlib.gen_constant_in_modules "Ring" stdlib_modules c)
+
+let coq_mk_Setoid = coq_constant "Build_Setoid_Theory"
+let coq_cons = coq_constant "cons"
+let coq_nil = coq_constant "nil"
+
+let lapp f args = mkApp(Lazy.force f,args)
+
+let rec dest_rel t =
+  match kind_of_term t with
+      App(f,args) when Array.length args >= 2 ->
+        let rel = mkApp(f,Array.sub args 0 (Array.length args - 2)) in
+        if closed0 rel then
+          (rel,args.(Array.length args - 2),args.(Array.length args - 1))
+        else error "ring: cannot find relation (not closed)"
+    | Prod(_,_,c) -> dest_rel c
+    | _ -> error "ring: cannot find relation"
+
+(****************************************************************************)
+(* Library linking *)
+
+let contrib_name = "setoid_ring"
+
+let cdir = ["Coq";contrib_name]
+let contrib_modules =
+  List.map (fun d -> cdir@d)
+    [["Ring_theory"];["Ring_polynom"]; ["Ring_tac"];["InitialRing"];
+     ["Field_tac"]; ["Field_theory"]
+    ]
+
+let my_constant c =
+  lazy (Coqlib.gen_constant_in_modules "Ring" contrib_modules c)
+
+let new_ring_path =
+  make_dirpath (List.map id_of_string ["Ring_tac";contrib_name;"Coq"])
+let ltac s =
+  lazy(make_kn (MPfile new_ring_path) (make_dirpath []) (mk_label s))
+let znew_ring_path =
+  make_dirpath (List.map id_of_string ["InitialRing";contrib_name;"Coq"])
+let zltac s =
+  lazy(make_kn (MPfile znew_ring_path) (make_dirpath []) (mk_label s))
+
+let mk_cst l s = lazy (Coqlib.gen_constant "newring" l s);;
+let pol_cst s = mk_cst [contrib_name;"Ring_polynom"] s ;;
+
+(* Ring theory *)
+
+(* almost_ring defs *)
+let coq_almost_ring_theory = my_constant "almost_ring_theory"
+
+(* setoid and morphism utilities *)
+let coq_eq_setoid = my_constant "Eqsth"
+let coq_eq_morph = my_constant "Eq_ext"
+let coq_eq_smorph = my_constant "Eq_s_ext"
+
+(* ring -> almost_ring utilities *)
+let coq_ring_theory = my_constant "ring_theory"
+let coq_mk_reqe = my_constant "mk_reqe"
+
+(* semi_ring -> almost_ring utilities *)
+let coq_semi_ring_theory = my_constant "semi_ring_theory"
+let coq_mk_seqe = my_constant "mk_seqe"
+
+let ltac_inv_morphZ = zltac"inv_gen_phiZ"
+let ltac_inv_morphN = zltac"inv_gen_phiN"
+
+let coq_abstract = my_constant"Abstract"
+let coq_comp = my_constant"Computational"
+let coq_morph = my_constant"Morphism"
+
+(* Equality: do not evaluate but make recursive call on both sides *)
+let map_with_eq arg_map c =
+  let (req,_,_) = dest_rel c in
+  interp_map
+    ((req,(function -1->Prot|_->Rec))::
+    List.map (fun (c,map) -> (Lazy.force c,map)) arg_map)
+
+let _ = add_map "ring"
+  (map_with_eq
+    [coq_cons,(function -1->Eval|2->Rec|_->Prot);
+    coq_nil, (function -1->Eval|_ -> Prot);
+    (* Pphi_dev: evaluate polynomial and coef operations, protect
+       ring operations and make recursive call on the var map *)
+    pol_cst "Pphi_dev", (function -1|6|7|8|9|11->Eval|10->Rec|_->Prot);
+    (* PEeval: evaluate morphism and polynomial, protect ring 
+       operations and make recursive call on the var map *)
+    pol_cst "PEeval", (function -1|7|9->Eval|8->Rec|_->Prot)])
 
 (****************************************************************************)
 (* Ring database *)
@@ -281,6 +294,10 @@ let ltac_call tac args =
 type ring_info =
     { ring_carrier : types;
       ring_req : constr;
+      ring_setoid : constr;
+      ring_ext : constr;
+      ring_morph : constr;
+      ring_th : constr;
       ring_cst_tac : glob_tactic_expr;
       ring_lemma1 : constr;
       ring_lemma2 : constr;
@@ -354,6 +371,10 @@ let add_entry (sp,_kn) e =
 let subst_th (_,subst,th) = 
   let c' = subst_mps subst th.ring_carrier in                   
   let eq' = subst_mps subst th.ring_req in
+  let set' = subst_mps subst th.ring_setoid in
+  let ext' = subst_mps subst th.ring_ext in
+  let morph' = subst_mps subst th.ring_morph in
+  let th' = subst_mps subst th.ring_th in
   let thm1' = subst_mps subst th.ring_lemma1 in
   let thm2' = subst_mps subst th.ring_lemma2 in
   let tac'= subst_tactic subst th.ring_cst_tac in
@@ -361,6 +382,10 @@ let subst_th (_,subst,th) =
   let posttac'= subst_tactic subst th.ring_post_tac in
   if c' == th.ring_carrier &&
      eq' == th.ring_req &&
+     set' = th.ring_setoid &&
+     ext' == th.ring_ext &&
+     morph' == th.ring_morph &&
+     th' == th.ring_th &&
      thm1' == th.ring_lemma1 &&
      thm2' == th.ring_lemma2 &&
      tac' == th.ring_cst_tac &&
@@ -369,6 +394,10 @@ let subst_th (_,subst,th) =
   else
     { ring_carrier = c';
       ring_req = eq';
+      ring_setoid = set';
+      ring_ext = ext';
+      ring_morph = morph';
+      ring_th = th';
       ring_cst_tac = tac';
       ring_lemma1 = thm1';
       ring_lemma2 = thm2';
@@ -399,48 +428,17 @@ let op_morph r add mul opp req m1 m2 m3 =
 let op_smorph r add mul req m1 m2 =
   lapp coq_mk_seqe [| r; add; mul; req; m1; m2 |]
 
-let smorph2morph r add mul req sm =
-  lapp coq_SReqe_Reqe [| r;add;mul;req;sm|]
-
-let sr_sub r add = lapp coq_SRsub [|r;add|]
-let sr_opp r = lapp coq_SRopp [|r|]
-
-let dest_morphism env sigma kind th sth =
-  let th_typ = Retyping.get_type_of env sigma th in
-  match kind_of_term th_typ with
-      App(f,[|_;_;_;_;_;_;_;_;c;czero;cone;cadd;cmul;csub;copp;ceqb;phi|])
-        when f = Lazy.force coq_ring_morph ->
-          (th,[|c;czero;cone;cadd;cmul;csub;copp;ceqb;phi|])
-    | App(f,[|r;zero;one;add;mul;req;c;czero;cone;cadd;cmul;ceqb;phi|])
-        when f = Lazy.force coq_sring_morph && kind=Some true->
-        let th =
-          lapp coq_SRmorph_Rmorph
-            [|r;zero;one;add;mul;req;sth;c;czero;cone;cadd;cmul;ceqb;phi;th|]in
-        (th,[|c;czero;cone;cadd;cmul;cadd;sr_opp c;ceqb;phi|])
-    | _ -> error "bad ring_morph lemma"
-
-let dest_eq_test env sigma th =
-  let th_typ = Retyping.get_type_of env sigma th in
-  match decompose_prod th_typ with
-      (_,h)::_,_ ->
-        (match snd(destApplication h) with
-            [|_;lhs;_|] ->
-              let (f,args) = destApplication lhs in
-              if Array.length args < 2 then
-                error "bad lemma for decidability of equality"
-              else
-                mkApp(f,Array.sub args 0 (Array.length args -2))
-          | _ -> error "bad lemma for decidability of equality")
-    | _ -> error "bad lemma for decidability of equality"
-
-let default_ring_equality is_semi (r,add,mul,opp,req) =
+let default_ring_equality (r,add,mul,opp,req) =
   let is_setoid = function
       {rel_refl=Some _; rel_sym=Some _;rel_trans=Some _} -> true
     | _ -> false in
   match default_relation_for_carrier ~filter:is_setoid r with
       Leibniz _ ->
         let setoid = lapp coq_eq_setoid [|r|] in
-        let op_morph = lapp coq_eq_morph [|r;add;mul;opp|] in
+        let op_morph =
+          match opp with
+              Some opp -> lapp coq_eq_morph [|r;add;mul;opp|]
+            | None -> lapp coq_eq_smorph [|r;add;mul|] in
         (setoid,op_morph)
     | Relation rel ->
         let setoid = setoid_of_relation rel in
@@ -458,7 +456,8 @@ let default_ring_equality is_semi (r,add,mul,opp,req) =
           with Not_found ->
             error "ring multiplication should be declared as a morphism" in
         let op_morph =
-          if is_semi <> Some true then
+          match opp with
+            | Some opp ->
             (let opp_m =
               try default_morphism ~filter:is_endomorphism opp
               with Not_found ->
@@ -472,7 +471,7 @@ let default_ring_equality is_semi (r,add,mul,opp,req) =
                str"\""++spc()++str"and \""++pr_constr opp_m.morphism_theory++
                str"\"");
              op_morph)
-          else
+            | None ->
             (msgnl
               (str"Using setoid \""++pr_constr rel.rel_aeq++str"\"" ++ spc() ++  
                str"and morphisms \""++pr_constr add_m.morphism_theory++
@@ -481,33 +480,25 @@ let default_ring_equality is_semi (r,add,mul,opp,req) =
             op_smorph r add mul req add_m.lem mul_m.lem) in
         (setoid,op_morph)
 
-let build_setoid_params is_semi r add mul opp req eqth =
+let build_setoid_params r add mul opp req eqth =
   match eqth with
       Some th -> th
-    | None -> default_ring_equality is_semi (r,add,mul,opp,req)
+    | None -> default_ring_equality (r,add,mul,opp,req)
 
 let dest_ring env sigma th_spec =
   let th_typ = Retyping.get_type_of env sigma th_spec in
   match kind_of_term th_typ with
       App(f,[|r;zero;one;add;mul;sub;opp;req|])
         when f = Lazy.force coq_almost_ring_theory ->
-          (None,r,zero,one,add,mul,sub,opp,req)
+          (None,r,zero,one,add,mul,Some sub,Some opp,req)
     | App(f,[|r;zero;one;add;mul;req|])
         when f = Lazy.force coq_semi_ring_theory ->
-        (Some true,r,zero,one,add,mul,sr_sub r add,sr_opp r,req)
+        (Some true,r,zero,one,add,mul,None,None,req)
     | App(f,[|r;zero;one;add;mul;sub;opp;req|])
         when f = Lazy.force coq_ring_theory ->
-        (Some false,r,zero,one,add,mul,sub,opp,req)
+        (Some false,r,zero,one,add,mul,Some sub,Some opp,req)
     | _ -> error "bad ring structure"
 
-
-let build_almost_ring kind r zero one add mul sub opp req sth morph th =
-  match kind with
-      None -> th
-    | Some true ->
-        lapp coq_SRth_ARth [|r;zero;one;add;mul;req;sth;th|]
-    | Some false ->
-        lapp coq_Rth_ARth [|r;zero;one;add;mul;sub;opp;req;sth;morph;th|]
 
 
 type coeff_spec =
@@ -515,102 +506,46 @@ type coeff_spec =
   | Abstract (* coeffs = Z *)
   | Morphism of constr (* general morphism *)
 
+
+let reflect_coeff rkind =
+  (* We build an ill-typed terms on purpose... *)
+  match rkind with
+      Abstract -> Lazy.force coq_abstract
+    | Computational c -> lapp coq_comp [|c|]
+    | Morphism m -> lapp coq_morph [|m|]
+
 type cst_tac_spec =
     CstTac of raw_tactic_expr
   | Closed of reference list
 
-(*
-let ring_equiv_constant c =
-  lazy (Coqlib.gen_constant_in_modules "Ring" [ring_dir@["Ring_equiv"]] c)
-let ring_def_eqb_ok = ring_equiv_constant "default_eqb_ok"
-let ring_equiv2 = ring_equiv_constant "ring_equiv2"
-let sring_equiv2 = ring_equiv_constant "sring_equiv2"
-let ring_m_plus = ring_constant "Radd_ext"
-let ring_m_mul = ring_constant "Rmul_ext"
-let ring_m_opp = ring_constant "Ropp_ext"
-
-let old_morph is_semi r add mul opp req morph =
-    { Ring.plusm = lapp ring_m_plus [|r;add;mul;opp;req;morph|];
-      Ring.multm  = lapp ring_m_mul [|r;add;mul;opp;req;morph|];
-      Ring.oppm =
-        if is_semi then None
-        else Some (lapp ring_m_opp [|r;add;mul;opp;req;morph|])
-    }
-
-let add_old_theory env sigma is_semi is_setoid
-      r zero one add mul sub opp req rth sth ops_morph morphth =
-(try
-  let opp_o = if is_semi then None else Some opp in
-  let (is_abs, eqb_ok) =
-    match morphth with
-        Computational c -> (false, c)
-      | _ -> (true, lapp ring_def_eqb_ok [|r|]) in
-  let eqb = dest_eq_test env sigma eqb_ok in
-  let rth =
-    if is_setoid then failwith "not impl"
-    else
-      if is_semi then
-        lapp sring_equiv2 [|r;zero;one;add;mul;rth;eqb;eqb_ok|]
-      else
-        lapp ring_equiv2 [|r;zero;one;add;mul;sub;opp;rth;eqb;eqb_ok|] in
-  Ring.add_theory (not is_semi) is_abs is_setoid r
-     (Some req) (Some sth)
-     (if is_setoid then Some(old_morph is_semi r add mul opp req ops_morph)
-      else None)
-     add mul one zero opp_o eqb rth Quote.ConstrSet.empty
-with _ ->
-  prerr_endline "Warning: could not add old ring structure")
-*)
+let interp_cst_tac kind (zero,one,add,mul,opp) cst_tac =
+  match cst_tac with
+      Some (CstTac t) -> Tacinterp.glob_tactic t
+    | Some (Closed lc) -> closed_term_ast (List.map Nametab.global lc)
+    | None ->
+        (match opp, kind with
+            None, _ ->
+              let t = ArgArg(dummy_loc,Lazy.force ltac_inv_morphN) in
+              TacArg(TacCall(dummy_loc,t,List.map carg [zero;one;add;mul]))
+          | Some opp, Some _ ->
+              let t = ArgArg(dummy_loc, Lazy.force ltac_inv_morphZ) in
+              TacArg(TacCall(dummy_loc,t,List.map carg [zero;one;add;mul;opp]))
+          | _ -> error"a tactic must be specified for an almost_ring")
 
 let add_theory name rth eqth morphth cst_tac (pre,post) =
   let env = Global.env() in
   let sigma = Evd.empty in
   let (kind,r,zero,one,add,mul,sub,opp,req) = dest_ring env sigma rth in
-  let (sth,morph) = build_setoid_params kind r add mul opp req eqth in
-  let args0 = [|r;zero;one;add;mul;sub;opp;req;sth;morph|] in
-  let args0' = [|r;zero;one;add;mul;req;sth;morph|] in
-  let (lemma1,lemma2) =
-    match morphth with
-      | Computational c ->
-          let reqb = dest_eq_test env sigma c in
-          let rth = 
-            build_almost_ring
-              kind r zero one add mul sub opp req sth  morph rth in
-          let args = Array.append args0 [|rth;reqb;c|] in
-          (lapp ring_comp1 args, lapp ring_comp2 args)
-      | Morphism m ->
-          let (m,args1) = dest_morphism env sigma kind m sth in
-          let rth = 
-            build_almost_ring
-              kind r zero one add mul sub opp req sth morph rth in
-          let args = Array.concat [args0;[|rth|]; args1; [|m|]] in
-          (lapp coq_ring_lemma1 args, lapp coq_ring_lemma2 args)
-      | Abstract ->
-          (try check_required_library (ring_dir@["Ring"])
-          with UserError _ ->
-            error "You must require \"Ring\" to declare an abstract ring");
-          (match kind with
-              None -> error "an almost_ring cannot be abstract"
-            | Some true ->
-                let args1 = Array.append args0' [|rth|] in
-                (lapp sring_abs1 args1, lapp sring_abs2 args1)
-            | Some false ->
-                let args1 = Array.append args0 [|rth|] in
-                (lapp ring_abs1 args1, lapp ring_abs2 args1)) in
+  let (sth,ext) = build_setoid_params r add mul opp req eqth in
+  let rk = reflect_coeff morphth in
+  let params =
+    exec_tactic env 5 (zltac"ring_lemmas") (List.map carg[sth;ext;rth;rk]) in
+  let lemma1 = constr_of params.(3) in
+  let lemma2 = constr_of params.(4) in
+
   let lemma1 = decl_constant (string_of_id name^"_ring_lemma1") lemma1 in
   let lemma2 = decl_constant (string_of_id name^"_ring_lemma2") lemma2 in
-  let cst_tac = match cst_tac with
-      Some (CstTac t) -> Tacinterp.glob_tactic t
-    | Some (Closed lc) -> closed_term_ast (List.map Nametab.global lc)
-    | None ->
-        (match kind with
-            Some true ->
-              let t = ArgArg(dummy_loc,Lazy.force ltac_inv_morphN) in
-              TacArg(TacCall(dummy_loc,t,List.map carg [zero;one;add;mul]))
-          | Some false ->
-              let t = ArgArg(dummy_loc, Lazy.force ltac_inv_morphZ) in
-              TacArg(TacCall(dummy_loc,t,List.map carg [zero;one;add;mul;opp]))
-          | _ -> error"a tactic must be specified for an almost_ring") in
+  let cst_tac = interp_cst_tac kind (zero,one,add,mul,opp) cst_tac in
   let pretac =
     match pre with
         Some t -> Tacinterp.glob_tactic t
@@ -624,19 +559,15 @@ let add_theory name rth eqth morphth cst_tac (pre,post) =
       (theory_to_obj
         { ring_carrier = r;
           ring_req = req;
+          ring_setoid = sth;
+          ring_ext = constr_of params.(1);
+          ring_morph = constr_of params.(2);
+          ring_th = constr_of params.(0);
           ring_cst_tac = cst_tac;
           ring_lemma1 = lemma1;
           ring_lemma2 = lemma2;
           ring_pre_tac = pretac;
           ring_post_tac = posttac }) in
-  (* old ring theory *)
-(*  let _ =
-    match kind with
-        Some is_semi ->
-          add_old_theory env sigma is_semi (eqth <> None)
-            r zero one add mul sub opp req rth sth morph morphth
-      | _ -> () in
-*)
   ()
 
 type ring_mod =
@@ -685,72 +616,47 @@ END
 (* The tactics consist then only in a lookup in the ring database and
    call the appropriate ltac. *)
 
-let ring gl = 
-  let env = pf_env gl in
-  let sigma = project gl in
-  let e = find_ring_structure env sigma [] (pf_concl gl) None in
-  let main_tac =
-    ltac_call ltac_setoid_ring
-      (Tacexp e.ring_cst_tac:: List.map carg [e.ring_lemma1;e.ring_req]) in
-  Tacinterp.eval_tactic (TacThen(e.ring_pre_tac,main_tac)) gl
+let make_term_list carrier rl gl =
+  let rl = 
+    match rl with
+	[] -> let (_,t1,t2) = dest_rel (pf_concl gl) in [t1;t2]
+      | _ -> rl in
+  List.fold_right
+    (fun x l -> lapp coq_cons [|carrier;x;l|]) rl
+    (lapp coq_nil [|carrier|])
 
-let ring_rewrite rl gl =
+let ring_lookup (f:glob_tactic_expr) rl gl =
   let env = pf_env gl in
   let sigma = project gl in
   let e = find_ring_structure env sigma rl (pf_concl gl) None in
-  tclTHEN (Tacinterp.eval_tactic e.ring_pre_tac)
-    (tclTHEN
-        (fun gl ->
-	    let rl = 
-	      match rl with
-		  [] -> let (_,t1,t2) = dest_rel (pf_concl gl) in [t1;t2]
-		| _ -> rl in
-	    let rl = List.fold_right
-	      (fun x l -> lapp coq_cons [|e.ring_carrier;x;l|]) rl
-	      (lapp coq_nil [|e.ring_carrier|]) in
-	      Tacinterp.eval_tactic 
-		(TacArg(
-		    TacCall(dummy_loc,
-			   (ArgArg(dummy_loc,
-				  Lazy.force ltac_setoid_ring_rewrite)),
-			   (Tacexp e.ring_cst_tac::
-			       List.map carg 
-			       [e.ring_lemma2; e.ring_req; rl])))) gl)
-	(Tacinterp.eval_tactic e.ring_post_tac)) gl
+  let rl = carg (make_term_list e.ring_carrier rl gl) in
+  let req = carg e.ring_req in
+  let sth = carg e.ring_setoid in
+  let ext = carg e.ring_ext in
+  let morph = carg e.ring_morph in
+  let th = carg e.ring_th in
+  let cst_tac = Tacexp e.ring_cst_tac in
+  let lemma1 = carg e.ring_lemma1 in
+  let lemma2 = carg e.ring_lemma2 in
+  let pretac = Tacexp(TacFun([None],e.ring_pre_tac)) in
+  let posttac = Tacexp(TacFun([None],e.ring_post_tac)) in
+  Tacinterp.eval_tactic
+    (TacLetIn
+      ([(dummy_loc,id_of_string"f"),None,Tacexp f],
+       ltac_lcall "f"
+         [req;sth;ext;morph;th;cst_tac;lemma1;lemma2;pretac;posttac;rl])) gl
 
-TACTIC EXTEND setoid_ring
-  [ "ring" ] -> [ ring ]
-| [ "ring_simplify" constr_list(l) ] -> [ ring_rewrite l ]
+TACTIC EXTEND ring_lookup
+| [ "ring_lookup" tactic(f) constr_list(l) ] -> [ ring_lookup (fst f) l ]
 END
 
 (***********************************************************************)
-let fld_cst s = mk_cst [contrib_name;"Field_theory"] s ;;
-
-let field_modules = List.map
-  (fun f -> ["Coq";contrib_name;f])
-  ["Field_theory";"Field_tac"]
 
 let new_field_path =
   make_dirpath (List.map id_of_string ["Field_tac";contrib_name;"Coq"])
 
-let field_constant c =
-  lazy (Coqlib.gen_constant_in_modules "Field" field_modules c)
-
 let field_ltac s =
   lazy(make_kn (MPfile new_field_path) (make_dirpath []) (mk_label s))
-
-let field_lemma = field_constant "Fnorm_correct2"
-let field_simplify_eq_lemma = field_constant "Field_simplify_eq_correct"
-let field_simplify_lemma = field_constant "Pphi_dev_div_ok"
-
-let afield_theory = field_constant "almost_field_theory"
-let field_theory = field_constant "field_theory"
-let sfield_theory = field_constant "semi_field_theory"
-let field_Rth = field_constant "AF_AR"
-
-let field_tac = field_ltac "Make_field_tac"
-let field_simplify_eq_tac = field_ltac "Make_field_simplify_eq_tac"
-let field_simplify_tac = field_ltac "Make_field_simplify_tac"
 
 
 let _ = add_map "field"
@@ -759,14 +665,14 @@ let _ = add_map "field"
     coq_nil, (function -1->Eval|_ -> Prot);
     (* display_linear: evaluate polynomials and coef operations, protect
        field operations and make recursive call on the var map *)
-    fld_cst "display_linear",
+    my_constant "display_linear",
       (function -1|7|8|9|10|12|13->Eval|11->Rec|_->Prot);
     (* Pphi_dev: evaluate polynomial and coef operations, protect
        ring operations and make recursive call on the var map *)
-    pol_cst "Pphi_dev", (function -1|6|7|8|9|11->Eval|10->Rec|_->Prot);
+    my_constant "Pphi_dev", (function -1|6|7|8|9|11->Eval|10->Rec|_->Prot);
     (* PEeval: evaluate morphism and polynomial, protect ring 
        operations and make recursive call on the var map *)
-    fld_cst "FEeval", (function -1|9|11->Eval|10->Rec|_->Prot)]);;
+    my_constant "FEeval", (function -1|9|11->Eval|10->Rec|_->Prot)]);;
 
 
 let _ = add_map "field_cond"
@@ -775,40 +681,35 @@ let _ = add_map "field_cond"
      coq_nil, (function -1->Eval|_ -> Prot);
     (* PCond: evaluate morphism and denum list, protect ring
        operations and make recursive call on the var map *)
-     fld_cst "PCond", (function -1|8|10->Eval|9->Rec|_->Prot)]);;
+     my_constant "PCond", (function -1|8|10->Eval|9->Rec|_->Prot)]);;
 
 
+let afield_theory = my_constant "almost_field_theory"
+let field_theory = my_constant "field_theory"
+let sfield_theory = my_constant "semi_field_theory"
+let af_ar = my_constant"AF_AR"
+let f_r = my_constant"F_R"
+let sf_sr = my_constant"SF_SR"
 let dest_field env sigma th_spec =
   let th_typ = Retyping.get_type_of env sigma th_spec in
   match kind_of_term th_typ with
     | App(f,[|r;zero;one;add;mul;sub;opp;div;inv;req|])
         when f = Lazy.force afield_theory ->
-        let rth = lapp field_Rth
+        let rth = lapp af_ar
           [|r;zero;one;add;mul;sub;opp;div;inv;req;th_spec|] in
-        (None,r,zero,one,add,mul,sub,opp,div,inv,req,rth)
+        (None,r,zero,one,add,mul,Some sub,Some opp,div,inv,req,rth)
     | App(f,[|r;zero;one;add;mul;sub;opp;div;inv;req|])
         when f = Lazy.force field_theory ->
         let rth =
-          lapp (field_constant"F_R")
+          lapp f_r
             [|r;zero;one;add;mul;sub;opp;div;inv;req;th_spec|] in
-        (Some false,r,zero,one,add,mul,sub,opp,div,inv,req,rth)
+        (Some false,r,zero,one,add,mul,Some sub,Some opp,div,inv,req,rth)
     | App(f,[|r;zero;one;add;mul;div;inv;req|])
         when f = Lazy.force sfield_theory ->
-        let rth = lapp (field_constant"SF_SR")
+        let rth = lapp sf_sr
           [|r;zero;one;add;mul;div;inv;req;th_spec|] in
-        (Some true,r,zero,one,add,mul,sr_sub r add,sr_opp r,div,inv,req,rth)
+        (Some true,r,zero,one,add,mul,None,None,div,inv,req,rth)
     | _ -> error "bad field structure"
-
-let build_almost_field
-     kind r zero one add mul sub opp div inv req sth morph th =
-  match kind with
-      None -> th
-    | Some true ->
-        lapp (field_constant "SF2AF")
-          [|r;zero;one;add;mul;div;inv;req;sth;th|]
-    | Some false ->
-        lapp (field_constant "F2AF")
-          [|r;zero;one;add;mul;sub;opp;div;inv;req;sth;morph;th|]
 
 type field_info =
     { field_carrier : types;
@@ -834,7 +735,7 @@ let field_lookup_by_name ref =
 
 
 let find_field_structure env sigma l cl oname =
-  check_required_library (ring_dir@["Field_tac"]);
+  check_required_library (cdir@["Field_tac"]);
   match oname, l with
       Some rf, _ ->
         (try field_lookup_by_name rf
@@ -879,14 +780,15 @@ let _ =
       Summary.survive_section = false }
 
 let add_field_entry (sp,_kn) e =
+(*
   let _ = ty e.field_ok in
   let _ = ty e.field_simpl_eq_ok in
   let _ = ty e.field_simpl_ok in
   let _ = ty e.field_cond in
+*)
   field_from_carrier := Cmap.add e.field_carrier e !field_from_carrier;
   field_from_relation := Cmap.add e.field_req e !field_from_relation;
   field_from_name := Spmap.add sp e !field_from_name 
-
 
 let subst_th (_,subst,th) = 
   let c' = subst_mps subst th.field_carrier in                   
@@ -918,7 +820,6 @@ let subst_th (_,subst,th) =
       field_pre_tac = pretac';
       field_post_tac = posttac' }
 
-
 let (ftheory_to_obj, obj_to_ftheory) = 
   let cache_th (name,th) = add_field_entry name th
   and export_th x = Some x in
@@ -949,93 +850,31 @@ let default_field_equality r inv req =
             error "field inverse should be declared as a morphism" in
         inv_m.lem
 
-
-let n_morph r zero one add mul =
-[|Lazy.force(coq_constant"N");
-Lazy.force(coq_constant"N0");
-lapp(coq_constant"Npos")[|Lazy.force(coq_constant"xH")|];
-Lazy.force(coq_constant"Nplus");
-Lazy.force(coq_constant"Nmult");
-Lazy.force(coq_constant"Nminus");
-Lazy.force(coq_constant"Nopp");
-Lazy.force(ring_constant"Neq_bool");
-lapp(ring_constant"gen_phiN")[|r;zero;one;add;mul|]
-|]
-let z_morph r zero one add mul opp =
-[|Lazy.force(coq_constant"Z");
-Lazy.force(coq_constant"Z0");
-lapp(coq_constant"Zpos")[|Lazy.force(coq_constant"xH")|];
-Lazy.force(coq_constant"Zplus");
-Lazy.force(coq_constant"Zmult");
-Lazy.force(coq_constant"Zminus");
-Lazy.force(coq_constant"Zopp");
-Lazy.force(coq_constant"Zeq_bool");
-lapp(ring_constant"gen_phiZ")[|r;zero;one;add;mul;opp|]
-|]
-
 let add_field_theory name fth eqth morphth cst_tac inj (pre,post) =
   let env = Global.env() in
   let sigma = Evd.empty in
   let (kind,r,zero,one,add,mul,sub,opp,div,inv,req,rth) =
     dest_field env sigma fth in
-  let (sth,morph) = build_setoid_params None r add mul opp req eqth in
-  let eqth = Some(sth,morph) in
+  let (sth,ext) = build_setoid_params r add mul opp req eqth in
+  let eqth = Some(sth,ext) in
   let _ = add_theory name rth eqth morphth cst_tac (None,None) in
-  let afth = build_almost_field
-    kind r zero one add mul sub opp div inv req sth morph fth in
   let inv_m = default_field_equality r inv req in
-  let args0 =
-    [|r;zero;one;add;mul;sub;opp;div;inv;req;sth;morph;inv_m;afth|] in
-  let args0' =
-    [|r;zero;one;add;mul;sub;opp;div;inv;req;sth;morph;afth|] in
-  let (m,args1) =
-    match morphth with
-        Computational c ->
-          let reqb = dest_eq_test env sigma c in
-          let idphi = ring_constant "IDphi" in
-          let idmorph =  lapp (ring_constant "IDmorph")
-            [|r;zero;one;add;mul;sub;opp;req;sth;reqb;c|] in
-          (idmorph,[|r;zero;one;add;mul;sub;opp;reqb;lapp idphi [|r|]|])
-      | Morphism m ->
-          dest_morphism env sigma kind m sth
-      | Abstract ->
-          (match kind with
-              None -> error "an almost_field cannot be abstract"
-            | Some true ->
-                (lapp(ring_constant"gen_phiN_morph")
-                  [|r;zero;one;add;mul;req;sth;morph;rth|],
-                 n_morph r zero one add mul)
-            | Some false ->
-                (lapp(ring_constant"gen_phiZ_morph")
-                  [|r;zero;one;add;mul;sub;opp;req;sth;morph;rth|],
-                 z_morph r zero one add mul opp)) in
-  let args = Array.concat [args0;args1;[|m|]] in
-  let args' = Array.concat [args0';args1;[|m|]] in
-  let lemma1 = lapp field_lemma args in
-  let lemma2 = lapp field_simplify_eq_lemma args in
-  let lemma3 = lapp field_simplify_lemma args in
+  let rk = reflect_coeff morphth in
+  let params =
+    exec_tactic env 8 (field_ltac"field_lemmas")
+      (List.map carg[sth;ext;inv_m;fth;rk]) in
+  let lemma1 = constr_of params.(3) in
+  let lemma2 = constr_of params.(4) in
+  let lemma3 = constr_of params.(5) in
+  let cond_lemma =
+    match inj with
+      | Some thm -> mkApp(constr_of params.(7),[|thm|])
+      | None -> constr_of params.(6) in
   let lemma1 = decl_constant (string_of_id name^"_field_lemma1") lemma1 in
   let lemma2 = decl_constant (string_of_id name^"_field_lemma2") lemma2 in
   let lemma3 = decl_constant (string_of_id name^"_field_lemma3") lemma3 in
-  let cond_lemma =
-    match inj with
-      | Some thm ->
-          lapp (field_constant"Pcond_simpl_complete")
-            (Array.append args' [|thm|])
-      | None -> lapp (field_constant"Pcond_simpl_gen") args' in
   let cond_lemma = decl_constant (string_of_id name^"_lemma4") cond_lemma in
-  let cst_tac = match cst_tac with
-      Some (CstTac t) -> Tacinterp.glob_tactic t
-    | Some (Closed lc) -> closed_term_ast (List.map Nametab.global lc)
-    | None ->
-        (match kind with
-            Some true ->
-              let t = ArgArg(dummy_loc,Lazy.force ltac_inv_morphN) in
-              TacArg(TacCall(dummy_loc,t,List.map carg [zero;one;add;mul]))
-          | Some false ->
-              let t = ArgArg(dummy_loc, Lazy.force ltac_inv_morphZ) in
-              TacArg(TacCall(dummy_loc,t,List.map carg [zero;one;add;mul;opp]))
-          | _ -> error"a tactic must be specified for an almost_ring") in
+  let cst_tac = interp_cst_tac kind (zero,one,add,mul,opp) cst_tac in
   let pretac =
     match pre with
         Some t -> Tacinterp.glob_tactic t
@@ -1090,51 +929,26 @@ VERNAC COMMAND EXTEND AddSetoidField
     add_field_theory id (ic t) set k cst_tac inj (pre,post) ]
 END
 
-let field gl = 
-  let env = pf_env gl in
-  let sigma = project gl in
-  let e = find_field_structure env sigma [] (pf_concl gl) None in
-  let main_tac =
-    ltac_call field_tac
-      [carg e.field_ok;carg e.field_cond;
-       carg e.field_req; Tacexp e.field_cst_tac] in
-  Tacinterp.eval_tactic
-    (TacThen(e.field_pre_tac,TacThen(main_tac,e.field_post_tac))) gl
-
-let field_simplify_eq gl =
-  let env = pf_env gl in
-  let sigma = project gl in
-  let e = find_field_structure env sigma [] (pf_concl gl) None in
-  let main_tac =
-    ltac_call field_simplify_eq_tac
-      [carg e.field_simpl_eq_ok;carg e.field_cond;
-       carg e.field_req; Tacexp e.field_cst_tac] in
-  Tacinterp.eval_tactic
-    (TacThen(e.field_pre_tac,TacThen(main_tac,e.field_post_tac))) gl
-
-let field_simplify rl gl =
+let field_lookup (f:glob_tactic_expr) rl gl =
   let env = pf_env gl in
   let sigma = project gl in
   let e = find_field_structure env sigma rl (pf_concl gl) None in
-  let rl =
-    match rl with
-        [] -> let (_,t1,t2) = dest_rel (pf_concl gl) in [t1;t2]
-      | _ -> rl in
-  let rl = List.fold_right
-    (fun x l -> lapp coq_cons [|e.field_carrier;x;l|]) rl
-    (lapp coq_nil [|e.field_carrier|]) in
-  let main_tac =
-    ltac_call field_simplify_tac
-      [carg e.field_simpl_ok;carg e.field_cond;
-       carg e.field_req; Tacexp e.field_cst_tac;
-       carg rl] in
+  let rl = carg (make_term_list e.field_carrier rl gl) in
+  let req = carg e.field_req in
+  let cst_tac = Tacexp e.field_cst_tac in
+  let field_ok = carg e.field_ok in
+  let field_simpl_ok = carg e.field_simpl_ok in
+  let field_simpl_eq_ok = carg e.field_simpl_eq_ok in
+  let cond_ok = carg e.field_cond in
+  let pretac = Tacexp(TacFun([None],e.field_pre_tac)) in
+  let posttac = Tacexp(TacFun([None],e.field_post_tac)) in
   Tacinterp.eval_tactic
-    (TacThen(e.field_pre_tac,TacThen(main_tac,e.field_post_tac))) gl
+    (TacLetIn
+      ([(dummy_loc,id_of_string"f"),None,Tacexp f],
+       ltac_lcall "f"
+         [req;cst_tac;field_ok;field_simpl_ok;field_simpl_eq_ok;cond_ok;
+          pretac;posttac;rl])) gl
 
-TACTIC EXTEND setoid_field
-  [ "field" ] -> [ field ]
-END
-TACTIC EXTEND setoid_field_simplify
-  [ "field_simplify_eq" ] -> [ field_simplify_eq ]
-| [ "field_simplify" constr_list(l) ] -> [ field_simplify l ]
+TACTIC EXTEND field_lookup
+| [ "field_lookup" tactic(f) constr_list(l) ] -> [ field_lookup (fst f) l ]
 END

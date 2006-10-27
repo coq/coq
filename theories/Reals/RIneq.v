@@ -16,41 +16,11 @@ Require Export Raxioms.
 Require Export ZArithRing.
 Require Import Omega.
 Require Export RealField.
-Require Export LegacyField.
 
 Open Local Scope Z_scope.
 Open Local Scope R_scope.
 
 Implicit Type r : R.
-
-(***************************************************************************)
-(** *     Instantiating Field tactic on reals                              *)
-(***************************************************************************)
-
-(* Legacy Field *)
-Require Export LegacyField.
-Import LegacyRing_theory.
-
-Lemma RLegacyTheory : Ring_Theory Rplus Rmult 1 0 Ropp (fun x y:R => false).
-  split.
-  exact Rplus_comm.
-  symmetry  in |- *; apply Rplus_assoc.
-  exact Rmult_comm.
-  symmetry  in |- *; apply Rmult_assoc.
-  intro; apply Rplus_0_l.
-  intro; apply Rmult_1_l.
-  exact Rplus_opp_r.
-  intros.
-  rewrite Rmult_comm.
-  rewrite (Rmult_comm n p).
-  rewrite (Rmult_comm m p).
-  apply Rmult_plus_distr_l.
-  intros; contradiction.
-Defined.
-
-Add Legacy Field
-R Rplus Rmult 1 0 Ropp (fun x y:R => false) Rinv RLegacyTheory Rinv_l
-  with minus := Rminus div := Rdiv.
 
 (**************************************************************************)
 (** * Relation between orders and equality                                *)

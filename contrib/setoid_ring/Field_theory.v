@@ -7,7 +7,7 @@
 (************************************************************************)
 
 Require Ring.
-Import Ring_polynom Ring_theory InitialRing Setoid List.
+Import Ring_polynom Ring_tac Ring_theory InitialRing Setoid List.
 Require Import ZArith_base.
 Set Implicit Arguments.
 
@@ -982,16 +982,16 @@ Proof.
 Qed.
 
 (* solving a field equation *)
-Theorem Fnorm_correct2:
- forall l fe1 fe2 nfe1 nfe2,
- Fnorm fe1 = nfe1 ->
- Fnorm fe2 = nfe2 ->
+Theorem Field_correct :
+ forall l fe1 fe2,
+ forall nfe1, Fnorm fe1 = nfe1 ->
+ forall nfe2, Fnorm fe2 = nfe2 ->
  Peq ceqb (Nnorm (PEmul (num nfe1) (denum nfe2)))
           (Nnorm (PEmul (num nfe2) (denum nfe1))) = true ->
  PCond l (condition nfe1 ++ condition nfe2) ->
  FEeval l fe1 == FEeval l fe2.
 Proof.
-intros l fe1 fe2 nfe1 nfe2 eq1 eq2 Hnorm Hcond; subst nfe1 nfe2.
+intros l fe1 fe2 nfe1 eq1 nfe2 eq2 Hnorm Hcond; subst nfe1 nfe2.
 apply Fnorm_crossproduct; trivial.
 apply (ring_correct Rsth Reqe ARth CRmorph); trivial.
 Qed.

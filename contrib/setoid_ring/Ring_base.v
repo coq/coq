@@ -13,3 +13,4 @@
 Declare ML Module "newring".
 Require Export Ring_theory.
 Require Export Ring_tac.
+Require Import InitialRing.

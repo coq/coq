@@ -7,7 +7,7 @@
 (************************************************************************)
 (*i $Id$ i*)
 
-Require Import Arith.
+Require Import Arith_base.
 Require Import BinInt.
 Require Import Zcompare.
 Require Import Zorder.

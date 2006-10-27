@@ -1,6 +1,6 @@
 Require Import Raxioms.
 Require Import Rdefinitions.
-Require Import Ring Field.
+Require Export Ring Field.
 
 Open Local Scope R_scope.
 

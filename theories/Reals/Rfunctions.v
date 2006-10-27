@@ -397,15 +397,14 @@ Lemma pow_1_even : forall n:nat, (-1) ^ (2 * n) = 1.
 Proof.
   intro; induction  n as [| n Hrecn].
   reflexivity.
-  replace (2 * S n)%nat with (2 + 2 * n)%nat.
+  replace (2 * S n)%nat with (2 + 2 * n)%nat by ring.
   rewrite pow_add; rewrite Hrecn; simpl in |- *; ring.
-  replace (S n) with (n + 1)%nat; [ ring | ring ].
 Qed.
 
 (**********)
 Lemma pow_1_odd : forall n:nat, (-1) ^ S (2 * n) = -1.
 Proof.
-  intro; replace (S (2 * n)) with (2 * n + 1)%nat; [ idtac | ring ].
+  intro; replace (S (2 * n)) with (2 * n + 1)%nat by ring.
   rewrite pow_add; rewrite pow_1_even; simpl in |- *; ring.
 Qed.
 
@@ -425,7 +424,7 @@ Proof.
   intros; induction  n2 as [| n2 Hrecn2].
   simpl in |- *; replace (n1 * 0)%nat with 0%nat; [ reflexivity | ring ].
   replace (n1 * S n2)%nat with (n1 * n2 + n1)%nat.
-  replace (S n2) with (n2 + 1)%nat; [ idtac | ring ].
+  replace (S n2) with (n2 + 1)%nat by ring.
   do 2 rewrite pow_add.
   rewrite Hrecn2.
   simpl in |- *.

@@ -1824,6 +1824,8 @@ and interp_genarg ist gl x =
   | BindingsArgType ->
       in_gen wit_bindings
         (interp_bindings ist gl (out_gen globwit_bindings x))
+  | List0ArgType ConstrArgType -> interp_genarg_constr_list0 ist gl x
+  | List1ArgType ConstrArgType -> interp_genarg_constr_list1 ist gl x
   | List0ArgType _ -> app_list0 (interp_genarg ist gl) x
   | List1ArgType _ -> app_list1 (interp_genarg ist gl) x
   | OptArgType _ -> app_opt (interp_genarg ist gl) x
@@ -1835,6 +1837,16 @@ and interp_genarg ist gl x =
           in_gen (wit_tactic n) (out_gen (globwit_tactic n) x)
       | None -> 
           lookup_interp_genarg s ist gl x
+
+and interp_genarg_constr_list0 ist gl x =
+  let lc = out_gen (wit_list0 globwit_constr) x in
+  let lc = pf_interp_constr_list ist gl lc in
+  in_gen (wit_list0 wit_constr) lc
+
+and interp_genarg_constr_list1 ist gl x =
+  let lc = out_gen (wit_list1 globwit_constr) x in
+  let lc = pf_interp_constr_list ist gl lc in
+  in_gen (wit_list1 wit_constr) lc
 
 (* Interprets the Match expressions *)
 and interp_match ist g lz constr lmr =

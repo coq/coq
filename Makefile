@@ -842,7 +842,7 @@ ARITHVO=\
  theories/Arith/Euclid.vo       theories/Arith/Plus.vo        \
  theories/Arith/Wf_nat.vo  	theories/Arith/Max.vo	      \
  theories/Arith/Bool_nat.vo	theories/Arith/Factorial.vo   \
-# theories/Arith/Div.vo 
+ theories/Arith/Arith_base.vo 
 
 SORTINGVO=\
  theories/Sorting/Heap.vo	theories/Sorting/Permutation.vo \
@@ -960,6 +960,7 @@ REALSBASEVO=\
  theories/Reals/Rdefinitions.vo \
  theories/Reals/Raxioms.vo      theories/Reals/RIneq.vo \
  theories/Reals/DiscrR.vo       theories/Reals/Rbase.vo \
+ theories/Reals/LegacyRfield.vo
 
 REALS_basic= 
 

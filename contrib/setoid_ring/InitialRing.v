@@ -10,7 +10,8 @@ Require Import ZArith_base.
 Require Import BinInt.
 Require Import BinNat.
 Require Import Setoid.
-Require Import Ring_base.
+Require Import Ring_theory.
+Require Import Ring_tac.
 Require Import Ring_polynom.
 Set Implicit Arguments.
 
@@ -404,7 +405,7 @@ Definition ring_gen_correct
                 (Rth_ARth rSet req_th Rth)
                 Z 0%Z 1%Z Zplus Zmult Zminus Zopp Zeq_bool
                 (@gen_phiZ R rO rI radd rmul ropp)
-            (@gen_phiZ_morph R rO rI radd rmul rsub ropp req rSet req_th Rth).
+                (gen_phiZ_morph rSet req_th Rth).
 
 Definition ring_rw_gen_correct
   R rO rI radd rmul rsub ropp req rSet req_th Rth :=
@@ -412,7 +413,7 @@ Definition ring_rw_gen_correct
                  (Rth_ARth rSet req_th Rth)
                  Z 0%Z 1%Z Zplus Zmult Zminus Zopp Zeq_bool
                  (@gen_phiZ R rO rI radd rmul ropp)
-            (@gen_phiZ_morph R rO rI radd rmul rsub ropp req rSet req_th Rth).
+                 (gen_phiZ_morph rSet req_th Rth).
 
 Definition ring_gen_eq_correct R rO rI radd rmul rsub ropp Rth :=
   @ring_gen_correct
@@ -434,7 +435,7 @@ Definition ring_gen_correct
                 (SRth_ARth rSet SRth)
                 N 0%N 1%N Nplus Nmult (SRsub Nplus) (@SRopp N) Neq_bool
                 (@gen_phiN R rO rI radd rmul)
-            (@gen_phiN_morph R rO rI radd rmul req rSet req_th SRth).
+                (gen_phiN_morph rSet req_th SRth).
 
 Definition ring_rw_gen_correct
   R rO rI radd rmul req rSet req_th SRth :=
@@ -443,7 +444,7 @@ Definition ring_rw_gen_correct
                  (SRth_ARth rSet SRth)
                  N 0%N 1%N Nplus Nmult (SRsub Nplus) (@SRopp N) Neq_bool
                  (@gen_phiN R rO rI radd rmul)
-            (@gen_phiN_morph R rO rI radd rmul req rSet req_th SRth).
+                 (gen_phiN_morph rSet req_th SRth).
 
 Definition ring_gen_eq_correct R rO rI radd rmul SRth :=
   @ring_gen_correct
@@ -454,3 +455,57 @@ Definition ring_rw_gen_eq_correct' R rO rI radd rmul SRth :=
      R rO rI radd rmul (@eq R) (Eqsth R) (Eq_s_ext _ _) SRth.
 
 End Npol.
+
+
+Ltac coerce_to_almost_ring set ext rspec :=
+  match type of rspec with
+  | ring_theory _ _ _ _ _ _ _ => constr:(Rth_ARth set ext rspec)
+  | semi_ring_theory _ _ _ _ _ => constr:(SRth_ARth set rspec)
+  | almost_ring_theory _ _ _ _ _ _ _ => rspec
+  | _ => fail 1 "not a valid ring theory"
+  end.
+
+Ltac coerce_to_ring_ext ext :=
+  match type of ext with
+  | ring_eq_ext _ _ _ _ => ext
+  | sring_eq_ext _ _ _ => constr:(SReqe_Reqe ext)
+  | _ => fail 1 "not a valid ring_eq_ext theory"
+  end.
+
+Ltac abstract_ring_morphism set ext rspec :=
+  match type of rspec with
+  | ring_theory _ _ _ _ _ _ _ => constr:(gen_phiZ_morph set ext rspec)
+  | semi_ring_theory _ _ _ _ _ => constr:(gen_phiN_morph set ext rspec)
+  | almost_ring_theory _ _ _ _ _ _ _ =>
+      fail 1 "an almost ring cannot be abstract"
+  | _ => fail 1 "bad ring structure"
+  end.
+
+Ltac ring_elements set ext rspec rk :=
+  let arth := coerce_to_almost_ring set ext rspec in
+  let ext_r := coerce_to_ring_ext ext in
+  let morph :=
+    match rk with
+    | Abstract => abstract_ring_morphism set ext rspec
+    | @Computational ?reqb_ok =>
+        match type of arth with
+        | almost_ring_theory ?rO ?rI ?add ?mul ?sub ?opp _ =>
+            constr:(IDmorph rO rI add mul sub opp set _ reqb_ok)
+        | _ => fail 2 "ring anomaly"
+        end
+    | @Morphism ?m => m
+    | _ => fail 1 "ill-formed ring kind"
+    end in
+  fun f => f arth ext_r morph.
+
+(* Given a ring structure and the kind of morphism,
+   returns 2 lemmas (one for ring, and one for ring_simplify). *)
+
+Ltac ring_lemmas set ext rspec rk :=
+  ring_elements set ext rspec rk
+    ltac:(fun arth ext_r morph =>
+      let lemma1 := constr:(ring_correct set ext_r arth morph) in
+      let lemma2 := constr:(Pphi_dev_ok set ext_r arth morph) in
+      fun f => f arth ext_r morph lemma1 lemma2).
+
+

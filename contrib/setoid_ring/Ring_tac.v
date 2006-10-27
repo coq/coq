@@ -5,6 +5,7 @@ Require Import Ring_polynom.
 Require Import BinList.
 Declare ML Module "newring".
 
+
 (* adds a definition id' on the normal form of t and an hypothesis id
    stating that t = id' (tries to produces a proof as small as possible) *)
 Ltac compute_assertion id  id' t :=
@@ -144,30 +145,16 @@ Ltac Ring_simplify Cst_tac lemma2 req rl :=
     end in
   Make_tac ReflexiveRewriteTactic.
 
+
+Tactic Notation (at level 0) "ring" :=
+  ring_lookup
+    (fun req sth ext morph arth cst_tac lemma1 lemma2 pre post rl =>
+       (pre(); Ring cst_tac lemma1 req)).
+
+Tactic Notation (at level 0) "ring_simplify" constr_list(rl) :=
+  ring_lookup
+    (fun req sth ext morph arth cst_tac lemma1 lemma2 pre post rl =>
+       (pre(); Ring_simplify cst_tac lemma2 req rl; post())) rl.
+
 (* A simple macro tactic to be prefered to ring_simplify *)
 Ltac ring_replace t1 t2 := replace t1 with t2 by ring.
-
-(* coefs belong to the same type as the target ring (concrete ring) *)
-Definition ring_id_correct
-  R rO rI radd rmul rsub ropp req rSet req_th ARth reqb reqb_ok :=
-  @ring_correct R rO rI radd rmul rsub ropp req rSet req_th ARth
-                R rO rI radd rmul rsub ropp reqb
-               (@IDphi R)
-               (@IDmorph R rO rI radd rmul rsub ropp req rSet reqb reqb_ok).
-
-Definition ring_rw_id_correct
-  R rO rI radd rmul rsub ropp req rSet req_th ARth reqb reqb_ok :=
-  @Pphi_dev_ok   R rO rI radd rmul rsub ropp req rSet req_th ARth
-                 R rO rI radd rmul rsub ropp reqb
-                (@IDphi R)
-                (@IDmorph R rO rI radd rmul rsub ropp req rSet reqb reqb_ok).
-
-Definition ring_id_eq_correct R rO rI radd rmul rsub ropp ARth reqb reqb_ok :=
- @ring_id_correct R rO rI radd rmul rsub ropp (@eq R)
-    (Eqsth R) (Eq_ext _ _ _) ARth reqb reqb_ok.
-
-Definition ring_rw_id_eq_correct
-   R rO rI radd rmul rsub ropp ARth reqb reqb_ok :=
- @ring_rw_id_correct R rO rI radd rmul rsub ropp (@eq R)
-    (Eqsth R) (Eq_ext _ _ _) ARth reqb reqb_ok.
-

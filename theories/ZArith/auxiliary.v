@@ -10,7 +10,7 @@
 
 (** Binary Integers (Pierre Crégut, CNET, Lannion, France) *)
 
-Require Export Arith.
+Require Export Arith_base.
 Require Import BinInt.
 Require Import Zorder.
 Require Import Decidable.

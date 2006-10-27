@@ -12,7 +12,7 @@
     from Russell O'Connor (Radbout U., Nijmegen, The Netherlands).
  *)
 
-Require Import Arith.
+Require Import Arith_base.
 Require Import BinInt.
 Require Import Zcompare.
 Require Import Zorder.

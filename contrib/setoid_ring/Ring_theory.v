@@ -433,7 +433,36 @@ Qed.
   repeat rewrite ARmul_0_r; sreflexivity.
  Qed.
 
+
+
 End ALMOST_RING.
+
+Section AddRing.
+
+ Variable R : Type.
+ Variable (rO rI : R) (radd rmul rsub: R->R->R) (ropp : R -> R).
+ Variable req : R -> R -> Prop.
+
+Inductive ring_kind : Type :=
+| Abstract
+| Computational
+    (R:Type)
+    (req : R -> R -> Prop)
+    (reqb : R -> R -> bool)
+    (_ : forall x y, (reqb x y) = true -> req x y)
+| Morphism
+    (R : Type)
+    (rO rI : R) (radd rmul rsub: R->R->R) (ropp : R -> R)
+    (req : R -> R -> Prop)
+    (C : Type)
+    (cO cI : C) (cadd cmul csub : C->C->C) (copp : C->C)
+    (ceqb : C->C->bool)
+    phi
+    (_ : ring_morph rO rI radd rmul rsub ropp req
+                    cO cI cadd cmul csub copp ceqb phi).
+
+End AddRing.
+
 
 (** Some simplification tactics*)
 Ltac gen_reflexivity Rsth := apply (Seq_refl _ _ Rsth).

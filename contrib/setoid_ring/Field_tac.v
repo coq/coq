@@ -82,7 +82,7 @@ Ltac simpl_PCond req :=
   fold_field_cond req.
 
 (* Rewriting (field_simplify) *)
-Ltac Make_field_simplify_tac lemma Cond_lemma req Cst_tac :=
+Ltac Field_simplify lemma Cond_lemma req Cst_tac :=
   let Make_tac :=
     match type of lemma with
     | forall l fe nfe,
@@ -99,6 +99,10 @@ Ltac Make_field_simplify_tac lemma Cond_lemma req Cst_tac :=
     end in
   Make_tac ReflexiveRewriteTactic.
 (* Pb: second rewrite are applied to non-zero condition of first rewrite... *)
+
+Tactic Notation (at level 0) "field_simplify" constr_list(rl) :=
+  field_lookup (fun req cst_tac _ _ field_simplify_ok cond_ok pre post rl =>
+    (pre(); Field_simplify field_simplify_ok cond_ok req cst_tac; post())).
 
 
 (* Generic form of field tactics *)
@@ -158,41 +162,69 @@ Ltac Field_Scheme_n FV_tac SYN_tac SIMPL_tac lemma Cond_lemma req :=
            ((apply ilemma || fail "field anomaly: failed in applying lemma");
            [ SIMPL_tac | apply Cond_lemma; simpl_PCond req])) in
   OnEquation req Main.
-(*
-Ltac ParseFieldComponents lemma req :=
-  match type of lemma with
-  | forall l fe1 fe2 nfe1 nfe2,
-    _ = nfe1 -> _ = nfe2 -> _ -> PCond _ _ _ _ _ _ _ _ _ ->
-    req (@FEeval ?R ?rO ?add ?mul ?sub ?opp ?div ?inv ?C ?phi l fe1) _ =>
-      (fun f => f add mul sub opp div inv C)
-  | _ => fail 1 "field anomaly: bad correctness lemma (parse)"
-  end.
-*)
+
 (* solve completely a field equation, leaving non-zero conditions to be
    proved (field) *)
-Ltac Make_field_tac lemma Cond_lemma req Cst_tac :=
+Ltac Field lemma Cond_lemma req Cst_tac :=
   let Main radd rmul rsub ropp rdiv rinv C :=
     let mkFV := FFV Cst_tac radd rmul rsub ropp rdiv rinv in
     let mkFE := mkFieldexpr C Cst_tac radd rmul rsub ropp rdiv rinv in
     let Simpl :=
       vm_compute; (reflexivity || fail "not a valid field equation") in
-    Field_Scheme mkFV mkFE Simpl lemma Cond_lemma req in
+    Field_Scheme_n mkFV mkFE Simpl lemma Cond_lemma req in
   ParseFieldComponents lemma req Main.
+
+Tactic Notation (at level 0) "field" :=
+  field_lookup (fun req cst_tac field_ok _ _ cond_ok pre post rl =>
+    (pre(); Field field_ok cond_ok req cst_tac; post())).
 
 (* transforms a field equation to an equivalent (simplified) ring equation,
    and leaves non-zero conditions to be proved (field_simplify_eq) *)
-Ltac Make_field_simplify_eq_old_tac lemma Cond_lemma req Cst_tac :=
-  let Main radd rmul rsub ropp rdiv rinv C :=
-    let mkFV := FFV Cst_tac radd rmul rsub ropp rdiv rinv in
-    let mkFE := mkFieldexpr C Cst_tac radd rmul rsub ropp rdiv rinv in
-    let Simpl := (protect_fv "field") in
-    Field_Scheme mkFV mkFE Simpl lemma Cond_lemma req in
-  ParseFieldComponents lemma req Main.
-
-Ltac Make_field_simplify_eq_tac lemma Cond_lemma req Cst_tac :=
+Ltac Field_simplify_eq lemma Cond_lemma req Cst_tac :=
   let Main radd rmul rsub ropp rdiv rinv C :=
     let mkFV := FFV Cst_tac radd rmul rsub ropp rdiv rinv in
     let mkFE := mkFieldexpr C Cst_tac radd rmul rsub ropp rdiv rinv in
     let Simpl := (protect_fv "field") in
     Field_Scheme_n mkFV mkFE Simpl lemma Cond_lemma req in
   ParseFieldComponents lemma req Main.
+
+Tactic Notation (at level 0) "field_simplify_eq" constr_list(rl) :=
+  field_lookup (fun req cst_tac _ field_simplify_eq_ok _ cond_ok pre post rl =>
+    (pre(); Field_simplify_eq field_simplify_eq_ok cond_ok req cst_tac;
+     post())) rl.
+
+(* Adding a new field *)
+
+Ltac ring_of_field f :=
+  match type of f with
+  | almost_field_theory _ _ _ _ _ _ _ _ _ => constr:(AF_AR f)
+  | field_theory _ _ _ _ _ _ _ _ _ => constr:(F_R f)
+  | semi_field_theory _ _ _ _ _ _ _ => constr:(SF_SR f)
+  end.
+
+Ltac coerce_to_almost_field set ext f :=
+  match type of f with
+  | almost_field_theory _ _ _ _ _ _ _ _ _ => f
+  | field_theory _ _ _ _ _ _ _ _ _ => constr:(F2AF set ext f)
+  | semi_field_theory _ _ _ _ _ _ _ => constr:(SF2AF set f)
+  end.
+
+Ltac field_elements set ext fspec rk :=
+  let afth := coerce_to_almost_field set ext fspec in
+  let rspec := ring_of_field fspec in
+  ring_elements set ext rspec rk
+  ltac:(fun arth ext_r morph f => f afth ext_r morph).
+
+
+Ltac field_lemmas set ext inv_m fspec rk :=
+  field_elements set ext fspec rk
+  ltac:(fun afth ext_r morph =>
+    let field_ok := constr:(Field_correct set ext_r inv_m afth morph) in
+    let field_simpl_ok :=
+      constr:(Pphi_dev_div_ok set ext_r inv_m afth morph) in
+    let field_simpl_eq_ok :=
+      constr:(Field_simplify_eq_correct set ext_r inv_m afth morph) in
+    let cond1_ok := constr:(Pcond_simpl_gen set ext_r afth morph) in
+    let cond2_ok := constr:(Pcond_simpl_complete set ext_r afth morph) in
+    (fun f => f afth ext_r morph field_ok field_simpl_ok field_simpl_eq_ok
+                cond1_ok cond2_ok)).

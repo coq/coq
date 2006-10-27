@@ -11,7 +11,7 @@
 
 Require Import BinPos.
 Require Import BinInt.
-Require Import Arith.
+Require Import Arith_base.
 Require Import Decidable.
 Require Import Zcompare.
 
