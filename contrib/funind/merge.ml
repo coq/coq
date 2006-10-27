@@ -556,15 +556,44 @@ let merge_one_constructor (shift:merge_infos) (typcstr1:rawconstr)
     list_filteri (fun i _ -> isArg_stable shift.lnk1.(i)) (List.rev allargs1) in
   let revargs2 = 
     list_filteri (fun i _ -> isArg_stable shift.lnk2.(i)) (List.rev allargs2) in
-(*  let args1 , _ = list_chop_end shift.nrecprms1 allargs1 in
-  let args2 , _ = list_chop_end shift.nrecprms2 allargs2_filtered in *)
   let typwithprms = raw_compose_prod typ (List.rev revargs2 @ List.rev revargs1) in
-  typwithprms (* useless *)
+  typwithprms
 
+
+let next_ident_fresh (s:identifier) = 
+    let res = ref s in
+    let _ = prstr (Printf.sprintf "\ns = %s" (string_of_id !res)) in
+    while 
+      (try
+          let ans = CRef (Libnames.Ident (dummy_loc,!res)) in
+          ignore (Constrintern.intern_constr Evd.empty (Global.env()) ans)
+ (* ignore (Prettyp.locate_any_name Libnames.qualid_of_string (string_of_id !res)) *)
+      ; true 
+      with _ -> false)
+    do res := Nameops.lift_ident !res ; prstr (string_of_id !res) done;
+    let _ = prstr (Printf.sprintf "\ns = %s (out)" (string_of_id !res)) in
+    !res;;
+
+(*
 let merge_constructor_id id1 id2:identifier = 
   let s1 = string_of_id id1 in
   let s2 = string_of_id id2 in
-  id_of_string (s1^s2)
+  next_ident_fresh (id_of_string (s1^"_"^s2^"_"))
+*)
+
+let fresh_cstror_suffix , cstror_suffix_init =
+  let cstror_num = ref 0 in
+  (fun () -> 
+    let res = string_of_int !cstror_num in
+    cstror_num := !cstror_num + 1;
+    res) ,
+  (fun () -> cstror_num := 0)
+
+let merge_constructor_id id1 id2 shift:identifier = 
+  let id = string_of_id shift.ident ^ "_" ^ fresh_cstror_suffix () in
+  next_ident_fresh (id_of_string id)
+
+
 
 (** [merge_constructors lnk shift avoid] merges the two list of
     constructor [(name*type)]. These are translated to rawterms
@@ -585,7 +614,7 @@ let rec merge_constructors (shift:merge_infos) (avoid:Idset.t)
               let avoid2 = Idset.union avoid idsoftyp1 in
               let rawtyp2 = Detyping.detype false (Idset.elements avoid2) [] typ2 in
               let typ = merge_one_constructor shift rawtyp1 rawtyp2 in
-              let newcstror_id = merge_constructor_id id1 id2 in
+              let newcstror_id = merge_constructor_id id1 id2 shift in
               newcstror_id , typ)
             typcstr2)
         typcstr1)
@@ -599,11 +628,8 @@ let rec merge_inductive_body (shift:merge_infos) avoid (oib1:one_inductive_body)
   let lcstr2 = Array.to_list oib2.mind_user_lc in
   let lcstr1 = List.combine (Array.to_list oib1.mind_consnames) lcstr1 in
   let lcstr2 = List.combine (Array.to_list oib2.mind_consnames) lcstr2 in
-  let newshift = shift (* { shift with
-    nargs1 = oib1.mind_nrealargs;
-    nargs2 = oib2.mind_nrealargs; } *) in
-  let res = merge_constructors newshift avoid lcstr1 lcstr2 in
-  res
+  cstror_suffix_init();
+  merge_constructors shift avoid lcstr1 lcstr2
 
 (** [build_raw_params prms_decl avoid] returns a list of variables
     attributed to the list of decl [prms_decl], avoiding names in
@@ -669,19 +695,15 @@ let merge_rec_params_and_arity params1 params2 shift (concl:constr) =
     FIXME: params et cstr_expr (arity) *)
 let rawterm_list_to_inductive_expr mib1 mib2 shift
     (rawlist:(identifier * rawconstr) list):inductive_expr =
-  let rawterm_to_constr_expr = (* build a constr_expr from a rawconstr *)
-    Options.with_option Options.raw_print (Constrextern.extern_rawtype Idset.empty) in
+  let rawterm_to_constr_expr x = (* build a constr_expr from a rawconstr *)
+    Options.with_option Options.raw_print (Constrextern.extern_rawtype Idset.empty) x in
   let lident = dummy_loc, shift.ident in
-  let bindlist , cstr_expr = (* params , arities  , FIXME: verify this *)
+  let bindlist , cstr_expr = (* params , arities *)
     merge_rec_params_and_arity 
       mib1.mind_params_ctxt mib2.mind_params_ctxt shift mkSet in
-  let cstor_cpt = ref 0 in
-  let bld_cor_name id =
-    cstor_cpt := !cstor_cpt + 1;
-    id_of_string (string_of_id id ^ string_of_int !cstor_cpt) in
   let lcstor_expr : (bool * (lident * constr_expr)) list  = 
     List.map (* zeta_normalize t ? *)
-      (fun (id,t) -> false, ((dummy_loc,bld_cor_name id),rawterm_to_constr_expr t))
+      (fun (id,t) -> false, ((dummy_loc,id),rawterm_to_constr_expr t))
       rawlist in  
   lident , bindlist , cstr_expr , lcstor_expr
 
