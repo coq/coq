@@ -46,7 +46,7 @@ let lift_ldecl n ldecl = List.map (fun (x,y) -> x,lift n y) ldecl
 
 let understand = Pretyping.Default.understand Evd.empty (Global.env())
 
-(** Operations on names *)
+(** Operations on names and identifiers *)
 let id_of_name = function
     Anonymous -> id_of_string "H"
   | Name id   -> id;;
@@ -58,6 +58,22 @@ let isVarf f x =
     match x with
       | RVar (_,x) -> x = f 
       | _ -> false
+
+(** [ident_global_exist id] returns true if identifier [id] is linked
+    in global environment. *)
+let ident_global_exist id = 
+  try 
+    let ans = CRef (Libnames.Ident (dummy_loc,id)) in
+    let _ = ignore (Constrintern.intern_constr Evd.empty (Global.env()) ans) in
+    true
+  with _ -> false 
+
+(** [next_ident_fresh id] returns a fresh identifier (ie not linked in
+    global env) with base [id]. *)
+let next_ident_fresh (id:identifier) = 
+    let res = ref id in
+    while ident_global_exist !res do res := Nameops.lift_ident !res done;
+    !res
 
 
 (** {2 Debugging} *)
@@ -172,6 +188,7 @@ end
 type linked_var =
     | Linked of int
     | Unlinked
+    | Funres
 
 (** When merging two graphs, parameters may become regular arguments,
     and thus be shifted. This type describe the result of computing
@@ -192,11 +209,13 @@ let prlinked x =
   match x with
     | Linked i -> Printf.sprintf "Linked %d" i
     | Unlinked -> Printf.sprintf "Unlinked"
+    | Funres -> Printf.sprintf "Funres"
 
 let linkmonad f lnkvar = 
   match lnkvar with
     | Linked i -> Linked (f i)
     | Unlinked -> Unlinked
+    | Funres -> Funres
 
 let linklift lnkvar i = linkmonad (fun x -> x+i) lnkvar
 
@@ -214,6 +233,7 @@ type 'a merged_arg =
     | Prm_arg of 'a
     | Arg_stable of 'a
     | Arg_linked of 'a
+    | Arg_funres
 
 type merge_infos =
     {
@@ -230,45 +250,51 @@ type merge_infos =
       nrecprms1: int;
       (* number of other rec params of ind1 (which become non parm) *)
       notherprms1:int;
+      (* number of functional result params of ind2 (which become non parm) *)
+      nfunresprms1:int;
       (* list of decl of rec parms from ind1 which remain parms *)
       recprms1: rel_declaration list;
       (* List of other rec parms from ind1 *)
       otherprms1: rel_declaration list; (* parms that became args *)
+      funresprms1: rel_declaration list; (* parms that are functional result args *)
       (* number of rec params of ind2 which remain rec param in merge (and not linked) *)
       nrecprms2: int;
-      (* number of other rec params of ind2 (which become non parm) *)
+      (* number of other params of ind2 (which become non rec parm) *)
       notherprms2:int;
+      (* number of functional result params of ind2 (which become non parm) *)
+      nfunresprms2:int;
       (* list of decl of rec parms from ind2 which remain parms (and not linked) *)
       recprms2: rel_declaration list;
       (* List of other rec parms from ind2 (which are linked or become non parm) *)
       otherprms2: rel_declaration list;      
-      (* list of decl of ordinary args from ind1 which remain args in merge *)
-(*      args1:rel_declaration list;
-      (* list of decl of ordinary args from ind2 which remain args in merge *)
-      args2:rel_declaration list;
-      nargs1:int;
-      nargs2:int*)
+      funresprms2: rel_declaration list; (* parms that are functional result args *)
     }
 
 
 let pr_merginfo x =
   let i,s=
     match x with 
-      | Prm_linked i -> i,"Prm_linked"
-      | Arg_linked i -> i,"Arg_linked"
-      | Prm_stable i ->  i,"Prm_stable"
-      | Prm_arg i ->  i,"Prm_arg"
-      | Arg_stable i ->  i,"Arg_stable" in
-  (Printf.sprintf "%s(%d)" s i)
+      | Prm_linked i -> Some i,"Prm_linked"
+      | Arg_linked i -> Some i,"Arg_linked"
+      | Prm_stable i -> Some i,"Prm_stable"
+      | Prm_arg i -> Some i,"Prm_arg"
+      | Arg_stable i -> Some i,"Arg_stable"
+      | Arg_funres -> None , "Arg_funres" in
+  match i with
+    | Some i -> Printf.sprintf "%s(%d)" s i
+    | None -> Printf.sprintf "%s" s
 
 let isPrm_stable x = match x with Prm_stable _ -> true | _ -> false
 
 let isArg_stable x = match x with Arg_stable _ -> true | _ -> false
 
+let isArg_funres x = match x with Arg_funres -> true | _ -> false
+
 let filter_shift_stable (lnk:int merged_arg array) (l:'a list): 'a list =
   let prms = list_filteri (fun i _ -> isPrm_stable lnk.(i)) l in
   let args = list_filteri (fun i _ -> isArg_stable lnk.(i)) l in
-  prms@args
+  let fres = list_filteri (fun i _ -> isArg_funres lnk.(i)) l in
+  prms@args@fres
 
 (** Reverse the link map, keeping only linked vars, elements are list
     of int as several vars may be linked to the same var. *)
@@ -276,7 +302,7 @@ let revlinked lnk =
   For.fold 0 (Array.length lnk - 1)
     (fun acc k -> 
       match lnk.(k) with 
-        | Unlinked -> acc 
+        | Unlinked | Funres -> acc 
         | Linked i -> 
             let old = try Link.find i acc with Not_found -> [] in
             Link.add i (k::old) acc)
@@ -301,33 +327,25 @@ let verify_inds mib1 mib2 =
   if mib2.mind_ntypes <> 1 then error "Second argument is mutual";
   ()
 
-(** [apply_link lnk typ] returns the type [type] in which each
-     debruijn index linked in [lnk] has been lifted to its
-     correpsonding new index. *)
-let apply_link lnk typ = 
-  Link.fold 
-    (fun k x acc -> 
-      match x with
-        | Linked i -> substitterm 0 (mkRel k) (mkRel i) acc
-        | Unlinked -> acc) 
-    lnk typ 
-
 
 (** {1 Merging function graphs} *)
 
-(** [shift_linked_params mib1 mib2 lnk] Computes how many recursively
-    uniform parameters of mutual inductives mib1 and mib2 remain
-    uniform when linked by [lnk].
+(** [shift_linked_params mib1 mib2 lnk] Computes which parameters (rec
+    uniform and ordinary ones) of mutual inductives [mib1] and [mib2]
+    remain uniform when linked by [lnk]. All parameters are
+    considered, ie we take parameters of the first inductive body of
+    [mib1] and [mib2].
     
     Explanation: The two inductives have parameters, some of the first
-    are recursively uniform.
+    are recursively uniform, some of the last are functional result of
+    the functional graph.
 
-   (I x1 x2 ... xk ... xn)
-   (J y1 y2 ... xl ... ym)
+   (I x1 x2 ... xk ... xk' ... xn)
+   (J y1 y2 ... xl ... yl' ... ym)
 
    Problem is, if some rec unif params are linked to non rec unif
-   ones, they become non rec (and the following too). This function
-   computes how many rec unif params we get from both inductives. *)
+   ones, they become non rec (and the following too). And functinal
+   argument have to be shifted at the end *)
 let shift_linked_params mib1 mib2 (lnk1:linked_var array) (lnk2:linked_var array) id =
   let linked_targets = revlinked lnk2 in
   let is_param_of_mib1 x = x < mib1.mind_nparams_rec in
@@ -342,52 +360,45 @@ let shift_linked_params mib1 mib2 (lnk1:linked_var array) (lnk2:linked_var array
       (fun i lkv -> 
         let isprm = is_param_of_mib1 i in
         let prmlost = is_targetted_by_non_recparam_lnk1 i in
-        match isprm , prmlost with
-          | true , true -> Prm_arg i (* recparam becoming ordinary *)
-          | true , false -> Prm_stable i (* recparam remains recparam*)
-          | false , _ -> Arg_stable i) (* Args of lnk1 are not linked *)
+        match isprm , prmlost, lnk1.(i) with
+          | true , true , _ -> Prm_arg i (* recparam becoming ordinary *)
+          | true , false , _-> Prm_stable i (* recparam remains recparam*)
+          | false , false , Funres -> Arg_funres
+          | _ , _ , Funres -> assert false (* fun res cannot be a rec param or lost *)
+          | false , _ , _ -> Arg_stable i) (* Args of lnk1 are not linked *)
       lnk1 in
   let mlnk2 = 
     Array.mapi
       (fun i lkv -> 
+        (* Is this correct if some param of ind2 is lost? *)
         let isprm = is_param_of_mib2 i in
-        (* FIXME: should use mlnk1.(i) instead of lnk2.(i) *)
         match isprm , lnk2.(i) with
           | true , Linked j when not (is_param_of_mib1 j) -> 
               Prm_arg j (* recparam becoming ordinary *)
           | true , Linked j -> Prm_linked j (*recparam linked to recparam*)
           | true , Unlinked -> Prm_stable i (* recparam remains recparam*)
           | false , Linked j -> Arg_linked j (* Args of lnk2 lost *)
-          | false , Unlinked -> Arg_stable i) (* Args of lnk2 remains *)
+          | false , Unlinked -> Arg_stable i (* Args of lnk2 remains *)
+          | false , Funres -> Arg_funres
+          | true , Funres -> assert false (* fun res cannot be a rec param *)
+      )
       lnk2 in
-
   let oib1 = mib1.mind_packets.(0) in
   let oib2 = mib2.mind_packets.(0) in
   (* count params remaining params *)
   let n_params1 = array_prfx mlnk1 (fun i x -> not (isPrm_stable x)) in
   let n_params2 = array_prfx mlnk2 (fun i x -> not (isPrm_stable x)) in
-
-  let recprms1,otherprms1 = 
+  let bldprms arity_ctxt mlnk = 
     list_fold_lefti
-      (fun i (acc1,acc2) x -> 
-        match mlnk1.(i) with
-          | Prm_stable _ -> x::acc1 , acc2 
-          | Prm_arg _ | Arg_stable _ -> acc1 , x::acc2 
-          | _ -> acc1 , acc2) (* Prm_linked and Arg_xxx = forget it *)
-      ([],[])
-      (List.rev oib1.mind_arity_ctxt)
-  in
-  let recprms2,otherprms2 = 
-    list_fold_lefti
-      (fun i (acc1,acc2) x -> 
-        match mlnk2.(i) with
-          | Prm_stable _ -> x::acc1 , acc2 
-          | Prm_arg _ | Arg_stable _ -> acc1 , x::acc2 
-          | _ -> acc1 , acc2) (* Prm_linked and Arg_xxx = forget it *)
-      ([],[])
-      (List.rev oib2.mind_arity_ctxt)
-  in
-  
+      (fun i (acc1,acc2,acc3) x -> 
+        match mlnk.(i) with
+          | Prm_stable _ -> x::acc1 , acc2 , acc3
+          | Prm_arg _ | Arg_stable _ -> acc1 , x::acc2 , acc3
+          | Arg_funres -> acc1 , acc2 , x::acc3
+          | _ -> acc1 , acc2 , acc3) (* Prm_linked and Arg_xxx = forget it *)
+      ([],[],[]) arity_ctxt in
+  let recprms1,otherprms1,funresprms1 = bldprms (List.rev oib1.mind_arity_ctxt) mlnk1 in
+  let recprms2,otherprms2,funresprms2 = bldprms (List.rev oib2.mind_arity_ctxt) mlnk2 in
   {
     ident=id;
     mib1=mib1;
@@ -399,11 +410,15 @@ let shift_linked_params mib1 mib2 (lnk1:linked_var array) (lnk2:linked_var array
     nrecprms1 = n_params1;
     recprms1 = recprms1;
     otherprms1 = otherprms1;
+    funresprms1 = funresprms1;
     notherprms1 = Array.length mlnk1 - n_params1;
+    nfunresprms1 = List.length funresprms1;
     nrecprms2 = n_params2;
     recprms2 = recprms2;
     otherprms2 = otherprms2;
+    funresprms2 = funresprms2;
     notherprms2 = Array.length mlnk2 - n_params2;
+    nfunresprms2 = List.length funresprms2;
   }
 
 
@@ -444,7 +459,7 @@ let rec merge_rec_hyps shift accrec (ltyp:(Names.name * Rawterm.rawconstr) list)
           List.map 
             (fun (nme,ind) -> 
               match ind with
-                | RApp(_,i,args) -> nme, merge_app_unsafe t ind shift
+                | RApp(_,i,args) -> nme, merge_app_unsafe ind t shift
                 | _ -> assert false)
             accrec in
         rechyps @ merge_rec_hyps shift accrec lt
@@ -538,11 +553,13 @@ let build_link_map allargs1 allargs2 lnk =
     TODO: return nothing if equalities (after linking) are contradictory. *)
 let merge_one_constructor (shift:merge_infos) (typcstr1:rawconstr)
     (typcstr2:rawconstr) : rawconstr =
-  (* -1 because last arg is functional result ?? *)
   (* FIXME: les noms des parametres corerspondent en principe au
      parametres du niveau mib, mais il faudrait s'en assurer *)
-  let nargs1 = shift.mib1.mind_nparams + shift.oib1.mind_nrealargs -1 in
-  let nargs2 = shift.mib2.mind_nparams + shift.oib2.mind_nrealargs -1 in
+  (* shift.nfunresprmsx last args are functional result *)
+  let nargs1 = 
+    shift.mib1.mind_nparams + shift.oib1.mind_nrealargs - shift.nfunresprms1 in
+  let nargs2 =
+    shift.mib2.mind_nparams + shift.oib2.mind_nrealargs - shift.nfunresprms2 in
   let allargs1,rest1 = raw_decompose_prod_n nargs1 typcstr1 in
   let allargs2,rest2 = raw_decompose_prod_n nargs2 typcstr2 in  
   (* Build map of linked args of [typcstr2], and apply it to [typcstr2]. *)
@@ -550,7 +567,8 @@ let merge_one_constructor (shift:merge_infos) (typcstr1:rawconstr)
   let rest2 = change_vars linked_map rest2 in
   let hyps1,concl1 = raw_decompose_prod rest1 in
   let hyps2,concl2' = raw_decompose_prod rest2 in
-  let ltyp,concl2 = merge_types shift [] (List.rev hyps1) concl1 (List.rev hyps2) concl2' in
+  let ltyp,concl2 = 
+    merge_types shift [] (List.rev hyps1) concl1 (List.rev hyps2) concl2' in
   let typ = raw_compose_prod concl2 (List.rev ltyp) in
   let revargs1 = 
     list_filteri (fun i _ -> isArg_stable shift.lnk1.(i)) (List.rev allargs1) in
@@ -560,28 +578,7 @@ let merge_one_constructor (shift:merge_infos) (typcstr1:rawconstr)
   typwithprms
 
 
-(** Return true id [id] is linked in global environment *)
-let ident_global_exist id = 
-  try 
-    let ans = CRef (Libnames.Ident (dummy_loc,id)) in
-    let _ = ignore (Constrintern.intern_constr Evd.empty (Global.env()) ans) in
-    true
-  with _ -> false 
-    
-let next_ident_fresh (s:identifier) = 
-    let res = ref s in
-    while ident_global_exist !res do
-      res := Nameops.lift_ident !res ; prstr (string_of_id !res) 
-    done;
-    !res;;
-
-(*
-let merge_constructor_id id1 id2:identifier = 
-  let s1 = string_of_id id1 in
-  let s2 = string_of_id id2 in
-  next_ident_fresh (id_of_string (s1^"_"^s2^"_"))
-*)
-
+(** constructor numbering *)
 let fresh_cstror_suffix , cstror_suffix_init =
   let cstror_num = ref 0 in
   (fun () -> 
@@ -590,6 +587,9 @@ let fresh_cstror_suffix , cstror_suffix_init =
     res) ,
   (fun () -> cstror_num := 0)
 
+(** [merge_constructor_id id1 id2 shift] returns the identifier of the
+    new constructor from the id of the two merged constructor and
+    the merging info. *)
 let merge_constructor_id id1 id2 shift:identifier = 
   let id = string_of_id shift.ident ^ "_" ^ fresh_cstror_suffix () in
   next_ident_fresh (id_of_string id)
@@ -664,9 +664,6 @@ let rec merge_mutual_inductive_body
 
   
 
-(* TODO: Define and use everywhere needed a function [is_linked i lnk] *)
-(* TODO: Define and use everywhere needed a function List.filteri,
-   List.fold_lefti... Probably with a initial int for the counter. *)
 let merge_rec_params_and_arity params1 params2 shift (concl:constr) = 
   let params = shift.recprms1 @ shift.recprms2 in
   let resparams, _ =
@@ -685,7 +682,7 @@ let merge_rec_params_and_arity params1 params2 shift (concl:constr) =
         let newenv = Environ.push_rel (nm,None,c) env in
         CProdN (dummy_loc, [[(dummy_loc,nm)],typ] , acc) , newenv)
       (concl,Global.env())
-      (shift.otherprms1@shift.otherprms2) in  
+      (shift.otherprms1@shift.otherprms2@shift.funresprms1@shift.funresprms2) in  
   resparams,arity
 
   
@@ -732,14 +729,16 @@ let merge (cstr1:constr) (cstr2:constr) (args1:constr array) (args2:constr array
   let ind2,_cstrlist2 = Inductiveops.find_inductive env Evd.empty cstr2 in
   let lnk1 = (* args1 are unlinked. FIXME? mergescheme (G x x) ?? *)
     Array.mapi (fun i c -> Unlinked) args1 in
+  let _ = lnk1.(Array.length lnk1 - 1) <- Funres in (* last arg is functional result *)
   let lnk2 = (* args2 may be linked to args1 members. FIXME: same 
-                   as above: vars may be linked inside args2?? *)
+                as above: vars may be linked inside args2?? *)
     Array.mapi
       (fun i c -> 
         match array_find args1 (fun i x -> x=c) with
-          | Some j -> (Linked j)
+          | Some j -> Linked j
           | None -> Unlinked) 
       args2 in
+  let _ = lnk2.(Array.length lnk2 - 1) <- Funres in (* last arg is functional result *)
   let resa = merge_inductive ind1 ind2 lnk1 lnk2 id in
   resa
 
