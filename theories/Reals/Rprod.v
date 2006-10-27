@@ -98,7 +98,7 @@ Proof.
   ring.
 Qed. 
 
-(** We prove that (N!)²<=(2N-k)!*k! forall k in [|O;2N|] *)
+(** We prove that (N!)^2<=(2N-k)!*k! forall k in [|O;2N|] *)
 Lemma RfactN_fact2N_factk :
   forall N k:nat,
     (k <= 2 * N)%nat ->
