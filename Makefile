@@ -1434,7 +1434,7 @@ PRINTERSCMO=\
   kernel/conv_oracle.cmo kernel/closure.cmo kernel/reduction.cmo	\
   kernel/cooking.cmo 		\
   kernel/modops.cmo kernel/type_errors.cmo kernel/inductive.cmo		\
-  kernel/subtyping.cmo kernel/typeops.cmo kernel/indtypes.cmo		\
+  kernel/typeops.cmo kernel/subtyping.cmo kernel/indtypes.cmo		\
   kernel/term_typing.cmo kernel/mod_typing.cmo kernel/safe_typing.cmo	\
   library/summary.cmo library/global.cmo library/nameops.cmo		\
   library/libnames.cmo library/nametab.cmo library/libobject.cmo	\
