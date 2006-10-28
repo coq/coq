@@ -242,7 +242,7 @@ let class_of env sigma t =
 
 let inductive_class_of ind = fst (class_info (CL_IND ind))
 
-let class_args_of c = snd (decompose_app c)
+let class_args_of c = snd (find_class_type c)
 
 let string_of_class = function
   | CL_FUN -> if !Options.v7 then "FUNCLASS" else "Funclass"

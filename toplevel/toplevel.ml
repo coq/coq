@@ -125,6 +125,7 @@ let print_highlight_location ib loc =
                       str sn ++ str dn) in 
 	  (l1 ++ li ++ ln)
   in 
+  let loc = make_loc (bp,ep) in
   (str"Toplevel input, characters " ++ Cerrors.print_loc loc ++ fnl () ++
      highlight_lines ++ fnl ())
 

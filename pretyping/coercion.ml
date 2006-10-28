@@ -157,7 +157,7 @@ let rec inh_conv_coerce_to_fail env isevars hj c1 =
                    (lift 1 t1) in
                let h2 = inh_conv_coerce_to_fail env1 isevars
 			 { uj_val = mkApp (lift 1 v, [|h1.uj_val|]);
-                           uj_type = subst1 h1.uj_val t2 }
+                           uj_type = subst_term h1.uj_val t2 }
                           u2
 	       in
                { uj_val = mkLambda (name, u1, h2.uj_val);

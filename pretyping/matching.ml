@@ -113,6 +113,11 @@ let matches_core convert allow_partial_app pat c =
 
       | PSort (RType _), Sort (Type _) -> sigma
 
+      | PApp (p, [||]), _ -> sorec stk sigma p t
+	  
+      | PApp (PApp (h, a1), a2), _ ->
+	  sorec stk sigma (PApp(h,Array.append a1 a2)) t
+
       | PApp (PMeta (Some n),args1), App (c2,args2) when allow_partial_app ->
           let p = Array.length args2 - Array.length args1 in
           if p>=0 then
