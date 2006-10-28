@@ -1,23 +1,38 @@
-Changes from V8.1beta to V8.1
-=============================
+Changes from V8.1beta to V8.1beta2
+==================================
 
-- Support for Miller-Pfenning's patterns unification in type synthesis
-  (e.g. can infer P such that P x y = phi(x,y))
-- Support for Miller-Pfenning's patterns unification in apply/rewrite/...
-  (may lead to few incompatibilities - generally now useless tactic calls)
+Language and commands
+
+- Added sort-polymorphism for definitions in Type.
 - Support for implicit arguments in the types of parameters in
-  (co-)fixpoints and (co-)inductive declarations
-- Improved type inference: use as much of possible general information
+  (co-)fixpoints and (co-)inductive declarations.
+- Improved type inference: use as much of possible general information.
   before applying irreversible unification heuristics (allow e.g. to
-  infer the predicate in "(exist _ 0 (refl_equal 0) : {n:nat | n=0 })")
-- Support for "where" clause in cofixpoint definitions
-- Support for argument lists of arbitrary length in Tactic Notation
+  infer the predicate in "(exist _ 0 (refl_equal 0) : {n:nat | n=0 })").
+- Support for Miller-Pfenning's patterns unification in type synthesis
+  (e.g. can infer P such that P x y = phi(x,y)).
+- Support for "where" clause in cofixpoint definitions.
+- New option "Set Printing Universes" for making Type levels explicit.
+
+Tactics
+
+- Improved implementation of the ring and field tactics.
+- New declarative mathematical proof language.
+- Support for argument lists of arbitrary length in Tactic Notation.
 - [rewrite ... in H] now fails if [H] is used either in an hypothesis
-  or in the goal. 
+  or in the goal.
 - The semantics of [rewrite ... in *] has been slightly modified (see doc). 
-- Support for "as" clause in tactic injection
-- Fix for notations involving basic "match" expressions
-- Numerous reported bugs solved (some of them leading to incompatibilities)
+- Support for "as" clause in tactic injection.
+- New forward-reasoning tactic "apply in".
+- Ltac fresh operator now builds names from a concatenation of its arguments.
+- New ltac tactic "remember" to abstract over a subterm and keep an equality
+- Support for Miller-Pfenning's patterns unification in apply/rewrite/...
+  (may lead to few incompatibilities - generally now useless tactic calls).
+
+Bug fixes
+
+- Fix for notations involving basic "match" expressions.
+- Numerous other bugs solved (a few fixes may lead to incompatibilities).
 
 
 Changes from V8.0 to V8.1beta
