@@ -328,7 +328,6 @@ let remove_current_view_page () =
     kill_input_view c;
     ((notebook ())#get_nth_page c)#misc#hide ()
 
-
 let is_word_char c =
   (* TODO: avoid num and prime at the head of a word *)
   Glib.Unichar.isalnum c || c = underscore || c = prime
@@ -342,14 +341,14 @@ let starts_word it =
 let ends_word it = 
   (not it#copy#nocopy#forward_char ||
      let c = it#forward_char#char in
-       not (Glib.Unichar.isalnum c || c = underscore || c = prime || c = arobase)
+       not (is_word_char c)
   )
 
 let inside_word it = 
   let c = it#char in
     not (starts_word it) &&
       not (ends_word it) &&
-      (Glib.Unichar.isalnum c || c = underscore || c = prime || c = arobase)
+      is_word_char c
 
 let is_on_word_limit it = inside_word it || ends_word it 
 
