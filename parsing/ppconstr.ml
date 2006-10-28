@@ -113,12 +113,14 @@ let pr_optc pr = function
   | None -> mt ()
   | Some x -> pr_sep_com spc pr x
 
+let pr_in_comment pr x = str "(* " ++ pr x ++ str " *)"
+
 let pr_universe = Univ.pr_uni 
 
 let pr_rawsort = function
   | RProp Term.Null -> str "Prop"
   | RProp Term.Pos -> str "Set"
-  | RType u -> str "Type" ++ pr_opt pr_universe u
+  | RType u -> hov 0 (str "Type" ++ pr_opt (pr_in_comment pr_universe) u)
 
 let pr_id = pr_id
 let pr_name = pr_name

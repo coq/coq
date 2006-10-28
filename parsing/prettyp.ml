@@ -279,11 +279,15 @@ let print_constructors envpar names types =
   hv 0 (str "  " ++ pc)
 
 let build_inductive sp tyi =
-  let (mib,mip as specif) = Global.lookup_inductive (sp,tyi) in
+  let (mib,mip) = Global.lookup_inductive (sp,tyi) in
   let params = mib.mind_params_ctxt in
   let args = extended_rel_list 0 params in
   let env = Global.env() in
-  let arity = hnf_prod_applist env (Inductive.type_of_inductive specif) args in
+  let fullarity = match mip.mind_arity with
+    | Monomorphic ar -> ar.mind_user_arity 
+    | Polymorphic ar ->
+	it_mkProd_or_LetIn (mkSort (Type ar.poly_level)) mip.mind_arity_ctxt in
+  let arity = hnf_prod_applist env fullarity args in
   let cstrtypes = arities_of_constructors env (sp,tyi) in
   let cstrtypes =
     Array.map (fun c -> hnf_prod_applist env c args) cstrtypes in
@@ -329,7 +333,7 @@ let print_typed_body (val_0,typ) =
 let print_constant with_values sep sp =
   let cb = Global.lookup_constant sp in
   let val_0 = cb.const_body in
-  let typ = cb.const_type in
+  let typ = Typeops.type_of_constant_type (Global.env()) cb.const_type in
   hov 0 (
     match val_0 with 
     | None -> 

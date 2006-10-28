@@ -800,6 +800,14 @@ let _ =
       optread=Pp_control.get_margin;
       optwrite=Pp_control.set_margin }
 
+let _ =
+  declare_bool_option
+    { optsync=true;
+      optkey=SecondaryTable("Printing","Universes");
+      optname="the printing of universes";
+      optread=(fun () -> !Constrextern.print_universes);
+      optwrite=(fun b -> Constrextern.print_universes:=b) }
+
 let vernac_debug b =
   set_debug (if b then Tactic_debug.DebugOn 0 else Tactic_debug.DebugOff)
 
