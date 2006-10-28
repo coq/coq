@@ -326,7 +326,7 @@ let remove_current_view_page () =
 
 
 let is_word_char c = 
-  Glib.Unichar.isalnum c || c = underscore || c = prime || c = arobase
+  Glib.Unichar.isalnum c || c = underscore || c = prime
   
 let starts_word it = 
   prerr_endline ("Starts word ? '"^(Glib.Utf8.from_unichar it#char)^"'");
@@ -337,14 +337,14 @@ let starts_word it =
 let ends_word it = 
   (not it#copy#nocopy#forward_char ||
   let c = it#forward_char#char in
-    not (Glib.Unichar.isalnum c || c = underscore || c = prime || c = arobase)
+    not (Glib.Unichar.isalnum c || c = underscore || c = prime)
   )
 
 let inside_word it = 
   let c = it#char in
   not (starts_word it) &&
   not (ends_word it) &&
-  (Glib.Unichar.isalnum c || c = underscore || c = prime || c = arobase)
+  (Glib.Unichar.isalnum c || c = underscore || c = prime)
 
 let is_on_word_limit it = inside_word it || ends_word it 
 
