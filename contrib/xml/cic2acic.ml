@@ -241,7 +241,7 @@ let typeur sigma metamap =
           Util.anomaly ("type_of: variable "^(Names.string_of_id id)^" unbound"))
     | T.Const c ->
         let cb = Environ.lookup_constant c env in
-        T.body_of_type cb.Declarations.const_type
+        Typeops.type_of_constant_type env (cb.Declarations.const_type)
     | T.Evar ev -> Evd.existential_type sigma ev
     | T.Ind ind -> T.body_of_type (Inductiveops.type_of_inductive env ind)
     | T.Construct cstr ->

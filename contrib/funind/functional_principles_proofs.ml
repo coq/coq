@@ -890,7 +890,8 @@ let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
 (*   observe (str "f_body_with_params_and_other_fun " ++  pr_lconstr f_body_with_params_and_other_fun); *)
   let eq_rhs = nf_betaiotazeta (mkApp(compose_lam params f_body_with_params_and_other_fun,Array.init (nb_params + nb_args) (fun i -> mkRel(nb_params + nb_args - i)))) in
 (*   observe (str "eq_rhs " ++  pr_lconstr eq_rhs); *)
-  let type_ctxt,type_of_f = Sign.decompose_prod_n_assum (nb_params + nb_args) f_def.const_type in
+  let type_ctxt,type_of_f = Sign.decompose_prod_n_assum (nb_params + nb_args) 
+    (Typeops.type_of_constant_type (Global.env()) f_def.const_type) in
   let eqn = mkApp(Lazy.force eq,[|type_of_f;eq_lhs;eq_rhs|]) in
   let lemma_type = it_mkProd_or_LetIn ~init:eqn type_ctxt in
   let f_id = id_of_label (con_label (destConst f)) in

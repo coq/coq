@@ -26,6 +26,15 @@ type engagement = ImpredicativeSet
 (**********************************************************************)
 (*s Representation of constants (Definition/Axiom)                    *)
 
+type polymorphic_arity = {
+  poly_param_levels : universe option list;
+  poly_level : universe;
+}
+
+type constant_type =
+  | NonPolymorphicType of types
+  | PolymorphicArity of rel_context * polymorphic_arity
+
 type constr_substituted
 
 val from_val : constr -> constr_substituted
@@ -34,7 +43,7 @@ val force : constr_substituted -> constr
 type constant_body = {
     const_hyps : section_context; (* New: younger hyp at top *)
     const_body : constr_substituted option;
-    const_type : types;  
+    const_type : constant_type;
     const_body_code : to_patch_substituted;
    (*i const_type_code : to_patch;i*)
     const_constraints : constraints;
@@ -70,11 +79,6 @@ val subst_wf_paths : substitution -> wf_paths -> wf_paths
 \end{verbatim}
 *)
 
-type polymorphic_inductive_arity = {
-  mind_param_levels : universe option list;
-  mind_level : universe;
-}
-
 type monomorphic_inductive_arity = {
   mind_user_arity : constr;
   mind_sort : sorts;
@@ -82,7 +86,7 @@ type monomorphic_inductive_arity = {
 
 type inductive_arity = 
 | Monomorphic of monomorphic_inductive_arity
-| Polymorphic of polymorphic_inductive_arity
+| Polymorphic of polymorphic_arity
 
 type one_inductive_body = {
 

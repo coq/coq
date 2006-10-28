@@ -396,7 +396,7 @@ let inspect n =
 			 let (_, _, v) = get_variable (basename sp) in
 			   add_search2 (Nametab.locate (qualid_of_sp sp)) v
 		     | (sp,kn), "CONSTANT" ->
-			 let {const_type=typ} = Global.lookup_constant (constant_of_kn kn) in
+			 let typ = Typeops.type_of_constant (Global.env()) (constant_of_kn kn) in
 			   add_search2 (Nametab.locate (qualid_of_sp sp)) typ
 		     | (sp,kn), "MUTUALINDUCTIVE" ->
 			 add_search2 (Nametab.locate (qualid_of_sp sp))

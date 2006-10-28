@@ -725,7 +725,7 @@ let rec nsortrec vl x =
    | Case(_,x,t,a) 
         -> nsortrec vl x
    | Cast(x,_, t)-> nsortrec vl t
-   | Const c  -> nsortrec vl (lookup_constant c vl).const_type
+   | Const c  -> nsortrec vl (Typeops.type_of_constant vl c)
    | _ -> nsortrec vl (type_of vl Evd.empty x)
 ;;
 let nsort x =

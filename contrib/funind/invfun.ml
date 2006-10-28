@@ -101,7 +101,7 @@ let id_to_constr id =
 
 let generate_type g_to_f f graph i = 
   (*i we deduce the number of arguments of the function and its returned type from the graph i*)
-  let graph_arity = Inductive.type_of_inductive (Global.lookup_inductive (destInd graph))  in 
+  let graph_arity = Inductive.type_of_inductive (Global.env()) (Global.lookup_inductive (destInd graph))  in 
   let ctxt,_ = decompose_prod_assum graph_arity in 
   let fun_ctxt,res_type = 
     match ctxt with 

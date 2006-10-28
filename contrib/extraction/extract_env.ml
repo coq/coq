@@ -74,7 +74,8 @@ let visit_ref v r =
 exception Impossible
 
 let check_arity env cb = 
-  if Reduction.is_arity env cb.const_type then raise Impossible
+  let t = Typeops.type_of_constant_type env cb.const_type in
+  if Reduction.is_arity env t then raise Impossible
 
 let check_fix env cb i = 
   match cb.const_body with 

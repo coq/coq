@@ -149,7 +149,7 @@ let make_definition_ast name c typ implicits =
 let constant_to_ast_list kn =
   let cb = Global.lookup_constant kn in
   let c = cb.const_body in
-  let typ = cb.const_type in
+  let typ = Typeops.type_of_constant_type (Global.env()) cb.const_type in
   let l = implicits_of_global (ConstRef kn) in
   (match c with
       None -> 

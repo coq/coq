@@ -25,6 +25,15 @@ type engagement = ImpredicativeSet
 
 (*s Constants (internal representation) (Definition/Axiom) *)
 
+type polymorphic_arity = {
+  poly_param_levels : universe option list;
+  poly_level : universe;
+}
+
+type constant_type =
+  | NonPolymorphicType of types
+  | PolymorphicArity of rel_context * polymorphic_arity
+
 type constr_substituted = constr substituted
 
 let from_val = from_val
@@ -36,7 +45,7 @@ let subst_constr_subst = subst_substituted
 type constant_body = {
     const_hyps : section_context; (* New: younger hyp at top *)
     const_body : constr_substituted option;
-    const_type : types;  
+    const_type : constant_type;
     const_body_code : Cemitcodes.to_patch_substituted;
    (* const_type_code : Cemitcodes.to_patch; *)
     const_constraints : constraints;
@@ -90,11 +99,6 @@ let subst_wf_paths sub p = Rtree.smartmap (subst_recarg sub) p
    with      In (params) : Un := cn1 : Tn1 | ... | cnpn : Tnpn
 *)
 
-type polymorphic_inductive_arity = {
-  mind_param_levels : universe option list;
-  mind_level : universe;
-}
-
 type monomorphic_inductive_arity = {
   mind_user_arity : constr;
   mind_sort : sorts;
@@ -102,7 +106,7 @@ type monomorphic_inductive_arity = {
 
 type inductive_arity = 
 | Monomorphic of monomorphic_inductive_arity
-| Polymorphic of polymorphic_inductive_arity
+| Polymorphic of polymorphic_arity
 
 type one_inductive_body = {
 
@@ -186,11 +190,15 @@ type mutual_inductive_body = {
     mind_equiv : kernel_name option
   }
 
+let subst_arity sub = function
+| NonPolymorphicType s -> NonPolymorphicType (subst_mps sub s)
+| PolymorphicArity (ctx,s) -> PolymorphicArity (subst_rel_context sub ctx,s)
+
 (* TODO: should be changed to non-coping after Term.subst_mps *)
 let subst_const_body sub cb = {
     const_hyps = (assert (cb.const_hyps=[]); []);
     const_body = option_map (subst_constr_subst sub) cb.const_body;
-    const_type = subst_mps sub cb.const_type;
+    const_type = subst_arity sub cb.const_type;
     const_body_code = Cemitcodes.subst_to_patch_subst sub cb.const_body_code;
     (*const_type_code = Cemitcodes.subst_to_patch sub cb.const_type_code;*)
     const_constraints = cb.const_constraints;

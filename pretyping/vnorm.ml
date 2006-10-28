@@ -70,7 +70,7 @@ let construct_of_constr_block env tag typ =
 let constr_type_of_idkey env idkey =
   match idkey with
   | ConstKey cst ->
-      mkConst cst, (lookup_constant cst env).const_type
+      mkConst cst, Typeops.type_of_constant env cst
   | VarKey id -> 
       let (_,_,ty) = lookup_named id env in 
       mkVar id, ty
@@ -80,7 +80,7 @@ let constr_type_of_idkey env idkey =
       mkRel n, lift n ty
 
 let type_of_ind env ind = 
-  type_of_inductive (Inductive.lookup_mind_specif env ind)
+  type_of_inductive env (Inductive.lookup_mind_specif env ind)
 
 let build_branches_type env (mind,_ as _ind) mib mip params dep p =
   let rtbl = mip.mind_reloc_tbl in

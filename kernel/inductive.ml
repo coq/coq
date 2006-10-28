@@ -177,10 +177,10 @@ let rec make_subst env = function
   | [], _, _ ->
       assert false
 
-let instantiate_universes env ctx mip ar argsorts =
+let instantiate_universes env ctx ar argsorts =
   let args = Array.to_list argsorts in
-  let ctx,subst = make_subst env (ctx,ar.mind_param_levels,args) in
-  let level = subst_large_constraints subst ar.mind_level in
+  let ctx,subst = make_subst env (ctx,ar.poly_param_levels,args) in
+  let level = subst_large_constraints subst ar.poly_level in
   ctx,
   if is_empty_univ level then mk_Prop
   else if is_base_univ level then mk_Set
@@ -192,8 +192,13 @@ let type_of_inductive_knowing_parameters env mip paramtyps =
       s.mind_user_arity
   | Polymorphic ar ->
       let ctx = List.rev mip.mind_arity_ctxt in
-      let ctx,s = instantiate_universes env ctx mip ar paramtyps in
+      let ctx,s = instantiate_universes env ctx ar paramtyps in
       mkArity (List.rev ctx,s)
+
+(* Type of a (non applied) inductive type *)
+
+let type_of_inductive env (_,mip) =
+  type_of_inductive_knowing_parameters env mip [||]
 
 (* The max of an array of universes *)
 
@@ -204,20 +209,6 @@ let cumulate_constructor_univ u = function
 
 let max_inductive_sort =
   Array.fold_left cumulate_constructor_univ neutral_univ
-
-(* Type of a (non applied) inductive type *)
-
-let type_of_inductive (mib,mip) =
-  match mip.mind_arity with
-  | Monomorphic s -> s.mind_user_arity
-  | Polymorphic s ->
-      let s =
-        if mib.mind_nparams = 0 then 
-          if is_empty_univ s.mind_level then mk_Prop
-          else if is_base_univ s.mind_level then mk_Set
-          else Type s.mind_level
-        else Type s.mind_level in
-      mkArity (mip.mind_arity_ctxt,s)
 
 (************************************************************************)
 (* Type of a constructor *)

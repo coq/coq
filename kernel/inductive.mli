@@ -37,7 +37,7 @@ val lookup_mind_specif : env -> inductive -> mind_specif
 (*s Functions to build standard types related to inductive *)
 val ind_subst : mutual_inductive -> mutual_inductive_body -> constr list
 
-val type_of_inductive : mind_specif -> types
+val type_of_inductive : env -> mind_specif -> types
 
 val elim_sorts : mind_specif -> sorts_family list
 
@@ -83,6 +83,9 @@ val type_of_inductive_knowing_parameters :
 val set_inductive_level : env -> sorts -> types -> types
 
 val max_inductive_sort : sorts array -> universe
+
+val instantiate_universes : env -> Sign.rel_context ->
+    polymorphic_arity -> types array -> Sign.rel_context * sorts
 
 (***************************************************************)
 (* Debug *)

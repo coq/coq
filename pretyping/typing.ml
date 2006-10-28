@@ -53,7 +53,7 @@ let rec execute env evd cstr =
         j_nf_evar (evars_of evd) (judge_of_variable env id)
 	  
     | Const c ->
-        make_judge cstr (nf_evar (evars_of evd) (constant_type env c))
+        make_judge cstr (nf_evar (evars_of evd) (type_of_constant env c))
 	  
     | Ind ind ->
 	make_judge cstr (nf_evar (evars_of evd) (type_of_inductive env ind))
@@ -90,12 +90,17 @@ let rec execute env evd cstr =
     | App (f,args) ->
         let jl = execute_array env evd args in
 	let j =
-	if isInd f then
-	  (* Sort-polymorphism of inductive types *)
-	  judge_of_inductive_knowing_parameters env (destInd f)
-	    (jv_nf_evar (evars_of evd) jl)
-	else
-	  execute env evd f
+	  match kind_of_term f with
+	    | Ind ind ->
+		(* Sort-polymorphism of inductive types *)
+		judge_of_inductive_knowing_parameters env ind
+		  (jv_nf_evar (evars_of evd) jl)
+	    | Const cst -> 
+		(* Sort-polymorphism of inductive types *)
+		judge_of_constant_knowing_parameters env cst
+		  (jv_nf_evar (evars_of evd) jl)
+	    | _ -> 
+		execute env evd f
 	in
 	fst (judge_of_apply env j jl)
 	    

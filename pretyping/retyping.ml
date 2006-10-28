@@ -53,9 +53,7 @@ let typeur sigma metamap =
           body_of_type ty
         with Not_found ->
           anomaly ("type_of: variable "^(string_of_id id)^" unbound"))
-    | Const c ->
-        let cb = lookup_constant c env in
-        body_of_type cb.const_type
+    | Const cst -> Typeops.type_of_constant env cst
     | Evar ev -> Evd.existential_type sigma ev
     | Ind ind -> body_of_type (type_of_inductive env ind)
     | Construct cstr -> body_of_type (type_of_constructor env cstr)
@@ -75,6 +73,9 @@ let typeur sigma metamap =
     | CoFix (i,(_,tys,_)) -> tys.(i)
     | App(f,args) when isInd f ->
 	let t = type_of_inductive_knowing_parameters env (destInd f) args in
+        strip_outer_cast (subst_type env sigma t (Array.to_list args))
+    | App(f,args) when isConst f ->
+	let t = type_of_constant_knowing_parameters env (destConst f) args in
         strip_outer_cast (subst_type env sigma t (Array.to_list args))
     | App(f,args) ->
         strip_outer_cast
@@ -100,6 +101,9 @@ let typeur sigma metamap =
     | App(f,args) when isInd f ->
 	let t = type_of_inductive_knowing_parameters env (destInd f) args in
         sort_of_atomic_type env sigma t args
+    | App(f,args) when isConst f ->
+	let t = type_of_constant_knowing_parameters env (destConst f) args in
+        sort_of_atomic_type env sigma t args
     | App(f,args) -> sort_of_atomic_type env sigma (type_of env f) args
     | Lambda _ | Fix _ | Construct _ ->
         anomaly "sort_of: Not a type (1)"
@@ -122,16 +126,24 @@ let typeur sigma metamap =
     let argtyps = Array.map (fun c -> nf_evar sigma (type_of env c)) args in
     Inductive.type_of_inductive_knowing_parameters env mip argtyps
 
-  in type_of, sort_of, sort_family_of, type_of_inductive_knowing_parameters
+  and type_of_constant_knowing_parameters env cst args =
+    let t = constant_type env cst in
+    let argtyps = Array.map (fun c -> nf_evar sigma (type_of env c)) args in
+    Typeops.type_of_constant_knowing_parameters env t argtyps
 
-let get_type_of env sigma c = let f,_,_,_ = typeur sigma [] in f env c
-let get_sort_of env sigma t = let _,f,_,_ = typeur sigma [] in f env t
-let get_sort_family_of env sigma c = let _,_,f,_ = typeur sigma [] in f env c
+  in type_of, sort_of, sort_family_of,
+     type_of_inductive_knowing_parameters, type_of_constant_knowing_parameters
+
+let get_type_of env sigma c = let f,_,_,_,_ = typeur sigma [] in f env c
+let get_sort_of env sigma t = let _,f,_,_,_ = typeur sigma [] in f env t
+let get_sort_family_of env sigma c = let _,_,f,_,_ = typeur sigma [] in f env c
 let type_of_inductive_knowing_parameters env sigma ind args =
-  let _,_,_,f = typeur sigma [] in f env ind args
+  let _,_,_,f,_ = typeur sigma [] in f env ind args
+let type_of_constant_knowing_parameters env sigma cst args =
+  let _,_,_,_,f = typeur sigma [] in f env cst args
 
 let get_type_of_with_meta env sigma metamap = 
-  let f,_,_,_ = typeur sigma metamap in f env
+  let f,_,_,_,_ = typeur sigma metamap in f env
 
 (* Makes an assumption from a constr *)
 let get_assumption_of env evc c = c

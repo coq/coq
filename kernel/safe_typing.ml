@@ -119,6 +119,12 @@ type global_declaration =
   | ConstantEntry of constant_entry
   | GlobalRecipe of Cooking.recipe
 
+let hcons_constant_type = function
+  | NonPolymorphicType t ->
+      NonPolymorphicType (hcons1_constr t)
+  | PolymorphicArity (ctx,s) ->
+      PolymorphicArity (map_rel_context hcons1_constr ctx,s)
+
 let hcons_constant_body cb =
   let body = match cb.const_body with
       None -> None
@@ -127,7 +133,7 @@ let hcons_constant_body cb =
   in
     { cb with
 	const_body = body;
-	const_type = hcons1_constr cb.const_type }
+	const_type = hcons_constant_type cb.const_type }
 
 let add_constant dir l decl senv =
   check_label l senv.labset;

@@ -122,7 +122,7 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
         Typeops.judge_of_variable env id
 	  
      | T.Const c ->
-        E.make_judge cstr (E.constant_type env c)
+        E.make_judge cstr (Typeops.type_of_constant env c)
 	  
      | T.Ind ind ->
         E.make_judge cstr (Inductiveops.type_of_inductive env ind)

@@ -23,7 +23,7 @@ open Reductionops
 
 let type_of_inductive env ind =
  let specif = Inductive.lookup_mind_specif env ind in
-  Inductive.type_of_inductive specif
+  Inductive.type_of_inductive env specif
 
 (* Return type as quoted by the user *)
 let type_of_constructor env cstr =

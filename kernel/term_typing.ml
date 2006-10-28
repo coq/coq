@@ -22,8 +22,35 @@ open Type_errors
 open Indtypes
 open Typeops
 
+let extract_level env p =
+  let _,c = dest_prod_assum env p in
+  match kind_of_term c with Sort (Type u) -> Some u | _ -> None
+
+let extract_context_levels env =
+  List.fold_left
+    (fun l (_,b,p) -> if b=None then extract_level env p::l else l) []
+
+let make_polymorphic_if_arity env t =
+  let params, ccl = dest_prod env t in
+  match kind_of_term ccl with
+  | Sort (Type u) -> 
+      let param_ccls = extract_context_levels env params in
+      let s = { poly_param_levels = param_ccls; poly_level = u} in
+      PolymorphicArity (params,s)
+  | _ -> NonPolymorphicType t
+
 let constrain_type env j cst1 = function
-  | None -> j.uj_type, cst1
+  | None ->
+      make_polymorphic_if_arity env j.uj_type, cst1
+  | Some t -> 
+      let (tj,cst2) = infer_type env t in
+      let (_,cst3) = judge_of_cast env j DEFAULTcast tj in
+      assert (t = tj.utj_val);
+      make_polymorphic_if_arity env t, Constraint.union (Constraint.union cst1 cst2) cst3
+
+let local_constrain_type env j cst1 = function
+  | None ->
+      j.uj_type, cst1
   | Some t -> 
       let (tj,cst2) = infer_type env t in
       let (_,cst3) = judge_of_cast env j DEFAULTcast tj in
@@ -32,7 +59,7 @@ let constrain_type env j cst1 = function
 
 let translate_local_def env (b,topt) =
   let (j,cst) = infer env b in
-  let (typ,cst) = constrain_type env j cst topt in
+  let (typ,cst) = local_constrain_type env j cst topt in
     (j.uj_val,typ,cst)
 
 let translate_local_assum env t =
@@ -83,16 +110,25 @@ let infer_declaration env dcl =
         c.const_entry_opaque, c.const_entry_boxed
   | ParameterEntry t ->
       let (j,cst) = infer env t in
-      None, Typeops.assumption_of_judgment env j, cst, false, false
+      None, NonPolymorphicType (Typeops.assumption_of_judgment env j), cst,
+        false, false
+
+let global_vars_set_constant_type env = function
+  | NonPolymorphicType t -> global_vars_set env t
+  | PolymorphicArity (ctx,_) ->
+      Sign.fold_rel_context 
+        (fold_rel_declaration
+	  (fun t c -> Idset.union (global_vars_set env t) c))
+      ctx ~init:Idset.empty
 
 let build_constant_declaration env kn (body,typ,cst,op,boxed) =
   let ids =
     match body with 
-    | None -> global_vars_set env typ
+    | None -> global_vars_set_constant_type env typ
     | Some b ->
         Idset.union 
 	  (global_vars_set env (Declarations.force b)) 
-	  (global_vars_set env typ)
+	  (global_vars_set_constant_type env typ)
   in
   let tps = Cemitcodes.from_val (compile_constant_body env body op boxed) in
   let hyps = keep_hyps env ids in

@@ -122,7 +122,14 @@ let cook_constant env r =
     on_body (fun c ->
       abstract_constant_body (expmod_constr r.d_modlist c) hyps) 
       cb.const_body in
-  let typ =
-    abstract_constant_type (expmod_constr r.d_modlist cb.const_type) hyps in
+  let typ = match cb.const_type with
+    | NonPolymorphicType t ->
+	let typ = abstract_constant_type (expmod_constr r.d_modlist t) hyps in
+	NonPolymorphicType typ
+    | PolymorphicArity (ctx,s) ->
+	let t = mkArity (ctx,Type s.poly_level) in
+	let typ = abstract_constant_type (expmod_constr r.d_modlist t) hyps in
+	let ctx,_ = dest_prod env typ in
+	PolymorphicArity (ctx,s) in
   let boxed = Cemitcodes.is_boxed cb.const_body_code in
   (body, typ, cb.const_constraints, cb.const_opaque, boxed)

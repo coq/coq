@@ -96,7 +96,7 @@ let check_inductive cst env msid1 l info1 mib2 spec2 =
       (* nparams done *)
       (* params_ctxt done because part of the inductive types *)
       (* Don't check the sort of the type if polymorphic *)
-      let cst = check_conv cst conv env (type_of_inductive (mib1,p1)) (type_of_inductive (mib2,p2))
+      let cst = check_conv cst conv env (type_of_inductive env (mib1,p1)) (type_of_inductive env (mib2,p2))
       in
 	cst
   in
@@ -164,7 +164,9 @@ let check_constant cst env msid1 l info1 cb2 spec2 =
    | Constant cb1 ->
       assert (cb1.const_hyps=[] && cb2.const_hyps=[]) ;
       (*Start by checking types*)
-      let cst = check_conv cst conv_leq env cb1.const_type cb2.const_type in
+      let typ1 = Typeops.type_of_constant_type env cb1.const_type in
+      let typ2 = Typeops.type_of_constant_type env cb2.const_type in
+      let cst = check_conv cst conv_leq env typ1 typ2 in
       let con = make_con (MPself msid1) empty_dirpath l in
       let cst =
        match cb2.const_body with
@@ -186,8 +188,9 @@ let check_constant cst env msid1 l info1 cb2 spec2 =
        "name."));
       assert (mind1.mind_hyps=[] && cb2.const_hyps=[]) ;
       if cb2.const_body <> None then error () ;
-      let arity1 = type_of_inductive (mind1,mind1.mind_packets.(i)) in
-       check_conv cst conv_leq env arity1 cb2.const_type
+      let arity1 = type_of_inductive env (mind1,mind1.mind_packets.(i)) in
+      let typ2 = Typeops.type_of_constant_type env cb2.const_type in
+       check_conv cst conv_leq env arity1 typ2
    | IndConstr (((kn,i),j) as cstr,mind1) ->
       ignore (Util.error (
        "The kernel does not recognize yet that a parameter can be " ^
@@ -197,7 +200,8 @@ let check_constant cst env msid1 l info1 cb2 spec2 =
       assert (mind1.mind_hyps=[] && cb2.const_hyps=[]) ;
       if cb2.const_body <> None then error () ;
       let ty1 = type_of_constructor cstr (mind1,mind1.mind_packets.(i)) in
-       check_conv cst conv env ty1 cb2.const_type
+      let ty2 = Typeops.type_of_constant_type env cb2.const_type in
+       check_conv cst conv env ty1 ty2
    | _ -> error ()
 	      
 let rec check_modules cst env msid1 l msb1 msb2 =

@@ -408,7 +408,7 @@ let mk_inductive_obj sp mib packs variables nparams hyps finite =
        let {D.mind_consnames=consnames ;
             D.mind_typename=typename } = p
        in
-        let arity = Inductive.type_of_inductive (mib,p) in
+        let arity = Inductive.type_of_inductive (Global.env()) (mib,p) in
         let lc = Inductiveops.arities_of_constructors (Global.env ()) (sp,!tyno) in
         let cons =
          (Array.fold_right (fun (name,lc) i -> (name,lc)::i)
@@ -522,6 +522,7 @@ let print internal glob_ref kind xml_library_root =
        let id = N.id_of_label (N.con_label kn) in
        let {D.const_body=val0 ; D.const_type = typ ; D.const_hyps = hyps} =
         G.lookup_constant kn in
+       let typ = Typeops.type_of_constant_type (Global.env()) typ in
         Cic2acic.Constant kn,mk_constant_obj id val0 typ variables hyps
     | Ln.IndRef (kn,_) ->
        let mib = G.lookup_mind kn in

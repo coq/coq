@@ -291,9 +291,17 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 
     | App (f,l) ->
 	let (acc',hdty) =
-	  if isInd f & not (array_exists occur_meta l) (* we could be finer *)
-	  then (goalacc,type_of_inductive_knowing_parameters env sigma (destInd f) l)
-	  else mk_hdgoals sigma goal goalacc f
+	  match kind_of_term f with
+	    | Ind ind
+		when not (array_exists occur_meta l) (* we could be finer *) ->
+		(* Sort-polymorphism of inductive types *)
+		goalacc, type_of_inductive_knowing_parameters env sigma ind l
+	    | Const cst
+		when not (array_exists occur_meta l) (* we could be finer *) ->
+		(* Sort-polymorphism of inductive types *)
+		goalacc, type_of_constant_knowing_parameters env sigma cst l
+	    | _ -> 
+		mk_hdgoals sigma goal goalacc f
 	in
 	let (acc'',conclty') =
 	  mk_arggoals sigma goal acc' hdty (Array.to_list l) in

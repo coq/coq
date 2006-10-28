@@ -119,8 +119,7 @@ let def_of_const t =
 
 let type_of_const t =
    match (kind_of_term t) with
-    Const sp -> 
-      (Global.lookup_constant sp).const_type
+    Const sp -> Typeops.type_of_constant (Global.env()) sp
     |_ -> assert false
 
 let arg_type t =

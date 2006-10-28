@@ -36,3 +36,6 @@ val get_judgment_of : env -> evar_map -> constr -> unsafe_judgment
 
 val type_of_inductive_knowing_parameters : env -> evar_map -> inductive -> 
   constr array -> types
+
+val type_of_constant_knowing_parameters : env -> evar_map -> constant -> 
+  constr array -> types

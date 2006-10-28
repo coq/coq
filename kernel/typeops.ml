@@ -126,12 +126,31 @@ let check_hyps id env hyps =
 (* Instantiation of terms on real arguments. *)
 
 (* Type of constants *)
+
+let type_of_constant_knowing_parameters env t paramtyps =
+  match t with
+  | NonPolymorphicType t -> t
+  | PolymorphicArity (sign,ar) ->
+      let ctx = List.rev sign in
+      let ctx,s = instantiate_universes env ctx ar paramtyps in
+      mkArity (List.rev ctx,s)
+
+let type_of_constant_type env t =
+  type_of_constant_knowing_parameters env t [||]
+
+let type_of_constant env cst =
+  type_of_constant_type env (constant_type env cst)
+
+let judge_of_constant_knowing_parameters env cst jl =
+  let c = mkConst cst in
+  let cb = lookup_constant cst env in
+  let _ = check_args env c cb.const_hyps in 
+  let paramstyp = Array.map (fun j -> j.uj_type) jl in
+  let t = type_of_constant_knowing_parameters env cb.const_type paramstyp in
+  make_judge c t
+
 let judge_of_constant env cst =
-  let constr = mkConst cst in
-  let _ =
-    let ce = lookup_constant cst env in
-    check_args env constr ce.const_hyps in 
-  make_judge constr (constant_type env cst)
+  judge_of_constant_knowing_parameters env cst [||]
 
 (* Type of a lambda-abstraction. *)
 
@@ -348,11 +367,16 @@ let rec execute env cstr cu =
     | App (f,args) ->
         let (jl,cu1) = execute_array env args cu in
 	let (j,cu2) =
-	  if isInd f then
-	    (* Sort-polymorphism of inductive types *)
-	    judge_of_inductive_knowing_parameters env (destInd f) jl, cu1
-	  else
-	    execute env f cu1
+	  match kind_of_term f with
+	    | Ind ind ->
+		(* Sort-polymorphism of inductive types *)
+		judge_of_inductive_knowing_parameters env ind jl, cu1
+	    | Const cst -> 
+		(* Sort-polymorphism of constant *)
+		judge_of_constant_knowing_parameters env cst jl, cu1
+	    | _ -> 
+		(* No sort-polymorphism *)
+		execute env f cu1
 	in
 	univ_combinator cu2 (judge_of_apply env j jl)
 	    

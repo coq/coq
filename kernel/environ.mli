@@ -129,7 +129,7 @@ type const_evaluation_result = NoBody | Opaque
 exception NotEvaluableConst of const_evaluation_result
 
 val constant_value     : env -> constant -> constr
-val constant_type      : env -> constant -> types
+val constant_type      : env -> constant -> constant_type
 val constant_opt_value : env -> constant -> constr option
 
 (************************************************************************)

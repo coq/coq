@@ -392,7 +392,7 @@ let ienv_push_inductive (env, n, ntypes, ra_env) (mi,lpar) =
   let specif = lookup_mind_specif env mi in
   let env' =
     push_rel (Anonymous,None,
-              hnf_prod_applist env (type_of_inductive specif) lpar) env in
+              hnf_prod_applist env (type_of_inductive env specif) lpar) env in
   let ra_env' = 
     (Imbr mi,Rtree.mk_param 0) ::
     List.map (fun (r,t) -> (r,Rtree.lift 1 t)) ra_env in
@@ -601,8 +601,8 @@ let build_inductive env env_ar params isrecord isfinite inds nmr recargs cst =
     let arkind,kelim = match ar_kind with
     | Inr (param_levels,lev) ->
 	Polymorphic {
-	  mind_param_levels = param_levels;
-	  mind_level = lev; 
+	  poly_param_levels = param_levels;
+	  poly_level = lev; 
 	}, all_sorts
     | Inl ((issmall,isunit),ar,s) ->
 	let isunit = isunit && ntypes = 1 && not (is_recursive recargs.(0)) in

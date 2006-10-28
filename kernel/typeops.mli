@@ -14,6 +14,7 @@ open Univ
 open Term
 open Environ
 open Entries
+open Declarations
 (*i*)
 
 (*s Typing functions (not yet tagged as safe) *)
@@ -46,6 +47,9 @@ val judge_of_variable : env -> variable -> unsafe_judgment
 
 (*s type of a constant *)
 val judge_of_constant : env -> constant -> unsafe_judgment
+
+val judge_of_constant_knowing_parameters :
+  env -> constant -> unsafe_judgment array -> unsafe_judgment
 
 (*s Type of application. *)
 val judge_of_apply : 
@@ -93,8 +97,9 @@ val type_fixpoint : env -> name array -> types array
 (* Kernel safe typing but applicable to partial proofs *)
 val typing : env -> constr -> unsafe_judgment
 
-(* A virer *)
-val execute : Environ.env ->
-    Term.types ->
-    Univ.Constraint.t * Univ.universes ->
-    Environ.unsafe_judgment * (Univ.Constraint.t * Univ.universes)
+val type_of_constant : env -> constant -> types
+
+val type_of_constant_type : env -> constant_type -> types
+
+val type_of_constant_knowing_parameters : 
+  env -> constant_type -> constr array -> types

@@ -105,7 +105,7 @@ let constant_entry_of_com (bl,com,comtypopt,opacity,boxed) =
 	let b = abstract_constr_expr com bl in
 	let j = interp_constr_judgment sigma env b in
 	{ const_entry_body = j.uj_val;
-	  const_entry_type = Some (refresh_universes j.uj_type);
+	  const_entry_type = None;
           const_entry_opaque = opacity;
 	  const_entry_boxed = boxed }
     | Some comtyp ->
@@ -225,7 +225,8 @@ let declare_one_elimination ind =
   if List.mem InType kelim then
     let elim = make_elim (new_sort_in_family InType) in
     let cte = declare (mindstr^(Indrec.elimination_suffix InType)) elim None in
-    let c = mkConst cte and t = constant_type (Global.env()) cte in
+    let c = mkConst cte in
+    let t = type_of_constant (Global.env()) cte in
     List.iter (fun (sort,suff) -> 
       let (t',c') = 
 	Indrec.instantiate_type_indrec_scheme (new_sort_in_family sort)

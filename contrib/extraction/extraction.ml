@@ -225,7 +225,7 @@ let rec extract_type env db j c args =
     | Const kn -> 
 	let r = ConstRef kn in 
 	let cb = lookup_constant kn env in 
-	let typ = cb.const_type in 
+	let typ = Typeops.type_of_constant_type env cb.const_type in 
 	(match flag_of_type env typ with 
 	   | (Info, TypeScheme) -> 
 	       let mlt = extract_type_app env db (r, type_sign env typ) args in 
@@ -321,7 +321,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
       Array.map 
 	(fun mip ->
 	   let b = snd (mind_arity mip) <> InProp in
-	   let ar = Inductive.type_of_inductive (mib,mip) in
+	   let ar = Inductive.type_of_inductive env (mib,mip) in
 	   let s,v = if b then type_sign_vl env ar else [],[] in
 	   let t = Array.make (Array.length mip.mind_nf_lc) [] in 
 	   { ip_typename = mip.mind_typename;
@@ -401,7 +401,8 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	(* Is this record officially declared with its projections ? *)
 	(* If so, we use this information. *)
 	begin try 
-	  let n = nb_default_params env (Inductive.type_of_inductive(mib,mip0))
+	  let n = nb_default_params env
+            (Inductive.type_of_inductive env (mib,mip0))
 	  in
 	  List.iter 
 	    (option_iter 
@@ -446,7 +447,7 @@ and mlt_env env r = match r with
 	   | _ -> None
        with Not_found -> 
 	 let cb = Environ.lookup_constant kn env in
-	 let typ = cb.const_type in
+	 let typ = Typeops.type_of_constant_type env cb.const_type in 
 	 match cb.const_body with
 	   | None -> None
 	   | Some l_body -> 
@@ -473,7 +474,7 @@ let record_constant_type env kn opt_typ =
     lookup_type kn 
   with Not_found ->
     let typ = match opt_typ with 
-      | None -> constant_type env kn 
+      | None -> Typeops.type_of_constant env kn
       | Some typ -> typ 
     in let mlt = extract_type env [] 1 typ [] 
     in let schema = (type_maxvar mlt, mlt)
@@ -814,7 +815,7 @@ let extract_fixpoint env vkn (fi,ti,ci) =
 		 
 let extract_constant env kn cb = 
   let r = ConstRef kn in 
-  let typ = cb.const_type in
+  let typ = Typeops.type_of_constant_type env cb.const_type in 
   match cb.const_body with
     | None -> (* A logical axiom is risky, an informative one is fatal. *) 
         (match flag_of_type env typ with
@@ -846,7 +847,7 @@ let extract_constant env kn cb =
 
 let extract_constant_spec env kn cb = 
   let r = ConstRef kn in 
-  let typ = cb.const_type in
+  let typ = Typeops.type_of_constant_type env cb.const_type in 
   match flag_of_type env typ with 
     | (Logic, TypeScheme) -> Stype (r, [], Some (Tdummy Ktype))
     | (Logic, Default) -> Sval (r, Tdummy Kother) 
@@ -884,7 +885,7 @@ let extract_declaration env r = match r with
 type kind = Logical | Term | Type 
     
 let constant_kind env cb = 
-  match flag_of_type env cb.const_type with 
+  match flag_of_type env (Typeops.type_of_constant_type env cb.const_type) with 
     | (Logic,_) -> Logical
     | (Info,TypeScheme) -> Type
     | (Info,Default) -> Term

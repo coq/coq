@@ -306,8 +306,7 @@ let generate_principle
 	  list_map_i
 	    (fun i x ->
 	       let princ = destConst (Indrec.lookup_eliminator (ind_kn,i) (InProp)) in 
-	       let princ_type = 
-		 (Global.lookup_constant princ).Declarations.const_type
+	       let princ_type = Typeops.type_of_constant (Global.env()) princ
 	       in
 	       Functional_principles_types.generate_functional_principle
 		 interactive_proof 
@@ -682,7 +681,8 @@ let make_graph (f_ref:global_reference) =
 	  with_full_print 
 	    (fun () -> 
 	       (Constrextern.extern_constr false env body, 
-		Constrextern.extern_type false env  c_body.const_type
+		Constrextern.extern_type false env
+                  (Typeops.type_of_constant_type env c_body.const_type)
 	       )
 	    )
 	    ()
