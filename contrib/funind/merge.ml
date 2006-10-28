@@ -56,7 +56,7 @@ let string_of_name nme = string_of_id (id_of_name nme)
 (** [isVarf f x] returns [true] if term [x] is of the form [(Var f)]. *)
 let isVarf f x = 
     match x with
-      | RVar (_,x) -> x = f 
+      | RVar (_,x) -> Pervasives.compare x f = 0 
       | _ -> false
 
 (** [ident_global_exist id] returns true if identifier [id] is linked
@@ -78,29 +78,31 @@ let next_ident_fresh (id:identifier) =
 
 (** {2 Debugging} *)
 (* comment this line to see debug msgs *)
-(* let msg x = () ;; let pr_lconstr c = str "" *)
+let msg x = () ;; let pr_lconstr c = str ""
 (* uncomment this to see debugging *)
-let prconstr c =  msg (str"  " ++ Printer.pr_lconstr c ++ str"\n")
+let prconstr c =  msg (str"  " ++ Printer.pr_lconstr c)
+let prconstrnl c =  msg (str"  " ++ Printer.pr_lconstr c ++ str"\n")
 let prlistconstr lc = List.iter prconstr lc
 let prstr s = msg(str s)
 let prNamedConstr s c = 
   begin
     msg(str "");
-    msg(str(s^"==>\n ") ++ Printer.pr_lconstr c ++ str "\n<==\n");
+    msg(str(s^" {§ ") ++ Printer.pr_lconstr c ++ str " §} ");
     msg(str "");
   end
 let prNamedRConstr s c = 
   begin
     msg(str "");
-    msg(str(s^"==>\n ") ++ Printer.pr_rawconstr c ++ str "\n<==\n");
+    msg(str(s^" {§ ") ++ Printer.pr_rawconstr c ++ str " §} ");
     msg(str "");
   end
-let prNamedLConstr_aux lc = 
-  List.iter (prNamedConstr "#>") lc
+let prNamedLConstr_aux lc = List.iter (prNamedConstr "\n") lc
 let prNamedLConstr s lc = 
   begin
+    prstr "[§§§ ";
     prstr s;
-    prNamedLConstr_aux lc
+    prNamedLConstr_aux lc;
+    prstr " §§§]\n";
   end
 let prNamedLDecl s lc = 
   begin
@@ -308,6 +310,23 @@ let revlinked lnk =
             Link.add i (k::old) acc)
     Link.empty
 
+let array_switch arr i j = 
+  let aux = arr.(j) in arr.(j) <- arr.(i); arr.(i) <- aux
+
+let filter_shift_stable_right (lnk:int merged_arg array) (l:'a list): 'a list =
+  let larr = Array.of_list l in
+  let _ =
+    Array.iteri
+      (fun j x -> 
+        match x with
+          | Prm_linked i -> array_switch larr i j
+          | Arg_linked i -> array_switch larr i j
+          | Prm_stable i -> ()
+          | Prm_arg i -> ()
+          | Arg_stable i -> ()
+          | Arg_funres -> ()
+      ) lnk in
+  filter_shift_stable lnk (Array.to_list larr)
 
 
 
@@ -429,7 +448,7 @@ let shift_linked_params mib1 mib2 (lnk1:linked_var array) (lnk2:linked_var array
 exception NoMerge
 
 (* lnk is an link array of *all* args (from 1 and 2) *)
-let merge_app c1 c2 id1 id2 shift = 
+let merge_app c1 c2 id1 id2 shift filter_shift_stable = 
   let lnk = Array.append shift.lnk1 shift.lnk2 in
   match c1 , c2 with
     | RApp(_,f1, arr1), RApp(_,f2,arr2) when isVarf id1 f1 && isVarf id2 f2 -> 
@@ -438,7 +457,7 @@ let merge_app c1 c2 id1 id2 shift =
     | RApp(_,f1, arr1), RApp(_,f2,arr2)  -> raise NoMerge
     | _ -> raise NoMerge
 
-let merge_app_unsafe c1 c2 shift = 
+let merge_app_unsafe c1 c2 shift filter_shift_stable = 
   let lnk = Array.append shift.lnk1 shift.lnk2 in
   match c1 , c2 with
     | RApp(_,f1, arr1), RApp(_,f2,arr2) -> 
@@ -446,11 +465,15 @@ let merge_app_unsafe c1 c2 shift =
         RApp (dummy_loc,RVar(dummy_loc,shift.ident) , args)
     | _ -> raise NoMerge
 
-let onefoud = ref false
+
 
 (* Heuristic when merging two lists of hypothesis: merge every rec
    calls of nrach 1 with all rec calls of branch 2. *)
-let rec merge_rec_hyps shift accrec (ltyp:(Names.name * Rawterm.rawconstr) list) =
+(* TODO: reecrire cette heuristique (jusqu'a merge_types) *)
+let onefoud = ref false (* Ugly *)
+
+let rec merge_rec_hyps shift accrec (ltyp:(Names.name * Rawterm.rawconstr) list) 
+    filter_shift_stable =
   match ltyp with
     | [] -> []
     | (nme,(RApp(_,f, largs) as t)) :: lt when isVarf ind2name f -> 
@@ -459,43 +482,81 @@ let rec merge_rec_hyps shift accrec (ltyp:(Names.name * Rawterm.rawconstr) list)
           List.map 
             (fun (nme,ind) -> 
               match ind with
-                | RApp(_,i,args) -> nme, merge_app_unsafe ind t shift
+                | RApp(_,i,args) -> 
+                    nme, merge_app_unsafe ind t shift filter_shift_stable
                 | _ -> assert false)
             accrec in
-        rechyps @ merge_rec_hyps shift accrec lt
-    | e::lt -> e :: merge_rec_hyps shift accrec lt
+        rechyps @ merge_rec_hyps shift accrec lt filter_shift_stable
+    | e::lt -> e :: merge_rec_hyps shift accrec lt filter_shift_stable
 
 
 let rec build_suppl_reccall (accrec:(name * rawconstr) list) concl2 shift = 
   List.map (fun (nm,tp) -> (nm,merge_app_unsafe tp concl2 shift)) accrec
 
-(* TODO: reecrire cette heuristique *)
+
+let find_app (nme:identifier) (ltyp: (name * rawconstr) list) = 
+  try
+    ignore
+      (List.map
+          (fun x -> 
+            match x with
+              | _,(RApp(_,f,_)) when isVarf nme f -> raise (Found 0)
+              | _ -> ())
+          ltyp);
+    false
+  with Found _ -> true
+        
 let rec merge_types shift accrec1 (ltyp1:(name * rawconstr) list)
     concl1 (ltyp2:(name * rawconstr) list) concl2
     : (name * rawconstr) list * rawconstr = 
-  let res = 
-  match ltyp1 with
-    | [] -> 
-        let _ = onefoud := false in
-        let rechyps =(*If accrec1 is empty, use conlusion instead of accrec1 
-                       to merge rec calls*)
-          merge_rec_hyps shift
-            (if accrec1<>[] then accrec1 else [name_of_string "concl1",concl1])
-            ltyp2 in
-        (* If no reccalls has been found in ltyp2 and accrec1 is not
-           empty, create one with accrec1 + concl2  *)
-        let suppl_rechyps = 
-          if accrec1 = [] || !onefoud then []
-          else build_suppl_reccall accrec1 concl2 shift in
-        rechyps @ suppl_rechyps , merge_app concl1 concl2 ind1name ind2name shift
-    | (nme,t1)as e ::lt1 -> 
-        match t1 with
-          | RApp(_,f,carr) when isVarf ind1name f -> 
-              merge_types shift (e::accrec1) lt1 concl1 ltyp2 concl2
-          | _ -> 
-              let recres, recconcl2 =
-                merge_types shift accrec1 lt1 concl1 ltyp2 concl2 in
-              ((nme,t1) :: recres) , recconcl2
+  let _ = prstr "MERGE_TYPES\n" in
+  let _ = prstr "ltyp 1 : " in
+  let _ = List.iter (fun (nm,tp) -> prNamedRConstr (string_of_name nm) tp) ltyp1 in
+  let _ = prstr "\nltyp 2 : " in
+  let _ = List.iter (fun (nm,tp) -> prNamedRConstr (string_of_name nm) tp) ltyp2 in
+  let _ = prstr "\n" in
+
+
+  let res =
+    match ltyp1 with
+      | [] -> 
+          let isrec1 = (accrec1<>[]) in
+          let isrec2 = find_app ind2name ltyp2 in
+          let _ = if isrec2 then prstr "  ISREC2 TRUE" else prstr "  ISREC2 FALSE" in
+          let _ = if isrec1 then prstr "  ISREC1 TRUE\n" else prstr "  ISREC1 FALSE\n" in
+          let rechyps =
+            if isrec1 && isrec2 
+            then merge_rec_hyps shift accrec1 ltyp2 filter_shift_stable
+            else if isrec1 
+                (* if rec calls in accrec1 and not in ltyp2, add one to ltyp2 *)
+            then merge_rec_hyps shift accrec1 (ltyp2@[name_of_string "concl2",concl2])
+              filter_shift_stable
+            else if isrec2
+            then merge_rec_hyps shift [name_of_string "concl1",concl1] ltyp2
+              filter_shift_stable_right
+            else [] in
+          let _ = prstr"\nrechyps : " in
+          let _ = List.iter 
+            (fun (nm,tp) -> prNamedRConstr (string_of_name nm) tp) rechyps in
+          let _ = prstr "MERGE CONCL :  " in
+          let _ = prNamedRConstr "concl1" concl1 in
+          let _ = prstr " with " in
+          let _ = prNamedRConstr "concl2" concl2 in
+          let _ = prstr "\n" in
+          let concl = 
+            merge_app concl1 concl2 ind1name ind2name shift filter_shift_stable in
+          let _ = prstr "FIN " in
+          let _ = prNamedRConstr "concl" concl in
+          let _ = prstr "\n" in
+          rechyps , concl
+      | (nme,t1)as e ::lt1 -> 
+          match t1 with
+            | RApp(_,f,carr) when isVarf ind1name f -> 
+                merge_types shift (e::accrec1) lt1 concl1 ltyp2 concl2 
+            | _ -> 
+                let recres, recconcl2 =
+                  merge_types shift accrec1 lt1 concl1 ltyp2 concl2 in
+                ((nme,t1) :: recres) , recconcl2
   in
   res
 
