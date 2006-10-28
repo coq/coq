@@ -980,7 +980,7 @@ argument, use command
 Conversely, use command {\tt Unset Contextual Implicit} to
 unset the contextual implicit mode.
 
-\subsection{Explicit Applications
+\subsection{Explicit applications
 \index{Explicitation of implicit arguments}
 \label{Implicits-explicitation}
 \index{qualid@{\qualid}}}
@@ -1207,6 +1207,35 @@ printing features, use the command
 \begin{quote}
 {\tt Unset Printing All.}
 \end{quote}
+
+\section{Printing universes}
+\label{PrintingUniverses}
+\comindex{Set Printing Universes}
+\comindex{Unset Printing Universes}
+
+The following command:
+\begin{quote}
+{\tt Set Printing Universes}
+\end{quote}
+activates the display of the actual level of each occurrence of
+{\Type}. See section~\ref{Sorts} for details.  This wizard option, in
+combination with \texttt{Set Printing All} (see
+section~\ref{SetPrintingAll}) can help to diagnose failures to unify
+terms apparently identical but internally different in the Calculus of
+Inductive Constructions. To reactivate the display of the actual level
+of the occurrences of {\Type}, use
+\begin{quote}
+{\tt Unset Printing Universes.}
+\end{quote}
+
+\comindex{Print Universes}
+
+The constraints on the internal level of the occurrences of {\Type}
+(see section~\ref{Sorts}) can be printed using the command
+\begin{quote}
+{\tt Print Universes.}
+\end{quote}
+
 
 %%% Local Variables: 
 %%% mode: latex

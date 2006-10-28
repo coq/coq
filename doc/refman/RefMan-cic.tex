@@ -118,7 +118,21 @@ indexes can be solved. From the user point of view we consequently
 have {\sf Type :Type}.
 
 We shall make precise in the typing rules the constraints between the
-indexes.
+indexes. 
+
+\paragraph{Implementation issues}
+In practice, the {\Type} hierarchy is implemented using algebraic
+universes. An algebraic universe $u$ is either a variable (a qualified
+identifier with a number) or a successor of an algebraic universe (an
+expression $u+1$), or an upper bound of algebraic universes (an
+expression $max(u_1,...,u_n)$), or the base universe (the expression
+$0$) which corresponds, in the arity of sort-polymorphic inductive
+types, to the predicative sort {\Set}. A graph of constraints between
+the universe variables is maintained globally. To ensure the existence
+of a mapping of the universes to the positive integers, the graph of
+constraints must remain acyclic.  Typing expressions that violate the
+acyclicity of the graph of constraints results in a \errindex{Universe
+inconsistency} error (see also section~\ref{PrintingUniverses}).
 
 \subsection{Constants}
 Besides the sorts, the language also contains constants denoting

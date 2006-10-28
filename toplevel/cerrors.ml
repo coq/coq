@@ -67,9 +67,9 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
   | Invalid_argument s -> 
       hov 0 (anomaly_string () ++ str "uncaught exception Invalid_argument " ++ str (guill s) ++ report_fn ())
   | Sys.Break -> 
-      hov 0 (fnl () ++ str "User Interrupt.")
+      hov 0 (fnl () ++ str "User interrupt.")
   | Univ.UniverseInconsistency -> 
-      hov 0 (str "Error: Universe Inconsistency.")
+      hov 0 (str "Error: Universe inconsistency.")
   | TypeError(ctx,te) -> 
       hov 0 (str "Error:" ++ spc () ++ Himsg.explain_type_error ctx te)
   | PretypeError(ctx,te) ->

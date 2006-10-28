@@ -488,9 +488,8 @@ GEXTEND Gram
       | IDENT "Declare"; IDENT "ML"; IDENT "Module"; l = LIST1 ne_string ->
 	  VernacDeclareMLModule l
 
-      (* Dump of the universe graph - to file or to stdout *) 
       | IDENT "Dump"; IDENT "Universes"; fopt = OPT ne_string ->
-	  VernacPrint (PrintUniverses fopt)
+	  error "This command is deprecated, use Print Universes"
 
       | IDENT "Locate"; l = locatable -> VernacLocate l
 
@@ -626,7 +625,8 @@ GEXTEND Gram
       | IDENT "Scopes" -> PrintScopes
       | IDENT "Scope"; s = IDENT -> PrintScope s
       | IDENT "Visibility"; s = OPT IDENT -> PrintVisibility s
-      | IDENT "Implicit"; qid = global -> PrintImplicit qid ] ]  
+      | IDENT "Implicit"; qid = global -> PrintImplicit qid
+      | IDENT "Universes"; fopt = OPT ne_string -> PrintUniverses fopt ] ]
   ;
   class_rawexpr:
     [ [ IDENT "Funclass" -> FunClass
