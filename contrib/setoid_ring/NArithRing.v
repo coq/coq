@@ -6,8 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+Require Export Ring.
 Require Import BinPos BinNat.
-Require Import Ring_base InitialRing.
+Import InitialRing.
 
 Set Implicit Arguments.
 

@@ -9,7 +9,6 @@
 Require Export Ring.
 Require Import ZArith_base.
 Import InitialRing.
-Export Ring_tac.
 
 Set Implicit Arguments.
 

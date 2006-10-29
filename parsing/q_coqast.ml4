@@ -441,8 +441,12 @@ and mlexpr_of_tactic : (Tacexpr.raw_tactic_expr -> MLast.expr) = function
         $mlexpr_of_bool lz$
         $mlexpr_of_bool lr$
         $mlexpr_of_list (mlexpr_of_match_rule mlexpr_of_tactic) l$>>
+
+  | Tacexpr.TacFun (idol,body) ->
+      <:expr< Tacexpr.TacFun
+        ($mlexpr_of_list mlexpr_of_ident_option idol$,
+         $mlexpr_of_tactic body$) >>
 (*
-  | Tacexpr.TacFun of $dloc$ * tactic_fun_ast
   | Tacexpr.TacFunRec of $dloc$ * identifier * tactic_fun_ast
 *)
 (*

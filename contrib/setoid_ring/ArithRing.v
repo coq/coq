@@ -7,10 +7,8 @@
 (************************************************************************)
 
 Require Import Mult.
-Require Import Ring_base.
+Require Export Ring.
 Set Implicit Arguments.
-Require Import InitialRing.
-Export Ring_tac.
 
 Ltac isnatcst t :=
   let t := eval hnf in t in
