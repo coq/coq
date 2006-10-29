@@ -1432,9 +1432,9 @@ PRINTERSCMO=\
   kernel/sign.cmo kernel/declarations.cmo kernel/pre_env.cmo \
   kernel/cbytecodes.cmo kernel/cbytegen.cmo kernel/environ.cmo \
   kernel/conv_oracle.cmo kernel/closure.cmo kernel/reduction.cmo	\
-  kernel/cooking.cmo 		\
   kernel/modops.cmo kernel/type_errors.cmo kernel/inductive.cmo		\
   kernel/typeops.cmo kernel/subtyping.cmo kernel/indtypes.cmo		\
+  kernel/cooking.cmo 		\
   kernel/term_typing.cmo kernel/mod_typing.cmo kernel/safe_typing.cmo	\
   library/summary.cmo library/global.cmo library/nameops.cmo		\
   library/libnames.cmo library/nametab.cmo library/libobject.cmo	\
