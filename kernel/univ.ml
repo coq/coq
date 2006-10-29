@@ -63,8 +63,8 @@ let pr_uni_level u = str (string_of_univ_level u)
 let pr_uni = function
   | Atom u -> 
       pr_uni_level u
-  | Max ([],[Base]) ->
-      int 1
+  | Max ([],[u]) ->
+      str "(" ++ pr_uni_level u ++ str ")+1"
   | Max (gel,gtl) ->
       str "max(" ++ hov 0
        (prlist_with_sep pr_coma pr_uni_level gel ++

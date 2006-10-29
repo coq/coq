@@ -330,10 +330,14 @@ let print_body = function
 let print_typed_body (val_0,typ) =
   (print_body val_0 ++ fnl () ++ str "     : " ++ pr_ltype typ ++ fnl ())
 
+let ungeneralized_type_of_constant_type = function
+  | PolymorphicArity (ctx,a) -> mkArity (ctx, Type a.poly_level)
+  | NonPolymorphicType t -> t
+
 let print_constant with_values sep sp =
   let cb = Global.lookup_constant sp in
   let val_0 = cb.const_body in
-  let typ = Typeops.type_of_constant_type (Global.env()) cb.const_type in
+  let typ = ungeneralized_type_of_constant_type cb.const_type in
   hov 0 (
     match val_0 with 
     | None -> 

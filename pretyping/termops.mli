@@ -204,6 +204,8 @@ val global_vars_set_of_decl : env -> named_declaration -> Idset.t
 (* Test if an identifier is the basename of a global reference *)
 val is_section_variable : identifier -> bool
 
+val isGlobalRef : constr -> bool
+
 (* Combinators on judgments *)
 
 val on_judgment       : (types -> types) -> unsafe_judgment -> unsafe_judgment

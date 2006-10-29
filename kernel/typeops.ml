@@ -125,6 +125,26 @@ let check_hyps id env hyps =
 *)
 (* Instantiation of terms on real arguments. *)
 
+(* Make a type polymorphic if an arity *)
+
+let extract_level env p =
+  let _,c = dest_prod_assum env p in
+  match kind_of_term c with Sort (Type u) -> Some u | _ -> None
+
+let extract_context_levels env =
+  List.fold_left
+    (fun l (_,b,p) -> if b=None then extract_level env p::l else l) []
+
+let make_polymorphic_if_arity env t =
+  let params, ccl = dest_prod_assum env t in
+  match kind_of_term ccl with
+  | Sort (Type u) -> 
+      let param_ccls = extract_context_levels env params in
+      let s = { poly_param_levels = param_ccls; poly_level = u} in
+      PolymorphicArity (params,s)
+  | _ ->
+      NonPolymorphicType t
+
 (* Type of constants *)
 
 let type_of_constant_knowing_parameters env t paramtyps =

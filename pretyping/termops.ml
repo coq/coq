@@ -855,7 +855,12 @@ let next_global_ident_away allow_secvar id avoid =
   else  
     next_global_ident_from allow_secvar (lift_ident id) avoid
 
-(* Nouvelle version de renommage des variables (DEC 98) *)
+let isGlobalRef c = 
+  match kind_of_term c with
+  | Const _ | Ind _ | Construct _ | Var _ -> true
+  | _ -> false
+
+(* nouvelle version de renommage des variables (DEC 98) *)
 (* This is the algorithm to display distinct bound variables 
 
     - Règle 1 : un nom non anonyme, même non affiché, contribue à la liste

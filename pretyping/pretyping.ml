@@ -392,14 +392,13 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	let resj =
 	  match evar_kind_of_term !isevars resj.uj_val with
 	  | App (f,args) ->
-              begin match evar_kind_of_term !isevars f with
-              | Ind ind ->
+              let f = whd_evar (Evd.evars_of !isevars) f in
+              begin match kind_of_term f with
+              | Ind _ | Const _ ->
 	          let sigma = evars_of !isevars in
-                  let args = Array.map (nf_evar sigma) args in
-	          let t = Retyping.type_of_inductive_knowing_parameters env sigma ind args in
-	          let s = snd (splay_arity env sigma t) in
-	          on_judgment_type (set_inductive_level env s) resj
-		(* Rem: no need to send sigma: no head evar, it's an arity *)
+		  let c = mkApp (f,Array.map (whd_evar sigma) args) in
+	          let t = Retyping.get_type_of env sigma c in
+		  make_judge c t
               | _ -> resj end
 	  | _ -> resj in
 	inh_conv_coerce_to_tycon loc env isevars resj tycon

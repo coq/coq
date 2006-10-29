@@ -80,8 +80,6 @@ val check_cofix : env -> cofixpoint -> unit
 val type_of_inductive_knowing_parameters :
   env -> one_inductive_body -> types array -> types
 
-val set_inductive_level : env -> sorts -> types -> types
-
 val max_inductive_sort : sorts array -> universe
 
 val instantiate_universes : env -> Sign.rel_context ->

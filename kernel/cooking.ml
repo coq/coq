@@ -16,6 +16,7 @@ open Sign
 open Declarations
 open Environ
 open Reduction
+open Term_typing
 
 (*s Cooking the constants. *)
 
@@ -129,7 +130,6 @@ let cook_constant env r =
     | PolymorphicArity (ctx,s) ->
 	let t = mkArity (ctx,Type s.poly_level) in
 	let typ = abstract_constant_type (expmod_constr r.d_modlist t) hyps in
-	let ctx,_ = dest_prod env typ in
-	PolymorphicArity (ctx,s) in
+	Typeops.make_polymorphic_if_arity env typ in
   let boxed = Cemitcodes.is_boxed cb.const_body_code in
   (body, typ, cb.const_constraints, cb.const_opaque, boxed)

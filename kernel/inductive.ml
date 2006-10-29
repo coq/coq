@@ -122,14 +122,6 @@ where
 Remark: Set (predicative) is encoded as Type(0)
 *)
 
-let set_inductive_level env s t = 
-  let sign,s' = dest_prod_assum env t in
-  if family_of_sort s <> family_of_sort (destSort s') then
-    (* This induces reductions if user_arity <> nf_arity *)
-    mkArity (sign,s)
-  else
-    t
-
 let sort_as_univ = function
 | Type u -> u
 | Prop Null -> neutral_univ
