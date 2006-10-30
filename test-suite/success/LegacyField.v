@@ -10,7 +10,7 @@
 
 (**** Tests of Field with real numbers ****)
 
-Require Import Reals.
+Require Import Reals LegacyRfield.
 
 (* Example 1 *)
 Goal
