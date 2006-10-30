@@ -1,6 +1,27 @@
 Performance analysis for V8-0 branch
 ------------------------------------
 
+Oct 29, 2006: polymorphism on definitions (+ 4%)
+
+Oct 17, 2006: improvement in new field [r9248]
+  (QArith -3%, geometry: -2%)
+
+Oct 5, 2006: fixing wrong unification of Meta below binders
+  (e.g. CatsInZFC: +10%, CoRN: -2.5%, Godel: +4%, 
+   DISTRIBUTED_REFERENCE_COUNTING: +10%, CoLoR: +1%)
+
+Sep 26, 2006: new field [r9178-9181]
+  (QArith: -16%, geometry: -5%, Float: +6%, BDDS:+5% but no ring in it)
+
+  Sep 12, 2006: Rocq/AREA_METHOD extended (~ 530s)
+  Aug 12, 2006: Rocq/AREA_METHOD added (~ 480s)
+  May 30, 2006: Nancy/CoLoR added (~ 319s)
+
+May 17, 2006: changes in List.v (DISTRIBUTED_REFERENCE_COUNTING: -)
+
+May 5, 2006: improvement in closure (array instead of lists)
+  (e.g. CatsInZFC: -10%, CoRN: -3%, 
+
   Dec 29, 2005: new test and use of -vm in Stalmarck
 
   Dec 27, 2005: contrib Karatsuba added (~ 30s)
