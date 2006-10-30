@@ -374,8 +374,8 @@ Module MoreInt (I:Int).
 
   Ltac omega_max_genspec x y := 
     generalize (max_spec x y); 
-      let z := fresh "z" in let Hz := fresh "Hz" in 
-	(set (z:=Zmax x y); clearbody z).
+    (let z := fresh "z" in let Hz := fresh "Hz" in 
+     set (z:=Zmax x y); clearbody z).
 
   Ltac omega_max_loop := 
     match goal with 

@@ -1,6 +1,11 @@
 Changes from V8.1beta to V8.1beta2
 ==================================
 
+Syntax
+
+- changed parsing precedence of let/in and fun constructions of Ltac:
+  let x := t in e1; e2 is now parsed as let x := t in (e1;e2).
+
 Language and commands
 
 - Added sort-polymorphism for definitions in Type.

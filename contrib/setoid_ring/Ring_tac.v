@@ -28,7 +28,7 @@ Ltac OnMainSubgoal H ty :=
   match ty with
   | _ -> ?ty' =>
      let subtac := OnMainSubgoal H ty' in
-     (fun tac => (lapply H; [clear H; intro H; subtac tac | idtac]))
+     fun tac => lapply H; [clear H; intro H; subtac tac | idtac]
   | _ => (fun tac => tac)
   end.
 
@@ -59,7 +59,7 @@ Ltac ReflexiveRewriteTactic FV_tac SYN_tac SIMPL_tac lemma2 req rl :=
    list_iter
      ltac:(fun r =>
        let ast := SYN_tac r fv in
-       (try ApplyLemmaAndSimpl SIMPL_tac (lemma2 fv) ast))
+       try ApplyLemmaAndSimpl SIMPL_tac (lemma2 fv) ast)
      rl).
 
 (********************************************************)
@@ -117,18 +117,18 @@ Ltac FV Cst add mul sub opp t fv :=
       req (PEeval ?rO ?add ?mul ?sub ?opp ?phi l pe1) _ =>
         let mkFV := FV Cst_tac add mul sub opp in
         let mkPol := mkPolexpr C Cst_tac add mul sub opp in
-        (fun f => f R mkFV mkPol)
+        fun f => f R mkFV mkPol
     | _ => fail 1 "ring anomaly: bad correctness lemma"
     end in
   let Main r1 r2 R mkFV mkPol :=
     let fv := mkFV r1 (@List.nil R) in
     let fv := mkFV r2 fv in
-    (check_fv fv;
-     let pe1 := mkPol r1 fv in
+    check_fv fv;
+    (let pe1 := mkPol r1 fv in
      let pe2 := mkPol r2 fv in
-     (apply (lemma1 fv pe1 pe2) || fail "typing error while applying ring");
+     apply (lemma1 fv pe1 pe2) || fail "typing error while applying ring";
      vm_compute;
-     (exact (refl_equal true) || fail "not a valid ring equation")) in
+     exact (refl_equal true) || fail "not a valid ring equation") in
   Make_tac ltac:(OnEquation req Main).
 
 Ltac Ring_simplify Cst_tac lemma2 req rl :=
@@ -149,12 +149,12 @@ Ltac Ring_simplify Cst_tac lemma2 req rl :=
 Tactic Notation (at level 0) "ring" :=
   ring_lookup
     (fun req sth ext morph arth cst_tac lemma1 lemma2 pre post rl =>
-       (pre(); Ring cst_tac lemma1 req)).
+       pre(); Ring cst_tac lemma1 req).
 
 Tactic Notation (at level 0) "ring_simplify" constr_list(rl) :=
   ring_lookup
     (fun req sth ext morph arth cst_tac lemma1 lemma2 pre post rl =>
-       (pre(); Ring_simplify cst_tac lemma2 req rl; post())) rl.
+       pre(); Ring_simplify cst_tac lemma2 req rl; post()) rl.
 
 (* A simple macro tactic to be prefered to ring_simplify *)
 Ltac ring_replace t1 t2 := replace t1 with t2 by ring.

@@ -789,14 +789,13 @@ Ltac reg :=
             try (change (continuity_pt aux X2) in |- *; is_cont_pt) || is_cont_pt)
     |  |- (derive_pt ?X1 ?X2 ?X3 = ?X4) =>
       let trm := eval cbv beta in (X1 AppVar) in
-        let aux := rew_term trm in
-          (intro_hyp_pt aux X2;
-            let aux2 := deriv_proof aux X2 in
-              (try
-                (replace (derive_pt X1 X2 X3) with (derive_pt aux X2 aux2);
-                  [ simplify_derive aux X2;
-                    try
-                      unfold plus_fct, minus_fct, mult_fct, div_fct, id, fct_cte,
-                        inv_fct, opp_fct in |- *; (ring || ring_simplify)
-                    | try apply pr_nu ]) || is_diff_pt))
+      let aux := rew_term trm in
+      intro_hyp_pt aux X2;
+      (let aux2 := deriv_proof aux X2 in
+       try
+         (replace (derive_pt X1 X2 X3) with (derive_pt aux X2 aux2);
+           [ simplify_derive aux X2;
+             try unfold plus_fct, minus_fct, mult_fct, div_fct, id, fct_cte,
+                        inv_fct, opp_fct in |- *; ring || ring_simplify
+           | try apply pr_nu ]) || is_diff_pt)
   end.

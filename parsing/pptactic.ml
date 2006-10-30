@@ -521,11 +521,11 @@ let rec pr_tacarg_using_rule pr_gen = function
 let pr_then () = str ";"
 
 let ltop = (5,E)
-let lseq = 5
+let lseq = 4
 let ltactical = 3
 let lorelse = 2
-let llet = 1
-let lfun = 1
+let llet = 5
+let lfun = 5
 let lcomplete = 1
 let labstract = 3
 let lmatch = 1
@@ -533,6 +533,7 @@ let latom = 0
 let lcall = 1
 let leval = 1
 let ltatom = 1
+let linfo = 5
 
 let level_of (n,p) = match p with E -> n | L -> n-1 | Prec n -> n | Any -> lseq
 
@@ -875,7 +876,7 @@ let rec pr_tac inherited tac =
       ltactical
   | TacInfo t ->
       hov 1 (str "info" ++ spc () ++ pr_tac (ltactical,E) t),
-      ltactical
+      linfo
   | TacOrelse (t1,t2) ->
       hov 1 (pr_tac (lorelse,L) t1 ++ str " ||" ++ brk (1,1) ++
              pr_tac (lorelse,E) t2),

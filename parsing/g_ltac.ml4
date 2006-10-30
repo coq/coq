@@ -46,20 +46,26 @@ GEXTEND Gram
   GLOBAL: tactic Vernac_.command tactic_expr tactic_arg constr_may_eval;
 
   tactic_expr:
-    [ "5" LEFTA
+    [ "5" RIGHTA
+      [ "fun"; it = LIST1 input_fun ; "=>"; body = tactic_expr ->
+          TacFun (it,body)
+      | "let"; IDENT "rec"; rcl = LIST1 rec_clause SEP "with"; "in";
+          body = tactic_expr -> TacLetRecIn (rcl,body)
+      | "let"; llc = LIST1 let_clause SEP "with"; "in";
+          u = tactic_expr -> TacLetIn (make_letin_clause loc llc,u)
+      | IDENT "info"; tc = tactic_expr -> TacInfo tc ]
+      
+    | "4" LEFTA
       [ ta0 = tactic_expr; ";"; ta1 = tactic_expr -> TacThen (ta0, ta1)
       | ta = tactic_expr; ";"; 
 	"["; lta = LIST0 OPT tactic_expr SEP "|"; "]" ->
 	  let lta = List.map (function None -> TacId [] | Some t -> t) lta in 
 	  TacThens (ta, lta) ]
-    | "4"
-      [ ]
     | "3" RIGHTA
       [ IDENT "try"; ta = tactic_expr -> TacTry ta
       | IDENT "do"; n = int_or_var; ta = tactic_expr -> TacDo (n,ta)
       | IDENT "repeat"; ta = tactic_expr -> TacRepeat ta
       | IDENT "progress"; ta = tactic_expr -> TacProgress ta
-      | IDENT "info"; tc = tactic_expr -> TacInfo tc
 (*To do: put Abstract in Refiner*)
       | IDENT "abstract"; tc = NEXT -> TacAbstract (tc,None)
       | IDENT "abstract"; tc = NEXT; "using";  s = ident ->
@@ -68,13 +74,7 @@ GEXTEND Gram
     | "2" RIGHTA
       [ ta0 = tactic_expr; "||"; ta1 = tactic_expr -> TacOrelse (ta0,ta1) ]
     | "1" RIGHTA
-      [ "fun"; it = LIST1 input_fun ; "=>"; body = tactic_expr ->
-          TacFun (it,body)
-      | "let"; IDENT "rec"; rcl = LIST1 rec_clause SEP "with"; "in";
-          body = tactic_expr -> TacLetRecIn (rcl,body)
-      | "let"; llc = LIST1 let_clause SEP "with"; "in";
-          u = tactic_expr -> TacLetIn (make_letin_clause loc llc,u)
-      | b = match_key; IDENT "goal"; "with"; mrl = match_context_list; "end" ->
+      [ b = match_key; IDENT "goal"; "with"; mrl = match_context_list; "end" ->
           TacMatchContext (b,false,mrl)
       | b = match_key; IDENT "reverse"; IDENT "goal"; "with";
         mrl = match_context_list; "end" ->

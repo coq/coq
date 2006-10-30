@@ -184,15 +184,15 @@ Ltac multiply mul :=
   match goal with
   |  |- (interp_ExprA ?FT ?X2 ?X3 = interp_ExprA ?FT ?X2 ?X4) =>
       let AzeroT := get_component Azero FT in
-      (cut (interp_ExprA FT X2 mul <> AzeroT);
-        [ intro; let id := grep_mult in apply (mult_eq FT X3 X4 mul X2 id)
-        | weak_reduce;
-           let AoneT := get_component Aone ltac:(body_of FT)
+      cut (interp_ExprA FT X2 mul <> AzeroT);
+       [ intro; (let id := grep_mult in apply (mult_eq FT X3 X4 mul X2 id))
+       | weak_reduce;
+          (let AoneT := get_component Aone ltac:(body_of FT)
            with AmultT := get_component Amult ltac:(body_of FT) in
-           (try
+           try
              match goal with
              |  |- context [(AmultT _ AoneT)] => rewrite (AmultT_1r FT)
-             end; clear FT X2) ])
+             end; clear FT X2) ]
   end.
 
 Ltac apply_multiply FT lvar trm :=
@@ -279,7 +279,7 @@ Ltac field_gen_aux FT :=
       let lvar := build_varlist FT (AplusT X1 X2) in
       let trm1 := interp_A FT lvar X1 with trm2 := interp_A FT lvar X2 in
       let mul := give_mult (EAplus trm1 trm2) in
-      (cut
+      cut
         (let ft := FT in
          let vm := lvar in interp_ExprA ft vm trm1 = interp_ExprA ft vm trm2);
         [ compute in |- *; auto
@@ -287,10 +287,10 @@ Ltac field_gen_aux FT :=
            apply_simplif apply_assoc; multiply mul;
            [ apply_simplif apply_multiply;
               apply_simplif ltac:(apply_inverse mul);
-              let id := grep_mult in
-              clear id; weak_reduce; clear ft vm; first
-              [ inverse_test FT; legacy ring | field_gen_aux FT ]
-           | idtac ] ])
+              (let id := grep_mult in
+               clear id; weak_reduce; clear ft vm; first
+              [ inverse_test FT; legacy ring | field_gen_aux FT ])
+           | idtac ] ]
   end.
 
 Ltac field_gen FT :=
