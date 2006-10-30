@@ -16,7 +16,6 @@ open Sign
 open Declarations
 open Environ
 open Reduction
-open Term_typing
 
 (*s Cooking the constants. *)
 
