@@ -135,6 +135,8 @@ let actualize_decl_level env lev t =
   let sign,s = dest_arity env t in
   mkArity (sign,lev)
 
+let polymorphism_on_non_applied_parameters = false
+
 (* Bind expected levels of parameters to actual levels *)
 (* Propagate the new levels in the signature *)
 let rec make_subst env = function
@@ -154,15 +156,18 @@ let rec make_subst env = function
       let s = sort_as_univ (snd (dest_arity env a)) in
       let ctx,subst = make_subst env (sign, exp, args) in
       d::ctx, cons_subst u s subst
-  | (na,None,t)::sign, Some u::exp, [] ->
+  | (na,None,t as d)::sign, Some u::exp, [] ->
       (* No more argument here: we instantiate the type with a fresh level *)
       (* which is first propagated to the corresponding premise in the arity *)
       (* (actualize_decl_level), then to the conclusion of the arity (via *)
       (* the substitution) *)
-      let s = fresh_local_univ () in
-      let t = actualize_decl_level env (Type s) t in
       let ctx,subst = make_subst env (sign, exp, []) in
-      (na,None,t)::ctx, cons_subst u s subst
+      if polymorphism_on_non_applied_parameters then
+	let s = fresh_local_univ () in
+	let t = actualize_decl_level env (Type s) t in
+	(na,None,t)::ctx, cons_subst u s subst
+      else
+	d::ctx, subst
   | sign, [], _ ->
       (* Uniform parameters are exhausted *)
       sign,[]
