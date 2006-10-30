@@ -11,6 +11,9 @@
 Require Export Raxioms.
 Require Export LegacyField.
 Import LegacyRing_theory.
+
+Section LegacyRfield.
+
 Open Scope R_scope.
 
 Lemma RLegacyTheory : Ring_Theory Rplus Rmult 1 0 Ropp (fun x y:R => false).
@@ -30,6 +33,8 @@ Lemma RLegacyTheory : Ring_Theory Rplus Rmult 1 0 Ropp (fun x y:R => false).
   intros; contradiction.
 Defined.
 
+End LegacyRfield.
+
 Add Legacy Field
-R Rplus Rmult 1 0 Ropp (fun x y:R => false) Rinv RLegacyTheory Rinv_l
+R Rplus Rmult 1%R 0%R Ropp (fun x y:R => false) Rinv RLegacyTheory Rinv_l
   with minus := Rminus div := Rdiv.
