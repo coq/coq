@@ -71,7 +71,7 @@ let declare_definition prg =
     Subtac_utils.definition_message prg.prg_name
     
 open Evd
-
+      
 let add_entry n b t obls =
   Options.if_verbose pp (str (string_of_id n) ++ str " has type-checked");
   let try_tactics e = 
@@ -103,26 +103,11 @@ let add_entry n b t obls =
 	      declare_definition prg
 	    else
 	      from_prg := ProgMap.add n prg !from_prg
-		
-(*		
-let (theory_to_obj, obj_to_theory) = 
-  let cache_th (name,th) = add_entry name th
-  and export_th x = Some x in
-  declare_object
-    {(default_object "program-tcc") with
-      open_function = (fun i o -> if i=1 then cache_th o);
-      cache_function = cache_th;
-      subst_function = (fun _ -> assert(false));
-      classify_function = (fun (_,x) -> Dispose);
-      export_function = export_th }
-*)
 
 let error s = Util.error s
 
-let subtac_obligation (user_num, name) =
-  let num = pred user_num in
+let get_prog name =
   let prg_infos = !from_prg in
-  let prg = 
     match name with
 	Some n -> ProgMap.find n prg_infos
       | None -> 
@@ -131,7 +116,20 @@ let subtac_obligation (user_num, name) =
 		 0 -> error "No obligations remaining"
 	       | 1 -> map_first prg_infos
 	       | _ -> error "More than one program with unsolved obligations")
-  in
+
+let update_obls prg obls rem = 
+  let prg' = { prg with prg_obligations = (obls, rem) } in
+    if rem > 1 then (
+      debug 2 (int rem ++ str " obligations remaining");
+      from_prg := map_replace prg.prg_name prg' !from_prg)
+    else (
+      declare_definition prg';
+      from_prg := ProgMap.remove prg.prg_name !from_prg
+    )		 
+	    
+let subtac_obligation (user_num, name) =
+  let num = pred user_num in
+  let prg = get_prog name in
   let obls, rem = prg.prg_obligations in
     if num < Array.length obls then
       let obl = obls.(num) in
@@ -143,14 +141,7 @@ let subtac_obligation (user_num, name) =
 		   let obl = { obl with obl_body = Some (Libnames.constr_of_global gr) } in
 		   let obls = Array.copy obls in
 		   let _ = obls.(num) <- obl in
-		   let prg' = { prg with prg_obligations = (obls, pred rem) } in
-		     if rem > 1 then (
-		       debug 2 (int rem ++ str " obligations remaining");
-		       from_prg := map_replace prg.prg_name prg' !from_prg)
-		     else (
-		       declare_definition prg';
-		       from_prg := ProgMap.remove prg.prg_name !from_prg
-		     ));
+		     update_obls prg obls (pred rem));
 	      trace (str "Started obligation " ++ int user_num ++ str "  proof")
 	  | Some r -> error "Obligation already solved"
     else error (sprintf "Unknown obligation number %i" (succ num))
@@ -166,3 +157,41 @@ let obligations_of_evars evars =
 	      obl_body = None;
 	    }) evars)
   in arr, Array.length arr
+
+let evar_of_obligation o = { evar_hyps = Environ.empty_named_context_val ; 
+			     evar_concl = o.obl_type ; 
+			     evar_body = Evar_empty ;
+			     evar_extra = None }
+
+
+
+let solve_obligations n tac = 
+  let prg = get_prog n in
+  let obls, rem = prg.prg_obligations in
+  let rem = ref rem in
+  let obls' = 
+    Array.map (fun x -> 
+		 match x.obl_body with 
+		     Some _ -> x
+		   | None -> 
+		       try
+			 let t = Subtac_utils.solve_by_tac (evar_of_obligation x) tac in
+			   decr rem;
+			   { x with obl_body = Some t }
+		       with _ -> x)
+      obls
+  in
+    update_obls prg obls' !rem
+
+open Pp
+let show_obligations n =
+  let prg = get_prog n in
+  let obls, rem = prg.prg_obligations in
+    msgnl (int rem ++ str " obligation(s) remaining: ");
+    Array.iteri (fun i x -> 
+		   match x.obl_body with 
+		       None -> msgnl (int i ++ str " : " ++ spc () ++ 
+					my_print_constr (Global.env ()) x.obl_type)
+		    | Some _ -> ())
+      obls
+			

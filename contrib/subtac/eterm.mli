@@ -12,12 +12,13 @@ open Tacmach
 open Term
 open Evd
 open Names
+open Util
 
 val mkMetas : int -> constr list
 
-val eterm_term : evar_map -> constr -> types option -> constr * types option * (identifier * types) list
+(* val eterm_term : evar_map -> constr -> types option -> constr * types option * (identifier * types) list *)
 
 val eterm_obligations : identifier -> int -> evar_map -> constr -> types option -> 
-  (constr list -> constr) * (identifier * types) list
+  (identifier * types * Intset.t) array * constr (* Obl. name, type as product and dependencies as indexes into the array *)
 
 val etermtac : open_constr -> tactic

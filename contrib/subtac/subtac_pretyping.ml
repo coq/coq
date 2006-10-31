@@ -158,6 +158,6 @@ let subtac_proof env isevars id l c tycon =
   let nc = named_context env in
   let nc_len = named_context_length nc in
   let evm, coqc, coqt = subtac_process env isevars id l c tycon in
-  let evars_def, evars = Eterm.eterm_obligations id nc_len evm coqc (Some coqt) in
+  let evars, def = Eterm.eterm_obligations id nc_len evm coqc (Some coqt) in
     trace (str "Adding to obligations list");
-    add_entry id evars_def coqt evars
+    add_entry id def coqt evars

@@ -304,16 +304,16 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
   in
   let evm = non_instanciated_map env isevars in
   let _ = try trace (str "Non instanciated evars map: " ++ Evd.pr_evar_map evm)  with _ -> () in
-  let evars_def, evars = Eterm.eterm_obligations recname nc_len evm fullcoqc (Some fullctyp) in
+  let evars, evars_def = Eterm.eterm_obligations recname nc_len evm fullcoqc (Some fullctyp) in
     (try trace (str "Generated obligations : ");
-       List.iter
-	 (fun (n, t) -> trace (str "Evar " ++ str (string_of_id n) ++ spc () ++ my_print_constr env t))
+       Array.iter
+	 (fun (n, t, _) -> trace (str "Evar " ++ str (string_of_id n) ++ spc () ++ my_print_constr env t))
 	 evars;
      with _ -> ());    
       trace (str "Adding to obligations list");
       Subtac_obligations.add_entry recname evars_def fullctyp evars;
       trace (str "Added to obligations list")
-
+(*
 let build_mutrec l boxed = 
   let sigma = Evd.empty
   and env0 = Global.env()
@@ -524,7 +524,7 @@ let build_mutrec l boxed =
 		 Environ.NoBody -> trace (str "Constant has no body")
 	       | Environ.Opaque -> trace (str "Constant is opaque")
       )
-
+*)
 let out_n = function
     Some n -> n
   | None -> 0
@@ -544,8 +544,8 @@ let build_recursive (lnameargsardef:(fixpoint_expr * decl_notation) list) boxed 
 		       errorlabstrm "Subtac_command.build_recursive"
 			 (str "Well-founded fixpoints not allowed in mutually recursive blocks"))
 	    lnameargsardef
-	in
-	  build_mutrec lnameargsardef boxed
+	in assert(false)
+	     (*build_mutrec lnameargsardef boxed*)
 	  
       
       
