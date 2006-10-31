@@ -447,3 +447,8 @@ let solve_by_tac ev t =
   let c = Tacmach.extract_pftreestate solved_state in
     debug 1 (str "Term constructed in solve by tac: " ++ my_print_constr (Global.env ()) c);
     c
+
+let rec string_of_list sep f = function
+    [] -> ""
+  | x :: [] -> f x
+  | x :: ((y :: _) as tl) -> f x ^ sep ^ string_of_list sep f tl

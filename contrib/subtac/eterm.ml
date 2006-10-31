@@ -125,12 +125,12 @@ let trunc_named_context n ctx =
 let eterm_obligations name nclen evm t tycon = 
   (* 'Serialize' the evars, we assume that the types of the existentials
      refer to previous existentials in the list only *)
-  let evl = to_list evm in
+  let evl = List.rev (to_list evm) in
   trace (str "Eterm, transformed to list");
   let evn = 
     let i = ref (-1) in
-      List.map (fun (id, ev) -> incr i; 
-		  (id, (!i, id_of_string (string_of_id name ^ "_obligation_" ^ string_of_int !i)), ev)) evl
+      List.rev_map (fun (id, ev) -> incr i; 
+		  (id, (!i, id_of_string (string_of_id name ^ "_obligation_" ^ string_of_int (succ !i))), ev)) evl
   in
   let evts = 
     (* Remove existential variables in types and build the corresponding products *)
@@ -163,7 +163,7 @@ let eterm_obligations name nclen evm t tycon =
 			    Termops.print_constr_env (Global.env ()) typ))
 		evars);
      with _ -> ());
-    Array.of_list evars, t'
+    Array.of_list (List.rev evars), t'
 
 let mkMetas n = 
   let rec aux i acc = 

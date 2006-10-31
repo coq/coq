@@ -96,3 +96,5 @@ val definition_message : identifier -> unit
 val recursive_message : global_reference array -> std_ppcmds
 
 val solve_by_tac : evar_info -> Tacmach.tactic -> constr
+
+val string_of_list : string -> ('a -> string) -> 'a list -> string

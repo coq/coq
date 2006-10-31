@@ -10,10 +10,11 @@ open Libobject
 open Entries
 open Decl_kinds
 open Util
+open Evd
 
 type obligation =
     { obl_name : identifier;
-      obl_type  : types;
+      obl_type : types;
       obl_body : constr option;
       obl_deps : Intset.t;
     }
@@ -26,6 +27,11 @@ type program_info = {
   prg_type: types;
   prg_obligations: obligations;
 }
+
+let evar_of_obligation o = { evar_hyps = Environ.empty_named_context_val ; 
+			     evar_concl = o.obl_type ; 
+			     evar_body = Evar_empty ;
+			     evar_extra = None }
 
 module ProgMap = Map.Make(struct type t = identifier let compare = compare end)
 
@@ -57,9 +63,9 @@ let _ =
       Summary.survive_section = false }
 
 let declare_definition prg = 
-  let obls_constrs = 
-    Array.fold_right (fun x acc -> (out_some x.obl_body) :: acc) (fst prg.prg_obligations) []
-  in
+(*  let obls_constrs = 
+    Array.fold_right (fun x acc -> (out_some x.obl_evar.evar_body) :: acc) (fst prg.prg_obligations) []
+  in*)
   let ce = 
     { const_entry_body = prg.prg_body;
       const_entry_type = Some prg.prg_type;
@@ -72,21 +78,47 @@ let declare_definition prg =
     Subtac_utils.definition_message prg.prg_name
     
 open Evd
+
+let terms_of_evar ev = 
+  match ev.evar_body with
+      Evar_defined b ->
+	let nc = Environ.named_context_of_val ev.evar_hyps in
+	let body = Termops.it_mkNamedLambda_or_LetIn b nc in
+	let typ = Termops.it_mkNamedProd_or_LetIn ev.evar_concl nc in
+	  body, typ
+    | _ -> assert(false)
+	  
+let declare_obligation obl body =
+  let ce = 
+    { const_entry_body = body;
+      const_entry_type = Some obl.obl_type;
+      const_entry_opaque = true;
+      const_entry_boxed = false} 
+  in
+  let constant = Declare.declare_constant obl.obl_name (DefinitionEntry ce,IsProof Property)
+  in
+    Subtac_utils.definition_message obl.obl_name;
+    { obl with obl_body = Some (mkConst constant) }
       
+let try_tactics obls = 
+  Array.map
+    (fun obl ->
+       match obl.obl_body with
+	   None ->
+	     (try
+		let ev = evar_of_obligation obl in
+		let c = Subtac_utils.solve_by_tac ev Auto.default_full_auto in	       
+		  declare_obligation obl c		  
+	      with _ -> obl)
+	 | _ -> obl)
+    obls
+        
 let add_entry n b t obls =
   Options.if_verbose pp (str (string_of_id n) ++ str " has type-checked");
-  let try_tactics e = 
+  let init_obls e = 
     Array.map
       (fun (n, t, d) ->
-	 let ev = { evar_concl = t ; evar_body = Evar_empty ; 
-		    evar_hyps = Environ.empty_named_context_val ; evar_extra = None } 
-	 in 
-	 let cstr = 
-	   try
-	     let c = Subtac_utils.solve_by_tac ev Auto.default_full_auto in	       
-	       Some c
-	   with _ -> None
-	 in { obl_name = n ; obl_type = t; obl_body = cstr; obl_deps = d })
+         { obl_name = n ; obl_body = None; obl_type = t; obl_deps = d })
       e
   in
     if Array.length obls = 0 then (
@@ -95,7 +127,7 @@ let add_entry n b t obls =
     else (
       let len = Array.length obls in
       let _ = Options.if_verbose ppnl (str ", generating " ++ int len ++ str " obligation(s)") in
-      let obls = try_tactics obls in
+      let obls = init_obls obls in
       let rem = Array.fold_left (fun acc obl -> if obl.obl_body = None then succ acc else acc) 0 obls in
       let prg = { prg_name = n ; prg_body = b ; prg_type = t ; prg_obligations = (obls, rem) } in
 	if rem < len then 
@@ -128,6 +160,26 @@ let update_obls prg obls rem =
       from_prg := ProgMap.remove prg.prg_name !from_prg
     )		 
 	    
+let is_defined obls x = obls.(x).obl_body <> None
+
+let deps_remaining obls x = 
+  let deps = obls.(x).obl_deps in
+    Intset.fold
+      (fun x acc -> 
+	 if is_defined obls x then acc
+	 else x :: acc)
+      deps []
+
+let subst_deps obls obl =
+  let t' = 
+    Intset.fold
+      (fun x acc ->
+	 let xobl = obls.(x) in
+	 let oblb = out_some xobl.obl_body in
+	   Term.subst1 oblb (Term.subst_var xobl.obl_name acc))
+      obl.obl_deps obl.obl_type
+  in { obl with obl_type = t' }
+
 let subtac_obligation (user_num, name) =
   let num = pred user_num in
   let prg = get_prog name in
@@ -136,14 +188,19 @@ let subtac_obligation (user_num, name) =
       let obl = obls.(num) in
 	match obl.obl_body with
 	    None -> 
-	      Command.start_proof obl.obl_name Subtac_utils.goal_proof_kind obl.obl_type
-		(fun strength gr -> 
-		   debug 2 (str "Proof of obligation " ++ int user_num ++ str " finished");		   
-		   let obl = { obl with obl_body = Some (Libnames.constr_of_global gr) } in
-		   let obls = Array.copy obls in
-		   let _ = obls.(num) <- obl in
-		     update_obls prg obls (pred rem));
-	      trace (str "Started obligation " ++ int user_num ++ str "  proof")
+	      (match deps_remaining obls num with
+		  [] ->
+		    let obl = subst_deps obls obl in
+		    Command.start_proof obl.obl_name Subtac_utils.goal_proof_kind obl.obl_type
+		      (fun strength gr -> 
+			 debug 2 (str "Proof of obligation " ++ int user_num ++ str " finished");		   
+			 let obl = { obl with obl_body = Some (Libnames.constr_of_global gr) } in
+			 let obls = Array.copy obls in
+			 let _ = obls.(num) <- obl in
+			   update_obls prg obls (pred rem));
+		    trace (str "Started obligation " ++ int user_num ++ str "  proof")
+     		 | l -> msgnl (str "Obligation " ++ int user_num ++ str " depends on obligation(s) "
+		     ++ str (string_of_list ", " (fun x -> string_of_int (succ x)) l)))
 	  | Some r -> error "Obligation already solved"
     else error (sprintf "Unknown obligation number %i" (succ num))
       
@@ -159,13 +216,6 @@ let obligations_of_evars evars =
 	      obl_deps = Intset.empty;
 	    }) evars)
   in arr, Array.length arr
-
-let evar_of_obligation o = { evar_hyps = Environ.empty_named_context_val ; 
-			     evar_concl = o.obl_type ; 
-			     evar_body = Evar_empty ;
-			     evar_extra = None }
-
-
 
 let solve_obligations n tac = 
   let prg = get_prog n in
@@ -192,7 +242,7 @@ let show_obligations n =
     msgnl (int rem ++ str " obligation(s) remaining: ");
     Array.iteri (fun i x -> 
 		   match x.obl_body with 
-		       None -> msgnl (int i ++ str " : " ++ spc () ++ 
+		       None -> msgnl (int (succ i) ++ str " : " ++ spc () ++ 
 					my_print_constr (Global.env ()) x.obl_type)
 		    | Some _ -> ())
       obls
