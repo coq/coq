@@ -271,9 +271,7 @@ let find_relation_class rel =
    match kind_of_term rel with
     | App (eq,[|ty|]) when eq_constr eq (Lazy.force coq_eq) -> Leibniz (Some ty)
     | _ when eq_constr rel (Lazy.force coq_eq) -> Leibniz None
-    | _ -> errorlabstrm 
-	"Setoid_replace.find_relation_class"  
-	  (pr_lconstr rel ++ spc() ++ str "is not a registered relation.")
+    | _ -> raise Not_found
 
 let coq_iff_relation = lazy (find_relation_class (Lazy.force coq_iff))
 let coq_impl_relation = lazy (find_relation_class (Lazy.force coq_impl))
@@ -807,135 +805,140 @@ let new_morphism m signature id hook =
   let typeofm = Typing.type_of env Evd.empty m in
   let typ = clos_norm_flags Closure.betaiotazeta empty_env Evd.empty typeofm in
   let argsrev, output =
-   match signature with
-      None -> decompose_prod typ
-    | Some (_,output') ->
-       (* the carrier of the relation output' can be a Prod ==>
-          we must uncurry on the fly output.
-          E.g: A -> B -> C vs        A -> (B -> C)
-                args   output     args     output
-       *)
-       let rel = find_relation_class output' in
-       let rel_a,rel_quantifiers_no =
-        match rel with
-           Relation rel -> rel.rel_a, rel.rel_quantifiers_no
-         | Leibniz (Some t) -> t, 0
-         | Leibniz None -> assert false in
-       let rel_a_n =
-        clos_norm_flags Closure.betaiotazeta empty_env Evd.empty rel_a in
-       try
-        let _,output_rel_a_n = decompose_lam_n rel_quantifiers_no rel_a_n in
-        let argsrev,_ = decompose_prod output_rel_a_n in
-        let n = List.length argsrev in
-        let argsrev',_ = decompose_prod typ in
-        let m = List.length argsrev' in
-         decompose_prod_n (m - n) typ
-       with UserError(_,_) ->
-        (* decompose_lam_n failed. This may happen when rel_a is an axiom,
-           a constructor, an inductive type, etc. *)
-        decompose_prod typ
+    match signature with
+	None -> decompose_prod typ
+      | Some (_,output') ->
+	  (* the carrier of the relation output' can be a Prod ==>
+             we must uncurry on the fly output.
+             E.g: A -> B -> C vs        A -> (B -> C)
+             args   output     args     output
+	  *)
+	  let rel = 
+	    try find_relation_class output' 
+	    with Not_found -> errorlabstrm "Add Morphism"
+	      (str "Not a valid signature: " ++ pr_lconstr output' ++
+		  str " is neither a registered relation nor the Leibniz " ++
+		  str " equality.") in
+	  let rel_a,rel_quantifiers_no =
+            match rel with
+		Relation rel -> rel.rel_a, rel.rel_quantifiers_no
+              | Leibniz (Some t) -> t, 0
+              | Leibniz None -> assert false in
+	  let rel_a_n =
+            clos_norm_flags Closure.betaiotazeta empty_env Evd.empty rel_a in
+	    try
+              let _,output_rel_a_n = decompose_lam_n rel_quantifiers_no rel_a_n in
+              let argsrev,_ = decompose_prod output_rel_a_n in
+              let n = List.length argsrev in
+              let argsrev',_ = decompose_prod typ in
+              let m = List.length argsrev' in
+		decompose_prod_n (m - n) typ
+	    with UserError(_,_) ->
+              (* decompose_lam_n failed. This may happen when rel_a is an axiom,
+		 a constructor, an inductive type, etc. *)
+              decompose_prod typ
   in
   let args_ty = List.rev argsrev in
   let args_ty_len = List.length (args_ty) in
   let args_ty_quantifiers_rev,args,args_instance,output,output_instance =
-   match signature with
-      None ->
-       if args_ty = [] then
-        errorlabstrm "New Morphism"
-         (str "The term " ++ pr_lconstr m ++ str " has type " ++
-          pr_lconstr typeofm ++ str " that is not a product.") ;
-       ignore (check_is_dependent 0 args_ty output) ;
-       let args =
-        List.map
-         (fun (_,ty) -> None,default_relation_for_carrier ty) args_ty in
-       let output = default_relation_for_carrier output in
-        [],args,args,output,output
-    | Some (args,output') ->
-       assert (args <> []);
-       let number_of_arguments = List.length args in
-       let number_of_quantifiers = args_ty_len - number_of_arguments in
-       if number_of_quantifiers < 0 then
-        errorlabstrm "New Morphism"
-         (str "The morphism " ++ pr_lconstr m ++ str " has type " ++
-          pr_lconstr typeofm ++ str " that attends at most " ++ int args_ty_len ++
-          str " arguments. The signature that you specified requires " ++
-          int number_of_arguments ++ str " arguments.")
-       else
-        begin
-         (* the real_args_ty returned are already delifted *)
-         let args_ty_quantifiers_rev, real_args_ty, real_output =
-          check_is_dependent number_of_quantifiers args_ty output in
-         let quantifiers_rel_context =
-          List.map (fun (n,t) -> n,None,t) args_ty_quantifiers_rev in
-         let env = push_rel_context quantifiers_rel_context env in
-         let find_relation_class t real_t =
-          try
-           let rel = find_relation_class t in
-            rel, unify_relation_class_carrier_with_type env rel real_t
-          with Not_found ->
-           errorlabstrm "Add Morphism"
-            (str "Not a valid signature: " ++ pr_lconstr t ++
-             str " is neither a registered relation nor the Leibniz " ++
-             str " equality.")
-         in
-         let find_relation_class_v (variance,t) real_t =
-          let relation,relation_instance = find_relation_class t real_t in
-           match relation, variance with
-              Leibniz _, None
-            | Relation {rel_sym = Some _}, None
-            | Relation {rel_sym = None}, Some _ ->
-               (variance, relation), (variance, relation_instance)
-            | Relation {rel_sym = None},None ->
-               errorlabstrm "Add Morphism"
-                (str "You must specify the variance in each argument " ++
-                 str "whose relation is asymmetric.")
-            | Leibniz _, Some _
-            | Relation {rel_sym = Some _}, Some _ ->
-               errorlabstrm "Add Morphism"
-                (str "You cannot specify the variance of an argument " ++
-                 str "whose relation is symmetric.")
-         in
-          let args, args_instance =
-           List.split
-            (List.map2 find_relation_class_v args real_args_ty) in
-          let output,output_instance= find_relation_class output' real_output in
-           args_ty_quantifiers_rev, args, args_instance, output, output_instance
-        end
+    match signature with
+	None ->
+	  if args_ty = [] then
+            errorlabstrm "New Morphism"
+              (str "The term " ++ pr_lconstr m ++ str " has type " ++
+		  pr_lconstr typeofm ++ str " that is not a product.") ;
+	  ignore (check_is_dependent 0 args_ty output) ;
+	  let args =
+            List.map
+              (fun (_,ty) -> None,default_relation_for_carrier ty) args_ty in
+	  let output = default_relation_for_carrier output in
+            [],args,args,output,output
+      | Some (args,output') ->
+	  assert (args <> []);
+	  let number_of_arguments = List.length args in
+	  let number_of_quantifiers = args_ty_len - number_of_arguments in
+	    if number_of_quantifiers < 0 then
+              errorlabstrm "New Morphism"
+		(str "The morphism " ++ pr_lconstr m ++ str " has type " ++
+		    pr_lconstr typeofm ++ str " that attends at most " ++ int args_ty_len ++
+		    str " arguments. The signature that you specified requires " ++
+		    int number_of_arguments ++ str " arguments.")
+	    else
+              begin
+		(* the real_args_ty returned are already delifted *)
+		let args_ty_quantifiers_rev, real_args_ty, real_output =
+		  check_is_dependent number_of_quantifiers args_ty output in
+		let quantifiers_rel_context =
+		  List.map (fun (n,t) -> n,None,t) args_ty_quantifiers_rev in
+		let env = push_rel_context quantifiers_rel_context env in
+		let find_relation_class t real_t =
+		  try
+		    let rel = find_relation_class t in
+		      rel, unify_relation_class_carrier_with_type env rel real_t
+		  with Not_found ->
+		    errorlabstrm "Add Morphism"
+		      (str "Not a valid signature: " ++ pr_lconstr t ++
+			  str " is neither a registered relation nor the Leibniz " ++
+			  str " equality.")
+		in
+		let find_relation_class_v (variance,t) real_t =
+		  let relation,relation_instance = find_relation_class t real_t in
+		    match relation, variance with
+			Leibniz _, None
+		      | Relation {rel_sym = Some _}, None
+		      | Relation {rel_sym = None}, Some _ ->
+			  (variance, relation), (variance, relation_instance)
+		      | Relation {rel_sym = None},None ->
+			  errorlabstrm "Add Morphism"
+			    (str "You must specify the variance in each argument " ++
+				str "whose relation is asymmetric.")
+		      | Leibniz _, Some _
+		      | Relation {rel_sym = Some _}, Some _ ->
+			  errorlabstrm "Add Morphism"
+			    (str "You cannot specify the variance of an argument " ++
+				str "whose relation is symmetric.")
+		in
+		let args, args_instance =
+		  List.split
+		    (List.map2 find_relation_class_v args real_args_ty) in
+		let output,output_instance= find_relation_class output' real_output in
+		  args_ty_quantifiers_rev, args, args_instance, output, output_instance
+              end
   in
-   let argsconstr,outputconstr,lem =
+  let argsconstr,outputconstr,lem =
     gen_compat_lemma_statement args_ty_quantifiers_rev output_instance
-     args_instance (apply_to_rels m args_ty_quantifiers_rev) in
-   (* "unfold make_compatibility_goal" *)
-   let lem =
+      args_instance (apply_to_rels m args_ty_quantifiers_rev) in
+    (* "unfold make_compatibility_goal" *)
+  let lem =
     Reductionops.clos_norm_flags
-     (Closure.unfold_red (Lazy.force coq_make_compatibility_goal_eval_ref))
-     env Evd.empty lem in
-   (* "unfold make_compatibility_goal_aux" *)
-   let lem =
+      (Closure.unfold_red (Lazy.force coq_make_compatibility_goal_eval_ref))
+      env Evd.empty lem in
+    (* "unfold make_compatibility_goal_aux" *)
+  let lem =
     Reductionops.clos_norm_flags
-     (Closure.unfold_red(Lazy.force coq_make_compatibility_goal_aux_eval_ref))
-     env Evd.empty lem in
-   (* "simpl" *)
-   let lem = Tacred.nf env Evd.empty lem in
+      (Closure.unfold_red(Lazy.force coq_make_compatibility_goal_aux_eval_ref))
+      env Evd.empty lem in
+    (* "simpl" *)
+  let lem = Tacred.nf env Evd.empty lem in
     if Lib.is_modtype () then
-     begin
-      ignore
-       (Declare.declare_internal_constant id
-        (ParameterEntry lem, IsAssumption Logical)) ;
-      let mor_name = morphism_theory_id_of_morphism_proof_id id in
-      let lemma_infos = Some (id,argsconstr,outputconstr) in
-       add_morphism lemma_infos mor_name
-        (m,args_ty_quantifiers_rev,args,output)
-     end
+      begin
+	ignore
+	  (Declare.declare_internal_constant id
+              (ParameterEntry lem, IsAssumption Logical)) ;
+	let mor_name = morphism_theory_id_of_morphism_proof_id id in
+	let lemma_infos = Some (id,argsconstr,outputconstr) in
+	  add_morphism lemma_infos mor_name
+            (m,args_ty_quantifiers_rev,args,output)
+      end
     else
-     begin
-      new_edited id
-       (m,args_ty_quantifiers_rev,args,argsconstr,output,outputconstr);
-      Pfedit.start_proof id (Global, Proof Lemma) 
-       (Declare.clear_proofs (Global.named_context ()))
-       lem hook;
-      Options.if_verbose msg (Printer.pr_open_subgoals ());
-     end
+      begin
+	new_edited id
+	  (m,args_ty_quantifiers_rev,args,argsconstr,output,outputconstr);
+	Pfedit.start_proof id (Global, Proof Lemma) 
+	  (Declare.clear_proofs (Global.named_context ()))
+	  lem hook;
+	Options.if_verbose msg (Printer.pr_open_subgoals ());
+      end
 
 let morphism_hook _ ref =
   let pf_id = id_of_global ref in
