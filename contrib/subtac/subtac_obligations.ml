@@ -15,13 +15,14 @@ type obligation =
     { obl_name : identifier;
       obl_type  : types;
       obl_body : constr option;
+      obl_deps : Intset.t;
     }
 
 type obligations = (obligation array * int)
 
 type program_info = {
   prg_name: identifier;
-  prg_body: constr list -> constr;
+  prg_body: constr;
   prg_type: types;
   prg_obligations: obligations;
 }
@@ -60,7 +61,7 @@ let declare_definition prg =
     Array.fold_right (fun x acc -> (out_some x.obl_body) :: acc) (fst prg.prg_obligations) []
   in
   let ce = 
-    { const_entry_body = prg.prg_body obls_constrs;
+    { const_entry_body = prg.prg_body;
       const_entry_type = Some prg.prg_type;
       const_entry_opaque = false;
       const_entry_boxed = false} 
@@ -75,8 +76,8 @@ open Evd
 let add_entry n b t obls =
   Options.if_verbose pp (str (string_of_id n) ++ str " has type-checked");
   let try_tactics e = 
-    List.fold_left 
-      (fun acc (n, t) ->
+    Array.map
+      (fun (n, t, d) ->
 	 let ev = { evar_concl = t ; evar_body = Evar_empty ; 
 		    evar_hyps = Environ.empty_named_context_val ; evar_extra = None } 
 	 in 
@@ -85,25 +86,25 @@ let add_entry n b t obls =
 	     let c = Subtac_utils.solve_by_tac ev Auto.default_full_auto in	       
 	       Some c
 	   with _ -> None
-	 in { obl_name = n ; obl_type = t; obl_body = cstr } :: acc)
-      [] e
+	 in { obl_name = n ; obl_type = t; obl_body = cstr; obl_deps = d })
+      e
   in
-    match obls with
-	[] -> Options.if_verbose ppnl (str ".");
-	  declare_definition { prg_name = n ; prg_body = b ; prg_type = t ; prg_obligations = ([||], 0) }
-      | l -> 
-	  let len = List.length l in
-	  let _ = Options.if_verbose ppnl (str ", generating " ++ int len ++ str " obligation(s)") in
-	  let obls = try_tactics l in
-	  let rem = List.fold_left (fun acc obl -> if obl.obl_body = None then succ acc else acc) 0 obls in
-	  let prg = { prg_name = n ; prg_body = b ; prg_type = t ; prg_obligations = (Array.of_list obls, rem) } in
-	    if rem < len then 
-	      Options.if_verbose ppnl (int rem ++ str " obligation(s) remaining.");
-	    if rem = 0 then 
-	      declare_definition prg
-	    else
-	      from_prg := ProgMap.add n prg !from_prg
-
+    if Array.length obls = 0 then (
+      Options.if_verbose ppnl (str ".");
+    declare_definition { prg_name = n ; prg_body = b ; prg_type = t ; prg_obligations = ([||], 0) } )
+    else (
+      let len = Array.length obls in
+      let _ = Options.if_verbose ppnl (str ", generating " ++ int len ++ str " obligation(s)") in
+      let obls = try_tactics obls in
+      let rem = Array.fold_left (fun acc obl -> if obl.obl_body = None then succ acc else acc) 0 obls in
+      let prg = { prg_name = n ; prg_body = b ; prg_type = t ; prg_obligations = (obls, rem) } in
+	if rem < len then 
+	  Options.if_verbose ppnl (int rem ++ str " obligation(s) remaining.");
+	if rem = 0 then 
+	  declare_definition prg
+	else
+	  from_prg := ProgMap.add n prg !from_prg)
+	    
 let error s = Util.error s
 
 let get_prog name =
@@ -155,6 +156,7 @@ let obligations_of_evars evars =
 	    { obl_name = n;
 	      obl_type = t;
 	      obl_body = None;
+	      obl_deps = Intset.empty;
 	    }) evars)
   in arr, Array.length arr
 
