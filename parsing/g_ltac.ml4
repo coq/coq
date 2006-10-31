@@ -49,8 +49,8 @@ GEXTEND Gram
     [ "5" RIGHTA
       [ te = binder_tactic -> te ]
     | "4" LEFTA
-      [ ta0 = tactic_expr; ";"; ta1 = tactic_expr -> TacThen (ta0, ta1)
-      | ta0 = tactic_expr; ";"; ta1 = binder_tactic -> TacThen (ta0, ta1)
+      [ ta0 = tactic_expr; ";"; ta1 = binder_tactic -> TacThen (ta0, ta1)
+      | ta0 = tactic_expr; ";"; ta1 = tactic_expr -> TacThen (ta0, ta1)
       | ta = tactic_expr; ";"; 
 	"["; lta = LIST0 OPT tactic_expr SEP "|"; "]" ->
 	  let lta = List.map (function None -> TacId [] | Some t -> t) lta in 
@@ -66,8 +66,8 @@ GEXTEND Gram
           TacAbstract (tc,Some s) ]
 (*End of To do*)
     | "2" RIGHTA
-      [ ta0 = tactic_expr; "||"; ta1 = tactic_expr -> TacOrelse (ta0,ta1)
-      | ta0 = tactic_expr; "||"; ta1 = binder_tactic -> TacOrelse (ta0,ta1) ]
+      [ ta0 = tactic_expr; "||"; ta1 = binder_tactic -> TacOrelse (ta0,ta1)
+      | ta0 = tactic_expr; "||"; ta1 = tactic_expr -> TacOrelse (ta0,ta1) ]
     | "1" RIGHTA
       [ b = match_key; IDENT "goal"; "with"; mrl = match_context_list; "end" ->
           TacMatchContext (b,false,mrl)
