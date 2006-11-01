@@ -1277,7 +1277,7 @@ let relation_class_that_matches_a_constr caller_name new_goals hypt =
     forall x1 x2, rel1 x1 x2 -> rel2 x1 x2
    The Coq part of the tactic, however, needs rel1 == rel2.
    Hence the third case commented out.
-   Note: accepting user-defined subtrelations seems to be the last
+   Note: accepting user-defined subrelations seems to be the last
    useful generalization that does not go against the original spirit of
    the tactic.
 *)
@@ -1356,9 +1356,9 @@ let cartesian_product gl a =
    (aux (List.map (elim_duplicates gl identity) (Array.to_list a)))
 
 let mark_occur gl ~new_goals t in_c input_relation input_direction =
- let rec aux output_relation output_direction in_c =
+ let rec aux output_relation output_directions in_c =
   if eq_constr t in_c then
-   if input_direction = output_direction
+   if List.mem input_direction output_directions
    && subrelation gl input_relation output_relation then
     [ToReplace]
    else []
@@ -1405,33 +1405,32 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
             (fun res (mor,c,al) ->
               let a =
                let arguments = Array.of_list mor.args in
-               let apply_variance_to_direction default_dir =
+               let apply_variance_to_direction =
                 function
-                   None -> default_dir
-                 | Some true -> output_direction
-                 | Some false -> opposite_direction output_direction
+                   None -> [Left2Right;Right2Left]
+                 | Some true -> output_directions
+                 | Some false -> List.map opposite_direction output_directions
                in
                 Util.array_map2
                  (fun a (variance,relation) ->
-                   (aux relation
-                     (apply_variance_to_direction Left2Right variance) a) @
-                   (aux relation
-                     (apply_variance_to_direction Right2Left variance) a)
+                   (aux relation (apply_variance_to_direction variance) a)
                  ) al arguments
               in
                let a' = cartesian_product gl a in
+	       List.flatten (List.map (fun output_direction ->
                 (List.map
                   (function a ->
                     if not (get_mark a) then
                      ToKeep (in_c,output_relation,output_direction)
                     else
-                     MApp (c,ACMorphism mor,a,output_direction)) a') @ res
+                     MApp (c,ACMorphism mor,a,output_direction)) a'))
+		 output_directions) @ res
             ) [] mors_and_cs_and_als in
           (* Then we look for well typed functions *)
           let res_functions =
            (* the tactic works only if the function type is
                made of non-dependent products only. However, here we
-               can cheat a bit by partially istantiating c to match
+               can cheat a bit by partially instantiating c to match
                the requirement when the arguments to be replaced are
                bound by non-dependent products only. *)
             let typeofc = Tacmach.pf_type_of gl c in
@@ -1442,7 +1441,9 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
              function
                 [] ->
                  if a_rev = [] then
-                  [ToKeep (in_c,output_relation,output_direction)]
+		  List.map (fun output_direction ->
+                   ToKeep (in_c,output_relation,output_direction))
+		   output_directions
                  else
                   let a' =
                    cartesian_product gl (Array.of_list (List.rev a_rev))
@@ -1450,7 +1451,9 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
                    List.fold_left
                     (fun res a ->
                       if not (get_mark a) then
-                       (ToKeep (in_c,output_relation,output_direction))::res
+			List.map (fun output_direction ->
+			 (ToKeep (in_c,output_relation,output_direction)))
+			 output_directions @ res
                       else
                        let err =
                         match output_relation with
@@ -1466,7 +1469,9 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
                          let mor =
                           ACFunction{f_args=List.rev f_args_rev;f_output=typ} in
                          let func = beta_expand c c_args_rev in
-                          (MApp (func,mor,a,output_direction))::res
+			 List.map (fun output_direction ->
+                          (MApp (func,mor,a,output_direction)))
+			  output_directions @ res
                     ) [] a'
               | (he::tl) as a->
                  let typnf = Reduction.whd_betadeltaiota env typ in
@@ -1477,8 +1482,7 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
                   | Prod (name,s,t) ->
                      let env' = push_rel (name,None,s) env in
                      let he =
-                      (aux (Leibniz (Some s)) Left2Right he) @
-                      (aux (Leibniz (Some s)) Right2Left he) in
+                      (aux (Leibniz (Some s)) [Left2Right;Right2Left] he) in
                      if he = [] then []
                      else
                       let he0 = List.hd he in
@@ -1524,7 +1528,10 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
 	    then errorlabstrm "Setoid_replace"
               (str "Cannot rewrite in the type of a variable bound " ++
 		  str "in a dependent product.")
-	    else [ToKeep (in_c,output_relation,output_direction)]
+	    else
+	      List.map (fun output_direction ->
+	       ToKeep (in_c,output_relation,output_direction)) 
+	       output_directions
           else 
             let typeofc1 = Tacmach.pf_type_of gl c1 in
               if not (Tacmach.pf_conv_x gl typeofc1 mkProp) then
@@ -1539,7 +1546,7 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
 		      pr_lconstr c1 ++ str " has type " ++ pr_lconstr typeofc1 ++
 		      str " that is not convertible to Prop.")
               else
-		aux output_relation output_direction
+		aux output_relation output_directions
 		  (mkApp ((Lazy.force coq_impl),
 			 [| c1 ; subst1 (mkRel 1 (*dummy*)) c2 |]))
       | _ ->
@@ -1548,15 +1555,17 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
               (str "Trying to replace " ++ pr_lconstr t ++ str " in " ++ pr_lconstr in_c ++
 		  str " that is not an applicative context.")
           else
-            [ToKeep (in_c,output_relation,output_direction)]
+	    List.map (fun output_direction ->
+             ToKeep (in_c,output_relation,output_direction))
+	      output_directions
  in
   let aux2 output_relation output_direction =
    List.map
     (fun res -> output_relation,output_direction,res)
-     (aux output_relation output_direction in_c) in
+     (aux output_relation [output_direction] in_c) in
   let res =
    (aux2 (Lazy.force coq_iff_relation) Right2Left) @
-   (* This is the case of a proposition of signature A ++> iff or B --> iff *)
+   (* [Left2Right] is the case of a prop of signature A ++> iff or B --> iff *)
    (aux2 (Lazy.force coq_iff_relation) Left2Right) @
    (aux2 (Lazy.force coq_impl_relation) Right2Left) in
   let res = elim_duplicates gl (function (_,_,t) -> t) res in
