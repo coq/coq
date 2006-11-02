@@ -107,7 +107,10 @@ let rec interp_entry_name loc s sep =
     let s = if s = "hyp" then "var" else s in
     let t, se, lev =
       match tactic_genarg_level s with
-	| Some n -> Some (ExtraArgType s), <:expr< Tactic. tactic_expr >>, Some n
+        | Some 5 ->
+            Some (ExtraArgType s), <:expr< Tactic. binder_tactic >>, None
+	| Some n ->
+            Some (ExtraArgType s), <:expr< Tactic. tactic_expr >>, Some n
 	| None ->
       match Pcoq.entry_type (Pcoq.get_univ "prim") s with
 	| Some _ as x -> x, <:expr< Prim. $lid:s$ >>, None

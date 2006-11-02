@@ -43,7 +43,8 @@ let tacarg_of_expr = function
 (* Tactics grammar rules *)
 
 GEXTEND Gram
-  GLOBAL: tactic Vernac_.command tactic_expr tactic_arg constr_may_eval;
+  GLOBAL: tactic Vernac_.command tactic_expr binder_tactic tactic_arg
+          constr_may_eval;
 
   tactic_expr:
     [ "5" RIGHTA

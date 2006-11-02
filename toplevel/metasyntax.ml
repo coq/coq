@@ -112,6 +112,8 @@ let print_grammar univ = function
   | "tactic" -> 
       msgnl (str "Entry tactic_expr is");
       Gram.Entry.print Pcoq.Tactic.tactic_expr;
+      msgnl (str "Entry binder_tactic is");
+      Gram.Entry.print Pcoq.Tactic.binder_tactic;
       msgnl (str "Entry simple_tactic is");
       Gram.Entry.print Pcoq.Tactic.simple_tactic;
   | "vernac" -> 

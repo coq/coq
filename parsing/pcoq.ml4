@@ -430,6 +430,7 @@ module Tactic =
     (* Main entries for ltac *)
     let tactic_arg = Gram.Entry.create "tactic:tactic_arg"
     let tactic_expr = Gram.Entry.create "tactic:tactic_expr"
+    let binder_tactic = Gram.Entry.create "tactic:binder_tactic"
 
     let tactic = make_gen_entry utactic (rawwit_tactic tactic_main_level) "tactic"
 

@@ -184,6 +184,7 @@ module Tactic :
     val simple_intropattern : Genarg.intro_pattern_expr Gram.Entry.e
     val tactic_arg : raw_tactic_arg Gram.Entry.e
     val tactic_expr : raw_tactic_expr Gram.Entry.e
+    val binder_tactic : raw_tactic_expr Gram.Entry.e
     val tactic : raw_tactic_expr Gram.Entry.e
     val tactic_eoi : raw_tactic_expr Gram.Entry.e
   end

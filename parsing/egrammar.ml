@@ -212,8 +212,8 @@ let rec interp_entry_name up_level s =
     try 
       let i = find_index "tactic" s in
       ExtraArgType s, 
-      if i=up_level then Gramext.Sself else
-      if i=up_level-1 then Gramext.Snext else
+      if up_level<>5 && i=up_level then Gramext.Sself else
+      if up_level<>5 && i=up_level-1 then Gramext.Snext else
       Gramext.Snterml(Pcoq.Gram.Entry.obj Tactic.tactic_expr,string_of_int i)
     with Not_found ->
     let e = 
@@ -238,7 +238,9 @@ let make_vprod_item n = function
 let get_tactic_entry n =
   if n = 0 then
     weaken_entry Tactic.simple_tactic, None
-  else if 1<=n && n<=5 then
+  else if n = 5 then
+    weaken_entry Tactic.binder_tactic, None
+  else if 1<=n && n<5 then
     weaken_entry Tactic.tactic_expr, Some (Gramext.Level (string_of_int n))
   else 
     error ("Invalid Tactic Notation level: "^(string_of_int n))
