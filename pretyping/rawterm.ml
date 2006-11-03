@@ -26,15 +26,13 @@ type cases_pattern =
   | PatVar of loc * name
   | PatCstr of loc * constructor * cases_pattern list * name
 
-let pattern_loc = function
+let cases_pattern_loc = function
     PatVar(loc,_) -> loc
   | PatCstr(loc,_,_,_) -> loc
 
 type patvar = identifier
 
 type rawsort = RProp of Term.contents | RType of Univ.universe option
-
-type fix_kind = RFix of (int array * int) | RCoFix of int
 
 type binder_kind = BProd | BLambda | BLetIn
 
@@ -49,6 +47,10 @@ type 'a bindings =
 
 type 'a with_bindings = 'a * 'a bindings
 
+type cast_type =
+  | CastConv of cast_kind
+  | CastCoerce (* Cast to a base type (eg, an underlying inductive type) *)
+
 type rawconstr = 
   | RRef of (loc * global_reference)
   | RVar of (loc * identifier)
@@ -58,9 +60,7 @@ type rawconstr =
   | RLambda of loc * name * rawconstr * rawconstr
   | RProd of loc * name * rawconstr * rawconstr
   | RLetIn of loc * name * rawconstr * rawconstr
-  | RCases of loc * rawconstr option *
-      (rawconstr * (name * (loc * inductive * name list) option)) list * 
-      (loc * identifier list * cases_pattern list * rawconstr) list
+  | RCases of loc * rawconstr option * tomatch_tuple * cases_clauses
   | RLetTuple of loc * name list * (name * rawconstr option) * 
       rawconstr * rawconstr
   | RIf of loc * rawconstr * (name * rawconstr option) * rawconstr * rawconstr
@@ -68,15 +68,29 @@ type rawconstr =
       rawconstr array * rawconstr array
   | RSort of loc * rawsort
   | RHole of (loc * hole_kind)
-  | RCast of loc * rawconstr * cast_kind * rawconstr
+  | RCast of loc * rawconstr * cast_type * rawconstr
   | RDynamic of loc * Dyn.t
 
 and rawdecl = name * rawconstr option * rawconstr
 
+and fix_recursion_order = RStructRec | RWfRec of rawconstr | RMeasureRec of rawconstr
+
+and fix_kind =
+  | RFix of ((int option * fix_recursion_order) array * int)
+  | RCoFix of int
+
+and predicate_pattern =
+    name * (loc * inductive * int * name list) option
+
+and tomatch_tuple = (rawconstr * predicate_pattern) list
+
+and cases_clauses =
+    (loc * identifier list * cases_pattern list * rawconstr) list
+
 let cases_predicate_names tml =
   List.flatten (List.map (function
     | (tm,(na,None)) -> [na]
-    | (tm,(na,Some (_,_,nal))) -> na::nal) tml)
+    | (tm,(na,Some (_,_,_,nal))) -> na::nal) tml)
 
 (*i - if PRec (_, names, arities, bodies) is in env then arities are
    typed in env too and bodies are typed in env enriched by the
@@ -87,7 +101,7 @@ let cases_predicate_names tml =
 
    - boolean in POldCase means it is recursive
 i*)
-let map_rawdecl f (na,obd,ty) = (na,option_app f obd,f ty)
+let map_rawdecl f (na,obd,ty) = (na,option_map f obd,f ty)
 
 let map_rawconstr f = function
   | RVar (loc,id) -> RVar (loc,id)
@@ -96,13 +110,13 @@ let map_rawconstr f = function
   | RProd (loc,na,ty,c) -> RProd (loc,na,f ty,f c)
   | RLetIn (loc,na,b,c) -> RLetIn (loc,na,f b,f c)
   | RCases (loc,rtntypopt,tml,pl) ->
-      RCases (loc,option_app f rtntypopt,
+      RCases (loc,option_map f rtntypopt,
         List.map (fun (tm,x) -> (f tm,x)) tml,
         List.map (fun (loc,idl,p,c) -> (loc,idl,p,f c)) pl)
   | RLetTuple (loc,nal,(na,po),b,c) ->
-      RLetTuple (loc,nal,(na,option_app f po),f b,f c)
+      RLetTuple (loc,nal,(na,option_map f po),f b,f c)
   | RIf (loc,c,(na,po),b1,b2) ->
-      RIf (loc,f c,(na,option_app f po),f b1,f b2)
+      RIf (loc,f c,(na,option_map f po),f b1,f b2)
   | RRec (loc,fk,idl,bl,tyl,bv) ->
       RRec (loc,fk,idl,Array.map (List.map (map_rawdecl f)) bl,
             Array.map f tyl,Array.map f bv)
@@ -135,7 +149,7 @@ let map_rawconstr_with_binders_loc loc g f e = function
       let g' id e = snd (g id e) in
       let h (_,idl,p,c) = (loc,idl,p,f (List.fold_right g' idl e) c) in
       RCases
-	(loc,option_app (f e) tyopt,List.map (f e) tml, List.map h pl)
+	(loc,option_map (f e) tyopt,List.map (f e) tml, List.map h pl)
   | RRec (_,fk,idl,tyl,bv) ->
       let idl',e' = fold_ident g idl e in
       RRec (loc,fk,idl',Array.map (f e) tyl,Array.map (f e') bv)
@@ -249,22 +263,24 @@ type 'a raw_red_flag = {
 let all_flags =
   {rBeta = true; rIota = true; rZeta = true; rDelta = true; rConst = []}
 
-type 'a occurrences = int list * 'a
+type 'a or_var = ArgArg of 'a | ArgVar of identifier located
+
+type 'a with_occurrences = int or_var list * 'a
 
 type ('a,'b) red_expr_gen =
   | Red of bool
   | Hnf
-  | Simpl of 'a occurrences option
+  | Simpl of 'a with_occurrences option
   | Cbv of 'b raw_red_flag
   | Lazy of 'b raw_red_flag
-  | Unfold of 'b occurrences list
+  | Unfold of 'b with_occurrences list
   | Fold of 'a list
-  | Pattern of 'a occurrences list
+  | Pattern of 'a with_occurrences list
   | ExtraRedExpr of string
   | CbvVm
 
 type ('a,'b) may_eval =
   | ConstrTerm of 'a
-  | ConstrEval of ('a, 'b) red_expr_gen * 'a
+  | ConstrEval of ('a,'b) red_expr_gen * 'a
   | ConstrContext of (loc * identifier) * 'a
   | ConstrTypeOf of 'a

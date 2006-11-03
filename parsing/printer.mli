@@ -35,6 +35,7 @@ val pr_lconstr             : constr -> std_ppcmds
 val pr_constr_env          : env -> constr -> std_ppcmds
 val pr_constr              : constr -> std_ppcmds
 
+val pr_ltype_env_at_top    : env -> types -> std_ppcmds
 val pr_ltype_env           : env -> types -> std_ppcmds
 val pr_ltype               : types -> std_ppcmds
 
@@ -50,10 +51,15 @@ val pr_lrawconstr          : rawconstr -> std_ppcmds
 val pr_rawconstr_env       : env -> rawconstr -> std_ppcmds
 val pr_rawconstr           : rawconstr -> std_ppcmds
 
+val pr_lconstr_pattern_env : env -> constr_pattern -> std_ppcmds
+val pr_lconstr_pattern     : constr_pattern -> std_ppcmds
+
 val pr_constr_pattern_env  : env -> constr_pattern -> std_ppcmds
 val pr_constr_pattern      : constr_pattern -> std_ppcmds
 
 val pr_cases_pattern       : cases_pattern -> std_ppcmds
+
+val pr_sort                : sorts -> std_ppcmds
 
 (* Printing global references using names as short as possible *)
 
@@ -82,7 +88,7 @@ val pr_context_of          : env -> std_ppcmds
 (* Proofs *)
 
 val pr_goal                : goal -> std_ppcmds
-val pr_subgoals            : evar_map -> goal list -> std_ppcmds
+val pr_subgoals            : string option -> evar_map -> goal list -> std_ppcmds
 val pr_subgoal             : int -> goal list -> std_ppcmds
 
 val pr_open_subgoals       : unit -> std_ppcmds

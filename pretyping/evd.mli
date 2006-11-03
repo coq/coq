@@ -32,7 +32,8 @@ type evar_body =
 type evar_info = {
   evar_concl : constr;
   evar_hyps : Environ.named_context_val;
-  evar_body : evar_body}
+  evar_body : evar_body;
+  evar_extra : Dyn.t option}
 
 val eq_evar_info : evar_info -> evar_info -> bool
 val evar_context : evar_info -> named_context
@@ -43,10 +44,9 @@ val empty : evar_map
 val add : evar_map -> evar -> evar_info -> evar_map
 
 val dom : evar_map -> evar list
-val map : evar_map -> evar -> evar_info
-val rmv : evar_map -> evar -> evar_map
-val remap : evar_map -> evar -> evar_info -> evar_map
-val in_dom : evar_map -> evar -> bool
+val find : evar_map -> evar -> evar_info
+val remove : evar_map -> evar -> evar_map
+val mem : evar_map -> evar -> bool
 val to_list : evar_map -> (evar * evar_info) list
 val fold : (evar -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
 
@@ -95,6 +95,7 @@ type 'a freelisted = {
   rebus : 'a;
   freemetas : Metaset.t }
 
+val metavars_of : constr -> Metaset.t
 val mk_freelisted : constr -> constr freelisted
 val map_fl : ('a -> 'b) -> 'a freelisted -> 'b freelisted
 
@@ -126,6 +127,7 @@ type hole_kind =
   | TomatchTypeParameter of inductive * int
 val is_defined_evar :  evar_defs -> existential -> bool
 val is_undefined_evar :  evar_defs -> constr -> bool
+val undefined_evars : evar_defs -> evar_defs
 val evar_declare :
   Environ.named_context_val -> evar -> types -> ?src:loc * hole_kind ->
   evar_defs -> evar_defs

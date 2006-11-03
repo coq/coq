@@ -1,0 +1,71 @@
+Debugging from Coq toplevel using Caml trace mechanism
+======================================================
+
+  1. Launch bytecode version of Coq (coqtop.byte or coqtop -byte)
+  2. Access Ocaml toplevel using vernacular command 'Drop.'
+  3. Install load paths and pretty printers for terms, idents, ... using
+     Ocaml command '#use "base_include";;' (use '#use "include";;' for a rawer
+     term pretty printer)
+  4. Use #trace to tell which function(s) to trace
+  5. Go back to Coq toplevel with 'go();;'
+  6. Test your Coq command and observe the result of tracing your functions
+  7. Freely switch from Coq to Ocaml toplevels with 'Drop.' and 'go();;'
+
+  Hints: To remove high-level pretty-printing features (coercions,
+  notations, ...), use "Set Printing All". It will affect the #trace
+  printers too.
+
+Debugging from Caml debugger
+============================
+
+   Needs tuareg mode in Emacs
+   Coq must be configured with -debug and -local (./configure -debug -local)
+
+   1. M-x camldebug
+   2. give the binary name bin/coqtop.byte
+   3. give ../dev/ocamldebug-coq
+   4. source db  (to get pretty-printers)
+   5. add breakpoints with C-x C-a C-b from the buffer displaying the ocaml
+      source
+   6. get more help from ocamldebug manual
+         run
+	 step
+         back
+         start
+	 next
+	 last
+	 print x (abbreviated into p x)
+	 ...
+   7. some hints: 
+
+   - To debug a failure/error/anomaly, add a breakpoint in
+     Vernac.vernac_com at the with clause of the "try ... interp com
+     with ..." block, then go "back" a few steps to find where the
+     failure/error/anomaly has been raised
+   - Alternatively, for an error or an anomaly, add breakpoints in the middle  
+     of each of error* functions or anomaly* functions in lib/util.ml
+   - If "source db" fails, recompile printers.cma with
+     "make dev/printers.cma" and try again
+
+Global gprof-based profiling
+============================
+
+   Coq must be configured with option -profile
+
+   1. Run native Coq which must end normally (use Quit or option -batch)
+   2. gprof ./coqtop gmon.out
+
+Per function profiling
+======================
+
+   1. To profile function foo in file bar.ml, add the following lines, just
+      after the definition of the function:
+
+     let fookey = Profile.declare_profile "foo";;
+     let foo a b c = Profile.profile3 fookey foo a b c;;
+
+     where foo is assumed to have three arguments (adapt using
+     Profile.profile1, Profile. profile2, etc).
+
+     This has the effect to cumulate the time passed in foo under a
+     line of name "foo" which is displayed at the time coqtop exits.

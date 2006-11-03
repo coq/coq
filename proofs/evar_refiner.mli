@@ -18,7 +18,7 @@ open Refiner
 
 (* Refinement of existential variables. *)
 
-val w_refine :  env -> evar -> Rawterm.rawconstr  -> evar_defs -> evar_defs
+val w_refine : evar -> Rawterm.rawconstr  -> evar_defs -> evar_defs
 
 val instantiate_pf_com :
   int -> Topconstr.constr_expr -> pftreestate -> pftreestate

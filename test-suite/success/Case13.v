@@ -67,3 +67,15 @@ Check (fun x => match x with
                 | D _ => 1
                 end).
 
+(* Check coercions against the type of the term to match *)
+(* Used to fail in V8.1beta *)
+
+Inductive C : Set := c : C.
+Inductive E : Set := e :> C -> E.
+Check fun (x : E) => match x with c => e c end.
+
+(* Check coercions with uniform parameters (cf bug #1168) *)
+
+Inductive C' : bool -> Set := c' : C' true.
+Inductive E' (b : bool) : Set := e' :> C' b -> E' b.
+Check fun (x : E' true) => match x with c' => e' true c' end.

@@ -35,6 +35,9 @@ exception I of inductive_info
    to avoid loops in [extract_inductive] *)
 let internal_call = ref KNset.empty
 
+(* A set of all fixpoint functions currently being extracted *)
+let current_fixpoints = ref ([] : constant list)
+
 let none = Evd.empty
 
 let type_of env c = Retyping.get_type_of env none (strip_outer_cast c)
@@ -80,6 +83,14 @@ let rec flag_of_type env t =
 
 let is_default env t = (flag_of_type env t = (Info, Default))
 
+exception NotDefault of kill_reason
+
+let check_default env t = 
+  match flag_of_type env t with 
+    | _,TypeScheme -> raise (NotDefault Ktype)
+    | Logic,_ -> raise (NotDefault Kother)
+    | _ -> ()
+
 let is_info_scheme env t = (flag_of_type env t = (Info, TypeScheme))
 
 (*s [type_sign] gernerates a signature aimed at treating a type application. *)
@@ -87,7 +98,8 @@ let is_info_scheme env t = (flag_of_type env t = (Info, TypeScheme))
 let rec type_sign env c = 
   match kind_of_term (whd_betadeltaiota env none c) with
     | Prod (n,t,d) -> 
-	(is_info_scheme env t)::(type_sign (push_rel_assum (n,t) env) d)
+	(if is_info_scheme env t then Keep else Kill Kother)
+	:: (type_sign (push_rel_assum (n,t) env) d)
     | _ -> []
 
 let rec type_scheme_nb_args env c = 
@@ -105,8 +117,8 @@ let rec type_sign_vl env c =
   match kind_of_term (whd_betadeltaiota env none c) with
     | Prod (n,t,d) -> 
 	let s,vl = type_sign_vl (push_rel_assum (n,t) env) d in 
-	if not (is_info_scheme env t) then false::s, vl
-	else true::s, (next_ident_away (id_of_name n) vl) :: vl
+	if not (is_info_scheme env t) then Kill Kother::s, vl
+	else Keep::s, (next_ident_away (id_of_name n) vl) :: vl
     | _ -> [],[]
 
 let rec nb_default_params env c = 
@@ -126,8 +138,8 @@ let rec nb_default_params env c =
 let db_from_sign s = 
   let rec make i acc = function 
     | [] -> acc  
-    | true :: l -> make (i+1) (i::acc) l
-    | false :: l -> make i (0::acc) l
+    | Keep :: l -> make (i+1) (i::acc) l
+    | Kill _ :: l -> make i (0::acc) l
   in make 1 [] s
 
 (*s Create a type variable context from indications taken from 
@@ -150,8 +162,8 @@ let rec db_from_ind dbmap i =
 let parse_ind_args si args relmax = 
   let rec parse i j = function 
     | [] -> Intmap.empty
-    | false :: s -> parse (i+1) j s
-    | true :: s -> 
+    | Kill _ :: s -> parse (i+1) j s
+    | Keep :: s -> 
       (match kind_of_term args.(i-1) with 
 	 | Rel k -> Intmap.add (relmax+1-k) j (parse (i+1) (j+1) s)
 	 | _ -> parse (i+1) (j+1) s)
@@ -166,6 +178,7 @@ let parse_ind_args si args relmax =
 
 (* [j] stands for the next ML type var. [j=0] means we do not 
    generate ML type var anymore (in subterms for example). *) 
+
 
 let rec extract_type env db j c args = 
   match kind_of_term (whd_betaiotazeta c) with
@@ -183,19 +196,24 @@ let rec extract_type env db j c args =
 	   | (Info, Default) -> 
 	       (* Standard case: two [extract_type] ... *)
 	       let mld = extract_type env' (0::db) j d [] in 
-	       if type_eq (mlt_env env) mld Tdummy then Tdummy 
-	       else Tarr (extract_type env db 0 t [], mld) 
+	       (match expand env mld with 
+		  | Tdummy d -> Tdummy d
+		  | _ -> Tarr (extract_type env db 0 t [], mld))
 	   | (Info, TypeScheme) when j > 0 -> 
 	       (* A new type var. *)
 	       let mld = extract_type env' (j::db) (j+1) d [] in 
-	       if type_eq (mlt_env env) mld Tdummy then Tdummy 
-	       else Tarr (Tdummy, mld)
-	   | _ -> 
+	       (match expand env mld with 
+		  | Tdummy d -> Tdummy d
+		  | _ -> Tarr (Tdummy Ktype, mld))
+	   | _,lvl -> 
 	       let mld = extract_type env' (0::db) j d [] in 
-	       if type_eq (mlt_env env) mld Tdummy then Tdummy 
-	       else Tarr (Tdummy, mld))
-    | Sort _ -> Tdummy (* The two logical cases. *)
-    | _ when sort_of env (applist (c, args)) = InProp -> Tdummy 
+	       (match expand env mld with 
+		  | Tdummy d -> Tdummy d
+		  | _ -> 
+		      let reason = if lvl=TypeScheme then Ktype else Kother in
+		      Tarr (Tdummy reason, mld)))
+    | Sort _ -> Tdummy Ktype (* The two logical cases. *)
+    | _ when sort_of env (applist (c, args)) = InProp -> Tdummy Kother
     | Rel n -> 
 	(match lookup_rel n env with
            | (_,Some t,_) -> extract_type env db j (lift n t) args
@@ -207,7 +225,7 @@ let rec extract_type env db j c args =
     | Const kn -> 
 	let r = ConstRef kn in 
 	let cb = lookup_constant kn env in 
-	let typ = cb.const_type in 
+	let typ = Typeops.type_of_constant_type env cb.const_type in 
 	(match flag_of_type env typ with 
 	   | (Info, TypeScheme) -> 
 	       let mlt = extract_type_app env db (r, type_sign env typ) args in 
@@ -222,7 +240,7 @@ let rec extract_type env db j c args =
 		      (* The more precise is [mlt'], extracted after reduction *)
 		      (* The shortest is [mlt], which use abbreviations *)
 		      (* If possible, we take [mlt], otherwise [mlt']. *)
-		      if type_eq (mlt_env env) mlt mlt' then mlt else mlt')
+		      if expand env mlt = expand env mlt' then mlt else mlt')
 	   | _ -> (* only other case here: Info, Default, i.e. not an ML type *)
 	       (match cb.const_body with 
 		  | None -> Tunknown (* Brutal approximation ... *)
@@ -242,7 +260,7 @@ let rec extract_type env db j c args =
 and extract_maybe_type env db c = 
   let t = whd_betadeltaiota env none (type_of env c) in 
   if isSort t then extract_type env db 0 c [] 
-  else if sort_of env t = InProp then Tdummy else Tunknown
+  else if sort_of env t = InProp then Tdummy Kother else Tunknown
 
 (*s Auxiliary function dealing with type application. 
   Precondition: [r] is a type scheme represented by the signature [s], 
@@ -251,7 +269,7 @@ and extract_maybe_type env db c =
 and extract_type_app env db (r,s) args =
   let ml_args = 
     List.fold_right 
-      (fun (b,c) a -> if b then 
+      (fun (b,c) a -> if b=Keep then 
 	 let p = List.length (fst (splay_prod env none (type_of env c))) in
          let db = iterate (fun l -> 0 :: l) p db in
          (extract_type_scheme env db c p) :: a
@@ -301,9 +319,10 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
     (* their type var list. *)
     let packets = 
       Array.map 
-	(fun mip -> 
-	   let b = mip.mind_sort <> (Prop Null) in 
-	   let s,v = if b then type_sign_vl env mip.mind_nf_arity else [],[] in
+	(fun mip ->
+	   let b = snd (mind_arity mip) <> InProp in
+	   let ar = Inductive.type_of_inductive env (mib,mip) in
+	   let s,v = if b then type_sign_vl env ar else [],[] in
 	   let t = Array.make (Array.length mip.mind_nf_lc) [] in 
 	   { ip_typename = mip.mind_typename;
 	     ip_consnames = mip.mind_consnames;
@@ -341,7 +360,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	if p.ip_logical then raise (I Standard);
 	if Array.length p.ip_types <> 1 then raise (I Standard);
 	let typ = p.ip_types.(0) in 
-	let l = List.filter (type_neq (mlt_env env) Tdummy) typ in 
+	let l = List.filter (fun t -> not (isDummy (expand env t))) typ in 
 	if List.length l = 1 && not (type_mem_kn kn (List.hd l)) 
 	then raise (I Singleton); 
 	if l = [] then raise (I Standard);
@@ -365,14 +384,15 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	let rec select_fields l typs = match l,typs with 
 	  | [],[] -> []
 	  | (Name id)::l, typ::typs -> 
-	      if type_eq (mlt_env env) Tdummy typ then select_fields l typs 
+	      if isDummy (expand env typ) then select_fields l typs 
 	      else  
 		let knp = make_con mp d (label_of_id id) in 
-		if not (List.mem false (type_to_sign (mlt_env env) typ)) then 
+		if not (List.exists isKill (type2signature env typ))
+		then 
 		  projs := Cset.add knp !projs; 
 		(ConstRef knp) :: (select_fields l typs)
 	  | Anonymous::l, typ::typs -> 
-	      if type_eq (mlt_env env) Tdummy typ then select_fields l typs
+	      if isDummy (expand env typ) then select_fields l typs
 	      else error_record r
 	  | _ -> assert false 
 	in 
@@ -381,11 +401,13 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	(* Is this record officially declared with its projections ? *)
 	(* If so, we use this information. *)
 	begin try 
-	  let n = nb_default_params env mip0.mind_nf_arity in
+	  let n = nb_default_params env
+            (Inductive.type_of_inductive env (mib,mip0))
+	  in
 	  List.iter 
 	    (option_iter 
 	       (fun kn -> if Cset.mem kn !projs then add_projection n kn))
-	    (lookup_structure ip).s_PROJ 
+	    (lookup_projections ip)
 	with Not_found -> ()
 	end; 
 	Record field_glob
@@ -425,7 +447,7 @@ and mlt_env env r = match r with
 	   | _ -> None
        with Not_found -> 
 	 let cb = Environ.lookup_constant kn env in
-	 let typ = cb.const_type in
+	 let typ = Typeops.type_of_constant_type env cb.const_type in 
 	 match cb.const_body with
 	   | None -> None
 	   | Some l_body -> 
@@ -439,9 +461,9 @@ and mlt_env env r = match r with
 		  | _ -> None))
   | _ -> None
 
-let type_expand env = type_expand (mlt_env env)
-let type_neq env = type_neq (mlt_env env)
-let type_to_sign env = type_to_sign (mlt_env env)
+and expand env = type_expand (mlt_env env)
+and type2signature env = type_to_signature (mlt_env env)
+let type2sign env = type_to_sign (mlt_env env)
 let type_expunge env = type_expunge (mlt_env env)
 
 (*s Extraction of the type of a constant. *)
@@ -452,7 +474,7 @@ let record_constant_type env kn opt_typ =
     lookup_type kn 
   with Not_found ->
     let typ = match opt_typ with 
-      | None -> constant_type env kn 
+      | None -> Typeops.type_of_constant env kn
       | Some typ -> typ 
     in let mlt = extract_type env [] 1 typ [] 
     in let schema = (type_maxvar mlt, mlt)
@@ -478,10 +500,9 @@ let rec extract_term env mle mlt c args =
 	       in extract_term env mle mlt d' []
 	   | [] -> 
 	       let env' = push_rel_assum (Name id, t) env in 
-	       let id, a = 
-		 if is_default env t 
-		 then id, new_meta () 
-		 else dummy_name, Tdummy in 
+	       let id, a = try check_default env t; id, new_meta()
+	       with NotDefault d -> dummy_name, Tdummy d
+	       in 
 	       let b = new_meta () in 
 	       (* If [mlt] cannot be unified with an arrow type, then magic! *)
 	       let magic = needs_magic (mlt, Tarr (a, b)) in 
@@ -491,15 +512,16 @@ let rec extract_term env mle mlt c args =
 	let id = id_of_name n in 
 	let env' = push_rel (Name id, Some c1, t1) env in 
 	let args' = List.map (lift 1) args in 
-	if is_default env t1 then 
+	(try 
+	  check_default env t1; 
 	  let a = new_meta () in 
 	  let c1' = extract_term env mle a c1 [] in
 	  (* The type of [c1'] is generalized and stored in [mle]. *)
 	  let mle' = Mlenv.push_gen mle a in 
 	  MLletin (id, c1', extract_term env' mle' mlt c2 args') 
-	else 
-	  let mle' = Mlenv.push_std_type mle Tdummy in 
-	  ast_pop (extract_term env' mle' mlt c2 args')
+	with NotDefault d -> 
+	  let mle' = Mlenv.push_std_type mle (Tdummy d) in 
+	  ast_pop (extract_term env' mle' mlt c2 args'))
     | Const kn ->
 	extract_cst_app env mle mlt kn args
     | Construct cp ->
@@ -521,8 +543,10 @@ let rec extract_term env mle mlt c args =
 (*s [extract_maybe_term] is [extract_term] for usual terms, else [MLdummy] *) 
 
 and extract_maybe_term env mle mlt c =
-  if is_default env (type_of env c) then extract_term env mle mlt c [] 
-  else put_magic (mlt, Tdummy) MLdummy
+  try check_default env (type_of env c); 
+    extract_term env mle mlt c [] 
+  with NotDefault d -> 
+    put_magic (mlt, Tdummy d) MLdummy
 
 (*s Generic way to deal with an application. *)
 
@@ -540,7 +564,7 @@ and extract_app env mle mlt mk_head args =
 
 and make_mlargs env e s args typs = 
   let l = ref s in 
-  let keep () = match !l with [] -> true | b :: s -> l:=s; b in
+  let keep () = match !l with [] -> true | b :: s -> l:=s; b=Keep in
   let rec f = function  
     | [], [] -> [] 
     | a::la, t::lt when keep() -> extract_maybe_term env e t a :: (f (la,lt))
@@ -553,19 +577,25 @@ and make_mlargs env e s args typs =
 and extract_cst_app env mle mlt kn args = 
   (* First, the [ml_schema] of the constant, in expanded version. *) 
   let nb,t = record_constant_type env kn None in 
-  let schema = nb, type_expand env t in 
+  let schema = nb, expand env t in 
+  (* Can we instantiate types variables for this constant ? *)
+  (* In Ocaml, inside the definition of this constant, the answer is no. *)
+  let instantiated = 
+    if lang () = Ocaml && List.mem kn !current_fixpoints then var2var' (snd schema)
+    else instantiation schema
+  in 
   (* Then the expected type of this constant. *)
-  let metas = List.map new_meta args in 
+  let a = new_meta () in 
   (* We compare stored and expected types in two steps. *)
   (* First, can [kn] be applied to all args ? *)
-  let a = new_meta () in 
-  let magic1 = needs_magic (type_recomp (metas, a), instantiation schema) in 
+  let metas = List.map new_meta args in 
+  let magic1 = needs_magic (type_recomp (metas, a), instantiated) in 
   (* Second, is the resulting type compatible with the expected type [mlt] ? *)
   let magic2 = needs_magic (a, mlt) in 
   (* The internal head receives a magic if [magic1] *)
   let head = put_magic_if magic1 (MLglob (ConstRef kn)) in 
   (* Now, the extraction of the arguments. *)
-  let s = type_to_sign env (snd schema) in 
+  let s = type2signature env (snd schema) in 
   let ls = List.length s in 
   let la = List.length args in
   let mla = make_mlargs env mle s args metas in 
@@ -580,8 +610,8 @@ and extract_cst_app env mle mlt kn args =
   in 			    
   (* Different situations depending of the number of arguments: *)
   if ls = 0 then put_magic_if magic2 head
-  else if List.mem true s then 
-    if la >= ls || not (List.mem false s) 
+  else if List.mem Keep s then 
+    if la >= ls || not (List.exists isKill s) 
     then 
       put_magic_if (magic2 && not magic1) (MLapp (head, mla))
     else 
@@ -590,12 +620,17 @@ and extract_cst_app env mle mlt kn args =
       let s' = list_lastn ls' s in
       let mla = (List.map (ast_lift ls') mla) @ (eta_args_sign ls' s') in
       put_magic_if magic2 (anonym_or_dummy_lams (MLapp (head, mla)) s')
-  else 
+  else if List.mem (Kill Kother) s then 
     (* In the special case of always false signature, one dummy lam is left. *)
     (* So a [MLdummy] is left accordingly. *) 
     if la >= ls 
     then put_magic_if (magic2 && not magic1) (MLapp (head, MLdummy :: mla))
     else put_magic_if magic2 (dummy_lams head (ls-la-1))
+  else (* s is made only of [Kill Ktype] *)
+    if la >= ls 
+    then put_magic_if (magic2 && not magic1) (MLapp (head, mla))
+    else put_magic_if magic2 (dummy_lams head (ls-la))
+
 
 (*s Extraction of an inductive constructor applied to arguments. *)
 
@@ -613,12 +648,12 @@ and extract_cons_app env mle mlt (((kn,i) as ip,j) as cp) args =
   let params_nb = mi.ind_nparams in 
   let oi = mi.ind_packets.(i) in 
   let nb_tvars = List.length oi.ip_vars
-  and types = List.map (type_expand env) oi.ip_types.(j-1) in
+  and types = List.map (expand env) oi.ip_types.(j-1) in
   let list_tvar = List.map (fun i -> Tvar i) (interval 1 nb_tvars) in 
   let type_cons = type_recomp (types, Tglob (IndRef ip, list_tvar)) in
   let type_cons = instantiation (nb_tvars, type_cons) in 
   (* Then, the usual variables [s], [ls], [la], ... *)
-  let s = List.map (type_neq env Tdummy) types in
+  let s = List.map (type2sign env) types in
   let ls = List.length s in 
   let la = List.length args in 
   assert (la <= ls + params_nb);
@@ -671,8 +706,8 @@ and extract_case env mle ((kn,i) as ip,c,br) mlt =
 	(* Logical singleton case: *)
 	(* [match c with C i j k -> t] becomes [t'] *)
 	assert (br_size = 1);
-	let s = iterate (fun l -> false :: l) ni.(0) [] in
-	let mlt = iterate (fun t -> Tarr (Tdummy, t)) ni.(0) mlt in 
+	let s = iterate (fun l -> Kill Kother :: l) ni.(0) [] in
+	let mlt = iterate (fun t -> Tarr (Tdummy Kother, t)) ni.(0) mlt in 
 	let e = extract_maybe_term env mle mlt br.(0) in 
 	snd (case_expunge s e)
       end 
@@ -686,10 +721,10 @@ and extract_case env mle ((kn,i) as ip,c,br) mlt =
       (* The extraction of each branch. *)
       let extract_branch i = 
 	(* The types of the arguments of the corresponding constructor. *)
-	let f t = type_subst_vect metas (type_expand env t) in 
+	let f t = type_subst_vect metas (expand env t) in 
 	let l = List.map f oi.ip_types.(i) in
 	(* the corresponding signature *)
-	let s = List.map (type_neq env Tdummy) oi.ip_types.(i) in
+	let s = List.map (type2sign env) oi.ip_types.(i) in
 	(* Extraction of the branch (in functional form). *)
 	let e = extract_maybe_term env mle (type_recomp (l,mlt)) br.(i) in 
 	(* We suppress dummy arguments according to signature. *)
@@ -745,8 +780,8 @@ let extract_std_constant env kn body typ =
   let t = snd (record_constant_type env kn (Some typ)) in 
   (* The real type [t']: without head lambdas, expanded, *)
   (* and with [Tvar] translated to [Tvar'] (not instantiable). *)
-  let l,t' = type_decomp (type_expand env (var2var' t)) in 
-  let s = List.map (type_neq env Tdummy) l in 
+  let l,t' = type_decomp (expand env (var2var' t)) in 
+  let s = List.map (type2sign env) l in 
   (* The initial ML environment. *)
   let mle = List.fold_left Mlenv.push_std_type Mlenv.empty l in 
   (* Decomposing the top level lambdas of [body]. *)
@@ -762,10 +797,12 @@ let extract_std_constant env kn body typ =
 
 let extract_fixpoint env vkn (fi,ti,ci) = 
   let n = Array.length vkn in 
-  let types = Array.make n Tdummy
+  let types = Array.make n (Tdummy Kother)
   and terms = Array.make n MLdummy in 
+  let kns = Array.to_list vkn in 
+  current_fixpoints := kns; 
   (* for replacing recursive calls [Rel ..] by the corresponding [Const]: *)
-  let sub = List.rev_map mkConst (Array.to_list vkn) in 
+  let sub = List.rev_map mkConst kns in 
   for i = 0 to n-1 do 
     if sort_of env ti.(i) <> InProp then begin 
       let e,t = extract_std_constant env vkn.(i) (substl sub ci.(i)) ti.(i) in
@@ -773,11 +810,12 @@ let extract_fixpoint env vkn (fi,ti,ci) =
       types.(i) <- t;
     end 
   done; 
+  current_fixpoints := [];
   Dfix (Array.map (fun kn -> ConstRef kn) vkn, terms, types) 
 		 
 let extract_constant env kn cb = 
   let r = ConstRef kn in 
-  let typ = cb.const_type in
+  let typ = Typeops.type_of_constant_type env cb.const_type in 
   match cb.const_body with
     | None -> (* A logical axiom is risky, an informative one is fatal. *) 
         (match flag_of_type env typ with
@@ -790,12 +828,14 @@ let extract_constant env kn cb =
 	       if not (is_custom r) then warning_info_ax r; 
 	       let t = snd (record_constant_type env kn (Some typ)) in 
 	       Dterm (r, MLaxiom, type_expunge env t) 
-           | (Logic,TypeScheme) -> warning_log_ax r; Dtype (r, [], Tdummy)
-	   | (Logic,Default) -> warning_log_ax r; Dterm (r, MLdummy, Tdummy))
+           | (Logic,TypeScheme) -> 
+	       warning_log_ax r; Dtype (r, [], Tdummy Ktype)
+	   | (Logic,Default) -> 
+	       warning_log_ax r; Dterm (r, MLdummy, Tdummy Kother))
     | Some body ->
 	(match flag_of_type env typ with
-	   | (Logic, Default) -> Dterm (r, MLdummy, Tdummy)
-	   | (Logic, TypeScheme) -> Dtype (r, [], Tdummy)
+	   | (Logic, Default) -> Dterm (r, MLdummy, Tdummy Kother)
+	   | (Logic, TypeScheme) -> Dtype (r, [], Tdummy Ktype)
 	   | (Info, Default) -> 
 	       let e,t = extract_std_constant env kn (force body) typ in 
 	       Dterm (r,e,t)
@@ -807,10 +847,10 @@ let extract_constant env kn cb =
 
 let extract_constant_spec env kn cb = 
   let r = ConstRef kn in 
-  let typ = cb.const_type in
+  let typ = Typeops.type_of_constant_type env cb.const_type in 
   match flag_of_type env typ with 
-    | (Logic, TypeScheme) -> Stype (r, [], Some Tdummy)
-    | (Logic, Default) -> Sval (r, Tdummy) 
+    | (Logic, TypeScheme) -> Stype (r, [], Some (Tdummy Ktype))
+    | (Logic, Default) -> Sval (r, Tdummy Kother) 
     | (Info, TypeScheme) -> 
 	let s,vl = type_sign_vl env typ in 
 	(match cb.const_body with 
@@ -826,7 +866,7 @@ let extract_constant_spec env kn cb =
 let extract_inductive env kn = 
   let ind = extract_ind env kn in 
   add_recursors env kn; 
-  let f l = List.filter (type_neq env Tdummy) l in 
+  let f l = List.filter (fun t -> not (isDummy (expand env t))) l in 
   let packets = 
     Array.map (fun p -> { p with ip_types = Array.map f p.ip_types }) 
       ind.ind_packets
@@ -845,7 +885,7 @@ let extract_declaration env r = match r with
 type kind = Logical | Term | Type 
     
 let constant_kind env cb = 
-  match flag_of_type env cb.const_type with 
+  match flag_of_type env (Typeops.type_of_constant_type env cb.const_type) with 
     | (Logic,_) -> Logical
     | (Info,TypeScheme) -> Type
     | (Info,Default) -> Term
@@ -853,19 +893,19 @@ let constant_kind env cb =
 (*s Is a [ml_decl] logical ? *) 
 
 let logical_decl = function 
-  | Dterm (_,MLdummy,Tdummy) -> true
-  | Dtype (_,[],Tdummy) -> true 
+  | Dterm (_,MLdummy,Tdummy _) -> true
+  | Dtype (_,[],Tdummy _) -> true 
   | Dfix (_,av,tv) -> 
       (array_for_all ((=) MLdummy) av) && 
-      (array_for_all ((=) Tdummy) tv)
+      (array_for_all isDummy tv)
   | Dind (_,i) -> array_for_all (fun ip -> ip.ip_logical) i.ind_packets
   | _ -> false
 
 (*s Is a [ml_spec] logical ? *)
 
 let logical_spec = function 
-  | Stype (_, [], Some Tdummy) -> true
-  | Sval (_,Tdummy) -> true
+  | Stype (_, [], Some (Tdummy _)) -> true
+  | Sval (_,Tdummy _) -> true
   | Sind (_,i) -> array_for_all (fun ip -> ip.ip_logical) i.ind_packets
   | _ -> false
 

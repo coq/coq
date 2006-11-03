@@ -11,6 +11,8 @@
 open Term 
 open Proof_type
 
-val cc_tactic : constr list -> tactic
+val cc_tactic : int -> constr list -> tactic
 
 val cc_fail : tactic
+
+val congruence_tac : int -> constr list -> tactic

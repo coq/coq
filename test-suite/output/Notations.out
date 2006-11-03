@@ -14,6 +14,12 @@ forall n : nat, n = 0
      : Prop
 !(0 = 0)
      : Prop
+forall n : nat, #(n = n)
+     : Prop
+forall n n0 : nat, ##(n = n0)
+     : Prop
+forall n n0 : nat, ###(n = n0)
+     : Prop
 3 + 3
      : Z
 3 + 3
@@ -22,3 +28,21 @@ forall n : nat, n = 0
      : list nat
 (1; 2, 4)
      : nat * nat * nat
+Defining 'ifzero' as keyword
+ifzero 3
+     : bool
+Defining 'pred' as keyword
+pred 3
+     : nat
+fun n : nat => pred n
+     : nat -> nat
+fun n : nat => pred n
+     : nat -> nat
+Defining 'ifn' as keyword
+Defining 'is' as keyword
+fun x : nat => ifn x is succ n then n else 0
+     : nat -> nat
+1-
+     : bool
+-4
+     : Z

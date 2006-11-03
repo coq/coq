@@ -130,6 +130,11 @@ let push_scope sc scopes = Scope sc :: scopes
 
 let push_scopes = List.fold_right push_scope
 
+type local_scopes = tmp_scope_name option * scope_name list
+
+let make_current_scopes (tmp_scope,scopes) =
+  option_fold_right push_scope tmp_scope (push_scopes scopes !scope_stack)
+
 (**********************************************************************)
 (* Delimiters *)
 
@@ -146,7 +151,7 @@ let declare_delimiters scope key =
   scope_map := Gmap.add scope sc !scope_map;
   if Gmap.mem key !delimiters_map then begin
     let oldsc = Gmap.find key !delimiters_map in
-    Options.if_verbose warning ("Hidding binding of key "^key^" to "^oldsc)
+    Options.if_verbose warning ("Hiding binding of key "^key^" to "^oldsc)
   end;
   delimiters_map := Gmap.add key scope !delimiters_map
 
@@ -234,12 +239,12 @@ let delay dir int loc x = (dir, (fun () -> int loc x))
 let declare_numeral_interpreter sc dir interp (patl,uninterp,inpat) =
   declare_prim_token_interpreter sc
     (fun cont loc -> function Numeral n-> delay dir interp loc n | p -> cont loc p)
-    (patl, (fun r -> option_app mkNumeral (uninterp r)), inpat)
+    (patl, (fun r -> option_map mkNumeral (uninterp r)), inpat)
 
 let declare_string_interpreter sc dir interp (patl,uninterp,inpat) =
   declare_prim_token_interpreter sc
     (fun cont loc -> function String s -> delay dir interp loc s | p -> cont loc p)
-    (patl, (fun r -> option_app mkString (uninterp r)), inpat)
+    (patl, (fun r -> option_map mkString (uninterp r)), inpat)
 
 let check_required_module loc sc (sp,d) =
   try let _ = Nametab.absolute_reference sp in ()
@@ -295,8 +300,8 @@ let declare_notation_interpretation ntn scopt pat df =
   let scope = match scopt with Some s -> s | None -> default_scope in
   let sc = find_scope scope in
   if Gmap.mem ntn sc.notations && Options.is_verbose () then
-    warning ("Notation "^ntn^" was already used"^
-    (if scopt = None then "" else " in scope "^scope));
+    msg_warning (str ("Notation "^ntn^" was already used"^
+    (if scopt = None then "" else " in scope "^scope)));
   let sc = { sc with notations = Gmap.add ntn (pat,df) sc.notations } in
   scope_map := Gmap.add scope sc !scope_map;
   if scopt = None then scope_stack := SingleNotation ntn :: !scope_stack
@@ -336,9 +341,9 @@ let find_prim_token g loc p sc =
   check_required_module loc sc spdir;
   g (interp ()), (dirpath (fst spdir),"")
 
-let interp_prim_token_gen g loc p scopes =
-  let all_scopes = push_scopes scopes !scope_stack in
-  try find_interpretation (find_prim_token g loc p) all_scopes
+let interp_prim_token_gen g loc p local_scopes =
+  let scopes = make_current_scopes local_scopes in
+  try find_interpretation (find_prim_token g loc p) scopes
   with Not_found ->
     user_err_loc (loc,"interp_prim_token",
     (match p with
@@ -351,8 +356,9 @@ let interp_prim_token =
 let interp_prim_token_cases_pattern loc p name =
   interp_prim_token_gen (cases_pattern_of_rawconstr name) loc p
 
-let rec interp_notation loc ntn scopes =
-  try find_interpretation (find_notation ntn) (push_scopes scopes !scope_stack) 
+let rec interp_notation loc ntn local_scopes =
+  let scopes = make_current_scopes local_scopes in
+  try find_interpretation (find_notation ntn) scopes
   with Not_found ->
     user_err_loc
     (loc,"",str ("Unknown interpretation for notation \""^ntn^"\""))
@@ -366,7 +372,7 @@ let uninterp_cases_pattern_notations c =
 let availability_of_notation (ntn_scope,ntn) scopes =
   let f scope =
     Gmap.mem ntn (Gmap.find scope !scope_map).notations in
-  find_without_delimiters f (ntn_scope,Some ntn) scopes
+  find_without_delimiters f (ntn_scope,Some ntn) (make_current_scopes scopes)
 
 let uninterp_prim_token c =
   try 
@@ -387,9 +393,10 @@ let uninterp_prim_token_cases_pattern c =
       | Some n -> (na,sc,n)
   with Not_found -> raise No_match
 
-let availability_of_prim_token printer_scope scopes =
+let availability_of_prim_token printer_scope local_scopes =
   let f scope = Hashtbl.mem prim_token_interpreter_tab scope in
-  option_app snd (find_without_delimiters f (Some printer_scope,None) scopes)
+  let scopes = make_current_scopes local_scopes in
+  option_map snd (find_without_delimiters f (Some printer_scope,None) scopes)
 
 (* Miscellaneous *)
 
@@ -494,7 +501,7 @@ let make_notation_key symbols =
 let decompose_notation_key s =
   let len = String.length s in
   let rec decomp_ntn dirs n =
-    if n>=len then dirs else
+    if n>=len then List.rev dirs else
     let pos =
       try
 	String.index_from s n ' ' 

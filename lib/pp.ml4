@@ -10,6 +10,14 @@
 
 open Pp_control
 
+(* This should not be used outside of this file. Use
+   Options.print_emacs instead. This one is updated when reading
+   command line options. This was the only way to make [Pp] depend on
+   an option without creating a circularity: [Options] -> [Util] ->
+   [Pp] -> [Options] *)
+let print_emacs = ref false
+let make_pp_emacs() = print_emacs:=true
+
 (* The different kinds of blocks are: 
    \begin{description}
    \item[hbox:] Horizontal block no line breaking;
@@ -238,6 +246,17 @@ let pp_err_dirs = pp_dirs err_ft
 
 let ppcmds x = Ppdir_ppcmds x
 
+(* Special chars for emacs, to detect warnings inside goal output *)
+let emacs_warning_start_string = String.make 1 (Char.chr 254)
+let emacs_warning_end_string = String.make 1 (Char.chr 255)
+
+let warnstart() = 
+  if not !print_emacs then str "" else str emacs_warning_start_string
+
+let warnend() = 
+  if not !print_emacs then str "" else str emacs_warning_end_string
+  
+
 (* pretty printing functions WITHOUT FLUSH *)
 let pp_with ft strm =
   pp_dirs ft [< 'Ppdir_ppcmds strm >]
@@ -246,10 +265,10 @@ let ppnl_with ft strm =
   pp_dirs ft [< 'Ppdir_ppcmds [< strm ; 'Ppcmd_force_newline >] >]
 
 let warning_with ft string =
-  ppnl_with ft [< str "Warning: " ; str string >]
+  ppnl_with ft [< warnstart() ; str "Warning: " ; str string ; warnend() >]
 
 let warn_with ft pps =
-  ppnl_with ft [< str "Warning: " ; pps >]
+  ppnl_with ft [< warnstart() ; str "Warning: " ; pps ; warnend() >]
 
 let pp_flush_with ft =
   Format.pp_print_flush ft
@@ -263,7 +282,7 @@ let msgnl_with ft strm =
   pp_dirs ft [< 'Ppdir_ppcmds strm ; 'Ppdir_print_newline >]
 
 let msg_warning_with ft strm=
-  pp_dirs ft [< 'Ppdir_ppcmds [< str "Warning: "; strm>]; 
+  pp_dirs ft [< 'Ppdir_ppcmds [< warnstart() ; str "Warning: "; strm ; warnend() >]; 
 		'Ppdir_print_newline >]
 
 

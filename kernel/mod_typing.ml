@@ -87,8 +87,8 @@ and merge_with env mtb with_decl =
 		match cb.const_body with
 		  | None -> 
 		      let (j,cst1) = Typeops.infer env' c in
-		      let cst2 = 
-			Reduction.conv_leq env' j.uj_type cb.const_type in
+		      let typ = Typeops.type_of_constant_type env' cb.const_type in
+		      let cst2 = Reduction.conv_leq env' j.uj_type typ in
 		      let cst = 
 			Constraint.union 
 			  (Constraint.union cb.const_constraints cst1)

@@ -85,7 +85,7 @@ let create l =
 			   | [] -> ()
 			   | path::_ ->
 			       let iter = store#get_iter path in
-			       GtkTree.TreePath.prev path;
+			       ignore (GtkTree.TreePath.prev path);
 			       let upiter = store#get_iter path in
 			       ignore (store#swap iter upiter);
 		      ));

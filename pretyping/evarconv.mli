@@ -33,3 +33,5 @@ val evar_eqappr_x :
     conv_pb -> constr * constr list -> constr * constr list ->
       evar_defs * bool
 (*i*)
+
+val consider_remaining_unif_problems : env -> evar_defs -> evar_defs * bool

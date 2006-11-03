@@ -114,7 +114,7 @@ EXTEND
   ;
   args:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
-        let t, g = Q_util.interp_entry_name loc e in
+        let t, g = Q_util.interp_entry_name loc e "" in
         VernacNonTerm (loc, t, g, Some s)
       | s = STRING ->
         VernacTerm s

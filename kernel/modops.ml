@@ -41,7 +41,7 @@ let error_incompatible_labels l l' =
   error ("Opening and closing labels are not the same: "
 	 ^string_of_label l^" <> "^string_of_label l'^" !")
 
-let error_result_must_be_signature mtb = 
+let error_result_must_be_signature () = 
   error "The result module type must be a signature"
 
 let error_signature_expected mtb =
@@ -170,56 +170,6 @@ and subst_module sub mb =
 let subst_signature_msid msid mp = 
   subst_signature (map_msid msid mp)
 
-let rec constants_of_specification env mp sign =
- let aux res (l,elem) =
-  match elem with
-   | SPBconst cb -> ((make_con mp empty_dirpath l),cb)::res
-   | SPBmind _ -> res
-   | SPBmodule mb ->
-      (constants_of_modtype env (MPdot (mp,l))
-        (module_body_of_spec mb).mod_type) @ res
-   | SPBmodtype mtb -> res (* ???? *)
- in
-  List.fold_left aux [] sign
-
-and constants_of_modtype env mp modtype =
- match scrape_modtype env modtype with
-    MTBident _ -> anomaly "scrape_modtype does not work!"
-  | MTBsig (msid,sign) ->
-     constants_of_specification env mp
-      (subst_signature_msid msid mp sign)
-  | MTBfunsig _ -> []
-
-(* returns a resolver for kn that maps mbid to mp and then delta-expands
-   the obtained constants according to env *)
-let resolver_of_environment mbid modtype mp env =
- let constants = constants_of_modtype env (MPbound mbid) modtype in
- let resolve =
-  List.map
-   (fun (con,expecteddef) ->
-     let con' = replace_mp_in_con (MPbound mbid) mp con in
-     let constr =
-      try
-       if expecteddef.Declarations.const_body <> None then
-        (* Do not expand constants that already have a body in the
-           expected type (i.e. only parameters/axioms in the module type
-           are expanded). In the few examples we have this seems to
-           be the more reasonable behaviour for the user. *)
-        None
-       else
-        let constant = lookup_constant con' env in
-         if constant.Declarations.const_opaque then
-          None
-         else
-          option_app Declarations.force
-           constant.Declarations.const_body
-      with Not_found -> error_no_such_label (con_label con')
-     in
-      con,constr
-   ) constants
- in
-  Mod_subst.make_resolver resolve
-
 (* we assume that the substitution of "mp" into "msid" is already done
 (or unnecessary) *)
 let rec add_signature mp sign env = 
@@ -244,6 +194,53 @@ and add_module mp mb env =
       | MTBsig (msid,sign) -> 
 	  add_signature mp (subst_signature_msid msid mp sign) env
       | MTBfunsig _ -> env
+
+
+let rec constants_of_specification env mp sign =
+ let aux (env,res) (l,elem) =
+  match elem with
+   | SPBconst cb -> env,((make_con mp empty_dirpath l),cb)::res
+   | SPBmind _ -> env,res
+   | SPBmodule mb ->
+       let new_env =  add_module (MPdot (mp,l)) (module_body_of_spec mb) env in 
+       new_env,(constants_of_modtype env (MPdot (mp,l))
+		  (module_body_of_spec mb).mod_type) @ res
+   | SPBmodtype mtb -> 
+       (* module type dans un module type. 
+	  Il faut au moins mettre mtb dans l'environnement (avec le bon 
+	  kn pour pouvoir continuer aller deplier les modules utilisant ce 
+	  mtb
+	  ex: 
+	  Module Type T1. 
+	  Module Type T2.
+	     ....
+    	    End T2.
+	  .....
+            Declare Module M : T2.
+         End T2 
+	  si on ne rajoute pas T2 dans l'environement de typage 
+	  on va exploser au moment du Declare Module
+       *)
+       let new_env = Environ.add_modtype (make_kn mp empty_dirpath l) mtb env in 
+       new_env, constants_of_modtype env (MPdot(mp,l)) mtb @ res
+ in
+ snd (List.fold_left aux (env,[]) sign)
+
+and constants_of_modtype env mp modtype =
+ match scrape_modtype env modtype with
+    MTBident _ -> anomaly "scrape_modtype does not work!"
+  | MTBsig (msid,sign) ->
+     constants_of_specification env mp
+      (subst_signature_msid msid mp sign)
+  | MTBfunsig _ -> []
+
+(* returns a resolver for kn that maps mbid to mp *)
+(* Nota: Some delta-expansions used to happen here. 
+    Browse SVN if you want to know more. *)
+let resolver_of_environment mbid modtype mp env =
+ let constants = constants_of_modtype env (MPbound mbid) modtype in
+ let resolve = List.map (fun (con,_) -> con,None) constants in 
+ Mod_subst.make_resolver resolve
 
 
 let strengthen_const env mp l cb = 

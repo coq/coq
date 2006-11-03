@@ -10,10 +10,4 @@
 
 open Index
 
-type file =
-  | Vernac_file of string * coq_module
-  | Latex_file of string
-
-val gallina : bool ref
-
-val produce_document : file list -> unit
+val coq_file : string -> Cdglobals.coq_module -> unit

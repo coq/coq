@@ -20,6 +20,7 @@ open Term
 open Pfedit
 open Tacmach
 open Proof_trees
+open Decl_mode
 open Constrintern
 open Prettyp
 open Printer
@@ -93,7 +94,10 @@ let show_script () =
   let pts = get_pftreestate () in
   let pf = proof_of_pftreestate pts
   and evc = evc_of_pftreestate pts in
-  msgnl (print_treescript true evc (Global.named_context()) pf)
+  msgnl (print_treescript true evc pf)
+
+let show_thesis () =
+     msgnl (anomaly "TODO" )
 
 let show_top_evars () =
   let pfts = get_pftreestate () in 
@@ -111,28 +115,19 @@ let print_subgoals () = if_verbose (fun () -> msg (pr_open_subgoals ())) ()
 
   (* Simulate the Intro(s) tactic *)
 
-let fresh_id_of_name avoid gl = function
-    Anonymous -> Tactics.fresh_id avoid (id_of_string "H") gl
-  | Name id   -> Tactics.fresh_id avoid id gl
-
-let rec do_renum avoid gl = function
-    [] -> mt ()
-  | [n] -> pr_id (fresh_id_of_name avoid gl n)
-  | n :: l ->
-      let id = fresh_id_of_name avoid gl n in
-      pr_id id ++ spc () ++ do_renum (id :: avoid) gl l
-
 let show_intro all =
   let pf = get_pftreestate() in
   let gl = nth_goal_of_pftreestate 1 pf in
-  let l,_= decompose_prod (strip_outer_cast (pf_concl gl)) in
-  let nl = List.rev_map fst l in
-  if all then msgnl (hov 0 (do_renum [] gl nl))
-  else try 
-    let n = List.hd nl in
-    msgnl (pr_id (fresh_id_of_name [] gl n))
-  with Failure "hd" -> message "" 
-
+  let l,_= Sign.decompose_prod_assum (strip_outer_cast (pf_concl gl)) in
+  if all 
+  then 
+    let lid = Tactics.find_intro_names l gl in 
+    msgnl (hov 0 (prlist_with_sep  spc pr_id lid))
+  else  
+    try  
+      let n = list_last l in
+      msgnl (pr_id (List.hd (Tactics.find_intro_names [n] gl)))
+    with Failure "list_last" -> message ""
 
 let id_of_name = function 
   | Names.Anonymous -> id_of_string "x" 
@@ -334,7 +329,7 @@ let vernac_start_proof kind sopt (bl,t) lettop hook =
 let vernac_end_proof = function
   | Admitted -> admit ()
   | Proved (is_opaque,idopt) ->
-    if_verbose show_script ();
+    if not !Options.print_emacs then if_verbose show_script ();
     match idopt with
     | None -> save_named is_opaque
     | Some ((_,id),None) -> save_anonymous is_opaque id
@@ -344,8 +339,14 @@ let vernac_end_proof = function
      the theories [??] *)
 
 let vernac_exact_proof c =
-  by (Tactics.exact_proof c);
-  save_named true
+  let pfs = top_of_tree (get_pftreestate()) in
+  let pf = proof_of_pftreestate pfs in
+    if (is_leaf_proof pf) then begin
+      by (Tactics.exact_proof c);
+      save_named true end
+    else
+      errorlabstrm "Vernacentries.ExactProof"
+	(str "Command 'Proof ...' can only be used at the beginning of the proof")
   	
 let vernac_assumption kind l =
   List.iter (fun (is_coe,(idl,c)) -> declare_assumption idl is_coe kind [] c) l
@@ -491,15 +492,14 @@ let vernac_end_section = Lib.close_section
 
 let vernac_end_segment id =
   check_no_pending_proofs ();
-  let o = 
-    try Lib.what_is_opened ()
-    with Not_found -> error "There is nothing to end." in
-  match o with
-    | _,Lib.OpenedModule (export,_,_) -> vernac_end_module export id
-    | _,Lib.OpenedModtype _ -> vernac_end_modtype id
-    | _,Lib.OpenedSection _ -> vernac_end_section id
-    | _ -> anomaly "No more opened things"
-      
+  let o = try Lib.what_is_opened () with 
+      Not_found -> error "There is nothing to end." in
+    match o with
+      | _,Lib.OpenedModule (export,_,_) -> vernac_end_module export id
+      | _,Lib.OpenedModtype _ -> vernac_end_modtype id
+      | _,Lib.OpenedSection _ -> vernac_end_section id
+      | _ -> anomaly "No more opened things"
+
 let vernac_require import _ qidl =
   let qidl = List.map qualid_of_reference qidl in
   Library.require_library qidl import
@@ -536,6 +536,7 @@ let vernac_identity_coercion stre id qids qidt =
 let vernac_solve n tcom b =
   if not (refining ()) then
     error "Unknown command of the non proof-editing mode";
+  Decl_mode.check_not_proof_mode "Unknown proof instruction";
   begin
     if b then 
       solve_nth n (Tacinterp.hide_interp tcom (get_end_tac ()))
@@ -546,7 +547,7 @@ let vernac_solve n tcom b =
   if subtree_solved () then begin
     Options.if_verbose msgnl (str "Subgoal proved");
     make_focus 0;
-    reset_top_of_tree ()
+    reset_top_of_script ()
   end;
   print_subgoals();
   if !pcoq <> None then (out_some !pcoq).solve n
@@ -562,10 +563,36 @@ let vernac_solve_existential = instantiate_nth_evar_com
 let vernac_set_end_tac tac =
   if not (refining ()) then
     error "Unknown command of the non proof-editing mode";
-  if tac <> (Tacexpr.TacId []) then set_end_tac (Tacinterp.interp tac)
+  if tac <> (Tacexpr.TacId []) then set_end_tac (Tacinterp.interp tac) else ()
     (* TO DO verifier s'il faut pas mettre exist s | TacId s ici*)
- 
-   
+
+(***********************)
+(* Proof Language Mode *)
+
+let vernac_decl_proof () = 
+  check_not_proof_mode "Already in Proof Mode";
+  if tree_solved () then 
+    error "Nothing left to prove here."
+  else
+    begin
+      Decl_proof_instr.go_to_proof_mode ();
+      print_subgoals ()
+    end
+
+let vernac_return () = 
+  match get_current_mode () with
+      Mode_tactic ->
+	Decl_proof_instr.return_from_tactic_mode ();
+	print_subgoals ()
+    | Mode_proof -> 
+	error "\"return\" is only used after \"escape\"."
+    | Mode_none -> 
+	error "There is no proof to end." 
+
+let vernac_proof_instr instr = 
+  Decl_proof_instr.proof_instr instr;
+  print_subgoals ()
+
 (*****************************)
 (* Auxiliary file management *)
 
@@ -772,6 +799,25 @@ let _ =
       optname="the printing width";
       optread=Pp_control.get_margin;
       optwrite=Pp_control.set_margin }
+
+let _ =
+  declare_bool_option
+    { optsync=true;
+      optkey=SecondaryTable("Printing","Universes");
+      optname="the printing of universes";
+      optread=(fun () -> !Constrextern.print_universes);
+      optwrite=(fun b -> Constrextern.print_universes:=b) }
+
+let vernac_debug b =
+  set_debug (if b then Tactic_debug.DebugOn 0 else Tactic_debug.DebugOff)
+
+let _ =
+  declare_bool_option
+    { optsync=false;
+      optkey=SecondaryTable("Ltac","Debug");
+      optname="Ltac debug";
+      optread=(fun () -> get_debug () <> Tactic_debug.DebugOff);
+      optwrite=vernac_debug }
 
 let vernac_set_opacity opaq locqid =
   match Nametab.global locqid with
@@ -982,18 +1028,21 @@ let vernac_backtrack snum pnum naborts =
   for i = 1 to naborts do vernac_abort None done;
   undo_todepth pnum;
   vernac_backto snum;
+  Pp.flush_all();
   (* there may be no proof in progress, even if no abort *)
   (try print_subgoals () with UserError _ -> ())
   
 
-  (* Est-ce normal que "Focus" ne semble pas se comporter comme "Focus 1" ? *)
-let vernac_focus = function
-  | None -> traverse_nth_goal 1; print_subgoals ()
-  | Some n -> traverse_nth_goal n; print_subgoals ()
-
+let vernac_focus gln =
+  check_not_proof_mode "No focussing or Unfocussing in Proof Mode.";
+  match gln with 
+    | None -> traverse_nth_goal 1; print_subgoals ()
+    | Some n -> traverse_nth_goal n; print_subgoals ()
+	
   (* Reset the focus to the top of the tree *)
 let vernac_unfocus () =
-  make_focus 0; reset_top_of_tree (); print_subgoals ()
+  check_not_proof_mode "No focussing or Unfocussing in Proof Mode.";
+  make_focus 0; reset_top_of_script (); print_subgoals ()
 
 let vernac_go = function
   | GoTo n -> Pfedit.traverse n;show_node()
@@ -1012,7 +1061,7 @@ let apply_subproof f occ =
   f evc (Global.named_context()) pf
 
 let explain_proof occ =
-  msg (apply_subproof (print_treescript true) occ)
+  msg (apply_subproof (fun evd _ -> print_treescript true evd) occ)
 
 let explain_tree occ =
   msg (apply_subproof print_proof occ)
@@ -1036,8 +1085,10 @@ let vernac_show = function
       msgnl (prlist_with_sep pr_spc pr_id (Pfedit.get_all_proof_names()))
   | ShowIntros all -> show_intro all
   | ShowMatch id -> show_match id
+  | ShowThesis -> show_thesis ()
   | ExplainProof occ -> explain_proof occ
   | ExplainTree occ -> explain_tree occ
+
 
 let vernac_check_guard () =
   let pts = get_pftreestate () in
@@ -1052,9 +1103,6 @@ let vernac_check_guard () =
       (str ("Condition violated : ") ++s)
   in 
   msgnl message
-
-let vernac_debug b =
-  set_debug (if b then Tactic_debug.DebugOn 0 else Tactic_debug.DebugOff)
 
 let interp c = match c with
   (* Control (done in vernac) *)
@@ -1105,6 +1153,14 @@ let interp c = match c with
   (* Solving *)
   | VernacSolve (n,tac,b) -> vernac_solve n tac b
   | VernacSolveExistential (n,c) -> vernac_solve_existential n c
+
+  (* MMode *)
+
+  | VernacDeclProof -> vernac_decl_proof ()
+  | VernacReturn -> vernac_return ()
+  | VernacProofInstr stp -> vernac_proof_instr stp 
+
+  (* /MMode *)
 
   (* Auxiliary file and library management *)
   | VernacRequireFrom (exp,spec,f) -> vernac_require_from exp spec f
@@ -1159,7 +1215,6 @@ let interp c = match c with
   | VernacGo g -> vernac_go g
   | VernacShow s -> vernac_show s
   | VernacCheckGuard -> vernac_check_guard ()
-  | VernacDebug b -> vernac_debug b
   | VernacProof tac -> vernac_set_end_tac tac
   (* Toplevel control *)
   | VernacToplevelControl e -> raise e

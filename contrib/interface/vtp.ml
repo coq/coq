@@ -112,19 +112,12 @@ and fCOMMAND = function
    fFORMULA x2;
    fINT_LIST x3;
    fNODE "abstraction" 3
-| CT_add_field(x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11) ->
+| CT_add_field(x1, x2, x3, x4) ->
    fFORMULA x1;
    fFORMULA x2;
    fFORMULA x3;
-   fFORMULA x4;
-   fFORMULA x5;
-   fFORMULA x6;
-   fFORMULA x7;
-   fFORMULA x8;
-   fFORMULA x9;
-   fFORMULA x10;
-   fBINDING_LIST x11;
-   fNODE "add_field" 11
+   fFORMULA_OPT x4;
+   fNODE "add_field" 4
 | CT_add_natural_feature(x1, x2) ->
    fNATURAL_FEATURE x1;
    fID x2;
@@ -1660,7 +1653,7 @@ and fTACTIC_COM = function
    fID x2;
    fNODE "move_after" 2
 | CT_new_destruct(x1, x2, x3) ->
-   fFORMULA_OR_INT x1;
+   (List.iter fFORMULA_OR_INT x1); (* Julien F. Est-ce correct? *)
    fUSING x2;
    fINTRO_PATT_OPT x3;
    fNODE "new_destruct" 3
@@ -1708,19 +1701,21 @@ and fTACTIC_COM = function
 | CT_repeat(x1) ->
    fTACTIC_COM x1;
    fNODE "repeat" 1
-| CT_replace_with(x1, x2) ->
+| CT_replace_with(x1, x2,x3,x4) ->
    fFORMULA x1;
    fFORMULA x2;
-   fNODE "replace_with" 2
+   fCLAUSE x3;
+   fTACTIC_OPT x4;
+   fNODE "replace_with" 4
 | CT_rewrite_lr(x1, x2, x3) ->
    fFORMULA x1;
    fSPEC_LIST x2;
-   fID_OPT x3;
+   fCLAUSE x3;
    fNODE "rewrite_lr" 3
 | CT_rewrite_rl(x1, x2, x3) ->
    fFORMULA x1;
    fSPEC_LIST x2;
-   fID_OPT x3;
+   fCLAUSE x3;
    fNODE "rewrite_rl" 3
 | CT_right(x1) ->
    fSPEC_LIST x1;

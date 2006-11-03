@@ -53,7 +53,7 @@ let rec execute env evd cstr =
         j_nf_evar (evars_of evd) (judge_of_variable env id)
 	  
     | Const c ->
-        make_judge cstr (nf_evar (evars_of evd) (constant_type env c))
+        make_judge cstr (nf_evar (evars_of evd) (type_of_constant env c))
 	  
     | Ind ind ->
 	make_judge cstr (nf_evar (evars_of evd) (type_of_inductive env ind))
@@ -88,10 +88,21 @@ let rec execute env evd cstr =
 	judge_of_type u
 	  
     | App (f,args) ->
-	let j = execute env evd f in
         let jl = execute_array env evd args in
-	let (j,_) = judge_of_apply env j jl in
-	j
+	let j =
+	  match kind_of_term f with
+	    | Ind ind ->
+		(* Sort-polymorphism of inductive types *)
+		judge_of_inductive_knowing_parameters env ind
+		  (jv_nf_evar (evars_of evd) jl)
+	    | Const cst -> 
+		(* Sort-polymorphism of inductive types *)
+		judge_of_constant_knowing_parameters env cst
+		  (jv_nf_evar (evars_of evd) jl)
+	    | _ -> 
+		execute env evd f
+	in
+	fst (judge_of_apply env j jl)
 	    
     | Lambda (name,c1,c2) -> 
         let j = execute env evd c1 in
@@ -133,17 +144,9 @@ and execute_recdef env evd (names,lar,vdef) =
   let _ = type_fixpoint env1 names lara vdefj in
   (names,lara,vdefv)
 
-and execute_array env evd v =
-  let jl = execute_list env evd (Array.to_list v) in
-  Array.of_list jl
+and execute_array env evd = Array.map (execute env evd)
 
-and execute_list env evd = function
-  | [] -> 
-      []
-  | c::r -> 
-      let j = execute env evd c in 
-      let jr = execute_list env evd r in
-      j::jr
+and execute_list env evd = List.map (execute env evd)
 
 let mcheck env evd c t =
   let sigma = Evd.evars_of evd in

@@ -91,7 +91,7 @@ let named_context_of_val = fst
    *** /!\ ***   [f t] should be convertible with t *)  
 let map_named_val f (ctxt,ctxtv) = 
   let ctxt =
-    List.map (fun (id,body,typ) -> (id, option_app f body, f typ)) ctxt in
+    List.map (fun (id,body,typ) -> (id, option_map f body, f typ)) ctxt in
   (ctxt,ctxtv)
 
 let empty_named_context = empty_named_context 
@@ -186,6 +186,8 @@ let evaluable_constant cst env =
 
 (* Mutual Inductives *)
 let lookup_mind = lookup_mind
+let scrape_mind = scrape_mind
+
 
 let add_mind kn mib env =
   let new_inds = KNmap.add kn mib env.env_globals.env_inductives in
@@ -242,6 +244,31 @@ let global_vars_set env constr =
     fold_constr filtrec acc c
   in 
   filtrec Idset.empty constr
+
+(* like [global_vars] but don't get through evars *)
+let global_vars_set_drop_evar env constr = 
+  let fold_constr_drop_evar f acc c = match kind_of_term c with
+    | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
+      | Construct _) -> acc
+    | Cast (c,_,t) -> f (f acc c) t
+    | Prod (_,t,c) -> f (f acc t) c
+    | Lambda (_,t,c) -> f (f acc t) c
+    | LetIn (_,b,t,c) -> f (f (f acc b) t) c
+    | App (c,l) -> Array.fold_left f (f acc c) l
+    | Evar (_,l) -> acc
+    | Case (_,p,c,bl) -> Array.fold_left f (f (f acc p) c) bl
+    | Fix (_,(lna,tl,bl)) ->
+	let fd = array_map3 (fun na t b -> (na,t,b)) lna tl bl in
+	  Array.fold_left (fun acc (na,t,b) -> f (f acc t) b) acc fd
+    | CoFix (_,(lna,tl,bl)) ->
+	let fd = array_map3 (fun na t b -> (na,t,b)) lna tl bl in
+	  Array.fold_left (fun acc (na,t,b) -> f (f acc t) b) acc fd in
+  let rec filtrec acc c =
+    let vl = vars_of_global env c in
+    let acc = List.fold_right Idset.add vl acc in
+      fold_constr_drop_evar filtrec acc c
+  in 
+    filtrec Idset.empty constr
 
 (* [keep_hyps env ids] keeps the part of the section context of [env] which 
    contains the variables of the set [ids], and recursively the variables 

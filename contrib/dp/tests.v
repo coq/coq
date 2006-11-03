@@ -1,14 +1,11 @@
-Reset Initial.
 
 Require Import ZArith.
 Require Import Classical.
 
-
 (* First example with the 0 and the equality translated *)
 
 Goal 0 = 0.
-
-simplify.
+zenon.
 Qed.
 
 
@@ -18,8 +15,7 @@ Qed.
 Parameter A C : Prop.
 
 Goal A -> A.
-
-simplify.
+zenon.
 Qed.
 
 
@@ -39,14 +35,14 @@ Qed.
 
 Goal ((((A -> C) -> A) -> A) -> C) -> C.
 
-simplify.
+zenon.
 Qed.
 
 
 (* Arithmetic *)
+Open Scope Z_scope.
 
 Goal 1 + 1 = 2.
-
 simplify.
 Qed.
 
@@ -59,15 +55,16 @@ Qed.
 
 (* Universal quantifier *)
 
-Goal (forall (x y : Z), x = y) -> 0 = 1.
-
+Goal (forall (x y : Z), x = y) -> 0=1.
+try zenon.
 simplify.
 Qed.
 
+Goal forall (x: nat), (x + 0 = x)%nat.
 
-Goal forall (x y : Z), x + y = y + x.
-
-induction x ; simplify.
+induction x0.
+zenon.
+zenon.
 Qed.
 
 
@@ -98,7 +95,7 @@ simplify.
 Qed.
 
 
-(* Inductive types definitions - call to injection function *)
+(* Inductive types definitions - call to incontrib/dp/jection function *)
 
 Inductive even : Z -> Prop :=
 | even_0 : even 0
@@ -109,7 +106,6 @@ Inductive even : Z -> Prop :=
    unlike CVC Lite *)
 
 Goal even 4.
-
 cvcl.
 Qed.
 
@@ -185,10 +181,10 @@ Qed.
 (* sorts issues *)
 
 Parameter foo : Set.         
-Parameter f : nat -> foo -> foo -> nat.
+Parameter ff : nat -> foo -> foo -> nat.
 Parameter g : foo -> foo.
-Goal (forall x:foo, f 0 x x = O) -> forall y, f 0 (g y) (g y) = O.
-simplify.      
+Goal (forall x:foo, ff 0 x x = O) -> forall y, ff 0 (g y) (g y) = O.
+zenon.
 Qed.
 
 
@@ -198,7 +194,7 @@ Qed.
 Parameter poly_f : forall A:Set, A->A.
 
 Goal forall x:nat, poly_f nat x = poly_f nat x.
-simplify.
+zenon.
 Qed.
 
 

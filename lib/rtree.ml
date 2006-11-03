@@ -11,11 +11,11 @@
 
 (* Type of regular trees:
    - Param denotes tree variables (like de Bruijn indices)
-   - Node denotes the usual tree node, labelles with 'a
+   - Node denotes the usual tree node, labelled with 'a
    - Rec(j,v1..vn) introduces infinite tree. It denotes
      v(j+1) with parameters 0..n-1 replaced by
      Rec(0,v1..vn)..Rec(n-1,v1..vn) respectively.
-     Parameters n and higher denote parameters globals to the
+     Parameters n and higher denote parameters global to the
      current Rec node (as usual in de Bruijn binding system)
  *)
 type 'a t =

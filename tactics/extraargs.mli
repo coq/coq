@@ -39,3 +39,14 @@ val rawwit_hloc : loc_place raw_abstract_argument_type
 val wit_hloc : place closed_abstract_argument_type
 val hloc : loc_place Pcoq.Gram.Entry.e
 
+
+val in_arg_hyp:  (Names.identifier Util.located list option * bool)  Pcoq.Gram.Entry.e
+val rawwit_in_arg_hyp : (Names.identifier Util.located list option * bool) raw_abstract_argument_type
+val wit_in_arg_hyp : (Names.identifier list option * bool) closed_abstract_argument_type
+val raw_in_arg_hyp_to_clause : (Names.identifier Util.located list option * bool) -> Tacticals.clause
+val glob_in_arg_hyp_to_clause :  (Names.identifier list option * bool)  -> Tacticals.clause
+
+
+val by_arg_tac : Tacexpr.raw_tactic_expr option Pcoq.Gram.Entry.e
+val rawwit_by_arg_tac :  raw_tactic_expr option raw_abstract_argument_type
+val wit_by_arg_tac : glob_tactic_expr option closed_abstract_argument_type

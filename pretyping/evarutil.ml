@@ -21,13 +21,6 @@ open Evd
 open Reductionops
 open Pretype_errors
 
-
-let rec filter_unique = function
-  | [] -> []
-  | x::l ->
-      if List.mem x l then filter_unique (List.filter (fun y -> x<>y) l)
-      else x::filter_unique l
-
 (* Expanding existential variables (pretyping.ml) *)
 (* 1- whd_ise fails if an existential is undefined *)
 
@@ -35,7 +28,7 @@ exception Uninstantiated_evar of existential_key
 
 let rec whd_ise sigma c =
   match kind_of_term c with
-    | Evar (ev,args) when Evd.in_dom sigma ev ->
+    | Evar (ev,args) when Evd.mem sigma ev ->
 	if Evd.is_defined sigma ev then
           whd_ise sigma (existential_value sigma (ev,args))
 	else raise (Uninstantiated_evar ev)
@@ -46,7 +39,7 @@ let rec whd_ise sigma c =
 let whd_castappevar_stack sigma c = 
   let rec whrec (c, l as s) =
     match kind_of_term c with
-      | Evar (ev,args) when Evd.in_dom sigma ev & Evd.is_defined sigma ev -> 
+      | Evar (ev,args) when Evd.mem sigma ev & Evd.is_defined sigma ev -> 
 	  whrec (existential_value sigma (ev,args), l)
       | Cast (c,_,_) -> whrec (c, l)
       | App (f,args) -> whrec (f, Array.fold_right (fun a l -> a::l) args l)
@@ -63,9 +56,20 @@ let jv_nf_evar = Pretype_errors.jv_nf_evar
 let tj_nf_evar = Pretype_errors.tj_nf_evar
 
 let nf_evar_info evc info =
-  { evar_concl = Reductionops.nf_evar evc info.evar_concl;
-    evar_hyps = map_named_val (Reductionops.nf_evar evc) info.evar_hyps;
-    evar_body = info.evar_body}
+  { info with 
+      evar_concl = Reductionops.nf_evar evc info.evar_concl;
+      evar_hyps = map_named_val (Reductionops.nf_evar evc) info.evar_hyps}
+
+let nf_evars evm = Evd.fold (fun ev evi evm' -> Evd.add evm' ev (nf_evar_info evm evi))
+		     evm Evd.empty
+
+let nf_evar_defs isevars = Evd.evars_reset_evd (nf_evars (Evd.evars_of isevars)) isevars
+
+let nf_isevar isevars = nf_evar (Evd.evars_of isevars)
+let j_nf_isevar isevars = j_nf_evar (Evd.evars_of isevars)
+let jl_nf_isevar isevars = jl_nf_evar (Evd.evars_of isevars)
+let jv_nf_isevar isevars = jv_nf_evar (Evd.evars_of isevars)
+let tj_nf_isevar isevars = tj_nf_evar (Evd.evars_of isevars)
 
 (**********************)
 (* Creating new metas *)
@@ -82,7 +86,7 @@ let collect_evars emap c =
   let rec collrec acc c =
     match kind_of_term c with
       | Evar (k,_) ->
-	  if Evd.in_dom emap k & not (Evd.is_defined emap k) then k::acc
+	  if Evd.mem emap k & not (Evd.is_defined emap k) then k::acc
 	  else (* No recursion on the evar instantiation *) acc
       | _         ->
 	  fold_constr collrec acc c in
@@ -92,13 +96,14 @@ let push_dependent_evars sigma emap =
   Evd.fold (fun ev {evar_concl = ccl} (sigma',emap') ->
     List.fold_left 
       (fun (sigma',emap') ev -> 
-	(Evd.add sigma' ev (Evd.map emap' ev),Evd.rmv emap' ev))
+	(Evd.add sigma' ev (Evd.find emap' ev),Evd.remove emap' ev))
       (sigma',emap') (collect_evars emap' ccl))
     emap (sigma,emap)
     
 (* replaces a mapping of existentials into a mapping of metas.
    Problem if an evar appears in the type of another one (pops anomaly) *)
 let evars_to_metas sigma (emap, c) =
+  let emap = nf_evars emap in
   let sigma',emap' = push_dependent_evars sigma emap in
   let change_exist evar =
     let ty = nf_betaiota (nf_evar emap (existential_type emap evar)) in
@@ -106,7 +111,7 @@ let evars_to_metas sigma (emap, c) =
     mkCast (mkMeta n, DEFAULTcast, ty) in
   let rec replace c =
     match kind_of_term c with
-        Evar (k,_ as ev) when Evd.in_dom emap' k -> change_exist ev
+        Evar (k,_ as ev) when Evd.mem emap' k -> change_exist ev
       | _ -> map_constr replace c in
   (sigma', replace c)
 
@@ -198,7 +203,7 @@ let push_rel_context_to_named_context env =
        let id = next_name_away na avoid in
        ((mkVar id)::subst,
         id::avoid,
-	push_named (id,option_app (substl subst) c,
+	push_named (id,option_map (substl subst) c,
                         type_app (substl subst) t)
 	  env))
     (rel_context env) ~init:([],ids_of_named_context (named_context env),env)
@@ -286,7 +291,7 @@ let is_defined_equation env evd (ev,inst) rhs =
   is_pattern inst &&
   not (occur_evar ev rhs) &&
   try
-    let evi = Evd.map (evars_of evd) ev in
+    let evi = Evd.find (evars_of evd) ev in
     let (evd',body) = inverse_instance env evd ev evi inst rhs in
     evar_well_typed_body evd' ev evi body
   with Failure _ -> false
@@ -298,29 +303,45 @@ let is_defined_equation env evd (ev,inst) rhs =
  * ?3 <-- ?1          no pb: env of ?3 is larger than ?1's
  * ?1 <-- (list ?2)   pb: ?2 may depend on x, but not ?1.
  * What we do is that ?2 is defined by a new evar ?4 whose context will be
- * a prefix of ?2's env, included in ?1's env. *)
+ * a prefix of ?2's env, included in ?1's env.
 
-let do_restrict_hyps evd ev args =
+ Concretely, the assumptions are "env |- ev : T" and "Gamma |-
+ ev[hyps:=args]" for some Gamma whose de Bruijn context has length k.
+ We create "env' |- ev' : T" for some env' <= env and define ev:=ev'
+*)
+
+let do_restrict_hyps env k evd ev args =
   let args = Array.to_list args in
-  let evi = Evd.map (evars_of !evd) ev in
-  let env = evar_env evi in
+  let evi = Evd.find (evars_of !evd) ev in
   let hyps = evar_context evi in
-  let (sign,ncargs) = list_filter2 (fun _ a -> closed0 a) (hyps,args) in
+  let (hyps',ncargs) = list_filter2 (fun _ a -> closedn k a) (hyps,args) in
   (* No care is taken in case the evar type uses vars filtered out!
-     Is it important ? *)
-  let nc =
-    let env =
-      Sign.fold_named_context push_named sign ~init:(reset_context env) in
-    e_new_evar evd env ~src:(evar_source ev !evd) evi.evar_concl in
+     Assuming that the restriction comes from a well-typed Flex/Flex
+     unification problem (see real_clean), the type of the evar cannot
+     depend on variables that are not in the scope of the other evar,
+     since this other evar has the same type (up to unification).
+     Since moreover, the evar contexts uses names only, the
+     restriction raise no de Bruijn reallocation problem *)
+  let env' =
+    Sign.fold_named_context push_named hyps' ~init:(reset_context env) in
+  let nc = e_new_evar evd env' ~src:(evar_source ev !evd) evi.evar_concl in
   evd := Evd.evar_define ev nc !evd;
   let (evn,_) = destEvar nc in
   mkEvar(evn,Array.of_list ncargs)
 
-
-let need_restriction isevars args = not (array_for_all closed0 args)
+let need_restriction k args = not (array_for_all (closedn k) args)
 
 (* We try to instantiate the evar assuming the body won't depend
- * on arguments that are not Rels or Vars, or appearing several times.
+ * on arguments that are not Rels or Vars, or appearing several times
+   (i.e. we tackle only Miller-Pfenning patterns unification) 
+
+  1) Let a unification problem "env |- ev[hyps:=args] = rhs"
+  2) We limit it to a patterns unification problem "env |- ev[subst] = rhs"
+     where only Rel's and Var's are relevant in subst
+  3) We recur on rhs, "imitating" the term failing if some Rel/Var not in scope
+
+  Note: we don't assume rhs in normal form, it may fail while it would
+  have succeeded after some reductions
  *)
 (* Note: error_not_clean should not be an error: it simply means that the
  * conversion test that lead to the faulty call to [real_clean] should return
@@ -329,36 +350,52 @@ let need_restriction isevars args = not (array_for_all closed0 args)
 
 let real_clean env isevars ev evi args rhs =
   let evd = ref isevars in
-  let subst = List.map (fun (x,y) -> (y,mkVar x)) (filter_unique args) in
+  let subst = List.map (fun (x,y) -> (y,mkVar x)) (list_uniquize args) in
   let rec subs rigid k t =
     match kind_of_term t with
       | Rel i ->
  	 if i<=k then t
- 	 else (try List.assoc (mkRel (i-k)) subst with Not_found -> t)
+ 	 else
+	   (* Flex/Rel problem: unifiable as a pattern iff Rel in ev scope *)
+	   (try List.assoc (mkRel (i-k)) subst 
+	    with Not_found -> if rigid then raise Exit else t)
       | Evar (ev,args) ->
           if Evd.is_defined_evar !evd (ev,args) then
             subs rigid k (existential_value (evars_of !evd) (ev,args))
           else
+	    (* Flex/Flex problem: restriction to a common scope *)
 	    let args' = Array.map (subs false k) args in
-	    if need_restriction !evd args' then
-              do_restrict_hyps evd ev args'
+	    if need_restriction k args' then
+              do_restrict_hyps (reset_context env) k evd ev args'
 	    else
 	      mkEvar (ev,args')
       | Var id ->
+	  (* Flex/Var problem: unifiable as a pattern iff Var in scope of ev *)
           (try List.assoc t subst
            with Not_found ->
              if
                not rigid 
+	     (* I don't understand this line: vars from evar_context evi
+		are private (especially some of them are freshly
+		generated in push_rel_context_to_named_context). They
+		have a priori nothing to do with the vars in env. I
+		remove the test [HH 25/8/06]
+
 		 or List.exists (fun (id',_,_) -> id=id') (evar_context evi)
+	     *)
              then t
-             else
-               error_not_clean env (evars_of !evd) ev rhs
-                 (evar_source ev !evd))
-      | _ -> map_constr_with_binders succ (subs rigid) k t
+             else raise Exit)
+               
+      | _ ->
+	  (* Flex/Rigid problem (or assimilated if not normal): we "imitate" *)
+	  map_constr_with_binders succ (subs rigid) k t
   in
-  let body = subs true 0 (nf_evar (evars_of isevars) rhs) in
-  if not (closed0 body)
-  then error_not_clean env (evars_of !evd) ev body (evar_source ev !evd);
+  let rhs = nf_evar (evars_of isevars) rhs in
+  let rhs = whd_beta rhs (* heuristic *) in
+  let body = 
+    try subs true 0 rhs
+    with Exit -> 
+      error_not_clean env (evars_of !evd) ev rhs (evar_source ev !evd) in
   (!evd,body)
 
 (* [evar_define] solves the problem lhs = rhs when lhs is an uninstantiated
@@ -384,7 +421,7 @@ let evar_define env (ev,argsv) rhs isevars =
   if occur_evar ev rhs
   then error_occur_check env (evars_of isevars) ev rhs;
   let args = Array.to_list argsv in 
-  let evi = Evd.map (evars_of isevars) ev in
+  let evi = Evd.find (evars_of isevars) ev in
   (* the bindings to invert *)
   let worklist = make_subst (evar_env evi) args in
   let (isevars',body) = real_clean env isevars ev evi worklist rhs in
@@ -452,6 +489,34 @@ let head_evar =
   in 
   hrec 
 
+(* Check if an applied evar "?X[args] l" is a Miller's pattern; note
+   that we don't care whether args itself contains Rel's or even Rel's
+   distinct from the ones in l *)
+
+let is_unification_pattern_evar (_,args) l =
+  let l' = Array.to_list args @ l in
+  List.for_all (fun a -> isRel a or isVar a) l' & list_distinct l'
+
+let is_unification_pattern f l =
+  match kind_of_term f with
+    | Meta _ -> array_for_all isRel l & array_distinct l
+    | Evar ev -> is_unification_pattern_evar ev (Array.to_list l)
+    | _ -> false
+
+(* From a unification problem "?X l1 = term1 l2" such that l1 is made
+   of distinct rel's, build "\x1...xn.(term1 l2)" (patterns unification) *)
+
+let solve_pattern_eqn env l1 c =
+  let c' = List.fold_right (fun a c ->
+    let c' = subst_term (lift 1 a) (lift 1 c) in
+    match kind_of_term a with
+      (* Rem: if [a] links to a let-in, do as if it were an assumption *)
+      | Rel n -> let (na,_,t) = lookup_rel n env in mkLambda (na,lift n t,c')
+      | Var id -> let (id,_,t) = lookup_named id env in mkNamedLambda id t c'
+      | _ -> assert false) 
+    l1 c in
+  whd_eta c'
+
 (* This code (i.e. solve_pb, etc.) takes a unification
  * problem, and tries to solve it. If it solves it, then it removes
  * all the conversion problems, and re-runs conversion on each one, in
@@ -491,7 +556,7 @@ let status_changed lev (pbty,t1,t2) =
 
 let solve_refl conv_algo env isevars ev argsv1 argsv2 =
   if argsv1 = argsv2 then (isevars,[]) else
-  let evd = Evd.map (evars_of isevars) ev in
+  let evd = Evd.find (evars_of isevars) ev in
   let hyps = evar_context evd in
   let (isevars',_,rsign) = 
     array_fold_left2
@@ -538,14 +603,33 @@ let solve_simple_eqn conv_algo env isevars (pbty,(n1,args1 as ev1),t2) =
     let (isevars,pbs) = get_conv_pbs isevars (status_changed lsp) in
     List.fold_left
       (fun (isevars,b as p) (pbty,t1,t2) ->
-        if b then conv_algo env isevars pbty t1 t2 else p) (isevars,true)
+	if b then conv_algo env isevars pbty t1 t2 else p) (isevars,true)
       pbs
   with e when precatchable_exception e ->
     (isevars,false)
 
+
+(* [check_evars] fails if some unresolved evar remains *)
+(* it assumes that the defined existentials have already been substituted *)
+
+let check_evars env initial_sigma isevars c =
+  let sigma = evars_of isevars in
+  let c = nf_evar sigma c in
+  let rec proc_rec c =
+    match kind_of_term c with
+      | Evar (ev,args) ->
+          assert (Evd.mem sigma ev);
+	  if not (Evd.mem initial_sigma ev) then
+            let (loc,k) = evar_source ev isevars in
+	    error_unsolvable_implicit loc env sigma k
+      | _ -> iter_constr proc_rec c
+  in proc_rec c
+
 (* Operations on value/type constraints *)
 
-type type_constraint = constr option
+type type_constraint_type = (int * int) option * constr
+type type_constraint = type_constraint_type option
+
 type val_constraint = constr option
 
 (* Old comment...
@@ -565,8 +649,14 @@ type val_constraint = constr option
 (* The empty type constraint *)
 let empty_tycon = None
 
+let mk_tycon_type c = (None, c)
+let mk_abstr_tycon_type n c = (Some (n, n), c) (* First component is initial abstraction, second
+						  is current abstraction *)
+
 (* Builds a type constraint *)
-let mk_tycon ty = Some ty
+let mk_tycon ty = Some (mk_tycon_type ty)
+
+let mk_abstr_tycon n ty = Some (mk_abstr_tycon_type n ty)
 
 (* Constrains the value of a type *)
 let empty_valcon = None
@@ -579,8 +669,8 @@ let mk_valcon c = Some c
 (* Declaring any type to be in the sort Type shouldn't be harmful since
    cumulativity now includes Prop and Set in Type...
    It is, but that's not too bad *)
-let define_evar_as_arrow evd (ev,args) =
-  let evi = Evd.map (evars_of evd) ev in
+let define_evar_as_abstraction abs evd (ev,args) =
+  let evi = Evd.find (evars_of evd) ev in
   let evenv = evar_env evi in
   let (evd1,dom) = new_evar evd evenv (new_Type()) in
   let nvar =
@@ -589,13 +679,19 @@ let define_evar_as_arrow evd (ev,args) =
   let newenv = push_named (nvar, None, dom) evenv in
   let (evd2,rng) =
     new_evar evd1 newenv ~src:(evar_source ev evd1) (new_Type()) in
-  let prod = mkProd (Name nvar, dom, subst_var nvar rng) in
+  let prod = abs (Name nvar, dom, subst_var nvar rng) in
   let evd3 = Evd.evar_define ev prod evd2 in
   let evdom = fst (destEvar dom), args in
   let evrng =
     fst (destEvar rng), array_cons (mkRel 1) (Array.map (lift 1) args) in
-  let prod' = mkProd (Name nvar, mkEvar evdom, mkEvar evrng) in
+  let prod' = abs (Name nvar, mkEvar evdom, mkEvar evrng) in
   (evd3,prod')
+
+let define_evar_as_arrow evd (ev,args) =
+  define_evar_as_abstraction (fun t -> mkProd t) evd (ev,args)
+
+let define_evar_as_lambda evd (ev,args) =
+  define_evar_as_abstraction (fun t -> mkLambda t) evd (ev,args)
 
 let define_evar_as_sort isevars (ev,args) =
   let s = new_Type () in
@@ -612,20 +708,56 @@ let judge_of_new_Type () = Typeops.judge_of_type (new_univ ())
    constraint on its domain and codomain. If the input constraint is
    an evar instantiate it with the product of 2 new evars. *)
 
-let split_tycon loc env isevars = function
-  | None -> isevars,(Anonymous,None,None)
-  | Some c ->
-      let sigma = evars_of isevars in
-      let t = whd_betadeltaiota env sigma c in
+let split_tycon loc env isevars tycon = 
+  let rec real_split c = 
+    let sigma = evars_of isevars in
+    let t = whd_betadeltaiota env sigma c in
       match kind_of_term t with
-        | Prod (na,dom,rng) -> isevars, (na, Some dom, Some rng)
+	| Prod (na,dom,rng) -> isevars, (na, dom, rng)
 	| Evar ev when not (Evd.is_defined_evar isevars ev) ->
 	    let (isevars',prod) = define_evar_as_arrow isevars ev in
-            let (_,dom,rng) = destProd prod in
-	    isevars',(Anonymous, Some dom, Some rng)
+	    let (_,dom,rng) = destProd prod in
+	      isevars',(Anonymous, dom, rng)
 	| _ -> error_not_product_loc loc env sigma c
+  in
+    match tycon with
+      | None -> isevars,(Anonymous,None,None)
+      | Some (abs, c) ->
+	  (match abs with
+	       None -> 
+		 let isevars', (n, dom, rng) = real_split c in
+		   isevars', (n, mk_tycon dom, mk_tycon rng)
+	     | Some (init, cur) ->
+		 if cur = 0 then 
+		   let isevars', (x, dom, rng) = real_split c in
+		     isevars, (Anonymous, 
+			       Some (Some (init, 0), dom), 
+			       Some (Some (init, 0), rng))
+		 else
+		   isevars, (Anonymous, None, Some (Some (init, pred cur), c)))
 
-let valcon_of_tycon x = x
+let valcon_of_tycon x = 
+  match x with
+    | Some (None, t) -> Some t
+    | _ -> None
+	
+let lift_abstr_tycon_type n (abs, t) =
+  match abs with 
+      None -> raise (Invalid_argument "lift_abstr_tycon_type: not an abstraction")
+    | Some (init, abs) ->
+	let abs' = abs + n in 
+	  if abs' < 0 then raise (Invalid_argument "lift_abstr_tycon_type")
+	  else (Some (init, abs'), t)
 
-let lift_tycon = option_app (lift 1)
+let lift_tycon_type n (abs, t) = (abs, lift n t)
+let lift_tycon n = option_map (lift_tycon_type n)
+
+let pr_tycon_type env (abs, t) =
+  match abs with 
+      None -> Termops.print_constr_env env t
+    | Some (init, cur) -> str "Abstract (" ++ int init ++ str ","  ++ int cur ++ str ") " ++ Termops.print_constr_env env t
+	
+let pr_tycon env = function
+    None -> str "None"
+  | Some t -> pr_tycon_type env t
 

@@ -24,7 +24,7 @@ Require Import List.
 Section Transitive_Closure.
   Variable A : Type.
   Variable R : relation A.
-
+  
   Inductive clos_trans (x: A) : A -> Prop :=
     | t_step : forall y:A, R x y -> clos_trans x y
     | t_trans :
@@ -48,16 +48,16 @@ End Reflexive_Transitive_Closure.
 Section Reflexive_Symetric_Transitive_Closure.
   Variable A : Type.
   Variable R : relation A.
-
+  
   Inductive clos_refl_sym_trans : relation A :=
     | rst_step : forall x y:A, R x y -> clos_refl_sym_trans x y
     | rst_refl : forall x:A, clos_refl_sym_trans x x
     | rst_sym :
-        forall x y:A, clos_refl_sym_trans x y -> clos_refl_sym_trans y x
+      forall x y:A, clos_refl_sym_trans x y -> clos_refl_sym_trans y x
     | rst_trans :
-        forall x y z:A,
-          clos_refl_sym_trans x y ->
-          clos_refl_sym_trans y z -> clos_refl_sym_trans x z.
+      forall x y z:A,
+        clos_refl_sym_trans x y ->
+        clos_refl_sym_trans y z -> clos_refl_sym_trans x z.
 End Reflexive_Symetric_Transitive_Closure.
 
 
@@ -92,18 +92,18 @@ End Disjoint_Union.
 
 
 Section Lexicographic_Product.
-(* Lexicographic order on dependent pairs *)
+  (* Lexicographic order on dependent pairs *)
 
-Variable A : Set.
-Variable B : A -> Set.
-Variable leA : A -> A -> Prop.
-Variable leB : forall x:A, B x -> B x -> Prop.
+  Variable A : Set.
+  Variable B : A -> Set.
+  Variable leA : A -> A -> Prop.
+  Variable leB : forall x:A, B x -> B x -> Prop.
 
-Inductive lexprod : sigS B -> sigS B -> Prop :=
-  | left_lex :
+  Inductive lexprod : sigS B -> sigS B -> Prop :=
+    | left_lex :
       forall (x x':A) (y:B x) (y':B x'),
         leA x x' -> lexprod (existS B x y) (existS B x' y')
-  | right_lex :
+    | right_lex :
       forall (x:A) (y y':B x),
         leB x y y' -> lexprod (existS B x y) (existS B x y').
 End Lexicographic_Product.
@@ -117,9 +117,9 @@ Section Symmetric_Product.
 
   Inductive symprod : A * B -> A * B -> Prop :=
     | left_sym :
-        forall x x':A, leA x x' -> forall y:B, symprod (x, y) (x', y)
+      forall x x':A, leA x x' -> forall y:B, symprod (x, y) (x', y)
     | right_sym :
-        forall y y':B, leB y y' -> forall x:A, symprod (x, y) (x, y').
+      forall y y':B, leB y y' -> forall x:A, symprod (x, y) (x, y').
 
 End Symmetric_Product.
 
@@ -131,34 +131,34 @@ Section Swap.
   Inductive swapprod : A * A -> A * A -> Prop :=
     | sp_noswap : forall x x':A * A, symprod A A R R x x' -> swapprod x x'
     | sp_swap :
-        forall (x y:A) (p:A * A),
-          symprod A A R R (x, y) p -> swapprod (y, x) p.
+      forall (x y:A) (p:A * A),
+        symprod A A R R (x, y) p -> swapprod (y, x) p.
 End Swap.
 
 
 Section Lexicographic_Exponentiation.
+  
+  Variable A : Set.
+  Variable leA : A -> A -> Prop.
+  Let Nil := nil (A:=A).
+  Let List := list A.
+  
+  Inductive Ltl : List -> List -> Prop :=
+    | Lt_nil : forall (a:A) (x:List), Ltl Nil (a :: x)
+    | Lt_hd : forall a b:A, leA a b -> forall x y:list A, Ltl (a :: x) (b :: y)
+    | Lt_tl : forall (a:A) (x y:List), Ltl x y -> Ltl (a :: x) (a :: y).
 
-Variable A : Set.
-Variable leA : A -> A -> Prop.
-Let Nil := nil (A:=A).
-Let List := list A.
 
-Inductive Ltl : List -> List -> Prop :=
-  | Lt_nil : forall (a:A) (x:List), Ltl Nil (a :: x)
-  | Lt_hd : forall a b:A, leA a b -> forall x y:list A, Ltl (a :: x) (b :: y)
-  | Lt_tl : forall (a:A) (x y:List), Ltl x y -> Ltl (a :: x) (a :: y).
-
-
-Inductive Desc : List -> Prop :=
-  | d_nil : Desc Nil
-  | d_one : forall x:A, Desc (x :: Nil)
-  | d_conc :
+  Inductive Desc : List -> Prop :=
+    | d_nil : Desc Nil
+    | d_one : forall x:A, Desc (x :: Nil)
+    | d_conc :
       forall (x y:A) (l:List),
         leA x y -> Desc (l ++ y :: Nil) -> Desc ((l ++ y :: Nil) ++ x :: Nil).
 
-Definition Pow : Set := sig Desc.
-
-Definition lex_exp (a b:Pow) : Prop := Ltl (proj1_sig a) (proj1_sig b).
+  Definition Pow : Set := sig Desc.
+  
+  Definition lex_exp (a b:Pow) : Prop := Ltl (proj1_sig a) (proj1_sig b).
 
 End Lexicographic_Exponentiation.
 

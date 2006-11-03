@@ -27,6 +27,7 @@ type pretype_error =
   | NotClean of existential_key * constr * Evd.hole_kind
   | UnsolvableImplicit of Evd.hole_kind
   | CannotUnify of constr * constr
+  | CannotUnifyLocal of Environ.env * constr * constr * constr
   | CannotUnifyBindingType of constr * constr
   | CannotGeneralize of constr
   | NoOccurrenceFound of constr
@@ -59,7 +60,7 @@ let env_ise sigma env =
   Sign.fold_rel_context
     (fun (na,b,ty) e ->
       push_rel
-        (na, option_app (nf_evar sigma) b, nf_evar sigma ty)
+        (na, option_map (nf_evar sigma) b, nf_evar sigma ty)
         e)
     ctxt
     ~init:env0
@@ -75,7 +76,7 @@ let contract env lc =
 	  env
       | _ -> 
 	  let t' = substl !l t in
-	  let c' = option_app (substl !l) c in
+	  let c' = option_map (substl !l) c in
 	  let na' = named_hd env t' na in
 	  l := (mkRel 1) :: List.map (lift 1) !l;
 	  push_rel (na',c',t') env in
@@ -155,6 +156,12 @@ let error_unsolvable_implicit loc env sigma e =
   raise_with_loc loc (PretypeError (env_ise sigma env, UnsolvableImplicit e))
 
 let error_cannot_unify env sigma (m,n) =
+  raise (PretypeError (env_ise sigma env,CannotUnify (m,n)))
+
+let error_cannot_unify_local env sigma (e,m,n,sn) = 
+  raise (PretypeError (env_ise sigma env,CannotUnifyLocal (e,m,n,sn)))
+
+let error_cannot_coerce env sigma (m,n) =
   raise (PretypeError (env_ise sigma env,CannotUnify (m,n)))
 
 (*s Ml Case errors *)

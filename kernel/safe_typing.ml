@@ -30,7 +30,6 @@ type modvariant =
   | NONE 
   | SIG of (* funsig params *) (mod_bound_id * module_type_body) list 
   | STRUCT of (* functor params *) (mod_bound_id * module_type_body) list
-      * (* optional result type *) module_type_body option
   | LIBRARY of dir_path
 
 type module_info = 
@@ -120,6 +119,12 @@ type global_declaration =
   | ConstantEntry of constant_entry
   | GlobalRecipe of Cooking.recipe
 
+let hcons_constant_type = function
+  | NonPolymorphicType t ->
+      NonPolymorphicType (hcons1_constr t)
+  | PolymorphicArity (ctx,s) ->
+      PolymorphicArity (map_rel_context hcons1_constr ctx,s)
+
 let hcons_constant_body cb =
   let body = match cb.const_body with
       None -> None
@@ -128,28 +133,28 @@ let hcons_constant_body cb =
   in
     { cb with
 	const_body = body;
-	const_type = hcons1_constr cb.const_type }
+	const_type = hcons_constant_type cb.const_type }
 
 let add_constant dir l decl senv =
   check_label l senv.labset;
-  let kn = make_con senv.modinfo.modpath dir l in 
+  let kn = make_con senv.modinfo.modpath dir l in
   let cb = 
     match decl with 
-    | ConstantEntry ce -> translate_constant senv.env kn ce
-    | GlobalRecipe r ->
-	let cb = translate_recipe senv.env kn r in
-	if dir = empty_dirpath then hcons_constant_body cb else cb
+      | ConstantEntry ce -> translate_constant senv.env kn ce
+      | GlobalRecipe r ->
+	  let cb = translate_recipe senv.env kn r in
+	    if dir = empty_dirpath then hcons_constant_body cb else cb
   in
   let env' = Environ.add_constraints cb.const_constraints senv.env in
   let env'' = Environ.add_constant kn cb env' in
-  kn, { old = senv.old;
-	env = env'';
-	modinfo = senv.modinfo;
-	labset = Labset.add l senv.labset;
-	revsign = (l,SPBconst cb)::senv.revsign;
-	revstruct = (l,SEBconst cb)::senv.revstruct;
-	imports = senv.imports;
-	loads = senv.loads }
+    kn, { old = senv.old;
+	  env = env'';
+	  modinfo = senv.modinfo;
+	  labset = Labset.add l senv.labset;
+	  revsign = (l,SPBconst cb)::senv.revsign;
+	  revstruct = (l,SEBconst cb)::senv.revstruct;
+	  imports = senv.imports;
+	  loads = senv.loads }
     
 
 (* Insertion of inductive types. *)
@@ -224,36 +229,18 @@ let add_module l me senv =
 
 (* Interactive modules *)
 
-let start_module l params result senv = 
+let start_module l senv = 
   check_label l senv.labset; 
-  let rec trans_params env = function 
-    | [] -> env,[] 
-    | (mbid,mte)::rest -> 
-	let mtb = translate_modtype env mte in
-	let env = 
-	  full_add_module (MPbound mbid) (module_body_of_type mtb) env 
-	in
-	let env,transrest = trans_params env rest in
-	env, (mbid,mtb)::transrest
-  in
-  let env,params_body = trans_params senv.env params in
-  let check_sig mtb = match scrape_modtype env mtb with
-    | MTBsig _ -> ()
-    | MTBfunsig _ -> error_result_must_be_signature mtb 
-    | _ -> anomaly "start_module: modtype not scraped"
-  in
-  let result_body = option_app (translate_modtype env) result in
-  ignore (option_app check_sig result_body);
   let msid = make_msid senv.modinfo.seed (string_of_label l) in
   let mp = MPself msid in
   let modinfo = { msid = msid;
 		  modpath = mp;
 		  seed = senv.modinfo.seed;
 		  label = l;
-		  variant = STRUCT(params_body,result_body) }
+		  variant = STRUCT [] }
   in
   mp, { old = senv;
-	env = env;
+	env = senv.env;
 	modinfo = modinfo;
 	labset = Labset.empty;
 	revsign = [];
@@ -261,21 +248,21 @@ let start_module l params result senv =
 	imports = senv.imports;
 	loads = [] }
 
-
-
-let end_module l senv = 
+let end_module l restype senv = 
   let oldsenv = senv.old in
   let modinfo = senv.modinfo in
-  let params, restype = 
+  let restype = option_map (translate_modtype senv.env) restype in
+  let params = 
     match modinfo.variant with
       | NONE | LIBRARY _ | SIG _ -> error_no_module_to_end ()
-      | STRUCT(params,restype) -> (params,restype)
+      | STRUCT params -> params
   in
   if l <> modinfo.label then error_incompatible_labels l modinfo.label;
   if not (empty_context senv.env) then error_local_context None;
-  let functorize_type = 
-    List.fold_right 
-      (fun (arg_id,arg_b) mtb -> MTBfunsig (arg_id,arg_b,mtb))
+  let functorize_type tb = 
+    List.fold_left
+      (fun mtb (arg_id,arg_b) -> MTBfunsig (arg_id,arg_b,mtb))
+      tb
       params
   in
   let auto_tb = MTBsig (modinfo.msid, List.rev senv.revsign) in
@@ -288,10 +275,10 @@ let end_module l senv =
 	    mtb, Some mtb, cst
   in
   let mexpr = 
-    List.fold_right
-      (fun (arg_id,arg_b) mtb -> MEBfunctor (arg_id,arg_b,mtb))
-      params
+    List.fold_left
+      (fun mtb (arg_id,arg_b) -> MEBfunctor (arg_id,arg_b,mtb))
       (MEBstruct (modinfo.msid, List.rev senv.revstruct)) 
+      params
   in
   let mb = 
     { mod_expr = Some mexpr;
@@ -326,31 +313,44 @@ let end_module l senv =
 	loads = senv.loads@oldsenv.loads }
 
 
+(* Adding parameters to modules or module types *)
+
+let add_module_parameter mbid mte senv =
+  if senv.revsign <> [] or senv.revstruct <> [] or senv.loads <> [] then
+    anomaly "Cannot add a module parameter to a non empty module";
+  let mtb = translate_modtype senv.env mte in
+  let env = full_add_module (MPbound mbid) (module_body_of_type mtb) senv.env 
+  in
+  let new_variant = match senv.modinfo.variant with
+    | STRUCT params -> STRUCT ((mbid,mtb) :: params)
+    | SIG params -> SIG ((mbid,mtb) :: params)
+    | _ -> 
+	anomaly "Module parameters can only be added to modules or signatures"
+  in
+  { old = senv.old;
+    env = env;
+    modinfo = { senv.modinfo with variant = new_variant };
+    labset = senv.labset;
+    revsign = [];
+    revstruct = [];
+    imports = senv.imports;
+    loads = [] }
+
+
 (* Interactive module types *)
 
-let start_modtype l params senv = 
+let start_modtype l senv = 
   check_label l senv.labset; 
-  let rec trans_params env = function 
-    | [] -> env,[] 
-    | (mbid,mte)::rest -> 
-	let mtb = translate_modtype env mte in
-	let env = 
-	  full_add_module (MPbound mbid) (module_body_of_type mtb) env 
-	in
-	let env,transrest = trans_params env rest in
-	env, (mbid,mtb)::transrest
-  in
-  let env,params_body = trans_params senv.env params in
   let msid = make_msid senv.modinfo.seed (string_of_label l) in
   let mp = MPself msid in
   let modinfo = { msid = msid;
 		  modpath = mp;
 		  seed = senv.modinfo.seed;
 		  label = l;
-		  variant = SIG params_body }
+		  variant = SIG [] }
   in
   mp, { old = senv;
-	env = env;
+	env = senv.env;
 	modinfo = modinfo;
 	labset = Labset.empty;
 	revsign = [];
@@ -370,10 +370,10 @@ let end_modtype l senv =
   if not (empty_context senv.env) then error_local_context None;
   let res_tb = MTBsig (modinfo.msid, List.rev senv.revsign) in
   let mtb = 
-    List.fold_right 
-      (fun (arg_id,arg_b) mtb -> MTBfunsig (arg_id,arg_b,mtb))
-      params
+    List.fold_left
+      (fun mtb (arg_id,arg_b) -> MTBfunsig (arg_id,arg_b,mtb))
       res_tb
+      params
   in
   let kn = make_kn oldsenv.modinfo.modpath empty_dirpath l in
   let newenv = oldsenv.env in
@@ -520,9 +520,9 @@ let import (dp,mb,depends,engmt) digest senv =
  
 let rec lighten_module mb =
   { mb with
-    mod_expr = option_app lighten_modexpr mb.mod_expr;
+    mod_expr = option_map lighten_modexpr mb.mod_expr;
     mod_type = lighten_modtype mb.mod_type;
-    mod_user_type = option_app lighten_modtype mb.mod_user_type }
+    mod_user_type = option_map lighten_modtype mb.mod_user_type }
 
 and lighten_modtype = function
   | MTBident kn as x -> x

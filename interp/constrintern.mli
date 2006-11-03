@@ -55,6 +55,14 @@ val intern_gen : bool -> evar_map -> env ->
   ?impls:full_implicits_env -> ?allow_soapp:bool -> ?ltacvars:ltac_sign ->
   constr_expr -> rawconstr
 
+val intern_pattern : env -> cases_pattern_expr ->
+  Names.identifier list *
+    ((Names.identifier * Names.identifier) list * Rawterm.cases_pattern) list
+
+val intern_pattern : env -> cases_pattern_expr ->
+  Names.identifier list *
+    ((Names.identifier * Names.identifier) list * Rawterm.cases_pattern) list
+
 (*s Composing internalisation with pretyping *)
 
 (* Main interpretation function *)
@@ -76,6 +84,12 @@ val interp_type : evar_map -> env -> ?impls:full_implicits_env ->
 
 val interp_open_constr   : evar_map -> env -> constr_expr -> evar_map * constr
 
+val interp_casted_constr_evars : evar_defs ref -> env -> 
+  ?impls:full_implicits_env -> constr_expr -> types -> constr
+
+val interp_type_evars : evar_defs ref -> env -> ?impls:full_implicits_env ->
+  constr_expr -> types
+
 (*s Build a judgment  *)
 
 val interp_constr_judgment : evar_map -> env -> constr_expr -> unsafe_judgment
@@ -94,6 +108,9 @@ val interp_binder  : evar_map -> env -> name -> constr_expr -> types
 (* Interpret contexts: returns extended env and context *)
 
 val interp_context : evar_map -> env -> local_binder list -> env * rel_context
+
+val interp_context_evars : 
+  evar_defs ref -> env -> local_binder list -> env * rel_context
 
 (* Locating references of constructions, possibly via a syntactic definition *)
 

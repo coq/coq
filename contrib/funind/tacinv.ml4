@@ -1,16 +1,10 @@
 (*i camlp4deps: "parsing/grammar.cma" i*)
 
 (*s FunInv Tactic: inversion following the shape of a function.  *)
-(* Use:
-   \begin{itemize}
-   \item The Tacinv directory must be in the path (-I <path> option)
-   \item use the bytecode version of coqtop or coqc (-byte option), or make a
-         coqtop 
-   \item Do [Require Tacinv] to be able to use it.
-   \item For syntax see Tacinv.v
-   \end{itemize}
-*)
 
+(* Deprecated: see indfun_main.ml4 instead *)
+
+(* Don't delete this file yet, it may be used for other purposes *)
 
 (*i*)
 open Termops
@@ -378,7 +372,7 @@ let rec proofPrinc mi: constr funind =
   (* <pcase> Cases b of arrPt end.*)
   | Case (cinfo, pcase, b, arrPt) -> 
      let prod_pcase,_ = decompose_lam pcase in
-     let nmeb,_ = List.hd prod_pcase in
+     let _nmeb,_ = List.hd prod_pcase in
      let newb'= apply_leqtrpl_t b mi.lst_eqs in
      let type_of_b = Typing.type_of mi.env mi.sigma b in
      (* Replace the recursive calls to the function by calls to the constant *)
@@ -428,7 +422,7 @@ let rec proofPrinc mi: constr funind =
      let varnames = List.map snd mi.lst_vars in
      let nb_vars = List.length varnames in
      let nb_eqs = List.length mi.lst_eqs in
-     let eqrels = List.map fst mi.lst_eqs in
+     let _eqrels = List.map fst mi.lst_eqs in
      (* [terms_recs]: appel rec du fixpoint, On concatène les appels recs
         trouvés dans les let in et les Cases avec ceux trouves dans u (ie
         mi.mimick). *)
@@ -772,11 +766,6 @@ let invfun_verif c l dorew gl =
    else error "wrong number of arguments for the function"
 
 
-TACTIC EXTEND functional_induction
-  [ "functional" "induction" constr(c)  ne_constr_list(l) ] 
-     -> [ invfun_verif c l true ]
-END
-
 
 
 (* Construction of the functional scheme. *)
@@ -847,22 +836,26 @@ let declareFunScheme f fname mutflist =
 
 
 
+TACTIC EXTEND functional_induction
+  [ "old" "functional" "induction" constr(c)  ne_constr_list(l) ] 
+     -> [ invfun_verif c l true ]
+END
+
 VERNAC COMMAND EXTEND FunctionalScheme
- [ "Functional" "Scheme" ident(na) ":=" "Induction" "for" 
+ [ "Old" "Functional" "Scheme" ident(na) ":=" "Induction" "for" 
     ident(c) "with" ne_ident_list(l) ] 
   -> [ declareFunScheme c na l ]
-| [ "Functional" "Scheme" ident(na) ":=" "Induction" "for" ident (c) ]
+| [ "Old" "Functional" "Scheme" ident(na) ":=" "Induction" "for" ident (c) ]
   -> [ declareFunScheme c na [] ]
 END
 
- 
+
 
 
 
 (* 
 *** Local Variables: ***
 *** compile-command: "make -C ../.. contrib/funind/tacinv.cmo" ***
-*** tab-width: 1 ***
 *** tuareg-default-indent:1 ***
 *** tuareg-begin-indent:1 ***
 *** tuareg-let-indent:1 ***

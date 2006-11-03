@@ -154,7 +154,8 @@ let lookup_pattern_path_between (s,t) =
 	   coe.coe_value
        in 
        match kind_of_term c with
-	 | Construct sp -> (sp, coe.coe_param)
+	 | Construct cstr ->
+	     (cstr, Inductiveops.constructor_nrealargs (Global.env()) cstr -1)
 	 | _ -> raise Not_found) l
 
 (* find_class_type : constr -> cl_typ * int *)
@@ -207,7 +208,7 @@ let class_of env sigma t =
 
 let inductive_class_of ind = fst (class_info (CL_IND ind))
 
-let class_args_of c = snd (decompose_app c)
+let class_args_of c = snd (find_class_type c)
 
 let string_of_class = function
   | CL_FUN -> "Funclass"

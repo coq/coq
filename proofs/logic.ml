@@ -80,15 +80,15 @@ let clear_hyps ids gl =
               error (string_of_id id'^
 		        " is used in hypothesis "^string_of_id id))
 	  (global_vars_set_of_decl env d) in
-    clear_hyps ids fcheck gl.evar_hyps in
+      clear_hyps ids fcheck gl.evar_hyps in
   let ncl = gl.evar_concl in
-  if !check && cleared_ids<>[] then
-    Idset.iter
-      (fun id' ->
-        if List.mem id' cleared_ids then
-          error (string_of_id id'^" is used in conclusion"))
-      (global_vars_set env ncl);
-  mk_goal nhyps ncl
+    if !check && cleared_ids<>[] then
+      Idset.iter
+	(fun id' ->
+          if List.mem id' cleared_ids then
+            error (string_of_id id'^" is used in conclusion"))
+	(global_vars_set_drop_evar env ncl);
+    mk_goal nhyps ncl gl.evar_extra
 
 (* The ClearBody tactic *)
 
@@ -155,7 +155,7 @@ let split_sign hfrom hto l =
       	else 
 	  splitrec (d::left) (toleft or (hyp = hto)) right
   in 
-  splitrec [] false l
+    splitrec [] false l
 
 let move_after with_dep toleft (left,(idfrom,_,_ as declfrom),right) hto =
   let env = Global.env() in
@@ -214,19 +214,25 @@ let check_forward_dependencies id tail =
 		^ (string_of_id id')))
     tail
 
+let check_goal_dependency id cl =
+  let env = Global.env() in
+    if Idset.mem id (global_vars_set_drop_evar env cl) then
+      error (string_of_id id^" is used in conclusion")
 
 let rename_hyp id1 id2 sign =
   apply_to_hyp_and_dependent_on sign id1
     (fun (_,b,t) _ -> (id2,b,t))
     (fun d _ -> map_named_declaration (replace_vars [id1,mkVar id2]) d)
 
-let replace_hyp sign id d =
+let replace_hyp sign id d cl =
+  if !check then
+    check_goal_dependency id cl;
   apply_to_hyp sign id
     (fun sign _ tail ->
-       if !check then
-	 (check_backward_dependencies sign d;
-	  check_forward_dependencies id tail);
-       d)
+      if !check then
+	(check_backward_dependencies sign d;
+	 check_forward_dependencies id tail); 
+      d)
 
 (* why we dont check that id does not appear in tail ??? *)
 let insert_after_hyp sign id d =
@@ -264,6 +270,7 @@ let goal_type_of env sigma c =
 let rec mk_refgoals sigma goal goalacc conclty trm =
   let env = evar_env goal in
   let hyps = goal.evar_hyps in
+  let mk_goal hyps concl = mk_goal hyps concl goal.evar_extra in
 (*
    if  not (occur_meta trm) then
     let t'ty = (unsafe_machine env sigma trm).uj_type in 	
@@ -283,7 +290,16 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 	mk_refgoals sigma goal goalacc ty t
 
     | App (f,l) ->
-	let (acc',hdty) = mk_hdgoals sigma goal goalacc f in
+	let (acc',hdty) =
+	  match kind_of_term f with
+	    | (Ind _ (* needed if defs in Type are polymorphic: | Const _*))
+		when not (array_exists occur_meta l) (* we could be finer *) ->
+		(* Sort-polymorphism of definition and inductive types *)
+		goalacc, 
+		type_of_global_reference_knowing_parameters env sigma f l
+	    | _ -> 
+		mk_hdgoals sigma goal goalacc f
+	in
 	let (acc'',conclty') =
 	  mk_arggoals sigma goal acc' hdty (Array.to_list l) in
 	check_conv_leq_goal env sigma trm conclty' conclty;
@@ -311,6 +327,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 and mk_hdgoals sigma goal goalacc trm =
   let env = evar_env goal in
   let hyps = goal.evar_hyps in
+  let mk_goal hyps concl = mk_goal hyps concl goal.evar_extra in
   match kind_of_term trm with
     | Cast (c,_, ty) when isMeta c ->
 	check_typability env sigma ty;
@@ -321,7 +338,13 @@ and mk_hdgoals sigma goal goalacc trm =
 	mk_refgoals sigma goal goalacc ty t
 
     | App (f,l) ->
-	let (acc',hdty) = mk_hdgoals sigma goal goalacc f in
+	let (acc',hdty) = 
+	  if isInd f or isConst f 
+	     & not (array_exists occur_meta l) (* we could be finer *)
+	  then
+	    (goalacc,type_of_global_reference_knowing_parameters env sigma f l)
+	  else mk_hdgoals sigma goal goalacc f
+	in
 	mk_arggoals sigma goal acc' hdty (Array.to_list l)
 
     | Case (_,p,c,lf) ->
@@ -384,6 +407,7 @@ let prim_refiner r sigma goal =
   let env = evar_env goal in
   let sign = goal.evar_hyps in
   let cl = goal.evar_concl in
+  let mk_goal hyps concl = mk_goal hyps concl goal.evar_extra in
   match r with
     (* Logical rules *)
     | Intro id ->
@@ -408,12 +432,12 @@ let prim_refiner r sigma goal =
 	(match kind_of_term (strip_outer_cast cl) with
            | Prod (_,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
-	       let sign' = replace_hyp sign id (id,None,c1) in
+	       let sign' = replace_hyp sign id (id,None,c1) cl in
 	       let sg = mk_goal sign' (subst1 (mkVar id) b) in
 	       [sg]
            | LetIn (_,c1,t1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
-	       let sign' = replace_hyp sign id (id,Some c1,t1) in
+	       let sign' = replace_hyp sign id (id,Some c1,t1) cl in
 	       let sg = mk_goal sign' (subst1 (mkVar id) b) in
 	       [sg]
 	   | _ ->
@@ -466,7 +490,8 @@ let prim_refiner r sigma goal =
 		  let _ = find_coinductive env sigma b in ()
                 with Not_found -> 
 		  error ("All methods must construct elements " ^
-			  "in coinductive types")
+			  "in coinductiv-> goal
+e types")
 	in
 	let all = (f,cl)::others in
      	List.iter (fun (_,c) -> check_is_coind env c) all;
@@ -535,15 +560,39 @@ let prim_refiner r sigma goal =
 (* Extracting a proof term from the proof tree *)
 
 (* Util *)
+
+type variable_proof_status = ProofVar | SectionVar of identifier
+
+type proof_variable = name * variable_proof_status
+
+let subst_proof_vars = 
+  let rec aux p vars =
+    let _,subst =
+      List.fold_left (fun (n,l) var ->
+        let t = match var with
+          | Anonymous,_ -> l
+          | Name id, ProofVar -> (id,mkRel n)::l
+          | Name id, SectionVar id' -> (id,mkVar id')::l in
+        (n+1,t)) (p,[]) vars
+    in replace_vars (List.rev subst)
+  in aux 1
+         
 let rec rebind id1 id2 = function
-  | [] -> []
-  | id::l -> 
-      if id = id1 then id2::l else
+  | [] -> [Name id2,SectionVar id1]
+  | (na,_ as x)::l -> 
+      if na = Name id1 then (Name id2,ProofVar)::l else
         let l' = rebind id1 id2 l in
-        if id = id2 then
-          (* TODO: find a more elegant way to hide a variable *)
-          (id_of_string "_@")::l'
-        else id::l'
+        if na = Name id2 then (Anonymous,ProofVar)::l' else x::l'
+
+let add_proof_var id vl = (Name id,ProofVar)::vl
+
+let proof_variable_index x = 
+  let rec aux n = function
+    | (Name id,ProofVar)::l when x = id -> n
+    | _::l ->  aux (n+1) l
+    | [] -> raise Not_found
+  in 
+  aux 1
 
 let prim_extractor subfun vl pft =
   let cl = pft.goal.evar_concl in
@@ -551,61 +600,64 @@ let prim_extractor subfun vl pft =
     | Some (Prim (Intro id), [spf]) ->
 	(match kind_of_term (strip_outer_cast cl) with
 	   | Prod (_,ty,_) ->
-	       let cty = subst_vars vl ty in
-	       mkLambda (Name id, cty, subfun (id::vl) spf)
+	       let cty = subst_proof_vars vl ty in
+	       mkLambda (Name id, cty, subfun (add_proof_var id vl) spf)
 	   | LetIn (_,b,ty,_) ->
-	       let cb = subst_vars vl b in
-	       let cty = subst_vars vl ty in
-	       mkLetIn (Name id, cb, cty, subfun (id::vl) spf)
+	       let cb = subst_proof_vars vl b in
+	       let cty = subst_proof_vars vl ty in
+	       mkLetIn (Name id, cb, cty, subfun (add_proof_var id vl) spf)
 	   | _ -> error "incomplete proof!")
 	
     | Some (Prim (Intro_replacing id),[spf]) ->
 	(match kind_of_term (strip_outer_cast cl) with
 	   | Prod (_,ty,_) ->
-	       let cty = subst_vars vl ty in
-	       mkLambda (Name id, cty, subfun (id::vl) spf)
+	       let cty = subst_proof_vars vl ty in
+	       mkLambda (Name id, cty, subfun (add_proof_var id vl) spf)
 	   | LetIn (_,b,ty,_) ->
-	       let cb = subst_vars vl b in
-	       let cty = subst_vars vl ty in
-	       mkLetIn (Name id, cb, cty, subfun (id::vl) spf)
+	       let cb = subst_proof_vars vl b in
+	       let cty = subst_proof_vars vl ty in
+	       mkLetIn (Name id, cb, cty, subfun (add_proof_var id vl) spf)
 	   | _ -> error "incomplete proof!")
 
     | Some (Prim (Cut (b,id,t)),[spf1;spf2]) ->
         let spf1, spf2 = if b then spf1, spf2 else spf2, spf1 in
-	mkLetIn (Name id,subfun vl spf1,subst_vars vl t,subfun (id::vl) spf2)
+	mkLetIn (Name id,subfun vl spf1,subst_proof_vars vl t,
+                 subfun (add_proof_var id vl) spf2)
 
     | Some (Prim (FixRule (f,n,others)),spfl) ->
 	let all = Array.of_list ((f,n,cl)::others) in
-	let lcty = Array.map (fun (_,_,ar) -> subst_vars vl ar) all in
+	let lcty = Array.map (fun (_,_,ar) -> subst_proof_vars vl ar) all in
 	let names = Array.map (fun (f,_,_) -> Name f) all in
 	let vn = Array.map (fun (_,n,_) -> n-1) all in
-	let newvl = List.fold_left (fun vl (id,_,_)->(id::vl)) (f::vl)others in
+	let newvl = List.fold_left (fun vl (id,_,_) -> add_proof_var id vl)
+          (add_proof_var f vl) others in
 	let lfix = Array.map (subfun newvl) (Array.of_list spfl) in
 	mkFix ((vn,0),(names,lcty,lfix))	
 
     | Some (Prim (Cofix (f,others)),spfl) ->
 	let all = Array.of_list ((f,cl)::others) in
-	let lcty = Array.map (fun (_,ar) -> subst_vars vl ar) all in
+	let lcty = Array.map (fun (_,ar) -> subst_proof_vars vl ar) all in
 	let names  = Array.map (fun (f,_) -> Name f) all in
-	let newvl = List.fold_left (fun vl (id,_)->(id::vl)) (f::vl) others in 
+	let newvl = List.fold_left (fun vl (id,_)-> add_proof_var id vl)
+          (add_proof_var f vl) others in 
 	let lfix = Array.map (subfun newvl) (Array.of_list spfl) in
 	mkCoFix (0,(names,lcty,lfix))
 	  
     | Some (Prim (Refine c),spfl) ->
 	let mvl = collect_meta_variables c in
 	let metamap = List.combine mvl (List.map (subfun vl) spfl) in
-	let cc = subst_vars vl c in 
+	let cc = subst_proof_vars vl c in 
 	plain_instance metamap cc
 
     (* Structural and conversion rules do not produce any proof *)
     | Some (Prim (Convert_concl (t,k)),[pf]) ->
 	if k = DEFAULTcast then subfun vl pf
-	else mkCast (subfun vl pf,k,cl)
+	else mkCast (subfun vl pf,k,subst_proof_vars vl cl)
     | Some (Prim (Convert_hyp _),[pf]) ->
 	subfun vl pf
 
     | Some (Prim (Thin _),[pf]) ->
-     (* No need to make ids Anonymous in vl: subst_vars take the more recent *)
+     (* No need to make ids Anon in vl: subst_proof_vars take the most recent*)
 	subfun vl pf
 	
     | Some (Prim (ThinBody _),[pf]) ->

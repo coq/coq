@@ -46,7 +46,6 @@ let rec nb_prod_after n c=
     | _ -> 0
 
 let construct_nhyps ind gls =
-  let env=pf_env gls in
   let nparams = (fst (Global.lookup_inductive ind)).mind_nparams in
   let constr_types = Inductiveops.arities_of_constructors (pf_env gls) ind in 
   let hyp = nb_prod_after nparams in	

@@ -17,7 +17,8 @@ open Libnames
 open Nametab
 (*i*)
 
-(* Untyped intermediate terms, after ASTs and before constr. *)
+(**********************************************************************)
+(* The kind of patterns that occurs in "match ... with ... end"       *)
 
 (* locs here refers to the ident's location, not whole pat *)
 (* the last argument of PatCstr is a possible alias ident for the pattern *)
@@ -25,13 +26,17 @@ type cases_pattern =
   | PatVar of loc * name
   | PatCstr of loc * constructor * cases_pattern list * name
 
-val pattern_loc : cases_pattern -> loc
+val cases_pattern_loc : cases_pattern -> loc
+
+(**********************************************************************)
+(* Untyped intermediate terms, after constr_expr and before constr    *)
+(* Resolution of names, insertion of implicit arguments placeholder,  *)
+(* and notations are done, but coercions, inference of implicit       *)
+(* arguments and pattern-matching compilation are not                 *)
 
 type patvar = identifier
 
 type rawsort = RProp of Term.contents | RType of Univ.universe option
-
-type fix_kind = RFix of (int array * int) | RCoFix of int
 
 type binder_kind = BProd | BLambda | BLetIn
 
@@ -46,6 +51,10 @@ type 'a bindings =
 
 type 'a with_bindings = 'a * 'a bindings
 
+type cast_type =
+  | CastConv of cast_kind
+  | CastCoerce (* Cast to a base type (eg, an underlying inductive type) *)
+
 type rawconstr = 
   | RRef of (loc * global_reference)
   | RVar of (loc * identifier)
@@ -55,9 +64,7 @@ type rawconstr =
   | RLambda of loc * name * rawconstr * rawconstr
   | RProd of loc * name * rawconstr * rawconstr
   | RLetIn of loc * name * rawconstr * rawconstr
-  | RCases of loc * rawconstr option *
-      (rawconstr * (name * (loc * inductive * name list) option)) list * 
-      (loc * identifier list * cases_pattern list * rawconstr) list
+  | RCases of loc * rawconstr option * tomatch_tuple * cases_clauses
   | RLetTuple of loc * name list * (name * rawconstr option) * 
       rawconstr * rawconstr
   | RIf of loc * rawconstr * (name * rawconstr option) * rawconstr * rawconstr
@@ -65,13 +72,26 @@ type rawconstr =
       rawconstr array * rawconstr array
   | RSort of loc * rawsort
   | RHole of (loc * Evd.hole_kind)
-  | RCast of loc * rawconstr * cast_kind * rawconstr
+  | RCast of loc * rawconstr * cast_type * rawconstr
   | RDynamic of loc * Dyn.t
 
 and rawdecl = name * rawconstr option * rawconstr
 
-val cases_predicate_names : 
-  (rawconstr * (name * (loc * inductive * name list) option)) list -> name list
+and fix_recursion_order = RStructRec | RWfRec of rawconstr | RMeasureRec of rawconstr
+
+and fix_kind =
+  | RFix of ((int option * fix_recursion_order) array * int)
+  | RCoFix of int
+
+and predicate_pattern =
+    name * (loc * inductive * int * name list) option
+
+and tomatch_tuple = (rawconstr * predicate_pattern) list
+
+and cases_clauses =
+    (loc * identifier list * cases_pattern list * rawconstr) list
+
+val cases_predicate_names : tomatch_tuple -> name list
 
 (*i - if PRec (_, names, arities, bodies) is in env then arities are
    typed in env too and bodies are typed in env enriched by the
@@ -119,22 +139,24 @@ type 'a raw_red_flag = {
 
 val all_flags : 'a raw_red_flag
 
-type 'a occurrences = int list * 'a
+type 'a or_var = ArgArg of 'a | ArgVar of identifier located
+
+type 'a with_occurrences = int or_var list * 'a
 
 type ('a,'b) red_expr_gen =
   | Red of bool
   | Hnf
-  | Simpl of 'a occurrences option
+  | Simpl of 'a with_occurrences option
   | Cbv of 'b raw_red_flag
   | Lazy of 'b raw_red_flag
-  | Unfold of 'b occurrences list
+  | Unfold of 'b with_occurrences list
   | Fold of 'a list
-  | Pattern of 'a occurrences list
+  | Pattern of 'a with_occurrences list
   | ExtraRedExpr of string
   | CbvVm
 
 type ('a,'b) may_eval =
   | ConstrTerm of 'a
-  | ConstrEval of ('a, 'b) red_expr_gen * 'a
+  | ConstrEval of ('a,'b) red_expr_gen * 'a
   | ConstrContext of (loc * identifier) * 'a
   | ConstrTypeOf of 'a

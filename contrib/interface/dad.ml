@@ -73,7 +73,7 @@ let rec map_subst (env :env) (subst:patvar_map) = function
   | CPatVar (_,(_,i)) ->
       let constr = List.assoc i subst in
       extern_constr false env constr
-  | x -> map_constr_expr_with_binders (map_subst env) (fun _ x -> x) subst x;;
+  | x -> map_constr_expr_with_binders (fun _ x -> x) (map_subst env) subst x;;
 
 let map_subst_tactic env subst = function
   | TacExtend (loc,("Rewrite" as x),[b;cbl]) ->

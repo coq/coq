@@ -11,10 +11,9 @@
 
 Require Import Bool.
 Require Import Sumbool.
-Require Import ZArith.
-Require Import Addr.
-Require Import Adist.
-Require Import Addec.
+Require Import NArith.
+Require Import Ndigits.
+Require Import Ndec.
 Require Import Map.
 
 Section Dom.
@@ -26,7 +25,7 @@ Section Dom.
     | M0 => fun _:Map B => M0 A
     | M1 a y =>
         fun m':Map B => match MapGet B m' a with
-                        | NONE => M0 A
+                        | None => M0 A
                         | _ => m
                         end
     | M2 m1 m2 =>
@@ -35,8 +34,8 @@ Section Dom.
           | M0 => M0 A
           | M1 a' y' =>
               match MapGet A m a' with
-              | NONE => M0 A
-              | SOME y => M1 A a' y
+              | None => M0 A
+              | Some y => M1 A a' y
               end
           | M2 m'1 m'2 =>
               makeM2 A (MapDomRestrTo m1 m'1) (MapDomRestrTo m2 m'2)
@@ -48,35 +47,35 @@ Section Dom.
      eqm A (MapGet A (MapDomRestrTo m m'))
        (fun a0:ad =>
           match MapGet B m' a0 with
-          | NONE => NONE A
+          | None => None
           | _ => MapGet A m a0
           end).
   Proof.
     unfold eqm in |- *. simple induction m. simpl in |- *. intros. case (MapGet B m' a); trivial.
-    intros. simpl in |- *. elim (sumbool_of_bool (ad_eq a a1)). intro H. rewrite H.
-    rewrite <- (ad_eq_complete _ _ H). case (MapGet B m' a). reflexivity.
+    intros. simpl in |- *. elim (sumbool_of_bool (Neqb a a1)). intro H. rewrite H.
+    rewrite <- (Neqb_complete _ _ H). case (MapGet B m' a); try reflexivity.
     intro. apply M1_semantics_1.
     intro H. rewrite H. case (MapGet B m' a). 
-    case (MapGet B m' a1); reflexivity.
     case (MapGet B m' a1); intros; exact (M1_semantics_2 A a a1 a0 H).
+    case (MapGet B m' a1); reflexivity.
     simple induction m'. trivial.
-    unfold MapDomRestrTo in |- *. intros. elim (sumbool_of_bool (ad_eq a a1)).
+    unfold MapDomRestrTo in |- *. intros. elim (sumbool_of_bool (Neqb a a1)).
     intro H1.
-    rewrite (ad_eq_complete _ _ H1). rewrite (M1_semantics_1 B a1 a0).
-    case (MapGet A (M2 A m0 m1) a1). reflexivity.
+    rewrite (Neqb_complete _ _ H1). rewrite (M1_semantics_1 B a1 a0).
+    case (MapGet A (M2 A m0 m1) a1); try reflexivity.
     intro. apply M1_semantics_1.
-    intro H1. rewrite (M1_semantics_2 B a a1 a0 H1). case (MapGet A (M2 A m0 m1) a). reflexivity.
+    intro H1. rewrite (M1_semantics_2 B a a1 a0 H1). case (MapGet A (M2 A m0 m1) a); try reflexivity.
     intro. exact (M1_semantics_2 A a a1 a2 H1).
     intros. change
    (MapGet A (makeM2 A (MapDomRestrTo m0 m2) (MapDomRestrTo m1 m3)) a =
     match MapGet B (M2 B m2 m3) a with
-    | NONE => NONE A
-    | SOME _ => MapGet A (M2 A m0 m1) a
+    | None => None
+    | Some _ => MapGet A (M2 A m0 m1) a
     end) in |- *.
     rewrite (makeM2_M2 A (MapDomRestrTo m0 m2) (MapDomRestrTo m1 m3) a).
-    rewrite MapGet_M2_bit_0_if. rewrite (H0 m3 (ad_div_2 a)). rewrite (H m2 (ad_div_2 a)).
+    rewrite MapGet_M2_bit_0_if. rewrite (H0 m3 (Ndiv2 a)). rewrite (H m2 (Ndiv2 a)).
     rewrite (MapGet_M2_bit_0_if B m2 m3 a). rewrite (MapGet_M2_bit_0_if A m0 m1 a).
-    case (ad_bit_0 a); reflexivity.
+    case (Nbit0 a); reflexivity.
   Qed.
 
   Fixpoint MapDomRestrBy (m:Map A) : Map B -> Map A :=
@@ -84,7 +83,7 @@ Section Dom.
     | M0 => fun _:Map B => M0 A
     | M1 a y =>
         fun m':Map B => match MapGet B m' a with
-                        | NONE => m
+                        | None => m
                         | _ => M0 A
                         end
     | M2 m1 m2 =>
@@ -102,37 +101,38 @@ Section Dom.
      eqm A (MapGet A (MapDomRestrBy m m'))
        (fun a0:ad =>
           match MapGet B m' a0 with
-          | NONE => MapGet A m a0
-          | _ => NONE A
+          | None => MapGet A m a0
+          | _ => None
           end).
   Proof.
     unfold eqm in |- *. simple induction m. simpl in |- *. intros. case (MapGet B m' a); trivial.
-    intros. simpl in |- *. elim (sumbool_of_bool (ad_eq a a1)). intro H. rewrite H.
-    rewrite (ad_eq_complete _ _ H). case (MapGet B m' a1). apply M1_semantics_1.
-    trivial.
-    intro H. rewrite H. case (MapGet B m' a). rewrite (M1_semantics_2 A a a1 a0 H).
+    intros. simpl in |- *. elim (sumbool_of_bool (Neqb a a1)). intro H. rewrite H.
+    rewrite (Neqb_complete _ _ H). case (MapGet B m' a1). trivial.
+    apply M1_semantics_1.
+    intro H. rewrite H. case (MapGet B m' a). 
     case (MapGet B m' a1); trivial.
+    rewrite (M1_semantics_2 A a a1 a0 H).
     case (MapGet B m' a1); trivial.
     simple induction m'. trivial.
     unfold MapDomRestrBy in |- *. intros. rewrite (MapRemove_semantics A (M2 A m0 m1) a a1).
-    elim (sumbool_of_bool (ad_eq a a1)). intro H1. rewrite H1. rewrite (ad_eq_complete _ _ H1).
+    elim (sumbool_of_bool (Neqb a a1)). intro H1. rewrite H1. rewrite (Neqb_complete _ _ H1).
     rewrite (M1_semantics_1 B a1 a0). reflexivity.
     intro H1. rewrite H1. rewrite (M1_semantics_2 B a a1 a0 H1). reflexivity.
     intros. change
    (MapGet A (makeM2 A (MapDomRestrBy m0 m2) (MapDomRestrBy m1 m3)) a =
     match MapGet B (M2 B m2 m3) a with
-    | NONE => MapGet A (M2 A m0 m1) a
-    | SOME _ => NONE A
+    | None => MapGet A (M2 A m0 m1) a
+    | Some _ => None
     end) in |- *.
     rewrite (makeM2_M2 A (MapDomRestrBy m0 m2) (MapDomRestrBy m1 m3) a).
-    rewrite MapGet_M2_bit_0_if. rewrite (H0 m3 (ad_div_2 a)). rewrite (H m2 (ad_div_2 a)).
+    rewrite MapGet_M2_bit_0_if. rewrite (H0 m3 (Ndiv2 a)). rewrite (H m2 (Ndiv2 a)).
     rewrite (MapGet_M2_bit_0_if B m2 m3 a). rewrite (MapGet_M2_bit_0_if A m0 m1 a).
-    case (ad_bit_0 a); reflexivity.
+    case (Nbit0 a); reflexivity.
   Qed.
 
   Definition in_dom (a:ad) (m:Map A) :=
     match MapGet A m a with
-    | NONE => false
+    | None => false
     | _ => true
     end.
 
@@ -141,32 +141,32 @@ Section Dom.
     trivial.
   Qed.
 
-  Lemma in_dom_M1 : forall (a a0:ad) (y:A), in_dom a0 (M1 A a y) = ad_eq a a0.
+  Lemma in_dom_M1 : forall (a a0:ad) (y:A), in_dom a0 (M1 A a y) = Neqb a a0.
   Proof.
-    unfold in_dom in |- *. intros. simpl in |- *. case (ad_eq a a0); reflexivity.
+    unfold in_dom in |- *. intros. simpl in |- *. case (Neqb a a0); reflexivity.
   Qed.
 
   Lemma in_dom_M1_1 : forall (a:ad) (y:A), in_dom a (M1 A a y) = true.
   Proof.
-    intros. rewrite in_dom_M1. apply ad_eq_correct.
+    intros. rewrite in_dom_M1. apply Neqb_correct.
   Qed.
 
   Lemma in_dom_M1_2 :
    forall (a a0:ad) (y:A), in_dom a0 (M1 A a y) = true -> a = a0.
   Proof.
-    intros. apply (ad_eq_complete a a0). rewrite (in_dom_M1 a a0 y) in H. assumption.
+    intros. apply (Neqb_complete a a0). rewrite (in_dom_M1 a a0 y) in H. assumption.
   Qed.
 
   Lemma in_dom_some :
    forall (m:Map A) (a:ad),
-     in_dom a m = true -> {y : A | MapGet A m a = SOME A y}.
+     in_dom a m = true -> {y : A | MapGet A m a = Some y}.
   Proof.
     unfold in_dom in |- *. intros. elim (option_sum _ (MapGet A m a)). trivial.
     intro H0. rewrite H0 in H. discriminate H.
   Qed.
 
   Lemma in_dom_none :
-   forall (m:Map A) (a:ad), in_dom a m = false -> MapGet A m a = NONE A.
+   forall (m:Map A) (a:ad), in_dom a m = false -> MapGet A m a = None.
   Proof.
     unfold in_dom in |- *. intros. elim (option_sum _ (MapGet A m a)). intro H0. elim H0.
     intros y H1. rewrite H1 in H. discriminate H.
@@ -175,33 +175,33 @@ Section Dom.
 
   Lemma in_dom_put :
    forall (m:Map A) (a0:ad) (y0:A) (a:ad),
-     in_dom a (MapPut A m a0 y0) = orb (ad_eq a a0) (in_dom a m).
+     in_dom a (MapPut A m a0 y0) = orb (Neqb a a0) (in_dom a m).
   Proof.
     unfold in_dom in |- *. intros. rewrite (MapPut_semantics A m a0 y0 a).
-    elim (sumbool_of_bool (ad_eq a a0)). intro H. rewrite H. rewrite (ad_eq_comm a a0) in H.
+    elim (sumbool_of_bool (Neqb a a0)). intro H. rewrite H. rewrite (Neqb_comm a a0) in H.
     rewrite H. rewrite orb_true_b. reflexivity.
-    intro H. rewrite H. rewrite (ad_eq_comm a a0) in H. rewrite H. rewrite orb_false_b.
+    intro H. rewrite H. rewrite (Neqb_comm a a0) in H. rewrite H. rewrite orb_false_b.
     reflexivity.
   Qed.
 
   Lemma in_dom_put_behind :
    forall (m:Map A) (a0:ad) (y0:A) (a:ad),
-     in_dom a (MapPut_behind A m a0 y0) = orb (ad_eq a a0) (in_dom a m).
+     in_dom a (MapPut_behind A m a0 y0) = orb (Neqb a a0) (in_dom a m).
   Proof.
     unfold in_dom in |- *. intros. rewrite (MapPut_behind_semantics A m a0 y0 a).
-    elim (sumbool_of_bool (ad_eq a a0)). intro H. rewrite H. rewrite (ad_eq_comm a a0) in H.
+    elim (sumbool_of_bool (Neqb a a0)). intro H. rewrite H. rewrite (Neqb_comm a a0) in H.
     rewrite H. case (MapGet A m a); reflexivity.
-    intro H. rewrite H. rewrite (ad_eq_comm a a0) in H. rewrite H. case (MapGet A m a); trivial.
+    intro H. rewrite H. rewrite (Neqb_comm a a0) in H. rewrite H. case (MapGet A m a); trivial.
   Qed.
 
   Lemma in_dom_remove :
    forall (m:Map A) (a0 a:ad),
-     in_dom a (MapRemove A m a0) = andb (negb (ad_eq a a0)) (in_dom a m).
+     in_dom a (MapRemove A m a0) = andb (negb (Neqb a a0)) (in_dom a m).
   Proof.
     unfold in_dom in |- *. intros. rewrite (MapRemove_semantics A m a0 a).
-    elim (sumbool_of_bool (ad_eq a a0)). intro H. rewrite H. rewrite (ad_eq_comm a a0) in H.
+    elim (sumbool_of_bool (Neqb a a0)). intro H. rewrite H. rewrite (Neqb_comm a a0) in H.
     rewrite H. reflexivity.
-    intro H. rewrite H. rewrite (ad_eq_comm a a0) in H. rewrite H.
+    intro H. rewrite H. rewrite (Neqb_comm a a0) in H. rewrite H.
     case (MapGet A m a); reflexivity.
   Qed.
 
@@ -272,35 +272,35 @@ Section FSetDefs.
 
   Lemma MapDom_semantics_1 :
    forall (m:Map A) (a:ad) (y:A),
-     MapGet A m a = SOME A y -> in_FSet a (MapDom m) = true.
+     MapGet A m a = Some y -> in_FSet a (MapDom m) = true.
   Proof.
     simple induction m. intros. discriminate H.
     unfold MapDom in |- *. unfold in_FSet in |- *. unfold in_dom in |- *. unfold MapGet in |- *. intros a y a0 y0.
-    case (ad_eq a a0). trivial.
+    case (Neqb a a0). trivial.
     intro. discriminate H.
     intros m0 H m1 H0 a y. rewrite (MapGet_M2_bit_0_if A m0 m1 a). simpl in |- *. unfold in_FSet in |- *.
     unfold in_dom in |- *. rewrite (MapGet_M2_bit_0_if unit (MapDom m0) (MapDom m1) a).
-    case (ad_bit_0 a). unfold in_FSet, in_dom in H0. intro. apply H0 with (y := y). assumption.
+    case (Nbit0 a). unfold in_FSet, in_dom in H0. intro. apply H0 with (y := y). assumption.
     unfold in_FSet, in_dom in H. intro. apply H with (y := y). assumption.
   Qed.
 
   Lemma MapDom_semantics_2 :
    forall (m:Map A) (a:ad),
-     in_FSet a (MapDom m) = true -> {y : A | MapGet A m a = SOME A y}.
+     in_FSet a (MapDom m) = true -> {y : A | MapGet A m a = Some y}.
   Proof.
     simple induction m. intros. discriminate H.
-    unfold MapDom in |- *. unfold in_FSet in |- *. unfold in_dom in |- *. unfold MapGet in |- *. intros a y a0. case (ad_eq a a0).
+    unfold MapDom in |- *. unfold in_FSet in |- *. unfold in_dom in |- *. unfold MapGet in |- *. intros a y a0. case (Neqb a a0).
     intro. split with y. reflexivity.
     intro. discriminate H.
     intros m0 H m1 H0 a. rewrite (MapGet_M2_bit_0_if A m0 m1 a). simpl in |- *. unfold in_FSet in |- *.
     unfold in_dom in |- *. rewrite (MapGet_M2_bit_0_if unit (MapDom m0) (MapDom m1) a).
-    case (ad_bit_0 a). unfold in_FSet, in_dom in H0. intro. apply H0. assumption.
+    case (Nbit0 a). unfold in_FSet, in_dom in H0. intro. apply H0. assumption.
     unfold in_FSet, in_dom in H. intro. apply H. assumption.
   Qed.
 
   Lemma MapDom_semantics_3 :
    forall (m:Map A) (a:ad),
-     MapGet A m a = NONE A -> in_FSet a (MapDom m) = false.
+     MapGet A m a = None -> in_FSet a (MapDom m) = false.
   Proof.
     intros. elim (sumbool_of_bool (in_FSet a (MapDom m))). intro H0.
     elim (MapDom_semantics_2 m a H0). intros y H1. rewrite H in H1. discriminate H1.
@@ -309,7 +309,7 @@ Section FSetDefs.
 
   Lemma MapDom_semantics_4 :
    forall (m:Map A) (a:ad),
-     in_FSet a (MapDom m) = false -> MapGet A m a = NONE A.
+     in_FSet a (MapDom m) = false -> MapGet A m a = None.
   Proof.
     intros. elim (option_sum A (MapGet A m a)). intro H0. elim H0. intros y H1.
     rewrite (MapDom_semantics_1 m a y H1) in H. discriminate H.

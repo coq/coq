@@ -192,7 +192,10 @@ let make_exact_entry (c,cty) =
 	   { pri=0; pat=None; code=Give_exact c })
 
 let dummy_goal =
-  {it={evar_hyps=empty_named_context_val;evar_concl=mkProp;evar_body=Evar_empty};
+  {it={evar_hyps=empty_named_context_val;
+       evar_concl=mkProp;
+       evar_body=Evar_empty;
+       evar_extra=None};
    sigma=Evd.empty}
 
 let make_apply_entry env sigma (eapply,verbose) (c,cty) =
@@ -778,7 +781,7 @@ let gen_auto n lems dbnames =
   | None -> full_auto n lems
   | Some l -> auto n lems l
 
-let inj_or_var = option_app (fun n -> Genarg.ArgArg n)
+let inj_or_var = option_map (fun n -> ArgArg n)
 
 let h_auto n lems l =
   Refiner.abstract_tactic (TacAuto (inj_or_var n,lems,l)) (gen_auto n lems l)
@@ -849,7 +852,7 @@ let compileAutoArg contac = function
       (tclTHEN  
          (Tacticals.tryAllClauses 
             (function 
-               | Some (id,_,_) -> Dhyp.h_destructHyp false id
+               | Some ((_,id),_) -> Dhyp.h_destructHyp false id
                | None          -> Dhyp.h_destructConcl))
          contac)
 

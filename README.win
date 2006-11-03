@@ -1,4 +1,4 @@
-THE COQ V8.0 SYSTEM
+THE COQ V8.1 SYSTEM
 ===================
 
     This file contains remarks specific to the windows port of Coq.
@@ -15,7 +15,7 @@ COMPILATION.
     distribution. If you really need to recompile under Windows, here
     are some indications:
 
-    1- Install ocaml version 3.06 or later, Visual C++ (needed
+    1- Install ocaml version 3.07 or later, Visual C++ (needed
        for the -custom option of ocaml) and MASM (needed if you want
        to produce a native version).
 

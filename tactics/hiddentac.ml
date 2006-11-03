@@ -23,7 +23,7 @@ let inj_id id = (dummy_loc,id)
 
 (* Basic tactics *)
 let h_intro_move x y =
-  abstract_tactic (TacIntroMove (x, option_app inj_id y)) (intro_move x y)
+  abstract_tactic (TacIntroMove (x, option_map inj_id y)) (intro_move x y)
 let h_intro x        = h_intro_move (Some x) None
 let h_intros_until x = abstract_tactic (TacIntrosUntil x) (intros_until x)
 let h_assumption     = abstract_tactic TacAssumption assumption
@@ -88,7 +88,9 @@ let h_simplest_right  = h_right NoBindings
 
 (* Conversion *)
 let h_reduce r cl  = abstract_tactic (TacReduce (r,cl)) (reduce r cl)
-let h_change oc c cl  = abstract_tactic (TacChange (oc,c,cl)) (change oc c cl)
+let h_change oc c cl =
+  abstract_tactic (TacChange (oc,c,cl))
+    (change (option_map Redexpr.out_with_occurrences oc) c cl)
 
 (* Equivalence relations *)
 let h_reflexivity    = abstract_tactic TacReflexivity intros_reflexivity

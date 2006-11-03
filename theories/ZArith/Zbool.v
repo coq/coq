@@ -17,6 +17,8 @@ Require Import Sumbool.
 
 Unset Boxed Definitions.
 
+
+(** * Boolean operations from decidabilty of order *)
 (** The decidability of equality and order relations over
     type [Z] give some boolean functions with the adequate specification. *)
 
@@ -32,65 +34,70 @@ Definition Z_noteq_bool (x y:Z) := bool_of_sumbool (Z_noteq_dec x y).
 Definition Zeven_odd_bool (x:Z) := bool_of_sumbool (Zeven_odd_dec x).
 
 (**********************************************************************)
-(** Boolean comparisons of binary integers *)
+(** * Boolean comparisons of binary integers *)
 
 Definition Zle_bool (x y:Z) :=
   match (x ?= y)%Z with
-  | Gt => false
-  | _ => true
+    | Gt => false
+    | _ => true
   end.
+
 Definition Zge_bool (x y:Z) :=
   match (x ?= y)%Z with
-  | Lt => false
-  | _ => true
+    | Lt => false
+    | _ => true
   end.
+
 Definition Zlt_bool (x y:Z) :=
   match (x ?= y)%Z with
-  | Lt => true
-  | _ => false
+    | Lt => true
+    | _ => false
   end.
+
 Definition Zgt_bool (x y:Z) :=
   match (x ?= y)%Z with
-  | Gt => true
-  | _ => false
+    | Gt => true
+    | _ => false
   end.
+
 Definition Zeq_bool (x y:Z) :=
   match (x ?= y)%Z with
-  | Eq => true
-  | _ => false
+    | Eq => true
+    | _ => false
   end.
+
 Definition Zneq_bool (x y:Z) :=
   match (x ?= y)%Z with
-  | Eq => false
-  | _ => true
+    | Eq => false
+    | _ => true
   end.
 
 Lemma Zle_cases :
- forall n m:Z, if Zle_bool n m then (n <= m)%Z else (n > m)%Z.
+  forall n m:Z, if Zle_bool n m then (n <= m)%Z else (n > m)%Z.
 Proof.
-intros x y; unfold Zle_bool, Zle, Zgt in |- *.
-case (x ?= y)%Z; auto; discriminate.
+  intros x y; unfold Zle_bool, Zle, Zgt in |- *.
+  case (x ?= y)%Z; auto; discriminate.
 Qed.
 
 Lemma Zlt_cases :
- forall n m:Z, if Zlt_bool n m then (n < m)%Z else (n >= m)%Z.
+  forall n m:Z, if Zlt_bool n m then (n < m)%Z else (n >= m)%Z.
 Proof.
-intros x y; unfold Zlt_bool, Zlt, Zge in |- *.
-case (x ?= y)%Z; auto; discriminate.
+  intros x y; unfold Zlt_bool, Zlt, Zge in |- *.
+  case (x ?= y)%Z; auto; discriminate.
 Qed.
 
 Lemma Zge_cases :
- forall n m:Z, if Zge_bool n m then (n >= m)%Z else (n < m)%Z.
+  forall n m:Z, if Zge_bool n m then (n >= m)%Z else (n < m)%Z.
 Proof.
-intros x y; unfold Zge_bool, Zge, Zlt in |- *.
-case (x ?= y)%Z; auto; discriminate.
+  intros x y; unfold Zge_bool, Zge, Zlt in |- *.
+  case (x ?= y)%Z; auto; discriminate.
 Qed.
 
 Lemma Zgt_cases :
- forall n m:Z, if Zgt_bool n m then (n > m)%Z else (n <= m)%Z.
+  forall n m:Z, if Zgt_bool n m then (n > m)%Z else (n <= m)%Z.
 Proof.
-intros x y; unfold Zgt_bool, Zgt, Zle in |- *.
-case (x ?= y)%Z; auto; discriminate.
+  intros x y; unfold Zgt_bool, Zgt, Zle in |- *.
+  case (x ?= y)%Z; auto; discriminate.
 Qed.
 
 (** Lemmas on [Zle_bool] used in contrib/graphs *)
@@ -112,15 +119,15 @@ Proof.
 Qed.
 
 Lemma Zle_bool_antisym :
- forall n m:Z, Zle_bool n m = true -> Zle_bool m n = true -> n = m.
+  forall n m:Z, Zle_bool n m = true -> Zle_bool m n = true -> n = m.
 Proof.
   intros. apply Zle_antisym. apply Zle_bool_imp_le. assumption.
   apply Zle_bool_imp_le. assumption.
 Qed.
 
 Lemma Zle_bool_trans :
- forall n m p:Z,
-   Zle_bool n m = true -> Zle_bool m p = true -> Zle_bool n p = true.
+  forall n m p:Z,
+    Zle_bool n m = true -> Zle_bool m p = true -> Zle_bool n p = true.
 Proof.
   intros x y z; intros. apply Zle_imp_le_bool. apply Zle_trans with (m := y). apply Zle_bool_imp_le. assumption.
   apply Zle_bool_imp_le. assumption.
@@ -137,9 +144,9 @@ Proof.
 Defined.
 
 Lemma Zle_bool_plus_mono :
- forall n m p q:Z,
-   Zle_bool n m = true ->
-   Zle_bool p q = true -> Zle_bool (n + p) (m + q) = true.
+  forall n m p q:Z,
+    Zle_bool n m = true ->
+    Zle_bool p q = true -> Zle_bool (n + p) (m + q) = true.
 Proof.
   intros. apply Zle_imp_le_bool. apply Zplus_le_compat. apply Zle_bool_imp_le. assumption.
   apply Zle_bool_imp_le. assumption.
@@ -159,30 +166,30 @@ Proof.
 Qed.
 
 
- Lemma Zle_is_le_bool : forall n m:Z, (n <= m)%Z <-> Zle_bool n m = true.
-  Proof.
-    intros. split. intro. apply Zle_imp_le_bool. assumption.
-    intro. apply Zle_bool_imp_le. assumption.
-  Qed.
+Lemma Zle_is_le_bool : forall n m:Z, (n <= m)%Z <-> Zle_bool n m = true.
+Proof.
+  intros. split. intro. apply Zle_imp_le_bool. assumption.
+  intro. apply Zle_bool_imp_le. assumption.
+Qed.
 
-  Lemma Zge_is_le_bool : forall n m:Z, (n >= m)%Z <-> Zle_bool m n = true.
-  Proof.
-    intros. split. intro. apply Zle_imp_le_bool. apply Zge_le. assumption.
-    intro. apply Zle_ge. apply Zle_bool_imp_le. assumption.
-  Qed.
+Lemma Zge_is_le_bool : forall n m:Z, (n >= m)%Z <-> Zle_bool m n = true.
+Proof.
+  intros. split. intro. apply Zle_imp_le_bool. apply Zge_le. assumption.
+  intro. apply Zle_ge. apply Zle_bool_imp_le. assumption.
+Qed.
 
-  Lemma Zlt_is_le_bool :
-   forall n m:Z, (n < m)%Z <-> Zle_bool n (m - 1) = true.
-  Proof.
-    intros x y. split. intro. apply Zle_imp_le_bool. apply Zlt_succ_le. rewrite (Zsucc_pred y) in H.
-    assumption.
-    intro. rewrite (Zsucc_pred y). apply Zle_lt_succ. apply Zle_bool_imp_le. assumption.
-  Qed.
+Lemma Zlt_is_le_bool :
+  forall n m:Z, (n < m)%Z <-> Zle_bool n (m - 1) = true.
+Proof.
+  intros x y. split. intro. apply Zle_imp_le_bool. apply Zlt_succ_le. rewrite (Zsucc_pred y) in H.
+  assumption.
+  intro. rewrite (Zsucc_pred y). apply Zle_lt_succ. apply Zle_bool_imp_le. assumption.
+Qed.
 
-  Lemma Zgt_is_le_bool :
-   forall n m:Z, (n > m)%Z <-> Zle_bool m (n - 1) = true.
-  Proof.
-    intros x y. apply iff_trans with (y < x)%Z. split. exact (Zgt_lt x y).
-    exact (Zlt_gt y x).
-    exact (Zlt_is_le_bool y x).
-  Qed.
+Lemma Zgt_is_le_bool :
+  forall n m:Z, (n > m)%Z <-> Zle_bool m (n - 1) = true.
+Proof.
+  intros x y. apply iff_trans with (y < x)%Z. split. exact (Zgt_lt x y).
+  exact (Zlt_gt y x).
+  exact (Zlt_is_le_bool y x).
+Qed.

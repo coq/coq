@@ -32,12 +32,15 @@ type delimiters = string
 type scope
 type scopes (* = [scope_name list] *)
 
+type local_scopes = tmp_scope_name option * scope_name list
+
 val type_scope : scope_name
 val declare_scope : scope_name -> unit
 
+val current_scopes : unit -> scopes
+
 (* Open scope *)
 
-val current_scopes : unit -> scopes
 val open_close_scope : 
   (* locality *) bool * (* open *) bool * scope_name -> unit
 
@@ -76,10 +79,10 @@ val declare_string_interpreter : scope_name -> required_module ->
 (* Return the [term]/[cases_pattern] bound to a primitive token in a
    given scope context*)
 
-val interp_prim_token : loc -> prim_token -> scope_name list -> 
+val interp_prim_token : loc -> prim_token -> local_scopes ->
   rawconstr * (notation_location * scope_name option)
 val interp_prim_token_cases_pattern : loc -> prim_token -> name -> 
-  scope_name list -> cases_pattern * (notation_location * scope_name option)
+  local_scopes -> cases_pattern * (notation_location * scope_name option)
 
 (* Return the primitive token associated to a [term]/[cases_pattern];
    raise [No_match] if no such token *)
@@ -90,7 +93,7 @@ val uninterp_prim_token_cases_pattern :
   cases_pattern -> name * scope_name * prim_token
 
 val availability_of_prim_token : 
-  scope_name -> scopes -> delimiters option option
+  scope_name -> local_scopes -> delimiters option option
 
 (*s Declare and interpret back and forth a notation *)
 
@@ -105,7 +108,7 @@ val declare_notation_interpretation : notation -> scope_name option ->
 val declare_uninterpretation : interp_rule -> interpretation -> unit
 
 (* Return the interpretation bound to a notation *)
-val interp_notation : loc -> notation -> scope_name list -> 
+val interp_notation : loc -> notation -> local_scopes ->
       interpretation * (notation_location * scope_name option)
 
 (* Return the possible notations for a given term *)
@@ -117,7 +120,7 @@ val uninterp_cases_pattern_notations : cases_pattern ->
 (* Test if a notation is available in the scopes *)
 (* context [scopes]; if available, the result is not None; the first *)
 (* argument is itself not None if a delimiters is needed *)
-val availability_of_notation : scope_name option * notation -> scopes -> 
+val availability_of_notation : scope_name option * notation -> local_scopes -> 
   (scope_name option * delimiters option) option
 
 (*s Declare and test the level of a (possibly uninterpreted) notation *)

@@ -56,3 +56,21 @@ Check
    :forall x : nat,
     (forall y n : nat, {q : nat | y = q * n}) ->
     forall n : nat, {q : nat | x = q * n}).
+
+(* Check instantiation of nested evars (bug #1089) *)
+
+Check (fun f:(forall (v:Type->Type), v (v nat) -> nat) => f _ (Some (Some O))).
+
+(* This used to fail with anomaly "evar was not declared" in V8.0pl3 *)
+
+Theorem contradiction : forall p, ~ p -> p -> False.
+Proof. trivial. Qed.
+Hint Resolve contradiction.
+Goal False.
+eauto.
+
+(* This used to fail in V8.1beta because first-order unification was
+   used before using type information *)
+
+Check (exist _ O (refl_equal 0) : {n:nat|n=0}).
+Check (exist _ O I : {n:nat|True}).

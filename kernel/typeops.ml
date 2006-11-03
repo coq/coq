@@ -36,7 +36,7 @@ let conv_leq_vecti env v1 v2 =
 
 (* This should be a type (a priori without intension to be an assumption) *)
 let type_judgment env j =
-  match kind_of_term(whd_betadeltaiota env (body_of_type j.uj_type)) with
+  match kind_of_term(whd_betadeltaiota env j.uj_type) with
     | Sort s -> {utj_val = j.uj_val; utj_type = s }
     | _ -> error_not_type env j
 
@@ -47,11 +47,7 @@ let assumption_of_judgment env j =
   with TypeError _ ->
     error_assumption env j
 
-(*
-let aojkey = Profile.declare_profile "assumption_of_judgment";;
-let assumption_of_judgment env j
-  = Profile.profile2 aojkey assumption_of_judgment env j;;
-*)
+let sort_judgment env j = (type_judgment env j).utj_type
 
 (************************************************)
 (* Incremental typing rules: builds a typing judgement given the *)
@@ -62,11 +58,11 @@ let assumption_of_judgment env j
 (* Prop and Set *)
 
 let judge_of_prop =
-  { uj_val = body_of_type mkProp;
+  { uj_val = mkProp;
     uj_type = mkSort type_0 }
 
 let judge_of_set =
-  { uj_val = body_of_type mkSet;
+  { uj_val = mkSet;
     uj_type = mkSort type_0 }
 
 let judge_of_prop_contents = function
@@ -77,7 +73,7 @@ let judge_of_prop_contents = function
 
 let judge_of_type u =
   let uu = super u in
-  { uj_val = body_of_type (mkType u);
+  { uj_val = mkType u;
     uj_type = mkType uu }
 
 (*s Type of a de Bruijn index. *)
@@ -89,12 +85,6 @@ let judge_of_relative env n =
       uj_type = type_app (lift n) typ }
   with Not_found -> 
     error_unbound_rel env n
-
-(*
-let relativekey = Profile.declare_profile "judge_of_relative";;
-let judge_of_relative env n =
-  Profile.profile2 relativekey judge_of_relative env n;;
-*)
 
 (* Type of variables *)
 let judge_of_variable env id =
@@ -135,19 +125,52 @@ let check_hyps id env hyps =
 *)
 (* Instantiation of terms on real arguments. *)
 
-(* Type of constants *)
-let judge_of_constant env cst =
-  let constr = mkConst cst in
-  let _ =
-    let ce = lookup_constant cst env in
-    check_args env constr ce.const_hyps in 
-  make_judge constr (constant_type env cst)
+(* Make a type polymorphic if an arity *)
 
-(*
-let tockey = Profile.declare_profile "type_of_constant";;
-let type_of_constant env c 
-  = Profile.profile3 tockey type_of_constant env c;;
-*)
+let extract_level env p =
+  let _,c = dest_prod_assum env p in
+  match kind_of_term c with Sort (Type u) -> Some u | _ -> None
+
+let extract_context_levels env =
+  List.fold_left
+    (fun l (_,b,p) -> if b=None then extract_level env p::l else l) []
+
+let make_polymorphic_if_arity env t =
+  let params, ccl = dest_prod_assum env t in
+  match kind_of_term ccl with
+  | Sort (Type u) -> 
+      let param_ccls = extract_context_levels env params in
+      let s = { poly_param_levels = param_ccls; poly_level = u} in
+      PolymorphicArity (params,s)
+  | _ ->
+      NonPolymorphicType t
+
+(* Type of constants *)
+
+let type_of_constant_knowing_parameters env t paramtyps =
+  match t with
+  | NonPolymorphicType t -> t
+  | PolymorphicArity (sign,ar) ->
+      let ctx = List.rev sign in
+      let ctx,s = instantiate_universes env ctx ar paramtyps in
+      mkArity (List.rev ctx,s)
+
+let type_of_constant_type env t =
+  type_of_constant_knowing_parameters env t [||]
+
+let type_of_constant env cst =
+  type_of_constant_type env (constant_type env cst)
+
+let judge_of_constant_knowing_parameters env cst jl =
+  let c = mkConst cst in
+  let cb = lookup_constant cst env in
+  let _ = check_args env c cb.const_hyps in 
+  let paramstyp = Array.map (fun j -> j.uj_type) jl in
+  let t = type_of_constant_knowing_parameters env cb.const_type paramstyp in
+  make_judge c t
+
+let judge_of_constant env cst =
+  judge_of_constant_knowing_parameters env cst [||]
 
 (* Type of a lambda-abstraction. *)
 
@@ -214,9 +237,11 @@ let sort_of_product env domsort rangsort =
           rangsort
         else
           (* Rule is (Type_i,Set,Type_i) in the Set-predicative calculus *)
-          domsort
+          Type (sup u1 base_univ)
     (* Product rule (Prop,Type_i,Type_i) *)
-    | (Prop _,  Type _)  -> rangsort
+    | (Prop Pos,  Type u2)  -> Type (sup base_univ u2)
+    (* Product rule (Prop,Type_i,Type_i) *)
+    | (Prop Null, Type _)  -> rangsort
     (* Product rule (Type_i,Type_i,Type_i) *) 
     | (Type u1, Type u2) -> Type (sup u1 u2)
 
@@ -257,20 +282,28 @@ let judge_of_cast env cj k tj =
 
 (* Inductive types. *)
 
-let judge_of_inductive env i =
-  let constr = mkInd i in
-  let _ =
-    let (kn,_) = i in
-    let mib = lookup_mind kn env in
-    check_args env constr mib.mind_hyps in 
-  let specif = lookup_mind_specif env i in
-  make_judge constr (type_of_inductive specif)
+(* The type is parametric over the uniform parameters whose conclusion
+   is in Type; to enforce the internal constraints between the
+   parameters and the instances of Type occurring in the type of the
+   constructors, we use the level variables _statically_ assigned to
+   the conclusions of the parameters as mediators: e.g. if a parameter
+   has conclusion Type(alpha), static constraints of the form alpha<=v
+   exist between alpha and the Type's occurring in the constructor
+   types; when the parameters is finally instantiated by a term of
+   conclusion Type(u), then the constraints u<=alpha is computed in
+   the App case of execute; from this constraints, the expected
+   dynamic constraints of the form u<=v are enforced *)
 
-(*
-let toikey = Profile.declare_profile "judge_of_inductive";;
-let judge_of_inductive env i
-  = Profile.profile2 toikey judge_of_inductive env i;;
-*)
+let judge_of_inductive_knowing_parameters env ind jl =
+  let c = mkInd ind in
+  let (mib,mip) = lookup_mind_specif env ind in
+  check_args env c mib.mind_hyps;
+  let paramstyp = Array.map (fun j -> j.uj_type) jl in
+  let t = Inductive.type_of_inductive_knowing_parameters env mip paramstyp in
+  make_judge c t
+
+let judge_of_inductive env ind =
+  judge_of_inductive_knowing_parameters env ind [||]
 
 (* Constructors. *)
 
@@ -282,12 +315,6 @@ let judge_of_constructor env c =
     check_args env constr mib.mind_hyps in 
   let specif = lookup_mind_specif env (inductive_of_constructor c) in
   make_judge constr (type_of_constructor c specif)
-
-(*
-let tockey = Profile.declare_profile "judge_of_constructor";;
-let judge_of_constructor env cstr
-  = Profile.profile2 tockey judge_of_constructor env cstr;;
-*)
 
 (* Case. *)
 
@@ -311,12 +338,6 @@ let judge_of_case env ci pj cj lfj =
                        Array.map j_val lfj);
      uj_type = rslty },
   Constraint.union univ univ')
-
-(*
-let tocasekey = Profile.declare_profile "judge_of_case";;
-let judge_of_case env ci pj cj lfj
-  = Profile.profile6 tocasekey judge_of_case env ci pj cj lfj;;
-*)
 
 (* Fixpoints. *)
 
@@ -364,10 +385,20 @@ let rec execute env cstr cu =
 
     (* Lambda calculus operators *)
     | App (f,args) ->
-	let (j,cu1) = execute env f cu in
-        let (jl,cu2) = execute_array env args cu1 in
-	univ_combinator cu2
-	  (judge_of_apply env j jl)
+        let (jl,cu1) = execute_array env args cu in
+	let (j,cu2) =
+	  match kind_of_term f with
+	    | Ind ind ->
+		(* Sort-polymorphism of inductive types *)
+		judge_of_inductive_knowing_parameters env ind jl, cu1
+	    | Const cst -> 
+		(* Sort-polymorphism of constant *)
+		judge_of_constant_knowing_parameters env cst jl, cu1
+	    | _ -> 
+		(* No sort-polymorphism *)
+		execute env f cu1
+	in
+	univ_combinator cu2 (judge_of_apply env j jl)
 	    
     | Lambda (name,c1,c2) -> 
         let (varj,cu1) = execute_type env c1 cu in
@@ -395,6 +426,7 @@ let rec execute env cstr cu =
         let (tj,cu2) = execute_type env t cu1 in
 	univ_combinator cu2
           (judge_of_cast env cj k tj)
+
     (* Inductive types *)
     | Ind ind ->
 	(judge_of_inductive env ind, cu)
@@ -442,18 +474,9 @@ and execute_recdef env (names,lar,vdef) i cu =
   univ_combinator cu2
     ((lara.(i),(names,lara,vdefv)),cst)
 
-and execute_array env v cu =
-  let (jl,cu1) = execute_list env (Array.to_list v) cu in
-  (Array.of_list jl, cu1)
+and execute_array env = array_fold_map' (execute env)
 
-and execute_list env l cu =
-  match l with
-  | [] -> 
-      ([], cu)
-  | c::r -> 
-      let (j,cu1) = execute env c cu in 
-      let (jr,cu2) = execute_list env r cu1 in
-      (j::jr, cu2)
+and execute_list env = list_fold_map' (execute env) 
 
 (* Derived functions *)
 let infer env constr =

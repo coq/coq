@@ -10,7 +10,7 @@ AXIOMSVO:= \
 theories/Reals/% \
 theories/Num/%
 
-DIRS:= $(shell (cd $(TOPDIR);find theories -type d ! -name CVS))
+DIRS:= $(shell (cd $(TOPDIR);find theories -type d ! -path \*.svn\*))
 
 INCL:= $(patsubst %,-I %,$(DIRS))
 
@@ -34,7 +34,7 @@ all: v2ml ml $(MLI) $(CMO)
 
 ml: $(ML)
 
-depend: $(ML)
+depend: #$(ML)
 	rm -f .depend; ocamldep $(INCL) theories/*/*.ml theories/*/*.mli > .depend
 
 tree:

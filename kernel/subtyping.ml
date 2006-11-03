@@ -89,14 +89,15 @@ let check_inductive cst env msid1 l info1 mib2 spec2 =
       (* nf_arity later *)
       (* user_lc ignored *)
       (* user_arity ignored *)
-      let cst = check_conv cst conv_sort env p1.mind_sort p2.mind_sort in
       check (fun p -> p.mind_nrealargs);
       (* kelim ignored *)
       (* listrec ignored *)
       (* finite done *)
       (* nparams done *)
-      (* params_ctxt done *)
-      let cst = check_conv cst conv env p1.mind_nf_arity p2.mind_nf_arity in
+      (* params_ctxt done because part of the inductive types *)
+      (* Don't check the sort of the type if polymorphic *)
+      let cst = check_conv cst conv env (type_of_inductive env (mib1,p1)) (type_of_inductive env (mib2,p2))
+      in
 	cst
   in
   let check_cons_types i cst p1 p2 =
@@ -113,9 +114,12 @@ let check_inductive cst env msid1 l info1 mib2 spec2 =
   assert (Array.length mib1.mind_packets >= 1 
 	    && Array.length mib2.mind_packets >= 1);
 
-       (* TODO: we should allow renaming of parameters at least ! *)
+  (* Check that the expected numbers of uniform parameters are the same *)
+  (* No need to check the contexts of parameters: it is checked *)
+  (* at the time of checking the inductive arities in check_packet. *)
+  (* Notice that we don't expect the local definitions to match: only *)
+  (* the inductive types and constructors types have to be convertible *)
   check (fun mib -> mib.mind_nparams);
-  check (fun mib -> mib.mind_params_ctxt); 
 
   begin 
     match mib2.mind_equiv with
@@ -160,7 +164,9 @@ let check_constant cst env msid1 l info1 cb2 spec2 =
    | Constant cb1 ->
       assert (cb1.const_hyps=[] && cb2.const_hyps=[]) ;
       (*Start by checking types*)
-      let cst = check_conv cst conv_leq env cb1.const_type cb2.const_type in
+      let typ1 = Typeops.type_of_constant_type env cb1.const_type in
+      let typ2 = Typeops.type_of_constant_type env cb2.const_type in
+      let cst = check_conv cst conv_leq env typ1 typ2 in
       let con = make_con (MPself msid1) empty_dirpath l in
       let cst =
        match cb2.const_body with
@@ -175,23 +181,27 @@ let check_constant cst env msid1 l info1 cb2 spec2 =
       in
        cst
    | IndType ((kn,i),mind1) ->
-      Util.error ("The kernel does not recognize yet that a parameter can be " ^
+      ignore (Util.error (
+       "The kernel does not recognize yet that a parameter can be " ^
        "instantiated by an inductive type. Hint: you can rename the " ^
        "inductive type and give a definition to map the old name to the new " ^
-       "name.") ;
+       "name."));
       assert (mind1.mind_hyps=[] && cb2.const_hyps=[]) ;
       if cb2.const_body <> None then error () ;
-      let arity1 = mind1.mind_packets.(i).mind_user_arity in
-       check_conv cst conv_leq env arity1 cb2.const_type
+      let arity1 = type_of_inductive env (mind1,mind1.mind_packets.(i)) in
+      let typ2 = Typeops.type_of_constant_type env cb2.const_type in
+       check_conv cst conv_leq env arity1 typ2
    | IndConstr (((kn,i),j) as cstr,mind1) ->
-      Util.error ("The kernel does not recognize yet that a parameter can be " ^
+      ignore (Util.error (
+       "The kernel does not recognize yet that a parameter can be " ^
        "instantiated by a constructor. Hint: you can rename the " ^
        "constructor and give a definition to map the old name to the new " ^
-       "name.") ;
+       "name."));
       assert (mind1.mind_hyps=[] && cb2.const_hyps=[]) ;
       if cb2.const_body <> None then error () ;
       let ty1 = type_of_constructor cstr (mind1,mind1.mind_packets.(i)) in
-       check_conv cst conv env ty1 cb2.const_type
+      let ty2 = Typeops.type_of_constant_type env cb2.const_type in
+       check_conv cst conv env ty1 ty2
    | _ -> error ()
 	      
 let rec check_modules cst env msid1 l msb1 msb2 =

@@ -95,8 +95,6 @@ let pr_patnotation = pr_notation_gen decode_patlist_value
 let pr_delimiters key strm =
   strm ++ str ("%"^key)
 
-let surround p = hov 1 (str"(" ++ p ++ str")")
-
 let pr_located pr ((b,e),x) =
   if Options.do_translate() && (b,e)<>dummy_loc then
     let (b,e) = unloc (b,e) in
@@ -115,12 +113,14 @@ let pr_optc pr = function
   | None -> mt ()
   | Some x -> pr_sep_com spc pr x
 
+let pr_in_comment pr x = str "(* " ++ pr x ++ str " *)"
+
 let pr_universe = Univ.pr_uni 
 
-let pr_sort = function
+let pr_rawsort = function
   | RProp Term.Null -> str "Prop"
   | RProp Term.Pos -> str "Set"
-  | RType u -> str "Type" ++ pr_opt pr_universe u
+  | RType u -> hov 0 (str "Type" ++ pr_opt (pr_in_comment pr_universe) u)
 
 let pr_id = pr_id
 let pr_name = pr_name
@@ -153,8 +153,8 @@ let pr_lname = function
   | lna -> pr_located pr_name lna
 
 let pr_or_var pr = function
-  | Genarg.ArgArg x -> pr x
-  | Genarg.ArgVar (loc,s) -> pr_lident (loc,s)
+  | ArgArg x -> pr x
+  | ArgVar (loc,s) -> pr_lident (loc,s)
 
 let pr_prim_token = function
   | Numeral n -> Bigint.pr_bigint n
@@ -180,18 +180,18 @@ let rec pr_patt sep inh p =
   | CPatPrim (_,p) -> pr_prim_token p, latom
   | CPatDelimiters (_,k,p) -> pr_delimiters k (pr_patt mt lsimple p), 1
   in
-  let loc = cases_pattern_loc p in
+  let loc = cases_pattern_expr_loc p in
   pr_with_comments loc
     (sep() ++ if prec_less prec inh then strm else surround strm)
 
 let pr_patt = pr_patt mt
 
-
 let pr_eqn pr (loc,pl,rhs) =
   spc() ++ hov 4
     (pr_with_comments loc
       (str "| " ++
-      hov 0 (prlist_with_sep sep_v (pr_patt ltop) pl ++ str " =>") ++
+      hov 0 (prlist_with_sep pr_bar (prlist_with_sep sep_v (pr_patt ltop)) pl 
+             ++ str " =>") ++
       pr_sep_com spc (pr ltop) rhs))
 
 let begin_of_binder = function
@@ -374,13 +374,20 @@ let pr_recursive_decl pr pr_dangling dangling_with_for id bl annot t c =
   pr_opt_type_spc pr t ++ str " :=" ++
   pr_sep_com (fun () -> brk(1,2)) (pr_body ltop) c
 
-let pr_fixdecl pr prd dangling_with_for (id,n,bl,t,c) =
+let pr_fixdecl pr prd dangling_with_for (id,(n,ro),bl,t,c) =
   let annot =
     let ids = names_of_local_assums bl in
-    if List.length ids > 1 then 
-      spc() ++ str "{struct " ++ pr_name (snd (List.nth ids n)) ++ str"}"
-    else mt() in
-  pr_recursive_decl pr prd dangling_with_for id bl annot t c
+      match ro with
+	  CStructRec ->
+	    if List.length ids > 1 && n <> None then 
+	      spc() ++ str "{struct " ++ pr_name (snd (List.nth ids (out_some n))) ++ str"}"
+	    else mt() 
+	| CWfRec c ->
+	    spc () ++ str "{wf " ++ pr lsimple c ++ pr_name (snd (List.nth ids (out_some n))) ++ str"}"
+	| CMeasureRec c ->
+	    spc () ++ str "{measure " ++ pr lsimple c ++ pr_name (snd (List.nth ids (out_some n))) ++ str"}"
+  in
+    pr_recursive_decl pr prd dangling_with_for id bl annot t c
 
 let pr_cofixdecl pr prd dangling_with_for (id,bl,t,c) =
   pr_recursive_decl pr prd dangling_with_for id bl (mt()) t c
@@ -558,9 +565,10 @@ let rec pr sep inherited a =
   | CHole _ -> str "_", latom
   | CEvar (_,n) -> str (Evd.string_of_existential n), latom
   | CPatVar (_,(_,p)) -> str "?" ++ pr_patvar p, latom
-  | CSort (_,s) -> pr_sort s, latom
-  | CCast (_,a,_,b) ->
-      hv 0 (pr mt (lcast,L) a ++ cut () ++ str ":" ++ pr mt (-lcast,E) b),
+  | CSort (_,s) -> pr_rawsort s, latom
+  | CCast (_,a,k,b) ->
+      let s = match k with CastConv  VMcast -> "<:" | _ -> ":" in
+      hv 0 (pr mt (lcast,L) a ++ cut () ++ str s ++ pr mt (-lcast,E) b),
       lcast
   | CNotation (_,"( _ )",[t]) ->
       pr (fun()->str"(") (max_int,L) t ++ str")", latom
@@ -614,19 +622,16 @@ let rec strip_context n iscast t =
 let pr_constr_expr c = pr lsimple c
 let pr_lconstr_expr c = pr ltop c
 let pr_pattern_expr c = pr lsimple c
+let pr_lpattern_expr c = pr ltop c
+
 let pr_cases_pattern_expr = pr_patt ltop
 
 let pr_binders = pr_undelimited_binders (pr ltop)
 
-let pr_pattern_occ prc = function
-    ([],c) -> prc c
-  | (nl,c) -> hov 1 (prc c ++ spc() ++ str"at " ++
-                     hov 0 (prlist_with_sep spc int nl))
-
-let pr_unfold_occ pr_ref = function
-    ([],qid) -> pr_ref qid
-  | (nl,qid) -> hov 1 (pr_ref qid ++ spc() ++ str"at " ++
-                       hov 0 (prlist_with_sep spc int nl))
+let pr_with_occurrences pr = function
+    ([],c) -> pr c
+  | (nl,c) -> hov 1 (pr c ++ spc() ++ str"at " ++
+                     hov 0 (prlist_with_sep spc (pr_or_var int) nl))
 
 let pr_red_flag pr r =
   (if r.rBeta then pr_arg str "beta" else mt ()) ++
@@ -646,7 +651,7 @@ let pr_metaid id = str"?" ++ pr_id id
 let pr_red_expr (pr_constr,pr_lconstr,pr_ref) = function
   | Red false -> str "red"
   | Hnf -> str "hnf"
-  | Simpl o -> str "simpl" ++ pr_opt (pr_pattern_occ pr_constr) o  
+  | Simpl o -> str "simpl" ++ pr_opt (pr_with_occurrences pr_constr) o  
   | Cbv f ->
       if f = {rBeta=true;rIota=true;rZeta=true;rDelta=true;rConst=[]} then
 	str "compute"
@@ -656,11 +661,11 @@ let pr_red_expr (pr_constr,pr_lconstr,pr_ref) = function
       hov 1 (str "lazy" ++ pr_red_flag pr_ref f)
   | Unfold l ->
       hov 1 (str "unfold" ++ spc() ++
-             prlist_with_sep pr_coma (pr_unfold_occ pr_ref) l)
+             prlist_with_sep pr_coma (pr_with_occurrences pr_ref) l)
   | Fold l -> hov 1 (str "fold" ++ prlist (pr_arg pr_constr) l)
   | Pattern l ->
       hov 1 (str "pattern" ++
-        pr_arg (prlist_with_sep pr_coma (pr_pattern_occ pr_constr)) l)
+        pr_arg (prlist_with_sep pr_coma (pr_with_occurrences pr_constr)) l)
         
   | Red true -> error "Shouldn't be accessible from user"
   | ExtraRedExpr s -> str s

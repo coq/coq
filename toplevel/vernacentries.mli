@@ -52,3 +52,5 @@ val set_pcoq_hook : pcoq_hook -> unit
 val abort_refine : ('a -> unit) -> 'a -> unit;;
 
 val interp : Vernacexpr.vernac_expr -> unit
+
+val vernac_reset_name : identifier Util.located -> unit 

@@ -47,6 +47,16 @@ let abstract_list_all env sigma typ c l =
   with UserError _ ->
     raise (PretypeError (env,CannotGeneralize typ))
 
+(**)
+
+let solve_pattern_eqn_array env f l c (metasubst,evarsubst) =
+  match kind_of_term f with
+    | Meta k -> 
+	(k,solve_pattern_eqn env (Array.to_list l) c)::metasubst,evarsubst
+    | Evar ev ->
+      (* Currently unused: incompatible with eauto/eassumption backtracking *)
+	metasubst,(f,solve_pattern_eqn env (Array.to_list l) c)::evarsubst
+    | _ -> assert false
 
 (*******************************)
 
@@ -70,58 +80,77 @@ let sort_eqns = unify_r2l
 
 let unify_0 env sigma cv_pb mod_delta m n =
   let trivial_unify pb substn m n =
-    if (not(occur_meta m)) && (if mod_delta then is_fconv pb env sigma m n else eq_constr m n) then substn
+    if (not(occur_meta m)) && 
+      (if mod_delta then is_fconv pb env sigma m n else eq_constr m n) 
+    then substn
     else error_cannot_unify env sigma (m,n) in
-  let rec unirec_rec pb ((metasubst,evarsubst) as substn) m n =
-    let cM = Evarutil.whd_castappevar sigma m
-    and cN = Evarutil.whd_castappevar sigma n in 
-    match (kind_of_term cM,kind_of_term cN) with
-      | Meta k1, Meta k2 ->
-	  if k1 < k2 then (k1,cN)::metasubst,evarsubst
-	  else if k1 = k2 then substn
-	  else (k2,cM)::metasubst,evarsubst
-      | Meta k, _    -> (k,cN)::metasubst,evarsubst
-      | _, Meta k    -> (k,cM)::metasubst,evarsubst
-      | Evar _, _ -> metasubst,((cM,cN)::evarsubst)
-      | _, Evar _ -> metasubst,((cN,cM)::evarsubst)
-
-      | Lambda (_,t1,c1), Lambda (_,t2,c2) ->
-	  unirec_rec CONV (unirec_rec CONV substn t1 t2) c1 c2
-      | Prod (_,t1,c1), Prod (_,t2,c2) ->
-	  unirec_rec pb (unirec_rec CONV substn t1 t2) c1 c2
-      | LetIn (_,b,_,c), _ -> unirec_rec pb substn (subst1 b c) cN
-      | _, LetIn (_,b,_,c) -> unirec_rec pb substn cM (subst1 b c)
-
-      | App (f1,l1), App (f2,l2) ->
-	  let len1 = Array.length l1
-	  and len2 = Array.length l2 in
-          let (f1,l1,f2,l2) =
-	    if len1 = len2 then (f1,l1,f2,l2)
-	    else if len1 < len2 then
-              let extras,restl2 = array_chop (len2-len1) l2 in 
-              (f1, l1, appvect (f2,extras), restl2)
-	    else 
-	      let extras,restl1 = array_chop (len1-len2) l1 in 
-              (appvect (f1,extras), restl1, f2, l2) in
-          (try
-            array_fold_left2 (unirec_rec CONV)
-	      (unirec_rec CONV substn f1 f2) l1 l2
-	  with ex when precatchable_exception ex ->
-            trivial_unify pb substn cM cN)
-      | Case (_,p1,c1,cl1), Case (_,p2,c2,cl2) ->
-          array_fold_left2 (unirec_rec CONV)
-	    (unirec_rec CONV (unirec_rec CONV substn p1 p2) c1 c2) cl1 cl2
-
-      | _ -> trivial_unify pb substn cM cN
-
+  let rec unirec_rec curenv pb ((metasubst,evarsubst) as substn) curm curn =
+    let cM = Evarutil.whd_castappevar sigma curm
+    and cN = Evarutil.whd_castappevar sigma curn in 
+      match (kind_of_term cM,kind_of_term cN) with
+	| Meta k1, Meta k2 ->
+	    if k1 < k2 
+	    then (k1,cN)::metasubst,evarsubst
+	    else if k1 = k2 then substn else (k2,cM)::metasubst,evarsubst
+	| Meta k, _    -> 
+	    (* Here we check that [cN] does not contain any local variables *)
+	    if (closedn (nb_rel env) cN)
+	    then (k,cN)::metasubst,evarsubst
+	    else error_cannot_unify_local curenv sigma (curenv,m,n,cN)
+	| _, Meta k    -> 
+	    (* Here we check that [cM] does not contain any local variables *)
+	    if (closedn (nb_rel env) cM) 
+	    then (k,cM)::metasubst,evarsubst
+	    else error_cannot_unify_local curenv sigma (curenv,m,n,cM)
+	| Evar _, _ -> metasubst,((cM,cN)::evarsubst)
+	| _, Evar _ -> metasubst,((cN,cM)::evarsubst)
+	| Lambda (na,t1,c1), Lambda (_,t2,c2) ->
+	    unirec_rec (push_rel_assum (na,t1) curenv) CONV 
+	      (unirec_rec curenv CONV substn t1 t2) c1 c2
+	| Prod (na,t1,c1), Prod (_,t2,c2) ->
+	    unirec_rec (push_rel_assum (na,t1) curenv) pb 
+	      (unirec_rec curenv CONV substn t1 t2) c1 c2
+	| LetIn (_,b,_,c), _ -> unirec_rec curenv  pb substn (subst1 b c) cN
+	| _, LetIn (_,b,_,c) -> unirec_rec curenv  pb substn cM (subst1 b c)
+	    
+	| App (f1,l1), App (f2,l2) ->
+	    if
+	      isMeta f1 & is_unification_pattern f1 l1 & not (dependent f1 cN)
+	    then
+	      solve_pattern_eqn_array curenv f1 l1 cN substn
+	    else if
+		isMeta f2 & is_unification_pattern f2 l2 & not (dependent f2 cM)
+	    then
+	      solve_pattern_eqn_array curenv f2 l2 cM substn
+	    else
+	      let len1 = Array.length l1
+	      and len2 = Array.length l2 in
+              let (f1,l1,f2,l2) =
+		if len1 = len2 then (f1,l1,f2,l2)
+		else if len1 < len2 then
+		  let extras,restl2 = array_chop (len2-len1) l2 in 
+		    (f1, l1, appvect (f2,extras), restl2)
+		else 
+		  let extras,restl1 = array_chop (len1-len2) l1 in 
+		    (appvect (f1,extras), restl1, f2, l2) in
+		(try
+		    array_fold_left2 (unirec_rec curenv CONV)
+		      (unirec_rec curenv CONV substn f1 f2) l1 l2
+		  with ex when precatchable_exception ex ->
+		    trivial_unify pb substn cM cN)
+	| Case (_,p1,c1,cl1), Case (_,p2,c2,cl2) ->
+            array_fold_left2 (unirec_rec curenv CONV)
+	      (unirec_rec curenv CONV 
+		  (unirec_rec curenv CONV substn p1 p2) c1 c2) cl1 cl2
+	| _ -> trivial_unify pb substn cM cN
   in
-  if (not(occur_meta m)) &&
-   (if mod_delta then is_fconv cv_pb env sigma m n else eq_constr m n)
-  then 
-    ([],[])
-  else 
-    let (mc,ec) = unirec_rec cv_pb ([],[]) m n in
-    ((*sort_eqns*) mc, (*sort_eqns*) ec)
+    if (not(occur_meta m)) &&
+      (if mod_delta then is_fconv cv_pb env sigma m n else eq_constr m n)
+    then 
+      ([],[])
+    else 
+      let (mc,ec) = unirec_rec env cv_pb ([],[]) m n in
+	((*sort_eqns*) mc, (*sort_eqns*) ec)
 
 
 (* Unification
@@ -259,7 +288,7 @@ let w_merge env with_types mod_delta metas evars evd =
             end
 
   and mimick_evar evd mod_delta hdc nargs sp =
-    let ev = Evd.map (evars_of evd) sp in
+    let ev = Evd.find (evars_of evd) sp in
     let sp_env = Global.env_of_context ev.evar_hyps in
     let (evd', c) = applyHead sp_env evd nargs hdc in
     let (mc,ec) =
@@ -442,30 +471,30 @@ let w_unify2 env mod_delta allow_K cv_pb ty1 ty2 evd =
 let w_unify allow_K env cv_pb ?(mod_delta=true) ty1 ty2 evd =
   let hd1,l1 = whd_stack ty1 in
   let hd2,l2 = whd_stack ty2 in
-  match kind_of_term hd1, l1<>[], kind_of_term hd2, l2<>[] with
-    (* Pattern case *)
-    | (Meta _, true, Lambda _, _ | Lambda _, _, Meta _, true)
-      when List.length l1 = List.length l2 ->
-	(try 
-	   w_typed_unify env cv_pb mod_delta ty1 ty2 evd
-	 with ex when precatchable_exception ex -> 
-	   try 
-	     w_unify2 env mod_delta allow_K cv_pb ty1 ty2 evd
-	   with PretypeError (env,NoOccurrenceFound c) as e -> raise e
-	     | ex when precatchable_exception ex -> 
-	     error "Cannot solve a second-order unification problem")
-
-     (* Second order case *)
-     | (Meta _, true, _, _ | _, _, Meta _, true) -> 
-	(try 
-	   w_unify2 env mod_delta allow_K cv_pb ty1 ty2 evd
-	with PretypeError (env,NoOccurrenceFound c) as e -> raise e
-	  | ex when precatchable_exception ex -> 
-          try 
-	     w_typed_unify env cv_pb mod_delta ty1 ty2 evd
-          with ex when precatchable_exception ex -> 
-             error "Cannot solve a second-order unification problem")
-
-     (* General case: try first order *)
-     | _ -> w_unify_0 env cv_pb mod_delta ty1 ty2 evd
+    match kind_of_term hd1, l1<>[], kind_of_term hd2, l2<>[] with
+      (* Pattern case *)
+      | (Meta _, true, Lambda _, _ | Lambda _, _, Meta _, true)
+	  when List.length l1 = List.length l2 ->
+	  (try 
+	      w_typed_unify env cv_pb mod_delta ty1 ty2 evd
+	    with ex when precatchable_exception ex -> 
+	      try 
+		w_unify2 env mod_delta allow_K cv_pb ty1 ty2 evd
+	      with PretypeError (env,NoOccurrenceFound c) as e -> raise e
+		| ex when precatchable_exception ex -> 
+		    error "Cannot solve a second-order unification problem")
+	    
+      (* Second order case *)
+      | (Meta _, true, _, _ | _, _, Meta _, true) -> 
+	  (try 
+	      w_unify2 env mod_delta allow_K cv_pb ty1 ty2 evd
+	    with PretypeError (env,NoOccurrenceFound c) as e -> raise e
+	      | ex when precatchable_exception ex -> 
+		  try 
+		    w_typed_unify env cv_pb mod_delta ty1 ty2 evd
+		  with ex when precatchable_exception ex -> 
+		    error "Cannot solve a second-order unification problem")
+	    
+      (* General case: try first order *)
+      | _ -> w_unify_0 env cv_pb mod_delta ty1 ty2 evd
 

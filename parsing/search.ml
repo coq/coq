@@ -57,12 +57,12 @@ let gen_crible refopt (fn : global_reference -> env -> constr -> unit) =
 	     fn (VarRef idc) env typ
 	 with Not_found -> (* we are in a section *) ())
     | "CONSTANT" ->
-	let kn = locate_constant (qualid_of_sp sp) in
-	let {const_type=typ} = Global.lookup_constant kn in
+	let cst = locate_constant (qualid_of_sp sp) in
+	let typ = Typeops.type_of_constant env cst in
         if refopt = None
 	  || head_const typ = constr_of_global (out_some refopt)
 	then
-	  fn (ConstRef kn) env typ
+	  fn (ConstRef cst) env typ
     | "INDUCTIVE" -> 
 	let kn = locate_mind (qualid_of_sp sp) in
         let mib = Global.lookup_mind kn in 

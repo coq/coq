@@ -64,6 +64,7 @@ val get_full_load_paths : unit -> (System.physical_path * dir_path) list
 val add_load_path : System.physical_path * dir_path -> unit
 val remove_load_path : System.physical_path -> unit
 val find_logical_path : System.physical_path -> dir_path
+val is_in_load_paths : System.physical_path -> bool
 val load_paths_of_dir_path : dir_path -> System.physical_path list
 
 (*s Locate a library in the load paths *)

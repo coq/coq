@@ -211,6 +211,6 @@ let normalize_evaluables=
   onAllClauses
     (function 
 	 None->unfold_in_concl (Lazy.force defined_connectives)
-       | Some (id,_,_)-> 
+       | Some ((_,id),_)-> 
 	   unfold_in_hyp (Lazy.force defined_connectives) 
-	   (id,[],Tacexpr.InHypTypeOnly))
+	   (([],id),Tacexpr.InHypTypeOnly))

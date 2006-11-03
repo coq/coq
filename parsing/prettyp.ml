@@ -246,6 +246,7 @@ let print_safe_judgment env j =
 let print_named_def name body typ =
   let pbody = pr_lconstr body in
   let ptyp = pr_ltype typ in
+  let pbody = if isCast body then surround pbody else pbody in
   (str "*** [" ++ str name ++ str " " ++
      hov 0 (str ":=" ++ brk (1,2) ++ pbody ++ spc () ++
 	      str ":" ++ brk (1,2) ++ ptyp) ++
@@ -282,7 +283,11 @@ let build_inductive sp tyi =
   let params = mib.mind_params_ctxt in
   let args = extended_rel_list 0 params in
   let env = Global.env() in
-  let arity = hnf_prod_applist env mip.mind_user_arity args in
+  let fullarity = match mip.mind_arity with
+    | Monomorphic ar -> ar.mind_user_arity 
+    | Polymorphic ar ->
+	it_mkProd_or_LetIn (mkSort (Type ar.poly_level)) mip.mind_arity_ctxt in
+  let arity = hnf_prod_applist env fullarity args in
   let cstrtypes = arities_of_constructors env (sp,tyi) in
   let cstrtypes =
     Array.map (fun c -> hnf_prod_applist env c args) cstrtypes in
@@ -325,10 +330,14 @@ let print_body = function
 let print_typed_body (val_0,typ) =
   (print_body val_0 ++ fnl () ++ str "     : " ++ pr_ltype typ ++ fnl ())
 
+let ungeneralized_type_of_constant_type = function
+  | PolymorphicArity (ctx,a) -> mkArity (ctx, Type a.poly_level)
+  | NonPolymorphicType t -> t
+
 let print_constant with_values sep sp =
   let cb = Global.lookup_constant sp in
   let val_0 = cb.const_body in
-  let typ = cb.const_type in
+  let typ = ungeneralized_type_of_constant_type cb.const_type in
   hov 0 (
     match val_0 with 
     | None -> 
@@ -401,7 +410,7 @@ let print_context with_values =
     | h::rest when n = None or out_some n > 0 -> 
 	(match print_library_entry with_values h with
 	  | None -> prec n rest
-	  | Some pp -> prec (option_app ((+) (-1)) n) rest ++ pp ++ fnl ())
+	  | Some pp -> prec (option_map ((+) (-1)) n) rest ++ pp ++ fnl ())
     | _ -> mt ()
   in 
   prec

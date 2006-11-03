@@ -286,6 +286,55 @@ let force_entry_type (u, utab) s etyp =
   with Not_found -> 
     new_entry etyp (u, utab) s
 
+(* Tactics as arguments *)
+
+let tactic_main_level = 5
+
+let (wit_tactic0,globwit_tactic0,rawwit_tactic0) = create_arg "tactic0"
+let (wit_tactic1,globwit_tactic1,rawwit_tactic1) = create_arg "tactic1"
+let (wit_tactic2,globwit_tactic2,rawwit_tactic2) = create_arg "tactic2"
+let (wit_tactic3,globwit_tactic3,rawwit_tactic3) = create_arg "tactic3"
+let (wit_tactic4,globwit_tactic4,rawwit_tactic4) = create_arg "tactic4"
+let (wit_tactic5,globwit_tactic5,rawwit_tactic5) = create_arg "tactic5"
+
+let wit_tactic = function
+  | 0 -> wit_tactic0
+  | 1 -> wit_tactic1
+  | 2 -> wit_tactic2
+  | 3 -> wit_tactic3
+  | 4 -> wit_tactic4
+  | 5 -> wit_tactic5
+  | n -> anomaly ("Unavailable tactic level: "^string_of_int n)
+
+let globwit_tactic = function
+  | 0 -> globwit_tactic0
+  | 1 -> globwit_tactic1
+  | 2 -> globwit_tactic2
+  | 3 -> globwit_tactic3
+  | 4 -> globwit_tactic4
+  | 5 -> globwit_tactic5
+  | n -> anomaly ("Unavailable tactic level: "^string_of_int n)
+
+let rawwit_tactic = function
+  | 0 -> rawwit_tactic0
+  | 1 -> rawwit_tactic1
+  | 2 -> rawwit_tactic2
+  | 3 -> rawwit_tactic3
+  | 4 -> rawwit_tactic4
+  | 5 -> rawwit_tactic5
+  | n -> anomaly ("Unavailable tactic level: "^string_of_int n)
+
+let tactic_genarg_level s =
+  if String.length s = 7 && String.sub s 0 6 = "tactic" then
+    let c = s.[6] in if '5' >= c && c >= '0' then Some (Char.code c - 48)
+    else None
+  else None
+
+let is_tactic_genarg = function
+| ExtraArgType s -> tactic_genarg_level s <> None
+| _ -> false
+
+
 (* [make_gen_entry] builds entries extensible by giving its name (a string) *)
 (* For entries extensible only via the ML name, Gram.Entry.create is enough *)
 
@@ -381,14 +430,15 @@ module Tactic =
     (* Main entries for ltac *)
     let tactic_arg = Gram.Entry.create "tactic:tactic_arg"
     let tactic_expr = Gram.Entry.create "tactic:tactic_expr"
+    let binder_tactic = Gram.Entry.create "tactic:binder_tactic"
 
-    let tactic_main_level = 5
     let tactic = make_gen_entry utactic (rawwit_tactic tactic_main_level) "tactic"
 
     (* Main entry for quotations *)
     let tactic_eoi = eoi_entry tactic
 
   end
+
 
 
 module Vernac_ =
@@ -401,6 +451,12 @@ module Vernac_ =
     let command = gec_vernac "command"
     let syntax = gec_vernac "syntax_command"
     let vernac = gec_vernac "Vernac_.vernac"
+
+    (* MMode *)
+
+    let proof_instr = Gram.Entry.create "proofmode:instr"
+
+    (* /MMode *)
 
     let vernac_eoi = eoi_entry vernac
   end
@@ -435,7 +491,11 @@ let default_levels =
    0,Gramext.RightA]
 
 let default_pattern_levels =
-  [10,Gramext.LeftA;
+  [200,Gramext.RightA;
+   100,Gramext.RightA;
+   99,Gramext.RightA;
+   10,Gramext.LeftA;
+   1,Gramext.LeftA;
    0,Gramext.RightA]
 
 let level_stack = 

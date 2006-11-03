@@ -6,35 +6,161 @@ open Term
 open Declarations
 open Pre_env
 
-(*i Compilation des variables + calcul des variables libres *)
 
-(* Representation des environnements machines :                       *)
-(*[t0|C0| ... |tc|Cc| ... |t(nbr-1)|C(nbr-1)| fv1 | fv1 | .... | fvn] *)
-(*               ^<----------offset--------->                         *)
+(* Compilation des variables + calcul des variables libres               *)
+
+(* Dans la machine virtuel il n'y a pas de difference entre les           *)
+(* fonctions et leur environnement                                        *)
+
+(* Representation de l'environnements des fonctions :                     *)
+(*        [clos_t | code | fv1 | fv2 | ... | fvn ]                        *)
+(*                ^                                                       *)
+(*  l'offset pour l'acces au variable libre est 1 (il faut passer le      *)
+(*  pointeur de code).                                                    *)
+(*  Lors de la compilation, les variables libres sont stock'ees dans      *)
+(*  [in_env] dans l'ordre inverse de la representation machine, ceci      *)
+(* permet de rajouter des nouvelles variables dans l'environnememt        *)
+(* facilement.                                                            *)
+(* Les arguments de la fonction arrive sur la pile dans l'ordre de        *)
+(* l'application :  f arg1 ... argn                                       *)
+(*   - la pile est alors :                                                *)
+(*        arg1 : ... argn : extra args : return addr : ...                *)
+(* Dans le corps de la fonction [arg1] est repr'esent'e par le de Bruijn  *)
+(*  [n], [argn] par le de Bruijn [1]                                      *)
+
+(* Representation des environnements des points fix mutuels :             *)
+(* [t1|C1| ... |tc|Cc| ... |t(nbr)|C(nbr)| fv1 | fv2 | .... | fvn | type] *)
+(*                ^<----------offset--------->                            *)
+(* type = [Ct1 | .... | Ctn]                                              *)
+(* Ci est le code correspondant au corps du ieme point fix                *)
+(* Lors de l'evaluation d'un point fix l'environnement est un pointeur    *)
+(* sur la position correspondante a son code.                             *)
+(* Dans le corps de chaque point fix le de Bruijn [nbr] represente,       *)
+(* le 1er point fix de la declaration mutuelle, le de Bruijn [1] le       *)
+(* nbr-ieme.                                                              *)
+(* L'acces a ces variables se fait par l'instruction [Koffsetclosure]     *)
+(*  (decalage de l'environnement)                                         *)
+
+(* Ceci permet de representer tout les point fix mutuels en un seul bloc  *)
+(* [Ct1 | ... | Ctn] est un tableau contant le code d'evaluation des      *)
+(* types des points fixes, ils sont utilises pour tester la conversion    *)
+(* Leur environnement d'execution est celui du dernier point fix :        *)
+(* [t1|C1| ... |tc|Cc| ... |t(nbr)|C(nbr)| fv1 | fv2 | .... | fvn | type] *)
+(*                                ^                                       *)
 
 
-type fv = fv_elem list
-
-type vm_env = {size : int; fv_rev : fv}
-    (* size = n;   fv_rev = [fvn; ... ;fv1] *)
-         
-type t = {
-    nb_stack : int;        (* nbre de variables sur la pile *)
-    in_stack : int list;   (* position dans la pile *)
-    nb_rec : int;          (* nbre de fonctions mutuellement recursives = 
-			                                              nbr *)
-    pos_rec : int;         (* position de la fonction courante = c *)
-    offset : int;          
-    in_env : vm_env ref
-  }	
-
-let empty_fv = {size= 0; fv_rev = []}
+(* Representation des cofix mutuels :                                     *)
+(*  a1 =   [A_t | accumulate | [Cfx_t | fcofix1 ] ]                       *)
+(*                ...                                                     *)
+(*  anbr = [A_t | accumulate | [Cfx_t | fcofixnbr ] ]                     *)
+(*                                                                        *)
+(*  fcofix1 = [clos_t   | code1   | a1 |...| anbr | fv1 |...| fvn | type] *)
+(*                      ^                                                 *)
+(*                ...                                                     *)
+(*  fcofixnbr = [clos_t | codenbr | a1 |...| anbr | fv1 |...| fvn | type] *)
+(*                      ^                                                 *)
+(*  Les block [ai] sont des fonctions qui accumulent leurs arguments :    *)
+(*           ai arg1  argp --->                                           *)
+(*    ai' = [A_t | accumulate | [Cfx_t | fcofixi] | arg1 | ... | argp ]   *)
+(* Si un tel bloc arrive sur un [match] il faut forcer l'evaluation,      *)
+(* la fonction [fcofixi] est alors appliqu'ee a [ai'] [arg1] ... [argp]   *)
+(* A la fin de l'evaluation [ai'] est mis a jour avec le resultat de      *)
+(* l'evaluation :                                                         *)
+(*  ai' <--                                                               *)
+(*   [A_t | accumulate | [Cfxe_t |fcofixi|result] | arg1 | ... | argp ]   *)
+(* L'avantage de cette representation est qu'elle permet d'evaluer qu'une *)
+(* fois l'application d'un cofix (evaluation lazy)                        *)
+(* De plus elle permet de creer facilement des cycles quand les cofix ne  *)
+(* n'ont pas d'aruments, ex:                                              *)
+(*   cofix one := cons 1 one                                              *)
+(*   a1 = [A_t | accumulate | [Cfx_t|fcofix1] ]                           *)
+(*   fcofix1 = [clos_t | code | a1]                                       *)
+(*  Quand on force l'evaluation de [a1] le resultat est                   *)
+(*    [cons_t | 1 | a1]                                                   *)
+(*  [a1] est mis a jour :                                                 *)
+(*  a1 = [A_t | accumulate | [Cfxe_t | fcofix1 | [cons_t | 1 | a1]] ]     *)
+(* Le cycle est cree ...                                                  *)
+   
+(* On conserve la fct de cofix pour la conversion                         *)
+   
+type vm_env = {
+    size : int;              (* longueur de la liste [n] *)
+    fv_rev : fv_elem list    (* [fvn; ... ;fv1] *)
+  }    
+   
+let empty_fv = { size= 0;  fv_rev = [] }
+   
+type comp_env = { 
+    nb_stack : int;              (* nbre de variables sur la pile          *)
+    in_stack : int list;         (* position dans la pile                  *)
+    nb_rec : int;                (* nbre de fonctions mutuellement         *)
+                                 (* recursives =  nbr                      *)
+    pos_rec  : instruction list; (* instruction d'acces pour les variables *)
+                                 (*  de point fix ou de cofix              *)
+    offset : int;                 
+    in_env : vm_env ref 
+  } 
 
 let fv r = !(r.in_env)
+   
+let empty_comp_env ()= 
+  { nb_stack = 0; 
+    in_stack = [];
+    nb_rec = 0;
+    pos_rec = [];
+    offset = 0; 
+    in_env = ref empty_fv;
+  } 
 
-(* [add_param n] rend la liste [sz+1;sz+2;...;sz+n] *)
+(*i Creation functions for comp_env *)
+
 let rec add_param n sz l =
   if n = 0 then l else add_param (n - 1) sz (n+sz::l) 
+   
+let comp_env_fun arity = 
+  { nb_stack = arity; 
+    in_stack = add_param arity 0 [];
+    nb_rec = 0;
+    pos_rec = [];
+    offset = 1; 
+    in_env = ref empty_fv 
+  } 
+    
+
+let comp_env_type rfv = 
+  { nb_stack = 0; 
+    in_stack = [];
+    nb_rec = 0;
+    pos_rec = [];
+    offset = 1; 
+    in_env = rfv 
+  }
+   
+let comp_env_fix ndef curr_pos arity rfv =
+   let prec = ref [] in
+   for i = ndef downto 1 do
+     prec := Koffsetclosure (2 * (ndef - curr_pos - i)) :: !prec 
+   done;
+   { nb_stack = arity; 
+     in_stack = add_param arity 0 [];
+     nb_rec = ndef; 
+     pos_rec = !prec;
+     offset = 2 * (ndef - curr_pos - 1)+1;
+     in_env = rfv 
+   } 
+
+let comp_env_cofix ndef arity rfv =
+   let prec = ref [] in
+   for i = 1 to ndef do
+     prec := Kenvacc i :: !prec
+   done;
+   { nb_stack = arity; 
+     in_stack = add_param arity 0 [];
+     nb_rec = ndef; 
+     pos_rec = !prec;
+     offset = ndef+1;
+     in_env = rfv 
+   }
 
 (* [push_param ] ajoute les parametres de fonction dans la pile *)
 let push_param n sz r =
@@ -42,33 +168,16 @@ let push_param n sz r =
     nb_stack = r.nb_stack + n;
     in_stack = add_param n sz r.in_stack }
 
-(* [push_local e sz] ajoute une nouvelle variable dans la pile a la position *)
+(* [push_local e sz] ajoute une nouvelle variable dans la pile a la *)
+(* position [sz]                                                    *)
 let push_local sz r = 
   { r with 
     nb_stack = r.nb_stack + 1;
     in_stack = (sz + 1) :: r.in_stack }
 
-(* Table de relocation initiale *)
-let empty () = 
-  { nb_stack = 0; in_stack = [];
-    nb_rec = 0;pos_rec = 0;
-    offset = 0; in_env = ref empty_fv }
 
-let init_fun arity = 
-  { nb_stack = arity; in_stack = add_param arity 0 [];
-    nb_rec = 0; pos_rec = 0;
-    offset = 1; in_env = ref empty_fv } 
 
-let init_type ndef rfv =
-  { nb_stack = 0; in_stack = [];
-    nb_rec = 0; pos_rec = 0;
-    offset = 2*(ndef-1)+1; in_env = rfv }
-
-let init_fix ndef pos_rec arity rfv =
-  { nb_stack = arity; in_stack = add_param arity 0 [];
-    nb_rec = ndef; pos_rec = pos_rec;
-    offset = 2 * (ndef - pos_rec - 1)+1; in_env = rfv} 
-
+(*i Compilation of variables *)
 let find_at el l = 
   let rec aux n = function
     | [] -> raise Not_found
@@ -87,24 +196,27 @@ let pos_named id r =
 let pos_rel i r sz = 
   if i <= r.nb_stack then
     Kacc(sz - (List.nth r.in_stack (i-1)))
-  else if i <= r.nb_stack + r.nb_rec 
-  then Koffsetclosure (2 * (r.nb_rec + r.nb_stack - r.pos_rec - i))
-  else 
-    let db = FVrel(i - r.nb_stack - r.nb_rec) in
-    let env = !(r.in_env) in
-    try Kenvacc(r.offset + env.size - (find_at db env.fv_rev))
-    with Not_found ->
-      let pos = env.size in
-      r.in_env := { size = pos+1; fv_rev =  db:: env.fv_rev};
-      Kenvacc(r.offset + pos)
-
+  else
+    let i = i - r.nb_stack in
+    if i <= r.nb_rec then 
+      try List.nth r.pos_rec (i-1)
+      with _ -> assert false
+    else
+      let i = i - r.nb_rec in
+      let db = FVrel(i) in
+      let env = !(r.in_env) in
+      try Kenvacc(r.offset + env.size - (find_at db env.fv_rev))
+      with Not_found ->
+	let pos = env.size in
+	r.in_env := { size = pos+1; fv_rev =  db:: env.fv_rev};
+	Kenvacc(r.offset + pos)
 
 (*i  Examination of the continuation *)
 
-(* Discard all instructions up to the next label.
-   This function is to be applied to the continuation before adding a
-   non-terminating instruction (branch, raise, return, appterm)
-   in front of it. *)
+(* Discard all instructions up to the next label.                        *)
+(* This function is to be applied to the continuation before adding a    *)
+(* non-terminating instruction (branch, raise, return, appterm)          *)
+(* in front of it.                                                       *)
 
 let rec discard_dead_code cont = cont
 (*function
@@ -113,9 +225,9 @@ let rec discard_dead_code cont = cont
   | _ :: cont -> discard_dead_code cont
 *)
 
-(* Return a label to the beginning of the given continuation.
-   If the sequence starts with a branch, use the target of that branch
-   as the label, thus avoiding a jump to a jump. *)
+(* Return a label to the beginning of the given continuation.            *)
+(*   If the sequence starts with a branch, use the target of that branch *)
+(*   as the label, thus avoiding a jump to a jump.                       *)
 
 let label_code = function
   | Klabel lbl :: _ as cont -> (lbl, cont)
@@ -138,7 +250,7 @@ let rec is_tailcall = function
   | Klabel _ :: c -> is_tailcall c
   | _ -> None
 
-(* Extention of the continuation ****)
+(* Extention of the continuation *)
 	
 (* Add a Kpop n instruction in front of a continuation *)
 let rec add_pop n = function
@@ -150,15 +262,41 @@ let add_grab arity lbl cont =
   if arity = 1 then Klabel lbl :: cont
   else Krestart :: Klabel lbl :: Kgrab (arity - 1) :: cont
  
+let add_grabrec rec_arg arity lbl cont =
+  if arity = 1 then 
+    Klabel lbl :: Kgrabrec 0 :: Krestart :: cont
+  else
+    Krestart :: Klabel lbl :: Kgrabrec rec_arg ::
+    Krestart :: Kgrab (arity - 1) :: cont
 
-(* Environnement global *****)
+(* continuation of a cofix *)
+
+let cont_cofix arity =
+    (* accu = res                                                         *)
+    (* stk  = ai::args::ra::...                                           *)
+    (* ai   = [At|accumulate|[Cfx_t|fcofix]|args]                         *)
+  [ Kpush;
+    Kpush;        (*                 stk = res::res::ai::args::ra::...    *)
+    Kacc 2;
+    Kfield 1;
+    Kfield 0;
+    Kmakeblock(2, cofix_evaluated_tag); 
+    Kpush;        (*  stk = [Cfxe_t|fcofix|res]::res::ai::args::ra::...*)
+    Kacc 2;
+    Ksetfield 1;  (*   ai = [At|accumulate|[Cfxe_t|fcofix|res]|args]      *)
+                  (*  stk = res::ai::args::ra::...                        *)   
+    Kacc 0;       (* accu = res                                           *)
+    Kreturn (arity+2) ]
+
+
+(*i Global environment global *)
 
 let global_env = ref empty_env
 
 let set_global_env env = global_env := env
 
 
-(* Code des fermetures ****)
+(* Code des fermetures *)
 let fun_code = ref []
 
 let init_fun_code () = fun_code := []
@@ -259,6 +397,14 @@ let compile_fv_elem reloc fv sz cont =
   | FVrel i -> pos_rel i reloc sz :: cont
   | FVnamed id -> pos_named id reloc :: cont
 
+let rec compile_fv reloc l sz cont =
+  match l with
+  | [] -> cont
+  | [fvn] -> compile_fv_elem reloc fvn sz cont
+  | fvn :: tl ->
+      compile_fv_elem reloc fvn sz 
+	(Kpush :: compile_fv reloc tl (sz + 1) cont)
+
 (* compilation des constantes *)
 
 let rec get_allias env kn =
@@ -271,8 +417,8 @@ let rec get_allias env kn =
  
 let rec compile_constr reloc c sz cont =
   match kind_of_term c with
-  | Meta _ -> raise (Invalid_argument "Cbytegen.gen_lam : Meta")
-  | Evar _ -> raise (Invalid_argument "Cbytegen.gen_lam : Evar")
+  | Meta _ -> raise (Invalid_argument "Cbytegen.compile_constr : Meta")
+  | Evar _ -> raise (Invalid_argument "Cbytegen.compile_constr : Evar")
  
   | Cast(c,_,_) -> compile_constr reloc c sz cont
 
@@ -294,7 +440,7 @@ let rec compile_constr reloc c sz cont =
   | Lambda _ ->
       let params, body = decompose_lam c in
       let arity = List.length params in
-      let r_fun = init_fun arity in
+      let r_fun = comp_env_fun arity in
       let lbl_fun = Label.create() in
       let cont_fun = 
 	compile_constr r_fun body arity [Kreturn arity] in
@@ -314,11 +460,11 @@ let rec compile_constr reloc c sz cont =
       let lbl_types = Array.create ndef Label.no in
       let lbl_bodies = Array.create ndef Label.no in
       (* Compilation des types *)
-      let rtype = init_type ndef rfv in
+      let env_type = comp_env_type rfv in
       for i = 0 to ndef - 1 do
 	let lbl,fcode = 
 	  label_code 
-	    (compile_constr rtype type_bodies.(i) 0 [Kstop]) in 
+	    (compile_constr env_type type_bodies.(i) 0 [Kstop]) in 
 	lbl_types.(i) <- lbl; 
 	fun_code := [Ksequence(fcode,!fun_code)]
       done;
@@ -326,18 +472,12 @@ let rec compile_constr reloc c sz cont =
       for i = 0 to ndef - 1 do
 	let params,body = decompose_lam rec_bodies.(i) in
 	let arity = List.length params in
-	let rbody = init_fix ndef i arity rfv in
+	let env_body = comp_env_fix ndef i arity rfv in
 	let cont1 = 
-	  compile_constr rbody body arity [Kreturn arity] in
+	  compile_constr env_body body arity [Kreturn arity] in
 	let lbl = Label.create () in
 	lbl_bodies.(i) <- lbl;
-	let fcode =  
-	  if arity = 1 then 
-	    Klabel lbl :: Kgrabrec 0 :: Krestart :: cont1
-	  else
-	    Krestart :: Klabel lbl :: Kgrabrec rec_args.(i) ::
-	    Krestart :: Kgrab (arity - 1) :: cont1
-	in
+	let fcode =  add_grabrec rec_args.(i) arity lbl cont1 in
 	fun_code := [Ksequence(fcode,!fun_code)]
       done;
       let fv = !rfv in
@@ -346,15 +486,15 @@ let rec compile_constr reloc c sz cont =
   
   | CoFix(init,(_,type_bodies,rec_bodies)) ->
       let ndef = Array.length type_bodies in
-      let rfv = ref empty_fv in
       let lbl_types = Array.create ndef Label.no in
       let lbl_bodies = Array.create ndef Label.no in
       (* Compilation des types *)
-      let rtype = init_type ndef rfv in
+      let rfv = ref empty_fv in
+      let env_type = comp_env_type rfv in
       for i = 0 to ndef - 1 do
 	let lbl,fcode = 
 	  label_code 
-	    (compile_constr rtype type_bodies.(i) 0 [Kstop]) in
+	    (compile_constr env_type type_bodies.(i) 0 [Kstop]) in
 	lbl_types.(i) <- lbl; 
 	fun_code := [Ksequence(fcode,!fun_code)]
       done;
@@ -362,21 +502,18 @@ let rec compile_constr reloc c sz cont =
       for i = 0 to ndef - 1 do
 	let params,body = decompose_lam rec_bodies.(i) in
 	let arity = List.length params in
-	let rbody = init_fix ndef i arity rfv in
+	let env_body = comp_env_cofix ndef arity rfv in
 	let lbl = Label.create () in
-
 	let cont1 = 
-	  compile_constr rbody body arity [Kreturn(arity)] in
+	  compile_constr env_body body (arity+1) (cont_cofix arity) in
 	let cont2 = 
-	  if arity <= 1 then cont1 else Kgrab (arity - 1) :: cont1 in
-	let cont3 = 
-	  Krestart :: Klabel lbl :: Kcograb arity :: Krestart :: cont2 in
-	fun_code := [Ksequence(cont3,!fun_code)];
-	lbl_bodies.(i) <- lbl
+	  add_grab (arity+1) lbl cont1 in
+	lbl_bodies.(i) <- lbl;
+	fun_code := [Ksequence(cont2,!fun_code)];
       done;
       let fv = !rfv in
       compile_fv reloc fv.fv_rev sz 
-	(Kclosurerec(fv.size,init,lbl_types,lbl_bodies) :: cont)
+	(Kclosurecofix(fv.size, init, lbl_types, lbl_bodies) :: cont)
   
   | Case(ci,t,a,branchs) ->
       let ind = ci.ci_ind in
@@ -418,12 +555,12 @@ let rec compile_constr reloc c sz cont =
 	  let lbl_b,code_b = 
 	    label_code(
 	    if nargs = arity then
-	      Kpushfield arity ::
+	      Kpushfields arity ::
 	      compile_constr (push_param arity sz_b reloc)
 		body (sz_b+arity) (add_pop arity (branch :: !c))
 	    else
 	      let sz_appterm = if is_tailcall then sz_b + arity else arity in
-	      Kpushfield arity :: 
+	      Kpushfields arity :: 
 	      compile_constr reloc branchs.(i) (sz_b+arity)
 		(Kappterm(arity,sz_appterm) :: !c))
 	  in
@@ -436,17 +573,8 @@ let rec compile_constr reloc c sz cont =
 	| Klabel lbl -> Kpush_retaddr lbl ::  !c
 	| _ -> !c 
       in
-      let cont_a = if mib.mind_finite then code_sw else Kforce :: code_sw in
-      compile_constr reloc a sz cont_a 
- 
-and compile_fv reloc l sz cont =
-  match l with
-  | [] -> cont
-  | [fvn] -> compile_fv_elem reloc fvn sz cont
-  | fvn :: tl ->
-      compile_fv_elem reloc fvn sz 
-	(Kpush :: compile_fv reloc tl (sz + 1) cont)
-      
+      compile_constr reloc a sz code_sw
+       
 and compile_str_cst reloc sc sz cont =
   match sc with
   | Bconstr c -> compile_constr reloc c sz cont
@@ -465,9 +593,18 @@ let compile env c =
   set_global_env env;
   init_fun_code ();
   Label.reset_label_counter ();
-  let reloc = empty () in
+  let reloc = empty_comp_env () in
   let init_code = compile_constr reloc c 0 [Kstop] in
   let fv = List.rev (!(reloc.in_env).fv_rev) in
+(*  draw_instr init_code;
+  draw_instr !fun_code;
+  Format.print_string "fv = ";
+  List.iter (fun v ->
+    match v with
+    | FVnamed id -> Format.print_string ((string_of_id id)^"; ")
+    | FVrel i -> Format.print_string ((string_of_int i)^"; ")) fv;  Format
+    .print_string "\n";
+  Format.print_flush();  *)
   init_code,!fun_code, Array.of_list fv
 
 let compile_constant_body env body opaque boxed =

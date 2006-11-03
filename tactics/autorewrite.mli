@@ -22,4 +22,9 @@ val add_rew_rules : string -> raw_rew_rule list -> unit
 val autorewrite : tactic -> string list -> tactic
 val autorewrite_in : Names.identifier -> tactic -> string list -> tactic
 
+
+val auto_multi_rewrite : string list -> Tacticals.clause -> tactic
+
+val auto_multi_rewrite_with : tactic -> string list -> Tacticals.clause -> tactic
+
 val print_rewrite_hintdb : string -> unit

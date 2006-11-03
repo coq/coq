@@ -129,7 +129,7 @@ type const_evaluation_result = NoBody | Opaque
 exception NotEvaluableConst of const_evaluation_result
 
 val constant_value     : env -> constant -> constr
-val constant_type      : env -> constant -> types
+val constant_type      : env -> constant -> constant_type
 val constant_opt_value : env -> constant -> constr option
 
 (************************************************************************)
@@ -139,6 +139,9 @@ val add_mind : mutual_inductive -> mutual_inductive_body -> env -> env
 (* Looks up in the context of global inductive names *)
 (* raises [Not_found] if the required path is not found *)
 val lookup_mind : mutual_inductive -> env -> mutual_inductive_body
+
+(* Find the ultimate inductive in the [mind_equiv] chain *)
+val scrape_mind : env -> mutual_inductive -> mutual_inductive
 
 (************************************************************************)
 (*s Modules *)
@@ -162,6 +165,7 @@ val set_engagement : engagement -> env -> env
 (* [global_vars_set env c] returns the list of [id]'s occurring as
    [VAR id] in [c] *)
 val global_vars_set : env -> constr -> Idset.t
+val global_vars_set_drop_evar : env -> constr -> Idset.t
 (* the constr must be an atomic construction *)
 val vars_of_global : env -> constr -> identifier list
 

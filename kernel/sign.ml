@@ -83,13 +83,16 @@ let map_context f l =
 let map_rel_context = map_context
 let map_named_context = map_context
 
+let iter_rel_context f = List.iter (fun (_,b,t) -> f t; option_iter f b)
+let iter_named_context f = List.iter (fun (_,b,t) -> f t; option_iter f b)
+
 (* Push named declarations on top of a rel context *)
 (* Bizarre. Should be avoided. *)
 let push_named_to_rel_context hyps ctxt =
   let rec push = function
     | (id,b,t) :: l ->
 	let s, hyps = push l in
-	let d = (Name id, option_app (subst_vars s) b, type_app (subst_vars s) t) in
+	let d = (Name id, option_map (subst_vars s) b, type_app (subst_vars s) t) in
 	id::s, d::hyps
     | [] -> [],[] in
   let s, hyps = push hyps in
@@ -191,3 +194,4 @@ let decompose_lam_n_assum n =
     | c -> error "decompose_lam_n_assum: not enough abstractions"
   in 
   lamdec_rec empty_rel_context n 
+

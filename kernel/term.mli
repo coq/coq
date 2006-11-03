@@ -236,6 +236,7 @@ val isMeta : constr -> bool
 val isSort : constr -> bool
 val isCast : constr -> bool
 val isApp : constr -> bool
+val isProd : constr -> bool
 val isConst : constr -> bool
 val isConstruct : constr -> bool
 
@@ -325,6 +326,11 @@ val map_named_declaration :
   (constr -> constr) -> named_declaration -> named_declaration
 val map_rel_declaration :
   (constr -> constr) -> rel_declaration -> rel_declaration
+
+val fold_named_declaration :
+  (constr -> 'a -> 'a) -> named_declaration -> 'a -> 'a
+val fold_rel_declaration :
+  (constr -> 'a -> 'a) -> rel_declaration -> 'a -> 'a
 
 (* Constructs either [(x:t)c] or [[x=b:t]c] *)
 val mkProd_or_LetIn : rel_declaration -> types -> types
@@ -425,6 +431,9 @@ val under_outer_cast : (constr -> constr) -> constr -> constr
 
 (*s Occur checks *)
 
+(* [closedn n M] is true iff [M] is a (deBruijn) closed term under n binders *)
+val closedn : int -> constr -> bool
+
 (* [closed0 M] is true iff [M] is a (deBruijn) closed term *)
 val closed0 : constr -> bool
 
@@ -459,8 +468,12 @@ val substnl : constr list -> int -> constr -> constr
 val substl : constr list -> constr -> constr
 val subst1 : constr -> constr -> constr
 
-val substl_decl : constr list -> named_declaration -> named_declaration
-val subst1_decl : constr -> named_declaration -> named_declaration
+val substnl_decl : constr list -> int -> rel_declaration -> rel_declaration
+val substl_decl : constr list -> rel_declaration -> rel_declaration
+val subst1_decl : constr -> rel_declaration -> rel_declaration
+
+val subst1_named_decl : constr -> named_declaration -> named_declaration
+val substl_named_decl : constr list -> named_declaration -> named_declaration
 
 val replace_vars : (identifier * constr) list -> constr -> constr
 val subst_var : identifier -> constr -> constr

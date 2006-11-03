@@ -196,7 +196,7 @@ let rec pp_type par vl t =
     | Tarr (t1,t2) ->
 	pp_par par 
 	  (pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ pp_rec false t2)
-    | Tdummy -> str "__"
+    | Tdummy _ -> str "__"
     | Tunknown -> str "__"
   in 
   hov 0 (pp_rec par t)
@@ -343,13 +343,9 @@ and pp_pat env i pv =
 and pp_function env f t =
   let bl,t' = collect_lams t in
   let bl,env' = push_vars bl env in
-  let is_function pv =
-    let ktl = array_map_to_list (fun (_,l,t0) -> (List.length l,t0)) pv in
-    not (List.exists (fun (k,t0) -> ast_occurs (k+1) t0) ktl)
-  in
   match t' with 
-    | MLcase(i,MLrel 1,pv) when i=Standard ->
-	if is_function pv then
+    | MLcase(i,MLrel 1,pv) when i=Standard -> 
+	if not (ast_occurs 1 (MLcase(i,MLdummy,pv))) then 
 	  (f ++ pr_binding (List.rev (List.tl bl)) ++
        	     str " = function" ++ fnl () ++
 	     v 0 (str "  | " ++ pp_pat env' i pv))
@@ -358,7 +354,6 @@ and pp_function env f t =
              str " = match " ++
 	     pr_id (List.hd bl) ++ str " with" ++ fnl () ++
 	     v 0 (str "  | " ++ pp_pat env' i pv))
-	  
     | _ -> (f ++ pr_binding (List.rev bl) ++
 	      str " =" ++ fnl () ++ str "  " ++
 	      hov 2 (pp_expr false env' [] t'))

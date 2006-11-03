@@ -47,7 +47,7 @@ let nf_evar sigma ~preserve =
                 | _ -> T.mkApp (c', l')
               )
            | _ -> T.mkApp (c', l'))
-     | T.Evar (e,l) when Evd.in_dom sigma e & Evd.is_defined sigma e ->
+     | T.Evar (e,l) when Evd.mem sigma e & Evd.is_defined sigma e ->
 	aux (Evd.existential_value sigma (e,l))
      | T.Evar (e,l) -> T.mkEvar (e, Array.map aux l)
      | T.Case (ci,p,c,bl) -> T.mkCase (ci, aux p, aux c, Array.map aux bl)
@@ -63,21 +63,24 @@ let nf_evar sigma ~preserve =
 (* Warning: statuses, goals, prim_rules and tactic_exprs are not unshared! *)
 let rec unshare_proof_tree =
  let module PT = Proof_type in
-  function {PT.open_subgoals = status ; PT.goal = goal ; PT.ref = ref} ->
+  function {PT.open_subgoals = status ; 
+	    PT.goal = goal ; 
+	    PT.ref = ref} ->
    let unshared_ref =
     match ref with
        None -> None
      | Some (rule,pfs) ->
         let unshared_rule =
          match rule with
-            PT.Prim prim -> PT.Prim prim
-          | PT.Change_evars -> PT.Change_evars
-          | PT.Tactic (tactic_expr, pf) ->
-             PT.Tactic (tactic_expr, unshare_proof_tree pf)
-        in
+             PT.Nested (cmpd, pf) ->
+               PT.Nested (cmpd, unshare_proof_tree pf)
+	   | other -> other
+	in
          Some (unshared_rule, List.map unshare_proof_tree pfs)
    in
-    {PT.open_subgoals = status ; PT.goal = goal ; PT.ref = unshared_ref}
+    {PT.open_subgoals = status ; 
+     PT.goal = goal ; 
+     PT.ref = unshared_ref}
 ;;
 
 module ProofTreeHash =
@@ -103,7 +106,7 @@ let extract_open_proof sigma pf =
        {PT.ref=Some(PT.Prim _,_)} as pf ->
         L.prim_extractor proof_extractor vl pf
 	  
-     | {PT.ref=Some(PT.Tactic (_,hidden_proof),spfl)} ->
+     | {PT.ref=Some(PT.Nested (_,hidden_proof),spfl)} ->
 	 let sgl,v = Refiner.frontier hidden_proof in
 	 let flat_proof = v spfl in
          ProofTreeHash.add proof_tree_to_flattened_proof_tree node flat_proof ;
@@ -117,7 +120,7 @@ let extract_open_proof sigma pf =
              (fun id ->
                 (* Section variables are in the [id] list but are not *)
                 (* lambda abstracted in the term [vl]                 *)
-                try let n = Util.list_index id vl in (n,id)
+                try let n = Logic.proof_variable_index id vl in (n,id)
 	        with Not_found -> failwith "caught")
 (*CSC: the above function must be modified such that when it is found  *)
 (*CSC: it becomes a Rel; otherwise a Var. Then it can be already used  *)

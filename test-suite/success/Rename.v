@@ -3,3 +3,16 @@ intros.
 rename n into p.
 induction p; auto.
 Qed.
+
+(* Submitted by Iris Loeb (#842) *)
+
+Section rename.
+
+Variable A:Prop.
+
+Lemma Tauto: A->A.
+rename A into B.
+tauto.
+Qed.
+
+End rename.

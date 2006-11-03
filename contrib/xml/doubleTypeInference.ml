@@ -93,7 +93,7 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
         let jty = execute env sigma ty None in
         let jty = assumption_of_judgment env sigma jty in
         let evar_context = 
-	  E.named_context_of_val (Evd.map sigma n).Evd.evar_hyps in
+	  E.named_context_of_val (Evd.find sigma n).Evd.evar_hyps in
          let rec iter actual_args evar_context =
           match actual_args,evar_context with
              [],[] -> ()
@@ -122,7 +122,7 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
         Typeops.judge_of_variable env id
 	  
      | T.Const c ->
-        E.make_judge cstr (E.constant_type env c)
+        E.make_judge cstr (Typeops.type_of_constant env c)
 	  
      | T.Ind ind ->
         E.make_judge cstr (Inductiveops.type_of_inductive env ind)

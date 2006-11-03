@@ -140,16 +140,14 @@ let error_axiom_scheme r i =
        str " type variable(s).") 
 
 let warning_info_ax r =
-  Options.if_verbose msg_warning
-    (str "You must realize axiom " ++
-     pr_global r ++ str " in the extracted code.")
+  msg_warning (str "You must realize axiom " ++
+		  pr_global r ++ str " in the extracted code.")
 
 let warning_log_ax r = 
-  Options.if_verbose msg_warning
-    (str "This extraction depends on logical axiom" ++ spc () ++ 
-     pr_global r ++ str "." ++ spc() ++ 
-     str "Having false logical axiom in the environment when extracting" ++ 
-     spc () ++ str "may lead to incorrect or non-terminating ML terms.")
+  msg_warning (str "This extraction depends on logical axiom" ++ spc () ++ 
+		  pr_global r ++ str "." ++ spc() ++ 
+		  str "Having false logical axiom in the environment when extracting" ++ 
+		  spc () ++ str "may lead to incorrect or non-terminating ML terms.")
 
 let check_inside_module () = 
   try 
@@ -443,7 +441,7 @@ let extract_constant_inline inline r ids s =
   match g with 
     | ConstRef kn -> 
 	let env = Global.env () in 
-	let typ = Environ.constant_type env kn in 
+	let typ = Typeops.type_of_constant env kn in 
 	let typ = Reduction.whd_betadeltaiota env typ in
 	if Reduction.is_arity env typ 
 	  then begin 

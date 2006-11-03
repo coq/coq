@@ -194,7 +194,7 @@ let list_map_i f =
 let list_map2_i f i l1 l2 =  
   let rec map_i i = function
     | ([], []) -> []
-    | ((h1::t1), (h2::t2)) -> (f i h1 h2) :: (map_i (succ i) (t1,t2))
+    | ((h1::t1), (h2::t2)) -> let v = f i h1 h2 in v :: map_i (succ i) (t1,t2)
     | (_, _) -> invalid_arg "map2_i"
   in 
   map_i i (l1,l2)
@@ -202,7 +202,7 @@ let list_map2_i f i l1 l2 =
 let list_map3 f l1 l2 l3 =
   let rec map = function
     | ([], [], []) -> []
-    | ((h1::t1), (h2::t2), (h3::t3)) -> (f h1 h2 h3) :: (map (t1,t2,t3))
+    | ((h1::t1), (h2::t2), (h3::t3)) -> let v = f h1 h2 h3 in v::map (t1,t2,t3)
     | (_, _, _) -> invalid_arg "map3"
   in 
   map (l1,l2,l3)
@@ -213,6 +213,16 @@ let list_index x =
     | [] -> raise Not_found
   in 
   index_x 1
+
+let list_unique_index x = 
+  let rec index_x n = function
+    | y::l -> 
+	if x = y then 
+	  if List.mem x l then raise Not_found
+	  else n 
+	else index_x (succ n) l
+    | [] -> raise Not_found 
+  in index_x 1
 
 let list_fold_left_i f = 
   let rec it_list_f i a = function
@@ -250,6 +260,13 @@ let list_for_all_i p =
 
 let list_except x l = List.filter (fun y -> not (x = y)) l
 
+let list_remove = list_except (* Alias *)
+
+let rec list_remove_first a = function
+  | b::l when a = b -> l
+  | b::l -> b::list_remove_first a l
+  | [] -> raise Not_found
+
 let list_for_all2eq f l1 l2 = try List.for_all2 f l1 l2 with Failure _ -> false
 
 let list_map_i f = 
@@ -278,9 +295,11 @@ let list_try_find f =
   in 
   try_find_f
 
-let rec list_uniquize = function
-  | [] -> []
-  | h::t -> if List.mem h t then list_uniquize t else h::(list_uniquize t)
+let list_uniquize l =
+  let rec aux acc = function
+  | [] -> List.rev acc
+  | h::t -> if List.mem h acc then aux acc t else aux (h::acc) t
+  in aux [] l
 
 let rec list_distinct = function
   | h::t -> (not (List.mem h t)) && list_distinct t
@@ -346,7 +365,19 @@ let list_prefix_of prefl l =
     | ([], _) -> true
     | (_, _) -> false
   in 
-  prefrec (prefl,l)
+    prefrec (prefl,l)
+
+let list_drop_prefix p l =
+(* if l=p++t then return t else l *)
+  let rec list_drop_prefix_rec = function
+    | ([], tl) -> Some tl
+    | (_, []) -> None
+    | (h1::tp, h2::tl) -> 
+	if h1 = h2 then list_drop_prefix_rec (tp,tl) else None
+  in
+    match list_drop_prefix_rec (p,l) with
+      | Some r -> r
+      | None -> l
 
 let list_map_append f l = List.flatten (List.map f l)
 
@@ -361,12 +392,12 @@ let list_share_tails l1 l2 =
 
 let list_join_map f l = List.flatten (List.map f l)
 
-let rec list_fold_map f e = function 
+let rec list_fold_map f e = function
   |  []  -> (e,[])
-  |  h::t -> 
+  |  h::t ->
        let e',h' = f e h in
        let e'',t' = list_fold_map f e' t in
-	 e'',h'::t'
+         e'',h'::t'
 
 (* (* tail-recursive version of the above function *)
 let list_fold_map f e l = 
@@ -377,6 +408,10 @@ let list_fold_map f e l =
   let (e',lrev) = List.fold_left g (e,[]) l in
     (e',List.rev lrev)
 *)
+
+(* The same, based on fold_right, with the effect accumulated on the right *)
+let list_fold_map' f l e =
+  List.fold_right (fun x (l,e) -> let (y,e) = f x e in (y::l,e)) l ([],e)
 
 let list_map_assoc f = List.map (fun (x,a) -> (x,f a))
 
@@ -439,6 +474,17 @@ let array_last v =
     | n -> v.(pred n)
 
 let array_cons e v = Array.append [|e|] v
+
+let array_rev t = 
+  let n=Array.length t in
+    if n <=0 then () 
+    else
+      let tmp=ref t.(0) in
+      for i=0 to pred (n/2) do 
+	tmp:=t.((pred n)-i);
+	t.((pred n)-i)<- t.(i);
+	t.(i)<- !tmp
+      done
 
 let array_fold_right_i f v a =
   let rec fold a n =
@@ -595,6 +641,38 @@ let array_map_left_pair f a g b =
     r, s
   end
 
+let pure_functional = false
+
+let array_fold_map' f v e =
+if pure_functional then
+  let (l,e) =
+    Array.fold_right 
+      (fun x (l,e) -> let (y,e) = f x e in (y::l,e))
+      v ([],e) in
+  (Array.of_list l,e)
+else
+  let e' = ref e in
+  let v' = Array.map (fun x -> let (y,e) = f x !e' in e' := e; y) v in
+  (v',!e')
+
+let array_fold_map2' f v1 v2 e =
+  let e' = ref e in
+  let v' = 
+    array_map2 (fun x1 x2 -> let (y,e) = f x1 x2 !e' in e' := e; y) v1 v2 
+  in
+  (v',!e')
+
+let array_distinct v =
+  try
+    for i=0 to Array.length v-1 do
+      for j=i+1 to Array.length v-1 do
+	if v.(i)=v.(j) then raise Exit
+      done
+    done;
+    true
+  with Exit ->
+    false
+
 (* Matrices *)
 
 let matrix_transpose mat =
@@ -647,7 +725,7 @@ let out_some = function
   | Some x -> x
   | None -> failwith "out_some"
 
-let option_app f = function
+let option_map f = function
   | None -> None
   | Some x -> Some (f x)
 
@@ -657,6 +735,10 @@ let option_cons a l = match a with
 
 let option_fold_left2 f e a b = match (a,b) with
   | Some x, Some y -> f e x y
+  | _ -> e
+
+let option_fold_left f e a = match a with
+  | Some x -> f e x
   | _ -> e
 
 let option_fold_right f a e = match a with
@@ -734,6 +816,8 @@ let prvect_with_sep sep elem v =
       in
   let n = Array.length v in
   if n = 0 then mt () else pr (n - 1)
+
+let surround p = hov 1 (str"(" ++ p ++ str")")
 
 (*s Size of ocaml values. *)
 

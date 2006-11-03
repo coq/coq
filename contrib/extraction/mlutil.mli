@@ -62,13 +62,15 @@ val var2var' : ml_type -> ml_type
 type abbrev_map = global_reference -> ml_type option
 
 val type_expand : abbrev_map -> ml_type -> ml_type 
-val type_eq : abbrev_map -> ml_type -> ml_type -> bool
-val type_neq : abbrev_map -> ml_type -> ml_type -> bool
-val type_to_sign : abbrev_map -> ml_type -> bool list
+val type_to_sign : abbrev_map -> ml_type -> sign
+val type_to_signature : abbrev_map -> ml_type -> signature
 val type_expunge : abbrev_map -> ml_type -> ml_type
 
-val case_expunge : bool list -> ml_ast -> identifier list * ml_ast
-val term_expunge : bool list -> identifier list * ml_ast -> ml_ast
+val isDummy : ml_type -> bool
+val isKill : sign -> bool
+
+val case_expunge : signature -> ml_ast -> identifier list * ml_ast
+val term_expunge : signature -> identifier list * ml_ast -> ml_ast
 
 
 (*s Special identifiers. [dummy_name] is to be used for dead code
@@ -86,9 +88,9 @@ val collect_n_lams : int -> ml_ast -> identifier list * ml_ast
 val nb_lams : ml_ast -> int
 
 val dummy_lams : ml_ast -> int -> ml_ast
-val anonym_or_dummy_lams : ml_ast -> bool list -> ml_ast
+val anonym_or_dummy_lams : ml_ast -> signature -> ml_ast
 
-val eta_args_sign : int -> bool list -> ml_ast list 
+val eta_args_sign : int -> signature -> ml_ast list 
 
 (*s Utility functions over ML terms. *)
 

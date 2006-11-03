@@ -4,6 +4,7 @@ tactics/extraargs.ml: parsing/grammar.cma
 tactics/extratactics.ml: parsing/grammar.cma
 tactics/eauto.ml: parsing/grammar.cma
 toplevel/whelp.ml: parsing/grammar.cma
+tactics/hipattern.ml: parsing/grammar.cma parsing/q_constr.cmo
 contrib/omega/g_omega.ml: parsing/grammar.cma
 contrib/romega/g_romega.ml: parsing/grammar.cma
 contrib/ring/g_quote.ml: parsing/grammar.cma
@@ -18,7 +19,7 @@ contrib/jprover/jprover.ml: parsing/grammar.cma
 contrib/cc/g_congruence.ml: parsing/grammar.cma
 contrib/funind/tacinv.ml: parsing/grammar.cma
 contrib/first-order/g_ground.ml: parsing/grammar.cma
-contrib/subtac/sparser.ml: parsing/grammar.cma
+contrib/subtac/g_subtac.ml: parsing/grammar.cma
 contrib/subtac/g_eterm.ml: parsing/grammar.cma
 contrib/rtauto/g_rtauto.ml: parsing/grammar.cma
 contrib/recdef/recdef.ml: parsing/grammar.cma
@@ -31,7 +32,7 @@ parsing/q_util.ml:
 parsing/q_coqast.ml: 
 parsing/g_prim.ml: 
 parsing/g_minicoq.ml: 
-parsing/g_vernac.ml: 
+parsing/g_vernac.ml: parsing/grammar.cma
 parsing/g_proofs.ml: 
 parsing/g_xml.ml: 
 parsing/g_constr.ml: 
@@ -40,6 +41,8 @@ parsing/g_ltac.ml:
 parsing/argextend.ml: 
 parsing/tacextend.ml: 
 parsing/vernacextend.ml: 
+parsing/q_constr.ml: 
+parsing/g_decl_mode.ml: parsing/grammar.cma
 toplevel/mltop.ml: 
 lib/pp.ml: 
 lib/compat.ml: 

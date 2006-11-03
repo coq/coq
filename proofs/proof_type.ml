@@ -16,6 +16,7 @@ open Libnames
 open Term
 open Util
 open Tacexpr
+open Decl_expr
 open Rawterm
 open Genarg
 open Nametab
@@ -39,12 +40,6 @@ type prim_rule =
   | Move of bool * identifier * identifier
   | Rename of identifier * identifier
 
-(*s Proof trees. 
-  [ref] = [None] if the goal has still to be proved, 
-  and [Some (r,l)] if the rule [r] was applied to the goal
-  and gave [l] as subproofs to be completed. 
-  if [ref = (Some(Tactic (t,p),l))] then [p] is the proof 
-  that the goal can be proven if the goals in [l] are solved. *)
 type proof_tree = {
   open_subgoals : int;
   goal : goal;
@@ -52,8 +47,14 @@ type proof_tree = {
 
 and rule =
   | Prim of prim_rule
-  | Tactic of tactic_expr * proof_tree
+  | Nested of compound_rule * proof_tree 
+  | Decl_proof of bool
+  | Daimon
   | Change_evars
+
+and compound_rule=  
+  | Tactic of tactic_expr * bool
+  | Proof_instr of bool*proof_instr (* the boolean is for focus restrictions *)
 
 and goal = evar_info
 

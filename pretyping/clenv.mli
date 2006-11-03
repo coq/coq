@@ -17,6 +17,7 @@ open Environ
 open Evd
 open Evarutil
 open Mod_subst
+open Rawterm
 (*i*)
 
 (***************************************************************)
@@ -93,23 +94,40 @@ val clenv_missing : clausenv -> metavariable list
 
 (* defines metas corresponding to the name of the bindings *)
 val clenv_match_args :
-  constr Rawterm.explicit_bindings -> clausenv -> clausenv
+  constr explicit_bindings -> clausenv -> clausenv
 val clenv_constrain_with_bindings : arg_bindings -> clausenv -> clausenv
 
 (* start with a clenv to refine with a given term with bindings *)
 
-(* 1- the arity of the lemma is fixed *)
+(* the arity of the lemma is fixed *)
+(* the optional int tells how many prods of the lemma have to be used *)
+(* use all of them if None *)
 val make_clenv_binding_apply :
-  evar_info sigma -> int -> constr * constr -> constr Rawterm.bindings ->
+  evar_info sigma -> int option -> constr * constr -> constr bindings ->
    clausenv
 val make_clenv_binding :
-  evar_info sigma -> constr * constr -> constr Rawterm.bindings -> clausenv
+  evar_info sigma -> constr * constr -> constr bindings -> clausenv
 
-(* other stuff *)
+(* [clenv_environments sigma n t] returns [sigma',lmeta,ccl] where
+   [lmetas] is a list of metas to be applied to a proof of [t] so that
+   it produces the unification pattern [ccl]; [sigma'] is [sigma]
+   extended with [lmetas]; if [n] is defined, it limits the size of
+   the list even if [ccl] is still a product; otherwise, it stops when
+   [ccl] is not a product; example: if [t] is [forall x y, x=y -> y=x]
+   and [n] is [None], then [lmetas] is [Meta n1;Meta n2;Meta n3] and
+   [ccl] is [Meta n1=Meta n2]; if [n] is [Some 1], [lmetas] is [Meta n1]
+   and [ccl] is [forall y, Meta n1=y -> y=Meta n1] *)
 val clenv_environments :
  evar_defs -> int option -> types -> evar_defs * constr list * types
+
+(* [clenv_environments_evars env sigma n t] does the same but returns
+   a list of Evar's defined in [env] and extends [sigma] accordingly *)
 val clenv_environments_evars :
  env -> evar_defs -> int option -> types -> evar_defs * constr list * types
+
+(* if the clause is a product, add an extra meta for this product *)
+exception NotExtensibleClause
+val clenv_push_prod : clausenv -> clausenv
 
 (***************************************************************)
 (* Pretty-print *)

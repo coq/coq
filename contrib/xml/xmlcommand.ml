@@ -214,7 +214,6 @@ let theory_filename xml_library_root =
     None -> None  (* stdout *)
   | Some xml_library_root' ->
      let toks = List.map N.string_of_id (N.repr_dirpath (Lib.library_dp ())) in
-     let hd = List.hd toks in
      (* theory from A/B/C/F.v goes into A/B/C/F.theory *)
      let alltoks = List.rev toks in
        Some (join_dirs xml_library_root' alltoks ^ ".theory")
@@ -396,7 +395,7 @@ let mk_constant_obj id bo ty variables hyps =
          ty,params)
 ;;
 
-let mk_inductive_obj sp packs variables nparams hyps finite =
+let mk_inductive_obj sp mib packs variables nparams hyps finite =
  let module D = Declarations in
   let hyps = string_list_of_named_context_list hyps in
   let params = filter_params variables hyps in
@@ -407,9 +406,9 @@ let mk_inductive_obj sp packs variables nparams hyps finite =
      (fun p i ->
        decr tyno ;
        let {D.mind_consnames=consnames ;
-            D.mind_typename=typename ;
-            D.mind_nf_arity=arity} = p
+            D.mind_typename=typename } = p
        in
+        let arity = Inductive.type_of_inductive (Global.env()) (mib,p) in
         let lc = Inductiveops.arities_of_constructors (Global.env ()) (sp,!tyno) in
         let cons =
          (Array.fold_right (fun (name,lc) i -> (name,lc)::i)
@@ -475,7 +474,7 @@ let kind_of_global r =
   match r with
   | Ln.IndRef kn | Ln.ConstructRef (kn,_) -> 
       let isrecord =
-	try let _ = Recordops.lookup_structure kn in true
+	try let _ = Recordops.lookup_projections kn in true
         with Not_found -> false in
       kind_of_inductive isrecord (fst kn)
   | Ln.VarRef id -> kind_of_variable id
@@ -523,15 +522,17 @@ let print internal glob_ref kind xml_library_root =
        let id = N.id_of_label (N.con_label kn) in
        let {D.const_body=val0 ; D.const_type = typ ; D.const_hyps = hyps} =
         G.lookup_constant kn in
+       let typ = Typeops.type_of_constant_type (Global.env()) typ in
         Cic2acic.Constant kn,mk_constant_obj id val0 typ variables hyps
     | Ln.IndRef (kn,_) ->
+       let mib = G.lookup_mind kn in
        let {D.mind_nparams=nparams;
 	    D.mind_packets=packs ;
             D.mind_hyps=hyps;
-            D.mind_finite=finite} = G.lookup_mind kn in
-          Cic2acic.Inductive kn,mk_inductive_obj kn packs variables nparams hyps finite
+            D.mind_finite=finite} = mib in
+          Cic2acic.Inductive kn,mk_inductive_obj kn mib packs variables nparams hyps finite
     | Ln.ConstructRef _ ->
-       Util.anomaly ("print: this should not happen")
+       Util.error ("a single constructor cannot be printed in XML")
   in
   let fn = filename_of_path xml_library_root tag in
   let uri = Cic2acic.uri_of_kernel_name tag in
@@ -547,14 +548,12 @@ let print_ref qid fn =
 (*  where dest is either None (for stdout) or (Some filename) *)
 (* pretty prints via Xml.pp the proof in progress on dest     *)
 let show_pftreestate internal fn (kind,pftst) id =
- let str = Names.string_of_id id in
  let pf = Tacmach.proof_of_pftreestate pftst in
  let typ = (Proof_trees.goal_of_proof pf).Evd.evar_concl in
  let val0,evar_map,proof_tree_to_constr,proof_tree_to_flattened_proof_tree,
      unshared_pf
  =
   Proof2aproof.extract_open_pftreestate pftst in
- let kn = Lib.make_kn id in
  let env = Global.env () in
  let obj =
   mk_current_proof_obj (fst kind = Decl_kinds.Local) id val0 typ evar_map env in

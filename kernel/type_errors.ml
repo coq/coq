@@ -45,8 +45,8 @@ type type_error =
   | NotAType of unsafe_judgment
   | BadAssumption of unsafe_judgment
   | ReferenceVariables of constr
-  | ElimArity of inductive * types list * constr * unsafe_judgment
-      * (constr * constr * arity_error) option
+  | ElimArity of inductive * sorts_family list * constr * unsafe_judgment
+      * (sorts_family * sorts_family * arity_error) option
   | CaseNotInductive of unsafe_judgment
   | WrongCaseInfo of inductive * case_info
   | NumberBranches of unsafe_judgment * int
@@ -103,7 +103,7 @@ let error_cant_apply_not_functional env rator randl =
   raise (TypeError (env, CantApplyNonFunctional (rator,randl)))
 
 let error_cant_apply_bad_type env t rator randl =
-  raise(TypeError (env, CantApplyBadType (t,rator,randl)))
+  raise (TypeError (env, CantApplyBadType (t,rator,randl)))
 
 let error_ill_formed_rec_body env why lna i =
   raise (TypeError (env, IllFormedRecBody (why,lna,i)))

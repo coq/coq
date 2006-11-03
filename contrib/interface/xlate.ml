@@ -63,7 +63,7 @@ let coercion_description t = !coercion_description_holder t;;
 let set_coercion_description f =
  coercion_description_holder:=f; ();;
 
-let xlate_error s = failwith ("Translation error: " ^ s);;
+let xlate_error s = print_endline ("xlate_error : "^s);failwith ("Translation error: " ^ s);;
 
 let ctf_STRING_OPT_NONE = CT_coerce_NONE_to_STRING_OPT CT_none;;
 
@@ -113,8 +113,16 @@ let nums_to_int_list_aux l = List.map (fun x -> CT_int x) l;;
 
 let nums_to_int_list l =  CT_int_list(nums_to_int_list_aux l);;
 
-let nums_to_int_ne_list n l =
-  CT_int_ne_list(CT_int n, nums_to_int_list_aux l);;
+let num_or_var_to_int = function
+  | ArgArg x -> CT_int x
+  | _ -> xlate_error "TODO: nums_to_int_list_aux ArgVar";;
+
+let nums_or_var_to_int_list_aux l = List.map num_or_var_to_int l;;
+
+let nums_or_var_to_int_list l = CT_int_list(nums_or_var_to_int_list_aux l);;
+
+let nums_or_var_to_int_ne_list n l =
+  CT_int_ne_list(num_or_var_to_int n, nums_or_var_to_int_list_aux l);;
 
 type iTARG =   Targ_command of ct_FORMULA
              | Targ_intropatt of ct_INTRO_PATT_LIST
@@ -298,9 +306,11 @@ let rec decompose_last = function
 let make_fix_struct (n,bl) =
   let names = names_of_local_assums bl in
   let nn = List.length names in
-  if nn = 1 then ctv_ID_OPT_NONE
-  else if n < nn then xlate_id_opt(List.nth names n)
-  else xlate_error "unexpected result of parsing for Fixpoint";;
+  if nn = 1 || n = None then ctv_ID_OPT_NONE
+  else 
+    let n = out_some n in 
+    if n < nn then xlate_id_opt(List.nth names n)
+    else xlate_error "unexpected result of parsing for Fixpoint";;
 
 
 let rec xlate_binder = function
@@ -326,8 +336,8 @@ and
   | a::l -> CT_match_pattern_ne_list(xlate_match_pattern a, 
                                      List.map xlate_match_pattern l)
 and  translate_one_equation = function
-    (_,lp, a) -> CT_eqn ( xlate_match_pattern_ne_list lp,
-	     xlate_formula a)
+    (_,[lp], a) -> CT_eqn (xlate_match_pattern_ne_list lp, xlate_formula a)
+  | _ -> xlate_error "TODO: disjunctive multiple patterns"
 and 
   xlate_binder_ne_list = function
     [] -> assert false
@@ -415,9 +425,12 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
         CT_cofixc(xlate_ident id,
 	  (CT_cofix_rec_list (strip_mutcorec lm, List.map strip_mutcorec lmi)))
    | CFix (_, (_, id), lm::lmi) ->       
-     let strip_mutrec (fid, n, bl, arf, ardef) =
+     let strip_mutrec (fid, (n, ro), bl, arf, ardef) =
         let (struct_arg,bl,arf,ardef) =
+	 (* Pierre L: could the case [n=None && bl=[]] happen ? Normally not *)
+	 (* By the way, how could [bl = []] happen in V8 syntax ?  *)
          if bl = [] then
+	   let n = out_some n in 
            let (bl,arf,ardef) = Ppconstr.split_fix (n+1) arf ardef in
            (xlate_id_opt(List.nth (names_of_local_assums bl) n),bl,arf,ardef)
          else (make_fix_struct (n, bl),bl,arf,ardef) in
@@ -469,19 +482,22 @@ let xlate_hyp = function
 
 let xlate_hyp_location =
  function
-  | AI (_,id), nums, InHypTypeOnly ->
-      CT_intype(xlate_ident id, nums_to_int_list nums)
-  | AI (_,id), nums, InHypValueOnly ->
-      CT_invalue(xlate_ident id, nums_to_int_list nums)
-  | AI (_,id), [], InHyp ->
+  | (nums, AI (_,id)), InHypTypeOnly ->
+      CT_intype(xlate_ident id, nums_or_var_to_int_list nums)
+  | (nums, AI (_,id)), InHypValueOnly ->
+      CT_invalue(xlate_ident id, nums_or_var_to_int_list nums)
+  | ([], AI (_,id)), InHyp ->
       CT_coerce_UNFOLD_to_HYP_LOCATION 
 	(CT_coerce_ID_to_UNFOLD (xlate_ident id))
-  | AI (_,id), a::l, InHyp ->
+  | (a::l, AI (_,id)), InHyp ->
       CT_coerce_UNFOLD_to_HYP_LOCATION 
 	(CT_unfold_occ (xlate_ident id, 
-			CT_int_ne_list(CT_int a, nums_to_int_list_aux l)))
-  | MetaId _, _,_ -> 
+			CT_int_ne_list(num_or_var_to_int a, 
+                                       nums_or_var_to_int_list_aux l)))
+  | (_, MetaId _),_ -> 
       xlate_error "MetaId not supported in xlate_hyp_location (should occur only in quotations)"
+
+
 
 let xlate_clause cls =
   let hyps_info =
@@ -661,13 +677,14 @@ let xlate_using = function
 let xlate_one_unfold_block = function
     ([],qid) -> CT_coerce_ID_to_UNFOLD(tac_qualid_to_ct_ID qid)
   | (n::nums, qid) ->
-      CT_unfold_occ(tac_qualid_to_ct_ID qid, nums_to_int_ne_list n nums);;
+      CT_unfold_occ(tac_qualid_to_ct_ID qid, nums_or_var_to_int_ne_list n nums)
+;;
 
 let xlate_with_names = function
     IntroAnonymous -> CT_coerce_ID_OPT_to_INTRO_PATT_OPT ctv_ID_OPT_NONE
   | fp -> CT_coerce_INTRO_PATT_to_INTRO_PATT_OPT (xlate_intro_pattern fp)
 
-let rawwit_main_tactic = rawwit_tactic Pcoq.Tactic.tactic_main_level
+let rawwit_main_tactic = Pcoq.rawwit_tactic Pcoq.tactic_main_level
 
 let rec (xlate_tacarg:raw_tactic_arg -> ct_TACTIC_ARG) =
   function
@@ -709,7 +726,9 @@ and (xlate_call_or_tacarg:raw_tactic_arg -> ct_TACTIC_COM) =
     | Reference (Ident (_,s)) -> ident_tac s
     | ConstrMayEval(ConstrTerm a) ->
 	CT_formula_marker(xlate_formula a)
-    | TacFreshId s -> CT_fresh(ctf_STRING_OPT s)
+    | TacFreshId [] -> CT_fresh(ctf_STRING_OPT None)
+    | TacFreshId [ArgArg s] -> CT_fresh(ctf_STRING_OPT (Some s))
+    | TacFreshId _ -> xlate_error "TODO: fresh with many args"
     | t -> xlate_error "TODO LATER: result other than tactic or constr"
 
 and xlate_red_tactic =
@@ -723,7 +742,7 @@ and xlate_red_tactic =
       CT_simpl 
 	(CT_coerce_PATTERN_to_PATTERN_OPT
 	   (CT_pattern_occ
-	      (CT_int_list(List.map (fun n -> CT_int n) l), xlate_formula c)))
+	      (CT_int_list(nums_or_var_to_int_list_aux l), xlate_formula c)))
   | Cbv flag_list ->
      let conv_flags, red_ids = get_flag flag_list in
      CT_cbv (CT_conversion_flag_list conv_flags, red_ids)
@@ -740,7 +759,7 @@ and xlate_red_tactic =
   | Pattern l ->
      let pat_list = List.map (fun (nums,c) ->
           CT_pattern_occ
-           (CT_int_list (List.map (fun x -> CT_int x) nums),
+           (CT_int_list (nums_or_var_to_int_list_aux nums),
             xlate_formula c)) l in
      (match pat_list with
       | first :: others -> CT_pattern (CT_pattern_ne_list (first, others))
@@ -898,7 +917,7 @@ and xlate_tac =
     | TacChange (Some(l,c), f, b) -> 
 	(* TODO LATER: combine with other constructions of pattern_occ *)
 	CT_change_local(
-	  CT_pattern_occ(CT_int_list(List.map (fun n -> CT_int n) l), 
+	  CT_pattern_occ(CT_int_list(nums_or_var_to_int_list_aux l), 
 			 xlate_formula c),
 	  xlate_formula f,
 	  xlate_clause b)
@@ -922,6 +941,8 @@ and xlate_tac =
      CT_injection_eq
          (xlate_quantified_hypothesis_opt
 	    (out_gen (wit_opt rawwit_quant_hyp) idopt))
+    | TacExtend (_,"injection_as", [idopt;ipat]) ->
+	xlate_error "TODO: injection as"
     | TacFix (idopt, n) ->
      CT_fixtactic (xlate_ident_opt idopt, CT_int n, CT_fix_tac_list [])
     | TacMutualFix (id, n, fixtac_list) ->
@@ -957,23 +978,42 @@ and xlate_tac =
     | TacRight bindl -> CT_right (xlate_bindings bindl)
     | TacSplit (false,bindl) -> CT_split (xlate_bindings bindl)
     | TacSplit (true,bindl) -> CT_exists (xlate_bindings bindl)
-    | TacExtend (_,"replace", [c1; c2]) ->
-     let c1 = xlate_formula (out_gen rawwit_constr c1) in
-     let c2 = xlate_formula (out_gen rawwit_constr c2) in
-     CT_replace_with (c1, c2)
-    | TacExtend (_,"rewrite", [b; cbindl]) ->
-     let b = out_gen Extraargs.rawwit_orient b in
-     let (c,bindl) = out_gen rawwit_constr_with_bindings cbindl in
-     let c = xlate_formula c and bindl = xlate_bindings bindl in
-     if b then CT_rewrite_lr (c, bindl, ctv_ID_OPT_NONE)
-     else CT_rewrite_rl (c, bindl, ctv_ID_OPT_NONE)
-    | TacExtend (_,"rewrite_in", [b; cbindl; id]) ->
-     let b = out_gen Extraargs.rawwit_orient b in
-     let (c,bindl) = out_gen rawwit_constr_with_bindings cbindl in
-     let c = xlate_formula c and bindl = xlate_bindings bindl in
-     let id = ctf_ID_OPT_SOME (xlate_ident (snd (out_gen rawwit_var id))) in
-     if b then CT_rewrite_lr (c, bindl, id)
-     else CT_rewrite_rl (c, bindl, id)
+    | TacExtend (_,"replace", [c1; c2;cl;tac_opt]) ->
+	let c1 = xlate_formula (out_gen rawwit_constr c1) in
+	let c2 = xlate_formula (out_gen rawwit_constr c2) in
+	let cl = 
+	  (* J.F. : 18/08/2006 
+	     Hack to coerce the "clause" argument of replace to a real clause 
+	     To be remove if we can reuse the clause grammar entrie defined in g_tactic
+	  *)
+	  let cl_as_clause = Extraargs.raw_in_arg_hyp_to_clause (out_gen Extraargs.rawwit_in_arg_hyp cl) in 
+	  let cl_as_xlate_arg = 
+	    {cl_as_clause with 
+	       Tacexpr.onhyps = 
+		option_map 
+		  (fun l -> 
+		     List.map (fun ((l,id),hyp_flag) -> ((l, Tacexpr.AI ((),id)) ,hyp_flag)) l
+		  )
+		  cl_as_clause.Tacexpr.onhyps
+	    }
+	  in
+	  cl_as_xlate_arg
+	in 
+	let cl = xlate_clause cl in 
+	let tac_opt = 
+	  match out_gen (Extraargs.rawwit_by_arg_tac) tac_opt with
+	    | None -> CT_coerce_NONE_to_TACTIC_OPT  CT_none
+	    | Some tac ->
+		let tac =  xlate_tactic tac in
+		CT_coerce_TACTIC_COM_to_TACTIC_OPT tac
+	in 
+	CT_replace_with (c1, c2,cl,tac_opt)
+    | TacRewrite(b,cbindl,cl) -> 
+     let cl = xlate_clause cl 
+     and c = xlate_formula (fst cbindl) 
+     and bindl = xlate_bindings (snd cbindl) in
+     if b then CT_rewrite_lr (c, bindl, cl)
+     else CT_rewrite_rl (c, bindl, cl)
     | TacExtend (_,"conditional_rewrite", [t; b; cbindl]) ->
      let t = out_gen rawwit_main_tactic t in
      let b = out_gen Extraargs.rawwit_orient b in
@@ -1057,12 +1097,12 @@ and xlate_tac =
 	let first_n =
 	  match out_gen (wit_opt rawwit_int_or_var) nopt with
 	    | Some (ArgVar(_, s)) -> xlate_id_to_id_or_int_opt s
-	    | Some ArgArg n -> xlate_int_to_id_or_int_opt n
+	    | Some (ArgArg n) -> xlate_int_to_id_or_int_opt n
 	    | None -> none_in_id_or_int_opt in
 	let second_n =
 	  match out_gen (wit_opt rawwit_int_or_var) popt with
 	    | Some (ArgVar(_, s)) -> xlate_id_to_id_or_int_opt s
-	    | Some ArgArg n -> xlate_int_to_id_or_int_opt n
+	    | Some (ArgArg n) -> xlate_int_to_id_or_int_opt n
 	    | None -> none_in_id_or_int_opt in
 	let _lems =
 	  match out_gen Eauto.rawwit_auto_using lems with
@@ -1082,7 +1122,7 @@ and xlate_tac =
 				  List.map (fun x -> CT_ident x) l))))
     | TacExtend (_,"prolog", [cl; n]) ->
       let cl = List.map xlate_formula (out_gen (wit_list0 rawwit_constr) cl) in
-      (match out_gen wit_int_or_var n with
+      (match out_gen rawwit_int_or_var n with
 	| ArgVar _ -> xlate_error ""
 	| ArgArg n -> CT_prolog (CT_formula_list cl, CT_int  n))
     | TacExtend (_,"eapply", [cbindl]) ->
@@ -1157,8 +1197,8 @@ and xlate_tac =
     | TacDAuto (a, b) ->
 	CT_dauto(xlate_int_or_var_opt_to_int_opt a, xlate_int_opt b)
     | TacNewDestruct(a,b,c) ->
-	CT_new_destruct
-	  (xlate_int_or_constr a, xlate_using b, 
+	CT_new_destruct (* Julien F. : est-ce correct *)
+	  (List.map  xlate_int_or_constr a, xlate_using b, 
 	   xlate_with_names c)
     | TacNewInduction(a,b,c) ->
 	CT_new_induction (* Pierre C. : est-ce correct *)
@@ -1195,6 +1235,7 @@ and xlate_tac =
 	     (List.map xlate_formula
 		(out_gen (wit_list0 rawwit_constr) args)))
     | TacExtend (_,id, l) ->
+	print_endline ("Extratactics : "^ id);
      CT_user_tac (CT_ident id, CT_targ_list (List.map coerce_genarg_to_TARG l))
     | TacAlias _ -> xlate_error "Alias not supported"
 
@@ -1250,14 +1291,15 @@ and coerce_genarg_to_TARG x =
       (CT_coerce_FORMULA_to_SCOMMENT_CONTENT (xlate_formula (out_gen rawwit_constr x)))
   | ConstrMayEvalArgType -> xlate_error"TODO: generic constr-may-eval argument"
   | QuantHypArgType ->xlate_error"TODO: generic quantified hypothesis argument"
-  | TacticArgType n ->
-      let t = xlate_tactic (out_gen (rawwit_tactic n) x) in
-      CT_coerce_TACTIC_COM_to_TARG t
   | OpenConstrArgType b -> 
       CT_coerce_SCOMMENT_CONTENT_to_TARG
       	(CT_coerce_FORMULA_to_SCOMMENT_CONTENT(xlate_formula
 					 (snd (out_gen
 					    (rawwit_open_constr_gen b) x))))
+  | ExtraArgType s as y when Pcoq.is_tactic_genarg y ->
+      let n = out_some (Pcoq.tactic_genarg_level s) in
+      let t = xlate_tactic (out_gen (Pcoq.rawwit_tactic n) x) in
+      CT_coerce_TACTIC_COM_to_TARG t
   | ConstrWithBindingsArgType -> xlate_error "TODO: generic constr with bindings"
   | BindingsArgType -> xlate_error "TODO: generic with bindings"
   | RedExprArgType -> xlate_error "TODO: generic red expr"
@@ -1347,8 +1389,9 @@ let coerce_genarg_to_VARG x =
       (CT_coerce_FORMULA_to_FORMULA_OPT (xlate_formula (out_gen rawwit_constr x)))
   | ConstrMayEvalArgType -> xlate_error"TODO: generic constr-may-eval argument"
   | QuantHypArgType ->xlate_error"TODO: generic quantified hypothesis argument"
-  | TacticArgType n ->
-      let t = xlate_tactic (out_gen (rawwit_tactic n) x) in
+  | ExtraArgType s as y when Pcoq.is_tactic_genarg y ->
+      let n = out_some (Pcoq.tactic_genarg_level s) in
+      let t = xlate_tactic (out_gen (Pcoq.rawwit_tactic n) x) in
       CT_coerce_TACTIC_OPT_to_VARG (CT_coerce_TACTIC_COM_to_TACTIC_OPT t)
   | OpenConstrArgType _ -> xlate_error "TODO: generic open constr"
   | ConstrWithBindingsArgType -> xlate_error "TODO: generic constr with bindings"
@@ -1602,6 +1645,15 @@ let rec xlate_vernac =
 	CT_solve (CT_int n, xlate_tactic tac,
 		  if b then CT_dotdot
                   else CT_coerce_NONE_to_DOTDOT_OPT CT_none)
+
+(* MMode *)
+
+    | (VernacDeclProof | VernacReturn | VernacProofInstr _) -> 
+	anomaly "No MMode in CTcoq"
+
+
+(* /MMode *)
+
     | VernacFocus nopt -> CT_focus (xlate_int_opt nopt)
     | VernacUnfocus -> CT_unfocus
     |VernacExtend("Extraction", [f;l]) ->
@@ -1622,27 +1674,14 @@ let rec xlate_vernac =
 	CT_no_inline(CT_id_ne_list(loc_qualid_to_ct_ID fst,
 				List.map loc_qualid_to_ct_ID l2))
     | VernacExtend("Field", 
-		   [a;aplus;amult;aone;azero;aopp;aeq;ainv;fth;ainvl;minusdiv]) ->
+		   [fth;ainv;ainvl;div]) ->
 	(match List.map (fun v -> xlate_formula(out_gen rawwit_constr v))
-                   [a;aplus;amult;aone;azero;aopp;aeq;ainv;fth;ainvl]
+                   [fth;ainv;ainvl]
  	 with
-             [a1;aplus1;amult1;aone1;azero1;aopp1;aeq1;ainv1;fth1;ainvl1] ->
-	       let bind =
-		 match out_gen Field.rawwit_minus_div_arg minusdiv with
-		     None, None ->
-		       CT_binding_list[]
-		   | Some m, None ->
-		       CT_binding_list[
-			 CT_binding(CT_coerce_ID_to_ID_OR_INT (CT_ident "minus"), xlate_formula m)]
-		   | None, Some d ->
-		       CT_binding_list[
-			 CT_binding(CT_coerce_ID_to_ID_OR_INT (CT_ident "div"), xlate_formula d)]
-		   | Some m, Some d ->
-		       CT_binding_list[
-			 CT_binding(CT_coerce_ID_to_ID_OR_INT (CT_ident "minus"), xlate_formula m);
-			 CT_binding(CT_coerce_ID_to_ID_OR_INT (CT_ident "div"), xlate_formula d)] in
-		 CT_add_field(a1, aplus1, amult1, aone1, azero1, aopp1, aeq1,
-			      ainv1, fth1, ainvl1, bind)
+             [fth1;ainv1;ainvl1] ->
+	       let adiv1 =
+                 xlate_formula_opt (out_gen (wit_opt rawwit_constr) div) in
+	       CT_add_field(fth1, ainv1, ainvl1, adiv1)
 	   |_ -> assert false)
   | VernacExtend ("HintRewrite", o::f::([b]|[_;b] as args)) ->
       let orient = out_gen Extraargs.rawwit_orient o in
@@ -1745,9 +1784,10 @@ let rec xlate_vernac =
   | VernacShow ShowExistentials -> CT_show_existentials
   | VernacShow ShowScript -> CT_show_script
   | VernacShow(ShowMatch _) -> xlate_error "TODO: VernacShow(ShowMatch _)"
+  | VernacShow(ShowThesis) -> xlate_error "TODO: VernacShow(ShowThesis _)"
   | VernacGo arg -> CT_go (xlate_locn arg)
-  | VernacShow ExplainProof l -> CT_explain_proof (nums_to_int_list l)
-  | VernacShow ExplainTree l ->
+  | VernacShow (ExplainProof l) -> CT_explain_proof (nums_to_int_list l)
+  | VernacShow (ExplainTree l) ->
       CT_explain_prooftree (nums_to_int_list l)
   | VernacCheckGuard -> CT_guarded
   | VernacPrint p ->
@@ -1800,7 +1840,7 @@ let rec xlate_vernac =
 	CT_theorem_goal (CT_coerce_THM_to_DEFN_OR_THM (xlate_thm k), xlate_ident s,
            xlate_binder_list bl, xlate_formula c))
   | VernacSuspend -> CT_suspend
-  | VernacResume idopt -> CT_resume (xlate_ident_opt (option_app snd idopt))
+  | VernacResume idopt -> CT_resume (xlate_ident_opt (option_map snd idopt))
   | VernacDefinition (k,(_,s),ProveBody (bl,typ),_) ->
       CT_coerce_THEOREM_GOAL_to_COMMAND
 	(CT_theorem_goal
@@ -1842,7 +1882,7 @@ let rec xlate_vernac =
       (_, (add_coercion, (_,s)), binders, c1,
        rec_constructor_or_none, field_list) ->
       let record_constructor =
-        xlate_ident_opt (option_app snd rec_constructor_or_none) in
+        xlate_ident_opt (option_map snd rec_constructor_or_none) in
       CT_record
        ((if add_coercion then CT_coercion_atm else
           CT_coerce_NONE_to_COERCION_OPT(CT_none)),
@@ -1851,7 +1891,7 @@ let rec xlate_vernac =
          build_record_field_list field_list)
    | VernacInductive (isind, lmi) ->
       let co_or_ind = if isind then "Inductive" else "CoInductive" in
-      let strip_mutind ((_,s), notopt, parameters, c, constructors) =
+      let strip_mutind (((_,s), parameters, c, constructors), notopt) =
           CT_ind_spec
             (xlate_ident s, xlate_binder_list parameters, xlate_formula c,
              build_constructors constructors,
@@ -1860,9 +1900,12 @@ let rec xlate_vernac =
 	  (CT_co_ind co_or_ind, CT_ind_spec_list (List.map strip_mutind lmi))
    | VernacFixpoint ([],_) -> xlate_error "mutual recursive"
    | VernacFixpoint ((lm :: lmi),boxed) ->
-      let strip_mutrec ((fid, n, bl, arf, ardef), ntn) =
+      let strip_mutrec ((fid, (n, ro), bl, arf, ardef), _ntn) =
         let (struct_arg,bl,arf,ardef) =
+	 (* Pierre L: could the case [n=None && bl=[]] happen ? Normally not *)
+	 (* By the way, how could [bl = []] happen in V8 syntax ?  *)
          if bl = [] then
+	   let n = out_some n in 
            let (bl,arf,ardef) = Ppconstr.split_fix (n+1) arf ardef in
            (xlate_id_opt(List.nth (names_of_local_assums bl) n),bl,arf,ardef)
          else (make_fix_struct (n, bl),bl,arf,ardef) in
@@ -1877,7 +1920,7 @@ let rec xlate_vernac =
 	  (CT_fix_rec_list (strip_mutrec lm, List.map strip_mutrec lmi))
    | VernacCoFixpoint ([],boxed) -> xlate_error "mutual corecursive"
    | VernacCoFixpoint ((lm :: lmi),boxed) ->
-      let strip_mutcorec (fid, bl, arf, ardef) =
+      let strip_mutcorec ((fid, bl, arf, ardef), _ntn) =
 	CT_cofix_rec (xlate_ident fid, xlate_binder_list bl,
                       xlate_formula arf, xlate_formula ardef) in
         CT_cofix_decl
@@ -2009,7 +2052,6 @@ let rec xlate_vernac =
   | VernacExtend (s, l) ->
       CT_user_vernac
        (CT_ident s, CT_varg_list (List.map coerce_genarg_to_VARG l))
-  | VernacDebug b -> xlate_error "Debug On/Off not supported"
   | VernacList((_, a)::l) -> 
       CT_coerce_COMMAND_LIST_to_COMMAND
 	(CT_command_list(xlate_vernac a, 

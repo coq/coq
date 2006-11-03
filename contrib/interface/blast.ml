@@ -86,13 +86,13 @@ let rec def_const_in_term_rec vl x =
    | Sort(c) -> c
    | Ind(ind) ->
           let (mib, mip) = Global.lookup_inductive ind in
-          mip.mind_sort
+	  new_sort_in_family (inductive_sort_family mip)
    | Construct(c) ->
           def_const_in_term_rec vl (mkInd (inductive_of_constructor c))
    | Case(_,x,t,a) 
         -> def_const_in_term_rec vl x
    | Cast(x,_,t)-> def_const_in_term_rec vl t
-   | Const(c)  -> def_const_in_term_rec vl (lookup_constant c vl).const_type
+   | Const(c)  -> def_const_in_term_rec vl (Typeops.type_of_constant vl c)
    | _ -> def_const_in_term_rec vl (type_of vl Evd.empty x)
 ;;
 let def_const_in_term_ x =

@@ -277,6 +277,25 @@ let extract_nondep_branches test c b n =
       | _ -> assert false in
   if test c n then Some (strip n b) else None
 
+let it_destRLambda_or_LetIn_names n c =
+  let rec aux n nal c =
+    if n=0 then (List.rev nal,c) else match c with
+      | RLambda (_,na,_,c) -> aux (n-1) (na::nal) c
+      | RLetIn (_,na,_,c) -> aux (n-1) (na::nal) c
+      | _ ->
+          (* eta-expansion *)
+	  let rec next l =
+	    let x = Nameops.next_ident_away (id_of_string "x") l in
+	    (* Not efficient but unusual and no function to get free rawvars *)
+	    if occur_rawconstr x c then next (x::l) else x in
+	  let x = next [] in 
+	  let a = RVar (dl,x) in
+	  aux (n-1) (Name x :: nal) 
+            (match c with
+              | RApp (loc,p,l) -> RApp (loc,c,l@[a])
+              | _ -> (RApp (dl,c,[a])))
+  in aux n [] c
+
 let detype_case computable detype detype_eqns testdep avoid data p c bl =
   let (indsp,st,nparams,consnargsl,k) = data in
   let synth_type = synthetize_type () in
@@ -286,32 +305,16 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
     then 
       Anonymous, None, None
     else
-      match option_app detype p with
+      match option_map detype p with
         | None -> Anonymous, None, None
         | Some p ->
-            let decompose_lam k c =
-              let rec lamdec_rec l avoid k c =
-                if k = 0 then List.rev l,c else match c with
-                  | RLambda (_,x,t,c) -> 
-                      lamdec_rec (x::l) (name_cons x avoid) (k-1) c
-                  | c -> 
-                      let x = next_ident_away (id_of_string "x") avoid in
-                      lamdec_rec ((Name x)::l) (x::avoid) (k-1)
-                        (let a = RVar (dl,x) in
-                          match c with
-                          | RApp (loc,p,l) -> RApp (loc,p,l@[a])
-                          | _ -> (RApp (dl,c,[a])))
-              in 
-              lamdec_rec [] [] k c in
-            let nl,typ = decompose_lam k p in
+            let nl,typ = it_destRLambda_or_LetIn_names k p in
 	    let n,typ = match typ with 
               | RLambda (_,x,t,c) -> x, c
 	      | _ -> Anonymous, typ in
 	    let aliastyp =
 	      if List.for_all ((=) Anonymous) nl then None
-	      else 
-		let pars = list_tabulate (fun _ -> Anonymous) nparams in
-		Some (dl,indsp,pars@nl) in
+	      else Some (dl,indsp,nparams,nl) in
             n, aliastyp, Some typ
   in
   let constructs = Array.init (Array.length bl) (fun i -> (indsp,i+1)) in
@@ -331,22 +334,7 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
   match tag with
   | LetStyle when aliastyp = None -> 
       let bl' = Array.map detype bl in
-      let rec decomp_lam_force n avoid l p =
-	if n = 0 then (List.rev l,p) else
-          match p with
-            | RLambda (_,na,_,c) -> 
-		decomp_lam_force (n-1) (name_cons na avoid) (na::l) c
-            | RLetIn (_,na,_,c) -> 
-		decomp_lam_force (n-1) (name_cons na avoid) (na::l) c
-            | _ ->
-		let x = Nameops.next_ident_away (id_of_string "x") avoid in
-		decomp_lam_force (n-1) (x::avoid) (Name x :: l) 
-                  (* eta-expansion *)
-                  (let a = RVar (dl,x) in
-                  match p with
-                    | RApp (loc,p,l) -> RApp (loc,p,l@[a])
-                    | _ -> (RApp (dl,p,[a]))) in
-      let (nal,d) = decomp_lam_force consnargsl.(0) avoid [] bl'.(0) in
+      let (nal,d) = it_destRLambda_or_LetIn_names consnargsl.(0) bl'.(0) in
       RLetTuple (dl,nal,(alias,pred),tomatch,d)
   | IfStyle when aliastyp = None ->
       let bl' = Array.map detype bl in
@@ -359,6 +347,10 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
 	RCases (dl,pred,[tomatch,(alias,aliastyp)],eqnl)
   | _ ->
       RCases (dl,pred,[tomatch,(alias,aliastyp)],eqnl)
+
+let detype_sort = function
+  | Prop c -> RProp c
+  | Type u -> RType (Some u)
 
 (**********************************************************************)
 (* Main detyping function                                             *)
@@ -380,10 +372,9 @@ let rec detype isgoal avoid env t =
 	  let _ = Global.lookup_named id in RRef (dl, VarRef id)
 	 with _ ->
 	  RVar (dl, id))
-    | Sort (Prop c) -> RSort (dl,RProp c)
-    | Sort (Type u) -> RSort (dl,RType (Some u))
+    | Sort s -> RSort (dl,detype_sort s)
     | Cast (c1,k,c2) ->
-	RCast(dl,detype isgoal avoid env c1, k,
+	RCast(dl,detype isgoal avoid env c1, CastConv k,
               detype isgoal avoid env c2)
     | Prod (na,ty,c) -> detype_binder isgoal BProd avoid env na ty c
     | Lambda (na,ty,c) -> detype_binder isgoal BLambda avoid env na ty c
@@ -421,7 +412,7 @@ and detype_fix isgoal avoid env (vn,_ as nvn) (names,tys,bodies) =
   let v = array_map3
     (fun c t i -> share_names isgoal (i+1) [] def_avoid def_env c (lift n t))
     bodies tys vn in
-  RRec(dl,RFix nvn,Array.of_list (List.rev lfi),
+  RRec(dl,RFix (Array.map (fun i -> Some i, RStructRec) (fst nvn), snd nvn),Array.of_list (List.rev lfi),
        Array.map (fun (bl,_,_) -> bl) v,
        Array.map (fun (_,_,ty) -> ty) v,
        Array.map (fun (_,bd,_) -> bd) v)
@@ -587,9 +578,9 @@ let rec subst_rawconstr subst raw =
         let a' = subst_rawconstr subst a in
         let (n,topt) = x in 
         let topt' = option_smartmap
-          (fun (loc,(sp,i),x as t) ->
+          (fun (loc,(sp,i),x,y as t) ->
             let sp' = subst_kn subst sp in
-            if sp == sp' then t else (loc,(sp',i),x)) topt in
+            if sp == sp' then t else (loc,(sp',i),x,y)) topt in
         if a == a' && topt == topt' then y else (a',(n,topt'))) rl
       and branches' = list_smartmap 
 			(fun (loc,idl,cpl,r as branch) ->
@@ -645,3 +636,18 @@ let rec subst_rawconstr subst raw =
 	  RCast (loc,r1',k,r2')
 
   | RDynamic _ -> raw
+
+(* Utilities to transform kernel cases to simple pattern-matching problem *)
+
+let simple_cases_matrix_of_branches ind brns brs =
+  list_map2_i (fun i n b ->
+      let nal,c = it_destRLambda_or_LetIn_names n b in
+      let mkPatVar na = PatVar (dummy_loc,na) in
+      let p = PatCstr (dummy_loc,(ind,i+1),List.map mkPatVar nal,Anonymous) in
+      let ids = map_succeed Nameops.out_name nal in
+      (dummy_loc,ids,[p],c))
+    0 brns brs
+
+let return_type_of_predicate ind nparams n pred =
+  let nal,p = it_destRLambda_or_LetIn_names (n+1) pred in
+  (List.hd nal, Some (dummy_loc, ind, nparams, List.tl nal)), Some p

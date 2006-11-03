@@ -11,6 +11,7 @@
 (*i*)
 open Dyn
 open Pp
+open Util
 open Names
 open Proof_type
 open Tacmach
@@ -20,6 +21,7 @@ open Tacexpr
 open Genarg
 open Topconstr
 open Mod_subst
+open Redexpr
 (*i*)
 
 (* Values for interpretation *)
@@ -32,18 +34,13 @@ type value =
   | VIntroPattern of intro_pattern_expr
   | VConstr of constr
   | VConstr_context of constr
+  | VList of value list
   | VRec of value ref
 
 (* Signature for interpretation: val\_interp and interpretation functions *)
 and interp_sign =
   { lfun : (identifier * value) list;
     debug : debug_info }
-
-(* Gives the identifier corresponding to an Identifier [tactic_arg] *)
-val id_of_Identifier : Environ.env -> value -> identifier
-
-(* Gives the constr corresponding to a Constr [value] *)
-val constr_of_VConstr : Environ.env -> value -> constr
 
 (* Transforms an id into a constr if possible *)
 val constr_of_id : Environ.env -> identifier -> constr
@@ -67,6 +64,14 @@ val add_tacdef :
   bool -> (identifier Util.located * raw_tactic_expr) list -> unit
 val add_primitive_tactic : string -> glob_tactic_expr -> unit
 
+(* Tactic extensions *)
+val add_tactic :
+  string -> (closed_generic_argument list -> tactic) -> unit
+val overwriting_add_tactic :
+  string -> (closed_generic_argument list -> tactic) -> unit
+val lookup_tactic :
+  string -> (closed_generic_argument list) -> tactic
+
 (* Adds an interpretation function for extra generic arguments *)
 type glob_sign = {
   ltacvars : identifier list * identifier list;
@@ -88,6 +93,9 @@ val interp_genarg :
 val intern_genarg :
   glob_sign -> raw_generic_argument -> glob_generic_argument
 
+val intern_tactic : 
+  glob_sign -> raw_tactic_expr -> glob_tactic_expr
+
 val intern_constr :
   glob_sign -> constr_expr -> rawconstr_and_expr
 
@@ -103,16 +111,18 @@ val subst_rawconstr_and_expr :
 (* Interprets any expression *)
 val val_interp : interp_sign -> goal sigma -> glob_tactic_expr -> value
 
+(* Interprets an expression that evaluates to a constr *)
+val interp_ltac_constr : interp_sign -> goal sigma -> glob_tactic_expr -> 
+  constr
+
 (* Interprets redexp arguments *)
-val interp_redexp : Environ.env -> Evd.evar_map -> raw_red_expr
-  -> Redexpr.red_expr
+val interp_redexp : Environ.env -> Evd.evar_map -> raw_red_expr -> red_expr
 
 (* Interprets tactic expressions *)
 val interp_tac_gen : (identifier * value) list -> 
                  debug_info -> raw_tactic_expr -> tactic
 
-val interp_hyp :  interp_sign -> goal sigma -> 
-  identifier Util.located -> identifier
+val interp_hyp :  interp_sign -> goal sigma -> identifier located -> identifier
 
 (* Initial call for interpretation *)
 val glob_tactic : raw_tactic_expr -> glob_tactic_expr
@@ -122,6 +132,8 @@ val glob_tactic_env : identifier list -> Environ.env -> raw_tactic_expr -> glob_
 val eval_tactic : glob_tactic_expr -> tactic
 
 val interp : raw_tactic_expr -> tactic
+
+val eval_ltac_constr : goal sigma -> raw_tactic_expr -> constr
 
 val subst_tactic : substitution -> glob_tactic_expr -> glob_tactic_expr
 

@@ -23,6 +23,9 @@ coqdep \- Compute inter-module dependencies for Coq and Caml programs
 [
 .BI \-D
 ]
+[
+.BI \-slash
+]
 .I filename ...
 .I directory ...
 
@@ -37,10 +40,11 @@ When a directory is given as argument, it is recursively looked at.
 Dependencies of Coq modules are computed by looking at
 .IR Require \&
 commands (Require, Require Export, Require Import, Require Implementation),
-and
 .IR Declare \& 
 .IR ML \& 
 .IR Module \&
+commands and
+.IR Load \&
 commands. Dependencies relative to modules from the Coq library are not
 printed.
 
@@ -54,8 +58,7 @@ directives and the dot notation
 .TP
 .BI \-c
 Prints the dependencies of Caml modules.
-(On Caml modules, the behaviour is exactly the same as cldepend,
-except that nested comments and strings are correctly handled).
+(On Caml modules, the behaviour is exactly the same as ocamldep).
 .TP
 .BI \-w
 Prints a warning if a Coq command
@@ -78,6 +81,10 @@ of each Coq file given as argument and complete (if needed)
 the list of Caml modules. The new command is printed on
 the standard output. No dependency is computed with this option.
 .TP 
+.BI \-slash
+Prints paths using a slash instead of the OS specific separator. This
+option is useful when developping under Cygwin.
+.TP
 .BI \-I \ directory
 The files .v .ml .mli of the directory
 .IR directory \&
@@ -87,7 +94,7 @@ but their own dependencies are not printed.
 .BI \-coqlib \ directory
 Indicates where is the Coq library. The default value has been
 determined at installation time, and therefore this option should not
-be used.
+be used under normal circumstances.
 
 
 .SH SEE ALSO
@@ -120,7 +127,7 @@ Consider the files (in the same directory):
 where
 .TP
 .BI \+ 
-D.ml contains the commands `#open "A"', `#open "B"' and `type t = C__t' ;
+D.ml contains the commands `open A', `open B' and `type t = C.t' ;
 .TP
 .BI \+
 Y.v contains the command `Require X' ;
@@ -135,7 +142,7 @@ example% coqdep -I . *.v
 .RS
 .sp .5
 .nf
-.B Z.vo: Z.v ./X.vo ./D.zo
+.B Z.vo: Z.v ./X.vo ./D.cmo
 .B Y.vo: Y.v ./X.vo
 .B X.vo: X.v
 .fi
@@ -150,7 +157,7 @@ example% coqdep -w -I . *.v
 .RS
 .sp .5
 .nf
-.B Z.vo: Z.v ./X.vo ./D.zo
+.B Z.vo: Z.v ./X.vo ./D.cmo
 .B Y.vo: Y.v ./X.vo
 .B X.vo: X.v
 ### Warning : In file Z.v, the ML modules declaration should be
@@ -167,10 +174,14 @@ example% coqdep -c -I . *.ml
 .RS
 .sp .5
 .nf
-.B D.zo: D.ml ./A.zo ./B.zo ./C.zo
-.B C.zo: C.ml
-.B B.zo: B.ml
-.B A.zo: A.ml
+.B D.cmo: D.ml ./A.cmo ./B.cmo ./C.cmo
+.B D.cmx: D.ml ./A.cmx ./B.cmx ./C.cmx
+.B C.cmo: C.ml
+.B C.cmx: C.ml
+.B B.cmo: B.ml
+.B B.cmx: B.ml
+.B A.cmo: A.ml
+.B A.cmx: A.ml
 .fi
 .RE
 .br

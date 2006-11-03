@@ -96,12 +96,12 @@ val is_sigma_type           : testing_function
 
 open Coqlib
 
-(* Match terms [(eq A t u)], [(eqT A t u)] or [(identityT A t u)] *)
+(* Match terms [(eq A t u)] or [(identity A t u)] *)
 (* Returns associated lemmas and [A,t,u] *)
 val find_eq_data_decompose : constr -> 
   coq_leibniz_eq_data * (constr * constr * constr)
 
-(* Match a term of the form [(existS A P t p)] or [(existT A P t p)] *)
+(* Match a term of the form [(existT A P t p)] *)
 (* Returns associated lemmas and [A,P,t,p] *)
 val find_sigma_data_decompose : constr -> 
   coq_sigma_data * (constr * constr * constr * constr)
@@ -111,11 +111,9 @@ val match_sigma : constr -> constr * constr
 
 val is_matching_sigma : constr -> bool
 
-(* Match a term of the form [{x=y}+{_}], returns [x] and [y] *)
-val match_eqdec_partial : constr -> constr * constr
-
-(* Match a term of the form [(x,y:t){x=y}+{~x=y}], returns [t] *)
-val match_eqdec : constr -> constr
+(* Match a decidable equality judgement (e.g [{t=u:>T}+{~t=u}]), returns
+   [t,u,T] and a boolean telling if equality is on the left side *)
+val match_eqdec : constr -> bool * constr * constr * constr * constr
 
 (* Match an equality up to conversion; returns [(eq,t1,t2)] in normal form *)
 open Proof_type

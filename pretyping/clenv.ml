@@ -31,7 +31,7 @@ open Mod_subst
 (* *)
 let w_coerce env c ctyp target evd =
   let j = make_judge c ctyp in
-  let (evd',j') = Coercion.inh_conv_coerce_to dummy_loc env evd j target in
+  let (evd',j') = Coercion.Default.inh_conv_coerce_to dummy_loc env evd j (mk_tycon_type target) in
   (evd',j'.uj_val)
 
 let pf_env gls = Global.env_of_context gls.it.evar_hyps
@@ -74,6 +74,26 @@ let clenv_get_type_of ce c =
       (meta_list ce.env) in
   Retyping.get_type_of_with_meta (cl_env ce) (cl_sigma ce) metamap c
 
+exception NotExtensibleClause
+
+let clenv_push_prod cl =
+  let typ = whd_betadeltaiota (cl_env cl) (cl_sigma cl) (clenv_type cl) in
+  let rec clrec typ = match kind_of_term typ with
+    | Cast (t,_,_) -> clrec t
+    | Prod (na,t,u) ->
+	let mv = new_meta () in
+	let dep = dependent (mkRel 1) u in
+	let na' = if dep then na else Anonymous in
+	let e' = meta_declare mv t ~name:na' cl.env in
+	let concl = if dep then subst1 (mkMeta mv) u else u in
+	let def = applist (cl.templval.rebus,[mkMeta mv]) in
+	{ templval = mk_freelisted def;
+	  templtyp = mk_freelisted concl;
+	  env = e';
+	  templenv = cl.templenv }
+    | _ -> raise NotExtensibleClause
+  in clrec typ
+
 let clenv_environments evd bound c =
   let rec clrec (e,metas) n c =
     match n, kind_of_term c with
@@ -84,10 +104,10 @@ let clenv_environments evd bound c =
 	  let dep = dependent (mkRel 1) c2 in
 	  let na' = if dep then na else Anonymous in
 	  let e' = meta_declare mv c1 ~name:na' e in
-	  clrec (e', (mkMeta mv)::metas) (option_app ((+) (-1)) n)
+	  clrec (e', (mkMeta mv)::metas) (option_map ((+) (-1)) n)
 	    (if dep then (subst1 (mkMeta mv) c2) else c2)
       | (n, LetIn (na,b,_,c)) ->
-	  clrec (e,metas) (option_app ((+) (-1)) n) (subst1 b c)
+	  clrec (e,metas) (option_map ((+) (-1)) n) (subst1 b c)
       | (n, _) -> (e, List.rev metas, c)
   in 
   clrec (evd,[]) bound c
@@ -100,10 +120,10 @@ let clenv_environments_evars env evd bound c =
       | (n, Prod (na,c1,c2)) ->
           let e',constr = Evarutil.new_evar e env c1 in
 	  let dep = dependent (mkRel 1) c2 in
-	  clrec (e', constr::ts) (option_app ((+) (-1)) n)
+	  clrec (e', constr::ts) (option_map ((+) (-1)) n)
 	    (if dep then (subst1 constr c2) else c2)
       | (n, LetIn (na,b,_,c)) ->
-	  clrec (e,ts) (option_app ((+) (-1)) n) (subst1 b c)
+	  clrec (e,ts) (option_map ((+) (-1)) n) (subst1 b c)
       | (n, _) -> (e, List.rev ts, c)
   in 
   clrec (evd,[]) bound c
@@ -258,7 +278,20 @@ let connect_clenv gls clenv =
  * resolution can cause unification of already-existing metavars, and
  * of the fresh ones which get created.  This operation is a composite
  * of operations which pose new metavars, perform unification on
- * terms, and make bindings.  *)
+ * terms, and make bindings. 
+
+   Otherwise said, from 
+
+     [clenv] = [env;sigma;metas |- c:T]
+     [clenv'] = [env';sigma';metas' |- d:U]
+     [mv] = [mi] of type [Ti] in [metas]
+
+   then, if the unification of [Ti] and [U] produces map [rho], the
+   chaining is [env';sigma';rho'(metas),rho(metas') |- c:rho'(T)] for
+   [rho'] being [rho;mi:=d].
+
+   In particular, it assumes that [env'] and [sigma'] extend [env] and [sigma].
+*)
 let clenv_fchain mv clenv nextclenv =
   (* Add the metavars of [nextclenv] to [clenv], with their name-environment *)
   let clenv' =
@@ -412,18 +445,18 @@ let clenv_constrain_missing_args mlist clause =
 (****************************************************************)
 (* Clausal environment for an application *)
 
-let make_clenv_binding_gen n gls (c,t) = function
+let make_clenv_binding_gen hyps_only n gls (c,t) = function
   | ImplicitBindings largs ->
       let clause = mk_clenv_from_n gls n (c,t) in
-      clenv_constrain_dep_args (n <> None) clause largs
+      clenv_constrain_dep_args hyps_only clause largs
   | ExplicitBindings lbind ->
       let clause = mk_clenv_rename_from_n gls n (c,t) in
       clenv_match_args lbind clause
   | NoBindings ->
       mk_clenv_from_n gls n (c,t)
 
-let make_clenv_binding_apply wc n = make_clenv_binding_gen (Some n) wc
-let make_clenv_binding = make_clenv_binding_gen None
+let make_clenv_binding_apply gls n = make_clenv_binding_gen true n gls
+let make_clenv_binding = make_clenv_binding_gen false None
 
 (****************************************************************)
 (* Pretty-print *)

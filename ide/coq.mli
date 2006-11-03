@@ -27,10 +27,13 @@ val is_state_preserving : Vernacexpr.vernac_expr -> bool
 
 type hyp = env * evar_map * 
            ((identifier*string) * constr option * constr) * (string * string)
+type meta = env * evar_map * string
 type concl = env * evar_map * constr * string
 type goal = hyp list * concl
 
 val get_current_goals : unit -> goal list
+
+val get_current_pm_goal : unit -> hyp list * meta list
 
 val get_current_goals_nb : unit -> int
 
@@ -50,6 +53,7 @@ val concl_menu : concl -> (string * string) list
 
 val is_in_coq_lib : string -> bool
 val is_in_coq_path : string -> bool
+val is_in_loadpath : string -> bool
 
 val make_cases : string -> string list list
 

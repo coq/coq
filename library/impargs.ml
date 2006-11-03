@@ -259,10 +259,9 @@ let list_of_implicits = function
 
 let constants_table = ref Cmap.empty
 
-let compute_constant_implicits kn =
+let compute_constant_implicits cst =
   let env = Global.env () in
-  let cb = lookup_constant kn env in
-  auto_implicits env (body_of_type cb.const_type)
+  auto_implicits env (Typeops.type_of_constant env cst)
 
 let constant_implicits sp =
   try Cmap.find sp !constants_table with Not_found -> No_impl
@@ -282,14 +281,16 @@ let compute_mib_implicits kn =
   let ar =
     Array.to_list
       (Array.map  (* No need to lift, arities contain no de Bruijn *)
-        (fun mip -> (Name mip.mind_typename, None, mip.mind_user_arity))
+        (fun mip ->
+	  (Name mip.mind_typename, None, type_of_inductive env (mib,mip)))
         mib.mind_packets) in
   let env_ar = push_rel_context ar env in
   let imps_one_inductive i mip =
     let ind = (kn,i) in
-    ((IndRef ind,auto_implicits env (body_of_type mip.mind_user_arity)),
+    let ar = type_of_inductive env (mib,mip) in
+    ((IndRef ind,auto_implicits env ar),
      Array.mapi (fun j c -> (ConstructRef (ind,j+1),auto_implicits env_ar c))
-       mip.mind_user_lc)
+       mip.mind_nf_lc)
   in
   Array.mapi imps_one_inductive mib.mind_packets
 
@@ -385,11 +386,6 @@ let implicits_of_global r =
 
 (* Declare manual implicits *)
 
-let rec list_remove a = function
-  | b::l when a = b -> l
-  | b::l -> b::list_remove a l
-  | [] -> raise Not_found
-
 let set_implicit id imp =
   Some (id,match imp with None -> Manual | Some imp -> imp)
 
@@ -403,9 +399,9 @@ let declare_manual_implicits r l =
   let rec merge k l = function
     | (Name id,imp)::imps ->
 	let l',imp =
-	  try list_remove (ExplByPos k) l, set_implicit id imp
+	  try list_remove_first (ExplByPos k) l, set_implicit id imp
 	  with Not_found ->
-	  try list_remove (ExplByName id) l, set_implicit id imp
+	  try list_remove_first (ExplByName id) l, set_implicit id imp
 	  with Not_found ->
 	  l, None in
 	imp :: merge (k+1) l' imps

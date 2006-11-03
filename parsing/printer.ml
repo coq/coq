@@ -23,6 +23,7 @@ open Nametab
 open Ppconstr
 open Evd
 open Proof_type
+open Decl_mode
 open Refiner
 open Pfedit
 open Ppconstr
@@ -77,10 +78,17 @@ let pr_rawconstr c =
 let pr_cases_pattern t =
   pr_cases_pattern_expr (extern_cases_pattern Idset.empty t)
 
+let pr_lconstr_pattern_env env c =
+  pr_lconstr_expr (extern_constr_pattern (names_of_rel_context env) c)
 let pr_constr_pattern_env env c =
   pr_constr_expr (extern_constr_pattern (names_of_rel_context env) c)
+
+let pr_lconstr_pattern t =
+  pr_lconstr_expr (extern_constr_pattern empty_names_context t)
 let pr_constr_pattern t =
   pr_constr_expr (extern_constr_pattern empty_names_context t)
+
+let pr_sort s = pr_rawsort (extern_sort s)
 
 let _ = Termops.set_print_constr pr_lconstr_env
 
@@ -101,6 +109,13 @@ let pr_evaluable_reference ref =
   | EvalVarRef sp -> VarRef sp in
  pr_global ref'
 
+(*let pr_rawterm t =
+  pr_lconstr (Constrextern.extern_rawconstr Idset.empty t)*)
+
+(*open Pattern
+
+let pr_pattern t = pr_pattern_env (Global.env()) empty_names_context t*)
+
 (**********************************************************************)
 (* Contexts and declarations                                          *)
 
@@ -110,6 +125,7 @@ let pr_var_decl env (id,c,typ) =
     | Some c ->
 	(* Force evaluation *) 
 	let pb = pr_lconstr_env env c in
+	let pb = if isCast c then surround pb else pb in
 	(str" := " ++ pb ++ cut () ) in
   let pt = pr_ltype_env env typ in
   let ptyp = (str" : " ++ pt) in
@@ -121,6 +137,7 @@ let pr_rel_decl env (na,c,typ) =
     | Some c ->
 	(* Force evaluation *) 
 	let pb = pr_lconstr_env env c in
+	let pb = if isCast c then surround pb else pb in
 	(str":=" ++ spc () ++ pb ++ spc ()) in
   let ptyp = pr_ltype_env env typ in
   match na with
@@ -212,23 +229,53 @@ let pr_context_of env = match Options.print_hyps_limit () with
   | None -> hv 0 (pr_context_unlimited env)
   | Some n -> hv 0 (pr_context_limit n env)
 
+(* display goal parts (Proof mode) *)
+
+let pr_restricted_named_context among env =
+  hv 0 (fold_named_context
+	  (fun env ((id,_,_) as d) pps ->
+	     if true || Idset.mem id among then
+	       pps ++ 
+		 fnl () ++ str (emacs_str (String.make 1 (Char.chr 253))) ++
+		 pr_var_decl env d
+	     else 
+	       pps)
+          env ~init:(mt ()))
+
+let pr_subgoal_metas metas env=
+  let pr_one (meta,typ) = 
+    str "?" ++ int meta ++ str " : " ++ 
+      hov 0 (pr_ltype_env_at_top env typ) ++ fnl () ++ 
+      str (emacs_str (String.make 1 (Char.chr 253))) in
+    hv 0 (prlist_with_sep mt pr_one metas)
 
 (* display complete goal *)
 let pr_goal g =
   let env = evar_env g in
-  let penv = pr_context_of env in
-  let pc = pr_ltype_env_at_top env g.evar_concl in
-  str"  " ++ hv 0 (penv ++ fnl () ++
-		   str (emacs_str (String.make 1 (Char.chr 253)))  ++
-                   str "============================" ++ fnl ()  ++
-                   str" "  ++ pc) ++ fnl ()
-
+  let preamb,penv,pc =
+    if g.evar_extra = None then
+          mt (),
+	  pr_context_of env,
+	  pr_ltype_env_at_top env g.evar_concl
+    else 
+      let {pm_subgoals=metas;pm_hyps=among} = get_info g in
+	(str "     *** Declarative Mode ***" ++ fnl ()++fnl ()),
+    pr_restricted_named_context among env,
+    pr_subgoal_metas metas env
+  in
+    preamb ++
+    str"  " ++ hv 0 (penv ++ fnl () ++
+		       str (emacs_str (String.make 1 (Char.chr 253)))  ++
+		       str "============================" ++ fnl ()  ++
+		       str" "  ++ pc) ++ fnl ()
+     
 (* display the conclusion of a goal *)
 let pr_concl n g =
   let env = evar_env g in
   let pc = pr_ltype_env_at_top env g.evar_concl in
-  str (emacs_str (String.make 1 (Char.chr 253)))  ++
-  str "subgoal " ++ int n ++ str " is:" ++ cut () ++ str" "  ++ pc
+    str (emacs_str (String.make 1 (Char.chr 253)))  ++
+      str "subgoal " ++ int n ++ str " is:" ++ cut () ++ str" "  ++ pc
+
 
 (* display evar type: a context and a type *)
 let pr_evgl_sign gl = 
@@ -259,15 +306,22 @@ let pr_subgoal n =
   prrec n
 
 (* Print open subgoals. Checks for uninstantiated existential variables *)
-let pr_subgoals sigma = function 
+let pr_subgoals close_cmd sigma = function 
   | [] -> 
-      let exl = Evarutil.non_instantiated sigma in 
-      if exl = [] then 
-	(str"Proof completed."  ++ fnl ())
-      else
-        let pei = pr_evars_int 1 exl in
-        (str "No more subgoals but non-instantiated existential " ++
-           str "variables :"  ++fnl () ++ (hov 0 pei))
+      begin
+	match close_cmd with
+	  Some cmd ->
+	    (str "Subproof completed, now type " ++ str cmd ++ 
+	       str "." ++ fnl ())
+	| None ->
+	    let exl = Evarutil.non_instantiated sigma in 
+	      if exl = [] then 
+		(str"Proof completed."  ++ fnl ())
+	      else
+		let pei = pr_evars_int 1 exl in
+		  (str "No more subgoals but non-instantiated existential " ++
+		     str "variables :"  ++fnl () ++ (hov 0 pei))
+      end
   | [g] ->
       let pg = pr_goal g in
       v 0 (str ("1 "^"subgoal") ++cut () ++ pg)
@@ -284,12 +338,12 @@ let pr_subgoals sigma = function
       v 0 (int(List.length rest+1) ++ str" subgoals" ++ cut () 
 	   ++ pg1 ++ prest ++ fnl ())
 
-
-let pr_subgoals_of_pfts pfts = 
+let pr_subgoals_of_pfts pfts =
+  let close_cmd = Decl_mode.get_end_command pfts in
   let gls = fst (Refiner.frontier (proof_of_pftreestate pfts)) in 
   let sigma = (top_goal_of_pftreestate pfts).sigma in
-  pr_subgoals sigma gls
-
+    pr_subgoals close_cmd sigma gls
+      
 let pr_open_subgoals () =
   let pfts = get_pftreestate () in
   match focus() with
@@ -344,7 +398,6 @@ let pr_prim_rule = function
 	  (pr_id f ++ str" : " ++ pr_lconstr ar ++ print_mut oth)
         | [] -> mt () in
       (str"cofix " ++ pr_id f ++  str" with " ++ print_mut others)
-
   | Refine c -> 
       str(if occur_meta c then "refine " else "exact ") ++
       Constrextern.with_meta_as_hole pr_constr c

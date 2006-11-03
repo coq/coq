@@ -27,8 +27,7 @@ value coq_kind_of_closure(value v) {
   if (Is_instruction(c, GRAB)) return Val_int(0);
   if (Is_instruction(c, RESTART)) {is_app = 1; c++;}
   if (Is_instruction(c, GRABREC)) return Val_int(1+is_app);
-  if (Is_instruction(c, COGRAB)) return Val_int(3+is_app);
-  if (Is_instruction(c, MAKEACCU)) return Val_int(5);
+  if (Is_instruction(c, MAKEACCU)) return Val_int(3);
   return Val_int(0);
 }
 

@@ -112,7 +112,8 @@ let contents_first_level mp =
 		      | Extraction.Term -> add false (id_of_label l))
 	       | (_, SPBmind mib) ->
 		   Array.iter 
-		     (fun mip -> if mip.mind_sort <> (Prop Null) then begin
+		     (fun mip -> if snd (Inductive.mind_arity mip) <> InProp
+		      then begin
 			add upper_type mip.mind_typename; 
 			Array.iter (add true) mip.mind_consnames
 		      end)
@@ -267,8 +268,6 @@ module StdParams = struct
 
   let globals () = !global_ids
 
-  (* TODO: remettre des conditions [lang () = Haskell] disant de qualifier. *)
-
   let unquote s = 
     if lang () <> Scheme then s 
     else 
@@ -288,23 +287,31 @@ module StdParams = struct
     let mp = modpath_of_r r in 
     let ls = 
       if mp = List.hd mpl then [s] (* simpliest situation *)
-      else 
-	try (* has [mp] something in common with one of those in [mpl] ? *)
-	  let pref = common_prefix_from_list mp mpl in 
-	  (*i TODO: possibilité de clash i*)
-	  list_firstn ((mp_length mp)-(mp_length pref)+1) ls
-	with Not_found -> (* [mp] is othogonal with every element of [mp]. *)
-	  let base = base_mp mp in 
-	  if !modular &&  
-	    (at_toplevel mp) && 
-	    not (Refset.mem r !to_qualify) && 
-	    not (clash base [] s mpl) 
-	  then snd (list_sep_last ls)
-	  else ls
+      else match lang () with 
+	| Scheme -> [s] (* no modular Scheme extraction... *)
+	| Toplevel -> [s] (* idem *)
+	| Haskell -> 
+	    if !modular then 
+	      ls (* for the moment we always qualify in modular Haskell *)
+	    else [s]
+	| Ocaml -> 
+	    try (* has [mp] something in common with one of those in [mpl] ? *)
+	      let pref = common_prefix_from_list mp mpl in 
+	      (*i TODO: possibilité de clash i*)
+	      list_firstn ((mp_length mp)-(mp_length pref)+1) ls
+	    with Not_found -> (* [mp] is othogonal with every element of [mp]. *)
+	      let base = base_mp mp in 
+	      if !modular &&  
+		(at_toplevel mp) && 
+		not (Refset.mem r !to_qualify) && 
+		not (clash base [] s mpl) 
+	      then snd (list_sep_last ls)
+	      else ls
     in 
     add_module_contents mp s; (* update the visible environment *)
     str (dottify ls)
 
+  (* The next function is used only in Ocaml extraction...*)
   let pp_module mpl mp = 
     let ls = 
       if !modular 
@@ -393,15 +400,15 @@ let print_structure_to_file f prm struc =
   in 
   let print_dummys =
     (struct_ast_search ((=) MLdummy) struc, 
-     struct_type_search Tdummy struc, 
-     struct_type_search Tunknown struc)
+     struct_type_search Mlutil.isDummy struc, 
+     struct_type_search ((=) Tunknown) struc)
   in 
   let print_magic = 
     if lang () <> Haskell then false 
     else struct_ast_search (function MLmagic _ -> true | _ -> false) struc
   in
   (* print the implementation *)
-  let cout = option_app (fun (f,_) -> open_out f) f in 
+  let cout = option_map (fun (f,_) -> open_out f) f in 
   let ft = match cout with 
     | None -> !Pp_control.std_ft
     | Some cout -> Pp_control.with_output_to cout in 

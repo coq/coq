@@ -277,7 +277,7 @@ let pr_onescheme (id,dep,ind,s) =
   hov 0 (pr_lident id ++ str" :=") ++ spc() ++
   hov 0 ((if dep then str"Induction for" else str"Minimality for")
   ++ spc() ++ pr_reference ind) ++ spc() ++ 
-  hov 0 (str"Sort" ++ spc() ++ pr_sort s)
+  hov 0 (str"Sort" ++ spc() ++ pr_rawsort s)
 
 let begin_of_inductive = function
     [] -> 0
@@ -410,11 +410,11 @@ let rec pr_vernac = function
 	| ShowProofNames -> str"Show Conjectures"
 	| ShowIntros b -> str"Show " ++ (if b then str"Intros" else str"Intro")
 	| ShowMatch id -> str"Show Match " ++ pr_lident id
+	| ShowThesis -> str "Show Thesis"
 	| ExplainProof l -> str"Explain Proof" ++ spc() ++ prlist_with_sep sep int l
 	| ExplainTree l -> str"Explain Proof Tree" ++ spc() ++ prlist_with_sep sep int l 
       in pr_showable s
   | VernacCheckGuard -> str"Guarded"
-  | VernacDebug b -> pr_topcmd b
 
   (* Resetting *)
   | VernacResetName id -> str"Reset" ++ spc() ++ pr_lident id
@@ -531,7 +531,7 @@ let rec pr_vernac = function
             fnl() ++
             str (if List.length l = 1 then "   " else " | ") ++
             prlist_with_sep (fun _ -> fnl() ++ str" | ") pr_constructor l in
-      let pr_oneind key (id,ntn,indpar,s,lc) =
+      let pr_oneind key ((id,indpar,s,lc),ntn) =
 	hov 0 (
           str key ++ spc() ++
           pr_lident id ++ pr_and_type_binders_arg indpar ++ spc() ++ str":" ++ 
@@ -549,21 +549,33 @@ let rec pr_vernac = function
         | LocalRawAssum (nal,_) -> nal
         | LocalRawDef (_,_) -> [] in
       let pr_onerec = function
-        | (id,n,bl,type_,def),ntn ->
+        | (id,(n,ro),bl,type_,def),ntn ->
             let (bl',def,type_) =
               if Options.do_translate() then extract_def_binders def type_
               else ([],def,type_) in
             let bl = bl @ bl' in
             let ids = List.flatten (List.map name_of_binder bl) in
-            let name =
-              try snd (List.nth ids n)
-              with Failure _ ->
-                warn (str "non-printable fixpoint \""++pr_id id++str"\"");
-                Anonymous in
             let annot =
-              if List.length ids > 1 then 
-                spc() ++ str "{struct " ++ pr_name name ++ str"}"
-              else mt() in
+	      match n with 
+		| None -> mt () 
+		| Some n -> 
+		    let name =
+		      try snd (List.nth ids n)
+		      with Failure _ ->
+			warn (str "non-printable fixpoint \""++pr_id id++str"\"");
+			Anonymous in
+		    match (ro : Topconstr.recursion_order_expr) with
+			CStructRec -> 
+			  if List.length ids > 1 then 
+			    spc() ++ str "{struct " ++ pr_name name ++ str"}"
+			  else mt()
+		      | CWfRec c -> 
+			  spc() ++ str "{wf " ++ pr_name name ++ spc() ++ 
+			    pr_lconstr_expr c ++ str"}"
+		      | CMeasureRec c -> 
+			  spc() ++ str "{measure " ++ pr_name name ++ spc() ++ 
+			    pr_lconstr_expr c ++ str"}"
+	    in
             pr_id id ++ pr_binders_arg bl ++ annot ++ spc()
             ++ pr_type_option (fun c -> spc() ++ pr_lconstr_expr c) type_
             ++ str" :=" ++ brk(1,1) ++ pr_lconstr def ++ 
@@ -574,14 +586,16 @@ let rec pr_vernac = function
         prlist_with_sep (fun _ -> fnl() ++ fnl() ++ str"with ") pr_onerec recs)
 
   | VernacCoFixpoint (corecs,b) ->
-      let pr_onecorec (id,bl,c,def) =
+      let pr_onecorec ((id,bl,c,def),ntn) =
         let (bl',def,c) =
               if Options.do_translate() then extract_def_binders def c
               else ([],def,c) in
         let bl = bl @ bl' in
         pr_id id ++ spc() ++ pr_binders bl ++ spc() ++ str":" ++
         spc() ++ pr_lconstr_expr c ++
-        str" :=" ++ brk(1,1) ++ pr_lconstr def in
+        str" :=" ++ brk(1,1) ++ pr_lconstr def  ++ 
+	pr_decl_notation pr_constr ntn
+      in
       let start = if b then "Boxed CoFixpoint" else "CoFixpoint" in
       hov 1 (str start ++ spc() ++
       prlist_with_sep (fun _ -> fnl() ++ str"with ") pr_onecorec corecs)  
@@ -667,6 +681,14 @@ let rec pr_vernac = function
 
   | VernacSolveExistential (i,c) ->
       str"Existential " ++ int i ++ pr_lconstrarg c
+
+  (* MMode *)
+ 
+  | VernacProofInstr instr -> anomaly "Not implemented"
+  | VernacDeclProof -> str "proof" 
+  | VernacReturn -> str "return"
+
+  (* /MMode *) 
 
   (* Auxiliary file and library management *)
   | VernacRequireFrom (exp,spe,f) -> hov 2
@@ -809,7 +831,7 @@ let rec pr_vernac = function
 
   (* For extension *)
   | VernacExtend (s,c) -> pr_extend s c
-  | VernacProof Tacexpr.TacId _ -> str "Proof"
+  | VernacProof (Tacexpr.TacId _) -> str "Proof"
   | VernacProof te -> str "Proof with" ++ spc() ++ pr_raw_tactic te 
 
 and pr_extend s cl =
@@ -819,6 +841,13 @@ and pr_extend s cl =
   try
     let rls = List.assoc s (Egrammar.get_extend_vernac_grammars()) in
     let rl = match_vernac_rule (List.map Genarg.genarg_tag cl) rls in
+    let start,rl,cl =
+      match rl with
+	| Egrammar.TacTerm s :: rl -> str s, rl, cl
+	| Egrammar.TacNonTerm _ :: rl ->
+	    (* Will put an unnecessary extra space in front *)
+	    pr_gen (Global.env()) (List.hd cl), rl, List.tl cl 
+	| [] -> anomaly "Empty entry" in
     let (pp,_) =
       List.fold_left
         (fun (strm,args) pi ->
@@ -827,7 +856,7 @@ and pr_extend s cl =
                 (strm ++ pr_gen (Global.env()) (List.hd args),
                 List.tl args)
             | Egrammar.TacTerm s -> (strm ++ spc() ++ str s, args))
-        (mt(),cl) rl in
+        (start,cl) rl in
     hov 1 pp
   with Not_found ->
     hov 1 (str ("TODO("^s) ++ prlist_with_sep sep pr_arg cl ++ str ")")

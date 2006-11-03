@@ -156,16 +156,16 @@ let seq_to_lnhyp sign sign' cl =
 
 let rule_is_complex r =
    match r with
-      Tactic (TacArg (Tacexp t),_) -> true  
-   |  Tactic (TacAtom (_,TacAuto _), _) -> true
-   |  Tactic (TacAtom (_,TacSymmetry _), _) -> true 
+       Nested (Tactic 
+		 ((TacArg (Tacexp _)
+		 |TacAtom (_,(TacAuto _|TacSymmetry _))),_),_) -> true
    |_ -> false
 ;;
 
 let rule_to_ntactic r =
    let rt =
      (match r with
-       Tactic (t,_) -> t
+       Nested(Tactic (t,_),_) -> t
      | Prim (Refine h) -> TacAtom (dummy_loc,TacExact h)
      | _ -> TacAtom (dummy_loc, TacIntroPattern [])) in
    if rule_is_complex r
@@ -234,17 +234,17 @@ let  to_nproof sigma osign pf =
               (List.map (fun x -> (to_nproof_rec sigma sign x).t_proof)
 		 spfl) in
 	  (match r with
-	    Tactic (TacAtom (_, TacAuto _),_) ->
-	      if spfl=[]
-	      then
-	      	{t_info="to_prove";
-	    	  t_goal= {newhyp=[];
-			    t_concl=concl ntree;
-			    t_full_concl=ntree.t_goal.t_full_concl;
-			    t_full_env=ntree.t_goal.t_full_env};
-		  t_proof= Proof (TacAtom (dummy_loc,TacExtend (dummy_loc,"InfoAuto",[])), [ntree])}
-	      else ntree
-	  | _ -> ntree))
+	       Nested(Tactic (TacAtom (_, TacAuto _),_),_) ->
+		 if spfl=[]
+		 then
+	      	   {t_info="to_prove";
+	    	    t_goal= {newhyp=[];
+			     t_concl=concl ntree;
+			     t_full_concl=ntree.t_goal.t_full_concl;
+			     t_full_env=ntree.t_goal.t_full_env};
+		    t_proof= Proof (TacAtom (dummy_loc,TacExtend (dummy_loc,"InfoAuto",[])), [ntree])}
+		 else ntree
+	     | _ -> ntree))
       	else
 	  {t_info="to_prove";
 	    t_goal=(seq_to_lnhyp oldsign nsign cl);
@@ -719,13 +719,13 @@ let rec nsortrec vl x =
    | Sort(c) -> c
    | Ind(ind) ->
           let (mib,mip) = lookup_mind_specif vl ind in
-          mip.mind_sort
+	  new_sort_in_family (inductive_sort_family mip)
    | Construct(c) ->
           nsortrec vl (mkInd (inductive_of_constructor c))
    | Case(_,x,t,a) 
         -> nsortrec vl x
    | Cast(x,_, t)-> nsortrec vl t
-   | Const c  -> nsortrec vl (lookup_constant c vl).const_type
+   | Const c  -> nsortrec vl (Typeops.type_of_constant vl c)
    | _ -> nsortrec vl (type_of vl Evd.empty x)
 ;;
 let nsort x =

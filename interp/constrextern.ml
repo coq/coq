@@ -27,6 +27,7 @@ open Pattern
 open Nametab
 open Notation
 open Reserve
+open Detyping
 (*i*)
 
 (* Translation from rawconstr to front constr *)
@@ -185,7 +186,7 @@ let rec check_same_type ty1 ty2 =
   | CCases(_,_,a1,brl1), CCases(_,_,a2,brl2) ->
       List.iter2 (fun (tm1,_) (tm2,_) -> check_same_type tm1 tm2) a1 a2;
       List.iter2 (fun (_,pl1,r1) (_,pl2,r2) ->
-        List.iter2 check_same_pattern pl1 pl2;
+        List.iter2 (List.iter2 check_same_pattern) pl1 pl2;
         check_same_type r1 r2) brl1 brl2
   | CHole _, CHole _ -> ()
   | CPatVar(_,i1), CPatVar(_,i2) when i1=i2 -> ()
@@ -259,7 +260,7 @@ let rec same_raw c d =
         (fun (t1,(al1,oind1)) (t2,(al2,oind2)) ->
           same_raw t1 t2;
           if al1 <> al2 then failwith "RCases";
-          option_iter2(fun (_,i1,nl1) (_,i2,nl2) ->
+          option_iter2(fun (_,i1,_,nl1) (_,i2,_,nl2) ->
             if i1<>i2 || nl1 <> nl2 then failwith "RCases") oind1 oind2) c1 c2;
       List.iter2 (fun (_,_,pl1,b1) (_,_,pl2,b2) ->
         List.iter2 same_patt pl1 pl2;
@@ -293,9 +294,6 @@ let same_rawconstr c d =
 
 (**********************************************************************)
 (* mapping patterns to cases_pattern_expr                                *)
-
-let make_current_scopes (scopt,scopes) = 
-  option_fold_right push_scope scopt scopes
 
 let has_curly_brackets ntn =
   String.length ntn >= 6 & (String.sub ntn 0 6 = "{ _ } " or
@@ -400,14 +398,14 @@ let match_aconstr_cases_pattern c (metas_scl,pat) =
   List.map (fun (x,scl) -> (find x subst,scl)) metas_scl
 
  (* Better to use extern_rawconstr composed with injection/retraction ?? *)
-let rec extern_cases_pattern_in_scope scopes vars pat =
+let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
   try 
     if !Options.raw_print or !print_no_symbol then raise No_match;
     let (na,sc,p) = uninterp_prim_token_cases_pattern pat in
-    match availability_of_prim_token sc (make_current_scopes scopes) with
+    match availability_of_prim_token sc scopes with
     | None -> raise No_match
     | Some key ->
-      let loc = pattern_loc pat in
+      let loc = cases_pattern_loc pat in
       insert_pat_alias loc (insert_pat_delimiters loc (CPatPrim(loc,p)) key) na
   with No_match ->
   try 
@@ -439,17 +437,15 @@ and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
 	(* Try availability of interpretation ... *)
         match keyrule with
           | NotationRule (sc,ntn) ->
-	      let scopes' = make_current_scopes (tmp_scope, scopes) in
-	      (match availability_of_notation (sc,ntn) scopes' with
+	      (match availability_of_notation (sc,ntn) allscopes with
                   (* Uninterpretation is not allowed in current context *)
               | None -> raise No_match
                   (* Uninterpretation is allowed in current context *)
 	      | Some (scopt,key) ->
-	          let scopes = make_current_scopes (scopt, scopes) in
+	          let scopes' = option_cons scopt scopes in
 	          let l =
 		    List.map (fun (c,(scopt,scl)) ->
-		      extern_cases_pattern_in_scope 
-		        (scopt,List.fold_right push_scope scl scopes) vars c)
+		      extern_cases_pattern_in_scope (scopt,scl@scopes') vars c)
                       subst in
 		  insert_pat_delimiters loc (make_pat_notation loc ntn l) key)
           | SynDefRule kn ->
@@ -459,7 +455,7 @@ and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
 	  No_match -> extern_symbol_pattern allscopes vars t rules
 
 let extern_cases_pattern vars p = 
-  extern_cases_pattern_in_scope (None,Notation.current_scopes()) vars p
+  extern_cases_pattern_in_scope (None,[]) vars p
 
 (**********************************************************************)
 (* Externalising applications *)
@@ -606,7 +602,7 @@ let rec share_fix_binders n rbl ty def =
 let extern_possible_prim_token scopes r =
   try
     let (sc,n) = uninterp_prim_token r in
-    match availability_of_prim_token sc (make_current_scopes scopes) with
+    match availability_of_prim_token sc scopes with
     | None -> None
     | Some key -> Some (insert_delimiters (CPrim (loc_of_rawconstr r,n)) key)
   with No_match ->
@@ -621,6 +617,11 @@ let extern_optimal_prim_token scopes r r' =
 
 (**********************************************************************)
 (* mapping rawterms to constr_expr                                    *)
+
+let extern_rawsort = function
+  | RProp _ as s -> s
+  | RType (Some _) as s when !print_universes -> s
+  | RType _ -> RType None
 
 let rec extern inctx scopes vars r =
   let r' = remove_coercions inctx r in
@@ -637,6 +638,8 @@ let rec extern inctx scopes vars r =
         (extern_reference loc vars ref)
 
   | RVar (loc,id) -> CRef (Ident (loc,id))
+
+  | REvar (loc,n,None) when !print_meta_as_hole -> CHole loc
 
   | REvar (loc,n,_) -> (* we drop args *) extern_evar loc n
 
@@ -677,7 +680,7 @@ let rec extern inctx scopes vars r =
       let vars' = 
 	List.fold_right (name_fold Idset.add)
 	  (cases_predicate_names tml) vars in
-      let rtntypopt' = option_app (extern_typ scopes vars') rtntypopt in
+      let rtntypopt' = option_map (extern_typ scopes vars') rtntypopt in
       let tml = List.map (fun (tm,(na,x)) ->
         let na' = match na,tm with
             Anonymous, RVar (_,id) when 
@@ -687,26 +690,28 @@ let rec extern inctx scopes vars r =
           | Name id, RVar (_,id') when id=id' -> None
           | Name _, _ -> Some na in
 	(sub_extern false scopes vars tm,
-	(na',option_app (fun (loc,ind,nal) ->
+	(na',option_map (fun (loc,ind,n,nal) ->
+	  let params = list_tabulate
+	    (fun _ -> RHole (dummy_loc,Evd.InternalHole)) n in
 	  let args = List.map (function
 	    | Anonymous -> RHole (dummy_loc,Evd.InternalHole) 
 	    | Name id -> RVar (dummy_loc,id)) nal in
-	  let t = RApp (dummy_loc,RRef (dummy_loc,IndRef ind),args) in
+	  let t = RApp (dummy_loc,RRef (dummy_loc,IndRef ind),params@args) in
 	  (extern_typ scopes vars t)) x))) tml in
       let eqns = List.map (extern_eqn (rtntypopt<>None) scopes vars) eqns in 
       CCases (loc,rtntypopt',tml,eqns)
 
   | RLetTuple (loc,nal,(na,typopt),tm,b) ->
       CLetTuple (loc,nal,
-        (option_app (fun _ -> na) typopt,
-         option_app (extern_typ scopes (add_vname vars na)) typopt),
+        (option_map (fun _ -> na) typopt,
+         option_map (extern_typ scopes (add_vname vars na)) typopt),
         sub_extern false scopes vars tm,
         extern false scopes (List.fold_left add_vname vars nal) b)
 
   | RIf (loc,c,(na,typopt),b1,b2) ->
       CIf (loc,sub_extern false scopes vars c,
-        (option_app (fun _ -> na) typopt,
-         option_app (extern_typ scopes (add_vname vars na)) typopt),
+        (option_map (fun _ -> na) typopt,
+         option_map (extern_typ scopes (add_vname vars na)) typopt),
         sub_extern false scopes vars b1, sub_extern false scopes vars b2)
 
   | RRec (loc,fk,idv,blv,tyv,bv) ->
@@ -719,7 +724,8 @@ let rec extern inctx scopes vars r =
                  let (ids,bl) = extern_local_binder scopes vars bl in
                  let vars0 = List.fold_right (name_fold Idset.add) ids vars in
                  let vars1 = List.fold_right (name_fold Idset.add) ids vars' in
-		 (fi,nv.(i), bl, extern_typ scopes vars0 ty,
+		 let n, ro = fst nv.(i), extern_recursion_order scopes vars (snd nv.(i)) in
+		 (fi, (n, ro), bl, extern_typ scopes vars0 ty,
                   extern false scopes vars1 def)) idv
 	     in 
 	     CFix (loc,(loc,idv.(n)),Array.to_list listdecl)
@@ -734,12 +740,7 @@ let rec extern inctx scopes vars r =
 	     in
 	     CCoFix (loc,(loc,idv.(n)),Array.to_list listdecl))
 
-  | RSort (loc,s) ->
-      let s = match s with
-	 | RProp _ -> s
-	 | RType (Some _) when !print_universes -> s
-	 | RType _ -> RType None in
-      CSort (loc,s)
+  | RSort (loc,s) -> CSort (loc,extern_rawsort s)
 
   | RHole (loc,e) -> CHole loc
 
@@ -748,11 +749,16 @@ let rec extern inctx scopes vars r =
 
   | RDynamic (loc,d) -> CDynamic (loc,d)
 
-and extern_typ (_,scopes) = extern true (Some Notation.type_scope,scopes)
+and extern_typ (_,scopes) = 
+  extern true (Some Notation.type_scope,scopes)
 
 and sub_extern inctx (_,scopes) = extern inctx (None,scopes)
 
-and factorize_prod scopes vars aty = function
+and factorize_prod scopes vars aty c =
+  try 
+    if !Options.raw_print or !print_no_symbol then raise No_match;
+    ([],extern_symbol scopes vars c (uninterp_notations c))
+  with No_match -> match c with
   | RProd (loc,(Name id as na),ty,c)
       when same aty (extern_typ scopes vars (anonymize_if_reserved na ty))
 	& not (occur_var_constr_expr id aty) (* avoid na in ty escapes scope *)
@@ -760,7 +766,11 @@ and factorize_prod scopes vars aty = function
            ((loc,Name id)::nal,c)
   | c -> ([],extern_typ scopes vars c)
 
-and factorize_lambda inctx scopes vars aty = function
+and factorize_lambda inctx scopes vars aty c =
+  try 
+    if !Options.raw_print or !print_no_symbol then raise No_match;
+    ([],extern_symbol scopes vars c (uninterp_notations c))
+  with No_match -> match c with
   | RLambda (loc,na,ty,c)
       when same aty (extern_typ scopes vars (anonymize_if_reserved na ty))
 	& not (occur_name na aty) (* To avoid na in ty' escapes scope *)
@@ -791,7 +801,7 @@ and extern_local_binder scopes vars = function
              LocalRawAssum([(dummy_loc,na)],ty) :: l))
 
 and extern_eqn inctx scopes vars (loc,ids,pl,c) =
-  (loc,List.map (extern_cases_pattern_in_scope scopes vars) pl,
+  (loc,[List.map (extern_cases_pattern_in_scope scopes vars) pl],
    extern inctx scopes vars c)
 
 and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
@@ -811,17 +821,16 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
         let e =
           match keyrule with
           | NotationRule (sc,ntn) ->
-	      let scopes' = make_current_scopes (tmp_scope, scopes) in
-	      (match availability_of_notation (sc,ntn) scopes' with
+	      (match availability_of_notation (sc,ntn) allscopes with
                   (* Uninterpretation is not allowed in current context *)
               | None -> raise No_match
                   (* Uninterpretation is allowed in current context *)
 	      | Some (scopt,key) ->
-	          let scopes = make_current_scopes (scopt, scopes) in
+	          let scopes' = option_cons scopt scopes in
 	          let l =
 		    List.map (fun (c,(scopt,scl)) ->
 		      extern (* assuming no overloading: *) true
-		        (scopt,List.fold_right push_scope scl scopes) vars c)
+		        (scopt,scl@scopes') vars c)
                       subst in
 	          insert_delimiters (make_notation loc ntn l) key)
           | SynDefRule kn ->
@@ -834,11 +843,17 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
       with
 	  No_match -> extern_symbol allscopes vars t rules
 
+and extern_recursion_order scopes vars = function
+    RStructRec -> CStructRec
+  | RWfRec c -> CWfRec (extern true scopes vars c)
+  | RMeasureRec c -> CMeasureRec (extern true scopes vars c)
+
+
 let extern_rawconstr vars c =
-  extern false (None,Notation.current_scopes()) vars c
+  extern false (None,[]) vars c
 
 let extern_rawtype vars c =
-  extern_typ (None,Notation.current_scopes()) vars c
+  extern_typ (None,[]) vars c
 
 (******************************************************************)
 (* Main translation function from constr -> constr_expr *)
@@ -849,7 +864,7 @@ let extern_constr_gen at_top scopt env t =
   let avoid = if at_top then ids_of_context env else [] in
   let r = Detyping.detype at_top avoid (names_of_rel_context env) t in
   let vars = vars_of_env env in
-  extern (not at_top) (scopt,Notation.current_scopes()) vars r
+  extern (not at_top) (scopt,[]) vars r
 
 let extern_constr_in_scope at_top scope env t =
   extern_constr_gen at_top (Some scope) env t
@@ -862,8 +877,17 @@ let extern_type at_top env t =
   let r = Detyping.detype at_top avoid (names_of_rel_context env) t in
   extern_rawtype (vars_of_env env) r
 
+let extern_sort s = extern_rawsort (detype_sort s)
+
 (******************************************************************)
 (* Main translation function from pattern -> constr_expr *)
+
+let it_destPLambda n c =
+  let rec aux n nal c =
+    if n=0 then (nal,c) else match c with
+      | PLambda (na,_,c) -> aux (n-1) (na::nal) c
+      | _ -> anomaly "it_destPLambda" in
+  aux n [] c
 
 let rec raw_of_pat env = function
   | PRef ref -> RRef (loc,ref)
@@ -889,20 +913,24 @@ let rec raw_of_pat env = function
       RLetIn (loc,na,raw_of_pat env t, raw_of_pat (na::env) c)
   | PLambda (na,t,c) ->
       RLambda (loc,na,raw_of_pat env t, raw_of_pat (na::env) c)
-  | PCase ((_,cs),typopt,tm,[||]) ->
-      if typopt <> None then failwith "TODO: PCase to RCases";
-      RCases (loc,(*(option_app (raw_of_pat env) typopt,*)None,
-         [raw_of_pat env tm,(Anonymous,None)],[])
-  | PCase ((Some ind,cs),typopt,tm,bv) ->
-      let avoid = List.fold_right (name_fold (fun x l -> x::l)) env [] in
-      let mib,mip = lookup_mind_specif (Global.env()) ind in
-      let k = mip.Declarations.mind_nrealargs in
-      let nparams = mib.Declarations.mind_nparams in
-      let cstrnargs = mip.Declarations.mind_consnrealargs in
-      Detyping.detype_case false (raw_of_pat env) (raw_of_eqns env)
-	(fun _ _ -> false (* lazy: don't try to display pattern with "if" *))
-	avoid (ind,cs,nparams,cstrnargs,k) typopt tm bv
-  | PCase _ -> error "Unsupported case-analysis while printing pattern"
+  | PIf (c,b1,b2) ->
+      RIf (loc, raw_of_pat env c, (Anonymous,None), 
+           raw_of_pat env b1, raw_of_pat env b2)
+  | PCase ((LetStyle,[|n|],ind,None),PMeta None,tm,[|b|]) ->
+      let nal,b = it_destRLambda_or_LetIn_names n (raw_of_pat env b) in
+      RLetTuple (loc,nal,(Anonymous,None),raw_of_pat env tm,b)
+  | PCase ((_,cstr_nargs,indo,ind_nargs),p,tm,bv) ->
+      let brs = Array.to_list (Array.map (raw_of_pat env) bv) in
+      let brns = Array.to_list cstr_nargs in
+        (* ind is None only if no branch and no return type *)
+      let ind = out_some indo in
+      let mat = simple_cases_matrix_of_branches ind brns brs in
+      let indnames,rtn =
+	if p = PMeta None then (Anonymous,None),None
+	else 
+	  let nparams,n = out_some ind_nargs in
+	  return_type_of_predicate ind nparams n (raw_of_pat env p) in
+      RCases (loc,rtn,[raw_of_pat env tm,indnames],mat)
   | PFix f -> Detyping.detype false [] env (mkFix f)
   | PCoFix c -> Detyping.detype false [] env (mkCoFix c)
   | PSort s -> RSort (loc,s)
@@ -937,5 +965,4 @@ and raw_of_eqn env constr construct_nargs branch =
   buildrec [] [] env construct_nargs branch
 
 let extern_constr_pattern env pat =
-  extern true (None,Notation.current_scopes()) Idset.empty
-    (raw_of_pat env pat)
+  extern true (None,[]) Idset.empty (raw_of_pat env pat)

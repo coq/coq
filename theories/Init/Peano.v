@@ -47,14 +47,16 @@ Hint Resolve (f_equal pred): v62.
 
 Theorem pred_Sn : forall n:nat, n = pred (S n).
 Proof.
-  auto.
+  simpl; reflexivity.  
 Qed.
 
 (** Injectivity of successor *)
 
 Theorem eq_add_S : forall n m:nat, S n = S m -> n = m.
 Proof.
-  intros n m H; change (pred (S n) = pred (S m)) in |- *; auto.
+  intros n m Sn_eq_Sm.
+  replace (n=m) with (pred (S n) = pred (S m)) by auto using pred_Sn.
+  rewrite Sn_eq_Sm; trivial.
 Qed.
 
 Hint Immediate eq_add_S: core v62.
@@ -65,19 +67,18 @@ Proof.
 Qed.
 Hint Resolve not_eq_S: core v62.
 
-(** Zero is not the successor of a number *)
-
 Definition IsSucc (n:nat) : Prop :=
   match n with
   | O => False
   | S p => True
   end.
 
+(** Zero is not the successor of a number *)
+
 Theorem O_S : forall n:nat, 0 <> S n.
 Proof.
-  red in |- *; intros n H.
-  change (IsSucc 0) in |- *.
-  rewrite <- (sym_eq (x:=0) (y:=(S n))); [ exact I | assumption ].
+  unfold not; intros n H.
+  inversion H.
 Qed.
 Hint Resolve O_S: core v62.
 

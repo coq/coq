@@ -64,7 +64,7 @@ val tclIFTHENELSE    : tactic -> tactic -> tactic -> tactic
 val tclIFTHENSELSE   : tactic -> tactic list -> tactic -> tactic
 val tclIFTHENSVELSE  : tactic -> tactic array -> tactic -> tactic
 
-
+val tclIFTHENTRYELSEMUST : tactic -> tactic -> tactic
 
 val unTAC            : tactic -> goal sigma -> proof_tree sigma
 

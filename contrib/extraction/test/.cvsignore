@@ -1,9 +1,0 @@
-theories
-ml2v 
-v2ml
-hs2v
-v2hs
-log
-*.hi
-*.hs
-*.hc

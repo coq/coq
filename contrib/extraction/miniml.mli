@@ -18,11 +18,18 @@ open Libnames
 (* The [signature] type is used to know how many arguments a CIC
    object expects, and what these arguments will become in the ML
    object. *)
-   
-(* Convention: outmost lambda/product gives the head of the list, 
-   and [true] means that the argument is to be kept. *)
 
-type signature = bool list
+(* We eliminate from terms:  1) types 2) logical parts.
+   [Kother] stands both for logical or unknown reason. *)
+
+type kill_reason = Ktype | Kother
+
+type sign = Keep | Kill of kill_reason
+
+   
+(* Convention: outmost lambda/product gives the head of the list. *)
+
+type signature = sign list
 
 (*s ML type expressions. *)
 
@@ -32,7 +39,7 @@ type ml_type =
   | Tvar    of int
   | Tvar'   of int (* same as Tvar, used to avoid clash *)
   | Tmeta   of ml_meta (* used during ML type reconstruction *)
-  | Tdummy
+  | Tdummy  of kill_reason
   | Tunknown
   | Taxiom
 

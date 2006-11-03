@@ -64,7 +64,7 @@ let get_uri_of_var v pvars =
   in
   let rec search_in_open_sections =
    function
-      [] -> Util.error "Variable not found"
+      [] -> Util.error ("Variable "^v^" not found")
     | he::tl as modules ->
        let dirpath = N.make_dirpath modules in
         if List.mem (N.id_of_string v) (D.last_section_hyps dirpath) then
@@ -167,10 +167,10 @@ let token_list_of_kernel_name tag =
        N.id_of_label (N.label kn), Lib.cwd ()
    | Constant con -> 
        N.id_of_label (N.con_label con),
-       Lib.library_part (LN.ConstRef con)
+       Lib.remove_section_part (LN.ConstRef con)
    | Inductive kn ->
        N.id_of_label (N.label kn),
-       Lib.library_part (LN.IndRef (kn,0))
+       Lib.remove_section_part (LN.IndRef (kn,0))
  in
  token_list_of_path dir id (etag_of_tag tag)
 ;;
@@ -241,7 +241,7 @@ let typeur sigma metamap =
           Util.anomaly ("type_of: variable "^(Names.string_of_id id)^" unbound"))
     | T.Const c ->
         let cb = Environ.lookup_constant c env in
-        T.body_of_type cb.Declarations.const_type
+        Typeops.type_of_constant_type env (cb.Declarations.const_type)
     | T.Evar ev -> Evd.existential_type sigma ev
     | T.Ind ind -> T.body_of_type (Inductiveops.type_of_inductive env ind)
     | T.Construct cstr ->

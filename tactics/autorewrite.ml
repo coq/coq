@@ -60,11 +60,11 @@ type raw_rew_rule = constr * bool * raw_tactic_expr
 
 (* Applies all the rules of one base *)
 let one_base general_rewrite_maybe_in tac_main bas =
-  let lrul = 
-    try 
+  let lrul =
+    try
       Stringmap.find bas !rewtab
-    with Not_found -> 
-      errorlabstrm "AutoRewrite" 
+    with Not_found ->
+      errorlabstrm "AutoRewrite"
         (str ("Rewriting base "^(bas)^" does not exist"))
   in
   let lrul = List.map (fun (c,_,b,t) -> (c,b,Tacinterp.eval_tactic t)) lrul in
@@ -74,16 +74,19 @@ let one_base general_rewrite_maybe_in tac_main bas =
 	  (tclTHENSFIRSTn (general_rewrite_maybe_in dir csr) [|tac_main|] tc)))
       tclIDTAC lrul))
 
+
+
 (* The AutoRewrite tactic *)
 let autorewrite tac_main lbas =
   tclREPEAT_MAIN (tclPROGRESS
     (List.fold_left (fun tac bas -> 
        tclTHEN tac (one_base general_rewrite tac_main bas)) tclIDTAC lbas))
 
-let autorewrite_in id tac_main lbas gl =
+let autorewrite_mutlti_in idl tac_main lbas : tactic =
+  fun gl -> 
  (* let's check at once if id exists (to raise the appropriate error) *)
- let _ = Tacmach.pf_get_hyp gl id in
- let general_rewrite_in =
+ let _ = List.map (Tacmach.pf_get_hyp gl) idl in
+ let general_rewrite_in id =
   let id = ref id in
   let to_be_cleared = ref false in
    fun dir cstr gl ->
@@ -117,10 +120,51 @@ let autorewrite_in id tac_main lbas gl =
           | _ -> assert false) (* there must be at least an hypothesis *)
      | _ -> assert false (* rewriting cannot complete a proof *)
  in
+ tclMAP (fun id -> 
   tclREPEAT_MAIN (tclPROGRESS
     (List.fold_left (fun tac bas -> 
-       tclTHEN tac (one_base general_rewrite_in tac_main bas)) tclIDTAC lbas))
-   gl
+       tclTHEN tac (one_base (general_rewrite_in id) tac_main bas)) tclIDTAC lbas)))
+   idl gl
+
+let autorewrite_in id = autorewrite_mutlti_in [id]
+
+let gen_auto_multi_rewrite tac_main lbas cl = 
+  let try_do_hyps treat_id l = 
+    autorewrite_mutlti_in (List.map treat_id l) tac_main lbas
+  in 
+  if cl.concl_occs <> [] then 
+    error "The \"at\" syntax isn't available yet for the autorewrite tactic"
+  else 
+    let compose_tac t1 t2 = 
+      match cl.onhyps with 
+	| Some [] -> t1 
+	| _ ->      tclTHENFIRST t1 t2
+    in
+    compose_tac
+	(if cl.onconcl then autorewrite tac_main lbas else tclIDTAC)
+	(match cl.onhyps with 
+	   | Some l -> try_do_hyps (fun ((_,id),_) -> id) l
+	   | None -> 
+	       fun gl -> 
+		 (* try to rewrite in all hypothesis 
+		    (except maybe the rewritten one) *)
+		 let ids =  Tacmach.pf_ids_of_hyps gl
+		 in try_do_hyps (fun id -> id)  ids gl)
+
+let auto_multi_rewrite = gen_auto_multi_rewrite Refiner.tclIDTAC
+
+let auto_multi_rewrite_with tac_main lbas cl gl = 
+  match cl.Tacexpr.onconcl,cl.Tacexpr.onhyps with 
+    | false,Some [_] | true,Some [] | false,Some [] ->   
+	(* autorewrite with .... in clause using tac n'est sur que 
+	   si clause reprensente soit le but soit UNE hypothse 
+	*)
+	gen_auto_multi_rewrite tac_main  lbas cl gl
+    | _ -> 
+	    Util.errorlabstrm "autorewrite" 
+	      (str "autorewrite .. in .. using can only be used either with a unique hypothesis or" ++
+		 str " on the conclusion")
+
 
 (* Functions necessary to the library object declaration *)
 let cache_hintrewrite (_,(rbase,lrl)) =
@@ -153,7 +197,7 @@ let subst_hintrewrite (_,subst,(rbase,list as node)) =
      typ (* dummy value, it will be recomputed by cache_hintrewrite *) in
     let t' = Tacinterp.subst_tactic subst t in
       if cst == cst' && t == t' then pair else
-	(cst',typ',b,t)
+	(cst',typ',b,t')
   in
   let list' = list_smartmap subst_first list in
     if list' == list then node else
@@ -165,8 +209,8 @@ let classify_hintrewrite (_,x) = Libobject.Substitute x
 (* Declaration of the Hint Rewrite library object *)
 let (in_hintrewrite,out_hintrewrite)=
   Libobject.declare_object {(Libobject.default_object "HINT_REWRITE") with
-       Libobject.open_function = (fun i o -> if i=1 then cache_hintrewrite o);
        Libobject.cache_function = cache_hintrewrite;
+       Libobject.load_function = (fun _ -> cache_hintrewrite);
        Libobject.subst_function = subst_hintrewrite;
        Libobject.classify_function = classify_hintrewrite;
        Libobject.export_function = export_hintrewrite }

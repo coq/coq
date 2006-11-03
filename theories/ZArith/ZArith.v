@@ -19,3 +19,5 @@ Require Export Zsqrt.
 Require Export Zpower.
 Require Export Zdiv.
 Require Export Zlogarithm.
+
+Export ZArithRing.

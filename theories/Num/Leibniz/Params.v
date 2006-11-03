@@ -1,4 +1,4 @@
-(*i $Id $ i*)
+(*i $Id$ i*)
 
 (*s 
   Axiomatisation of a numerical set 

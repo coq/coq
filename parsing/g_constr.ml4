@@ -28,7 +28,7 @@ let _ = List.iter (fun s -> Lexer.add_token("",s)) constr_kw
 
 let mk_cast = function
     (c,(_,None)) -> c
-  | (c,(_,Some ty)) -> CCast(join_loc (constr_loc c) (constr_loc ty), c, DEFAULTcast,ty)
+  | (c,(_,Some ty)) -> CCast(join_loc (constr_loc c) (constr_loc ty), c, CastConv DEFAULTcast, ty)
 
 let mk_lam = function
     ([],c) -> c
@@ -57,29 +57,28 @@ let rec mkCLambdaN loc bll c =
   | [] -> c
   | LocalRawAssum ([],_) :: bll -> mkCLambdaN loc bll c
 
-let rec index_of_annot loc bl ann =
+let rec index_and_rec_order_of_annot loc bl ann =
   match names_of_local_assums bl,ann with
-    | [_], None -> 0
-    | lids, Some x ->
+    | [_], (None, r) -> Some 0, r
+    | lids, (Some x, ro) ->
         let ids = List.map snd lids in
-        (try list_index (snd x) ids - 1
+        (try Some (list_index (snd x) ids - 1), ro
         with Not_found ->
           user_err_loc(fst x,"index_of_annot", Pp.str"no such fix variable"))
-    | _ -> user_err_loc(loc,"index_of_annot",
-      Pp.str "cannot guess decreasing argument of fix")
+    | _, (None, r) -> None, r
 
 let mk_fixb (id,bl,ann,body,(loc,tyc)) =
-  let n = index_of_annot (fst id) bl ann in
+  let n,ro = index_and_rec_order_of_annot (fst id) bl ann in
   let ty = match tyc with
       Some ty -> ty
     | None -> CHole loc in
-  (snd id,n,bl,ty,body)
+  (snd id,(n,ro),bl,ty,body)
 
 let mk_cofixb (id,bl,ann,body,(loc,tyc)) =
-  let _ = option_app (fun (aloc,_) ->
+  let _ = option_map (fun (aloc,_) ->
     Util.user_err_loc
       (aloc,"Constr:mk_cofixb",
-       Pp.str"Annotation forbidden in cofix expression")) ann in
+       Pp.str"Annotation forbidden in cofix expression")) (fst ann) in
   let ty = match tyc with
       Some ty -> ty
     | None -> CHole loc in
@@ -156,8 +155,14 @@ GEXTEND Gram
     [ "200" RIGHTA
       [ c = binder_constr -> c ]
     | "100" RIGHTA
-      [ c1 = operconstr; ":"; c2 = binder_constr -> CCast(loc,c1,DEFAULTcast,c2)
-      | c1 = operconstr; ":"; c2 = SELF -> CCast(loc,c1,DEFAULTcast,c2) ]
+      [ c1 = operconstr; "<:"; c2 = binder_constr -> 
+                 CCast(loc,c1, CastConv VMcast,c2)
+      | c1 = operconstr; "<:"; c2 = SELF -> 
+                 CCast(loc,c1, CastConv VMcast,c2)
+      | c1 = operconstr; ":";c2 = binder_constr -> 
+                 CCast(loc,c1, CastConv DEFAULTcast,c2)
+      | c1 = operconstr; ":"; c2 = SELF -> 
+                 CCast(loc,c1, CastConv DEFAULTcast,c2) ]
     | "99" RIGHTA [ ]
     | "90" RIGHTA
       [ c1 = operconstr; "->"; c2 = binder_constr -> CArrow(loc,c1,c2)
@@ -243,8 +248,11 @@ GEXTEND Gram
         c=operconstr LEVEL "200" -> (id,bl,ann,c,ty) ] ]
   ;
   fixannot:
-    [ [ "{"; IDENT "struct"; id=name; "}" -> Some id
-      | -> None ] ]
+    [ [ "{"; IDENT "struct"; id=name; "}" -> (Some id, CStructRec)
+      | "{"; IDENT "wf"; id=name; rel=lconstr; "}" -> (Some id, CWfRec rel)
+      | "{"; IDENT "measure"; id=name; rel=lconstr; "}" -> (Some id, CMeasureRec rel)
+      | ->  (None, CStructRec)
+      ] ]
   ;
   match_constr:
     [ [ "match"; ci=LIST1 case_item SEP ","; ty=OPT case_type; "with";
@@ -272,24 +280,25 @@ GEXTEND Gram
     [ [ OPT"|"; br=LIST0 eqn SEP "|" -> br ] ]
   ;
   eqn:
-    [ [ pl = LIST1 pattern SEP ","; "=>"; rhs = lconstr -> (loc,pl,rhs) ] ]
+    [ [ pll = LIST0 LIST1 pattern LEVEL "99" SEP "," SEP "|"; 
+        "=>"; rhs = lconstr -> (loc,pll,rhs) ] ]
   ;
   pattern:
     [ "200" RIGHTA [ ]
-    | "100" LEFTA
+    | "100" RIGHTA
       [ p = pattern; "|"; pl = LIST1 pattern SEP "|" -> CPatOr (loc,p::pl) ]
     | "99" RIGHTA [ ]
     | "10" LEFTA
-      [ p = pattern; lp = LIST1 (pattern LEVEL "0") ->
+      [ p = pattern; lp = LIST1 NEXT ->
         (match p with
           | CPatAtom (_, Some r) -> CPatCstr (loc, r, lp)
           | _ -> Util.user_err_loc 
-              (cases_pattern_loc p, "compound_pattern",
+              (cases_pattern_expr_loc p, "compound_pattern",
                Pp.str "Constructor expected"))
       | p = pattern; "as"; id = ident ->
-	  CPatAlias (loc, p, id)
-      | c = pattern; "%"; key=IDENT -> 
-          CPatDelimiters (loc,key,c) ]
+	  CPatAlias (loc, p, id) ]
+    | "1" LEFTA
+      [ c = pattern; "%"; key=IDENT -> CPatDelimiters (loc,key,c) ]
     | "0"
       [ r = Prim.reference -> CPatAtom (loc,Some r)
       | "_" -> CPatAtom (loc,None)
@@ -319,7 +328,7 @@ GEXTEND Gram
       | "("; id=name; ":="; c=lconstr; ")" ->
           LocalRawDef (id,c)
       | "("; id=name; ":"; t=lconstr; ":="; c=lconstr; ")" -> 
-          LocalRawDef (id,CCast (join_loc (constr_loc t) loc,c,DEFAULTcast,t))
+          LocalRawDef (id,CCast (join_loc (constr_loc t) loc,c, CastConv DEFAULTcast,t))
     ] ]
   ;
   binder:

@@ -24,7 +24,7 @@ open RedFlags
 (* call by value normalisation function using the virtual machine *)
 let cbv_vm env _ c =
   let ctyp = (fst (Typeops.infer env c)).Environ.uj_type in
-  Vconv.cbv_vm env c ctyp
+  Vnorm.cbv_vm env c ctyp
 
 
 let set_opaque_const sp = 
@@ -93,19 +93,26 @@ let declare_red_expr s f =
   with Not_found ->
     red_expr_tab := Stringmap.add s f !red_expr_tab
 
+let out_arg = function
+  | ArgVar _ -> anomaly "Unevaluated or_var variable"
+  | ArgArg x -> x
+
+let out_with_occurrences (l,c) =
+  (List.map out_arg l, c)
+
 let reduction_of_red_expr = function
   | Red internal -> 
       if internal then (try_red_product,DEFAULTcast) 
       else (red_product,DEFAULTcast)
   | Hnf -> (hnf_constr,DEFAULTcast)
-  | Simpl (Some (_,c as lp)) -> 
-      (contextually (is_reference c) lp nf,DEFAULTcast)
+  | Simpl (Some (_,c as lp)) ->
+      (contextually (is_reference c) (out_with_occurrences lp) nf,DEFAULTcast)
   | Simpl None -> (nf,DEFAULTcast)
   | Cbv f -> (cbv_norm_flags (make_flag f),DEFAULTcast)
   | Lazy f -> (clos_norm_flags (make_flag f),DEFAULTcast)
-  | Unfold ubinds -> (unfoldn ubinds,DEFAULTcast)
+  | Unfold ubinds -> (unfoldn (List.map out_with_occurrences ubinds),DEFAULTcast)
   | Fold cl -> (fold_commands cl,DEFAULTcast)
-  | Pattern lp -> (pattern_occs lp,DEFAULTcast)
+  | Pattern lp -> (pattern_occs (List.map out_with_occurrences lp),DEFAULTcast)
   | ExtraRedExpr s ->
       (try (Stringmap.find s !red_expr_tab,DEFAULTcast)
       with Not_found -> error("unknown user-defined reduction \""^s^"\""))

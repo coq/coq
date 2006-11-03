@@ -34,7 +34,7 @@ Module Type T.
   
   Declare Module M1: SIG.
   
-  Declare Module M2 <: SIG.
+  Module M2 <: SIG.
     Definition A := nat.
   End M2.
   

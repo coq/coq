@@ -13,6 +13,7 @@ open Term
 open Declarations
 open Environ
 open Evd
+open Sign
 
 (* The following three functions are similar to the ones defined in
    Inductive, but they expect an env *)
@@ -42,8 +43,7 @@ val dest_ind_type : inductive_type -> inductive_family * constr list
 val map_inductive_type : (constr -> constr) -> inductive_type -> inductive_type
 val liftn_inductive_type : int -> int -> inductive_type -> inductive_type
 val lift_inductive_type  : int -> inductive_type -> inductive_type
-val substnl_ind_type :
-  constr list -> int -> inductive_type -> inductive_type
+val substnl_ind_type : constr list -> int -> inductive_type -> inductive_type
 
 val mkAppliedInd : inductive_type -> constr
 val mis_is_recursive_subset : int list -> wf_paths -> bool
@@ -51,16 +51,24 @@ val mis_is_recursive :
   inductive * mutual_inductive_body * one_inductive_body -> bool
 val mis_nf_constructor_type :
   inductive * mutual_inductive_body * one_inductive_body -> int -> constr
-val mis_constr_nargs : inductive -> int array
 
+(* Extract information from an inductive name *)
+
+val mis_constr_nargs : inductive -> int array
 val mis_constr_nargs_env : env -> inductive -> int array
 
-val mis_constructor_nargs_env : env -> constructor -> int
+(* Return number of expected parameters and of expected real arguments *)
+val inductive_nargs : env -> inductive -> int * int
 
+val mis_constructor_nargs_env : env -> constructor -> int
 val constructor_nrealargs : env -> constructor -> int
 val constructor_nrealhyps : env -> constructor -> int
 
-val inductive_nargs : env -> inductive -> int
+val get_full_arity_sign : env -> inductive -> rel_context
+
+val allowed_sorts : env -> inductive -> sorts_family list
+
+(* Extract information from an inductive family *)
 
 type constructor_summary = {
   cs_cstr : constructor;
@@ -68,17 +76,16 @@ type constructor_summary = {
   cs_nargs : int;
   cs_args : Sign.rel_context;
   cs_concl_realargs : constr array;
-} 
+}
 val lift_constructor : int -> constructor_summary -> constructor_summary
 val get_constructor :
   inductive * mutual_inductive_body * one_inductive_body * constr list ->
   int -> constructor_summary
-val get_arity        : env -> inductive_family -> Sign.arity
+val get_arity        : env -> inductive_family -> rel_context * sorts_family
 val get_constructors : env -> inductive_family -> constructor_summary array
 val build_dependent_constructor : constructor_summary -> constr
 val build_dependent_inductive   : env -> inductive_family -> constr
-val make_arity_signature :
-  env -> bool -> inductive_family -> Sign.rel_context
+val make_arity_signature : env -> bool -> inductive_family -> Sign.rel_context
 val make_arity : env -> bool -> inductive_family -> sorts -> types
 val build_branch_type : env -> bool -> constr -> constructor_summary -> types
 

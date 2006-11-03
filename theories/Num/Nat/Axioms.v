@@ -1,4 +1,4 @@
-(*i $Id: i*)
+(*i $Id$ i*)
 
 (*s Axioms for the basic numerical operations *)
 Require Export Params.

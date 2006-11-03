@@ -208,8 +208,8 @@ let reduce_open_constr (em0,c) =
       | Cast (c',t) -> 
 	  (match kind_of_term c' with
 	     | Evar (ev,_) ->
-                 if not (Evd.in_dom em ev) then
-                   Evd.add em ev (Evd.map em0 ev)
+                 if not (Evd.mem em ev) then
+                   Evd.add em ev (Evd.find em0 ev)
                  else
                    em
 	     | _ -> fold_constr collect em c)

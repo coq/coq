@@ -152,12 +152,7 @@ type coq_sigma_data = {
 
 type 'a delayed = unit -> 'a
 
-let build_sigma_set () =
-  { proj1 = init_constant ["Specif"] "projS1";
-    proj2 = init_constant ["Specif"] "projS2";
-    elim = init_constant ["Specif"] "sigS_rec";
-    intro = init_constant ["Specif"] "existS";
-    typ = init_constant ["Specif"] "sigS" }
+let build_sigma_set () = anomaly "Use build_sigma_type"
 
 let build_sigma_type () =
   { proj1 = init_constant ["Specif"] "projT1";
@@ -165,6 +160,13 @@ let build_sigma_type () =
     elim = init_constant ["Specif"] "sigT_rec";
     intro = init_constant ["Specif"] "existT";
     typ = init_constant ["Specif"] "sigT" }
+
+let build_prod () =
+  { proj1 = init_constant ["Datatypes"] "fst";
+    proj2 = init_constant ["Datatypes"] "snd";
+    elim = init_constant ["Datatypes"] "prod_rec";
+    intro = init_constant ["Datatypes"] "pair";
+    typ = init_constant ["Datatypes"] "prod" }
 
 (* Equalities *)
 type coq_leibniz_eq_data = {
@@ -250,7 +252,7 @@ let build_coq_ex ()   = Lazy.force coq_ex
 (* The following is less readable but does not depend on parsing *)
 let coq_eq_ref      = lazy (init_reference ["Logic"] "eq")
 let coq_identity_ref     = lazy (init_reference ["Datatypes"] "identity")
-let coq_existS_ref  = lazy (init_reference ["Specif"] "existS")
+let coq_existS_ref  = lazy (anomaly "use coq_existT_ref")
 let coq_existT_ref  = lazy (init_reference ["Specif"] "existT")
 let coq_not_ref     = lazy (init_reference ["Logic"] "not")
 let coq_False_ref   = lazy (init_reference ["Logic"] "False")

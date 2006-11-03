@@ -186,9 +186,9 @@ let add_leaf id obj =
   if fst (current_prefix ()) = initial_path then 
     error ("No session module started (use -top dir)");
   let oname = make_oname id in
-  cache_object (oname,obj);
-  add_entry oname (Leaf obj);
-  oname
+    cache_object (oname,obj);
+    add_entry oname (Leaf obj);
+    oname
 
 let add_leaves id objs =
   let oname = make_oname id in
@@ -319,7 +319,7 @@ let end_compilation dir =
       | _, OpenedModtype _ -> error "There are some open module types"
       | _ -> assert false
     with
-	Not_found -> ()
+	Not_found -> () 
   in
   let module_p =
     function (_,CompilingLibrary _) -> true | x -> is_something_opened x
@@ -331,16 +331,17 @@ let end_compilation dir =
     with
 	Not_found -> anomaly "No module declared"
   in
-  let _ =  match !comp_name with
+  let _ =  
+    match !comp_name with
       | None -> anomaly "There should be a module name..."
       | Some m ->
 	  if m <> dir then anomaly 
 	    ("The current open module has name "^ (string_of_dirpath m) ^ 
-	     " and not " ^ (string_of_dirpath m));
+	       " and not " ^ (string_of_dirpath m));
   in
   let (after,_,before) = split_lib oname in
-  comp_name := None;
-  !path_prefix,after
+    comp_name := None;
+    !path_prefix,after
 
 (* Returns true if we are inside an opened module type *)
 let is_modtype () = 
@@ -444,15 +445,15 @@ let open_section id =
   let dir = extend_dirpath olddir id in
   let prefix = dir, (mp, extend_dirpath oldsec id) in
   let name = make_path id, make_kn id (* this makes little sense however *) in
-  if Nametab.exists_section dir then
-    errorlabstrm "open_section" (pr_id id ++ str " already exists");
-  let sum = freeze_summaries() in
-  add_entry name (OpenedSection (prefix, sum));
-  (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
-  Nametab.push_dir (Nametab.Until 1) dir (DirOpenSection prefix);
-  path_prefix := prefix;
-  if !Options.xml_export then !xml_open_section id;
-  add_section ()
+    if Nametab.exists_section dir then
+      errorlabstrm "open_section" (pr_id id ++ str " already exists");
+    let sum = freeze_summaries() in
+      add_entry name (OpenedSection (prefix, sum));
+      (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
+      Nametab.push_dir (Nametab.Until 1) dir (DirOpenSection prefix);
+      path_prefix := prefix;
+      if !Options.xml_export then !xml_open_section id;
+      add_section ()
 
 
 (* Restore lib_stk and summaries as before the section opening, and
@@ -460,7 +461,7 @@ let open_section id =
 
 let discharge_item = function
   | ((sp,_ as oname),Leaf lobj) ->
-      option_app (fun o -> (basename sp,o)) (discharge_object (oname,lobj))
+      option_map (fun o -> (basename sp,o)) (discharge_object (oname,lobj))
   | _ ->
       None
 
@@ -476,16 +477,16 @@ let close_section id =
       error "no opened section"
   in
   let (secdecls,_,before) = split_lib oname in
-  lib_stk := before;
-  let full_olddir = fst !path_prefix in
-  pop_path_prefix ();
-  add_entry (make_oname id) ClosedSection;
-  if !Options.xml_export then !xml_close_section id;
-  let newdecls = List.map discharge_item secdecls in
-  Summary.section_unfreeze_summaries fs;
-  List.iter (option_iter (fun (id,o) -> ignore (add_leaf id o))) newdecls;
-  Cooking.clear_cooking_sharing ();
-  Nametab.push_dir (Nametab.Until 1) full_olddir (DirClosedSection full_olddir)
+    lib_stk := before;
+    let full_olddir = fst !path_prefix in
+      pop_path_prefix ();
+      add_entry (make_oname id) ClosedSection;
+      if !Options.xml_export then !xml_close_section id;
+      let newdecls = List.map discharge_item secdecls in
+	Summary.section_unfreeze_summaries fs;
+	List.iter (option_iter (fun (id,o) -> ignore (add_leaf id o))) newdecls;
+	Cooking.clear_cooking_sharing ();
+	Nametab.push_dir (Nametab.Until 1) full_olddir (DirClosedSection full_olddir)
 
 (*****************)
 (* Backtracking. *)
@@ -624,12 +625,30 @@ let reset_initial () =
 
 (* Misc *)
 
+let mp_of_global ref = 
+  match ref with
+    | VarRef id -> fst (current_prefix ())
+    | ConstRef cst -> con_modpath cst
+    | IndRef ind -> ind_modpath ind
+    | ConstructRef constr -> constr_modpath constr
+
+let rec dp_of_mp modp =
+  match modp with
+    | MPfile dp -> dp
+    | MPbound _ | MPself _ -> library_dp ()
+    | MPdot (mp,_) -> dp_of_mp mp
+
 let library_part ref =
+  match ref with 
+    | VarRef id -> library_dp ()
+    | _ -> dp_of_mp (mp_of_global ref)
+
+let remove_section_part ref =
   let sp = Nametab.sp_of_global ref in
   let dir,_ = repr_path sp in
   match ref with
   | VarRef id -> 
-      anomaly "library_part not supported on local variables"
+      anomaly "remove_section_part not supported on local variables"
   | _ ->
       if is_dirpath_prefix_of dir (cwd ()) then
         (* Not yet (fully) discharged *)

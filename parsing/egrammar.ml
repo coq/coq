@@ -160,7 +160,7 @@ type grammar_tactic_production =
 
 let make_prod_item = function
   | TacTerm s -> (Gramext.Stoken (Lexer.terminal s), None)
-  | TacNonTerm (_,(nont,t), po) -> (nont, option_app (fun p -> (p,t)) po)
+  | TacNonTerm (_,(nont,t), po) -> (nont, option_map (fun p -> (p,t)) po)
 
 (* Tactic grammar extensions *)
 
@@ -196,23 +196,24 @@ let find_index s t =
   if s <> t or n = None then raise Not_found;
   out_some n
 
-let rec interp_entry_name up_level u s =
+let rec interp_entry_name up_level s =
   let l = String.length s in
   if l > 8 & String.sub s 0 3 = "ne_" & String.sub s (l-5) 5 = "_list" then
-    let t, g = interp_entry_name up_level u (String.sub s 3 (l-8)) in
+    let t, g = interp_entry_name up_level (String.sub s 3 (l-8)) in
     List1ArgType t, Gramext.Slist1 g
   else if l > 5 & String.sub s (l-5) 5 = "_list" then
-    let t, g = interp_entry_name up_level u (String.sub s 0 (l-5)) in
+    let t, g = interp_entry_name up_level (String.sub s 0 (l-5)) in
     List0ArgType t, Gramext.Slist0 g
   else if l > 4 & String.sub s (l-4) 4 = "_opt" then
-    let t, g = interp_entry_name up_level u (String.sub s 0 (l-4)) in
+    let t, g = interp_entry_name up_level (String.sub s 0 (l-4)) in
     OptArgType t, Gramext.Sopt g
   else
+    let s = if s = "hyp" then "var" else s in
     try 
       let i = find_index "tactic" s in
-      TacticArgType i, 
-      if i=up_level then Gramext.Sself else
-      if i=up_level-1 then Gramext.Snext else
+      ExtraArgType s, 
+      if up_level<>5 && i=up_level then Gramext.Sself else
+      if up_level<>5 && i=up_level-1 then Gramext.Snext else
       Gramext.Snterml(Pcoq.Gram.Entry.obj Tactic.tactic_expr,string_of_int i)
     with Not_found ->
     let e = 
@@ -228,16 +229,18 @@ let rec interp_entry_name up_level u s =
     let t = type_of_typed_entry e in
     t,Gramext.Snterm (Pcoq.Gram.Entry.obj o)
 
-let make_vprod_item n univ = function
+let make_vprod_item n = function
   | VTerm s -> (Gramext.Stoken (Lexer.terminal s), None)
   | VNonTerm (loc, nt, po) ->
-      let (etyp, e) = interp_entry_name n univ nt in
-      e, option_app (fun p -> (p,etyp)) po
+      let (etyp, e) = interp_entry_name n nt in
+      e, option_map (fun p -> (p,etyp)) po
 
 let get_tactic_entry n =
   if n = 0 then
     weaken_entry Tactic.simple_tactic, None
-  else if 1<=n && n<=5 then
+  else if n = 5 then
+    weaken_entry Tactic.binder_tactic, None
+  else if 1<=n && n<5 then
     weaken_entry Tactic.tactic_expr, Some (Gramext.Level (string_of_int n))
   else 
     error ("Invalid Tactic Notation level: "^(string_of_int n))
@@ -249,7 +252,7 @@ let head_is_ident = function VTerm _::_ -> true | _ -> false
 let add_tactic_entry (key,lev,prods,tac) =
   let univ = get_univ "tactic" in
   let entry, pos = get_tactic_entry lev in
-  let mkprod = make_vprod_item lev "tactic" in
+  let mkprod = make_vprod_item lev in
   let rules = 
     if lev = 0 then begin
       if not (head_is_ident prods) then

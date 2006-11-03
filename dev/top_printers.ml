@@ -27,6 +27,8 @@ open Clenv
 open Cerrors
 open Evd
 open Goptions
+open Genarg
+
 
 let _ = Constrextern.print_evar_arguments := true
 let _ = set_bool_option_value (SecondaryTable ("Printing","Matching")) false
@@ -145,9 +147,9 @@ let constr_display csr =
   | Fix ((t,i),(lna,tl,bl)) ->
       "Fix(([|"^(Array.fold_right (fun x i -> (string_of_int x)^(if not(i="")
         then (";"^i) else "")) t "")^"|],"^(string_of_int i)^"),"
-      ^(array_display tl)^","
+      ^(array_display tl)^",[|"
       ^(Array.fold_right (fun x i -> (name_display x)^(if not(i="")
-        then (";"^i) else "")) lna "")^","
+        then (";"^i) else "")) lna "")^"|],"
       ^(array_display bl)^")"
   | CoFix(i,(lna,tl,bl)) ->
       "CoFix("^(string_of_int i)^"),"
@@ -308,6 +310,39 @@ let ppfconstr c = ppconstr (Closure.term_of_fconstr c)
 
 let pploc x = let (l,r) = unloc x in
   print_string"(";print_int l;print_string",";print_int r;print_string")"
+
+(* extendable tactic arguments *)
+let rec pr_argument_type = function
+  (* Basic types *)
+  | BoolArgType -> str"bool"
+  | IntArgType -> str"int"
+  | IntOrVarArgType -> str"int-or-var"
+  | StringArgType -> str"string"
+  | PreIdentArgType -> str"pre-ident"
+  | IntroPatternArgType -> str"intro-pattern"
+  | IdentArgType -> str"ident"
+  | VarArgType -> str"var"
+  | RefArgType -> str"ref"
+  (* Specific types *)
+  | SortArgType -> str"sort"
+  | ConstrArgType -> str"constr"
+  | ConstrMayEvalArgType -> str"constr-may-eval"
+  | QuantHypArgType -> str"qhyp"
+  | OpenConstrArgType _ -> str"open-constr"
+  | ConstrWithBindingsArgType -> str"constr-with-bindings"
+  | BindingsArgType -> str"bindings"
+  | RedExprArgType -> str"redexp"
+  | List0ArgType t -> pr_argument_type t ++ str" list0"
+  | List1ArgType t -> pr_argument_type t ++ str" list1"
+  | OptArgType t -> pr_argument_type t ++ str" opt"
+  | PairArgType (t1,t2) ->
+      str"("++ pr_argument_type t1 ++ str"*" ++ pr_argument_type t2 ++str")"
+  | ExtraArgType s -> str"\"" ++ str s ++ str "\""
+
+let pp_argument_type t = pp (pr_argument_type t)
+
+let pp_generic_argument arg =
+  pp(str"<genarg:"++pr_argument_type(genarg_tag arg)++str">")
 
 (**********************************************************************)
 (* Vernac-level debugging commands                                    *)

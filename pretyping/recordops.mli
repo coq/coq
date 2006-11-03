@@ -21,18 +21,13 @@ open Library
 (*s A structure S is a non recursive inductive type with a single
    constructor (the name of which defaults to Build_S) *)
 
-type struc_typ = {
-  s_CONST : identifier; 
-  s_PARAM : int;
-  s_PROJKIND : bool list;
-  s_PROJ : constant option list }
-
 val declare_structure : 
-  inductive * identifier * int * bool list * constant option list -> unit
+  inductive * identifier * bool list * constant option list -> unit
 
-(* [lookup_structure isp] returns the infos associated to inductive path
-   [isp] if it corresponds to a structure, otherwise fails with [Not_found] *)
-val lookup_structure : inductive -> struc_typ
+(* [lookup_projections isp] returns the projections associated to the
+   inductive path [isp] if it corresponds to a structure, otherwise
+   it fails with [Not_found] *)
+val lookup_projections : inductive -> constant option list
 
 (* raise [Not_found] if not a projection *)
 val find_projection_nparams : global_reference -> int

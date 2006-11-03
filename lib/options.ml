@@ -22,6 +22,7 @@ let batch_mode = ref false
 let debug = ref false
 
 let print_emacs = ref false
+let print_emacs_safechar = ref false
 
 let term_quality = ref false
 
@@ -70,10 +71,10 @@ let print_hyps_limit () = !print_hyps_limit
 
 (* A list of the areas of the system where "unsafe" operation
  * has been requested *)
+
 let unsafe_set = ref Stringset.empty
 let add_unsafe s = unsafe_set := Stringset.add s !unsafe_set
 let is_unsafe s = Stringset.mem s !unsafe_set
-
 
 (* Dump of globalization (to be used by coqdoc) *)
 

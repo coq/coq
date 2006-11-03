@@ -22,13 +22,13 @@ open Refiner
 
 (* w_tactic pour instantiate *) 
 
-let w_refine env ev rawc evd =
+let w_refine ev rawc evd =
   if Evd.is_defined (evars_of evd) ev then 
     error "Instantiate called on already-defined evar";
-  let e_info = Evd.map (evars_of evd) ev in
+  let e_info = Evd.find (evars_of evd) ev in
   let env = Evd.evar_env e_info in
   let sigma,typed_c = 
-    Pretyping.understand_tcc (evars_of evd) env 
+    Pretyping.Default.understand_tcc (evars_of evd) env 
       ~expected_type:e_info.evar_concl rawc in
   evar_define ev typed_c (evars_reset_evd sigma evd)
 
@@ -45,5 +45,5 @@ let instantiate_pf_com n com pfts =
   let env = Evd.evar_env evi in
   let rawc = Constrintern.intern_constr sigma env com in 
   let evd = create_evar_defs sigma in
-  let evd' = w_refine env sp rawc evd in
+  let evd' = w_refine sp rawc evd in
   change_constraints_pftreestate (evars_of evd') pfts

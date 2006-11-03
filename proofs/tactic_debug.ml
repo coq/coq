@@ -31,6 +31,8 @@ type debug_info =
 (* An exception handler *)
 let explain_logic_error = ref (fun e -> mt())
 
+let explain_logic_error_no_anomaly = ref (fun e -> mt())
+
 (* Prints the goal *)
 let db_pr_goal g =
   msgnl (str "Goal:" ++ fnl () ++ Proof_trees.db_pr_goal (Refiner.sig_it g))
@@ -76,11 +78,12 @@ let rec prompt level =
   begin
     msg (fnl () ++ str "TcDebug (" ++ int level ++ str ") > ");
     flush stdout;
-    let inst = read_line () in
+    let exit () = skip:=0;allskip:=0;raise Sys.Break in
+    let inst = try read_line () with End_of_file -> exit () in
     match inst with
     | ""  -> true
     | "s" -> false
-    | "x" -> print_char (Char.chr 8);skip:=0;allskip:=0;raise Sys.Break
+    | "x" -> print_char (Char.chr 8); exit ()
     | "h"| "?" ->
       begin
         help ();

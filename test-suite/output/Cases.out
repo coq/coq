@@ -2,7 +2,7 @@ t_rect =
 fun (P : t -> Type) (f : let x := t in forall x0 : x, P x0 -> P (k x0)) =>
 fix F (t : t) : P t :=
   match t as t0 return (P t0) with
-  | k x x0 => f x0 (F x0)
+  | k _ x0 => f x0 (F x0)
   end
      : forall P : t -> Type,
        (let x := t in forall x0 : x, P x0 -> P (k x0)) -> forall t : t, P t

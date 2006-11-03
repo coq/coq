@@ -24,7 +24,7 @@ open Libnames
 
 (* declaring search depth as a global option *)
 
-let ground_depth=ref 5
+let ground_depth=ref 3
 
 let _=
   let gdopt=
@@ -34,13 +34,28 @@ let _=
       optread=(fun ()->Some !ground_depth); 
       optwrite=
    (function 
-	None->ground_depth:=5
+	None->ground_depth:=3
       |	Some i->ground_depth:=(max i 0))}
   in
     declare_int_option gdopt
-      
+
+let congruence_depth=ref 100
+
+let _=
+  let gdopt=
+    { optsync=true;
+      optname="Congruence Depth";
+      optkey=SecondaryTable("Congruence","Depth"); 
+      optread=(fun ()->Some !congruence_depth); 
+      optwrite=
+   (function 
+	None->congruence_depth:=0
+      |	Some i->congruence_depth:=(max i 0))}
+  in
+    declare_int_option gdopt
+
 let default_solver=(Tacinterp.interp <:tactic<auto with *>>)
-    
+
 let fail_solver=tclFAIL 0 (Pp.str "GTauto failed")
 		      
 type external_env=
@@ -83,14 +98,30 @@ let normalize_evaluables=
 
 TACTIC EXTEND firstorder
     [ "firstorder" tactic_opt(t) "with" ne_reference_list(l) ] -> 
-      [ gen_ground_tac true (option_app eval_tactic t) (Ids l) ]
+      [ gen_ground_tac true (option_map eval_tactic t) (Ids l) ]
 |   [ "firstorder" tactic_opt(t) "using" ne_preident_list(l) ] -> 
-      [ gen_ground_tac true (option_app eval_tactic t) (Bases l) ]
+      [ gen_ground_tac true (option_map eval_tactic t) (Bases l) ]
 |   [ "firstorder" tactic_opt(t) ] -> 
-      [ gen_ground_tac true (option_app eval_tactic t) Void ]
+      [ gen_ground_tac true (option_map eval_tactic t) Void ]
 END
 
 TACTIC EXTEND gintuition
   [ "gintuition" tactic_opt(t) ] ->
-     [ gen_ground_tac false (option_app eval_tactic t) Void ]
+     [ gen_ground_tac false (option_map eval_tactic t) Void ]
 END
+
+
+let default_declarative_automation gls = 
+  tclORELSE 
+    (Cctac.congruence_tac !congruence_depth []) 
+    (gen_ground_tac true 
+       (Some (tclTHEN
+		default_solver
+		(Cctac.congruence_tac !congruence_depth [])))
+       Void) gls
+
+
+
+let () = 
+  Decl_proof_instr.register_automation_tac default_declarative_automation
+

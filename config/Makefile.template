@@ -35,30 +35,40 @@ COQTOP=COQTOPDIRECTORY
 VERSION=COQVERSION
 
 # Directory containing Camlp4 binaries. Can be empty if camlp4 is in the PATH
-CAMLP4BIN=CAMLP4BINDIRECTORY
+CAMLP4BIN="CAMLP4BINDIRECTORY"
 
 # Ocaml version number
 CAMLVERSION=CAMLTAG
 
 # Ocaml .h directory
-CAMLHLIB=CAMLLIBDIRECTORY/caml
+CAMLHLIB="CAMLLIBDIRECTORY"/caml
 
 # Camlp4 library directory (avoid CAMLP4LIB used on Windows)
 CAMLP4O=CAMLP4TOOL
 CAMLP4COMPAT=CAMLP4COMPATFLAGS
-MYCAMLP4LIB=CAMLP4LIBDIRECTORY
+MYCAMLP4LIB="CAMLP4LIBDIRECTORY"
 
 # Objective-Caml compile command 
-OCAMLC=BYTECAMLC
-OCAMLOPT=NATIVECAMLC
+OCAMLC="BYTECAMLC"
+OCAMLOPT="NATIVECAMLC"
+OCAMLDEP="OCAMLDEPEXEC"
+OCAMLDOC="OCAMLDOCEXEC"
+OCAMLLEX="OCAMLLEXEXEC"
+OCAMLYACC="OCAMLYACCEXEC"
 
 # Caml link command and Caml make top command
-CAMLLINK=BYTECAMLC
-CAMLOPTLINK=NATIVECAMLC
-CAMLMKTOP=ocamlmktop
+CAMLLINK="BYTECAMLC"
+CAMLOPTLINK="NATIVECAMLC"
+CAMLMKTOP="CAMLMKTOPEXEC"
+
+# Caml flags
+CAMLFLAGS=CAMLANNOTATEFLAG
 
 # Compilation debug flag
 CAMLDEBUG=COQDEBUGFLAG
+
+# User compilation flag
+USERFLAGS=
 
 # Compilation profile flag
 CAMLTIMEPROF=COQPROFILEFLAG
@@ -73,6 +83,11 @@ P4DEP=$(COQTOP)/bin/$(ARCH)/camlp4dep
 # Your architecture
 # Can be obtain by UNIX command arch
 ARCH=ARCHITECTURE
+
+# Your C compiler and co
+CC="CCEXEC"
+AR="AREXEC"
+RANLIB="RANLIBEXEC"
 
 # Supplementary libs for some systems, currently:
 #  . Sun Solaris: -cclib -lunix -cclib -lnsl -cclib -lsocket
@@ -90,7 +105,7 @@ EXE=EXECUTEEXTENSION
 MKDIR=mkdir -p
 
 # where to put the coqdoc.sty style file
-COQDOCDIR=COQDOCDIRECTORY
+COQDOCDIR="COQDOCDIRECTORY"
 
 # command to update TeX' kpathsea database
 #MKTEXLSR=MKTEXLSRCOMMAND
@@ -101,11 +116,18 @@ COQDOCDIR=COQDOCDIRECTORY
 # Win32 systems: true (actually strip is bogus)
 STRIP=STRIPCOMMAND
 
+# Options for fsets (all/basic)
+FSETS=FSETSOPT
+
 # Options for reals (all/basic)
 REALS=REALSOPT
 
 # CoqIde (no/byte/opt)
 HASCOQIDE=COQIDEOPT
 
+# Defining REVISION
+CHECKEDOUT=CHECKEDOUTSOURCETREE
+
 # make or sed are bogus and believe lines not terminating by a return
 # are inexistent
+

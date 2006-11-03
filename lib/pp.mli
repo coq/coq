@@ -12,6 +12,11 @@
 open Pp_control
 (*i*)
 
+(* Modify pretty printing functions behavior for emacs ouput (special
+   chars inserted at some places). This function should called once in
+   module [Options], that's all. *)
+val make_pp_emacs:unit -> unit
+
 (* Pretty-printers. *)
 
 type ppcmd

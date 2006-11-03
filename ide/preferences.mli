@@ -52,6 +52,8 @@ type pref =
       mutable use_utf8_notation : bool;
 *)
       mutable auto_complete : bool;
+      mutable stop_before : bool;
+      mutable lax_syntax : bool;
     }
 
 val save_pref : unit -> unit

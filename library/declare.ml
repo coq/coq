@@ -150,18 +150,18 @@ let open_constant i ((sp,kn),_) =
 let cache_constant ((sp,kn),(cdt,dhyps,imps,kind)) =
   let id = basename sp in
   let _,dir,_ = repr_kn kn in
-  if Idmap.mem id !vartab then
-    errorlabstrm "cache_constant" (pr_id id ++ str " already exists");
-  if Nametab.exists_cci sp then
-    errorlabstrm "cache_constant" (pr_id id ++ str " already exists");
-  let kn' = Global.add_constant dir id cdt in
-  assert (kn' = constant_of_kn kn);
-  Nametab.push (Nametab.Until 1) sp (ConstRef (constant_of_kn kn));
-  add_section_constant kn' (Global.lookup_constant kn').const_hyps;
-  Dischargedhypsmap.set_discharged_hyps sp dhyps;
-  with_implicits imps declare_constant_implicits kn';
-  Notation.declare_ref_arguments_scope (ConstRef kn');
-  csttab := Spmap.add sp kind !csttab
+    if Idmap.mem id !vartab then
+      errorlabstrm "cache_constant" (pr_id id ++ str " already exists");
+    if Nametab.exists_cci sp then
+      errorlabstrm "cache_constant" (pr_id id ++ str " already exists");
+    let kn' = Global.add_constant dir id cdt in
+      assert (kn' = constant_of_kn kn);
+      Nametab.push (Nametab.Until 1) sp (ConstRef (constant_of_kn kn));
+      add_section_constant kn' (Global.lookup_constant kn').const_hyps;
+      Dischargedhypsmap.set_discharged_hyps sp dhyps;
+      with_implicits imps declare_constant_implicits kn';
+      Notation.declare_ref_arguments_scope (ConstRef kn');
+      csttab := Spmap.add sp kind !csttab
 
 (*s Registration as global tables and rollback. *)
 
@@ -204,7 +204,7 @@ let hcons_constant_declaration = function
       let (hcons1_constr,_) = hcons_constr (hcons_names()) in
       DefinitionEntry
        { const_entry_body = hcons1_constr ce.const_entry_body;
-	 const_entry_type = option_app hcons1_constr ce.const_entry_type;
+	 const_entry_type = option_map hcons1_constr ce.const_entry_type;
          const_entry_opaque = ce.const_entry_opaque; 
          const_entry_boxed = ce.const_entry_boxed }
   | cd -> cd

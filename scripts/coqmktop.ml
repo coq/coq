@@ -57,7 +57,7 @@ let includes () =
   List.fold_right
     (fun d l -> "-I" :: List.fold_left Filename.concat !src_coqtop d :: l)
     (src_dirs ())
-    (["-I"; Coq_config.camlp4lib] @ 
+    (["-I"; "\""; Coq_config.camlp4lib; "\""] @ 
      (if !coqide then ["-thread"; "-I"; "+lablgtk2"] else []))
 
 (* Transform bytecode object file names in native object file names *)
@@ -166,7 +166,7 @@ let parse_args () =
         parse ((List.rev(List.flatten (List.map (fun d -> ["-I";d])
 					 (all_subdirs a))))@op,fl) rem
     | "-R" :: [] -> usage ()
-    | ("-noassert"|"-compact"|"-g"|"-p"|"-thread" as o) :: rem ->
+    | ("-noassert"|"-compact"|"-g"|"-p"|"-thread"|"-dtypes" as o) :: rem ->
         parse (o::op,fl) rem
     | ("-h"|"--help") :: _ -> usage ()
     | f :: rem ->
@@ -279,11 +279,13 @@ let main () =
     if !opt then begin
       (* native code *)
       if !top then failwith "no custom toplevel in native code !";
-      "ocamlopt -linkall"
+      let ocamloptexec = Filename.concat Coq_config.camldir "ocamlopt" in
+        ocamloptexec^" -linkall"
     end else
       (* bytecode (we shunt ocamlmktop script which fails on win32) *)
       let ocamlmktoplib = " toplevellib.cma" in
-      let ocamlccustom = "ocamlc -custom -linkall" in
+      let ocamlcexec = Filename.concat Coq_config.camldir "ocamlc" in
+      let ocamlccustom = ocamlcexec^" -custom -linkall" in
       (if !top then ocamlccustom^ocamlmktoplib else ocamlccustom)
   in
   (* files to link *)

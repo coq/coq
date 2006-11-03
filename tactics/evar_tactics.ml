@@ -23,7 +23,7 @@ open Termops
 let evar_list evc c = 
   let rec evrec acc c =
     match kind_of_term c with
-    | Evar (n, _) when Evd.in_dom evc n -> c :: acc
+    | Evar (n, _) when Evd.mem evc n -> c :: acc
     | _ -> fold_constr evrec acc c
   in 
     evrec [] c
@@ -51,7 +51,7 @@ let instantiate n rawc ido gl =
       error "not enough uninstantiated existential variables";
     if n <= 0 then error "incorrect existential variable index";
     let ev,_ =  destEvar (List.nth evl (n-1)) in
-    let evd' = w_refine (pf_env gl) ev rawc (create_evar_defs sigma)  in
+    let evd' = w_refine ev rawc (create_evar_defs sigma)  in
     Refiner.tclEVARS (evars_of evd') gl
 	
 (*

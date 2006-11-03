@@ -74,7 +74,7 @@ val error_incompatible_labels : label -> label -> 'a
 
 val error_no_such_label : label -> 'a
 
-val error_result_must_be_signature : module_type_body -> 'a
+val error_result_must_be_signature : unit -> 'a
 
 val error_signature_expected : module_type_body -> 'a
 

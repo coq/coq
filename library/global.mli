@@ -63,20 +63,13 @@ val set_engagement : engagement -> unit
 (* [start_*] functions return the [module_path] valid for components
    of the started module / module type *)
 
-val start_module : 
-  identifier -> (mod_bound_id * module_type_entry) list 
-    -> module_type_entry option 
-      -> module_path
+val start_module : identifier -> module_path
+val end_module : identifier -> module_type_entry option -> module_path
 
-val end_module :
-  identifier -> module_path
+val add_module_parameter : mod_bound_id -> module_type_entry -> unit
 
-val start_modtype :
-  identifier -> (mod_bound_id * module_type_entry) list
-    -> module_path
-
-val end_modtype :
-  identifier -> kernel_name
+val start_modtype : identifier -> module_path
+val end_modtype : identifier -> kernel_name
 
 
 (* Queries *)

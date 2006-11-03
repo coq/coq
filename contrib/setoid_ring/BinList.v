@@ -1,46 +1,36 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+
 Set Implicit Arguments.
 Require Import BinPos.
+Require Export List.
+Require Export ListTactics.
 Open Scope positive_scope.
 
+Section MakeBinList.
+ Variable A : Type.
+ Variable default : A.
 
-Section LIST.
-
- Variable A:Type.
- Variable default:A.
-
- Inductive list : Type :=
-  | nil : list
-  | cons : A -> list -> list.
-  
- Infix "::" := cons (at level 60, right associativity).
-
- Definition hd l := match l with hd :: _ => hd | _ => default end. 
-
- Definition tl l := match l with _ :: tl => tl | _ => nil end. 
-
- Fixpoint jump (p:positive) (l:list) {struct p} : list :=
+ Fixpoint jump (p:positive) (l:list A) {struct p} : list A :=
   match p with
-  | xH => tl l
+  | xH => tail l
   | xO p => jump p (jump p l)
-  | xI p  => jump p (jump p (tl l))
+  | xI p  => jump p (jump p (tail l))
   end.
 
- Fixpoint nth (p:positive) (l:list) {struct p} : A:=
+ Fixpoint nth (p:positive) (l:list A) {struct p} : A:=
   match p with
-  | xH => hd l
+  | xH => hd default l
   | xO p => nth p (jump p l)
-  | xI p => nth p (jump p (tl l))
+  | xI p => nth p (jump p (tail l))
   end. 
 
- Fixpoint rev_append (rev l : list) {struct l} : list :=
-  match l with
-  | nil => rev
-  | (cons h t) => rev_append (cons h rev) t 
-  end.
- 
- Definition rev l : list := rev_append nil l.
-
- Lemma jump_tl : forall j l, tl (jump j l) = jump j (tl l).
+ Lemma jump_tl : forall j l, tail (jump j l) = jump j (tail l).
  Proof. 
   induction j;simpl;intros.
   repeat rewrite IHj;trivial.
@@ -71,7 +61,7 @@ Section LIST.
  Qed.
 
  Lemma jump_Pdouble_minus_one : forall i l,
-  (jump (Pdouble_minus_one i) (tl l)) = (jump i (jump i l)).
+  (jump (Pdouble_minus_one i) (tail l)) = (jump i (jump i l)).
  Proof.
   induction i;intros;simpl.
   repeat rewrite jump_tl;trivial.
@@ -80,7 +70,7 @@ Section LIST.
  Qed.
 
  
- Lemma nth_jump : forall p l, nth p (tl l) = hd (jump p l).
+ Lemma nth_jump : forall p l, nth p (tail l) = hd default (jump p l).
  Proof.
   induction p;simpl;intros.
   rewrite <-jump_tl;rewrite IHp;trivial.
@@ -89,7 +79,7 @@ Section LIST.
  Qed.
 
  Lemma nth_Pdouble_minus_one :
-  forall p l, nth (Pdouble_minus_one p) (tl l) = nth p (jump p l).
+  forall p l, nth (Pdouble_minus_one p) (tail l) = nth p (jump p l).
  Proof.
   induction p;simpl;intros.
   repeat rewrite jump_tl;trivial.
@@ -98,4 +88,4 @@ Section LIST.
   trivial.
  Qed.
 
-End LIST.
+End MakeBinList.

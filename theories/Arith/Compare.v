@@ -9,18 +9,14 @@
 (*i $Id$ i*)
 
 (** Equality is decidable on [nat] *)
+
 Open Local Scope nat_scope.
 
-(*
-Lemma not_eq_sym : (A:Set)(p,q:A)(~p=q) -> ~(q=p).
-Proof sym_not_eq.
-Hints Immediate not_eq_sym : arith.
-*)
 Notation not_eq_sym := sym_not_eq.
 
 Implicit Types m n p q : nat.
 
-Require Import Arith.
+Require Import Arith_base.
 Require Import Peano_dec.
 Require Import Compare_dec.
 
@@ -41,17 +37,17 @@ Proof le_lt_or_eq.
 
 (* By special request of G. Kahn - Used in Group Theory *)
 Lemma discrete_nat :
- forall n m, n < m -> S n = m \/ (exists r : nat, m = S (S (n + r))).
+  forall n m, n < m -> S n = m \/ (exists r : nat, m = S (S (n + r))).
 Proof.
-intros m n H.
-lapply (lt_le_S m n); auto with arith.
-intro H'; lapply (le_lt_or_eq (S m) n); auto with arith.
-induction 1; auto with arith.
-right; exists (n - S (S m)); simpl in |- *.
-rewrite (plus_comm m (n - S (S m))).
-rewrite (plus_n_Sm (n - S (S m)) m).
-rewrite (plus_n_Sm (n - S (S m)) (S m)).
-rewrite (plus_comm (n - S (S m)) (S (S m))); auto with arith.
+  intros m n H.
+  lapply (lt_le_S m n); auto with arith.
+  intro H'; lapply (le_lt_or_eq (S m) n); auto with arith.
+  induction 1; auto with arith.
+  right; exists (n - S (S m)); simpl in |- *.
+  rewrite (plus_comm m (n - S (S m))).
+  rewrite (plus_n_Sm (n - S (S m)) m).
+  rewrite (plus_n_Sm (n - S (S m)) (S m)).
+  rewrite (plus_comm (n - S (S m)) (S (S m))); auto with arith.
 Qed.
 
 Require Export Wf_nat.

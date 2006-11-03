@@ -43,6 +43,31 @@ let and_status = List.fold_left (+) 0
 let pf_env gls = Global.env_of_context (sig_it gls).evar_hyps
 let pf_hyps gls = named_context_of_val (sig_it gls).evar_hyps
 
+
+let descend n p =
+  match p.ref with
+    | None        -> error "It is a leaf."
+    | Some(r,pfl) ->
+    	if List.length pfl >= n then
+	  (match list_chop (n-1) pfl with 
+	     | left,(wanted::right) ->
+		 (wanted,
+		  (fun pfl' ->
+                     if (List.length pfl' = 1) 
+		       & (List.hd pfl').goal = wanted.goal 
+		     then
+                       let pf'       = List.hd pfl' in
+                       let spfl      = left@(pf'::right) in
+                       let newstatus = and_status (List.map pf_status spfl) in
+                       { p with 
+			   open_subgoals = newstatus;
+			   ref           = Some(r,spfl) }
+                     else 
+		       error "descend: validation"))
+	     | _ -> assert false)
+    	else 
+	  error "Too few subproofs"
+
 (* Normalizing evars in a goal. Called by tactic Local_constraints
    (i.e. when the sigma of the proof tree changes). Detect if the
    goal is unchanged *)
@@ -50,10 +75,10 @@ let norm_goal sigma gl =
   let red_fun = Evarutil.nf_evar sigma in
   let ncl = red_fun gl.evar_concl in
   let ngl =
-    { evar_concl = ncl;
-      evar_hyps = map_named_val red_fun gl.evar_hyps; 
-      evar_body = gl.evar_body} in
-  if Evd.eq_evar_info ngl gl then None else Some ngl
+    { gl with 
+	evar_concl = ncl;
+	evar_hyps = map_named_val red_fun gl.evar_hyps } in
+    if Evd.eq_evar_info ngl gl then None else Some ngl
 
 
 (* [mapshape [ l1 ; ... ; lk ] [ v1 ; ... ; vk ] [ p_1 ; .... ; p_(l1+...+lk) ]]
@@ -91,9 +116,9 @@ let rec frontier p =
     	(List.flatten gll,
          (fun retpfl ->
             let pfl' = mapshape (List.map List.length gll) vl retpfl in
-            { open_subgoals = and_status (List.map pf_status pfl');
-              goal = p.goal;
-              ref = Some(r,pfl')}))
+              { p with
+		  open_subgoals = and_status (List.map pf_status pfl');
+		  ref = Some(r,pfl')}))
 
 
 let rec frontier_map_rec f n p =
@@ -111,9 +136,9 @@ let rec frontier_map_rec f n p =
             (fun (n,acc) p -> (n-p.open_subgoals,frontier_map_rec f n p::acc))
             (n,[]) pfl in
         let pfl' = List.rev rpfl' in
-        { open_subgoals = and_status (List.map pf_status pfl');
-          goal = p.goal;
-          ref = Some(r,pfl')}
+        { p with
+	    open_subgoals = and_status (List.map pf_status pfl');
+            ref = Some(r,pfl')}
 
 let frontier_map f n p =
   let nmax = p.open_subgoals in
@@ -137,9 +162,9 @@ let rec frontier_mapi_rec f i p =
             (fun (n,acc) p -> (n+p.open_subgoals,frontier_mapi_rec f n p::acc))
             (i,[]) pfl in
         let pfl' = List.rev rpfl' in
-        { open_subgoals = and_status (List.map pf_status pfl');
-          goal = p.goal;
-          ref = Some(r,pfl')}
+        { p with 
+	    open_subgoals = and_status (List.map pf_status pfl');
+            ref = Some(r,pfl')}
 
 let frontier_mapi f p = frontier_mapi_rec f 1 p
 
@@ -152,50 +177,35 @@ let rec nb_unsolved_goals pf = pf.open_subgoals
 
 (* leaf g is the canonical incomplete proof of a goal g *)
 
-let leaf g = {
-  open_subgoals = 1;
-  goal = g;
-  ref = None }
-
-(* Tactics table. *)
-
-let tac_tab = Hashtbl.create 17
-
-let add_tactic s t =
-  if Hashtbl.mem tac_tab s then
-    errorlabstrm ("Refiner.add_tactic: ") 
-      (str ("Cannot redeclare tactic "^s));
-  Hashtbl.add tac_tab s t
-
-let overwriting_add_tactic s t =
-  if Hashtbl.mem tac_tab s then begin
-    Hashtbl.remove tac_tab s;
-    warning ("Overwriting definition of tactic "^s)
-  end;
-  Hashtbl.add tac_tab s t
-
-let lookup_tactic s =
-  try 
-    Hashtbl.find tac_tab s
-  with Not_found -> 
-    errorlabstrm "Refiner.lookup_tactic"
-      (str"The tactic " ++ str s ++ str" is not installed")
-
+let leaf g = 
+  { open_subgoals = 1;
+    goal = g;
+    ref = None }
 
 (* refiner r is a tactic applying the rule r *)
 
 let check_subproof_connection gl spfl =
   list_for_all2eq (fun g pf -> Evd.eq_evar_info g pf.goal) gl spfl
 
-let abstract_tactic_expr te tacfun gls =
-  let (sgl_sigma,v) = tacfun gls in
-  let hidden_proof = v (List.map leaf sgl_sigma.it) in
+
+let abstract_operation syntax semantics gls =
+  let (sgl_sigma,validation) = semantics gls in
+  let hidden_proof = validation (List.map leaf sgl_sigma.it) in
   (sgl_sigma,
    fun spfl ->
      assert (check_subproof_connection sgl_sigma.it spfl);
      { open_subgoals = and_status (List.map pf_status spfl);
        goal = gls.it;
-       ref = Some(Tactic(te,hidden_proof),spfl) })
+       ref = Some(Nested(syntax,hidden_proof),spfl)})
+
+let abstract_tactic_expr ?(dflt=false) te tacfun gls =
+  abstract_operation (Tactic(te,dflt)) tacfun gls	
+
+let abstract_tactic ?(dflt=false) te =
+  abstract_tactic_expr ~dflt (Tacexpr.TacAtom (dummy_loc,te))
+
+let abstract_extended_tactic ?(dflt=false) s args = 
+  abstract_tactic ~dflt (Tacexpr.TacExtend (dummy_loc, s, args))
 
 let refiner = function
   | Prim pr as r ->
@@ -209,8 +219,21 @@ let refiner = function
                goal = goal_sigma.it;
                ref = Some(r,spfl) })))
 
-  | Tactic _ -> failwith "Refiner: should not occur"
+
+  | Nested (_,_) | Decl_proof _ -> 
+      failwith "Refiner: should not occur"
       
+	(* Daimon is a canonical unfinished proof *)
+
+  | Daimon -> 
+      fun gls -> 
+	({it=[];sigma=gls.sigma},  
+	 fun spfl -> 
+	   assert (spfl=[]);
+	   { open_subgoals = 0;
+             goal = gls.it;
+             ref = Some(Daimon,[])})
+
    (* [Local_constraints lc] makes the local constraints be [lc] and
       normalizes evars *)
 
@@ -237,19 +260,11 @@ let local_Constraints gl = refiner Change_evars gl
 
 let norm_evar_tac = local_Constraints
 
-(*
-let vernac_tactic (s,args) =
-  let tacfun = lookup_tactic s args in
-  abstract_extra_tactic s args tacfun
-*)
-let abstract_tactic te = abstract_tactic_expr (Tacexpr.TacAtom (dummy_loc,te))
-
-let abstract_extended_tactic s args = 
-  abstract_tactic (Tacexpr.TacExtend (dummy_loc, s, args))
-
-let vernac_tactic (s,args) =
-  let tacfun = lookup_tactic s args in
-  abstract_extended_tactic s args tacfun
+let norm_evar_proof sigma pf =
+  let nf_subgoal i sgl =
+    let (gll,v) = norm_evar_tac {it=sgl.goal;sigma=sigma} in
+    v (List.map leaf gll.it) in
+  frontier_mapi nf_subgoal pf
 
 (* [extract_open_proof : proof_tree -> constr * (int * constr) list]
   takes a (not necessarly complete) proof and gives a pair (pfterm,obl)
@@ -263,7 +278,7 @@ let extract_open_proof sigma pf =
     let meta_cnt = ref 0 in
     let rec f () =
       incr meta_cnt; 
-      if in_dom sigma (existential_of_int !meta_cnt) then f ()
+      if Evd.mem sigma (existential_of_int !meta_cnt) then f ()
       else !meta_cnt
     in f
   in
@@ -271,18 +286,20 @@ let extract_open_proof sigma pf =
   let rec proof_extractor vl = function
     | {ref=Some(Prim _,_)} as pf -> prim_extractor proof_extractor vl pf
 	  
-    | {ref=Some(Tactic (_,hidden_proof),spfl)} ->
+    | {ref=Some(Nested(_,hidden_proof),spfl)} ->
 	let sgl,v = frontier hidden_proof in
 	let flat_proof = v spfl in
 	proof_extractor vl flat_proof
-	  
+ 
     | {ref=Some(Change_evars,[pf])} -> (proof_extractor vl) pf
+
+    | {ref=Some(Decl_proof _,[pf])} -> (proof_extractor vl) pf
 	  
-    | {ref=None;goal=goal} ->
+    | {ref=(None|Some(Daimon,[]));goal=goal} ->
 	let visible_rels =
           map_succeed
             (fun id ->
-               try let n = list_index id vl in (n,id)
+               try let n = proof_variable_index id vl in (n,id)
 	       with Not_found -> failwith "caught")
             (ids_of_named_context (named_context_of_val goal.evar_hyps)) in
 	let sorted_rels =
@@ -555,6 +572,8 @@ let tclIFTHENSELSE=ite_gen tclTHENS
 
 let tclIFTHENSVELSE=ite_gen tclTHENSV
 
+let tclIFTHENTRYELSEMUST tac1 tac2 gl = 
+  tclIFTHENELSE tac1 (tclTRY tac2) tac2 gl
 
 (* Fails if a tactic did not solve the goal *)
 let tclCOMPLETE tac = tclTHEN tac (tclFAIL_s "Proof is not complete.")
@@ -633,7 +652,6 @@ let tactic_list_tactic tac gls =
 
 
 
-
 (* The type of proof-trees state and a few utilities 
    A proof-tree state is built from a proof-tree, a set of global
    constraints, and a stack which allows to navigate inside the
@@ -665,41 +683,19 @@ let nth_goal_of_pftreestate n pts =
   try {it = List.nth goals (n-1); sigma = pts.tpfsigma }
   with Invalid_argument _ | Failure _ -> non_existent_goal n
 
-let descend n p =
-  match p.ref with
-    | None        -> error "It is a leaf."
-    | Some(r,pfl) ->
-    	if List.length pfl >= n then
-	  (match list_chop (n-1) pfl with 
-	     | left,(wanted::right) ->
-		 (wanted,
-		  (fun pfl' ->
-                     if (List.length pfl' = 1) 
-		       & (List.hd pfl').goal = wanted.goal 
-		     then
-                       let pf'       = List.hd pfl' in
-                       let spfl      = left@(pf'::right) in
-                       let newstatus = and_status (List.map pf_status spfl) in
-                       { open_subgoals = newstatus;
-			 goal          = p.goal;
-			 ref           = Some(r,spfl) }
-                     else 
-		       error "descend: validation"))
-	     | _ -> assert false)
-    	else 
-	  error "Too few subproofs"
-
 let traverse n pts = match n with 
   | 0 -> (* go to the parent *)
       (match  pts.tstack with
 	 | [] -> error "traverse: no ancestors"
 	 | (_,v)::tl ->
-	     { tpf = v [pts.tpf];
+             let pf = v [pts.tpf] in
+             let pf = norm_evar_proof pts.tpfsigma pf in
+	     { tpf = pf;
 	       tstack = tl;
 	       tpfsigma = pts.tpfsigma })
   | -1 -> (* go to the hidden tactic-proof, if any, otherwise fail *)
       (match pts.tpf.ref with
-	 | Some (Tactic (_,spf),_) ->
+	 | Some (Nested (_,spf),_) ->
 	     let v = (fun pfl -> pts.tpf) in 
 	     { tpf = spf;
                tstack = (-1,v)::pts.tstack;
@@ -718,17 +714,23 @@ let app_tac sigr tac p =
   sigr := gll.sigma;
   v (List.map leaf gll.it)
 
-(* solve the nth subgoal with tactic tac *)
-let solve_nth_pftreestate n tac pts =
+(* modify proof state at current position *)
+
+let map_pftreestate f pts =
   let sigr = ref pts.tpfsigma in
-  let tpf' = frontier_map (app_tac sigr tac) n pts.tpf in
+  let tpf' = f sigr pts.tpf in
   let tpf'' =
-    if !sigr == pts.tpfsigma then tpf'
-    else frontier_mapi (fun _ g -> app_tac sigr norm_evar_tac g) tpf' in
+    if !sigr == pts.tpfsigma then tpf' else norm_evar_proof !sigr tpf' in
   { tpf      = tpf'';
     tpfsigma = !sigr;
     tstack   = pts.tstack }
 
+(* solve the nth subgoal with tactic tac *)
+
+let solve_nth_pftreestate n tac =
+  map_pftreestate 
+    (fun sigr pt -> frontier_map (app_tac sigr tac) n pt)
+ 
 let solve_pftreestate = solve_nth_pftreestate 1
 
 (* This function implements a poor man's undo at the current goal.
@@ -768,7 +770,7 @@ let extract_pftreestate pts =
       else
         str "Attempt to save a proof with existential variables still non-instantiated");
   let env = Global.env_of_context pts.tpf.goal.evar_hyps in
-  strong whd_betaiotaevar_preserving_vm_cast env pts.tpfsigma pfterm
+  nf_betaiotaevar_preserving_vm_cast env pts.tpfsigma pfterm
   (* strong whd_betaiotaevar env pts.tpfsigma pfterm *)
   (***
   local_strong (Evarutil.whd_ise (ts_it pts.tpfsigma)) pfterm
@@ -880,6 +882,38 @@ let prev_unproven pts =
 let rec top_of_tree pts = 
   if is_top_pftreestate pts then pts else top_of_tree(traverse 0 pts)
 
+let change_rule f pts =
+  let mark_top _ pt =
+    match pt.ref with
+	Some (oldrule,l) -> 
+	  {pt with ref=Some (f oldrule,l)}
+      | _ -> invalid_arg "change_rule" in
+    map_pftreestate mark_top pts
+
+let match_rule p pts =
+  match (proof_of_pftreestate pts).ref with
+      Some (r,_) -> p r
+    | None -> false
+
+let rec up_until_matching_rule p pts = 
+  if is_top_pftreestate pts then 
+    raise Not_found
+  else
+    let one_up = traverse 0 pts in
+      if match_rule p one_up then 
+	pts
+      else
+	up_until_matching_rule p one_up
+
+let rec up_to_matching_rule p pts = 
+  if match_rule p pts then 
+    pts
+  else
+    if is_top_pftreestate pts then 
+      raise Not_found
+    else
+      let one_up = traverse 0 pts in
+      	up_to_matching_rule p one_up
 
 (* Change evars *)
 let tclEVARS sigma gls = tclIDTAC {gls with sigma=sigma}

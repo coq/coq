@@ -50,7 +50,7 @@ let make_terminal_status = function
 let rec make_tags lev = function
   | VTerm s :: l -> make_tags lev l
   | VNonTerm (loc, nt, po) :: l ->
-      let (etyp, _) = Egrammar.interp_entry_name lev "tactic" nt in
+      let (etyp, _) = Egrammar.interp_entry_name lev nt in
       etyp :: make_tags lev l
   | [] -> []
 
@@ -112,6 +112,8 @@ let print_grammar univ = function
   | "tactic" -> 
       msgnl (str "Entry tactic_expr is");
       Gram.Entry.print Pcoq.Tactic.tactic_expr;
+      msgnl (str "Entry binder_tactic is");
+      Gram.Entry.print Pcoq.Tactic.binder_tactic;
       msgnl (str "Entry simple_tactic is");
       Gram.Entry.print Pcoq.Tactic.simple_tactic;
   | "vernac" -> 
@@ -399,6 +401,10 @@ let is_operator s =
    s.[0] = '-' or s.[0] = '/' or s.[0] = '<' or s.[0] = '>' or
    s.[0] = '@' or s.[0] = '\\' or s.[0] = '&' or s.[0] = '~')
 
+let is_prod_ident = function
+  | Terminal s when is_letter s.[0] or s.[0] = '_' -> true
+  | _ -> false
+
 let rec is_non_terminal = function
   | NonTerminal _ | SProdList _ -> true
   | _ -> false
@@ -437,10 +443,11 @@ let make_hunks etyps symbols from =
 	  else 
 	    UnpTerminal s :: add_break 1 (make NoBreak prods)
 	else if is_ident_tail s.[String.length s - 1] then
+	  let sep = if is_prod_ident (List.hd prods) then "" else " " in
 	  if ws = CanBreak then
-	    add_break 1 (UnpTerminal (s^" ") :: make CanBreak prods)
+	    add_break 1 (UnpTerminal (s^sep) :: make CanBreak prods)
 	  else
-	    UnpTerminal (s^" ") :: make CanBreak prods
+	    UnpTerminal (s^sep) :: make CanBreak prods
 	else if ws = CanBreak then
 	  add_break 1 (UnpTerminal (s^" ") :: make CanBreak prods)
 	else

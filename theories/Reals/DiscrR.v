@@ -12,7 +12,7 @@ Require Import RIneq.
 Require Import Omega. Open Local Scope R_scope.
 
 Lemma Rlt_R0_R2 : 0 < 2.
-replace 2 with (INR 2); [ apply lt_INR_0; apply lt_O_Sn | reflexivity ].
+change 2 with (INR 2); apply lt_INR_0; apply lt_O_Sn.
 Qed.
 
 Lemma Rplus_lt_pos : forall x y:R, 0 < x -> 0 < y -> 0 < x + y.
@@ -36,17 +36,14 @@ Ltac discrR :=
   try
    match goal with
    |  |- (?X1 <> ?X2) =>
-       replace 2 with (IZR 2);
-        [ replace 1 with (IZR 1);
-           [ replace 0 with (IZR 0);
-              [ repeat
-                 rewrite <- plus_IZR ||
-                   rewrite <- mult_IZR ||
-                     rewrite <- Ropp_Ropp_IZR || rewrite Z_R_minus;
-                 apply IZR_neq; try discriminate
-              | reflexivity ]
-           | reflexivity ]
-        | reflexivity ]
+       change 2 with (IZR 2);
+       change 1 with (IZR 1);
+       change 0 with (IZR 0);
+       repeat
+         rewrite <- plus_IZR ||
+           rewrite <- mult_IZR ||
+           rewrite <- Ropp_Ropp_IZR || rewrite Z_R_minus;
+       apply IZR_neq; try discriminate
    end.
 
 Ltac prove_sup0 :=
@@ -60,17 +57,13 @@ Ltac prove_sup0 :=
   end.
 
 Ltac omega_sup :=
-  replace 2 with (IZR 2);
-   [ replace 1 with (IZR 1);
-      [ replace 0 with (IZR 0);
-         [ repeat
-            rewrite <- plus_IZR ||
-              rewrite <- mult_IZR ||
-                rewrite <- Ropp_Ropp_IZR || rewrite Z_R_minus; 
-            apply IZR_lt; omega
-         | reflexivity ]
-      | reflexivity ]
-   | reflexivity ].
+  change 2 with (IZR 2);
+  change 1 with (IZR 1);
+  change 0 with (IZR 0);
+  repeat
+    rewrite <- plus_IZR ||
+      rewrite <- mult_IZR || rewrite <- Ropp_Ropp_IZR || rewrite Z_R_minus; 
+  apply IZR_lt; omega.
   
 Ltac prove_sup :=
   match goal with
@@ -84,14 +77,10 @@ Ltac prove_sup :=
   end.
 
 Ltac Rcompute :=
-  replace 2 with (IZR 2);
-   [ replace 1 with (IZR 1);
-      [ replace 0 with (IZR 0);
-         [ repeat
-            rewrite <- plus_IZR ||
-              rewrite <- mult_IZR ||
-                rewrite <- Ropp_Ropp_IZR || rewrite Z_R_minus; 
-            apply IZR_eq; try reflexivity
-         | reflexivity ]
-      | reflexivity ]
-   | reflexivity ].
+  change 2 with (IZR 2);
+  change 1 with (IZR 1);
+  change 0 with (IZR 0);
+  repeat
+    rewrite <- plus_IZR ||
+      rewrite <- mult_IZR || rewrite <- Ropp_Ropp_IZR || rewrite Z_R_minus; 
+  apply IZR_eq; try reflexivity.

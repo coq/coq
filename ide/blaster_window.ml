@@ -77,22 +77,17 @@ object(self)
   val blaster_killed = Condition.create () 
   method blaster_killed = blaster_killed
   method window = window
-  method set
-    root
-    name
-    (compute:unit -> Coq.tried_tactic) 
-    (on_click:unit -> unit) 
-    = 
+  method set root name (compute:unit -> Coq.tried_tactic) (on_click:unit -> unit) = 
     let root_iter = 
       try Hashtbl.find roots root 
       with Not_found -> 
 	let nr = new_arg root in
-	Hashtbl.add roots root nr;
-	nr
+	  Hashtbl.add roots root nr;
+	  nr
     in
     let nt = new_tac root_iter name in
     let old_val = try MyMap.find root tbl with Not_found -> MyMap.empty in
-    tbl <- MyMap.add root (MyMap.add name (nt,compute,on_click) old_val) tbl
+      tbl <- MyMap.add root (MyMap.add name (nt,compute,on_click) old_val) tbl
 
   method clear () = 
     model#clear ();      
@@ -107,20 +102,20 @@ object(self)
 	   MyMap.iter 
 	     (fun name (nt,compute,on_click) ->  
 		match compute () with 
-		| Coq.Interrupted -> 
-		    prerr_endline "Interrupted";
-		    raise Stop
-		| Coq.Failed -> 
-		    prerr_endline "Failed";
-		    ignore (model#remove nt)
-		      (*	       model#set ~row:nt ~column:status false;
+		  | Coq.Interrupted -> 
+		      prerr_endline "Interrupted";
+		      raise Stop
+		  | Coq.Failed -> 
+		      prerr_endline "Failed";
+		      ignore (model#remove nt)
+			(*	       model#set ~row:nt ~column:status false;
 				       model#set ~row:nt ~column:nb_goals "N/A"
-		      *)
-		| Coq.Success n -> 
-		    prerr_endline "Success";
-		    model#set ~row:nt ~column:status true;
-		    model#set ~row:nt ~column:nb_goals (string_of_int n);
-		    if n= -1 then raise Done 
+			*)
+		  | Coq.Success n -> 
+		      prerr_endline "Success";
+		      model#set ~row:nt ~column:status true;
+		      model#set ~row:nt ~column:nb_goals (string_of_int n);
+		      if n= -1 then raise Done 
 	     )
 	     l
 	 with Done -> ())

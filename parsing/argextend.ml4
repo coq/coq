@@ -30,7 +30,6 @@ let rec make_rawwit loc = function
   | ConstrArgType -> <:expr< Genarg.rawwit_constr >>
   | ConstrMayEvalArgType -> <:expr< Genarg.rawwit_constr_may_eval >>
   | QuantHypArgType -> <:expr< Genarg.rawwit_quant_hyp >>
-  | TacticArgType n -> <:expr< Genarg.rawwit_tactic $mlexpr_of_int n$ >>
   | RedExprArgType -> <:expr< Genarg.rawwit_red_expr >>
   | OpenConstrArgType b -> <:expr< Genarg.rawwit_open_constr_gen $mlexpr_of_bool b$ >>
   | ConstrWithBindingsArgType -> <:expr< Genarg.rawwit_constr_with_bindings >>
@@ -56,7 +55,6 @@ let rec make_globwit loc = function
   | SortArgType -> <:expr< Genarg.globwit_sort >>
   | ConstrArgType -> <:expr< Genarg.globwit_constr >>
   | ConstrMayEvalArgType -> <:expr< Genarg.globwit_constr_may_eval >>
-  | TacticArgType n -> <:expr< Genarg.globwit_tactic  $mlexpr_of_int n$ >>
   | RedExprArgType -> <:expr< Genarg.globwit_red_expr >>
   | OpenConstrArgType b -> <:expr< Genarg.globwit_open_constr_gen $mlexpr_of_bool b$ >>
   | ConstrWithBindingsArgType -> <:expr< Genarg.globwit_constr_with_bindings >>
@@ -82,7 +80,6 @@ let rec make_wit loc = function
   | SortArgType -> <:expr< Genarg.wit_sort >>
   | ConstrArgType -> <:expr< Genarg.wit_constr >>
   | ConstrMayEvalArgType -> <:expr< Genarg.wit_constr_may_eval >>
-  | TacticArgType n -> <:expr< Genarg.wit_tactic $mlexpr_of_int n$ >>
   | RedExprArgType -> <:expr< Genarg.wit_red_expr >>
   | OpenConstrArgType b -> <:expr< Genarg.wit_open_constr_gen $mlexpr_of_bool b$ >>
   | ConstrWithBindingsArgType -> <:expr< Genarg.wit_constr_with_bindings >>
@@ -179,38 +176,6 @@ let declare_vernac_argument loc s cl =
 
 open Vernacexpr
 open Pcoq
-
-let rec interp_entry_name loc s =
-  let l = String.length s in
-  if l > 8 & String.sub s 0 3 = "ne_" & String.sub s (l-5) 5 = "_list" then
-    let t, g = interp_entry_name loc (String.sub s 3 (l-8)) in
-    List1ArgType t, <:expr< Gramext.Slist1 $g$ >>
-  else if l > 5 & String.sub s (l-5) 5 = "_list" then
-    let t, g = interp_entry_name loc (String.sub s 0 (l-5)) in
-    List0ArgType t, <:expr< Gramext.Slist0 $g$ >>
-  else if l > 4 & String.sub s (l-4) 4 = "_opt" then
-    let t, g = interp_entry_name loc (String.sub s 0 (l-4)) in
-    OptArgType t, <:expr< Gramext.Sopt $g$ >>
-  else 
-    let t, se =
-      match Pcoq.entry_type (Pcoq.get_univ "prim") s with
-	| Some _ as x -> x, <:expr< Prim. $lid:s$ >>
-	| None -> 
-      match Pcoq.entry_type (Pcoq.get_univ "constr") s with
-	| Some _ as x -> x, <:expr< Constr. $lid:s$ >>
-	| None -> 
-      match Pcoq.entry_type (Pcoq.get_univ "tactic") s with
-	| Some _ as x -> x, <:expr< Tactic. $lid:s$ >>
-	| None -> None, <:expr< $lid:s$ >> in
-    let t =
-      match t with
-	| Some t -> t
-	| None ->
-(*	    Pp.warning_with Pp_control.err_ft
-            ("Unknown primitive grammar entry: "^s);*)
-	    ExtraArgType s
-    in t, <:expr< Gramext.Snterm (Pcoq.Gram.Entry.obj $se$) >>
-
 open Pcaml
 
 EXTEND
@@ -248,7 +213,7 @@ EXTEND
       [ e = argtype; LIDENT "list" -> List0ArgType e
       | e = argtype; LIDENT "option" -> OptArgType e ]
     | "0"
-      [ e = LIDENT -> fst (interp_entry_name loc e) 
+      [ e = LIDENT -> fst (interp_entry_name loc e "")
       | "("; e = argtype; ")" -> e ] ]
   ;
   argrule:
@@ -256,7 +221,9 @@ EXTEND
   ;
   genarg:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
-        let t, g = interp_entry_name loc e in (g, Some (s,t))
+        let t, g = interp_entry_name loc e "" in (g, Some (s,t))
+      | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
+        let t, g = interp_entry_name loc e sep in (g, Some (s,t))
       | s = STRING ->
 	  if String.length s > 0 && Util.is_letter s.[0] then
 	    Pcoq.lexer.Token.using ("", s);

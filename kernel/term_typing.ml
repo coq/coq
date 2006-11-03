@@ -23,7 +23,20 @@ open Indtypes
 open Typeops
 
 let constrain_type env j cst1 = function
-  | None -> j.uj_type, cst1
+  | None ->
+(* To have definitions in Type polymorphic
+      make_polymorphic_if_arity env j.uj_type, cst1
+*) 
+      NonPolymorphicType j.uj_type, cst1
+  | Some t -> 
+      let (tj,cst2) = infer_type env t in
+      let (_,cst3) = judge_of_cast env j DEFAULTcast tj in
+      assert (t = tj.utj_val);
+      NonPolymorphicType t, Constraint.union (Constraint.union cst1 cst2) cst3
+
+let local_constrain_type env j cst1 = function
+  | None ->
+      j.uj_type, cst1
   | Some t -> 
       let (tj,cst2) = infer_type env t in
       let (_,cst3) = judge_of_cast env j DEFAULTcast tj in
@@ -32,7 +45,7 @@ let constrain_type env j cst1 = function
 
 let translate_local_def env (b,topt) =
   let (j,cst) = infer env b in
-  let (typ,cst) = constrain_type env j cst topt in
+  let (typ,cst) = local_constrain_type env j cst topt in
     (j.uj_val,typ,cst)
 
 let translate_local_assum env t =
@@ -83,16 +96,25 @@ let infer_declaration env dcl =
         c.const_entry_opaque, c.const_entry_boxed
   | ParameterEntry t ->
       let (j,cst) = infer env t in
-      None, Typeops.assumption_of_judgment env j, cst, false, false
+      None, NonPolymorphicType (Typeops.assumption_of_judgment env j), cst,
+        false, false
+
+let global_vars_set_constant_type env = function
+  | NonPolymorphicType t -> global_vars_set env t
+  | PolymorphicArity (ctx,_) ->
+      Sign.fold_rel_context 
+        (fold_rel_declaration
+	  (fun t c -> Idset.union (global_vars_set env t) c))
+      ctx ~init:Idset.empty
 
 let build_constant_declaration env kn (body,typ,cst,op,boxed) =
   let ids =
     match body with 
-    | None -> global_vars_set env typ
+    | None -> global_vars_set_constant_type env typ
     | Some b ->
         Idset.union 
 	  (global_vars_set env (Declarations.force b)) 
-	  (global_vars_set env typ)
+	  (global_vars_set_constant_type env typ)
   in
   let tps = Cemitcodes.from_val (compile_constant_body env body op boxed) in
   let hyps = keep_hyps env ids in

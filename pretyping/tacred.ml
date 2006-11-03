@@ -18,8 +18,8 @@ open Termops
 open Declarations
 open Inductive
 open Environ
-open Reductionops
 open Closure
+open Reductionops
 open Cbv
 open Rawterm
 
@@ -80,7 +80,7 @@ let reference_opt_value sigma env = function
       v
   | EvalRel n ->
       let (_,v,_) = lookup_rel n env in
-      option_app (lift n) v
+      option_map (lift n) v
   | EvalEvar ev -> Evd.existential_opt_value sigma ev
 
 exception NotEvaluable

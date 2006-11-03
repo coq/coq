@@ -12,12 +12,6 @@ open Printf
 open Coqdep_lexer
 open Unix
 
-let (/) = Filename.concat
-
-let file_concat l =
-  if l=[] then "<empty>" else
-    List.fold_left (/) (List.hd l) (List.tl l)
-
 let stderr = Pervasives.stderr
 let stdout = Pervasives.stdout
 
@@ -28,11 +22,22 @@ let option_D = ref false
 let option_w = ref false
 let option_i = ref false
 let option_sort = ref false
+let option_slash = ref false
 
 let suffixe = ref ".vo"
 let suffixe_spec = ref ".vi"
 
 type dir = string option
+
+(* filename for printing *)
+let (//) s1 s2 =
+  if !option_slash then s1^"/"^s2 else Filename.concat s1 s2
+
+let (/) = Filename.concat
+
+let file_concat l =
+  if l=[] then "<empty>" else
+    List.fold_left (//) (List.hd l) (List.tl l)
 
 (* Files specified on the command line *)
 let mlAccu  = ref ([] : (string * string * dir) list) 
@@ -148,7 +153,7 @@ let cut_prefix p s =
   if ls >= lp && String.sub s 0 lp = p then String.sub s lp (ls - lp) else s
 
 let canonize f = match Sys.os_type with
-  | "Win32" -> cut_prefix ".\\" f
+  | "Win32" when not !option_slash -> cut_prefix ".\\" f
   | _ -> cut_prefix "./" f
 
 let sort () = 
@@ -162,8 +167,12 @@ let sort () =
       try
 	while true do
 	  match coq_action lb with
-	    | Require (_, s) ->
-		(try loop (List.assoc s !vKnown) with Not_found -> ())
+	    | Require (_, sl) ->
+		List.iter 
+		  (fun s -> 
+		    try loop (List.assoc s !vKnown) 
+		    with Not_found -> ())
+		sl
 	    | RequireString (_, s) -> loop s
 	    | _ -> ()
 	done
@@ -184,17 +193,18 @@ let traite_fichier_Coq verbose f =
       while true do
       	let tok = coq_action buf in
 	match tok with
-	  | Require (spec,str) ->
-	      if not (List.mem str !deja_vu_v) then begin
-	        addQueue deja_vu_v str;
-                try
-                  let file_str = safe_assoc verbose f str in
-                  printf " %s%s" (canonize file_str)
-                    (if spec then !suffixe_spec else !suffixe)
-                with Not_found -> 
-		  if verbose && not (List.mem_assoc str !coqlibKnown) then
-                    warning_module_notfound f str
-       	      end
+	  | Require (spec,strl) ->
+	      List.iter (fun str ->
+		if not (List.mem str !deja_vu_v) then begin
+	          addQueue deja_vu_v str;
+                  try
+                    let file_str = safe_assoc verbose f str in
+                    printf " %s%s" (canonize file_str)
+                      (if spec then !suffixe_spec else !suffixe)
+                  with Not_found -> 
+		    if verbose && not (List.mem_assoc str !coqlibKnown) then
+                      warning_module_notfound f str
+       		end) strl
 	  | RequireString (spec,s) -> 
 	      let str = Filename.basename s in
 	      if not (List.mem [str] !deja_vu_v) then begin
@@ -332,7 +342,7 @@ let mL_dependencies () =
        flush stdout)
     (List.rev !mlAccu);
   List.iter
-    (fun ((name,ext,dirname) as pairname) ->
+    (fun ((name,ext,dirname)) ->
        let fullname = file_name ([name],dirname) in
        let (dep,_) = traite_fichier_ML fullname ext in
        printf "%s.cmi: %s%s" fullname fullname ext;
@@ -512,6 +522,7 @@ let coqdep () =
       | "-coqlib" :: [] -> usage ()
       | "-suffix" :: (s :: ll) -> suffixe := s ; suffixe_spec := s; parse ll
       | "-suffix" :: [] -> usage ()
+      | "-slash" :: ll -> option_slash := true; parse ll
       | f :: ll -> treat None f; parse ll
       | [] -> ()
   in

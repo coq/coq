@@ -138,7 +138,7 @@ let next_ident_away_from id avoid =
 
 let out_name = function
   | Name id -> id
-  | Anonymous -> anomaly "out_name: expects a defined name"
+  | Anonymous -> failwith "out_name: expects a defined name"
 
 let name_fold f na a =
   match na with
@@ -153,6 +153,10 @@ let name_cons na l =
 let name_app f = function
   | Name id -> Name (f id)
   | Anonymous -> Anonymous
+
+let name_fold_map f e = function
+  | Name id -> let (e,id) = f e id in (e,Name id)
+  | Anonymous -> e,Anonymous
 
 let next_name_away_with_default default name l = 
   match name with

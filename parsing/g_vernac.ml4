@@ -7,6 +7,7 @@
 (************************************************************************)
 
 (* $Id$ *)
+(*i camlp4deps: "parsing/grammar.cma" i*)
 
 open Pp
 open Util
@@ -14,6 +15,7 @@ open Names
 open Topconstr
 open Vernacexpr
 open Pcoq
+open Decl_mode
 open Tactic
 open Decl_kinds
 open Genarg
@@ -33,13 +35,28 @@ let _ = List.iter (fun s -> Lexer.add_token ("",s)) vernac_kw
 (* compilation on PowerPC and Sun architectures *)
 
 let check_command = Gram.Entry.create "vernac:check_command"
+
+let tactic_mode = Gram.Entry.create "vernac:tactic_command"
+let proof_mode = Gram.Entry.create "vernac:proof_command"
+let noedit_mode = Gram.Entry.create "vernac:noedit_command"
+
 let class_rawexpr = Gram.Entry.create "vernac:class_rawexpr"
 let thm_token = Gram.Entry.create "vernac:thm_token"
 let def_body = Gram.Entry.create "vernac:def_body"
 
+let get_command_entry () =
+  match Decl_mode.get_current_mode () with
+      Mode_proof -> proof_mode
+    | Mode_tactic -> tactic_mode
+    | Mode_none -> noedit_mode
+
+let default_command_entry =
+  Gram.Entry.of_parser "command_entry" 
+    (fun strm -> Gram.Entry.parse_token (get_command_entry ()) strm)
+
 let no_hook _ _ = ()
 GEXTEND Gram
-  GLOBAL: vernac gallina_ext;
+  GLOBAL: vernac gallina_ext tactic_mode proof_mode noedit_mode;
   vernac:
     (* Better to parse "." here: in case of failure (e.g. in coerce_to_var), *)
     (* "." is still in the stream and discard_to_dot works correctly         *)
@@ -53,9 +70,15 @@ GEXTEND Gram
   vernac: FIRST
     [ [ IDENT "Time"; v = vernac  -> VernacTime v ] ]
   ;
-  vernac: LAST
-    [ [ gln = OPT[n=natural; ":" -> n];
-        tac = subgoal_command -> tac gln ] ]
+  vernac: LAST  
+    [ [ prfcom = default_command_entry -> prfcom ] ]
+  ;
+  noedit_mode:
+    [ [ c = subgoal_command -> c None] ]
+  ;
+  tactic_mode:
+  [ [ gln = OPT[n=natural; ":" -> n];
+      tac = subgoal_command -> tac gln ] ]
   ;
   subgoal_command:
     [ [ c = check_command; "." -> c
@@ -65,6 +88,12 @@ GEXTEND Gram
             let g = match g with Some gl -> gl | _ -> 1 in
             VernacSolve(g,tac,use_dft_tac)) ] ]
   ;
+  proof_mode:
+    [ [ instr = proof_instr; "." -> VernacProofInstr instr ] ] 
+  ;
+  proof_mode: LAST
+    [ [ c=subgoal_command -> c (Some 1) ] ]
+  ; 
   located_vernac:
     [ [ v = vernac -> loc, v ] ]
   ;
@@ -190,9 +219,9 @@ GEXTEND Gram
     ;
   (* Inductives and records *)
   inductive_definition:
-    [ [ id = identref; indpar = LIST0 binder_let; ":"; c = lconstr; 
+    [ [ id = identref; indpar = LIST0 binder_let; ":"; c = lconstr;
         ":="; lc = constructor_list; ntn = decl_notation ->
-	  (id,ntn,indpar,c,lc) ] ]
+	  ((id,indpar,c,lc),ntn) ] ]
   ;
   constructor_list:
     [ [ "|"; l = LIST1 constructor SEP "|" -> l
@@ -211,31 +240,34 @@ GEXTEND Gram
   (* (co)-fixpoints *)
   rec_definition:
     [ [ id = ident; bl = LIST1 binder_let;
-        annot = OPT rec_annotation; type_ = type_cstr; 
+        annot = rec_annotation; ty = type_cstr; 
 	":="; def = lconstr; ntn = decl_notation ->
           let names = List.map snd (names_of_local_assums bl) in
           let ni =
-            match annot with
+            match fst annot with
                 Some id ->
-                  (try list_index (Name id) names - 1
-                  with Not_found ->  Util.user_err_loc
-                      (loc,"Fixpoint",
-                       Pp.str "No argument named " ++ Nameops.pr_id id))
+                  (try Some (list_index (Name id) names - 1)
+                   with Not_found ->  Util.user_err_loc
+                     (loc,"Fixpoint",
+                      Pp.str "No argument named " ++ Nameops.pr_id id))
               | None -> 
-                  if List.length names > 1 then
-                    Util.user_err_loc
-                      (loc,"Fixpoint",
-                       Pp.str "the recursive argument needs to be specified");
-                  0 in
-	  ((id, ni, bl, type_, def),ntn) ] ]
+		  (* If there is only one argument, it is the recursive one, 
+		     otherwise, we search the recursive index later *)
+		  if List.length names = 1 then Some 0 else None	  
+	  in 
+	  ((id,(ni,snd annot),bl,ty,def),ntn) ] ]
   ;
   corec_definition:
-    [ [ id = ident; bl = LIST0 binder_let; c = type_cstr; ":=";
-        def = lconstr ->
-          (id,bl,c ,def) ] ]
+    [ [ id = ident; bl = LIST0 binder_let; ty = type_cstr; ":=";
+        def = lconstr; ntn = decl_notation ->
+          ((id,bl,ty,def),ntn) ] ]
   ;
   rec_annotation:
-    [ [ "{"; IDENT "struct"; id=IDENT; "}" -> id_of_string id ] ]
+    [ [ "{"; IDENT "struct"; id=IDENT; "}" -> (Some (id_of_string id), CStructRec)
+      | "{"; IDENT "wf"; id=IDENT; rel=lconstr; "}" -> (Some (id_of_string id), CWfRec rel) 
+      | "{"; IDENT "measure"; id=IDENT; rel=lconstr; "}" -> (Some (id_of_string id), CMeasureRec rel) 
+      | ->  (None, CStructRec)
+      ] ]
   ;
   type_cstr:
     [ [ ":"; c=lconstr -> c 
@@ -316,8 +348,8 @@ GEXTEND Gram
 	  VernacDeclareModuleType (id, bl, mty_o)
 	  
       | IDENT "Declare"; IDENT "Module"; export = export_token; id = identref; 
-	bl = LIST0 module_binder; mty_o = of_module_type ->
-	  VernacDeclareModule (export, id, bl, mty_o)
+	bl = LIST0 module_binder; ":"; mty = module_type ->
+	  VernacDeclareModule (export, id, bl, (mty,true))
       (* Section beginning *)
       | IDENT "Section"; id = identref -> VernacBeginSection id
       | IDENT "Chapter"; id = identref -> VernacBeginSection id
@@ -426,7 +458,7 @@ GEXTEND Gram
       (* Implicit *)
       | IDENT "Implicit"; IDENT "Arguments"; qid = global; 
          pos = OPT [ "["; l = LIST0 ident; "]" -> l ] ->
-	   let pos = option_app (List.map (fun id -> ExplByName id)) pos in
+	   let pos = option_map (List.map (fun id -> ExplByName id)) pos in
 	   VernacDeclareImplicits (qid,pos)
 
       | IDENT "Implicit"; ["Type" | IDENT "Types"];
@@ -456,9 +488,8 @@ GEXTEND Gram
       | IDENT "Declare"; IDENT "ML"; IDENT "Module"; l = LIST1 ne_string ->
 	  VernacDeclareMLModule l
 
-      (* Dump of the universe graph - to file or to stdout *) 
       | IDENT "Dump"; IDENT "Universes"; fopt = OPT ne_string ->
-	  VernacPrint (PrintUniverses fopt)
+	  error "This command is deprecated, use Print Universes"
 
       | IDENT "Locate"; l = locatable -> VernacLocate l
 
@@ -552,7 +583,9 @@ GEXTEND Gram
       | IDENT "Remove"; table = IDENT; field = IDENT; v= LIST1 option_ref_value
         -> VernacRemoveOption (SecondaryTable (table,field), v)
       | IDENT "Remove"; table = IDENT; v = LIST1 option_ref_value ->
-	  VernacRemoveOption (PrimaryTable table, v) ] ]
+	  VernacRemoveOption (PrimaryTable table, v) 
+      | IDENT "proof" -> VernacDeclProof
+      | "return" -> VernacReturn ]]
   ;
   check_command: (* TODO: rapprocher Eval et Check *)
     [ [ IDENT "Eval"; r = Tactic.red_expr; "in"; c = lconstr ->
@@ -592,7 +625,8 @@ GEXTEND Gram
       | IDENT "Scopes" -> PrintScopes
       | IDENT "Scope"; s = IDENT -> PrintScope s
       | IDENT "Visibility"; s = OPT IDENT -> PrintVisibility s
-      | IDENT "Implicit"; qid = global -> PrintImplicit qid ] ]
+      | IDENT "Implicit"; qid = global -> PrintImplicit qid
+      | IDENT "Universes"; fopt = OPT ne_string -> PrintUniverses fopt ] ]
   ;
   class_rawexpr:
     [ [ IDENT "Funclass" -> FunClass
@@ -648,8 +682,11 @@ GEXTEND Gram
 	  VernacBacktrack (n,m,p)
 
 (* Tactic Debugger *)
-      |	IDENT "Debug"; IDENT "On" -> VernacDebug true
-      |	IDENT "Debug"; IDENT "Off" -> VernacDebug false
+      |	IDENT "Debug"; IDENT "On" -> 
+          VernacSetOption (SecondaryTable ("Ltac","Debug"), BoolValue true)
+
+      |	IDENT "Debug"; IDENT "Off" ->
+          VernacSetOption (SecondaryTable ("Ltac","Debug"), BoolValue false)
 
  ] ];
     END

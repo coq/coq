@@ -22,19 +22,22 @@ open Vernacinterp
 open Vernacexpr
 open Tacexpr
 open Mod_subst
+open Coqlib
 
 (* Interpretation of constr's *)
 let constr_of c = Constrintern.interp_constr Evd.empty (Global.env()) c
 
 (* Construction of constants *)
-let constant dir s = Coqlib.gen_constant "Field" ("field"::dir) s
+let constant dir s = gen_constant "Field" ("field"::dir) s
+let init_constant s = gen_constant_in_modules "Field" init_modules s
 
 (* To deal with the optional arguments *)
 let constr_of_opt a opt =
   let ac = constr_of a in
+  let ac3 = mkArrow ac (mkArrow ac ac) in
   match opt with
-  | None -> mkApp ((constant ["Field_Compl"] "Field_None"),[|ac|])
-  | Some f -> mkApp ((constant ["Field_Compl"] "Field_Some"),[|ac;constr_of f|])
+  | None -> mkApp (init_constant "None",[|ac3|])
+  | Some f -> mkApp (init_constant "Some",[|ac3;constr_of f|])
 
 (* Table of theories *)
 let th_tab = ref (Gmap.empty : (constr,constr) Gmap.t)
@@ -83,7 +86,7 @@ let add_field a aplus amult aone azero aopp aeq ainv aminus_o adiv_o rth
       Ring.add_theory true true false a None None None aplus amult aone azero
         (Some aopp) aeq rth Quote.ConstrSet.empty
      with | UserError("Add Semi Ring",_) -> ());
-    let th = mkApp ((constant ["Field_Theory"] "Build_Field_Theory"),
+    let th = mkApp ((constant ["LegacyField_Theory"] "Build_Field_Theory"),
       [|a;aplus;amult;aone;azero;aopp;aeq;ainv;aminus_o;adiv_o;rth;ainv_l|]) in
     begin
       let _ = type_of (Global.env ()) Evd.empty th in ();
@@ -136,7 +139,7 @@ ARGUMENT EXTEND minus_div_arg
 END
 
 VERNAC COMMAND EXTEND Field
-  [ "Add" "Field" 
+  [ "Add" "Legacy" "Field" 
       constr(a) constr(aplus) constr(amult) constr(aone)
       constr(azero) constr(aopp) constr(aeq)
       constr(ainv) constr(rth) constr(ainv_l) minus_div_arg(md) ]
@@ -150,7 +153,7 @@ END
 
 (* Guesses the type and calls field_gen with the right theory *)
 let field g =
-  Coqlib.check_required_library ["Coq";"field";"Field"];
+  Coqlib.check_required_library ["Coq";"field";"LegacyField"];
   let typ = 
     match Hipattern.match_with_equation (pf_concl g) with
       | Some (eq,t::args) when eq = (Coqlib.build_coq_eq_data()).Coqlib.eq -> t
@@ -172,7 +175,7 @@ let guess_theory env evc = function
 
 (* Guesses the type and calls Field_Term with the right theory *)
 let field_term l g =
-  Coqlib.check_required_library ["Coq";"field";"Field"];
+  Coqlib.check_required_library ["Coq";"field";"LegacyField"];
   let env = (pf_env g)
   and evc = (project g) in
   let th = valueIn (VConstr (guess_theory env evc l))
@@ -184,7 +187,7 @@ let field_term l g =
 
 (* Declaration of Field *)
 
-TACTIC EXTEND field
-| [ "field" ] -> [ field ]
-| [ "field" ne_constr_list(l) ] -> [ field_term l ]
+TACTIC EXTEND legacy_field
+| [ "legacy" "field" ] -> [ field ]
+| [ "legacy" "field" ne_constr_list(l) ] -> [ field_term l ]
 END

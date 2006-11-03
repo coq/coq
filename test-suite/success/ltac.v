@@ -145,3 +145,33 @@ Ltac check_binding y := cut ((fun y => y) = S).
 Goal True.
 check_binding true.
 Abort.
+
+(* Check that variables explicitly parsed as ltac variables are not
+   seen as intro pattern or constr (bug #984) *)
+
+Ltac afi tac := intros; tac.
+Goal 1 = 2.
+afi ltac:auto.
+
+(* Tactic Notation avec listes *)
+
+Tactic Notation "pat" hyp(id) "occs" integer_list(l) := pattern id at l.
+
+Goal forall x, x=0 -> x=x.
+intro x.
+pat x occs 1 3.
+Abort.
+
+Tactic Notation "revert" ne_hyp_list(l) := generalize l; clear l.
+
+Goal forall a b c, a=0 -> b=c+a.
+intros.
+revert a b c H.
+Abort.
+
+(* Used to fail until revision 9280 because of a parasitic App node with
+   empty args *)
+
+Goal True.
+match None with @None => exact I end.
+Abort.

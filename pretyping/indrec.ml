@@ -48,13 +48,13 @@ let mkLambda_string s t c = mkLambda (Name (id_of_string s), t, c)
    lift_constructor et lift_inductive_family qui ne se contentent pas de 
    lifter les paramètres globaux *)
 
-let mis_make_case_com depopt env sigma (ind,mib,mip) kind =
+let mis_make_case_com depopt env sigma ind (mib,mip as specif) kind =
   let lnamespar = mib.mind_params_ctxt in
   let dep = match depopt with 
-    | None -> mip.mind_sort <> (Prop Null)
+    | None -> inductive_sort_family mip <> InProp
     | Some d -> d
   in
-  if not (List.exists ((=) kind) mip.mind_kelim) then
+  if not (List.mem kind (elim_sorts specif)) then
     raise
       (RecursionSchemeError
 	 (NotAllowedCaseAnalysis
@@ -431,7 +431,7 @@ let mis_make_indrec env sigma listdepkind mib =
       it_mkLambda_or_LetIn_name env (put_arity env' 0 listdepkind) 
 	lnamesparrec
     else 
-      mis_make_case_com (Some dep) env sigma (indi,mibi,mipi) kind 
+      mis_make_case_com (Some dep) env sigma indi (mibi,mipi) kind 
   in 
       (* Body of mis_make_indrec *)
   list_tabulate make_one_rec nrec
@@ -441,7 +441,7 @@ let mis_make_indrec env sigma listdepkind mib =
 
 let make_case_com depopt env sigma ity kind =
   let (mib,mip) = lookup_mind_specif env ity in 
-  mis_make_case_com depopt env sigma (ity,mib,mip) kind
+  mis_make_case_com depopt env sigma ity (mib,mip) kind
 
 let make_case_dep env   = make_case_com (Some true) env
 let make_case_nodep env = make_case_com (Some false) env 
@@ -504,7 +504,7 @@ let check_arities listdepkind =
   let _ = List.fold_left
     (fun ln ((_,ni),mibi,mipi,dep,kind) -> 
        let id = mipi.mind_typename  in
-       let kelim = mipi.mind_kelim in
+       let kelim = elim_sorts (mibi,mipi) in
        if not (List.exists ((=) kind) kelim) then raise
 	 (RecursionSchemeError (BadInduction (dep,id,new_sort_in_family kind)))
        else if List.mem ni ln then raise
@@ -534,7 +534,7 @@ let build_mutual_indrec env sigma = function
 
 let build_indrec env sigma ind =
   let (mib,mip) = lookup_mind_specif env ind in
-  let kind = family_of_sort mip.mind_sort in
+  let kind = inductive_sort_family mip in
   let dep = kind <> InProp in
   List.hd (mis_make_indrec env sigma [(ind,mib,mip,dep,kind)] mib)
 
@@ -596,7 +596,7 @@ let lookup_eliminator ind_sp s =
        pr_id id ++ spc () ++
        str "The elimination of the inductive definition " ++
        pr_id id ++ spc () ++ str "on sort " ++ 
-       spc () ++ print_sort_family s ++
+       spc () ++ pr_sort_family s ++
        str " is probably not allowed")
 
 
@@ -617,6 +617,6 @@ let lookup_eliminator ind_sp s =
            pr_id id ++ spc () ++
 	   str "The elimination of the inductive definition " ++
            pr_id base ++ spc () ++ str "on sort " ++ 
-           spc () ++ print_sort_family s ++
+           spc () ++ pr_sort_family s ++
 	   str " is probably not allowed")
 *)

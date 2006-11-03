@@ -23,8 +23,17 @@ open Mod_subst
 
 type engagement = ImpredicativeSet
 
+(**********************************************************************)
+(*s Representation of constants (Definition/Axiom)                    *)
 
-(*s Constants (Definition/Axiom) *)
+type polymorphic_arity = {
+  poly_param_levels : universe option list;
+  poly_level : universe;
+}
+
+type constant_type =
+  | NonPolymorphicType of types
+  | PolymorphicArity of rel_context * polymorphic_arity
 
 type constr_substituted
 
@@ -34,7 +43,7 @@ val force : constr_substituted -> constr
 type constant_body = {
     const_hyps : section_context; (* New: younger hyp at top *)
     const_body : constr_substituted option;
-    const_type : types;  
+    const_type : constant_type;
     const_body_code : to_patch_substituted;
    (*i const_type_code : to_patch;i*)
     const_constraints : constraints;
@@ -42,8 +51,8 @@ type constant_body = {
 
 val subst_const_body : substitution -> constant_body -> constant_body
 
-(*s Inductive types (internal representation with redundant
-    information). *)
+(**********************************************************************)
+(*s Representation of mutual inductive types in the kernel            *)
 
 type recarg = 
   | Norec 
@@ -62,48 +71,108 @@ val recarg_length : wf_paths -> int -> int
 
 val subst_wf_paths : substitution -> wf_paths -> wf_paths
 
-(* [mind_typename] is the name of the inductive; [mind_arity] is
-   the arity generalized over global parameters; [mind_lc] is the list
-   of types of constructors generalized over global parameters and
-   relative to the global context enriched with the arities of the
-   inductives *) 
+(*
+\begin{verbatim}
+   Inductive I1 (params) : U1 := c11 : T11 | ... | c1p1 : T1p1
+   ...
+   with      In (params) : Un := cn1 : Tn1 | ... | cnpn : Tnpn
+\end{verbatim}
+*)
+
+type monomorphic_inductive_arity = {
+  mind_user_arity : constr;
+  mind_sort : sorts;
+}
+
+type inductive_arity = 
+| Monomorphic of monomorphic_inductive_arity
+| Polymorphic of polymorphic_arity
 
 type one_inductive_body = {
+
+(* Primitive datas *)
+
+ (* Name of the type: [Ii] *)
     mind_typename : identifier;
-    mind_nrealargs : int;
-    mind_nf_arity : types;
-    mind_user_arity : types;
-    mind_sort : sorts;
-    mind_kelim : sorts_family list;
+
+ (* Arity context of [Ii] with parameters: [forall params, Ui] *)
+    mind_arity_ctxt : rel_context;
+
+ (* Arity sort and original user arity if monomorphic *)
+    mind_arity : inductive_arity;
+
+ (* Names of the constructors: [cij] *)
     mind_consnames : identifier array;
-    mind_consnrealargs : int array; (* length of constructs, let-in included *)
-    mind_nf_lc : types array; (* constrs and arity with pre-expanded ccl *)
+
+ (* Types of the constructors with parameters: [forall params, Tij],
+    where the Ik are replaced by de Bruijn index in the context
+    I1:forall params, U1 ..  In:forall params, Un *)
     mind_user_lc : types array;
+
+(* Derived datas *)
+
+ (* Number of expected real arguments of the type (no let, no params) *)
+    mind_nrealargs : int;
+
+ (* List of allowed elimination sorts *)
+    mind_kelim : sorts_family list;
+
+ (* Head normalized constructor types so that their conclusion is atomic *)
+    mind_nf_lc : types array;
+
+ (* Length of the signature of the constructors (with let, w/o params) *)
+    mind_consnrealdecls : int array;
+
+ (* Signature of recursive arguments in the constructors *)
     mind_recargs : wf_paths;
-    mind_nb_constant : int; (* number of constant constructor *)
-    mind_nb_args : int; (* number of no constant constructor *)
+
+(* Datas for bytecode compilation *)
+
+ (* number of constant constructor *)
+    mind_nb_constant : int;
+
+ (* number of no constant constructor *)
+    mind_nb_args : int;
+
     mind_reloc_tbl :  Cbytecodes.reloc_table; 
   }
 
-
-
 type mutual_inductive_body = {
-    mind_record : bool; 
-    mind_finite : bool;
-    mind_ntypes : int;
-    mind_hyps : section_context;
-    mind_nparams : int;
-    mind_nparams_rec : int;
-    mind_params_ctxt : rel_context;
-    mind_packets : one_inductive_body array;
-    mind_constraints : constraints;
-    mind_equiv : kernel_name option;
-  }
 
+  (* The component of the mutual inductive block *)
+    mind_packets : one_inductive_body array;
+
+  (* Whether the inductive type has been declared as a record *)
+    mind_record : bool;
+
+  (* Whether the type is inductive or coinductive *)
+    mind_finite : bool;
+
+  (* Number of types in the block *)
+    mind_ntypes : int;
+
+  (* Section hypotheses on which the block depends *)
+    mind_hyps : section_context;
+
+  (* Number of expected parameters *)
+    mind_nparams : int;
+
+  (* Number of recursively uniform (i.e. ordinary) parameters *)
+    mind_nparams_rec : int;
+
+  (* The context of parameters (includes let-in declaration) *)
+    mind_params_ctxt : rel_context;
+
+  (* Universes constraints enforced by the inductive declaration *)
+    mind_constraints : constraints;
+
+  (* Source of the inductive block when aliased in a module *)
+    mind_equiv : kernel_name option
+  }
 
 val subst_mind : substitution -> mutual_inductive_body -> mutual_inductive_body
 
-
+(**********************************************************************)
 (*s Modules: signature component specifications, module types, and
   module declarations *)
 

@@ -32,20 +32,17 @@ val apply_sig_tac :
 
 type transformation_tactic = proof_tree -> (goal list * validation)
 
-val add_tactic             : string -> (closed_generic_argument list -> tactic) -> unit
-val overwriting_add_tactic : string -> (closed_generic_argument list -> tactic) -> unit
-val lookup_tactic          : string -> (closed_generic_argument list) -> tactic
-
 (*s Hiding the implementation of tactics. *)
 
 (* [abstract_tactic tac] hides the (partial) proof produced by [tac] under
-   a single proof node *)
-val abstract_tactic : atomic_tactic_expr -> tactic -> tactic
-val abstract_tactic_expr : tactic_expr -> tactic -> tactic
-val abstract_extended_tactic : string -> closed_generic_argument list -> tactic -> tactic
+   a single proof node. The boolean tells if the default tactic is used. *)
+val abstract_operation : compound_rule -> tactic -> tactic
+val abstract_tactic : ?dflt:bool -> atomic_tactic_expr -> tactic -> tactic
+val abstract_tactic_expr : ?dflt:bool -> tactic_expr -> tactic -> tactic
+val abstract_extended_tactic :
+  ?dflt:bool -> string -> closed_generic_argument list -> tactic -> tactic
 
 val refiner : rule -> tactic
-val vernac_tactic : string * closed_generic_argument list -> tactic
 val frontier : transformation_tactic
 val list_pf : proof_tree -> goal list
 val unTAC : tactic -> goal sigma -> proof_tree sigma
@@ -148,6 +145,12 @@ val tclIFTHENELSE    : tactic -> tactic -> tactic -> tactic
 val tclIFTHENSELSE   : tactic -> tactic list -> tactic ->tactic
 val tclIFTHENSVELSE   : tactic -> tactic array -> tactic ->tactic
 
+(* [tclIFTHENTRYELSEMUST tac1 tac2 gls] applies [tac1] then [tac2]. If [tac1]
+   has been successful, then [tac2] may fail. Otherwise, [tac2] must succeed. 
+   Equivalent to [(tac1;try tac2)||tac2] *)
+
+val tclIFTHENTRYELSEMUST : tactic -> tactic -> tactic
+
 (*s Tactics handling a list of goals. *)
 
 type validation_list = proof_tree list -> proof_tree list
@@ -170,11 +173,14 @@ type pftreestate
 val proof_of_pftreestate : pftreestate -> proof_tree
 val cursor_of_pftreestate : pftreestate -> int list
 val is_top_pftreestate : pftreestate -> bool
+val match_rule : (rule -> bool) -> pftreestate -> bool
 val evc_of_pftreestate : pftreestate -> evar_map
 val top_goal_of_pftreestate : pftreestate -> goal sigma
 val nth_goal_of_pftreestate : int -> pftreestate -> goal sigma
 
 val traverse : int -> pftreestate -> pftreestate
+val map_pftreestate : 
+  (evar_map ref -> proof_tree -> proof_tree) -> pftreestate -> pftreestate
 val solve_nth_pftreestate : int -> tactic -> pftreestate -> pftreestate
 val solve_pftreestate : tactic -> pftreestate -> pftreestate
 
@@ -193,6 +199,12 @@ val node_next_unproven : int -> pftreestate -> pftreestate
 val next_unproven : pftreestate -> pftreestate
 val prev_unproven : pftreestate -> pftreestate
 val top_of_tree : pftreestate -> pftreestate
+val match_rule : (rule -> bool) -> pftreestate -> bool
+val up_until_matching_rule : (rule -> bool) -> 
+  pftreestate -> pftreestate
+val up_to_matching_rule : (rule -> bool) -> 
+  pftreestate -> pftreestate
+val change_rule : (rule -> rule) -> pftreestate -> pftreestate
 val change_constraints_pftreestate 
   : evar_map -> pftreestate -> pftreestate
 

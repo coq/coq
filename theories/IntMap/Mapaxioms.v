@@ -9,10 +9,9 @@
 
 Require Import Bool.
 Require Import Sumbool.
-Require Import ZArith.
-Require Import Addr.
-Require Import Adist.
-Require Import Addec.
+Require Import NArith.
+Require Import Ndigits.
+Require Import Ndec.
 Require Import Map.
 Require Import Fset.
 
@@ -59,8 +58,8 @@ Section MapAxioms.
      eqmap (MapPut A m a y) (MapMerge A m (M1 A a y)).
   Proof.
     unfold eqmap, eqm in |- *. intros. rewrite (MapPut_semantics A m a y a0).
-    rewrite (MapMerge_semantics A m (M1 A a y) a0). unfold MapGet at 2 in |- *.
-    elim (sumbool_of_bool (ad_eq a a0)); intro H; rewrite H; reflexivity.
+    rewrite (MapMerge_semantics A m (M1 A a y) a0). unfold MapGet at 2.
+    elim (sumbool_of_bool (Neqb a a0)); intro H; rewrite H; reflexivity.
   Qed.
 
   Lemma MapPut_ext :
@@ -70,7 +69,7 @@ Section MapAxioms.
   Proof.
     unfold eqmap, eqm in |- *. intros. rewrite (MapPut_semantics A m' a y a0).
     rewrite (MapPut_semantics A m a y a0). 
-    case (ad_eq a a0); [ reflexivity | apply H ].
+    case (Neqb a a0); [ reflexivity | apply H ].
   Qed.
 
   Lemma MapPut_behind_as_Merge :
@@ -115,7 +114,7 @@ Section MapAxioms.
    forall m m':Map A, eqmap (MapMerge A m m') (M0 A) -> eqmap m (M0 A).
   Proof.
     unfold eqmap, eqm in |- *. intros. cut (MapGet A (MapMerge A m m') a = MapGet A (M0 A) a).
-    rewrite (MapMerge_semantics A m m' a). case (MapGet A m' a). trivial.
+    rewrite (MapMerge_semantics A m m' a). case (MapGet A m' a); trivial.
     intros. discriminate H0.
     exact (H a).
   Qed.
@@ -124,8 +123,7 @@ Section MapAxioms.
    forall m m':Map A, eqmap (MapMerge A m m') (M0 A) -> eqmap m' (M0 A).
   Proof.
     unfold eqmap, eqm in |- *. intros. cut (MapGet A (MapMerge A m m') a = MapGet A (M0 A) a).
-    rewrite (MapMerge_semantics A m m' a). case (MapGet A m' a). trivial.
-    intros. discriminate H0.
+    rewrite (MapMerge_semantics A m m' a). case (MapGet A m' a); trivial.
     exact (H a).
   Qed.
 
@@ -190,8 +188,8 @@ Section MapAxioms.
      eqmap (MapRemove A m a) (MapDomRestrBy A B m (M1 B a y)).
   Proof.
     unfold eqmap, eqm in |- *. intros. rewrite (MapRemove_semantics A m a a0).
-    rewrite (MapDomRestrBy_semantics A B m (M1 B a y) a0). elim (sumbool_of_bool (ad_eq a a0)).
-    intro H. rewrite H. rewrite (ad_eq_complete a a0 H). rewrite (M1_semantics_1 B a0 y).
+    rewrite (MapDomRestrBy_semantics A B m (M1 B a y) a0). elim (sumbool_of_bool (Neqb a a0)).
+    intro H. rewrite H. rewrite (Neqb_complete a a0 H). rewrite (M1_semantics_1 B a0 y).
     reflexivity.
     intro H. rewrite H. rewrite (M1_semantics_2 B a a0 y H). reflexivity.
   Qed.
@@ -202,7 +200,7 @@ Section MapAxioms.
   Proof.
     unfold eqmap, eqm in |- *. intros. rewrite (MapRemove_semantics A m' a a0).
     rewrite (MapRemove_semantics A m a a0). 
-    case (ad_eq a a0); [ reflexivity | apply H ].
+    case (Neqb a a0); [ reflexivity | apply H ].
   Qed.
 
   Lemma MapDomRestrTo_empty_m_1 :
@@ -259,7 +257,7 @@ Section MapAxioms.
     elim (MapDom_semantics_2 B m' a H). intros y H0. rewrite H0. unfold in_FSet, in_dom in H.
     generalize H. case (MapGet unit (MapDom B m') a); trivial. intro H1. discriminate H1.
     intro H. rewrite (MapDom_semantics_4 B m' a H). unfold in_FSet, in_dom in H.
-    generalize H. case (MapGet unit (MapDom B m') a). trivial.
+    generalize H. case (MapGet unit (MapDom B m') a); trivial.
     intros H0 H1. discriminate H1.
   Qed.
 
@@ -298,7 +296,7 @@ Section MapAxioms.
     unfold in_FSet, in_dom in H. generalize H. case (MapGet unit (MapDom B m') a); trivial.
     intro H1. discriminate H1.
     intro H. rewrite (MapDom_semantics_4 B m' a H). unfold in_FSet, in_dom in H.
-    generalize H. case (MapGet unit (MapDom B m') a). trivial.
+    generalize H. case (MapGet unit (MapDom B m') a); trivial.
     intros H0 H1. discriminate H1.
   Qed.
 

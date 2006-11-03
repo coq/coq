@@ -33,7 +33,6 @@ type argument_type =
   | ConstrArgType
   | ConstrMayEvalArgType
   | QuantHypArgType
-  | TacticArgType of int
   | OpenConstrArgType of bool
   | ConstrWithBindingsArgType
   | BindingsArgType
@@ -44,7 +43,6 @@ type argument_type =
   | PairArgType of argument_type * argument_type
   | ExtraArgType of string
 
-type 'a or_var = ArgArg of 'a | ArgVar of identifier located
 type 'a and_short_name = 'a * identifier located option
 type rawconstr_and_expr = rawconstr * constr_expr option
 
@@ -53,6 +51,10 @@ type rawconstr_and_expr = rawconstr * constr_expr option
 type ('a,'b) generic_argument = argument_type * Obj.t
 
 let dyntab = ref ([] : string list)
+
+type rlevel = constr_expr
+type glevel = rawconstr_and_expr
+type tlevel = constr
 
 type ('a,'b,'c) abstract_argument_type = argument_type
 
@@ -142,10 +144,6 @@ let rawwit_constr_may_eval = ConstrMayEvalArgType
 let globwit_constr_may_eval = ConstrMayEvalArgType
 let wit_constr_may_eval = ConstrMayEvalArgType
 
-let rawwit_tactic n = TacticArgType n
-let globwit_tactic n = TacticArgType n
-let wit_tactic n = TacticArgType n
-
 let rawwit_open_constr_gen b = OpenConstrArgType b
 let globwit_open_constr_gen b = OpenConstrArgType b 
 let wit_open_constr_gen b = OpenConstrArgType b
@@ -220,7 +218,7 @@ let app_list1 f = function
 let app_opt f = function
   | (OptArgType t as u, l) ->
       let o = Obj.magic l in
-      (u, Obj.repr (option_app (fun x -> out_gen t (f (in_gen t x))) o))
+      (u, Obj.repr (option_map (fun x -> out_gen t (f (in_gen t x))) o))
   | _ -> failwith "Genarg: not an opt"
 
 let app_pair f1 f2 = function

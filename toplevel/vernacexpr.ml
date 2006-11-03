@@ -99,6 +99,7 @@ type showable =
   | ShowProofNames
   | ShowIntros of bool
   | ShowMatch of lident
+  | ShowThesis
   | ExplainProof of int list
   | ExplainTree of int list
 
@@ -146,8 +147,7 @@ type simple_binder = lident list  * constr_expr
 type 'a with_coercion = coercion_flag * 'a
 type constructor_expr = (lident * constr_expr) with_coercion
 type inductive_expr =
-     lident * decl_notation * local_binder list * constr_expr
-    * constructor_expr list
+     lident * local_binder list * constr_expr * constructor_expr list
 type definition_expr =
   | ProveBody of local_binder list * constr_expr
   | DefineBody of local_binder list * raw_red_expr option * constr_expr
@@ -195,9 +195,9 @@ type vernac_expr =
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
   | VernacAssumption of assumption_kind * simple_binder with_coercion list
-  | VernacInductive of inductive_flag * inductive_expr list
+  | VernacInductive of inductive_flag * (inductive_expr * decl_notation) list
   | VernacFixpoint of (fixpoint_expr * decl_notation) list * bool
-  | VernacCoFixpoint of cofixpoint_expr list * bool
+  | VernacCoFixpoint of (cofixpoint_expr * decl_notation) list * bool
   | VernacScheme of (lident * bool * lreference * sort_expr) list
 
   (* Gallina extensions *)
@@ -223,8 +223,16 @@ type vernac_expr =
       module_binder list * module_type_ast option
 
   (* Solving *)
+
   | VernacSolve of int * raw_tactic_expr * bool
   | VernacSolveExistential of int * constr_expr
+
+  (* Proof Mode *)
+
+  | VernacDeclProof
+  | VernacReturn
+  | VernacProofInstr of Decl_expr.raw_proof_instr
+
 
   (* Auxiliary file and library management *)
   | VernacRequireFrom of export_flag option * specif_flag option * lstring
@@ -281,7 +289,6 @@ type vernac_expr =
   | VernacGo of goable
   | VernacShow of showable
   | VernacCheckGuard
-  | VernacDebug of bool
   | VernacProof of raw_tactic_expr
   (* Toplevel control *)
   | VernacToplevelControl of exn

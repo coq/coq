@@ -54,6 +54,7 @@ let print_usage_channel co command =
   -boot                  boot mode (implies -q and -batch)
   -emacs                 tells Coq it is executed under Emacs
   -dump-glob f           dump globalizations in file f (to be used by coqdoc)
+  -with-geoproof (yes|no) to (de)activate special functions for Geoproof within Coqide (default is yes)
   -impredicative-set     set sort Set impredicative
   -dont-load-proofs      don't load opaque proofs in memory
   -xml                   export XML files either to the hierarchy rooted in

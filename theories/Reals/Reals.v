@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-(* The library REALS is divided in 6 parts :
+(** The library REALS is divided in 6 parts :
    - Rbase: basic lemmas on R
             equalities and inequalities
             Ring and Field are instantiated on R

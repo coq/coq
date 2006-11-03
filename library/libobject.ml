@@ -109,12 +109,12 @@ let declare_object odecl =
       anomaly "somehow we got the wrong dynamic object in the classifyfun"
   and discharge (oname,lobj) = 
     if Dyn.tag lobj = na then 
-      option_app infun (odecl.discharge_function (oname,outfun lobj))
+      option_map infun (odecl.discharge_function (oname,outfun lobj))
     else 
       anomaly "somehow we got the wrong dynamic object in the dischargefun"
   and exporter lobj = 
     if Dyn.tag lobj = na then 
-      option_app infun (odecl.export_function (outfun lobj))
+      option_map infun (odecl.export_function (outfun lobj))
     else 
       anomaly "somehow we got the wrong dynamic object in the exportfun"
 
@@ -144,7 +144,7 @@ let apply_dyn_fun deflt f lobj =
 	  else
 	    anomaly
 	      ("Cannot find library functions for an object with tag "^tag) in 
-  	f dodecl
+	f dodecl
     with
 	Failure "local to_apply_dyn_fun" -> deflt;;
 

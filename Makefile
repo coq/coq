@@ -26,7 +26,11 @@
 
 include config/Makefile
 
-NOARG:
+.PHONY: NOARG
+
+NOARG: world
+
+help:
 	@echo "Please use either"
 	@echo "   ./configure"
 	@echo "   make world"
@@ -36,8 +40,9 @@ NOARG:
 	@echo
 	@echo "For make to be verbose, add VERBOSE=1"
 
+
 # build and install the three subsystems: coq, coqide, pcoq
-world: coq coqide pcoq
+world: revision coq coqide pcoq
 
 install: install-coq install-coqide install-pcoq
 #install-manpages: install-coq-manpages install-pcoq-manpages
@@ -73,15 +78,17 @@ LOCALINCLUDES=-I config -I tools -I tools/coqdoc \
 
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
-BYTEFLAGS=$(MLINCLUDES) $(CAMLDEBUG)
-OPTFLAGS=$(MLINCLUDES) $(CAMLTIMEPROF) -noassert
-OCAMLDEP=ocamldep
+OCAMLC += $(CAMLFLAGS)
+OCAMLOPT += $(CAMLFLAGS)
+
+BYTEFLAGS=$(MLINCLUDES) $(CAMLDEBUG) $(USERFLAGS)
+OPTFLAGS=$(MLINCLUDES) $(CAMLTIMEPROF) $(USERFLAGS)
 DEPFLAGS=$(LOCALINCLUDES)
 
 OCAMLC_P4O=$(OCAMLC) -pp $(CAMLP4O) $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp $(CAMLP4O) $(OPTFLAGS)
 CAMLP4EXTENDFLAGS=-I . pa_extend.cmo pa_extend_m.cmo q_MLast.cmo
-CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)$$|\1|p'
+CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)|\1|p'
 
 COQINCLUDES=          # coqtop includes itself the needed paths
 GLOB=           # is "-dump-glob file" when making the doc
@@ -91,8 +98,7 @@ UNBOXEDVALUES=  # is "-unboxed-values" to use unboxed values
 COQOPTS=$(GLOB) $(COQ_XML) $(VM) $(UNBOXEDVALUES)
 TIME=           # is "'time -p'" to get compilation time of .v 
 
-BOOTCOQTOP= $(TIME) $(BESTCOQTOP) -boot $(COQOPTS)
-
+BOOTCOQTOP= $(TIME) $(BESTCOQTOP) -boot $(COQOPTS) 
 
 ###########################################################################
 # Objects files 
@@ -137,11 +143,11 @@ LIBRARY=\
   library/nameops.cmo library/libnames.cmo library/libobject.cmo \
   library/summary.cmo library/nametab.cmo library/global.cmo library/lib.cmo \
   library/declaremods.cmo library/library.cmo library/states.cmo \
-  library/decl_kinds.cmo library/dischargedhypsmap.cmo library/goptions.cmo 
+  library/decl_kinds.cmo library/dischargedhypsmap.cmo library/goptions.cmo
 
 PRETYPING=\
   pretyping/termops.cmo pretyping/evd.cmo \
-  pretyping/reductionops.cmo pretyping/inductiveops.cmo \
+  pretyping/reductionops.cmo pretyping/vnorm.cmo pretyping/inductiveops.cmo \
   pretyping/retyping.cmo pretyping/cbv.cmo \
   pretyping/pretype_errors.cmo pretyping/recordops.cmo pretyping/typing.cmo \
   pretyping/tacred.cmo \
@@ -164,20 +170,21 @@ PROOFS=\
   proofs/proof_trees.cmo proofs/logic.cmo \
   proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
   proofs/pfedit.cmo proofs/tactic_debug.cmo \
-  proofs/clenvtac.cmo
+  proofs/clenvtac.cmo proofs/decl_mode.cmo
 
 PARSING=\
   parsing/extend.cmo \
   parsing/pcoq.cmo parsing/egrammar.cmo parsing/g_xml.cmo \
   parsing/ppconstr.cmo parsing/printer.cmo \
-  parsing/pptactic.cmo parsing/tactic_printer.cmo \
+  parsing/pptactic.cmo parsing/ppdecl_proof.cmo parsing/tactic_printer.cmo \
   parsing/printmod.cmo parsing/prettyp.cmo parsing/search.cmo 
 
 HIGHPARSING=\
   parsing/g_constr.cmo parsing/g_vernac.cmo parsing/g_prim.cmo \
   parsing/g_proofs.cmo parsing/g_tactic.cmo parsing/g_ltac.cmo \
   parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo \
-  parsing/g_ascii_syntax.cmo parsing/g_string_syntax.cmo
+  parsing/g_ascii_syntax.cmo parsing/g_string_syntax.cmo \
+  parsing/g_decl_mode.cmo
 
 TACTICS=\
   tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
@@ -188,11 +195,12 @@ TACTICS=\
   tactics/dhyp.cmo tactics/auto.cmo \
   tactics/setoid_replace.cmo tactics/equality.cmo \
   tactics/contradiction.cmo tactics/inv.cmo tactics/leminv.cmo \
-  tactics/tacinterp.cmo tactics/autorewrite.cmo
+  tactics/tacinterp.cmo tactics/autorewrite.cmo \
+  tactics/decl_interp.cmo tactics/decl_proof_instr.cmo
 
 TOPLEVEL=\
   toplevel/himsg.cmo toplevel/cerrors.cmo toplevel/class.cmo \
-  toplevel/vernacexpr.cmo  toplevel/metasyntax.cmo \
+  toplevel/vernacexpr.cmo toplevel/metasyntax.cmo \
   toplevel/command.cmo toplevel/record.cmo \
   parsing/ppvernac.cmo \
   toplevel/vernacinterp.cmo toplevel/mltop.cmo \
@@ -208,7 +216,7 @@ HIGHTACTICS=\
 SPECTAC= tactics/tauto.ml4 tactics/eqdecide.ml4
 USERTAC = $(SPECTAC)
 ML4FILES += $(USERTAC) tactics/extraargs.ml4 tactics/extratactics.ml4 \
-	tactics/eauto.ml4 toplevel/whelp.ml4
+	tactics/eauto.ml4 toplevel/whelp.ml4 tactics/hipattern.ml4
 
 USERTACCMO=$(USERTAC:.ml4=.cmo)
 USERTACCMX=$(USERTAC:.ml4=.cmx)
@@ -236,9 +244,9 @@ RINGCMO=\
 NEWRINGCMO=\
   contrib/setoid_ring/newring.cmo
 
-DPCMO=\
-  contrib/dp/dp_simplify.cmo contrib/dp/dp_zenon.cmo contrib/dp/dp_cvcl.cmo \
-  contrib/dp/dp_sorts.cmo contrib/dp/dp.cmo contrib/dp/g_dp.cmo
+DPCMO=contrib/dp/dp_why.cmo contrib/dp/dp.cmo contrib/dp/g_dp.cmo
+#  contrib/dp/dp_simplify.cmo contrib/dp/dp_zenon.cmo contrib/dp/dp_cvcl.cmo \
+#  contrib/dp/dp_sorts.cmo 
 
 FIELDCMO=\
   contrib/field/field.cmo 
@@ -276,9 +284,11 @@ JPROVERCMO=\
 FUNINDCMO=\
   contrib/funind/tacinvutils.cmo contrib/funind/tacinv.cmo \
   contrib/funind/indfun_common.cmo contrib/funind/rawtermops.cmo \
-  contrib/funind/rawterm_to_relation.cmo contrib/funind/new_arg_principle.cmo \
+  contrib/funind/rawterm_to_relation.cmo \
+  contrib/funind/functional_principles_proofs.cmo \
+  contrib/funind/functional_principles_types.cmo \
   contrib/funind/invfun.cmo contrib/funind/indfun.cmo \
-  contrib/funind/indfun_main.cmo
+  contrib/funind/merge.cmo contrib/funind/indfun_main.cmo
 
 RECDEFCMO=\
   contrib/recdef/recdef.cmo
@@ -292,30 +302,30 @@ FOCMO=\
 CCCMO=contrib/cc/ccalgo.cmo contrib/cc/ccproof.cmo contrib/cc/cctac.cmo \
   contrib/cc/g_congruence.cmo 
 
-SUBTACCMO=\
-	contrib/subtac/natural.cmo \
-	contrib/subtac/scoq.cmo \
-	contrib/subtac/sast.cmo \
-	contrib/subtac/infer.cmo \
-	contrib/subtac/sutils.cmo \
-	contrib/subtac/eterm.cmo \
-	contrib/subtac/rewrite.cmo \
-	contrib/subtac/sparser.cmo
+SUBTACCMO=contrib/subtac/subtac_utils.cmo contrib/subtac/eterm.cmo \
+  contrib/subtac/g_eterm.cmo contrib/subtac/context.cmo \
+  contrib/subtac/subtac_errors.cmo contrib/subtac/subtac_coercion.cmo \
+  contrib/subtac/subtac_obligations.cmo \
+  contrib/subtac/subtac_pretyping_F.cmo contrib/subtac/subtac_pretyping.cmo \
+  contrib/subtac/subtac_interp_fixpoint.cmo \
+  contrib/subtac/subtac_command.cmo contrib/subtac/subtac.cmo \
+  contrib/subtac/g_subtac.cmo
+
 
 RTAUTOCMO=contrib/rtauto/proof_search.cmo contrib/rtauto/refl_tauto.cmo \
 	contrib/rtauto/g_rtauto.cmo
 
 ML4FILES += contrib/jprover/jprover.ml4 contrib/cc/g_congruence.ml4 \
-  contrib/funind/tacinv.ml4 contrib/first-order/g_ground.ml4 \
-  contrib/subtac/sparser.ml4 contrib/subtac/g_eterm.ml4 \
-  contrib/rtauto/g_rtauto.ml4 contrib/recdef/recdef.ml4 \
-   contrib/funind/indfun_main.ml4 
+	contrib/funind/tacinv.ml4 contrib/first-order/g_ground.ml4 \
+	contrib/subtac/g_subtac.ml4 contrib/subtac/g_eterm.ml4 \
+	contrib/rtauto/g_rtauto.ml4 contrib/recdef/recdef.ml4 \
+	contrib/funind/indfun_main.ml4 
 
 
-CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(DPCMO) $(FIELDCMO) \
+CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(NEWRINGCMO) $(DPCMO) $(FIELDCMO) \
 	$(FOURIERCMO) $(EXTRACTIONCMO) $(JPROVERCMO) $(XMLCMO) \
 	$(CCCMO)  $(FOCMO) $(SUBTACCMO) $(RTAUTOCMO) \
-        $(RECDEFCMO) $(FUNINDCMO) $(NEWRINGCMO)
+        $(RECDEFCMO) $(FUNINDCMO)
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
@@ -341,10 +351,12 @@ OBJSCMO=$(CONFIG) $(LIBREP) $(KERNEL) $(LIBRARY) $(PRETYPING) $(INTERP) \
 ###########################################################################
 
 CINCLUDES= -I $(CAMLHLIB)
-CC=gcc
-AR=ar
-RANLIB=ranlib
-BYTECCCOMPOPTS=-fno-defer-pop -Wall -Wno-unused
+
+ifeq ($(CAMLVERSION),OCAML307)
+  CFLAGS=-fno-defer-pop -Wall -Wno-unused -DOCAML_307
+else
+  CFLAGS=-fno-defer-pop -Wall -Wno-unused
+endif
 
 # libcoqrun.a 
 
@@ -375,7 +387,13 @@ clean ::
 # Main targets (coqmktop, coqtop.opt, coqtop.byte)
 ###########################################################################
 
+COQMKTOPBYTE=bin/coqmktop.byte$(EXE)
+COQMKTOPOPT=bin/coqmktop.opt$(EXE)
+BESTCOQMKTOP=bin/coqmktop.$(BEST)$(EXE)
 COQMKTOP=bin/coqmktop$(EXE) 
+COQCBYTE=bin/coqc.byte$(EXE)
+COQCOPT=bin/coqc.opt$(EXE)
+BESTCOQC=bin/coqc.$(BEST)$(EXE)
 COQC=bin/coqc$(EXE)
 COQTOPBYTE=bin/coqtop.byte$(EXE)
 COQTOPOPT=bin/coqtop.opt$(EXE)
@@ -409,11 +427,20 @@ $(COQTOP):
 # coqmktop 
 
 COQMKTOPCMO=$(CONFIG) scripts/tolink.cmo scripts/coqmktop.cmo 
+COQMKTOPCMX=config/coq_config.cmx scripts/tolink.cmx scripts/coqmktop.cmx 
 
-$(COQMKTOP): $(COQMKTOPCMO)
+$(COQMKTOPBYTE): $(COQMKTOPCMO)
 	$(SHOW)'OCAMLC -o $@'	
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ -custom str.cma unix.cma \
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma unix.cma \
           $(COQMKTOPCMO) $(OSDEPLIBS)
+
+$(COQMKTOPOPT): $(COQMKTOPCMX)
+	$(SHOW)'OCAMLOPT -o $@'	
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ str.cmxa unix.cmxa \
+          $(COQMKTOPCMX) $(OSDEPLIBS)
+
+$(COQMKTOP): $(BESTCOQMKTOP)
+	cd bin; ln -sf coqmktop.$(BEST)$(EXE) coqmktop$(EXE)
 
 
 scripts/tolink.ml: Makefile
@@ -428,10 +455,19 @@ beforedepend:: scripts/tolink.ml
 # coqc
 
 COQCCMO=$(CONFIG) toplevel/usage.cmo scripts/coqc.cmo
+COQCCMX=config/coq_config.cmx toplevel/usage.cmx scripts/coqc.cmx
 
-$(COQC): $(COQCCMO) $(COQTOPBYTE) $(BESTCOQTOP)
+$(COQCBYTE): $(COQCCMO) $(COQTOPBYTE) $(BESTCOQTOP)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ -custom unix.cma $(COQCCMO) $(OSDEPLIBS)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ unix.cma $(COQCCMO) $(OSDEPLIBS)
+
+$(COQCOPT): $(COQCCMX) $(COQTOPOPT) $(BESTCOQTOP)
+	$(SHOW)'OCAMLOPT -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ unix.cmxa $(COQCCMX) $(OSDEPLIBS)
+
+$(COQC): $(BESTCOQC)
+	cd bin; ln -sf coqc.$(BEST)$(EXE) coqc$(EXE)
+
 
 clean::
 	rm -f scripts/tolink.ml
@@ -565,7 +601,7 @@ COQIDEBYTE=bin/coqide.byte$(EXE)
 COQIDEOPT=bin/coqide.opt$(EXE)
 COQIDE=bin/coqide$(EXE)
 
-COQIDECMO=ide/utils/okey.cmo ide/utils/uoptions.cmo \
+COQIDECMO=ide/utils/okey.cmo ide/utils/config_file.cmo \
 	  ide/utils/configwin_keys.cmo ide/utils/configwin_types.cmo \
 	  ide/utils/configwin_messages.cmo ide/utils/configwin_ihm.cmo \
 	  ide/utils/configwin.cmo \
@@ -723,14 +759,14 @@ PARSERCODE=contrib/interface/line_parser.cmo contrib/interface/vtp.cmo \
 PARSERCMO=$(PARSERREQUIRES) $(PARSERCODE)
 PARSERCMX= $(PARSERREQUIRESCMX) $(PARSERCODE:.cmo=.cmx)
 
-bin/parser$(EXE): $(PARSERCMO)
+bin/parser$(EXE):$(LIBCOQRUN) $(PARSERCMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) -linkall -custom -cclib -lunix $(OPTFLAGS) -o $@ \
-	  dynlink.cma $(CMA) $(PARSERCMO)
+	$(HIDE)$(OCAMLC) -custom -linkall $(BYTEFLAGS) -o $@ \
+	  dynlink.cma $(LIBCOQRUN) $(CMA) $(PARSERCMO)
 
-bin/parser.opt$(EXE): $(PARSERCMX)
+bin/parser.opt$(EXE): $(LIBCOQRUN) $(PARSERCMX)
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) -linkall -cclib -lunix $(OPTFLAGS) -o $@ \
+	$(HIDE)$(OCAMLOPT) -linkall $(OPTFLAGS) -o $@ \
 	  $(LIBCOQRUN) $(CMXA) $(PARSERCMX)
 
 INTERFACEVO=
@@ -782,15 +818,18 @@ INITVO=\
 init: $(INITVO)
 
 LOGICVO=\
- theories/Logic/Hurkens.vo          	theories/Logic/ProofIrrelevance.vo\
- theories/Logic/Classical.vo          	theories/Logic/Classical_Type.vo \
- theories/Logic/Classical_Pred_Set.vo   theories/Logic/Eqdep.vo          \
- theories/Logic/Classical_Pred_Type.vo  theories/Logic/Classical_Prop.vo \
- theories/Logic/ClassicalFacts.vo       theories/Logic/ChoiceFacts.vo \
- theories/Logic/Berardi.vo       	theories/Logic/Eqdep_dec.vo \
- theories/Logic/Decidable.vo            theories/Logic/JMeq.vo \
- theories/Logic/ClassicalDescription.vo theories/Logic/ClassicalChoice.vo \
- theories/Logic/RelationalChoice.vo     theories/Logic/Diaconescu.vo
+ theories/Logic/Hurkens.vo            theories/Logic/ProofIrrelevance.vo\
+ theories/Logic/Classical.vo          theories/Logic/Classical_Type.vo \
+ theories/Logic/Classical_Pred_Set.vo theories/Logic/Eqdep.vo          \
+ theories/Logic/Classical_Prop.vo     theories/Logic/Classical_Pred_Type.vo \
+ theories/Logic/ClassicalFacts.vo     theories/Logic/ChoiceFacts.vo \
+ theories/Logic/Berardi.vo            theories/Logic/Eqdep_dec.vo \
+ theories/Logic/Decidable.vo          theories/Logic/JMeq.vo \
+ theories/Logic/ClassicalChoice.vo    theories/Logic/ClassicalDescription.vo \
+ theories/Logic/RelationalChoice.vo   theories/Logic/Diaconescu.vo \
+ theories/Logic/EqdepFacts.vo         theories/Logic/ProofIrrelevanceFacts.vo \
+ theories/Logic/ClassicalEpsilon.vo   theories/Logic/ClassicalUniqueChoice.vo \
+ theories/Logic/DecidableType.vo      theories/Logic/DecidableTypeEx.vo 
 
 ARITHVO=\
  theories/Arith/Arith.vo        theories/Arith/Gt.vo          \
@@ -808,7 +847,8 @@ ARITHVO=\
 
 SORTINGVO=\
  theories/Sorting/Heap.vo	theories/Sorting/Permutation.vo \
- theories/Sorting/Sorting.vo
+ theories/Sorting/Sorting.vo	theories/Sorting/PermutSetoid.vo \
+ theories/Sorting/PermutEq.vo
  
 BOOLVO=\
  theories/Bool/Bool.vo  	theories/Bool/IfProp.vo \
@@ -818,7 +858,9 @@ BOOLVO=\
 
 NARITHVO=\
  theories/NArith/BinPos.vo	theories/NArith/Pnat.vo \
- theories/NArith/BinNat.vo	theories/NArith/NArith.vo
+ theories/NArith/BinNat.vo	theories/NArith/NArith.vo \
+ theories/NArith/Nnat.vo	theories/NArith/Ndigits.vo \
+ theories/NArith/Ndec.vo	theories/NArith/Ndist.vo 
 
 ZARITHVO=\
  theories/ZArith/BinInt.vo      theories/ZArith/Wf_Z.vo \
@@ -833,12 +875,18 @@ ZARITHVO=\
  theories/ZArith/Zdiv.vo	theories/ZArith/Zsqrt.vo \
  theories/ZArith/Zwf.vo		theories/ZArith/ZArith_base.vo \
  theories/ZArith/Zbool.vo	theories/ZArith/Zbinary.vo \
- theories/ZArith/Znumtheory.vo
+ theories/ZArith/Znumtheory.vo  theories/ZArith/Int.vo
+
+QARITHVO=\
+ theories/QArith/QArith_base.vo theories/QArith/Qreduction.vo \
+ theories/QArith/Qring.vo       theories/QArith/Qreals.vo \
+ theories/QArith/QArith.vo	theories/QArith/Qcanon.vo 
 
 LISTSVO=\
  theories/Lists/MonoList.vo \
  theories/Lists/ListSet.vo   	theories/Lists/Streams.vo \
- theories/Lists/TheoryList.vo   theories/Lists/List.vo
+ theories/Lists/TheoryList.vo   theories/Lists/List.vo \
+ theories/Lists/SetoidList.vo   theories/Lists/ListTactics.vo
 
 STRINGSVO=\
  theories/Strings/Ascii.vo      theories/Strings/String.vo
@@ -856,11 +904,35 @@ SETSVO=\
  theories/Sets/Multiset.vo          theories/Sets/Relations_3_facts.vo \
  theories/Sets/Partial_Order.vo     theories/Sets/Uniset.vo
 
+FSETSBASEVO=\
+ theories/FSets/OrderedType.vo \
+ theories/FSets/OrderedTypeEx.vo     theories/FSets/OrderedTypeAlt.vo \
+ theories/FSets/FSetInterface.vo     theories/FSets/FSetList.vo \
+ theories/FSets/FSetBridge.vo        theories/FSets/FSetFacts.vo \
+ theories/FSets/FSetProperties.vo    theories/FSets/FSetEqProperties.vo \
+ theories/FSets/FSets.vo             theories/FSets/FSetWeakProperties.vo \
+ theories/FSets/FSetWeakInterface.vo theories/FSets/FSetWeakList.vo \
+ theories/FSets/FSetWeakFacts.vo     theories/FSets/FSetWeak.vo \
+ theories/FSets/FMapInterface.vo     theories/FSets/FMapList.vo \
+ theories/FSets/FMaps.vo             theories/FSets/FMapFacts.vo \
+ theories/FSets/FMapWeakFacts.vo \
+ theories/FSets/FMapWeakInterface.vo theories/FSets/FMapWeakList.vo \
+ theories/FSets/FMapWeak.vo          theories/FSets/FMapPositive.vo \
+ theories/FSets/FMapIntMap.vo        theories/FSets/FSetToFiniteSet.vo
+
+FSETS_basic=
+
+FSETS_all=\
+ theories/FSets/FMapAVL.vo           theories/FSets/FSetAVL.vo \
+
+FSETSVO=$(FSETSBASEVO) $(FSETS_$(FSETS))
+
+ALLFSETS=$(FSETSBASEVO) $(FSETS_all)
+
 INTMAPVO=\
  theories/IntMap/Adalloc.vo    theories/IntMap/Mapcanon.vo \
- theories/IntMap/Addec.vo      theories/IntMap/Mapcard.vo \
- theories/IntMap/Addr.vo       theories/IntMap/Mapc.vo \
- theories/IntMap/Adist.vo      theories/IntMap/Mapfold.vo \
+ theories/IntMap/Mapfold.vo \
+ theories/IntMap/Mapcard.vo    theories/IntMap/Mapc.vo \
  theories/IntMap/Allmaps.vo    theories/IntMap/Mapiter.vo \
  theories/IntMap/Fset.vo       theories/IntMap/Maplists.vo \
  theories/IntMap/Lsort.vo      theories/IntMap/Mapsubset.vo \
@@ -889,6 +961,7 @@ REALSBASEVO=\
  theories/Reals/Rdefinitions.vo \
  theories/Reals/Raxioms.vo      theories/Reals/RIneq.vo \
  theories/Reals/DiscrR.vo       theories/Reals/Rbase.vo \
+ theories/Reals/LegacyRfield.vo
 
 REALS_basic= 
 
@@ -927,8 +1000,8 @@ SETOIDSVO=theories/Setoids/Setoid.vo
 
 THEORIESVO =\
   $(INITVO) $(LOGICVO) $(ARITHVO) $(BOOLVO) $(NARITHVO) $(ZARITHVO) \
-  $(LISTSVO) $(STRINGSVO) $(SETSVO) $(INTMAPVO) $(RELATIONSVO) \
-  $(WELLFOUNDEDVO) $(REALSVO) $(SETOIDSVO) $(SORTINGVO)
+  $(SETOIDSVO) $(LISTSVO) $(STRINGSVO) $(SETSVO) $(FSETSVO) $(INTMAPVO) \
+  $(RELATIONSVO) $(WELLFOUNDEDVO) $(REALSVO)  $(SORTINGVO) $(QARITHVO)
 
 THEORIESLIGHTVO = $(INITVO) $(LOGICVO) $(ARITHVO)
 
@@ -940,9 +1013,12 @@ arith: $(ARITHVO)
 bool: $(BOOLVO)
 narith: $(NARITHVO)
 zarith: $(ZARITHVO)
+qarith: $(QARITHVO)
 lists: $(LISTSVO)
 strings: $(STRINGSVO)
 sets: $(SETSVO)
+fsets: $(FSETSVO)
+allfsets: $(ALLFSETS)
 intmap: $(INTMAPVO)
 relations: $(RELATIONSVO)
 wellfounded: $(WELLFOUNDEDVO)
@@ -952,8 +1028,8 @@ allreals: $(ALLREALS)
 setoids: $(SETOIDSVO)
 sorting: $(SORTINGVO)
 
-noreal: logic arith bool zarith lists sets intmap relations wellfounded \
-	setoids sorting
+noreal: logic arith bool zarith qarith lists sets fsets intmap relations \
+	wellfounded setoids sorting
 
 ###########################################################################
 # contribs (interface not included)
@@ -966,21 +1042,26 @@ ROMEGAVO=\
  contrib/romega/ReflOmegaCore.vo contrib/romega/ROmega.vo 
 
 RINGVO=\
- contrib/ring/ArithRing.vo      contrib/ring/Ring_normalize.vo \
- contrib/ring/Ring_theory.vo    contrib/ring/Ring.vo \
- contrib/ring/NArithRing.vo     \
- contrib/ring/ZArithRing.vo     contrib/ring/Ring_abstract.vo \
- contrib/ring/Quote.vo		contrib/ring/Setoid_ring_normalize.vo \
- contrib/ring/Setoid_ring.vo	contrib/ring/Setoid_ring_theory.vo
-
-NEWRINGVO=\
- contrib/setoid_ring/BinList.vo   contrib/setoid_ring/Ring_th.vo \
- contrib/setoid_ring/Pol.vo       contrib/setoid_ring/Ring_tac.vo \
- contrib/setoid_ring/ZRing_th.vo
+ contrib/ring/LegacyArithRing.vo      	contrib/ring/Ring_normalize.vo \
+ contrib/ring/LegacyRing_theory.vo	contrib/ring/LegacyRing.vo \
+ contrib/ring/LegacyNArithRing.vo     \
+ contrib/ring/LegacyZArithRing.vo	contrib/ring/Ring_abstract.vo \
+ contrib/ring/Quote.vo			contrib/ring/Setoid_ring_normalize.vo \
+ contrib/ring/Setoid_ring.vo		contrib/ring/Setoid_ring_theory.vo
 
 FIELDVO=\
- contrib/field/Field_Compl.vo     contrib/field/Field_Theory.vo \
- contrib/field/Field_Tactic.vo    contrib/field/Field.vo
+ contrib/field/LegacyField_Compl.vo     contrib/field/LegacyField_Theory.vo \
+ contrib/field/LegacyField_Tactic.vo    contrib/field/LegacyField.vo
+
+NEWRINGVO=\
+ contrib/setoid_ring/BinList.vo   	contrib/setoid_ring/Ring_theory.vo \
+ contrib/setoid_ring/Ring_polynom.vo	contrib/setoid_ring/Ring_tac.vo \
+ contrib/setoid_ring/Ring_base.vo 	contrib/setoid_ring/InitialRing.vo \
+ contrib/setoid_ring/Ring_equiv.vo 	contrib/setoid_ring/Ring.vo \
+ contrib/setoid_ring/ArithRing.vo	contrib/setoid_ring/NArithRing.vo \
+ contrib/setoid_ring/ZArithRing.vo \
+ contrib/setoid_ring/Field_theory.vo	contrib/setoid_ring/Field_tac.vo \
+ contrib/setoid_ring/Field.vo		contrib/setoid_ring/RealField.vo
 
 XMLVO= 
 
@@ -995,7 +1076,7 @@ JPROVERVO=
 
 CCVO=
 
-SUBTACVO=
+SUBTACVO=contrib/subtac/FixSub.vo contrib/subtac/Utils.vo
 
 RTAUTOVO = \
  contrib/rtauto/Bintree.vo contrib/rtauto/Rtauto.vo
@@ -1087,7 +1168,7 @@ COQDEPCMO=config/coq_config.cmo tools/coqdep_lexer.cmo tools/coqdep.cmo
 
 $(COQDEP): $(COQDEPCMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ unix.cma $(COQDEPCMO) $(OSDEPLIBS)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ unix.cma $(COQDEPCMO) $(OSDEPLIBS)
 
 beforedepend:: tools/coqdep_lexer.ml $(COQDEP)
 
@@ -1095,33 +1176,33 @@ GALLINACMO=tools/gallina_lexer.cmo tools/gallina.cmo
 
 $(GALLINA): $(GALLINACMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ $(GALLINACMO)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ $(GALLINACMO)
 
 beforedepend:: tools/gallina_lexer.ml
 
 $(COQMAKEFILE): tools/coq_makefile.cmo
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ tools/coq_makefile.cmo
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ tools/coq_makefile.cmo
 
 $(COQTEX): tools/coq-tex.cmo
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ str.cma tools/coq-tex.cmo
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma tools/coq-tex.cmo
 
 beforedepend:: tools/coqwc.ml
 
 $(COQWC): tools/coqwc.cmo
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ tools/coqwc.cmo
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ tools/coqwc.cmo
 
 beforedepend:: tools/coqdoc/pretty.ml tools/coqdoc/index.ml
 
-COQDOCCMO=$(CONFIG) tools/coqdoc/alpha.cmo tools/coqdoc/index.cmo \
-          tools/coqdoc/output.cmo tools/coqdoc/pretty.cmo \
-	  tools/coqdoc/main.cmo
+COQDOCCMO=$(CONFIG) tools/coqdoc/cdglobals.cmo tools/coqdoc/alpha.cmo \
+	tools/coqdoc/index.cmo tools/coqdoc/output.cmo \
+	tools/coqdoc/pretty.cmo tools/coqdoc/main.cmo
 
 $(COQDOC): $(COQDOCCMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ str.cma unix.cma $(COQDOCCMO)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma unix.cma $(COQDOCCMO)
 
 clean::
 	rm -f tools/coqdep_lexer.ml tools/gallina_lexer.ml
@@ -1143,7 +1224,7 @@ MINICOQ=bin/minicoq$(EXE)
 
 $(MINICOQ): $(MINICOQCMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ -custom $(CMA) $(MINICOQCMO) $(OSDEPLIBS)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ $(CMA) $(MINICOQCMO) $(OSDEPLIBS)
 
 archclean::
 	rm -f $(MINICOQ)
@@ -1179,6 +1260,9 @@ install-opt::
 
 install-tools::
 	$(MKDIR) $(FULLBINDIR)
+	# recopie des fichiers de style pour coqide
+	$(MKDIR) $(FULLCOQLIB)/tools/coqdoc
+	cp tools/coqdoc/coqdoc.css tools/coqdoc/coqdoc.sty $(FULLCOQLIB)/tools/coqdoc
 	cp $(TOOLS) $(FULLBINDIR)
 
 LIBFILES=$(THEORIESVO) $(CONTRIBVO)
@@ -1239,20 +1323,32 @@ install-latex:
 
 .PHONY: doc
 
-doc: doc/coq.tex
-	$(MAKE) -C doc coq.ps minicoq.dvi
+doc: glob.dump
+	(cd doc; make all)
 
-doc/coq.tex:
-	ocamlweb -p "\usepackage{epsfig}" \
-	doc/macros.tex doc/intro.tex \
-	lib/{doc.tex,*.mli} kernel/{doc.tex,*.mli} library/{doc.tex,*.mli} \
-	pretyping/{doc.tex,*.mli} interp/{doc.tex,*.mli} \
-	parsing/{doc.tex,*.mli} proofs/{doc.tex,*.mli} \
-	tactics/{doc.tex,*.mli} toplevel/{doc.tex,*.mli} \
-	-o doc/coq.tex
+clean::
+	(cd doc; make clean)
 
 clean::
 	rm -f doc/coq.tex
+
+###########################################################################
+# Documentation of the source code (using ocamldoc)
+###########################################################################
+
+SOURCEDOCDIR=dev/source-doc
+
+.PHONY: source-doc
+
+source-doc:
+	if !(test -d $(SOURCEDOCDIR)); then mkdir $(SOURCEDOCDIR); fi
+	$(OCAMLDOC) -html -rectypes $(LOCALINCLUDES) -d $(SOURCEDOCDIR) `find . -name "*.ml"`
+
+clean::
+	rm -rf $(SOURCEDOCDIR)
+
+
+
 
 ###########################################################################
 # Emacs tags
@@ -1319,7 +1415,7 @@ GRAMMARNEEDEDCMO=\
   proofs/tacexpr.cmo \
   parsing/lexer.cmo parsing/extend.cmo \
   toplevel/vernacexpr.cmo parsing/pcoq.cmo parsing/q_util.cmo \
-  parsing/q_coqast.cmo
+  parsing/q_coqast.cmo 
 
 CAMLP4EXTENSIONSCMO=\
   parsing/argextend.cmo parsing/tacextend.cmo parsing/vernacextend.cmo 
@@ -1337,9 +1433,9 @@ PRINTERSCMO=\
   kernel/sign.cmo kernel/declarations.cmo kernel/pre_env.cmo \
   kernel/cbytecodes.cmo kernel/cbytegen.cmo kernel/environ.cmo \
   kernel/conv_oracle.cmo kernel/closure.cmo kernel/reduction.cmo	\
-  kernel/cooking.cmo 		\
   kernel/modops.cmo kernel/type_errors.cmo kernel/inductive.cmo		\
-  kernel/subtyping.cmo kernel/typeops.cmo kernel/indtypes.cmo		\
+  kernel/typeops.cmo kernel/subtyping.cmo kernel/indtypes.cmo		\
+  kernel/cooking.cmo 		\
   kernel/term_typing.cmo kernel/mod_typing.cmo kernel/safe_typing.cmo	\
   library/summary.cmo library/global.cmo library/nameops.cmo		\
   library/libnames.cmo library/nametab.cmo library/libobject.cmo	\
@@ -1359,10 +1455,13 @@ PRINTERSCMO=\
   interp/constrextern.cmo interp/syntax_def.cmo interp/constrintern.cmo	\
   proofs/proof_trees.cmo proofs/logic.cmo proofs/refiner.cmo \
   proofs/tacexpr.cmo \
-  proofs/evar_refiner.cmo proofs/pfedit.cmo proofs/tactic_debug.cmo	\
-  parsing/ppconstr.cmo parsing/extend.cmo \
-  parsing/printer.cmo parsing/pptactic.cmo parsing/tactic_printer.cmo \
-  parsing/pcoq.cmo parsing/egrammar.cmo toplevel/himsg.cmo \
+  proofs/evar_refiner.cmo proofs/pfedit.cmo proofs/tactic_debug.cmo \
+  proofs/decl_mode.cmo \
+  parsing/ppconstr.cmo parsing/extend.cmo parsing/pcoq.cmo \
+  parsing/printer.cmo parsing/pptactic.cmo \
+  parsing/ppdecl_proof.cmo \
+  parsing/tactic_printer.cmo \
+  parsing/egrammar.cmo toplevel/himsg.cmo \
   toplevel/cerrors.cmo toplevel/vernacexpr.cmo toplevel/vernacinterp.cmo \
   dev/top_printers.cmo
 
@@ -1389,7 +1488,9 @@ ML4FILES +=parsing/g_minicoq.ml4 \
 	   parsing/g_xml.ml4 parsing/g_constr.ml4 \
 	   parsing/g_tactic.ml4 parsing/g_ltac.ml4 \
 	   parsing/argextend.ml4 parsing/tacextend.ml4 \
-	   parsing/vernacextend.ml4
+	   parsing/vernacextend.ml4 parsing/q_constr.ml4 \
+	   parsing/g_decl_mode.ml4
+
 
 # beforedepend:: $(GRAMMARCMO)
 
@@ -1488,6 +1589,19 @@ parsing/lexer.cmo: parsing/lexer.ml4
 	$(SHOW)'OCAMLC4   $<'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` pr_o.cmo -impl" -c -impl $<
 
+# pretty printing of the revision number when compiling a checked out
+# source tree
+.PHONY: revision
+
+revision:
+ifeq ($(CHECKEDOUT),1)
+	- /bin/rm -f revision
+	sed -ne '/url/s/^.*\/\([^\/]\+\)"$$/\1/p' .svn/entries > revision
+	sed -ne '/revision/s/^.*"\([0-9]\+\)".*$$/r\1/p' .svn/entries >> revision
+endif
+
+archclean::
+	/bin/rm -f revision
 
 
 ###########################################################################
@@ -1513,15 +1627,15 @@ parsing/lexer.cmo: parsing/lexer.ml4
 
 .mll.ml:
 	$(SHOW)'OCAMLLEX  $<'
-	$(HIDE)ocamllex $<
+	$(HIDE)$(OCAMLLEX) $<
 
 .mly.ml:
 	$(SHOW)'OCAMLYACC $<'
-	$(HIDE)ocamlyacc $<
+	$(HIDE)$(OCAMLYACC) $<
 
 .mly.mli:
 	$(SHOW)'OCAMLYACC $<'
-	$(HIDE)ocamlyacc $<
+	$(HIDE)$(OCAMLYACC) $<
 
 .ml4.cmx:
 	$(SHOW)'OCAMLOPT4 $<'
@@ -1567,22 +1681,22 @@ archclean::
 clean:: archclean
 	rm -f *~ */*~ */*/*~
 	rm -f gmon.out core
-	rm -f config/*.cm[ioa]
-	rm -f lib/*.cm[ioa]
-	rm -f kernel/*.cm[ioa]
-	rm -f library/*.cm[ioa]
-	rm -f proofs/*.cm[ioa]
-	rm -f tactics/*.cm[ioa]
-	rm -f interp/*.cm[ioa]
-	rm -f parsing/*.cm[ioa] parsing/*.ppo
-	rm -f pretyping/*.cm[ioa]
-	rm -f toplevel/*.cm[ioa]
-	rm -f ide/*.cm[ioa]
-	rm -f ide/utils/*.cm[ioa]
-	rm -f tools/*.cm[ioa]
-	rm -f tools/*/*.cm[ioa]
-	rm -f scripts/*.cm[ioa]
-	rm -f dev/*.cm[ioa]
+	rm -f config/*.cm[ioa] config/*.annot
+	rm -f lib/*.cm[ioa] lib/*.annot
+	rm -f kernel/*.cm[ioa] kernel/*.annot
+	rm -f library/*.cm[ioa] library/*.annot
+	rm -f proofs/*.cm[ioa] proofs/*.annot
+	rm -f tactics/*.cm[ioa] tactics/*.annot
+	rm -f interp/*.cm[ioa] interp/*.annot
+	rm -f parsing/*.cm[ioa] parsing/*.ppo parsing/*.annot
+	rm -f pretyping/*.cm[ioa] pretyping/*.annot
+	rm -f toplevel/*.cm[ioa] toplevel/*.annot
+	rm -f ide/*.cm[ioa] ide/*.annot
+	rm -f ide/utils/*.cm[ioa] ide/utils/*.annot
+	rm -f tools/*.cm[ioa] tools/*.annot
+	rm -f tools/*/*.cm[ioa] tools/*/*.annot
+	rm -f scripts/*.cm[ioa] scripts/*.annot
+	rm -f dev/*.cm[ioa] dev/*.annot
 	rm -f */*.pp[iox] contrib/*/*.pp[iox]
 
 cleanconfig::
@@ -1596,7 +1710,7 @@ alldepend: depend dependcoq
 
 dependcoq:: beforedepend
 	$(COQDEP) -coqlib . -R theories Coq -R contrib Coq $(COQINCLUDES) \
-	 $(ALLREALS:.vo=.v) $(ALLVO:.vo=.v) > .depend.coq
+	 $(ALLFSETS:.vo=.v) $(ALLREALS:.vo=.v) $(ALLVO:.vo=.v) > .depend.coq
 
 # Build dependencies ignoring failures in building ml files from ml4 files
 # This is useful to rebuild dependencies when they are strongly corrupted:
@@ -1640,8 +1754,8 @@ depend: beforedepend dependp4 ml4filesml
 	  echo `$(CAMLP4DEPS) $$f` >> .depend; \
 	done
 # 5.  We express dependencies of .o files
-	gcc -MM $(CINCLUDES) kernel/byterun/*.c >> .depend
-	gcc -MM  $(CINCLUDES) kernel/byterun/*.c | sed -e 's/\.o/.d.o/' >> \
+	$(CC) -MM $(CINCLUDES) kernel/byterun/*.c >> .depend
+	$(CC) -MM  $(CINCLUDES) kernel/byterun/*.c | sed -e 's/\.o/.d.o/' >> \
                     .depend
 # 6. Finally, we erase the generated .ml files
 	rm -f $(ML4FILESML)
@@ -1666,6 +1780,5 @@ devel:
 
 clean::
 	find . -name "\.#*" -exec rm -f {} \;
-	find . -name "*~" -exec rm -f {} \;
 
 ###########################################################################

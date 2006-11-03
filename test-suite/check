@@ -103,6 +103,36 @@ test_interactive() {
     done
 }
 
+# La fonction suivante teste en interactif 
+# It expects a line "(* Expected time < XXX.YYs *)" in the .v file 
+# with exactly two digits after the dot
+test_complexity() {
+    if [ -f /proc/cpuinfo ]; then
+        bogomips=`sed -n -e "s/bogomips.*: \([0-9]*\).*/\1/p" /proc/cpuinfo | head -1`
+    else
+        bogomips=6120 # assume a i386 3Gz
+    fi
+    for f in $1/*.v; do 
+	nbtests=`expr $nbtests + 1`
+	printf "    "$f"..."
+        # compute effective user time * 100
+	res=`$command $f 2>&1 | sed -n -e "s/Finished transaction in .*(\([0-9]*\)\.\([0-9][0-9]\).*/\1\2/p" | head -1`
+	if [ $? != 0 ]; then
+ 	    echo "Error! (should be accepted)"
+        else 
+          # find expected time * 100
+          exp=`sed -n -e "s/(\*.*Expected time < \([0-9]\).\([0-9][0-9]\)s.*\*)/\1\2/p" $f`
+          ok=`expr \( $res \* $bogomips \) "<" \( $exp \* 6120 \)`
+          if [ $ok = 1 ]; then
+              echo "Ok"
+              nbtestsok=`expr $nbtestsok + 1`
+          else
+              echo "Error! (should run faster)"
+          fi
+        fi
+    done
+}
+
 # Programme principal
 
 echo "Success tests"
@@ -115,6 +145,8 @@ echo "Parser tests"
 test_parser parser
 echo "Interactive tests"
 test_interactive interactive
+echo "Complexity tests"
+test_complexity complexity
 echo "Module tests"
 $coqtop -compile modules/Nat
 $coqtop -compile modules/plik

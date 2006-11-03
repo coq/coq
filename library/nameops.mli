@@ -38,6 +38,8 @@ val out_name : name -> identifier
 val name_fold : (identifier -> 'a -> 'a) -> name -> 'a -> 'a
 val name_cons : name -> identifier list -> identifier list
 val name_app : (identifier -> identifier) -> name -> name
+val name_fold_map : ('a -> identifier -> 'a * identifier) -> 'a -> name -> 'a * name
+
 
 val pr_lab : label -> Pp.std_ppcmds
 

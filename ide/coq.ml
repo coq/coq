@@ -19,6 +19,7 @@ open Printer
 open Environ
 open Evarutil
 open Evd
+open Decl_mode
 open Hipattern
 open Tacmach
 open Reductionops
@@ -53,41 +54,41 @@ let version () =
   let date =
     if Glib.Utf8.validate Coq_config.date
     then Coq_config.date
-    else "<date not printable>"
-  in
-  Printf.sprintf 
-    "The Coq Proof Assistant, version %s (%s)\
-   \nConfigured on %s\
-   \nArchitecture %s running %s operating system\
-   \nGtk version is %s\
-   \nThis is the %s version (%s is the best one for this architecture and OS)\
-   \n"
-    Coq_config.version date Coq_config.compile_date
-    Coq_config.arch Sys.os_type
-    (let x,y,z = GMain.Main.version in Printf.sprintf "%d.%d.%d" x y z)
+    else "<date not printable>" in
+  let get_version_date () =
+    try
+      let ch = open_in (Coq_config.coqtop^"/revision") in
+      let ver = input_line ch in
+      let rev = input_line ch in
+	(ver,rev)
+    with _ -> (Coq_config.version,date) in
+  let (rev,ver) = get_version_date () in
+    Printf.sprintf 
+      "The Coq Proof Assistant, version %s (%s)\
+       \nArchitecture %s running %s operating system\
+       \nGtk version is %s\
+       \nThis is the %s version (%s is the best one for this architecture and OS)\
+       \n"
+      rev ver
+      Coq_config.arch Sys.os_type
+      (let x,y,z = GMain.Main.version in Printf.sprintf "%d.%d.%d" x y z)
     (if Mltop.get () = Mltop.Native then "native" else "bytecode") 
     (if Coq_config.best="opt" then "native" else "bytecode") 
 
 let is_in_coq_lib dir = 
   prerr_endline ("Is it a coq theory ? : "^dir);
-  try
-    let stat = Unix.stat dir in
-    List.exists 
-      (fun s -> 
-	 try
-	   let fdir = Filename.concat 
-			Coq_config.coqlib 
-			(Filename.concat "theories" s) 
-	   in
-	   prerr_endline (" Comparing to: "^fdir);
-	   let fstat = Unix.stat fdir in 
-	   (fstat.Unix.st_dev = stat.Unix.st_dev) &&
-	   (fstat.Unix.st_ino = stat.Unix.st_ino) && 
-           (prerr_endline " YES";true)
-	 with _ -> prerr_endline " No(because of a local exn)";false
-      )
-      Coq_config.theories_dirs
-  with _ -> prerr_endline " No(because of a global exn)";false
+  let is_same_file = same_file dir in
+  List.exists 
+    (fun s -> 
+      let fdir =
+        Filename.concat Coq_config.coqlib (Filename.concat "theories" s) in
+      prerr_endline (" Comparing to: "^fdir);
+      if is_same_file fdir then (prerr_endline " YES";true)
+      else (prerr_endline"NO";false))
+    Coq_config.theories_dirs
+
+let is_in_loadpath dir =
+  Library.is_in_load_paths (System.physical_path_of_string dir)
 
 let is_in_coq_path f = 
   try 
@@ -102,7 +103,9 @@ let is_in_coq_path f =
     false  
 
 let is_in_proof_mode () = 
-  try ignore (get_pftreestate ()); true with _ -> false
+  match Decl_mode.get_current_mode () with
+      Decl_mode.Mode_none -> false
+    | _ -> true
 
 let user_error_loc l s =
   raise (Stdpp.Exc_located (l, Util.UserError ("CoqIde", s)))
@@ -122,7 +125,7 @@ let interp verbosely s =
 	  | VernacDeclareTacticDefinition _
 		when is_in_proof_mode () -> 
 		  user_error_loc loc (str "CoqIDE do not support nested goals")
-	  | VernacDebug _ ->
+	  | VernacSetOption (Goptions.SecondaryTable ("Ltac","Debug"), _) ->
 	      user_error_loc loc (str "Debug mode not available within CoqIDE")
 	  | VernacResetName _
 	  | VernacResetInitial 
@@ -244,12 +247,13 @@ type hyp = env * evar_map *
            ((identifier * string) * constr option * constr) * 
            (string * string)
 type concl = env * evar_map * constr * string
+type meta = env * evar_map * string
 type goal = hyp list * concl
 
 let prepare_hyp sigma env ((i,c,d) as a) =
   env, sigma,
   ((i,string_of_id i),c,d), 
-  (msg (pr_var_decl env a), msg (pr_lconstr_env_at_top env d))
+  (msg (pr_var_decl env a), msg (pr_ltype_env env d))
 
 let prepare_hyps sigma env =
   assert (rel_context env = []);
@@ -263,7 +267,38 @@ let prepare_hyps sigma env =
 let prepare_goal sigma g =
   let env = evar_env g in
   (prepare_hyps sigma env,
-   (env, sigma, g.evar_concl, msg (pr_lconstr_env_at_top env g.evar_concl)))
+   (env, sigma, g.evar_concl, msg (pr_ltype_env_at_top env g.evar_concl)))
+
+let prepare_hyps_filter info sigma env =
+  assert (rel_context env = []);
+  let hyps =
+    fold_named_context
+      (fun env ((id,_,_) as d) acc ->
+	 if true || Idset.mem id info.pm_hyps then
+	   let hyp = prepare_hyp sigma env d in hyp :: acc
+	 else acc)
+      env ~init:[] 
+  in
+  List.rev hyps
+
+let prepare_meta sigma env (m,typ)  =
+  env, sigma, 
+  (msg (str " ?" ++ int m ++ str " : " ++ pr_ltype_env_at_top env typ))
+
+let prepare_metas info sigma env =
+  List.fold_right 
+    (fun cpl acc ->  
+      let meta = prepare_meta sigma env cpl in meta :: acc)
+    info.pm_subgoals [] 
+
+let get_current_pm_goal () =
+  let pfts = get_pftreestate ()  in
+  let gls = try nth_goal_of_pftreestate 1 pfts with _ -> raise Not_found in
+  let info = Decl_mode.get_info gls.it in
+  let env = pf_env gls in
+  let sigma= sig_sig gls in
+    (prepare_hyps_filter info sigma env,
+     prepare_metas info sigma env)
 
 let get_current_goals () = 
     let pfts = get_pftreestate () in
@@ -273,14 +308,13 @@ let get_current_goals () =
 
 let get_current_goals_nb () = 
   try List.length (get_current_goals ()) with _ -> 0
-
   
 let print_no_goal () =
     let pfts = get_pftreestate () in
     let gls = fst (Refiner.frontier (Tacmach.proof_of_pftreestate pfts)) in 
     assert (gls = []);
     let sigma = Tacmach.project (Tacmach.top_goal_of_pftreestate pfts) in
-    msg (Printer.pr_subgoals sigma gls)
+    msg (Printer.pr_subgoals (Decl_mode.get_end_command pfts) sigma gls)
 
 
 type word_class = Normal | Kwd | Reserved
@@ -333,7 +367,7 @@ let compute_reset_info = function
   | VernacDeclareModule (_,(_,id), _, _)
   | VernacDeclareModuleType ((_,id), _, _)
   | VernacAssumption (_, (_,((_,id)::_,_))::_)
-  | VernacInductive (_, ((_,id),_,_,_,_) :: _) ->
+  | VernacInductive (_, (((_,id),_,_,_),_) :: _) ->
       Reset (id, ref true)
   | VernacDefinition (_, (_,id), ProveBody _, _)
   | VernacStartTheoremProof (_, (_,id), _, _, _) ->

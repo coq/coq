@@ -25,7 +25,7 @@ let print_sort = function
   | Prop Null -> (str "Prop")
   | Type u -> (str "Type(" ++ Univ.pr_uni u ++ str ")")
 
-let print_sort_family = function
+let pr_sort_family = function
   | InSet -> (str "Set")
   | InProp -> (str "Prop")
   | InType -> (str "Type")
@@ -855,7 +855,12 @@ let next_global_ident_away allow_secvar id avoid =
   else  
     next_global_ident_from allow_secvar (lift_ident id) avoid
 
-(* Nouvelle version de renommage des variables (DEC 98) *)
+let isGlobalRef c = 
+  match kind_of_term c with
+  | Const _ | Ind _ | Construct _ | Var _ -> true
+  | _ -> false
+
+(* nouvelle version de renommage des variables (DEC 98) *)
 (* This is the algorithm to display distinct bound variables 
 
     - Règle 1 : un nom non anonyme, même non affiché, contribue à la liste
@@ -961,7 +966,7 @@ let assums_of_rel_context sign =
 let lift_rel_context n sign =
   let rec liftrec k = function
     | (na,c,t)::sign ->
-	(na,option_app (liftn n k) c,type_app (liftn n k) t)
+	(na,option_map (liftn n k) c,type_app (liftn n k) t)
 	::(liftrec (k-1) sign)
     | [] -> []
   in
@@ -1019,4 +1024,10 @@ let rec rename_bound_var env l c =
         mkProd (Anonymous, c1, rename_bound_var env' l c2)
   | Cast (c,k,t) -> mkCast (rename_bound_var env l c, k,t)
   | x -> c
+
+(* Combinators on judgments *)
+
+let on_judgment f j = { uj_val = f j.uj_val; uj_type = f j.uj_type }
+let on_judgment_value f j = { j with uj_val = f j.uj_val }
+let on_judgment_type f j = { j with uj_type = f j.uj_type }
 

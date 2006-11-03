@@ -100,12 +100,16 @@ val list_map2_i :
 val list_map3 :
   ('a -> 'b -> 'c -> 'd) -> 'a list -> 'b list -> 'c list -> 'd list
 val list_index : 'a -> 'a list -> int
+(* [list_unique_index x l] returns [Not_found] if [x] doesn't occur exactly once *)
+val list_unique_index : 'a -> 'a list -> int 
 val list_iter_i :  (int -> 'a -> unit) -> 'a list -> unit
 val list_fold_left_i :  (int -> 'a -> 'b -> 'a) -> int -> 'a -> 'b list -> 'a
 val list_fold_right_and_left :
     ('a -> 'b -> 'b list -> 'a) -> 'b list -> 'a -> 'a
 val list_for_all_i : (int -> 'a -> bool) -> int -> 'a list -> bool
 val list_except : 'a -> 'a list -> 'a list
+val list_remove : 'a -> 'a list -> 'a list
+val list_remove_first : 'a -> 'a list -> 'a list
 val list_for_all2eq : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 val list_sep_last : 'a list -> 'a * 'a list
 val list_try_find_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b
@@ -119,6 +123,7 @@ val list_last : 'a list -> 'a
 val list_lastn : int -> 'a list -> 'a list
 val list_skipn : int -> 'a list -> 'a list 
 val list_prefix_of : 'a list -> 'a list -> bool
+val list_drop_prefix : 'a list -> 'a list -> 'a list
 (* [map_append f [x1; ...; xn]] returns [(f x1)@(f x2)@...@(f xn)] *)
 val list_map_append : ('a -> 'b list) -> 'a list -> 'b list
 (* raises [Invalid_argument] if the two lists don't have the same length *)
@@ -127,8 +132,8 @@ val list_share_tails : 'a list -> 'a list -> 'a list * 'a list * 'a list
 val list_join_map : ('a -> 'b list) -> 'a list -> 'b list
 (* [list_fold_map f e_0 [l_1...l_n] = e_n,[k_1...k_n]]
    where [(e_i,k_i)=f e_{i-1} l_i] *)
-val list_fold_map : 
-  ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list 
+val list_fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
+val list_fold_map' : ('b -> 'a -> 'c * 'a) -> 'b list -> 'a -> 'c list * 'a
 val list_map_assoc : ('a -> 'b) -> ('c * 'a) list -> ('c * 'b) list
 
 (*s Arrays. *)
@@ -144,6 +149,7 @@ val array_hd : 'a array -> 'a
 val array_tl : 'a array -> 'a array
 val array_last : 'a array -> 'a
 val array_cons : 'a -> 'a array -> 'a array
+val array_rev : 'a array -> unit
 val array_fold_right_i : 
   (int -> 'b -> 'a -> 'a) -> 'b array -> 'a -> 'a
 val array_fold_left_i : (int -> 'a -> 'b -> 'a) -> 'a -> 'b array -> 'a
@@ -167,6 +173,10 @@ val array_map3 :
 val array_map_left : ('a -> 'b) -> 'a array -> 'b array
 val array_map_left_pair : ('a -> 'b) -> 'a array -> ('c -> 'd) -> 'c array ->
   'b array * 'd array
+val array_fold_map' : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
+val array_fold_map2' :
+  ('a -> 'b -> 'c -> 'd * 'c) -> 'a array -> 'b array -> 'c -> 'd array * 'c
+val array_distinct : 'a array -> bool
 
 (*s Matrices *)
 
@@ -196,9 +206,10 @@ val interval : int -> int -> int list
 
 val in_some : 'a -> 'a option
 val out_some : 'a option -> 'a
-val option_app : ('a -> 'b) -> 'a option -> 'b option
+val option_map : ('a -> 'b) -> 'a option -> 'b option
 val option_cons : 'a option -> 'a list -> 'a list
 val option_fold_right : ('a -> 'b -> 'b) -> 'a option -> 'b -> 'b
+val option_fold_left : ('a -> 'b -> 'a) -> 'a -> 'b option -> 'a
 val option_fold_left2 : ('a -> 'b -> 'c -> 'a) -> 'a -> 'b option ->
   'c option -> 'a
 val option_iter : ('a -> unit) -> 'a option -> unit
@@ -230,6 +241,8 @@ val prlist_with_sep :
 val prvect_with_sep :
    (unit -> std_ppcmds) -> ('b -> std_ppcmds) -> 'b array -> std_ppcmds
 val pr_vertical_list : ('b -> std_ppcmds) -> 'b list -> std_ppcmds
+val surround : std_ppcmds -> std_ppcmds
+
 
 (*s Size of an ocaml value (in words, bytes and kilobytes). *)
 

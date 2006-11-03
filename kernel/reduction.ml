@@ -41,14 +41,24 @@ let compare_stack_shape stk1 stk2 =
       ([],[]) -> bal=0
     | ((Zupdate _|Zshift _)::s1, _) -> compare_rec bal s1 stk2
     | (_, (Zupdate _|Zshift _)::s2) -> compare_rec bal stk1 s2
-    | (Zapp l1::s1, _) -> compare_rec (bal+List.length l1) s1 stk2
-    | (_, Zapp l2::s2) -> compare_rec (bal-List.length l2) stk1 s2
+    | (Zapp l1::s1, _) -> compare_rec (bal+Array.length l1) s1 stk2
+    | (_, Zapp l2::s2) -> compare_rec (bal-Array.length l2) stk1 s2
     | (Zcase(c1,_,_)::s1, Zcase(c2,_,_)::s2) ->
         bal=0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
     | (Zfix(_,a1)::s1, Zfix(_,a2)::s2) ->
         bal=0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
     | (_,_) -> false in
   compare_rec 0 stk1 stk2
+
+type lft_constr_stack_elt =
+    Zlapp of (lift * fconstr) array
+  | Zlfix of (lift * fconstr) * lft_constr_stack
+  | Zlcase of case_info * lift * fconstr * fconstr array
+and lft_constr_stack = lft_constr_stack_elt list
+
+let rec zlapp v = function
+    Zlapp v2 :: s -> zlapp (Array.append v v2) s
+  | s -> Zlapp v :: s
 
 let pure_stack lfts stk =
   let rec pure_rec lfts stk =
@@ -58,15 +68,13 @@ let pure_stack lfts stk =
           (match (zi,pure_rec lfts s) with
               (Zupdate _,lpstk)  -> lpstk
             | (Zshift n,(l,pstk)) -> (el_shft n l, pstk)
-            | (Zapp a1,(l,Zapp a2::pstk)) ->
-                (l,Zapp (List.map (fun t -> (l,t)) a1 @ a2)::pstk)
             | (Zapp a, (l,pstk)) ->
-                (l,Zapp (List.map (fun t -> (l,t)) a)::pstk)
+                (l,zlapp (Array.map (fun t -> (l,t)) a) pstk)
             | (Zfix(fx,a),(l,pstk)) ->
                 let (lfx,pa) = pure_rec l a in
-                (l, Zfix((lfx,fx),pa)::pstk)
+                (l, Zlfix((lfx,fx),pa)::pstk)
             | (Zcase(ci,p,br),(l,pstk)) ->
-                (l,Zcase(ci,(l,p),Array.map (fun t -> (l,t)) br)::pstk)) in
+                (l,Zlcase(ci,l,p,br)::pstk)) in
   snd (pure_rec lfts stk)
 
 (****************************************************************************)
@@ -98,10 +106,10 @@ let whd_betadeltaiota_nolet env t =
 
 let beta_appvect c v =
   let rec stacklam env t stack =
-    match (decomp_stack stack,kind_of_term t) with
-      | Some (h,stacktl), Lambda (_,_,c) -> stacklam (h::env) c stacktl
-      | _ -> app_stack (substl env t, stack) in
-  stacklam [] c (append_stack v empty_stack)
+    match kind_of_term t, stack with
+        Lambda(_,_,c), arg::stacktl -> stacklam (arg::env) c stacktl
+      | _ -> applist (substl env t, stack) in
+  stacklam [] c (Array.to_list v)
 
 (********************************************************************)
 (*                         Conversion                               *)
@@ -117,17 +125,17 @@ let compare_stacks f fmind lft1 stk1 lft2 stk2 cuniv =
   let rec cmp_rec pstk1 pstk2 cuniv =
     match (pstk1,pstk2) with
       | (z1::s1, z2::s2) ->
-          let c1 = cmp_rec s1 s2 cuniv in
+          let cu1 = cmp_rec s1 s2 cuniv in
           (match (z1,z2) with
-            | (Zapp a1,Zapp a2) -> List.fold_right2 f a1 a2 c1
-            | (Zfix(fx1,a1),Zfix(fx2,a2)) ->
-                let c2 = f fx1 fx2 c1 in
-                cmp_rec a1 a2 c2
-            | (Zcase(ci1,p1,br1),Zcase(ci2,p2,br2)) ->
+            | (Zlapp a1,Zlapp a2) -> array_fold_right2 f a1 a2 cu1
+            | (Zlfix(fx1,a1),Zlfix(fx2,a2)) ->
+                let cu2 = f fx1 fx2 cu1 in
+                cmp_rec a1 a2 cu2
+            | (Zlcase(ci1,l1,p1,br1),Zlcase(ci2,l2,p2,br2)) ->
                 if not (fmind ci1.ci_ind ci2.ci_ind) then
 		  raise NotConvertible;
-		let c2 = f p1 p2 c1 in
-                array_fold_right2 f br1 br2 c2
+		let cu2 = f (l1,p1) (l2,p2) cu1 in
+                array_fold_right2 (fun c1 c2 -> f (l1,c1) (l2,c2)) br1 br2 cu2
             | _ -> assert false)
       | _ -> cuniv in
   if compare_stack_shape stk1 stk2 then
@@ -249,14 +257,14 @@ and eqappr cv_pb infos appr1 appr2 cuniv =
 
     (* Inductive types:  MutInd MutConstruct Fix Cofix *)
 
-     | (FInd (kn1,i1), FInd (kn2,i2)) ->
-         if i1 = i2 && mind_equiv infos kn1 kn2
+     | (FInd ind1, FInd ind2) ->
+         if mind_equiv_infos infos ind1 ind2
 	 then
            convert_stacks infos lft1 lft2 v1 v2 cuniv
          else raise NotConvertible
 
-     | (FConstruct ((kn1,i1),j1), FConstruct ((kn2,i2),j2)) ->
-	 if i1 = i2 && j1 = j2 && mind_equiv infos kn1 kn2
+     | (FConstruct (ind1,j1), FConstruct (ind2,j2)) ->
+	 if j1 = j2 && mind_equiv_infos infos ind1 ind2
 	 then
            convert_stacks infos lft1 lft2 v1 v2 cuniv
          else raise NotConvertible
@@ -291,17 +299,25 @@ and eqappr cv_pb infos appr1 appr2 cuniv =
            convert_stacks infos lft1 lft2 v1 v2 u2
          else raise NotConvertible
 
-    | ( (FLetIn _, _) | (_, FLetIn _) | (FCases _,_) | (_,FCases _)
-      | (FApp _,_) | (_,FApp _) | (FCLOS _, _) | (_,FCLOS _)
-      | (FLIFT _, _) | (_,FLIFT _) | (FLOCKED,_) | (_,FLOCKED)) ->
-        anomaly "Unexpected term returned by fhnf"
+    (* Can happen because whd_stack on one arg may have side-effects
+       on the other arg and coulb be no more in hnf... *)
+    | ( (FLetIn _, _) | (FCases _,_) | (FApp _,_)
+      | (FCLOS _, _) | (FLIFT _, _)) ->
+        eqappr cv_pb infos (lft1, whd_stack infos hd1 v1) appr2 cuniv
+
+    | ( (_, FLetIn _) | (_,FCases _) | (_,FApp _)
+      | (_,FCLOS _) | (_,FLIFT _)) ->
+        eqappr cv_pb infos (lft1, whd_stack infos hd1 v1) appr2 cuniv
+
+    (* Should not happen because whd_stack unlocks references *)
+    | ((FLOCKED,_) | (_,FLOCKED)) -> assert false
 
      | _ -> raise NotConvertible
 
 and convert_stacks infos lft1 lft2 stk1 stk2 cuniv =
   compare_stacks
     (fun (l1,t1) (l2,t2) c -> ccnv CONV infos l1 l2 t1 t2 c)
-    (fun (mind1,i1) (mind2,i2) -> i1=i2 && mind_equiv infos mind1 mind2)
+    (mind_equiv_infos infos)
     lft1 stk1 lft2 stk2 cuniv
 
 and convert_vect infos lft1 lft2 v1 v2 cuniv =
@@ -422,7 +438,7 @@ let dest_prod_assum env =
   prodec_rec env Sign.empty_rel_context
 
 let dest_arity env c =
-  let l, c = dest_prod env c in
+  let l, c = dest_prod_assum env c in
   match kind_of_term c with
     | Sort s -> l,s
     | _ -> error "not an arity"

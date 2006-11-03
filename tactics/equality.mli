@@ -22,6 +22,7 @@ open Tacticals
 open Tactics
 open Tacexpr
 open Rawterm
+open Genarg
 (*i*)
 
 val general_rewrite_bindings : bool -> constr with_bindings -> tactic
@@ -43,12 +44,18 @@ val general_rewrite_bindings_in :
 val general_rewrite_in          :
   bool -> identifier -> constr -> tactic
 
+val general_multi_rewrite : 
+  bool -> constr with_bindings -> clause -> tactic
+
 val conditional_rewrite : bool -> tactic -> constr with_bindings -> tactic
 val conditional_rewrite_in :
   bool -> identifier -> tactic -> constr with_bindings -> tactic
 
+val replace_in_clause_maybe_by : constr -> constr -> clause -> tactic option -> tactic
 val replace    : constr -> constr -> tactic
 val replace_in : identifier -> constr -> constr -> tactic
+val replace_by : constr -> constr -> tactic -> tactic
+val replace_in_by : identifier -> constr -> constr -> tactic -> tactic
 
 val discr        : identifier -> tactic
 val discrConcl   : tactic
@@ -56,8 +63,9 @@ val discrClause  : clause -> tactic
 val discrHyp     : identifier -> tactic
 val discrEverywhere     : tactic
 val discr_tac    : quantified_hypothesis option -> tactic
-val inj          : identifier -> tactic
-val injClause    : quantified_hypothesis option -> tactic
+val inj          : intro_pattern_expr list -> identifier -> tactic
+val injClause    : intro_pattern_expr list -> quantified_hypothesis option ->
+                   tactic
 
 val dEq : quantified_hypothesis option -> tactic
 val dEqThen : (int -> tactic) -> quantified_hypothesis option -> tactic
@@ -106,9 +114,8 @@ val subst : identifier list -> tactic
 val subst_all : tactic
 
 (* Replace term *)
-val replace_term_left : constr -> tactic
-val replace_term_right : constr -> tactic
-val replace_term : constr -> tactic
-val replace_term_in_left : constr -> identifier -> tactic
-val replace_term_in_right : constr -> identifier -> tactic
-val replace_term_in : constr -> identifier -> tactic
+(* [replace_multi_term dir_opt c cl] 
+   perfoms replacement of [c] by the first value found in context
+   (according to [dir] if given to get the rewrite direction)  in the clause [cl]
+*)
+val replace_multi_term : bool option -> constr -> clause -> tactic

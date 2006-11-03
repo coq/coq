@@ -102,7 +102,7 @@ let mk_fix_tac (loc,id,bl,ann,ty) =
   (id,n,CProdN(loc,bl,ty))
 
 let mk_cofix_tac (loc,id,bl,ann,ty) =
-  let _ = option_app (fun (aloc,_) ->
+  let _ = option_map (fun (aloc,_) ->
     Util.user_err_loc
       (aloc,"Constr:mk_cofix_tac",
        Pp.str"Annotation forbidden in cofix expression")) ann in
@@ -121,8 +121,8 @@ GEXTEND Gram
   simple_intropattern;
 
   int_or_var:
-    [ [ n = integer  -> Genarg.ArgArg n
-      | id = identref -> Genarg.ArgVar id ] ]
+    [ [ n = integer  -> Rawterm.ArgArg n
+      | id = identref -> Rawterm.ArgVar id ] ]
   ;
   (* An identifier or a quotation meta-variable *)
   id_or_meta:
@@ -155,11 +155,11 @@ GEXTEND Gram
   conversion:
     [ [ c = constr -> (None, c)
       | c1 = constr; "with"; c2 = constr -> (Some ([],c1), c2)
-      | c1 = constr; "at"; nl = LIST1 integer; "with"; c2 = constr ->
+      | c1 = constr; "at"; nl = LIST1 int_or_var; "with"; c2 = constr ->
 	  (Some (nl,c1), c2) ] ]
   ;
   occurrences:
-    [ [ "at"; nl = LIST1 integer -> nl
+    [ [ "at"; nl = LIST1 int_or_var -> nl
       | -> [] ] ]
   ;
   pattern_occ:
@@ -240,7 +240,7 @@ GEXTEND Gram
     ] ]
   ;
   hypident_occ:
-    [ [ (id,l)=hypident; occs=occurrences -> (id,occs,l) ] ]
+    [ [ (id,l)=hypident; occs=occurrences -> ((occs,id),l) ] ]
   ;
   clause:
     [ [ "in"; "*"; occs=occurrences ->
@@ -261,6 +261,11 @@ GEXTEND Gram
     [ [ "in"; idl = LIST1 id_or_meta -> idl
       | -> [] ] ]
   ;
+  orient: 
+    [ [ "->" -> true 
+      | "<-" -> false
+      | -> true ]]
+  ; 
   fixdecl:
     [ [ "("; id = ident; bl=LIST0 Constr.binder; ann=fixannot;
         ":"; ty=lconstr; ")" -> (loc,id,bl,ann,ty) ] ]
@@ -285,7 +290,8 @@ GEXTEND Gram
     [ [ "as"; ipat = simple_intropattern -> ipat | -> IntroAnonymous ] ]
   ;
   by_tactic:
-    [ [ IDENT "by"; tac = tactic -> TacComplete tac | -> TacId [] ] ]
+    [ [ IDENT "by"; tac = tactic_expr LEVEL "3" -> TacComplete tac
+      | -> TacId [] ] ]
   ;
   simple_tactic:
     [ [ 
@@ -363,8 +369,8 @@ GEXTEND Gram
 	  h2 = quantified_hypothesis -> TacDoubleInduction (h1,h2)
       | IDENT "simple"; IDENT"destruct"; h = quantified_hypothesis ->
           TacSimpleDestruct h
-      | IDENT "destruct"; c = induction_arg; ids = with_names; 
-	  el = OPT eliminator -> TacNewDestruct (c,el,ids)
+      | IDENT "destruct"; lc = LIST1 induction_arg; ids = with_names; 
+	  el = OPT eliminator -> TacNewDestruct (lc,el,ids)
       | IDENT "decompose"; IDENT "record" ; c = constr -> TacDecomposeAnd c
       | IDENT "decompose"; IDENT "sum"; c = constr -> TacDecomposeOr c
       | IDENT "decompose"; "["; l = LIST1 global; "]"; c = constr
@@ -411,6 +417,8 @@ GEXTEND Gram
       | IDENT "transitivity"; c = constr -> TacTransitivity c
 
       (* Equality and inversion *)
+      | IDENT "rewrite"; b = orient; c = constr_with_bindings ; cl = clause -> 
+	  TacRewrite (b,c,cl)
       | IDENT "dependent"; k =
 	  [ IDENT "simple"; IDENT "inversion" -> SimpleInversion
 	  | IDENT "inversion" -> FullInversion

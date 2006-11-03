@@ -45,10 +45,10 @@ open Esubst
  *)
 type cbv_value =
   | VAL of int * constr
-  | LAM of name * constr * constr * cbv_value subs
-  | FIXP of fixpoint * cbv_value subs * cbv_value list
-  | COFIXP of cofixpoint * cbv_value subs * cbv_value list
-  | CONSTR of constructor * cbv_value list
+  | LAM of int * (name * constr) list * constr * cbv_value subs
+  | FIXP of fixpoint * cbv_value subs * cbv_value array
+  | COFIXP of cofixpoint * cbv_value subs * cbv_value array
+  | CONSTR of constructor * cbv_value array
 
 (* les vars pourraient etre des constr,
    cela permet de retarder les lift: utile ?? *) 
@@ -58,14 +58,15 @@ type cbv_value =
  *)
 let rec shift_value n = function
   | VAL (k,v) -> VAL ((k+n),v)
-  | LAM (x,a,b,s) -> LAM (x,a,b,subs_shft (n,s))
+  | LAM (nlams,ctxt,b,s) -> LAM (nlams,ctxt,b,subs_shft (n,s))
   | FIXP (fix,s,args) ->
-      FIXP (fix,subs_shft (n,s), List.map (shift_value n) args)
+      FIXP (fix,subs_shft (n,s), Array.map (shift_value n) args)
   | COFIXP (cofix,s,args) ->
-      COFIXP (cofix,subs_shft (n,s), List.map (shift_value n) args)
+      COFIXP (cofix,subs_shft (n,s), Array.map (shift_value n) args)
   | CONSTR (c,args) ->
-      CONSTR (c, List.map (shift_value n) args)
-	
+      CONSTR (c, Array.map (shift_value n) args)
+let shift_value n v =
+  if n = 0 then v else shift_value n v
 
 (* Contracts a fixpoint: given a fixpoint and a bindings,
  * returns the corresponding fixpoint body, and the bindings in which
@@ -74,22 +75,14 @@ let rec shift_value n = function
  *    -> (S. [S]F0 . [S]F1 ... . [S]Fn-1, Ti)
  *)
 let contract_fixp env ((reci,i),(_,_,bds as bodies)) =
-  let make_body j = FIXP(((reci,j),bodies), env, []) in
+  let make_body j = FIXP(((reci,j),bodies), env, [||]) in
   let n = Array.length bds in
-  let rec subst_bodies_from_i i subs =
-    if i=n then subs
-    else subst_bodies_from_i (i+1) (subs_cons (make_body i, subs))
-  in       
-  subst_bodies_from_i 0 env, bds.(i)
+  subs_cons(Array.init n make_body, env), bds.(i)
 
 let contract_cofixp env (i,(_,_,bds as bodies)) =
-  let make_body j = COFIXP((j,bodies), env, []) in
+  let make_body j = COFIXP((j,bodies), env, [||]) in
   let n = Array.length bds in
-  let rec subst_bodies_from_i i subs =
-    if i=n then subs
-    else subst_bodies_from_i (i+1) (subs_cons (make_body i, subs))
-  in       
-  subst_bodies_from_i 0 env, bds.(i)
+  subs_cons(Array.init n make_body, env), bds.(i)
 
 let make_constr_ref n = function
   | RelKey p -> mkRel (n+p)
@@ -99,9 +92,11 @@ let make_constr_ref n = function
 
 (* type of terms with a hole. This hole can appear only under App or Case.
  *   TOP means the term is considered without context
- *   APP(l,stk) means the term is applied to l, and then we have the context st
+ *   APP(v,stk) means the term is applied to v, and then the context stk
+ *      (v.0 is the first argument).
  *      this corresponds to the application stack of the KAM.
- *      The members of l are values: we evaluate arguments before the function.
+ *      The members of l are values: we evaluate arguments before
+        calling the function.
  *   CASE(t,br,pat,S,stk) means the term is in a case (which is himself in stk
  *      t is the type of the case and br are the branches, all of them under
  *      the subs S, pat is information on the patterns of the Case
@@ -114,15 +109,15 @@ let make_constr_ref n = function
 
 type cbv_stack =
   | TOP
-  | APP of cbv_value list * cbv_stack
+  | APP of cbv_value array * cbv_stack
   | CASE of constr * constr array * case_info * cbv_value subs * cbv_stack
 
 (* Adds an application list. Collapse APPs! *)
 let stack_app appl stack =
-  match (appl, stack) with
-    | ([], _)            -> stack
-    | (_, APP(args,stk)) -> APP(appl@args,stk)
-    | _                  -> APP(appl, stack)
+  if Array.length appl = 0 then stack else
+    match stack with
+    | APP(args,stk) -> APP(Array.append appl args,stk)
+    | _             -> APP(appl, stack)
 
 
 open RedFlags
@@ -137,23 +132,21 @@ let red_set_ref flags = function
  *)
 let strip_appl head stack =
   match head with
-    | FIXP (fix,env,app) -> (FIXP(fix,env,[]), stack_app app stack)
-    | COFIXP (cofix,env,app) -> (COFIXP(cofix,env,[]), stack_app app stack)
-    | CONSTR (c,app) -> (CONSTR(c,[]), stack_app app stack)
+    | FIXP (fix,env,app) -> (FIXP(fix,env,[||]), stack_app app stack)
+    | COFIXP (cofix,env,app) -> (COFIXP(cofix,env,[||]), stack_app app stack)
+    | CONSTR (c,app) -> (CONSTR(c,[||]), stack_app app stack)
     | _ -> (head, stack)
 
 
-(* Tests if fixpoint reduction is possible. A reduction function is given as
-   argument *)
-let rec check_app_constr = function
-  | ([], _) -> false
-  | ((CONSTR _)::_, 0) -> true
-  | (_::l, n) -> check_app_constr (l,(pred n))
-	
+(* Tests if fixpoint reduction is possible. *)
 let fixp_reducible flgs ((reci,i),_) stk =
   if red_set flgs fIOTA then
-    match stk with               (* !!! for Acc_rec: reci.(i) = -2 *)
-      | APP(appl,_) -> reci.(i) >=0 & check_app_constr (appl, reci.(i))
+    match stk with
+      | APP(appl,_) ->
+          Array.length appl > reci.(i) &&
+          (match appl.(reci.(i)) with
+              CONSTR _ -> true
+            | _ -> false)
       | _ -> false
   else 
     false
@@ -165,6 +158,7 @@ let cofixp_reducible flgs _ stk =
       | _ -> false
   else 
     false
+
 
 (* The main recursive functions
  *
@@ -184,7 +178,7 @@ let rec norm_head info env t stack =
   | App (head,args) -> (* Applied terms are normalized immediately;
                         they could be computed when getting out of the stack *)
       let nargs = Array.map (cbv_stack_term info TOP env) args in
-      norm_head info env head (stack_app (Array.to_list nargs) stack)
+      norm_head info env head (stack_app nargs stack)
   | Case (ci,p,c,v) -> norm_head info env c (CASE(p,v,ci,env,stack))
   | Cast (ct,_,_) -> norm_head info env ct stack
 
@@ -212,7 +206,7 @@ let rec norm_head info env t stack =
           or red_set (info_flags info) fDELTA
           *)
         then 
-	  subs_cons (cbv_stack_term info TOP env b,env)
+	  subs_cons ([|cbv_stack_term info TOP env b|],env)
 	else
 	  subs_lift env in
       if zeta then
@@ -225,10 +219,12 @@ let rec norm_head info env t stack =
 	(VAL(0,normt), stack) (* Considérer une coupure commutative ? *)
 
   (* non-neutral cases *)
-  | Lambda (x,a,b) -> (LAM(x,a,b,env), stack)
-  | Fix fix -> (FIXP(fix,env,[]), stack)
-  | CoFix cofix -> (COFIXP(cofix,env,[]), stack)
-  | Construct c -> (CONSTR(c, []), stack)
+  | Lambda _ ->
+      let ctxt,b = decompose_lam t in
+      (LAM(List.length ctxt, List.rev ctxt,b,env), stack)
+  | Fix fix -> (FIXP(fix,env,[||]), stack)
+  | CoFix cofix -> (COFIXP(cofix,env,[||]), stack)
+  | Construct c -> (CONSTR(c, [||]), stack)
 
   (* neutral cases *)
   | (Sort _ | Meta _ | Ind _|Evar _) -> (VAL(0, t), stack)
@@ -253,10 +249,18 @@ and norm_head_ref k info env stack normt =
 and cbv_stack_term info stack env t =
   match norm_head info env t stack with
     (* a lambda meets an application -> BETA *)
-    | (LAM (x,a,b,env), APP (arg::args, stk))
+    | (LAM (nlams,ctxt,b,env), APP (args, stk))
       when red_set (info_flags info) fBETA ->
-        let subs = subs_cons (arg,env) in
-          cbv_stack_term info (stack_app args stk) subs b
+        let nargs = Array.length args in
+        if nargs == nlams then
+          cbv_stack_term info stk (subs_cons(args,env)) b
+        else if nlams < nargs then
+          let env' = subs_cons(Array.sub args 0 nlams, env) in
+          let eargs = Array.sub args nlams (nargs-nlams) in
+          cbv_stack_term info (APP(eargs,stk)) env' b
+        else
+          let ctxt' = list_skipn nargs ctxt in
+          LAM(nlams-nargs,ctxt', b, subs_cons(args,env))
 
     (* a Fix applied enough -> IOTA *)
     | (FIXP(fix,env,_), stk)
@@ -273,8 +277,9 @@ and cbv_stack_term info stack env t =
     (* constructor in a Case -> IOTA *)
     | (CONSTR((sp,n),_), APP(args,CASE(_,br,ci,env,stk)))
             when red_set (info_flags info) fIOTA ->
-	let real_args = list_skipn ci.ci_npar args in
-        cbv_stack_term info (stack_app real_args stk) env br.(n-1)
+	let cargs =
+          Array.sub args ci.ci_npar (Array.length args - ci.ci_npar) in
+        cbv_stack_term info (stack_app cargs stk) env br.(n-1)
          
     (* constructor of arity 0 in a Case -> IOTA *)
     | (CONSTR((_,n),_), CASE(_,br,_,env,stk))
@@ -287,6 +292,9 @@ and cbv_stack_term info stack env t =
     | (COFIXP(cofix,env,_), APP(appl,TOP)) -> COFIXP(cofix,env,appl) 
     | (CONSTR(c,_), APP(appl,TOP)) -> CONSTR(c,appl)
 
+    (* absurd cases (ill-typed) *)
+    | (LAM _, CASE _) -> assert false
+
     (* definitely a value *)
     | (head,stk) -> VAL(0,apply_stack info (cbv_norm_value info head) stk)
 
@@ -298,7 +306,7 @@ and cbv_stack_term info stack env t =
 and apply_stack info t = function
   | TOP -> t
   | APP (args,st) ->
-      apply_stack info (applistc t (List.map (cbv_norm_value info) args)) st
+      apply_stack info (mkApp(t,Array.map (cbv_norm_value info) args)) st
   | CASE (ty,br,ci,env,st) ->
       apply_stack info
         (mkCase (ci, cbv_norm_term info env ty, t,
@@ -314,28 +322,28 @@ and cbv_norm_term info env t =
 (* reduction of a cbv_value to a constr *)
 and cbv_norm_value info = function (* reduction under binders *)
   | VAL (n,v) -> lift n v
-  | LAM (x,a,b,env) ->
-      mkLambda (x, cbv_norm_term info env a,
-		cbv_norm_term info (subs_lift env) b)
+  | LAM (n,ctxt,b,env) ->
+      let nctxt =
+        list_map_i (fun i (x,ty) ->
+          (x,cbv_norm_term info (subs_liftn i env) ty)) 0 ctxt in
+      compose_lam (List.rev nctxt) (cbv_norm_term info (subs_liftn n env) b)
   | FIXP ((lij,(names,lty,bds)),env,args) ->
-      applistc
+      mkApp
         (mkFix (lij,
 		(names,
                  Array.map (cbv_norm_term info env) lty,
 		 Array.map (cbv_norm_term info 
-			      (subs_liftn (Array.length lty) env)) bds)))
-        (List.map (cbv_norm_value info) args)
+			      (subs_liftn (Array.length lty) env)) bds)),
+         Array.map (cbv_norm_value info) args)
   | COFIXP ((j,(names,lty,bds)),env,args) ->
-      applistc
+      mkApp
         (mkCoFix (j,
 		  (names,Array.map (cbv_norm_term info env) lty,
 		   Array.map (cbv_norm_term info 
-				(subs_liftn (Array.length lty) env)) bds)))
-        (List.map (cbv_norm_value info) args)
+				(subs_liftn (Array.length lty) env)) bds)),
+         Array.map (cbv_norm_value info) args)
   | CONSTR (c,args) ->
-      applistc
-        (mkConstruct c)
-        (List.map (cbv_norm_value info) args)
+      mkApp(mkConstruct c, Array.map (cbv_norm_value info) args)
 
 (* with profiling *)
 let cbv_norm infos constr =

@@ -144,3 +144,8 @@ let lookup_constant kn env =
 (* Mutual Inductives *)
 let lookup_mind kn env =
   KNmap.find kn env.env_globals.env_inductives
+
+let rec scrape_mind env kn = 
+  match (lookup_mind kn env).mind_equiv with
+    | None -> kn
+    | Some kn' -> scrape_mind env kn'

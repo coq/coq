@@ -7,8 +7,9 @@
 (************************************************************************)
 (*i 	$Id$	 i*)
 
-Require Import Addr.
-Require Import Addec.
+Require Import BinNat.
+Require Import Ndigits.
+Require Import Ndec.
 Require Import Map.
 Require Import Fset.
 Require Import Mapaxioms.
@@ -28,7 +29,7 @@ Section MapLists.
   Fixpoint ad_in_list (a:ad) (l:list ad) {struct l} : bool :=
     match l with
     | nil => false
-    | a' :: l' => orb (ad_eq a a') (ad_in_list a l')
+    | a' :: l' => orb (Neqb a a') (ad_in_list a l')
     end.
 
   Fixpoint ad_list_stutters (l:list ad) : bool :=
@@ -43,8 +44,8 @@ Section MapLists.
      {l1 : list ad &  {l2 : list ad | l = l1 ++ x :: l2}}.
   Proof.
     simple induction l. intro. discriminate H.
-    intros. elim (sumbool_of_bool (ad_eq x a)). intro H1. simpl in H0. split with (nil (A:=ad)).
-    split with l0. rewrite (ad_eq_complete _ _ H1). reflexivity.
+    intros. elim (sumbool_of_bool (Neqb x a)). intro H1. simpl in H0. split with (nil (A:=ad)).
+    split with l0. rewrite (Neqb_complete _ _ H1). reflexivity.
     intro H2. simpl in H0. rewrite H2 in H0. simpl in H0. elim (H H0). intros l'1 H3.
     split with (a :: l'1). elim H3. intros l2 H4. split with l2. rewrite H4. reflexivity.
   Qed.
@@ -223,7 +224,7 @@ Section MapLists.
   Lemma ad_in_list_app_1 :
    forall (l l':list ad) (x:ad), ad_in_list x (l ++ x :: l') = true.
   Proof.
-    simple induction l. simpl in |- *. intros. rewrite (ad_eq_correct x). reflexivity.
+    simple induction l. simpl in |- *. intros. rewrite (Neqb_correct x). reflexivity.
     intros. simpl in |- *. rewrite (H l' x). apply orb_b_true.
   Qed.
 
@@ -353,18 +354,18 @@ Section MapLists.
         (fun (a:ad) (l:list ad) => ad_in_list a l) (
         fun c:ad => refl_equal _) ad_in_list_app
         (fun (a0:ad) (_:A) => a0 :: nil) m a).
-    simpl in |- *. rewrite (MapFold_orb A (fun (a0:ad) (_:A) => orb (ad_eq a a0) false) m).
+    simpl in |- *. rewrite (MapFold_orb A (fun (a0:ad) (_:A) => orb (Neqb a a0) false) m).
     elim
      (option_sum _
-        (MapSweep A (fun (a0:ad) (_:A) => orb (ad_eq a a0) false) m)). intro H. elim H.
+        (MapSweep A (fun (a0:ad) (_:A) => orb (Neqb a a0) false) m)). intro H. elim H.
     intro r. elim r. intros a0 y H0. rewrite H0. unfold in_dom in |- *.
     elim (orb_prop _ _ (MapSweep_semantics_1 _ _ _ _ _ H0)). intro H1.
-    rewrite (ad_eq_complete _ _ H1). rewrite (MapSweep_semantics_2 A _ _ _ _ H0). reflexivity.
+    rewrite (Neqb_complete _ _ H1). rewrite (MapSweep_semantics_2 A _ _ _ _ H0). reflexivity.
     intro H1. discriminate H1.
     intro H. rewrite H. elim (sumbool_of_bool (in_dom A a m)). intro H0.
     elim (in_dom_some A m a H0). intros y H1.
     elim (orb_false_elim _ _ (MapSweep_semantics_3 _ _ _ H _ _ H1)). intro H2.
-    rewrite (ad_eq_correct a) in H2. discriminate H2.
+    rewrite (Neqb_correct a) in H2. discriminate H2.
     exact (sym_eq (y:=_)).
   Qed.
 
@@ -397,7 +398,7 @@ Section MapLists.
           pf m) = MapCard A m.
   Proof.
     simple induction m; try trivial. simpl in |- *. intros. rewrite ad_list_app_length.
-    rewrite (H (fun a0:ad => pf (ad_double a0))). rewrite (H0 (fun a0:ad => pf (ad_double_plus_un a0))).
+    rewrite (H (fun a0:ad => pf (Ndouble a0))). rewrite (H0 (fun a0:ad => pf (Ndouble_plus_one a0))).
     reflexivity.
   Qed.
 
@@ -423,8 +424,8 @@ Section MapLists.
      MapFold1 unit (list ad) nil (app (A:=ad))
        (fun (a:ad) (_:unit) => a :: nil) pf (MapDom A m).
   Proof.
-    simple induction m; try trivial. simpl in |- *. intros. rewrite (H (fun a0:ad => pf (ad_double a0))).
-    rewrite (H0 (fun a0:ad => pf (ad_double_plus_un a0))). reflexivity.
+    simple induction m; try trivial. simpl in |- *. intros. rewrite (H (fun a0:ad => pf (Ndouble a0))).
+    rewrite (H0 (fun a0:ad => pf (Ndouble_plus_one a0))). reflexivity.
   Qed.
 
   Lemma ad_list_of_dom_Dom :

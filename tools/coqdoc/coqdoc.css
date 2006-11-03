@@ -28,16 +28,21 @@ body { padding: 0px 0px;
 
 #main  a.idref:visited {color : #416DFF; text-decoration : none; }
 #main  a.idref:link {color : #416DFF; text-decoration : none; }
-#main  a.idref:hover {color : Red; text-decoration : underline; }
-#main  a.idref:active {color : Red; text-decoration : underline; }
+#main  a.idref:hover {text-decoration : none; }
+#main  a.idref:active {text-decoration : none; }
 
-#main .keyword { font-weight : bold; 
-                 color : Red }
+#main  a.modref:visited {color : #416DFF; text-decoration : none; }
+#main  a.modref:link {color : #416DFF; text-decoration : none; }
+#main  a.modref:hover {text-decoration : none; }
+#main  a.modref:active {text-decoration : none; }
 
-#main .section { font-size : 20pt }
+#main .keyword { color : #cf1d1d }
+#main { color: black }
+
+#main .section { background-color:#899BD6;
+                 font-size : 20pt }
 
 #main code { font-family: monospace; 
-             font-size: 8pt; 
              line-height: 50% }
 
 #main .doc { margin: 0px;
@@ -45,10 +50,11 @@ body { padding: 0px 0px;
              font-family: sans-serif;
              font-size: 11pt;
              font-weight:bold;
-             background-color:#66ff66 }
+             color: black;
+             background-color: #90bdff;
+             border-style: plain}
 
-#main .doc code { font-family: monospace; 
-                  font-size: 10pt} 
+#main .doc code { font-family: monospace} 
 
 /* Pied de page */
 
@@ -56,4 +62,6 @@ body { padding: 0px 0px;
           font-family: sans-serif; }
 
 #footer a:visited { color: blue; }
+#footer a:link { text-decoration: none; 
+                 color: #888888; }
 

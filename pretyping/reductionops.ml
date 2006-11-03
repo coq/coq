@@ -23,6 +23,92 @@ open Reduction
 
 exception Elimconst
 
+
+(**********************************************************************)
+(* The type of (machine) stacks (= lambda-bar-calculus' contexts)     *) 
+
+type 'a stack_member =
+  | Zapp of 'a list
+  | Zcase of case_info * 'a * 'a array
+  | Zfix of 'a * 'a stack
+  | Zshift of int
+  | Zupdate of 'a
+
+and 'a stack = 'a stack_member list
+
+let empty_stack = []
+let append_stack_list l s =
+  match (l,s) with
+  | ([],s) -> s
+  | (l1, Zapp l :: s) -> Zapp (l1@l) :: s
+  | (l1, s) -> Zapp l1 :: s
+let append_stack v s = append_stack_list (Array.to_list v) s
+
+(* Collapse the shifts in the stack *)
+let zshift n s =
+  match (n,s) with
+      (0,_) -> s
+    | (_,Zshift(k)::s) -> Zshift(n+k)::s
+    | _ -> Zshift(n)::s
+
+let rec stack_args_size = function
+  | Zapp l::s -> List.length l + stack_args_size s
+  | Zshift(_)::s -> stack_args_size s
+  | Zupdate(_)::s -> stack_args_size s
+  | _ -> 0
+
+(* When used as an argument stack (only Zapp can appear) *)
+let rec decomp_stack = function
+  | Zapp[v]::s -> Some (v, s)
+  | Zapp(v::l)::s -> Some (v, (Zapp l :: s))
+  | Zapp [] :: s -> decomp_stack s
+  | _ -> None
+let rec decomp_stackn = function
+  | Zapp [] :: s -> decomp_stackn s
+  | Zapp l :: s -> (Array.of_list l, s)
+  | _ -> assert false
+let array_of_stack s =
+  let rec stackrec = function
+  | [] -> []
+  | Zapp args :: s -> args :: (stackrec s)
+  | _ -> assert false
+  in Array.of_list (List.concat (stackrec s))
+let rec list_of_stack = function
+  | [] -> []
+  | Zapp args :: s -> args @ (list_of_stack s)
+  | _ -> assert false
+let rec app_stack = function
+  | f, [] -> f
+  | f, (Zapp [] :: s) -> app_stack (f, s)
+  | f, (Zapp args :: s) -> 
+      app_stack (applist (f, args), s)
+  | _ -> assert false
+let rec stack_assign s p c = match s with
+  | Zapp args :: s ->
+      let q = List.length args in 
+      if p >= q then
+	Zapp args :: stack_assign s (p-q) c
+      else
+        (match list_chop p args with
+            (bef, _::aft) -> Zapp (bef@c::aft) :: s
+          | _ -> assert false)
+  | _ -> s
+let rec stack_tail p s =
+  if p = 0 then s else
+    match s with
+      | Zapp args :: s ->
+	  let q = List.length args in
+	  if p >= q then stack_tail (p-q) s
+	  else Zapp (list_skipn p args) :: s
+      | _ -> failwith "stack_tail"
+let rec stack_nth s p = match s with
+  | Zapp args :: s ->
+      let q = List.length args in
+      if p >= q then stack_nth s (p-q)
+      else List.nth args p
+  | _ -> raise Not_found
+
+(**************************************************************)
 (* The type of (machine) states (= lambda-bar-calculus' cuts) *) 
 type state = constr * constr stack
 
@@ -142,6 +228,7 @@ open RedFlags
 
 (* Local *)
 let beta = mkflags [fbeta]
+let eta = mkflags [feta]
 let evar = mkflags [fevar]
 let betaevar = mkflags [fevar; fbeta]
 let betaiota = mkflags [fiota; fbeta]
@@ -166,7 +253,7 @@ let rec stacklam recfun env t stack =
     | _ -> recfun (substl env t, stack)
 
 let beta_applist (c,l) =
-  stacklam app_stack [] c (append_stack (Array.of_list l) empty_stack)
+  stacklam app_stack [] c (append_stack_list l empty_stack)
 
 (* Iota reduction tools *)
 
@@ -176,7 +263,7 @@ type 'a miota_args = {
   mci     : case_info;  (* special info to re-build pattern *)
   mcargs  : 'a list;    (* the constructor's arguments *)
   mlf     : 'a array }  (* the branch code vector *)
-		       
+
 let reducible_mind_case c = match kind_of_term c with
   | Construct _ | CoFix _ -> true
   | _  -> false
@@ -338,46 +425,6 @@ let local_whd_state_gen flags =
   in 
   whrec
 
-let rec whd_betaiotaevar_preserving_vm_cast env sigma t = 
-  let rec stacklam_var subst t stack =
-    match (decomp_stack stack,kind_of_term t) with
-    | Some (h,stacktl), Lambda (_,_,c) ->
-	begin match kind_of_term h with
-	| Rel i when not (evaluable_rel i env) ->
-	    stacklam_var (h::subst) c stacktl
-        | Var id when  not (evaluable_named id env)->
-	    stacklam_var (h::subst) c stacktl
-	| _ -> whrec (substl subst t, stack)
-	end
-    | _ -> whrec (substl subst t, stack)
-  and whrec (x, stack as s) =
-    match kind_of_term x with
-      | Evar ev ->
-	  (match existential_opt_value sigma ev with
-	     | Some body -> whrec (body, stack)
-	     | None -> s)
-      | Cast (c,VMcast,t) ->
-	  let c = app_stack (whrec (c,empty_stack)) in
-	  let t = app_stack (whrec (t,empty_stack)) in
-	  (mkCast(c,VMcast,t),stack)
-      | Cast (c,DEFAULTcast,_) ->
-	  whrec (c, stack)
-      | App (f,cl)  -> whrec (f, append_stack cl stack)
-      | Lambda (na,t,c) ->
-          (match decomp_stack stack with
-           | Some (a,m) -> stacklam_var [a] c m
-           | _ -> s)
-      | Case (ci,p,d,lf) ->
-          let (c,cargs) = whrec (d, empty_stack) in
-          if reducible_mind_case c then
-            whrec (reduce_mind_case
-                     {mP=p; mconstr=c; mcargs=list_of_stack cargs;
-		      mci=ci; mlf=lf}, stack)
-          else 
-	    (mkCase (ci, p, app_stack (c,cargs), lf), stack)
-      | x -> s
-  in 
-  app_stack (whrec (t,empty_stack))
 
 (* 1. Beta Reduction Functions *)
 
@@ -460,6 +507,10 @@ let whd_betadeltaiota_nolet_stack env sigma x =
 let whd_betadeltaiota_nolet env sigma x = 
   app_stack (whd_betadeltaiota_nolet_state env sigma (x, empty_stack))
 
+(* 3. Eta reduction Functions *)
+
+let whd_eta c = app_stack (local_whd_state_gen eta (c,empty_stack))
+
 (****************************************************************************)
 (*                   Reduction Functions                                    *)
 (****************************************************************************)
@@ -468,13 +519,13 @@ let whd_betadeltaiota_nolet env sigma x =
 let rec whd_evar sigma c =
   match kind_of_term c with
     | Evar (ev,args)
-        when Evd.in_dom sigma ev & Evd.is_defined sigma ev ->
+        when Evd.mem sigma ev & Evd.is_defined sigma ev ->
 	whd_evar sigma (Evd.existential_value sigma (ev,args))
     | Sort s when is_sort_variable sigma s -> whd_sort_variable sigma c
     | _ -> collapse_appl c
 
-let nf_evar evd =
-  local_strong (whd_evar evd)
+let nf_evar sigma =
+  local_strong (whd_evar sigma)
 
 (* lazy reduction functions. The infos must be created for each term *)
 let clos_norm_flags flgs env sigma t =
@@ -484,6 +535,56 @@ let nf_beta = clos_norm_flags Closure.beta empty_env Evd.empty
 let nf_betaiota = clos_norm_flags Closure.betaiota empty_env Evd.empty
 let nf_betadeltaiota env sigma =
   clos_norm_flags Closure.betadeltaiota env sigma
+
+
+(* Attention reduire un beta-redexe avec un argument qui n'est pas 
+   une variable, peut changer enormement le temps de conversion lors
+   du type checking :
+     (fun x => x + x) M
+*)
+let rec whd_betaiotaevar_preserving_vm_cast env sigma t = 	 
+   let rec stacklam_var subst t stack = 	 
+     match (decomp_stack stack,kind_of_term t) with 	 
+     | Some (h,stacktl), Lambda (_,_,c) -> 	 
+         begin match kind_of_term h with 	 
+         | Rel i when not (evaluable_rel i env) -> 	 
+             stacklam_var (h::subst) c stacktl 	 
+         | Var id when  not (evaluable_named id env)-> 	 
+             stacklam_var (h::subst) c stacktl 	 
+         | _ -> whrec (substl subst t, stack) 	 
+         end 	 
+     | _ -> whrec (substl subst t, stack) 	 
+   and whrec (x, stack as s) = 	 
+     match kind_of_term x with 	 
+       | Evar ev -> 	 
+           (match existential_opt_value sigma ev with 	 
+              | Some body -> whrec (body, stack) 	 
+              | None -> s) 	 
+       | Cast (c,VMcast,t) -> 	 
+           let c = app_stack (whrec (c,empty_stack)) in 	 
+           let t = app_stack (whrec (t,empty_stack)) in 	 
+           (mkCast(c,VMcast,t),stack) 	 
+       | Cast (c,DEFAULTcast,_) -> 	 
+           whrec (c, stack) 	 
+       | App (f,cl)  -> whrec (f, append_stack cl stack) 	 
+       | Lambda (na,t,c) -> 	 
+           (match decomp_stack stack with 	 
+            | Some (a,m) -> stacklam_var [a] c m 	 
+            | _ -> s) 	 
+       | Case (ci,p,d,lf) -> 	 
+           let (c,cargs) = whrec (d, empty_stack) in 	 
+           if reducible_mind_case c then 	 
+             whrec (reduce_mind_case 	 
+                      {mP=p; mconstr=c; mcargs=list_of_stack cargs; 	 
+                       mci=ci; mlf=lf}, stack) 	 
+           else 	 
+             (mkCase (ci, p, app_stack (c,cargs), lf), stack) 	 
+       | x -> s 	 
+   in 	 
+   app_stack (whrec (t,empty_stack))
+
+let nf_betaiotaevar_preserving_vm_cast = 
+  strong whd_betaiotaevar_preserving_vm_cast
 
 (* lazy weak head reduction functions *)
 let whd_flags flgs env sigma t =
@@ -546,7 +647,7 @@ let is_fconv = function | CONV -> is_conv | CUMUL -> is_conv_leq
 let whd_meta metamap c = match kind_of_term c with
   | Meta p -> (try List.assoc p metamap with Not_found -> c)
   | _ -> c
-	
+
 (* Try to replace all metas. Does not replace metas in the metas' values
  * Differs from (strong whd_meta). *)
 let plain_instance s c = 
@@ -573,7 +674,7 @@ let plain_instance s c =
     | _ -> map_constr irec u
   in 
   if s = [] then c else irec c
-    
+
 (* Pourquoi ne fait-on pas nf_betaiota si s=[] ? *)
 let instance s c = 
   if s = [] then c else local_strong whd_betaiota (plain_instance s c)
@@ -632,7 +733,7 @@ let splay_lambda env sigma =
 let splay_prod_assum env sigma = 
   let rec prodec_rec env l c =
     let t = whd_betadeltaiota_nolet env sigma c in
-    match kind_of_term c with
+    match kind_of_term t with
     | Prod (x,t,c)  ->
 	prodec_rec (push_rel (x,None,t) env)
 	  (Sign.add_rel_decl (x, None, t) l) c
@@ -651,7 +752,7 @@ let splay_arity env sigma c =
     | _ -> error "not an arity"
 
 let sort_of_arity env c = snd (splay_arity env Evd.empty c)
-  
+
 let decomp_n_prod env sigma n = 
   let rec decrec env m ln c = if m = 0 then (ln,c) else 
     match kind_of_term (whd_betadeltaiota env sigma c) with
@@ -662,7 +763,19 @@ let decomp_n_prod env sigma n =
   in 
   decrec env n Sign.empty_rel_context
 
-(* One step of approximation *)
+exception NotASort
+
+let decomp_sort env sigma t =
+  match kind_of_term (whd_betadeltaiota env sigma t) with
+  | Sort s -> s
+  | _ -> raise NotASort
+
+let is_sort env sigma arity =
+  try let _ = decomp_sort env sigma arity in true 
+  with NotASort -> false
+
+(* reduction to head-normal-form allowing delta/zeta only in argument
+   of case/fix (heuristic used by evar_conv) *)
 
 let rec apprec env sigma s =
   let (t, stack as s) = whd_betaiota_state s in
@@ -679,8 +792,6 @@ let rec apprec env sigma s =
              | Reduced s -> apprec env sigma s
 	     | NotReducible -> s)
     | _ -> s
-
-let hnf env sigma c = apprec env sigma (c, empty_stack)
 
 (* A reduction function like whd_betaiota but which keeps casts
  * and does not reduce redexes containing existential variables.
@@ -744,26 +855,6 @@ let is_arity env sigma c =
   match find_conclusion env sigma c with
     | Sort _ -> true
     | _ -> false
- 
-let info_arity env sigma c =
-  match find_conclusion env sigma c with
-    | Sort (Prop Null) -> false 
-    | Sort (Prop Pos) -> true 
-    | _ -> raise IsType
-    
-let is_info_arity env sigma c =
-  try (info_arity env sigma c) with IsType -> true
-  
-let is_type_arity env sigma c = 
-  match find_conclusion env sigma c with
-    | Sort (Type _) -> true
-    | _ -> false
-
-let is_info_type env sigma t =
-  let s = t.utj_type in
-  (s = Prop Pos) ||
-  (s <> Prop Null && 
-   try info_arity env sigma t.utj_val with IsType -> true)
 
 (*************************************)
 (* Metas *)

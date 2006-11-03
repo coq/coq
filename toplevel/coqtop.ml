@@ -21,18 +21,16 @@ open Coqinit
 
 let get_version_date () =
   try
-    let ch = open_in (Coq_config.coqtop^"/make.result") in
-    let l = input_line ch in
-    let i = String.index l ' ' in
-    let j = String.index_from l (i+1) ' ' in
-    "checked out on "^(String.sub l (i+1) (j-i-1))
-  with _ -> Coq_config.date
+    let ch = open_in (Coq_config.coqlib^"/revision") in
+    let ver = input_line ch in
+    let rev = input_line ch in
+      (ver,rev)
+  with _ -> (Coq_config.version,Coq_config.date)
 
 let print_header () =
-  Printf.printf "Welcome to Coq %s (%s)\n" 
-    Coq_config.version 
-    (get_version_date ());
-  flush stdout
+  let (ver,rev) = (get_version_date ()) in
+    Printf.printf "Welcome to Coq %s (%s)\n" ver rev;
+    flush stdout
 
 let memory_stat = ref false
 
@@ -108,14 +106,16 @@ let add_compile verbose s =
   compile_list := (verbose,s) :: !compile_list
 let compile_files () =
   let init_state = States.freeze() in
-  List.iter
-    (fun (v,f) ->
-      States.unfreeze init_state;
-      if Options.do_translate () then
-	with_option translate_file (Vernac.compile v) f
-      else
-	Vernac.compile v f)
-    (List.rev !compile_list)
+  let coqdoc_init_state = Constrintern.coqdoc_freeze () in
+    List.iter
+      (fun (v,f) ->
+	 States.unfreeze init_state;
+	 Constrintern.coqdoc_unfreeze coqdoc_init_state;
+	 if Options.do_translate () then
+	   with_option translate_file (Vernac.compile v) f
+	 else
+	   Vernac.compile v f)
+      (List.rev !compile_list)
 
 let re_exec_version = ref ""
 let set_byte () = re_exec_version := "byte"
@@ -172,7 +172,11 @@ let ide_args = ref []
 let parse_args is_ide =
   let rec parse = function
     | [] -> ()
-
+    | "-with-geoproof" :: s :: rem -> 
+	if s = "yes" then Coq_config.with_geoproof := true
+	else if s = "no" then Coq_config.with_geoproof := false
+	else usage ();
+	parse rem
     | "-impredicative-set" :: rem -> 
         set_engagement Declarations.ImpredicativeSet; parse rem
 
@@ -242,9 +246,11 @@ let parse_args is_ide =
     | "-debug" :: rem -> set_debug (); parse rem
 
     | "-vm" :: rem -> use_vm := true; parse rem
-    | "-emacs" :: rem -> Options.print_emacs := true; parse rem
+    | "-emacs" :: rem -> Options.print_emacs := true; Pp.make_pp_emacs(); parse rem
+    | "-emacs-U" :: rem -> Options.print_emacs := true; 
+	Options.print_emacs_safechar := true; Pp.make_pp_emacs(); parse rem
 	  
-    | "-where" :: _ -> print_endline Coq_config.coqlib; exit 0
+    | "-where" :: _ -> print_endline (getenv_else "COQLIB" Coq_config.coqlib); exit 0
 
     | ("-quiet"|"-silent") :: rem -> Options.make_silent true; parse rem
 

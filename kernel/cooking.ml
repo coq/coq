@@ -113,7 +113,7 @@ type recipe = {
   d_modlist : work_list }
 
 let on_body f = 
-  option_app (fun c -> Declarations.from_val (f (Declarations.force c)))
+  option_map (fun c -> Declarations.from_val (f (Declarations.force c)))
 
 let cook_constant env r =
   let cb = r.d_from in
@@ -122,7 +122,13 @@ let cook_constant env r =
     on_body (fun c ->
       abstract_constant_body (expmod_constr r.d_modlist c) hyps) 
       cb.const_body in
-  let typ =
-    abstract_constant_type (expmod_constr r.d_modlist cb.const_type) hyps in
+  let typ = match cb.const_type with
+    | NonPolymorphicType t ->
+	let typ = abstract_constant_type (expmod_constr r.d_modlist t) hyps in
+	NonPolymorphicType typ
+    | PolymorphicArity (ctx,s) ->
+	let t = mkArity (ctx,Type s.poly_level) in
+	let typ = abstract_constant_type (expmod_constr r.d_modlist t) hyps in
+	Typeops.make_polymorphic_if_arity env typ in
   let boxed = Cemitcodes.is_boxed cb.const_body_code in
   (body, typ, cb.const_constraints, cb.const_opaque, boxed)

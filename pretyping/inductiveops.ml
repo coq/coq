@@ -23,7 +23,7 @@ open Reductionops
 
 let type_of_inductive env ind =
  let specif = Inductive.lookup_mind_specif env ind in
-  Inductive.type_of_inductive specif
+  Inductive.type_of_inductive env specif
 
 (* Return type as quoted by the user *)
 let type_of_constructor env cstr =
@@ -114,13 +114,21 @@ let constructor_nrealargs env (ind,j) =
 
 let constructor_nrealhyps env (ind,j) =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  mip.mind_consnrealargs.(j-1) - rel_context_length (mib.mind_params_ctxt)
+  mip.mind_consnrealdecls.(j-1)
+
+let get_full_arity_sign env ind =
+  let (mib,mip) = Inductive.lookup_mind_specif env ind in
+  mip.mind_arity_ctxt
 
 (* Length of arity (w/o local defs) *)
 
 let inductive_nargs env ind =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  mip.mind_nrealargs + rel_context_nhyps mib.mind_params_ctxt
+  mib.mind_nparams, mip.mind_nrealargs
+
+let allowed_sorts env (kn,i as ind) =
+  let (mib,mip) = Inductive.lookup_mind_specif env ind in
+  mip.mind_kelim
 
 (* Annotation for cases *)
 let make_case_info env ind style pats_source =
@@ -131,7 +139,7 @@ let make_case_info env ind style pats_source =
       source    = pats_source } in
   { ci_ind     = ind;
     ci_npar    = mib.mind_nparams;
-    ci_cstr_nargs = mip.mind_consnrealargs;
+    ci_cstr_nargs = mip.mind_consnrealdecls;
     ci_pp_info = print_info }
 
 let make_default_case_info env style ind =
@@ -196,10 +204,40 @@ let rec instantiate args c = match kind_of_term c, args with
   | _, [] -> c
   | _ -> anomaly "too short arity"
 
+(* substitution in a signature *)
+
+let substnl_rel_context subst n sign =
+  let rec aux n = function
+  | d::sign -> substnl_decl subst n d :: aux (n+1) sign
+  | [] -> []
+  in List.rev (aux n (List.rev sign))
+
+let substl_rel_context subst = substnl_rel_context subst 0
+
+let rec instantiate_context sign args =
+  let rec aux subst = function
+  | (_,None,_)::sign, a::args -> aux (a::subst) (sign,args)
+  | (_,Some b,_)::sign, args -> aux (substl subst b::subst) (sign,args)
+  | [], [] -> subst
+  | _ -> anomaly "Signature/instance mismatch in inductive family"
+  in aux [] (List.rev sign,args)
+
 let get_arity env (ind,params) =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  let arity = mip.mind_nf_arity in
-  destArity (instantiate params arity)
+  let parsign =
+    (* Dynamically detect if called with an instance of recursively
+       uniform parameter only or also of non recursively uniform
+       parameters *)
+    let parsign = mib.mind_params_ctxt in
+    let nnonrecparams = mib.mind_nparams - mib.mind_nparams_rec in
+    if List.length params = rel_context_nhyps parsign - nnonrecparams then
+      snd (list_chop nnonrecparams mib.mind_params_ctxt)
+    else
+      parsign in
+  let arproperlength = List.length mip.mind_arity_ctxt - List.length parsign in
+  let arsign,_ = list_chop arproperlength mip.mind_arity_ctxt in
+  let subst = instantiate_context parsign params in
+  (substl_rel_context subst arsign, Inductive.inductive_sort_family mip)
 
 (* Functions to build standard types related to inductive *)
 let build_dependent_constructor cs =
@@ -284,12 +322,12 @@ let find_coinductive env sigma c =
 (* find appropriate names for pattern variables. Useful in the Case
    and Inversion (case_then_using et case_nodep_then_using) tactics. *)
 
-let is_predicate_explicitly_dep env pred nodep_ar = 
-  let rec srec env pval nodep_ar =
+let is_predicate_explicitly_dep env pred arsign = 
+  let rec srec env pval arsign =
     let pv' = whd_betadeltaiota env Evd.empty pval in
-    match kind_of_term pv', kind_of_term nodep_ar with
-      | Lambda (na,t,b), Prod (_,_,a') ->
-	  srec (push_rel_assum (na,t) env) b a'
+    match kind_of_term pv', arsign with
+      | Lambda (na,t,b), (_,None,_)::arsign ->
+	  srec (push_rel_assum (na,t) env) b arsign
       | Lambda (na,_,_), _ ->
 
        (* The following code has impact on the introduction names
@@ -317,12 +355,11 @@ let is_predicate_explicitly_dep env pred nodep_ar =
 
       | _ -> anomaly "Non eta-expanded dep-expanded \"match\" predicate"
   in
-  srec env pred nodep_ar
+  srec env pred arsign
 
 let is_elim_predicate_explicitly_dependent env pred indf =
-  let arsign,s = get_arity env indf in
-  let glob_t = it_mkProd_or_LetIn (mkSort s) arsign in
-  is_predicate_explicitly_dep env pred glob_t
+  let arsign,_ = get_arity env indf in
+  is_predicate_explicitly_dep env pred arsign
 
 let set_names env n brty =
   let (ctxt,cl) = decompose_prod_n_assum n brty in

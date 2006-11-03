@@ -21,7 +21,7 @@ and ct_BINDING =
     CT_binding of ct_ID_OR_INT * ct_FORMULA
 and ct_BINDING_LIST =
     CT_binding_list of ct_BINDING list
-and ct_BOOL =
+and t_BOOL =
     CT_false
   | CT_true
 and ct_CASE =
@@ -46,7 +46,7 @@ and ct_COMMAND =
   | CT_coerce_THEOREM_GOAL_to_COMMAND of ct_THEOREM_GOAL
   | CT_abort of ct_ID_OPT_OR_ALL
   | CT_abstraction of ct_ID * ct_FORMULA * ct_INT_LIST
-  | CT_add_field of ct_FORMULA * ct_FORMULA * ct_FORMULA * ct_FORMULA * ct_FORMULA * ct_FORMULA * ct_FORMULA * ct_FORMULA * ct_FORMULA * ct_FORMULA * ct_BINDING_LIST
+  | CT_add_field of ct_FORMULA * ct_FORMULA * ct_FORMULA * ct_FORMULA_OPT
   | CT_add_natural_feature of ct_NATURAL_FEATURE * ct_ID
   | CT_addpath of ct_STRING * ct_ID_OPT
   | CT_arguments_scope of ct_ID * ct_ID_OPT_LIST
@@ -670,7 +670,7 @@ and ct_TACTIC_COM =
   | CT_match_context_reverse of ct_CONTEXT_RULE * ct_CONTEXT_RULE list
   | CT_match_tac of ct_TACTIC_COM * ct_MATCH_TAC_RULES
   | CT_move_after of ct_ID * ct_ID
-  | CT_new_destruct of ct_FORMULA_OR_INT * ct_USING * ct_INTRO_PATT_OPT
+  | CT_new_destruct of ct_FORMULA_OR_INT list * ct_USING * ct_INTRO_PATT_OPT
   | CT_new_induction of ct_FORMULA_OR_INT list * ct_USING * ct_INTRO_PATT_OPT
   | CT_omega
   | CT_orelse of ct_TACTIC_COM * ct_TACTIC_COM
@@ -684,9 +684,9 @@ and ct_TACTIC_COM =
   | CT_reflexivity
   | CT_rename of ct_ID * ct_ID
   | CT_repeat of ct_TACTIC_COM
-  | CT_replace_with of ct_FORMULA * ct_FORMULA
-  | CT_rewrite_lr of ct_FORMULA * ct_SPEC_LIST * ct_ID_OPT
-  | CT_rewrite_rl of ct_FORMULA * ct_SPEC_LIST * ct_ID_OPT
+  | CT_replace_with of ct_FORMULA * ct_FORMULA * ct_CLAUSE * ct_TACTIC_OPT
+  | CT_rewrite_lr of ct_FORMULA * ct_SPEC_LIST * ct_CLAUSE
+  | CT_rewrite_rl of ct_FORMULA * ct_SPEC_LIST * ct_CLAUSE
   | CT_right of ct_SPEC_LIST
   | CT_ring of ct_FORMULA_LIST
   | CT_simple_user_tac of ct_ID * ct_TACTIC_ARG_LIST

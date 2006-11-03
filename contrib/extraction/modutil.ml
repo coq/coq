@@ -252,40 +252,40 @@ let struct_get_references_list struc =
 
 exception Found
 
-let rec ast_search t a = 
-  if t a then raise Found else ast_iter (ast_search t) a
+let rec ast_search f a = 
+  if f a then raise Found else ast_iter (ast_search f) a
 
-let decl_ast_search t = function 
-  | Dterm (_,a,_) -> ast_search t a
-  | Dfix (_,c,_) -> Array.iter (ast_search t) c
+let decl_ast_search f = function 
+  | Dterm (_,a,_) -> ast_search f a
+  | Dfix (_,c,_) -> Array.iter (ast_search f) c
   | _ -> () 
 
-let struct_ast_search t s = 
-  try struct_iter (decl_ast_search t) (fun _ -> ()) s; false
+let struct_ast_search f s = 
+  try struct_iter (decl_ast_search f) (fun _ -> ()) s; false
   with Found -> true
 
-let rec type_search t = function  
-  | Tarr (a,b) -> type_search t a; type_search t b 
-  | Tglob (r,l) -> List.iter (type_search t) l
-  | u -> if t = u then raise Found
+let rec type_search f = function  
+  | Tarr (a,b) -> type_search f a; type_search f b 
+  | Tglob (r,l) -> List.iter (type_search f) l
+  | u -> if f u then raise Found
 
-let decl_type_search t = function 
+let decl_type_search f = function 
   | Dind (_,{ind_packets=p})  -> 
       Array.iter 
-	(fun {ip_types=v} -> Array.iter (List.iter (type_search t)) v) p
-  | Dterm (_,_,u) -> type_search t u
-  | Dfix (_,_,v) -> Array.iter (type_search t) v
-  | Dtype (_,_,u) -> type_search t u
+	(fun {ip_types=v} -> Array.iter (List.iter (type_search f)) v) p
+  | Dterm (_,_,u) -> type_search f u
+  | Dfix (_,_,v) -> Array.iter (type_search f) v
+  | Dtype (_,_,u) -> type_search f u
 
-let spec_type_search t = function 
+let spec_type_search f = function 
   | Sind (_,{ind_packets=p}) -> 
       Array.iter 
-	(fun {ip_types=v} -> Array.iter (List.iter (type_search t)) v) p
-  | Stype (_,_,ot) -> option_iter (type_search t) ot
-  | Sval (_,u) -> type_search t u
+	(fun {ip_types=v} -> Array.iter (List.iter (type_search f)) v) p
+  | Stype (_,_,ot) -> option_iter (type_search f) ot
+  | Sval (_,u) -> type_search f u
 
-let struct_type_search t s = 
-  try struct_iter (decl_type_search t) (spec_type_search t) s; false
+let struct_type_search f s = 
+  try struct_iter (decl_type_search f) (spec_type_search f) s; false
   with Found -> true
 
 
@@ -359,7 +359,7 @@ let dfix_to_mlfix rv av i =
 
 let rec optim prm s = function
   | [] -> []
-  | (Dtype (r,_,Tdummy) | Dterm(r,MLdummy,_)) as d :: l ->
+  | (Dtype (r,_,Tdummy _) | Dterm(r,MLdummy,_)) as d :: l ->
       if List.mem r prm.to_appear then d :: (optim prm s l) else optim prm s l
   | Dterm (r,t,typ) :: l ->
       let t = normalize (ast_glob_subst !s t) in 
