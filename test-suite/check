@@ -122,7 +122,8 @@ test_complexity() {
         else 
           # find expected time * 100
           exp=`sed -n -e "s/(\*.*Expected time < \([0-9]\).\([0-9][0-9]\)s.*\*)/\1\2/p" $f`
-          if [ `expr \( $res \* $bogomips \) "<=" \( $exp \* 6120 \)` ]; then
+          ok=`expr \( $res \* $bogomips \) "<=" \( $exp \* 6120 \)`
+          if [ $ok = 1 ]; then
               echo "Ok"
               nbtestsok=`expr $nbtestsok + 1`
           else
