@@ -18,11 +18,14 @@ Set Implicit Arguments.
 (* X will be used to distinguish covariant arguments whose type is an   *)
 (* Asymmetric* relation from contravariant arguments of the same type *)
 Inductive X_Relation_Class (X: Type) : Type :=
-   SymmetricReflexive :
-     forall A Aeq, symmetric A Aeq -> reflexive _ Aeq -> X_Relation_Class X
- | AsymmetricReflexive : X -> forall A Aeq, reflexive A Aeq -> X_Relation_Class X
- | SymmetricAreflexive : forall A Aeq, symmetric A Aeq -> X_Relation_Class X
- | AsymmetricAreflexive : X -> forall A (Aeq : relation A), X_Relation_Class X
+   SymmetricReflexive : forall A (Aeq : relation A),
+     symmetric Aeq -> reflexive Aeq -> X_Relation_Class X
+ | AsymmetricReflexive : X -> forall A (Aeq : relation A), 
+     reflexive Aeq -> X_Relation_Class X
+ | SymmetricAreflexive : forall A (Aeq : relation A), 
+     symmetric Aeq -> X_Relation_Class X
+ | AsymmetricAreflexive : X -> forall A (Aeq : relation A),
+     X_Relation_Class X
  | Leibniz : Type -> X_Relation_Class X.
 
 Inductive variance : Set :=
@@ -33,15 +36,17 @@ Definition Argument_Class := X_Relation_Class variance.
 Definition Relation_Class := X_Relation_Class unit.
 
 Inductive Reflexive_Relation_Class : Type :=
-   RSymmetric :
-     forall A Aeq, symmetric A Aeq -> reflexive _ Aeq -> Reflexive_Relation_Class
- | RAsymmetric :
-     forall A Aeq, reflexive A Aeq -> Reflexive_Relation_Class
+   RSymmetric : forall A (Aeq : relation A),
+     symmetric Aeq -> reflexive Aeq -> Reflexive_Relation_Class
+ | RAsymmetric : forall A (Aeq : relation A),
+     reflexive Aeq -> Reflexive_Relation_Class
  | RLeibniz : Type -> Reflexive_Relation_Class.
 
 Inductive Areflexive_Relation_Class  : Type :=
- | ASymmetric : forall A Aeq, symmetric A Aeq -> Areflexive_Relation_Class
- | AAsymmetric : forall A (Aeq : relation A), Areflexive_Relation_Class.
+ | ASymmetric : forall A (Aeq : relation A),
+     symmetric Aeq -> Areflexive_Relation_Class
+ | AAsymmetric : forall A (Aeq : relation A), 
+     Areflexive_Relation_Class.
 
 Implicit Type Hole Out: Relation_Class.
 
@@ -141,7 +146,7 @@ Defined.
 
 Definition impl (A B: Prop) := A -> B.
 
-Theorem impl_refl: reflexive _ impl.
+Theorem impl_refl: reflexive impl.
 Proof.
   hnf; unfold impl; tauto.
 Qed.
@@ -189,7 +194,7 @@ Defined.
 (** * Utility functions to prove that every transitive relation is a morphism *)
 
 Definition equality_morphism_of_symmetric_areflexive_transitive_relation:
- forall (A: Type)(Aeq: relation A)(sym: symmetric _ Aeq)(trans: transitive _ Aeq),
+ forall (A: Type)(Aeq: relation A)(sym: symmetric Aeq)(trans: transitive Aeq),
   let ASetoidClass := SymmetricAreflexive _ sym in
    (Morphism_Theory (necons ASetoidClass (singl ASetoidClass)) Iff_Relation_Class).
  intros.
@@ -198,8 +203,8 @@ Definition equality_morphism_of_symmetric_areflexive_transitive_relation:
 Defined.
 
 Definition equality_morphism_of_symmetric_reflexive_transitive_relation:
- forall (A: Type)(Aeq: relation A)(refl: reflexive _ Aeq)(sym: symmetric _ Aeq)
-  (trans: transitive _ Aeq), let ASetoidClass := SymmetricReflexive _ sym refl in
+ forall (A: Type)(Aeq: relation A)(refl: reflexive Aeq)(sym: symmetric Aeq)
+  (trans: transitive Aeq), let ASetoidClass := SymmetricReflexive _ sym refl in
    (Morphism_Theory (necons ASetoidClass (singl ASetoidClass)) Iff_Relation_Class).
  intros.
  exists Aeq.
@@ -207,7 +212,7 @@ Definition equality_morphism_of_symmetric_reflexive_transitive_relation:
 Defined.
 
 Definition equality_morphism_of_asymmetric_areflexive_transitive_relation:
- forall (A: Type)(Aeq: relation A)(trans: transitive _ Aeq),
+ forall (A: Type)(Aeq: relation A)(trans: transitive Aeq),
   let ASetoidClass1 := AsymmetricAreflexive Contravariant Aeq in
   let ASetoidClass2 := AsymmetricAreflexive Covariant Aeq in
    (Morphism_Theory (necons ASetoidClass1 (singl ASetoidClass2)) Impl_Relation_Class).
@@ -217,7 +222,7 @@ Definition equality_morphism_of_asymmetric_areflexive_transitive_relation:
 Defined.
 
 Definition equality_morphism_of_asymmetric_reflexive_transitive_relation:
- forall (A: Type)(Aeq: relation A)(refl: reflexive _ Aeq)(trans: transitive _ Aeq),
+ forall (A: Type)(Aeq: relation A)(refl: reflexive Aeq)(trans: transitive Aeq),
   let ASetoidClass1 := AsymmetricReflexive Contravariant refl in
   let ASetoidClass2 := AsymmetricReflexive Covariant refl in
    (Morphism_Theory (necons ASetoidClass1 (singl ASetoidClass2)) Impl_Relation_Class).
@@ -238,7 +243,7 @@ as iff_relation.
 
 (** [impl] as a relation *)
 
-Theorem impl_trans: transitive _ impl.
+Theorem impl_trans: transitive impl.
 Proof.
   hnf; unfold impl; tauto.
 Qed.
