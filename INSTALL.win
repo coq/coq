@@ -1,6 +1,6 @@
-*****************************************************************
-* INSTALLATION PROCEDURE FOR THE COQ V8 SYSTEM UNDER WINDOWS OS *
-*****************************************************************
+**************************************************************
+* INSTALLATION PROCEDURE FOR THE COQ SYSTEM UNDER WINDOWS OS *
+**************************************************************
 
     The binary distribution consists in a .zip archive file. This .zip contains
 long filenames and cannot therefore be unpacked with pkunzip version 2. Use
