@@ -18,7 +18,7 @@ Implicit Types m n p : nat.
 
 Section Well_founded_Nat.
 
-Variable A : Set.
+Variable A : Type.
 
 Variable f : A -> nat.
 Definition ltof (a b:A) := f a < f b.
