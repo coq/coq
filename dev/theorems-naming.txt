@@ -239,10 +239,10 @@ Transitivity of relation rel on domain D : Drel_sym
 Antisymmetry of relation rel on domain D : Drel_antisym
   forall x y:D, rel x y -> rel y x -> x = y
 
-Irreflexivity of relation rel on domain D : Drel_antisym
+Irreflexivity of relation rel on domain D : Drel_irrefl
   forall x:D, ~ rel x x
 
-Asymmetry of relation rel on domain D : Drel_antisym
+Asymmetry of relation rel on domain D : Drel_asym
   forall x y:D, rel x y -> ~ rel y x
 
 Cotransitivity of relation rel on domain D : Drel_cotrans
