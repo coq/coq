@@ -1,11 +1,11 @@
 INSTALLATION PROCEDURE FOR THE COQ V8.1 SYSTEM UNDER MACOS X
 ------------------------------------------------------------
 
-1) Download archive coq-8.0-macosx.dmg.
+1) Download archive coq-8.1-macosx.dmg.
 
-2) Double-click on its icon; it mounts a disk volume named "Coq V8.0".
+2) Double-click on its icon; it mounts a disk volume named "Coq V8.1".
 
-3) Open volume "Coq 8.0" and double-click on coq-8.0.pkg to launch the
+3) Open volume "Coq 8.1" and double-click on coq-8.1.pkg to launch the
    installer (you'll need administrator permissions).
 
 4) Coq installs in /usr/local/bin, which should be in your PATH, and

@@ -67,6 +67,9 @@ CAMLFLAGS=CAMLANNOTATEFLAG
 # Compilation debug flag
 CAMLDEBUG=COQDEBUGFLAG
 
+# Inlining flag (inlining causes problems with ocaml < 3.09.x)
+INLINEFLAG=COQINLINEFLAG
+
 # User compilation flag
 USERFLAGS=
 
