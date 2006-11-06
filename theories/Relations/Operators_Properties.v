@@ -15,17 +15,16 @@
 Require Import Relation_Definitions.
 Require Import Relation_Operators.
 
-
 Section Properties.
 
-  Variable A : Set.
+  Variable A : Type.
   Variable R : relation A.
 
   Let incl (R1 R2:relation A) : Prop := forall x y:A, R1 x y -> R2 x y.
   
   Section Clos_Refl_Trans.
 
-    Lemma clos_rt_is_preorder : preorder A (clos_refl_trans A R).
+    Lemma clos_rt_is_preorder : preorder (clos_refl_trans A R).
     Proof.
       apply Build_preorder.
       exact (rt_refl A R).
@@ -62,21 +61,19 @@ Section Properties.
       apply rt_trans with y; auto with sets.
     Qed.
 
-
   End Clos_Refl_Trans.
-
 
   Section Clos_Refl_Sym_Trans.
 
     Lemma clos_rt_clos_rst :
-      inclusion A (clos_refl_trans A R) (clos_refl_sym_trans A R).
+      inclusion (clos_refl_trans A R) (clos_refl_sym_trans A R).
     Proof.
       red in |- *.
       induction 1; auto with sets.
       apply rst_trans with y; auto with sets.
     Qed.
 
-    Lemma clos_rst_is_equiv : equivalence A (clos_refl_sym_trans A R).
+    Lemma clos_rst_is_equiv : equivalence (clos_refl_sym_trans A R).
     Proof.
       apply Build_equivalence.
       exact (rst_refl A R).

@@ -254,6 +254,16 @@ theories/Relations/Operators_Properties.vo: theories/Relations/Operators_Propert
 theories/Relations/Relation_Definitions.vo: theories/Relations/Relation_Definitions.v
 theories/Relations/Relation_Operators.vo: theories/Relations/Relation_Operators.v theories/Relations/Relation_Definitions.vo theories/Lists/List.vo
 theories/Relations/Relations.vo: theories/Relations/Relations.v theories/Relations/Relation_Definitions.vo theories/Relations/Relation_Operators.vo theories/Relations/Operators_Properties.vo
+theories/Relations/Relations_1.vo: theories/Relations/Relations_1.v theories/Relations/Relation_Definitions.vo
+theories/Relations/Relations_1_facts.vo: theories/Relations/Relations_1_facts.v theories/Relations/Relation_Definitions.vo theories/Relations/Relations_1.vo
+theories/Relations/Relations_2.vo: theories/Relations/Relations_2.v theories/Relations/Relations_1.vo
+theories/Relations/Relations_2_facts.vo: theories/Relations/Relations_2_facts.v theories/Relations/Relations_1.vo theories/Relations/Relations_1_facts.vo theories/Relations/Relations_2.vo
+theories/Relations/Relations_3.vo: theories/Relations/Relations_3.v theories/Relations/Relations_1.vo theories/Relations/Relations_2.vo
+theories/Relations/Relations_3_facts.vo: theories/Relations/Relations_3_facts.v theories/Relations/Relations_1.vo theories/Relations/Relations_1_facts.vo theories/Relations/Relations_2.vo theories/Relations/Relations_2_facts.vo theories/Relations/Relations_3.vo
+theories/Relations/Relation_Definitions_compat.vo: theories/Relations/Relation_Definitions_compat.v theories/Relations/Relation_Definitions.vo
+theories/Relations/Relations_1_compat.vo: theories/Relations/Relations_1_compat.v theories/Relations/Relations_1.vo
+theories/Relations/Relations_2_compat.vo: theories/Relations/Relations_2_compat.v theories/Relations/Relations_2.vo
+theories/Relations/Relations_3_compat.vo: theories/Relations/Relations_3_compat.v theories/Relations/Relations_3.vo
 theories/Wellfounded/Disjoint_Union.vo: theories/Wellfounded/Disjoint_Union.v theories/Relations/Relation_Operators.vo
 theories/Wellfounded/Inclusion.vo: theories/Wellfounded/Inclusion.v theories/Relations/Relation_Definitions.vo
 theories/Wellfounded/Inverse_Image.vo: theories/Wellfounded/Inverse_Image.v

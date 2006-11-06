@@ -28,6 +28,7 @@
 
 Require Export Ensembles.
 Require Export Relations_1.
+Require Export Relation_Definitions_compat.
 
 Section Partial_orders.
   Variable U : Type.

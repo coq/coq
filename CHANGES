@@ -1,3 +1,13 @@
+Changes in branch revised-theories
+==================================
+
+Relations:
+
+- removal of Rstar.v and Newman.v (moved to contrib CoC-HISTORY)
+- move of Sets/Relation_*.v to Relations 
+- Set Implicit Arguments in main Relations files
+- changed order in "compat"
+
 Changes from V8.1beta to V8.1beta2
 ==================================
 

@@ -29,12 +29,14 @@
 Require Export Relations_1.
 Require Export Relations_2.
 
+Set Implicit Arguments.
+
 Section Relations_3.
    Variable U : Type.
-   Variable R : Relation U.
+   Variable R : relation U.
    
    Definition coherent (x y:U) : Prop :=
-      exists z : _, Rstar U R x z /\ Rstar U R y z.
+      exists z : _, Rstar R x z /\ Rstar R y z.
    
    Definition locally_confluent (x:U) : Prop :=
      forall y z:U, R x y -> R x z -> coherent y z.
@@ -42,7 +44,7 @@ Section Relations_3.
    Definition Locally_confluent : Prop := forall x:U, locally_confluent x.
    
    Definition confluent (x:U) : Prop :=
-     forall y z:U, Rstar U R x y -> Rstar U R x z -> coherent y z.
+     forall y z:U, Rstar R x y -> Rstar R x z -> coherent y z.
    
    Definition Confluent : Prop := forall x:U, confluent x.
    
@@ -59,4 +61,3 @@ Hint Unfold confluent: sets v62.
 Hint Unfold Confluent: sets v62.
 Hint Resolve definition_of_noetherian: sets v62.
 Hint Unfold Noetherian: sets v62.
-

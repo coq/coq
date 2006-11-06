@@ -28,9 +28,11 @@
 
 Require Export Relations_1.
 
+Set Implicit Arguments.
+
 Section Relations_2.
 Variable U : Type.
-Variable R : Relation U.
+Variable R : relation U.
 
 Inductive Rstar (x:U) : U -> Prop :=
   | Rstar_0 : Rstar x x
@@ -45,7 +47,7 @@ Inductive Rplus (x:U) : U -> Prop :=
   | Rplus_0 : forall y:U, R x y -> Rplus x y
   | Rplus_n : forall y z:U, R x y -> Rplus y z -> Rplus x z.
 
-Definition Strongly_confluent : Prop :=
+Definition strongly_confluent : Prop :=
   forall x a b:U, R x a -> R x b -> ex (fun z:U => R a z /\ R b z).
 
 End Relations_2.
@@ -54,3 +56,7 @@ Hint Resolve Rstar_0: sets v62.
 Hint Resolve Rstar1_0: sets v62.
 Hint Resolve Rstar1_1: sets v62.
 Hint Resolve Rplus_0: sets v62.
+
+(* Compatibility *)
+
+Notation Strongly_confluent := strongly_confluent (only parsing).

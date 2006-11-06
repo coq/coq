@@ -26,42 +26,35 @@
 
 (*i $Id$ i*)
 
-Section Relations_1.
-   Variable U : Type.
-   
-   Definition Relation := U -> U -> Prop.
-   Variable R : Relation.
-   
-   Definition Reflexive : Prop := forall x:U, R x x.
-   
-   Definition Transitive : Prop := forall x y z:U, R x y -> R y z -> R x z.
-   
-   Definition Symmetric : Prop := forall x y:U, R x y -> R y x.
-   
-   Definition Antisymmetric : Prop := forall x y:U, R x y -> R y x -> x = y.
-   
-   Definition contains (R R':Relation) : Prop :=
-     forall x y:U, R' x y -> R x y.
-   
-   Definition same_relation (R R':Relation) : Prop :=
-     contains R R' /\ contains R' R.
-   
-   Inductive Preorder : Prop :=
-       Definition_of_preorder : Reflexive -> Transitive -> Preorder.
-   
-   Inductive Order : Prop :=
-       Definition_of_order :
-         Reflexive -> Transitive -> Antisymmetric -> Order.
-   
-   Inductive Equivalence : Prop :=
-       Definition_of_equivalence :
-         Reflexive -> Transitive -> Symmetric -> Equivalence.
-   
-   Inductive PER : Prop :=
-       Definition_of_PER : Symmetric -> Transitive -> PER.
-   
-End Relations_1.
-Hint Unfold Reflexive Transitive Antisymmetric Symmetric contains
-  same_relation: sets v62.
-Hint Resolve Definition_of_preorder Definition_of_order
-  Definition_of_equivalence Definition_of_PER: sets v62.
+Require Export Relation_Definitions.
+
+Set Implicit Arguments.
+
+Definition contains U (R R':relation U) := forall x y:U, R' x y -> R x y.
+
+Hint Unfold contains.
+
+(* Compatibility *)
+
+Notation Relation := relation (only parsing).
+Notation Reflexive := reflexive (only parsing).
+Notation Symmetric := symmetric (only parsing).
+Notation Transitive := transitive (only parsing).
+Notation Antisymmetric := antisymmetric (only parsing).
+Notation same_relation := (@same_relation _).
+Notation Preorder := preorder (only parsing).
+Notation Definition_of_preorder := Build_preorder (only parsing).
+Notation Order := order (only parsing).
+Notation Definition_of_order := Build_order (only parsing).
+Notation Equivalence := equivalence (only parsing).
+Notation Definition_of_equivalence := Build_equivalence (only parsing).
+Notation PER := PER.
+Notation Definition_of_PER := Build_PER (only parsing).
+
+(* Compatibility notes
+
+  [same_relation] was defined on endorelations as a pair of [contains], now
+  it is defined on arbitrary relations and on [inclusion], resulting in a
+  reverse order in the two conjuncts!
+
+*)

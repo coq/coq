@@ -83,7 +83,7 @@ intros x y z H' H'0; try assumption.
 elim Strict_Rel_is_Strict_Included.
 unfold contains in |- *.
 intros H'1 H'2; try assumption.
-apply H'1.
+apply H'2.
 apply Strict_Rel_Transitive_with_Rel with (y := y); auto with sets.
 Qed.
 
@@ -94,7 +94,7 @@ intros x y z H' H'0; try assumption.
 elim Strict_Rel_is_Strict_Included.
 unfold contains in |- *.
 intros H'1 H'2; try assumption.
-apply H'1.
+apply H'2.
 apply Strict_Rel_Transitive_with_Rel_left with (y := y); auto with sets.
 Qed.
 

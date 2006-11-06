@@ -33,7 +33,7 @@ Require Export Relations_2_facts.
 Require Export Relations_3.
 
 Theorem Rstar_imp_coherent :
- forall (U:Type) (R:Relation U) (x y:U), Rstar U R x y -> coherent U R x y.
+ forall (U:Type) (R:relation U) (x y:U), Rstar R x y -> coherent R x y.
 Proof.
 intros U R x y H'; red in |- *.
 exists y; auto with sets.
@@ -41,7 +41,7 @@ Qed.
 Hint Resolve Rstar_imp_coherent.
 
 Theorem coherent_symmetric :
- forall (U:Type) (R:Relation U), Symmetric U (coherent U R).
+ forall (U:Type) (R:relation U), symmetric (coherent R).
 Proof.
 unfold coherent at 1 in |- *.
 intros U R; red in |- *.
@@ -50,7 +50,7 @@ intros z H'0; exists z; tauto.
 Qed.
 
 Theorem Strong_confluence :
- forall (U:Type) (R:Relation U), Strongly_confluent U R -> Confluent U R.
+ forall (U:Type) (R:relation U), strongly_confluent R -> Confluent R.
 Proof.
 intros U R H'; red in |- *.
 intro x; red in |- *; intros a b H'0.
@@ -75,7 +75,7 @@ apply Rstar_n with z0; auto with sets.
 Qed.
 
 Theorem Strong_confluence_direct :
- forall (U:Type) (R:Relation U), Strongly_confluent U R -> Confluent U R.
+ forall (U:Type) (R:relation U), strongly_confluent R -> Confluent R.
 Proof.
 intros U R H'; red in |- *.
 intro x; red in |- *; intros a b H'0.
@@ -84,7 +84,7 @@ generalize b; clear b.
 elim H'0; clear H'0.
 intros x0 b H'1; exists b; auto with sets.
 intros x0 y z H'1 H'2 H'3 b H'4.
-cut (ex (fun t:U => Rstar U R y t /\ R b t)).
+cut (ex (fun t:U => Rstar R y t /\ R b t)).
 intro h; elim h; intros t h0; elim h0; intros H'0 H'5; clear h h0.
 generalize (H'3 t); intro h; lapply h;
  [ intro h0; elim h0; intros z0 h1; elim h1; intros H'6 H'7; clear h h0 h1
@@ -110,8 +110,8 @@ apply Rstar_n with z1; auto with sets.
 Qed.
 
 Theorem Noetherian_contains_Noetherian :
- forall (U:Type) (R R':Relation U),
-   Noetherian U R -> contains U R R' -> Noetherian U R'.
+ forall (U:Type) (R R':relation U),
+   Noetherian R -> contains R R' -> Noetherian R'.
 Proof.
 unfold Noetherian at 2 in |- *.
 intros U R R' H' H'0 x.
@@ -119,8 +119,8 @@ elim (H' x); auto with sets.
 Qed.
 
 Theorem Newman :
- forall (U:Type) (R:Relation U),
-   Noetherian U R -> Locally_confluent U R -> Confluent U R.
+ forall (U:Type) (R:relation U),
+   Noetherian R -> Locally_confluent R -> Confluent R.
 Proof.
 intros U R H' H'0; red in |- *; intro x.
 elim (H' x); unfold confluent in |- *.

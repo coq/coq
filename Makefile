@@ -842,7 +842,6 @@ ARITHVO=\
  theories/Arith/Euclid.vo       theories/Arith/Plus.vo        \
  theories/Arith/Wf_nat.vo  	theories/Arith/Max.vo	      \
  theories/Arith/Bool_nat.vo	theories/Arith/Factorial.vo   \
- theories/Arith/Power.vo 
 # theories/Arith/Div.vo 
 
 SORTINGVO=\
@@ -896,12 +895,9 @@ SETSVO=\
  theories/Sets/Constructive_sets.vo theories/Sets/Powerset.vo \
  theories/Sets/Cpo.vo               theories/Sets/Powerset_Classical_facts.vo \
  theories/Sets/Ensembles.vo         theories/Sets/Powerset_facts.vo \
- theories/Sets/Finite_sets.vo       theories/Sets/Relations_1.vo \
- theories/Sets/Finite_sets_facts.vo theories/Sets/Relations_1_facts.vo \
- theories/Sets/Image.vo             theories/Sets/Relations_2.vo \
- theories/Sets/Infinite_sets.vo     theories/Sets/Relations_2_facts.vo \
- theories/Sets/Integers.vo          theories/Sets/Relations_3.vo \
- theories/Sets/Multiset.vo          theories/Sets/Relations_3_facts.vo \
+ theories/Sets/Finite_sets.vo       theories/Sets/Finite_sets_facts.vo \
+ theories/Sets/Image.vo             theories/Sets/Infinite_sets.vo \
+ theories/Sets/Integers.vo          theories/Sets/Multiset.vo \
  theories/Sets/Partial_Order.vo     theories/Sets/Uniset.vo
 
 FSETSBASEVO=\
@@ -939,12 +935,17 @@ INTMAPVO=\
  theories/IntMap/Mapaxioms.vo  theories/IntMap/Map.vo \
 
 RELATIONSVO=\
- theories/Relations/Newman.vo \
  theories/Relations/Operators_Properties.vo \
  theories/Relations/Relation_Definitions.vo \
  theories/Relations/Relation_Operators.vo \
  theories/Relations/Relations.vo \
- theories/Relations/Rstar.vo
+ theories/Relations/Relations_1.vo  theories/Relations/Relations_1_facts.vo \
+ theories/Relations/Relations_2.vo  theories/Relations/Relations_2_facts.vo \
+ theories/Relations/Relations_3.vo  theories/Relations/Relations_3_facts.vo \
+ theories/Relations/Relation_Definitions_compat.vo \
+ theories/Relations/Relations_1_compat.vo \
+ theories/Relations/Relations_2_compat.vo \
+ theories/Relations/Relations_3_compat.vo
 
 WELLFOUNDEDVO=\
  theories/Wellfounded/Disjoint_Union.vo \

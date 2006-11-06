@@ -26,22 +26,23 @@
 
 (*i $Id$ i*)
 
+Require Import Relation_Definitions.
 Require Export Relations_1.
+Set Implicit Arguments.
 
-Definition Complement (U:Type) (R:Relation U) : Relation U :=
+Definition Complement (U:Type) (R:relation U) : relation U :=
   fun x y:U => ~ R x y.
 
 Theorem Rsym_imp_notRsym :
- forall (U:Type) (R:Relation U),
-   Symmetric U R -> Symmetric U (Complement U R).
+ forall (U:Type) (R:relation U), symmetric R -> symmetric (Complement R).
 Proof.
-unfold Symmetric, Complement in |- *.
+unfold symmetric, Complement in |- *.
 intros U R H' x y H'0; red in |- *; intro H'1; apply H'0; auto with sets.
 Qed.
 
 Theorem Equiv_from_preorder :
- forall (U:Type) (R:Relation U),
-   Preorder U R -> Equivalence U (fun x y:U => R x y /\ R y x).
+ forall (U:Type) (R:relation U),
+   preorder R -> equivalence (fun x y:U => R x y /\ R y x).
 Proof.
 intros U R H'; elim H'; intros H'0 H'1.
 apply Definition_of_equivalence.
@@ -55,58 +56,58 @@ Qed.
 Hint Resolve Equiv_from_preorder.
 
 Theorem Equiv_from_order :
- forall (U:Type) (R:Relation U),
-   Order U R -> Equivalence U (fun x y:U => R x y /\ R y x).
+ forall (U:Type) (R:relation U),
+   order R -> equivalence (fun x y:U => R x y /\ R y x).
 Proof.
 intros U R H'; elim H'; auto 10 with sets.
 Qed.
 Hint Resolve Equiv_from_order.
 
 Theorem contains_is_preorder :
- forall U:Type, Preorder (Relation U) (contains U).
+ forall U:Type, preorder (contains (U:=U)).
 Proof.
 auto 10 with sets.
 Qed.
 Hint Resolve contains_is_preorder.
 
-Theorem same_relation_is_equivalence :
- forall U:Type, Equivalence (Relation U) (same_relation U).
+Theorem inclusion_is_preorder :
+ forall U:Type, preorder (inclusion (A:=U) (B:=U)).
 Proof.
-unfold same_relation at 1 in |- *; auto 10 with sets.
+auto 10 with sets.
+Qed.
+Hint Resolve inclusion_is_preorder.
+
+Theorem same_relation_is_equivalence :
+ forall U:Type, equivalence (A:=relation U) (same_relation U).
+Proof.
+unfold Relation_Definitions.same_relation; auto.
 Qed.
 Hint Resolve same_relation_is_equivalence.
 
 Theorem cong_reflexive_same_relation :
- forall (U:Type) (R R':Relation U),
-   same_relation U R R' -> Reflexive U R -> Reflexive U R'.
+ forall (U:Type) (R R':relation U),
+   same_relation U R R' -> reflexive R -> reflexive R'.
 Proof.
-unfold same_relation in |- *; intuition.
+unfold Relation_Definitions.same_relation in |- *; intuition.
 Qed.
 
 Theorem cong_symmetric_same_relation :
- forall (U:Type) (R R':Relation U),
-   same_relation U R R' -> Symmetric U R -> Symmetric U R'.
+ forall (U:Type) (R R':relation U),
+   same_relation U R R' -> symmetric R -> symmetric R'.
 Proof.
-  compute in |- *; intros; elim H; intros; clear H;
-   apply (H3 y x (H0 x y (H2 x y H1))).
-(*Intuition.*)
+  compute; intros; destruct H; auto.
 Qed.
 
 Theorem cong_antisymmetric_same_relation :
- forall (U:Type) (R R':Relation U),
-   same_relation U R R' -> Antisymmetric U R -> Antisymmetric U R'.
+ forall (U:Type) (R R':relation U),
+   same_relation U R R' -> antisymmetric R -> antisymmetric R'.
 Proof.
-  compute in |- *; intros; elim H; intros; clear H;
-   apply (H0 x y (H3 x y H1) (H3 y x H2)).
-(*Intuition.*)
+  compute; intros; destruct H; auto.
 Qed.
 
 Theorem cong_transitive_same_relation :
- forall (U:Type) (R R':Relation U),
-   same_relation U R R' -> Transitive U R -> Transitive U R'.
+ forall (U:Type) (R R':relation U),
+   same_relation U R R' -> transitive R -> transitive R'.
 Proof.
-intros U R R' H' H'0; red in |- *.
-elim H'.
-intros H'1 H'2 x y z H'3 H'4; apply H'2.
-apply H'0 with y; auto with sets.
+  compute; intros; destruct H; eauto.
 Qed.
