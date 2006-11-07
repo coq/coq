@@ -6,7 +6,7 @@
 # 
 ##################################
 
-VERSION=v8.1
+VERSION=V8.1gamma
 DATE="Nov. 2006"
 
 # a local which command for sh
