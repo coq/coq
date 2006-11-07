@@ -120,9 +120,9 @@ let (current:pref ref) =
 			 "auto with *"; "intuition" ];
     
     modifier_for_navigation = [`CONTROL; `MOD1];
-    modifier_for_templates = [`MOD4];
+    modifier_for_templates = [`CONTROL; `SHIFT];
     modifier_for_tactics = [`CONTROL; `MOD1];
-    modifiers_valid = [`SHIFT; `CONTROL; `MOD1; `MOD4];
+    modifiers_valid = [`SHIFT; `CONTROL; `MOD1];
 
     
     cmd_browse = Options.browser_cmd_fmt;
