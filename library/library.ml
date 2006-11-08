@@ -37,6 +37,12 @@ let find_logical_path phys_dir =
   | _,[] -> Nameops.default_root_prefix
   | _,l -> anomaly ("Two logical paths are associated to "^phys_dir)
 
+let is_in_load_paths phys_dir =
+  let dir = System.canonical_path_name phys_dir in
+  let lp = get_load_path () in
+  let check_p = fun p -> (String.compare dir p) == 0 in
+  List.exists check_p lp
+
 let remove_path dir =
   let dir = System.canonical_path_name dir in
   load_path := list_filter2 (fun p d -> p <> dir) !load_path

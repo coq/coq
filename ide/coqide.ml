@@ -1476,13 +1476,11 @@ Please restart and report NOW.";
 		 #filename 
 	       with
 	       | None -> ()
-	       | Some f ->     
-		   if not (is_in_coq_path f) then 
-		     begin
-		       let dir = Filename.dirname f in
-		       ignore (Coq.interp false
-				 (Printf.sprintf "Add LoadPath \"%s\". "  dir))
-		     end)
+	       | Some f ->
+                   let dir = Filename.dirname f in
+ 	           if not (is_in_loadpath dir) then
+		     ignore (Coq.interp false
+		       (Printf.sprintf "Add LoadPath \"%s\". "  dir)))
     in ()
 
       

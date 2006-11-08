@@ -73,6 +73,7 @@ val add_load_path_entry : System.physical_path * logical_path -> unit
 val remove_path : System.physical_path -> unit
 val find_logical_path : System.physical_path -> logical_path
 val load_path_of_logical_path : dir_path -> System.physical_path list
+val is_in_load_paths : System.physical_path -> bool
 
 exception LibUnmappedDir
 exception LibNotFound
