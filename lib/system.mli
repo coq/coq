@@ -22,6 +22,9 @@ val all_subdirs : unix_path:string -> (physical_path * string list) list
 val is_in_path : load_path -> string -> bool
 val where_in_path : load_path -> string -> physical_path * string
 
+val physical_path_of_string : string -> physical_path
+val string_of_physical_path : physical_path -> string
+  	 
 val make_suffix : string -> string -> string
 val file_readable_p : string -> bool
 

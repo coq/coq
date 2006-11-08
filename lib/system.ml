@@ -62,6 +62,9 @@ let glob s = expand_macros true s 0
 type physical_path = string
 type load_path = physical_path list
 
+let physical_path_of_string s = s
+let string_of_physical_path p = p
+  	 
 (* Hints to partially detects if two paths refer to the same repertory *)
 let rec remove_path_dot p = 
   let curdir = Filename.concat Filename.current_dir_name "" in (* Unix: "./" *)
