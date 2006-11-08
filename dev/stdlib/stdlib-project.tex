@@ -1,0 +1,2066 @@
+\documentclass[a4paper]{book}
+\usepackage{fullpage}
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsfonts}
+
+\newcommand\formula[1]{\begin{tt}#1\end{tt}}
+\newcommand\tactic[1]{\begin{tt}#1\end{tt}}
+\newcommand\command[1]{\begin{tt}#1\end{tt}}
+\newcommand\term[1]{\begin{tt}#1\end{tt}}
+\newcommand\library[1]{\texttt{#1}}
+\newcommand\name[1]{\texttt{#1}}
+
+\newcommand\itemrule[3]{
+\paragraph{#1}
+\begin{quote}
+\begin{tt}
+#3
+\end{tt}
+\end{quote}
+
+Name: \texttt{#2}}
+
+\newcommand\op{\texttt{op}}
+\newcommand\opp{\texttt{op'}}
+\newcommand\oppp{\texttt{op''}}
+\newcommand\phimapping{\texttt{phi}}
+\newcommand\D{\texttt{D}}
+\newcommand\elt{\texttt{elt}}
+\newcommand\rel{\texttt{rel}}
+\newcommand\relp{\texttt{rel'}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\author{The Coq Development Team\\
+initial version by Hugo Herbelin}
+\title{A project for the standard library of Coq\\
+Draft
+}
+
+\begin{document}
+
+\maketitle
+
+\mbox{}
+\vspace{4cm}{}
+
+This document discusses features of an ideal Coq standard library that
+could serve as a solid basis both for future extensions and
+(hopefully) for ``laying formal mathematical knowledge''.
+
+The document includes both long-term prospective aspects and technical
+points about how to improve the actual library in the short term.
+
+\tableofcontents
+
+\chapter{What to do with the standard library?}
+
+\section{Historical context of the standard library}
+
+Coq is a system originating in the initial work of Thierry Coquand and
+Gérard Huet on the Calculus of Constructions. Its implementation,
+called CoC, was started in 1984. Version 4.10 of CoC was released in
+1989.  With version 5.6, the underlying logic became the Calculus of
+Inductive Constructions and changed its name to Coq.
+
+The standard library of Coq was first released as such in April 1993
+as part of Coq version 5.8.0. It contained libraries about natural
+numbers (ARITH), boolean values (BOOL) and lists (LISTS). They were
+structured pretty much the same as it still is in Coq version 8.0.  It
+contained also an initial library (SYSTEM) for connectives and Peano
+axioms that was automatically loaded at startup. It contained almost
+empty libraries for sets (SETS), relations (RELATIONS), streams
+(STREAMS) whose purpose was basically to provide examples such as the
+proof of Schroeder-Bernstein theorem, the proof of Newman lemma, and
+the correctness of Eratosthene sieve. A collection of examples of
+algorithm correctness proofs (PROGRAMS) completed this first version.
+
+Formerly, the same collection of results (but poorer) was simply
+released as an informal collection of examples\footnote{For the
+record, the directory containing the examples changed its name from
+the French \texttt{exemples} to the English \texttt{EXAMPLES} at the
+time of the first public release, version V4.10, in 1989.}.
+
+Depending on the notions, we can trace their current name back as
+early as the first 1984 prototype\footnote{This is for instance the
+case of \texttt{sig}, \texttt{exist}, \texttt{eq},
+\texttt{refl\_equal}, \texttt{sym\_equal}, \texttt{trans\_equal},
+\texttt{bool}, \texttt{list}, \texttt{nat}, \texttt{plus\_0\_r},
+\texttt{plus\_0\_l}, \texttt{plus\_comm}, \texttt{plus\_0\_r},
+\texttt{plus\_0\_l}, \texttt{plus\_comm}...} in C, but extensions
+really started around the version 4.3 with the implementation of the
+first extraction mechanism and the development of correctness proofs
+of algorithms (e.g. Manna's binary search algorithm), then in version
+4.10 with the implementation of basic tactics, then in version 5.6
+with the help of the new primitive inductive definitions and
+pattern-matching constructions.
+
+A the end, this resulted with a standard library made of a collection
+of notions added heterogeneously and anarchically, with still the
+traces of the different strata of Coq evolution, at periods when
+rewriting, or coercions, or high-level tactics for induction, or
+implicit arguments, etc. were not yet available.
+
+As an example of the gestation process of the standard library,
+Appendix~\ref{appendix-historical} shows the evolution of \texttt{sig}
+and \texttt{exist} along the history of Coq.
+
+\section{Aspects of the restructuration of the standard library}
+
+Reworking the standard library covers several aspects that we list
+below.
+
+\subsection{The naming layer}
+
+This first layer is a pure question of uniform naming scheme
+(e.g. should we have a generic name for all reflexivity lemmas:
+shouldn't le\_n be le\_refl and refl\_equal be eq\_refl, etc.). In this
+level, we also include very basic conventions on naming the variables
+(x,y,z or n,m,p, or n1,n2,n3, ...?), on the order of hypotheses
+(e.g. where should the intermediate variable of a cotransitivity
+statement be quantified?), on the file names (do we really want
+Peano\_dec.v and DecBool.v), etc.
+
+This layer, which would give a uniformity to the library, is however
+complex to implement if compatibility with the existing developments
+is required.
+
+To preserve the existing developments, the only reasonable technique
+is to use a translator as it was done for switching from (old) pre-V8
+syntax to new V8 syntax. Would the user accept a new automatic
+translation phase?
+
+A light way to automatically translate development is in two phases:
+in a first phase, compilation produces a file of localised changes
+(such as: replace ident id at line xx, character yy, into id'), in a
+second phase, a clever translater applies the precompiled
+substitutions.
+
+
+\subsection{The contents layer}
+
+This layer is about deciding, for a given theory, what are the
+meaningful lemmas that are legitimate to be present in a standard
+library. This covers proving obvously missing lemmas but also removing
+possible redundancies (e.g. is it desirable to have both
+
+\verb!mult_S_lt_compat_l : forall n m p, m < p -> S n * m < S n * p!
+
+and
+
+\verb!mult_lt_compat_r : forall n m p, n < m -> 0 < p -> n * p < m * p!?)
+
+and reformulating non appropriately stated lemmas.
+
+A reasonable approach for implementing this level is that the
+responsabilities are dispatched. Typically the contents of the computer
+science libraries and the arithmetical, algebraic and analysis
+libraries could be supervised by different persons.
+
+\subsection{The methodological layer}
+
+This third layer includes questions like:
+\begin{itemize}
+
+\item Should we have a library for reasoning on decidable
+   propositions? (see e.g. G. Gonthier's reflection of decidable
+   propositions in booleans).
+
+\item Should we define classical real numbers on top of constructive ones or
+should we have completely independent characterisations/constructions?
+
+\item Should we define N, Z, Q, ...  axiomatically or should we construct
+      them? Wouldn't it be reasonable to have both?
+
+\item Shouldn't we use modules to factorise all properties
+of, say, totally ordered rings, rather than re-proving them for each
+new concrete structure? This seems reasonable.
+
+\item Should we define distinct objects for \verb!<! and \verb!>!, or
+should we just consider it is a purely notational problem? Should we
+define \verb!<=! from \verb!<!, as suggested by constructive
+mathematics (and actually done in CoRN), or the reverse (as done in
+Arith), or shall we have different definitions depending on which
+structure is considered?  Should we define < on decidable structures
+as a function (as done for ZArith) or as a predicate (as done in
+Arith)?  Etc.
+\end{itemize}
+
+Connected to the methodological level is the support for
+automation. E.g. if we accept ring or field as granted, do we really
+need to state extra technical lemmas that ring or field would solve
+immediately.  On the opposite side, automation based on the auto
+tactic requires a well designed set of theorems that surely exceed the
+simple set of basic defining properties of the structure on
+consideration (e.g. couldn't \verb!forall n m:Z, n + - m > 0 -> n > m!
+be such a theorem?)
+
+\subsection{The ``logistic'' layer}
+
+By ``logistic'' is intended the question of which theories are
+relevant for a so-called standard library (e.g. is category theory or
+projective geometry relevant to build extra works or should we
+consider them as leaves of the dependency graph of theories).
+
+\subsection{The documentation layer}
+
+\subsubsection{Metadata}
+
+Metadatas such as authors of the files, history of the files, textbook
+or paper used as references, are minimum expectations for a library with
+scientific claims. In most of the files such informations are
+missing.
+
+\subsubsection{Browsing}
+
+Coqdoc is a good tool for documentation and browsing the standard library.
+
+\subsubsection{Natural language}
+
+MoWGLI provided a very interesting platform for reading proofs in
+natural language. It is not fully satisfactory (proofs too long,
+details not put in evidence), but partly because the proof scripts
+themselves are not written with natural language rendering in mind.
+
+At the time being, the question of natural language looks immature to
+me. Directions to explore before having a better feeling are:
+
+\begin{itemize}
+\item The mathematical mode developed in Nijmegen
+
+\item The development of tactics behaving closer and closer to what the
+  user has in mind.
+
+\item A rendering based as much on proof script than on the raw
+proof-term, as partly explored by MoWGLI and Loïc Pottier.
+\end{itemize}
+
+\subsubsection{Searching}
+
+MoWGLI provided an excellent platform for searching formal libraries.
+It has to communicate with the standard library.
+
+\subsubsection{The symbolic language}
+
+Coq is basically text made of Unicode characters.  How far can we go
+in using more involved notations in the interactive proof development,
+starting from three dimensional notations, such as indices, fractions,
+etc.  The Matita~\cite{Matita} project is an interesting project to
+follow on this side.
+
+Alternatively, how to export notations from a Coq file, so that its
+rendering in TeX or HTML benefits of these notations.
+This raises questions such as:
+
+\begin{itemize}
+\item What is the status of indices in Coq identifiers? Shall we do
+something special with the indices chart of Unicode?
+
+\item How to render operators with side conditions such as division
+that expects a non-zero proof in CoRN?
+
+\item Can we go on with Camlp4 as it is (the LL1 restriction, no
+detection of conflicts)?
+
+\end{itemize}
+
+\section{Methodology and connected projects}
+
+\subsection{General remarks}
+
+The sources of progress come from the formalisation. The early
+formalisation of category theory by Amokrane Saïbi was a motivation
+for coercions, implicit arguments, canonical structures.
+
+The need for shorten further expressions motivated extensible syntactic
+notations, automatic inference of types.
+
+The need for tactics well-suited to the human mind motivated the (new)
+induction, the forward reasoning tactics and the tactics for
+fine-tuned simplification of expressions.
+
+The need for notation overloading motivated the introduction of
+interpretation scopes.
+
+The library of binary integers was crucial for the development of
+further libraries.
+
+All of these innovations had flaws. The current document lists some of
+them that are related to the standard library.
+
+The standard library project aims to both correct the flaws (when
+possible) and to experiment new features.
+
+The reworking of the standard library will certainly provide an
+excellent source of problems for developing new features. We list the
+ones already in sight.
+
+\subsection{Improving the module system}
+
+A modular development of the arithmetical properties of
+ordered semi-rings, rings and field has been tempted 2 years ago.
+This work has been carried on by Claudio Sacerdoti during its
+post-doc.  Rewriting of abstract equalities was necessary, so he
+extended the setoid rewrite mechanism. Then, expansion of the
+instances of functors was necessary to go on further, so he
+implemented many new features of the module system. Especially, it
+appeared that the implementation/interface duality on which the Coq
+module system is based was too much restricted. It has been decided to
+develop a new system based on a more general notion of
+refinement/subtyping (a master student is working on it).
+
+\subsection{Improving tactics}
+
+We list a few ideas for improvement of the basic tactics:
+
+\begin{itemize}
+
+\item Induction: the \texttt{induction} is an improvement over
+\texttt{elim}, we have ideas to better combine inversion and
+induction (as an example, the inversion steps of the proof of the
+transitivity lemma in the POPLmark should be automatised).
+
+\item Induction: mention of the occurrences on which the induction is
+performed (including occurrences in context) should be attached to the
+tactic invocation.
+
+\item Cleaning hypotheses: it is most common to use hypotheses only
+once. The default should be to erase the hypotheses invoked by
+\tactic{apply} or \tactic{generalize}.
+
+\item Apply: it is a pity that \texttt{apply} does not traverse
+``cosmetic'' constant such as \texttt{not}, \texttt{reflexive}, or
+that it does not know how to insert coercions in case of mismatch
+(e.g. applying a iff statement should automatically split into trying
+to apply the if or the only if part; this is typically something that
+hinders the development of the standard library: one is often forced
+to state the if and the only if part of an equivalence in two distinct
+statements while it should be more intuitive to have only one).
+
+\end{itemize}
+
+G. Gonthier~\cite{Ssreflect06} proposed a concise syntax for various
+tactics that it is worth to be studied. He proposed also to extend the
+use of incompletely specificied terms, which is a pain of the current
+implementation.
+
+J.-C. Filliâtre proposed to refer to hypotheses by giving a pattern of
+its statement (e.g. \texttt{apply :$t$} would apply the first hypothesis
+that matches the  pattern $t$).
+
+\subsection{The role of coercions}
+
+The standard library does not use coercions at all. However, there are
+many situations where coercions could be useful. Such situations
+include:
+
+\begin{itemize}
+\item a coercion from \name{sumbool} to \name{bool},
+\item a coercion from \name{bool} to \name{Prop}
+\end{itemize}
+
+Some forms of (non standard) coercions should be useful also in
+tactics, typically when trying to apply an \name{iff} lemma (two
+coercions are needed then), or more generally when trying to apply a
+\name{and} statement of which it is only a component of it which is
+applicable.
+
+On the opposite side, introducing coercions in the standard library
+may lead to a complexification of the learning of Coq.
+
+\subsection{The role of the user contributions}
+
+The user contributions contain many many interesting lemmas on various
+subjects. A clarification of the licence of these developments has
+been done recently and most of them are now LGPL. Some authors, among
+the most interesting contributors, have already suggested that their
+work could be reused (Milad Niqui, Russell O'Connor, Laurent Théry).
+
+It remains to realise a smooth integration of these portions of the
+contributions into a uniform consistent standard library.
+
+\subsection{Cooperation}
+
+Natural external possible partners for the project of revision of the
+standard library include Bologna, Nijmegen, Sophia-Antipolis-Nice and
+the ``Mathematical Component'' Common Research Action.
+
+For the revision of the standard library, the Coq Development Team
+hires a post-doc researcher.
+
+\chapter{The components of the standard library}
+
+\section{The initial state: \library{Init}}
+
+\paragraph{Historical context}
+
+Interestingly, the genesis of \library{Init} comes from the development
+of proof of the specification of a binary-search algorithm (usable
+e.g. for computing integer roots) and of the correctness of a line
+formatting algorithm in CoC V4.2 (both developments were by Christine
+Paulin). The standard notions on which the developments relied were
+moved to a file called Base.v in CoC V4.4.
+
+This is the time when \term{sig}, \term{sig2}, \term{sum},
+\term{sumor}, \term{sumbool}, \term{prod}, and \term{and} were
+created. In Coq V4.2, \term{sumor} was called \term{sum01} and the
+Prop argument came first, while \term{or} was called \term{sum0}. The
+respective constructors were \term{inl01}, \term{inr01}, \term{inl0}
+and \term{inr0}. This was related to the fact that the informative and
+non informative components of \term{Prop} were respectively called
+\term{Prop1} and \term{Prop0} in V4.2.
+
+The irregular distinctions between \term{left}/\term{right} (for
+\term{sumbool}), \term{inleft}/\term{inright} (for \term{sumor}),
+\term{or\_introl}/\term{or\_intror} (for \term{or}) came from V4.4.
+Similarly for the distinction between \term{fst}/\term{snd} (for
+\term{prod}) and \term{proj1}/\term{proj2} (for \term{and}). [Note
+that \term{or\_introl}/\term{or\_intro} were also called
+\term{sum\_IL} and \term{sum\_IR} in a file from V4.2.]
+
+This volatility of names emphasizes their arbitrariness. Seeking for
+more uniform names would be no sacrilege.
+
+\paragraph{Suggested revisions}
+
+\begin{itemize}
+\item Set \term{iff} as \command{hint unfold}.
+\item Add support for reasoning over \name{iff}: either combine
+  \tactic{setoid\_rewrite} and \tactic{apply} or make that
+  \tactic{apply} on a \texttt{iff} statement automatically select the
+  relevant projection.
+\item Move minimal terminology on relations to \library{Init} (add a
+  new file \library{Init/Relations}?)
+\item Move minimal operations on booleans and booleans as propositions
+  to \library{Init} (add new files \library{Init/BoolOps} and
+  \library{Init/BoolProp}?)
+\item The question of propositional and informative connectives:
+\begin{itemize}
+\item Merge \term{sum}, \term{sumor} and \term{sumbool} (possible thanks
+  to sort polymorphism of inductive types?
+\item If yes, what uniform naming schemes? We need at least uniform
+naming schemes for \name{or} and \name{and} and for \name{prod} and
+\name{sum}/\name{sumor}/\name{sumbool}.
+
+Adopt the following?
+
+\noindent
+\begin{tabular}{lllll}
+\hline & (\term{Prop},\term{Prop}) to \term{Prop} & (\term{Type},\term{Type}) to \term{Type} & (\term{Type},\term{Prop}) to \term{Type}\\
+conjunction/product & and/conj/proj1/proj2 & prod/pair/fst/snd & \\
+disjunction/sum & or/or\_ind/inj1/inj2 & sum/sum\_rect/inl/inr & \\
+$\exists$/subtype/$\Sigma$ & ex/ex\_intro(?)/ex\_ind & ? & ? \\
+\end{tabular}
+
+Shall we reuse \name{sig} for \name{sigT} and \name{subset} for old
+\name{sig}? 
+
+We may also change \name{proj1} and \name{proj2} to 
+\name{and\_elim\_l} and \name{and\_elim\_r}?
+
+\end{itemize}
+\item Give the same implicit arguments to \name{eq\_rect} and
+\name{eq\_rect\_r}, etc.
+\end{itemize}
+
+\section{Arithmetics}
+
+Coq V8.1 has the following arithmetical libraries: \library{Arith}
+(Peano's arithmetic), \library{NArith} (positive and natural numbers
+based on binary digits) and \library{ZArith} (integer arithmetic based
+on binary digits).
+
+The \library{Arith} library is the historical arithmetical
+library. The type \name{nat} (with concrete syntax \term{0} and
+\term{S} for the constructors) was defined impredicatively in the
+older known archived version of CoC (namely version 1.10). The order
+on \name{nat}, named \name{le} can be found in CoC V2.13 with the same
+characterisation as today (reflexivity and stability wrt successor).
+
+The \library{ZArith} library, contributed by Pierre Crégut, appeared
+in Coq V6.2 as a component for the \tactic{omega} tactic. It gained a
+great success and has been regularly extended.
+
+At the time of Coq V8.0, \library{ZArith} was cleaned up a bit. The
+parts of it that were concerned with positive and natural numbers
+moved to a directory called \library{NArith}.
+
+Still, \library{Arith} on one side and \library{NArith} and
+\library{ZArith} on the other side have very different structures and
+they don't share many things. Still, the theory of the types
+\name{N} and \name{nat} should have the same signature.
+
+This justifies to go in the direction of abstractly characterising the
+arithmetical structures.
+
+\paragraph{Abstract characterisation of the arithmetical structures}
+
+Having different implementations sharing the same interface would help
+in these ways.
+
+\begin{itemize}
+\item General tools can apply abstractly on some structure
+      independently of its representation. For instance, if the
+      ordered structures on which Fourier elimination procedure
+      applies were abstractly characterized, this elimination
+      procedure could be applied uniformly on $\mathbb{Z}$ (hence
+      $\mathbb{N}$), $\mathbb{Q}$, $\mathbb{R}$. Depending on additional
+      axioms on the density of the structure, extra tactics could be
+      applied to apply either the Omega or the Fourier-Motzkin
+      procedures.
+
+\item other libraries can apply abstractly on some structure
+      independently of its representation if they wish (e.g. a library
+      on properties of a linear order, applicable to any arithmetical
+      structure by just knowing the order is linear).
+
+\end{itemize}
+
+The abstract arithmetical structures can possibly be given in an
+\library{Algebra} library (see section~\ref{library-algebra})
+
+\subsection{\library{ZArith}}
+
+This implementation of integer arithmetic took profit of the old to
+new syntax translator to be cleaned up a bit.
+The definitions are globally nice. Let us mention the following issues though
+
+\begin{itemize}
+\item \name{Zplus} is a bit inefficient because comparing the two
+arguments twice (IMHO, \name{Zplus'} should be preferred but it may
+lead to some -- few -- incompatibilities)
+
+\item The computational definitions of order on \name{Z} is
+interesting but it is unclear how to uniformly introduces orders for
+all of $\mathbb{N}$, $\mathbb{N^*_+}$, $\mathbb{Z}$ and $\mathbb{Q}$
+(both a definition in \term{Prop} and a definition in \term{bool}
+and/or \term{comparison} should be provided, with the lemmas stating
+the equivalence).
+
+\item To have both a ``less than'' and a ``greater than'' is a source
+of complication. Only one of them should be kept and the other should
+be a matter of notations.
+
+\item The proofs about the order relation should be factorized with
+the ones in $\mathbb{N}$, $\mathbb{N^*_+}$, $\mathbb{Z}$, $\mathbb{Q}$ and
+$\mathbb{R}$ (ongoing work from Evgeny about that).
+
+\item Do the peripheral results need to be cleaned up?
+
+\item About min and max: Russell O'Conor provided a nice parametric
+derivation of the lattice properties of min and max, applicable to
+QArith as well (and more generally to any ordered semi-lattice or
+lattice).
+
+\end{itemize}
+
+\subsection{\library{NArith}}
+
+Desserve to be develop as much as \library{Arith} and \library{ZArith}.
+Factorise results using functors?
+
+\subsection{\library{QArith}}
+
+\subsection{\library{Reals}}
+
+\paragraph{Miscellaneous remarks}
+
+\name{INR} is not uniformly defined: there is a special case for 1
+that shows up every time one want to use it.
+
+As a matter of fact, the archimede axiom for reals is derivable from
+the rest of the axioms. The current \name{archimed} axiom amounts to
+specifying \name{up} (the integer upper bound of any real) as a
+function.
+
+Hints are circular (e.g. loop between \name{Rle\_ge} and
+\name{Rge\_le}), or create expansions (e.g. \name{Rplus\_eq\_reg\_l}),
+while some of them prove non atomic, conjonctive results (like
+\name{Rplus\_ne} and \name{Rmult\_ne}). It is unclear what can be kept
+from the main files of the library on reals.
+
+\name{Rtopology.included} is redundant
+
+\section{Data structures}
+
+\subsection{\library{Bool}}
+
+\paragraph{Historical context}
+
+The type \name{bool} itself was (of course) present in CoC version 1.
+Properties such as \term{(true=b $\backslash$/ false=b)},
+\term{(false=b) -> (true=b)} arrived as lemmas in \library{Arith.v} in
+CoC V4.10. The motivation may have been to justify the axiom
+\term{true<>false} (not derivable in CoC).
+
+First operations on \name{bool} arrived in Coq V5.10 as part of
+Paulin-Werner's tautology checker case study. Operations, such as
+\name{Is\_True}, and results about \name{neg}, such as
+\name{no\_fixpoint\_neg} came from Huet's shuffle trick case study.
+
+File \name{Bool.v} arrived in Coq V5.8.0 (at the same time when the
+directory EXAMPLES moved to THEORIES). It collected the operations
+from the tautology checker and the shuffle trick.  More lemmas about
+\name{eqb} and \name{negb} arrived in V5.10.13 with applications in
+Gimenez's development of the ABP protocol. First hint
+(\name{diff\_true\_false}) arrived in V5.10.11.
+
+Properties of \name{orb} arrived in file \library{Orb.v} in V5.10.14.b
+for use in Lyon's contribution CIRCUITS. \library{Orb.v} have been
+further integrated to \name{Bool.v} in V6.2. The libraries
+\name{Zerob.v} and \name{IfProp.v} were also motivated by the
+contribution CIRCUITS.
+
+Most extensions were then made then by Patrick Loiseleur: lemmas in V6
+revisions 1.11, 1.12 and 1.14 and hints in revision 1.15 (V6.2.3); by
+Christine Paulin (V6 revision 1.6 and V7 revision 1.8); by
+J.-C. Filliâtre (V7 revision 1.21 for reasoning on \term{b=true} in
+\library{FSets}).
+
+\paragraph{Suggested revisions}
+
+\begin{itemize}
+
+\item {\bf Connection between \name{bool} and \name{Prop}}
+
+The question of suppporting reasoning in \name{bool} as a replacement
+of reasoning in \term{Prop} in combination with \name{sumbool} has to be
+raised.
+
+In the first case, it is certainly possible to smoothly reason on
+decidable propositions thanks to an implicit coerction from
+\name{bool} to \term{Prop}. It is worth to introduce this complexity.
+
+\bigskip
+
+The current default embedding from \name{bool} to \name{Prop} is
+\name{Is\_true} which maps \name{true} to \name{True} and \name{false}
+to \name{False}. Others users seem to prefer mapping the boolean
+\term{b} to \term{b=true}. The best choice, suggested by J.-M. Notin,
+seems in fact to be the following inductive definition:
+
+\begin{verbatim}
+Inductive eq_true : bool -> Prop := is_eq_true : eq_true true.
+\end{verbatim}
+
+The problem of the definition \term{b=true} is that it introduces
+confusions between statements intended to embed \name{bool} ito \name{Prop} 
+and reasoning on pure boolean expressions. For instance, relying on
+\term{b=true} led to add lemmas such as \term{negb b <> true -> b =
+true} as hints, creating inconsistencies in the \tactic{auto}
+mechanism (goals of the form \term{b=true} were provable while goals
+of the form \term{true=b} or \term{b=false} were not).
+
+To solve this problem of interference between the two kinds of use of
+the booleans, a solution is to use a name hiding the definition of
+\term{b=true} and to develop a set of hints/theorems stating the
+properties of the embedding without having to clutter the theory of
+booleans (e.g. with the symmetry of equality or with general
+properties breaking the \term{b=true} structure such as \term{b <>
+false -> b = true}.  This is the approach followed e.g. by G. Gonthier
+for the proof of the four colour theorem.
+
+However, the problem with using a name is that it eventually gets
+unfolded leading to a non standard representation of the embedding.
+
+Here is a summary of the advantage of the different solutions wrt a
+choice of 4 criterion.
+
+\noindent\begin{tabular}{lllll}
+ & ability  & no theorem & stability  & hidable as  \\
+ & to rewrite  & cluttering & by unfolding &  a coercion \\
+\term{b=true} & OK & BAD & OK & BAD \\
+\term{if b then True else False} & BAD & OK/BAD & OK & BAD \\
+naming \term{b=true} & OK & OK & BAD & OK \\
+naming \term{\small if b then True else False} & OK (with coercions) & OK & BAD & OK \\
+\name{eq\_true} & OK & OK & OK & OK\\
+\end{tabular}
+
+One could then ask whether it would be better to have some
+\name{Is\_False} to express that boolean properties are wrong, or if
+it would be better to reason with \texttt{~ Is\_True}. The first case
+provides a better symmetry, but we cannot have two coercions from
+\name{bool} to \name{Prop}. Shall we renounce to the symmetry and
+express negative conditions as, either \texttt{~ Is\_True cond}
+(i.e. \texttt{~ cond} with a coercion) or \texttt{Is\_True (negb
+cond)} (i.e. \texttt{negb cond} with a coercion)? Consider for
+instance the following typical example in \library{IntMap}:
+
+\verb!forall (m:Map A) (a:ad) (y:B), in_dom A a m = false -> MapDisjoint A B m (M1 B a y)!.
+
+\item {\bf Connection between \name{sumbool} and \name{bool}}
+
+It would be nice to have an implicit coercion from \name{sumbool}
+to \name{bool}. Wouldn't be too complex for beginners?
+
+\item {\bf General schemes}
+
+Shouldn't \term{bool\_dec} be generated automatically~(see
+\ref{ind-schemes}).
+
+Shouldn't \term{diff\_true\_false} be generated automatically~(see
+\ref{ind-schemes}). Indeed \name{diff\_true\_false} and
+\name{diff\_false\_true}as hints only serve to compensate the absence
+of discrimination in auto (see~\ref{automation}).
+
+Shouldn't \term{eqb} be also generated automatically?
+
+\item {\bf The standard operators}
+
+The standard operators \name{andb}, \name{orb}, 
+\name{xorb}, \name{negb} should probably go in the initial state, together with
+their notations and \texttt{bool\_scope} (but not open by default).
+
+What's the genericity of \name{implb}? As the reflection of
+(decidable) \term{->} within \name{bool}?
+
+Is \texttt{ifb} useful (it used to be when the \texttt{if} notation
+didn't exist)?
+
+\item {\bf The boolean algebra structure}
+
+The boolean algebra properties (\name{orb\_true\_r},
+\name{orb\_negb\_r}, \name{orb\_comm}, \name{andb\_orb\_distrib\_r},
+\name{absorption\_andb}, ...) should occur somewhere to say that the
+booleans implements the signature of boolean algebras (to be put
+somewhere in the \library{Algebra} library~\ref{library-algebra}). See
+also~\ref{modules}.
+
+Derived properties (de Morgan laws, involution of \name{negb},
+idempotency of \name{orb} and \name{andb}, ...) may be either reproved
+(their proofs are simpler enough) or inherited from a generic
+treatment of the properties of boolean algebras.
+
+\item {\bf Miscellaneous remarks}
+
+Some lemmas seem rather trivial, what could they be useful for (e.g.
+\name{eq\_true\_false\_abs}, \name{not\_true\_is\_false},
+\name{not\_false\_is\_true})
+
+What is the motivation for \name{leb}? Why not rather
+\texttt{Is\_true (implb a b)}? Moreover, \name{leb} already exists in
+\library{Compare\_dec}.
+
+Why \texttt{eqb\_subst} rather than \name{eqb\_eq}?
+
+Wouldn't be \name{eqb\_prop} better with \name{Is\_true} (a coercion)?
+
+\end{itemize}
+
+\subsection{\library{Lists}}
+
+My feeling is that the \library{Lists} library should at least cover
+the Objective Caml list library (because the Objective Caml list
+library is nice, because it is in a language close to the one of Coq,
+because this is a priori to have a certified list library for
+Objective Caml, and finally because this is a following of the ideas
+having led to the \library{FSet}/\library{FMap} library).
+
+\paragraph{Open questions}
+
+How to deal with partial functions? The work on native exceptions in
+CIC is not a short term work.
+
+Starting from what we have, I would conclude that the two possible
+variants have to be defined (i.e. the variant which returns an option
+type and the variant which expects a default value), with connections
+between them.
+
+
+\paragraph{Inconsistencies and recommendations}
+
+\begin{itemize}
+\item \term{app\_nil\_end} wrong orientation
+\item \term{nth} and \term{nth\_default} redundant
+\end{itemize}
+
+Concrete syntax for lists ``\texttt{[x::y::z]}''. Rarely useful in
+developments about lists in general but often useful in concrete
+situations that use lists as a tool.
+
+\subsection{\library{Strings}}
+
+\subsection{\library{FMaps} and \library{Intmap}}
+
+\subsection{\library{FSets}}
+
+Why isn't it in a directory distinct of \library{FMaps}?
+
+\subsection{\library{Relations}}
+
+\paragraph{Historical context}
+
+The first development about relations was a proof of Newman's lemma
+(probably formalised by Gérard Huet) as soon as the first version of
+Coq. From CoC V4.5, the part on the transitive
+closure of a relation was considered of general interest and was
+isolated to a file called \library{Relations.v}. At the time the first
+version of a standard library was released, the directory
+\library{RELATIONS} contained only these two files. Then B. Barras
+and C. Cornes started to enrich the library, and the contents
+dealing with transitive closure moved to a file named
+\library{Rstar.v}.
+
+First appeared \library{Newman.v} and \library{Rstar.v} (the latter
+was named \library{Relations.v} until V5.9). These files (whose
+contributor was probably Gérard Huet) probably served as an emphasis
+of how the Calculus of Constructions can deal with this kind of
+notions.
+
+\library{Relation\_Definitions.v} (issued from an embryon of
+\library{SYSTEM/Relns.v} in V5.10.6) and the contents of
+\library{Wellfounded}, \library{Relation\_Operators.v} and
+\library{Operators\_Properties.v} (contributed by B. Barras and
+C. Cornes) appeared in V5.10.15. It is essentially unchanged until
+now.
+
+\subsubsection{Questions}
+
+Is it worth to have \verb!relation := A -> A -> Prop! ? Why not rather
+\verb!relation := A -> B -> Prop! ? But then, how to call
+\verb!A -> A -> Prop!, choose another name (e.g. \name{endorelation}) or
+implements specific tools that implement common statements such as
+``we will write relation$_A$ for relation$_{AB}$ when A=B''.
+
+\subsubsection{Miscellaneous remarks}
+
+They are redundancies between Relations\_*.v in Sets and the files in
+Relations.v. The former files should move to Relations and the redundancies
+removed.
+
+Remove Rstar.v (inductive definition of refl-trans closure) and Newman.v
+
+Change the definition of commut (it is not in the intuitive way) [but
+compatibility...].
+
+How to manage the overloading of the word ``inclusion'' for relations,
+unary predicates, etc? Needs some extra features in the language?
+
+\subsubsection{Missing notions}
+
+Standard notions of injectivity, surjectivity, etc are missing.
+
+\subsection{\library{Wellfounded}}
+
+\subsection{\library{Sets}}
+
+\library{Relations\_}* files to move to \library{Relations}.
+
+\library{Permut.v} would benefit of being presented as a module.
+
+\subsection{\library{Setoids}}
+
+\subsection{\library{Sorting}}
+
+To move \library{Permutation.v} and \library{Sorting.v} in
+\library{Lists} and \library{Heap.v} in contribs??
+
+\section{Missing components}
+
+\subsection{\library{Algebra}}
+\label{library-algebra}
+
+There is currently no library about standard algebraic structures (to
+the exception of setoids).
+
+I believe that a library that provides the basic algebraic properties
+of operations and relations, and the basic structure that have these
+properties is worth to be part of {\em standard} library (typically
+the library \library{Relations} could be part of it.
+
+There are several user contributions providing basic algebra,
+especially in Nijmegen (constructive algebra) and in Sophia-Antipolis.
+
+Can the constructive approach be followed smoothly without making life
+more complicated for the classical mathematician?
+
+\paragraph{Technical aspects}
+
+Knowing that the carrier and operations of an algebraic structure are
+the most used component of a structure; knowing that seeking the
+carrier and operations through nested coercions increase the size of
+terms and proofs and of their reduction, wouldn't it be better to keep
+the carrier and operations at the top of the structure. Something
+like:
+
+\begin{verbatim}
+Record is_Monoid (A:Setoid) (op:A->A->A) (zero:A) (inv:A->A) := {
+  mo_ass : associative op;
+  mo_unit_rht_prf : is_rht_unit op zero;
+  mo_unit_lft_prf : is_lft_unit op zero;
+}.
+Record Monoid := {
+  mo_crr : Setoid;
+  mo_op : mo_crr -> mo_crr -> mo_crr;
+  mo_unit : mo_crr;
+  mo_prf : is_Monoid mo_crr mo_op mo_unit
+}.
+
+Record is_Group (A:Setoid) (op:A->A->A) (zero:A) (inv:A->A) := {
+  gr_ass : associative op;
+  gr_unit_prf : is_rht_unit op zero;
+  gr_inv_prf : forall x, is_rht_inverse op zero x (inv x)
+}.
+Record Group := {
+  gr_crr : Setoid;
+  gr_op : gr_crr -> gr_crr -> gr_crr;
+  gr_unit : gr_crr;
+  gr_inv : gr_crr -> gr_crr;
+  gr_prf : is_Group gr_crr gr_op gr_unit gr_inv
+}.
+\end{verbatim}
+
+Note the use of a \name{Setoid} instead of a type for the
+carrier. Equality is so central that it probably deserves to be
+associated to the carrier rather than to the structure itself (it
+remains the question of whether defining setoids from apartness or
+from equality).
+
+Avoiding deeply nested coercions seems to somehow follow the
+mathematical practise which typically says, ``let $(A,+,0,{}^{-1})$ a
+group'' meaning ``let $(A,+,0,,{}^{-1})$ be a tuple satisfying the
+hypotheses of a group.
+
+\subsection{Floating-point numbers}
+
+This looks like a central but missing library. Still there are some
+implementations of the IEEE 754 norm.
+
+\subsection{Finite intervals}
+
+Several users asked for such a library.
+
+\section{Libraries dedicated to tactics}
+
+\paragraph{Inconsistencies and recommendations}
+
+By consistency with the naming schemes in the theories directory, the
+names of contribution directories should be capitalised
+(e.g. \name{Coq.Omega.OmegaLemmas} instead of
+\name{Coq.omega.OmegaLemmas}).
+
+\subsection{\library{LegacyRing}}
+
+\library{Bool}, \library{Arith} or \library{ZARith} shouldn't have
+been exported when just calling \library{Ring}. But let now
+\library{Ring} end its days in peace.
+
+\subsection{\library{LegacyField}}
+
+\library{Bool}, \library{Arith} or \library{ZARith} shouldn't have
+been exported when just calling \library{Ring}. But let now
+\library{Ring} end its days in peace.
+
+\subsection{\library{setoid\_ring}}
+
+Should find a better name than \library{setoid\_ring} for a repository that develops \tactic{Ring} and \tactic{Field} and that could more generally provide
+simplification for many different kinds of algebraic structures.
+
+\subsection{\library{Omega and ROmega}}
+
+Make \tactic{romega} available at large scale.
+
+\section{Miscellaneous recommendations}
+
+\subsection{How to name files?}
+
+In 8.1 library, 79 files adopted juxtaposed capitalized words (as in
+\texttt{BinInt.v}, 
+\texttt{ProofIrrelevanceFacts.v}, \texttt{NewtonInt.v}, \texttt{FSetToFiniteSet.v},
+\texttt{ReflOmegaCore.v}, \texttt{LegacyZArithRing.v}, ...).
+
+In 8.1 library, 66 files adopted separation of words by underscores.
+Of them, 45 have the second word lowercase (as in
+\texttt{Constructive\_sets.v}, \texttt{Setoid\_ring\_normalize.v},
+\texttt{Compare\_dec.v}, \texttt{Rtrigo\_def.v},
+\texttt{Field\_theory.v}, \texttt{Fourier\_util.v},
+...) and 21 have the second word uppercase (as in
+\texttt{Field\_Tactic.v}, \texttt{Lexicographic\_Exponentiation.v},
+\texttt{Classical\_Pred\_Set.v}, \texttt{Operators\_Properties.v},
+ ...)
+
+In the first case, the authors are CP, HH, PLe, BB, OD, ... In the
+second case, the authors are CP, BB, OD, PLo, CSC, DD, LT, GK, GH, ...
+
+Would we accept to have 
+\texttt{CompareDec.v}, \texttt{RTrigoDef.v},
+\texttt{FieldTheory.v}, \texttt{FourierUtil.v},
+\texttt{ConstructiveSets.v}, \texttt{SetoidRingNormalize.v},
+\texttt{LexicographicExponentiation.v},
+\texttt{ClassicalPredSet.v}, \texttt{OperatorsProperties.v},
+\texttt{FieldTactic.v}, ... ?
+
+Would we accept to have \texttt{Bin\_Int.v} or \texttt{Bin\_int.v},
+\texttt{Newton\_Int.v} or \texttt{Newton\_int.v},
+\texttt{Proof\_Irrelevance\_Facts.v} or
+\texttt{Proof\_irrelevance\_facts.v}, \texttt{FSet\_To\_Finite\_Set.v} or
+\texttt{FSet\_to\_finite\_set.v}, ...
+
+E.g., are'nt abbreviated words better accepted if part of joined words?
+
+\subsection{How to name directories?}
+
+All theories have a capitalized directory name. This is not the case
+of contributions (e.g. \texttt{ring}, \texttt{setoid\_ring}, ...).
+This should be made uniform. At least, in the names of contributions,
+option \texttt{-R} should map \texttt{omega} to \texttt{Omega}, etc.
+
+\subsection{How to present operators and properties?}
+
+Should we have files for operators and other for properties (as
+e.g. for \texttt{Arith} or \texttt{Relations}) ? Or should have
+properties follow the definitions of operators (as e.g. in
+\texttt{Lists} or \texttt{Bool})?
+
+I'm slightly in favor of having distinct files for operators and
+properties.  This would allow, for instance, to have more basic
+operations in the initial state without making it growing with
+properties. Unless having indexes and direct access to subpart of a
+file, it is often difficult to find the (short) definition of
+operators when they are lost inbetween (long) list of (long) proofs of
+properties.
+
+\section{Discussion on possible features}
+
+\subsection{Automatisation of the generation of inductive schemes}
+\label{ind-schemes}
+
+Currently, only recursion and induction schemes are automatically
+generated. Why not to generalize the process to also include the
+generation of decidable equality (if any), decidability of Leibniz
+equality (if any), discrimination and injection combinators,
+injectivity of dependent pairs (if any) (see e.g. McBride TYPES '04
+paper).
+
+\subsection{More convenient automation tactics}
+\label{automation}
+
+It is a pity that \texttt{auto} does not recognize discriminable
+equalities. More generally, it is a pity that no tactic exists to
+automatically recognize that such or such goal is possibly provable by
+\tactic{ring}, \tactic{omega}, \tactic{discriminate}, \tactic{tauto},
+\tactic{auto}...
+
+\subsection{Unification modulo $\delta$}
+
+Some constants behave as simple abbreviation and have no computational
+content.  This is the case of generic notion such \name{reflexive},
+\name{relation}, etc. It would be nice that \tactic{apply} (and the
+automation tactics) work smoother wrt the $\delta$-conversion of this
+kind of constants. Here is a (realistic) example:
+
+\begin{verbatim}
+Definition relation (A : Type) := A -> A -> Prop.
+Parameter preorder: forall A : Type, relation A -> Prop.
+Parameter contains: forall A B : Type, (A->B->Prop) -> (A->B->Prop) -> Prop.
+Axiom contains_preorder: forall U:Type, preorder (relation U) (contains U U).
+Goal forall U:Type, preorder (U -> U -> Prop) (contains U U).
+intro. apply contains_preorder. (* fails !!! *)
+\end{verbatim}
+
+\subsection{Being able to say that some .v implements some module 
+specification}
+\label{modules}
+
+As in Objective Caml, only explicitly defined modules can be said to
+implement such or such specification. Why couldn't we do the same for
+the file-level of modules.
+
+\appendix
+
+\chapter{An history of Coq versions}
+
+\centerline{\large 1984-1989: The Calculus of Constructions}
+\mbox{}\\
+\mbox{}\\
+\begin{tabular}{l|l|l}
+version & date & comments \\
+\hline
+CoC V1.10& mention of dates from 6 December & implementation language is Caml\\
+         & 1984 to 13 February 1985 \\
+
+CoC V1.11& mention of dates from 6 December\\
+         & 1984 to 19 February 1985\\
+
+CoC V2.13& dated 16 December 1985\\
+
+CoC V2.13& dated 25 June 1986\\
+
+CoC V3.1& dated 20 November 1986\\
+
+CoC V3.2& dated 27 November 1986\\
+
+CoC V3.3 and V3.4& dated 1 January 1987 & creation of a directory for examples\\
+
+CoC V4.1& dated 24 July 1987\\
+
+CoC V4.2& dated 10 September 1987\\
+
+CoC V4.3& dated 15 September 1987\\
+
+CoC V4.4& dated 27 January 1988\\
+
+CoC V4.5 and V4.5.5& dated 15 March 1988\\
+
+CoC V4.6 and V4.7& dated 1 September 1988\\
+
+CoC V4.8& dated 1 December 1988\\
+
+CoC V4.8.5& dated 1 February 1989\\
+
+CoC V4.9& dated 1 March 1989\\
+
+CoC V4.10 and 4.10.1& dated 1 May 1989 & first public release - in English\\
+\end{tabular}
+
+\bigskip
+\bigskip
+
+\newpage
+
+\centerline{\large 1989-now: The Calculus of Inductive Constructions}
+\mbox{}\\
+\mbox{}\\
+\begin{tabular}{l|l|l}
+version & date & comments \\
+\hline
+Coq V5.6 beta & 1991 & first announce of the new Coq based on CIC \\
+ & & in May at TYPES?\\
+ & & rewrite tactic\\
+
+Coq V5.6& 7 August 1991 & \\
+
+Coq V5.6 patch 1& 13 November 1991 & \\
+
+Coq V5.6 (last) & mention of 27 November 1992\\
+
+Coq V5.7.0& 1992 & translation to Caml-Light -- archive lost?\\
+
+Coq V5.8& 12 February 1993\\
+
+& & has the xcoq graphical interface\\
+
+& & first explicit notion of standard library\\
+
+& & only version to include a MacOS 7-9 version\\
+
+Coq V5.8.2& released 9 July 1993 & with X graphical interface and MacOS 7-9 support\\
+
+Coq V5.8.3& 6 December 1993 & with X graphical interface and MacOS 7-9 support\\
+
+ & & 3 branches: Lyon (V5.8.x), Ulm (V5.10.x) and Rocq (V5.9)\\
+
+Coq V5.9 alpha& 7 July 1993 & 
+experimental version based on evars refinement \\
+              & & (merge from experimental ``V6.0'' and some pre-V5.8.3 \\
+              & & version), not released\\
+
+& March 1994 & Tauto tactic in V5.9 branch\\
+
+Coq V5.9 & 27 January 1993 & experimental version based on evars refinement\\
+         & & not released\\
+
+Coq V5.10 ``Murthy'' & 22 January 1994 & 
+introduction of the ``DOPN'' structure\\
+ & & eapply and prolog tactics\\
+ & & private use of cvs on madiran.inria.fr\\
+
+Coq V5.10.1 ``Murthy''& 15 April 1994 \\
+
+Coq V5.10.2 ``Murthy''& 19 April 1994 & mutual inductive types (from Lyon's branch)\\
+
+Coq V5.10.3& 28 April 1994 
+
+Coq V5.10.5& dated 13 May 1994\\
+
+Coq V5.10.6& dated 30 May 1994\\
+& in 1994 & cvs server set up on woodstock.ens-lyon.fr\\
+
+Coq V5.10.11& announced on 2 February 1995 & first cvs version on pauillac on 16 February\\
+
+Coq V5.10.12& dated 9 June 1995\\
+
+Coq V5.10.13& dated 23 June 1995\\
+
+Coq V5.10.14.00& dated 29 June 1995\\
+
+Coq V5.10.14.a& dated 17 July 1995\\
+
+Coq V5.10.14.b& dated 21 September 1995\\
+
+Coq V5.10.15& dated 12 February 1996 & added SETS and RELATIONS \\
+
+Coq V5.11& \begin{tabular}{l}different versions from 29 June \\
+ 1995 to 4 March 1996\end{tabular}\\
+
+Coq V6.0& internal use & add implicit arguments and coercions\\
+ & & Case/Match with implicit type\\
+ & & omega\\
+ & & ported to Caml-Special-Light\\
+
+Coq V6.1& released 18 November 1996 & \\
+
+Coq V6.2beta& released 30 January 1998 & includes a Windows version\\
+
+Coq V6.2& released 4 May 1998\\
+
+Coq V6.2.1& released 23 July 1998\\
+
+Coq V6.2.2 beta& released 30 January 1998\\
+
+Coq V6.2.2& released 23 September 1998\\
+
+Coq V6.2.3& released 22 December 1998\\
+
+Coq V6.2.4& released 8 February 1999\\
+
+Coq V6.3& released 27 July 1999\\
+
+Coq V6.3.1& released 7 December 1999\\
+\end{tabular}
+
+\bigskip
+\bigskip
+\newpage
+
+\centerline{\large Back to a kernel-centric implementation}
+\mbox{}\\
+\mbox{}\\
+\begin{tabular}{l|l|l}
+version & date & comments \\
+\hline
+Coq V7.0beta& released 27 December 2000 & new architecture by J.-C. Filliâtre\\
+   & & more care for outside readers (indentation, ocaml warning protection)\\
+Coq V7.0beta2& released 2 February 2001\\
+
+Coq V7.0& released 25 April 2001\\
+
+Coq V7.1& released 25 September 2001\\
+
+Coq V7.2& released 10 January 2002\\
+
+Coq V7.3& released 16 May 2002\\
+
+Coq V7.3.1& released 5 October 2002\\
+
+Coq V7.4& released February 2003 & module system, notations\\
+
+Coq V8.0& released April 2004 & new concrete syntax, Set predicative\\
+
+Coq V8.0pl1& released 18 July 2004\\
+
+Coq V8.0pl2& released 22 January 2005\\
+
+Coq V8.0pl3& released 13 January 2006\\
+
+Coq V8.1beta& released June 2006 & archive moved to subversion control management\\
+
+Coq V8.1gamma& released November 2006 & \\
+\end{tabular}
+
+\bigskip
+\bigskip
+\centerline{\large Other important dates}
+\mbox{}\\
+\mbox{}\\
+\begin{tabular}{l|l|l}
+version & date & comments \\
+\hline
+Lechenadec's version in C& mention of 13 January 1985 \\
+ & on some vernacular files\\
+Set up of the coq-club mailing list & 28 July 1993\\
+
+Coq V6.0 ``evars'' & & experimentation based on evars
+refinement started \\
+  & & in 1991 by Gilles from V5.6 beta, with work by Hugo
+in July 1992\\
+
+Coq V6.0 ``evars'' ``light'' & July 1993 & Hugo's port of the first
+evars-based experimentation \\
+ & & to Coq V5.7, version from October/November
+1992\\
+
+Proto with explicit substitutions & 1997 &\\
+\end{tabular}
+
+\chapter{An historical example: \texttt{sig} and \texttt{exist}}
+\label{appendix-historical}
+
+The names \texttt{sig} and \texttt{exist} used to denote the type and
+constructor of the inductive structure of $\Sigma$-types were present
+as soon as the first implementation of CoC in 1984.
+
+Before the first release of a system based on the Calculus of
+Inductive Constructions (what coincided with the move from CoC to
+Coq), inductive types were encoded as second-order types using a macro
+called \verb=Inductive=. Typically, here is how the inductive
+type \verb=sig= of constructor \verb=exist= was defined in CoC version
+4.4 (notice that the sort \texttt{Set} was called at that time
+\texttt{Spec}; there was also a sort \texttt{Data} to denote the $F_\omega$ subset of \texttt{Spec}; sectioning
+was also implemented \`a la \textit{Automath} using the keyword
+\verb=Discharge=).
+
+\begin{verbatim}
+Variable A : Data.
+Variable P : A->Prop.
+    Inductive sig : Spec = exist : (x:A)(P x)->sig.
+Discharge A.
+Syntax sig "<_>Sig(_)".
+\end{verbatim}
+
+In CoC version 4.3, there were no macro for generating inductive
+types. There were also no fully integrated extraction mechanism so
+that {\tt Set}/\texttt{Spec} was not
+distinguished out of \texttt{Prop} yet\footnote{As for the
+predicative unbounded type hierarchy, it was introduced in CoC version
+4.8.}).  Here is how the definitions of \verb=sig= and \verb=exist=
+looked like.
+
+\begin{verbatim}
+ Definition sig [A:Prop][P:A->Prop](B:Prop)((x:A)(P x)->B)->B.
+Syntax sig "<_>Sig(_)".
+
+ Variable A : Prop.
+ Variable P,Q : A->Prop.
+ Variable x : A.
+
+     Theorem exist      (P x)-><A>Sig(P)
+       Proof    [p:(P x)][B:Prop][f:(a:A)(P a)->B](f x p).
+
+ Discharge A.
+\end{verbatim}
+
+Before CoC version 4.3, there were no \verb=.v= files. Definitions and
+lemmas were parsed directly within a ML toplevel thanks to the syntax
+extension facilities of ML. Typically, here is how \verb=sig= and
+\verb=exist= were defined in CoC in version 3.4 where it appeared
+first (notice the use of \verb=<< >>= to switch to the vernacular
+parser from within the ML toplevel).
+
+\begin{verbatim}
+<<Definition sig        [A:Prop][P:A->Prop](B:Prop)((z:A)(P z)->B)->B;>>;;
+
+
+<<Variable A : Prop;>>;;
+<<
+Variable P : A->Prop;>>;;
+<<
+Variable x : A;>>;;
+
+
+
+<<  Lemma       Sig_I   (P x)-><A>Sig(P)
+  Proof exist   [p:(P x)][B:Prop][f:(a:A)(P a)->B](f x p);>>;;
+
+
+<<Discharge A;>>;;
+\end{verbatim}
+
+Just for the record, notice how the use of indentation improved the
+presentation in version 4.1:
+
+\begin{verbatim}
+<< Definition sig       [A:Prop][P:A->Prop](B:Prop)((x:A)(P x)->B)->B;>>;;
+
+<<Variable A : Prop;>>;;
+<<Variable P : A->Prop;>>;;
+<<Variable x : A;>>;;
+
+<<  Lemma       Sig_I   (P x)-><A>Sig(P)
+    Proof       exist   [p:(P x)][B:Prop][f:(a:A)(P a)->B](f x p);>>;;
+
+<< Discharge A;>>;;
+\end{verbatim}
+
+and how the need for a concrete syntax appeared in version 4.2:
+
+\begin{verbatim}
+<< Definition sig       [A:Prop][P:A->Prop](B:Prop)((x:A)(P x)->B)->B;  >>;;
+LET_SYNTAX "sig" ["<";">Sig(";")"];;
+\end{verbatim}
+
+In fact, \texttt{sig} and \texttt{exist} were already there in CoC
+version 1. This version was written in ML with a different parsing
+facilities.
+
+\begin{verbatim}
+% Existential quantification, or general sum %
+let SIGMA = "!A.{P|A->*}!B.([x:A](P x)->B)->B";;
+
+PROP `Sig` SIGMA;;
+LET_SYNTAX `Sig` [`<`;`>Sig(`;`)`];;
+
+% Existential Introduction %
+let Sig_intro = "!A.{P|A->*}[x:A](P x)-><A>Sig(P)";;
+
+let EXIST = "!A.{P|A->*}[x:A][y:(P x)]!B.[f:[x:A](P x)->B](f x y)";;
+
+LET `exist` EXIST Sig_intro;;
+% This permits to use a predicate over A as a space over A %
+\end{verbatim}
+
+Finally, here is the definition of \texttt{sig} and \texttt{exist} in
+the 1985 implementation in C (Yacc was used for
+parsing, what provided better parsing facilities).
+
+\begin{verbatim}
+Definition sig  [A:Prop][P:A->Prop](B:Prop)((x:A)(P x)->B)->B; #Syntax Binary
+
+Variable A : Prop;
+Variable P : A->Prop;
+Variable x : A;
+
+  Lemma Sig_I   (P x)-><A>Sig(P)
+  Proof exist   [p:(P x)][B:Prop][f:(a:A)(P a)->B](f x p);
+
+Discharge A;
+\end{verbatim}
+
+\chapter{Suggestions of canonical naming conventions for lemmatas in the 
+standard library of Coq}
+
+%======================================================================
+\section{Equational properties of operations}
+
+\itemrule{Associativity of binary operator {\op} on domain
+{\D}}{Dop\_assoc} {forall x y z:D, op x (op y z) = op (op x y) z}
+
+  Remark: symmetric form: \name{Dop\_assoc\_reverse}:
+  \formula{forall x y z:D, op (op x y) z = op x (op y z)}
+
+
+\itemrule{Associativity of binary operator {\op} on domain {\D}}{Dop\_assoc}
+{forall x y z:D, op x (op y z) = op (op x y) z}
+
+  Remark: symmetric form: \name{Dop\_assoc\_reverse}:
+  \formula{forall x y z:D, op (op x y) z = op x (op y z)}
+
+\itemrule{Commutativity of binary operator {\op} on domain {\D}}{Dop\_comm}
+{forall x y:D, op x y = op y x}
+
+  Remark: avoid \formula{forall x y:D, op y x = op x y}, or at worst, call it
+  \name{Dop\_comm\_reverse}
+
+\itemrule{Left neutrality of element elt for binary operator {\op}}{Dop\_elt\_l}
+{forall x:D, op elt x = x}
+
+  Remark: in English, ``{\elt} is an identity for {\op}'' seems to be
+  a more common terminology.
+
+\itemrule{Right neutrality of element elt for binary operator {\op}}{Dop\_elt\_r}
+{forall x:D, op x elt = x}
+
+  Remark: by convention, if the identities are reminiscent to zero or one, they
+  are written 1 and 0 in the name of the property.
+
+\itemrule{Left absorption of element elt for binary operator {\op}}{Dop\_elt\_l  [BAD ??]}
+{forall x:D, op elt x = elt}
+
+  Remarks:
+  \begin{itemize}
+  \item In French school, this property is named "elt est absorbant pour op"
+  \item English, the property seems generally named "elt is a zero of op"
+  \item In the context of lattices, this a boundedness property, it may
+     be called "elt is a bound on D", or referring to a (possibly
+     arbitrarily oriented) order "elt is a least element of D" or "elt
+     is a greatest element of D"
+  \end{itemize}
+
+\itemrule{Right absorption of element {\elt} for binary operator {\op}}{Dop\_elt\_l  [BAD ??]}
+{forall x:D, op x elt = elt}
+
+\itemrule{Left distributivity of binary operator {\op} over {\opp} on domain {\D}}{Dop\_op'\_distr\_l}
+{forall x y z:D, op (op' x y) z = op' (op x z) (op y z)}
+
+  Remark: some authors say ``distribution''.
+
+\itemrule{Right distributivity of binary operator {\op} over {\opp} on domain {\D}}{Dop\_op'\_distr\_r}
+{forall x y z:D, op z (op' x y) = op' (op z x) (op z y)}
+
+  Remark: note the order of arguments
+
+\itemrule{Distributivity of unary operator {\op} over binary op' on domain {\D}}{Dop\_op'\_distr}
+{forall x y:D, op (op' x y) = op' (op x) (op y)}
+
+\itemrule{Left distributivity of unary operator {\op} over binary op' on domain {\D}}{Dop\_op'\_distr\_l}
+{forall x y:D, op (op' x y) = op' (op x) y}
+
+  Question: call it left commutativity ??
+
+\itemrule{Right distributivity of unary operator {\op} over binary op' on domain {\D}}{Dop\_op'\_distr\_r}
+{forall x y:D, op (op' x y) = op' x (op y)}
+
+\itemrule{Idempotency of binary operator {\op} on domain {\D}}{Dop\_idempotent}
+{forall x:D, op x n = x}
+
+\itemrule{Idempotency of unary operator {\op} on domain {\D}}{Dop\_idempotent}
+{forall x:D, op (op x) = op x}
+
+  Remark: this is actually idempotency of {\op} wrt to composition and
+  identity.
+
+\itemrule{Idempotency of element elt for binary operator {\op} on domain {\D}}{Dop\_elt\_idempotent}
+{op elt elt = elt}
+
+  Remark: generally useless in CIC for concrete, computable operators
+
+  Remark: the general definition is ``exists n, iter n op x = x''.
+
+\itemrule{Nilpotency of element elt wrt a ring D with additive
+neutral element zero and multiplicative binary operator {\op}}{Delt\_nilpotent}
+{op elt elt = zero}
+
+  Remark: we leave the ring structure of D implicit; the general definition is ``exists n, iter n op x = elt''.
+
+\itemrule{Nilpotency of binary operator {\op} wrt to its absorbing element
+zero in D}{Dop\_nilpotent} {forall x, op x x = zero}
+
+  Remark: I did not find this definition on the web, but it used in
+  the Coq library (to characterize \name{xor}).
+
+\itemrule{Involutivity of unary op on D}{Dop\_involutive}
+{forall x:D, op (op x) = x}
+
+\itemrule{Absorption law on the left for binary operator {\op} over binary operator {\op}' on the left}{Dop\_op'\_absorption\_l\_l}
+{forall x y:D, op x (op' x y) = x}
+
+\itemrule{Absorption law on the left for binary operator {\op} over binary operator {\op}' on the right}{Dop\_op'\_absorption\_l\_r}
+{forall x y:D, op x (op' y x) = x}
+
+  Remark: Similarly for \name{Dop\_op'\_absorption\_r\_l} and \name{Dop\_op'\_absorption\_r\_r}.
+
+\itemrule{De Morgan law's for binary operators {\opp} and {\oppp} wrt
+to unary op on domain {\D}}{Dop'\_op''\_de\_morgan,
+Dop''\_op'\_de\_morgan ?? \mbox{leaving the complementing operation
+implicit})}
+{forall x y:D, op (op' x y) = op'' (op x) (op y)\\
+forall x y:D, op (op'' x y) = op' (op x) (op y)}
+
+\itemrule{Left complementation of binary operator{\op} by means of unary {\opp} wrt neutral element {\elt} of {\op} on domain {\D}}{Dop\_op'\_l ??}
+{forall x:D, op (op' x) x = elt}
+
+  Question: make explicit the "complementation" in the name of the property?
+
+\itemrule{Right complementation of binary operator {\op} by means of unary {\op'} wrt neutral element {\elt} of {\op} on domain {\D}}{Dop\_op'\_r ??}
+{forall x:D, op x (op' x) = elt}
+
+\itemrule{Associativity of binary operators {\op} and {\op'}}{Dop\_op'\_assoc}
+{forall x y z, op x (op' y z) = op (op' x y) z}
+
+  Remark: did not find anything like this on the web; used e.g. in
+  lists \formula{(a :: l ++ l' = (a :: l) ++ l')}, in arithmetic
+  \formula{(a + (b - c) = (a + b) - c)}; operations are not
+  necessarily internal composition laws.
+
+
+%======================================================================
+%\section{Properties of elements}
+
+%Remark: not used in current library
+
+
+
+%======================================================================
+\section{Preservation and compatibility properties of operations}
+
+\subsubsection{With respect to equality}
+
+\itemrule{Injectivity of unary operator {\op}}{Dop\_inj}
+{forall x y:D, op x = op y -> x = y}
+
+\itemrule{Left regularity of binary operator {\op}}{Dop\_reg\_l [or call it Dop\_inj\_l ??]}
+{forall x y z:D, op z x = op z y -> x = y}
+
+  Remark: note the order of arguments
+
+  Remark: The property is sometimes called cancellation (would give
+  \name{Dop\_cancel\_l}).
+
+\itemrule{Right regularity of binary operator {\op}}{Dop\_reg\_r [or call it Dop\_inj\_r ??]}
+{forall x y z:D, op x z = op y z -> x = y}
+
+\subsubsection{With respect to a relation {\rel}}
+
+\itemrule{Compatibility of unary operator {\op}}{Dop\_rel\_compat}
+{forall x y:D, rel x y -> rel (op x) (op y)}
+
+  Remark: for equality, use names of the form \name{Dop\_eq\_compat}
+\formula{forall x y:D, y = x -> op y = op x}
+  (actually subsumed by the substitutivity property of equality)
+
+\itemrule{Left compatibility of binary operator {\op}}{Dop\_rel\_compat\_l}
+{forall x y z:D, rel x y -> rel (op z x) (op z y)}
+
+\itemrule{Right compatibility of binary operator {\op}}{Dop\_rel\_compat\_r}
+{forall x y z:D, rel x y -> rel (op x z) (op y z)}
+
+  Remark: for equality, use names of the form \name{Dop\_eq\_compat\_l} or
+  \name{Dop\_eq\_compat\_r}
+(\formula{forall x y z:D, y = x -> op y z = op x z} and
+\formula{forall x y z:D, y = x -> op y z = op x z})
+
+  Remark: should we admit (or even prefer) the name
+  \name{Dop\_rel\_monotone}, \name{Dop\_rel\_monotone\_l},
+  \name{Dop\_rel\_monotone\_r} when {\rel} is an order ?
+
+\itemrule{Left regularity of binary operator {\op}}{Dop\_rel\_reg\_l}
+{forall x y z:D, rel (op z x) (op z y) -> rel x y}
+
+\itemrule{Right regularity of binary operator {\op}}{Dop\_rel\_reg\_r}
+{forall x y z:D, rel (op x z) (op y z) -> rel x y}
+
+  Question: Would it be better to have \name{z} as first argument, since it
+  is missing in the conclusion ?? (or admit we shall use the options
+  ``\texttt{with p}''?)
+
+\itemrule{Left distributivity of binary operator {\op} over {\opp} along relation {\rel} on domain {\D}}{Dop\_op'\_rel\_distr\_l}
+{forall x y z:D, rel (op (op' x y) z) (op' (op x z) (op y z))}
+
+  Example: standard property of (not necessarily distributive) lattices
+
+  Remark: in a (non distributive) lattice, by swapping join and meet,
+  one would like also,
+\formula{forall x y z:D, rel (op' (op x z) (op y z)) (op (op' x y) z)}.
+  How to name it with a symmetric name (use
+ \name{Dop\_op'\_rel\_distr\_mon\_l} and
+ \name{Dop\_op'\_rel\_distr\_anti\_l})?
+
+\itemrule{Irreducibility of binary operator {\op} on domain {\D}}{Dop\_irreducible}
+{forall x y z:D, z = op x y -> z = x $\backslash/$ z = y}
+
+  Question: what about the constructive version ? Call it \name{Dop\_irreducible\_inf} ?
+\formula{forall x y z:D, z = op x y -> \{z = x\} + \{z = y\}}
+
+\itemrule{Primality of binary operator {\op} along relation {\rel} on domain {\D}}{Dop\_rel\_prime}
+{forall x y z:D, rel z (op x y) -> rel z x $\backslash/$ rel  z y}
+
+
+%======================================================================
+\section{Morphisms}
+
+\itemrule{Morphism between structures {\D} and {\D'}}{IDD' ?? \mbox{as
+\name{INR} (which should be \name{I\_nat\_R} and \name{IZR}, and then
+\name{I\_nat\_Z}, \name{I\_bool\_Prop}... ?) or \name{D'\_of\_D} as in ocaml}}{D -> D'}
+
+\itemrule{Morphism {\phimapping} mapping unary operators {\op} to {\op'}}{phi\_op\_op'\_morphism ? \mbox{(or just \name{phi\_op\_op'}, or just \name{op\_op'}, or \name{phi\_op\_morphism} if \name{op} and \name{op'} have the same name on their respective domains ?)}}
+{forall x:D, phi (op x) = op' (phi x)}
+
+  Example: how to name \formula{\~{} Is\_true b -> Is\_true (negb b)}, or
+  \formula{forall a, nat\_of\_N (Nsucc a) = S (nat\_of\_N a)} (assuming that
+  we already accept the names \name{Is\_true} and \name{nat\_of\_N}) ?
+
+\itemrule{Morphism {\phimapping} mapping binary operators {\op} to
+{\op'}}{phi\_op\_op'\_morphism ? \mbox{(or just \name{phi\_op\_op'}, or just
+\name{op\_op'}, or \name{phi\_op\_morphism} if \name{op} and
+\name{op'} have the same name on their respective domain ?)}}  {forall
+x y:D, phi (op x y) = op' (phi x) (phi y)}
+
+\itemrule{Morphism {\phimapping} mapping binary operator {\op} to
+binary relation {\rel}}{phi\_op\_rel\_morphism ? \mbox{(or just
+\name{phi\_op\_rel}, or just \name{phi\_op\_morphism} if \name{op} and
+\name{rel} have similar names (e.g. \name{andb} and \name{and})?)}}
+{forall x y:D, phi (op x y) <-> rel (phi x) (phi y)}
+
+  Remark: how to name each direction? (add \_elim for -> and \_intro for <- ?? --
+  as done in Bool.v ??)
+
+$\ldots$
+
+%======================================================================
+\section{Preservation and compatibility properties of operations wrt order}
+
+\itemrule{Compatibility of binary operator {\op} wrt (strict order) {\rel} and (large order) {\rel'}}{Dop\_rel\_rel'\_compat}
+{forall x y z t:D, rel x y -> rel' z t -> rel (op x z) (op y t)}
+
+\itemrule{Compatibility of binary operator {\op} wrt (large order) {\relp} and (strict order) {\rel}}{Dop\_rel'\_rel\_compat}
+{forall x y z t:D, rel' x y -> rel z t -> rel (op x z) (op y t)}
+
+
+%======================================================================
+\section{Properties of relations}
+
+\itemrule{Reflexivity of relation {\rel} on domain {\D}}{Drel\_refl}
+{forall x:D, rel x x}
+
+\itemrule{Symmetry of relation {\rel} on domain {\D}}{Drel\_sym}
+{forall x y:D, rel x y -> rel y x}
+
+\itemrule{Transitivity of relation {\rel} on domain {\D}}{Drel\_trans}
+{forall x y z:D, rel x y -> rel y z -> rel x z}
+
+\itemrule{Antisymmetry of relation {\rel} on domain {\D}}{Drel\_antisym}
+{forall x y:D, rel x y -> rel y x -> x = y}
+
+\itemrule{Irreflexivity of relation {\rel} on domain {\D}}{Drel\_irrefl}
+{forall x:D, \~{} rel x x}
+
+\itemrule{Asymmetry of relation {\rel} on domain {\D}}{Drel\_asym}
+{forall x y:D, rel x y -> \~{} rel y x}
+
+\itemrule{Cotransitivity of relation {\rel} on domain {\D}}{Drel\_cotrans}
+{forall x y z:D, rel x y -> \{rel z y\} + \{rel x z\}}
+
+  Question: or \formula{forall x y:D, rel x y -> forall z:D, \{rel z y\} + \{rel x z\}} ?
+  or \formula{forall x y:D, rel x y -> forall z:D, rel z y $\backslash/$ rel x z ?}
+
+\itemrule{Linearity of relation {\rel} on domain {\D}}{Drel\_trichotomy}
+{forall x y:D, \{rel x y\} + \{x = y\} + \{rel y x\}}
+
+  Questions: or call it \name{Drel\_total}, or \name{Drel\_linear}
+  use $\backslash/$ ? or use a ternary sumbool, or a ternary disjunction, for nicer
+  elimination.
+
+\itemrule{Informative decidability of relation {\rel} on domain {\D}}{Drel\_dec (or Drel\_dect, Drel\_dec\_inf ?)}
+{forall x y:D, \{rel x y\} + \{\~{} rel x y\}}
+
+  Remark: if equality: \name{D\_eq\_dec} or \name{D\_dec} (not like
+  \name{eq\_nat\_dec})
+
+\itemrule{Non informative decidability of relation {\rel} on domain {\D}}{Drel\_dec\_prop (or Drel\_dec)}
+{forall x y:D, rel x y $\backslash/$ \~{} rel x y}
+
+\itemrule{Inclusion of relation {\rel} in relation {\rel}' on domain {\D}}{Drel\_rel'\_incl (or Drel\_incl\_rel')}
+{forall x y:D, rel x y -> rel' x y}
+
+  Remark: use \name{Drel\_rel'\_weak} for a strict inclusion ??
+
+%======================================================================
+\section{Arithmetical conventions}
+
+\begin{tabular}{lll}
+Zero on domain {\D} & D0 & (notation \verb=0=)\\
+One on domain {\D} & D1 (if explicitly defined) & (notation \verb=1=)\\
+Successor on domain {\D} & Dsucc\\
+Predessor on domain {\D} & Dpred\\
+Addition on domain {\D} & Dplus & (infix notation \verb=+= [50,L])\\
+Multiplication on domain {\D} & Dmult & (infix notation \verb=*= [40,L]))\\
+Soustraction on domain {\D} & Dminus & (infix notation \verb=-= [50,L])\\
+Opposite on domain {\D} & Dopp (if any) & (prefix notation \verb=-= [35,R]))\\
+Inverse on domain {\D} & Dinv (if any) & (prefix notation \verb=/= [35,R]))\\
+Power on domain {\D} & Dpower & (infix notation \verb=^= [30,R])\\
+Minimal element on domain {\D} & Dmin\\
+Maximal element on domain {\D} & Dmax\\
+Large less than order on {\D} & Dle & (infix notations \verb!<=! and \verb!>=! [70,N]))\\
+Strict less than order on {\D} & Dlt & (infix notations \verb=<= and \verb=>= [70,N]))\\
+\end{tabular}
+\bigskip
+
+No explicit definition for \verb!>=! and \verb!>! : accepted only as
+parsing notations (alone, or as part of a
+\verb!forall x >= e, t! syntax).
+
+\bigskip
+
+Exception: Peano Arithmetic which is used for pedagogical purpose:
+
+\begin{itemize}
+\item domain name is implicit
+\item \term{0} is \term{O}
+\item \term{succ} is \verb!S! (but use \term{S} or \term{succ} in theorems ???)
+\end{itemize}
+
+%======================================================================
+\section{General conventions}
+
+For equalities w/o premisses, if the conclusion is in the other way
+round, add suffix \name{\_reverse}.
+
+%======================================================================
+\section{General questions}
+
+\begin{itemize}
+
+\item Names of bound variables in arithmetical lemmas: n,m,p, or
+n,m,p, or a,b,c, or x,y,z ?? (The latter is probably the most generic
+convention.)
+
+\item Status of constructive disjunctive statements. Add a standard suffix
+\name{\_inf} to the name ?
+
+\item Existential arguments: often, one argument is not in the
+conclusion of property \term{ppty} (typical case of the
+``\texttt{with} $c$'' option of \tactic{apply}). Put it rather first
+to allow \tactic{apply (ppty t)} (i.e. to avoid the use of
+\texttt{with})?
+
+\item Order of arguments: when an argument does not occur in some premisses,
+quantify it after the non dependent premisses, or put it in the same
+quantification bunch ?
+
+\item Note that prefixing of names by domains (here {\D}) would allow
+for smooth transition if one derives properties from functorial
+applications.
+
+\end{itemize}
+
+\chapter{Miscellaneous}
+
+\section{A list of suggested renamings}
+
+\begin{verbatim}
+(* Logic *)
+refl_equal -> eq_refl
+trans_eq, trans_equal -> eq_trans
+sym_eq, sym_equal -> eq_sym
+sym_not_eq, sym_not_equal -> not_eq_sym
+f_equal -> eq_compat (??)
+f_equal2 -> eq_compat2 (??)
+f_equal3 ->
+f_equal4 ->
+f_equal5 ->
+
+(* uniformize names for construction/destruction of connectives *)
+(* 1a- Prop * Prop to Prop *)
+or_introl -> inj1      or_intro_l   (contrib: 137 of which 109 in CatsInZF)
+or_intror -> inj2      or_intro_r   (contrib: 150 of which 110 in CatsInZF)
+proj1 ->     proj1     and_elim_l   (contrib: 634 in 10 contribs)
+proj2 ->     proj2     and_elim_r   (contrib: 553 in 8 contribs)
+conj ->      conj      and_intro    (contrib: 42 in 9 contribs)
+
+(* 1b- Type * Prop to Prop *)
+ex OK
+ex_intro OK                      (contrib: 65 in 5 contribs - mainly CatsInZF)
+ex2 OK
+ex_intro2 -> ex2_intro           (contrib: 3 in 2 contribs)
+
+(* 2- Type * Prop to Type *)
+sig OK
+proj1_sig -> witness (* ? *)     (contrib: 53 in 3 contribs - mainly Godel)
+proj2_sig -> proof (* ? *)       (contrib: 0)
+sumor (* OK? *)
+inleft -> regular (* ? *)        (contrib: 62 in 9 contribs)
+inright -> irregular (* ? *)     (contrib: 38 in 8 contribs)
+
+(* 3-a Type * Type to Type *)  (* fusionner sigT et prod ? *)
+fst               (contrib: 3130 in 25 contribs - 1932 in BDDS, 568 in SMC)
+snd               (contrib: 2028 in 24 contribs - 1177 in BDDS, 268 in SMC)
+inl               (contrib: 162 in 8 contribs)
+inr               (contrib: 156 in 8 contribs)
+(* 3-b Type * dep Type to Type *)
+sigT -> dprod
+projT1 -> dproj1  or depfst (* d for dependent *)   (contrib: 4)
+projT2 -> dproj2  or depsnd     (contrib: 0)
+
+(* 3-c Prop + Prop to Type *)
+sumbool (* ? *)
+left (* OK ? *)                (contrib: 419 in 48 contribs)
+right (* OK ? *)               (contrib: 375 in 48 contribs)
+
+(* Ring *)
+SR_plus_zero_left -> SR_plus_0_l
+SR_mult_one_left  -> SR_mult_1_l
+SR_mult_zero_left -> SR_mult_0_l
+SR_distr_left     -> SR_mult_plus_distr_l
+
+(* ZArith *)
+Z_le_lt_eq_dec -> Zle_lt_or_eq_dec_inf
+Z_lt_le_dec -> Zlt_or_le_dec_inf (mais mettre en avant un Zle_or_lt_dec_inf)
+
+dec_eq -> Zeq_dec ??
+dec_Zne -> Zne_dec ??
+dec_Zle -> Zle_dec
+dec_Zge -> Zge_dec
+dec_Zlt -> Zlt_dec
+dec_Zgt -> Zgt_dec
+
+Zle_succ = le_n_Sn : comment nommer ? (le_S ?)
+Zle_le_succ = le_S : comment nommer ? (le_S_trans ?)
+lt_plus_trans      : comment nommer ?
+
+(* Arith *)
+(* Peano.v *)
+plus_n_O -> plus_0_r
+plus_O_n -> plus_0_l
+le_n -> le_refl
+le_S -> le_S_trans
+
+O_S -> O_S_discr ? diff_O_S ? diff_0_succ ? (à la fois propriété
+  d'inductif -- insistance sur O, S -- et propriété arithmétique --
+  insistance sur 0, succ)
+
+(* Le.v *)
+le_n_S -> succ_le_monotone ?? succ_le_compat ?? S_le_compat ?? bof...
+le_S_n -> succ_le_reg ??
+le_lt_dec -> le_or_lt_dec_inf
+le_or_lt -> le_or_lt_dec
+le_lt_eq_dec -> le_lt_or_eq_inf
+le_lt_or_eq -> OK 
+lt_le_S -> lt_le_succ ?
+lt_n_O -> lt_O_minimal ??
+
+(* Min.v *)
+min_SS -> succ_min_distr
+min_l -> ?
+min_r -> ?
+min_dec -> min_irreducible_inf (mais garder le nom intuitif min_dec comme synonyme)
+
+(* Max.v *)
+max_SS -> succ_max_distr
+max_dec -> max_irreducible_inf (mais garder le nom intuitif min_dec comme synonyme)
+
+(* Le.v *)
+le_n_S -> le_succ_mono
+
+(* Mult.v *)
+mult_S_lt_compat_l -> ??
+
+(* Peano_dec.v *)
+eq_nat_dec -> eq_nat_dec_inf (trop long ?)
+
+min_case/Zmin_case (choisir place P)
+
+(* Bool *)
+demorgan1 -> andb_orb_distrib_r
+demorgan2 -> andb_orb_distrib_l
+demorgan3 -> orb_andb_distrib_r
+demorgan4 -> orb_andb_distrib_l
+absorption_andb -> andb_orb_absorption_l_l
+absorption_orb -> orb_andb_absorption_l_l
+negb_elim -> negb_involutive
+negb_intro -> negb_involutive_reverse
+  (* zero property *)
+orb_b_true -> orb_true_r
+orb_true_b -> orb_true_l
+andb_b_false -> andb_false_r
+andb_false_b -> andb_false_l
+  (* identities *)
+orb_b_false -> orb_false_r
+orb_false_b -> orb_false_l
+andb_b_true -> andb_true_r
+andb_true_b -> andb_true_l
+  (* complementation *)
+orb_neg_b -> orb_negb_r
+andb_neg_b -> andb_negb_r
+
+orb_true_elim -> orb_integral_inf ? (or orb_true_elim_inf)
+orb_prop -> orb_integral_inf ? (or orb_true_elim)
+andb_false_elim -> andb_integral_inf ? (or andb_false_elim_inf)
+
+orb_false_elim -> ??
+
+negb_orb -> orb_de_morgan ??
+negb_andb -> andb_de_morgan ??
+
+eqb_reflx -> insister sur la propriété algébrique (soit une forme de
+  nilpotence - quoique la nilpotence dit plutot a * a = 0 où 0 est
+  l'absorbant de * [ce qui donnerait eqb_nilpotent]; soit le fait que
+  l'identité est un opposé pour eqb [ce qui donnerait eqb_id ?? ou
+  eqb_id_opposite ??]) ou sur la propriété ``logique'' [eqb_refl]
+
+xorb_
+
+(* Reals *)
+Rlt_le -> Rlt_le_weak (or Rlt_le_incl, Rlt_incl_le ?)
+
+
+Hints:
+
+lt_n_Sm_le: remplacable par le_S_n suivi de lt_le_S (coercion identite).
+gt_le_S:    convertible avec lt_le_S (i.e. c'est une identité)
+le_lt_n_Sm: convertible avec le_n_S via lt_le_S
+lt_n_Sm_le: convertible avec le_S_n via lt_le_S
+gt_Sn_O:    replacer par unfold gt, puis lt_le_S
+le_n_Sn:    remplacable par le_S et le_n
+le_S_gt:    remplacer par unfold gt, unfold lt (i.e. lt_le_S) ?
+
+Rle_lt_0_plus_1
+le_Sn_le
+\end{verbatim}
+
+\section{A list of inconsistencies}
+
+Implicit arguments:
+
+eq\_rect : A is implicit
+
+eq\_rect\_r : A, x, y are implicit
+
+\section{A collection of examples that we'd like succeed automatically}
+
+\begin{verbatim}
+Require Import Bool List.
+Fixpoint andbl l := match l with nil => true | a::l => andb a (andbl l) end.
+Goal forall x l, andbl (x::l) = true -> andbl l = true.
+intro H; apply H.
+\end{verbatim}
+
+\begin{verbatim}
+Goal forall x y, x = y => S x = S y.
+\end{verbatim}
+
+\section{Inconsistencies and weakness in the new syntax}
+
+\texttt{set} and \texttt{pose} have semantics swapped compared to the
+intuitive one.
+
+
+\texttt{autorewrite using} vs \texttt{auto with}.
+
+Use of commas...
+
+Use of \verb=%type= in, e.g., \verb=(nat * nat)%type= is not very elegant.
+
+The confusion between $(x_1,\ldots,x_n)$ meaning $C(x_1,\ldots,x_n)$
+in destructing let and $(x_1,\ldots,x_n)$ meaning the iterated tuple
+$(x_1,(x_2,\ldots,x_n)\ldots)$ in terms and \texttt{match} patterns.
+
+How then to extend the notation to nested destructing \texttt{let} or,
+further, to destructing \texttt{fun} (i.e. \texttt{fun ((x,y),(z,t))
+=> \ldots} meaning \texttt{fun u => let ((x,y),(z,t)) := u in \ldots}.
+
+\section{Tactic wishes}
+
+That apply and elim default to automatically removing used hypotheses
+?
+
+
+\section{Language wishes}
+
+That existential/meta variables are named after the dependent variable that
+create them.
+
+Extending the \term{\{~...~\}} notation for record types ?
+
+
+\begin{verbatim}
+{ x1 : A1;
+  x2 : A2(x1);
+  _ : T;   (* no available projection *)
+  y;       (* infered type *)
+  ...      (* optional colon for last field *)
+}
+\end{verbatim}
+
+Having a \term{\{~...~\}} notation for record components? (allowing
+field in any (dependency-compatible) order?)
+
+\begin{verbatim}
+{ x1 = O;
+  x2 : A2(x1) = v1;
+  _ = v2;
+  ...
+}
+\end{verbatim}
+
+\section{Implementation issues}
+
+Rename \texttt{rawconstr} into \texttt{glob\_constr} or \texttt{gconstr}.
+
+Rename term.ml into constr.ml, rawterm.ml into globconstr.ml ?
+
+Confusion with pcoq.ml4. Rename it to ?
+
+Replace calls with ``sigma env'' into calls with ``env sigma''.
+
+Confusion PatVar and APatVar/CPatVar: rename the laters into AMeta/CMeta
+
+Ltac environment: use constr or glob\_constr
+
+Statut des hidden tactiques: autoriser ltac dedans ? Comment y
+representer les arguments de tactiques
+
+\bibliographystyle{alpha}
+\bibliography{coq-biblio}
+
+\end{document}
