@@ -160,4 +160,4 @@ let subtac_proof env isevars id l c tycon =
   let evm, coqc, coqt = subtac_process env isevars id l c tycon in
   let evars, def = Eterm.eterm_obligations id nc_len evm coqc (Some coqt) in
     trace (str "Adding to obligations list");
-    add_entry id def coqt evars
+    add_definition id def coqt evars

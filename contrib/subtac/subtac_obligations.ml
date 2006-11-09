@@ -12,6 +12,8 @@ open Decl_kinds
 open Util
 open Evd
 
+type obligation_info = (Names.identifier * Term.types * Intset.t) array
+
 type obligation =
     { obl_name : identifier;
       obl_type : types;
@@ -24,14 +26,27 @@ type obligations = (obligation array * int)
 type program_info = {
   prg_name: identifier;
   prg_body: constr;
-  prg_type: types;
+  prg_type: constr;
   prg_obligations: obligations;
+  prg_deps : identifier list;
 }
 
 let evar_of_obligation o = { evar_hyps = Environ.empty_named_context_val ; 
 			     evar_concl = o.obl_type ; 
 			     evar_body = Evar_empty ;
 			     evar_extra = None }
+
+let subst_deps obls deps t =
+  Intset.fold
+    (fun x acc ->
+       let xobl = obls.(x) in
+       let oblb = out_some xobl.obl_body in
+	 Term.subst1 oblb (Term.subst_var xobl.obl_name acc))
+    deps t
+
+let subst_deps_obl obls obl =
+  let t' = subst_deps obls obl.obl_deps obl.obl_type in
+    { obl with obl_type = t' }
 
 module ProgMap = Map.Make(struct type t = identifier let compare = compare end)
 
@@ -62,21 +77,6 @@ let _ =
       Summary.survive_module = false;
       Summary.survive_section = false }
 
-let declare_definition prg = 
-(*  let obls_constrs = 
-    Array.fold_right (fun x acc -> (out_some x.obl_evar.evar_body) :: acc) (fst prg.prg_obligations) []
-  in*)
-  let ce = 
-    { const_entry_body = prg.prg_body;
-      const_entry_type = Some prg.prg_type;
-      const_entry_opaque = false;
-      const_entry_boxed = false} 
-  in
-  let _constant = Declare.declare_constant 
-    prg.prg_name (DefinitionEntry ce,IsDefinition Definition)
-  in
-    Subtac_utils.definition_message prg.prg_name
-    
 open Evd
 
 let terms_of_evar ev = 
@@ -88,6 +88,53 @@ let terms_of_evar ev =
 	  body, typ
     | _ -> assert(false)
 	  
+let rec intset_to = function
+    -1 -> Intset.empty
+  | n -> Intset.add n (intset_to (pred n))
+  
+let subst_body prg = 
+  let obls, _ = prg.prg_obligations in
+    subst_deps obls (intset_to (pred (Array.length obls))) prg.prg_body
+
+let declare_definition prg =
+  let ce = 
+    { const_entry_body = subst_body prg;
+      const_entry_type = Some prg.prg_type;
+      const_entry_opaque = false;
+      const_entry_boxed = false} 
+  in
+  let _constant = Declare.declare_constant 
+    prg.prg_name (DefinitionEntry ce,IsDefinition Definition)
+  in
+    Subtac_utils.definition_message prg.prg_name
+
+let declare_mutual_definition l = assert(false)
+  (*let len = List.length l in
+  let namerec = List.map (fun x -> x.prg_name) l in
+  let arrrec = 
+    Array.of_list (List.map (fun x -> x.prg_type) l)
+  in
+  let defrec = 
+    Array.of_list (List.map (fun x -> subst_body x) l)
+  in
+  let recvec = Array.map (subst_vars (List.rev namerec)) defrec in
+  let recdecls = (Array.of_list (List.map (fun id -> Name id) namerec), arrec, recvec) in
+  let rec declare i fi =
+    (try trace (str "Declaring: " ++ pr_id fi ++ spc () ++
+		  my_print_constr env (recvec.(i)));
+     with _ -> ());
+    let ce = 
+      { const_entry_body = mkFix ((nvrec,i),recdecls); 
+        const_entry_type = Some arrec.(i);
+        const_entry_opaque = false;
+        const_entry_boxed = boxed} in
+    let kn = Declare.declare_constant fi (DefinitionEntry ce,IsDefinition Fixpoint)
+    in
+      ConstRef kn
+  in
+  let lrefrec = Array.mapi declare namerec in
+    Options.if_verbose ppnl (recursive_message lrefrec)
+    *)     
 let declare_obligation obl body =
   let ce = 
     { const_entry_body = body;
@@ -113,30 +160,38 @@ let try_tactics obls =
 	 | _ -> obl)
     obls
         
-let add_entry n b t obls =
-  Options.if_verbose pp (str (string_of_id n) ++ str " has type-checked");
-  let init_obls e = 
+
+let init_prog_info n b t deps obls =
+  let obls' = 
     Array.map
       (fun (n, t, d) ->
          { obl_name = n ; obl_body = None; obl_type = t; obl_deps = d })
-      e
+      obls
   in
-    if Array.length obls = 0 then (
-      Options.if_verbose ppnl (str ".");
-    declare_definition { prg_name = n ; prg_body = b ; prg_type = t ; prg_obligations = ([||], 0) } )
-    else (
-      let len = Array.length obls in
-      let _ = Options.if_verbose ppnl (str ", generating " ++ int len ++ str " obligation(s)") in
-      let obls = init_obls obls in
-      let rem = Array.fold_left (fun acc obl -> if obl.obl_body = None then succ acc else acc) 0 obls in
-      let prg = { prg_name = n ; prg_body = b ; prg_type = t ; prg_obligations = (obls, rem) } in
-	if rem < len then 
-	  Options.if_verbose ppnl (int rem ++ str " obligation(s) remaining.");
-	if rem = 0 then 
-	  declare_definition prg
-	else
-	  from_prg := ProgMap.add n prg !from_prg)
-	    
+    { prg_name = n ; prg_body = b; prg_type = t; prg_obligations = (obls', Array.length obls');
+      prg_deps = deps }
+
+let add_definition n b t obls =
+  Options.if_verbose pp (str (string_of_id n) ++ str " has type-checked");
+  let prg = init_prog_info n b t [] obls in
+  let obls,_ = prg.prg_obligations in
+  if Array.length obls = 0 then (
+    Options.if_verbose ppnl (str ".");
+    declare_definition prg)
+  else (
+    let len = Array.length obls in
+    let _ = Options.if_verbose ppnl (str ", generating " ++ int len ++ str " obligation(s)") in
+      from_prg := ProgMap.add n prg !from_prg)
+	
+let add_mutual_definitions l =
+  let deps = List.map (fun (n, b, t, obls) -> n) l in
+  let upd = List.fold_left
+      (fun acc (n, b, t, obls) ->
+	 let prg = init_prog_info n b t deps obls in
+	   ProgMap.add n prg acc)
+      !from_prg l
+  in from_prg := upd
+    
 let error s = Util.error s
 
 let get_prog name =
@@ -150,15 +205,22 @@ let get_prog name =
 	       | 1 -> map_first prg_infos
 	       | _ -> error "More than one program with unsolved obligations")
 
+let obligations_solved prg = (snd prg.prg_obligations) = 0
+
 let update_obls prg obls rem = 
   let prg' = { prg with prg_obligations = (obls, rem) } in
     if rem > 1 then (
       debug 2 (int rem ++ str " obligations remaining");
       from_prg := map_replace prg.prg_name prg' !from_prg)
     else (
-      declare_definition prg';
-      from_prg := ProgMap.remove prg.prg_name !from_prg
-    )		 
+      match prg'.prg_deps with
+	  [] ->
+	    declare_definition prg';
+	    from_prg := ProgMap.remove prg.prg_name !from_prg
+	| l ->
+	    if List.for_all (fun x -> obligations_solved (ProgMap.find x !from_prg)) prg'.prg_deps then 
+	      declare_mutual_definition (List.map (fun x -> ProgMap.find x !from_prg) prg'.prg_deps)
+    )
 	    
 let is_defined obls x = obls.(x).obl_body <> None
 
@@ -170,16 +232,6 @@ let deps_remaining obls x =
 	 else x :: acc)
       deps []
 
-let subst_deps obls obl =
-  let t' = 
-    Intset.fold
-      (fun x acc ->
-	 let xobl = obls.(x) in
-	 let oblb = out_some xobl.obl_body in
-	   Term.subst1 oblb (Term.subst_var xobl.obl_name acc))
-      obl.obl_deps obl.obl_type
-  in { obl with obl_type = t' }
-
 let subtac_obligation (user_num, name) =
   let num = pred user_num in
   let prg = get_prog name in
@@ -190,7 +242,7 @@ let subtac_obligation (user_num, name) =
 	    None -> 
 	      (match deps_remaining obls num with
 		  [] ->
-		    let obl = subst_deps obls obl in
+		    let obl = subst_deps_obl obls obl in
 		    Command.start_proof obl.obl_name Subtac_utils.goal_proof_kind obl.obl_type
 		      (fun strength gr -> 
 			 debug 2 (str "Proof of obligation " ++ int user_num ++ str " finished");		   

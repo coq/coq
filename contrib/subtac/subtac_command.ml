@@ -311,15 +311,15 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
 	 evars;
      with _ -> ());    
       trace (str "Adding to obligations list");
-      Subtac_obligations.add_entry recname evars_def fullctyp evars;
+      Subtac_obligations.add_definition recname evars_def fullctyp evars;
       trace (str "Added to obligations list")
-(*
+
 let build_mutrec l boxed = 
-  let sigma = Evd.empty
-  and env0 = Global.env()
-  in 
+  let sigma = Evd.empty and env = Global.env () in 
+  let nc = named_context env in
+  let nc_len = named_context_length nc in
   let lnameargsardef =
-    (*List.map (fun (f, d) -> Subtac_interp_fixpoint.rewrite_fixpoint env0 protos (f, d))*)
+    (*List.map (fun (f, d) -> Subtac_interp_fixpoint.rewrite_fixpoint env protos (f, d))*)
     l
   in
   let lrecnames = List.map (fun ((f,_,_,_,_),_) -> f) lnameargsardef 
@@ -331,14 +331,14 @@ let build_mutrec l boxed =
       (fun (env,impls,arl) ((recname, n, bl,arityc,body),_) -> 
 	 let isevars = ref (Evd.create_evar_defs sigma) in	  
 	 let arityc = Command.generalize_constr_expr arityc bl in
-	 let arity = interp_type isevars env0 arityc in
+	 let arity = interp_type isevars env arityc in
 	 let impl = 
 	   if Impargs.is_implicit_args()
-	   then Impargs.compute_implicits env0 arity
+	   then Impargs.compute_implicits env arity
 	   else [] in
 	 let impls' =(recname,([],impl,compute_arguments_scope arity))::impls in
 	   (Environ.push_named (recname,None,arity) env, impls', (isevars, None, arity)::arl))
-      (env0,[],[]) lnameargsardef in
+      (env,[],[]) lnameargsardef in
   let arityl = List.rev arityl in
   let notations = 
     List.fold_right (fun (_,ntnopt) l -> option_cons ntnopt l) 
@@ -371,14 +371,14 @@ let build_mutrec l boxed =
   in
 
   let (lnonrec,(namerec,defrec,arrec,nvrec)) = 
-    collect_non_rec env0 lrecnames recdef arityl nv in
+    collect_non_rec env lrecnames recdef arityl nv in
   let declare arrec defrec =
     let recvec = 
       Array.map (subst_vars (List.rev (Array.to_list namerec))) defrec in
     let recdecls = (Array.map (fun id -> Name id) namerec, arrec, recvec) in
     let rec declare i fi =
       (try trace (str "Declaring: " ++ pr_id fi ++ spc () ++
-		  my_print_constr env0 (recvec.(i)));
+		  my_print_constr env (recvec.(i)));
        with _ -> ());
       let ce = 
 	{ const_entry_body = mkFix ((nvrec,i),recdecls); 
@@ -437,94 +437,13 @@ let build_mutrec l boxed =
       and typ = 
 	Termops.it_mkNamedProd_or_LetIn typ (Environ.named_context rec_sign) 
       in
-      let evars_def, evars_typ, evars = Eterm.eterm_term evm def (Some typ) in 	
-      (*let evars_typ = match evars_typ with Some t -> t | None -> assert(false) in*)
-      (*let fi = id_of_string (string_of_id id ^ "_evars") in*)
-      (*let ce = 
-	{ const_entry_body = evars_def; 
-	  const_entry_type = Some evars_typ;
-	  const_entry_opaque = false;
-	  const_entry_boxed = boxed} in
-      let kn = Declare.declare_constant fi (DefinitionEntry ce,IsDefinition Definition) in
-	definition_message fi;
-	trace (str (string_of_id fi) ++ str " is defined");*)
-	let evar_sum =
-	  if evars = [] then None
-	  else (
-	    (try trace (str "Building evars sum for : ");
-	       List.iter
-		 (fun (n, t) -> trace (str "Evar " ++ str (string_of_id n) ++ spc () ++ my_print_constr env0 t))
-		 evars;
-	     with _ -> ());
-	    let sum = Subtac_utils.build_dependent_sum evars in
-	      (try trace (str "Evars sum: " ++ my_print_constr env0 (snd sum));
-	       with _ -> ());
-	      Some sum)
-	in
-	  collect_evars (succ i) ((id, evars_def, evar_sum) :: acc)
+      let evars, def = Eterm.eterm_obligations id nc_len evm def (Some typ) in
+	collect_evars (succ i) ((id, def, typ, evars) :: acc)
     else acc
   in 
   let defs = collect_evars 0 [] in
-
-  (* Solve evars then create the definitions *)
-  let real_evars = 
-    filter_map (fun (id, kn, sum) ->
-		  match sum with Some (sumtac, sumg) -> Some (id, kn, sumg, sumtac) | None -> None)
-      defs
-  in
-    match real_evars with
-	[] -> declare (List.rev_map (fun (id, c, _) ->
-				   snd (decompose_lam_n recdefs c)) defs)
-      | l ->
-
-    Subtac_utils.and_tac real_evars
-      (fun f _ gr ->
-	 let _ = trace (str "Got a proof of: " ++ pr_global gr ++
-			str "type: " ++ my_print_constr (Global.env ()) (Global.type_of_global gr)) in
-	 let constant = match gr with Libnames.ConstRef c -> c
-	   | _ -> assert(false)
-	 in
-	   try
-	     (*let value = Environ.constant_value (Global.env ()) constant in*)
-	     let pis = f (mkConst constant) in
-	       (try (trace (str "Accessors: " ++
-			   List.fold_right (fun (_, _, _, c) acc -> my_print_constr env0 c ++ spc () ++ acc)
-			     pis (mt()));
-		    trace (str "Applied existentials: " ++
-			   (List.fold_right
-			      (fun (id, kn, sumg, pi) acc ->
-				 let args = Subtac_utils.destruct_ex pi sumg in
-				   my_print_constr env0 (mkApp (kn, Array.of_list args)))
-			      pis (mt ()))))
-	       with _ -> ());
-	       let rec aux pis acc = function
-		   (id, kn, sum) :: tl ->
-		     (match sum with 
-			  None -> aux pis (kn :: acc) tl
-			| Some (_, sumg) -> 
-			    let (id, kn, sumg, pi), pis = List.hd pis, List.tl pis in
-			    let args = Subtac_utils.destruct_ex pi sumg in
-			    let args = 
-			      List.map (fun c -> 
-					  try Reductionops.whd_betadeltaiota (Global.env ()) Evd.empty c
-					  with Not_found ->
-					    trace (str "Not_found while reducing " ++
-						   my_print_constr (Global.env ()) c);
-					    c
-				       ) args 				  
-			    in
-			    let _, newdef = decompose_lam_n (recdefs + List.length args) kn in
-			    let constr = Term.substl (mkRel 1 :: List.rev args) newdef in
-			      aux pis (constr :: acc) tl)
-		 | [] -> List.rev acc
-	       in
-		 declare (aux pis [] defs)
-	   with Environ.NotEvaluableConst cer ->
-	     match cer with
-		 Environ.NoBody -> trace (str "Constant has no body")
-	       | Environ.Opaque -> trace (str "Constant is opaque")
-      )
-*)
+    Subtac_obligations.add_mutual_definitions defs
+      
 let out_n = function
     Some n -> n
   | None -> 0
@@ -544,8 +463,7 @@ let build_recursive (lnameargsardef:(fixpoint_expr * decl_notation) list) boxed 
 		       errorlabstrm "Subtac_command.build_recursive"
 			 (str "Well-founded fixpoints not allowed in mutually recursive blocks"))
 	    lnameargsardef
-	in assert(false)
-	     (*build_mutrec lnameargsardef boxed*)
+	in build_mutrec lnameargsardef boxed
 	  
       
       

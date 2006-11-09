@@ -1,7 +1,12 @@
 open Util
 
-val add_entry : Names.identifier -> Term.constr -> Term.types ->
-  (Names.identifier * Term.types * Intset.t) array -> unit
+type obligation_info = (Names.identifier * Term.types * Intset.t) array
+
+val add_definition : Names.identifier ->  Term.constr -> Term.types -> 
+  obligation_info -> unit
+
+val add_mutual_definitions : 
+  (Names.identifier * Term.constr * Term.types * obligation_info) list -> unit
 
 val subtac_obligation : int * Names.identifier option -> unit
 
