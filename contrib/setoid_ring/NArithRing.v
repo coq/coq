@@ -13,7 +13,6 @@ Import InitialRing.
 Set Implicit Arguments.
 
 Ltac isNcst t :=
-  let t := eval hnf in t in
   match t with
     N0 => constr:true
   | Npos ?p => isNcst p

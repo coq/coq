@@ -23,7 +23,6 @@ Ltac OnEquation req :=
   | _ => fail 1 "Goal is not an equation (of expected equality)"
   end.
 
-
 Ltac OnMainSubgoal H ty :=
   match ty with
   | _ -> ?ty' =>
@@ -32,35 +31,34 @@ Ltac OnMainSubgoal H ty :=
   | _ => (fun tac => tac)
   end.
 
-Ltac ApplyLemmaAndSimpl tac lemma pe:=
-  let npe := fresh "ast_nf" in
+Ltac ApplyLemmaThen lemma expr tac :=
+  let nexpr := fresh "expr_nf" in
   let H := fresh "eq_nf" in
   let Heq := fresh "thm" in
-  let npe_spec :=
-    match type of (lemma pe) with
-      forall npe, ?npe_spec = npe -> _ => npe_spec
-    | _ => fail 1 "ApplyLemmaAndSimpl: cannot find norm expression"
+  let nf_spec :=
+    match type of (lemma expr) with
+      forall x, ?nf_spec = x -> _ => nf_spec
+    | _ => fail 1 "ApplyLemmaThen: cannot find norm expression"
     end in
-  (compute_assertion H npe npe_spec;
+  (compute_assertion H nexpr nf_spec;
    (assert (Heq:=lemma _ _ H) || fail "anomaly: failed to apply lemma");
    clear H;
-   OnMainSubgoal Heq ltac:(type of Heq)
-     ltac:(tac Heq; rewrite Heq; clear Heq npe)).
+   OnMainSubgoal Heq ltac:(type of Heq) ltac:(tac Heq; clear Heq nexpr)).
 
 (* General scheme of reflexive tactics using of correctness lemma
    that involves normalisation of one expression *)
-Ltac ReflexiveRewriteTactic FV_tac SYN_tac SIMPL_tac lemma2 req rl :=
+Ltac ReflexiveNormTactic FV_tac SYN_tac MAIN_tac lemma2 req terms :=
   let R := match type of req with ?R -> _ => R end in
   (* build the atom list *)
-  let fv := list_fold_left FV_tac (@List.nil R) rl in
+  let val := list_fold_left FV_tac (@List.nil R) terms in
   (* some type-checking to avoid late errors *)
-  (check_fv fv;
+  (check_fv val;
    (* rewrite steps *)
    list_iter
-     ltac:(fun r =>
-       let ast := SYN_tac r fv in
-       try ApplyLemmaAndSimpl SIMPL_tac (lemma2 fv) ast)
-     rl).
+     ltac:(fun term =>
+       let expr := SYN_tac term val in
+       try ApplyLemmaThen (lemma2 val) expr MAIN_tac)
+     terms).
 
 (********************************************************)
 
@@ -109,6 +107,7 @@ Ltac FV Cst add mul sub opp t fv :=
 
 (* ring tactics *)
 
+
  Ltac Ring Cst_tac lemma1 req :=
   let Make_tac :=
     match type of lemma1 with
@@ -131,7 +130,7 @@ Ltac FV Cst add mul sub opp t fv :=
      exact (refl_equal true) || fail "not a valid ring equation") in
   Make_tac ltac:(OnEquation req Main).
 
-Ltac Ring_simplify Cst_tac lemma2 req rl :=
+Ltac Ring_norm_gen f Cst_tac lemma2 req rl :=
   let Make_tac :=
     match type of lemma2 with 
       forall (l:list ?R) (pe:PExpr ?C) (npe:Pol ?C),
@@ -139,12 +138,20 @@ Ltac Ring_simplify Cst_tac lemma2 req rl :=
       req (PEeval ?rO ?add ?mul ?sub ?opp ?phi l pe) _ =>
       let mkFV := FV Cst_tac add mul sub opp in
       let mkPol := mkPolexpr C Cst_tac add mul sub opp in
-      let simpl_ring H := protect_fv "ring" in H in
+      let simpl_ring H := (protect_fv "ring" in H; f H) in
       (fun tac => tac mkFV mkPol simpl_ring lemma2 req rl)
     | _ => fail 1 "ring anomaly: bad correctness lemma"
     end in
-  Make_tac ReflexiveRewriteTactic.
+  Make_tac ReflexiveNormTactic.
 
+Ltac Ring_simplify := Ring_norm_gen ltac:(fun H => rewrite H).
+Ltac Ring_simplify_in hyp := Ring_norm_gen ltac:(fun H => rewrite H in hyp).
+Ltac Ring_nf Cst_tac lemma2 req rl f :=
+  let on_rhs H :=
+    match type of H with
+    | req _ ?rhs => f rhs
+    end in
+  Ring_norm_gen on_rhs Cst_tac lemma2 req rl.
 
 Tactic Notation (at level 0) "ring" :=
   ring_lookup
@@ -155,6 +162,11 @@ Tactic Notation (at level 0) "ring_simplify" constr_list(rl) :=
   ring_lookup
     (fun req sth ext morph arth cst_tac lemma1 lemma2 pre post rl =>
        pre(); Ring_simplify cst_tac lemma2 req rl; post()) rl.
+
+Tactic Notation (at level 0) "ring_simplify" constr_list(rl) "in" hyp(h) :=
+  ring_lookup
+    (fun req sth ext morph arth cst_tac lemma1 lemma2 pre post rl =>
+       pre(); Ring_simplify_in h cst_tac lemma2 req rl; post()) rl.
 
 (* A simple macro tactic to be prefered to ring_simplify *)
 Ltac ring_replace t1 t2 := replace t1 with t2 by ring.

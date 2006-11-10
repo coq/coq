@@ -92,12 +92,12 @@ Ltac Field_simplify lemma Cond_lemma req Cst_tac :=
         _ =>
         let mkFV := FFV Cst_tac radd rmul rsub ropp rdiv rinv in
         let mkFE := mkFieldexpr C Cst_tac radd rmul rsub ropp rdiv rinv in
-        let simpl_field H := protect_fv "field" in H in
-        fun f rl => f mkFV mkFE simpl_field lemma req rl;
+        let field_rw H := (protect_fv "field" in H; rewrite H) in
+        fun f rl => f mkFV mkFE field_rw lemma req rl;
                     try (apply Cond_lemma; simpl_PCond req)
     | _ => fail 1 "field anomaly: bad correctness lemma (rewr)"
     end in
-  Make_tac ReflexiveRewriteTactic.
+  Make_tac ReflexiveNormTactic.
 (* Pb: second rewrite are applied to non-zero condition of first rewrite... *)
 
 Tactic Notation (at level 0) "field_simplify" constr_list(rl) :=
