@@ -11,7 +11,6 @@ Require Export Ring.
 Set Implicit Arguments.
 
 Ltac isnatcst t :=
-  let t := eval hnf in t in
   match t with
     O => true
   | S ?p => isnatcst p

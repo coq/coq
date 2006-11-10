@@ -13,7 +13,6 @@ Import InitialRing.
 Set Implicit Arguments.
 
 Ltac isZcst t :=
-  let t := eval hnf in t in
   match t with
     Z0 => constr:true
   | Zpos ?p => isZcst p
