@@ -177,6 +177,12 @@ open Tactics
 open Tacticals
 
 let id x = x
+let filter_map f l = 
+  let rec aux acc = function
+      hd :: tl -> (match f hd with Some t -> aux (t :: acc) tl
+		     | None -> aux acc tl)
+    | [] -> List.rev acc
+  in aux [] l
 
 let build_dependent_sum l =
   let rec aux names conttac conttype = function
@@ -279,13 +285,146 @@ let destruct_ex ext ex =
 
 open Rawterm
 
-
+let rec concatMap f l = 
+  match l with
+      hd :: tl -> f hd @ concatMap f tl      
+    | [] -> []
+	
 let list_mapi f = 
   let rec aux i = function 
       hd :: tl -> f i hd :: aux (succ i) tl 
     | [] -> []
   in aux 0
 
+(*
+let make_discr (loc, po, tml, eqns) =
+  let mkHole = RHole (dummy_loc, InternalHole) in
+  
+  let rec vars_of_pat = function
+      RPatVar (loc, n) -> (match n with Anonymous -> [] | Name n -> [n])
+    | RPatCstr (loc, csrt, pats, _) -> 
+	concatMap vars_of_pat pats
+  in
+  let rec constr_of_pat l = function 
+      RPatVar (loc, n) -> 
+	(match n with 
+	     Anonymous -> 
+	       let n = next_name_away_from "x" l in
+		 RVar n, (n :: l)
+	   | Name n -> RVar n, l)
+    | RPatCstr (loc, csrt, pats, _) -> 
+	let (args, vars) =
+	  List.fold_left
+	    (fun (args, vars) x ->
+	       let c, vars = constr_of_pat vars x in
+		 c :: args, vars)
+	    ([], l) pats
+	in		 
+	  RApp ((RRef (dummy_loc, ConstructRef cstr)), args), vars
+  in
+  let rec constr_of_pat l = function 
+      RPatVar (loc, n) -> 
+	(match n with 
+	     Anonymous -> 
+	       let n = next_name_away_from "x" l in
+		 RVar n, (n :: l)
+	   | Name n -> RVar n, l)
+    | RPatCstr (loc, csrt, pats, _) -> 
+	let (args, vars) =
+	  List.fold_left
+	    (fun (args, vars) x ->
+	       let c, vars = constr_of_pat vars x in
+		 c :: args, vars)
+	    ([], l) pats
+	in		 
+	  RApp ((RRef (dummy_loc, ConstructRef cstr)), args), vars
+  in
+  let constrs_of_pats v l =
+    List.fold_left 
+      (fun (v, acc) x -> 
+	 let x', v' = constr_of_pat v x in
+	   (l', v' :: acc))
+      (v, []) l
+  in
+  let rec pat_of_pat l = function
+      RPatVar (loc, n) -> 
+	let n', l = match n with
+	    Anonymous -> 
+	      let n = next_name_away_from "x" l in
+		n, n :: l
+	  | Name n -> n, n :: l 
+	in
+	  RPatVar (loc, Name n'), l
+    | RPatCstr (loc, cstr, pats, (loc, alias)) ->
+	let args, vars, s = 
+	  List.fold_left (fun (args, vars) x -> 
+			    let pat', vars = pat_of_pat vars pat in
+			      pat' :: args, vars)
+	    ([], alias :: l) pats
+	in RPatCstr (loc, cstr, args, (loc, alias)), vars
+  in
+  let pats_of_pats l =
+    List.fold_left 
+      (fun (v, acc) x -> 
+	 let x', v' = pat_of_pat v x in
+	   (v', x' :: acc))
+      ([], []) l
+  in
+  let eq_of_pat p used c = 
+    let constr, vars' = constr_of_pat used p in
+    let eq = RApp (dummy_loc, RRef (dummy_loc, Lazy.force eqind_ref), [mkHole; constr; c]) in
+      vars', eq
+  in
+  let eqs_of_pats ps used cstrs =
+    List.fold_left2 
+      (fun (vars, eqs) pat c ->
+	 let (vars', eq) = eq_of_pat pat c in
+	   match eqs with 
+	       None -> Some eq 
+	     | Some eqs ->
+		 Some (RApp (dummy_loc, RRef (dummy_loc, Lazy.force and_ref), [eq, eqs])))
+      (used, None) ps cstrs
+  in
+  let quantify c l =
+    List.fold_left
+      (fun acc name -> RProd (dummy_loc, name, mkHole, acc))
+      c l
+  in
+  let quantpats = 
+    List.fold_left
+      (fun (acc, pats) ((loc, idl, cpl, c) as x) ->
+	 let vars, cpl = pats_of_pats cpl in
+	 let l', constrs = constrs_of_pats vars cpl in	   
+	 let discrs = 
+	   List.map (fun (_, _, cpl', _) -> 
+		       let qvars, eqs = eqs_of_pats cpl' l' constrs in
+		       let neg = RApp (dummy_loc, RRef (dummy_loc, Lazy.force not_ref), [out_some eqs]) in
+		       let pat_ineq = quantify qvars neg in
+			 
+		    )
+	     pats in
+	   
+			 
+
+
+	   
+	   
+
+	   (x, pat_ineq))
+  in
+    List.fold_left 
+      (fun acc ((loc, idl, cpl, c0) pat) -> 
+    
+		
+		let c' = 
+		  List.fold_left 
+		    (fun acc (n, t) ->
+		       RLambda (dummy_loc, n, mkHole, acc))
+		    c eqs_types
+		in (loc, idl, cpl, c'))
+      eqns
+  i
+*)
 let rewrite_cases_aux (loc, po, tml, eqns) =
   let tml = list_mapi (fun i (c, (n, opt)) -> c, 
 		       ((match n with

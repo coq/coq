@@ -150,14 +150,6 @@ let collect_non_rec env =
   in 
   searchrec [] 
 
-
-let filter_map f l = 
-  let rec aux acc = function
-      hd :: tl -> (match f hd with Some t -> aux (t :: acc) tl
-		     | None -> aux acc tl)
-    | [] -> List.rev acc
-  in aux [] l
-
 let list_of_local_binders l = 
   let rec aux acc = function
       Topconstr.LocalRawDef (n, c) :: tl -> aux ((n, Some c, None) :: acc) tl

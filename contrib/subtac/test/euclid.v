@@ -1,6 +1,15 @@
 
 Notation "( x & y )" := (@existS _ _ x y) : core_scope.
 Unset Printing All.
+Require Import Coq.Arith.Compare_dec.
+  
+Program Fixpoint euclid (a : nat) (b : { b : nat | b <> O }) {wf a lt}  :
+  { q : nat & { r : nat | a = b * q + r /\ r < b } } :=
+  if le_lt_dec b a then let (q', r) := euclid (a - b) b in 
+  (S q' & r)
+  else (O & a).
+
+Obligations.
 
 Definition t := fun (Evar46 : forall a : nat, (fun y : nat => @eq nat a y) a) (a : nat) =>
 @existS nat (fun x : nat => @sig nat (fun y : nat => @eq nat x y)) a
@@ -8,6 +17,12 @@ Definition t := fun (Evar46 : forall a : nat, (fun y : nat => @eq nat a y) a) (a
 
 Program Definition testsig (a : nat) : { x : nat & { y : nat | x = y } } :=
   (a & a).
+
+Obligation 1.
+intros ; simpl ; auto.
+Qed.
+
+Solve Obligations using auto.
 reflexivity.
 Defined.
 
