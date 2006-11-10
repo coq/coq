@@ -89,7 +89,7 @@ and pp_sg sg =
  *  meta_map correspond à celui des buts qui seront engendrés par le refine.
  *)
 
-let replace_by_meta env = function
+let replace_by_meta env sigma = function
   | TH (m, mm, sgp) when isMeta (strip_outer_cast m) -> m,mm,sgp
   | (TH (c,mm,_)) as th ->
       let n = Evarutil.new_meta() in
@@ -101,7 +101,7 @@ let replace_by_meta env = function
 	| Lambda (Anonymous,c1,c2) when isCast c2 ->
 	    let _,_,t = destCast c2 in mkArrow c1 t
 	| _ -> (* (App _ | Case _) -> *)
-	    Retyping.get_type_of_with_meta env Evd.empty mm c
+	    Retyping.get_type_of_with_meta env sigma mm c
 	(*
 	| Fix ((_,j),(v,_,_)) ->
 	    v.(j) (* en pleine confiance ! *)
@@ -112,12 +112,12 @@ let replace_by_meta env = function
 
 exception NoMeta
 
-let replace_in_array keep_length env a =
+let replace_in_array keep_length env sigma a =
   if array_for_all (function (TH (_,_,[])) -> true | _ -> false) a then
     raise NoMeta;
   let a' = Array.map (function
 			| (TH (c,mm,[])) when not keep_length -> c,mm,[]
-			| th -> replace_by_meta env th) a 
+			| th -> replace_by_meta env sigma th) a 
   in
   let v' = Array.map pi1 a' in
   let mm = Array.fold_left (@) [] (Array.map pi2 a') in
@@ -128,7 +128,7 @@ let fresh env n =
   let id = match n with Name x -> x | _ -> id_of_string "_" in
   next_global_ident_away true id (ids_of_named_context (named_context env))
 
-let rec compute_metamap env c = match kind_of_term c with
+let rec compute_metamap env sigma c = match kind_of_term c with
   (* le terme est directement une preuve *)
   | (Const _ | Evar _ | Ind _ | Construct _ |
     Sort _ | Var _ | Rel _) -> 
@@ -148,12 +148,12 @@ let rec compute_metamap env c = match kind_of_term c with
   | Lambda (name,c1,c2) ->
       let v = fresh env name in
       let env' = push_named (v,None,c1) env in
-      begin match compute_metamap env' (subst1 (mkVar v) c2) with
+      begin match compute_metamap env' sigma (subst1 (mkVar v) c2) with
 	(* terme de preuve complet *)
 	| TH (_,_,[]) -> TH (c,[],[])
 	(* terme de preuve incomplet *)    
 	| th ->
-	    let m,mm,sgp = replace_by_meta env' th in
+	    let m,mm,sgp = replace_by_meta env' sigma th in
 	    TH (mkLambda (Name v,c1,m), mm, sgp)
       end
 
@@ -162,21 +162,21 @@ let rec compute_metamap env c = match kind_of_term c with
 	error "Refine: body of let-in cannot contain existentials";
       let v = fresh env name in
       let env' = push_named (v,Some c1,t1) env in
-      begin match compute_metamap env' (subst1 (mkVar v) c2) with
+      begin match compute_metamap env' sigma (subst1 (mkVar v) c2) with
 	(* terme de preuve complet *)
 	| TH (_,_,[]) -> TH (c,[],[])
 	(* terme de preuve incomplet *)    
 	| th ->
-	    let m,mm,sgp = replace_by_meta env' th in
+	    let m,mm,sgp = replace_by_meta env' sigma th in
 	    TH (mkLetIn (Name v,c1,t1,m), mm, sgp)
       end
 
   (* 4. Application *)
   | App (f,v) ->
-      let a = Array.map (compute_metamap env) (Array.append [|f|] v) in
+      let a = Array.map (compute_metamap env sigma) (Array.append [|f|] v) in
       begin
 	try
-	  let v',mm,sgp = replace_in_array false env a in
+	  let v',mm,sgp = replace_in_array false env sigma a in
           let v'' = Array.sub v' 1 (Array.length v) in
           TH (mkApp(v'.(0), v''),mm,sgp)
 	with NoMeta ->
@@ -187,10 +187,10 @@ let rec compute_metamap env c = match kind_of_term c with
       (* bof... *)
       let nbr = Array.length v in
       let v = Array.append [|p;cc|] v in
-      let a = Array.map (compute_metamap env) v in
+      let a = Array.map (compute_metamap env sigma) v in
       begin
 	try
-	  let v',mm,sgp = replace_in_array false env a in
+	  let v',mm,sgp = replace_in_array false env sigma a in
 	  let v'' = Array.sub v' 2 nbr in
 	  TH (mkCase (ci,v'.(0),v'.(1),v''),mm,sgp)
 	with NoMeta ->
@@ -204,12 +204,12 @@ let rec compute_metamap env c = match kind_of_term c with
       let fi' = Array.map (fun id -> Name id) vi in
       let env' = push_named_rec_types (fi',ai,v) env in
       let a = Array.map
-		(compute_metamap env')
+		(compute_metamap env' sigma)
 		(Array.map (substl (List.map mkVar (Array.to_list vi))) v) 
       in
       begin
 	try
-	  let v',mm,sgp = replace_in_array true env' a in
+	  let v',mm,sgp = replace_in_array true env' sigma a in
 	  let fix = mkFix ((ni,i),(fi',ai,v')) in
 	  TH (fix,mm,sgp)
 	with NoMeta ->
@@ -217,7 +217,7 @@ let rec compute_metamap env c = match kind_of_term c with
       end
 	      
   (* Cast. Est-ce bien exact ? *)
-  | Cast (c,_,t) -> compute_metamap env c
+  | Cast (c,_,t) -> compute_metamap env sigma c
       (*let TH (c',mm,sgp) = compute_metamap sign c in
 	TH (mkCast (c',t),mm,sgp) *)
       
@@ -234,12 +234,12 @@ let rec compute_metamap env c = match kind_of_term c with
       let fi' = Array.map (fun id -> Name id) vi in
       let env' = push_named_rec_types (fi',ai,v) env in
       let a = Array.map
-		(compute_metamap env')
+		(compute_metamap env' sigma)
 		(Array.map (substl (List.map mkVar (Array.to_list vi))) v) 
       in
       begin
 	try
-	  let v',mm,sgp = replace_in_array true env' a in
+	  let v',mm,sgp = replace_in_array true env' sigma a in
 	  let cofix = mkCoFix (i,(fi',ai,v')) in
 	  TH (cofix,mm,sgp)
 	with NoMeta ->
@@ -341,5 +341,5 @@ let refine oc gl =
   let (sigma,c) = Evarutil.evars_to_metas sigma oc in
   (* Relies on Cast's put on Meta's by evars_to_metas, because it is otherwise 
      complicated to update meta types when passing through a binder *)
-  let th = compute_metamap (pf_env gl) c in
+  let th = compute_metamap (pf_env gl) sigma c in
   tclTHEN (Refiner.tclEVARS sigma) (tcc_aux [] th) gl

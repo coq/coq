@@ -87,3 +87,15 @@ refine
      | exist _ _ => _
      end).
 Abort.
+
+
+(* Use to fail because sigma was not propagated to get_type_of *)
+(* Revealed by r9310, fixed in r9359 *)
+
+Goal
+  forall f : forall a (H:a=a), Prop,
+ (forall a (H:a = a :> nat), f a H -> True /\ True) -> 
+  True.
+intros.
+refine (@proj1 _ _ (H 0 _ _)).
+Abort.
