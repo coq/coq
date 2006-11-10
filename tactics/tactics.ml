@@ -562,14 +562,21 @@ let find_matching_clause unifier clause =
     with NotExtensibleClause -> failwith "Cannot apply"
   in find clause
 
-let apply_in_once gls innerclause (d,lbind) =
-  let thm = nf_betaiota (pf_type_of gls d) in
-  let clause = make_clenv_binding gls (d,thm) lbind in
+let progress_with_clause innerclause clause =
   let ordered_metas = List.rev (clenv_independent clause) in
   if ordered_metas = [] then error "Statement without assumptions";
   let f mv = find_matching_clause (clenv_fchain mv clause) innerclause in
   try list_try_find f ordered_metas
   with Failure _ -> error "Unable to unify"
+
+let apply_in_once gls innerclause (d,lbind) =
+  let thm = nf_betaiota (pf_type_of gls d) in
+  let rec aux clause =
+    try progress_with_clause innerclause clause
+    with err ->
+    try aux (clenv_push_prod clause)
+    with NotExtensibleClause -> raise err
+  in aux (make_clenv_binding gls (d,thm) lbind)
 
 let apply_in id lemmas gls =
   let t' = pf_get_hyp_typ gls id in

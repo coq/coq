@@ -12,3 +12,11 @@ Goal forall x y z, ~ z <= 0 -> x * z < y * z -> x <= y.
 intros; apply Znot_le_gt, Zgt_lt in H.
 apply Zmult_lt_reg_r, Zlt_le_weak in H0; auto.
 Qed.
+
+(* Check if it unfolds when there are not enough premises *)
+
+Goal forall n, n = S n -> False.
+intro.
+apply n_Sn in H.
+assumption.
+Qed.
