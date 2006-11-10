@@ -591,3 +591,6 @@ let rec string_of_list sep f = function
     [] -> ""
   | x :: [] -> f x
   | x :: ((y :: _) as tl) -> f x ^ sep ^ string_of_list sep f tl
+
+let string_of_intset d = 
+  string_of_list "," string_of_int (Intset.elements d)

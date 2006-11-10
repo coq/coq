@@ -364,52 +364,6 @@ let build_mutrec l boxed =
 
   let (lnonrec,(namerec,defrec,arrec,nvrec)) = 
     collect_non_rec env lrecnames recdef arityl nv in
-  let declare arrec defrec =
-    let recvec = 
-      Array.map (subst_vars (List.rev (Array.to_list namerec))) defrec in
-    let recdecls = (Array.map (fun id -> Name id) namerec, arrec, recvec) in
-    let rec declare i fi =
-      (try trace (str "Declaring: " ++ pr_id fi ++ spc () ++
-		  my_print_constr env (recvec.(i)));
-       with _ -> ());
-      let ce = 
-	{ const_entry_body = mkFix ((nvrec,i),recdecls); 
-          const_entry_type = Some arrec.(i);
-          const_entry_opaque = false;
-          const_entry_boxed = boxed} in
-      let kn = Declare.declare_constant fi (DefinitionEntry ce,IsDefinition Fixpoint)
-      in (ConstRef kn)
-    in 
-      (* declare the recursive definitions *)
-    let lrefrec = Array.mapi declare namerec in
-      Options.if_verbose ppnl (recursive_message lrefrec);
-
-
-      (*(* The others are declared as normal definitions *)
-      let var_subst id = (id, Constrintern.global_reference id) in
-      let _ = 
-	List.fold_left
-	  (fun subst (f,def,t) ->
-	     let ce = { const_entry_body = replace_vars subst def;
-			const_entry_type = Some t;
-			const_entry_opaque = false;
-			const_entry_boxed = boxed } in
-	     let _ =
-	       Declare.declare_constant f (DefinitionEntry ce,IsDefinition Definition)
-	     in
-      	       warning ((string_of_id f)^" is non-recursively defined");
-      	       (var_subst f) :: subst)
-	  (List.map var_subst (Array.to_list namerec))
-	  lnonrec 
-      in*)
-      List.iter (fun (df,c,scope) ->
-		   Metasyntax.add_notation_interpretation df [] c scope) notations
-  in 
-  let declare l = 
-    let recvec = Array.of_list l
-    and arrec = Array.map pi3 arrec
-    in declare arrec recvec
-  in
   let recdefs = Array.length defrec in
     trace (int recdefs ++ str " recursive definitions");
     (* Solve remaining evars *)
@@ -430,11 +384,11 @@ let build_mutrec l boxed =
 	Termops.it_mkNamedProd_or_LetIn typ (Environ.named_context rec_sign) 
       in
       let evars, def = Eterm.eterm_obligations id nc_len evm def (Some typ) in
-	collect_evars (succ i) ((id, def, typ, evars) :: acc)
+	collect_evars (succ i) ((id, nvrec.(i), def, typ, evars) :: acc)
     else acc
   in 
   let defs = collect_evars 0 [] in
-    Subtac_obligations.add_mutual_definitions defs
+    Subtac_obligations.add_mutual_definitions (List.rev defs)
       
 let out_n = function
     Some n -> n

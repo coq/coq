@@ -141,7 +141,8 @@ let eterm_obligations name nclen evm t tycon =
 	 let hyps = trunc_named_context nclen hyps in
 	 trace (str "Named context is: " ++ Printer.pr_named_context (Global.env ()) hyps);
 	 let evtyp, deps = etype_of_evar l ev hyps in
-	 trace (str "Evar " ++ str (string_of_int n) ++ str "'s type is: " ++ Termops.print_constr_env (Global.env ()) evtyp);
+	 trace (str "Evar " ++ str (string_of_int n) ++ str "'s type is: " ++ Termops.print_constr_env (Global.env ()) evtyp ++
+		  str " depends on evars : " ++ str (Subtac_utils.string_of_intset deps));
 	 let y' = (id, ((n, nstr), hyps, evtyp, deps)) in
 	   y' :: l) 
       evn []
