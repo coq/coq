@@ -135,7 +135,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/ZArith/Int.v
   </dd>
 
-  <dt> <b>Reals</b>:
+  <dt> <b>QArith</b>:
     Rational numbers
   </dt>
   <dd>
@@ -144,6 +144,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/QArith/Qring.v
     (theories/QArith/QArith.v)
     theories/QArith/Qreals.v
+    theories/QArith/Qcanon.v
   </dd>
     
   <dt> <b>Reals</b>:
