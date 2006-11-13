@@ -578,14 +578,35 @@ let recursive_message v =
 		    spc () ++ str "are recursively defined")
 
 (* Solve an obligation using tactics, return the corresponding proof term *)
+(*
 let solve_by_tac ev t =
   debug 1 (str "Solving goal using tactics: " ++ Evd.pr_evar_info ev);
   let goal = Proof_trees.mk_goal ev.evar_hyps ev.evar_concl None in
+  debug 1 (str "Goal created");
   let ts = Tacmach.mk_pftreestate goal in
+  debug 1 (str "Got pftreestate");
   let solved_state = Tacmach.solve_pftreestate t ts in
-  let c = Tacmach.extract_pftreestate solved_state in
+  debug 1 (str "Solved goal");
+    let _, l = Tacmach.extract_open_pftreestate solved_state in
+      List.iter (fun (_, x) -> debug 1 (str "left hole of type " ++ my_print_constr (Global.env()) x)) l;
+    let c = Tacmach.extract_pftreestate solved_state in
+    debug 1 (str "Extracted term");
     debug 1 (str "Term constructed in solve by tac: " ++ my_print_constr (Global.env ()) c);
     c
+    *)
+
+let solve_by_tac evi t =
+  debug 1 (str "Solving goal using tactics: " ++ Evd.pr_evar_info evi);
+  let id = id_of_string "H" in
+  Pfedit.start_proof id (Decl_kinds.Local,Decl_kinds.Proof Decl_kinds.Lemma) evi.evar_hyps evi.evar_concl
+    (fun _ _ -> ());
+  try
+    Pfedit.by (tclCOMPLETE t);
+    let _,(const,_,_) = Pfedit.cook_proof () in 
+      Pfedit.delete_current_proof (); const.Entries.const_entry_body
+  with e when Logic.catchable_exception e -> 
+    Pfedit.delete_current_proof();
+    raise Exit
 
 let rec string_of_list sep f = function
     [] -> ""

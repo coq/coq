@@ -300,11 +300,14 @@ let solve_obligations n tac =
 		 match x.obl_body with 
 		     Some _ -> x
 		   | None -> 
-		       try
-			 let t = Subtac_utils.solve_by_tac (evar_of_obligation x) tac in
-			   decr rem;
-			   { x with obl_body = Some t }
-		       with _ -> x)
+		       (try
+			  let t = Subtac_utils.solve_by_tac (evar_of_obligation x) tac in
+			    decr rem;
+			    { x with obl_body = Some t }
+			with UserError (s, cmds) ->
+			  debug 1 cmds;
+			  x
+			  | _ -> x))
       obls
   in
     update_obls prg obls' !rem
