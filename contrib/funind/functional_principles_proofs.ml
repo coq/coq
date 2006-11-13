@@ -1380,219 +1380,6 @@ let is_valid_hypothesis predicates_name =
 	| _ -> false 
   in
   is_valid_hypothesis 
-(*
-let fresh_id avoid na = 
-  let id =  
-    match na with 
-      | Name id -> id 
-      | Anonymous -> h_id 
-  in 
-  next_global_ident_away true id avoid
-
-
-let prove_principle_for_gen
-    (f_ref,functional_ref,eq_ref) tcc_lemma_ref is_mes
-    rec_arg_num rec_arg_type relation = 
-  fun g -> 
-    let type_of_goal = pf_concl g in 
-    let goal_ids = pf_ids_of_hyps g in 
-    let goal_elim_infos = compute_elim_sig type_of_goal in 
-    let params_names,ids = List.fold_left 
-      (fun (params_names,avoid) (na,_,_) -> 
-	 let new_id = fresh_id avoid na in 
-	 (new_id::params_names,new_id::avoid)
-      )
-      ([],goal_ids)
-      goal_elim_infos.params
-    in
-    let predicates_names,ids = 
-      List.fold_left 
-	(fun (predicates_names,avoid) (na,_,_) -> 
-	   let new_id = fresh_id avoid na in 
-	   (new_id::predicates_names,new_id::avoid)
-	)
-	([],ids)
-	goal_elim_infos.predicates
-    in
-    let branches_names,ids = 
-      List.fold_left 
-	(fun (branches_names,avoid) (na,_,_) -> 
-	   let new_id = fresh_id avoid na in 
-	   (new_id::branches_names,new_id::avoid)
-	)
-	([],ids)
-	goal_elim_infos.branches
-    in
-    let to_intro = params_names@predicates_names@branches_names in 
-    let nparams = List.length params_names in 
-    let rec_arg_num = rec_arg_num - nparams in 
-    let tac_intro_static = h_intros to_intro in 
-    let args_info = ref None in 
-    let arg_tac g =  (* introducing args *)
-      let ids = pf_ids_of_hyps g in 
-      let func_body = def_of_const (mkConst functional_ref) in
-      (* 	      let _ = Pp.msgnl (Printer.pr_lconstr func_body) in  *)
-      let (f_name, _, body1) = destLambda func_body in
-      let f_id =
-	match f_name with
-	  | Name f_id -> next_global_ident_away true f_id ids
-	  | Anonymous -> anomaly "anonymous function"
-      in
-      let n_names_types,_ = decompose_lam body1 in 
-      let n_ids,ids = 
-	List.fold_left 
-	  (fun (n_ids,ids) (n_name,_) -> 
-	     match n_name with 
-	       | Name id -> 
-		   let n_id = next_global_ident_away true id ids in 
-		   n_id::n_ids,n_id::ids
-	       | _ -> anomaly "anonymous argument"
-	  )
-	  ([],(f_id::ids))
-	  n_names_types
-      in
-      let rec_arg_id = List.nth n_ids (rec_arg_num - 1 ) in
-      let args_ids = snd (list_chop nparams n_ids) in
-      args_info := Some (ids,args_ids,rec_arg_id);
-      h_intros args_ids g
-    in
-    let wf_tac = 
-      if is_mes 
-      then 
-	(fun b -> Recdef.tclUSER_if_not_mes b None)
-      else fun _ -> prove_with_tcc tcc_lemma_ref []
-    in
-    let start_tac g = 
-      let ids,args_ids,rec_arg_id = out_some !args_info in
-      let nargs = List.length args_ids in 
-      let pre_rec_arg = 
-	List.rev_map 
-	  mkVar 
-	  (fst (list_chop (rec_arg_num - 1) args_ids))
-      in
-      let args_before_rec = pre_rec_arg@(List.map mkVar params_names) in
-      let relation = substl args_before_rec relation in 
-      let input_type = substl args_before_rec rec_arg_type in 
-      let wf_thm = next_global_ident_away true (id_of_string ("wf_R")) ids in 
-      let wf_rec_arg = 
-	next_global_ident_away true 
-	  (id_of_string ("Acc_"^(string_of_id rec_arg_id)))
-	  (wf_thm::ids) 
-      in 
-      let hrec = next_global_ident_away true hrec_id (wf_rec_arg::wf_thm::ids) in 
-      let acc_inv = 
-	lazy (
-	  mkApp (
-	    delayed_force acc_inv_id,
-	    [|input_type;relation;mkVar rec_arg_id|]
-	  )
-	)
-      in
-      (tclTHENS
-	   (observe_tac 
-	      "first assert" 
-	      (assert_tac 
-		 true (* the assert thm is in first subgoal *)
-		 (Name wf_rec_arg) 
-		 (mkApp (delayed_force acc_rel,
-			 [|input_type;relation;mkVar rec_arg_id|])
-		 )
-	      )
-	   )
-	   [
-	     (* accesibility proof *) 
-	     tclTHENS 
-	       (observe_tac 
-		  "second assert" 
-		  (assert_tac 
-		     true 
-		     (Name wf_thm)
-		     (mkApp (delayed_force well_founded,[|input_type;relation|]))
-		  )
-	       )
-	       [ 
-		 (* interactive proof of the well_foundness of the relation *) 
-		 wf_tac is_mes;
-		 (* well_foundness -> Acc for any element *)
-		 observe_tac 
-		   "apply wf_thm" 
-		   (h_apply ((mkApp(mkVar wf_thm,
-				    [|mkVar rec_arg_id |])),Rawterm.NoBindings)
-		   )
-	       ]
-	     ;
-	     (* rest of the proof *)
-	     tclTHENSEQ
-	       [
-		 observe_tac "generalize" (fun g -> 
-		    let to_thin = 
-		      fst (list_chop ( nargs + 1) (pf_ids_of_hyps g))
-		    in
-		    let to_thin_c = List.rev_map mkVar to_thin in 
-		    tclTHEN (generalize to_thin_c) (observe_tac "thin" (h_clear false to_thin)) g
-		 );
-		 observe_tac "h_fix" (h_fix (Some hrec) (nargs+1));
-		h_intros args_ids;
-		h_intro wf_rec_arg;
-		Equality.rewriteLR (mkConst eq_ref);
-		(fun g' -> 
-		   let body = 
-		     let _,args = destApp (pf_concl g') in 
-		     array_last args
-		   in
-		   let body_info rec_hyps = 
-		     {
-		       nb_rec_hyps = List.length rec_hyps;
-		       rec_hyps = rec_hyps;
-		       eq_hyps = [];
-		       info = body
-		     }
-		   in 
-		   let acc_inv = lazy (mkApp(Lazy.force acc_inv, [|mkVar  wf_rec_arg|]) )  in
-		   let pte_info = 
-		     { proving_tac =
-			 (fun eqs -> 
-			    observe_tac "new_prove_with_tcc" 
-			      (new_prove_with_tcc is_mes acc_inv hrec  tcc_lemma_ref (List.map mkVar eqs))
-			 );
-		       is_valid = is_valid_hypothesis predicates_names 
-		     }
-		   in
-		   let ptes_info : pte_info Idmap.t = 
-		     List.fold_left
-		       (fun map pte_id -> 
-			  Idmap.add pte_id 
-			    pte_info			       
-			    map
-		       )
-		       Idmap.empty
-		       predicates_names
-		   in
-		   let make_proof rec_hyps = 
-		     build_proof 
-		       false 
-		       [f_ref]
-		       ptes_info
-		       (body_info rec_hyps)
-		   in
-		   instanciate_hyps_with_args 
-		     make_proof
-		     branches_names
-		     args_ids
-		     g'
-		     
-		) 
-	       ]
-	   ]
-	   g
-      )
-      in
-      tclTHENSEQ 
-	[tac_intro_static;
-	 arg_tac;
-	 start_tac
-	] g
-*)
 
 let prove_principle_for_gen
     (f_ref,functional_ref,eq_ref) tcc_lemma_ref is_mes
@@ -1627,14 +1414,22 @@ let prove_principle_for_gen
   in
   let real_rec_arg_num = rec_arg_num - princ_info.nparams in 
   let npost_rec_arg = princ_info.nargs - real_rec_arg_num + 1 in 
+  observe (
+    str "princ_type := " ++ pr_lconstr  princ_type ++ fnl () ++
+    str "princ_info.nparams := " ++ int princ_info.nparams ++ fnl () ++ 
+      str "princ_info.nargs := " ++ int princ_info.nargs ++ fnl () ++ 
+    str "rec_arg_num := " ++ int rec_arg_num ++ fnl() ++ 
+	     str "real_rec_arg_num := " ++ int real_rec_arg_num ++ fnl () ++
+	     str "npost_rec_arg := " ++ int npost_rec_arg );
   let (post_rec_arg,pre_rec_arg) = 
     Util.list_chop npost_rec_arg princ_info.args
   in
   let rec_arg_id = 
-    match post_rec_arg with 
+    match List.rev post_rec_arg with 
       | (Name id,_,_)::_ -> id 
       | _ -> assert false 
   in
+  observe (str "rec_arg_id := " ++ pr_lconstr (mkVar rec_arg_id));
   let subst_constrs = List.map (fun (na,_,_) -> mkVar (Nameops.out_name na)) (pre_rec_arg@princ_info.params) in 
   let relation = substl subst_constrs relation in 
   let input_type = substl subst_constrs rec_arg_type in 
@@ -1679,7 +1474,7 @@ let prove_principle_for_gen
  	 (mkApp (delayed_force acc_rel,[|input_type;relation;mkVar rec_arg_id|]))
       );
       observe_tac "reverting" (revert (List.rev (acc_rec_arg_id::args_ids)));
-      observe_tac "h_fix" (h_fix (Some fix_id) (real_rec_arg_num + 1)); 
+      observe_tac "h_fix" (h_fix (Some fix_id) (npost_rec_arg + 1)); 
       h_intros (List.rev (acc_rec_arg_id::args_ids));
       Equality.rewriteLR (mkConst eq_ref);
       observe_tac "finish" (fun gl' -> 
