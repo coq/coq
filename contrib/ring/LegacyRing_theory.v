@@ -153,7 +153,7 @@ Notation "- x" := (Aopp x).
 Record Ring_Theory : Prop := 
   {Th_plus_comm : forall n m:A, n + m = m + n;
    Th_plus_assoc : forall n m p:A, n + (m + p) = n + m + p;
-   Th_mult_sym : forall n m:A, n * m = m * n;
+   Th_mult_comm : forall n m:A, n * m = m * n;
    Th_mult_assoc : forall n m p:A, n * (m * p) = n * m * p;
    Th_plus_zero_left : forall n:A, 0 + n = n;
    Th_mult_one_left : forall n:A, 1 * n = n;
@@ -165,7 +165,7 @@ Variable T : Ring_Theory.
 
 Let plus_comm := Th_plus_comm T.
 Let plus_assoc := Th_plus_assoc T.
-Let mult_comm := Th_mult_sym T.
+Let mult_comm := Th_mult_comm T.
 Let mult_assoc := Th_mult_assoc T.
 Let plus_zero_left := Th_plus_zero_left T.
 Let mult_one_left := Th_mult_one_left T. 

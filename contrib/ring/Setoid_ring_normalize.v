@@ -1032,7 +1032,7 @@ Variable T : Setoid_Ring_Theory Aequiv Aplus Amult Aone Azero Aopp Aeq.
 Hint Resolve (STh_plus_comm T).
 Hint Resolve (STh_plus_assoc T).
 Hint Resolve (STh_plus_assoc2 S T).
-Hint Resolve (STh_mult_sym T).
+Hint Resolve (STh_mult_comm T).
 Hint Resolve (STh_mult_assoc T).
 Hint Resolve (STh_mult_assoc2 S T).
 Hint Resolve (STh_plus_zero_left T).

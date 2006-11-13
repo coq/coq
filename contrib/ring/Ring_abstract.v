@@ -428,7 +428,7 @@ Fixpoint interp_ap (p:apolynomial) : A :=
 Hint Resolve (Th_plus_comm T).
 Hint Resolve (Th_plus_assoc T).
 Hint Resolve (Th_plus_assoc2 T).
-Hint Resolve (Th_mult_sym T).
+Hint Resolve (Th_mult_comm T).
 Hint Resolve (Th_mult_assoc T).
 Hint Resolve (Th_mult_assoc2 T).
 Hint Resolve (Th_plus_zero_left T).

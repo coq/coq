@@ -177,7 +177,7 @@ Section Theory_of_setoid_rings.
 Record Setoid_Ring_Theory : Prop := 
   {STh_plus_comm : forall n m:A, n + m == m + n;
    STh_plus_assoc : forall n m p:A, n + (m + p) == n + m + p;
-   STh_mult_sym : forall n m:A, n * m == m * n;
+   STh_mult_comm : forall n m:A, n * m == m * n;
    STh_mult_assoc : forall n m p:A, n * (m * p) == n * m * p;
    STh_plus_zero_left : forall n:A, 0 + n == n;
    STh_mult_one_left : forall n:A, 1 * n == n;
@@ -189,7 +189,7 @@ Variable T : Setoid_Ring_Theory.
 
 Let plus_comm := STh_plus_comm T.
 Let plus_assoc := STh_plus_assoc T.
-Let mult_comm := STh_mult_sym T.
+Let mult_comm := STh_mult_comm T.
 Let mult_assoc := STh_mult_assoc T.
 Let plus_zero_left := STh_plus_zero_left T.
 Let mult_one_left := STh_mult_one_left T. 
