@@ -16,7 +16,7 @@ Qed.
 (* Check if it unfolds when there are not enough premises *)
 
 Goal forall n, n = S n -> False.
-intro.
+intros.
 apply n_Sn in H.
 assumption.
 Qed.
