@@ -115,15 +115,20 @@ test_complexity() {
     for f in $1/*.v; do 
 	nbtests=`expr $nbtests + 1`
 	printf "    "$f"..."
-        # compute effective user time * 100
-	res=`$command $f 2>&1 | sed -n -e "s/Finished transaction in .*(\([0-9]*\)\.\([0-9][0-9]\).*/\1\2/p" | head -1`
+        # compute effective user time (get X seconds, or XX ds, or XXX cs)
+	res=`$command $f 2>&1 | sed -n -e "s/Finished transaction in .*(\([0-9]\)\.\([0-9]*\)u.*)/\1\2/p" | head -1`
 	if [ $? != 0 ]; then
  	    echo "Error! (should be accepted)"
-        else 
+        else
+          # express effective time in cenths of seconds
+	  n=`echo -n $res | wc -c`
+	  if [ $n = 2 ]; then res="$res"0;
+	  else if [ $n = 1 ]; then res="$res"00; fi
+	  fi
           # find expected time * 100
           exp=`sed -n -e "s/(\*.*Expected time < \([0-9]\).\([0-9][0-9]\)s.*\*)/\1\2/p" $f`
           ok=`expr \( $res \* $bogomips \) "<" \( $exp \* 6120 \)`
-          if [ $ok = 1 ]; then
+          if [ "$ok" = 1 ]; then
               echo "Ok"
               nbtestsok=`expr $nbtestsok + 1`
           else
