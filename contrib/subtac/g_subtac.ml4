@@ -37,6 +37,7 @@ struct
   let gec s = Gram.Entry.create ("Subtac."^s)
 		(* types *)
   let subtac_gallina_loc : Vernacexpr.vernac_expr located Gram.Entry.e = gec "subtac_gallina_loc"
+
 end
 
 open SubtacGram 
@@ -63,6 +64,8 @@ GEXTEND Gram
 	  let typ = mkAppC (sigref, [mkLambdaC ([id], c, p)]) in
 	    ([id], typ) ] ];
 
+
+
   END
 
 
@@ -75,8 +78,10 @@ let (wit_subtac_gallina_loc : (Genarg.tlevel, Proof_type.tactic) gallina_loc_arg
 
 VERNAC COMMAND EXTEND Subtac
 [ "Program" subtac_gallina_loc(g) ] -> [ Subtac.subtac g ]
-| [ "Obligation" integer(num) "of" ident(name) ] -> [ Subtac_obligations.subtac_obligation (num, Some name) ]
-| [ "Obligation" integer(num) ] -> [ Subtac_obligations.subtac_obligation (num, None) ]      
+| [ "Obligation" integer(num) "of" ident(name) ":" lconstr(t) ] -> [ Subtac_obligations.subtac_obligation (num, Some name, Some t) ]
+| [ "Obligation" integer(num) "of" ident(name) ] -> [ Subtac_obligations.subtac_obligation (num, Some name, None) ]
+| [ "Obligation" integer(num) ":" lconstr(t) ] -> [ Subtac_obligations.subtac_obligation (num, None, Some t) ]      
+| [ "Obligation" integer(num) ] -> [ Subtac_obligations.subtac_obligation (num, None, None) ]      
 | [ "Solve" "Obligations" "of" ident(name) "using" tactic(t) ] -> [ Subtac_obligations.solve_obligations (Some name) (Tacinterp.interp t) ]
 | [ "Solve" "Obligations" "using" tactic(t) ] -> [ Subtac_obligations.solve_obligations None (Tacinterp.interp t) ]
 | [ "Obligations" "of" ident(name) ] -> [ Subtac_obligations.show_obligations (Some name) ]

@@ -8,7 +8,7 @@ val add_definition : Names.identifier ->  Term.constr -> Term.types ->
 val add_mutual_definitions : 
   (Names.identifier * int * Term.constr * Term.types * obligation_info) list -> unit
 
-val subtac_obligation : int * Names.identifier option -> unit
+val subtac_obligation : int * Names.identifier option * Topconstr.constr_expr option -> unit
 
 val solve_obligations : Names.identifier option -> Proof_type.tactic -> unit
 

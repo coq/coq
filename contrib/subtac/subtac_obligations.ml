@@ -174,16 +174,19 @@ let try_tactics obls =
 	 | _ -> obl)
     obls
         
+let red = Reductionops.nf_betaiota
 
 let init_prog_info n b t deps obls =
   let obls' = 
     Array.mapi
       (fun i (n, t, d) ->
 	 debug 2 (str "Adding obligation " ++ int i ++ str " with deps : " ++ str (string_of_intset d));
-         { obl_name = n ; obl_body = None; obl_type = t; obl_deps = d })
+         { obl_name = n ; obl_body = None; 
+	   obl_type = red t; 
+	   obl_deps = d })
       obls
   in
-    { prg_name = n ; prg_body = b; prg_type = t; prg_obligations = (obls', Array.length obls');
+    { prg_name = n ; prg_body = b; prg_type = red t; prg_obligations = (obls', Array.length obls');
       prg_deps = deps }
     
 let pperror cmd = Util.errorlabstrm "Subtac" cmd
@@ -192,7 +195,9 @@ let error s = pperror (str s)
 let get_prog name =
   let prg_infos = !from_prg in
     match name with
-	Some n -> ProgMap.find n prg_infos
+	Some n -> 
+	  (try ProgMap.find n prg_infos
+	   with Not_found -> error ("No obligations for program " ^ string_of_id n))
       | None -> 
 	  (let n = map_cardinal prg_infos in
 	     match n with 
@@ -254,7 +259,7 @@ let deps_remaining obls x =
 	 else x :: acc)
       deps []
 
-let subtac_obligation (user_num, name) =
+let subtac_obligation (user_num, name, typ) =
   let num = pred user_num in
   let prg = get_prog name in
   let obls, rem = prg.prg_obligations in
@@ -315,12 +320,13 @@ let solve_obligations n tac =
 open Pp
 let show_obligations n =
   let prg = get_prog n in
+  let n = prg.prg_name in
   let obls, rem = prg.prg_obligations in
     msgnl (int rem ++ str " obligation(s) remaining: ");
     Array.iteri (fun i x -> 
 		   match x.obl_body with 
-		       None -> msgnl (int (succ i) ++ str " : " ++ spc () ++ 
-					my_print_constr (Global.env ()) x.obl_type)
+		       None -> msgnl (str "Obligation" ++ spc() ++ int (succ i) ++ spc () ++ str "of" ++ spc() ++ str (string_of_id n) ++ str ":" ++ spc () ++ 
+					my_print_constr (Global.env ()) x.obl_type ++ str "." ++ fnl ())
 		    | Some _ -> ())
       obls
 			

@@ -9,20 +9,19 @@ Program Fixpoint euclid (a : nat) (b : { b : nat | b <> O }) {wf a lt}  :
   (S q' & r)
   else (O & a).
 
-Obligations.
-
 Require Import Coq.subtac.Utils.
 Require Import Coq.subtac.FixSub.
 Require Import Omega.
+Obligations.
 
 Obligation 1.
-  simpl ; intros.
+  intros.
   destruct_exists ; simpl in * ; auto with arith.
   omega.
 Qed.
 
 Obligation 2 of euclid.
-  simpl ; intros.
+  intros.
   destruct_exists ; simpl in * ; auto with arith.
   assert(x0 * S q' = x0 * q' + x0) by auto with arith ; omega.
 Qed.
@@ -32,7 +31,7 @@ Obligation 4 of euclid.
 Qed.
 
 Obligation 3 of euclid.
-  simpl ; intros.
+  intros.
   destruct_exists ; simpl in *.
   omega.
 Qed.
@@ -44,10 +43,10 @@ Extraction le_lt_dec.
 Extraction euclid.
 
 
-Program Definition testsig (a : nat) : { x : nat & { y : nat | x = y } } :=
-  (a & a).
+Program Definition testsig (a : nat) : { x : nat & { y : nat | x < y } } :=
+  (a & S a).
 
 
-Solve Obligations using simpl ; auto.
+Solve Obligations using auto with zarith.
 
 Extraction testsig.
