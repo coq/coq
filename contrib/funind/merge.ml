@@ -529,12 +529,13 @@ let rec merge_types shift accrec1 (ltyp1:(name * rawconstr) list)
             then merge_rec_hyps shift accrec1 ltyp2 filter_shift_stable
             else if isrec1 
                 (* if rec calls in accrec1 and not in ltyp2, add one to ltyp2 *)
-            then merge_rec_hyps shift accrec1 (ltyp2@[name_of_string "concl2",concl2])
+            then  
+                 merge_rec_hyps shift accrec1 (ltyp2@[name_of_string "concl2",concl2])
               filter_shift_stable
             else if isrec2
             then merge_rec_hyps shift [name_of_string "concl1",concl1] ltyp2
               filter_shift_stable_right
-            else [] in
+            else ltyp2 in
           let _ = prstr"\nrechyps : " in
           let _ = List.iter 
             (fun (nm,tp) -> prNamedRConstr (string_of_name nm) tp) rechyps in
@@ -630,11 +631,21 @@ let merge_one_constructor (shift:merge_infos) (typcstr1:rawconstr)
   let hyps2,concl2' = raw_decompose_prod rest2 in
   let ltyp,concl2 = 
     merge_types shift [] (List.rev hyps1) concl1 (List.rev hyps2) concl2' in
+  let _ = prstr "ltyp result: " in
+  let _ = List.iter (fun (nm,tp) -> prNamedRConstr (string_of_name nm) tp) ltyp in
   let typ = raw_compose_prod concl2 (List.rev ltyp) in
   let revargs1 = 
     list_filteri (fun i _ -> isArg_stable shift.lnk1.(i)) (List.rev allargs1) in
+  let _ = prstr "ltyp allargs1: " in
+  let _ = List.iter (fun (nm,tp) -> prNamedRConstr (string_of_name nm) tp) allargs1 in
+  let _ = prstr "ltyp revargs1: " in
+  let _ = List.iter (fun (nm,tp) -> prNamedRConstr (string_of_name nm) tp) revargs1 in
   let revargs2 = 
     list_filteri (fun i _ -> isArg_stable shift.lnk2.(i)) (List.rev allargs2) in
+  let _ = prstr "ltyp allargs12: " in
+  let _ = List.iter (fun (nm,tp) -> prNamedRConstr (string_of_name nm) tp) allargs2 in
+  let _ = prstr "ltyp revargs2: " in
+  let _ = List.iter (fun (nm,tp) -> prNamedRConstr (string_of_name nm) tp) revargs2 in
   let typwithprms = raw_compose_prod typ (List.rev revargs2 @ List.rev revargs1) in
   typwithprms
 
@@ -677,6 +688,7 @@ let rec merge_constructors (shift:merge_infos) (avoid:Idset.t)
               let rawtyp2 = Detyping.detype false (Idset.elements avoid2) [] typ2 in
               let typ = merge_one_constructor shift rawtyp1 rawtyp2 in
               let newcstror_id = merge_constructor_id id1 id2 shift in
+              let _ = prstr "\n**************\n" in
               newcstror_id , typ)
             typcstr2)
         typcstr1)
@@ -778,6 +790,8 @@ let merge_inductive (ind1: inductive) (ind2: inductive)
   (* compute params that become ordinary args (because linked to ord. args) *)
   let shift_prm = shift_linked_params mib1 mib2 lnk1 lnk2 id in
   let rawlist = merge_mutual_inductive_body mib1 mib2 shift_prm in
+  let _ = prstr "\nrawlist : " in
+  let _ = List.iter (fun (nm,tp) -> prNamedRConstr (string_of_id nm) tp; prstr "\n") rawlist in  
   let indexpr = rawterm_list_to_inductive_expr mib1 mib2 shift_prm rawlist in
   (* Declare inductive *)
   Command.build_mutual [(indexpr,None)] true (* means: not coinductive *)
