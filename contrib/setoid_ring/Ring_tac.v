@@ -40,10 +40,10 @@ Ltac ApplyLemmaThen lemma expr tac :=
       forall x, ?nf_spec = x -> _ => nf_spec
     | _ => fail 1 "ApplyLemmaThen: cannot find norm expression"
     end in
-  (compute_assertion H nexpr nf_spec;
-   (assert (Heq:=lemma _ _ H) || fail "anomaly: failed to apply lemma");
-   clear H;
-   OnMainSubgoal Heq ltac:(type of Heq) ltac:(tac Heq; clear Heq nexpr)).
+  compute_assertion H nexpr nf_spec;
+  assert (Heq:=lemma _ _ H) || fail "anomaly: failed to apply lemma";
+  clear H;
+  OnMainSubgoal Heq ltac:(type of Heq) ltac:(tac Heq; clear Heq nexpr).
 
 (* General scheme of reflexive tactics using of correctness lemma
    that involves normalisation of one expression *)
@@ -51,14 +51,15 @@ Ltac ReflexiveNormTactic FV_tac SYN_tac MAIN_tac lemma2 req terms :=
   let R := match type of req with ?R -> _ => R end in
   (* build the atom list *)
   let val := list_fold_left FV_tac (@List.nil R) terms in
-  (* some type-checking to avoid late errors *)
-  (check_fv val;
-   (* rewrite steps *)
-   list_iter
-     ltac:(fun term =>
-       let expr := SYN_tac term val in
-       try ApplyLemmaThen (lemma2 val) expr MAIN_tac)
-     terms).
+  let lem := fresh "ring_lemma" in
+  pose (lem := lemma2 val) || fail "anomaly: ill-typed atom list";
+  (* rewrite steps *)
+  list_iter
+    ltac:(fun term =>
+      let expr := SYN_tac term val in
+      try ApplyLemmaThen lem expr MAIN_tac)
+    terms;
+  clear lem.
 
 (********************************************************)
 
@@ -105,51 +106,43 @@ Ltac FV Cst add mul sub opp t fv :=
     end
  in mkP t.
 
+Ltac ParseRingComponents lemma :=
+  match type of lemma with
+  | context [@PEeval ?R ?rO ?add ?mul ?sub ?opp ?C ?phi _ _] =>
+      (fun f => f R add mul sub opp C)
+  | _ => fail 1 "ring anomaly: bad correctness lemma (parse)"
+  end.
+
 (* ring tactics *)
 
-
- Ltac Ring Cst_tac lemma1 req :=
-  let Make_tac :=
-    match type of lemma1 with
-    | forall (l:list ?R) (pe1 pe2:PExpr ?C),
-      _ = true ->
-      req (PEeval ?rO ?add ?mul ?sub ?opp ?phi l pe1) _ =>
-        let mkFV := FV Cst_tac add mul sub opp in
-        let mkPol := mkPolexpr C Cst_tac add mul sub opp in
-        fun f => f R mkFV mkPol
-    | _ => fail 1 "ring anomaly: bad correctness lemma"
-    end in
-  let Main r1 r2 R mkFV mkPol :=
-    let fv := mkFV r1 (@List.nil R) in
-    let fv := mkFV r2 fv in
+Ltac Ring Cst_tac lemma1 req :=
+  let Main lhs rhs R radd rmul rsub ropp C :=
+    let mkFV := FV Cst_tac radd rmul rsub ropp in
+    let mkPol := mkPolexpr C Cst_tac radd rmul rsub ropp in
+    let fv := mkFV lhs (@List.nil R) in
+    let fv := mkFV rhs fv in
     check_fv fv;
-    (let pe1 := mkPol r1 fv in
-     let pe2 := mkPol r2 fv in
-     apply (lemma1 fv pe1 pe2) || fail "typing error while applying ring";
-     vm_compute;
-     exact (refl_equal true) || fail "not a valid ring equation") in
-  Make_tac ltac:(OnEquation req Main).
+    let pe1 := mkPol lhs fv in
+    let pe2 := mkPol rhs fv in
+    apply (lemma1 fv pe1 pe2) || fail "typing error while applying ring";
+    vm_compute;
+    exact (refl_equal true) || fail "not a valid ring equation" in
+  ParseRingComponents lemma1 ltac:(OnEquation req Main).
 
 Ltac Ring_norm_gen f Cst_tac lemma2 req rl :=
-  let Make_tac :=
-    match type of lemma2 with 
-      forall (l:list ?R) (pe:PExpr ?C) (npe:Pol ?C),
-      _ = npe ->
-      req (PEeval ?rO ?add ?mul ?sub ?opp ?phi l pe) _ =>
-      let mkFV := FV Cst_tac add mul sub opp in
-      let mkPol := mkPolexpr C Cst_tac add mul sub opp in
-      let simpl_ring H := (protect_fv "ring" in H; f H) in
-      (fun tac => tac mkFV mkPol simpl_ring lemma2 req rl)
-    | _ => fail 1 "ring anomaly: bad correctness lemma"
-    end in
-  Make_tac ReflexiveNormTactic.
+  let Main R add mul sub opp C :=
+    let mkFV := FV Cst_tac add mul sub opp in
+    let mkPol := mkPolexpr C Cst_tac add mul sub opp in
+    let simpl_ring H := (protect_fv "ring" in H; f H) in
+    ReflexiveNormTactic mkFV mkPol simpl_ring lemma2 req rl in
+  ParseRingComponents lemma2 Main.
 
 Ltac Ring_simplify := Ring_norm_gen ltac:(fun H => rewrite H).
 Ltac Ring_simplify_in hyp := Ring_norm_gen ltac:(fun H => rewrite H in hyp).
 Ltac Ring_nf Cst_tac lemma2 req rl f :=
   let on_rhs H :=
     match type of H with
-    | req _ ?rhs => f rhs
+    | req _ ?rhs => clear H; f rhs
     end in
   Ring_norm_gen on_rhs Cst_tac lemma2 req rl.
 

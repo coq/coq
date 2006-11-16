@@ -55,7 +55,7 @@ Ltac FFV Cst add mul sub opp div inv t fv :=
   end 
  in TFV t fv.
 
-Ltac ParseFieldComponents lemma req :=
+Ltac ParseFieldComponents lemma :=
   match type of lemma with
   | context [@FEeval ?R ?rO ?add ?mul ?sub ?opp ?div ?inv ?C ?phi _ _] =>
       (fun f => f add mul sub opp div inv C)
@@ -140,7 +140,7 @@ Ltac Field lemma Cond_lemma req Cst_tac :=
     let Simpl :=
       vm_compute; reflexivity || fail "not a valid field equation" in
     Field_Scheme mkFV mkFE Simpl lemma Cond_lemma req in
-  ParseFieldComponents lemma req Main.
+  ParseFieldComponents lemma Main.
 
 Tactic Notation (at level 0) "field" :=
   field_lookup
@@ -155,7 +155,7 @@ Ltac Field_simplify_eq lemma Cond_lemma req Cst_tac :=
     let mkFE := mkFieldexpr C Cst_tac radd rmul rsub ropp rdiv rinv in
     let Simpl := (protect_fv "field") in
     Field_Scheme mkFV mkFE Simpl lemma Cond_lemma req in
-  ParseFieldComponents lemma req Main.
+  ParseFieldComponents lemma Main.
 
 Tactic Notation (at level 0) "field_simplify_eq" :=
   field_lookup

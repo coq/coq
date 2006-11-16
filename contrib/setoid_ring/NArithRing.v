@@ -20,7 +20,7 @@ Ltac isNcst t :=
   | xO ?p => isNcst p
   | xH => constr:true
   (* nat -> positive *)
-  | P_of_succ_nat ?n => isZcst n
+  | P_of_succ_nat ?n => isNcst n
   (* *)
   | _ => constr:false
   end.
