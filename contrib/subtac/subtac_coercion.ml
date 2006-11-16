@@ -158,6 +158,7 @@ module Coercion = struct
 		     let existS = Lazy.force existS in
 		     let prod = Lazy.force prod in
 		       if len = Array.length l' && len = 2 && i = i'
+			 && (i = Term.destInd existS.typ || i = Term.destInd prod.typ)
 		       then 
 			 if i = Term.destInd existS.typ 
 			 then
@@ -198,7 +199,7 @@ module Coercion = struct
 					  in
 					    mkApp (existS.intro, [| a'; pb'; x ; y |]))
 			   end
-			 else if i = Term.destInd prod.typ then
+			 else 
 			   begin 
 			     debug 1 (str "In coerce prod types");
 			     let (a, b), (a', b') = 
@@ -219,8 +220,22 @@ module Coercion = struct
 					  in
 					    mkApp (prod.intro, [| a'; b'; x ; y |]))
 			   end
+		       else
+			 if len = 1 && len = Array.length l' && i = i' then
+			   let argx, argy = l.(0), l'.(0) in
+			   let indtyp = Inductiveops.type_of_inductive env i in
+			   let argname, argtype, rest = destProd indtyp in
+			   let eq =
+			     mkApp (Lazy.force eqind, [| argtype; argx; argy |])
+			   in
+			   let pred = mkLambda (argname, argtype, 
+						mkApp (mkInd i, [| mkRel 1 |]))
+			   in
+			   let evar = make_existential dummy_loc env isevars eq in
+			     Some (fun x ->
+				     mkApp (Lazy.force eqrec, 
+					    [| argtype; argx; pred; x; argy; evar |]))
 			 else subco ()
-		       else subco ()
 		 | _ ->  subco ())
 	  | _, _ ->  subco ()
 

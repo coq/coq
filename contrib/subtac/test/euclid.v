@@ -1,3 +1,16 @@
+Print eq_rec.
+Print eq.
+Inductive vector : nat -> Set :=
+  | vnil : vector 0
+  | vcons : nat -> forall n, vector n -> vector (S n).
+Set Printing All.
+Print eq.
+Program Fixpoint vapp (n m : nat) (v : vector n) (w : vector m) { struct v } : vector (n + m) :=
+  match v with
+  | vnil => w
+  | vcons a n' v' => vcons a (n' + m) (vapp n' m v' w)
+  end.
+
 
 Notation "( x & y )" := (@existS _ _ x y) : core_scope.
 Unset Printing All.

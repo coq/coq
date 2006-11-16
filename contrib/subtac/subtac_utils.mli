@@ -32,6 +32,7 @@ val proj2_sig_ref : reference
 val build_sig : unit -> coq_sigma_data
 val sig_ : coq_sigma_data lazy_t
 val eqind : constr lazy_t
+val eqrec : constr lazy_t
 val eqind_ref : global_reference lazy_t
 val refl_equal_ref : global_reference lazy_t
 val boolind : constr lazy_t
