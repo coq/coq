@@ -306,6 +306,9 @@ if test ! -f "$CAMLC" ; then
     exit 1
 fi
 
+# this fixes a camlp4 bug under FreeBSD
+# ("native-code program cannot do a dynamic load")
+if [ `uname -s` = "FreeBSD" ]; then camlp4oexec=$camlp4oexec.byte; fi
 
 CAMLVERSION=`"$bytecamlc" -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
 
