@@ -19,6 +19,9 @@ Ltac isNcst t :=
   | xI ?p => isNcst p
   | xO ?p => isNcst p
   | xH => constr:true
+  (* nat -> positive *)
+  | P_of_succ_nat ?n => isZcst n
+  (* *)
   | _ => constr:false
   end.
 Ltac Ncst t :=

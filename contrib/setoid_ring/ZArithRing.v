@@ -14,13 +14,24 @@ Set Implicit Arguments.
 
 Ltac isZcst t :=
   match t with
-    Z0 => constr:true
+    Z0 => true
   | Zpos ?p => isZcst p
   | Zneg ?p => isZcst p
   | xI ?p => isZcst p
   | xO ?p => isZcst p
-  | xH => constr:true
-  | _ => constr:false
+  | xH => true
+  (* injection nat -> Z *)
+  | Z_of_nat ?n => isZcst n
+  | O => true
+  | S ?n => isZcst n
+  (* injection N -> Z *)
+  | Z_of_N ?n => isZcst n
+  | N0 => true
+  | Npos ?p => isZcst p
+  (* nat -> positive *)
+  | P_of_succ_nat ?n => isZcst n
+  (* *)
+  | _ => false
   end.
 Ltac Zcst t :=
   match isZcst t with
