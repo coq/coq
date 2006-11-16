@@ -1595,8 +1595,8 @@ parsing/lexer.cmo: parsing/lexer.ml4
 revision:
 ifeq ($(CHECKEDOUT),1)
 	- /bin/rm -f revision
-	sed -ne '/url/s/^.*\/\([^\/]\+\)"$$/\1/p' .svn/entries > revision
-	sed -ne '/revision/s/^.*"\([0-9]\+\)".*$$/r\1/p' .svn/entries >> revision
+	sed -ne '/url/s/^.*\/\([^\/]\{1,\}\)"$$/\1/p' .svn/entries > revision
+	sed -ne '/revision/s/^.*"\([0-9]\{1,\}\)".*$$/r\1/p' .svn/entries >> revision
 endif
 
 archclean::
