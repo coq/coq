@@ -52,12 +52,9 @@ let resynch_buffer ibuf =
    (Char.chr 6) since it does not interfere with utf8. For
     compatibility we let (Char.chr 249) as default for a while. *)
 
-let emacs_prompt_startstring() = 
-  if !Options.print_emacs_safechar then "<prompt>" else ""
+let emacs_prompt_startstring() = Printer.emacs_str "" "<prompt>"
 
-let emacs_prompt_endstring() = 
-  if !Options.print_emacs_safechar then "</prompt>"
-  else String.make 1 (Char.chr 249)
+let emacs_prompt_endstring() = Printer.emacs_str (String.make 1 (Char.chr 249)) "</prompt>"
 
 (* Read a char in an input channel, displaying a prompt at every
    beginning of line. *)
@@ -230,9 +227,9 @@ let make_emacs_prompt() =
  * or after a Drop. *)
 let top_buffer =
   let pr() = 
-    Printer.emacs_str (emacs_prompt_startstring()) 
+    emacs_prompt_startstring() 
     ^ make_prompt() 
-    ^ Printer.emacs_str (make_emacs_prompt())
+    ^ make_emacs_prompt()
   in
   { prompt = pr;
     str = "";
@@ -244,9 +241,9 @@ let top_buffer =
 let set_prompt prompt =
   top_buffer.prompt
   <- (fun () -> 
-    Printer.emacs_str (emacs_prompt_startstring())
+    emacs_prompt_startstring()
     ^ prompt ()
-    ^ Printer.emacs_str (emacs_prompt_endstring()))
+    ^ emacs_prompt_endstring())
 
 (* Removes and prints the location of the error. The following exceptions
    need not be located. *)
