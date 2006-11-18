@@ -122,7 +122,7 @@ theories/Logic/ClassicalEpsilon.vo: theories/Logic/ClassicalEpsilon.v theories/L
 theories/Logic/ClassicalUniqueChoice.vo: theories/Logic/ClassicalUniqueChoice.v theories/Logic/Classical.vo theories/Setoids/Setoid.vo
 theories/Logic/DecidableType.vo: theories/Logic/DecidableType.v theories/Lists/SetoidList.vo
 theories/Logic/DecidableTypeEx.vo: theories/Logic/DecidableTypeEx.v theories/Logic/DecidableType.vo theories/FSets/OrderedType.vo theories/FSets/OrderedTypeEx.vo
-theories/Arith/Arith.vo: theories/Arith/Arith.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Plus.vo theories/Arith/Gt.vo theories/Arith/Minus.vo theories/Arith/Mult.vo theories/Arith/Between.vo theories/Arith/Peano_dec.vo theories/Arith/Compare_dec.vo theories/Arith/Factorial.vo
+theories/Arith/Arith.vo: theories/Arith/Arith.v theories/Arith/Arith_base.vo contrib/setoid_ring/ArithRing.vo
 theories/Arith/Gt.vo: theories/Arith/Gt.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Plus.vo
 theories/Arith/Between.vo: theories/Arith/Between.v theories/Arith/Le.vo theories/Arith/Lt.vo
 theories/Arith/Le.vo: theories/Arith/Le.v
