@@ -986,26 +986,26 @@ Theorem Tplus_permute_stable : term_stable Tplus_permute.
 prove_stable Tplus_permute Zplus_permute.
 Qed.
 
-Definition Tplus_sym (t : term) :=
+Definition Tplus_comm (t : term) :=
   match t with
   | (x + y)%term => (y + x)%term
   | _ => t
   end.
 
-Theorem Tplus_sym_stable : term_stable Tplus_sym.
+Theorem Tplus_comm_stable : term_stable Tplus_comm.
 
-prove_stable Tplus_sym Zplus_comm.
+prove_stable Tplus_comm Zplus_comm.
 Qed.
 
-Definition Tmult_sym (t : term) :=
+Definition Tmult_comm (t : term) :=
   match t with
   | (x * y)%term => (y * x)%term
   | _ => t
   end.
 
-Theorem Tmult_sym_stable : term_stable Tmult_sym.
+Theorem Tmult_comm_stable : term_stable Tmult_comm.
 
-prove_stable Tmult_sym Zmult_comm.
+prove_stable Tmult_comm Zmult_comm.
 Qed.
 
 Definition T_OMEGA10 (t : term) :=
@@ -1480,7 +1480,7 @@ Fixpoint rewrite (s : step) : term -> term :=
   | C_PLUS_ASSOC_R => Tplus_assoc_r
   | C_PLUS_ASSOC_L => Tplus_assoc_l
   | C_PLUS_PERMUTE => Tplus_permute
-  | C_PLUS_COMM => Tplus_sym
+  | C_PLUS_COMM => Tplus_comm
   | C_RED0 => Tred_factor0
   | C_RED1 => Tred_factor1
   | C_RED2 => Tred_factor2
@@ -1490,7 +1490,7 @@ Fixpoint rewrite (s : step) : term -> term :=
   | C_RED6 => Tred_factor6
   | C_MULT_ASSOC_REDUCED => Tmult_assoc_reduced
   | C_MINUS => Tminus_def
-  | C_MULT_COMM => Tmult_sym
+  | C_MULT_COMM => Tmult_comm
   end.
 
 Theorem rewrite_stable : forall s : step, term_stable (rewrite s).
@@ -1512,7 +1512,7 @@ simple induction s; simpl in |- *;
  | exact Tplus_assoc_r_stable
  | exact Tplus_assoc_l_stable
  | exact Tplus_permute_stable
- | exact Tplus_sym_stable
+ | exact Tplus_comm_stable
  | exact Tred_factor0_stable
  | exact Tred_factor1_stable
  | exact Tred_factor2_stable
@@ -1522,7 +1522,7 @@ simple induction s; simpl in |- *;
  | exact Tred_factor6_stable
  | exact Tmult_assoc_reduced_stable
  | exact Tminus_def_stable
- | exact Tmult_sym_stable ].
+ | exact Tmult_comm_stable ].
 Qed.
 
 (* \subsection{tactiques de résolution d'un but omega normalisé} 
