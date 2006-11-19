@@ -21,7 +21,6 @@ open Reduction
 open Reductionops
 open Rawterm
 open Pattern
-open Tacexpr
 open Tacred
 open Pretype_errors
 open Evarutil
