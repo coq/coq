@@ -323,16 +323,24 @@ let mk_freelisted c =
 
 let map_fl f cfl = { cfl with rebus=f cfl.rebus }
 
+(* Status of an instance wrt to the meta it solves:
+  - a supertype of the meta (e.g. the solution to ?X <= T is a supertype of ?X)
+  - a subtype of the meta (e.g. the solution to T <= ?X is a supertype of ?X)
+  - a term that can be eta-expanded n times while still being a solution
+    (e.g. the solution [P] to [?X u v = P u v] can be eta-expanded twice)
+*)
+
+type instance_status = IsSuperType | IsSubType | ConvUpToEta of int
 
 (* Clausal environments *)
 
 type clbinding =
   | Cltyp of name * constr freelisted
-  | Clval of name * constr freelisted * constr freelisted
+  | Clval of name * (constr freelisted * instance_status) * constr freelisted
 
 let map_clb f = function
   | Cltyp (na,cfl) -> Cltyp (na,map_fl f cfl)
-  | Clval (na,cfl1,cfl2) -> Clval (na,map_fl f cfl1,map_fl f cfl2)
+  | Clval (na,(cfl1,pb),cfl2) -> Clval (na,(map_fl f cfl1,pb),map_fl f cfl2)
 
 (* name of defined is erased (but it is pretty-printed) *)
 let clb_name = function
@@ -469,12 +477,19 @@ let meta_ftype evd mv =
 let meta_declare mv v ?(name=Anonymous) evd =
   { evd with metas = Metamap.add mv (Cltyp(name,mk_freelisted v)) evd.metas }
   
-let meta_assign mv v evd =
+let meta_assign mv (v,pb) evd =
   match Metamap.find mv evd.metas with
-      Cltyp(na,ty) ->
-        { evd with
-          metas = Metamap.add mv (Clval(na,mk_freelisted v, ty)) evd.metas }
-    | _ -> anomaly "meta_assign: already defined"
+  | Cltyp(na,ty) ->
+      { evd with
+        metas = Metamap.add mv (Clval(na,(mk_freelisted v,pb),ty)) evd.metas }
+  | _ -> anomaly "meta_assign: already defined"
+
+let meta_reassign mv (v,pb) evd =
+  match Metamap.find mv evd.metas with
+  | Clval(na,_,ty) ->
+      { evd with
+        metas = Metamap.add mv (Clval(na,(mk_freelisted v,pb),ty)) evd.metas }
+  | _ -> anomaly "meta_reassign: not yet defined"
 
 (* If the meta is defined then forget its name *)
 let meta_name evd mv =
@@ -522,7 +537,7 @@ let pr_meta_map mmap =
       	hov 0 
 	  (pr_meta mv ++ pr_name na ++ str " : " ++
            print_constr b.rebus ++ fnl ())
-    | (mv,Clval(na,b,_)) ->
+    | (mv,Clval(na,(b,_),_)) ->
       	hov 0 
 	  (pr_meta mv ++ pr_name na ++ str " := " ++
            print_constr b.rebus ++ fnl ())

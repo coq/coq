@@ -862,7 +862,7 @@ let is_arity env sigma c =
 let meta_value evd mv = 
   let rec valrec mv =
     try
-      let b = meta_fvalue evd mv in
+      let b,_ = meta_fvalue evd mv in
       instance
         (List.map (fun mv' -> (mv',valrec mv')) (Metaset.elements b.freemetas))
         b.rebus

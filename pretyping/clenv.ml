@@ -156,7 +156,7 @@ let mentions clenv mv0 =
   let rec menrec mv1 =
     mv0 = mv1 ||
     let mlist =
-      try (meta_fvalue clenv.env mv1).freemetas
+      try (fst (meta_fvalue clenv.env mv1)).freemetas
       with Anomaly _ | Not_found -> Metaset.empty in
     meta_exists menrec mlist
   in menrec
@@ -180,11 +180,11 @@ let clenv_assign mv rhs clenv =
     error "clenv_assign: circularity in unification";
   try
     if meta_defined clenv.env mv then
-      if not (eq_constr (meta_fvalue clenv.env mv).rebus rhs) then
+      if not (eq_constr (fst (meta_fvalue clenv.env mv)).rebus rhs) then
         error_incompatible_inst clenv mv
       else
 	clenv
-    else {clenv with env = meta_assign mv rhs_fls.rebus clenv.env}
+    else {clenv with env = meta_assign mv (rhs_fls.rebus,ConvUpToEta 0) clenv.env}
   with Not_found -> 
     error "clenv_assign: undefined meta"
 
@@ -362,7 +362,7 @@ let clenv_match_args s clause =
     | (loc,b,c)::t ->
 	let k = meta_of_binder clause loc b t mvs in
         if meta_defined clause.env k then
-          if eq_constr (meta_fvalue clause.env k).rebus c then
+          if eq_constr (fst (meta_fvalue clause.env k)).rebus c then
             matchrec clause t
           else error_already_defined b
         else

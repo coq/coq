@@ -49,10 +49,41 @@ let abstract_list_all env sigma typ c l =
 
 (**)
 
+(* A refinement of [conv_pb]: the integers tells how many arguments
+   were applied in the context of the conversion problem; if the number
+   is non zero, steps of eta-expansion will be allowed
+*)
+
+type conv_pb_up_to_eta = Cumul | ConvUnderApp of int * int
+
+let topconv = ConvUnderApp (0,0)
+let of_conv_pb = function CONV -> topconv | CUMUL -> Cumul
+let conv_pb_of = function ConvUnderApp _ -> CONV | Cumul -> CUMUL
+let prod_pb = function ConvUnderApp _ -> topconv | pb -> pb
+
+let opp_status = function
+  | IsSuperType -> IsSubType
+  | IsSubType -> IsSuperType
+  | ConvUpToEta _ as x -> x
+
+let extract_instance_status = function
+  | Cumul -> (IsSubType,IsSuperType)
+  | ConvUnderApp (n1,n2) -> ConvUpToEta n1, ConvUpToEta n2
+
+let rec assoc_pair x = function
+    [] -> raise Not_found
+  | (a,b,_)::l -> if compare a x = 0 then b else assoc_pair x l
+
+let rec subst_meta_instances bl c =
+  match kind_of_term c with
+    | Meta i -> (try assoc_pair i bl with Not_found -> c)
+    | _ -> map_constr (subst_meta_instances bl) c
+
 let solve_pattern_eqn_array env f l c (metasubst,evarsubst) =
   match kind_of_term f with
     | Meta k -> 
-	(k,solve_pattern_eqn env (Array.to_list l) c)::metasubst,evarsubst
+	let pb = ConvUpToEta (Array.length l) in
+	(k,solve_pattern_eqn env (Array.to_list l) c,pb)::metasubst,evarsubst
     | Evar ev ->
       (* Currently unused: incompatible with eauto/eassumption backtracking *)
 	metasubst,(f,solve_pattern_eqn env (Array.to_list l) c)::evarsubst
@@ -81,7 +112,8 @@ let sort_eqns = unify_r2l
 let unify_0 env sigma cv_pb mod_delta m n =
   let trivial_unify pb substn m n =
     if (not(occur_meta m)) && 
-      (if mod_delta then is_fconv pb env sigma m n else eq_constr m n) 
+      (if mod_delta then is_fconv (conv_pb_of pb) env sigma m n
+       else eq_constr m n)
     then substn
     else error_cannot_unify env sigma (m,n) in
   let rec unirec_rec curenv pb ((metasubst,evarsubst) as substn) curm curn =
@@ -89,29 +121,31 @@ let unify_0 env sigma cv_pb mod_delta m n =
     and cN = Evarutil.whd_castappevar sigma curn in 
       match (kind_of_term cM,kind_of_term cN) with
 	| Meta k1, Meta k2 ->
+	    let stM,stN = extract_instance_status pb in
 	    if k1 < k2 
-	    then (k1,cN)::metasubst,evarsubst
-	    else if k1 = k2 then substn else (k2,cM)::metasubst,evarsubst
+	    then (k1,cN,stN)::metasubst,evarsubst
+	    else if k1 = k2 then substn
+	    else (k2,cM,stM)::metasubst,evarsubst
 	| Meta k, _    -> 
 	    (* Here we check that [cN] does not contain any local variables *)
 	    if (closedn (nb_rel env) cN)
-	    then (k,cN)::metasubst,evarsubst
+	    then (k,cN,snd (extract_instance_status pb))::metasubst,evarsubst
 	    else error_cannot_unify_local curenv sigma (curenv,m,n,cN)
 	| _, Meta k    -> 
 	    (* Here we check that [cM] does not contain any local variables *)
-	    if (closedn (nb_rel env) cM) 
-	    then (k,cM)::metasubst,evarsubst
+	    if (closedn (nb_rel env) cM)
+	    then (k,cM,fst (extract_instance_status pb))::metasubst,evarsubst
 	    else error_cannot_unify_local curenv sigma (curenv,m,n,cM)
 	| Evar _, _ -> metasubst,((cM,cN)::evarsubst)
 	| _, Evar _ -> metasubst,((cN,cM)::evarsubst)
 	| Lambda (na,t1,c1), Lambda (_,t2,c2) ->
-	    unirec_rec (push_rel_assum (na,t1) curenv) CONV 
-	      (unirec_rec curenv CONV substn t1 t2) c1 c2
+	    unirec_rec (push_rel_assum (na,t1) curenv) topconv
+	      (unirec_rec curenv topconv substn t1 t2) c1 c2
 	| Prod (na,t1,c1), Prod (_,t2,c2) ->
-	    unirec_rec (push_rel_assum (na,t1) curenv) pb 
-	      (unirec_rec curenv CONV substn t1 t2) c1 c2
-	| LetIn (_,b,_,c), _ -> unirec_rec curenv  pb substn (subst1 b c) cN
-	| _, LetIn (_,b,_,c) -> unirec_rec curenv  pb substn cM (subst1 b c)
+	    unirec_rec (push_rel_assum (na,t1) curenv) (prod_pb pb)
+	      (unirec_rec curenv topconv substn t1 t2) c1 c2
+	| LetIn (_,b,_,c), _ -> unirec_rec curenv pb substn (subst1 b c) cN
+	| _, LetIn (_,b,_,c) -> unirec_rec curenv pb substn cM (subst1 b c)
 	    
 	| App (f1,l1), App (f2,l2) ->
 	    if
@@ -133,25 +167,82 @@ let unify_0 env sigma cv_pb mod_delta m n =
 		else 
 		  let extras,restl1 = array_chop (len1-len2) l1 in 
 		    (appvect (f1,extras), restl1, f2, l2) in
+	      let pb = ConvUnderApp (len1,len2) in
 		(try
-		    array_fold_left2 (unirec_rec curenv CONV)
-		      (unirec_rec curenv CONV substn f1 f2) l1 l2
+		    array_fold_left2 (unirec_rec curenv topconv)
+		      (unirec_rec curenv pb substn f1 f2) l1 l2
 		  with ex when precatchable_exception ex ->
 		    trivial_unify pb substn cM cN)
 	| Case (_,p1,c1,cl1), Case (_,p2,c2,cl2) ->
-            array_fold_left2 (unirec_rec curenv CONV)
-	      (unirec_rec curenv CONV 
-		  (unirec_rec curenv CONV substn p1 p2) c1 c2) cl1 cl2
+            array_fold_left2 (unirec_rec curenv topconv)
+	      (unirec_rec curenv topconv
+		  (unirec_rec curenv topconv substn p1 p2) c1 c2) cl1 cl2
 	| _ -> trivial_unify pb substn cM cN
   in
     if (not(occur_meta m)) &&
-      (if mod_delta then is_fconv cv_pb env sigma m n else eq_constr m n)
+      (if mod_delta then is_fconv (conv_pb_of cv_pb) env sigma m n
+       else eq_constr m n)
     then 
       ([],[])
     else 
       let (mc,ec) = unirec_rec env cv_pb ([],[]) m n in
 	((*sort_eqns*) mc, (*sort_eqns*) ec)
 
+let left = true
+let right = false
+
+let pop k = if k=0 then 0 else k-1
+
+let rec unify_with_eta keptside mod_delta env sigma k1 k2 c1 c2 =
+  (* Reason up to limited eta-expansion: ci is allowed to start with ki lam *)
+  (* Question: try whd_betadeltaiota on ci if ki>0 ? *)
+  match kind_of_term c1, kind_of_term c2 with
+  | (Lambda (na,t1,c1'), Lambda (_,t2,c2')) ->
+      let env' = push_rel_assum (na,t1) env in
+      let metas,evars = unify_0 env sigma topconv mod_delta t1 t2 in
+      let side,status,(metas',evars') =
+	unify_with_eta keptside mod_delta env' sigma (pop k1) (pop k2) c1' c2'
+      in (side,status,(metas@metas',evars@evars'))
+  | (Lambda (na,t,c1'),_) when k2 > 0 ->
+      let env' = push_rel_assum (na,t) env in
+      let side = left in (* expansion on the right: we keep the left side *)
+      unify_with_eta side mod_delta env' sigma (pop k1) (k2-1) 
+	c1' (mkApp (lift 1 c2,[|mkRel 1|]))
+  | (_,Lambda (na,t,c2')) when k1 > 0 ->
+      let env' = push_rel_assum (na,t) env in
+      let side = right in (* expansion on the left: we keep the right side *)
+      unify_with_eta side mod_delta env' sigma (k1-1) (pop k2) 
+	(mkApp (lift 1 c1,[|mkRel 1|])) c2'
+  | _ ->
+      (keptside,ConvUpToEta(min k1 k2),
+       unify_0 env sigma topconv mod_delta c1 c2)
+
+(* We solved problems [?n =_pb u] (i.e. [u =_(opp pb) ?n]) and [?n =_pb' u'],
+   we now compute the problem on [u =? u'] and decide which of u or u' is kept
+
+   Rem: the upper constraint is lost in case u <= ?n <= u' (and symmetrically
+   in the case u' <= ?n <= u)
+ *)
+
+let merge_instances env sigma mod_delta st1 st2 c1 c2 =
+  match (opp_status st1, st2) with
+  | (ConvUpToEta n1, ConvUpToEta n2) ->
+      let side = left (* arbitrary choice, but agrees with compatibility *) in
+      unify_with_eta side mod_delta env sigma n1 n2 c1 c2
+  | ((IsSubType  |ConvUpToEta _ as oppst1),(IsSubType  |ConvUpToEta _)) ->
+      let res = unify_0 env sigma Cumul mod_delta c2 c1 in
+      if oppst1=st2 then (* arbitrary choice *) (left, st1, res)
+      else (st2=IsSubType, ConvUpToEta 0, res)
+  | ((IsSuperType|ConvUpToEta _ as oppst1),(IsSuperType|ConvUpToEta _)) ->
+      let res = unify_0 env sigma Cumul mod_delta c1 c2 in
+      if oppst1=st2 then (* arbitrary choice *) (left, st1, res)
+      else (st2=IsSuperType, ConvUpToEta 0, res)
+  | (IsSuperType,IsSubType) ->
+      (try (left, IsSubType, unify_0 env sigma Cumul mod_delta c2 c1)
+       with _ -> (right, IsSubType, unify_0 env sigma Cumul mod_delta c1 c2))
+  | (IsSubType,IsSuperType) ->
+      (try (left, IsSuperType, unify_0 env sigma Cumul mod_delta c1 c2)
+       with _ -> (right, IsSuperType, unify_0 env sigma Cumul mod_delta c2 c1))
 
 (* Unification
  *
@@ -234,7 +325,7 @@ let w_merge env with_types mod_delta metas evars evd =
       | ((lhs,rhs)::t, metas) ->
       (match kind_of_term rhs with
 
-	| Meta k -> w_merge_rec evd ((k,lhs)::metas) t
+	| Meta k -> w_merge_rec evd ((k,lhs,ConvUpToEta 0)::metas) t
 
 	| krhs ->
         (match kind_of_term lhs with
@@ -242,11 +333,12 @@ let w_merge env with_types mod_delta metas evars evd =
 	  | Evar (evn,_ as ev) ->
     	      if is_defined_evar evd ev then
 		let (metas',evars') =
-                  unify_0 env (evars_of evd) CONV mod_delta rhs lhs in
+                  unify_0 env (evars_of evd) topconv mod_delta rhs lhs in
 		w_merge_rec evd (metas'@metas) (evars'@t)
     	      else begin
-		let rhs' = 
-		  if occur_meta rhs then subst_meta metas rhs else rhs 
+		let rhs' =
+		  if occur_meta rhs then subst_meta_instances metas rhs
+		  else rhs 
 		in
 		if occur_evar evn rhs' then
                   error "w_merge: recursive equation";
@@ -265,12 +357,16 @@ let w_merge env with_types mod_delta metas evars evd =
 
 	  | _ -> anomaly "w_merge_rec"))
 
-      | ([], (mv,n)::t) ->
+      | ([], (mv,n,status)::t) ->
     	  if meta_defined evd mv then
-            let (metas',evars') =
-              unify_0 env (evars_of evd) CONV mod_delta
-               (meta_fvalue evd mv).rebus n in
-            w_merge_rec evd (metas'@t) evars'
+	    let n',status' = meta_fvalue evd mv in
+	    let n' = n'.rebus in
+            let (take_left,st,(metas',evars')) =
+	      merge_instances env (evars_of evd) mod_delta status' status n' n
+	    in
+	    let evd' = if take_left then evd else meta_reassign mv (n,st) evd 
+	    in
+            w_merge_rec evd' (metas'@t) evars'
     	  else
             begin
 	      if with_types (* or occur_meta mvty *) then
@@ -279,11 +375,11 @@ let w_merge env with_types mod_delta metas evars evd =
                   let sigma = evars_of evd in
                   (* why not typing with the metamap ? *)
 		  let nty = Typing.type_of env sigma (nf_meta evd n) in
-		  let (mc,ec) = unify_0 env sigma CUMUL mod_delta nty mvty in
+		  let (mc,ec) = unify_0 env sigma Cumul mod_delta nty mvty in
                   ty_metas := mc @ !ty_metas;
                   ty_evars := ec @ !ty_evars
 		with e when precatchable_exception e -> ());
-              let evd' = meta_assign mv n evd in
+              let evd' = meta_assign mv (n,status) evd in
 	      w_merge_rec evd' t []
             end
 
@@ -292,7 +388,7 @@ let w_merge env with_types mod_delta metas evars evd =
     let sp_env = Global.env_of_context ev.evar_hyps in
     let (evd', c) = applyHead sp_env evd nargs hdc in
     let (mc,ec) =
-      unify_0 sp_env (evars_of evd') CUMUL mod_delta
+      unify_0 sp_env (evars_of evd') Cumul mod_delta
         (Retyping.get_type_of sp_env (evars_of evd') c) ev.evar_concl in
     let evd'' = w_merge_rec evd' mc ec in
     if (evars_of evd') == (evars_of evd'')
@@ -347,7 +443,7 @@ let w_unify_to_subterm env ?(mod_delta=true) (op,cl) evd =
     let cl = strip_outer_cast cl in
     (try 
        if closed0 cl 
-       then w_unify_0 env CONV mod_delta op cl evd,cl
+       then w_unify_0 env topconv mod_delta op cl evd,cl
        else error "Bound 1"
      with ex when precatchable_exception ex ->
        (match kind_of_term cl with 
@@ -427,7 +523,7 @@ let secondOrderAbstraction env mod_delta allow_K typ (p, oplist) evd =
     w_unify_to_subterm_list env mod_delta allow_K oplist typ evd in
   let typp = Typing.meta_type evd' p in
   let pred = abstract_list_all env sigma typp typ cllist in
-  w_unify_0 env CONV mod_delta (mkMeta p) pred evd'
+  w_unify_0 env topconv mod_delta (mkMeta p) pred evd'
 
 let w_unify2 env mod_delta allow_K cv_pb ty1 ty2 evd =
   let c1, oplist1 = whd_stack ty1 in
@@ -469,6 +565,7 @@ let w_unify2 env mod_delta allow_K cv_pb ty1 ty2 evd =
    convertible and first-order otherwise. But if failed if e.g. the type of
    Meta(1) had meta-variables in it. *)
 let w_unify allow_K env cv_pb ?(mod_delta=true) ty1 ty2 evd =
+  let cv_pb = of_conv_pb cv_pb in
   let hd1,l1 = whd_stack ty1 in
   let hd2,l2 = whd_stack ty2 in
     match kind_of_term hd1, l1<>[], kind_of_term hd2, l2<>[] with

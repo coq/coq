@@ -99,9 +99,18 @@ val metavars_of : constr -> Metaset.t
 val mk_freelisted : constr -> constr freelisted
 val map_fl : ('a -> 'b) -> 'a freelisted -> 'b freelisted
 
+(* Status of an instance wrt to the meta it solves:
+  - a supertype of the meta (e.g. the solution to ?X <= T is a supertype of ?X)
+  - a subtype of the meta (e.g. the solution to T <= ?X is a supertype of ?X)
+  - a term that can be eta-expanded n times while still being a solution
+    (e.g. the solution [P] to [?X u v = P u v] can be eta-expanded twice)
+*)
+
+type instance_status = IsSuperType | IsSubType | ConvUpToEta of int
+
 type clbinding =
   | Cltyp of name * constr freelisted
-  | Clval of name * constr freelisted * constr freelisted
+  | Clval of name * (constr freelisted * instance_status) * constr freelisted
 
 val map_clb : (constr -> constr) -> clbinding -> clbinding
 
@@ -146,13 +155,14 @@ val meta_list : evar_defs -> (metavariable * clbinding) list
 val meta_defined : evar_defs -> metavariable -> bool
 (* [meta_fvalue] raises [Not_found] if meta not in map or [Anomaly] if
    meta has no value *)  
-val meta_fvalue    : evar_defs -> metavariable -> constr freelisted
+val meta_fvalue    : evar_defs -> metavariable -> constr freelisted * instance_status
 val meta_ftype     : evar_defs -> metavariable -> constr freelisted
 val meta_name      : evar_defs -> metavariable -> name
 val meta_with_name : evar_defs -> identifier -> metavariable
 val meta_declare   :
   metavariable -> types -> ?name:name -> evar_defs -> evar_defs
-val meta_assign    : metavariable -> constr -> evar_defs -> evar_defs
+val meta_assign    : metavariable -> constr * instance_status -> evar_defs -> evar_defs
+val meta_reassign  : metavariable -> constr * instance_status -> evar_defs -> evar_defs
 
 (* [meta_merge evd1 evd2] returns [evd2] extended with the metas of [evd1] *)
 val meta_merge : evar_defs -> evar_defs -> evar_defs

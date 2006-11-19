@@ -1729,7 +1729,7 @@ let check_evar_map_of_evars_defs evd =
      match binding with
         Evd.Cltyp (_,{Evd.rebus=rebus; Evd.freemetas=freemetas}) ->
          check_freemetas_is_empty rebus freemetas
-      | Evd.Clval (_,{Evd.rebus=rebus1; Evd.freemetas=freemetas1},
+      | Evd.Clval (_,({Evd.rebus=rebus1; Evd.freemetas=freemetas1},_),
                  {Evd.rebus=rebus2; Evd.freemetas=freemetas2}) ->
          check_freemetas_is_empty rebus1 freemetas1 ;
          check_freemetas_is_empty rebus2 freemetas2

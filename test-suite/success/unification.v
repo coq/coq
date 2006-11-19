@@ -63,3 +63,23 @@ Proof.
 intros.
 apply H.
 Qed.
+
+
+(* Test unification modulo eta-expansion (if possible) *)
+
+(* In this example, two instances for ?P (argument of hypothesis H) can be 
+   inferred (one is by unifying the type [Q true] and [?P true] of the
+   goal and type of [H]; the other is by unifying the argument of [f]);
+   we need to unify both instances up to allowed eta-expansions of the 
+   instances (eta is allowed if the meta was applied to arguments)
+
+   This used to fail before revision 9389 in trunk
+*)
+
+Lemma l4 :
+   forall f : (forall P, P true), (forall P, f P = f P) ->
+   forall Q, f (fun x => Q x) = f (fun x => Q x).
+Proof.
+intros.
+apply H.
+Qed.

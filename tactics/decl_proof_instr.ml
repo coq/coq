@@ -326,7 +326,7 @@ let enstack_subsubgoals env se stack gls=
 	    let (nlast,holes,nmetas) = 
 		meta_aux se.se_last_meta [] (List.rev rc) in
 	    let refiner = applist (appterm,List.rev holes) in
-	    let evd = meta_assign se.se_meta refiner se.se_evd in
+	    let evd = meta_assign se.se_meta (refiner,ConvUpToEta 0) se.se_evd in
 	    let ncreated = replace_in_list 
 	      se.se_meta nmetas se.se_meta_list in
 	    let evd0 = List.fold_left 
@@ -361,7 +361,7 @@ let find_subsubgoal env c ctyp skip evd metas gls =
 	  Unification.w_unify true env Reduction.CUMUL 
 	    ctyp se.se_type se.se_evd in
 	  if n <= 0 then 
-	      {se with se_evd=meta_assign se.se_meta c unifier}	  
+	      {se with se_evd=meta_assign se.se_meta (c,ConvUpToEta 0) unifier}
 	  else
 	      dfs (pred n)
       with _ -> 
