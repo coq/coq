@@ -188,11 +188,11 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacInversion of ('constr,'id) inversion_strength * quantified_hypothesis
       
   (* For ML extensions *)
-  | TacExtend of loc * string * ('constr,'tac) generic_argument list
+  | TacExtend of loc * string * 'constr generic_argument list
 
   (* For syntax extensions *)
   | TacAlias of loc * string *
-      (identifier * ('constr,'tac) generic_argument) list
+      (identifier * 'constr generic_argument) list
       * (dir_path * glob_tactic_expr)
 
 and ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr =
@@ -221,7 +221,7 @@ and ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr =
 and ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_fun_ast =
   identifier option list * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr
 
-  (* These are possible arguments of a tactic definition *)
+  (* These are the possible arguments of a tactic definition *)
 and ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_arg =
   | TacDynamic     of loc * Dyn.t
   | TacVoid
@@ -274,8 +274,7 @@ type raw_tactic_arg =
      identifier located or_metaid,
      raw_tactic_expr) gen_tactic_arg
 
-type raw_generic_argument =
-    (constr_expr,raw_tactic_expr) generic_argument
+type raw_generic_argument = constr_expr generic_argument
 
 type raw_red_expr = (constr_expr, reference) red_expr_gen
 
@@ -297,28 +296,21 @@ type glob_tactic_arg =
      identifier located,
      glob_tactic_expr) gen_tactic_arg
 
-type glob_generic_argument =
-    (rawconstr_and_expr,glob_tactic_expr) generic_argument
+type glob_generic_argument = rawconstr_and_expr generic_argument
 
 type glob_red_expr =
     (rawconstr_and_expr, evaluable_global_reference or_var) red_expr_gen
 
-type closed_raw_generic_argument =
-    (constr_expr,raw_tactic_expr) generic_argument
+type closed_raw_generic_argument = constr_expr generic_argument
 
-type 'a raw_abstract_argument_type =
-    ('a,rlevel,raw_tactic_expr) abstract_argument_type
+type 'a raw_abstract_argument_type = ('a,rlevel) abstract_argument_type
 
-type 'a glob_abstract_argument_type =
-    ('a,glevel,glob_tactic_expr) abstract_argument_type
+type 'a glob_abstract_argument_type = ('a,glevel) abstract_argument_type
 
-type open_generic_argument =
-    (Term.constr,glob_tactic_expr) generic_argument
+type open_generic_argument = Term.constr generic_argument
 
-type closed_generic_argument =
-    (Term.constr,glob_tactic_expr) generic_argument
+type closed_generic_argument = Term.constr generic_argument
 
-type 'a closed_abstract_argument_type =
-    ('a,Term.constr,glob_tactic_expr) abstract_argument_type
+type 'a closed_abstract_argument_type = ('a,Term.constr) abstract_argument_type
 
 type declaration_hook = Decl_kinds.strength -> global_reference -> unit

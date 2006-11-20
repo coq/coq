@@ -69,11 +69,11 @@ GEXTEND Gram
   END
 
 
-type ('a,'b) gallina_loc_argtype = (Vernacexpr.vernac_expr located, 'a, 'b) Genarg.abstract_argument_type
+type 'a gallina_loc_argtype = (Vernacexpr.vernac_expr located, 'a) Genarg.abstract_argument_type
 
-let (wit_subtac_gallina_loc : (Genarg.tlevel, Proof_type.tactic) gallina_loc_argtype),
-  (globwit_subtac_gallina_loc : (Genarg.glevel, Tacexpr.glob_tactic_expr) gallina_loc_argtype),
-  (rawwit_subtac_gallina_loc : (Genarg.rlevel, Tacexpr.raw_tactic_expr) gallina_loc_argtype) =
+let (wit_subtac_gallina_loc : Genarg.tlevel gallina_loc_argtype),
+  (globwit_subtac_gallina_loc : Genarg.glevel gallina_loc_argtype),
+  (rawwit_subtac_gallina_loc : Genarg.rlevel gallina_loc_argtype) =
   Genarg.create_arg "subtac_gallina_loc"
 
 VERNAC COMMAND EXTEND Subtac

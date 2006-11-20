@@ -129,7 +129,7 @@ let rec pr_message_token prid = function
 
 let pr_fresh_ids = prlist (fun s -> spc() ++ pr_or_var qs s)
 
-let rec pr_raw_generic prc prlc prtac prref (x:(Genarg.rlevel, Tacexpr.raw_tactic_expr) Genarg.generic_argument) =
+let rec pr_raw_generic prc prlc prtac prref (x:Genarg.rlevel Genarg.generic_argument) =
   match Genarg.genarg_tag x with
   | BoolArgType -> pr_arg str (if out_gen rawwit_bool x then "true" else "false")
   | IntArgType -> pr_arg int (out_gen rawwit_int x)

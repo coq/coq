@@ -48,7 +48,7 @@ type rawconstr_and_expr = rawconstr * constr_expr option
 
 (* Dynamics but tagged by a type expression *)
 
-type ('a,'b) generic_argument = argument_type * Obj.t
+type 'a generic_argument = argument_type * Obj.t
 
 let dyntab = ref ([] : string list)
 
@@ -56,7 +56,7 @@ type rlevel = constr_expr
 type glevel = rawconstr_and_expr
 type tlevel = constr
 
-type ('a,'b,'c) abstract_argument_type = argument_type
+type ('a,'b) abstract_argument_type = argument_type
 
 let create_arg s =
   if List.mem s !dyntab then
