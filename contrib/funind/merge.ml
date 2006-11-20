@@ -10,6 +10,7 @@
 
 (*i $Id: i*)
 
+open Indfun_common
 open Util
 open Topconstr
 open Vernacexpr
@@ -78,7 +79,7 @@ let next_ident_fresh (id:identifier) =
 
 (** {2 Debugging} *)
 (* comment this line to see debug msgs *)
-let msg x = () ;; let pr_lconstr c = str ""
+(* let msg x = () ;; let pr_lconstr c = str "" *)
 (* uncomment this to see debugging *)
 let prconstr c =  msg (str"  " ++ Printer.pr_lconstr c)
 let prconstrnl c =  msg (str"  " ++ Printer.pr_lconstr c ++ str"\n")
@@ -797,11 +798,26 @@ let merge_inductive (ind1: inductive) (ind2: inductive)
   Command.build_mutual [(indexpr,None)] true (* means: not coinductive *)
 
 
+let kn_of_id id =
+  let f_ref = Libnames.Ident (dummy_loc,id) in
+  locate_with_msg (Libnames.pr_reference f_ref ++ str ": Not found!")
+    locate_constant
+    f_ref
 
-let merge (cstr1:constr) (cstr2:constr) (args1:constr array) (args2:constr array) id =
-  let env = Global.env() in
-  let ind1,_cstrlist1 = Inductiveops.find_inductive env Evd.empty cstr1 in
-  let ind2,_cstrlist2 = Inductiveops.find_inductive env Evd.empty cstr2 in
+
+
+let merge (id1:identifier) (id2:identifier) (args1:identifier array) 
+    (args2:identifier array) id =
+  let kn1 = kn_of_id id1 in
+  let kn2 = kn_of_id id2 in
+  let finfo1 = 
+    try find_Function_infos kn1 
+    with Not_found -> errorlabstrm "indfun" (Nameops.pr_id id1 ++ str " unknown") in
+  let finfo2 = 
+    try find_Function_infos kn2 
+    with Not_found -> errorlabstrm "indfun" (Nameops.pr_id id2 ++ str " unknown") in
+  let ind1 = finfo1.graph_ind in
+  let ind2 = finfo2.graph_ind in
   let lnk1 = (* args1 are unlinked. FIXME? mergescheme (G x x) ?? *)
     Array.mapi (fun i c -> Unlinked) args1 in
   let _ = lnk1.(Array.length lnk1 - 1) <- Funres in (* last arg is functional result *)
@@ -814,8 +830,8 @@ let merge (cstr1:constr) (cstr2:constr) (args1:constr array) (args2:constr array
           | None -> Unlinked) 
       args2 in
   let _ = lnk2.(Array.length lnk2 - 1) <- Funres in (* last arg is functional result *)
-  let resa = merge_inductive ind1 ind2 lnk1 lnk2 id in
-  resa
+  let _ = merge_inductive ind1 ind2 lnk1 lnk2 id in
+  ()
 
 
 
