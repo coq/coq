@@ -80,6 +80,7 @@ let error_unsupported_unicode_character n cs =
 
 let error_utf8 cs =
   let bp = Stream.count cs in
+  Stream.junk cs; (* consume the char to avoid read it and fail again *)
   err (bp, bp+1) Illegal_character
 
 let njunk n = Util.repeat n Stream.junk
