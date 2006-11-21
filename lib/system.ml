@@ -43,7 +43,7 @@ let rec expand_macros s i =
 	  let v = safe_getenv (String.sub s (i+1) (n-i-1)) in
 	  let s = (String.sub s 0 i)^v^(String.sub s n (l-n)) in
 	  expand_macros s (i + String.length v)
-      | '~' ->
+      | '~' when i = 0 ->
 	  let n = expand_atom s (i+1) in
 	  let v =
 	    if n=i+1 then home
@@ -53,7 +53,7 @@ let rec expand_macros s i =
 	  expand_macros s (String.length v)
       | c -> expand_macros s (i+1)
 
-let glob s = expand_macros s 0
+let expand_path_macros s = expand_macros s 0
 
 (* Files and load path. *)
 
@@ -97,51 +97,44 @@ let all_subdirs ~unix_path:root =
    end ;
   List.rev !l
 
-let search_in_path path filename =
+let where_in_path path filename =
   let rec search = function
     | lpe :: rem ->
-	let f = glob (Filename.concat lpe filename) in
+	let f = Filename.concat lpe filename in
 	if Sys.file_exists f then (lpe,f) else search rem
     | [] ->
 	raise Not_found
   in
   search path
 
-let where_in_path = search_in_path
-
-let find_file_in_path paths name =
-  let globname = glob name in
-  if not (Filename.is_implicit globname) then
-    let root = Filename.dirname globname in
-    root, globname
+let find_file_in_path paths filename =
+  if not (Filename.is_implicit filename) then
+    let root = Filename.dirname filename in
+    root, filename
   else 
-    try 
-      search_in_path paths name
+    try where_in_path paths filename
     with Not_found ->
       errorlabstrm "System.find_file_in_path"
-	(hov 0 (str "Can't find file" ++ spc () ++ str name ++ spc () ++ 
+	(hov 0 (str "Can't find file" ++ spc () ++ str filename ++ spc () ++ 
 		str "on loadpath"))
 
 let is_in_path lpath filename =
-  try
-    let _ = search_in_path lpath filename in true
-  with
-    Not_found -> false
+  try ignore (where_in_path lpath filename); true
+  with Not_found -> false
 
 let make_suffix name suffix =
   if Filename.check_suffix name suffix then name else (name ^ suffix)
 
-let file_readable_p na =
-  try access (glob na) [R_OK];true with Unix_error (_, _, _) -> false
+let file_readable_p name =
+  try access name [R_OK];true with Unix_error (_, _, _) -> false
 
-let open_trapping_failure open_fun name suffix =
-  let rname = glob (make_suffix name suffix) in
-  try open_fun rname with _ -> error ("Can't open " ^ rname)
+let open_trapping_failure name =
+  try open_out_bin name with _ -> error ("Can't open " ^ name)
 
-let try_remove f =
-  try Sys.remove f
+let try_remove filename =
+  try Sys.remove filename
   with _ -> msgnl (str"Warning: " ++ str"Could not remove file " ++
-                   str f ++ str" which is corrupted!" )
+                   str filename ++ str" which is corrupted!" )
 
 let marshal_out ch v = Marshal.to_channel ch v []
 let marshal_in ch =
@@ -152,14 +145,14 @@ exception Bad_magic_number of string
 
 let raw_extern_intern magic suffix =
   let extern_state name = 
-    let (_,channel) as filec =
-      open_trapping_failure (fun n -> n,open_out_bin n) name suffix in
+    let filename = make_suffix name suffix in
+    let channel = open_trapping_failure filename in
     output_binary_int channel magic;
-    filec
-  and intern_state fname = 
-    let channel = open_in_bin fname in
+    filename,channel
+  and intern_state filename = 
+    let channel = open_in_bin filename in
     if input_binary_int channel <> magic then
-      raise (Bad_magic_number fname);
+      raise (Bad_magic_number filename);
     channel
   in 
   (extern_state,intern_state)
@@ -168,17 +161,17 @@ let extern_intern magic suffix =
   let (raw_extern,raw_intern) = raw_extern_intern magic suffix in
   let extern_state name val_0 = 
     try
-      let (fname,channel) = raw_extern name in
+      let (filename,channel) = raw_extern name in
       try
         marshal_out channel val_0;
         close_out channel
       with e -> 
-	begin try_remove fname; raise e end
+	begin try_remove filename; raise e end
     with Sys_error s -> error ("System error: " ^ s)
   and intern_state paths name = 
     try
-      let _,fname = find_file_in_path paths (make_suffix name suffix) in
-      let channel = raw_intern fname in
+      let _,filename = find_file_in_path paths (make_suffix name suffix) in
+      let channel = raw_intern filename in
       let v = marshal_in channel in
       close_in channel; 
       v

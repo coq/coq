@@ -42,9 +42,8 @@ open Vernacinterp
 
 (* This path is where we look for .cmo *)
 let coq_mlpath_copy = ref ["."]
-let keep_copy_mlpath s = 
-  let dir = glob s in
-  coq_mlpath_copy := dir :: !coq_mlpath_copy
+let keep_copy_mlpath path = 
+  coq_mlpath_copy := path :: !coq_mlpath_copy
 
 (* If there is a toplevel under Coq *)
 type toplevel = { 
