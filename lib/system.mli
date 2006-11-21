@@ -26,7 +26,7 @@ val string_of_physical_path : physical_path -> string
 val make_suffix : string -> string -> string
 val file_readable_p : string -> bool
 
-val glob : string -> string
+val expand_path_macros : string -> string
 val getenv_else : string -> string -> string
 val home : string
 

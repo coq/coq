@@ -119,6 +119,7 @@ let pr_new_syntax loc ocom =
 let rec vernac_com interpfun (loc,com) =
   let rec interp = function
     | VernacLoad (verbosely, fname) ->
+	let fname = expand_path_macros fname in
         (* translator state *)
         let ch = !chan_translate in
         let cs = Lexer.com_state() in
