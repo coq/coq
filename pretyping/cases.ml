@@ -131,19 +131,14 @@ let mkSpecialLetInJudge j (na,(deppat,nondeppat,d,t)) =
 
 (**********************************************************************)
 (* Structures used in compiling pattern-matching *)
-type 'a lifted = int * 'a
-
-let insert_lifted a = (0,a);;
 
 type rhs =
     { rhs_env    : env;
       avoid_ids  : identifier list;
-      rhs_lift   : int;
       it         : rawconstr }
 
 type equation =
-    { dependencies : constr lifted list;
-      patterns     : cases_pattern list; 
+    { patterns     : cases_pattern list; 
       rhs          : rhs;
       alias_stack  : name list;
       eqn_loc      : loc;
@@ -779,7 +774,7 @@ let noccur_between_without_evar n m term =
   in 
   try occur_rec n term; true with Occur -> false
 
-(* Infering the predicate *)
+(* Inferring the predicate *)
 let prepare_unif_pb typ cs =
   let n = List.length (assums_of_rel_context cs.cs_args) in
 
@@ -979,7 +974,7 @@ let ungeneralize_predicate = function
 (* We first need to lift t(x) s.t. it is typed in Gamma, X:=rargs, x'        *)
 (* then we have to replace x by x' in t(x) and y by y' in P                  *)
 (*****************************************************************************)
-let generalize_predicate c ny d = function
+let generalize_predicate ny d = function
   | PrLetIn ((names,dep as tm),pred) ->
       if dep=Anonymous then anomaly "Undetected dependency";
       let p = List.length names + 1 in
@@ -1157,16 +1152,16 @@ let group_equations pb ind current cstrs mat =
 (* Here starts the pattern-matching compilation algorithm *)
 
 (* Abstracting over dependent subterms to match *)
-let rec generalize_problem pb current = function
+let rec generalize_problem pb = function
   | [] -> pb
   | i::l ->
       let d = map_rel_declaration (lift i) (Environ.lookup_rel i pb.env) in
-      let pb' = generalize_problem pb current l in
+      let pb' = generalize_problem pb l in
       let tomatch = lift_tomatch_stack 1 pb'.tomatch in
       let tomatch = regeneralize_index_tomatch (i+1) tomatch in
       { pb with
 	  tomatch = Abstract d :: tomatch;
-          pred = option_map (generalize_predicate current i d) pb'.pred }
+          pred = option_map (generalize_predicate i d) pb'.pred }
 
 (* No more patterns: typing the right-hand-side of equations *)
 let build_leaf pb =
@@ -1264,9 +1259,6 @@ let build_branch current deps pb eqns const_info =
   "Pushed" terms and types are relative to env
   "Abstract" types are relative to env enriched by the previous terms to match
 
-  Concretely, each term "c" or type "T" comes with a delayed lift
-  index, but it works as if the lifting were effective.
-
 *)
 
 (**********************************************************************)
@@ -1294,7 +1286,7 @@ and match_current pb tomatch =
           let _constraints = Array.map (solve_constraints indt) cstrs in
 
 	  (* We generalize over terms depending on current term to match *)
-	  let pb = generalize_problem pb current deps in
+	  let pb = generalize_problem pb deps in
 
 	  (* We compile branches *)
 	  let brs = array_map2 (compile_branch current deps pb) eqns cstrs in
@@ -1372,10 +1364,8 @@ let matx_of_eqns env tomatchl eqns =
     let rhs =
       { rhs_env = env;
 	avoid_ids = ids@(ids_of_named_context (named_context env));
-	rhs_lift = 0;
 	it = initial_rhs } in
-    { dependencies = [];
-      patterns = initial_lpat;
+    { patterns = initial_lpat;
       tag = RegularPat;
       alias_stack = [];
       eqn_loc = loc;
