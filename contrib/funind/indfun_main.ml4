@@ -446,10 +446,20 @@ VERNAC COMMAND EXTEND MergeFunind
   [ "Mergeschemes" "(" ident(id1) ne_ident_list(cl1) ")" 
       "with" "(" ident(id2) ne_ident_list(cl2)  ")" "using" ident(id) ] -> 
      [ 
-       let _ = Constrintern.interp_constr Evd.empty (Global.env()) 
+       let f1 = Constrintern.interp_constr Evd.empty (Global.env()) 
 	 (CRef (Libnames.Ident (Util.dummy_loc,id1))) in
-       let _ = Constrintern.interp_constr Evd.empty (Global.env())
-	 (CRef (Libnames.Ident (Util.dummy_loc,id2)))in
+       let f2 = Constrintern.interp_constr Evd.empty (Global.env())
+	 (CRef (Libnames.Ident (Util.dummy_loc,id2))) in
+       let f1type = Typing.type_of (Global.env()) Evd.empty f1 in
+       let f2type = Typing.type_of (Global.env()) Evd.empty f2 in
+       let ar1 = List.length (fst (decompose_prod f1type)) in
+       let ar2 = List.length (fst (decompose_prod f2type)) in
+       let _ = 
+	 if ar1 <> List.length cl1 then 
+	   Util.error ("not the right number of arguments for " ^ string_of_id id1) in
+       let _ = 
+	 if ar2 <> List.length cl2 then 
+	   Util.error ("not the right number of arguments for " ^ string_of_id id2) in
        Merge.merge id1 id2 (Array.of_list cl1) (Array.of_list cl2)  id
      ]
 END
