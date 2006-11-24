@@ -238,47 +238,47 @@ type 'a merged_arg =
     | Arg_linked of 'a
     | Arg_funres
 
+(** Information about graph merging of two inductives. 
+   All rel_decl list are IN INVERSE ORDER (ie well suited for compose) *)
+
 type merge_infos =
     {
-      ident:identifier; (* new inductive name *)
+      ident:identifier; (** new inductive name *)
       mib1: mutual_inductive_body;
       oib1: one_inductive_body; 
       mib2: mutual_inductive_body;
       oib2: one_inductive_body; 
-      (* Array of links of the first inductive (should be all stable) *)
+
+      (** Array of links of the first inductive (should be all stable) *)
       lnk1: int merged_arg array;
-      (* Array of links of the second inductive (point to the first ind param/args) *)
+
+      (** Array of links of the second inductive (point to the first ind param/args) *)
       lnk2: int merged_arg array;
-      (* number of rec params of ind1 which remain rec param in merge *)
-      nrecprms1: int;
-      (* number of other rec params of ind1 (which become non parm) *)
-      notherprms1:int;
-      (* number of args of ind1 which remain args in merge *)
-      nargs1:int;
-      (* number of functional result params of ind2 (which become non parm) *)
-      nfunresprms1:int;
-      (* list of decl of rec parms from ind1 which remain parms *)
+
+      (** rec params which remain rec param (ie not linked) *)
       recprms1: rel_declaration list;
-      (* List of other rec parms from ind1 *)
-      otherprms1: rel_declaration list; (* parms that became args *)
-      args1:rel_declaration list; (* args of ind1 which remain args in merge *)
-      funresprms1: rel_declaration list; (* parms that are functional result args *)
-      (* number of rec params of ind2 which remain rec param in merge (and not linked) *)
-      nrecprms2: int;
-      (* number of other params of ind2 (which become non rec parm) *)
-      notherprms2:int;
-      (* number of args of ind2 which remain args in merge *)
-      nargs2:int;
-      (* number of functional result params of ind2 (which become non parm) *)
-      nfunresprms2:int;
-      (* list of decl of rec parms from ind2 which remain parms (and not linked) *)
       recprms2: rel_declaration list;
-      (* List of other rec parms from ind2 (which are linked or become non parm) *)
+      nrecprms1: int; 
+      nrecprms2: int;
+
+      (** rec parms which became non parm (either linked to something
+         or because after a rec parm that became non parm) *)
+      otherprms1: rel_declaration list; 
       otherprms2: rel_declaration list;      
-      args2:rel_declaration list; (* args of ind2 which remain args in merge *)
-      funresprms2: rel_declaration list; (* parms that are functional result args *)
-(*       mapargs1: identifier Idmap.t; *)
-(*       mapargs2: identifier Idmap.t; *)
+      notherprms1:int; 
+      notherprms2:int;
+
+      (** args which remain args in merge *)
+      args1:rel_declaration list; 
+      args2:rel_declaration list;
+      nargs1:int;
+      nargs2:int;
+
+      (** functional result args *)
+      funresprms1: rel_declaration list; 
+      funresprms2: rel_declaration list;
+      nfunresprms1:int;
+      nfunresprms2:int;
     }
 
 
@@ -802,8 +802,8 @@ let merge_rec_params_and_arity prms1 prms2 shift (concl:constr) =
         let newenv = Environ.push_rel (nm,None,c) env in
         CProdN (dummy_loc, [[(dummy_loc,nm)],typ] , acc) , newenv)
       (concl,Global.env())
-      (List.rev (shift.otherprms1@shift.otherprms2@shift.args1@shift.args2
-        @shift.funresprms1@shift.funresprms2)) in  
+      (shift.funresprms2 @ shift.funresprms1 
+        @ shift.args2 @ shift.args1 @ shift.otherprms2 @ shift.otherprms1) in  
   resparams,arity
 
   
@@ -895,7 +895,7 @@ let merge (id1:identifier) (id2:identifier) (args1:identifier array)
   (* We add one arg (functional arg of the graph) *)
   let lnk1 = Array.make (Array.length args1 + 1) Unlinked in
   let lnk2' = (* args2 may be linked to args1 members. FIXME: same 
-                as above: vars may be linked inside args2?? *)
+                 as above: vars may be linked inside args2?? *)
     Array.mapi
       (fun i c -> 
         match array_find args1 (fun i x -> x=c) with
