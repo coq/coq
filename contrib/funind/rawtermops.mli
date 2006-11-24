@@ -31,8 +31,14 @@ val mkRCast : rawconstr* rawconstr -> rawconstr
   These are analogous to the ones constrs
 *)
 val raw_decompose_prod : rawconstr -> (Names.name*rawconstr) list * rawconstr
+val raw_decompose_prod_or_letin : 
+  rawconstr -> (Names.name*rawconstr option*rawconstr option) list * rawconstr
 val raw_decompose_prod_n : int -> rawconstr -> (Names.name*rawconstr) list * rawconstr
+val raw_decompose_prod_or_letin_n : int -> rawconstr -> 
+  (Names.name*rawconstr option*rawconstr option) list * rawconstr
 val raw_compose_prod : rawconstr -> (Names.name*rawconstr) list  ->  rawconstr 
+val raw_compose_prod_or_letin: rawconstr -> 
+  (Names.name*rawconstr option*rawconstr option) list  ->  rawconstr
 val raw_decompose_app : rawconstr -> rawconstr*(rawconstr list)
 
 

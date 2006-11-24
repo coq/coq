@@ -32,8 +32,26 @@ let raw_decompose_prod =
   in
   raw_decompose_prod []
 
+let raw_decompose_prod_or_letin = 
+  let rec raw_decompose_prod args = function 
+  | RProd(_,n,t,b) -> 
+      raw_decompose_prod ((n,None,Some t)::args) b 
+  | RLetIn(_,n,t,b) -> 
+      raw_decompose_prod ((n,Some t,None)::args) b 
+  | rt -> args,rt
+  in
+  raw_decompose_prod []
+
 let raw_compose_prod = 
   List.fold_left (fun b (n,t) -> mkRProd(n,t,b))
+
+let raw_compose_prod_or_letin = 
+  List.fold_left (
+      fun concl decl -> 
+	match decl with 
+	  | (n,None,Some t) -> mkRProd(n,t,concl)
+	  | (n,Some bdy,None) -> mkRLetIn(n,bdy,concl)
+	  | _ -> assert false)
 
 let raw_decompose_prod_n n = 
   let rec raw_decompose_prod i args c = 
@@ -42,6 +60,20 @@ let raw_decompose_prod_n n =
       match c with
 	| RProd(_,n,t,b) -> 
 	    raw_decompose_prod (i-1) ((n,t)::args) b 
+	| rt -> args,rt
+  in
+  raw_decompose_prod n []
+
+
+let raw_decompose_prod_or_letin_n n = 
+  let rec raw_decompose_prod i args c = 
+    if i<=0 then args,c
+    else
+      match c with
+	| RProd(_,n,t,b) -> 
+	    raw_decompose_prod (i-1) ((n,None,Some t)::args) b 
+	| RLetIn(_,n,t,b) -> 
+	    raw_decompose_prod (i-1) ((n,Some t,None)::args) b 
 	| rt -> args,rt
   in
   raw_decompose_prod n []
