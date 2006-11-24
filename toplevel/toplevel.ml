@@ -220,7 +220,8 @@ let make_emacs_prompt() =
       (fun acc x -> acc ^ (if acc <> "" then "|" else "") ^ Names.string_of_id x)
       "" pending in
   let proof_info = if dpth >= 0 then string_of_int dpth else "0" in
-  statnum ^ " |" ^ pendingprompt ^ "| " ^ proof_info ^ " < " ^ (emacs_prompt_endstring())
+  if !Options.print_emacs then statnum ^ " |" ^ pendingprompt ^ "| " ^ proof_info ^ " < "
+  else ""
 
 (* A buffer to store the current command read on stdin. It is
  * initialized when a vernac command is immediately followed by "\n",
@@ -230,6 +231,7 @@ let top_buffer =
     emacs_prompt_startstring() 
     ^ make_prompt() 
     ^ make_emacs_prompt()
+    ^ emacs_prompt_endstring()
   in
   { prompt = pr;
     str = "";
