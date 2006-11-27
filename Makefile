@@ -421,7 +421,7 @@ $(COQTOPBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) $(USERTACCMO)
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -top $(BYTEFLAGS) -o $@
 
-$(COQTOP):
+$(COQTOP): | $(BESTCOQTOP)
 	cd bin; ln -sf coqtop.$(BEST)$(EXE) coqtop$(EXE)
 
 # coqmktop 
@@ -439,7 +439,7 @@ $(COQMKTOPOPT): $(COQMKTOPCMX)
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ str.cmxa unix.cmxa \
           $(COQMKTOPCMX) $(OSDEPLIBS)
 
-$(COQMKTOP): $(BESTCOQMKTOP)
+$(COQMKTOP): | $(BESTCOQMKTOP)
 	cd bin; ln -sf coqmktop.$(BEST)$(EXE) coqmktop$(EXE)
 
 
@@ -465,7 +465,7 @@ $(COQCOPT): $(COQCCMX) $(COQTOPOPT) $(BESTCOQTOP)
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ unix.cmxa $(COQCCMX) $(OSDEPLIBS)
 
-$(COQC): $(BESTCOQC)
+$(COQC): | $(BESTCOQC)
 	cd bin; ln -sf coqc.$(BEST)$(EXE) coqc$(EXE)
 
 
