@@ -44,4 +44,6 @@ end.
 
 Ltac destruct_exists := repeat (destruct_one_pair) .
 
+Ltac subtac_simpl := simpl ; intros ; destruct_exists.
+
 Extraction Inline proj1_sig.

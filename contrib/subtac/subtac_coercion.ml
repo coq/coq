@@ -224,7 +224,7 @@ module Coercion = struct
 			 if len = 1 && len = Array.length l' && i = i' then
 			   let argx, argy = l.(0), l'.(0) in
 			   let indtyp = Inductiveops.type_of_inductive env i in
-			   let argname, argtype, rest = destProd indtyp in
+			   let argname, argtype, _ = destProd indtyp in
 			   let eq =
 			     mkApp (Lazy.force eqind, [| argtype; argx; argy |])
 			   in
@@ -391,7 +391,7 @@ module Coercion = struct
        debug 1 (str "inh_conv_coerce_to_fail called for " ++
 	      Termops.print_constr_env env t ++ str " and "++ spc () ++
 	      Termops.print_constr_env env c1 ++ str " with evars: " ++ spc () ++
-	      Evd.pr_evar_defs isevars ++ str " in env: " ++ spc () ++
+	      Subtac_utils.pr_evar_defs isevars ++ str " in env: " ++ spc () ++
 	      Termops.print_env env);
      with _ -> ());
     try (the_conv_x_leq env t c1 isevars, v, t)
@@ -457,7 +457,7 @@ module Coercion = struct
        debug 1 (str "Subtac_coercion.inh_conv_coerce_to called for " ++
 	      Termops.print_constr_env env cj.uj_type ++ str " and "++ spc () ++ 
 	      Evarutil.pr_tycon_type env tycon ++ str " with evars: " ++ spc () ++
-	      Evd.pr_evar_defs isevars ++ str " in env: " ++ spc () ++
+	      Subtac_utils.pr_evar_defs isevars ++ str " in env: " ++ spc () ++
 	      Termops.print_env env);
      with _ -> ());
     match n with

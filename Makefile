@@ -305,7 +305,7 @@ CCCMO=contrib/cc/ccalgo.cmo contrib/cc/ccproof.cmo contrib/cc/cctac.cmo \
 SUBTACCMO=contrib/subtac/subtac_utils.cmo contrib/subtac/eterm.cmo \
   contrib/subtac/g_eterm.cmo contrib/subtac/context.cmo \
   contrib/subtac/subtac_errors.cmo contrib/subtac/subtac_coercion.cmo \
-  contrib/subtac/subtac_obligations.cmo \
+  contrib/subtac/subtac_obligations.cmo contrib/subtac/subtac_cases.cmo \
   contrib/subtac/subtac_pretyping_F.cmo contrib/subtac/subtac_pretyping.cmo \
   contrib/subtac/subtac_interp_fixpoint.cmo \
   contrib/subtac/subtac_command.cmo contrib/subtac/subtac.cmo \

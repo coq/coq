@@ -148,8 +148,10 @@ let start_proof_and_print env isevars idopt k t hook =
 let subtac (loc, command) =
   check_required_library ["Coq";"Init";"Datatypes"];
   check_required_library ["Coq";"Init";"Specif"];
+  check_required_library ["Coq";"Logic";"JMeq"];  
   require_library "Coq.subtac.FixSub";
   require_library "Coq.subtac.Utils";
+  (*Subtac_obligations.set_default_tactic (Tacinterp.lookup_tactic "subtac_simpl" []);*)
   let env = Global.env () in
   let isevars = ref (create_evar_defs Evd.empty) in
   try

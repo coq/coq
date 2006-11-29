@@ -31,6 +31,13 @@ type program_info = {
   prg_deps : (identifier * int) list;
 }
 
+let assumption_message id =
+  Options.if_verbose message ((string_of_id id) ^ " is assumed")
+
+let default_tactic : Proof_type.tactic ref = ref Refiner.tclIDTAC
+
+let set_default_tactic t = default_tactic := t
+
 let evar_of_obligation o = { evar_hyps = Environ.empty_named_context_val ; 
 			     evar_concl = o.obl_type ; 
 			     evar_body = Evar_empty ;
@@ -277,7 +284,8 @@ let subtac_obligation (user_num, name, typ) =
 			 let obls = Array.copy obls in
 			 let _ = obls.(num) <- obl in
 			   update_obls prg obls (pred rem));
-		    trace (str "Started obligation " ++ int user_num ++ str "  proof")
+		      Pfedit.by !default_tactic;
+		      trace (str "Started obligation " ++ int user_num ++ str "  proof")
      		 | l -> pperror (str "Obligation " ++ int user_num ++ str " depends on obligation(s) "
 		     ++ str (string_of_list ", " (fun x -> string_of_int (succ x)) l)))
 	  | Some r -> error "Obligation already solved"
@@ -316,6 +324,22 @@ let solve_obligations n tac =
       obls
   in
     update_obls prg obls' !rem
+
+let admit_obligations n =
+  let prg = get_prog n in
+  let obls, rem = prg.prg_obligations in
+  let obls' = 
+    Array.mapi (fun i x -> 
+		 match x.obl_body with 
+		     None -> 
+			 let kn = Declare.declare_constant x.obl_name (ParameterEntry x.obl_type, IsAssumption Conjectural) in
+			   assumption_message x.obl_name;
+			   { x with obl_body = Some (mkConst kn) }
+		   | Some _ -> x)
+      obls
+  in
+    update_obls prg obls' 0
+
 
 open Pp
 let show_obligations n =

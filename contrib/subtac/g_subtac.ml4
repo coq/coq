@@ -38,6 +38,7 @@ struct
 		(* types *)
   let subtac_gallina_loc : Vernacexpr.vernac_expr located Gram.Entry.e = gec "subtac_gallina_loc"
 
+  let subtac_nameopt : identifier option Gram.Entry.e = gec "subtac_nameopt"
 end
 
 open SubtacGram 
@@ -47,10 +48,15 @@ open Pcoq
 let sigref = mkRefC (Qualid (dummy_loc, Libnames.qualid_of_string "Coq.Init.Specif.sig"))
 
 GEXTEND Gram
-  GLOBAL: subtac_gallina_loc Constr.binder_let Constr.binder;
+  GLOBAL: subtac_gallina_loc Constr.binder_let Constr.binder subtac_nameopt;
  
   subtac_gallina_loc:
     [ [ g = Vernac.gallina -> loc, g ] ]
+    ;
+
+  subtac_nameopt:
+    [ [ "ofb"; id=Prim.ident -> Some (id) 
+      | -> None ] ]
     ;
 
   Constr.binder_let:
@@ -76,14 +82,32 @@ let (wit_subtac_gallina_loc : Genarg.tlevel gallina_loc_argtype),
   (rawwit_subtac_gallina_loc : Genarg.rlevel gallina_loc_argtype) =
   Genarg.create_arg "subtac_gallina_loc"
 
+type 'a nameopt_argtype = (identifier option, 'a) Genarg.abstract_argument_type
+
+let (wit_subtac_nameopt : Genarg.tlevel nameopt_argtype),
+  (globwit_subtac_nameopt : Genarg.glevel nameopt_argtype),
+  (rawwit_subtac_nameopt : Genarg.rlevel nameopt_argtype) =
+  Genarg.create_arg "subtac_nameopt"
+
 VERNAC COMMAND EXTEND Subtac
 [ "Program" subtac_gallina_loc(g) ] -> [ Subtac.subtac g ]
+  END
+
+VERNAC COMMAND EXTEND Subtac_Obligations
 | [ "Obligation" integer(num) "of" ident(name) ":" lconstr(t) ] -> [ Subtac_obligations.subtac_obligation (num, Some name, Some t) ]
 | [ "Obligation" integer(num) "of" ident(name) ] -> [ Subtac_obligations.subtac_obligation (num, Some name, None) ]
 | [ "Obligation" integer(num) ":" lconstr(t) ] -> [ Subtac_obligations.subtac_obligation (num, None, Some t) ]      
-| [ "Obligation" integer(num) ] -> [ Subtac_obligations.subtac_obligation (num, None, None) ]      
+| [ "Obligation" integer(num) ] -> [ Subtac_obligations.subtac_obligation (num, None, None) ]
+    END
+
+VERNAC COMMAND EXTEND Subtac_Solve_Obligations
 | [ "Solve" "Obligations" "of" ident(name) "using" tactic(t) ] -> [ Subtac_obligations.solve_obligations (Some name) (Tacinterp.interp t) ]
 | [ "Solve" "Obligations" "using" tactic(t) ] -> [ Subtac_obligations.solve_obligations None (Tacinterp.interp t) ]
+| [ "Admit" "Obligations" "of" ident(name) ] -> [ Subtac_obligations.admit_obligations (Some name) ] 
+| [ "Admit" "Obligations" ] -> [ Subtac_obligations.admit_obligations None ] 
+    END
+
+VERNAC COMMAND EXTEND Subtac_Show_Obligations
 | [ "Obligations" "of" ident(name) ] -> [ Subtac_obligations.show_obligations (Some name) ]
 | [ "Obligations" ] -> [ Subtac_obligations.show_obligations None ]
 END
