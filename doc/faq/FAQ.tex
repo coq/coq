@@ -1231,6 +1231,9 @@ You can use the {\set} or {\pose} tactics.
 
 You can use the {\case} or {\destruct} tactics.
 
+\Question{How can I prevent the case tactic from losing information ?}
+
+You may want to use the (now standard) {\tt case\_eq} tactic. See the Coq'Art page 159.
 
 \Question{Why should I name my intros?}
 
@@ -2416,6 +2419,21 @@ This means that {\eauto} or {\eapply} didn't instantiate an
 existential variable which eventually got erased by some computation.
 You have to backtrack to the faulty occurrence of {\eauto} or
 {\eapply} and give the missing argument an explicit value.
+
+Note that you can see what the current existential are using the {\tt
+  Show Existentials} command.
+
+\begin{coq_example}
+Lemma example_show_existentials :  forall a b c:nat, a=b -> b=c -> a=c.
+Proof.
+intros.
+eapply trans_equal.
+Show Existentials.
+eassumption.
+assumption.
+Qed.
+\end{coq_example}
+
 
 \Question{What can I do if I get ``Cannot solve a second-order unification problem''?}
 
