@@ -177,6 +177,10 @@ val coerce_to_id : constr_expr -> identifier located
 val abstract_constr_expr : constr_expr -> local_binder list -> constr_expr
 val prod_constr_expr : constr_expr -> local_binder list -> constr_expr
 
+(* Same as [abstract_constr_expr] and [prod_constr_expr], with location *)
+val mkCLambdaN : loc -> local_binder list -> constr_expr -> constr_expr
+val mkCProdN : loc -> local_binder list -> constr_expr -> constr_expr
+
 (* For binders parsing *)
 
 (* Includes let binders *)

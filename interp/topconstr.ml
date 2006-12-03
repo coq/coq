@@ -736,6 +736,24 @@ let mkLambdaC (idl,a,b) = CLambdaN (dummy_loc,[idl,a],b)
 let mkLetInC (id,a,b)   = CLetIn (dummy_loc,id,a,b)
 let mkProdC (idl,a,b)   = CProdN (dummy_loc,[idl,a],b)
 
+let rec mkCProdN loc bll c =
+  match bll with
+  | LocalRawAssum ((loc1,_)::_ as idl,t) :: bll -> 
+      CProdN (loc,[idl,t],mkCProdN (join_loc loc1 loc) bll c)
+  | LocalRawDef ((loc1,_) as id,b) :: bll -> 
+      CLetIn (loc,id,b,mkCProdN (join_loc loc1 loc) bll c)
+  | [] -> c
+  | LocalRawAssum ([],_) :: bll -> mkCProdN loc bll c
+
+let rec mkCLambdaN loc bll c =
+  match bll with
+  | LocalRawAssum ((loc1,_)::_ as idl,t) :: bll -> 
+      CLambdaN (loc,[idl,t],mkCLambdaN (join_loc loc1 loc) bll c)
+  | LocalRawDef ((loc1,_) as id,b) :: bll -> 
+      CLetIn (loc,id,b,mkCLambdaN (join_loc loc1 loc) bll c)
+  | [] -> c
+  | LocalRawAssum ([],_) :: bll -> mkCLambdaN loc bll c
+
 let rec abstract_constr_expr c = function
   | [] -> c
   | LocalRawDef (x,b)::bl -> mkLetInC(x,b,abstract_constr_expr c bl)

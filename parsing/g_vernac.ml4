@@ -320,9 +320,9 @@ GEXTEND Gram
   constructor:
     [ [ id = identref; l = LIST0 binder_let; 
         coe = of_type_with_opt_coercion; c = lconstr ->
-	  (coe,(id,G_constr.mkCProdN loc l c))
+	  (coe,(id,mkCProdN loc l c))
       | id = identref; l = LIST0 binder_let ->
-	  (false,(id,G_constr.mkCProdN loc l (CHole loc))) ] ]
+	  (false,(id,mkCProdN loc l (CHole loc))) ] ]
   ;
   of_type_with_opt_coercion:
     [ [ ":>" -> true

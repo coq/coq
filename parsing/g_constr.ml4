@@ -39,24 +39,6 @@ let loc_of_binder_let = function
   | LocalRawDef ((loc,_),_)::_ -> loc
   | _ -> dummy_loc
 
-let rec mkCProdN loc bll c =
-  match bll with
-  | LocalRawAssum ((loc1,_)::_ as idl,t) :: bll -> 
-      CProdN (loc,[idl,t],mkCProdN (join_loc loc1 loc) bll c)
-  | LocalRawDef ((loc1,_) as id,b) :: bll -> 
-      CLetIn (loc,id,b,mkCProdN (join_loc loc1 loc) bll c)
-  | [] -> c
-  | LocalRawAssum ([],_) :: bll -> mkCProdN loc bll c
-
-let rec mkCLambdaN loc bll c =
-  match bll with
-  | LocalRawAssum ((loc1,_)::_ as idl,t) :: bll -> 
-      CLambdaN (loc,[idl,t],mkCLambdaN (join_loc loc1 loc) bll c)
-  | LocalRawDef ((loc1,_) as id,b) :: bll -> 
-      CLetIn (loc,id,b,mkCLambdaN (join_loc loc1 loc) bll c)
-  | [] -> c
-  | LocalRawAssum ([],_) :: bll -> mkCLambdaN loc bll c
-
 let rec index_and_rec_order_of_annot loc bl ann =
   match names_of_local_assums bl,ann with
     | [_], (None, r) -> Some 0, r
