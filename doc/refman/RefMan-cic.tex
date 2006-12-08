@@ -1572,7 +1572,8 @@ Let $F$ be the set of declarations: $f_1/k_1:A_1:=t_1 \ldots
 f_n/k_n:A_n:=t_n$.
 The reduction for fixpoints is:
 \[ (\Fix{f_i}{F}~a_1\ldots
-a_{k_i}) \triangleright_{\iota} \substs{t_i}{f_k}{\Fix{f_k}{F}}{k=1\ldots n}\]
+a_{k_i}) \triangleright_{\iota} \substs{t_i}{f_k}{\Fix{f_k}{F}}{k=1\ldots n}
+~a_1\ldots a_{k_i}\]
 when $a_{k_i}$ starts with a constructor.
 This last restriction is needed in order to keep strong normalization
 and corresponds to the reduction for primitive recursive operators.

@@ -769,6 +769,15 @@ it were allowed, it would be possible to encode e.g. Burali-Forti
 paradox \cite{Gir70,Coq85}.
 
 
+\Question{Is Coq's logic conservative over Coquand's Calculus of 
+Constructions?}
+
+Yes for the non Set-impredicative version of the Calculus of Inductive
+Constructions. Indeed, the impredicative sort of the Calculus of
+Constructions can only be interpreted as the sort {\Prop} since {\Set}
+is predicative. But {\Prop} can be 
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Talkin' with the Rooster}
 
@@ -2236,16 +2245,30 @@ rendering tool provided by the server (see
 {\CoqIde} is a gtk based GUI for \Coq.
 
 \Question{How to enable Emacs keybindings?}
- Insert \texttt{gtk-key-theme-name = "Emacs"}
+
+Depending on your configuration, use either one of these two methods
+
+\begin{itemize}
+
+\item Insert \texttt{gtk-key-theme-name = "Emacs"}
     in your \texttt{.coqide-gtk2rc} file. It may be in the current dir
     or in \verb#$HOME# dir. This is done by default.
+
+\item If in Gnome, run the gnome configuration editor (\texttt{gconf-editor})
+and set key \texttt{gtk-key-theme} to \texttt{Emacs} in the category
+\texttt{desktop/gnome/interface}.
+
+\end{itemize}
+
+
 
 %$ juste pour que la coloration emacs marche
 
 \Question{How to enable antialiased fonts?}
 
- Set the \verb#GDK_USE_XFT# variable to \verb#1#. This is by default with \verb#Gtk >= 2.2#.
-    If some of your fonts are not available, set \verb#GDK_USE_XFT# to \verb#0#.
+ Set the \verb#GDK_USE_XFT# variable to \verb#1#. This is by default
+    with \verb#Gtk >= 2.2#.  If some of your fonts are not available,
+    set \verb#GDK_USE_XFT# to \verb#0#.
 
 \Question{How to use those Forall and Exists pretty symbols?}\label{forallcoqide}
  Thanks to the notation features in \Coq, you just need to insert these
