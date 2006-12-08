@@ -335,7 +335,8 @@ let init is_ide =
   end;
   if !batch_mode then
     (flush_all(); 
-     if !output_context then Pp.ppnl (Prettyp.print_full_pure_context ());
+     if !output_context then
+       Pp.ppnl (with_option raw_print Prettyp.print_full_pure_context ());
      Profile.print_profile (); 
      exit 0);
   Lib.declare_initial_state ()

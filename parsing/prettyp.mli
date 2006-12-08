@@ -40,7 +40,7 @@ val print_eval :
 (* This function is exported for the graphical user-interface pcoq *)
 val build_inductive : mutual_inductive -> int ->
   global_reference * rel_context * types * identifier array * types array
-val print_mutual : mutual_inductive -> std_ppcmds
+val print_inductive : mutual_inductive -> std_ppcmds
 val print_name : reference -> std_ppcmds
 val print_opaque_name : reference -> std_ppcmds
 val print_about : reference -> std_ppcmds

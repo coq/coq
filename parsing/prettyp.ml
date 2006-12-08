@@ -307,17 +307,16 @@ let pr_mutual_inductive finite indl =
   hov 0 (
     str (if finite then "Inductive " else "CoInductive ") ++
     prlist_with_sep (fun () -> fnl () ++ str"  with ")
-      print_one_inductive indl) ++
-  fnl ()
+      print_one_inductive indl)
 
-let print_mutual sp =
+let print_inductive sp =
   let (mib,mip) = Global.lookup_inductive (sp,0) in
   let mipv = mib.mind_packets in
   let names = list_tabulate (fun x -> (sp,x)) (Array.length mipv) in
-  pr_mutual_inductive mib.mind_finite names (* ++
+  pr_mutual_inductive mib.mind_finite names ++ fnl () ++ fnl () ++
   print_inductive_implicit_args sp mipv ++
   print_inductive_argument_scopes sp mipv
-*)
+
 let print_section_variable sp =
   let d = get_variable sp in
   print_named_decl d ++ 
@@ -328,7 +327,7 @@ let print_body = function
   | None -> (str"<no body>")
 
 let print_typed_body (val_0,typ) =
-  (print_body val_0 ++ fnl () ++ str "      : " ++ pr_ltype typ ++ fnl ())
+  (print_body val_0 ++ fnl () ++ str "     : " ++ pr_ltype typ ++ fnl ())
 
 let ungeneralized_type_of_constant_type = function
   | PolymorphicArity (ctx,a) -> mkArity (ctx, Type a.poly_level)
@@ -351,8 +350,6 @@ let print_constant with_values sep sp =
 
 let print_constant_with_infos sp =
   print_constant true " = " sp ++ print_name_infos (ConstRef sp)
-
-let print_inductive sp = (print_mutual sp)
 
 let print_syntactic_def sep kn =
   let qid = Nametab.shortest_qualid_of_syndef Idset.empty kn in
@@ -445,7 +442,11 @@ let print_full_pure_context () =
 		  str "  : " ++ pr_ltype typ ++ cut () ++ str " := " ++
 		  print_body val_0) ++ str "." ++ fnl () ++ fnl ()
       | "INDUCTIVE" ->
-	  print_inductive kn ++ str "." ++ fnl () ++ fnl ()
+	  let (mib,mip) = Global.lookup_inductive (kn,0) in
+	  let mipv = mib.mind_packets in
+	  let names = list_tabulate (fun x -> (kn,x)) (Array.length mipv) in
+	  pr_mutual_inductive mib.mind_finite names ++ str "." ++ 
+	  fnl () ++ fnl ()
       | "MODULE" ->
 	  (* TODO: make it reparsable *)
 	  let (mp,_,l) = repr_kn kn in 
@@ -546,7 +547,7 @@ let print_opaque_name qid =
         else 
 	  error "not a defined constant"
     | IndRef (sp,_) ->
-        print_mutual sp
+        print_inductive sp
     | ConstructRef cstr -> 
 	let ty = Inductiveops.type_of_constructor env cstr in
 	print_typed_value (mkConstruct cstr, ty)
