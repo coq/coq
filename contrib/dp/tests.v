@@ -57,7 +57,6 @@ Qed.
 
 Goal (forall (x y : Z), x = y) -> 0=1.
 try zenon.
-simplify.
 Qed.
 
 Goal forall (x: nat), (x + 0 = x)%nat.
@@ -133,8 +132,7 @@ Dp_hint add_S.
    unlike zenon *)
 
 Goal forall n : nat, add n 0 = n.
-
-induction n ; zenon.
+induction n ; simplify.
 Qed.
 
 

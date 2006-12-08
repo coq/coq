@@ -36,3 +36,12 @@ END
 VERNAC COMMAND EXTEND Dp_hint 
   [ "Dp_hint" ne_global_list(l) ] -> [ dp_hint l ]
 END
+
+VERNAC COMMAND EXTEND Dp_timeout
+| [ "Dp_timeout" natural(n) ] -> [ set_timeout n ]
+END
+
+VERNAC COMMAND EXTEND Dp_debug
+| [ "Dp_debug" ] -> [ set_debug true; Dp_zenon.set_debug true ]
+END
+

@@ -25,8 +25,12 @@ open Coqlib
 open Hipattern
 open Libnames
 open Declarations
+open Dp_why
 
 let debug = ref false
+let set_debug b = debug := b
+let timeout = ref 10
+let set_timeout n = timeout := n
 
 let logic_dir = ["Coq";"Logic";"Decidable"]
 let coq_modules =
@@ -52,6 +56,7 @@ let coq_Zneg = lazy (constant "Zneg")
 let coq_xH = lazy (constant "xH")
 let coq_xI = lazy (constant "xI")
 let coq_xO = lazy (constant "xO")
+let coq_iff = lazy (constant "iff")
 
 (* not Prop typed expressions *)
 exception NotProp
@@ -374,7 +379,7 @@ and axiomatize_body env r id d = match r with
 		     let value = tr_term tv [] env b in
 		     [id, Fatom (Eq (Fol.App (id, []), value))]
 		 | DeclFun (id, _, l, _) | DeclPred (id, _, l) ->
-		     Format.eprintf "axiomatize_body %S@." id;
+		     (*Format.eprintf "axiomatize_body %S@." id;*)
 		     let b = match kind_of_term b with
 		       (* a single recursive function *)
 		       | Fix (_, (_,_,[|b|])) -> 
@@ -401,21 +406,21 @@ and axiomatize_body env r id d = match r with
 		     let vars = List.rev vars in
 		     let bv = vars in
 		     let vars = List.map (fun x -> string_of_id x) vars in
-		     let fol_var x =
-		       Fol.App (x, []) in
+		     let fol_var x = Fol.App (x, []) in
 		     let fol_vars = List.map fol_var vars in
 		     let vars = List.combine vars l in
 		     begin match d with
-		       | DeclFun _ ->
+		       | DeclFun (_, _, _, ty) ->
 			   begin match kind_of_term t with
 			     | Case (ci, _, e, br) ->
 				 equations_for_case env id vars tv bv ci e br
 			     | _ -> 
-				 let p = 
-				   Fatom (Eq (App (id, fol_vars), 
-					      tr_term tv bv env t)) 
+				 let t = tr_term tv bv env t in
+				 let ax = 
+				   add_proof (Fun_def (id, vars, ty, t))
 				 in
-				 [id, foralls vars p]
+				 let p = Fatom (Eq (App (id, fol_vars), t)) in
+				 [ax, foralls vars p]
 			   end
 		       | DeclPred _ ->
 			   let value = tr_formula tv bv env t in
@@ -581,6 +586,8 @@ and tr_formula tv bv env f =
 	And (tr_formula tv bv env a, tr_formula tv bv env b)
     | _, [a;b] when c = build_coq_or () ->
 	Or (tr_formula tv bv env a, tr_formula tv bv env b)
+    | _, [a;b] when c = Lazy.force coq_iff ->
+	Iff (tr_formula tv bv env a, tr_formula tv bv env b)
     | Prod (n, a, b), _ ->
 	if is_imp_term f then
 	  Imp (tr_formula tv bv env a, tr_formula tv bv env b)
@@ -639,14 +646,18 @@ let remove_files = List.iter (fun f -> try Sys.remove f with _ -> ())
 let sprintf = Format.sprintf
 
 let call_simplify fwhy =
-  if Sys.command (sprintf "why --simplify %s" fwhy) <> 0 then
-    anomaly ("call to why --simplify " ^ fwhy ^ " failed; please report");
+  let cmd = sprintf "why --no-prelude --simplify %s" fwhy in
+  if Sys.command cmd <> 0 then
+    anomaly ("call to " ^ cmd ^ " failed; please report");
   let fsx = Filename.chop_suffix fwhy ".why" ^ "_why.sx" in
   let cmd = 
-    sprintf "timeout 10 Simplify %s > out 2>&1 && grep -q -w Valid out" fsx
+    sprintf "timeout %d Simplify %s > out 2>&1 && grep -q -w Valid out" 
+      !timeout fsx
   in
   let out = Sys.command cmd in
-  let r = if out = 0 then Valid else if out = 1 then Invalid else Timeout in
+  let r = 
+    if out = 0 then Valid None else if out = 1 then Invalid else Timeout 
+  in
   if not !debug then remove_files [fwhy; fsx];
   r
 
@@ -655,28 +666,34 @@ let call_zenon fwhy =
   if Sys.command cmd <> 0 then
     anomaly ("call to " ^ cmd ^ " failed; please report");
   let fznn = Filename.chop_suffix fwhy ".why" ^ "_why.znn" in
+  let out = Filename.temp_file "dp_out" "" in
   let cmd = 
-    sprintf "timeout 10 zenon %s > out 2>&1 && grep -q PROOF-FOUND out" fznn
+    sprintf "timeout %d zenon -ocoqterm %s > %s 2>&1" !timeout fznn out 
   in
-  let out = Sys.command cmd in
-  let r = 
-    if out = 0 then Valid 
-    else if out = 1 then Invalid 
-    else if out = 137 then Timeout 
-    else anomaly ("malformed Zenon input file " ^ fznn)
-  in
+  let c = Sys.command cmd in
   if not !debug then remove_files [fwhy; fznn];
-  r
+  if c = 137 then 
+    Timeout
+  else begin
+    if c <> 0 then anomaly ("command failed: " ^ cmd);
+    if Sys.command (sprintf "grep -q -w Error %s" out) = 0 then
+      error "Zenon failed";
+    let c = Sys.command (sprintf "grep -q PROOF-FOUND %s" out) in
+    if c = 0 then Valid (Some out) else Invalid
+  end
 
 let call_cvcl fwhy =
   if Sys.command (sprintf "why --cvcl %s" fwhy) <> 0 then
     anomaly ("call to why --cvcl " ^ fwhy ^ " failed; please report");
   let fcvc = Filename.chop_suffix fwhy ".why" ^ "_why.cvc" in
   let cmd = 
-    sprintf "timeout 10 cvcl < %s > out 2>&1 && grep -q -w Valid out" fcvc
+    sprintf "timeout %d cvcl < %s > out 2>&1 && grep -q -w Valid out" 
+      !timeout fcvc
   in
   let out = Sys.command cmd in
-  let r = if out = 0 then Valid else if out = 1 then Invalid else Timeout in
+  let r = 
+    if out = 0 then Valid None else if out = 1 then Invalid else Timeout 
+  in
   if not !debug then remove_files [fwhy; fcvc];
   r
 
@@ -689,7 +706,8 @@ let call_harvey fwhy =
   let f = Filename.chop_suffix frv ".rv" ^ "-0.baf" in
   let outf = Filename.temp_file "rv" ".out" in
   let out = 
-    Sys.command (sprintf "timeout 10 rv -e\"-T 2000\" %s > %s 2>&1" f outf) 
+    Sys.command (sprintf "timeout %d rv -e\"-T 2000\" %s > %s 2>&1" 
+		   !timeout f outf) 
   in
   let r =
     if out <> 0 then 
@@ -698,7 +716,7 @@ let call_harvey fwhy =
       let cmd = 
 	sprintf "grep \"Proof obligation in\" %s | grep -q \"is valid\"" outf
       in
-      if Sys.command cmd = 0 then Valid else Invalid
+      if Sys.command cmd = 0 then Valid None else Invalid
   in
   if not !debug then remove_files [fwhy; frv; outf];
   r
@@ -719,7 +737,8 @@ let dp prover gl =
   try 
     let q = tr_goal gl in
     begin match call_prover prover q with
-      | Valid -> Tactics.admit_as_an_axiom gl
+      | Valid (Some f) when prover = Zenon -> Dp_zenon.proof_from_file f gl
+      | Valid _ -> Tactics.admit_as_an_axiom gl
       | Invalid -> error "Invalid"
       | DontKnow -> error "Don't know"
       | Timeout -> error "Timeout"
@@ -742,7 +761,8 @@ let dp_hint l =
       if is_Prop s then
 	try
 	  let id = rename_global r in
-	  let d = Axiom (id, tr_formula [] [] env ty) in
+	  let tv, env, ty = decomp_type_quantifiers env ty in
+	  let d = Axiom (id, tr_formula tv [] env ty) in
 	  add_global r (Gfo d);
 	  globals_stack := d :: !globals_stack
 	with NotFO ->

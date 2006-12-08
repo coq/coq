@@ -1,4 +1,7 @@
 
 open Fol
 
-val call : query -> prover_answer
+val set_debug : bool -> unit
+
+val proof_from_file : string -> Proof_type.tactic
+

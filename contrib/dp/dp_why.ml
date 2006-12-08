@@ -4,6 +4,18 @@
 open Format
 open Fol
 
+type proof = 
+  | Immediate of Term.constr
+  | Fun_def of string * (string * typ) list * typ * term
+
+let proofs = Hashtbl.create 97
+let proof_name = 
+  let r = ref 0 in fun () -> incr r; "dp_axiom__" ^ string_of_int !r
+
+let add_proof pr = let n = proof_name () in Hashtbl.add proofs n pr; n
+
+let find_proof = Hashtbl.find proofs
+
 let rec print_list sep print fmt = function
   | [] -> ()
   | [x] -> print fmt x
