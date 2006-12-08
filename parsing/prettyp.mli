@@ -30,6 +30,7 @@ val print_context : bool -> int option -> Lib.library_segment -> std_ppcmds
 val print_library_entry : bool -> (object_name * Lib.node) -> std_ppcmds option
 val print_full_context : unit -> std_ppcmds
 val print_full_context_typ : unit -> std_ppcmds
+val print_full_pure_context : unit -> std_ppcmds
 val print_sec_context : reference -> std_ppcmds
 val print_sec_context_typ : reference -> std_ppcmds
 val print_judgment : env -> unsafe_judgment -> std_ppcmds

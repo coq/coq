@@ -32,6 +32,8 @@ let print_header () =
     Printf.printf "Welcome to Coq %s (%s)\n" ver rev;
     flush stdout
 
+let output_context = ref false
+
 let memory_stat = ref false
 
 let print_memory_stat () = 
@@ -272,6 +274,8 @@ let parse_args is_ide =
 
     | "-xml" :: rem -> Options.xml_export := true; parse rem
 
+    | "-output-context" :: rem -> output_context := true; parse rem
+
     (* Scanned in Options! *)
     | "-v7" :: rem -> error "This version of Coq does not support v7 syntax"
     | "-v8" :: rem -> parse rem
@@ -329,7 +333,11 @@ let init is_ide =
       msgnl (Toplevel.print_toplevel_error e);
       exit 1
   end;
-  if !batch_mode then (flush_all(); Profile.print_profile (); exit 0);
+  if !batch_mode then
+    (flush_all(); 
+     if !output_context then Pp.ppnl (Prettyp.print_full_pure_context ());
+     Profile.print_profile (); 
+     exit 0);
   Lib.declare_initial_state ()
 
 let init_ide () = init true; List.rev !ide_args

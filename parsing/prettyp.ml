@@ -314,10 +314,10 @@ let print_mutual sp =
   let (mib,mip) = Global.lookup_inductive (sp,0) in
   let mipv = mib.mind_packets in
   let names = list_tabulate (fun x -> (sp,x)) (Array.length mipv) in
-  pr_mutual_inductive mib.mind_finite names ++
+  pr_mutual_inductive mib.mind_finite names (* ++
   print_inductive_implicit_args sp mipv ++
   print_inductive_argument_scopes sp mipv
-
+*)
 let print_section_variable sp =
   let d = get_variable sp in
   print_named_decl d ++ 
@@ -328,7 +328,7 @@ let print_body = function
   | None -> (str"<no body>")
 
 let print_typed_body (val_0,typ) =
-  (print_body val_0 ++ fnl () ++ str "     : " ++ pr_ltype typ ++ fnl ())
+  (print_body val_0 ++ fnl () ++ str "      : " ++ pr_ltype typ ++ fnl ())
 
 let ungeneralized_type_of_constant_type = function
   | PolymorphicArity (ctx,a) -> mkArity (ctx, Type a.poly_level)
@@ -420,6 +420,44 @@ let print_full_context () =
 
 let print_full_context_typ () =
   print_context false None (Lib.contents_after None)
+
+let print_full_pure_context () =
+  let rec prec = function
+  | ((_,kn),Lib.Leaf lobj)::rest ->
+      let pp = match object_tag lobj with
+      | "CONSTANT" ->
+	  let con = constant_of_kn kn in
+	  let cb = Global.lookup_constant con in
+	  let val_0 = cb.const_body in
+	  let typ = ungeneralized_type_of_constant_type cb.const_type in
+	  hov 0 (
+	    match val_0 with 
+	    | None ->
+		str (if cb.const_opaque then "Axiom " else "Parameter ") ++
+		print_basename con ++ str " : " ++ cut () ++ pr_ltype typ
+	    | Some v ->
+		if cb.const_opaque then
+		  str "Theorem " ++ print_basename con ++ cut () ++ 
+		  str " : " ++ pr_ltype typ ++ str "." ++ fnl () ++
+		  str "Proof " ++ print_body val_0
+		else
+		  str "Definition " ++ print_basename con ++ cut () ++ 
+		  str "  : " ++ pr_ltype typ ++ cut () ++ str " := " ++
+		  print_body val_0) ++ str "." ++ fnl () ++ fnl ()
+      | "INDUCTIVE" ->
+	  print_inductive kn ++ str "." ++ fnl () ++ fnl ()
+      | "MODULE" ->
+	  (* TODO: make it reparsable *)
+	  let (mp,_,l) = repr_kn kn in 
+	  print_module true (MPdot (mp,l)) ++ str "." ++ fnl () ++ fnl ()
+      | "MODULE TYPE" ->
+	  (* TODO: make it reparsable *)
+	  print_modtype kn ++ str "." ++ fnl () ++ fnl ()
+      | _ -> mt () in
+      prec rest ++ pp
+  | _::rest -> prec rest
+  | _ -> mt () in 
+  prec (Lib.contents_after None)
 
 (* For printing an inductive definition with
    its constructors and elimination,
