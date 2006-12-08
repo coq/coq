@@ -106,5 +106,5 @@ type guard_env =
   }
 
 val subterm_specif : guard_env -> constr -> subterm_spec
-val case_branches_specif : guard_env -> constr -> inductive ->
+val case_branches_specif : guard_env -> subterm_spec -> inductive ->
   constr array -> (guard_env * constr) array
