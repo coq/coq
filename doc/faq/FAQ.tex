@@ -2233,9 +2233,20 @@ rendering tool provided by the server (see
 {\CoqIde} is a gtk based GUI for \Coq.
 
 \Question{How to enable Emacs keybindings?}
- Insert \texttt{gtk-key-theme-name = "Emacs"}
+
+Depending on your configuration, use either one of these two methods
+
+\begin{itemize}
+
+\item Insert \texttt{gtk-key-theme-name = "Emacs"}
     in your \texttt{.coqide-gtk2rc} file. It may be in the current dir
     or in \verb#$HOME# dir. This is done by default.
+
+\item If in Gnome, run the gnome configuration editor (\texttt{gconf-editor})
+and set key \texttt{gtk-key-theme} to \texttt{Emacs} in the category
+\texttt{desktop/gnome/interface}.
+
+\end{itemize}
 
 %$ juste pour que la coloration emacs marche
 
