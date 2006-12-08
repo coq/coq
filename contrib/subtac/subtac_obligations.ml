@@ -218,7 +218,7 @@ let update_obls prg obls rem =
   let prg' = { prg with prg_obligations = (obls, rem) } in
     from_prg := map_replace prg.prg_name prg' !from_prg;
     if rem > 0 then (
-      Options.if_verbose ppnl (int rem ++ str " obligation(s) remaining");
+      Options.if_verbose msgnl (int rem ++ str " obligation(s) remaining");
     )
     else (
       debug 2 (str "No more obligations remaining");
@@ -258,8 +258,7 @@ let add_mutual_definitions l =
 	    
 let is_defined obls x = obls.(x).obl_body <> None
 
-let deps_remaining obls x = 
-  let deps = obls.(x).obl_deps in
+let deps_remaining obls deps = 
     Intset.fold
       (fun x acc -> 
 	 if is_defined obls x then acc
@@ -274,7 +273,7 @@ let subtac_obligation (user_num, name, typ) =
       let obl = obls.(num) in
 	match obl.obl_body with
 	    None -> 
-	      (match deps_remaining obls num with
+	      (match deps_remaining obls obl.obl_deps with
 		  [] ->
 		    let obl = subst_deps_obl obls obl in
 		    Command.start_proof obl.obl_name Subtac_utils.goal_proof_kind obl.obl_type
@@ -308,20 +307,22 @@ let solve_obligations n tac =
   let prg = get_prog n in
   let obls, rem = prg.prg_obligations in
   let rem = ref rem in
-  let obls' = 
-    Array.map (fun x -> 
+  let obls' = Array.copy obls in
+  let _ = 
+    Array.iteri (fun i x -> 
 		 match x.obl_body with 
-		     Some _ -> x
+		     Some _ -> ()
 		   | None -> 
 		       (try
-			  let t = Subtac_utils.solve_by_tac (evar_of_obligation x) tac in
-			    decr rem;
-			    { x with obl_body = Some t }
+			  if deps_remaining obls' x.obl_deps = [] then
+			    let t = Subtac_utils.solve_by_tac (evar_of_obligation x) tac in
+			      decr rem;
+			      obls'.(i) <- { x with obl_body = Some t }
+			  else ()
 			with UserError (s, cmds) ->
-			  debug 1 cmds;
-			  x
-			  | _ -> x))
-      obls
+			  debug 1 cmds
+			  | _ -> ()))
+      obls'
   in
     update_obls prg obls' !rem
 

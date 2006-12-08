@@ -168,6 +168,10 @@ let rec gen_rels = function
     0 -> []
   | n -> mkRel n :: gen_rels (pred n)
 
+let split_args n rel = match list_chop ((List.length rel) - n) rel with
+    (l1, x :: l2) -> l1, x, l2
+  | _ -> assert(false)
+
 let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
   let sigma = Evd.empty in
   let isevars = ref (Evd.create_evar_defs sigma) in
@@ -186,7 +190,7 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
     with _ -> ()
   in
   let env', binders_rel = interp_context isevars env bl in
-  let after, ((argname, _, argtyp) as arg), before = list_chop_hd (succ n) binders_rel in
+  let after, ((argname, _, argtyp) as arg), before = split_args (succ n) binders_rel in
   let before_length, after_length = List.length before, List.length after in
   let argid = match argname with Name n -> n | _ -> assert(false) in
   let _liftafter = lift_binders 1 after_length after in
@@ -218,7 +222,7 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
   in
   let argid' = id_of_string (string_of_id argid ^ "'") in
   let wfarg len = (Name argid', None, 
-  		   mkSubset (Name argid') argtyp 
+  		   mkSubset (Name argid') (lift len argtyp) 
 		     (wf_rel_fun (mkRel 1) (mkRel (len + 1))))
   in
   let top_bl = after @ (arg :: before) in

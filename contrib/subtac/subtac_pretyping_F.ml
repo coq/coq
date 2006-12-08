@@ -161,7 +161,10 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
   (* [pretype tycon env isevars lvar lmeta cstr] attempts to type [cstr] *)
   (* in environment [env], with existential variables [(evars_of isevars)] and *)
   (* the type constraint tycon *)
-  let rec pretype (tycon : type_constraint) env isevars lvar = function
+  let rec pretype (tycon : type_constraint) env isevars lvar c = 
+    let _ = Subtac_utils.trace (str "pretype " ++ Subtac_utils.my_print_rawconstr env c ++
+			       str " with tycon " ++ Evarutil.pr_tycon env tycon) in
+    match c with
     | RRef (loc,ref) ->
 	inh_conv_coerce_to_tycon loc env isevars
 	  (pretype_ref isevars env ref)

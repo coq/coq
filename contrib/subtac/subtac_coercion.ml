@@ -221,21 +221,21 @@ module Coercion = struct
 					    mkApp (prod.intro, [| a'; b'; x ; y |]))
 			   end
 		       else
-			 if len = 1 && len = Array.length l' && i = i' then
-			   let argx, argy = l.(0), l'.(0) in
-			   let indtyp = Inductiveops.type_of_inductive env i in
-			   let argname, argtype, _ = destProd indtyp in
-			   let eq =
-			     mkApp (Lazy.force eqind, [| argtype; argx; argy |])
-			   in
-			   let pred = mkLambda (argname, argtype, 
-						mkApp (mkInd i, [| mkRel 1 |]))
-			   in
-			   let evar = make_existential dummy_loc env isevars eq in
-			     Some (fun x ->
-				     mkApp (Lazy.force eqrec, 
-					    [| argtype; argx; pred; x; argy; evar |]))
-			 else subco ()
+			 (* if len = 1 && len = Array.length l' && i = i' then *)
+(* 			   let argx, argy = l.(0), l'.(0) in *)
+(* 			   let indtyp = Inductiveops.type_of_inductive env i in *)
+(* 			   let argname, argtype, _ = destProd indtyp in *)
+(* 			   let eq = *)
+(* 			     mkApp (Lazy.force eqind, [| argtype; argx; argy |]) *)
+(* 			   in *)
+(* 			   let pred = mkLambda (argname, argtype,  *)
+(* 						mkApp (mkInd i, [| mkRel 1 |])) *)
+(* 			   in *)
+(* 			   let evar = make_existential dummy_loc env isevars eq in *)
+(* 			     Some (fun x -> *)
+(* 				     mkApp (Lazy.force eqrec,  *)
+(* 					    [| argtype; argx; pred; x; argy; evar |])) *)
+(* 			 else  *)subco ()
 		 | _ ->  subco ())
 	  | _, _ ->  subco ()
 

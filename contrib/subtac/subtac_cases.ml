@@ -1607,7 +1607,7 @@ let prepare_predicate loc typing_fun isevars env tomatchs sign tycon = function
       let predcclj = typing_fun (mk_tycon (new_Type ())) env rtntyp in
       let _ = 
 	option_map (fun tycon -> 
-		      let tycon' = (lift_tycon_type (succ (List.length arsign)) tycon) in
+		      let tycon' = (lift_tycon_type (List.length arsign) tycon) in
 			isevars := Coercion.inh_conv_coerces_to loc env !isevars predcclj.uj_val
 			  tycon')
 	  tycon

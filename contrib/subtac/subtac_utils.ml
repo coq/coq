@@ -98,7 +98,7 @@ let my_print_evardefs = Evd.pr_evar_defs
 
 let my_print_tycon_type = Evarutil.pr_tycon_type
 
-let debug_level = 4
+let debug_level = 2
 
 let debug_on = true
 
@@ -527,8 +527,8 @@ let rewrite_cases_aux (loc, po, tml, eqns) =
   in
   let mkHole = RHole (dummy_loc, InternalHole) in
   let mkCoerceCast c = RCast (dummy_loc, c, CastCoerce, mkHole) in
-  let mkeq c n = RApp (dummy_loc, RRef (dummy_loc, (Lazy.force jmeq_ind_ref)),
-		       [mkHole; c; mkHole; n])
+  let mkeq c n = RApp (dummy_loc, RRef (dummy_loc, (Lazy.force eqind_ref)),
+		       [mkHole; c; n])
   in
   let eqs_types = 
     List.map
@@ -555,7 +555,7 @@ let rewrite_cases_aux (loc, po, tml, eqns) =
 		in (loc, idl, cpl, c'))
       eqns
   in
-  let mk_refl_equal c = RApp (dummy_loc, RRef (dummy_loc, Lazy.force jmeq_refl_ref),
+  let mk_refl_equal c = RApp (dummy_loc, RRef (dummy_loc, Lazy.force refl_equal_ref),
 			      [mkHole; c])
   in
   let refls = List.map (fun (c, ((id, _), _)) -> mk_refl_equal (mkCoerceCast c)) tml' in
@@ -575,11 +575,10 @@ let rec rewrite_cases c =
 	   | _ -> assert(false))
     | _ -> map_rawconstr rewrite_cases c
 	  
-let rewrite_cases env c = c
-(*
+let rewrite_cases env c =
   let c' = rewrite_cases c in
   let _ = trace (str "Rewrote cases: " ++ spc () ++ my_print_rawconstr env c') in
-    c'*)
+    c'
 
 let id_of_name = function
     Name n -> n
@@ -614,15 +613,15 @@ let solve_by_tac ev t =
     *)
 
 let solve_by_tac evi t =
-  debug 1 (str "Solving goal using tactics: " ++ Evd.pr_evar_info evi);
+  debug 2 (str "Solving goal using tactics: " ++ Evd.pr_evar_info evi);
   let id = id_of_string "H" in
-  Pfedit.start_proof id (Decl_kinds.Local,Decl_kinds.Proof Decl_kinds.Lemma) evi.evar_hyps evi.evar_concl
+  try 
+    Pfedit.start_proof id (Decl_kinds.Local,Decl_kinds.Proof Decl_kinds.Lemma) evi.evar_hyps evi.evar_concl
     (fun _ _ -> ());
-  try
     Pfedit.by (tclCOMPLETE t);
     let _,(const,_,_) = Pfedit.cook_proof () in 
       Pfedit.delete_current_proof (); const.Entries.const_entry_body
-  with e when Logic.catchable_exception e -> 
+  with e -> 
     Pfedit.delete_current_proof();
     raise Exit
 
