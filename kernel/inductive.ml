@@ -547,6 +547,7 @@ let check_one_fix renv recpos def =
     let f,l = decompose_app (whd_betaiotazeta renv.env t) in
     match kind_of_term f with
       | Rel p -> 
+          List.for_all (check_rec_call renv) l &&
           (* Test if it is a recursive call: *) 
 	  if renv.rel_min <= p & p < renv.rel_min+nfi then
             (* the position of the invoked fixpoint: *) 
@@ -554,15 +555,14 @@ let check_one_fix renv recpos def =
             (* the decreasing arg of the rec call: *)
 	    let np = recpos.(glob) in
             if List.length l <= np then error_partial_apply renv glob;
-	    match list_chop np l with
+	    (match list_chop np l with
 		(la,(z::lrest)) -> 
                   (* Check the decreasing arg is smaller *)
 	          if not (check_is_subterm renv z renv.inds.(glob)) then
-                    error_illegal_rec_call renv glob z;
-                  List.for_all (check_rec_call renv) (la@lrest)
-		| _ -> assert false
-          (* otherwise check the arguments are guarded: *)
-	  else List.for_all (check_rec_call renv) l        
+                    error_illegal_rec_call renv glob z
+                  else true
+	      | _ -> assert false)
+          else false
 
       | Case (ci,p,c_0,lrest) ->
           List.for_all (check_rec_call renv) (c_0::p::l) &&
