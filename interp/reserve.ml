@@ -84,7 +84,7 @@ let rec unloc = function
 let anonymize_if_reserved na t = match na with
   | Name id as na ->
       (try 
-	if unloc t = find_reserved_type id
+	if not !Options.raw_print & unloc t = find_reserved_type id
 	then RHole (dummy_loc,Evd.BinderType na)
 	else t
       with Not_found -> t)
