@@ -519,6 +519,35 @@ let lookup_subterms env ind =
 
 (*********************************)
 
+(* Propagation of size information through Cases: if the matched
+   object is a recursive subterm then compute the information
+   associated to its own subterms.
+   Rq: if branch is not eta-long, then the recursive information
+   is not propagated to the missing abstractions *)
+let case_branches_specif renv c_spec ind lbr = 
+  let rec push_branch_args renv lrec c = 
+    match lrec with
+        ra::lr ->
+          let c' = whd_betadeltaiota renv.env c in
+          (match kind_of_term c' with
+              Lambda(x,a,b) ->
+                let renv' = push_var renv (x,a,ra) in
+                push_branch_args renv' lr b
+            | _ -> (* branch not in eta-long form: cannot perform rec. calls *)
+                (renv,c'))
+      | [] -> (renv, c) in
+  match c_spec with
+      Subterm (_,t) ->
+        let sub_spec = Array.map (List.map spec_of_tree) (dest_subterms t) in
+        assert (Array.length sub_spec = Array.length lbr);
+        array_map2 (push_branch_args renv) sub_spec lbr
+    | Dead_code -> 
+        let t = dest_subterms (lookup_subterms renv.env ind) in
+        let sub_spec = Array.map (List.map (fun _ -> Dead_code)) t in
+        assert (Array.length sub_spec = Array.length lbr);
+        array_map2 (push_branch_args renv) sub_spec lbr
+    | Not_subterm -> Array.map (fun c -> (renv,c)) lbr
+
 (* [subterm_specif renv t] computes the recursive structure of [t] and
    compare its size with the size of the initial recursive argument of
    the fixpoint we are checking. [renv] collects such information
@@ -534,7 +563,8 @@ let rec subterm_specif renv t =
     | Case (ci,_,c,lbr) ->
         if Array.length lbr = 0 then Dead_code
         else
-          let lbr_spec = case_branches_specif renv c ci.ci_ind lbr in
+          let c_spec = subterm_specif renv c in
+          let lbr_spec = case_branches_specif renv c_spec ci.ci_ind lbr in
           let stl  =
             Array.map (fun (renv',br') -> subterm_specif renv' br')
               lbr_spec in
@@ -586,35 +616,6 @@ let rec subterm_specif renv t =
     (* Other terms are not subterms *)
     | _ -> Not_subterm
 
-(* Propagation of size information through Cases: if the matched
-   object is a recursive subterm then compute the information
-   associated to its own subterms.
-   Rq: if branch is not eta-long, then the recursive information
-   is not propagated to the missing abstractions *)
-and case_branches_specif renv c ind lbr = 
-  let c_spec = subterm_specif renv c in
-  let rec push_branch_args renv lrec c = 
-    match lrec with
-        ra::lr ->
-          let c' = whd_betadeltaiota renv.env c in
-          (match kind_of_term c' with
-              Lambda(x,a,b) ->
-                let renv' = push_var renv (x,a,ra) in
-                push_branch_args renv' lr b
-            | _ -> (* branch not in eta-long form: cannot perform rec. calls *)
-                (renv,c'))
-      | [] -> (renv, c) in
-  match c_spec with
-      Subterm (_,t) ->
-        let sub_spec = Array.map (List.map spec_of_tree) (dest_subterms t) in
-        assert (Array.length sub_spec = Array.length lbr);
-        array_map2 (push_branch_args renv) sub_spec lbr
-    | Dead_code -> 
-        let t = dest_subterms (lookup_subterms renv.env ind) in
-        let sub_spec = Array.map (List.map (fun _ -> Dead_code)) t in
-        assert (Array.length sub_spec = Array.length lbr);
-        array_map2 (push_branch_args renv) sub_spec lbr
-    | Not_subterm -> Array.map (fun c -> (renv,c)) lbr
 
 (* Check term c can be applied to one of the mutual fixpoints. *)
 let check_is_subterm renv c = 
@@ -652,10 +653,10 @@ let check_one_fix renv recpos def =
     (* if [t] does not make recursive calls, it is guarded: *)
     if noccur_with_meta renv.rel_min nfi t then ()
     else
-      (* Rq: why not try and expand some definitions ? *)
-      let f,l = decompose_app (whd_betaiotazeta renv.env t) in
+      let (f,l) = decompose_app (whd_betaiotazeta renv.env t) in
       match kind_of_term f with
         | Rel p -> 
+            List.iter (check_rec_call renv) l;
             (* Test if [p] is a fixpoint (recursive call) *) 
 	    if renv.rel_min <= p & p < renv.rel_min+nfi then
               (* the position of the invoked fixpoint: *) 
@@ -668,87 +669,80 @@ let check_one_fix renv recpos def =
 		    (la,(z::lrest)) -> 
                       (* Check the decreasing arg is smaller *)
 	              if not (check_is_subterm renv z) then
-                        error_illegal_rec_call renv glob z;
-                      List.iter (check_rec_call renv) (la@lrest)
+                        error_illegal_rec_call renv glob z
 	          | _ -> assert false)
-            (* otherwise check the arguments are guarded: *)
-	    else List.iter (check_rec_call renv) l        
 
-      | Case (ci,p,c_0,lrest) ->
-          List.iter (check_rec_call renv) (c_0::p::l);
-          (* compute the recarg information for the arguments of
-             each branch *)
-          let lbr = case_branches_specif renv c_0 ci.ci_ind lrest in
-          Array.iter (fun (renv',br') -> check_rec_call renv' br') lbr
+        | Case (ci,p,c_0,lrest) ->
+            List.iter (check_rec_call renv) (c_0::p::l);
+            (* compute the recarg information for the arguments of
+               each branch *)
+            let c_spec = subterm_specif renv c_0 in
+            let lbr = case_branches_specif renv c_spec ci.ci_ind lrest in
+            Array.iter (fun (renv',br') -> check_rec_call renv' br') lbr
 
-  (* Enables to traverse Fixpoint definitions in a more intelligent
-     way, ie, the rule :
+        (* Enables to traverse Fixpoint definitions in a more intelligent
+           way, ie, the rule :
+           if - g = Fix g/p := [y1:T1]...[yp:Tp]e &
+              - f is guarded with respect to the set of pattern variables S 
+                in a1 ... am        &
+              - f is guarded with respect to the set of pattern variables S 
+                in T1 ... Tp        &
+              - ap is a sub-term of the formal argument of f &
+              - f is guarded with respect to the set of pattern variables
+                S+{yp} in e
+           then f is guarded with respect to S in (g a1 ... am).
+           Eduardo 7/9/98 *)
 
-     if - g = Fix g/1 := [y1:T1]...[yp:Tp]e &
-        - f is guarded with respect to the set of pattern variables S 
-          in a1 ... am        &
-        - f is guarded with respect to the set of pattern variables S 
-          in T1 ... Tp        &
-        - ap is a sub-term of the formal argument of f &
-        - f is guarded with respect to the set of pattern variables S+{yp}
-          in e
-     then f is guarded with respect to S in (g a1 ... am).
+        | Fix ((recindxs,i),(_,typarray,bodies as recdef)) ->
+            List.iter (check_rec_call renv) l;
+            Array.iter (check_rec_call renv) typarray;
+            let decrArg = recindxs.(i) in
+            let renv' = push_fix_renv renv recdef in 
+            if (List.length l < (decrArg+1)) then
+	      Array.iter (check_rec_call renv') bodies
+            else 
+              Array.iteri
+                (fun j body ->
+                  if i=j then
+                    let theDecrArg  = List.nth l decrArg in
+	            let arg_spec = subterm_specif renv theDecrArg in
+	            check_nested_fix_body renv' (decrArg+1) arg_spec body
+                  else check_rec_call renv' body)
+                bodies
 
-     Eduardo 7/9/98 *)
+        | Const kn -> 
+            if evaluable_constant kn renv.env then 
+              try List.iter (check_rec_call renv) l
+              with (FixGuardError _ ) ->
+	        check_rec_call renv(applist(constant_value renv.env kn, l))
+	    else List.iter (check_rec_call renv) l
 
-      | Fix ((recindxs,i),(_,typarray,bodies as recdef)) ->
-          List.iter (check_rec_call renv) l;
-          Array.iter (check_rec_call renv) typarray;
-          let decrArg = recindxs.(i) in
-          let renv' = push_fix_renv renv recdef in 
-          if (List.length l < (decrArg+1)) then
+        (* The cases below simply check recursively the condition on the
+           subterms *)
+        | Cast (a,_, b) -> 
+            List.iter (check_rec_call renv) (a::b::l)
+
+        | Lambda (x,a,b) ->
+            List.iter (check_rec_call renv) (a::l);
+            check_rec_call (push_var_renv renv (x,a)) b
+
+        | Prod (x,a,b) -> 
+            List.iter (check_rec_call renv) (a::l);
+            check_rec_call (push_var_renv renv (x,a)) b
+
+        | CoFix (i,(_,typarray,bodies as recdef)) ->
+            List.iter (check_rec_call renv) l;
+	    Array.iter (check_rec_call renv) typarray;
+	    let renv' = push_fix_renv renv recdef in
 	    Array.iter (check_rec_call renv') bodies
-          else 
-            Array.iteri
-              (fun j body ->
-                if i=j then
-                  let theDecrArg  = List.nth l decrArg in
-	          let arg_spec = subterm_specif renv theDecrArg in
-	          check_nested_fix_body renv' (decrArg+1) arg_spec body
-                else check_rec_call renv' body)
-              bodies
 
-      | Const kn -> 
-          if evaluable_constant kn renv.env then 
-            try List.iter (check_rec_call renv) l
-            with (FixGuardError _ ) ->
-	      check_rec_call renv(applist(constant_value renv.env kn, l))
-	  else List.iter (check_rec_call renv) l
+        | (Ind _ | Construct _ | Var _ | Sort _) ->
+            List.iter (check_rec_call renv) l
 
-      (* The cases below simply check recursively the condition on the
-         subterms *)
-      | Cast (a,_, b) -> 
-          List.iter (check_rec_call renv) (a::b::l)
+        (* l is not checked because it is considered as the meta's context *)
+        | (Evar _ | Meta _) -> ()
 
-      | Lambda (x,a,b) ->
-          check_rec_call (push_var_renv renv (x,a)) b;
-          List.iter (check_rec_call renv) (a::l)
-
-      | Prod (x,a,b) -> 
-          check_rec_call (push_var_renv renv (x,a)) b;
-          List.iter (check_rec_call renv) (a::l)
-
-      | CoFix (i,(_,typarray,bodies as recdef)) ->
-	  Array.iter (check_rec_call renv) typarray;
-          List.iter (check_rec_call renv) l;
-	  let renv' = push_fix_renv renv recdef in
-	  Array.iter (check_rec_call renv') bodies
-
-      | Evar _ -> 
-          List.iter (check_rec_call renv) l
-
-      (* l is not checked because it is considered as the meta's context *)
-      | Meta _ -> ()
-
-      | (Ind _ | Construct _ | Var _ | Sort _) ->
-          List.iter (check_rec_call renv) l
-
-      | (App _ | LetIn _) -> assert false (* beta zeta reduction *)
+        | (App _ | LetIn _) -> assert false (* beta zeta reduction *)
 
   and check_nested_fix_body renv decr recArgsDecrArg body =
     if decr = 0 then
