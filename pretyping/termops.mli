@@ -100,6 +100,7 @@ val occur_var_in_decl :
   identifier -> 'a * types option * types -> bool
 val occur_term : constr -> constr -> bool
 val free_rels : constr -> Intset.t
+val dependent : constr -> constr -> bool
 
 (* Substitution of metavariables *)
 type metamap = (metavariable * constr) list 
@@ -108,19 +109,36 @@ val subst_meta : metamap -> constr -> constr
 (* [pop c] lifts by -1 the positive indexes in [c] *)
 val pop : constr -> constr
 
-(* bindings of an arbitrary large term. Uses equality modulo
+(*s Substitution of an arbitrary large term. Uses equality modulo
    reduction of let *)
-val dependent : constr -> constr -> bool
+
+(* [subst_term_gen eq d c] replaces [Rel 1] by [d] in [c] using [eq]
+   as equality *)
 val subst_term_gen :
   (constr -> constr -> bool) -> constr -> constr -> constr
+
+(* [replace_term_gen eq d e c] replaces [d] by [e] in [c] using [eq]
+   as equality *)
 val replace_term_gen :
   (constr -> constr -> bool) ->
     constr -> constr -> constr -> constr
+
+(* [subst_term d c] replaces [Rel 1] by [d] in [c] *)
 val subst_term : constr -> constr -> constr
+
+(* [replace_term d e c] replaces [d] by [e] in [c] *)
 val replace_term : constr -> constr -> constr -> constr
-val subst_term_occ_gen :
-  int list -> int -> constr -> types -> int * types
-val subst_term_occ : int list -> constr -> types -> types
+
+(* [subst_term_occ occl c d] replaces occurrences of [Rel 1] at
+   positions [occl] by [c] in [d] *)
+val subst_term_occ_gen : int list -> int -> constr -> types -> int * types
+
+(* [subst_term_occ occl c d] replaces occurrences of [Rel 1] at
+   positions [occl] by [c] in [d] (see also Note OCC) *)
+val subst_term_occ : int list -> constr -> constr -> constr
+
+(* [subst_term_occ_decl occl c decl] replaces occurrences of [Rel 1] at
+   positions [occl] by [c] in [decl] *)
 val subst_term_occ_decl :
   int list -> constr -> named_declaration -> named_declaration
 
@@ -177,15 +195,22 @@ type used_idents = identifier list
 val occur_rel : int -> name list -> identifier -> bool
 val occur_id : name list -> identifier -> constr -> bool
 
+type avoid_flags = bool option
+ (* Some true = avoid all globals (as in intro); 
+    Some false = avoid only global constructors; None = don't avoid globals *)
+
+val next_name_away_in_cases_pattern : 
+  name -> identifier list -> identifier
 val next_global_ident_away : 
   (*allow section vars:*) bool -> identifier -> identifier list -> identifier
 val next_name_not_occuring :
-  bool -> name -> identifier list -> name list -> constr -> identifier
+  avoid_flags -> name -> identifier list -> name list -> constr -> identifier
 val concrete_name :
-  bool -> identifier list -> name list -> name -> constr -> 
+  avoid_flags -> identifier list -> name list -> name -> constr -> 
     name * identifier list
 val concrete_let_name :
-  bool -> identifier list -> name list -> name -> constr -> name * identifier list
+  avoid_flags -> identifier list -> name list -> name -> constr -> 
+    name * identifier list
 val rename_bound_var : env -> identifier list -> types -> types
 
 (* other signature iterators *)

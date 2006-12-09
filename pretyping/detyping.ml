@@ -174,17 +174,18 @@ let computable p k =
   let _,ccl = decompose_lam p in 
   noccur_between 1 (k+1) ccl
 
-
+let avoid_flag isgoal = if isgoal then Some true else None
+ 
 let lookup_name_as_renamed env t s =
   let rec lookup avoid env_names n c = match kind_of_term c with
     | Prod (name,_,c') ->
-	(match concrete_name true avoid env_names name c' with
+	(match concrete_name (Some true) avoid env_names name c' with
            | (Name id,avoid') -> 
 	       if id=s then (Some n) 
 	       else lookup avoid' (add_name (Name id) env_names) (n+1) c'
 	   | (Anonymous,avoid')    -> lookup avoid' env_names (n+1) (pop c'))
     | LetIn (name,_,_,c') ->
-	(match concrete_name true avoid env_names name c' with
+	(match concrete_name (Some true) avoid env_names name c' with
            | (Name id,avoid') -> 
 	       if id=s then (Some n) 
 	       else lookup avoid' (add_name (Name id) env_names) (n+1) c'
@@ -196,11 +197,11 @@ let lookup_name_as_renamed env t s =
 let lookup_index_as_renamed env t n =
   let rec lookup n d c = match kind_of_term c with
     | Prod (name,_,c') ->
-	  (match concrete_name true [] empty_names_context name c' with
+	  (match concrete_name (Some true) [] empty_names_context name c' with
                (Name _,_) -> lookup n (d+1) c'
              | (Anonymous,_) -> if n=1 then Some d else lookup (n-1) (d+1) c')
     | LetIn (name,_,_,c') ->
-	  (match concrete_name true [] empty_names_context name c' with
+	  (match concrete_name (Some true) [] empty_names_context name c' with
              | (Name _,_) -> lookup n (d+1) c'
              | (Anonymous,_) -> if n=1 then Some d else lookup (n-1) (d+1) c')
     | Cast (c,_,_) -> lookup n d c
@@ -227,7 +228,7 @@ let rec decomp_branch n nal b (avoid,env as e) c =
 	| _ -> 
 	    Name (id_of_string "x"),(applist (lift 1 c, [mkRel 1])), 
 	    concrete_name in
-    let na',avoid' = f b avoid env na c in
+    let na',avoid' = f (Some b) avoid env na c in
     decomp_branch (n-1) (na'::nal) b (avoid',add_name na' env) c
 
 let rec build_tree na isgoal e ci cl =
@@ -355,7 +356,7 @@ let detype_sort = function
 (**********************************************************************)
 (* Main detyping function                                             *)
 
-let rec detype isgoal avoid env t =
+let rec detype (isgoal:bool) avoid env t =
   match kind_of_term (collapse_appl t) with
     | Rel n ->
       (try match lookup_name_of_rel n env with
@@ -484,7 +485,7 @@ and detype_eqn isgoal avoid env constr construct_nargs branch =
     if force_wildcard () & noccurn 1 b then
       PatVar (dl,Anonymous),avoid,(add_name Anonymous env),ids
     else 
-      let id = next_name_away_with_default "x" x avoid in
+      let id = next_name_away_in_cases_pattern x avoid in
       PatVar (dl,Name id),id::avoid,(add_name (Name id) env),id::ids
   in
   let rec buildrec ids patlist avoid env n b =
@@ -519,9 +520,9 @@ and detype_eqn isgoal avoid env constr construct_nargs branch =
 and detype_binder isgoal bk avoid env na ty c =
   let na',avoid' =
     if bk = BLetIn then
-      concrete_let_name isgoal avoid env na c
+      concrete_let_name (avoid_flag isgoal) avoid env na c
     else
-      concrete_name isgoal avoid env na c in
+      concrete_name (avoid_flag isgoal) avoid env na c in
   let r =  detype isgoal avoid' (add_name na' env) c in
   match bk with
   | BProd -> RProd (dl, na',detype isgoal avoid env ty, r)

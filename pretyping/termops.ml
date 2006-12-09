@@ -834,6 +834,14 @@ let is_global id =
   with Not_found -> 
     false
 
+let is_constructor id =
+  try 
+    match locate (make_short_qualid id) with 
+      | ConstructRef _ as ref -> not (is_imported_ref ref)
+      | _ -> false
+  with Not_found -> 
+    false
+
 let is_section_variable id =
   try let _ = Global.lookup_named id in true
   with Not_found -> false
@@ -898,11 +906,19 @@ let occur_id nenv id0 c =
   with Occur -> true
     | Not_found -> false (* Case when a global is not in the env *)
 
-let next_name_not_occuring is_goal_ccl name l env_names t =
+type avoid_flags = bool option
+
+let next_name_not_occuring avoid_flags name l env_names t =
   let rec next id =
     if List.mem id l or occur_id env_names id t or 
-      (* To be consistent with intro mechanism *)
-      (is_goal_ccl & is_global id & not (is_section_variable id))
+      (* Further restrictions ? *)
+      match avoid_flags with None -> false | Some not_only_cstr ->
+      (if not_only_cstr then
+	(* To be consistent with the intro mechanism *)
+	is_global id & not (is_section_variable id)
+      else
+	(* To avoid constructors in pattern-matchings *)
+	is_constructor id)
     then next (lift_ident id)
     else id
   in 
@@ -996,17 +1012,26 @@ let global_vars_set_of_decl env = function
       Idset.union (global_vars_set env t)
         (global_vars_set env c)
 
+let default_x = id_of_string "x"
+
+let rec next_name_away_in_cases_pattern id avoid =
+  let id = match id with Name id -> id | Anonymous -> default_x in
+  let rec next id =
+    if List.mem id avoid or is_constructor id then next (lift_ident id)
+    else id in
+  next id
+
 (* Remark: Anonymous var may be dependent in Evar's contexts *)
-let concrete_name is_goal_ccl l env_names n c =
+let concrete_name avoid_flags l env_names n c =
   if n = Anonymous & noccurn 1 c then
     (Anonymous,l)
   else
-    let fresh_id = next_name_not_occuring is_goal_ccl n l env_names c in
+    let fresh_id = next_name_not_occuring avoid_flags n l env_names c in
     let idopt = if noccurn 1 c then Anonymous else Name fresh_id in
     (idopt, fresh_id::l)
 
-let concrete_let_name is_goal_ccl l env_names n c =
-  let fresh_id = next_name_not_occuring is_goal_ccl n l env_names c in
+let concrete_let_name avoid_flags l env_names n c =
+  let fresh_id = next_name_not_occuring avoid_flags n l env_names c in
   (Name fresh_id, fresh_id::l)
 
 let rec rename_bound_var env l c =
