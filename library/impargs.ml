@@ -170,7 +170,7 @@ let add_free_rels_until strict bound env m pos acc =
 let my_concrete_name avoid names t = function
   | Anonymous -> Anonymous, avoid, Anonymous::names
   | na -> 
-      let id = Termops.next_name_not_occuring false na avoid names t in
+      let id = Termops.next_name_not_occuring None na avoid names t in
       Name id, id::avoid, Name id::names
   
 let compute_implicits_gen strict contextual env t =
@@ -178,7 +178,7 @@ let compute_implicits_gen strict contextual env t =
     let t = whd_betadeltaiota env t in
     match kind_of_term t with
       | Prod (na,a,b) ->
-	  let na',avoid' = Termops.concrete_name false avoid names na b in
+	  let na',avoid' = Termops.concrete_name None avoid names na b in
 	  add_free_rels_until strict n env a (Hyp (n+1))
             (aux (push_rel (na',None,a) env) avoid' (n+1) (na'::names) b)
       | _ -> 
@@ -189,7 +189,7 @@ let compute_implicits_gen strict contextual env t =
   in 
   match kind_of_term (whd_betadeltaiota env t) with 
     | Prod (na,a,b) ->
-	let na',avoid = Termops.concrete_name false [] [] na b in
+	let na',avoid = Termops.concrete_name None [] [] na b in
 	let v = aux (push_rel (na',None,a) env) avoid 1 [na'] b in
 	Array.to_list v
     | _ -> []
