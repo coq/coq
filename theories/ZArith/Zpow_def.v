@@ -1,7 +1,7 @@
 Require Import ZArith_base.
 Require Import Ring_theory.
 
-Open Scope Z_scope.
+Open Local Scope Z_scope.
  
 (** [Zpower_pos z n] is the n-th power of [z] when [n] is an binary
       integer (type [positive]) and [z] a signed integer (type [Z]) *) 
