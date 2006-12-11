@@ -42,31 +42,31 @@ let find_rectype_a env c =
   | _ -> raise Not_found
 
 (* Instantiate inductives and parameters in constructor type *)
-let build_type_constructor mind mib params ctyp =
-  let si = ind_subst mind mib in
-  let ctyp1 = substl si ctyp in
-  let nparams = Array.length params in
-  if nparams = 0 then ctyp1
-  else
-    let _,ctyp2 = decompose_prod_n nparams ctyp1 in
-    let sp = List.rev (Array.to_list params) in substl sp ctyp2
-   
-let construct_of_constr_const env tag typ =
-  let ind,params = find_rectype env typ in
-  let (_,mip) = lookup_mind_specif env ind in
-  let i = invert_tag true tag mip.mind_reloc_tbl in
-  applistc (mkConstruct(ind,i)) params
 
-let construct_of_constr_block env tag typ =
+let type_constructor mind mib typ params = 
+  let s = ind_subst mind mib in
+  let ctyp = substl s typ in
+  let nparams = Array.length params in
+  if nparams = 0 then ctyp
+  else
+    let _,ctyp = decompose_prod_n nparams ctyp in   
+    substl (List.rev (Array.to_list params)) ctyp
+
+let construct_of_constr const env tag typ =
   let (mind,_ as ind), allargs = find_rectype_a env typ in
-  let (mib,mip) = lookup_mind_specif env ind in
+  let mib,mip as mind_s = lookup_mind_specif env ind in
   let nparams = mib.mind_nparams in
-  let i = invert_tag false tag mip.mind_reloc_tbl in
+  let i = invert_tag const tag mip.mind_reloc_tbl in
+  let c = (ind,i) in
   let params = Array.sub allargs 0 nparams in
-  let specif = mip.mind_nf_lc in
-  let ctyp = build_type_constructor mind mib params specif.(i-1) in
+  let ctyp = type_constructor mind mib (mip.mind_nf_lc.(i-1)) params in
   (mkApp(mkConstruct(ind,i), params), ctyp)
-  	
+
+let construct_of_constr_const env tag typ = 
+  fst (construct_of_constr true env tag typ)
+
+let construct_of_constr_block = construct_of_constr false
+
 let constr_type_of_idkey env idkey =
   match idkey with
   | ConstKey cst ->
@@ -87,7 +87,7 @@ let build_branches_type env (mind,_ as _ind) mib mip params dep p =
   (* [build_one_branch i cty] construit le type de la ieme branche (commence
      a 0) et les lambda correspondant aux realargs *)
   let build_one_branch i cty =
-    let typi = build_type_constructor mind mib params cty in
+    let typi = type_constructor mind mib cty params in
     let decl,indapp = Term.decompose_prod typi in
     let ind,cargs = find_rectype_a env indapp in
     let nparams = Array.length params in
