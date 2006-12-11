@@ -10,11 +10,11 @@
 
 #include <stdio.h>
 #include <stdlib.h> 
-#include "config.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "fail.h"
-#include "memory.h"
+#include <config.h>
+#include <misc.h>
+#include <mlvalues.h>
+#include <fail.h>
+#include <memory.h>
 #include "coq_instruct.h"
 #include "coq_fix_code.h"
 

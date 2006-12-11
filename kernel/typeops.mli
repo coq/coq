@@ -106,3 +106,4 @@ val type_of_constant_knowing_parameters :
 
 (* Make a type polymorphic if an arity *)
 val make_polymorphic_if_arity : env -> types -> constant_type
+

@@ -626,6 +626,7 @@ let rec intern_atomic lf ist x =
   | TacAssumption -> TacAssumption
   | TacExact c -> TacExact (intern_constr ist c)
   | TacExactNoCheck c -> TacExactNoCheck (intern_constr ist c)
+  | TacVmCastNoCheck c -> TacVmCastNoCheck (intern_constr ist c)
   | TacApply cb -> TacApply (intern_constr_with_bindings ist cb)
   | TacElim (cb,cbo) ->
       TacElim (intern_constr_with_bindings ist cb,
@@ -1992,6 +1993,7 @@ and interp_atomic ist gl = function
   | TacAssumption -> h_assumption
   | TacExact c -> h_exact (pf_interp_casted_constr ist gl c)
   | TacExactNoCheck c -> h_exact_no_check (pf_interp_constr ist gl c)
+  | TacVmCastNoCheck c -> h_vm_cast_no_check (pf_interp_constr ist gl c)
   | TacApply cb -> h_apply (interp_constr_with_bindings ist gl cb)
   | TacElim (cb,cbo) ->
       h_elim (interp_constr_with_bindings ist gl cb)
@@ -2320,6 +2322,7 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacAssumption as x -> x
   | TacExact c -> TacExact (subst_rawconstr subst c)
   | TacExactNoCheck c -> TacExactNoCheck (subst_rawconstr subst c)
+  | TacVmCastNoCheck c -> TacVmCastNoCheck (subst_rawconstr subst c)
   | TacApply cb -> TacApply (subst_raw_with_bindings subst cb)
   | TacElim (cb,cbo) ->
       TacElim (subst_raw_with_bindings subst cb,

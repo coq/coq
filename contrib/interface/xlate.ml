@@ -1060,6 +1060,7 @@ and xlate_tac =
     | TacAssumption -> CT_assumption
     | TacExact c -> CT_exact (xlate_formula c)
     | TacExactNoCheck c -> CT_exact_no_check (xlate_formula c)
+    | TacVmCastNoCheck c -> CT_vm_cast_no_check (xlate_formula c)
     | TacDestructHyp (true, (_,id)) -> CT_cdhyp (xlate_ident id)
     | TacDestructHyp (false, (_,id)) -> CT_dhyp (xlate_ident id)
     | TacDestructConcl -> CT_dconcl

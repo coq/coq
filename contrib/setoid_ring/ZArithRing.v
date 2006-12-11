@@ -8,36 +8,53 @@
 
 Require Export Ring.
 Require Import ZArith_base.
+Require Import Zpow_def.
+
 Import InitialRing.
 
 Set Implicit Arguments.
 
-Ltac isZcst t :=
-  match t with
-    Z0 => true
-  | Zpos ?p => isZcst p
-  | Zneg ?p => isZcst p
-  | xI ?p => isZcst p
-  | xO ?p => isZcst p
-  | xH => true
-  (* injection nat -> Z *)
-  | Z_of_nat ?n => isZcst n
-  | O => true
-  | S ?n => isZcst n
-  (* injection N -> Z *)
-  | Z_of_N ?n => isZcst n
-  | N0 => true
-  | Npos ?p => isZcst p
-  (* nat -> positive *)
-  | P_of_succ_nat ?n => isZcst n
-  (* *)
-  | _ => false
-  end.
 Ltac Zcst t :=
   match isZcst t with
     true => t
   | _ => NotConstant
   end.
 
+Ltac isZpow_coef t :=
+  match t with 
+  | Zpos ?p => isPcst p
+  | Z0 => true
+  | _ => false
+  end.
+
+Definition N_of_Z x :=
+ match x with
+ | Zpos p => Npos p
+ | _ => N0
+ end.
+
+Ltac Zpow_tac t :=
+ match isZpow_coef t with
+ | true => constr:(N_of_Z t)
+ | _ => constr:(NotConstant)
+ end.
+
+Ltac Zpower_neg :=
+  repeat match goal with
+  | [|- ?G] => 
+    match G with 
+    | context c [Zpower _ (Zneg _)] =>
+      let t := context c [Z0] in
+      change t
+    end
+  end.   
+
+
 Add Ring Zr : Zth
-  (decidable Zeqb_ok, constants [Zcst], preprocess [unfold Zsucc]).
+  (decidable Zeqb_ok, constants [Zcst], preprocess [Zpower_neg;unfold Zsucc],
+   power_tac Zpower_theory [Zpow_tac]).
+
+
+
+
+

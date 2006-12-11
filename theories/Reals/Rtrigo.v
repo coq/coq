@@ -1580,10 +1580,14 @@ Lemma cos_eq_0_0 :
 Proof.
   intros x H; rewrite cos_sin in H; generalize (sin_eq_0_0 (PI / INR 2 + x) H);
     intro H2; elim H2; intros x0 H3; exists (x0 - Z_of_nat 1)%Z;
-      rewrite <- Z_R_minus; simpl; ring_simplify;
-(* rewrite (Rmult_comm PI);*) (* old ring compat *)
+      rewrite <- Z_R_minus; simpl.
+unfold INR in H3. field_simplify [(sym_eq H3)]. field.
+(** 
+  ring_simplify.
+ (* rewrite (Rmult_comm PI);*) (* old ring compat *)
         rewrite <- H3; simpl;
-          field; repeat split; discrR.
+          field;repeat split; discrR.
+*)
 Qed.
 
 Lemma cos_eq_0_1 :

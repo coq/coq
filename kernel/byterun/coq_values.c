@@ -13,7 +13,7 @@
 #include "coq_instruct.h"
 #include "coq_memory.h"
 #include "coq_values.h"
-#include "memory.h"
+#include <memory.h>
 /* KIND OF VALUES */
 
 #define Setup_for_gc

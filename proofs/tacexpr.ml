@@ -121,6 +121,7 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacAssumption
   | TacExact of 'constr
   | TacExactNoCheck of 'constr
+  | TacVmCastNoCheck of 'constr
   | TacApply of 'constr with_bindings
   | TacElim of 'constr with_bindings * 'constr with_bindings option
   | TacElimType of 'constr

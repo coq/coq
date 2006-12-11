@@ -7,6 +7,9 @@
 (************************************************************************)
 
 Require Import Setoid.
+Require Import BinPos.
+Require Import BinNat.
+
 Set Implicit Arguments.
 
 Module RingSyntax.
@@ -26,6 +29,71 @@ Reserved Notation "-- x" (at level 35, right associativity).
 Reserved Notation "x == y" (at level 70, no associativity).
 End RingSyntax.
 Import RingSyntax.
+
+Section Power.
+ Variable R:Type.
+ Variable rI : R.
+ Variable rmul : R -> R -> R.
+ Variable req : R -> R -> Prop.
+ Variable Rsth : Setoid_Theory R req.
+ Notation "x * y " := (rmul x y).
+ Notation "x == y" := (req x y).
+
+ Hypothesis mul_ext : 
+   forall x1 x2, x1 == x2 -> forall y1 y2, y1 == y2 -> x1 * y1 == x2 * y2.
+ Hypothesis mul_comm : forall x y, x * y == y * x.
+ Hypothesis mul_assoc  : forall x y z, x * (y * z) == (x * y) * z.
+ Add Setoid R req Rsth as R_set_Power.
+ Add Morphism rmul : rmul_ext_Power. exact mul_ext. Qed.
+
+
+ Fixpoint pow_pos (x:R) (i:positive) {struct i}: R :=
+  match i with
+  | xH => x
+  | xO i => let p := pow_pos x i in rmul p p
+  | xI i => let p := pow_pos x i in rmul (rmul x p) p
+  end.
+
+ Lemma pow_pos_Psucc : forall x j, pow_pos x (Psucc j) == x * pow_pos x j.
+ Proof.
+  induction j;simpl.
+  rewrite IHj. 
+  set (w:= x*pow_pos x j);unfold w at 2.
+  rewrite (mul_comm x (pow_pos x j));unfold w.
+  rewrite (mul_comm x (x * pow_pos x j * pow_pos x j)).
+  repeat rewrite mul_assoc. apply (Seq_refl _ _ Rsth).
+  repeat rewrite mul_assoc. apply (Seq_refl _ _ Rsth).
+  apply (Seq_refl _ _ Rsth).
+ Qed.
+
+ Lemma pow_pos_Pplus : forall x i j, pow_pos x (i + j) == pow_pos x i * pow_pos x j.
+ Proof.
+  intro x;induction i;intros.
+  rewrite xI_succ_xO;rewrite Pplus_one_succ_r.
+  rewrite <- Pplus_diag;repeat rewrite <- Pplus_assoc.
+  repeat rewrite IHi.
+  rewrite Pplus_comm;rewrite <- Pplus_one_succ_r;rewrite pow_pos_Psucc.
+  simpl;repeat rewrite mul_assoc. apply (Seq_refl _ _ Rsth).
+  rewrite <- Pplus_diag;repeat rewrite <- Pplus_assoc.
+  repeat rewrite IHi;rewrite mul_assoc. apply (Seq_refl _ _ Rsth).
+  rewrite Pplus_comm;rewrite <- Pplus_one_succ_r;rewrite pow_pos_Psucc;
+   simpl. apply (Seq_refl _ _ Rsth).
+ Qed.
+
+ Definition pow_N (x:R) (p:N) := 
+  match p with
+  | N0 => rI
+  | Npos p => pow_pos x p
+  end. 
+
+ Definition id_phi_N (x:N) : N := x.
+
+ Lemma pow_N_pow_N : forall x n, pow_N x (id_phi_N n) == pow_N x n.
+ Proof.
+  intros; apply (Seq_refl _ _ Rsth).
+ Qed.
+
+End Power.
 
 Section DEFINITIONS.
  Variable R : Type.
@@ -126,6 +194,19 @@ Section DEFINITIONS.
     morph_opp : forall x, [-!x] == -[x];
     morph_eq  : forall x y, x?=!y = true -> [x] == [y] 
   }.
+
+ Section SIGN.
+  Variable get_sign : C -> option C.
+  Record sign_theory : Prop := mksign_th {
+    sign_spec : forall c c', get_sign c = Some c' -> [c] == - [c']
+  }.
+ End SIGN.
+
+ Definition get_sign_None (c:C) := @None C.
+
+ Lemma get_sign_None_th : sign_theory get_sign_None.
+ Proof. constructor;intros;discriminate. Qed.
+
  End MORPHISM. 
 
  (** Identity is a morphism *)
@@ -139,6 +220,20 @@ Section DEFINITIONS.
   apply (mkmorph rO rI radd rmul rsub ropp reqb IDphi);intros;unfold IDphi;
   try apply (Seq_refl _ _ Rsth);auto.
  Qed.
+
+ (** Specification of the power function *)
+ Section POWER.
+  Variable Cpow : Set.
+  Variable Cp_phi : N -> Cpow.
+  Variable rpow : R -> Cpow -> R. 
+  
+  Record power_theory : Prop := mkpow_th {
+    rpow_pow_N : forall r n, req (rpow r (Cp_phi n)) (pow_N rI rmul r n)
+  }.
+
+ End POWER.
+
+ Definition pow_N_th := mkpow_th id_phi_N (pow_N rI rmul) (pow_N_pow_N rI rmul Rsth).
 
 End DEFINITIONS.
 
@@ -437,11 +532,12 @@ Qed.
 
 End ALMOST_RING.
 
+
 Section AddRing.
 
- Variable R : Type.
+(* Variable R : Type.
  Variable (rO rI : R) (radd rmul rsub: R->R->R) (ropp : R -> R).
- Variable req : R -> R -> Prop.
+ Variable req : R -> R -> Prop. *)
 
 Inductive ring_kind : Type :=
 | Abstract
@@ -460,6 +556,7 @@ Inductive ring_kind : Type :=
     phi
     (_ : ring_morph rO rI radd rmul rsub ropp req
                     cO cI cadd cmul csub copp ceqb phi).
+
 
 End AddRing.
 

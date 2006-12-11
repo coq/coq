@@ -38,7 +38,7 @@ theories/Reals/R_sqr.vo: theories/Reals/R_sqr.v theories/Reals/Rbase.vo theories
 theories/Reals/SplitAbsolu.vo: theories/Reals/SplitAbsolu.v theories/Reals/Rbasic_fun.vo
 theories/Reals/SplitRmult.vo: theories/Reals/SplitRmult.v theories/Reals/Rbase.vo
 theories/Reals/ArithProp.vo: theories/Reals/ArithProp.v theories/Reals/Rbase.vo theories/Reals/Rbasic_fun.vo theories/Arith/Even.vo theories/Arith/Div2.vo contrib/setoid_ring/ArithRing.vo
-theories/Reals/Rfunctions.vo: theories/Reals/Rfunctions.v contrib/ring/LegacyArithRing.vo contrib/setoid_ring/ArithRing.vo theories/Reals/Rbase.vo theories/Reals/R_Ifp.vo theories/Reals/Rbasic_fun.vo theories/Reals/R_sqr.vo theories/Reals/SplitAbsolu.vo theories/Reals/SplitRmult.vo theories/Reals/ArithProp.vo contrib/omega/Omega.vo theories/ZArith/Zpower.vo
+theories/Reals/Rfunctions.vo: theories/Reals/Rfunctions.v contrib/ring/LegacyArithRing.vo contrib/setoid_ring/ArithRing.vo theories/Reals/Rbase.vo theories/Reals/Rpow_def.vo theories/Reals/R_Ifp.vo theories/Reals/Rbasic_fun.vo theories/Reals/R_sqr.vo theories/Reals/SplitAbsolu.vo theories/Reals/SplitRmult.vo theories/Reals/ArithProp.vo contrib/omega/Omega.vo theories/ZArith/Zpower.vo
 theories/Reals/Rseries.vo: theories/Reals/Rseries.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Logic/Classical.vo theories/Arith/Compare.vo
 theories/Reals/SeqProp.vo: theories/Reals/SeqProp.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Logic/Classical.vo theories/Arith/Max.vo
 theories/Reals/Rcomplete.vo: theories/Reals/Rcomplete.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/SeqProp.vo theories/Arith/Max.vo
@@ -174,7 +174,7 @@ theories/ZArith/Zminmax.vo: theories/ZArith/Zminmax.v theories/ZArith/Zmin.vo th
 theories/ZArith/Zeven.vo: theories/ZArith/Zeven.v theories/ZArith/BinInt.vo
 theories/ZArith/Zhints.vo: theories/ZArith/Zhints.v theories/ZArith/BinInt.vo theories/ZArith/Zorder.vo theories/ZArith/Zmin.vo theories/ZArith/Zabs.vo theories/ZArith/Zcompare.vo theories/ZArith/Znat.vo theories/ZArith/auxiliary.vo theories/ZArith/Zmisc.vo theories/ZArith/Wf_Z.vo
 theories/ZArith/Zlogarithm.vo: theories/ZArith/Zlogarithm.v theories/ZArith/ZArith_base.vo contrib/omega/Omega.vo theories/ZArith/Zcomplements.vo theories/ZArith/Zpower.vo
-theories/ZArith/Zpower.vo: theories/ZArith/Zpower.v theories/ZArith/ZArith_base.vo contrib/omega/Omega.vo theories/ZArith/Zcomplements.vo
+theories/ZArith/Zpower.vo: theories/ZArith/Zpower.v theories/ZArith/ZArith_base.vo theories/ZArith/Zpow_def.vo contrib/omega/Omega.vo theories/ZArith/Zcomplements.vo
 theories/ZArith/Zcomplements.vo: theories/ZArith/Zcomplements.v contrib/setoid_ring/ZArithRing.vo theories/ZArith/ZArith_base.vo contrib/omega/Omega.vo theories/Arith/Wf_nat.vo theories/Lists/List.vo
 theories/ZArith/Zdiv.vo: theories/ZArith/Zdiv.v theories/ZArith/ZArith_base.vo theories/ZArith/Zbool.vo contrib/omega/Omega.vo contrib/setoid_ring/ZArithRing.vo theories/ZArith/Zcomplements.vo
 theories/ZArith/Zsqrt.vo: theories/ZArith/Zsqrt.v contrib/setoid_ring/ZArithRing.vo contrib/omega/Omega.vo theories/ZArith/ZArith_base.vo
@@ -184,6 +184,7 @@ theories/ZArith/Zbool.vo: theories/ZArith/Zbool.v theories/ZArith/BinInt.vo theo
 theories/ZArith/Zbinary.vo: theories/ZArith/Zbinary.v theories/Bool/Bvector.vo theories/ZArith/ZArith.vo theories/ZArith/Zpower.vo contrib/omega/Omega.vo
 theories/ZArith/Znumtheory.vo: theories/ZArith/Znumtheory.v theories/ZArith/ZArith_base.vo contrib/setoid_ring/ZArithRing.vo theories/ZArith/Zcomplements.vo theories/ZArith/Zdiv.vo theories/NArith/Ndigits.vo theories/Arith/Wf_nat.vo
 theories/ZArith/Int.vo: theories/ZArith/Int.v theories/ZArith/ZArith.vo contrib/romega/ROmega.vo
+theories/ZArith/Zpow_def.vo: theories/ZArith/Zpow_def.v theories/ZArith/ZArith_base.vo contrib/setoid_ring/Ring_theory.vo
 theories/Setoids/Setoid.vo: theories/Setoids/Setoid.v theories/Relations/Relation_Definitions.vo
 theories/Lists/MonoList.vo: theories/Lists/MonoList.v theories/Arith/Le.vo
 theories/Lists/ListSet.vo: theories/Lists/ListSet.v theories/Lists/List.vo
@@ -284,7 +285,7 @@ theories/Reals/R_sqr.vo: theories/Reals/R_sqr.v theories/Reals/Rbase.vo theories
 theories/Reals/SplitAbsolu.vo: theories/Reals/SplitAbsolu.v theories/Reals/Rbasic_fun.vo
 theories/Reals/SplitRmult.vo: theories/Reals/SplitRmult.v theories/Reals/Rbase.vo
 theories/Reals/ArithProp.vo: theories/Reals/ArithProp.v theories/Reals/Rbase.vo theories/Reals/Rbasic_fun.vo theories/Arith/Even.vo theories/Arith/Div2.vo contrib/setoid_ring/ArithRing.vo
-theories/Reals/Rfunctions.vo: theories/Reals/Rfunctions.v contrib/ring/LegacyArithRing.vo contrib/setoid_ring/ArithRing.vo theories/Reals/Rbase.vo theories/Reals/R_Ifp.vo theories/Reals/Rbasic_fun.vo theories/Reals/R_sqr.vo theories/Reals/SplitAbsolu.vo theories/Reals/SplitRmult.vo theories/Reals/ArithProp.vo contrib/omega/Omega.vo theories/ZArith/Zpower.vo
+theories/Reals/Rfunctions.vo: theories/Reals/Rfunctions.v contrib/ring/LegacyArithRing.vo contrib/setoid_ring/ArithRing.vo theories/Reals/Rbase.vo theories/Reals/Rpow_def.vo theories/Reals/R_Ifp.vo theories/Reals/Rbasic_fun.vo theories/Reals/R_sqr.vo theories/Reals/SplitAbsolu.vo theories/Reals/SplitRmult.vo theories/Reals/ArithProp.vo contrib/omega/Omega.vo theories/ZArith/Zpower.vo
 theories/Reals/Rseries.vo: theories/Reals/Rseries.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Logic/Classical.vo theories/Arith/Compare.vo
 theories/Reals/SeqProp.vo: theories/Reals/SeqProp.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Logic/Classical.vo theories/Arith/Max.vo
 theories/Reals/Rcomplete.vo: theories/Reals/Rcomplete.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/SeqProp.vo theories/Arith/Max.vo
@@ -364,17 +365,17 @@ contrib/rtauto/Bintree.vo: contrib/rtauto/Bintree.v theories/Lists/List.vo theor
 contrib/rtauto/Rtauto.vo: contrib/rtauto/Rtauto.v theories/Lists/List.vo contrib/rtauto/Bintree.vo theories/Bool/Bool.vo theories/NArith/BinPos.vo
 contrib/recdef/Recdef.vo: contrib/recdef/Recdef.v theories/Arith/Compare_dec.vo theories/Arith/Wf_nat.vo
 contrib/setoid_ring/BinList.vo: contrib/setoid_ring/BinList.v theories/NArith/BinPos.vo theories/Lists/List.vo theories/Lists/ListTactics.vo
-contrib/setoid_ring/Ring_theory.vo: contrib/setoid_ring/Ring_theory.v theories/Setoids/Setoid.vo
-contrib/setoid_ring/Ring_polynom.vo: contrib/setoid_ring/Ring_polynom.v theories/Setoids/Setoid.vo contrib/setoid_ring/BinList.vo theories/NArith/BinPos.vo theories/ZArith/BinInt.vo contrib/setoid_ring/Ring_theory.vo
-contrib/setoid_ring/Ring_tac.vo: contrib/setoid_ring/Ring_tac.v theories/Setoids/Setoid.vo theories/NArith/BinPos.vo contrib/setoid_ring/Ring_polynom.vo contrib/setoid_ring/BinList.vo contrib/setoid_ring/newring.cmo
+contrib/setoid_ring/Ring_theory.vo: contrib/setoid_ring/Ring_theory.v theories/Setoids/Setoid.vo theories/NArith/BinPos.vo theories/NArith/BinNat.vo
+contrib/setoid_ring/Ring_polynom.vo: contrib/setoid_ring/Ring_polynom.v theories/Setoids/Setoid.vo contrib/setoid_ring/BinList.vo theories/NArith/BinPos.vo theories/NArith/BinNat.vo theories/ZArith/BinInt.vo contrib/setoid_ring/Ring_theory.vo
+contrib/setoid_ring/Ring_tac.vo: contrib/setoid_ring/Ring_tac.v theories/Setoids/Setoid.vo theories/NArith/BinPos.vo contrib/setoid_ring/Ring_polynom.vo contrib/setoid_ring/BinList.vo contrib/setoid_ring/InitialRing.vo contrib/setoid_ring/newring.cmo
 contrib/setoid_ring/Ring_base.vo: contrib/setoid_ring/Ring_base.v contrib/setoid_ring/newring.cmo contrib/setoid_ring/Ring_theory.vo contrib/setoid_ring/Ring_tac.vo contrib/setoid_ring/InitialRing.vo
-contrib/setoid_ring/InitialRing.vo: contrib/setoid_ring/InitialRing.v theories/ZArith/ZArith_base.vo theories/ZArith/BinInt.vo theories/NArith/BinNat.vo theories/Setoids/Setoid.vo contrib/setoid_ring/Ring_theory.vo contrib/setoid_ring/Ring_tac.vo contrib/setoid_ring/Ring_polynom.vo
+contrib/setoid_ring/InitialRing.vo: contrib/setoid_ring/InitialRing.v theories/ZArith/ZArith_base.vo theories/ZArith/Zpow_def.vo theories/ZArith/BinInt.vo theories/NArith/BinNat.vo theories/Setoids/Setoid.vo contrib/setoid_ring/Ring_theory.vo contrib/setoid_ring/Ring_polynom.vo
 contrib/setoid_ring/Ring_equiv.vo: contrib/setoid_ring/Ring_equiv.v contrib/ring/Setoid_ring_theory.vo contrib/ring/LegacyRing_theory.vo contrib/setoid_ring/Ring_theory.vo
-contrib/setoid_ring/Ring.vo: contrib/setoid_ring/Ring.v theories/Bool/Bool.vo contrib/setoid_ring/Ring_theory.vo contrib/setoid_ring/Ring_base.vo contrib/setoid_ring/Ring_tac.vo
+contrib/setoid_ring/Ring.vo: contrib/setoid_ring/Ring.v theories/Bool/Bool.vo contrib/setoid_ring/Ring_theory.vo contrib/setoid_ring/Ring_base.vo contrib/setoid_ring/InitialRing.vo contrib/setoid_ring/Ring_tac.vo
 contrib/setoid_ring/ArithRing.vo: contrib/setoid_ring/ArithRing.v theories/Arith/Mult.vo contrib/setoid_ring/Ring.vo
 contrib/setoid_ring/NArithRing.vo: contrib/setoid_ring/NArithRing.v contrib/setoid_ring/Ring.vo theories/NArith/BinPos.vo theories/NArith/BinNat.vo
-contrib/setoid_ring/ZArithRing.vo: contrib/setoid_ring/ZArithRing.v contrib/setoid_ring/Ring.vo theories/ZArith/ZArith_base.vo
+contrib/setoid_ring/ZArithRing.vo: contrib/setoid_ring/ZArithRing.v contrib/setoid_ring/Ring.vo theories/ZArith/ZArith_base.vo theories/ZArith/Zpow_def.vo
 contrib/setoid_ring/Field_theory.vo: contrib/setoid_ring/Field_theory.v contrib/setoid_ring/Ring.vo theories/ZArith/ZArith_base.vo
 contrib/setoid_ring/Field_tac.vo: contrib/setoid_ring/Field_tac.v contrib/setoid_ring/Ring_tac.vo contrib/setoid_ring/BinList.vo contrib/setoid_ring/Ring_polynom.vo contrib/setoid_ring/InitialRing.vo contrib/setoid_ring/Field_theory.vo
 contrib/setoid_ring/Field.vo: contrib/setoid_ring/Field.v contrib/setoid_ring/Field_theory.vo contrib/setoid_ring/Field_tac.vo
-contrib/setoid_ring/RealField.vo: contrib/setoid_ring/RealField.v theories/Reals/Raxioms.vo theories/Reals/Rdefinitions.vo contrib/setoid_ring/Ring.vo contrib/setoid_ring/Field.vo
+contrib/setoid_ring/RealField.vo: contrib/setoid_ring/RealField.v theories/NArith/Nnat.vo contrib/setoid_ring/ArithRing.vo contrib/setoid_ring/Ring.vo contrib/setoid_ring/Field.vo theories/Reals/Rdefinitions.vo theories/Reals/Rpow_def.vo theories/Reals/Raxioms.vo

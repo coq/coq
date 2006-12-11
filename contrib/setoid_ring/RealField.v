@@ -1,6 +1,9 @@
-Require Import Raxioms.
-Require Import Rdefinitions.
+Require Import Nnat.
+Require Import ArithRing. 
 Require Export Ring Field.
+Require Import Rdefinitions.
+Require Import Rpow_def.
+Require Import Raxioms.
 
 Open Local Scope R_scope.
 
@@ -102,4 +105,28 @@ Lemma Zeq_bool_complete : forall x y,
   Zeq_bool x y = true.
 Proof gen_phiZ_complete Rset Rext Rfield Rgen_phiPOS_not_0.
 
-Add Field RField : Rfield (infinite Zeq_bool_complete).
+Lemma Rdef_pow_add : forall (x:R) (n m:nat), pow x  (n + m) = pow x n * pow x m.
+Proof.
+  intros x n; elim n; simpl in |- *; auto with real.
+  intros n0 H' m; rewrite H'; auto with real.
+Qed.
+
+Lemma R_power_theory : power_theory 1%R Rmult (eq (A:=R))  nat_of_N pow.
+Proof.
+ constructor. destruct n. reflexivity.
+ simpl. induction p;simpl. 
+ rewrite ZL6. rewrite Rdef_pow_add;rewrite IHp. symmetry; apply Rmult_assoc.
+ unfold nat_of_P;simpl;rewrite ZL6;rewrite Rdef_pow_add;rewrite IHp;trivial.
+ rewrite Rmult_comm;apply Rmult_1_l.
+Qed.
+
+Ltac Rpow_tac t := 
+  match isnatcst t with
+  | false => constr:(InitialRing.NotConstant)
+  | _ => constr:(N_of_nat t)
+  end. 
+
+Add Field RField : Rfield  (infinite Zeq_bool_complete, power_tac R_power_theory [Rpow_tac]).
+
+
+ 

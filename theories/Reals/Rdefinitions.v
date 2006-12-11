@@ -55,6 +55,8 @@ Definition Rminus (r1 r2:R) : R := (r1 + - r2)%R.
 (**********)
 Definition Rdiv (r1 r2:R) : R := (r1 * / r2)%R.
 
+(**********)
+
 Infix "-" := Rminus : R_scope.
 Infix "/" := Rdiv : R_scope.
 

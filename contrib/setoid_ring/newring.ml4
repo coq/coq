@@ -127,6 +127,12 @@ TACTIC EXTEND closed_term
     [ closed_term t l ]
 END
 ;;
+
+TACTIC EXTEND echo 
+| [ "echo" constr(t) ] -> 
+  [ Pp.msg (Termops.print_constr t);  Tacinterp.eval_tactic (TacId []) ]
+END;;
+
 (*
 let closed_term_ast l =
   TacFun([Some(id_of_string"t")],
@@ -196,7 +202,8 @@ let constr_of = function
 
 let stdlib_modules =
   [["Coq";"Setoids";"Setoid"];
-   ["Coq";"Lists";"List"]
+   ["Coq";"Lists";"List"];
+   ["Coq";"Init";"Datatypes"]
   ]
 
 let coq_constant c =
@@ -205,6 +212,8 @@ let coq_constant c =
 let coq_mk_Setoid = coq_constant "Build_Setoid_Theory"
 let coq_cons = coq_constant "cons"
 let coq_nil = coq_constant "nil"
+let coq_None = coq_constant "None"
+let coq_Some = coq_constant "Some"
 
 let lapp f args = mkApp(Lazy.force f,args)
 
@@ -265,10 +274,17 @@ let coq_mk_seqe = my_constant "mk_seqe"
 
 let ltac_inv_morphZ = zltac"inv_gen_phiZ"
 let ltac_inv_morphN = zltac"inv_gen_phiN"
-
 let coq_abstract = my_constant"Abstract"
 let coq_comp = my_constant"Computational"
 let coq_morph = my_constant"Morphism"
+
+(* power function *)
+let ltac_inv_morph_nothing = zltac"inv_morph_nothing"
+let coq_pow_N_pow_N = my_constant "pow_N_pow_N"
+
+(* hypothesis *)
+let coq_mkhypo = my_constant "mkhypo"
+let coq_hypo = my_constant "hypo"
 
 (* Equality: do not evaluate but make recursive call on both sides *)
 let map_with_eq arg_map c =
@@ -283,10 +299,12 @@ let _ = add_map "ring"
     coq_nil, (function -1->Eval|_ -> Prot);
     (* Pphi_dev: evaluate polynomial and coef operations, protect
        ring operations and make recursive call on the var map *)
-    pol_cst "Pphi_dev", (function -1|6|7|8|9|11->Eval|10->Rec|_->Prot);
+    pol_cst "Pphi_dev", (function -1|8|9|10|11|12|13|15->Eval|14->Rec|_->Prot);
+    pol_cst "Pphi_pow", 
+          (function -1|8|9|10|11|12|14|16|18->Eval|17->Rec|_->Prot);
     (* PEeval: evaluate morphism and polynomial, protect ring 
        operations and make recursive call on the var map *)
-    pol_cst "PEeval", (function -1|7|9->Eval|8->Rec|_->Prot)])
+    pol_cst "PEeval", (function -1|7|9|12->Eval|11->Rec|_->Prot)])
 
 (****************************************************************************)
 (* Ring database *)
@@ -299,6 +317,7 @@ type ring_info =
       ring_morph : constr;
       ring_th : constr;
       ring_cst_tac : glob_tactic_expr;
+      ring_pow_tac : glob_tactic_expr;
       ring_lemma1 : constr;
       ring_lemma2 : constr;
       ring_pre_tac : glob_tactic_expr;
@@ -378,6 +397,7 @@ let subst_th (_,subst,th) =
   let thm1' = subst_mps subst th.ring_lemma1 in
   let thm2' = subst_mps subst th.ring_lemma2 in
   let tac'= subst_tactic subst th.ring_cst_tac in
+  let pow_tac'= subst_tactic subst th.ring_pow_tac in
   let pretac'= subst_tactic subst th.ring_pre_tac in
   let posttac'= subst_tactic subst th.ring_post_tac in
   if c' == th.ring_carrier &&
@@ -389,6 +409,7 @@ let subst_th (_,subst,th) =
      thm1' == th.ring_lemma1 &&
      thm2' == th.ring_lemma2 &&
      tac' == th.ring_cst_tac &&
+     pow_tac' == th.ring_pow_tac &&
      pretac' == th.ring_pre_tac &&
      posttac' == th.ring_post_tac then th
   else
@@ -399,6 +420,7 @@ let subst_th (_,subst,th) =
       ring_morph = morph';
       ring_th = th';
       ring_cst_tac = tac';
+      ring_pow_tac = pow_tac';
       ring_lemma1 = thm1';
       ring_lemma2 = thm2';
       ring_pre_tac = pretac';
@@ -532,14 +554,50 @@ let interp_cst_tac kind (zero,one,add,mul,opp) cst_tac =
               TacArg(TacCall(dummy_loc,t,List.map carg [zero;one;add;mul;opp]))
           | _ -> error"a tactic must be specified for an almost_ring")
 
-let add_theory name rth eqth morphth cst_tac (pre,post) =
+let make_hyp env c =
+  let t = (Typeops.typing env c).uj_type in
+  lapp coq_mkhypo [|t;c|]
+
+let make_hyp_list env lH =
+  let carrier = Lazy.force coq_hypo in
+  List.fold_right 
+    (fun c l -> lapp coq_cons [|carrier; (make_hyp env c); l|]) lH
+    (lapp coq_nil [|carrier|])
+
+let interp_power env pow =  
+  let carrier = Lazy.force coq_hypo in
+  match pow with
+  | None -> 
+      let t = ArgArg(dummy_loc, Lazy.force ltac_inv_morph_nothing) in
+      (TacArg(TacCall(dummy_loc,t,[])), lapp coq_None [|carrier|])
+  | Some (tac, spec) -> 
+      let tac = 
+        match tac with
+        | CstTac t -> Tacinterp.glob_tactic t
+        | Closed lc -> closed_term_ast (List.map Nametab.global lc) in
+      let spec = make_hyp env (ic spec) in
+      (tac, lapp coq_Some [|carrier; spec|])
+
+let interp_sign env sign =
+  let carrier = Lazy.force coq_hypo in
+  match sign with
+  | None -> lapp coq_None [|carrier|] 
+  | Some spec -> 
+      let spec = make_hyp env (ic spec) in
+      lapp coq_Some [|carrier;spec|]
+       (* Same remark on ill-typed terms ... *)
+
+let add_theory name rth eqth morphth cst_tac (pre,post) power sign =
   let env = Global.env() in
   let sigma = Evd.empty in
   let (kind,r,zero,one,add,mul,sub,opp,req) = dest_ring env sigma rth in
   let (sth,ext) = build_setoid_params r add mul opp req eqth in
+  let (pow_tac, pspec) = interp_power env power in 
+  let sspec = interp_sign env sign in
   let rk = reflect_coeff morphth in
   let params =
-    exec_tactic env 5 (zltac"ring_lemmas") (List.map carg[sth;ext;rth;rk]) in
+    exec_tactic env 5 (zltac "ring_lemmas") 
+      (List.map carg[sth;ext;rth;pspec;sspec;rk]) in
   let lemma1 = constr_of params.(3) in
   let lemma2 = constr_of params.(4) in
 
@@ -564,6 +622,7 @@ let add_theory name rth eqth morphth cst_tac (pre,post) =
           ring_morph = constr_of params.(2);
           ring_th = constr_of params.(0);
           ring_cst_tac = cst_tac;
+	  ring_pow_tac = pow_tac;
           ring_lemma1 = lemma1;
           ring_lemma2 = lemma2;
           ring_pre_tac = pretac;
@@ -576,6 +635,10 @@ type ring_mod =
   | Pre_tac of raw_tactic_expr
   | Post_tac of raw_tactic_expr
   | Setoid of Topconstr.constr_expr * Topconstr.constr_expr
+  | Pow_spec of cst_tac_spec * Topconstr.constr_expr
+           (* Syntaxification tactic , correctness lemma *)
+  | Sign_spec of Topconstr.constr_expr
+
 
 VERNAC ARGUMENT EXTEND ring_mod
   | [ "decidable" constr(eq_test) ] -> [ Ring_kind(Computational (ic eq_test)) ]
@@ -586,6 +649,11 @@ VERNAC ARGUMENT EXTEND ring_mod
   | [ "preprocess" "[" tactic(pre) "]" ] -> [ Pre_tac pre ]
   | [ "postprocess" "[" tactic(post) "]" ] -> [ Post_tac post ]
   | [ "setoid" constr(sth) constr(ext) ] -> [ Setoid(sth,ext) ]
+  | [ "sign" constr(sign_spec) ] -> [ Sign_spec sign_spec ]
+  | [ "power" constr(pow_spec) "[" ne_global_list(l) "]" ] ->
+           [ Pow_spec (Closed l, pow_spec) ]   
+  | [ "power_tac" constr(pow_spec) "[" tactic(cst_tac) "]" ] ->
+           [ Pow_spec (CstTac cst_tac, pow_spec) ]
 END
 
 let set_once s r v =
@@ -597,19 +665,23 @@ let process_ring_mods l =
   let cst_tac = ref None in
   let pre = ref None in
   let post = ref None in
+  let sign = ref None in
+  let power = ref None in
   List.iter(function
       Ring_kind k -> set_once "ring kind" kind k
     | Const_tac t -> set_once "tactic recognizing constants" cst_tac t
     | Pre_tac t -> set_once "preprocess tactic" pre t
     | Post_tac t -> set_once "postprocess tactic" post t
-    | Setoid(sth,ext) -> set_once "setoid" set (ic sth,ic ext)) l;
+    | Setoid(sth,ext) -> set_once "setoid" set (ic sth,ic ext) 
+    | Pow_spec(t,spec) -> set_once "power" power (t,spec)
+    | Sign_spec t -> set_once "sign" sign t) l;
   let k = match !kind with Some k -> k | None -> Abstract in
-  (k, !set, !cst_tac, !pre, !post)
+  (k, !set, !cst_tac, !pre, !post, !power, !sign)
 
 VERNAC COMMAND EXTEND AddSetoidRing
   | [ "Add" "Ring" ident(id) ":" constr(t) ring_mods(l) ] ->
-    [ let (k,set,cst,pre,post) = process_ring_mods l in
-      add_theory id (ic t) set k cst (pre,post) ]
+    [ let (k,set,cst,pre,post,power,sign) = process_ring_mods l in
+      add_theory id (ic t) set k cst (pre,post) power sign ]
 END
 
 (*****************************************************************************)
@@ -625,17 +697,20 @@ let make_term_list carrier rl gl =
     (fun x l -> lapp coq_cons [|carrier;x;l|]) rl
     (lapp coq_nil [|carrier|])
 
-let ring_lookup (f:glob_tactic_expr) rl gl =
+
+let ring_lookup (f:glob_tactic_expr) lH rl gl =
   let env = pf_env gl in
   let sigma = project gl in
   let e = find_ring_structure env sigma rl (pf_concl gl) None in
   let rl = carg (make_term_list e.ring_carrier rl gl) in
+  let lH = carg (make_hyp_list env lH) in
   let req = carg e.ring_req in
   let sth = carg e.ring_setoid in
   let ext = carg e.ring_ext in
   let morph = carg e.ring_morph in
   let th = carg e.ring_th in
   let cst_tac = Tacexp e.ring_cst_tac in
+  let pow_tac = Tacexp e.ring_pow_tac in
   let lemma1 = carg e.ring_lemma1 in
   let lemma2 = carg e.ring_lemma2 in
   let pretac = Tacexp(TacFun([None],e.ring_pre_tac)) in
@@ -644,12 +719,16 @@ let ring_lookup (f:glob_tactic_expr) rl gl =
     (TacLetIn
       ([(dummy_loc,id_of_string"f"),None,Tacexp f],
        ltac_lcall "f"
-         [req;sth;ext;morph;th;cst_tac;lemma1;lemma2;pretac;posttac;rl])) gl
+         [req;sth;ext;morph;th;cst_tac;pow_tac;
+          lemma1;lemma2;pretac;posttac;lH;rl])) gl
 
 TACTIC EXTEND ring_lookup
-| [ "ring_lookup" tactic(f) constr_list(l) ] -> [ ring_lookup (fst f) l ]
+| [ "ring_lookup" tactic(f) "[" constr_list(lH) "]" constr_list(lr)] ->
+          [ring_lookup (fst f) lH lr]
 END
 
+
+ 
 (***********************************************************************)
 
 let new_field_path =
@@ -666,14 +745,20 @@ let _ = add_map "field"
     (* display_linear: evaluate polynomials and coef operations, protect
        field operations and make recursive call on the var map *)
     my_constant "display_linear",
-      (function -1|7|8|9|10|12|13->Eval|11->Rec|_->Prot);
-    (* Pphi_dev: evaluate polynomial and coef operations, protect
+      (function -1|8|9|10|11|12|13|14|16|17->Eval|15->Rec|_->Prot);
+    my_constant "display_pow_linear",
+     (function -1|8|9|10|11|12|13|14|15|17|19|20->Eval|18->Rec|_->Prot);
+   (* Pphi_dev: evaluate polynomial and coef operations, protect
        ring operations and make recursive call on the var map *)
-    my_constant "Pphi_dev", (function -1|6|7|8|9|11->Eval|10->Rec|_->Prot);
+    pol_cst "Pphi_dev", (function -1|8|9|10|11|12|13|15->Eval|14->Rec|_->Prot);
+    pol_cst "Pphi_pow", 
+          (function -1|8|9|10|11|12|14|16|18->Eval|17->Rec|_->Prot);
     (* PEeval: evaluate morphism and polynomial, protect ring 
        operations and make recursive call on the var map *)
-    my_constant "FEeval", (function -1|9|11->Eval|10->Rec|_->Prot)]);;
-
+    pol_cst "PEeval", (function -1|7|9|12->Eval|11->Rec|_->Prot);
+    (* FEeval: evaluate morphism, protect field 
+       operations and make recursive call on the var map *)
+    my_constant "FEeval", (function -1|8|9|10|11|14->Eval|13->Rec|_->Prot)]);;
 
 let _ = add_map "field_cond"
   (map_with_eq
@@ -681,7 +766,8 @@ let _ = add_map "field_cond"
      coq_nil, (function -1->Eval|_ -> Prot);
     (* PCond: evaluate morphism and denum list, protect ring
        operations and make recursive call on the var map *)
-     my_constant "PCond", (function -1|8|10->Eval|9->Rec|_->Prot)]);;
+     my_constant "PCond", (function -1|8|10|13->Eval|12->Rec|_->Prot)]);;
+(*                       (function -1|8|10->Eval|9->Rec|_->Prot)]);;*)
 
 
 let afield_theory = my_constant "almost_field_theory"
@@ -715,6 +801,7 @@ type field_info =
     { field_carrier : types;
       field_req : constr;
       field_cst_tac : glob_tactic_expr;
+      field_pow_tac : glob_tactic_expr;
       field_ok : constr;
       field_simpl_eq_ok : constr;
       field_simpl_ok : constr;
@@ -798,6 +885,7 @@ let subst_th (_,subst,th) =
   let thm3' = subst_mps subst th.field_simpl_ok in
   let thm4' = subst_mps subst th.field_cond in
   let tac'= subst_tactic subst th.field_cst_tac in
+  let pow_tac' = subst_tactic subst th.field_pow_tac in
   let pretac'= subst_tactic subst th.field_pre_tac in
   let posttac'= subst_tactic subst th.field_post_tac in
   if c' == th.field_carrier &&
@@ -807,12 +895,14 @@ let subst_th (_,subst,th) =
      thm3' == th.field_simpl_ok &&
      thm4' == th.field_cond &&
      tac' == th.field_cst_tac &&
+     pow_tac' == th.field_pow_tac &&
      pretac' == th.field_pre_tac &&
      posttac' == th.field_post_tac then th
   else
     { field_carrier = c';
       field_req = eq';
       field_cst_tac = tac';
+      field_pow_tac = pow_tac';
       field_ok = thm1';
       field_simpl_eq_ok = thm2';
       field_simpl_ok = thm3';
@@ -850,19 +940,21 @@ let default_field_equality r inv req =
             error "field inverse should be declared as a morphism" in
         inv_m.lem
 
-let add_field_theory name fth eqth morphth cst_tac inj (pre,post) =
+let add_field_theory name fth eqth morphth cst_tac inj (pre,post) power sign =
   let env = Global.env() in
   let sigma = Evd.empty in
   let (kind,r,zero,one,add,mul,sub,opp,div,inv,req,rth) =
     dest_field env sigma fth in
   let (sth,ext) = build_setoid_params r add mul opp req eqth in
   let eqth = Some(sth,ext) in
-  let _ = add_theory name rth eqth morphth cst_tac (None,None) in
+  let _ = add_theory name rth eqth morphth cst_tac (None,None) power sign in
+  let (pow_tac, pspec) = interp_power env power in 
+  let sspec = interp_sign env sign in
   let inv_m = default_field_equality r inv req in
   let rk = reflect_coeff morphth in
   let params =
     exec_tactic env 8 (field_ltac"field_lemmas")
-      (List.map carg[sth;ext;inv_m;fth;rk]) in
+      (List.map carg[sth;ext;inv_m;fth;pspec;sspec;rk]) in
   let lemma1 = constr_of params.(3) in
   let lemma2 = constr_of params.(4) in
   let lemma3 = constr_of params.(5) in
@@ -889,6 +981,7 @@ let add_field_theory name fth eqth morphth cst_tac inj (pre,post) =
         { field_carrier = r;
           field_req = req;
           field_cst_tac = cst_tac;
+          field_pow_tac = pow_tac;
           field_ok = lemma1;
           field_simpl_eq_ok = lemma2;
           field_simpl_ok = lemma3;
@@ -911,7 +1004,9 @@ let process_field_mods l =
   let cst_tac = ref None in
   let pre = ref None in
   let post = ref None in
-  let inj = ref None in
+  let inj = ref None in  
+  let sign = ref None in
+  let power = ref None in
   List.iter(function
       Ring_mod(Ring_kind k) -> set_once "field kind" kind k
     | Ring_mod(Const_tac t) ->
@@ -919,23 +1014,27 @@ let process_field_mods l =
     | Ring_mod(Pre_tac t) -> set_once "preprocess tactic" pre t
     | Ring_mod(Post_tac t) -> set_once "postprocess tactic" post t
     | Ring_mod(Setoid(sth,ext)) -> set_once "setoid" set (ic sth,ic ext)
+    | Ring_mod(Pow_spec(t,spec)) -> set_once "power" power (t,spec)
+    | Ring_mod(Sign_spec t) -> set_once "sign" sign t
     | Inject i -> set_once "infinite property" inj (ic i)) l;
   let k = match !kind with Some k -> k | None -> Abstract in
-  (k, !set, !inj, !cst_tac, !pre, !post)
+  (k, !set, !inj, !cst_tac, !pre, !post, !power, !sign)
 
 VERNAC COMMAND EXTEND AddSetoidField
 | [ "Add" "Field" ident(id) ":" constr(t) field_mods(l) ] -> 
-  [ let (k,set,inj,cst_tac,pre,post) = process_field_mods l in
-    add_field_theory id (ic t) set k cst_tac inj (pre,post) ]
+  [ let (k,set,inj,cst_tac,pre,post,power,sign) = process_field_mods l in
+    add_field_theory id (ic t) set k cst_tac inj (pre,post) power sign]
 END
 
-let field_lookup (f:glob_tactic_expr) rl gl =
+let field_lookup (f:glob_tactic_expr) lH rl gl =
   let env = pf_env gl in
   let sigma = project gl in
   let e = find_field_structure env sigma rl (pf_concl gl) None in
   let rl = carg (make_term_list e.field_carrier rl gl) in
+  let lH = carg (make_hyp_list env lH) in
   let req = carg e.field_req in
   let cst_tac = Tacexp e.field_cst_tac in
+  let pow_tac = Tacexp e.field_pow_tac in
   let field_ok = carg e.field_ok in
   let field_simpl_ok = carg e.field_simpl_ok in
   let field_simpl_eq_ok = carg e.field_simpl_eq_ok in
@@ -946,9 +1045,10 @@ let field_lookup (f:glob_tactic_expr) rl gl =
     (TacLetIn
       ([(dummy_loc,id_of_string"f"),None,Tacexp f],
        ltac_lcall "f"
-         [req;cst_tac;field_ok;field_simpl_ok;field_simpl_eq_ok;cond_ok;
-          pretac;posttac;rl])) gl
+        [req;cst_tac;pow_tac;field_ok;field_simpl_ok;field_simpl_eq_ok;cond_ok;
+         pretac;posttac;lH;rl])) gl
 
 TACTIC EXTEND field_lookup
-| [ "field_lookup" tactic(f) constr_list(l) ] -> [ field_lookup (fst f) l ]
+| [ "field_lookup" tactic(f) "[" constr_list(lH) "]" constr_list(l) ] -> 
+      [ field_lookup (fst f) lH l ]
 END

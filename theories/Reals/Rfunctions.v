@@ -19,6 +19,7 @@ Require Export LegacyArithRing. (* for ring_nat... *)
 Require Export ArithRing.
 
 Require Import Rbase.
+Require Export Rpow_def.
 Require Export R_Ifp.
 Require Export Rbasic_fun.
 Require Export R_sqr.
@@ -65,11 +66,6 @@ Qed.
 (** *       Power              *)
 (*******************************)
 (*********)
-Boxed Fixpoint pow (r:R) (n:nat) {struct n} : R :=
-  match n with
-    | O => 1
-    | S n => r * pow r n
-  end.
 
 Infix "^" := pow : R_scope.
 

@@ -44,11 +44,7 @@ sp is a local copy of the global variable extern_sp. */
 #  ifdef DEBUG
 #    define Next goto next_instr
 #  else
-#    ifdef __ia64__
-#      define Next goto *(void *)(coq_jumptbl_base + *((uint32 *) pc)++)
-#    else
-#      define Next goto *(void *)(coq_jumptbl_base + *pc++)
-#    endif
+#    define Next goto *(void *)(coq_jumptbl_base + *pc++)  
 #  endif
 #else 
 #  define Instruct(name) case name:

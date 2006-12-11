@@ -309,6 +309,7 @@ GEXTEND Gram
       | IDENT "assumption" -> TacAssumption
       | IDENT "exact"; c = constr -> TacExact c
       | IDENT "exact_no_check"; c = constr -> TacExactNoCheck c
+      | IDENT "vm_cast_no_check"; c = constr -> TacVmCastNoCheck c
 
       | IDENT "apply"; cl = constr_with_bindings -> TacApply cl
       | IDENT "elim"; cl = constr_with_bindings; el = OPT eliminator ->

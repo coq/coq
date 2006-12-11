@@ -10,12 +10,6 @@ Require Import Mult.
 Require Export Ring.
 Set Implicit Arguments.
 
-Ltac isnatcst t :=
-  match t with
-    O => true
-  | S ?p => isnatcst p
-  | _ => false
-  end.
 Ltac natcst t :=
   match isnatcst t with
     true => t
@@ -50,7 +44,7 @@ Ltac natprering :=
  Qed.
 
 
-Unboxed Fixpoint nateq (n m:nat) {struct m} : bool :=
+Fixpoint nateq (n m:nat) {struct m} : bool :=
   match n, m with
   | O, O => true
   | S n', S m' => nateq n' m'
@@ -67,3 +61,6 @@ Qed.
 
 Add Ring natr : natSRth
   (decidable nateq_ok, constants [natcst], preprocess [natprering]).
+
+
+(* Pourquoi on n'utilise pas N pour les calculs sur nat ???? *)

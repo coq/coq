@@ -7,15 +7,20 @@
 (************************************************************************)
 
 Require Import ZArith_base.
+Require Import Zpow_def.
 Require Import BinInt.
 Require Import BinNat.
 Require Import Setoid.
 Require Import Ring_theory.
-Require Import Ring_tac.
 Require Import Ring_polynom.
+
 Set Implicit Arguments.
 
 Import RingSyntax.
+
+
+(* An object to return when an expression is not recognized as a constant *)
+Definition NotConstant := false.
 
 (** Z is a ring and a setoid*)
 
@@ -88,6 +93,21 @@ Section ZMORPHISM.
   | Zneg p => -(gen_phiPOS p)
   end.
  Notation "[ x ]" := (gen_phiZ x).   
+
+ Definition get_signZ z :=
+  match z with
+  | Zneg p => Some (Zpos p) 
+  | _ => None
+  end.
+
+ Lemma get_signZ_th : sign_theory ropp req gen_phiZ get_signZ.
+ Proof.
+  constructor.
+  destruct c;intros;try discriminate.
+  injection H;clear H;intros H1;subst c'.
+  simpl;rrefl.
+ Qed.
+
  
  Section ALMOST_RING.
  Variable ARth : almost_ring_theory 0 1 radd rmul rsub ropp req.
@@ -346,7 +366,8 @@ Section NMORPHISM.
 End NMORPHISM.
 
  (* syntaxification of constants in an abstract ring:
-    the inverse of gen_phiPOS *)
+    the inverse of gen_phiPOS 
+    Why we do not reconnize only rI ?????? *)
  Ltac inv_gen_phi_pos rI add mul t :=
    let rec inv_cst t :=
    match t with
@@ -396,65 +417,8 @@ End NMORPHISM.
      end
    end.
 
-(* coefs = Z (abstract ring) *)
-Module Zpol.
-
-Definition ring_gen_correct
-  R rO rI radd rmul rsub ropp req rSet req_th Rth :=
-  @ring_correct R rO rI radd rmul rsub ropp req rSet req_th
-                (Rth_ARth rSet req_th Rth)
-                Z 0%Z 1%Z Zplus Zmult Zminus Zopp Zeq_bool
-                (@gen_phiZ R rO rI radd rmul ropp)
-                (gen_phiZ_morph rSet req_th Rth).
-
-Definition ring_rw_gen_correct
-  R rO rI radd rmul rsub ropp req rSet req_th Rth :=
-  @Pphi_dev_ok   R rO rI radd rmul rsub ropp req rSet req_th
-                 (Rth_ARth rSet req_th Rth)
-                 Z 0%Z 1%Z Zplus Zmult Zminus Zopp Zeq_bool
-                 (@gen_phiZ R rO rI radd rmul ropp)
-                 (gen_phiZ_morph rSet req_th Rth).
-
-Definition ring_gen_eq_correct R rO rI radd rmul rsub ropp Rth :=
-  @ring_gen_correct
-     R rO rI radd rmul rsub ropp (@eq R) (Eqsth R) (Eq_ext _ _ _) Rth.
-
-Definition ring_rw_gen_eq_correct R rO rI radd rmul rsub ropp Rth :=
-  @ring_rw_gen_correct
-     R rO rI radd rmul rsub ropp (@eq R) (Eqsth R) (Eq_ext _ _ _) Rth.
-
-End Zpol.
-
-(* coefs = N (abstract semi-ring) *)
-Module Npol.
-
-Definition ring_gen_correct
-  R rO rI radd rmul req rSet req_th SRth :=
-  @ring_correct R rO rI radd rmul (SRsub radd) (@SRopp R) req rSet
-                (SReqe_Reqe req_th)
-                (SRth_ARth rSet SRth)
-                N 0%N 1%N Nplus Nmult (SRsub Nplus) (@SRopp N) Neq_bool
-                (@gen_phiN R rO rI radd rmul)
-                (gen_phiN_morph rSet req_th SRth).
-
-Definition ring_rw_gen_correct
-  R rO rI radd rmul req rSet req_th SRth :=
-  @Pphi_dev_ok   R rO rI radd rmul (SRsub radd) (@SRopp R) req rSet
-                 (SReqe_Reqe req_th)
-                 (SRth_ARth rSet SRth)
-                 N 0%N 1%N Nplus Nmult (SRsub Nplus) (@SRopp N) Neq_bool
-                 (@gen_phiN R rO rI radd rmul)
-                 (gen_phiN_morph rSet req_th SRth).
-
-Definition ring_gen_eq_correct R rO rI radd rmul SRth :=
-  @ring_gen_correct
-     R rO rI radd rmul (@eq R) (Eqsth R) (Eq_s_ext _ _) SRth.
-
-Definition ring_rw_gen_eq_correct' R rO rI radd rmul SRth :=
-  @ring_rw_gen_correct
-     R rO rI radd rmul (@eq R) (Eqsth R) (Eq_s_ext _ _) SRth.
-
-End Npol.
+(* A simpl tactic reconninzing nothing *)
+ Ltac inv_morph_nothing t := constr:(NotConstant).
 
 
 Ltac coerce_to_almost_ring set ext rspec :=
@@ -481,7 +445,46 @@ Ltac abstract_ring_morphism set ext rspec :=
   | _ => fail 1 "bad ring structure"
   end.
 
-Ltac ring_elements set ext rspec rk :=
+Record hypo : Type := mkhypo {
+   hypo_type : Type;
+   hypo_proof : hypo_type
+ }.
+
+Ltac gen_ring_pow set arth pspec :=
+ match pspec with
+ | None =>
+   match type of arth with
+   | @almost_ring_theory ?R ?rO ?rI ?radd ?rmul ?rsub ?ropp ?req =>
+     constr:(mkhypo (@pow_N_th R rI rmul req set))
+   | _ => fail 1 "gen_ring_pow"
+   end
+ | Some ?t => constr:(t)
+ end.
+
+Ltac default_sign_spec morph :=
+ match type of morph with
+ | @ring_morph ?R ?r0 ?rI ?radd ?rmul ?rsub ?ropp ?req 
+               ?C ?c0 ?c1 ?cadd ?cmul ?csub ?copp ?ceq_b ?phi =>
+      constr:(mkhypo (@get_sign_None_th R ropp req C phi))
+ | _ => fail 1 "ring anomaly : default_sign_spec" 
+ end.
+
+Ltac gen_ring_sign set rspec morph sspec rk :=
+ match sspec with
+ | None =>
+   match rk with
+   | Abstract =>
+     match type of rspec with
+     | @ring_theory ?R ?rO ?rI ?radd ?rmul ?rsub ?ropp ?req =>
+       constr:(mkhypo (@get_signZ_th R rO rI radd rmul ropp req set))
+     | _ => default_sign_spec morph 
+     end
+   | _ => default_sign_spec morph 
+   end
+ | Some ?t => constr:(t)
+ end.
+
+Ltac ring_elements set ext rspec pspec sspec rk :=
   let arth := coerce_to_almost_ring set ext rspec in
   let ext_r := coerce_to_ring_ext ext in
   let morph :=
@@ -496,16 +499,78 @@ Ltac ring_elements set ext rspec rk :=
     | @Morphism ?m => m
     | _ => fail 1 "ill-formed ring kind"
     end in
-  fun f => f arth ext_r morph.
+  let p_spec := gen_ring_pow set arth pspec in
+  let s_spec := gen_ring_sign set rspec morph sspec rk in
+  fun f => f arth ext_r morph p_spec s_spec.
+
 
 (* Given a ring structure and the kind of morphism,
    returns 2 lemmas (one for ring, and one for ring_simplify). *)
 
-Ltac ring_lemmas set ext rspec rk :=
-  ring_elements set ext rspec rk
-    ltac:(fun arth ext_r morph =>
-      let lemma1 := constr:(ring_correct set ext_r arth morph) in
-      let lemma2 := constr:(Pphi_dev_ok set ext_r arth morph) in
-      fun f => f arth ext_r morph lemma1 lemma2).
+Ltac ring_lemmas set ext rspec pspec sspec rk :=
+  let gen_lemma2 :=
+    match pspec with
+    | None => constr:(ring_rw_correct) 
+    | Some _ => constr:(ring_rw_pow_correct)
+    end in
+  ring_elements set ext rspec pspec sspec rk
+    ltac:(fun arth ext_r morph p_spec s_spec =>
+        match p_spec with
+        | mkhypo ?pp_spec =>
+        match s_spec with
+        | mkhypo ?ps_spec =>
+          let lemma1 := 
+            constr:(ring_correct set ext_r arth morph pp_spec) in
+          let lemma2 := 
+            constr:(gen_lemma2 _  _ _  _ _ _  _  _ set ext_r arth 
+                           _  _ _  _ _ _  _  _  _ morph 
+                           _ _ _ pp_spec
+                           _ ps_spec) in 
+          fun f => f arth ext_r morph lemma1 lemma2
+        | _ => fail 2 "bad sign specification"
+       end
+       | _ => fail 1 "bad power specification" 
+       end).
+ 
+(* Tactic for constant *)
+Ltac isnatcst t :=
+  match t with
+    O => true
+  | S ?p => isnatcst p
+  | _ => false
+  end.
+
+Ltac isPcst t :=
+  match t with
+  | xI ?p => isPcst p
+  | xO ?p => isPcst p
+  | xH => constr:true
+  (* nat -> positive *)
+  | P_of_succ_nat ?n => isnatcst n 
+  | _ => false
+  end.
+
+Ltac isNcst t :=
+  match t with
+    N0 => constr:true
+  | Npos ?p => isPcst p
+  | _ => constr:false
+  end.
+
+Ltac isZcst t :=
+  match t with
+    Z0 => true
+  | Zpos ?p => isPcst p
+  | Zneg ?p => isPcst p
+  (* injection nat -> Z *)
+  | Z_of_nat ?n => isnatcst n
+  (* injection N -> Z *)
+  | Z_of_N ?n => isNcst n
+  (* *)
+  | _ => false
+  end.
+
+
+
 
 
