@@ -1,5 +1,6 @@
 Inductive sig2 (A : Type) (P : A -> Prop) (Q : A -> Prop) : Type :=
     exist2 : forall x : A, P x -> Q x -> sig2 P Q
+
 For sig2: Argument A is implicit
 For exist2: Argument A is implicit
 For sig2: Argument scopes are [type_scope type_scope type_scope]
