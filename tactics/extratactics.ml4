@@ -285,7 +285,7 @@ open Evar_tactics
 (* evar creation *)
 
 TACTIC EXTEND evar
-  [ "evar" "(" ident(id) ":" constr(typ) ")" ] -> [ let_evar (Name id) typ ]
+  [ "evar" "(" ident(id) ":" lconstr(typ) ")" ] -> [ let_evar (Name id) typ ]
 | [ "evar" constr(typ) ] -> [ let_evar Anonymous typ ]
 END
 
