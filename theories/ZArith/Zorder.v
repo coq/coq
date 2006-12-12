@@ -549,7 +549,7 @@ Hint Immediate Zeq_le: zarith.
 
 (** Transitivity using successor *)
 
-Lemma Zge_trans_succ : forall n m p:Z, Zsucc n > m -> m > p -> n > p.
+Lemma Zgt_trans_succ : forall n m p:Z, Zsucc n > m -> m > p -> n > p.
 Proof.
   intros n m p H1 H2; apply Zle_gt_trans with (m := m);
     [ apply Zgt_succ_le; assumption | assumption ].
