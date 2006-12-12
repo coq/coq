@@ -63,6 +63,9 @@ let print_projections = ref false
 
 let print_meta_as_hole = ref false
 
+(* This forces printing of evar instances *)
+let print_instances = ref false
+
 let with_arguments f = Options.with_option print_arguments f
 let with_implicits f = Options.with_option print_implicits f
 let with_coercions f = Options.with_option print_coercions f
@@ -101,13 +104,7 @@ let idopt_of_name = function
   | Name id -> Some id
   | Anonymous -> None
 
-let extern_evar loc n =
-(*
-  msgerrnl (str 
-    "Warning: existential variable turned into meta-variable during externalization");
-  CPatVar (loc,(false,make_ident "META" (Some n)))
-*)
-  CEvar (loc,n)
+let extern_evar loc n = CEvar (loc,n)
 
 let raw_string_of_ref = function
   | ConstRef kn -> 
@@ -641,7 +638,13 @@ let rec extern inctx scopes vars r =
 
   | REvar (loc,n,None) when !print_meta_as_hole -> CHole loc
 
-  | REvar (loc,n,_) -> (* we drop args *) extern_evar loc n
+  | REvar (loc,n,args) ->
+      if !print_instances & args <> None then
+	explicitize loc false [] (None,extern_evar loc n)
+          (List.map (sub_extern true scopes vars) (out_some args))
+      else
+	(* we drop args *)
+	extern_evar loc n
 
   | RPatVar (loc,n) -> if !print_meta_as_hole then CHole loc else CPatVar (loc,n)
 
