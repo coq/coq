@@ -665,12 +665,10 @@ let check_one_fix renv recpos def =
 	      let np = recpos.(glob) in
               if List.length l <= np then error_partial_apply renv glob
               else
-	        (match list_chop np l with
-		    (la,(z::lrest)) -> 
-                      (* Check the decreasing arg is smaller *)
-	              if not (check_is_subterm renv z) then
-                        error_illegal_rec_call renv glob z
-	          | _ -> assert false)
+                (* Check the decreasing arg is smaller *)
+                let z = List.nth l np in
+	        if not (check_is_subterm renv z) then
+                  error_illegal_rec_call renv glob z
 
         | Case (ci,p,c_0,lrest) ->
             List.iter (check_rec_call renv) (c_0::p::l);
