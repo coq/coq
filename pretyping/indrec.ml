@@ -425,8 +425,6 @@ let mis_make_indrec env sigma listdepkind mib =
       if (mis_is_recursive_subset
 	(List.map (fun (indi,_,_,_,_) -> snd indi) listdepkind)
 	mipi.mind_recargs) 
-	(* mis_is_recursive_subset do not care about mutually recursive calls so: *)
-	|| (nparams-nparrec > 0)
       then 
 	let env' = push_rel_context lnamesparrec env in
 	  it_mkLambda_or_LetIn_name env (put_arity env' 0 listdepkind) 
