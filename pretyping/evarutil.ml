@@ -148,17 +148,6 @@ let new_evar_instance sign evd typ ?(src=(dummy_loc,InternalHole)) instance =
   (evar_declare sign newev typ ~src:src evd,
    mkEvar (newev,Array.of_list instance))
 
-let make_evar_instance_with_rel env =
-  let n = rel_context_length (rel_context env) in
-  let vars = 
-    fold_named_context
-      (fun env (id,b,_) l -> (* if b=None then *) mkVar id :: l (*else l*))
-      env ~init:[] in
-  snd (fold_rel_context
-	 (fun env (_,b,_) (i,l) -> 
-	    (i-1, (*if b=None then *) mkRel i :: l (*else l*)))
-	 env ~init:(n,vars))
-
 let make_subst env args =
   snd (fold_named_context
     (fun env (id,b,c) (args,l) ->
@@ -171,24 +160,32 @@ let make_subst env args =
 (* [new_isevar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
 
-let push_rel_context_to_named_context env =
-  let (subst,_,env) =
-  Sign.fold_rel_context
-    (fun (na,c,t) (subst,avoid,env) ->
-       let na = if na = Anonymous then Name(id_of_string"_") else na in
-       let id = next_name_away na avoid in
-       ((mkVar id)::subst,
-        id::avoid,
-	push_named (id,option_map (substl subst) c,
-                        type_app (substl subst) t)
-	  env))
-    (rel_context env) ~init:([],ids_of_named_context (named_context env),env)
-  in (subst, (named_context_val env))
+let dummy_var = mkVar (id_of_string "_")
+
+let push_rel_context_to_named_context env typ =
+  (* compute the instance relative to the named context *)
+  let vars = 
+    fold_named_context (fun env (id,b,_) l -> mkVar id :: l) env ~init:[] in
+  (* move the rel context to a named context and extend the instance 
+     with vars of the rel context *)
+  let fv = free_rels typ in
+  let avoid = ids_of_named_context (named_context env) in
+  let n = rel_context_length (rel_context env) in
+  let (subst, _, _, inst, env) =
+    Sign.fold_rel_context
+      (fun (na,c,t) (subst, n, avoid, inst, env) -> match na with
+	| Anonymous when not (Intset.mem n fv) -> 
+	    (dummy_var::subst, n-1, avoid, inst, env)
+	| _ ->
+	    let id = next_name_away na avoid in
+	    ((mkVar id)::subst, n-1, id::avoid, mkRel n::inst,
+	    push_named (id,option_map (substl subst) c,substl subst t) env))
+      (rel_context env) ~init:([], n, avoid, vars, env) in
+  (named_context_val env, substl subst typ, inst)
 
 let new_evar evd env ?(src=(dummy_loc,InternalHole)) typ =
-  let subst,sign = push_rel_context_to_named_context env in
-  let typ' = substl subst typ in
-  let instance = make_evar_instance_with_rel env in
+  let sign,typ',instance = push_rel_context_to_named_context env typ in
+  assert (not (dependent dummy_var typ));
   new_evar_instance sign evd typ' ~src:src instance
 
 (* The same using side-effect *)
