@@ -13,7 +13,6 @@
     From : Constructing Recursion Operators in Type Theory                
            L. Paulson  JSC (1986) 2, 325-355  *)
 
-Require Import Eqdep.
 Require Import List.
 Require Import Relation_Operators.
 Require Import Transitive_Closure.
