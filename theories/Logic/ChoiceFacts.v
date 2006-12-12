@@ -632,11 +632,8 @@ Proof.
   destruct (AC_depfun A0 B0 R0 H0) as (f, Hf).
   apply H.
   intros A P H'.
-  exists (f (existT (fun _ => sigT _) A
-    (existT (fun P => exists x, P x) P H'))).
-  pose (Hf' := 
-    Hf (existT (fun _ => sigT _) A
-      (existT (fun P => exists x, P x) P H'))).
+  exists (f (existT _ A (existT _ P H'))).
+  pose (Hf' := Hf (existT _ A (existT _ P H'))).
   assumption.
 Qed.
 
@@ -664,11 +661,8 @@ Proof.
   destruct (DepFunReify A0 B0 R0 H0) as (f, Hf).
   apply H.
   intros A P H'.
-  exists (f (existT (fun _ => sigT _) A
-    (existT (fun P => exists! x, P x) P H'))).
-  pose (Hf' := 
-    Hf (existT (fun _ => sigT _) A
-      (existT (fun P => exists! x, P x) P H'))).
+  exists (f (existT _ A (existT _ P H'))).
+  pose (Hf' := Hf (existT _ A (existT _ P H'))).
   assumption.
 Qed.
 
