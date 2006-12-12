@@ -165,23 +165,21 @@ let rec print_script nochange sigma pf =
 (* printed by Show Script command *)
 
 let print_treescript nochange sigma pf =
-  let rec aux top pf =
+  let rec aux pf =
     match pf.ref with
     | None ->
         if nochange then 
-	  if pf.goal.evar_extra=None then
-	    (str"<Your Tactic Text here>")
-	  else (str"<Your Proof Text here>")
-	else 
-	  (pr_change pf.goal)
+	  if pf.goal.evar_extra=None then str"<Your Tactic Text here>"
+	  else str"<Your Proof Text here>"
+	else pr_change pf.goal
     | Some(Decl_proof opened,script) ->
 	assert (List.length script = 1);
 	begin
-	  if nochange then (mt ()) else (pr_change pf.goal ++ fnl ())
+	  if nochange then mt () else pr_change pf.goal ++ fnl ()
 	end ++
 	  hov 0 
 	  begin str "proof." ++ fnl () ++
-	    print_decl_script (aux false)  
+	    print_decl_script aux
 	    nochange sigma (List.hd script) 
 	  end ++ fnl () ++ 
 	  begin
@@ -191,23 +189,14 @@ let print_treescript nochange sigma pf =
 	((if nochange then (mt ()) else (pr_change pf.goal ++ fnl ())) ++
 	   prlist_with_sep pr_fnl
            (print_script nochange sigma) spfl )
+    | Some(Change_evars,[spf]) ->
+        (if nochange then mt () else pr_change pf.goal ++ fnl ()) ++
+        aux spf
     | Some(r,spfl) ->
+        let indent = if List.length spfl >= 2 then 1 else 0 in
         (if nochange then mt () else (pr_change pf.goal ++ fnl ())) ++
-	  pr_rule_dot r ++
-	  begin
-	    if List.length spfl > 1 then
-	      fnl ()  ++ 
-		str " " ++  hov 0 (aux false (List.hd spfl)) ++ fnl () ++
-		hov 0 (prlist_with_sep fnl (aux false) (List.tl spfl))
-	    else
-	      match spfl with
-		| [] -> mt ()
-		| [spf] -> fnl () ++ 
-		    (if top then mt () else str "  ") ++ aux top spf
-		| _ -> fnl () ++ str " " ++
-		    hov 0 (prlist_with_sep fnl (aux false) spfl)
-	  end
-  in hov 0 (aux true pf)
+        hv indent (pr_rule_dot r ++ fnl() ++ prlist_with_sep fnl aux spfl)
+  in hov 0 (aux pf)
 
 let rec print_info_script sigma osign pf =
   let {evar_hyps=sign; evar_concl=cl} = pf.goal in
