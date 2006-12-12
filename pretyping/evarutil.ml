@@ -199,7 +199,6 @@ let push_rel_context_to_named_context env =
   let (subst,_,env) =
   Sign.fold_rel_context
     (fun (na,c,t) (subst,avoid,env) ->
-       let na = if na = Anonymous then Name(id_of_string"_") else na in
        let id = next_name_away na avoid in
        ((mkVar id)::subst,
         id::avoid,

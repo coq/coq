@@ -20,8 +20,6 @@ let pr_name = function
   | Anonymous -> str "_"
   | Name id -> pr_id id
 
-let wildcard = id_of_string "_"
-
 (* Utilities *)
 
 let code_of_0 = Char.code '0'
@@ -163,10 +161,7 @@ let next_name_away_with_default default name l =
     | Name str  -> next_ident_away str l
     | Anonymous -> next_ident_away (id_of_string default) l
 
-let next_name_away name l = 
-  match name with
-    | Name str  -> next_ident_away str l
-    | Anonymous -> id_of_string "_"
+let next_name_away = next_name_away_with_default "H"
 
 let pr_lab l = str (string_of_label l)
 

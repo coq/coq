@@ -14,8 +14,6 @@ open Names
 val pr_id : identifier -> Pp.std_ppcmds
 val pr_name : name -> Pp.std_ppcmds
 
-val wildcard : identifier
-
 val make_ident : string -> int option -> identifier
 val repr_ident : identifier -> string * int option
 
