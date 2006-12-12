@@ -168,15 +168,20 @@ let push_rel_context_to_named_context env typ =
     fold_named_context (fun env (id,b,_) l -> mkVar id :: l) env ~init:[] in
   (* move the rel context to a named context and extend the instance 
      with vars of the rel context *)
+(*
   let fv = free_rels typ in
+*)
   let avoid = ids_of_named_context (named_context env) in
   let n = rel_context_length (rel_context env) in
   let (subst, _, _, inst, env) =
     Sign.fold_rel_context
-      (fun (na,c,t) (subst, n, avoid, inst, env) -> match na with
+      (fun (na,c,t) (subst, n, avoid, inst, env) ->
+(*
+	match na with
 	| Anonymous when not (Intset.mem n fv) -> 
 	    (dummy_var::subst, n-1, avoid, inst, env)
 	| _ ->
+*)
 	    let id = next_name_away na avoid in
 	    ((mkVar id)::subst, n-1, id::avoid, mkRel n::inst,
 	    push_named (id,option_map (substl subst) c,substl subst t) env))
