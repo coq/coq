@@ -45,9 +45,9 @@ let build_sig () =
 
 let sig_ = lazy (build_sig ())
 
-let eqind = lazy (init_constant ["Init"; "Logic"] "eq")
-let eqrec = lazy (init_constant ["Init"; "Logic"] "eq_rec")
-let eqind_ref = lazy (init_reference ["Init"; "Logic"] "eq")
+let eq_ind = lazy (init_constant ["Init"; "Logic"] "eq")
+let eq_rec = lazy (init_constant ["Init"; "Logic"] "eq_rec")
+let eq_ind_ref = lazy (init_reference ["Init"; "Logic"] "eq")
 let refl_equal_ref = lazy (init_reference ["Init"; "Logic"] "refl_equal")
 
 let eqdep_ind = lazy (init_constant [ "Logic";"Eqdep"] "eq_dep")
@@ -90,6 +90,7 @@ open Pp
 
 let my_print_constr = Termops.print_constr_env
 let my_print_constr_expr = Ppconstr.pr_constr_expr
+let my_print_rel_context env ctx = Printer.pr_rel_context env ctx
 let my_print_context = Termops.print_rel_context
 let my_print_named_context = Termops.print_named_context
 let my_print_env = Termops.print_env
@@ -527,7 +528,7 @@ let rewrite_cases_aux (loc, po, tml, eqns) =
   in
   let mkHole = RHole (dummy_loc, InternalHole) in
   let mkCoerceCast c = RCast (dummy_loc, c, CastCoerce, mkHole) in
-  let mkeq c n = RApp (dummy_loc, RRef (dummy_loc, (Lazy.force eqind_ref)),
+  let mkeq c n = RApp (dummy_loc, RRef (dummy_loc, (Lazy.force eq_ind_ref)),
 		       [mkHole; c; n])
   in
   let eqs_types = 
@@ -575,10 +576,10 @@ let rec rewrite_cases c =
 	   | _ -> assert(false))
     | _ -> map_rawconstr rewrite_cases c
 	  
-let rewrite_cases env c =
-  let c' = rewrite_cases c in
-  let _ = trace (str "Rewrote cases: " ++ spc () ++ my_print_rawconstr env c') in
-    c'
+let rewrite_cases env c = c
+(*   let c' = rewrite_cases c in *)
+(*   let _ = trace (str "Rewrote cases: " ++ spc () ++ my_print_rawconstr env c') in *)
+(*     c' *)
 
 let id_of_name = function
     Name n -> n

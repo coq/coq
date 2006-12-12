@@ -32,9 +32,9 @@ val proj2_sig_ref : reference
 val build_sig : unit -> coq_sigma_data
 val sig_ : coq_sigma_data lazy_t
 
-val eqind : constr lazy_t
-val eqrec : constr lazy_t
-val eqind_ref : global_reference lazy_t
+val eq_ind : constr lazy_t
+val eq_rec : constr lazy_t
+val eq_ind_ref : global_reference lazy_t
 val refl_equal_ref : global_reference lazy_t
 
 val eqdep_ind : constr lazy_t
@@ -61,6 +61,7 @@ val my_print_constr : env -> constr -> std_ppcmds
 val my_print_constr_expr : constr_expr -> std_ppcmds
 val my_print_evardefs : evar_defs -> std_ppcmds
 val my_print_context : env -> std_ppcmds
+val my_print_rel_context : env -> rel_context -> std_ppcmds
 val my_print_named_context : env -> std_ppcmds
 val my_print_env : env -> std_ppcmds
 val my_print_rawconstr : env -> rawconstr -> std_ppcmds
