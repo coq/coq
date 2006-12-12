@@ -603,6 +603,7 @@ let cut_and_apply c gl =
   let goal_constr = pf_concl gl in 
     match kind_of_term (pf_hnf_constr gl (pf_type_of gl c)) with
       | Prod (_,c1,c2) when not (dependent (mkRel 1) c2) ->
+	  let c2 = refresh_universes c2 in
 	  tclTHENLAST
 	    (apply_type (mkProd (Anonymous,c2,goal_constr)) [mkMeta(new_meta())])
 	    (apply_term c [mkMeta (new_meta())]) gl
@@ -954,7 +955,7 @@ let true_cut = assert_tac true
 (**************************)
 
 let generalize_goal gl c cl =
-  let t = pf_type_of gl c in
+  let t = refresh_universes (pf_type_of gl c) in
   match kind_of_term c with
     | Var id ->
 	(* The choice of remembering or not a non dependent name has an impact
