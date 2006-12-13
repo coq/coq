@@ -20,3 +20,11 @@ intros.
 apply n_Sn in H.
 assumption.
 Qed.
+
+(* Check naming in with bindings; printing used to be inconsistent before *)
+(* revision 9450 *)
+
+Notation S':=S (only parsing).
+Goal (forall S, S = S' S) -> (forall S, S = S' S).
+intros.
+apply H with (S0 := S).

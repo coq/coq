@@ -1034,21 +1034,20 @@ let concrete_let_name avoid_flags l env_names n c =
   let fresh_id = next_name_not_occuring avoid_flags n l env_names c in
   (Name fresh_id, fresh_id::l)
 
-let rec rename_bound_var env l c =
-  match kind_of_term c with
-  | Prod (Name s,c1,c2)  ->
-      if noccurn 1 c2 then
-        let env' = push_rel (Name s,None,c1) env in
-	mkProd (Name s, c1, rename_bound_var env' l c2)
-      else 
-        let s' = next_ident_away s (global_vars env c2@l) in
-        let env' = push_rel (Name s',None,c1) env in
-        mkProd (Name s', c1, rename_bound_var env' (s'::l) c2)
-  | Prod (Anonymous,c1,c2) ->
-        let env' = push_rel (Anonymous,None,c1) env in
-        mkProd (Anonymous, c1, rename_bound_var env' l c2)
-  | Cast (c,k,t) -> mkCast (rename_bound_var env l c, k,t)
-  | x -> c
+let rec rename_bound_var env avoid c =
+  let env_names = names_of_rel_context env in
+  let rec rename avoid c =
+    match kind_of_term c with
+    | Prod (na,c1,c2)  ->
+	let na',avoid' = concrete_name (Some true) avoid env_names na c2 in
+	mkProd (na', c1, rename avoid' c2)
+    | LetIn (na,c1,t,c2) ->
+	let na',avoid' = concrete_let_name (Some true) avoid env_names na c2 in
+	mkLetIn (na',c1,t, rename avoid' c2)
+    | Cast (c,k,t) -> mkCast (rename avoid c, k,t)
+    | _ -> c
+  in
+  rename avoid c
 
 (* Combinators on judgments *)
 
