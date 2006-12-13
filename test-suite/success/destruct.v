@@ -23,3 +23,9 @@ set (b := true) in *.
 try destruct b.
 Abort.
 
+(* Used to fail with error "n is used in conclusion" before revision 9447 *)
+
+Goal forall n, n = S n.
+induction S.
+Abort.
+

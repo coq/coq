@@ -1173,6 +1173,35 @@ let forward usetac ipat c gl =
       tclTHENFIRST (assert_as true ipat c) tac gl
 
 (*****************************)
+(* Ad hoc unfold             *)
+(*****************************)
+
+(* The two following functions should already exist, but found nowhere *)
+(* Unfolds x by its definition everywhere *)
+let unfold_body x gl =
+  let hyps = pf_hyps gl in
+  let xval =
+    match Sign.lookup_named x hyps with
+        (_,Some xval,_) -> xval
+      | _ -> errorlabstrm "unfold_body"
+          (pr_id x ++ str" is not a defined hypothesis") in
+  let aft = afterHyp x gl in
+  let hl = List.fold_right (fun (y,yval,_) cl -> (([],y),InHyp) :: cl) aft [] in
+  let xvar = mkVar x in
+  let rfun _ _ c = replace_term xvar xval c in
+  tclTHENLIST
+    [tclMAP (fun h -> reduct_in_hyp rfun h) hl;
+     reduct_in_concl (rfun,DEFAULTcast)] gl
+
+(* Unfolds x by its definition everywhere and clear x. This may raise
+   an error if x is not defined. *)
+let unfold_all x gl =
+  let (_,xval,_) = pf_get_hyp gl x in
+  (* If x has a body, simply replace x with body and clear x *)
+  if xval <> None then tclTHEN (unfold_body x) (clear [x]) gl
+  else tclIDTAC gl
+
+(*****************************)
 (* High-level induction      *)
 (*****************************)
 
@@ -2040,7 +2069,7 @@ let induction_from_context isrec elim_info hyp0 names gl =
       (if isrec then tclTHENFIRSTn else tclTHENLASTn)
        	(tclTHENLIST
 	  [ induction_tac hyp0 typ0 scheme (*scheme.elimc,scheme.elimt*);
-	    thin [hyp0];
+	    tclTHEN (tclTRY (unfold_body hyp0)) (thin [hyp0]);
             tclTRY (thin indhyps) ])
        	(array_map2
 	   (induct_discharge statlists lhyp0 (List.rev dephyps)) indsign names)
@@ -2090,32 +2119,6 @@ let new_induct_gen isrec elim names c gl =
 	tclTHEN
 	  (letin_tac true (Name id) c allClauses)
 	  (induction_with_atomization_of_ind_arg isrec elim names id) gl
-
-(* The two following functions should already exist, but found nowhere *)
-(* Unfolds x by its definition everywhere *)
-let unfold_body x gl =
-  let hyps = pf_hyps gl in
-  let xval =
-    match Sign.lookup_named x hyps with
-        (_,Some xval,_) -> xval
-      | _ -> errorlabstrm "unfold_body"
-          (pr_id x ++ str" is not a defined hypothesis") in
-  let aft = afterHyp x gl in
-  let hl = List.fold_right (fun (y,yval,_) cl -> (([],y),InHyp) :: cl) aft [] in
-  let xvar = mkVar x in
-  let rfun _ _ c = replace_term xvar xval c in
-  tclTHENLIST
-    [tclMAP (fun h -> reduct_in_hyp rfun h) hl;
-     reduct_in_concl (rfun,DEFAULTcast)] gl
-
-(* Unfolds x by its definition everywhere and clear x. This may raise
-   an error if x is not defined. *)
-let unfold_all x gl =
-  let (_,xval,_) = pf_get_hyp gl x in
-  (* If x has a body, simply replace x with body and clear x *)
-  if xval <> None then tclTHEN (unfold_body x) (clear [x]) gl
-  else tclIDTAC gl
-
 
 (* Induction on a list of arguments. First make induction arguments
    atomic (using letins), then do induction. The specificity here is
