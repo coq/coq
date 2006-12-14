@@ -47,6 +47,7 @@ let sig_ = lazy (build_sig ())
 
 let eq_ind = lazy (init_constant ["Init"; "Logic"] "eq")
 let eq_rec = lazy (init_constant ["Init"; "Logic"] "eq_rec")
+let eq_refl = lazy (init_constant ["Init"; "Logic"] "refl_equal")
 let eq_ind_ref = lazy (init_reference ["Init"; "Logic"] "eq")
 let refl_equal_ref = lazy (init_reference ["Init"; "Logic"] "refl_equal")
 

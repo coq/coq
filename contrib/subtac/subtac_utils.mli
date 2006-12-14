@@ -34,6 +34,7 @@ val sig_ : coq_sigma_data lazy_t
 
 val eq_ind : constr lazy_t
 val eq_rec : constr lazy_t
+val eq_refl : constr lazy_t
 val eq_ind_ref : global_reference lazy_t
 val refl_equal_ref : global_reference lazy_t
 
