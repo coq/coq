@@ -1039,10 +1039,10 @@ let rec rename_bound_var env avoid c =
   let rec rename avoid c =
     match kind_of_term c with
     | Prod (na,c1,c2)  ->
-	let na',avoid' = concrete_name (Some true) avoid env_names na c2 in
+	let na',avoid' = concrete_name None avoid env_names na c2 in
 	mkProd (na', c1, rename avoid' c2)
     | LetIn (na,c1,t,c2) ->
-	let na',avoid' = concrete_let_name (Some true) avoid env_names na c2 in
+	let na',avoid' = concrete_let_name None avoid env_names na c2 in
 	mkLetIn (na',c1,t, rename avoid' c2)
     | Cast (c,k,t) -> mkCast (rename avoid c, k,t)
     | _ -> c
