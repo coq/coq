@@ -107,8 +107,8 @@ Hint Resolve (ARadd_0_l  ARth) (ARadd_comm  ARth) (ARadd_assoc ARth)
 Notation NPEeval := (PEeval rO radd rmul rsub ropp phi Cp_phi rpow).
 Notation Nnorm := (norm_subst cO cI cadd cmul csub copp ceqb).
 
-Notation NPphi_dev := (Pphi_dev rO rI radd rmul rsub ropp cO cI copp ceqb phi get_sign).
-Notation NPphi_pow := (Pphi_pow rO rI radd rmul rsub ropp cO cI copp ceqb phi Cp_phi rpow get_sign).
+Notation NPphi_dev := (Pphi_dev rO rI radd rmul rsub ropp cO cI ceqb phi get_sign).
+Notation NPphi_pow := (Pphi_pow rO rI radd rmul rsub ropp cO cI ceqb phi Cp_phi rpow get_sign).
 
 (* add abstract semi-ring to help with some proofs *)
 Add Ring Rring : (ARth_SRth ARth).
@@ -990,7 +990,6 @@ Eval compute
  Lemma pow_pos_not_0 : forall x, ~x==0 -> forall p, ~pow_pos rmul x p == 0.
 Proof.
  induction p;simpl.
-  rewrite <- ARth.(ARmul_assoc).
   intro Hp;assert (H1 := @rmul_reg_l _ (pow_pos rmul x p * pow_pos rmul x p) 0 H).
   apply IHp.
   rewrite (@rmul_reg_l _ (pow_pos rmul x p)  0 IHp). rewrite H1. rewrite Hp;ring. ring.
@@ -1152,8 +1151,9 @@ generalize (NPEeval l (num (Fnorm e1))) (NPEeval l (denum (Fnorm e1)))
   (Pcond_Fnorm _ _ Hcond).
 intros r r0 Hdiff;induction p;simpl.
 repeat (rewrite <- rdiv4;trivial).
-intro Hp;apply (pow_pos_not_0 Hdiff  p). rewrite  (@rmul_reg_l _ (pow_pos rmul r0 p)  0 Hdiff).
-rewrite Hp;ring. reflexivity.
+intro Hp;apply (pow_pos_not_0 Hdiff  p). 
+rewrite  (@rmul_reg_l (pow_pos rmul r0 p) (pow_pos rmul r0 p)  0).
+ apply pow_pos_not_0;trivial. ring [Hp]. reflexivity.
 apply pow_pos_not_0;trivial. apply pow_pos_not_0;trivial.
 rewrite IHp;reflexivity.
 rewrite <- rdiv4;trivial. apply pow_pos_not_0;trivial. apply pow_pos_not_0;trivial.
@@ -1351,6 +1351,107 @@ simpl in Hcrossprod.
 rewrite Hcrossprod in |- *.
 reflexivity.
 Qed.
+
+Theorem Field_simplify_eq_pow_in_correct :
+ forall n l lpe fe1 fe2,
+    Ninterp_PElist l lpe ->
+ forall lmp, Nmk_monpol_list lpe = lmp ->
+ forall nfe1, Fnorm fe1 = nfe1 ->
+ forall nfe2, Fnorm fe2 = nfe2 ->
+ forall den, split (denum nfe1) (denum nfe2) = den -> 
+ forall np1, Nnorm n lmp (PEmul (num nfe1) (right den)) = np1 ->
+ forall np2, Nnorm n lmp (PEmul (num nfe2) (left den)) = np2 ->
+ FEeval l fe1 == FEeval l fe2 ->
+  PCond l (condition nfe1 ++ condition nfe2) ->
+ NPphi_pow l np1 ==
+ NPphi_pow l np2.
+Proof.
+ intros. subst nfe1 nfe2 lmp np1 np2.
+ repeat rewrite (Pphi_pow_ok Rsth Reqe ARth CRmorph pow_th get_sign_spec).
+ repeat (rewrite <- (norm_subst_ok Rsth Reqe ARth CRmorph pow_th);trivial). simpl.
+ assert (N1 := Pcond_Fnorm _ _ (PCond_app_inv_l _ _ _ H7)).
+ assert (N2 := Pcond_Fnorm _ _ (PCond_app_inv_r _ _ _ H7)).
+ apply (@rmul_reg_l (NPEeval l (rsplit_common den))). 
+ intro Heq;apply N1.
+ rewrite (split_correct_l l (denum (Fnorm fe1)) (denum (Fnorm fe2))).
+ rewrite H3. rewrite NPEmul_correct. simpl. ring [Heq].
+ repeat rewrite (ARth.(ARmul_comm) (NPEeval l (rsplit_common den))).
+ repeat rewrite <- ARth.(ARmul_assoc).
+ change (NPEeval l (rsplit_right den) * NPEeval l (rsplit_common den)) with
+      (NPEeval l (PEmul (rsplit_right den) (rsplit_common den))).
+ change (NPEeval l (rsplit_left den) * NPEeval l (rsplit_common den)) with
+      (NPEeval l (PEmul (rsplit_left den) (rsplit_common den))).
+ repeat rewrite <- NPEmul_correct. rewrite <- H3. rewrite <- split_correct_l.
+ rewrite <- split_correct_r.
+ apply (@rmul_reg_l (/NPEeval l (denum (Fnorm fe2)))).
+ intro Heq; apply AFth.(AF_1_neq_0).
+ rewrite <- (@AFinv_l AFth (NPEeval l (denum (Fnorm fe2))));trivial.
+ ring [Heq]. rewrite (ARth.(ARmul_comm)  (/ NPEeval l (denum (Fnorm fe2)))).
+ repeat rewrite <- (ARth.(ARmul_assoc)).
+ rewrite <- (AFth.(AFdiv_def)). rewrite rdiv_r_r. trivial.
+ apply (@rmul_reg_l (/NPEeval l (denum (Fnorm fe1)))).
+ intro Heq; apply AFth.(AF_1_neq_0).
+ rewrite <- (@AFinv_l AFth (NPEeval l (denum (Fnorm fe1))));trivial.
+ ring [Heq]. repeat rewrite (ARth.(ARmul_comm)  (/ NPEeval l (denum (Fnorm fe1)))).
+ repeat rewrite <- (ARth.(ARmul_assoc)).
+ repeat rewrite <- (AFth.(AFdiv_def)). rewrite rdiv_r_r. trivial.
+ rewrite (AFth.(AFdiv_def)). ring_simplify. unfold SRopp.
+ rewrite  (ARth.(ARmul_comm) (/ NPEeval l (denum (Fnorm fe2)))).
+ repeat rewrite <- (AFth.(AFdiv_def)).
+ repeat rewrite <- Fnorm_FEeval_PEeval;trivial.
+ apply (PCond_app_inv_l _ _ _ H7). apply (PCond_app_inv_r _ _ _ H7).
+Qed.
+
+Theorem Field_simplify_eq_in_correct :
+forall n l lpe fe1 fe2,
+    Ninterp_PElist l lpe ->
+ forall lmp, Nmk_monpol_list lpe = lmp ->
+ forall nfe1, Fnorm fe1 = nfe1 ->
+ forall nfe2, Fnorm fe2 = nfe2 ->
+ forall den, split (denum nfe1) (denum nfe2) = den -> 
+ forall np1, Nnorm n lmp (PEmul (num nfe1) (right den)) = np1 ->
+ forall np2, Nnorm n lmp (PEmul (num nfe2) (left den)) = np2 ->
+ FEeval l fe1 == FEeval l fe2 ->
+  PCond l (condition nfe1 ++ condition nfe2) ->
+ NPphi_dev l np1 ==
+ NPphi_dev l np2.
+Proof.
+ intros. subst nfe1 nfe2 lmp np1 np2.
+ repeat rewrite (Pphi_dev_ok Rsth Reqe ARth CRmorph  get_sign_spec).
+ repeat (rewrite <- (norm_subst_ok Rsth Reqe ARth CRmorph pow_th);trivial). simpl.
+ assert (N1 := Pcond_Fnorm _ _ (PCond_app_inv_l _ _ _ H7)).
+ assert (N2 := Pcond_Fnorm _ _ (PCond_app_inv_r _ _ _ H7)).
+ apply (@rmul_reg_l (NPEeval l (rsplit_common den))). 
+ intro Heq;apply N1.
+ rewrite (split_correct_l l (denum (Fnorm fe1)) (denum (Fnorm fe2))).
+ rewrite H3. rewrite NPEmul_correct. simpl. ring [Heq].
+ repeat rewrite (ARth.(ARmul_comm) (NPEeval l (rsplit_common den))).
+ repeat rewrite <- ARth.(ARmul_assoc).
+ change (NPEeval l (rsplit_right den) * NPEeval l (rsplit_common den)) with
+      (NPEeval l (PEmul (rsplit_right den) (rsplit_common den))).
+ change (NPEeval l (rsplit_left den) * NPEeval l (rsplit_common den)) with
+      (NPEeval l (PEmul (rsplit_left den) (rsplit_common den))).
+ repeat rewrite <- NPEmul_correct;rewrite <- H3. rewrite <- split_correct_l.
+ rewrite <- split_correct_r.
+ apply (@rmul_reg_l (/NPEeval l (denum (Fnorm fe2)))).
+ intro Heq; apply AFth.(AF_1_neq_0).
+ rewrite <- (@AFinv_l AFth (NPEeval l (denum (Fnorm fe2))));trivial.
+ ring [Heq]. rewrite (ARth.(ARmul_comm)  (/ NPEeval l (denum (Fnorm fe2)))).
+ repeat rewrite <- (ARth.(ARmul_assoc)).
+ rewrite <- (AFth.(AFdiv_def)). rewrite rdiv_r_r. trivial.
+ apply (@rmul_reg_l (/NPEeval l (denum (Fnorm fe1)))).
+ intro Heq; apply AFth.(AF_1_neq_0).
+ rewrite <- (@AFinv_l AFth (NPEeval l (denum (Fnorm fe1))));trivial.
+ ring [Heq]. repeat rewrite (ARth.(ARmul_comm)  (/ NPEeval l (denum (Fnorm fe1)))).
+ repeat rewrite <- (ARth.(ARmul_assoc)).
+ repeat rewrite <- (AFth.(AFdiv_def)). rewrite rdiv_r_r. trivial.
+ rewrite (AFth.(AFdiv_def)). ring_simplify. unfold SRopp.
+ rewrite  (ARth.(ARmul_comm) (/ NPEeval l (denum (Fnorm fe2)))).
+ repeat rewrite <- (AFth.(AFdiv_def)).
+ repeat rewrite <- Fnorm_FEeval_PEeval;trivial.
+ apply (PCond_app_inv_l _ _ _ H7). apply (PCond_app_inv_r _ _ _ H7).
+Qed.
+
 
 Section Fcons_impl.
 
@@ -1750,4 +1851,3 @@ Qed.
 End Field.
 
 End Complete.
-

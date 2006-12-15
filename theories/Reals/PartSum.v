@@ -278,7 +278,7 @@ Proof.
   rewrite (tech5 An (2 * S N)).
   rewrite <- HrecN.
   ring.
-  ring_nat.
+  ring.
 Qed.
 
 Lemma sum_Rle :

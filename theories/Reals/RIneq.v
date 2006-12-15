@@ -13,6 +13,8 @@
 (***************************************************************************)
 
 Require Export Raxioms.
+Require Import Rpow_def.
+Require Import Zpower.
 Require Export ZArithRing.
 Require Import Omega.
 Require Export RealField.
@@ -1526,6 +1528,16 @@ Proof.
   rewrite Ropp_mult_distr_l_reverse; auto with real.
   intros t1 z1; rewrite nat_of_P_mult_morphism; auto with real.
   rewrite Rmult_opp_opp; auto with real.
+Qed.
+
+Lemma pow_IZR : forall z n, pow (IZR z) n = IZR (Zpower z (Z_of_nat n)).
+Proof.
+ intros z [|n];simpl;trivial.
+ rewrite Zpower_pos_nat.
+ rewrite nat_of_P_o_P_of_succ_nat_eq_succ. unfold Zpower_nat;simpl.
+ rewrite mult_IZR.
+ induction n;simpl;trivial.
+ rewrite mult_IZR;ring[IHn].
 Qed.
 
 (**********)

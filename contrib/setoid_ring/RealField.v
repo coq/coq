@@ -115,7 +115,7 @@ Lemma R_power_theory : power_theory 1%R Rmult (eq (A:=R))  nat_of_N pow.
 Proof.
  constructor. destruct n. reflexivity.
  simpl. induction p;simpl. 
- rewrite ZL6. rewrite Rdef_pow_add;rewrite IHp. symmetry; apply Rmult_assoc.
+ rewrite ZL6. rewrite Rdef_pow_add;rewrite IHp. reflexivity.
  unfold nat_of_P;simpl;rewrite ZL6;rewrite Rdef_pow_add;rewrite IHp;trivial.
  rewrite Rmult_comm;apply Rmult_1_l.
 Qed.

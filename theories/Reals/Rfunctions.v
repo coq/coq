@@ -15,7 +15,6 @@
 (**          Definition of the sum functions            *)
 (*                                                      *)
 (********************************************************)
-Require Export LegacyArithRing. (* for ring_nat... *)
 Require Export ArithRing.
 
 Require Import Rbase.
@@ -378,7 +377,7 @@ Proof.
   replace (x ^ S (S (2 * n))) with (x * x * x ^ (2 * n)).
   rewrite Hrecn; reflexivity.
   simpl in |- *; ring.
-  ring_nat.
+  ring.
 Qed.
 
 Lemma pow_le : forall (a:R) (n:nat), 0 <= a -> 0 <= a ^ n.
@@ -425,7 +424,7 @@ Proof.
   rewrite Hrecn2.
   simpl in |- *.
   ring.
-  ring_nat.
+  ring.
 Qed.
 
 Lemma pow_incr : forall (x y:R) (n:nat), 0 <= x <= y -> x ^ n <= y ^ n.

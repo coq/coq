@@ -522,7 +522,7 @@ Proof.
   intro; assumption.
   intro; reflexivity.
   split.
-  intro; elim diff_false_true; assumption.
+  intro feqt;discriminate feqt.
   intro.
   elim n0; assumption.
   unfold Vn in |- *.
@@ -540,7 +540,7 @@ Proof.
   unfold cond_positivity in |- *.
   case (Rle_dec 0 z); intro.
   split.
-  intro; elim diff_true_false; assumption.
+  intro feqt; discriminate feqt.
   intro; elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ r H7)).
   split.
   intro; auto with real.

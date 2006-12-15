@@ -60,7 +60,7 @@ Ltac ApplyLemmaThenAndCont lemma expr tac CONT_tac cont_arg :=
    (assert (Heq:=lemma _ _ H) || fail "anomaly: failed to apply lemma");
    clear H;
    OnMainSubgoal Heq ltac:(type of Heq)
-     ltac:(try tac Heq; clear Heq npe; CONT_tac cont_arg)).
+     ltac:(try tac Heq; clear Heq npe;CONT_tac cont_arg)).
 
 (* General scheme of reflexive tactics using of correctness lemma
    that involves normalisation of one expression *)
@@ -69,7 +69,7 @@ Ltac ReflexiveRewriteTactic FV_tac SYN_tac MAIN_tac LEMMA_tac fv terms :=
   (* extend the atom list *)
   let fv := list_fold_left FV_tac fv terms in
   let RW_tac lemma := 
-    let fcons term CONT_tac cont_arg := 
+     let fcons term CONT_tac cont_arg := 
       let expr := SYN_tac term fv in
       (ApplyLemmaThenAndCont lemma expr MAIN_tac CONT_tac cont_arg) in
      (* rewrite steps *)
@@ -227,18 +227,15 @@ Ltac Ring_norm_gen f Cst_tac CstPow_tac lemma2 req n lH rl :=
     ReflexiveRewriteTactic mkFV mkPol simpl_ring lemma_tac fv rl in
   ParseRingComponents lemma2 Main.
 
-Ltac Ring_gen pre post cst_tac pow_tac lemma1 req lH :=
-  pre(); Ring cst_tac pow_tac lemma1 req ring_subst_niter lH.
+Ltac Ring_gen
+  req sth ext morph arth cst_tac pow_tac lemma1 lemma2 pre post lH rl :=
+  pre();Ring cst_tac pow_tac lemma1 req ring_subst_niter lH.
 
 Tactic Notation (at level 0) "ring" :=
-  ring_lookup
-    (fun req sth ext morph arth cst_tac pow_tac lemma1 lemma2 pre post lH rl =>
-       Ring_gen pre post cst_tac pow_tac lemma1 req lH) [].
+  match goal with [|- ?G] => ring_lookup Ring_gen [] [G] end.
 
 Tactic Notation (at level 0) "ring" "[" constr_list(lH) "]" :=
-  ring_lookup
-    (fun req sth ext morph arth cst_tac pow_tac lemma1 lemma2 pre post lH rl =>
-       pre(); Ring_gen pre post cst_tac pow_tac lemma1 req lH) [lH].
+  match goal with [|- ?G] => ring_lookup Ring_gen [lH] [G] end.
 
 (* Simplification *)
 
@@ -250,22 +247,112 @@ Ltac Ring_simplify_gen f :=
      post().
 
 Ltac Ring_simplify := Ring_simplify_gen ltac:(fun H => rewrite H).
+
+
+Tactic Notation (at level 0) 
+  "ring_simplify" "[" constr_list(lH) "]" constr_list(rl) := 
+  match goal with [|- ?G] => ring_lookup Ring_simplify [lH] rl [G] end.
+
+Tactic Notation (at level 0) 
+  "ring_simplify" constr_list(rl) := 
+  match goal with [|- ?G] => ring_lookup Ring_simplify [] rl [G] end.
+
+(* MON DIEU QUE C'EST MOCHE !!!!!!!!!!!!! *)
+
+Tactic Notation "ring_simplify" constr_list(rl) "in" hyp(H):=   
+ match goal with 
+ | [|- ?G] =>
+   let t := type of H in   
+   let g := fresh "goal" in
+   set (g:= G);
+   generalize H;clear H;
+   ring_lookup Ring_simplify [] rl [t];
+   intro H;
+   unfold g;clear g
+ end.
+
+Tactic Notation "ring_simplify" "["constr_list(lH)"]" constr_list(rl) "in" hyp(H):=   
+ match goal with 
+ | [|- ?G] =>
+   let t := type of H in   
+   let g := fresh "goal" in
+   set (g:= G);
+   generalize H;clear H;
+   ring_lookup Ring_simplify [lH] rl [t];
+   intro H;
+   unfold g;clear g
+ end.
+
+
+(*     LE RESTE MARCHE PAS DOMAGE  .....  *)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(*
+
+
+
+
+
+
+
+
 Ltac Ring_simplify_in hyp:= Ring_simplify_gen ltac:(fun H => rewrite H in hyp).
 
 
 Tactic Notation (at level 0) 
   "ring_simplify" "[" constr_list(lH) "]" constr_list(rl) := 
-  ring_lookup Ring_simplify [lH] rl.
+  match goal with [|- ?G] => ring_lookup Ring_simplify [lH] rl [G] end.
 
 Tactic Notation (at level 0) 
   "ring_simplify" constr_list(rl) := 
-  ring_lookup Ring_simplify [] rl.
+  match goal with [|- ?G] => ring_lookup Ring_simplify [] rl [G] end.
 
 Tactic Notation (at level 0) 
   "ring_simplify" "[" constr_list(lH) "]" constr_list(rl) "in" hyp(h):= 
-  ring_lookup (Ring_simplify_in h) [lH] rl.
+  let t := type of h in
+  ring_lookup 
+   (fun req sth ext morph arth cst_tac pow_tac lemma1 lemma2 pre post lH rl =>
+     pre(); 
+     Ring_norm_gen ltac:(fun EQ => rewrite EQ in h) cst_tac pow_tac lemma2 req ring_subst_niter lH rl; 
+     post()) 
+  [lH] rl [t]. 
+(*  ring_lookup ltac:(Ring_simplify_in h) [lH] rl [t]. NE MARCHE PAS ??? *)
+
+Ltac Ring_simpl_in hyp := Ring_norm_gen ltac:(fun H => rewrite H in hyp).
 
 Tactic Notation (at level 0) 
-  "ring_simplify" constr_list(rl) "in" hyp(h):= 
-  ring_lookup (Ring_simplify_in h) [] rl.
+  "ring_simplify" constr_list(rl) "in" constr(h):= 
+  let t := type of h in
+  ring_lookup   
+   (fun req sth ext morph arth cst_tac pow_tac lemma1 lemma2 pre post lH rl =>
+     pre(); 
+     Ring_simpl_in h cst_tac pow_tac lemma2 req ring_subst_niter lH rl; 
+     post())
+ [] rl [t].
 
+Ltac rw_in H Heq := rewrite Heq in H.
+
+Ltac simpl_in H := 
+  let t := type of H in
+   ring_lookup 
+   (fun req sth ext morph arth cst_tac pow_tac lemma1 lemma2 pre post lH rl =>
+     pre(); 
+     Ring_norm_gen ltac:(fun Heq => rewrite Heq in H) cst_tac pow_tac lemma2 req ring_subst_niter lH rl; 
+     post()) 
+   [] [t].
+
+
+*)

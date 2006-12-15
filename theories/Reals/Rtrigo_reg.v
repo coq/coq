@@ -99,7 +99,7 @@ Proof.
   apply pow_nonzero; assumption.
   replace (2 * S n)%nat with (S (S (2 * n))).
   simpl in |- *; ring.
-  ring_nat.
+  ring.
   apply Rle_ge; apply pow_le; left; apply (cond_pos r).
   apply Rle_ge; apply pow_le; left; apply (cond_pos r).
   apply Rabs_no_R0; apply pow_nonzero; assumption.
@@ -280,7 +280,7 @@ Proof.
   apply pow_nonzero; assumption.
   replace (2 * S n)%nat with (S (S (2 * n))).
   simpl in |- *; ring.
-  ring_nat.
+  ring.
   apply Rle_ge; apply pow_le; left; apply (cond_pos r).
   apply Rle_ge; apply pow_le; left; apply (cond_pos r).
   apply Rabs_no_R0; apply pow_nonzero; assumption.

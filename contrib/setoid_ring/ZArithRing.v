@@ -54,7 +54,3 @@ Add Ring Zr : Zth
   (decidable Zeqb_ok, constants [Zcst], preprocess [Zpower_neg;unfold Zsucc],
    power_tac Zpower_theory [Zpow_tac]).
 
-
-
-
-

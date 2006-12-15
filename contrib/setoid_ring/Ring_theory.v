@@ -51,16 +51,16 @@ Section Power.
   match i with
   | xH => x
   | xO i => let p := pow_pos x i in rmul p p
-  | xI i => let p := pow_pos x i in rmul (rmul x p) p
+  | xI i => let p := pow_pos x i in rmul x (rmul p p)
   end.
 
  Lemma pow_pos_Psucc : forall x j, pow_pos x (Psucc j) == x * pow_pos x j.
  Proof.
   induction j;simpl.
-  rewrite IHj. 
+  rewrite IHj.
+  rewrite (mul_comm x (pow_pos x j *pow_pos x j)).
   set (w:= x*pow_pos x j);unfold w at 2.
   rewrite (mul_comm x (pow_pos x j));unfold w.
-  rewrite (mul_comm x (x * pow_pos x j * pow_pos x j)).
   repeat rewrite mul_assoc. apply (Seq_refl _ _ Rsth).
   repeat rewrite mul_assoc. apply (Seq_refl _ _ Rsth).
   apply (Seq_refl _ _ Rsth).

@@ -75,7 +75,7 @@ Proof.
   apply H3; assumption.
   right.
   apply H4; assumption.
-  unfold double in |- *; ring.
+  unfold double in |- *;ring.
 Qed.
 
   (* 2m <= 2n => m<=n *)

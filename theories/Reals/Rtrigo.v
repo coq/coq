@@ -466,10 +466,10 @@ Proof.
   unfold x in |- *; replace 0 with (INR 0);
     [ apply le_INR; apply le_O_n | reflexivity ].
   prove_sup0.
-  ring_nat.
+  ring.
   apply INR_fact_neq_0.
   apply INR_fact_neq_0.
-  ring_nat.
+  ring.
 Qed.
 
 Lemma SIN : forall a:R, 0 <= a -> a <= PI -> sin_lb a <= sin a <= sin_ub a.

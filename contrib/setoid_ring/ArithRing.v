@@ -7,13 +7,32 @@
 (************************************************************************)
 
 Require Import Mult.
+Require Import BinNat.
+Require Import Nnat.
 Require Export Ring.
 Set Implicit Arguments.
 
+Lemma natSRth : semi_ring_theory O (S O) plus mult (@eq nat).
+ Proof.
+  constructor. exact plus_0_l. exact plus_comm. exact plus_assoc.
+  exact mult_1_l. exact mult_0_l. exact mult_comm. exact mult_assoc.
+  exact mult_plus_distr_r. 
+ Qed.
+
+Lemma nat_morph_N : 
+   semi_morph 0 1 plus mult (eq (A:=nat)) 
+          0%N 1%N Nplus Nmult Neq_bool nat_of_N.
+Proof.
+  constructor;trivial.
+  exact nat_of_Nplus.
+  exact nat_of_Nmult.
+  intros x y H;rewrite (Neq_bool_ok _ _ H);trivial.
+Qed.
+
 Ltac natcst t :=
   match isnatcst t with
-    true => t
-  | _ => NotConstant
+    true => constr:(N_of_nat t)
+  | _ => InitialRing.NotConstant
   end.
 
 Ltac Ss_to_add f acc :=
@@ -36,31 +55,6 @@ Ltac natprering :=
   | _ => idtac
   end.
 
- Lemma natSRth : semi_ring_theory O (S O) plus mult (@eq nat).
- Proof.
-  constructor. exact plus_0_l. exact plus_comm. exact plus_assoc.
-  exact mult_1_l. exact mult_0_l. exact mult_comm. exact mult_assoc.
-  exact mult_plus_distr_r. 
- Qed.
-
-
-Fixpoint nateq (n m:nat) {struct m} : bool :=
-  match n, m with
-  | O, O => true
-  | S n', S m' => nateq n' m'
-  | _, _ => false
-  end.
-
-Lemma nateq_ok : forall n m:nat, nateq n m = true -> n = m.
-Proof.
-  simple induction n; simple induction m; simpl; intros; try discriminate.
-  trivial.
-  rewrite (H n1 H1).
-  trivial.
-Qed.
-
 Add Ring natr : natSRth
-  (decidable nateq_ok, constants [natcst], preprocess [natprering]).
+  (morphism nat_morph_N, constants [natcst], preprocess [natprering]).
 
-
-(* Pourquoi on n'utilise pas N pour les calculs sur nat ???? *)

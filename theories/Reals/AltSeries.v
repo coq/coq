@@ -92,9 +92,9 @@ Proof.
     replace (Un (S (2 * S N)) + (-1 * Un (S (2 * S N)) + Un (S (S (2 * S N)))))
       with (Un (S (S (2 * S N)))); [ idtac | ring ].
   apply H.
-  ring_nat.
+  ring.
   apply HrecN.
-  ring_nat.
+  ring.
 Qed.
 
 (** A more general inequality *)
@@ -300,7 +300,7 @@ Proof.
   do 2 rewrite Rmult_1_r; apply le_INR.
   replace (2 * S n + 1)%nat with (S (S (2 * n + 1))).
   apply le_trans with (S (2 * n + 1)); apply le_n_Sn.
-  ring_nat.
+  ring.
   apply not_O_INR; discriminate.
   apply not_O_INR; replace (2 * n + 1)%nat with (S (2 * n));
     [ discriminate | ring ].

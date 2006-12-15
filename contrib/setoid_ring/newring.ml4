@@ -217,15 +217,19 @@ let coq_Some = coq_constant "Some"
 
 let lapp f args = mkApp(Lazy.force f,args)
 
+let dest_rel0 t =  
+  match kind_of_term t with
+  | App(f,args) when Array.length args >= 2 ->
+      let rel = mkApp(f,Array.sub args 0 (Array.length args - 2)) in
+      if closed0 rel then
+        (rel,args.(Array.length args - 2),args.(Array.length args - 1))
+      else error "ring: cannot find relation (not closed)"
+  | _ -> error "ring: cannot find relation"
+
 let rec dest_rel t =
   match kind_of_term t with
-      App(f,args) when Array.length args >= 2 ->
-        let rel = mkApp(f,Array.sub args 0 (Array.length args - 2)) in
-        if closed0 rel then
-          (rel,args.(Array.length args - 2),args.(Array.length args - 1))
-        else error "ring: cannot find relation (not closed)"
-    | Prod(_,_,c) -> dest_rel c
-    | _ -> error "ring: cannot find relation"
+  | Prod(_,_,c) -> dest_rel c
+  | _ -> dest_rel0 t
 
 (****************************************************************************)
 (* Library linking *)
@@ -299,9 +303,9 @@ let _ = add_map "ring"
     coq_nil, (function -1->Eval|_ -> Prot);
     (* Pphi_dev: evaluate polynomial and coef operations, protect
        ring operations and make recursive call on the var map *)
-    pol_cst "Pphi_dev", (function -1|8|9|10|11|12|13|15->Eval|14->Rec|_->Prot);
+    pol_cst "Pphi_dev", (function -1|8|9|10|11|12|14->Eval|13->Rec|_->Prot);
     pol_cst "Pphi_pow", 
-          (function -1|8|9|10|11|12|14|16|18->Eval|17->Rec|_->Prot);
+          (function -1|8|9|10|11|13|15|17->Eval|16->Rec|_->Prot);
     (* PEeval: evaluate morphism and polynomial, protect ring 
        operations and make recursive call on the var map *)
     pol_cst "PEeval", (function -1|7|9|12->Eval|11->Rec|_->Prot)])
@@ -335,7 +339,7 @@ let ring_lookup_by_name ref =
   Spmap.find (Nametab.locate_obj (snd(qualid_of_reference ref))) !from_name
 
 
-let find_ring_structure env sigma l cl oname =
+let find_ring_structure env sigma l oname =
   match oname, l with
       Some rf, _ ->
         (try ring_lookup_by_name rf
@@ -356,13 +360,14 @@ let find_ring_structure env sigma l cl oname =
           errorlabstrm "ring"
             (str"cannot find a declared ring structure over"++
              spc()++str"\""++pr_constr ty++str"\""))
-    | None, [] ->
+    | None, [] -> assert false
+(*
         let (req,_,_) = dest_rel cl in
         (try ring_for_relation req
         with Not_found ->
           errorlabstrm "ring"
             (str"cannot find a declared ring structure for equality"++
-             spc()++str"\""++pr_constr req++str"\""))
+             spc()++str"\""++pr_constr req++str"\"")) *)
 
 let _ = 
   Summary.declare_summary "tactic-new-ring-table"
@@ -688,21 +693,23 @@ END
 (* The tactics consist then only in a lookup in the ring database and
    call the appropriate ltac. *)
 
-let make_term_list carrier rl gl =
-  let rl = 
-    match rl with
-	[] -> let (_,t1,t2) = dest_rel (pf_concl gl) in [t1;t2]
-      | _ -> rl in
+let make_args_list rl t = 
+  match rl with
+  | [] -> let (_,t1,t2) = dest_rel0 t in [t1;t2]
+  | _ -> rl
+
+let make_term_list carrier rl =
   List.fold_right
     (fun x l -> lapp coq_cons [|carrier;x;l|]) rl
     (lapp coq_nil [|carrier|])
 
 
-let ring_lookup (f:glob_tactic_expr) lH rl gl =
+let ring_lookup (f:glob_tactic_expr) lH rl t gl =
   let env = pf_env gl in
   let sigma = project gl in
-  let e = find_ring_structure env sigma rl (pf_concl gl) None in
-  let rl = carg (make_term_list e.ring_carrier rl gl) in
+  let rl = make_args_list rl t in
+  let e = find_ring_structure env sigma rl None in
+  let rl = carg (make_term_list e.ring_carrier rl) in
   let lH = carg (make_hyp_list env lH) in
   let req = carg e.ring_req in
   let sth = carg e.ring_setoid in
@@ -723,8 +730,9 @@ let ring_lookup (f:glob_tactic_expr) lH rl gl =
           lemma1;lemma2;pretac;posttac;lH;rl])) gl
 
 TACTIC EXTEND ring_lookup
-| [ "ring_lookup" tactic(f) "[" constr_list(lH) "]" constr_list(lr)] ->
-          [ring_lookup (fst f) lH lr]
+| [ "ring_lookup" tactic(f) "[" constr_list(lH) "]" constr_list(lr)
+      "[" constr(t) "]" ] ->
+          [ring_lookup (fst f) lH lr t]
 END
 
 
@@ -745,14 +753,14 @@ let _ = add_map "field"
     (* display_linear: evaluate polynomials and coef operations, protect
        field operations and make recursive call on the var map *)
     my_constant "display_linear",
-      (function -1|8|9|10|11|12|13|14|16|17->Eval|15->Rec|_->Prot);
+      (function -1|9|10|11|12|13|15|16->Eval|14->Rec|_->Prot);
     my_constant "display_pow_linear",
-     (function -1|8|9|10|11|12|13|14|15|17|19|20->Eval|18->Rec|_->Prot);
+     (function -1|9|10|11|12|13|14|16|18|19->Eval|17->Rec|_->Prot);
    (* Pphi_dev: evaluate polynomial and coef operations, protect
        ring operations and make recursive call on the var map *)
-    pol_cst "Pphi_dev", (function -1|8|9|10|11|12|13|15->Eval|14->Rec|_->Prot);
+    pol_cst "Pphi_dev", (function -1|8|9|10|11|12|14->Eval|13->Rec|_->Prot);
     pol_cst "Pphi_pow", 
-          (function -1|8|9|10|11|12|14|16|18->Eval|17->Rec|_->Prot);
+          (function -1|8|9|10|11|13|15|17->Eval|16->Rec|_->Prot);
     (* PEeval: evaluate morphism and polynomial, protect ring 
        operations and make recursive call on the var map *)
     pol_cst "PEeval", (function -1|7|9|12->Eval|11->Rec|_->Prot);
@@ -805,6 +813,7 @@ type field_info =
       field_ok : constr;
       field_simpl_eq_ok : constr;
       field_simpl_ok : constr;
+      field_simpl_eq_in_ok : constr;
       field_cond : constr;
       field_pre_tac : glob_tactic_expr;
       field_post_tac : glob_tactic_expr }
@@ -821,7 +830,7 @@ let field_lookup_by_name ref =
     !field_from_name
 
 
-let find_field_structure env sigma l cl oname =
+let find_field_structure env sigma l oname =
   check_required_library (cdir@["Field_tac"]);
   match oname, l with
       Some rf, _ ->
@@ -843,13 +852,13 @@ let find_field_structure env sigma l cl oname =
           errorlabstrm "field"
             (str"cannot find a declared field structure over"++
              spc()++str"\""++pr_constr ty++str"\""))
-    | None, [] ->
-        let (req,_,_) = dest_rel cl in
+    | None, [] -> assert false
+(*        let (req,_,_) = dest_rel cl in
         (try field_for_relation req
         with Not_found ->
           errorlabstrm "field"
             (str"cannot find a declared field structure for equality"++
-             spc()++str"\""++pr_constr req++str"\""))
+             spc()++str"\""++pr_constr req++str"\"")) *)
 
 let _ = 
   Summary.declare_summary "tactic-new-field-table"
@@ -883,7 +892,8 @@ let subst_th (_,subst,th) =
   let thm1' = subst_mps subst th.field_ok in
   let thm2' = subst_mps subst th.field_simpl_eq_ok in
   let thm3' = subst_mps subst th.field_simpl_ok in
-  let thm4' = subst_mps subst th.field_cond in
+  let thm4' = subst_mps subst th.field_simpl_eq_in_ok in
+  let thm5' = subst_mps subst th.field_cond in
   let tac'= subst_tactic subst th.field_cst_tac in
   let pow_tac' = subst_tactic subst th.field_pow_tac in
   let pretac'= subst_tactic subst th.field_pre_tac in
@@ -893,7 +903,8 @@ let subst_th (_,subst,th) =
      thm1' == th.field_ok &&
      thm2' == th.field_simpl_eq_ok &&
      thm3' == th.field_simpl_ok &&
-     thm4' == th.field_cond &&
+     thm4' == th.field_simpl_eq_in_ok &&
+     thm5' == th.field_cond &&
      tac' == th.field_cst_tac &&
      pow_tac' == th.field_pow_tac &&
      pretac' == th.field_pre_tac &&
@@ -906,7 +917,8 @@ let subst_th (_,subst,th) =
       field_ok = thm1';
       field_simpl_eq_ok = thm2';
       field_simpl_ok = thm3';
-      field_cond = thm4';
+      field_simpl_eq_in_ok = thm4';
+      field_cond = thm5';
       field_pre_tac = pretac';
       field_post_tac = posttac' }
 
@@ -953,19 +965,21 @@ let add_field_theory name fth eqth morphth cst_tac inj (pre,post) power sign =
   let inv_m = default_field_equality r inv req in
   let rk = reflect_coeff morphth in
   let params =
-    exec_tactic env 8 (field_ltac"field_lemmas")
+    exec_tactic env 9 (field_ltac"field_lemmas")
       (List.map carg[sth;ext;inv_m;fth;pspec;sspec;rk]) in
   let lemma1 = constr_of params.(3) in
   let lemma2 = constr_of params.(4) in
   let lemma3 = constr_of params.(5) in
+  let lemma4 = constr_of params.(6) in
   let cond_lemma =
     match inj with
-      | Some thm -> mkApp(constr_of params.(7),[|thm|])
-      | None -> constr_of params.(6) in
+      | Some thm -> mkApp(constr_of params.(8),[|thm|])
+      | None -> constr_of params.(7) in
   let lemma1 = decl_constant (string_of_id name^"_field_lemma1") lemma1 in
   let lemma2 = decl_constant (string_of_id name^"_field_lemma2") lemma2 in
   let lemma3 = decl_constant (string_of_id name^"_field_lemma3") lemma3 in
-  let cond_lemma = decl_constant (string_of_id name^"_lemma4") cond_lemma in
+  let lemma4 = decl_constant (string_of_id name^"_field_lemma4") lemma4 in
+  let cond_lemma = decl_constant (string_of_id name^"_lemma5") cond_lemma in
   let cst_tac = interp_cst_tac kind (zero,one,add,mul,opp) cst_tac in
   let pretac =
     match pre with
@@ -985,6 +999,7 @@ let add_field_theory name fth eqth morphth cst_tac inj (pre,post) power sign =
           field_ok = lemma1;
           field_simpl_eq_ok = lemma2;
           field_simpl_ok = lemma3;
+          field_simpl_eq_in_ok = lemma4;
           field_cond = cond_lemma;
           field_pre_tac = pretac;
           field_post_tac = posttac }) in  ()
@@ -1026,11 +1041,12 @@ VERNAC COMMAND EXTEND AddSetoidField
     add_field_theory id (ic t) set k cst_tac inj (pre,post) power sign]
 END
 
-let field_lookup (f:glob_tactic_expr) lH rl gl =
+let field_lookup (f:glob_tactic_expr) lH rl t gl =
   let env = pf_env gl in
   let sigma = project gl in
-  let e = find_field_structure env sigma rl (pf_concl gl) None in
-  let rl = carg (make_term_list e.field_carrier rl gl) in
+  let rl = make_args_list rl t in
+  let e = find_field_structure env sigma rl None in
+  let rl = carg (make_term_list e.field_carrier rl) in
   let lH = carg (make_hyp_list env lH) in
   let req = carg e.field_req in
   let cst_tac = Tacexp e.field_cst_tac in
@@ -1038,6 +1054,7 @@ let field_lookup (f:glob_tactic_expr) lH rl gl =
   let field_ok = carg e.field_ok in
   let field_simpl_ok = carg e.field_simpl_ok in
   let field_simpl_eq_ok = carg e.field_simpl_eq_ok in
+  let field_simpl_eq_in_ok = carg e.field_simpl_eq_in_ok in
   let cond_ok = carg e.field_cond in
   let pretac = Tacexp(TacFun([None],e.field_pre_tac)) in
   let posttac = Tacexp(TacFun([None],e.field_post_tac)) in
@@ -1045,10 +1062,11 @@ let field_lookup (f:glob_tactic_expr) lH rl gl =
     (TacLetIn
       ([(dummy_loc,id_of_string"f"),None,Tacexp f],
        ltac_lcall "f"
-        [req;cst_tac;pow_tac;field_ok;field_simpl_ok;field_simpl_eq_ok;cond_ok;
-         pretac;posttac;lH;rl])) gl
+        [req;cst_tac;pow_tac;field_ok;field_simpl_ok;field_simpl_eq_ok;
+         field_simpl_eq_in_ok;cond_ok;pretac;posttac;lH;rl])) gl
 
 TACTIC EXTEND field_lookup
-| [ "field_lookup" tactic(f) "[" constr_list(lH) "]" constr_list(l) ] -> 
-      [ field_lookup (fst f) lH l ]
+| [ "field_lookup" tactic(f) "[" constr_list(lH) "]" constr_list(l) 
+     "[" constr(t) "]" ] -> 
+      [ field_lookup (fst f) lH l t ]
 END

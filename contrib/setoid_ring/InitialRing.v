@@ -484,6 +484,7 @@ Ltac gen_ring_sign set rspec morph sspec rk :=
  | Some ?t => constr:(t)
  end.
 
+
 Ltac ring_elements set ext rspec pspec sspec rk :=
   let arth := coerce_to_almost_ring set ext rspec in
   let ext_r := coerce_to_ring_ext ext in
@@ -496,17 +497,21 @@ Ltac ring_elements set ext rspec pspec sspec rk :=
             constr:(IDmorph rO rI add mul sub opp set _ reqb_ok)
         | _ => fail 2 "ring anomaly"
         end
-    | @Morphism ?m => m
+    | @Morphism ?m =>
+       match type of m with 
+       | ring_morph _ _ _ _ _ _ _  _ _ _ _ _ _  _ _ => m 
+       | @semi_morph _ _ _ _ _ _  _ _ _ _ _  _ _   => 
+           constr:(SRmorph_Rmorph set m) 
+       | _ => fail 2 " ici"
+       end
     | _ => fail 1 "ill-formed ring kind"
     end in
   let p_spec := gen_ring_pow set arth pspec in
   let s_spec := gen_ring_sign set rspec morph sspec rk in
   fun f => f arth ext_r morph p_spec s_spec.
 
-
 (* Given a ring structure and the kind of morphism,
    returns 2 lemmas (one for ring, and one for ring_simplify). *)
-
 Ltac ring_lemmas set ext rspec pspec sspec rk :=
   let gen_lemma2 :=
     match pspec with
