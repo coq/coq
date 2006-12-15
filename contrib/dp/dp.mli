@@ -3,6 +3,7 @@ open Libnames
 open Proof_type
 
 val simplify : tactic
+val ergo : tactic
 val cvc_lite : tactic
 val harvey : tactic
 val zenon : tactic

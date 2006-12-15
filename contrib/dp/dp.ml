@@ -639,7 +639,7 @@ let tr_goal gl =
   hyps, c
 
 
-type prover = Simplify | CVCLite | Harvey | Zenon
+type prover = Simplify | Ergo | CVCLite | Harvey | Zenon
 
 let remove_files = List.iter (fun f -> try Sys.remove f with _ -> ())
 
@@ -659,6 +659,18 @@ let call_simplify fwhy =
     if out = 0 then Valid None else if out = 1 then Invalid else Timeout 
   in
   if not !debug then remove_files [fwhy; fsx];
+  r
+
+let call_ergo fwhy =
+  let cmd = 
+    sprintf "timeout %d ergo %s > out 2>&1 && grep -q -w Valid out" 
+      !timeout fwhy
+  in
+  let out = Sys.command cmd in
+  let r = 
+    if out = 0 then Valid None else if out = 1 then Invalid else Timeout 
+  in
+  if not !debug then remove_files [fwhy];
   r
 
 let call_zenon fwhy =
@@ -724,9 +736,10 @@ let call_harvey fwhy =
 let call_prover prover q =
   let fwhy = Filename.temp_file "coq_dp" ".why" in
   Dp_why.output_file fwhy q;
-  if !debug then ignore (Sys.command (sprintf "cat %s" fwhy));
+  if !debug then Format.eprintf "Why file: %s@." fwhy;
   match prover with
     | Simplify -> call_simplify fwhy
+    | Ergo -> call_ergo fwhy
     | Zenon -> call_zenon fwhy
     | CVCLite -> call_cvcl fwhy
     | Harvey -> call_harvey fwhy
@@ -748,6 +761,7 @@ let dp prover gl =
   
 
 let simplify = tclTHEN intros (dp Simplify)
+let ergo = tclTHEN intros (dp Ergo)
 let cvc_lite = tclTHEN intros (dp CVCLite)
 let harvey = dp Harvey
 let zenon = tclTHEN intros (dp Zenon)

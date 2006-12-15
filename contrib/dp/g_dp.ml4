@@ -16,6 +16,10 @@ TACTIC EXTEND Simplify
   [ "simplify" ] -> [ simplify ]
 END
 
+TACTIC EXTEND Simplify
+  [ "ergo" ] -> [ ergo ]
+END
+
 TACTIC EXTEND CVCLite
   [ "cvcl" ] -> [ cvc_lite ]
 END
