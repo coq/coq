@@ -392,7 +392,7 @@ let rec pp_Dfix init i ((rv,c,t) as fix) =
 	
 (*s Pretty-printing of inductive types declaration. *)
 
-let pp_one_ind prefix ip pl cv =
+let pp_one_ind prefix ip ip_equiv pl cv =
   let pl = rename_tvars keywords pl in
   let pp_constructor (r,l) =
     hov 2 (str "  | " ++ pp_global r ++
@@ -402,7 +402,11 @@ let pp_one_ind prefix ip pl cv =
 		      prlist_with_sep 
 			(fun () -> spc () ++ str "* ") (pp_type true pl) l))
   in
-  pp_parameters pl ++ str prefix ++ pp_global (IndRef ip) ++ str " =" ++ 
+  pp_parameters pl ++ str prefix ++ pp_global (IndRef ip) ++
+  (match ip_equiv with 
+     | None -> mt ()
+     | Some ip_e -> str " = " ++ pp_global (IndRef ip_e)) ++
+  str " =" ++
   if Array.length cv = 0 then str " unit (* empty inductive *)" 
   else fnl () ++ v 0 (prvect_with_sep fnl pp_constructor
 			(Array.mapi (fun i c -> ConstructRef (ip,i+1), c) cv))
@@ -434,17 +438,20 @@ let pp_coind ip pl =
   let r = IndRef ip in 
   let pl = rename_tvars keywords pl in
   pp_parameters pl ++ pp_global r ++ str " = " ++ 
-  pp_parameters pl ++ str "__" ++ pp_global r ++ str " Lazy.t"
+  pp_parameters pl ++ str "__" ++ pp_global r ++ str " Lazy.t" ++ 
+  fnl() ++ str "and "
 
 let pp_ind co kn ind =
+  let prefix = if co then "__" else "" in 
   let some = ref false in 
   let init= ref (str "type ") in 
   let rec pp i =  
     if i >= Array.length ind.ind_packets then mt () 
     else 
       let ip = (kn,i) in 
+      let ip_equiv = option_map (fun kn -> (kn,i)) ind.ind_equiv in 
       let p = ind.ind_packets.(i) in 
-      if is_custom (IndRef (kn,i)) then pp (i+1)
+      if is_custom (IndRef ip) then pp (i+1)
       else begin 
 	some := true; 
 	if p.ip_logical then pp_logical_ind p ++ pp (i+1)
@@ -453,8 +460,8 @@ let pp_ind co kn ind =
 	  begin 
 	    init := (fnl () ++ str "and "); 
 	    s ++
-	    (if co then pp_coind ip p.ip_vars ++ fnl () ++ str "and " else mt ())
-	    ++ pp_one_ind (if co then "__" else "") ip p.ip_vars p.ip_types ++
+	    (if co then pp_coind ip p.ip_vars else mt ())
+	    ++ pp_one_ind prefix ip ip_equiv p.ip_vars p.ip_types ++
 	    pp (i+1)
 	  end
       end
@@ -574,7 +581,7 @@ let rec pp_structure_elem mpl = function
   | (l,SEmodule m) ->
       hov 1 
 	(str "module " ++ P.pp_module mpl (MPdot (List.hd mpl, l)) ++ 
-	 (* if you want signatures everywhere: *)
+	 (*i if you want signatures everywhere: i*)
 	 (*i str " :" ++ fnl () ++ i*)
 	 (*i pp_module_type mpl None m.ml_mod_type ++ fnl () ++ i*)
 	 str " = " ++

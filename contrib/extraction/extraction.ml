@@ -310,6 +310,9 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
   with Not_found -> 
     internal_call := KNset.add kn !internal_call;
     let mib = Environ.lookup_mind kn env in 
+    (* First, if this inductive is aliased via a Module, *)
+    (* we process the original inductive. *)
+    option_iter (fun kn -> ignore (extract_ind env kn)) mib.mind_equiv; 
     (* Everything concerning parameters. *)
     (* We do that first, since they are common to all the [mib]. *)
     let mip0 = mib.mind_packets.(0) in 
@@ -332,7 +335,11 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	     ip_types = t }) 
 	mib.mind_packets 
     in 
-    add_ind kn {ind_info = Standard; ind_nparams = npar; ind_packets = packets};
+    add_ind kn 
+      {ind_info = Standard; 
+       ind_nparams = npar; 
+       ind_packets = packets; 
+       ind_equiv = mib.mind_equiv };
     (* Second pass: we extract constructors *)
     for i = 0 to mib.mind_ntypes - 1 do
       let p = packets.(i) in 
@@ -413,7 +420,11 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	Record field_glob
       with (I info) -> info
     in
-    let i = {ind_info = ind_info; ind_nparams = npar; ind_packets = packets} in
+    let i = {ind_info = ind_info; 
+	     ind_nparams = npar; 
+	     ind_packets = packets; 
+	     ind_equiv = mib.mind_equiv}
+    in
     add_ind kn i; 
     internal_call := KNset.remove kn !internal_call;
     i
