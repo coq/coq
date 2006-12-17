@@ -79,7 +79,9 @@ type ml_ind_packet = {
 type ml_ind = {
   ind_info : inductive_info;
   ind_nparams : int; 	       
-  ind_packets : ml_ind_packet array }
+  ind_packets : ml_ind_packet array;
+  ind_equiv : kernel_name option
+}
 
 (*s ML terms. *)
 

@@ -195,7 +195,10 @@ let ind_iter_references do_term do_cons do_type kn ind =
   let type_iter = type_iter_references do_type in
   let cons_iter cp l = do_cons (ConstructRef cp); List.iter type_iter l in 
   let packet_iter ip p = 
-    do_type (IndRef ip); Array.iteri (fun j -> cons_iter (ip,j+1)) p.ip_types 
+    do_type (IndRef ip); 
+    if lang () = Ocaml then 
+      option_iter (fun kne -> do_type (IndRef (kne,snd ip))) ind.ind_equiv; 
+    Array.iteri (fun j -> cons_iter (ip,j+1)) p.ip_types 
   in
   if lang () = Ocaml then record_iter_references do_term ind.ind_info; 
   Array.iteri (fun i -> packet_iter (kn,i)) ind.ind_packets
