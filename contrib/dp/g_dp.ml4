@@ -16,7 +16,7 @@ TACTIC EXTEND Simplify
   [ "simplify" ] -> [ simplify ]
 END
 
-TACTIC EXTEND Simplify
+TACTIC EXTEND Ergo
   [ "ergo" ] -> [ ergo ]
 END
 
