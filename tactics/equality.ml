@@ -282,7 +282,7 @@ let find_positions env sigma t1 t2 =
 	  let sorts = list_intersect sorts (allowed_sorts env (fst sp1)) in
           (* both sides are fully applied constructors, so either we descend,
              or we can discriminate here. *)
-	  if sp1 = sp2 then
+	  if is_conv env sigma hd1 hd2 then
 	    let nrealargs = constructor_nrealargs env sp1 in
 	    let rargs1 = list_lastn nrealargs args1 in
 	    let rargs2 = list_lastn nrealargs args2 in
