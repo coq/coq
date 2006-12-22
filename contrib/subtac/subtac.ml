@@ -120,6 +120,8 @@ let subtac_end_proof = function
 open Pp
 open Ppconstr
 open Decl_kinds
+open Tacinterp
+open Tacexpr
 
 let start_proof_com env isevars sopt kind (bl,t) hook =
   let id = match sopt with
@@ -140,6 +142,14 @@ let start_proof_com env isevars sopt kind (bl,t) hook =
       
 let print_subgoals () = Options.if_verbose (fun () -> msg (Printer.pr_open_subgoals ())) ()
 
+let subtac_utils_path =
+  make_dirpath (List.map id_of_string ["Utils";contrib_name;"Coq"])
+let utils_tac s =
+  lazy(make_kn (MPfile subtac_utils_path) (make_dirpath []) (mk_label s))
+
+let utils_call tac args =
+  TacArg(TacCall(dummy_loc, ArgArg(dummy_loc, Lazy.force (utils_tac tac)),args))
+
 let start_proof_and_print env isevars idopt k t hook =
   start_proof_com env isevars idopt k t hook;
   print_subgoals ()
@@ -148,10 +158,11 @@ let start_proof_and_print env isevars idopt k t hook =
 let subtac (loc, command) =
   check_required_library ["Coq";"Init";"Datatypes"];
   check_required_library ["Coq";"Init";"Specif"];
-  check_required_library ["Coq";"Logic";"JMeq"];  
+  check_required_library ["Coq";"Logic";"JMeq"];
   require_library "Coq.subtac.FixSub";
   require_library "Coq.subtac.Utils";
-  (*Subtac_obligations.set_default_tactic (Tacinterp.lookup_tactic "subtac_simpl" []);*)
+  Subtac_obligations.set_default_tactic 
+    (Tacinterp.eval_tactic (utils_call "subtac_simpl" []));
   let env = Global.env () in
   let isevars = ref (create_evar_defs Evd.empty) in
   try

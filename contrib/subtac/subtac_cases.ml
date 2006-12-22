@@ -1625,7 +1625,7 @@ let constr_of_pat env isevars ty pat =
 	    ([], [], env, 0) ci.cs_args (List.rev args)
 	in
 	let cstr = mkConstruct ci.cs_cstr in
-	let app = applistc cstr params in
+	let app = applistc cstr (List.map (lift (List.length args)) params) in
 	let app = applistc app (List.rev args) in
 	  if alias <> Anonymous then
 	    (alias, Some app, ty) :: sign, lift 1 app, n + 1
