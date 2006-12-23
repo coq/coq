@@ -199,6 +199,7 @@ type vernac_expr =
   | VernacFixpoint of (fixpoint_expr * decl_notation) list * bool
   | VernacCoFixpoint of (cofixpoint_expr * decl_notation) list * bool
   | VernacScheme of (lident * bool * lreference * sort_expr) list
+  | VernacCombinedScheme of lident * lident list
 
   (* Gallina extensions *)
   | VernacRecord of bool (* = Record or Structure *)

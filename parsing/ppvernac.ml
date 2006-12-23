@@ -602,6 +602,11 @@ let rec pr_vernac = function
   | VernacScheme l ->
       hov 2 (str"Scheme" ++ spc() ++
              prlist_with_sep (fun _ -> fnl() ++ str"with ") pr_onescheme l)
+  | VernacCombinedScheme (id, l) ->
+      hov 2 (str"Combined Scheme" ++ spc() ++
+	       pr_lident id ++ spc() ++ str"from" ++ spc() ++
+	       prlist_with_sep (fun _ -> fnl() ++ str", ") pr_lident l)
+	
 
   (* Gallina extensions *)
   | VernacRecord (b,(oc,name),ps,s,c,fs) ->

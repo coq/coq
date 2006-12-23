@@ -143,7 +143,9 @@ GEXTEND Gram
           VernacFixpoint (recs,Options.boxed_definitions())
       | "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
           VernacCoFixpoint (corecs,false)
-      | IDENT "Scheme"; l = LIST1 scheme SEP "with" -> VernacScheme l ] ]
+      | IDENT "Scheme"; l = LIST1 scheme SEP "with" -> VernacScheme l
+      | IDENT "Combined"; IDENT "Scheme"; id = identref; IDENT "from"; 
+	l = LIST1 identref SEP "," -> VernacCombinedScheme (id, l) ] ]
   ;
   gallina_ext:
     [ [ b = record_token; oc = opt_coercion; name = identref;
