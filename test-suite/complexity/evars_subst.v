@@ -20,7 +20,7 @@
 Variable P : Set -> Set.
 Variable f : forall A : Set, A -> P A.
 
-Check
+Time Check
   let _ := f _ 0 in
   let _ := f _ 0 in
   let _ := f _ 0 in

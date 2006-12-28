@@ -119,6 +119,8 @@ test_complexity() {
 	res=`$command $f 2>&1 | sed -n -e "s/Finished transaction in .*(\([0-9]\)\.\([0-9]*\)u.*)/\1\2/p" | head -1`
 	if [ $? != 0 ]; then
  	    echo "Error! (should be accepted)"
+	elif [ "$res" = "" ]; then
+	    echo "Error! (couldn't find a time measure)"
         else
           # express effective time in cenths of seconds
 	  n=`echo -n $res | wc -c`
