@@ -150,18 +150,20 @@ let find_split_p p =
   in
   find !lib_stk
 
-let split_lib sp = 
+let split_lib_gen test = 
   let rec collect after equal = function
-    | ((sp',_) as hd)::before ->
-      	if sp = sp' then collect after (hd::equal) before else after,equal,hd::before
+    | hd::before ->
+      	if test hd then collect after (hd::equal) before else after,equal,hd::before
     | [] -> after,equal,[]
   in
   let rec findeq after = function
-    | ((sp',_) as hd)::before ->
-      	if sp = sp' then collect after [hd] before else findeq (hd::after) before
+    | hd :: before ->
+      	if test hd then collect after [hd] before else findeq (hd::after) before
     | [] -> error "no such entry"
   in 
   findeq [] !lib_stk
+
+let split_lib sp = split_lib_gen (fun x -> (fst x) = sp)
 
 (* Adding operations. *)
 
@@ -491,6 +493,10 @@ let close_section id =
 (*****************)
 (* Backtracking. *)
 
+let (inLabel,outLabel) =
+  declare_object {(default_object "DOT") with
+				classify_function = (fun _ -> Dispose)}
+
 let recache_decl = function
   | (sp, Leaf o) -> cache_object (sp,o)
   | (_,OpenedSection _) -> add_section ()
@@ -501,8 +507,8 @@ let recache_context ctx =
 
 let is_frozen_state = function (_,FrozenState _) -> true | _ -> false
 
-let reset_to sp =
-  let (_,_,before) = split_lib sp in
+let reset_to_gen test =
+  let (_,_,before) = split_lib_gen test in
   lib_stk := before;
   recalc_path_prefix ();
   let spf = match find_entry_p is_frozen_state with
@@ -510,7 +516,10 @@ let reset_to sp =
     | _ -> assert false
   in
   let (after,_,_) = split_lib spf in
-  recache_context after
+  let res = recache_context after in
+  res
+
+let reset_to sp = reset_to_gen (fun x -> (fst x) = sp)
 
 let reset_name (loc,id) =
   let (sp,_) = 
@@ -549,10 +558,6 @@ let reset_mod (loc,id) =
   recache_context after
 
 
-let (inLabel,outLabel) =
-  declare_object {(default_object "DOT") with
-				classify_function = (fun _ -> Dispose)}
-
 let mark_end_of_command, current_command_label, set_command_label =
   let n = ref 0 in
   (fun () ->
@@ -562,17 +567,23 @@ let mark_end_of_command, current_command_label, set_command_label =
   (fun () -> !n),
   (fun x -> n:=x)
 
-let rec reset_label_stk n stk =
-  match stk with
-      (sp,Leaf o)::tail when object_tag o = "DOT" && n = outLabel o -> sp
-    | _::tail -> reset_label_stk n tail
-    | [] -> error "Unknown state number"
+let is_label_n n x =
+  match x with
+    | (sp,Leaf o) when object_tag o = "DOT" && n = outLabel o -> true
+    | _ -> false
 
+(* Reset the label registered by [mark_end_of_command()] with number n. *)
 let reset_label n = 
-  let res = reset_label_stk n !lib_stk in
-  set_command_label (n-1); (* forget state numbers after n only if reset succeeded *)
-  reset_to res
-
+  let current = current_command_label() in
+  if n < current then
+    let res = reset_to_gen (is_label_n n) in
+    set_command_label (n-1); (* forget state numbers after n only if reset succeeded *)
+    res
+  else (* optimisation to avoid recaching when not necessary (why is it so long??) *)
+    match !lib_stk with
+      | [] -> ()
+      | x :: ls -> (lib_stk := ls;set_command_label (n-1))
+    
 let rec back_stk n stk =
   match stk with
       (sp,Leaf o)::tail when object_tag o = "DOT" ->

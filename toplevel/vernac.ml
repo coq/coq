@@ -195,8 +195,8 @@ and read_vernac_file verbosely s =
 
 (* raw_do_vernac : char Stream.t -> unit
  * parses and executes one command of the vernacular char stream.
- * Marks the end of the command in the lib_stk to make vernac undoing
- * easier. *)
+ * Marks the end of the command in the lib_stk with a new label to
+ * make vernac undoing easier. *)
 
 let raw_do_vernac po =
   vernac (States.with_heavy_rollback Vernacentries.interp) (po,None);

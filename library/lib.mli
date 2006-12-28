@@ -65,8 +65,14 @@ val add_anonymous_leaf : obj -> unit
 val add_leaves : identifier -> obj list -> object_name
 
 val add_frozen_state : unit -> unit
+
+(* Adds a "dummy" entry in lib_stk with a unique new label number. *)
 val mark_end_of_command : unit -> unit
+(* Returns the current label number *)
 val current_command_label : unit -> int
+(* [reset_label n ] resets [lib_stk] to the label n registered by
+   [mark_end_of_command()]. That is it forgets the label and anything
+   registered after it. *)
 val reset_label : int -> unit
 
 (*s The function [contents_after] returns the current library segment, 
