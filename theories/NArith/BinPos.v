@@ -535,21 +535,31 @@ Definition PeanoView_iter (P:positive->Type)
   | PeanoSucc _ q => f _ (iter _ q)
   end).
 
-Require Import JMeq.
+Require Import Eqdep_dec EqdepFacts.
+
+Theorem eq_dep_eq_positive :
+  forall (P:positive->Type) (p:positive) (x y:P p), 
+  eq_dep positive P p x p y -> x = y.
+Proof.
+apply eq_dep_eq_dec.
+decide equality.
+Qed.
 
 Theorem PeanoViewUnique : forall p (q q':PeanoView p), q = q'.  
 Proof.
 intros. 
-induction q. apply JMeq_eq. cut (xH=xH). pattern xH at 1 2 5, q'. destruct q'. trivial.
-destruct p0; intros; discriminate.
-trivial.
-apply JMeq_eq.
-cut (Psucc p=Psucc p). pattern (Psucc p) at 1 2 5, q'. destruct q'. 
-intro. destruct p; discriminate.
-intro. unfold p0 in H. apply Psucc_inj in H.
-generalize q'. rewrite H. intro.
-rewrite (IHq q'0).
-trivial.
+induction q. 
+apply eq_dep_eq_positive. 
+  cut (xH=xH). pattern xH at 1 2 5, q'. destruct q'. trivial.
+  destruct p0; intros; discriminate.
+  trivial.
+apply eq_dep_eq_positive.
+  cut (Psucc p=Psucc p). pattern (Psucc p) at 1 2 5, q'. destruct q'. 
+  intro. destruct p; discriminate.
+  intro. unfold p0 in H. apply Psucc_inj in H.
+  generalize q'. rewrite H. intro.
+  rewrite (IHq q'0).
+  trivial.
 trivial.
 Qed.
 

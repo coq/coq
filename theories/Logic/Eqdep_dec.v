@@ -158,6 +158,13 @@ Proof.
   apply (Streicher_K__eq_rect_eq A (K_dec_type eq_dec)).
 Qed.
 
+(** We deduce the injectivity of dependent equality for decidable types *)
+Theorem eq_dep_eq_dec :
+  forall A:Type,
+    (forall x y:A, {x = y} + {x <> y}) ->
+     forall (P:A->Type) (p:A) (x y:P p), eq_dep A P p x p y -> x = y.
+Proof (fun A eq_dec => eq_rect_eq__eq_dep_eq A (eq_rect_eq_dec eq_dec)).
+
 Unset Implicit Arguments.
 
 (************************************************************************)
