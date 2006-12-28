@@ -501,70 +501,83 @@ intro x; induction x; simpl in |- *; try rewrite Pplus_carry_spec;
 Qed.
 
 (**********************************************************************)
-(** Peano induction on binary positive positive numbers *)
+(** Peano induction and recursion on binary positive positive numbers *)
+(** (a nice proof from Conor McBride, see "The view from the left")   *)
 
-Fixpoint plus_iter (x y:positive) {struct x} : positive :=
-  match x with
-  | xH => Psucc y
-  | xO x => plus_iter x (plus_iter x y)
-  | xI x => plus_iter x (plus_iter x (Psucc y))
+Inductive PeanoView : positive -> Type :=
+| PeanoOne : PeanoView xH
+| PeanoSucc : forall p, PeanoView p -> PeanoView (Psucc p).
+
+Fixpoint peanoView_xO p (q:PeanoView p) {struct q} : PeanoView (xO p) :=
+  match q in PeanoView x return PeanoView (xO x) with
+  | PeanoOne => PeanoSucc _ PeanoOne
+  | PeanoSucc _ q => PeanoSucc _ (PeanoSucc _ (peanoView_xO _ q))
   end.
 
-Lemma plus_iter_eq_plus : forall p q:positive, plus_iter p q = p + q.
+Fixpoint peanoView_xI p (q:PeanoView p) {struct q} : PeanoView (xI p) :=
+  match q in PeanoView x return PeanoView (xI x) with
+  | PeanoOne => PeanoSucc _ (PeanoSucc _ PeanoOne)
+  | PeanoSucc _ q => PeanoSucc _ (PeanoSucc _ (peanoView_xI _ q))
+  end.
+
+Fixpoint peanoView p : PeanoView p :=
+  match p return PeanoView p with
+  | xH => PeanoOne
+  | xO p => peanoView_xO p (peanoView p)
+  | xI p => peanoView_xI p (peanoView p)
+  end.
+
+Definition PeanoView_iter (P:positive->Type) 
+  (a:P xH) (f:forall p, P p -> P (Psucc p)) :=
+  (fix iter p (q:PeanoView p) : P p :=
+  match q in PeanoView p return P p with 
+  | PeanoOne => a
+  | PeanoSucc _ q => f _ (iter _ q)
+  end).
+
+Require Import JMeq.
+
+Theorem PeanoViewUnique : forall p (q q':PeanoView p), q = q'.  
 Proof.
-intro x; induction x as [p IHp| p IHp| ]; intro y;
- [ destruct y as [p0| p0| ]
- | destruct y as [p0| p0| ]
- | destruct y as [p| p| ] ]; simpl in |- *; reflexivity || (do 2 rewrite IHp);
- rewrite Pplus_assoc; rewrite Pplus_diag; try reflexivity.
-rewrite Pplus_carry_spec; rewrite <- Pplus_succ_permute_r; reflexivity.
-rewrite Pplus_one_succ_r; reflexivity.
+intros. 
+induction q. apply JMeq_eq. cut (xH=xH). pattern xH at 1 2 5, q'. destruct q'. trivial.
+destruct p0; intros; discriminate.
+trivial.
+apply JMeq_eq.
+cut (Psucc p=Psucc p). pattern (Psucc p) at 1 2 5, q'. destruct q'. 
+intro. destruct p; discriminate.
+intro. unfold p0 in H. apply Psucc_inj in H.
+generalize q'. rewrite H. intro.
+rewrite (IHq q'0).
+trivial.
+trivial.
 Qed.
 
-Lemma plus_iter_xO : forall p:positive, plus_iter p p = xO p.
+Definition Prect (P:positive->Type) (a:P xH) (f:forall p, P p -> P (Psucc p)) 
+  (p:positive) :=
+  PeanoView_iter P a f p (peanoView p).
+
+Theorem Prect_succ : forall (P:positive->Type) (a:P xH) 
+  (f:forall p, P p -> P (Psucc p)) (p:positive), 
+ Prect P a f (Psucc p) = f _ (Prect P a f p).
 Proof.
-intro; rewrite <- Pplus_diag; apply plus_iter_eq_plus.
+intros.
+unfold Prect.
+rewrite (PeanoViewUnique _ (peanoView (Psucc p)) (PeanoSucc _ (peanoView p))).
+trivial.
 Qed.
 
-Lemma plus_iter_xI : forall p:positive, Psucc (plus_iter p p) = xI p.
+Theorem Prect_base : forall (P:positive->Type) (a:P xH) 
+  (f:forall p, P p -> P (Psucc p)) (p:positive), Prect P a f xH = a.
 Proof.
-intro; rewrite xI_succ_xO; rewrite <- Pplus_diag;
- apply (f_equal (A:=positive)); apply plus_iter_eq_plus.
+trivial.
 Qed.
 
-Lemma iterate_add :
- forall P:positive -> Type,
-   (forall n:positive, P n -> P (Psucc n)) ->
-   forall p q:positive, P q -> P (plus_iter p q).
-Proof.
-intros P H; induction p; simpl in |- *; intros.
-apply IHp; apply IHp; apply H; assumption.
-apply IHp; apply IHp; assumption.
-apply H; assumption.
-Defined.
+Definition Prec (P:positive->Set) := Prect P.
 
 (** Peano induction *)
 
-Theorem Pind :
- forall P:positive -> Prop,
-   P xH -> (forall n:positive, P n -> P (Psucc n)) -> forall p:positive, P p.
-Proof.
-intros P H1 Hsucc n; induction n.
-rewrite <- plus_iter_xI; apply Hsucc; apply iterate_add; assumption.
-rewrite <- plus_iter_xO; apply iterate_add; assumption.
-assumption.
-Qed.
-
-(** Peano recursion *)
-
-Definition Prec (A:Set) (a:A) (f:positive -> A -> A) : 
-  positive -> A :=
-  (fix Prec (p:positive) : A :=
-     match p with
-     | xH => a
-     | xO p => iterate_add (fun _ => A) f p p (Prec p)
-     | xI p => f (plus_iter p p) (iterate_add (fun _ => A) f p p (Prec p))
-     end).
+Definition Pind (P:positive->Prop) := Prect P.
 
 (** Peano case analysis *)
 
@@ -574,15 +587,6 @@ Theorem Pcase :
 Proof.
 intros; apply Pind; auto.
 Qed.
-
-(*
-Check
-  (let fact := Prec positive xH (fun p r => Psucc p * r) in
-   let seven := xI (xI xH) in
-   let five_thousand_forty :=
-     xO (xO (xO (xO (xI (xI (xO (xI (xI (xI (xO (xO xH))))))))))) in
-   refl_equal _:fact seven = five_thousand_forty).
-*)
 
 (**********************************************************************)
 (** Properties of multiplication on binary positive numbers *)

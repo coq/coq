@@ -20,15 +20,6 @@ Ltac caseq t := generalize (refl_equal t); pattern t at -1; case t.
 
 Functional Scheme Pcompare_ind := Induction for Pcompare Sort Prop.
 
-Lemma Prect : forall P : positive -> Type,
-       P 1 ->
-       (forall n : positive, P n -> P (Psucc n)) -> forall p : positive, P p.
-intros P H1 Hsucc n; induction n.
-rewrite <- plus_iter_xI; apply Hsucc; apply iterate_add; assumption.
-rewrite <- plus_iter_xO; apply iterate_add; assumption.
-assumption.
-Qed.
-
 Lemma Gt_Eq_Gt : forall p q cmp,
        (p ?= q) Eq = Gt -> (p ?= q) cmp = Gt.
 apply (Pcompare_ind (fun p q cmp _ => (p ?= q) Eq = Gt -> (p ?= q) cmp = Gt));
