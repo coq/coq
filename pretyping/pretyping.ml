@@ -196,6 +196,13 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 
   let push_rels vars env = List.fold_right push_rel vars env
 
+  (* used to enforce a name in Lambda when the type constraints itself
+     is named, hence possibly dependent *)
+
+  let orelse_name name name' = match name with
+    | Anonymous -> name'
+    | _ -> name
+
   (*
     let evar_type_case isevars env ct pt lft p c =
     let (mind,bty,rslty) = type_case_branches env (evars_of isevars) ct pt p c
@@ -409,7 +416,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	let j = pretype_type dom_valcon env isevars lvar c1 in
 	let var = (name,None,j.utj_val) in
 	let j' = pretype rng (push_rel var env) isevars lvar c2 in 
-	  judge_of_abstraction env name j j'
+	  judge_of_abstraction env (orelse_name name name') j j'
 
     | RProd(loc,name,c1,c2)        ->
 	let j = pretype_type empty_valcon env isevars lvar c1 in
