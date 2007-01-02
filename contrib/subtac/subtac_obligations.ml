@@ -229,15 +229,18 @@ let update_obls prg obls rem =
 	| l ->
 	    let progs = List.map (fun (x,y) -> ProgMap.find x !from_prg, y) prg'.prg_deps in
 	      if List.for_all (fun x -> obligations_solved (fst x)) progs then 
-		declare_mutual_definition progs)
+		(declare_mutual_definition progs;
+		 from_prg := List.fold_left
+		   (fun acc x -> ProgMap.remove (fst x).prg_name acc) !from_prg progs))
 
 let add_definition n b t obls =
   Options.if_verbose pp (str (string_of_id n) ++ str " has type-checked");
   let prg = init_prog_info n b t [] obls in
   let obls,_ = prg.prg_obligations in
   if Array.length obls = 0 then (
-    Options.if_verbose ppnl (str ".");
-    declare_definition prg)
+    Options.if_verbose ppnl (str ".");    
+    declare_definition prg;
+    from_prg := ProgMap.remove prg.prg_name !from_prg)
   else (
     let len = Array.length obls in
     let _ = Options.if_verbose ppnl (str ", generating " ++ int len ++ str " obligation(s)") in

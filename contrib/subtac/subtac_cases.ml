@@ -138,8 +138,6 @@ type rhs =
     { rhs_env    : env;
       avoid_ids  : identifier list;
       it         : rawconstr;
-      rhs_lift   : int;
-      c_it       : constr;
     }
 
 type equation =
@@ -719,9 +717,28 @@ let get_names env sign eqns =
 let recover_alias_names get_name = List.map2 (fun x (_,c,t) ->(get_name x,c,t))
 
 let push_rels_eqn sign eqn =
-  trace (str "push_rels_eqn: " ++ my_print_rel_context eqn.rhs.rhs_env sign);
-  {eqn with rhs = {eqn.rhs with rhs_env = push_rels sign eqn.rhs.rhs_env;
-		     rhs_lift = eqn.rhs.rhs_lift - (List.length sign) } }
+(*   trace (str "push_rels_eqn: " ++ my_print_rel_context eqn.rhs.rhs_env sign ++  *)
+(* 	str " lift is " ++ int eqn.rhs.rhs_lift ++  *)
+(* 	str " branch is " ++ my_print_constr (fst eqn.rhs.c_orig) (snd eqn.rhs.c_orig)); *)
+(*   let rhs = eqn.rhs in *)
+(*   let l, c, s, e = *)
+(*     List.fold_right *)
+(*       (fun (na, c, t) (itlift, it, sign, env) -> *)
+(* 	 (try trace (str "Pushing decl: " ++ pr_rel_decl env (na, c, t) ++ *)
+(* 		  str " lift is " ++ int itlift); *)
+(* 	 with _ -> trace (str "error in push_rels_eqn")); *)
+(* 	 let env' = push_rel (na, c, t) env in *)
+(* 	   match sign with  *)
+(* 	       [] -> (itlift, lift 1 it, sign, env') *)
+(* 	     | (na', c, t) :: sign' ->  *)
+(* 		 if na' = na then  *)
+(* 		   (pred itlift, it, sign', env') *)
+(* 		 else ( *)
+(* 		   trace (str "skipping it"); *)
+(* 		   (itlift, liftn 1 itlift it, sign, env'))) *)
+(*       sign (rhs.rhs_lift, rhs.c_it, eqn.rhs.rhs_sign, eqn.rhs.rhs_env) *)
+(*   in *)
+    {eqn with rhs = {eqn.rhs with rhs_env = push_rels sign eqn.rhs.rhs_env; } }
 
 let push_rels_eqn_with_names sign eqn =
   let pats = List.rev (list_firstn (List.length sign) eqn.patterns) in
@@ -753,20 +770,9 @@ let build_aliases_context env sigma names allpats pats =
   let allpats = List.map (fun x -> [x]) allpats
   in insert env [] [] 0 (List.map (fun _ -> []) allpats) allpats (pats, names)
 
-let insert_aliases_rels rhs sign =
-  let len = List.length sign in
-    if len = 0 then rhs 
-    else
-      { rhs with 
-	  rhs_env = push_rels sign rhs.rhs_env;
-	  c_it = liftn len rhs.rhs_lift rhs.c_it }
-
 let insert_aliases_eqn sign eqnnames alias_rest eqn =
   let thissign = List.map2 (fun na (_,c,t) -> (na,c,t)) eqnnames sign in
-    trace (str "insert aliases: " ++ my_print_rel_context eqn.rhs.rhs_env thissign);
-  { eqn with
-      alias_stack = alias_rest;
-      rhs = insert_aliases_rels eqn.rhs thissign }
+    push_rels_eqn thissign { eqn with  alias_stack = alias_rest; }
 	    
 
 let insert_aliases env sigma alias eqns =
@@ -1160,8 +1166,9 @@ let group_equations pb ind current cstrs mat =
 	   | PatVar (_,name) -> 
 	       (* This is a default clause that we expand *)
 	       for i=1 to Array.length cstrs do
-		 let args = make_anonymous_patvars cstrs.(i-1).cs_nargs in
-		 let rest = {rest with tag = lower_pattern_status rest.tag} in
+		 let n = cstrs.(i-1).cs_nargs in
+		 let args = make_anonymous_patvars n in
+		 let rest = {rest with tag = lower_pattern_status rest.tag } in
 		 brs.(i-1) <- (args, rest) :: brs.(i-1)
 	       done
 	   | PatCstr (loc,((_,i)),args,_) ->
@@ -1192,10 +1199,11 @@ let build_leaf pb =
   let tag, rhs = extract_rhs pb in
   let tycon = match pb.pred with
     | None -> anomaly "Predicate not found"
-    | Some (PrCcl typ) -> typ
+    | Some (PrCcl typ) -> mk_tycon typ
     | Some _ -> anomaly "not all parameters of pred have been consumed" in
-    trace (str "In build leaf: env is: " ++ my_print_env rhs.rhs_env);
-    tag, { uj_val = rhs.c_it; uj_type = tycon }
+    (try trace (str "In build leaf: env is: " ++ my_print_env rhs.rhs_env)
+     with _ -> trace (str "Error in build leaf"));
+    tag, pb.typing_function tycon rhs.rhs_env rhs.it
 
 (* Building the sub-problem when all patterns are variables *)
 let shift_problem (current,t) pb =
@@ -1257,7 +1265,6 @@ let build_branch current deps pb eqns const_info =
       1 typs' (List.rev dep_sign) in
 
   let sign = List.map (fun (na,t) -> mkDeclTomatch na t) typs' in
-    debug 4 (str "In build branch, add rel context: " ++ Subtac_utils.my_print_rel_context pb.env sign);
   let ind =
     appvect (
       applist (mkInd (inductive_of_constructor const_info.cs_cstr),
@@ -1393,8 +1400,6 @@ let matx_of_eqns env tomatchl eqns =
       { rhs_env = env;
 	avoid_ids = ids@(ids_of_named_context (named_context env));
 	it = initial_rhs;
-	rhs_lift = 0;
-	c_it = Obj.magic 0;
       } in
     { patterns = initial_lpat;
       tag = RegularPat;
@@ -1604,10 +1609,18 @@ let list_mapi f l =
   in aux 0 l
 
 let constr_of_pat env isevars ty pat = 
-  let rec typ env ty = function
-    | PatVar (_,name) -> 
-	[name, None, ty], mkRel 1, 1
-    | PatCstr (_,((_, i) as cstr),args,alias) ->
+  let rec typ env ty pat = 
+(*     trace (str "Typing pattern " ++ Printer.pr_cases_pattern pat ++ str " in env " ++ *)
+(* 	     print_env env); *)
+    match pat with
+    | PatVar (l,name) -> 
+	let name = match name with
+	    Name n -> name
+	  | Anonymous -> Name (id_of_string "wildcard")
+	in
+(* 	  trace (str "Treating pattern variable " ++ str (string_of_id (id_of_name name))); *)
+	  PatVar (l, name), [name, None, ty], mkRel 1, 1
+    | PatCstr (l,((_, i) as cstr),args,alias) ->
 	let ind = inductive_of_constructor cstr in
 	let IndType (indf, realargs) = find_rectype env (Evd.evars_of !isevars) ty in
 	let ind, params = dest_ind_family indf in
@@ -1615,40 +1628,77 @@ let constr_of_pat env isevars ty pat =
 	let ci = cstrs.(i-1) in
 	let nb_args_constr = ci.cs_nargs in
 	assert(nb_args_constr = List.length args);
-	let args, sign, env, n = 
-	  List.fold_left2
-	    (fun (args, sign, env, n) (na, c, t) ua ->
-	       let sign', arg', n' = typ env t ua in
+	let patargs, args, sign, env, n = 
+	  List.fold_right2
+	    (fun (na, c, t) ua (patargs, args, sign, env, n)  ->
+	       let pat', sign', arg', n' = typ env t ua in
 	       let args' = arg' :: List.map (lift n') args in
 	       let env' = push_rels sign' env in
-		 (args', sign' @ sign, env', n' + n))
-	    ([], [], env, 0) ci.cs_args (List.rev args)
+		 (pat' :: patargs, args', sign' @ sign, env', n' + n))
+	    ci.cs_args (List.rev args) ([], [], [], env, 0)
 	in
+	let args = List.rev args in
+	let patargs = List.rev patargs in
+	let pat' = PatCstr (l, cstr, patargs, alias) in
 	let cstr = mkConstruct ci.cs_cstr in
 	let app = applistc cstr (List.map (lift (List.length args)) params) in
-	let app = applistc app (List.rev args) in
+	let app = applistc app args in
+(* 	  trace (str "New pattern: " ++ Printer.pr_cases_pattern pat'); *)
 	  if alias <> Anonymous then
-	    (alias, Some app, ty) :: sign, lift 1 app, n + 1
-	  else sign, app, n
+	    pat', (alias, Some app, ty) :: sign, lift 1 app, n + 1
+	  else pat', sign, app, n
   in 
-  let x, y, z = typ env ty pat in 
-  let x = List.rev x in
-  let prod = it_mkProd_or_LetIn y x in
+  let pat', sign, y, z = typ env ty pat in 
+  let prod = it_mkProd_or_LetIn y sign in
     trace (str "Pattern: " ++ Printer.pr_cases_pattern pat ++ str " becomes constr : " ++
 	     my_print_constr env prod);
-
-    x, y
+    pat', (sign, y)
 
 let mk_refl typ a = mkApp (Lazy.force eq_refl, [| typ; a |])
 
+let vars_of_ctx = 
+  List.rev_map (fun (na, _, t) -> 
+	      match na with
+		  Anonymous -> raise (Invalid_argument "vars_of_ctx")
+		| Name n -> RVar (dummy_loc, n))
+
+(*let build_ineqs eqns pats = 
+  List.fold_left 
+    (fun (sign, c) eqn -> 
+       let acc = fold_left3
+	 (fun acc prevpat (ppat_sign, ppat_c, ppat_ty) (pat, pat_c) ->
+	    match acc with
+		None -> None
+	      | Some (sign,len, c) ->
+		  if is_included pat prevpat then
+		    let lens = List.length ppat_sign in
+		    let acc = 
+		      (lift_rels lens ppat_sign @ sign, 
+		       lens + len,
+		       mkApp (Lazy.force eq_ind,
+			      [| ppat_ty ; ppat_c ; 
+				 lift (lens + len) pat_c |]) :: c)
+		    in Some acc
+		  else None)
+	 (sign, c) eqn.patterns eqn.c_patterns pats
+       in match acc with 
+	   None -> (sign, c)
+	 | Some (sign, len, c) ->
+	     it_mkProd_or_LetIn c sign
+	     
+    )
+    ([], []) eqns*)
+
 let constrs_of_pats typing_fun tycon env isevars eqns tomatchs =
-  List.map
-    (fun eqn ->
+  let i = ref 0 in
+  List.fold_left
+    (fun (branches, eqns) eqn ->
        let pats = 
 	 List.map2 (fun pat (_, ty) -> 
 		      constr_of_pat env isevars (type_of_tomatch ty) pat) 
 	   eqn.patterns tomatchs 
        in
+       let newpatterns, pats = List.split pats in
        let rhs_rels, signlen = 
 	 List.fold_left (fun (env, n) (sign,_) -> (sign @ env, List.length sign + n)) 
 	   ([], 0) pats in
@@ -1664,6 +1714,7 @@ let constrs_of_pats typing_fun tycon env isevars eqns tomatchs =
 	 ([], 0, signlen) pats tomatchs
        in
        let eqs_rels = List.map (fun eq -> Name (id_of_string "H"), None, eq) eqs in
+(*        let ineqs = build_ineqs eqns newpatterns in *)
        let rhs_rels' = eqs_rels @ rhs_rels in
        let rhs_env = push_rels rhs_rels' env in
        (try trace (str "branch env: " ++ print_env rhs_env)
@@ -1673,12 +1724,25 @@ let constrs_of_pats typing_fun tycon env isevars eqns tomatchs =
 	 (try trace (str "Typed branch: " ++ Prettyp.print_judgment rhs_env j);
 	  with _ ->
 	    trace (str "Error in typed branch pretty printing"));
-	 let j' = it_mkLambda_or_LetIn j.uj_val eqs_rels
-	   (*uj_type = it_mkProd_or_LetIn j.uj_type eqs_rels; }*)
+	 let bbody = it_mkLambda_or_LetIn j.uj_val rhs_rels'
+	 and btype = it_mkProd_or_LetIn j.uj_type rhs_rels' in
+	 let branch_name = id_of_string ("branch_" ^ (string_of_int !i)) in
+	 let branch_decl = (Name branch_name, Some (lift !i bbody), (lift !i btype)) in
+	 (try trace (str "Branch decl: " ++ pr_rel_decl env branch_decl)
+	  with _ -> trace (str "Error in branch decl pp"));
+	 let branch = 
+	   let bref = RVar (dummy_loc, branch_name) in
+	   match vars_of_ctx rhs_rels with
+	       [] -> bref
+	     | l -> RApp (dummy_loc, bref, l)
 	 in
-	 let rhs = { eqn.rhs with c_it = j'; rhs_lift = succ signlen } in
-	   { eqn with rhs = rhs })
-    eqns
+	 (try trace (str "New branch: " ++ Printer.pr_rawconstr branch)
+	  with _ -> trace (str "Error in new branch pp"));
+	 incr i;
+	 let rhs = { eqn.rhs with it = branch } in
+	   (branch_decl :: branches,
+	    { eqn with patterns = newpatterns; rhs = rhs } :: eqns))
+    ([], []) eqns
     
 
 (* 		   liftn_rel_declaration *)
@@ -1735,7 +1799,14 @@ let compile_cases loc (typing_fun, isevars) (tycon : Evarutil.type_constraint) e
   (* constructors found in patterns *)
   let tomatchs = coerce_to_indtype typing_fun isevars env matx tomatchl in
 
-  let matx = constrs_of_pats typing_fun tycon env isevars matx tomatchs in
+  let lets, matx = constrs_of_pats typing_fun tycon env isevars matx tomatchs in
+  let matx = List.rev matx in
+  let env = push_rels lets env in
+  let len = List.length lets in
+  let matx = List.map (fun eqn -> { eqn with rhs = { eqn.rhs with rhs_env = env } }) matx in
+  trace (str "New env: " ++ my_print_env env);
+  let tycon = lift_tycon len tycon in
+  let tomatchs = List.map (fun (x, y) -> lift len x, lift_tomatch_type len y) tomatchs in
   let args = List.map (fun (tm,ty) -> mk_refl (type_of_tomatch ty) tm) tomatchs in
 
   (* We build the elimination predicate if any and check its consistency *)
@@ -1761,7 +1832,7 @@ let compile_cases loc (typing_fun, isevars) (tycon : Evarutil.type_constraint) e
     (* We check for unused patterns *)
     List.iter (check_unused_pattern env) matx;
     let j = 
-      { uj_val = applistc j.uj_val args;
+      { uj_val = it_mkLambda_or_LetIn (applistc j.uj_val args) lets;
 	uj_type = opred; }
     in
       inh_conv_coerce_to_tycon loc env isevars j tycon
