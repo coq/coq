@@ -392,6 +392,13 @@ let rec pp_Dfix init i ((rv,c,t) as fix) =
 	
 (*s Pretty-printing of inductive types declaration. *)
 
+let pp_equiv param_list = function 
+  | None -> mt ()
+  | Some ip_equiv -> 
+      str " = " ++ pp_parameters param_list ++ pp_global (IndRef ip_equiv)
+
+let pp_comment s = str "(* " ++ s ++ str " *)"
+
 let pp_one_ind prefix ip ip_equiv pl cv =
   let pl = rename_tvars keywords pl in
   let pp_constructor (r,l) =
@@ -403,15 +410,10 @@ let pp_one_ind prefix ip ip_equiv pl cv =
 			(fun () -> spc () ++ str "* ") (pp_type true pl) l))
   in
   pp_parameters pl ++ str prefix ++ pp_global (IndRef ip) ++
-  (match ip_equiv with 
-     | None -> mt ()
-     | Some ip_e -> str " = " ++ pp_global (IndRef ip_e)) ++
-  str " =" ++
+  pp_equiv pl ip_equiv ++ str " =" ++
   if Array.length cv = 0 then str " unit (* empty inductive *)" 
   else fnl () ++ v 0 (prvect_with_sep fnl pp_constructor
 			(Array.mapi (fun i c -> ConstructRef (ip,i+1), c) cv))
-
-let pp_comment s = str "(* " ++ s ++ str " *)"
 
 let pp_logical_ind packet = 
   pp_comment (pr_id packet.ip_typename ++ str " : logical inductive") ++ 
@@ -426,10 +428,11 @@ let pp_singleton kn packet =
 	 pp_comment (str "singleton inductive, whose constructor was " ++ 
 		     pr_id packet.ip_consnames.(0)))
 
-let pp_record kn projs packet = 
+let pp_record kn projs ip_equiv packet = 
   let l = List.combine projs packet.ip_types.(0) in 
   let pl = rename_tvars keywords packet.ip_vars in 
-  str "type " ++ pp_parameters pl ++ pp_global (IndRef (kn,0)) ++ str " = { "++
+  str "type " ++ pp_parameters pl ++ pp_global (IndRef (kn,0)) ++ 
+  pp_equiv pl ip_equiv ++ str " = { "++
   hov 0 (prlist_with_sep (fun () -> str ";" ++ spc ()) 
 	   (fun (r,t) -> pp_global r ++ str " : " ++ pp_type true pl t) l) 
   ++ str " }"
@@ -475,7 +478,9 @@ let pp_mind kn i =
   match i.ind_info with 
     | Singleton -> pp_singleton kn i.ind_packets.(0)
     | Coinductive -> pp_ind true kn i
-    | Record projs -> pp_record kn projs i.ind_packets.(0)
+    | Record projs -> 
+	let ip_equiv = option_map (fun kn -> (kn,0)) i.ind_equiv in 
+	pp_record kn projs ip_equiv i.ind_packets.(0)
     | Standard -> pp_ind false kn i
 
 let pp_decl mpl = 
