@@ -64,3 +64,5 @@ Ltac destruct_call f :=
     end.
 
 Extraction Inline proj1_sig.
+
+Require Export ProofIrrelevance.

@@ -12,6 +12,8 @@ val add_mutual_definitions :
 
 val subtac_obligation : int * Names.identifier option * Topconstr.constr_expr option -> unit
 
+val next_obligation : Names.identifier option -> unit
+
 val solve_obligations : Names.identifier option -> Proof_type.tactic -> unit
 
 val show_obligations : Names.identifier option -> unit

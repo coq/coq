@@ -716,9 +716,12 @@ let get_names env sign eqns =
 
 let recover_alias_names get_name = List.map2 (fun x (_,c,t) ->(get_name x,c,t))
 
+let all_name sign = List.map (fun (n, b, t) -> let n = match n with Name _ -> n | Anonymous -> Name (id_of_string "Anonymous") in
+				(n, b, t)) sign
+
 let push_rels_eqn sign eqn =
-(*   trace (str "push_rels_eqn: " ++ my_print_rel_context eqn.rhs.rhs_env sign ++  *)
-(* 	str " lift is " ++ int eqn.rhs.rhs_lift ++  *)
+  let sign = all_name sign in
+(*    trace (str "push_rels_eqn: " ++ my_print_rel_context eqn.rhs.rhs_env sign ++ str "end");   *)
 (* 	str " branch is " ++ my_print_constr (fst eqn.rhs.c_orig) (snd eqn.rhs.c_orig)); *)
 (*   let rhs = eqn.rhs in *)
 (*   let l, c, s, e = *)
@@ -1201,9 +1204,13 @@ let build_leaf pb =
     | None -> anomaly "Predicate not found"
     | Some (PrCcl typ) -> mk_tycon typ
     | Some _ -> anomaly "not all parameters of pred have been consumed" in
-    (try trace (str "In build leaf: env is: " ++ my_print_env rhs.rhs_env)
-     with _ -> trace (str "Error in build leaf"));
-    tag, pb.typing_function tycon rhs.rhs_env rhs.it
+    (try trace (str "In build leaf:");
+       trace (str "typing: " ++ my_print_rawconstr rhs.rhs_env rhs.it);
+       trace (str "env is: " ++ my_print_env rhs.rhs_env)
+     with _ -> trace (str "error"));
+    let x = tag, pb.typing_function tycon rhs.rhs_env rhs.it in
+      trace (str "end build leaf");
+      x
 
 (* Building the sub-problem when all patterns are variables *)
 let shift_problem (current,t) pb =
@@ -1720,21 +1727,26 @@ let constrs_of_pats typing_fun tycon env isevars eqns tomatchs =
        (try trace (str "branch env: " ++ print_env rhs_env)
 	with _ -> trace (str "error in print branch env"));
        let tycon = lift_tycon (List.length eqs + signlen) tycon in
+	 
        let j = typing_fun tycon rhs_env eqn.rhs.it in
-	 (try trace (str "Typed branch: " ++ Prettyp.print_judgment rhs_env j);
+	 (try trace (str "in env: " ++ my_print_env rhs_env ++ str"," ++
+		       str "Typed branch: " ++ Prettyp.print_judgment rhs_env j);
 	  with _ ->
 	    trace (str "Error in typed branch pretty printing"));
 	 let bbody = it_mkLambda_or_LetIn j.uj_val rhs_rels'
 	 and btype = it_mkProd_or_LetIn j.uj_type rhs_rels' in
 	 let branch_name = id_of_string ("branch_" ^ (string_of_int !i)) in
 	 let branch_decl = (Name branch_name, Some (lift !i bbody), (lift !i btype)) in
-	 (try trace (str "Branch decl: " ++ pr_rel_decl env branch_decl)
+	 (try trace (str "Branch decl: " ++ pr_rel_decl env (Name branch_name, Some bbody, btype))
 	  with _ -> trace (str "Error in branch decl pp"));
 	 let branch = 
 	   let bref = RVar (dummy_loc, branch_name) in
-	   match vars_of_ctx rhs_rels with
+	   match vars_of_ctx rhs_rels' with
 	       [] -> bref
 	     | l -> RApp (dummy_loc, bref, l)
+	 in
+	 let branch = 
+	   List.fold_left (fun br (eqH, _, t) -> RLambda (dummy_loc, eqH, RHole (dummy_loc, Evd.InternalHole), br)) branch eqs_rels
 	 in
 	 (try trace (str "New branch: " ++ Printer.pr_rawconstr branch)
 	  with _ -> trace (str "Error in new branch pp"));
@@ -1791,7 +1803,8 @@ let prepare_predicate loc typing_fun isevars env tomatchs sign tycon =
 (* Main entry of the matching compilation                                 *)
   
 let compile_cases loc (typing_fun, isevars) (tycon : Evarutil.type_constraint) env (predopt, tomatchl, eqns)=
-  
+  let env0 = env in
+  let tycon0 = tycon in
   (* We build the matrix of patterns and right-hand-side *)
   let matx = matx_of_eqns env tomatchl eqns in
       
@@ -1801,6 +1814,7 @@ let compile_cases loc (typing_fun, isevars) (tycon : Evarutil.type_constraint) e
 
   let lets, matx = constrs_of_pats typing_fun tycon env isevars matx tomatchs in
   let matx = List.rev matx in
+  trace (str "Old env: " ++ my_print_env env);
   let env = push_rels lets env in
   let len = List.length lets in
   let matx = List.map (fun eqn -> { eqn with rhs = { eqn.rhs with rhs_env = env } }) matx in
@@ -1831,10 +1845,12 @@ let compile_cases loc (typing_fun, isevars) (tycon : Evarutil.type_constraint) e
   let _, j = compile pb in
     (* We check for unused patterns *)
     List.iter (check_unused_pattern env) matx;
+    let ty = out_some (valcon_of_tycon tycon0) in
     let j = 
       { uj_val = it_mkLambda_or_LetIn (applistc j.uj_val args) lets;
-	uj_type = opred; }
+	uj_type = ty; }
     in
-      inh_conv_coerce_to_tycon loc env isevars j tycon
+      trace (str"final judgement:"  ++ Prettyp.print_judgment env0 j ++ spc ());
+      inh_conv_coerce_to_tycon loc env isevars j tycon0
 end
   

@@ -326,7 +326,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	      let t = Retyping.get_type_of env sigma c in
 	      make_judge c t
 	  | _ -> resj in
-	inh_conv_coerce_to_tycon loc env isevars resj tycon
+	  inh_conv_coerce_to_tycon loc env isevars resj tycon
 
     | RLambda(loc,name,c1,c2)      ->
 	let (name',dom,rng) = evd_comb1 (split_tycon loc env) isevars tycon in

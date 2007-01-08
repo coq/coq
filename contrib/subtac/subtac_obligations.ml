@@ -268,6 +268,25 @@ let deps_remaining obls deps =
 	 else x :: acc)
       deps []
 
+let solve_obligation prg num =
+  let user_num = succ num in
+  let obls, rem = prg.prg_obligations in
+  let obl = obls.(num) in
+  match deps_remaining obls obl.obl_deps with
+      [] ->
+	let obl = subst_deps_obl obls obl in
+	  Command.start_proof obl.obl_name Subtac_utils.goal_proof_kind obl.obl_type
+	    (fun strength gr -> 
+	       debug 2 (str "Proof of obligation " ++ int user_num ++ str " finished");		   
+	       let obl = { obl with obl_body = Some (Libnames.constr_of_global gr) } in
+	       let obls = Array.copy obls in
+	       let _ = obls.(num) <- obl in
+		 update_obls prg obls (pred rem));
+	  Pfedit.by !default_tactic;
+	  trace (str "Started obligation " ++ int user_num ++ str "  proof")
+    | l -> pperror (str "Obligation " ++ int user_num ++ str " depends on obligation(s) "
+		    ++ str (string_of_list ", " (fun x -> string_of_int (succ x)) l))
+
 let subtac_obligation (user_num, name, typ) =
   let num = pred user_num in
   let prg = get_prog name in
@@ -275,21 +294,7 @@ let subtac_obligation (user_num, name, typ) =
     if num < Array.length obls then
       let obl = obls.(num) in
 	match obl.obl_body with
-	    None -> 
-	      (match deps_remaining obls obl.obl_deps with
-		  [] ->
-		    let obl = subst_deps_obl obls obl in
-		    Command.start_proof obl.obl_name Subtac_utils.goal_proof_kind obl.obl_type
-		      (fun strength gr -> 
-			 debug 2 (str "Proof of obligation " ++ int user_num ++ str " finished");		   
-			 let obl = { obl with obl_body = Some (Libnames.constr_of_global gr) } in
-			 let obls = Array.copy obls in
-			 let _ = obls.(num) <- obl in
-			   update_obls prg obls (pred rem));
-		      Pfedit.by !default_tactic;
-		      trace (str "Started obligation " ++ int user_num ++ str "  proof")
-     		 | l -> pperror (str "Obligation " ++ int user_num ++ str " depends on obligation(s) "
-		     ++ str (string_of_list ", " (fun x -> string_of_int (succ x)) l)))
+	    None -> solve_obligation prg num
 	  | Some r -> error "Obligation already solved"
     else error (sprintf "Unknown obligation number %i" (succ num))
       
@@ -344,6 +349,21 @@ let admit_obligations n =
   in
     update_obls prg obls' 0
 
+exception Found of int
+
+let array_find f arr = 
+  try Array.iteri (fun i x -> if f x then raise (Found i)) arr;
+    raise Not_found
+  with Found i -> i
+
+let next_obligation n =
+  let prg = get_prog n in
+  let obls, rem = prg.prg_obligations in
+  let i = 
+    array_find (fun x ->  x.obl_body = None && deps_remaining obls x.obl_deps = [])
+      obls
+  in
+    solve_obligation prg i
 
 open Pp
 let show_obligations n =
