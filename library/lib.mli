@@ -25,9 +25,11 @@ type node =
   | Leaf of obj
   | CompilingLibrary of object_prefix
   | OpenedModule of bool option * object_prefix * Summary.frozen
+  | ClosedModule  of library_segment
   | OpenedModtype of object_prefix * Summary.frozen
+  | ClosedModtype of library_segment
   | OpenedSection of object_prefix * Summary.frozen
-  | ClosedSection
+  | ClosedSection of library_segment
   | FrozenState of Summary.frozen
 
 and library_segment = (object_name * node) list

@@ -32,6 +32,7 @@ theories/Reals/RIneq.vo: theories/Reals/RIneq.v theories/Reals/Raxioms.vo theori
 theories/Reals/DiscrR.vo: theories/Reals/DiscrR.v theories/Reals/RIneq.vo contrib/omega/Omega.vo
 theories/Reals/Rbase.vo: theories/Reals/Rbase.v theories/Reals/Rdefinitions.vo theories/Reals/Raxioms.vo theories/Reals/RIneq.vo theories/Reals/DiscrR.vo
 theories/Reals/LegacyRfield.vo: theories/Reals/LegacyRfield.v theories/Reals/Raxioms.vo contrib/field/LegacyField.vo
+theories/Reals/Rpow_def.vo: theories/Reals/Rpow_def.v theories/Reals/Rdefinitions.vo
 theories/Reals/R_Ifp.vo: theories/Reals/R_Ifp.v theories/Reals/Rbase.vo contrib/omega/Omega.vo
 theories/Reals/Rbasic_fun.vo: theories/Reals/Rbasic_fun.v theories/Reals/Rbase.vo theories/Reals/R_Ifp.vo contrib/fourier/Fourier.vo
 theories/Reals/R_sqr.vo: theories/Reals/R_sqr.v theories/Reals/Rbase.vo theories/Reals/Rbasic_fun.vo
@@ -279,6 +280,7 @@ theories/Reals/RIneq.vo: theories/Reals/RIneq.v theories/Reals/Raxioms.vo theori
 theories/Reals/DiscrR.vo: theories/Reals/DiscrR.v theories/Reals/RIneq.vo contrib/omega/Omega.vo
 theories/Reals/Rbase.vo: theories/Reals/Rbase.v theories/Reals/Rdefinitions.vo theories/Reals/Raxioms.vo theories/Reals/RIneq.vo theories/Reals/DiscrR.vo
 theories/Reals/LegacyRfield.vo: theories/Reals/LegacyRfield.v theories/Reals/Raxioms.vo contrib/field/LegacyField.vo
+theories/Reals/Rpow_def.vo: theories/Reals/Rpow_def.v theories/Reals/Rdefinitions.vo
 theories/Reals/R_Ifp.vo: theories/Reals/R_Ifp.v theories/Reals/Rbase.vo contrib/omega/Omega.vo
 theories/Reals/Rbasic_fun.vo: theories/Reals/Rbasic_fun.v theories/Reals/Rbase.vo theories/Reals/R_Ifp.vo contrib/fourier/Fourier.vo
 theories/Reals/R_sqr.vo: theories/Reals/R_sqr.v theories/Reals/Rbase.vo theories/Reals/Rbasic_fun.vo
@@ -359,8 +361,10 @@ contrib/field/LegacyField_Tactic.vo: contrib/field/LegacyField_Tactic.v theories
 contrib/field/LegacyField.vo: contrib/field/LegacyField.v contrib/field/LegacyField_Compl.vo contrib/field/LegacyField_Theory.vo contrib/field/LegacyField_Tactic.vo
 contrib/fourier/Fourier_util.vo: contrib/fourier/Fourier_util.v theories/Reals/Rbase.vo
 contrib/fourier/Fourier.vo: contrib/fourier/Fourier.v contrib/ring/quote.cmo contrib/ring/ring.cmo contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo contrib/field/field.cmo contrib/fourier/Fourier_util.vo contrib/field/LegacyField.vo theories/Reals/DiscrR.vo
-contrib/subtac/FixSub.vo: contrib/subtac/FixSub.v theories/Init/Wf.vo theories/Arith/Wf_nat.vo theories/Arith/Lt.vo
-contrib/subtac/Utils.vo: contrib/subtac/Utils.v
+contrib/subtac/Utils.vo: contrib/subtac/Utils.v theories/Logic/ProofIrrelevance.vo
+contrib/subtac/FixSub.vo: contrib/subtac/FixSub.v theories/Init/Wf.vo contrib/subtac/Utils.vo theories/Arith/Wf_nat.vo theories/Arith/Lt.vo
+contrib/subtac/Subtac.vo: contrib/subtac/Subtac.v contrib/subtac/Utils.vo contrib/subtac/FixSub.vo
+contrib/subtac/FunctionalExtensionality.vo: contrib/subtac/FunctionalExtensionality.v contrib/subtac/Utils.vo contrib/subtac/FixSub.vo
 contrib/rtauto/Bintree.vo: contrib/rtauto/Bintree.v theories/Lists/List.vo theories/NArith/BinPos.vo
 contrib/rtauto/Rtauto.vo: contrib/rtauto/Rtauto.v theories/Lists/List.vo contrib/rtauto/Bintree.vo theories/Bool/Bool.vo theories/NArith/BinPos.vo
 contrib/recdef/Recdef.vo: contrib/recdef/Recdef.v theories/Arith/Compare_dec.vo theories/Arith/Wf_nat.vo

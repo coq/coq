@@ -16,6 +16,7 @@ open Pp_control
    chars inserted at some places). This function should called once in
    module [Options], that's all. *)
 val make_pp_emacs:unit -> unit
+val make_pp_nonemacs:unit -> unit
 
 (* Pretty-printers. *)
 

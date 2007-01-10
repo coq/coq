@@ -260,10 +260,13 @@ case $ARCH in
     fi
 esac
 
-# Is the source tree checked out from svn ?
+# Is the source tree checked out from a recognised
+# version control system ?
 if test -e .svn/entries ; then 
-    checkedout=1
-else 
+    checkedout=svn
+elif [ -d '{arch}' ]; then
+    checkedout=gnuarch
+else
     checkedout=0
 fi
 

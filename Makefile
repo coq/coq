@@ -620,7 +620,11 @@ beforedepend:: ide/utf8_convert.ml
 
 COQIDEVO=ide/utf8.vo
 
-$(COQIDEVO): states/initial.coq 
+ifdef NO_RECOMPILE_LIB
+ $(COQIDEVO): | states/initial.coq
+else
+ $(COQIDEVO): states/initial.coq
+endif
 	$(BOOTCOQTOP) -compile $*
 
 IDEFILES=$(COQIDEVO) ide/utf8.v ide/coq.png ide/.coqide-gtk2rc
@@ -961,7 +965,7 @@ REALSBASEVO=\
  theories/Reals/Rdefinitions.vo \
  theories/Reals/Raxioms.vo      theories/Reals/RIneq.vo \
  theories/Reals/DiscrR.vo       theories/Reals/Rbase.vo \
- theories/Reals/LegacyRfield.vo
+ theories/Reals/LegacyRfield.vo theories/Reals/Rpow_def.vo
 
 REALS_basic= 
 
@@ -1086,7 +1090,11 @@ CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
 	    $(FOURIERVO) $(JPROVERVO) $(CCVO) $(FUNINDVO) $(SUBTACVO) \
 	    $(RTAUTOVO) $(RECDEFVO) $(NEWRINGVO)
 
-$(CONTRIBVO): states/initial.coq
+ifdef NO_RECOMPILE_LIB
+ $(CONTRIBVO): | states/initial.coq
+else
+ $(CONTRIBVO): states/initial.coq
+endif
 
 contrib: $(CONTRIBVO) $(CONTRIBCMO)
 omega: $(OMEGAVO) $(OMEGACMO) $(ROMEGAVO) $(ROMEGACMO)
@@ -1114,10 +1122,18 @@ SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v
 states/initial.coq: states/MakeInitial.v $(INITVO)
 	$(BOOTCOQTOP) -batch -notop -silent -nois -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
 
-theories/Init/%.vo: $(BESTCOQTOP) theories/Init/%.v
+ifdef NO_RECOMPILE_LIB
+ theories/Init/%.vo: theories/Init/%.v | $(BESTCOQTOP)
+else
+ theories/Init/%.vo: $(BESTCOQTOP) theories/Init/%.v
+endif
 	$(BOOTCOQTOP) -nois -compile theories/Init/$*
 
-theories/%.vo: theories/%.v states/initial.coq
+ifdef NO_RECOMPILE_LIB
+ theories/%.vo: theories/%.v | states/initial.coq
+else
+ theories/%.vo: theories/%.v states/initial.coq
+endif
 	$(BOOTCOQTOP) -compile theories/$*
 
 contrib/%.vo: contrib/%.v
@@ -1595,12 +1611,20 @@ parsing/lexer.cmo: parsing/lexer.ml4
 .PHONY: revision
 
 revision:
-ifeq ($(CHECKEDOUT),1)
+ifeq ($(CHECKEDOUT),svn)
 	- /bin/rm -f revision
-	if test -x `which svn`; then \
-	  export LANG=C; \
+	if test -x "`which svn`"; then \
+	  LANG=C; export LANG; \
 	  svn info . | sed -ne '/URL/s/.*\/\([^\/]\{1,\}\)/\1/p' > revision; \
 	  svn info . | sed -ne '/Revision/s/Revision: \([0-9]\{1,\}\)/\1/p'>> revision; \
+	fi
+endif
+ifeq ($(CHECKEDOUT),gnuarch)
+	- /bin/rm -f revision
+	if test -x "`which tla`"; then \
+	  LANG=C; export LANG; \
+	  tla tree-version  >  revision ; \
+	  tla tree-revision | sed -ne 's|.*--||p' >> revision ; \
 	fi
 endif
 

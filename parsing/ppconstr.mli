@@ -70,3 +70,13 @@ val pr_lpattern_expr : Tacexpr.pattern_expr -> std_ppcmds
 val pr_constr_expr : constr_expr -> std_ppcmds
 val pr_lconstr_expr : constr_expr -> std_ppcmds
 val pr_cases_pattern_expr : cases_pattern_expr -> std_ppcmds
+
+type term_pr = {
+  pr_constr_expr   : constr_expr -> std_ppcmds;
+  pr_lconstr_expr  : constr_expr -> std_ppcmds;
+  pr_pattern_expr  : Tacexpr.pattern_expr -> std_ppcmds;
+  pr_lpattern_expr : Tacexpr.pattern_expr -> std_ppcmds
+}
+
+val set_term_pr : term_pr -> unit
+val default_term_pr : term_pr

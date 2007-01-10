@@ -619,10 +619,28 @@ let rec strip_context n iscast t =
 	LocalRawDef (na,b) :: bl', c
     | _ -> anomaly "strip_context"
 
-let pr_constr_expr c = pr lsimple c
-let pr_lconstr_expr c = pr ltop c
-let pr_pattern_expr c = pr lsimple c
-let pr_lpattern_expr c = pr ltop c
+type term_pr = {
+  pr_constr_expr   : constr_expr -> std_ppcmds;
+  pr_lconstr_expr  : constr_expr -> std_ppcmds;
+  pr_pattern_expr  : Tacexpr.pattern_expr -> std_ppcmds;
+  pr_lpattern_expr : Tacexpr.pattern_expr -> std_ppcmds
+}
+
+let default_term_pr = {
+  pr_constr_expr   = pr lsimple;
+  pr_lconstr_expr  = pr ltop;
+  pr_pattern_expr  = pr lsimple;
+  pr_lpattern_expr = pr ltop
+}
+
+let term_pr = ref default_term_pr
+
+let set_term_pr = (:=) term_pr
+
+let pr_constr_expr c   = !term_pr.pr_constr_expr   c
+let pr_lconstr_expr c  = !term_pr.pr_lconstr_expr  c
+let pr_pattern_expr c  = !term_pr.pr_pattern_expr  c
+let pr_lpattern_expr c = !term_pr.pr_lpattern_expr c
 
 let pr_cases_pattern_expr = pr_patt ltop
 

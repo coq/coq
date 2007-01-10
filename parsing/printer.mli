@@ -107,3 +107,13 @@ val emacs_str              : string -> string -> string
 (* Backwards compatibility *)
 
 val prterm                 : constr -> std_ppcmds (* = pr_lconstr *)
+
+type printer_pr = {
+ pr_subgoals            : string option -> evar_map -> goal list -> std_ppcmds;
+ pr_subgoal             : int -> goal list -> std_ppcmds;
+ pr_goal                : goal -> std_ppcmds;
+};;
+
+val set_printer_pr : printer_pr -> unit
+
+val default_printer_pr : printer_pr

@@ -17,6 +17,7 @@ open Pp_control
    [Pp] -> [Options] *)
 let print_emacs = ref false
 let make_pp_emacs() = print_emacs:=true
+let make_pp_nonemacs() = print_emacs:=false
 
 (* The different kinds of blocks are: 
    \begin{description}

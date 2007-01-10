@@ -75,3 +75,6 @@ let translate_path l =
 (*translates a path and a goal into a centaur-tree --> RULE *)
 let translate_goal (g:goal) =
  CT_rule(translate_sign (evar_env g), translate_constr true (evar_env g) g.evar_concl);;
+
+let translate_goals (gl: goal list) =
+ CT_rule_list (List.map translate_goal gl);;

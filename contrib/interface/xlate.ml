@@ -15,12 +15,6 @@ open Libnames;;
 open Goptions;;
 
 
-let in_coq_ref = ref false;;
-
-let declare_in_coq () = in_coq_ref:=true;;
-
-let in_coq () = !in_coq_ref;;
-
 (* // Verify whether this is dead code, as of coq version 7 *)
 (* The following three sentences have been added to cope with a change 
 of strategy from the Coq team in the way rules construct ast's.  The

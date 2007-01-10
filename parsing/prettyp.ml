@@ -6,6 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* Changed by (and thus parts copyright ©) by Lionel Elie Mamane <lionel@mamane.lu>
+ * on May-June 2006 for implementation of abstraction of pretty-printing of objects.
+ *)
+
 (* $Id$ *)
 
 open Pp
@@ -28,6 +32,24 @@ open Printmod
 open Libnames
 open Nametab
 open Recordops
+
+type object_pr = {
+  print_inductive           : mutual_inductive -> std_ppcmds;
+  print_constant_with_infos : constant -> std_ppcmds;
+  print_section_variable    : variable -> std_ppcmds;
+  print_syntactic_def       : kernel_name -> std_ppcmds;
+  print_module              : bool -> Names.module_path -> std_ppcmds;
+  print_modtype             : kernel_name -> std_ppcmds;
+  print_named_decl          : identifier * constr option * types -> std_ppcmds;
+  print_leaf_entry          : bool -> Libnames.object_name * Libobject.obj -> Pp.std_ppcmds;
+  print_library_entry       : bool -> (object_name * Lib.node) -> std_ppcmds option;
+  print_context             : bool -> int option -> Lib.library_segment -> std_ppcmds;
+  print_typed_value_in_env  : Environ.env -> Term.constr * Term.types -> Pp.std_ppcmds;
+  print_eval                : Reductionops.reduction_function -> env -> Evd.evar_map -> Topconstr.constr_expr -> unsafe_judgment -> std_ppcmds;
+}
+
+let gallina_print_module  = print_module
+let gallina_print_modtype = print_modtype
 
 (*********************)
 (** Basic printing   *)
@@ -223,21 +245,12 @@ let print_located_qualid ref =
 
 (******************************************)
 (**** Printing declarations and judgments *)
+(****  Gallina layer                  *****)
 
-let print_typed_value_in_env env (trm,typ) =
+let gallina_print_typed_value_in_env env (trm,typ) =
   (pr_lconstr_env env trm ++ fnl () ++
      str "     : " ++ pr_ltype_env env typ ++ fnl ())
 
-let print_typed_value x = print_typed_value_in_env (Global.env ()) x
-
-let print_judgment env {uj_val=trm;uj_type=typ} =
-  print_typed_value_in_env env (trm, typ)
-    
-let print_safe_judgment env j =
-  let trm = Safe_typing.j_val j in
-  let typ = Safe_typing.j_type j in
-  print_typed_value_in_env env (trm, typ)
-    
 (* To be improved; the type should be used to provide the types in the
    abstractions. This should be done recursively inside pr_lconstr, so that
    the pretty-print of a proposition (P:(nat->nat)->Prop)(P [u]u)
@@ -255,7 +268,7 @@ let print_named_def name body typ =
 let print_named_assum name typ =
   (str "*** [" ++ str name ++ str " : " ++ pr_ltype typ ++ str "]" ++ fnl ())
 
-let print_named_decl (id,c,typ) =
+let gallina_print_named_decl (id,c,typ) =
   let s = string_of_id id in
   match c with
     | Some body -> print_named_def s body typ
@@ -309,7 +322,7 @@ let pr_mutual_inductive finite indl =
     prlist_with_sep (fun () -> fnl () ++ str"  with ")
       print_one_inductive indl)
 
-let print_inductive sp =
+let gallina_print_inductive sp =
   let (mib,mip) = Global.lookup_inductive (sp,0) in
   let mipv = mib.mind_packets in
   let names = list_tabulate (fun x -> (sp,x)) (Array.length mipv) in
@@ -317,9 +330,9 @@ let print_inductive sp =
   print_inductive_implicit_args sp mipv ++
   print_inductive_argument_scopes sp mipv
 
-let print_section_variable sp =
+let gallina_print_section_variable sp =
   let d = get_variable sp in
-  print_named_decl d ++ 
+  gallina_print_named_decl d ++ 
   print_name_infos (VarRef sp)
 
 let print_body = function
@@ -348,69 +361,130 @@ let print_constant with_values sep sp =
 	(if with_values then print_typed_body (val_0,typ) else pr_ltype typ) ++
 	fnl ())
 
-let print_constant_with_infos sp =
+let gallina_print_constant_with_infos sp =
   print_constant true " = " sp ++ print_name_infos (ConstRef sp)
 
-let print_syntactic_def sep kn =
-  let qid = Nametab.shortest_qualid_of_syndef Idset.empty kn in
-  let c = Syntax_def.search_syntactic_definition dummy_loc kn in 
+let gallina_print_syntactic_def kn =
+  let sep = " := "
+  and qid = Nametab.shortest_qualid_of_syndef Idset.empty kn
+  and c = Syntax_def.search_syntactic_definition dummy_loc kn in 
   str "Notation " ++ pr_qualid qid ++ str sep ++ 
   Constrextern.without_symbols pr_lrawconstr c ++ fnl ()
 
-let print_leaf_entry with_values sep ((sp,kn as oname),lobj) =
-  let tag = object_tag lobj in
-  match (oname,tag) with
-    | (_,"VARIABLE") ->
-	(* Outside sections, VARIABLES still exist but only with universes 
-           constraints *)
-	(try Some(print_section_variable (basename sp)) with Not_found -> None)
-    | (_,"CONSTANT") ->
-	Some (print_constant with_values sep (constant_of_kn kn))
-    | (_,"INDUCTIVE") ->
-	Some (print_inductive kn)
-    | (_,"MODULE") ->
-	let (mp,_,l) = repr_kn kn in 
-	Some (print_module with_values (MPdot (mp,l)))
-    | (_,"MODULE TYPE") ->
-	Some (print_modtype kn)
-    | (_,("AUTOHINT"|"GRAMMAR"|"SYNTAXCONSTANT"|"PPSYNTAX"|"TOKEN"|"CLASS"|
-	"COERCION"|"REQUIRE"|"END-SECTION"|"STRUCTURE")) -> None
-    (* To deal with forgotten cases... *)
-    | (_,s) -> None
-(*
-    | (_,s) -> 
-	(str(string_of_path sp) ++ str" : " ++
-           str"Unrecognized object " ++ str s ++ fnl ())
-*)
 
-let rec print_library_entry with_values ent = 
-  let sep = if with_values then " = " else " : " in 
+let gallina_print_leaf_entry with_values ((sp,kn as oname),lobj) =
+  let sep = if with_values then " = " else " : "
+  and tag = object_tag lobj in
+    match (oname,tag) with
+      | (_,"VARIABLE") ->
+	  (* Outside sections, VARIABLES still exist but only with universes 
+             constraints *)
+	  (try Some(gallina_print_section_variable (basename sp)) with Not_found -> None)
+      | (_,"CONSTANT") ->
+	  Some (print_constant with_values sep (constant_of_kn kn))
+      | (_,"INDUCTIVE") ->
+	  Some (gallina_print_inductive kn)
+      | (_,"MODULE") ->
+	  let (mp,_,l) = repr_kn kn in 
+	    Some (print_module with_values (MPdot (mp,l)))
+      | (_,"MODULE TYPE") ->
+	  Some (print_modtype kn)
+      | (_,("AUTOHINT"|"GRAMMAR"|"SYNTAXCONSTANT"|"PPSYNTAX"|"TOKEN"|"CLASS"|
+	    "COERCION"|"REQUIRE"|"END-SECTION"|"STRUCTURE")) -> None
+      (* To deal with forgotten cases... *)
+      | (_,s) -> None
+
+let gallina_print_library_entry with_values ent = 
   let pr_name (sp,_) = pr_id (basename sp) in
   match ent with
     | (oname,Lib.Leaf lobj) -> 
-	print_leaf_entry with_values sep (oname,lobj)
+	gallina_print_leaf_entry with_values (oname,lobj)
     | (oname,Lib.OpenedSection (dir,_)) -> 
         Some (str " >>>>>>> Section " ++ pr_name oname)
-    | (oname,Lib.ClosedSection) -> 
+    | (oname,Lib.ClosedSection _) -> 
         Some (str " >>>>>>> Closed Section " ++ pr_name oname)
     | (_,Lib.CompilingLibrary (dir,_)) ->
 	Some (str " >>>>>>> Library " ++ pr_dirpath dir)
     | (oname,Lib.OpenedModule _) ->
 	Some (str " >>>>>>> Module " ++ pr_name oname)
+    | (oname,Lib.ClosedModule _) -> 
+        Some (str " >>>>>>> Closed Module " ++ pr_name oname)
     | (oname,Lib.OpenedModtype _) ->
 	Some (str " >>>>>>> Module Type " ++ pr_name oname)
+    | (oname,Lib.ClosedModtype _) -> 
+        Some (str " >>>>>>> Closed Module Type " ++ pr_name oname)
     | (_,Lib.FrozenState _) ->
 	None
-	
-let print_context with_values = 
+
+let gallina_print_leaf_entry with_values c =
+  match gallina_print_leaf_entry with_values c with
+    | None    -> mt ()
+    | Some pp -> pp ++ fnl()
+
+let gallina_print_context with_values = 
   let rec prec n = function
     | h::rest when n = None or out_some n > 0 -> 
-	(match print_library_entry with_values h with
+	(match gallina_print_library_entry with_values h with
 	  | None -> prec n rest
 	  | Some pp -> prec (option_map ((+) (-1)) n) rest ++ pp ++ fnl ())
     | _ -> mt ()
   in 
   prec
+
+let gallina_print_eval red_fun env evmap _ {uj_val=trm;uj_type=typ} =
+  let ntrm = red_fun env evmap trm in
+  (str "     = " ++ gallina_print_typed_value_in_env env (ntrm,typ))
+
+(******************************************)
+(**** Printing abstraction layer          *)
+
+let default_object_pr = {
+  print_inductive           = gallina_print_inductive;
+  print_constant_with_infos = gallina_print_constant_with_infos;
+  print_section_variable    = gallina_print_section_variable;
+  print_syntactic_def       = gallina_print_syntactic_def;
+  print_module              = gallina_print_module;
+  print_modtype             = gallina_print_modtype;
+  print_named_decl          = gallina_print_named_decl;
+  print_leaf_entry          = gallina_print_leaf_entry;
+  print_library_entry       = gallina_print_library_entry;
+  print_context             = gallina_print_context;
+  print_typed_value_in_env  = gallina_print_typed_value_in_env;
+  print_eval                = gallina_print_eval;
+}
+
+let object_pr = ref default_object_pr
+let set_object_pr = (:=) object_pr
+
+let print_inductive x = !object_pr.print_inductive x
+let print_constant_with_infos c = !object_pr.print_constant_with_infos c
+let print_section_variable c = !object_pr.print_section_variable c
+let print_syntactic_def x = !object_pr.print_syntactic_def x
+let print_module x  = !object_pr.print_module  x
+let print_modtype x = !object_pr.print_modtype x
+let print_named_decl x = !object_pr.print_named_decl x
+let print_leaf_entry x = !object_pr.print_leaf_entry x
+let print_library_entry x = !object_pr.print_library_entry x
+let print_context x = !object_pr.print_context x
+let print_typed_value_in_env x = !object_pr.print_typed_value_in_env x
+let print_eval x = !object_pr.print_eval x
+
+(******************************************)
+(**** Printing declarations and judgments *)
+(****  Abstract layer                 *****)
+
+let print_typed_value x = print_typed_value_in_env (Global.env ()) x
+
+let print_judgment env {uj_val=trm;uj_type=typ} =
+  print_typed_value_in_env env (trm, typ)
+    
+let print_safe_judgment env j =
+  let trm = Safe_typing.j_val j in
+  let typ = Safe_typing.j_type j in
+  print_typed_value_in_env env (trm, typ)
+    
+(*********************)
+(* *)
 
 let print_full_context () = 
   print_context true None (Lib.contents_after None)
@@ -485,8 +559,9 @@ let read_sec_context r =
   let rec get_cxt in_cxt = function
     | (_,Lib.OpenedSection ((dir',_),_) as hd)::rest ->
         if dir = dir' then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
-    | (_,Lib.ClosedSection)::rest ->
+    | (_,Lib.ClosedSection _)::rest ->
         error "Cannot print the contents of a closed section"
+	(* LEM: Actually, we could if we wanted to. *)
     | [] -> []
     | hd::rest -> get_cxt (hd::in_cxt) rest 
   in
@@ -499,17 +574,13 @@ let print_sec_context sec =
 let print_sec_context_typ sec =
   print_context false None (read_sec_context sec)
 
-let print_eval red_fun env {uj_val=trm;uj_type=typ} =
-  let ntrm = red_fun env Evd.empty trm in
-  (str "     = " ++ print_judgment env {uj_val = ntrm; uj_type = typ})
-
 let print_name ref = 
   match locate_any_name ref with
   | Term (ConstRef sp) -> print_constant_with_infos sp
   | Term (IndRef (sp,_)) -> print_inductive sp
   | Term (ConstructRef ((sp,_),_)) -> print_inductive sp
   | Term (VarRef sp) -> print_section_variable sp
-  | Syntactic kn -> print_syntactic_def " := " kn
+  | Syntactic kn -> print_syntactic_def kn
   | Dir (DirModule(dirpath,(mp,_))) -> print_module (printable_body dirpath) mp
   | Dir _ -> mt ()
   | ModuleType (_,kn) -> print_modtype kn
@@ -530,9 +601,7 @@ let print_name ref =
 	| Lib.Leaf obj -> (oname,obj)
 	| _ -> raise Not_found
     in
-    match print_leaf_entry true " = " (oname,lobj) with
-      | None -> mt ()
-      | Some pp -> pp ++ fnl()
+    print_leaf_entry true (oname,lobj)
   with Not_found ->
     errorlabstrm
       "print_name" (pr_qualid qid ++ spc () ++ str "not a defined object")
@@ -561,7 +630,7 @@ let print_about ref =
   | Term ref -> 
       print_ref false ref ++ print_name_infos ref ++ print_opacity ref
   | Syntactic kn ->
-      print_syntactic_def " := " kn
+      print_syntactic_def kn
   | Dir _ | ModuleType _ | Undefined _ ->
       mt () end
   ++
@@ -642,3 +711,4 @@ let print_canonical_projections () =
     (canonical_projections ())
 
 (*************************************************************************)
+

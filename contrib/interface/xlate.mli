@@ -6,4 +6,3 @@ val xlate_formula : Topconstr.constr_expr -> ct_FORMULA;;
 val xlate_ident : Names.identifier -> ct_ID;;
 val xlate_vernac_list : Vernacexpr.vernac_expr -> ct_COMMAND_LIST;;
 
-val declare_in_coq : (unit -> unit);;

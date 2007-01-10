@@ -254,7 +254,7 @@ let pr_subgoal_metas metas env=
     hv 0 (prlist_with_sep mt pr_one metas)
 
 (* display complete goal *)
-let pr_goal g =
+let default_pr_goal g =
   let env = evar_env g in
   let preamb,penv,pc =
     if g.evar_extra = None then
@@ -297,12 +297,12 @@ let rec pr_evars_int i = function
               str (string_of_existential ev)  ++ str " : " ++ pegl)) ++ 
       fnl () ++ pei
 
-let pr_subgoal n =
+let default_pr_subgoal n =
   let rec prrec p = function
     | [] -> error "No such goal"
     | g::rest ->
        	if p = 1 then
-          let pg = pr_goal g in
+          let pg = default_pr_goal g in
           v 0 (str "subgoal " ++ int n ++ str " is:" ++ cut () ++ pg)
        	else 
 	  prrec (p-1) rest
@@ -310,7 +310,7 @@ let pr_subgoal n =
   prrec n
 
 (* Print open subgoals. Checks for uninstantiated existential variables *)
-let pr_subgoals close_cmd sigma = function 
+let default_pr_subgoals close_cmd sigma = function 
   | [] -> 
       begin
 	match close_cmd with
@@ -327,7 +327,7 @@ let pr_subgoals close_cmd sigma = function
 		     str "variables :"  ++fnl () ++ (hov 0 pei))
       end
   | [g] ->
-      let pg = pr_goal g in
+      let pg = default_pr_goal g in
       v 0 (str ("1 "^"subgoal") ++cut () ++ pg)
   | g1::rest ->
       let rec pr_rec n = function
@@ -337,10 +337,38 @@ let pr_subgoals close_cmd sigma = function
             let prest = pr_rec (n+1) rest in
             (cut () ++ pc ++ prest) 
       in
-      let pg1 = pr_goal g1 in
+      let pg1 = default_pr_goal g1 in
       let prest = pr_rec 2 rest in
       v 0 (int(List.length rest+1) ++ str" subgoals" ++ cut () 
 	   ++ pg1 ++ prest ++ fnl ())
+
+
+(**********************************************************************)
+(* Abstraction layer                                                  *)
+
+
+type printer_pr = {
+ pr_subgoals            : string option -> evar_map -> goal list -> std_ppcmds;
+ pr_subgoal             : int -> goal list -> std_ppcmds;
+ pr_goal                : goal -> std_ppcmds;
+}
+
+let default_printer_pr = {
+ pr_subgoals = default_pr_subgoals;
+ pr_subgoal  = default_pr_subgoal;
+ pr_goal     = default_pr_goal;
+}
+
+let printer_pr = ref default_printer_pr
+
+let set_printer_pr = (:=) printer_pr
+
+let pr_subgoals x = !printer_pr.pr_subgoals x
+let pr_subgoal  x = !printer_pr.pr_subgoal  x
+let pr_goal     x = !printer_pr.pr_goal     x
+
+(* End abstraction layer                                              *)
+(**********************************************************************)
 
 let pr_subgoals_of_pfts pfts =
   let close_cmd = Decl_mode.get_end_command pfts in
@@ -360,6 +388,7 @@ let pr_open_subgoals () =
 	if List.length gls < 2 then 
 	  pr_subgoal n gls
 	else 
+	  (* LEM TODO: this way of saying how many subgoals has to be abstracted out*)
 	  v 0 (int(List.length gls) ++ str" subgoals" ++ cut () ++
 	  pr_subgoal n gls)
 

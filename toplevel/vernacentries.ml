@@ -44,8 +44,8 @@ type pcoq_hook = {
   abort : string -> unit;
   search : searchable -> dir_path list * bool -> unit;
   print_name : reference -> unit;
-  print_check : Environ.unsafe_judgment -> unit;
-  print_eval : (constr -> constr) -> Environ.env -> constr_expr -> 
+  print_check : Environ.env -> Environ.unsafe_judgment -> unit;
+  print_eval : Reductionops.reduction_function -> Environ.env -> Evd.evar_map -> constr_expr ->
     Environ.unsafe_judgment -> unit;
   show_goal : int option -> unit
 }
@@ -888,13 +888,13 @@ let vernac_check_may_eval redexp glopt rc =
   let j = Typeops.typing env c in
   match redexp with
     | None ->
-	if !pcoq <> None then (out_some !pcoq).print_check j
+	if !pcoq <> None then (out_some !pcoq).print_check env j
 	else msg (print_judgment env j)
     | Some r ->
 	let redfun = fst (reduction_of_red_expr (interp_redexp env evmap r)) in
 	if !pcoq <> None
-	then (out_some !pcoq).print_eval (redfun env evmap) env rc j
-	else msg (print_eval redfun env j)
+	then (out_some !pcoq).print_eval redfun env evmap rc j
+	else msg (print_eval redfun env evmap rc j)
 
   (* The same but avoiding the current goal context if any *)
 let vernac_global_check c =

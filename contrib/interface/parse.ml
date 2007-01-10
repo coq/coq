@@ -21,18 +21,19 @@ type parsed_tree =
   | P_i of ct_INT;;
 
 let print_parse_results n msg =
-  print_string "message\nparsed\n";
-  print_int n;
-  print_string "\n";
-  (match msg with
-  | P_cl x -> fCOMMAND_LIST x
-  | P_c x -> fCOMMAND x
-  | P_t x -> fTACTIC_COM x
-  | P_f x -> fFORMULA x
-  | P_id x -> fID x
-  | P_s x -> fSTRING x
-  | P_i x -> fINT x);
-  print_string "e\nblabla\n";
+  Pp.msg
+  ( str "message\nparsed\n" ++
+    int n ++
+    str "\n" ++
+    (match msg with
+     | P_cl x -> fCOMMAND_LIST x
+     | P_c x -> fCOMMAND x
+     | P_t x -> fTACTIC_COM x
+     | P_f x -> fFORMULA x
+     | P_id x -> fID x
+     | P_s x -> fSTRING x
+     | P_i x -> fINT x) ++
+    str "e\nblabla\n");
   flush stdout;;
 
 let ctf_SyntaxErrorMessage reqid pps =

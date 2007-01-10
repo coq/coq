@@ -22,9 +22,11 @@ type node =
   | Leaf of obj
   | CompilingLibrary of object_prefix
   | OpenedModule of bool option * object_prefix * Summary.frozen
+  | ClosedModule  of library_segment
   | OpenedModtype of object_prefix * Summary.frozen
+  | ClosedModtype of library_segment
   | OpenedSection of object_prefix * Summary.frozen
-  | ClosedSection
+  | ClosedSection of library_segment
   | FrozenState of Summary.frozen
 
 and library_entry = object_name * node
@@ -60,7 +62,11 @@ let classify_segment seg =
 		 clean ((id,o')::substl, keepl, anticipl) stk
 	     | Anticipate o' ->
 		 clean (substl, keepl, o'::anticipl) stk)
-    | (oname,ClosedSection) :: stk -> clean acc stk
+    | (_,ClosedSection _) :: stk -> clean acc stk
+    (* LEM; TODO: Understand what this does and see if what I do is the
+                  correct thing for ClosedMod(ule|type) *)
+    | (_,ClosedModule _) :: stk -> clean acc stk
+    | (_,ClosedModtype _) :: stk -> clean acc stk
     | (_,OpenedSection _) :: _ -> error "there are still opened sections"
     | (_,OpenedModule _) :: _ -> error "there are still opened modules"
     | (_,OpenedModtype _) :: _ -> error "there are still opened module types"
@@ -152,16 +158,28 @@ let find_split_p p =
 
 let split_lib_gen test = 
   let rec collect after equal = function
-    | hd::before ->
-      	if test hd then collect after (hd::equal) before else after,equal,hd::before
-    | [] -> after,equal,[]
+    | hd::strict_before as before ->
+      	if test hd then collect after (hd::equal) strict_before else after,equal,before
+    | [] as before -> after,equal,before
   in
   let rec findeq after = function
     | hd :: before ->
-      	if test hd then collect after [hd] before else findeq (hd::after) before
-    | [] -> error "no such entry"
-  in 
-  findeq [] !lib_stk
+      	if test hd
+	then Some (collect after [hd] before)
+	else (match hd with
+		| (sp,ClosedModule  seg)
+		| (sp,ClosedModtype seg)
+		| (sp,ClosedSection seg) ->
+		    (match findeq after seg with
+		       | None -> findeq (hd::after) before
+		       | Some (sub_after,sub_equal,sub_before) ->
+			   Some (sub_after, sub_equal, (List.append sub_before before)))
+		| _ -> findeq (hd::after) before)
+    | [] -> None
+  in
+    match findeq [] !lib_stk with
+      | None -> error "no such entry"
+      | Some r -> r
 
 let split_lib sp = split_lib_gen (fun x -> (fst x) = sp)
 
@@ -251,9 +269,15 @@ let end_module id =
     with Not_found ->
       error "no opened modules"
   in
-  let (after,_,before) = split_lib oname in
+  let (after,modopening,before) = split_lib oname in
   lib_stk := before;
+  add_entry (make_oname id) (ClosedModule (List.rev_append after (List.rev modopening)));
   let prefix = !path_prefix in
+  (* LEM: This module business seems more complicated than sections;
+          shouldn't a backtrack into a closed module also do something
+          with global.ml, given that closing a module does?
+     TODO
+   *)
   recalc_path_prefix ();
   (* add_frozen_state must be called after processing the module, 
      because we cannot recache interactive modules  *) 
@@ -285,8 +309,9 @@ let end_modtype id =
     with Not_found ->
       error "no opened module types"
   in
-  let (after,_,before) = split_lib sp in
+  let (after,modtypeopening,before) = split_lib sp in
   lib_stk := before;
+  add_entry (make_oname id) (ClosedModtype (List.rev_append after (List.rev modtypeopening)));
   let dir = !path_prefix in
   recalc_path_prefix ();
   (* add_frozen_state must be called after processing the module type.
@@ -496,11 +521,11 @@ let close_section id =
     with Not_found ->
       error "no opened section"
   in
-  let (secdecls,_,before) = split_lib oname in
+  let (secdecls,secopening,before) = split_lib oname in
   lib_stk := before;
   let full_olddir = fst !path_prefix in
   pop_path_prefix ();
-  add_entry (make_oname id) ClosedSection;
+  add_entry (make_oname id) (ClosedSection (List.rev_append secdecls (List.rev secopening)));
   if !Options.xml_export then !xml_close_section id;
   let newdecls = List.map discharge_item secdecls in
   Summary.section_unfreeze_summaries fs;
@@ -550,7 +575,7 @@ let reset_name (loc,id) =
 
 let is_mod_node = function 
   | OpenedModule _ | OpenedModtype _ | OpenedSection _ 
-  | ClosedSection -> true 
+  | ClosedModule _ | ClosedModtype _ | ClosedSection _  -> true 
   | Leaf o -> let t = object_tag o in t = "MODULE" || t = "MODULE TYPE"
   | _ -> false
 

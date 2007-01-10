@@ -39,8 +39,9 @@ type pcoq_hook = {
   abort : string -> unit;
   search : searchable -> dir_path list * bool -> unit;
   print_name : Libnames.reference -> unit;
-  print_check : Environ.unsafe_judgment -> unit;
-  print_eval : (constr -> constr) -> Environ.env -> constr_expr -> Environ.unsafe_judgment -> unit;
+  print_check : Environ.env -> Environ.unsafe_judgment -> unit;
+  print_eval : Reductionops.reduction_function -> Environ.env -> Evd.evar_map -> constr_expr ->
+    Environ.unsafe_judgment -> unit;
   show_goal : int option -> unit
 }
 

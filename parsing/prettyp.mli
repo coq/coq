@@ -36,11 +36,10 @@ val print_sec_context_typ : reference -> std_ppcmds
 val print_judgment : env -> unsafe_judgment -> std_ppcmds
 val print_safe_judgment : env -> Safe_typing.judgment -> std_ppcmds
 val print_eval :
-  reduction_function -> env -> unsafe_judgment -> std_ppcmds
+  reduction_function -> env -> Evd.evar_map -> Topconstr.constr_expr -> unsafe_judgment -> std_ppcmds
 (* This function is exported for the graphical user-interface pcoq *)
 val build_inductive : mutual_inductive -> int ->
   global_reference * rel_context * types * identifier array * types array
-val print_inductive : mutual_inductive -> std_ppcmds
 val print_name : reference -> std_ppcmds
 val print_opaque_name : reference -> std_ppcmds
 val print_about : reference -> std_ppcmds
@@ -63,3 +62,21 @@ val inspect : int -> std_ppcmds
 
 (* Locate *)
 val print_located_qualid : reference -> std_ppcmds
+
+type object_pr = {
+  print_inductive           : mutual_inductive -> std_ppcmds;
+  print_constant_with_infos : constant -> std_ppcmds;
+  print_section_variable    : variable -> std_ppcmds;
+  print_syntactic_def       : kernel_name -> std_ppcmds;
+  print_module              : bool -> Names.module_path -> std_ppcmds;
+  print_modtype             : kernel_name -> std_ppcmds;
+  print_named_decl          : identifier * constr option * types -> std_ppcmds;
+  print_leaf_entry          : bool -> Libnames.object_name * Libobject.obj -> Pp.std_ppcmds;
+  print_library_entry       : bool -> (object_name * Lib.node) -> std_ppcmds option;
+  print_context             : bool -> int option -> Lib.library_segment -> std_ppcmds;
+  print_typed_value_in_env  : Environ.env -> Term.constr * Term.types -> Pp.std_ppcmds;
+  print_eval                : reduction_function -> env -> Evd.evar_map -> Topconstr.constr_expr -> unsafe_judgment -> std_ppcmds
+}
+
+val set_object_pr : object_pr -> unit
+val default_object_pr : object_pr

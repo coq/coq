@@ -1,11 +1,23 @@
 (*i camlp4deps: "parsing/grammar.cma" i*)
 
+(*
+ * This file has been modified by Lionel Elie Mamane <lionel@mamane.lu>
+ * to implement the following features
+ * - Terms (optionally) as pretty-printed string and not trees
+ * - (Optionally) give most commands their usual Coq semantics
+ * - Add the backtracking information to the status message.
+ * in the following time period
+ * - May-November 2006
+ *)
+
 (*Toplevel loop for the communication between Coq and Centaur *)
 open Names;;
 open Nameops;;
 open Util;;
 open Term;;
 open Pp;;
+open Ppconstr;;
+open Prettyp;;
 open Libnames;;
 open Libobject;;
 open Library;;
@@ -43,6 +55,7 @@ open Showproof;;
 open Showproof_ct;;
 open Tacexpr;;
 open Vernacexpr;;
+open Printer;;
 
 let pcoq_started = ref None;;
 
@@ -50,6 +63,11 @@ let if_pcoq f a =
   if !pcoq_started <> None then f a else error "Pcoq is not started";;
 
 let text_proof_flag = ref "en";;
+
+let pcoq_history = ref true;;
+
+let assert_pcoq_history f a =
+  if !pcoq_history then f a else error "Pcoq-style history tracking deactivated";;
 
 let current_proof_name () = 
   try 
@@ -85,6 +103,29 @@ let kill_proof_node index =
  History.border_length (current_proof_name());;
 
 
+type vtp_tree =
+  | P_rl of ct_RULE_LIST
+  | P_r of ct_RULE
+  | P_s_int of ct_SIGNED_INT_LIST
+  | P_pl of ct_PREMISES_LIST
+  | P_cl of ct_COMMAND_LIST
+  | P_t of ct_TACTIC_COM
+  | P_text of ct_TEXT
+  | P_ids of ct_ID_LIST;;
+
+let print_tree t = 
+  (match t with
+  | P_rl x -> fRULE_LIST x
+  | P_r x -> fRULE x
+  | P_s_int x -> fSIGNED_INT_LIST x
+  | P_pl x -> fPREMISES_LIST x
+  | P_cl x -> fCOMMAND_LIST x
+  | P_t x -> fTACTIC_COM x
+  | P_text x -> fTEXT x
+  | P_ids x -> fID_LIST x)
+  ++ (str "e\nblabla\n");;
+
+
 (*Message functions, the text of these messages is recognized by the protocols *)
 (*of CtCoq                                                                     *)
 let ctf_header message_name request_id =
@@ -97,14 +138,20 @@ let ctf_acknowledge_command request_id command_count opt_exn =
       let g_count =
         List.length 
           (fst (frontier (proof_of_pftreestate (get_pftreestate ())))) in
-        g_count, (min g_count !current_goal_index)
+        g_count, !current_goal_index
     else
-      (0, 0) in
+      (0, 0)
+  and statnum = Lib.current_command_label ()
+  and dpth = let d = Pfedit.current_proof_depth() in if d >= 0 then d else 0
+  and pending = CT_id_list (List.map xlate_ident (Pfedit.get_all_proof_names())) in
    (ctf_header "acknowledge" request_id ++
     int command_count ++ fnl() ++
     int goal_count ++ fnl () ++
     int goal_index ++ fnl () ++
     str (current_proof_name()) ++ fnl() ++
+    int statnum ++ fnl() ++
+    print_tree (P_ids pending) ++
+    int dpth ++ fnl() ++
     (match opt_exn with
       Some e -> Cerrors.explain_exn e
     | None -> mt ()) ++ fnl() ++ str "E-n-d---M-e-s-s-a-g-e" ++ fnl ());;
@@ -125,6 +172,8 @@ let ctf_PathGoalMessage () =
  fnl () ++ str "message" ++ fnl () ++ str "single_goal" ++ fnl ();;
 
 let ctf_GoalReqIdMessage = ctf_header "single_goal_state";;
+
+let ctf_GoalsReqIdMessage = ctf_header "goals_state";;
 
 let ctf_NewStateMessage = ctf_header "fresh_state";;
 
@@ -153,39 +202,16 @@ let ctf_ResetIdentMessage request_id s =
  ctf_header "reset_ident" request_id ++ str s ++ fnl () ++
   str  "E-n-d---M-e-s-s-a-g-e" ++ fnl();;
 
-type vtp_tree =
-  | P_rl of ct_RULE_LIST
-  | P_r of ct_RULE
-  | P_s_int of ct_SIGNED_INT_LIST
-  | P_pl of ct_PREMISES_LIST
-  | P_cl of ct_COMMAND_LIST
-  | P_t of ct_TACTIC_COM
-  | P_text of ct_TEXT
-  | P_ids of ct_ID_LIST;;
-
-let print_tree t = 
-  (match t with
-  | P_rl x -> fRULE_LIST x
-  | P_r x -> fRULE x
-  | P_s_int x -> fSIGNED_INT_LIST x
-  | P_pl x -> fPREMISES_LIST x
-  | P_cl x -> fCOMMAND_LIST x
-  | P_t x -> fTACTIC_COM x
-  | P_text x -> fTEXT x
-  | P_ids x -> fID_LIST x);
-  print_string "e\nblabla\n";;
-
-
 
 let break_happened = ref false;;
 
 let output_results stream vtp_tree =
     let _ = Sys.signal Sys.sigint
        (Sys.Signal_handle(fun i -> (break_happened := true;()))) in
-    msg stream;
-    match vtp_tree with
-      Some t -> print_tree t
-    | None -> ();;
+    msg (stream ++
+    (match vtp_tree with
+       Some t -> print_tree t
+     | None -> mt()));;
 
 let output_results_nl stream =
     let _ = Sys.signal Sys.sigint
@@ -221,20 +247,18 @@ let print_past_goal index =
 
 let show_nth n =
   try
-    let pf = proof_of_pftreestate (get_pftreestate()) in
-    if (!text_proof_flag<>"off") then
-       (if n=0
-	   then output_results (ctf_TextMessage !global_request_id)
-                               (Some (P_text (show_proof !text_proof_flag [])))
-           else			       
-	   let path = History.get_nth_open_path (current_proof_name()) n in
-	   output_results (ctf_TextMessage !global_request_id)
-                          (Some (P_text (show_proof !text_proof_flag path))))
-    else
-      output_results (ctf_GoalReqIdMessage !global_request_id)
-      (let goal = List.nth (fst (frontier pf))
-                   (n - 1) in
-      (Some (P_r (translate_goal goal))))
+    output_results (ctf_GoalReqIdMessage !global_request_id
+		    ++ pr_nth_open_subgoal n)
+      None
+  with
+  | Invalid_argument s -> 
+       error "No focused proof (No proof-editing in progress)";;
+
+let show_subgoals () =
+  try
+    output_results (ctf_GoalReqIdMessage !global_request_id
+		    ++ pr_open_subgoals ())
+      None
   with
   | Invalid_argument s -> 
        error "No focused proof (No proof-editing in progress)";;
@@ -275,39 +299,24 @@ let ctf_EmptyGoalMessage id =
   fnl () ++ str "Empty Goal is a no-op.  Fun oh fun." ++ fnl ();;
 
 
-let print_check judg =
- let {uj_val=value; uj_type=typ} = judg in
- let value_ct_ast = 
-     (try translate_constr false (Global.env()) value 
-      with UserError(f,str) ->
-           raise(UserError(f,Printer.pr_lconstr value ++
-			      fnl () ++ str ))) in
- let type_ct_ast =
-     (try translate_constr false (Global.env()) typ
-      with UserError(f,str) ->
-           raise(UserError(f, Printer.pr_lconstr value ++ fnl() ++ str))) in
- ((ctf_SearchResults !global_request_id),
- (Some  (P_pl
-  (CT_premises_list
-  [CT_coerce_TYPED_FORMULA_to_PREMISE
-    (CT_typed_formula(value_ct_ast,type_ct_ast)
-    )]))));;
+let print_check env judg =
+ ((ctf_SearchResults !global_request_id) ++
+    print_judgment env judg,
+  None);;
 
-let ct_print_eval ast red_fun env judg =
-((if refining() then traverse_to []);
-let {uj_val=value; uj_type=typ} = judg in
-let nvalue = red_fun value
-(* // Attention , ici il faut peut être utiliser des environnemenst locaux *)
-and ntyp = nf_betaiota typ in
-(ctf_SearchResults !global_request_id,
- Some (P_pl
-  (CT_premises_list
-  [CT_eval_result
-    (xlate_formula ast,
-    translate_constr false env nvalue,
-    translate_constr false env ntyp)]))));;
-
-
+let ct_print_eval red_fun env evmap ast judg =
+  (if refining() then traverse_to []);
+  let {uj_val=value; uj_type=typ} = judg in
+  let nvalue = (red_fun env evmap) value
+    (* // Attention , ici il faut peut être utiliser des environnemenst locaux *)
+  and ntyp = nf_betaiota typ in
+    print_tree
+      (P_pl
+	 (CT_premises_list
+	    [CT_eval_result
+	       (xlate_formula ast,
+		translate_constr false env nvalue,
+		translate_constr false env ntyp)]));;
 
 let pbp_tac_pcoq =
     pbp_tac (function (x:raw_tactic_expr) -> 
@@ -330,6 +339,7 @@ let dad_tac_pcoq =
 </cpa> *)
 
 let search_output_results () =
+  (* LEM: See comments for pcoq_search *)
   output_results
        (ctf_SearchResults !global_request_id)
        (Some (P_pl (CT_premises_list
@@ -491,19 +501,19 @@ VERNAC COMMAND EXTEND OutputGoal
 END
 
 VERNAC COMMAND EXTEND OutputGoal
-  [ "Goal" "Cmd" natural(n) "with" tactic(tac) ] -> [ simulate_solve n tac ]
+  [ "Goal" "Cmd" natural(n) "with" tactic(tac) ] -> [ assert_pcoq_history (simulate_solve n) tac ]
 END
 
 VERNAC COMMAND EXTEND KillProofAfter
-| [ "Kill" "Proof" "after"  natural(n) ] -> [ kill_node_verbose n ]
+| [ "Kill" "Proof" "after"  natural(n) ] -> [ assert_pcoq_history kill_node_verbose n ]
 END
 
 VERNAC COMMAND EXTEND KillProofAt
-| [ "Kill" "Proof" "at"  natural(n) ] -> [ kill_node_verbose n ]
+| [ "Kill" "Proof" "at"  natural(n) ] -> [ assert_pcoq_history kill_node_verbose n ]
 END
 
 VERNAC COMMAND EXTEND KillSubProof
-  [ "Kill" "SubProof" natural(n) ] -> [ logical_kill n ]
+  [ "Kill" "SubProof" natural(n) ] -> [ assert_pcoq_history logical_kill n ]
 END
 
 VERNAC COMMAND EXTEND PcoqReset
@@ -515,18 +525,17 @@ VERNAC COMMAND EXTEND PcoqResetInitial
 END
 
 let start_proof_hook () =
-  History.start_proof (current_proof_name());
+  if !pcoq_history then History.start_proof (current_proof_name());
   current_goal_index := 1
 
 let solve_hook n =
-  let name = current_proof_name () in
-  let old_n_count = History.border_length name in
-  let pf = proof_of_pftreestate (get_pftreestate ()) in
-  let n_goals = (List.length (fst (frontier pf))) + 1 - old_n_count in
-  begin
-    current_goal_index := n;
-    History.push_command name  n n_goals
-  end
+  current_goal_index := n;
+  if !pcoq_history then
+    let name = current_proof_name () in
+    let old_n_count = History.border_length name in
+    let pf = proof_of_pftreestate (get_pftreestate ()) in
+    let n_goals = (List.length (fst (frontier pf))) + 1 - old_n_count in
+      History.push_command name n n_goals
 
 let abort_hook s = output_results_nl (ctf_AbortedMessage !global_request_id s)
 
@@ -535,6 +544,12 @@ let interp_search_about_item = function
   | SearchString s -> GlobSearchString s
 
 let pcoq_search s l =
+  (* LEM: I don't understand why this is done in this way (redoing the
+   *      match on s here) instead of making the code in
+   *      parsing/search.ml call the right function instead of
+   *      "plain_display". Investigates this later.
+   * TODO
+   *)
   ctv_SEARCH_LIST:=[];
   begin match s with
   | SearchAbout sl -> 
@@ -581,27 +596,25 @@ let hyp_search_pattern c l =
       (Some
 	 (P_pl (CT_premises_list (List.rev !ctv_SEARCH_LIST))));;
 let pcoq_print_name ref =
-  let results = xlate_vernac_list (name_to_ast ref) in
   output_results 
-    (fnl () ++ str "message" ++ fnl () ++ str "PRINT_VALUE" ++ fnl ())
-    (Some (P_cl results))
+    (fnl () ++ str "message" ++ fnl () ++ str "PRINT_VALUE" ++ fnl () ++ print_name ref )
+    None
 
-let pcoq_print_check j =
-  let a,b = print_check j in output_results a b
+let pcoq_print_check env j =
+  let a,b = print_check env j in output_results a b
 
-let pcoq_print_eval redfun env c j =
-  let strm, vtp = ct_print_eval c redfun env j in
-  output_results strm vtp;;
+let pcoq_print_eval redfun env evmap c j =
+  output_results
+    (ctf_SearchResults !global_request_id
+     ++ Prettyp.print_eval redfun env evmap c j)
+    None;;
 
 open Vernacentries
 
 let pcoq_show_goal = function
   | Some n -> show_nth n
-  | None ->
-      if !pcoq_started = Some true (* = debug *) then
-	msg (Printer.pr_open_subgoals ())
-      else errorlabstrm "show_goal"
-	(str "Show must be followed by an integer in Centaur mode");;
+  | None -> show_subgoals ()
+;;
 
 let pcoq_hook = {
   start_proof = start_proof_hook;
@@ -614,6 +627,127 @@ let pcoq_hook = {
   show_goal = pcoq_show_goal
 }
 
+let pcoq_term_pr = {
+  pr_constr_expr   = (fun c -> str "pcoq_constr_expr\n"  ++ (default_term_pr.pr_constr_expr   c));
+  (* In future translate_constr false (Global.env())
+   * Except with right bool/env which I'll get :)
+   *)
+  pr_lconstr_expr  = (fun c -> fFORMULA (xlate_formula c) ++ str "(pcoq_lconstr_expr of " ++ (default_term_pr.pr_lconstr_expr  c) ++ str ")");
+  pr_pattern_expr  = (fun c -> str "pcoq_pattern_expr\n" ++ (default_term_pr.pr_pattern_expr  c));
+  pr_lpattern_expr = (fun c -> str "pcoq_constr_expr\n"  ++ (default_term_pr.pr_lpattern_expr c))
+}
+
+let start_pcoq_trees () =
+  set_term_pr pcoq_term_pr
+
+(* BEGIN functions for object_pr *)
+
+(* These functions in general mirror what name_to_ast does in a subcase,
+   and then print the corresponding object as a PCoq tree. *)
+
+let object_to_ast_template object_to_ast_list sp =
+  let l = object_to_ast_list sp in
+    VernacList (List.map (fun x -> (dummy_loc, x)) l)
+
+let pcoq_print_object_template object_to_ast_list sp =
+  let results = xlate_vernac_list (object_to_ast_template object_to_ast_list sp) in
+    print_tree (P_cl results)
+
+(* This function mirror what print_check does *)
+
+let pcoq_print_typed_value_in_env env (value, typ) =
+ let value_ct_ast = 
+     (try translate_constr false (Global.env()) value 
+      with UserError(f,str) ->
+           raise(UserError(f,Printer.pr_lconstr value ++
+			      fnl () ++ str ))) in
+ let type_ct_ast =
+     (try translate_constr false (Global.env()) typ
+      with UserError(f,str) ->
+           raise(UserError(f, Printer.pr_lconstr value ++ fnl() ++ str))) in
+   print_tree
+     (P_pl
+	(CT_premises_list
+	   [CT_coerce_TYPED_FORMULA_to_PREMISE
+	      (CT_typed_formula(value_ct_ast,type_ct_ast)
+	      )]))
+;;
+
+(* This function mirrors what show_nth does *)
+
+let pcoq_pr_subgoal n gl =
+  try
+    print_tree
+      (if (!text_proof_flag<>"off") then
+	   (* This is a horrendeous hack; it ignores the "gl" argument
+              and just takes the currently focused proof. This will bite
+	      us back one day.
+	      TODO: Fix this.
+	   *)
+	   (
+	    if not !pcoq_history then error "Text mode requires Pcoq history tracking.";
+	    if n=0
+	    then (P_text (show_proof !text_proof_flag []))
+	    else
+		let path = History.get_nth_open_path (current_proof_name()) n in
+		  (P_text (show_proof !text_proof_flag path)))
+       else
+	   (let goal = List.nth gl (n - 1) in
+	      (P_r (translate_goal goal))))
+  with
+  | Invalid_argument _
+  | Failure "nth"
+  | Not_found           -> error "No such goal";;
+
+let pcoq_pr_subgoals close_cmd evar gl =
+  (*LEM: TODO: we should check for evar emptiness or not, and do something *)
+  try
+    print_tree
+      (if (!text_proof_flag<>"off") then
+	   raise (Anomaly ("centaur.ml4:pcoq_pr_subgoals", str "Text mode show all subgoals not implemented"))
+       else
+	   (P_rl (translate_goals gl)))
+  with
+  | Invalid_argument _
+  | Failure "nth"
+  | Not_found           -> error "No such goal";;
+
+
+(*  END functions for object_pr  *)
+
+let pcoq_object_pr = {
+  print_inductive           = pcoq_print_object_template inductive_to_ast_list;
+  (* TODO: Check what that with_infos means, and adapt accordingly *)
+  print_constant_with_infos = pcoq_print_object_template constant_to_ast_list;
+  print_section_variable    = pcoq_print_object_template variable_to_ast_list;
+  print_syntactic_def       = pcoq_print_object_template (fun x -> errorlabstrm "print"
+      (str "printing of syntax definitions not implemented in PCoq syntax"));
+  (* TODO: These are placeholders only; write them *)
+  print_module              = (fun x y -> str "pcoq_print_module not implemented");
+  print_modtype             = (fun x   -> str "pcoq_print_modtype not implemented");
+  print_named_decl          = (fun x   -> str "pcoq_print_named_decl not implemented");
+  (* TODO: Find out what the first argument x (a bool) is about and react accordingly *)
+  print_leaf_entry          = (fun x -> pcoq_print_object_template leaf_entry_to_ast_list);
+  print_library_entry       = (fun x y -> Some (str "pcoq_print_library_entry not implemented"));
+  print_context             = (fun x y z -> str "pcoq_print_context not implemented");
+  print_typed_value_in_env  = pcoq_print_typed_value_in_env;
+  Prettyp.print_eval        = ct_print_eval;
+};;
+
+let pcoq_printer_pr = {
+ pr_subgoals = pcoq_pr_subgoals;
+ pr_subgoal  = pcoq_pr_subgoal;
+ pr_goal     = (fun x   -> str "pcoq_pr_goal not implemented");
+};;
+
+
+let start_pcoq_objects () =
+  set_object_pr pcoq_object_pr;
+  set_printer_pr pcoq_printer_pr
+
+let start_default_objects () =
+  set_object_pr default_object_pr;
+  set_printer_pr default_printer_pr
 
 TACTIC EXTEND pbp
 | [ "pbp" ident_opt(idopt) natural_list(nl) ] -> 
@@ -635,7 +769,6 @@ let start_pcoq_mode debug =
 (* <\cpa> 
     start_dad();
 </cpa> *)
-    declare_in_coq();
 (* The following ones are added to enable rich comments in pcoq *)
 (* TODO ...
     add_tactic "Image" (fun _ -> tclIDTAC);
@@ -649,6 +782,8 @@ let start_pcoq_mode debug =
       List.iter (fun (a,b) -> overwriting_vinterp_add a b) non_debug_changes;
 *)
     set_pcoq_hook pcoq_hook;
+    start_pcoq_objects();
+    Options.print_emacs := false; Pp.make_pp_nonemacs(); 
   end;;
 
 
@@ -680,4 +815,20 @@ END
 
 VERNAC COMMAND EXTEND StartPcoqDebug
 | [ "Start" "Pcoq" "Debug" "Mode" ] -> [ start_pcoq_debug () ]
+END
+
+VERNAC COMMAND EXTEND StartPcoqTerms
+| [ "Start" "Pcoq" "Trees" ] -> [ start_pcoq_trees () ]
+END
+
+VERNAC COMMAND EXTEND StartPcoqObjects
+| [ "Start" "Pcoq" "Objects" ] -> [ start_pcoq_objects () ]
+END
+
+VERNAC COMMAND EXTEND StartDefaultObjects
+| [ "Start" "Default" "Objects" ] -> [ start_default_objects () ]
+END
+
+VERNAC COMMAND EXTEND StopPcoqHistory
+| [ "Stop" "Pcoq" "History" ] -> [ pcoq_history := false ]
 END
