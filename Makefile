@@ -620,11 +620,7 @@ beforedepend:: ide/utf8_convert.ml
 
 COQIDEVO=ide/utf8.vo
 
-ifdef NO_RECOMPILE_LIB
- $(COQIDEVO): | states/initial.coq
-else
- $(COQIDEVO): states/initial.coq
-endif
+$(COQIDEVO): states/initial.coq $(VO_TOOLS_DEP)
 	$(BOOTCOQTOP) -compile $*
 
 IDEFILES=$(COQIDEVO) ide/utf8.v ide/coq.png ide/.coqide-gtk2rc
@@ -1090,12 +1086,6 @@ CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
 	    $(FOURIERVO) $(JPROVERVO) $(CCVO) $(FUNINDVO) $(SUBTACVO) \
 	    $(RTAUTOVO) $(RECDEFVO) $(NEWRINGVO)
 
-ifdef NO_RECOMPILE_LIB
- $(CONTRIBVO): | states/initial.coq
-else
- $(CONTRIBVO): states/initial.coq
-endif
-
 contrib: $(CONTRIBVO) $(CONTRIBCMO)
 omega: $(OMEGAVO) $(OMEGACMO) $(ROMEGAVO) $(ROMEGACMO)
 ring: $(RINGVO) $(RINGCMO)
@@ -1119,27 +1109,27 @@ ALLVO = $(INITVO) $(THEORIESVO) $(CONTRIBVO)
 
 SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v
 
-states/initial.coq: states/MakeInitial.v $(INITVO)
+ifdef NO_RECOMPILE_LIB
+ VO_TOOLS_DEP += |
+endif
+ VO_TOOLS_DEP += $(BESTCOQTOP)
+ifdef COQ_XML
+ VO_TOOLS_DEP += $(COQDOC)
+endif
+
+states/initial.coq: states/MakeInitial.v $(INITVO) $(VO_TOOLS_DEP)
 	$(BOOTCOQTOP) -batch -notop -silent -nois -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
 
-ifdef NO_RECOMPILE_LIB
- theories/Init/%.vo: theories/Init/%.v | $(BESTCOQTOP)
-else
- theories/Init/%.vo: $(BESTCOQTOP) theories/Init/%.v
-endif
+theories/Init/%.vo: theories/Init/%.v $(VO_TOOLS_DEP)
 	$(BOOTCOQTOP) -nois -compile theories/Init/$*
 
-ifdef NO_RECOMPILE_LIB
- theories/%.vo: theories/%.v | states/initial.coq
-else
- theories/%.vo: theories/%.v states/initial.coq
-endif
+theories/%.vo: theories/%.v states/initial.coq $(VO_TOOLS_DEP)
 	$(BOOTCOQTOP) -compile theories/$*
 
-contrib/%.vo: contrib/%.v
+contrib/%.vo: contrib/%.v states/initial.coq $(VO_TOOLS_DEP)
 	$(BOOTCOQTOP) -compile contrib/$*
 
-contrib/extraction/%.vo: contrib/extraction/%.v states/barestate.coq $(COQC)
+contrib/extraction/%.vo: contrib/extraction/%.v states/barestate.coq $(VO_TOOLS_DEP)
 	$(BOOTCOQTOP) -is states/barestate.coq -compile $*
 
 cleantheories:
