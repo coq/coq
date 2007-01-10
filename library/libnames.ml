@@ -21,6 +21,8 @@ type global_reference =
   | IndRef of inductive
   | ConstructRef of constructor
 
+let isVarRef = function VarRef _ -> true | _ -> false
+
 let subst_global subst ref = match ref with
   | VarRef var -> ref, mkVar var
   | ConstRef kn ->

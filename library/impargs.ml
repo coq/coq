@@ -418,9 +418,9 @@ let declare_mib_implicits kn =
 let declare_manual_implicits local ref l =
   let flags = !implicit_args,!strict_implicit_args,!contextual_implicit_args in
   let l' = compute_manual_implicits flags ref l in
-  let local = local or (match ref with VarRef _ -> true | _ -> false) in
   let req =
-    if local then ImplNoDischarge else ImplInteractive(ref,flags,ImplManual l)
+    if local or isVarRef ref then ImplNoDischarge
+    else ImplInteractive(ref,flags,ImplManual l)
   in
   add_anonymous_leaf (inImplicits (req,[ref,l']))
 

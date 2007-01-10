@@ -23,6 +23,8 @@ type global_reference =
   | IndRef of inductive
   | ConstructRef of constructor
 
+val isVarRef : global_reference -> bool
+
 val subst_global : substitution -> global_reference -> global_reference * constr
 
 (* Turn a global reference into a construction *)
