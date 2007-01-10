@@ -506,7 +506,7 @@ let discharge_item ((sp,_ as oname),e) =
   | Leaf lobj ->
       option_map (fun o -> (basename sp,o)) (discharge_object (oname,lobj))
   | FrozenState _ -> None
-  | ClosedSection -> None
+  | ClosedSection _ | ClosedModtype _ | ClosedModule _ -> None
   | OpenedSection _ | OpenedModtype _ | OpenedModule _ | CompilingLibrary _ ->
       anomaly "discharge_item"
 
