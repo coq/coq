@@ -1,4 +1,10 @@
-Changes from V8.1beta to V8.1beta2
+Changes from V8.1gamma to ...
+=============================
+
+- Added option Global to "Implicit Arguments" and "Arguments Scope" for
+  section surviving
+
+Changes from V8.1beta to V8.1gamma
 ==================================
 
 Syntax

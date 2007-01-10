@@ -141,3 +141,9 @@ val qualid_of_reference : reference -> qualid located
 val string_of_reference : reference -> string
 val pr_reference : reference -> std_ppcmds
 val loc_of_reference : reference -> loc
+
+(* popping one level of section in global names *)
+
+val pop_con : constant -> constant
+val pop_kn : kernel_name -> kernel_name
+val pop_global_reference : global_reference -> global_reference

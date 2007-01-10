@@ -37,6 +37,7 @@ type 'a object_declaration = {
   classify_function : object_name * 'a -> 'a substitutivity;
   subst_function : object_name * substitution * 'a -> 'a;
   discharge_function : object_name * 'a -> 'a option;
+  rebuild_function : 'a -> 'a;
   export_function : 'a -> 'a option }
 
 let yell s = anomaly s
@@ -50,6 +51,7 @@ let default_object s = {
     yell ("The object "^s^" does not know how to substitute!"));
   classify_function = (fun (_,obj) -> Keep obj);
   discharge_function = (fun _ -> None);
+  rebuild_function = (fun x -> x);
   export_function = (fun _ -> None)} 
 
 
@@ -75,6 +77,7 @@ type dynamic_object_declaration = {
   dyn_subst_function : object_name * substitution * obj -> obj;
   dyn_classify_function : object_name * obj -> obj substitutivity;
   dyn_discharge_function : object_name * obj -> obj option;
+  dyn_rebuild_function : obj -> obj;
   dyn_export_function : obj -> obj option }
 
 let object_tag lobj = Dyn.tag lobj
@@ -112,6 +115,9 @@ let declare_object odecl =
       option_map infun (odecl.discharge_function (oname,outfun lobj))
     else 
       anomaly "somehow we got the wrong dynamic object in the dischargefun"
+  and rebuild lobj = 
+    if Dyn.tag lobj = na then infun (odecl.rebuild_function (outfun lobj))
+    else anomaly "somehow we got the wrong dynamic object in the rebuildfun"
   and exporter lobj = 
     if Dyn.tag lobj = na then 
       option_map infun (odecl.export_function (outfun lobj))
@@ -125,6 +131,7 @@ let declare_object odecl =
 			     dyn_subst_function = substituter;
 			     dyn_classify_function = classifier;
 			     dyn_discharge_function = discharge;
+			     dyn_rebuild_function = rebuild;
                              dyn_export_function = exporter };
   (infun,outfun)
 
@@ -165,6 +172,9 @@ let classify_object ((_,lobj) as node) =
 
 let discharge_object ((_,lobj) as node) = 
   apply_dyn_fun None (fun d -> d.dyn_discharge_function node) lobj
+
+let rebuild_object lobj =
+  apply_dyn_fun lobj (fun d -> d.dyn_rebuild_function lobj) lobj
 
 let export_object lobj =
   apply_dyn_fun None (fun d -> d.dyn_export_function lobj) lobj

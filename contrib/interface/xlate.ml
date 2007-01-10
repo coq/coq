@@ -1979,7 +1979,7 @@ let rec xlate_vernac =
    | VernacOpenCloseScope(false, true, s) -> CT_open_scope(CT_ident s)
    | VernacOpenCloseScope(true, false, s) -> CT_local_close_scope(CT_ident s)
    | VernacOpenCloseScope(false, false, s) -> CT_close_scope(CT_ident s)
-   | VernacArgumentsScope(qid, l) -> 
+   | VernacArgumentsScope(true, qid, l) -> 
        CT_arguments_scope(loc_qualid_to_ct_ID qid,
 		       CT_id_opt_list
 		       (List.map
@@ -1987,6 +1987,8 @@ let rec xlate_vernac =
 				  match x with
 				      None -> ctv_ID_OPT_NONE
 				    | Some x -> ctf_ID_OPT_SOME(CT_ident x)) l))
+   | VernacArgumentsScope(false, qid, l) -> 
+       xlate_error "TODO: Arguments Scope Global"
    | VernacDelimiters(s1,s2) -> CT_delim_scope(CT_ident s1, CT_ident s2)
    | VernacBindScope(id, a::l) -> 
        let xlate_class_rawexpr = function
@@ -2061,7 +2063,7 @@ let rec xlate_vernac =
   | VernacNop -> CT_proof_no_op
   | VernacComments l -> 
       CT_scomments(CT_scomment_content_list (List.map xlate_comment l))
-  | VernacDeclareImplicits(id, opt_positions) ->
+  | VernacDeclareImplicits(true, id, opt_positions) ->
       CT_implicits
 	(reference_to_ct_ID id,
 	 match opt_positions with
@@ -2074,6 +2076,8 @@ let rec xlate_vernac =
 		       -> xlate_error
 			   "explication argument by rank is obsolete"
 		     | ExplByName id -> CT_ident (string_of_id id)) l)))
+  | VernacDeclareImplicits(false, id, opt_positions) ->
+      xlate_error "TODO: Implicit Arguments Global"
   | VernacReserve((_,a)::l, f) ->
       CT_reserve(CT_id_ne_list(xlate_ident a, 
 			       List.map (fun (_,x) -> xlate_ident x) l),

@@ -180,7 +180,7 @@ type vernac_expr =
   | VernacOpenCloseScope of (locality_flag * bool * scope_name)
   | VernacDelimiters of scope_name * lstring
   | VernacBindScope of scope_name * class_rawexpr list
-  | VernacArgumentsScope of lreference * scope_name option list
+  | VernacArgumentsScope of locality_flag * lreference * scope_name option list
   | VernacInfix of locality_flag * (lstring * syntax_modifier list) *
       lreference * scope_name option
   | VernacNotation of
@@ -259,7 +259,8 @@ type vernac_expr =
   | VernacHints of locality_flag * lstring list * hints
   | VernacSyntacticDefinition of identifier * constr_expr * locality_flag *
       onlyparsing_flag
-  | VernacDeclareImplicits of lreference * explicitation list option
+  | VernacDeclareImplicits of locality_flag * lreference *
+      explicitation list option
   | VernacReserve of lident list * constr_expr
   | VernacSetOpacity of opacity_flag * lreference list
   | VernacUnsetOption of Goptions.option_name

@@ -458,10 +458,14 @@ GEXTEND Gram
 	  VernacCoercion (Global, qid, s, t)
 
       (* Implicit *)
-      | IDENT "Implicit"; IDENT "Arguments"; qid = global; 
-         pos = OPT [ "["; l = LIST0 ident; "]" -> l ] ->
-	   let pos = option_map (List.map (fun id -> ExplByName id)) pos in
-	   VernacDeclareImplicits (qid,pos)
+      | IDENT "Implicit"; IDENT "Arguments"; 
+	 (local,qid,pos) = 
+	     [ local = [ IDENT "Global" -> false | IDENT "Local" -> true ];
+	       qid = global -> (local,qid,None) 
+	     | qid = global;
+	       l = OPT [ "["; l = LIST0 ident; "]" -> 
+		   List.map (fun id -> ExplByName id) l ] -> (true,qid,l) ] ->
+	   VernacDeclareImplicits (local,qid,pos)
 
       | IDENT "Implicit"; ["Type" | IDENT "Types"];
 	   idl = LIST1 identref; ":"; c = lconstr -> VernacReserve (idl,c) ] ]
@@ -712,8 +716,8 @@ GEXTEND Gram
      | IDENT "Bind"; IDENT "Scope"; sc = IDENT; "with"; 
        refl = LIST1 class_rawexpr -> VernacBindScope (sc,refl)
 
-     | IDENT "Arguments"; IDENT "Scope"; qid = global;
-         "["; scl = LIST0 opt_scope; "]" -> VernacArgumentsScope (qid,scl)
+     | IDENT "Arguments"; IDENT "Scope"; local = non_globality; qid = global;
+       "["; scl = LIST0 opt_scope; "]" -> VernacArgumentsScope (local,qid,scl)
 
      | IDENT "Infix"; local = locality;
 	 op = ne_string; ":="; p = global; 
@@ -745,6 +749,9 @@ GEXTEND Gram
   ;
   locality:
     [ [ IDENT "Local" -> true | -> false ] ]
+  ;
+  non_globality:
+    [ [ IDENT "Global" -> false | IDENT "Local" -> true | -> true ] ]
   ;
   level:
     [ [ IDENT "level"; n = natural -> NumLevel n

@@ -144,6 +144,7 @@ let pr_search a b pr_p = match a with
   | SearchAbout sl -> str"SearchAbout" ++ spc() ++ str "[" ++ prlist_with_sep spc pr_search_about sl ++ str "]" ++ pr_in_out_modules b
 
 let pr_locality local = if local then str "Local " else str ""
+let pr_non_globality local = if local then str "" else str "Global "
 
 let pr_explanation imps = function
   | ExplByPos n -> pr_id (Impargs.name_of_implicit (List.nth imps (n-1)))
@@ -447,10 +448,11 @@ let rec pr_vernac = function
   | VernacBindScope (sc,cll) ->
       str"Bind Scope" ++ spc () ++ str sc ++
       spc() ++ str "with " ++ prlist_with_sep spc pr_class_rawexpr cll
-  | VernacArgumentsScope (q,scl) -> let pr_opt_scope = function 
+  | VernacArgumentsScope (local,q,scl) -> let pr_opt_scope = function 
       |	None -> str"_"
       |	Some sc -> str sc in 
-    str"Arguments Scope" ++ spc() ++ pr_reference q ++ spc() ++ str"[" ++ prlist_with_sep sep pr_opt_scope scl ++ str"]"
+    str"Arguments Scope" ++ spc() ++ pr_non_globality local ++ pr_reference q 
+    ++ spc() ++ str"[" ++ prlist_with_sep sep pr_opt_scope scl ++ str"]"
   | VernacInfix (local,(s,mv),q,sn) -> (* A Verifier *)
       hov 0 (hov 0 (str"Infix " ++ pr_locality local
       ++ qs s ++ str " :=" ++ spc() ++ pr_reference q) ++
@@ -746,11 +748,11 @@ let rec pr_vernac = function
         (str"Notation " ++ pr_locality local ++ pr_id id ++ str" :=" ++
          pr_constrarg c ++
          pr_syntax_modifiers (if onlyparsing then [SetOnlyParsing] else []))
-  | VernacDeclareImplicits (q,None) ->
+  | VernacDeclareImplicits (local,q,None) ->
       hov 2 (str"Implicit Arguments" ++ spc() ++ pr_reference q)
-  | VernacDeclareImplicits (q,Some l) ->
+  | VernacDeclareImplicits (local,q,Some l) ->
       let r = Nametab.global q in
-      Impargs.declare_manual_implicits r l;
+      Impargs.declare_manual_implicits local r l;
       let imps = Impargs.implicits_of_global r in
       hov 1 (str"Implicit Arguments" ++ spc() ++ pr_reference q ++ spc() ++
              str"[" ++ prlist_with_sep sep (pr_explanation imps) l ++ str"]")
