@@ -459,7 +459,7 @@ GEXTEND Gram
       | IDENT "Implicit"; IDENT "Arguments"; qid = global; 
          pos = OPT [ "["; l = LIST0 ident; "]" -> l ] ->
 	   let pos = option_map (List.map (fun id -> ExplByName id)) pos in
-	   VernacDeclareImplicits (qid,pos)
+	   VernacDeclareImplicits (true,qid,pos)
 
       | IDENT "Implicit"; ["Type" | IDENT "Types"];
 	   idl = LIST1 identref; ":"; c = lconstr -> VernacReserve (idl,c) ] ]
@@ -711,7 +711,7 @@ GEXTEND Gram
        refl = LIST1 class_rawexpr -> VernacBindScope (sc,refl)
 
      | IDENT "Arguments"; IDENT "Scope"; qid = global;
-         "["; scl = LIST0 opt_scope; "]" -> VernacArgumentsScope (qid,scl)
+       "["; scl = LIST0 opt_scope; "]" -> VernacArgumentsScope (true,qid,scl)
 
      | IDENT "Infix"; local = locality;
 	 op = ne_string; ":="; p = global; 

@@ -135,7 +135,9 @@ val exists_notation_in_scope : scope_name option -> notation ->
       interpretation -> bool
 
 (* Declares and looks for scopes associated to arguments of a global ref *)
-val declare_arguments_scope: global_reference -> scope_name option list -> unit
+val declare_arguments_scope : 
+  bool (* true=local *) -> global_reference -> scope_name option list -> unit
+
 val find_arguments_scope : global_reference -> scope_name option list
 
 val declare_class_scope : scope_name -> Classops.cl_typ -> unit

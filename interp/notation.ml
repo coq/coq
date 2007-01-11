@@ -446,19 +446,36 @@ let rec compute_arguments_scope t =
 
 let arguments_scope = ref Refmap.empty
 
-let load_arguments_scope _ (_,(r,scl)) =
+type arguments_scope_discharge_request =
+  | ArgsScopeAuto
+  | ArgsScopeManual
+  | ArgsScopeNoDischarge
+
+let load_arguments_scope _ (_,(_,r,scl)) =
   List.iter (option_iter check_scope) scl;
   arguments_scope := Refmap.add r scl !arguments_scope
 
 let cache_arguments_scope o =
   load_arguments_scope 1 o
 
-let subst_arguments_scope (_,subst,(r,scl)) = (fst (subst_global subst r),scl)
+let subst_arguments_scope (_,subst,(req,r,scl)) =
+  (ArgsScopeNoDischarge,fst (subst_global subst r),scl)
 
-let discharge_arguments_scope (r,_) =
-  match r with
-    | VarRef _ -> None
-    | _ -> Some (r,compute_arguments_scope (Global.type_of_global r))
+let discharge_arguments_scope (_,(req,r,l)) =
+  if req = ArgsScopeNoDischarge then None
+  else Some (req,pop_global_reference r,l)
+
+let rebuild_arguments_scope (req,r,l) =
+  match req with
+    | ArgsScopeNoDischarge -> assert false
+    | ArgsScopeAuto ->
+	(req,r,compute_arguments_scope (Global.type_of_global r))
+    | ArgsScopeManual ->
+	(* Add to the manually given scopes the one found automatically
+           for the extra parameters of the section *)
+	let l' = compute_arguments_scope (Global.type_of_global r) in
+	let l1,_ = list_chop (List.length l' - List.length l) l' in
+	(req,r,l1@l)
 
 let (inArgumentsScope,outArgumentsScope) = 
   declare_object {(default_object "ARGUMENTS-SCOPE") with
@@ -466,10 +483,17 @@ let (inArgumentsScope,outArgumentsScope) =
       load_function = load_arguments_scope;
       subst_function = subst_arguments_scope;
       classify_function = (fun (_,o) -> Substitute o);
+      discharge_function = discharge_arguments_scope;
+      rebuild_function = rebuild_arguments_scope;
       export_function = (fun x -> Some x) }
 
-let declare_arguments_scope r scl =
-  Lib.add_anonymous_leaf (inArgumentsScope (r,scl))
+let declare_arguments_scope_gen req r scl =
+  Lib.add_anonymous_leaf (inArgumentsScope (req,r,scl))
+
+let declare_arguments_scope local ref scl =
+  let req =
+    if local or isVarRef ref then ArgsScopeNoDischarge else ArgsScopeManual in
+  declare_arguments_scope_gen req ref scl
 
 let find_arguments_scope r =
   try Refmap.find r !arguments_scope
@@ -477,7 +501,8 @@ let find_arguments_scope r =
 
 let declare_ref_arguments_scope ref =
   let t = Global.type_of_global ref in
-  declare_arguments_scope ref (compute_arguments_scope t)
+  let req = if isVarRef ref then ArgsScopeNoDischarge else ArgsScopeAuto in
+  declare_arguments_scope_gen req ref (compute_arguments_scope t)
 
 (********************************)
 (* Encoding notations as string *)
