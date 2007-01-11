@@ -754,7 +754,8 @@ let rec pr_vernac = function
       let r = Nametab.global q in
       Impargs.declare_manual_implicits local r l;
       let imps = Impargs.implicits_of_global r in
-      hov 1 (str"Implicit Arguments" ++ spc() ++ pr_reference q ++ spc() ++
+      hov 1 (str"Implicit Arguments" ++ pr_non_globality local ++
+      spc() ++ pr_reference q ++ spc() ++
              str"[" ++ prlist_with_sep sep (pr_explanation imps) l ++ str"]")
   | VernacReserve (idl,c) ->
       hov 1 (str"Implicit Type" ++
