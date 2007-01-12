@@ -53,23 +53,55 @@ let environment_until dir_opt =
 	  | _ -> assert false
   in parse (Library.loaded_libraries ())
 
-type visit =
- { mutable kn : KNset.t; mutable ref : Refset.t; mutable mp : MPset.t }
 
-let in_kn v kn = KNset.mem kn v.kn
-let in_ref v ref = Refset.mem ref v.ref
-let in_mp v mp = MPset.mem mp v.mp
+(*s Visit: 
+  a structure recording the needed dependencies for the current extraction *)
 
-let visit_mp v mp = v.mp <- MPset.union (prefixes_mp mp) v.mp
-let visit_kn v kn = v.kn <- KNset.add kn v.kn; visit_mp v (modpath kn)
-let visit_ref v r =
- let r =
-  (* if we meet a constructor we must export the inductive definition *)
-  match r with
-     ConstructRef (r,_) -> IndRef r
-   | _ -> r
- in
-  v.ref <- Refset.add r v.ref; visit_mp v (modpath_of_r r) 
+module type VISIT = sig 
+  (* Reset the dependencies by emptying the visit lists *)
+  val reset : unit -> unit
+    
+  (* Add the module_path and all its prefixes to the mp visit list *)  
+  val add_mp : module_path -> unit
+    
+  (* Add kernel_name / constant / reference / ... in the visit lists. 
+     These functions silently add the mp of their arg in the mp list *)
+  val add_kn : kernel_name -> unit
+  val add_con : constant -> unit
+  val add_ref : global_reference -> unit
+  val add_decl_deps : ml_decl -> unit
+  val add_spec_deps : ml_spec -> unit
+
+  (* Test functions: 
+     is a particular object a needed dependency for the current extraction ? *)
+  val needed_kn : kernel_name -> bool 
+  val needed_con : constant -> bool
+  val needed_mp : module_path -> bool
+end
+  
+module Visit : VISIT = struct 
+  (* Thanks to C.S.C, what used to be in a single KNset should now be split 
+     into a KNset (for inductives and modules names) and a Cset for constants 
+     (and still the remaining MPset) *)
+  type must_visit = 
+      { mutable kn : KNset.t; mutable con : Cset.t; mutable mp : MPset.t }
+  (* the imperative internal visit lists *)
+  let v = { kn = KNset.empty ; con = Cset.empty ; mp = MPset.empty } 
+  (* the accessor functions *)
+  let reset () = v.kn <- KNset.empty; v.con <- Cset.empty; v.mp <- MPset.empty
+  let needed_kn kn = KNset.mem kn v.kn
+  let needed_con c = Cset.mem c v.con
+  let needed_mp mp = MPset.mem mp v.mp
+  let add_mp mp = v.mp <- MPset.union (prefixes_mp mp) v.mp
+  let add_kn kn = v.kn <- KNset.add kn v.kn; add_mp (modpath kn)
+  let add_con c = v.con <- Cset.add c v.con; add_mp (con_modpath c)
+  let add_ref = function 
+    | ConstRef c -> add_con c
+    | IndRef (kn,_) | ConstructRef ((kn,_),_) -> add_kn kn
+    | VarRef _ -> assert false
+  let add_decl_deps = decl_iter_references add_ref add_ref add_ref 
+  let add_spec_deps = spec_iter_references add_ref add_ref add_ref
+end
 
 exception Impossible
 
@@ -104,115 +136,108 @@ let factor_fix env l cb msb =
     labels, recd, msb''
   end
 
-let get_decl_references v d = 
-  let f = visit_ref v in decl_iter_references f f f d
-
-let get_spec_references v s = 
-  let f = visit_ref v in spec_iter_references f f f s
-
-let rec extract_msig env v mp = function 
+let rec extract_msig env mp = function 
   | [] -> [] 
   | (l,SPBconst cb) :: msig -> 
       let kn = make_con mp empty_dirpath l in 
       let s = extract_constant_spec env kn cb in 
-      if logical_spec s then extract_msig env v mp msig
+      if logical_spec s then extract_msig env mp msig
       else begin
-	get_spec_references v s; 
-	(l,Spec s) :: (extract_msig env v mp msig)
+	Visit.add_spec_deps s;
+	(l,Spec s) :: (extract_msig env mp msig)
       end
   | (l,SPBmind cb) :: msig -> 
       let kn = make_kn mp empty_dirpath l in 
       let s = Sind (kn, extract_inductive env kn) in 
-      if logical_spec s then extract_msig env v mp msig
+      if logical_spec s then extract_msig env mp msig
       else begin 
-	get_spec_references v s; 
-	(l,Spec s) :: (extract_msig env v mp msig)
+	Visit.add_spec_deps s;
+	(l,Spec s) :: (extract_msig env mp msig)
       end
   | (l,SPBmodule {msb_modtype=mtb}) :: msig -> 
-(*i      let mpo = Some (MPdot (mp,l)) in  i*)
-      (l,Smodule (extract_mtb env v None (*i mpo i*) mtb)) :: (extract_msig env v mp msig)
+      (l,Smodule (extract_mtb env None mtb)) :: (extract_msig env mp msig)
   | (l,SPBmodtype mtb) :: msig -> 
-      (l,Smodtype (extract_mtb env v None mtb)) :: (extract_msig env v mp msig)
+      (l,Smodtype (extract_mtb env None mtb)) :: (extract_msig env mp msig)
 
-and extract_mtb env v mpo = function 
-  | MTBident kn -> visit_kn v kn; MTident kn 
+and extract_mtb env mpo = function 
+  | MTBident kn -> Visit.add_kn kn; MTident kn 
   | MTBfunsig (mbid, mtb, mtb') -> 
       let mp = MPbound mbid in 
       let env' = Modops.add_module mp (Modops.module_body_of_type mtb) env in 
-      MTfunsig (mbid, extract_mtb env v None mtb, 
-		extract_mtb env' v None mtb') 
+      MTfunsig (mbid, extract_mtb env None mtb, 
+		extract_mtb env' None mtb') 
   | MTBsig (msid, msig) -> 
       let mp, msig = match mpo with 
 	| None -> MPself msid, msig
 	| Some mp -> mp, Modops.subst_signature_msid msid mp msig
       in
       let env' = Modops.add_signature mp msig env in 
-      MTsig (msid, extract_msig env' v mp msig) 
+      MTsig (msid, extract_msig env' mp msig) 
 
-let rec extract_msb env v mp all = function 
+let rec extract_msb env mp all = function 
   | [] -> [] 
   | (l,SEBconst cb) :: msb -> 
       (try 
 	 let vl,recd,msb = factor_fix env l cb msb in 
-	 let vkn = Array.map (fun id -> make_con mp empty_dirpath id) vl in
-	 let ms = extract_msb env v mp all msb in 
-	 let b = array_exists (fun con -> in_ref v (ConstRef con)) vkn in 
+	 let vc = Array.map (make_con mp empty_dirpath) vl in
+	 let ms = extract_msb env mp all msb in 
+	 let b = array_exists Visit.needed_con vc in 
 	 if all || b then 
-	   let d = extract_fixpoint env vkn recd in 
+	   let d = extract_fixpoint env vc recd in
 	   if (not b) && (logical_decl d) then ms 
-	   else begin get_decl_references v d; (l,SEdecl d) :: ms end
+	   else begin Visit.add_decl_deps d; (l,SEdecl d) :: ms end
 	 else ms
        with Impossible ->
-	 let ms = extract_msb env v mp all msb in 
-	 let kn = make_con mp empty_dirpath l in 
-	 let b = in_ref v (ConstRef kn) in 
+	 let ms = extract_msb env mp all msb in 
+	 let c = make_con mp empty_dirpath l in 
+	 let b = Visit.needed_con c in 
 	 if all || b then 
-	   let d = extract_constant env kn cb in
+	   let d = extract_constant env c cb in
 	   if (not b) && (logical_decl d) then ms 
-	   else begin get_decl_references v d; (l,SEdecl d) :: ms end
+	   else begin Visit.add_decl_deps d; (l,SEdecl d) :: ms end
 	 else ms)
   | (l,SEBmind mib) :: msb ->
-      let ms = extract_msb env v mp all msb in
+      let ms = extract_msb env mp all msb in
       let kn = make_kn mp empty_dirpath l in 
-      let b = in_ref v (IndRef (kn,0)) in  (* 0 is dummy *)
+      let b = Visit.needed_kn kn in
       if all || b then 
 	let d = Dind (kn, extract_inductive env kn) in 
 	if (not b) && (logical_decl d) then ms 
-	else begin get_decl_references v d; (l,SEdecl d) :: ms end
+	else begin Visit.add_decl_deps d; (l,SEdecl d) :: ms end
       else ms
   | (l,SEBmodule mb) :: msb -> 
-      let ms = extract_msb env v mp all msb in
+      let ms = extract_msb env mp all msb in
       let mp = MPdot (mp,l) in 
-      if all || in_mp v mp then 
-	(l,SEmodule (extract_module env v mp true mb)) :: ms
+      if all || Visit.needed_mp mp then 
+	(l,SEmodule (extract_module env mp true mb)) :: ms
       else ms
   | (l,SEBmodtype mtb) :: msb ->
-      let ms = extract_msb env v mp all msb in
+      let ms = extract_msb env mp all msb in
       let kn = make_kn mp empty_dirpath l in
-      if all || in_kn v kn then 
-	(l,SEmodtype (extract_mtb env v None mtb)) :: ms
+      if all || Visit.needed_kn kn then 
+	(l,SEmodtype (extract_mtb env None mtb)) :: ms
       else ms
 
-and extract_meb env v mpo all = function 
+and extract_meb env mpo all = function 
   | MEBident (MPfile d) -> error_MPfile_as_mod d (* temporary (I hope) *)
-  | MEBident mp -> visit_mp v mp; MEident mp 
+  | MEBident mp -> Visit.add_mp mp; MEident mp 
   | MEBapply (meb, meb',_) -> 
-      MEapply (extract_meb env v None true meb, 
-	       extract_meb env v None true meb')
+      MEapply (extract_meb env None true meb, 
+	       extract_meb env None true meb')
   | MEBfunctor (mbid, mtb, meb) -> 
       let mp = MPbound mbid in 
       let env' = Modops.add_module mp (Modops.module_body_of_type mtb) env in 
-      MEfunctor (mbid, extract_mtb env v None mtb, 
-		 extract_meb env' v None true meb)
+      MEfunctor (mbid, extract_mtb env None mtb, 
+		 extract_meb env' None true meb)
   | MEBstruct (msid, msb) -> 
       let mp,msb = match mpo with 
 	| None -> MPself msid, msb 
 	| Some mp -> mp, subst_msb (map_msid msid mp) msb
       in 
       let env' = add_structure mp msb env in 
-      MEstruct (msid, extract_msb env' v mp all msb) 
+      MEstruct (msid, extract_msb env' mp all msb) 
 
-and extract_module env v mp all mb = 
+and extract_module env mp all mb = 
   (* [mb.mod_expr <> None ], since we look at modules from outside. *)
   (* Example of module with empty [mod_expr] is X inside a Module F [X:SIG]. *)
   let meb = out_some mb.mod_expr in
@@ -220,25 +245,21 @@ and extract_module env v mp all mb =
   (* Because of the "with" construct, the module type can be [MTBsig] with *)
   (* a msid different from the one of the module. Here is the patch. *)
   let mtb = replicate_msid meb mtb in
-  { ml_mod_expr = extract_meb env v (Some mp) all meb;
-    ml_mod_type = extract_mtb env v None mtb }
+  { ml_mod_expr = extract_meb env (Some mp) all meb;
+    ml_mod_type = extract_mtb env None mtb }
 
 let unpack = function MEstruct (_,sel) -> sel | _ -> assert false 
 
 let mono_environment refs mpl = 
-  let l = environment_until None in 
-  let v = 
-    let add_ref r = Refset.add r in 
-    let refs = List.fold_right add_ref refs Refset.empty in 
-    let add_mp mp = MPset.union (prefixes_mp mp) in
-    let mps = List.fold_right add_mp mpl MPset.empty in 
-    let mps = Refset.fold (fun k -> add_mp (modpath_of_r k)) refs mps in 
-    { kn = KNset.empty; ref = refs; mp = mps }
-  in 
+  Visit.reset ();
+  List.iter Visit.add_ref refs; 
+  List.iter Visit.add_mp mpl; 
   let env = Global.env () in 
-  List.rev_map (fun (mp,m) -> mp, unpack (extract_meb env v (Some mp) false m)) 
-    (List.rev l)
+  let l = List.rev (environment_until None) in 
+  List.rev_map 
+    (fun (mp,m) -> mp, unpack (extract_meb env (Some mp) false m)) l
 
+    
 (*s Recursive extraction in the Coq toplevel. The vernacular command is
     \verb!Recursive Extraction! [qualid1] ... [qualidn]. We use [extract_env]
     to get the saturated environment to extract. *)
@@ -259,6 +280,7 @@ let mono_extraction (f,m) qualids =
   let prm = {modular=false; mod_name = m; to_appear= refs} in
   let struc = optimize_struct prm None (mono_environment refs mps) in 
   print_structure_to_file f prm struc; 
+  Visit.reset ();
   reset_tables ()
 
 let extraction_rec = mono_extraction (None,id_of_string "Main")
@@ -277,15 +299,15 @@ let extraction qid =
     let r = Nametab.global qid in 
     if is_custom r then
       msgnl (str "User defined extraction:" ++ spc () ++ 
-	     str (find_custom r) ++ fnl ()) 
-    else begin 
+	       str (find_custom r) ++ fnl ()) 
+    else
       let prm = 
-	{ modular = false; mod_name = id_of_string "Main"; to_appear = [r]} in 
+	{ modular = false; mod_name = id_of_string "Main"; to_appear = [r]} in
       let struc = optimize_struct prm None (mono_environment [r] []) in 
       let d = get_decl_in_structure r struc in 
       print_one_decl struc (modpath_of_r r) d;
-      reset_tables ()
-    end
+      Visit.reset (); 
+      reset_tables () 
 
 (*s Extraction to a file (necessarily recursive). 
     The vernacular command is 
@@ -313,32 +335,33 @@ let extraction_file f vl =
 let extraction_module m = 
   check_inside_section (); 
   check_inside_module ();
-  match lang () with 
+  begin match lang () with 
     | Toplevel -> error_toplevel ()
     | Scheme -> error_scheme ()
-    | _ -> 
-	let q = snd (qualid_of_reference m) in 
-	let mp = 
-	  try Nametab.locate_module q
-	  with Not_found -> error_unknown_module q
-	in 
-	let b = is_modfile mp in 
-	let prm = {modular=b; mod_name = id_of_string ""; to_appear= []} in
-	let l = environment_until None in 
-	let v={ kn = KNset.empty ; ref = Refset.empty; mp = prefixes_mp mp } in
-	let env = Global.env () in 
-	let struc = 
-	  List.rev_map
-	    (fun (mp,m) -> mp, unpack (extract_meb env v (Some mp) b m)) 
-	    (List.rev l)
-	in 
-	let struc = optimize_struct prm None struc in 
-	let struc = 
-	  let bmp = base_mp mp in 
-	  try [bmp, List.assoc bmp struc] with Not_found -> assert false
-	in
-	print_structure_to_file None prm struc; 
-	reset_tables ()
+    | _ -> ()
+  end; 
+  let q = snd (qualid_of_reference m) in 
+  let mp = 
+    try Nametab.locate_module q with Not_found -> error_unknown_module q
+  in 
+  let b = is_modfile mp in 
+  let prm = {modular=b; mod_name = id_of_string ""; to_appear= []} in
+  Visit.reset ();
+  Visit.add_mp mp; 
+  let env = Global.env () in 
+  let l = List.rev (environment_until None) in 
+  let struc = 
+    List.rev_map (fun (mp,m) -> mp, unpack (extract_meb env (Some mp) b m)) l
+  in
+  let struc = optimize_struct prm None struc in 
+  let struc = 
+    let bmp = base_mp mp in 
+    try [bmp, List.assoc bmp struc] with Not_found -> assert false
+  in
+  print_structure_to_file None prm struc; 
+  Visit.reset (); 
+  reset_tables ()
+
 
 (*s (Recursive) Extraction of a library. The vernacular command is 
   \verb!(Recursive) Extraction Library! [M]. *) 
@@ -355,38 +378,38 @@ let dir_module_of_id m =
 let extraction_library is_rec m =
   check_inside_section (); 
   check_inside_module ();  
-  match lang () with 
+  begin match lang () with 
     | Toplevel -> error_toplevel ()
     | Scheme -> error_scheme ()
-    | _ -> 
-	let dir_m = dir_module_of_id m in 
-	let v =
-         { kn = KNset.empty; ref = Refset.empty;
-           mp = MPset.singleton (MPfile dir_m) } in 
-	let l = environment_until (Some dir_m) in 
-	let struc = 
-	  let env = Global.env () in
-	  let select l (mp,meb) = 
-	    if in_mp v mp (* [mp] est long -> [in_mp] peut etre sans [long_mp] *)
-	    then (mp, unpack (extract_meb env v (Some mp) true meb)) :: l 
-	    else l
-	  in 
-	  List.fold_left select [] (List.rev l)
-	in 
-	let dummy_prm = {modular=true; mod_name=m; to_appear=[]} in
-	let struc = optimize_struct dummy_prm None struc in 
-	let rec print = function 
-	  | [] -> () 
-	  | (MPfile dir, _) :: l when not is_rec && dir <> dir_m -> print l 
-	  | (MPfile dir, sel) as e :: l -> 
-	      let short_m = snd (split_dirpath dir) in
-	      let f = module_file_name short_m in 
-	      let prm = {modular=true;mod_name=short_m;to_appear=[]} in
-	      print_structure_to_file (Some f) prm [e]; 
-	      print l 
-	  | _ -> assert false
-	in print struc; 
-	reset_tables ()
+    | _ -> () 
+  end; 
+  let dir_m = dir_module_of_id m in 
+  Visit.reset (); 
+  Visit.add_mp (MPfile dir_m); 
+  let env = Global.env () in	
+  let l = List.rev (environment_until (Some dir_m)) in 
+  let select l (mp,meb) = 
+    if Visit.needed_mp mp 
+    then (mp, unpack (extract_meb env (Some mp) true meb)) :: l 
+    else l
+  in 
+  let struc = List.fold_left select [] l in 
+  let dummy_prm = {modular=true; mod_name=m; to_appear=[]} in
+  let struc = optimize_struct dummy_prm None struc in 
+  let rec print = function 
+    | [] -> () 
+    | (MPfile dir, _) :: l when not is_rec && dir <> dir_m -> print l 
+    | (MPfile dir, sel) as e :: l -> 
+	let short_m = snd (split_dirpath dir) in
+	let f = module_file_name short_m in 
+	let prm = {modular=true;mod_name=short_m;to_appear=[]} in
+	print_structure_to_file (Some f) prm [e]; 
+	print l 
+    | _ -> assert false
+  in 
+  print struc; 
+  Visit.reset ();
+  reset_tables ()
 
 
 
