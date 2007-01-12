@@ -417,8 +417,10 @@ let pp_one_ind prefix ip ip_equiv pl cv =
 
 let pp_logical_ind packet = 
   pp_comment (pr_id packet.ip_typename ++ str " : logical inductive") ++ 
-  fnl () ++ pp_comment (str "with constructors : " ++ 
-			prvect_with_sep spc pr_id packet.ip_consnames)
+  fnl () ++
+  pp_comment (str "with constructors : " ++ 
+	      prvect_with_sep spc pr_id packet.ip_consnames) ++
+  fnl ()
 
 let pp_singleton kn packet = 
   let l = rename_tvars keywords packet.ip_vars in 
