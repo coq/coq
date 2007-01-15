@@ -1121,9 +1121,6 @@ theories/%.vo: theories/%.v states/initial.coq
 contrib/%.vo: contrib/%.v
 	$(BOOTCOQTOP) -compile contrib/$*
 
-contrib/extraction/%.vo: contrib/extraction/%.v states/barestate.coq $(COQC)
-	$(BOOTCOQTOP) -is states/barestate.coq -compile $*
-
 cleantheories:
 	rm -f states/*.coq
 	rm -f theories/*/*.vo
