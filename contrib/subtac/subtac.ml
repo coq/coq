@@ -155,14 +155,16 @@ let start_proof_and_print env isevars idopt k t hook =
   print_subgoals ()
   (*if !pcoq <> None then (out_some !pcoq).start_proof ()*)
 
+let _ = Subtac_obligations.set_default_tactic 
+    (Tacinterp.eval_tactic (utils_call "subtac_simpl" []))
+
+
 let subtac (loc, command) =
   check_required_library ["Coq";"Init";"Datatypes"];
   check_required_library ["Coq";"Init";"Specif"];
   (* check_required_library ["Coq";"Logic";"JMeq"]; *)
   require_library "Coq.subtac.FixSub";
   require_library "Coq.subtac.Utils";
-  Subtac_obligations.set_default_tactic 
-    (Tacinterp.eval_tactic (utils_call "subtac_simpl" []));
   let env = Global.env () in
   let isevars = ref (create_evar_defs Evd.empty) in
   try

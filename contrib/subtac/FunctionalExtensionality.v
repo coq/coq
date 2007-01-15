@@ -15,8 +15,7 @@ Lemma fix_sub_eq_ext :
     (F_sub : forall x : A, (forall  {y : A | R y x}, P (`y)) -> P x),
     forall x : A,
       Fix_sub A R Rwf P F_sub x =
-      let f_sub := F_sub in
-        F_sub x (fun {y : A | R y x}=> Fix A R Rwf P f_sub (`y)).
+        F_sub x (fun {y : A | R y x}=> Fix A R Rwf P F_sub (`y)).
 Proof.
   intros ; apply Fix_eq ; auto.
   intros.

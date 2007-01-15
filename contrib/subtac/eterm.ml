@@ -52,8 +52,8 @@ let subst_evar_constr evs n t =
 	    anomaly ("eterm: existential variable " ^ string_of_int k ^ " not found")
 	in
         seen := Intset.add id !seen;
-	  (try trace (str "Evar " ++ int k ++ str " found, applied to " ++ int (Array.length args) ++ str "arguments," ++
-			int (List.length hyps) ++ str " hypotheses"); 	      with _ -> () );
+(* 	  (try trace (str "Evar " ++ int k ++ str " found, applied to " ++ int (Array.length args) ++ str "arguments," ++ *)
+(* 			int (List.length hyps) ++ str " hypotheses"); 	      with _ -> () ); *)
 	  (* Evar arguments are created in inverse order, 
 	     and we must not apply to defined ones (i.e. LetIn's)
 	  *)
@@ -126,7 +126,6 @@ let eterm_obligations name nclen evm t tycon =
   (* 'Serialize' the evars, we assume that the types of the existentials
      refer to previous existentials in the list only *)
   let evl = List.rev (to_list evm) in
-  trace (str "Eterm, transformed to list");
   let evn = 
     let i = ref (-1) in
       List.rev_map (fun (id, ev) -> incr i; 
@@ -136,13 +135,9 @@ let eterm_obligations name nclen evm t tycon =
     (* Remove existential variables in types and build the corresponding products *)
     fold_right 
       (fun (id, (n, nstr), ev) l ->
-	 trace (str "Eterm: " ++ str "treating evar: " ++ int id);
 	 let hyps = Environ.named_context_of_val ev.evar_hyps in
 	 let hyps = trunc_named_context nclen hyps in
-	 trace (str "Named context is: " ++ Printer.pr_named_context (Global.env ()) hyps);
 	 let evtyp, deps = etype_of_evar l ev hyps in
-	 trace (str "Evar " ++ str (string_of_int n) ++ str "'s type is: " ++ Termops.print_constr_env (Global.env ()) evtyp ++
-		  str " depends on evars : " ++ str (Subtac_utils.string_of_intset deps));
 	 let y' = (id, ((n, nstr), hyps, evtyp, deps)) in
 	   y' :: l) 
       evn []
@@ -153,17 +148,17 @@ let eterm_obligations name nclen evm t tycon =
   let evars = 
     List.map (fun (_, ((_, name), _, typ, deps)) -> name, typ, deps) evts
   in
-    (try 
-       trace (str "Term given to eterm" ++ spc () ++
-		Termops.print_constr_env (Global.env ()) t);
-       trace (str "Term constructed in eterm" ++ spc () ++
-		Termops.print_constr_env (Global.env ()) t');
-       ignore(iter
-		(fun (name, typ, deps) ->
-		   trace (str "Evar :" ++ spc () ++ str (string_of_id name) ++
-			    Termops.print_constr_env (Global.env ()) typ))
-		evars);
-     with _ -> ());
+(*     (try  *)
+(*        trace (str "Term given to eterm" ++ spc () ++ *)
+(* 		Termops.print_constr_env (Global.env ()) t); *)
+(*        trace (str "Term constructed in eterm" ++ spc () ++ *)
+(* 		Termops.print_constr_env (Global.env ()) t'); *)
+(*        ignore(iter *)
+(* 		(fun (name, typ, deps) -> *)
+(* 		   trace (str "Evar :" ++ spc () ++ str (string_of_id name) ++ *)
+(* 			    Termops.print_constr_env (Global.env ()) typ)) *)
+(* 		evars); *)
+(*      with _ -> ()); *)
     Array.of_list (List.rev evars), t'
 
 let mkMetas n = 

@@ -47,6 +47,7 @@ let sig_ = lazy (build_sig ())
 
 let eq_ind = lazy (init_constant ["Init"; "Logic"] "eq")
 let eq_rec = lazy (init_constant ["Init"; "Logic"] "eq_rec")
+let eq_rect = lazy (init_constant ["Init"; "Logic"] "eq_rect")
 let eq_refl = lazy (init_constant ["Init"; "Logic"] "refl_equal")
 let eq_ind_ref = lazy (init_reference ["Init"; "Logic"] "eq")
 let refl_equal_ref = lazy (init_reference ["Init"; "Logic"] "refl_equal")
@@ -145,8 +146,9 @@ let print_args env args =
 let make_existential loc env isevars c =
   let evar = Evarutil.e_new_evar isevars env ~src:(loc, QuestionMark) c in
   let (key, args) = destEvar evar in
-    (try debug 2 (str "Constructed evar " ++ int key ++ str " applied to args: " ++
-		  print_args env args) with _ -> ());
+    (try trace (str "Constructed evar " ++ int key ++ str " applied to args: " ++
+		  print_args env args ++ str " for type: "++ 
+		  my_print_constr env c) with _ -> ());
     evar
 
 let make_existential_expr loc env c =

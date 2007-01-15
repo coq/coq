@@ -8,32 +8,30 @@ Program Fixpoint euclid (a : nat) (b : { b : nat | b <> O }) {wf a lt}  :
   (S q' & r)
   else (O & a).
 
-Require Import Coq.subtac.Utils.
-Require Import Coq.subtac.FixSub.
 Require Import Omega.
 Obligations.
 
 Obligation 1.
   intros.
-  destruct_exists ; simpl in * ; auto with arith.
+  simpl in * ; auto with arith.
   omega.
-Qed.
+Defined.
 
 Obligation 2 of euclid.
   intros.
-  destruct_exists ; simpl in * ; auto with arith.
   assert(x0 * S q' = x0 * q' + x0) by auto with arith ; omega.
-Qed.
+Defined.
 
 Obligation 4 of euclid.
   exact Wf_nat.lt_wf.
-Qed.
+Defined.
 
 Obligation 3 of euclid.
   intros.
-  destruct_exists ; simpl in *.
   omega.
 Qed.
+
+Eval cbv delta [euclid_obligation_1 euclid_obligation_2] in (euclid 0).
 
 Extraction Inline Fix_sub Fix_F_sub.  
 Extract Inductive sigT => "pair" [ "" ].

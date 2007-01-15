@@ -44,7 +44,7 @@ end.
 
 Ltac destruct_exists := repeat (destruct_one_pair) .
 
-Ltac subtac_simpl := simpl ; intros ; destruct_exists ; simpl in *.
+Ltac subtac_simpl := hnf ; intros ; destruct_exists ; try subst.
 
 (* Destructs calls to f in hypothesis or conclusion, useful if f creates a subset object *)
 Ltac destruct_call f :=

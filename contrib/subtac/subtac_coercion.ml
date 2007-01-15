@@ -53,8 +53,6 @@ module Coercion = struct
       | _ -> None
 	  
   and disc_exist env x =
-    (try trace (str "Disc_exist: " ++ my_print_constr env x)
-     with _ -> ());
     match kind_of_term x with
       | App (c, l) ->
 	  (match kind_of_term c with
@@ -67,8 +65,6 @@ module Coercion = struct
 
 
   let disc_proj_exist env x =
-    (try trace (str "disc_proj_exist: " ++ my_print_constr env x);
-     with _ -> ());
     match kind_of_term x with
       | App (c, l) ->
 	  (if Term.eq_constr c (Lazy.force sig_).proj1 
@@ -108,27 +104,27 @@ module Coercion = struct
       : (Term.constr -> Term.constr) option 
       =
     let x = nf_evar (evars_of !isevars) x and y = nf_evar (evars_of !isevars) y in
-      (try debug 1 (str "Coerce called for " ++ (my_print_constr env x) ++ 
-		  str " and "++ my_print_constr env y ++ 
-		  str " with evars: " ++ spc () ++
-		  my_print_evardefs !isevars);
-       with _ -> ());
+(*       (try debug 1 (str "Coerce called for " ++ (my_print_constr env x) ++  *)
+(* 		  str " and "++ my_print_constr env y ++  *)
+(* 		  str " with evars: " ++ spc () ++ *)
+(* 		  my_print_evardefs !isevars); *)
+(*        with _ -> ()); *)
     let rec coerce_unify env x y =
-      (try debug 1 (str "coerce_unify from " ++ (my_print_constr env x) ++ 
-		  str " to "++ my_print_constr env y)
-       with _ -> ());
+(*       (try debug 1 (str "coerce_unify from " ++ (my_print_constr env x) ++  *)
+(* 		  str " to "++ my_print_constr env y) *)
+(*        with _ -> ()); *)
       try 
 	isevars := the_conv_x_leq env x y !isevars;
-	(try debug 1 (str "Unified " ++ (my_print_constr env x) ++ 
-			str " and "++ my_print_constr env y);
-	 with _ -> ());
+(* 	(try debug 1 (str "Unified " ++ (my_print_constr env x) ++  *)
+(* 			str " and "++ my_print_constr env y); *)
+(* 	 with _ -> ()); *)
 	None
       with Reduction.NotConvertible -> coerce' env (hnf env isevars x) (hnf env isevars y)
     and coerce' env x y : (Term.constr -> Term.constr) option =
       let subco () = subset_coerce env isevars x y in
-	(try debug 1 (str "coerce' from " ++ (my_print_constr env x) ++ 
-		    str " to "++ my_print_constr env y);
-	 with _ -> ());
+(* 	(try debug 1 (str "coerce' from " ++ (my_print_constr env x) ++  *)
+(* 		    str " to "++ my_print_constr env y); *)
+(* 	 with _ -> ()); *)
 	match (kind_of_term x, kind_of_term y) with
 	  | Sort s, Sort s' -> 
 	      (match s, s' with
@@ -163,7 +159,6 @@ module Coercion = struct
 			 if i = Term.destInd existS.typ 
 			 then
 			   begin 
-			     trace (str "In coerce sigma types");
 			     let (a, pb), (a', pb') = 
 			       pair_of_array l, pair_of_array l' 
 			     in
@@ -186,7 +181,6 @@ module Coercion = struct
 			     let c2 = coerce_unify env' b b' in
 			       match c1, c2 with
 				   None, None -> 
-				     trace (str "No coercion needed");
 				     None
 				 | _, _ ->
 				     Some 
@@ -201,7 +195,6 @@ module Coercion = struct
 			   end
 			 else 
 			   begin 
-			     debug 1 (str "In coerce prod types");
 			     let (a, b), (a', b') = 
 			       pair_of_array l, pair_of_array l' 
 			     in
@@ -236,7 +229,25 @@ module Coercion = struct
 (* 				     mkApp (Lazy.force eqrec,  *)
 (* 					    [| argtype; argx; pred; x; argy; evar |])) *)
 (* 			 else  *)subco ()
-		 | _ ->  subco ())
+		 | x, y when x = y ->
+		     let lam_type = Typing.type_of env (evars_of !isevars) c in
+		     let rec coerce typ i co =
+		       if i < Array.length l then
+			 let hdx = l.(i) and hdy = l'.(i) in
+			 let (n, eqT, restT) = destProd typ in
+			 let pred = mkLambda (n, eqT, mkApp (lift 1 c, [| mkRel 1 |])) in
+			 let eq = mkApp (Lazy.force eq_ind, [| eqT; hdx; hdy |]) in
+			 let evar = make_existential dummy_loc env isevars eq in
+			 let eq_app x = mkApp (Lazy.force eq_rect,
+					       [| eqT; hdx; pred; x; hdy; evar|])
+			 in 
+			   coerce (subst1 hdy restT) (succ i) (fun x -> eq_app (co x))
+		       else co
+		     in
+		       if Array.length l = Array.length l' then
+			 Some (coerce lam_type 0 (fun x -> x))
+		       else subco ()
+		 | _ -> subco ())
 	  | _, _ ->  subco ()
 
     and subset_coerce env isevars x y =
@@ -387,13 +398,13 @@ module Coercion = struct
       with Reduction.NotConvertible -> raise NoCoercion
 
   let rec inh_conv_coerce_to_fail loc env isevars v t c1 =
-    (try
-       debug 1 (str "inh_conv_coerce_to_fail called for " ++
-	      Termops.print_constr_env env t ++ str " and "++ spc () ++
-	      Termops.print_constr_env env c1 ++ str " with evars: " ++ spc () ++
-	      Subtac_utils.pr_evar_defs isevars ++ str " in env: " ++ spc () ++
-	      Termops.print_env env);
-     with _ -> ());
+(*     (try *)
+(*        debug 1 (str "inh_conv_coerce_to_fail called for " ++ *)
+(* 	      Termops.print_constr_env env t ++ str " and "++ spc () ++ *)
+(* 	      Termops.print_constr_env env c1 ++ str " with evars: " ++ spc () ++ *)
+(* 	      Subtac_utils.pr_evar_defs isevars ++ str " in env: " ++ spc () ++ *)
+(* 	      Termops.print_env env); *)
+(*      with _ -> ()); *)
     try (the_conv_x_leq env t c1 isevars, v, t)
     with Reduction.NotConvertible ->
       (try 
@@ -452,14 +463,14 @@ module Coercion = struct
 
 	
   (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
-  let inh_conv_coerce_to loc env isevars cj ((n, t) as tycon) =
-    (try 
-       debug 1 (str "Subtac_coercion.inh_conv_coerce_to called for " ++
-	      Termops.print_constr_env env cj.uj_type ++ str " and "++ spc () ++ 
-	      Evarutil.pr_tycon_type env tycon ++ str " with evars: " ++ spc () ++
-	      Subtac_utils.pr_evar_defs isevars ++ str " in env: " ++ spc () ++
-	      Termops.print_env env);
-     with _ -> ());
+  let inh_conv_coerce_to loc env isevars cj ((n, t) as _tycon) =
+(*     (try  *)
+(*        debug 1 (str "Subtac_coercion.inh_conv_coerce_to called for " ++ *)
+(* 	      Termops.print_constr_env env cj.uj_type ++ str " and "++ spc () ++  *)
+(* 	      Evarutil.pr_tycon_type env tycon ++ str " with evars: " ++ spc () ++ *)
+(* 	      Subtac_utils.pr_evar_defs isevars ++ str " in env: " ++ spc () ++ *)
+(* 	      Termops.print_env env); *)
+(*      with _ -> ()); *)
     match n with
 	None ->
 	  let (evd', val', type') = 
@@ -477,40 +488,38 @@ module Coercion = struct
       | Some (init, cur) ->
 	  (isevars, cj)
 
-  let inh_conv_coerces_to loc env isevars t ((abs, t') as tycon) =
-    (try 
-       debug 1 (str "Subtac_coercion.inh_conv_coerces_to called for " ++
-	      Termops.print_constr_env env t ++ str " and "++ spc () ++ 
-	      Evarutil.pr_tycon_type env tycon ++ str " with evars: " ++ spc () ++
-	      Evd.pr_evar_defs isevars ++ str " in env: " ++ spc () ++
-	      Termops.print_env env);
-     with _ -> ());
+  let inh_conv_coerces_to loc env isevars t ((abs, t') as _tycon) =
+(*     (try  *)
+(*        trace (str "Subtac_coercion.inh_conv_coerces_to called for " ++ *)
+(* 	      Termops.print_constr_env env t ++ str " and "++ spc () ++  *)
+(* 	      Evarutil.pr_tycon_type env tycon ++ str " with evars: " ++ spc () ++ *)
+(* 	      Evd.pr_evar_defs isevars ++ str " in env: " ++ spc () ++ *)
+(* 	      Termops.print_env env); *)
+(*      with _ -> ()); *)
     let nabsinit, nabs = 
       match abs with
 	  None -> 0, 0
 	| Some (init, cur) -> init, cur
     in
-    let (rels, rng) = 
       (* a little more effort to get products is needed *) 
-      try decompose_prod_n nabs t
-      with _ -> 
-	trace (str "decompose_prod_n failed");
-	raise (Invalid_argument "Subtac_coercion.inh_conv_coerces_to")
-    in
-      (* The final range free variables must have been replaced by evars, we accept only that evars
-	 in rng are applied to free vars. *)
-      if noccur_with_meta 0 (succ nabsinit) rng then (
-	trace (str "No occur between 0 and " ++ int (succ nabsinit));
-	let env', t, t' = 
-	  let env' = List.fold_right (fun (n, t) env -> push_rel (n, None, t) env) rels env in
-	    env', rng, lift nabs t'
-	in
-	  try 
-	    pi1 (try inh_conv_coerce_to_fail loc env' isevars None t t'
-		 with NoCoercion ->
-		   coerce_itf loc env' isevars None t t') 
-	  with NoSubtacCoercion ->
-	    let sigma = evars_of isevars in
-	      error_cannot_coerce env' sigma (t, t'))
-      else isevars 
+      try let rels, rng = decompose_prod_n nabs t in
+	(* The final range free variables must have been replaced by evars, we accept only that evars
+	   in rng are applied to free vars. *)
+	if noccur_with_meta 0 (succ nabsinit) rng then (
+(* 	  trace (str "No occur between 0 and " ++ int (succ nabsinit)); *)
+	  let env', t, t' = 
+	    let env' = List.fold_right (fun (n, t) env -> push_rel (n, None, t) env) rels env in
+	      env', rng, lift nabs t'
+	  in
+	    try 
+	      pi1 (try inh_conv_coerce_to_fail loc env' isevars None t t'
+		   with NoCoercion ->
+		     coerce_itf loc env' isevars None t t') 
+	    with NoSubtacCoercion ->
+	      let sigma = evars_of isevars in
+		error_cannot_coerce env' sigma (t, t'))
+	else isevars 
+      with _ -> isevars
+ (* 	trace (str "decompose_prod_n failed"); *)
+ (* 	raise (Invalid_argument "Subtac_coercion.inh_conv_coerces_to") *)
 end

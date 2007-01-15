@@ -109,6 +109,10 @@ VERNAC COMMAND EXTEND Subtac_Solve_Obligations
 | [ "Admit" "Obligations" ] -> [ Subtac_obligations.admit_obligations None ] 
     END
 
+VERNAC COMMAND EXTEND Subtac_Set_Solver
+| [ "Obligations" "Tactic" ":=" tactic(t) ] -> [ Subtac_obligations.set_default_tactic (Tacinterp.interp t) ]
+END
+
 VERNAC COMMAND EXTEND Subtac_Show_Obligations
 | [ "Obligations" "of" ident(name) ] -> [ Subtac_obligations.show_obligations (Some name) ]
 | [ "Obligations" ] -> [ Subtac_obligations.show_obligations None ]
