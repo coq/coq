@@ -10,10 +10,17 @@ WHAT DO YOU NEED ?
 
      - Objective Caml version 3.07 or later
        (available at http://caml.inria.fr/)
-  
+
+     - GNU Make version 3.80 or later
+       (available at http://www.gnu.org/software/make/, but also a
+        standard or optional add-on part to most Unices and Unix
+        clones, sometimes under the name "gmake".)
+
+     - A C compiler
+
    Until now, it has mainly been tested on Sun workstations running Solaris,
-   and DEC alpha and Pentium workstations running Linux. By FTP, Coq
-   comes as a single compressed tar-file. You have probably already
+   DEC alpha and Pentium workstations running Linux. By FTP, Coq comes
+   as a single compressed tar-file. You have probably already
    decompressed it if you are reading this document.
 
 
@@ -64,7 +71,8 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
    the Coq binaries, standard library, man pages, etc. It will propose
    you some default values.
 
-   The "configure" script accepts the following options:
+   For a list of options accepted by the "configure" script, run
+   "./configure -help". The main options accepted are:
 
 -prefix <dir>
 	Binaries, library, man pages and Emacs mode will be respectively
