@@ -358,6 +358,18 @@ endef
 
 $(foreach f,$(.FEATURES),$(eval $(call order-only-template,$(f))))
 
+ifdef NO_RECOMPILE_LIB
+ ifdef ORDER_ONLY_SEP
+  VO_TOOLS_DEP += $(ORDER_ONLY_SEP)
+ else
+  $(error NO_RECOMPILE_LIB needs GNU make version 3.80 or later; that is a version that supports order-only dependencies)
+ endif
+endif
+VO_TOOLS_DEP += $(BESTCOQTOP)
+ifdef COQ_XML
+ VO_TOOLS_DEP += $(COQDOC)
+endif
+
 ###########################################################################
 # Compilation option for .c files 
 ###########################################################################
@@ -1120,18 +1132,6 @@ ALLVO = $(INITVO) $(THEORIESVO) $(CONTRIBVO)
 ###########################################################################
 
 SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v
-
-ifdef NO_RECOMPILE_LIB
- ifdef ORDER_ONLY_SEP
-  VO_TOOLS_DEP += $(ORDER_ONLY_SEP)
- else
-  $(error NO_RECOMPILE_LIB needs GNU make version 3.80 or later; that is a version that supports order-only dependencies)
- endif
-endif
-VO_TOOLS_DEP += $(BESTCOQTOP)
-ifdef COQ_XML
- VO_TOOLS_DEP += $(COQDOC)
-endif
 
 states/initial.coq: states/MakeInitial.v $(INITVO) $(VO_TOOLS_DEP)
 	$(BOOTCOQTOP) -batch -notop -silent -nois -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
