@@ -81,6 +81,41 @@ let check_inductive cst env msid1 l info1 mib2 spec2 =
       | IndType ((_,0), mib) -> mib
       | _ -> error ()
   in
+  let check_inductive_type cst env t1 t2 =
+
+    (* Due to sort-polymorphism in inductive types, the conclusions of
+       t1 and t2, if in Type, are generated as the least upper bounds
+       of the types of the constructors. 
+
+       By monotonicity of the infered l.u.b.  wrt subtyping (i.e.  if X:U
+       |- T(X):s and |- M:U' and U'<=U then infer_type(T(M))<=s), each
+       universe in the conclusion of t1 has an bounding universe in
+       the conclusion of t2, so that we don't need to check the
+       subtyping of the conclusions of t1 and t2.
+
+       Even if we'd like to recheck it, the inference of constraints
+       is not designed to deal with algebraic constraints of the form
+       max-univ(u1..un) <= max-univ(u'1..u'n), so that it is not easy
+       to recheck it (in short, we would need the actual graph of
+       constraints as input while type checking is currently designed
+       to output a set of constraints instead) *)
+
+    (* So we cheat and replace the subtyping problem on algebraic
+       constraints of the form max-univ(u1..un) <= max-univ(u'1..u'n)
+       (that we know are necessary true) by trivial constraints that
+       the constraint generator knows how to deal with *)
+
+    let (ctx1,s1) = dest_arity env t1 in
+    let (ctx2,s2) = dest_arity env t2 in
+    let s1,s2 =
+      match s1, s2 with
+      | Type _, Type _ -> (* shortcut here *) mk_Prop, mk_Prop
+      | (Prop _, Type _) | (Type _,Prop _) -> error ()
+      | _ -> (s1, s2) in
+    check_conv cst conv_leq env 
+      (Sign.mkArity (ctx1,s1)) (Sign.mkArity (ctx2,s2))
+  in
+
   let check_packet cst p1 p2 =
     let check f = if f p1 <> f p2 then error () in
       check (fun p -> p.mind_consnames);
@@ -96,7 +131,7 @@ let check_inductive cst env msid1 l info1 mib2 spec2 =
       (* nparams done *)
       (* params_ctxt done because part of the inductive types *)
       (* Don't check the sort of the type if polymorphic *)
-      let cst = check_conv cst conv env (type_of_inductive env (mib1,p1)) (type_of_inductive env (mib2,p2))
+      let cst = check_inductive_type cst env (type_of_inductive env (mib1,p1)) (type_of_inductive env (mib2,p2))
       in
 	cst
   in
