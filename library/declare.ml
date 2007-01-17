@@ -136,7 +136,7 @@ let _ = Summary.declare_summary "CONSTANT"
 
 (* At load-time, the segment starting from the module name to the discharge *)
 (* section (if Remark or Fact) is needed to access a construction *)
-let load_constant i ((sp,kn),(_,_,_,kind)) =
+let load_constant i ((sp,kn),(_,_,kind)) =
   if Nametab.exists_cci sp then
     errorlabstrm "cache_constant" 
       (pr_id (basename sp) ++ str " already exists");
@@ -147,21 +147,17 @@ let load_constant i ((sp,kn),(_,_,_,kind)) =
 let open_constant i ((sp,kn),_) =
   Nametab.push (Nametab.Exactly i) sp (ConstRef (constant_of_kn kn))
 
-let cache_constant ((sp,kn),(cdt,dhyps,imps,kind)) =
+let cache_constant ((sp,kn),(cdt,dhyps,kind)) =
   let id = basename sp in
   let _,dir,_ = repr_kn kn in
-    if Idmap.mem id !vartab then
-      errorlabstrm "cache_constant" (pr_id id ++ str " already exists");
-    if Nametab.exists_cci sp then
-      errorlabstrm "cache_constant" (pr_id id ++ str " already exists");
-    let kn' = Global.add_constant dir id cdt in
-      assert (kn' = constant_of_kn kn);
-      Nametab.push (Nametab.Until 1) sp (ConstRef (constant_of_kn kn));
-      add_section_constant kn' (Global.lookup_constant kn').const_hyps;
-      Dischargedhypsmap.set_discharged_hyps sp dhyps;
-      with_implicits imps declare_constant_implicits kn';
-      Notation.declare_ref_arguments_scope (ConstRef kn');
-      csttab := Spmap.add sp kind !csttab
+  if Idmap.mem id !vartab or Nametab.exists_cci sp then
+    errorlabstrm "cache_constant" (pr_id id ++ str " already exists");
+  let kn' = Global.add_constant dir id cdt in
+  assert (kn' = constant_of_kn kn);
+  Nametab.push (Nametab.Until 1) sp (ConstRef (constant_of_kn kn));
+  add_section_constant kn' (Global.lookup_constant kn').const_hyps;
+  Dischargedhypsmap.set_discharged_hyps sp dhyps;
+  csttab := Spmap.add sp kind !csttab
 
 (*s Registration as global tables and rollback. *)
 
@@ -172,18 +168,18 @@ let discharged_hyps kn sechyps =
   let args = array_map_to_list destVar (instance_from_named_context sechyps) in
   List.rev (List.map (Libnames.make_path dir) args)
 
-let discharge_constant ((sp,kn),(cdt,dhyps,imps,kind)) =
+let discharge_constant ((sp,kn),(cdt,dhyps,kind)) =
   let con = constant_of_kn kn in
   let cb = Global.lookup_constant con in
-  let (repl1,_ as repl) = replacement_context () in
-  let sechyps = section_segment (ConstRef con) in
+  let repl = replacement_context () in
+  let sechyps = section_segment_of_constant con in
   let recipe = { d_from=cb; d_modlist=repl; d_abstract=sechyps } in
-  Some (GlobalRecipe recipe,(discharged_hyps kn sechyps)@dhyps,imps,kind)
+  Some (GlobalRecipe recipe,(discharged_hyps kn sechyps)@dhyps,kind)
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
 let dummy_constant_entry = ConstantEntry (ParameterEntry mkProp)
 
-let dummy_constant (ce,_,imps,mk) = dummy_constant_entry,[],imps,mk
+let dummy_constant (ce,_,mk) = dummy_constant_entry,[],mk
 
 let export_constant cst = Some (dummy_constant cst)
 
@@ -210,9 +206,10 @@ let hcons_constant_declaration = function
   | cd -> cd
 
 let declare_constant_common id dhyps (cd,kind) =
-  let imps = implicits_flags () in
-  let (sp,kn) = add_leaf id (in_constant (cd,dhyps,imps,kind)) in
+  let (sp,kn) = add_leaf id (in_constant (cd,dhyps,kind)) in
   let kn = constant_of_kn kn in
+  declare_constant_implicits kn;
+  Notation.declare_ref_arguments_scope (ConstRef kn);
   kn
 
 let declare_constant_gen internal id (cd,kind) =
@@ -261,16 +258,16 @@ let check_exists_inductive (sp,_) =
     let (_,id) = repr_path sp in
     errorlabstrm "" (pr_id id ++ str " already exists")
 
-let load_inductive i ((sp,kn),(_,_,mie)) =
+let load_inductive i ((sp,kn),(_,mie)) =
   let names = inductive_names sp kn mie in
   List.iter check_exists_inductive names;
   List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until i) sp ref) names
 
-let open_inductive i ((sp,kn),(_,_,mie)) =
+let open_inductive i ((sp,kn),(_,mie)) =
   let names = inductive_names sp kn mie in
   List.iter (fun (sp, ref) -> Nametab.push (Nametab.Exactly i) sp ref) names
 
-let cache_inductive ((sp,kn),(dhyps,imps,mie)) =
+let cache_inductive ((sp,kn),(dhyps,mie)) =
   let names = inductive_names sp kn mie in
   List.iter check_exists_inductive names;
   let id = basename sp in
@@ -279,15 +276,13 @@ let cache_inductive ((sp,kn),(dhyps,imps,mie)) =
   assert (kn'=kn);
   add_section_kn kn (Global.lookup_mind kn').mind_hyps;
   Dischargedhypsmap.set_discharged_hyps sp dhyps;
-  with_implicits imps declare_mib_implicits kn;
-  declare_inductive_argument_scopes kn mie;
   List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until 1) sp ref) names
 
-let discharge_inductive ((sp,kn),(dhyps,imps,mie)) =
+let discharge_inductive ((sp,kn),(dhyps,mie)) =
   let mie = Global.lookup_mind kn in
   let repl = replacement_context () in
-  let sechyps = section_segment (IndRef (kn,0)) in
-  Some (discharged_hyps kn sechyps,imps,
+  let sechyps = section_segment_of_mutual_inductive kn in
+  Some (discharged_hyps kn sechyps,
         Discharge.process_inductive sechyps repl mie)
 
 let dummy_one_inductive_entry mie = {
@@ -298,7 +293,7 @@ let dummy_one_inductive_entry mie = {
 }
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
-let dummy_inductive_entry (_,imps,m) = ([],imps,{
+let dummy_inductive_entry (_,m) = ([],{
   mind_entry_params = [];
   mind_entry_record = false;
   mind_entry_finite = true;
@@ -318,11 +313,12 @@ let (in_inductive, out_inductive) =
 
 (* for initial declaration *)
 let declare_mind isrecord mie =
-  let imps = implicits_flags () in
   let id = match mie.mind_entry_inds with
     | ind::_ -> ind.mind_entry_typename
     | [] -> anomaly "cannot declare an empty list of inductives" in
-  let oname = add_leaf id (in_inductive ([],imps,mie)) in
+  let (sp,kn as oname) = add_leaf id (in_inductive ([],mie)) in
+  declare_mib_implicits kn;
+  declare_inductive_argument_scopes kn mie;
   !xml_declare_inductive (isrecord,oname);
   oname
 

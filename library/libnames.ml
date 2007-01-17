@@ -21,6 +21,8 @@ type global_reference =
   | IndRef of inductive
   | ConstructRef of constructor
 
+let isVarRef = function VarRef _ -> true | _ -> false
+
 let subst_global subst ref = match ref with
   | VarRef var -> ref, mkVar var
   | ConstRef kn ->
@@ -264,3 +266,18 @@ let loc_of_reference = function
   | Qualid (loc,qid) -> loc
   | Ident (loc,id) -> loc
 
+(* popping one level of section in global names *)
+
+let pop_con con =
+  let (mp,dir,l) = repr_con con in
+  Names.make_con mp (dirpath_prefix dir) l
+
+let pop_kn kn =
+  let (mp,dir,l) = repr_kn kn in
+  Names.make_kn mp (dirpath_prefix dir) l
+
+let pop_global_reference = function
+  | ConstRef con -> ConstRef (pop_con con)
+  | IndRef (kn,i) -> IndRef (pop_kn kn,i)
+  | ConstructRef ((kn,i),j) -> ConstructRef ((pop_kn kn,i),j)
+  | VarRef id -> anomaly "VarRef not poppable"

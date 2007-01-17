@@ -186,9 +186,15 @@ let add_leaf id obj =
   if fst (current_prefix ()) = initial_path then 
     error ("No session module started (use -top dir)");
   let oname = make_oname id in
-    cache_object (oname,obj);
-    add_entry oname (Leaf obj);
-    oname
+  cache_object (oname,obj);
+  add_entry oname (Leaf obj);
+  oname
+
+let add_discharged_leaf id obj =
+  let oname = make_oname id in
+  let newobj = rebuild_object obj in
+  cache_object (oname,newobj);
+  add_entry oname (Leaf newobj)
 
 let add_leaves id objs =
   let oname = make_oname id in
@@ -371,10 +377,17 @@ let what_is_opened () = find_entry_p is_something_opened
 
 (* Discharge tables *)
 
+(* At each level of section, we remember
+   - the list of variables in this section
+   - the list of variables on which each constant depends in this section
+   - the list of variables on which each inductive depends in this section
+   - the list of substitution to do at section closing 
+*)
+
+type abstr_list = Sign.named_context Cmap.t * Sign.named_context KNmap.t
+
 let sectab =
-  ref ([] : (identifier list *
-             (identifier array Cmap.t * identifier array KNmap.t) *
-             (Sign.named_context Cmap.t * Sign.named_context KNmap.t)) list)
+  ref ([] : (identifier list * Cooking.work_list * abstr_list) list)
 
 let add_section () =
   sectab := ([],(Cmap.empty,KNmap.empty),(Cmap.empty,KNmap.empty)) :: !sectab
@@ -407,16 +420,18 @@ let add_section_constant kn =
 
 let replacement_context () = pi2 (List.hd !sectab)
 
-let section_segment = function
-  | VarRef id ->
-      []
-  | ConstRef con -> 
-      Cmap.find con (fst (pi3 (List.hd !sectab)))
-  | IndRef (kn,_) | ConstructRef ((kn,_),_) ->
-      KNmap.find kn (snd (pi3 (List.hd !sectab)))
+let section_segment_of_constant con =
+  Cmap.find con (fst (pi3 (List.hd !sectab)))
 
-let section_instance r =
-  Sign.instance_from_named_context (List.rev (section_segment r))
+let section_segment_of_mutual_inductive kn =
+  KNmap.find kn (snd (pi3 (List.hd !sectab)))
+
+let section_instance = function
+  | VarRef id -> [||]
+  | ConstRef con ->
+      Cmap.find con (fst (pi2 (List.hd !sectab)))
+  | IndRef (kn,_) | ConstructRef ((kn,_),_) ->
+      KNmap.find kn (snd (pi2 (List.hd !sectab)))
 
 let init () = sectab := []
 let freeze () = !sectab
@@ -459,11 +474,14 @@ let open_section id =
 (* Restore lib_stk and summaries as before the section opening, and
    add a ClosedSection object. *)
 
-let discharge_item = function
-  | ((sp,_ as oname),Leaf lobj) ->
+let discharge_item ((sp,_ as oname),e) =
+  match e with
+  | Leaf lobj ->
       option_map (fun o -> (basename sp,o)) (discharge_object (oname,lobj))
-  | _ ->
-      None
+  | FrozenState _ -> None
+  | ClosedSection -> None
+  | OpenedSection _ | OpenedModtype _ | OpenedModule _ | CompilingLibrary _ ->
+      anomaly "discharge_item"
 
 let close_section id =
   let oname,fs = 
@@ -477,16 +495,16 @@ let close_section id =
       error "no opened section"
   in
   let (secdecls,_,before) = split_lib oname in
-    lib_stk := before;
-    let full_olddir = fst !path_prefix in
-      pop_path_prefix ();
-      add_entry (make_oname id) ClosedSection;
-      if !Options.xml_export then !xml_close_section id;
-      let newdecls = List.map discharge_item secdecls in
-	Summary.section_unfreeze_summaries fs;
-	List.iter (option_iter (fun (id,o) -> ignore (add_leaf id o))) newdecls;
-	Cooking.clear_cooking_sharing ();
-	Nametab.push_dir (Nametab.Until 1) full_olddir (DirClosedSection full_olddir)
+  lib_stk := before;
+  let full_olddir = fst !path_prefix in
+  pop_path_prefix ();
+  add_entry (make_oname id) ClosedSection;
+  if !Options.xml_export then !xml_close_section id;
+  let newdecls = List.map discharge_item secdecls in
+  Summary.section_unfreeze_summaries fs;
+  List.iter (option_iter (fun (id,o) -> add_discharged_leaf id o)) newdecls;
+  Cooking.clear_cooking_sharing ();
+  Nametab.push_dir (Nametab.Until 1) full_olddir (DirClosedSection full_olddir)
 
 (*****************)
 (* Backtracking. *)
@@ -659,14 +677,6 @@ let remove_section_part ref =
 
 (************************)
 (* Discharging names *)
-
-let pop_kn kn =
-  let (mp,dir,l) = Names.repr_kn kn in
-  Names.make_kn mp (dirpath_prefix dir) l
-
-let pop_con con = 
-  let (mp,dir,l) = Names.repr_con con in
-  Names.make_con mp (dirpath_prefix dir) l
 
 let con_defined_in_sec kn = 
   let _,dir,_ = repr_con kn in

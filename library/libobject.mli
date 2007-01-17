@@ -71,6 +71,7 @@ type 'a object_declaration = {
   classify_function : object_name * 'a -> 'a substitutivity;
   subst_function : object_name * substitution * 'a -> 'a;
   discharge_function : object_name * 'a -> 'a option;
+  rebuild_function : 'a -> 'a;
   export_function : 'a -> 'a option }
 
 (* The default object is a "Keep" object with empty methods. 
@@ -105,4 +106,5 @@ val subst_object : object_name * substitution * obj -> obj
 val classify_object : object_name * obj -> obj substitutivity
 val export_object : obj -> obj option
 val discharge_object : object_name * obj -> obj option
+val rebuild_object : obj -> obj
 val relax : bool -> unit

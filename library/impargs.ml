@@ -45,7 +45,7 @@ let is_contextual_implicit_args () = !contextual_implicit_args
 
 type implicits_flags = bool * bool * bool
 
-let implicits_flags () = 
+let implicit_flags () = 
   (!implicit_args, !strict_implicit_args, !contextual_implicit_args)
 
 let with_implicits (a,b,c) f x =
@@ -167,12 +167,6 @@ let add_free_rels_until strict bound env m pos acc =
 
 (* calcule la liste des arguments implicites *)
 
-let my_concrete_name avoid names t = function
-  | Anonymous -> Anonymous, avoid, Anonymous::names
-  | na -> 
-      let id = Termops.next_name_not_occuring false na avoid names t in
-      Name id, id::avoid, Name id::names
-  
 let compute_implicits_gen strict contextual env t =
   let rec aux env avoid n names t =
     let t = whd_betadeltaiota env t in
@@ -194,14 +188,49 @@ let compute_implicits_gen strict contextual env t =
 	Array.to_list v
     | _ -> []
 
-let compute_implicits env t =
-  let strict = !strict_implicit_args in
-  let contextual = !contextual_implicit_args in
+let compute_implicits_auto env (_,strict,contextual) t =
   let l = compute_implicits_gen strict contextual env t in
   List.map (function
     | (Name id, Some imp) -> Some (id,imp)
     | (Anonymous, Some _) -> anomaly "Unnamed implicit"
     | _ -> None) l
+
+let compute_implicits env t = compute_implicits_auto env (implicit_flags()) t
+
+let set_implicit id imp =
+  Some (id,match imp with None -> Manual | Some imp -> imp)
+
+let compute_manual_implicits flags ref l =
+  let t = Global.type_of_global ref in
+  let autoimps = compute_implicits_gen false true (Global.env()) t in
+  let n = List.length autoimps in
+  if not (list_distinct l) then 
+    error ("Some parameters are referred more than once");
+  (* Compare with automatic implicits to recover printing data and names *)
+  let rec merge k l = function
+    | (Name id,imp)::imps ->
+	let l',imp =
+	  try list_remove_first (ExplByPos k) l, set_implicit id imp
+	  with Not_found ->
+	  try list_remove_first (ExplByName id) l, set_implicit id imp
+	  with Not_found ->
+	  l, None in
+	imp :: merge (k+1) l' imps
+    | (Anonymous,imp)::imps -> 
+	None :: merge (k+1) l imps
+    | [] when l = [] -> []
+    | _ ->
+	match List.hd l with
+	| ExplByName id ->
+	    error ("Wrong or not dependent implicit argument name: "^(string_of_id id))
+	| ExplByPos i ->
+	    if i<1 or i>n then 
+	      error ("Bad implicit argument number: "^(string_of_int i))
+	    else
+	      errorlabstrm ""
+		(str "Cannot set implicit argument number " ++ int i ++
+		 str ": it has no name") in
+  merge 1 l autoimps
 
 type implicit_status =
     (* None = Not implicit *)
@@ -238,44 +267,18 @@ let positions_of_implicits =
 type strict_flag = bool     (* true = strict *)
 type contextual_flag = bool (* true = contextual *)
 
-type implicits =
-  | Impl_auto of strict_flag * contextual_flag * implicits_list
-  | Impl_manual of implicits_list
-  | No_impl
-
-let auto_implicits env ty =
-  if !implicit_args then
-    let l = compute_implicits env ty in
-    Impl_auto (!strict_implicit_args,!contextual_implicit_args,l)
-  else
-    No_impl
-
-let list_of_implicits = function 
-  | Impl_auto (_,_,l) -> l
-  | Impl_manual l -> l
-  | No_impl -> []
-
 (*s Constants. *)
 
-let constants_table = ref Cmap.empty
-
-let compute_constant_implicits cst =
+let compute_constant_implicits flags cst =
   let env = Global.env () in
-  auto_implicits env (Typeops.type_of_constant env cst)
-
-let constant_implicits sp =
-  try Cmap.find sp !constants_table with Not_found -> No_impl
+  compute_implicits_auto env flags (Typeops.type_of_constant env cst)
 
 (*s Inductives and constructors. Their implicit arguments are stored
    in an array, indexed by the inductive number, of pairs $(i,v)$ where
    $i$ are the implicit arguments of the inductive and $v$ the array of 
    implicit arguments of the constructors. *)
 
-let inductives_table = ref Indmap.empty
-
-let constructors_table = ref Constrmap.empty
-
-let compute_mib_implicits kn =
+let compute_mib_implicits flags kn =
   let env = Global.env () in
   let mib = lookup_mind kn env in
   let ar =
@@ -288,54 +291,55 @@ let compute_mib_implicits kn =
   let imps_one_inductive i mip =
     let ind = (kn,i) in
     let ar = type_of_inductive env (mib,mip) in
-    ((IndRef ind,auto_implicits env ar),
-     Array.mapi (fun j c -> (ConstructRef (ind,j+1),auto_implicits env_ar c))
+    ((IndRef ind,compute_implicits_auto env flags ar),
+     Array.mapi (fun j c ->
+       (ConstructRef (ind,j+1),compute_implicits_auto env_ar flags c))
        mip.mind_nf_lc)
   in
   Array.mapi imps_one_inductive mib.mind_packets
 
-let inductive_implicits indp =
-  try Indmap.find indp !inductives_table with Not_found -> No_impl
-
-let constructor_implicits consp =
-  try Constrmap.find consp !constructors_table with Not_found -> No_impl
+let compute_all_mib_implicits flags kn =
+  let imps = compute_mib_implicits flags kn in
+  List.flatten 
+    (array_map_to_list (fun (ind,cstrs) -> ind::Array.to_list cstrs) imps)
 
 (*s Variables. *)
 
-let var_table = ref Idmap.empty
-
-let compute_var_implicits id =
+let compute_var_implicits flags id =
   let env = Global.env () in
   let (_,_,ty) = lookup_named id env in
-  auto_implicits env ty
-
-let var_implicits id = 
-  try Idmap.find id !var_table with Not_found -> No_impl
+  compute_implicits_auto env flags ty
 
 (* Implicits of a global reference. *)
 
-let compute_global_implicits = function
-  | VarRef id -> compute_var_implicits id
-  | ConstRef kn -> compute_constant_implicits kn
+let compute_global_implicits flags = function
+  | VarRef id -> compute_var_implicits flags id
+  | ConstRef kn -> compute_constant_implicits flags kn
   | IndRef (kn,i) -> 
-      let ((_,imps),_) = (compute_mib_implicits kn).(i) in imps
+      let ((_,imps),_) = (compute_mib_implicits flags kn).(i) in imps
   | ConstructRef ((kn,i),j) -> 
-      let (_,cimps) = (compute_mib_implicits kn).(i) in snd cimps.(j-1)
+      let (_,cimps) = (compute_mib_implicits flags kn).(i) in snd cimps.(j-1)
 
 (* Caching implicits *)
 
-let cache_implicits_decl (r,imps) =
-  match r with
-  | VarRef id -> 
-      var_table := Idmap.add id imps !var_table
-  | ConstRef kn ->
-      constants_table := Cmap.add kn imps !constants_table
-  | IndRef indp ->
-      inductives_table := Indmap.add indp imps !inductives_table;
-  | ConstructRef consp -> 
-      constructors_table := Constrmap.add consp imps !constructors_table
+type implicit_interactive_request = ImplAuto | ImplManual of explicitation list
 
-let load_implicits _ (_,l) = List.iter cache_implicits_decl l
+type implicit_discharge_request =
+  | ImplNoDischarge
+  | ImplConstant of constant * implicits_flags
+  | ImplMutualInductive of kernel_name * implicits_flags
+  | ImplInteractive of global_reference * implicits_flags * 
+      implicit_interactive_request
+
+let implicits_table = ref Refmap.empty
+
+let implicits_of_global ref =
+  try Refmap.find ref !implicits_table with Not_found -> []
+
+let cache_implicits_decl (ref,imps) =
+  implicits_table := Refmap.add ref imps !implicits_table
+
+let load_implicits _ (_,(_,l)) = List.iter cache_implicits_decl l
 
 let cache_implicits o =
   load_implicits 1 o
@@ -343,121 +347,88 @@ let cache_implicits o =
 let subst_implicits_decl subst (r,imps as o) =
   let r' = fst (subst_global subst r) in if r==r' then o else (r',imps)
 
-let subst_implicits (_,subst,l) =
-  list_smartmap (subst_implicits_decl subst) l
+let subst_implicits (_,subst,(req,l)) =
+  (ImplNoDischarge,list_smartmap (subst_implicits_decl subst) l)
 
-let (in_implicits, _) =
+let discharge_implicits (_,(req,l)) =
+  match req with
+  | ImplNoDischarge -> None
+  | ImplInteractive (ref,flags,exp) -> 
+      Some (ImplInteractive (pop_global_reference ref,flags,exp),l)
+  | ImplConstant (con,flags) ->
+      Some (ImplConstant (pop_con con,flags),l)
+  | ImplMutualInductive (kn,flags) ->
+      Some (ImplMutualInductive (pop_kn kn,flags),l)
+
+let rebuild_implicits (req,l) =
+  let l' = match req with
+  | ImplNoDischarge -> assert false
+  | ImplConstant (con,flags) -> 
+      [ConstRef con,compute_constant_implicits flags con]
+  | ImplMutualInductive (kn,flags) ->
+      compute_all_mib_implicits flags kn
+  | ImplInteractive (ref,flags,o) ->
+      match o with
+      | ImplAuto -> [ref,compute_global_implicits flags ref]
+      | ImplManual l ->
+	  error "Discharge of global manually given implicit arguments not implemented" in
+  (req,l')
+
+
+let (inImplicits, _) =
   declare_object {(default_object "IMPLICITS") with 
     cache_function = cache_implicits;
     load_function = load_implicits;
     subst_function = subst_implicits;
     classify_function = (fun (_,x) -> Substitute x);
+    discharge_function = discharge_implicits;
+    rebuild_function = rebuild_implicits;
     export_function = (fun x -> Some x) }
 
-let declare_implicits_gen r = 
-  add_anonymous_leaf (in_implicits [r,compute_global_implicits r])
+let declare_implicits_gen req flags ref =
+  let imps = compute_global_implicits flags ref in
+  add_anonymous_leaf (inImplicits (req,[ref,imps]))
 
-let declare_implicits r =
-  with_implicits
-    (true,!strict_implicit_args,!contextual_implicit_args)
-    declare_implicits_gen r
+let declare_implicits local ref =
+  let flags = (true,!strict_implicit_args,!contextual_implicit_args) in
+  let req = 
+    if local then ImplNoDischarge else ImplInteractive(ref,flags,ImplAuto) in
+  declare_implicits_gen req flags ref
 
 let declare_var_implicits id =
-  if !implicit_args then declare_implicits_gen (VarRef id)
+  if !implicit_args then
+    declare_implicits_gen ImplNoDischarge (implicit_flags ()) (VarRef id)
 
-let declare_constant_implicits kn =
-  if !implicit_args then declare_implicits_gen (ConstRef kn)
+let declare_constant_implicits con =
+  if !implicit_args then
+    let flags = implicit_flags () in
+    declare_implicits_gen (ImplConstant (con,flags)) flags (ConstRef con)
 
 let declare_mib_implicits kn =
   if !implicit_args then
-  let imps = compute_mib_implicits kn in
-  let imps = array_map_to_list
-    (fun (ind,cstrs) -> ind::(Array.to_list cstrs)) imps in
-  add_anonymous_leaf (in_implicits (List.flatten imps))
-
-let implicits_of_global_gen = function
-  | VarRef id -> var_implicits id
-  | ConstRef sp -> constant_implicits sp
-  | IndRef isp -> inductive_implicits isp
-  | ConstructRef csp ->	constructor_implicits csp
-
-let implicits_of_global r =
-  list_of_implicits (implicits_of_global_gen r)
+    let flags = implicit_flags () in
+    let imps = array_map_to_list
+      (fun (ind,cstrs) -> ind::(Array.to_list cstrs))
+      (compute_mib_implicits flags kn) in
+    add_anonymous_leaf
+      (inImplicits (ImplMutualInductive (kn,flags),List.flatten imps))
 
 (* Declare manual implicits *)
 
-let set_implicit id imp =
-  Some (id,match imp with None -> Manual | Some imp -> imp)
-
-let declare_manual_implicits r l =
-  let t = Global.type_of_global r in
-  let autoimps = compute_implicits_gen false true (Global.env()) t in
-  let n = List.length autoimps in
-  if not (list_distinct l) then 
-    error ("Some parameters are referred more than once");
-  (* Compare with automatic implicits to recover printing data and names *)
-  let rec merge k l = function
-    | (Name id,imp)::imps ->
-	let l',imp =
-	  try list_remove_first (ExplByPos k) l, set_implicit id imp
-	  with Not_found ->
-	  try list_remove_first (ExplByName id) l, set_implicit id imp
-	  with Not_found ->
-	  l, None in
-	imp :: merge (k+1) l' imps
-    | (Anonymous,imp)::imps -> 
-	None :: merge (k+1) l imps
-    | [] when l = [] -> []
-    | _ ->
-	match List.hd l with
-	| ExplByName id ->
-	    error ("Wrong or not dependent implicit argument name: "^(string_of_id id))
-	| ExplByPos i ->
-	    if i<1 or i>n then 
-	      error ("Bad implicit argument number: "^(string_of_int i))
-	    else
-	      errorlabstrm ""
-		(str "Cannot set implicit argument number " ++ int i ++
-		 str ": it has no name") in
-  let l = Impl_manual (merge 1 l autoimps) in
-  add_anonymous_leaf (in_implicits [r,l])
-
-(* Tests if declared implicit *)
-
-let test = function
-  | No_impl | Impl_manual _ -> false,false,false
-  | Impl_auto (s,c,_) -> true,s,c
-
-let test_if_implicit find a =
-  try let b = find a in test b
-  with Not_found -> (false,false,false)
-    
-let is_implicit_constant sp =
-  test_if_implicit (Cmap.find sp) !constants_table
-
-let is_implicit_inductive_definition indp =
-  test_if_implicit (Indmap.find (indp,0)) !inductives_table
-
-let is_implicit_var id =
-  test_if_implicit (Idmap.find id) !var_table
+let declare_manual_implicits local ref l =
+  let flags = !implicit_args,!strict_implicit_args,!contextual_implicit_args in
+  let l' = compute_manual_implicits flags ref l in
+  let req =
+    if local or isVarRef ref then ImplNoDischarge
+    else ImplInteractive(ref,flags,ImplManual l)
+  in
+  add_anonymous_leaf (inImplicits (req,[ref,l']))
 
 (*s Registration as global tables *)
 
-let init () =
-  constants_table := Cmap.empty;
-  inductives_table := Indmap.empty;
-  constructors_table := Constrmap.empty;
-  var_table := Idmap.empty
-
-let freeze () =
-  (!constants_table, !inductives_table, 
-   !constructors_table, !var_table)
-
-let unfreeze (ct,it,const,vt) =
-  constants_table := ct;
-  inductives_table := it;
-  constructors_table := const;
-  var_table := vt
+let init () = implicits_table := Refmap.empty
+let freeze () = !implicits_table
+let unfreeze t = implicits_table := t
 
 let _ = 
   Summary.declare_summary "implicits"

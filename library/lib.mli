@@ -160,8 +160,10 @@ val set_xml_close_section : (identifier -> unit) -> unit
 
 (*s Section management for discharge *)
 
-val section_segment : global_reference -> Sign.named_context
-val section_instance : global_reference -> Term.constr array
+val section_segment_of_constant : constant -> Sign.named_context
+val section_segment_of_mutual_inductive: mutual_inductive -> Sign.named_context
+
+val section_instance : global_reference -> identifier array
 
 val add_section_variable : identifier -> unit
 val add_section_constant : constant -> Sign.named_context -> unit
