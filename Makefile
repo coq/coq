@@ -347,6 +347,18 @@ OBJSCMO=$(CONFIG) $(LIBREP) $(KERNEL) $(LIBRARY) $(PRETYPING) $(INTERP) \
         $(HIGHTACTICS) $(USERTACMO) $(CONTRIB)
 
 ###########################################################################
+# Infrastructure for the rest of the Makefile
+###########################################################################
+
+define order-only-template
+ ifeq "order-only" "$(1)"
+   ORDER_ONLY_SEP:=|
+ endif
+endef
+
+$(foreach f,$(.FEATURES),$(eval $(call order-only-template,$(f))))
+
+###########################################################################
 # Compilation option for .c files 
 ###########################################################################
 
@@ -421,7 +433,7 @@ $(COQTOPBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) $(USERTACCMO)
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -top $(BYTEFLAGS) -o $@
 
-$(COQTOP): | $(BESTCOQTOP)
+$(COQTOP): $(ORDER_ONLY_SEP) $(BESTCOQTOP)
 	cd bin; ln -sf coqtop.$(BEST)$(EXE) coqtop$(EXE)
 
 # coqmktop 
@@ -439,7 +451,7 @@ $(COQMKTOPOPT): $(COQMKTOPCMX)
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ str.cmxa unix.cmxa \
           $(COQMKTOPCMX) $(OSDEPLIBS)
 
-$(COQMKTOP): | $(BESTCOQMKTOP)
+$(COQMKTOP): $(ORDER_ONLY_SEP) $(BESTCOQMKTOP)
 	cd bin; ln -sf coqmktop.$(BEST)$(EXE) coqmktop$(EXE)
 
 
@@ -465,7 +477,7 @@ $(COQCOPT): $(COQCCMX) $(COQTOPOPT) $(BESTCOQTOP)
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ unix.cmxa $(COQCCMX) $(OSDEPLIBS)
 
-$(COQC): | $(BESTCOQC)
+$(COQC): $(ORDER_ONLY_SEP) $(BESTCOQC)
 	cd bin; ln -sf coqc.$(BEST)$(EXE) coqc$(EXE)
 
 
@@ -1110,9 +1122,13 @@ ALLVO = $(INITVO) $(THEORIESVO) $(CONTRIBVO)
 SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v
 
 ifdef NO_RECOMPILE_LIB
- VO_TOOLS_DEP += |
+ ifdef ORDER_ONLY_SEP
+  VO_TOOLS_DEP += $(ORDER_ONLY_SEP)
+ else
+  $(error NO_RECOMPILE_LIB needs GNU make version 3.80 or later; that is a version that supports order-only dependencies)
+ endif
 endif
- VO_TOOLS_DEP += $(BESTCOQTOP)
+VO_TOOLS_DEP += $(BESTCOQTOP)
 ifdef COQ_XML
  VO_TOOLS_DEP += $(COQDOC)
 endif
