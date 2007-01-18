@@ -5,16 +5,44 @@
 WHAT DO YOU NEED ?
 ==================
 
-   Coq is designed to work on computers equipped with the Unix operating 
-   system. In order to compile Coq V8.1 you need:
+   Coq is designed to work on computers equipped with a POSIX (Unix or
+   a clone) operating system. It also works under Microsoft Windows
+   (see INSTALL.win); for a precompiled MacOS X package, see
+   INSTALL.macosx.
+
+   Coq is known to be actively used under GNU/Linux (i386, amd64 and
+   ppc) and FreeBSD. Automated tests are run under many, many
+   different architectures under GNU/Linux.
+
+   Naturally, Coq will run faster on an architecture where OCaml can
+   compile to native code, rather than only bytecode. At time of
+   writing, that is IA32, PowerPC, AMD64, Alpha, Sparc, Mips, IA64,
+   HPPA and StrongArm. See
+   http://caml.inria.fr/ocaml/portability.en.html for details.
+
+
+   Your OS may already contain Coq under the form of a precompiled
+   package or ready-to-compile port. In this case, and if the supplied
+   version suits you, follow the usual procedure for your OS to
+   install it. E.g.:
+
+   - Debian GNU/Linux (or Debian GNU/k*BSD or ...):
+
+     aptitude install coq
+
+   - Gentoo GNU/Linux: emerge sci-mathematics/coq
+
+
+   Should you need or prefer to compile Coq V8.1 yourself, you need:
 
      - Objective Caml version 3.07 or later
        (available at http://caml.inria.fr/)
 
-   Until now, it has mainly been tested on Sun workstations running Solaris,
-   DEC alpha and Pentium workstations running Linux. By FTP, Coq comes
-   as a single compressed tar-file. You have probably already
-   decompressed it if you are reading this document.
+     - a C compiler
+
+
+   By FTP, Coq comes as a single compressed tar-file. You have
+   probably already decompressed it if you are reading this document.
 
 
 QUICK INSTALLATION PROCEDURE.
@@ -133,7 +161,7 @@ INSTALLATION PROCEDURE FOR ADVANCED USERS.
 ==========================================
 
    If you wish to write tactics (and that really means that you belong
-   to advanced users !) you *must* keep the Coq sources, without cleaning
+   to advanced users!) you *must* keep the Coq sources, without cleaning
    them. Therefore, to avoid a duplication of binaries and library, it is
    not necessary to do the installation step (6- above).
    You just have to tell it at configuration step (4- above) with the
@@ -184,9 +212,11 @@ THE AVAILABLE COMMANDS.
       command "Require". 
 
    A detailed description of these commands and of their options is given
-   in the Reference Manual (which you can get by FTP, in the doc/ directory) 
+   in the Reference Manual (which you can get by FTP, in the doc/
+   directory, or read online on http://coq.inria.fr/doc/)
    and in the corresponding manual pages.
 
+   There is also a tutorial and a FAQ; see http://coq.inria.fr/doc1-eng.html
 
 COMMON PROBLEMS.
 ================
