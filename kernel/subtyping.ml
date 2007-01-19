@@ -195,13 +195,60 @@ let check_inductive cst env msid1 l info1 mib2 spec2 =
 let check_constant cst env msid1 l info1 cb2 spec2 = 
   let error () = error_not_match l spec2 in
   let check_conv cst f = check_conv_error error cst f in
+  let check_type cst env t1 t2 = 
+
+    (* If the type of a constant is generated, it may mention
+       non-variable algebraic universes that the general conversion
+       algorithm is not ready to handle. Anyway, generated types of
+       constants are functions of the body of the constant. If the
+       bodies are the same in environments that are subtypes one of
+       the other, the types are subtypes too (i.e. if Gamma <= Gamma',
+       Gamma |- A |> T, Gamma |- A' |> T' and Gamma |- A=A' then T <= T').
+       Hence they don't have to be checked again *)
+
+    let t1,t2 = 
+      if Sign.isArity t2 then
+        let (ctx2,s2) = Sign.destArity t2 in
+        match s2 with
+        | Type v when not (is_univ_variable v) ->
+          (* The type in the interface is inferred and is made of algebraic
+             universes *)
+          begin try
+            let (ctx1,s1) = dest_arity env t1 in
+            match s1 with
+            | Type u when not (is_univ_variable u) ->
+              (* Both types are inferred, no need to recheck them. We
+                 cheat and collapse the types to Prop *)
+                Sign.mkArity (ctx1,mk_Prop), Sign.mkArity (ctx2,mk_Prop)
+            | Prop _ ->
+              (* The type in the interface is inferred, it may be the case
+                 that the type in the implementation is smaller because
+                 the body is more reduced. We safely collapse the upper
+                 type to Prop *)
+                Sign.mkArity (ctx1,mk_Prop), Sign.mkArity (ctx2,mk_Prop)
+            | Type _ ->
+              (* The type in the interface is inferred and the type in the
+                 implementation is not inferred or is inferred but from a
+                 more reduced body so that it is just a variable. Since
+                 constraints of the form "univ <= max(...)" are not
+                 expressible in the system of algebraic universes: we fail
+                 (the user has to use an explicit type in the interface *)
+                error ()
+          with UserError _ (* "not an arity" *) ->
+            error () end
+        | _ -> t1,t2
+      else
+        (t1,t2) in
+    check_conv cst conv_leq env t1 t2
+  in
+
   match info1 with
    | Constant cb1 ->
       assert (cb1.const_hyps=[] && cb2.const_hyps=[]) ;
       (*Start by checking types*)
       let typ1 = Typeops.type_of_constant_type env cb1.const_type in
       let typ2 = Typeops.type_of_constant_type env cb2.const_type in
-      let cst = check_conv cst conv_leq env typ1 typ2 in
+      let cst = check_type cst env typ1 typ2 in
       let con = make_con (MPself msid1) empty_dirpath l in
       let cst =
        match cb2.const_body with
