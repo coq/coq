@@ -38,6 +38,7 @@
 #install_printer ppvblock;;
 #install_printer  (* bigint *) ppbigint;;
 #install_printer  (* loc *) pploc;;
+#install_printer  (* substitution *) prsubst;;
 
 (* Open main files *)
 

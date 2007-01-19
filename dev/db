@@ -34,5 +34,6 @@ install_printer Top_printers.ppclenv
 install_printer Top_printers.pptac
 install_printer Top_printers.ppobj
 install_printer Top_printers.pploc
+install_printer Top_printers.prsubst
                                                   
 
