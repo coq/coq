@@ -18,6 +18,7 @@ val neutral_univ : universe
 val make_univ : Names.dir_path * int -> universe
 
 val is_base_univ : universe -> bool
+val is_univ_variable : universe -> bool
 
 (* The type of a universe *)
 val super : universe -> universe

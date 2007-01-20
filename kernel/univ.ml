@@ -134,6 +134,10 @@ let is_base_univ = function
   | Max ([Base],[]) -> warning "Non canonical Set"; true
   | u -> false
 
+let is_univ_variable = function
+  | Atom a when a<>Base -> true
+  | _ -> false
+
 (* When typing [Prop] and [Set], there is no constraint on the level,
    hence the definition of [prop_univ], the type of [Prop] *)
 
