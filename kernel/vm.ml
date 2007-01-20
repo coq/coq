@@ -478,7 +478,6 @@ let reduce_cofix k vcf =
     Array.map (fun c -> interprete c crasy_val (Obj.magic vcf) 0) fc_typ in
   (* Construction de l'environnement des corps des cofix *)
 
-  let max = k + ndef - 1 in 
   let e = Obj.dup (Obj.repr vcf) in 
   for i = 0 to ndef - 1 do
     Obj.set_field e (i+1) (Obj.repr (val_of_rel (k+i))) 

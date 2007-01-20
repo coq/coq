@@ -561,7 +561,7 @@ let ids_of_rawterm c =
       | RCases (loc,rtntypopt,tml,brchl) -> 
 	  List.flatten (List.map (fun (_,idl,patl,c) -> idl @ ids_of_rawterm [] c) brchl)
       | RRec _ -> failwith "Fix inside a constructor branch"
-      | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) as x -> []
+      | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) -> []
   in
   (* build the set *)
   List.fold_left (fun acc x -> Idset.add x acc) Idset.empty (ids_of_rawterm [] c)

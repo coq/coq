@@ -54,10 +54,9 @@ let type_constructor mind mib typ params =
 
 let construct_of_constr const env tag typ =
   let (mind,_ as ind), allargs = find_rectype_a env typ in
-  let mib,mip as mind_s = lookup_mind_specif env ind in
+  let mib,mip = lookup_mind_specif env ind in
   let nparams = mib.mind_nparams in
   let i = invert_tag const tag mip.mind_reloc_tbl in
-  let c = (ind,i) in
   let params = Array.sub allargs 0 nparams in
   let ctyp = type_constructor mind mib (mip.mind_nf_lc.(i-1)) params in
   (mkApp(mkConstruct(ind,i), params), ctyp)
