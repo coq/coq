@@ -216,12 +216,19 @@ let declare_one_elimination ind =
   let env = Global.env () in
   let sigma = Evd.empty in
   let elim_scheme = Indrec.build_indrec env sigma ind in
-  let npars = mib.mind_nparams_rec in
+  let npars = 
+    (* if a constructor of [ind] contains a recursive call, the scheme
+       is generalized only wrt recursively uniform parameters *)
+    if (Inductiveops.mis_is_recursive_subset [snd ind] mip.mind_recargs) 
+    then 
+      mib.mind_nparams_rec
+    else 
+      mib.mind_nparams in
   let make_elim s = Indrec.instantiate_indrec_scheme s npars elim_scheme in
   let kelim = elim_sorts (mib,mip) in
-  (* in case the inductive has a type elimination, generates only one
-     induction scheme, the other ones share the same code with the
-     apropriate type *)
+    (* in case the inductive has a type elimination, generates only one
+       induction scheme, the other ones share the same code with the
+       apropriate type *)
   if List.mem InType kelim then
     let elim = make_elim (new_sort_in_family InType) in
     let cte = declare (mindstr^(Indrec.elimination_suffix InType)) elim None in
