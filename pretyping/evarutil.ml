@@ -57,8 +57,8 @@ let tj_nf_evar = Pretype_errors.tj_nf_evar
 
 let nf_evar_info evc info =
   { info with 
-      evar_concl = Reductionops.nf_evar evc info.evar_concl;
-      evar_hyps = map_named_val (Reductionops.nf_evar evc) info.evar_hyps}
+    evar_concl = Reductionops.nf_evar evc info.evar_concl;
+    evar_hyps = map_named_val (Reductionops.nf_evar evc) info.evar_hyps}
 
 let nf_evars evm = Evd.fold (fun ev evi evm' -> Evd.add evm' ev (nf_evar_info evm evi))
 		     evm Evd.empty
@@ -99,7 +99,7 @@ let push_dependent_evars sigma emap =
 	(Evd.add sigma' ev (Evd.find emap' ev),Evd.remove emap' ev))
       (sigma',emap') (collect_evars emap' ccl))
     emap (sigma,emap)
-    
+
 (* replaces a mapping of existentials into a mapping of metas.
    Problem if an evar appears in the type of another one (pops anomaly) *)
 let evars_to_metas sigma (emap, c) =
@@ -141,12 +141,12 @@ let new_untyped_evar =
 (* All ids of sign must be distincts! *)
 let new_evar_instance sign evd typ ?(src=(dummy_loc,InternalHole)) instance =
   let ctxt = named_context_of_val sign in
-  assert (List.length instance = named_context_length ctxt); 
-  if not (list_distinct (ids_of_named_context ctxt)) then 
-    anomaly "new_evar_instance: two vars have the same name";
-  let newev = new_untyped_evar() in
-  (evar_declare sign newev typ ~src:src evd,
-   mkEvar (newev,Array.of_list instance))
+    assert (List.length instance = named_context_length ctxt); 
+    if not (list_distinct (ids_of_named_context ctxt)) then 
+      anomaly "new_evar_instance: two vars have the same name";
+    let newev = new_untyped_evar() in
+      (evar_declare sign newev typ ~src:src evd,
+      mkEvar (newev,Array.of_list instance))
 
 let make_subst env args =
   snd (fold_named_context
@@ -166,38 +166,38 @@ let push_rel_context_to_named_context env typ =
   (* compute the instance relative to the named context *)
   let vars = 
     fold_named_context (fun env (id,b,_) l -> mkVar id :: l) env ~init:[] in
-  (* move the rel context to a named context and extend the instance 
-     with vars of the rel context *)
-(*
-  let fv = free_rels typ in
-*)
+    (* move the rel context to a named context and extend the instance 
+       with vars of the rel context *)
+    (*
+      let fv = free_rels typ in
+    *)
   let avoid = ids_of_named_context (named_context env) in
   let n = rel_context_length (rel_context env) in
   let (subst, _, _, inst, env) =
     Sign.fold_rel_context
       (fun (na,c,t) (subst, n, avoid, inst, env) ->
-(*
-	match na with
-	| Anonymous when not (Intset.mem n fv) -> 
-	    (dummy_var::subst, n-1, avoid, inst, env)
-	| _ ->
-*)
-	    let id = next_name_away na avoid in
-	    ((mkVar id)::subst, n-1, id::avoid, mkRel n::inst,
-	    push_named (id,option_map (substl subst) c,substl subst t) env))
+	(*
+	  match na with
+	  | Anonymous when not (Intset.mem n fv) -> 
+	  (dummy_var::subst, n-1, avoid, inst, env)
+	  | _ ->
+	*)
+	let id = next_name_away na avoid in
+	  ((mkVar id)::subst, n-1, id::avoid, mkRel n::inst,
+	  push_named (id,option_map (substl subst) c,substl subst t) env))
       (rel_context env) ~init:([], n, avoid, vars, env) in
-  (named_context_val env, substl subst typ, inst)
-
+    (named_context_val env, substl subst typ, inst)
+      
 let new_evar evd env ?(src=(dummy_loc,InternalHole)) typ =
   let sign,typ',instance = push_rel_context_to_named_context env typ in
-  assert (not (dependent dummy_var typ));
-  new_evar_instance sign evd typ' ~src:src instance
+    assert (not (dependent dummy_var typ));
+    new_evar_instance sign evd typ' ~src:src instance
 
-(* The same using side-effect *)
+  (* The same using side-effect *)
 let e_new_evar evd env ?(src=(dummy_loc,InternalHole)) ty =
   let (evd',ev) = new_evar !evd env ~src:src ty in
-  evd := evd';
-  ev
+    evd := evd';
+    ev
 
 (*------------------------------------*
  * operations on the evar constraints *
@@ -293,33 +293,74 @@ let do_restrict_hyps env k evd ev args =
   let evi = Evd.find (evars_of !evd) ev in
   let hyps = evar_context evi in
   let (hyps',ncargs) = list_filter2 (fun _ a -> closedn k a) (hyps,args) in
-  (* No care is taken in case the evar type uses vars filtered out!
-     Assuming that the restriction comes from a well-typed Flex/Flex
-     unification problem (see real_clean), the type of the evar cannot
-     depend on variables that are not in the scope of the other evar,
-     since this other evar has the same type (up to unification).
+    (* No care is taken in case the evar type uses vars filtered out!
+       Assuming that the restriction comes from a well-typed Flex/Flex
+       unification problem (see real_clean), the type of the evar cannot
+       depend on variables that are not in the scope of the other evar,
+       since this other evar has the same type (up to unification).
      Since moreover, the evar contexts uses names only, the
-     restriction raise no de Bruijn reallocation problem *)
+       restriction raise no de Bruijn reallocation problem *)
   let env' =
     Sign.fold_named_context push_named hyps' ~init:(reset_context env) in
   let nc = e_new_evar evd env' ~src:(evar_source ev !evd) evi.evar_concl in
-  evd := Evd.evar_define ev nc !evd;
-  let (evn,_) = destEvar nc in
-  mkEvar(evn,Array.of_list ncargs)
+    evd := Evd.evar_define ev nc !evd;
+    let (evn,_) = destEvar nc in
+      mkEvar(evn,Array.of_list ncargs)
+
+let clear_evar_hyps_in_evar evd evn args ids =
+  (* Creates a new evar ev' from ev such that all ids are removed from
+     the context of ev' *)
+  (* ATTN: il faut vérifier que le type associé à ev ne dépend pas de
+     l'un des ids *)
+  let args = Array.to_list args in
+  let evi = Evd.find (evars_of !evd) evn in
+  let hyps = evar_context evi in
+  let (hyps',args') = list_filter2 
+    (fun _ c -> match kind_of_term c with Var id -> not (List.mem id ids) | _  -> true) 
+    (hyps,args) in
+  let env = Sign.fold_named_context push_named hyps' ~init:(empty_env) in
+  let ev' = e_new_evar evd env ~src:(evar_source evn !evd) evi.evar_concl in
+    evd := Evd.evar_define evn ev' !evd;
+    let (evn',_) = destEvar ev' in
+      mkEvar(evn',Array.of_list args') 
+
+let clear_evar_hyps_in_constr evd c ids =
+  let rec aux c =
+    match kind_of_term c with
+      | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
+	| Construct _) -> c
+      | Evar (e,l) -> 
+	  (* aux may have defined e earlier, so we have to check *)
+	  if Evd.is_defined_evar !evd (e,l) then
+	    let nc = nf_evar (evars_of !evd) c in aux nc
+	  else
+	    clear_evar_hyps_in_evar evd e l ids
+      | _ -> map_constr aux c 
+  in
+    aux c
+
+let clear_evar_hyps sigma evi ids =
+  let evd = Evd.create_evar_defs sigma in
+  let aux c = clear_evar_hyps_in_constr (ref evd) c ids in
+  let goal = evar_concl evi in
+  let hyps = evar_hyps evi in
+    ({ evi with
+      evar_concl = aux goal;
+      evar_hyps  = map_named_val aux hyps}, evars_of evd)
 
 let need_restriction k args = not (array_for_all (closedn k) args)
 
 (* We try to instantiate the evar assuming the body won't depend
  * on arguments that are not Rels or Vars, or appearing several times
-   (i.e. we tackle only Miller-Pfenning patterns unification) 
+ * (i.e. we tackle only Miller-Pfenning patterns unification) 
 
-  1) Let a unification problem "env |- ev[hyps:=args] = rhs"
-  2) We limit it to a patterns unification problem "env |- ev[subst] = rhs"
-     where only Rel's and Var's are relevant in subst
-  3) We recur on rhs, "imitating" the term failing if some Rel/Var not in scope
+ * 1) Let a unification problem "env |- ev[hyps:=args] = rhs"
+ * 2) We limit it to a patterns unification problem "env |- ev[subst] = rhs"
+ * where only Rel's and Var's are relevant in subst
+ * 3) We recur on rhs, "imitating" the term failing if some Rel/Var not in scope
 
-  Note: we don't assume rhs in normal form, it may fail while it would
-  have succeeded after some reductions
+ * Note: we don't assume rhs in normal form, it may fail while it would
+ * have succeeded after some reductions
  *)
 (* Note: error_not_clean should not be an error: it simply means that the
  * conversion test that lead to the faulty call to [real_clean] should return

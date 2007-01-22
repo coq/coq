@@ -458,6 +458,13 @@ let pr_prim_rule = function
   | Rename (id1,id2) ->
       (str "rename " ++ pr_id id1 ++ str " into " ++ pr_id id2)
 
+  | Change_evars ->
+      (* This is internal tactic and cannot be replayed at user-level.
+         Function pr_rule_dot below is used when we want to hide
+         Change_evars *)
+      str "Evar change"
+
+
 (* Backwards compatibility *)
 
 let prterm = pr_lconstr

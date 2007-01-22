@@ -39,6 +39,7 @@ type prim_rule =
   | ThinBody of identifier list
   | Move of bool * identifier * identifier
   | Rename of identifier * identifier
+  | Change_evars
 
 (* The type [goal sigma] is the type of subgoal. It has the following form
 \begin{verbatim}
@@ -84,7 +85,6 @@ and rule =
   | Nested of compound_rule * proof_tree 
   | Decl_proof of bool
   | Daimon
-  | Change_evars
 
 and compound_rule= 
   (* the boolean of Tactic tells if the default tactic is used *)

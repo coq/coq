@@ -56,6 +56,8 @@ val is_evar : evar_map -> evar -> bool
 
 val is_defined : evar_map -> evar -> bool
 
+val evar_concl : evar_info -> constr
+val evar_hyps : evar_info -> Environ.named_context_val
 val evar_body : evar_info -> evar_body
 val evar_env :  evar_info -> Environ.env
 

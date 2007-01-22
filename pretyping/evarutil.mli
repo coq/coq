@@ -158,3 +158,10 @@ val whd_castappevar :  evar_map -> constr -> constr
 
 val pr_tycon_type : env -> type_constraint_type -> Pp.std_ppcmds
 val pr_tycon : env -> type_constraint -> Pp.std_ppcmds
+
+
+(**********************************)
+(* Removing hyps in evars'context *)
+val clear_evar_hyps_in_evar : evar_defs ref -> evar -> constr array -> identifier list -> constr
+val clear_evar_hyps_in_constr : evar_defs ref -> constr -> identifier list -> constr
+val clear_evar_hyps : evar_map -> evar_info -> identifier list -> evar_info * evar_map

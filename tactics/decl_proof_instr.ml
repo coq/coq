@@ -54,7 +54,7 @@ let tcl_change_info_gen info_gen =
       [pftree] ->
 	{pftree with
 	   goal=gl;
-	   ref=Some (Change_evars,[pftree])} 
+	   ref=Some (Prim Change_evars,[pftree])} 
     | _ -> anomaly "change_info : Wrong number of subtrees")
 
 let tcl_change_info info gls =  tcl_change_info_gen (Some (pm_in info)) gls

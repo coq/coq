@@ -68,18 +68,6 @@ let descend n p =
     	else 
 	  error "Too few subproofs"
 
-(* Normalizing evars in a goal. Called by tactic Local_constraints
-   (i.e. when the sigma of the proof tree changes). Detect if the
-   goal is unchanged *)
-let norm_goal sigma gl =
-  let red_fun = Evarutil.nf_evar sigma in
-  let ncl = red_fun gl.evar_concl in
-  let ngl =
-    { gl with 
-	evar_concl = ncl;
-	evar_hyps = map_named_val red_fun gl.evar_hyps } in
-    if Evd.eq_evar_info ngl gl then None else Some ngl
-
 
 (* [mapshape [ l1 ; ... ; lk ] [ v1 ; ... ; vk ] [ p_1 ; .... ; p_(l1+...+lk) ]]
    gives
@@ -192,11 +180,11 @@ let abstract_operation syntax semantics gls =
   let (sgl_sigma,validation) = semantics gls in
   let hidden_proof = validation (List.map leaf sgl_sigma.it) in
   (sgl_sigma,
-   fun spfl ->
-     assert (check_subproof_connection sgl_sigma.it spfl);
-     { open_subgoals = and_status (List.map pf_status spfl);
-       goal = gls.it;
-       ref = Some(Nested(syntax,hidden_proof),spfl)})
+  fun spfl ->
+    assert (check_subproof_connection sgl_sigma.it spfl);
+    { open_subgoals = and_status (List.map pf_status spfl);
+      goal = gls.it;
+      ref = Some(Nested(syntax,hidden_proof),spfl)})
 
 let abstract_tactic_expr ?(dflt=false) te tacfun gls =
   abstract_operation (Tactic(te,dflt)) tacfun gls	
@@ -210,14 +198,14 @@ let abstract_extended_tactic ?(dflt=false) s args =
 let refiner = function
   | Prim pr as r ->
       let prim_fun = prim_refiner pr in
-      (fun goal_sigma ->
-         let sgl = prim_fun goal_sigma.sigma goal_sigma.it in 
-	 ({it=sgl; sigma = goal_sigma.sigma},
-          (fun spfl ->
-	     assert (check_subproof_connection sgl spfl);
-             { open_subgoals = and_status (List.map pf_status spfl);
-               goal = goal_sigma.it;
-               ref = Some(r,spfl) })))
+	(fun goal_sigma ->
+          let (sgl,sigma') = prim_fun goal_sigma.sigma goal_sigma.it in 
+	    ({it=sgl; sigma = sigma'},
+            (fun spfl ->
+	      assert (check_subproof_connection sgl spfl);
+              { open_subgoals = and_status (List.map pf_status spfl);
+		goal = goal_sigma.it;
+		ref = Some(r,spfl) })))
 
 
   | Nested (_,_) | Decl_proof _ -> 
@@ -234,44 +222,23 @@ let refiner = function
              goal = gls.it;
              ref = Some(Daimon,[])})
 
-   (* [Local_constraints lc] makes the local constraints be [lc] and
-      normalizes evars *)
 
-  | Change_evars as r ->
-      (fun goal_sigma ->
-         let gl = goal_sigma.it in
-         (match norm_goal goal_sigma.sigma gl with
-             Some ngl ->
-	       ({it=[ngl];sigma=goal_sigma.sigma},
-                (fun spfl -> 
-	          assert (check_subproof_connection [ngl] spfl);
-                  { open_subgoals = (List.hd spfl).open_subgoals;
-                    goal = gl;
-                    ref = Some(r,spfl) }))
-           (* if the evar change does not affect the goal, leave the
-              proof tree unchanged *)
-           | None -> ({it=[gl];sigma=goal_sigma.sigma},
-                      (fun spfl ->
-                        assert (List.length spfl = 1);
-                        List.hd spfl))))
-
-
-let local_Constraints gl = refiner Change_evars gl
+let local_Constraints gl = refiner (Prim Change_evars) gl
 
 let norm_evar_tac = local_Constraints
 
 let norm_evar_proof sigma pf =
   let nf_subgoal i sgl =
     let (gll,v) = norm_evar_tac {it=sgl.goal;sigma=sigma} in
-    v (List.map leaf gll.it) in
-  frontier_mapi nf_subgoal pf
+      v (List.map leaf gll.it) in
+    frontier_mapi nf_subgoal pf
 
 (* [extract_open_proof : proof_tree -> constr * (int * constr) list]
-  takes a (not necessarly complete) proof and gives a pair (pfterm,obl)
-  where pfterm is the constr corresponding to the proof
-  and [obl] is an [int*constr list] [ (m1,c1) ; ... ; (mn,cn)]
-  where the mi are metavariables numbers, and ci are their types.
-  Their proof should be completed in order to complete the initial proof *)
+   takes a (not necessarly complete) proof and gives a pair (pfterm,obl)
+   where pfterm is the constr corresponding to the proof
+   and [obl] is an [int*constr list] [ (m1,c1) ; ... ; (mn,cn)]
+   where the mi are metavariables numbers, and ci are their types.
+   Their proof should be completed in order to complete the initial proof *)
 
 let extract_open_proof sigma pf =
   let next_meta = 
@@ -291,8 +258,6 @@ let extract_open_proof sigma pf =
 	let flat_proof = v spfl in
 	proof_extractor vl flat_proof
  
-    | {ref=Some(Change_evars,[pf])} -> (proof_extractor vl) pf
-
     | {ref=Some(Decl_proof _,[pf])} -> (proof_extractor vl) pf
 	  
     | {ref=(None|Some(Daimon,[]));goal=goal} ->
