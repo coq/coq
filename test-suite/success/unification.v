@@ -15,6 +15,12 @@ Proof.
 intros; apply (H _ H0).
 Qed.
 
+Lemma l3 : (forall P, ~(exists x:nat, P x))
+         -> forall P:nat->Prop, ~(exists x:nat, P x -> P x).
+Proof.
+intros; apply H.
+Qed.
+
 
 (* Example submitted for Zenon *)
 
