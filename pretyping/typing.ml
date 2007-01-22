@@ -29,6 +29,15 @@ let meta_type env mv =
 let vect_lift = Array.mapi lift
 let vect_lift_type = Array.mapi (fun i t -> type_app (lift i) t)
 
+let constant_type_knowing_parameters env cst jl =
+  let paramstyp = Array.map (fun j -> j.uj_type) jl in
+  type_of_constant_knowing_parameters env (constant_type env cst) paramstyp
+
+let inductive_type_knowing_parameters env ind jl =
+  let (mib,mip) = lookup_mind_specif env ind in
+  let paramstyp = Array.map (fun j -> j.uj_type) jl in
+  Inductive.type_of_inductive_knowing_parameters env mip paramstyp
+
 (* The typing machine without information, without universes but with
    existential variables. *)
 
@@ -93,12 +102,14 @@ let rec execute env evd cstr =
 	  match kind_of_term f with
 	    | Ind ind ->
 		(* Sort-polymorphism of inductive types *)
-		judge_of_inductive_knowing_parameters env ind
-		  (jv_nf_evar (evars_of evd) jl)
+		make_judge f
+		  (inductive_type_knowing_parameters env ind
+		    (jv_nf_evar (evars_of evd) jl))
 	    | Const cst -> 
 		(* Sort-polymorphism of inductive types *)
-		judge_of_constant_knowing_parameters env cst
-		  (jv_nf_evar (evars_of evd) jl)
+		make_judge f
+		  (constant_type_knowing_parameters env cst
+		    (jv_nf_evar (evars_of evd) jl))
 	    | _ -> 
 		execute env evd f
 	in
