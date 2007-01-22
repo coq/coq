@@ -57,14 +57,11 @@ Definition iota_spec (A : Type) (i:inhabited A) (P : A->Prop) :
   (exists! x:A, P x) -> P (iota i P)
   := proj2_sig (classical_definite_description P i).
 
-(** Weaker lemmas (compatibility lemmas) *)
-
-Unset Implicit Arguments.
-
-Lemma dependent_description :
-    forall (A:Type) (B:A -> Type) (R:forall x:A, B x -> Prop),
-      (forall x:A, exists! y : B x, R x y) ->
-      (exists f : (forall x:A, B x), forall x:A, R x (f x)).
+(** Axiom of unique "choice" (functional reification of functional relations) *)
+Theorem dependent_unique_choice :
+  forall (A:Type) (B:A -> Type) (R:forall x:A, B x -> Prop),
+    (forall x:A, exists! y : B x, R x y) ->
+    (exists f : (forall x:A, B x), forall x:A, R x (f x)).
 Proof.
 intros A B R H.
 assert (Hexuni:forall x, exists! y, R x y).
@@ -74,27 +71,18 @@ intro x.
 apply (proj2_sig (constructive_definite_description (R x) (Hexuni x))).
 Qed.
 
-Theorem description :
- forall (A B:Type) (R:A -> B -> Prop),
-   (forall x : A,  exists! y : B, R x y) ->
-   (exists f : A->B, forall x:A, R x (f x)).
+Theorem unique_choice :
+  forall (A B:Type) (R:A -> B -> Prop),
+    (forall x:A,  exists! y : B, R x y) ->
+    (exists f : A -> B, forall x:A, R x (f x)).
 Proof.
 intros A B.
-apply (dependent_description A (fun _ => B)).
+apply dependent_unique_choice with (B:=fun _:A => B).
 Qed.
 
-(** Axiom of unique "choice" (functional reification of functional relations) *)
+(** Compatibility lemmas *)
 
-Set Implicit Arguments.
+Unset Implicit Arguments.
 
-Require Import Setoid.
-
-Theorem unique_choice :
- forall (A B:Type) (R:A -> B -> Prop),
-   (forall x:A,  exists! y : B, R x y) ->
-   (exists f : A -> B, forall x:A, R x (f x)).
-Proof.
-intros A B R H.
-apply (description A B).
-intro x. apply H.
-Qed.
+Definition dependent_description := dependent_unique_choice.
+Definition description := unique_choice.
