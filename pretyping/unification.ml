@@ -113,16 +113,15 @@ let unify_0 env sigma cv_pb mod_delta m n =
 	| LetIn (_,b,_,c), _ -> unirec_rec curenv  pb substn (subst1 b c) cN
 	| _, LetIn (_,b,_,c) -> unirec_rec curenv  pb substn cM (subst1 b c)
 	    
-	| App (f1,l1), App (f2,l2) ->
-	    if
-	      isMeta f1 & is_unification_pattern f1 l1 & not (dependent f1 cN)
-	    then
+	| App (f1,l1), _ when
+	    isMeta f1 & is_unification_pattern f1 l1 & not (dependent f1 cN) ->
 	      solve_pattern_eqn_array curenv f1 l1 cN substn
-	    else if
-		isMeta f2 & is_unification_pattern f2 l2 & not (dependent f2 cM)
-	    then
+
+	| _, App (f2,l2) when
+	    isMeta f2 & is_unification_pattern f2 l2 & not (dependent f2 cM) ->
 	      solve_pattern_eqn_array curenv f2 l2 cM substn
-	    else
+
+	| App (f1,l1), App (f2,l2) ->
 	      let len1 = Array.length l1
 	      and len2 = Array.length l2 in
               let (f1,l1,f2,l2) =
