@@ -647,8 +647,7 @@ let sprintf = Format.sprintf
 
 let call_simplify fwhy =
   let cmd = sprintf "why --no-prelude --simplify %s" fwhy in
-  if Sys.command cmd <> 0 then
-    anomaly ("call to " ^ cmd ^ " failed; please report");
+  if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fsx = Filename.chop_suffix fwhy ".why" ^ "_why.sx" in
   let cmd = 
     sprintf "timeout %d Simplify %s > out 2>&1 && grep -q -w Valid out" 
@@ -675,8 +674,7 @@ let call_ergo fwhy =
 
 let call_zenon fwhy =
   let cmd = sprintf "why --no-prelude --no-zenon-prelude --zenon %s" fwhy in
-  if Sys.command cmd <> 0 then
-    anomaly ("call to " ^ cmd ^ " failed; please report");
+  if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fznn = Filename.chop_suffix fwhy ".why" ^ "_why.znn" in
   let out = Filename.temp_file "dp_out" "" in
   let cmd = 
@@ -695,8 +693,8 @@ let call_zenon fwhy =
   end
 
 let call_cvcl fwhy =
-  if Sys.command (sprintf "why --cvcl %s" fwhy) <> 0 then
-    anomaly ("call to why --cvcl " ^ fwhy ^ " failed; please report");
+  let cmd = sprintf "why --cvcl %s" fwhy in
+  if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fcvc = Filename.chop_suffix fwhy ".why" ^ "_why.cvc" in
   let cmd = 
     sprintf "timeout %d cvcl < %s > out 2>&1 && grep -q -w Valid out" 
@@ -710,8 +708,8 @@ let call_cvcl fwhy =
   r
 
 let call_harvey fwhy =
-  if Sys.command (sprintf "why --harvey %s" fwhy) <> 0 then
-    anomaly ("call to why --harvey " ^ fwhy ^ " failed; please report");
+  let cmd = sprintf "why --harvey %s" fwhy in
+  if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let frv = Filename.chop_suffix fwhy ".why" ^ "_why.rv" in
   let out = Sys.command (sprintf "rvc -e -t %s > /dev/null 2>&1" frv) in
   if out <> 0 then anomaly ("call to rvc -e -t " ^ frv ^ " failed");
