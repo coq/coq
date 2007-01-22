@@ -109,6 +109,8 @@ let extern_evar loc n =
 *)
   CEvar (loc,n)
 
+let rawdebug = ref false
+
 let raw_string_of_ref = function
   | ConstRef kn -> 
       "CONST("^(string_of_con kn)^")"
@@ -120,11 +122,22 @@ let raw_string_of_ref = function
   | VarRef id -> 
       "SECVAR("^(string_of_id id)^")"
 
+let short_string_of_ref = function
+  | VarRef id -> string_of_id id
+  | ConstRef cst -> string_of_label (pi3 (repr_con cst))
+  | IndRef (kn,0) -> string_of_label (pi3 (repr_kn kn))
+  | IndRef (kn,i) -> 
+      "IND("^string_of_label (pi3 (repr_kn kn))^(string_of_int i)^")"
+  | ConstructRef ((kn,i),j) -> 
+      "CONSTRUCT("^
+      string_of_label (pi3 (repr_kn kn))^","^(string_of_int i)^","^(string_of_int j)^")"
+
 let extern_reference loc vars r =
   try Qualid (loc,shortest_qualid_of_global vars r)
   with Not_found ->
     (* happens in debugger *)
-    Ident (loc,id_of_string (raw_string_of_ref r))
+    let f = if !rawdebug then raw_string_of_ref else short_string_of_ref in
+    Ident (loc,id_of_string (f r))
 
 (************************************************************************)
 (* Equality up to location (useful for translator v8) *)

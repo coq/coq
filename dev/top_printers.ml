@@ -46,7 +46,8 @@ let ppsp sp = pp(pr_sp sp)
 let ppqualid qid = pp(pr_qualid qid)
 
 (* term printers *)
-let ppconstr x = pp(Termops.print_constr x)
+let ppconstr x = pp (Termops.print_constr x)
+let ppconstrdb x = pp(Options.with_option Constrextern.rawdebug Termops.print_constr x)
 let ppterm = ppconstr
 let ppsconstr x = ppconstr (Declarations.force x)
 let ppconstr_univ x = Constrextern.with_universes ppconstr x

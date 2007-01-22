@@ -52,6 +52,9 @@ val print_universes : bool ref
 val print_no_symbol : bool ref
 val print_projections : bool ref
 
+(* Debug printing options *)
+val rawdebug : bool ref
+
 (* This governs printing of implicit arguments. If [with_implicits] is
    on and not [with_arguments] then implicit args are printed prefixed
    by "!"; if [with_implicits] and [with_arguments] are both on the
