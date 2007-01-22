@@ -639,8 +639,8 @@ let remove_files = List.iter (fun f -> try Sys.remove f with _ -> ())
 let sprintf = Format.sprintf
 
 let call_simplify fwhy =
-  if Sys.command (sprintf "why --simplify %s" fwhy) <> 0 then
-    anomaly ("call to why --simplify " ^ fwhy ^ " failed; please report");
+  let cmd = sprintf "why --simplify %s" fwhy in
+  if Sys.command cmd <> 0 then error ("Call to " ^ cmd ^ " failed");
   let fsx = Filename.chop_suffix fwhy ".why" ^ "_why.sx" in
   let cmd = 
     sprintf "timeout 10 Simplify %s > out 2>&1 && grep -q -w Valid out" fsx
@@ -652,8 +652,7 @@ let call_simplify fwhy =
 
 let call_zenon fwhy =
   let cmd = sprintf "why --no-prelude --no-zenon-prelude --zenon %s" fwhy in
-  if Sys.command cmd <> 0 then
-    anomaly ("call to " ^ cmd ^ " failed; please report");
+  if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fznn = Filename.chop_suffix fwhy ".why" ^ "_why.znn" in
   let cmd = 
     sprintf "timeout 10 zenon %s > out 2>&1 && grep -q PROOF-FOUND out" fznn
@@ -669,8 +668,8 @@ let call_zenon fwhy =
   r
 
 let call_cvcl fwhy =
-  if Sys.command (sprintf "why --cvcl %s" fwhy) <> 0 then
-    anomaly ("call to why --cvcl " ^ fwhy ^ " failed; please report");
+  let cmd = sprintf "why --cvcl %s" fwhy in
+  if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fcvc = Filename.chop_suffix fwhy ".why" ^ "_why.cvc" in
   let cmd = 
     sprintf "timeout 10 cvcl < %s > out 2>&1 && grep -q -w Valid out" fcvc
@@ -681,8 +680,8 @@ let call_cvcl fwhy =
   r
 
 let call_harvey fwhy =
-  if Sys.command (sprintf "why --harvey %s" fwhy) <> 0 then
-    anomaly ("call to why --harvey " ^ fwhy ^ " failed; please report");
+  let cmd = sprintf "why --harvey %s" fwhy in
+  if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let frv = Filename.chop_suffix fwhy ".why" ^ "_why.rv" in
   let out = Sys.command (sprintf "rvc -e -t %s > /dev/null 2>&1" frv) in
   if out <> 0 then anomaly ("call to rvc -e -t " ^ frv ^ " failed");
