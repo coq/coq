@@ -259,13 +259,12 @@ let add_justification_hyps keep items gls =
 	    letin_tac false (Names.Name id) c Tacexpr.nowhere gls in 
     tclMAP add_aux items gls   
 
-let apply_to_prepared_goal items kont gls =
+let prepare_goal items gls =
   let tokeep = ref Idset.empty in
   let auxres = add_justification_hyps tokeep items gls in
    tclTHENLIST
      [ (fun _ -> auxres);
-       filter_hyps (let keep = !tokeep in fun id -> Idset.mem id keep);
-       kont ] gls
+       filter_hyps (let keep = !tokeep in fun id -> Idset.mem id keep)] gls
 
 let my_automation_tac = ref 
   (fun gls -> anomaly "No automation registered")
@@ -276,7 +275,7 @@ let automation_tac gls = !my_automation_tac gls
 
 let justification tac gls= 
     tclORELSE 
-      (tclSOLVE [tac]) 
+      (tclSOLVE [tclTHEN tac assumption]) 
       (fun gls -> 
 	 if get_strictness () then 
 	   error "insufficient justification" 
@@ -286,8 +285,8 @@ let justification tac gls=
 	     daimon_tac gls
 	   end) gls
 
-let default_justification items gls=
-  justification (apply_to_prepared_goal items automation_tac) gls
+let default_justification elems gls=
+  justification (tclTHEN (prepare_goal elems) automation_tac) gls
 
 (* code for have/then/thus/hence *)
 
@@ -452,19 +451,26 @@ let mk_stat_or_thesis info = function
 	    "\"thesis\" is split, please specify which part you refer to."
 			
 let instr_cut mkstat _thus _then cut gls0 = 
-  let info = get_its_info gls0 in  
-  let just_tac gls = 
+  let info = get_its_info gls0 in
+  let items_tac gls =
     match cut.cut_by with
-        Automated l ->	
-	  let elems = 
+	None -> tclIDTAC gls
+      | Some items -> 
+	  let items_ = 
 	    if _then then
 	      match info.pm_last with
-		  Anonymous -> l
-		| Name id -> (mkVar id) ::l
-	    else l in
-	    default_justification elems gls
-      | By_tactic t -> 
-	  justification (Tacinterp.eval_tactic t) gls in
+		  Anonymous -> error "no previous statement to use"
+		| Name id -> (mkVar id)::items
+	    else items
+	  in prepare_goal items_ gls in
+  let method_tac gls = 
+    match cut.cut_using with
+        None ->	
+	  automation_tac gls
+      | Some tac -> 
+	  (Tacinterp.eval_tactic tac) gls in
+  let just_tac gls =
+    justification (tclTHEN items_tac method_tac) gls in
   let c_id = match cut.cut_stat.st_label with 
       Anonymous -> 
 	pf_get_new_id (id_of_string "_fact") gls0 
@@ -501,13 +507,18 @@ let instr_rew _thus rew_side cut gls0 =
 	Anonymous -> error "no previous equality"
       | Name id -> id in
   let typ,lhs,rhs = decompose_eq last_id gls0 in  
-  let just_tac gls = 
+  let items_tac gls =
     match cut.cut_by with
-        Automated l ->	
-	  let elems = (mkVar last_id) :: l in
-	    default_justification elems gls
-      | By_tactic t -> 
-	  justification (Tacinterp.eval_tactic t) gls in
+	None -> tclIDTAC gls
+      | Some items -> prepare_goal items gls in
+  let method_tac gls = 
+    match cut.cut_using with
+        None ->	
+	  automation_tac gls
+      | Some tac -> 
+	  (Tacinterp.eval_tactic tac) gls in
+  let just_tac gls =
+    justification (tclTHEN items_tac method_tac) gls in
   let c_id = match cut.cut_stat.st_label with 
       Anonymous -> 
 	pf_get_new_id (id_of_string "_eq") gls0 
@@ -1201,6 +1212,30 @@ let hrec_for obj_id fix_id per_info gls=
 	    else None
       | _ -> None
 
+
+(* custom elim performs the case analysis of hypothesis id from the local 
+context, 
+
+- generalizing hypotheses below id
+- computing the elimination predicate (abstract inductive predicate) 
+- build case analysis term 
+- generalize rec_calls (use wf_paths)
+- vector of introduced identifiers per branch 
+
+match id in t return p with
+ C1 ... => ?1 
+|C2 ... => ?2
+...
+end*)
+
+
+    
+
+
+
+
+
+
 let rec execute_cases at_top fix_name per_info kont0 stacks tree gls = 
   match tree with
       Pop t ->  
@@ -1431,8 +1466,20 @@ let rec postprocess pts instr =
     | Pcut _ | Passume _ | Plet _ | Pconsider (_,_) | Pcast (_,_)
     | Pgiven _ | Ptake _ | Pdefine (_,_,_) | Prew (_,_) -> pts
     | Pclaim _ | Pfocus _ | Psuppose _ | Pcase _ | Pper _ -> nth_unproven 1 pts
-    | Pescape ->
-	escape_command pts
+    | Pescape -> escape_command pts
+    | Pend (B_elim ET_Induction) ->
+  	begin
+	  let pf = proof_of_pftreestate pts in
+	  let (pfterm,_) = extract_open_pftreestate pts in
+	  let env =  Evd.evar_env (goal_of_proof pf) in
+	    try 
+	      Inductiveops.control_only_guard env pfterm;
+	      goto_current_focus_or_top (mark_as_done pts)
+ 	    with 
+		Type_errors.TypeError(env,
+				      Type_errors.IllFormedRecBody(_,_,_)) ->
+		  anomaly "\"end induction\" generated an ill-formed fixpoint"
+	end
     | Pend _ -> 
 	goto_current_focus_or_top (mark_as_done pts)
 

@@ -50,18 +50,26 @@ GLOBAL: proof_instr;
       | c=constr -> {st_label=Anonymous;st_it=This c}
       ]
     ];
-  justification : 
-    [[ -> Automated [] 
-     | IDENT "by"; l=LIST1 constr SEP "," -> Automated l
-     | IDENT "by"; IDENT "tactic"; tac=tactic -> By_tactic tac ]]
+  justification_items : 
+    [[ -> Some [] 
+     | IDENT "by"; l=LIST1 constr SEP "," -> Some l
+     | IDENT "by"; "*"                    -> None ]]
+  ;
+  justification_method : 
+    [[ -> None 
+     | "using";  tac = tactic -> Some tac ]]
   ;
   simple_cut_or_thesis :
     [[ ls = statement_or_thesis;
-       j=justification -> {cut_stat=ls;cut_by=j} ]]
+       j = justification_items;
+       taco = justification_method 	
+	 -> {cut_stat=ls;cut_by=j;cut_using=taco} ]]
   ;
   simple_cut :
     [[ ls = statement;
-       j=justification -> {cut_stat=ls;cut_by=j} ]]
+       j = justification_items;
+       taco = justification_method 	
+	 -> {cut_stat=ls;cut_by=j;cut_using=taco} ]]
   ;
   elim_type:
     [[ IDENT "induction" -> ET_Induction

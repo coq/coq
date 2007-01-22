@@ -22,13 +22,17 @@ let pr_label = function
     Anonymous -> mt ()
   | Name id -> pr_id id ++ spc () ++ str ":" ++ spc () 
 
-let pr_justification env = function
-    Automated [] -> mt ()
-  | Automated (_::_ as l) -> 
+let pr_justification_items env = function
+    Some [] -> mt ()
+  | Some (_::_ as l) -> 
       spc () ++ str "by" ++ spc () ++  
 	prlist_with_sep (fun () -> str ",") (pr_constr env) l
-  | By_tactic tac -> 
-      spc () ++ str "by" ++ spc () ++ str "tactic" ++  pr_tac env tac
+  | None -> spc () ++ str "by *"
+
+let pr_justification_method env = function
+    None -> mt ()
+  | Some tac -> 
+      spc () ++ str "using" ++  pr_tac env tac
 
 let pr_statement pr_it env st = 
   pr_label st.st_label ++ pr_it env st.st_it
@@ -42,7 +46,8 @@ let pr_or_thesis pr_this env = function
 
 let pr_cut pr_it env c = 
   hov 1 (pr_statement pr_it env c.cut_stat) ++ 
-    pr_justification env c.cut_by
+    pr_justification_items env c.cut_by ++
+    pr_justification_method env c.cut_using
 
 let type_or_thesis = function
     Thesis _ -> Term.mkProp

@@ -12,10 +12,6 @@ open Names
 open Util
 open Tacexpr
 
-type ('constr,'tac) justification =
-  By_tactic of 'tac
-| Automated of 'constr list
-
 type 'it statement = 
     {st_label:name;
      st_it:'it}
@@ -43,7 +39,8 @@ type block_type =
 
 type ('it,'constr,'tac) cut =
     {cut_stat: 'it statement;
-     cut_by: ('constr,'tac) justification}
+     cut_by: 'constr list option;
+     cut_using: 'tac option}
 
 type ('var,'constr) hyp = 
     Hvar of 'var 
