@@ -114,7 +114,7 @@ theories/Logic/Eqdep_dec.vo: theories/Logic/Eqdep_dec.v theories/Logic/EqdepFact
 theories/Logic/Decidable.vo: theories/Logic/Decidable.v
 theories/Logic/JMeq.vo: theories/Logic/JMeq.v theories/Logic/Eqdep.vo
 theories/Logic/ClassicalChoice.vo: theories/Logic/ClassicalChoice.v theories/Logic/ClassicalUniqueChoice.vo theories/Logic/RelationalChoice.vo theories/Logic/ChoiceFacts.vo
-theories/Logic/ClassicalDescription.vo: theories/Logic/ClassicalDescription.v theories/Logic/Classical.vo theories/Logic/ChoiceFacts.vo theories/Setoids/Setoid.vo
+theories/Logic/ClassicalDescription.vo: theories/Logic/ClassicalDescription.v theories/Logic/Classical.vo theories/Logic/ChoiceFacts.vo
 theories/Logic/RelationalChoice.vo: theories/Logic/RelationalChoice.v
 theories/Logic/Diaconescu.vo: theories/Logic/Diaconescu.v theories/Logic/ClassicalFacts.vo theories/Logic/ChoiceFacts.vo theories/Bool/Bool.vo
 theories/Logic/EqdepFacts.vo: theories/Logic/EqdepFacts.v
@@ -123,6 +123,7 @@ theories/Logic/ClassicalEpsilon.vo: theories/Logic/ClassicalEpsilon.v theories/L
 theories/Logic/ClassicalUniqueChoice.vo: theories/Logic/ClassicalUniqueChoice.v theories/Logic/Classical.vo theories/Setoids/Setoid.vo
 theories/Logic/DecidableType.vo: theories/Logic/DecidableType.v theories/Lists/SetoidList.vo
 theories/Logic/DecidableTypeEx.vo: theories/Logic/DecidableTypeEx.v theories/Logic/DecidableType.vo theories/FSets/OrderedType.vo theories/FSets/OrderedTypeEx.vo
+theories/Logic/ConstructiveEpsilon.vo: theories/Logic/ConstructiveEpsilon.v theories/Arith/Arith.vo
 theories/Arith/Arith.vo: theories/Arith/Arith.v theories/Arith/Arith_base.vo contrib/setoid_ring/ArithRing.vo
 theories/Arith/Gt.vo: theories/Arith/Gt.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Plus.vo
 theories/Arith/Between.vo: theories/Arith/Between.v theories/Arith/Le.vo theories/Arith/Lt.vo
