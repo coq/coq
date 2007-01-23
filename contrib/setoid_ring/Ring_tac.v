@@ -239,23 +239,35 @@ Tactic Notation (at level 0) "ring" "[" constr_list(lH) "]" :=
 
 (* Simplification *)
 
-
 Ltac Ring_simplify_gen f :=
   fun req sth ext morph arth cst_tac pow_tac lemma1 lemma2 pre post lH rl =>
+     let l := fresh "to_rewrite" in
+     pose (l:= rl);
+     generalize (refl_equal l);
+     unfold l at 2;
      pre(); 
-     Ring_norm_gen f cst_tac pow_tac lemma2 req ring_subst_niter lH rl; 
-     post().
+     match goal with
+     | [|- l = ?RL -> _ ] =>
+       let Heq := fresh "Heq" in
+       intros Heq;clear Heq l;
+       Ring_norm_gen f cst_tac pow_tac lemma2 req ring_subst_niter lH RL; 
+       post()
+     | _ => fail 1 "ring_simplify anomaly: bad goal after pre"
+     end.
 
 Ltac Ring_simplify := Ring_simplify_gen ltac:(fun H => rewrite H).
 
 
 Tactic Notation (at level 0) 
-  "ring_simplify" "[" constr_list(lH) "]" constr_list(rl) := 
+  "ring_simplify" "[" constr_list(lH) "]" constr_list(rl) :=
   match goal with [|- ?G] => ring_lookup Ring_simplify [lH] rl [G] end.
 
 Tactic Notation (at level 0) 
   "ring_simplify" constr_list(rl) := 
-  match goal with [|- ?G] => ring_lookup Ring_simplify [] rl [G] end.
+  let Main := 
+    match goal with [|- ?G] => (fun f => f G) end in
+  let Aux G := ring_lookup Ring_simplify [] rl [G] in
+  Main Aux.
 
 (* MON DIEU QUE C'EST MOCHE !!!!!!!!!!!!! *)
 
