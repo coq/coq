@@ -591,6 +591,12 @@ let current_deps () =
 let current_reexports () =
   List.map (fun m -> m.library_name) !libraries_exports_list
 
+let error_recursively_dependent_library dir =
+  errorlabstrm ""
+    (str "Unable to use logical name" ++ spc() ++ pr_dirpath dir ++ spc() ++ 
+     str "to save current library" ++ spc() ++ str"because" ++ spc() ++ 
+     str "it already depends on a library of this name.")
+
 let save_library_to dir f =
   let cenv, seg = Declaremods.end_library dir in
   let md = { 
@@ -599,6 +605,8 @@ let save_library_to dir f =
     md_objects = seg;
     md_deps = current_deps ();
     md_imports = current_reexports () } in
+  if List.mem_assoc dir md.md_deps then
+    error_recursively_dependent_library dir;
   let (f',ch) = raw_extern_library f in
   try
     System.marshal_out ch md;
