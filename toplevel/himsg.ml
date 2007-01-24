@@ -96,22 +96,24 @@ let explain_elim_arity ctx ind sorts c pj okinds =
           "strong elimination on non-small inductive types leads to paradoxes."
 	| WrongArity ->
 	  "wrong arity" in
-	(hov 0 
-           (fnl () ++ str "Elimination of an inductive object of sort " ++
-            pki ++ brk(1,0) ++
-            str "is not allowed on a predicate in sort " ++ pkp  ++fnl () ++
-            str "because" ++ spc () ++ str explanation))
+      let ppar = pr_disjunction (fun s -> quote (pr_sort_family s)) sorts in
+      let ppt = pr_lconstr_env ctx (snd (decompose_prod_assum pj.uj_type)) in
+      hov 0 
+	(str "the return type has sort" ++ spc() ++ ppt ++ spc() ++ 
+	 str "while it" ++ spc() ++ str "should be " ++ ppar ++ str ".") ++ 
+      fnl() ++ 
+      hov 0
+	(str "Elimination of an inductive object of sort " ++
+	 pki ++ brk(1,0) ++
+         str "is not allowed on a predicate in sort " ++ pkp ++ fnl() ++
+         str "because" ++ spc() ++ str explanation ++ str ".")
   | None -> 
-      mt ()
+      str "ill-formed elimination predicate."
   in
   hov 0 (
-  str "Incorrect elimination of" ++ spc() ++ pc ++ spc () ++
-  str "in the inductive type " ++ spc() ++ quote pi ++ 
-  (let ppar = pr_disjunction (fun s -> quote (pr_sort_family s)) sorts in
-   let ppt = pr_lconstr_env ctx (snd (decompose_prod_assum pj.uj_type)) in
-   str "," ++ spc() ++ str "the return type has sort" ++ spc() ++ ppt ++ 
-   spc () ++ str "while it should be " ++ ppar))
-  ++ fnl () ++ msg
+    str "Incorrect elimination of" ++ spc() ++ pc ++ spc () ++
+    str "in the inductive type" ++ spc() ++ quote pi ++ str":") ++ 
+  fnl () ++ msg
 
 let explain_case_not_inductive ctx cj =
   let ctx = make_all_name_different ctx in
@@ -219,8 +221,8 @@ let explain_unexpected_type ctx actual_type expected_type =
 let explain_not_product ctx c =
   let pr = pr_lconstr_env ctx c in
   str"The type of this term is a product," ++ spc () ++
-  str"but it is casted with type" ++
-  brk(1,1) ++ pr
+  str"while it is expected to be" ++ 
+  if is_Type c then str " a sort" else (brk(1,1) ++ pr)
 
 (* TODO: use the names *)
 (* (co)fixpoints *)
