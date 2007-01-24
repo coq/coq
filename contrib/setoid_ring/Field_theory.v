@@ -458,11 +458,12 @@ Qed.
 Definition NPEpow x n :=
   match n with
   | N0 => PEc cI
-  | Npos p => 
+  | Npos p =>
+    if positive_eq p xH then x else
     match x with 
     | PEc c => 
       if ceqb c cI then PEc cI else if ceqb c cO then PEc cO else PEc (pow_pos cmul c p)  
-    | _ => PEpow x n
+    | _ => PEpow x n         
     end
   end.
 
@@ -471,7 +472,10 @@ Theorem NPEpow_correct : forall l e n,
 Proof.
  destruct n;simpl.
  rewrite pow_th.(rpow_pow_N);simpl;auto.
- destruct e;simpl;auto.
+ generalize (positive_eq_correct p xH).
+ destruct (positive_eq p 1);intros.
+ rewrite H;rewrite  pow_th.(rpow_pow_N). trivial.
+ clear H;destruct e;simpl;auto.
  repeat apply ceqb_rect;simpl;intros;rewrite pow_th.(rpow_pow_N);simpl.
  symmetry;induction p;simpl;trivial; ring [IHp H CRmorph.(morph1)].
  symmetry; induction p;simpl;trivial;ring [IHp CRmorph.(morph0)].
@@ -1194,8 +1198,10 @@ intros n l lpe fe Hlpe H H1;
  apply eq_trans with (1 := Fnorm_FEeval_PEeval l fe H1).
 apply rdiv8; auto.
 transitivity (NPEeval l (PEc cO)); auto.
-apply (ring_correct Rsth Reqe ARth CRmorph) with n lpe;trivial.
-simpl; apply (morph0 CRmorph); auto.
+rewrite (norm_subst_ok Rsth Reqe ARth CRmorph pow_th n l lpe);auto.
+change (NPEeval l (PEc cO)) with (Pphi 0 radd rmul phi l (Pc cO)).
+apply (Peq_ok Rsth Reqe CRmorph);auto.
+simpl. apply (morph0 CRmorph); auto.
 Qed.
 
 (* simplify a field expression into a fraction *)

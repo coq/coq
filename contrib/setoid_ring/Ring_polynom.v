@@ -1191,8 +1191,25 @@ Section POWER.
   Variable lmp:list (Mon*Pol).
   Let subst_l P := PNSubstL P lmp n n.
   Let Pmul_subst P1 P2 := subst_l (Pmul P1 P2).
-  Let Ppow_subst := Ppow_N subst_l. 
-  
+  Let Ppow_subst := Ppow_N subst_l.
+
+  Fixpoint norm_aux (pe:PExpr) : Pol :=
+   match pe with
+   | PEc c => Pc c
+   | PEX j => mk_X j  
+   | PEadd (PEopp pe1) pe2 => Psub (norm_aux pe2) (norm_aux pe1)
+   | PEadd pe1 (PEopp pe2) => 
+     Psub (norm_aux pe1) (norm_aux pe2)
+   | PEadd pe1 pe2 => Padd (norm_aux  pe1) (norm_aux pe2)
+   | PEsub pe1 pe2 => Psub (norm_aux pe1) (norm_aux pe2)
+   | PEmul pe1 pe2 => Pmul (norm_aux pe1) (norm_aux pe2) 
+   | PEopp pe1 => Popp (norm_aux pe1)
+   | PEpow pe1 n => Ppow_N (fun p => p) (norm_aux pe1) n
+   end.
+
+  Definition norm_subst pe := subst_l (norm_aux pe).
+
+ (* 
   Fixpoint norm_subst (pe:PExpr) : Pol :=
    match pe with
    | PEc c => Pc c
@@ -1227,7 +1244,32 @@ Section POWER.
    induction p;simpl;try rewrite IHp;try rewrite IHpe;repeat rewrite Pms_ok; 
       repeat rewrite Pmul_ok;rrefl.
   Qed.
+*)
+ Lemma norm_aux_spec : 
+     forall l pe, MPcond lmp l ->
+       PEeval l pe == (norm_aux pe)@l. 
+  Proof.
+   intros.
+   induction pe;simpl;Esimpl3.
+   apply mkX_ok.
+   rewrite IHpe1;rewrite IHpe2;destruct pe1;destruct pe2;Esimpl3. 
+   rewrite IHpe1;rewrite IHpe2;rrefl.
+   rewrite IHpe1;rewrite IHpe2. rewrite Pmul_ok. rrefl.
+   rewrite IHpe;rrefl.
+   rewrite Ppow_N_ok. intros;rrefl.
+   rewrite pow_th.(rpow_pow_N). destruct n0;Esimpl3.
+   induction p;simpl;try rewrite IHp;try rewrite IHpe;repeat rewrite Pms_ok; 
+      repeat rewrite Pmul_ok;rrefl.
+  Qed.
 
+ Lemma norm_subst_spec : 
+     forall l pe, MPcond lmp l ->
+       PEeval l pe == (norm_subst pe)@l.
+ Proof.
+  intros;unfold norm_subst.
+  unfold subst_l;rewrite <- PNSubstL_ok;trivial. apply norm_aux_spec. trivial.
+ Qed. 
+ 
  End NORM_SUBST_REC.
   
  Fixpoint interp_PElist (l:list R) (lpe:list (PExpr*PExpr)) {struct lpe} : Prop :=
