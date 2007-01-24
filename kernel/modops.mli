@@ -17,7 +17,7 @@ open Declarations
 open Entries
 open Mod_subst
 (*i*)
-
+exception Circularity of string
 (* Various operations on modules and module types *)
 
 (* recursively unfold MTBdent module types *)
@@ -97,6 +97,10 @@ val error_a_generative_module_expected : label -> 'a
 val error_local_context : label option -> 'a
 
 val error_circular_with_module : identifier -> 'a
+
+val error_circularity_in_subtyping : string->string->string-> 'a
+
+val error_no_such_label_sub : label->string->string->'a
 
 val resolver_of_environment :
  mod_bound_id -> module_type_body -> module_path -> env -> resolver

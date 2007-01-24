@@ -20,6 +20,8 @@ open Entries
 open Mod_subst
 (*i*)
 
+exception Circularity of string
+
 let error_existing_label l = 
   error ("The label "^string_of_label l^" is already declared")
 
@@ -83,6 +85,12 @@ let error_local_context lo =
 let error_circular_with_module l =
   error ("The construction \"with Module "^(string_of_id l)^":=...\" is about to create\na circular module type. Their resolution is not implemented yet.\nIf you really need that feature, please report.")
 
+let error_circularity_in_subtyping l l1 l2 =
+  error ("An occurrence of "^l^" creates a circularity\n during the subtyping verification between "^l1^" and "^l2^".")
+
+let error_no_such_label_sub l l1 l2 =
+  error (l1^" is not a subtype of "^l2^".\nThe field "^(string_of_label l)^" is missing (or invisible) in "^l1^".")
+
 let rec scrape_modtype env = function
   | MTBident kn -> scrape_modtype env (lookup_modtype kn env)
   | mtb -> mtb
@@ -134,16 +142,16 @@ let rec subst_modtype sub = function
        M to M' I must substitute M' for X in "Module N := X". *)
   | MTBident ln -> MTBident (subst_kn sub ln)
   | MTBfunsig (arg_id, arg_b, body_b) ->
-      if occur_mbid arg_id sub then failwith "capture";
+      if occur_mbid arg_id sub then raise (Circularity (debug_string_of_mbid arg_id));
       MTBfunsig (arg_id, 
-		 subst_modtype sub arg_b, 
-		 subst_modtype sub body_b)
+		 subst_modtype  sub arg_b, 
+		 subst_modtype  sub body_b)
   | MTBsig (sid1, msb) -> 
-      if occur_msid sid1 sub then failwith "capture";
+      if occur_msid sid1 sub then raise (Circularity (debug_string_of_msid sid1));
       MTBsig (sid1, subst_signature sub msb)
 
 and subst_signature sub sign = 
-  let subst_body = function
+  let subst_body  = function
       SPBconst cb -> 
 	SPBconst (subst_const_body sub cb)
     | SPBmind mib -> 
@@ -155,7 +163,7 @@ and subst_signature sub sign =
   in
     List.map (fun (l,b) -> (l,subst_body b)) sign
 
-and subst_module sub mb =
+and subst_module  sub mb =
   let mtb' = subst_modtype sub mb.msb_modtype in
   (* This is similar to the previous case. In this case we have
      a module M in a signature that is knows to be equivalent to a module M'

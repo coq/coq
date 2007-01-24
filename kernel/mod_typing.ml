@@ -120,10 +120,10 @@ and merge_with env mtb with_decl =
 	    we check that there is no msid bound in mtb *)
 	    begin
 	      try 
-		let _ = subst_modtype (map_msid msid (MPself msid)) mtb in
+		let _ = subst_modtype  (map_msid msid (MPself msid)) mtb in
 		  ()
 	      with
-		  Failure _ -> error_circular_with_module id
+		  Circularity _ -> error_circular_with_module id
 	    end;
 	    let cst =
               try check_subtypes env' mtb old.msb_modtype
@@ -247,9 +247,7 @@ and translate_module env is_definition me =
 	    | None -> mtb1, None, Constraint.empty
 	    | Some mte -> 
 		let mtb2 = translate_modtype env mte in
-                let cst =
-                  try check_subtypes env mtb1 mtb2
-                  with Failure _ -> error "not subtype" in
+                let cst = check_subtypes env mtb1 mtb2 in
 		mtb2, Some mtb2, cst
 	in
 	  { mod_type = mtb;
@@ -274,10 +272,7 @@ and translate_mexpr env mexpr = match mexpr with
       let ftb = scrape_modtype env ftb in
       let farg_id, farg_b, fbody_b = destr_functor ftb in
       let meb,mtb = translate_mexpr env mexpr in
-      let cst =
-        try check_subtypes env mtb farg_b
-        with Failure _ ->
-          error "" in
+      let cst = check_subtypes env mtb farg_b in
       let mp = 
 	try
 	  path_of_mexpr mexpr 
@@ -290,7 +285,7 @@ and translate_mexpr env mexpr = match mexpr with
         (* This is the place where the functor formal parameter is
            substituted by the given argument to compute the type of the
            functor application. *)
-	subst_modtype
+	subst_modtype 
          (map_mbid farg_id mp (Some resolve)) fbody_b
   | MEstruct (msid,structure) ->
       let structure,signature = translate_entry_list env msid true structure in
