@@ -1,4 +1,12 @@
-Changes from V8.1beta to V8.1beta2
+Changes from V8.1gamma to V8.1
+==============================
+
+Bug fixes
+
+- Many bugs have been fixed (cf coq-bugs web page)
+
+
+Changes from V8.1beta to V8.1gamma
 ==================================
 
 Syntax
