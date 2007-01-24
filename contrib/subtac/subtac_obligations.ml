@@ -39,7 +39,7 @@ let default_tactic : Proof_type.tactic ref = ref Refiner.tclIDTAC
 
 let set_default_tactic t = default_tactic := t
 
-let evar_of_obligation o = { evar_hyps = Environ.empty_named_context_val ; 
+let evar_of_obligation o = { evar_hyps = Global.named_context_val () ;
 			     evar_concl = o.obl_type ; 
 			     evar_body = Evar_empty ;
 			     evar_extra = None }
@@ -221,7 +221,7 @@ let update_obls prg obls rem =
       Options.if_verbose msgnl (int rem ++ str " obligation(s) remaining");
     )
     else (
-      debug 2 (str "No more obligations remaining");
+      Options.if_verbose msgnl (str "No more obligations remaining");
       match prg'.prg_deps with
 	  [] ->
 	    declare_definition prg';
@@ -259,9 +259,9 @@ let solve_obligation prg num =
 		   let obls = Array.copy obls in
 		   let _ = obls.(num) <- obl in
 		     update_obls prg obls (pred rem));
-	      Pfedit.by !default_tactic;
 	      trace (str "Started obligation " ++ int user_num ++ str "  proof: " ++
-		       Subtac_utils.my_print_constr (Global.env ()) obl.obl_type)
+		       Subtac_utils.my_print_constr (Global.env ()) obl.obl_type);
+	      Pfedit.by !default_tactic
 	| l -> pperror (str "Obligation " ++ int user_num ++ str " depends on obligation(s) "
 			++ str (string_of_list ", " (fun x -> string_of_int (succ x)) l))
 

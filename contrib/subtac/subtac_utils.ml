@@ -616,12 +616,15 @@ let solve_by_tac ev t =
     c
     *)
 
+let ($) f g = fun x -> f (g x)
+
 let solve_by_tac evi t =
   debug 2 (str "Solving goal using tactics: " ++ Evd.pr_evar_info evi);
   let id = id_of_string "H" in
   try 
-    Pfedit.start_proof id (Decl_kinds.Local,Decl_kinds.Proof Decl_kinds.Lemma) evi.evar_hyps evi.evar_concl
+    Pfedit.start_proof id goal_kind evi.evar_hyps evi.evar_concl
     (fun _ _ -> ());
+    debug 2 (str "Started proof");
     Pfedit.by (tclCOMPLETE t);
     let _,(const,_,_) = Pfedit.cook_proof () in 
       Pfedit.delete_current_proof (); const.Entries.const_entry_body

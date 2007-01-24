@@ -6,6 +6,8 @@ Notation "'fun' { x : A | P } => Q" :=
 
 Notation "( x & ? )" := (@exist _ _ x _) : core_scope.
 
+Notation " ! " := (False_rect _ _).
+
 Definition ex_pi1 (A : Prop) (P : A -> Prop) (t : ex P) : A.
 intros.
 induction t.
@@ -44,7 +46,7 @@ end.
 
 Ltac destruct_exists := repeat (destruct_one_pair) .
 
-Ltac subtac_simpl := hnf ; intros ; destruct_exists ; try subst.
+Ltac subtac_simpl := simpl ; intros ; destruct_exists ; simpl in * ; try subst ; auto. 
 
 (* Destructs calls to f in hypothesis or conclusion, useful if f creates a subset object *)
 Ltac destruct_call f :=
