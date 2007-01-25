@@ -62,7 +62,7 @@ Require Import Arith.
 Parameter x y : nat.
 Parameter G:x=y->x=y->Prop.
 Parameter K:x<>y->x<>y->Prop.
-Lemma l3 : (forall f:x=y->Prop, forall g:x<>y->Prop,
+Lemma l4 : (forall f:x=y->Prop, forall g:x<>y->Prop,
             match eq_nat_dec x y with left a => f a | right a => g a end)
    -> match eq_nat_dec x y with left a => G a a | right a => K a a end.
 Proof.
@@ -82,7 +82,7 @@ Qed.
    This used to fail before revision 9389 in trunk
 *)
 
-Lemma l4 :
+Lemma l5 :
    forall f : (forall P, P true), (forall P, f P = f P) ->
    forall Q, f (fun x => Q x) = f (fun x => Q x).
 Proof.
