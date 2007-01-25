@@ -262,9 +262,9 @@ let default_pr_goal g =
 	  pr_context_of env,
 	  pr_ltype_env_at_top env g.evar_concl
     else 
-      let {pm_subgoals=metas;pm_hyps=among} = get_info g in
+      let {pm_subgoals=metas} = get_info g in
 	(str "     *** Declarative Mode ***" ++ fnl ()++fnl ()),
-    pr_restricted_named_context among env,
+    pr_context_of env,
     pr_subgoal_metas metas env
   in
     preamb ++

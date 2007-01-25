@@ -89,6 +89,8 @@ let rec print_decl_script tac_printer nochange sigma pf =
 	   pr_change pf.goal)
 	++ fnl ()
     | Some (Daimon,_) -> mt ()
+    | Some (Prim Change_evars,[subpf]) ->   
+	print_decl_script tac_printer nochange sigma subpf
     | Some (Nested(Proof_instr (opened,instr),_) as rule,subprfs) ->
 	begin
 	  match instr.instr,subprfs with

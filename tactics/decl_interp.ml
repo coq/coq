@@ -149,8 +149,8 @@ let decompose_eq env id =
 let get_eq_typ info env =
   let last_id = 	    
     match info.pm_last with
-	Anonymous -> error "no previous equality"
-      | Name id -> id in
+	None -> error "no previous equality"
+      | Some (id,_) -> id in
   let typ = decompose_eq env last_id in  
     typ
 

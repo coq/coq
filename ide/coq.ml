@@ -269,18 +269,6 @@ let prepare_goal sigma g =
   (prepare_hyps sigma env,
    (env, sigma, g.evar_concl, msg (pr_ltype_env_at_top env g.evar_concl)))
 
-let prepare_hyps_filter info sigma env =
-  assert (rel_context env = []);
-  let hyps =
-    fold_named_context
-      (fun env ((id,_,_) as d) acc ->
-	 if true || Idset.mem id info.pm_hyps then
-	   let hyp = prepare_hyp sigma env d in hyp :: acc
-	 else acc)
-      env ~init:[] 
-  in
-  List.rev hyps
-
 let prepare_meta sigma env (m,typ)  =
   env, sigma, 
   (msg (str " ?" ++ int m ++ str " : " ++ pr_ltype_env_at_top env typ))
@@ -297,7 +285,7 @@ let get_current_pm_goal () =
   let info = Decl_mode.get_info gls.it in
   let env = pf_env gls in
   let sigma= sig_sig gls in
-    (prepare_hyps_filter info sigma env,
+    (prepare_hyps sigma env,
      prepare_metas info sigma env)
 
 let get_current_goals () = 
