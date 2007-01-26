@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id:$ *)
+(* $Id$ *)
 
 open Util
 open Pp
@@ -98,7 +98,8 @@ let set_last cpl gls =
     tclTHEN 
       begin 
 	match info.pm_last with 
-	    Some (lid,false) -> tclTRY (clear [lid])
+	    Some (lid,false) when 
+	      not (occur_id [] lid info.pm_partial_goal) -> tclTRY (clear [lid])
 	  | _ -> tclIDTAC
       end
       begin
