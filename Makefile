@@ -829,7 +829,8 @@ LOGICVO=\
  theories/Logic/RelationalChoice.vo   theories/Logic/Diaconescu.vo \
  theories/Logic/EqdepFacts.vo         theories/Logic/ProofIrrelevanceFacts.vo \
  theories/Logic/ClassicalEpsilon.vo   theories/Logic/ClassicalUniqueChoice.vo \
- theories/Logic/DecidableType.vo      theories/Logic/DecidableTypeEx.vo 
+ theories/Logic/DecidableType.vo      theories/Logic/DecidableTypeEx.vo \
+ theories/Logic/ConstructiveEpsilon.vo
 
 ARITHVO=\
  theories/Arith/Arith.vo        theories/Arith/Gt.vo          \
