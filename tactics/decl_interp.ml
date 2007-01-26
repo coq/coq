@@ -22,9 +22,11 @@ open Pp
 
 let raw_app (loc,hd,args) = if args =[] then hd else RApp(loc,hd,args) 
 
-let intern_justification globs = function
-    Automated l -> Automated (List.map (intern_constr globs) l)
-  | By_tactic tac -> By_tactic (intern_tactic globs tac) 
+let intern_justification_items globs = 
+  option_map (List.map (intern_constr globs))
+
+let intern_justification_method globs = 
+  option_map (intern_tactic globs)
 
 let intern_statement intern_it globs st =
   {st_label=st.st_label;
@@ -54,7 +56,8 @@ let intern_hyps iconstr globs hyps =
 
 let intern_cut intern_it globs cut=
  {cut_stat=intern_statement intern_it globs cut.cut_stat;
-  cut_by=intern_justification globs cut.cut_by}
+  cut_by=intern_justification_items globs cut.cut_by;
+  cut_using=intern_justification_method globs cut.cut_using}
 
 let intern_casee globs = function 
     Real c -> Real (intern_constr globs c)
@@ -118,10 +121,8 @@ let rec intern_proof_instr globs instr=
   {emph = instr.emph;
    instr = intern_bare_proof_instr globs instr.instr}
 
-let interp_justification env sigma  = function
-    Automated l -> 
-      Automated (List.map (fun c ->understand env sigma (fst c)) l)
-  | By_tactic tac -> By_tactic tac 
+let interp_justification_items env sigma  =
+    option_map (List.map (fun c ->understand env sigma (fst c)))
 
 let interp_constr check_sort env sigma c = 
   if check_sort then 
@@ -148,8 +149,8 @@ let decompose_eq env id =
 let get_eq_typ info env =
   let last_id = 	    
     match info.pm_last with
-	Anonymous -> error "no previous equality"
-      | Name id -> id in
+	None -> error "no previous equality"
+      | Some (id,_) -> id in
   let typ = decompose_eq env last_id in  
     typ
 
@@ -368,8 +369,9 @@ let interp_cases info env sigma params (pat:cases_pattern_expr) hyps =
 	     pat_expr=pat},thyps
 
 let interp_cut interp_it env sigma cut=
- {cut_stat=interp_statement interp_it env sigma cut.cut_stat;
-  cut_by=interp_justification env sigma cut.cut_by}
+  {cut with 
+    cut_stat=interp_statement interp_it env sigma cut.cut_stat;
+    cut_by=interp_justification_items env sigma cut.cut_by}
 
 let interp_casee env sigma = function 
     Real c -> Real (understand env sigma (fst c))

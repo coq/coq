@@ -67,8 +67,7 @@ type stack_info =
   | Focus_claim
 
 type pm_info =
-    { pm_last: Names.name (* anonymous if none *);
-      pm_hyps: Idset.t;
+    { pm_last: (Names.identifier * bool) option (* anonymous if none *);
       pm_partial_goal : constr ; (* partial goal construction *)
       pm_subgoals : (metavariable*constr) list;
       pm_stack : stack_info list }

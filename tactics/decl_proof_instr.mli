@@ -112,7 +112,7 @@ val hrec_for:
 
 val consider_match :
    bool ->
-    Names.Idset.elt list ->
+    (Names.Idset.elt*bool) list ->
     Names.Idset.elt list ->
     (Term.types Decl_expr.statement, Term.types) Decl_expr.hyp list ->
     Proof_type.tactic

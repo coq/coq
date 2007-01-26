@@ -81,7 +81,7 @@ let ground_tac solver startseq gl=
 			      tclFAIL 0 (Pp.str "reversible in 1st order mode")
 			    else
 			      backtrack in
-			    forall_tac backtrack continue (re_add seq1)
+			    forall_tac backtrack1 continue (re_add seq1)
 		      | Rarrow->
 			  arrow_tac backtrack continue (re_add seq1)
 		      | Ror->

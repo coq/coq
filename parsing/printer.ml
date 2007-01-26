@@ -235,17 +235,6 @@ let pr_context_of env = match Options.print_hyps_limit () with
 
 (* display goal parts (Proof mode) *)
 
-let pr_restricted_named_context among env =
-  hv 0 (fold_named_context
-	  (fun env ((id,_,_) as d) pps ->
-	     if true || Idset.mem id among then
-	       pps ++ 
-		 fnl () ++ str (emacs_str (String.make 1 (Char.chr 253)) "") ++
-		 pr_var_decl env d
-	     else 
-	       pps)
-          env ~init:(mt ()))
-
 let pr_subgoal_metas metas env=
   let pr_one (meta,typ) = 
     str "?" ++ int meta ++ str " : " ++ 
@@ -254,6 +243,7 @@ let pr_subgoal_metas metas env=
     hv 0 (prlist_with_sep mt pr_one metas)
 
 (* display complete goal *)
+
 let pr_goal g =
   let env = evar_env g in
   let preamb,penv,pc =
@@ -262,9 +252,9 @@ let pr_goal g =
 	  pr_context_of env,
 	  pr_ltype_env_at_top env g.evar_concl
     else 
-      let {pm_subgoals=metas;pm_hyps=among} = get_info g in
+      let {pm_subgoals=metas} = get_info g in
 	(str "     *** Declarative Mode ***" ++ fnl ()++fnl ()),
-    pr_restricted_named_context among env,
+    pr_context_of env,
     pr_subgoal_metas metas env
   in
     preamb ++
