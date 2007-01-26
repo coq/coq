@@ -561,6 +561,15 @@ let make_scheme (fas : (constant*Rawterm.rawsort) list) : Entries.definition_ent
       (fun _ _ _ -> ())
   in      
   incr i;
+  let opacity = 
+    let finfos = find_Function_infos this_block_funs.(0) in 
+    try 
+      let equation =  out_some finfos.equation_lemma in  
+      (Global.lookup_constant equation).Declarations.const_opaque 
+    with Failure "out_some" -> (* non recursive definition *) 
+      false
+  in
+  let const = {const with const_entry_opaque = opacity } in 
   (* The others are just deduced *)
   if other_princ_types = [] 
   then
@@ -642,10 +651,12 @@ let build_scheme fas =
   in 
   List.iter2 
     (fun (princ_id,_,_) def_entry -> 
-       ignore (Declare.declare_constant 
-		 princ_id 
-		 (Entries.DefinitionEntry def_entry,Decl_kinds.IsProof Decl_kinds.Theorem));
-       Options.if_verbose (fun id -> Pp.msgnl (Ppconstr.pr_id id ++ str " is defined")) princ_id
+       ignore 
+	 (Declare.declare_constant 
+	    princ_id 
+	    (Entries.DefinitionEntry def_entry,Decl_kinds.IsProof Decl_kinds.Theorem));
+       Options.if_verbose 
+	 (fun id -> Pp.msgnl (Ppconstr.pr_id id ++ str " is defined")) princ_id
     )
     fas
     bodies_types

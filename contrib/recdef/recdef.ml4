@@ -850,6 +850,16 @@ let open_new_goal using_lemmas ref goal_name (gls_type,decompose_and_tac,nb_goal
   if occur_existential gls_type then
     Util.error "\"abstract\" cannot handle existentials";
   let hook _ _ = 
+    let opacity = 
+      let na_ref = Libnames.Ident (dummy_loc,na) in 
+      let na_global = Nametab.global na_ref in
+      match na_global with 
+	  ConstRef c -> 
+	    let cb = Global.lookup_constant c in 
+	    if cb.Declarations.const_opaque then true 
+	    else begin  match cb.const_body with None -> true | _ -> false end 
+	| _ -> anomaly "equation_lemma: not a constant"
+    in
     let lemma = mkConst (Lib.make_con na) in 
     Array.iteri 
       (fun i _ -> 
@@ -857,7 +867,7 @@ let open_new_goal using_lemmas ref goal_name (gls_type,decompose_and_tac,nb_goal
       (Array.make nb_goal ())
     ;
     ref := Some lemma ;
-    defined ();
+    Command.save_named opacity;
   in
   start_proof
     na
@@ -888,7 +898,7 @@ let open_new_goal using_lemmas ref goal_name (gls_type,decompose_and_tac,nb_goal
   with UserError _ -> 
     defined ()
   
-    
+;;    
 let com_terminate 
     tcc_lemma_name 
     tcc_lemma_ref 
@@ -1140,6 +1150,14 @@ let (com_eqn : identifier ->
        global_reference -> global_reference -> global_reference
 	 -> constr -> unit) =
   fun eq_name functional_ref f_ref terminate_ref equation_lemma_type ->
+    let opacity = 
+      match terminate_ref with 
+	| ConstRef c -> 	      
+	    let cb = Global.lookup_constant c in 
+	    if cb.Declarations.const_opaque then true 
+	    else begin match cb.const_body with None -> true | _ -> false end 
+	| _ -> anomaly "terminate_lemma: not a constant"
+    in 
     let (evmap, env) = Command.get_current_context() in
     let f_constr = (constr_of_reference f_ref) in
     let equation_lemma_type = subst1 f_constr equation_lemma_type in
@@ -1159,7 +1177,7 @@ let (com_eqn : identifier ->
 	       )
 	  )
        );
-     Options.silently defined (); 
+     Options.silently (fun () -> Command.save_named opacity) (); 
     );;
 
 
