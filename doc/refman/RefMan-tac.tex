@@ -702,7 +702,6 @@ This tactic applies to any goal. It implements the rule
 \end{Variants}
 
 \SeeAlso \ref{Conversion-tactics}
-
 \subsection{Bindings list
 \index{Binding list}
 \label{Binding-list}}
@@ -724,6 +723,36 @@ these terms correspond are determined by the tactic. In case of {\tt
 all the dependent products in the type of \term\ while in the case of
 {\tt apply} only the dependent products which are not bound in
 the conclusion of the type are given.
+
+\subsection{\tt evar (\ident:\term)
+\tacindex{evar}
+\label{evar}}
+
+The {\tt evar} tactic creates a new local definition named \ident\ with
+type \term\ in the context. The body of this binding is a fresh
+existential variable.
+
+\subsection{\tt instantiate (\num:= \term)
+\tacindex{instantiate}
+\label{instantiate}}
+
+The {\tt instantiate} tactic allows to solve an existential variable
+with the term \term. The \num\  argument is the position of the
+existential variable from right to left in the conclusion. This cannot be
+the number of the existential variable since this number is different
+in every session.
+
+\begin{Variants}
+  \item {\tt instantiate (\num:=\term) in \ident}
+  
+  \item {\tt instantiate (\num:=\term) in (Value of \ident)}
+  
+  \item {\tt instantiate (\num:=\term) in (Type of \ident)}
+
+These allow to refer respectively to existential variables occurring in 
+a hypothesis or in the body or the type of a local definition.  
+
+\end{Variants}
 
 
 \section{Negation and contradiction}
@@ -3127,6 +3156,8 @@ pattern-matching on hypotheses.
 %\begin{Warnings}
 %  \item \texttt{Overriding hint named \dots\ in database \dots}
 %\end{Warnings}
+
+
 
 \subsection{Hint databases defined in the \Coq\ standard library}
 
