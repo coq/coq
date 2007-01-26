@@ -5,6 +5,11 @@ Bug fixes
 
 - Many bugs have been fixed (cf coq-bugs web page)
 
+Libraries
+
+- New file ConstructiveEpsilon.v defining an epsilon operator and
+  proving the axiom of choice constructively for a countable domain
+  and a decidable predicate.
 
 Changes from V8.1beta to V8.1gamma
 ==================================
