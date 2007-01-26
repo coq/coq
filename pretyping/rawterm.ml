@@ -201,6 +201,70 @@ let occur_rawconstr id =
 
   in occur
 
+
+let add_name_to_ids set na = 
+  match na with 
+    | Anonymous -> set 
+    | Name id -> Idset.add id set 
+
+let free_rawvars  =
+  let rec vars bounded vs = function
+    | RVar (loc,id') -> if Idset.mem id' bounded then vs else Idset.add id' vs
+    | RApp (loc,f,args) -> List.fold_left (vars bounded) vs (f::args)
+    | RLambda (loc,na,ty,c) | RProd (loc,na,ty,c) | RLetIn (loc,na,ty,c) -> 
+	let vs' = vars bounded vs ty in 
+	let bounded' = add_name_to_ids bounded na in 
+	vars bounded' vs' c
+    | RCases (loc,rtntypopt,tml,pl) ->
+	let vs1 = vars_option bounded vs rtntypopt in 
+	let vs2 = List.fold_left (fun vs (tm,_) -> vars bounded vs tm) vs1 tml in 
+	List.fold_left (vars_pattern bounded) vs2 pl
+    | RLetTuple (loc,nal,rtntyp,b,c) ->
+	let vs1 = vars_return_type bounded vs rtntyp in 
+	let vs2 = vars bounded vs1 b in 
+	let bounded' = List.fold_left add_name_to_ids bounded nal in
+	vars bounded' vs2 c
+    | RIf (loc,c,rtntyp,b1,b2) -> 
+	let vs1 = vars_return_type bounded vs rtntyp in 
+	let vs2 = vars bounded vs1 c in 
+	let vs3 = vars bounded vs2 b1 in 
+	vars bounded vs3 b2
+    | RRec (loc,fk,idl,bl,tyl,bv) ->
+	let bounded' = Array.fold_right Idset.add idl bounded in 
+	let vars_fix i vs fid = 
+	  let vs1,bounded1 = 
+	    List.fold_left 
+	      (fun (vs,bounded) (na,bbd,bty) -> 
+		 let vs' = vars_option bounded vs bbd in 
+		 let vs'' = vars bounded vs' bty in
+		 let bounded' = add_name_to_ids bounded na in 
+		 (vs'',bounded')
+	      )
+	      (vs,bounded')
+	      bl.(i)
+	  in
+	  let vs2 = vars bounded1 vs1 tyl.(i) in 
+	  vars bounded1 vs2 bv.(i)
+	in
+	array_fold_left_i vars_fix vs idl
+    | RCast (loc,c,_,t) -> vars bounded (vars bounded vs c) t
+    | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) -> vs
+
+  and vars_pattern bounded vs (loc,idl,p,c) = 
+    let bounded' = List.fold_right Idset.add idl bounded  in 
+    vars bounded' vs c
+
+  and vars_option bounded vs = function None -> vs | Some p -> vars bounded vs p
+
+  and vars_return_type bounded vs (na,tyopt) = 
+    let bounded' = add_name_to_ids bounded na in 
+    vars_option bounded' vs tyopt
+  in 
+  fun rt -> 
+    let vs = vars Idset.empty Idset.empty rt in 
+    Idset.elements vs
+
+
 let loc_of_rawconstr = function
   | RRef (loc,_) -> loc
   | RVar (loc,_) -> loc

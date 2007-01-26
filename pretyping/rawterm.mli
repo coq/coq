@@ -113,7 +113,7 @@ val map_rawconstr_with_binders_loc : loc ->
 i*)
 
 val occur_rawconstr : identifier -> rawconstr -> bool
-
+val free_rawvars : rawconstr -> identifier list
 val loc_of_rawconstr : rawconstr -> loc
 
 (**********************************************************************)

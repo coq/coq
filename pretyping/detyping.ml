@@ -286,9 +286,9 @@ let it_destRLambda_or_LetIn_names n c =
           (* eta-expansion *)
 	  let rec next l =
 	    let x = Nameops.next_ident_away (id_of_string "x") l in
-	    (* Not efficient but unusual and no function to get free rawvars *)
-	    if occur_rawconstr x c then next (x::l) else x in
-	  let x = next [] in 
+	    x
+	  in
+	  let x = next (free_rawvars c) in 
 	  let a = RVar (dl,x) in
 	  aux (n-1) (Name x :: nal) 
             (match c with
