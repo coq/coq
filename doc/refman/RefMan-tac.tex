@@ -282,12 +282,16 @@ the tactic {\tt intro} applies the tactic {\tt red} until the tactic
   
 \item {\tt intros until {\num}}  \tacindex{intros until}
   
-  Repeats {\tt intro} until the {\num}-th non-dependent premise. For
-  instance, on the subgoal %
-  \verb+forall x y:nat, x=y -> forall z:nat,z=x->z=y+ the
-  tactic \texttt{intros until 2} is equivalent to \texttt{intros x y H
-    z H0} (assuming \texttt{x, y, H, z} and \texttt{H0} do not already
-  occur in context).
+  Repeats {\tt intro} until the {\num}-th non-dependent product. For
+  instance, on the subgoal % 
+  \verb+forall x y:nat, x=y -> y=x+ the tactic \texttt{intros until 1}
+  is equivalent to \texttt{intros x y H}, as \verb+x=y -> y=x+ is the
+  first non-dependent product. And on the subgoal %
+  \verb+forall x y z:nat, x=y -> y=x+ the tactic \texttt{intros until 1}
+  is equivalent to \texttt{intros x y z} as the product on \texttt{z}
+  can be rewritten as a non-dependent product: %
+  \verb+forall x y:nat, nat -> x=y -> y=x+
+
 
   \ErrMsg \errindex{No such hypothesis in current goal}
 
