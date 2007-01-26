@@ -405,11 +405,26 @@ let generate_functional_principle
   let (id,(entry,g_kind,hook)) =
     build_functional_principle interactive_proof old_princ_type new_sorts funs i proof_tac hook 
   in
+  (* Pr  1278 :
+     Don't forget to close the goal if an error is raised !!!!
+  *) 
   save false new_princ_name entry g_kind hook
-  with 
-    | Defining_principle _ as e -> raise e
-    | e -> raise (Defining_principle e)
-
+  with e -> 
+    begin
+      begin 
+	try 
+	  let id = Pfedit.get_current_proof_name () in 
+	  let s = string_of_id id in 
+	  let n = String.length "___________princ_________" in
+	  if String.length s >= n 
+	  then if String.sub s 0 n = "___________princ_________" 
+	  then Pfedit.delete_current_proof ()
+	  else ()
+	  else ()
+	with _ -> ()
+      end;
+      raise (Defining_principle e)
+    end
 (*   defined  () *)
 
 
