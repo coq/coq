@@ -98,7 +98,7 @@ let set_last cpl gls =
     tclTHEN 
       begin 
 	match info.pm_last with 
-	    Some (lid,false) -> tclTRY (clear [lid])
+	    Some (lid,false) when not (occur_id [] lid info.pm_partial_goal) -> tclTRY (clear [lid])
 	  | _ -> tclIDTAC
       end
       begin
@@ -458,9 +458,8 @@ let mk_stat_or_thesis info = function
 	  [_,c] -> c
 	| _ -> error 
 	    "\"thesis\" is split, please specify which part you refer to."
-			
-let instr_cut mkstat _thus _then cut gls0 = 
-  let info = get_its_info gls0 in
+
+let just_tac _then cut info gls0 =
   let items_tac gls =
     match cut.cut_by with
 	None -> tclIDTAC gls
@@ -478,20 +477,25 @@ let instr_cut mkstat _thus _then cut gls0 =
 	  automation_tac gls
       | Some tac -> 
 	  (Tacinterp.eval_tactic tac) gls in
-  let just_tac gls =
-    justification (tclTHEN items_tac method_tac) gls in
-  let (c_id,_) as cpl = match cut.cut_stat.st_label with 
+    justification (tclTHEN items_tac method_tac) gls0
+			
+let instr_cut mkstat _thus _then cut gls0 = 
+  let info = get_its_info gls0 in 
+  let stat = cut.cut_stat in
+  let (c_id,_) as cpl = match stat.st_label with 
       Anonymous -> 
 	pf_get_new_id (id_of_string "_fact") gls0,false 
     | Name id -> id,true in
-  let c_stat = mkstat info cut.cut_stat.st_it in
+  let c_stat = mkstat info stat.st_it in
   let thus_tac gls= 
     if _thus then 
       thus_tac (mkVar c_id) c_stat gls
     else tclIDTAC gls in
     tclTHENS (internal_cut c_id c_stat) 
-      [tclTHEN tcl_erase_info just_tac;
+      [tclTHEN tcl_erase_info (just_tac _then cut info);
        tclTHEN (set_last cpl) thus_tac] gls0
+
+
 
 (* iterated equality *)
 let _eq = Libnames.constr_of_reference (Coqlib.glob_eq)
@@ -640,6 +644,49 @@ let assume_st_letin hyps gls =
 	    (fun id -> 
 	       convert_hyp (id,Some (fst st.st_it),snd st.st_it)) st.st_label))
 	 hyps tclIDTAC gls 
+
+(* suffices *)
+
+let free_meta info = 
+  let max_next (i,_) j  = if i <= j then succ j else i in
+  List.fold_right max_next info.pm_subgoals 1
+
+let rec metas_from n hyps = 
+  match hyps with
+      _ :: q -> mkMeta n :: metas_from (succ n) q
+    | [] -> []
+ 
+let rec build_product args body =
+  match args with 
+      (Hprop st| Hvar st )::rest -> 
+	let pprod= lift 1 (build_product rest body) in
+	let lbody =
+	  match st.st_label with
+	      Anonymous -> body
+	    | Name id -> subst_term (mkVar id) pprod in
+	  mkProd (st.st_label, st.st_it, lbody)
+    | [] -> body 
+
+let instr_suffices _then cut gls0 = 
+  let info = get_its_info gls0 in 
+  let c_id = pf_get_new_id (id_of_string "_cofact") gls0 in 
+  let ctx,hd = cut.cut_stat in
+  let c_stat = build_product ctx (mk_stat_or_thesis info hd) in
+  let metas = metas_from (free_meta info) ctx in
+  let c_costat = prod_applist c_stat metas in
+  let costat = applist (mkVar c_id,metas) in  
+ let thus_tac gls= 
+      thus_tac costat c_costat gls in
+   tclTHENS (internal_cut c_id c_stat) 
+     [tclTHENLIST 
+	 [ tcl_change_info 
+	     {info with 
+	       pm_partial_goal=mkMeta 1;
+	       pm_subgoals=[1,c_stat]};
+	   assume_tac ctx;   
+	   tcl_erase_info;
+	   just_tac _then cut info];
+      tclTHEN (set_last (c_id,false)) thus_tac] gls0
 
 (* tactics for consider/given *)
 
@@ -872,17 +919,6 @@ let per_tac etype casee gls=
 	      gls
 
 (* suppose *)
-
-let rec build_product args body =
-  match args with 
-      (Hprop st| Hvar st )::rest -> 
-	let pprod= lift 1 (build_product rest body) in
-	let lbody =
-	  match st.st_label with
-	      Anonymous -> body
-	    | Name id -> subst_term (mkVar id) pprod in
-	  mkProd (st.st_label, st.st_it, lbody)
-    | [] -> body 
 
 let register_nodep_subcase id= function
     Per(et,pi,ek,clauses)::s ->
@@ -1411,6 +1447,8 @@ let rec do_proof_instr_gen _thus _then instr =
 	do_proof_instr_gen true true i
     | Pcut c ->
 	instr_cut mk_stat_or_thesis _thus _then c
+    | Psuffices c ->
+	instr_suffices _then c 
     | Prew (s,c) ->
 	assert (not _then);
 	instr_rew _thus s c
@@ -1435,7 +1473,7 @@ let eval_instr {instr=instr} =
 let rec preprocess pts instr =
   match instr with
     Phence i |Pthus i | Pthen i -> preprocess pts i
-  | Pcut _ |  Passume _ | Plet _ | Pclaim _ | Pfocus _ 
+  | Psuffices _ | Pcut _ |  Passume _ | Plet _ | Pclaim _ | Pfocus _ 
   | Pconsider (_,_) | Pcast (_,_) | Pgiven _ | Ptake _ 
   | Pdefine (_,_,_) | Pper _ | Prew _ ->
       check_not_per pts;
@@ -1451,7 +1489,7 @@ let rec preprocess pts instr =
 let rec postprocess pts instr = 
   match instr with
       Phence i | Pthus i | Pthen i -> postprocess pts i
-    | Pcut _ | Passume _ | Plet _ | Pconsider (_,_) | Pcast (_,_)
+    | Pcut _ | Psuffices _ | Passume _ | Plet _ | Pconsider (_,_) | Pcast (_,_)
     | Pgiven _ | Ptake _ | Pdefine (_,_,_) | Prew (_,_) -> pts
     | Pclaim _ | Pfocus _ | Psuppose _ | Pcase _ | Pper _ -> nth_unproven 1 pts
     | Pescape -> escape_command pts

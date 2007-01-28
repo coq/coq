@@ -45,7 +45,7 @@ let pr_or_thesis pr_this env = function
   | This c -> pr_this env c
 
 let pr_cut pr_it env c = 
-  hov 1 (pr_statement pr_it env c.cut_stat) ++ 
+  hov 1 (pr_it env c.cut_stat) ++ 
     pr_justification_items env c.cut_by ++
     pr_justification_method env c.cut_using
 
@@ -55,24 +55,24 @@ let type_or_thesis = function
 
 let _I x = x
 
-let rec print_hyps pconstr gtyp env _and _be hyps = 
-  let _andp = if _and then str "and" ++spc () else mt () in
+let rec print_hyps pconstr gtyp env sep _be _have hyps = 
+  let pr_sep = if sep then str "and" ++ spc () else mt () in
     match hyps with 
 	(Hvar _ ::_) as rest -> 
-	  spc () ++ _andp ++ str "we have" ++ 
-	    print_vars pconstr gtyp env false _be rest
+	  spc () ++ pr_sep ++ str _have ++ 
+	    print_vars pconstr gtyp env false _be _have rest
       | Hprop st :: rest -> 
 	  begin
 	    let nenv =
 	      match st.st_label with
 		  Anonymous -> env
 		| Name id -> Environ.push_named (id,None,gtyp st.st_it) env in
-	      spc() ++ _andp ++ pr_statement pconstr env st ++ 
-		print_hyps pconstr gtyp nenv true _be rest
+	      spc() ++ pr_sep ++ pr_statement pconstr env st ++ 
+		print_hyps pconstr gtyp nenv true _be _have rest
 	  end
       | [] -> mt ()
 
-and print_vars pconstr gtyp env _and _be vars =
+and print_vars pconstr gtyp env sep _be _have vars =
   match vars with
     Hvar st :: rest -> 
       begin
@@ -80,18 +80,22 @@ and print_vars pconstr gtyp env _and _be vars =
 	  match st.st_label with
 	      Anonymous -> anomaly "anonymous variable"
 	    | Name id -> Environ.push_named (id,None,st.st_it) env in
-	let _andp = if _and then pr_coma () else mt () in
-		spc() ++ _andp ++
+	let pr_sep = if sep then pr_coma () else mt () in
+		spc() ++ pr_sep ++
 		   pr_statement pr_constr env st ++
-		  print_vars pconstr gtyp nenv true _be rest
+		  print_vars pconstr gtyp nenv true _be _have rest
       end
    | (Hprop _ :: _) as rest ->
       let _st =  if _be then 
 	str "be such that" 
       else 
 	str "such that" in
-	spc() ++ _st ++  print_hyps pconstr gtyp env false _be rest
+	spc() ++ _st ++  print_hyps pconstr gtyp env false _be _have rest
   | [] -> mt ()
+
+let pr_suffices_clause env (hyps,c) = 
+    print_hyps pr_constr _I env false false "to have" hyps ++ spc () ++
+       str "to show" ++ spc () ++ pr_or_thesis pr_constr env c
 
 let pr_elim_type = function
     ET_Case_analysis -> str "cases"
@@ -99,7 +103,7 @@ let pr_elim_type = function
 
 let pr_casee env =function
     Real c -> str "on" ++ spc () ++ pr_constr env c
-  | Virtual cut -> str "of" ++ spc () ++ pr_cut pr_constr env cut
+  | Virtual cut -> str "of" ++ spc () ++ pr_cut (pr_statement pr_constr) env cut
 
 let pr_side = function
     Lhs -> str "=~"
@@ -114,30 +118,32 @@ let rec pr_bare_proof_instr _then _thus env = function
       begin
 	match _then,_thus with
 	    false,false -> str "have" ++ spc () ++ 
-	      pr_cut (pr_or_thesis pr_constr) env c
+	      pr_cut (pr_statement (pr_or_thesis pr_constr)) env c
 	  | false,true  -> str "thus" ++ spc () ++ 
-	      pr_cut (pr_or_thesis pr_constr) env c
+	      pr_cut (pr_statement (pr_or_thesis pr_constr)) env c
 	  | true,false  -> str "then" ++ spc () ++
-	      pr_cut (pr_or_thesis pr_constr) env c
+	      pr_cut (pr_statement (pr_or_thesis pr_constr)) env c
 	  | true,true   -> str "hence" ++ spc () ++ 
-	      pr_cut (pr_or_thesis pr_constr) env c
+	      pr_cut (pr_statement (pr_or_thesis pr_constr)) env c
       end
+  | Psuffices c ->
+      str "suffices" ++  pr_cut pr_suffices_clause env c 
   | Prew (sid,c) ->
       (if _thus then str "thus" else str "    ") ++ spc () ++
-	pr_side sid ++ spc () ++ pr_cut pr_constr env c
+	pr_side sid ++ spc () ++ pr_cut (pr_statement pr_constr) env c
   | Passume hyps -> 
-      str "assume" ++ print_hyps pr_constr _I env false false hyps
+      str "assume" ++ print_hyps pr_constr _I env false false "we have" hyps
   | Plet hyps -> 
-      str "let" ++ print_vars pr_constr _I env false true hyps
+      str "let" ++ print_vars pr_constr _I env false true "let" hyps
   | Pclaim st ->
       str "claim" ++ spc () ++ pr_statement pr_constr env st
   | Pfocus st ->
       str "focus on" ++ spc () ++ pr_statement pr_constr env st
   | Pconsider (id,hyps) ->
-      str "consider" ++ print_vars pr_constr _I env false false hyps 
+      str "consider" ++ print_vars pr_constr _I env false false "consider" hyps 
       ++ spc () ++ str "from " ++ pr_constr env id 
   | Pgiven hyps ->
-      str "given" ++ print_vars pr_constr _I env false false hyps
+      str "given" ++ print_vars pr_constr _I env false false "given" hyps
   | Ptake witl -> 
       str "take" ++ spc () ++ 
 	prlist_with_sep pr_coma (pr_constr env) witl
@@ -153,7 +159,7 @@ let rec pr_bare_proof_instr _then _thus env = function
 	str "as" ++ (pr_constr env typ)  
   | Psuppose hyps -> 
       str "suppose" ++ 
-	print_hyps pr_constr _I env false false hyps
+	print_hyps pr_constr _I env false false "we have" hyps
   | Pcase (params,pat,hyps) ->
       str "suppose it is" ++ spc () ++ pr_pat pat ++
 	(if params = [] then mt () else 
@@ -165,7 +171,7 @@ let rec pr_bare_proof_instr _then _thus env = function
 	(if hyps = [] then mt () else 
 	   (spc () ++ str "and" ++ 
 	      print_hyps (pr_or_thesis pr_constr) type_or_thesis
-	      env false false hyps))
+	      env false false "we have" hyps))
   | Pper (et,c) -> 
       str "per" ++ spc () ++ pr_elim_type et ++ spc () ++
       pr_casee env c
