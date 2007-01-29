@@ -350,10 +350,11 @@ let enstack_subsubgoals env se stack gls=
 	    Array.iteri process gentypes
       | _ -> ()
 
-let find_subsubgoal env c ctyp skip evd metas gls =
+let find_subsubgoal env c ctyp skip evd metas submetas gls =
   let stack = Stack.create () in
   let max_meta = 
-    List.fold_left (fun a (m,_) -> max a m) 0 metas in
+    let tmp = List.fold_left (fun a (m,_) -> max a m) 0 metas in
+      List.fold_left (fun a (m,_) -> max a m) tmp submetas in
   let _ = 
     List.iter (fun (m,typ) -> 
 		 Stack.push 
@@ -369,7 +370,10 @@ let find_subsubgoal env c ctyp skip evd metas gls =
 	  Unification.w_unify true env Reduction.CUMUL 
 	    ctyp se.se_type se.se_evd in
 	  if n <= 0 then 
-	      {se with se_evd=meta_assign se.se_meta (c,ConvUpToEta 0) unifier}
+	      {se with 
+		 se_evd=meta_assign se.se_meta (c,ConvUpToEta 0) unifier;
+	         se_meta_list=replace_in_list 
+		  se.se_meta submetas se.se_meta_list}
 	  else
 	      dfs (pred n)
       with _ -> 
@@ -388,7 +392,6 @@ let rec nf_list evd =
 	    nf_list evd others
 	else
 	  (m,nf_meta evd typ)::nf_list evd others
-
 
 let rec max_linear_context meta_one c =
   if !meta_one = None then
@@ -411,12 +414,12 @@ let rec max_linear_context meta_one c =
     else
       map_constr (max_linear_context meta_one) c
 
-let thus_tac c ctyp gls =  
+let thus_tac c ctyp submetas gls =  
   let info = get_its_info gls in
-  let evd0 = mk_evd info.pm_subgoals gls in
+  let evd0 = mk_evd (info.pm_subgoals@submetas) gls in
   let list,evd = 
     try
-      find_subsubgoal (pf_env gls) c ctyp 0 evd0 info.pm_subgoals gls
+      find_subsubgoal (pf_env gls) c ctyp 0 evd0 info.pm_subgoals submetas gls
     with Not_found -> 
       error "I could not relate this statement to the thesis" in
   let nflist = nf_list evd list in
@@ -489,7 +492,7 @@ let instr_cut mkstat _thus _then cut gls0 =
   let c_stat = mkstat info stat.st_it in
   let thus_tac gls= 
     if _thus then 
-      thus_tac (mkVar c_id) c_stat gls
+      thus_tac (mkVar c_id) c_stat [] gls
     else tclIDTAC gls in
     tclTHENS (internal_cut c_id c_stat) 
       [tclTHEN tcl_erase_info (just_tac _then cut info);
@@ -537,7 +540,7 @@ let instr_rew _thus rew_side cut gls0 =
     | Name id -> id,true in
   let thus_tac new_eq gls= 
     if _thus then 
-      thus_tac (mkVar c_id) new_eq gls
+      thus_tac (mkVar c_id) new_eq [] gls
     else tclIDTAC gls in
     match rew_side with 
 	Lhs ->
@@ -566,7 +569,7 @@ let instr_claim _thus st gls0 =
     | Name id -> id,true in
   let thus_tac gls= 
     if _thus then 
-      thus_tac (mkVar id) st.st_it gls
+      thus_tac (mkVar id) st.st_it [] gls
     else tclIDTAC gls in
   let ninfo1 = {info with 
 		  pm_stack=
@@ -653,7 +656,7 @@ let free_meta info =
 
 let rec metas_from n hyps = 
   match hyps with
-      _ :: q -> mkMeta n :: metas_from (succ n) q
+      _ :: q -> n :: metas_from (succ n) q
     | [] -> []
  
 let rec build_product args body =
@@ -662,10 +665,17 @@ let rec build_product args body =
 	let pprod= lift 1 (build_product rest body) in
 	let lbody =
 	  match st.st_label with
-	      Anonymous -> body
+	      Anonymous -> pprod
 	    | Name id -> subst_term (mkVar id) pprod in
 	  mkProd (st.st_label, st.st_it, lbody)
     | [] -> body 
+
+let rec build_applist prod = function
+    [] -> [],prod
+  | n::q -> 
+      let (_,typ,_) = destProd prod in
+      let ctx,head = build_applist (Term.prod_applist prod [mkMeta n]) q in
+	(n,typ)::ctx,head
 
 let instr_suffices _then cut gls0 = 
   let info = get_its_info gls0 in 
@@ -673,10 +683,10 @@ let instr_suffices _then cut gls0 =
   let ctx,hd = cut.cut_stat in
   let c_stat = build_product ctx (mk_stat_or_thesis info hd) in
   let metas = metas_from (free_meta info) ctx in
-  let c_costat = prod_applist c_stat metas in
-  let costat = applist (mkVar c_id,metas) in  
- let thus_tac gls= 
-      thus_tac costat c_costat gls in
+  let c_ctx,c_head = build_applist c_stat metas in
+  let c_term = applist (mkVar c_id,List.map mkMeta metas) in  
+  let thus_tac gls= 
+    thus_tac c_term c_head c_ctx gls in
    tclTHENS (internal_cut c_id c_stat) 
      [tclTHENLIST 
 	 [ tcl_change_info 
@@ -799,7 +809,7 @@ let rec take_tac wits gls =
       [] -> tclIDTAC gls
     | wit::rest ->  
 	let typ = pf_type_of gls wit in  
-	  tclTHEN (thus_tac wit typ) (take_tac rest)  gls
+	  tclTHEN (thus_tac wit typ []) (take_tac rest)  gls
 
 
 (* tactics for define *)

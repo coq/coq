@@ -34,6 +34,9 @@ let intern_statement intern_it globs st =
   {st_label=st.st_label;
    st_it=intern_it globs st.st_it}
     
+let intern_no_bind intern_it globs x =
+  globs,intern_it globs x
+
 let intern_constr_or_thesis globs = function
     Thesis n -> Thesis n
   | This c -> This (intern_constr globs c)
@@ -57,13 +60,15 @@ let intern_hyps iconstr globs hyps =
   snd (list_fold_map (intern_hyp iconstr) globs hyps)
 
 let intern_cut intern_it globs cut=
- {cut_stat=intern_it globs cut.cut_stat;
-  cut_by=intern_justification_items globs cut.cut_by;
-  cut_using=intern_justification_method globs cut.cut_using}
+  let nglobs,nstat=intern_it globs cut.cut_stat in
+    {cut_stat=nstat;
+     cut_by=intern_justification_items nglobs cut.cut_by;
+     cut_using=intern_justification_method nglobs cut.cut_using}
 
 let intern_casee globs = function 
     Real c -> Real (intern_constr globs c)
-  | Virtual cut -> Virtual (intern_cut (intern_statement intern_constr) globs cut) 
+  | Virtual cut -> Virtual 
+      (intern_cut (intern_no_bind (intern_statement intern_constr)) globs cut) 
 
 let intern_hyp_list args globs =
   let intern_one globs (loc,(id,opttyp)) =
@@ -73,7 +78,7 @@ let intern_hyp_list args globs =
 
 let intern_suffices_clause globs (hyps,c) = 
   let nglobs,nhyps = list_fold_map (intern_hyp intern_constr) globs hyps in
-    (nhyps,intern_constr_or_thesis nglobs c) 
+    nglobs,(nhyps,intern_constr_or_thesis nglobs c) 
 
 let intern_fundecl args body globs= 
   let nglobs,nargs = intern_hyp_list args globs in
@@ -98,10 +103,14 @@ let rec intern_bare_proof_instr globs = function
     Pthus i -> Pthus (intern_bare_proof_instr globs i)
   | Pthen i -> Pthen (intern_bare_proof_instr globs i)
   | Phence i -> Phence (intern_bare_proof_instr globs i)
-  | Pcut c -> Pcut (intern_cut (intern_statement intern_constr_or_thesis) globs c)
+  | Pcut c -> Pcut 
+      (intern_cut 
+	 (intern_no_bind (intern_statement intern_constr_or_thesis)) globs c)
   | Psuffices c -> 
       Psuffices (intern_cut intern_suffices_clause globs c)
-  | Prew (s,c) -> Prew (s,intern_cut (intern_statement intern_constr) globs c) 
+  | Prew (s,c) -> Prew 
+      (s,intern_cut 
+	 (intern_no_bind  (intern_statement intern_constr)) globs c) 
   | Psuppose hyps -> Psuppose (intern_hyps intern_constr globs hyps)
   | Pcase (params,pat,hyps) -> 
       let nglobs,nparams = intern_hyp_list params globs in
@@ -382,20 +391,34 @@ let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
 	     pat_expr=pat},thyps
 
 let interp_cut interp_it sigma env cut=
-  {cut with 
-    cut_stat=interp_it sigma env cut.cut_stat;
-    cut_by=interp_justification_items sigma env cut.cut_by}
+  let nenv,nstat = interp_it sigma env cut.cut_stat in
+    {cut with 
+       cut_stat=nstat;
+       cut_by=interp_justification_items sigma nenv cut.cut_by}
+
+let interp_no_bind interp_it sigma env x =
+  env,interp_it sigma env x
 
 let interp_suffices_clause sigma env (hyps,cot)=
-  match cot with
-      This (c,_) -> 
-	let nhyps,nc = interp_hyps_gen fst (fun x _ -> x) sigma env hyps c in nhyps,This nc
-    | Thesis (Plain| Sub _) as th  -> interp_hyps sigma env hyps,th
-      | Thesis (For n) -> error "\"thesis for\" is not applicable here"
- 
+  let (locvars,_) as res =
+    match cot with
+	This (c,_) -> 
+	  let nhyps,nc = interp_hyps_gen fst (fun x _ -> x) sigma env hyps c in
+	  nhyps,This nc
+      | Thesis (Plain| Sub _) as th  -> interp_hyps sigma env hyps,th
+      | Thesis (For n) -> error "\"thesis for\" is not applicable here" in
+  let push_one hyp env0 =
+    match hyp with
+	(Hprop st | Hvar st) ->
+	  match st.st_label with
+	      Name id -> Environ.push_named (id,None,st.st_it) env0
+	    | _ -> env in
+  let nenv = List.fold_right push_one locvars env in 
+    nenv,res 
+	  
 let interp_casee sigma env = function 
     Real c -> Real (understand sigma env (fst c))
-  | Virtual cut -> Virtual (interp_cut (interp_statement (interp_constr true)) sigma env cut) 
+  | Virtual cut -> Virtual (interp_cut (interp_no_bind (interp_statement (interp_constr true))) sigma env cut) 
 
 let abstract_one_arg = function
     (loc,(id,None)) ->
@@ -417,12 +440,15 @@ let rec interp_bare_proof_instr info (sigma:Evd.evar_map) (env:Environ.env) = fu
     Pthus i -> Pthus (interp_bare_proof_instr info sigma env i)
   | Pthen i -> Pthen (interp_bare_proof_instr info sigma env i)
   | Phence i -> Phence (interp_bare_proof_instr info sigma env i)
-  | Pcut c -> Pcut (interp_cut (interp_statement (interp_constr_or_thesis true)) sigma env c) 
+  | Pcut c -> Pcut (interp_cut 
+		      (interp_no_bind (interp_statement 
+					 (interp_constr_or_thesis true))) 
+		      sigma env c) 
   | Psuffices c ->  
       Psuffices (interp_cut interp_suffices_clause sigma env c)
-
   | Prew (s,c) -> Prew (s,interp_cut 
-			  (interp_statement (interp_constr_in_type (get_eq_typ info env)))
+			  (interp_no_bind (interp_statement 
+			     (interp_constr_in_type (get_eq_typ info env))))
 			  sigma env c) 
 
   | Psuppose hyps -> Psuppose (interp_hyps sigma env hyps)

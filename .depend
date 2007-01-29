@@ -533,7 +533,7 @@ dev/top_printers.cmo: toplevel/vernacinterp.cmi lib/util.cmi kernel/univ.cmi \
     pretyping/termops.cmi kernel/term.cmi parsing/tactic_printer.cmi \
     lib/system.cmi kernel/sign.cmi proofs/refiner.cmi proofs/proof_trees.cmi \
     parsing/printer.cmi parsing/pptactic.cmi lib/pp.cmi proofs/pfedit.cmi \
-    parsing/pcoq.cmi kernel/names.cmi library/nameops.cmi \
+    parsing/pcoq.cmi lib/options.cmi kernel/names.cmi library/nameops.cmi \
     kernel/mod_subst.cmi proofs/logic.cmi library/libobject.cmi \
     library/libnames.cmi library/goptions.cmi library/global.cmi \
     interp/genarg.cmi pretyping/evd.cmi kernel/environ.cmi \
@@ -544,7 +544,7 @@ dev/top_printers.cmx: toplevel/vernacinterp.cmx lib/util.cmx kernel/univ.cmx \
     pretyping/termops.cmx kernel/term.cmx parsing/tactic_printer.cmx \
     lib/system.cmx kernel/sign.cmx proofs/refiner.cmx proofs/proof_trees.cmx \
     parsing/printer.cmx parsing/pptactic.cmx lib/pp.cmx proofs/pfedit.cmx \
-    parsing/pcoq.cmx kernel/names.cmx library/nameops.cmx \
+    parsing/pcoq.cmx lib/options.cmx kernel/names.cmx library/nameops.cmx \
     kernel/mod_subst.cmx proofs/logic.cmx library/libobject.cmx \
     library/libnames.cmx library/goptions.cmx library/global.cmx \
     interp/genarg.cmx pretyping/evd.cmx kernel/environ.cmx \
