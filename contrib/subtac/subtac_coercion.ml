@@ -465,10 +465,10 @@ module Coercion = struct
 
 	
   (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
-  let inh_conv_coerce_to loc env isevars cj ((n, t) as _tycon) =
-(*     (try  *)
-(*        debug 1 (str "Subtac_coercion.inh_conv_coerce_to called for " ++ *)
-(* 	      Termops.print_constr_env env cj.uj_type ++ str " and "++ spc () ++  *)
+  let inh_conv_coerce_to loc env isevars cj ((n, t) as tycon) =
+(*     (try *)
+(*        trace (str "Subtac_coercion.inh_conv_coerce_to called for " ++ *)
+(* 	      Termops.print_constr_env env cj.uj_type ++ str " and "++ spc () ++ *)
 (* 	      Evarutil.pr_tycon_type env tycon ++ str " with evars: " ++ spc () ++ *)
 (* 	      Subtac_utils.pr_evar_defs isevars ++ str " in env: " ++ spc () ++ *)
 (* 	      Termops.print_env env); *)

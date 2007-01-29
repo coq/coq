@@ -343,7 +343,7 @@ let add_mutual_definitions l nvrec =
       !from_prg l
   in
     from_prg := upd;
-    solve_obligations (Some (List.hd deps)) !default_tactic
+    List.iter (fun x -> solve_obligations (Some x) !default_tactic) deps
 
 let admit_obligations n =
   let prg = get_prog n in

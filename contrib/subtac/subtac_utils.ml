@@ -5,6 +5,8 @@ open Term
 open Names
 open Util
 
+let ($) f x = f x
+
 (****************************************************************************)
 (* Library linking *)
 
@@ -615,8 +617,6 @@ let solve_by_tac ev t =
     debug 1 (str "Term constructed in solve by tac: " ++ my_print_constr (Global.env ()) c);
     c
     *)
-
-let ($) f g = fun x -> f (g x)
 
 let solve_by_tac evi t =
   debug 2 (str "Solving goal using tactics: " ++ Evd.pr_evar_info evi);

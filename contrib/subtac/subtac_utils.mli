@@ -12,6 +12,7 @@ open Evarutil
 open Names
 open Sign
 
+val ($) : ('a -> 'b) -> 'a -> 'b
 val contrib_name : string
 val subtac_dir : string list
 val fix_sub_module : string

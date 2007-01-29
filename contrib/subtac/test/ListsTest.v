@@ -36,7 +36,7 @@ Section app.
       | hd :: tl => hd :: (tl ++ l')
     end 
     where "x ++ y" := (app x y).
- 
+
   Next Obligation.
     intros.
     destruct_call app ; subtac_simpl.
@@ -70,13 +70,8 @@ Section Nth.
 
   Next Obligation.
   Proof.
-    intros.
-    simpl in * ; auto with arith.
-  Defined.
-
-  Next Obligation.
-  Proof.
-    intros.
     inversion l0.
   Defined.
 End Nth.
+
+Section 

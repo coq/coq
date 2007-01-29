@@ -46,7 +46,7 @@ end.
 
 Ltac destruct_exists := repeat (destruct_one_pair) .
 
-Ltac subtac_simpl := simpl ; intros ; destruct_exists ; simpl in * ; try subst ; auto. 
+Ltac subtac_simpl := simpl ; intros ; destruct_exists ; simpl in * ; try subst ; auto with arith.  
 
 (* Destructs calls to f in hypothesis or conclusion, useful if f creates a subset object *)
 Ltac destruct_call f :=
@@ -69,6 +69,7 @@ Extraction Inline proj1_sig.
 Extract Inductive unit => "unit" [ "()" ].
 Extract Inductive bool => "bool" [ "true" "false" ].
 Extract Inductive sumbool => "bool" [ "true" "false" ].
-Extract Inductive prod => "" [ "" ].
+Extract Inductive prod => "pair" [ "" ].
+Extract Inductive sigT => "pair" [ "" ].
 
 Require Export ProofIrrelevance.
