@@ -14,6 +14,7 @@
 #include "coq_instruct.h"
 #include "coq_fix_code.h"
 #include "coq_memory.h"
+#include "coq_interp.h"
 
 /* stack */
 
@@ -264,9 +265,3 @@ value coq_set_drawinstr(value unit)
   return Val_unit;
 }
 
-
-value coq_print_pointer(value p)
-{
-  printf("pointer = %X\n", p);
-  return Val_unit;
-}

@@ -9,6 +9,7 @@
 Require Import Bool.
 Require Export Ring_theory.
 Require Export Ring_base.
+Require Export InitialRing.
 Require Export Ring_tac.
 
 Lemma BoolTheory :
@@ -25,7 +26,7 @@ reflexivity.
 destruct x; reflexivity.
 Qed.
 
-Unboxed Definition bool_eq (b1 b2:bool) :=
+Definition bool_eq (b1 b2:bool) :=
   if b1 then b2 else negb b2.
 
 Lemma bool_eq_ok : forall b1 b2, bool_eq b1 b2 = true -> b1 = b2.

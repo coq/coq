@@ -12,15 +12,6 @@ Import InitialRing.
 
 Set Implicit Arguments.
 
-Ltac isNcst t :=
-  match t with
-    N0 => constr:true
-  | Npos ?p => isNcst p
-  | xI ?p => isNcst p
-  | xO ?p => isNcst p
-  | xH => constr:true
-  | _ => constr:false
-  end.
 Ltac Ncst t :=
   match isNcst t with
     true => t

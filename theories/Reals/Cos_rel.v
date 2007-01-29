@@ -109,9 +109,10 @@ pose
              C (2 * S p) (S (2 * l)) * x ^ S (2 * l) * y ^ S (2 * (p - l))) p
     end).
 ring_simplify.
+unfold Rminus.
 replace
 (* (-   old ring compat *)
- (-1 *
+ (-
   sum_f_R0
     (fun k:nat =>
        sum_f_R0
@@ -140,7 +141,6 @@ replace
     (fun l:nat =>
        C (2 * S i) (S (2 * l)) * x ^ S (2 * l) * y ^ S (2 * (i - l))) i) with
  (sum_f_R0 (fun l:nat => Wn (S (2 * l))) i).
-(*rewrite Rplus_comm.*) (* compatibility old ring... *)
 apply sum_decomposition.
 apply sum_eq; intros.
 unfold Wn in |- *.
@@ -154,8 +154,7 @@ apply Rmult_eq_compat_l.
 replace (2 * S i - 2 * i0)%nat with (2 * (S i - i0))%nat.
 reflexivity.
 omega.
-replace (sum_f_R0 sin_nnn (S n)) with (-1 * (-1 * sum_f_R0 sin_nnn (S n))).
-(*replace (* compatibility old ring... *)
+replace
  (-
   sum_f_R0
     (fun k:nat =>
@@ -171,13 +170,13 @@ replace (sum_f_R0 sin_nnn (S n)) with (-1 * (-1 * sum_f_R0 sin_nnn (S n))).
          (fun p:nat =>
             (-1) ^ p / INR (fact (2 * p + 1)) * x ^ (2 * p + 1) *
             ((-1) ^ (k - p) / INR (fact (2 * (k - p) + 1)) *
-             y ^ (2 * (k - p) + 1))) k) n);[idtac|ring].*)
-apply Rmult_eq_compat_l.
+             y ^ (2 * (k - p) + 1))) k) n);[idtac|ring].
 rewrite scal_sum.
 rewrite decomp_sum.
 replace (sin_nnn 0%nat) with 0.
-rewrite Rmult_0_l; rewrite Rplus_0_l.
-replace (pred (S n)) with n; [ idtac | reflexivity ].
+rewrite Rplus_0_l.
+change (pred (S n)) with n.
+   (* replace (pred (S n)) with n; [ idtac | reflexivity ]. *)
 apply sum_eq; intros.
 rewrite Rmult_comm.
 unfold sin_nnn in |- *.
@@ -185,8 +184,8 @@ rewrite scal_sum.
 rewrite scal_sum.
 apply sum_eq; intros.
 unfold Rdiv in |- *.
-repeat rewrite Rmult_assoc.
-rewrite (Rmult_comm (/ INR (fact (2 * S i)))).
+(*repeat rewrite Rmult_assoc.*)
+(* rewrite (Rmult_comm (/ INR (fact (2 * S i)))). *)
 repeat rewrite <- Rmult_assoc.
 rewrite <- (Rmult_comm (/ INR (fact (2 * S i)))).
 repeat rewrite <- Rmult_assoc.
@@ -216,7 +215,7 @@ apply INR_fact_neq_0.
 apply INR_fact_neq_0.
 reflexivity.
 apply lt_O_Sn.
-ring.
+(* ring. *)
 apply sum_eq; intros.
 rewrite scal_sum.
 apply sum_eq; intros.

@@ -486,7 +486,7 @@ Proof.
   apply le_trans with (pred N).
   assumption.
   apply le_pred_n.
-  ring_nat.
+  ring.
   apply Rle_trans with
     (sum_f_R0
       (fun k:nat =>
@@ -515,7 +515,7 @@ Proof.
   apply le_trans with (2 * S (S (n0 + n)))%nat.
   replace (2 * S (S (n0 + n)))%nat with (S (2 * S (n0 + n) + 1)).
   apply le_n_Sn.
-  ring_nat.
+  ring.
   omega.
   right.
   unfold Rdiv in |- *; rewrite Rmult_comm.

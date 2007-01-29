@@ -44,6 +44,10 @@ $x (3 + yx + 25(1 - z)) + zx$ is $28x + (-24)xz + xxy$.
   $\wedge$, variables are atoms and the only constants are T and F)
 \end{Examples}
 
+\texttt{ring} is also able to compute a normal form modulo monomial 
+equalities. For example, under the hypothesis that $x^2 = yz$,
+ the normal form of $(x + 1)x - x - zy$ is 0.
+
 \asection{The variables map}
 
 It is frequent to have an expression built with + and
@@ -97,41 +101,63 @@ this paragraph and use the tactic according to your intuition.
 The {\tt ring} tactic solves equations upon polynomial expressions of
 a ring (or semi-ring) structure. It proceeds by normalizing both hand
 sides of the equation (w.r.t. associativity, commutativity and
-distributivity, constant propagation) and comparing syntactically the
-results.
+distributivity, constant propagation, rewrite of monomial equalities) 
+and comparing syntactically the results.
 
 {\tt ring\_simplify} applies the normalization procedure described
 above to the terms given. The tactic then replaces all occurrences of
 the terms given in the conclusion of the goal by their normal
 forms. If no term is given, then the conclusion should be an equation
-and both hand sides are normalized.
+and both hand sides are normalized. 
 
 The tactic must be loaded by \texttt{Require Import Ring}. The ring
 structures must be declared with the \texttt{Add Ring} command (see
 below). The ring of booleans is predefined; if one wants to use the
 tactic on \texttt{nat} one must first require the module
-\texttt{ArithRing}; for \texttt{Z}, do \texttt{Require Import
-ZArithRing}; for \texttt{N}, do \texttt{Require Import
-NArithRing}.
+\texttt{ArithRing} (exported by \texttt{Arith});
+for \texttt{Z}, do \texttt{Require Import
+ZArithRing} or simply \texttt{Require Import ZArith}; 
+for \texttt{N}, do \texttt{Require Import NArithRing} or 
+\texttt{Require Import NArith}.
 
 \Example
 \begin{coq_eval}
 Reset Initial.
-Require Import ZArith.
-Open Scope Z_scope.
 \end{coq_eval}
 \begin{coq_example}
-Require Import ZArithRing.
+Require Import ZArith.
+Open Scope Z_scope.
 Goal forall a b c:Z,
-  (a + b + c) * (a + b + c) =
-  a * a + b * b + c * c + 2 * a * b + 2 * a * c + 2 * b * c.
+  (a + b + c)^2  =
+  a * a + b^2 + c * c + 2 * a * b + 2 * a * c + 2 * b * c.
 \end{coq_example}
 \begin{coq_example}
 intros; ring.
 \end{coq_example}
 \begin{coq_eval}
+Abort.
+\end{coq_eval}
+\begin{coq_example}
+Goal forall a b:Z, a*b = 0 ->
+        (a+b)^2 = a^2 + b^2.
+\end{coq_example}
+\begin{coq_example}
+intros a b H; ring [H].
+\end{coq_example} 
+\begin{coq_eval}
 Reset Initial.
 \end{coq_eval}
+
+\begin{Variants}
+  \item {\tt ring [$term_1 \ldots term_n$]} decide the equality of two
+    terms, modulo ring operations and rewriting of the equalities
+    defined by $term_1 \ldots term_n$. $term_1 \ldots term_n$ are 
+    proof of type $m = p$, where $m$ is a monomial (after ``abstraction''), 
+    $p$ a polynomial and $=$ the equality corresponding to the ring structure.
+
+  \item {\tt ring\_simplify [$term_1 \ldots term_n$] $t_1 \ldots t_n$ in H}
+     performs the simplification in the hypothesis {\tt H}.
+\end{Variants}
 
 \Warning \texttt{ring\_simplify $term_1$; ring\_simplify $term_2$} is
 not equivalent to \texttt{ring\_simplify $term_1$ $term_2$}. In the
@@ -139,6 +165,7 @@ latter case the variables map is shared between the two terms, and
 common subterm $t$ of $term_1$ and $term_2$ will have the same
 associated variable number. So the first alternative should be
 avoided for terms belonging to the same ring theory.
+
 
 \begin{ErrMsgs}
 \item \errindex{not a valid ring equation}
@@ -238,6 +265,23 @@ coefficients. There are basically three kinds of (semi-)rings:
   coefficient set and the morphism.
 \end{description}
 
+This implementation of ring can also allows recognizes simple 
+power expression as ring expression. A power function is specifies by 
+the following property:
+\begin{verbatim}
+ Section POWER.
+  Variable Cpow : Set.
+  Variable Cp_phi : N -> Cpow.
+  Variable rpow : R -> Cpow -> R. 
+  
+  Record power_theory : Prop := mkpow_th {
+    rpow_pow_N : forall r n, req (rpow r (Cp_phi n)) (pow_N rI rmul r n)
+  }.
+
+ End POWER.
+\end{verbatim}
+
+
 The syntax for adding a new ring is {\tt Add Ring $name$ : $ring$
 ($mod_1$,\dots,$mod_2$)}.  The name is not relevent. It is just used
 for error messages. $ring$ is a proof that the ring signature
@@ -262,7 +306,7 @@ describes their syntax and effects:
 \item[constants [\ltac]] specifies a tactic expression that, given a term,
   returns either an object of the coefficient set that is mapped to
   the expression via the morphism, or returns {\tt
-  Ring\_tac.NotConstant}. Abstract (semi-)rings need not define this.
+  InitialRing.NotConstant}. Abstract (semi-)rings need not define this.
 \item[preprocess [\ltac]]
   specifies a tactic that is applied as a preliminary step for {\tt
   ring} and {\tt ring\_simplify}. It can be used to transform a goal
@@ -271,6 +315,20 @@ describes their syntax and effects:
 \item[postprocess [\ltac]] specifies a tactic that is applied as a final step
   for {\tt ring\_simplify}. For instance, it can be used to undo
   modifications of the preprocessor.
+\item[power\_tac \term [\ltac]] allows {\tt ring} and {\tt ring\_simplify} to
+  recognize power expressions with a constant exponent (example: $x^2$).
+  \term is a proof that a given power function is the power function
+  (see {\tt Ring\_theory.power\_theory}) and \ltac specifies a tactic
+  expression that, given a term, returns either an object of type {\tt N}
+  that is mapped to the original term via the evaluation function of power 
+  coefficient, or returns {\tt InitialRing.NotConstant} (i.e. \ltac is the 
+  inverse of {tt Cp\_phi}). 
+  See files {\tt contrib/setoid\_ring/ZArithRing.v} and
+  {\tt contrib/setoid\_ring/RealField.v} for examples.
+  By default the tactic does not recognize power expression as a ring
+  expression.
+  
+  
 \end{description}
 
 

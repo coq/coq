@@ -87,7 +87,7 @@ Proof.
   reflexivity.
   replace (2 * S N)%nat with (S (S (2 * N))).
   simpl in |- *; simpl in HrecN; rewrite HrecN; reflexivity.
-  ring_nat.
+  ring.
 Qed.
 
 Lemma div2_S_double : forall N:nat, div2 (S (2 * N)) = N.
@@ -96,7 +96,7 @@ Proof.
   reflexivity.
   replace (2 * S N)%nat with (S (S (2 * N))).
   simpl in |- *; simpl in HrecN; rewrite HrecN; reflexivity.
-  ring_nat.
+  ring.
 Qed.
 
 Lemma div2_not_R0 : forall N:nat, (1 < N)%nat -> (0 < div2 N)%nat.
@@ -367,7 +367,7 @@ Proof.
   apply le_trans with (pred N).
   apply H0.
   apply le_pred_n.
-  rewrite H4; ring_nat.
+  rewrite H4; ring.
   cut (S N = (2 * S N0)%nat).
   intro.
   replace (C (S N) (S N0) / INR (fact (S N))) with (/ Rsqr (INR (fact (S N0)))).
@@ -388,7 +388,7 @@ Proof.
   apply INR_fact_neq_0.
   apply INR_fact_neq_0.
   apply INR_fact_neq_0.
-  rewrite H4; ring_nat.
+  rewrite H4; ring.
   unfold C, Rdiv in |- *.
   rewrite (Rmult_comm (INR (fact (S N)))).
   rewrite Rmult_assoc; rewrite <- Rinv_r_sym.
@@ -494,7 +494,7 @@ Proof.
   simpl in |- *.
   pattern 1 at 1 in |- *; rewrite <- Rplus_0_r; apply Rplus_le_compat_l; left;
     apply Rlt_0_1.
-  ring_nat.
+  ring.
   unfold Rsqr in |- *; apply prod_neq_R0; apply INR_fact_neq_0.
   unfold Rsqr in |- *; apply prod_neq_R0; apply not_O_INR; discriminate.
   assert (H0 := even_odd_cor N).
@@ -515,7 +515,7 @@ Proof.
   replace (S (S (2 * N0))) with (2 * S N0)%nat.
   do 2 rewrite div2_double.
   reflexivity.
-  ring_nat.
+  ring.
   apply S_pred with 0%nat; apply H.
 Qed.
 
@@ -585,8 +585,8 @@ Proof.
   apply (fun m n p:nat => mult_le_compat_l p n m).
   replace (2 * S N1)%nat with (S (S (2 * N1))).
   apply le_n_Sn.
-  ring_nat.
-  ring_nat.
+  ring.
+  ring.
   reflexivity.
   apply INR_fact_neq_0.
   apply INR_fact_neq_0.
@@ -623,7 +623,7 @@ Proof.
   replace (2 * N1)%nat with (S (S (2 * pred N1))).
   reflexivity.
   pattern N1 at 2 in |- *; replace N1 with (S (pred N1)).
-  ring_nat.
+  ring.
   symmetry  in |- *; apply S_pred with 0%nat; apply H8.
   apply INR_lt.
   apply Rmult_lt_reg_l with (INR 2).
@@ -641,7 +641,7 @@ Proof.
   rewrite div2_double.
   replace (2 * S N1)%nat with (S (S (2 * N1))).
   apply le_n_Sn.
-  ring_nat.
+  ring.
   reflexivity.
   apply le_trans with (max (2 * S N0) 2).
   apply le_max_l.

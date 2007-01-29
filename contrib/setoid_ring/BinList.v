@@ -10,7 +10,7 @@ Set Implicit Arguments.
 Require Import BinPos.
 Require Export List.
 Require Export ListTactics.
-Open Scope positive_scope.
+Open Local Scope positive_scope.
 
 Section MakeBinList.
  Variable A : Type.
@@ -89,3 +89,5 @@ Section MakeBinList.
  Qed.
 
 End MakeBinList.
+
+

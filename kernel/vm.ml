@@ -469,8 +469,6 @@ let check_cofix vcf1 vcf2 =
   (current_cofix vcf1 = current_cofix vcf2) &&
   (Obj.size (last (Obj.repr vcf1)) = Obj.size (last (Obj.repr vcf2)))
 
-external print_point : Obj.t -> unit = "coq_print_pointer"
-
 let reduce_cofix k vcf =
   let fc_typ = ((Obj.obj (last (Obj.repr vcf))) : tcode array) in
   let ndef = Array.length fc_typ in

@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-Require Import Arith.
+Require Import Arith_base.
 Require Import Compare_dec.
 Require Import Sumbool.
 Require Import Div2.

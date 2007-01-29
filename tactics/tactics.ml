@@ -623,6 +623,11 @@ let exact_check c gl =
 
 let exact_no_check = refine_no_check
 
+let vm_cast_no_check c gl = 
+  let concl = pf_concl gl in
+  refine_no_check (Term.mkCast(c,Term.VMcast,concl)) gl
+
+
 let exact_proof c gl =
   (* on experimente la synthese d'ise dans exact *)
   let c = Constrintern.interp_casted_constr (project gl) (pf_env gl) c (pf_concl gl)

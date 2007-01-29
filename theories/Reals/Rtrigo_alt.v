@@ -121,7 +121,7 @@ Proof.
   apply INR_fact_neq_0.
   apply INR_fact_neq_0.
   simpl in |- *; ring.
-  ring_nat.
+  ring.
   assert (H3 := cv_speed_pow_fact a); unfold Un in |- *; unfold Un_cv in H3;
     unfold R_dist in H3; unfold Un_cv in |- *; unfold R_dist in |- *; 
       intros; elim (H3 eps H4); intros N H5.
@@ -316,7 +316,7 @@ Proof.
   apply INR_fact_neq_0.
   apply INR_fact_neq_0.
   simpl in |- *; ring.
-  ring_nat.
+  ring.
   assert (H4 := cv_speed_pow_fact a0); unfold Un in |- *; unfold Un_cv in H4;
     unfold R_dist in H4; unfold Un_cv in |- *; unfold R_dist in |- *; 
       intros; elim (H4 eps H5); intros N H6; exists N; intros.

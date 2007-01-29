@@ -53,7 +53,7 @@ Section Sigma.
     apply lt_minus_O_lt; assumption.
     apply sum_eq; intros; replace (S k + S i)%nat with (S (S k) + i)%nat.
     reflexivity.
-    ring_nat.
+    ring.
     replace (high - S (S k))%nat with (high - S k - 1)%nat.
     apply pred_of_minus.
     omega.
@@ -71,7 +71,7 @@ Section Sigma.
     apply le_lt_trans with (S k); [ rewrite H2; apply le_n | assumption ].
     apply sum_eq; intros; replace (S (low + i)) with (low + S i)%nat.
     reflexivity.
-    ring_nat.
+    ring.
     omega.
     inversion H; [ right; reflexivity | left; assumption ].
   Qed.

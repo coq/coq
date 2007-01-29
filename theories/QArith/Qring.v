@@ -37,15 +37,15 @@ Proof.
 Qed.
 
 Ltac isQcst t :=
-  let t := eval hnf in t in
-    match t with
-      Qmake ?n ?d =>
-      match isZcst n with
-        true => isZcst d
-	| _ => false
-      end
-      | _ => false
-    end.
+  match t with
+  | inject_Z ?z => isZcst z
+  | Qmake ?n ?d =>
+    match isZcst n with
+      true => isPcst d
+    | _ => false
+    end
+  | _ => false
+  end.
 
 Ltac Qcst t :=
   match isQcst t with
@@ -74,7 +74,7 @@ Let ex3 : forall x y z : Q, (x+y)+z == x+(y+z).
 Qed.
 
 Let ex4 : (inject_Z 1)+(inject_Z 1)==(inject_Z 2).
-  ring.
+ ring.
 Qed.
 
 Let ex5 : 1+1 == 2#1.

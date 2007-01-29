@@ -642,6 +642,7 @@ and ct_TACTIC_COM =
   | CT_elim_type of ct_FORMULA
   | CT_exact of ct_FORMULA
   | CT_exact_no_check of ct_FORMULA
+  | CT_vm_cast_no_check of ct_FORMULA
   | CT_exists of ct_SPEC_LIST
   | CT_fail of ct_ID_OR_INT * ct_STRING_OPT
   | CT_first of ct_TACTIC_COM * ct_TACTIC_COM list

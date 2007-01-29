@@ -30,6 +30,7 @@ val h_intros_until    : quantified_hypothesis -> tactic
 val h_assumption      : tactic
 val h_exact           : constr -> tactic
 val h_exact_no_check  : constr -> tactic
+val h_vm_cast_no_check  : constr -> tactic
 
 val h_apply           : constr with_bindings -> tactic
 

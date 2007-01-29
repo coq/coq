@@ -11,11 +11,11 @@
 #ifndef _COQ_MEMORY_
 #define _COQ_MEMORY_
 
-#include "config.h"
-#include "fail.h"
-#include "misc.h"
-#include "memory.h"
-#include "mlvalues.h"
+#include <config.h>
+#include <fail.h>
+#include <misc.h>
+#include <memory.h>
+#include <mlvalues.h>
 
 
 #define Coq_stack_size (4096 * sizeof(value))

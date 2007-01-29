@@ -225,7 +225,7 @@ ML4FILES +=\
   contrib/omega/g_omega.ml4 \
   contrib/romega/g_romega.ml4 contrib/ring/g_quote.ml4 \
   contrib/ring/g_ring.ml4 contrib/dp/g_dp.ml4 \
-  contrib/setoid_ring/newring.ml4 \
+  contrib/setoid_ring/newring.ml4  \
   contrib/field/field.ml4 contrib/fourier/g_fourier.ml4 \
   contrib/extraction/g_extraction.ml4 contrib/xml/xmlentries.ml4
 
@@ -875,7 +875,8 @@ ZARITHVO=\
  theories/ZArith/Zdiv.vo	theories/ZArith/Zsqrt.vo \
  theories/ZArith/Zwf.vo		theories/ZArith/ZArith_base.vo \
  theories/ZArith/Zbool.vo	theories/ZArith/Zbinary.vo \
- theories/ZArith/Znumtheory.vo  theories/ZArith/Int.vo
+ theories/ZArith/Znumtheory.vo  theories/ZArith/Int.vo \
+ theories/ZArith/Zpow_def.vo
 
 QARITHVO=\
  theories/QArith/QArith_base.vo theories/QArith/Qreduction.vo \
@@ -958,7 +959,7 @@ WELLFOUNDEDVO=\
  theories/Wellfounded/Lexicographic_Product.vo 
 
 REALSBASEVO=\
- theories/Reals/Rdefinitions.vo \
+ theories/Reals/Rdefinitions.vo theories/Reals/Rpow_def.vo \
  theories/Reals/Raxioms.vo      theories/Reals/RIneq.vo \
  theories/Reals/DiscrR.vo       theories/Reals/Rbase.vo \
  theories/Reals/LegacyRfield.vo
@@ -966,7 +967,7 @@ REALSBASEVO=\
 REALS_basic= 
 
 REALS_all=\
- theories/Reals/R_Ifp.vo \
+ theories/Reals/R_Ifp.vo        theories/Reals/Rpow_def.vo \
  theories/Reals/Rbasic_fun.vo   theories/Reals/R_sqr.vo \
  theories/Reals/SplitAbsolu.vo  theories/Reals/SplitRmult.vo \
  theories/Reals/ArithProp.vo    theories/Reals/Rfunctions.vo \
@@ -1752,8 +1753,6 @@ depend: beforedepend dependp4 ml4filesml
 	done
 # 5.  We express dependencies of .o files
 	$(CC) -MM $(CINCLUDES) kernel/byterun/*.c >> .depend
-	$(CC) -MM  $(CINCLUDES) kernel/byterun/*.c | sed -e 's/\.o/.d.o/' >> \
-                    .depend
 # 6. Finally, we erase the generated .ml files
 	rm -f $(ML4FILESML)
 # 7. Since .depend contains correct dependencies .depend.devel can be deleted
