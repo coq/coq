@@ -204,7 +204,7 @@ let rawconstr_of_hyps inject hyps head =
 let raw_prop = RSort (dummy_loc,RProp Null)
   
 let rec match_hyps blend names constr = function 
-    [] -> [],constr
+    [] -> [],substl names constr
   | hyp::q -> 
       let (name,typ,body)=destProd constr in
       let st= {st_label=name;st_it=substl names typ} in
