@@ -20,6 +20,8 @@ open Rawterm
 open Term
 open Pp
 
+(* INTERN *)
+
 let raw_app (loc,hd,args) = if args =[] then hd else RApp(loc,hd,args) 
 
 let intern_justification_items globs = 
@@ -32,6 +34,9 @@ let intern_statement intern_it globs st =
   {st_label=st.st_label;
    st_it=intern_it globs st.st_it}
     
+let intern_no_bind intern_it globs x =
+  globs,intern_it globs x
+
 let intern_constr_or_thesis globs = function
     Thesis n -> Thesis n
   | This c -> This (intern_constr globs c)
@@ -55,19 +60,25 @@ let intern_hyps iconstr globs hyps =
   snd (list_fold_map (intern_hyp iconstr) globs hyps)
 
 let intern_cut intern_it globs cut=
- {cut_stat=intern_statement intern_it globs cut.cut_stat;
-  cut_by=intern_justification_items globs cut.cut_by;
-  cut_using=intern_justification_method globs cut.cut_using}
+  let nglobs,nstat=intern_it globs cut.cut_stat in
+    {cut_stat=nstat;
+     cut_by=intern_justification_items nglobs cut.cut_by;
+     cut_using=intern_justification_method nglobs cut.cut_using}
 
 let intern_casee globs = function 
     Real c -> Real (intern_constr globs c)
-  | Virtual cut -> Virtual (intern_cut intern_constr globs cut) 
+  | Virtual cut -> Virtual 
+      (intern_cut (intern_no_bind (intern_statement intern_constr)) globs cut) 
 
 let intern_hyp_list args globs =
   let intern_one globs (loc,(id,opttyp)) =
     (add_var id globs),
     (loc,(id,option_map (intern_constr globs) opttyp)) in
   list_fold_map intern_one globs args 
+
+let intern_suffices_clause globs (hyps,c) = 
+  let nglobs,nhyps = list_fold_map (intern_hyp intern_constr) globs hyps in
+    nglobs,(nhyps,intern_constr_or_thesis nglobs c) 
 
 let intern_fundecl args body globs= 
   let nglobs,nargs = intern_hyp_list args globs in
@@ -92,8 +103,14 @@ let rec intern_bare_proof_instr globs = function
     Pthus i -> Pthus (intern_bare_proof_instr globs i)
   | Pthen i -> Pthen (intern_bare_proof_instr globs i)
   | Phence i -> Phence (intern_bare_proof_instr globs i)
-  | Pcut c -> Pcut (intern_cut intern_constr_or_thesis globs c) 
-  | Prew (s,c) -> Prew (s,intern_cut intern_constr globs c) 
+  | Pcut c -> Pcut 
+      (intern_cut 
+	 (intern_no_bind (intern_statement intern_constr_or_thesis)) globs c)
+  | Psuffices c -> 
+      Psuffices (intern_cut intern_suffices_clause globs c)
+  | Prew (s,c) -> Prew 
+      (s,intern_cut 
+	 (intern_no_bind  (intern_statement intern_constr)) globs c) 
   | Psuppose hyps -> Psuppose (intern_hyps intern_constr globs hyps)
   | Pcase (params,pat,hyps) -> 
       let nglobs,nparams = intern_hyp_list params globs in
@@ -121,14 +138,16 @@ let rec intern_proof_instr globs instr=
   {emph = instr.emph;
    instr = intern_bare_proof_instr globs instr.instr}
 
-let interp_justification_items env sigma  =
-    option_map (List.map (fun c ->understand env sigma (fst c)))
+(* INTERP *)
 
-let interp_constr check_sort env sigma c = 
+let interp_justification_items sigma env =
+    option_map (List.map (fun c ->understand sigma env (fst c)))
+
+let interp_constr check_sort sigma env c = 
   if check_sort then 
-    understand_type env sigma (fst c) 
+    understand_type sigma env (fst c) 
   else 
-    understand env sigma (fst c)
+    understand sigma env (fst c)
 
 let special_whd env =
   let infos=Closure.create_clos_infos Closure.betadeltaiota env in
@@ -154,16 +173,16 @@ let get_eq_typ info env =
   let typ = decompose_eq env last_id in  
     typ
 
-let interp_constr_in_type typ env sigma c =
-  understand env sigma (fst c) ~expected_type:typ
+let interp_constr_in_type typ sigma env c =
+  understand sigma env (fst c) ~expected_type:typ
 
-let interp_statement interp_it env sigma st =
+let interp_statement interp_it sigma env st =
   {st_label=st.st_label;
-   st_it=interp_it env sigma st.st_it}
+   st_it=interp_it sigma env st.st_it}
 	
-let interp_constr_or_thesis check_sort env sigma = function
+let interp_constr_or_thesis check_sort sigma env = function
     Thesis n -> Thesis n
-  | This c -> This (interp_constr check_sort env sigma c)
+  | This c -> This (interp_constr check_sort sigma env c)
 
 let type_tester_var body typ = 
   raw_app(dummy_loc,
@@ -179,11 +198,13 @@ let abstract_one_hyp inject h raw =
     | Hprop st -> 
 	RProd (dummy_loc,st.st_label,inject st.st_it, raw)
 
-let rawconstr_of_hyps inject hyps = 
-  List.fold_right (abstract_one_hyp inject) hyps (RSort (dummy_loc,RProp Null))
+let rawconstr_of_hyps inject hyps head = 
+  List.fold_right (abstract_one_hyp inject) hyps head
+
+let raw_prop = RSort (dummy_loc,RProp Null)
   
 let rec match_hyps blend names constr = function 
-    [] -> []
+    [] -> [],substl names constr
   | hyp::q -> 
       let (name,typ,body)=destProd constr in
       let st= {st_label=name;st_it=substl names typ} in
@@ -194,13 +215,14 @@ let rec match_hyps blend names constr = function
       let qhyp = match hyp with
 	  Hprop st' -> Hprop (blend st st')
 	| Hvar _ -> Hvar st in
-	qhyp::(match_hyps blend qnames body q)
+      let rhyps,head = match_hyps blend qnames body q in
+	qhyp::rhyps,head
 
-let interp_hyps_gen inject blend env sigma hyps = 
-  let constr=understand env sigma (rawconstr_of_hyps inject hyps) in
+let interp_hyps_gen inject blend sigma env hyps head = 
+  let constr=understand sigma env (rawconstr_of_hyps inject hyps head) in
     match_hyps blend [] constr hyps
 
-let interp_hyps = interp_hyps_gen fst (fun x _ -> x)
+let interp_hyps sigma env hyps = fst (interp_hyps_gen fst (fun x _ -> x) sigma env hyps raw_prop)
 
 let dummy_prefix= id_of_string "__"
 
@@ -302,7 +324,7 @@ let rec match_aliases names constr = function
 
 let detype_ground c = Detyping.detype false [] [] c
 
-let interp_cases info env sigma params (pat:cases_pattern_expr) hyps =
+let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
   let et,pinfo =
     match info.pm_stack with
 	Per(et,pi,_,_)::_ -> et,pi
@@ -339,7 +361,7 @@ let interp_cases info env sigma params (pat:cases_pattern_expr) hyps =
 	       str " does not occur in pattern.");
 	Rawterm.RSort(dummy_loc,RProp Null)
     | This (c,_) -> c in
-  let term1 = rawconstr_of_hyps inject hyps in
+  let term1 = rawconstr_of_hyps inject hyps raw_prop in
   let loc_ids,npatt =
     let rids=ref ([],pat_vars) in
     let npatt= deanonymize rids patt in 
@@ -356,11 +378,11 @@ let interp_cases info env sigma params (pat:cases_pattern_expr) hyps =
   let tpatvars,nam3,rest3 = match_args destProd nam4 rest4 loc_ids in
   let taliases,nam2,rest2 = match_aliases nam3 rest3 aliases in
   let (_,pat_pat,pat_typ,rest1) = destLetIn rest2 in
-  let blend  st st' =
+  let blend st st' =
     match st'.st_it with 
 	Thesis nam -> {st_it=Thesis nam;st_label=st'.st_label} 
       | This _ -> {st_it = This st.st_it;st_label=st.st_label} in
-  let thyps = match_hyps blend nam2 (Termops.pop rest1) hyps in
+  let thyps = fst (match_hyps blend nam2 (Termops.pop rest1) hyps) in
     tparams,{pat_vars=tpatvars;
 	     pat_aliases=taliases;
 	     pat_constr=pat_pat;
@@ -368,14 +390,35 @@ let interp_cases info env sigma params (pat:cases_pattern_expr) hyps =
 	     pat_pat=patt;
 	     pat_expr=pat},thyps
 
-let interp_cut interp_it env sigma cut=
-  {cut with 
-    cut_stat=interp_statement interp_it env sigma cut.cut_stat;
-    cut_by=interp_justification_items env sigma cut.cut_by}
+let interp_cut interp_it sigma env cut=
+  let nenv,nstat = interp_it sigma env cut.cut_stat in
+    {cut with 
+       cut_stat=nstat;
+       cut_by=interp_justification_items sigma nenv cut.cut_by}
 
-let interp_casee env sigma = function 
-    Real c -> Real (understand env sigma (fst c))
-  | Virtual cut -> Virtual (interp_cut (interp_constr true) env sigma cut) 
+let interp_no_bind interp_it sigma env x =
+  env,interp_it sigma env x
+
+let interp_suffices_clause sigma env (hyps,cot)=
+  let (locvars,_) as res =
+    match cot with
+	This (c,_) -> 
+	  let nhyps,nc = interp_hyps_gen fst (fun x _ -> x) sigma env hyps c in
+	  nhyps,This nc
+      | Thesis (Plain| Sub _) as th  -> interp_hyps sigma env hyps,th
+      | Thesis (For n) -> error "\"thesis for\" is not applicable here" in
+  let push_one hyp env0 =
+    match hyp with
+	(Hprop st | Hvar st) ->
+	  match st.st_label with
+	      Name id -> Environ.push_named (id,None,st.st_it) env0
+	    | _ -> env in
+  let nenv = List.fold_right push_one locvars env in 
+    nenv,res 
+	  
+let interp_casee sigma env = function 
+    Real c -> Real (understand sigma env (fst c))
+  | Virtual cut -> Virtual (interp_cut (interp_no_bind (interp_statement (interp_constr true))) sigma env cut) 
 
 let abstract_one_arg = function
     (loc,(id,None)) ->
@@ -389,21 +432,28 @@ let abstract_one_arg = function
 let rawconstr_of_fun args body = 
   List.fold_right abstract_one_arg args (fst body)
 
-let interp_fun env sigma args body = 
-  let constr=understand env sigma (rawconstr_of_fun args body) in
+let interp_fun sigma env args body = 
+  let constr=understand sigma env (rawconstr_of_fun args body) in
     match_args destLambda [] constr args
 
-let rec interp_bare_proof_instr info sigma env = function
+let rec interp_bare_proof_instr info (sigma:Evd.evar_map) (env:Environ.env) = function
     Pthus i -> Pthus (interp_bare_proof_instr info sigma env i)
   | Pthen i -> Pthen (interp_bare_proof_instr info sigma env i)
   | Phence i -> Phence (interp_bare_proof_instr info sigma env i)
-  | Pcut c -> Pcut (interp_cut (interp_constr_or_thesis true) sigma env c) 
+  | Pcut c -> Pcut (interp_cut 
+		      (interp_no_bind (interp_statement 
+					 (interp_constr_or_thesis true))) 
+		      sigma env c) 
+  | Psuffices c ->  
+      Psuffices (interp_cut interp_suffices_clause sigma env c)
   | Prew (s,c) -> Prew (s,interp_cut 
-			  (interp_constr_in_type (get_eq_typ info env))
+			  (interp_no_bind (interp_statement 
+			     (interp_constr_in_type (get_eq_typ info env))))
 			  sigma env c) 
+
   | Psuppose hyps -> Psuppose (interp_hyps sigma env hyps)
   | Pcase (params,pat,hyps) -> 
-      let tparams,tpat,thyps = interp_cases info env sigma params pat hyps in 
+      let tparams,tpat,thyps = interp_cases info sigma env params pat hyps in 
 	Pcase (tparams,tpat,thyps)
   | Ptake witl -> 
       Ptake (List.map (fun c -> understand sigma env (fst c)) witl)

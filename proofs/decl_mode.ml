@@ -68,9 +68,9 @@ type stack_info =
 
 type pm_info =
     { pm_last: (Names.identifier * bool) option (* anonymous if none *);
-      pm_partial_goal : constr ; (* partial goal construction *)
+      pm_partial_goal : constr; (* partial goal construction *)
       pm_subgoals : (metavariable*constr) list;
-      pm_stack : stack_info list }
+      pm_stack : stack_info list}
 
 let pm_in,pm_out = Dyn.create "pm_info" 
 

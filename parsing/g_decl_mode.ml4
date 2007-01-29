@@ -84,10 +84,15 @@ GLOBAL: proof_instr;
   elim_obj:
     [[ IDENT "on"; c=constr -> Real c
      | IDENT "of"; c=simple_cut -> Virtual c ]]
-  ;    
+  ;  
   elim_step:
-    [[ IDENT "consider" ; h=vars ; IDENT "from" ; c=constr -> Pconsider (c,h)
-     | IDENT "per"; et=elim_type; obj=elim_obj -> Pper (et,obj)]]
+    [[ IDENT "consider" ; 
+       h=consider_vars ; IDENT "from" ; c=constr -> Pconsider (c,h)
+     | IDENT "per"; et=elim_type; obj=elim_obj -> Pper (et,obj)
+     | IDENT "suffices"; ls=suff_clause;
+       j = justification_items;
+       taco = justification_method 	
+	-> Psuffices {cut_stat=ls;cut_by=j;cut_using=taco} ]] 
   ;
   rew_step :
     [[ "~=" ;         c=simple_cut -> (Rhs,c)       
@@ -114,46 +119,112 @@ GLOBAL: proof_instr;
     [[ id=loc_id -> id None ;
      | id=loc_id ; ":" ; c=constr -> id (Some c)]]
   ;
-  vars:
+  consider_vars:
     [[ name=hyp -> [Hvar name]
-     | name=hyp; ","; v=vars -> (Hvar name) :: v
-     | name=hyp; IDENT "be"; 
-       IDENT "such"; IDENT "that"; h=hyps -> (Hvar name)::h
+     | name=hyp; ","; v=consider_vars -> (Hvar name) :: v
      | name=hyp; 
-       IDENT "such"; IDENT "that"; h=hyps -> (Hvar name)::h
+       IDENT "such"; IDENT "that"; h=consider_hyps -> (Hvar name)::h
      ]]
   ;
-  hyps:  
-    [[ IDENT "we"; IDENT "have"; v=vars -> v
-     | st=statement; IDENT "and"; h=hyps  -> Hprop st::h
-     | st=statement; IDENT "and"; v=vars  -> Hprop st::v
+  consider_hyps:  
+    [[ st=statement; IDENT "and"; h=consider_hyps  -> Hprop st::h
+     | st=statement; IDENT "and"; 
+       IDENT "consider" ; v=consider_vars  -> Hprop st::v
+     | st=statement -> [Hprop st]
+     ]]
+  ;  
+  assume_vars:
+    [[ name=hyp -> [Hvar name]
+     | name=hyp; ","; v=assume_vars -> (Hvar name) :: v
+     | name=hyp; 
+       IDENT "such"; IDENT "that"; h=assume_hyps -> (Hvar name)::h
+     ]]
+  ;
+  assume_hyps:  
+    [[ st=statement; IDENT "and"; h=assume_hyps  -> Hprop st::h
+     | st=statement; IDENT "and"; 
+       IDENT "we"; IDENT "have" ; v=assume_vars  -> Hprop st::v
      | st=statement -> [Hprop st]
      ]]
   ;
-  vars_or_thesis:
-    [[name=hyp -> [Hvar name] 
-     |name=hyp; ","; v=vars_or_thesis -> (Hvar name) :: v
-     |name=hyp; OPT[IDENT "be"]; 
-      IDENT "such"; IDENT "that"; h=hyps_or_thesis -> (Hvar name)::h
+  assume_clause:
+    [[ IDENT "we" ; IDENT "have" ; v=assume_vars -> v
+    |  h=assume_hyps -> h ]]
+  ; 
+  suff_vars:
+    [[ name=hyp; IDENT "to"; IDENT "show" ; c = constr_or_thesis ->
+      [Hvar name],c
+     | name=hyp; ","; v=suff_vars -> 
+	 let (q,c) = v in ((Hvar name) :: q),c
+     | name=hyp; 
+       IDENT "such"; IDENT "that"; h=suff_hyps -> 
+	 let (q,c) = h in ((Hvar name) :: q),c
+     ]];
+  suff_hyps:  
+    [[ st=statement; IDENT "and"; h=suff_hyps  ->	 
+	 let (q,c) = h in (Hprop st::q),c
+     | st=statement; IDENT "and"; 
+       IDENT "to" ; IDENT "have" ; v=suff_vars -> 
+	 let (q,c) = v in (Hprop st::q),c
+     | st=statement; IDENT "to"; IDENT "show" ; c = constr_or_thesis -> 
+	 [Hprop st],c
      ]]
   ;
-  hyps_or_thesis:  
-    [[ IDENT "we"; IDENT "have"; v=vars_or_thesis -> v
-     | st=statement_or_thesis; IDENT "and"; h=hyps_or_thesis  -> Hprop st::h
-     | st=statement_or_thesis; IDENT "and"; v=vars_or_thesis  -> Hprop st::v
-     | st=statement_or_thesis -> [Hprop st];
+  suff_clause:
+    [[ IDENT "to" ; IDENT "have" ; v=suff_vars -> v
+    |  h=suff_hyps -> h ]]
+  ; 
+  let_vars:
+    [[ name=hyp -> [Hvar name]
+     | name=hyp; ","; v=let_vars -> (Hvar name) :: v
+     | name=hyp; IDENT "be"; 
+       IDENT "such"; IDENT "that"; h=let_hyps -> (Hvar name)::h
      ]]
+  ;
+  let_hyps:  
+    [[ st=statement; IDENT "and"; h=let_hyps  -> Hprop st::h
+    |  st=statement; IDENT "and"; "let"; v=let_vars  -> Hprop st::v
+    |  st=statement -> [Hprop st]
+    ]];
+  given_vars:
+    [[ name=hyp -> [Hvar name]
+     | name=hyp; ","; v=given_vars -> (Hvar name) :: v
+     | name=hyp; IDENT "such"; IDENT "that"; h=given_hyps -> (Hvar name)::h
+     ]]
+  ;
+  given_hyps:  
+    [[ st=statement; IDENT "and"; h=given_hyps  -> Hprop st::h
+    |  st=statement; IDENT "and"; IDENT "given"; v=given_vars  -> Hprop st::v
+    |  st=statement -> [Hprop st]
+    ]];
+  suppose_vars:
+    [[name=hyp -> [Hvar name] 
+     |name=hyp; ","; v=suppose_vars -> (Hvar name) :: v
+     |name=hyp; OPT[IDENT "be"]; 
+      IDENT "such"; IDENT "that"; h=suppose_hyps -> (Hvar name)::h
+     ]]
+  ;
+  suppose_hyps:  
+    [[ st=statement_or_thesis; IDENT "and"; h=suppose_hyps -> Hprop st::h
+     | st=statement_or_thesis; IDENT "and"; IDENT "we"; IDENT "have";
+          v=suppose_vars -> Hprop st::v
+     | st=statement_or_thesis -> [Hprop st]
+     ]]
+  ;
+  suppose_clause:
+    [[ IDENT "we"; IDENT "have"; v=suppose_vars -> v;
+     |  h=suppose_hyps -> h ]]
   ;
   intro_step:
-    [[ IDENT "suppose" ; h=hyps -> Psuppose h
+    [[ IDENT "suppose" ; h=assume_clause -> Psuppose h
      | IDENT "suppose" ; IDENT "it"; IDENT "is" ; c=pattern LEVEL "0" ;
        po=OPT[ IDENT "with"; p=LIST1 hyp -> p ] ; 
-       ho=OPT[ IDENT "and" ; h=hyps_or_thesis -> h ] -> 
+       ho=OPT[ IDENT "and" ; h=suppose_clause -> h ] -> 
 	 Pcase (none_is_empty po,c,none_is_empty ho)
-     | "let" ; v=vars -> Plet v	 
+     | "let" ; v=let_vars -> Plet v	 
      | IDENT "take"; witnesses = LIST1 constr SEP ","  -> Ptake witnesses
-     | IDENT "assume"; h=hyps -> Passume h
-     | IDENT "given"; h=vars -> Pgiven h
+     | IDENT "assume"; h=assume_clause -> Passume h
+     | IDENT "given"; h=given_vars -> Pgiven h
      | IDENT "define"; id=ident; args=LIST0 hyp; 
        "as"; body=constr -> Pdefine(id,args,body)
      | IDENT "reconsider"; id=ident; "as" ; typ=constr -> Pcast (This id,typ)

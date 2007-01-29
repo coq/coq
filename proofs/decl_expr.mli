@@ -38,7 +38,7 @@ type block_type =
   | B_elim of elim_type
 
 type ('it,'constr,'tac) cut =
-    {cut_stat: 'it statement;
+    {cut_stat: 'it;
      cut_by: 'constr list option;
      cut_using: 'tac option}
 
@@ -48,14 +48,15 @@ type ('var,'constr) hyp =
 
 type ('constr,'tac) casee = 
     Real of 'constr 
-  | Virtual of ('constr,'constr,'tac) cut
+  | Virtual of ('constr statement,'constr,'tac) cut
 
 type ('hyp,'constr,'pat,'tac) bare_proof_instr =
   | Pthen of ('hyp,'constr,'pat,'tac) bare_proof_instr
   | Pthus of ('hyp,'constr,'pat,'tac) bare_proof_instr
   | Phence of ('hyp,'constr,'pat,'tac) bare_proof_instr
-  | Pcut of ('constr or_thesis,'constr,'tac) cut
-  | Prew of side * ('constr,'constr,'tac) cut
+  | Pcut of ('constr or_thesis statement,'constr,'tac) cut
+  | Prew of side * ('constr statement,'constr,'tac) cut
+  | Psuffices of ((('hyp,'constr) hyp list * 'constr or_thesis),'constr,'tac) cut
   | Passume of ('hyp,'constr) hyp list
   | Plet of ('hyp,'constr) hyp list
   | Pgiven of ('hyp,'constr) hyp list

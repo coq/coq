@@ -93,7 +93,7 @@ let rec print_decl_script tac_printer nochange sigma pf =
 	 else 
 	   pr_change pf.goal)
 	++ fnl ()
-    | Some (Daimon,_) -> mt ()
+    | Some (Daimon,[]) -> mt ()
     | Some (Nested(Proof_instr (opened,instr),_) as rule,subprfs) ->
 	begin
 	  match instr.instr,subprfs with
