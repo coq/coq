@@ -66,5 +66,9 @@ Ltac destruct_call f :=
     end.
 
 Extraction Inline proj1_sig.
+Extract Inductive unit => "unit" [ "()" ].
+Extract Inductive bool => "bool" [ "true" "false" ].
+Extract Inductive sumbool => "bool" [ "true" "false" ].
+Extract Inductive prod => "" [ "" ].
 
 Require Export ProofIrrelevance.

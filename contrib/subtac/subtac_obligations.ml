@@ -111,8 +111,12 @@ let subst_body prg =
     subst_deps obls (intset_to (pred (Array.length obls))) prg.prg_body
 
 let declare_definition prg =
+  let body = subst_body prg in
+    (try trace (str "Declaring: " ++ Ppconstr.pr_id prg.prg_name ++ spc () ++
+		  my_print_constr (Global.env()) body);
+     with _ -> ());
   let ce = 
-    { const_entry_body = subst_body prg;
+    { const_entry_body = body;
       const_entry_type = Some prg.prg_type;
       const_entry_opaque = false;
       const_entry_boxed = false} 

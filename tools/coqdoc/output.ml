@@ -43,12 +43,15 @@ let is_keyword =
       "Section"; "Show"; "Syntactic"; "Syntax"; "Tactic"; "Theorem"; 
       "Unset"; "Variable"; "Variables"; 
       "Notation"; 
+      (* Program *)
+      "Program Definition"; "Program Fixpoint"; "Program Lemma";
+      "Obligation"; "Obligations"; "Solve";
       (*i (* correctness *)
       "array"; "assert"; "begin"; "do"; "done"; "else"; "end"; "if";
       "in"; "invariant"; "let"; "of"; "ref"; "state"; "then"; "variant";
       "while"; i*)
-      (*i (* coq terms *)
-      "with"; "Case"; "Cases"; "Prop"; "Set"; "Type"; i*)
+      (*i (* coq terms *) *)
+	"match"; "with"; "end"; "if"; "then"; "else"; "Prop"; "Set"; "Type"; ":="
        ]
 
 (*s Current Coq module *)

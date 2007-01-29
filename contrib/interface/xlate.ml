@@ -1929,6 +1929,7 @@ let rec xlate_vernac =
 	     xlate_sort sort) in
         CT_ind_scheme
 	  (CT_scheme_spec_list (strip_ind lm, List.map strip_ind lmi))
+   | VernacCombinedScheme _ -> xlate_error "TODO: Combined Scheme"
    | VernacSyntacticDefinition (id, c, false, _) ->
        CT_syntax_macro (xlate_ident id, xlate_formula c, xlate_int_opt None)
    | VernacSyntacticDefinition (id, c, true, _) ->

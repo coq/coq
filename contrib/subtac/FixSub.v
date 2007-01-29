@@ -2,13 +2,13 @@ Require Import Wf.
 Require Import Coq.subtac.Utils.
 
 Section Well_founded.
-  Variable A : Set.
+  Variable A : Type.
   Variable R : A -> A -> Prop.
   Hypothesis Rwf : well_founded R.
   
   Section Acc.
     
-    Variable P : A -> Set.
+    Variable P : A -> Type.
     
     Variable F_sub : forall x:A, (forall y: { y : A | R y x }, P (proj1_sig y)) -> P x.
     
@@ -20,7 +20,7 @@ Section Well_founded.
   End Acc.
   
   Section FixPoint.
-    Variable P : A -> Set.
+    Variable P : A -> Type.
     
     Variable F_sub : forall x:A, (forall y: { y : A | R y x }, P (proj1_sig y)) -> P x.
     
@@ -75,13 +75,13 @@ Require Import Wf_nat.
 Require Import Lt.
 
 Section Well_founded_measure.
-Variable A : Set.
+Variable A : Type.
 Variable f : A -> nat.
 Definition R := fun x y => f x < f y.
 
 Section FixPoint.
 
-Variable P : A -> Set.
+Variable P : A -> Type.
 
 Variable F_sub : forall x:A, (forall y: { y : A | f y < f x }, P (proj1_sig y)) -> P x.
  

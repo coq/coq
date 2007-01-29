@@ -209,6 +209,8 @@ let all_entries () =
 }
 
 (*s Shortcuts for regular expressions. *)
+let digit = ['0'-'9']
+let num = digit+
 
 let space = 
   [' ' '\010' '\013' '\009' '\012']
@@ -225,16 +227,18 @@ let end_hide = "(*" space* "end" space+ "hide" space* "*)"
 (*s Indexing entry point. *)
   
 rule traverse = parse
-  | "Definition" space
+  | ("Program" space+)? "Definition" space
       { current_type := Definition; index_ident lexbuf; traverse lexbuf }
   | "Tactic" space+ "Definition" space
       { current_type := TacticDefinition; index_ident lexbuf; traverse lexbuf }
   | ("Axiom" | "Parameter") space 
       { current_type := Axiom; index_ident lexbuf; traverse lexbuf }
-  | "Fixpoint" space
+  | ("Program" space+)? "Fixpoint" space
       { current_type := Definition; index_ident lexbuf; fixpoint lexbuf;
 	traverse lexbuf }
-  | ("Lemma" | "Theorem") space
+  | ("Program" space+)? ("Lemma" | "Theorem") space
+      { current_type := Lemma; index_ident lexbuf; traverse lexbuf }
+  | "Obligation" space num ("of" ident)?
       { current_type := Lemma; index_ident lexbuf; traverse lexbuf }
   | "Inductive" space
       { current_type := Inductive; 

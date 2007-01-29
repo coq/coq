@@ -1187,6 +1187,7 @@ let group_equations pb ind current cstrs mat =
 let rec generalize_problem pb = function
   | [] -> pb
   | i::l ->
+      trace (str"Generalizing problem");
       let d = map_rel_declaration (lift i) (Environ.lookup_rel i pb.env) in
       let pb' = generalize_problem pb l in
       let tomatch = lift_tomatch_stack 1 pb'.tomatch in
@@ -1272,10 +1273,11 @@ let build_branch current deps pb eqns const_info =
 
   let cur_alias = lift (List.length sign) current in
   let currents = Alias (ci,cur_alias,alias_type,ind) :: currents in
-
-  sign,
+  let env' = push_rels sign pb.env in
+  let pred' = option_map (specialize_predicate (List.rev typs') dep_sign const_info) pb.pred in
+    sign,
   { pb with
-      env = push_rels sign pb.env;
+      env = env';
       tomatch = List.rev_append currents tomatch;
       pred = option_map (specialize_predicate (List.rev typs') dep_sign const_info) pb.pred;
       history = history;
@@ -1640,14 +1642,13 @@ let constr_of_pat env isevars ty pat =
 	let app = applistc cstr (List.map (lift (List.length args)) params) in
 	let app = applistc app args in
 (* 	  trace (str "New pattern: " ++ Printer.pr_cases_pattern pat'); *)
+	let alname = if alias <> Anonymous then alias else Name (id_of_string "anon") in
+	let al = alname, Some (mkRel 1), lift 1 ty in
 	  if alias <> Anonymous then
 	    pat', (alias, Some app, ty) :: sign, lift 1 app, n + 1
 	  else pat', sign, app, n
   in 
   let pat', sign, y, z = typ env ty pat in 
-(*   let prod = it_mkProd_or_LetIn y sign in *)
-(*     trace (str "Pattern: " ++ Printer.pr_cases_pattern pat ++ str " becomes constr : " ++ *)
-(* 	     my_print_constr env prod); *)
     pat', (sign, y)
 
 let mk_refl typ a = mkApp (Lazy.force eq_refl, [| typ; a |])
@@ -1766,9 +1767,12 @@ let constrs_of_pats typing_fun tycon env isevars eqns tomatchs =
  * A type constraint but no annotation case: it is assumed non dependent.
  *)
 
-let prepare_predicate_from_tycon loc typing_fun isevars env tomatchs sign tycon = 
+let prepare_predicate_from_tycon loc typing_fun isevars env tomatchs arsign tycon = 
   (* We extract the signature of the arity *)
-  let arsign = extract_arity_signature env tomatchs sign in
+  List.iter
+      (fun arsign -> 
+	 trace (str "arity signature: " ++ my_print_rel_context env arsign))
+    arsign;
 (*   let env = List.fold_right push_rels arsign env in *)
   let allnames = List.rev (List.map (List.map pi1) arsign) in
   let nar = List.fold_left (fun n names -> List.length names + n) 0 allnames in
@@ -1823,8 +1827,12 @@ let compile_cases loc (typing_fun, isevars) (tycon : Evarutil.type_constraint) e
 	None ->	  
 	  let lets, matx = constrs_of_pats typing_fun tycon env isevars matx tomatchs in
 	  let matx = List.rev matx in
-	  let env = push_rels lets env in
 	  let len = List.length lets in
+	  let sign = 
+	    let arsign = extract_arity_signature env tomatchs (List.map snd tomatchl) in
+	      List.map (lift_rel_context len) arsign
+	  in
+	  let env = push_rels lets env in	      
 	  let matx = List.map (fun eqn -> { eqn with rhs = { eqn.rhs with rhs_env = env } }) matx in
 	  let tycon = lift_tycon len tycon in
 	  let tomatchs = List.map (fun (x, y) -> lift len x, lift_tomatch_type len y) tomatchs in
@@ -1832,9 +1840,7 @@ let compile_cases loc (typing_fun, isevars) (tycon : Evarutil.type_constraint) e
 	    
 	  (* We build the elimination predicate if any and check its consistency *)
 	  (* with the type of arguments to match *)
-	  let tmsign = List.map snd tomatchl in
-	  let pred, opred = prepare_predicate_from_tycon loc typing_fun isevars env tomatchs tmsign tycon in
-	    
+	  let pred, opred = prepare_predicate_from_tycon loc typing_fun isevars env tomatchs sign tycon in
 	  (* We push the initial terms to match and push their alias to rhs' envs *)
 	  (* names of aliases will be recovered from patterns (hence Anonymous here) *)
 	  let initial_pushed = List.map (fun tm -> Pushed (tm,[])) tomatchs in
@@ -1883,5 +1889,6 @@ let compile_cases loc (typing_fun, isevars) (tycon : Evarutil.type_constraint) e
 	    (* We check for unused patterns *)
 	    List.iter (check_unused_pattern env) matx;
 	    inh_conv_coerce_to_tycon loc env isevars j tycon	  
+
 end
   

@@ -244,15 +244,17 @@ module Coercion = struct
 			   coerce (subst1 hdy restT) (succ i) (fun x -> eq_app (co x))
 		       else co
 		     in
-		       if Array.length l = Array.length l' then
+		       if Array.length l = Array.length l' then (
+			 trace (str"Inserting coercion at application");
 			 Some (coerce lam_type 0 (fun x -> x))
-		       else subco ()
+		       ) else subco ()
 		 | _ -> subco ())
 	  | _, _ ->  subco ()
 
     and subset_coerce env isevars x y =
       match disc_subset x with
 	  Some (u, p) -> 
+	    (* trace (str "Inserting projection ");	     *)
 	    let c = coerce_unify env u y in
 	    let f x = 
 	      app_opt c (mkApp ((Lazy.force sig_).proj1, 

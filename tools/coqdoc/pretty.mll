@@ -257,7 +257,14 @@ let extraction =
   | "Recursive" space+ "Extraction" 
   | "Extract"
 
+
 let gallina_kw = thm_token | def_token | decl_token | gallina_ext | commands | extraction
+
+let prog_kw =
+  "Program" space+ gallina_kw
+  | "Obligation"
+  | "Obligations"
+  | "Solve"
 
 let gallina_kw_to_hide =
   "Implicit"
@@ -344,6 +351,15 @@ rule coq_bol = parse
 	    ident s (lexeme_start lexbuf + nbsp); 
 	    let eol= body lexbuf in
 	      if eol then coq_bol lexbuf else coq lexbuf }
+  | space* prog_kw
+      { let s = lexeme lexbuf in 
+	let nbsp = count_spaces s in
+	  indentation nbsp;
+	  let s = String.sub s nbsp (String.length s - nbsp)  in
+	    ident s (lexeme_start lexbuf + nbsp); 
+	    let eol= body lexbuf in
+	      if eol then coq_bol lexbuf else coq lexbuf }
+
   | space* "(**" space+ "printing" space+ (identifier | token) space+
       { let tok = lexeme lexbuf in
 	let s = printing_token lexbuf in
@@ -410,6 +426,11 @@ and coq = parse
 		if eol then coq_bol lexbuf else coq lexbuf
 	    end }
   | gallina_kw
+      { let s = lexeme lexbuf in 
+	  ident s (lexeme_start lexbuf); 
+	let eol = body lexbuf in
+	  if eol then coq_bol lexbuf else coq lexbuf }
+  | prog_kw
       { let s = lexeme lexbuf in 
 	  ident s (lexeme_start lexbuf); 
 	let eol = body lexbuf in
