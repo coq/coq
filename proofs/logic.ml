@@ -70,36 +70,9 @@ let with_check = Options.with_option check
    (instead of iterating on the list of identifier to be removed, which
    forces the user to give them in order). *)
 let clear_hyps sigma ids gl =
-  let env = Global.env() in
   let evd = ref (Evd.create_evar_defs sigma) in
-  let (nhyps, cleared_ids) = 
-    let check_and_clear_in_evar_hyps (id,ob,c) = 
-      let rec aux c =
-	match kind_of_term c with
-	  | (Rel _ | Meta _ | Sort _ | Const _ | Ind _
-	    | Construct _) -> c
-	  | Var id' ->  if !check && List.mem id' ids then
-		error (string_of_id id' ^ " is used in hypothesis "
-			^ string_of_id id); mkVar id'
-	  | Evar (e,l) -> 
-	      (* If e is already define, we replace it by its definition *)
-	      if Evd.is_defined_evar !evd (e,l) then
-		let nc = nf_evar (evars_of !evd) c in aux nc
-	      else
-		Evarutil.clear_evar_hyps_in_evar evd e l ids
-	  | _ -> map_constr aux c
-      in
-	(id, (match ob with None -> None | Some b -> Some (aux b)), aux c)
-    in
-      remove_hyps ids check_and_clear_in_evar_hyps (evar_hyps gl) in
-  let ncl = Evarutil.clear_evar_hyps_in_constr evd (evar_concl gl) ids in
-    if !check && cleared_ids<>[] then
-      Idset.iter
-	(fun id' ->
-          if List.mem id' cleared_ids then
-            error (string_of_id id'^" is used in conclusion"))
-	(global_vars_set env ncl);
-    (mk_goal nhyps ncl gl.evar_extra, evars_of !evd)
+  let ngl = Evarutil.clear_evar_hyps_in_evi evd InGoal gl ids in
+    (ngl, evars_of !evd)
 
 (* The ClearBody tactic *)
 

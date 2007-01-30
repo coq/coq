@@ -162,6 +162,9 @@ val pr_tycon : env -> type_constraint -> Pp.std_ppcmds
 
 (**********************************)
 (* Removing hyps in evars'context *)
-val clear_evar_hyps_in_evar : evar_defs ref -> evar -> constr array -> identifier list -> constr
-val clear_evar_hyps_in_constr : evar_defs ref -> constr -> identifier list -> constr
-val clear_evar_hyps : evar_map -> evar_info -> identifier list -> evar_info * evar_map
+type ch_error_loc = 
+    | InGoal 
+    | InHyps of Names.identifier 
+    | InEvar of Term.existential_key
+
+val clear_evar_hyps_in_evi : evar_defs ref -> ch_error_loc -> evar_info -> identifier list -> evar_info

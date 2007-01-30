@@ -306,47 +306,77 @@ let do_restrict_hyps env k evd ev args =
     evd := Evd.evar_define ev nc !evd;
     let (evn,_) = destEvar nc in
       mkEvar(evn,Array.of_list ncargs)
+	
 
-let clear_evar_hyps_in_evar evd evn args ids =
-  (* Creates a new evar ev' from ev such that all ids are removed from
-     the context of ev' *)
-  (* ATTN: il faut vérifier que le type associé à ev ne dépend pas de
-     l'un des ids *)
-  let args = Array.to_list args in
-  let evi = Evd.find (evars_of !evd) evn in
-  let hyps = evar_context evi in
-  let (hyps',args') = list_filter2 
-    (fun _ c -> match kind_of_term c with Var id -> not (List.mem id ids) | _  -> true) 
-    (hyps,args) in
-  let env = Sign.fold_named_context push_named hyps' ~init:(empty_env) in
-  let ev' = e_new_evar evd env ~src:(evar_source evn !evd) evi.evar_concl in
-    evd := Evd.evar_define evn ev' !evd;
-    let (evn',_) = destEvar ev' in
-      mkEvar(evn',Array.of_list args') 
-
-let clear_evar_hyps_in_constr evd c ids =
-  let rec aux c =
-    match kind_of_term c with
-      | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-	| Construct _) -> c
-      | Evar (e,l) -> 
-	  (* aux may have defined e earlier, so we have to check *)
-	  if Evd.is_defined_evar !evd (e,l) then
-	    let nc = nf_evar (evars_of !evd) c in aux nc
-	  else
-	    clear_evar_hyps_in_evar evd e l ids
-      | _ -> map_constr aux c 
-  in
-    aux c
-
-let clear_evar_hyps sigma evi ids =
-  let evd = Evd.create_evar_defs sigma in
-  let aux c = clear_evar_hyps_in_constr (ref evd) c ids in
-  let goal = evar_concl evi in
-  let hyps = evar_hyps evi in
-    ({ evi with
-      evar_concl = aux goal;
-      evar_hyps  = map_named_val aux hyps}, evars_of evd)
+type ch_error_loc = 
+    | InGoal
+    | InHyps of identifier
+    | InEvar of existential_key
+	
+let rec check_and_clear_in_constr evd loc c ids =
+  (* returns a new constr where all the evars have been 'cleaned'
+     (ie the hypotheses ids have been removed from the contexts of
+     evars *)
+  match kind_of_term c with
+    | ( Rel _ | Meta _ | Sort _ ) -> c
+    | ( Const _ | Ind _ | Construct _ ) -> 
+	let vars = Environ.vars_of_global (Global.env()) c in
+	let check id' = 
+	  if List.mem id' ids then
+	    match loc with
+		InGoal -> error (string_of_id id' ^ " is used in conclusion")
+              | InHyps id -> error (string_of_id id' ^ " is used in hypothesis "
+                                   ^ string_of_id id)
+	      | InEvar n -> error (string_of_id id' ^ " is used in "
+                                   ^ string_of_existential n)
+	in 
+	  List.iter check vars; c
+    | Var id' ->  
+	(if List.mem id' ids then
+	    match loc with
+		InGoal -> error (string_of_id id' ^ " is used in conclusion")
+              | InHyps id -> error (string_of_id id' ^ " is used in hypothesis "
+                                    ^ string_of_id id)
+	      | InEvar n -> error (string_of_id id' ^ " is used in "
+                                    ^ string_of_existential n));
+	mkVar id'
+    | Evar (e,l) -> 
+	(* If e is already defined we replace it by its definition *)
+	if Evd.is_defined_evar !evd (e,l) then
+	  let nc = nf_evar (evars_of !evd) c in 
+	    (check_and_clear_in_constr evd loc nc ids)
+	else
+	  let evi = Evd.find (evars_of !evd) e in
+	  let evi' = clear_evar_hyps_in_evi evd (InEvar e) evi ids in
+	  let env = Sign.fold_named_context push_named (evar_context evi') ~init:(empty_env) in
+	  let ev'= e_new_evar evd env ~src:(evar_source e !evd) (evar_concl evi') in
+	    evd := Evd.evar_define e ev' !evd;
+	    ev'
+    | _ -> map_constr (fun c -> check_and_clear_in_constr evd loc c ids) c
+	
+and clear_evar_hyps_in_evi evd loc evi ids =
+  (* clear_evar_hyps erases hypotheses ids in evi, checking if some
+     hypothesis does not depend on a element of ids, and erases ids in
+     the contexts of the evars occuring in evi *)
+  let nconcl = check_and_clear_in_constr evd loc (evar_concl evi) ids in
+  let (nhyps,_) = 
+    let aux (id,ob,c) = 
+      let loc' = match loc with
+	  InGoal -> InHyps id
+	| _ -> loc 
+      in
+	(id,
+	(match ob with 
+	    None -> None
+	  | Some b -> Some (check_and_clear_in_constr evd loc' b ids)),
+	check_and_clear_in_constr evd loc' c ids)
+    in
+      remove_hyps ids aux (evar_hyps evi)
+  in    
+    { evi with
+      evar_concl = nconcl;
+      evar_hyps  = nhyps}
+      
 
 let need_restriction k args = not (array_for_all (closedn k) args)
 
