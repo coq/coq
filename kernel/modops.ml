@@ -142,12 +142,12 @@ let rec subst_modtype sub = function
        M to M' I must substitute M' for X in "Module N := X". *)
   | MTBident ln -> MTBident (subst_kn sub ln)
   | MTBfunsig (arg_id, arg_b, body_b) ->
-      if occur_mbid arg_id sub then raise (Circularity (debug_string_of_mbid arg_id));
+      if occur_mbid arg_id sub then raise (Circularity (string_of_mbid arg_id));
       MTBfunsig (arg_id, 
 		 subst_modtype  sub arg_b, 
 		 subst_modtype  sub body_b)
   | MTBsig (sid1, msb) -> 
-      if occur_msid sid1 sub then raise (Circularity (debug_string_of_msid sid1));
+      if occur_msid sid1 sub then raise (Circularity (string_of_msid sid1));
       MTBsig (sid1, subst_signature sub msb)
 
 and subst_signature sub sign = 
