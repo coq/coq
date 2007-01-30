@@ -73,8 +73,10 @@ let string_of_dirpath = function
 let u_number = ref 0 
 type uniq_ident = int * string * dir_path
 let make_uid dir s = incr u_number;(!u_number,String.copy s,dir)
-let string_of_uid (i,s,p) = 
+let debug_string_of_uid (i,s,p) = 
   "<"(*^string_of_dirpath p ^"#"^*) ^ s ^"#"^ string_of_int i^">"
+let string_of_uid (i,s,p) = 
+  string_of_dirpath p ^"."^s
 
 module Umap = Map.Make(struct 
 			 type t = uniq_ident 
@@ -84,12 +86,14 @@ module Umap = Map.Make(struct
 
 type mod_self_id = uniq_ident
 let make_msid = make_uid
-let debug_string_of_msid = string_of_uid
+let debug_string_of_msid = debug_string_of_uid
+let string_of_msid = string_of_uid
 let id_of_msid (_,s,_) = s
 
 type mod_bound_id = uniq_ident
 let make_mbid = make_uid
-let debug_string_of_mbid = string_of_uid
+let debug_string_of_mbid = debug_string_of_uid
+let string_of_mbid = string_of_uid
 let id_of_mbid (_,s,_) = s
 
 type label = string
