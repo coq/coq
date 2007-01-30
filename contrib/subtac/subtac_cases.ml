@@ -1605,8 +1605,8 @@ let list_mapi f l =
 
 let constr_of_pat env isevars ty pat idents = 
   let rec typ env ty pat idents = 
-(*     trace (str "Typing pattern " ++ Printer.pr_cases_pattern pat ++ str " in env " ++ *)
-(* 	     print_env env); *)
+    trace (str "Typing pattern " ++ Printer.pr_cases_pattern pat ++ str " in env " ++
+	     print_env env ++ str" should have type: " ++ my_print_constr env ty);
     match pat with
     | PatVar (l,name) -> 
 	let name, idents' = match name with
@@ -1626,20 +1626,20 @@ let constr_of_pat env isevars ty pat idents =
 	let nb_args_constr = ci.cs_nargs in
 	assert(nb_args_constr = List.length args);
 	let idents' = idents in
-	let patargs, args, sign, env, n, idents' = 
+	let patargs, args, sign, env, n, m, idents' = 
 	  List.fold_right2
-	    (fun (na, c, t) ua (patargs, args, sign, env, n, idents)  ->
-	       let pat', sign', arg', n', idents' = typ env t ua idents in
+	    (fun (na, c, t) ua (patargs, args, sign, env, n, m, idents)  ->
+	       let pat', sign', arg', n', idents' = typ env (lift (n - m) t) ua idents in
 	       let args' = arg' :: List.map (lift n') args in
 	       let env' = push_rels sign' env in
-		 (pat' :: patargs, args', sign' @ sign, env', n' + n, idents'))
-	    ci.cs_args (List.rev args) ([], [], [], env, 0, idents')
+		 (pat' :: patargs, args', sign' @ sign, env', n' + n, succ m, idents'))
+	    ci.cs_args (List.rev args) ([], [], [], env, 0, 0, idents')
 	in
 	let args = List.rev args in
 	let patargs = List.rev patargs in
 	let pat' = PatCstr (l, cstr, patargs, alias) in
 	let cstr = mkConstruct ci.cs_cstr in
-	let app = applistc cstr (List.map (lift (List.length args)) params) in
+	let app = applistc cstr (List.map (lift (List.length sign)) params) in
 	let app = applistc app args in
 (* 	  trace (str "New pattern: " ++ Printer.pr_cases_pattern pat'); *)
 (* 	let alname = if alias <> Anonymous then alias else Name (id_of_string "anon") in *)
@@ -1649,6 +1649,8 @@ let constr_of_pat env isevars ty pat idents =
 	  else pat', sign, app, n, idents'
   in 
   let pat', sign, y, z, idents = typ env ty pat idents in 
+  let c = it_mkProd_or_LetIn y sign in
+    trace (str "Constr_of_pat gives: " ++ my_print_constr env c);
     pat', (sign, y), idents
 
 let mk_refl typ a = mkApp (Lazy.force eq_refl, [| typ; a |])
