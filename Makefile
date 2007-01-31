@@ -1323,10 +1323,10 @@ install-latex:
 .PHONY: doc
 
 doc: glob.dump
-	(cd doc; make all)
+	(cd doc; $(MAKE) all)
 
 clean::
-	(cd doc; make clean)
+	(cd doc; $(MAKE) clean)
 
 clean::
 	rm -f doc/coq.tex

@@ -7,7 +7,7 @@
 ##################################
 
 VERSION=v8.1
-DATE="Nov. 2006"
+DATE="Feb. 2007"
 
 # a local which command for sh
 which () {
