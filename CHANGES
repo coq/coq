@@ -2,7 +2,18 @@ Changes from V8.1gamma to ...
 =============================
 
 - Added option Global to "Implicit Arguments" and "Arguments Scope" for
-  section surviving
+  section surviving.
+
+Tactics
+
+- New tactic ring, ring_simplify and new tactic field now able to manage
+  power to a positive integer constant. Tactic ring on Z and R, and
+  field on R manage power (may lead to incompatibilities with V8.1gamma).
+- Tactic field_simplify now applicable in hypotheses.
+- New field_simplify_eq for simplifying field equations into ring equations.
+- Tactics ring, ring_simplify, field, field_simplify and field_simplify_eq 
+  all able to apply user-given equations to rewrite monoms on the fly 
+  (see documentation).
 
 Changes from V8.1beta to V8.1gamma
 ==================================
