@@ -112,8 +112,6 @@ let extract_open_proof sigma pf =
          ProofTreeHash.add proof_tree_to_flattened_proof_tree node flat_proof ;
 	 proof_extractor vl flat_proof
 	  
-     | {PT.ref=Some(PT.Change_evars,[pf])} -> (proof_extractor vl) pf
-	  
      | {PT.ref=None;PT.goal=goal} ->
 	 let visible_rels =
            Util.map_succeed

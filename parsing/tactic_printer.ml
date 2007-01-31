@@ -39,11 +39,6 @@ let pr_rule = function
       end
   | Daimon -> str "<Daimon>"
   | Decl_proof _ -> str "proof" 
-  | Change_evars ->
-      (* This is internal tactic and cannot be replayed at user-level.
-         Function pr_rule_dot below is used when we want to hide
-         Change_evars *)
-      str "Evar change"
 
 let uses_default_tac = function
   | Nested(Tactic(_,dflt),_) -> dflt
@@ -51,7 +46,7 @@ let uses_default_tac = function
 
 (* Does not print change of evars *)
 let pr_rule_dot = function 
-  | Change_evars -> mt ()
+  | Prim Change_evars -> mt ()
   | r ->
       pr_rule r ++ if uses_default_tac r then str "..." else str"."
 
@@ -213,8 +208,6 @@ let rec print_info_script sigma osign pf =
   let {evar_hyps=sign; evar_concl=cl} = pf.goal in
   match pf.ref with
     | None -> (mt ())
-    | Some(Change_evars,[spf]) ->
-        print_info_script sigma osign spf
     | Some(r,spfl) ->
         (pr_rule r ++ 
            match spfl with

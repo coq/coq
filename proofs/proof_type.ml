@@ -39,6 +39,7 @@ type prim_rule =
   | ThinBody of identifier list
   | Move of bool * identifier * identifier
   | Rename of identifier * identifier
+  | Change_evars
 
 type proof_tree = {
   open_subgoals : int;
@@ -50,7 +51,6 @@ and rule =
   | Nested of compound_rule * proof_tree 
   | Decl_proof of bool
   | Daimon
-  | Change_evars
 
 and compound_rule=  
   | Tactic of tactic_expr * bool

@@ -241,9 +241,9 @@ let global_vars_set env constr =
   let rec filtrec acc c =
     let vl = vars_of_global env c in
     let acc = List.fold_right Idset.add vl acc in
-    fold_constr filtrec acc c
+      fold_constr filtrec acc c
   in 
-  filtrec Idset.empty constr
+    filtrec Idset.empty constr
 
 (* like [global_vars] but don't get through evars *)
 let global_vars_set_drop_evar env constr = 
@@ -339,18 +339,6 @@ type unsafe_type_judgment = {
 
 let compile_constant_body = Cbytegen.compile_constant_body  
 
-(*s Special functions for the refiner (logic.ml) *)
-
-let clear_hyps ids check (ctxt,vals) =
-  let ctxt,vals,rmv = 
-    List.fold_right2 (fun (id,_,_ as d) v (ctxt,vals,rmv) ->
-      if List.mem id ids then (ctxt,vals,id::rmv)
-      else begin
-	check rmv d;
-	(d::ctxt,v::vals,rmv)
-      end) ctxt vals ([],[],[])
-  in ((ctxt,vals),rmv)
-
 exception Hyp_not_found
 
 let rec apply_to_hyp (ctxt,vals) id f =
@@ -393,3 +381,16 @@ let insert_after_hyp (ctxt,vals) id d check =
     | [],[] -> raise Hyp_not_found
     | _, _ -> assert false
   in aux ctxt vals
+
+(* To be used in Logic.clear_hyps *)
+let remove_hyps ids check (ctxt, vals) =
+  let ctxt,vals,rmv = 
+    List.fold_right2 (fun (id,_,_ as d) v (ctxt,vals,rmv) ->
+      if List.mem id ids then 
+	(ctxt,vals,id::rmv)
+      else 	  
+	let nd = check d in
+	  (nd::ctxt,v::vals,rmv))
+		     ctxt vals ([],[],[])
+  in ((ctxt,vals),rmv)
+
