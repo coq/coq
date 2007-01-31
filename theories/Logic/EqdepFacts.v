@@ -303,7 +303,7 @@ Lemma eq_rect_eq :
 Proof M.eq_rect_eq U.
 
 Lemma eq_rec_eq :
-  forall (p:U) (Q:U -> Set) (x:Q p) (h:p = p), x = eq_rect p Q x p h.
+  forall (p:U) (Q:U -> Set) (x:Q p) (h:p = p), x = eq_rec p Q x p h.
 Proof (fun p Q => M.eq_rect_eq U p Q).
 
 (** Injectivity of Dependent Equality *)
