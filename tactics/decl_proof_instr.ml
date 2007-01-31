@@ -290,7 +290,7 @@ let justification tac gls=
 	   error "insufficient justification" 
 	 else
 	   begin
-	     msgnl (str "Warning: insufficient justification");  
+	     msg_warning (str "insufficient justification");  
 	     daimon_tac gls
 	   end) gls
 
@@ -424,8 +424,6 @@ let thus_tac c ctyp submetas gls =
       error "I could not relate this statement to the thesis" in
   let nflist = nf_list evd list in
   let nfgoal = nf_meta evd info.pm_partial_goal in
-(*  let _ = msgnl (str "Partial goal : " ++ 
-		   print_constr_env (pf_env gls) nfgoal) in *)
   let rgl = ref None in
   let refiner = max_linear_context rgl nfgoal in
     match !rgl with
@@ -1263,13 +1261,6 @@ match id in t return p with
 end*)
 
 
-    
-
-
-
-
-
-
 let rec execute_cases at_top fix_name per_info kont0 stacks tree gls = 
   match tree with
       Pop t ->  
@@ -1321,7 +1312,7 @@ let rec execute_cases at_top fix_name per_info kont0 stacks tree gls =
 		push_head (constr i) is_rec ids br_stacks in
 		execute_cases false fix_name per_info kont0 p_stacks tree 
 	  | None -> 
-	      msgnl (str "Warning : missing case");
+	      msg_warning (str "missing case");
 	      kont0 (mkMeta 1) 
 	in
 	let id = pf_get_new_id patvar_base gls in

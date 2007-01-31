@@ -243,7 +243,7 @@ let pp_dirs ft =
 (* pretty print on stdout and stderr *)
 
 let pp_std_dirs = pp_dirs !std_ft
-let pp_err_dirs = pp_dirs err_ft
+let pp_err_dirs = pp_dirs !err_ft
 
 let ppcmds x = Ppdir_ppcmds x
 
@@ -265,11 +265,17 @@ let pp_with ft strm =
 let ppnl_with ft strm =
   pp_dirs ft [< 'Ppdir_ppcmds [< strm ; 'Ppcmd_force_newline >] >]
 
-let warning_with ft string =
-  ppnl_with ft [< warnstart() ; str "Warning: " ; str string ; warnend() >]
 
-let warn_with ft pps =
+let default_warn_with ft pps = 
   ppnl_with ft [< warnstart() ; str "Warning: " ; pps ; warnend() >]
+
+let pp_warn_with = ref default_warn_with
+
+let set_warning_function pp_warn = pp_warn_with := pp_warn
+
+let warn_with ft pps = !pp_warn_with ft pps 
+
+let warning_with ft string = warn_with ft (str string)
 
 let pp_flush_with ft =
   Format.pp_print_flush ft
@@ -288,19 +294,19 @@ let msg_warning_with ft strm=
 
 
 (* pretty printing functions WITHOUT FLUSH *)
-let pp        x = pp_with !std_ft x
+let pp        x = pp_with   !std_ft x
 let ppnl      x = ppnl_with !std_ft x
-let pperr     = pp_with err_ft
-let pperrnl   = ppnl_with err_ft
-let message s = ppnl (str s)
-let warning   x = warning_with err_ft x
-let warn      x = warn_with err_ft x
+let pperr     x = pp_with   !err_ft x
+let pperrnl   x = ppnl_with !err_ft x
+let message   s = ppnl      (str s)
+let warning   x = warning_with !err_ft x
+let warn      x = warn_with    !err_ft x
 let pp_flush  x = Format.pp_print_flush !std_ft x
 let flush_all() = flush stderr; flush stdout; pp_flush()
 
 (* pretty printing functions WITH FLUSH *)
 let msg x = msg_with !std_ft x
 let msgnl x = msgnl_with !std_ft x
-let msgerr = msg_with err_ft
-let msgerrnl = msgnl_with err_ft
-let msg_warning x = msg_warning_with err_ft x
+let msgerr x = msg_with !err_ft x
+let msgerrnl x = msgnl_with !err_ft x
+let msg_warning x = msg_warning_with !err_ft x

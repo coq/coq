@@ -150,12 +150,14 @@ let set_highlight_timer f =
 (* Get back the standard coq out channels *)
 let read_stdout,clear_stdout =
   let out_buff = Buffer.create 100 in
-  Pp_control.std_ft := Format.formatter_of_buffer out_buff;
-  (fun () -> Format.pp_print_flush !Pp_control.std_ft (); 
+  let out_ft = Format.formatter_of_buffer out_buff in
+    Pp_control.std_ft := out_ft;
+    Pp_control.err_ft := out_ft;    
+  (fun () -> Format.pp_print_flush out_ft (); 
      let r = Buffer.contents out_buff in
      Buffer.clear out_buff; r),
   (fun () -> 
-     Format.pp_print_flush !Pp_control.std_ft (); Buffer.clear out_buff)
+     Format.pp_print_flush out_ft (); Buffer.clear out_buff)
 
 
 let last_dir = ref ""

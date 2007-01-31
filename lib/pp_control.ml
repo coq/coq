@@ -89,7 +89,8 @@ let with_output_to ch =
 let std_ft = ref Format.std_formatter
 let _ = set_dflt_gp !std_ft
 
-let err_ft = with_output_to stderr
+let err_ft = ref Format.err_formatter
+let _ = set_gp !err_ft deep_gp
 
 let deep_ft = with_output_to stdout
 let _ = set_gp deep_ft deep_gp
