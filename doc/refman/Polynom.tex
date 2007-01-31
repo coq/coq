@@ -1,11 +1,12 @@
-\achapter{The \texttt{ring} tactic}
+\achapter{The \texttt{ring} and \texttt{field} tactic families}
 \aauthor{Bruno Barras, Benjamin Gr\'egoire and Assia
   Mahboubi\footnote{based on previous work from
   Patrick Loiseleur and Samuel Boutin}}
 \label{ring}
 \tacindex{ring}
 
-This chapter presents  the \texttt{ring} tactic.
+This chapter presents the tactics dedicated to deal with ring and
+field equations.
 
 
 \asection{What does this tactic?}
@@ -96,7 +97,9 @@ Yes, building the variables map and doing the substitution after
 normalizing is automatically done by the tactic. So you can just forget
 this paragraph and use the tactic according to your intuition.
 
-\asection{Concrete usage in \Coq}
+\asection{Concrete usage in \Coq
+\tacindex{ring}
+\tacindex{ring\_simplify}}
 
 The {\tt ring} tactic solves equations upon polynomial expressions of
 a ring (or semi-ring) structure. It proceeds by normalizing both hand
@@ -182,7 +185,8 @@ avoided for terms belonging to the same ring theory.
   Same as above is the case of the {\tt ring} tactic.
 \end{ErrMsgs}
 
-\asection{Adding a ring structure}
+\asection{Adding a ring structure
+\comindex{Add Ring}}
 
 Declaring a new ring consists in proving that a ring signature (a
 carrier set, an equality, and ring operations: {\tt
@@ -439,6 +443,69 @@ $\beta\delta\iota$ simplification extended with AC rewriting rules.
 Basically, the proof is only the application of the main
 correctness theorem to well-chosen arguments.
 
+
+\asection{Dealing with fields
+\tacindex{field}
+\tacindex{field\_simplify}
+\tacindex{field\_simplify\_eq}}
+
+% - Faire Require Import Field...
+% - RealField
+% -
+
+\asection{Adding a new field structure
+\comindex{Add Field}}
+
+Declaring a new field consists in proving that a field signature (a
+carrier set, an equality, and field operations: {\tt
+Field\_theory.field\_theory} and {\tt Field\_theory.semi\_field\_theory})
+satisfies the field axioms. Semi-fields (fields without $+$ inverse) are
+also supported. The equality can be either Leibniz equality, or any
+relation declared as a setoid (see~\ref{setoidtactics}). The definition
+of fields and semi-fields is:
+\begin{verbatim}
+Record field_theory : Prop := mk_field {
+    F_R : ring_theory rO rI radd rmul rsub ropp req;
+    F_1_neq_0 : ~ 1 == 0;
+    Fdiv_def : forall p q, p / q == p * / q;
+    Finv_l : forall p, ~ p == 0 ->  / p * p == 1
+}.
+
+Record semi_field_theory : Prop := mk_sfield {
+    SF_SR : semi_ring_theory rO rI radd rmul req;
+    SF_1_neq_0 : ~ 1 == 0;
+    SFdiv_def : forall p q, p / q == p * / q;
+    SFinv_l : forall p, ~ p == 0 ->  / p * p == 1
+}.
+\end{verbatim}
+
+The result of the normalization process is a fraction represented by
+the following type:
+\begin{verbatim}
+Record linear : Type := mk_linear {
+   num : PExpr C;
+   denum : PExpr C;
+   condition : list (PExpr C) }.
+\end{verbatim}
+where {\tt num} and {\tt denum} are the numerator and denominator;
+{\tt condition} is a list of expressions that have appeared as a
+denominator during the normalization process. These expressions must
+be proven different from zero for the correctness of the algorithm.
+
+The syntax for adding a new field is {\tt Add Field $name$ : $field$
+($mod_1$,\dots,$mod_2$)}.  The name is not relevent. It is just used
+for error messages. $field$ is a proof that the field signature
+satisfies the (semi-)field axioms. The optional list of modifiers is
+used to tailor the behaviour of the tactic. Since field tactics are
+built upon ring tactics, all mofifiers of the {\tt Add Ring}
+apply. There is only one specific modifier:
+\begin{description}
+\item[infinite \term] allows the field tactic to prove
+  automatically that the image of non-zero coefficients are mapped to
+  non-zero elements of the field. \term is a proof of {\tt forall x y,
+    [x] == [y] -> x?=!y = true}, which is the completeness of equality
+  on coefficients w.r.t. the field equality.
+\end{description}
 
 \asection{Legacy implementation}
 

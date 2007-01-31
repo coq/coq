@@ -2757,9 +2757,31 @@ and both hand sides are normalized.
 See chapter~\ref{ring} for more information on the tactic and how to
 declare new ring structures.
 
-\subsection{\tt field
+\subsection{{\tt field}, {\tt field\_simplify \term$_1$\dots\ \term$_n$}
+            and {\tt field\_simplify\_eq}
 \tacindex{field}
+\tacindex{field\_simplify}
+\tacindex{field\_simplify\_eq}
 \comindex{Add Field}}
+
+The {\tt field} tactic is built on the same ideas as {\tt ring}: this
+is a reflexive tactic that solves or simplifies equations in a field
+structure. The main idea is to reduce a field expression (which is an
+extension of ring expressions with the inverse and division
+operations) to a fraction made of two polynomial expressions.
+
+Tactic {\tt field} is used to solve subgoals, whereas {\tt
+  field\_simplify \term$_1$\dots\term$_n$} replaces the provided terms
+by their reducted fraction. {\tt field\_simplify\_eq} applies when the
+conclusion is an equation: it simplifies both hand sides and multiplies
+so as to cancel denominators. So it produces an equation without
+division nor inverse.
+
+All of these 3 tactics may generate a subgoal in order to prove that
+denominators are different from zero.
+
+See chapter~\ref{ring} for more information on the tactic and how to
+declare new field structures.
 
 \Example
 \begin{coq_example*}
@@ -2778,7 +2800,7 @@ intros; field.
 Reset Initial.
 \end{coq_eval}
 
-\SeeAlso file {\tt theories/Reals/Rbase.v} for an example of instantiation,\\
+\SeeAlso file {\tt contrib/setoid\_ring/RealField.v} for an example of instantiation,\\
 \phantom{\SeeAlso}theory {\tt theories/Reals} for many examples of use of {\tt
 field}.
 
