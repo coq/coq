@@ -1,95 +1,76 @@
+(* -*- coq-prog-args: ("-emacs-U" "-debug") -*- *)
 Require Import Coq.subtac.Utils.
 Require Import List.
 
-Variable A : Set.
+Set Implicit Arguments.
 
-Program Definition myhd : forall { l : list A | length l <> 0 }, A :=  
-  fun l =>
-    match `l with
-    | nil => _
-    | hd :: tl => hd
-    end.
-Proof.
-  destruct l ; simpl ; intro H.
-  rewrite H in n ; intuition.
-Defined.
+Section Accessors.
+  Variable A : Set.
 
+  Program Definition myhd : forall { l : list A | length l <> 0 }, A :=  
+    fun l =>
+      match l with
+        | nil => !
+        | hd :: tl => hd
+      end.
 
-Extraction myhd.
-Extraction Inline proj1_sig.
-
-Program Definition mytail : forall { l : list A | length l <> 0 }, list A :=
-  fun l => 
+  Program Definition mytail (l : list A | length l <> 0) : list A :=
     match l with
-    | nil => _
-    | hd :: tl => tl
+      | nil => !
+      | hd :: tl => tl
     end.
-Proof.
-destruct l ; simpl ; intro H ; rewrite H in n ; intuition.
-Defined.
+End Accessors.
 
-Extraction mytail.
+Program Definition test_hd : nat := myhd (cons 1 nil).
 
-Variable a : A.
-
-Program Definition test_hd : A := myhd (cons a nil).
-Proof.
-simpl ; auto.
-Defined.
-
-Extraction test_hd.
-
+(*Eval compute in test_hd*)
 (*Program Definition test_tail : list A := mytail nil.*)
 
+Section app.
+  Variable A : Set.
 
+  Program Fixpoint app (l : list A) (l' : list A) { struct l } :
+    { r : list A | length r = length l + length l' } :=
+    match l with
+      | nil => l'
+      | hd :: tl => hd :: (tl ++ l')
+    end 
+    where "x ++ y" := (app x y).
 
+  Next Obligation.
+    intros.
+    destruct_call app ; subtac_simpl.
+  Defined.
+  
+  Program Lemma app_id_l : forall l : list A, l = nil ++ l.
+  Proof.
+    simpl ; auto.
+  Qed.
+  
+  Program Lemma app_id_r : forall l : list A, l = l ++ nil.
+  Proof.
+    induction l ; simpl ; auto.
+    rewrite <- IHl ; auto.
+  Qed.
 
+End app.
 
-Program Fixpoint append (l : list A) (l' : list A) { struct l } :
- { r : list A | length r = length l + length l' } :=
- match l with
- | nil => l'
- | hd :: tl => hd :: (append tl l')
- end.
-subst ; auto.
-simpl ; rewrite (subset_simpl (append tl0 l')).
-simpl ; subst.
-simpl ; auto.
-Defined.
+Extraction app.
 
-Extraction append.
+Section Nth.
 
+  Variable A : Set.
 
-Program Lemma append_app' : forall l : list A, l = append nil l.
-Proof.
-simpl ; auto.
-Qed.
+  Program Fixpoint nth (l : list A) (n : nat | n < length l) { struct l } : A := 
+    match n, l with
+      | 0, hd :: _ => hd
+      | S n', _ :: tl => nth tl n'
+      | _, nil => !
+    end.
 
-Program Lemma append_app : forall l : list A, l = append l nil.
-Proof.
-intros.
-induction l ; simpl ; auto.
-simpl in IHl.
-rewrite <- IHl.
-reflexivity.
-Qed.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  Next Obligation.
+  Proof.
+    inversion l0.
+  Defined.
+End Nth.
 

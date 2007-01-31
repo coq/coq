@@ -40,7 +40,7 @@ open Inductiveops
 
 module SubtacPretyping_F (Coercion : Coercion.S) = struct
 
-  module Cases = Cases.Cases_F(Coercion)
+  module Cases = Subtac_cases.Cases_F(Coercion)
 
   (* Allow references to syntaxically inexistent variables (i.e., if applied on an inductive) *)
   let allow_anonymous_refs = ref true
@@ -161,7 +161,12 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
   (* [pretype tycon env isevars lvar lmeta cstr] attempts to type [cstr] *)
   (* in environment [env], with existential variables [(evars_of isevars)] and *)
   (* the type constraint tycon *)
-  let rec pretype (tycon : type_constraint) env isevars lvar = function
+  let rec pretype (tycon : type_constraint) env isevars lvar c = 
+(*     let _ = try Subtac_utils.trace (str "pretype " ++ Subtac_utils.my_print_rawconstr env c ++ *)
+(* 			       str " with tycon " ++ Evarutil.pr_tycon env tycon)  *)
+(*     with _ -> () *)
+(*     in *)
+    match c with
     | RRef (loc,ref) ->
 	inh_conv_coerce_to_tycon loc env isevars
 	  (pretype_ref isevars env ref)
@@ -321,7 +326,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	      let t = Retyping.get_type_of env sigma c in
 	      make_judge c t
 	  | _ -> resj in
-	inh_conv_coerce_to_tycon loc env isevars resj tycon
+	  inh_conv_coerce_to_tycon loc env isevars resj tycon
 
     | RLambda(loc,name,c1,c2)      ->
 	let (name',dom,rng) = evd_comb1 (split_tycon loc env) isevars tycon in

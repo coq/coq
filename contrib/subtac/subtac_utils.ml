@@ -5,6 +5,8 @@ open Term
 open Names
 open Util
 
+let ($) f x = f x
+
 (****************************************************************************)
 (* Library linking *)
 
@@ -45,9 +47,22 @@ let build_sig () =
 
 let sig_ = lazy (build_sig ())
 
-let eqind = lazy (init_constant ["Init"; "Logic"] "eq")
-let eqind_ref = lazy (init_reference ["Init"; "Logic"] "eq")
+let eq_ind = lazy (init_constant ["Init"; "Logic"] "eq")
+let eq_rec = lazy (init_constant ["Init"; "Logic"] "eq_rec")
+let eq_rect = lazy (init_constant ["Init"; "Logic"] "eq_rect")
+let eq_refl = lazy (init_constant ["Init"; "Logic"] "refl_equal")
+let eq_ind_ref = lazy (init_reference ["Init"; "Logic"] "eq")
 let refl_equal_ref = lazy (init_reference ["Init"; "Logic"] "refl_equal")
+
+let eqdep_ind = lazy (init_constant [ "Logic";"Eqdep"] "eq_dep")
+let eqdep_rec = lazy (init_constant ["Logic";"Eqdep"] "eq_dep_rec")
+let eqdep_ind_ref = lazy (init_reference [ "Logic";"Eqdep"] "eq_dep")
+let eqdep_intro_ref = lazy (init_reference [ "Logic";"Eqdep"] "eq_dep_intro")
+
+let jmeq_ind = lazy (init_constant ["Logic";"JMeq"] "JMeq")
+let jmeq_rec = lazy (init_constant ["Logic";"JMeq"] "JMeq_rec")
+let jmeq_ind_ref = lazy (init_reference ["Logic";"JMeq"] "JMeq")
+let jmeq_refl_ref = lazy (init_reference ["Logic";"JMeq"] "JMeq_refl")
 
 let ex_ind = lazy (init_constant ["Init"; "Logic"] "ex")
 let ex_intro = lazy (init_reference ["Init"; "Logic"] "ex_intro")
@@ -79,6 +94,7 @@ open Pp
 
 let my_print_constr = Termops.print_constr_env
 let my_print_constr_expr = Ppconstr.pr_constr_expr
+let my_print_rel_context env ctx = Printer.pr_rel_context env ctx
 let my_print_context = Termops.print_rel_context
 let my_print_named_context = Termops.print_named_context
 let my_print_env = Termops.print_env
@@ -87,7 +103,7 @@ let my_print_evardefs = Evd.pr_evar_defs
 
 let my_print_tycon_type = Evarutil.pr_tycon_type
 
-let debug_level = 1
+let debug_level = 2
 
 let debug_on = true
 
@@ -132,8 +148,9 @@ let print_args env args =
 let make_existential loc env isevars c =
   let evar = Evarutil.e_new_evar isevars env ~src:(loc, QuestionMark) c in
   let (key, args) = destEvar evar in
-    (try debug 2 (str "Constructed evar " ++ int key ++ str " applied to args: " ++
-		  print_args env args) with _ -> ());
+    (try trace (str "Constructed evar " ++ int key ++ str " applied to args: " ++
+		  print_args env args ++ str " for type: "++ 
+		  my_print_constr env c) with _ -> ());
     evar
 
 let make_existential_expr loc env c =
@@ -177,6 +194,12 @@ open Tactics
 open Tacticals
 
 let id x = x
+let filter_map f l = 
+  let rec aux acc = function
+      hd :: tl -> (match f hd with Some t -> aux (t :: acc) tl
+		     | None -> aux acc tl)
+    | [] -> List.rev acc
+  in aux [] l
 
 let build_dependent_sum l =
   let rec aux names conttac conttype = function
@@ -279,45 +302,137 @@ let destruct_ex ext ex =
 
 open Rawterm
 
-
+let rec concatMap f l = 
+  match l with
+      hd :: tl -> f hd @ concatMap f tl      
+    | [] -> []
+	
 let list_mapi f = 
   let rec aux i = function 
       hd :: tl -> f i hd :: aux (succ i) tl 
     | [] -> []
   in aux 0
 
-let rewrite_cases_aux (loc, po, tml, eqns) =
-  let tml = list_mapi (fun i (c, (n, opt)) -> c, 
-		       ((match n with
-			    Name id -> (match c with
-					  | RVar (_, id') when id = id' ->
-					      Name (id_of_string (string_of_id id ^ "'"))
-					  | _ -> n)
-			  | Anonymous -> Name (id_of_string ("x" ^ string_of_int i))),
-			opt)) tml 
-  in
+(*
+let make_discr (loc, po, tml, eqns) =
   let mkHole = RHole (dummy_loc, InternalHole) in
-  let mkeq c n = RApp (dummy_loc, RRef (dummy_loc, (Lazy.force eqind_ref)),
-		       [mkHole; c; n])
+  
+  let rec vars_of_pat = function
+      RPatVar (loc, n) -> (match n with Anonymous -> [] | Name n -> [n])
+    | RPatCstr (loc, csrt, pats, _) -> 
+	concatMap vars_of_pat pats
   in
-  let eqs_types = 
-    List.map
-      (fun (c, (n, _)) ->
-	 let id = match n with Name id -> id | _ -> assert false in
-	 let heqid = id_of_string ("Heq" ^ string_of_id id) in
-	   Name heqid, mkeq c (RVar (dummy_loc, id)))
-      tml
+  let rec constr_of_pat l = function 
+      RPatVar (loc, n) -> 
+	(match n with 
+	     Anonymous -> 
+	       let n = next_name_away_from "x" l in
+		 RVar n, (n :: l)
+	   | Name n -> RVar n, l)
+    | RPatCstr (loc, csrt, pats, _) -> 
+	let (args, vars) =
+	  List.fold_left
+	    (fun (args, vars) x ->
+	       let c, vars = constr_of_pat vars x in
+		 c :: args, vars)
+	    ([], l) pats
+	in		 
+	  RApp ((RRef (dummy_loc, ConstructRef cstr)), args), vars
   in
-  let po = 
-    List.fold_right
-      (fun (n,t) acc ->
-	 RProd (dummy_loc, Anonymous, t, acc))
-      eqs_types (match po with 
-		     Some e -> e
-		   | None -> mkHole)
+  let rec constr_of_pat l = function 
+      RPatVar (loc, n) -> 
+	(match n with 
+	     Anonymous -> 
+	       let n = next_name_away_from "x" l in
+		 RVar n, (n :: l)
+	   | Name n -> RVar n, l)
+    | RPatCstr (loc, csrt, pats, _) -> 
+	let (args, vars) =
+	  List.fold_left
+	    (fun (args, vars) x ->
+	       let c, vars = constr_of_pat vars x in
+		 c :: args, vars)
+	    ([], l) pats
+	in		 
+	  RApp ((RRef (dummy_loc, ConstructRef cstr)), args), vars
   in
-  let eqns =   
-    List.map (fun (loc, idl, cpl, c) ->
+  let constrs_of_pats v l =
+    List.fold_left 
+      (fun (v, acc) x -> 
+	 let x', v' = constr_of_pat v x in
+	   (l', v' :: acc))
+      (v, []) l
+  in
+  let rec pat_of_pat l = function
+      RPatVar (loc, n) -> 
+	let n', l = match n with
+	    Anonymous -> 
+	      let n = next_name_away_from "x" l in
+		n, n :: l
+	  | Name n -> n, n :: l 
+	in
+	  RPatVar (loc, Name n'), l
+    | RPatCstr (loc, cstr, pats, (loc, alias)) ->
+	let args, vars, s = 
+	  List.fold_left (fun (args, vars) x -> 
+			    let pat', vars = pat_of_pat vars pat in
+			      pat' :: args, vars)
+	    ([], alias :: l) pats
+	in RPatCstr (loc, cstr, args, (loc, alias)), vars
+  in
+  let pats_of_pats l =
+    List.fold_left 
+      (fun (v, acc) x -> 
+	 let x', v' = pat_of_pat v x in
+	   (v', x' :: acc))
+      ([], []) l
+  in
+  let eq_of_pat p used c = 
+    let constr, vars' = constr_of_pat used p in
+    let eq = RApp (dummy_loc, RRef (dummy_loc, Lazy.force eqind_ref), [mkHole; constr; c]) in
+      vars', eq
+  in
+  let eqs_of_pats ps used cstrs =
+    List.fold_left2 
+      (fun (vars, eqs) pat c ->
+	 let (vars', eq) = eq_of_pat pat c in
+	   match eqs with 
+	       None -> Some eq 
+	     | Some eqs ->
+		 Some (RApp (dummy_loc, RRef (dummy_loc, Lazy.force and_ref), [eq, eqs])))
+      (used, None) ps cstrs
+  in
+  let quantify c l =
+    List.fold_left
+      (fun acc name -> RProd (dummy_loc, name, mkHole, acc))
+      c l
+  in
+  let quantpats = 
+    List.fold_left
+      (fun (acc, pats) ((loc, idl, cpl, c) as x) ->
+	 let vars, cpl = pats_of_pats cpl in
+	 let l', constrs = constrs_of_pats vars cpl in	   
+	 let discrs = 
+	   List.map (fun (_, _, cpl', _) -> 
+		       let qvars, eqs = eqs_of_pats cpl' l' constrs in
+		       let neg = RApp (dummy_loc, RRef (dummy_loc, Lazy.force not_ref), [out_some eqs]) in
+		       let pat_ineq = quantify qvars neg in
+			 
+		    )
+	     pats in
+	   
+			 
+
+
+	   
+	   
+
+	   (x, pat_ineq))
+  in
+    List.fold_left 
+      (fun acc ((loc, idl, cpl, c0) pat) -> 
+    
+		
 		let c' = 
 		  List.fold_left 
 		    (fun acc (n, t) ->
@@ -325,27 +440,74 @@ let rewrite_cases_aux (loc, po, tml, eqns) =
 		    c eqs_types
 		in (loc, idl, cpl, c'))
       eqns
-  in
-  let mk_refl_equal c = RApp (dummy_loc, RRef (dummy_loc, Lazy.force refl_equal_ref),
-			      [mkHole; c])
-  in
-  let refls = List.map (fun (c, _) -> mk_refl_equal c) tml in
-  let case = RCases (loc,Some po,tml,eqns) in
-  let app = RApp (dummy_loc, case, refls) in
-    app
+  i
+*)
+(* let rewrite_cases_aux (loc, po, tml, eqns) = *)
+(*   let tml = list_mapi (fun i (c, (n, opt)) -> c,  *)
+(* 		       ((match n with *)
+(* 			    Name id -> (match c with *)
+(* 					  | RVar (_, id') when id = id' -> *)
+(* 					      Name (id_of_string (string_of_id id ^ "'")) *)
+(* 					  | _ -> n) *)
+(* 			  | Anonymous -> Name (id_of_string ("x" ^ string_of_int i))), *)
+(* 			opt)) tml  *)
+(*   in *)
+(*   let mkHole = RHole (dummy_loc, InternalHole) in *)
+(*   (\* let mkeq c n = RApp (dummy_loc, RRef (dummy_loc, (Lazy.force eqind_ref)), *\) *)
+(* (\* 		       [mkHole; c; n]) *\) *)
+(* (\*   in *\) *)
+(*   let mkeq c n = RApp (dummy_loc, RRef (dummy_loc, (Lazy.force eqdep_ind_ref)), *)
+(* 		       [mkHole; c; mkHole; n]) *)
+(*   in *)
+(*   let eqs_types =  *)
+(*     List.map *)
+(*       (fun (c, (n, _)) -> *)
+(* 	 let id = match n with Name id -> id | _ -> assert false in *)
+(* 	 let heqid = id_of_string ("Heq" ^ string_of_id id) in *)
+(* 	   Name heqid, mkeq c (RVar (dummy_loc, id))) *)
+(*       tml *)
+(*   in *)
+(*   let po =  *)
+(*     List.fold_right *)
+(*       (fun (n,t) acc -> *)
+(* 	 RProd (dummy_loc, Anonymous, t, acc)) *)
+(*       eqs_types (match po with  *)
+(* 		     Some e -> e *)
+(* 		   | None -> mkHole) *)
+(*   in *)
+(*   let eqns =    *)
+(*     List.map (fun (loc, idl, cpl, c) -> *)
+(* 		let c' =  *)
+(* 		  List.fold_left  *)
+(* 		    (fun acc (n, t) -> *)
+(* 		       RLambda (dummy_loc, n, mkHole, acc)) *)
+(* 		    c eqs_types *)
+(* 		in (loc, idl, cpl, c')) *)
+(*       eqns *)
+(*   in *)
+(*   let mk_refl_equal c = RApp (dummy_loc, RRef (dummy_loc, Lazy.force refl_equal_ref), *)
+(* 			      [mkHole; c]) *)
+(*   in *)
+(*   (\*let mk_refl_equal c = RApp (dummy_loc, RRef (dummy_loc, Lazy.force refl_equal_ref), *)
+(* 			      [mkHole; c]) *)
+(*   in*\) *)
+(*   let refls = List.map (fun (c, _) -> mk_refl_equal c) tml in *)
+(*   let case = RCases (loc,Some po,tml,eqns) in *)
+(*   let app = RApp (dummy_loc, case, refls) in *)
+(*     app *)
 
-let rec rewrite_cases c = 
-  match c with 
-      RCases _ -> let c' = map_rawconstr rewrite_cases c in
-	(match c' with 
-	   | RCases (x, y, z, w) -> rewrite_cases_aux (x,y,z,w)
-	   | _ -> assert(false))
-    | _ -> map_rawconstr rewrite_cases c
+(* let rec rewrite_cases c =  *)
+(*   match c with  *)
+(*       RCases _ -> let c' = map_rawconstr rewrite_cases c in *)
+(* 	(match c' with  *)
+(* 	   | RCases (x, y, z, w) -> rewrite_cases_aux (x,y,z,w) *)
+(* 	   | _ -> assert(false)) *)
+(*     | _ -> map_rawconstr rewrite_cases c *)
 	  
-let rewrite_cases env c =
-  let c' = rewrite_cases c in
-  let _ = trace (str "Rewrote cases: " ++ spc () ++ my_print_rawconstr env c') in
-    c'
+(* let rewrite_cases env c = *)
+(*   let c' = rewrite_cases c in *)
+(*   let _ = trace (str "Rewrote cases: " ++ spc () ++ my_print_rawconstr env c') in *)
+(*     c' *)
 
 let list_mapi f = 
   let rec aux i = function 
@@ -371,7 +533,7 @@ let rewrite_cases_aux (loc, po, tml, eqns) =
   in
   let mkHole = RHole (dummy_loc, InternalHole) in
   let mkCoerceCast c = RCast (dummy_loc, c, CastCoerce, mkHole) in
-  let mkeq c n = RApp (dummy_loc, RRef (dummy_loc, (Lazy.force eqind_ref)),
+  let mkeq c n = RApp (dummy_loc, RRef (dummy_loc, (Lazy.force eq_ind_ref)),
 		       [mkHole; c; n])
   in
   let eqs_types = 
@@ -419,10 +581,10 @@ let rec rewrite_cases c =
 	   | _ -> assert(false))
     | _ -> map_rawconstr rewrite_cases c
 	  
-let rewrite_cases env c =
-  let c' = rewrite_cases c in
-  let _ = trace (str "Rewrote cases: " ++ spc () ++ my_print_rawconstr env c') in
-    c'
+let rewrite_cases env c = c
+(*   let c' = rewrite_cases c in *)
+(*   let _ = trace (str "Rewrote cases: " ++ spc () ++ my_print_rawconstr env c') in *)
+(*     c' *)
 
 let id_of_name = function
     Name n -> n
@@ -439,16 +601,107 @@ let recursive_message v =
 		    spc () ++ str "are recursively defined")
 
 (* Solve an obligation using tactics, return the corresponding proof term *)
+(*
 let solve_by_tac ev t =
   debug 1 (str "Solving goal using tactics: " ++ Evd.pr_evar_info ev);
   let goal = Proof_trees.mk_goal ev.evar_hyps ev.evar_concl None in
+  debug 1 (str "Goal created");
   let ts = Tacmach.mk_pftreestate goal in
+  debug 1 (str "Got pftreestate");
   let solved_state = Tacmach.solve_pftreestate t ts in
-  let c = Tacmach.extract_pftreestate solved_state in
+  debug 1 (str "Solved goal");
+    let _, l = Tacmach.extract_open_pftreestate solved_state in
+      List.iter (fun (_, x) -> debug 1 (str "left hole of type " ++ my_print_constr (Global.env()) x)) l;
+    let c = Tacmach.extract_pftreestate solved_state in
+    debug 1 (str "Extracted term");
     debug 1 (str "Term constructed in solve by tac: " ++ my_print_constr (Global.env ()) c);
     c
+    *)
+
+let solve_by_tac evi t =
+  debug 2 (str "Solving goal using tactics: " ++ Evd.pr_evar_info evi);
+  let id = id_of_string "H" in
+  try 
+    Pfedit.start_proof id goal_kind evi.evar_hyps evi.evar_concl
+    (fun _ _ -> ());
+    debug 2 (str "Started proof");
+    Pfedit.by (tclCOMPLETE t);
+    let _,(const,_,_) = Pfedit.cook_proof () in 
+      Pfedit.delete_current_proof (); const.Entries.const_entry_body
+  with e -> 
+    Pfedit.delete_current_proof();
+    raise Exit
 
 let rec string_of_list sep f = function
     [] -> ""
   | x :: [] -> f x
   | x :: ((y :: _) as tl) -> f x ^ sep ^ string_of_list sep f tl
+
+let string_of_intset d = 
+  string_of_list "," string_of_int (Intset.elements d)
+
+(**********************************************************)
+(* Pretty-printing *)
+open Printer
+open Ppconstr
+open Nameops
+open Termops
+open Evd
+
+let pr_meta_map evd =
+  let ml = meta_list evd in
+  let pr_name = function
+      Name id -> str"[" ++ pr_id id ++ str"]"
+    | _ -> mt() in
+  let pr_meta_binding = function
+    | (mv,Cltyp (na,b)) ->
+      	hov 0 
+	  (pr_meta mv ++ pr_name na ++ str " : " ++
+           print_constr b.rebus ++ fnl ())
+    | (mv,Clval(na,b,_)) ->
+      	hov 0 
+	  (pr_meta mv ++ pr_name na ++ str " := " ++
+             print_constr b.rebus ++ fnl ())
+  in
+  prlist pr_meta_binding ml    
+
+let pr_idl idl = prlist_with_sep pr_spc pr_id idl
+
+let pr_evar_info evi =
+  let phyps = 
+    (*pr_idl (List.rev (ids_of_named_context (evar_context evi))) *)
+    Printer.pr_named_context (Global.env()) (evar_context evi)
+  in
+  let pty = print_constr evi.evar_concl in
+  let pb =
+    match evi.evar_body with
+      | Evar_empty -> mt ()
+      | Evar_defined c -> spc() ++ str"=> "  ++ print_constr c
+  in
+  hov 2 (str"["  ++ phyps ++ spc () ++ str"|- "  ++ pty ++ pb ++ str"]")
+
+let pr_evar_map sigma =
+  h 0 
+    (prlist_with_sep pr_fnl
+      (fun (ev,evi) ->
+        h 0 (str(string_of_existential ev)++str"=="++ pr_evar_info evi))
+      (to_list sigma))
+
+let pr_constraints pbs =
+  h 0
+    (prlist_with_sep pr_fnl (fun (pbty,t1,t2) ->
+      print_constr t1 ++ spc() ++
+      str (match pbty with
+	| Reduction.CONV -> "=="
+	| Reduction.CUMUL -> "<=") ++ 
+      spc() ++ print_constr t2) pbs)
+
+let pr_evar_defs evd =
+  let pp_evm =
+    let evars = evars_of evd in
+    if evars = empty then mt() else
+      str"EVARS:"++brk(0,1)++pr_evar_map evars++fnl() in
+  let pp_met =
+    if meta_list evd = [] then mt() else
+      str"METAS:"++brk(0,1)++pr_meta_map evd in
+  v 0 (pp_evm ++ pp_met)

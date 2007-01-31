@@ -6,6 +6,8 @@ Notation "'fun' { x : A | P } => Q" :=
 
 Notation "( x & ? )" := (@exist _ _ x _) : core_scope.
 
+Notation " ! " := (False_rect _ _).
+
 Definition ex_pi1 (A : Prop) (P : A -> Prop) (t : ex P) : A.
 intros.
 induction t.
@@ -44,4 +46,30 @@ end.
 
 Ltac destruct_exists := repeat (destruct_one_pair) .
 
+Ltac subtac_simpl := simpl ; intros ; destruct_exists ; simpl in * ; try subst ; auto with arith.  
+
+(* Destructs calls to f in hypothesis or conclusion, useful if f creates a subset object *)
+Ltac destruct_call f :=
+  match goal with
+    | H : ?T |- _  =>
+      match T with
+         context [f ?x ?y ?z] => destruct (f x y z)
+       | context [f ?x ?y] => destruct (f x y)
+       | context [f ?x] => destruct (f x)        
+      end
+    | |- ?T  =>
+      match T with
+        context [f ?x ?y ?z] => let n := fresh "H" in set (n:=f x y z); destruct n
+        | context [f ?x ?y] => let n := fresh "H" in set (n:=f x y); destruct n
+        | context [f ?x] => let n := fresh "H" in set (n:=f x); destruct n
+      end
+    end.
+
 Extraction Inline proj1_sig.
+Extract Inductive unit => "unit" [ "()" ].
+Extract Inductive bool => "bool" [ "true" "false" ].
+Extract Inductive sumbool => "bool" [ "true" "false" ].
+Extract Inductive prod => "pair" [ "" ].
+Extract Inductive sigT => "pair" [ "" ].
+
+Require Export ProofIrrelevance.

@@ -113,29 +113,23 @@ let env_with_binders env isevars l =
   in aux (env, []) l
 
 let subtac_process env isevars id l c tycon =
-  let evars () = evars_of !isevars in
-  let _ = trace (str "Creating env with binders") in
   let env_binders, binders_rel = env_with_binders env isevars l in
-  let _ = try (trace (str "New env created:" ++ my_print_context env_binders)) with _ -> () in
   let tycon = 
     match tycon with
 	None -> empty_tycon
       | Some t -> 
 	  let t = coqintern !isevars env_binders t in
-	  let _ = try trace (str "Internalized specification: " ++ my_print_rawconstr env_binders t) with _ -> () in
 	  let coqt, ttyp = interp env_binders isevars t empty_tycon in
-	  let _ = try trace (str "Interpreted type: " ++ my_print_constr env_binders coqt) with _ -> () in
 	    mk_tycon coqt
   in    
   let c = coqintern !isevars env_binders c in
   let c = Subtac_utils.rewrite_cases env c in
-  let _ = try trace (str "Internalized term: " ++ my_print_rawconstr env c)  with _ -> () in
   let coqc, ctyp = interp env_binders isevars c tycon in
-  let _ = try trace (str "Interpreted term: " ++ my_print_constr env_binders coqc ++ spc () ++
-		 str "Coq type: " ++ my_print_constr env_binders ctyp)
-  with _ -> () 
-  in
-  let _ = try trace (str "Original evar map: " ++ Evd.pr_evar_map (evars ()))  with _ -> () in
+(*   let _ = try trace (str "Interpreted term: " ++ my_print_constr env_binders coqc ++ spc () ++ *)
+(* 		 str "Coq type: " ++ my_print_constr env_binders ctyp) *)
+(*   with _ -> ()  *)
+(*   in *)
+(*   let _ = try trace (str "Original evar map: " ++ Evd.pr_evar_map (evars ()))  with _ -> () in *)
     
   let fullcoqc = it_mkLambda_or_LetIn coqc binders_rel 
   and fullctyp = it_mkProd_or_LetIn ctyp binders_rel
@@ -143,13 +137,13 @@ let subtac_process env isevars id l c tycon =
   let fullcoqc = Evarutil.nf_evar (evars_of !isevars) fullcoqc in
   let fullctyp = Evarutil.nf_evar (evars_of !isevars) fullctyp in
 
-  let _ = try trace (str "After evar normalization: " ++ spc () ++
-		 str "Coq term: " ++ my_print_constr env fullcoqc ++ spc ()
-		 ++ str "Coq type: " ++ my_print_constr env fullctyp) 
-     with _ -> () 
-  in
+(*   let _ = try trace (str "After evar normalization: " ++ spc () ++ *)
+(* 		 str "Coq term: " ++ my_print_constr env fullcoqc ++ spc () *)
+(* 		 ++ str "Coq type: " ++ my_print_constr env fullctyp)  *)
+(*      with _ -> ()  *)
+(*   in *)
   let evm = non_instanciated_map env isevars in
-  let _ = try trace (str "Non instanciated evars map: " ++ Evd.pr_evar_map evm)  with _ -> () in
+(*   let _ = try trace (str "Non instanciated evars map: " ++ Evd.pr_evar_map evm)  with _ -> () in *)
     evm, fullcoqc, fullctyp
 
 open Subtac_obligations
@@ -159,5 +153,4 @@ let subtac_proof env isevars id l c tycon =
   let nc_len = named_context_length nc in
   let evm, coqc, coqt = subtac_process env isevars id l c tycon in
   let evars, def = Eterm.eterm_obligations id nc_len evm coqc (Some coqt) in
-    trace (str "Adding to obligations list");
-    add_entry id def coqt evars
+    add_definition id def coqt evars

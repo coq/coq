@@ -12,6 +12,7 @@ open Evarutil
 open Names
 open Sign
 
+val ($) : ('a -> 'b) -> 'a -> 'b
 val contrib_name : string
 val subtac_dir : string list
 val fix_sub_module : string
@@ -31,9 +32,19 @@ val proj1_sig_ref : reference
 val proj2_sig_ref : reference
 val build_sig : unit -> coq_sigma_data
 val sig_ : coq_sigma_data lazy_t
-val eqind : constr lazy_t
-val eqind_ref : global_reference lazy_t
+
+val eq_ind : constr lazy_t
+val eq_rec : constr lazy_t
+val eq_rect : constr lazy_t
+val eq_refl : constr lazy_t
+val eq_ind_ref : global_reference lazy_t
 val refl_equal_ref : global_reference lazy_t
+
+val eqdep_ind : constr lazy_t
+val eqdep_rec : constr lazy_t
+val eqdep_ind_ref : global_reference lazy_t
+val eqdep_intro_ref : global_reference lazy_t
+
 val boolind : constr lazy_t
 val sumboolind : constr lazy_t
 val natind : constr lazy_t
@@ -48,10 +59,12 @@ val acc : constr lazy_t
 val acc_inv : constr lazy_t
 val extconstr : constr -> constr_expr
 val extsort : sorts -> constr_expr
+
 val my_print_constr : env -> constr -> std_ppcmds
 val my_print_constr_expr : constr_expr -> std_ppcmds
 val my_print_evardefs : evar_defs -> std_ppcmds
 val my_print_context : env -> std_ppcmds
+val my_print_rel_context : env -> rel_context -> std_ppcmds
 val my_print_named_context : env -> std_ppcmds
 val my_print_env : env -> std_ppcmds
 val my_print_rawconstr : env -> rawconstr -> std_ppcmds
@@ -98,3 +111,6 @@ val recursive_message : global_reference array -> std_ppcmds
 val solve_by_tac : evar_info -> Tacmach.tactic -> constr
 
 val string_of_list : string -> ('a -> string) -> 'a list -> string
+val string_of_intset : Intset.t -> string
+
+val pr_evar_defs : evar_defs -> Pp.std_ppcmds
