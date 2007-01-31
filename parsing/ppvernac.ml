@@ -570,11 +570,11 @@ let rec pr_vernac = function
 			    spc() ++ str "{struct " ++ pr_name name ++ str"}"
 			  else mt()
 		      | CWfRec c -> 
-			  spc() ++ str "{wf " ++ pr_name name ++ spc() ++ 
-			    pr_lconstr_expr c ++ str"}"
+			  spc() ++ str "{wf " ++ pr_lconstr_expr c ++ spc() ++ 
+			    pr_name name ++ str"}"
 		      | CMeasureRec c -> 
-			  spc() ++ str "{measure " ++ pr_name name ++ spc() ++ 
-			    pr_lconstr_expr c ++ str"}"
+			  spc() ++ str "{measure " ++ pr_lconstr_expr c ++ spc() ++ 
+			    pr_name name ++ str"}"
 	    in
             pr_id id ++ pr_binders_arg bl ++ annot ++ spc()
             ++ pr_type_option (fun c -> spc() ++ pr_lconstr_expr c) type_
