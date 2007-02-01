@@ -28,9 +28,12 @@ let w_refine ev rawc evd =
   let e_info = Evd.find (evars_of evd) ev in
   let env = Evd.evar_env e_info in
   let sigma,typed_c = 
-    Pretyping.Default.understand_tcc (evars_of evd) env 
-      ~expected_type:e_info.evar_concl rawc in
-  evar_define ev typed_c (evars_reset_evd sigma evd)
+    try Pretyping.Default.understand_tcc (evars_of evd) env 
+      ~expected_type:e_info.evar_concl rawc 
+    with _ -> error ("The term is not well-typed in the environment of " ^
+			string_of_existential ev)
+  in
+    evar_define ev typed_c (evars_reset_evd sigma evd)
 
 (* vernac command Existential *)
 
