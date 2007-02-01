@@ -104,7 +104,7 @@ this paragraph and use the tactic according to your intuition.
 The {\tt ring} tactic solves equations upon polynomial expressions of
 a ring (or semi-ring) structure. It proceeds by normalizing both hand
 sides of the equation (w.r.t. associativity, commutativity and
-distributivity, constant propagation, rewrite of monomial equalities) 
+distributivity, constant propagation, rewriting of monomials) 
 and comparing syntactically the results.
 
 {\tt ring\_simplify} applies the normalization procedure described
@@ -152,20 +152,22 @@ Reset Initial.
 \end{coq_eval}
 
 \begin{Variants}
-  \item {\tt ring [$term_1 \ldots term_n$]} decide the equality of two
-    terms, modulo ring operations and rewriting of the equalities
-    defined by $term_1 \ldots term_n$. $term_1 \ldots term_n$ are 
-    proof of type $m = p$, where $m$ is a monomial (after ``abstraction''), 
-    $p$ a polynomial and $=$ the equality corresponding to the ring structure.
+  \item {\tt ring [\term$_1$ {\ldots} \term$_n$]} decides the equality of two
+    terms modulo ring operations and rewriting of the equalities
+    defined by \term$_1$ {\ldots} \term$_n$. Each of \term$_1$
+    {\ldots} \term$_n$ has to be a proof of some equality $m = p$,
+    where $m$ is a monomial (after ``abstraction''),
+    $p$ a polynomial and $=$ the corresponding equality of the ring structure.
 
-  \item {\tt ring\_simplify [$term_1 \ldots term_n$] $t_1 \ldots t_n$ in H}
-     performs the simplification in the hypothesis {\tt H}.
+  \item {\tt ring\_simplify [\term$_1$ {\ldots} \term$_n$] $t_1 \ldots t_n$ in 
+{\ident}}
+     performs the simplification in the hypothesis named {\tt ident}.
 \end{Variants}
 
-\Warning \texttt{ring\_simplify $term_1$; ring\_simplify $term_2$} is
-not equivalent to \texttt{ring\_simplify $term_1$ $term_2$}. In the
+\Warning \texttt{ring\_simplify \term$_1$; ring\_simplify \term$_2$} is
+not equivalent to \texttt{ring\_simplify \term$_1$ \term$_2$}. In the
 latter case the variables map is shared between the two terms, and
-common subterm $t$ of $term_1$ and $term_2$ will have the same
+common subterm $t$ of \term$_1$ and \term$_2$ will have the same
 associated variable number. So the first alternative should be
 avoided for terms belonging to the same ring theory.
 
@@ -269,8 +271,8 @@ coefficients. There are basically three kinds of (semi-)rings:
   coefficient set and the morphism.
 \end{description}
 
-This implementation of ring can also allows recognizes simple 
-power expression as ring expression. A power function is specifies by 
+This implementation of ring can also recognize simple 
+power expressions as ring expressions. A power function is specified by 
 the following property:
 \begin{verbatim}
  Section POWER.
@@ -288,21 +290,23 @@ the following property:
 
 The syntax for adding a new ring is {\tt Add Ring $name$ : $ring$
 ($mod_1$,\dots,$mod_2$)}.  The name is not relevent. It is just used
-for error messages. $ring$ is a proof that the ring signature
+for error messages. The term $ring$ is a proof that the ring signature
 satisfies the (semi-)ring axioms. The optional list of modifiers is
-used to tailor the behaviour of the tactic. The following list
+used to tailor the behavior of the tactic. The following list
 describes their syntax and effects:
 \begin{description}
 \item[abstract] declares the ring as abstract. This is the default.
-\item[decidable \term] declares the ring as computational. \term{} is
+\item[decidable \term] declares the ring as computational. The expression 
+  \term{} is
   the correctness proof of an equality test {\tt ?=!}. Its type should be of
   the form {\tt forall x y, x?=!y = true $\rightarrow$ x == y}.
-\item[morphism \term] declares the ring as a customized one. \term{} is
+\item[morphism \term] declares the ring as a customized one. The expression 
+  \term{} is
   a proof that there exists a morphism between a set of coefficient
   and the ring carrier (see {\tt Ring\_theory.ring\_morph} and {\tt
   Ring\_theory.semi\_morph}).
-\item[setoid \term$_1$ \term$_2$] forces the use of given
-  setoid. \term$_1$ is a proof that the equality is indeed a setoid
+\item[setoid \term$_1$ \term$_2$] forces the use of given setoid. The 
+  expression \term$_1$ is a proof that the equality is indeed a setoid
   (see {\tt Setoid.Setoid\_Theory}), and \term$_2$ a proof that the
   ring operations are morphisms (see {\tt Ring\_theory.ring\_eq\_ext} and
   {\tt Ring\_theory.sring\_eq\_ext}). This modifier needs not be used if the
@@ -319,18 +323,20 @@ describes their syntax and effects:
 \item[postprocess [\ltac]] specifies a tactic that is applied as a final step
   for {\tt ring\_simplify}. For instance, it can be used to undo
   modifications of the preprocessor.
-\item[power\_tac \term [\ltac]] allows {\tt ring} and {\tt ring\_simplify} to
-  recognize power expressions with a constant exponent (example: $x^2$).
-  \term is a proof that a given power function is the power function
-  (see {\tt Ring\_theory.power\_theory}) and \ltac specifies a tactic
-  expression that, given a term, returns either an object of type {\tt N}
-  that is mapped to the original term via the evaluation function of power 
-  coefficient, or returns {\tt InitialRing.NotConstant} (i.e. \ltac is the 
-  inverse of {tt Cp\_phi}). 
+\item[power\_tac {\term} [\ltac]] allows {\tt ring} and {\tt ring\_simplify} to
+  recognize power expressions with a constant positive integer exponent 
+  (example: $x^2$). The term {\term} is a proof that a given power function
+  satisfies the specification of a power function ({\term} has to be a
+  proof of {\tt Ring\_theory.power\_theory}) and {\ltac} specifies a
+  tactic expression that, given a term, ``abstracts'' it into an
+  object of type {\tt N} whose interpretation via {\tt Cp\_phi} (the
+  evaluation function of power coefficient) is the original term, or
+  returns {\tt InitialRing.NotConstant} if not a constant coefficient
+  (i.e. {\ltac} is the inverse function of {\tt Cp\_phi}).
   See files {\tt contrib/setoid\_ring/ZArithRing.v} and
   {\tt contrib/setoid\_ring/RealField.v} for examples.
-  By default the tactic does not recognize power expression as a ring
-  expression.
+  By default the tactic does not recognize power expressions as ring
+  expressions.
   
   
 \end{description}
