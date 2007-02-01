@@ -231,8 +231,8 @@ GEXTEND Gram
   ;
   fixannot:
     [ [ "{"; IDENT "struct"; id=name; "}" -> (Some id, CStructRec)
-      | "{"; IDENT "wf"; rel=constr; id=name; "}" -> (Some id, CWfRec rel)
-      | "{"; IDENT "measure"; rel=constr; id=name; "}" -> (Some id, CMeasureRec rel)
+      | "{"; IDENT "wf"; rel=constr; id=OPT name; "}" -> (id, CWfRec rel)
+      | "{"; IDENT "measure"; rel=constr; id=OPT name; "}" -> (id, CMeasureRec rel)
       | ->  (None, CStructRec)
       ] ]
   ;
