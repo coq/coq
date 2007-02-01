@@ -350,12 +350,6 @@ GEXTEND Gram
       | IDENT "cut"; c = constr -> TacCut c
       | IDENT "generalize"; lc = LIST1 constr -> TacGeneralize lc
       | IDENT "generalize"; IDENT "dependent"; c = constr -> TacGeneralizeDep c
-    (*  | IDENT "instantiate"; "("; n = natural; ":="; c = lconstr; ")"; "in";
-	  hid = hypident ->
-	    let (id,(hloc,_)) = hid in
-              TacInstantiate (n,c,HypLocation (id,hloc))
-      | IDENT "instantiate"; "("; n = natural; ":="; c = lconstr; ")" ->
-            TacInstantiate (n,c,ConclLocation ()) *)
 
       | IDENT "specialize"; n = OPT natural; lcb = constr_with_bindings ->
 	  TacSpecialize (n,lcb)

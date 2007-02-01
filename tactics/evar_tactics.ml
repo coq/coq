@@ -38,21 +38,21 @@ let instantiate n rawc ido gl =
 	    match hloc with
 		InHyp ->  
 		  (match decl with 
-		       (_,None,typ) -> evar_list sigma typ
-		     | _ -> error 
-			 "please be more specific : in type or value ?")
+		      (_,None,typ) -> evar_list sigma typ
+		    | _ -> error 
+			"please be more specific : in type or value ?")
 	      | InHypTypeOnly ->
 		  let (_, _, typ) = decl in evar_list sigma typ
 	      | InHypValueOnly ->
 		  (match decl with 
-		       (_,Some body,_) -> evar_list sigma body
-		     | _ -> error "not a let .. in  hypothesis") in
+		      (_,Some body,_) -> evar_list sigma body
+		    | _ -> error "not a let .. in  hypothesis") in
     if List.length evl < n then
       error "not enough uninstantiated existential variables";
     if n <= 0 then error "incorrect existential variable index";
     let ev,_ =  destEvar (List.nth evl (n-1)) in
     let evd' = w_refine ev rawc (create_evar_defs sigma)  in
-    Refiner.tclEVARS (evars_of evd') gl
+      Refiner.tclEVARS (evars_of evd') gl
 	
 (*
 let pfic gls c =
