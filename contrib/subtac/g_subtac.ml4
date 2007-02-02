@@ -67,10 +67,12 @@ GEXTEND Gram
 
   Constr.binder:
     [ [ "("; id=Prim.name; ":"; c=Constr.lconstr; "|"; p=Constr.lconstr; ")" ->
-	  let typ = mkAppC (sigref, [mkLambdaC ([id], c, p)]) in
-	    ([id], typ) ] ];
-
-
+          ([id],mkAppC (sigref, [mkLambdaC ([id], c, p)]))
+      | "("; id=Prim.name; ":"; c=Constr.lconstr; ")" ->
+          ([id],c)
+      | "("; id=Prim.name; lid=LIST1 Prim.name; ":"; c=Constr.lconstr; ")" ->
+          (id::lid,c)
+    ] ];
 
   END
 
