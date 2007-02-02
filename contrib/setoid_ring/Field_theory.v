@@ -300,7 +300,29 @@ transitivity (r2 * (r1 / r2) * (r4 * (r3 / r4))); [  ring | idtac ].
 repeat rewrite rdiv_simpl in |- *; trivial.
 Qed.
 
- Theorem rdiv7:
+ Theorem rdiv4b:
+ forall r1 r2 r3 r4 r5 r6,
+ ~ r2 * r5 == 0 ->
+ ~ r4 * r6 == 0 ->
+ ((r1 * r6) / (r2 * r5)) * ((r3 * r5) / (r4 * r6)) == (r1 * r3) / (r2 * r4).
+Proof.
+intros r1 r2 r3 r4 r5 r6 H H0.
+rewrite rdiv4; auto.
+transitivity ((r5 * r6) * (r1 * r3) / ((r5 * r6) * (r2 * r4))).
+apply SRdiv_ext; ring.
+assert (HH: ~ r5*r6 == 0).
+  apply field_is_integral_domain.
+    intros H1; case H; rewrite H1; ring.
+    intros H1; case H0; rewrite H1; ring.
+rewrite <- rdiv4; auto.
+  apply field_is_integral_domain.
+    intros H1; case H; rewrite H1; ring.
+    intros H1; case H0; rewrite H1; ring.
+rewrite rdiv_r_r; auto.
+Qed.
+
+
+Theorem rdiv7:
  forall r1 r2 r3 r4,
  ~ r2 == 0 ->
  ~ r3 == 0 ->
@@ -312,6 +334,29 @@ rewrite (rdiv_def (r1 / r2)) in |- *.
 rewrite rdiv6 in |- *; trivial.
 apply rdiv4; trivial.
 Qed.
+
+Theorem rdiv7b:
+ forall r1 r2 r3 r4 r5 r6,
+ ~ r2 * r6 == 0 ->
+ ~ r3 * r5 == 0 ->
+ ~ r4 * r6 == 0 ->
+ ((r1 * r5) / (r2 * r6)) / ((r3 * r5) / (r4 * r6)) == (r1 * r4) / (r2 * r3).
+Proof.
+intros.
+rewrite rdiv7; auto.
+transitivity ((r5 * r6) * (r1 * r4) / ((r5 * r6) * (r2 * r3))).
+apply SRdiv_ext; ring.
+assert (HH: ~ r5*r6 == 0).
+  apply field_is_integral_domain.
+    intros H2; case H0; rewrite H2; ring.
+    intros H2; case H1; rewrite H2; ring.
+rewrite <- rdiv4; auto.
+  apply field_is_integral_domain.
+    intros H2; case H; rewrite H2; ring.
+    intros H2; case H0; rewrite H2; ring.
+rewrite rdiv_r_r; auto.
+Qed.
+
 
 Theorem rdiv8: forall r1 r2, ~ r2 == 0 -> r1 == 0 ->  r1 / r2 == 0.
 intros r1 r2 H H0.
@@ -961,8 +1006,10 @@ Fixpoint Fnorm (e : FExpr) : linear :=
   | FEmul e1 e2 =>
       let x := Fnorm e1 in
       let y := Fnorm e2 in
-      mk_linear (NPEmul (num x) (num y))
-        (NPEmul (denum x) (denum y))
+      let s1 := split (num x) (denum y) in
+      let s2 := split (num y) (denum x) in
+      mk_linear (NPEmul (left s1) (left s2))
+        (NPEmul (right s2) (right s1))
         (condition x ++ condition y)
   | FEopp e1 =>
       let x := Fnorm e1 in
@@ -973,8 +1020,10 @@ Fixpoint Fnorm (e : FExpr) : linear :=
   | FEdiv e1 e2 =>
       let x := Fnorm e1 in
       let y := Fnorm e2 in
-      mk_linear (NPEmul (num x) (denum y))
-        (NPEmul (denum x) (num y))
+      let s1 := split (num x) (num y) in
+      let s2 := split (denum x) (denum y) in
+      mk_linear (NPEmul (left s1) (right s2))
+        (NPEmul (left s2) (right s1))
         (num y :: condition x ++ condition y)
   | FEpow e1 n =>
       let x := Fnorm e1 in
@@ -1040,10 +1089,14 @@ intros l e; elim e.
    rewrite NPEmul_correct in |- *.
    simpl in |- *.
    apply field_is_integral_domain.
-  apply Hrec1.
+  intros HH; apply Hrec1.
     apply PCond_app_inv_l with (1 := Hcond).
-  apply Hrec2.
+    rewrite (split_correct_r l (num (Fnorm e2)) (denum (Fnorm e1))).
+    rewrite NPEmul_correct; simpl; rewrite HH; ring.
+  intros HH; apply Hrec2.
     apply PCond_app_inv_r with (1 := Hcond).
+    rewrite (split_correct_r l (num (Fnorm e1)) (denum (Fnorm e2))).
+    rewrite NPEmul_correct; simpl; rewrite HH; ring.
  intros e1 Hrec1 Hcond.
    simpl condition in Hcond.
    simpl denum in |- *.
@@ -1058,10 +1111,14 @@ intros l e; elim e.
    rewrite NPEmul_correct in |- *.
    simpl in |- *.
    apply field_is_integral_domain.
-  apply Hrec1.
+    intros HH; apply Hrec1.
     specialize PCond_cons_inv_r with (1:=Hcond); intro Hcond1.
     apply PCond_app_inv_l with (1 := Hcond1).
-   apply PCond_cons_inv_l with (1:=Hcond).
+    rewrite (split_correct_l l (denum (Fnorm e1)) (denum (Fnorm e2))).
+    rewrite NPEmul_correct; simpl; rewrite HH; ring.
+    intros HH; apply PCond_cons_inv_l with (1:=Hcond).
+    rewrite (split_correct_r l (num (Fnorm e1)) (num (Fnorm e2))).
+    rewrite NPEmul_correct; simpl; rewrite HH; ring.
  simpl;intros e1 Hrec1 n Hcond.
   rewrite NPEpow_correct.
   simpl;rewrite pow_th.(rpow_pow_N).
@@ -1124,7 +1181,16 @@ assert (HH2: PCond l (condition (Fnorm e2))).
 apply PCond_app_inv_r with ( 1 := HH ).
 rewrite (He1 HH1); rewrite (He2 HH2).
 repeat rewrite NPEmul_correct; simpl.
-apply rdiv4; auto.
+generalize (split_correct_l l (num (Fnorm e1)) (denum (Fnorm e2)))
+   (split_correct_r l (num (Fnorm e1)) (denum (Fnorm e2)))
+   (split_correct_l l (num (Fnorm e2)) (denum (Fnorm e1)))
+   (split_correct_r l (num (Fnorm e2)) (denum (Fnorm e1))).
+repeat rewrite NPEmul_correct; simpl.
+intros U1 U2 U3 U4; rewrite U1; rewrite U2; rewrite U3;
+  rewrite U4; simpl.
+apply rdiv4b; auto.
+  rewrite <- U4; auto.
+  rewrite <- U2; auto.
 
 intros e1 He1 HH.
 rewrite NPEopp_correct; simpl; rewrite (He1 HH); apply rdiv5; auto.
@@ -1144,8 +1210,18 @@ apply PCond_app_inv_r with (condition (Fnorm e1)).
 apply PCond_cons_inv_r with ( 1 := HH ).
 rewrite (He1 HH1); rewrite (He2 HH2).
 repeat rewrite NPEmul_correct;simpl.
-apply rdiv7; auto.
+generalize (split_correct_l l (num (Fnorm e1)) (num (Fnorm e2)))
+   (split_correct_r l (num (Fnorm e1)) (num (Fnorm e2)))
+   (split_correct_l l (denum (Fnorm e1)) (denum (Fnorm e2)))
+   (split_correct_r l (denum (Fnorm e1)) (denum (Fnorm e2))).
+repeat rewrite NPEmul_correct; simpl.
+intros U1 U2 U3 U4; rewrite U1; rewrite U2; rewrite U3;
+  rewrite U4; simpl.
+apply rdiv7b; auto.
+  rewrite <- U3; auto.
+  rewrite <- U2; auto.
 apply PCond_cons_inv_l with ( 1 := HH ).
+  rewrite <- U4; auto.
 
 intros e1 He1 n Hcond;assert (He1' := He1 Hcond);clear He1.
 repeat rewrite NPEpow_correct;simpl;repeat rewrite pow_th.(rpow_pow_N).
