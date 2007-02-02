@@ -155,7 +155,7 @@ Ltac mkHyp_tac C req mkPE lH :=
      let pe1 := mkPE r1 in
      let pe2 := mkPE r2 in
      constr:(cons (pe1,pe2) res)
-   | _ => fail "hypothesis is not a ring equality"
+   | _ => fail 1 "hypothesis is not a ring equality"
    end in
   list_fold_right mkHyp (@nil (PExpr C * PExpr C)) lH.
      
@@ -197,7 +197,7 @@ Ltac Ring Cst_tac CstPow_tac lemma1 req n lH :=
     [ ((let prh := proofHyp_tac lH in exact prh)
         || idtac "can not automatically proof hypothesis : maybe a left member of a hypothesis is not a monomial") 
     | vm_compute;
-      (exact (refl_equal true) || fail "not a valid ring equation")] in
+      (exact (refl_equal true) || fail 1 "not a valid ring equation")] in
   ParseRingComponents lemma1 ltac:(OnEquation req Main).
 
 Ltac Ring_norm_gen f Cst_tac CstPow_tac lemma2 req n lH rl :=
@@ -219,7 +219,7 @@ Ltac Ring_norm_gen f Cst_tac CstPow_tac lemma2 req n lH rl :=
         compute_assertion vlmp_eq vlmp 
             (mk_monpol_list cO cI cadd cmul csub copp ceqb vlpe);
          (assert (rr_lemma := lemma2 n vlpe fv prh vlmp vlmp_eq)
-          || fail "type error when build the rewriting lemma");   
+          || fail 1 "type error when build the rewriting lemma");   
          RW_tac rr_lemma;
          try clear rr_lemma vlmp_eq vlmp vlpe
       | _ => fail 1 "ring_simplify anomaly: bad correctness lemma"
@@ -227,15 +227,20 @@ Ltac Ring_norm_gen f Cst_tac CstPow_tac lemma2 req n lH rl :=
     ReflexiveRewriteTactic mkFV mkPol simpl_ring lemma_tac fv rl in
   ParseRingComponents lemma2 Main.
 
+
 Ltac Ring_gen
   req sth ext morph arth cst_tac pow_tac lemma1 lemma2 pre post lH rl :=
   pre();Ring cst_tac pow_tac lemma1 req ring_subst_niter lH.
 
+Ltac Get_goal := match goal with [|- ?G] => G end.
+
 Tactic Notation (at level 0) "ring" :=
-  match goal with [|- ?G] => ring_lookup Ring_gen [] [G] end.
+  let G := Get_goal in
+  ring_lookup Ring_gen [] [G].
 
 Tactic Notation (at level 0) "ring" "[" constr_list(lH) "]" :=
-  match goal with [|- ?G] => ring_lookup Ring_gen [lH] [G] end.
+  let G := Get_goal in
+  ring_lookup Ring_gen [lH] [G].
 
 (* Simplification *)
 
@@ -246,54 +251,52 @@ Ltac Ring_simplify_gen f :=
      generalize (refl_equal l);
      unfold l at 2;
      pre(); 
-     match goal with
-     | [|- l = ?RL -> _ ] =>
+     let Tac RL :=
        let Heq := fresh "Heq" in
        intros Heq;clear Heq l;
        Ring_norm_gen f cst_tac pow_tac lemma2 req ring_subst_niter lH RL; 
-       post()
-     | _ => fail 1 "ring_simplify anomaly: bad goal after pre"
-     end.
+       post() in
+     let Main :=
+       match goal with
+       | [|- l = ?RL -> _ ] => (fun f => f RL)
+       | _ => fail 1 "ring_simplify anomaly: bad goal after pre"
+       end in
+     Main Tac.
 
 Ltac Ring_simplify := Ring_simplify_gen ltac:(fun H => rewrite H).
 
+Tactic Notation (at level 0) "ring_simplify" constr_list(rl) := 
+  let G := Get_goal in
+  ring_lookup Ring_simplify [] rl [G].
 
 Tactic Notation (at level 0) 
   "ring_simplify" "[" constr_list(lH) "]" constr_list(rl) :=
-  match goal with [|- ?G] => ring_lookup Ring_simplify [lH] rl [G] end.
-
-Tactic Notation (at level 0) 
-  "ring_simplify" constr_list(rl) := 
-  let Main := 
-    match goal with [|- ?G] => (fun f => f G) end in
-  let Aux G := ring_lookup Ring_simplify [] rl [G] in
-  Main Aux.
+  let G := Get_goal in
+  ring_lookup Ring_simplify [lH] rl [G].
 
 (* MON DIEU QUE C'EST MOCHE !!!!!!!!!!!!! *)
 
 Tactic Notation "ring_simplify" constr_list(rl) "in" hyp(H):=   
- match goal with 
- | [|- ?G] =>
-   let t := type of H in   
-   let g := fresh "goal" in
-   set (g:= G);
-   generalize H;clear H;
-   ring_lookup Ring_simplify [] rl [t];
-   intro H;
-   unfold g;clear g
- end.
+  let G := Get_goal in
+  let t := type of H in   
+  let g := fresh "goal" in
+  set (g:= G);
+  generalize H;clear H;
+  ring_lookup Ring_simplify [] rl [t];
+  intro H;
+  unfold g;clear g.
 
-Tactic Notation "ring_simplify" "["constr_list(lH)"]" constr_list(rl) "in" hyp(H):=   
- match goal with 
- | [|- ?G] =>
-   let t := type of H in   
-   let g := fresh "goal" in
-   set (g:= G);
-   generalize H;clear H;
-   ring_lookup Ring_simplify [lH] rl [t];
-   intro H;
-   unfold g;clear g
- end.
+Tactic Notation 
+  "ring_simplify" "["constr_list(lH)"]" constr_list(rl) "in" hyp(H):=   
+  let G := Get_goal in
+  let t := type of H in   
+  let g := fresh "goal" in
+  set (g:= G);
+  generalize H;clear H;
+  ring_lookup Ring_simplify [lH] rl [t];
+  intro H;
+  unfold g;clear g.
+
 
 
 (*     LE RESTE MARCHE PAS DOMAGE  .....  *)
