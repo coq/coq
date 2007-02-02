@@ -123,7 +123,7 @@ Ltac Field_norm_gen f Cst_tac Pow_tac lemma Cond_lemma req n lH rl :=
         compute_assertion vlmp_eq vlmp 
             (mk_monpol_list cO cI cadd cmul csub copp ceqb vlpe);
          (assert (rr_lemma := lemma n vlpe fv prh vlmp vlmp_eq)
-          || fail "type error when build the rewriting lemma");
+          || fail 1 "type error when build the rewriting lemma");
          RW_tac rr_lemma;
         try clear rr_lemma vlmp_eq vlmp vlpe
       | _ => fail 1 "field_simplify anomaly: bad correctness lemma"
@@ -141,37 +141,35 @@ Ltac Field_simplify_gen f :=
 
 Ltac Field_simplify := Field_simplify_gen ltac:(fun H => rewrite H).
 
-Tactic Notation (at level 0) 
-  "field_simplify" constr_list(rl) :=
-  match goal with [|- ?G] => field_lookup Field_simplify [] rl [G] end.
+Tactic Notation (at level 0) "field_simplify" constr_list(rl) :=
+  let G := Get_goal in
+  field_lookup Field_simplify [] rl [G].
 
 Tactic Notation (at level 0) 
   "field_simplify" "[" constr_list(lH) "]" constr_list(rl) :=
-  match goal with [|- ?G] => field_lookup Field_simplify [lH] rl [G] end.
+  let G := Get_goal in
+  field_lookup Field_simplify [lH] rl [G].
 
 Tactic Notation "field_simplify" constr_list(rl) "in" hyp(H):=   
- match goal with 
- | [|- ?G] =>
-   let t := type of H in   
-   let g := fresh "goal" in
-   set (g:= G);
-   generalize H;clear H;
-   field_lookup Field_simplify [] rl [t];
-   intro H;
-   unfold g;clear g
- end.
+  let G := Get_goal in
+  let t := type of H in   
+  let g := fresh "goal" in
+  set (g:= G);
+  generalize H;clear H;
+  field_lookup Field_simplify [] rl [t];
+  intro H;
+  unfold g;clear g.
 
-Tactic Notation "field_simplify" "["constr_list(lH) "]" constr_list(rl) "in" hyp(H):=   
- match goal with 
- | [|- ?G] =>
-   let t := type of H in   
-   let g := fresh "goal" in
-   set (g:= G);
-   generalize H;clear H;
-   field_lookup Field_simplify [lH] rl [t];
-   intro H;
-   unfold g;clear g
- end.
+Tactic Notation "field_simplify" 
+    "["constr_list(lH) "]" constr_list(rl) "in" hyp(H):=   
+  let G := Get_goal in
+  let t := type of H in   
+  let g := fresh "goal" in
+  set (g:= G);
+  generalize H;clear H;
+  field_lookup Field_simplify [lH] rl [t];
+  intro H;
+  unfold g;clear g.
 
 (*
 Ltac Field_simplify_in hyp:= 
@@ -243,10 +241,12 @@ Ltac FIELD :=
        post().
  
 Tactic Notation (at level 0) "field" :=
-  match goal with [|- ?G] => field_lookup FIELD [] [G] end.
+  let G := Get_goal in
+  field_lookup FIELD [] [G].
 
 Tactic Notation (at level 0) "field" "[" constr_list(lH) "]" :=
-  match goal with [|- ?G] => field_lookup FIELD [lH] [G] end.
+  let G := Get_goal in
+  field_lookup FIELD [lH] [G].
 
 (* transforms a field equation to an equivalent (simplified) ring equation,
    and leaves non-zero conditions to be proved (field_simplify_eq) *)
@@ -259,17 +259,19 @@ Ltac FIELD_SIMPL  :=
        post().
 
 Tactic Notation (at level 0) "field_simplify_eq" :=  
-  match goal with [|- ?G] => field_lookup FIELD_SIMPL [] [G] end.
+  let G := Get_goal in
+  field_lookup FIELD_SIMPL [] [G].
 
 Tactic Notation (at level 0) "field_simplify_eq" "[" constr_list(lH) "]" :=  
-  match goal with [|- ?G] => field_lookup FIELD_SIMPL [lH] [G] end.
+  let G := Get_goal in
+  field_lookup FIELD_SIMPL [lH] [G].
 
 (* Same as FIELD_SIMPL but in hypothesis *)
 
 Ltac Field_simplify_eq Cst_tac Pow_tac lemma Cond_lemma req n lH :=
    let Main radd rmul rsub ropp rdiv rinv rpow C :=
     let hyp := fresh "hyp" in
-    intro hyp;
+    intro hyp;   
     match type of hyp with
     | req ?t1 ?t2 =>
       let mkFV := FV Cst_tac Pow_tac radd rmul rsub ropp rpow in
