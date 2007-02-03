@@ -1651,7 +1651,7 @@ let constr_of_pat env isevars ty pat idents =
   let pat', sign, y, z, idents = typ env ty pat idents in 
   let c = it_mkProd_or_LetIn y sign in
     trace (str "Constr_of_pat gives: " ++ my_print_constr env c);
-    pat', (sign, y), idents
+    pat', (sign, y, ty), idents
 
 let mk_refl typ a = mkApp (Lazy.force eq_refl, [| typ; a |])
 
@@ -1661,100 +1661,103 @@ let vars_of_ctx =
 		  Anonymous -> raise (Invalid_argument "vars_of_ctx")
 		| Name n -> RVar (dummy_loc, n))
 
-(*let build_ineqs eqns pats = 
-  List.fold_left 
-    (fun (sign, c) eqn -> 
-       let acc = fold_left3
-	 (fun acc prevpat (ppat_sign, ppat_c, ppat_ty) (pat, pat_c) ->
+let build_ineqs prevpatterns = ()
+ (* List.fold_left 
+    (fun (sign, c) eqnpats -> 
+       let acc = List.fold_left
+	 (fun acc (ppat_sign, ppat_c, ppat_ty) ->
 	    match acc with
 		None -> None
-	      | Some (sign,len, c) ->
-		  if is_included pat prevpat then
+	      | Some (sign, len, n, c) ->
+(* 		  if is_included pat prevpat then *)
 		    let lens = List.length ppat_sign in
+		    let len' = lens + len in
 		    let acc = 
-		      (lift_rels lens ppat_sign @ sign, 
-		       lens + len,
+		      (lift_rel_context len ppat_sign @ sign, 
+		       len',
 		       mkApp (Lazy.force eq_ind,
 			      [| ppat_ty ; ppat_c ; 
-				 lift (lens + len) pat_c |]) :: c)
+				 mkRel (len' + n) |]) :: c)
 		    in Some acc
-		  else None)
-	 (sign, c) eqn.patterns eqn.c_patterns pats
+(* 		  else None *))
+	 (sign, c) eqnpats
        in match acc with 
 	   None -> (sign, c)
 	 | Some (sign, len, c) ->
 	     it_mkProd_or_LetIn c sign
-	     
     )
-    ([], []) eqns*)
-
+    ([], []) prevpatterns
+*)
 let constrs_of_pats typing_fun tycon env isevars eqns tomatchs =
   let i = ref 0 in
-  List.fold_left
-    (fun (branches, eqns) eqn ->
-       let _, newpatterns, pats = 
-	 List.fold_right2 (fun pat (_, ty) (idents, newpatterns, pats) -> 
-			    let x, y, z = constr_of_pat env isevars (type_of_tomatch ty) pat idents in
-			      (z, x :: newpatterns, y :: pats)) 
-	   eqn.patterns tomatchs ([], [], [])
-       in
-       let rhs_rels, signlen = 
-	 List.fold_left (fun (renv, n) (sign,_) -> 
+  let (x, y, z) = 
+    List.fold_left
+      (fun (branches, eqns, prevpatterns) eqn ->
+	 let _, newpatterns, pats = 
+	   List.fold_right2 (fun pat (_, ty) (idents, newpatterns, pats) -> 
+			       let x, y, z = constr_of_pat env isevars (type_of_tomatch ty) pat idents in
+				 (z, x :: newpatterns, y :: pats)) 
+	     eqn.patterns tomatchs ([], [], [])
+	 in
+	 let rhs_rels, signlen = 
+	   List.fold_left (fun (renv, n) (sign,_,_) -> 
 			   ((lift_rel_context n sign) @ renv, List.length sign + n)) 
-	   ([], 0) pats in
-       let eqs, _, _ = List.fold_left2 
-	 (fun (eqs, n, slen) (sign, c) (tm, ty) -> 
-	    let len = n + signlen in (* Number of already defined equations + signature *)
-	    let csignlen = List.length sign in
-	    let slen' = slen - csignlen in (* Lift to get pattern variables signature *)	      
-	    let c = liftn (signlen - slen) signlen c in (* Lift to jump over previous ind signatures for pattern variables outside sign 
-							in c (e.g. type arguments of constructors instanciated by variables ) *)
-	    let cstr = lift (slen' + n) c in
-(* 	      trace (str "lift " ++ my_print_constr (push_rels sign env) c ++ *)
-(* 		       str " by " ++ int  ++ str " to get " ++ *)
-(* 		       my_print_constr (push_rels sign env) cstr); *)
-	    let app = 
-	      mkApp (Lazy.force eq_ind, 
-		     [| lift len (type_of_tomatch ty); cstr; lift len tm |])
-	    in app :: eqs, succ n, slen')
-	 ([], 0, signlen) pats tomatchs
-       in
-       let eqs_rels = List.map (fun eq -> Name (id_of_string "H"), None, eq) eqs in
-(*        let ineqs = build_ineqs eqns newpatterns in *)
-       let rhs_rels' = eqs_rels @ rhs_rels in
-       let rhs_env = push_rels rhs_rels' env in
-(*        (try trace (str "branch env: " ++ print_env rhs_env) *)
-(* 	with _ -> trace (str "error in print branch env")); *)
-       let tycon = lift_tycon (List.length eqs + signlen) tycon in
-	 
-       let j = typing_fun tycon rhs_env eqn.rhs.it in
-(* 	 (try trace (str "in env: " ++ my_print_env rhs_env ++ str"," ++ *)
-(* 		       str "Typed branch: " ++ Prettyp.print_judgment rhs_env j); *)
-(* 	  with _ -> *)
-(* 	    trace (str "Error in typed branch pretty printing")); *)
+	     ([], 0) pats in
+	 let eqs, _, _ = List.fold_left2 
+	   (fun (eqs, n, slen) (sign, c, _) (tm, ty) -> 
+	      let len = n + signlen in (* Number of already defined equations + signature *)
+	      let csignlen = List.length sign in
+	      let slen' = slen - csignlen in (* Lift to get pattern variables signature *)	      
+	      let c = liftn (signlen - slen) signlen c in (* Lift to jump over previous ind signatures for pattern variables outside sign 
+							     in c (e.g. type arguments of constructors instanciated by variables ) *)
+	      let cstr = lift (slen' + n) c in
+		(* 	      trace (str "lift " ++ my_print_constr (push_rels sign env) c ++ *)
+		(* 		       str " by " ++ int  ++ str " to get " ++ *)
+		(* 		       my_print_constr (push_rels sign env) cstr); *)
+	      let app = 
+		mkApp (Lazy.force eq_ind, 
+		       [| lift len (type_of_tomatch ty); cstr; lift len tm |])
+	      in app :: eqs, succ n, slen')
+	   ([], 0, signlen) pats tomatchs
+	 in
+	 let eqs_rels = List.map (fun eq -> Name (id_of_string "H"), None, eq) eqs in
+	 (*let ineqs = build_ineqs prevpatterns newpatterns in*)
+	 let rhs_rels' = eqs_rels @ rhs_rels in
+	 let rhs_env = push_rels rhs_rels' env in
+	   (*        (try trace (str "branch env: " ++ print_env rhs_env) *)
+	   (* 	with _ -> trace (str "error in print branch env")); *)
+	 let tycon = lift_tycon (List.length eqs + signlen) tycon in
+	   
+	 let j = typing_fun tycon rhs_env eqn.rhs.it in
+	   (* 	 (try trace (str "in env: " ++ my_print_env rhs_env ++ str"," ++ *)
+	   (* 		       str "Typed branch: " ++ Prettyp.print_judgment rhs_env j); *)
+	   (* 	  with _ -> *)
+	   (* 	    trace (str "Error in typed branch pretty printing")); *)
 	 let bbody = it_mkLambda_or_LetIn j.uj_val rhs_rels'
 	 and btype = it_mkProd_or_LetIn j.uj_type rhs_rels' in
 	 let branch_name = id_of_string ("branch_" ^ (string_of_int !i)) in
 	 let branch_decl = (Name branch_name, Some (lift !i bbody), (lift !i btype)) in
-(* 	 (try trace (str "Branch decl: " ++ pr_rel_decl env (Name branch_name, Some bbody, btype)) *)
-(* 	  with _ -> trace (str "Error in branch decl pp")); *)
+	   (* 	 (try trace (str "Branch decl: " ++ pr_rel_decl env (Name branch_name, Some bbody, btype)) *)
+	   (* 	  with _ -> trace (str "Error in branch decl pp")); *)
 	 let branch = 
 	   let bref = RVar (dummy_loc, branch_name) in
-	   match vars_of_ctx rhs_rels with
-	       [] -> bref
-	     | l -> RApp (dummy_loc, bref, l)
+	     match vars_of_ctx rhs_rels with
+		 [] -> bref
+	       | l -> RApp (dummy_loc, bref, l)
 	 in
-(* 	 let branch =  *)
-(* 	   List.fold_left (fun br (eqH, _, t) -> RLambda (dummy_loc, eqH, RHole (dummy_loc, Evd.InternalHole), br)) branch eqs_rels *)
-(* 	 in *)
-(* 	 (try trace (str "New branch: " ++ Printer.pr_rawconstr branch) *)
-(* 	  with _ -> trace (str "Error in new branch pp")); *)
-	 incr i;
-	 let rhs = { eqn.rhs with it = branch } in
-	   (branch_decl :: branches,
-	    { eqn with patterns = newpatterns; rhs = rhs } :: eqns))
-    ([], []) eqns
-    
+	   (* 	 let branch =  *)
+	   (* 	   List.fold_left (fun br (eqH, _, t) -> RLambda (dummy_loc, eqH, RHole (dummy_loc, Evd.InternalHole), br)) branch eqs_rels *)
+	   (* 	 in *)
+	   (* 	 (try trace (str "New branch: " ++ Printer.pr_rawconstr branch) *)
+	   (* 	  with _ -> trace (str "Error in new branch pp")); *)
+	   incr i;
+	   let rhs = { eqn.rhs with it = branch } in
+	     (branch_decl :: branches,
+	      { eqn with patterns = newpatterns; rhs = rhs } :: eqns,
+	      pats :: prevpatterns))
+      ([], [], []) eqns
+  in x, y
+      
 
 (* 		   liftn_rel_declaration *)
 
