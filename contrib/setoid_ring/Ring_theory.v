@@ -198,7 +198,7 @@ Section DEFINITIONS.
  Section SIGN.
   Variable get_sign : C -> option C.
   Record sign_theory : Prop := mksign_th {
-    sign_spec : forall c c', get_sign c = Some c' -> [c] == - [c']
+    sign_spec : forall c c', get_sign c = Some c' -> c ?=! -! c' = true
   }.
  End SIGN.
 
@@ -206,6 +206,13 @@ Section DEFINITIONS.
 
  Lemma get_sign_None_th : sign_theory get_sign_None.
  Proof. constructor;intros;discriminate. Qed.
+
+ Section DIV.
+  Variable cdiv: C -> C -> C*C.
+  Record div_theory : Prop := mkdiv_th {
+    div_eucl_th : forall a b, let (q,r) := cdiv a b in [a] == [b *! q +! r]
+  }.
+ End DIV.
 
  End MORPHISM. 
 
@@ -235,6 +242,7 @@ Section DEFINITIONS.
 
  Definition pow_N_th := mkpow_th id_phi_N (pow_N rI rmul) (pow_N_pow_N rI rmul Rsth).
 
+ 
 End DEFINITIONS.
 
 

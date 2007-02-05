@@ -49,8 +49,12 @@ Ltac Zpower_neg :=
     end
   end.   
 
-
 Add Ring Zr : Zth
   (decidable Zeqb_ok, constants [Zcst], preprocess [Zpower_neg;unfold Zsucc],
-   power_tac Zpower_theory [Zpow_tac]).
+   power_tac Zpower_theory [Zpow_tac],
+    (* The two following option are not needed, it is the default chose when the set of 
+        coefficiant is usual ring Z *)
+    div (InitialRing.Ztriv_div_th (@Eqsth Z) (@IDphi Z)),
+   sign get_signZ_th).
+
 

@@ -119,9 +119,9 @@ Ltac Field_norm_gen f Cst_tac Pow_tac lemma Cond_lemma req n lH rl :=
       let prh := proofHyp_tac lH in
       pose (vlpe := lpe);
       match type of lemma with
-      | context [mk_monpol_list ?cO ?cI ?cadd ?cmul ?csub ?copp ?ceqb _] =>
+      | context [mk_monpol_list ?cO ?cI ?cadd ?cmul ?csub ?copp ?cdiv ?ceqb _] =>
         compute_assertion vlmp_eq vlmp 
-            (mk_monpol_list cO cI cadd cmul csub copp ceqb vlpe);
+            (mk_monpol_list cO cI cadd cmul csub copp cdiv ceqb vlpe);
          (assert (rr_lemma := lemma n vlpe fv prh vlmp vlmp_eq)
           || fail 1 "type error when build the rewriting lemma");
          RW_tac rr_lemma;
@@ -352,59 +352,55 @@ Ltac coerce_to_almost_field set ext f :=
   | semi_field_theory _ _ _ _ _ _ _ => constr:(SF2AF set f)
   end.
 
-Ltac field_elements set ext fspec pspec sspec rk :=
+Ltac field_elements set ext fspec pspec sspec dspec rk :=
   let afth := coerce_to_almost_field set ext fspec in
   let rspec := ring_of_field fspec in
-  ring_elements set ext rspec pspec sspec rk
-  ltac:(fun arth ext_r morph p_spec s_spec f => f afth ext_r morph p_spec s_spec).
+  ring_elements set ext rspec pspec sspec dspec rk
+  ltac:(fun arth ext_r morph p_spec s_spec d_spec f => f afth ext_r morph p_spec s_spec d_spec).
 
-Ltac field_lemmas set ext inv_m fspec pspec sspec rk :=
-  let simpl_eq_lemma := 
-     match pspec with
-     | None => constr:(Field_simplify_eq_correct)
-     | Some _ => constr:(Field_simplify_eq_pow_correct)
-     end in
-  let simpl_eq_in_lemma :=
-     match pspec with
-     | None => constr:(Field_simplify_eq_in_correct)
-     | Some _ => constr:(Field_simplify_eq_pow_in_correct)
-     end in
-  let rw_lemma :=
-     match pspec with
-     | None => constr:(Field_rw_correct)
-     | Some _ => constr:(Field_rw_pow_correct)
-     end in
-  field_elements set ext fspec pspec sspec rk
-   ltac:(fun afth ext_r morph p_spec s_spec =>
-     match p_spec with
-     | mkhypo ?pp_spec => match s_spec with
-     | mkhypo ?ss_spec =>
-       let field_simpl_eq_ok :=
-         constr:(simpl_eq_lemma _ _ _  _ _ _  _ _ _ _ 
+Ltac field_lemmas set ext inv_m fspec pspec sspec dspec rk :=
+  let get_lemma :=
+    match pspec with None => fun x y => x | _ => fun x y => y end in
+  let simpl_eq_lemma := get_lemma 
+       Field_simplify_eq_correct       Field_simplify_eq_pow_correct in
+  let simpl_eq_in_lemma := get_lemma
+       Field_simplify_eq_in_correct   Field_simplify_eq_pow_in_correct in
+  let rw_lemma := get_lemma
+       Field_rw_correct                    Field_rw_pow_correct in
+  field_elements set ext fspec pspec sspec dspec rk
+   ltac:(fun afth ext_r morph p_spec s_spec d_spec =>
+     match morph with
+     | _ =>
+       let field_ok1 := constr:(Field_correct set ext_r inv_m afth morph) in
+       match p_spec with
+       | mkhypo ?pp_spec =>  
+         let field_ok2 := constr:(field_ok1 _ _ _ pp_spec) in
+         match s_spec with
+         | mkhypo ?ss_spec => 
+           let field_ok3 := constr:(field_ok2 _ ss_spec) in
+           match d_spec with
+           | mkhypo ?dd_spec => 
+             let field_ok := constr:(field_ok3 _ dd_spec) in
+             let mk_lemma lemma :=     
+              constr:(lemma _ _ _  _ _ _  _ _ _ _ 
                    set ext_r inv_m afth 
                    _ _ _  _ _ _  _ _ _ morph 
-                   _ _ _ pp_spec _ ss_spec) in 
-       let field_simpl_ok :=
-         constr:(rw_lemma _ _ _  _ _ _  _ _ _ _
-                   set ext_r inv_m afth 
-                   _ _ _  _ _ _  _ _ _ morph 
-                   _ _ _ pp_spec _ ss_spec) in
-       let field_simpl_eq_in :=
-         constr:(simpl_eq_in_lemma _ _ _  _ _ _  _ _ _ _
-                   set ext_r inv_m afth 
-                   _ _ _  _ _ _  _ _ _ morph 
-                   _ _ _ pp_spec _ ss_spec) in
-       let field_ok := 
-         constr:(Field_correct set ext_r inv_m afth morph pp_spec ss_spec) in
-       let cond1_ok := 
-         constr:(Pcond_simpl_gen set ext_r afth morph pp_spec) in
-       let cond2_ok := 
-         constr:(Pcond_simpl_complete set ext_r afth morph pp_spec) in
-       (fun f => 
-         f afth ext_r morph field_ok field_simpl_ok field_simpl_eq_ok field_simpl_eq_in
-                cond1_ok cond2_ok)
-     | _ => fail 2 "bad sign specification"
-     end 
-     | _ => fail 1 "bad power specification" 
+                   _ _ _ pp_spec _ ss_spec _ dd_spec) in 
+             let field_simpl_eq_ok := mk_lemma simpl_eq_lemma  in
+             let field_simpl_ok := mk_lemma rw_lemma in
+             let field_simpl_eq_in := mk_lemma simpl_eq_in_lemma in
+             let cond1_ok := 
+                constr:(Pcond_simpl_gen set ext_r afth morph pp_spec dd_spec) in
+             let cond2_ok := 
+               constr:(Pcond_simpl_complete set ext_r afth morph pp_spec dd_spec) in
+             (fun f => 
+               f afth ext_r morph field_ok field_simpl_ok field_simpl_eq_ok field_simpl_eq_in
+                  cond1_ok cond2_ok)
+           | _ => fail 4 "field: bad coefficiant division specification"
+           end
+         | _ => fail 3 "field: bad sign specification"
+         end
+       | _ => fail 2 "field: bad power specification"
+       end  
+     | _ => fail 1 "field internal error : field_lemmas, please report"
      end).
-

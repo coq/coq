@@ -43,6 +43,10 @@ Section MakeRingPol.
  Variable rpow : R -> Cpow -> R. 
  Variable pow_th : power_theory rI rmul req Cp_phi rpow.
 
+ (* division is ok *)
+ Variable cdiv: C -> C -> C * C.
+ Variable div_th: div_theory req cadd cmul phi cdiv.
+
 
  (* R notations *)
  Notation "0" := rO. Notation "1" := rI.
@@ -411,63 +415,79 @@ Section MakeRingPol.
    | vmon i' m => vmon (i+i') m
    end.
 
- Fixpoint MFactor (P: Pol) (M: Mon) {struct P}: Pol * Pol :=
+ Fixpoint CFactor (P: Pol) (c: C) {struct P}: Pol * Pol :=
+   match P with
+   | Pc c1   => let (q,r) := cdiv c1 c in (Pc r, Pc q)
+   | Pinj j1 P1  =>
+     let (R,S) := CFactor P1 c in
+            (mkPinj j1 R, mkPinj j1 S)
+  | PX P1 i Q1 =>
+     let (R1, S1) := CFactor P1 c in
+     let (R2, S2) := CFactor Q1 c in
+        (mkPX R1 i R2, mkPX S1 i S2)
+   end.
+
+ Fixpoint MFactor (P: Pol) (c: C) (M: Mon) {struct P}: Pol * Pol :=
    match P, M with
-        _, mon0 => (Pc cO, P)
+        _, mon0 =>
+            if (ceqb c cI) then (Pc cO, P) else
+(*            if (ceqb c (copp cI)) then (Pc cO, Popp P) else  Not in almost ring *)
+            CFactor P c
    | Pc _, _    => (P, Pc cO)
    | Pinj j1 P1, zmon j2 M1 =>
       match (j1 ?= j2) Eq with
-        Eq => let (R,S) := MFactor P1 M1 in
+        Eq => let (R,S) := MFactor P1 c M1 in
                  (mkPinj j1 R, mkPinj j1 S)
-      | Lt => let (R,S) := MFactor P1 (zmon (j2 - j1) M1) in
+      | Lt => let (R,S) := MFactor P1 c (zmon (j2 - j1) M1) in
                  (mkPinj j1 R, mkPinj j1 S)
       | Gt => (P, Pc cO)
       end
   | Pinj _ _, vmon _ _ => (P, Pc cO)
   | PX P1 i Q1, zmon j M1 =>
              let M2 := zmon_pred j M1 in
-             let (R1, S1) := MFactor P1 M in
-             let (R2, S2) := MFactor Q1 M2 in
+             let (R1, S1) := MFactor P1 c M in
+             let (R2, S2) := MFactor Q1 c M2 in
                (mkPX R1 i R2, mkPX S1 i S2)
   | PX P1 i Q1, vmon j M1 =>
       match (i ?= j) Eq with
-        Eq => let (R1,S1) := MFactor P1 (mkZmon xH M1) in
+        Eq => let (R1,S1) := MFactor P1 c (mkZmon xH M1) in
                  (mkPX R1 i Q1, S1)
-      | Lt => let (R1,S1) := MFactor P1 (vmon (j - i) M1) in
+      | Lt => let (R1,S1) := MFactor P1 c (vmon (j - i) M1) in
                  (mkPX R1 i Q1, S1)
-      | Gt => let (R1,S1) := MFactor P1 (mkZmon xH M1) in
+      | Gt => let (R1,S1) := MFactor P1 c (mkZmon xH M1) in
                  (mkPX R1 i Q1, mkPX S1 (i-j) (Pc cO))
       end
    end.
 
-  Definition POneSubst (P1: Pol) (M1: Mon) (P2: Pol): option Pol :=
-    let (Q1,R1) := MFactor P1 M1 in
+  Definition POneSubst (P1: Pol) (cM1: C * Mon) (P2: Pol): option Pol :=
+    let (c,M1) := cM1 in
+    let (Q1,R1) := MFactor P1 c M1 in
     match R1 with 
      (Pc c) => if c ?=! cO then None 
                else Some (Padd Q1 (Pmul P2 R1))
     | _ => Some (Padd Q1 (Pmul P2 R1))
     end.
 
-  Fixpoint PNSubst1 (P1: Pol) (M1: Mon) (P2: Pol) (n: nat) {struct n}: Pol :=
-    match POneSubst P1 M1 P2 with 
-     Some P3 => match n with S n1 => PNSubst1 P3 M1 P2 n1 | _ => P3 end
+  Fixpoint PNSubst1 (P1: Pol) (cM1: C * Mon) (P2: Pol) (n: nat) {struct n}: Pol :=
+    match POneSubst P1 cM1 P2 with 
+     Some P3 => match n with S n1 => PNSubst1 P3 cM1 P2 n1 | _ => P3 end
     | _ => P1
     end.
 
-  Definition PNSubst (P1: Pol) (M1: Mon) (P2: Pol) (n: nat): option Pol :=
-    match POneSubst P1 M1 P2 with 
-     Some P3 => match n with S n1 => Some (PNSubst1 P3 M1 P2 n1) | _ => None end
+  Definition PNSubst (P1: Pol) (cM1: C * Mon) (P2: Pol) (n: nat): option Pol :=
+    match POneSubst P1 cM1 P2 with 
+     Some P3 => match n with S n1 => Some (PNSubst1 P3 cM1 P2 n1) | _ => None end
     | _ => None
     end.
             
-  Fixpoint PSubstL1 (P1: Pol) (LM1: list (Mon * Pol)) (n: nat) {struct LM1}: 
+  Fixpoint PSubstL1 (P1: Pol) (LM1: list ((C * Mon) * Pol)) (n: nat) {struct LM1}: 
      Pol :=
     match LM1 with 
      cons (M1,P2) LM2 => PSubstL1 (PNSubst1 P1 M1 P2 n) LM2 n
     | _ => P1
     end.
 
-  Fixpoint PSubstL (P1: Pol) (LM1: list (Mon * Pol)) (n: nat) {struct LM1}: option Pol :=
+  Fixpoint PSubstL (P1: Pol) (LM1: list ((C * Mon) * Pol)) (n: nat) {struct LM1}: option Pol :=
     match LM1 with 
      cons (M1,P2) LM2 =>
       match PNSubst P1 M1 P2 n with 
@@ -477,7 +497,7 @@ Section MakeRingPol.
     | _ => None
     end.
 
-  Fixpoint PNSubstL (P1: Pol) (LM1: list (Mon * Pol)) (m n: nat) {struct m}: Pol :=
+  Fixpoint PNSubstL (P1: Pol) (LM1: list ((C * Mon) * Pol)) (m n: nat) {struct m}: Pol :=
     match PSubstL P1 LM1 n with 
      Some P3 => match m with S m1 => PNSubstL P3 LM1 m1 n | _ => P3 end
     | _ => P1
@@ -876,38 +896,82 @@ Lemma Pmul_ok : forall P P' l, (P**P')@l == P@l * P'@l.
   rewrite Pplus_comm;rewrite pow_pos_Pplus;rsimpl.
  Qed.
 
-
- Lemma Mphi_ok: forall P M l, 
-    let (Q,R) := MFactor P M in
-      P@l == Q@l + (Mphi l M) * (R@l).
+ Lemma Mcphi_ok: forall P c l, 
+    let (Q,R) := CFactor P c in
+      P@l == Q@l + (phi c) * (R@l).
  Proof.
  intros P; elim P; simpl; auto; clear P.
-   intros c M l; case M; simpl; auto; try intro p; try intro m;
-   try rewrite (morph0 CRmorph); rsimpl.
+   intros c c1 l; generalize (div_th.(div_eucl_th) c c1); case cdiv.
+   intros q r H; rewrite H.
+   Esimpl.
+   rewrite (ARadd_comm ARth); rsimpl.
+ intros i P Hrec c l.
+  generalize (Hrec c (jump i l)); case CFactor.
+  intros R1 S1; Esimpl; auto.
+ intros Q1 Qrec i R1 Rrec c l.
+   generalize (Qrec c l); case CFactor; intros S1 S2 HS.
+   generalize (Rrec c (tail l)); case CFactor; intros S3 S4 HS1.
+   rewrite HS; rewrite HS1; Esimpl.
+   apply (Radd_ext Reqe); rsimpl.
+   repeat rewrite <- (ARadd_assoc ARth).
+   apply (Radd_ext Reqe); rsimpl.
+   rewrite (ARadd_comm ARth); rsimpl.
+ Qed.
 
-   intros i P Hrec M l; case M; simpl; clear M.
-     rewrite (morph0 CRmorph); rsimpl.
+ Lemma Mphi_ok: forall P (cM: C * Mon) l, 
+    let (c,M) := cM in
+    let (Q,R) := MFactor P c M in
+      P@l == Q@l + (phi c) * (Mphi l M) * (R@l).
+ Proof.
+ intros P; elim P; simpl; auto; clear P.
+   intros c (c1, M) l; case M; simpl; auto.
+   assert (H1:= morph_eq CRmorph c1 cI);destruct (c1 ?=! cI).
+   rewrite (H1 (refl_equal true));Esimpl.
+    try rewrite (morph0 CRmorph); rsimpl.
+   generalize (div_th.(div_eucl_th) c c1); case (cdiv c c1).
+   intros q r H; rewrite H; clear H H1.
+   Esimpl.
+   rewrite (ARadd_comm ARth); rsimpl.
+   intros p m; Esimpl.
+   intros p m; Esimpl.
+   intros i P Hrec (c,M) l; case M; simpl; clear M.
+     assert (H1:= morph_eq CRmorph c cI);destruct (c ?=! cI).
+     rewrite (H1 (refl_equal true));Esimpl.
+     Esimpl.
+   generalize (Mcphi_ok P c (jump i l)); case CFactor.
+   intros R1 Q1 HH; rewrite HH; Esimpl.
      intros j M.
      case_eq ((i ?= j) Eq); intros He; simpl.
        rewrite (Pcompare_Eq_eq _ _ He).
-       generalize (Hrec M (jump j l)); case (MFactor P M);
+       generalize (Hrec (c, M) (jump j l)); case (MFactor P c M);
         simpl; intros P2 Q2 H; repeat rewrite mkPinj_ok; auto.
-       generalize (Hrec (zmon (j -i) M) (jump i l)); 
-       case (MFactor P (zmon (j -i) M)); simpl.
+       generalize (Hrec (c, (zmon (j -i) M)) (jump i l)); 
+       case (MFactor P c (zmon (j -i) M)); simpl.
        intros P2 Q2 H; repeat rewrite mkPinj_ok; auto.
        rewrite  <- (Pplus_minus _ _ (ZC2 _ _ He)).
        rewrite Pplus_comm; rewrite jump_Pplus; auto.
        rewrite (morph0 CRmorph); rsimpl.
        intros P2 m; rewrite (morph0 CRmorph); rsimpl.
 
-   intros P2 Hrec1 i Q2 Hrec2 M l; case M; simpl; auto.
-   rewrite (morph0 CRmorph); rsimpl.
+   intros P2 Hrec1 i Q2 Hrec2 (c, M) l; case M; simpl; auto.
+     assert (H1:= morph_eq CRmorph c cI);destruct (c ?=! cI).
+     rewrite (H1 (refl_equal true));Esimpl.
+     Esimpl.
+    generalize (Mcphi_ok P2 c l); case CFactor.
+    intros S1 S2 HS.
+    generalize (Mcphi_ok Q2 c (tail l)); case CFactor.
+    intros S3 S4 HS1; Esimpl; rewrite HS; rewrite HS1.
+    rsimpl.
+    apply (Radd_ext Reqe); rsimpl.
+    repeat rewrite <- (ARadd_assoc ARth).
+    apply (Radd_ext Reqe); rsimpl.
+    rewrite (ARadd_comm ARth); rsimpl.
    intros j M1.
-     generalize (Hrec1 (zmon j M1) l); 
-     case (MFactor P2 (zmon j M1)).
+     generalize (Hrec1 (c,zmon j M1) l); 
+     case (MFactor P2 c (zmon j M1)).
      intros R1 S1 H1.
-     generalize (Hrec2 (zmon_pred j M1) (List.tail l)); 
-     case (MFactor Q2 (zmon_pred j M1)); simpl.
+     generalize (Hrec2 (c, zmon_pred j M1) (List.tail l)); 
+     case (MFactor Q2 c (zmon_pred j M1)); simpl.
      intros R2 S2 H2; rewrite H1; rewrite H2.
      repeat rewrite mkPX_ok; simpl.
      rsimpl.  
@@ -919,7 +983,7 @@ Lemma Pmul_ok : forall P P' l, (P**P')@l == P@l * P'@l.
    intros j M1.
      case_eq ((i ?= j) Eq); intros He; simpl.
        rewrite (Pcompare_Eq_eq _ _ He).
-       generalize (Hrec1 (mkZmon xH M1) l); case (MFactor P2 (mkZmon xH M1));
+       generalize (Hrec1 (c, mkZmon xH M1) l); case (MFactor P2 c (mkZmon xH M1));
         simpl; intros P3 Q3 H; repeat rewrite mkPinj_ok; auto.
        rewrite H; rewrite mkPX_ok; rsimpl.
        repeat (rewrite <-(ARadd_assoc ARth)).
@@ -929,9 +993,11 @@ Lemma Pmul_ok : forall P P' l, (P**P')@l == P@l * P'@l.
        repeat (rewrite <-(ARmul_assoc ARth)).
        rewrite mkZmon_ok.
        apply rmul_ext; rsimpl.
+       repeat (rewrite <-(ARmul_assoc ARth)).
+       apply rmul_ext; rsimpl.
        rewrite (ARmul_comm ARth); rsimpl.
-       generalize (Hrec1 (vmon (j - i) M1) l); 
-             case (MFactor P2 (vmon (j - i) M1));
+       generalize (Hrec1 (c, vmon (j - i) M1) l); 
+             case (MFactor P2 c (vmon (j - i) M1));
         simpl; intros P3 Q3 H; repeat rewrite mkPinj_ok; auto.
        rewrite H; rsimpl; repeat rewrite mkPinj_ok; auto.
        rewrite mkPX_ok; rsimpl.
@@ -943,10 +1009,13 @@ Lemma Pmul_ok : forall P P' l, (P**P')@l == P@l * P'@l.
        apply rmul_ext; rsimpl.
        rewrite (ARmul_comm ARth); rsimpl.
        apply rmul_ext; rsimpl.
+       rewrite <- (ARmul_comm ARth (Mphi (tail l) M1)); rsimpl.
+       repeat (rewrite <-(ARmul_assoc ARth)).
+       apply rmul_ext; rsimpl.
        rewrite <- pow_pos_Pplus.
        rewrite (Pplus_minus _ _ (ZC2 _ _ He)); rsimpl.
-       generalize (Hrec1 (mkZmon 1 M1) l); 
-             case (MFactor P2 (mkZmon 1 M1));
+       generalize (Hrec1 (c, mkZmon 1 M1) l); 
+             case (MFactor P2 c (mkZmon 1 M1));
         simpl; intros P3 Q3 H; repeat rewrite mkPinj_ok; auto.
        rewrite H; rsimpl.
        rewrite mkPX_ok; rsimpl.
@@ -963,6 +1032,9 @@ Lemma Pmul_ok : forall P P' l, (P**P')@l == P@l * P'@l.
        repeat (rewrite <-(ARmul_assoc ARth)).
        rewrite (ARmul_comm ARth (Q3@l)); rsimpl.
        apply rmul_ext; rsimpl.
+       rewrite (ARmul_comm ARth); rsimpl.
+       repeat (rewrite <- (ARmul_assoc ARth)).
+       apply rmul_ext; rsimpl.
        rewrite <- pow_pos_Pplus.
        rewrite (Pplus_minus _ _ He); rsimpl.
  Qed.
@@ -970,10 +1042,10 @@ Lemma Pmul_ok : forall P P' l, (P**P')@l == P@l * P'@l.
 (* Proof for the symmetric version *)
 
  Lemma POneSubst_ok: forall P1 M1 P2 P3 l,
-    POneSubst P1 M1 P2 = Some P3 -> Mphi l M1 == P2@l -> P1@l == P3@l.
+    POneSubst P1 M1 P2 = Some P3 -> phi (fst M1) * Mphi l (snd M1) == P2@l -> P1@l == P3@l.
  Proof.
- intros P2 M1 P3 P4 l; unfold POneSubst.
- generalize (Mphi_ok P2 M1 l); case (MFactor P2 M1); simpl; auto.
+ intros P2 (cc,M1) P3 P4 l; unfold POneSubst.
+ generalize (Mphi_ok P2 (cc, M1) l); case (MFactor P2 cc M1); simpl; auto.
  intros Q1 R1; case R1.
    intros c H; rewrite H.
    generalize (morph_eq CRmorph c cO);
@@ -1017,7 +1089,7 @@ Proof.
  Qed. 
 *)
  Lemma PNSubst1_ok: forall n P1 M1 P2 l,
-    Mphi l M1 == P2@l -> P1@l == (PNSubst1 P1 M1 P2 n)@l.
+    [fst M1] * Mphi l (snd M1) == P2@l -> P1@l == (PNSubst1 P1 M1 P2 n)@l.
  Proof.
  intros n; elim n; simpl; auto.
    intros P2 M1 P3 l H.
@@ -1031,19 +1103,19 @@ Proof.
  Qed.
 
  Lemma PNSubst_ok: forall n P1 M1 P2 l P3,
-    PNSubst P1 M1 P2 n = Some P3 -> Mphi l M1 == P2@l -> P1@l == P3@l.
+    PNSubst P1 M1 P2 n = Some P3 -> [fst M1] * Mphi l (snd M1) == P2@l -> P1@l == P3@l.
  Proof.
- intros n P2 M1 P3 l P4; unfold PNSubst.
- generalize (fun P4 => @POneSubst_ok P2 M1 P3 P4 l); 
- case (POneSubst P2 M1 P3); [idtac | intros; discriminate].
+ intros n P2 (cc, M1) P3 l P4; unfold PNSubst.
+ generalize (fun P4 => @POneSubst_ok P2 (cc,M1) P3 P4 l); 
+ case (POneSubst P2 (cc,M1) P3); [idtac | intros; discriminate].
  intros P5 H1; case n; try (intros; discriminate). 
  intros n1 H2; injection H2; intros; subst.
  rewrite <- PNSubst1_ok; auto.
  Qed.
 
- Fixpoint MPcond (LM1: list (Mon * Pol)) (l: list R) {struct LM1} : Prop :=            
+ Fixpoint MPcond (LM1: list (C * Mon * Pol)) (l: list R) {struct LM1} : Prop :=            
     match LM1 with 
-     cons (M1,P2) LM2 =>  (Mphi l M1 == P2@l) /\ (MPcond LM2 l)
+     cons (M1,P2) LM2 =>  ([fst M1] * Mphi l (snd M1) == P2@l) /\ (MPcond LM2 l)
     | _ => True
     end.
 
@@ -1188,7 +1260,7 @@ Section POWER.
 
  Section NORM_SUBST_REC.
   Variable n : nat.
-  Variable lmp:list (Mon*Pol).
+  Variable lmp:list (C*Mon*Pol).
   Let subst_l P := PNSubstL P lmp n n.
   Let Pmul_subst P1 P2 := subst_l (Pmul P1 P2).
   Let Ppow_subst := Ppow_N subst_l.
@@ -1282,24 +1354,24 @@ Section POWER.
      end
   end.
 
-  Fixpoint mon_of_pol (P:Pol) : option Mon :=
+  Fixpoint mon_of_pol (P:Pol) : option (C * Mon) :=
   match P with
-  | Pc c => if (c ?=! cI) then Some mon0 else None
+  | Pc c => if (c ?=! cO) then None else Some (c, mon0)
   | Pinj j P =>
     match mon_of_pol P with 
     | None => None
-    | Some m =>  Some (mkZmon j m) 
+    | Some (c,m) =>  Some (c, mkZmon j m) 
     end
   | PX P i Q =>
     if Peq Q P0 then
       match mon_of_pol P with
       | None => None
-      | Some m => Some (mkVmon i m)
+      | Some (c,m) => Some (c, mkVmon i m)
       end
     else None
   end.
 
- Fixpoint mk_monpol_list (lpe:list (PExpr * PExpr)) : list (Mon*Pol) :=
+ Fixpoint mk_monpol_list (lpe:list (PExpr * PExpr)) : list (C*Mon*Pol) :=
   match lpe with
   | nil => nil
   | (me,pe)::lpe =>
@@ -1310,16 +1382,18 @@ Section POWER.
   end.
 
   Lemma mon_of_pol_ok : forall P m, mon_of_pol P = Some m ->
-              forall l, Mphi l m == P@l.
+              forall l, [fst m] * Mphi l (snd m) == P@l.
   Proof.
     induction P;simpl;intros;Esimpl.  
-    assert (H1 := (morph_eq CRmorph) c cI).
-    destruct (c ?=! cI).
-    inversion H;rewrite H1;trivial;Esimpl.
+    assert (H1 := (morph_eq CRmorph) c cO).
+    destruct (c ?=! cO).
     discriminate.
-    generalize H;clear H;case_eq (mon_of_pol P);intros;try discriminate.
-    inversion H0.
-    rewrite mkZmon_ok;simpl;auto.
+    inversion H;trivial;Esimpl.
+    generalize H;clear H;case_eq (mon_of_pol P).
+    intros (c1,P2) H0 H1; inversion H1; Esimpl.
+      generalize (IHP (c1, P2) H0 (jump p l)).
+      rewrite mkZmon_ok;simpl;auto.
+    intros; discriminate.
     generalize H;clear H;change match P3 with
         | Pc c => c ?=! cO
         | Pinj _ _ => false
@@ -1327,10 +1401,13 @@ Section POWER.
         end with (P3 ?== P0).
     assert (H := Peq_ok P3 P0).
     destruct (P3 ?== P0).
-    case_eq (mon_of_pol P2);intros.
+    case_eq (mon_of_pol P2);try intros (cc, pp); intros.
     inversion H1.
+    simpl.
     rewrite mkVmon_ok;simpl.
-    rewrite H;trivial;Esimpl.  rewrite IHP1;trivial;Esimpl. discriminate.
+    rewrite H;trivial;Esimpl.
+     generalize (IHP1 _ H0); simpl; intros HH; rewrite HH; rsimpl.
+    discriminate.
     intros;discriminate.
    Qed.
  
@@ -1371,7 +1448,7 @@ Section POWER.
 
   (** Generic evaluation of polynomial towards R avoiding parenthesis *)
  Variable get_sign : C -> option C.
- Variable get_sign_spec : sign_theory ropp req phi get_sign.
+ Variable get_sign_spec : sign_theory copp ceqb get_sign.
 
 
  Section EVALUATION.
@@ -1509,7 +1586,7 @@ Section POWER.
   case_eq (get_sign c);intros.
   assert (H1 := (morph_eq CRmorph) c0  cI).
   destruct (c0 ?=! cI).
-   rewrite (get_sign_spec.(sign_spec) _ H). rewrite H1;trivial.
+   rewrite (CRmorph.(morph_eq) _ _ (get_sign_spec.(sign_spec) _ H)). Esimpl. rewrite H1;trivial.
    rewrite <- r_list_pow_rev;trivial;Esimpl.
   apply mkmultm1_ok.
  rewrite <- r_list_pow_rev; apply mkmult_rec_ok.
@@ -1520,7 +1597,7 @@ Qed.
  Proof.
   intros;unfold mkadd_mult.
   case_eq (get_sign c);intros.
-  rewrite (get_sign_spec.(sign_spec) _ H).
+  rewrite (CRmorph.(morph_eq) _ _ (get_sign_spec.(sign_spec) _ H));Esimpl.
   rewrite mkmult_c_pos_ok;Esimpl.
   rewrite mkmult_c_pos_ok;Esimpl.
  Qed.

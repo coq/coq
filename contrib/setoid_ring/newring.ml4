@@ -592,17 +592,27 @@ let interp_sign env sign =
       lapp coq_Some [|carrier;spec|]
        (* Same remark on ill-typed terms ... *)
 
-let add_theory name rth eqth morphth cst_tac (pre,post) power sign =
+let interp_div env div =
+  let carrier = Lazy.force coq_hypo in
+  match div with
+  | None -> lapp coq_None [|carrier|] 
+  | Some spec -> 
+      let spec = make_hyp env (ic spec) in
+      lapp coq_Some [|carrier;spec|]
+       (* Same remark on ill-typed terms ... *)
+
+let add_theory name rth eqth morphth cst_tac (pre,post) power sign div =
   let env = Global.env() in
   let sigma = Evd.empty in
   let (kind,r,zero,one,add,mul,sub,opp,req) = dest_ring env sigma rth in
   let (sth,ext) = build_setoid_params r add mul opp req eqth in
   let (pow_tac, pspec) = interp_power env power in 
   let sspec = interp_sign env sign in
+  let dspec = interp_div env div in
   let rk = reflect_coeff morphth in
   let params =
     exec_tactic env 5 (zltac "ring_lemmas") 
-      (List.map carg[sth;ext;rth;pspec;sspec;rk]) in
+      (List.map carg[sth;ext;rth;pspec;sspec;dspec;rk]) in
   let lemma1 = constr_of params.(3) in
   let lemma2 = constr_of params.(4) in
 
@@ -643,6 +653,7 @@ type ring_mod =
   | Pow_spec of cst_tac_spec * Topconstr.constr_expr
            (* Syntaxification tactic , correctness lemma *)
   | Sign_spec of Topconstr.constr_expr
+  | Div_spec of Topconstr.constr_expr
 
 
 VERNAC ARGUMENT EXTEND ring_mod
@@ -659,6 +670,7 @@ VERNAC ARGUMENT EXTEND ring_mod
            [ Pow_spec (Closed l, pow_spec) ]   
   | [ "power_tac" constr(pow_spec) "[" tactic(cst_tac) "]" ] ->
            [ Pow_spec (CstTac cst_tac, pow_spec) ]
+  | [ "div" constr(div_spec) ] -> [ Div_spec div_spec ]
 END
 
 let set_once s r v =
@@ -672,6 +684,7 @@ let process_ring_mods l =
   let post = ref None in
   let sign = ref None in
   let power = ref None in
+  let div = ref None in
   List.iter(function
       Ring_kind k -> set_once "ring kind" kind k
     | Const_tac t -> set_once "tactic recognizing constants" cst_tac t
@@ -679,14 +692,15 @@ let process_ring_mods l =
     | Post_tac t -> set_once "postprocess tactic" post t
     | Setoid(sth,ext) -> set_once "setoid" set (ic sth,ic ext) 
     | Pow_spec(t,spec) -> set_once "power" power (t,spec)
-    | Sign_spec t -> set_once "sign" sign t) l;
+    | Sign_spec t -> set_once "sign" sign t
+    | Div_spec t -> set_once "div" div t) l;
   let k = match !kind with Some k -> k | None -> Abstract in
-  (k, !set, !cst_tac, !pre, !post, !power, !sign)
+  (k, !set, !cst_tac, !pre, !post, !power, !sign, !div)
 
 VERNAC COMMAND EXTEND AddSetoidRing
   | [ "Add" "Ring" ident(id) ":" constr(t) ring_mods(l) ] ->
-    [ let (k,set,cst,pre,post,power,sign) = process_ring_mods l in
-      add_theory id (ic t) set k cst (pre,post) power sign ]
+    [ let (k,set,cst,pre,post,power,sign, div) = process_ring_mods l in
+      add_theory id (ic t) set k cst (pre,post) power sign div]
 END
 
 (*****************************************************************************)
@@ -952,21 +966,22 @@ let default_field_equality r inv req =
             error "field inverse should be declared as a morphism" in
         inv_m.lem
 
-let add_field_theory name fth eqth morphth cst_tac inj (pre,post) power sign =
+let add_field_theory name fth eqth morphth cst_tac inj (pre,post) power sign odiv =
   let env = Global.env() in
   let sigma = Evd.empty in
   let (kind,r,zero,one,add,mul,sub,opp,div,inv,req,rth) =
     dest_field env sigma fth in
   let (sth,ext) = build_setoid_params r add mul opp req eqth in
   let eqth = Some(sth,ext) in
-  let _ = add_theory name rth eqth morphth cst_tac (None,None) power sign in
+  let _ = add_theory name rth eqth morphth cst_tac (None,None) power sign odiv in
   let (pow_tac, pspec) = interp_power env power in 
   let sspec = interp_sign env sign in
+  let dspec = interp_div env odiv in
   let inv_m = default_field_equality r inv req in
   let rk = reflect_coeff morphth in
   let params =
     exec_tactic env 9 (field_ltac"field_lemmas")
-      (List.map carg[sth;ext;inv_m;fth;pspec;sspec;rk]) in
+      (List.map carg[sth;ext;inv_m;fth;pspec;sspec;dspec;rk]) in
   let lemma1 = constr_of params.(3) in
   let lemma2 = constr_of params.(4) in
   let lemma3 = constr_of params.(5) in
@@ -1022,6 +1037,7 @@ let process_field_mods l =
   let inj = ref None in  
   let sign = ref None in
   let power = ref None in
+  let div = ref None in
   List.iter(function
       Ring_mod(Ring_kind k) -> set_once "field kind" kind k
     | Ring_mod(Const_tac t) ->
@@ -1031,14 +1047,15 @@ let process_field_mods l =
     | Ring_mod(Setoid(sth,ext)) -> set_once "setoid" set (ic sth,ic ext)
     | Ring_mod(Pow_spec(t,spec)) -> set_once "power" power (t,spec)
     | Ring_mod(Sign_spec t) -> set_once "sign" sign t
+    | Ring_mod(Div_spec t) -> set_once "div" div t
     | Inject i -> set_once "infinite property" inj (ic i)) l;
   let k = match !kind with Some k -> k | None -> Abstract in
-  (k, !set, !inj, !cst_tac, !pre, !post, !power, !sign)
+  (k, !set, !inj, !cst_tac, !pre, !post, !power, !sign, !div)
 
 VERNAC COMMAND EXTEND AddSetoidField
 | [ "Add" "Field" ident(id) ":" constr(t) field_mods(l) ] -> 
-  [ let (k,set,inj,cst_tac,pre,post,power,sign) = process_field_mods l in
-    add_field_theory id (ic t) set k cst_tac inj (pre,post) power sign]
+  [ let (k,set,inj,cst_tac,pre,post,power,sign,div) = process_field_mods l in
+    add_field_theory id (ic t) set k cst_tac inj (pre,post) power sign div]
 END
 
 let field_lookup (f:glob_tactic_expr) lH rl t gl =

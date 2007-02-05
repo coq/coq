@@ -102,10 +102,13 @@ Hint Resolve (ARadd_0_l  ARth) (ARadd_comm  ARth) (ARadd_assoc ARth)
  Variable pow_th : power_theory rI rmul req Cp_phi rpow.
  (* sign function *)
  Variable get_sign : C -> option C.
- Variable get_sign_spec : sign_theory ropp req phi get_sign.
+ Variable get_sign_spec : sign_theory copp ceqb get_sign.
+
+ Variable cdiv:C -> C -> C*C.
+ Variable cdiv_th : div_theory req cadd cmul phi cdiv.
 
 Notation NPEeval := (PEeval rO radd rmul rsub ropp phi Cp_phi rpow).
-Notation Nnorm := (norm_subst cO cI cadd cmul csub copp ceqb).
+Notation Nnorm:= (norm_subst cO cI cadd cmul csub copp ceqb cdiv).
 
 Notation NPphi_dev := (Pphi_dev rO rI radd rmul rsub ropp cO cI ceqb phi get_sign).
 Notation NPphi_pow := (Pphi_pow rO rI radd rmul rsub ropp cO cI ceqb phi Cp_phi rpow get_sign).
@@ -496,7 +499,7 @@ Proof.
 intros l e1 e2.
 destruct e1; destruct e2; simpl in |- *; try reflexivity; try apply ceqb_rect;
  try (intro eq_c; rewrite eq_c in |- *); simpl in |- *;try apply eq_refl;
- try ring [(morph0 CRmorph)].
+ try (ring [(morph0 CRmorph)]).
  apply (morph_add CRmorph).
 Qed.
 
@@ -1263,7 +1266,7 @@ Qed.
 
 (* Correctness lemmas of reflexive tactics *)
 Notation Ninterp_PElist := (interp_PElist rO radd rmul rsub ropp req phi Cp_phi rpow).
-Notation Nmk_monpol_list := (mk_monpol_list cO cI cadd cmul csub copp ceqb).
+Notation Nmk_monpol_list := (mk_monpol_list cO cI cadd cmul csub copp ceqb cdiv).
 
 Theorem Fnorm_correct:
  forall n l lpe fe,
@@ -1274,7 +1277,7 @@ intros n l lpe fe Hlpe H H1;
  apply eq_trans with (1 := Fnorm_FEeval_PEeval l fe H1).
 apply rdiv8; auto.
 transitivity (NPEeval l (PEc cO)); auto.
-rewrite (norm_subst_ok Rsth Reqe ARth CRmorph pow_th n l lpe);auto.
+rewrite (norm_subst_ok Rsth Reqe ARth CRmorph pow_th cdiv_th n l lpe);auto.
 change (NPEeval l (PEc cO)) with (Pphi 0 radd rmul phi l (Pc cO)).
 apply (Peq_ok Rsth Reqe CRmorph);auto.
 simpl. apply (morph0 CRmorph); auto.
@@ -1346,9 +1349,9 @@ intros l fe1 fe2 nfe1 nfe2 eq1 eq2 Hcrossprod Hcond;  subst nfe1 nfe2.
 apply Fnorm_crossproduct; trivial.
 match goal with 
  [ |- NPEeval l ?x == NPEeval l ?y] =>
-    rewrite (ring_rw_correct Rsth Reqe ARth CRmorph pow_th get_sign_spec
+    rewrite (ring_rw_correct Rsth Reqe ARth CRmorph pow_th cdiv_th get_sign_spec
        O nil l I (refl_equal nil) x (refl_equal (Nnorm O nil x)));
-    rewrite (ring_rw_correct Rsth Reqe ARth CRmorph pow_th get_sign_spec
+    rewrite (ring_rw_correct Rsth Reqe ARth CRmorph pow_th cdiv_th get_sign_spec 
        O nil l I (refl_equal nil) y (refl_equal (Nnorm O nil y)))
  end.
 trivial.
@@ -1379,14 +1382,14 @@ repeat rewrite (ARmul_assoc ARth) in |- *.
 rewrite <-(
   let x := PEmul (num (Fnorm fe1))
                      (rsplit_right (split (denum (Fnorm fe1)) (denum (Fnorm fe2)))) in
-ring_rw_correct Rsth Reqe ARth CRmorph pow_th get_sign_spec n lpe l 
+ring_rw_correct Rsth Reqe ARth CRmorph pow_th cdiv_th get_sign_spec n lpe l 
         Hlpe (refl_equal (Nmk_monpol_list lpe))
         x (refl_equal (Nnorm n (Nmk_monpol_list lpe) x))) in Hcrossprod.
 rewrite <-(
   let x := (PEmul (num (Fnorm fe2))
                      (rsplit_left
                         (split (denum (Fnorm fe1)) (denum (Fnorm fe2))))) in
-    ring_rw_correct Rsth Reqe ARth CRmorph pow_th get_sign_spec n lpe l 
+    ring_rw_correct Rsth Reqe ARth CRmorph pow_th cdiv_th get_sign_spec n lpe l 
         Hlpe (refl_equal (Nmk_monpol_list lpe))
         x (refl_equal (Nnorm n (Nmk_monpol_list lpe) x))) in Hcrossprod.
 simpl in Hcrossprod.
@@ -1419,14 +1422,14 @@ repeat rewrite (ARmul_assoc ARth) in |- *.
 rewrite <-(
   let x := PEmul (num (Fnorm fe1))
                      (rsplit_right (split (denum (Fnorm fe1)) (denum (Fnorm fe2)))) in
-ring_rw_pow_correct Rsth Reqe ARth CRmorph pow_th get_sign_spec n lpe l 
+ring_rw_pow_correct Rsth Reqe ARth CRmorph pow_th cdiv_th get_sign_spec n lpe l 
         Hlpe (refl_equal (Nmk_monpol_list lpe))
         x (refl_equal (Nnorm n (Nmk_monpol_list lpe) x))) in Hcrossprod.
 rewrite <-(
   let x := (PEmul (num (Fnorm fe2))
                      (rsplit_left
                         (split (denum (Fnorm fe1)) (denum (Fnorm fe2))))) in
-    ring_rw_pow_correct Rsth Reqe ARth CRmorph pow_th get_sign_spec n lpe l 
+    ring_rw_pow_correct Rsth Reqe ARth CRmorph pow_th cdiv_th get_sign_spec n lpe l 
         Hlpe (refl_equal (Nmk_monpol_list lpe))
         x (refl_equal (Nnorm n (Nmk_monpol_list lpe) x))) in Hcrossprod.
 simpl in Hcrossprod.
@@ -1600,7 +1603,7 @@ Theorem PFcons0_fcons_inv:
 intros l a l1; elim l1; simpl Fcons0; auto.
 simpl; auto.
 intros a0 l0.
-generalize (ring_correct Rsth Reqe ARth CRmorph pow_th O l nil a a0). simpl.
+generalize (ring_correct Rsth Reqe ARth CRmorph pow_th cdiv_th O l nil a a0). simpl.
   case (Peq ceqb (Nnorm O nil a) (Nnorm O nil a0)).
 intros H H0 H1; split; auto.
 rewrite H; auto.

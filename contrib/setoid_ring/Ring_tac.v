@@ -197,7 +197,7 @@ Ltac Ring Cst_tac CstPow_tac lemma1 req n lH :=
     [ ((let prh := proofHyp_tac lH in exact prh)
         || idtac "can not automatically proof hypothesis : maybe a left member of a hypothesis is not a monomial") 
     | vm_compute;
-      (exact (refl_equal true) || fail 1 "not a valid ring equation")] in
+      (exact (refl_equal true) || fail "not a valid ring equation")] in
   ParseRingComponents lemma1 ltac:(OnEquation req Main).
 
 Ltac Ring_norm_gen f Cst_tac CstPow_tac lemma2 req n lH rl :=
@@ -215,9 +215,10 @@ Ltac Ring_norm_gen f Cst_tac CstPow_tac lemma2 req n lH rl :=
       let prh := proofHyp_tac lH in
       pose (vlpe := lpe);
       match type of lemma2 with
-      | context [mk_monpol_list ?cO ?cI ?cadd ?cmul ?csub ?copp ?ceqb _] =>
+      | context [mk_monpol_list ?cO ?cI ?cadd ?cmul ?csub ?copp ?cdiv ?ceqb _]
+            =>
         compute_assertion vlmp_eq vlmp 
-            (mk_monpol_list cO cI cadd cmul csub copp ceqb vlpe);
+            (mk_monpol_list cO cI cadd cmul csub copp cdiv ceqb vlpe);
          (assert (rr_lemma := lemma2 n vlpe fv prh vlmp vlmp_eq)
           || fail 1 "type error when build the rewriting lemma");   
          RW_tac rr_lemma;
