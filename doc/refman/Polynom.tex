@@ -1,13 +1,12 @@
 \achapter{The \texttt{ring} and \texttt{field} tactic families}
-\aauthor{Bruno Barras, Benjamin Gr\'egoire and Assia
-  Mahboubi\footnote{based on previous work from
+\aauthor{Bruno Barras, Benjamin Gr\'egoire, Assia
+  Mahboubi, Laurent Th\'ery\footnote{based on previous work from
   Patrick Loiseleur and Samuel Boutin}}
 \label{ring}
 \tacindex{ring}
 
 This chapter presents the tactics dedicated to deal with ring and
 field equations.
-
 
 \asection{What does this tactic?}
 
@@ -46,8 +45,8 @@ $x (3 + yx + 25(1 - z)) + zx$ is $28x + (-24)xz + xxy$.
 \end{Examples}
 
 \texttt{ring} is also able to compute a normal form modulo monomial 
-equalities. For example, under the hypothesis that $x^2 = yz$,
- the normal form of $(x + 1)x - x - zy$ is 0.
+equalities. For example, under the hypothesis that $2x^2 = yz+1$,
+ the normal form of $2(x + 1)x - x - zy$ is $x+1$.
 
 \asection{The variables map}
 
@@ -112,6 +111,7 @@ above to the terms given. The tactic then replaces all occurrences of
 the terms given in the conclusion of the goal by their normal
 forms. If no term is given, then the conclusion should be an equation
 and both hand sides are normalized. 
+The tactic can also be applied in a hypothesis.
 
 The tactic must be loaded by \texttt{Require Import Ring}. The ring
 structures must be declared with the \texttt{Add Ring} command (see
@@ -141,8 +141,8 @@ intros; ring.
 Abort.
 \end{coq_eval}
 \begin{coq_example}
-Goal forall a b:Z, a*b = 0 ->
-        (a+b)^2 = a^2 + b^2.
+Goal forall a b:Z, 2*a*b = 30 ->
+        (a+b)^2 = a^2 + b^2 + 30.
 \end{coq_example}
 \begin{coq_example}
 intros a b H; ring [H].
@@ -337,6 +337,8 @@ describes their syntax and effects:
   {\tt contrib/setoid\_ring/RealField.v} for examples.
   By default the tactic does not recognize power expressions as ring
   expressions.
+\item[sign {\term}]
+\item[div {\term}]
   
   
 \end{description}
@@ -512,6 +514,11 @@ apply. There is only one specific modifier:
     [x] == [y] -> x?=!y = true}, which is the completeness of equality
   on coefficients w.r.t. the field equality.
 \end{description}
+
+{\tt field_simplify_eq}
+
+{\tt field_simplify}
+
 
 \asection{Legacy implementation}
 

@@ -1084,7 +1084,7 @@ NEWRINGVO=\
  contrib/setoid_ring/Ring_base.vo 	contrib/setoid_ring/InitialRing.vo \
  contrib/setoid_ring/Ring_equiv.vo 	contrib/setoid_ring/Ring.vo \
  contrib/setoid_ring/ArithRing.vo	contrib/setoid_ring/NArithRing.vo \
- contrib/setoid_ring/ZArithRing.vo \
+ contrib/setoid_ring/ZArithRing.vo 	contrib/setoid_ring/Ring_zdiv.vo \
  contrib/setoid_ring/Field_theory.vo	contrib/setoid_ring/Field_tac.vo \
  contrib/setoid_ring/Field.vo		contrib/setoid_ring/RealField.vo
 
