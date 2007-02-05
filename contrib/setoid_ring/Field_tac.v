@@ -67,12 +67,12 @@ Ltac FFV Cst CstPow add mul sub opp div inv pow t fv :=
   end 
  in TFV t fv.
 
-Ltac ParseFieldComponents lemma req :=
+Ltac ParseFieldComponents lemma :=
   match type of lemma with
   | context [
      (*   PCond _ _ _  _ _ _ _  _ _  _ _ -> *)
-        req (@FEeval ?R ?rO ?radd ?rmul ?rsub ?ropp ?rdiv ?rinv 
-                          ?C ?phi ?Cpow ?Cp_phi ?rpow _ _) _ ] =>
+        (@FEeval ?R ?rO ?radd ?rmul ?rsub ?ropp ?rdiv ?rinv 
+                 ?C ?phi ?Cpow ?Cp_phi ?rpow _ _) ] =>
       (fun f => f radd rmul rsub ropp rdiv rinv rpow C)
   | _ => fail 1 "field anomaly: bad correctness lemma (parse)"
   end.
@@ -130,7 +130,7 @@ Ltac Field_norm_gen f Cst_tac Pow_tac lemma Cond_lemma req n lH rl :=
       end in
     ReflexiveRewriteTactic mkFFV mkFE simpl_field lemma_tac fv rl;
     try (apply Cond_lemma; simpl_PCond req) in
-  ParseFieldComponents lemma req Main.
+  ParseFieldComponents lemma Main.
 
 Ltac Field_simplify_gen f := 
      fun req cst_tac pow_tac _ _ field_simplify_ok _ cond_ok pre post lH rl =>
@@ -150,28 +150,24 @@ Tactic Notation (at level 0)
   match goal with [|- ?G] => field_lookup Field_simplify [lH] rl [G] end.
 
 Tactic Notation "field_simplify" constr_list(rl) "in" hyp(H):=   
- match goal with 
- | [|- ?G] =>
+   let G := getGoal in
    let t := type of H in   
    let g := fresh "goal" in
    set (g:= G);
    generalize H;clear H;
    field_lookup Field_simplify [] rl [t];
    intro H;
-   unfold g;clear g
- end.
+   unfold g;clear g.
 
 Tactic Notation "field_simplify" "["constr_list(lH) "]" constr_list(rl) "in" hyp(H):=   
- match goal with 
- | [|- ?G] =>
+   let G := getGoal in
    let t := type of H in   
    let g := fresh "goal" in
    set (g:= G);
    generalize H;clear H;
    field_lookup Field_simplify [lH] rl [t];
    intro H;
-   unfold g;clear g
- end.
+   unfold g;clear g.
 
 (*
 Ltac Field_simplify_in hyp:= 
@@ -228,7 +224,7 @@ Ltac Field_Scheme Simpl_tac Cst_tac Pow_tac lemma Cond_lemma req n lH :=
                   [ Simpl_tac | apply Cond_lemma; simpl_PCond req]);
       clear vlpe nlemma in
     OnEquation req Main_eq in
-  ParseFieldComponents lemma req Main.
+  ParseFieldComponents lemma Main.
 
 (* solve completely a field equation, leaving non-zero conditions to be
    proved (field) *)
@@ -243,10 +239,10 @@ Ltac FIELD :=
        post().
  
 Tactic Notation (at level 0) "field" :=
-  match goal with [|- ?G] => field_lookup FIELD [] [G] end.
+  let G := getGoal in field_lookup FIELD [] [G].
 
 Tactic Notation (at level 0) "field" "[" constr_list(lH) "]" :=
-  match goal with [|- ?G] => field_lookup FIELD [lH] [G] end.
+  let G := getGoal in field_lookup FIELD [lH] [G].
 
 (* transforms a field equation to an equivalent (simplified) ring equation,
    and leaves non-zero conditions to be proved (field_simplify_eq) *)
@@ -260,10 +256,10 @@ Ltac FIELD_SIMPL  :=
        post().
 
 Tactic Notation (at level 0) "field_simplify_eq" :=  
-  match goal with [|- ?G] => field_lookup FIELD_SIMPL [] [G] end.
+  let G := getGoal in field_lookup FIELD_SIMPL [] [G].
 
 Tactic Notation (at level 0) "field_simplify_eq" "[" constr_list(lH) "]" :=  
-  match goal with [|- ?G] => field_lookup FIELD_SIMPL [lH] [G] end.
+  let G := getGoal in field_lookup FIELD_SIMPL [lH] [G].
 
 (* Same as FIELD_SIMPL but in hypothesis *)
 
@@ -310,7 +306,7 @@ Ltac Field_simplify_eq Cst_tac Pow_tac lemma Cond_lemma req n lH :=
                clear hyp  
              end)
      end in
-  ParseFieldComponents lemma req Main.
+  ParseFieldComponents lemma Main.
 
 Ltac FIELD_SIMPL_EQ :=
  fun req cst_tac pow_tac _ _ _ lemma cond_ok pre post lH rl =>
