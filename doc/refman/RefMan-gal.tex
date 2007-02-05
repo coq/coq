@@ -528,26 +528,110 @@ The expression {\tt match} {\term$_0$} {\returntype} {\tt with}
 {\pattern$_1$} {\tt =>} {\term$_1$} {\tt $|$} {\ldots} {\tt $|$}
 {\pattern$_n$} {\tt =>} {\term$_n$} {\tt end}, denotes a {\em
 pattern-matching} over the term {\term$_0$} (expected to be of an
-inductive type $I$). 
-The terms {\term$_1$}\ldots{\term$_n$} are called branches. In
-a simple pattern \qualid~\nelist{\ident}{}, the qualified identifier
-{\qualid} is intended to
-be a constructor. There should be one branch for every constructor of
-$I$.
+inductive type $I$).  The terms {\term$_1$}\ldots{\term$_n$} are the
+{\em branches} of the pattern-matching expression. In a simple pattern
+\qualid~\nelist{\ident}{}, the qualified identifier {\qualid} is
+intended to be a constructor. There should be one branch for every
+constructor of $I$.
 
-The {\returntype} is used to compute the resulting type of the whole
-{\tt match} expression and the type of the branches. Most of the time,
-when this type is the same as the types of all the {\term$_i$}, the
-annotation is not needed\footnote{except if no equation is given, to
-match the term in an empty type, e.g. the type \texttt{False}}. This
-annotation has to be given when the resulting type of the whole {\tt
-match} depends on the actual {\term$_0$} matched.
+The {\returntype} expresses the type returned by the whole {\tt match}
+expression. There are several cases.
 
+In the {\em non dependent} case, all branches have the same type, and
+the {\returntype} is the common type of branches. In this case,
+{\returntype} can usually be omitted as it can be inferred from the
+type of branches\footnote{except if no equation is given, to match the
+term in an empty type, e.g. the type \texttt{False}}.
+
+In the {\em dependent} case, there are three subcases. In the first
+subcase, the type in each branch may depend on the exact value being
+matched in the branch. In this case, the whole pattern-matching itself
+depends on the term being matched. This dependency of the term being
+matched in the return type is expressed with an {\tt as {\ident}}
+clause where {\ident} is dependent in the return type.
+For instance, in the following example:
+\begin{coq_example*}
+Inductive bool : Type := true : bool | false : bool.
+Inductive eq (A:Type) (x:A) : A -> Prop := refl_equal : eq A x x.
+Inductive or (A:Prop) (B:Prop) : Prop :=
+| or_introl : A -> or A B
+| or_intror : B -> or A B.
+Definition bool_case (b:bool) : or (eq bool b true) (eq bool b false)
+:= match b as x return or (eq bool x true) (eq bool x false) with
+   | true  => or_introl (eq bool true true) (eq bool true false)
+                (refl_equal bool true)
+   | false => or_intror (eq bool false true) (eq bool false false)
+                (refl_equal bool false)
+   end.
+\end{coq_example*}
+the branches have respective types {\tt or (eq bool true true) (eq
+bool true false)} and {\tt or (eq bool false true) (eq bool false
+false)} while the whole pattern-matching expression has type {\tt or
+(eq bool b true) (eq bool b false)}, the identifier {\tt x} being used
+to represent the dependency.
+
+\noindent {\bf Remark: } when the term being matched is a variable,
+the {\tt as} clause can be omitted and the term being matched can
+serve itself as binding name in the return type. For instance, the
+following alternative definition is accepted and has the same meaning
+as the above one.
+\begin{coq_example*}
+Definition bool_case (b:bool) : or (eq bool b true) (eq bool b false)
+:= match b return or (eq bool b true) (eq bool b false) with
+   | true  => or_introl (eq bool true true) (eq bool true false)
+                (refl_equal bool true)
+   | false => or_intror (eq bool false true) (eq bool false false)
+                (refl_equal bool false)
+   end.
+\end{coq_example*}
+
+The second subcase is only concerned with the inductive types that
+have constraints expressed by non uniform arguments such as the
+equality predicate (see section~\ref{Equality}), the order predicate
+on natural numbers (see section~\ref{le}) or the type of lists of a
+given length (see section~\ref{listn}). In this situation, the type of
+each branch can depend on the type dependencies specific to the branch
+and the whole pattern-matching expression has a type determined by the
+specific dependencies in the type of the term being matched. This
+dependency of the return type in the non uniform arguments of the
+inductive type is expressed using a {\tt
+in~I~\_~$\ldots$~\_~\ident$_1$~$\ldots$~\ident$_n$} clause, where
+\begin{itemize}
+\item $I$ is the inductive type of the term being matched;
+
+\item the \ident$_i$'s correspond to the non uniform arguments of the
+inductive type: the return type is dependent on them;
+
+\item the {\_}'s denote the uniform parameters of the inductive type:
+the return type is not dependent on them.
+\end{itemize}
+
+For instance, in the following example:
+\begin{coq_example*}
+Definition sym_equal (A:Type) (x y:A) (H:eq A x y) : eq A y x :=
+  match H in eq _ _ z return eq A z x with
+  | refl_equal => refl_equal A x
+  end.
+\end{coq_example*}
+the type of the branch has type {\tt eq~A~x~x} because the third
+argument of {\tt eq} is {\tt x} in the type of the pattern {\tt
+refl\_equal}. On the contrary, the type of the whole pattern-matching
+expression has type {\tt eq~A~y~x} because the third argument of {\tt
+eq} is {\tt y} in the type of {\tt H}. This dependency of the case
+analysis in the third argument of {\tt eq} is expressed by the
+identifier {\tt z} in the return type.
+
+Finally, the third subcase is a combination of the first and second
+subcase. In particular, it only applies to pattern-matching on terms
+in a type with non uniform arguments. For this third subcase, both
+the clauses {\tt as} and {\tt in} are available.
+ 
 There are specific notations for case analysis on types with one or
 two constructors: {\tt if {\ldots} then {\ldots} else {\ldots}} and
 {\tt let (}\nelist{\ldots}{,}{\tt ) :=} {\ldots} {\tt in} {\ldots}.
 
-\SeeAlso Section~\ref{Mult-match} for details and examples.
+\SeeAlso Section~\ref{Mult-match} for convenient extensions of
+pattern-matching.
 
 \subsection{Recursive functions
 \label{fixpoints}

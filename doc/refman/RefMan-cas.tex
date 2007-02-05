@@ -304,10 +304,11 @@ The previous examples illustrate pattern matching on objects of
 non-dependent types, but we can also 
 use the macro to destructure objects of dependent type.
 Consider the type \verb+listn+ of lists of a certain length:
+\label{listn}
 
 \begin{coq_example}
 Inductive listn : nat -> Set :=
-  | niln : listn 0%N
+  | niln : listn O
   | consn : forall n:nat, nat -> listn n -> listn (S n).
 \end{coq_example}
 
@@ -324,7 +325,7 @@ we can define it by case analysis:
 Reset length.
 Definition length (n:nat) (l:listn n) :=
   match l with
-  | niln => 0%N
+  | niln => O
   | consn n _ _ => S n
   end.
 \end{coq_example}
@@ -338,7 +339,7 @@ alternative definition using nested patterns:
 \begin{coq_example}
 Definition length1 (n:nat) (l:listn n) :=
   match l with
-  | niln => 0%N
+  | niln => O
   | consn n _ niln => S n
   | consn n _ (consn _ _ _) => S n
   end.
@@ -349,8 +350,8 @@ It is obvious that \verb+length1+ is  another version of
 \begin{coq_example}
 Definition length2 (n:nat) (l:listn n) :=
   match l with
-  | niln => 0%N
-  | consn n _ niln => 1%N
+  | niln => O
+  | consn n _ niln => S O
   | consn n _ (consn m _ _) => S (S m)
   end.
 \end{coq_example}
@@ -375,8 +376,8 @@ Thus, the following term \verb+length3+ corresponds to the function
 \begin{coq_example}
 Definition length3 (n:nat) (l:listn n) :=
   match l with
-  | niln => 0%N
-  | consn O _ _ => 1%N
+  | niln => O
+  | consn O _ _ => S O
   | consn (S n) _ _ => S (S n)
   end.
 \end{coq_example}
@@ -482,7 +483,7 @@ Consider the following definition of the predicate less-equal
 
 \begin{coq_example}
 Inductive Le : nat -> nat -> Prop :=
-  | LeO : forall n:nat, Le 0%N n
+  | LeO : forall n:nat, Le O n
   | LeS : forall n m:nat, Le n m -> Le (S n) (S m).
 \end{coq_example}
 
@@ -640,7 +641,7 @@ Fixpoint last (n:nat) (l:listn n) {struct l} : nat :=
   match l with
   | consn _ a niln => a
   | consn m _ x => last m x
-  | niln => 0%N
+  | niln => O
   end.
 \end{coq_example}
 
@@ -653,7 +654,7 @@ Fixpoint last (n:nat) (l:listn n) {struct l} : nat :=
   match l with
   | consn _ a niln => a
   | consn n _ (consn m b x) => last n (consn m b x)
-  | niln => 0%N
+  | niln => O
   end.
 \end{coq_example*}
 
@@ -681,7 +682,7 @@ Fixpoint last (n:nat) (l:listn n) {struct l} : nat :=
                    | niln => a
                    | _ => last m x
                    end
-  | niln => 0%N
+  | niln => O
   end.
 \end{coq_example}
 
