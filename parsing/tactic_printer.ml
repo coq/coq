@@ -89,6 +89,9 @@ let rec print_decl_script tac_printer nochange sigma pf =
 	   pr_change pf.goal)
 	++ fnl ()
     | Some (Daimon,[]) -> mt ()
+    | Some (Prim Change_evars,[next]) -> 
+      (* ignore evar changes *)
+        print_decl_script tac_printer nochange sigma next
     | Some (Nested(Proof_instr (opened,instr),_) as rule,subprfs) ->
 	begin
 	  match instr.instr,subprfs with
