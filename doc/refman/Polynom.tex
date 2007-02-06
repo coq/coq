@@ -159,7 +159,7 @@ Reset Initial.
     where $m$ is a monomial (after ``abstraction''),
     $p$ a polynomial and $=$ the corresponding equality of the ring structure.
 
-  \item {\tt ring\_simplify [\term$_1$ {\ldots} \term$_n$] $t_1 \ldots t_n$ in 
+  \item {\tt ring\_simplify [\term$_1$ {\ldots} \term$_n$] $t_1 \ldots t_m$ in 
 {\ident}}
      performs the simplification in the hypothesis named {\tt ident}.
 \end{Variants}
@@ -337,9 +337,17 @@ describes their syntax and effects:
   {\tt contrib/setoid\_ring/RealField.v} for examples.
   By default the tactic does not recognize power expressions as ring
   expressions.
-\item[sign {\term}]
-\item[div {\term}]
-  
+\item[sign {\term}] allows {\tt ring\_simplify} to use a minus operation
+  when outputing its normal form, i.e writing $x - y$ instead of $x + (-y)$. 
+  The term {\term} is a proof that a given sign function indicates expressions
+   that are signed ({\term} has to be a
+  proof of {\tt Ring\_theory.get\_sign}). See  {\tt contrib/setoid\_ring/IntialRing.v} for examples of sign function.
+\item[div {\term}] allows  {\tt ring} and {\tt ring\_simplify} to use moniomals
+with coefficient other than 1 in the rewriting. The term {\term} is a proof that a given division function  satisfies the specification of an euclidean
+  division function  ({\term} has to be a
+  proof of {\tt Ring\_theory.div\_theory}). For example, this function is
+  called when trying to rewrite $7x$ by $2x = z$ to tell that $7 = 3 * 2 + 1$.
+   See  {\tt contrib/setoid\_ring/IntialRing.v} for examples of div function.
   
 \end{description}
 
@@ -457,9 +465,111 @@ correctness theorem to well-chosen arguments.
 \tacindex{field\_simplify}
 \tacindex{field\_simplify\_eq}}
 
+
+The {\tt field} tactic is  an extension of the {\tt ring} to deal with
+rational expresision. Given a rational expression $F=0$. It first reduces the expression $F$ to a common denominator $N/D= 0$ where $N$ and $D$ are two ring
+expressions.
+For example, if we take $F = (1 - 1/x) x - x + 1$, this gives 
+$ N= (x -1)  x - x^2 + x$ and $D= x$. It then calls {\tt ring} 
+to solve $N=0$. Note that {\tt field} also generates non-zero conditions
+for all the denominators it encounters in the reduction.
+In our example, it generates the condition $x \neq 0$.
+Non-zero conditions are {\it always} polynomial expressions. For example 
+when reducing the expression $1/(1 + 1/x)$, two side conditions are
+generated: $x\neq 0$ and $x + 1 \neq 0$.
 % - Faire Require Import Field...
 % - RealField
 % -
+
+The tactic must be loaded by \texttt{Require Import Field}. The field
+structures must be declared with the \texttt{Add Field} command (see
+below). The fiel of reals is predefined; if one wants to use the
+tactic on \texttt{R} one must first require the module
+\texttt{RealField} (exported by \texttt{Reals}).
+
+\Example
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+\begin{coq_example}
+Require Import Reals.
+Open Scope R_scope.
+Goal forall x,  x <> 0 ->
+   (1 - 1/x) * x - x + 1 = 0.
+\end{coq_example}
+\begin{coq_example}
+intros; field; auto.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+\begin{coq_example}
+Goal forall x y, y <> 0 -> y = x -> x/y = 1.
+\end{coq_example}
+\begin{coq_example}
+intros x y H H1; field [H1]; auto.
+\end{coq_example} 
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+\begin{Variants}
+  \item {\tt field [\term$_1$ {\ldots} \term$_n$]} decides the equality of two
+    terms modulo field operations and rewriting of the equalities
+    defined by \term$_1$ {\ldots} \term$_n$. Each of \term$_1$
+    {\ldots} \term$_n$ has to be a proof of some equality $m = p$,
+    where $m$ is a monomial (after ``abstraction''),
+    $p$ a polynomial and $=$ the corresponding equality of the field structure.
+
+  \item {\tt field\_simplify} 
+     performs the simplification in the conclusion of the goal, $F_1 = F_2$
+     becomes $N_1/D_1 = N_2/D_2$.
+
+  \item {\tt field\_simplify   [\term$_1$ {\ldots} \term$_n$]}
+     performs the simplification in the conclusion of the goal using
+    the equalities
+    defined by \term$_1$ {\ldots} \term$_n$.
+
+  \item {\tt field\_simplify   [\term$_1$ {\ldots} \term$_n$] $t_1$ \ldots
+$t_m$}
+     performs the simplification in the terms $t_1$ \ldots $t_m$
+    of the conclusion of the goal using
+    the equalities
+    defined by \term$_1$ {\ldots} \term$_n$. 
+
+  \item {\tt field\_simplify in $H$}  
+     performs the simplification in the assumption $H$.
+
+  \item {\tt field\_simplify   [\term$_1$ {\ldots} \term$_n$] in $H$}
+     performs the simplification in the assumption $H$ using
+    the equalities
+    defined by \term$_1$ {\ldots} \term$_n$. 
+
+  \item {\tt field\_simplify   [\term$_1$ {\ldots} \term$_n$] $t_1$ \ldots
+$t_m$ in $H$}
+     performs the simplification in the terms $t_1$ \ldots $t_n$
+    of the assumption $H$ using
+    the equalities
+    defined by \term$_1$ {\ldots} \term$_m$. 
+
+  \item {\tt field\_simplify\_eq}
+     performs the simplification in the conclusion of the goal removing
+     the denominator. $F_1 = F_2$
+     becomes $N_1 D_2 = N_2  D_1$.
+
+  \item {\tt field\_simplify\_eq   [\term$_1$ {\ldots} \term$_n$]}
+     performs the simplification in the conclusion of the goal using
+    the equalities
+    defined by \term$_1$ {\ldots} \term$_n$. 
+
+  \item {\tt field\_simplify\_eq} in $H$
+     performs the simplification in the assumption $H$.
+
+  \item {\tt field\_simplify\_eq   [\term$_1$ {\ldots} \term$_n$] in $H$}
+     performs the simplification in the assumption $H$ using
+    the equalities
+    defined by \term$_1$ {\ldots} \term$_n$. 
+\end{Variants}
 
 \asection{Adding a new field structure
 \comindex{Add Field}}
@@ -515,9 +625,9 @@ apply. There is only one specific modifier:
   on coefficients w.r.t. the field equality.
 \end{description}
 
-{\tt field_simplify_eq}
+{\tt field\_simplify\_eq}
 
-{\tt field_simplify}
+{\tt field\_simplify}
 
 
 \asection{Legacy implementation}
