@@ -18,8 +18,8 @@ Require Import Transitive_Closure.
      L. Paulson  JSC (1986) 2, 325-355 *)
 
 Section WfLexicographic_Product.
-  Variable A : Set.
-  Variable B : A -> Set.
+  Variable A : Type.
+  Variable B : A -> Type.
   Variable leA : A -> A -> Prop.
   Variable leB : forall x:A, B x -> B x -> Prop.
 
@@ -74,8 +74,8 @@ End WfLexicographic_Product.
 
 
 Section Wf_Symmetric_Product.
-  Variable A : Set.
-  Variable B : Set.
+  Variable A : Type.
+  Variable B : Type.
   Variable leA : A -> A -> Prop.
   Variable leB : B -> B -> Prop.
 
@@ -106,7 +106,7 @@ End Wf_Symmetric_Product.
 
 Section Swap.
   
-  Variable A : Set.
+  Variable A : Type.
   Variable R : A -> A -> Prop.
 
   Notation SwapProd := (swapprod A R).

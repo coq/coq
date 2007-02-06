@@ -78,7 +78,7 @@ End Union.
 
 
 Section Disjoint_Union.
-Variables A B : Set.
+Variables A B : Type.
 Variable leA : A -> A -> Prop.
 Variable leB : B -> B -> Prop.
 
@@ -94,8 +94,8 @@ End Disjoint_Union.
 Section Lexicographic_Product.
   (* Lexicographic order on dependent pairs *)
 
-  Variable A : Set.
-  Variable B : A -> Set.
+  Variable A : Type.
+  Variable B : A -> Type.
   Variable leA : A -> A -> Prop.
   Variable leB : forall x:A, B x -> B x -> Prop.
 
@@ -110,8 +110,8 @@ End Lexicographic_Product.
 
 
 Section Symmetric_Product.
-  Variable A : Set.
-  Variable B : Set.
+  Variable A : Type.
+  Variable B : Type.
   Variable leA : A -> A -> Prop.
   Variable leB : B -> B -> Prop.
 
@@ -125,7 +125,7 @@ End Symmetric_Product.
 
 
 Section Swap.
-  Variable A : Set.
+  Variable A : Type.
   Variable R : A -> A -> Prop.
 
   Inductive swapprod : A * A -> A * A -> Prop :=
@@ -138,7 +138,7 @@ End Swap.
 
 Section Lexicographic_Exponentiation.
   
-  Variable A : Set.
+  Variable A : Type.
   Variable leA : A -> A -> Prop.
   Let Nil := nil (A:=A).
   Let List := list A.
@@ -156,7 +156,7 @@ Section Lexicographic_Exponentiation.
       forall (x y:A) (l:List),
         leA x y -> Desc (l ++ y :: Nil) -> Desc ((l ++ y :: Nil) ++ x :: Nil).
 
-  Definition Pow : Set := sig Desc.
+  Definition Pow : Type := sig Desc.
   
   Definition lex_exp (a b:Pow) : Prop := Ltl (proj1_sig a) (proj1_sig b).
 

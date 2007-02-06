@@ -14,7 +14,7 @@ Require Import Relation_Definitions.
 Require Import Relation_Operators.
 
 Section Wf_Transitive_Closure.
-  Variable A : Set.
+  Variable A : Type.
   Variable R : relation A.
 
   Notation trans_clos := (clos_trans A R).

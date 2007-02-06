@@ -13,7 +13,7 @@ Require Export Relation_Operators.
 Require Export Operators_Properties.
 
 Lemma inverse_image_of_equivalence :
-  forall (A B:Set) (f:A -> B) (r:relation B),
+  forall (A B:Type) (f:A -> B) (r:relation B),
     equivalence B r -> equivalence A (fun x y:A => r (f x) (f y)).
 Proof.
   intros; split; elim H; red in |- *; auto.
@@ -21,7 +21,7 @@ Proof.
 Qed.
 
 Lemma inverse_image_of_eq :
-  forall (A B:Set) (f:A -> B), equivalence A (fun x y:A => f x = f y).
+  forall (A B:Type) (f:A -> B), equivalence A (fun x y:A => f x = f y).
 Proof.
   split; red in |- *;
     [  (* reflexivity *) reflexivity

@@ -15,10 +15,10 @@
 Require Import Eqdep.
 
 Section WellOrdering.
-  Variable A : Set.
-  Variable B : A -> Set. 
+  Variable A : Type.
+  Variable B : A -> Type. 
   
-  Inductive WO : Set :=
+  Inductive WO : Type :=
     sup : forall (a:A) (f:B a -> WO), WO.
 
 
@@ -52,7 +52,7 @@ Section Characterisation_wf_relations.
   (*  in course of development                                          *)
 
 
-  Variable A : Set.
+  Variable A : Type.
   Variable leA : A -> A -> Prop.
 
   Definition B (a:A) := {x : A | leA x a}.
@@ -60,8 +60,8 @@ Section Characterisation_wf_relations.
   Definition wof : well_founded leA -> A -> WO A B.
   Proof.
     intros.
-    apply (well_founded_induction H (fun a:A => WO A B)); auto.
-    intros.
+    apply (well_founded_induction_type H (fun a:A => WO A B)); auto.
+    intros x H1.
     apply (sup A B x).
     unfold B at 1 in |- *.
     destruct 1 as [x0].
