@@ -1421,14 +1421,14 @@ pretyping/evarutil.cmo: lib/util.cmi kernel/univ.cmi pretyping/typing.cmi \
     kernel/typeops.cmi pretyping/termops.cmi kernel/term.cmi kernel/sign.cmi \
     pretyping/reductionops.cmi kernel/reduction.cmi \
     pretyping/pretype_errors.cmi lib/pp.cmi kernel/names.cmi \
-    library/nameops.cmi pretyping/evd.cmi kernel/environ.cmi \
-    pretyping/evarutil.cmi 
+    library/nameops.cmi library/global.cmi pretyping/evd.cmi \
+    kernel/environ.cmi pretyping/evarutil.cmi 
 pretyping/evarutil.cmx: lib/util.cmx kernel/univ.cmx pretyping/typing.cmx \
     kernel/typeops.cmx pretyping/termops.cmx kernel/term.cmx kernel/sign.cmx \
     pretyping/reductionops.cmx kernel/reduction.cmx \
     pretyping/pretype_errors.cmx lib/pp.cmx kernel/names.cmx \
-    library/nameops.cmx pretyping/evd.cmx kernel/environ.cmx \
-    pretyping/evarutil.cmi 
+    library/nameops.cmx library/global.cmx pretyping/evd.cmx \
+    kernel/environ.cmx pretyping/evarutil.cmi 
 pretyping/evd.cmo: lib/util.cmi kernel/univ.cmi pretyping/termops.cmi \
     kernel/term.cmi kernel/sign.cmi kernel/reduction.cmi lib/pp.cmi \
     kernel/names.cmi library/nameops.cmi kernel/mod_subst.cmi \
