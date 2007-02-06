@@ -553,7 +553,7 @@ e types")
         let cl' = replace_vars [id1,mkVar id2] cl in
           ([mk_goal sign' cl'], sigma)
 
-    | Change_evars as r ->
+    | Change_evars ->
         match norm_goal sigma goal with
 	    Some ngl -> ([ngl],sigma)
           | None -> ([goal], sigma)
