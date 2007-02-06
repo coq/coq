@@ -2480,8 +2480,11 @@ let abstract_subproof name tac gls =
 	by (tclCOMPLETE (tclTHEN (tclDO (List.length sign) intro) tac)); 
 	let r = cook_proof () in 
 	delete_current_proof (); r
-      with e when catchable_exception e -> 
-	(delete_current_proof(); raise e)
+      with 
+	  e when catchable_exception e -> 
+	    (delete_current_proof(); raise e)
+	| FailError (0,_) as e -> 
+	    (delete_current_proof(); raise e)
     in   (* Faudrait un peu fonctionnaliser cela *)
     let cd = Entries.DefinitionEntry const in
     let con = Declare.declare_internal_constant na (cd,IsProof Lemma) in
