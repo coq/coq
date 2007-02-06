@@ -18,7 +18,7 @@ Require Import Relation_Operators.
 
 Section Properties.
 
-  Variable A : Set.
+  Variable A : Type.
   Variable R : relation A.
 
   Let incl (R1 R2:relation A) : Prop := forall x y:A, R1 x y -> R2 x y.
@@ -43,7 +43,7 @@ Section Properties.
     Qed.
 
     Lemma clos_refl_trans_ind_left :
-      forall (A:Set) (R:A -> A -> Prop) (M:A) (P:A -> Prop),
+      forall (A:Type) (R:A -> A -> Prop) (M:A) (P:A -> Prop),
 	P M ->
 	(forall P0 N:A, clos_refl_trans A R M P0 -> P P0 -> R P0 N -> P N) ->
 	forall a:A, clos_refl_trans A R M a -> P a.

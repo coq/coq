@@ -105,8 +105,8 @@ Implicit Arguments eq_dep1 [U P].
 (** Dependent equality is equivalent to equality on dependent pairs *)
 
 Lemma eq_sigS_eq_dep :
-  forall (U:Set) (P:U -> Set) (p q:U) (x:P p) (y:P q),
-    existS P p x = existS P q y -> eq_dep p x q y.
+  forall (U:Type) (P:U -> Type) (p q:U) (x:P p) (y:P q),
+    existT P p x = existT P q y -> eq_dep p x q y.
 Proof.
   intros.
   dependent rewrite H.
@@ -114,7 +114,7 @@ Proof.
 Qed.
 
 Lemma equiv_eqex_eqdep :
-  forall (U:Set) (P:U -> Set) (p q:U) (x:P p) (y:P q),
+  forall (U:Type) (P:U -> Type) (p q:U) (x:P p) (y:P q),
    existS P p x = existS P q y <-> eq_dep p x q y.
 Proof.
   split. 
@@ -248,28 +248,13 @@ End Equivalences.
 Section Corollaries.
   
   Variable U:Type.
-  Variable V:Set.
   
   (** UIP implies the injectivity of equality on dependent pairs in Type *)
-
-  Definition Inj_dep_pairT :=
-    forall (P:U -> Type) (p:U) (x y:P p),
-      existT P p x = existT P p y -> x = y.
-  
-  Lemma eq_dep_eq__inj_pairT2 : Eq_dep_eq U -> Inj_dep_pairT.
-  Proof.
-    intro eq_dep_eq; red; intros.
-    apply eq_dep_eq.
-    apply eq_sigT_eq_dep.
-    assumption.
- Qed.
  
-  (** UIP implies the injectivity of equality on dependent pairs in Set *)
+ Definition Inj_dep_pair :=
+   forall (P:U -> Type) (p:U) (x y:P p), existT P p x = existT P p y -> x = y.
  
- Definition Inj_dep_pairS :=
-   forall (P:V -> Set) (p:V) (x y:P p), existS P p x = existS P p y -> x = y.
- 
- Lemma eq_dep_eq__inj_pair2 : Eq_dep_eq V -> Inj_dep_pairS.
+ Lemma eq_dep_eq__inj_pair2 : Eq_dep_eq U -> Inj_dep_pair.
  Proof.
    intro eq_dep_eq; red; intros.
    apply eq_dep_eq.
@@ -278,6 +263,11 @@ Section Corollaries.
  Qed.
 
 End Corollaries.
+
+Notation Inj_dep_pairS := Inj_dep_pair.
+Notation Inj_dep_pairT := Inj_dep_pair.
+Notation eq_dep_eq__inj_pairT2 := eq_dep_eq__inj_pair2.
+ 
 
 (************************************************************************)
 (** *** C. Definition of the functor that builds properties of dependent equalities assuming axiom eq_rect_eq *)
@@ -333,17 +323,12 @@ End Axioms.
 
 (** UIP implies the injectivity of equality on dependent pairs in Type *)
 
-Lemma inj_pairT2 :
+Lemma inj_pair2 :
  forall (U:Type) (P:U -> Type) (p:U) (x y:P p),
    existT P p x = existT P p y -> x = y.
-Proof (fun U => eq_dep_eq__inj_pairT2 U (eq_dep_eq U)).
-
-(** UIP implies the injectivity of equality on dependent pairs in Set *)
-
-Lemma inj_pair2 :
- forall (U:Set) (P:U -> Set) (p:U) (x y:P p),
-   existS P p x = existS P p y -> x = y.
 Proof (fun U => eq_dep_eq__inj_pair2 U (eq_dep_eq U)).
+
+Notation inj_pairT2 := inj_pair2.
 
 End EqdepTheory.
 
