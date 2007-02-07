@@ -36,8 +36,9 @@ let assumption_message id =
   Options.if_verbose message ((string_of_id id) ^ " is assumed")
 
 let default_tactic : Proof_type.tactic ref = ref Refiner.tclIDTAC
+let default_tactic_expr : Tacexpr.glob_tactic_expr ref = ref (Obj.magic 0)
 
-let set_default_tactic t = default_tactic := t
+let set_default_tactic t = default_tactic_expr := t; default_tactic := Tacinterp.eval_tactic t
 
 let evar_of_obligation o = { evar_hyps = Global.named_context_val () ;
 			     evar_concl = o.obl_type ; 
@@ -83,11 +84,11 @@ let from_prg : program_info ProgMap.t ref = ref ProgMap.empty
 
 let _ = 
   Summary.declare_summary "program-tcc-table"
-    { Summary.freeze_function = (fun () -> !from_prg);
+    { Summary.freeze_function = (fun () -> !from_prg, !default_tactic_expr);
       Summary.unfreeze_function =
-        (fun v -> from_prg := v);
+        (fun (v, t) -> from_prg := v; set_default_tactic t);
       Summary.init_function =
-        (fun () -> from_prg := ProgMap.empty);
+        (fun () -> from_prg := ProgMap.empty; set_default_tactic (Subtac_utils.utils_call "subtac_simpl" []));
       Summary.survive_module = false;
       Summary.survive_section = false }
 

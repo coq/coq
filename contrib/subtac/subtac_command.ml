@@ -178,10 +178,10 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
   let env = Global.env() in 
   let nc = named_context env in
   let nc_len = named_context_length nc in
-(*   let pr c = my_print_constr env c in *)
-(*   let prr = Printer.pr_rel_context env in *)
-(*   let prn = Printer.pr_named_context env in *)
-(*   let pr_rel env = Printer.pr_rel_context env in *)
+  let pr c = my_print_constr env c in
+  let prr = Printer.pr_rel_context env in
+  let prn = Printer.pr_named_context env in
+  let pr_rel env = Printer.pr_rel_context env in
 (*   let _ =  *)
 (*     try debug 2 (str "In named context: " ++ prn (named_context env) ++ str "Rewriting fixpoint: " ++ Ppconstr.pr_id recname ++  *)
 (* 		 Ppconstr.pr_binders bl ++ str " : " ++  *)
@@ -193,40 +193,42 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
   let after, ((argname, _, argtyp) as arg), before = split_args (succ n) binders_rel in
   let before_length, after_length = List.length before, List.length after in
   let argid = match argname with Name n -> n | _ -> assert(false) in
-  let _liftafter = lift_binders 1 after_length after in
+  let liftafter = lift_binders 1 after_length after in
   let envwf = push_rel_context before env in
   let wf_rel, wf_rel_fun, measure_fn = 
     let rconstr_body, rconstr = 
       let app = mkAppC (r, [mkIdentC (id_of_name argname)]) in
        let env = push_rel_context [arg] envwf in
        let capp = interp_constr isevars env app in
- 	capp, mkLambda (argname, argtyp, capp)
+ 	 capp, mkLambda (argname, argtyp, capp)
      in
+      trace (str"rconstr_body: " ++ pr rconstr_body);
        if measure then
  	let lt_rel = constr_of_global (Lazy.force lt_ref) in
  	let name s = Name (id_of_string s) in
- 	let wf_rel_fun = 
- 	  (fun x y ->
- 	      mkApp (lt_rel, [| subst1 x rconstr_body; 
- 				subst1 y rconstr_body |])) 
- 	in
+ 	let wf_rel_fun lift x y = (* lift to before_env *)
+	  trace (str"lifter rconstr_body:" ++ pr (liftn lift 2 rconstr_body));
+ 	  mkApp (lt_rel, [| subst1 x (liftn lift 2 rconstr_body); 
+ 			    subst1 y (liftn lift 2 rconstr_body) |])
+	in
  	let wf_rel = 
  	  mkLambda (name "x", argtyp,
  		    mkLambda (name "y", lift 1 argtyp,
- 			      wf_rel_fun (mkRel 2) (mkRel 1)))
+ 			      wf_rel_fun 0 (mkRel 2) (mkRel 1)))
  	in
  	  wf_rel, wf_rel_fun , Some rconstr
-       else rconstr, (fun x y -> mkApp (rconstr, [|x; y|])), None
+       else rconstr, (fun lift x y -> mkApp (rconstr, [|x; y|])), None
   in
   let wf_proof = mkApp (Lazy.force well_founded, [| argtyp ; wf_rel |])
   in
   let argid' = id_of_string (string_of_id argid ^ "'") in
-  let wfarg len = (Name argid', None, 
+  let wfarg len = (Name argid', None,
   		   mkSubset (Name argid') (lift len argtyp) 
-		     (wf_rel_fun (mkRel 1) (mkRel (len + 1))))
+		     (wf_rel_fun (succ len) (mkRel 1) (mkRel (len + 1))))
   in
   let top_bl = after @ (arg :: before) in
-  let intern_bl = after @ (wfarg 1 :: arg :: before) in
+  let intern_bl = liftafter @ (wfarg 1 :: arg :: before) in
+    (try trace (str "Intern bl: " ++ prr intern_bl) with _ -> ());
   let top_env = push_rel_context top_bl env in
   let _intern_env = push_rel_context intern_bl env in
   let top_arity = interp_type isevars top_env arityc in
@@ -234,36 +236,40 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
   let projection = 
     mkApp (proj, [| argtyp ;
 		    (mkLambda (Name argid', argtyp,
-			       (wf_rel_fun (mkRel 1) (mkRel 3)))) ;
+			       (wf_rel_fun 1 (mkRel 1) (mkRel 3)))) ;
 		    mkRel 1
 		 |])
   in
-    (*   (try debug 2 (str "Top arity: " ++ my_print_constr top_env top_arity) with _ -> ()); *)
-  let intern_arity = substnl [projection] after_length top_arity in 
-(*   (try debug 2 (str "Top arity after subst: " ++ my_print_constr intern_env intern_arity) with _ -> ()); *)
+  (try trace (str "Top env: " ++ prr top_bl ++ spc () ++ str "Top arity: " ++ my_print_constr top_env top_arity) with _ -> ());
+  let intern_arity' = liftn 1 after_length top_arity in (* arity in after :: wfarg :: arg :: before *)
+  (try trace (str "intern_arity': " ++ my_print_constr _intern_env intern_arity') with _ -> ());
+  let intern_arity = substnl [projection] after_length intern_arity' in (* substitute the projection of wfarg for arg *)
+  (try trace (str "Top arity after subst: " ++ my_print_constr top_env intern_arity) with _ -> ());
+  let intern_arity = liftn 1 (succ after_length) intern_arity in (* back in after :: wfarg :: arg :: before (ie, jump over arg) *)
+  (try trace (str "Top arity after subst in intern_env: " ++ my_print_constr _intern_env intern_arity) with _ -> ());
   let intern_before_env = push_rel_context before env in
-  let intern_fun_bl = after @ [wfarg 1]  in
+  let intern_fun_bl = liftafter @ [wfarg 1]  in (* FixMe dependencies *)
 (*   (try debug 2 (str "Intern fun bl: " ++ prr intern_fun_bl) with _ -> ()); *)
   let intern_fun_arity = intern_arity in
-(*   (try debug 2 (str "Intern fun arity: " ++  *)
-(* 		  my_print_constr intern_env intern_fun_arity) with _ -> ()); *)
+  (try trace (str "Intern fun arity: " ++
+		  my_print_constr _intern_env intern_fun_arity) with _ -> ());
   let intern_fun_arity_prod = it_mkProd_or_LetIn intern_fun_arity intern_fun_bl in
   let intern_fun_binder = (Name recname, None, intern_fun_arity_prod) in
-  let fun_bl = after @ (intern_fun_binder :: [arg]) in
+  let fun_bl = liftafter @ (intern_fun_binder :: [arg]) in
 (*   (try debug 2 (str "Fun bl: " ++ pr_rel intern_before_env fun_bl ++ spc ()) with _ -> ()); *)
   let fun_env = push_rel_context fun_bl intern_before_env in
   let fun_arity = interp_type isevars fun_env arityc in
   let intern_body = interp_casted_constr isevars fun_env body fun_arity in
   let intern_body_lam = it_mkLambda_or_LetIn intern_body fun_bl in
-(*   let _ =  *)
-(*       try debug 2 (str "Fun bl: " ++ prr fun_bl ++ spc () ++ *)
-(* 		   str "Intern bl" ++ prr intern_bl ++ spc () ++ *)
-(* 		   str "Top bl" ++ prr top_bl ++ spc () ++ *)
-(* 		   str "Intern arity: " ++ pr intern_arity ++ *)
-(* 		   str "Top arity: " ++ pr top_arity ++ spc () ++ *)
+  let _ =
+    try trace ((* str "Fun bl: " ++ prr fun_bl ++ spc () ++ *)
+		 str "Intern bl" ++ prr intern_bl ++ spc ())
+(* 		 str "Top bl" ++ prr top_bl ++ spc () ++ *)
+(* 		 str "Intern arity: " ++ pr intern_arity ++ *)
+(* 		 str "Top arity: " ++ pr top_arity ++ spc () ++ *)
 (* 		   str "Intern body " ++ pr intern_body_lam) *)
-(*       with _ -> () *)
-(*   in *)
+    with _ -> ()
+  in
   let _impl = 
     if Impargs.is_implicit_args()
     then Impargs.compute_implicits top_env top_arity
@@ -280,9 +286,12 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
 		    prop ;
 		    intern_body_lam |])
       | Some f ->
-	  mkApp (constr_of_reference (Lazy.force fix_measure_sub_ref), 
-		 [| argtyp ; f ; prop ;
-		    intern_body_lam |])
+	  lift (succ after_length) 
+	    (mkApp (constr_of_reference (Lazy.force fix_measure_sub_ref), 
+		    [| argtyp ; 
+		       f ;
+		       prop ;
+		       intern_body_lam |]))
   in
   let def_appl = applist (fix_def, gen_rels (after_length + 1)) in
   let def = it_mkLambda_or_LetIn def_appl binders_rel in

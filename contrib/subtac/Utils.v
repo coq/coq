@@ -46,7 +46,8 @@ end.
 
 Ltac destruct_exists := repeat (destruct_one_pair) .
 
-Ltac subtac_simpl := simpl ; intros ; destruct_exists ; simpl in * ; try subst ; auto with arith.  
+Ltac subtac_simpl := simpl ; intros ; destruct_exists ; simpl in * ; try subst ; 
+  try (solve [ red ; intros ; discriminate ]) ; auto with arith.  
 
 (* Destructs calls to f in hypothesis or conclusion, useful if f creates a subset object *)
 Ltac destruct_call f :=
@@ -64,6 +65,18 @@ Ltac destruct_call f :=
         | context [f ?x] => let n := fresh "H" in set (n:=f x); destruct n
       end
     end.
+
+Ltac myinjection :=
+      let tac H := inversion H ; subst ; clear H in
+        match goal with
+          | [ H : ?f ?a = ?f' ?a' |- _ ] => tac H
+          | [ H : ?f ?a ?b = ?f' ?a' ?b'  |- _ ] => tac H
+          | [ H : ?f ?a ?b ?c = ?f' ?a' ?b' ?c' |- _ ] => tac H
+          | [ H : ?f ?a ?b ?c ?d= ?f' ?a' ?b' ?c' ?d' |- _ ] => tac H
+          | [ H : ?f ?a ?b ?c ?d ?e= ?f' ?a' ?b' ?c' ?d' ?e' |- _ ] => tac H
+          | [ H : ?f ?a ?b ?c ?d ?e ?f= ?f' ?a' ?b' ?c' ?d' ?e' ?f'  |- _ ] => tac H
+          | _ => idtac
+        end.
 
 Extraction Inline proj1_sig.
 Extract Inductive unit => "unit" [ "()" ].

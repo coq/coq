@@ -54,6 +54,10 @@ let eq_refl = lazy (init_constant ["Init"; "Logic"] "refl_equal")
 let eq_ind_ref = lazy (init_reference ["Init"; "Logic"] "eq")
 let refl_equal_ref = lazy (init_reference ["Init"; "Logic"] "refl_equal")
 
+let not_ref = lazy (init_constant ["Init"; "Logic"] "not")
+
+let and_typ = lazy (Coqlib.build_coq_and ())
+
 let eqdep_ind = lazy (init_constant [ "Logic";"Eqdep"] "eq_dep")
 let eqdep_rec = lazy (init_constant ["Logic";"Eqdep"] "eq_dep_rec")
 let eqdep_ind_ref = lazy (init_reference [ "Logic";"Eqdep"] "eq_dep")
@@ -705,3 +709,11 @@ let pr_evar_defs evd =
     if meta_list evd = [] then mt() else
       str"METAS:"++brk(0,1)++pr_meta_map evd in
   v 0 (pp_evm ++ pp_met)
+
+let subtac_utils_path =
+  make_dirpath (List.map id_of_string ["Utils";contrib_name;"Coq"])
+let utils_tac s =
+  lazy(make_kn (MPfile subtac_utils_path) (make_dirpath []) (mk_label s))
+
+let utils_call tac args =
+  TacArg(TacCall(dummy_loc, ArgArg(dummy_loc, Lazy.force (utils_tac tac)),args))

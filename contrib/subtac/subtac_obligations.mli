@@ -2,7 +2,7 @@ open Util
 
 type obligation_info = (Names.identifier * Term.types * Intset.t) array
 
-val set_default_tactic : Proof_type.tactic -> unit
+val set_default_tactic : Tacexpr.glob_tactic_expr -> unit
 
 val add_definition : Names.identifier ->  Term.constr -> Term.types -> 
   obligation_info -> unit

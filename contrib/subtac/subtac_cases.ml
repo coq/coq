@@ -1651,7 +1651,7 @@ let constr_of_pat env isevars ty pat idents =
   let pat', sign, y, z, idents = typ env ty pat idents in 
   let c = it_mkProd_or_LetIn y sign in
     trace (str "Constr_of_pat gives: " ++ my_print_constr env c);
-    pat', (sign, y, ty), idents
+    pat', (sign, y, ty, pat'), idents
 
 let mk_refl typ a = mkApp (Lazy.force eq_refl, [| typ; a |])
 
@@ -1661,33 +1661,62 @@ let vars_of_ctx =
 		  Anonymous -> raise (Invalid_argument "vars_of_ctx")
 		| Name n -> RVar (dummy_loc, n))
 
-let build_ineqs prevpatterns = ()
- (* List.fold_left 
-    (fun (sign, c) eqnpats -> 
-       let acc = List.fold_left
-	 (fun acc (ppat_sign, ppat_c, ppat_ty) ->
-	    match acc with
-		None -> None
-	      | Some (sign, len, n, c) ->
-(* 		  if is_included pat prevpat then *)
-		    let lens = List.length ppat_sign in
-		    let len' = lens + len in
-		    let acc = 
-		      (lift_rel_context len ppat_sign @ sign, 
-		       len',
-		       mkApp (Lazy.force eq_ind,
-			      [| ppat_ty ; ppat_c ; 
-				 mkRel (len' + n) |]) :: c)
-		    in Some acc
-(* 		  else None *))
-	 (sign, c) eqnpats
-       in match acc with 
-	   None -> (sign, c)
-	 | Some (sign, len, c) ->
-	     it_mkProd_or_LetIn c sign
-    )
-    ([], []) prevpatterns
-*)
+let unsafe_fold_right f = function
+    hd :: tl -> List.fold_right f tl hd
+  | [] -> raise (Invalid_argument "unsafe_fold_right")
+
+let mk_conj l =
+  let conj_typ = Lazy.force Subtac_utils.and_typ in
+    unsafe_fold_right
+      (fun c conj ->
+	 mkApp (conj_typ, [| c ; conj |]))
+      l
+
+let mk_not c =
+  let notc = Lazy.force Subtac_utils.not_ref in
+    mkApp (notc, [| c |])
+
+let rec is_included x y = 
+  match x, y with
+    | PatVar _, _ -> true
+    | _, PatVar _ -> true
+    | PatCstr (l, (_, i), args, alias), PatCstr (l', (_, i'), args', alias')  ->
+	if i = i' then List.for_all2 is_included args args'
+	else false
+
+let build_ineqs prevpatterns pats liftsign patargs =
+  let tomatchs = List.length pats in
+  let diffs = 
+    List.fold_left 
+      (fun c eqnpats -> 
+	 let acc = List.fold_left2
+	   (fun acc (ppat_sign, ppat_c, ppat_ty, ppat) curpat ->
+	      match acc with
+		  None -> None
+		| Some (sign, len, n, c) ->
+		    if is_included curpat ppat then
+		      let lens = List.length ppat_sign in
+		      let len' = lens + len in
+		      let acc = 
+			(lift_rel_context len ppat_sign @ sign, 
+			 len',
+			 succ n,
+			 mkApp (Lazy.force eq_ind,
+				[| lift (lens + liftsign) ppat_ty ; liftn liftsign (succ lens) ppat_c ; 
+				   mkRel (len' + patargs.(pred n)) |]) :: 
+			   List.map (lift lens) c)
+		      in Some acc
+		    else None)
+	   (Some ([], 0, 1, [])) eqnpats pats
+	 in match acc with 
+	     None -> c
+	   | Some (sign, len, _, c') ->
+	       let conj = it_mkProd_or_LetIn (mk_not (mk_conj c')) (lift_rel_context liftsign sign) in
+		 conj :: c)
+      [] prevpatterns
+  in match diffs with [] -> None
+    | _ -> Some (mk_conj diffs)
+       
 let constrs_of_pats typing_fun tycon env isevars eqns tomatchs =
   let i = ref 0 in
   let (x, y, z) = 
@@ -1700,11 +1729,11 @@ let constrs_of_pats typing_fun tycon env isevars eqns tomatchs =
 	     eqn.patterns tomatchs ([], [], [])
 	 in
 	 let rhs_rels, signlen = 
-	   List.fold_left (fun (renv, n) (sign,_,_) -> 
+	   List.fold_left (fun (renv, n) (sign,_,_,_) -> 
 			   ((lift_rel_context n sign) @ renv, List.length sign + n)) 
 	     ([], 0) pats in
 	 let eqs, _, _ = List.fold_left2 
-	   (fun (eqs, n, slen) (sign, c, _) (tm, ty) -> 
+	   (fun (eqs, n, slen) (sign, c, _, _) (tm, ty) -> 
 	      let len = n + signlen in (* Number of already defined equations + signature *)
 	      let csignlen = List.length sign in
 	      let slen' = slen - csignlen in (* Lift to get pattern variables signature *)	      
@@ -1721,18 +1750,27 @@ let constrs_of_pats typing_fun tycon env isevars eqns tomatchs =
 	   ([], 0, signlen) pats tomatchs
 	 in
 	 let eqs_rels = List.map (fun eq -> Name (id_of_string "H"), None, eq) eqs in
-	 (*let ineqs = build_ineqs prevpatterns newpatterns in*)
-	 let rhs_rels' = eqs_rels @ rhs_rels in
+	 let pattern_rels = fst (List.fold_right (fun (sign, pat_c, pat_ty, pat)  (l, acc) -> 
+						    acc :: l, List.length sign + acc) pats ([], 1))
+	 in
+	 let ineqs = build_ineqs prevpatterns newpatterns signlen (Array.of_list pattern_rels) in
+	 let rhs_rels', lift_ineqs = 
+	   match ineqs with
+	       None -> eqs_rels @ rhs_rels, 0
+	     | Some ineqs -> 
+		 let _ = trace (str"Generated inequalities: " ++ my_print_constr env ineqs) in
+		   lift_rel_context 1 eqs_rels @ ((Anonymous, None, ineqs) :: rhs_rels), 1
+	 in
 	 let rhs_env = push_rels rhs_rels' env in
-	   (*        (try trace (str "branch env: " ++ print_env rhs_env) *)
-	   (* 	with _ -> trace (str "error in print branch env")); *)
-	 let tycon = lift_tycon (List.length eqs + signlen) tycon in
+	          (try trace (str "branch env: " ++ print_env rhs_env)
+	   	with _ -> trace (str "error in print branch env"));
+	 let tycon = lift_tycon (List.length eqs + lift_ineqs + signlen) tycon in
 	   
 	 let j = typing_fun tycon rhs_env eqn.rhs.it in
-	   (* 	 (try trace (str "in env: " ++ my_print_env rhs_env ++ str"," ++ *)
-	   (* 		       str "Typed branch: " ++ Prettyp.print_judgment rhs_env j); *)
-	   (* 	  with _ -> *)
-	   (* 	    trace (str "Error in typed branch pretty printing")); *)
+	   	 (try trace (str "in env: " ++ my_print_env rhs_env ++ str"," ++
+	   		       str "Typed branch: " ++ Prettyp.print_judgment rhs_env j);
+	   	  with _ ->
+	   	    trace (str "Error in typed branch pretty printing"));
 	 let bbody = it_mkLambda_or_LetIn j.uj_val rhs_rels'
 	 and btype = it_mkProd_or_LetIn j.uj_type rhs_rels' in
 	 let branch_name = id_of_string ("branch_" ^ (string_of_int !i)) in
@@ -1744,6 +1782,10 @@ let constrs_of_pats typing_fun tycon env isevars eqns tomatchs =
 	     match vars_of_ctx rhs_rels with
 		 [] -> bref
 	       | l -> RApp (dummy_loc, bref, l)
+	 in
+	 let branch = match ineqs with
+	     Some _ -> RApp (dummy_loc, branch, [ RHole (dummy_loc, Evd.QuestionMark) ])
+	   | None -> branch
 	 in
 	   (* 	 let branch =  *)
 	   (* 	   List.fold_left (fun br (eqH, _, t) -> RLambda (dummy_loc, eqH, RHole (dummy_loc, Evd.InternalHole), br)) branch eqs_rels *)

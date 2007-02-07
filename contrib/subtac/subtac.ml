@@ -142,22 +142,10 @@ let start_proof_com env isevars sopt kind (bl,t) hook =
       
 let print_subgoals () = Options.if_verbose (fun () -> msg (Printer.pr_open_subgoals ())) ()
 
-let subtac_utils_path =
-  make_dirpath (List.map id_of_string ["Utils";contrib_name;"Coq"])
-let utils_tac s =
-  lazy(make_kn (MPfile subtac_utils_path) (make_dirpath []) (mk_label s))
-
-let utils_call tac args =
-  TacArg(TacCall(dummy_loc, ArgArg(dummy_loc, Lazy.force (utils_tac tac)),args))
-
 let start_proof_and_print env isevars idopt k t hook =
   start_proof_com env isevars idopt k t hook;
   print_subgoals ()
   (*if !pcoq <> None then (out_some !pcoq).start_proof ()*)
-
-let _ = Subtac_obligations.set_default_tactic 
-    (Tacinterp.eval_tactic (utils_call "subtac_simpl" []))
-
 
 let subtac (loc, command) =
   check_required_library ["Coq";"Init";"Datatypes"];

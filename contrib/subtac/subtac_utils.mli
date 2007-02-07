@@ -40,6 +40,9 @@ val eq_refl : constr lazy_t
 val eq_ind_ref : global_reference lazy_t
 val refl_equal_ref : global_reference lazy_t
 
+val not_ref : constr lazy_t
+val and_typ : constr lazy_t
+
 val eqdep_ind : constr lazy_t
 val eqdep_rec : constr lazy_t
 val eqdep_ind_ref : global_reference lazy_t
@@ -114,3 +117,5 @@ val string_of_list : string -> ('a -> string) -> 'a list -> string
 val string_of_intset : Intset.t -> string
 
 val pr_evar_defs : evar_defs -> Pp.std_ppcmds
+
+val utils_call : string -> Tacexpr.glob_tactic_arg list -> Tacexpr.glob_tactic_expr
