@@ -138,7 +138,7 @@ End Swap.
 
 Section Lexicographic_Exponentiation.
   
-  Variable A : Type.
+  Variable A : Set.
   Variable leA : A -> A -> Prop.
   Let Nil := nil (A:=A).
   Let List := list A.
@@ -156,7 +156,7 @@ Section Lexicographic_Exponentiation.
       forall (x y:A) (l:List),
         leA x y -> Desc (l ++ y :: Nil) -> Desc ((l ++ y :: Nil) ++ x :: Nil).
 
-  Definition Pow : Type := sig Desc.
+  Definition Pow : Set := sig Desc.
   
   Definition lex_exp (a b:Pow) : Prop := Ltl (proj1_sig a) (proj1_sig b).
 
