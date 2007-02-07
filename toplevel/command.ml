@@ -595,6 +595,7 @@ let interp_recursive fixkind l boxed =
   let fixdefs = List.map (nf_evar (Evd.evars_of isevars)) fixdefs in
   let fixtypes = List.map (nf_evar (Evd.evars_of isevars)) fixtypes in
   List.iter (check_evars env_rec Evd.empty isevars) fixdefs;
+  List.iter (check_evars env Evd.empty isevars) fixtypes;
   check_mutuality env kind (List.combine fixnames fixdefs);
 
   (* Build the fix declaration block *)
