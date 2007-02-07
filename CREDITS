@@ -28,9 +28,9 @@ contrib/cc
 contrib/correctness
   developed by Jean-Christophe Filliâtre (LRI, 1999-2001)
 contrib/dp
-  developed by Nicolas Ayache and Jean-Christophe Filliâtre (LRI, 2005-2006)
+  developed by Nicolas Ayache and Jean-Christophe Filliâtre (LRI, 2005-2007)
 contrib/extraction
-  developed by Pierre Letouzey (LRI, 2000-2006)
+  developed by Pierre Letouzey (LRI, 2000-2007)
 contrib/field
   developed by David Delahaye and Micaela Mayero (INRIA-LogiCal, 2001)
 contrib/first-order 
@@ -38,8 +38,8 @@ contrib/first-order
 contrib/fourier
   developed by Loïc Pottier (INRIA-Lemme, 2001)
 contrib/funind
-  developed by Pierre Courtieu (INRIA-Lemme, 2003-2004, CNAM, 2004-2006),
-  Julien Forest (INRIA-Everest, 2006) 
+  developed by Pierre Courtieu (INRIA-Lemme, 2003-2004, CNAM, 2004-2007),
+  Julien Forest (INRIA-Everest, 2006-2007)
   and Yves Bertot (INRIA-Marelle, 2005-2006).
 contrib/interface
   developed by Yves Bertot with contributions from Loïc Pottier and
@@ -56,11 +56,11 @@ contrib/romega
 contrib/rtauto
   developed by Pierre Corbineau (LRI, 2005)
 contrib/setoid_ring
-  developed by Benjamin Grégoire (INRIA-Everest, 2005-2006), 
-  Assia Mahboubi, Laurent Théry (INRIA-Marelle, 2006) 
-  and Bruno Barras (INRIA LogiCal, 2005-2006),
+  developed by Benjamin Grégoire (INRIA-Everest, 2005-2007),
+  Assia Mahboubi, Laurent Théry (INRIA-Marelle, 2007)
+  and Bruno Barras (INRIA LogiCal, 2005-2007),
 contrib/subtac
-  developed by Matthieu Sozeau (LRI, 2005-2006)
+  developed by Matthieu Sozeau (LRI, 2005-2007)
 contrib/xml
   developed by Claudio Sacerdoti (Univ. Bologna, 2000-2005) 
   as part of the HELM and MoWGLI projects
@@ -112,12 +112,12 @@ of the Coq Proof assistant during the indicated time :
   Pierre Letouzey (LRI, 2000-2005 & PPS-Paris 7, 2005-now)
   Pascal Manoury (INRIA, 1993)
   Micaela Mayero (INRIA, 1997-2002)
-  Claude Marché (INRIA 2003-2004 & LRI, 2004-now)
+  Claude Marché (INRIA 2003-2004 & LRI, 2004-2005)
   Benjamin Monate (LRI, 2003)
   César Muñoz (INRIA, 1994-1995)
   Chetan Murthy (INRIA, 1992-1994)
   Julien Narboux (INRIA, 2005-2006)
-  Jean-Marc Notin (CNRS, 2006)
+  Jean-Marc Notin (CNRS, 2006-now)
   Catherine Parent-Vigouroux (ENS Lyon, 1992-1995)
   Patrick Loiseleur (Paris Sud, 1997-1999)
   Christine Paulin-Mohring (INRIA, 1985-1989, ENS Lyon, 1989-1997, 
