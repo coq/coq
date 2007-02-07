@@ -18,7 +18,7 @@ Require Import Relation_Operators.
 Require Import Transitive_Closure.
 
 Section Wf_Lexicographic_Exponentiation.
-  Variable A : Type.
+  Variable A : Set.
   Variable leA : A -> A -> Prop.
   
   Notation Power := (Pow A leA).
