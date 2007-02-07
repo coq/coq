@@ -396,86 +396,101 @@ subclass of the syntactic class {\term}.
 \end{itemize}
 \noindent More on sorts can be found in section \ref{Sorts}.
 
-\subsection{Binders
-\label{Binders}
-\index{binders}}
-
-Various constructions introduce variables which scope is some of its
-sub-expressions. There is a uniform syntax for this. A binder may be
-an (unqualified) identifier: the name to use to refer to this
-variable. If the variable is not to be used, its name can be {\tt
-\_}. When its type cannot be synthesized by the system, it can be
-specified with notation {\tt (}\,{\ident}\,{\tt :}\,{\type}\,{\tt
-)}. There is a notation for several variables sharing the same type:
-{\tt (}\,{\ident$_1$}\ldots{\ident$_n$}\,{\tt :}\,{\type}\,{\tt )}.
-
-Some constructions allow ``let-binders'', that is either a binder as
-defined above, or a variable with a value. The notation is {\tt
-(}\,{\ident}\,{\tt :=}\,{\term}\,{\tt )}. Only one variable can be
-introduced at the same time. It is also possible to give the type of
-the variable before the symbol {\tt :=}.
-
-The last kind of binders is the ``binder list''. It is either a list
-of let-binders (the first one not being a variable with value), or
-{\ident$_1$}\ldots{\ident$_n$}\,{\tt :}\,{\type} if all variables
-share the same type.
+\bigskip
 
 {\Coq} terms are typed. {\Coq} types are recognized by the same
 syntactic class as {\term}. We denote by {\type} the semantic subclass
 of types inside the syntactic class {\term}.
 \index{type@{\type}}
 
+\subsection{Binders
+\label{Binders}
+\index{binders}}
+
+Various constructions such as {\tt fun}, {\tt forall}, {\tt fix} and
+{\tt cofix} {\em bind} variables. A binding is represented by an
+identifier. If the binding variable is not used in the expression, the
+identifier can be replaced by the symbol {\tt \_}.  When the type of a
+bound variable cannot be synthesized by the system, it can be
+specified with the notation {\tt (}\,{\ident}\,{\tt :}\,{\type}\,{\tt
+)}. There is also a notation for a sequence of binding variables
+sharing the same type: {\tt (}\,{\ident$_1$}\ldots{\ident$_n$}\,{\tt
+:}\,{\type}\,{\tt )}.
+
+Some constructions allow the binding of a variable to value. This is
+called a ``let-binder''. The entry {\binderlet} of the grammar accepts
+either a binder as defined above or a let-binder. The notation in the
+latter case is {\tt (}\,{\ident}\,{\tt :=}\,{\term}\,{\tt )}. In a
+let-binder, only one variable can be introduced at the same
+time. It is also possible to give the type of the variable as follows:
+{\tt (}\,{\ident}\,{\tt :}\,{\term}\,{\tt :=}\,{\term}\,{\tt )}.
+
+Lists of {\binderlet} are allowed. In the case of {\tt fun} and {\tt
+forall}, the first binder of the list cannot be a let-binder, but
+parentheses can be omitted in the case of a single sequence of
+bindings sharing the same type (e.g.: {\tt fun~(x~y~z~:~A)~=>~t} can
+be shortened in {\tt fun~x~y~z~:~A~=>~t}).
+
 \subsection{Abstractions
 \label{abstractions}
 \index{abstractions}}
 
-The expression ``{\tt fun} {\ident} {\tt :} \type {\tt =>}~{\term}''
-denotes the {\em abstraction} of the variable {\ident} of type
-{\type}, over the term {\term}. Put in another way, it is function of
-formal parameter {\ident} of type {\type} returning {\term}.
-
-Keyword {\tt fun} is followed by a ``binder list'', so any of the
-binders of Section~\ref{Binders} apply. Internally, abstractions are
-only over one variable. Multiple variable binders are an iteration of
-the single variable abstraction: notation {\tt
-fun}~{\ident$_{1}$}~{\ldots}~{\ident$_{n}$}~{\tt :}~\type~{\tt
-=>}~{\term} stands for {\tt fun}~{\ident$_{1}$}~{\tt :}~\type~{\tt
-=>}~{\ldots}~{\tt fun}~{\ident$_{n}$}~{\tt :}~\type~{\tt =>}~{\term}.
-Variables with a value expand to a local definition (see
-Section~\ref{let-in}).
+The expression ``{\tt fun} {\ident} {\tt :} {\type} {\tt =>}~{\term}''
+defines the {\em abstraction} of the variable {\ident}, of type
+{\type}, over the term {\term}. It denotes a function of the variable
+{\ident} that evaluates to the expression {\term} (e.g. {\tt fun x:$A$
+=> x} denotes the identity function on type $A$).
+% The variable {\ident} is called the {\em parameter} of the function 
+% (we sometimes say the {\em formal parameter}).
+The keyword {\tt fun} can be followed by several binders as given in
+Section~\ref{Binders}. Functions over several variables are
+equivalent to an iteration of one-variable functions.  For instance the
+expression ``{\tt fun}~{\ident$_{1}$}~{\ldots}~{\ident$_{n}$}~{\tt
+:}~\type~{\tt =>}~{\term}'' denotes the same function as ``{\tt
+fun}~{\ident$_{1}$}~{\tt :}~\type~{\tt =>}~{\ldots}~{\tt
+fun}~{\ident$_{n}$}~{\tt :}~\type~{\tt =>}~{\term}''. If a let-binder
+occurs in the list of binders, it is expanded to a local definition
+(see Section~\ref{let-in}).
 
 \subsection{Products
 \label{products}
 \index{products}}
 
-The expression ``{\tt forall}~{\ident}~{\tt :}~\type~{\tt ,}~{\term}''
-denotes the {\em product} of the variable {\ident} of type {\type},
-over the term {\term}. As for abstractions, {\tt forall} is followed
-by a binder list, and it is represented by an iteration of single
-variable products.
+The expression ``{\tt forall}~{\ident}~{\tt :}~{\type}{\tt
+,}~{\term}'' denotes the {\em product} of the variable {\ident} of
+type {\type}, over the term {\term}. As for abstractions, {\tt forall}
+is followed by a binder list, and products over several variables are
+equivalent to an iteration of one-variable products. 
+Note that {\term} is intended to be a type.
 
-Non dependent product types have a special notation ``$A$ {\tt ->}
-$B$'' stands for ``{\tt forall \_:}$A${\tt ,}~$B$''. This is to stress
-on the fact that non dependent product types are usual functional types.
+If the variable {\ident} occurs in {\term}, the product is called {\em
+dependent product}.  The intention behind a dependent product {\tt
+forall}~$x$~{\tt :}~{$A$}{\tt ,}~{$B$} is twofold. It denotes either
+the universal quantification of the variable $x$ of type $A$ in the
+proposition $B$ or the functional dependent product from $A$ to $B$ (a
+construction usually written $\Pi_{x:A}.B$ in set theory).
+
+Non dependent product types have a special notation: ``$A$ {\tt ->}
+$B$'' stands for ``{\tt forall \_:}$A${\tt ,}~$B$''. The non dependent
+product is used both to denote the propositional implication and
+function types.
 
 \subsection{Applications
 \label{applications}
 \index{applications}}
 
 The expression \term$_0$ \term$_1$ denotes the application of
-  term \term$_0$ to \term$_1$.
+\term$_0$ to \term$_1$.
 
 The expression {\tt }\term$_0$ \term$_1$ ...  \term$_n${\tt}
 denotes the application of the term \term$_0$ to the arguments
-\term$_1$ ... then \term$_n$.  It is equivalent to {\tt } {\ldots}
-{\tt (} {\term$_0$} {\term$_1$} {\tt )} {\ldots} {\term$_n$} {\tt }:
+\term$_1$ ... then \term$_n$.  It is equivalent to {\tt (} {\ldots}
+{\tt (} {\term$_0$} {\term$_1$} {\tt )} {\ldots} {\tt )} {\term$_n$} {\tt }:
 associativity is to the left.
 
-When using implicit arguments mechanism, implicit positions can be
-forced a value with notation {\tt (}\,{\ident}\,{\tt
-:=}\,{\term}\,{\tt )} or {\tt (}\,{\num}\,{\tt
-:=}\,{\term}\,{\tt )}. See Section~\ref{Implicits-explicitation} for
-details.
+The notation {\tt (}\,{\ident}\,{\tt :=}\,{\term}\,{\tt )} for
+arguments is used for making explicit the value of implicit arguments
+(see Section~\ref{Implicits-explicitation}).
 
 \subsection{Type cast
 \label{typecast}
@@ -488,10 +503,9 @@ expression. It enforces the type of {\term} to be {\type}.
 \label{hole}
 \index{\_}}
 
-Since there are redundancies, a term can be type-checked without
-giving it in totality. Subterms that are left to guess by the
-type-checker are replaced by ``\_''.
-
+Expressions often contain redundant pieces of information. Subterms that
+can be automatically inferred by {\Coq} can be replaced by the
+symbol ``\_'' and {\Coq} will guess the missing piece of information.
 
 \subsection{Local definitions (let-in)
 \label{let-in}
@@ -502,72 +516,153 @@ type-checker are replaced by ``\_''.
 {\tt let}~{\ident}~{\tt :=}~{\term$_1$}~{\tt in}~{\term$_2$} denotes
 the local binding of \term$_1$ to the variable $\ident$ in
 \term$_2$. 
-
 There is a syntactic sugar for local definition of functions: {\tt
 let} {\ident} {\binder$_1$} \ldots {\binder$_n$} {\tt :=} {\term$_1$}
 {\tt in} {\term$_2$} stands for {\tt let} {\ident} {\tt := fun}
-{\binder$_1$} \ldots {\binder$_n$} {\tt in} {\term$_2$}.
-
+{\binder$_1$} \ldots {\binder$_n$} {\tt =>} {\term$_2$} {\tt in}
+{\term$_2$}.
 
 \subsection{Definition by case analysis
 \label{caseanalysis}
 \index{match@{\tt match\ldots with\ldots end}}}
 
-
-This paragraph only shows simple variants of case analysis. See
-Section~\ref{Mult-match} and Chapter~\ref{Mult-match-full} for
-explanations of the general form.
-
 Objects of inductive types can be destructurated by a case-analysis
-construction, also called pattern-matching in functional languages. In
-its simple form, a case analysis expression is used to analyze the
-structure of an inductive objects (upon which constructor it is
-built).
+construction called {\em pattern-matching} expression.  A
+pattern-matching expression is used to analyze the structure of an
+inductive objects and to apply specific treatments accordingly.
+
+This paragraph describes the basic form of pattern-matching. See
+Section~\ref{Mult-match} and Chapter~\ref{Mult-match-full} for the
+description of the general form. The basic form of pattern-matching is
+characterized by a single {\caseitem} expression, a {\multpattern}
+restricted to a single {\pattern} and {\pattern} restricted to the
+form {\qualid} \nelist{\ident}{}.
 
 The expression {\tt match} {\term$_0$} {\returntype} {\tt with}
 {\pattern$_1$} {\tt =>} {\term$_1$} {\tt $|$} {\ldots} {\tt $|$}
 {\pattern$_n$} {\tt =>} {\term$_n$} {\tt end}, denotes a {\em
 pattern-matching} over the term {\term$_0$} (expected to be of an
-inductive type $I$). 
-The terms {\term$_1$}\ldots{\term$_n$} are called branches. In
-a simple pattern \qualid~\nelist{\ident}{}, the qualified identifier
-{\qualid} is intended to
-be a constructor. There should be one branch for every constructor of
-$I$.
+inductive type $I$).  The terms {\term$_1$}\ldots{\term$_n$} are the
+{\em branches} of the pattern-matching expression. Each of
+{\pattern$_i$} has a form \qualid~\nelist{\ident}{} where {\qualid}
+must denote a constructor. There should be exactly one branch for
+every constructor of $I$.
 
-The {\returntype} is used to compute the resulting type of the whole
-{\tt match} expression and the type of the branches. Most of the time,
-when this type is the same as the types of all the {\term$_i$}, the
-annotation is not needed\footnote{except if no equation is given, to
-match the term in an empty type, e.g. the type \texttt{False}}. This
-annotation has to be given when the resulting type of the whole {\tt
-match} depends on the actual {\term$_0$} matched.
+The {\returntype} expresses the type returned by the whole {\tt match}
+expression. There are several cases.  In the {\em non dependent} case,
+all branches have the same type, and the {\returntype} is the common
+type of branches. In this case, {\returntype} can usually be omitted
+as it can be inferred from the type of the branches\footnote{Except if
+the inductive type is empty in which case there is no equation to help
+to infer the return type.}.
 
+In the {\em dependent} case, there are three subcases. In the first
+subcase, the type in each branch may depend on the exact value being
+matched in the branch. In this case, the whole pattern-matching itself
+depends on the term being matched. This dependency of the term being
+matched in the return type is expressed with an ``{\tt as {\ident}}''
+clause where {\ident} is dependent in the return type.
+For instance, in the following example:
+\begin{coq_example*}
+Inductive bool : Type := true : bool | false : bool.
+Inductive eq (A:Type) (x:A) : A -> Prop := refl_equal : eq A x x.
+Inductive or (A:Prop) (B:Prop) : Prop :=
+| or_introl : A -> or A B
+| or_intror : B -> or A B.
+Definition bool_case (b:bool) : or (eq bool b true) (eq bool b false)
+:= match b as x return or (eq bool x true) (eq bool x false) with
+   | true  => or_introl (eq bool true true) (eq bool true false)
+                (refl_equal bool true)
+   | false => or_intror (eq bool false true) (eq bool false false)
+                (refl_equal bool false)
+   end.
+\end{coq_example*}
+the branches have respective types {\tt or (eq bool true true) (eq
+bool true false)} and {\tt or (eq bool false true) (eq bool false
+false)} while the whole pattern-matching expression has type {\tt or
+(eq bool b true) (eq bool b false)}, the identifier {\tt x} being used
+to represent the dependency.  Remark that when the term being matched
+is a variable, the {\tt as} clause can be omitted and the term being
+matched can serve itself as binding name in the return type. For
+instance, the following alternative definition is accepted and has the
+same meaning as the previous one.
+\begin{coq_example*}
+Definition bool_case (b:bool) : or (eq bool b true) (eq bool b false)
+:= match b return or (eq bool b true) (eq bool b false) with
+   | true  => or_introl (eq bool true true) (eq bool true false)
+                (refl_equal bool true)
+   | false => or_intror (eq bool false true) (eq bool false false)
+                (refl_equal bool false)
+   end.
+\end{coq_example*}
+
+The second subcase is only relevant for annotated inductive types such
+as the equality predicate (see section~\ref{Equality}), the order
+predicate on natural numbers (see section~\ref{le}) or the type of
+lists of a given length (see section~\ref{listn}). In this configuration,
+the type of each branch can depend on the type dependencies specific
+to the branch and the whole pattern-matching expression has a type
+determined by the specific dependencies in the type of the term being
+matched. This dependency of the return type in the annotations of the
+inductive type is expressed using a {\tt
+``in~I~\_~$\ldots$~\_~\ident$_1$~$\ldots$~\ident$_n$}'' clause, where
+\begin{itemize}
+\item $I$ is the inductive type of the term being matched;
+
+\item the names \ident$_i$'s correspond to the arguments of the
+inductive type that carry the annotations: the return type is dependent
+on them;
+
+\item the {\_}'s denote the family parameters of the inductive type:
+the return type is not dependent on them.
+\end{itemize}
+
+For instance, in the following example:
+\begin{coq_example*}
+Definition sym_equal (A:Type) (x y:A) (H:eq A x y) : eq A y x :=
+  match H in eq _ _ z return eq A z x with
+  | refl_equal => refl_equal A x
+  end.
+\end{coq_example*}
+the type of the branch has type {\tt eq~A~x~x} because the third
+argument of {\tt eq} is {\tt x} in the type of the pattern {\tt
+refl\_equal}. On the contrary, the type of the whole pattern-matching
+expression has type {\tt eq~A~y~x} because the third argument of {\tt
+eq} is {\tt y} in the type of {\tt H}. This dependency of the case
+analysis in the third argument of {\tt eq} is expressed by the
+identifier {\tt z} in the return type.
+
+Finally, the third subcase is a combination of the first and second
+subcase. In particular, it only applies to pattern-matching on terms
+in a type with annotations. For this third subcase, both
+the clauses {\tt as} and {\tt in} are available.
+ 
 There are specific notations for case analysis on types with one or
-two constructors: {\tt if {\ldots} then {\ldots} else {\ldots}} and
-{\tt let (}\nelist{\ldots}{,}{\tt ) :=} {\ldots} {\tt in} {\ldots}.
+two constructors: ``{\tt if {\ldots} then {\ldots} else {\ldots}}''
+and ``{\tt let (}\nelist{\ldots}{,}{\tt ) := } {\ldots} {\tt in}
+{\ldots}'' (see Sections~\ref{if-then-else} and~\ref{Letin}).
 
-\SeeAlso Section~\ref{Mult-match} for details and examples.
+%\SeeAlso Section~\ref{Mult-match} for convenient extensions of pattern-matching.
 
 \subsection{Recursive functions
 \label{fixpoints}
 \index{fix@{fix \ident$_i$\{\dots\}}}}
 
-Expression ``{\tt fix} \ident$_1$ \binder$_1$ {\tt :} {\type$_1$}
+The expression ``{\tt fix} \ident$_1$ \binder$_1$ {\tt :} {\type$_1$}
 \texttt{:=} \term$_1$ {\tt with} {\ldots} {\tt with} \ident$_n$
 \binder$_n$~{\tt :} {\type$_n$} \texttt{:=} \term$_n$ {\tt for}
-{\ident$_i$}'' denotes the $i$th component of a block of functions
+{\ident$_i$}'' denotes the $i$\nth component of a block of functions
 defined by mutual well-founded recursion. It is the local counterpart
 of the {\tt Fixpoint} command. See Section~\ref{Fixpoint} for more
-details. When $n=1$, the {\tt for}~{\ident$_i$} is omitted.
+details. When $n=1$, the ``{\tt for}~{\ident$_i$}'' clause is omitted.
 
 The expression ``{\tt cofix} \ident$_1$~\binder$_1$ {\tt :}
 {\type$_1$} {\tt with} {\ldots} {\tt with} \ident$_n$ \binder$_n$ {\tt
-:} {\type$_n$}~{\tt for} {\ident$_i$}'' denotes the $i$th component of
+:} {\type$_n$}~{\tt for} {\ident$_i$}'' denotes the $i$\nth component of
 a block of terms defined by a mutual guarded co-recursion. It is the
 local counterpart of the {\tt CoFixpoint} command. See
-Section~\ref{CoFixpoint} for more details. When $n=1$, the {\tt
-for}~{\ident$_i$} is omitted.
+Section~\ref{CoFixpoint} for more details. When $n=1$, the ``{\tt
+for}~{\ident$_i$}'' clause is omitted.
 
 The association of a single fixpoint and a local
 definition have a special syntax: ``{\tt let fix}~$f$~{\ldots}~{\tt
@@ -701,7 +796,7 @@ This command links {\term} to the name {\ident} in the context of the
 current section (see Section~\ref{Section} for a description of the section
 mechanism). When the current section is closed, name {\ident} will be
 unknown and every object using this variable will be explicitly
-parameterized (the variable is {\em discharged}). Using the {\tt
+parametrized (the variable is {\em discharged}). Using the {\tt
 Variable} command out of any section is equivalent to {\tt Axiom}.
 
 \begin{ErrMsgs}
@@ -944,7 +1039,7 @@ structural induction principle we got for {\tt nat}.
 built from {\ident}}
 \end{ErrMsgs}
 
-\subsubsection{Parameterized inductive types}
+\subsubsection{Parametrized inductive types}
 In the previous example, each constructor introduces a
 different instance of the predicate {\tt even}. In some cases, 
 all the constructors introduces the same generic instance of the
@@ -1000,7 +1095,8 @@ arguments of the constructors rather than their full type.
 \end{Variants}
 
 \begin{ErrMsgs}
-\item \errindex{The {\num}th argument of {\ident} must be {\ident'} in {\type}}
+\item \errindex{The {\num}th argument of {\ident} must be {\ident'} in
+{\type}}
 \end{ErrMsgs}
 
 \paragraph{New from \Coq{} V8.1} The condition on parameters for
@@ -1030,7 +1126,7 @@ Inductive listw (A:Set) : Set :=
 Because the conclusion of the type of constructors should be {\tt
   listw A} in both cases. 
 
-A parameterized inductive definition can be defined using
+A parametrized inductive definition can be defined using
 annotations instead of parameters but it will sometimes give a
 different (bigger) sort for the inductive definition and will produce
 a less convenient rule for case elimination.
@@ -1072,7 +1168,7 @@ definition for each \ident$_1$, {\ldots}, \ident$_m$. All names
 well-typing of constructors can be checked. Each one of the
 \ident$_1$, {\ldots}, \ident$_m$ can be used on its own.
 
-It is also possible to parameterize these inductive definitions.
+It is also possible to parametrize these inductive definitions.
 However, parameters correspond to a local
 context in which the whole set of inductive declarations is done.  For
 this reason, the parameters must be strictly the same for each
@@ -1132,7 +1228,7 @@ Check tree_rec.
 Check forest_rec.
 \end{coq_example}
 
-Assume we want to parameterize our mutual inductive definitions with
+Assume we want to parametrize our mutual inductive definitions with
 the two type variables $A$ and $B$, the declaration should be done the
 following way:
 
@@ -1208,15 +1304,18 @@ how to introduce infinite objects in Section~\ref{CoFixpoint}.
 %%
 \subsection{Definition of recursive functions}
 
-\subsubsection{Recursive functions over a inductive type}
+\subsubsection{Definition of functions by recursion over inductive objects}
 
-The command:
+This section describes the primitive form of definition by recursion
+over inductive objects. See Section~\ref{Function} for more advanced
+constructions. The command:
 \begin{center}
   \texttt{Fixpoint {\ident} {\params} {\tt \{struct}
   \ident$_0$ {\tt \}} : type$_0$ := \term$_0$ 
   \comindex{Fixpoint}\label{Fixpoint}}
 \end{center}
-allows to define inductive objects using a fixed point construction.
+allows to define functions by pattern-matching over inductive objects 
+using a fixed point construction.
 The meaning of this declaration is to define {\it ident} a recursive
 function with arguments specified by the binders in {\params} such
 that {\it ident} applied to arguments corresponding to these binders
@@ -1307,7 +1406,7 @@ Fixpoint mod2 (n:nat) : nat :=
            end
   end.
 \end{coq_example*}
-In order to keep the strong normalisation property, the fixed point
+In order to keep the strong normalization property, the fixed point
 reduction will only be performed when the argument in position of the
 decreasing argument (which type should be in an inductive definition)
 starts with a constructor.
@@ -1349,203 +1448,7 @@ Fixpoint tree_size (t:tree) : nat :=
 A generic command {\tt Scheme} is useful to build automatically various
 mutual induction principles. It is described in Section~\ref{Scheme}.
 
-\subsubsection{A more complex definition of recursive functions}
-
-The \emph{experimental} command 
-\begin{center}
-   \texttt{Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
-     \{decrease\_annot\} : type$_0$ := \term$_0$}
-   \comindex{Function}
-   \label{Function}
-\end{center}
-can be seen as a generalization of {\tt Fixpoint}.  It is actually a
-wrapper for several ways of defining a function \emph{and other useful
-  related objects}, namely: an induction principle that reflects the
-recursive structure of the function (see \ref{FunInduction}), and its
-fixpoint equality.  The meaning of this
-declaration is to define a function {\it ident}, similarly to {\tt
-  Fixpoint}. Like in {\tt Fixpoint}, the decreasing argument must be
-given (unless the function is not recursive), but it must not
-necessary be \emph{structurally} decreasing. The point of the {\tt
-  \{\}} annotation is to name the decreasing argument \emph{and} to
-describe which kind of decreasing criteria must be used to ensure
-termination of recursive calls.
-
-The {\tt Function} construction enjoys also the {\tt with} extension
-to define mutually recursive definitions. However, this feature does
-not work for non structural recursive functions. % VRAI??
-
-See the documentation of {\tt functional induction} (section
-\ref{FunInduction}) and {\tt Functional Scheme} (section
-\ref{FunScheme} and \ref{FunScheme-examples}) for how to use the 
-induction principle to easily reason about the function.
-
-\noindent {\bf Remark: } To obtain the right principle, it is better
-to put rigid parameters of the function as first arguments. For
-example it is better to define plus like this:
-
-\begin{coq_example*}
-Function plus (m n : nat) {struct n} : nat :=
-  match n with
-  | 0 => m
-  | S p => S (plus m p)
-  end.
-\end{coq_example*}
-\noindent than like this:
-\begin{coq_eval}
-Reset plus.
-\end{coq_eval}
-\begin{coq_example*}
-Function plus (n m : nat) {struct n} : nat :=
-  match n with
-  | 0 => m
-  | S p => S (plus p m)
-  end.
-\end{coq_example*}
-
-\paragraph{Limitations}
-\label{sec:Function-limitations}
-\term$_0$ must be build as a \emph{pure pattern-matching tree}
-(\texttt{match...with}) with applications only \emph{at the end} of
-each branch.  For now dependent cases are not treated.
-
-
-
-\begin{ErrMsgs}
-\item \errindex{The recursive argument must be specified}
-\item \errindex{No argument name \ident}
-\item \errindex{Cannot use mutual definition with well-founded
-    recursion or measure}
-
-\item \errindex{Cannot define graph for \ident\dots} (warning)
-
-  The generation of the graph relation \texttt{(R\_\ident)} used to
-  compute the induction scheme of \ident\ raised a typing error. Only
-  the ident is defined, the induction scheme will not be generated.
-
-  This error happens generally when:
-
-  \begin{itemize}
-  \item the definition uses pattern matching on dependent types, which
-    \texttt{Function} cannot deal with yet.
-  \item the definition is not a \emph{pattern-matching tree} as
-    explained above.
-  \end{itemize}
-
-\item \errindex{Cannot define principle(s) for \ident\dots} (warning)
-
-  The generation of the graph relation \texttt{(R\_\ident)} succeeded
-  but the induction principle could not be built. Only the ident is
-  defined. Please report.
-
-\item \errindex{Cannot built inversion information} (warning)
-
-  \texttt{functional inversion} will not be available for the
-  function.
-\end{ErrMsgs}
-
-
-\SeeAlso{\ref{FunScheme},\ref{FunScheme-examples},\ref{FunInduction}}
-
-Depending on the {\tt \{$\ldots$\}} annotation, different definition
-mechanisms are used by {\tt Function}. More precise description
-given below.
-
-\begin{Variants}
-\item \texttt{ Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
-    : type$_0$ := \term$_0$}
-
-  Defines the not recursive function \ident\ as if declared with
-  \texttt{Definition}.  Moreover the following are defined:
-
-  \begin{itemize}
-  \item {\tt\ident\_rect}, {\tt\ident\_rec} and {\tt\ident\_ind},
-    which reflect the pattern matching structure of \term$_0$ (see the
-    documentation of {\tt Inductive} \ref{Inductive});
-  \item The inductive \texttt{R\_\ident} corresponding to the graph of
-    \ident\ (silently);
-  \item \texttt{\ident\_complete} and \texttt{\ident\_correct} which are
-    inversion information linking the function and its graph.
-  \end{itemize}
-\item \texttt{Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
-    {\tt \{}{\tt struct} \ident$_0${\tt\}} : type$_0$ := \term$_0$}
-  
-  Defines the structural recursive function \ident\ as if declared
-  with \texttt{Fixpoint}.  Moreover the following are defined:
-
-  \begin{itemize}
-  \item The same objects as above;
-  \item The fixpoint equation of \ident: \texttt{\ident\_equation}.
-  \end{itemize}
-  
-\item \texttt{Function {\ident} {\binder$_1$}\ldots{\binder$_n$} {\tt
-      \{}{\tt measure \term$_1$} \ident$_0${\tt\}} : type$_0$ :=
-    \term$_0$}
-\item \texttt{Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
- {\tt \{}{\tt wf \term$_1$} \ident$_0${\tt\}} : type$_0$ := \term$_0$}
-
-Defines a recursive function by well founded recursion. \textbf{The
-module \texttt{Recdef} of the standard library must be loaded for this
-feature}. The {\tt \{\}} annotation is mandatory and must be one of
-the following:
-\begin{itemize}
-\item {\tt \{measure} \term$_1$ \ident$_0${\tt\}} with \ident$_0$
-      being the decreasing argument and \term$_1$ being a function
-      from type of \ident$_0$ to \texttt{nat} for which value on the
-      decreasing argument decreases (for the {\tt lt} order on {\tt
-      nat}) at each recursive call of \term$_0$, parameters of the
-      function are bound in  \term$_0$;
-\item {\tt \{wf} \term$_1$ \ident$_0${\tt\}} with \ident$_0$ being
-      the decreasing argument and \term$_1$ an ordering relation on
-      the type of \ident$_0$ (i.e. of type T$_{\ident_0}$
-      $\to$ T$_{\ident_0}$ $\to$ {\tt Prop}) for which
-      the decreasing argument decreases at each recursive call of
-      \term$_0$. The order must be well founded. parameters of the
-      function are bound in  \term$_0$.
-\end{itemize} 
-
-Depending on the annotation, the user is left with some proof
-obligations that will be used to define the function. These proofs
-are: proofs that each recursive call is actually decreasing with
-respect to the given criteria, and (if the criteria is \texttt{wf}) a
-proof that the ordering relation is well founded.
-
-%Completer sur measure et wf
-
-Once proof obligations are discharged, the following objects are
-defined:
-
-\begin{itemize}
-\item The same objects as with the \texttt{struct};
-\item The lemma \texttt{\ident\_tcc} which collects all proof
-  obligations in one property;
-\item The lemmas \texttt{\ident\_terminate} and \texttt{\ident\_F}
-  which is needed to be inlined during extraction of \ident.
-\end{itemize}
-
-
-
-%Complete!!
-The way this recursive function is defined is the subject of several
-papers by Yves Bertot and Antonia Balaa on one hand and  Gilles Barthe, Julien Forest, David Pichardie and Vlad Rusu on the other hand.
-
-%Exemples ok ici
-
-\bigskip
-
-\noindent {\bf Remark: } Proof obligations are presented as several
-subgoals belonging to a Lemma {\ident}{\tt\_tcc}. % These subgoals are independent which means that in order to
-% abort them you will have to abort each separately.
-
-
-
-%The decreasing argument cannot be dependent of another??
-
-%Exemples faux ici
-\end{Variants}
-
-
-\subsubsection{Recursive functions over co-indcutive types}
+\subsubsection{Definition of recursive objects in co-inductive types}
 
 The command:
 \begin{center}
@@ -1659,7 +1562,7 @@ All these commands are synonymous of \texttt{Theorem}
 \item {\tt Definition {\ident} : {\type}.} \\
 Allow to define a term of type {\type} using the proof editing mode. It
 behaves as {\tt Theorem} but is intended for the interactive
-definition of expression which computational behaviour will be used by
+definition of expression which computational behavior will be used by
 further commands. \SeeAlso~\ref{Transparent} and \ref{unfold}. 
 \end{Variants}
 
