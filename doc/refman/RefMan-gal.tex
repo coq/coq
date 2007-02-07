@@ -396,86 +396,101 @@ subclass of the syntactic class {\term}.
 \end{itemize}
 \noindent More on sorts can be found in section \ref{Sorts}.
 
-\subsection{Binders
-\label{Binders}
-\index{binders}}
-
-Various constructions introduce variables which scope is some of its
-sub-expressions. There is a uniform syntax for this. A binder may be
-an (unqualified) identifier: the name to use to refer to this
-variable. If the variable is not to be used, its name can be {\tt
-\_}. When its type cannot be synthesized by the system, it can be
-specified with notation {\tt (}\,{\ident}\,{\tt :}\,{\type}\,{\tt
-)}. There is a notation for several variables sharing the same type:
-{\tt (}\,{\ident$_1$}\ldots{\ident$_n$}\,{\tt :}\,{\type}\,{\tt )}.
-
-Some constructions allow ``let-binders'', that is either a binder as
-defined above, or a variable with a value. The notation is {\tt
-(}\,{\ident}\,{\tt :=}\,{\term}\,{\tt )}. Only one variable can be
-introduced at the same time. It is also possible to give the type of
-the variable before the symbol {\tt :=}.
-
-The last kind of binders is the ``binder list''. It is either a list
-of let-binders (the first one not being a variable with value), or
-{\ident$_1$}\ldots{\ident$_n$}\,{\tt :}\,{\type} if all variables
-share the same type.
-
 {\Coq} terms are typed. {\Coq} types are recognized by the same
 syntactic class as {\term}. We denote by {\type} the semantic subclass
 of types inside the syntactic class {\term}.
 \index{type@{\type}}
 
+\subsection{Binders
+\label{Binders}
+\index{binders}}
+
+Various constructions such as {\tt fun}, {\tt forall}, {\tt fix} and
+{\tt cofix} {\em bind} variables. A binding is represented by an
+identifier. If the binding variable is not used in the expression, the
+identifier can be replaced by the symbol {\tt \_}.  When the type of a
+bound variable cannot be synthesized by the system, it can be
+specified with the notation {\tt (}\,{\ident}\,{\tt :}\,{\type}\,{\tt
+)}. There is also a notation for a sequence of binding variables
+sharing the same type: {\tt (}\,{\ident$_1$}\ldots{\ident$_n$}\,{\tt
+:}\,{\type}\,{\tt )}.
+
+Some constructions allow the binding of a variable to value. This is
+called a ``let-binder''. The entry {\binderlet} of the grammar accepts
+either a binder as defined above or a let-binder. The notation in the
+latter case is {\tt (}\,{\ident}\,{\tt :=}\,{\term}\,{\tt )}. In a
+let-binder, only one variable can be introduced at the same
+time. It is also possible to give the type of the variable as follows:
+{\tt (}\,{\ident}\,{\tt :}\,{\term}\,{\tt :=}\,{\term}\,{\tt )}.
+
+Lists of {\binderlet} are allowed. In the case of {\tt fun} and {\tt
+forall}, the first binder of the list cannot be a let-binder, but
+parentheses can be omitted in the case of a single sequence of
+bindings sharing the same type (e.g.: {\tt fun~(x~y~z~:~A)~=>~t} can
+be shortened in {\tt fun~x~y~z~:~A~=>~t}).
+
 \subsection{Abstractions
 \label{abstractions}
 \index{abstractions}}
 
-The expression ``{\tt fun} {\ident} {\tt :} \type {\tt =>}~{\term}''
-denotes the {\em abstraction} of the variable {\ident} of type
-{\type}, over the term {\term}. Put in another way, it is function of
-formal parameter {\ident} of type {\type} returning {\term}.
-
-Keyword {\tt fun} is followed by a ``binder list'', so any of the
-binders of Section~\ref{Binders} apply. Internally, abstractions are
-only over one variable. Multiple variable binders are an iteration of
-the single variable abstraction: notation {\tt
-fun}~{\ident$_{1}$}~{\ldots}~{\ident$_{n}$}~{\tt :}~\type~{\tt
-=>}~{\term} stands for {\tt fun}~{\ident$_{1}$}~{\tt :}~\type~{\tt
-=>}~{\ldots}~{\tt fun}~{\ident$_{n}$}~{\tt :}~\type~{\tt =>}~{\term}.
-Variables with a value expand to a local definition (see
-Section~\ref{let-in}).
+The expression ``{\tt fun} {\ident} {\tt :} {\type} {\tt =>}~{\term}''
+defines the {\em abstraction} of the variable {\ident}, of type
+{\type}, over the term {\term}. It denotes a function of the variable
+{\ident} that evaluates to the expression {\term} (e.g. {\tt fun x:$A$
+=> x} denotes the identity function on type $A$).
+% The variable {\ident} is called the {\em parameter} of the function 
+% (we sometimes say the {\em formal parameter}).
+The keyword {\tt fun} can be followed by several binders as given in
+Section~\ref{Binders} apply. Functions over several variables are
+equivalent to an iteration of one-variable functions.  For instance the
+expression {\tt fun}~{\ident$_{1}$}~{\ldots}~{\ident$_{n}$}~{\tt
+:}~\type~{\tt =>}~{\term} denotes the same function as {\tt
+fun}~{\ident$_{1}$}~{\tt :}~\type~{\tt =>}~{\ldots}~{\tt
+fun}~{\ident$_{n}$}~{\tt :}~\type~{\tt =>}~{\term}. If a let-binder
+occur in the list of binders, it is expanded to a local definition
+(see Section~\ref{let-in}).
 
 \subsection{Products
 \label{products}
 \index{products}}
 
-The expression ``{\tt forall}~{\ident}~{\tt :}~\type~{\tt ,}~{\term}''
-denotes the {\em product} of the variable {\ident} of type {\type},
-over the term {\term}. As for abstractions, {\tt forall} is followed
-by a binder list, and it is represented by an iteration of single
-variable products.
+The expression ``{\tt forall}~{\ident}~{\tt :}~{\type}{\tt
+,}~{\term}'' denotes the {\em product} of the variable {\ident} of
+type {\type}, over the term {\term}. As for abstractions, {\tt forall}
+is followed by a binder list, and products over several variables are
+equivalent to an iteration of one-variable products. 
+
+Note that {\term} is intended to be a type (even if {\term} and
+{\type} lives in the same grammatical category).
+
+If the variable {\ident} occurs in {\term}, the product is called {\em
+dependent product}.  The intention behind a dependent product {\tt
+forall}~$x$~{\tt :}~{$A$}{\tt ,}~{$B$} is twofold. It denotes either
+the universal quantification of the variable $x$ of type $A$ in the
+proposition $B$ or the functional dependent product from $A$ to $B$ (a
+construction usually written $\Pi_{x:A}.B$ in set theory).
 
 Non dependent product types have a special notation ``$A$ {\tt ->}
-$B$'' stands for ``{\tt forall \_:}$A${\tt ,}~$B$''. This is to stress
-on the fact that non dependent product types are usual functional types.
+$B$'' stands for ``{\tt forall \_:}$A${\tt ,}~$B$''. The non dependent
+product is used both to denote the propositional implication and
+function types.
 
 \subsection{Applications
 \label{applications}
 \index{applications}}
 
 The expression \term$_0$ \term$_1$ denotes the application of
-  term \term$_0$ to \term$_1$.
+\term$_0$ to \term$_1$.
 
 The expression {\tt }\term$_0$ \term$_1$ ...  \term$_n${\tt}
 denotes the application of the term \term$_0$ to the arguments
-\term$_1$ ... then \term$_n$.  It is equivalent to {\tt } {\ldots}
-{\tt (} {\term$_0$} {\term$_1$} {\tt )} {\ldots} {\term$_n$} {\tt }:
+\term$_1$ ... then \term$_n$.  It is equivalent to {\tt (} {\ldots}
+{\tt (} {\term$_0$} {\term$_1$} {\tt )} {\ldots} {\tt )} {\term$_n$} {\tt }:
 associativity is to the left.
 
-When using implicit arguments mechanism, implicit positions can be
-forced a value with notation {\tt (}\,{\ident}\,{\tt
-:=}\,{\term}\,{\tt )} or {\tt (}\,{\num}\,{\tt
-:=}\,{\term}\,{\tt )}. See Section~\ref{Implicits-explicitation} for
-details.
+The notation {\tt (}\,{\ident}\,{\tt :=}\,{\term}\,{\tt )} for
+arguments is used for making explicit the value of implicit arguments
+(see Section~\ref{Implicits-explicitation}).
 
 \subsection{Type cast
 \label{typecast}
@@ -488,10 +503,9 @@ expression. It enforces the type of {\term} to be {\type}.
 \label{hole}
 \index{\_}}
 
-Since there are redundancies, a term can be type-checked without
-giving it in totality. Subterms that are left to guess by the
-type-checker are replaced by ``\_''.
-
+{\Coq} expressions often contains redundant informations. Subterms that
+can be automatically inferred by {\Coq} can be replaced by the
+symbol ``\_'' and {\Coq} will guess the missing information.
 
 \subsection{Local definitions (let-in)
 \label{let-in}
@@ -506,42 +520,42 @@ the local binding of \term$_1$ to the variable $\ident$ in
 There is a syntactic sugar for local definition of functions: {\tt
 let} {\ident} {\binder$_1$} \ldots {\binder$_n$} {\tt :=} {\term$_1$}
 {\tt in} {\term$_2$} stands for {\tt let} {\ident} {\tt := fun}
-{\binder$_1$} \ldots {\binder$_n$} {\tt in} {\term$_2$}.
-
+{\binder$_1$} \ldots {\binder$_n$} {\tt =>} {\term$_2$} {\tt in}
+{\term$_2$}.
 
 \subsection{Definition by case analysis
 \label{caseanalysis}
 \index{match@{\tt match\ldots with\ldots end}}}
 
-
-This paragraph only shows simple variants of case analysis. See
-Section~\ref{Mult-match} and Chapter~\ref{Mult-match-full} for
-explanations of the general form.
-
 Objects of inductive types can be destructurated by a case-analysis
-construction, also called pattern-matching in functional languages. In
-its simple form, a case analysis expression is used to analyze the
-structure of an inductive objects (upon which constructor it is
-built).
+construction, that are called {\em pattern-matching} expressions.  A
+pattern-matching expression is used to analyze the structure of an
+inductive objects and to apply specific treatments accordingly.
+
+This paragraph describes the basic form of pattern-matching. See
+Section~\ref{Mult-match} and Chapter~\ref{Mult-match-full} for the
+description of the general form. The basic form of pattern-matching is
+characterized by a single {\caseitem} expression, a {\multpattern}
+restricted to a single {\pattern} and {\pattern} restricted to the
+form {\qualid} \nelist{\ident}{}.
 
 The expression {\tt match} {\term$_0$} {\returntype} {\tt with}
 {\pattern$_1$} {\tt =>} {\term$_1$} {\tt $|$} {\ldots} {\tt $|$}
 {\pattern$_n$} {\tt =>} {\term$_n$} {\tt end}, denotes a {\em
 pattern-matching} over the term {\term$_0$} (expected to be of an
 inductive type $I$).  The terms {\term$_1$}\ldots{\term$_n$} are the
-{\em branches} of the pattern-matching expression. In a simple pattern
-\qualid~\nelist{\ident}{}, the qualified identifier {\qualid} is
-intended to be a constructor. There should be one branch for every
-constructor of $I$.
+{\em branches} of the pattern-matching expression. Each of
+{\pattern$_i$} has a form \qualid~\nelist{\ident}{} where {\qualid}
+must denotes a constructor. There should be exactly one branch for
+every constructor of $I$.
 
 The {\returntype} expresses the type returned by the whole {\tt match}
-expression. There are several cases.
-
-In the {\em non dependent} case, all branches have the same type, and
-the {\returntype} is the common type of branches. In this case,
-{\returntype} can usually be omitted as it can be inferred from the
-type of branches\footnote{except if no equation is given, to match the
-term in an empty type, e.g. the type \texttt{False}}.
+expression. There are several cases.  In the {\em non dependent} case,
+all branches have the same type, and the {\returntype} is the common
+type of branches. In this case, {\returntype} can usually be omitted
+as it can be inferred from the type of the branches\footnote{Except if
+the inductive type is empty in which case there is no equation to help
+to infer the return type.}.
 
 In the {\em dependent} case, there are three subcases. In the first
 subcase, the type in each branch may depend on the exact value being
@@ -568,13 +582,11 @@ the branches have respective types {\tt or (eq bool true true) (eq
 bool true false)} and {\tt or (eq bool false true) (eq bool false
 false)} while the whole pattern-matching expression has type {\tt or
 (eq bool b true) (eq bool b false)}, the identifier {\tt x} being used
-to represent the dependency.
-
-\noindent {\bf Remark: } when the term being matched is a variable,
-the {\tt as} clause can be omitted and the term being matched can
-serve itself as binding name in the return type. For instance, the
-following alternative definition is accepted and has the same meaning
-as the above one.
+to represent the dependency.  Remark that when the term being matched
+is a variable, the {\tt as} clause can be omitted and the term being
+matched can serve itself as binding name in the return type. For
+instance, the following alternative definition is accepted and has the
+same meaning as the previous one.
 \begin{coq_example*}
 Definition bool_case (b:bool) : or (eq bool b true) (eq bool b false)
 := match b return or (eq bool b true) (eq bool b false) with
@@ -585,15 +597,14 @@ Definition bool_case (b:bool) : or (eq bool b true) (eq bool b false)
    end.
 \end{coq_example*}
 
-The second subcase is only concerned with the inductive types that
-have constraints expressed by non uniform arguments such as the
-equality predicate (see section~\ref{Equality}), the order predicate
-on natural numbers (see section~\ref{le}) or the type of lists of a
-given length (see section~\ref{listn}). In this situation, the type of
-each branch can depend on the type dependencies specific to the branch
-and the whole pattern-matching expression has a type determined by the
-specific dependencies in the type of the term being matched. This
-dependency of the return type in the non uniform arguments of the
+The second subcase is only relevant for annotated inductive types such
+as the equality predicate (see section~\ref{Equality}), the order
+predicate on natural numbers (see section~\ref{le}) or the type of
+lists of a given length (see section~\ref{listn}). In this situation,
+the type of each branch can depend on the type dependencies specific
+to the branch and the whole pattern-matching expression has a type
+determined by the specific dependencies in the type of the term being
+matched. This dependency of the return type in the annotations of the
 inductive type is expressed using a {\tt
 in~I~\_~$\ldots$~\_~\ident$_1$~$\ldots$~\ident$_n$} clause, where
 \begin{itemize}
@@ -1084,7 +1095,8 @@ arguments of the constructors rather than their full type.
 \end{Variants}
 
 \begin{ErrMsgs}
-\item \errindex{The {\num}th argument of {\ident} must be {\ident'} in {\type}}
+\item \errindex{The {\num}$^{\mbox{\scriptize th}}$ argument of
+{\ident} must be {\ident'} in {\type}}
 \end{ErrMsgs}
 
 \paragraph{New from \Coq{} V8.1} The condition on parameters for
