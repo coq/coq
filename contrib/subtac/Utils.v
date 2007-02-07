@@ -4,6 +4,8 @@ Notation "'fun' { x : A | P } => Q" :=
   (fun x:{x:A|P} => Q)
   (at level 200, x ident, right associativity).
 
+Notation " {{ x }} " := (tt : { y : unit | x }).
+
 Notation "( x & ? )" := (@exist _ _ x _) : core_scope.
 
 Notation " ! " := (False_rect _ _).
@@ -82,6 +84,8 @@ Extraction Inline proj1_sig.
 Extract Inductive unit => "unit" [ "()" ].
 Extract Inductive bool => "bool" [ "true" "false" ].
 Extract Inductive sumbool => "bool" [ "true" "false" ].
+Axiom pair : Type -> Type -> Type.
+Extract Constant pair "'a" "'b" => " 'a * 'b ".
 Extract Inductive prod => "pair" [ "" ].
 Extract Inductive sigT => "pair" [ "" ].
 
