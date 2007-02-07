@@ -292,6 +292,12 @@ let intern_qualid loc qid =
   with Not_found ->
     error_global_not_found_loc loc qid
 
+(* Rule out section vars since these should have been found by intern_var *)
+let intern_non_secvar_qualid loc qid =
+  match intern_qualid loc qid with
+    | RRef (loc, VarRef id) -> error_global_not_found_loc loc qid
+    | r -> r
+
 let intern_inductive r =
   let loc,qid = qualid_of_reference r in
   try match Nametab.extended_locate qid with
@@ -312,7 +318,8 @@ let intern_reference env lvar = function
   | Ident (loc, id) ->
       try intern_var env lvar loc id
       with Not_found -> 
-      try find_appl_head_data lvar (intern_qualid loc (make_short_qualid id))
+      let qid = make_short_qualid id in
+      try find_appl_head_data lvar (intern_non_secvar_qualid loc qid)
       with e ->
 	(* Extra allowance for non globalizing functions *)
 	if !interning_grammar then RVar (loc,id), [], [], []

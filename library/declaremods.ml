@@ -203,7 +203,8 @@ let cache_module ((sp,kn as oname),(entry,substobjs,substituted)) =
 	  
 	match sub_mtb_o with
 	    None -> ()
-	  | Some sub_mtb -> check_subtypes mp sub_mtb
+	  | Some sub_mtb -> 
+check_subtypes mp sub_mtb
 
   in
   conv_names_do_module false "cache" load_objects 1 oname substobjs substituted
@@ -683,6 +684,7 @@ let end_modtype id =
 let declare_modtype interp_modtype id args mty = 
   let fs = Summary.freeze_summaries () in
 
+  try
   let _ = Global.start_modtype id in
   let arg_entries = List.concat (List.map (intern_args interp_modtype) args) in
 
@@ -694,9 +696,14 @@ let declare_modtype interp_modtype id args mty =
       base_mty
   in
   let substobjs = get_modtype_substobjs entry in
+  (* Undo the simulated interactive building of the module type *)
+  (* and declare the module type as a whole *)
   Summary.unfreeze_summaries fs;
     
   ignore (add_leaf id (in_modtype (Some entry, substobjs)))
+  with e ->
+    (* Something wrong: undo the whole process *)
+    Summary.unfreeze_summaries fs; raise e
 			       
 
 let rec get_module_substobjs env = function
@@ -726,8 +733,10 @@ let rec get_module_substobjs env = function
 
 
 let declare_module interp_modtype interp_modexpr id args mty_o mexpr_o =
+
   let fs = Summary.freeze_summaries () in
 
+  try
   let _ = Global.start_module id in
   let arg_entries = List.concat (List.map (intern_args interp_modtype) args) in
 
@@ -765,6 +774,9 @@ let declare_module interp_modtype interp_modexpr id args mty_o mexpr_o =
       | {mod_entry_expr = Some mexpr} -> get_module_substobjs env mexpr
       | _ -> anomaly "declare_module: No type, no body ..."
   in
+
+    (* Undo the simulated interactive building of the module *)
+    (* and declare the module as a whole *)
     Summary.unfreeze_summaries fs;
 
     let dir,mp = dir_of_sp (Lib.make_path id), mp_of_kn (Lib.make_kn id) in
@@ -773,6 +785,10 @@ let declare_module interp_modtype interp_modexpr id args mty_o mexpr_o =
       ignore (add_leaf
 		id
 		(in_module (Some (entry, mty_sub_o), substobjs, substituted)))
+
+  with e -> 
+    (* Something wrong: undo the whole process *)
+    Summary.unfreeze_summaries fs; raise e
 
 
 (*s Iterators. *)
