@@ -526,7 +526,9 @@ Reset Initial.
     {\ldots} \term$_n$ has to be a proof of some equality $m = p$,
     where $m$ is a monomial (after ``abstraction''),
     $p$ a polynomial and $=$ the corresponding equality of the field structure.
-
+    Beware that rewriting works with the equality $m=p$ only if $p$ is a 
+    polynomial since rewriting is handled by the underlying {\tt ring}
+    tactic.
   \item {\tt field\_simplify} 
      performs the simplification in the conclusion of the goal, $F_1 = F_2$
      becomes $N_1/D_1 = N_2/D_2$. A normalization step (the same as the
