@@ -362,6 +362,7 @@ contrib/field/LegacyField_Tactic.vo: contrib/field/LegacyField_Tactic.v theories
 contrib/field/LegacyField.vo: contrib/field/LegacyField.v contrib/field/LegacyField_Compl.vo contrib/field/LegacyField_Theory.vo contrib/field/LegacyField_Tactic.vo
 contrib/fourier/Fourier_util.vo: contrib/fourier/Fourier_util.v theories/Reals/Rbase.vo
 contrib/fourier/Fourier.vo: contrib/fourier/Fourier.v contrib/ring/quote.cmo contrib/ring/ring.cmo contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo contrib/field/field.cmo contrib/fourier/Fourier_util.vo contrib/field/LegacyField.vo theories/Reals/DiscrR.vo
+contrib/subtac/SubtacTactics.vo: contrib/subtac/SubtacTactics.v
 contrib/subtac/Utils.vo: contrib/subtac/Utils.v theories/Logic/ProofIrrelevance.vo
 contrib/subtac/FixSub.vo: contrib/subtac/FixSub.v theories/Init/Wf.vo contrib/subtac/Utils.vo theories/Arith/Wf_nat.vo theories/Arith/Lt.vo
 contrib/subtac/Subtac.vo: contrib/subtac/Subtac.v contrib/subtac/Utils.vo contrib/subtac/FixSub.vo

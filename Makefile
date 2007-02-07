@@ -1101,7 +1101,7 @@ JPROVERVO=
 
 CCVO=
 
-SUBTACVO=contrib/subtac/Tactics.vo contrib/subtac/Utils.vo contrib/subtac/FixSub.vo contrib/subtac/Subtac.vo \
+SUBTACVO=contrib/subtac/SubtacTactics.vo contrib/subtac/Utils.vo contrib/subtac/FixSub.vo contrib/subtac/Subtac.vo \
 	contrib/subtac/FunctionalExtensionality.vo
 
 RTAUTOVO = \
