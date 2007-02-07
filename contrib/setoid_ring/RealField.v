@@ -127,7 +127,7 @@ Ltac Rpow_tac t :=
   end. 
 
 Add Field RField : Rfield  
-   (infinite Zeq_bool_complete, power_tac R_power_theory [Rpow_tac]).
+   (completeness Zeq_bool_complete, power_tac R_power_theory [Rpow_tac]).
 
 
 

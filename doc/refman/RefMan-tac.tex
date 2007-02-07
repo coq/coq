@@ -2833,65 +2833,6 @@ Reset Initial.
 \phantom{\SeeAlso}theory {\tt theories/Reals} for many examples of use of {\tt
 field}.
 
-\subsection{\tt legacy field
-\tacindex{legacy field}}
-
-This tactic written by David~Delahaye and Micaela~Mayero solves equalities
-using commutative field theory. Denominators have to be non equal to zero and,
-as this is not decidable in general, this tactic may generate side conditions
-requiring some expressions to be non equal to zero. This tactic must be loaded
-by {\tt Require Import LegacyField}. Field theories are declared (as for
-{\tt legacy ring}) with
-the {\tt Add Legacy Field} command.
-
-\subsection{\tt Add Legacy Field
-\comindex{Add Legacy Field}}
-
-This vernacular command adds a commutative field theory to the database for the
-tactic {\tt field}. You must provide this theory as follows:
-\begin{flushleft}
-{\tt Add Legacy Field {\it A} {\it Aplus} {\it Amult} {\it Aone} {\it Azero} {\it
-Aopp} {\it Aeq} {\it Ainv} {\it Rth} {\it Tinvl}}
-\end{flushleft}
-where {\tt {\it A}} is a term of type {\tt Type}, {\tt {\it Aplus}} is
-a term of type {\tt A->A->A}, {\tt {\it Amult}} is a term of type {\tt
-  A->A->A}, {\tt {\it Aone}} is a term of type {\tt A}, {\tt {\it
-    Azero}} is a term of type {\tt A}, {\tt {\it Aopp}} is a term of
-type {\tt A->A}, {\tt {\it Aeq}} is a term of type {\tt A->bool}, {\tt
-  {\it Ainv}} is a term of type {\tt A->A}, {\tt {\it Rth}} is a term
-of type {\tt (Ring\_Theory {\it A Aplus Amult Aone Azero Ainv Aeq})},
-and {\tt {\it Tinvl}} is a term of type {\tt forall n:{\it A},
-  {\~{}}(n={\it Azero})->({\it Amult} ({\it Ainv} n) n)={\it Aone}}.
-To build a ring theory, refer to Chapter~\ref{ring} for more details.
-
-This command adds also an entry in the ring theory table if this theory is not
-already declared. So, it is useless to keep, for a given type, the {\tt Add
-Ring} command if you declare a theory with {\tt Add Field}, except if you plan
-to use specific features of {\tt ring} (see Chapter~\ref{ring}). However, the
-module {\tt ring} is not loaded by {\tt Add Field} and you have to make a {\tt
-Require Import Ring} if you want to call the {\tt ring} tactic.
-
-\begin{Variants}
-
-\item {\tt Add Legacy Field {\it A} {\it Aplus} {\it Amult} {\it Aone} {\it Azero}
-{\it Aopp} {\it Aeq} {\it Ainv} {\it Rth} {\it Tinvl}}\\
-{\tt \phantom{Add Field }with minus:={\it Aminus}}
-
-Adds also the term {\it Aminus} which must be a constant expressed by
-means of {\it Aopp}.
-
-\item {\tt Add Legacy Field {\it A} {\it Aplus} {\it Amult} {\it Aone} {\it Azero}
-{\it Aopp} {\it Aeq} {\it Ainv} {\it Rth} {\it Tinvl}}\\
-{\tt \phantom{Add Legacy Field }with div:={\it Adiv}}
-
-Adds also the term {\it Adiv} which must be a constant expressed by
-means of {\it Ainv}.
-
-\end{Variants}
-
-\SeeAlso \cite{DelMay01} for more details regarding the implementation of {\tt
-legacy field}.
-
 \subsection{\tt fourier
 \tacindex{fourier}}
 

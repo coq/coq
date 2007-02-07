@@ -1025,7 +1025,7 @@ type field_mod =
 
 VERNAC ARGUMENT EXTEND field_mod
   | [ ring_mod(m) ] -> [ Ring_mod m ]
-  | [ "infinite" constr(inj) ] -> [ Inject inj ]
+  | [ "completeness" constr(inj) ] -> [ Inject inj ]
 END
 
 let process_field_mods l =

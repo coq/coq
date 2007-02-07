@@ -473,19 +473,25 @@ For example, if we take $F = (1 - 1/x) x - x + 1$, this gives
 $ N= (x -1)  x - x^2 + x$ and $D= x$. It then calls {\tt ring} 
 to solve $N=0$. Note that {\tt field} also generates non-zero conditions
 for all the denominators it encounters in the reduction.
-In our example, it generates the condition $x \neq 0$.
+In our example, it generates the condition $x \neq 0$. These
+conditions appear as one subgoal which is a conjunction if there are
+several denominators.
 Non-zero conditions are {\it always} polynomial expressions. For example 
 when reducing the expression $1/(1 + 1/x)$, two side conditions are
-generated: $x\neq 0$ and $x + 1 \neq 0$.
-% - Faire Require Import Field...
-% - RealField
-% -
+generated: $x\neq 0$ and $x + 1 \neq 0$. Factorized expressions are
+broken since a field is an integral domain, and when the equality test
+on coefficients is complete w.r.t. the equality of the target field,
+constants can be proven different from zero automatically.
 
-The tactic must be loaded by \texttt{Require Import Field}. The field
-structures must be declared with the \texttt{Add Field} command (see
-below). The fiel of reals is predefined; if one wants to use the
-tactic on \texttt{R} one must first require the module
-\texttt{RealField} (exported by \texttt{Reals}).
+The tactic must be loaded by \texttt{Require Import Field}. New field
+structures can be declared to the system with the \texttt{Add Field}
+command (see below). The field of real numbers is defined in module
+\texttt{RealField} (in texttt{contrib/setoid\_ring}). It is exported
+by module \texttt{Rbase}, so that requiring \texttt{Rbase} or
+\texttt{Reals} is enough to use the field tactics on real
+numbers. Rational numbers in canonical form are also declared as a
+field in module \texttt{Qcanon}.
+
 
 \Example
 \begin{coq_eval}
@@ -523,7 +529,12 @@ Reset Initial.
 
   \item {\tt field\_simplify} 
      performs the simplification in the conclusion of the goal, $F_1 = F_2$
-     becomes $N_1/D_1 = N_2/D_2$.
+     becomes $N_1/D_1 = N_2/D_2$. A normalization step (the same as the
+     one for rings) is then applied to $N_1$, $D_1$, $N_2$ and
+     $D_2$. This way, polynomials remain in factorized form during the
+     fraction simplifications. This yields smaller expressions when
+     reducing to the same denominator since common factors can be
+     cancelled.
 
   \item {\tt field\_simplify   [\term$_1$ {\ldots} \term$_n$]}
      performs the simplification in the conclusion of the goal using
@@ -618,17 +629,12 @@ used to tailor the behaviour of the tactic. Since field tactics are
 built upon ring tactics, all mofifiers of the {\tt Add Ring}
 apply. There is only one specific modifier:
 \begin{description}
-\item[infinite \term] allows the field tactic to prove
+\item[completeness \term] allows the field tactic to prove
   automatically that the image of non-zero coefficients are mapped to
   non-zero elements of the field. \term is a proof of {\tt forall x y,
     [x] == [y] -> x?=!y = true}, which is the completeness of equality
   on coefficients w.r.t. the field equality.
 \end{description}
-
-{\tt field\_simplify\_eq}
-
-{\tt field\_simplify}
-
 
 \asection{Legacy implementation}
 
@@ -844,6 +850,65 @@ booleans.
 \texttt{Ring} module. To load the ring structure for \texttt{nat},
 load the module \texttt{ArithRing}, and for \texttt{Z},
 load the module \texttt{ZArithRing}.
+
+\subsection{\tt legacy field
+\tacindex{legacy field}}
+
+This tactic written by David~Delahaye and Micaela~Mayero solves equalities
+using commutative field theory. Denominators have to be non equal to zero and,
+as this is not decidable in general, this tactic may generate side conditions
+requiring some expressions to be non equal to zero. This tactic must be loaded
+by {\tt Require Import LegacyField}. Field theories are declared (as for
+{\tt legacy ring}) with
+the {\tt Add Legacy Field} command.
+
+\subsection{\tt Add Legacy Field
+\comindex{Add Legacy Field}}
+
+This vernacular command adds a commutative field theory to the database for the
+tactic {\tt field}. You must provide this theory as follows:
+\begin{flushleft}
+{\tt Add Legacy Field {\it A} {\it Aplus} {\it Amult} {\it Aone} {\it Azero} {\it
+Aopp} {\it Aeq} {\it Ainv} {\it Rth} {\it Tinvl}}
+\end{flushleft}
+where {\tt {\it A}} is a term of type {\tt Type}, {\tt {\it Aplus}} is
+a term of type {\tt A->A->A}, {\tt {\it Amult}} is a term of type {\tt
+  A->A->A}, {\tt {\it Aone}} is a term of type {\tt A}, {\tt {\it
+    Azero}} is a term of type {\tt A}, {\tt {\it Aopp}} is a term of
+type {\tt A->A}, {\tt {\it Aeq}} is a term of type {\tt A->bool}, {\tt
+  {\it Ainv}} is a term of type {\tt A->A}, {\tt {\it Rth}} is a term
+of type {\tt (Ring\_Theory {\it A Aplus Amult Aone Azero Ainv Aeq})},
+and {\tt {\it Tinvl}} is a term of type {\tt forall n:{\it A},
+  {\~{}}(n={\it Azero})->({\it Amult} ({\it Ainv} n) n)={\it Aone}}.
+To build a ring theory, refer to Chapter~\ref{ring} for more details.
+
+This command adds also an entry in the ring theory table if this theory is not
+already declared. So, it is useless to keep, for a given type, the {\tt Add
+Ring} command if you declare a theory with {\tt Add Field}, except if you plan
+to use specific features of {\tt ring} (see Chapter~\ref{ring}). However, the
+module {\tt ring} is not loaded by {\tt Add Field} and you have to make a {\tt
+Require Import Ring} if you want to call the {\tt ring} tactic.
+
+\begin{Variants}
+
+\item {\tt Add Legacy Field {\it A} {\it Aplus} {\it Amult} {\it Aone} {\it Azero}
+{\it Aopp} {\it Aeq} {\it Ainv} {\it Rth} {\it Tinvl}}\\
+{\tt \phantom{Add Field }with minus:={\it Aminus}}
+
+Adds also the term {\it Aminus} which must be a constant expressed by
+means of {\it Aopp}.
+
+\item {\tt Add Legacy Field {\it A} {\it Aplus} {\it Amult} {\it Aone} {\it Azero}
+{\it Aopp} {\it Aeq} {\it Ainv} {\it Rth} {\it Tinvl}}\\
+{\tt \phantom{Add Legacy Field }with div:={\it Adiv}}
+
+Adds also the term {\it Adiv} which must be a constant expressed by
+means of {\it Ainv}.
+
+\end{Variants}
+
+\SeeAlso \cite{DelMay01} for more details regarding the implementation of {\tt
+legacy field}.
 
 \asection{History of \texttt{ring}}
 
