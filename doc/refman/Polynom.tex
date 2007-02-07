@@ -159,7 +159,7 @@ Reset Initial.
     where $m$ is a monomial (after ``abstraction''),
     $p$ a polynomial and $=$ the corresponding equality of the ring structure.
 
-  \item {\tt ring\_simplify [\term$_1$ {\ldots} \term$_n$] $t_1 \ldots t_n$ in 
+  \item {\tt ring\_simplify [\term$_1$ {\ldots} \term$_n$] $t_1 \ldots t_m$ in 
 {\ident}}
      performs the simplification in the hypothesis named {\tt ident}.
 \end{Variants}
@@ -337,8 +337,17 @@ describes their syntax and effects:
   {\tt contrib/setoid\_ring/RealField.v} for examples.
   By default the tactic does not recognize power expressions as ring
   expressions.
-  
-  
+\item[sign {\term}] allows {\tt ring\_simplify} to use a minus operation
+  when outputing its normal form, i.e writing $x - y$ instead of $x + (-y)$. 
+  The term {\term} is a proof that a given sign function indicates expressions
+   that are signed ({\term} has to be a
+  proof of {\tt Ring\_theory.get\_sign}). See  {\tt contrib/setoid\_ring/IntialRing.v} for examples of sign function.
+\item[div {\term}] allows  {\tt ring} and {\tt ring\_simplify} to use moniomals
+with coefficient other than 1 in the rewriting. The term {\term} is a proof that a given division function  satisfies the specification of an euclidean
+  division function  ({\term} has to be a
+  proof of {\tt Ring\_theory.div\_theory}). For example, this function is
+  called when trying to rewrite $7x$ by $2x = z$ to tell that $7 = 3 * 2 + 1$.
+   See  {\tt contrib/setoid\_ring/IntialRing.v} for examples of div function.
 \end{description}
 
 
@@ -455,9 +464,122 @@ correctness theorem to well-chosen arguments.
 \tacindex{field\_simplify}
 \tacindex{field\_simplify\_eq}}
 
-% - Faire Require Import Field...
-% - RealField
-% -
+
+The {\tt field} tactic is  an extension of the {\tt ring} to deal with
+rational expresision. Given a rational expression $F=0$. It first reduces the expression $F$ to a common denominator $N/D= 0$ where $N$ and $D$ are two ring
+expressions.
+For example, if we take $F = (1 - 1/x) x - x + 1$, this gives 
+$ N= (x -1)  x - x^2 + x$ and $D= x$. It then calls {\tt ring} 
+to solve $N=0$. Note that {\tt field} also generates non-zero conditions
+for all the denominators it encounters in the reduction.
+In our example, it generates the condition $x \neq 0$. These
+conditions appear as one subgoal which is a conjunction if there are
+several denominators.
+Non-zero conditions are {\it always} polynomial expressions. For example 
+when reducing the expression $1/(1 + 1/x)$, two side conditions are
+generated: $x\neq 0$ and $x + 1 \neq 0$. Factorized expressions are
+broken since a field is an integral domain, and when the equality test
+on coefficients is complete w.r.t. the equality of the target field,
+constants can be proven different from zero automatically.
+
+The tactic must be loaded by \texttt{Require Import Field}. New field
+structures can be declared to the system with the \texttt{Add Field}
+command (see below). The field of real numbers is defined in module
+\texttt{RealField} (in texttt{contrib/setoid\_ring}). It is exported
+by module \texttt{Rbase}, so that requiring \texttt{Rbase} or
+\texttt{Reals} is enough to use the field tactics on real
+numbers. Rational numbers in canonical form are also declared as a
+field in module \texttt{Qcanon}.
+
+
+\Example
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+\begin{coq_example}
+Require Import Reals.
+Open Scope R_scope.
+Goal forall x,  x <> 0 ->
+   (1 - 1/x) * x - x + 1 = 0.
+\end{coq_example}
+\begin{coq_example}
+intros; field; auto.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+\begin{coq_example}
+Goal forall x y, y <> 0 -> y = x -> x/y = 1.
+\end{coq_example}
+\begin{coq_example}
+intros x y H H1; field [H1]; auto.
+\end{coq_example} 
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+\begin{Variants}
+  \item {\tt field [\term$_1$ {\ldots} \term$_n$]} decides the equality of two
+    terms modulo field operations and rewriting of the equalities
+    defined by \term$_1$ {\ldots} \term$_n$. Each of \term$_1$
+    {\ldots} \term$_n$ has to be a proof of some equality $m = p$,
+    where $m$ is a monomial (after ``abstraction''),
+    $p$ a polynomial and $=$ the corresponding equality of the field structure.
+
+  \item {\tt field\_simplify} 
+     performs the simplification in the conclusion of the goal, $F_1 = F_2$
+     becomes $N_1/D_1 = N_2/D_2$. A normalization step (the same as the
+     one for rings) is then applied to $N_1$, $D_1$, $N_2$ and
+     $D_2$. This way, polynomials remain in factorized form during the
+     fraction simplifications. This yields smaller expressions when
+     reducing to the same denominator since common factors can be
+     cancelled.
+
+  \item {\tt field\_simplify   [\term$_1$ {\ldots} \term$_n$]}
+     performs the simplification in the conclusion of the goal using
+    the equalities
+    defined by \term$_1$ {\ldots} \term$_n$.
+
+  \item {\tt field\_simplify   [\term$_1$ {\ldots} \term$_n$] $t_1$ \ldots
+$t_m$}
+     performs the simplification in the terms $t_1$ \ldots $t_m$
+    of the conclusion of the goal using
+    the equalities
+    defined by \term$_1$ {\ldots} \term$_n$. 
+
+  \item {\tt field\_simplify in $H$}  
+     performs the simplification in the assumption $H$.
+
+  \item {\tt field\_simplify   [\term$_1$ {\ldots} \term$_n$] in $H$}
+     performs the simplification in the assumption $H$ using
+    the equalities
+    defined by \term$_1$ {\ldots} \term$_n$. 
+
+  \item {\tt field\_simplify   [\term$_1$ {\ldots} \term$_n$] $t_1$ \ldots
+$t_m$ in $H$}
+     performs the simplification in the terms $t_1$ \ldots $t_n$
+    of the assumption $H$ using
+    the equalities
+    defined by \term$_1$ {\ldots} \term$_m$. 
+
+  \item {\tt field\_simplify\_eq}
+     performs the simplification in the conclusion of the goal removing
+     the denominator. $F_1 = F_2$
+     becomes $N_1 D_2 = N_2  D_1$.
+
+  \item {\tt field\_simplify\_eq   [\term$_1$ {\ldots} \term$_n$]}
+     performs the simplification in the conclusion of the goal using
+    the equalities
+    defined by \term$_1$ {\ldots} \term$_n$. 
+
+  \item {\tt field\_simplify\_eq} in $H$
+     performs the simplification in the assumption $H$.
+
+  \item {\tt field\_simplify\_eq   [\term$_1$ {\ldots} \term$_n$] in $H$}
+     performs the simplification in the assumption $H$ using
+    the equalities
+    defined by \term$_1$ {\ldots} \term$_n$. 
+\end{Variants}
 
 \asection{Adding a new field structure
 \comindex{Add Field}}
@@ -506,7 +628,7 @@ used to tailor the behaviour of the tactic. Since field tactics are
 built upon ring tactics, all mofifiers of the {\tt Add Ring}
 apply. There is only one specific modifier:
 \begin{description}
-\item[infinite \term] allows the field tactic to prove
+\item[completeness \term] allows the field tactic to prove
   automatically that the image of non-zero coefficients are mapped to
   non-zero elements of the field. \term is a proof of {\tt forall x y,
     [x] == [y] -> x?=!y = true}, which is the completeness of equality
@@ -727,6 +849,65 @@ booleans.
 \texttt{Ring} module. To load the ring structure for \texttt{nat},
 load the module \texttt{ArithRing}, and for \texttt{Z},
 load the module \texttt{ZArithRing}.
+
+\subsection{\tt legacy field
+\tacindex{legacy field}}
+
+This tactic written by David~Delahaye and Micaela~Mayero solves equalities
+using commutative field theory. Denominators have to be non equal to zero and,
+as this is not decidable in general, this tactic may generate side conditions
+requiring some expressions to be non equal to zero. This tactic must be loaded
+by {\tt Require Import LegacyField}. Field theories are declared (as for
+{\tt legacy ring}) with
+the {\tt Add Legacy Field} command.
+
+\subsection{\tt Add Legacy Field
+\comindex{Add Legacy Field}}
+
+This vernacular command adds a commutative field theory to the database for the
+tactic {\tt field}. You must provide this theory as follows:
+\begin{flushleft}
+{\tt Add Legacy Field {\it A} {\it Aplus} {\it Amult} {\it Aone} {\it Azero} {\it
+Aopp} {\it Aeq} {\it Ainv} {\it Rth} {\it Tinvl}}
+\end{flushleft}
+where {\tt {\it A}} is a term of type {\tt Type}, {\tt {\it Aplus}} is
+a term of type {\tt A->A->A}, {\tt {\it Amult}} is a term of type {\tt
+  A->A->A}, {\tt {\it Aone}} is a term of type {\tt A}, {\tt {\it
+    Azero}} is a term of type {\tt A}, {\tt {\it Aopp}} is a term of
+type {\tt A->A}, {\tt {\it Aeq}} is a term of type {\tt A->bool}, {\tt
+  {\it Ainv}} is a term of type {\tt A->A}, {\tt {\it Rth}} is a term
+of type {\tt (Ring\_Theory {\it A Aplus Amult Aone Azero Ainv Aeq})},
+and {\tt {\it Tinvl}} is a term of type {\tt forall n:{\it A},
+  {\~{}}(n={\it Azero})->({\it Amult} ({\it Ainv} n) n)={\it Aone}}.
+To build a ring theory, refer to Chapter~\ref{ring} for more details.
+
+This command adds also an entry in the ring theory table if this theory is not
+already declared. So, it is useless to keep, for a given type, the {\tt Add
+Ring} command if you declare a theory with {\tt Add Field}, except if you plan
+to use specific features of {\tt ring} (see Chapter~\ref{ring}). However, the
+module {\tt ring} is not loaded by {\tt Add Field} and you have to make a {\tt
+Require Import Ring} if you want to call the {\tt ring} tactic.
+
+\begin{Variants}
+
+\item {\tt Add Legacy Field {\it A} {\it Aplus} {\it Amult} {\it Aone} {\it Azero}
+{\it Aopp} {\it Aeq} {\it Ainv} {\it Rth} {\it Tinvl}}\\
+{\tt \phantom{Add Field }with minus:={\it Aminus}}
+
+Adds also the term {\it Aminus} which must be a constant expressed by
+means of {\it Aopp}.
+
+\item {\tt Add Legacy Field {\it A} {\it Aplus} {\it Amult} {\it Aone} {\it Azero}
+{\it Aopp} {\it Aeq} {\it Ainv} {\it Rth} {\it Tinvl}}\\
+{\tt \phantom{Add Legacy Field }with div:={\it Adiv}}
+
+Adds also the term {\it Adiv} which must be a constant expressed by
+means of {\it Ainv}.
+
+\end{Variants}
+
+\SeeAlso \cite{DelMay01} for more details regarding the implementation of {\tt
+legacy field}.
 
 \asection{History of \texttt{ring}}
 

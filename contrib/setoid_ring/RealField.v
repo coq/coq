@@ -126,7 +126,8 @@ Ltac Rpow_tac t :=
   | _ => constr:(N_of_nat t)
   end. 
 
-Add Field RField : Rfield  (infinite Zeq_bool_complete, power_tac R_power_theory [Rpow_tac]).
+Add Field RField : Rfield  
+   (completeness Zeq_bool_complete, power_tac R_power_theory [Rpow_tac]).
 
 
  
