@@ -1267,6 +1267,13 @@ install-tools::
 LIBFILES=$(THEORIESVO) $(CONTRIBVO)
 LIBFILESLIGHT=$(THEORIESLIGHTVO)
 
+OBJECTCMA=lib/lib.cma kernel/kernel.cma library/library.cma \
+        pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
+        parsing/parsing.cma tactics/tactics.cma toplevel/toplevel.cma \
+        parsing/highparsing.cma tactics/hightactics.cma contrib/contrib.cma
+
+OBJECTCMXA=$(OBJECTCMA:.cma=.cmxa)
+
 install-library:
 	$(MKDIR) $(FULLCOQLIB)
 	for f in $(LIBFILES); do \
@@ -1276,6 +1283,7 @@ install-library:
 	$(MKDIR) $(FULLCOQLIB)/states
 	cp states/*.coq $(FULLCOQLIB)/states
 	$(MKDIR) $(FULLCOQLIB)/user-contrib
+	cp $(OBJECTCMA) $(OBJECTCMXA) $(FULLCOQLIB)
 
 install-library-light:
 	$(MKDIR) $(FULLCOQLIB)
