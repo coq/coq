@@ -10,6 +10,9 @@ Notation "( x & ? )" := (@exist _ _ x _) : core_scope.
 
 Notation " ! " := (False_rect _ _).
 
+(* Logical if : keep a trace of the control flow in obligations. *)
+Notation " 'lif' b 'then' e 'else' f " := (match b with true => e | false => f end) (at level 30).
+
 Definition ex_pi1 (A : Prop) (P : A -> Prop) (t : ex P) : A.
 intros.
 induction t.
