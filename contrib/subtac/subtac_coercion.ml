@@ -86,6 +86,13 @@ module Coercion = struct
 
   let hnf env isevars c = whd_betadeltaiota env (evars_of !isevars) c
 
+  let lift_args n sign =
+    let rec liftrec k = function
+      | t::sign -> liftn n k t :: (liftrec (k-1) sign)
+      | [] -> []
+    in
+      liftrec (List.length sign) sign
+
   let rec mu env isevars t =   
     let isevars = ref isevars in
     let rec aux v = 
@@ -123,20 +130,25 @@ module Coercion = struct
     and coerce' env x y : (Term.constr -> Term.constr) option =
       let subco () = subset_coerce env isevars x y in
       let rec coerce_application typ c c' l l' =
-	let rec aux typ i co = 
+	let rec aux tele typ i co = 
 	  trace (str"Inserting coercion at application");
 	  if i < Array.length l then
 	    let hdx = l.(i) and hdy = l'.(i) in
-	    let (n, eqT, restT) = destProd typ in
-	    let pred = mkLambda (n, eqT, mkApp (lift 1 c, [| mkRel 1 |])) in
-	    let eq = mkApp (Lazy.force eq_ind, [| eqT; hdx; hdy |]) in
-	    let evar = make_existential dummy_loc env isevars eq in
-	    let eq_app x = mkApp (Lazy.force eq_rect,
-				  [| eqT; hdx; pred; x; hdy; evar|])
-	    in 
-	      aux (subst1 hdy restT) (succ i) (fun x -> eq_app (co x))
+	      try isevars := the_conv_x_leq env hdx hdy !isevars;
+		let (n, eqT, restT) = destProd typ in
+		aux (hdx :: tele) (subst1 hdy restT) (succ i) co
+	      with Reduction.NotConvertible ->
+		let (n, eqT, restT) = destProd typ in
+		let args = List.rev (mkRel 1 :: lift_args 1 tele) in
+		let pred = mkLambda (n, eqT, applistc (lift 1 c) args) in
+		let eq = mkApp (Lazy.force eq_ind, [| eqT; hdx; hdy |]) in
+		let evar = make_existential dummy_loc env isevars eq in
+		let eq_app x = mkApp (Lazy.force eq_rect,
+				      [| eqT; hdx; pred; x; hdy; evar|])
+		in 
+		  aux (hdx :: tele) (subst1 hdy restT) (succ i)  (fun x -> eq_app (co x))
 	  else co
-	in aux typ 0 (fun x -> x)
+	in aux [] typ 0 (fun x -> x)
       in
 (* 	(try debug 1 (str "coerce' from " ++ (my_print_constr env x) ++  *)
 (* 		    str " to "++ my_print_constr env y); *)
