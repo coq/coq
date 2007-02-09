@@ -97,19 +97,7 @@ let mind_check_arities env mie =
 
 (* Typing the arities and constructor types *)
 
-let is_info_arity env c =
-  match dest_arity env c with
-    | (_,Prop Null) -> false 
-    | (_,Prop Pos)  -> true 
-    | (_,Type _)    -> true
-
-let is_info_type env t =
-  let s = t.utj_type in
-  if s = mk_Set then true
-  else if s = mk_Prop then false
-  else
-    try is_info_arity env t.utj_val
-    with UserError _ -> true
+let is_logic_type t = (t.utj_type = mk_Prop)
 
 (* [infos] is a sequence of pair [islogic,issmall] for each type in
    the product of a constructor or arity *)
@@ -132,7 +120,7 @@ let rec infos_and_sort env t =
     | Prod (name,c1,c2) ->
         let (varj,_) = infer_type env c1 in
 	let env1 = Environ.push_rel (name,None,varj.utj_val) env in
-	let logic = not (is_info_type env varj) in
+	let logic = is_logic_type varj in
 	let small = Term.is_small varj.utj_type in
 	(logic,small) :: (infos_and_sort env1 c2)
     | Cast (c,_,_) -> infos_and_sort env c
