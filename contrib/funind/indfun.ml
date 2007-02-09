@@ -266,7 +266,7 @@ let derive_inversion fix_names =
 	)
     with e -> 
       msg_warning 
-	(str "Cannot build functional inversion principle" ++ 
+	(str "Cannot built inversion information" ++ 
 	   if do_observe () then Cerrors.explain_exn e else mt ())
   with _ -> ()
 
