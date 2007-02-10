@@ -116,3 +116,11 @@ val consider_match :
     Names.Idset.elt list ->
     (Term.types Decl_expr.statement, Term.types) Decl_expr.hyp list ->
     Proof_type.tactic
+
+val thus_tac : constr -> constr -> (metavariable * types) list ->
+  tactic
+
+val build_applist :    Term.types ->
+    Term.metavariable list ->
+    (Term.metavariable * Term.types) list * Term.types
+

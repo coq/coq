@@ -653,7 +653,7 @@ let assume_st_letin hyps gls =
 (* suffices *)
 
 let free_meta info = 
-  let max_next (i,_) j  = if i <= j then succ j else i in
+  let max_next (i,_) j  = if j <= i then succ i else j in
   List.fold_right max_next info.pm_subgoals 1
 
 let rec metas_from n hyps = 
