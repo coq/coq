@@ -1474,7 +1474,7 @@ let prove_principle_for_gen
  	 (mkApp (delayed_force acc_rel,[|input_type;relation;mkVar rec_arg_id|]))
       );
       observe_tac "reverting" (revert (List.rev (acc_rec_arg_id::args_ids)));
-      observe_tac "h_fix" (h_fix (Some fix_id) (npost_rec_arg + 1)); 
+      observe_tac "h_fix" (h_fix (Some fix_id) (List.length args_ids + 1)); 
       h_intros (List.rev (acc_rec_arg_id::args_ids));
       Equality.rewriteLR (mkConst eq_ref);
       observe_tac "finish" (fun gl' -> 
