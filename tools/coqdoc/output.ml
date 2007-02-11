@@ -40,18 +40,18 @@ let is_keyword =
       "Module"; "Module Type"; "Declare Module";
       "Mutual"; "Parameter"; "Parameters"; "Print"; "Proof"; "Qed";
       "Record"; "Recursive"; "Remark"; "Require"; "Save"; "Scheme";
-      "Section"; "Show"; "Syntactic"; "Syntax"; "Tactic"; "Theorem"; 
+      "Section"; "Show"; "Structure"; "Syntactic"; "Syntax"; "Tactic"; "Theorem"; 
       "Unset"; "Variable"; "Variables"; 
       "Notation"; 
       (* Program *)
       "Program Definition"; "Program Fixpoint"; "Program Lemma";
-      "Obligation"; "Obligations"; "Solve";
+      "Obligation"; "Obligations"; "Solve"; "Next Obligation"; "Next";
       (*i (* correctness *)
       "array"; "assert"; "begin"; "do"; "done"; "else"; "end"; "if";
       "in"; "invariant"; "let"; "of"; "ref"; "state"; "then"; "variant";
       "while"; i*)
       (*i (* coq terms *) *)
-	"match"; "with"; "end"; "if"; "then"; "else"; "Prop"; "Set"; "Type"; ":="
+	"match"; "in"; "return"; "with"; "end"; "let"; "dest"; "fun"; "if"; "then"; "else"; "Prop"; "Set"; "Type"; ":="
        ]
 
 (*s Current Coq module *)
