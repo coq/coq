@@ -15,7 +15,7 @@ Require Import Relation_Definitions.
 Require Import Transitive_Closure.
 
 Section WfUnion.
-  Variable A : Set.
+  Variable A : Type.
   Variables R1 R2 : relation A.
   
   Notation Union := (union A R1 R2).

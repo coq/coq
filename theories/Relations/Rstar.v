@@ -87,7 +87,7 @@ Section Rstar.
 
   (** Property of Commutativity of two relations *)
   
-  Definition commut (A:Set) (R1 R2:A -> A -> Prop) :=
+  Definition commut (A:Type) (R1 R2:A -> A -> Prop) :=
     forall x y:A,
       R1 y x -> forall z:A, R2 z y ->  exists2 y' : A, R2 y' x & R1 z y'.
 

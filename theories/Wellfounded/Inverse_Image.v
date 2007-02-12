@@ -12,7 +12,7 @@
 
 Section Inverse_Image.
 
-  Variables A B : Set.
+  Variables A B : Type.
   Variable R : B -> B -> Prop.
   Variable f : A -> B.
 

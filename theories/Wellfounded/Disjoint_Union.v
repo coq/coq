@@ -15,7 +15,7 @@
 Require Import Relation_Operators.
 
 Section Wf_Disjoint_Union.
-  Variables A B : Set.
+  Variables A B : Type.
   Variable leA : A -> A -> Prop.
   Variable leB : B -> B -> Prop.
 

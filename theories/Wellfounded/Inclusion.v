@@ -13,7 +13,7 @@
 Require Import Relation_Definitions.
 
 Section WfInclusion.
-  Variable A : Set.
+  Variable A : Type.
   Variables R1 R2 : A -> A -> Prop.
 
   Lemma Acc_incl : inclusion A R1 R2 -> forall z:A, Acc R2 z -> Acc R1 z.
