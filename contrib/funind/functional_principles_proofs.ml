@@ -1308,6 +1308,7 @@ let prove_with_tcc tcc_lemma_constr eqs : tactic =
 
 let backtrack_eqs_until_hrec hrec eqs : tactic = 
   fun gls -> 
+    let eqs = List.map mkVar eqs in 
     let rewrite = 
       tclFIRST (List.map Equality.rewriteRL eqs )
     in 
@@ -1328,23 +1329,32 @@ let backtrack_eqs_until_hrec hrec eqs : tactic =
   
 
 let new_prove_with_tcc is_mes acc_inv hrec tcc_lemma_constr eqs : tactic = 
-  match !tcc_lemma_constr with 
+   match !tcc_lemma_constr with 
     | None -> tclIDTAC_MESSAGE (str "No tcc proof !!")
     | Some lemma -> 
 	fun gls ->
-	  let hid = next_global_ident_away true Recdef.h_id (pf_ids_of_hyps gls) in 
+	  let tcc_hyp = next_global_ident_away true (Names.id_of_string "tcc_p") (pf_ids_of_hyps gls) in 
 	    (tclTHENSEQ 
 	    [
-	      generalize [lemma];
-	      h_intro hid;
-	      Elim.h_decompose_and (mkVar hid); 
 	      backtrack_eqs_until_hrec hrec eqs;
 	      observe_tac ("new_prove_with_tcc ( applying "^(string_of_id hrec)^" )" )
 		(tclTHENS  (* We must have exactly ONE subgoal !*)
 		   (apply (mkVar hrec))
 		   [ tclTHENSEQ 
 		       [
-			 thin [hrec];
+			 generalize [lemma];
+			 h_intro tcc_hyp;
+			 begin 
+			   let eqs' : identifier list = 
+			     let sec_vars = 
+			       List.filter Termops.is_section_variable (pf_ids_of_hyps gls) 
+			     in
+			     sec_vars@eqs
+			   in
+			   keep (tcc_hyp::eqs')
+			 end;
+			 Elim.h_decompose_and (mkVar tcc_hyp); 
+			 
 			 apply (Lazy.force acc_inv);
 			 (fun g -> 
 			    if is_mes 
@@ -1354,13 +1364,18 @@ let new_prove_with_tcc is_mes acc_inv hrec tcc_lemma_constr eqs : tactic =
 			 );
 			 observe_tac "rew_and_finish"
 			   (tclTHEN 
-			      (tclTRY(Recdef.list_rewrite true eqs))
-			      (observe_tac "finishing"  (tclCOMPLETE (Eauto.gen_eauto false (false,5) [] (Some [])))))
+			      (tclTRY(Recdef.list_rewrite true (List.map mkVar eqs)))
+			      (observe_tac "finishing"  
+				 (tclCOMPLETE (
+				    Eauto.gen_eauto false (false,5) [] (Some []))
+				 )
+			      )
+			   )
 		       ]
-		])
+		   ])
 	    ])
-	    gls
-
+	      gls
+	      
 
 let is_valid_hypothesis predicates_name =
   let predicates_name = List.fold_right Idset.add predicates_name Idset.empty in
@@ -1417,6 +1432,7 @@ let prove_principle_for_gen
   observe (
     str "princ_type := " ++ pr_lconstr  princ_type ++ fnl () ++
     str "princ_info.nparams := " ++ int princ_info.nparams ++ fnl () ++ 
+      
       str "princ_info.nargs := " ++ int princ_info.nargs ++ fnl () ++ 
     str "rec_arg_num := " ++ int rec_arg_num ++ fnl() ++ 
 	     str "real_rec_arg_num := " ++ int real_rec_arg_num ++ fnl () ++
@@ -1474,7 +1490,8 @@ let prove_principle_for_gen
  	 (mkApp (delayed_force acc_rel,[|input_type;relation;mkVar rec_arg_id|]))
       );
       observe_tac "reverting" (revert (List.rev (acc_rec_arg_id::args_ids)));
-(*       (fun g -> observe (Printer.pr_goal (sig_it g)); tclIDTAC g); *)
+(*       (fun g -> observe (Printer.pr_goal (sig_it g) ++ fnl () ++  *)
+(* 			   str "fix arg num" ++ int (List.length args_ids + 1) ); tclIDTAC g); *)
       observe_tac "h_fix " (h_fix (Some fix_id) (List.length args_ids + 1)); 
 (*       (fun g -> observe (Printer.pr_goal (sig_it g) ++ fnl() ++ pr_lconstr_env (pf_env g ) (pf_type_of g (mkVar fix_id) )); tclIDTAC g); *)
       h_intros (List.rev (acc_rec_arg_id::args_ids));
@@ -1509,7 +1526,11 @@ let prove_principle_for_gen
 	       (fun eqs -> 
 		  observe_tac "new_prove_with_tcc" 
 		    (new_prove_with_tcc 
-		       is_mes acc_inv fix_id tcc_lemma_ref (List.map mkVar eqs)
+		       is_mes acc_inv fix_id tcc_lemma_ref 
+		       ((List.map 
+			  (fun (na,_,_) -> (Nameops.out_name na)) 
+			  (princ_info.args@princ_info.params)
+		       )@ (acc_rec_arg_id::eqs))
 		    )
 	       );
 	     is_valid = is_valid_hypothesis predicates_names
