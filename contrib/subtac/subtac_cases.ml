@@ -1500,7 +1500,7 @@ let set_arity_signature dep n arsign tomatchl pred x =
   in
   decomp_block [] pred (tomatchl,arsign)
 
-let prepare_predicate_from_tycon loc dep env isevars tomatchs sign c =
+let oldprepare_predicate_from_tycon loc dep env isevars tomatchs sign c =
   let cook (n, l, env, signs) = function
     | c,IsInd (_,IndType(indf,realargs)) ->
 	let indf' = lift_inductive_family n indf in
@@ -1685,7 +1685,7 @@ let rec is_included x y =
 	else false
 
 let build_ineqs prevpatterns pats liftsign patargs =
-  let tomatchs = List.length pats in
+  let _tomatchs = List.length pats in
   let diffs = 
     List.fold_left 
       (fun c eqnpats -> 
@@ -1851,15 +1851,18 @@ let prepare_predicate_from_rettyp loc typing_fun isevars env tomatchs sign tycon
   let arsign = extract_arity_signature env tomatchs sign in
   let env = List.fold_right push_rels arsign env in
   let allnames = List.rev (List.map (List.map pi1) arsign) in
-  let predcclj = typing_fun (mk_tycon (new_Type ())) env rtntyp in
-(*   let _ =  *)
-(*     option_map (fun tycon ->  *)
-(* 		  isevars := Coercion.inh_conv_coerces_to loc env !isevars predcclj.uj_val  *)
-(* 		    (lift_tycon_type (List.length arsign) tycon)) *)
-(*       tycon *)
-(*   in *)
-  let predccl = (j_nf_isevar !isevars predcclj).uj_val in      
-    Some (build_initial_predicate true allnames predccl)
+    match rtntyp with
+      | Some rtntyp ->
+	  let predcclj = typing_fun (mk_tycon (new_Type ())) env rtntyp in
+	  let predccl = (j_nf_isevar !isevars predcclj).uj_val in      
+	    Some (build_initial_predicate true allnames predccl)
+      | None -> 
+	  match valcon_of_tycon tycon with
+	    | Some ty -> 
+		let names,pred = 
+		  oldprepare_predicate_from_tycon loc false env isevars tomatchs sign ty
+		in Some (build_initial_predicate true names pred)
+	    | None -> None
   
 let lift_ctx n ctx = 
   let ctx', _ =
@@ -1882,6 +1885,10 @@ let abstract_tomatch env tomatchs =
       ([], [], []) tomatchs
   in List.rev prev, ctx
     
+let is_dependent_ind = function
+    IsInd (_, IndType (indf, args)) when List.length args > 0 -> true
+  | _ -> false
+      
 (**************************************************************************)
 (* Main entry of the matching compilation                                 *)
   
@@ -1897,55 +1904,54 @@ let compile_cases loc (typing_fun, isevars) (tycon : Evarutil.type_constraint) e
   let tomatchs_len = List.length tomatchs_lets in
   let tycon = lift_tycon tomatchs_len tycon in
   let env = push_rel_context tomatchs_lets env in
-    match predopt with
-	None ->	  
-	  let lets, matx = constrs_of_pats typing_fun tycon env isevars matx tomatchs in
-	  let matx = List.rev matx in
-	  let len = List.length lets in
-	  let sign = 
-	    let arsign = extract_arity_signature env tomatchs (List.map snd tomatchl) in
-	      List.map (lift_rel_context len) arsign
-	  in
-	  let env = push_rels lets env in	      
-	  let matx = List.map (fun eqn -> { eqn with rhs = { eqn.rhs with rhs_env = env } }) matx in
-	  let tycon = lift_tycon len tycon in
-	  let tomatchs = List.map (fun (x, y) -> lift len x, lift_tomatch_type len y) tomatchs in
-	  let args = List.map (fun (tm,ty) -> mk_refl (type_of_tomatch ty) tm) tomatchs in
+  let isdep = List.exists (fun (x, y) -> is_dependent_ind y) tomatchs in
+    if predopt = None && not isdep then
+      let lets, matx = constrs_of_pats typing_fun tycon env isevars matx tomatchs in
+      let matx = List.rev matx in
+      let len = List.length lets in
+      let sign = 
+	let arsign = extract_arity_signature env tomatchs (List.map snd tomatchl) in
+	  List.map (lift_rel_context len) arsign
+      in
+      let env = push_rels lets env in	      
+      let matx = List.map (fun eqn -> { eqn with rhs = { eqn.rhs with rhs_env = env } }) matx in
+      let tycon = lift_tycon len tycon in
+      let tomatchs = List.map (fun (x, y) -> lift len x, lift_tomatch_type len y) tomatchs in
+      let args = List.map (fun (tm,ty) -> mk_refl (type_of_tomatch ty) tm) tomatchs in
 	    
-	  (* We build the elimination predicate if any and check its consistency *)
-	  (* with the type of arguments to match *)
-	  let pred, opred = prepare_predicate_from_tycon loc typing_fun isevars env tomatchs sign tycon in
-	  (* We push the initial terms to match and push their alias to rhs' envs *)
-	  (* names of aliases will be recovered from patterns (hence Anonymous here) *)
-	  let initial_pushed = List.map (fun tm -> Pushed (tm,[])) tomatchs in
-	    
-	  let pb =
-	    { env      = env;
-	      isevars  = isevars;
-	      pred     = Some pred;
-	      tomatch  = initial_pushed;
-	      history  = start_history (List.length initial_pushed);
-	      mat      = matx;
-	      caseloc  = loc;
-	      typing_function = typing_fun } in
-	    
-	  let _, j = compile pb in
-	    (* We check for unused patterns *)
-	    List.iter (check_unused_pattern env) matx;
-	    let ty = out_some (valcon_of_tycon tycon0) in
-	    let body = it_mkLambda_or_LetIn (applistc j.uj_val args) lets in
-	    let j = 
-	      { uj_val = it_mkLambda_or_LetIn body tomatchs_lets;
-		uj_type = ty; }
-	    in
-	      inh_conv_coerce_to_tycon loc env isevars j tycon0
-
-      | Some rtntyp ->
-	  (* We build the elimination predicate if any and check its consistency *)
-	  (* with the type of arguments to match *)
-	  let tmsign = List.map snd tomatchl in
-	  let pred = prepare_predicate_from_rettyp loc typing_fun isevars env tomatchs tmsign tycon rtntyp in
-	    
+      (* We build the elimination predicate if any and check its consistency *)
+      (* with the type of arguments to match *)
+      let pred, opred = prepare_predicate_from_tycon loc typing_fun isevars env tomatchs sign tycon in
+	(* We push the initial terms to match and push their alias to rhs' envs *)
+	(* names of aliases will be recovered from patterns (hence Anonymous here) *)
+      let initial_pushed = List.map (fun tm -> Pushed (tm,[])) tomatchs in
+	
+      let pb =
+	{ env      = env;
+	  isevars  = isevars;
+	  pred     = Some pred;
+	  tomatch  = initial_pushed;
+	  history  = start_history (List.length initial_pushed);
+	  mat      = matx;
+	  caseloc  = loc;
+	  typing_function = typing_fun } in
+	
+      let _, j = compile pb in
+	(* We check for unused patterns *)
+	List.iter (check_unused_pattern env) matx;
+	let ty = out_some (valcon_of_tycon tycon0) in
+	let body = it_mkLambda_or_LetIn (applistc j.uj_val args) lets in
+	let j = 
+	  { uj_val = it_mkLambda_or_LetIn body tomatchs_lets;
+	    uj_type = ty; }
+	in
+	  inh_conv_coerce_to_tycon loc env isevars j tycon0
+    else
+      (* We build the elimination predicate if any and check its consistency *)
+      (* with the type of arguments to match *)
+      let tmsign = List.map snd tomatchl in
+      let pred = prepare_predicate_from_rettyp loc typing_fun isevars env tomatchs tmsign tycon predopt in
+	
 	  (* We push the initial terms to match and push their alias to rhs' envs *)
 	  (* names of aliases will be recovered from patterns (hence Anonymous here) *)
 	  let initial_pushed = List.map (fun tm -> Pushed (tm,[])) tomatchs in
