@@ -536,7 +536,7 @@ let intern_hyp_location ist ((occs,id),hl) =
   ((List.map (intern_or_var ist) occs,intern_hyp ist (skip_metaid id)), hl)
 
 let interp_constrpattern_gen sigma env ltacvar c =
-  let c = intern_gen false ~allow_soapp:true ~ltacvars:(ltacvar,[])
+  let c = intern_gen false ~allow_patvar:true ~ltacvars:(ltacvar,[])
                      sigma env c in
   pattern_of_rawconstr c
 

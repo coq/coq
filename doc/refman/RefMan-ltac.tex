@@ -29,18 +29,28 @@ problems.
 
 The syntax of the tactic language is given Figures~\ref{ltac}
 and~\ref{ltac_aux}. See page~\pageref{BNF-syntax} for a description of
-the BNF metasyntax used in these grammar rules. Various already defined
-entries will be used in this chapter: entries {\naturalnumber},
-{\integer}, {\ident}, {\qualid}, {\term}, {\cpattern} and {\atomictac}
-represent respectively the natural and integer numbers, the authorized
-identificators and qualified names, {\Coq}'s terms and patterns and
-all the atomic tactics described in chapter~\ref{Tactics}. The syntax
-of {\cpattern} is the same as that of terms, but there can be specific
-variables like {\tt ?id} where {\tt id} is a {\ident} or {\tt \_},
-which are metavariables for pattern matching. {\tt ?id} allows us to
+the BNF metasyntax used in these grammar rules. Various already
+defined entries will be used in this chapter: entries
+{\naturalnumber}, {\integer}, {\ident}, {\qualid}, {\term},
+{\cpattern} and {\atomictac} represent respectively the natural and
+integer numbers, the authorized identificators and qualified names,
+{\Coq}'s terms and patterns and all the atomic tactics described in
+chapter~\ref{Tactics}. The syntax of {\cpattern} is the same as that
+of terms, but it is extended with pattern matching metavariables. In
+{\cpattern}, a pattern-matching metavariable is represented with the
+syntax {\tt ?id} where {\tt id} is a {\ident}. The notation {\tt \_}
+can also be used to denote metavariable whose instance is
+irrelevant. In the notation {\tt ?id}, the identifier allows us to
 keep instantiations and to make constraints whereas {\tt \_} shows
 that we are not interested in what will be matched. On the right hand
-side, they are used without the question mark.
+side of pattern-matching clauses, the named metavariable are used
+without the question mark prefix. There is also a special notation for
+second-order pattern-matching problems: in an applicative pattern of
+the form {\tt @?id id$_1$ \ldots id$_n$}, the variable {\tt id}
+matches any complex expression with (possible) dependencies in the
+variables {\tt id$_1$ \ldots id$_n$} and returns a functional term of
+the form {\tt fun id$_1$ \ldots id$_n$ => {\term}}.
+
 
 The main entry of the grammar is {\tacexpr}. This language is used in
 proof mode but it can also be used in toplevel definitions as shown in
@@ -483,19 +493,33 @@ We can carry out pattern matching on terms with:
 ~{\tt |} {\tt \_} {\tt =>} {\tacexpr}$_{n+1}$\\
 {\tt end}
 \end{quote}
-The {\tacexpr} is evaluated and should yield a term which is matched
-(non-linear first order unification) against {\cpattern}$_1$ then
-{\tacexpr}$_1$ is evaluated into some value by substituting the
-pattern matching instantiations to the metavariables. If the matching
-with {\cpattern}$_1$ fails, {\cpattern}$_2$ is used and so on.  The
+The expression {\tacexpr} is evaluated and should yield a term which
+is matched against {\cpattern}$_1$. The matching is non-linear: if a
+metavariable occurs more than once, it should match the same
+expression every time. It is first-order except on the
+variables of the form {\tt @?id} that occur in head position of an
+application. For these variables, the matching is second-order and
+returns a functional term.
+
+If the matching with {\cpattern}$_1$ succeeds, then {\tacexpr}$_1$ is
+evaluated into some value by substituting the pattern matching
+instantiations to the metavariables. If {\tacexpr}$_1$ evaluates to a
+tactic and the {\tt match} expression is in position to be applied to
+a goal (e.g. it is not bound to a variable by a {\tt let in}), then
+this tactic is applied. If the tactic succeeds, the list of resulting
+subgoals is the result of the {\tt match} expression. If
+{\tacexpr}$_1$ does not evaluate to a tactic or if the {\tt match}
+expression is not in position to be applied to a goal, then the result
+of the evaluation of {\tacexpr}$_1$ is the result of the {\tt match}
+expression.
+
+If the matching with {\cpattern}$_1$ fails, or if it succeeds but the
+evaluation of {\tacexpr}$_1$ fails, or if the evaluation of
+{\tacexpr}$_1$ succeeds but returns a tactic in execution position
+whose execution fails, then {\cpattern}$_2$ is used and so on.  The
 pattern {\_} matches any term and shunts all remaining patterns if
-any. If {\tacexpr}$_1$ evaluates to a tactic and the {\tt match}
-expression is in position to be applied to a goal (e.g. it is not
-bound to a variable by a {\tt let in}, then this tactic is applied. If
-the tactic succeeds, the list of resulting subgoals is the result of
-the {\tt match} expression. On the opposite, if it fails, the next
-pattern is tried. If all clauses fail (in particular, there is no
-pattern {\_}) then a no-matching error is raised.
+any. If all clauses fail (in particular, there is no pattern {\_})
+then a no-matching-clause error is raised.
 
 \begin{ErrMsgs}
 

@@ -14,7 +14,7 @@ val interp_gen :
   evar_defs ref ->
   env ->
   ?impls:full_implicits_env ->
-  ?allow_soapp:bool ->
+  ?allow_patvar:bool ->
   ?ltacvars:ltac_sign ->
   constr_expr -> constr
 val interp_constr :

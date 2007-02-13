@@ -175,3 +175,16 @@ Abort.
 Goal True.
 match None with @None => exact I end.
 Abort.
+
+(* Check second-order pattern unification *)
+
+Ltac to_exist :=
+  match goal with 
+  |- forall x y, @?P x y => 
+    let Q := eval lazy beta in (exists x, forall y, P x y) in
+    assert (Q->Q)
+  end.
+
+Goal forall x y : nat, x = y.
+to_exist. exact (fun H => H).
+Abort.

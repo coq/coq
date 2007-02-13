@@ -146,7 +146,7 @@ let rec abstract_rawconstr c = function
 let interp_casted_constr_with_implicits sigma env impls c  =
 (*   Constrintern.interp_rawconstr_with_implicits sigma env [] impls c *)
   Constrintern.intern_gen false sigma env ~impls:([],impls) 
-    ~allow_soapp:false  ~ltacvars:([],[]) c
+    ~allow_patvar:false  ~ltacvars:([],[]) c
 
 
 (* 

@@ -216,7 +216,7 @@ let rec pat_of_raw metas vars = function
       PRef r
   (* Hack pour ne pas réécrire une interprétation complète des patterns*)
   | RApp (_, RPatVar (_,(true,n)), cl) ->
-      PSoApp (n, List.map (pat_of_raw metas vars) cl)
+      metas := n::!metas; PSoApp (n, List.map (pat_of_raw metas vars) cl)
   | RApp (_,c,cl) -> 
       PApp (pat_of_raw metas vars c,
 	    Array.of_list (List.map (pat_of_raw metas vars) cl))

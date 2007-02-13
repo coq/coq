@@ -151,7 +151,10 @@ GEXTEND Gram
       | c1 = operconstr; "->"; c2 = SELF -> CArrow(loc,c1,c2)]
     | "10" LEFTA
       [ f=operconstr; args=LIST1 appl_arg -> CApp(loc,(None,f),args)
-      | "@"; f=global; args=LIST0 NEXT -> CAppExpl(loc,(None,f),args) ]
+      | "@"; f=global; args=LIST0 NEXT -> CAppExpl(loc,(None,f),args)
+      | "@"; "?"; (locid,id) = identref; args=LIST1 identref ->
+          let args = List.map (fun x -> CRef (Ident x), None) args in
+          CApp(loc,(None,CPatVar(locid,(true,id))),args) ]
     | "9"
         [ ".."; c = operconstr LEVEL "0"; ".." ->
           CAppExpl (loc,(None,Ident (loc,Topconstr.ldots_var)),[c]) ]

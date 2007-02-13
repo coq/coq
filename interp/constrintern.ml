@@ -776,7 +776,7 @@ let reset_tmp_scope (ids,tmp_scope,scopes) =
 (**********************************************************************)
 (* Main loop                                                          *)
 
-let internalise sigma globalenv env allow_soapp lvar c =
+let internalise sigma globalenv env allow_patvar lvar c =
   let rec intern (ids,tmp_scope,scopes as env) = function
     | CRef ref as x ->
 	let (c,imp,subscopes,l) = intern_reference env lvar ref in
@@ -916,10 +916,8 @@ let internalise sigma globalenv env allow_soapp lvar c =
         RIf (loc, c', (na', p'), intern env b1, intern env b2)
     | CHole loc -> 
 	RHole (loc, Evd.QuestionMark)
-    | CPatVar (loc, n) when allow_soapp ->
+    | CPatVar (loc, n) when allow_patvar ->
 	RPatVar (loc, n)
-    | CPatVar (loc, (false,n)) ->
-        error_unbound_patvar loc n
     | CPatVar (loc, _) ->
 	raise (InternalisationError (loc,NegativeMetavariable))
     | CEvar (loc, n) ->
@@ -1078,12 +1076,12 @@ let extract_ids env =
     Idset.empty
 
 let intern_gen isarity sigma env
-               ?(impls=([],[])) ?(allow_soapp=false) ?(ltacvars=([],[]))
+               ?(impls=([],[])) ?(allow_patvar=false) ?(ltacvars=([],[]))
                c =
   let tmp_scope = 
     if isarity then Some Notation.type_scope else None in
   internalise sigma env (extract_ids env, tmp_scope,[])
-    allow_soapp (ltacvars,Environ.named_context env, [], impls) c
+    allow_patvar (ltacvars,Environ.named_context env, [], impls) c
 
 let intern_constr sigma env c = intern_gen false sigma env c 
 
@@ -1102,10 +1100,10 @@ let intern_ltac isarity ltacvars sigma env c =
 (* Functions to parse and interpret constructions *)
 
 let interp_gen kind sigma env 
-               ?(impls=([],[])) ?(allow_soapp=false) ?(ltacvars=([],[]))
+               ?(impls=([],[])) ?(allow_patvar=false) ?(ltacvars=([],[]))
                c =
   Default.understand_gen kind sigma env 
-    (intern_gen (kind=IsType) ~impls ~allow_soapp ~ltacvars sigma env c)
+    (intern_gen (kind=IsType) ~impls ~allow_patvar ~ltacvars sigma env c)
 
 let interp_constr sigma env c =
   interp_gen (OfType None) sigma env c 
@@ -1140,7 +1138,7 @@ let interp_constr_judgment_evars isevars env c =
 type ltac_sign = identifier list * unbound_ltac_var_map
 
 let interp_constrpattern sigma env c =
-  pattern_of_rawconstr (intern_gen false sigma env ~allow_soapp:true c)
+  pattern_of_rawconstr (intern_gen false sigma env ~allow_patvar:true c)
 
 let interp_aconstr impls vars a =
   let env = Global.env () in

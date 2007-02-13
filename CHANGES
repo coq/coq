@@ -4,6 +4,11 @@ Changes from V8.1gamma to ...
 - Added option Global to "Implicit Arguments" and "Arguments Scope" for
   section surviving.
 
+Tactic Language
+
+- Second-order pattern-matching now working in Ltac "match" clauses
+  (syntax for second-order unification variable is "@?X").
+
 Tactics
 
 - New tactic ring, ring_simplify and new tactic field now able to manage
