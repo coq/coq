@@ -646,7 +646,7 @@ let remove_files = List.iter (fun f -> try Sys.remove f with _ -> ())
 let sprintf = Format.sprintf
 
 let call_simplify fwhy =
-  let cmd = sprintf "why --no-prelude --simplify %s" fwhy in
+  let cmd = sprintf "why --no-arrays --simplify --encoding strat %s" fwhy in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fsx = Filename.chop_suffix fwhy ".why" ^ "_why.sx" in
   let cmd = 
@@ -693,7 +693,7 @@ let call_zenon fwhy =
   end
 
 let call_yices fwhy =
-  let cmd = sprintf "why -smtlib --encoding sstrat %s" fwhy in
+  let cmd = sprintf "why --no-arrays -smtlib --encoding sstrat %s" fwhy in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fsmt = Filename.chop_suffix fwhy ".why" ^ "_why.smt" in
   let cmd = 
@@ -708,7 +708,7 @@ let call_yices fwhy =
   r
 
 let call_cvcl fwhy =
-  let cmd = sprintf "why --cvcl --encoding sstrat %s" fwhy in
+  let cmd = sprintf "why --no-arrays --cvcl --encoding sstrat %s" fwhy in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fcvc = Filename.chop_suffix fwhy ".why" ^ "_why.cvc" in
   let cmd = 
@@ -723,7 +723,7 @@ let call_cvcl fwhy =
   r
 
 let call_harvey fwhy =
-  let cmd = sprintf "why --harvey %s" fwhy in
+  let cmd = sprintf "why --no-arrays --harvey --encoding strat %s" fwhy in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let frv = Filename.chop_suffix fwhy ".why" ^ "_why.rv" in
   let out = Sys.command (sprintf "rvc -e -t %s > /dev/null 2>&1" frv) in

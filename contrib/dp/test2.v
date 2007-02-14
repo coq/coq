@@ -5,6 +5,10 @@ Require Import List.
 Open Scope list_scope.
 Open Scope Z_scope.
 
+Dp_debug.
+Dp_timeout 3.
+Require Export zenon.
+
 Definition neg (z:Z) : Z := match z with
   | Z0 => Z0
   | Zpos p => Zneg p
@@ -18,9 +22,7 @@ Open Scope nat_scope.
 Print plus.
 
 Goal forall x, x+0=x.
-  induction x.
-  zenon.
-  zenon.
+  induction x; ergo.
   (* simplify resoud le premier, pas le second *)
   Admitted.
 

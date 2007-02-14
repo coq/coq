@@ -4,6 +4,9 @@ Require Import Classical.
 
 Require Export zenon.
 
+Dp_debug.
+Dp_timeout 3.
+
 (* First example with the 0 and the equality translated *)
 
 Goal 0 = 0.
@@ -38,8 +41,6 @@ Goal ((((A -> C) -> A) -> A) -> C) -> C.
 
 zenon.
 Qed.
-
-Dp_debug.
 
 (* Arithmetic *)
 Open Scope Z_scope.
