@@ -20,6 +20,10 @@ TACTIC EXTEND Ergo
   [ "ergo" ] -> [ ergo ]
 END
 
+TACTIC EXTEND Yices
+  [ "yices" ] -> [ yices ]
+END
+
 TACTIC EXTEND CVCLite
   [ "cvcl" ] -> [ cvc_lite ]
 END

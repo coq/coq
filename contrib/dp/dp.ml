@@ -639,7 +639,7 @@ let tr_goal gl =
   hyps, c
 
 
-type prover = Simplify | Ergo | CVCLite | Harvey | Zenon
+type prover = Simplify | Ergo | Yices | CVCLite | Harvey | Zenon
 
 let remove_files = List.iter (fun f -> try Sys.remove f with _ -> ())
 
@@ -692,8 +692,23 @@ let call_zenon fwhy =
     if c = 0 then Valid (Some out) else Invalid
   end
 
+let call_yices fwhy =
+  let cmd = sprintf "why -smtlib --encoding sstrat %s" fwhy in
+  if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
+  let fsmt = Filename.chop_suffix fwhy ".why" ^ "_why.smt" in
+  let cmd = 
+    sprintf "timeout %d yices -pc 0 -smt < %s > out 2>&1 && grep -q -w unsat out" 
+      !timeout fsmt
+  in
+  let out = Sys.command cmd in
+  let r = 
+    if out = 0 then Valid None else if out = 1 then Invalid else Timeout 
+  in
+  if not !debug then remove_files [fwhy; fsmt];
+  r
+
 let call_cvcl fwhy =
-  let cmd = sprintf "why --cvcl %s" fwhy in
+  let cmd = sprintf "why --cvcl --encoding sstrat %s" fwhy in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fcvc = Filename.chop_suffix fwhy ".why" ^ "_why.cvc" in
   let cmd = 
@@ -738,6 +753,7 @@ let call_prover prover q =
   match prover with
     | Simplify -> call_simplify fwhy
     | Ergo -> call_ergo fwhy
+    | Yices -> call_yices fwhy
     | Zenon -> call_zenon fwhy
     | CVCLite -> call_cvcl fwhy
     | Harvey -> call_harvey fwhy
@@ -760,6 +776,7 @@ let dp prover gl =
 
 let simplify = tclTHEN intros (dp Simplify)
 let ergo = tclTHEN intros (dp Ergo)
+let yices = tclTHEN intros (dp Yices)
 let cvc_lite = tclTHEN intros (dp CVCLite)
 let harvey = dp Harvey
 let zenon = tclTHEN intros (dp Zenon)
