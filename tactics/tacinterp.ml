@@ -1195,7 +1195,7 @@ let interp_hyp_location ist gl ((occs,id),hl) =
 let interp_clause ist gl { onhyps=ol; onconcl=b; concl_occs=occs } =
   { onhyps=option_map(List.map (interp_hyp_location ist gl)) ol;
     onconcl=b;
-    concl_occs=occs }
+    concl_occs=interp_int_or_var_list ist occs }
 
 (* Interpretation of constructions *)
 
