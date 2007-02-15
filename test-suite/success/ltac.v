@@ -188,3 +188,13 @@ Ltac to_exist :=
 Goal forall x y : nat, x = y.
 to_exist. exact (fun H => H).
 Abort.
+
+(* Used to fail in V8.1 *)
+
+Tactic Notation "test" constr(t) integer(n) :=
+   set (k := t) in |- * at n.
+
+Goal forall x : nat, x = 1 -> x + x + x = 3.
+intros x H.
+test x 2.
+Abort.
