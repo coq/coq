@@ -117,8 +117,10 @@ GEXTEND Gram
       | IDENT "ipattern"; ":"; ipat = simple_intropattern -> IntroPattern ipat
       | a = may_eval_arg -> a
       | r = reference -> Reference r
-      | a = tactic_atom -> a
-      | c = Constr.constr -> ConstrMayEval (ConstrTerm c) ] ]
+      | c = Constr.constr -> ConstrMayEval (ConstrTerm c)
+      (* Unambigous entries: tolerated w/o "ltac:" modifier *)
+      | id = METAIDENT -> MetaIdArg (loc,id)
+      | "()" -> TacVoid ] ]
   ;
   may_eval_arg:
     [ [ c = constr_eval -> ConstrMayEval c
@@ -141,6 +143,7 @@ GEXTEND Gram
   ;
   tactic_atom:
     [ [ id = METAIDENT -> MetaIdArg (loc,id)
+      | n = integer -> Integer n
       | "()" -> TacVoid ] ]
   ;
   match_key:
