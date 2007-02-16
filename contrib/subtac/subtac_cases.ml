@@ -1623,7 +1623,9 @@ let constr_of_pat env isevars arsign neqs arity pat idents =
 	  PatVar (l, name), [name, None, ty] @ realargs, mkRel 1, ty, (List.map (fun x -> mkRel 1) realargs), 1, idents'
     | PatCstr (l,((_, i) as cstr),args,alias) ->
 	let _ind = inductive_of_constructor cstr in
-	let IndType (indf, _) = find_rectype (push_rels realargs env) (Evd.evars_of !isevars) ty in
+	  trace (str "Finding the inductive family we're in");
+	let IndType (indf, _) = find_rectype env (Evd.evars_of !isevars) (lift (-(List.length realargs)) ty) in
+	  trace (str "Found the inductive family we're in");
 	let ind, params = dest_ind_family indf in
 	let cstrs = get_constructors env indf in
 	let ci = cstrs.(i-1) in
@@ -1645,8 +1647,11 @@ let constr_of_pat env isevars arsign neqs arity pat idents =
 	let cstr = mkConstruct ci.cs_cstr in
 	let app = applistc cstr (List.map (lift (List.length sign)) params) in
 	let app = applistc app args in
+	  trace (str "Getting type of app: " ++ my_print_constr env app);
 	let apptype = Retyping.get_type_of env (Evd.evars_of !isevars) app in	
+	  trace (str "Family and args of apptype: " ++ my_print_constr env apptype);
 	let IndType (indf, realargs) = find_rectype env (Evd.evars_of !isevars) apptype in
+	  trace (str "Got Family and args of apptype: " ++ my_print_constr env apptype);
 	  if alias <> Anonymous then
 	    pat', (alias, Some app, apptype) :: sign, lift 1 app, lift 1 apptype, realargs, n + 1, idents'
 	  else pat', sign, app, apptype, realargs, n, idents'
@@ -2094,8 +2099,8 @@ let compile_cases loc (typing_fun, isevars) (tycon : Evarutil.type_constraint) e
 	let j = 
 	  { uj_val = it_mkLambda_or_LetIn body tomatchs_lets;
 	    uj_type = ty; }
-	in
-	  inh_conv_coerce_to_tycon loc env isevars j tycon0
+	in j
+(* 	  inh_conv_coerce_to_tycon loc env isevars j tycon0 *)
     else
       (* We build the elimination predicate if any and check its consistency *)
       (* with the type of arguments to match *)
