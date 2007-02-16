@@ -21,7 +21,7 @@ open Util
 
 let constr_kw =
   [ "forall"; "fun"; "match"; "fix"; "cofix"; "with"; "in"; "for"; 
-    "end"; "as"; "let"; "if"; "then"; "else"; "return";
+    "end"; "as"; "let"; "dest"; "if"; "then"; "else"; "return";
     "Prop"; "Set"; "Type"; ".("; "_"; ".." ]
 
 let _ = List.iter (fun s -> Lexer.add_token("",s)) constr_kw
@@ -195,6 +195,10 @@ GEXTEND Gram
 	  ":="; c1 = operconstr LEVEL "200"; "in";
           c2 = operconstr LEVEL "200" ->
           CLetTuple (loc,List.map snd lb,po,c1,c2)
+      | "dest"; c1 = operconstr LEVEL "200"; "as"; p=pattern;
+          "in"; c2 = operconstr LEVEL "200" ->
+         CCases (loc, None, [(c1, (None, None))],
+                 [loc, [[p]], c2])
       | "if"; c=operconstr LEVEL "200"; po = return_type;
 	"then"; b1=operconstr LEVEL "200";
         "else"; b2=operconstr LEVEL "200" ->
