@@ -358,12 +358,15 @@ let detype_sort = function
 (**********************************************************************)
 (* Main detyping function                                             *)
 
+let detype_anonymous = ref (fun loc n -> anomaly "detype: index to an anonymous variable")
+let set_detype_anonymous f = detype_anonymous := f
+
 let rec detype (isgoal:bool) avoid env t =
   match kind_of_term (collapse_appl t) with
     | Rel n ->
       (try match lookup_name_of_rel n env with
 	 | Name id   -> RVar (dl, id)
-	 | Anonymous -> anomaly "detype: index to an anonymous variable"
+	 | Anonymous -> !detype_anonymous dl n
        with Not_found ->
 	 let s = "_UNBOUND_REL_"^(string_of_int n)
 	 in RVar (dl, id_of_string s))
