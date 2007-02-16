@@ -45,7 +45,7 @@ let is_keyword =
       "Notation"; 
       (* Program *)
       "Program Definition"; "Program Fixpoint"; "Program Lemma";
-      "Obligation"; "Obligations"; "Solve"; "Next Obligation"; "Next";
+      "Obligation"; "Obligations"; "Solve"; "using"; "Next Obligation"; "Next";
       (*i (* correctness *)
       "array"; "assert"; "begin"; "do"; "done"; "else"; "end"; "if";
       "in"; "invariant"; "let"; "of"; "ref"; "state"; "then"; "variant";
