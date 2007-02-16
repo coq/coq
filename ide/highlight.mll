@@ -28,7 +28,8 @@
 	 "Notation"; "Proof" ; "Print"; "Qed" ;
 	 "Require" ; "Reset"; "Undo"; "Save" ;
 	 "Section" ; "Unset" ;
-	 "Set" ; "Notation"
+	 "Set" ; "Notation";
+	 "Implicit"; "Arguments"; "Unfold"; "Resolve"
       ];
     Hashtbl.mem h
 
@@ -36,7 +37,7 @@
     let h = Hashtbl.create 97 in
       List.iter (fun s -> Hashtbl.add h s ())
 	[ "forall"; "fun"; "match"; "fix"; "cofix"; "with"; "for"; 
-	  "end"; "as"; "let"; "if"; "then"; "else"; "return";
+	  "end"; "as"; "let"; "in"; "dest"; "if"; "then"; "else"; "return";
 	  "Prop"; "Set"; "Type"]; 
       Hashtbl.mem h
 
@@ -45,7 +46,7 @@
       List.iter (fun s -> Hashtbl.add h s ())
 	[ "Theorem" ; "Lemma" ; "Fact" ; "Remark" ; "Corollary" ; "Proposition" ; "Property" ;
 	  "Definition" ; "Let" ; "Example" ; "SubClass" ; "Inductive" ; "CoInductive" ; 
-	  "Record" ; "Structure" ; "Fixpoint" ; "CoFixpoint";  
+	  "Record" ; "Structure" ; "Fixpoint" ; "CoFixpoint"; 
 	  "Hypothesis" ; "Variable" ; "Axiom" ; "Parameter" ; "Conjecture" ;
 	  "Hypotheses" ; "Variables" ; "Axioms" ; "Parameters"
 	];
@@ -74,12 +75,14 @@ let declaration =
   "Inductive" | "CoInductive" | 
   "Record" | "Structure" |
   "Fixpoint" | "CoFixpoint"
+       
 
 rule next_order = parse
   | "(*" 
       { comment_start := lexeme_start lexbuf; comment lexbuf }
   | "Module Type"
       { lexeme_start lexbuf, lexeme_end lexbuf, "kwd" }
+  | "Program" space+ ident as id { lexeme_start lexbuf, lexeme_end lexbuf, "decl" }
   | ident as id 
       { if is_keyword id then 
 	    lexeme_start lexbuf, lexeme_end lexbuf, "kwd" 

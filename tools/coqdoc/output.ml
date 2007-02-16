@@ -51,7 +51,7 @@ let is_keyword =
       "in"; "invariant"; "let"; "of"; "ref"; "state"; "then"; "variant";
       "while"; i*)
       (*i (* coq terms *) *)
-	"match"; "in"; "return"; "with"; "end"; "let"; "dest"; "fun"; "if"; "then"; "else"; "Prop"; "Set"; "Type"; ":="
+	"match"; "as"; "in"; "return"; "with"; "end"; "let"; "dest"; "fun"; "if"; "then"; "else"; "Prop"; "Set"; "Type"; ":="
        ]
 
 (*s Current Coq module *)

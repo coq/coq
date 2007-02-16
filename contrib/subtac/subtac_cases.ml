@@ -2094,11 +2094,10 @@ let compile_cases loc (typing_fun, isevars) (tycon : Evarutil.type_constraint) e
       let _, j = compile pb in
 	(* We check for unused patterns *)
 	List.iter (check_unused_pattern env) matx;
-	let ty = tycon_constr in
 	let body = it_mkLambda_or_LetIn (applistc j.uj_val args) lets in
 	let j = 
 	  { uj_val = it_mkLambda_or_LetIn body tomatchs_lets;
-	    uj_type = ty; }
+	    uj_type = out_some (valcon_of_tycon tycon0); }
 	in j
 (* 	  inh_conv_coerce_to_tycon loc env isevars j tycon0 *)
     else

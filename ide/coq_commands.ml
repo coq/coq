@@ -77,10 +77,17 @@ let commands = [
   ["Module";
    "Module Type";
    "Mutual Inductive";];
-  ["Notation";];
-  ["Opaque";];
+  ["Notation";
+   "Next Obligation";];
+  ["Opaque";
+   "Obligations Tactic";];
   ["Parameter";
-   "Proof."];
+   "Proof.";
+   "Program Definition";
+   "Program Fixpoint";     
+   "Program Lemma";
+   "Program Theorem";
+  ];
   ["Qed.";
    ];
   ["Read Module";
@@ -155,6 +162,8 @@ let state_preserving = [
   "Extraction Module";
   "Inspect";
   "Locate";
+  
+  "Obligations";
   "Print";
   "Print All.";
   "Print Classes";
