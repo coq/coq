@@ -131,7 +131,6 @@ module Coercion = struct
       let subco () = subset_coerce env isevars x y in
       let rec coerce_application typ c c' l l' =
 	let rec aux tele typ i co = 
-	  trace (str"Inserting coercion at application");
 	  if i < Array.length l then
 	    let hdx = l.(i) and hdy = l'.(i) in
 	      try isevars := the_conv_x_leq env hdx hdy !isevars;
@@ -142,10 +141,13 @@ module Coercion = struct
 		let args = List.rev (mkRel 1 :: lift_args 1 tele) in
 		let pred = mkLambda (n, eqT, applistc (lift 1 c) args) in
 		let eq = mkApp (Lazy.force eq_ind, [| eqT; hdx; hdy |]) in
+(* 		let jmeq = mkApp (Lazy.force jmeq_ind, [| eqT; hdx; eqT; hdy |]) in *)
 		let evar = make_existential dummy_loc env isevars eq in
 		let eq_app x = mkApp (Lazy.force eq_rect,
-				      [| eqT; hdx; pred; x; hdy; evar|])
-		in 
+				      [| eqT; hdx; pred; x; hdy; evar|]) in
+(* 		let jeq_app x = mkApp (Lazy.force eq_rect, *)
+(* 				      [| eqT; hdx; pred; x; hdy; evar|]) *)
+		  trace (str"Inserting coercion at application");
 		  aux (hdx :: tele) (subst1 hdy restT) (succ i)  (fun x -> eq_app (co x))
 	  else co
 	in aux [] typ 0 (fun x -> x)

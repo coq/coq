@@ -147,12 +147,15 @@ let start_proof_and_print env isevars idopt k t hook =
   print_subgoals ()
   (*if !pcoq <> None then (out_some !pcoq).start_proof ()*)
 
+let _ = Detyping.set_detype_anonymous (fun loc n -> RVar (loc, id_of_string ("Anonymous_REL_" ^ string_of_int n)))
+
 let subtac (loc, command) =
   check_required_library ["Coq";"Init";"Datatypes"];
   check_required_library ["Coq";"Init";"Specif"];
-  (* check_required_library ["Coq";"Logic";"JMeq"]; *)
+(*   check_required_library ["Coq";"Logic";"JMeq"]; *)
   require_library "Coq.subtac.FixSub";
   require_library "Coq.subtac.Utils";
+  require_library "Coq.Logic.JMeq";
   let env = Global.env () in
   let isevars = ref (create_evar_defs Evd.empty) in
   try

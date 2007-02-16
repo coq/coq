@@ -37,16 +37,16 @@ val eq_ind : constr lazy_t
 val eq_rec : constr lazy_t
 val eq_rect : constr lazy_t
 val eq_refl : constr lazy_t
-val eq_ind_ref : global_reference lazy_t
-val refl_equal_ref : global_reference lazy_t
 
 val not_ref : constr lazy_t
 val and_typ : constr lazy_t
 
 val eqdep_ind : constr lazy_t
 val eqdep_rec : constr lazy_t
-val eqdep_ind_ref : global_reference lazy_t
-val eqdep_intro_ref : global_reference lazy_t
+
+val jmeq_ind : constr lazy_t
+val jmeq_rec : constr lazy_t
+val jmeq_refl : constr lazy_t
 
 val boolind : constr lazy_t
 val sumboolind : constr lazy_t

@@ -65,8 +65,7 @@ let eqdep_intro_ref = lazy (init_reference [ "Logic";"Eqdep"] "eq_dep_intro")
 
 let jmeq_ind = lazy (init_constant ["Logic";"JMeq"] "JMeq")
 let jmeq_rec = lazy (init_constant ["Logic";"JMeq"] "JMeq_rec")
-let jmeq_ind_ref = lazy (init_reference ["Logic";"JMeq"] "JMeq")
-let jmeq_refl_ref = lazy (init_reference ["Logic";"JMeq"] "JMeq_refl")
+let jmeq_refl = lazy (init_constant ["Logic";"JMeq"] "JMeq_refl")
 
 let ex_ind = lazy (init_constant ["Init"; "Logic"] "ex")
 let ex_intro = lazy (init_reference ["Init"; "Logic"] "ex_intro")
