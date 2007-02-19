@@ -30,6 +30,13 @@ Proof.
   auto with arith.
 Qed.
 
+Theorem max_assoc : forall m n p : nat, max m (max n p) = max (max m n) p.
+Proof.
+  induction m; destruct n; destruct p; trivial.
+  simpl.
+  auto using IHm.
+Qed.
+
 Lemma max_comm : forall n m, max n m = max m n.
 Proof.
   induction n; induction m; simpl in |- *; auto with arith.
