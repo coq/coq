@@ -73,3 +73,11 @@ Ltac bang :=
         | context [False_rect _ ?p] => elim p
       end
   end.
+
+Ltac elim_eq_rect :=
+  match goal with
+    | [ |- ?t ] => 
+      match t with
+        context [ @eq_rect _ _ _ _ _ ?p ] => try case p ; simpl
+      end
+  end.
