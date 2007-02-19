@@ -56,7 +56,6 @@ let interp_gen kind isevars env
                ?(impls=([],[])) ?(allow_patvar=false) ?(ltacvars=([],[]))
                c =
   let c' = Constrintern.intern_gen (kind=IsType) ~impls ~allow_patvar ~ltacvars (Evd.evars_of !isevars) env c in
-  let c' = Subtac_utils.rewrite_cases env c' in
 (*     (try trace (str "Pretyping " ++ my_print_constr_expr c) with _ -> ()); *)
   let c' = SPretyping.pretype_gen isevars env ([],[]) kind c' in
     evar_nf isevars c'

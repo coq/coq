@@ -123,7 +123,6 @@ let subtac_process env isevars id l c tycon =
 	    mk_tycon coqt
   in    
   let c = coqintern !isevars env_binders c in
-  let c = Subtac_utils.rewrite_cases env c in
   let coqc, ctyp = interp env_binders isevars c tycon in
 (*   let _ = try trace (str "Interpreted term: " ++ my_print_constr env_binders coqc ++ spc () ++ *)
 (* 		 str "Coq type: " ++ my_print_constr env_binders ctyp) *)
@@ -137,11 +136,11 @@ let subtac_process env isevars id l c tycon =
   let fullcoqc = Evarutil.nf_evar (evars_of !isevars) fullcoqc in
   let fullctyp = Evarutil.nf_evar (evars_of !isevars) fullctyp in
 
-(*   let _ = try trace (str "After evar normalization: " ++ spc () ++ *)
-(* 		 str "Coq term: " ++ my_print_constr env fullcoqc ++ spc () *)
-(* 		 ++ str "Coq type: " ++ my_print_constr env fullctyp)  *)
-(*      with _ -> ()  *)
-(*   in *)
+  let _ = try trace (str "After evar normalization: " ++ spc () ++
+		 str "Coq term: " ++ my_print_constr env fullcoqc ++ spc ()
+		 ++ str "Coq type: " ++ my_print_constr env fullctyp)
+     with _ -> ()
+  in
   let evm = non_instanciated_map env isevars in
 (*   let _ = try trace (str "Non instanciated evars map: " ++ Evd.pr_evar_map evm)  with _ -> () in *)
     evm, fullcoqc, fullctyp

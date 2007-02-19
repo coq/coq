@@ -120,13 +120,14 @@ module Coercion = struct
 (*       (try debug 1 (str "coerce_unify from " ++ (my_print_constr env x) ++  *)
 (* 		  str " to "++ my_print_constr env y) *)
 (*        with _ -> ()); *)
-      try 
-	isevars := the_conv_x_leq env x y !isevars;
-(* 	(try debug 1 (str "Unified " ++ (my_print_constr env x) ++  *)
-(* 			str " and "++ my_print_constr env y); *)
-(* 	 with _ -> ()); *)
-	None
-      with Reduction.NotConvertible -> coerce' env (hnf env isevars x) (hnf env isevars y)
+      let x = hnf env isevars x and y = hnf env isevars y in
+	try 
+	  isevars := the_conv_x_leq env x y !isevars;
+	  (* 	(try debug 1 (str "Unified " ++ (my_print_constr env x) ++  *)
+	  (* 			str " and "++ my_print_constr env y); *)
+	  (* 	 with _ -> ()); *)
+	  None
+	with Reduction.NotConvertible -> coerce' env x y
     and coerce' env x y : (Term.constr -> Term.constr) option =
       let subco () = subset_coerce env isevars x y in
       let rec coerce_application typ c c' l l' =
@@ -245,14 +246,24 @@ module Coercion = struct
 			   end
 		       else
 			 if i = i' && len = Array.length l' then
-			   Some (coerce_application (Typing.type_of env (evars_of !isevars) c) c c' l l')
+			   let evm = evars_of !isevars in
+			   let typ = Typing.type_of env evm c in
+			     (try subco () 
+			      with NoSubtacCoercion ->
+				
+(* 			     if not (is_arity env evm typ) then *)
+			       Some (coerce_application typ c c' l l'))
+(* 			     else subco () *)
 			 else
 			   subco ()
 		 | x, y when x = y ->
-		     let lam_type = Typing.type_of env (evars_of !isevars) c in
-		       if Array.length l = Array.length l' then (
-			 Some (coerce_application lam_type c c' l l')
-		       ) else subco ()
+		     if Array.length l = Array.length l' then
+		       let evm = evars_of !isevars in
+		       let lam_type = Typing.type_of env evm c in
+			 if not (is_arity env evm lam_type) then (
+			   Some (coerce_application lam_type c c' l l')
+			 ) else subco ()
+		     else subco ()
 		 | _ -> subco ())
 	  | _, _ ->  subco ()
 

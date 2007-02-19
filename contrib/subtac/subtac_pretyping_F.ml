@@ -93,7 +93,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 
   (* coerce to tycon if any *)
   let inh_conv_coerce_to_tycon loc env isevars j = function
-    | None -> j
+    | None -> j_nf_isevar !isevars j
     | Some t -> evd_comb2 (Coercion.inh_conv_coerce_to loc env) isevars j t
 
   let push_rels vars env = List.fold_right push_rel vars env

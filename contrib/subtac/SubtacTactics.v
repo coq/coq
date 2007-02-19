@@ -64,3 +64,12 @@ Ltac myinjection :=
           | _ => idtac
         end.
 
+Ltac destruct_nondep H := let H0 := fresh "H" in assert(H0 := H); destruct H0.
+
+Ltac bang :=
+  match goal with
+    | |- ?x => 
+      match x with
+        | context [False_rect _ ?p] => elim p
+      end
+  end.

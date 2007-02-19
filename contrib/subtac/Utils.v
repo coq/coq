@@ -43,6 +43,13 @@ induction t.
  simpl ; auto.
 Qed.
 
+Lemma equal_f : forall A B : Type, forall (f g : A -> B), 
+  f = g -> forall x, f x = g x.
+Proof.
+  intros.
+  rewrite H.
+  auto.
+Qed.
 
 Ltac subtac_simpl := simpl ; intros ; destruct_exists ; simpl in * ; try subst ; 
   try (solve [ red ; intros ; discriminate ]) ; auto with arith.  
