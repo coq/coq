@@ -130,12 +130,12 @@ let unify_0 env sigma cv_pb mod_delta m n =
 	    (* Here we check that [cN] does not contain any local variables *)
 	    if (closedn (nb_rel env) cN)
 	    then (k,cN,snd (extract_instance_status pb))::metasubst,evarsubst
-	    else error_cannot_unify_local curenv sigma (curenv,m,n,cN)
+	    else error_cannot_unify_local curenv sigma (m,n,cN)
 	| _, Meta k    -> 
 	    (* Here we check that [cM] does not contain any local variables *)
 	    if (closedn (nb_rel env) cM)
 	    then (k,cM,fst (extract_instance_status pb))::metasubst,evarsubst
-	    else error_cannot_unify_local curenv sigma (curenv,m,n,cM)
+	    else error_cannot_unify_local curenv sigma (m,n,cM)
 	| Evar _, _ -> metasubst,((cM,cN)::evarsubst)
 	| _, Evar _ -> metasubst,((cN,cM)::evarsubst)
 	| Lambda (na,t1,c1), Lambda (_,t2,c2) ->
