@@ -1,4 +1,4 @@
-(* Circular substitution check in subtyping verification *)
+(* subtyping verification in presence of  pseudo-circularity*)
 Module Type S. End S.
 Module Type T. Declare Module M:S. End T.
 

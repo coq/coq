@@ -306,11 +306,7 @@ let rec check_modules cst env msid1 l msb1 msb2 =
 and check_signatures cst env (msid1,sig1) (msid2,sig2') = 
   let mp1 = MPself msid1 in
   let env = add_signature mp1 sig1 env in 
-  let sig2 = try
-    subst_signature_msid msid2 mp1 sig2' 
-  with
-    | Circularity l -> 
-	error_circularity_in_subtyping l (string_of_msid msid1) (string_of_msid msid2) in
+  let sig2 = subst_signature_msid msid2 mp1 sig2' in
   let map1 = make_label_map mp1 sig1 in
   let check_one_body cst (l,spec2) = 
     let info1 = 

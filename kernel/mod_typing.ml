@@ -63,7 +63,8 @@ let rec translate_modtype env mte =
 
 and merge_with env mtb with_decl = 
   let msid,sig_b = match (Modops.scrape_modtype env mtb) with 
-    | MTBsig(msid,sig_b) -> msid,sig_b 
+    | MTBsig(msid,sig_b) -> let msid'=(refresh_msid msid) in
+	msid',(subst_signature_msid msid (MPself(msid')) sig_b)
     | _ -> error_signature_expected mtb
   in
   let id,idl = match with_decl with 
@@ -116,15 +117,6 @@ and merge_with env mtb with_decl =
 	      | _ -> error_not_a_module (string_of_label l)
 	    in
 	    let mtb = type_modpath env' mp in
-	 (* here, using assertions in substitutions, 
-	    we check that there is no msid bound in mtb *)
-	    begin
-	      try 
-		let _ = subst_modtype  (map_msid msid (MPself msid)) mtb in
-		  ()
-	      with
-		  Circularity _ -> error_circular_with_module id
-	    end;
 	    let cst =
               try check_subtypes env' mtb old.msb_modtype
               with Failure _ -> error_with_incorrect (label_of_id id) in
