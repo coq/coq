@@ -381,15 +381,15 @@ let explain_wrong_case_info ctx ind ci =
     spc () ++ pc
        
 
-let explain_cannot_unify m n =
-  let pm = pr_lconstr m in 
-  let pn = pr_lconstr n in
+let explain_cannot_unify ctx m n =
+  let pm = pr_lconstr_env ctx m in 
+  let pn = pr_lconstr_env ctx n in
   str"Impossible to unify" ++ brk(1,1)  ++ pm ++ spc ()  ++
   str"with" ++ brk(1,1)  ++ pn
 
 let explain_cannot_unify_local env m n subn =
-  let pm = pr_lconstr m in 
-  let pn = pr_lconstr n in
+  let pm = pr_lconstr_env env m in 
+  let pn = pr_lconstr_env env n in
   let psubn = pr_lconstr_env env subn in
     str"Impossible to unify" ++ brk(1,1)  ++ pm ++ spc ()  ++
       str"with" ++ brk(1,1)  ++ pn ++ spc() ++ str"as" ++ brk(1,1) ++ 
@@ -402,9 +402,9 @@ let explain_refiner_cannot_generalize ty =
 let explain_no_occurrence_found c =
   str "Found no subterm matching " ++ pr_lconstr c ++ str " in the current goal"
 
-let explain_cannot_unify_binding_type m n =
-  let pm = pr_lconstr m in 
-  let pn = pr_lconstr n in
+let explain_cannot_unify_binding_type ctx m n =
+  let pm = pr_lconstr_env ctx m in 
+  let pn = pr_lconstr_env ctx n in
   str "This binding has type" ++ brk(1,1) ++ pm ++ spc () ++ 
   str "which should be unifiable with" ++ brk(1,1) ++ pn
 
@@ -464,11 +464,11 @@ let explain_pretype_error ctx err =
       explain_unexpected_type ctx actual expected
   | NotProduct c ->
       explain_not_product ctx c
-  | CannotUnify (m,n) -> explain_cannot_unify m n
+  | CannotUnify (m,n) -> explain_cannot_unify ctx m n
   | CannotUnifyLocal (e,m,n,sn) -> explain_cannot_unify_local e m n sn
   | CannotGeneralize ty -> explain_refiner_cannot_generalize ty
   | NoOccurrenceFound c -> explain_no_occurrence_found c
-  | CannotUnifyBindingType (m,n) -> explain_cannot_unify_binding_type m n
+  | CannotUnifyBindingType (m,n) -> explain_cannot_unify_binding_type ctx m n
 
 (* Refiner errors *)
 
