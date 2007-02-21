@@ -327,7 +327,7 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	  solve_simple_eqn evar_conv_x env isevars (pbty,ev1,t2)
 	else
 	  (* Postpone the use of an heuristic *)
-	  add_conv_pb (pbty,applist(term1,l1),applist(term2,l2)) isevars,
+	  add_conv_pb (pbty,env,applist(term1,l1),applist(term2,l2)) isevars,
 	  true
 
     | Rigid _, Flexible ev2 ->
@@ -342,7 +342,7 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	  solve_simple_eqn evar_conv_x env isevars (pbty,ev2,t1)
 	else
 	  (* Postpone the use of an heuristic *)
-	  add_conv_pb (pbty,applist(term1,l1),applist(term2,l2)) isevars,
+	  add_conv_pb (pbty,env,applist(term1,l1),applist(term2,l2)) isevars,
 	  true
 
     | MaybeFlexible flex1, Rigid _ ->
@@ -524,8 +524,7 @@ let first_order_unification env isevars pbty (term1,l1) (term2,l2) =
 let consider_remaining_unif_problems env isevars =
   let (isevars,pbs) = get_conv_pbs isevars (fun _ -> true) in
   List.fold_left
-    (fun (isevars,b as p) (pbty,t1,t2) ->
-      (* Pas le bon env pour le problème... *)
+    (fun (isevars,b as p) (pbty,env,t1,t2) ->
       if b then first_order_unification env isevars pbty 
 	(apprec_nohdbeta env isevars (whd_castappevar (evars_of isevars) t1))
 	(apprec_nohdbeta env isevars (whd_castappevar (evars_of isevars) t2))

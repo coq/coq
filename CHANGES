@@ -8,10 +8,18 @@ Tactic Language
 
 - Second-order pattern-matching now working in Ltac "match" clauses
   (syntax for second-order unification variable is "@?X").
+- Ltac accepts integer arguments (syntax is "ltac:nnn" for nnn an integer)
+
+Changes from V8.1gamma to V8.1
+==============================
+
+Bug fixes
+
+- Many bugs have been fixed (cf coq-bugs web page)
 
 Tactics
 
-- New tactic ring, ring_simplify and new tactic field now able to manage
+- New tactics ring, ring_simplify and new tactic field now able to manage
   power to a positive integer constant. Tactic ring on Z and R, and
   field on R manage power (may lead to incompatibilities with V8.1gamma).
 - Tactic field_simplify now applicable in hypotheses.
@@ -19,6 +27,12 @@ Tactics
 - Tactics ring, ring_simplify, field, field_simplify and field_simplify_eq 
   all able to apply user-given equations to rewrite monoms on the fly 
   (see documentation).
+
+Libraries
+
+- New file ConstructiveEpsilon.v defining an epsilon operator and
+  proving the axiom of choice constructively for a countable domain
+  and a decidable predicate.
 
 Changes from V8.1beta to V8.1gamma
 ==================================

@@ -120,8 +120,8 @@ val map_clb : (constr -> constr) -> clbinding -> clbinding
 (* Unification state *)
 type evar_defs
 
-(* Substitution is not applied to the [evar_map] *)
-val subst_evar_defs : substitution -> evar_defs -> evar_defs
+(* Assume empty [evar_map] and [conv_pbs] *)
+val subst_evar_defs_light : substitution -> evar_defs -> evar_defs
 
 (* create an [evar_defs] with empty meta map: *)
 val create_evar_defs : evar_map -> evar_defs
@@ -147,7 +147,7 @@ val evar_source : existential_key -> evar_defs -> loc * hole_kind
 
 (* Unification constraints *)
 type conv_pb = Reduction.conv_pb
-type evar_constraint = conv_pb * constr * constr
+type evar_constraint = conv_pb * Environ.env * constr * constr
 val add_conv_pb :  evar_constraint -> evar_defs -> evar_defs
 val get_conv_pbs : evar_defs -> (evar_constraint -> bool) -> 
   evar_defs * evar_constraint list
