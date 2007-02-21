@@ -54,7 +54,7 @@ let cl_sigma ce = evars_of ce.env
 let subst_clenv sub clenv = 
   { templval = map_fl (subst_mps sub) clenv.templval;
     templtyp = map_fl (subst_mps sub) clenv.templtyp;
-    env = subst_evar_defs sub clenv.env;
+    env = subst_evar_defs_light sub clenv.env;
     templenv = clenv.templenv }
 
 let clenv_nf_meta clenv c = nf_meta clenv.env c

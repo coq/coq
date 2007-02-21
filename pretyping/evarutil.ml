@@ -619,7 +619,7 @@ let solve_pattern_eqn env l1 c =
  * ass.
  *)
 
-let status_changed lev (pbty,t1,t2) =
+let status_changed lev (pbty,_,t1,t2) =
   try 
     List.mem (head_evar t1) lev or List.mem (head_evar t2) lev
   with Failure _ ->
@@ -678,7 +678,7 @@ let solve_simple_eqn conv_algo env isevars (pbty,(n1,args1 as ev1),t2) =
 	  evar_define env ev1 t2 isevars in
     let (isevars,pbs) = get_conv_pbs isevars (status_changed lsp) in
     List.fold_left
-      (fun (isevars,b as p) (pbty,t1,t2) ->
+      (fun (isevars,b as p) (pbty,env,t1,t2) ->
 	if b then conv_algo env isevars pbty t1 t2 else p) (isevars,true)
       pbs
   with e when precatchable_exception e ->
