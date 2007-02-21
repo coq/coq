@@ -17,3 +17,15 @@ intros n n' l l'.
  dependent rewrite (ax n n' l l').
 split; reflexivity.
 Qed.
+
+(* Used to raise an anomaly instead of an error in 8.1 *)
+(* Submitted by Y. Makarov *)
+
+Parameter N : Set.
+Parameter E : N -> N -> Prop.
+
+Axiom e : forall (A : Set) (EA : A -> A -> Prop) (a : A), EA a a.
+
+Theorem th : forall x : N, E x x.
+intro x. try rewrite e.
+Abort.
