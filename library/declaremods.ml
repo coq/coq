@@ -131,7 +131,6 @@ let rec check_sig env = function
 
 let rec check_sig_entry env = function
   | MTEident kn -> check_sig env (Environ.lookup_modtype kn env)
-  | MTEsig _ -> ()
   | MTEfunsig _ -> Modops.error_result_must_be_signature ()
   | MTEwith (mte,_) -> check_sig_entry env mte
 
@@ -420,9 +419,7 @@ let rec get_modtype_substobjs = function
       let substobjs = get_modtype_substobjs mty in
       let modobjs = MPmap.find mp !modtab_substobjs in
 	replace_module_object idl substobjs modobjs
-  | MTEsig (msid,_) -> 
-      todo "Anonymous module types"; (empty_subst, [], msid, [])
-
+ 
 (* push names of bound modules (and their components) to Nametab *)
 (* add objects associated to them *)
 let process_module_bindings argids args =
@@ -440,8 +437,7 @@ let replace_module mtb id mb = todo "replace module after with"; mtb
 
 let rec get_some_body mty env = match mty with
     MTEident kn -> Environ.lookup_modtype kn env 
-  | MTEfunsig _ 
-  | MTEsig _ -> anomaly "anonymous module types not supported"
+  | MTEfunsig _ -> anomaly "anonymous module types not supported"
   | MTEwith (mty,With_Definition _) -> get_some_body mty env 
   | MTEwith (mty,With_Module (id,mp)) -> 
       replace_module (get_some_body mty env) id (Environ.lookup_module mp env)
@@ -517,9 +513,6 @@ let end_module id =
 	  (empty_subst, mbids, msid, substitute), keep, special
       | Some (MTEident ln) ->
 	  abstract_substobjs mbids (KNmap.find ln (!modtypetab)), [], []
-      | Some (MTEsig (msid,_)) ->
-	  todo "Anonymous signatures not supported";
-	  (empty_subst, mbids, msid, []), keep, special
       | Some (MTEwith _ as mty) ->
 	  abstract_substobjs mbids (get_modtype_substobjs mty), [], []
       | Some (MTEfunsig _) -> 
@@ -711,8 +704,6 @@ let rec get_module_substobjs env = function
   | MEfunctor (mbid,mty,mexpr) ->
        let (subst, mbids, msid, objs) = get_module_substobjs env mexpr in
 	(subst, mbid::mbids, msid, objs)
-  | MEstruct (msid,_) ->
-      (empty_subst, [], msid, [])
   | MEapply (mexpr, MEident mp) ->
       let feb,ftb = Mod_typing.translate_mexpr env mexpr in
       let ftb = Modops.scrape_modtype env ftb in
@@ -726,7 +717,7 @@ let rec get_module_substobjs env = function
                   objects (that are all non-logical objects) *)
 	       (add_mbid mbid mp (Some resolve) subst, mbids, msid, objs)
 	   | [] -> match mexpr with
-	       | MEident _ | MEstruct _ -> error "Application of a non-functor"
+	       | MEident _  -> error "Application of a non-functor"
 	       | _ -> error "Application of a functor with too few arguments")
   | MEapply (_,mexpr) ->
       Modops.error_application_to_not_path mexpr

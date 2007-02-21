@@ -78,7 +78,6 @@ type specification_entry =
 and module_type_entry = 
     MTEident of kernel_name
   | MTEfunsig of mod_bound_id * module_type_entry * module_type_entry
-  | MTEsig of mod_self_id * module_signature_entry
   | MTEwith of module_type_entry * with_declaration
 
 and module_signature_entry = (label * specification_entry) list
@@ -90,7 +89,6 @@ and with_declaration =
 and module_expr = 
     MEident of module_path
   | MEfunctor of mod_bound_id * module_type_entry * module_expr
-  | MEstruct of mod_self_id * module_structure
   | MEapply of module_expr * module_expr
 
 and module_structure = (label * specification_entry) list

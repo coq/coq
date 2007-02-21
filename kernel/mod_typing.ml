@@ -54,9 +54,6 @@ let rec translate_modtype env mte =
 	  add_module (MPbound arg_id) (module_body_of_type arg_b) env in
 	let body_b = translate_modtype env' body_e in
 	  MTBfunsig (arg_id,arg_b,body_b)
-    | MTEsig (msid,sig_e) ->
-	let str_b,sig_b = translate_entry_list env msid false sig_e in
-	  MTBsig (msid,sig_b)
     | MTEwith (mte, with_decl) ->
 	let mtb = translate_modtype env mte in
 	  merge_with env mtb with_decl
@@ -162,47 +159,8 @@ and merge_with env mtb with_decl =
 	Not_found -> error_no_such_label l
       | Reduction.NotConvertible -> error_with_incorrect l
 
-and translate_entry_list env msid is_definition sig_e = 
-  let mp = MPself msid in
-  let do_entry env (l,e) = 
-    let kn = make_kn mp empty_dirpath l in
-    let con = make_con mp empty_dirpath l in
-    match e with
-      | SPEconst ce ->
-	  let cb = translate_constant env con ce in
-	    begin match cb.const_hyps with
-	      |	(_::_) -> error_local_context (Some l)
-	      | [] ->
-		  add_constant con cb env, (l, SEBconst cb), (l, SPBconst cb)
-	    end
-      | SPEmind mie -> 
-	  let mib = translate_mind env mie in
-	    begin match mib.mind_hyps with
-	      |	(_::_) -> error_local_context (Some l)
-	      | [] ->
-		  add_mind kn mib env, (l, SEBmind mib), (l, SPBmind mib)
-	    end
-      | SPEmodule me ->
-	  let mb = translate_module env is_definition me in
-	  let mspec = 
-	    { msb_modtype = mb.mod_type;
-	      msb_equiv = mb.mod_equiv;
-	      msb_constraints = mb.mod_constraints }
-	  in
-	  let mp' = MPdot (mp,l) in
-	    add_module mp' mb env, (l, SEBmodule mb), (l, SPBmodule mspec)
-      | SPEmodtype mte ->
-	  let mtb = translate_modtype env mte in
-	    add_modtype kn mtb env, (l, SEBmodtype mtb), (l, SPBmodtype mtb)
-  in
-  let _,str_b,sig_b = list_fold_map2 do_entry env sig_e
-  in
-    str_b,sig_b
 
-(* if [is_definition=true], [mod_entry_expr] may be any expression.
-   Otherwise it must be a path *)
-
-and translate_module env is_definition me =
+and translate_module env  me =
   match me.mod_entry_expr, me.mod_entry_type with
     | None, None -> 
 	anomaly "Mod_typing.translate_module: empty type and expr in module entry"
@@ -222,18 +180,7 @@ and translate_module env is_definition me =
 	  with 
 	    | Not_path -> None
 	in
-	let meb,mtb1 = 
-	  if is_definition then
-	    translate_mexpr env mexpr
-	  else 
-	    let mp = 
-	      try 
-		path_of_mexpr mexpr 
-	      with 
-		| Not_path -> error_declaration_not_path mexpr
-	    in
-	      MEBident mp, type_modpath env mp
-	in
+	let meb,mtb1 = translate_mexpr env mexpr in
 	let mtb, mod_user_type, cst =
 	  match me.mod_entry_type with
 	    | None -> mtb1, None, Constraint.empty
@@ -279,14 +226,9 @@ and translate_mexpr env mexpr = match mexpr with
            functor application. *)
 	subst_modtype 
          (map_mbid farg_id mp (Some resolve)) fbody_b
-  | MEstruct (msid,structure) ->
-      let structure,signature = translate_entry_list env msid true structure in
-	MEBstruct (msid,structure),
-	MTBsig (msid,signature)
+ 
 
-
-(* is_definition is true - me.mod_entry_expr may be any expression *)
-let translate_module env me = translate_module env true me
+let translate_module env me = translate_module env  me
 
 let rec add_module_expr_constraints env = function
   | MEBident _ -> env
