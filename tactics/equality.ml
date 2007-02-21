@@ -93,7 +93,7 @@ let general_rewrite_bindings_clause cls lft2rgt (c,l) gl =
       (* Original code. In particular, [splay_prod] performs delta-reduction. *)
       let env = pf_env gl in
       let sigma = project gl in 
-      let _,t = splay_prod env sigma t in
+      let _,t = splay_prod env sigma ctype in
 	match match_with_equation t with
 	  | None -> 
 	      if l = NoBindings
