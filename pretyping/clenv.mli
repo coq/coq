@@ -125,6 +125,10 @@ val clenv_environments :
 val clenv_environments_evars :
  env -> evar_defs -> int option -> types -> evar_defs * constr list * types
 
+(* [clenv_conv_leq env sigma t c n] looks for c1...cn s.t. [t <= c c1...cn] *)
+val clenv_conv_leq :
+ env -> evar_map -> types -> constr -> int -> constr list
+
 (* if the clause is a product, add an extra meta for this product *)
 exception NotExtensibleClause
 val clenv_push_prod : clausenv -> clausenv
