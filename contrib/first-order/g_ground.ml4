@@ -97,9 +97,9 @@ let normalize_evaluables=
 	   (Tacexpr.InHypType id)) *)
 
 TACTIC EXTEND firstorder
-    [ "firstorder" tactic_opt(t) "with" ne_reference_list(l) ] -> 
+    [ "firstorder" tactic_opt(t) "using" ne_reference_list(l) ] -> 
       [ gen_ground_tac true (option_map eval_tactic t) (Ids l) ]
-|   [ "firstorder" tactic_opt(t) "using" ne_preident_list(l) ] -> 
+|   [ "firstorder" tactic_opt(t) "with" ne_preident_list(l) ] -> 
       [ gen_ground_tac true (option_map eval_tactic t) (Bases l) ]
 |   [ "firstorder" tactic_opt(t) ] -> 
       [ gen_ground_tac true (option_map eval_tactic t) Void ]
