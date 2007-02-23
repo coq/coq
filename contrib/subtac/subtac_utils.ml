@@ -129,6 +129,10 @@ let trace s =
     else ()
   else ()
 
+let rec pp_list f = function
+    [] -> mt()
+  | x :: y -> f x ++ spc () ++ pp_list f y
+
 let wf_relations = Hashtbl.create 10
 
 let std_relations () = 
@@ -646,3 +650,4 @@ let utils_tac s =
 
 let utils_call tac args =
   TacArg(TacCall(dummy_loc, ArgArg(dummy_loc, Lazy.force (utils_tac tac)),args))
+

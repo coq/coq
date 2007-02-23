@@ -1,3 +1,4 @@
+(* -*- coq-prog-args: ("-emacs-U" "-debug") -*- *)
 Require Import List.
 Require Import Coq.subtac.Utils.
 
@@ -20,9 +21,9 @@ Section Map_DependentRecursor.
   Variable U V : Set.
   Variable l : list U.
   Variable f : { x : U | In x l } -> V.
-
+  Obligations Tactic := idtac.
   Program Fixpoint map_rec ( l' : list U | sub_list l' l )
-    { measure l' length } : { r : list V | length r = length l' } :=
+    { measure length l' } : { r : list V | length r = length l' } :=
     match l' with
     nil => nil
     | cons x tl => let tl' := map_rec tl in
@@ -31,10 +32,10 @@ Section Map_DependentRecursor.
     
     Obligation 1.
     intros.
-    destruct tl' ; simpl ; simpl in e.
-    subst x0 tl0.
-    rewrite <- Heql'.
-    rewrite e.
+    unfold proj1_sig in map_rec.
+    intros.
+    destruct l' ; subtac_simpl.
+    rewrite <- Heq_l'.
     auto.
     Qed.
 
@@ -42,19 +43,17 @@ Section Map_DependentRecursor.
     simpl.
     intros.
     destruct l'.
-    simpl in Heql'.
-    destruct x0 ; simpl ; try discriminate.
-    inversion Heql'.
+    subtac_simpl.
     inversion s.
-    apply H.
-    auto with datatypes.
+    unfold sub_list. 
+    intuition.
     Qed.
 
 
     Obligation 3 of map_rec.
     simpl.
     intros.
-    rewrite <- Heql'.
+    rewrite <- Heq_l'.
     simpl ; auto with arith.
     Qed.
 
@@ -62,16 +61,25 @@ Section Map_DependentRecursor.
     simpl.
     intros.
     destruct l'.
-    simpl in Heql'.
+    simpl in Heq_l'.
     destruct x0 ; simpl ; try discriminate.
-    inversion Heql'.
+    inversion Heq_l'.
     subst x tl.
-    apply sub_list_tl with u ; auto.
+    inversion s.
+    apply H.
+    auto with datatypes.
     Qed.
   
     Obligation 5.
-    intros.
-    rewrite <- Heql' ; auto.
+    Proof.
+      intros.
+      destruct tl'.
+      destruct l'.
+      simpl in *.
+      subst.
+      simpl.
+      subtac_simpl.
+      simpl ; rewrite e ; auto.
     Qed.
     
     Program Definition map : list V := map_rec l.

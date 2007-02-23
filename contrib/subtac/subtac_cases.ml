@@ -1602,11 +1602,7 @@ let list_mapi f l =
       [] -> []
     | hd :: tl -> f n hd :: aux (succ n) tl
   in aux 0 l
-	
-let rec pp_list f = function
-    [] -> mt()
-  | x :: y -> f x ++ spc () ++ pp_list f y
-       
+	       
 let constr_of_pat env isevars arsign neqs arity pat idents = 
   let rec typ env (ty, realargs) pat idents = 
     trace (str "Typing pattern " ++ Printer.pr_cases_pattern pat ++ str " in env " ++

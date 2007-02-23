@@ -239,13 +239,16 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
 		    mkRel 1
 		 |])
   in
-  (try trace (str "Top env: " ++ prr top_bl ++ spc () ++ str "Top arity: " ++ my_print_constr top_env top_arity) with _ -> ());
-  let intern_arity' = liftn 1 after_length top_arity in (* arity in after :: wfarg :: arg :: before *)
-  (try trace (str "intern_arity': " ++ my_print_constr _intern_env intern_arity') with _ -> ());
-  let intern_arity = substnl [projection] after_length intern_arity' in (* substitute the projection of wfarg for arg *)
-  (try trace (str "Top arity after subst: " ++ my_print_constr top_env intern_arity) with _ -> ());
-  let intern_arity = liftn 1 (succ after_length) intern_arity in (* back in after :: wfarg :: arg :: before (ie, jump over arg) *)
-  (try trace (str "Top arity after subst in intern_env: " ++ my_print_constr _intern_env intern_arity) with _ -> ());
+  (try trace (str "After length: " ++ int after_length ++ str "Top env: " ++ prr top_bl ++ spc () ++ str "Top arity: " ++ my_print_constr top_env top_arity);
+     trace (str "Before lifting arity: " ++ my_print_constr env top_arity) with _ -> ());
+  (* Top arity is in top_env = after :: arg :: before *)
+(*   let intern_arity' = liftn 1 (succ after_length) top_arity in (\* arity in after :: wfarg :: arg :: before *\) *)
+(*       (try trace (str "projection: " "After lifting arity: " ++ my_print_constr env intern_arity' ++ spc ()); *)
+(* 	 trace (str "Intern env: " ++ prr intern_bl ++ str "intern_arity': " ++ my_print_constr _intern_env intern_arity') with _ -> ()); *)
+  let intern_arity = substnl [projection] after_length top_arity in (* substitute the projection of wfarg for arg *)
+  (try trace (str "Top arity after subst: " ++ my_print_constr (Global.env ()) intern_arity) with _ -> ());
+(*   let intern_arity = liftn 1 (succ after_length) intern_arity in (\* back in after :: wfarg :: arg :: before (ie, jump over arg) *\) *)
+(*   (try trace (str "Top arity after subst and lift: " ++ my_print_constr (Global.env ()) intern_arity) with _ -> ()); *)
   let intern_before_env = push_rel_context before env in
   let intern_fun_bl = liftafter @ [wfarg 1]  in (* FixMe dependencies *)
 (*   (try debug 2 (str "Intern fun bl: " ++ prr intern_fun_bl) with _ -> ()); *)
@@ -253,6 +256,8 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
   (try trace (str "Intern fun arity: " ++
 		  my_print_constr _intern_env intern_fun_arity) with _ -> ());
   let intern_fun_arity_prod = it_mkProd_or_LetIn intern_fun_arity intern_fun_bl in
+  (try trace (str "Intern fun arity product: " ++
+		  my_print_constr (push_rel_context [arg] intern_before_env) intern_fun_arity_prod) with _ -> ());
   let intern_fun_binder = (Name recname, None, intern_fun_arity_prod) in
   let fun_bl = liftafter @ (intern_fun_binder :: [arg]) in
 (*   (try debug 2 (str "Fun bl: " ++ pr_rel intern_before_env fun_bl ++ spc ()) with _ -> ()); *)
@@ -304,7 +309,7 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
 (*   in *)
   let evm = non_instanciated_map env isevars in
     (*   let _ = try trace (str "Non instanciated evars map: " ++ Evd.pr_evar_map evm)  with _ -> () in *)
-  let evars, evars_def = Eterm.eterm_obligations recname nc_len evm fullcoqc (Some fullctyp) in
+  let evars, evars_def = Eterm.eterm_obligations recname nc_len evm 0 fullcoqc (Some fullctyp) in
     (*     (try trace (str "Generated obligations : "); *)
 (*        Array.iter *)
     (* 	 (fun (n, t, _) -> trace (str "Evar " ++ str (string_of_id n) ++ spc () ++ my_print_constr env t)) *)
@@ -387,7 +392,7 @@ let build_mutrec l boxed =
       and typ = 
 	Termops.it_mkNamedProd_or_LetIn typ rec_sign
       in
-      let evars, def = Eterm.eterm_obligations id nc_len evm def (Some typ) in
+      let evars, def = Eterm.eterm_obligations id nc_len evm recdefs def (Some typ) in
 	collect_evars (succ i) ((id, def, typ, evars) :: acc)
     else acc
   in 
