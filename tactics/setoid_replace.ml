@@ -257,8 +257,8 @@ let default_relation_for_carrier ?(filter=fun _ -> true) a =
     [] -> Leibniz (Some a)
   | relation::tl ->
      if tl <> [] then
-      ppnl
-       (str "Warning: There are several relations on the carrier \"" ++
+      Options.if_warn msg_warning
+       (str "There are several relations on the carrier \"" ++
          pr_lconstr a ++ str "\". The relation " ++ prrelation relation ++
          str " is chosen.") ;
      Relation relation
@@ -345,29 +345,29 @@ let (relation_to_obj, obj_to_relation)=
           match th.rel_sym with
              None -> old_relation.rel_sym
            | Some t -> Some t} in
-        ppnl
-         (str "Warning: The relation " ++ prrelation th' ++
-          str " is redeclared. The new declaration" ++
+        Options.if_warn msg_warning 
+         (strbrk "The relation " ++ prrelation th' ++
+          strbrk " is redeclared. The new declaration" ++
            (match th'.rel_refl with
-              None -> str ""
-            | Some t -> str " (reflevity proved by " ++ pr_lconstr t) ++
+              None -> mt ()
+            | Some t -> strbrk " (reflexivity proved by " ++ pr_lconstr t) ++
            (match th'.rel_sym with
-               None -> str ""
+               None -> mt ()
              | Some t ->
-                (if th'.rel_refl = None then str " (" else str " and ") ++
-                str "symmetry proved by " ++ pr_lconstr t) ++
+                (if th'.rel_refl = None then strbrk " (" else strbrk " and ")
+		++ strbrk "symmetry proved by " ++ pr_lconstr t) ++
            (if th'.rel_refl <> None && th'.rel_sym <> None then
              str ")" else str "") ++
-           str " replaces the old declaration" ++
+           strbrk " replaces the old declaration" ++
            (match old_relation.rel_refl with
               None -> str ""
-            | Some t -> str " (reflevity proved by " ++ pr_lconstr t) ++
+            | Some t -> strbrk " (reflexivity proved by " ++ pr_lconstr t) ++
            (match old_relation.rel_sym with
                None -> str ""
              | Some t ->
                 (if old_relation.rel_refl = None then
-                  str " (" else str " and ") ++
-                str "symmetry proved by " ++ pr_lconstr t) ++
+                  strbrk " (" else strbrk " and ") ++
+                strbrk "symmetry proved by " ++ pr_lconstr t) ++
            (if old_relation.rel_refl <> None && old_relation.rel_sym <> None
             then str ")" else str "") ++
            str ".");
@@ -410,12 +410,12 @@ let morphism_table_add (m,c) =
     List.find
      (function mor -> mor.args = c.args && mor.output = c.output) old
    in
-    ppnl
-     (str "Warning: The morphism " ++ prmorphism m old_morph ++
-      str " is redeclared. " ++
-      str "The new declaration whose compatibility is proved by " ++
-       pr_lconstr c.lem ++ str " replaces the old declaration whose" ++
-       str " compatibility was proved by " ++
+    Options.if_warn msg_warning
+     (strbrk "The morphism " ++ prmorphism m old_morph ++
+      strbrk " is redeclared. " ++
+      strbrk "The new declaration whose compatibility is proved by " ++
+       pr_lconstr c.lem ++ strbrk " replaces the old declaration whose" ++
+       strbrk " compatibility was proved by " ++
        pr_lconstr old_morph.lem ++ str ".")
   with
    Not_found -> morphism_table := Gmap.add m (c::old) !morphism_table
@@ -425,10 +425,10 @@ let default_morphism ?(filter=fun _ -> true) m =
       [] -> raise Not_found
     | m1::ml ->
         if ml <> [] then
-          ppnl
-            (str "Warning: There are several morphisms associated to \"" ++
-            pr_lconstr m ++ str"\". Morphism " ++ prmorphism m m1 ++
-            str " is randomly chosen.");
+          Options.if_warn msg_warning
+            (strbrk "There are several morphisms associated to \"" ++
+            pr_lconstr m ++ strbrk "\". Morphism " ++ prmorphism m m1 ++
+            strbrk " is randomly chosen.");
         relation_morphism_of_constr_morphism m1
 
 let subst_morph subst morph = 
@@ -1573,16 +1573,16 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
           (fun i (_,_,mc) -> pr_new_goals i mc) res)
    | [he] -> he
    | he::_ ->
-      ppnl
-       (str "Warning: The application of the tactic is subject to one of " ++
-        str "the \nfollowing set of side conditions that the user needs " ++
-        str "to prove:" ++
+      Options.if_warn msg_warning
+       (strbrk "The application of the tactic is subject to one of " ++
+        strbrk "the following set of side conditions that the user needs " ++
+        strbrk "to prove:" ++
          pr_fnl () ++
          prlist_with_sepi pr_fnl
           (fun i (_,_,mc) -> pr_new_goals i mc) res' ++ pr_fnl () ++
-         str "The first set is randomly chosen. Use the syntax " ++
-         str "\"setoid_rewrite ... generate side conditions ...\" to choose " ++
-         str "a different set.") ;
+         strbrk "The first set is randomly chosen. Use the syntax " ++
+         strbrk "\"setoid_rewrite ... generate side conditions ...\" to choose " ++
+         strbrk "a different set.") ;
       he
 
 let cic_morphism_context_list_of_list hole_relation hole_direction out_direction

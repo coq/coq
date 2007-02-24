@@ -29,8 +29,6 @@ open Printer
 open Rawterm
 open Evd
 
-let quote s = h 0 (str "\"" ++ s ++ str "\"")
-
 let pr_lconstr c = quote (pr_lconstr c)
 let pr_lconstr_env e c = quote (pr_lconstr_env e c)
 let pr_lconstr_env_at_top e c = quote (pr_lconstr_env_at_top e c)

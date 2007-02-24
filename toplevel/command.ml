@@ -144,8 +144,9 @@ let declare_definition ident (local,boxed,dok) bl red_option c typopt hook =
         let _ = declare_variable ident (Lib.cwd(),c,IsDefinition Definition) in
         definition_message ident;
         if Pfedit.refining () then 
-          msgerrnl (str"Warning: Local definition " ++ pr_id ident ++ 
-          str" is not visible from current goals");
+          Options.if_verbose msg_warning 
+	    (str"Local definition " ++ pr_id ident ++ 
+             str" is not visible from current goals");
         VarRef ident
     | (Global|Local) ->
         declare_global_definition ident ce' local in

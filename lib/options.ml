@@ -63,6 +63,10 @@ let if_verbose f x = if not !silent then f x
 
 let hash_cons_proofs = ref true
 
+let warn = ref true
+let make_warn flag = warn := flag;  ()
+let if_warn f x = if !warn then f x
+
 (* The number of printed hypothesis in a goal *)
 
 let print_hyps_limit = ref (None : int option)

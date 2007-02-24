@@ -174,6 +174,7 @@ and vernac interpfun input =
   vernac_com interpfun (parse_phrase input)
 
 and read_vernac_file verbosely s =
+  Options.make_warn verbosely;
   let interpfun =
     if verbosely then 
       Vernacentries.interp

@@ -40,6 +40,9 @@ val silently : ('a -> 'b) -> 'a -> 'b
 val if_silent : ('a -> unit) -> 'a -> unit
 val if_verbose : ('a -> unit) -> 'a -> unit
 
+val make_warn : bool -> unit
+val if_warn : ('a -> unit) -> 'a -> unit
+
 val hash_cons_proofs : bool ref
 
 (* Temporary activate an option ('c must be an atomic type) *)

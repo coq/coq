@@ -53,6 +53,8 @@ val real : float -> std_ppcmds
 val bool : bool -> std_ppcmds
 val qstring : string -> std_ppcmds
 val qs : string -> std_ppcmds
+val quote : std_ppcmds -> std_ppcmds
+val strbrk : string -> std_ppcmds
 
 (*s Boxing commands. *)
 

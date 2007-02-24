@@ -130,19 +130,15 @@ let align () = [< 'Ppcmd_print_break (0,0) >]
 let int n = str (string_of_int n)
 let real r = str (string_of_float r)
 let bool b = str (string_of_bool b)
-
-(* In new syntax only double quote char is escaped by repeating it *)
-let rec escape_string s =
-  let rec escape_at s i =
-    if i<0 then s
-    else if s.[i] == '"' then
-      let s' = String.sub s 0 i^"\""^String.sub s i (String.length s - i) in
-      escape_at s' (i-1)
-    else escape_at s (i-1) in
-  escape_at s (String.length s - 1)
-
-let qstring s = str ("\""^escape_string s^"\"")
-let qs = qstring
+let strbrk s =
+  let rec aux p n =
+    if n < String.length s then 
+      if s.[n] = ' ' then
+	if p=n then [< spc (); aux (n+1) (n+1) >]
+	else [< str (String.sub s p (n-p)); spc (); aux (n+1) (n+1) >]
+      else aux p (n+1)
+    else if p=n then [< >] else [< str (String.sub s p (n-p)) >]
+  in aux 0 0
 
 (* boxing commands *)
 let h n s = [< 'Ppcmd_box(Pp_hbox n,s) >]
@@ -161,6 +157,20 @@ let close () = [< 'Ppcmd_close_box >]
 let tclose () = [< 'Ppcmd_close_tbox >]
 
 let (++) = Stream.iapp
+
+(* In new syntax only double quote char is escaped by repeating it *)
+let rec escape_string s =
+  let rec escape_at s i =
+    if i<0 then s
+    else if s.[i] == '"' then
+      let s' = String.sub s 0 i^"\""^String.sub s i (String.length s - i) in
+      escape_at s' (i-1)
+    else escape_at s (i-1) in
+  escape_at s (String.length s - 1)
+
+let qstring s = str ("\""^escape_string s^"\"")
+let qs = qstring
+let quote s = h 0 (str "\"" ++ s ++ str "\"")
 
 (* This flag tells if the last printed comment ends with a newline, to
   avoid empty lines *)
@@ -252,11 +262,13 @@ let emacs_warning_start_string = String.make 1 (Char.chr 254)
 let emacs_warning_end_string = String.make 1 (Char.chr 255)
 
 let warnstart() = 
-  if not !print_emacs then str "" else str emacs_warning_start_string
+  if not !print_emacs then mt() else str emacs_warning_start_string
 
 let warnend() = 
-  if not !print_emacs then str "" else str emacs_warning_end_string
-  
+  if not !print_emacs then mt() else str emacs_warning_end_string
+
+let warnbody strm =
+  [< warnstart() ; hov 0 (str "Warning: " ++ strm) ; warnend() >]
 
 (* pretty printing functions WITHOUT FLUSH *)
 let pp_with ft strm =
@@ -265,21 +277,17 @@ let pp_with ft strm =
 let ppnl_with ft strm =
   pp_dirs ft [< 'Ppdir_ppcmds [< strm ; 'Ppcmd_force_newline >] >]
 
-
-let default_warn_with ft pps = 
-  ppnl_with ft [< warnstart() ; str "Warning: " ; pps ; warnend() >]
+let default_warn_with ft strm = ppnl_with ft (warnbody strm)
 
 let pp_warn_with = ref default_warn_with
 
 let set_warning_function pp_warn = pp_warn_with := pp_warn
 
-let warn_with ft pps = !pp_warn_with ft pps 
+let warn_with ft strm = !pp_warn_with ft strm
 
 let warning_with ft string = warn_with ft (str string)
 
-let pp_flush_with ft =
-  Format.pp_print_flush ft
-
+let pp_flush_with ft = Format.pp_print_flush ft
 
 (* pretty printing functions WITH FLUSH *)
 let msg_with ft strm =
@@ -288,10 +296,8 @@ let msg_with ft strm =
 let msgnl_with ft strm =
   pp_dirs ft [< 'Ppdir_ppcmds strm ; 'Ppdir_print_newline >]
 
-let msg_warning_with ft strm=
-  pp_dirs ft [< 'Ppdir_ppcmds [< warnstart() ; str "Warning: "; strm ; warnend() >]; 
-		'Ppdir_print_newline >]
-
+let msg_warning_with ft strm =
+  msgnl_with ft (warnbody strm)
 
 (* pretty printing functions WITHOUT FLUSH *)
 let pp        x = pp_with   !std_ft x

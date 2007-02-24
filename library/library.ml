@@ -86,10 +86,10 @@ let add_load_path (phys_path,coq_path) =
 	    begin
               (* Assume the user is concerned by library naming *)
 	      if dir <> Nameops.default_root_prefix then
-		(Options.if_verbose warning (phys_path^" was previously bound to "
-					     ^(string_of_dirpath dir)
-					     ^("\nIt is remapped to "^(string_of_dirpath coq_path)));
-		 flush_all ());
+		Options.if_warn msg_warning
+		  (str phys_path ++ strbrk " was previously bound to " ++
+		   pr_dirpath dir ++ strbrk "; it is remapped to " ++
+		   pr_dirpath coq_path);
 	      remove_load_path phys_path;
 	      load_paths := (phys_path::fst !load_paths, coq_path::snd !load_paths)
 	    end
@@ -614,7 +614,7 @@ let save_library_to dir f =
     let di = Digest.file f' in
     System.marshal_out ch di;
     close_out ch
-  with e -> (warning ("Removed file "^f'); close_out ch; Sys.remove f'; raise e)
+  with e -> warning ("Removed file "^f'); close_out ch; Sys.remove f'; raise e
 
 (************************************************************************)
 (*s Display the memory use of a library. *)
