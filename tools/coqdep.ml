@@ -42,7 +42,7 @@ let file_concat l =
 (* Files specified on the command line *)
 let mlAccu  = ref ([] : (string * string * dir) list) 
 and mliAccu = ref ([] : (string * string * dir) list) 
-and vAccu   = ref ([] : string list)
+and vAccu   = ref ([] : (string * string) list)
 
 (* Queue operations *)
 let addQueue q v = q := v :: !q
@@ -97,6 +97,16 @@ let safe_assoc verbose file k =
   List.assoc k !vKnown
 
 
+let absolute_dir dir =
+  let current = Sys.getcwd () in
+  Sys.chdir dir;
+  let dir' = Sys.getcwd () in
+  Sys.chdir current;
+  dir'
+
+let absolute_file_name basename odir =
+  let dir = match odir with Some dir -> dir | None -> "." in
+  absolute_dir dir / basename
      
 let file_name = function
   | (s,None)     -> file_concat s 
@@ -152,9 +162,11 @@ let cut_prefix p s =
   let ls = String.length s in
   if ls >= lp && String.sub s 0 lp = p then String.sub s lp (ls - lp) else s
 
-let canonize f = match Sys.os_type with
-  | "Win32" when not !option_slash -> cut_prefix ".\\" f
-  | _ -> cut_prefix "./" f
+let canonize f =
+  let f' = absolute_dir (Filename.dirname f) / Filename.basename f in
+  match List.filter (fun (_,full) -> f' = full) !vAccu with
+    | (f,_) :: _ -> f
+    | _ -> f
 
 let sort () = 
   let seen = Hashtbl.create 97 in
@@ -181,7 +193,7 @@ let sort () =
 	printf "%s%s " file !suffixe
     end
   in
-  List.iter loop !vAccu
+  List.iter (fun (name,_) -> loop name) !vAccu
 
 let traite_fichier_Coq verbose f = 
   try 
@@ -352,7 +364,7 @@ let mL_dependencies () =
 
 let coq_dependencies () =
   List.iter
-    (fun name ->
+    (fun (name,_) ->
        printf "%s%s: %s.v" name !suffixe name;
        traite_fichier_Coq true (name ^ ".v");
        printf "\n";
@@ -366,7 +378,7 @@ let coq_dependencies () =
 
 let declare_dependencies () =
   List.iter
-    (fun name ->
+    (fun (name,_) ->
        traite_Declare (name^".v");      
        flush stdout)
     (List.rev !vAccu)
@@ -410,7 +422,7 @@ let all_subdirs root_dir log_dir =
 
 let usage () =
   eprintf
-  "[ usage: coqdep [-w] [-I dir] [-coqlib dir] [-c] [-i] [-D] <filename>+ ]\n";
+  "[ usage: coqdep [-w] [-I dir] [-R dir coqdir] [-coqlib dir] [-c] [-i] [-D] <filename>+ ]\n";
   flush stderr;
   exit 1
 
@@ -471,7 +483,8 @@ let coqdep () =
 	    addQueue mliAccu (basename,".mli",dirname)
 	  else if Filename.check_suffix name ".v" then
 	    let basename = Filename.chop_suffix name ".v" in
-	    addQueue vAccu (file_name ([basename], dirname))
+	    let name = file_name ([basename],dirname) in
+	    addQueue vAccu (name, absolute_file_name basename dirname)
       | _ -> ()
   in 
   let add_known phys_dir log_dir f =
@@ -526,7 +539,7 @@ let coqdep () =
       | f :: ll -> treat None f; parse ll
       | [] -> ()
   in
-  add_directory (".", []);
+(*  add_directory (".", []);*)
   parse (List.tl (Array.to_list Sys.argv));
   List.iter
     (fun (s,_) -> add_coqlib_directory s)

@@ -81,7 +81,7 @@ coq_makefile [subdirectory] .... [file.v] ... [file.ml] ... [-custom
 
 let standard sds sps =
   print "byte:\n";
-  print "\t$(MAKE) all \"OPT=\"\n\n";
+  print "\t$(MAKE) all \"OPT=-byte\"\n\n";
   print "opt:\n";
   if !opt = "" then print "\t@echo \"WARNING: opt is disabled\"\n";
   print "\t$(MAKE) all \"OPT="; print !opt; print "\"\n\n";
@@ -209,6 +209,23 @@ let variables l =
   var_aux l;
   print "\n"
 
+let absolute_dir dir =
+  let current = Sys.getcwd () in
+  Sys.chdir dir;
+  let dir' = Sys.getcwd () in
+  Sys.chdir current;
+  dir'
+
+let is_prefix dir1 dir2 =
+  let l1 = String.length dir1 in
+  let l2 = String.length dir2 in
+  dir1 = dir2 or (l1 < l2 & String.sub dir2 0 l1 = dir1 & dir2.[l1] = '/')
+
+let is_included dir = function
+  | RInclude (dir',_) -> is_prefix (absolute_dir dir') (absolute_dir dir)
+  | Include dir' -> absolute_dir dir = absolute_dir dir'
+  | _ -> false
+
 let include_dirs l =
   let include_aux' includeR =
    let rec include_aux = function
@@ -221,8 +238,9 @@ let include_dirs l =
    in
     include_aux
   in
+  let l' = if List.exists (is_included ".") l then l else Include "." :: l in
   let i_ocaml = "-I ." :: (include_aux' false l) in
-  let i_coq   = "-I ." :: (include_aux' true  l) in
+  let i_coq   = include_aux' true l' in
   section "Libraries definition.";
   print "OCAMLLIBS="; print_list "\\\n  " i_ocaml; print "\n";
   print "COQLIBS=";   print_list "\\\n  " i_coq; print "\n\n"
