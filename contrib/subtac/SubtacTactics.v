@@ -74,10 +74,15 @@ Ltac bang :=
       end
   end.
 
+Require Import Eqdep.
+
 Ltac elim_eq_rect :=
   match goal with
-    | [ |- ?t ] => 
-      match t with
-        context [ @eq_rect _ _ _ _ _ ?p ] => try case p ; simpl
-      end
+  | [ |- ?t ] => 
+    match t with
+    context [ @eq_rect _ _ _ _ _ ?p ] => 
+      let t := fresh "t" in 
+      set (t := p); simpl in t ; 
+	try ((case t ; clear t) || (clearbody t; rewrite (UIP_refl _ _ t); clear t))
+    end
   end.

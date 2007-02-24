@@ -65,8 +65,8 @@ let subst_evar_constr evs n t =
 	     and we must not apply to defined ones (i.e. LetIn's)
 	  *)
 	let args = 
-	  let (l, r) = list_split_at chop (Array.to_list args) in
-	    r
+	  let (l, r) = list_split_at chop (List.rev (Array.to_list args)) in
+	    List.rev r
 	in
 	let args =
 	  let rec aux hyps args acc =
@@ -179,7 +179,7 @@ let eterm_obligations name nclen evm fs t tycon =
     subst_evar_constr evts 0 t 
   in
   let evars = 
-    List.map (fun (_, ((_, name), _, _, typ, deps)) -> name, typ, deps) evts
+    List.map (fun (_, ((_, name), _, chop, typ, deps)) -> name, typ, chop = fs, deps) evts
   in
     (try
        trace (str "Term given to eterm" ++ spc () ++
@@ -187,7 +187,7 @@ let eterm_obligations name nclen evm fs t tycon =
        trace (str "Term constructed in eterm" ++ spc () ++
 		Termops.print_constr_env (Global.env ()) t');
        ignore(iter
-		(fun (name, typ, deps) ->
+		(fun (name, typ, _, deps) ->
 		   trace (str "Evar :" ++ spc () ++ str (string_of_id name) ++
 			    Termops.print_constr_env (Global.env ()) typ))
 		evars);

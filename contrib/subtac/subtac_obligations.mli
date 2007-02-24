@@ -1,6 +1,7 @@
 open Util
 
-type obligation_info = (Names.identifier * Term.types * Intset.t) array
+type obligation_info = (Names.identifier * Term.types * bool * Intset.t) array
+    (* ident, type, opaque or transparent, dependencies *)
 
 val set_default_tactic : Tacexpr.glob_tactic_expr -> unit
 

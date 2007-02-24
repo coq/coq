@@ -12,12 +12,13 @@ open Decl_kinds
 open Util
 open Evd
 
-type obligation_info = (Names.identifier * Term.types * Intset.t) array
+type obligation_info = (Names.identifier * Term.types * bool * Intset.t) array
 
 type obligation =
     { obl_name : identifier;
       obl_type : types;
       obl_body : constr option;
+      obl_opaque : bool;
       obl_deps : Intset.t;
     }
 
@@ -114,7 +115,8 @@ let subst_body prg =
 let declare_definition prg =
   let body = subst_body prg in
     (try trace (str "Declaring: " ++ Ppconstr.pr_id prg.prg_name ++ spc () ++
-		  my_print_constr (Global.env()) body);
+		  my_print_constr (Global.env()) body ++ str " : " ++ 
+		  my_print_constr (Global.env()) prg.prg_type);
      with _ -> ());
   let ce = 
     { const_entry_body = body;
@@ -164,7 +166,7 @@ let declare_obligation obl body =
   let ce = 
     { const_entry_body = body;
       const_entry_type = Some obl.obl_type;
-      const_entry_opaque = false;
+      const_entry_opaque = obl.obl_opaque;
       const_entry_boxed = false} 
   in
   let constant = Declare.declare_constant obl.obl_name 
@@ -191,10 +193,10 @@ let red = Reductionops.nf_betaiota
 let init_prog_info n b t deps nvrec obls =
   let obls' = 
     Array.mapi
-      (fun i (n, t, d) ->
+      (fun i (n, t, o, d) ->
 	 debug 2 (str "Adding obligation " ++ int i ++ str " with deps : " ++ str (string_of_intset d));
          { obl_name = n ; obl_body = None; 
-	   obl_type = red t; 
+	   obl_type = red t; obl_opaque = o;
 	   obl_deps = d })
       obls
   in
@@ -247,6 +249,10 @@ let deps_remaining obls deps =
 	 else x :: acc)
       deps []
 
+let kind_of_opacity o =
+  if o then Subtac_utils.goal_proof_kind
+  else Subtac_utils.goal_kind
+
 let solve_obligation prg num =
   let user_num = succ num in
   let obls, rem = prg.prg_obligations in
@@ -257,7 +263,7 @@ let solve_obligation prg num =
       match deps_remaining obls obl.obl_deps with
 	  [] ->
 	    let obl = subst_deps_obl obls obl in
-	      Command.start_proof obl.obl_name Subtac_utils.goal_proof_kind obl.obl_type
+	      Command.start_proof obl.obl_name (kind_of_opacity obl.obl_opaque) obl.obl_type
 		(fun strength gr -> 
 		   debug 2 (str "Proof of obligation " ++ int user_num ++ str " finished");		   
 		   let obl = { obl with obl_body = Some (Libnames.constr_of_global gr) } in
@@ -290,6 +296,7 @@ let obligations_of_evars evars =
 	    { obl_name = n;
 	      obl_type = t;
 	      obl_body = None;
+	      obl_opaque = false;
 	      obl_deps = Intset.empty;
 	    }) evars)
   in arr, Array.length arr
@@ -303,7 +310,10 @@ let solve_obligation_by_tac prg obls i tac =
 	   if deps_remaining obls obl.obl_deps = [] then
 	     let obl = subst_deps_obl obls obl in
 	     let t = Subtac_utils.solve_by_tac (evar_of_obligation obl) tac in
-	       obls.(i) <- { obl with obl_body = Some t };
+	       if obl.obl_opaque then 
+		 obls.(i) <- declare_obligation obl t
+	       else
+		 obls.(i) <- { obl with obl_body = Some t };
 	       true		 
 	   else false
 	 with _ -> false)  

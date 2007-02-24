@@ -20,6 +20,7 @@ val mkMetas : int -> constr list
 
 val eterm_obligations : identifier -> int -> evar_map -> int -> constr -> types option -> (* id, named context length, evars, number of
 											     function prototypes to try to clear from evars contexts *)
-  (identifier * types * Intset.t) array * constr (* Obl. name, type as product and dependencies as indexes into the array *)
+  (identifier * types * bool * Intset.t) array * constr
+    (* Obl. name, type as product, chopping of products flag, and dependencies as indexes into the array *)
 
 val etermtac : open_constr -> tactic
