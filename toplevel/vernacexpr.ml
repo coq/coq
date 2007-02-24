@@ -37,7 +37,7 @@ type printable =
   | PrintFullContext
   | PrintSectionContext of reference
   | PrintInspect of int
-  | PrintGrammar of string * string
+  | PrintGrammar of string
   | PrintLoadPath
   | PrintModules
   | PrintModule of reference

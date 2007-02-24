@@ -1792,7 +1792,7 @@ let rec xlate_vernac =
 	| PrintOpaqueName id -> CT_print_opaqueid (loc_qualid_to_ct_ID id)
 	| PrintSectionContext id -> CT_print_section (loc_qualid_to_ct_ID id)
 	| PrintModules -> CT_print_modules
-	| PrintGrammar (phylum, name) -> CT_print_grammar CT_grammar_none
+	| PrintGrammar name -> CT_print_grammar CT_grammar_none
 	| PrintHintDb -> CT_print_hintdb (CT_coerce_STAR_to_ID_OR_STAR CT_star)
 	| PrintHintDbName id -> 
 	    CT_print_hintdb (CT_coerce_ID_to_ID_OR_STAR (CT_ident id))
