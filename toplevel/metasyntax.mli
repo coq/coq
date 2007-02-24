@@ -51,7 +51,7 @@ val add_syntax_extension :
 
 (* Print the Camlp4 state of a grammar *)
 
-val print_grammar : string -> string -> unit
+val print_grammar : string -> unit
 
 (* Removes quotes in a notation *)
 

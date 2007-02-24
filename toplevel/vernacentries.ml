@@ -910,7 +910,7 @@ let vernac_print = function
   | PrintFullContext -> msg (print_full_context_typ ())
   | PrintSectionContext qid -> msg (print_sec_context_typ qid)
   | PrintInspect n -> msg (inspect n)
-  | PrintGrammar (uni,ent) -> Metasyntax.print_grammar uni ent
+  | PrintGrammar ent -> Metasyntax.print_grammar ent
   | PrintLoadPath -> (* For compatibility ? *) print_loadpath ()
   | PrintModules -> msg (print_modules ())
   | PrintModule qid -> print_module qid

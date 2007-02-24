@@ -605,7 +605,7 @@ GEXTEND Gram
       | IDENT "Section"; s = global -> PrintSectionContext s
       | IDENT "Grammar"; ent = IDENT ->
           (* This should be in "syntax" section but is here for factorization*)
-	  PrintGrammar ("", ent)
+	  PrintGrammar ent
       | IDENT "LoadPath" -> PrintLoadPath
       | IDENT "Modules" -> PrintModules
 

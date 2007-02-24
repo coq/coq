@@ -788,8 +788,7 @@ let rec pr_vernac = function
 	| PrintFullContext -> str"Print All"
 	| PrintSectionContext s ->
             str"Print Section" ++ spc() ++ Libnames.pr_reference s
-	| PrintGrammar (uni,ent) ->
-            msgerrnl (str "warning: no direct translation of Print Grammar entry"); 
+	| PrintGrammar ent ->
             str"Print Grammar" ++ spc() ++ str ent
 	| PrintLoadPath -> str"Print LoadPath"
 	| PrintModules -> str"Print Modules"

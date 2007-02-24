@@ -97,7 +97,7 @@ let add_tactic_notation (n,prods,e) =
 (**********************************************************************)
 (* Printing grammar entries                                           *)
 
-let print_grammar univ = function
+let print_grammar = function
   | "constr" | "operconstr" | "binder_constr" ->
       msgnl (str "Entry constr is");
       Gram.Entry.print Pcoq.Constr.constr;
