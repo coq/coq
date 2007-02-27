@@ -1698,26 +1698,29 @@ let rec is_included x y =
 	if i = i' then List.for_all2 is_included args args'
 	else false
 
-let build_ineqs prevpatterns pats liftsign patargs =
+(* liftsign is the current pattern's signature length *)
+let build_ineqs prevpatterns pats liftsign =
   let _tomatchs = List.length pats in
   let diffs = 
     List.fold_left 
       (fun c eqnpats -> 
 	 let acc = List.fold_left2
-	   (fun acc (ppat_sign, ppat_c, ppat_ty, (ppat_eqs, ppat_arity), ppat) curpat ->
+	   (fun acc (ppat_sign, ppat_c, ppat_ty, (ppat_eqs, ppat_arity), ppat) 
+	      (curpat_sign, curpat_c, curpat_ty, (curpat_eqs, curpat_arity), curpat) ->
 	      match acc with
 		  None -> None
 		| Some (sign, len, n, c) -> (* FixMe: do not work with ppat_args *)
 		    if is_included curpat ppat then
-		      let lens = List.length ppat_sign in
-		      let len' = lens + len in
+		      let lens = List.length ppat_sign in (* Length of previous pattern's signature *)
+		      let len' = lens + len in (* Accumulated length of previous pattern's signatures *)
 		      let acc = 
-			(lift_rel_context len ppat_sign @ sign, 
+			(lift_rel_context len ppat_sign @ sign, (* Jump over previous prevpat signs *)
 			 len',
-			 succ n,
+			 succ n, (* nth pattern *)
 			 mkApp (Lazy.force eq_ind,
-				[| lift (lens + liftsign) ppat_ty ; liftn liftsign (succ lens) ppat_c ; 
-				   mkRel (len' + patargs.(pred n)) |]) :: 
+				[| lift (lens + liftsign) ppat_ty ;
+				   liftn liftsign (succ lens) ppat_c ; 
+				   lift len' curpat_c |]) :: 
 			   List.map (lift lens) c)
 		      in Some acc
 		    else None)
@@ -1750,7 +1753,7 @@ let constrs_of_pats typing_fun tycon env isevars eqns tomatchs sign neqs arity =
 	 let pattern_rels = fst (List.fold_right (fun (sign, pat_c, pat_ty, _, pat)  (l, acc) -> 
 						    acc :: l, List.length sign + acc) pats ([], 1))
 	 in
-	 let ineqs = build_ineqs prevpatterns newpatterns signlen (Array.of_list pattern_rels) in
+	 let ineqs = build_ineqs prevpatterns pats signlen in
 	 let eqs_rels = List.fold_left (fun eqenv (_,_,_,(eqs,ty), _) -> 
 					  (List.map (fun (x,y) -> (x, None, y)) eqs) @ eqenv)
 	   [] pats
