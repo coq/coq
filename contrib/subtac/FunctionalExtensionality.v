@@ -23,3 +23,17 @@ Proof.
   apply (fun_extensionality_dep _ _ _ _ H).
   rewrite H0 ; auto.
 Qed.
+
+Lemma fix_sub_measure_eq_ext :
+  forall (A : Type) (f : A -> nat) (P : A -> Type)
+    (F_sub : forall x : A, (forall  {y : A | f y < f x}, P (`y)) -> P x),
+    forall x : A,
+      Fix_measure_sub A f P F_sub x =
+        F_sub x (fun {y : A | f y < f x}=> Fix_measure_sub A f P F_sub (`y)).
+Proof.
+  intros ; apply Fix_measure_eq ; auto.
+  intros.
+  assert(f0 = g).
+  apply (fun_extensionality_dep _ _ _ _ H).
+  rewrite H0 ; auto.
+Qed.
