@@ -274,8 +274,12 @@ Module Type S.
   (** Specification of [choose] *)
   Parameter choose_1 : choose s = Some x -> In x s.
   Parameter choose_2 : choose s = None -> Empty s.
-(*  Parameter choose_equal: 
-      (equal s s')=true -> E.eq (choose s) (choose s'). *)
+  Parameter choose_equal: (equal s s')=true -> 
+     match choose s, choose s' with  
+      | Some x, Some x' => E.eq x x'
+      | None, None => True
+      | _, _ => False
+     end.
 
   End Spec.
 
@@ -417,5 +421,14 @@ Module Type Sdep.
       {x : elt | In x s /\ For_all (fun y => ~ E.lt x y) s} + {Empty s}.
 
   Parameter choose : forall s : t, {x : elt | In x s} + {Empty s}.
+
+  (** The [choose_equal] specification of [S] cannot be packed 
+        in the dependent version of [choose], so we leave it separate. *)
+  Parameter choose_equal : forall s s', Equal s s' -> 
+     match choose s, choose s' with 
+       | inleft (exist x _), inleft (exist x' _) => E.eq x x'
+       | inright _, inright _  => True
+       | _, _                        => False
+     end.
 
 End Sdep.

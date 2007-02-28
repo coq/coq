@@ -2542,6 +2542,38 @@ Proof.
   apply subset'_2; auto.
 Qed. 
 
+Lemma choose_equal: forall s s', bst s -> avl s -> bst s' -> avl s' -> 
+  (equal' s s')=true -> 
+  match choose s, choose s' with  
+   | Some x, Some x' => X.eq x x'
+   | None, None => True
+   | _, _ => False
+  end.
+Proof.
+ unfold choose; intros s s' Hb Ha Hb' Ha' H.
+ generalize (equal'_2 s s' Hb Ha Hb' Ha' H); clear H; intros.
+ generalize (@min_elt_1 s) (@min_elt_2 s) (@min_elt_3 s).
+ generalize (@min_elt_1 s') (@min_elt_2 s') (@min_elt_3 s').
+ destruct (min_elt s) as [x|]; destruct (min_elt s') as [x'|]; auto.
+ 
+ intros H1 H2 _ H1' H2' _.
+ destruct (X.compare x x'); auto.
+ assert (In x s) by auto.
+ rewrite (H x) in H0.
+ destruct (H2 x' x); auto.
+ assert (In x' s') by auto.
+ rewrite <- (H x') in H0.
+ destruct (H2' x x'); auto.
+
+ intros _ _ H3 H1' _ _.
+ destruct (H3 (refl_equal _) x).
+ rewrite <- (H x); auto.
+   
+ intros H1 _ _ _ _ H3'.
+ destruct (H3' (refl_equal _) x').
+ rewrite (H x'); auto.
+Qed.   
+
 End Raw.
 
 (** * Encapsulation
@@ -2876,6 +2908,20 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Proof. exact (Raw.choose_1 s x). Qed.
  Lemma choose_2 : choose s = None -> Empty s.
  Proof. exact (Raw.choose_2 s). Qed.
+
+ Lemma  choose_equal: (equal s s')=true -> 
+     match choose s, choose s' with  
+      | Some x, Some x' => E.eq x x'
+      | None, None => True
+      | _, _ => False
+     end.
+ Proof.
+  intros.
+  unfold choose.  
+  apply Raw.choose_equal; auto.
+  apply Raw.equal'_1; auto.
+  exact (equal_2 H).
+ Qed.
 
  Lemma eq_refl : eq s s. 
  Proof. exact (Raw.eq_refl s). Qed.

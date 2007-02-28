@@ -247,13 +247,70 @@ Module DepOfNodep (M: S) <: Sdep with Module E := M.E.
     eapply (filter_1 (s:=s) (x:=x) H3); elim (H x); intros B _; apply B; auto.
   Qed. 
 
-  Definition choose : forall s : t, {x : elt | In x s} + {Empty s}.
-  Proof.  
-    intros.
-    generalize (choose_1 (s:=s)) (choose_2 (s:=s)).
-    case (choose s); [ left | right ]; auto.
-    exists e; auto.    
+  Definition choose_aux: forall s : t, 
+    { x : elt | M.choose s = Some x } + { M.choose s = None }.
+  Proof.
+   intros.
+   destruct (M.choose s); [left | right]; auto.
+   exists e; auto.
   Qed.
+ 
+  Definition choose : forall s : t, {x : elt | In x s} + {Empty s}.
+  Proof.
+   intros; destruct (choose_aux s) as [(x,Hx)|H].
+   left; exists x; apply choose_1; auto.
+   right; apply choose_2; auto.
+  Defined.
+
+  Lemma choose_ok1 : 
+   forall s x, M.choose s = Some x <-> exists H:In x s, 
+      choose s = inleft _ (exist (fun x => In x s) x H).
+  Proof.
+    intros s x.
+    unfold choose; split; intros. 
+    destruct (choose_aux s) as [(y,Hy)|H']; try congruence.
+    replace x with y in * by congruence.
+    exists (choose_1 Hy); auto.
+    destruct H.
+    destruct (choose_aux s) as [(y,Hy)|H']; congruence.
+  Qed.
+
+  Lemma choose_ok2 : 
+   forall s, M.choose s = None <-> exists H:Empty s, 
+      choose s = inright _ H.
+  Proof. 
+    intros s.
+    unfold choose; split; intros.
+    destruct (choose_aux s) as [(y,Hy)|H']; try congruence.
+    exists (choose_2 H'); auto.
+    destruct H.
+    destruct (choose_aux s) as [(y,Hy)|H']; congruence.
+  Qed.
+
+  Lemma choose_equal : forall s s', Equal s s' -> 
+     match choose s, choose s' with 
+       | inleft (exist x _), inleft (exist x' _) => E.eq x x'
+       | inright _, inright _  => True
+       | _, _                        => False
+     end.
+  Proof.
+    intros.
+    generalize (M.choose_equal (M.equal_1 H)); clear H; intros Heq.
+    generalize (choose_ok1 s) (choose_ok2 s) (choose_ok1 s') (choose_ok2 s').
+    destruct (choose s) as [(x,Hx)|Hx]; destruct (choose s') as [(x',Hx')|Hx']; auto.
+ 
+   intros H _ H' _; generalize (H x) (H' x'); clear H H'; intros H H'.
+   destruct H as (_,H); rewrite H in Heq; simpl in Heq; [|exists Hx]; auto.
+   destruct H' as (_,H'); rewrite H' in Heq; simpl in Heq; [|exists Hx']; auto.
+   
+   intros H _ _ H'; generalize (H x); clear H; intros H.
+   destruct H as (_,H); rewrite H in Heq; simpl in Heq; [|exists Hx]; auto.
+   destruct H' as (_,H'); rewrite H' in Heq; simpl in Heq;[|exists Hx']; auto.
+
+   intros _ H H' _; generalize (H' x'); clear H'; intros H'.
+   destruct H as (_,H); rewrite H in Heq; simpl in Heq; [|exists Hx]; auto.
+   destruct H' as (_,H'); rewrite H' in Heq; simpl in Heq; [|exists Hx']; auto.
+  Qed. 
 
   Definition min_elt :
     forall s : t,
@@ -390,6 +447,19 @@ Module NodepOfDep (M: Sdep) <: S with Module E := M.E.
   Proof.
     intro s; unfold choose in |- *; case (M.choose s); auto.
     simple destruct s0; intros; discriminate H.
+  Qed.
+ 
+  Lemma choose_equal: forall s s', (equal s s')=true -> 
+     match choose s, choose s' with  
+      | Some x, Some x' => E.eq x x'
+      | None, None => True
+      | _, _ => False
+     end.
+  Proof.
+  unfold choose; intros.
+  generalize (M.choose_equal (equal_2 H)); clear H.
+  destruct (M.choose s) as [(x,Hx)|Hx]; destruct (M.choose s') as [(x',Hx')|Hx']; 
+   simpl; auto.
   Qed.
 
   Definition elements (s : t) : list elt := let (l, _) := elements s in l. 
