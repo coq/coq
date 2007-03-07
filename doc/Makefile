@@ -16,7 +16,7 @@ MAKEINDEX=makeindex
 PDFLATEX=pdflatex
 
 HEVEALIB=/usr/local/lib/hevea:/usr/lib/hevea
-TEXINPUTS=$(HEVEALIB):.:
+export TEXINPUTS=$(COQTOP)/doc:$(HEVEALIB):
 
 DOCCOQTOP=$(COQTOP)/bin/coqtop
 COQTEX=$(COQTOP)/bin/coq-tex -n 72 -image $(DOCCOQTOP) -v -sl -small
