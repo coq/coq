@@ -138,7 +138,7 @@ Module Positive_as_OT <: UsualOrderedType.
   apply GT; unfold lt.
   replace Eq with (CompOpp Eq); auto.
   rewrite <- Pcompare_antisym; rewrite H; auto.
-  Qed.
+  Defined.
 
 End Positive_as_OT.
 
