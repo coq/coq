@@ -70,6 +70,7 @@ LOCALINCLUDES=-I config -I tools -I tools/coqdoc \
               -I contrib/omega -I contrib/romega \
 	      -I contrib/ring -I contrib/dp -I contrib/setoid_ring \
               -I contrib/xml -I contrib/extraction \
+	      -I contrib/intextr \
               -I contrib/interface -I contrib/fourier \
 	      -I contrib/jprover -I contrib/cc \
 	      -I contrib/funind -I contrib/first-order \
@@ -227,7 +228,8 @@ ML4FILES +=\
   contrib/ring/g_ring.ml4 contrib/dp/g_dp.ml4 \
   contrib/setoid_ring/newring.ml4  \
   contrib/field/field.ml4 contrib/fourier/g_fourier.ml4 \
-  contrib/extraction/g_extraction.ml4 contrib/xml/xmlentries.ml4
+  contrib/extraction/g_extraction.ml4 contrib/xml/xmlentries.ml4 \
+  contrib/intextr/g_intextr.ml4
 
 OMEGACMO=\
   contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
@@ -274,6 +276,10 @@ EXTRACTIONCMO=\
   contrib/extraction/common.cmo \
   contrib/extraction/extract_env.cmo \
   contrib/extraction/g_extraction.cmo
+
+INTEXTRCMO=\
+  contrib/intextr/intextr.cmo \
+  contrib/intextr/g_intextr.cmo
 
 JPROVERCMO=\
   contrib/jprover/opname.cmo \
@@ -323,7 +329,7 @@ ML4FILES += contrib/jprover/jprover.ml4 contrib/cc/g_congruence.ml4 \
 
 
 CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(NEWRINGCMO) $(DPCMO) $(FIELDCMO) \
-	$(FOURIERCMO) $(EXTRACTIONCMO) $(JPROVERCMO) $(XMLCMO) \
+	$(FOURIERCMO) $(EXTRACTIONCMO) $(INTEXTRCMO) $(JPROVERCMO) $(XMLCMO) \
 	$(CCCMO)  $(FOCMO) $(SUBTACCMO) $(RTAUTOCMO) \
         $(RECDEFCMO) $(FUNINDCMO)
 
@@ -1063,6 +1069,9 @@ noreal: logic arith bool zarith qarith lists sets fsets intmap relations \
 OMEGAVO=\
  contrib/omega/OmegaLemmas.vo contrib/omega/Omega.vo
 
+INTEXTRVO=\
+ contrib/intextr/Ml.vo
+
 ROMEGAVO=\
  contrib/romega/ReflOmegaCore.vo contrib/romega/ROmega.vo 
 
@@ -1109,7 +1118,7 @@ RTAUTOVO = \
 
 CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
 	    $(FOURIERVO) $(JPROVERVO) $(CCVO) $(FUNINDVO) $(SUBTACVO) \
-	    $(RTAUTOVO) $(RECDEFVO) $(NEWRINGVO)
+	    $(RTAUTOVO) $(RECDEFVO) $(NEWRINGVO) $(INTEXTRVO)
 
 contrib: $(CONTRIBVO) $(CONTRIBCMO)
 omega: $(OMEGAVO) $(OMEGACMO) $(ROMEGAVO) $(ROMEGACMO)
@@ -1118,6 +1127,7 @@ setoid_ring: $(NEWRINGVO) $(NEWRINGCMO)
 dp: $(DPCMO)
 xml: $(XMLVO) $(XMLCMO)
 extraction: $(EXTRACTIONCMO)
+intextr: $(INTEXTRVO) $(INTEXTRCMO)
 field: $(FIELDVO) $(FIELDCMO)
 fourier: $(FOURIERVO) $(FOURIERCMO)
 jprover: $(JPROVERVO) $(JPROVERCMO)
