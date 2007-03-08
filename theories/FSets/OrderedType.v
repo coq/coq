@@ -296,12 +296,12 @@ Ltac false_order := elimtype False; order.
   Lemma eq_dec : forall x y : t, {eq x y} + {~ eq x y}.
   Proof.
    intros; elim (compare x y); [ right | left | right ]; auto.
-  Qed.
+  Defined.
  
   Lemma lt_dec : forall x y : t, {lt x y} + {~ lt x y}.
   Proof.
    intros; elim (compare x y); [ left | right | right ]; auto.
-  Qed.
+  Defined.
 
   Definition eqb x y : bool := if eq_dec x y then true else false.
 
