@@ -97,7 +97,7 @@ let rcs = "\036" rcs_keyword [^ '$']* "\036"
 let stars = "(*" '*'* "*)"
 let dot = '.' (' ' | '\t' | '\n' | '\r' | eof)
 let proof_start =   
-  "Theorem" | "Lemma" | "Fact" | "Remark" | "Goal" | "Correctness"
+  "Theorem" | "Lemma" | "Fact" | "Remark" | "Goal" | "Correctness" | "Obligation" | "Next"
 let proof_end =
   ("Save" | "Qed" | "Defined" | "Abort" | "Admitted") [^'.']* '.'
 
@@ -114,8 +114,10 @@ rule spec = parse
            { seen_spec := true; spec_to_dot lexbuf; proof lexbuf }
   | proof_start '\n'
            { seen_spec := true; newline (); spec_to_dot lexbuf; proof lexbuf }
-  | "Definition" space
+  | "Program"? "Definition" space
            { seen_spec := true; definition lexbuf }
+  | "Program"? "Fixpoint" space
+  	   { seen_spec := true; definition lexbuf }
   | character | _ 
 	   { seen_spec := true; spec lexbuf }
   | eof    { () }
