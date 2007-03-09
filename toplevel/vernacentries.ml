@@ -397,7 +397,7 @@ let vernac_define_module export id binders_ast mty_ast_o mexpr_ast_o =
        let binders_ast,argsexport =
         List.fold_right
          (fun (export,idl,ty) (args,argsexport) ->
-           (idl,ty)::args, List.map (fun (_,i) -> export,i) idl) binders_ast
+           (idl,ty)::args, (List.map (fun (_,i) -> export,i)idl)@argsexport) binders_ast
              ([],[]) in
 	Declaremods.start_module Modintern.interp_modtype export
 	  id binders_ast mty_ast_o;
