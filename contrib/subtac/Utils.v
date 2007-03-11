@@ -66,7 +66,3 @@ Extract Inductive sigT => "pair" [ "" ].
 Require Export ProofIrrelevance.
 
 Delimit Scope program_scope with program.
-
-Require Import Specif.
-Notation "'left'" := (left _ _) : program_scope.
-Notation "'right'" := (right _ _) : program_scope.
