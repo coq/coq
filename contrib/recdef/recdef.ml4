@@ -46,6 +46,9 @@ open Eauto
 open Genarg
 
 
+let compute_renamed_type gls c = 
+  rename_bound_var (pf_env gls) [] (pf_type_of gls c)
+
 let qed () = Command.save_named true 
 let defined () = Command.save_named false
 
@@ -388,32 +391,57 @@ let rec compute_le_proofs = function
   | a::tl ->
       tclORELSE assumption 
 	(tclTHENS
-	   (apply_with_bindings
-	      (delayed_force le_trans,
-	       ExplicitBindings[dummy_loc,NamedHyp(id_of_string "m"),a]))
+	   (fun g -> 
+	      let le_trans = delayed_force le_trans in 
+	      let t_le_trans = compute_renamed_type g le_trans in 
+	      let m_id = 
+		let _,_,t = destProd t_le_trans in 
+		let na,_,_ = destProd t in 
+		Nameops.out_name na
+	      in
+	      apply_with_bindings
+		(le_trans,
+		 ExplicitBindings[dummy_loc,NamedHyp m_id,a])
+		g
+	   )
 	   [compute_le_proofs tl; 
             tclORELSE (apply (delayed_force le_n)) assumption])
 
 let make_lt_proof pmax le_proof =
   tclTHENS
-    (apply_with_bindings
-       (delayed_force le_lt_trans,
-	ExplicitBindings[dummy_loc,NamedHyp(id_of_string "m"), pmax]))
-    [compute_le_proofs le_proof; 
-     tclTHENLIST[apply (delayed_force lt_S_n); default_full_auto]];;
+    (fun g -> 
+       let le_lt_trans = delayed_force le_lt_trans in 
+       let t_le_lt_trans = compute_renamed_type g le_lt_trans in 
+       let m_id = 
+	 let _,_,t = destProd t_le_lt_trans in 
+	 let na,_,_ = destProd t in 
+	 Nameops.out_name na
+       in
+       apply_with_bindings
+	 (le_lt_trans,
+	  ExplicitBindings[dummy_loc,NamedHyp m_id, pmax]) g)
+    [observe_tac "compute_le_proofs" (compute_le_proofs le_proof); 
+     tclTHENLIST[observe_tac "lt_S_n" (apply (delayed_force lt_S_n)); default_full_auto]];;
 
 let rec list_cond_rewrite k def pmax cond_eqs le_proofs =
   match cond_eqs with
     [] -> tclIDTAC
   | eq::eqs ->
       (fun g -> 
+	 let t_eq = compute_renamed_type g (mkVar eq) in 
+	 let k_id,def_id = 
+	   let k_na,_,t = destProd t_eq in 
+	   let _,_,t  = destProd t in 
+	   let def_na,_,_ = destProd t in 
+	   Nameops.out_name k_na,Nameops.out_name def_na
+	 in
 	 tclTHENS
 	   (general_rewrite_bindings false
 	      (mkVar eq,
 	       ExplicitBindings[dummy_loc, NamedHyp k_id, mkVar k;
 				dummy_loc, NamedHyp def_id, mkVar def]))
 	   [list_cond_rewrite k def pmax eqs le_proofs;
-            make_lt_proof pmax le_proofs] g
+            observe_tac "make_lt_proof" (make_lt_proof pmax le_proofs)] g
       ) 
 
 let rec introduce_all_equalities func eqs values specs bound le_proofs 
@@ -446,7 +474,7 @@ let rec introduce_all_equalities func eqs values specs bound le_proofs
 	     (unfold_in_concl[([1],evaluable_of_global_reference func)]);
 	   observe_tac "rewriting equations" 
 	     (list_rewrite true eqs);
-           observe_tac "cond rewrite" (list_cond_rewrite  k def bound cond_eqs le_proofs);
+           observe_tac ("cond rewrite "^(string_of_id k)) (list_cond_rewrite  k def bound cond_eqs le_proofs);
 	   observe_tac "refl equal" (apply (delayed_force refl_equal))] g
   | spec1::specs ->
       fun g ->
@@ -1033,12 +1061,20 @@ let rec introduce_all_values_eq  cont_tac functional termine
       [] ->
 	tclTHENLIST
 	  [tclTHENS
-	     (general_rewrite_bindings false
+	     (fun gls -> 
+		let t_eq = compute_renamed_type gls (mkVar heq1) in 
+		let k_id,def_id = 
+		  let k_na,_,t = destProd t_eq in 
+		  let _,_,t  = destProd t in 
+		  let def_na,_,_ = destProd t in 
+		  Nameops.out_name k_na,Nameops.out_name def_na
+		in
+		general_rewrite_bindings false
 		(mkVar heq1,
 		 ExplicitBindings[dummy_loc,NamedHyp k_id,
 				  f_S(f_S(mkVar pmax));
 				  dummy_loc,NamedHyp def_id,
-				  f]))
+				  f]) gls )
 	     [tclTHENLIST
 		[simpl_iter();
 		 unfold_constr (reference_of_constr functional);
@@ -1077,12 +1113,22 @@ let rec introduce_all_values_eq  cont_tac functional termine
 		   h_intros [heq;heq2];
 		   rewriteLR (mkVar heq2);
 		   tclTHENS
-		     (general_rewrite_bindings false
-			(mkVar heq,
-			 ExplicitBindings
-			   [dummy_loc, NamedHyp k_id,
-			    f_S(mkVar pmax');
-			    dummy_loc, NamedHyp def_id, f]))
+		     ( fun g -> 
+			 let t_eq = compute_renamed_type g (mkVar heq) in 
+			 let k_id,def_id = 
+			   let k_na,_,t = destProd t_eq in 
+			   let _,_,t  = destProd t in 
+			   let def_na,_,_ = destProd t in 
+			   Nameops.out_name k_na,Nameops.out_name def_na
+			 in
+			 general_rewrite_bindings false
+			   (mkVar heq,
+			    ExplicitBindings
+			      [dummy_loc, NamedHyp k_id,
+			       f_S(mkVar pmax');
+			       dummy_loc, NamedHyp def_id, f]) 
+			   g
+		     )
 		     [tclIDTAC;
 		      tclTHENLIST
 			[apply (delayed_force le_lt_n_Sm);
@@ -1142,9 +1188,9 @@ let rec prove_eq  (termine:constr) (f:constr)(functional:global_reference)
 	      | fn,args ->
 		  fun g ->
 		    let ids = ids_of_named_context (pf_hyps g) in
-		    rec_leaf_eq  
+		    observe_tac "rec_leaf_eq" (rec_leaf_eq  
 		      termine f ids (constr_of_reference functional)
-		      eqs expr fn args g));;
+		      eqs expr fn args) g));;
 
 let (com_eqn : identifier ->
        global_reference -> global_reference -> global_reference
@@ -1177,7 +1223,10 @@ let (com_eqn : identifier ->
 	       )
 	  )
        );
-     Options.silently (fun () -> Command.save_named opacity) (); 
+(*      (try Vernacentries.interp (Vernacexpr.VernacShow Vernacexpr.ShowProof) with _ -> ()); *)
+(*      Vernacentries.interp (Vernacexpr.VernacShow Vernacexpr.ShowScript); *)
+     Options.silently (fun () ->Command.save_named opacity) () ;  
+    
     );;
 
 
