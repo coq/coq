@@ -23,7 +23,7 @@ Defined.
 
 Theorem eq_nat_dec : forall n m, {n = m} + {n <> m}.
 Proof.
-  induction n; induction m; auto.
+  induction n; destruct m; auto.
   elim (IHn m); auto.
 Defined.
 
