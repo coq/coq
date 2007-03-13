@@ -15,7 +15,8 @@ val subtac_obligation : int * Names.identifier option * Topconstr.constr_expr op
 
 val next_obligation : Names.identifier option -> unit
 
-val solve_obligations : Names.identifier option -> Proof_type.tactic -> unit
+val solve_obligations : Names.identifier option -> Proof_type.tactic -> bool
+val try_solve_obligations : Names.identifier option -> Proof_type.tactic -> unit
 
 val show_obligations : Names.identifier option -> unit
 
