@@ -189,7 +189,7 @@ let multi_replace clause c2 c1 unsafe try_prove_eq_opt gl =
   let try_prove_eq = 
     match try_prove_eq_opt with 
       | None -> tclIDTAC
-      | Some tac ->  tclTRY (tclCOMPLETE tac)
+      | Some tac ->  tclCOMPLETE tac
   in
   let t1 = pf_apply get_type_of gl c1 
   and t2 = pf_apply get_type_of gl c2 in
