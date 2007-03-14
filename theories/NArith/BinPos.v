@@ -578,7 +578,7 @@ trivial.
 Qed.
 
 Theorem Prect_base : forall (P:positive->Type) (a:P xH) 
-  (f:forall p, P p -> P (Psucc p)) (p:positive), Prect P a f xH = a.
+  (f:forall p, P p -> P (Psucc p)), Prect P a f xH = a.
 Proof.
 trivial.
 Qed.
