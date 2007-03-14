@@ -494,7 +494,7 @@ $(COQC): $(ORDER_ONLY_SEP) $(BESTCOQC)
 
 
 clean::
-	rm -f scripts/tolink.ml
+	rm -f scripts/tolink.ml $(COQCOPT) $(COQMKTOPOPT)
 
 archclean::
 	rm -f $(COQTOPBYTE) $(COQTOPOPT) $(BESTCOQTOP) $(COQC) $(COQMKTOP)
@@ -1255,14 +1255,16 @@ archclean::
 ###########################################################################
 
 COQINSTALLPREFIX=
+OLDROOT=
+
   # Can be changed for a local installation (to make packages).
   # You must NOT put a "/" at the end (Cygnus for win32 does not like "//").
 
-FULLBINDIR=$(BINDIR:'$(OLDROOT)%='$(COQINSTALLPREFIX)%)
-FULLCOQLIB=$(COQLIB:'$(OLDROOT)%='$(COQINSTALLPREFIX)%)
-FULLMANDIR=$(MANDIR:'$(OLDROOT)%='$(COQINSTALLPREFIX)%)
-FULLEMACSLIB=$(EMACSLIB:'$(OLDROOT)%='$(COQINSTALLPREFIX)%)
-FULLCOQDOCDIR=$(COQDOCDIR:'$(OLDROOT)%='$(COQINSTALLPREFIX)%)
+FULLBINDIR=$(BINDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
+FULLCOQLIB=$(COQLIB:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
+FULLMANDIR=$(MANDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
+FULLEMACSLIB=$(EMACSLIB:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
+FULLCOQDOCDIR=$(COQDOCDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
 
 install-coq: install-binaries install-library install-coq-info
 install-coqlight: install-binaries install-library-light
