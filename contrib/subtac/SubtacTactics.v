@@ -49,6 +49,19 @@ Ltac destruct_call f :=
       end
     end.
 
+Ltac destruct_call_concl f :=
+  match goal with
+    | |- ?T  =>
+      match T with
+        | context [f ?x ?y ?z ?w ?v ?u] => let n := fresh "H" in set (n:=f x y z w v u); destruct n
+        | context [f ?x ?y ?z ?w ?v] => let n := fresh "H" in set (n:=f x y z w v); destruct n
+        | context [f ?x ?y ?z ?w] => let n := fresh "H" in set (n:=f x y z w); destruct n
+        | context [f ?x ?y ?z] => let n := fresh "H" in set (n:=f x y z); destruct n
+        | context [f ?x ?y] => let n := fresh "H" in set (n:=f x y); destruct n
+        | context [f ?x] => let n := fresh "H" in set (n:=f x); destruct n
+      end
+  end.
+
 Ltac myinjection :=
       let tac H := inversion H ; subst ; clear H in
         match goal with

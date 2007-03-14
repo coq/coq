@@ -240,9 +240,8 @@ let update_obls prg obls rem =
 		(declare_mutual_definition progs;
 		 from_prg := List.fold_left
 		   (fun acc x -> 
-		      ProgMap.remove x.prg_name acc) !from_prg progs;
-		 true)
-	      else false)
+		      ProgMap.remove x.prg_name acc) !from_prg progs);
+	      false)
 	    
 let is_defined obls x = obls.(x).obl_body <> None
 
