@@ -104,3 +104,15 @@ setoid_rewrite <- H.
 trivial.
 Qed.
 
+(* Unifying the domain up to delta-conversion (example from emakarov) *)
+
+Definition id: Set -> Set := fun A => A.
+Definition rel : forall A : Set, relation (id A) := @eq.
+Definition f: forall A : Set, A -> A := fun A x => x.
+
+Add Relation id rel as eq_rel.
+
+Add Morphism f with signature rel ++> rel as f_morph.
+Proof.
+unfold rel, f. trivial.
+Qed.
