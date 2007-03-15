@@ -397,7 +397,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 		     let f = it_mkLambda_or_LetIn fj.uj_val fsign in
 		     let v =
 		       let mis,_ = dest_ind_family indf in
-		       let ci = make_default_case_info env LetStyle mis in
+		       let ci = make_case_info env mis LetStyle in
 			 mkCase (ci, p, cj.uj_val,[|f|]) in 
 		       { uj_val = v; uj_type = substl (realargs@[cj.uj_val]) ccl }
 
@@ -415,7 +415,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 		     let p = it_mkLambda_or_LetIn (lift (nar+1) ccl) psign in
 		     let v =
 		       let mis,_ = dest_ind_family indf in
-		       let ci = make_default_case_info env LetStyle mis in
+		       let ci = make_case_info env mis LetStyle in
 			 mkCase (ci, p, cj.uj_val,[|f|] ) 
 		     in
 		       { uj_val = v; uj_type = ccl })
@@ -485,7 +485,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	  let b2 = f cstrs.(1) b2 in
 	  let v =
 	    let mis,_ = dest_ind_family indf in
-	    let ci = make_default_case_info env IfStyle mis in
+	    let ci = make_case_info env mis IfStyle in
 	      mkCase (ci, pred, cj.uj_val, [|b1;b2|])
 	  in
 	    { uj_val = v; uj_type = p }

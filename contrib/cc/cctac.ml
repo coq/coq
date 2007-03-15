@@ -203,7 +203,7 @@ let build_projection intype outtype (cstr:constructor) special default gls=
   let branches=Array.init lp branch in
   let casee=mkRel 1 in
   let pred=mkLambda(Anonymous,intype,outtype) in
-  let case_info=make_default_case_info (pf_env gls) RegularStyle ind in
+  let case_info=make_case_info (pf_env gls) ind RegularStyle in
   let body= mkCase(case_info, pred, casee, branches) in
   let id=pf_get_new_id (id_of_string "t") gls in     
     mkLambda(Name id,intype,body)

@@ -40,12 +40,10 @@ type existential_key = int
 type metavariable = int
 
 (*s Case annotation *)
-type pattern_source = DefaultPat of int | RegularPat
 type case_style = LetStyle | IfStyle | MatchStyle | RegularStyle
 type case_printing =
   { ind_nargs : int; (* number of real args of the inductive type *)
-    style     : case_style;
-    source    : pattern_source array }
+    style     : case_style }
 (* the integer is the number of real args, needed for reduction *)
 type case_info =
   { ci_ind        : inductive;

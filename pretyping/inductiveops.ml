@@ -131,21 +131,16 @@ let allowed_sorts env (kn,i as ind) =
   mip.mind_kelim
 
 (* Annotation for cases *)
-let make_case_info env ind style pats_source =
+let make_case_info env ind style =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  let print_info =
-    { ind_nargs = mip.mind_nrealargs;
-      style     = style;
-      source    = pats_source } in
+  let print_info = { ind_nargs = mip.mind_nrealargs; style = style } in
   { ci_ind     = ind;
     ci_npar    = mib.mind_nparams;
     ci_cstr_nargs = mip.mind_consnrealdecls;
     ci_pp_info = print_info }
 
 let make_default_case_info env style ind =
-  let (mib,mip) = Inductive.lookup_mind_specif env ind in
   make_case_info env ind style
-    (Array.map (fun _ -> RegularPat) mip.mind_consnames)
 
 (*s Useful functions *)
 

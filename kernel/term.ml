@@ -24,12 +24,10 @@ type metavariable = int
 (* This defines the strategy to use for verifiying a Cast *)
 
 (* This defines Cases annotations *)
-type pattern_source = DefaultPat of int | RegularPat
 type case_style = LetStyle | IfStyle | MatchStyle | RegularStyle
 type case_printing =
   { ind_nargs : int; (* number of real args of the inductive type *)
-    style     : case_style;
-    source    : pattern_source array }
+    style     : case_style }
 type case_info =
   { ci_ind        : inductive;
     ci_npar       : int;

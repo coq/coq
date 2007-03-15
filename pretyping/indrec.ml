@@ -78,7 +78,7 @@ let mis_make_case_com depopt env sigma ind (mib,mip as specif) kind =
       let depind = build_dependent_inductive env indf' in
       let deparsign = (Anonymous,None,depind)::arsign in
 
-      let ci = make_default_case_info env RegularStyle ind in
+      let ci = make_case_info env ind RegularStyle in
       let pbody =
         appvect
           (mkRel (ndepar + nbprod),
@@ -350,7 +350,7 @@ let mis_make_indrec env sigma listdepkind mib =
 
 	    (* body of i-th component of the mutual fixpoint *)
 	    let deftyi = 
-	      let ci = make_default_case_info env RegularStyle indi in
+	      let ci = make_case_info env indi RegularStyle in
 	      let concl = applist (mkRel (dect+j+ndepar),pargs) in 
 	      let pred =
 		it_mkLambda_or_LetIn_name env 

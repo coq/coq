@@ -397,7 +397,7 @@ let descend_then sigma env head dirn =
       let brl =
         List.map build_branch
           (interval 1 (Array.length mip.mind_consnames)) in
-      let ci = make_default_case_info env RegularStyle ind in
+      let ci = make_case_info env ind RegularStyle in
       mkCase (ci, p, head, Array.of_list brl)))
   
 (* Now we need to construct the discriminator, given a discriminable
@@ -440,7 +440,7 @@ let construct_discriminator sigma env dirn c sort =
     it_mkLambda_or_LetIn endpt cstrs.(i-1).cs_args in
   let brl =
     List.map build_branch(interval 1 (Array.length mip.mind_consnames)) in
-  let ci = make_default_case_info env RegularStyle ind in
+  let ci = make_case_info env ind RegularStyle in
   mkCase (ci, p, c, Array.of_list brl)
     
 let rec build_discriminator sigma env dirn c sort = function

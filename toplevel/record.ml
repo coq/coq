@@ -152,8 +152,7 @@ let declare_projections indsp coers fields =
 		let ccl' = liftn 1 2 ccl in
 		let p = mkLambda (x, lift 1 rp, ccl') in
 		let branch = it_mkLambda_or_LetIn (mkRel nfi) lifted_fields in
-		let ci = Inductiveops.make_case_info env indsp
-		  LetStyle [| RegularPat |] in
+		let ci = Inductiveops.make_case_info env indsp LetStyle in
 		mkCase (ci, p, mkRel 1, [|branch|]) in
 	      let proj =
 	        it_mkLambda_or_LetIn (mkLambda (x,rp,body)) paramdecls in

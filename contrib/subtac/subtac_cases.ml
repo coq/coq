@@ -145,8 +145,7 @@ type equation =
       rhs          : rhs;
       alias_stack  : name list;
       eqn_loc      : loc;
-      used         : bool ref;
-      tag          : pattern_source }
+      used         : bool ref }
 
 type matrix = equation list
 
@@ -468,25 +467,6 @@ let remove_current_pattern eqn =
 let prepend_pattern tms eqn = {eqn with patterns = tms@eqn.patterns }
 
 (**********************************************************************)
-(* Dealing with regular and default patterns *)
-let is_regular eqn = eqn.tag = RegularPat
-
-let lower_pattern_status = function
-  | RegularPat -> DefaultPat 0
-  | DefaultPat n -> DefaultPat (n+1)
-
-let pattern_status pats =
-  if array_exists ((=) RegularPat) pats then RegularPat
-  else 
-    let min =
-      Array.fold_right
-	(fun pat n -> match pat with
-	   | DefaultPat i when i<n -> i
-	   | _ -> n)
-	pats 0 in
-    DefaultPat min
-
-(**********************************************************************)
 (* Well-formedness tests *)
 (* Partial check on patterns *)
 
@@ -544,7 +524,7 @@ let extract_rhs pb =
     | [] -> errorlabstrm "build_leaf" (mssg_may_need_inversion())
     | eqn::_ ->
 	set_used_pattern eqn;
-	eqn.tag, eqn.rhs
+	eqn.rhs
 
 (**********************************************************************)
 (* Functions to deal with matrix factorization *)
@@ -1171,7 +1151,6 @@ let group_equations pb ind current cstrs mat =
 	       for i=1 to Array.length cstrs do
 		 let n = cstrs.(i-1).cs_nargs in
 		 let args = make_anonymous_patvars n in
-		 let rest = {rest with tag = lower_pattern_status rest.tag } in
 		 brs.(i-1) <- (args, rest) :: brs.(i-1)
 	       done
 	   | PatCstr (loc,((_,i)),args,_) ->
@@ -1197,12 +1176,12 @@ let rec generalize_problem pb = function
 
 (* No more patterns: typing the right-hand-side of equations *)
 let build_leaf pb =
-  let tag, rhs = extract_rhs pb in
+  let rhs = extract_rhs pb in
   let tycon = match pb.pred with
     | None -> anomaly "Predicate not found"
     | Some (PrCcl typ) -> mk_tycon typ
     | Some _ -> anomaly "not all parameters of pred have been consumed" in
-    tag, pb.typing_function tycon rhs.rhs_env rhs.it
+    pb.typing_function tycon rhs.rhs_env rhs.it
 
 (* Building the sub-problem when all patterns are variables *)
 let shift_problem (current,t) pb =
@@ -1324,23 +1303,21 @@ and match_current pb tomatch =
 	  let brs = array_map2 (compile_branch current deps pb) eqns cstrs in
 
 	  (* We build the (elementary) case analysis *)
-	  let tags   = Array.map (fun (t,_,_) -> t) brs in
-	  let brvals = Array.map (fun (_,v,_) -> v) brs in
-	  let brtyps = Array.map (fun (_,_,t) -> t) brs in
+	  let brvals = Array.map (fun (v,_) -> v) brs in
+	  let brtyps = Array.map (fun (_,t) -> t) brs in
 	  let (pred,typ,s) =
 	    find_predicate pb.caseloc pb.env pb.isevars 
 	      pb.pred brtyps cstrs current indt pb.tomatch in
-	  let ci = make_case_info pb.env mind RegularStyle tags in
+	  let ci = make_case_info pb.env mind RegularStyle in
 	  let case = mkCase (ci,nf_betaiota pred,current,brvals) in
 	  let inst = List.map mkRel deps in
-	  pattern_status tags,
 	  { uj_val = applist (case, inst);
 	    uj_type = substl inst typ }
 
 and compile_branch current deps pb eqn cstr =
   let sign, pb = build_branch current deps pb eqn cstr in
-  let tag, j = compile pb in
-  (tag, it_mkLambda_or_LetIn j.uj_val sign, j.uj_type)
+  let j = compile pb in
+  (it_mkLambda_or_LetIn j.uj_val sign, j.uj_type)
 
 and compile_generalization pb d rest =
   let pb =
@@ -1349,8 +1326,7 @@ and compile_generalization pb d rest =
        tomatch = rest;
        pred = option_map ungeneralize_predicate pb.pred;
        mat = List.map (push_rels_eqn [d]) pb.mat } in
-  let patstat,j = compile pb in
-  patstat, 
+  let j = compile pb in
   { uj_val = mkLambda_or_LetIn d j.uj_val;
     uj_type = mkProd_or_LetIn d j.uj_type }
 
@@ -1376,8 +1352,7 @@ and compile_alias pb (deppat,nondeppat,d,t) rest =
        pred = option_map (lift_predicate n) pb.pred;
        history = history;
        mat = mat } in
-  let patstat,j = compile pb in
-  patstat, 
+  let j = compile pb in
   List.fold_left mkSpecialLetInJudge j sign
 
 (* pour les alias des initiaux, enrichir les env de ce qu'il faut et
@@ -1397,7 +1372,6 @@ let matx_of_eqns env eqns =
 	it = rhs;
       } in
     { patterns = lpat;
-      tag = RegularPat;
       alias_stack = [];
       eqn_loc = loc;
       used = ref false;
@@ -2089,7 +2063,7 @@ let compile_cases loc (typing_fun, isevars) (tycon : Evarutil.type_constraint) e
 	  caseloc  = loc;
 	  typing_function = typing_fun } in
 	
-      let _, j = compile pb in
+      let j = compile pb in
 	(* We check for unused patterns *)
 	List.iter (check_unused_pattern env) matx;
 	let body = it_mkLambda_or_LetIn (applistc j.uj_val args) lets in
@@ -2118,7 +2092,7 @@ let compile_cases loc (typing_fun, isevars) (tycon : Evarutil.type_constraint) e
 	      caseloc  = loc;
 	      typing_function = typing_fun } in
 	    
-	  let _, j = compile pb in
+	  let j = compile pb in
 	  (* We check for unused patterns *)
 	  List.iter (check_unused_pattern env) matx;
 	  let j = { j with uj_val = it_mkLambda_or_LetIn j.uj_val tomatchs_lets } in
