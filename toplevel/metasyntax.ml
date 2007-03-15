@@ -739,7 +739,9 @@ let set_entry_type etyps (x,typ) =
 
 let check_rule_productivity l = 
   if List.for_all (function NonTerminal _ -> true | _ -> false) l then
-    error "A notation must include at least one symbol"
+    error "A notation must include at least one symbol";
+  if (match l with SProdList _ :: _ -> true | _ -> false) then
+    error "A recursive notation must start with at least one symbol"
 
 let is_not_printable = function
   | AVar _ -> warning "This notation won't be used for printing as it is bound to a \nsingle variable"; true
