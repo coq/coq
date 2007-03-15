@@ -31,8 +31,8 @@ Table of contents:
 
 3.1. Weak excluded middle
 
-3.2. Gödel-Dummet axiom and right distributivity of implication over
-      disjunction
+3.2. Gödel-Dummett axiom and right distributivity of implication over
+     disjunction
 
 3 3. Independence of general premises and drinker's paradox
 
@@ -396,7 +396,7 @@ End Proof_irrelevance_CCI.
 
 (** We show the following increasing in the strength of axioms:
  - weak excluded-middle
- - right distributivity of implication over disjunction and Gödel-Dummet axiom
+ - right distributivity of implication over disjunction and Gödel-Dummett axiom
  - independence of general premises and drinker's paradox
  - excluded-middle
 *)
@@ -533,7 +533,11 @@ Proof.
 Qed.
 
 (** Independence of general premises is weaker than (generalized) 
-    excluded middle *)
+    excluded middle
+
+Remark: generalized excluded middle is preferred here to avoid relying on
+the "ex falso quodlibet" property (i.e. [False -> forall A, A])
+*)
 
 Definition generalized_excluded_middle := 
   forall A B:Prop, A \/ (A -> B).
