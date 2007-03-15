@@ -28,54 +28,57 @@ Ltac destruct_one_pair :=
  | [H : (ex2 _) |- _] => destruct H
  | [H : (sig _) |- _] => destruct H
  | [H : (_ /\ _) |- _] => destruct H
+ | [H : prod _ _ |- _] => destruct H
 end.
 
 Ltac destruct_exists := repeat (destruct_one_pair) .
 
-(* Destructs calls to f in hypothesis or conclusion, useful if f creates a subset object *)
-Ltac destruct_call f :=
+Ltac on_call f tac :=
   match goal with
     | H : ?T |- _  =>
       match T with
-         context [f ?x ?y ?z] => destruct (f x y z)
-       | context [f ?x ?y] => destruct (f x y)
-       | context [f ?x] => destruct (f x)        
+        | context [f ?x ?y ?z ?w ?v ?u] => tac (f x y z w v u)
+        | context [f ?x ?y ?z ?w ?v] => tac (f x y z w v)
+        | context [f ?x ?y ?z ?w] => tac (f x y z w)
+        | context [f ?x ?y ?z] => tac (f x y z)
+        | context [f ?x ?y] => tac (f x y) 
+        | context [f ?x] => tac (f x)
       end
     | |- ?T  =>
       match T with
-        context [f ?x ?y ?z] => let n := fresh "H" in set (n:=f x y z); destruct n
-        | context [f ?x ?y] => let n := fresh "H" in set (n:=f x y); destruct n
-        | context [f ?x] => let n := fresh "H" in set (n:=f x); destruct n
-      end
-    end.
-
-Ltac destruct_call_concl f :=
-  match goal with
-    | |- ?T  =>
-      match T with
-        | context [f ?x ?y ?z ?w ?v ?u] => let n := fresh "H" in set (n:=f x y z w v u); destruct n
-        | context [f ?x ?y ?z ?w ?v] => let n := fresh "H" in set (n:=f x y z w v); destruct n
-        | context [f ?x ?y ?z ?w] => let n := fresh "H" in set (n:=f x y z w); destruct n
-        | context [f ?x ?y ?z] => let n := fresh "H" in set (n:=f x y z); destruct n
-        | context [f ?x ?y] => let n := fresh "H" in set (n:=f x y); destruct n
-        | context [f ?x] => let n := fresh "H" in set (n:=f x); destruct n
+        | context [f ?x ?y ?z ?w ?v ?u] => tac (f x y z w v u)
+        | context [f ?x ?y ?z ?w ?v] => tac (f x y z w v)
+        | context [f ?x ?y ?z ?w] => tac (f x y z w)
+        | context [f ?x ?y ?z] => tac (f x y z)
+        | context [f ?x ?y] => tac (f x y)
+        | context [f ?x] => tac (f x)
       end
   end.
 
+(* Destructs calls to f in hypothesis or conclusion, useful if f creates a subset object *)
+Ltac destruct_call f :=
+  let tac t := destruct t in on_call f tac.
+
+Ltac destruct_call_as f l :=
+  let tac t := destruct t as l in on_call f tac.
+
+Tactic Notation "destruct_call" constr(f) := destruct_call f.
+Tactic Notation "destruct_call" constr(f) "as" simple_intropattern(l) := destruct_call_as f l.
+
 Ltac myinjection :=
-      let tac H := inversion H ; subst ; clear H in
-        match goal with
-          | [ H : ?f ?a = ?f' ?a' |- _ ] => tac H
-          | [ H : ?f ?a ?b = ?f' ?a' ?b'  |- _ ] => tac H
-          | [ H : ?f ?a ?b ?c = ?f' ?a' ?b' ?c' |- _ ] => tac H
-          | [ H : ?f ?a ?b ?c ?d= ?f' ?a' ?b' ?c' ?d' |- _ ] => tac H
-          | [ H : ?f ?a ?b ?c ?d ?e= ?f' ?a' ?b' ?c' ?d' ?e' |- _ ] => tac H
-          | [ H : ?f ?a ?b ?c ?d ?e ?g= ?f' ?a' ?b' ?c' ?d' ?e' ?g'  |- _ ] => tac H
-          | [ H : ?f ?a ?b ?c ?d ?e ?g ?h= ?f' ?a' ?b' ?c' ?d' ?e'?g' ?h' |- _ ] => tac H
-          | [ H : ?f ?a ?b ?c ?d ?e ?g ?h ?i = ?f' ?a' ?b' ?c' ?d' ?e'?g' ?h' ?i' |- _ ] => tac H
-          | [ H : ?f ?a ?b ?c ?d ?e ?g ?h ?i ?j = ?f' ?a' ?b' ?c' ?d' ?e'?g' ?h' ?i' ?j' |- _ ] => tac H
-          | _ => idtac
-        end.
+  let tac H := inversion H ; subst ; clear H in
+    match goal with
+      | [ H : ?f ?a = ?f' ?a' |- _ ] => tac H
+      | [ H : ?f ?a ?b = ?f' ?a' ?b'  |- _ ] => tac H
+      | [ H : ?f ?a ?b ?c = ?f' ?a' ?b' ?c' |- _ ] => tac H
+      | [ H : ?f ?a ?b ?c ?d= ?f' ?a' ?b' ?c' ?d' |- _ ] => tac H
+      | [ H : ?f ?a ?b ?c ?d ?e= ?f' ?a' ?b' ?c' ?d' ?e' |- _ ] => tac H
+      | [ H : ?f ?a ?b ?c ?d ?e ?g= ?f' ?a' ?b' ?c' ?d' ?e' ?g'  |- _ ] => tac H
+      | [ H : ?f ?a ?b ?c ?d ?e ?g ?h= ?f' ?a' ?b' ?c' ?d' ?e'?g' ?h' |- _ ] => tac H
+      | [ H : ?f ?a ?b ?c ?d ?e ?g ?h ?i = ?f' ?a' ?b' ?c' ?d' ?e'?g' ?h' ?i' |- _ ] => tac H
+      | [ H : ?f ?a ?b ?c ?d ?e ?g ?h ?i ?j = ?f' ?a' ?b' ?c' ?d' ?e'?g' ?h' ?i' ?j' |- _ ] => tac H
+      | _ => idtac
+    end.
 
 Ltac destruct_nondep H := let H0 := fresh "H" in assert(H0 := H); destruct H0.
 
