@@ -270,7 +270,30 @@ let derive_inversion fix_names =
 	   if do_observe () then Cerrors.explain_exn e else mt ())
   with _ -> ()
 
-let generate_principle 
+let warning_error names e = 
+  match e with 
+    | Building_graph e -> 
+	Pp.msg_warning 
+	  (str "Cannot define graph(s) for " ++ 
+	     h 1 (prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names) ++
+	     if do_observe () then (spc () ++ Cerrors.explain_exn e) else mt ())
+    | Defining_principle e -> 
+	Pp.msg_warning
+	  (str "Cannot define principle(s) for "++ 
+	     h 1 (prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names) ++
+	     if do_observe () then Cerrors.explain_exn e else mt ())
+    | _ -> anomaly ""
+
+let error_error names e = 
+  match e with 
+    | Building_graph e -> 
+	errorlabstrm ""  
+	  (str "Cannot define graph(s) for " ++ 
+	     h 1 (prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names) ++
+	     if do_observe () then (spc () ++ Cerrors.explain_exn e) else mt ())
+    | _ -> anomaly ""
+
+let generate_principle  on_error
     is_general do_built fix_rec_l recdefs  interactive_proof 
     (continue_proof : int -> Names.constant array -> Term.constr array -> int -> 
       Tacmach.tactic) : unit =
@@ -324,18 +347,7 @@ let generate_principle
 	()
       end
   with e -> 
-    match e with 
-      | Building_graph e -> 
-	    Pp.msg_warning 
-	    (str "Cannot define graph(s) for " ++ 
-	       h 1 (prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names) ++
-	       if do_observe () then (spc () ++ Cerrors.explain_exn e) else mt ())
-      | Defining_principle e -> 
-	    Pp.msg_warning
-	    (str "Cannot define principle(s) for "++ 
-	       h 1 (prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names) ++
-	       if do_observe () then Cerrors.explain_exn e else mt ())
-      | _ -> anomaly ""
+    on_error names e 
 
 let register_struct is_rec fixpoint_exprl = 
   match fixpoint_exprl with 
@@ -459,13 +471,14 @@ let register_mes fname rec_impls wf_mes_expr wf_arg using_lemmas args ret_type b
     using_lemmas args ret_type body
 	  
 
-let do_generate_principle register_built interactive_proof fixpoint_exprl  = 
+let do_generate_principle on_error register_built interactive_proof fixpoint_exprl  = 
   let recdefs,rec_impls = build_newrecursive fixpoint_exprl in 
   let _is_struct = 
     match fixpoint_exprl with 
       | [((name,Some (Wf (wf_rel,wf_x,using_lemmas)),args,types,body))] -> 
 	  let pre_hook = 
 	    generate_principle 
+	      on_error
 	      true
 	      register_built
 	      fixpoint_exprl 
@@ -478,6 +491,7 @@ let do_generate_principle register_built interactive_proof fixpoint_exprl  =
       | [((name,Some (Mes (wf_mes,wf_x,using_lemmas)),args,types,body))] -> 
 	  let pre_hook = 
 	    generate_principle 
+	      on_error
 	      true
 	      register_built
 	      fixpoint_exprl 
@@ -530,6 +544,7 @@ let do_generate_principle register_built interactive_proof fixpoint_exprl  =
 	  let is_rec = List.exists (is_rec fix_names) recdefs in
 	  if register_built then register_struct is_rec old_fixpoint_exprl;
 	  generate_principle
+	    on_error
 	    false
 	    register_built
 	    fixpoint_exprl
@@ -732,7 +747,7 @@ let make_graph (f_ref:global_reference) =
 		let id = id_of_label (con_label c) in 
 		[(id,None,nal_tas,t,b)]
 	in
-	do_generate_principle false false expr_list;
+	do_generate_principle error_error false false expr_list;
 	(* We register the infos *)
 	let mp,dp,_ = repr_con c in 
 	List.iter 
@@ -742,6 +757,6 @@ let make_graph (f_ref:global_reference) =
 
 (* let make_graph _ = assert false	 *)
 	  
-let do_generate_principle = do_generate_principle true 
+let do_generate_principle = do_generate_principle warning_error true 
 
 

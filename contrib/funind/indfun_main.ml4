@@ -203,7 +203,10 @@ VERNAC COMMAND EXTEND NewFunctionalScheme
 	match fas with 
 	  | (_,fun_name,_)::_ -> 
 	      begin
-		make_graph (Nametab.global fun_name);
+		begin
+		    make_graph (Nametab.global fun_name)
+		end
+		;
 		try Functional_principles_types.build_scheme fas
 		with Functional_principles_types.No_graph_found -> 
 		  Util.error ("Cannot generate induction principle(s)")
