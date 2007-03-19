@@ -351,7 +351,7 @@ let rec find_type_of nb b =
 	  then raise (Invalid_argument "find_type_of : not a valid inductive");
 	  ind_type	   
 	end
-    | RCast(_,b,_,_) -> find_type_of nb b 
+    | RCast(_,b,_) -> find_type_of nb b 
     | RApp _ -> assert false (* we have decomposed any application via raw_decompose_app *)
     | _ -> raise (Invalid_argument "not a ref")
     
@@ -575,7 +575,7 @@ let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
 		let f_res = build_entry_lc env funnames args_res.to_avoid f in
 		combine_results combine_app f_res  args_res
 	    | RDynamic _ ->error "Not handled RDynamic" 
-	    | RCast(_,b,_,_) -> 
+	    | RCast(_,b,_) -> 
 		(* for an applied cast we just trash the cast part 
 		   and restart the work. 
 
@@ -685,7 +685,7 @@ let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
 
 	end
     | RRec _ -> error "Not handled RRec"
-    | RCast(_,b,_,_) -> 
+    | RCast(_,b,_) -> 
 	build_entry_lc env funnames  avoid b
     | RDynamic _ -> error "Not handled RDynamic"
 and build_entry_lc_from_case env funname make_discr

@@ -1,3 +1,11 @@
+Lemma equal_f : forall A B : Type, forall (f g : A -> B), 
+  f = g -> forall x, f x = g x.
+Proof.
+  intros.
+  rewrite H.
+  auto.
+Qed.
+
 Axiom fun_extensionality : forall A B (f g : A -> B), 
   (forall x, f x = g x) -> f = g.
 

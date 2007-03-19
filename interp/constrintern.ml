@@ -915,7 +915,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
         let p' = option_map (intern_type env'') po in
         RIf (loc, c', (na', p'), intern env b1, intern env b2)
     | CHole loc -> 
-	RHole (loc, Evd.QuestionMark)
+	RHole (loc, Evd.QuestionMark true)
     | CPatVar (loc, n) when allow_patvar ->
 	RPatVar (loc, n)
     | CPatVar (loc, _) ->
@@ -924,8 +924,10 @@ let internalise sigma globalenv env allow_patvar lvar c =
 	REvar (loc, n, None)
     | CSort (loc, s) ->
 	RSort(loc,s)
-    | CCast (loc, c1, k, c2) ->
-	RCast (loc,intern env c1,k,intern_type env c2)
+    | CCast (loc, c1, CastConv (k, c2)) ->
+	RCast (loc,intern env c1, CastConv (k, intern_type env c2))
+    | CCast (loc, c1, CastCoerce) ->
+	RCast (loc,intern env c1, CastCoerce)
 
     | CDynamic (loc,d) -> RDynamic (loc,d)
 

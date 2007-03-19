@@ -380,8 +380,7 @@ let rec detype (isgoal:bool) avoid env t =
 	  RVar (dl, id))
     | Sort s -> RSort (dl,detype_sort s)
     | Cast (c1,k,c2) ->
-	RCast(dl,detype isgoal avoid env c1, CastConv k,
-              detype isgoal avoid env c2)
+	RCast(dl,detype isgoal avoid env c1, CastConv (k, detype isgoal avoid env c2))
     | Prod (na,ty,c) -> detype_binder isgoal BProd avoid env na ty c
     | Lambda (na,ty,c) -> detype_binder isgoal BLambda avoid env na ty c
     | LetIn (na,b,_,c) -> detype_binder isgoal BLetIn avoid env na b c
@@ -633,14 +632,18 @@ let rec subst_rawconstr subst raw =
       let ref',_ = subst_global subst ref in 
 	if ref' == ref then raw else
 	  RHole (loc,InternalHole)
-  | RHole (loc, (BinderType _ | QuestionMark | CasesType |
+  | RHole (loc, (BinderType _ | QuestionMark _ | CasesType |
       InternalHole | TomatchTypeParameter _)) -> raw
 
-  | RCast (loc,r1,k,r2) -> 
-      let r1' = subst_rawconstr subst r1 and r2' = subst_rawconstr subst r2 in
-	if r1' == r1 && r2' == r2 then raw else
-	  RCast (loc,r1',k,r2')
-
+  | RCast (loc,r1,k) -> 
+      (match k with 
+	   CastConv (k,r2) ->
+	     let r1' = subst_rawconstr subst r1 and r2' = subst_rawconstr subst r2 in
+	       if r1' == r1 && r2' == r2 then raw else
+		 RCast (loc,r1', CastConv (k,r2'))
+	 | CastCoerce -> 
+	     let r1' = subst_rawconstr subst r1 in
+	       if r1' == r1 then raw else RCast (loc,r1',k))
   | RDynamic _ -> raw
 
 (* Utilities to transform kernel cases to simple pattern-matching problem *)

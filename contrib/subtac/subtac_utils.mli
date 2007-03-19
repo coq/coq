@@ -82,7 +82,7 @@ val wf_relations : (constr, constr lazy_t) Hashtbl.t
 type binders = local_binder list
 val app_opt : ('a -> 'a) option -> 'a -> 'a
 val print_args : env -> constr array -> std_ppcmds
-val make_existential : loc -> env -> evar_defs ref -> types -> constr
+val make_existential : loc -> ?opaque:bool -> env -> evar_defs ref -> types -> constr
 val make_existential_expr : loc -> 'a -> 'b -> constr_expr
 val string_of_hole_kind : hole_kind -> string
 val non_instanciated_map : env -> evar_defs ref -> evar_map

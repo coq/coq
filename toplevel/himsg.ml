@@ -329,7 +329,7 @@ let explain_occur_check env ev rhs =
   str" with term" ++ brk(1,1) ++ pt
 
 let explain_hole_kind env = function
-  | QuestionMark -> str "a term for this placeholder"
+  | QuestionMark _ -> str "a term for this placeholder"
   | CasesType ->
       str "the type of this pattern-matching problem"
   | BinderType (Name id) ->

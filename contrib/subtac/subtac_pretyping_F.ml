@@ -495,13 +495,13 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	  ((fun vtyc env -> pretype vtyc env isevars lvar),isevars)
 	  tycon env (* loc *) (po,tml,eqns)
 
-    | RCast(loc,c,k,t) ->
+    | RCast(loc,c,k) ->
 	let cj =
 	  match k with
 	      CastCoerce ->
 		let cj = pretype empty_tycon env isevars lvar c in
 		  evd_comb1 (Coercion.inh_coerce_to_base loc env) isevars cj
-	    | CastConv k ->
+	    | CastConv (k,t) ->
 		let tj = pretype_type empty_valcon env isevars lvar t in
 		let cj = pretype (mk_tycon tj.utj_val) env isevars lvar c in
 		  (* User Casts are for helping pretyping, experimentally not to be kept*)

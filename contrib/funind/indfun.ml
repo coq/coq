@@ -209,7 +209,7 @@ let rec is_rec names =
   let rec lookup names = function 
     | RVar(_,id) -> check_id id names
     | RRef _ | REvar _ | RPatVar _ | RSort _ |  RHole _ | RDynamic _ -> false
-    | RCast(_,b,_,_) -> lookup names b
+    | RCast(_,b,_) -> lookup names b
     | RRec _ -> error "RRec not handled"
     | RIf(_,b,_,lhs,rhs) -> 
 	(lookup names b) || (lookup names lhs) || (lookup names rhs)
@@ -611,8 +611,10 @@ let rec add_args id new_args b =
   | CPatVar _ -> b
   | CEvar _ -> b
   | CSort _ -> b
-  | CCast(loc,b1,ck,b2)  -> 
-      CCast(loc,add_args id new_args b1,ck,add_args id new_args b2)
+  | CCast(loc,b1,CastConv(ck,b2))  -> 
+      CCast(loc,add_args id new_args b1,CastConv(ck,add_args id new_args b2))
+  | CCast(loc,b1,CastCoerce) ->
+      CCast(loc,add_args id new_args b1,CastCoerce)
   | CNotation _ -> anomaly "add_args : CNotation"
   | CPrim _ -> b
   | CDelimiters _ -> anomaly "add_args : CDelimiters"

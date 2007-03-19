@@ -65,7 +65,8 @@ let subst_evar_constr evs n t =
 	     and we must not apply to defined ones (i.e. LetIn's)
 	  *)
 	let args = 
-	  let (l, r) = list_split_at chop (List.rev (Array.to_list args)) in
+	  let n = match chop with None -> 0 | Some c -> c in 
+	  let (l, r) = list_split_at n (List.rev (Array.to_list args)) in
 	    List.rev r
 	in
 	let args =
@@ -144,14 +145,16 @@ let rec chop_product n t =
       | Prod (_, _, b) ->  if noccurn 1 b then chop_product (pred n) (Termops.pop b) else None
       | _ -> None
 
-let eterm_obligations name nclen evm fs t tycon = 
+let eterm_obligations name nclen isevars evm fs t tycon = 
   (* 'Serialize' the evars, we assume that the types of the existentials
      refer to previous existentials in the list only *)
   let evl = List.rev (to_list evm) in
   let evn = 
     let i = ref (-1) in
       List.rev_map (fun (id, ev) -> incr i; 
-		  (id, (!i, id_of_string (string_of_id name ^ "_obligation_" ^ string_of_int (succ !i))), ev)) evl
+		      (id, (!i, id_of_string
+			      (string_of_id name ^ "_obligation_" ^ string_of_int (succ !i))),
+		       ev)) evl
   in
   let evts = 
     (* Remove existential variables in types and build the corresponding products *)
@@ -171,7 +174,10 @@ let eterm_obligations name nclen evm fs t tycon =
 		 t, trunc_named_context fs hyps, fs
 	     | None -> evtyp, hyps, 0
 	 in
-	 let y' = (id, ((n, nstr), hyps, chop, evtyp, deps)) in
+	 let loc, k = evar_source id isevars in
+	 let opacity = match k with QuestionMark o -> o | _ -> true in
+	 let opaque = if not opacity || chop <> fs then None else Some chop in
+	 let y' = (id, ((n, nstr), hyps, opaque, evtyp, deps)) in
 	   y' :: l) 
       evn []
   in 
@@ -179,7 +185,7 @@ let eterm_obligations name nclen evm fs t tycon =
     subst_evar_constr evts 0 t 
   in
   let evars = 
-    List.map (fun (_, ((_, name), _, chop, typ, deps)) -> name, typ, chop = fs, deps) evts
+    List.map (fun (_, ((_, name), _, opaque, typ, deps)) -> name, typ, not (opaque = None), deps) evts
   in
     (try
        trace (str "Term given to eterm" ++ spc () ++

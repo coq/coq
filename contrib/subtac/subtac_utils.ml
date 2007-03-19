@@ -152,8 +152,8 @@ let app_opt c e =
 let print_args env args = 
   Array.fold_right (fun a acc -> my_print_constr env a ++ spc () ++ acc) args (str "")
 
-let make_existential loc env isevars c =
-  let evar = Evarutil.e_new_evar isevars env ~src:(loc, QuestionMark) c in
+let make_existential loc ?(opaque = true) env isevars c =
+  let evar = Evarutil.e_new_evar isevars env ~src:(loc, QuestionMark opaque) c in
   let (key, args) = destEvar evar in
     (try trace (str "Constructed evar " ++ int key ++ str " applied to args: " ++
 		  print_args env args ++ str " for type: "++ 
@@ -169,7 +169,7 @@ let make_existential_expr loc env c =
 let string_of_hole_kind = function
   | ImplicitArg _ -> "ImplicitArg"
   | BinderType _ -> "BinderType"
-  | QuestionMark -> "QuestionMark"
+  | QuestionMark _ -> "QuestionMark"
   | CasesType -> "CasesType"
   | InternalHole -> "InternalHole"
   | TomatchTypeParameter _ -> "TomatchTypeParameter"
@@ -182,7 +182,7 @@ let non_instanciated_map env evd =
 	   debug 2 (str "evar " ++ int key ++ str " has kind " ++ 
 		      str (string_of_hole_kind k));
 	   match k with 
-	       QuestionMark -> Evd.add evm key evi
+	       QuestionMark _ -> Evd.add evm key evi
 	     | _ ->
 	       debug 2 (str " and is an implicit");
 	       Pretype_errors.error_unsolvable_implicit loc env evm k)

@@ -28,7 +28,7 @@ let _ = List.iter (fun s -> Lexer.add_token("",s)) constr_kw
 
 let mk_cast = function
     (c,(_,None)) -> c
-  | (c,(_,Some ty)) -> CCast(join_loc (constr_loc c) (constr_loc ty), c, CastConv DEFAULTcast, ty)
+  | (c,(_,Some ty)) -> CCast(join_loc (constr_loc c) (constr_loc ty), c, CastConv (DEFAULTcast, ty))
 
 let mk_lam = function
     ([],c) -> c
@@ -138,13 +138,15 @@ GEXTEND Gram
       [ c = binder_constr -> c ]
     | "100" RIGHTA
       [ c1 = operconstr; "<:"; c2 = binder_constr -> 
-                 CCast(loc,c1, CastConv VMcast,c2)
+                 CCast(loc,c1, CastConv (VMcast,c2))
       | c1 = operconstr; "<:"; c2 = SELF -> 
-                 CCast(loc,c1, CastConv VMcast,c2)
+                 CCast(loc,c1, CastConv (VMcast,c2))
       | c1 = operconstr; ":";c2 = binder_constr -> 
-                 CCast(loc,c1, CastConv DEFAULTcast,c2)
+                 CCast(loc,c1, CastConv (DEFAULTcast,c2))
       | c1 = operconstr; ":"; c2 = SELF -> 
-                 CCast(loc,c1, CastConv DEFAULTcast,c2) ]
+                 CCast(loc,c1, CastConv (DEFAULTcast,c2)) 
+      | c1 = operconstr; ":>" ->
+                 CCast(loc,c1, CastCoerce) ]
     | "99" RIGHTA [ ]
     | "90" RIGHTA
       [ c1 = operconstr; "->"; c2 = binder_constr -> CArrow(loc,c1,c2)
@@ -317,7 +319,7 @@ GEXTEND Gram
       | "("; id=name; ":="; c=lconstr; ")" ->
           LocalRawDef (id,c)
       | "("; id=name; ":"; t=lconstr; ":="; c=lconstr; ")" -> 
-          LocalRawDef (id,CCast (join_loc (constr_loc t) loc,c, CastConv DEFAULTcast,t))
+          LocalRawDef (id,CCast (join_loc (constr_loc t) loc,c, CastConv (DEFAULTcast,t)))
     ] ]
   ;
   binder:

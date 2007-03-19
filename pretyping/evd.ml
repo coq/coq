@@ -366,7 +366,7 @@ let metamap_to_list m =
 type hole_kind =
   | ImplicitArg of global_reference * (int * identifier option)
   | BinderType of name
-  | QuestionMark
+  | QuestionMark of bool
   | CasesType
   | InternalHole
   | TomatchTypeParameter of inductive * int

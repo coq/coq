@@ -1762,7 +1762,7 @@ let constrs_of_pats typing_fun tycon env isevars eqns tomatchs sign neqs arity =
 	       | l -> RApp (dummy_loc, bref, l)
 	 in
 	 let branch = match ineqs with
-	     Some _ -> RApp (dummy_loc, branch, [ RHole (dummy_loc, Evd.QuestionMark) ])
+	     Some _ -> RApp (dummy_loc, branch, [ RHole (dummy_loc, Evd.QuestionMark true) ])
 	   | None -> branch
 	 in
 	   (* 	 let branch =  *)

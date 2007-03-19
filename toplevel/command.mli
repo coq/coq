@@ -36,6 +36,9 @@ val declare_definition : identifier -> definition_kind ->
 
 val syntax_definition : identifier -> constr_expr -> bool -> bool -> unit
 
+val declare_one_assumption : coercion_flag -> assumption_kind -> Term.types -> 
+  Names.variable located -> unit
+
 val declare_assumption : identifier located list ->
   coercion_flag -> assumption_kind -> local_binder list -> constr_expr -> unit
 

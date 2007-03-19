@@ -145,9 +145,27 @@ let print_subgoals () = Options.if_verbose (fun () -> msg (Printer.pr_open_subgo
 let start_proof_and_print env isevars idopt k t hook =
   start_proof_com env isevars idopt k t hook;
   print_subgoals ()
-  (*if !pcoq <> None then (out_some !pcoq).start_proof ()*)
+(*     if !pcoq <> None then (out_some !pcoq).start_proof () *)
 
 let _ = Detyping.set_detype_anonymous (fun loc n -> RVar (loc, id_of_string ("Anonymous_REL_" ^ string_of_int n)))
+
+
+let assumption_message id =
+  Options.if_verbose message ((string_of_id id) ^ " is assumed")
+
+let declare_assumption env isevars idl is_coe k bl c =
+  if not (Pfedit.refining ()) then 
+    let evm, c, typ = 
+      Subtac_pretyping.subtac_process env isevars (snd (List.hd idl)) [] (Command.generalize_constr_expr c bl) None 
+    in
+      List.iter (Command.declare_one_assumption is_coe k c) idl
+  else
+    errorlabstrm "Command.Assumption"
+	(str "Cannot declare an assumption while in proof editing mode.")
+
+let vernac_assumption env isevars kind l =
+  List.iter (fun (is_coe,(idl,c)) -> declare_assumption env isevars idl is_coe kind [] c) l
+
 
 let subtac (loc, command) =
   check_required_library ["Coq";"Init";"Datatypes"];
@@ -159,7 +177,7 @@ let subtac (loc, command) =
   let env = Global.env () in
   let isevars = ref (create_evar_defs Evd.empty) in
   try
-    match command with
+  match command with
 	VernacDefinition (defkind, (locid, id), expr, hook) -> 
 	    (match expr with
 		 ProveBody (bl, c) -> Subtac_pretyping.subtac_proof env isevars id bl c None
@@ -190,6 +208,8 @@ let subtac (loc, command) =
 	  start_proof_and_print env isevars (Some id) (Global, Proof thkind) (bl,t) hook
 
 
+      | VernacAssumption (stre,l) -> 
+	  vernac_assumption env isevars stre l
 
       (*| VernacEndProof e -> 
 	  subtac_end_proof e*)

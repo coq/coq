@@ -18,7 +18,7 @@ let mkRLetIn(n,t,b) = RLetIn(dummy_loc,n,t,b)
 let mkRCases(rto,l,brl) = RCases(dummy_loc,rto,l,brl)
 let mkRSort s = RSort(dummy_loc,s)
 let mkRHole () = RHole(dummy_loc,Evd.BinderType Anonymous)
-let mkRCast(b,t) = RCast(dummy_loc,b,CastCoerce,t)
+let mkRCast(b,t) = RCast(dummy_loc,b,CastConv (Term.DEFAULTcast,t))
 
 (*
   Some basic functions to decompose rawconstrs
@@ -177,8 +177,10 @@ let change_vars =
       | RRec _ -> error "Local (co)fixes are not supported"
       | RSort _ -> rt 
       | RHole _ -> rt 
-      | RCast(loc,b,k,t) -> 
-	  RCast(loc,change_vars mapping b,k,change_vars mapping t)
+      | RCast(loc,b,CastConv (k,t)) -> 
+	  RCast(loc,change_vars mapping b, CastConv (k,change_vars mapping t))
+      | RCast(loc,b,CastCoerce) -> 
+	  RCast(loc,change_vars mapping b,CastCoerce)
       | RDynamic _ -> error "Not handled RDynamic"
   and change_vars_br mapping ((loc,idl,patl,res) as br) = 
     let new_mapping = List.fold_right Idmap.remove idl mapping in 
@@ -356,8 +358,10 @@ let rec alpha_rt excluded rt =
     | RRec _ -> error "Not handled RRec"
     | RSort _ -> rt 
     | RHole _ -> rt 
-    | RCast (loc,b,k,t) -> 
-	RCast(loc,alpha_rt excluded b,k,alpha_rt excluded t)
+    | RCast (loc,b,CastConv (k,t)) -> 
+	RCast(loc,alpha_rt excluded b,CastConv(k,alpha_rt excluded t))
+    | RCast (loc,b,CastCoerce) -> 
+	RCast(loc,alpha_rt excluded b,CastCoerce)
     | RDynamic _ -> error "Not handled RDynamic"
     | RApp(loc,f,args) -> 
 	RApp(loc,
@@ -407,7 +411,8 @@ let is_free_in id =
     | RRec _ -> raise (UserError("",str "Not handled RRec"))
     | RSort _ -> false
     | RHole _ -> false
-    | RCast (_,b,_,t) -> is_free_in b || is_free_in t
+    | RCast (_,b,CastConv (_,t)) -> is_free_in b || is_free_in t
+    | RCast (_,b,CastCoerce) -> is_free_in b
     | RDynamic _ -> raise (UserError("",str "Not handled RDynamic"))
   and is_free_in_br (_,ids,_,rt) =
     (not (List.mem id ids)) && is_free_in rt
@@ -501,8 +506,10 @@ let replace_var_by_term x_id term =
       | RRec _ -> raise (UserError("",str "Not handled RRec"))
       | RSort _ -> rt 
       | RHole _ -> rt 
-      | RCast(loc,b,k,t) -> 
-	  RCast(loc,replace_var_by_pattern b,k,replace_var_by_pattern t)
+      | RCast(loc,b,CastConv(k,t)) -> 
+	  RCast(loc,replace_var_by_pattern b,CastConv(k,replace_var_by_pattern t))
+      | RCast(loc,b,CastCoerce) -> 
+	  RCast(loc,replace_var_by_pattern b,CastCoerce)
       | RDynamic _ -> raise (UserError("",str "Not handled RDynamic"))
   and replace_var_by_pattern_br ((loc,idl,patl,res) as br) = 
     if List.exists (fun id -> id_ord id x_id == 0) idl 
@@ -586,7 +593,8 @@ let ids_of_rawterm c =
       | RLambda (loc,na,ty,c) -> idof na :: ids_of_rawterm [] ty @ ids_of_rawterm [] c @ acc
       | RProd (loc,na,ty,c) -> idof na :: ids_of_rawterm [] ty @ ids_of_rawterm [] c @ acc
       | RLetIn (loc,na,b,c) -> idof na :: ids_of_rawterm [] b @ ids_of_rawterm [] c @ acc
-      | RCast (loc,c,k,t) -> ids_of_rawterm [] c @ ids_of_rawterm [] t @ acc
+      | RCast (loc,c,CastConv(k,t)) -> ids_of_rawterm [] c @ ids_of_rawterm [] t @ acc
+      | RCast (loc,c,CastCoerce) -> ids_of_rawterm [] c @ acc
       | RIf (loc,c,(na,po),b1,b2) -> ids_of_rawterm [] c @ ids_of_rawterm [] b1 @ ids_of_rawterm [] b2 @ acc
       | RLetTuple (_,nal,(na,po),b,c) -> 
           List.map idof nal @ ids_of_rawterm [] b @ ids_of_rawterm [] c @ acc
@@ -651,8 +659,10 @@ let zeta_normalize =
       | RRec _ -> raise (UserError("",str "Not handled RRec"))
       | RSort _ -> rt 
       | RHole _ -> rt 
-      | RCast(loc,b,k,t) -> 
-	  RCast(loc,zeta_normalize_term b,k,zeta_normalize_term t)
+      | RCast(loc,b,CastConv(k,t)) -> 
+	  RCast(loc,zeta_normalize_term b,CastConv(k,zeta_normalize_term t))
+      | RCast(loc,b,CastCoerce) -> 
+	  RCast(loc,zeta_normalize_term b,CastCoerce)
       | RDynamic _ -> raise (UserError("",str "Not handled RDynamic"))
   and zeta_normalize_br (loc,idl,patl,res) = 
     (loc,idl,patl,zeta_normalize_term res)
@@ -692,7 +702,8 @@ let expand_as =
 	      expand_as map br1, expand_as map br2)
       | RRec _ ->  error "Not handled RRec"
       | RDynamic _ -> error "Not handled RDynamic"
-      | RCast(loc,b,kind,t) -> RCast(loc,expand_as map b,kind,expand_as map t)
+      | RCast(loc,b,CastConv(kind,t)) -> RCast(loc,expand_as map b,CastConv(kind,expand_as map t))
+      | RCast(loc,b,CastCoerce) -> RCast(loc,expand_as map b,CastCoerce)
       | RCases(loc,po,el,brl) ->
 	  RCases(loc, option_map (expand_as map) po, List.map (fun (rt,t) -> expand_as map rt,t) el,
 		List.map (expand_as_br map) brl)

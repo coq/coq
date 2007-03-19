@@ -204,7 +204,7 @@ GEXTEND Gram
   def_body:
     [ [ bl = LIST0 binder_let; ":="; red = reduce; c = lconstr ->
       (match c with
-          CCast(_,c,k,t) -> DefineBody (bl, red, c, Some t)
+          CCast(_,c, Rawterm.CastConv (k,t)) -> DefineBody (bl, red, c, Some t)
         | _ -> DefineBody (bl, red, c, None))
       | bl = LIST0 binder_let; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
           DefineBody (bl, red, c, Some t)
@@ -306,7 +306,7 @@ GEXTEND Gram
              t = lconstr; ":="; b = lconstr -> (oc,DefExpr (id,b,Some t))
       | id = name; ":="; b = lconstr ->
          match b with
-             CCast(_,b,_,t) -> (false,DefExpr(id,b,Some t))
+             CCast(_,b, Rawterm.CastConv (_, t)) -> (false,DefExpr(id,b,Some t))
            | _ -> (false,DefExpr(id,b,None)) ] ]
   ;
   assum_list:

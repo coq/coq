@@ -111,7 +111,7 @@ let constant_entry_of_com (bl,com,comtypopt,opacity,boxed) =
     | Some comtyp ->
 	(* We use a cast to avoid troubles with evars in comtyp *)
 	(* that can only be resolved knowing com *)
-	let b = abstract_constr_expr (mkCastC (com, Rawterm.CastConv DEFAULTcast,comtyp)) bl in
+	let b = abstract_constr_expr (mkCastC (com, Rawterm.CastConv (DEFAULTcast,comtyp))) bl in
 	let (body,typ) = destSubCast (interp_constr sigma env b) in
 	{ const_entry_body = body;
 	  const_entry_type = Some typ;
