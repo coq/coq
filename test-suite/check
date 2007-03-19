@@ -108,23 +108,29 @@ test_interactive() {
 # with exactly two digits after the dot
 test_complexity() {
     if [ -f /proc/cpuinfo ]; then
-        bogomips=`sed -n -e "s/bogomips.*: \([0-9]*\).*/\1/p" /proc/cpuinfo | head -1`
-    else
-        bogomips=6120 # assume a i386 3Gz
+	if grep -q bogomips /proc/cpuinfo; then # i386, ppc
+	    bogomips=`sed -n -e "s/bogomips.*: \([0-9]*\).*/\1/p" /proc/cpuinfo | head -1`
+	elif grep -q Cpu0Bogo /proc/cpuinfo; then # sparc
+	    bogomips=`sed -n -e "s/Cpu0Bogo.*: \([0-9]*\).*/\1/p" /proc/cpuinfo | head -1`
+	elif grep -q BogoMIPS /proc/cpuinfo; then # alpha
+	    bogomips=`sed -n -e "s/BogoMIPS.*: \([0-9]*\).*/\1/p" /proc/cpuinfo | head -1`
+	fi
     fi
-    for f in $1/*.v; do 
-	nbtests=`expr $nbtests + 1`
-	printf "    "$f"..."
-        # compute effective user time (get X seconds, or XX ds, or XXX cs)
-	res=`$command $f 2>&1 | sed -n -e "s/Finished transaction in .*(\([0-9]\)\.\([0-9]*\)u.*)/\1\2/p" | head -1`
-	if [ $? != 0 ]; then
- 	    echo "Error! (should be accepted)"
+    if [ "$bogomips" = "" ]; then
+	echo "    cannot run complexity tests (no bogomips found)"
+    else
+      for f in $1/*.v; do 
+        nbtests=`expr $nbtests + 1`
+        printf "    "$f"..."
+        # extract effective user time
+        res=`$command $f 2>&1 | sed -n -e "s/Finished transaction in .*(\([0-9]*\.[0-9]*\)u.*)/\1/p" | head -1`
+        if [ $? != 0 ]; then
+	  echo "Error! (should be accepted)"
+        elif [ "$res" = "" ]; then
+          echo "Error! (couldn't find a time measure)"
         else
-          # express effective time in cenths of seconds
-	  n=`echo -n $res | wc -c`
-	  if [ $n = 2 ]; then res="$res"0;
-	  else if [ $n = 1 ]; then res="$res"00; fi
-	  fi
+          # express effective time in centiseconds
+          res=`echo "$res"00 | sed -n -e "s/\([0-9]*\)\.\([0-9][0-9]\).*/\1\2/p"`
           # find expected time * 100
           exp=`sed -n -e "s/(\*.*Expected time < \([0-9]\).\([0-9][0-9]\)s.*\*)/\1\2/p" $f`
           ok=`expr \( $res \* $bogomips \) "<" \( $exp \* 6120 \)`
@@ -135,7 +141,8 @@ test_complexity() {
               echo "Error! (should run faster)"
           fi
         fi
-    done
+      done
+    fi
 }
 
 # Programme principal
