@@ -25,6 +25,16 @@ let (proof_view:GText.view option ref) = ref None
   
 let (_notebook:GPack.notebook option ref) = ref None
 let notebook () = out_some !_notebook
+
+let update_notebook_pos () =
+  let pos =
+    match !current.vertical_tabs, !current.opposite_tabs with
+      | false, false -> `TOP
+      | false, true  -> `BOTTOM
+      | true , false -> `LEFT
+      | true , true  -> `RIGHT
+  in
+  (notebook ())#set_tab_pos pos
   
 (* Tabs contain the name of the edited file and 2 status informations: 
    Saved state + Focused proof buffer *)
@@ -2453,7 +2463,7 @@ let main files =
 
 				let _ =
 				  edit_f#add_item "_Preferences"
-				    ~callback:(fun () -> configure ();reset_revert_timer ())
+				    ~callback:(fun () -> configure ~apply:update_notebook_pos (); reset_revert_timer ())
 				in
 				  (*
 				    let save_prefs_m =
@@ -3051,6 +3061,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					    _notebook := Some (GPack.notebook ~border_width:2 ~show_border:false ~scrollable:true 
 								 ~packing:fr_notebook#add
 								 ());
+                                            update_notebook_pos ();
 					    let nb = notebook () in
 					    let hb2 = GPack.paned `VERTICAL ~packing:hb#add2 () in
 					    let fr_a = GBin.frame ~shadow_type:`IN ~packing:hb2#add () in
