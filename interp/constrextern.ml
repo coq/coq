@@ -830,7 +830,7 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
 	let (t,args) = match t,n with
 	  | RApp (_,f,args), Some n when List.length args > n ->
 	      let args1, args2 = list_chop n args in
-	      RApp (dummy_loc,f,args1), args2
+	      (if n = 0 then f else RApp (dummy_loc,f,args1)), args2
 	  | _ -> t,[] in
 	(* Try matching ... *)
 	let subst = match_aconstr t pat in
