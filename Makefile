@@ -1101,6 +1101,8 @@ JPROVERVO=
 
 CCVO=
 
+DPVO=contrib/dp/Dp.vo
+
 SUBTACVO=contrib/subtac/SubtacTactics.vo contrib/subtac/Utils.vo contrib/subtac/FixSub.vo contrib/subtac/Subtac.vo \
 	contrib/subtac/FunctionalExtensionality.vo
 
@@ -1109,7 +1111,7 @@ RTAUTOVO = \
 
 CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
 	    $(FOURIERVO) $(JPROVERVO) $(CCVO) $(FUNINDVO) $(SUBTACVO) \
-	    $(RTAUTOVO) $(RECDEFVO) $(NEWRINGVO)
+	    $(RTAUTOVO) $(RECDEFVO) $(NEWRINGVO) $(DPVO)
 
 contrib: $(CONTRIBVO) $(CONTRIBCMO)
 omega: $(OMEGAVO) $(OMEGACMO) $(ROMEGAVO) $(ROMEGACMO)
