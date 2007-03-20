@@ -24,19 +24,37 @@ Ltac induction_with_subterms c c' H :=
 
 Ltac destruct_one_pair :=
  match goal with
-   | [H : (ex2 _) |- _] => destruct H
    | [H : (_ /\ _) |- _] => destruct H
    | [H : prod _ _ |- _] => destruct H
  end.
+
+Ltac destruct_pairs := repeat (destruct_one_pair).
 
 Ltac destruct_one_ex :=
   let tac H := let ph := fresh "H" in destruct H as [H ph] in
     match goal with
       | [H : (ex _) |- _] => tac H
       | [H : (sig ?P) |- _ ] => tac H
+      | [H : (ex2 _) |- _] => tac H
     end.
 
-Ltac destruct_exists := repeat (destruct_one_pair || destruct_one_ex).
+Ltac destruct_exists := repeat (destruct_one_ex).
+
+Ltac destruct_conjs := repeat (destruct_one_pair || destruct_one_ex).
+
+Ltac on_last_hyp tac := 
+  match goal with
+    [ H : _ |- _ ] => tac H
+  end.
+
+Tactic Notation "on_last_hyp" tactic(t) := on_last_hyp t.
+
+Ltac revert_last := 
+  match goal with
+    [ H : _ |- _ ] => revert H
+  end.
+
+Ltac reverse := repeat revert_last.
 
 Ltac on_call f tac :=
   match goal with

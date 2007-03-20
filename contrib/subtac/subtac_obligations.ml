@@ -373,9 +373,10 @@ let admit_obligations n =
     Array.mapi (fun i x -> 
 		 match x.obl_body with 
 		     None -> 
-			 let kn = Declare.declare_constant x.obl_name (ParameterEntry x.obl_type, IsAssumption Conjectural) in
-			   assumption_message x.obl_name;
-			   { x with obl_body = Some (mkConst kn) }
+                       let x = subst_deps_obl obls x in
+		       let kn = Declare.declare_constant x.obl_name (ParameterEntry x.obl_type, IsAssumption Conjectural) in
+			 assumption_message x.obl_name;
+			 { x with obl_body = Some (mkConst kn) }
 		   | Some _ -> x)
       obls
   in

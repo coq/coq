@@ -10,7 +10,7 @@ Notation "{ ( x , y )  :  A  |  P }" :=
 
 Notation " ! " := (False_rect _ _).
 
-Notation "` t" := (proj1_sig t) (at level 100) : core_scope.
+Notation " ` t " := (proj1_sig t) (at level 10) : core_scope.
 Notation "( x & ? )" := (@exist _ _ x _) : core_scope.
 
 (** Coerces objects before comparing them *)
@@ -29,7 +29,7 @@ Require Import Coq.Bool.Sumbool.
 Notation "'dec'" := (sumbool_of_bool) (at level 0). 
 
 (** Default simplification tactic. *)
-Ltac subtac_simpl := simpl ; intros ; destruct_exists ; simpl in * ; try subst ; 
+Ltac subtac_simpl := simpl ; intros ; destruct_conjs ; simpl in * ; try subst ; 
   try (solve [ red ; intros ; discriminate ]) ; auto with *.  
 
 (** Extraction directives *)
