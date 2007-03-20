@@ -53,3 +53,7 @@ VERNAC COMMAND EXTEND Dp_debug
 | [ "Dp_debug" ] -> [ set_debug true; Dp_zenon.set_debug true ]
 END
 
+VERNAC COMMAND EXTEND Dp_trace
+| [ "Dp_trace" ] -> [ set_trace true ]
+END
+

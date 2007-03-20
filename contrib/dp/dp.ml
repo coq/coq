@@ -29,6 +29,8 @@ open Dp_why
 
 let debug = ref false
 let set_debug b = debug := b
+let trace = ref false
+let set_trace b = trace := b
 let timeout = ref 10
 let set_timeout n = timeout := n
 
@@ -661,13 +663,20 @@ let call_simplify fwhy =
   r
 
 let call_ergo fwhy =
+  let ftrace = Filename.temp_file "ergo_trace" "" in
   let cmd = 
-    sprintf "timeout %d ergo %s > out 2>&1 && grep -q -w Valid out" 
-      !timeout fwhy
+    if !trace then
+      sprintf 
+	"timeout %d ergo -cctrace %s %s > out 2>&1 && grep -q -w Valid out"  
+	!timeout ftrace fwhy
+    else
+      sprintf "timeout %d ergo %s > out 2>&1 && grep -q -w Valid out" 
+	!timeout fwhy
   in
   let out = Sys.command cmd in
   let r = 
-    if out = 0 then Valid None else if out = 1 then Invalid else Timeout 
+    if out = 0 then Valid (if !trace then Some ftrace else None)
+    else if out = 1 then Invalid else Timeout 
   in
   if not !debug then remove_files [fwhy];
   r
@@ -746,6 +755,20 @@ let call_harvey fwhy =
   if not !debug then remove_files [fwhy; frv; outf];
   r
 
+let ergo_proof_from_file f gl =
+  let s =
+    let buf = Buffer.create 1024 in
+    let c = open_in f in
+    try
+      while true do Buffer.add_string buf (input_line c) done; assert false
+    with End_of_file ->
+      close_in c;
+      Buffer.contents buf
+  in
+  let parsed_constr = Pcoq.parse_string Pcoq.Constr.constr s in
+  let t = Constrintern.interp_constr (project gl) (pf_env gl) parsed_constr in
+  exact_check t gl
+
 let call_prover prover q =
   let fwhy = Filename.temp_file "coq_dp" ".why" in
   Dp_why.output_file fwhy q;
@@ -765,6 +788,7 @@ let dp prover gl =
     let q = tr_goal gl in
     begin match call_prover prover q with
       | Valid (Some f) when prover = Zenon -> Dp_zenon.proof_from_file f gl
+      | Valid (Some f) when prover = Ergo -> ergo_proof_from_file f gl
       | Valid _ -> Tactics.admit_as_an_axiom gl
       | Invalid -> error "Invalid"
       | DontKnow -> error "Don't know"
