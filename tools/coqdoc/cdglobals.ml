@@ -26,7 +26,6 @@ let out_to = ref MultFiles
 let out_channel = ref stdout
 
 let open_out_file f =
-  prerr_string f; prerr_newline();
   let f = if !output_dir <> "" && Filename.is_relative f then Filename.concat !output_dir f else f in
     out_channel := open_out f
 
