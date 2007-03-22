@@ -26,12 +26,13 @@ Inductive term : Set :=
   | TVar : nat -> term
   | TLet : term -> term -> term
   | TFun : term -> term
-  | TLetrec : term -> term -> term
+  | TFix : term -> term
   | TApply : term -> term -> term
   | TConstr : nat -> list term -> term
   | TMatch : term -> list pat -> term
 with pat : Set :=
-  | Patc : nat -> term -> pat.
+  | Patc : nat -> term -> pat
+.
 (** un programme Pml est un terme **)
 
 (**Semantique de Pml **)
@@ -47,16 +48,15 @@ Inductive value : Set:=
 (** predicat d'evaluation d'un terme dans un environnement : list de value**)
 
 Inductive Peval : list value -> term -> value -> Prop:=
+  | Peval_Dummy : forall e, Peval e TDummy VDummy
   | Peval_V : forall n e v,
                        nth_error e n = (Some v)-> Peval e (TVar n) v
-  | Peval_Fun : forall e t , Peval e (TFun t) (VClos e t)
+  | Peval_Fun : forall e t, Peval e (TFun t) (VClos e t)
+  | Peval_Fix : forall e t, Peval e (TFix t) (VClos_rec e t)
   | Peval_let : forall e t1 t2 v1 v ,
                            Peval e t1 v1 ->
                            Peval (v1::e)  t2 v ->
                            Peval e (TLet t1 t2) v
-  | Peval_letrec : forall e t1 t2 v,
-                           Peval ((VClos_rec e t1)::e) t2 v ->
-                           Peval e (TLetrec t1 t2) v
   | Peval_app : forall e e' t t1 t2 v v2,
                             Peval e t1 (VClos e' t) ->
                             Peval e t2 v2 ->
@@ -81,6 +81,11 @@ Peval_list : list value->list term-> list value ->Prop:=
    | Peval_cons : forall e t lt v lv , Peval e t v -> Peval_list e lt lv ->
                                           Peval_list e (t::lt) (v::lv)
 .
+
+Hint Resolve (* tout sauf Peval_app et Peval_appr *)
+  Peval_Dummy Peval_V Peval_Fun Peval_Fix
+  Peval_let Peval_constr Peval_match
+  Peval_nil Peval_cons.
 
 Scheme peval_term_ind6 := Minimality for Peval Sort Prop
  with peval_terml_ind6 := Minimality for Peval_list Sort Prop.

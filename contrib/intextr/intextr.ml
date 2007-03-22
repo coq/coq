@@ -43,7 +43,7 @@ let coq_TDummy = lazy (constant "TDummy")
 let coq_TVar = lazy (constant "TVar")
 let coq_TLet = lazy (constant "TLet")
 let coq_TFun = lazy (constant "TFun")
-let coq_TLetrec = lazy (constant "TLetrec")
+let coq_TFix = lazy (constant "TFix")
 let coq_TApply = lazy (constant "TApply")
 let coq_TMatch = lazy (constant "TMatch")
 let coq_TConstr = lazy (constant "TConstr")
@@ -66,7 +66,7 @@ type term =
   | TVar of int
   | TLet of term * term
   | TFun of term
-  | TLetrec of term * term
+  | TFix of term
   | TApply of term * term
   | TConstr of int * (term list)
   | TMatch of term * (pat list)
@@ -86,8 +86,8 @@ let rec mkTerm = function
       mkApp (Lazy.force coq_TLet, [| mkTerm a; mkTerm b |])
   | TFun a ->
       mkApp (Lazy.force coq_TFun, [| mkTerm a |])
-  | TLetrec (a, b) ->
-      mkApp (Lazy.force coq_TLetrec, [| mkTerm a; mkTerm b |])
+  | TFix a ->
+      mkApp (Lazy.force coq_TFix, [| mkTerm a |])
   | TApply (a, b) ->
       mkApp (Lazy.force coq_TApply, [| mkTerm a; mkTerm b |])
   | TConstr (i, la) ->
@@ -121,7 +121,7 @@ let rec discard env t =
   match kind_of_term t with
     | Prod (x, t, c) -> discard (push_rel (x, None, t) env) c
     | Sort _ -> true
-    | _ -> sort_of env t = InProp (* we take the non-normalized t (why?) *)
+    | _ -> sort_of env t = InProp
 
 (*s [add_lambda t n] adds [n] leading lambdas to [t]. *)
 
@@ -227,7 +227,7 @@ and extract_fix env i (_, _, ci as recd) =
   let body = match ei.(0) with
     | TFun(a) -> a
     | _ -> assert false (* a fixpoint is a function *)
-  in TLetrec (body, TVar 0)
+  in TFix body
 
 (*s Extraction of a constant in the global environment. *)
 
