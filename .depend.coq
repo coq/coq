@@ -386,3 +386,4 @@ contrib/setoid_ring/Field_theory.vo: contrib/setoid_ring/Field_theory.v contrib/
 contrib/setoid_ring/Field_tac.vo: contrib/setoid_ring/Field_tac.v contrib/setoid_ring/Ring_tac.vo contrib/setoid_ring/BinList.vo contrib/setoid_ring/Ring_polynom.vo contrib/setoid_ring/InitialRing.vo contrib/setoid_ring/Field_theory.vo
 contrib/setoid_ring/Field.vo: contrib/setoid_ring/Field.v contrib/setoid_ring/Field_theory.vo contrib/setoid_ring/Field_tac.vo
 contrib/setoid_ring/RealField.vo: contrib/setoid_ring/RealField.v theories/NArith/Nnat.vo contrib/setoid_ring/ArithRing.vo contrib/setoid_ring/Ring.vo contrib/setoid_ring/Field.vo theories/Reals/Rdefinitions.vo theories/Reals/Rpow_def.vo theories/Reals/Raxioms.vo
+contrib/dp/Dp.vo: contrib/dp/Dp.v theories/ZArith/ZArith.vo theories/Logic/Classical.vo

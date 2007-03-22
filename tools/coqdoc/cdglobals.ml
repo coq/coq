@@ -26,8 +26,14 @@ let out_to = ref MultFiles
 let out_channel = ref stdout
 
 let open_out_file f =
-  let f = if !output_dir <> "" then Filename.concat !output_dir f else f in
+  prerr_string f; prerr_newline();
+  let f = if !output_dir <> "" && Filename.is_relative f then Filename.concat !output_dir f else f in
     out_channel := open_out f
+
+let open_temp_out_file prefix suffix =
+  let tmp_fname, tmp_ochan = Filename.open_temp_file prefix suffix in
+    out_channel := tmp_ochan;
+    tmp_fname
 
 let close_out_file () = close_out !out_channel
 

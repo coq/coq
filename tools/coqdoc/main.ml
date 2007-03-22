@@ -449,9 +449,8 @@ let produce_output fl =
   if not (!dvi || !ps) then begin
     produce_document fl
   end else begin
-    let texfile = temp_file "coqdoc" ".tex" in
+    let texfile = open_temp_out_file "coqdoc" ".tex" in
     let basefile = chop_suffix texfile ".tex" in
-      open_out_file texfile;
       produce_document fl;
       let command = 
 	let file = basename texfile in
