@@ -49,7 +49,8 @@ let usage () =
   prerr_endline "  --tex <file>        consider <file> as a .tex file";
   prerr_endline "  -p <string>         insert <string> in LaTeX preamble";
   prerr_endline "  --files-from <file> read file names to process in <file>";
-  prerr_endline "  --quiet             quiet mode";
+  prerr_endline "  --quiet             quiet mode (default)";
+  prerr_endline "  --verbose           verbose mode";  
   prerr_endline "  --glob-from <file>  read Coq globalizations from file <file>";
   prerr_endline "  --no-externals      no links to Coq standard library";
   prerr_endline "  --coqlib <url>      set URL for Coq standard library";
@@ -214,7 +215,6 @@ let files_from_file f =
       
 (*s \textbf{Parsing of the command line.} *)
       
-let output_file = ref ""
 let dvi = ref false
 let ps = ref false
 
@@ -284,10 +284,12 @@ let parse () =
 	  
     | ("-q" | "-quiet" | "--quiet") :: rem ->
 	quiet := true; parse_rec rem
+    | ("-v" | "-verbose" | "--verbose") :: rem ->
+	quiet := false; parse_rec rem
 	  
     | ("-h" | "-help" | "-?" | "--help") :: rem ->
 	banner (); usage ()
-    | ("-v" | "-version" | "--version") :: _ ->
+    | ("-V" | "-version" | "--version") :: _ ->
 	banner (); exit 0
 
     | ("-vernac-file" | "--vernac-file") :: f :: rem -> 
@@ -449,8 +451,10 @@ let produce_output fl =
   if not (!dvi || !ps) then begin
     produce_document fl
   end else begin
-    let texfile = open_temp_out_file "coqdoc" ".tex" in
+    let texfile = Filename.temp_file "coqdoc" ".tex" in
     let basefile = chop_suffix texfile ".tex" in
+    let final_out_to = !out_to in
+      out_to := File texfile;
       produce_document fl;
       let command = 
 	let file = basename texfile in
@@ -466,16 +470,14 @@ let produce_output fl =
 	  clean_and_exit basefile res
 	end;
 	let dvifile = basefile ^ ".dvi" in
-	  if !dvi then begin
-	    if !output_file <> "" then 
-	      (* we cannot use Sys.rename accross file systems *)
-	      copy dvifile !output_file 
-	    else 
-	      cat dvifile
-	  end;
+	  if !dvi then 
+	    begin
+	      match final_out_to with
+		| MultFiles | StdOut -> cat dvifile
+		| File f -> copy dvifile f
+	    end;
 	  if !ps then begin
-	    let psfile = 
-	      if !output_file <> "" then !output_file else basefile ^ ".ps" 
+	    let psfile = basefile ^ ".ps" 
 	    in
 	    let command = 
 	      sprintf "dvips %s -o %s %s" dvifile psfile 
@@ -486,7 +488,9 @@ let produce_output fl =
 		eprintf "Couldn't run dvips successfully\n"; 
 		clean_and_exit basefile res
 	      end;
-	      if !output_file = "" then cat psfile
+	      match final_out_to with
+		| MultFiles | StdOut -> cat psfile
+		| File f -> copy psfile f
 	  end;
 	  clean_temp_files basefile
   end
