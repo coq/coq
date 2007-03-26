@@ -46,7 +46,7 @@ Ltac f_equal :=
       cut (d=d');[cut (c=c');[cut (b=b');[cut (a=a');[cg|r]|r]|r]|r]
    | |- ?f ?a ?b ?c ?d ?e= ?f' ?a' ?b' ?c' ?d' ?e'=> 
       cut (e=e');[cut (d=d');[cut (c=c');[cut (b=b');[cut (a=a');[cg|r]|r]|r]|r]|r]
-   | |- ?f ?a ?b ?c ?d ?e ?f= ?f' ?a' ?b' ?c' ?d' ?e' ?f' => 
+   | |- ?f ?a ?b ?c ?d ?e ?g= ?f' ?a' ?b' ?c' ?d' ?e' ?g' => 
       cut (f=f');[cut (e=e');[cut (d=d');[cut (c=c');[cut (b=b');[cut (a=a');[cg|r]|r]|r]|r]|r]|r]
    | _ => idtac
   end.
