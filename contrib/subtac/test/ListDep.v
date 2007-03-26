@@ -36,7 +36,7 @@ Section Map_DependentRecursor.
   Next Obligation.
     destruct_call map_rec.
     simpl in *.
-    subst x0.
+    subst l'.
     simpl ; auto with arith.
   Qed.
       
