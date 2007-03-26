@@ -16,6 +16,7 @@
 Require Import Bool.
 Require Import ZArith.
 Require Import OrderedType.
+Require Import OrderedTypeEx.
 Require Import FMapInterface.
 
 Set Implicit Arguments.
@@ -36,9 +37,12 @@ Open Scope positive_scope.
   usual order (see [OrderedTypeEx]), we use here a lexicographic order 
   over bits, which is more natural here (lower bits are considered first). *)
 
-Module PositiveOrderedTypeBits <: OrderedType.
+Module PositiveOrderedTypeBits <: UsualOrderedType.
   Definition t:=positive.
   Definition eq:=@eq positive.
+  Definition eq_refl := @refl_equal t.
+  Definition eq_sym := @sym_eq t.
+  Definition eq_trans := @trans_eq t.
 
   Fixpoint bits_lt (p q:positive) { struct p } : Prop := 
    match p, q with 
@@ -51,15 +55,6 @@ Module PositiveOrderedTypeBits <: OrderedType.
    end.
 
   Definition lt:=bits_lt.
-
-  Lemma eq_refl : forall x : t, eq x x.
-  Proof. red; auto. Qed.
-
-  Lemma eq_sym : forall x y : t, eq x y -> eq y x.
-  Proof. red; auto. Qed.
-
-  Lemma eq_trans : forall x y z : t, eq x y -> eq y z -> eq x z.
-  Proof. red; intros; transitivity y; auto. Qed.
 
   Lemma bits_lt_trans : forall x y z : positive, bits_lt x y -> bits_lt y z -> bits_lt x z.
   Proof.
