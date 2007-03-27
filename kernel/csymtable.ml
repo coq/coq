@@ -121,31 +121,36 @@ let rec slot_for_getglobal env kn =
     rk := Some pos;
     pos
 
-and slot_for_fv env fv=
+and slot_for_fv env fv =
   match fv with
   | FVnamed id -> 
-      let nv = lookup_named_val id env in
+      let nv = Pre_env.lookup_named_val id env in
       begin
 	match !nv with
-	| VKvalue v -> v
-	| VKaxiom id ->
-	    let v = val_of_named id in
-	    nv := VKvalue v; v
-	| VKdef c ->
-	    let v = val_of_constr (env_of_named id env) c in
-	    nv := VKvalue v; v
+	| VKvalue (v,_) -> v
+	| VKnone -> 
+	    let (_, b, _) = Sign.lookup_named id env.env_named_context in
+	    let v,d = 
+	      match b with
+		| None -> (val_of_named id, Idset.empty)
+		| Some c -> (val_of_constr env c, Environ.global_vars_set (Environ.env_of_pre_env env) c)
+	    in
+	      nv := VKvalue (v,d); v
       end
   | FVrel i ->
-      let rv = lookup_rel_val i env in
+      let rv = Pre_env.lookup_rel_val i env in
       begin
 	match !rv with
-	| VKvalue v -> v
-	| VKaxiom k ->
-	    let v = val_of_rel k in
-	    rv := VKvalue v; v
-	| VKdef c ->
-	    let v = val_of_constr (env_of_rel i env) c in
-	    rv := VKvalue v; v
+	| VKvalue (v, _) -> v
+	| VKnone -> 
+	    let (_, b, _) = Sign.lookup_rel i env.env_rel_context in
+	    let (v, d) =
+	      match b with 
+		| None -> (val_of_rel i, Idset.empty)
+		| Some c -> let renv =  env_of_rel i env in
+			      (val_of_constr renv c, Environ.global_vars_set (Environ.env_of_pre_env renv) c)
+	    in
+	      rv := VKvalue (v,d); v
       end
  
 and eval_to_patch env (buff,pl,fv) = 

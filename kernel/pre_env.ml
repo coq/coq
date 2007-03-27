@@ -33,25 +33,20 @@ type stratification = {
   env_engagement : engagement option
 }
 
-type 'a val_kind =   
-  | VKvalue of values
-  | VKaxiom of 'a
-  | VKdef of constr
+type val_kind = 
+    | VKvalue of values * Idset.t
+    | VKnone
 
-type 'a lazy_val = 'a val_kind ref
+type lazy_val = val_kind ref
 
-type rel_val = inv_rel_key lazy_val
-
-type named_val = identifier lazy_val
-
-type named_vals = (identifier * named_val) list
+type named_vals = (identifier * lazy_val) list
 
 type env = {
   env_globals       : globals;
   env_named_context : named_context;
   env_named_vals    : named_vals;
   env_rel_context   : rel_context;
-  env_rel_val       : rel_val list;
+  env_rel_val       : lazy_val list;
   env_nb_rel        : int;
   env_stratification : stratification }
 
@@ -78,18 +73,13 @@ let empty_env = {
 (* Rel context *)
 
 let nb_rel env = env.env_nb_rel
-
+  
 let push_rel d env =
-  let _,body,_ = d in
-  let rval =
-    match body with
-    | None -> ref (VKaxiom env.env_nb_rel)
-    | Some c -> ref (VKdef c)
-  in     
-  { env with
-    env_rel_context = add_rel_decl d env.env_rel_context;
-    env_rel_val = rval :: env.env_rel_val;
-    env_nb_rel = env.env_nb_rel + 1 }
+  let rval = ref VKnone in
+    { env with
+      env_rel_context = add_rel_decl d env.env_rel_context;
+      env_rel_val = rval :: env.env_rel_val;
+      env_nb_rel = env.env_nb_rel + 1 }
  
 let lookup_rel_val n env =
   try List.nth env.env_rel_val (n - 1)
@@ -101,16 +91,13 @@ let env_of_rel n env =
     env_rel_val = Util.list_skipn n env.env_rel_val;
     env_nb_rel = env.env_nb_rel - n
   }
-
+    
 (* Named context *)
 
 let push_named_context_val d (ctxt,vals) =
-  let id,body,_ = d in
-  let rval =
-    match body with
-    | None -> ref (VKaxiom id)
-    | Some c -> ref (VKdef c)
-  in Sign.add_named_decl d ctxt, (id,rval)::vals
+  let id,_,_ = d in
+  let rval = ref VKnone in
+    Sign.add_named_decl d ctxt, (id,rval)::vals
 
 exception ASSERT of Sign.rel_context
 
@@ -118,18 +105,14 @@ let push_named d env =
 (*  if not (env.env_rel_context = []) then raise (ASSERT env.env_rel_context);
   assert (env.env_rel_context = []); *)
   let id,body,_ = d in
-  let rval =
-    match body with
-    | None -> ref (VKaxiom id)
-    | Some c -> ref (VKdef c)
-  in
-  { env with  
-    env_named_context = Sign.add_named_decl d env.env_named_context;
-    env_named_vals =  (id,rval):: env.env_named_vals }
+  let rval = ref VKnone in
+    { env with  
+      env_named_context = Sign.add_named_decl d env.env_named_context;
+      env_named_vals =  (id,rval):: env.env_named_vals }
 
 let lookup_named_val id env =
-   snd(List.find (fun (id',_) -> id = id') env.env_named_vals)
-  
+  snd(List.find (fun (id',_) -> id = id') env.env_named_vals)
+    
 (* Warning all the names should be different *)
 let env_of_named id env = env
  

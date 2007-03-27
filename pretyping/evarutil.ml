@@ -16,6 +16,7 @@ open Univ
 open Term
 open Termops
 open Sign
+open Pre_env
 open Environ
 open Evd
 open Reductionops
@@ -367,7 +368,7 @@ and clear_hyps_in_evi evd evi ids =
   let nconcl = try check_and_clear_in_constr evd (evar_concl evi) ids 
     with Dependency_error id' -> error (string_of_id id' ^ " is used in conclusion") in
   let (nhyps,_) = 
-    let aux (id,ob,c) = 
+    let check_context (id,ob,c) = 
       try
 	(id,
 	(match ob with 
@@ -375,13 +376,24 @@ and clear_hyps_in_evi evd evi ids =
 	  | Some b -> Some (check_and_clear_in_constr evd b ids)),
 	check_and_clear_in_constr evd c ids)
       with Dependency_error id' -> error (string_of_id id' ^ " is used in hypothesis "
-					   ^ string_of_id id)
+					   ^ string_of_id id) 
     in
-      remove_hyps ids aux (evar_hyps evi)
+    let check_value vk =
+      match !vk with
+	| VKnone -> vk
+	| VKvalue (v,d) ->
+	    if (List.for_all (fun e -> not (Idset.mem e d)) ids) then
+	      (* v does depend on any of ids, it's ok *)
+	      vk
+	    else
+	      (* v depends on one of the cleared hyps: we forget the computed value *)
+	      ref VKnone
+    in
+      remove_hyps ids check_context check_value (evar_hyps evi)
   in    
     { evi with
-      evar_concl = nconcl;
-      evar_hyps  = nhyps}
+	evar_concl = nconcl;
+	evar_hyps  = nhyps}
       
 
 let need_restriction k args = not (array_for_all (closedn k) args)

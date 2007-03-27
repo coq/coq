@@ -15,7 +15,6 @@ open Univ
 open Term
 open Declarations
 open Pre_env
-open Csymtable
 
 (* The type of environments. *)
 
@@ -24,6 +23,7 @@ type named_context_val = Pre_env.named_context_val
 type env = Pre_env.env
 
 let pre_env env = env
+let env_of_pre_env env = env
 
 let empty_named_context_val = empty_named_context_val
 
@@ -359,14 +359,15 @@ let insert_after_hyp (ctxt,vals) id d check =
   in aux ctxt vals
 
 (* To be used in Logic.clear_hyps *)
-let remove_hyps ids check (ctxt, vals) =
+let remove_hyps ids check_context check_value (ctxt, vals) =
   let ctxt,vals,rmv = 
-    List.fold_right2 (fun (id,_,_ as d) v (ctxt,vals,rmv) ->
+    List.fold_right2 (fun (id,_,_ as d) (id',v) (ctxt,vals,rmv) ->
       if List.mem id ids then 
 	(ctxt,vals,id::rmv)
       else 	  
-	let nd = check d in
-	  (nd::ctxt,v::vals,rmv))
+	let nd = check_context d in
+	let nv = check_value v in
+	  (nd::ctxt,(id',nv)::vals,rmv))
 		     ctxt vals ([],[],[])
   in ((ctxt,vals),rmv)
 

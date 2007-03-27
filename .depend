@@ -741,12 +741,14 @@ kernel/cooking.cmx: lib/util.cmx kernel/typeops.cmx kernel/term.cmx \
     kernel/sign.cmx kernel/reduction.cmx lib/pp.cmx kernel/names.cmx \
     kernel/environ.cmx kernel/declarations.cmx kernel/cemitcodes.cmx \
     kernel/cooking.cmi 
-kernel/csymtable.cmo: kernel/vm.cmi kernel/term.cmi kernel/pre_env.cmi \
-    kernel/names.cmi kernel/declarations.cmi kernel/cemitcodes.cmi \
-    kernel/cbytegen.cmi kernel/cbytecodes.cmi kernel/csymtable.cmi 
-kernel/csymtable.cmx: kernel/vm.cmx kernel/term.cmx kernel/pre_env.cmx \
-    kernel/names.cmx kernel/declarations.cmx kernel/cemitcodes.cmx \
-    kernel/cbytegen.cmx kernel/cbytecodes.cmx kernel/csymtable.cmi 
+kernel/csymtable.cmo: kernel/vm.cmi kernel/term.cmi kernel/sign.cmi \
+    kernel/pre_env.cmi kernel/names.cmi kernel/environ.cmi \
+    kernel/declarations.cmi kernel/cemitcodes.cmi kernel/cbytegen.cmi \
+    kernel/cbytecodes.cmi kernel/csymtable.cmi 
+kernel/csymtable.cmx: kernel/vm.cmx kernel/term.cmx kernel/sign.cmx \
+    kernel/pre_env.cmx kernel/names.cmx kernel/environ.cmx \
+    kernel/declarations.cmx kernel/cemitcodes.cmx kernel/cbytegen.cmx \
+    kernel/cbytecodes.cmx kernel/csymtable.cmi 
 kernel/declarations.cmo: lib/util.cmi kernel/univ.cmi kernel/term.cmi \
     kernel/sign.cmi lib/rtree.cmi kernel/names.cmi kernel/mod_subst.cmi \
     kernel/cemitcodes.cmi kernel/cbytecodes.cmi kernel/declarations.cmi 
@@ -759,12 +761,10 @@ kernel/entries.cmx: kernel/univ.cmx kernel/term.cmx kernel/sign.cmx \
     kernel/names.cmx kernel/entries.cmi 
 kernel/environ.cmo: lib/util.cmi kernel/univ.cmi kernel/term.cmi \
     kernel/sign.cmi kernel/pre_env.cmi kernel/names.cmi \
-    kernel/declarations.cmi kernel/csymtable.cmi kernel/cbytegen.cmi \
-    kernel/environ.cmi 
+    kernel/declarations.cmi kernel/cbytegen.cmi kernel/environ.cmi 
 kernel/environ.cmx: lib/util.cmx kernel/univ.cmx kernel/term.cmx \
     kernel/sign.cmx kernel/pre_env.cmx kernel/names.cmx \
-    kernel/declarations.cmx kernel/csymtable.cmx kernel/cbytegen.cmx \
-    kernel/environ.cmi 
+    kernel/declarations.cmx kernel/cbytegen.cmx kernel/environ.cmi 
 kernel/esubst.cmo: lib/util.cmi kernel/esubst.cmi 
 kernel/esubst.cmx: lib/util.cmx kernel/esubst.cmi 
 kernel/indtypes.cmo: lib/util.cmi kernel/univ.cmi kernel/typeops.cmi \

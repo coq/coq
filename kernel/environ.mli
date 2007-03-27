@@ -35,6 +35,7 @@ open Sign
 
 type env
 val pre_env : env -> Pre_env.env
+val env_of_pre_env : Pre_env.env -> env
 
 type named_context_val
 val eq_named_context_val : named_context_val -> named_context_val -> bool
@@ -216,5 +217,5 @@ val insert_after_hyp : named_context_val -> variable ->
   named_declaration -> 
     (named_context -> unit) -> named_context_val
 
-val remove_hyps : identifier list -> (named_declaration -> named_declaration) -> named_context_val -> named_context_val * identifier list
+val remove_hyps : identifier list -> (named_declaration -> named_declaration) -> (Pre_env.lazy_val -> Pre_env.lazy_val) -> named_context_val -> named_context_val * identifier list
 
