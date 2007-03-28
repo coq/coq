@@ -85,7 +85,8 @@ val print_args : env -> constr array -> std_ppcmds
 val make_existential : loc -> ?opaque:bool -> env -> evar_defs ref -> types -> constr
 val make_existential_expr : loc -> 'a -> 'b -> constr_expr
 val string_of_hole_kind : hole_kind -> string
-val non_instanciated_map : env -> evar_defs ref -> evar_map
+val evars_of_term : evar_map -> evar_map -> constr -> evar_map
+val non_instanciated_map : env -> evar_defs ref -> evar_map -> evar_map
 val global_kind : logical_kind
 val goal_kind : locality_flag * goal_object_kind
 val global_proof_kind : logical_kind

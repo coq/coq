@@ -1087,6 +1087,8 @@ let intern_gen isarity sigma env
 
 let intern_constr sigma env c = intern_gen false sigma env c 
 
+let intern_type sigma env c = intern_gen true sigma env c 
+
 let intern_pattern env patt =
   try
     intern_cases_pattern env [] ([],[]) None patt 

@@ -307,7 +307,10 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
 (* 		     ++ str "Coq type: " ++ my_print_constr env fullctyp)  *)
 (*      with _ -> ()  *)
 (*   in *)
-  let evm = non_instanciated_map env isevars in
+  let evm = evars_of_term (Evd.evars_of !isevars) Evd.empty fullctyp in
+  let evm = evars_of_term (Evd.evars_of !isevars) evm fullcoqc in
+  let evm = non_instanciated_map env isevars evm in
+
     (*   let _ = try trace (str "Non instanciated evars map: " ++ Evd.pr_evar_map evm)  with _ -> () in *)
   let evars, evars_def = Eterm.eterm_obligations recname nc_len !isevars evm 0 fullcoqc (Some fullctyp) in
     (*     (try trace (str "Generated obligations : "); *)

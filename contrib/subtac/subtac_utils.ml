@@ -174,20 +174,28 @@ let string_of_hole_kind = function
   | InternalHole -> "InternalHole"
   | TomatchTypeParameter _ -> "TomatchTypeParameter"
       
-let non_instanciated_map env evd =
-  let evm = evars_of !evd in
-    List.fold_left 
-      (fun evm (key, evi) -> 
-	 let (loc,k) = evar_source key !evd in
-	   debug 2 (str "evar " ++ int key ++ str " has kind " ++ 
-		      str (string_of_hole_kind k));
-	   match k with 
-	       QuestionMark _ -> Evd.add evm key evi
-	     | _ ->
+let evars_of_term evc init c = 
+  let rec evrec acc c =
+    match kind_of_term c with
+    | Evar (n, _) when Evd.mem evc n -> Evd.add acc n (Evd.find evc n)
+    | Evar (n, _) -> assert(false)
+    | _ -> fold_constr evrec acc c
+  in 
+    evrec init c
+
+let non_instanciated_map env evd evm =
+  List.fold_left 
+    (fun evm (key, evi) -> 
+       let (loc,k) = evar_source key !evd in
+	 debug 2 (str "evar " ++ int key ++ str " has kind " ++ 
+		    str (string_of_hole_kind k));
+	 match k with 
+	     QuestionMark _ -> Evd.add evm key evi
+	   | _ ->
 	       debug 2 (str " and is an implicit");
 	       Pretype_errors.error_unsolvable_implicit loc env evm k)
-      Evd.empty (Evarutil.non_instantiated evm)
-
+    Evd.empty (Evarutil.non_instantiated evm)
+    
 let global_kind = Decl_kinds.IsDefinition Decl_kinds.Definition
 let goal_kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Definition
 

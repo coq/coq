@@ -57,6 +57,8 @@ val build_combined_scheme : identifier located -> identifier located list -> uni
 
 val generalize_constr_expr : constr_expr -> local_binder list -> constr_expr
 
+val abstract_constr_expr : constr_expr -> local_binder list -> constr_expr
+
 val start_proof : identifier -> goal_kind -> constr ->
   declaration_hook -> unit
 
