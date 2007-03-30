@@ -144,14 +144,14 @@ let general_multi_rewrite l2r c cl =
 		(do_hyps_atleastonce l)
 	in 
 	let do_hyps gl = 
-	  (* If the term to rewrite is an hypothesis, don't rewrite in itself *)
-	  let ids = match kind_of_term (fst c) with 
-	    | Var id -> list_remove id (pf_ids_of_hyps gl)
-	    | _ -> pf_ids_of_hyps gl
+	  (* If the term to rewrite uses an hypothesis H, don't rewrite in H *)
+	  let ids = 
+	    let ids_in_c = Environ.global_vars_set (Global.env()) (fst c) in
+	      Idset.fold (fun id l -> list_remove id l) ids_in_c (pf_ids_of_hyps gl)
 	  in do_hyps_atleastonce ids gl
 	in 
-	if not cl.onconcl then do_hyps 
-	else tclIFTHENTRYELSEMUST (general_rewrite_bindings l2r c) do_hyps
+	  if not cl.onconcl then do_hyps 
+	  else tclIFTHENTRYELSEMUST (general_rewrite_bindings l2r c) do_hyps
 
 (* Conditional rewriting, the success of a rewriting is related 
    to the resolution of the conditions by a given tactic *)
