@@ -472,6 +472,11 @@ Qed.
 
 (** Commutation of addition with the double of a positive number *)
 
+Lemma Pplus_xO : forall m n : positive, xO (m + n) = xO m + xO n.
+Proof.
+destruct n; destruct m; simpl; auto.
+Qed.
+
 Lemma Pplus_xI_double_minus_one :
  forall p q:positive, xO (p + q) = xI p + Pdouble_minus_one q.
 Proof.
@@ -611,6 +616,17 @@ intro x; induction x; simpl in |- *.
   reflexivity.
 Qed.
 
+(** Successor and multiplication *)
+
+Lemma Pmult_Sn_m : forall n m : positive, (Psucc n) * m = m + n * m.
+Proof.
+induction n as [n IH | n IH |]; simpl; intro m.
+rewrite IH; rewrite Pplus_assoc; rewrite Pplus_diag;
+rewrite <- Pplus_xO; reflexivity.
+reflexivity.
+symmetry; apply Pplus_diag.
+Qed.
+
 (** Right reduction properties for multiplication *)
 
 Lemma Pmult_xO_permute_r : forall p q:positive, p * xO q = xO (p * q).
@@ -726,6 +742,16 @@ Qed.
 (**********************************************************************)
 (** Properties of comparison on binary positive numbers *)
 
+Theorem Pcompare_refl : forall p:positive, (p ?= p) Eq = Eq.
+intro x; induction  x as [x Hrecx| x Hrecx| ]; auto.
+Qed.
+
+(* A generalization of Pcompare_refl *)
+
+Theorem Pcompare_refl_id : forall (p : positive) (r : comparison), (p ?= p) r = r.
+induction p; auto.
+Qed.
+
 Theorem Pcompare_not_Eq :
  forall p q:positive, (p ?= q) Gt <> Eq /\ (p ?= q) Lt <> Eq.
 Proof.
@@ -759,6 +785,14 @@ intro x; induction  x as [x Hrecx| x Hrecx| ]; intro y;
  auto; discriminate || intros H; discriminate H.
 Qed.
 
+Lemma Pcompare_eq_Lt :
+ forall p q : positive, (p ?= q) Eq = Lt <-> (p ?= q) Gt = Lt.
+Proof.
+intros p q; split; [| apply Pcompare_Gt_Lt].
+generalize q; clear q; induction p; induction q; simpl; auto.
+intro; discriminate.
+Qed.
+
 Lemma Pcompare_Lt_Gt :
  forall p q:positive, (p ?= q) Lt = Gt -> (p ?= q) Eq = Gt.
 Proof.
@@ -769,6 +803,14 @@ intro x; induction  x as [x Hrecx| x Hrecx| ]; intro y;
  auto; discriminate || intros H; discriminate H.
 Qed.
 
+Lemma Pcompare_eq_Gt :
+  forall p q : positive, (p ?= q) Eq = Gt <-> (p ?= q) Lt = Gt.
+Proof.
+intros p q; split; [| apply Pcompare_Lt_Gt].
+generalize q; clear q; induction p; induction q; simpl; auto.
+intro; discriminate.
+Qed.
+
 Lemma Pcompare_Lt_Lt :
  forall p q:positive, (p ?= q) Lt = Lt -> (p ?= q) Eq = Lt \/ p = q.
 Proof.
@@ -777,12 +819,32 @@ intro x; induction x as [p IHp| p IHp| ]; intro y; destruct y as [q| q| ];
  auto; intros E; rewrite E; auto.
 Qed.
 
+Lemma Pcompare_Lt_eq_Lt :
+ forall p q:positive, (p ?= q) Lt = Lt <-> (p ?= q) Eq = Lt \/ p = q.
+Proof.
+intros p q; split; [apply Pcompare_Lt_Lt |].
+intro H; destruct H as [H | H]; [ | rewrite H; apply Pcompare_refl_id].
+generalize q H. clear q H.
+induction p as [p' IH | p' IH |]; destruct q as [q' | q' |]; simpl; intro H;
+try (reflexivity || assumption || discriminate H); apply IH; assumption.
+Qed.
+
 Lemma Pcompare_Gt_Gt :
  forall p q:positive, (p ?= q) Gt = Gt -> (p ?= q) Eq = Gt \/ p = q.
 Proof.
 intro x; induction x as [p IHp| p IHp| ]; intro y; destruct y as [q| q| ];
  simpl in |- *; auto; try discriminate; intro H2; elim (IHp q H2); 
  auto; intros E; rewrite E; auto.
+Qed.
+
+Lemma Pcompare_Gt_eq_Gt :
+ forall p q:positive, (p ?= q) Gt = Gt <-> (p ?= q) Eq = Gt \/ p = q.
+Proof.
+intros p q; split; [apply Pcompare_Gt_Gt |].
+intro H; destruct H as [H | H]; [ | rewrite H; apply Pcompare_refl_id].
+generalize q H. clear q H.
+induction p as [p' IH | p' IH |]; destruct q as [q' | q' |]; simpl; intro H;
+try (reflexivity || assumption || discriminate H); apply IH; assumption.
 Qed.
 
 Lemma Dcompare : forall r:comparison, r = Eq \/ r = Lt \/ r = Gt.
@@ -794,10 +856,6 @@ Ltac ElimPcompare c1 c2 :=
   elim (Dcompare ((c1 ?= c2) Eq));
    [ idtac | let x := fresh "H" in
              (intro x; case x; clear x) ].
-
-Theorem Pcompare_refl : forall p:positive, (p ?= p) Eq = Eq.
-intro x; induction  x as [x Hrecx| x Hrecx| ]; auto.
-Qed.
 
 Lemma Pcompare_antisym :
  forall (p q:positive) (r:comparison),
@@ -834,6 +892,56 @@ Lemma ZC4 : forall p q:positive, (p ?= q) Eq = CompOpp ((q ?= p) Eq).
 Proof.
 intros; change Eq at 1 with (CompOpp Eq) in |- *.
 symmetry  in |- *; apply Pcompare_antisym.
+Qed.
+
+(** Comparison and the successor *)
+
+Lemma Pcompare_p_Sp : forall p : positive, (p ?= Psucc p) Eq = Lt.
+Proof.
+induction p as [p' IH | p' IH |]; simpl in *;
+[apply -> Pcompare_eq_Lt; assumption | apply Pcompare_refl_id | reflexivity].
+Qed.
+
+Theorem Pcompare_p_Sq : forall p q : positive,
+  (p ?= Psucc q) Eq = Lt <-> (p ?= q) Eq = Lt \/ p = q.
+Proof.
+intros p q; split.
+generalize p q; clear p q.
+induction p as [p' IH | p' IH |]; destruct q as [q' | q' |]; simpl; intro H.
+assert (T : xI p' = xI q' <-> p' = q').
+split; intro HH; [inversion HH; trivial | rewrite HH; reflexivity].
+cut ((p' ?= q') Eq = Lt \/ p' = q'). firstorder.
+apply IH. apply Pcompare_Gt_Lt; assumption.
+left; apply -> Pcompare_eq_Lt; assumption.
+destruct p'; discriminate.
+apply IH in H. left.
+destruct H as [H | H]; [apply <- Pcompare_Lt_eq_Lt; left; assumption |
+rewrite H; apply Pcompare_refl_id].
+assert (T : xO p' = xO q' <-> p' = q').
+split; intro HH; [inversion HH; trivial | rewrite HH; reflexivity].
+cut ((p' ?= q') Eq = Lt \/ p' = q'); [firstorder | ].
+apply -> Pcompare_Lt_eq_Lt; assumption.
+destruct p'; discriminate.
+left; reflexivity.
+left; reflexivity.
+right; reflexivity.
+intro H; destruct H as [H | H].
+generalize q H; clear q H. induction p as [p' IH | p' IH |];
+destruct q as [q' | q' |]; simpl in *; intro H;
+try (reflexivity || discriminate H).
+apply -> Pcompare_eq_Lt; apply IH; assumption.
+apply <- Pcompare_eq_Lt; assumption.
+assert (H1 : (p' ?= q') Eq = Lt \/ p' = q'); [apply -> Pcompare_Lt_eq_Lt; assumption |].
+destruct H1 as [H1 | H1]; [apply IH; assumption | rewrite H1; apply Pcompare_p_Sp].
+apply <- Pcompare_Lt_eq_Lt; left; assumption.
+rewrite H; apply Pcompare_p_Sp.
+Qed.
+
+(** 1 is the least positive number *)
+
+Lemma Pcompare_1 : forall p, ~ (p ?= xH) Eq = Lt.
+Proof.
+destruct p; discriminate.
 Qed.
 
 (**********************************************************************)

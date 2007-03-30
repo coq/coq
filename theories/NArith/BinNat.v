@@ -123,15 +123,39 @@ Qed.
 
 (** Peano induction on binary natural numbers *)
 
-Theorem Nind :
- forall P:N -> Prop,
-   P N0 -> (forall n:N, P n -> P (Nsucc n)) -> forall n:N, P n.
+Definition Nrect
+  (P : N -> Type) (a : P N0)
+    (f : forall n : N, P n -> P (Nsucc n)) (n : N) : P n :=
+let f' (p : positive) (x : P (Npos p)) := f (Npos p) x in
+let P' (p : positive) := P (Npos p) in
+match n return (P n) with
+| N0 => a
+| Npos p => Prect P' (f N0 a) f' p
+end.
+
+Theorem Nrect_base : forall P a f, Nrect P a f N0 = a.
 Proof.
-destruct n.
-  assumption.
-  apply Pind with (P := fun p => P (Npos p)).
-exact (H0 N0 H).
-intro p'; exact (H0 (Npos p')).
+intros P a f; simpl; reflexivity.
+Qed.
+
+Theorem Nrect_step : forall P a f n, Nrect P a f (Nsucc n) = f n (Nrect P a f n).
+Proof.
+intros P a f; destruct n as [| p]; simpl;
+[rewrite Prect_base | rewrite Prect_succ]; reflexivity.
+Qed.
+
+Definition Nind (P : N -> Prop) := Nrect P.
+
+Definition Nrec (P : N -> Set) := Nrect P.
+
+Theorem Nrec_base : forall P a f, Nrec P a f N0 = a.
+Proof.
+intros P a f; unfold Nrec; apply Nrect_base.
+Qed.
+
+Theorem Nrec_step : forall P a f n, Nrec P a f (Nsucc n) = f n (Nrec P a f n).
+Proof.
+intros P a f; unfold Nrec; apply Nrect_step.
 Qed.
 
 (** Properties of addition *)
@@ -171,6 +195,11 @@ destruct n; destruct m.
   simpl in |- *; rewrite Pplus_succ_permute_l; reflexivity.
 Qed.
 
+Theorem Nsucc_0 : forall n : N, Nsucc n <> N0.
+Proof.
+intro n; elim n; simpl Nsucc; intros; discriminate.
+Qed.
+
 Theorem Nsucc_inj : forall n m:N, Nsucc n = Nsucc m -> n = m.
 Proof.
 destruct n; destruct m; simpl in |- *; intro H; reflexivity || injection H;
@@ -190,9 +219,20 @@ Qed.
 
 (** Properties of multiplication *)
 
+Theorem Nmult_0_l : forall n:N, N0 * n = N0.
+Proof.
+reflexivity.
+Qed.
+
 Theorem Nmult_1_l : forall n:N, Npos 1 * n = n.
 Proof.
 destruct n; reflexivity.
+Qed.
+
+Theorem Nmult_Sn_m : forall n m : N, (Nsucc n) * m = m + n * m.
+Proof.
+destruct n as [| n]; destruct m as [| m]; simpl; auto.
+rewrite Pmult_Sn_m; reflexivity.
 Qed.
 
 Theorem Nmult_1_r : forall n:N, n * Npos 1%positive = n.
@@ -233,11 +273,6 @@ destruct n; destruct m; reflexivity || (try discriminate H).
 injection H; clear H; intro H; rewrite Pmult_reg_r with (1 := H); reflexivity.
 Qed. 
 
-Theorem Nmult_0_l : forall n:N, N0 * n = N0.
-Proof.
-reflexivity.
-Qed.
-
 (** Properties of comparison *)
 
 Theorem Ncompare_Eq_eq : forall n m:N, (n ?= m) = Eq -> n = m.
@@ -257,6 +292,25 @@ Lemma Ncompare_antisym : forall n m, CompOpp (n ?= m) = (m ?= n).
 Proof.
 destruct n; destruct m; simpl; auto.
 exact (Pcompare_antisym p p0 Eq).
+Qed.
+
+(** 0 is the least natural number *)
+
+Theorem Ncompare_0 : forall n : N, Ncompare n N0 <> Lt.
+Proof.
+destruct n; discriminate.
+Qed.
+
+Theorem Ncompare_n_Sm :
+  forall n m : N, Ncompare n (Nsucc m) = Lt <-> Ncompare n m = Lt \/ n = m.
+Proof.
+intros n m; split; destruct n as [| p]; destruct m as [| q]; simpl; auto.
+destruct p; simpl; intros; discriminate.
+pose proof (proj1 (Pcompare_p_Sq p q));
+assert (p = q <-> Npos p = Npos q); [split; congruence | tauto].
+intros H; destruct H; discriminate.
+pose proof (proj2 (Pcompare_p_Sq p q));
+assert (p = q <-> Npos p = Npos q); [split; congruence | tauto].
 Qed.
 
 (** Dividing by 2 *)
