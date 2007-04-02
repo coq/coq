@@ -296,14 +296,28 @@ let list_try_find f =
   try_find_f
 
 let list_uniquize l =
+  let visited = Hashtbl.create 23 in
   let rec aux acc = function
-  | [] -> List.rev acc
-  | h::t -> if List.mem h acc then aux acc t else aux (h::acc) t
+    | h::t -> if Hashtbl.mem visited h then aux acc t else
+	  begin
+	    Hashtbl.add visited h h;
+	    aux (h::acc) t
+	  end
+    | [] -> List.rev acc
   in aux [] l
 
-let rec list_distinct = function
-  | h::t -> (not (List.mem h t)) && list_distinct t
-  | _ -> true
+let rec list_distinct l = 
+  let visited = Hashtbl.create 23 in
+  let rec loop = function
+    | h::t ->
+	if Hashtbl.mem visited h then false
+	else 
+	  begin
+	    Hashtbl.add visited h h;
+	    loop t
+	  end
+    | [] -> true
+  in loop l
 
 let rec list_filter2 f = function
   | [], [] as p -> p
