@@ -68,3 +68,61 @@ Ltac remembertac x a :=
   (set (x:=a) in *; assert (H: x=a) by reflexivity; clearbody x).
 
 Tactic Notation "remember" constr(c) "as" ident(x) := remembertac x c.
+
+(** Tactics for applying equivalences.
+
+The following code provides tactics "apply -> t", "apply <- t",
+"apply -> t in H" and "apply <- t in H". Here t is a term whose type
+consists of nested dependent and nondependent products with an
+equivalence A <-> B as the conclusion. The tactics with "->" in their
+names apply A -> B while those with "<-" in the name apply B -> A. *)
+
+(* The idea of the tactics is to first provide a term in the context
+whose type is the implication (in one of the directions), and then
+apply it. The first idea is to produce a statement "forall ..., A ->
+B" (call this type T) and then do "assert (H : T)" for a fresh H.
+Thus, T can be proved from the original equivalence and then used to
+perform the application. However, currently in Ltac it is difficult
+to produce such T from the original formula.
+
+Therefore, we first pose the original equivalence as H. If the type of
+H is a dependent product, we create an existential variable and apply
+H to this variable. If the type of H has the form C -> D, then we do a
+cut on C. Once we eliminate all products, we split (i.e., destruct)
+the conjunction into two parts and apply the relevant one. *)
+
+Ltac find_equiv H :=
+let T := type of H in
+lazymatch T with
+| ?A -> ?B =>
+  let H1 := fresh in
+  let H2 := fresh in
+  cut A;
+  [intro H1; pose proof (H H1) as H2; clear H H1;
+   rename H2 into H; find_equiv H |
+   clear H]
+| forall x : ?t, _ =>
+  let a := fresh "a" with
+      H1 := fresh "H" in
+    evar (a : t); pose proof (H a) as H1; unfold a in H1;
+    clear a; clear H; rename H1 into H; find_equiv H
+| ?A <-> ?B => idtac
+| _ => fail "The given statement does not seem to end with an equivalence"
+end.
+
+Ltac bapply lemma todo :=
+let H := fresh in
+  pose proof lemma as H;
+  find_equiv H; [todo H; clear H | .. ].
+
+Tactic Notation "apply" "->" constr(lemma) :=
+bapply lemma ltac:(fun H => destruct H as [H _]; apply H).
+
+Tactic Notation "apply" "<-" constr(lemma) :=
+bapply lemma ltac:(fun H => destruct H as [_ H]; apply H).
+
+Tactic Notation "apply" "->" constr(lemma) "in" ident(J) :=
+bapply lemma ltac:(fun H => destruct H as [H _]; apply H in J).
+
+Tactic Notation "apply" "<-" constr(lemma) "in" ident(J) :=
+bapply lemma ltac:(fun H => destruct H as [_ H]; apply H in J).
