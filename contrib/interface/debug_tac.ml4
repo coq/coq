@@ -113,7 +113,7 @@ let count_subgoals2
 let rec local_interp : glob_tactic_expr -> report_holder -> tactic = function
     TacThens (a,l) ->
       (fun report_holder -> checked_thens report_holder a l)
-  | TacThen (a,b) ->
+  | TacThen (a,[||],b,[||]) ->
       (fun report_holder -> checked_then report_holder a b)
   | t ->
       (fun report_holder g ->
@@ -279,7 +279,7 @@ let rec reconstruct_success_tac (tac:glob_tactic_expr) =
       	| Failed n -> TacId []
       	| Tree_fail r -> reconstruct_success_tac a r
       	| Mismatch (n,p) -> a)
-  | TacThen (a,b) ->
+  | TacThen (a,[||],b,[||]) ->
       (function
 	  Report_node(true, n, l) -> tac
 	| Report_node(false, n, rl) ->
@@ -340,7 +340,7 @@ Tacinterp.add_tactic "OnThen" on_then;;
 
 let rec clean_path tac l = 
   match tac, l with
-  | TacThen (a,b), fst::tl ->
+  | TacThen (a,[||],b,[||]), fst::tl ->
       fst::(clean_path (if fst = 1 then a else b) tl)
   | TacThens (a,l), 1::tl ->
       1::(clean_path a tl)
@@ -390,7 +390,7 @@ let rec report_error
 	  | t::tl -> (report_error t the_goal the_ast returned_path (n::2::path))::
 	      (fold_num (n + 1) tl) in
 	fold_num 1 l)
-    | TacThen (a,b) ->
+    | TacThen (a,[||],b,[||]) ->
 	let the_count = ref 1 in
 	tclTHEN
 	  (fun g ->
@@ -398,7 +398,7 @@ let rec report_error
 	      report_error a the_goal the_ast returned_path (1::path) g
 	    with
 	      e ->
-		(the_ast := TacThen (!the_ast, b);
+		(the_ast := TacThen (!the_ast,[||], b,[||]);
 		 raise e))
 	  (fun g ->
 	    try

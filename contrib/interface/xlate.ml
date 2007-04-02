@@ -775,10 +775,11 @@ and xlate_tactic =
    | TacFun (largs, t) ->
        let fst, rest =  xlate_largs_to_id_opt largs in
        CT_tactic_fun (CT_id_opt_ne_list(fst, rest), xlate_tactic t)
-   | TacThen (t1,t2) -> 
+   | TacThen (t1,[||],t2,[||]) -> 
        (match xlate_tactic t1 with
             CT_then(a,l) -> CT_then(a,l@[xlate_tactic t2])
 	  | t -> CT_then (t,[xlate_tactic t2]))
+   | TacThen _ -> xlate_error "TacThen generalization TODO"
    | TacThens(t1,[]) -> assert false
    | TacThens(t1,t::l) ->
        let ct = xlate_tactic t in

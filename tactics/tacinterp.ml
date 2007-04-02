@@ -764,15 +764,21 @@ and intern_tactic_seq ist = function
       ist.ltacvars, TacFail (intern_or_var ist n,intern_message ist l)
   | TacProgress tac -> ist.ltacvars, TacProgress (intern_tactic ist tac)
   | TacAbstract (tac,s) -> ist.ltacvars, TacAbstract (intern_tactic ist tac,s)
-  | TacThen (t1,t2) ->
+  | TacThen (t1,[||],t2,[||]) ->
       let lfun', t1 = intern_tactic_seq ist t1 in
       let lfun'', t2 = intern_tactic_seq { ist with ltacvars = lfun' } t2 in
-      lfun'', TacThen (t1,t2)
+      lfun'', TacThen (t1,[||],t2,[||])
+  | TacThen (t1,tf,t2,tl) ->
+      let lfun', t1 = intern_tactic_seq ist t1 in
+      let ist' = { ist with ltacvars = lfun' } in
+      (* Que faire en cas de (tac complexe avec Match et Thens; tac2) ?? *)
+      lfun', TacThen (t1,Array.map (intern_tactic ist') tf,intern_tactic ist' t2,
+		       Array.map (intern_tactic ist') tl)
   | TacThens (t,tl) ->
       let lfun', t = intern_tactic_seq ist t in
+      let ist' = { ist with ltacvars = lfun' } in
       (* Que faire en cas de (tac complexe avec Match et Thens; tac2) ?? *)
-      lfun',
-      TacThens (t, List.map (intern_tactic { ist with ltacvars = lfun' }) tl)
+      lfun', TacThens (t, List.map (intern_tactic ist') tl)
   | TacDo (n,tac) -> 
       ist.ltacvars, TacDo (intern_or_var ist n,intern_tactic ist tac)
   | TacTry tac -> ist.ltacvars, TacTry (intern_tactic ist tac)
@@ -1532,9 +1538,10 @@ and eval_tactic ist = function
   | TacFail (n,s) -> tclFAIL (interp_int_or_var ist n) (interp_message ist s)
   | TacProgress tac -> tclPROGRESS (interp_tactic ist tac)
   | TacAbstract (tac,s) -> Tactics.tclABSTRACT s (interp_tactic ist tac)
-  | TacThen (t1,t2) -> tclTHEN (interp_tactic ist t1) (interp_tactic ist t2)
-  | TacThens (t,tl) ->
-      tclTHENS (interp_tactic ist t) (List.map (interp_tactic ist) tl)
+  | TacThen (t1,tf,t,tl) -> 
+      tclTHENS3PARTS (interp_tactic ist t1)
+	(Array.map (interp_tactic ist) tf) (interp_tactic ist t) (Array.map (interp_tactic ist) tl)
+  | TacThens (t1,tl) -> tclTHENS (interp_tactic ist t1) (List.map (interp_tactic ist) tl)
   | TacDo (n,tac) -> tclDO (interp_int_or_var ist n) (interp_tactic ist tac)
   | TacTry tac -> tclTRY (interp_tactic ist tac)
   | TacInfo tac -> tclINFO (interp_tactic ist tac)
@@ -2410,8 +2417,9 @@ and subst_tactic subst (t:glob_tactic_expr) = match t with
   | TacId _ | TacFail _ as x -> x
   | TacProgress tac -> TacProgress (subst_tactic subst tac:glob_tactic_expr)
   | TacAbstract (tac,s) -> TacAbstract (subst_tactic subst tac,s)
-  | TacThen (t1,t2) ->
-      TacThen (subst_tactic subst t1,subst_tactic subst t2)
+  | TacThen (t1,tf,t2,tl) ->
+      TacThen (subst_tactic subst t1,Array.map (subst_tactic subst) tf,
+	       subst_tactic subst t2,Array.map (subst_tactic subst) tl)
   | TacThens (t,tl) ->
       TacThens (subst_tactic subst t, List.map (subst_tactic subst) tl)
   | TacDo (n,tac) -> TacDo (n,subst_tactic subst tac)

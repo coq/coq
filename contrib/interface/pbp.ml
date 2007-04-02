@@ -156,7 +156,7 @@ let make_pbp_pattern x =
 let rec make_then = function
   | [] -> TacId []
   | [t] -> t
-  | t1::t2::l -> make_then (TacThen (t1,t2)::l)
+  | t1::t2::l -> make_then (TacThen (t1,[||],t2,[||])::l)
 
 let make_pbp_atomic_tactic = function
   | PbpTryAssumption None -> TacTry (TacAtom (zz, TacAssumption))

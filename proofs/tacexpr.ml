@@ -197,8 +197,12 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
 
 and ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr =
   | TacAtom of loc * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr
-  | TacThen of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr
-  | TacThens of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr list
+  | TacThen of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr * 
+	('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr array *
+	('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr *
+	('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr array
+  | TacThens of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr * 
+	('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr list
   | TacFirst of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr list
   | TacComplete of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr
   | TacSolve of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr list

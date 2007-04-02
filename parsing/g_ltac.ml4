@@ -46,16 +46,31 @@ GEXTEND Gram
   GLOBAL: tactic Vernac_.command tactic_expr binder_tactic tactic_arg
           constr_may_eval;
 
+  tactic_then_last:
+    [ [ "|"; lta = LIST0 OPT tactic_expr SEP "|" ->
+          Array.map (function None -> TacId [] | Some t -> t) (Array.of_list lta)
+      | -> [||] 
+    ] ]
+  ;
+  tactic_then_gen:
+    [ [ ta = tactic_expr; "|"; (first,last) = tactic_then_gen -> (ta::first, last)
+      | ta = tactic_expr; ".."; l = tactic_then_last -> ([], Some (ta, l))
+      | ".."; l = tactic_then_last -> ([], Some (TacId [], l))
+      | ta = tactic_expr -> ([ta], None)
+      | "|"; (first,last) = tactic_then_gen -> (TacId [] :: first, last)
+      | -> ([TacId []], None)
+    ] ]
+  ;
   tactic_expr:
     [ "5" RIGHTA
       [ te = binder_tactic -> te ]
     | "4" LEFTA
-      [ ta0 = tactic_expr; ";"; ta1 = binder_tactic -> TacThen (ta0, ta1)
-      | ta0 = tactic_expr; ";"; ta1 = tactic_expr -> TacThen (ta0, ta1)
-      | ta = tactic_expr; ";"; 
-	"["; lta = LIST0 OPT tactic_expr SEP "|"; "]" ->
-	  let lta = List.map (function None -> TacId [] | Some t -> t) lta in 
-	  TacThens (ta, lta) ]
+      [ ta0 = tactic_expr; ";"; ta1 = binder_tactic -> TacThen (ta0, [||], ta1, [||])
+      | ta0 = tactic_expr; ";"; ta1 = tactic_expr -> TacThen (ta0,  [||], ta1, [||])
+      | ta0 = tactic_expr; ";"; "["; (first,tail) = tactic_then_gen; "]" ->
+	  match tail with 
+	  | Some (t,last) -> TacThen (ta0, Array.of_list first, t, last)
+	  | None -> TacThens (ta0,first) ]
     | "3" RIGHTA
       [ IDENT "try"; ta = tactic_expr -> TacTry ta
       | IDENT "do"; n = int_or_var; ta = tactic_expr -> TacDo (n,ta)
@@ -114,6 +129,7 @@ GEXTEND Gram
   (* Tactic arguments *)
   tactic_arg:
     [ [ IDENT "ltac"; ":"; a = tactic_expr LEVEL "0" -> tacarg_of_expr a
+      | IDENT "ltac"; ":"; n = natural -> Integer n
       | IDENT "ipattern"; ":"; ipat = simple_intropattern -> IntroPattern ipat
       | a = may_eval_arg -> a
       | r = reference -> Reference r

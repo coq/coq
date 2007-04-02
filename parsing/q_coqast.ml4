@@ -398,8 +398,8 @@ let rec mlexpr_of_atomic_tactic = function
 and mlexpr_of_tactic : (Tacexpr.raw_tactic_expr -> MLast.expr) = function
   | Tacexpr.TacAtom (loc,t) ->
       <:expr< Tacexpr.TacAtom $dloc$ $mlexpr_of_atomic_tactic t$ >>
-  | Tacexpr.TacThen (t1,t2) -> 
-      <:expr< Tacexpr.TacThen $mlexpr_of_tactic t1$ $mlexpr_of_tactic t2$ >>
+  | Tacexpr.TacThen (t1,[||],t2,[||]) -> 
+      <:expr< Tacexpr.TacThen $mlexpr_of_tactic t1$ [||] $mlexpr_of_tactic t2$ [||]>>
   | Tacexpr.TacThens (t,tl) ->
       <:expr< Tacexpr.TacThens $mlexpr_of_tactic t$ $mlexpr_of_list mlexpr_of_tactic tl$>>
   | Tacexpr.TacFirst tl ->

@@ -334,29 +334,25 @@ let start_tac gls =
 
 let finish_tac (sigr,gl,p) = (repackage sigr gl, p)
 
-(* Apply [taci.(i)] on the first n-th subgoals and [tac] on the others *)
-let thensf_tac taci tac (sigr,gs,p) =
-  let n = Array.length taci in
-  let nsg = List.length gs in
-  if nsg<n then errorlabstrm "Refiner.thensn_tac" (str "Not enough subgoals.");
+(* Apply [taci.(i)] on the first n subgoals and [tac] on the others *)
+let thens3parts_tac tacfi tac tacli (sigr,gs,p) =
+  let nf = Array.length tacfi in
+  let nl = Array.length tacli in
+  let ng = List.length gs in
+  if ng<nf+nl then errorlabstrm "Refiner.thensn_tac" (str "Not enough subgoals.");
   let gll,pl =
     List.split
-      (list_map_i (fun i -> apply_sig_tac sigr (if i<n then taci.(i) else tac))
+      (list_map_i (fun i -> 
+        apply_sig_tac sigr (if i<nf then tacfi.(i) else if i>=ng-nl then tacli.(nl-ng+i) else tac))
 	0 gs) in
   (sigr, List.flatten gll,
    compose p (mapshape (List.map List.length gll) pl))
 
-(* Apply [taci.(i)] on the last n-th subgoals and [tac] on the others *)
-let thensl_tac tac taci (sigr,gs,p) =
-  let n = Array.length taci in
-  let nsg = List.length gs in
-  if nsg<n then errorlabstrm "Refiner.thensn_tac" (str "Not enough subgoals.");
-  let gll,pl =
-    List.split
-      (list_map_i (fun i -> apply_sig_tac sigr (if i<0 then tac else taci.(i)))
-	(n-nsg) gs) in
-  (sigr, List.flatten gll,
-   compose p (mapshape (List.map List.length gll) pl))
+(* Apply [taci.(i)] on the first n subgoals and [tac] on the others *)
+let thensf_tac taci tac = thens3parts_tac taci tac [||]
+
+(* Apply [taci.(i)] on the last n subgoals and [tac] on the others *)
+let thensl_tac tac taci = thens3parts_tac [||] tac taci
 
 (* Apply [tac i] on the ith subgoal (no subgoals number check) *)
 let thensi_tac tac (sigr,gs,p) =
@@ -382,19 +378,25 @@ let theni_tac i tac ((_,gl,_) as subgoals) =
       subgoals
   else non_existent_goal k 
 
+(* [tclTHENS3PARTS tac1 [|t1 ; ... ; tn|] tac2 [|t'1 ; ... ; t'm|] gls]
+   applies the tactic [tac1] to [gls] then, applies [t1], ..., [tn] to
+   the first [n] resulting subgoals, [t'1], ..., [t'm] to the last [m]
+   subgoals and [tac2] to the rest of the subgoals in the middle. Raises an
+   error if the number of resulting subgoals is strictly less than [n+m] *)
+let tclTHENS3PARTS tac1 tacfi tac tacli gls =
+  finish_tac (thens3parts_tac tacfi tac tacli (then_tac tac1 (start_tac gls)))
+
 (* [tclTHENSFIRSTn tac1 [|t1 ; ... ; tn|] tac2 gls] applies the tactic [tac1]
-   to [gls] and applies [t1], ..., [tn] to the [n] first resulting
+   to [gls] and applies [t1], ..., [tn] to the first [n] resulting
    subgoals, and [tac2] to the others subgoals. Raises an error if
    the number of resulting subgoals is strictly less than [n] *)
-let tclTHENSFIRSTn tac1 taci tac gls =
-  finish_tac (thensf_tac taci tac (then_tac tac1 (start_tac gls)))
+let tclTHENSFIRSTn tac1 taci tac = tclTHENS3PARTS tac1 taci tac [||]
 
 (* [tclTHENSLASTn tac1 tac2 [|t1 ;...; tn|] gls] applies the tactic [tac1]
-   to [gls] and applies [t1], ..., [tn] to the [n] last resulting
+   to [gls] and applies [t1], ..., [tn] to the last [n] resulting
    subgoals, and [tac2] to the other subgoals. Raises an error if the
    number of resulting subgoals is strictly less than [n] *)
-let tclTHENSLASTn tac1 tac taci gls =
-  finish_tac (thensl_tac tac taci (then_tac tac1 (start_tac gls)))
+let tclTHENSLASTn tac1 tac taci = tclTHENS3PARTS tac1 [||] tac taci
 
 (* [tclTHEN_i tac taci gls] applies the tactic [tac] to [gls] and applies
    [(taci i)] to the i_th resulting subgoal (starting from 1), whatever the
@@ -407,13 +409,13 @@ let tclTHENFIRSTn tac1 taci = tclTHENSFIRSTn tac1 taci tclIDTAC
 
 (* [tclTHEN tac1 tac2 gls] applies the tactic [tac1] to [gls] and applies
    [tac2] to every resulting subgoals *)
-let tclTHEN tac1 tac2 = tclTHENSFIRSTn tac1 [||] tac2
+let tclTHEN tac1 tac2 = tclTHENS3PARTS tac1 [||] tac2 [||]
 
 (* [tclTHENSV tac1 [t1 ; ... ; tn] gls] applies the tactic [tac1] to
    [gls] and applies [t1],..., [tn] to the [n] resulting subgoals. Raises
    an error if the number of resulting subgoals is not [n] *)
 let tclTHENSV tac1 tac2v =
-  tclTHENSFIRSTn tac1 tac2v (tclFAIL_s "Wrong number of tactics.")
+  tclTHENS3PARTS tac1 tac2v (tclFAIL_s "Wrong number of tactics.") [||]
 
 let tclTHENS tac1 tac2l = tclTHENSV tac1 (Array.of_list tac2l)
 
@@ -424,7 +426,6 @@ let tclTHENLAST tac1 tac2 = tclTHENSLASTn tac1 tclIDTAC [|tac2|]
 (* [tclTHENFIRST tac1 tac2 gls] applies the tactic [tac1] to [gls] and [tac2]
    to the first resulting subgoal *)
 let tclTHENFIRST tac1 tac2 = tclTHENSFIRSTn tac1 [|tac2|] tclIDTAC
-
 
 (* [tclTHENLIST [t1;..;tn]] applies [t1] then [t2] ... then [tn]. More
    convenient than [tclTHEN] when [n] is large. *)

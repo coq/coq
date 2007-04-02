@@ -131,7 +131,7 @@ GEXTEND Gram
     [ [ c = operconstr LEVEL "200" -> c ] ]
   ;
   constr:
-    [ [ c = operconstr LEVEL "9" -> c ] ]
+    [ [ c = operconstr LEVEL "1" -> c ] ]
   ;
   operconstr:
     [ "200" RIGHTA
@@ -210,7 +210,7 @@ GEXTEND Gram
   appl_arg:
     [ [ id = lpar_id_coloneq; c=lconstr; ")" ->
 	  (c,Some (loc,ExplByName id))
-      | c=constr -> (c,None) ] ]
+      | c=operconstr LEVEL "9" -> (c,None) ] ]
   ;
   atomic_constr:
     [ [ g=global -> CRef g

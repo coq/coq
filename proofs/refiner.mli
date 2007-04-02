@@ -100,6 +100,13 @@ val tclTHENS         : tactic -> tactic list -> tactic
 val tclTHENST        : tactic -> tactic array -> tactic -> tactic
 *)
 
+(* [tclTHENS3PARTS tac1 [|t1 ; ... ; tn|] tac2 [|t'1 ; ... ; t'm|] gls]
+   applies the tactic [tac1] to [gls] then, applies [t1], ..., [tn] to
+   the first [n] resulting subgoals, [t'1], ..., [t'm] to the last [m]
+   subgoals and [tac2] to the rest of the subgoals in the middle. Raises an
+   error if the number of resulting subgoals is strictly less than [n+m] *)
+val tclTHENS3PARTS     : tactic -> tactic array -> tactic -> tactic array -> tactic
+
 (* [tclTHENSLASTn tac1 [t1 ; ... ; tn] tac2 gls] applies [t1],...,[tn] on the
    last [n] resulting subgoals and [tac2] on the remaining first subgoals *)
 val tclTHENSLASTn     : tactic -> tactic -> tactic array -> tactic

@@ -487,6 +487,17 @@ let pr_seq_body pr tl =
         prlist_with_sep (fun () -> spc () ++ str "| ") pr tl ++
         str " ]")
 
+let pr_opt_tactic pr = function
+  | TacId [] -> mt ()
+  | t -> pr t
+
+let pr_then_gen pr tf tm tl =
+  hv 0 (str "[ " ++
+        prvect_with_sep mt (fun t -> pr t ++ spc () ++ str "| ") tf ++
+	pr_opt_tactic pr tm ++ str ".." ++
+	prvect_with_sep mt (fun t -> spc () ++ str "| " ++ pr t) tl ++
+        str " ]")
+
 let pr_hintbases = function
   | None -> spc () ++ str "with *"
   | Some [] -> mt ()
@@ -858,9 +869,13 @@ let rec pr_tac inherited tac =
       hov 1 (pr_tac (lseq,E) t ++ pr_then () ++ spc () ++
              pr_seq_body (pr_tac ltop) tl),
       lseq
-  | TacThen (t1,t2) ->
+  | TacThen (t1,[||],t2,[||]) ->
       hov 1 (pr_tac (lseq,E) t1 ++ pr_then () ++ spc () ++
              pr_tac (lseq,L) t2),
+      lseq
+  | TacThen (t1,tf,t2,tl) ->
+      hov 1 (pr_tac (lseq,E) t1 ++ pr_then () ++ spc () ++
+             pr_then_gen (pr_tac ltop) tf t2 tl),
       lseq
   | TacTry t ->
       hov 1 (str "try" ++ spc () ++ pr_tac (ltactical,E) t),
