@@ -42,7 +42,10 @@ help:
 
 
 # build and install the three subsystems: coq, coqide, pcoq
-world: revision coq coqide pcoq
+world: .depend .depend.coq
+	$(MAKE) worldnodep
+
+worldnodep: revision coq coqide pcoq
 
 install: install-coq install-coqide install-pcoq
 #install-manpages: install-coq-manpages install-pcoq-manpages
@@ -1715,9 +1718,14 @@ cleanconfig::
 # Dependencies
 ###########################################################################
 
+.PHONY: alldepend beforedepend dependcoq dependp4 ml4filesml
+
 alldepend: depend dependcoq 
 
-dependcoq:: beforedepend
+dependcoq: beforedepend
+	$(MAKE) .depend.coq
+
+\.depend.coq:
 	$(COQDEP) -coqlib . -R theories Coq -R contrib Coq $(COQINCLUDES) \
 	 $(ALLFSETS:.vo=.v) $(ALLREALS:.vo=.v) $(ALLVO:.vo=.v) > .depend.coq
 
@@ -1726,7 +1734,7 @@ dependcoq:: beforedepend
 # by making scratchdepend, one gets dependencies OK for .ml files and
 # .ml4 files not using fancy parsers. This is sufficient to get beforedepend
 # and depend targets successfully built
-scratchdepend:: dependp4
+scratchdepend: dependp4
 	$(OCAMLDEP) $(DEPFLAGS) */*.mli */*/*.mli */*.ml */*/*.ml > .depend
 	-$(MAKE) -k -f Makefile.dep $(ML4FILESML)
 	$(OCAMLDEP) $(DEPFLAGS) */*.mli */*/*.mli */*.ml */*/*.ml > .depend
@@ -1739,7 +1747,10 @@ scratchdepend:: dependp4
 ML4FILESML = $(ML4FILES:.ml4=.ml)
 
 # Expresses dependencies of the .ml4 files w.r.t their grammars
-dependp4::
+\.depend.camlp4: $(ML4FILES)
+	$(MAKE) dependp4
+
+dependp4:
 	rm -f .depend.camlp4
 	for f in $(ML4FILES); do \
 	  printf "%s" `dirname $$f`/`basename $$f .ml4`".ml: " >> .depend.camlp4; \
@@ -1747,8 +1758,11 @@ dependp4::
 	done
 
 # Produce the .ml files using Makefile.dep
-ml4filesml:: .depend.camlp4
+ml4filesml: .depend.camlp4
 	$(MAKE) -f Makefile.dep $(ML4FILESML)
+
+\.depend: */*.mli */*/*.mli */*.ml */*/*.ml $(ML4FILES) kernel/byterun/*.c
+	$(MAKE) depend
 
 depend: beforedepend dependp4 ml4filesml
 # 1. We express dependencies of the .ml files w.r.t their grammars
@@ -1763,7 +1777,7 @@ depend: beforedepend dependp4 ml4filesml
 	  echo `$(CAMLP4DEPS) $$f` >> .depend; \
 	done
 # 5.  We express dependencies of .o files
-	$(CC) -MM $(CINCLUDES) kernel/byterun/*.c >> .depend
+	$(CC) -MM kernel/byterun/*.c >> .depend
 # 6. Finally, we erase the generated .ml files
 	rm -f $(ML4FILESML)
 # 7. Since .depend contains correct dependencies .depend.devel can be deleted
