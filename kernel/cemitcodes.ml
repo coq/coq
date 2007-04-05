@@ -24,6 +24,7 @@ let patch_int buff pos n =
 let out_buffer = ref(String.create 1024)
 and out_position = ref 0
 
+(*
 let out_word b1 b2 b3 b4 =
   let p = !out_position in
   if p >= String.length !out_buffer then begin
@@ -37,6 +38,30 @@ let out_word b1 b2 b3 b4 =
   String.unsafe_set !out_buffer (p+2) (Char.unsafe_chr b3);
   String.unsafe_set !out_buffer (p+3) (Char.unsafe_chr b4);
   out_position := p + 4
+*)
+
+let out_word b1 b2 b3 b4 =
+  let p = !out_position in
+  if p >= String.length !out_buffer then begin
+    let len = String.length !out_buffer in
+    let new_len =
+      if len <= Sys.max_string_length / 2
+      then 2 * len
+      else
+	if len = Sys.max_string_length
+	then raise (Invalid_argument "String.create")  (* Pas la bonne execption
+.... *)
+	else Sys.max_string_length in
+    let new_buffer = String.create new_len in
+    String.blit !out_buffer 0 new_buffer 0 len;
+    out_buffer := new_buffer
+  end;
+  String.unsafe_set !out_buffer p (Char.unsafe_chr b1);
+  String.unsafe_set !out_buffer (p+1) (Char.unsafe_chr b2);
+  String.unsafe_set !out_buffer (p+2) (Char.unsafe_chr b3);
+  String.unsafe_set !out_buffer (p+3) (Char.unsafe_chr b4);
+  out_position := p + 4
+
 
 let out opcode =
   out_word opcode 0 0 0
