@@ -285,7 +285,6 @@ JPROVERCMO=\
   contrib/jprover/jprover.cmo
 
 FUNINDCMO=\
-  contrib/funind/tacinvutils.cmo contrib/funind/tacinv.cmo \
   contrib/funind/indfun_common.cmo contrib/funind/rawtermops.cmo \
   contrib/funind/rawterm_to_relation.cmo \
   contrib/funind/functional_principles_proofs.cmo \
@@ -319,7 +318,7 @@ RTAUTOCMO=contrib/rtauto/proof_search.cmo contrib/rtauto/refl_tauto.cmo \
 	contrib/rtauto/g_rtauto.cmo
 
 ML4FILES += contrib/jprover/jprover.ml4 contrib/cc/g_congruence.ml4 \
-	contrib/funind/tacinv.ml4 contrib/first-order/g_ground.ml4 \
+	contrib/first-order/g_ground.ml4 \
 	contrib/subtac/g_subtac.ml4 contrib/subtac/g_eterm.ml4 \
 	contrib/rtauto/g_rtauto.ml4 contrib/recdef/recdef.ml4 \
 	contrib/funind/indfun_main.ml4 
