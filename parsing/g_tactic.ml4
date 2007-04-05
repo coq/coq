@@ -204,6 +204,13 @@ GEXTEND Gram
       | IDENT "delta"; "-"; "["; idl = LIST1 global; "]" -> FDeltaBut idl
     ] ]
   ;
+
+  delta_flag:
+    [ [ IDENT "delta"; "["; idl = LIST1 global; "]" -> FConst idl
+      | IDENT "delta"; "-"; "["; idl = LIST1 global; "]" -> FDeltaBut idl
+    ] ]
+  ;
+
   red_tactic:
     [ [ IDENT "red" -> Red false
       | IDENT "hnf" -> Hnf
@@ -211,6 +218,9 @@ GEXTEND Gram
       | IDENT "cbv"; s = LIST1 red_flag -> Cbv (make_red_flag s)
       | IDENT "lazy"; s = LIST1 red_flag -> Lazy (make_red_flag s)
       | IDENT "compute" -> compute
+      | IDENT "compute"; delta = delta_flag -> 
+	  let s = [FBeta;FIota;FZeta;delta] in 
+	  Cbv (make_red_flag s)
       | IDENT "vm_compute" -> CbvVm
       | IDENT "unfold"; ul = LIST1 unfold_occ SEP "," -> Unfold ul
       | IDENT "fold"; cl = LIST1 constr -> Fold cl

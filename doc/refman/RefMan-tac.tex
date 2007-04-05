@@ -873,6 +873,12 @@ computational expressions (i.e. with few dead code).
   
   This tactic is an alias for {\tt cbv beta delta iota zeta}.
 
+\item {\tt compute delta [\qualid$_1$\ldots\qualid$_k$]} (resp. {\tt compute delta  -[\qualid$_1$\ldots\qualid$_k$]})  \tacindex{compute} 
+
+      This tactic is an alias for {\tt cbv beta delta iota zeta [\qualid$_1$\ldots\qualid$_k$]} (resp. {\tt cbv beta delta iota zeta -[\qualid$_1$\ldots\qualid$_k$]}) .
+  
+  This tactic is an alias for {\tt cbv beta delta iota zeta}.
+
 \item {\tt vm\_compute} \tacindex{vm\_compute}
 
   This tactic evaluates the goal using the optimized call-by-value
