@@ -198,16 +198,14 @@ Qed.
     tail-recursive, whereas [plus] is not. This can be useful
     when extracting programs. *)
 
-Fixpoint plus_acc q n {struct n} : nat :=
+Fixpoint tail_plus n m {struct n} : nat :=
   match n with
-    | O => q
-    | S p => plus_acc (S q) p
+    | O => m
+    | S n => tail_plus n (S m)
   end.
 
-Definition tail_plus n m := plus_acc m n.
-
 Lemma plus_tail_plus : forall n m, n + m = tail_plus n m.
-unfold tail_plus in |- *; induction n as [| n IHn]; simpl in |- *; auto.
+induction n as [| n IHn]; simpl in |- *; auto.
 intro m; rewrite <- IHn; simpl in |- *; auto.
 Qed.
 
