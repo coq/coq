@@ -598,7 +598,8 @@ Definition bool_case (b:bool) : or (eq bool b true) (eq bool b false)
 
 The second subcase is only relevant for annotated inductive types such
 as the equality predicate (see section~\ref{Equality}), the order
-predicate on natural numbers (see section~\ref{le}) or the type of
+predicate on natural numbers % (see section~\ref{le}) % undefined reference
+or the type of
 lists of a given length (see section~\ref{listn}). In this configuration,
 the type of each branch can depend on the type dependencies specific
 to the branch and the whole pattern-matching expression has a type
