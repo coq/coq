@@ -131,7 +131,7 @@ GEXTEND Gram
     [ [ c = operconstr LEVEL "200" -> c ] ]
   ;
   constr:
-    [ [ c = operconstr LEVEL "1" -> c ] ]
+    [ [ c = operconstr LEVEL "5" -> c ] ]
   ;
   operconstr:
     [ "200" RIGHTA
@@ -160,6 +160,7 @@ GEXTEND Gram
     | "9"
         [ ".."; c = operconstr LEVEL "0"; ".." ->
           CAppExpl (loc,(None,Ident (loc,Topconstr.ldots_var)),[c]) ]
+    | "5" LEFTA [ ]
     | "1" LEFTA
       [ c=operconstr; ".("; f=global; args=LIST0 appl_arg; ")" ->
 	CApp(loc,(Some (List.length args+1),CRef f),args@[c,None])
