@@ -8,8 +8,7 @@ Commands
 
 Notations
 
-- Level "constr" moved from 9 to 5. User notations from levels 6 to 9
-  may have to be put at levels below 5 to be used without parentheses.
+- Level "constr" moved from 9 to 8.
 
 Tactic Language
 

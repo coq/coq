@@ -45,10 +45,19 @@ module L =
 
 module G = Grammar.Make(L)
 
-let grammar_delete e rls =
+let grammar_delete e pos rls =
   List.iter
-    (fun (_,_,lev) ->
-       List.iter (fun (pil,_) -> G.delete_rule e pil) (List.rev lev))
+    (fun (n,ass,lev) ->
+
+      (* Caveat: deletion is not the converse of extension: when an
+	 empty level is extended, deletion removes the level instead
+	 of keeping it empty. This has an effect on the empty levels 8
+	 and 99. We didn't find a good solution to this problem
+	 (e.g. using G.extend to know if the level exists results in a
+	 printed error message as side effect). As a consequence an
+	 extension at 99 or 8 inside a section corrupts the parser. *)
+
+      List.iter (fun (pil,_) -> G.delete_rule e pil) (List.rev lev))
     (List.rev rls)
 
 (* grammar_object is the superclass of all grammar entries *)
@@ -107,7 +116,7 @@ module Gram =
     include G
     let extend e pos rls =
       camlp4_state :=
-      (ByGEXTEND ((fun () -> grammar_delete e rls),
+      (ByGEXTEND ((fun () -> grammar_delete e pos rls),
                   (fun () -> G.extend e pos rls)))
       :: !camlp4_state;
       G.extend e pos rls
@@ -134,8 +143,8 @@ let rec remove_grammars n =
   if n>0 then
     (match !camlp4_state with
        | [] -> anomaly "Pcoq.remove_grammars: too many rules to remove"
-       | ByGrammar(g,_,rls)::t ->
-           grammar_delete g rls;
+       | ByGrammar(g,pos,rls)::t ->
+           grammar_delete g pos rls;
            camlp4_state := t;
            remove_grammars (n-1)
        | ByGEXTEND (undo,redo)::t ->
@@ -487,7 +496,7 @@ let default_levels =
    90,Gramext.RightA;
    10,Gramext.RightA;
    9,Gramext.RightA;
-   5,Gramext.LeftA;
+   8,Gramext.LeftA;
    1,Gramext.LeftA;
    0,Gramext.RightA]
 
