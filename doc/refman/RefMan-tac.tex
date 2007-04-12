@@ -3299,14 +3299,14 @@ The tactic {\tt exists (n // m)} did not fail. The hole was solved by
 The {\tt Scheme} command is a high-level tool for generating
 automatically (possibly mutual) induction principles for given types
 and sorts.  Its syntax follows the schema:
-\begin{tabbing}
+\begin{quote}
 {\tt Scheme {\ident$_1$} := Induction for \ident'$_1$ Sort {\sort$_1$} \\
   with\\
-  \mbox{}\hspace{0.1cm} \dots\ \\
+  \mbox{}\hspace{0.1cm} \dots\\
         with {\ident$_m$} := Induction for {\ident'$_m$} Sort
         {\sort$_m$}}
-\end{tabbing}
-\ident'$_1$ \dots\ \ident'$_m$ are different inductive type
+\end{quote}
+where \ident'$_1$ \dots\ \ident'$_m$ are different inductive type
 identifiers belonging to the same package of mutual inductive
 definitions. This command generates {\ident$_1$}\dots{} {\ident$_m$}
 to be mutually recursive definitions. Each term {\ident$_i$} proves a
@@ -3353,14 +3353,14 @@ The {\tt Functional Scheme} command is a high-level experimental
 tool for generating automatically induction principles
 corresponding to (possibly mutually recursive) functions.  Its
 syntax follows the schema:
-\begin{tabbing}
+\begin{quote}
 {\tt Functional Scheme {\ident$_1$} := Induction for \ident'$_1$ Sort {\sort$_1$} \\
   with\\
   \mbox{}\hspace{0.1cm} \dots\ \\
         with {\ident$_m$} := Induction for {\ident'$_m$} Sort
         {\sort$_m$}}
-\end{tabbing}  
-\ident'$_1$ \dots\ \ident'$_m$ are different mutually defined function
+\end{quote}  
+where \ident'$_1$ \dots\ \ident'$_m$ are different mutually defined function
 names (they must be in the same order as when they were defined).
 This command generates the induction principles
 \ident$_1$\dots\ident$_m$, following the recursive structure and case

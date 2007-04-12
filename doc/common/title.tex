@@ -1,78 +1,69 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % File title.tex
-% Page formatting commands 
+% Page formatting commands
 % Macro \coverpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %\setlength{\marginparwidth}{0pt}
 %\setlength{\oddsidemargin}{0pt}
-%\setlength{\evensidemargin}{0pt} 
+%\setlength{\evensidemargin}{0pt}
 %\setlength{\marginparsep}{0pt}
-%\setlength{\topmargin}{0pt} 
-%\setlength{\textwidth}{16.9cm} 
+%\setlength{\topmargin}{0pt}
+%\setlength{\textwidth}{16.9cm}
 %\setlength{\textheight}{22cm}
-\usepackage{fullpage}
+%\usepackage{fullpage}
 
-\newcommand{\printingdate}{\today}
-\newcommand{\isdraft}{\Large\bf\today\\[20pt]}
+%\newcommand{\printingdate}{\today}
+%\newcommand{\isdraft}{\Large\bf\today\\[20pt]}
 %\newcommand{\isdraft}{\vspace{20pt}}
-
-%To show the top for the toc in html
-\newcommand{\tophtml}{}
 
 \newcommand{\coverpage}[3]{
 \thispagestyle{empty}
 \begin{center}
-\begin{Huge}
-\begin{bf}
-The Coq Proof Assistant\\
-\vspace{12pt}
-    #1\\
-\end{bf}
-\end{Huge}
-\vspace{20pt}
-\isdraft
-{\Large \bf Version \coqversion}
-\footnote[1]{This research was partly supported by IST working group ``Types''}
-\\
-\vspace{120pt}
-{\bf #2}\\
-\vfill
-{\Large \bf LogiCal Project}\\
-\vspace{15pt}
+\bfseries % for the rest of this page, until \end{center}
+\Huge
+The Coq Proof Assistant\\[12pt]
+#1\\[20pt]
+\Large\today\\[20pt]
+Version \coqversion\footnote[1]{This research was partly supported by IST working group ``Types''}
+
+\vspace{0pt plus .5fill}
+#2
+\par\vfill
+LogiCal Project
+
+\vspace*{15pt}
 \end{center}
-%BEGIN LATEX
 \newpage
-\vspace*{500pt}
+
 \thispagestyle{empty}
-%END LATEX
+\hbox{}\vfill % without \hbox \vfill does not work at the top of the page
 \begin{flushleft}
 %BEGIN LATEX
-{\large{V\coqversion,
-\printingdate}}\\[20pt]
+V\coqversion, \today
+\par\vspace{20pt}
 %END LATEX
-{\large{\copyright INRIA 1999-2004 ({\Coq} versions 7.x)}}\\
-{\large{\copyright INRIA 2004-2006 ({\Coq} versions 8.x)}}\\
-{\large{#3}}
+\copyright INRIA 1999-2004 ({\Coq} versions 7.x)
+
+\copyright INRIA 2004-2006 ({\Coq} versions 8.x)
+
+#3
 \end{flushleft}
-%BEGIN LATEX
-\newpage
-%END LATEX
-}
+} % end of \coverpage definition
 
 
-\newcommand{\shorttitle}[1]{
-\begin{center}
-\begin{huge}
-\begin{bf}
-The Coq Proof Assistant\\
-\vspace{10pt}
-    #1\\
-\end{bf}
-\end{huge}
-\end{center}
-\vspace{5pt}
-}
+% \newcommand{\shorttitle}[1]{
+% \begin{center}
+% \begin{huge}
+% \begin{bf}
+% The Coq Proof Assistant\\
+% \vspace{10pt}
+%     #1\\
+% \end{bf}
+% \end{huge}
+% \end{center}
+% \vspace{5pt}
+% }
 
 % Local Variables: 
 % mode: LaTeX
@@ -80,7 +71,3 @@ The Coq Proof Assistant\\
 % End: 
 
 % $Id$ 
-
-
-
-
