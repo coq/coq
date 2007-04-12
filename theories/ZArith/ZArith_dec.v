@@ -94,7 +94,7 @@ Section decidability.
     elim Z_lt_ge_dec.
     intros; left; assumption.
     intros; right; apply Zge_le; assumption.
-  Qed.
+  Defined.
 
   Definition Z_le_gt_dec : {x <= y} + {x > y}.
   Proof.
