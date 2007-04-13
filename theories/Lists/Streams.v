@@ -14,9 +14,9 @@ Set Implicit Arguments.
 
 Section Streams.
 
-Variable A : Set.
+Variable A : Type.
 
-CoInductive Stream : Set :=
+CoInductive Stream : Type :=
     Cons : A -> Stream -> Stream.
 
 
