@@ -78,6 +78,7 @@ module Stringmap : Map.S with type key = string
 (*s Lists. *)
 
 val list_add_set : 'a -> 'a list -> 'a list
+val list_eq_set : 'a list -> 'a list -> bool
 val list_intersect : 'a list -> 'a list -> 'a list
 val list_union : 'a list -> 'a list -> 'a list
 val list_unionq : 'a list -> 'a list -> 'a list

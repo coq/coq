@@ -267,6 +267,12 @@ let rec list_remove_first a = function
   | b::l -> b::list_remove_first a l
   | [] -> raise Not_found
 
+let list_eq_set l1 l2 =
+  let rec aux l1 = function
+  | [] -> l1 = []
+  | a::l2 -> aux (list_remove_first a l1) l2 in
+  try aux l1 l2 with Not_found -> false
+
 let list_for_all2eq f l1 l2 = try List.for_all2 f l1 l2 with Failure _ -> false
 
 let list_map_i f = 
