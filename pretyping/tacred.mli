@@ -35,11 +35,15 @@ val red_product : reduction_function
 (* Red (raise Redelimination if nothing reducible) *)
 val try_red_product : reduction_function
 
-(* Hnf *)
-val hnf_constr :  reduction_function
-
 (* Simpl *)
-val nf :  reduction_function
+val simpl : reduction_function 
+
+(* Simpl only at the head *)
+val whd_simpl : reduction_function
+
+(* Hnf: like whd_simpl but force delta-reduction of constants that do
+   not immediately hide a non reducible fix or cofix *)
+val hnf_constr : reduction_function
 
 (* Unfold *)
 val unfoldn : 
@@ -79,3 +83,8 @@ val reduce_to_atomic_ref :
 
 val contextually : bool -> int list * constr -> reduction_function
   -> reduction_function
+
+(* Compatibility *)
+(* use [simpl] instead of [nf] *)
+val nf :  reduction_function
+

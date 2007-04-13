@@ -106,8 +106,8 @@ let reduction_of_red_expr = function
       else (red_product,DEFAULTcast)
   | Hnf -> (hnf_constr,DEFAULTcast)
   | Simpl (Some (_,c as lp)) ->
-      (contextually (is_reference c) (out_with_occurrences lp) nf,DEFAULTcast)
-  | Simpl None -> (nf,DEFAULTcast)
+    (contextually (is_reference c) (out_with_occurrences lp) simpl,DEFAULTcast)
+  | Simpl None -> (simpl,DEFAULTcast)
   | Cbv f -> (cbv_norm_flags (make_flag f),DEFAULTcast)
   | Lazy f -> (clos_norm_flags (make_flag f),DEFAULTcast)
   | Unfold ubinds -> (unfoldn (List.map out_with_occurrences ubinds),DEFAULTcast)

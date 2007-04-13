@@ -181,7 +181,8 @@ val is_arity : env ->  evar_map -> constr -> bool
 
 val whd_programs :  reduction_function
 
-(* [reduce_fix] contracts a fix redex if it is actually reducible *)
+(* [reduce_fix redfun fix stk] contracts [fix stk] if it is actually
+   reducible; the structural argument is reduced by [redfun] *)
 
 type fix_reduction_result = NotReducible | Reduced of state
 

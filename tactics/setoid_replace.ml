@@ -903,7 +903,7 @@ let new_morphism m signature id hook =
       (Closure.unfold_red(Lazy.force coq_make_compatibility_goal_aux_eval_ref))
       env Evd.empty lem in
     (* "simpl" *)
-  let lem = Tacred.nf env Evd.empty lem in
+  let lem = Tacred.simpl env Evd.empty lem in
     if Lib.is_modtype () then
       begin
 	ignore

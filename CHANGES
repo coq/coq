@@ -26,6 +26,8 @@ Tactics
 
 - New tactics [apply -> term], [apply <- term], [apply -> term in
   ident], [apply <- term in ident] for applying equivalences (iff).
+- Slight improvement of the hnf and simpl tactics when applied on
+  expressions with explicit occurrences of match or fix.
 
 Changes from V8.1gamma to V8.1
 ==============================
