@@ -12,3 +12,15 @@ Fixpoint max (n m:nat) {struct m} : nat :=
   | S n', S m' => S (max n' m')
   | 0, p | p, 0 => p
   end.
+
+(* Check bug #1477 *)
+
+Inductive I : Set :=
+  | A : nat -> nat -> I
+  | B : nat -> nat -> I.
+
+Definition foo (x:I) : nat :=
+  match x with
+    | A a b | B b a => S b
+  end.
+

@@ -123,8 +123,6 @@ module Stringmap = Map.Make(struct type t = string let compare = compare end)
 
 (* Lists *)
 
-let list_add_set x l = if List.mem x l then l else x::l
-
 let list_intersect l1 l2 = 
   List.filter (fun x -> List.mem x l2) l1
 
@@ -266,6 +264,14 @@ let rec list_remove_first a = function
   | b::l when a = b -> l
   | b::l -> b::list_remove_first a l
   | [] -> raise Not_found
+
+let list_add_set x l = if List.mem x l then l else x::l
+
+let list_eq_set l1 l2 =
+  let rec aux l1 = function
+  | [] -> l1 = []
+  | a::l2 -> aux (list_remove_first a l1) l2 in
+  try aux l1 l2 with Not_found -> false
 
 let list_for_all2eq f l1 l2 = try List.for_all2 f l1 l2 with Failure _ -> false
 
