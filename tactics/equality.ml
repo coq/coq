@@ -578,18 +578,20 @@ let make_tuple env sigma (rterm,rty) lind =
    applist(sig_term,[a;p]))
 
 (* check that the free-references of the type of [c] are contained in
-   the free-references of the normal-form of that type.  If the normal
-   form of the type contains fewer references, we want to return that
-   instead. *)
+   the free-references of the normal-form of that type. Strictly
+   computing the exact set of free rels would require full
+   normalization but this is not reasonable (e.g. in presence of
+   records that contains proofs). We restrict ourself to a "simpl"
+   normalization *)
 
 let minimal_free_rels env sigma (c,cty) =
   let cty_rels = free_rels cty in
-  let nf_cty = nf_betadeltaiota env sigma cty in
-  let nf_rels = free_rels nf_cty in
-  if Intset.subset cty_rels nf_rels then
+  let cty' = simpl env sigma cty in
+  let rels' = free_rels cty' in
+  if Intset.subset cty_rels rels' then
     (cty,cty_rels)
   else
-    (nf_cty,nf_rels)
+    (cty',rels')
 
 (* [sig_clausal_form siglen ty]
     
