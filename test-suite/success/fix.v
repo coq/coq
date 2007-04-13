@@ -1,10 +1,3 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
 (* Ancien bug signale par Laurent Thery sur la condition de garde *)
 
 Require Import Bool.
@@ -50,3 +43,17 @@ Fixpoint maxVar (e : rExpr) : rNat :=
   | rNode n p q => rmax (maxVar p) (maxVar q)
   end.
 
+(* Check bug #1491 *)
+
+Require Import Streams.
+
+Definition decomp (s:Stream nat) : Stream nat := 
+  match s with Cons _ s => s end.
+
+CoFixpoint bx0 : Stream nat := Cons 0 bx1 
+with bx1 : Stream nat := Cons 1 bx0.
+
+Lemma bx0bx : decomp bx0 = bx1.
+simpl. (* used to return bx0 in V8.1 and before instead of bx1 *)
+reflexivity.
+Qed.
