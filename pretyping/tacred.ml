@@ -361,7 +361,7 @@ let contract_cofix_use_function f (bodynum,(names,_,bodies as typedbodies)) =
     | None -> mkCoFix(j,typedbodies)
     | Some c -> c in
   let subbodies = list_tabulate make_Fi nbodies in
-  substl subbodies bodies.(bodynum)
+  substl (List.rev subbodies) bodies.(bodynum)
 
 let reduce_mind_case_use_function func env mia =
   match kind_of_term mia.mconstr with 
