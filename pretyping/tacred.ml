@@ -840,11 +840,14 @@ let reduce_to_ind_gen allow_product env sigma t =
 	  if allow_product then
 	    elimrec (push_rel (n,None,ty) env) t' ((n,None,ty)::l)
 	  else
-	     errorlabstrm "tactics__reduce_to_mind"
-	       (str"Not an inductive definition")
+	    errorlabstrm "" (str"Not an inductive definition")
       | _ ->
-	  errorlabstrm "tactics__reduce_to_mind"
-	    (str"Not an inductive product")
+	  (* Last chance: we allow to bypass the Opaque flag (as it
+	     was partially the case between V5.10 and V8.1 *)
+	  let t' = whd_betadeltaiota env sigma t in
+	  match kind_of_term (fst (decompose_app t')) with
+	    | Ind ind-> (ind, it_mkProd_or_LetIn t' l)
+	    | _ -> errorlabstrm "" (str"Not an inductive product")
   in
   elimrec env t []
 
@@ -888,7 +891,11 @@ let one_step_reduce env sigma c =
   in 
   app_stack (redrec (c, empty_stack))
 
-let reduce_to_ref_gen allow_product env sigma ref t = 
+let isIndRef = function IndRef _ -> true | _ -> false
+
+let reduce_to_ref_gen allow_product env sigma ref t =
+  if isIndRef ref then snd (reduce_to_ind_gen allow_product env sigma t) else
+  (* lazily reduces to match the head of [t] with the expected [ref] *)
   let rec elimrec env t l = 
     let c, _ = Reductionops.whd_stack t in
     match kind_of_term c with
@@ -896,8 +903,9 @@ let reduce_to_ref_gen allow_product env sigma ref t =
 	  if allow_product then
 	    elimrec (push_rel (n,None,t) env) t' ((n,None,ty)::l)
 	  else 
-	     errorlabstrm "Tactics.reduce_to_ref_gen"
-	       (str"Not an induction object of atomic type")
+	     errorlabstrm "" 
+	       (str "Cannot recognize an atomic statement based on " ++ 
+	        Nametab.pr_global_env Idset.empty ref)
       | _ ->
 	  try 
 	    if global_of_constr c = ref 
@@ -909,8 +917,8 @@ let reduce_to_ref_gen allow_product env sigma ref t =
 	    elimrec env t' l
           with NotStepReducible ->
 	    errorlabstrm ""
-	    (str "Not a statement of conclusion " ++ 
-	     Nametab.pr_global_env Idset.empty ref)
+	      (str "Cannot recognize a statement based on " ++ 
+	       Nametab.pr_global_env Idset.empty ref)
   in
   elimrec env t []
 
