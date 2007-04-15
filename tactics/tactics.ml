@@ -509,7 +509,7 @@ let cut_in_parallel l =
 
 (* Resolution with missing arguments *)
 
-let apply_with_bindings (c,lbind) gl = 
+let apply_with_bindings_gen with_evars (c,lbind) gl = 
   (* The actual type of the theorem. It will be matched against the
   goal. If this fails, then the head constant will be unfolded step by
   step. *)
@@ -519,7 +519,8 @@ let apply_with_bindings (c,lbind) gl =
       let n = nb_prod thm_ty - nb_prod (pf_concl gl) in
       if n<0 then error "Apply: theorem has not enough premisses.";
       let clause = make_clenv_binding_apply gl (Some n) (c,thm_ty) lbind in
-      Clenvtac.res_pf clause gl
+      if with_evars then Clenvtac.e_res_pf clause gl
+      else Clenvtac.res_pf clause gl
     with (Pretype_errors.PretypeError _|RefinerError _|UserError _|Failure _) as exn ->
       let red_thm =
         try red_product (pf_env gl) (project gl) thm_ty
@@ -531,6 +532,9 @@ let apply_with_bindings (c,lbind) gl =
        second order unification *)
     let clause = make_clenv_binding_apply gl None (c,thm_ty0) lbind in 
     Clenvtac.res_pf clause gl
+
+let apply_with_bindings = apply_with_bindings_gen false
+let eapply_with_bindings = apply_with_bindings_gen true
 
 let apply c = apply_with_bindings (c,NoBindings)
 

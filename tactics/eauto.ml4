@@ -63,7 +63,7 @@ let registered_e_assumption gl =
 
 (* This automatically define h_eApply (among other things) *)
 TACTIC EXTEND eapply
-  [ "eapply" constr_with_bindings(c) ] -> [ e_resolve_with_bindings_tac c ]
+  [ "eapply" constr_with_bindings(c) ] -> [ Tactics.eapply_with_bindings c ]
 END
 
 let vernac_e_resolve_constr c = h_eapply (c,NoBindings)

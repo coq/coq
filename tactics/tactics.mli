@@ -167,6 +167,7 @@ val apply                 : constr      -> tactic
 val apply_without_reduce  : constr      -> tactic
 val apply_list            : constr list -> tactic
 val apply_with_bindings   : constr with_bindings -> tactic
+val eapply_with_bindings  : constr with_bindings -> tactic
 
 val cut_and_apply         : constr -> tactic
 
