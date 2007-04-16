@@ -1300,50 +1300,58 @@ let rec execute_cases at_top fix_name per_info kont0 stacks tree gls =
     | Split(ids,ind,br) ->
 	let (_,typ,_)=destProd (pf_concl gls) in
 	let hd,args=decompose_app (special_whd gls typ) in
-	let _ = assert (ind = destInd hd) in
-	let nparams = (fst (Global.lookup_inductive ind)).mind_nparams in
-	let params = list_firstn nparams args in
-	let constr i =applist (mkConstruct(ind,succ i),params) in
-	let next_tac is_rec i = function
-	    Some (sub_ids,tree) ->
-	      let br_stacks =
-		List.filter (fun (id,_) -> Idset.mem id sub_ids) stacks in
-	      let p_stacks = 
-		push_head (constr i) is_rec ids br_stacks in
-		execute_cases false fix_name per_info kont0 p_stacks tree 
-	  | None -> 
-	      msg_warning (str "missing case");
-	      kont0 (mkMeta 1) 
-	in
-	let id = pf_get_new_id patvar_base gls in
-	let kont is_rec = 			
-	  tclTHENSV
-	    (general_case_analysis (mkVar id,NoBindings))
-	    (Array.mapi (next_tac is_rec) br) in
-	  tclTHEN 
-	    (intro_mustbe_force id)
-	    begin
-	      match fix_name with
-		  Anonymous -> kont false
-		| Name fix_id ->  
-		    (fun gls -> 
-		       if at_top then
-			 kont false gls
-		       else
-			 match hrec_for id fix_id per_info gls with
-			     None -> kont false gls
-			   | Some c_obj ->
-			       tclTHENLIST 
-				 [generalize [c_obj];
-				  kont true] gls)
-	    end gls
+	if ind <> destInd hd then 
+	  (* argument of an inductive family : intro + discard *) 
+	  tclTHEN intro 
+	    (execute_cases at_top fix_name per_info kont0 stacks tree) gls
+	else
+	  begin
+	    let nparams = (fst (Global.lookup_inductive ind)).mind_nparams in
+	    let params = list_firstn nparams args in
+	    let constr i =applist (mkConstruct(ind,succ i),params) in
+	    let next_tac is_rec i = function
+		Some (sub_ids,tree) ->
+		  let br_stacks =
+		    List.filter (fun (id,_) -> Idset.mem id sub_ids) stacks in
+		  let p_stacks = 
+		    push_head (constr i) is_rec ids br_stacks in
+		    execute_cases false fix_name per_info kont0 p_stacks tree 
+	      | None -> 
+		  msg_warning (str "missing case");
+		  kont0 (mkMeta 1) 
+	    in
+	    let id = pf_get_new_id patvar_base gls in
+	    let kont is_rec = 			
+	      tclTHENSV
+		(general_case_analysis (mkVar id,NoBindings))
+		(Array.mapi (next_tac is_rec) br) in
+	      tclTHEN 
+		(intro_mustbe_force id)
+		begin
+		  match fix_name with
+		      Anonymous -> kont false
+		    | Name fix_id ->  
+			(fun gls -> 
+			   if at_top then
+			     kont false gls
+			   else
+			     match hrec_for id fix_id per_info gls with
+				 None -> kont false gls
+			       | Some c_obj ->
+				   tclTHENLIST 
+				     [generalize [c_obj];
+				      kont true] gls)
+		end gls
+	  end
     | End_of_branch (id,nhyps) -> 
-	  match List.assoc id stacks with
-	      [None,_,args] -> 
-		let metas = list_tabulate (fun n -> mkMeta (succ n)) nhyps in
-		  kont0 (applist (mkVar id,List.rev_append args metas)) gls
-	    | _ -> anomaly "wrong stack size"
-
+	match List.assoc id stacks with
+	    [None,_,args] -> 
+	      let metas = 
+		list_tabulate (fun n -> mkMeta (succ n)) nhyps in
+		kont0 
+		  (applist (mkVar id,List.rev_append args metas)) gls
+	  | _ -> anomaly "wrong stack size"
+ 
 let end_tac et2 gls =
   let info = get_its_info gls in
   let et1,pi,ek,clauses = 
