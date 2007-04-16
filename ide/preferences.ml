@@ -95,6 +95,8 @@ type pref =
       mutable auto_complete : bool;
       mutable stop_before : bool;
       mutable lax_syntax : bool;
+      mutable vertical_tabs : bool;
+      mutable opposite_tabs : bool;
 }
 
 let (current:pref ref) = 
@@ -147,7 +149,9 @@ let (current:pref ref) =
 *)
     auto_complete = false;
     stop_before = true;
-    lax_syntax = true
+    lax_syntax = true;
+    vertical_tabs = false;
+    opposite_tabs = false;
   }
 
 
@@ -211,6 +215,8 @@ let save_pref () =
     add "auto_complete" [string_of_bool p.auto_complete] ++
     add "stop_before" [string_of_bool p.stop_before] ++
     add "lax_syntax" [string_of_bool p.lax_syntax] ++
+    add "vertical_tabs" [string_of_bool p.vertical_tabs] ++
+    add "opposite_tabs" [string_of_bool p.opposite_tabs] ++
     Config_lexer.print_file pref_file
   with _ -> prerr_endline "Could not save preferences."
  
@@ -265,6 +271,8 @@ let load_pref () =
     set_bool "auto_complete" (fun v -> np.auto_complete <- v);
     set_bool "stop_before" (fun v -> np.stop_before <- v);
     set_bool "lax_syntax" (fun v -> np.lax_syntax <- v);
+    set_bool "vertical_tabs" (fun v -> np.vertical_tabs <- v);
+    set_bool "opposite_tabs" (fun v -> np.opposite_tabs <- v);
     current := np;
 (*
     Format.printf "in laod_pref: current.text_font = %s@." (Pango.Font.to_string !current.text_font);
@@ -281,7 +289,7 @@ let split_string_format s =
     pre,post
   with Not_found -> s,""
 
-let configure () = 
+let configure ?(apply=(fun () -> ())) () = 
   let cmd_coqc = 
     string
       ~f:(fun s -> !current.cmd_coqc <- s) 
@@ -405,6 +413,18 @@ let configure () =
       "Relax read-only constraint at end of command" !current.lax_syntax
   in
 
+  let vertical_tabs =
+    bool
+      ~f:(fun s -> !current.vertical_tabs <- s)
+      "Vertical tabs" !current.vertical_tabs
+  in
+
+  let opposite_tabs =
+    bool
+      ~f:(fun s -> !current.opposite_tabs <- s)
+      "Tabs on opposite side" !current.opposite_tabs
+  in
+
   let encodings = 
     combo 
       "File charset encoding "
@@ -496,7 +516,8 @@ let configure () =
       "Contextual menus on goal" !current.contextual_menus_on_goal
   in 
 
-  let misc = [contextual_menus_on_goal;auto_complete;stop_before;lax_syntax] in
+  let misc = [contextual_menus_on_goal;auto_complete;stop_before;lax_syntax;
+              vertical_tabs;opposite_tabs] in
    
 (* ATTENTION !!!!! L'onglet Fonts doit etre en premier pour eviter un bug !!!!
    (shame on Benjamin) *)
@@ -527,7 +548,7 @@ let configure () =
 (*
   Format.printf "before edit: current.text_font = %s@." (Pango.Font.to_string !current.text_font);
 *)
-  let x = edit ~width:500 "Customizations" cmds in
+  let x = edit ~apply ~width:500 "Customizations" cmds in
 (*
   Format.printf "after edit: current.text_font = %s@." (Pango.Font.to_string !current.text_font);
 *)

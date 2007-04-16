@@ -54,6 +54,8 @@ type pref =
       mutable auto_complete : bool;
       mutable stop_before : bool;
       mutable lax_syntax : bool;
+      mutable vertical_tabs : bool;
+      mutable opposite_tabs : bool;
     }
 
 val save_pref : unit -> unit
@@ -61,7 +63,7 @@ val load_pref : unit -> unit
 
 val current : pref ref
 
-val configure : unit -> unit
+val configure : ?apply:(unit -> unit) -> unit -> unit
 
 val change_font : ( Pango.font_description -> unit) ref
 val show_toolbar : (bool -> unit) ref
