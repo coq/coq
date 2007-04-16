@@ -42,6 +42,7 @@ open Tacexpr
 open Decl_kinds
 open Evarutil
 open Indrec
+open Pretype_errors
 
 exception Bound
 
@@ -514,24 +515,26 @@ let apply_with_bindings_gen with_evars (c,lbind) gl =
   goal. If this fails, then the head constant will be unfolded step by
   step. *)
   let thm_ty0 = nf_betaiota (pf_type_of gl c) in
+  let concl_nprod = nb_prod (pf_concl gl) in
   let rec try_apply thm_ty =
     try
-      let n = nb_prod thm_ty - nb_prod (pf_concl gl) in
+      let n = nb_prod thm_ty - concl_nprod in
       if n<0 then error "Apply: theorem has not enough premisses.";
       let clause = make_clenv_binding_apply gl (Some n) (c,thm_ty) lbind in
       if with_evars then Clenvtac.e_res_pf clause gl
       else Clenvtac.res_pf clause gl
-    with (Pretype_errors.PretypeError _|RefinerError _|UserError _|Failure _) as exn ->
-      let red_thm =
-        try red_product (pf_env gl) (project gl) thm_ty
-        with (Redelimination | UserError _) -> raise exn in
-      try_apply red_thm in
-  try try_apply thm_ty0
-  with (Pretype_errors.PretypeError _|RefinerError _|UserError _|Failure _) ->
-    (* Last chance: if the head is a variable, apply may try
-       second order unification *)
-    let clause = make_clenv_binding_apply gl None (c,thm_ty0) lbind in 
-    Clenvtac.res_pf clause gl
+    with PretypeError _|RefinerError _|UserError _|Failure _ ->
+    try 
+      (* Try to head-reduce the conclusion of the theorem *)
+      let red_thm = try_red_product (pf_env gl) (project gl) thm_ty in
+      try_apply red_thm
+    with Redelimination -> 
+      (* Last chance: if the head is a variable, apply may try
+	 second order unification *)
+      let clause = make_clenv_binding_apply gl None (c,thm_ty) lbind in 
+      if with_evars then Clenvtac.e_res_pf clause gl
+      else Clenvtac.res_pf clause gl in
+  try_apply thm_ty0
 
 let apply_with_bindings = apply_with_bindings_gen false
 let eapply_with_bindings = apply_with_bindings_gen true

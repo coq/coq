@@ -44,13 +44,6 @@ TACTIC EXTEND eassumption
 | [ "eassumption" ] -> [ e_assumption ]
 END
 
-let e_resolve_with_bindings_tac  (c,lbind) gl = 
-  let t = pf_hnf_constr gl (pf_type_of gl c) in 
-  let clause = make_clenv_binding_apply gl None (c,t) lbind in 
-  Clenvtac.e_res_pf clause gl
-
-let e_resolve_constr c gls = e_resolve_with_bindings_tac (c,NoBindings) gls
-			     
 TACTIC EXTEND eexact
 | [ "eexact" constr(c) ] -> [ e_give_exact c ]
 END
@@ -66,7 +59,7 @@ TACTIC EXTEND eapply
   [ "eapply" constr_with_bindings(c) ] -> [ Tactics.eapply_with_bindings c ]
 END
 
-let vernac_e_resolve_constr c = h_eapply (c,NoBindings)
+let simplest_eapply c = h_eapply (c,NoBindings)
 
 let e_constructor_tac boundopt i lbind gl = 
     let cl = pf_concl gl in 
@@ -82,7 +75,7 @@ let e_constructor_tac boundopt i lbind gl =
     | None -> ()
   end;
   let cons = mkConstruct (ith_constructor_of_inductive mind i) in
-  let apply_tac = e_resolve_with_bindings_tac (cons,lbind) in
+  let apply_tac = eapply_with_bindings (cons,lbind) in
   (tclTHENLIST [convert_concl_no_check redcl DEFAULTcast
 ; intros; apply_tac]) gl
 
@@ -137,8 +130,8 @@ END
 
 let one_step l gl =
   [Tactics.intro]
-  @ (List.map e_resolve_constr (List.map mkVar (pf_ids_of_hyps gl)))
-  @ (List.map e_resolve_constr l)
+  @ (List.map simplest_eapply (List.map mkVar (pf_ids_of_hyps gl)))
+  @ (List.map simplest_eapply l)
   @ (List.map assumption (pf_ids_of_hyps gl))
 
 let rec prolog l n gl =
@@ -169,7 +162,7 @@ open Auto
 let unify_e_resolve  (c,clenv) gls = 
   let clenv' = connect_clenv gls clenv in
   let _ = clenv_unique_resolver false clenv' gls in
-  vernac_e_resolve_constr c gls
+  simplest_eapply c gls
 
 let rec e_trivial_fail_db db_list local_db goal =
   let tacl = 

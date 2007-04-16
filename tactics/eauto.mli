@@ -22,10 +22,6 @@ val e_assumption : tactic
 
 val registered_e_assumption : tactic
 
-val e_resolve_constr :  constr -> tactic
-
-val vernac_e_resolve_constr :  constr -> tactic
-
 val e_give_exact_constr : constr -> tactic
 
 val gen_eauto : bool -> bool * int -> constr list -> 
