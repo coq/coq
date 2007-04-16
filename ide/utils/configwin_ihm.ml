@@ -1108,10 +1108,6 @@ let edit ?(with_apply=true)
       List.iter (fun param_box -> param_box#apply) list_param_box  ;
       apply ()
     in
-    let f_ok () =
-      List.iter (fun param_box -> param_box#apply) list_param_box  ;
-      Return_ok
-    in
     let destroy () =
       tooltips#destroy () ;
       dialog#destroy ();
@@ -1120,7 +1116,7 @@ let edit ?(with_apply=true)
       try
 	match dialog#run () with
 	  | `APPLY  -> f_apply (); iter Return_apply
-	  | `OK -> destroy (); f_ok ()
+	  | `OK -> f_apply (); destroy (); Return_ok
 	  | _ -> destroy (); rep
       with
 	  Failure s ->
