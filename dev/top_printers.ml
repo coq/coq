@@ -243,7 +243,7 @@ let print_pure_constr csr =
       print_string "end"; 
       close_box()
   | Fix ((t,i),(lna,tl,bl)) ->
-      print_string "("; print_int i; print_string ")"; 
+      print_string "Fix("; print_int i; print_string ")"; 
       print_cut();
       open_vbox 0;
       let rec print_fix () =
