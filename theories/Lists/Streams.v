@@ -162,13 +162,13 @@ End Stream_Properties.
 End Streams.
 
 Section Map.
-Variables A B : Set.
+Variables A B : Type.
 Variable f : A -> B.
 CoFixpoint map (s:Stream A) : Stream B := Cons (f (hd s)) (map (tl s)).
 End Map.
 
 Section Constant_Stream.
-Variable A : Set.
+Variable A : Type.
 Variable a : A.
 CoFixpoint const  : Stream A := Cons a const.
 End Constant_Stream.
