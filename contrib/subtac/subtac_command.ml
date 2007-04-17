@@ -179,8 +179,8 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
   let nc_len = named_context_length nc in
   let pr c = my_print_constr env c in
   let prr = Printer.pr_rel_context env in
-  let prn = Printer.pr_named_context env in
-  let pr_rel env = Printer.pr_rel_context env in
+  let _prn = Printer.pr_named_context env in
+  let _pr_rel env = Printer.pr_rel_context env in
 (*   let _ =  *)
 (*     try debug 2 (str "In named context: " ++ prn (named_context env) ++ str "Rewriting fixpoint: " ++ Ppconstr.pr_id recname ++  *)
 (* 		 Ppconstr.pr_binders bl ++ str " : " ++  *)

@@ -70,7 +70,22 @@ Section Nth.
 
   Next Obligation.
   Proof.
-    inversion l0.
+    intros.
+    inversion H.
   Defined.
+
+  Program Fixpoint nth' (l : list A) (n : nat | n < length l) { struct l } : A := 
+    match l, n with
+      | hd :: _, 0 => hd
+      | _ :: tl, S n' => nth' tl n'
+      | nil, _ => !
+    end.
+
+  Next Obligation.
+  Proof.
+    intros.
+    inversion H.
+  Defined.
+
 End Nth.
 

@@ -5,7 +5,7 @@ Set Implicit Arguments.
 Notation " {{ x }} " := (tt : { y : unit | x }).
 
 Notation "{ ( x , y )  :  A  |  P }" := 
-  (sig (fun t:A => let (x,y) := t in P))
+  (sig (fun anonymous : A => let (x,y) := anonymous in P))
   (x ident, y ident) : type_scope.
 
 Notation " ! " := (False_rect _ _).

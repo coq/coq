@@ -43,79 +43,6 @@ open Eterm
 let require_library dirpath =
   let qualid = (dummy_loc, qualid_of_dirpath (dirpath_of_string dirpath)) in
     Library.require_library [qualid] None
-(*
-let subtac_one_fixpoint env isevars (f, decl) = 
-  let ((id, n, bl, typ, body), decl) = 
-    Subtac_interp_fixpoint.rewrite_fixpoint env [] (f, decl) 
-  in
-  let _ = 
-    try trace (str "Working on a single fixpoint rewritten as: " ++ spc () ++
-	       Ppconstr.pr_constr_expr body)
-    with _ -> ()
-  in ((id, n, bl, typ, body), decl)
-*)
-	      
-let subtac_fixpoint isevars l = 
-  (* TODO: Copy command.build_recursive *)
-  ()
-(*
-let save id const (locality,kind) hook =
-  let {const_entry_body = pft;
-       const_entry_type = tpo;
-       const_entry_opaque = opacity } = const in
-  let l,r = match locality with
-    | Local when Lib.sections_are_opened () ->
-        let k = logical_kind_of_goal_kind kind in
-	let c = SectionLocalDef (pft, tpo, opacity) in
-	let _ = declare_variable id (Lib.cwd(), c, k) in
-	(Local, VarRef id)
-    | Local ->
-        let k = logical_kind_of_goal_kind kind in
-        let kn = declare_constant id (DefinitionEntry const, k) in
-	(Global, ConstRef kn)
-    | Global ->
-        let k = logical_kind_of_goal_kind kind in
-        let kn = declare_constant id (DefinitionEntry const, k) in
-	(Global, ConstRef kn) in
-  Pfedit.delete_current_proof ();
-  hook l r;
-  definition_message id
-
-let save_named opacity =
-  let id,(const,persistence,hook) = Pfedit.cook_proof () in
-  let const = { const with const_entry_opaque = opacity } in
-  save id const persistence hook
-
-let check_anonymity id save_ident =
-  if atompart_of_id id <> "Unnamed_thm" then
-    error "This command can only be used for unnamed theorem"
-(*
-    message("Overriding name "^(string_of_id id)^" and using "^save_ident)
-*)
-
-let save_anonymous opacity save_ident =
-  let id,(const,persistence,hook) = Pfedit.cook_proof () in
-  let const = { const with const_entry_opaque = opacity } in
-  check_anonymity id save_ident;
-  save save_ident const persistence hook
-
-let save_anonymous_with_strength kind opacity save_ident =
-  let id,(const,_,hook) = Pfedit.cook_proof () in
-  let const = { const with const_entry_opaque = opacity } in
-  check_anonymity id save_ident;
-  (* we consider that non opaque behaves as local for discharge *)
-  save save_ident const (Global, Proof kind) hook
-
-let subtac_end_proof = function
-  | Admitted -> admit ()
-  | Proved (is_opaque,idopt) ->
-    if_verbose show_script ();
-    match idopt with
-    | None -> save_named is_opaque
-    | Some ((_,id),None) -> save_anonymous is_opaque id
-    | Some ((_,id),Some kind) -> save_anonymous_with_strength kind is_opaque id
-
-	*)
 
 open Pp
 open Ppconstr
@@ -145,11 +72,9 @@ let print_subgoals () = Options.if_verbose (fun () -> msg (Printer.pr_open_subgo
 let start_proof_and_print env isevars idopt k t hook =
   start_proof_com env isevars idopt k t hook;
   print_subgoals ()
-(*     if !pcoq <> None then (out_some !pcoq).start_proof () *)
-
+	  
 let _ = Detyping.set_detype_anonymous (fun loc n -> RVar (loc, id_of_string ("Anonymous_REL_" ^ string_of_int n)))
-
-
+  
 let assumption_message id =
   Options.if_verbose message ((string_of_id id) ^ " is assumed")
 
@@ -181,18 +106,8 @@ let subtac (loc, command) =
 	VernacDefinition (defkind, (locid, id), expr, hook) -> 
 	    (match expr with
 		 ProveBody (bl, c) -> Subtac_pretyping.subtac_proof env isevars id bl c None
-(* 		   let evm, c, ctyp =  in *)
-(* 		     trace (str "Starting proof"); *)
-(* 		     Command.start_proof id goal_kind c hook; *)
-(* 		     trace (str "Started proof");	      *)
-		     
 	       | DefineBody (bl, _, c, tycon) -> 
-		   Subtac_pretyping.subtac_proof env isevars id bl c tycon
-		     (* let tac = Eterm.etermtac (evm, c) in  *)
-		     (* 		     trace (str "Starting proof"); *)
-		     (* 		     Command.start_proof id goal_kind ctyp hook; *)
-		     (* 		     trace (str "Started proof"); *)
-		     (* 		     Pfedit.by tac) *))
+		   Subtac_pretyping.subtac_proof env isevars id bl c tycon)
       | VernacFixpoint (l, b) -> 
 	  let _ = trace (str "Building fixpoint") in
 	    ignore(Subtac_command.build_recursive l b)

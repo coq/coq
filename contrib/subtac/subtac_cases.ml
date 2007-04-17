@@ -1677,24 +1677,35 @@ let build_ineqs prevpatterns pats liftsign =
 		  None -> None
 		| Some (sign, len, n, c) -> (* FixMe: do not work with ppat_args *)
 		    if is_included curpat ppat then
-		      let lens = List.length ppat_sign in (* Length of previous pattern's signature *)
-		      let len' = lens + len in (* Accumulated length of previous pattern's signatures *)
+		      (* Length of previous pattern's signature *)
+		      let lens = List.length ppat_sign in
+		      (* Accumulated length of previous pattern's signatures *)
+		      let len' = lens + len in
+			trace (str "Lifting " ++ my_print_constr Environ.empty_env curpat_c ++ str " by "
+				  ++ int len');
 		      let acc = 
-			(lift_rel_context len ppat_sign @ sign, (* Jump over previous prevpat signs *)
-			 len',
-			 succ n, (* nth pattern *)
-			 mkApp (Lazy.force eq_ind,
+			((* Jump over previous prevpat signs *)
+			  lift_rel_context len ppat_sign @ sign, 
+			  len',
+			  succ n, (* nth pattern *)
+			  mkApp (Lazy.force eq_ind,
 				[| lift (lens + liftsign) ppat_ty ;
-				   liftn liftsign (succ lens) ppat_c ; 
+				   ppat_c ; 
+				   (*liftn liftsign lens ppat_c ; *)
 				   lift len' curpat_c |]) :: 
-			   List.map (lift lens) c)
+			    List.map 
+			    (fun t -> 
+			      liftn (List.length curpat_sign) (succ len') (* Jump over the curpat signature *)
+			      (lift lens t (* Jump over this prevpat signature *))) c)
 		      in Some acc
 		    else None)
-	   (Some ([], 0, 1, [])) eqnpats pats
+	   (Some ([], 0, 0, [])) eqnpats pats
 	 in match acc with 
 	     None -> c
 	   | Some (sign, len, _, c') ->
-	       let conj = it_mkProd_or_LetIn (mk_not (mk_conj c')) (lift_rel_context liftsign sign) in
+	       let conj = it_mkProd_or_LetIn (mk_not (mk_conj c')) 
+		 (lift_rel_context liftsign sign) 
+	       in
 		 conj :: c)
       [] prevpatterns
   in match diffs with [] -> None
@@ -1732,8 +1743,8 @@ let constrs_of_pats typing_fun tycon env isevars eqns tomatchs sign neqs eqs ari
 	 let rhs_rels, signlen, arsignlen = 
 	   List.fold_left 
 	     (fun (renv, n, m) (sign,c,(_, args),_) -> 
-		((lift_rel_context n sign) @ renv, List.length sign + n, 
-		 succ (List.length args) + m))
+	       (lift_rel_context n sign @ renv, List.length sign + n, 
+	         succ (List.length args) + m))
 	     ([], 0, 0) pats in
 	 let signenv = push_rel_context rhs_rels env in
 (* 	   trace (str "Env with signature is: " ++ my_print_env signenv); *)

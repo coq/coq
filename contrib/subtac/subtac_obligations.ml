@@ -1,3 +1,4 @@
+(* -*- default-directory: "~/research/coq/trunk/" -*- *)
 open Printf
 open Pp
 open Subtac_utils
@@ -37,7 +38,7 @@ let assumption_message id =
   Options.if_verbose message ((string_of_id id) ^ " is assumed")
 
 let default_tactic : Proof_type.tactic ref = ref Refiner.tclIDTAC
-let default_tactic_expr : Tacexpr.glob_tactic_expr ref = ref (Obj.magic 0)
+let default_tactic_expr : Tacexpr.glob_tactic_expr ref = ref (Obj.magic ())
 
 let set_default_tactic t = default_tactic_expr := t; default_tactic := Tacinterp.eval_tactic t
 
@@ -83,16 +84,34 @@ let map_first m =
     
 let from_prg : program_info ProgMap.t ref = ref ProgMap.empty
 
+let freeze () = !from_prg, !default_tactic_expr
+let unfreeze (v, t) = from_prg := v; set_default_tactic t
+let init () =
+  from_prg := ProgMap.empty; set_default_tactic (Subtac_utils.utils_call "subtac_simpl" [])
+
 let _ = 
   Summary.declare_summary "program-tcc-table"
-    { Summary.freeze_function = (fun () -> !from_prg, !default_tactic_expr);
-      Summary.unfreeze_function =
-        (fun (v, t) -> from_prg := v; set_default_tactic t);
-      Summary.init_function =
-        (fun () -> from_prg := ProgMap.empty; set_default_tactic (Subtac_utils.utils_call "subtac_simpl" []));
+    { Summary.freeze_function = freeze;
+      Summary.unfreeze_function = unfreeze;
+      Summary.init_function = init;
       Summary.survive_module = false;
       Summary.survive_section = false }
 
+let progmap_union = ProgMap.fold ProgMap.add
+
+let cache (_, (infos, tac)) =
+  from_prg := progmap_union infos !from_prg;
+  default_tactic_expr := tac
+
+let (input,output) = 
+  declare_object
+    { (default_object "Program state") with
+      cache_function = cache ; 
+      load_function = (fun _ -> cache);
+      open_function = (fun _ -> cache);
+      classify_function = (fun _ -> Dispose);
+      export_function = (fun x -> Some x) }
+    
 open Evd
 
 let terms_of_evar ev = 
@@ -221,27 +240,38 @@ let get_prog name =
 
 let obligations_solved prg = (snd prg.prg_obligations) = 0
 
+let update_state s = 
+(*   msgnl (str "Updating obligations info"); *)
+  Lib.add_anonymous_leaf (input s)
+
+let obligations_message rem = 
+  if rem > 0 then
+    if rem = 1 then
+      Options.if_verbose msgnl (int rem ++ str " obligation remaining")
+    else
+      Options.if_verbose msgnl (int rem ++ str " obligations remaining")
+  else
+    Options.if_verbose msgnl (str "No more obligations remaining")
+      
 let update_obls prg obls rem = 
   let prg' = { prg with prg_obligations = (obls, rem) } in
     from_prg := map_replace prg.prg_name prg' !from_prg;
-    if rem > 0 then (
-      Options.if_verbose msgnl (int rem ++ str " obligation(s) remaining");
-      true)
+    obligations_message rem;
+    if rem > 0 then ()
     else (
-      Options.if_verbose msgnl (str "No more obligations remaining");
       match prg'.prg_deps with
 	  [] ->
 	    declare_definition prg';
-	    from_prg := ProgMap.remove prg.prg_name !from_prg;
-	    false
+	    from_prg := ProgMap.remove prg.prg_name !from_prg
 	| l ->
 	    let progs = List.map (fun x -> ProgMap.find x !from_prg) prg'.prg_deps in
 	      if List.for_all (fun x -> obligations_solved x) progs then 
 		(declare_mutual_definition progs;
 		 from_prg := List.fold_left
 		   (fun acc x -> 
-		      ProgMap.remove x.prg_name acc) !from_prg progs);
-	      false)
+		     ProgMap.remove x.prg_name acc) !from_prg progs));
+    update_state (!from_prg, !default_tactic_expr);
+    rem
 	    
 let is_defined obls x = obls.(x).obl_body <> None
 
@@ -285,7 +315,7 @@ let rec solve_obligation prg num =
 		   let obl = { obl with obl_body = Some (Libnames.constr_of_global gr) } in
 		   let obls = Array.copy obls in
 		   let _ = obls.(num) <- obl in
-		     if update_obls prg obls (pred rem) then
+		     if update_obls prg obls (pred rem) <> 0 then
 		       auto_solve_obligations (Some prg.prg_name));
 	      trace (str "Started obligation " ++ int user_num ++ str "  proof: " ++
 		       Subtac_utils.my_print_constr (Global.env ()) obl.obl_type);
@@ -334,11 +364,12 @@ and solve_obligations n tac =
       obls'
   in
     update_obls prg obls' !rem
-
+      
 and try_solve_obligations n tac = 
   ignore (solve_obligations n tac)
 
-and auto_solve_obligations n =
+and auto_solve_obligations n : unit =
+  Options.if_verbose msgnl (str "Solving obligations automatically...");
   try_solve_obligations n !default_tactic
     
 let add_definition n b t obls =
@@ -353,7 +384,7 @@ let add_definition n b t obls =
     let len = Array.length obls in
     let _ = Options.if_verbose ppnl (str ", generating " ++ int len ++ str " obligation(s)") in
       from_prg := ProgMap.add n prg !from_prg; 
-      try_solve_obligations (Some n) !default_tactic)
+      auto_solve_obligations (Some n))
 	
 let add_mutual_definitions l nvrec =
   let deps = List.map (fun (n, b, t, obls) -> n) l in
@@ -364,7 +395,7 @@ let add_mutual_definitions l nvrec =
       !from_prg l
   in
     from_prg := upd;
-    List.iter (fun x -> try_solve_obligations (Some x) !default_tactic) deps
+    List.iter (fun x -> auto_solve_obligations (Some x)) deps
 
 let admit_obligations n =
   let prg = get_prog n in
@@ -410,3 +441,4 @@ let show_obligations n =
 		    | Some _ -> ())
       obls
 			
+let default_tactic () = !default_tactic
