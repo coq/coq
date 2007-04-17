@@ -764,8 +764,8 @@ let save id const (locality,kind) hook =
         let kn = declare_constant id (DefinitionEntry const, k) in
 	(Global, ConstRef kn) in
   Pfedit.delete_current_proof ();
-  hook l r;
-  definition_message id
+  definition_message id;
+  hook l r
 
 let save_named opacity =
   let id,(const,persistence,hook) = Pfedit.cook_proof () in
@@ -801,8 +801,8 @@ let admit () =
   let kn =
     declare_constant id (ParameterEntry typ, IsAssumption Conjectural) in
   Pfedit.delete_current_proof ();
-  hook Global (ConstRef kn);
-  assumption_message id
+  assumption_message id;
+  hook Global (ConstRef kn)
 
 let get_current_context () =
   try Pfedit.get_current_goal_context ()
