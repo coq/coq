@@ -413,11 +413,23 @@ let prepare_inductive ntnl indl =
     }) indl in
   List.fold_right option_cons ntnl [], indl
 
+open Goptions
+
+let elim_flag = ref true
+let _ =
+  declare_bool_option 
+    { optsync  = true;
+      optname  = "automatic declaration of eliminations";
+      optkey   = (SecondaryTable ("Elimination","Schemes"));
+      optread  = (fun () -> !elim_flag) ;
+      optwrite = (fun b -> elim_flag := b) }
+
+
 let declare_mutual_with_eliminations isrecord mie =
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
   let (_,kn) = declare_mind isrecord mie in
   if_verbose ppnl (minductive_message names);
-  declare_eliminations kn;
+  if !elim_flag then declare_eliminations kn;
   kn
 
 let build_mutual l finite =

@@ -6,6 +6,9 @@ Commands
 - Added option Global to "Implicit Arguments" and "Arguments Scope" for
   section surviving.
 
+- Added option "Unset Elimination Schemes" to deactivated the automatic
+generation of elimination schemes.
+
 Notations
 
 - Level "constr" moved from 9 to 8.
