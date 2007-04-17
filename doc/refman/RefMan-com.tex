@@ -1,6 +1,6 @@
-\chapter{The \Coq~commands}\label{Addoc-coqc}
+\chapter[The \Coq~commands]{The \Coq~commands\label{Addoc-coqc}
 \ttindex{coqtop}
-\ttindex{coqc}
+\ttindex{coqc}}
 
 There are two \Coq~commands: 
 \begin{itemize}
@@ -54,8 +54,7 @@ available with \verb!coqc!  and allow you to select the byte-code or
 native-code versions of the system.
 
 
-\section{Resource file}
-\index{Resource file}
+\section[Resource file]{Resource file\index{Resource file}}
 
 When \Coq\ is launched, with either {\tt coqtop} or {\tt coqc}, the
 resource file \verb:$HOME/.coqrc.7.0: is loaded, where \verb:$HOME: is
@@ -70,9 +69,8 @@ directories to the load path of \Coq.
 It is possible to skip the loading of the resource file with the
 option \verb:-q:.
 
-\section{Environment variables}
-\label{EnvVariables}
-\index{Environment variables}
+\section[Environment variables]{Environment variables\label{EnvVariables}
+\index{Environment variables}}
 
 There are three environment variables used by the \Coq\ system.
 \verb:$COQBIN: for the directory where the binaries are,
@@ -84,9 +82,8 @@ only for developers that are writing their own tactics and are using
 (defined at installation time). So these variables are useful only if
 you move the \Coq\ binaries and library after installation.
 
-\section{Options}
-\index{Options of the command line}
-\label{vmoption}
+\section[Options]{Options\index{Options of the command line}
+\label{vmoption}}
 
 The following command-line options are recognized by the commands {\tt
   coqc} and {\tt coqtop}, unless stated otherwise:

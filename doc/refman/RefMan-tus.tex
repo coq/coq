@@ -9,8 +9,7 @@
 %\tableofcontents
 %\clearpage
 
-\chapter{Writing ad-hoc Tactics in Coq}
-\label{WritingTactics}
+\chapter[Writing ad-hoc Tactics in Coq]{Writing ad-hoc Tactics in Coq\label{WritingTactics}}
 
 \section{Introduction}
 
@@ -274,8 +273,7 @@ most important functions, which are sufficient to implement a large
 class of tactics.
 
 
-\subsection{The Logical Framework}
-\label{LogicalFramework}
+\subsection[The Logical Framework]{The Logical Framework\label{LogicalFramework}}
 
 At the very heart of \Coq there is a generic untyped language for
 expressing abstractions, applications and global constants. This
@@ -398,8 +396,7 @@ The following operations can be used for handling names:
     generates an identifier from the given string.}
 \end{description}
 
-\paragraph{Section paths.} 
-\label{SectionPaths}
+\paragraph[Section paths.]{Section paths.\label{SectionPaths}}
 A \textsl{section-path} is a global name to refer to an object without
 ambiguity.  It can be seen as a sort of filename, where open sections
 play the role of directories. Each section path is formed by three
@@ -645,8 +642,7 @@ information:
     the $ith$ type is recursive, and \texttt{Norec} if it is not.}.
 \end{description}
 
-\subsection{The Type Checker}
-\label{TypeChecker}
+\subsection[The Type Checker]{The Type Checker\label{TypeChecker}}
 
 The third logical module is the type checker. It concentrates two main
 tasks concerning the language of constructions.
@@ -723,8 +719,7 @@ generate it or the machinery of the proof engine, but only on the
 type-checker. In other words, extending the system with a potentially
 bugged new tactic never endangers the consistency of the system.
 
-\subsubsection{What is a Tactic?}
-\label{WhatIsATactic}
+\subsubsection[What is a Tactic?]{What is a Tactic?\label{WhatIsATactic}}
 %Let us now explain what is a tactic, and how the user can introduce
 %new ones. 
 
@@ -871,8 +866,7 @@ val Auto.trivial            : tactic
 The functions hiding the implementation of these tactics are defined
 in the module \texttt{Hiddentac}. Their names are prefixed by ``h\_''.
 
-\subsubsection{Tacticals}
-\label{OcamlTacticals}
+\subsubsection[Tacticals]{Tacticals\label{OcamlTacticals}}
 
 The following tacticals can be used to combine already existing
 tactics:
@@ -949,8 +943,7 @@ expressions from the \gallina{} language (definitions), general
 directives (setting commands) or tactics to be applied by the proof
 engine. 
 
-\subsection{The Parser and the Pretty-Printer}
-\label{PrettyPrinter}
+\subsection[The Parser and the Pretty-Printer]{The Parser and the Pretty-Printer\label{PrettyPrinter}}
 
 The last logical module is the parser and pretty printer of \Coq,
 which is the interface between the vernacular interpreter and the
@@ -1196,8 +1189,7 @@ for example
 \verb+tactics/contrib/polynom/ring.ml+ or 
 \verb+tactics/contrib/polynom/coq_omega.ml+.
 
-\section{Some Useful Tools for Writing Tactics}
-\label{SomeUsefulToolsforWrittingTactics}
+\section[Some Useful Tools for Writing Tactics]{Some Useful Tools for Writing Tactics\label{SomeUsefulToolsforWrittingTactics}}
 When the implementation of a tactic is not a straightforward
 combination of tactics and tacticals, the module \texttt{Tacmach}
 provides several useful functions for handling goals, calling the
@@ -1250,8 +1242,7 @@ Tacmach.pf\_reduction\_of\_redexp  : \\
     {Test whether  two given terms are definitionally equal.}
 \end{description}
 
-\subsection{Patterns}
-\label{Patterns}
+\subsection[Patterns]{Patterns\label{Patterns}}
 
 The \ocaml{} file \texttt{Pattern} provides a quick way for describing a
 term pattern and performing second-order, binding-preserving, matching
@@ -1351,8 +1342,7 @@ They
     {\\ Similarly, but it performs case analysis instead of induction.}
 \end{description}
 
-\section{A Complete Example}
-\label{ACompleteExample}
+\section[A Complete Example]{A Complete Example\label{ACompleteExample}}
 
 In order to illustrate the implementation of a new tactic, let us come
 back to the problem of deciding the equality of two elements of an
@@ -1742,8 +1732,7 @@ Abort.
 Remark that the task performed by the tactic \texttt{solveRightBranch}
 is not displayed, since we have chosen to hide its implementation.
 
-\section{Testing and Debugging your Tactic}
-\label{test-and-debug}
+\section[Testing and Debugging your Tactic]{Testing and Debugging your Tactic\label{test-and-debug}}
 
 When your tactic does not behave as expected, it is possible to trace
 it dynamically from \Coq. In order to do this, you have first to leave
@@ -1786,8 +1775,7 @@ Finally, the traditional \ocaml{} debugging tools like the directives
 execution of your functions. Frequently, a better solution is to use
 the \ocaml{} debugger, see Chapter \ref{Utilities}.
 
-\section{Concrete syntax for ML tactic and vernacular command}
-\label{Notations-for-ML-command}
+\section[Concrete syntax for ML tactic and vernacular command]{Concrete syntax for ML tactic and vernacular command\label{Notations-for-ML-command}}
 
 \subsection{The general case}
 
