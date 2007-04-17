@@ -243,8 +243,7 @@ let print_pure_constr csr =
       print_string "end"; 
       close_box()
   | Fix ((t,i),(lna,tl,bl)) ->
-      print_string "Fix"
-(* "("; print_int i; print_string ")"; 
+      print_string "("; print_int i; print_string ")"; 
       print_cut();
       open_vbox 0;
       let rec print_fix () =
@@ -256,7 +255,7 @@ let print_pure_constr csr =
 	  box_display bl.(k); close_box ();
 	  print_cut()
         done
-      in print_string"{"; print_fix(); print_string"}" *)
+      in print_string"{"; print_fix(); print_string"}" 
   | CoFix(i,(lna,tl,bl)) ->
       print_string "CoFix("; print_int i; print_string ")"; 
       print_cut();
