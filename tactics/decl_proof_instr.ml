@@ -882,11 +882,11 @@ let build_per_info etype casee gls =
 	 ET_Induction -> mind.mind_nparams_rec
        | _ -> mind.mind_nparams in
   let params,real_args = list_chop nparams args in
-  let abstract_obj body c = 
+  let abstract_obj c body = 
     let typ=pf_type_of gls c in 
       lambda_create env (typ,subst_term c body) in
-  let pred= List.fold_left abstract_obj    
-    (lambda_create env (ctyp,subst_term casee concl)) real_args in
+  let pred= List.fold_right abstract_obj    
+    real_args (lambda_create env (ctyp,subst_term casee concl)) in
     is_dep,
   {per_casee=casee;
    per_ctype=ctyp;
@@ -1298,9 +1298,11 @@ let rec execute_cases at_top fix_name per_info kont0 stacks tree gls =
 				    kont] gls)
 	    end gls
     | Split(ids,ind,br) ->
-	let (_,typ,_)=destProd (pf_concl gls) in
+	let (_,typ,_)=
+	  try destProd (pf_concl gls) with Invalid_argument _ -> 
+	    anomaly "Sub-object not found." in
 	let hd,args=decompose_app (special_whd gls typ) in
-	if ind <> destInd hd then 
+	if try ind <> destInd hd with Invalid_argument _ -> true then 
 	  (* argument of an inductive family : intro + discard *) 
 	  tclTHEN intro 
 	    (execute_cases at_top fix_name per_info kont0 stacks tree) gls
