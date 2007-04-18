@@ -93,39 +93,43 @@ let clenv_push_prod cl =
     | _ -> raise NotExtensibleClause
   in clrec typ
 
-let clenv_environments evd bound c =
-  let rec clrec (e,metas) n c =
-    match n, kind_of_term c with
-      | (Some 0, _) -> (e, List.rev metas, c)
-      | (n, Cast (c,_,_)) -> clrec (e,metas) n c
-      | (n, Prod (na,c1,c2)) ->
-	  let mv = new_meta () in
-	  let dep = dependent (mkRel 1) c2 in
-	  let na' = if dep then na else Anonymous in
-	  let e' = meta_declare mv c1 ~name:na' e in
-	  clrec (e', (mkMeta mv)::metas) (option_map ((+) (-1)) n)
-	    (if dep then (subst1 (mkMeta mv) c2) else c2)
-      | (n, LetIn (na,b,_,c)) ->
-	  clrec (e,metas) (option_map ((+) (-1)) n) (subst1 b c)
-      | (n, _) -> (e, List.rev metas, c)
-  in 
-  clrec (evd,[]) bound c
+(* Instantiate the first [bound] products of [t] with metas (all products if
+   [bound] is [None]; unfold local defs *)
 
-let clenv_environments_evars env evd bound c =
-  let rec clrec (e,ts) n c =
-    match n, kind_of_term c with
-      | (Some 0, _) -> (e, List.rev ts, c)
-      | (n, Cast (c,_,_)) -> clrec (e,ts) n c
-      | (n, Prod (na,c1,c2)) ->
-          let e',constr = Evarutil.new_evar e env c1 in
-	  let dep = dependent (mkRel 1) c2 in
-	  clrec (e', constr::ts) (option_map ((+) (-1)) n)
-	    (if dep then (subst1 constr c2) else c2)
-      | (n, LetIn (na,b,_,c)) ->
-	  clrec (e,ts) (option_map ((+) (-1)) n) (subst1 b c)
-      | (n, _) -> (e, List.rev ts, c)
+let clenv_environments evd bound t =
+  let rec clrec (e,metas) n t =
+    match n, kind_of_term t with
+      | (Some 0, _) -> (e, List.rev metas, t)
+      | (n, Cast (t,_,_)) -> clrec (e,metas) n t
+      | (n, Prod (na,t1,t2)) ->
+	  let mv = new_meta () in
+	  let dep = dependent (mkRel 1) t2 in
+	  let na' = if dep then na else Anonymous in
+	  let e' = meta_declare mv t1 ~name:na' e in
+	  clrec (e', (mkMeta mv)::metas) (option_map ((+) (-1)) n)
+	    (if dep then (subst1 (mkMeta mv) t2) else t2)
+      | (n, LetIn (na,b,_,t)) -> clrec (e,metas) n (subst1 b t)
+      | (n, _) -> (e, List.rev metas, t)
   in 
-  clrec (evd,[]) bound c
+  clrec (evd,[]) bound t
+
+(* Instantiate the first [bound] products of [t] with evars (all products if
+   [bound] is [None]; unfold local defs *)
+
+let clenv_environments_evars env evd bound t =
+  let rec clrec (e,ts) n t =
+    match n, kind_of_term t with
+      | (Some 0, _) -> (e, List.rev ts, t)
+      | (n, Cast (t,_,_)) -> clrec (e,ts) n t
+      | (n, Prod (na,t1,t2)) ->
+          let e',constr = Evarutil.new_evar e env t1 in
+	  let dep = dependent (mkRel 1) t2 in
+	  clrec (e', constr::ts) (option_map ((+) (-1)) n)
+	    (if dep then (subst1 constr t2) else t2)
+      | (n, LetIn (na,b,_,t)) -> clrec (e,ts) n (subst1 b t)
+      | (n, _) -> (e, List.rev ts, t)
+  in 
+  clrec (evd,[]) bound t
 
 let clenv_conv_leq env sigma t c bound =
   let ty = Retyping.get_type_of env sigma c in

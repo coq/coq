@@ -22,6 +22,8 @@ val e_assumption : tactic
 
 val registered_e_assumption : tactic
 
+val simplest_eapply : constr -> tactic
+
 val e_give_exact_constr : constr -> tactic
 
 val gen_eauto : bool -> bool * int -> constr list -> 

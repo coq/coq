@@ -1,4 +1,16 @@
 =========================================
+= CHANGES BETWEEN COQ V8.1 AND COQ V8.2 =
+=========================================
+
+A few differences in Coq ML interfaces between Coq V8.0 and V8.1
+================================================================
+
+** Functions
+
+Eauto: e_resolve_constr, vernac_e_resolve_constr -> simplest_eapply
+
+
+=========================================
 = CHANGES BETWEEN COQ V8.0 AND COQ V8.1 =
 =========================================
 

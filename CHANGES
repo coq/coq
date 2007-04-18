@@ -1,13 +1,18 @@
-Changes from V8.1gamma to ...
-=============================
+Changes from V8.1 to V8.2
+=========================
 
 Commands
 
 - Added option Global to "Implicit Arguments" and "Arguments Scope" for
   section surviving.
-
 - Added option "Unset Elimination Schemes" to deactivated the automatic
-generation of elimination schemes.
+  generation of elimination schemes.
+
+Libraries
+
+- Better computational behavior of some constants (eq_nat_dec more
+  efficient, Z_lt_le_dec transparent, ...) [exceptionally source of
+  incompatibilities].
 
 Notations
 
@@ -31,6 +36,7 @@ Tactics
   ident], [apply <- term in ident] for applying equivalences (iff).
 - Slight improvement of the hnf and simpl tactics when applied on
   expressions with explicit occurrences of match or fix.
+- Better heuristic of lemma unfolding for apply/eapply.
 
 Changes from V8.1gamma to V8.1
 ==============================
