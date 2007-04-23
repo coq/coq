@@ -212,6 +212,8 @@ let def_token =
   | "Scheme"
   | "Inductive"
   | "CoInductive"
+  | "Program" space+ "Definition"
+  | "Program" space+ "Fixpoint"
 
 let decl_token = 
   "Hypothesis" 
