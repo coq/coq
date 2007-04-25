@@ -235,13 +235,29 @@ and constants_of_modtype env mp modtype =
   | MTBfunsig _ -> []
 
 (* returns a resolver for kn that maps mbid to mp *)
-(* Nota: Some delta-expansions used to happen here. 
-    Browse SVN if you want to know more. *)
 let resolver_of_environment mbid modtype mp env =
  let constants = constants_of_modtype env (MPbound mbid) modtype in
- let resolve = List.map (fun (con,_) -> con,None) constants in 
- Mod_subst.make_resolver resolve
-
+ let resolve = 
+   List.map
+     (fun (con,expecteddef) ->
+	let con' = replace_mp_in_con (MPbound mbid) mp con in
+	let constr =
+	  try
+	    if expecteddef.Declarations.const_inline then
+              let constant = lookup_constant con' env in
+		if constant.Declarations.const_opaque then
+		  None
+		else
+		  option_map Declarations.force
+		    constant.Declarations.const_body
+	    else
+              None
+	  with Not_found -> error_no_such_label (con_label con')
+	in
+	  con,constr
+     ) constants
+ in
+   Mod_subst.make_resolver resolve
 
 let strengthen_const env mp l cb = 
   match cb.const_opaque, cb.const_body with

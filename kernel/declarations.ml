@@ -49,7 +49,8 @@ type constant_body = {
     const_body_code : Cemitcodes.to_patch_substituted;
    (* const_type_code : Cemitcodes.to_patch; *)
     const_constraints : constraints;
-    const_opaque : bool }
+    const_opaque : bool; 
+    const_inline : bool}
 
 (*s Inductive types (internal representation with redundant
     information). *)
@@ -202,7 +203,8 @@ let subst_const_body sub cb = {
     const_body_code = Cemitcodes.subst_to_patch_subst sub cb.const_body_code;
     (*const_type_code = Cemitcodes.subst_to_patch sub cb.const_type_code;*)
     const_constraints = cb.const_constraints;
-    const_opaque = cb.const_opaque } 
+    const_opaque = cb.const_opaque;
+    const_inline = cb.const_inline} 
 
 let subst_arity sub = function
 | Monomorphic s ->

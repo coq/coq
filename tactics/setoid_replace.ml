@@ -908,7 +908,7 @@ let new_morphism m signature id hook =
       begin
 	ignore
 	  (Declare.declare_internal_constant id
-              (ParameterEntry lem, IsAssumption Logical)) ;
+              (ParameterEntry (lem,false), IsAssumption Logical)) ;
 	let mor_name = morphism_theory_id_of_morphism_proof_id id in
 	let lemma_infos = Some (id,argsconstr,outputconstr) in
 	  add_morphism lemma_infos mor_name

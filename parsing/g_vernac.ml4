@@ -120,11 +120,11 @@ GEXTEND Gram
     [ [ thm = thm_token; id = identref; bl = LIST0 binder_let; ":";
         c = lconstr ->
           VernacStartTheoremProof (thm, id, (bl, c), false, no_hook)
-      | stre = assumption_token; bl = assum_list -> 
-	  VernacAssumption (stre, bl)
-      | stre = assumptions_token; bl = assum_list ->
+      | stre = assumption_token; nl = inline; bl = assum_list -> 
+	  VernacAssumption (stre, nl, bl)
+      | stre = assumptions_token; nl = inline; bl = assum_list ->
 	  test_plurial_form bl;
-	  VernacAssumption (stre, bl)
+	  VernacAssumption (stre, nl, bl)
       | IDENT "Boxed";"Definition";id = identref; b = def_body -> 
 	  VernacDefinition ((Global,true,Definition), id, b, no_hook)
       | IDENT "Unboxed";"Definition";id = identref; b = def_body -> 
@@ -192,6 +192,9 @@ GEXTEND Gram
       | IDENT "Variables" -> (Local, Definitional)
       | IDENT "Axioms" -> (Global, Logical)
       | IDENT "Parameters" -> (Global, Definitional) ] ]
+  ;
+  inline:
+    [ ["Inline" -> true |  -> false] ]
   ;
   finite_token:
     [ [ "Inductive" -> true

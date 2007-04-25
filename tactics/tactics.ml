@@ -2524,7 +2524,7 @@ let admit_as_an_axiom gls =
   let concl = it_mkNamedProd_or_LetIn (pf_concl gls) sign in
   if occur_existential concl then error "\"admit\" cannot handle existentials";
   let axiom =
-    let cd = Entries.ParameterEntry concl in
+    let cd = Entries.ParameterEntry (concl,false) in
     let con = Declare.declare_internal_constant na (cd,IsAssumption Logical) in
     constr_of_global (ConstRef con)
   in

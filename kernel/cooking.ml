@@ -131,4 +131,4 @@ let cook_constant env r =
 	let typ = abstract_constant_type (expmod_constr r.d_modlist t) hyps in
 	Typeops.make_polymorphic_if_arity env typ in
   let boxed = Cemitcodes.is_boxed cb.const_body_code in
-  (body, typ, cb.const_constraints, cb.const_opaque, boxed)
+  (body, typ, cb.const_constraints, cb.const_opaque, boxed,false)

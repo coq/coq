@@ -515,7 +515,7 @@ let rec pr_vernac = function
       |	Some tok -> str"Save" ++ spc() ++ pr_thm_token tok ++ spc() ++ pr_lident id)) 
   | VernacExactProof c ->
       hov 2 (str"Proof" ++ pr_lconstrarg c)
-  | VernacAssumption (stre,l) ->
+  | VernacAssumption (stre,_,l) ->
       let n = List.length (List.flatten (List.map fst (List.map snd l))) in
       hov 2
         (pr_assumption_token (n > 1) stre ++ spc() ++ 

@@ -1848,8 +1848,9 @@ let rec xlate_vernac =
 	(xlate_defn kind, xlate_ident s, xlate_binder_list bl,
 	   cvt_optional_eval_for_definition c red_option,
            xlate_formula_opt typ_opt)
-  | VernacAssumption (kind, b) ->
-      CT_variable (xlate_var kind, cvt_vernac_binders b)
+  | VernacAssumption (kind,inline ,b) ->xlate_error "TODO: Parameter Inline"
+      (*inline : bool -> automatic delta reduction at fonctor application*)
+     (* CT_variable (xlate_var kind, cvt_vernac_binders b)*)
   | VernacCheckMayEval (None, numopt, c) ->
       CT_check (xlate_formula c)
   | VernacSearch (s,x) ->

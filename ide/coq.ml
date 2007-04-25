@@ -354,7 +354,7 @@ let compute_reset_info = function
   | VernacDefineModule (_,(_,id), _, _, _) 
   | VernacDeclareModule (_,(_,id), _, _)
   | VernacDeclareModuleType ((_,id), _, _)
-  | VernacAssumption (_, (_,((_,id)::_,_))::_)
+  | VernacAssumption (_,_ ,(_,((_,id)::_,_))::_)
   | VernacInductive (_, (((_,id),_,_,_),_) :: _) ->
       Reset (id, ref true)
   | VernacDefinition (_, (_,id), ProveBody _, _)

@@ -78,18 +78,18 @@ let _ = Detyping.set_detype_anonymous (fun loc n -> RVar (loc, id_of_string ("An
 let assumption_message id =
   Options.if_verbose message ((string_of_id id) ^ " is assumed")
 
-let declare_assumption env isevars idl is_coe k bl c =
+let declare_assumption env isevars idl is_coe k bl c nl =
   if not (Pfedit.refining ()) then 
     let evm, c, typ = 
       Subtac_pretyping.subtac_process env isevars (snd (List.hd idl)) [] (Command.generalize_constr_expr c bl) None 
     in
-      List.iter (Command.declare_one_assumption is_coe k c) idl
+      List.iter (Command.declare_one_assumption is_coe k c nl) idl
   else
     errorlabstrm "Command.Assumption"
 	(str "Cannot declare an assumption while in proof editing mode.")
 
-let vernac_assumption env isevars kind l =
-  List.iter (fun (is_coe,(idl,c)) -> declare_assumption env isevars idl is_coe kind [] c) l
+let vernac_assumption env isevars kind l nl =
+  List.iter (fun (is_coe,(idl,c)) -> declare_assumption env isevars idl is_coe kind [] c nl) l
 
 
 let subtac (loc, command) =
@@ -123,8 +123,8 @@ let subtac (loc, command) =
 	  start_proof_and_print env isevars (Some id) (Global, Proof thkind) (bl,t) hook
 
 
-      | VernacAssumption (stre,l) -> 
-	  vernac_assumption env isevars stre l
+      | VernacAssumption (stre,nl,l) -> 
+	  vernac_assumption env isevars stre l nl
 
       (*| VernacEndProof e -> 
 	  subtac_end_proof e*)

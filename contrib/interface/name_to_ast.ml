@@ -134,7 +134,7 @@ let implicits_to_ast_list implicits =
 
 let make_variable_ast name typ implicits =
   (VernacAssumption
-    ((Local,Definitional),
+    ((Local,Definitional),false,(*inline flag*)
      [false,([dummy_loc,name], constr_to_ast (body_of_type typ))]))
   ::(implicits_to_ast_list implicits);;
     

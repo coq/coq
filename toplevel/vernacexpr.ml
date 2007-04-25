@@ -194,7 +194,7 @@ type vernac_expr =
       (local_binder list * constr_expr) * bool * declaration_hook
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
-  | VernacAssumption of assumption_kind * simple_binder with_coercion list
+  | VernacAssumption of assumption_kind * bool * simple_binder with_coercion list
   | VernacInductive of inductive_flag * (inductive_expr * decl_notation) list
   | VernacFixpoint of (fixpoint_expr * decl_notation) list * bool
   | VernacCoFixpoint of (cofixpoint_expr * decl_notation) list * bool

@@ -348,8 +348,8 @@ let vernac_exact_proof c =
       errorlabstrm "Vernacentries.ExactProof"
 	(str "Command 'Proof ...' can only be used at the beginning of the proof")
   	
-let vernac_assumption kind l =
-  List.iter (fun (is_coe,(idl,c)) -> declare_assumption idl is_coe kind [] c) l
+let vernac_assumption kind l nl=
+  List.iter (fun (is_coe,(idl,c)) -> declare_assumption idl is_coe kind [] c nl) l
 
 let vernac_inductive f indl = build_mutual indl f
 
@@ -1134,7 +1134,7 @@ let interp c = match c with
       vernac_start_proof k (Some id) t top f
   | VernacEndProof e -> vernac_end_proof e
   | VernacExactProof c -> vernac_exact_proof c
-  | VernacAssumption (stre,l) -> vernac_assumption stre l
+  | VernacAssumption (stre,nl,l) -> vernac_assumption stre l nl
   | VernacInductive (finite,l) -> vernac_inductive finite l
   | VernacFixpoint (l,b) -> vernac_fixpoint l b
   | VernacCoFixpoint (l,b) -> vernac_cofixpoint l b

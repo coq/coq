@@ -47,7 +47,8 @@ type constant_body = {
     const_body_code : to_patch_substituted;
    (*i const_type_code : to_patch;i*)
     const_constraints : constraints;
-    const_opaque : bool }
+    const_opaque : bool;
+    const_inline : bool}
 
 val subst_const_body : substitution -> constant_body -> constant_body
 

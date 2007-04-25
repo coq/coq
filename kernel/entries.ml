@@ -62,7 +62,7 @@ type definition_entry = {
   const_entry_opaque : bool;
   const_entry_boxed  : bool}
 
-type parameter_entry = types
+type parameter_entry = types*bool
 
 type constant_entry = 
   | DefinitionEntry of definition_entry

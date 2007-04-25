@@ -161,7 +161,7 @@ let syntax_definition ident c local onlyparse =
 let assumption_message id =
   if_verbose message ((string_of_id id) ^ " is assumed")
 
-let declare_one_assumption is_coe (local,kind) c (_,ident) =
+let declare_one_assumption is_coe (local,kind) c nl (_,ident) =
   let r = match local with
     | Local when Lib.sections_are_opened () ->
         let _ = 
@@ -174,7 +174,7 @@ let declare_one_assumption is_coe (local,kind) c (_,ident) =
         VarRef ident
     | (Global|Local) ->
         let kn =
-          declare_constant ident (ParameterEntry c, IsAssumption kind) in
+          declare_constant ident (ParameterEntry (c,nl), IsAssumption kind) in
         assumption_message ident;
         if local=Local & Options.is_verbose () then
           msg_warning (pr_id ident ++ str" is declared as a parameter" ++
@@ -182,11 +182,11 @@ let declare_one_assumption is_coe (local,kind) c (_,ident) =
         ConstRef kn in
   if is_coe then Class.try_add_new_coercion r local
 
-let declare_assumption idl is_coe k bl c =
+let declare_assumption idl is_coe k bl c nl=
   if not (Pfedit.refining ()) then 
     let c = generalize_constr_expr c bl in
     let c = interp_type Evd.empty (Global.env()) c in
-      List.iter (declare_one_assumption is_coe k c) idl
+      List.iter (declare_one_assumption is_coe k c nl) idl
   else
     errorlabstrm "Command.Assumption"
 	(str "Cannot declare an assumption while in proof editing mode.")
@@ -799,7 +799,7 @@ let admit () =
     error "Only statements declared as conjecture can be admitted";
 *)
   let kn =
-    declare_constant id (ParameterEntry typ, IsAssumption Conjectural) in
+    declare_constant id (ParameterEntry (typ,false), IsAssumption Conjectural) in
   Pfedit.delete_current_proof ();
   assumption_message id;
   hook Global (ConstRef kn)
