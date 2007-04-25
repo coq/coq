@@ -19,9 +19,12 @@
 
 Set Implicit Arguments.
 
+Unset Elimination Schemes.
+
 Inductive JMeq (A:Type) (x:A) : forall B:Type, B -> Prop :=
     JMeq_refl : JMeq x x.
-Reset JMeq_rect.
+
+Set Elimination Schemes.
 
 Hint Resolve JMeq_refl.
 
