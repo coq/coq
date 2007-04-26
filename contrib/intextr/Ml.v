@@ -15,12 +15,10 @@
 
 (* $Id$ *)
 
-(** premiere langage intermediaire Pml :
-      les constructeur de type concrets sont representes par des numeros **)
 Require Import List.
 
-(** version de PMml en indice de de Bruijn **)
-(** nous ajoutons les types concrets  numerote**)
+(***** Premier langage intermédiaire Pml en indices de de Bruijn *****)
+
 Inductive term : Set :=
   | TDummy : term
   | TVar : nat -> term
@@ -29,63 +27,65 @@ Inductive term : Set :=
   | TFix : term -> term
   | TApply : term -> term -> term
   | TConstr : nat -> list term -> term
+    (* les constructeurs des types concrets sont representés par des numéros *)
   | TMatch : term -> list pat -> term
 with pat : Set :=
   | Patc : nat -> term -> pat
-.
-(** un programme Pml est un terme **)
-
-(**Semantique de Pml **)
-
-(** les valeurs **)
-Inductive value : Set:=
-  | VDummy : value
-  | VClos : list value -> term -> value  (** env corps **)
-  | VClos_rec : list value -> term -> value
-  | VConstr : nat -> list value -> value (** num, param**)
+    (* le nat est le nombre d'arguments du constructeur *)
 .
 
-(** predicat d'evaluation d'un terme dans un environnement : list de value**)
+Notation "a @ b" := (TApply a b) (at level 40, left associativity).
 
-Inductive Peval : list value -> term -> value -> Prop:=
-  | Peval_Dummy : forall e, Peval e TDummy VDummy
-  | Peval_V : forall n e v,
-                       nth_error e n = (Some v)-> Peval e (TVar n) v
-  | Peval_Fun : forall e t, Peval e (TFun t) (VClos e t)
-  | Peval_Fix : forall e t, Peval e (TFix t) (VClos_rec e t)
-  | Peval_let : forall e t1 t2 v1 v ,
-                           Peval e t1 v1 ->
-                           Peval (v1::e)  t2 v ->
-                           Peval e (TLet t1 t2) v
-  | Peval_app : forall e e' t t1 t2 v v2,
-                            Peval e t1 (VClos e' t) ->
-                            Peval e t2 v2 ->
-                            Peval (v2::e') t v ->
-                            Peval e (TApply t1 t2) v
-  | Peval_appr : forall e e' t t1 t2 v v2,
-                            Peval e t1 (VClos_rec e' t) ->
-                            Peval e t2 v2 ->
-                            Peval (v2::(VClos_rec e' t)::e') t v ->
-                            Peval e (TApply t1 t2) v
-  | Peval_constr : forall e tl vl n ,
-                            Peval_list e tl vl -> Peval e (TConstr n tl) (VConstr n vl)
-  | Peval_match : forall e t n pl vl m tn v,
-                            Peval e t (VConstr n vl) ->
-                            nth_error pl n = Some (Patc m tn) ->
-                            length vl = m ->
-                            Peval ((rev vl)++e) tn v ->
-                            Peval e (TMatch t pl) v
-with
-Peval_list : list value->list term-> list value ->Prop:=
-   | Peval_nil : forall e , Peval_list e nil nil
-   | Peval_cons : forall e t lt v lv , Peval e t v -> Peval_list e lt lv ->
-                                          Peval_list e (t::lt) (v::lv)
-.
+(* Pourrait être une coercion *)
+Definition unpat p := match p with Patc n t => t end.
 
-Hint Resolve (* tout sauf Peval_app et Peval_appr *)
-  Peval_Dummy Peval_V Peval_Fun Peval_Fix
-  Peval_let Peval_constr Peval_match
-  Peval_nil Peval_cons.
 
-Scheme peval_term_ind6 := Minimality for Peval Sort Prop
- with peval_terml_ind6 := Minimality for Peval_list Sort Prop.
+(***** Principe d'induction mutuelle entre les term et les list term *****)
+
+Section term_ind2.
+  Variable P : term -> Prop.
+  Variable Q : list term -> Prop.
+
+  Let Pp p := P (unpat p).
+  Let Qp l := Q (map unpat l).
+
+(*
+  Variable Pp : pat -> Prop.
+  Variable Qp : list pat -> Prop.
+  Hypothesis Hp : forall n t, P t -> Pp (Patc n t).
+  Hypothesis Hpnil : Qp nil.
+  Hypothesis Hpcons : forall p pl, Pp p -> Qp pl -> Qp (p::pl).
+*)
+
+  Hypothesis HDummy : P TDummy.
+  Hypothesis HVar : forall n, P (TVar n).
+  Hypothesis HFun : forall f, P f -> P (TFun f).
+  Hypothesis HFix : forall f, P f -> P (TFix f).
+  Hypothesis HLet : forall a1 a2, P a1 -> P a2 -> P (TLet a1 a2).
+  Hypothesis HApply : forall a1 a2, P a1 -> P a2 -> P (TApply a1 a2).
+  Hypothesis HConstr : forall c l, Q l -> P (TConstr c l).
+  Hypothesis HMatch : forall t pl, P t -> Qp pl -> P (TMatch t pl).
+
+  Hypothesis Hnil : Q nil.
+  Hypothesis Hcons : forall a l, P a -> Q l -> Q (a::l).
+
+  Fixpoint term_ind2 t : P t :=
+    match t as t0 return P t0 with
+      | TDummy => HDummy
+      | TVar n => HVar n
+      | TFun f => HFun f (term_ind2 f)
+      | TFix f => HFix f (term_ind2 f)
+      | TLet a1 a2 => HLet a1 a2 (term_ind2 a1) (term_ind2 a2)
+      | TApply a1 a2 => HApply a1 a2 (term_ind2 a1) (term_ind2 a2)
+      | TConstr c l => HConstr c l
+          ((fix F (l : list term) := match l as l0 return Q l0 with
+              | nil => Hnil
+              | cons a l => Hcons a l (term_ind2 a) (F l)
+            end) l)
+      | TMatch t pl => HMatch t pl (term_ind2 t)
+          ((fix F (pl : list pat) := match pl as l0 return Qp l0 with
+              | nil => Hnil
+              | cons p pl => Hcons (unpat p) (map unpat pl) (term_ind2 (unpat p)) (F pl)
+            end) pl)
+    end.
+End term_ind2.
