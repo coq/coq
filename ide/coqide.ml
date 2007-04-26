@@ -804,17 +804,15 @@ object(self)
       proof_buffer#insert 
 	(Printf.sprintf "    *** Declarative Mode ***\n");
       try 
-	let (hyps,metas) = get_current_pm_goal () in
+	let (hyps,concl) = get_current_pm_goal () in
 	List.iter
 	  (fun ((_,_,_,(s,_)) as _hyp) -> 
 	     proof_buffer#insert (s^"\n"))
 	  hyps;
 	proof_buffer#insert 
 	  (String.make 38 '_' ^ "\n");
-	List.iter
-	  (fun (_,_,m) -> 
-	     proof_buffer#insert (m^"\n"))
-	  metas;
+	let (_,_,_,s) = concl in 
+	  proof_buffer#insert ("thesis := \n "^s^"\n");
 	let my_mark = `NAME "end_of_conclusion" in
 	  proof_buffer#move_mark
 	    ~where:((proof_buffer#get_iter_at_mark `INSERT)) 

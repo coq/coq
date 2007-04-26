@@ -28,7 +28,6 @@ GLOBAL: proof_instr;
   thesis :
     [[ "thesis" -> Plain 
      | "thesis"; "for"; i=ident -> (For i)
-     | "thesis"; "["; n=INT ;"]" -> (Sub (int_of_string n))
      ]];
   statement :
     [[ i=ident ; ":" ; c=constr -> {st_label=Name i;st_it=c}

@@ -18,7 +18,6 @@ type 'it statement =
 
 type thesis_kind =
     Plain
-  | Sub of int
   | For of identifier
 
 type 'this or_thesis =

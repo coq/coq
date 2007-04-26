@@ -269,24 +269,13 @@ let prepare_goal sigma g =
   (prepare_hyps sigma env,
    (env, sigma, g.evar_concl, msg (pr_ltype_env_at_top env g.evar_concl)))
 
-let prepare_meta sigma env (m,typ)  =
-  env, sigma, 
-  (msg (str " ?" ++ int m ++ str " : " ++ pr_ltype_env_at_top env typ))
-
-let prepare_metas info sigma env =
-  List.fold_right 
-    (fun cpl acc ->  
-      let meta = prepare_meta sigma env cpl in meta :: acc)
-    info.pm_subgoals [] 
-
 let get_current_pm_goal () =
   let pfts = get_pftreestate ()  in
   let gls = try nth_goal_of_pftreestate 1 pfts with _ -> raise Not_found in
-  let info = Decl_mode.get_info gls.it in
-  let env = pf_env gls in
   let sigma= sig_sig gls in
-    (prepare_hyps sigma env,
-     prepare_metas info sigma env)
+  let gl = sig_it gls in
+    prepare_goal sigma gl
+
 
 let get_current_goals () = 
     let pfts = get_pftreestate () in

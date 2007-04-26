@@ -22,6 +22,8 @@ val automation_tac : tactic
 
 val daimon_subtree: pftreestate -> pftreestate
 
+val concl_refiner: Termops.metamap -> constr -> Proof_type.goal sigma -> constr
+
 val do_instr: Decl_expr.raw_proof_instr -> pftreestate -> pftreestate
 val proof_instr: Decl_expr.raw_proof_instr -> unit
 

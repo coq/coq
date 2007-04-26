@@ -56,10 +56,7 @@ type stack_info =
   | Focus_claim
 
 type pm_info =
-    { pm_last: (Names.identifier * bool) option (* anonymous if none *);
-      pm_partial_goal : constr ; (* partial goal construction *)
-      pm_subgoals : (metavariable*constr) list;
-      pm_stack : stack_info list }
+    {pm_stack : stack_info list }
 
 val pm_in : pm_info -> Dyn.t
 
@@ -70,3 +67,5 @@ val get_end_command : pftreestate -> string option
 val get_stack : pftreestate -> stack_info list
 
 val get_top_stack : pftreestate -> stack_info list
+
+val get_last:  Environ.env -> identifier

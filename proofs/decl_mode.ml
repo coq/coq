@@ -67,10 +67,7 @@ type stack_info =
   | Focus_claim
 
 type pm_info =
-    { pm_last: (Names.identifier * bool) option (* anonymous if none *);
-      pm_partial_goal : constr; (* partial goal construction *)
-      pm_subgoals : (metavariable*constr) list;
-      pm_stack : stack_info list}
+    { pm_stack : stack_info list}
 
 let pm_in,pm_out = Dyn.create "pm_info" 
 
@@ -118,3 +115,8 @@ let get_end_command pts =
 	end
     | Mode_none ->
         error "no proof in progress"
+
+let get_last env =  
+  try 
+    let (id,_,_) =  List.hd (Environ.named_context env) in id
+  with Invalid_argument _ -> error "no previous statement to use"

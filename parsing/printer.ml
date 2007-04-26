@@ -262,16 +262,15 @@ let default_pr_goal g =
 	  pr_context_of env,
 	  pr_ltype_env_at_top env g.evar_concl
     else 
-      let {pm_subgoals=metas} = get_info g in
-	(str "     *** Declarative Mode ***" ++ fnl ()++fnl ()),
+      (str "     *** Declarative Mode ***" ++ fnl ()++fnl ()),
     pr_context_of env,
-    pr_subgoal_metas metas env
+    pr_ltype_env_at_top env g.evar_concl
   in
     preamb ++
     str"  " ++ hv 0 (penv ++ fnl () ++
 		       str (emacs_str (String.make 1 (Char.chr 253)) "")  ++
 		       str "============================" ++ fnl ()  ++
-		       str" "  ++ pc) ++ fnl ()
+		       str"thesis := "  ++ fnl () ++ str " " ++  pc) ++ fnl ()
      
 (* display the conclusion of a goal *)
 let pr_concl n g =

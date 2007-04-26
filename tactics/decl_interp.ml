@@ -166,11 +166,7 @@ let decompose_eq env id =
       | _ -> error "previous step is not an equality"
 
 let get_eq_typ info env =
-  let last_id = 	    
-    match info.pm_last with
-	None -> error "no previous equality"
-      | Some (id,_) -> id in
-  let typ = decompose_eq env last_id in  
+  let typ = decompose_eq env (get_last env) in  
     typ
 
 let interp_constr_in_type typ sigma env c =
@@ -352,8 +348,6 @@ let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
   let pat_vars,aliases,patt = interp_pattern env pat in
   let inject = function
       Thesis (Plain) -> Rawterm.RSort(dummy_loc,RProp Null)
-    | Thesis (Sub n) ->
-	error "thesis[_] is not allowed here"
     | Thesis (For rec_occ) ->
 	if not (List.mem rec_occ pat_vars) then 
 	  errorlabstrm "suppose it is" 
@@ -405,7 +399,7 @@ let interp_suffices_clause sigma env (hyps,cot)=
 	This (c,_) -> 
 	  let nhyps,nc = interp_hyps_gen fst (fun x _ -> x) sigma env hyps c in
 	  nhyps,This nc
-      | Thesis (Plain| Sub _) as th  -> interp_hyps sigma env hyps,th
+      | Thesis Plain as th  -> interp_hyps sigma env hyps,th
       | Thesis (For n) -> error "\"thesis for\" is not applicable here" in
   let push_one hyp env0 =
     match hyp with

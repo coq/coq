@@ -33,7 +33,7 @@ type goal = hyp list * concl
 
 val get_current_goals : unit -> goal list
 
-val get_current_pm_goal : unit -> hyp list * meta list
+val get_current_pm_goal : unit -> goal
 
 val get_current_goals_nb : unit -> int
 

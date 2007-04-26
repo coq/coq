@@ -41,7 +41,6 @@ let pr_or_thesis pr_this env = function
     Thesis Plain -> str "thesis"
   | Thesis (For id) -> 
       str "thesis" ++ spc() ++ str "for" ++ spc () ++ pr_id id 
-  | Thesis (Sub n) -> str "thesis[" ++ int n ++ str "]"
   | This c -> pr_this env c
 
 let pr_cut pr_it env c = 
