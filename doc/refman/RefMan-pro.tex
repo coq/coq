@@ -197,11 +197,13 @@ proof was edited.
 
 \end{Variants}
 
+%%%%
 \subsection[\tt Suspend.]{\tt Suspend.\comindex{Suspend}}
 
 This command applies in proof editing mode. It switches back to the
 \Coq\ toplevel, but without canceling the current proofs.
 
+%%%%
 \subsection[\tt Resume.]{\tt Resume.\comindex{Resume}\label{Resume}}
 
 This commands switches back to the editing of the last edited proof.
@@ -223,7 +225,26 @@ This commands switches back to the editing of the last edited proof.
 \item \errindex{No such proof}
 \end{ErrMsgs}
 
+
+%%%%
+\subsection[\tt Existential {\num} := {\term}.]{\tt Existential  {\num} := {\term}.\comindex{Existential}
+\label{Existential}}
+
+This command allows to instantiate an existential variable. {\tt \num}
+is an index in the list of uninstantiated existential variables
+displayed by {\tt Show Existentials.} (described in section~\ref{Show})
+
+This command is intented to be used to instantiate existential
+variables when the proof is completed but some uninstantiated
+existential variables remain. To instantiate existential variables
+during proof edition, you should use the tactic {\tt instantiate}.
+
+\SeeAlso {\tt instantiate (\num:= \term).} in section~\ref{instantiate}.
+
+
+%%%%%%%%
 \section{Navigation in the proof tree}
+%%%%%%%%
 
 \subsection[\tt Undo.]{\tt Undo.\comindex{Undo}}
 
@@ -350,6 +371,10 @@ In the case of a non-product goal, it prints nothing.
 \item{\tt Show Intros.}\comindex{Show Intros}\\
 This command is similar to the previous one, it simulates the naming 
 process of an {\tt Intros}.
+
+\item{\tt Show Existentials}\comindex{Show Existentials}\\ It displays
+the set of all uninstantiated existential variables in the current proof tree, 
+along with the type and the context of each variable.
 
 \end{Variants}
 
