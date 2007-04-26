@@ -41,12 +41,16 @@ let instantiate_pf_com n com pfts =
   let gls = top_goal_of_pftreestate pfts in
   let sigma = gls.sigma in 
   let (sp,evi) (* as evc *) = 
-    try
-      List.nth (Evarutil.non_instantiated sigma) (n-1) 
-    with Failure _ -> 
-      error "not so many uninstantiated existential variables" in 
+    let evl = Evarutil.non_instantiated sigma in
+      if (n <= 0) then
+	error "incorrect existential variable index"
+      else if List.length evl < n then
+	  error "not so many uninstantiated existential variables"
+      else
+	List.nth evl (n-1)
+  in 
   let env = Evd.evar_env evi in
   let rawc = Constrintern.intern_constr sigma env com in 
   let evd = create_evar_defs sigma in
   let evd' = w_refine sp rawc evd in
-  change_constraints_pftreestate (evars_of evd') pfts
+    change_constraints_pftreestate (evars_of evd') pfts
