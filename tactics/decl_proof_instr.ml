@@ -1440,8 +1440,8 @@ let rec postprocess pts instr =
       Phence i | Pthus i | Pthen i -> postprocess pts i
     | Pcut _ | Psuffices _ | Passume _ | Plet _ | Pconsider (_,_) | Pcast (_,_)
     | Pgiven _ | Ptake _ | Pdefine (_,_,_) | Prew (_,_) -> pts
-    | Pclaim _ | Pfocus _ | Psuppose _ | Pcase _ | Pper _ -> nth_unproven 1 pts
-    | Pescape -> pts
+    | Pclaim _ | Pfocus _ | Psuppose _ | Pcase _ | Pper _ 
+    | Pescape -> nth_unproven 1 pts
     | Pend (B_elim ET_Induction) ->
   	begin
 	  let pf = proof_of_pftreestate pts in
