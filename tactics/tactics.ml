@@ -503,6 +503,20 @@ let cut_in_parallel l =
   in 
     prec (List.rev l)
 
+let error_uninstantiated_metas t clenv =
+  let na = meta_name clenv.env (List.hd (Metaset.elements (metavars_of t))) in
+  let id = match na with Name id -> id | _ -> anomaly "unnamed dependent meta"
+  in errorlabstrm "" (str "cannot find an instance for " ++ pr_id id)
+
+let clenv_refine_in id clenv gl =
+  let new_hyp_typ  = clenv_type clenv in
+  if occur_meta new_hyp_typ then error_uninstantiated_metas new_hyp_typ clenv;
+  let new_hyp_prf  = clenv_value clenv in
+  tclTHEN
+    (tclEVARS (evars_of clenv.env))
+    (cut_replacing id new_hyp_typ
+      (fun x gl -> refine_no_check new_hyp_prf gl)) gl
+
 (****************************************************)
 (*            Resolution tactics                    *)
 (****************************************************)
@@ -575,12 +589,7 @@ let apply_in id lemmas gls =
   let t' = pf_get_hyp_typ gls id in
   let innermostclause = mk_clenv_from_n gls (Some 0) (mkVar id,t') in
   let clause = List.fold_left (apply_in_once gls) innermostclause lemmas in
-  let new_hyp_prf  = clenv_value clause in
-  let new_hyp_typ  = clenv_type clause in
-  tclTHEN
-    (tclEVARS (evars_of clause.env))
-    (cut_replacing id new_hyp_typ
-      (fun x gls -> refine_no_check new_hyp_prf gls)) gls
+  clenv_refine_in id clause gls
 
 (* A useful resolution tactic which, if c:A->B, transforms |- C into
    |- B -> C and |- A
@@ -839,15 +848,11 @@ let elimination_in_clause_scheme id elimclause indclause gl =
   let hyp_typ = pf_type_of gl hyp in
   let hypclause = mk_clenv_from_n gl (Some 0) (hyp, hyp_typ) in
   let elimclause'' = clenv_fchain hypmv elimclause' hypclause in  
-  let new_hyp_prf  = clenv_value elimclause'' in
   let new_hyp_typ  = clenv_type elimclause'' in
   if eq_constr hyp_typ new_hyp_typ then
     errorlabstrm "general_rewrite_in" 
       (str "Nothing to rewrite in " ++ pr_id id);
-  tclTHEN
-    (tclEVARS (evars_of elimclause''.env))
-    (cut_replacing id new_hyp_typ
-      (fun x gls -> refine_no_check new_hyp_prf gls)) gl
+  clenv_refine_in id elimclause'' gl
 
 let general_elim_in id =
   general_elim_clause (elimination_in_clause_scheme id)
