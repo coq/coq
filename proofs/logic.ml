@@ -582,10 +582,10 @@ let subst_proof_vars =
          
 let rec rebind id1 id2 = function
   | [] -> [Name id2,SectionVar id1]
-  | (na,_ as x)::l -> 
-      if na = Name id1 then (Name id2,ProofVar)::l else
+  | (na,k as x)::l -> 
+      if na = Name id1 then (Name id2,k)::l else
         let l' = rebind id1 id2 l in
-        if na = Name id2 then (Anonymous,ProofVar)::l' else x::l'
+        if na = Name id2 then (Anonymous,k)::l' else x::l'
 
 let add_proof_var id vl = (Name id,ProofVar)::vl
 
