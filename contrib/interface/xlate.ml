@@ -197,6 +197,10 @@ let xlate_int_or_var_opt_to_int_opt = function
   | Some (ArgVar _) -> xlate_error "int_or_var: TODO"
   | None ->  CT_coerce_NONE_to_INT_OPT CT_none
 
+let apply_or_by_notation f = function
+  | AN x -> f x
+  | ByNotation _ -> xlate_error "TODO: ByNotation"
+
 let tac_qualid_to_ct_ID ref = 
   CT_ident (Libnames.string_of_qualid (snd (qualid_of_reference ref)))
 
@@ -600,14 +604,15 @@ let strip_targ_intropatt =
     | _ -> xlate_error "strip_targ_intropatt";;
 
 let get_flag r =
-  let conv_flags, red_ids = 
+  let conv_flags, red_ids =
+    let csts = List.map (apply_or_by_notation tac_qualid_to_ct_ID) r.rConst in
     if r.rDelta then
-      [CT_delta], CT_unfbut (List.map tac_qualid_to_ct_ID r.rConst)
+      [CT_delta], CT_unfbut csts
     else
       (if r.rConst = []
       then (* probably useless: just for compatibility *) []
       else [CT_delta]),
-      CT_unf (List.map tac_qualid_to_ct_ID r.rConst) in
+      CT_unf csts in
   let conv_flags = if r.rBeta then CT_beta::conv_flags else conv_flags in
   let conv_flags = if r.rIota then CT_iota::conv_flags else conv_flags in
   let conv_flags = if r.rZeta then CT_zeta::conv_flags else conv_flags in
@@ -670,9 +675,11 @@ let xlate_using = function
   | Some (c2,sl2) -> CT_using (xlate_formula c2, xlate_bindings sl2);;
 
 let xlate_one_unfold_block = function
-    ([],qid) -> CT_coerce_ID_to_UNFOLD(tac_qualid_to_ct_ID qid)
+    ([],qid) -> 
+      CT_coerce_ID_to_UNFOLD(apply_or_by_notation tac_qualid_to_ct_ID qid)
   | (n::nums, qid) ->
-      CT_unfold_occ(tac_qualid_to_ct_ID qid, nums_or_var_to_int_ne_list n nums)
+      CT_unfold_occ(apply_or_by_notation tac_qualid_to_ct_ID qid, 
+                    nums_or_var_to_int_ne_list n nums)
 ;;
 
 let xlate_with_names = function
@@ -1164,8 +1171,8 @@ and xlate_tac =
     | TacDecompose ([],c) ->
 	xlate_error "Decompose : empty list of identifiers?"
     | TacDecompose (id::l,c) ->
-	let id' = tac_qualid_to_ct_ID id in
-	let l' = List.map tac_qualid_to_ct_ID l in
+	let id' = apply_or_by_notation tac_qualid_to_ct_ID id in
+	let l' = List.map (apply_or_by_notation tac_qualid_to_ct_ID) l in
         CT_decompose_list(CT_id_ne_list(id',l'),xlate_formula c)
     | TacDecomposeAnd c -> CT_decompose_record (xlate_formula c)
     | TacDecomposeOr c -> CT_decompose_sum(xlate_formula c)

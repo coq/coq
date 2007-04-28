@@ -373,9 +373,21 @@ let intern_or_var ist = function
   | ArgVar locid -> ArgVar (intern_hyp ist locid)
   | ArgArg _ as x -> x
 
+let loc_of_by_notation f = function
+  | AN c -> f c
+  | ByNotation (loc,s) -> loc
+
+let destIndRef = function IndRef ind -> ind | _ -> failwith "destIndRef"
+
+let intern_inductive_or_by_notation = function
+  | AN r -> Nametab.global_inductive r
+  | ByNotation (loc,ntn) ->
+      destIndRef (Notation.interp_notation_as_global_reference loc
+        (function IndRef ind -> true | _ -> false) ntn)
+
 let intern_inductive ist = function
-  | Ident (loc,id) when find_var id ist -> ArgVar (loc,id)
-  | r -> ArgArg (Nametab.global_inductive r)
+  | AN (Ident (loc,id)) when find_var id ist -> ArgVar (loc,id)
+  | r -> ArgArg (intern_inductive_or_by_notation r)
 
 let intern_global_reference ist = function
   | Ident (loc,id) when find_var id ist -> ArgVar (loc,id)
@@ -480,29 +492,40 @@ let intern_induction_arg ist = function
       else
 	ElimOnIdent (loc,id)
 
+let evaluable_of_global_reference = function
+  | ConstRef c -> EvalConstRef c
+  | VarRef c -> EvalVarRef c
+  | r -> error_not_evaluable (pr_global r)
+
+let short_name = function
+  | AN (Ident (loc,id)) when not !strict_check -> Some (loc,id)
+  | _ -> None
+
+let interp_global_reference r =
+  let loc,qid = qualid_of_reference r in
+  try locate_global qid
+  with Not_found ->
+  match r with 
+  | Ident (loc,id) when not !strict_check -> VarRef id
+  | _ -> error_global_not_found_loc loc qid
+
+let intern_evaluable_reference_or_by_notation = function
+  | AN r -> evaluable_of_global_reference (interp_global_reference r)
+  | ByNotation (loc,ntn) ->
+      evaluable_of_global_reference
+      (Notation.interp_notation_as_global_reference loc
+        (function ConstRef _ | VarRef _ -> true | _ -> false) ntn)
+
 (* Globalizes a reduction expression *)
 let intern_evaluable ist = function
-  | Ident (loc,id) when find_ltacvar id ist -> ArgVar (loc,id)
-  | Ident (_,id) when
+  | AN (Ident (loc,id)) when find_ltacvar id ist -> ArgVar (loc,id)
+  | AN (Ident (_,id)) when
       (not !strict_check & find_hyp id ist) or find_ctxvar id ist ->
       ArgArg (EvalVarRef id, None)
   | r ->
-      let loc,qid = qualid_of_reference r in
-      try
-	let e = match locate_global qid with
-	  | ConstRef c -> EvalConstRef c
-	  | VarRef c -> EvalVarRef c
-	  | _ -> error_not_evaluable (pr_reference r) in
-        let short_name = match r with
-	  | Ident (loc,id) when not !strict_check -> Some (loc,id)
-	  | _ -> None in
-        ArgArg (e,short_name)
-      with
-	| Not_found ->
-	match r with 
-	  | Ident (loc,id) when not !strict_check ->
-	      ArgArg (EvalVarRef id, Some (loc,id))
-	  | _ -> error_global_not_found_loc loc qid
+      let e = intern_evaluable_reference_or_by_notation r in
+      let na = short_name r in
+      ArgArg (e,na)
 
 let intern_unfold ist (l,qid) = (l,intern_evaluable ist qid)
 

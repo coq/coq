@@ -408,6 +408,8 @@ let exists_notation_in_scope scopt ntn r =
     r' = r
   with Not_found -> false
 
+let isAVar = function AVar _ -> true | _ -> false
+
 (**********************************************************************)
 (* Mapping classes to scopes *)
 
@@ -602,21 +604,51 @@ let factorize_entries = function
 let is_ident s = (* Poor analysis *)
   String.length s <> 0 & is_letter s.[0]
 
-let browse_notation ntn map =
+let browse_notation strict ntn map =
   let find =
     if String.contains ntn ' ' then (=) ntn
-    else fun ntn' -> List.mem (Terminal ntn) (decompose_notation_key ntn') in
+    else fun ntn' ->
+      let toks = decompose_notation_key ntn' in
+      let trms = List.filter (function Terminal _ -> true | _ -> false) toks in
+      if strict then [Terminal ntn] = trms else List.mem (Terminal ntn) trms in
   let l =
     Gmap.fold 
       (fun scope_name sc ->
 	Gmap.fold (fun ntn ((_,r),df) l ->
 	  if find ntn then (ntn,(scope_name,r,df))::l else l) sc.notations)
       map [] in
-  let l = List.sort (fun x y -> Pervasives.compare (fst x) (fst y)) l in
-  factorize_entries l
+  List.sort (fun x y -> Pervasives.compare (fst x) (fst y)) l
+
+let global_reference_of_notation test (ntn,(sc,c,_)) =
+  match c with
+  | ARef ref when test ref -> Some (ntn,sc,ref)
+  | AApp (ARef ref, l) when List.for_all isAVar l & test ref -> 
+      Some (ntn,sc,ref)
+  | _ -> None
+
+let error_ambiguous_notation loc _ntn =
+  user_err_loc (loc,"",str "Ambiguous notation")
+
+let error_notation_not_reference loc ntn =
+  user_err_loc (loc,"",
+    str "Unable to interpret " ++ quote (str ntn) ++
+    str " as a reference")
+
+let interp_notation_as_global_reference loc test ntn =
+  let ntns = browse_notation true ntn !scope_map in
+  let refs = List.map (global_reference_of_notation test) ntns in
+  match filter_some refs with
+  | [_,_,ref] -> ref
+  | [] -> error_notation_not_reference loc ntn
+  | refs -> 
+      let f (ntn,sc,ref) = find_default ntn !scope_stack = Some sc in
+      match List.filter f refs with
+      | [_,_,ref] -> ref
+      | [] -> error_notation_not_reference loc ntn
+      | _ -> error_ambiguous_notation loc ntn
 
 let locate_notation prraw ntn =
-  let ntns = browse_notation ntn !scope_map in
+  let ntns = factorize_entries (browse_notation false ntn !scope_map) in
   if ntns = [] then
     str "Unknown notation"
   else

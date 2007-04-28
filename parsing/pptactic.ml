@@ -77,6 +77,10 @@ let pr_or_metaid pr = function
 
 let pr_and_short_name pr (c,_) = pr c
 
+let pr_or_by_notation f = function
+  | AN v -> f v
+  | ByNotation (_,s) -> str s
+
 let pr_located pr (loc,x) = pr x
 
 let pr_evaluable_reference = function 
@@ -144,11 +148,13 @@ let rec pr_raw_generic prc prlc prtac prref (x:Genarg.rlevel Genarg.generic_argu
   | SortArgType -> pr_arg pr_rawsort (out_gen rawwit_sort x)
   | ConstrArgType -> pr_arg prc (out_gen rawwit_constr x)
   | ConstrMayEvalArgType ->
-      pr_arg (pr_may_eval prc prlc prref) (out_gen rawwit_constr_may_eval x)
+      pr_arg (pr_may_eval prc prlc (pr_or_by_notation prref))
+        (out_gen rawwit_constr_may_eval x)
   | QuantHypArgType ->
       pr_arg pr_quantified_hypothesis (out_gen rawwit_quant_hyp x)
   | RedExprArgType ->
-      pr_arg (pr_red_expr (prc,prlc,prref)) (out_gen rawwit_red_expr x)
+      pr_arg (pr_red_expr (prc,prlc,pr_or_by_notation prref))
+        (out_gen rawwit_red_expr x)
   | OpenConstrArgType b -> pr_arg prc (snd (out_gen (rawwit_open_constr_gen b) x))
   | ConstrWithBindingsArgType -> 
       pr_arg (pr_with_bindings prc prlc) (out_gen rawwit_constr_with_bindings x)
@@ -976,8 +982,8 @@ let rec raw_printers =
      drop_env pr_constr_expr,
      drop_env pr_lconstr_expr,
      pr_lpattern_expr,
-     drop_env pr_reference,
-     drop_env pr_reference,
+     drop_env (pr_or_by_notation pr_reference),
+     drop_env (pr_or_by_notation pr_reference),
      pr_reference,
      pr_or_metaid pr_lident,
      pr_raw_extend,

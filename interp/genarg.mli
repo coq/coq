@@ -18,6 +18,8 @@ open Term
 
 type 'a and_short_name = 'a * identifier located option
 
+type 'a or_by_notation = AN of 'a | ByNotation of loc * string
+
 (* In globalize tactics, we need to keep the initial [constr_expr] to recompute*)
 (* in the environment by the effective calls to Intro, Inversion, etc *)
 (* The [constr_expr] field is [None] in TacDef though *)
@@ -156,7 +158,7 @@ val rawwit_constr : (constr_expr,rlevel) abstract_argument_type
 val globwit_constr : (rawconstr_and_expr,glevel) abstract_argument_type
 val wit_constr : (constr,tlevel) abstract_argument_type
 
-val rawwit_constr_may_eval : ((constr_expr,reference) may_eval,rlevel) abstract_argument_type
+val rawwit_constr_may_eval : ((constr_expr,reference or_by_notation) may_eval,rlevel) abstract_argument_type
 val globwit_constr_may_eval : ((rawconstr_and_expr,evaluable_global_reference and_short_name or_var) may_eval,glevel) abstract_argument_type
 val wit_constr_may_eval : (constr,tlevel) abstract_argument_type
 
@@ -180,7 +182,7 @@ val rawwit_bindings : (constr_expr bindings,rlevel) abstract_argument_type
 val globwit_bindings : (rawconstr_and_expr bindings,glevel) abstract_argument_type
 val wit_bindings : (constr bindings,tlevel) abstract_argument_type
 
-val rawwit_red_expr : ((constr_expr,reference) red_expr_gen,rlevel) abstract_argument_type
+val rawwit_red_expr : ((constr_expr,reference or_by_notation) red_expr_gen,rlevel) abstract_argument_type
 val globwit_red_expr : ((rawconstr_and_expr,evaluable_global_reference and_short_name or_var) red_expr_gen,glevel) abstract_argument_type
 val wit_red_expr : ((constr,evaluable_global_reference) red_expr_gen,tlevel) abstract_argument_type
 

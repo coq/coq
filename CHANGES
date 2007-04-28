@@ -39,6 +39,7 @@ Tactics
   expressions with explicit occurrences of match or fix.
 - Better heuristic of lemma unfolding for apply/eapply.
 - New tactics "eapply in", "erewrite", "erewrite in".
+- Unfoldable references can be given by notation rather than by name in unfold.
 
 Changes from V8.1gamma to V8.1
 ==============================

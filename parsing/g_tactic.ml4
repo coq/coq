@@ -158,6 +158,10 @@ GEXTEND Gram
       | c1 = constr; "at"; nl = LIST1 int_or_var; "with"; c2 = constr ->
 	  (Some (nl,c1), c2) ] ]
   ;
+  smart_global:
+    [ [ c = global -> AN c
+      | s = ne_string -> ByNotation (loc,s) ] ]
+  ;
   occurrences:
     [ [ "at"; nl = LIST1 int_or_var -> nl
       | -> [] ] ]
@@ -166,7 +170,7 @@ GEXTEND Gram
     [ [ c = constr; nl = occurrences -> (nl,c) ] ]
   ;
   unfold_occ:
-    [ [ c = global; nl = occurrences -> (nl,c) ] ]
+    [ [ c = smart_global; nl = occurrences -> (nl,c) ] ]
   ;
   intropatterns:
     [ [ l = LIST0 simple_intropattern -> l ]]
@@ -200,14 +204,14 @@ GEXTEND Gram
       | IDENT "delta" -> FDeltaBut []
       | IDENT "iota" -> FIota
       | IDENT "zeta" -> FZeta
-      | IDENT "delta"; "["; idl = LIST1 global; "]" -> FConst idl
-      | IDENT "delta"; "-"; "["; idl = LIST1 global; "]" -> FDeltaBut idl
+      | IDENT "delta"; "["; idl = LIST1 smart_global; "]" -> FConst idl
+      | IDENT "delta"; "-"; "["; idl = LIST1 smart_global; "]" -> FDeltaBut idl
     ] ]
   ;
 
   delta_flag:
-    [ [ IDENT "delta"; "["; idl = LIST1 global; "]" -> FConst idl
-      | IDENT "delta"; "-"; "["; idl = LIST1 global; "]" -> FDeltaBut idl
+    [ [ IDENT "delta"; "["; idl = LIST1 smart_global; "]" -> FConst idl
+      | IDENT "delta"; "-"; "["; idl = LIST1 smart_global; "]" -> FDeltaBut idl
     ] ]
   ;
 
@@ -379,7 +383,7 @@ GEXTEND Gram
 	  el = OPT eliminator -> TacNewDestruct (lc,el,ids)
       | IDENT "decompose"; IDENT "record" ; c = constr -> TacDecomposeAnd c
       | IDENT "decompose"; IDENT "sum"; c = constr -> TacDecomposeOr c
-      | IDENT "decompose"; "["; l = LIST1 global; "]"; c = constr
+      | IDENT "decompose"; "["; l = LIST1 smart_global; "]"; c = constr
         -> TacDecompose (l,c)
 
       (* Automation tactic *)

@@ -44,6 +44,8 @@ type argument_type =
   | ExtraArgType of string
 
 type 'a and_short_name = 'a * identifier located option
+type 'a or_by_notation = AN of 'a | ByNotation of loc * string
+
 type rawconstr_and_expr = rawconstr * constr_expr option
 
 (* Dynamics but tagged by a type expression *)

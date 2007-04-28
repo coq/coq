@@ -27,8 +27,8 @@ type raw_red_flag =
   | FBeta
   | FIota
   | FZeta
-  | FConst of reference list
-  | FDeltaBut of reference list
+  | FConst of reference or_by_notation list
+  | FDeltaBut of reference or_by_notation list
 
 let make_red_flag =
   let rec add_flag red = function
@@ -255,8 +255,8 @@ and glob_tactic_expr =
 type raw_tactic_expr =
     (constr_expr,
      pattern_expr,
-     reference,
-     reference,
+     reference or_by_notation,
+     reference or_by_notation,
      reference,
      identifier located or_metaid,
      raw_tactic_expr) gen_tactic_expr
@@ -264,8 +264,8 @@ type raw_tactic_expr =
 type raw_atomic_tactic_expr =
     (constr_expr,                  (* constr *)
      pattern_expr,                 (* pattern *)
-     reference,                    (* evaluable reference *)
-     reference,                    (* inductive *)
+     reference or_by_notation,     (* evaluable reference *)
+     reference or_by_notation,     (* inductive *)
      reference,                    (* ltac reference *)
      identifier located or_metaid, (* identifier *)
      raw_tactic_expr) gen_atomic_tactic_expr
@@ -273,15 +273,15 @@ type raw_atomic_tactic_expr =
 type raw_tactic_arg =
     (constr_expr,
      pattern_expr,
-     reference,
-     reference,
+     reference or_by_notation,
+     reference or_by_notation,
      reference,
      identifier located or_metaid,
      raw_tactic_expr) gen_tactic_arg
 
 type raw_generic_argument = constr_expr generic_argument
 
-type raw_red_expr = (constr_expr, reference) red_expr_gen
+type raw_red_expr = (constr_expr, reference or_by_notation) red_expr_gen
 
 type glob_atomic_tactic_expr =
     (rawconstr_and_expr,

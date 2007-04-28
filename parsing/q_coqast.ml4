@@ -55,6 +55,10 @@ let mlexpr_of_reference = function
   | Libnames.Qualid (loc,qid) -> <:expr< Libnames.Qualid $dloc$ $mlexpr_of_qualid qid$ >>
   | Libnames.Ident (loc,id) -> <:expr< Libnames.Ident $dloc$ $mlexpr_of_ident id$ >>
 
+let mlexpr_of_by_notation f = function
+  | Genarg.AN x -> <:expr< Genarg.AN $f x$ >>
+  | Genarg.ByNotation (loc,s) -> <:expr< Genarg.ByNotation $dloc$ $str:s$ >>
+
 let mlexpr_of_intro_pattern = function
   | Genarg.IntroOrAndPattern _ -> failwith "mlexpr_of_intro_pattern: TODO"
   | Genarg.IntroWildcard -> <:expr< Genarg.IntroWildcard >>
@@ -112,7 +116,7 @@ let mlexpr_of_red_flags {
   Rawterm.rIota = $mlexpr_of_bool bi$;
   Rawterm.rZeta = $mlexpr_of_bool bz$;
   Rawterm.rDelta = $mlexpr_of_bool bd$;
-  Rawterm.rConst = $mlexpr_of_list mlexpr_of_reference l$
+  Rawterm.rConst = $mlexpr_of_list (mlexpr_of_by_notation mlexpr_of_reference) l$
 } >>
 
 let mlexpr_of_explicitation = function
@@ -155,7 +159,7 @@ let mlexpr_of_red_expr = function
       <:expr< Rawterm.Lazy $mlexpr_of_red_flags f$ >>
   | Rawterm.Unfold l ->
       let f1 = mlexpr_of_list (mlexpr_of_or_var mlexpr_of_int) in
-      let f2 = mlexpr_of_reference in
+      let f2 = mlexpr_of_by_notation mlexpr_of_reference in
       let f = mlexpr_of_list (mlexpr_of_pair f1 f2) in
       <:expr< Rawterm.Unfold $f l$ >>
   | Rawterm.Fold l ->

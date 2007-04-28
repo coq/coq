@@ -1567,7 +1567,7 @@ and fTACTIC_COM = function
    fFORMULA x1 ++
    fNODE "exact_no_check" 1
 | CT_vm_cast_no_check(x1) ->
-   fFORMULA x1;
+   fFORMULA x1 ++
    fNODE "vm_cast_no_check" 1
 | CT_exists(x1) ->
    fSPEC_LIST x1 ++

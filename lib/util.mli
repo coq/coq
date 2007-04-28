@@ -216,6 +216,7 @@ val option_fold_left2 : ('a -> 'b -> 'c -> 'a) -> 'a -> 'b option ->
 val option_iter : ('a -> unit) -> 'a option -> unit
 val option_compare : ('a -> 'b -> bool) -> 'a option -> 'b option -> bool 
 val option_smartmap : ('a -> 'a) -> 'a option -> 'a option
+val filter_some : 'a option list -> 'a list
 
 (* In [map_succeed f l] an element [a] is removed if [f a] raises *)
 (* [Failure _] otherwise behaves as [List.map f l] *)

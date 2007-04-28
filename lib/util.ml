@@ -778,6 +778,11 @@ let option_smartmap f a = match a with
   | None -> a
   | Some x -> let x' = f x in if x'==x then a else Some x'
 
+let rec filter_some = function
+  | [] -> []
+  | None::l -> filter_some l
+  | Some a::l -> a :: filter_some l
+
 let map_succeed f = 
   let rec map_f = function 
     | [] -> []
