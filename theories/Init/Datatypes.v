@@ -26,6 +26,35 @@ Inductive bool : Set :=
 
 Add Printing If bool.
 
+Delimit Scope bool_scope with bool.
+
+Bind Scope bool_scope with bool.
+
+(** Basic boolean operators *)
+
+Definition andb (b1 b2:bool) : bool := if b1 then b2 else false.
+
+Definition orb (b1 b2:bool) : bool := if b1 then true else b2.
+
+Definition implb (b1 b2:bool) : bool := if b1 then b2 else true.
+
+Definition xorb (b1 b2:bool) : bool :=
+  match b1, b2 with
+    | true, true => false
+    | true, false => true
+    | false, true => true
+    | false, false => false
+  end.
+
+Definition negb (b:bool) := if b then false else true.
+
+Infix "||" := orb (at level 50, left associativity) : bool_scope.
+Infix "&&" := andb (at level 40, left associativity) : bool_scope.
+
+(** Interpretation of booleans as propositions *)
+
+Inductive eq_true : bool -> Prop := is_eq_true : eq_true true.
+
 (** [nat] is the datatype of natural numbers built from [O] and successor [S];
     note that the constructor name is the letter O.
     Numbers in [nat] can be denoted using a decimal notation; 
@@ -70,7 +99,7 @@ Definition option_map (A B:Type) (f:A->B) o :=
   end.
 
 (** [sum A B], written [A + B], is the disjoint sum of [A] and [B] *)
-(* Syntax defined in Specif.v *)
+
 Inductive sum (A B:Type) : Type :=
   | inl : A -> sum A B
   | inr : B -> sum A B.
@@ -82,6 +111,7 @@ Notation "x + y" := (sum x y) : type_scope.
 
 Inductive prod (A B:Type) : Type :=
   pair : A -> B -> prod A B.
+
 Add Printing Let prod.
 
 Notation "x * y" := (prod x y) : type_scope.
@@ -135,6 +165,8 @@ Definition CompOpp (r:comparison) :=
     | Gt => Lt
   end.
 
+(* begin hide *)
+
 (* Compatibility *)
 
 Notation prodT := prod (only parsing).
@@ -146,3 +178,5 @@ Notation fstT := fst (only parsing).
 Notation sndT := snd (only parsing).
 Notation prodT_uncurry := prod_uncurry (only parsing).
 Notation prodT_curry := prod_curry (only parsing).
+
+(* end hide *)

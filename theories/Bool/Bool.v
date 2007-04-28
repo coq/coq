@@ -126,9 +126,8 @@ Proof.
   destruct a; destruct b; simpl in |- *; intro; discriminate H || reflexivity.
 Qed.
 
-
 (************************)
-(** * Logical combinators *)
+(** * A synonym of [if] on [bool] *)
 (************************)
  
 Definition ifb (b1 b2 b3:bool) : bool :=
@@ -137,30 +136,7 @@ Definition ifb (b1 b2 b3:bool) : bool :=
     | false => b3
   end.
 
-Definition andb (b1 b2:bool) : bool := ifb b1 b2 false.
-
-Definition orb (b1 b2:bool) : bool := ifb b1 true b2.
-
-Definition implb (b1 b2:bool) : bool := ifb b1 b2 true.
-
-Definition xorb (b1 b2:bool) : bool :=
-  match b1, b2 with
-    | true, true => false
-    | true, false => true
-    | false, true => true
-    | false, false => false
-  end.
-
-Definition negb (b:bool) := if b then false else true.
-
-Infix "||" := orb (at level 50, left associativity) : bool_scope.
-Infix "&&" := andb (at level 40, left associativity) : bool_scope.
-
 Open Scope bool_scope.
-
-Delimit Scope bool_scope with bool.
-
-Bind Scope bool_scope with bool.
 
 (****************************)
 (** * De Morgan laws          *)

@@ -13,6 +13,7 @@ Libraries
 - Better computational behavior of some constants (eq_nat_dec more
   efficient, Z_lt_le_dec transparent, ...) [exceptionally source of
   incompatibilities].
+- Boolean operators moved from module Bool to module Datatypes.
 
 Notations
 
