@@ -1004,12 +1004,13 @@ and xlate_tac =
 		CT_coerce_TACTIC_COM_to_TACTIC_OPT tac
 	in 
 	CT_replace_with (c1, c2,cl,tac_opt)
-    | TacRewrite(b,cbindl,cl) -> 
+    | TacRewrite(b,false,cbindl,cl) -> 
      let cl = xlate_clause cl 
      and c = xlate_formula (fst cbindl) 
      and bindl = xlate_bindings (snd cbindl) in
      if b then CT_rewrite_lr (c, bindl, cl)
      else CT_rewrite_rl (c, bindl, cl)
+    | TacRewrite(b,true,cbindl,cl) -> xlate_error "TODO: erewrite"
     | TacExtend (_,"conditional_rewrite", [t; b; cbindl]) ->
      let t = out_gen rawwit_main_tactic t in
      let b = out_gen Extraargs.rawwit_orient b in
@@ -1122,10 +1123,9 @@ and xlate_tac =
       (match out_gen rawwit_int_or_var n with
 	| ArgVar _ -> xlate_error ""
 	| ArgArg n -> CT_prolog (CT_formula_list cl, CT_int  n))
-    | TacExtend (_,"eapply", [cbindl]) ->
-     let (c,bindl) = out_gen rawwit_constr_with_bindings cbindl in
-     let c = xlate_formula c and bindl = xlate_bindings bindl in
-     CT_eapply (c, bindl)
+    (* eapply now represented by TacApply (true,cbindl) 
+    | TacExtend (_,"eapply", [cbindl]) -> 
+*)
     | TacTrivial ([],Some []) -> CT_trivial
     | TacTrivial ([],None) -> 
 	CT_trivial_with(CT_coerce_STAR_to_ID_NE_LIST_OR_STAR CT_star)
@@ -1136,8 +1136,10 @@ and xlate_tac =
 	xlate_error "TODO: trivial using"
     | TacReduce (red, l) ->
      CT_reduce (xlate_red_tactic red, xlate_clause l)
-    | TacApply (c,bindl) ->
+    | TacApply (false,(c,bindl)) ->
      CT_apply (xlate_formula c, xlate_bindings bindl)
+    | TacApply (true,(c,bindl)) ->
+     CT_eapply (xlate_formula c, xlate_bindings bindl)
     | TacConstructor (n_or_meta, bindl) ->
 	let n = match n_or_meta with AI n -> n | MetaId _ -> xlate_error ""
 	in CT_constructor (CT_int n, xlate_bindings bindl)

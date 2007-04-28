@@ -321,7 +321,8 @@ GEXTEND Gram
       | IDENT "exact_no_check"; c = constr -> TacExactNoCheck c
       | IDENT "vm_cast_no_check"; c = constr -> TacVmCastNoCheck c
 
-      | IDENT "apply"; cl = constr_with_bindings -> TacApply cl
+      | IDENT "apply"; cl = constr_with_bindings -> TacApply (false,cl)
+      | IDENT "eapply"; cl = constr_with_bindings -> TacApply (true,cl)
       | IDENT "elim"; cl = constr_with_bindings; el = OPT eliminator ->
           TacElim (cl,el)
       | IDENT "elimtype"; c = constr -> TacElimType c
@@ -422,8 +423,10 @@ GEXTEND Gram
       | IDENT "transitivity"; c = constr -> TacTransitivity c
 
       (* Equality and inversion *)
-      | IDENT "rewrite"; b = orient; c = constr_with_bindings ; cl = clause -> 
-	  TacRewrite (b,c,cl)
+      | IDENT "rewrite"; b = orient; c = constr_with_bindings ; cl = clause ->
+	  TacRewrite (b,false,c,cl)
+      | IDENT "erewrite"; b = orient; c = constr_with_bindings ; cl = clause ->
+	  TacRewrite (b,true,c,cl)
       | IDENT "dependent"; k =
 	  [ IDENT "simple"; IDENT "inversion" -> SimpleInversion
 	  | IDENT "inversion" -> FullInversion

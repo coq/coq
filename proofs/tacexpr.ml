@@ -21,6 +21,7 @@ type 'a or_metaid = AI of 'a | MetaId of loc * string
 
 type direction_flag = bool (* true = Left-to-right    false = right-to-right *)
 type lazy_flag = bool      (* true = lazy             false = eager *)
+type evars_flag = bool     (* true = pose evars       false = fail on evars *)
 
 type raw_red_flag =
   | FBeta
@@ -122,7 +123,7 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacExact of 'constr
   | TacExactNoCheck of 'constr
   | TacVmCastNoCheck of 'constr
-  | TacApply of 'constr with_bindings
+  | TacApply of evars_flag * 'constr with_bindings
   | TacElim of 'constr with_bindings * 'constr with_bindings option
   | TacElimType of 'constr
   | TacCase of 'constr with_bindings
@@ -184,7 +185,7 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacTransitivity of 'constr 
 
   (* Equality and inversion *)
-  | TacRewrite of bool * 'constr with_bindings * 'id gclause
+  | TacRewrite of bool * evars_flag * 'constr with_bindings * 'id gclause
   | TacInversion of ('constr,'id) inversion_strength * quantified_hypothesis
       
   (* For ML extensions *)

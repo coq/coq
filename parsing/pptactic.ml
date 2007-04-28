@@ -664,7 +664,9 @@ and pr_atom1 = function
   | TacExact c -> hov 1 (str "exact" ++ pr_constrarg c)
   | TacExactNoCheck c -> hov 1 (str "exact_no_check" ++ pr_constrarg c)
   | TacVmCastNoCheck c -> hov 1 (str "vm_cast_no_check" ++ pr_constrarg c)
-  | TacApply cb -> hov 1 (str "apply" ++ spc () ++ pr_with_bindings cb)
+  | TacApply (ev,cb) ->
+      hov 1 (str (if ev then "eapply" else "apply") ++ spc () ++ 
+             pr_with_bindings cb)
   | TacElim (cb,cbo) ->
       hov 1 (str "elim" ++ pr_arg pr_with_bindings cb ++ 
         pr_opt pr_eliminator cbo)
@@ -805,9 +807,9 @@ and pr_atom1 = function
   | TacTransitivity c -> str "transitivity" ++ pr_constrarg c
 
   (* Equality and inversion *)
-  | TacRewrite (b,c,cl) -> 
-      hov 1 (str "rewrite" ++ pr_orient b ++ spc() ++ pr_with_bindings c ++ 
-             pr_clauses pr_ident cl) 
+  | TacRewrite (b,ev,c,cl) -> 
+      hov 1 (str (if ev then "erewrite" else "rewrite") ++ pr_orient b ++
+             spc() ++ pr_with_bindings c ++ pr_clauses pr_ident cl) 
   | TacInversion (DepInversion (k,c,ids),hyp) ->
       hov 1 (str "dependent " ++ pr_induction_kind k ++ spc () ++
       pr_quantified_hypothesis hyp ++

@@ -82,7 +82,7 @@ let autorewrite tac_main lbas =
     (List.fold_left (fun tac bas -> 
        tclTHEN tac (one_base general_rewrite tac_main bas)) tclIDTAC lbas))
 
-let autorewrite_mutlti_in idl tac_main lbas : tactic =
+let autorewrite_multi_in idl tac_main lbas : tactic =
   fun gl -> 
  (* let's check at once if id exists (to raise the appropriate error) *)
  let _ = List.map (Tacmach.pf_get_hyp gl) idl in
@@ -96,7 +96,7 @@ let autorewrite_mutlti_in idl tac_main lbas : tactic =
       | _ -> (* even the hypothesis id is missing *)
              error ("No such hypothesis : " ^ (string_of_id !id))
     in
-    let gl' = general_rewrite_in dir !id cstr gl in
+    let gl' = general_rewrite_in dir !id cstr false gl in
     let gls = (fst gl').Evd.it in
     match gls with
        g::_ ->
@@ -126,11 +126,11 @@ let autorewrite_mutlti_in idl tac_main lbas : tactic =
        tclTHEN tac (one_base (general_rewrite_in id) tac_main bas)) tclIDTAC lbas)))
    idl gl
 
-let autorewrite_in id = autorewrite_mutlti_in [id]
+let autorewrite_in id = autorewrite_multi_in [id]
 
 let gen_auto_multi_rewrite tac_main lbas cl = 
   let try_do_hyps treat_id l = 
-    autorewrite_mutlti_in (List.map treat_id l) tac_main lbas
+    autorewrite_multi_in (List.map treat_id l) tac_main lbas
   in 
   if cl.concl_occs <> [] then 
     error "The \"at\" syntax isn't available yet for the autorewrite tactic"

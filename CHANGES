@@ -37,6 +37,7 @@ Tactics
 - Slight improvement of the hnf and simpl tactics when applied on
   expressions with explicit occurrences of match or fix.
 - Better heuristic of lemma unfolding for apply/eapply.
+- New tactics "eapply in", "erewrite", "erewrite in".
 
 Changes from V8.1gamma to V8.1
 ==============================

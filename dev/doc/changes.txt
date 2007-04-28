@@ -8,7 +8,8 @@ A few differences in Coq ML interfaces between Coq V8.0 and V8.1
 ** Functions
 
 Eauto: e_resolve_constr, vernac_e_resolve_constr -> simplest_eapply
-
+Tactics: apply_with_bindings -> apply_with_bindings_wo_evars
+Eauto.simplest_apply -> Hiddentac.h_simplest_apply
 
 =========================================
 = CHANGES BETWEEN COQ V8.0 AND COQ V8.1 =

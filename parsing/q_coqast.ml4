@@ -273,8 +273,8 @@ let rec mlexpr_of_atomic_tactic = function
       <:expr< Tacexpr.TacExactNoCheck $mlexpr_of_constr c$ >>
   | Tacexpr.TacVmCastNoCheck c ->
       <:expr< Tacexpr.TacVmCastNoCheck $mlexpr_of_constr c$ >>
-  | Tacexpr.TacApply cb ->
-      <:expr< Tacexpr.TacApply $mlexpr_of_constr_with_binding cb$ >>
+  | Tacexpr.TacApply (false,cb) ->
+      <:expr< Tacexpr.TacApply False $mlexpr_of_constr_with_binding cb$ >>
   | Tacexpr.TacElim (cb,cbo) ->
       let cb = mlexpr_of_constr_with_binding cb in
       let cbo = mlexpr_of_option mlexpr_of_constr_with_binding cbo in

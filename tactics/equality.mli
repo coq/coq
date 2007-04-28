@@ -25,8 +25,10 @@ open Rawterm
 open Genarg
 (*i*)
 
-val general_rewrite_bindings : bool -> constr with_bindings -> tactic
-val general_rewrite          : bool -> constr -> tactic
+val general_rewrite_bindings : 
+  bool -> constr with_bindings -> evars_flag -> tactic
+val general_rewrite : 
+  bool -> constr -> tactic
 
 (* Obsolete, use [general_rewrite_bindings l2r]
 [val rewriteLR_bindings       : constr with_bindings -> tactic]
@@ -40,12 +42,12 @@ val rewriteRL   : constr  -> tactic
 (* Warning: old [general_rewrite_in] is now [general_rewrite_bindings_in] *)
 
 val general_rewrite_bindings_in :
-  bool -> identifier -> constr with_bindings -> tactic
+  bool -> identifier -> constr with_bindings -> evars_flag -> tactic
 val general_rewrite_in          :
-  bool -> identifier -> constr -> tactic
+  bool -> identifier -> constr -> evars_flag -> tactic
 
 val general_multi_rewrite : 
-  bool -> constr with_bindings -> clause -> tactic
+  bool -> evars_flag -> constr with_bindings -> clause -> tactic
 
 val conditional_rewrite : bool -> tactic -> constr with_bindings -> tactic
 val conditional_rewrite_in :

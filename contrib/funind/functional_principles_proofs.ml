@@ -1353,7 +1353,7 @@ let rec rewrite_eqs_in_eqs eqs =
     | [] -> tclIDTAC
     | eq::eqs -> 
 	  tclTHEN 
-	    (tclMAP (fun id -> tclTRY (Equality.general_rewrite_in true id (mkVar eq))) eqs)
+	    (tclMAP (fun id -> tclTRY (Equality.general_rewrite_in true id (mkVar eq) false)) eqs)
 	    (rewrite_eqs_in_eqs eqs) 
 
 let new_prove_with_tcc is_mes acc_inv hrec tcc_lemma_constr eqs : tactic = 
@@ -1498,9 +1498,7 @@ let prove_principle_for_gen
 	       (
 		 (* observe_tac  *)
 (* 		   "apply wf_thm"  *)
-		   (h_apply ((mkApp(mkVar wf_thm_id,
-				    [|mkVar rec_arg_id |])),Rawterm.NoBindings)
-		   )
+		 h_simplest_apply (mkApp(mkVar wf_thm_id,[|mkVar rec_arg_id|]))
 	       )
 	    )
 	 )

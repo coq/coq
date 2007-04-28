@@ -235,7 +235,7 @@ let thin l             = with_check (thin_no_check l)
 let thin_body c        = with_check (thin_body_no_check c)
 let move_hyp b id id'  = with_check (move_hyp_no_check b id id') 
 let rename_hyp id id'  = with_check (rename_hyp_no_check id id')
-    
+
 (* Pretty-printers *)
 
 open Pp

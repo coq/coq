@@ -32,7 +32,7 @@ val h_exact           : constr -> tactic
 val h_exact_no_check  : constr -> tactic
 val h_vm_cast_no_check  : constr -> tactic
 
-val h_apply           : constr with_bindings -> tactic
+val h_apply           : evars_flag -> constr with_bindings -> tactic
 
 val h_elim            : constr with_bindings ->
                         constr with_bindings option -> tactic
@@ -98,6 +98,7 @@ val h_symmetry        : Tacticals.clause -> tactic
 val h_transitivity    : constr -> tactic
 
 val h_simplest_apply  : constr -> tactic 
+val h_simplest_eapply : constr -> tactic 
 val h_simplest_elim   : constr -> tactic
 val h_simplest_case   : constr -> tactic
 

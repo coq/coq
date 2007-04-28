@@ -29,6 +29,7 @@ open Pattern
 open Clenv
 open Auto
 open Rawterm
+open Hiddentac
 
 let e_give_exact c gl = let t1 = (pf_type_of gl c) and t2 = pf_concl gl in 
   if occur_existential t1 or occur_existential t2 then 
@@ -53,13 +54,6 @@ let e_give_exact_constr = h_eexact
 let registered_e_assumption gl = 
   tclFIRST (List.map (fun id gl -> e_give_exact_constr (mkVar id) gl) 
               (pf_ids_of_hyps gl)) gl
-
-(* This automatically define h_eApply (among other things) *)
-TACTIC EXTEND eapply
-  [ "eapply" constr_with_bindings(c) ] -> [ Tactics.eapply_with_bindings c ]
-END
-
-let simplest_eapply c = h_eapply (c,NoBindings)
 
 let e_constructor_tac boundopt i lbind gl = 
     let cl = pf_concl gl in 
@@ -130,8 +124,8 @@ END
 
 let one_step l gl =
   [Tactics.intro]
-  @ (List.map simplest_eapply (List.map mkVar (pf_ids_of_hyps gl)))
-  @ (List.map simplest_eapply l)
+  @ (List.map h_simplest_eapply (List.map mkVar (pf_ids_of_hyps gl)))
+  @ (List.map h_simplest_eapply l)
   @ (List.map assumption (pf_ids_of_hyps gl))
 
 let rec prolog l n gl =
@@ -162,7 +156,7 @@ open Auto
 let unify_e_resolve  (c,clenv) gls = 
   let clenv' = connect_clenv gls clenv in
   let _ = clenv_unique_resolver false clenv' gls in
-  simplest_eapply c gls
+  h_simplest_eapply c gls
 
 let rec e_trivial_fail_db db_list local_db goal =
   let tacl = 

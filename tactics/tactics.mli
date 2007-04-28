@@ -166,12 +166,13 @@ val bring_hyps : named_context -> tactic
 val apply                 : constr      -> tactic
 val apply_without_reduce  : constr      -> tactic
 val apply_list            : constr list -> tactic
-val apply_with_bindings   : constr with_bindings -> tactic
+val apply_with_bindings_gen   : evars_flag -> constr with_bindings -> tactic
+val apply_with_bindings : constr with_bindings -> tactic
 val eapply_with_bindings  : constr with_bindings -> tactic
 
 val cut_and_apply         : constr -> tactic
 
-val apply_in              : identifier -> constr with_bindings list -> tactic
+val apply_in : evars_flag -> identifier -> constr with_bindings list -> tactic
 
 (*s Elimination tactics. *)
 
@@ -226,7 +227,7 @@ val compute_elim_sig : ?elimc: (Term.constr * constr Rawterm.bindings) -> types 
 
 val general_elim  :
   constr with_bindings -> constr with_bindings -> ?allow_K:bool -> tactic
-val general_elim_in :
+val general_elim_in : evars_flag -> 
   identifier -> constr with_bindings -> constr with_bindings -> tactic
 
 val default_elim  : constr with_bindings -> tactic

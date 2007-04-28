@@ -341,7 +341,7 @@ let intros = tclREPEAT (intro_force false)
 
 let intro_erasing id = tclTHEN (thin [id]) (introduction id)
 
-let intros_replacing ids gls = 
+let intros_replacing ids gl = 
   let rec introrec = function
     | [] -> tclIDTAC
     | id::tl ->
@@ -350,7 +350,7 @@ let intros_replacing ids gls =
                        (intro_using id)))
            (introrec tl))
   in 
-  introrec ids gls
+  introrec ids gl
 
 (* User-level introduction tactics *)
 
@@ -504,6 +504,23 @@ let cut_in_parallel l =
   in 
     prec (List.rev l)
 
+let error_uninstantiated_metas t clenv =
+  let na = meta_name clenv.env (List.hd (Metaset.elements (metavars_of t))) in
+  let id = match na with Name id -> id | _ -> anomaly "unnamed dependent meta"
+  in errorlabstrm "" (str "cannot find an instance for " ++ pr_id id)
+
+let clenv_refine_in with_evars id clenv gl =
+  let clenv = if with_evars then clenv_pose_dependent_evars clenv else clenv in
+  let new_hyp_typ  = clenv_type clenv in
+  if not with_evars & occur_meta new_hyp_typ then 
+    error_uninstantiated_metas new_hyp_typ clenv;
+  let new_hyp_prf  = clenv_value clenv in
+  tclTHEN
+    (tclEVARS (evars_of clenv.env))
+    (cut_replacing id new_hyp_typ
+      (fun x gl -> refine_no_check new_hyp_prf gl)) gl
+
+
 (****************************************************)
 (*            Resolution tactics                    *)
 (****************************************************)
@@ -576,25 +593,20 @@ let progress_with_clause innerclause clause =
   try list_try_find f ordered_metas
   with Failure _ -> error "Unable to unify"
 
-let apply_in_once gls innerclause (d,lbind) =
-  let thm = nf_betaiota (pf_type_of gls d) in
+let apply_in_once gl innerclause (d,lbind) =
+  let thm = nf_betaiota (pf_type_of gl d) in
   let rec aux clause =
     try progress_with_clause innerclause clause
     with err ->
     try aux (clenv_push_prod clause)
     with NotExtensibleClause -> raise err
-  in aux (make_clenv_binding gls (d,thm) lbind)
+  in aux (make_clenv_binding gl (d,thm) lbind)
 
-let apply_in id lemmas gls =
-  let t' = pf_get_hyp_typ gls id in
-  let innermostclause = mk_clenv_from_n gls (Some 0) (mkVar id,t') in
-  let clause = List.fold_left (apply_in_once gls) innermostclause lemmas in
-  let new_hyp_prf  = clenv_value clause in
-  let new_hyp_typ  = clenv_type clause in
-  tclTHEN
-    (tclEVARS (evars_of clause.env))
-    (cut_replacing id new_hyp_typ
-      (fun x gls -> refine_no_check new_hyp_prf gls)) gls
+let apply_in with_evars id lemmas gl =
+  let t' = pf_get_hyp_typ gl id in
+  let innermostclause = mk_clenv_from_n gl (Some 0) (mkVar id,t') in
+  let clause = List.fold_left (apply_in_once gl) innermostclause lemmas in
+  clenv_refine_in with_evars id clause gl
 
 (* A useful resolution tactic which, if c:A->B, transforms |- C into
    |- B -> C and |- A
@@ -842,7 +854,7 @@ let simplest_elim c = default_elim (c,NoBindings)
    (e.g. it could replace id:A->B->C by id:C, knowing A/\B)
 *)
 
-let elimination_in_clause_scheme id elimclause indclause gl =
+let elimination_in_clause_scheme with_evars id elimclause indclause gl =
   let (hypmv,indmv) = 
     match clenv_independent elimclause with
         [k1;k2] -> (k1,k2)
@@ -853,18 +865,14 @@ let elimination_in_clause_scheme id elimclause indclause gl =
   let hyp_typ = pf_type_of gl hyp in
   let hypclause = mk_clenv_from_n gl (Some 0) (hyp, hyp_typ) in
   let elimclause'' = clenv_fchain hypmv elimclause' hypclause in  
-  let new_hyp_prf  = clenv_value elimclause'' in
   let new_hyp_typ  = clenv_type elimclause'' in
   if eq_constr hyp_typ new_hyp_typ then
     errorlabstrm "general_rewrite_in" 
       (str "Nothing to rewrite in " ++ pr_id id);
-  tclTHEN
-    (tclEVARS (evars_of elimclause''.env))
-    (cut_replacing id new_hyp_typ
-      (fun x gls -> refine_no_check new_hyp_prf gls)) gl
+  clenv_refine_in with_evars id elimclause'' gl
 
-let general_elim_in id =
-  general_elim_clause (elimination_in_clause_scheme id)
+let general_elim_in with_evars id =
+  general_elim_clause (elimination_in_clause_scheme with_evars id)
 
 (* Case analysis tactics *)
 
@@ -2465,9 +2473,9 @@ let interpretable_as_section_decl d1 d2 = match d1,d2 with
   | (_,Some b1,t1), (_,Some b2,t2) -> eq_constr b1 b2 & eq_constr t1 t2
   | (_,None,t1), (_,_,t2) -> eq_constr t1 t2
 
-let abstract_subproof name tac gls = 
+let abstract_subproof name tac gl = 
   let current_sign = Global.named_context()
-  and global_sign = pf_hyps gls in
+  and global_sign = pf_hyps gl in
   let sign,secsign = 
     List.fold_right
       (fun (id,_,_ as d) (s1,s2) -> 
@@ -2476,8 +2484,8 @@ let abstract_subproof name tac gls =
         then (s1,push_named_context_val d s2)
 	else (add_named_decl d s1,s2)) 
       global_sign (empty_named_context,empty_named_context_val) in
-  let na = next_global_ident_away false name (pf_ids_of_hyps gls) in
-  let concl = it_mkNamedProd_or_LetIn (pf_concl gls) sign in
+  let na = next_global_ident_away false name (pf_ids_of_hyps gl) in
+  let concl = it_mkNamedProd_or_LetIn (pf_concl gl) sign in
     if occur_existential concl then
       error "\"abstract\" cannot handle existentials";
     let lemme =
@@ -2498,19 +2506,19 @@ let abstract_subproof name tac gls =
       exact_no_check 
 	(applist (lemme, 
 		 List.rev (Array.to_list (instance_from_named_context sign))))
-	gls
+	gl
 
-let tclABSTRACT name_op tac gls = 
+let tclABSTRACT name_op tac gl = 
   let s = match name_op with 
     | Some s -> s 
     | None   -> add_suffix (get_current_proof_name ()) "_subproof" 
   in  
-  abstract_subproof s tac gls
+  abstract_subproof s tac gl
 
 
-let admit_as_an_axiom gls =
+let admit_as_an_axiom gl =
   let current_sign = Global.named_context()
-  and global_sign = pf_hyps gls in
+  and global_sign = pf_hyps gl in
   let sign,secsign = 
     List.fold_right
       (fun (id,_,_ as d) (s1,s2) -> 
@@ -2520,8 +2528,8 @@ let admit_as_an_axiom gls =
 	 else (add_named_decl d s1,s2)) 
       global_sign (empty_named_context,empty_named_context) in
   let name = add_suffix (get_current_proof_name ()) "_admitted" in
-  let na = next_global_ident_away false name (pf_ids_of_hyps gls) in
-  let concl = it_mkNamedProd_or_LetIn (pf_concl gls) sign in
+  let na = next_global_ident_away false name (pf_ids_of_hyps gl) in
+  let concl = it_mkNamedProd_or_LetIn (pf_concl gl) sign in
   if occur_existential concl then error "\"admit\" cannot handle existentials";
   let axiom =
     let cd = Entries.ParameterEntry (concl,false) in
@@ -2531,4 +2539,4 @@ let admit_as_an_axiom gls =
   exact_no_check 
     (applist (axiom, 
               List.rev (Array.to_list (instance_from_named_context sign))))
-    gls
+    gl

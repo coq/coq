@@ -332,7 +332,7 @@ let rec  mk_intros_and_continue thin_intros (extra_eqn:bool)
 		h_intros thin_intros;
 		
 		tclMAP 
-		  (fun eq -> tclTRY (Equality.general_rewrite_in true teq eq)) 
+		  (fun eq -> tclTRY (Equality.general_rewrite_in true teq eq false)) 
 		  (List.rev eqs);
 		(fun g1 -> 
 		   let ty_teq = pf_type_of g1 (mkVar teq) in 
@@ -476,7 +476,7 @@ let rec list_cond_rewrite k def pmax cond_eqs le_proofs =
 	   (general_rewrite_bindings false
 	      (mkVar eq,
 	       ExplicitBindings[dummy_loc, NamedHyp k_id, mkVar k;
-				dummy_loc, NamedHyp def_id, mkVar def]))
+				dummy_loc, NamedHyp def_id, mkVar def]) false)
 	   [list_cond_rewrite k def pmax eqs le_proofs;
             observe_tac "make_lt_proof" (make_lt_proof pmax le_proofs)] g
       ) 
@@ -684,8 +684,7 @@ let hyp_terminates func =
 
 let tclUSER_if_not_mes is_mes names_to_suppress = 
   if is_mes 
-  then 
-    tclCOMPLETE (h_apply (delayed_force well_founded_ltof,Rawterm.NoBindings))
+  then tclCOMPLETE (h_simplest_apply (delayed_force well_founded_ltof))
   else tclUSER is_mes names_to_suppress
 
 let termination_proof_header is_mes input_type ids args_id relation
@@ -745,8 +744,7 @@ let termination_proof_header is_mes input_type ids args_id relation
 		 (* this gives the accessibility argument *)
 		 observe_tac 
 		   "apply wf_thm" 
-		   (h_apply ((mkApp(mkVar wf_thm,
-				    [|mkVar rec_arg_id |])),Rawterm.NoBindings)
+		   (h_simplest_apply (mkApp(mkVar wf_thm,[|mkVar rec_arg_id|]))
 		   )
 	       ]
 	     ;
@@ -950,7 +948,7 @@ let open_new_goal using_lemmas ref goal_name (gls_type,decompose_and_tac,nb_goal
 	      (fun c -> 
 		 tclTHENSEQ
 		   [intros; 
-		    h_apply (interp_constr Evd.empty (Global.env()) c,Rawterm.NoBindings); 
+		    h_simplest_apply (interp_constr Evd.empty (Global.env()) c); 
 		    tclCOMPLETE Auto.default_auto
 		   ]
 	      )
@@ -1111,7 +1109,7 @@ let rec introduce_all_values_eq  cont_tac functional termine
 		 ExplicitBindings[dummy_loc,NamedHyp k_id,
 				  f_S(f_S(mkVar pmax));
 				  dummy_loc,NamedHyp def_id,
-				  f]) gls )
+				  f]) false gls )
 	     [tclTHENLIST
 		[simpl_iter();
 		 unfold_constr (reference_of_constr functional);
@@ -1163,7 +1161,7 @@ let rec introduce_all_values_eq  cont_tac functional termine
 			    ExplicitBindings
 			      [dummy_loc, NamedHyp k_id,
 			       f_S(mkVar pmax');
-			       dummy_loc, NamedHyp def_id, f]) )
+			       dummy_loc, NamedHyp def_id, f]) false)
 			   g
 		     )
 		     [tclIDTAC;

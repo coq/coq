@@ -56,14 +56,14 @@ let general_s_rewrite_clause = function
   | Some id -> general_s_rewrite_in id
 
 (* Ad hoc asymmetric general_elim_clause *)
-let general_elim_clause cls c elim = match cls with
+let general_elim_clause with_evars cls c elim = match cls with
   | None ->
       (* was tclWEAK_PROGRESS which only fails for tactics generating one 
          subgoal and did not fail for useless conditional rewritings generating
          an extra condition *)
       tclNOTSAMEGOAL (general_elim c elim ~allow_K:false)
   | Some id ->
-      general_elim_in id c elim 
+      general_elim_in with_evars id c elim 
 
 let elimination_sort_of_clause = function
   | None -> elimination_sort_of_goal
@@ -81,7 +81,7 @@ let elimination_sort_of_clause = function
    else back to the old approach
 *)
 
-let general_rewrite_bindings_clause cls lft2rgt (c,l) gl =
+let general_rewrite_bindings_clause cls lft2rgt (c,l) with_evars gl =
   let ctype = pf_apply get_type_of gl c in 
   (* A delta-reduction would be here too strong, since it would 
      break search for a defined setoid relation in head position. *)
@@ -109,17 +109,17 @@ let general_rewrite_bindings_clause cls lft2rgt (c,l) gl =
 		with Not_found ->
 		  error ("Cannot find rewrite principle "^rwr_thm)
               in 
-		general_elim_clause cls (c,l) (elim,NoBindings) gl
+		general_elim_clause with_evars cls (c,l) (elim,NoBindings) gl
 
 let general_rewrite_bindings = general_rewrite_bindings_clause None
-let general_rewrite l2r c = general_rewrite_bindings l2r (c,NoBindings)
+let general_rewrite l2r c = general_rewrite_bindings l2r (c,NoBindings) false
 
 let general_rewrite_bindings_in l2r id =
   general_rewrite_bindings_clause (Some id) l2r
 let general_rewrite_in l2r id c = 
   general_rewrite_bindings_clause (Some id) l2r (c,NoBindings)
 
-let general_multi_rewrite l2r c cl = 
+let general_multi_rewrite l2r with_evars c cl = 
   if cl.concl_occs <> [] then 
     error "The \"at\" syntax isn't available yet for the rewrite/replace tactic"
   else match cl.onhyps with 
@@ -129,10 +129,14 @@ let general_multi_rewrite l2r c cl =
 	let rec do_hyps = function 
 	  | [] -> tclIDTAC
 	  | ((_,id),_) :: l -> 
-	      tclTHENFIRST (general_rewrite_bindings_in l2r id c) (do_hyps l)
+	      tclTHENFIRST
+	        (general_rewrite_bindings_in l2r id c with_evars)
+	        (do_hyps l)
 	in 
-	if not cl.onconcl then do_hyps l 
-	else tclTHENFIRST (general_rewrite_bindings l2r c) (do_hyps l)
+	if not cl.onconcl then do_hyps l else
+	  tclTHENFIRST
+	    (general_rewrite_bindings l2r c with_evars)
+	    (do_hyps l)
     | None -> 
 	(* Otherwise, if we are told to rewrite in all hypothesis via the 
            syntax "* |-", we fail iff all the different rewrites fail *) 
@@ -140,7 +144,7 @@ let general_multi_rewrite l2r c cl =
 	  | [] -> (fun gl -> error "Nothing to rewrite.")
 	  | id :: l -> 
 	      tclIFTHENTRYELSEMUST 
-		(general_rewrite_bindings_in l2r id c) 
+		(general_rewrite_bindings_in l2r id c with_evars) 
 		(do_hyps_atleastonce l)
 	in 
 	let do_hyps gl = 
@@ -150,14 +154,16 @@ let general_multi_rewrite l2r c cl =
 	      Idset.fold (fun id l -> list_remove id l) ids_in_c (pf_ids_of_hyps gl)
 	  in do_hyps_atleastonce ids gl
 	in 
-	  if not cl.onconcl then do_hyps 
-	  else tclIFTHENTRYELSEMUST (general_rewrite_bindings l2r c) do_hyps
+	  if not cl.onconcl then do_hyps else
+	    tclIFTHENTRYELSEMUST 
+	      (general_rewrite_bindings l2r c with_evars)
+	      do_hyps
 
 (* Conditional rewriting, the success of a rewriting is related 
    to the resolution of the conditions by a given tactic *)
 
 let conditional_rewrite lft2rgt tac (c,bl) = 
-  tclTHENSFIRSTn (general_rewrite_bindings lft2rgt (c,bl))
+  tclTHENSFIRSTn (general_rewrite_bindings lft2rgt (c,bl) false)
     [|tclIDTAC|] (tclCOMPLETE tac)
 
 let rewriteLR_bindings = general_rewrite_bindings true
@@ -170,7 +176,7 @@ let rewriteLRin_bindings = general_rewrite_bindings_in true
 let rewriteRLin_bindings = general_rewrite_bindings_in false
 
 let conditional_rewrite_in lft2rgt id tac (c,bl) = 
-  tclTHENSFIRSTn (general_rewrite_bindings_in lft2rgt id (c,bl))
+  tclTHENSFIRSTn (general_rewrite_bindings_in lft2rgt id (c,bl) false)
     [|tclIDTAC|] (tclCOMPLETE tac)
 
 let rewriteRL_clause = function
@@ -200,7 +206,7 @@ let multi_replace clause c2 c1 unsafe try_prove_eq_opt gl =
     tclTHENS (assert_tac false Anonymous eq)
       [onLastHyp (fun id -> 
 	tclTHEN 
-	  (tclTRY (general_multi_rewrite false (mkVar id,NoBindings) clause))
+	  (tclTRY (general_multi_rewrite false false (mkVar id,NoBindings) clause))
 	  (clear [id]));
        tclFIRST
 	 [assumption;
@@ -1139,14 +1145,14 @@ let cond_eq_term c t gl =
     else failwith "not convertible"
   with PatternMatchingFailure -> failwith "not an equality"
 
-let rewrite_mutli_assumption_cond cond_eq_term cl gl = 
+let rewrite_multi_assumption_cond cond_eq_term cl gl = 
   let rec arec = function 
     | [] -> error "No such assumption"
     | (id,_,t) ::rest -> 
 	begin 
 	  try 
 	    let dir = cond_eq_term t gl in 
-	    general_multi_rewrite dir (mkVar id,NoBindings) cl gl
+	    general_multi_rewrite dir false (mkVar id,NoBindings) cl gl
 	  with | Failure _ | UserError _ -> arec rest
 	end
   in 
@@ -1159,7 +1165,7 @@ let replace_multi_term dir_opt c  =
       | Some true -> cond_eq_term_left c
       | Some false -> cond_eq_term_right c
   in 
-  rewrite_mutli_assumption_cond cond_eq_fun 
+  rewrite_multi_assumption_cond cond_eq_fun 
 
 (* JF. old version 
 let rewrite_assumption_cond faildir gl =

@@ -81,6 +81,8 @@ val clenv_unique_resolver :
 val evar_clenv_unique_resolver :
   clausenv -> evar_info sigma -> clausenv
 
+val clenv_pose_dependent_evars : clausenv -> clausenv
+
 (***************************************************************)
 (* Bindings *)
 

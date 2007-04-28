@@ -401,7 +401,13 @@ VERNAC COMMAND EXTEND ImplicitTactic
 END
 
 TACTIC EXTEND apply_in
-| ["apply" constr_with_bindings(c) "in" hyp(id) ] -> [ apply_in id [c] ]
+| ["apply" constr_with_bindings(c) "in" hyp(id) ] -> [ apply_in false id [c] ]
 | ["apply" constr_with_bindings(c) "," constr_with_bindings_list_sep(cl,",") 
-   "in" hyp(id) ] -> [ apply_in id (c::cl) ]
+   "in" hyp(id) ] -> [ apply_in false id (c::cl) ]
+END
+
+TACTIC EXTEND eapply_in
+| ["eapply" constr_with_bindings(c) "in" hyp(id) ] -> [ apply_in true id [c] ]
+| ["epply" constr_with_bindings(c) "," constr_with_bindings_list_sep(cl,",") 
+   "in" hyp(id) ] -> [ apply_in true id (c::cl) ]
 END
