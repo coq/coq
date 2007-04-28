@@ -39,7 +39,7 @@ let interp_decl sigma env = function
 	| Some t -> mkCastC (c, Rawterm.CastConv DEFAULTcast,t)
       in
       let j = interp_constr_judgment Evd.empty env c in
-      (id,Some j.uj_val, j.uj_type)
+      (id,Some j.uj_val, refresh_universes j.uj_type)
 
 let typecheck_params_and_fields ps fs =
   let env0 = Global.env () in
