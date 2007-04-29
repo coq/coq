@@ -56,3 +56,7 @@ intro.
 set (C := forall m, Q m -> Q m).
 exact I.
 Qed.
+
+(* Submitted by Danko Ilik (bug report #1507); related to LetIn *)
+
+Record U : Type := { A:=Type; a:A }.
