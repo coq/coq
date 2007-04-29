@@ -108,7 +108,9 @@ let current_constant id =
   try
     global_reference id
   with Not_found ->
-    anomaly ("Setoid: cannot find " ^ (string_of_id id))
+    anomalylabstrm ""
+      (str "Setoid: cannot find " ++ pr_id id ++
+       str "(if loading Setoid.v under coqtop, use option \"-top Coq.Setoids.Setoid\")")
 
 (* From Setoid.v *)
 

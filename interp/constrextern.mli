@@ -45,6 +45,7 @@ val extern_sort : sorts -> rawsort
 
 (* Printing options *)
 val print_implicits : bool ref
+val print_implicits_defensive : bool ref
 val print_arguments : bool ref
 val print_evar_arguments : bool ref
 val print_coercions : bool ref

@@ -25,46 +25,54 @@ open Topconstr
 
 (*s Flags governing the computation of implicit arguments *)
 
+type implicits_flags = {
+  main : bool;
+  strict : bool;
+  strong_strict : bool;
+  reversible_pattern : bool;
+  contextual : bool
+}
+
 (* les implicites sont stricts par défaut en v8 *)
-let implicit_args = ref false
-let strict_implicit_args = ref true
-let contextual_implicit_args = ref false
+
+let implicit_args = ref { 
+  main = false;
+  strict = true;
+  strong_strict = false;
+  reversible_pattern = false;
+  contextual = false
+}
 
 let make_implicit_args flag =
-  implicit_args := flag
+  implicit_args := { !implicit_args with main = flag }
 
 let make_strict_implicit_args flag =
-  strict_implicit_args := flag
+  implicit_args := { !implicit_args with strict = flag }
+
+let make_strong_strict_implicit_args flag =
+  implicit_args := { !implicit_args with strong_strict = flag }
+
+let make_reversible_pattern_implicit_args flag =
+  implicit_args := { !implicit_args with reversible_pattern = flag }
 
 let make_contextual_implicit_args flag =
-  contextual_implicit_args := flag
+  implicit_args := { !implicit_args with contextual = flag }
 
-let is_implicit_args () = !implicit_args
-let is_strict_implicit_args () = !strict_implicit_args
-let is_contextual_implicit_args () = !contextual_implicit_args
+let is_implicit_args () = !implicit_args.main
+let is_strict_implicit_args () = !implicit_args.strict
+let is_strong_strict_implicit_args () = !implicit_args.strong_strict
+let is_reversible_pattern_implicit_args () = !implicit_args.reversible_pattern
+let is_contextual_implicit_args () = !implicit_args.contextual
 
-type implicits_flags = bool * bool * bool
-
-let implicit_flags () = 
-  (!implicit_args, !strict_implicit_args, !contextual_implicit_args)
-
-let with_implicits (a,b,c) f x =
-  let oa = !implicit_args in
-  let ob = !strict_implicit_args in
-  let oc = !contextual_implicit_args in
+let with_implicits flags f x =
+  let oflags = !implicit_args in
   try 
-    implicit_args := a;
-    strict_implicit_args := b;
-    contextual_implicit_args := c;
-    let rslt = f x in 
-    implicit_args := oa;
-    strict_implicit_args := ob;
-    contextual_implicit_args := oc;
+    implicit_args := flags;
+    let rslt = f x in
+    implicit_args := oflags;
     rslt
   with e -> begin
-    implicit_args := oa;
-    strict_implicit_args := ob;
-    contextual_implicit_args := oc;
+    implicit_args := oflags;
     raise e
   end
 
@@ -149,11 +157,18 @@ let is_flexible_reference env bound depth f =
 let push_lift d (e,n) = (push_rel d e,n+1)
 
 (* Precondition: rels in env are for inductive types only *)
-let add_free_rels_until strict bound env m pos acc =
+let add_free_rels_until strict strong_strict revpat bound env m pos acc =
   let rec frec rig (env,depth as ed) c =
-    match kind_of_term (whd_betadeltaiota env c) with
+    let hd = if strict then whd_betadeltaiota env c else c in
+    let c = if strong_strict then hd else c in
+    match kind_of_term hd with
     | Rel n when (n < bound+depth) & (n >= depth) ->
         acc.(bound+depth-n-1) <- update pos rig (acc.(bound+depth-n-1))
+    | App (f,l) when rig & isRel f & revpat ->
+	let n = destRel f in
+	if (n < bound+depth) & (n >= depth) & array_distinct l &
+	  array_for_all (fun c -> isRel c & destRel c < depth) l
+	then acc.(bound+depth-n-1) <- update pos rig (acc.(bound+depth-n-1))
     | App (f,_) when rig & is_flexible_reference env bound depth f ->
 	if strict then () else
           iter_constr_with_full_binders push_lift (frec false) ed c
@@ -167,18 +182,19 @@ let add_free_rels_until strict bound env m pos acc =
 
 (* calcule la liste des arguments implicites *)
 
-let compute_implicits_gen strict contextual env t =
+let compute_implicits_gen strict strong_strict revpat contextual env t =
   let rec aux env avoid n names t =
     let t = whd_betadeltaiota env t in
     match kind_of_term t with
       | Prod (na,a,b) ->
 	  let na',avoid' = Termops.concrete_name None avoid names na b in
-	  add_free_rels_until strict n env a (Hyp (n+1))
+	  add_free_rels_until strict strong_strict revpat n env a (Hyp (n+1))
             (aux (push_rel (na',None,a) env) avoid' (n+1) (na'::names) b)
       | _ -> 
 	  let names = List.rev names in
 	  let v = Array.map (fun na -> na,None) (Array.of_list names) in
-	  if contextual then add_free_rels_until strict n env t Conclusion v
+	  if contextual then
+	    add_free_rels_until strict strong_strict revpat n env t Conclusion v
 	  else v
   in 
   match kind_of_term (whd_betadeltaiota env t) with 
@@ -188,21 +204,24 @@ let compute_implicits_gen strict contextual env t =
 	Array.to_list v
     | _ -> []
 
-let compute_implicits_auto env (_,strict,contextual) t =
-  let l = compute_implicits_gen strict contextual env t in
+let compute_implicits_auto env f t =
+  let l =
+    compute_implicits_gen 
+      f.strict f.strong_strict f.reversible_pattern f.contextual env t in
   List.map (function
     | (Name id, Some imp) -> Some (id,imp)
     | (Anonymous, Some _) -> anomaly "Unnamed implicit"
     | _ -> None) l
 
-let compute_implicits env t = compute_implicits_auto env (implicit_flags()) t
+let compute_implicits env t = compute_implicits_auto env !implicit_args t
 
 let set_implicit id imp =
   Some (id,match imp with None -> Manual | Some imp -> imp)
 
 let compute_manual_implicits flags ref l =
   let t = Global.type_of_global ref in
-  let autoimps = compute_implicits_gen false true (Global.env()) t in
+  let autoimps =
+    compute_implicits_gen false false false true (Global.env()) t in
   let n = List.length autoimps in
   if not (list_distinct l) then 
     error ("Some parameters are referred more than once");
@@ -390,23 +409,23 @@ let declare_implicits_gen req flags ref =
   add_anonymous_leaf (inImplicits (req,[ref,imps]))
 
 let declare_implicits local ref =
-  let flags = (true,!strict_implicit_args,!contextual_implicit_args) in
+  let flags = { !implicit_args with main = true } in
   let req = 
     if local then ImplNoDischarge else ImplInteractive(ref,flags,ImplAuto) in
   declare_implicits_gen req flags ref
 
 let declare_var_implicits id =
-  if !implicit_args then
-    declare_implicits_gen ImplNoDischarge (implicit_flags ()) (VarRef id)
+  if !implicit_args.main then
+    declare_implicits_gen ImplNoDischarge !implicit_args (VarRef id)
 
 let declare_constant_implicits con =
-  if !implicit_args then
-    let flags = implicit_flags () in
+  if !implicit_args.main then
+    let flags = !implicit_args in
     declare_implicits_gen (ImplConstant (con,flags)) flags (ConstRef con)
 
 let declare_mib_implicits kn =
-  if !implicit_args then
-    let flags = implicit_flags () in
+  if !implicit_args.main then
+    let flags = !implicit_args in
     let imps = array_map_to_list
       (fun (ind,cstrs) -> ind::(Array.to_list cstrs))
       (compute_mib_implicits flags kn) in
@@ -416,7 +435,7 @@ let declare_mib_implicits kn =
 (* Declare manual implicits *)
 
 let declare_manual_implicits local ref l =
-  let flags = !implicit_args,!strict_implicit_args,!contextual_implicit_args in
+  let flags = !implicit_args in
   let l' = compute_manual_implicits flags ref l in
   let req =
     if local or isVarRef ref then ImplNoDischarge

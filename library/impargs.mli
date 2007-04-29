@@ -21,10 +21,14 @@ open Nametab
 
 val make_implicit_args : bool -> unit
 val make_strict_implicit_args : bool -> unit
+val make_strong_strict_implicit_args : bool -> unit
+val make_reversible_pattern_implicit_args : bool -> unit
 val make_contextual_implicit_args : bool -> unit
 
 val is_implicit_args : unit -> bool
 val is_strict_implicit_args : unit -> bool
+val is_strong_strict_implicit_args : unit -> bool
+val is_reversible_pattern_implicit_args : unit -> bool
 val is_contextual_implicit_args : unit -> bool
 
 type implicits_flags

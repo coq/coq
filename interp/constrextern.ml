@@ -44,10 +44,14 @@ let print_evar_arguments = ref false
 (* This governs printing of implicit arguments.  When
    [print_implicits] is on then [print_implicits_explicit_args] tells
    how implicit args are printed. If on, implicit args are printed
-   prefixed by "!" otherwise the function and not the arguments is
-   prefixed by "!" *)
+   with the form (id:=arg) otherwise arguments are printed normally and
+   the function is prefixed by "@" *)
 let print_implicits = ref false
 let print_implicits_explicit_args = ref false
+
+(* Tells if implicit arguments not known to be inferable from a rigid
+   position are systematically printed *)
+let print_implicits_defensive = ref true
 
 (* This forces printing of coercions *)
 let print_coercions = ref false
@@ -503,8 +507,9 @@ let explicitize loc inctx impl (cf,f) args =
         let visible =
           !Options.raw_print or
           (!print_implicits & !print_implicits_explicit_args) or 
-	  (is_significant_implicit a impl tail &
-	  (not (is_inferable_implicit inctx n imp)))
+	  (!print_implicits_defensive &
+	   is_significant_implicit a impl tail &
+	   not (is_inferable_implicit inctx n imp))
 	in
         if visible then 
 	  (a,Some (dummy_loc, ExplByName (name_of_implicit imp))) :: tail 

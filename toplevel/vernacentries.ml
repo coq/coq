@@ -709,10 +709,34 @@ let _ =
 let _ =
   declare_bool_option 
     { optsync  = true;
+      optname  = "strong strict implicit arguments";
+      optkey   = (TertiaryTable ("Strong","Strict","Implicit"));
+      optread  = Impargs.is_strong_strict_implicit_args;
+      optwrite = Impargs.make_strong_strict_implicit_args }
+
+let _ =
+  declare_bool_option 
+    { optsync  = true;
       optname  = "contextual implicit arguments";
       optkey   = (SecondaryTable ("Contextual","Implicit"));
       optread  = Impargs.is_contextual_implicit_args;
       optwrite = Impargs.make_contextual_implicit_args }
+
+let _ =
+  declare_bool_option 
+    { optsync  = true;
+      optname  = "implicit arguments defensive printing";
+      optkey   = (TertiaryTable ("Reversible","Pattern","Implicit"));
+      optread  = Impargs.is_reversible_pattern_implicit_args;
+      optwrite = Impargs.make_reversible_pattern_implicit_args }
+
+let _ =
+  declare_bool_option 
+    { optsync  = true;
+      optname  = "maximal insertion of implicit";
+      optkey   = (TertiaryTable ("Maximal","Implicit","Insertion"));
+      optread  = (fun () -> !Constrintern.insert_maximal_implicit);
+      optwrite = (fun b ->  Constrintern.insert_maximal_implicit := b) }
 
 let _ =
   declare_bool_option 
@@ -729,6 +753,14 @@ let _ =
       optkey   = (SecondaryTable ("Printing","Implicit"));
       optread  = (fun () -> !Constrextern.print_implicits);
       optwrite = (fun b ->  Constrextern.print_implicits := b) }
+
+let _ =
+  declare_bool_option 
+    { optsync  = true;
+      optname  = "implicit arguments defensive printing";
+      optkey   = (TertiaryTable ("Printing","Implicit","Defensive"));
+      optread  = (fun () -> !Constrextern.print_implicits_defensive);
+      optwrite = (fun b ->  Constrextern.print_implicits_defensive := b) }
 
 let _ =
   declare_bool_option 

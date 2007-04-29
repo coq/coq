@@ -47,6 +47,8 @@ type full_implicits_env = identifier list * implicits_env
 
 type ltac_sign = identifier list * unbound_ltac_var_map
 
+val insert_maximal_implicit : bool ref
+
 (*s Internalisation performs interpretation of global names and notations *)
 
 val intern_constr : evar_map -> env -> constr_expr -> rawconstr
