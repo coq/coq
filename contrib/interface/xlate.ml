@@ -2102,13 +2102,15 @@ let rec xlate_vernac =
       let table1 = 
 	match table with
 	    PrimaryTable(s) -> CT_coerce_ID_to_TABLE(CT_ident s)
-	  | SecondaryTable(s1,s2) -> CT_table(CT_ident s1, CT_ident s2) in
+	  | SecondaryTable(s1,s2) -> CT_table(CT_ident s1, CT_ident s2)
+	  | TertiaryTable(s1,s2,s3) -> xlate_error "TODO: TertiaryTable" in
 	CT_set_option(table1)
   | VernacSetOption (table, v) -> 
       let table1 = 
 	match table with
 	    PrimaryTable(s) -> CT_coerce_ID_to_TABLE(CT_ident s)
-	  | SecondaryTable(s1,s2) -> CT_table(CT_ident s1, CT_ident s2) in
+	  | SecondaryTable(s1,s2) -> CT_table(CT_ident s1, CT_ident s2)
+	  | TertiaryTable(s1,s2,s3) -> xlate_error "TODO: TertiaryTable" in
       let value =
 	match v with
 	  | BoolValue _ -> assert false
@@ -2121,7 +2123,8 @@ let rec xlate_vernac =
       let table1 = 
 	match table with
 	    PrimaryTable(s) -> CT_coerce_ID_to_TABLE(CT_ident s)
-	  | SecondaryTable(s1,s2) -> CT_table(CT_ident s1, CT_ident s2) in
+	  | SecondaryTable(s1,s2) -> CT_table(CT_ident s1, CT_ident s2)
+	  | TertiaryTable(s1,s2,s3) -> xlate_error "TODO: TertiaryTable" in
 	CT_unset_option(table1)
   | VernacAddOption (table, l) ->
       let values =
@@ -2136,7 +2139,8 @@ let rec xlate_vernac =
       let table1 = 
 	match table with
 	    PrimaryTable(s) -> CT_coerce_ID_to_TABLE(CT_ident s)
-	  | SecondaryTable(s1,s2) -> CT_table(CT_ident s1, CT_ident s2) in
+	  | SecondaryTable(s1,s2) -> CT_table(CT_ident s1, CT_ident s2)
+	  | TertiaryTable(s1,s2,s3) -> xlate_error "TODO: TertiaryTable" in
 	CT_set_option_value2(table1, CT_id_or_string_ne_list(fst, values1))
   | VernacImport(true, a::l) ->
       CT_export_id(CT_id_ne_list(reference_to_ct_ID a,

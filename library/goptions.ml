@@ -25,10 +25,12 @@ open Mod_subst
 type option_name =
   | PrimaryTable of string
   | SecondaryTable of string * string
+  | TertiaryTable of string * string * string
 
 let nickname = function
   | PrimaryTable s         -> s
   | SecondaryTable (s1,s2) -> s1^" "^s2
+  | TertiaryTable (s1,s2,s3) -> s1^" "^s2^" "^s3
 
 let error_undeclared_key key =
   error ((nickname key)^": no table or option of this type")

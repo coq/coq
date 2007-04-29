@@ -551,48 +551,41 @@ GEXTEND Gram
 	  VernacAddMLPath (true, dir)
 
       (* Pour intervenir sur les tables de paramètres *)
-      | "Set"; table = IDENT; field = IDENT; v = option_value ->
-  	  VernacSetOption (SecondaryTable (table,field),v)
-      | "Set"; table = IDENT; field = IDENT; lv = LIST1 option_ref_value ->
-  	  VernacAddOption (SecondaryTable (table,field),lv)
-      | "Set"; table = IDENT; field = IDENT ->
-  	  VernacSetOption (SecondaryTable (table,field),BoolValue true)
-      | IDENT "Unset"; table = IDENT; field = IDENT ->
-  	  VernacUnsetOption (SecondaryTable (table,field))
-      | IDENT "Unset"; table = IDENT; field = IDENT; lv = LIST1 option_ref_value ->
-  	  VernacRemoveOption (SecondaryTable (table,field),lv)
-      | "Set"; table = IDENT; value = option_value ->
-  	  VernacSetOption (PrimaryTable table, value)
-      | "Set"; table = IDENT ->
-  	  VernacSetOption (PrimaryTable table, BoolValue true)
-      | IDENT "Unset"; table = IDENT ->
-  	  VernacUnsetOption (PrimaryTable table)
+      | "Set"; table = option_table; v = option_value ->
+  	  VernacSetOption (table,v)
+      | "Set"; table = option_table ->
+  	  VernacSetOption (table,BoolValue true)
+      | IDENT "Unset"; table = option_table ->
+  	  VernacUnsetOption table
 
-      | IDENT "Print"; IDENT "Table"; table = IDENT; field = IDENT ->
-	  VernacPrintOption (SecondaryTable (table,field))
-      | IDENT "Print"; IDENT "Table"; table = IDENT ->
-	  VernacPrintOption (PrimaryTable table)
+      | IDENT "Print"; IDENT "Table"; table = option_table ->
+	  VernacPrintOption table
 
       | IDENT "Add"; table = IDENT; field = IDENT; v = LIST1 option_ref_value
         -> VernacAddOption (SecondaryTable (table,field), v)
-
       (* Un value global ci-dessous va être caché par un field au dessus! *)
+      (* Dans la pratique, on a donné priorité aux tables secondaires *)
       | IDENT "Add"; table = IDENT; v = LIST1 option_ref_value ->
           VernacAddOption (PrimaryTable table, v)
+      | IDENT "Add"; table = IDENT; field = IDENT; field2 = IDENT; 
+	  v = LIST1 option_ref_value
+        -> VernacAddOption (TertiaryTable (table,field,field2), v)
 
-      | IDENT "Test"; table = IDENT; field = IDENT; v = LIST1 option_ref_value
-        -> VernacMemOption (SecondaryTable (table,field), v)
-      | IDENT "Test"; table = IDENT; field = IDENT ->
-          VernacPrintOption (SecondaryTable (table,field))
-      | IDENT "Test"; table = IDENT; v = LIST1 option_ref_value ->
-          VernacMemOption (PrimaryTable table, v)
-      | IDENT "Test"; table = IDENT ->
-          VernacPrintOption (PrimaryTable table)
+      | IDENT "Test"; table = option_table; "for"; v = LIST1 option_ref_value
+        -> VernacMemOption (table, v)
+      | IDENT "Test"; table = option_table ->
+          VernacPrintOption table
 
       | IDENT "Remove"; table = IDENT; field = IDENT; v= LIST1 option_ref_value
         -> VernacRemoveOption (SecondaryTable (table,field), v)
+      (* Un value global ci-dessous va être caché par un field au dessus! *)
+      (* Dans la pratique, on a donné priorité aux tables secondaires *)
       | IDENT "Remove"; table = IDENT; v = LIST1 option_ref_value ->
 	  VernacRemoveOption (PrimaryTable table, v) 
+      | IDENT "Remove"; table = IDENT; field = IDENT; field2 = IDENT; 
+	  v = LIST1 option_ref_value ->
+	  VernacRemoveOption (TertiaryTable (table,field,field2), v) 
+
       | IDENT "proof" -> VernacDeclProof
       | "return" -> VernacReturn ]]
   ;
@@ -656,6 +649,11 @@ GEXTEND Gram
   option_ref_value:
     [ [ id = global   -> QualidRefValue id
       | s  = STRING   -> StringRefValue s ] ]
+  ;
+  option_table:
+    [ [ f1 = IDENT; f2 = IDENT; f3 = IDENT -> TertiaryTable (f1,f2,f3)
+      | f1 = IDENT; f2 = IDENT -> SecondaryTable (f1,f2)
+      | f1 = IDENT -> PrimaryTable f1 ] ]
   ;
   as_dirpath:
     [ [ d = OPT [ "as"; d = dirpath -> d ] -> d ] ]

@@ -424,7 +424,7 @@ The default is to not print synthesisable types.
 \subsubsection{Printing matching on irrefutable pattern
 \comindex{Add Printing Let {\ident}}
 \comindex{Remove Printing Let {\ident}}
-\comindex{Test Printing Let {\ident}}
+\comindex{Test Printing Let for {\ident}}
 \comindex{Print Table Printing Let}}
 
 If an inductive type has just one constructor,
@@ -443,7 +443,7 @@ pattern-matching is written using a {\tt let} expression.
 This removes {\ident} from this list.
 
 \begin{quote}
-{\tt Test Printing Let {\ident}.}
+{\tt Test Printing Let for {\ident}.}
 \end{quote}
 This tells if {\ident} belongs to the list.
 
@@ -460,7 +460,7 @@ it is sensible to the command {\tt Reset}.
 \subsubsection{Printing matching on booleans
 \comindex{Add Printing If {\ident}}
 \comindex{Remove Printing If {\ident}}
-\comindex{Test Printing If {\ident}}
+\comindex{Test Printing If for {\ident}}
 \comindex{Print Table Printing If}}
 
 If an inductive type is isomorphic to the boolean type,
@@ -479,7 +479,7 @@ pattern-matching is written using an {\tt if} expression.
 This removes {\ident} from this list.
 
 \begin{quote}
-{\tt Test Printing If {\ident}.}
+{\tt Test Printing If for {\ident}.}
 \end{quote}
 This tells if {\ident} belongs to the list.
 
@@ -498,7 +498,7 @@ it is sensible to the command {\tt Reset}.
 This example emphasizes what the printing options offer.
 
 \begin{coq_example}
-Test Printing Let prod.
+Test Printing Let for prod.
 Print fst.
 Remove Printing Let prod.
 Unset Printing Synth.
