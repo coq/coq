@@ -139,8 +139,7 @@ Options are:
   -top          Build Coq on a ocaml toplevel (incompatible with -opt)
   -searchisos   Build a toplevel for SearchIsos
   -ide          Build a toplevel for the Coq IDE
-  -R dir        Specify recursively directories for Ocaml
-  -v8           Link with V8 grammar\n";
+  -R dir        Specify recursively directories for Ocaml\n";
   exit 1
 
 (* parsing of the command line *)
@@ -154,7 +153,9 @@ let parse_args () =
     | "-top" :: rem -> top := true ; parse (op,fl) rem
     | "-ide" :: rem ->
         coqide := true; parse (op,fl) rem
-    | "-v8" :: rem -> parse (op,fl) rem
+    | "-v8" :: rem -> 
+	Printf.eprintf "warning: option -v8 deprecated";
+	parse (op,fl) rem
     | "-echo" :: rem -> echo := true ; parse (op,fl) rem
     | ("-cclib"|"-ccopt"|"-I"|"-o"|"-w" as o) :: rem' ->
 	begin
