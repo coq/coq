@@ -41,6 +41,11 @@ Tactics
 - New tactics "eapply in", "erewrite", "erewrite in".
 - Unfoldable references can be given by notation rather than by name in unfold.
 
+Miscellaneous
+
+- Syntax of "Test Printing Let ref" and "Test Printing If ref" changed into
+  "Test Printing Let for ref" and "Test Printing If for ref".
+
 Changes from V8.1gamma to V8.1
 ==============================
 

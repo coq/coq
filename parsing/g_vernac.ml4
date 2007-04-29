@@ -564,12 +564,11 @@ GEXTEND Gram
       | IDENT "Add"; table = IDENT; field = IDENT; v = LIST1 option_ref_value
         -> VernacAddOption (SecondaryTable (table,field), v)
       (* Un value global ci-dessous va être caché par un field au dessus! *)
-      (* Dans la pratique, on a donné priorité aux tables secondaires *)
+      (* En fait, on donne priorité aux tables secondaires *)
+      (* Pas de syntaxe pour les tables tertiaires pour cause de conflit *)
+      (* (mais de toutes façons, pas utilisées) *)
       | IDENT "Add"; table = IDENT; v = LIST1 option_ref_value ->
           VernacAddOption (PrimaryTable table, v)
-      | IDENT "Add"; table = IDENT; field = IDENT; field2 = IDENT; 
-	  v = LIST1 option_ref_value
-        -> VernacAddOption (TertiaryTable (table,field,field2), v)
 
       | IDENT "Test"; table = option_table; "for"; v = LIST1 option_ref_value
         -> VernacMemOption (table, v)
@@ -578,13 +577,8 @@ GEXTEND Gram
 
       | IDENT "Remove"; table = IDENT; field = IDENT; v= LIST1 option_ref_value
         -> VernacRemoveOption (SecondaryTable (table,field), v)
-      (* Un value global ci-dessous va être caché par un field au dessus! *)
-      (* Dans la pratique, on a donné priorité aux tables secondaires *)
       | IDENT "Remove"; table = IDENT; v = LIST1 option_ref_value ->
 	  VernacRemoveOption (PrimaryTable table, v) 
-      | IDENT "Remove"; table = IDENT; field = IDENT; field2 = IDENT; 
-	  v = LIST1 option_ref_value ->
-	  VernacRemoveOption (TertiaryTable (table,field,field2), v) 
 
       | IDENT "proof" -> VernacDeclProof
       | "return" -> VernacReturn ]]
