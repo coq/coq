@@ -59,7 +59,7 @@ Section MakeRingPol.
  Notation "x -! y " := (csub x y). Notation "-! x" := (copp x).
  Notation " x ?=! y" := (ceqb x y). Notation "[ x ]" := (phi x).
 
- (* Usefull tactics *)		  
+ (* Useful tactics *)		  
   Add Setoid R req Rsth as R_set1.
  Ltac rrefl := gen_reflexivity Rsth.
   Add Morphism radd : radd_ext.  exact (Radd_ext Reqe). Qed.

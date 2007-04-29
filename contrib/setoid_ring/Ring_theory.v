@@ -450,7 +450,7 @@ Section ALMOST_RING.
 
  End RING.
 
- (** Usefull lemmas on almost ring *)
+ (** Useful lemmas on almost ring *)
  Variable ARth : almost_ring_theory 0 1 radd rmul rsub ropp req.
 
  Lemma ARth_SRth : semi_ring_theory 0 1 radd rmul req.

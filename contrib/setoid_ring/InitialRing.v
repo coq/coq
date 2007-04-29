@@ -378,7 +378,7 @@ Section GEN_DIV.
  Variable ARth : almost_ring_theory rO rI radd rmul rsub ropp req.
  Variable morph : ring_morph rO rI radd rmul rsub ropp req cO cI cadd cmul csub copp ceqb phi.
  
-  (* Usefull tactics *)		  
+  (* Useful tactics *)		  
   Add Setoid R req Rsth as R_set1.
  Ltac rrefl := gen_reflexivity Rsth.
   Add Morphism radd : radd_ext.  exact (Radd_ext Reqe). Qed.

@@ -74,7 +74,7 @@ Qed.
  Notation "[ x ]" := (phi x) (at level 0).
 
 
- (* Usefull tactics *)		  
+ (* Useful tactics *)		  
   Add Setoid R req Rsth as R_set1.
   Add Morphism radd : radd_ext.  exact (Radd_ext Reqe). Qed.
   Add Morphism rmul : rmul_ext.  exact (Rmul_ext Reqe). Qed.
