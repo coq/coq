@@ -20,7 +20,7 @@ Parameter i : bool -> nat.
 Coercion i : bool >-> nat.
 Add Printing Coercion i.
 Remove Printing Coercion i.
-Test Printing Coercion i.
+Test Printing Coercion for i.
 
 Test Printing Let.
 Test Printing If.
