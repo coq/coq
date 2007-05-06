@@ -710,9 +710,9 @@ let _ =
   declare_bool_option 
     { optsync  = true;
       optname  = "strong strict implicit arguments";
-      optkey   = (TertiaryTable ("Strong","Strict","Implicit"));
-      optread  = Impargs.is_strong_strict_implicit_args;
-      optwrite = Impargs.make_strong_strict_implicit_args }
+      optkey   = (TertiaryTable ("Strongly","Strict","Implicit"));
+      optread  = Impargs.is_strongly_strict_implicit_args;
+      optwrite = Impargs.make_strongly_strict_implicit_args }
 
 let _ =
   declare_bool_option 
@@ -735,8 +735,8 @@ let _ =
     { optsync  = true;
       optname  = "maximal insertion of implicit";
       optkey   = (TertiaryTable ("Maximal","Implicit","Insertion"));
-      optread  = (fun () -> !Constrintern.insert_maximal_implicit);
-      optwrite = (fun b ->  Constrintern.insert_maximal_implicit := b) }
+      optread  = Impargs.is_maximal_implicit_args;
+      optwrite = Impargs.make_maximal_implicit_args }
 
 let _ =
   declare_bool_option 

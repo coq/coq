@@ -466,12 +466,16 @@ GEXTEND Gram
 	     [ local = [ IDENT "Global" -> false | IDENT "Local" -> true ];
 	       qid = global -> (local,qid,None) 
 	     | qid = global;
-	       l = OPT [ "["; l = LIST0 ident; "]" -> 
-		   List.map (fun id -> ExplByName id) l ] -> (true,qid,l) ] ->
+	       l = OPT [ "["; l = LIST0 implicit_name; "]" -> 
+		   List.map (fun (id,b) -> (ExplByName id,b)) l ] ->
+		 (true,qid,l) ] ->
 	   VernacDeclareImplicits (local,qid,pos)
 
       | IDENT "Implicit"; ["Type" | IDENT "Types"];
 	   idl = LIST1 identref; ":"; c = lconstr -> VernacReserve (idl,c) ] ]
+  ;
+  implicit_name:
+    [ [ id = ident -> (id,false) | "["; id = ident; "]" -> (id,true) ] ]
   ;
 END
 

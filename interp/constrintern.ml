@@ -44,8 +44,6 @@ let for_grammar f x =
 
 let variables_bind = ref false
 
-let insert_maximal_implicit = ref false
-
 (**********************************************************************)
 (* Internalisation errors                                             *)
 
@@ -1035,10 +1033,9 @@ let internalise sigma globalenv env allow_patvar lvar c =
 	    let eargs' = List.remove_assoc id eargs in
 	    intern enva a :: aux (n+1) impl' subscopes' eargs' rargs
 	  with Not_found ->
-	  if rargs=[] & eargs=[] & not !insert_maximal_implicit &
-	    not (List.for_all is_status_implicit impl') then
-	    (* Less regular arguments than expected: don't complete *)
-	    (* with implicit arguments *)
+	  if rargs=[] & eargs=[] & not (maximal_insertion_of imp) then
+            (* Less regular arguments than expected: complete *)
+            (* with implicit arguments if maximal insertion is set *)
 	    []
 	  else
 	    RHole (set_hole_implicit (n,get_implicit_name n l) c) :: 

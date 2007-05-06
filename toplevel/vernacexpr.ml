@@ -260,7 +260,7 @@ type vernac_expr =
   | VernacSyntacticDefinition of identifier * constr_expr * locality_flag *
       onlyparsing_flag
   | VernacDeclareImplicits of locality_flag * lreference *
-      explicitation list option
+      (explicitation * bool) list option
   | VernacReserve of lident list * constr_expr
   | VernacSetOpacity of opacity_flag * lreference list
   | VernacUnsetOption of Goptions.option_name

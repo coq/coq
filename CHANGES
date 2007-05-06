@@ -15,8 +15,13 @@ Libraries
   incompatibilities].
 - Boolean operators moved from module Bool to module Datatypes.
 
-Notations
+Notations and implicit arguments
 
+- New options "Set Maximal Implicit Insertion", "Set Reversible Pattern
+  Implicit", "Set Strongly Strict Implicit" and "Set Printing Implicit
+  Defensive" for controlling inference and use of implicit arguments.
+- New modifier in "Implicit Arguments" to force an implicit argument to
+  be maximally inserted.
 - Level "constr" moved from 9 to 8.
 
 Tactic Language

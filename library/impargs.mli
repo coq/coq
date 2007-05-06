@@ -21,15 +21,17 @@ open Nametab
 
 val make_implicit_args : bool -> unit
 val make_strict_implicit_args : bool -> unit
-val make_strong_strict_implicit_args : bool -> unit
+val make_strongly_strict_implicit_args : bool -> unit
 val make_reversible_pattern_implicit_args : bool -> unit
 val make_contextual_implicit_args : bool -> unit
+val make_maximal_implicit_args : bool -> unit
 
 val is_implicit_args : unit -> bool
 val is_strict_implicit_args : unit -> bool
-val is_strong_strict_implicit_args : unit -> bool
+val is_strongly_strict_implicit_args : unit -> bool
 val is_reversible_pattern_implicit_args : unit -> bool
 val is_contextual_implicit_args : unit -> bool
+val is_maximal_implicit_args : unit -> bool
 
 type implicits_flags
 val with_implicits : implicits_flags -> ('a -> 'b) -> 'a -> 'b
@@ -42,6 +44,7 @@ type implicits_list = implicit_status list
 val is_status_implicit : implicit_status -> bool
 val is_inferable_implicit : bool -> int -> implicit_status -> bool
 val name_of_implicit : implicit_status -> identifier
+val maximal_insertion_of : implicit_status -> bool
 
 val positions_of_implicits : implicits_list -> int list
 
@@ -59,6 +62,6 @@ val declare_implicits : bool -> global_reference -> unit
 
 (* Manual declaration of which arguments are expected implicit *)
 val declare_manual_implicits : bool -> global_reference -> 
-  Topconstr.explicitation list -> unit
+  (Topconstr.explicitation * bool) list -> unit
 
 val implicits_of_global : global_reference -> implicits_list

@@ -2079,10 +2079,10 @@ let rec xlate_vernac =
 	       CT_coerce_ID_LIST_to_ID_LIST_OPT
 	       (CT_id_list
 	       (List.map
-		  (function ExplByPos x
+		  (function ExplByPos x, _
 		       -> xlate_error
 			   "explication argument by rank is obsolete"
-		     | ExplByName id -> CT_ident (string_of_id id)) l)))
+		     | ExplByName id, _ -> CT_ident (string_of_id id)) l)))
   | VernacDeclareImplicits(false, id, opt_positions) ->
       xlate_error "TODO: Implicit Arguments Global"
   | VernacReserve((_,a)::l, f) ->

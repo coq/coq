@@ -61,26 +61,24 @@ let print_closed_sections = ref false
 (********************************)
 (** Printing implicit arguments *)
 			  		  
-let print_impl_args_by_pos = function
-  | []  -> mt ()
-  | [i] -> str"Position [" ++ int i ++ str"] is implicit" ++ fnl()
-  | l   -> 
-      str"Positions [" ++ 
-      prlist_with_sep (fun () -> str "; ") int l ++
-      str"] are implicit" ++ fnl()
+let conjugate_to_be = function [_] -> "is" | _ -> "are"
 
-let print_impl_args_by_name = function
+let pr_implicit imp = pr_id (name_of_implicit imp)
+
+let print_impl_args_by_name max = function
   | []  -> mt ()
-  | [i] -> str"Argument " ++ pr_id (name_of_implicit i) ++ str" is implicit" ++
-      fnl()
-  | l   -> 
-      str"Arguments " ++ 
-      prlist_with_sep (fun () -> str ", ")
-        (fun imp -> pr_id (name_of_implicit imp)) l ++
-      str" are implicit" ++ fnl()
+  | impls -> 
+      hov 0 (str (plural (List.length impls) "Argument") ++ spc() ++ 
+      prlist_with_sep pr_coma pr_implicit impls ++ spc() ++ 
+      str (conjugate_to_be impls) ++ str" implicit" ++
+      (if max then strbrk " and maximally inserted" else mt())) ++ fnl()
 
 let print_impl_args l = 
-  print_impl_args_by_name (List.filter is_status_implicit l)
+  let imps = List.filter is_status_implicit l in
+  let maximps = List.filter Impargs.maximal_insertion_of imps in
+  let nonmaximps = list_subtract imps maximps in
+  print_impl_args_by_name false nonmaximps ++
+  print_impl_args_by_name true maximps
 
 (*********************)
 (** Printing Scopes  *)

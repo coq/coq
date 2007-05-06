@@ -563,16 +563,17 @@ let rec extern_args extern scopes env args subscopes =
 
 let rec remove_coercions inctx = function
   | RApp (loc,RRef (_,r),args) as c
-      when inctx & not (!Options.raw_print or !print_coercions)
+      when  not (!Options.raw_print or !print_coercions)
       ->
+      let nargs = List.length args in
       (try match Classops.hide_coercion r with
-	  | Some n when n < List.length args ->
+	  | Some n when n < nargs && (inctx or n+1 < nargs) ->
 	      (* We skip a coercion *) 
 	      let l = list_skipn n args in
-              let (a,l) = match l with a::l -> (a,l) | [] -> assert false in
-              let (a,l) =
+	      let (a,l) = match l with a::l -> (a,l) | [] -> assert false in
+	      let (a,l) =
                 (* Recursively remove the head coercions *)
-                match remove_coercions inctx a with
+                match remove_coercions true a with
                   | RApp (_,a,l') -> a,l'@l
                   | a -> a,l in
               if l = [] then a
@@ -886,7 +887,7 @@ let extern_constr_gen at_top scopt env t =
   let avoid = if at_top then ids_of_context env else [] in
   let r = Detyping.detype at_top avoid (names_of_rel_context env) t in
   let vars = vars_of_env env in
-  extern (not at_top) (scopt,[]) vars r
+  extern false (scopt,[]) vars r
 
 let extern_constr_in_scope at_top scope env t =
   extern_constr_gen at_top (Some scope) env t

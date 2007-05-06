@@ -27,10 +27,11 @@ open Topconstr
 
 type implicits_flags = {
   main : bool;
-  strict : bool;
-  strong_strict : bool;
+  strict : bool;                   (* true = strict *)
+  strongly_strict : bool;            (* true = strongly strict *)
   reversible_pattern : bool;
-  contextual : bool
+  contextual : bool;               (* true = contextual *)
+  maximal : bool
 }
 
 (* les implicites sont stricts par défaut en v8 *)
@@ -38,9 +39,10 @@ type implicits_flags = {
 let implicit_args = ref { 
   main = false;
   strict = true;
-  strong_strict = false;
+  strongly_strict = false;
   reversible_pattern = false;
-  contextual = false
+  contextual = false;
+  maximal = false;
 }
 
 let make_implicit_args flag =
@@ -49,8 +51,8 @@ let make_implicit_args flag =
 let make_strict_implicit_args flag =
   implicit_args := { !implicit_args with strict = flag }
 
-let make_strong_strict_implicit_args flag =
-  implicit_args := { !implicit_args with strong_strict = flag }
+let make_strongly_strict_implicit_args flag =
+  implicit_args := { !implicit_args with strongly_strict = flag }
 
 let make_reversible_pattern_implicit_args flag =
   implicit_args := { !implicit_args with reversible_pattern = flag }
@@ -58,11 +60,15 @@ let make_reversible_pattern_implicit_args flag =
 let make_contextual_implicit_args flag =
   implicit_args := { !implicit_args with contextual = flag }
 
+let make_maximal_implicit_args flag =
+  implicit_args := { !implicit_args with maximal = flag }
+
 let is_implicit_args () = !implicit_args.main
 let is_strict_implicit_args () = !implicit_args.strict
-let is_strong_strict_implicit_args () = !implicit_args.strong_strict
+let is_strongly_strict_implicit_args () = !implicit_args.strongly_strict
 let is_reversible_pattern_implicit_args () = !implicit_args.reversible_pattern
 let is_contextual_implicit_args () = !implicit_args.contextual
+let is_maximal_implicit_args () = !implicit_args.maximal
 
 let with_implicits flags f x =
   let oflags = !implicit_args in
@@ -156,19 +162,23 @@ let is_flexible_reference env bound depth f =
 
 let push_lift d (e,n) = (push_rel d e,n+1)
 
+let is_reversible_pattern bound depth f l =
+  isRel f & let n = destRel f in (n < bound+depth) & (n >= depth) & 
+  array_for_all (fun c -> isRel c & destRel c < depth) l &
+  array_distinct l
+
 (* Precondition: rels in env are for inductive types only *)
-let add_free_rels_until strict strong_strict revpat bound env m pos acc =
+let add_free_rels_until strict strongly_strict revpat bound env m pos acc =
   let rec frec rig (env,depth as ed) c =
     let hd = if strict then whd_betadeltaiota env c else c in
-    let c = if strong_strict then hd else c in
+    let c = if strongly_strict then hd else c in
     match kind_of_term hd with
     | Rel n when (n < bound+depth) & (n >= depth) ->
-        acc.(bound+depth-n-1) <- update pos rig (acc.(bound+depth-n-1))
-    | App (f,l) when rig & isRel f & revpat ->
-	let n = destRel f in
-	if (n < bound+depth) & (n >= depth) & array_distinct l &
-	  array_for_all (fun c -> isRel c & destRel c < depth) l
-	then acc.(bound+depth-n-1) <- update pos rig (acc.(bound+depth-n-1))
+	let i = bound + depth - n - 1 in
+        acc.(i) <- update pos rig acc.(i)
+    | App (f,l) when revpat & is_reversible_pattern bound depth f l ->
+	let i = bound + depth - destRel f - 1 in
+	acc.(i) <- update pos rig acc.(i)
     | App (f,_) when rig & is_flexible_reference env bound depth f ->
 	if strict then () else
           iter_constr_with_full_binders push_lift (frec false) ed c
@@ -182,19 +192,19 @@ let add_free_rels_until strict strong_strict revpat bound env m pos acc =
 
 (* calcule la liste des arguments implicites *)
 
-let compute_implicits_gen strict strong_strict revpat contextual env t =
+let compute_implicits_gen strict strongly_strict revpat contextual env t =
   let rec aux env avoid n names t =
     let t = whd_betadeltaiota env t in
     match kind_of_term t with
       | Prod (na,a,b) ->
 	  let na',avoid' = Termops.concrete_name None avoid names na b in
-	  add_free_rels_until strict strong_strict revpat n env a (Hyp (n+1))
+	  add_free_rels_until strict strongly_strict revpat n env a (Hyp (n+1))
             (aux (push_rel (na',None,a) env) avoid' (n+1) (na'::names) b)
       | _ -> 
 	  let names = List.rev names in
 	  let v = Array.map (fun na -> na,None) (Array.of_list names) in
 	  if contextual then
-	    add_free_rels_until strict strong_strict revpat n env t Conclusion v
+	    add_free_rels_until strict strongly_strict revpat n env t Conclusion v
 	  else v
   in 
   match kind_of_term (whd_betadeltaiota env t) with 
@@ -207,16 +217,16 @@ let compute_implicits_gen strict strong_strict revpat contextual env t =
 let compute_implicits_auto env f t =
   let l =
     compute_implicits_gen 
-      f.strict f.strong_strict f.reversible_pattern f.contextual env t in
+      f.strict f.strongly_strict f.reversible_pattern f.contextual env t in
   List.map (function
-    | (Name id, Some imp) -> Some (id,imp)
+    | (Name id, Some imp) -> Some (id,imp,f.maximal)
     | (Anonymous, Some _) -> anomaly "Unnamed implicit"
     | _ -> None) l
 
 let compute_implicits env t = compute_implicits_auto env !implicit_args t
 
-let set_implicit id imp =
-  Some (id,match imp with None -> Manual | Some imp -> imp)
+let set_implicit id imp insmax =
+  (id,(match imp with None -> Manual | Some imp -> imp),insmax)
 
 let compute_manual_implicits flags ref l =
   let t = Global.type_of_global ref in
@@ -227,33 +237,42 @@ let compute_manual_implicits flags ref l =
     error ("Some parameters are referred more than once");
   (* Compare with automatic implicits to recover printing data and names *)
   let rec merge k l = function
-    | (Name id,imp)::imps ->
-	let l',imp =
-	  try list_remove_first (ExplByPos k) l, set_implicit id imp
-	  with Not_found ->
-	  try list_remove_first (ExplByName id) l, set_implicit id imp
-	  with Not_found ->
-	  l, None in
-	imp :: merge (k+1) l' imps
-    | (Anonymous,imp)::imps -> 
-	None :: merge (k+1) l imps
-    | [] when l = [] -> []
-    | _ ->
-	match List.hd l with
-	| ExplByName id ->
-	    error ("Wrong or not dependent implicit argument name: "^(string_of_id id))
-	| ExplByPos i ->
-	    if i<1 or i>n then 
-	      error ("Bad implicit argument number: "^(string_of_int i))
-	    else
-	      errorlabstrm ""
-		(str "Cannot set implicit argument number " ++ int i ++
-		 str ": it has no name") in
+  | (Name id,imp)::imps ->
+      let l',m =
+	try 
+	  let b = List.assoc (ExplByName id) l in
+	  List.remove_assoc (ExplByName id) l, Some b
+	with Not_found ->
+	try 
+	  let b = List.assoc (ExplByPos k) l in
+	  List.remove_assoc (ExplByPos k) l, Some b
+	with Not_found ->
+	l, None in
+      let imps' = merge (k+1) l' imps in
+      (* Force maximal insertion on ending implicits (compatibility) *)
+      let m = option_map ((||) (List.for_all ((<>) None) imps')) m in
+      option_map (set_implicit id imp) m :: imps'
+  | (Anonymous,_imp)::imps -> 
+      None :: merge (k+1) l imps
+  | [] when l = [] -> []
+  | _ ->
+      match List.hd l with
+      | ExplByName id,_ ->
+	  error ("Wrong or not dependent implicit argument name: "^(string_of_id id))
+      | ExplByPos i,_ ->
+	  if i<1 or i>n then 
+	    error ("Bad implicit argument number: "^(string_of_int i))
+	  else
+	    errorlabstrm ""
+	      (str "Cannot set implicit argument number " ++ int i ++
+	      str ": it has no name") in
   merge 1 l autoimps
+
+type maximal_insertion = bool (* true = maximal contextual insertion *)
 
 type implicit_status =
     (* None = Not implicit *)
-    (identifier * implicit_explanation) option
+    (identifier * implicit_explanation * maximal_insertion) option
 
 type implicits_list = implicit_status list
 
@@ -263,18 +282,22 @@ let is_status_implicit = function
 
 let name_of_implicit = function
   | None -> anomaly "Not an implicit argument"
-  | Some (id,_) -> id
+  | Some (id,_,_) -> id
+
+let maximal_insertion_of = function
+  | Some (_,_,b) -> b
+  | None -> anomaly "Not an implicit argument"
 
 (* [in_ctx] means we now the expected type, [n] is the index of the argument *)
 let is_inferable_implicit in_ctx n = function
   | None -> false
-  | Some (_,DepRigid (Hyp p)) -> n >= p
-  | Some (_,DepFlex (Hyp p)) -> false
-  | Some (_,DepFlexAndRigid (_,Hyp q)) -> n >= q
-  | Some (_,DepRigid Conclusion) -> in_ctx
-  | Some (_,DepFlex Conclusion) -> false
-  | Some (_,DepFlexAndRigid (_,Conclusion)) -> false
-  | Some (_,Manual) -> true
+  | Some (_,DepRigid (Hyp p),_) -> in_ctx or n >= p
+  | Some (_,DepFlex (Hyp p),_) -> false
+  | Some (_,DepFlexAndRigid (_,Hyp q),_) -> in_ctx or n >= q
+  | Some (_,DepRigid Conclusion,_) -> in_ctx
+  | Some (_,DepFlex Conclusion,_) -> false
+  | Some (_,DepFlexAndRigid (_,Conclusion),_) -> in_ctx
+  | Some (_,Manual,_) -> true
 
 let positions_of_implicits =
   let rec aux n = function
@@ -282,9 +305,6 @@ let positions_of_implicits =
     | Some _ :: l -> n :: aux (n+1) l
     | None :: l -> aux (n+1) l
   in aux 1
-
-type strict_flag = bool     (* true = strict *)
-type contextual_flag = bool (* true = contextual *)
 
 (*s Constants. *)
 
@@ -341,7 +361,9 @@ let compute_global_implicits flags = function
 
 (* Caching implicits *)
 
-type implicit_interactive_request = ImplAuto | ImplManual of explicitation list
+type implicit_interactive_request =
+  | ImplAuto
+  | ImplManual of (explicitation * bool) list
 
 type implicit_discharge_request =
   | ImplNoDischarge

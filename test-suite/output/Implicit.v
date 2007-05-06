@@ -17,3 +17,22 @@ Definition d1 y x (h : x = y :>nat) := h.
 Definition d2 x := d1 (y:=x).
 
 Print d2.
+
+(* Check maximal insertion of implicit *)
+
+Require Import List.
+
+Open Scope list_scope.
+
+Set Implicit Arguments.
+Set Maximal Implicit Insertion.
+
+Definition id (A:Type) (x:A) := x.
+
+Check map id (1::nil).
+
+Definition id' (A:Type) (x:A) := x.
+
+Implicit Arguments id' [[A]].
+
+Check map id' (1::nil).

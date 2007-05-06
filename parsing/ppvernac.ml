@@ -146,9 +146,11 @@ let pr_search a b pr_p = match a with
 let pr_locality local = if local then str "Local " else str ""
 let pr_non_globality local = if local then str "" else str "Global "
 
-let pr_explanation imps = function
-  | ExplByPos n -> pr_id (Impargs.name_of_implicit (List.nth imps (n-1)))
-  | ExplByName id -> pr_id id
+let pr_explanation (e,b) =
+  let a = match e with
+  | ExplByPos n -> anomaly "No more supported"
+  | ExplByName id -> pr_id id in
+  if b then str "[" ++ a ++ str "]" else a
 
 let pr_class_rawexpr = function
   | FunClass -> str"Funclass"
@@ -753,13 +755,10 @@ let rec pr_vernac = function
          pr_syntax_modifiers (if onlyparsing then [SetOnlyParsing] else []))
   | VernacDeclareImplicits (local,q,None) ->
       hov 2 (str"Implicit Arguments" ++ spc() ++ pr_reference q)
-  | VernacDeclareImplicits (local,q,Some l) ->
-      let r = Nametab.global q in
-      Impargs.declare_manual_implicits local r l;
-      let imps = Impargs.implicits_of_global r in
+  | VernacDeclareImplicits (local,q,Some imps) ->
       hov 1 (str"Implicit Arguments" ++ pr_non_globality local ++
       spc() ++ pr_reference q ++ spc() ++
-             str"[" ++ prlist_with_sep sep (pr_explanation imps) l ++ str"]")
+             str"[" ++ prlist_with_sep sep pr_explanation imps ++ str"]")
   | VernacReserve (idl,c) ->
       hov 1 (str"Implicit Type" ++
         str (if List.length idl > 1 then "s " else " ") ++

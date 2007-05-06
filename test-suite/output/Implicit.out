@@ -8,3 +8,7 @@ d2 = fun x : nat => d1 (y:=x)
 
 Arguments x, x0 are implicit
 Argument scopes are [nat_scope nat_scope _]
+map id (1 :: nil)
+     : list nat
+map id' (1 :: nil)
+     : list nat
