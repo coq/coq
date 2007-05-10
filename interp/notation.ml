@@ -187,10 +187,10 @@ let cases_pattern_key = function
   | PatCstr (_,ref,_,_) -> RefKey (ConstructRef ref)
   | _ -> Oth
 
-let aconstr_key = function
+let aconstr_key = function (* Rem: AApp(ARef ref,[]) stands for @ref *)
   | AApp (ARef ref,args) -> RefKey ref, Some (List.length args)
   | AList (_,_,AApp (ARef ref,args),_,_) -> RefKey ref, Some (List.length args)
-  | ARef ref -> RefKey ref, Some 0
+  | ARef ref -> RefKey ref, None
   | _ -> Oth, None
 
 let pattern_key = function

@@ -131,7 +131,8 @@ GEXTEND Gram
     [ [ c = operconstr LEVEL "200" -> c ] ]
   ;
   constr:
-    [ [ c = operconstr LEVEL "8" -> c ] ]
+    [ [ c = operconstr LEVEL "8" -> c 
+      | "@"; f=global -> CAppExpl(loc,(None,f),[]) ] ]
   ;
   operconstr:
     [ "200" RIGHTA

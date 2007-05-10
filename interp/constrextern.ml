@@ -834,10 +834,13 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
       try
 	(* Adjusts to the number of arguments expected by the notation *)
 	let (t,args) = match t,n with
-	  | RApp (_,f,args), Some n when List.length args > n ->
+	  | RApp (_,(RRef _ as f),args), Some n when List.length args >= n ->
 	      let args1, args2 = list_chop n args in
 	      (if n = 0 then f else RApp (dummy_loc,f,args1)), args2
-	  | _ -> t,[] in
+	  | RApp (_,(RRef _ as f),args), None -> f, args
+	  | RRef _, Some 0 -> RApp (dummy_loc,t,[]), []
+          | _, None -> t,[]
+          | _ -> raise No_match in
 	(* Try matching ... *)
 	let subst = match_aconstr t pat in
 	(* Try availability of interpretation ... *)

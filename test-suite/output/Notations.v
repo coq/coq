@@ -119,3 +119,13 @@ Require Import ZArith.
 Open Scope Z_scope.
 Notation "- 4" := (-2 + -2).
 Check -4.
+
+(**********************************************************************)
+(* Check notations for references with activated or deactivated       *)
+(* implicit arguments                                                 *)
+
+Notation Nil := @nil.
+Check Nil.
+
+Notation NIL := nil.
+Check NIL : list nat.

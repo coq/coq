@@ -46,3 +46,7 @@ fun x : nat => ifn x is succ n then n else 0
      : bool
 -4
      : Z
+Nil
+     : forall A : Type, list A
+NIL:list nat
+     : list nat
