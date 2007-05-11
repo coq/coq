@@ -95,14 +95,16 @@ let module_body_of_spec msb =
       mod_equiv = msb.msb_equiv;
       mod_expr = None;
       mod_user_type = None;
-      mod_constraints = Constraint.empty}
+      mod_constraints = Constraint.empty;
+      mod_retroknowledge = []}
 
 let module_body_of_type mtb = 
   { mod_type = mtb;
     mod_equiv = None;
     mod_expr = None;
     mod_user_type = None;
-    mod_constraints = Constraint.empty}
+    mod_constraints = Constraint.empty;
+    mod_retroknowledge = []}
 
 
 (* the constraints are not important here *)
@@ -170,6 +172,32 @@ and subst_module  sub mb =
 let subst_signature_msid msid mp = 
   subst_signature (map_msid msid mp)
 
+
+(* spiwack: here comes the function which takes care of importing 
+   the retroknowledge declared in the library *)
+(* lclrk : retroknowledge_action list, rkaction : retroknowledge action *)
+let add_retroknowledge msid mp =
+  let subst = add_msid msid mp empty_subst in
+  let subst_and_perform rkaction env =
+    match rkaction with
+      | Retroknowledge.RKRegister (f, e) ->
+	  Environ.register env f 
+	  (match e with 
+	    | Const kn -> kind_of_term (subst_mps subst (mkConst kn))
+	    | Ind ind -> kind_of_term (subst_mps subst (mkInd ind))
+	    | _ -> anomaly "Modops.add_retroknowledge: had to import an unsupported kind of term")
+  in
+  fun lclrk env ->
+  (* The order of the declaration matters, for instance (and it's at the
+     time this comment is being written, the only relevent instance) the
+     int31 type registration absolutely needs int31 bits to be registered.
+     Since the local_retroknowledge is stored in reverse order (each new
+     registration is added at the top of the list) we need a fold_right
+     for things to go right (the pun is not intented). So we lose 
+     tail recursivity, but the world will have exploded before any module
+     imports 10 000 retroknowledge registration.*)
+  List.fold_right subst_and_perform lclrk env
+
 (* we assume that the substitution of "mp" into "msid" is already done
 (or unnecessary) *)
 let rec add_signature mp sign env = 
@@ -192,7 +220,8 @@ and add_module mp mb env =
     match scrape_modtype env mb.mod_type with
       | MTBident _ -> anomaly "scrape_modtype does not work!"
       | MTBsig (msid,sign) -> 
-	  add_signature mp (subst_signature_msid msid mp sign) env
+	  add_retroknowledge msid mp (mb.mod_retroknowledge)
+	    (add_signature mp (subst_signature_msid msid mp sign) env)
       | MTBfunsig _ -> env
 
 
@@ -306,7 +335,7 @@ and strengthen_sig env msid sign mp = match sign with
       let env' = add_module 
 		   (MPdot (MPself msid,l)) 
 		   (module_body_of_spec mb) 
-		   env 
+		   env
       in
       let rest' = strengthen_sig env' msid rest mp in
 	item'::rest'

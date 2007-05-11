@@ -130,10 +130,12 @@ BYTERUN=\
 
 KERNEL=\
   kernel/names.cmo kernel/univ.cmo \
-  kernel/esubst.cmo kernel/term.cmo kernel/mod_subst.cmo kernel/sign.cmo \
+  kernel/esubst.cmo kernel/term.cmo \
+  kernel/mod_subst.cmo kernel/sign.cmo \
   kernel/cbytecodes.cmo kernel/copcodes.cmo \
   kernel/cemitcodes.cmo kernel/vm.cmo \
-  kernel/declarations.cmo kernel/pre_env.cmo \
+  kernel/declarations.cmo \
+  kernel/retroknowledge.cmo kernel/pre_env.cmo \
   kernel/cbytegen.cmo  kernel/environ.cmo  \
   kernel/csymtable.cmo kernel/conv_oracle.cmo \
   kernel/closure.cmo kernel/reduction.cmo kernel/type_errors.cmo \
@@ -187,7 +189,7 @@ HIGHPARSING=\
   parsing/g_proofs.cmo parsing/g_tactic.cmo parsing/g_ltac.cmo \
   parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo \
   parsing/g_ascii_syntax.cmo parsing/g_string_syntax.cmo \
-  parsing/g_decl_mode.cmo
+  parsing/g_decl_mode.cmo parsing/g_intsyntax.cmo 
 
 TACTICS=\
   tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
@@ -904,6 +906,26 @@ ZARITHVO=\
  theories/ZArith/Znumtheory.vo  theories/ZArith/Int.vo \
  theories/ZArith/Zpow_def.vo
 
+INTSVO=\
+ theories/Ints/Z/IntsZmisc.vo theories/Ints/Z/Pmod.vo \
+ theories/Ints/Tactic.vo theories/Ints/Z/ZAux.vo \
+ theories/Ints/Z/ZPowerAux.vo theories/Ints/Z/ZDivModAux.vo \
+ theories/Ints/Z/Zmod.vo \
+ theories/Ints/Basic_type.vo theories/Ints/Int31.vo \
+ theories/Ints/num/GenBase.vo theories/Ints/num/ZnZ.vo \
+ theories/Ints/num/GenAdd.vo theories/Ints/num/GenSub.vo \
+ theories/Ints/num/GenMul.vo theories/Ints/num/GenDivn1.vo \
+ theories/Ints/num/GenDiv.vo theories/Ints/num/GenSqrt.vo \
+ theories/Ints/num/GenLift.vo theories/Ints/num/Zn2Z.vo\
+ theories/Ints/num/Nbasic.vo theories/Ints/num/NMake.vo \
+ theories/Ints/BigN.vo
+# theories/Ints/List/ListAux.vo
+# theories/Ints/List/LPermutation.vo theories/Ints/List/Iterator.vo \
+# theories/Ints/List/ZProgression.vo
+# theories/Ints/Z/ZSum.vo theories/Ints/Z/Ppow.vo \
+# spiwack : should use the genN.ml to create NMake eventually
+# arnaud : see above
+
 QARITHVO=\
  theories/QArith/QArith_base.vo theories/QArith/Qreduction.vo \
  theories/QArith/Qring.vo       theories/QArith/Qreals.vo \
@@ -1028,7 +1050,8 @@ SETOIDSVO=theories/Setoids/Setoid.vo
 THEORIESVO =\
   $(INITVO) $(LOGICVO) $(ARITHVO) $(BOOLVO) $(NARITHVO) $(ZARITHVO) \
   $(SETOIDSVO) $(LISTSVO) $(STRINGSVO) $(SETSVO) $(FSETSVO) $(INTMAPVO) \
-  $(RELATIONSVO) $(WELLFOUNDEDVO) $(REALSVO)  $(SORTINGVO) $(QARITHVO)
+  $(RELATIONSVO) $(WELLFOUNDEDVO) $(REALSVO)  $(SORTINGVO) $(QARITHVO) \
+  $(INTSVO)
 
 THEORIESLIGHTVO = $(INITVO) $(LOGICVO) $(ARITHVO)
 
@@ -1049,6 +1072,7 @@ allfsets: $(ALLFSETS)
 intmap: $(INTMAPVO)
 relations: $(RELATIONSVO)
 wellfounded: $(WELLFOUNDEDVO)
+ints: $(INTSVO)
 # reals
 reals: $(REALSVO)
 allreals: $(ALLREALS)
@@ -1153,6 +1177,7 @@ contrib/%.vo: contrib/%.v states/initial.coq $(VO_TOOLS_DEP)
 cleantheories:
 	rm -f states/*.coq
 	rm -f theories/*/*.vo
+	rm -f theories/*/*/*.vo
 
 clean :: cleantheories
 
@@ -1167,6 +1192,7 @@ archclean::
 glob.dump::
 	rm -f glob.dump
 	rm -f theories/*/*.vo
+	rm -f theories/*/*/*.vo
 	$(MAKE) GLOB="-dump-glob glob.dump" world
 
 ###########################################################################
@@ -1424,7 +1450,8 @@ GRAMMARNEEDEDCMO=\
   kernel/names.cmo kernel/univ.cmo \
   kernel/esubst.cmo kernel/term.cmo kernel/mod_subst.cmo kernel/sign.cmo \
   kernel/cbytecodes.cmo kernel/copcodes.cmo kernel/cemitcodes.cmo \
-  kernel/declarations.cmo kernel/pre_env.cmo \
+  kernel/declarations.cmo \
+  kernel/retroknowledge.cmo kernel/pre_env.cmo \
   kernel/cbytegen.cmo kernel/conv_oracle.cmo kernel/environ.cmo \
   kernel/closure.cmo kernel/reduction.cmo kernel/type_errors.cmo\
   kernel/entries.cmo \
@@ -1457,7 +1484,9 @@ PRINTERSCMO=\
   config/coq_config.cmo lib/lib.cma \
   kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo kernel/term.cmo	\
   kernel/mod_subst.cmo kernel/copcodes.cmo kernel/cemitcodes.cmo	\
-  kernel/sign.cmo kernel/declarations.cmo kernel/pre_env.cmo \
+  kernel/sign.cmo kernel/declarations.cmo kernel/retroknowledge.cmo \
+  kernel/pre_env.cmo \
+  kernel/retroknowledge.cmo kernel/pre_env.cmo \
   kernel/cbytecodes.cmo kernel/cbytegen.cmo kernel/environ.cmo \
   kernel/conv_oracle.cmo kernel/closure.cmo kernel/reduction.cmo	\
   kernel/modops.cmo kernel/type_errors.cmo kernel/inductive.cmo		\

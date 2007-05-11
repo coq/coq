@@ -52,14 +52,63 @@ let type_constructor mind mib typ params =
     let _,ctyp = decompose_prod_n nparams ctyp in   
     substl (List.rev (Array.to_list params)) ctyp
 
+(* arnaud: to clean 
+(* spiwack: auxiliary fonction for decompiling 31-bit integers
+   into their corresponding constr *)
+let constr_of_int31 =
+  let nth_digit_plus_one i n = (* calculates the nth (starting with 0)
+                                  digit of i and adds 1 to it 
+                                  (nth_digit_plus_one 1 3 = 2) *)
+      if (land) i ((lsl) 1 n) = 0 then
+         1
+      else
+         2
+  in
+  fun tag -> fun ind->
+  let digit_ind = Retroknowledge.digits_of_int31 ind 
+  in
+  let array_of_int i =
+    Array.init 31 (fun n -> mkConstruct(digit_ind, nth_digit_plus_one i (30-n)))
+  in
+    mkApp(mkConstruct(ind, 1), array_of_int tag) *)
+
+(* /spiwack *)
+(* arnaud
+let construct_of_constr_const env tag typ =
+  let ind,params = find_rectype env typ in
+  (* arnaud:improve comment ? *)
+  (* spiwack: branching for 31-bits integers *)
+(* arnaud:
+  if Retroknowledge.isInt31t ind then
+    constr_of_int31 tag ind
+  else *)
+  try 
+    retroknowledge Retroknowledge.get_vm_decompile_constant_info env (Ind ind) tag
+  with Not_found ->
+    let (_,mip) = lookup_mind_specif env ind in
+    let i = invert_tag true tag mip.mind_reloc_tbl in
+    applistc (mkConstruct(ind,i))  params *)
+
 let construct_of_constr const env tag typ =
   let (mind,_ as ind), allargs = find_rectype_a env typ in
-  let mib,mip = lookup_mind_specif env ind in
-  let nparams = mib.mind_nparams in
-  let i = invert_tag const tag mip.mind_reloc_tbl in
-  let params = Array.sub allargs 0 nparams in
-  let ctyp = type_constructor mind mib (mip.mind_nf_lc.(i-1)) params in
-  (mkApp(mkConstruct(ind,i), params), ctyp)
+  (* spiwack : here be a branch for specific decompilation handled by retroknowledge *)
+  try
+    if const then
+      ((retroknowledge Retroknowledge.get_vm_decompile_constant_info env (Ind ind) tag),
+       typ) (*spiwack: this may need to be changed in case there are parameters in the
+	               type which may cause a constant value to have an arity.
+	               (type_constructor seems to be all about parameters actually)
+	               but it shouldn't really matter since constant values don't use
+	               their ctyp in the rest of the code.*)
+    else
+      raise Not_found (* No retroknowledge function (yet) for block decompilation *)
+  with Not_found ->
+    let mib,mip = lookup_mind_specif env ind in
+    let nparams = mib.mind_nparams in
+    let i = invert_tag const tag mip.mind_reloc_tbl in
+    let params = Array.sub allargs 0 nparams in
+    let ctyp = type_constructor mind mib (mip.mind_nf_lc.(i-1)) params in
+      (mkApp(mkConstruct(ind,i), params), ctyp)
 
 let construct_of_constr_const env tag typ = 
   fst (construct_of_constr true env tag typ)

@@ -170,7 +170,8 @@ and translate_module env  me =
 	  mod_user_type = Some mtb;
 	  mod_type = mtb;
 	  mod_equiv = None;
-	  mod_constraints = Constraint.empty }
+	  mod_constraints = Constraint.empty;
+	  mod_retroknowledge = [] } 
     | Some mexpr, _ -> 
 	let meq_o = (* do we have a transparent module ? *)
 	  try       (* TODO: transparent field in module_entry *)
@@ -193,7 +194,11 @@ and translate_module env  me =
 	    mod_user_type = mod_user_type;
 	    mod_expr = Some meb;
 	    mod_equiv = meq_o;
-	    mod_constraints = cst }
+	    mod_constraints = cst;
+	    mod_retroknowledge = []} (* spiwack: not so sure about that. It may
+					cause a bug when closing nested modules.
+					If it does, I don't really know how to
+					fix the bug.*)
 
 (* translate_mexpr : env -> module_expr -> module_expr_body * module_type_body *)
 and translate_mexpr env mexpr = match mexpr with

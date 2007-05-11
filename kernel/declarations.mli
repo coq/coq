@@ -218,7 +218,8 @@ and module_body =
       mod_user_type : module_type_body option;
       mod_type : module_type_body;
       mod_equiv : module_path option;
-      mod_constraints : constraints }
+      mod_constraints : constraints;
+      mod_retroknowledge : Retroknowledge.action list}
     (*    [type_of(mod_expr)]  <: [mod_user_type] (if given)  *)
     (*  if equiv given then constraints are empty *)
 

@@ -350,6 +350,29 @@ let is_pos_or_zero n = is_pos_or_zero (ints_of_z n)
 
 let pr_bigint n = str (to_string n)
 
+(* spiwack: computes n^m *)
+(* The basic idea of the algorithm is that n^(2m) = (n^2)^m *)
+(* In practice the algorithm performs :
+    k*n^0 = k
+    k*n^(2m) = k*(n*n)^m
+    k*n^(2m+1) = (n*k)*(n*n)^m *)
+let pow  =
+  let rec pow_aux odd_rest n m = (* odd_rest is the k from above *)
+    if is_neg_or_zero m then
+      odd_rest
+    else
+      let (quo,rem) = div2_with_rest m in
+      pow_aux
+	((* [if m mod 2 = 1]*)
+         if rem then 
+          mult n odd_rest
+	 else
+          odd_rest )
+	(* quo = [m/2] *)
+	(mult n n) quo 
+  in
+  pow_aux one
+
 (* Testing suite *)
 
 let check () =

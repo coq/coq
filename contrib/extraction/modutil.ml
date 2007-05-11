@@ -49,7 +49,10 @@ let rec subst_module sub mb =
 	 mod_type=mtb'; 
 	 mod_user_type=mtb''; 
 	 mod_equiv=mpo'; 
-	 mod_constraints=mb.mod_constraints }
+	 mod_constraints=mb.mod_constraints;
+         mod_retroknowledge=[] } (* spiwack: since I'm lazy and it's unused at 
+				    this point. I forget about retroknowledge, 
+				    this may need a change later *)
 
 and subst_meb sub = function 
   | MEBident mp -> MEBident (subst_mp sub mp) 

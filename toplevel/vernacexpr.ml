@@ -64,6 +64,7 @@ type printable =
   | PrintVisibility of string option
   | PrintAbout of reference
   | PrintImplicit of reference
+  | PrintNeededAssumptions of reference
 
 type search_about_item =
   | SearchRef of reference

@@ -49,7 +49,7 @@ val add_signature :
 
 (* adds a module and its components, but not the constraints *)
 val add_module :
-  module_path -> module_body -> env -> env
+  module_path -> module_body ->  env -> env
 
 val check_modpath_equiv : env -> module_path -> module_path -> unit
 

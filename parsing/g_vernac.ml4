@@ -626,7 +626,8 @@ GEXTEND Gram
       | IDENT "Scope"; s = IDENT -> PrintScope s
       | IDENT "Visibility"; s = OPT IDENT -> PrintVisibility s
       | IDENT "Implicit"; qid = global -> PrintImplicit qid
-      | IDENT "Universes"; fopt = OPT ne_string -> PrintUniverses fopt ] ]
+      | IDENT "Universes"; fopt = OPT ne_string -> PrintUniverses fopt
+      | IDENT "Assumptions"; qid = global -> PrintNeededAssumptions qid ] ]
   ;
   class_rawexpr:
     [ [ IDENT "Funclass" -> FunClass

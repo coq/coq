@@ -108,6 +108,11 @@ val emacs_str              : string -> string -> string
 
 val prterm                 : constr -> std_ppcmds (* = pr_lconstr *)
 
+
+(* spiwack: A printer for sets of Environ.assumption *)
+val pr_assumptionset : env -> Environ.AssumptionSet.t -> std_ppcmds
+
+
 type printer_pr = {
  pr_subgoals            : string option -> evar_map -> goal list -> std_ppcmds;
  pr_subgoal             : int -> goal list -> std_ppcmds;
@@ -117,3 +122,4 @@ type printer_pr = {
 val set_printer_pr : printer_pr -> unit
 
 val default_printer_pr : printer_pr
+

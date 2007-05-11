@@ -48,7 +48,8 @@ type env = {
     env_rel_context   : rel_context;
     env_rel_val       : lazy_val list;
     env_nb_rel        : int;
-    env_stratification : stratification }
+    env_stratification : stratification; 
+    retroknowledge : Retroknowledge.retroknowledge }
 
 type named_context_val = named_context * named_vals
 
@@ -80,5 +81,3 @@ val lookup_mind : mutual_inductive -> env -> mutual_inductive_body
 
 (* Find the ultimate inductive in the [mind_equiv] chain *)
 val scrape_mind : env -> mutual_inductive -> mutual_inductive
-
-

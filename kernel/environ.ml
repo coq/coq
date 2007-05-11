@@ -358,6 +358,7 @@ let insert_after_hyp (ctxt,vals) id d check =
     | _, _ -> assert false
   in aux ctxt vals
 
+
 (* To be used in Logic.clear_hyps *)
 let remove_hyps ids check_context check_value (ctxt, vals) =
   let ctxt,vals,rmv = 
@@ -370,4 +371,223 @@ let remove_hyps ids check_context check_value (ctxt, vals) =
 	  (nd::ctxt,(id',nv)::vals,rmv))
 		     ctxt vals ([],[],[])
   in ((ctxt,vals),rmv)
+
+
+
+
+
+
+(*spiwack: the following functions assemble the pieces of the retroknowledge
+   note that the "consistent" register function is available in the module
+   Safetyping, Environ only synchronizes the proactive and the reactive parts*)
+
+open Retroknowledge
+
+(* lifting of the "get" functions works also for "mem"*)
+let retroknowledge f env =
+  f env.retroknowledge
+
+let registered env field =
+    retroknowledge mem env field
+
+(* spiwack: this unregistration function is not in operation yet. It should
+            not be used *)
+(* this unregistration function assumes that no "constr" can hold two different
+   places in the retroknowledge. There is no reason why it shouldn't be true,
+   but in case someone needs it, remember to add special branches to the
+   unregister function *)
+let unregister env field =
+  match field with
+    | KInt31 (_,Int31Type) -> 
+	(*there is only one matching kind due to the fact that Environ.env
+          is abstract, and that the only function which add elements to the
+          retroknowledge is Environ.register which enforces this shape *)
+        let Ind i31t = retroknowledge find env field in 
+	let i31c = Construct (i31t, 1) in
+	  {env with retroknowledge = 
+	      remove (retroknowledge clear_info env i31c) field}
+    |_ -> {env with retroknowledge =
+	   try 
+	     remove (retroknowledge clear_info env 
+                                         (retroknowledge find env field)) field
+	   with Not_found ->
+	     retroknowledge remove env field}
+
+
+
+(* the Environ.register function syncrhonizes the proactive and reactive 
+   retroknowledge. *)
+let register =
+
+  (* subfunction used for static decompilation of int31 (after a vm_compute,
+     see pretyping/vnorm.ml for more information) *)
+  let constr_of_int31 =
+    let nth_digit_plus_one i n = (* calculates the nth (starting with 0)
+                                    digit of i and adds 1 to it 
+                                    (nth_digit_plus_one 1 3 = 2) *)
+      if (land) i ((lsl) 1 n) = 0 then
+        1
+      else
+        2
+    in
+      fun ind -> fun digit_ind -> fun tag ->
+	let array_of_int i =
+	  Array.init 31 (fun n -> mkConstruct
+			   (digit_ind, nth_digit_plus_one i (30-n)))
+	in
+	  mkApp(mkConstruct(ind, 1), array_of_int tag)
+  in
+
+  (* subfunction which adds the information bound to the constructor of
+     the int31 type to the reactive retroknowledge *)
+  let add_int31c retroknowledge c = 
+    let rk = add_vm_constant_static_info retroknowledge c 
+                                         Cbytegen.compile_structured_int31
+    in
+    add_vm_constant_dynamic_info rk c Cbytegen.dynamic_int31_compilation
+  in
+
+  (* subfunction which adds the compiling information of an
+     int31 operation which has a specific vm instruction (associates
+     it to the name of the coq definition in the reactive retroknowledge) *)
+  let add_int31_op retroknowledge v n op kn =
+    add_vm_compiling_info retroknowledge v (Cbytegen.op_compilation n op kn)
+  in
+
+fun env field value ->
+  (* subfunction which shortens the (very often use) registration of binary
+     operators to the reactive retroknowledge. *)
+  let add_int31_binop_from_const op =
+    match value with
+      | Const kn ->  retroknowledge add_int31_op env value 2 
+	                               op kn
+      | _ -> anomaly "Environ.register: should be a constant"
+  in
+  (* subfunction which completes the function constr_of_int31 above
+     by performing the actual retroknowledge operations *)
+  let add_int31_decompilation_from_type rk = 
+    (* invariant : the type of bits is registered, otherwise the function 
+       would raise Not_found. The invariant is enforced in safe_typing.ml *)
+    match field with
+      | KInt31 (grp, Int31Type) -> 
+	  (match Retroknowledge.find rk (KInt31 (grp,Int31Bits)) with
+	    | Ind i31bit_type ->  
+		(match value with 
+		  | Ind i31t -> 
+		      Retroknowledge.add_vm_decompile_constant_info rk
+		               value (constr_of_int31 i31t i31bit_type)
+		  | _ -> anomaly "Environ.register: should be an inductive type")
+	    | _ -> anomaly "Environ.register: Int31Bits should be an inductive type")
+      | _ -> anomaly "Environ.register: add_int31_decompilation_from_type called with an abnormal field"
+  in
+  {env with retroknowledge = 
+  let retroknowledge_with_reactive_info = 
+  match field with
+    | KInt31 (_, Int31Type) -> 
+        let i31c = match value with
+                     | Ind i31t -> (Construct (i31t, 1))
+		     | _ -> anomaly "Environ.register: should be an inductive type"
+	in
+	add_int31_decompilation_from_type 
+	  (add_vm_before_match_info 
+	     (retroknowledge add_int31c env i31c) 
+	     value Cbytegen.int31_escape_before_match)
+    | KInt31 (_, Int31Plus) -> add_int31_binop_from_const Cbytecodes.Kaddint31
+    | KInt31 (_, Int31PlusC) -> add_int31_binop_from_const Cbytecodes.Kaddcint31
+    | KInt31 (_, Int31PlusCarryC) -> add_int31_binop_from_const Cbytecodes.Kaddcarrycint31
+    | KInt31 (_, Int31Minus) -> add_int31_binop_from_const Cbytecodes.Ksubint31
+    | KInt31 (_, Int31MinusC) -> add_int31_binop_from_const Cbytecodes.Ksubcint31
+    | KInt31 (_, Int31MinusCarryC) -> add_int31_binop_from_const 
+	                                           Cbytecodes.Ksubcarrycint31
+    | KInt31 (_, Int31PlusC) -> add_int31_binop_from_const Cbytecodes.Kaddcint31
+    | KInt31 (_, Int31Times) -> add_int31_binop_from_const Cbytecodes.Kmulint31
+    | KInt31 (_, Int31TimesC) -> add_int31_binop_from_const Cbytecodes.Kmulcint31
+    | KInt31 (_, Int31Div21) -> (* this is a ternary operation *)
+                                (match value with
+				 | Const kn ->
+				     retroknowledge add_int31_op env value 3 
+	                               Cbytecodes.Kdiv21int31 kn
+				 | _ -> anomaly "Environ.register: should be a constant")
+    | KInt31 (_, Int31Div) -> add_int31_binop_from_const Cbytecodes.Kdivint31
+    | KInt31 (_, Int31AddMulDiv) -> (* this is a ternary operation *)
+                                (match value with
+				 | Const kn ->
+				     retroknowledge add_int31_op env value 3 
+	                               Cbytecodes.Kaddmuldivint31 kn
+				 | _ -> anomaly "Environ.register: should be a constant")
+    | KInt31 (_, Int31Compare) -> add_int31_binop_from_const Cbytecodes.Kcompareint31
+    | _ -> env.retroknowledge
+  in
+  Retroknowledge.add_field retroknowledge_with_reactive_info field value
+  }
+
+
+(* spiwack: the following definitions are used by the function 
+   needed_assumption which gives as an output the set of all
+   axioms and sections variables on which a given term depends
+   in a context (expectingly the Global context) *)
+type assumption =
+  | Variable of identifier*constr
+  | Axiom of constant*constr
+
+module OrderedAssumption = 
+struct 
+  type t = assumption
+  let compare = compare
+end
+
+module AssumptionSet = Set.Make (OrderedAssumption)
+
+(* definition for redability purposes *)
+let ( ** ) s1 s2  = AssumptionSet.union s1 s2
+
+let rec needed_assumptions t env =   
+ (* goes recursively into the terms to see if it depends on assumptions
+    the 3 important cases are : Var _ which simply means that the term refers
+    to a section variable,
+                                Rel _ which means the term is a variable
+    which has been bound earlier by a Lambda or a Prod (returns [] )
+                                Const _ where we need to first unfold
+    the constant and return the needed assumptions of its body in the 
+    environnement *)
+  match kind_of_term t with
+    | Var id -> AssumptionSet.singleton (Variable (id,named_type id env))
+    | Meta _ | Evar _ -> assert false
+    | Cast (e1,_,e2) | Prod (_,e1,e2) | Lambda (_,e1,e2) -> 
+                   (needed_assumptions e1 env)**(needed_assumptions e2 env)
+    | LetIn (_,e1,e2,e3) ->(needed_assumptions e1 env)**
+                           (needed_assumptions e2 env)**
+                           (needed_assumptions e3 env)
+    | App (e1, e_array) -> (needed_assumptions e1 env)**
+                   (Array.fold_right (fun e -> fun s -> 
+                                               (needed_assumptions e env)**s)
+                                      e_array AssumptionSet.empty)
+    | Case (_,e1,e2,e_array) -> (needed_assumptions e1 env)**
+                                (needed_assumptions e2 env)**
+                   (Array.fold_right (fun e -> fun s -> 
+                                               (needed_assumptions e env)**s)
+                                      e_array AssumptionSet.empty)
+    | Fix (_,(_, e1_array, e2_array)) | CoFix (_,(_,e1_array, e2_array)) ->
+                   Array.fold_right (fun e -> fun s -> 
+                                              (needed_assumptions e env)**s)
+                                      e1_array
+                   (Array.fold_right (fun e -> fun s -> 
+                                              (needed_assumptions e env)**s)
+                                      e2_array AssumptionSet.empty)
+    | Const kn -> 
+	let cb = lookup_constant kn env in
+        (match cb.Declarations.const_body with
+        | None -> 
+	    let ctype = 
+	      match cb.Declarations.const_type with
+		| PolymorphicArity (ctx,a) -> mkArity (ctx, Type a.poly_level)
+		| NonPolymorphicType t -> t
+	    in
+	    AssumptionSet.singleton (Axiom (kn,ctype))
+        | Some body -> needed_assumptions (Declarations.force body) env)
+    | _ -> AssumptionSet.empty (* closed atomic types + rel *)
+
+(* /spiwack *)
+
+
 

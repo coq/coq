@@ -111,7 +111,10 @@ let out_label_with_orig orig lbl =
     Label_defined def ->
       out_int((def - orig) asr 2)
   | Label_undefined patchlist ->
-      if patchlist = [] then
+      (* spiwack: patchlist is supposed to be non-empty all the time
+         thus I commented that out. If there is no problem I suggest
+         removing it for next release (cur: 8.1) *)
+      (*if patchlist = [] then *)
 	(!label_table).(lbl) <-
           Label_undefined((!out_position, orig) :: patchlist);
       out_int 0
@@ -222,9 +225,28 @@ let emit_instr = function
   | Ksetfield n ->
       if n <= 1 then out (opSETFIELD0+n) 
       else (out opSETFIELD;out_int n)
+  | Ksequence _ -> raise (Invalid_argument "Cemitcodes.emit_instr")
+  (* spiwack *)
+  | Kbranch lbl -> out opBRANCH; out_label lbl
+  | Kaddint31 -> out opADDINT31
+  | Kaddcint31 -> out opADDCINT31
+  | Kaddcarrycint31 -> out opADDCARRYCINT31
+  | Ksubint31 -> out opSUBINT31
+  | Ksubcint31 -> out opSUBCINT31
+  | Ksubcarrycint31 -> out opSUBCARRYCINT31
+  | Kmulint31 -> out opMULINT31
+  | Kmulcint31 -> out opMULCINT31
+  | Kdiv21int31 -> out opDIV21INT31
+  | Kdivint31 -> out opDIVINT31
+  | Kaddmuldivint31 -> out opADDMULDIVINT31
+  | Kcompareint31 -> out opCOMPAREINT31
+  | Kisconst lbl -> out opISCONST; out_label lbl
+  | Kareconst(n,lbl) -> out opARECONST; out_int n; out_label lbl
+  | Kcompint31 -> out opCOMPINT31
+  | Kdecompint31 -> out opDECOMPINT31
+  (*/spiwack *)
   | Kstop -> 
       out opSTOP
-  | Ksequence _ -> raise (Invalid_argument "Cemitcodes.emit_instr")
 
 (* Emission of a list of instructions. Include some peephole optimization. *)
 

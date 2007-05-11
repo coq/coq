@@ -814,12 +814,15 @@ let rec pr_vernac = function
 	| PrintModuleType qid -> str"Print Module Type" ++ spc() ++ pr_reference qid
 	| PrintModule qid -> str"Print Module" ++ spc() ++ pr_reference qid
 	| PrintInspect n -> str"Inspect" ++ spc() ++ int n
-  | PrintSetoids -> str"Print Setoids"
+	| PrintSetoids -> str"Print Setoids"
 	| PrintScopes -> str"Print Scopes"
 	| PrintScope s -> str"Print Scope" ++ spc() ++ str s 
 	| PrintVisibility s -> str"Print Visibility" ++ pr_opt str s 
 	| PrintAbout qid -> str"About" ++ spc()  ++ pr_reference qid
 	| PrintImplicit qid -> str"Print Implicit" ++ spc()  ++ pr_reference qid
+(* spiwack: command printing all the axioms and section variables used in a 
+         term *)
+	| PrintNeededAssumptions qid -> str"Print Needed Assumptions"++spc()++pr_reference qid
       in pr_printable p
   | VernacSearch (sea,sea_r) -> pr_search sea sea_r pr_pattern_expr
   | VernacLocate loc -> 

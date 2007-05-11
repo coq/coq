@@ -52,7 +52,8 @@ type safe_environment =
       revsign : module_signature_body;
       revstruct : module_structure_body;
       imports : library_info list;
-      loads : (module_path * module_body) list }
+      loads : (module_path * module_body) list;
+      local_retroknowledge : Retroknowledge.action list}
 
 (*
   { old = senv.old;
@@ -79,10 +80,63 @@ let rec empty_environment =
     revsign = [];
     revstruct = [];
     imports = [];
-    loads = [] }
+    loads = [];
+    local_retroknowledge = [] }
 
 let env_of_safe_env senv = senv.env
 let env_of_senv = env_of_safe_env
+
+
+
+
+
+
+
+
+
+
+(*spiwack: functions for safe retroknowledge *)
+
+(* terms which are closed under the environnement env, i.e
+   terms which only depends on constant who are themselves closed *)
+let closed env term = 
+  AssumptionSet.is_empty (needed_assumptions env term)
+
+(* the set of safe terms in an environement any recursive set of
+   terms who are known not to prove inconsistent statement. It should
+   include at least all the closed terms. But it could contain other ones
+   like the axiom of excluded middle for instance *)
+let safe =
+  closed
+
+
+
+(* universal lifting, used for the "get" operations mostly *)
+let retroknowledge f senv = 
+  Environ.retroknowledge f (env_of_senv senv)
+
+let register senv field value by_clause = 
+  (* todo : value closed, by_clause safe, by_clause of the proper type*)
+  (* spiwack : updates the safe_env with the information that the register
+     action has to be performed (again) when the environement is imported *)
+  {senv with env = Environ.register senv.env field value;
+             local_retroknowledge = 
+      Retroknowledge.RKRegister (field,value)::senv.local_retroknowledge
+  }
+
+(* spiwack : currently unused *)
+let unregister senv field  =
+  (*spiwack: todo: do things properly or delete *)
+  {senv with env = Environ.unregister senv.env field}
+(* /spiwack *)
+
+
+
+
+
+
+
+
 
 
 (* Insertion of section variables. They are now typed before being
@@ -154,7 +208,8 @@ let add_constant dir l decl senv =
 	  revsign = (l,SPBconst cb)::senv.revsign;
 	  revstruct = (l,SEBconst cb)::senv.revstruct;
 	  imports = senv.imports;
-	  loads = senv.loads }
+	  loads = senv.loads ;
+	  local_retroknowledge = senv.local_retroknowledge }
     
 
 (* Insertion of inductive types. *)
@@ -181,7 +236,8 @@ let add_mind dir l mie senv =
 	revsign = (l,SPBmind mib)::senv.revsign;
 	revstruct = (l,SEBmind mib)::senv.revstruct;
 	imports = senv.imports;
-	loads = senv.loads }
+	loads = senv.loads;
+        local_retroknowledge = senv.local_retroknowledge }
 
 
 (* Insertion of module types *)
@@ -199,8 +255,8 @@ let add_modtype l mte senv =
 	revsign = (l,SPBmodtype mtb)::senv.revsign;
 	revstruct = (l,SEBmodtype mtb)::senv.revstruct;
 	imports = senv.imports;
-	loads = senv.loads }
-
+	loads = senv.loads;
+        local_retroknowledge = senv.local_retroknowledge }
 
 
 (* full_add_module adds module with universes and constraints *)
@@ -224,7 +280,8 @@ let add_module l me senv =
 	revsign = (l,SPBmodule mspec)::senv.revsign;
 	revstruct = (l,SEBmodule mb)::senv.revstruct;
 	imports = senv.imports;
-	loads = senv.loads }
+	loads = senv.loads;
+        local_retroknowledge = senv.local_retroknowledge }
 
 
 (* Interactive modules *)
@@ -246,7 +303,9 @@ let start_module l senv =
 	revsign = [];
 	revstruct = [];
 	imports = senv.imports;
-	loads = [] }
+	loads = [];
+	(* spiwack : not sure, but I hope it's correct *)
+        local_retroknowledge = [] }
 
 let end_module l restype senv = 
   let oldsenv = senv.old in
@@ -285,7 +344,8 @@ let end_module l restype senv =
       mod_user_type = mod_user_type;
       mod_type = mtb;
       mod_equiv = None;
-      mod_constraints = cst }
+      mod_constraints = cst;
+      mod_retroknowledge = senv.local_retroknowledge}
   in
   let mspec = 
     { msb_modtype = mtb;
@@ -310,7 +370,8 @@ let end_module l restype senv =
 	revsign = (l,SPBmodule mspec)::oldsenv.revsign;
 	revstruct = (l,SEBmodule mb)::oldsenv.revstruct;
 	imports = senv.imports;
-	loads = senv.loads@oldsenv.loads }
+	loads = senv.loads@oldsenv.loads;
+	local_retroknowledge = senv.local_retroknowledge@oldsenv.local_retroknowledge }
 
 
 (* Adding parameters to modules or module types *)
@@ -334,7 +395,8 @@ let add_module_parameter mbid mte senv =
     revsign = [];
     revstruct = [];
     imports = senv.imports;
-    loads = [] }
+    loads = [];
+    local_retroknowledge = senv.local_retroknowledge }
 
 
 (* Interactive module types *)
@@ -356,7 +418,9 @@ let start_modtype l senv =
 	revsign = [];
 	revstruct = [];
 	imports = senv.imports;
-	loads = [] }
+	loads = [];
+	(* spiwack: not 100% sure, but I think it should be like that *)
+        local_retroknowledge = []}
 
 let end_modtype l senv = 
   let oldsenv = senv.old in
@@ -396,7 +460,11 @@ let end_modtype l senv =
 	revsign = (l,SPBmodtype mtb)::oldsenv.revsign;
 	revstruct = (l,SEBmodtype mtb)::oldsenv.revstruct;
 	imports = senv.imports;
-	loads = senv.loads@oldsenv.loads }
+	loads = senv.loads@oldsenv.loads;
+        (* spiwack : if there is a bug with retroknowledge in nested modules
+                     it's likely to come from here *)
+        local_retroknowledge = 
+                   senv.local_retroknowledge@oldsenv.local_retroknowledge}
   
 
 let current_modpath senv = senv.modinfo.modpath
@@ -421,7 +489,6 @@ let set_engagement c senv =
 
 type compiled_library = 
     dir_path * module_body * library_info list * engagement option
-
 
 (* We check that only initial state Require's were performed before 
    [start_library] was called *)
@@ -455,7 +522,10 @@ let start_library dir senv =
 	revsign = [];
 	revstruct = [];
 	imports = senv.imports;
-	loads = [] }
+	loads = [];
+        local_retroknowledge = [] }
+
+
 
 
 let export senv dir = 
@@ -475,7 +545,8 @@ let export senv dir =
       mod_type = MTBsig (modinfo.msid, List.rev senv.revsign);
       mod_user_type = None;
       mod_equiv = None;
-      mod_constraints = Constraint.empty }
+      mod_constraints = Constraint.empty;
+      mod_retroknowledge = senv.local_retroknowledge}
   in
     modinfo.msid, (dir,mb,senv.imports,engagement senv.env)
 
@@ -491,6 +562,8 @@ let check_imports senv needed =
       error ("Reference to unknown module " ^ (string_of_dirpath id))
   in
   List.iter check needed
+
+
 
 (* we have an inefficiency: Since loaded files are added to the
 environment every time a module is closed, their components are
@@ -571,3 +644,6 @@ let j_type j = j.uj_type
 let safe_infer senv = infer (env_of_senv senv)
     
 let typing senv = Typeops.typing (env_of_senv senv)
+
+
+

@@ -17,6 +17,7 @@ type structured_constant =
   | Const_b0 of tag                
   | Const_bn of tag * structured_constant array
 
+
 type reloc_table = (tag * int) array 
 
 type annot_switch = 
@@ -63,12 +64,71 @@ type instruction =
   | Ksetfield of int
   | Kstop
   | Ksequence of bytecodes * bytecodes
+(* spiwack: instructions concerning integers *)
+  | Kbranch of Label.t                  (* jump to label *)
+  | Kaddint31                           (* adds the int31 in the accu 
+                                           and the one ontop of the stack *)
+  | Kaddcint31                          (* makes the sum and keeps the carry *)
+  | Kaddcarrycint31                     (* sum +1, keeps the carry *)
+  | Ksubint31                           (* subtraction modulo *)
+  | Ksubcint31                          (* subtraction, keeps the carry *)
+  | Ksubcarrycint31                      (* subtraction -1, keeps the carry *)
+  | Kmulint31                           (* multiplication modulo *)
+  | Kmulcint31                          (* multiplication, result in two
+					   int31, for exact computation *)
+  | Kdiv21int31                          (* divides a double size integer
+                                           (represented by an int31 in the 
+					   accumulator and one on the top of 
+					   the stack) by an int31. The result
+					   is a pair of the quotient and the 
+					   rest.
+					   If the divisor is 0, it returns
+					   0. *)
+  | Kdivint31                           (* euclidian division (returns a pair
+					   quotient,rest) *)
+  | Kaddmuldivint31                     (* generic operation for shifting and
+					   cycling. Takes 3 int31 i j and s,
+					   and returns x*2^s+y/(2^(31-s) *)
+  | Kcompareint31                        (* unsigned comparison of int31
+					   cf COMPAREINT31 in 
+					   kernel/byterun/coq_interp.c
+					   for more info *)
+  | Kisconst of Label.t                 (* conditional jump *)
+  | Kareconst of int*Label.t            (* conditional jump *)
+  | Kcompint31                          (* dynamic compilation of int31 *)
+  | Kdecompint31                        (* dynamic decompilation of int31 *)
+(* /spiwack *)
 
 and bytecodes = instruction list
 
 type fv_elem = FVnamed of identifier | FVrel of int
 
 type fv = fv_elem array
+
+(* spiwack: this exception is expected to be raised by function expecting
+            closed terms. *)
+exception NotClosed
+
+
+(*spiwack: both type have been moved from Cbytegen because I needed then
+  for the retroknowledge *)
+type vm_env = {
+    size : int;              (* longueur de la liste [n] *)
+    fv_rev : fv_elem list    (* [fvn; ... ;fv1] *)
+  }    
+   
+   
+type comp_env = { 
+    nb_stack : int;              (* nbre de variables sur la pile          *)
+    in_stack : int list;         (* position dans la pile                  *)
+    nb_rec : int;                (* nbre de fonctions mutuellement         *)
+                                 (* recursives =  nbr                      *)
+    pos_rec  : instruction list; (* instruction d'acces pour les variables *)
+                                 (*  de point fix ou de cofix              *)
+    offset : int;                 
+    in_env : vm_env ref 
+  } 
+
 
 
 (* --- Pretty print *)
@@ -123,6 +183,27 @@ let rec instruction ppf = function
   | Kstop -> fprintf ppf "\tstop"
   | Ksequence (c1,c2) ->
       fprintf ppf "%a@ %a" instruction_list c1 instruction_list c2 
+(* spiwack *)
+  | Kbranch lbl -> fprintf ppf "\tbranch %i" lbl
+  | Kaddint31 -> fprintf ppf "\taddint31"
+  | Kaddcint31 -> fprintf ppf "\taddcint31"
+  | Kaddcarrycint31 -> fprintf ppf "\taddcarrycint31"
+  | Ksubint31 -> fprintf ppf "\tsubint31"
+  | Ksubcint31 -> fprintf ppf "\tsubcint31"
+  | Ksubcarrycint31 -> fprintf ppf "\tsubcarrycint31"
+  | Kmulint31 -> fprintf ppf "\tmulint31"
+  | Kmulcint31 -> fprintf ppf "\tmulcint31"
+  | Kdiv21int31 -> fprintf ppf "\tdiv21int31"
+  | Kdivint31 -> fprintf ppf "\tdivint31"
+  | Kcompareint31 -> fprintf ppf "\tcompareint31"
+  | Kaddmuldivint31 -> fprintf ppf "\taddmuldivint31"
+  | Kisconst lbl -> fprintf ppf "\tisconst %i" lbl
+  | Kareconst(n,lbl) -> fprintf ppf "\tareconst %i %i" n lbl
+  | Kcompint31 -> fprintf ppf "\tcompint31"
+  | Kdecompint31 -> fprintf ppf "\tdecompint"
+
+(* /spiwack *)
+
 
 and instruction_list ppf = function
     [] -> ()
@@ -130,6 +211,26 @@ and instruction_list ppf = function
       fprintf ppf "L%i:%a" lbl instruction_list il
   | instr :: il ->
       fprintf ppf "%a@ %a" instruction instr instruction_list il
+
+
+(*spiwack: moved this type in this file  because I needed it for 
+  retroknowledge which can't depend from cbytegen *)
+type block = 
+  | Bconstr of constr
+  | Bstrconst of structured_constant
+  | Bmakeblock of int * block array
+  | Bconstruct_app of int * int * int * block array
+                  (* tag , nparams, arity *)
+  | Bspecial of (comp_env -> block array -> int -> bytecodes -> bytecodes) * block array
+                (* spiwack: compilation given by a function *)
+                (* compilation function (see get_vm_constant_dynamic_info in 
+                   retroknowledge.mli for more info) , argument array  *)
+
+
  
 let draw_instr c =
   fprintf std_formatter "@[<v 0>%a@]" instruction_list c
+
+let string_of_instr c =
+  fprintf str_formatter "@[<v 0>%a@]" instruction_list c;
+  flush_str_formatter ()

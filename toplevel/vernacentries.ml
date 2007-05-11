@@ -976,6 +976,18 @@ let vernac_print = function
       pp (Notation.pr_visibility (Constrextern.without_symbols pr_lrawconstr) s)
   | PrintAbout qid -> msgnl (print_about qid)
   | PrintImplicit qid -> msg (print_impargs qid)
+(*spiwack: prints all the axioms and section variables used by a term *)
+  | PrintNeededAssumptions qid ->
+      let cstr =  constr_of_reference (global qid)
+      in
+      let nassumptions = Environ.needed_assumptions cstr
+                                          (Global.env ())
+      in
+      msg 
+      (try
+        Printer.pr_assumptionset (Global.env ()) nassumptions
+      with Not_found ->
+        pr_reference qid ++ str " is closed under the global context")
 
 let global_module r =
   let (loc,qid) = qualid_of_reference r in

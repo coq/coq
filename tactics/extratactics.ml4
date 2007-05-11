@@ -400,14 +400,47 @@ VERNAC COMMAND EXTEND ImplicitTactic
     [ Tacinterp.declare_implicit_tactic (Tacinterp.interp tac) ]
 END
 
+
+
+
+(*spiwack : Vernac commands for retroknowledge *)
+
+VERNAC COMMAND EXTEND RetroknowledgeRegister
+ | [ "Register" constr(c) "as" retroknowledge_field(f) "by" constr(b)] -> 
+           [ let tc = Constrintern.interp_constr Evd.empty (Global.env ()) c in
+             let tb = Constrintern.interp_constr Evd.empty (Global.env ()) b in
+             Global.register f tc tb ]
+END
+
+(* spiwack : Vernac commands for developement *)
+
+(* arnaud : comment out/clear ? *)
+VERNAC COMMAND EXTEND InternalRepresentation (* Prints internal representation of the argument *)
+| [ "Internal" "Representation" "of" constr(t) ] -> 
+    [ let t' = Constrintern.interp_constr Evd.empty (Global.env ()) t in
+      pp (str (string_of_constr t'))]
+END
+
+VERNAC COMMAND EXTEND Bytecode (* Prints Bytecode representation of the argument *)
+| [ "Bytecode" "of" constr(t) ] -> 
+    [ let t' = Constrintern.interp_constr Evd.empty (Global.env ()) t in
+      let (bc,_,_) = Cbytegen.compile (Environ.pre_env (Global.env ())) t' in
+      pp (str (Cbytecodes.string_of_instr bc))]
+END
+
+(* /spiwack *)
+
+
 TACTIC EXTEND apply_in
 | ["apply" constr_with_bindings(c) "in" hyp(id) ] -> [ apply_in false id [c] ]
 | ["apply" constr_with_bindings(c) "," constr_with_bindings_list_sep(cl,",") 
    "in" hyp(id) ] -> [ apply_in false id (c::cl) ]
 END
 
+
 TACTIC EXTEND eapply_in
 | ["eapply" constr_with_bindings(c) "in" hyp(id) ] -> [ apply_in true id [c] ]
 | ["epply" constr_with_bindings(c) "," constr_with_bindings_list_sep(cl,",") 
    "in" hyp(id) ] -> [ apply_in true id (c::cl) ]
 END
+

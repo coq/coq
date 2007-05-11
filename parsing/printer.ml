@@ -468,3 +468,30 @@ let pr_prim_rule = function
 
 let prterm = pr_lconstr
 
+
+(* spiwack a little printer function for sets of Environ.assumption *)
+(* arnaud : tester "Print Assumptions" *)
+let pr_assumptionset env s = 
+  if not (Environ.AssumptionSet.is_empty s) then
+    let (vars, axioms) = Environ.AssumptionSet.partition 
+                         (function |Variable _ -> true | _ -> false) s
+    in
+    (if not (Environ.AssumptionSet.is_empty vars) then
+      str "Section Variables:" ++ fnl () ++
+      (Environ.AssumptionSet.fold 
+            (function Variable (id,typ ) -> fun s -> 
+                       str (string_of_identifier id)++str " : "++pr_ltype typ++spc ()++s)
+            vars (fnl ()))
+    else
+      mt ()
+    )++
+    if not (Environ.AssumptionSet.is_empty axioms) then
+      str "Axioms:" ++ fnl () ++
+      (Environ.AssumptionSet.fold
+            (function Axiom (cst, typ) -> fun s -> (pr_constant env cst)++str " : "++pr_ltype typ++spc ()++s)
+            axioms (mt ()))
+    else
+      mt ()
+  else
+    raise Not_found
+

@@ -219,3 +219,27 @@ val insert_after_hyp : named_context_val -> variable ->
 
 val remove_hyps : identifier list -> (named_declaration -> named_declaration) -> (Pre_env.lazy_val -> Pre_env.lazy_val) -> named_context_val -> named_context_val * identifier list
 
+
+(* spiwack: functions manipulating the retroknowledge *)
+open Retroknowledge
+
+val retroknowledge : (retroknowledge->'a) -> env -> 'a
+
+val registered : env -> field -> bool
+
+val unregister : env -> field -> env
+
+val register : env -> field -> Retroknowledge.entry -> env
+
+(* spiwack: a few declarations for the "Print Assumption" command *)
+type assumption =
+  | Variable of identifier*Term.constr
+  | Axiom of constant*Term.constr
+
+module OrderedAssumption :  Set.OrderedType with type t = assumption
+
+module AssumptionSet : Set.S with type elt = assumption
+
+val needed_assumptions : constr -> env -> AssumptionSet.t
+
+

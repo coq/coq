@@ -77,3 +77,7 @@ val pr_universes : universes -> Pp.std_ppcmds
 val dump_universes : out_channel -> universes -> unit
 
 val hcons1_univ : universe -> universe
+
+
+(* spiwack: function for internal representation printing *)
+val string_of_universe : universe -> string

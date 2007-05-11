@@ -50,3 +50,11 @@ val glob_in_arg_hyp_to_clause :  (Names.identifier list option * bool)  -> Tacti
 val by_arg_tac : Tacexpr.raw_tactic_expr option Pcoq.Gram.Entry.e
 val rawwit_by_arg_tac :  raw_tactic_expr option raw_abstract_argument_type
 val wit_by_arg_tac : glob_tactic_expr option closed_abstract_argument_type
+
+
+
+(* Spiwack: Primitive for retroknowledge registration *)
+
+val retroknowledge_field : Retroknowledge.field Pcoq.Gram.Entry.e
+val rawwit_retroknowledge_field :  Retroknowledge.field raw_abstract_argument_type
+val wit_retroknowledge_field : Retroknowledge.field closed_abstract_argument_type

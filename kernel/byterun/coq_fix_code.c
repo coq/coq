@@ -8,6 +8,9 @@
 /*                                                                     */
 /***********************************************************************/
 
+/* Arnaud Spiwack: expanded the virtual machine with operators used
+   for fast computation of bounded (31bits) integers */
+
 #include <stdio.h>
 #include <stdlib.h> 
 #include <config.h>
@@ -37,7 +40,12 @@ void init_arity () {
     arity[GETFIELD0]=arity[GETFIELD1]=arity[SETFIELD0]=arity[SETFIELD1]=
     arity[CONST0]=arity[CONST1]=arity[CONST2]=arity[CONST3]=
     arity[PUSHCONST0]=arity[PUSHCONST1]=arity[PUSHCONST2]=arity[PUSHCONST3]=
-    arity[ACCUMULATE]=arity[STOP]=arity[MAKEPROD]= 0;
+    arity[ACCUMULATE]=arity[STOP]=arity[MAKEPROD]= 
+    arity[ADDINT31]=arity[ADDCINT31]=arity[ADDCARRYCINT31]=
+    arity[SUBINT31]=arity[SUBCINT31]=arity[SUBCARRYCINT31]=
+    arity[MULCINT31]=arity[MULINT31]=arity[COMPAREINT31]=
+    arity[DIV21INT31]=arity[DIVINT31]=arity[ADDMULDIVINT31]=
+    arity[COMPINT31]=arity[DECOMPINT31]=0;
   /* instruction with one operand */
   arity[ACC]=arity[PUSHACC]=arity[POP]=arity[ENVACC]=arity[PUSHENVACC]=
     arity[PUSH_RETADDR]=arity[APPLY]=arity[APPTERM1]=arity[APPTERM2]=
@@ -45,9 +53,11 @@ void init_arity () {
     arity[PUSHOFFSETCLOSURE]=arity[GETGLOBAL]=arity[PUSHGETGLOBAL]=
     arity[MAKEBLOCK1]=arity[MAKEBLOCK2]=arity[MAKEBLOCK3]=arity[MAKEBLOCK4]=
     arity[MAKEACCU]=arity[CONSTINT]=arity[PUSHCONSTINT]=arity[GRABREC]=
-    arity[PUSHFIELDS]=arity[GETFIELD]=arity[SETFIELD]=arity[ACCUMULATECOND]= 1;
+    arity[PUSHFIELDS]=arity[GETFIELD]=arity[SETFIELD]=arity[ACCUMULATECOND]=
+    arity[BRANCH]=arity[ISCONST]= 1;
   /* instruction with two operands */
-  arity[APPTERM]=arity[MAKEBLOCK]=arity[CLOSURE]=2;
+  arity[APPTERM]=arity[MAKEBLOCK]=arity[CLOSURE]=
+  arity[ARECONST]=2;
   /* instruction with four operands */ 
   arity[MAKESWITCHBLOCK]=4;
   /* instruction with arbitrary operands */

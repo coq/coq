@@ -285,5 +285,6 @@ and module_body =
       mod_user_type : module_type_body option;
       mod_type : module_type_body;
       mod_equiv : module_path option;
-      mod_constraints : constraints }
+      mod_constraints : constraints;
+      mod_retroknowledge : Retroknowledge.action list}
 
