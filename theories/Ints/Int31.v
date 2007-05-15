@@ -306,41 +306,49 @@ Definition sqrt312 (ih il:int31) :=
   match (match ih ?= On with | Eq =>  il ?= On | not0 => not0 end) with 
   | Eq => (On, C0 On)
   | _ => let root :=
+     (* invariant lower <= r <= upper *)
+     let closer_to_upper (r upper lower:int31) :=
+	let (quo,_) := (upper-r)/Twon in
+	match quo ?= On with
+        | Eq => match r ?= upper with | Lt => r+quo | _ => r end
+        | _ => r+quo
+       end
+     in
+     let closer_to_lower (r upper lower:int31) :=
+        let (quo,_) := (r-lower)/Twon in r-quo 
+     in
      (fix dichotomy (guard:nat) (r upper lower:int31) {struct guard} :=
       match guard with
-      | 0%nat => r (* arnaud : pas On *)
+      | 0%nat => r
       | S p => 
          match r*c r with
            | W0 => dichotomy p  
-                             (let (quo, _) := (r+upper)/Twon in quo) 
+                             (closer_to_upper r upper lower) 
                              upper r             (* because 0 < WW ih il *)
-           | WW jh jl => match (match ih ?= jh with 
-                                  | Eq => il ?= jl
+           | WW jh jl => match (match jh ?= ih with 
+                                  | Eq => jl ?= il
                                   | noteq => noteq
                                 end)
                          with
                            | Eq => r
                            | Lt =>
                              match (r + In)*c (r + In) with
-                               | W0 => (* this case should not araise *)
-                                 dichotomy p 
-                                       (let (quo, _) := (r+upper)/Twon in quo)
-                                       upper r
+                               | W0 => r (* r = 2^31 - 1 *)
                                | WW jh1 jl1 => 
-                                 match (match ih ?= jh1 with 
-                                          | Eq => il ?= jl1 
+                                 match (match jh1 ?= ih with 
+                                          | Eq => jl1 ?= il 
                                           | noteq => noteq 
                                         end) 
                                  with
                                    | Eq => r + In
                                    | Gt => r
                                    | Lt => dichotomy p
-                                        (let (quo, _) := (r+upper)/Twon in quo)
+                                        (closer_to_upper r upper lower)
                                         upper r
                                  end
                              end
                            | Gt => dichotomy p 
-                                       (let (quo, _) := (r+lower)/Twon in quo) 
+                                       (closer_to_lower r upper lower) 
                                        r lower
                          end
          end
