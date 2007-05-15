@@ -30,8 +30,8 @@
 
 /* spiwack: I append here a few macros for value/number manipulation */
 #define uint32_of_value(val) (((uint32)val >> 1))
-#define value_of_uint32(i)   ((value)(((uint32)i << 1) | 1))
-#define UI64_of_uint32(i)  ((uint64)I64_literal(0,i))
+#define value_of_uint32(i)   ((value)(((uint32)(i) << 1) | 1))
+#define UI64_of_uint32(lo)  ((uint64)(I64_literal(0,(uint32)(lo))))
 #define UI64_of_value(val) (UI64_of_uint32(uint32_of_value(val)))
 /* /spiwack */
 
@@ -1234,7 +1234,7 @@ value coq_interprete
         /* *sp = 2*x+1 --> accu = 2^(shiftby+1)*x */
         accu = (value)(((*sp++)^1) << shiftby);
         /* accu = 2^(shiftby+1)*x --> 2^(shifby+1)*x+2*y/2^(31-shiftby)+1 */
-        accu = (value)((accu | ((*sp++) >> (31-shiftby)))|1);
+        accu = (value)((accu | (((uint32)(*sp++)) >> (31-shiftby)))|1);
         Next;
       }
 
