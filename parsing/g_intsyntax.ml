@@ -14,16 +14,6 @@ open Bigint
 open Libnames
 open Rawterm
 
-(* arnaud : plan : 
-  - path des modules int31 et bigint dans des variables
-  - nom des constructeurs dans des variables
-  - nom des scopes dans des variables
-  - fonction qui cree les int31 en fonction d'un entier (ce sont des bigint de coq)
-    <= div2 with rest 31 fois, dans un tableau d'args preconstruit
-  - fonction qui cree un bigint de hauteur n (en appelant deux fois la fonction 
-    a la hauteur n-1 (sauf dans les cas ou il y a du 0))
-  /!\ attention aux nombres negatifs  *)
-
 (*** Constants for locating the int31 and bigN ***)
 
 
@@ -214,18 +204,20 @@ let bigint_of_word =
     | RApp (_,RRef(_,c), [_;lft;rght]) when c = zn2z_WW -> 
 	                                  let hleft = get_height lft in
 					  let hright = get_height rght in
-					  if less_than hleft hright then
-					    hright
-					  else
-					    hleft
+					  add_1 
+					    (if less_than hleft hright then
+						 hright
+					     else
+						 hleft)
     | _ -> zero
   in
   let rec transform hght rc =
     match rc with
     | RApp (_,RRef(_,c),_) when c = zn2z_W0-> zero
-    | RApp (_,RRef(_,c), [_;lft;rght]) when c=zn2z_WW-> add (mult (rank hght)
-                                                          (transform (sub_1 hght) lft))
-	                                            (transform (sub_1 hght) rght)
+    | RApp (_,RRef(_,c), [_;lft;rght]) when c=zn2z_WW-> let new_hght = sub_1 hght in
+	                                                add (mult (rank new_hght)
+                                                          (transform (new_hght) lft))
+	                                            (transform (new_hght) rght)
     | _ -> bigint_of_int31 rc
   in
   fun rc ->
