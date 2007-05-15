@@ -66,11 +66,19 @@ Definition int31_op : znz_op int31.
  
  (* shift operations *)
  exact (fun p => let (_,i) := positive_to_int31 p in addmuldiv31 i). (*add_mul_div with positive ? *)
- exact (fun p i => let (n,j) := positive_to_int31 p in (*modulo 2^p (p positive) *)
-                             match n with
-                             | N0 => let (_,r) := i/j in r
-                             | _ => i
-                             end).
+(*modulo 2^p (p positive) *)
+ exact (fun p i => 
+   let (n,j) := positive_to_int31 p in 
+   match n with
+   | N0 => 
+     match compare31 j 32 with
+     | Lt => addmuldiv31 j 0 (addmuldiv31 (31-j) i 0)
+     | _ => i
+     end
+   | _ => i
+   end).
+
+
  (* is i even ? *)
  exact (fun i => let (_,r) := i/2 in 
                           match r ?= 0 with
