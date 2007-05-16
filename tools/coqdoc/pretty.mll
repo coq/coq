@@ -52,6 +52,11 @@
     in
     count 0 (String.index s '*')
 
+  let strip_eol s =
+    let eol = s.[String.length s - 1] = '\n' in
+    (eol, if eol then String.sub s 1 (String.length s - 1) else s)
+
+
   let formatted = ref false
   let brackets = ref 0
 
@@ -449,22 +454,24 @@ and coq = parse
 	  if eol then coq_bol lexbuf else coq lexbuf}
       
 (*s Scanning documentation, at beginning of line *)
-      
+
 and doc_bol = parse
   | space* "\n" '\n'*
       { paragraph (); doc_bol lexbuf }
-  | space* section [^')'] ([^'\n' '*'] | '*' [^'\n'')'])*
-{ let lev, s = sec_title (lexeme lexbuf) in 
-    section lev (fun () -> ignore (doc (from_string s))); 
-    doc lexbuf }
-| space* '-'+
-     { let n = count_dashes (lexeme lexbuf) in
-	 if n >= 4 then rule () else item n;
-	 doc lexbuf }
-| "<<" space*
+  | space* section space+ ([^'\n' '*'] | '*'+ [^'\n' ')' '*'])* ('*'+ '\n')?
+      { let eol, lex = strip_eol (lexeme lexbuf) in
+        let lev, s = sec_title lex in
+Printf.eprintf "%s %d" s (if eol then 1 else 2);
+        section lev (fun () -> ignore (doc (from_string s)));
+	if eol then doc_bol lexbuf else doc lexbuf }
+  | space* '-'+
+      { let n = count_dashes (lexeme lexbuf) in
+	if n >= 4 then rule () else item n;
+        doc lexbuf }
+  | "<<" space*
       { start_verbatim (); verbatim lexbuf; doc_bol lexbuf }
   | eof 
-      { false }
+      { true }
   | _ 
       { backtrack lexbuf; doc lexbuf }
 
