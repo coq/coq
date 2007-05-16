@@ -36,3 +36,13 @@ Check (fun x => @ rhs _ _ (f x)).
 Fixpoint g n := match n with O => true | S n => g n end.
 
 Inductive P n : nat -> Prop := c : P n n.
+
+(* Avoid evars in the computation of implicit arguments (cf r9827) *)
+
+Require Import List.
+
+Fixpoint plus n m {struct n} :=
+  match n with 
+  | 0 => m
+  | S p => S (plus p m)
+  end.

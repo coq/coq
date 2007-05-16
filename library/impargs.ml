@@ -185,6 +185,7 @@ let add_free_rels_until strict strongly_strict revpat bound env m pos acc =
     | Case _ when rig ->
 	if strict then () else
           iter_constr_with_full_binders push_lift (frec false) ed c
+    | Evar _ -> ()
     | _ ->
         iter_constr_with_full_binders push_lift (frec rig) ed c
   in 
