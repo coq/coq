@@ -705,16 +705,18 @@ let add_morphism lemma_infos mor_name (m,quantifiers_rev,args,output) =
         output = output_constr;
         lem = lem;
         morphism_theory = mmor }));
-   Options.if_verbose ppnl (pr_lconstr m ++ str " is registered as a morphism")   
+   Options.if_verbose ppnl (pr_lconstr m ++ str " is registered as a morphism")
+
+let error_cannot_unify_signature env k t t' =
+  errorlabstrm "New Morphism"
+   (str "One morphism argument or its output has type" ++ spc() ++
+    pr_lconstr_env env t ++ strbrk " but the signature requires an argument" ++
+    (if k = 0 then strbrk " of type " else
+    strbrk "whose type is an instance of ") ++ pr_lconstr_env env t' ++
+    str ".")
 
 (* first order matching with a bit of conversion *)
 let unify_relation_carrier_with_type env rel t =
- let raise_error quantifiers_no =
-  errorlabstrm "New Morphism"
-   (str "One morphism argument or its output has type " ++ pr_lconstr t ++
-    str " but the signature requires an argument of type \"" ++
-    pr_lconstr rel.rel_a ++ str " " ++ prvect_with_sep pr_spc (fun _ -> str  "?")
-     (Array.make quantifiers_no 0) ++ str "\"") in
  let args =
   match kind_of_term t with
      App (he',args') ->
@@ -724,15 +726,15 @@ let unify_relation_carrier_with_type env rel t =
        if is_conv env Evd.empty rel.rel_a (mkApp (he',args1)) then
         args2
        else
-        raise_error rel.rel_quantifiers_no
+	error_cannot_unify_signature env rel.rel_quantifiers_no t rel.rel_a
    | _  ->
-     if rel.rel_quantifiers_no = 0 && is_conv env Evd.empty rel.rel_a t then
-      [||] 
-     else
+       try
        let args =
          Clenv.clenv_conv_leq env Evd.empty t rel.rel_a rel.rel_quantifiers_no
        in
        Array.of_list args
+       with Reduction.NotConvertible -> 
+	error_cannot_unify_signature env rel.rel_quantifiers_no t rel.rel_a
  in
   apply_to_relation args rel
 
@@ -742,10 +744,7 @@ let unify_relation_class_carrier_with_type env rel t =
      if is_conv env Evd.empty t t' then
       rel
      else
-      errorlabstrm "New Morphism"
-       (str "One morphism argument or its output has type " ++ pr_lconstr t ++
-        str " but the signature requires an argument of type " ++
-        pr_lconstr t')
+      error_cannot_unify_signature env 0 t t'
   | Leibniz None -> Leibniz (Some t)
   | Relation rel -> Relation (unify_relation_carrier_with_type env rel t)
 
@@ -846,7 +845,7 @@ let new_morphism m signature id hook =
 	    if number_of_quantifiers < 0 then
               errorlabstrm "New Morphism"
 		(str "The morphism " ++ pr_lconstr m ++ str " has type " ++
-		    pr_lconstr typeofm ++ str " that attends at most " ++ int args_ty_len ++
+		    pr_lconstr typeofm ++ str " that expects at most " ++ int args_ty_len ++
 		    str " arguments. The signature that you specified requires " ++
 		    int number_of_arguments ++ str " arguments.")
 	    else
@@ -947,6 +946,8 @@ let new_named_morphism id m sign =
   match sign with
      None -> None
    | Some (args,out) ->
+      if args = [] then
+	error "Morphism signature expects at least one argument.";
       Some
        (List.map (fun (variance,ty) -> variance, constr_of ty) args,
         constr_of out)
