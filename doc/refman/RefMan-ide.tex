@@ -207,7 +207,10 @@ For experts: it is also possible to set up a specific gtk resource
 file, under the name \verb|.coqide-gtk2rc|, following the gtk2
 resources syntax
 \url{http://developer.gnome.org/doc/API/2.0/gtk/gtk-Resource-Files.html}.
-Such a default resource file exists in the \Coq{} library, you may
+Such a default resource file can be found in the subdirectory
+\verb=lib/coq/ide= of the root installation directory of \Coq{}
+(alternatively, it can be found in the subdirectory \verb=ide= of the
+source archive of \Coq{}). You may
 copy this file into your home directory, and edit it using any text
 editor, \CoqIDE{} itself for example.
 
@@ -256,7 +259,7 @@ $\forall$ and $\exists$ respectively, you may add
   bind "F11" {"insert-at-cursor" ("$\forall$")}\\
   bind "F12" {"insert-at-cursor" ("$\exists$")}
 \end{quote}
-to your \verb|binding "text"| section in \verb|.coqiderc-gtk2rc|.
+to your \verb|binding "text"| section in \verb|.coqide-gtk2rc|.
 
 
 %  such a binding is system-dependent. We
@@ -275,7 +278,7 @@ to your \verb|binding "text"| section in \verb|.coqiderc-gtk2rc|.
 %     bind "F13" {"insert-at-cursor" ("$\forall$")}\\
 %     bind "F14" {"insert-at-cursor" ("$\exists$")}
 %   \end{quote}
-%   to your \verb|binding "text"| section in \verb|.coqiderc-gtk2rc|.
+%   to your \verb|binding "text"| section in \verb|.coqide-gtk2rc|.
 %        The strange \verb|∀| argument is the UTF-8 encoding for
 %        0x2200, that is the symbol $\forall$. Computing UTF-8 encoding
 %        for a unicode can be done in various ways, including
