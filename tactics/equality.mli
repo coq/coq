@@ -105,6 +105,7 @@ val substHyp : bool -> types -> identifier -> tactic
 *)
 
 val discriminable : env -> evar_map -> constr -> constr -> bool
+val injectable : env -> evar_map -> constr -> constr -> bool
 
 (* Subst *)
 

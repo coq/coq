@@ -313,6 +313,13 @@ let discriminable env sigma t1 t2 =
     | Inl _ -> true
     | _ -> false
 
+let injectable env sigma t1 t2 = 
+    match find_positions env sigma t1 t2 with
+    | Inl _ | Inr [] -> false
+    | Inr _ -> true
+
+
+
 (* Once we have found a position, we need to project down to it.  If
    we are discriminating, then we need to produce False on one of the
    branches of the discriminator, and True on the other one.  So the
