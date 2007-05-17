@@ -146,9 +146,8 @@ let rank_for_arg_list h =
   | x::tl -> if predicate h x then Some i else rank_aux (i+1) tl in
   rank_aux 0;;
 
-let rec (find_call_occs:
-	   constr -> constr -> (constr list ->constr)*(constr  list list)) =
- fun f expr ->
+let rec find_call_occs  =
+ fun nb_lam f expr ->
   match (kind_of_term expr) with
     App (g, args) when g = f -> 
       (fun l -> List.hd l), [Array.to_list args]
@@ -159,7 +158,7 @@ let rec (find_call_occs:
        | a::upper_tl ->
          (match find_aux upper_tl with
           (cf, ((arg1::args) as args_for_upper_tl)) -> 
-           (match find_call_occs f a with
+           (match find_call_occs nb_lam f a with
              cf2, (_ :: _ as other_args) ->
                let rec avoid_duplicates args =
                   match args with
@@ -183,7 +182,7 @@ let rec (find_call_occs:
                      other_args'@args_for_upper_tl
            | _, [] -> (fun x -> a::cf x), args_for_upper_tl)
 	 | _, [] ->
-	   (match find_call_occs f a with
+	   (match find_call_occs nb_lam f a with
 	     cf, (arg1::args) -> (fun l -> cf l::upper_tl), (arg1::args)
 	   | _, [] -> (fun x -> a::upper_tl), [])) in
      begin
@@ -192,22 +191,39 @@ let rec (find_call_occs:
 	 | cf, args ->
 	     (fun l -> mkApp (g, Array.of_list (cf l))), args
      end
-  | Rel(_) -> error "find_call_occs : Rel"
+  | Rel(v) -> if v > nb_lam then error "find_call_occs : Rel" else ((fun l -> expr),[])
   | Var(id) -> (fun l -> expr), []
   | Meta(_) -> error "find_call_occs : Meta"
   | Evar(_) -> error "find_call_occs : Evar"
   | Sort(_)  -> error "find_call_occs : Sort"
-  | Cast(b,_,_) -> find_call_occs f b
+  | Cast(b,_,_) -> find_call_occs nb_lam f b
   | Prod(_,_,_) -> error "find_call_occs : Prod"
-  | Lambda(_,_,_) -> error "find_call_occs : Lambda"
-  | LetIn(_,_,_,_) -> error "find_call_occs : let in"
+  | Lambda(na,t,b) -> 
+      begin
+	match find_call_occs (succ nb_lam) f b with 
+	  | _, [] ->  (* Lambda are authorized as long as they do not contain 
+			 recursives calls *)
+	      (fun l -> expr),[]
+	  | _ ->  error "find_call_occs : Lambda"
+      end
+  | LetIn(na,v,t,b) -> 
+      begin
+	match find_call_occs nb_lam f v, find_call_occs (succ nb_lam) f b with 
+	  | (_,[]),(_,[]) -> 
+	      ((fun l -> expr), [])
+	  | (_,[]),(cf,(_::_ as l)) -> 
+	      ((fun  l -> mkLetIn(na,v,t,cf l)),l)
+	  | (cf,(_::_ as l)),(_,[]) -> 
+	      ((fun l -> mkLetIn(na,cf l,t,b)), l)
+	  | _ -> error "find_call_occs : LetIn"
+      end
   | Const(_) -> (fun l -> expr), []
   | Ind(_) -> (fun l -> expr), []
   | Construct (_, _) -> (fun l -> expr), []
   | Case(i,t,a,r) ->
-      (match find_call_occs f a with
+      (match find_call_occs nb_lam f a with
 	cf, (arg1::args) -> (fun l -> mkCase(i, t, (cf l), r)),(arg1::args)
-      | _ -> (fun l -> mkCase(i, t, a, r)),[])
+      | _ -> (fun l -> expr),[])
   | Fix(_) -> error "find_call_occs : Fix"
   | CoFix(_) -> error "find_call_occs : CoFix";;
 
@@ -311,20 +327,8 @@ let  mkDestructEq not_on_hyp expr g =
 
 
 let rec  mk_intros_and_continue thin_intros (extra_eqn:bool)
-    cont_function (eqs:constr list) (expr:constr) g =
-  match kind_of_term expr with
-    | Lambda (n, _, b) -> 
-     	let n1 = 
-	  match n with
-      	      Name x -> x
-            | Anonymous -> ano_id
-	in
-     	let new_n = pf_get_new_id n1 g in
-	  tclTHEN (h_intro new_n)
-	    (mk_intros_and_continue thin_intros extra_eqn cont_function eqs 
-	       (subst1 (mkVar new_n) b)) g
-    | _ -> 
- 	if extra_eqn then
+    cont_function (eqs:constr list) nb_lam (expr:constr) g =
+  let finalize () =  	if extra_eqn then
 	  let teq = pf_get_new_id teq_id g in
 	    tclTHENLIST
 	      [ h_intro teq;
@@ -337,7 +341,7 @@ let rec  mk_intros_and_continue thin_intros (extra_eqn:bool)
 		(fun g1 -> 
 		   let ty_teq = pf_type_of g1 (mkVar teq) in 
 		   let teq_lhs,teq_rhs = 
-		     let _,args = destApp ty_teq in 
+		     let _,args = try destApp ty_teq with _ -> Pp.msgnl (Printer.pr_goal (sig_it g1) ++ fnl () ++ pr_id teq ++ str ":" ++ Printer.pr_lconstr ty_teq); assert false in 
 		     args.(1),args.(2) 
 		   in
 	           cont_function (mkVar teq::eqs) (replace_term teq_lhs teq_rhs expr) g1
@@ -350,7 +354,24 @@ let rec  mk_intros_and_continue thin_intros (extra_eqn:bool)
 	    h_intros thin_intros;
 	    cont_function eqs expr 
 	  ] g
-
+  in
+  if nb_lam = 0 
+  then finalize () 
+  else
+    match kind_of_term expr with
+      | Lambda (n, _, b) -> 
+     	  let n1 = 
+	    match n with
+      		Name x -> x
+              | Anonymous -> ano_id
+	  in
+     	  let new_n = pf_get_new_id n1 g in
+	  tclTHEN (h_intro new_n)
+	    (mk_intros_and_continue thin_intros extra_eqn cont_function eqs 
+	       (pred nb_lam) (subst1 (mkVar new_n) b)) g
+      | _ -> 
+	  assert false 
+(* 	  finalize () *)
 let const_of_ref = function
     ConstRef kn -> kn
   | _ -> anomaly "ConstRef expected"
@@ -599,10 +620,64 @@ let rec introduce_all_values is_mes acc_inv func context_fn
  
 	   
 let rec_leaf_terminate is_mes acc_inv hrec (func:global_reference) eqs expr =
-  match find_call_occs (mkVar (get_f (constr_of_reference func))) expr with
+  match find_call_occs 0 (mkVar (get_f (constr_of_reference func))) expr with
   | context_fn, args ->
       observe_tac "introduce_all_values" 
 	(introduce_all_values is_mes acc_inv func context_fn eqs  hrec args  [] [])
+(*
+let proveterminate rec_arg_id is_mes acc_inv (hrec:identifier)  
+  (f_constr:constr) (func:global_reference) base_leaf rec_leaf = 
+  let rec proveterminate (eqs:constr list) (expr:constr)  =
+    try
+      (*  let _ = msgnl (str "entering proveterminate") in *)
+      let v =
+	match (kind_of_term expr) with
+	    Case (ci, t, a, l) -> 
+	      (match find_call_occs 0 f_constr a with
+		   _,[] ->
+		     (fun g -> 
+			let destruct_tac,rev_to_thin_intro = mkDestructEq rec_arg_id a g in 
+			tclTHENS destruct_tac
+			  (list_map_i 
+			     (fun i -> mk_intros_and_continue 
+				(List.rev rev_to_thin_intro) 
+				true 
+				proveterminate 
+				eqs
+				ci.ci_cstr_nargs.(i)
+			     )
+			     0
+			     (Array.to_list l) 
+			  ) g)
+		 | _, _::_ -> 
+		     (
+		       match find_call_occs  0 f_constr expr with
+	     		   _,[] -> observe_tac "base_leaf" (base_leaf func eqs expr)
+			 | _, _:: _ -> 
+			     observe_tac "rec_leaf" 
+			       (rec_leaf is_mes acc_inv hrec  func eqs expr)
+		     )
+	      )
+	  | _ ->  (match find_call_occs  0 f_constr expr with
+	     	       _,[] -> 
+			 (try 
+			    observe_tac "base_leaf" (base_leaf func eqs expr)
+			  with e -> 
+			    (msgerrnl (str "failure in base case");raise e ))
+		     | _, _::_ -> 
+			 observe_tac "rec_leaf" 
+			   (rec_leaf is_mes acc_inv hrec  func eqs expr)
+		  ) in
+      (*  let _ = msgnl(str "exiting proveterminate") in *)
+      v
+    with e -> 
+      begin 
+	msgerrnl(str "failure in proveterminate"); 
+	raise e
+      end
+  in 
+  proveterminate 
+*)
 
 let proveterminate rec_arg_id is_mes acc_inv (hrec:identifier)  
   (f_constr:constr) (func:global_reference) base_leaf rec_leaf = 
@@ -611,26 +686,33 @@ let proveterminate rec_arg_id is_mes acc_inv (hrec:identifier)
       (*  let _ = msgnl (str "entering proveterminate") in *)
       let v =
 	match (kind_of_term expr) with
-	    Case (_, t, a, l) -> 
-	      (match find_call_occs f_constr a with
+	    Case (ci, t, a, l) -> 
+	      (match find_call_occs 0 f_constr a with
 		   _,[] ->
 		     (fun g -> 
 			let destruct_tac,rev_to_thin_intro = mkDestructEq rec_arg_id a g in 
 			tclTHENS destruct_tac
-			  (List.map 
-			     (mk_intros_and_continue (List.rev rev_to_thin_intro) true proveterminate eqs)
+			  (list_map_i 
+			     (fun i -> mk_intros_and_continue 
+				(List.rev rev_to_thin_intro) 
+				true 
+				proveterminate 
+				eqs
+				ci.ci_cstr_nargs.(i)
+			     )
+			     0
 			     (Array.to_list l) 
 			  ) g)
 		 | _, _::_ -> 
 		     (
-		       match find_call_occs  f_constr expr with
+		       match find_call_occs  0 f_constr expr with
 	     		   _,[] -> observe_tac "base_leaf" (base_leaf func eqs expr)
 			 | _, _:: _ -> 
 			     observe_tac "rec_leaf" 
 			       (rec_leaf is_mes acc_inv hrec  func eqs expr)
 		     )
 	      )
-	  | _ ->  (match find_call_occs  f_constr expr with
+	  | _ ->  (match find_call_occs  0 f_constr expr with
 	     	       _,[] -> 
 			 (try 
 			    observe_tac "base_leaf" (base_leaf func eqs expr)
@@ -650,9 +732,9 @@ let proveterminate rec_arg_id is_mes acc_inv (hrec:identifier)
   in 
   proveterminate 
 
-let hyp_terminates func = 
+let hyp_terminates nb_args func = 
   let a_arrow_b = arg_type (constr_of_reference func) in 
-  let rev_args,b = decompose_prod a_arrow_b in 
+  let rev_args,b = decompose_prod_n nb_args a_arrow_b in 
   let left = 
     mkApp(delayed_force iter, 
 	  Array.of_list 
@@ -776,7 +858,7 @@ let rec instantiate_lambda t l =
 ;;
 
 
-let whole_start is_mes func input_type relation rec_arg_num  : tactic = 
+let whole_start nb_args is_mes func input_type relation rec_arg_num  : tactic = 
   begin 
     fun g -> 
       let ids = ids_of_named_context (pf_hyps g) in
@@ -787,7 +869,7 @@ let whole_start is_mes func input_type relation rec_arg_num  : tactic =
 	  | Name f_id -> next_global_ident_away true f_id ids
 	  | Anonymous -> anomaly "Anonymous function"
       in
-      let n_names_types,_ = decompose_lam body1 in 
+      let n_names_types,_ = decompose_lam_n nb_args body1 in 
       let n_ids,ids = 
 	List.fold_left 
 	  (fun (n_ids,ids) (n_name,_) -> 
@@ -970,13 +1052,17 @@ let com_terminate
     input_type
     relation 
     rec_arg_num
-    thm_name using_lemmas hook =
+    thm_name using_lemmas 
+    nb_args
+    hook =
   let (evmap, env) = Command.get_current_context() in
   start_proof thm_name
     (Global, Proof Lemma) (Environ.named_context_val env)
-    (hyp_terminates fonctional_ref) hook;
-  by (observe_tac "whole_start" (whole_start is_mes fonctional_ref
-				       input_type relation rec_arg_num ));
+    (hyp_terminates nb_args fonctional_ref) hook;
+  by (observe_tac "whole_start" (whole_start nb_args is_mes fonctional_ref
+				   input_type relation rec_arg_num ))
+    
+  ;
   try 
     let new_goal_type = build_new_goal_type () in 
     open_new_goal using_lemmas tcc_lemma_ref
@@ -985,6 +1071,7 @@ let com_terminate
   with Failure "empty list of subgoals!" -> 
     (* a non recursive function declared with measure ! *)
     defined ()
+    
 
     
 
@@ -1156,12 +1243,12 @@ let rec introduce_all_values_eq  cont_tac functional termine
 			   let def_na,_,_ = destProd t in 
 			   Nameops.out_name k_na,Nameops.out_name def_na
 			 in
-			 observe_tac "general_rewrite_bindings" (general_rewrite_bindings false
+			 observe_tac "general_rewrite_bindings" ( (general_rewrite_bindings false
 			   (mkVar heq,
 			    ExplicitBindings
 			      [dummy_loc, NamedHyp k_id,
 			       f_S(mkVar pmax');
-			       dummy_loc, NamedHyp def_id, f]) false)
+			       dummy_loc, NamedHyp def_id, f]) false))
 			   g
 		     )
 		     [tclIDTAC;
@@ -1200,20 +1287,23 @@ let rec prove_eq  (termine:constr) (f:constr)(functional:global_reference)
   (expr:constr) =
 (*   tclTRY *)
   (match kind_of_term expr with
-      Case(_,t,a,l) ->
-	(match find_call_occs f a with
+      Case(ci,t,a,l) ->
+	(match find_call_occs 0 f a with
 	     _,[] -> 
 	       (fun g -> 
 		  let destruct_tac,rev_to_thin_intro = mkDestructEq [] a g in 
 		  tclTHENS destruct_tac
-		    (List.map 
-		       (mk_intros_and_continue (List.rev rev_to_thin_intro) true 
+		    (list_map_i  
+		       (fun i -> mk_intros_and_continue (List.rev rev_to_thin_intro) true 
 			  (prove_eq termine f functional)  
-			  eqs)
+			  eqs
+			  ci.ci_cstr_nargs.(i)
+		       )
+		       0
 		       (Array.to_list l) 
 		    ) g)
 	   | _,_::_ ->
-               	(match find_call_occs f expr with
+               	(match find_call_occs 0 f expr with
 	     _,[] -> base_leaf_eq functional eqs f
 	   | fn,args ->
 	       fun g ->
@@ -1222,7 +1312,7 @@ let rec prove_eq  (termine:constr) (f:constr)(functional:global_reference)
 		 (constr_of_reference functional)
 		 eqs expr fn args g))
        | _ -> 
-	   (match find_call_occs f expr with
+	   (match find_call_occs 0 f expr with
 		_,[] -> base_leaf_eq functional eqs f
 	      | fn,args ->
 		  fun g ->
@@ -1269,6 +1359,10 @@ let (com_eqn : identifier ->
     
     );;
 
+let nf_zeta env =       
+  Reductionops.clos_norm_flags  (Closure.RedFlags.mkflags [Closure.RedFlags.fZETA])
+    env
+    Evd.empty
 
 let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num eq 
     generate_induction_principle using_lemmas : unit =
@@ -1278,6 +1372,8 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let equation_lemma_type = interp_gen (OfType None) Evd.empty env ~impls:([],rec_impls) eq in 
 (*   Pp.msgnl (Printer.pr_lconstr equation_lemma_type); *)
   let res_vars,eq' = decompose_prod equation_lemma_type in 
+  let env_eq' = Environ.push_rel_context (List.map (fun (x,y) -> (x,None,y)) res_vars) env in
+  let eq' = nf_zeta env_eq' eq'  in 
   let res = 
 (*     Pp.msgnl (str "res_var :=" ++ Printer.pr_lconstr_env (push_rel_context (List.map (function (x,t) -> (x,None,t)) res_vars) env) eq'); *)
 (*     Pp.msgnl (str "rec_arg_num := " ++ str (string_of_int rec_arg_num)); *)
@@ -1308,28 +1404,32 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
     let term_ref = Nametab.locate (make_short_qualid term_id) in
     let f_ref = declare_f function_name (IsProof Lemma) arg_types term_ref in
 (*     message "start second proof"; *)
+    let stop = ref false in 
     begin 
       try com_eqn equation_id functional_ref f_ref term_ref (subst_var function_name equation_lemma_type)
       with e -> 
 	begin 
 	  if Tacinterp.get_debug () <> Tactic_debug.DebugOff
 	  then anomalylabstrm "" (str "Cannot create equation Lemma " ++ Cerrors.explain_exn e);
-	  ignore(try Vernacentries.vernac_reset_name (Util.dummy_loc,functional_id) with _ -> ());
-	  anomaly "Cannot create equation Lemma"
+	  stop := true;
+(* 	  ignore(try Vernacentries.vernac_reset_name (Util.dummy_loc,functional_id) with _ -> ()); *)
+(* 	  anomaly "Cannot create equation Lemma" *)
 	end
     end;
-    let eq_ref = Nametab.locate (make_short_qualid equation_id ) in
-    let f_ref = destConst (constr_of_reference f_ref) 
-    and functional_ref = destConst (constr_of_reference functional_ref) 
-    and eq_ref = destConst (constr_of_reference eq_ref) in
-    generate_induction_principle f_ref tcc_lemma_constr
-     functional_ref eq_ref rec_arg_num rec_arg_type (nb_prod res) relation;
-     if Options.is_verbose ()
-     then msgnl (h 1 (Ppconstr.pr_id function_name ++ 
-			spc () ++ str"is defined" )++ fnl () ++ 
-		   h 1 (Ppconstr.pr_id equation_id ++ 
-			  spc () ++ str"is defined" )
-		  )
+    if not !stop
+    then
+      let eq_ref = Nametab.locate (make_short_qualid equation_id ) in
+      let f_ref = destConst (constr_of_reference f_ref) 
+      and functional_ref = destConst (constr_of_reference functional_ref) 
+      and eq_ref = destConst (constr_of_reference eq_ref) in
+      generate_induction_principle f_ref tcc_lemma_constr
+	functional_ref eq_ref rec_arg_num rec_arg_type (nb_prod res) relation;
+      if Options.is_verbose ()
+      then msgnl (h 1 (Ppconstr.pr_id function_name ++ 
+			 spc () ++ str"is defined" )++ fnl () ++ 
+		    h 1 (Ppconstr.pr_id equation_id ++ 
+			   spc () ++ str"is defined" )
+		 )
   in
   try 
     com_terminate 
@@ -1340,7 +1440,8 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
       relation rec_arg_num
       term_id
       using_lemmas
-      hook 
+      (List.length res_vars)
+      hook
   with e -> 
     begin
       ignore(try Vernacentries.vernac_reset_name (Util.dummy_loc,functional_id) with _ -> ());

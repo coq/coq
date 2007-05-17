@@ -478,7 +478,72 @@ let generalize_depedent_of x hyp g =
 
 
 
-
+    (* [intros_with_rewrite] do the intros in each branch and treat each new hypothesis 
+       (unfolding, substituting, destructing cases \ldots)
+    *)
+let  rec intros_with_rewrite g = 
+  observe_tac "intros_with_rewrite" intros_with_rewrite_aux g
+and intros_with_rewrite_aux : tactic = 
+  fun g -> 
+    let eq_ind = Coqlib.build_coq_eq () in 
+    match kind_of_term (pf_concl g) with 
+	  | Prod(_,t,t') -> 
+	      begin 
+		match kind_of_term t with 
+		  | App(eq,args) when (eq_constr eq eq_ind) -> 
+		      if isVar args.(1)
+		      then 			
+			let id = pf_get_new_id (id_of_string "y") g  in 
+			tclTHENSEQ [ h_intro id;
+				     generalize_depedent_of (destVar args.(1)) id; 
+				     tclTRY (Equality.rewriteLR (mkVar id));
+				     intros_with_rewrite
+				   ] 
+			  g
+		      else
+			begin 
+			  let id = pf_get_new_id (id_of_string "y") g  in 
+			  tclTHENSEQ[
+			    h_intro id;
+			    tclTRY (Equality.rewriteLR (mkVar id));
+			    intros_with_rewrite
+			  ] g
+			end
+		  | Ind _ when eq_constr t (Coqlib.build_coq_False ()) -> 
+		      Tauto.tauto g
+		  | Case(_,_,v,_) -> 
+		      tclTHENSEQ[
+			h_case (v,Rawterm.NoBindings);
+			intros_with_rewrite
+		      ] g
+		  | LetIn _ -> 
+		      tclTHENSEQ[
+			h_reduce 
+			  (Rawterm.Cbv
+			     {Rawterm.all_flags 
+			      with Rawterm.rDelta = false; 		 
+			     }) 
+			  onConcl
+			;
+			intros_with_rewrite
+		      ] g
+		  | _ -> 			
+		      let id = pf_get_new_id (id_of_string "y") g  in 
+		      tclTHENSEQ [ h_intro id;intros_with_rewrite] g
+	      end
+	  | LetIn _ -> 
+	      tclTHENSEQ[
+		h_reduce 
+		  (Rawterm.Cbv
+		     {Rawterm.all_flags 
+		      with Rawterm.rDelta = false; 		 
+		     }) 
+		  onConcl
+		;
+		intros_with_rewrite
+	      ] g
+	  | _ -> tclIDTAC g 
+  
 let rec reflexivity_with_destruct_cases g = 
   let destruct_case () = 
     try 
@@ -492,10 +557,34 @@ let rec reflexivity_with_destruct_cases g =
 	| _ -> reflexivity
     with _ -> reflexivity
   in
-  tclFIRST
+  let eq_ind =     Coqlib.build_coq_eq () in
+  let discr_inject =
+    Tacticals.onAllClauses (
+       fun sc g -> 
+	 match sc with 
+	     None -> tclIDTAC g
+	   | Some ((_,id),_) -> 
+	       match kind_of_term  (pf_type_of g (mkVar id)) with 
+		 | App(eq,[|_;t1;t2|]) when eq_constr eq eq_ind -> 
+		     if Equality.discriminable (pf_env g) (project g) t1 t2 
+		     then Equality.discr id g
+		     else if Equality.injectable (pf_env g) (project g) t1 t2
+		     then tclTHEN (Equality.inj [] id) intros_with_rewrite  g
+		     else tclIDTAC g
+		 | _ -> tclIDTAC g
+    )
+  in
+  (tclFIRST
     [ reflexivity;
-      destruct_case ()
-    ]
+      destruct_case ();
+      (*  We reach this point ONLY if 
+	  the same value is matched (at least) two times 
+	  along binding path.
+	  In this case, either we have a discriminable hypothesis and we are done, 
+	  either at least an injectable one and we do the injection before continuing
+      *)
+      tclTHEN (tclPROGRESS discr_inject ) reflexivity_with_destruct_cases
+    ])
     g
 
 
@@ -566,7 +655,6 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	)
 	branches
     in
-    let eq_ind = Coqlib.build_coq_eq () in 
     (* We will need to change the function by its body 
        using [f_equation] if it is recursive (that is the graph is infinite 
        or unfold if the graph is finite 
@@ -595,71 +683,6 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	  thin ids
 	]
       else unfold_in_concl [([],Names.EvalConstRef (destConst f))]
-    in
-    (* [intros_with_rewrite] do the intros in each branch and treat each new hypothesis 
-       (unfolding, substituting, destructing cases \ldots)
-    *)
-    let rec intros_with_rewrite_aux : tactic = 
-      fun g -> 
-	match kind_of_term (pf_concl g) with 
-	  | Prod(_,t,t') -> 
-	      begin 
-		match kind_of_term t with 
-		  | App(eq,args) when (eq_constr eq eq_ind) -> 
-		      if isVar args.(1)
-		      then 			
-			let id = pf_get_new_id (id_of_string "y") g  in 
-			tclTHENSEQ [ h_intro id;
-				     generalize_depedent_of (destVar args.(1)) id; 
-				     tclTRY (Equality.rewriteLR (mkVar id));
-				     intros_with_rewrite
-				   ] 
-			  g
-		      else
-			begin 
-			  let id = pf_get_new_id (id_of_string "y") g  in 
-			  tclTHENSEQ[
-			    h_intro id;
-			    tclTRY (Equality.rewriteLR (mkVar id));
-			    intros_with_rewrite
-			  ] g
-			end
-		  | Ind _ when eq_constr t (Coqlib.build_coq_False ()) -> 
-		      Tauto.tauto g
-		  | Case(_,_,v,_) -> 
-		      tclTHENSEQ[
-			h_case (v,Rawterm.NoBindings);
-			intros_with_rewrite
-		      ] g
-		  | LetIn _ -> 
-		      tclTHENSEQ[
-			h_reduce 
-			  (Rawterm.Cbv
-			     {Rawterm.all_flags 
-			      with Rawterm.rDelta = false; 		 
-			     }) 
-			  onConcl
-			;
-			intros_with_rewrite
-		      ] g
-		  | _ -> 			
-		      let id = pf_get_new_id (id_of_string "y") g  in 
-		      tclTHENSEQ [ h_intro id;intros_with_rewrite] g
-	      end
-	  | LetIn _ -> 
-	      tclTHENSEQ[
-		h_reduce 
-		  (Rawterm.Cbv
-		     {Rawterm.all_flags 
-		      with Rawterm.rDelta = false; 		 
-		     }) 
-		  onConcl
-		;
-		intros_with_rewrite
-	      ] g
-	  | _ -> tclIDTAC g 
-    and intros_with_rewrite g = 
-      observe_tac "intros_with_rewrite" intros_with_rewrite_aux g
     in
     (* The proof of each branche itself *)
     let ind_number = ref 0 in 
@@ -698,7 +721,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	h_intro graph_principle_id;
 	observe_tac "" (tclTHEN_i 
 	  (observe_tac "elim" ((elim (mkVar hres,Rawterm.NoBindings) (Some (mkVar graph_principle_id,Rawterm.NoBindings)))))
-	  (fun i g -> prove_branche i g ))
+	  (fun i g -> observe_tac "prove_branche" (prove_branche i) g ))
       ]
       g
 
