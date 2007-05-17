@@ -1205,8 +1205,17 @@ let (com_eqn : identifier ->
 	       )
 	  )
        );
+(*      (try Vernacentries.interp (Vernacexpr.VernacShow Vernacexpr.ShowProof) with _ -> ()); 
+     Vernacentries.interp (Vernacexpr.VernacShow Vernacexpr.ShowScript);
+*)
      Options.silently defined (); 
     );;
+
+
+let nf_zeta env =       
+  Reductionops.clos_norm_flags  (Closure.RedFlags.mkflags [Closure.RedFlags.fZETA])
+    env
+    Evd.empty
 
 
 let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num eq 
@@ -1217,10 +1226,12 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let equation_lemma_type = interp_gen (OfType None) Evd.empty env ~impls:([],rec_impls) eq in 
 (*   Pp.msgnl (Printer.pr_lconstr equation_lemma_type); *)
   let res_vars,eq' = decompose_prod equation_lemma_type in 
+  let env_eq' = Environ.push_rel_context (List.map (fun (x,y) -> (x,None,y)) res_vars) env in
+  let eq' = nf_zeta env_eq' eq'  in 
   let res = 
 (*     Pp.msgnl (str "res_var :=" ++ Printer.pr_lconstr_env (push_rel_context (List.map (function (x,t) -> (x,None,t)) res_vars) env) eq'); *)
 (*     Pp.msgnl (str "rec_arg_num := " ++ str (string_of_int rec_arg_num)); *)
-(*     Pp.msgnl (str "eq' := " ++ str (string_of_int rec_arg_num)); *)
+(*     Pp.msgnl (str "eq' := " ++ Printer.pr_lconstr_env env eq' ++ fnl () ++str (string_of_int rec_arg_num)); *)
     match kind_of_term eq' with 
       | App(e,[|_;_;eq_fix|]) -> 
 	  mkLambda (Name function_name,function_type,subst_var function_name (compose_lam res_vars  eq_fix))
@@ -1247,16 +1258,19 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
     let term_ref = Nametab.locate (make_short_qualid term_id) in
     let f_ref = declare_f function_name (IsProof Lemma) arg_types term_ref in
 (*     message "start second proof"; *)
+    let continue = ref true in 
     begin 
       try com_eqn equation_id functional_ref f_ref term_ref (subst_var function_name equation_lemma_type)
       with e -> 
 	begin 
 	  if Tacinterp.get_debug () <> Tactic_debug.DebugOff
-	  then anomalylabstrm "" (str "Cannot create equation Lemma " ++ Cerrors.explain_exn e);
-	  ignore(try Vernacentries.vernac_reset_name (Util.dummy_loc,functional_id) with _ -> ());
-	  anomaly "Cannot create equation Lemma"
+	  then (Pp.msgnl (str "Cannot create equation Lemma " ++ Cerrors.explain_exn e); continue := false)
+	  else (ignore(try Vernacentries.vernac_reset_name (Util.dummy_loc,functional_id) with _ -> ());
+	  anomaly "Cannot create equation Lemma")
 	end
     end;
+    if !continue 
+    then
     let eq_ref = Nametab.locate (make_short_qualid equation_id ) in
     let f_ref = destConst (constr_of_reference f_ref) 
     and functional_ref = destConst (constr_of_reference functional_ref) 
