@@ -709,9 +709,10 @@ let add_morphism lemma_infos mor_name (m,quantifiers_rev,args,output) =
 let unify_relation_carrier_with_type env rel t =
  let raise_error quantifiers_no =
   errorlabstrm "New Morphism"
-   (str "One morphism argument or its output has type " ++ pr_lconstr t ++
+   (str "One morphism argument or its output has type " ++ 
+    pr_lconstr_env env t ++
     str " but the signature requires an argument of type \"" ++
-    pr_lconstr rel.rel_a ++ str " " ++ prvect_with_sep pr_spc (fun _ -> str  "?")
+    pr_lconstr_env env rel.rel_a ++ prvect_with_sep mt (fun _ -> str " ?")
      (Array.make quantifiers_no 0) ++ str "\"") in
  let args =
   match kind_of_term t with
@@ -757,9 +758,10 @@ let unify_relation_class_carrier_with_type env rel t =
       rel
      else
       errorlabstrm "New Morphism"
-       (str "One morphism argument or its output has type " ++ pr_lconstr t ++
+       (str "One morphism argument or its output has type " ++ 
+        pr_lconstr_env env t ++
         str " but the signature requires an argument of type " ++
-        pr_lconstr t')
+        pr_lconstr_env env t')
   | Leibniz None -> Leibniz (Some t)
   | Relation rel -> Relation (unify_relation_carrier_with_type env rel t)
 
@@ -961,6 +963,8 @@ let new_named_morphism id m sign =
   match sign with
      None -> None
    | Some (args,out) ->
+      if args = [] then
+	error "Morphism signature expects at least one argument.";
       Some
        (List.map (fun (variance,ty) -> variance, constr_of ty) args,
         constr_of out)
