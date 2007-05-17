@@ -31,7 +31,7 @@ open Sign
 type recursion_scheme_error =
   | NotAllowedCaseAnalysis of bool * sorts * inductive
   | BadInduction of bool * identifier * sorts
-  | NotMutualInScheme
+  | NotMutualInScheme of inductive * inductive
 
 exception RecursionSchemeError of recursion_scheme_error
 
@@ -501,13 +501,13 @@ let instantiate_type_indrec_scheme sort npars term =
 
 let check_arities listdepkind = 
   let _ = List.fold_left
-    (fun ln ((_,ni),mibi,mipi,dep,kind) -> 
+    (fun ln ((_,ni as mind),mibi,mipi,dep,kind) -> 
        let id = mipi.mind_typename  in
        let kelim = elim_sorts (mibi,mipi) in
        if not (List.exists ((=) kind) kelim) then raise
 	 (RecursionSchemeError (BadInduction (dep,id,new_sort_in_family kind)))
        else if List.mem ni ln then raise
-	 (RecursionSchemeError NotMutualInScheme)
+	 (RecursionSchemeError (NotMutualInScheme (mind,mind)))
        else ni::ln)
 	    [] listdepkind
   in true
@@ -524,7 +524,7 @@ let build_mutual_indrec env sigma = function
                 let (mibi',mipi') = lookup_mind_specif env mind' in
 		(mind',mibi',mipi',dep',s') 
 	      else 
-		raise (RecursionSchemeError NotMutualInScheme))
+		raise (RecursionSchemeError (NotMutualInScheme (mind,mind'))))
 	   lrecspec)
       in
       let _ = check_arities listdepkind in 

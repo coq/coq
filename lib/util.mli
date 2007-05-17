@@ -69,6 +69,7 @@ val implode : string list -> string
 val string_index_from : string -> int -> string -> int
 val string_string_contains : where:string -> what:string -> bool
 val plural : int -> string -> string
+val ordinal : int -> string
 
 val parse_loadpath : string -> string list
 
@@ -89,6 +90,7 @@ val list_chop : int -> 'a list -> 'a list * 'a list
 val list_tabulate : (int -> 'a) -> int -> 'a list
 val list_assign : 'a list -> int -> 'a -> 'a list
 val list_distinct : 'a list -> bool
+val list_duplicates : 'a list -> 'a list
 val list_filter2 : ('a -> 'b -> bool) -> 'a list * 'b list -> 'a list * 'b list
 
 (* [list_smartmap f [a1...an] = List.map f [a1...an]] but if for all i
@@ -232,14 +234,15 @@ val pr_str : string -> std_ppcmds
 val pr_coma : unit -> std_ppcmds
 val pr_semicolon : unit -> std_ppcmds
 val pr_bar : unit -> std_ppcmds
-val pr_ord : int -> std_ppcmds
 val pr_arg : ('a -> std_ppcmds) -> 'a -> std_ppcmds
 val pr_opt : ('a -> std_ppcmds) -> 'a option -> std_ppcmds
+val nth : int -> std_ppcmds
 
 val prlist : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
-val prvecti : (int -> 'a -> std_ppcmds) -> 'a array -> std_ppcmds
 val prlist_with_sep :
    (unit -> std_ppcmds) -> ('b -> std_ppcmds) -> 'b list -> std_ppcmds
+val prvect : ('a -> std_ppcmds) -> 'a array -> std_ppcmds
+val prvecti : (int -> 'a -> std_ppcmds) -> 'a array -> std_ppcmds
 val prvect_with_sep :
    (unit -> std_ppcmds) -> ('b -> std_ppcmds) -> 'b array -> std_ppcmds
 val pr_vertical_list : ('b -> std_ppcmds) -> 'b list -> std_ppcmds

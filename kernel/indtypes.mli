@@ -29,7 +29,7 @@ type inductive_error =
   | NotConstructor of env * constr * constr
   | NonPar of env * constr * int * constr * constr
   | SameNamesTypes of identifier
-  | SameNamesConstructors of identifier * identifier
+  | SameNamesConstructors of identifier
   | SameNamesOverlap of identifier list
   | NotAnArity of identifier
   | BadEntry

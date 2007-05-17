@@ -101,6 +101,10 @@ let string_string_contains ~where ~what =
 
 let plural n s = if n>1 then s^"s" else s
 
+let ordinal n =
+  let s = match n mod 10 with 1 -> "st" | 2 -> "nd" | 3 -> "rd" | _ -> "th" in
+  string_of_int n ^ s
+
 (* string parsing *)
 
 let parse_loadpath s =
@@ -324,6 +328,12 @@ let rec list_distinct l =
 	  end
     | [] -> true
   in loop l
+
+let rec list_duplicates = function
+  | [] -> []
+  | x::l ->
+      let l' = list_duplicates l in
+      if List.mem x l then list_add_set x l' else l'
 
 let rec list_filter2 f = function
   | [], [] as p -> p
@@ -802,9 +812,7 @@ let pr_bar () = str "|" ++ spc ()
 let pr_arg pr x = spc () ++ pr x
 let pr_opt pr = function None -> mt () | Some x -> pr_arg pr x
 
-let pr_ord n =
-  let suff = match n mod 10 with 1 -> "st" | 2 -> "nd" | _ -> "th" in
-  int n ++ str suff
+let nth n = str (ordinal n)
 
 let rec prlist elem l = match l with 
   | []   -> mt ()
@@ -841,6 +849,8 @@ let prvect_with_sep sep elem v =
       in
   let n = Array.length v in
   if n = 0 then mt () else pr (n - 1)
+
+let prvect elem v = prvect_with_sep mt elem v
 
 let surround p = hov 1 (str"(" ++ p ++ str")")
 

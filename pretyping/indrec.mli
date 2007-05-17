@@ -22,7 +22,7 @@ open Evd
 type recursion_scheme_error =
   | NotAllowedCaseAnalysis of bool * sorts * inductive
   | BadInduction of bool * identifier * sorts
-  | NotMutualInScheme
+  | NotMutualInScheme of inductive * inductive
 
 exception RecursionSchemeError of recursion_scheme_error
 

@@ -295,9 +295,14 @@ let minductive_message = function
 		     spc () ++ str "are defined")
 
 let check_all_names_different indl =
-  let get_names ind = ind.ind_name::List.map fst ind.ind_lc in
-  if not (list_distinct (List.flatten (List.map get_names indl))) then
-    error "Two inductive objects have the same name"
+  let ind_names = List.map (fun ind -> ind.ind_name) indl in
+  let cstr_names = list_map_append (fun ind -> List.map fst ind.ind_lc) indl in
+  let l = list_duplicates ind_names in
+  if l <> [] then raise (InductiveError (SameNamesTypes (List.hd l)));
+  let l = list_duplicates cstr_names in
+  if l <> [] then raise (InductiveError (SameNamesConstructors (List.hd l)));
+  let l = list_intersect ind_names cstr_names in
+  if l <> [] then raise (InductiveError (SameNamesOverlap l))
 
 let mk_mltype_data isevars env assums arity indname =
   let is_ml_type = is_sort env (Evd.evars_of !isevars) arity in

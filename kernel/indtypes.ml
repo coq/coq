@@ -39,7 +39,7 @@ type inductive_error =
   | NotConstructor of env * constr * constr
   | NonPar of env * constr * int * constr * constr
   | SameNamesTypes of identifier
-  | SameNamesConstructors of identifier * identifier
+  | SameNamesConstructors of identifier
   | SameNamesOverlap of identifier list
   | NotAnArity of identifier
   | BadEntry
@@ -51,12 +51,12 @@ exception InductiveError of inductive_error
    of names. The name [id] is the name of the current inductive type, used
    when reporting the error. *)
 
-let check_constructors_names id =
+let check_constructors_names =
   let rec check idset = function
     | [] -> idset
     | c::cl -> 
 	if Idset.mem c idset then 
-	  raise (InductiveError (SameNamesConstructors (id,c)))
+	  raise (InductiveError (SameNamesConstructors c))
 	else
 	  check (Idset.add c idset) cl
   in
@@ -75,7 +75,7 @@ let mind_check_names mie =
 	if Idset.mem id indset then
 	  raise (InductiveError (SameNamesTypes id))
 	else
-	  let cstset' = check_constructors_names id cstset cl in
+	  let cstset' = check_constructors_names cstset cl in
 	  check (Idset.add id indset) cstset' inds
   in
   check Idset.empty Idset.empty mie.mind_entry_inds
