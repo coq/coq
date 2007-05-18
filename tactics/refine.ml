@@ -327,12 +327,16 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
     | LetIn (Name id,c1,t1,c2), _ ->
 	tclTHENS
           (assert_tac true (Name id) t1) 
-	  [(match sgp with 
-	     | [None] -> tclIDTAC
-	     | [Some th] -> onLastHyp (fun id -> tcc_aux (mkVar id::subst) th)
-	     | _ -> assert false);
-           exact_check (subst1 (mkVar id) c2)]
-	  gl
+	  [(match List.hd sgp with 
+	     | None -> tclIDTAC
+	     | Some th -> onLastHyp (fun id -> tcc_aux (mkVar id::subst) th));
+           (match List.tl sgp with 
+	     | [] -> refine (subst1 (mkVar id) c2)  (* a complete proof *)
+	     | [None] -> tclIDTAC                   (* a meta *)
+	     | [Some th] ->                         (* a partial proof *)
+                 onLastHyp (fun id -> tcc_aux (mkVar id::subst) th)
+             | _ -> assert false)]
+          gl
 
     (* fix => tactique Fix *)
     | Fix ((ni,_),(fi,ai,_)) , _ ->
