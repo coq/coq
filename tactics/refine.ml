@@ -125,7 +125,7 @@ let replace_in_array keep_length env sigma a =
   v',mm,sgp
     
 let fresh env n =
-  let id = match n with Name x -> x | _ -> id_of_string "_" in
+  let id = match n with Name x -> x | _ -> id_of_string "_H" in
   next_global_ident_away true id (ids_of_named_context (named_context env))
 
 let rec compute_metamap env sigma c = match kind_of_term c with
@@ -148,27 +148,44 @@ let rec compute_metamap env sigma c = match kind_of_term c with
   | Lambda (name,c1,c2) ->
       let v = fresh env name in
       let env' = push_named (v,None,c1) env in
-      begin match compute_metamap env' sigma (subst1 (mkVar v) c2) with
-	(* terme de preuve complet *)
-	| TH (_,_,[]) -> TH (c,[],[])
-	(* terme de preuve incomplet *)    
-	| th ->
-	    let m,mm,sgp = replace_by_meta env' sigma th in
-	    TH (mkLambda (Name v,c1,m), mm, sgp)
-      end
+      let allow_anon_vars_in_evars = false in
+      if allow_anon_vars_in_evars or name<>Anonymous or dependent (mkRel 1) c2
+      then
+        begin match compute_metamap env' sigma (subst1 (mkVar v) c2) with
+	  (* terme de preuve complet *)
+	  | TH (_,_,[]) -> TH (c,[],[])
+	  (* terme de preuve incomplet *)    
+	  | th ->
+	      let m,mm,sgp = replace_by_meta env' sigma th in
+	      TH (mkLambda (Name v,c1,m), mm, sgp)
+        end
+      else
+        begin match compute_metamap env' sigma c2 with
+	  (* terme de preuve complet *)
+	  | TH (_,_,[]) -> TH (c,[],[])
+	  (* terme de preuve incomplet *)    
+	  | th ->
+	      let m,mm,sgp = replace_by_meta env' sigma th in
+	      TH (mkLambda (Anonymous,c1,m), mm, sgp)
+        end
 
   | LetIn (name, c1, t1, c2) ->
-      if occur_meta c1 then 
-	error "Refine: body of let-in cannot contain existentials";
       let v = fresh env name in
+      let th1 = compute_metamap env sigma c1 in
       let env' = push_named (v,Some c1,t1) env in
-      begin match compute_metamap env' sigma (subst1 (mkVar v) c2) with
+      let th2 = compute_metamap env' sigma (subst1 (mkVar v) c2) in
+      begin match th1,th2 with
 	(* terme de preuve complet *)
-	| TH (_,_,[]) -> TH (c,[],[])
+	| TH (_,_,[]), TH (_,_,[]) -> TH (c,[],[])
 	(* terme de preuve incomplet *)    
-	| th ->
-	    let m,mm,sgp = replace_by_meta env' sigma th in
-	    TH (mkLetIn (Name v,c1,t1,m), mm, sgp)
+	| TH (c1,mm1,sgp1), TH (c2,mm2,sgp2) ->
+	    let m1,mm1,sgp1 =
+              if sgp1=[] then (c1,mm1,[]) 
+              else replace_by_meta env sigma th1 in
+	    let m2,mm2,sgp2 =
+              if sgp2=[] then (c2,mm2,[]) 
+              else replace_by_meta env' sigma th2 in
+	    TH (mkNamedLetIn v m1 t1 m2, mm1@mm2, sgp1@sgp2)
       end
 
   (* 4. Application *)
@@ -267,7 +284,8 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
 	refine c gl
 	
     (* abstraction => intro *)
-    | Lambda (Name id,_,m), _ when isMeta (strip_outer_cast m) ->
+    | Lambda (Name id,_,m), _ 
+	assert (isMeta (strip_outer_cast m));
 	begin match sgp with
 	  | [None] -> introduction id gl
 	  | [Some th] ->
@@ -275,12 +293,23 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
                 (onLastHyp (fun id -> tcc_aux (mkVar id::subst) th)) gl
 	  | _ -> assert false
 	end
-	
-    | Lambda _, _ ->
-	anomaly "invalid lambda passed to function tcc_aux"
 
-    (* let in *)
-    | LetIn (Name id,c1,t1,c2), _ when isMeta (strip_outer_cast c2) ->
+    | Lambda (Anonymous,_,m), _ -> (* if anon vars are allowed in evars *)
+        assert (isMeta (strip_outer_cast m));
+	begin match sgp with
+	  | [None] -> tclTHEN intro (onLastHyp (fun id -> clear [id])) gl
+	  | [Some th] ->
+              tclTHEN
+                intro
+                (onLastHyp (fun id -> 
+                  tclTHEN
+                    (clear [id])
+                    (tcc_aux (mkVar (*dummy*) id::subst) th))) gl
+	  | _ -> assert false
+	end
+
+    (* let in without holes in the body => possibly dependent intro *)
+    | LetIn (Name id,c1,t1,c2), _ when not (isMeta (strip_outer_cast c1)) ->
 	let c = pf_concl gl in
 	let newc = mkNamedLetIn id c1 t1 c in
 	tclTHEN 
@@ -293,8 +322,17 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
 	     | _ -> assert false) 
 	  gl
 
-    | LetIn _, _ ->
-	anomaly "invalid let-in passed to function tcc_aux"
+    (* let in with holes in the body => unable to handle dependency
+       because of evars limitation, use non dependent assert instead *)
+    | LetIn (Name id,c1,t1,c2), _ ->
+	tclTHENS
+          (assert_tac true (Name id) t1) 
+	  [(match sgp with 
+	     | [None] -> tclIDTAC
+	     | [Some th] -> onLastHyp (fun id -> tcc_aux (mkVar id::subst) th)
+	     | _ -> assert false);
+           exact_check (subst1 (mkVar id) c2)]
+	  gl
 
     (* fix => tactique Fix *)
     | Fix ((ni,_),(fi,ai,_)) , _ ->
