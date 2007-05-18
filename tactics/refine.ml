@@ -284,7 +284,7 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
 	refine c gl
 	
     (* abstraction => intro *)
-    | Lambda (Name id,_,m), _ 
+    | Lambda (Name id,_,m), _ ->
 	assert (isMeta (strip_outer_cast m));
 	begin match sgp with
 	  | [None] -> introduction id gl
