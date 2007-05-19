@@ -148,26 +148,14 @@ let rec compute_metamap env sigma c = match kind_of_term c with
   | Lambda (name,c1,c2) ->
       let v = fresh env name in
       let env' = push_named (v,None,c1) env in
-      let allow_anon_vars_in_evars = false in
-      if allow_anon_vars_in_evars or name<>Anonymous or dependent (mkRel 1) c2
-      then
-        begin match compute_metamap env' sigma (subst1 (mkVar v) c2) with
-	  (* terme de preuve complet *)
-	  | TH (_,_,[]) -> TH (c,[],[])
-	  (* terme de preuve incomplet *)    
-	  | th ->
-	      let m,mm,sgp = replace_by_meta env' sigma th in
-	      TH (mkLambda (Name v,c1,m), mm, sgp)
-        end
-      else
-        begin match compute_metamap env' sigma c2 with
-	  (* terme de preuve complet *)
-	  | TH (_,_,[]) -> TH (c,[],[])
-	  (* terme de preuve incomplet *)    
-	  | th ->
-	      let m,mm,sgp = replace_by_meta env' sigma th in
-	      TH (mkLambda (Anonymous,c1,m), mm, sgp)
-        end
+      begin match compute_metamap env' sigma (subst1 (mkVar v) c2) with
+	(* terme de preuve complet *)
+	| TH (_,_,[]) -> TH (c,[],[])
+	(* terme de preuve incomplet *)    
+	| th ->
+	    let m,mm,sgp = replace_by_meta env' sigma th in
+	    TH (mkLambda (Name v,c1,m), mm, sgp)
+      end
 
   | LetIn (name, c1, t1, c2) ->
       let v = fresh env name in
