@@ -8,17 +8,11 @@
 
 (*i $Id$ i*)
 
-open Util
-open Names
-open Term
 open Proof_type
 open Rawterm
-open Tacexpr
-open Topconstr
-open Genarg
 
 val h_discrHyp : quantified_hypothesis -> tactic
 val h_injHyp : quantified_hypothesis -> tactic
 
-val refine_tac : Genarg.open_constr -> tactic
+val refine_tac : Evd.open_constr -> tactic
 

@@ -40,7 +40,7 @@ val abstract_operation : compound_rule -> tactic -> tactic
 val abstract_tactic : ?dflt:bool -> atomic_tactic_expr -> tactic -> tactic
 val abstract_tactic_expr : ?dflt:bool -> tactic_expr -> tactic -> tactic
 val abstract_extended_tactic :
-  ?dflt:bool -> string -> closed_generic_argument list -> tactic -> tactic
+  ?dflt:bool -> string -> typed_generic_argument list -> tactic -> tactic
 
 val refiner : rule -> tactic
 val frontier : transformation_tactic

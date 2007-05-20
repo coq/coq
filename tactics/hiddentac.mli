@@ -16,6 +16,7 @@ open Tacmach
 open Genarg
 open Tacexpr
 open Rawterm
+open Evd
 (*i*)
 
 (* Tactics for the interpreter. They left a trace in the proof tree
@@ -32,12 +33,12 @@ val h_exact           : constr -> tactic
 val h_exact_no_check  : constr -> tactic
 val h_vm_cast_no_check  : constr -> tactic
 
-val h_apply           : evars_flag -> constr with_bindings -> tactic
+val h_apply           : evars_flag -> constr with_ebindings -> tactic
 
-val h_elim            : constr with_bindings ->
-                        constr with_bindings option -> tactic
+val h_elim            : constr with_ebindings ->
+                        constr with_ebindings option -> tactic
 val h_elim_type       : constr -> tactic
-val h_case            : constr with_bindings -> tactic
+val h_case            : constr with_ebindings -> tactic
 val h_case_type       : constr -> tactic
 
 val h_mutual_fix      : identifier -> int ->
@@ -58,12 +59,12 @@ val h_instantiate     : int -> Rawterm.rawconstr ->
 val h_simple_induction   : quantified_hypothesis -> tactic
 val h_simple_destruct    : quantified_hypothesis -> tactic
 val h_new_induction   :
-  constr induction_arg list -> constr with_bindings option ->
+  constr induction_arg list -> constr with_ebindings option ->
   intro_pattern_expr -> tactic
 val h_new_destruct    :
-  constr induction_arg list -> constr with_bindings option -> 
+  constr induction_arg list -> constr with_ebindings option -> 
   intro_pattern_expr -> tactic
-val h_specialize      : int option -> constr with_bindings -> tactic
+val h_specialize      : int option -> constr with_ebindings -> tactic
 val h_lapply          : constr -> tactic
 
 (* Automation tactic : see Auto *)
@@ -77,10 +78,10 @@ val h_rename          : identifier -> identifier -> tactic
 
 
 (* Constructors *)
-val h_constructor     : int -> constr bindings -> tactic
-val h_left            : constr bindings -> tactic
-val h_right           : constr bindings -> tactic
-val h_split           : constr bindings -> tactic
+val h_constructor     : int -> open_constr bindings -> tactic
+val h_left            : open_constr bindings -> tactic
+val h_right           : open_constr bindings -> tactic
+val h_split           : open_constr bindings -> tactic
 
 val h_one_constructor : int -> tactic
 val h_simplest_left   : tactic

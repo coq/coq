@@ -17,6 +17,7 @@ open Topconstr
 open Rawterm
 open Ppextend
 open Environ
+open Evd
 
 val pr_or_var : ('a -> std_ppcmds) -> 'a or_var -> std_ppcmds
 val pr_or_metaid : ('a -> std_ppcmds) -> 'a or_metaid -> std_ppcmds
@@ -45,7 +46,7 @@ type 'a extra_genarg_printer =
 val declare_extra_genarg_pprule : 
   ('c raw_abstract_argument_type * 'c raw_extra_genarg_printer) ->
   ('a glob_abstract_argument_type * 'a glob_extra_genarg_printer) ->
-  ('b closed_abstract_argument_type * 'b extra_genarg_printer) -> unit
+  ('b typed_abstract_argument_type * 'b extra_genarg_printer) -> unit
 
 type grammar_terminals = string option list
 
@@ -73,9 +74,9 @@ val pr_glob_extend:
     string -> glob_generic_argument list -> std_ppcmds
 
 val pr_extend :
-  (Term.constr -> std_ppcmds) -> (Term.constr -> std_ppcmds) ->
+  (open_constr -> std_ppcmds) -> (open_constr -> std_ppcmds) ->
   (tolerability -> glob_tactic_expr -> std_ppcmds) -> int ->
-    string -> closed_generic_argument list -> std_ppcmds
+    string -> typed_generic_argument list -> std_ppcmds
 
 val pr_raw_tactic : env -> raw_tactic_expr -> std_ppcmds
 
@@ -88,3 +89,7 @@ val pr_tactic : env -> Proof_type.tactic_expr -> std_ppcmds
 val pr_hintbases : string list option -> std_ppcmds
 
 val pr_auto_using : ('constr -> std_ppcmds) -> 'constr list -> std_ppcmds
+
+val pr_bindings :
+  ('constr -> std_ppcmds) ->
+  ('constr -> std_ppcmds) -> 'constr bindings -> std_ppcmds

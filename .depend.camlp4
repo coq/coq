@@ -10,7 +10,7 @@ contrib/romega/g_romega.ml: parsing/grammar.cma
 contrib/ring/g_quote.ml: parsing/grammar.cma
 contrib/ring/g_ring.ml: parsing/grammar.cma
 contrib/dp/g_dp.ml: parsing/grammar.cma
-contrib/setoid_ring/newring.ml: 
+contrib/setoid_ring/newring.ml: parsing/grammar.cma
 contrib/field/field.ml: parsing/grammar.cma
 contrib/fourier/g_fourier.ml: parsing/grammar.cma
 contrib/extraction/g_extraction.ml: parsing/grammar.cma

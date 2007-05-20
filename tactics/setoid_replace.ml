@@ -1734,14 +1734,14 @@ let unification_rewrite c1 c2 cl but gl =
       (* ~mod_delta:false to allow to mark occurences that must not be
          rewritten simply by replacing them with let-defined definitions
          in the context *)
-      w_unify_to_subterm ~mod_delta:false (pf_env gl) (c1,but) cl.env
+      w_unify_to_subterm ~mod_delta:false (pf_env gl) (c1,but) cl.evd
     with
 	Pretype_errors.PretypeError _ ->
 	  (* ~mod_delta:true to make Ring work (since it really
              exploits conversion) *)
-	  w_unify_to_subterm ~mod_delta:true (pf_env gl) (c1,but) cl.env
+	  w_unify_to_subterm ~mod_delta:true (pf_env gl) (c1,but) cl.evd
   in
-  let cl' = {cl with env = env' } in
+  let cl' = {cl with evd = env' } in
   let c2 = Clenv.clenv_nf_meta cl' c2 in
   check_evar_map_of_evars_defs env' ;
   env',Clenv.clenv_value cl', c1, c2
@@ -1983,7 +1983,7 @@ let setoid_transitivity c gl =
              | _ -> assert false
            in
             apply_with_bindings
-             (trans, Rawterm.ExplicitBindings [ dummy_loc, binder, c ]) gl
+             (trans, Rawterm.ExplicitBindings [ dummy_loc, binder, (Evd.empty,c) ]) gl
  with
   Optimize -> transitivity c gl
 ;;

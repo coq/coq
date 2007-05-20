@@ -66,11 +66,11 @@ val add_primitive_tactic : string -> glob_tactic_expr -> unit
 
 (* Tactic extensions *)
 val add_tactic :
-  string -> (closed_generic_argument list -> tactic) -> unit
+  string -> (typed_generic_argument list -> tactic) -> unit
 val overwriting_add_tactic :
-  string -> (closed_generic_argument list -> tactic) -> unit
+  string -> (typed_generic_argument list -> tactic) -> unit
 val lookup_tactic :
-  string -> (closed_generic_argument list) -> tactic
+  string -> (typed_generic_argument list) -> tactic
 
 (* Adds an interpretation function for extra generic arguments *)
 type glob_sign = {
@@ -83,12 +83,12 @@ val add_interp_genarg :
   string ->
     (glob_sign -> raw_generic_argument -> glob_generic_argument) *
     (interp_sign -> goal sigma -> glob_generic_argument -> 
-      closed_generic_argument) *
+      typed_generic_argument) *
     (substitution -> glob_generic_argument -> glob_generic_argument)
     -> unit
 
 val interp_genarg :
-  interp_sign -> goal sigma -> glob_generic_argument -> closed_generic_argument
+  interp_sign -> goal sigma -> glob_generic_argument -> typed_generic_argument
 
 val intern_genarg :
   glob_sign -> raw_generic_argument -> glob_generic_argument

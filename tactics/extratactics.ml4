@@ -323,7 +323,7 @@ let step left x tac =
   let l =
     List.map (fun lem ->
       tclTHENLAST
-      (apply_with_bindings (lem, ImplicitBindings [x]))
+      (apply_with_bindings (lem, ImplicitBindings [Evd.empty,x]))
         tac)
       !(if left then transitivity_left_table else transitivity_right_table)
   in

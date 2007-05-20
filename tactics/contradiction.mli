@@ -13,7 +13,8 @@ open Names
 open Term
 open Proof_type
 open Rawterm
+open Genarg
 (*i*)
 
 val absurd                      : constr -> tactic
-val contradiction               : constr with_bindings option -> tactic
+val contradiction               : constr with_ebindings option -> tactic

@@ -28,12 +28,15 @@ open Nametab
 open Rawterm
 (*i*)
 
+val inj_open : constr -> open_constr
+val inj_red_expr : red_expr -> (open_constr, evaluable_global_reference) red_expr_gen
+
 (* Main tactics. *)
 
 (*s General functions. *)
 
 val type_clenv_binding : goal sigma ->
-  constr * constr -> constr bindings  -> constr
+  constr * constr -> open_constr bindings  -> constr
 
 val string_of_inductive : constr -> string
 val head_constr       : constr -> constr list
@@ -152,7 +155,7 @@ val clear         : identifier list -> tactic
 val clear_body    : identifier list -> tactic
 val keep          : identifier list -> tactic
 
-val new_hyp       : int option -> constr with_bindings -> tactic
+val new_hyp       : int option -> constr with_ebindings -> tactic
 
 val move_hyp      : bool -> identifier -> identifier -> tactic
 val rename_hyp    : identifier -> identifier -> tactic
@@ -166,13 +169,13 @@ val bring_hyps : named_context -> tactic
 val apply                 : constr      -> tactic
 val apply_without_reduce  : constr      -> tactic
 val apply_list            : constr list -> tactic
-val apply_with_bindings_gen   : evars_flag -> constr with_bindings -> tactic
-val apply_with_bindings : constr with_bindings -> tactic
-val eapply_with_bindings  : constr with_bindings -> tactic
+val apply_with_bindings_gen   : evars_flag -> constr with_ebindings -> tactic
+val apply_with_bindings : constr with_ebindings -> tactic
+val eapply_with_bindings  : constr with_ebindings -> tactic
 
 val cut_and_apply         : constr -> tactic
 
-val apply_in : evars_flag -> identifier -> constr with_bindings list -> tactic
+val apply_in : evars_flag -> identifier -> constr with_ebindings list -> tactic
 
 (*s Elimination tactics. *)
 
@@ -203,7 +206,7 @@ val apply_in : evars_flag -> identifier -> constr with_bindings list -> tactic
 (* [rel_contexts] and [rel_declaration] actually contain triples, and
    lists are actually in reverse order to fit [compose_prod]. *)
 type elim_scheme = { 
-  elimc: (Term.constr * constr Rawterm.bindings) option;
+  elimc: constr with_ebindings option;
   elimt: types;
   indref: global_reference option;
   params: rel_context;     (* (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *)
@@ -223,28 +226,28 @@ type elim_scheme = {
 }
 
 
-val compute_elim_sig : ?elimc: (Term.constr * constr Rawterm.bindings) -> types -> elim_scheme
+val compute_elim_sig : ?elimc: constr with_ebindings -> types -> elim_scheme
 
 val general_elim  :
-  constr with_bindings -> constr with_bindings -> ?allow_K:bool -> tactic
+  constr with_ebindings -> constr with_ebindings -> ?allow_K:bool -> tactic
 val general_elim_in : evars_flag -> 
-  identifier -> constr with_bindings -> constr with_bindings -> tactic
+  identifier -> constr with_ebindings -> constr with_ebindings -> tactic
 
-val default_elim  : constr with_bindings -> tactic
+val default_elim  : constr with_ebindings -> tactic
 val simplest_elim : constr -> tactic
-val elim          : constr with_bindings -> constr with_bindings option -> tactic
+val elim          : constr with_ebindings -> constr with_ebindings option -> tactic
 val simple_induct : quantified_hypothesis -> tactic
 
-val new_induct : constr induction_arg list -> constr with_bindings option ->
+val new_induct : constr induction_arg list -> constr with_ebindings option ->
   intro_pattern_expr -> tactic
 
 (*s Case analysis tactics. *)
 
-val general_case_analysis : constr with_bindings ->  tactic
+val general_case_analysis : constr with_ebindings ->  tactic
 val simplest_case         : constr -> tactic
 
 val simple_destruct          : quantified_hypothesis -> tactic
-val new_destruct : constr induction_arg list -> constr with_bindings option ->
+val new_destruct : constr induction_arg list -> constr with_ebindings option ->
   intro_pattern_expr -> tactic
 
 (*s Eliminations giving the type instead of the proof. *)
@@ -265,14 +268,14 @@ val dorE : bool -> clause ->tactic
 (*s Introduction tactics. *)
 
 val constructor_tac            : int option -> int -> 
-                                 constr bindings  -> tactic
-val one_constructor            : int -> constr bindings  -> tactic
+                                 open_constr bindings  -> tactic
+val one_constructor            : int -> open_constr bindings  -> tactic
 val any_constructor            : tactic option -> tactic
-val left                       : constr bindings -> tactic
+val left                       : open_constr bindings -> tactic
 val simplest_left              : tactic
-val right                      : constr bindings -> tactic
+val right                      : open_constr bindings -> tactic
 val simplest_right             : tactic
-val split                      : constr bindings -> tactic
+val split                      : open_constr bindings -> tactic
 val simplest_split             : tactic
 
 (*s Logical connective tactics. *)

@@ -49,7 +49,7 @@ let clenv_cast_meta clenv =
     match kind_of_term (strip_outer_cast u) with
       | Meta mv ->
 	  (try 
-            let b = Typing.meta_type clenv.env mv in
+            let b = Typing.meta_type clenv.evd mv in
 	    if occur_meta b then u
             else mkCast (mkMeta mv, DEFAULTcast, b)
 	  with Not_found -> u)
@@ -62,7 +62,7 @@ let clenv_cast_meta clenv =
 
 let clenv_refine clenv gls =
   tclTHEN
-    (tclEVARS (evars_of clenv.env)) 
+    (tclEVARS (evars_of clenv.evd)) 
     (refine (clenv_cast_meta clenv (clenv_value clenv)))
     gls
 

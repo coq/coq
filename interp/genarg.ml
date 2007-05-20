@@ -16,6 +16,7 @@ open Nametab
 open Rawterm
 open Topconstr
 open Term
+open Evd
 
 type argument_type =
   (* Basic types *)
@@ -47,6 +48,10 @@ type 'a and_short_name = 'a * identifier located option
 type 'a or_by_notation = AN of 'a | ByNotation of loc * string
 
 type rawconstr_and_expr = rawconstr * constr_expr option
+type open_constr_expr = unit * constr_expr
+type open_rawconstr = unit * rawconstr_and_expr
+
+type 'a with_ebindings = 'a * open_constr bindings
 
 (* Dynamics but tagged by a type expression *)
 
@@ -56,7 +61,7 @@ let dyntab = ref ([] : string list)
 
 type rlevel = constr_expr
 type glevel = rawconstr_and_expr
-type tlevel = constr
+type tlevel = open_constr
 
 type ('a,'b) abstract_argument_type = argument_type
 
@@ -89,10 +94,6 @@ and pr_case_intro_pattern = function
       str "[" ++
       hv 0 (prlist_with_sep pr_bar (prlist_with_sep spc pr_intro_pattern) pll)
       ++ str "]"
-
-type open_constr = Evd.evar_map * Term.constr
-type open_constr_expr = unit * constr_expr
-type open_rawconstr = unit * rawconstr_and_expr
 
 let rawwit_bool = BoolArgType
 let globwit_bool = BoolArgType

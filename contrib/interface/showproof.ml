@@ -166,7 +166,7 @@ let rule_to_ntactic r =
    let rt =
      (match r with
        Nested(Tactic (t,_),_) -> t
-     | Prim (Refine h) -> TacAtom (dummy_loc,TacExact h)
+     | Prim (Refine h) -> TacAtom (dummy_loc,TacExact (Tactics.inj_open h))
      | _ -> TacAtom (dummy_loc, TacIntroPattern [])) in
    if rule_is_complex r
    then (match rt with
@@ -1184,8 +1184,8 @@ let rec natural_ntree ig ntree =
 	  | TacIntroMove _ -> natural_intros ig lh g gs ltree
 	  | TacFix (_,n) -> natural_fix ig lh g gs n ltree
 	  | TacSplit (_,NoBindings) -> natural_split ig lh g gs ge [] ltree
-	  | TacSplit(_,ImplicitBindings l) -> natural_split ig lh g gs ge l ltree
-	  | TacGeneralize l -> natural_generalize ig lh g gs ge l ltree
+	  | TacSplit(_,ImplicitBindings l) -> natural_split ig lh g gs ge (List.map snd l) ltree
+	  | TacGeneralize l -> natural_generalize ig lh g gs ge (List.map snd l) ltree
 	  | TacRight _ -> natural_right ig lh g gs ltree
 	  | TacLeft _ -> natural_left ig lh g gs ltree
 	  | (* "Simpl" *)TacReduce (r,cl)  ->
@@ -1202,17 +1202,17 @@ let rec natural_ntree ig ntree =
 	  | TacExtend (_,"InductionIntro",[a]) -> 
               let id=(out_gen wit_ident a) in
               natural_induction ig lh g gs ge id ltree true
-	  | TacApply (false,(c,_)) -> natural_apply ig lh g gs c ltree
-	  | TacExact c -> natural_exact ig lh g gs c ltree
-	  | TacCut c -> natural_cut ig lh g gs c ltree
+	  | TacApply (false,(c,_)) -> natural_apply ig lh g gs (snd c) ltree
+	  | TacExact c -> natural_exact ig lh g gs (snd c) ltree
+	  | TacCut c -> natural_cut ig lh g gs (snd c) ltree
 	  | TacExtend (_,"CutIntro",[a]) ->
 	      let _c = out_gen wit_constr a in
 	      natural_cutintro ig lh g gs a ltree
-	  | TacCase (c,_) -> natural_case ig lh g gs ge c ltree false
+	  | TacCase (c,_) -> natural_case ig lh g gs ge (snd c) ltree false
 	  | TacExtend (_,"CaseIntro",[a]) ->
 	      let c = out_gen wit_constr a in
 	      natural_case ig lh g gs ge c ltree true
-	  | TacElim ((c,_),_) -> natural_elim ig lh g gs ge c ltree false
+	  | TacElim ((c,_),_) -> natural_elim ig lh g gs ge (snd c) ltree false
 	  | TacExtend (_,"ElimIntro",[a]) ->
 	      let c = out_gen wit_constr a in
 	      natural_elim ig lh g gs ge c ltree true

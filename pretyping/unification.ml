@@ -367,21 +367,30 @@ let w_merge env with_types mod_delta metas evars evd =
 	    in
             w_merge_rec evd' (metas'@t) evars'
     	  else
-            begin
+	    begin
 	      if with_types (* or occur_meta mvty *) then
-	        (let mvty = Typing.meta_type evd mv in
-		try 
-                  let sigma = evars_of evd in
-                  (* why not typing with the metamap ? *)
-		  let nty = Typing.type_of env sigma (nf_meta evd n) in
-		  let (mc,ec) = unify_0 env sigma Cumul mod_delta nty mvty in
-                  ty_metas := mc @ !ty_metas;
-                  ty_evars := ec @ !ty_evars
-		with e when precatchable_exception e -> ());
-              let evd' = meta_assign mv (n,status) evd in
+		begin
+	          let mvty = Typing.meta_type evd mv in
+		  try 
+                    let sigma = evars_of evd in
+                    (* why not typing with the metamap ? *)
+		    let nty = Typing.type_of env sigma (nf_meta evd n) in
+		    (* unification with arities may induce a too early *)
+		    (* commitment of an evar to an arity of wrong sort *)
+		    if
+		      not (is_arity env sigma mvty) &&
+		      not (is_arity env sigma nty)
+		    then
+		      let (mc,ec) = unify_0 env sigma Cumul mod_delta nty mvty
+		      in
+                      ty_metas := mc @ !ty_metas;
+                      ty_evars := ec @ !ty_evars
+		  with e when precatchable_exception e -> ()
+		end;
+	      let evd' = meta_assign mv (n,status) evd in
 	      w_merge_rec evd' t []
-            end
-
+	    end
+		
   and mimick_evar evd mod_delta hdc nargs sp =
     let ev = Evd.find (evars_of evd) sp in
     let sp_env = Global.env_of_context ev.evar_hyps in
@@ -592,5 +601,5 @@ let w_unify allow_K env cv_pb ?(mod_delta=true) ty1 ty2 evd =
 		    error "Cannot solve a second-order unification problem")
 	    
       (* General case: try first order *)
-      | _ -> w_unify_0 env cv_pb mod_delta ty1 ty2 evd
+      | _ -> w_typed_unify env cv_pb mod_delta ty1 ty2 evd
 

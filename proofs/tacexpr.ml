@@ -306,16 +306,12 @@ type glob_generic_argument = rawconstr_and_expr generic_argument
 type glob_red_expr =
     (rawconstr_and_expr, evaluable_global_reference or_var) red_expr_gen
 
-type closed_raw_generic_argument = constr_expr generic_argument
+type typed_generic_argument = Evd.open_constr generic_argument
 
 type 'a raw_abstract_argument_type = ('a,rlevel) abstract_argument_type
 
 type 'a glob_abstract_argument_type = ('a,glevel) abstract_argument_type
 
-type open_generic_argument = Term.constr generic_argument
-
-type closed_generic_argument = Term.constr generic_argument
-
-type 'a closed_abstract_argument_type = ('a,Term.constr) abstract_argument_type
+type 'a typed_abstract_argument_type = ('a,tlevel) abstract_argument_type
 
 type declaration_hook = Decl_kinds.strength -> global_reference -> unit

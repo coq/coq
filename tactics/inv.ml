@@ -47,7 +47,7 @@ let collect_meta_variables c =
 let check_no_metas clenv ccl =
   if occur_meta ccl then
     let metas = List.filter (fun na -> na<>Anonymous)
-      (List.map (Evd.meta_name clenv.env) (collect_meta_variables ccl)) in
+      (List.map (Evd.meta_name clenv.evd) (collect_meta_variables ccl)) in
     errorlabstrm "inversion" 
       (str ("Cannot find an instantiation for variable"^
 	       (if List.length metas = 1 then " " else "s ")) ++

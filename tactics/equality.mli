@@ -26,7 +26,7 @@ open Genarg
 (*i*)
 
 val general_rewrite_bindings : 
-  bool -> constr with_bindings -> evars_flag -> tactic
+  bool -> constr with_ebindings -> evars_flag -> tactic
 val general_rewrite : 
   bool -> constr -> tactic
 
@@ -42,16 +42,16 @@ val rewriteRL   : constr  -> tactic
 (* Warning: old [general_rewrite_in] is now [general_rewrite_bindings_in] *)
 
 val general_rewrite_bindings_in :
-  bool -> identifier -> constr with_bindings -> evars_flag -> tactic
+  bool -> identifier -> constr with_ebindings -> evars_flag -> tactic
 val general_rewrite_in          :
   bool -> identifier -> constr -> evars_flag -> tactic
 
 val general_multi_rewrite : 
-  bool -> evars_flag -> constr with_bindings -> clause -> tactic
+  bool -> evars_flag -> constr with_ebindings -> clause -> tactic
 
-val conditional_rewrite : bool -> tactic -> constr with_bindings -> tactic
+val conditional_rewrite : bool -> tactic -> constr with_ebindings -> tactic
 val conditional_rewrite_in :
-  bool -> identifier -> tactic -> constr with_bindings -> tactic
+  bool -> identifier -> tactic -> constr with_ebindings -> tactic
 
 val replace_in_clause_maybe_by : constr -> constr -> clause -> tactic option -> tactic
 val replace    : constr -> constr -> tactic

@@ -29,20 +29,37 @@ let pr_bindings prc prlc = function
         Util.prlist_with_sep spc (fun b -> str"(" ++ pr_binding prlc b ++ str")") l
   | Rawterm.NoBindings -> mt ()
 
-
 let pr_with_bindings prc prlc (c,bl) =
   prc c ++ hv 0 (pr_bindings prc prlc bl)
-
 
 let pr_fun_ind_using  prc prlc _ opt_c = 
   match opt_c with
     | None -> mt ()
     | Some (p,b) -> spc () ++ hov 2 (str "using" ++ spc () ++ pr_with_bindings prc prlc (p,b))
 
+(* Duplication of printing functions because "'a with_bindings" is
+   (internally) not uniform in 'a: indeed constr_with_bindings at the
+   "typed" level has type "open_constr with_bindings" instead of
+   "constr with_bindings"; hence, its printer cannot be polymorphic in
+   (prc,prlc)... *)
+
+let pr_with_bindings_typed prc prlc (c,bl) =
+  prc c ++ 
+  hv 0 (pr_bindings (fun c -> prc (snd c)) (fun c -> prlc (snd c))  bl)
+
+let pr_fun_ind_using_typed prc prlc _ opt_c = 
+  match opt_c with
+    | None -> mt ()
+    | Some (p,b) -> spc () ++ hov 2 (str "using" ++ spc () ++ pr_with_bindings_typed prc prlc (p,b))
+
 
 ARGUMENT EXTEND fun_ind_using
   TYPED AS constr_with_bindings_opt
-  PRINTED BY pr_fun_ind_using
+  PRINTED BY pr_fun_ind_using_typed
+  RAW_TYPED AS constr_with_bindings_opt
+  RAW_PRINTED BY pr_fun_ind_using
+  GLOB_TYPED AS constr_with_bindings_opt
+  GLOB_PRINTED BY pr_fun_ind_using
 | [ "using" constr_with_bindings(c) ] -> [ Some c ]
 | [ ] -> [ None ]
 END

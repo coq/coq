@@ -23,17 +23,15 @@ open Rawterm
 (***************************************************************)
 (* The Type of Constructions clausale environments. *)
 
-(* [templenv] is the typing context
- * [env] is the mapping from metavar and evar numbers to their types
+(* [env] is the typing context
+ * [evd] is the mapping from metavar and evar numbers to their types
  *       and values.
  * [templval] is the template which we are trying to fill out.
  * [templtyp] is its type.
- * [namenv] is a mapping from metavar numbers to names, for
- *          use in instantiating metavars by name.
  *)
 type clausenv = {
-  templenv : env;
-  env      : evar_defs;
+  env      : env;
+  evd      : evar_defs;
   templval : constr freelisted;
   templtyp : constr freelisted }
 
@@ -89,14 +87,14 @@ val clenv_pose_dependent_evars : clausenv -> clausenv
 (* bindings where the key is the position in the template of the
    clenv (dependent or not). Positions can be negative meaning to
    start from the rightmost argument of the template. *)
-type arg_bindings = (int * constr) list
+type arg_bindings = (int * open_constr) list
 
 val clenv_independent : clausenv -> metavariable list
 val clenv_missing : clausenv -> metavariable list
 
 (* defines metas corresponding to the name of the bindings *)
 val clenv_match_args :
-  constr explicit_bindings -> clausenv -> clausenv
+  open_constr explicit_bindings -> clausenv -> clausenv
 val clenv_constrain_with_bindings : arg_bindings -> clausenv -> clausenv
 
 (* start with a clenv to refine with a given term with bindings *)
@@ -105,10 +103,10 @@ val clenv_constrain_with_bindings : arg_bindings -> clausenv -> clausenv
 (* the optional int tells how many prods of the lemma have to be used *)
 (* use all of them if None *)
 val make_clenv_binding_apply :
-  evar_info sigma -> int option -> constr * constr -> constr bindings ->
+  evar_info sigma -> int option -> constr * constr -> open_constr bindings ->
    clausenv
 val make_clenv_binding :
-  evar_info sigma -> constr * constr -> constr bindings -> clausenv
+  evar_info sigma -> constr * constr -> open_constr bindings -> clausenv
 
 (* [clenv_environments sigma n t] returns [sigma',lmeta,ccl] where
    [lmetas] is a list of metas to be applied to a proof of [t] so that

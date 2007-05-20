@@ -50,6 +50,8 @@ val mem : evar_map -> evar -> bool
 val to_list : evar_map -> (evar * evar_info) list
 val fold : (evar -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
 
+val merge : evar_map -> evar_map -> evar_map
+
 val define : evar_map -> evar -> constr -> evar_map
 
 val is_evar : evar_map -> evar -> bool
@@ -144,6 +146,9 @@ val evar_declare :
   evar_defs -> evar_defs
 val evar_define : evar -> constr -> evar_defs -> evar_defs
 val evar_source : existential_key -> evar_defs -> loc * hole_kind
+
+(* [evar_merge evd evars] extends the evars of [evd] with [evars] *)
+val evar_merge : evar_defs -> evar_map -> evar_defs
 
 (* Unification constraints *)
 type conv_pb = Reduction.conv_pb

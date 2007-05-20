@@ -287,6 +287,8 @@ let existential_value (sigma,_) = existential_value sigma
 let existential_type (sigma,_) = existential_type sigma
 let existential_opt_value (sigma,_) = existential_opt_value sigma
 
+let merge e e' = fold (fun n v sigma -> add sigma n v) e' e
+
 (*******************************************************************)
 type open_constr = evar_map * constr
 
@@ -439,6 +441,8 @@ let get_conv_pbs isevars p =
   {isevars with conv_pbs = pbs1},
   pbs
 
+let evar_merge isevars evars =
+  { isevars with evars = merge isevars.evars evars }
 
 (**********************************************************)
 (* Sort variables *)

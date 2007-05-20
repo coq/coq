@@ -216,12 +216,12 @@ let make_apply_entry env sigma (eapply,verbose) (c,cty) =
           (hd,
            { pri = nb_hyp cty + nmiss;
              pat = Some pat;
-             code = ERes_pf(c,{ce with templenv=empty_env}) })
+             code = ERes_pf(c,{ce with env=empty_env}) })
         end else 
 	  (hd,
            { pri = nb_hyp cty;
              pat = Some pat;
-             code = Res_pf(c,{ce with templenv=empty_env}) })
+             code = Res_pf(c,{ce with env=empty_env}) })
     | _ -> failwith "make_apply_entry"
  
 (* eap is (e,v) with e=true if eapply and v=true if verbose 
@@ -270,7 +270,7 @@ let make_trivial env sigma c =
   let ce = mk_clenv_from dummy_goal (c,t) in
   (hd, { pri=1;
          pat = Some (Pattern.pattern_of_constr (clenv_type ce));
-         code=Res_pf_THEN_trivial_fail(c,{ce with templenv=empty_env}) })
+         code=Res_pf_THEN_trivial_fail(c,{ce with env=empty_env}) })
 
 open Vernacexpr
 
@@ -673,8 +673,11 @@ let gen_trivial lems = function
   | None -> full_trivial lems
   | Some l -> trivial lems l
 
+let inj_open c = (Evd.empty,c)
+
 let h_trivial lems l =
-  Refiner.abstract_tactic (TacTrivial (lems,l)) (gen_trivial lems l)
+  Refiner.abstract_tactic (TacTrivial (List.map inj_open lems,l))
+    (gen_trivial lems l)
 
 (**************************************************************************)
 (*                       The classical Auto tactic                        *)
@@ -784,7 +787,8 @@ let gen_auto n lems dbnames =
 let inj_or_var = option_map (fun n -> ArgArg n)
 
 let h_auto n lems l =
-  Refiner.abstract_tactic (TacAuto (inj_or_var n,lems,l)) (gen_auto n lems l)
+  Refiner.abstract_tactic (TacAuto (inj_or_var n,List.map inj_open lems,l))
+    (gen_auto n lems l)
 
 (**************************************************************************)
 (*                  The "destructing Auto" from Eduardo                   *)

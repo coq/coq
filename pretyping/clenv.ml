@@ -26,11 +26,13 @@ open Pretype_errors
 open Evarutil
 open Unification
 open Mod_subst
+open Coercion.Default
 
 (* *)
 let w_coerce env c ctyp target evd =
   let j = make_judge c ctyp in
-  let (evd',j') = Coercion.Default.inh_conv_coerce_to dummy_loc env evd j (mk_tycon_type target) in
+  let tycon = mk_tycon_type target in
+  let (evd',j') = inh_conv_coerce_to dummy_loc env evd j tycon in
   (evd',j'.uj_val)
 
 let pf_env gls = Global.env_of_context gls.it.evar_hyps
@@ -42,24 +44,24 @@ let pf_concl gl = gl.it.evar_concl
 (* Clausal environments *)
 
 type clausenv = {
-  templenv : env;
-  env      : evar_defs;
+  env      : env;
+  evd      : evar_defs;
   templval : constr freelisted;
   templtyp : constr freelisted }
 
-let cl_env ce = ce.templenv
-let cl_sigma ce = evars_of ce.env
+let cl_env ce = ce.env
+let cl_sigma ce = evars_of ce.evd
 
 let subst_clenv sub clenv = 
   { templval = map_fl (subst_mps sub) clenv.templval;
     templtyp = map_fl (subst_mps sub) clenv.templtyp;
-    env = subst_evar_defs_light sub clenv.env;
-    templenv = clenv.templenv }
+    evd = subst_evar_defs_light sub clenv.evd;
+    env = clenv.env }
 
-let clenv_nf_meta clenv c = nf_meta clenv.env c
-let clenv_meta_type clenv mv = Typing.meta_type clenv.env mv
-let clenv_value clenv = meta_instance clenv.env clenv.templval
-let clenv_type clenv = meta_instance clenv.env clenv.templtyp
+let clenv_nf_meta clenv c = nf_meta clenv.evd c
+let clenv_meta_type clenv mv = Typing.meta_type clenv.evd mv
+let clenv_value clenv = meta_instance clenv.evd clenv.templval
+let clenv_type clenv = meta_instance clenv.evd clenv.templtyp
 
 
 let clenv_hnf_constr ce t = hnf_constr (cl_env ce) (cl_sigma ce) t
@@ -70,7 +72,7 @@ let clenv_get_type_of ce c =
       (function
 	 | (n,Clval(_,_,typ)) -> (n,typ.rebus)
          | (n,Cltyp (_,typ))    -> (n,typ.rebus))
-      (meta_list ce.env) in
+      (meta_list ce.evd) in
   Retyping.get_type_of_with_meta (cl_env ce) (cl_sigma ce) metamap c
 
 exception NotExtensibleClause
@@ -83,13 +85,13 @@ let clenv_push_prod cl =
 	let mv = new_meta () in
 	let dep = dependent (mkRel 1) u in
 	let na' = if dep then na else Anonymous in
-	let e' = meta_declare mv t ~name:na' cl.env in
+	let e' = meta_declare mv t ~name:na' cl.evd in
 	let concl = if dep then subst1 (mkMeta mv) u else u in
 	let def = applist (cl.templval.rebus,[mkMeta mv]) in
 	{ templval = mk_freelisted def;
 	  templtyp = mk_freelisted concl;
-	  env = e';
-	  templenv = cl.templenv }
+	  evd = e';
+	  env = cl.env }
     | _ -> raise NotExtensibleClause
   in clrec typ
 
@@ -146,8 +148,8 @@ let mk_clenv_from_n gls n (c,cty) =
   let (env,args,concl) = clenv_environments evd n cty in
   { templval = mk_freelisted (match args with [] -> c | _ -> applist (c,args));
     templtyp = mk_freelisted concl;
-    env = env;
-    templenv = Global.env_of_context gls.it.evar_hyps }
+    evd = env;
+    env = Global.env_of_context gls.it.evar_hyps }
 
 let mk_clenv_from gls = mk_clenv_from_n gls None
 
@@ -169,15 +171,15 @@ let mentions clenv mv0 =
   let rec menrec mv1 =
     mv0 = mv1 ||
     let mlist =
-      try (fst (meta_fvalue clenv.env mv1)).freemetas
+      try (fst (meta_fvalue clenv.evd mv1)).freemetas
       with Anomaly _ | Not_found -> Metaset.empty in
     meta_exists menrec mlist
   in menrec
 
-let clenv_defined clenv mv = meta_defined clenv.env mv
+let clenv_defined clenv mv = meta_defined clenv.evd mv
 
 let error_incompatible_inst clenv mv  =
-  let na = meta_name clenv.env mv in
+  let na = meta_name clenv.evd mv in
   match na with
       Name id ->
         errorlabstrm "clenv_assign"
@@ -192,17 +194,17 @@ let clenv_assign mv rhs clenv =
   if meta_exists (mentions clenv mv) rhs_fls.freemetas then
     error "clenv_assign: circularity in unification";
   try
-    if meta_defined clenv.env mv then
-      if not (eq_constr (fst (meta_fvalue clenv.env mv)).rebus rhs) then
+    if meta_defined clenv.evd mv then
+      if not (eq_constr (fst (meta_fvalue clenv.evd mv)).rebus rhs) then
         error_incompatible_inst clenv mv
       else
 	clenv
-    else {clenv with env = meta_assign mv (rhs_fls.rebus,ConvUpToEta 0) clenv.env}
+    else {clenv with evd = meta_assign mv (rhs_fls.rebus,ConvUpToEta 0) clenv.evd}
   with Not_found -> 
     error "clenv_assign: undefined meta"
 
 
-let clenv_wtactic f clenv = {clenv with env = f clenv.env }
+let clenv_wtactic f clenv = {clenv with evd = f clenv.evd }
 
 
 (* [clenv_dependent hyps_only clenv]
@@ -233,7 +235,7 @@ let clenv_metavars clenv mv = (meta_ftype clenv mv).freemetas
 let dependent_metas clenv mvs conclmetas =
   List.fold_right
     (fun mv deps ->
-       Metaset.union deps (clenv_metavars clenv.env mv))
+       Metaset.union deps (clenv_metavars clenv.evd mv))
     mvs conclmetas
 
 let clenv_dependent hyps_only clenv =
@@ -250,10 +252,10 @@ let clenv_missing ce = clenv_dependent true ce
 (******************************************************************)
 
 let clenv_unify allow_K cv_pb t1 t2 clenv =
-  { clenv with env = w_unify allow_K clenv.templenv cv_pb t1 t2 clenv.env }
+  { clenv with evd = w_unify allow_K clenv.env cv_pb t1 t2 clenv.evd }
 
-let clenv_unique_resolver allow_K clause gl =
-  clenv_unify allow_K CUMUL (clenv_type clause) (pf_concl gl) clause 
+let clenv_unique_resolver allow_K clenv gl =
+  clenv_unify allow_K CUMUL (clenv_type clenv) (pf_concl gl) clenv
 
 
 (* [clenv_pose_dependent_evars clenv]
@@ -266,8 +268,8 @@ let clenv_pose_dependent_evars clenv =
   List.fold_left
     (fun clenv mv ->
       let ty = clenv_meta_type clenv mv in
-      let (evd,evar) = new_evar clenv.env (cl_env clenv) ty in
-      clenv_assign mv evar {clenv with env=evd})
+      let (evd,evar) = new_evar clenv.evd (cl_env clenv) ty in
+      clenv_assign mv evar {clenv with evd=evd})
     clenv
     dep_mvs
 
@@ -279,8 +281,8 @@ let evar_clenv_unique_resolver clenv gls =
 
 let connect_clenv gls clenv =
   { clenv with
-    env = evars_reset_evd gls.sigma clenv.env;
-    templenv = Global.env_of_context gls.it.evar_hyps }
+    evd = evars_reset_evd gls.sigma clenv.evd;
+    env = Global.env_of_context gls.it.evar_hyps }
 
 (* [clenv_fchain mv clenv clenv']
  *
@@ -310,8 +312,8 @@ let clenv_fchain mv clenv nextclenv =
   let clenv' =
     { templval = clenv.templval;
       templtyp = clenv.templtyp;
-      env = meta_merge clenv.env nextclenv.env;
-      templenv = nextclenv.templenv } in
+      evd = meta_merge clenv.evd nextclenv.evd;
+      env = nextclenv.env } in
   (* unify the type of the template of [nextclenv] with the type of [mv] *)
   let clenv'' =
     clenv_unify true CUMUL
@@ -327,7 +329,7 @@ let clenv_fchain mv clenv nextclenv =
 (***************************************************************)
 (* Bindings *)
 
-type arg_bindings = (int * constr) list
+type arg_bindings = (int * open_constr) list
 
 (* [clenv_independent clenv]
  * returns a list of metavariables which appear in the term cval,
@@ -345,58 +347,58 @@ let meta_of_binder clause loc b t mvs =
   match b with
     | NamedHyp s ->
 	if List.exists (fun (_,b',_) -> b=b') t then 
-	  errorlabstrm "clenv_match_args" 
+	  errorlabstrm ""
 	    (str "The variable " ++ pr_id s ++ 
 	     str " occurs more than once in binding");
-        meta_with_name clause.env s
+        meta_with_name clause.evd s
     | AnonHyp n ->
 	if List.exists (fun (_,b',_) -> b=b') t then
-	  errorlabstrm "clenv_match_args"
+	  errorlabstrm ""
 	    (str "The position " ++ int n ++
 	    str " occurs more than once in binding");
 	try List.nth mvs (n-1)
 	with (Failure _|Invalid_argument _) ->
-          errorlabstrm "clenv_match_args" (str "No such binder")
+          errorlabstrm "" (str "No such binder")
 
 let error_already_defined b =
   match b with
-      NamedHyp id ->
-        errorlabstrm "clenv_match_args"
+    | NamedHyp id ->
+        errorlabstrm ""
           (str "Binder name \"" ++ pr_id id ++
            str"\" already defined with incompatible value")
     | AnonHyp n ->
-        anomalylabstrm "clenv_match_args"
+        anomalylabstrm ""
           (str "Position " ++ int n ++ str" already defined")
 
 let clenv_match_args s clause =
   let mvs = clenv_independent clause in 
-  let rec matchrec clause = function
-    | [] -> clause
-    | (loc,b,c)::t ->
-	let k = meta_of_binder clause loc b t mvs in
-        if meta_defined clause.env k then
-          if eq_constr (fst (meta_fvalue clause.env k)).rebus c then
-            matchrec clause t
+  let rec matchrec clenv = function
+    | [] -> clenv
+    | (loc,b,(sigma,c))::t ->
+	let k = meta_of_binder clenv loc b t mvs in
+        if meta_defined clenv.evd k then
+          if eq_constr (fst (meta_fvalue clenv.evd k)).rebus c then
+            matchrec clenv t
           else error_already_defined b
         else
-	  let k_typ = clenv_hnf_constr clause (clenv_meta_type clause k)
+	  let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
 	    (* nf_betaiota was before in type_of - useful to reduce
                types like (x:A)([x]P u) *)
-	  and c_typ =
-            clenv_hnf_constr clause
-              (nf_betaiota (clenv_get_type_of clause c)) in
-	  let cl =
+	  let clenv' = { clenv with evd = evar_merge clenv.evd sigma} in
+	  let c_typ = nf_betaiota (clenv_get_type_of clenv' c) in
+	  let c_typ = clenv_hnf_constr clenv' c_typ in
+	  let clenv'' =
 	    (* Try to infer some Meta/Evar from the type of [c] *)
-	    try clenv_assign k c (clenv_unify true CUMUL c_typ k_typ clause)
+	    try clenv_assign k c (clenv_unify true CUMUL c_typ k_typ clenv')
 	    with e when precatchable_exception e ->
-	      (* Try to coerce to the type of [k]; cannot merge with the
-	         previous case because Coercion does not handle Meta *)
-              let (_,c') = w_coerce (cl_env clause) c c_typ k_typ clause.env in
-	      try clenv_unify true CONV (mkMeta k) c' clause
-	      with PretypeError (env,CannotUnify (m,n)) ->
-	        Stdpp.raise_with_loc loc
- 	          (PretypeError (env,CannotUnifyBindingType (m,n)))
-	  in matchrec cl t
+	    (* Try to coerce to the type of [k]; cannot merge with the
+	       previous case because Coercion does not handle Meta *)
+            let (evd,c') = w_coerce (cl_env clenv') c c_typ k_typ clenv'.evd in
+	    try clenv_unify true CONV (mkMeta k) c' { clenv' with evd = evd }
+	    with PretypeError (env,CannotUnify (m,n)) ->
+	      Stdpp.raise_with_loc loc
+ 	        (PretypeError (env,CannotUnifyBindingType (m,n)))
+	  in matchrec clenv'' t
   in 
   matchrec clause s
 
@@ -408,7 +410,7 @@ let clenv_constrain_with_bindings bl clause =
     let all_mvs = collect_metas clause.templval.rebus in
     let rec matchrec clause = function
       | []       -> clause
-      | (n,c)::t ->
+      | (n,(sigma,c))::t ->
           let k = 
             (try
               if n > 0 then 
@@ -421,7 +423,8 @@ let clenv_constrain_with_bindings bl clause =
                 (str"Clause did not have " ++ int n ++ str"-th" ++
                 str" absolute argument")) in
 	  let k_typ = nf_betaiota (clenv_meta_type clause k) in
-	  let c_typ = nf_betaiota (clenv_get_type_of clause c) in 
+	  let cl = { clause with evd = evar_merge clause.evd sigma} in
+	  let c_typ = nf_betaiota (clenv_get_type_of cl c) in 
 	  matchrec
             (clenv_assign k c (clenv_unify true CUMUL c_typ k_typ clause)) t
     in 
@@ -435,17 +438,16 @@ let clenv_constrain_dep_args hyps_only clause = function
       let occlist = clenv_dependent hyps_only clause in
       if List.length occlist = List.length mlist then
 	List.fold_left2
-          (fun clenv k c ->
+          (fun clenv k (sigma,c) ->
+	    let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
+	    let clenv' = { clenv with evd = evar_merge clenv.evd sigma} in
+	    let c_typ = clenv_hnf_constr clenv' (clenv_get_type_of clenv' c) in
 	    try
-	      let k_typ =
-                clenv_hnf_constr clause (clenv_meta_type clause k) in
-	      let c_typ =
-                clenv_hnf_constr clause (clenv_get_type_of clause c) in
               (* faire quelque chose avec le sigma retourne ? *)
-	      let (_,c') = w_coerce (cl_env clenv) c c_typ k_typ clenv.env in
-	      clenv_unify true CONV (mkMeta k) c' clenv
+	      let evd,c' = w_coerce (cl_env clenv') c c_typ k_typ clenv'.evd in
+	      clenv_unify true CONV (mkMeta k) c' { clenv' with evd = evd }
 	    with _ ->
-              clenv_unify true CONV (mkMeta k) c clenv)
+              clenv_unify true CONV (mkMeta k) c clenv')
           clause occlist mlist
       else 
 	error ("Not the right number of missing arguments (expected "
@@ -478,4 +480,4 @@ let pr_clenv clenv =
   h 0
     (str"TEMPL: " ++ print_constr clenv.templval.rebus ++
      str" : " ++ print_constr clenv.templtyp.rebus ++ fnl () ++
-     pr_evar_defs clenv.env)
+     pr_evar_defs clenv.evd)

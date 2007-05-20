@@ -505,7 +505,7 @@ let cut_in_parallel l =
     prec (List.rev l)
 
 let error_uninstantiated_metas t clenv =
-  let na = meta_name clenv.env (List.hd (Metaset.elements (metavars_of t))) in
+  let na = meta_name clenv.evd (List.hd (Metaset.elements (metavars_of t))) in
   let id = match na with Name id -> id | _ -> anomaly "unnamed dependent meta"
   in errorlabstrm "" (str "cannot find an instance for " ++ pr_id id)
 
@@ -516,7 +516,7 @@ let clenv_refine_in with_evars id clenv gl =
     error_uninstantiated_metas new_hyp_typ clenv;
   let new_hyp_prf  = clenv_value clenv in
   tclTHEN
-    (tclEVARS (evars_of clenv.env))
+    (tclEVARS (evars_of clenv.evd))
     (cut_replacing id new_hyp_typ
       (fun x gl -> refine_no_check new_hyp_prf gl)) gl
 
@@ -558,8 +558,19 @@ let eapply_with_bindings = apply_with_bindings_gen true
 
 let apply c = apply_with_bindings (c,NoBindings)
 
+let inj_open c = (Evd.empty,c)
+
+let inj_occ (occ,c) = (occ,inj_open c)
+
+let inj_red_expr = function
+  | Simpl lo -> Simpl (option_map inj_occ lo)
+  | Fold l -> Fold (List.map inj_open l)
+  | Pattern l -> Pattern (List.map inj_occ l)
+  | (ExtraRedExpr _ | CbvVm | Red _ | Hnf | Cbv _ | Lazy _ | Unfold _ as c)
+    -> c
+
 let apply_list = function 
-  | c::l -> apply_with_bindings (c,ImplicitBindings l)
+  | c::l -> apply_with_bindings (c,ImplicitBindings (List.map inj_open l))
   | _ -> assert false
 
 (* Resolution with no reduction on the type *)
@@ -710,7 +721,7 @@ let new_hyp mopt (c,lbind) g =
 	      | Some m -> if m < nargs then list_firstn m tstack else tstack
 	      | None   -> tstack)
   in 
-  (tclTHENLAST (tclTHEN (tclEVARS (evars_of clause.env))
+  (tclTHENLAST (tclTHEN (tclEVARS (evars_of clause.evd))
                (cut (pf_type_of g cut_pf)))
      ((tclORELSE (apply cut_pf) (exact_no_check cut_pf)))) g
 
@@ -1530,7 +1541,7 @@ let cook_sign hyp0_opt indvars_init env =
 (* [rel_contexts] and [rel_declaration] actually contain triples, and
    lists are actually in reverse order to fit [compose_prod]. *)
 type elim_scheme = { 
-  elimc: (Term.constr * constr Rawterm.bindings) option;
+  elimc: constr with_ebindings option;
   elimt: types;
   indref: global_reference option;
   params: rel_context;     (* (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *)

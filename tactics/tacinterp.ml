@@ -288,7 +288,7 @@ type glob_sign = {
 type interp_genarg_type =
   (glob_sign -> raw_generic_argument -> glob_generic_argument) *
   (interp_sign -> goal sigma -> glob_generic_argument -> 
-    closed_generic_argument) *
+    typed_generic_argument) *
   (substitution -> glob_generic_argument -> glob_generic_argument)
 
 let extragenargtab =
@@ -1367,6 +1367,21 @@ let pf_interp_constr_list_as_list ist gl (c,_ as x) =
 let pf_interp_constr_list ist gl l =
   List.flatten (List.map (pf_interp_constr_list_as_list ist gl) l)
 
+let inj_open c = (Evd.empty,c)
+
+let pf_interp_open_constr_list_as_list ist gl (c,_ as x) =
+  match c with
+    | RVar (_,id) ->
+        (try List.map inj_open 
+	       (constr_list_of_VList (pf_env gl) (List.assoc id ist.lfun))
+        with Not_found ->
+	  [interp_open_constr None ist (project gl) (pf_env gl) x])
+    | _ ->
+	[interp_open_constr None ist (project gl) (pf_env gl) x]
+
+let pf_interp_open_constr_list ist gl l =
+  List.flatten (List.map (pf_interp_open_constr_list_as_list ist gl) l)
+
 (* Interprets a type expression *)
 let pf_interp_type ist gl =
   interp_type ist (project gl) (pf_env gl)
@@ -1446,6 +1461,12 @@ let interp_constr_may_eval ist gl c =
     csr
   end
 
+let inj_may_eval = function
+  | ConstrTerm c -> ConstrTerm (inj_open c)
+  | ConstrEval (r,c) -> ConstrEval (Tactics.inj_red_expr r,inj_open c)
+  | ConstrContext (id,c) -> ConstrContext (id,inj_open c)
+  | ConstrTypeOf c -> ConstrTypeOf (inj_open c)
+
 let message_of_value = function
   | VVoid -> str "()"
   | VInteger n -> int n
@@ -1517,15 +1538,18 @@ let interp_induction_arg ist gl = function
 	(pf_interp_constr ist gl (RVar (loc,id),Some (CRef (Ident (loc,id)))))
 
 let interp_binding ist gl (loc,b,c) =
-  (loc,interp_quantified_hypothesis ist b,pf_interp_constr ist gl c)
+  (loc,interp_quantified_hypothesis ist b,pf_interp_open_constr false ist gl c)
 
 let interp_bindings ist gl = function
 | NoBindings -> NoBindings
-| ImplicitBindings l -> ImplicitBindings (pf_interp_constr_list ist gl l)
+| ImplicitBindings l -> ImplicitBindings (pf_interp_open_constr_list ist gl l)
 | ExplicitBindings l -> ExplicitBindings (List.map (interp_binding ist gl) l)
 
 let interp_constr_with_bindings ist gl (c,bl) =
   (pf_interp_constr ist gl c, interp_bindings ist gl bl)
+
+let interp_open_constr_with_bindings ist gl (c,bl) =
+  (pf_interp_open_constr false ist gl c, interp_bindings ist gl bl)
 
 let mk_constr_value ist gl c = VConstr (pf_interp_constr ist gl c)
 let mk_hyp_value ist gl c = VConstr (mkVar (interp_hyp ist gl c))
@@ -2047,7 +2071,7 @@ and interp_atomic ist gl = function
   | TacCut c -> h_cut (pf_interp_type ist gl c)
   | TacAssert (t,ipat,c) ->
       let c = (if t=None then pf_interp_constr else pf_interp_type) ist gl c in
-      abstract_tactic (TacAssert (t,ipat,c))
+      abstract_tactic (TacAssert (t,ipat,inj_open c))
         (Tactics.forward (option_map (interp_tactic ist) t)
 	  (interp_intro_pattern ist gl ipat) c)
   | TacGeneralize cl -> h_generalize (pf_interp_constr_list ist gl cl)

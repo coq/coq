@@ -15,6 +15,7 @@ open Libnames
 open Rawterm
 open Topconstr
 open Term
+open Evd
 
 type 'a and_short_name = 'a * identifier located option
 
@@ -25,9 +26,10 @@ type 'a or_by_notation = AN of 'a | ByNotation of loc * string
 (* The [constr_expr] field is [None] in TacDef though *)
 type rawconstr_and_expr = rawconstr * constr_expr option
 
-type open_constr = Evd.evar_map * Term.constr
 type open_constr_expr = unit * constr_expr
 type open_rawconstr = unit * rawconstr_and_expr
+
+type 'a with_ebindings = 'a * open_constr bindings
 
 type intro_pattern_expr =
   | IntroOrAndPattern of case_intro_pattern_expr
@@ -106,7 +108,7 @@ ExtraArgType of string         '_a                      '_b
 
 type rlevel = constr_expr
 type glevel = rawconstr_and_expr
-type tlevel = constr
+type tlevel = open_constr
 
 type ('a,'co) abstract_argument_type
 
@@ -176,11 +178,11 @@ val wit_casted_open_constr : (open_constr,tlevel) abstract_argument_type
 
 val rawwit_constr_with_bindings : (constr_expr with_bindings,rlevel) abstract_argument_type
 val globwit_constr_with_bindings : (rawconstr_and_expr with_bindings,glevel) abstract_argument_type
-val wit_constr_with_bindings : (constr with_bindings,tlevel) abstract_argument_type
+val wit_constr_with_bindings : (constr with_ebindings,tlevel) abstract_argument_type
 
 val rawwit_bindings : (constr_expr bindings,rlevel) abstract_argument_type
 val globwit_bindings : (rawconstr_and_expr bindings,glevel) abstract_argument_type
-val wit_bindings : (constr bindings,tlevel) abstract_argument_type
+val wit_bindings : (open_constr bindings,tlevel) abstract_argument_type
 
 val rawwit_red_expr : ((constr_expr,reference or_by_notation) red_expr_gen,rlevel) abstract_argument_type
 val globwit_red_expr : ((rawconstr_and_expr,evaluable_global_reference and_short_name or_var) red_expr_gen,glevel) abstract_argument_type
