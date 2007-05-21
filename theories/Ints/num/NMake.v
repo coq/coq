@@ -2317,57 +2317,70 @@ Module Make (W0:W0Type).
  Definition w12_div_gt := w12_op.(znz_div_gt).
 
  Definition w0_divn1 :=
-  gen_divn1 w0_op.(znz_digits) w0_op.(znz_0)
+  gen_divn1 w0_op.(znz_zdigits) w0_op.(znz_0)
     w0_op.(znz_WW) w0_op.(znz_head0)
-    w0_op.(znz_add_mul_div) w0_op.(znz_div21).
+    w0_op.(znz_add_mul_div) w0_op.(znz_div21)
+    w0_op.(znz_compare) w0_op.(znz_sub).
  Definition w1_divn1 :=
-  gen_divn1 w1_op.(znz_digits) w1_op.(znz_0)
+  gen_divn1 w1_op.(znz_zdigits) w1_op.(znz_0)
     w1_op.(znz_WW) w1_op.(znz_head0)
-    w1_op.(znz_add_mul_div) w1_op.(znz_div21).
+    w1_op.(znz_add_mul_div) w1_op.(znz_div21)
+    w1_op.(znz_compare) w1_op.(znz_sub).
  Definition w2_divn1 :=
-  gen_divn1 w2_op.(znz_digits) w2_op.(znz_0)
+  gen_divn1 w2_op.(znz_zdigits) w2_op.(znz_0)
     w2_op.(znz_WW) w2_op.(znz_head0)
-    w2_op.(znz_add_mul_div) w2_op.(znz_div21).
+    w2_op.(znz_add_mul_div) w2_op.(znz_div21)
+    w2_op.(znz_compare) w2_op.(znz_sub).
  Definition w3_divn1 :=
-  gen_divn1 w3_op.(znz_digits) w3_op.(znz_0)
+  gen_divn1 w3_op.(znz_zdigits) w3_op.(znz_0)
     w3_op.(znz_WW) w3_op.(znz_head0)
-    w3_op.(znz_add_mul_div) w3_op.(znz_div21).
+    w3_op.(znz_add_mul_div) w3_op.(znz_div21)
+    w3_op.(znz_compare) w3_op.(znz_sub).
  Definition w4_divn1 :=
-  gen_divn1 w4_op.(znz_digits) w4_op.(znz_0)
+  gen_divn1 w4_op.(znz_zdigits) w4_op.(znz_0)
     w4_op.(znz_WW) w4_op.(znz_head0)
-    w4_op.(znz_add_mul_div) w4_op.(znz_div21).
+    w4_op.(znz_add_mul_div) w4_op.(znz_div21)
+    w4_op.(znz_compare) w4_op.(znz_sub).
  Definition w5_divn1 :=
-  gen_divn1 w5_op.(znz_digits) w5_op.(znz_0)
+  gen_divn1 w5_op.(znz_zdigits) w5_op.(znz_0)
     w5_op.(znz_WW) w5_op.(znz_head0)
-    w5_op.(znz_add_mul_div) w5_op.(znz_div21).
+    w5_op.(znz_add_mul_div) w5_op.(znz_div21)
+    w5_op.(znz_compare) w5_op.(znz_sub).
  Definition w6_divn1 :=
-  gen_divn1 w6_op.(znz_digits) w6_op.(znz_0)
+  gen_divn1 w6_op.(znz_zdigits) w6_op.(znz_0)
     w6_op.(znz_WW) w6_op.(znz_head0)
-    w6_op.(znz_add_mul_div) w6_op.(znz_div21).
+    w6_op.(znz_add_mul_div) w6_op.(znz_div21)
+    w6_op.(znz_compare) w6_op.(znz_sub).
  Definition w7_divn1 :=
-  gen_divn1 w7_op.(znz_digits) w7_op.(znz_0)
+  gen_divn1 w7_op.(znz_zdigits) w7_op.(znz_0)
     w7_op.(znz_WW) w7_op.(znz_head0)
-    w7_op.(znz_add_mul_div) w7_op.(znz_div21).
+    w7_op.(znz_add_mul_div) w7_op.(znz_div21)
+    w7_op.(znz_compare) w7_op.(znz_sub).
  Definition w8_divn1 :=
-  gen_divn1 w8_op.(znz_digits) w8_op.(znz_0)
+  gen_divn1 w8_op.(znz_zdigits) w8_op.(znz_0)
     w8_op.(znz_WW) w8_op.(znz_head0)
-    w8_op.(znz_add_mul_div) w8_op.(znz_div21).
+    w8_op.(znz_add_mul_div) w8_op.(znz_div21)
+    w8_op.(znz_compare) w8_op.(znz_sub).
  Definition w9_divn1 :=
-  gen_divn1 w9_op.(znz_digits) w9_op.(znz_0)
+  gen_divn1 w9_op.(znz_zdigits) w9_op.(znz_0)
     w9_op.(znz_WW) w9_op.(znz_head0)
-    w9_op.(znz_add_mul_div) w9_op.(znz_div21).
+    w9_op.(znz_add_mul_div) w9_op.(znz_div21)
+    w9_op.(znz_compare) w9_op.(znz_sub).
  Definition w10_divn1 :=
-  gen_divn1 w10_op.(znz_digits) w10_op.(znz_0)
+  gen_divn1 w10_op.(znz_zdigits) w10_op.(znz_0)
     w10_op.(znz_WW) w10_op.(znz_head0)
-    w10_op.(znz_add_mul_div) w10_op.(znz_div21).
+    w10_op.(znz_add_mul_div) w10_op.(znz_div21)
+    w10_op.(znz_compare) w10_op.(znz_sub).
  Definition w11_divn1 :=
-  gen_divn1 w11_op.(znz_digits) w11_op.(znz_0)
+  gen_divn1 w11_op.(znz_zdigits) w11_op.(znz_0)
     w11_op.(znz_WW) w11_op.(znz_head0)
-    w11_op.(znz_add_mul_div) w11_op.(znz_div21).
+    w11_op.(znz_add_mul_div) w11_op.(znz_div21)
+    w11_op.(znz_compare) w11_op.(znz_sub).
  Definition w12_divn1 :=
-  gen_divn1 w12_op.(znz_digits) w12_op.(znz_0)
+  gen_divn1 w12_op.(znz_zdigits) w12_op.(znz_0)
     w12_op.(znz_WW) w12_op.(znz_head0)
-    w12_op.(znz_add_mul_div) w12_op.(znz_div21).
+    w12_op.(znz_add_mul_div) w12_op.(znz_div21)
+    w12_op.(znz_compare) w12_op.(znz_sub).
 
  Definition div_gt x y :=
   match x, y with
@@ -2913,44 +2926,57 @@ Module Make (W0:W0Type).
  Definition w12_mod_gt := w12_op.(znz_mod_gt).
 
  Definition w0_modn1 :=
-  gen_modn1 w0_op.(znz_digits) w0_op.(znz_0)
-    w0_op.(znz_head0) w0_op.(znz_add_mul_div) w0_op.(znz_div21).
+  gen_modn1 w0_op.(znz_zdigits) w0_op.(znz_0)
+    w0_op.(znz_head0) w0_op.(znz_add_mul_div) w0_op.(znz_div21)
+    w0_op.(znz_compare) w0_op.(znz_sub).
  Definition w1_modn1 :=
-  gen_modn1 w1_op.(znz_digits) w1_op.(znz_0)
-    w1_op.(znz_head0) w1_op.(znz_add_mul_div) w1_op.(znz_div21).
+  gen_modn1 w1_op.(znz_zdigits) w1_op.(znz_0)
+    w1_op.(znz_head0) w1_op.(znz_add_mul_div) w1_op.(znz_div21)
+    w1_op.(znz_compare) w1_op.(znz_sub).
  Definition w2_modn1 :=
-  gen_modn1 w2_op.(znz_digits) w2_op.(znz_0)
-    w2_op.(znz_head0) w2_op.(znz_add_mul_div) w2_op.(znz_div21).
+  gen_modn1 w2_op.(znz_zdigits) w2_op.(znz_0)
+    w2_op.(znz_head0) w2_op.(znz_add_mul_div) w2_op.(znz_div21)
+    w2_op.(znz_compare) w2_op.(znz_sub).
  Definition w3_modn1 :=
-  gen_modn1 w3_op.(znz_digits) w3_op.(znz_0)
-    w3_op.(znz_head0) w3_op.(znz_add_mul_div) w3_op.(znz_div21).
+  gen_modn1 w3_op.(znz_zdigits) w3_op.(znz_0)
+    w3_op.(znz_head0) w3_op.(znz_add_mul_div) w3_op.(znz_div21)
+    w3_op.(znz_compare) w3_op.(znz_sub).
  Definition w4_modn1 :=
-  gen_modn1 w4_op.(znz_digits) w4_op.(znz_0)
-    w4_op.(znz_head0) w4_op.(znz_add_mul_div) w4_op.(znz_div21).
+  gen_modn1 w4_op.(znz_zdigits) w4_op.(znz_0)
+    w4_op.(znz_head0) w4_op.(znz_add_mul_div) w4_op.(znz_div21)
+    w4_op.(znz_compare) w4_op.(znz_sub).
  Definition w5_modn1 :=
-  gen_modn1 w5_op.(znz_digits) w5_op.(znz_0)
-    w5_op.(znz_head0) w5_op.(znz_add_mul_div) w5_op.(znz_div21).
+  gen_modn1 w5_op.(znz_zdigits) w5_op.(znz_0)
+    w5_op.(znz_head0) w5_op.(znz_add_mul_div) w5_op.(znz_div21)
+    w5_op.(znz_compare) w5_op.(znz_sub).
  Definition w6_modn1 :=
-  gen_modn1 w6_op.(znz_digits) w6_op.(znz_0)
-    w6_op.(znz_head0) w6_op.(znz_add_mul_div) w6_op.(znz_div21).
+  gen_modn1 w6_op.(znz_zdigits) w6_op.(znz_0)
+    w6_op.(znz_head0) w6_op.(znz_add_mul_div) w6_op.(znz_div21)
+    w6_op.(znz_compare) w6_op.(znz_sub).
  Definition w7_modn1 :=
-  gen_modn1 w7_op.(znz_digits) w7_op.(znz_0)
-    w7_op.(znz_head0) w7_op.(znz_add_mul_div) w7_op.(znz_div21).
+  gen_modn1 w7_op.(znz_zdigits) w7_op.(znz_0)
+    w7_op.(znz_head0) w7_op.(znz_add_mul_div) w7_op.(znz_div21)
+    w7_op.(znz_compare) w7_op.(znz_sub).
  Definition w8_modn1 :=
-  gen_modn1 w8_op.(znz_digits) w8_op.(znz_0)
-    w8_op.(znz_head0) w8_op.(znz_add_mul_div) w8_op.(znz_div21).
+  gen_modn1 w8_op.(znz_zdigits) w8_op.(znz_0)
+    w8_op.(znz_head0) w8_op.(znz_add_mul_div) w8_op.(znz_div21)
+    w8_op.(znz_compare) w8_op.(znz_sub).
  Definition w9_modn1 :=
-  gen_modn1 w9_op.(znz_digits) w9_op.(znz_0)
-    w9_op.(znz_head0) w9_op.(znz_add_mul_div) w9_op.(znz_div21).
+  gen_modn1 w9_op.(znz_zdigits) w9_op.(znz_0)
+    w9_op.(znz_head0) w9_op.(znz_add_mul_div) w9_op.(znz_div21)
+    w9_op.(znz_compare) w9_op.(znz_sub).
  Definition w10_modn1 :=
-  gen_modn1 w10_op.(znz_digits) w10_op.(znz_0)
-    w10_op.(znz_head0) w10_op.(znz_add_mul_div) w10_op.(znz_div21).
+  gen_modn1 w10_op.(znz_zdigits) w10_op.(znz_0)
+    w10_op.(znz_head0) w10_op.(znz_add_mul_div) w10_op.(znz_div21)
+    w10_op.(znz_compare) w10_op.(znz_sub).
  Definition w11_modn1 :=
-  gen_modn1 w11_op.(znz_digits) w11_op.(znz_0)
-    w11_op.(znz_head0) w11_op.(znz_add_mul_div) w11_op.(znz_div21).
+  gen_modn1 w11_op.(znz_zdigits) w11_op.(znz_0)
+    w11_op.(znz_head0) w11_op.(znz_add_mul_div) w11_op.(znz_div21)
+    w11_op.(znz_compare) w11_op.(znz_sub).
  Definition w12_modn1 :=
-  gen_modn1 w12_op.(znz_digits) w12_op.(znz_0)
-    w12_op.(znz_head0) w12_op.(znz_add_mul_div) w12_op.(znz_div21).
+  gen_modn1 w12_op.(znz_zdigits) w12_op.(znz_0)
+    w12_op.(znz_head0) w12_op.(znz_add_mul_div) w12_op.(znz_div21)
+    w12_op.(znz_compare) w12_op.(znz_sub).
 
  Definition mod_gt x y :=
   match x, y with

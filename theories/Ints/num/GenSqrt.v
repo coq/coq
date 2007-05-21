@@ -11,6 +11,7 @@ Set Implicit Arguments.
 Require Import ZArith.
 Require Import ZAux.
 Require Import ZDivModAux.
+Require Import ZPowerAux.
 Require Import Basic_type.
 Require Import GenBase.
 
@@ -30,18 +31,22 @@ Section GenSqrt.
  Variable w_sub_c        : w -> w -> carry w.
  Variable w_square_c     : w -> zn2z w.
  Variable w_div21        : w -> w -> w -> w * w.
- Variable w_add_mul_div  : positive -> w -> w -> w.
+ Variable w_add_mul_div  : w -> w -> w -> w.
  Variable w_digits       : positive.
+ Variable w_zdigits      : w.
+ Variable ww_zdigits     : zn2z w.
  Variable w_add_c        : w -> w -> carry w.
  Variable w_sqrt2        : w -> w -> w * carry w.
+ Variable w_pred         : w -> w.
  Variable ww_pred_c      : zn2z w -> carry (zn2z w).
  Variable ww_pred        : zn2z w -> zn2z w.
  Variable ww_add_c       : zn2z w -> zn2z w -> carry (zn2z w).
  Variable ww_add         : zn2z w -> zn2z w -> zn2z w.
  Variable ww_sub_c       : zn2z w -> zn2z w -> carry (zn2z w).
- Variable ww_add_mul_div : positive -> zn2z w -> zn2z w -> zn2z w.
- Variable ww_head0       : zn2z w -> N.
+ Variable ww_add_mul_div : zn2z w -> zn2z w -> zn2z w -> zn2z w.
+ Variable ww_head0       : zn2z w -> zn2z w.
  Variable ww_compare     : zn2z w -> zn2z w -> comparison.
+ Variable low            : zn2z w -> w.
 
  Let wwBm1 := ww_Bm1 w_Bm1.
 
@@ -76,28 +81,28 @@ Section GenSqrt.
      match q with
        C0 q1 =>
          if w_is_even q1 then
-          (C0 (w_add_mul_div (w_digits - 1) w_1 q1), C0 r)
+          (C0 (w_add_mul_div (w_pred w_zdigits) w_1 q1), C0 r)
          else
-          (C0 (w_add_mul_div (w_digits - 1) w_1 q1), w_add_c r s)
+          (C0 (w_add_mul_div (w_pred w_zdigits) w_1 q1), w_add_c r s)
      | C1 q1 =>
          if w_is_even q1 then
-          (C1 (w_add_mul_div (w_digits - 1) w_0 q1), C0 r)
+          (C1 (w_add_mul_div (w_pred w_zdigits) w_0 q1), C0 r)
          else
-          (C1 (w_add_mul_div (w_digits - 1) w_0 q1), w_add_c r s)
+          (C1 (w_add_mul_div (w_pred w_zdigits) w_0 q1), w_add_c r s)
      end
   | C0 x1 =>
      let (q, r) := w_div21c x1 y s in
      match q with
        C0 q1 =>
          if w_is_even q1 then
-          (C0 (w_add_mul_div (w_digits - 1) w_0 q1), C0 r)
+          (C0 (w_add_mul_div (w_pred w_zdigits) w_0 q1), C0 r)
          else
-          (C0 (w_add_mul_div (w_digits - 1) w_0 q1), w_add_c r s)
+          (C0 (w_add_mul_div (w_pred w_zdigits) w_0 q1), w_add_c r s)
      | C1 q1 =>
          if w_is_even q1 then
-          (C0 (w_add_mul_div (w_digits - 1) w_1 q1), C0 r)
+          (C0 (w_add_mul_div (w_pred w_zdigits) w_1 q1), C0 r)
          else
-          (C0 (w_add_mul_div (w_digits - 1) w_1 q1), w_add_c r s)
+          (C0 (w_add_mul_div (w_pred w_zdigits) w_1 q1), w_add_c r s)
      end
   end.
 
@@ -126,7 +131,7 @@ Section GenSqrt.
            match ww_sub_c (WW r2 y2) q2 with
              C0 r3 => (a, C0 r3)
            | C1 r3 => 
-              let a2 := ww_add_mul_div 1 a W0 in
+              let a2 := ww_add_mul_div (w_0W w_1) a W0 in
               match ww_pred_c a2 with 
                 C0 a3 =>
                   (ww_pred a, ww_add_c a3 r3)
@@ -137,7 +142,7 @@ Section GenSqrt.
          end
    | C1 q1 =>
          let a1 := WW q w_Bm1 in
-         let a2 := ww_add_mul_div 1 a1 wwBm1 in
+         let a2 := ww_add_mul_div (w_0W w_1) a1 wwBm1 in
             (a1, ww_add_c a2 y)
    end.
 
@@ -148,28 +153,28 @@ Section GenSqrt.
   end.
 
  Definition ww_head1 x :=
-   match ww_head0 x with 
-     N0 => N0
-   | Npos xH => N0
-   | Npos (xO _) as U => U
-   | Npos (xI V) => Npos (xO V)
-   end.
+   let p := ww_head0 x in
+   if (ww_is_even p) then p else ww_pred p.
 
  Definition ww_sqrt x :=
    if (ww_is_zero x) then W0
    else
-    match (ww_head1 x) with
-      N0 => 
-        match x with
-          W0 => W0
-        | WW x1 x2 => WW w_0 (fst (w_sqrt2 x1 x2))
-        end
-    | Npos p =>
+    let p := ww_head1 x in
+    match ww_compare p W0 with
+    | Gt =>
         match ww_add_mul_div p x W0 with
          W0 => W0
        | WW x1 x2 => 
           let (r, _) := w_sqrt2 x1 x2 in
-            WW w_0 (w_add_mul_div (w_digits - (Pdiv2 p)) w_0 r)
+            WW w_0 (w_add_mul_div 
+                     (w_sub w_zdigits 
+                     (low (ww_add_mul_div (ww_pred ww_zdigits)
+                              W0 p))) w_0 r)
+        end
+     | _ => 
+        match x with
+          W0 => W0
+        | WW x1 x2 => WW w_0 (fst (w_sqrt2 x1 x2))
         end
     end.
           
@@ -201,8 +206,10 @@ Section GenSqrt.
   Variable spec_w_0   : [|w_0|] = 0.
   Variable spec_w_1   : [|w_1|] = 1.
   Variable spec_w_Bm1 : [|w_Bm1|] = wB - 1.
-
+  Variable spec_w_zdigits : [|w_zdigits|] = Zpos w_digits.
+  Variable spec_ww_zdigits : [[ww_zdigits]] = Zpos (xO w_digits).
   Variable spec_to_Z  : forall x, 0 <= [|x|] < wB.
+  Variable spec_to_w_Z  : forall x, 0 <= [[x]] < wwB.
 
   Variable spec_w_WW : forall h l, [[w_WW h l]] = [|h|] * wB + [|l|].
   Variable spec_w_W0 : forall h, [[w_W0 h]] = [|h|] * wB.
@@ -224,15 +231,15 @@ Section GenSqrt.
      [|a1|] *wB+ [|a2|] = [|q|] * [|b|] + [|r|] /\
      0 <= [|r|] < [|b|].
  Variable spec_w_add_mul_div : forall x y p,
-        Zpos p < Zpos w_digits ->
+        [|p|] <= Zpos w_digits ->
        [| w_add_mul_div p x y |] =
-         ([|x|] * (Zpower 2 (Zpos p)) +
-          [|y|] / (Zpower 2 ((Zpos w_digits) - (Zpos p)))) mod wB.
+         ([|x|] * (2 ^ [|p|]) +
+          [|y|] / (Zpower 2 ((Zpos w_digits) - [|p|]))) mod wB.
  Variable spec_ww_add_mul_div : forall x y p,
-       Zpos p < Zpos (xO w_digits) ->
+       [[p]] <= Zpos (xO w_digits) ->
        [[ ww_add_mul_div p x y ]] =
-         ([[x]] * (2^ Zpos p) +
-          [[y]] / (2^ (Zpos (xO w_digits) - Zpos p))) mod wwB.
+         ([[x]] * (2^ [[p]]) +
+          [[y]] / (2^ (Zpos (xO w_digits) - [[p]]))) mod wwB.
  Variable spec_w_add_c  : forall x y, [+|w_add_c x y|] = [|x|] + [|y|].
  Variable spec_ww_add : forall x y, [[ww_add x y]] = ([[x]] + [[y]]) mod wwB.
  Variable spec_w_sqrt2 : forall x y,
@@ -242,6 +249,7 @@ Section GenSqrt.
           [+|r|] <= 2 * [|s|].
  Variable spec_ww_sub_c : forall x y, [-[ww_sub_c x y]] = [[x]] - [[y]].
  Variable spec_ww_pred_c : forall x, [-[ww_pred_c x]] = [[x]] - 1.
+ Variable spec_pred : forall x, [|w_pred x|] = ([|x|] - 1) mod wB.
  Variable spec_ww_pred : forall x, [[ww_pred x]] = ([[x]] - 1) mod wwB.
  Variable spec_ww_add_c  : forall x y, [+[ww_add_c x y]] = [[x]] + [[y]].
  Variable spec_ww_compare : forall x y,
@@ -251,7 +259,8 @@ Section GenSqrt.
        | Gt => [[x]] > [[y]]
        end.
  Variable spec_ww_head0  : forall x,  0 < [[x]] ->
-	 wwB/ 2 <= 2 ^ (Z_of_N (ww_head0 x)) * [[x]] < wwB.
+	 wwB/ 2 <= 2 ^ [[ww_head0 x]] * [[x]] < wwB.
+ Variable spec_low: forall x, [|low x|] = [[x]] mod wB.
 
  Let spec_ww_Bm1 : [[wwBm1]] = wwB - 1.
  Proof. refine (spec_ww_Bm1 w_Bm1 w_digits w_to_Z _);auto. Qed.
@@ -351,8 +360,14 @@ Section GenSqrt.
  Hypothesis more_than_one_bit: 1 < Zpos w_digits.
 
  Theorem add_mult_div_2: forall w,
-    [|w_add_mul_div (w_digits - 1) w_0 w|] = [|w|] / 2.
+    [|w_add_mul_div (w_pred w_zdigits) w_0 w|] = [|w|] / 2.
  intros w1.
+ assert (Hp: [|w_pred w_zdigits|] = Zpos w_digits - 1).
+   rewrite spec_pred; rewrite spec_w_zdigits.
+   rewrite Zmod_def_small; auto with zarith.
+   split; auto with zarith.
+   apply Zlt_le_trans with (Zpos w_digits); auto with zarith.
+   unfold base; apply Zpower2_le_lin; auto with zarith.
  rewrite spec_w_add_mul_div; auto with zarith.
  autorewrite with w_rewrite rm10.
  match goal with |- context[?X - ?Y] =>
@@ -361,19 +376,25 @@ Section GenSqrt.
  rewrite Zpower_exp_1; rewrite Zmod_def_small; auto with zarith.
  destruct (spec_to_Z w1) as [H1 H2];auto with zarith.
  split; auto with zarith. 
- apply Zdiv_lt_upper_bound; auto with zarith.
- rewrite Zpos_minus; auto with zarith.
- rewrite Zpos_minus; auto with zarith.
+ apply Zdiv_lt_upper_bound; auto with zarith.  
+ rewrite Hp; ring.
  Qed.
 
  Theorem add_mult_div_2_plus_1: forall w,
-    [|w_add_mul_div (w_digits - 1) w_1 w|] =
+    [|w_add_mul_div (w_pred w_zdigits) w_1 w|] =
       [|w|] / 2 + 2 ^ Zpos (w_digits - 1).
  intros w1.
+ assert (Hp: [|w_pred w_zdigits|] = Zpos w_digits - 1).
+   rewrite spec_pred; rewrite spec_w_zdigits.
+   rewrite Zmod_def_small; auto with zarith.
+   split; auto with zarith.
+   apply Zlt_le_trans with (Zpos w_digits); auto with zarith.
+   unfold base; apply Zpower2_le_lin; auto with zarith.
  autorewrite with w_rewrite rm10; auto with zarith.
  match goal with |- context[?X - ?Y] =>
   replace (X - Y) with 1
- end.
+ end; rewrite Hp; try ring.
+ rewrite Zpos_minus; auto with zarith.
  rewrite Zpower_exp_1; rewrite Zmod_def_small; auto with zarith.
  destruct (spec_to_Z w1) as [H1 H2];auto with zarith.
  split; auto with zarith. 
@@ -383,7 +404,8 @@ Section GenSqrt.
   rewrite <- (tmp X); clear tmp
  end.
  rewrite Zpower_exp; try rewrite Zpower_exp_1; auto with zarith.
- rewrite Zpos_minus; auto with zarith.
+ assert (tmp: forall p, 1 + (p -1) - 1 = p - 1); auto with zarith;
+  rewrite tmp; clear tmp; auto with zarith.
  match goal with |- ?X + ?Y < _ =>
  assert (Y < X); auto with zarith
  end.
@@ -392,12 +414,10 @@ Section GenSqrt.
   auto with zarith.
  assert (tmp: forall p, (p - 1) + 1 = p); auto with zarith;
   rewrite tmp; clear tmp; auto with zarith.
- rewrite Zpos_minus; auto with zarith.
- rewrite Zpos_minus; auto with zarith.
  Qed.
 
  Theorem add_mult_mult_2: forall w,
-    [|w_add_mul_div 1 w w_0|] = 2 * [|w|] mod wB.
+    [|w_add_mul_div w_1 w w_0|] = 2 * [|w|] mod wB.
  intros w1.
  autorewrite with w_rewrite rm10; auto with zarith.
  rewrite Zpower_exp_1; auto with zarith.
@@ -405,19 +425,23 @@ Section GenSqrt.
  Qed.
 
  Theorem ww_add_mult_mult_2: forall w,
-    [[ww_add_mul_div 1 w W0]] = 2 * [[w]] mod wwB.
+    [[ww_add_mul_div (w_0W w_1) w W0]] = 2 * [[w]] mod wwB.
  intros w1.
  rewrite spec_ww_add_mul_div; auto with zarith.
  autorewrite with w_rewrite rm10.
+ rewrite spec_w_0W; rewrite spec_w_1. 
  rewrite Zpower_exp_1; auto with zarith.
  rewrite Zmult_comm; auto.
+ rewrite spec_w_0W; rewrite spec_w_1; auto with zarith.
+ red; simpl; intros; discriminate.
  Qed.
 
  Theorem ww_add_mult_mult_2_plus_1: forall w,
-    [[ww_add_mul_div 1 w wwBm1]] =
+    [[ww_add_mul_div (w_0W w_1) w wwBm1]] =
       (2 * [[w]] + 1) mod wwB.
  intros w1.
  rewrite spec_ww_add_mul_div; auto with zarith.
+ rewrite spec_w_0W; rewrite spec_w_1; auto with zarith.
  rewrite Zpower_exp_1; auto with zarith.
  eq_tac; auto.
  rewrite Zmult_comm; eq_tac; auto.
@@ -450,6 +474,8 @@ Section GenSqrt.
  match goal with  |- ?X - 1 >= 0 =>
    assert (0 < X); auto with zarith; red; reflexivity
  end.
+ rewrite spec_w_0W; rewrite spec_w_1; auto with zarith.
+ red; simpl; intros; discriminate.
  Qed.
 
  Theorem Zmod_plus_one: forall a1 b1, 0 < b1 -> (a1 + b1) mod b1 = a1 mod b1.
@@ -1114,50 +1140,54 @@ Section GenSqrt.
 
   Lemma spec_ww_head1
        : forall x : zn2z w, 
-         (forall p, ww_head1 x = Npos p -> (2 * Zpos (Pdiv2 p) = Zpos p)) /\
-         (0 < [[x]] -> wwB / 4 <= 2 ^ Z_of_N (ww_head1 x) * [[x]] < wwB).
+         (ww_is_even (ww_head1 x) = true) /\
+         (0 < [[x]] -> wwB / 4 <= 2 ^ [[ww_head1 x]] * [[x]] < wwB).
   assert (U := wB_pos w_digits).
   intros x; unfold ww_head1.
-  generalize (spec_ww_head0 x); case (ww_head0 x); simpl Z_of_N;
-  autorewrite with rm10.
-  intros H1; split.
-  intros; discriminate.
-  intros H2; assert (H3:= H1 H2).
-  split; auto with zarith.
-  apply Zle_trans with (wwB/2); auto with zarith.
+  generalize (spec_ww_is_even (ww_head0 x)); case_eq (ww_is_even (ww_head0 x)).
+    intros HH H1; rewrite HH; split; auto.
+  intros H2.
+  generalize (spec_ww_head0 x H2); case (ww_head0 x);  autorewrite with rm10.
+  intros (H3, H4); split; auto with zarith.
+  apply Zle_trans with (2 := H3).
   apply Zdiv_le_monotone; auto with zarith.
-  intros p; case p; clear p; simpl Z_of_N.
-  intros p H1; split.
-  intros p1 H2; injection H2; intros; subst; clear H2; auto.
-  intros H2; assert (H3:= H1 H2).
+  intros xh xl (H3, H4); split; auto with zarith.
+  apply Zle_trans with (2 := H3).
+  apply Zdiv_le_monotone; auto with zarith.
+  intros H1.
+  case (spec_to_w_Z (ww_head0 x)); intros Hv1 Hv2.
+  assert (Hp0: 0 < [[ww_head0 x]]).
+    generalize (spec_ww_is_even (ww_head0 x)); rewrite H1.
+    generalize Hv1; case [[ww_head0 x]].
+    rewrite Zmod_def_small; auto with zarith.
+    intros; assert (0 < Zpos p); auto with zarith.
+    red; simpl; auto.
+    intros p H2; case H2; auto.
+  assert (Hp: [[ww_pred (ww_head0 x)]] = [[ww_head0 x]] - 1).
+    rewrite spec_ww_pred.
+    rewrite Zmod_def_small; auto with zarith.
+  intros H2; split.
+    generalize (spec_ww_is_even (ww_pred (ww_head0 x)));
+      case ww_is_even; auto.
+    rewrite Hp.
+    rewrite Zmod_minus; auto with zarith.
+    rewrite H2; repeat rewrite Zmod_def_small; auto with zarith.
+  intros H3; rewrite Hp.  
+  case (spec_ww_head0 x); auto; intros Hv3 Hv4.
+  assert (Hu: forall u, 0 < u -> 2 *  2 ^ (u - 1) = 2 ^u).
+    intros u Hu.
+    pattern 2 at 1; rewrite <- Zpower_exp_1.
+    rewrite <- Zpower_exp; auto with zarith.
+    ring_simplify (1 + (u - 1)); auto with zarith.
   split; auto with zarith.
   apply Zmult_le_reg_r with 2; auto with zarith.
   repeat rewrite (fun x => Zmult_comm x 2).
   rewrite wwB_4_2.
-  pattern 2 at 2; rewrite <- Zpower_exp_1; rewrite Zmult_assoc;
-   rewrite <- Zpower_exp; auto with zarith.
-  replace (1 + Zpos (xO p)) with (Zpos (xI p)); auto with zarith.
-  case H3; intros _ tmp; apply Zlt_trans with (2 := tmp).
-  apply Zmult_lt_compat_r; auto with zarith.
-  apply Zpower_lt_monotone; auto with zarith.
-  split; try (red; intros; discriminate).
-  replace (Zpos (xI p)) with (1 + Zpos (xO p)); auto with zarith.
-  intros p H1; split.
-  intros p1 H2; injection H2; intros; subst; clear H2; auto.
-  intros H2; assert (H3:= H1 H2).
-  split; auto with zarith.
-  apply Zle_trans with (wwB/2); auto with zarith.
-  apply Zdiv_le_monotone; auto with zarith.
-  generalize (wwB_pos w_digits); auto with zarith.
-  rewrite Zpower_exp_1; try rewrite Zpower_exp_0.
-  intros H1; split.
-  intros; discriminate.
-  intros H2; assert (H3 := H1 H2).
-  autorewrite with rm10.
-  split; auto with zarith.
-  apply Zmult_le_reg_r with 2; auto with zarith.
-  repeat rewrite (fun x => Zmult_comm x 2).
-  rewrite wwB_4_2; auto with zarith.
+  rewrite Zmult_assoc; rewrite Hu; auto with zarith.
+  apply Zle_lt_trans with (2 * 2 ^ ([[ww_head0 x]] - 1) * [[x]]); auto with zarith;
+    rewrite Hu; auto with zarith.
+  apply Zmult_le_compat_r; auto with zarith.
+  apply Zpower_le_monotone; auto with zarith.
   Qed.
 
   Theorem wwB_4_wB_4: wwB / 4 = wB / 4 * wB.
@@ -1173,14 +1203,16 @@ Section GenSqrt.
   intro x; unfold ww_sqrt.
   generalize (spec_ww_is_zero x); case (ww_is_zero x).
   simpl ww_to_Z; simpl Zpower; unfold Zpower_pos; simpl;
-    auto with zarith.
-  intros H1; generalize (spec_ww_head1 x); case (ww_head1 x); simpl Z_of_N;
-    autorewrite with rm10.
+    auto with zarith. 
+  intros H1.
+  generalize (spec_ww_compare (ww_head1 x) W0); case ww_compare;
+    simpl ww_to_Z; autorewrite with rm10.
   generalize H1; case x.
   intros HH; contradict HH; simpl ww_to_Z; auto with zarith.
   intros w0 w1; simpl ww_to_Z; autorewrite with w_rewrite rm10.
-  intros H2 (H3, H4).
-  generalize (H4 H2); clear H4; intros (H4, H5).
+  intros H2; case (spec_ww_head1 (WW w0 w1)); intros H3 H4 H5.  
+  generalize (H4 H2); clear H4; rewrite H5; clear H5; autorewrite with rm10.
+  intros (H4, H5).
   assert (V: wB/4 <= [|w0|]).
   apply beta_lex with 0 [|w1|] wB; auto with zarith; autorewrite with rm10.
   rewrite <- wwB_4_wB_4; auto.
@@ -1204,21 +1236,21 @@ Section GenSqrt.
     replace Z with (X + 1); auto with zarith
   end.
   repeat rewrite Zsquare_mult; ring.
-  intros p (Hp1, Hp2).
-  assert (F0: 0 < Zpos (Pdiv2 p)); try (red; reflexivity).
-  assert (Hp3 := Hp1 p (refl_equal _)).
-  assert (U0: Zpos p < Zpos (ww_digits w_digits)).
-  case (Zle_or_lt (Zpos (ww_digits w_digits)) (Zpos p)); auto; intros H2;
-    case (Hp2 H1); intros _ tmp; contradict tmp; apply Zle_not_lt;
-    unfold base.
-  apply Zle_trans with (2 ^ Zpos p * 1); auto with zarith.
-  autorewrite with rm10; apply Zpower_le_monotone; auto with zarith.
-  assert (U1: Zpos (Pdiv2 p) < Zpos (ww_digits w_digits)); auto with zarith.
-  match goal with |- context[ww_add_mul_div ?y ?z ?t] =>
-    assert (UU:= spec_ww_add_mul_div z t );
-    generalize (UU p U0);
-    case (ww_add_mul_div y z t)
-  end.
+  intros HH; case (spec_to_w_Z (ww_head1 x)); auto with zarith.
+  intros Hv1.
+  case (spec_ww_head1 x); intros Hp1 Hp2.
+  generalize (Hp2 H1); clear Hp2; intros Hp2.
+  assert (Hv2: [[ww_head1 x]] <= Zpos (xO w_digits)).
+    case (Zle_or_lt (Zpos (xO w_digits)) [[ww_head1 x]]); auto with zarith; intros HH1.
+    case Hp2; intros _ HH2; contradict HH2.
+    apply Zle_not_lt; unfold base.
+    apply Zle_trans with (2 ^ [[ww_head1 x]]).
+      apply Zpower_le_monotone; auto with zarith.
+    pattern (2 ^ [[ww_head1 x]]) at 1; 
+      rewrite <- (Zmult_1_r (2 ^ [[ww_head1 x]])).
+    apply Zmult_le_compat_l; auto with zarith.
+  generalize (spec_ww_add_mul_div x W0 (ww_head1 x) Hv2);
+     case ww_add_mul_div.
   simpl ww_to_Z; autorewrite with w_rewrite rm10.
   rewrite Zmod_def_small; auto with zarith.
   intros H2; case (Zmult_integral _ _ (sym_equal H2)); clear H2; intros H2.
@@ -1228,9 +1260,14 @@ Section GenSqrt.
   end.
   apply Zpower_lt_0; auto with zarith.
   split; auto with zarith.
-  case (Hp2 H1); intros _ tmp; apply Zle_lt_trans with (2 := tmp);
+  case Hp2; intros _ tmp; apply Zle_lt_trans with (2 := tmp);
    clear tmp.
   rewrite Zmult_comm; apply Zmult_le_compat_r; auto with zarith.
+  assert (Hv0: [[ww_head1 x]] = 2 * ([[ww_head1 x]]/2)).
+    pattern [[ww_head1 x]] at 1; rewrite (Z_div_mod_eq [[ww_head1 x]] 2);
+      auto with zarith.
+    generalize (spec_ww_is_even (ww_head1 x)); rewrite Hp1;
+      intros tmp; rewrite tmp; rewrite Zplus_0_r; auto.
   intros w0 w1; autorewrite with w_rewrite rm10.
   rewrite Zmod_def_small; auto with zarith.
   2: rewrite Zmult_comm; auto with zarith.
@@ -1243,42 +1280,71 @@ Section GenSqrt.
   assert (V1 := spec_to_Z w1);auto with zarith.
   generalize (@spec_w_sqrt2 w0 w1 V);auto with zarith.
   case (w_sqrt2 w0 w1); intros w2 c.
+  case (spec_to_Z w2); intros HH1 HH2.
   simpl ww_to_Z; simpl fst.
-  assert (U2: Zpos (Pdiv2 p) < Zpos w_digits).
-  apply Zmult_lt_reg_r with 2; auto with zarith.
-  repeat rewrite (fun x => Zmult_comm x 2).
-  rewrite Hp3.
-  rewrite <- Zpos_xO; auto.
-  autorewrite with w_rewrite rm10.
-  2: rewrite Zpos_minus; auto with zarith; auto.
-  rewrite Zpos_minus; auto with zarith.
-  match goal with |- context[?X - (?X -?Y)] =>
-    replace (X - (X - Y)) with Y; try ring
-  end.
-  assert (V2 := spec_to_Z w2);auto with zarith.
-  rewrite Zmod_def_small; auto with zarith.
+  assert (Hv3: [[ww_pred ww_zdigits]]
+                 = Zpos (xO w_digits) - 1).
+    rewrite spec_ww_pred; rewrite spec_ww_zdigits.
+    rewrite Zmod_def_small; auto with zarith.
+    split; auto with zarith.
+    apply Zlt_le_trans with (Zpos (xO w_digits)); auto with zarith.
+    unfold base; apply Zpower2_le_lin; auto with zarith.  
+  assert (Hv4: [[ww_head1 x]]/2 < wB).
+    apply Zle_lt_trans with (Zpos w_digits).
+    apply Zmult_le_reg_r with 2; auto with zarith.
+    repeat rewrite (fun x => Zmult_comm x 2).
+    rewrite <- Hv0;  rewrite <- Zpos_xO; auto.
+    unfold base; apply Zpower2_lt_lin; auto with zarith. 
+  assert (Hv5: [[(ww_add_mul_div (ww_pred ww_zdigits) W0 (ww_head1 x))]]
+                 = [[ww_head1 x]]/2).
+    rewrite spec_ww_add_mul_div.
+    simpl ww_to_Z; autorewrite with rm10.
+    rewrite Hv3.
+    ring_simplify (Zpos (xO w_digits) - (Zpos (xO w_digits) - 1)).
+    rewrite Zpower_exp_1.
+    rewrite Zmod_def_small; auto with zarith.
+    split; auto with zarith.
+    apply Zlt_le_trans with (1 := Hv4); auto with zarith.
+    unfold base; apply Zpower_le_monotone; auto with zarith.
+    split; unfold ww_digits; try rewrite Zpos_xO; auto with zarith.
+    rewrite Hv3; auto with zarith.
+  assert (Hv6: [|low(ww_add_mul_div (ww_pred ww_zdigits) W0 (ww_head1 x))|]
+                 = [[ww_head1 x]]/2).
+    rewrite spec_low.
+    rewrite Hv5; rewrite Zmod_def_small; auto with zarith.
+  rewrite spec_w_add_mul_div; auto with zarith.
+  rewrite spec_w_sub; auto with zarith.
+  rewrite spec_w_0.
+  simpl ww_to_Z; autorewrite with rm10.
+  rewrite Hv6; rewrite spec_w_zdigits.
+  rewrite (fun x y => Zmod_def_small (x - y)).
+  ring_simplify (Zpos w_digits - (Zpos w_digits - [[ww_head1 x]] / 2)).
+  rewrite Zmod_def_small.
   simpl ww_to_Z in H2; rewrite H2; auto with zarith.
   intros (H4, H5); split.
-  apply Zmult_le_reg_r with (2 ^ Zpos p); auto with zarith.
+  apply Zmult_le_reg_r with (2 ^ [[ww_head1 x]]); auto with zarith.
   rewrite H4.
   apply Zle_trans with ([|w2|] ^ 2); auto with zarith.
-  repeat rewrite (fun x => Zmult_comm x (2 ^ Zpos p)).
-  rewrite <- Hp3; rewrite (Zmult_comm 2); rewrite Zpower_mult;
-   auto with zarith.
+  rewrite Zmult_comm.
+  pattern [[ww_head1 x]] at 1;
+    rewrite Hv0; auto with zarith.
+  rewrite (Zmult_comm 2); rewrite Zpower_mult;
+    auto with zarith.
   assert (tmp: forall p q, p ^ 2 * q ^ 2 = (p * q) ^2);
    try (intros; repeat rewrite Zsquare_mult; ring);
    rewrite tmp; clear tmp.
   apply ZPowerAux.Zpower_le_monotone_exp; auto with zarith.
   split; auto with zarith.
-  pattern [|w2|] at 2; rewrite (Z_div_mod_eq [|w2|] (2 ^ Zpos (Pdiv2 p)));
-    auto with zarith.
+  pattern [|w2|] at 2; 
+     rewrite (Z_div_mod_eq [|w2|] (2 ^ ([[ww_head1 x]] / 2)));
+     auto with zarith.
   match goal with |- ?X <= ?X + ?Y =>
     assert (0 <= Y); auto with zarith
   end.
-  case (Z_mod_lt [|w2|] (2 ^ Zpos (Pdiv2 p))); auto with zarith.
+  case (Z_mod_lt [|w2|] (2 ^ ([[ww_head1 x]] / 2))); auto with zarith.
   case c; unfold interp_carry; autorewrite with rm10; 
     intros w3; assert (V3 := spec_to_Z w3);auto with zarith.
-  apply Zmult_lt_reg_r with (2 ^ Zpos p); auto with zarith.
+  apply Zmult_lt_reg_r with (2 ^ [[ww_head1 x]]); auto with zarith.
   rewrite H4.
   apply Zle_lt_trans with ([|w2|] ^ 2 + 2 * [|w2|]); auto with zarith.
   apply Zlt_le_trans with (([|w2|] + 1) ^ 2); auto with zarith.
@@ -1286,19 +1352,20 @@ Section GenSqrt.
     replace Y with (X + 1); auto with zarith
   end.
   repeat rewrite (Zsquare_mult); ring.
-  repeat rewrite (fun x => Zmult_comm x (2 ^ Zpos p)).
-  rewrite <- Hp3; rewrite (Zmult_comm 2); rewrite Zpower_mult;
+  rewrite Zmult_comm.
+  pattern [[ww_head1 x]] at 1; rewrite Hv0.
+  rewrite (Zmult_comm 2); rewrite Zpower_mult;
    auto with zarith.
   assert (tmp: forall p q, p ^ 2 * q ^ 2 = (p * q) ^2);
    try (intros; repeat rewrite Zsquare_mult; ring);
    rewrite tmp; clear tmp.
   apply ZPowerAux.Zpower_le_monotone_exp; auto with zarith.
   split; auto with zarith.
-  pattern [|w2|] at 1; rewrite (Z_div_mod_eq [|w2|] (2 ^ Zpos (Pdiv2 p)));
+  pattern [|w2|] at 1; rewrite (Z_div_mod_eq [|w2|] (2 ^ ([[ww_head1 x]]/2)));
     auto with zarith.
   rewrite <- Zplus_assoc; rewrite Zmult_plus_distr_r.
   autorewrite with rm10; apply Zplus_le_compat_l; auto with zarith.
-  case (Z_mod_lt [|w2|] (2 ^ Zpos (Pdiv2 p))); auto with zarith.
+  case (Z_mod_lt [|w2|] (2 ^ ([[ww_head1 x]]/2))); auto with zarith.
   split; auto with zarith.
   apply Zle_lt_trans with ([|w2|]); auto with zarith.
   apply Zdiv_le_upper_bound; auto with zarith.
@@ -1307,6 +1374,21 @@ Section GenSqrt.
   apply Zmult_le_compat_l; auto with zarith.
   apply Zpower_le_monotone; auto with zarith.
   rewrite Zpower_exp_0; autorewrite with rm10; auto.
+  split; auto with zarith.
+  rewrite Hv0 in Hv2; rewrite (Zpos_xO w_digits) in Hv2; auto with zarith.
+  apply Zle_lt_trans with (Zpos w_digits); auto with zarith.
+  unfold base; apply Zpower2_lt_lin; auto with zarith.
+  rewrite spec_w_sub; auto with zarith.
+  rewrite Hv6; rewrite spec_w_zdigits; auto with zarith.
+  assert (Hv7: 0 < [[ww_head1 x]]/2); auto with zarith.
+  rewrite Zmod_def_small; auto with zarith.
+  split; auto with zarith.
+  assert ([[ww_head1 x]]/2 <= Zpos w_digits); auto with zarith.
+  apply Zmult_le_reg_r with 2; auto with zarith.
+  repeat rewrite (fun x => Zmult_comm x 2).
+  rewrite <- Hv0; rewrite <- Zpos_xO; auto with zarith.
+  apply Zle_lt_trans with (Zpos w_digits); auto with zarith.
+  unfold base; apply Zpower2_lt_lin; auto with zarith.
   Qed.
 
 End GenSqrt.

@@ -9,9 +9,10 @@ Definition int31_op : znz_op int31.
 
  (* Conversion functions with Z *)
  exact (31%positive). (* number of digits *)
+ exact (31). (* number of digits *)
  exact (phi). (* conversion to Z *)
  exact (positive_to_int31). (* positive -> N*int31 :  p => N,i where p = N*2^31+phi i *)
- exact (head031).   (* number of head 0 *)
+ exact head031.  (* number of head 0 *)
 
  (* Basic constructors *)
  exact 0. (* 0 *)
@@ -65,19 +66,13 @@ Definition int31_op : znz_op int31.
  exact gcd31. (*gcd*)
  
  (* shift operations *)
- exact (fun p => let (_,i) := positive_to_int31 p in addmuldiv31 i). (*add_mul_div with positive ? *)
+ exact addmuldiv31. (*add_mul_div with positive ? *)
 (*modulo 2^p (p positive) *)
  exact (fun p i => 
-   let (n,j) := positive_to_int31 p in 
-   match n with
-   | N0 => 
-     match compare31 j 32 with
-     | Lt => addmuldiv31 j 0 (addmuldiv31 (31-j) i 0)
+     match compare31 p 32 with
+     | Lt => addmuldiv31 p 0 (addmuldiv31 (31-p) i 0)
      | _ => i
-     end
-   | _ => i
-   end).
-
+     end).
 
  (* is i even ? *)
  exact (fun i => let (_,r) := i/2 in 

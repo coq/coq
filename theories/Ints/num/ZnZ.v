@@ -23,9 +23,10 @@ Section ZnZ_Op.
  Record znz_op : Set := mk_znz_op {
     (* Conversion functions with Z *)
     znz_digits : positive;
+    znz_zdigits: znz;
     znz_to_Z   : znz -> Z;
     znz_of_pos : positive -> N * znz;
-    znz_head0  : znz -> N;
+    znz_head0  : znz -> znz;
     (* Basic constructors *)
     znz_0   : znz;
     znz_1   : znz;
@@ -71,8 +72,8 @@ Section ZnZ_Op.
 
     znz_gcd_gt      : znz -> znz -> znz;
     znz_gcd         : znz -> znz -> znz; 
-    znz_add_mul_div : positive -> znz -> znz -> znz;
-    znz_pos_mod     : positive -> znz -> znz;
+    znz_add_mul_div : znz -> znz -> znz -> znz;
+    znz_pos_mod     : znz -> znz -> znz;
 
    (* square root *)
     znz_is_even     : znz -> bool;
@@ -86,6 +87,7 @@ Section Spec.
  Variable w_op : znz_op w.
 
  Let w_digits      := w_op.(znz_digits).
+ Let w_zdigits      := w_op.(znz_zdigits).
  Let w_to_Z        := w_op.(znz_to_Z).
  Let w_of_pos      := w_op.(znz_of_pos).
  Let w_head0       := w_op.(znz_head0).
@@ -163,6 +165,7 @@ Section Spec.
     spec_to_Z   : forall x, 0 <= [| x |] < wB;
     spec_of_pos : forall p,
            Zpos p = (Z_of_N (fst (w_of_pos p)))*wB + [|(snd (w_of_pos p))|];
+    spec_zdigits : [| w_zdigits |] = Zpos w_digits;
 
     (* Basic constructors *)
     spec_0   : [|w0|] = 0;
@@ -234,14 +237,14 @@ Section Spec.
  
     (* shift operations *)
     spec_head0  : forall x,  0 < [|x|] ->
-	 wB/ 2 <= 2 ^ (Z_of_N (w_head0 x)) * [|x|] < wB;  
+	 wB/ 2 <= 2 ^ ([|w_head0 x|]) * [|x|] < wB;  
     spec_add_mul_div : forall x y p,
-       Zpos p < Zpos w_digits ->
+       [|p|] <= Zpos w_digits ->
        [| w_add_mul_div p x y |] =
-         ([|x|] * (Zpower 2 (Zpos p)) +
-          [|y|] / (Zpower 2 ((Zpos w_digits) - (Zpos p)))) mod wB;
+         ([|x|] * (2 ^ [|p|]) +
+          [|y|] / (2 ^ ((Zpos w_digits) - [|p|]))) mod wB;
     spec_pos_mod : forall w p,
-       [|w_pos_mod p w|] = [|w|] mod (2 ^ Zpos p);
+       [|w_pos_mod p w|] = [|w|] mod (2 ^ [|p|]);
     (* sqrt *)
     spec_is_even : forall x,
       if w_is_even x then [|x|] mod 2 = 0 else [|x|] mod 2 = 1;

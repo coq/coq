@@ -386,7 +386,7 @@ Hint Resolve Zlt_gt Zle_ge: zarith.
 
  Lemma shift_unshift_mod : forall n p a,
      0 <= a < 2^n ->
-     0 < p < n ->
+     0 <= p <= n ->
      a * 2^p = a / 2^(n - p) * 2^n + (a*2^p) mod 2^n.
  Proof.
   intros n p a H1 H2.

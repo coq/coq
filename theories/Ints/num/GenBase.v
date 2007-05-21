@@ -25,10 +25,14 @@ Section GenBase.
  Variable w_WW  : w -> w -> zn2z w.
  Variable w_0W  : w -> zn2z w.
  Variable w_digits : positive.
+ Variable w_zdigits: w.
+ Variable w_add: w -> w -> zn2z w.
  Variable w_to_Z   : w -> Z.
  Variable w_compare : w -> w -> comparison. 
  
  Definition ww_digits := xO w_digits.
+
+ Definition ww_zdigits := w_add w_zdigits w_zdigits.
 
  Definition ww_to_Z := zn2z_to_Z (base w_digits) w_to_Z.
 

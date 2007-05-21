@@ -181,3 +181,23 @@ replace (a^c) with 0. auto with zarith.
 destruct c;trivial;unfold Zgt in z0;discriminate z0.
 destruct b;trivial;unfold Zgt in z;discriminate z.
 Qed.
+
+Theorem Zpower2_lt_lin: forall n,
+  0 <= n -> n < 2 ^ n.
+intros n; apply (natlike_ind (fun n => n < 2 ^n)); clear n.
+ simpl; auto with zarith.
+intros n H1 H2; unfold Zsucc.
+case (Zle_lt_or_eq _ _ H1); clear H1; intros H1.
+  apply Zle_lt_trans with (n + n); auto with zarith.
+  rewrite Zpower_exp; auto with zarith.
+  rewrite Zpower_exp_1.
+  assert (tmp: forall p, p * 2 = p + p); intros; try ring;
+  rewrite tmp; auto with zarith.
+subst n; simpl; unfold Zpower_pos; simpl; auto with zarith.
+Qed.
+
+Theorem Zpower2_le_lin: forall n,
+  0 <= n -> n <= 2 ^ n.
+intros; apply Zlt_le_weak.
+apply Zpower2_lt_lin; auto.
+Qed.

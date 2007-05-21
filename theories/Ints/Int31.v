@@ -38,6 +38,7 @@ Definition On := I31 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0
 Definition In := I31 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D1.
 Definition Tn := I31 D1 D1 D1 D1 D1 D1 D1 D1 D1 D1 D1 D1 D1 D1 D1 D1 D1 D1 D1 D1 D1 D1 D1 D1 D1 D1 D1 D1 D1 D1 D1.
 Definition Twon :=  I31 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D1 D0.
+Definition T31 :=  I31 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D0 D1 D1 D1 D1 D1.
 
 Definition sneakr b i :=
   match i with
@@ -388,9 +389,9 @@ Definition positive_to_int31 (p:positive) :=
 .
 
 Definition head031 (i:int31) :=
-  recl _ (fun _ => sizeN) (fun b si rec n => match b with 
-                                          | D0 => rec (n+1)%N
+  recl _ (fun _ => T31) (fun b si rec n => match b with 
+                                          | D0 => rec (add31 n In)
                                           | D1 => n
                                           end)
-       i 0%N
+       i On
 .
