@@ -744,10 +744,12 @@ let rec substlin env name n ol c =
                (n2,ol2,mkCast (c1',k,c2')))
 
     | Fix _ -> 
-        (warning "do not consider occurrences inside fixpoints"; (n,ol,c))
+        (Options.if_verbose
+	  warning "do not consider occurrences inside fixpoints"; (n,ol,c))
 	
     | CoFix _ -> 
-        (warning "do not consider occurrences inside cofixpoints"; (n,ol,c))
+        (Options.if_verbose
+	  warning "do not consider occurrences inside cofixpoints"; (n,ol,c))
 
     | (Rel _|Meta _|Var _|Sort _
       |Evar _|Const _|Ind _|Construct _) -> (n,ol,c)
