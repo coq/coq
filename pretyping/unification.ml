@@ -23,6 +23,7 @@ open Rawterm
 open Pattern
 open Evarutil
 open Pretype_errors
+open Retyping
 
 (* if lname_typ is [xn,An;..;x1,A1] and l is a list of terms,
    gives [x1:A1]..[xn:An]c' such that c converts to ([x1:A1]..[xn:An]c' l) *)
@@ -86,7 +87,7 @@ let solve_pattern_eqn_array env f l c (metasubst,evarsubst) =
 	(k,solve_pattern_eqn env (Array.to_list l) c,pb)::metasubst,evarsubst
     | Evar ev ->
       (* Currently unused: incompatible with eauto/eassumption backtracking *)
-	metasubst,(f,solve_pattern_eqn env (Array.to_list l) c)::evarsubst
+	metasubst,(ev,solve_pattern_eqn env (Array.to_list l) c)::evarsubst
     | _ -> assert false
 
 (*******************************)
@@ -136,8 +137,8 @@ let unify_0 env sigma cv_pb mod_delta m n =
 	    if (closedn (nb_rel env) cM)
 	    then (k,cM,fst (extract_instance_status pb))::metasubst,evarsubst
 	    else error_cannot_unify_local curenv sigma (m,n,cM)
-	| Evar _, _ -> metasubst,((cM,cN)::evarsubst)
-	| _, Evar _ -> metasubst,((cN,cM)::evarsubst)
+	| Evar ev, _ -> metasubst,((ev,cN)::evarsubst)
+	| _, Evar ev -> metasubst,((ev,cM)::evarsubst)
 	| Lambda (na,t1,c1), Lambda (_,t2,c2) ->
 	    unirec_rec (push_rel_assum (na,t1) curenv) topconv
 	      (unirec_rec curenv topconv substn t1 t2) c1 c2
@@ -319,20 +320,18 @@ let w_merge env with_types mod_delta metas evars evd =
   let ty_evars = ref [] in
   let rec w_merge_rec evd metas evars =
     match (evars,metas) with
-      | ([], []) -> evd
+    | [], [] -> evd
 
-      | ((lhs,rhs)::t, metas) ->
-      (match kind_of_term rhs with
+    | ((evn,_ as ev),rhs)::t, metas ->
+	(match kind_of_term rhs with
 
-	| Meta k -> w_merge_rec evd ((k,lhs,ConvUpToEta 0)::metas) t
+	| Meta k -> w_merge_rec evd ((k,mkEvar ev,ConvUpToEta 0)::metas) t
 
 	| krhs ->
-        (match kind_of_term lhs with
-
-	  | Evar (evn,_ as ev) ->
     	      if is_defined_evar evd ev then
+		let v = Evd.existential_value (evars_of evd) ev in
 		let (metas',evars') =
-                  unify_0 env (evars_of evd) topconv mod_delta rhs lhs in
+		  unify_0 env (evars_of evd) topconv mod_delta rhs v in
 		w_merge_rec evd (metas'@metas) (evars'@t)
     	      else begin
 		let rhs' =
@@ -352,9 +351,7 @@ let w_merge env with_types mod_delta metas evars evd =
                   | _ ->
                       (* ensure tail recursion in non-mimickable case! *)
 		      w_merge_rec (fst (evar_define env ev rhs' evd)) metas t
-	      end
-
-	  | _ -> anomaly "w_merge_rec"))
+	      end)
 
       | ([], (mv,n,status)::t) ->
     	  if meta_defined evd mv then
@@ -368,26 +365,19 @@ let w_merge env with_types mod_delta metas evars evd =
             w_merge_rec evd' (metas'@t) evars'
     	  else
 	    begin
+	      let evd' = meta_assign mv (n,status) evd in
 	      if with_types (* or occur_meta mvty *) then
 		begin
-	          let mvty = Typing.meta_type evd mv in
+	          let mvty = Typing.meta_type evd' mv in
 		  try 
-                    let sigma = evars_of evd in
-                    (* why not typing with the metamap ? *)
-		    let nty = Typing.type_of env sigma (nf_meta evd n) in
-		    (* unification with arities may induce a too early *)
-		    (* commitment of an evar to an arity of wrong sort *)
-		    if
-		      not (is_arity env sigma mvty) &&
-		      not (is_arity env sigma nty)
-		    then
-		      let (mc,ec) = unify_0 env sigma Cumul mod_delta nty mvty
-		      in
-                      ty_metas := mc @ !ty_metas;
-                      ty_evars := ec @ !ty_evars
+                    let sigma = evars_of evd' in
+		    let metas = metas_of evd' in
+		    let nty = get_type_of_with_meta env sigma metas (nf_meta evd' n) in
+		    let (mc,ec) = unify_0 env sigma Cumul mod_delta nty mvty in
+                    ty_metas := mc @ !ty_metas;
+                    ty_evars := ec @ !ty_evars
 		  with e when precatchable_exception e -> ()
 		end;
-	      let evd' = meta_assign mv (n,status) evd in
 	      w_merge_rec evd' t []
 	    end
 		

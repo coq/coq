@@ -67,13 +67,7 @@ let clenv_type clenv = meta_instance clenv.evd clenv.templtyp
 let clenv_hnf_constr ce t = hnf_constr (cl_env ce) (cl_sigma ce) t
 
 let clenv_get_type_of ce c =
-  let metamap =
-    List.map 
-      (function
-	 | (n,Clval(_,_,typ)) -> (n,typ.rebus)
-         | (n,Cltyp (_,typ))    -> (n,typ.rebus))
-      (meta_list ce.evd) in
-  Retyping.get_type_of_with_meta (cl_env ce) (cl_sigma ce) metamap c
+  Retyping.get_type_of_with_meta (cl_env ce) (cl_sigma ce) (metas_of ce.evd) c
 
 exception NotExtensibleClause
 
@@ -255,8 +249,11 @@ let clenv_unify allow_K cv_pb t1 t2 clenv =
   { clenv with evd = w_unify allow_K clenv.env cv_pb t1 t2 clenv.evd }
 
 let clenv_unique_resolver allow_K clenv gl =
-  clenv_unify allow_K CUMUL (clenv_type clenv) (pf_concl gl) clenv
-
+  if isMeta (fst (whd_stack clenv.templtyp.rebus)) then
+    clenv_unify allow_K CUMUL (clenv_type clenv) (pf_concl gl) clenv
+  else
+    try clenv_unify allow_K CUMUL clenv.templtyp.rebus (pf_concl gl) clenv
+    with _ -> clenv_unify allow_K CUMUL (clenv_type clenv) (pf_concl gl) clenv
 
 (* [clenv_pose_dependent_evars clenv]
  * For each dependent evar in the clause-env which does not have a value,

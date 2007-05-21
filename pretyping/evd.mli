@@ -15,6 +15,7 @@ open Term
 open Sign
 open Libnames
 open Mod_subst
+open Termops
 (*i*)
 
 (* The type of mappings for existential variables.
@@ -173,6 +174,8 @@ val meta_reassign  : metavariable -> constr * instance_status -> evar_defs -> ev
 
 (* [meta_merge evd1 evd2] returns [evd2] extended with the metas of [evd1] *)
 val meta_merge : evar_defs -> evar_defs -> evar_defs
+
+val metas_of : evar_defs -> metamap
 
 (**********************************************************)
 (* Sort variables *)

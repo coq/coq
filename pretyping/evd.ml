@@ -464,6 +464,12 @@ let pr_sort_constraints (_,sm) = pr_sort_cstrs sm
 
 let meta_list evd = metamap_to_list evd.metas
 
+let metas_of evd = 
+  List.map (function
+    | (n,Clval(_,_,typ)) -> (n,typ.rebus)
+    | (n,Cltyp (_,typ))  -> (n,typ.rebus))
+    (meta_list evd)
+
 let meta_defined evd mv =
   match Metamap.find mv evd.metas with
     | Clval _ -> true
