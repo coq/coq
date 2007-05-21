@@ -1,6 +1,11 @@
 Performance analysis for V8-0 branch
 ------------------------------------
 
+Apr 11, 2007: added primitive integers (+6% CoLoR, +7% CoRN, ...)
+
+Between Feb 22 and March 16, 2007: bench temporarily moved on JMN's
+  computer (-25% CoRN, -25% Fairisle, ...)
+
 Oct 29 and Oct 30, 2006: abandoned attempt to add polymorphism on definitions
   (+4% in general during these two days)
 
