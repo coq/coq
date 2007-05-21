@@ -66,8 +66,8 @@ Definition int31_op : znz_op int31.
  exact gcd31. (*gcd*)
  
  (* shift operations *)
- exact addmuldiv31. (*add_mul_div with positive ? *)
-(*modulo 2^p (p positive) *)
+ exact addmuldiv31. (*add_mul_div  *)
+(*modulo 2^p  *)
  exact (fun p i => 
      match compare31 p 32 with
      | Lt => addmuldiv31 p 0 (addmuldiv31 (31-p) i 0)

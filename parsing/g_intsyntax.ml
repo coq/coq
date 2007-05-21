@@ -8,7 +8,7 @@
 
 (*i $ $ i*)
 
-(* digit-based syntax for int31 and bigint *)
+(* digit-based syntax for int31, bigN and bigZ *)
 
 open Bigint
 open Libnames
@@ -31,7 +31,7 @@ let make_kn dir id = Libnames.encode_kn (make_dir dir) (Names.id_of_string id)
 let int31_module = ["Coq"; "Ints"; "Int31"]
 let int31_path = make_path int31_module "int31"
 let int31_id = make_kn int31_module
-
+let int31_scope = "int31_scope"
 
 let int31_construct = ConstructRef ((int31_id "int31",0),1)
 
@@ -39,7 +39,7 @@ let int31_0 = ConstructRef ((int31_id "digits",0),1)
 let int31_1 = ConstructRef ((int31_id "digits",0),2)
 
 
-(* bigint stuff*)
+(* bigN stuff*)
 let zn2z_module = ["Coq"; "Ints"; "Basic_type"]
 let zn2z_path = make_path zn2z_module "zn2z"
 let zn2z_id = make_kn zn2z_module
@@ -53,6 +53,7 @@ let bigN_path = make_path bigN_module "bigN"
 let bigN_id id = (Obj.magic ((Names.MPdot ((Names.MPfile (make_dir bigN_module)), 
                              Names.mk_label "BigN")),
               [], Names.id_of_string id) : Names.kernel_name)
+let bigN_scope = "bigN_scope"
 
 (* number of inlined level of bigN (actually the level 0 to n_inlined-1 are inlined) *)
 let n_inlined = of_string "13"
@@ -75,6 +76,21 @@ let bigN_constructor =
 		else
 		  (to_int n_inlined)+1
 	       )
+
+(*bigZ stuff*)
+let bigZ_module = ["Coq"; "Ints"; "BigZ"]
+let bigZ_path = make_path bigZ_module "bigZ"
+(* big ugly hack bis *)
+let bigZ_id id = (Obj.magic ((Names.MPdot ((Names.MPfile (make_dir bigZ_module)), 
+                             Names.mk_label "BigZ")),
+              [], Names.id_of_string id) : Names.kernel_name)
+let bigZ_scope = "bigZ_scope"
+
+let bigZ_pos = ConstructRef ((bigZ_id "t_",0),1)
+let bigZ_neg = ConstructRef ((bigZ_id "t_",0),2)
+
+
+
 
 (*** Definition of the Non_closed exception, used in the pretty printing ***)
 exception Non_closed
@@ -126,7 +142,7 @@ let uninterp_int31 i =
     None
 
 (* Actually declares the interpreter for int31 *)
-let _ = Notation.declare_numeral_interpreter "int31_scope"
+let _ = Notation.declare_numeral_interpreter int31_scope
   (int31_path, int31_module)
   interp_int31
   ([RRef (Util.dummy_loc, int31_construct)],
@@ -134,8 +150,8 @@ let _ = Notation.declare_numeral_interpreter "int31_scope"
    true)
 
 
-(*** Parsing for BigN in digital notation ***)
-(* the base for BigN (in Coq) that is 2^31 in our case *)
+(*** Parsing for bigN in digital notation ***)
+(* the base for bigN (in Coq) that is 2^31 in our case *)
 let base = pow two (of_string "31")
 
 (* base of the bigN of height N : *)
@@ -224,7 +240,7 @@ let bigint_of_word =
     let hght = get_height rc in
     transform hght rc
     
-let bigint_of_bigN rc=
+let bigint_of_bigN rc =
   match rc with
   | RApp (_,_,[one_arg]) -> bigint_of_word one_arg
   | RApp (_,_,[_;second_arg]) -> bigint_of_word second_arg
@@ -250,9 +266,46 @@ let bigN_list_of_constructors =
   build zero
 
 (* Actually declares the interpreter for bigN *)
-let _ = Notation.declare_numeral_interpreter "bigN_scope"
+let _ = Notation.declare_numeral_interpreter bigN_scope
   (bigN_path, bigN_module)
   interp_bigN
   (bigN_list_of_constructors,
    uninterp_bigN,
+   true)
+
+
+(*** Parsing for bigZ in digital notation ***)
+let interp_bigZ dloc n = 
+  let ref_pos = RRef (dloc, bigZ_pos) in
+  let ref_neg = RRef (dloc, bigZ_neg) in
+  if is_pos_or_zero n then
+    RApp (dloc, ref_pos, [bigN_of_pos_bigint dloc n])
+  else
+    RApp (dloc, ref_neg, [bigN_of_pos_bigint dloc n])
+
+(* pretty printing functions for bigZ *)
+let bigint_of_bigZ = function
+  | RApp (_, RRef(_,c), [one_arg]) when c = bigZ_pos -> bigint_of_bigN one_arg
+  | RApp (_, RRef(_,c), [one_arg]) when c = bigZ_neg -> 
+      let opp_val = bigint_of_bigN one_arg in 
+      if equal opp_val zero then
+	raise Non_closed
+      else
+	neg opp_val
+  | _ -> raise Non_closed
+
+
+let uninterp_bigZ rc = 
+  try 
+    Some (bigint_of_bigZ rc)
+  with Non_closed ->
+    None
+
+(* Actually declares the interpreter for bigN *)
+let _ = Notation.declare_numeral_interpreter bigZ_scope
+  (bigZ_path, bigZ_module)
+  interp_bigZ
+  ([RRef (Util.dummy_loc, bigZ_pos);
+    RRef (Util.dummy_loc, bigZ_neg)],
+   uninterp_bigZ,
    true)

@@ -918,7 +918,8 @@ INTSVO=\
  theories/Ints/num/GenDiv.vo theories/Ints/num/GenSqrt.vo \
  theories/Ints/num/GenLift.vo theories/Ints/num/Zn2Z.vo\
  theories/Ints/num/Nbasic.vo theories/Ints/num/NMake.vo \
- theories/Ints/BigN.vo
+ theories/Ints/BigN.vo theories/Ints/num/ZMake.vo \
+ theories/Ints/BigZ.vo theories/Ints/num/QMake.vo
 # theories/Ints/List/ListAux.vo
 # theories/Ints/List/LPermutation.vo theories/Ints/List/Iterator.vo \
 # theories/Ints/List/ZProgression.vo
