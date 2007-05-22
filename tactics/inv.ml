@@ -441,15 +441,14 @@ let rewrite_equations_tac (gene, othin) id neqns names ba =
     tac
 
 
-let raw_inversion inv_kind indbinding id status names gl =
+let raw_inversion inv_kind id status names gl =
   let env = pf_env gl and sigma = project gl in
   let c = mkVar id in
   let t = strong_prodspine (pf_whd_betadeltaiota gl) (pf_type_of gl c) in
   let indclause = mk_clenv_from gl (c,t) in
-  let indclause' = clenv_constrain_with_bindings indbinding indclause in
-  let newc = clenv_value indclause' in
-  let ccl = clenv_type indclause' in
-  check_no_metas indclause' ccl;
+  let newc = clenv_value indclause in
+  let ccl = clenv_type indclause in
+  check_no_metas indclause ccl;
   let IndType (indf,realargs) =
     try find_rectype env sigma ccl
     with Not_found ->
@@ -503,13 +502,13 @@ let wrap_inv_error id = function
   | UserError ("Case analysis",s) -> errorlabstrm "Inv needs Nodep Prop Set" s
   | UserError("mind_specif_of_mind",_)  -> not_inductive_here id
   | UserError (a,b)  -> errorlabstrm "Inv" b
-  | Invalid_argument (*"it_list2"*) "List.fold_left2" -> dep_prop_prop_message id
+  | Invalid_argument "List.fold_left2" -> dep_prop_prop_message id
   | Not_found  ->  errorlabstrm "Inv" (not_found_message [id]) 
   | e -> raise e
 
 (* The most general inversion tactic *)
 let inversion inv_kind status names id gls =
-  try (raw_inversion inv_kind [] id status names) gls
+  try (raw_inversion inv_kind id status names) gls
   with e -> wrap_inv_error id e
 
 (* Specializing it... *)

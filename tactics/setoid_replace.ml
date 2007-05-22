@@ -1983,7 +1983,7 @@ let setoid_transitivity c gl =
              | _ -> assert false
            in
             apply_with_bindings
-             (trans, Rawterm.ExplicitBindings [ dummy_loc, binder, (Evd.empty,c) ]) gl
+             (trans, Rawterm.ExplicitBindings [ dummy_loc, binder, c ]) gl
  with
   Optimize -> transitivity c gl
 ;;

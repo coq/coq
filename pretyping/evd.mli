@@ -111,7 +111,8 @@ val map_fl : ('a -> 'b) -> 'a freelisted -> 'b freelisted
     (e.g. the solution [P] to [?X u v = P u v] can be eta-expanded twice)
 *)
 
-type instance_status = IsSuperType | IsSubType | ConvUpToEta of int
+type instance_status =
+    IsSuperType | IsSubType | ConvUpToEta of int | Coercible of types
 
 type clbinding =
   | Cltyp of name * constr freelisted
@@ -176,6 +177,11 @@ val meta_reassign  : metavariable -> constr * instance_status -> evar_defs -> ev
 val meta_merge : evar_defs -> evar_defs -> evar_defs
 
 val metas_of : evar_defs -> metamap
+
+type metabinding = metavariable * constr * instance_status
+
+val retract_defined_metas : evar_defs -> metabinding list * evar_defs
+val subst_defined_metas : metabinding list -> constr -> constr option
 
 (**********************************************************)
 (* Sort variables *)

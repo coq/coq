@@ -55,6 +55,23 @@ let rec nb_prod x =
       | _ -> n
   in count 0 x
 
+let inj_open c = (Evd.empty,c)
+
+let inj_occ (occ,c) = (occ,inj_open c)
+
+let inj_red_expr = function
+  | Simpl lo -> Simpl (option_map inj_occ lo)
+  | Fold l -> Fold (List.map inj_open l)
+  | Pattern l -> Pattern (List.map inj_occ l)
+  | (ExtraRedExpr _ | CbvVm | Red _ | Hnf | Cbv _ | Lazy _ | Unfold _ as c)
+    -> c
+
+let inj_ebindings = function
+  | NoBindings -> NoBindings
+  | ImplicitBindings l -> ImplicitBindings (List.map inj_open l)
+  | ExplicitBindings l -> 
+      ExplicitBindings (List.map (fun (l,id,c) -> (l,id,inj_open c)) l)
+
 (*********************************************)
 (*                 Tactics                   *)
 (*********************************************)
@@ -527,7 +544,7 @@ let clenv_refine_in with_evars id clenv gl =
 
 (* Resolution with missing arguments *)
 
-let apply_with_bindings_gen with_evars (c,lbind) gl = 
+let apply_with_ebindings_gen with_evars (c,lbind) gl = 
   (* The actual type of the theorem. It will be matched against the
   goal. If this fails, then the head constant will be unfolded step by
   step. *)
@@ -553,24 +570,20 @@ let apply_with_bindings_gen with_evars (c,lbind) gl =
       else Clenvtac.res_pf clause gl in
   try_apply thm_ty0
 
-let apply_with_bindings = apply_with_bindings_gen false
-let eapply_with_bindings = apply_with_bindings_gen true
+let apply_with_ebindings = apply_with_ebindings_gen false
+let eapply_with_ebindings = apply_with_ebindings_gen true
 
-let apply c = apply_with_bindings (c,NoBindings)
+let apply_with_bindings (c,bl) =
+  apply_with_ebindings (c,inj_ebindings bl)
 
-let inj_open c = (Evd.empty,c)
+let eapply_with_bindings (c,bl) =
+  apply_with_ebindings_gen true (c,inj_ebindings bl)
 
-let inj_occ (occ,c) = (occ,inj_open c)
-
-let inj_red_expr = function
-  | Simpl lo -> Simpl (option_map inj_occ lo)
-  | Fold l -> Fold (List.map inj_open l)
-  | Pattern l -> Pattern (List.map inj_occ l)
-  | (ExtraRedExpr _ | CbvVm | Red _ | Hnf | Cbv _ | Lazy _ | Unfold _ as c)
-    -> c
+let apply c =
+  apply_with_ebindings (c,NoBindings)
 
 let apply_list = function 
-  | c::l -> apply_with_bindings (c,ImplicitBindings (List.map inj_open l))
+  | c::l -> apply_with_bindings (c,ImplicitBindings l)
   | _ -> assert false
 
 (* Resolution with no reduction on the type *)
@@ -713,6 +726,7 @@ let rec intros_clearing = function
 
 let new_hyp mopt (c,lbind) g =
   let clause  = make_clenv_binding g (c,pf_type_of g c) lbind in
+  let clause = clenv_unify_meta_types clause in
   let (thd,tstack) = whd_stack (clenv_value clause) in
   let nargs = List.length tstack in
   let cut_pf = 
@@ -720,7 +734,10 @@ let new_hyp mopt (c,lbind) g =
             match mopt with
 	      | Some m -> if m < nargs then list_firstn m tstack else tstack
 	      | None   -> tstack)
-  in 
+  in
+  if occur_meta cut_pf then
+    errorlabstrm "" (str "Cannot infer an instance for " ++
+      pr_name (meta_name clause.evd (List.hd (collect_metas cut_pf))));
   (tclTHENLAST (tclTHEN (tclEVARS (evars_of clause.evd))
                (cut (pf_type_of g cut_pf)))
      ((tclORELSE (apply cut_pf) (exact_no_check cut_pf)))) g
@@ -744,21 +761,24 @@ let keep hyps gl =
 (* Introduction tactics *)
 (************************)
 
-let constructor_tac boundopt i lbind gl =
+let check_number_of_constructors expctdnumopt i nconstr =
+  if i=0 then error "The constructors are numbered starting from 1";
+  begin match expctdnumopt with 
+    | Some n when n <> nconstr ->
+	error ("Not an inductive goal with "^
+	       string_of_int n^plural n " constructor")
+    | _ -> ()
+  end;
+  if i > nconstr then error "Not enough constructors"
+
+let constructor_tac expctdnumopt i lbind gl =
   let cl = pf_concl gl in 
   let (mind,redcl) = pf_reduce_to_quantified_ind gl cl in 
   let nconstr =
     Array.length (snd (Global.lookup_inductive mind)).mind_consnames in
-  if i=0 then error "The constructors are numbered starting from 1";
-  if i > nconstr then error "Not enough constructors";
-  begin match boundopt with 
-    | Some expctdnum -> 
-        if expctdnum <> nconstr then 
-	  error "Not the expected number of constructors"
-    | None -> ()
-  end;
+  check_number_of_constructors expctdnumopt i nconstr;
   let cons = mkConstruct (ith_constructor_of_inductive mind i) in
-  let apply_tac = apply_with_bindings (cons,lbind) in
+  let apply_tac = apply_with_ebindings (cons,lbind) in
   (tclTHENLIST 
      [convert_concl_no_check redcl DEFAULTcast; intros; apply_tac]) gl
 
@@ -778,14 +798,19 @@ let any_constructor tacopt gl =
   tclFIRST (List.map (fun i -> tclTHEN (one_constructor i NoBindings) t) 
               (interval 1 nconstr)) gl
 
-let left           = constructor_tac (Some 2) 1
+let left_with_ebindings  = constructor_tac (Some 2) 1
+let right_with_ebindings = constructor_tac (Some 2) 2
+let split_with_ebindings = constructor_tac (Some 1) 1
+
+let left l         = left_with_ebindings (inj_ebindings l)
 let simplest_left  = left NoBindings
 
-let right          = constructor_tac (Some 2) 2
+let right l        = right_with_ebindings (inj_ebindings l)
 let simplest_right = right NoBindings
 
-let split          = constructor_tac (Some 1) 1
+let split l        = split_with_ebindings (inj_ebindings l)
 let simplest_split = split NoBindings
+
 
 (********************************************)
 (*       Elimination tactics                *)

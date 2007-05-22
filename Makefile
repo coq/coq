@@ -155,9 +155,9 @@ PRETYPING=\
   pretyping/reductionops.cmo pretyping/vnorm.cmo pretyping/inductiveops.cmo \
   pretyping/retyping.cmo pretyping/cbv.cmo \
   pretyping/pretype_errors.cmo pretyping/recordops.cmo pretyping/typing.cmo \
-  pretyping/tacred.cmo \
-  pretyping/evarutil.cmo pretyping/unification.cmo pretyping/evarconv.cmo \
-  pretyping/classops.cmo pretyping/coercion.cmo pretyping/clenv.cmo \
+  pretyping/tacred.cmo pretyping/evarutil.cmo pretyping/evarconv.cmo \
+  pretyping/classops.cmo pretyping/coercion.cmo \
+  pretyping/unification.cmo pretyping/clenv.cmo \
   pretyping/rawterm.cmo pretyping/pattern.cmo \
   pretyping/detyping.cmo  pretyping/indrec.cmo\
   pretyping/cases.cmo pretyping/pretyping.cmo pretyping/matching.cmo
@@ -1497,14 +1497,14 @@ PRINTERSCMO=\
   library/summary.cmo library/global.cmo library/nameops.cmo		\
   library/libnames.cmo library/nametab.cmo library/libobject.cmo	\
   library/lib.cmo library/goptions.cmo \
-  pretyping/termops.cmo pretyping/evd.cmo				    \
-  pretyping/rawterm.cmo pretyping/termops.cmo pretyping/evd.cmo		    \
+  pretyping/termops.cmo pretyping/evd.cmo pretyping/rawterm.cmo \
   pretyping/reductionops.cmo pretyping/inductiveops.cmo			    \
   pretyping/retyping.cmo pretyping/cbv.cmo				    \
   pretyping/pretype_errors.cmo pretyping/recordops.cmo pretyping/typing.cmo \
-  pretyping/evarutil.cmo pretyping/unification.cmo pretyping/evarconv.cmo   \
+  pretyping/evarutil.cmo pretyping/evarconv.cmo   \
   pretyping/tacred.cmo pretyping/classops.cmo pretyping/detyping.cmo	    \
-  pretyping/indrec.cmo pretyping/coercion.cmo pretyping/cases.cmo	    \
+  pretyping/indrec.cmo pretyping/coercion.cmo \
+  pretyping/unification.cmo pretyping/cases.cmo \
   pretyping/pretyping.cmo pretyping/clenv.cmo pretyping/pattern.cmo \
   parsing/lexer.cmo interp/ppextend.cmo interp/genarg.cmo \
   interp/topconstr.cmo interp/notation.cmo interp/reserve.cmo		\

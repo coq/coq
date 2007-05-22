@@ -514,6 +514,16 @@ let free_rels m =
   in 
   frec 1 Intset.empty m
 
+(* collects all metavar occurences, in left-to-right order, preserving
+ * repetitions and all. *)
+
+let collect_metas c = 
+  let rec collrec acc c =
+    match kind_of_term c with
+      | Meta mv -> mv::acc
+      | _         -> fold_constr collrec acc c
+  in
+  List.rev (collrec [] c)
 
 (* (dependent M N) is true iff M is eq_term with a subterm of N 
    M is appropriately lifted through abstractions of N *)

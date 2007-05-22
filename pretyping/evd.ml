@@ -334,7 +334,8 @@ let map_fl f cfl = { cfl with rebus=f cfl.rebus }
     (e.g. the solution [P] to [?X u v = P u v] can be eta-expanded twice)
 *)
 
-type instance_status = IsSuperType | IsSubType | ConvUpToEta of int
+type instance_status =
+    IsSuperType | IsSubType | ConvUpToEta of int | Coercible of types
 
 (* Clausal environments *)
 
@@ -535,6 +536,28 @@ let meta_merge evd1 evd2 =
     metas = List.fold_left (fun m (n,v) -> Metamap.add n v m) 
       evd2.metas (metamap_to_list evd1.metas) }
 
+type metabinding = metavariable * constr * instance_status
+
+let retract_defined_metas evd =
+  let mc,ml = 
+    Metamap.fold (fun n v (mc,ml) -> 
+      match v with
+	| Clval (na,(b,s),typ) ->
+	    (n,b.rebus,s)::mc, Metamap.add n (Cltyp (na,typ)) ml
+	| Cltyp _ as v ->
+	    mc, Metamap.add n v ml)
+      evd.metas ([],Metamap.empty) in
+  mc, { evd with metas = ml }
+
+let rec list_assoc_in_triple x = function
+    [] -> raise Not_found
+  | (a,b,_)::l -> if compare a x = 0 then b else list_assoc_in_triple x l
+
+let subst_defined_metas bl c = 
+  let rec substrec c = match kind_of_term c with
+    | Meta i -> list_assoc_in_triple i bl
+    | _ -> map_constr substrec c
+  in try Some (substrec c) with Not_found -> None
 
 (**********************************************************)
 (* Pretty-printing *)

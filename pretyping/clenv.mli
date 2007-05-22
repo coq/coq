@@ -84,18 +84,20 @@ val clenv_pose_dependent_evars : clausenv -> clausenv
 (***************************************************************)
 (* Bindings *)
 
+type arg_bindings = open_constr explicit_bindings
+
 (* bindings where the key is the position in the template of the
    clenv (dependent or not). Positions can be negative meaning to
    start from the rightmost argument of the template. *)
-type arg_bindings = (int * open_constr) list
-
 val clenv_independent : clausenv -> metavariable list
 val clenv_missing : clausenv -> metavariable list
 
+val clenv_constrain_last_binding : constr -> clausenv -> clausenv
+
 (* defines metas corresponding to the name of the bindings *)
-val clenv_match_args :
-  open_constr explicit_bindings -> clausenv -> clausenv
-val clenv_constrain_with_bindings : arg_bindings -> clausenv -> clausenv
+val clenv_match_args : arg_bindings -> clausenv -> clausenv
+
+val clenv_unify_meta_types : clausenv -> clausenv
 
 (* start with a clenv to refine with a given term with bindings *)
 

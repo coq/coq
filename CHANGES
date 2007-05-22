@@ -45,6 +45,9 @@ Tactics
 - Better heuristic of lemma unfolding for apply/eapply.
 - New tactics "eapply in", "erewrite", "erewrite in".
 - Unfoldable references can be given by notation rather than by name in unfold.
+- The "with" arguments are now typed using informations from the current goal:
+  allows support for coercions and more inference of implicit arguments.
+- Application of "f_equal"-style lemmas works better.
 
 Miscellaneous
 

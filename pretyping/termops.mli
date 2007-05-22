@@ -102,7 +102,7 @@ val occur_var_in_decl :
 val occur_term : constr -> constr -> bool
 val free_rels : constr -> Intset.t
 val dependent : constr -> constr -> bool
-
+val collect_metas : constr -> int list
 (* Substitution of metavariables *)
 type metamap = (metavariable * constr) list 
 val subst_meta : metamap -> constr -> constr

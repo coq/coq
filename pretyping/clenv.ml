@@ -30,10 +30,13 @@ open Coercion.Default
 
 (* *)
 let w_coerce env c ctyp target evd =
-  let j = make_judge c ctyp in
-  let tycon = mk_tycon_type target in
-  let (evd',j') = inh_conv_coerce_to dummy_loc env evd j tycon in
-  (evd',j'.uj_val)
+  try
+    let j = make_judge c ctyp in
+    let tycon = mk_tycon_type target in
+    let (evd',j') = inh_conv_coerce_to dummy_loc env evd j tycon in
+    (evd',j'.uj_val)
+  with e when precatchable_exception e ->
+    evd,c
 
 let pf_env gls = Global.env_of_context gls.it.evar_hyps
 let pf_type_of gls c  = Typing.type_of (pf_env gls) gls.sigma c
@@ -209,17 +212,6 @@ let clenv_wtactic f clenv = {clenv with evd = f clenv.evd }
  * type of clenv.
  * If [hyps_only] then metavariables occurring in the type are _excluded_ *)
 
-(* collects all metavar occurences, in left-to-right order, preserving
- * repetitions and all. *)
-
-let collect_metas c = 
-  let rec collrec acc c =
-    match kind_of_term c with
-      | Meta mv -> mv::acc
-      | _         -> fold_constr collrec acc c
-  in
-  List.rev (collrec [] c)
-
 (* [clenv_metavars clenv mv]
  * returns a list of the metavars which appear in the type of
  * the metavar mv.  The list is unordered. *)
@@ -248,12 +240,34 @@ let clenv_missing ce = clenv_dependent true ce
 let clenv_unify allow_K cv_pb t1 t2 clenv =
   { clenv with evd = w_unify allow_K clenv.env cv_pb t1 t2 clenv.evd }
 
+let clenv_unify_meta_types clenv =
+  List.fold_left (fun clenv (k,m) ->
+    match m with
+    | Cltyp _ -> clenv
+    | Clval (na,(c,s),k_typ) ->
+	let k_typ = clenv_hnf_constr clenv k_typ.rebus in
+	match s with
+        | Coercible c_typ when not (occur_meta k_typ) -> 
+	    let evd,c' = w_coerce (cl_env clenv) c.rebus c_typ k_typ clenv.evd in
+	    {clenv with evd = meta_reassign k (c',ConvUpToEta 0) clenv.evd}
+	| _ -> 
+	    (* nf_betaiota was before in type_of - useful to reduce
+	       types like (x:A)([x]P u) *)
+	    let c_typ = nf_betaiota (clenv_get_type_of clenv c.rebus) in
+	    let c_typ = clenv_hnf_constr clenv c_typ in
+	    (* Try to infer some Meta/Evar from the type of [c] *)
+	    try clenv_unify true CUMUL c_typ k_typ clenv
+	    with e when precatchable_exception e -> clenv)
+    clenv (meta_list clenv.evd)
+
+
 let clenv_unique_resolver allow_K clenv gl =
   if isMeta (fst (whd_stack clenv.templtyp.rebus)) then
-    clenv_unify allow_K CUMUL (clenv_type clenv) (pf_concl gl) clenv
+    clenv_unify allow_K CUMUL (clenv_type clenv) (pf_concl gl)
+      (clenv_unify_meta_types clenv)
   else
-    try clenv_unify allow_K CUMUL clenv.templtyp.rebus (pf_concl gl) clenv
-    with _ -> clenv_unify allow_K CUMUL (clenv_type clenv) (pf_concl gl) clenv
+    clenv_unify allow_K CUMUL 
+      (meta_reducible_instance clenv.evd clenv.templtyp) (pf_concl gl) clenv
 
 (* [clenv_pose_dependent_evars clenv]
  * For each dependent evar in the clause-env which does not have a value,
@@ -326,7 +340,7 @@ let clenv_fchain mv clenv nextclenv =
 (***************************************************************)
 (* Bindings *)
 
-type arg_bindings = (int * open_constr) list
+type arg_bindings = open_constr explicit_bindings
 
 (* [clenv_independent clenv]
  * returns a list of metavariables which appear in the term cval,
@@ -340,22 +354,24 @@ let clenv_independent clenv =
   let deps = dependent_metas clenv mvs ctyp_mvs in
   List.filter (fun mv -> not (Metaset.mem mv deps)) mvs
 
-let meta_of_binder clause loc b t mvs =
-  match b with
-    | NamedHyp s ->
-	if List.exists (fun (_,b',_) -> b=b') t then 
-	  errorlabstrm ""
-	    (str "The variable " ++ pr_id s ++ 
-	     str " occurs more than once in binding");
-        meta_with_name clause.evd s
-    | AnonHyp n ->
-	if List.exists (fun (_,b',_) -> b=b') t then
-	  errorlabstrm ""
-	    (str "The position " ++ int n ++
-	    str " occurs more than once in binding");
-	try List.nth mvs (n-1)
-	with (Failure _|Invalid_argument _) ->
-          errorlabstrm "" (str "No such binder")
+let check_bindings bl =
+  match list_duplicates (List.map pi2 bl) with
+    | NamedHyp s :: _ -> 
+	errorlabstrm ""
+	  (str "The variable " ++ pr_id s ++ 
+	   str " occurs more than once in binding list");
+    | AnonHyp n :: _ ->
+	errorlabstrm ""
+	  (str "The position " ++ int n ++
+	   str " occurs more than once in binding list")
+    | [] -> ()
+
+let meta_of_binder clause loc mvs = function
+  | NamedHyp s -> meta_with_name clause.evd s
+  | AnonHyp n ->
+      try List.nth mvs (n-1)
+      with (Failure _|Invalid_argument _) ->
+        errorlabstrm "" (str "No such binder")
 
 let error_already_defined b =
   match b with
@@ -367,92 +383,49 @@ let error_already_defined b =
         anomalylabstrm ""
           (str "Position " ++ int n ++ str" already defined")
 
-let clenv_match_args s clause =
-  let mvs = clenv_independent clause in 
-  let rec matchrec clenv = function
-    | [] -> clenv
-    | (loc,b,(sigma,c))::t ->
-	let k = meta_of_binder clenv loc b t mvs in
+let clenv_match_args bl clenv =
+  if bl = [] then
+    clenv
+  else
+    let mvs = clenv_independent clenv in
+    check_bindings bl;
+    List.fold_left
+      (fun clenv (loc,b,(sigma,c)) ->
+	let k = meta_of_binder clenv loc mvs b in
         if meta_defined clenv.evd k then
-          if eq_constr (fst (meta_fvalue clenv.evd k)).rebus c then
-            matchrec clenv t
+          if eq_constr (fst (meta_fvalue clenv.evd k)).rebus c then clenv
           else error_already_defined b
         else
-	  let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
-	    (* nf_betaiota was before in type_of - useful to reduce
-               types like (x:A)([x]P u) *)
-	  let clenv' = { clenv with evd = evar_merge clenv.evd sigma} in
-	  let c_typ = nf_betaiota (clenv_get_type_of clenv' c) in
-	  let c_typ = clenv_hnf_constr clenv' c_typ in
-	  let clenv'' =
-	    (* Try to infer some Meta/Evar from the type of [c] *)
-	    try clenv_assign k c (clenv_unify true CUMUL c_typ k_typ clenv')
-	    with e when precatchable_exception e ->
-	    (* Try to coerce to the type of [k]; cannot merge with the
-	       previous case because Coercion does not handle Meta *)
-            let (evd,c') = w_coerce (cl_env clenv') c c_typ k_typ clenv'.evd in
-	    try clenv_unify true CONV (mkMeta k) c' { clenv' with evd = evd }
-	    with PretypeError (env,CannotUnify (m,n)) ->
-	      Stdpp.raise_with_loc loc
- 	        (PretypeError (env,CannotUnifyBindingType (m,n)))
-	  in matchrec clenv'' t
-  in 
-  matchrec clause s
+	  let c_typ = nf_betaiota (clenv_get_type_of clenv c) in
+	  let c_typ = clenv_hnf_constr clenv c_typ in
+	  let clenv = { clenv with evd = evar_merge clenv.evd sigma} in
+	  {clenv with evd = meta_assign k (c,Coercible c_typ) clenv.evd})
+      clenv bl
 
+let clenv_assign_binding clenv k (sigma,c) =
+  let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
+  let clenv' = { clenv with evd = evar_merge clenv.evd sigma} in
+  let c_typ = clenv_hnf_constr clenv' (clenv_get_type_of clenv' c) in
+  let evd,c' = w_coerce (cl_env clenv') c c_typ k_typ clenv'.evd in
+  { clenv' with evd = meta_assign k (c',Coercible c_typ) evd }
 
-let clenv_constrain_with_bindings bl clause =
-  if bl = [] then 
-    clause 
-  else 
-    let all_mvs = collect_metas clause.templval.rebus in
-    let rec matchrec clause = function
-      | []       -> clause
-      | (n,(sigma,c))::t ->
-          let k = 
-            (try
-              if n > 0 then 
-		List.nth all_mvs (n-1)
-              else if n < 0 then 
-		List.nth (List.rev all_mvs) (-n-1)
-              else error "clenv_constrain_with_bindings" 
-            with Failure _ ->
-              errorlabstrm "clenv_constrain_with_bindings"
-                (str"Clause did not have " ++ int n ++ str"-th" ++
-                str" absolute argument")) in
-	  let k_typ = nf_betaiota (clenv_meta_type clause k) in
-	  let cl = { clause with evd = evar_merge clause.evd sigma} in
-	  let c_typ = nf_betaiota (clenv_get_type_of cl c) in 
-	  matchrec
-            (clenv_assign k c (clenv_unify true CUMUL c_typ k_typ clause)) t
-    in 
-    matchrec clause bl
+let clenv_constrain_last_binding c clenv =
+  let all_mvs = collect_metas clenv.templval.rebus in
+  let k =
+    try list_last all_mvs 
+    with Failure _ -> error "clenv_constrain_with_bindings" in
+  clenv_assign_binding clenv k (Evd.empty,c)
 
-
-(* not exported: maybe useful ? *)
-let clenv_constrain_dep_args hyps_only clause = function
-  | [] -> clause 
-  | mlist ->
-      let occlist = clenv_dependent hyps_only clause in
-      if List.length occlist = List.length mlist then
-	List.fold_left2
-          (fun clenv k (sigma,c) ->
-	    let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
-	    let clenv' = { clenv with evd = evar_merge clenv.evd sigma} in
-	    let c_typ = clenv_hnf_constr clenv' (clenv_get_type_of clenv' c) in
-	    try
-              (* faire quelque chose avec le sigma retourne ? *)
-	      let evd,c' = w_coerce (cl_env clenv') c c_typ k_typ clenv'.evd in
-	      clenv_unify true CONV (mkMeta k) c' { clenv' with evd = evd }
-	    with _ ->
-              clenv_unify true CONV (mkMeta k) c clenv')
-          clause occlist mlist
-      else 
-	error ("Not the right number of missing arguments (expected "
-	       ^(string_of_int (List.length occlist))^")")
-
-let clenv_constrain_missing_args mlist clause =
-  clenv_constrain_dep_args true clause mlist
-
+let clenv_constrain_dep_args hyps_only bl clenv =
+  if bl = [] then
+    clenv
+  else
+    let occlist = clenv_dependent hyps_only clenv in
+    if List.length occlist = List.length bl then
+      List.fold_left2 clenv_assign_binding clenv occlist bl
+    else 
+      error ("Not the right number of missing arguments (expected "
+	     ^(string_of_int (List.length occlist))^")")
 
 (****************************************************************)
 (* Clausal environment for an application *)
@@ -460,7 +433,7 @@ let clenv_constrain_missing_args mlist clause =
 let make_clenv_binding_gen hyps_only n gls (c,t) = function
   | ImplicitBindings largs ->
       let clause = mk_clenv_from_n gls n (c,t) in
-      clenv_constrain_dep_args hyps_only clause largs
+      clenv_constrain_dep_args hyps_only largs clause
   | ExplicitBindings lbind ->
       let clause = mk_clenv_rename_from_n gls n (c,t) in
       clenv_match_args lbind clause

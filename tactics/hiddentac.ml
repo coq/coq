@@ -41,7 +41,7 @@ let h_vm_cast_no_check c =
   abstract_tactic (TacVmCastNoCheck (inj_open c)) (vm_cast_no_check c)
 let h_apply ev cb    =
   abstract_tactic (TacApply (ev,inj_open_wb cb))
-    (apply_with_bindings_gen ev cb)
+    (apply_with_ebindings_gen ev cb)
 let h_elim cb cbo    =
   abstract_tactic (TacElim (inj_open_wb cb,option_map inj_open_wb cbo))
     (elim cb cbo)
@@ -96,9 +96,9 @@ let h_rename id1 id2 =
   abstract_tactic (TacRename (id1,id2)) (rename_hyp id1 id2)
 
 (* Constructors *)
-let h_left l          = abstract_tactic (TacLeft l) (left l)
-let h_right l         = abstract_tactic (TacLeft l) (right l)
-let h_split l         = abstract_tactic (TacSplit (false,l)) (split l)
+let h_left l    = abstract_tactic (TacLeft l) (left_with_ebindings l)
+let h_right l   = abstract_tactic (TacLeft l) (right_with_ebindings l)
+let h_split l   = abstract_tactic (TacSplit (false,l)) (split_with_ebindings l)
 (* Moved to tacinterp because of dependence in Tacinterp.interp
 let h_any_constructor t =
   abstract_tactic (TacAnyConstructor t) (any_constructor t)

@@ -30,6 +30,7 @@ open Rawterm
 
 val inj_open : constr -> open_constr
 val inj_red_expr : red_expr -> (open_constr, evaluable_global_reference) red_expr_gen
+val inj_ebindings : constr bindings -> open_constr bindings
 
 (* Main tactics. *)
 
@@ -169,9 +170,11 @@ val bring_hyps : named_context -> tactic
 val apply                 : constr      -> tactic
 val apply_without_reduce  : constr      -> tactic
 val apply_list            : constr list -> tactic
-val apply_with_bindings_gen   : evars_flag -> constr with_ebindings -> tactic
-val apply_with_bindings : constr with_ebindings -> tactic
-val eapply_with_bindings  : constr with_ebindings -> tactic
+val apply_with_ebindings_gen : evars_flag -> constr with_ebindings -> tactic
+val apply_with_bindings   : constr with_bindings -> tactic
+val apply_with_ebindings  : constr with_ebindings -> tactic
+val eapply_with_bindings  : constr with_bindings -> tactic
+val eapply_with_ebindings : constr with_ebindings -> tactic
 
 val cut_and_apply         : constr -> tactic
 
@@ -271,11 +274,17 @@ val constructor_tac            : int option -> int ->
                                  open_constr bindings  -> tactic
 val one_constructor            : int -> open_constr bindings  -> tactic
 val any_constructor            : tactic option -> tactic
-val left                       : open_constr bindings -> tactic
+
+val left                       : constr bindings -> tactic
+val right                      : constr bindings -> tactic
+val split                      : constr bindings -> tactic
+
+val left_with_ebindings        : open_constr bindings -> tactic
+val right_with_ebindings       : open_constr bindings -> tactic
+val split_with_ebindings       : open_constr bindings -> tactic
+
 val simplest_left              : tactic
-val right                      : open_constr bindings -> tactic
 val simplest_right             : tactic
-val split                      : open_constr bindings -> tactic
 val simplest_split             : tactic
 
 (*s Logical connective tactics. *)

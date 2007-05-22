@@ -292,7 +292,7 @@ let add_inversion_lemma_exn na com comsort bool tac =
 let lemInv id c gls =
   try
     let clause = mk_clenv_type_of gls c in
-    let clause = clenv_constrain_with_bindings [(-1,(Evd.empty,mkVar id))] clause in
+    let clause = clenv_constrain_last_binding (mkVar id) clause in
     Clenvtac.res_pf clause ~allow_K:true gls
   with 
     |  UserError (a,b) -> 

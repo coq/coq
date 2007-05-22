@@ -8,6 +8,8 @@
 
 (*i camlp4deps: "parsing/grammar.cma" i*)
 
+(* $Id:$ *)
+
 open Term
 open Termops
 open Environ
@@ -416,8 +418,8 @@ let base_leaf_terminate (func:global_reference) eqs expr =
 	   [k';h] -> k',h
 	 | _ -> assert false
      in
-     tclTHENLIST [observe_tac "first split" (split (ImplicitBindings [inj_open expr]));
-		  observe_tac "second split" (split (ImplicitBindings [inj_open (delayed_force coq_O)]));
+     tclTHENLIST [observe_tac "first split" (split (ImplicitBindings [expr]));
+		  observe_tac "second split" (split (ImplicitBindings [delayed_force coq_O]));
 		  observe_tac "intro k" (h_intro k');
                   observe_tac "case on k" 
 		      (tclTHENS 
@@ -459,7 +461,7 @@ let rec compute_le_proofs = function
 	      in
 	      apply_with_bindings
 		(le_trans,
-		 ExplicitBindings[dummy_loc,NamedHyp m_id,inj_open a])
+		 ExplicitBindings[dummy_loc,NamedHyp m_id,a])
 		g
 	   )
 	   [compute_le_proofs tl; 
@@ -477,7 +479,7 @@ let make_lt_proof pmax le_proof =
        in
        apply_with_bindings
 	 (le_lt_trans,
-	  ExplicitBindings[dummy_loc,NamedHyp m_id, inj_open pmax]) g)
+	  ExplicitBindings[dummy_loc,NamedHyp m_id, pmax]) g)
     [observe_tac "compute_le_proofs" (compute_le_proofs le_proof); 
      tclTHENLIST[observe_tac "lt_S_n" (apply (delayed_force lt_S_n)); default_full_auto]];;
 
@@ -496,8 +498,8 @@ let rec list_cond_rewrite k def pmax cond_eqs le_proofs =
 	 tclTHENS
 	   (general_rewrite_bindings false
 	      (mkVar eq,
-	       ExplicitBindings[dummy_loc, NamedHyp k_id, inj_open (mkVar k);
-				dummy_loc, NamedHyp def_id, inj_open (mkVar def)]) false)
+	       ExplicitBindings[dummy_loc, NamedHyp k_id, mkVar k;
+				dummy_loc, NamedHyp def_id, mkVar def]) false)
 	   [list_cond_rewrite k def pmax eqs le_proofs;
             observe_tac "make_lt_proof" (make_lt_proof pmax le_proofs)] g
       ) 
@@ -515,7 +517,7 @@ let rec introduce_all_equalities func eqs values specs bound le_proofs
         let ids = h'::ids in
 	let def = next_global_ident_away true def_id ids in
 	tclTHENLIST
-	  [observe_tac "introduce_all_equalities_final split" (split (ImplicitBindings [inj_open s_max]));
+	  [observe_tac "introduce_all_equalities_final split" (split (ImplicitBindings [s_max]));
 	   observe_tac "introduce_all_equalities_final intro k" (h_intro  k);
 	   tclTHENS
 	     (observe_tac "introduce_all_equalities_final case k" (simplest_case (mkVar k)))
@@ -575,8 +577,8 @@ let rec introduce_all_values is_mes acc_inv func context_fn
     (match args with
     [] -> 
       tclTHENLIST
-	[observe_tac "split" (split(ImplicitBindings 
-		 [inj_open (context_fn (List.map mkVar (List.rev values)))]));
+	[observe_tac "split" (split(ImplicitBindings
+		 [context_fn (List.map mkVar (List.rev values))]));
 	 observe_tac "introduce_all_equalities" (introduce_all_equalities func eqs
 	   (List.rev values) (List.rev specs) (delayed_force coq_O) [] [])]
   | arg::args ->
@@ -1194,9 +1196,9 @@ let rec introduce_all_values_eq  cont_tac functional termine
 		general_rewrite_bindings false
 		(mkVar heq1,
 		 ExplicitBindings[dummy_loc,NamedHyp k_id,
-		                  inj_open (f_S(f_S(mkVar pmax)));
+				  f_S(f_S(mkVar pmax));
 				  dummy_loc,NamedHyp def_id,
-				  inj_open f]) false gls )
+				  f]) false gls )
 	     [tclTHENLIST
 		[simpl_iter();
 		 unfold_constr (reference_of_constr functional);
@@ -1247,8 +1249,8 @@ let rec introduce_all_values_eq  cont_tac functional termine
 			   (mkVar heq,
 			    ExplicitBindings
 			      [dummy_loc, NamedHyp k_id,
-			       inj_open (f_S(mkVar pmax'));
-			       dummy_loc, NamedHyp def_id, inj_open f]) false))
+			       f_S(mkVar pmax');
+			       dummy_loc, NamedHyp def_id, f]) false))
 			   g
 		     )
 		     [tclIDTAC;

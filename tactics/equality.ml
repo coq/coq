@@ -81,7 +81,7 @@ let elimination_sort_of_clause = function
    else back to the old approach
 *)
 
-let general_rewrite_bindings_clause cls lft2rgt (c,l) with_evars gl =
+let general_rewrite_ebindings_clause cls lft2rgt (c,l) with_evars gl =
   let ctype = pf_apply get_type_of gl c in 
   (* A delta-reduction would be here too strong, since it would 
      break search for a defined setoid relation in head position. *)
@@ -111,13 +111,20 @@ let general_rewrite_bindings_clause cls lft2rgt (c,l) with_evars gl =
               in 
 		general_elim_clause with_evars cls (c,l) (elim,NoBindings) gl
 
-let general_rewrite_bindings = general_rewrite_bindings_clause None
-let general_rewrite l2r c = general_rewrite_bindings l2r (c,NoBindings) false
+let general_rewrite_ebindings = 
+  general_rewrite_ebindings_clause None
+let general_rewrite_bindings l2r (c,bl) = 
+  general_rewrite_ebindings_clause None l2r (c,inj_ebindings bl)
 
-let general_rewrite_bindings_in l2r id =
-  general_rewrite_bindings_clause (Some id) l2r
+let general_rewrite l2r c =
+  general_rewrite_bindings l2r (c,NoBindings) false
+
+let general_rewrite_ebindings_in l2r id =
+  general_rewrite_ebindings_clause (Some id) l2r
+let general_rewrite_bindings_in l2r id (c,bl) =
+  general_rewrite_ebindings_clause (Some id) l2r (c,inj_ebindings bl)
 let general_rewrite_in l2r id c = 
-  general_rewrite_bindings_clause (Some id) l2r (c,NoBindings)
+  general_rewrite_ebindings_clause (Some id) l2r (c,NoBindings)
 
 let general_multi_rewrite l2r with_evars c cl = 
   if cl.concl_occs <> [] then 
@@ -130,12 +137,12 @@ let general_multi_rewrite l2r with_evars c cl =
 	  | [] -> tclIDTAC
 	  | ((_,id),_) :: l -> 
 	      tclTHENFIRST
-	        (general_rewrite_bindings_in l2r id c with_evars)
+	        (general_rewrite_ebindings_in l2r id c with_evars)
 	        (do_hyps l)
 	in 
 	if not cl.onconcl then do_hyps l else
 	  tclTHENFIRST
-	    (general_rewrite_bindings l2r c with_evars)
+	    (general_rewrite_ebindings l2r c with_evars)
 	    (do_hyps l)
     | None -> 
 	(* Otherwise, if we are told to rewrite in all hypothesis via the 
@@ -144,7 +151,7 @@ let general_multi_rewrite l2r with_evars c cl =
 	  | [] -> (fun gl -> error "Nothing to rewrite.")
 	  | id :: l -> 
 	      tclIFTHENTRYELSEMUST 
-		(general_rewrite_bindings_in l2r id c with_evars) 
+		(general_rewrite_ebindings_in l2r id c with_evars) 
 		(do_hyps_atleastonce l)
 	in 
 	let do_hyps gl = 
@@ -156,14 +163,14 @@ let general_multi_rewrite l2r with_evars c cl =
 	in 
 	  if not cl.onconcl then do_hyps else
 	    tclIFTHENTRYELSEMUST 
-	      (general_rewrite_bindings l2r c with_evars)
+	      (general_rewrite_ebindings l2r c with_evars)
 	      do_hyps
 
 (* Conditional rewriting, the success of a rewriting is related 
    to the resolution of the conditions by a given tactic *)
 
 let conditional_rewrite lft2rgt tac (c,bl) = 
-  tclTHENSFIRSTn (general_rewrite_bindings lft2rgt (c,bl) false)
+  tclTHENSFIRSTn (general_rewrite_ebindings lft2rgt (c,bl) false)
     [|tclIDTAC|] (tclCOMPLETE tac)
 
 let rewriteLR_bindings = general_rewrite_bindings true
@@ -176,7 +183,7 @@ let rewriteLRin_bindings = general_rewrite_bindings_in true
 let rewriteRLin_bindings = general_rewrite_bindings_in false
 
 let conditional_rewrite_in lft2rgt id tac (c,bl) = 
-  tclTHENSFIRSTn (general_rewrite_bindings_in lft2rgt id (c,bl) false)
+  tclTHENSFIRSTn (general_rewrite_ebindings_in lft2rgt id (c,bl) false)
     [|tclIDTAC|] (tclCOMPLETE tac)
 
 let rewriteRL_clause = function

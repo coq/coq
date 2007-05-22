@@ -879,3 +879,31 @@ let meta_instance env b =
   instance c_sigma b.rebus
 
 let nf_meta env c = meta_instance env (mk_freelisted c)
+
+(* Instantiate metas that create beta/iota redexes *)
+
+let meta_reducible_instance env b =
+  let s =
+    List.map (fun mv -> (mv,meta_value env mv)) (Metaset.elements b.freemetas)
+  in 
+  let rec irec u =
+    let u = whd_betaiota u in
+    match kind_of_term u with
+    | Case (ci,p,c,bl) when isMeta c or isCast c & isMeta (pi1 (destCast c)) ->
+        let bl' = Array.map irec bl in
+        let p' = irec p in
+	let m = try destMeta c with _ -> destMeta (pi1 (destCast c)) in
+	let g = List.assoc m s in
+	(match kind_of_term g with
+           | Construct _ -> whd_betaiota (mkCase (ci,p',g,bl'))
+           | _ -> mkCase (ci,p',c,bl'))
+    | App (f,l) when isMeta f or isCast f & isMeta (pi1 (destCast f)) ->
+        let l' = Array.map irec l in
+	let m = try destMeta f with _ -> destMeta (pi1 (destCast f)) in
+	let g = List.assoc m s in
+	(match kind_of_term g with
+           | Lambda _ -> beta_appvect g l'
+           | _ -> mkApp (f,l'))
+    | _ -> map_constr irec u
+  in 
+  if s = [] then b.rebus else irec b.rebus
