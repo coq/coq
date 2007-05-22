@@ -82,6 +82,10 @@ let with_implicits flags f x =
     raise e
   end
 
+let set_maximality imps b =
+  (* Force maximal insertion on ending implicits (compatibility) *)
+  b || List.for_all ((<>) None) imps
+
 (*s Computation of implicit arguments *)
 
 (* We remember various information about why an argument is (automatically)
@@ -215,14 +219,19 @@ let compute_implicits_gen strict strongly_strict revpat contextual env t =
 	Array.to_list v
     | _ -> []
 
+let rec prepare_implicits f = function
+  | [] -> []
+  | (Anonymous, Some _)::_ -> anomaly "Unnamed implicit"
+  | (Name id, Some imp)::imps -> 
+      let imps' = prepare_implicits f imps in
+      Some (id,imp,set_maximality imps' f.maximal) :: imps'
+  | _::imps -> None :: prepare_implicits f imps
+
 let compute_implicits_auto env f t =
   let l =
     compute_implicits_gen 
       f.strict f.strongly_strict f.reversible_pattern f.contextual env t in
-  List.map (function
-    | (Name id, Some imp) -> Some (id,imp,f.maximal)
-    | (Anonymous, Some _) -> anomaly "Unnamed implicit"
-    | _ -> None) l
+  prepare_implicits f l
 
 let compute_implicits env t = compute_implicits_auto env !implicit_args t
 
@@ -250,8 +259,7 @@ let compute_manual_implicits flags ref l =
 	with Not_found ->
 	l, None in
       let imps' = merge (k+1) l' imps in
-      (* Force maximal insertion on ending implicits (compatibility) *)
-      let m = option_map ((||) (List.for_all ((<>) None) imps')) m in
+      let m = option_map (set_maximality imps') m in
       option_map (set_implicit id imp) m :: imps'
   | (Anonymous,_imp)::imps -> 
       None :: merge (k+1) l imps
