@@ -2333,10 +2333,18 @@ let dImp cls =
 let setoid_reflexivity = ref (fun _ -> assert false)
 let register_setoid_reflexivity f = setoid_reflexivity := f
 
-let reflexivity gl =
-  match match_with_equation (pf_concl gl) with
+let reflexivity_red allowred gl =
+  (* PL: usual reflexivity don't perform any reduction when searching 
+     for an equality, but we may need to do some when called back from 
+     inside setoid_reflexivity (see Optimize cases in setoid_replace.ml). *)
+  let concl = if not allowred then pf_concl gl
+  else whd_betadeltaiota (pf_env gl) (project gl) (pf_concl gl) 
+  in 
+  match match_with_equation concl with
     | None -> !setoid_reflexivity gl
-    | Some (hdcncl,args) ->  one_constructor 1 NoBindings gl
+    | Some _ -> one_constructor 1 NoBindings gl
+
+let reflexivity gl = reflexivity_red false gl
 
 let intros_reflexivity  = (tclTHEN intros reflexivity)
 
@@ -2350,8 +2358,14 @@ let intros_reflexivity  = (tclTHEN intros reflexivity)
 let setoid_symmetry = ref (fun _ -> assert false)
 let register_setoid_symmetry f = setoid_symmetry := f
 
-let symmetry gl =
-  match match_with_equation (pf_concl gl) with
+let symmetry_red allowred gl =
+  (* PL: usual symmetry don't perform any reduction when searching 
+     for an equality, but we may need to do some when called back from 
+     inside setoid_reflexivity (see Optimize cases in setoid_replace.ml). *)
+  let concl = if not allowred then pf_concl gl
+  else whd_betadeltaiota (pf_env gl) (project gl) (pf_concl gl) 
+  in 
+  match match_with_equation concl with
     | None -> !setoid_symmetry gl
     | Some (hdcncl,args) ->
         let hdcncls = string_of_inductive hdcncl in
@@ -2365,13 +2379,15 @@ let symmetry gl =
               | [c1;c2]     -> mkApp (hdcncl, [| c2; c1 |])
 	      | _ -> assert false 
 	    in 
-	    tclTHENLAST (cut symc)
+	    tclTHENFIRST (cut symc)
               (tclTHENLIST 
 		[ intro;
 		  tclLAST_HYP simplest_case;
 		  one_constructor 1 NoBindings ])
 	      gl
 	end
+
+let symmetry gl = symmetry_red false gl
 
 let setoid_symmetry_in = ref (fun _ _ -> assert false)
 let register_setoid_symmetry_in f = setoid_symmetry_in := f
@@ -2413,8 +2429,14 @@ let intros_symmetry =
 let setoid_transitivity = ref (fun _ _ -> assert false)
 let register_setoid_transitivity f = setoid_transitivity := f
 
-let transitivity t gl =
-  match match_with_equation (pf_concl gl) with
+let transitivity_red allowred t gl =
+  (* PL: usual transitivity don't perform any reduction when searching 
+     for an equality, but we may need to do some when called back from 
+     inside setoid_reflexivity (see Optimize cases in setoid_replace.ml). *)
+  let concl = if not allowred then pf_concl gl
+  else whd_betadeltaiota (pf_env gl) (project gl) (pf_concl gl) 
+  in 
+  match match_with_equation concl with
     | None -> !setoid_transitivity t gl
     | Some (hdcncl,args) -> 
         let hdcncls = string_of_inductive hdcncl in
@@ -2441,7 +2463,9 @@ let transitivity t gl =
 		    tclLAST_HYP simplest_case;
 		    assumption ])) gl
         end 
-	
+
+let transitivity t gl = transitivity_red false t gl
+
 let intros_transitivity  n  = tclTHEN intros (transitivity n)
 
 (* tactical to save as name a subproof such that the generalisation of 

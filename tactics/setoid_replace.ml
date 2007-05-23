@@ -1951,7 +1951,7 @@ let setoid_reflexivity gl =
            (str "The relation " ++ prrelation rel ++ str " is not reflexive.")
        | Some refl -> apply refl gl
  with
-  Optimize -> reflexivity gl
+  Optimize -> reflexivity_red true gl
 
 let setoid_symmetry gl =
  try
@@ -1967,7 +1967,7 @@ let setoid_symmetry gl =
            (str "The relation " ++ prrelation rel ++ str " is not symmetric.")
        | Some sym -> apply sym gl
  with
-  Optimize -> symmetry gl
+  Optimize -> symmetry_red true gl
 
 let setoid_symmetry_in id gl =
  let new_hyp =
@@ -2002,7 +2002,7 @@ let setoid_transitivity c gl =
             apply_with_bindings
              (trans, Rawterm.ExplicitBindings [ dummy_loc, binder, c ]) gl
  with
-  Optimize -> transitivity c gl
+  Optimize -> transitivity_red true c gl
 ;;
 
 Tactics.register_setoid_reflexivity setoid_reflexivity;;
