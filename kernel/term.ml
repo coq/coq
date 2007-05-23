@@ -388,7 +388,9 @@ let destApplication = destApp
 
 let isApp c = match kind_of_term c with App _ -> true | _ -> false
 
-let isProd c = match kind_of_term c with | Prod(_) -> true | _ -> false
+let isProd c = match kind_of_term c with | Prod _ -> true | _ -> false
+
+let isLambda c = match kind_of_term c with | Lambda _ -> true | _ -> false
 
 (* Destructs a constant *)
 let destConst c = match kind_of_term c with

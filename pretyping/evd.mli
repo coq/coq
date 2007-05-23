@@ -112,7 +112,8 @@ val map_fl : ('a -> 'b) -> 'a freelisted -> 'b freelisted
 *)
 
 type instance_status =
-    IsSuperType | IsSubType | ConvUpToEta of int | Coercible of types
+  | IsSuperType | IsSubType
+  | ConvUpToEta of int | Coercible of types | Processed
 
 type clbinding =
   | Cltyp of name * constr freelisted
@@ -180,7 +181,7 @@ val metas_of : evar_defs -> metamap
 
 type metabinding = metavariable * constr * instance_status
 
-val retract_defined_metas : evar_defs -> metabinding list * evar_defs
+val retract_coercible_metas : evar_defs -> metabinding list * evar_defs
 val subst_defined_metas : metabinding list -> constr -> constr option
 
 (**********************************************************)

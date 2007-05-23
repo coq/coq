@@ -234,6 +234,7 @@ val isMeta : constr -> bool
 val isSort : constr -> bool
 val isCast : constr -> bool
 val isApp : constr -> bool
+val isLambda : constr -> bool
 val isProd : constr -> bool
 val isConst : constr -> bool
 val isConstruct : constr -> bool

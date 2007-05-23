@@ -65,7 +65,7 @@ let prod_pb = function ConvUnderApp _ -> topconv | pb -> pb
 let opp_status = function
   | IsSuperType -> IsSubType
   | IsSubType -> IsSuperType
-  | ConvUpToEta _ | Coercible _ as x -> x
+  | ConvUpToEta _ | Coercible _ | Processed as x -> x
 
 let extract_instance_status = function
   | Cumul -> (IsSubType,IsSuperType)
@@ -231,13 +231,13 @@ let merge_instances env sigma mod_delta st1 st2 c1 c2 =
   | (ConvUpToEta n1, ConvUpToEta n2) ->
       let side = left (* arbitrary choice, but agrees with compatibility *) in
       unify_with_eta side mod_delta env sigma n1 n2 c1 c2
-  | ((IsSubType | ConvUpToEta _ | Coercible _ as oppst1),
-     (IsSubType | ConvUpToEta _ | Coercible _)) ->
+  | ((IsSubType | ConvUpToEta _ | Coercible _ | Processed as oppst1),
+     (IsSubType | ConvUpToEta _ | Coercible _ | Processed)) ->
       let res = unify_0 env sigma Cumul mod_delta c2 c1 in
       if oppst1=st2 then (* arbitrary choice *) (left, st1, res)
       else (st2=IsSubType, ConvUpToEta 0, res)
-  | ((IsSuperType | ConvUpToEta _ | Coercible _ as oppst1),
-     (IsSuperType | ConvUpToEta _ | Coercible _)) ->
+  | ((IsSuperType | ConvUpToEta _ | Coercible _ | Processed as oppst1),
+     (IsSuperType | ConvUpToEta _ | Coercible _ | Processed)) ->
       let res = unify_0 env sigma Cumul mod_delta c1 c2 in
       if oppst1=st2 then (* arbitrary choice *) (left, st1, res)
       else (st2=IsSuperType, ConvUpToEta 0, res)
@@ -379,7 +379,7 @@ let w_merge env with_types mod_delta metas evars evd =
     	  else
 	    begin
 	      let evd,n =
-		if with_types (* or occur_meta mvty *) then
+		if with_types & status <> Processed then
                   let sigma = evars_of evd in
 		  let metas = metas_of evd in
 	          let mvty = Typing.meta_type evd mv in
@@ -439,7 +439,7 @@ let w_merge env with_types mod_delta metas evars evd =
    types of metavars are unifiable with the types of their instances    *)
 
 let w_unify_core_0 env with_types cv_pb mod_delta m n evd =
-  let (mc1,evd') = retract_defined_metas evd in
+  let (mc1,evd') = retract_coercible_metas evd in
   let (mc2,ec) = 
     unify_0_with_initial_metas mc1 env (evars_of evd') cv_pb mod_delta m n in 
   w_merge env with_types mod_delta mc2 ec evd'

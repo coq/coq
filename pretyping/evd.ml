@@ -335,7 +335,8 @@ let map_fl f cfl = { cfl with rebus=f cfl.rebus }
 *)
 
 type instance_status =
-    IsSuperType | IsSubType | ConvUpToEta of int | Coercible of types
+  | IsSuperType | IsSubType
+  | ConvUpToEta of int | Coercible of types | Processed
 
 (* Clausal environments *)
 
@@ -538,13 +539,13 @@ let meta_merge evd1 evd2 =
 
 type metabinding = metavariable * constr * instance_status
 
-let retract_defined_metas evd =
+let retract_coercible_metas evd =
   let mc,ml = 
     Metamap.fold (fun n v (mc,ml) -> 
       match v with
-	| Clval (na,(b,s),typ) ->
+	| Clval (na,(b,s),typ) when s <> Processed ->
 	    (n,b.rebus,s)::mc, Metamap.add n (Cltyp (na,typ)) ml
-	| Cltyp _ as v ->
+	| v ->
 	    mc, Metamap.add n v ml)
       evd.metas ([],Metamap.empty) in
   mc, { evd with metas = ml }
