@@ -395,17 +395,22 @@ let rec similar_type_shapes t u =
   | Case (_,_,c,_), Case (_,_,c',_) -> similar_type_shapes c c'
   | _ -> false
 
-let clenv_unify_similar_types clenv t u =
-  if similar_type_shapes t u then 
-    try Processed, clenv_unify true CUMUL t u clenv 
-    with e when precatchable_exception e -> Coercible t, clenv
-  else Coercible t, clenv
+let clenv_unify_similar_types clenv c t u =
+  if occur_meta u then
+    if similar_type_shapes t u then
+      try Processed, clenv_unify true CUMUL t u clenv, c
+      with e when precatchable_exception e -> Coercible t, clenv, c
+    else
+      Coercible t, clenv, c
+  else
+    let evd,c = w_coerce (cl_env clenv) c t u clenv.evd in
+    Processed, { clenv with evd = evd }, c
 
 let clenv_assign_binding clenv k (sigma,c) =
   let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
   let clenv' = { clenv with evd = evar_merge clenv.evd sigma} in
   let c_typ = clenv_hnf_constr clenv' (clenv_get_type_of clenv' c) in
-  let status,clenv'' = clenv_unify_similar_types clenv' c_typ k_typ in
+  let status,clenv'',c = clenv_unify_similar_types clenv' c c_typ k_typ in
 (*  let evd,c' = w_coerce (cl_env clenv') c c_typ k_typ clenv'.evd in*)
   { clenv'' with evd = meta_assign k (c,status) clenv''.evd }
 
