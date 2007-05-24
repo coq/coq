@@ -12,20 +12,20 @@ open Ccalgo
 open Names
 open Term
 
-type proof =
+type rule=
     Ax of constr
   | SymAx of constr
   | Refl of term
-  | Trans of proof * proof
-  | Congr of proof * proof
-  | Inject of proof * constructor * int * int
+  | Trans of proof*proof
+  | Congr of proof*proof
+  | Inject of proof*constructor*int*int 
+and proof = 
+    private {p_lhs:term;p_rhs:term;p_rule:rule}
 
 val build_proof : 
   forest -> 
   [ `Discr of int * pa_constructor * int * pa_constructor
   | `Prove of int * int ] -> proof
 
-val type_proof :
-  (constr, (term * term)) Hashtbl.t -> proof -> term * term
 
 

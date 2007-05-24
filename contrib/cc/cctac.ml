@@ -37,6 +37,12 @@ let _f_equal = constant ["Init";"Logic"] "f_equal"
 
 let _eq_rect = constant ["Init";"Logic"] "eq_rect"
 
+let _refl_equal = constant ["Init";"Logic"] "refl_equal"
+
+let _sym_eq = constant ["Init";"Logic"] "sym_eq"
+
+let _trans_eq = constant ["Init";"Logic"] "trans_eq"
+
 let _eq = constant ["Init";"Logic"] "eq"
 
 let _False = constant ["Init";"Logic"] "False"
@@ -210,54 +216,73 @@ let build_projection intype outtype (cstr:constructor) special default gls=
   
 (* generate an adhoc tactic following the proof tree  *)
 
-let rec proof_tac axioms=function
-    Ax c -> exact_check c
-  | SymAx c -> tclTHEN symmetry (exact_check c)
-  | Refl t -> reflexivity
-  | Trans (p1,p2)->let t=(constr_of_term (snd (type_proof axioms p1))) in
-      (tclTHENS (transitivity t) 
-	 [(proof_tac axioms p1);(proof_tac axioms p2)])
-  | Congr (p1,p2)->
-      fun gls->
-	let (f1,f2)=(type_proof axioms p1) 
-	and (x1,x2)=(type_proof axioms p2) in
-        let tf1=constr_of_term f1 and tx1=constr_of_term x1 
-	and tf2=constr_of_term f2 and tx2=constr_of_term x2 in
-	let typf=pf_type_of gls tf1 and typx=pf_type_of gls tx1
-	and typfx=pf_type_of gls (mkApp(tf1,[|tx1|])) in
-	let id=pf_get_new_id (id_of_string "f") gls in
-	let appx1=mkLambda(Name id,typf,mkApp(mkRel 1,[|tx1|])) in
-	let lemma1=
-	  mkApp(Lazy.force _f_equal,[|typf;typfx;appx1;tf1;tf2|])
-	and lemma2=
-	  mkApp(Lazy.force _f_equal,[|typx;typfx;tf2;tx1;tx2|]) in
-	  (tclTHENS (transitivity (mkApp(tf2,[|tx1|])))
-	     [tclTHEN (apply lemma1) (proof_tac axioms p1);
-  	      tclFIRST
-		[tclTHEN (apply lemma2) (proof_tac axioms p2);
-		 reflexivity;
-		 fun gls ->
-		   errorlabstrm  "Congruence" 
-		   (Pp.str 
-		      "I don't know how to handle dependent equality")]]
-	     gls)
-  | Inject (prf,cstr,nargs,argind)  as gprf->
-      (fun gls ->
-	 let ti,tj=type_proof axioms prf in
-	 let ai,aj=type_proof axioms gprf in
-	 let cti=constr_of_term ti in
-	 let ctj=constr_of_term tj in
-	 let cai=constr_of_term ai in
-	 let intype=pf_type_of gls cti in
-	 let outtype=pf_type_of gls cai in
+let _M =mkMeta
+
+let rec proof_tac p gls =
+  match p.p_rule with
+      Ax c -> exact_check c gls
+    | SymAx c -> 
+	let l=constr_of_term p.p_lhs and 
+	    r=constr_of_term p.p_rhs in
+        let typ = pf_type_of gls l in 	  
+	  exact_check
+	    (mkApp(Lazy.force _sym_eq,[|typ;r;l;c|])) gls
+    | Refl t ->
+	let lr = constr_of_term t in
+	let typ = pf_type_of gls lr in 
+	exact_check
+	   (mkApp(Lazy.force _refl_equal,[|typ;constr_of_term t|])) gls
+    | Trans (p1,p2)->
+	let t1 = constr_of_term p1.p_lhs and
+	    t2 = constr_of_term p1.p_rhs and
+	    t3 = constr_of_term p2.p_rhs in
+	let typ = pf_type_of gls t2 in 
+	let prf = 
+	  mkApp(Lazy.force _trans_eq,[|typ;t1;t2;t3;_M 1;_M 2|]) in
+	  tclTHENS (refine prf) [(proof_tac p1);(proof_tac p2)] gls
+    | Congr (p1,p2)->
+	let tf1=constr_of_term p1.p_lhs 
+	and tx1=constr_of_term p2.p_lhs 
+	and tf2=constr_of_term p1.p_rhs 
+	and tx2=constr_of_term p2.p_rhs in
+	let typf = pf_type_of gls tf1 in
+	let typx = pf_type_of gls tx1 in
+	let typfx = prod_applist typf [tx1] in
+	let id = pf_get_new_id (id_of_string "f") gls in
+	let appx1 = mkLambda(Name id,typf,mkApp(mkRel 1,[|tx1|])) in
+	let lemma1 =
+	  mkApp(Lazy.force _f_equal,
+		[|typf;typfx;appx1;tf1;tf2;_M 1|]) in
+	let lemma2=
+	  mkApp(Lazy.force _f_equal,[|typx;typfx;tf2;tx1;tx2;_M 1|]) in
+	let prf = 
+	  mkApp(Lazy.force _trans_eq,
+		[|typfx;
+		  mkApp(tf1,[|tx1|]);
+		  mkApp(tf2,[|tx1|]);
+		  mkApp(tf2,[|tx2|]);_M 2;_M 3|]) in
+	  tclTHENS (refine prf)
+	    [tclTHEN (refine lemma1) (proof_tac p1);
+  	     tclFIRST
+	       [tclTHEN (refine lemma2) (proof_tac p2);
+		reflexivity;
+		fun gls ->
+		  errorlabstrm  "Congruence" 
+		    (Pp.str 
+		       "I don't know how to handle dependent equality")]] gls
+  | Inject (prf,cstr,nargs,argind) ->
+	 let ti=constr_of_term prf.p_lhs in
+	 let tj=constr_of_term prf.p_rhs in
+	 let default=constr_of_term p.p_lhs in
+	 let intype=pf_type_of gls ti in
+	 let outtype=pf_type_of gls default in
 	 let special=mkRel (1+nargs-argind) in
-	 let default=constr_of_term ai in
 	 let proj=build_projection intype outtype cstr special default gls in
 	 let injt=
-	   mkApp (Lazy.force _f_equal,[|intype;outtype;proj;cti;ctj|]) in 
-	   tclTHEN (apply injt) (proof_tac axioms prf) gls)
+	   mkApp (Lazy.force _f_equal,[|intype;outtype;proj;ti;tj;_M 1|]) in 
+	   tclTHEN (refine injt) (proof_tac prf) gls
 
-let refute_tac axioms c t1 t2 p gls =      
+let refute_tac c t1 t2 p gls =      
   let tt1=constr_of_term t1 and tt2=constr_of_term t2 in
   let intype=pf_type_of gls tt1 in
   let neweq=
@@ -266,9 +291,9 @@ let refute_tac axioms c t1 t2 p gls =
   let hid=pf_get_new_id (id_of_string "Heq") gls in
   let false_t=mkApp (c,[|mkVar hid|]) in
     tclTHENS (true_cut (Name hid) neweq)
-      [proof_tac axioms p; simplest_elim false_t] gls
+      [proof_tac p; simplest_elim false_t] gls
 
-let convert_to_goal_tac axioms c t1 t2 p gls =
+let convert_to_goal_tac c t1 t2 p gls =
   let tt1=constr_of_term t1 and tt2=constr_of_term t2 in
   let sort=pf_type_of gls tt2 in
   let neweq=mkApp(Lazy.force _eq,[|sort;tt1;tt2|]) in 
@@ -278,20 +303,19 @@ let convert_to_goal_tac axioms c t1 t2 p gls =
   let endt=mkApp (Lazy.force _eq_rect,
 		  [|sort;tt1;identity;c;tt2;mkVar e|]) in
     tclTHENS (true_cut (Name e) neweq) 
-      [proof_tac axioms p;exact_check endt] gls
+      [proof_tac p;exact_check endt] gls
 
-let convert_to_hyp_tac axioms c1 t1 c2 t2 p gls =
+let convert_to_hyp_tac c1 t1 c2 t2 p gls =
   let tt2=constr_of_term t2 in
   let h=pf_get_new_id (id_of_string "H") gls in
   let false_t=mkApp (c2,[|mkVar h|]) in
     tclTHENS (true_cut (Name h) tt2)
-      [convert_to_goal_tac axioms c1 t1 t2 p;
+      [convert_to_goal_tac c1 t1 t2 p;
        simplest_elim false_t] gls
   
-let discriminate_tac axioms cstr p gls =
-  let t1,t2=type_proof axioms p in 
-  let tt1=constr_of_term t1 and tt2=constr_of_term t2 in
-  let intype=pf_type_of gls tt1 in
+let discriminate_tac cstr p gls =
+  let t1=constr_of_term p.p_lhs and t2=constr_of_term p.p_rhs in
+  let intype=pf_type_of gls t1 in
   let concl=pf_concl gls in
   let outsort=mkType (new_univ ()) in
   let xid=pf_get_new_id (id_of_string "X") gls in
@@ -303,12 +327,12 @@ let discriminate_tac axioms cstr p gls =
   let hid=pf_get_new_id (id_of_string "Heq") gls in     
   let proj=build_projection intype outtype cstr trivial concl gls in
   let injt=mkApp (Lazy.force _f_equal,
-		  [|intype;outtype;proj;tt1;tt2;mkVar hid|]) in   
+		  [|intype;outtype;proj;t1;t2;mkVar hid|]) in   
   let endt=mkApp (Lazy.force _eq_rect,
 		  [|outtype;trivial;pred;identity;concl;injt|]) in
-  let neweq=mkApp(Lazy.force _eq,[|intype;tt1;tt2|]) in
+  let neweq=mkApp(Lazy.force _eq,[|intype;t1;t2|]) in
     tclTHENS (true_cut (Name hid) neweq) 
-      [proof_tac axioms p;exact_check endt] gls
+      [proof_tac p;exact_check endt] gls
       
 (* wrap everything *)
 	
@@ -333,12 +357,12 @@ let cc_tactic depth additionnal_terms gls=
 	  debug Pp.msgnl (Pp.str "Goal solved, generating proof ...");
 	  match reason with
 	      Discrimination (i,ipac,j,jpac) ->
-		let p=build_proof uf (`Discr (i,ipac,j,jpac)) in	  
+		let p=build_proof uf (`Discr (i,ipac,j,jpac)) in
 		let cstr=(get_constructor_info uf ipac.cnode).ci_constr in
-		  discriminate_tac (axioms uf) cstr p gls
+		  discriminate_tac cstr p gls
 	    | Incomplete ->
 		let metacnt = ref 0 in
-		let newmeta _ = incr metacnt; mkMeta !metacnt in
+		let newmeta _ = incr metacnt; _M !metacnt in
 		let terms_to_complete = 
 		  List.map 
 		    (build_term_to_complete uf newmeta) 
@@ -363,14 +387,13 @@ let cc_tactic depth additionnal_terms gls=
 	    | Contradiction dis ->
 		let p=build_proof uf (`Prove (dis.lhs,dis.rhs)) in
 		let ta=term uf dis.lhs and tb=term uf dis.rhs in
-		let axioms = axioms uf in 
 		  match dis.rule with
-		      Goal -> proof_tac axioms p gls
-		    | Hyp id -> refute_tac axioms id ta tb p gls
+		      Goal -> proof_tac p gls
+		    | Hyp id -> refute_tac id ta tb p gls
 		    | HeqG id -> 
-			convert_to_goal_tac axioms id ta tb p gls
+			convert_to_goal_tac id ta tb p gls
 		    | HeqnH (ida,idb) -> 
-			convert_to_hyp_tac axioms ida ta idb tb p gls
+			convert_to_hyp_tac ida ta idb tb p gls
 		    
 
 let cc_fail gls =
