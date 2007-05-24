@@ -183,9 +183,9 @@ let unify_0_with_initial_metas metas env sigma cv_pb mod_delta m n =
       (if mod_delta then is_fconv (conv_pb_of cv_pb) env sigma m n
        else eq_constr m n)
     then 
-      (metas,[])
+      ([],[])
     else 
-      let (mc,ec) = unirec_rec env cv_pb (metas,[]) m n in
+      let (mc,ec) = unirec_rec env cv_pb ([],[]) m n in
 	((*sort_eqns*) mc, (*sort_eqns*) ec)
 
 let unify_0 = unify_0_with_initial_metas []
@@ -442,7 +442,7 @@ let w_unify_core_0 env with_types cv_pb mod_delta m n evd =
   let (mc1,evd') = retract_coercible_metas evd in
   let (mc2,ec) = 
     unify_0_with_initial_metas mc1 env (evars_of evd') cv_pb mod_delta m n in 
-  w_merge env with_types mod_delta mc2 ec evd'
+  w_merge env with_types mod_delta (mc1@mc2) ec evd'
 
 let w_unify_0 env = w_unify_core_0 env false
 let w_typed_unify env = w_unify_core_0 env true

@@ -7,8 +7,7 @@ assumption.
 Qed.
 
 Require Import ZArith.
-Open Scope Z_scope.
-Goal forall x y z, ~ z <= 0 -> x * z < y * z -> x <= y.
+Goal (forall x y z, ~ z <= 0 -> x * z < y * z -> x <= y)%Z.
 intros; apply Znot_le_gt, Zgt_lt in H.
 apply Zmult_lt_reg_r, Zlt_le_weak in H0; auto.
 Qed.
@@ -28,6 +27,7 @@ Notation S':=S (only parsing).
 Goal (forall S, S = S' S) -> (forall S, S = S' S).
 intros.
 apply H with (S0 := S).
+Qed.
 
 (* Check inference of implicit arguments in bindings *)
 
@@ -44,7 +44,6 @@ exists Prop.
 trivial.
 Qed.
 
-Definition E := Type.
 Variable Eq : Prop = (Prop -> Prop) :> E.
 Goal Prop.
 rewrite Eq.
@@ -69,7 +68,7 @@ Abort.
 Reset P.
 
 (* Two examples that show that hnf_constr is used when unifying types
-   of bindings *)
+   of bindings (a simplification of a script from Field_Theory) *)
 
 Require Import List.
 Open Scope list_scope.
@@ -91,5 +90,25 @@ intros.
 apply L with (1:=H).
 Qed.
 
+(* The following call to auto fails if the type of the clause
+   associated to the H is not beta-reduced [but apply H works]
+   (a simplification of a script from FSetAVL) *)
 
+Definition apply (f:nat->Prop) := forall x, f x.
+Goal apply (fun n => n=0) -> 1=0.
+intro H.
+auto. 
+Qed.
 
+(* The following fails if the coercion Zpos is not introduced around p
+   before trying a subterm that matches the left-hand-side of the equality
+   (a simplication of an example taken from Nijmegen/QArith) *)
+
+Require Import ZArith.
+Coercion Zpos : positive >-> Z.
+Variable f : Z -> Z -> Z.
+Variable g : forall q1 q2 p : Z, f (f q1 p) (f q2 p) = Z0.
+Goal forall p q1 q2, f (f q1 (Zpos p)) (f q2 (Zpos p)) = Z0.
+intros; rewrite g with (p:=p).
+reflexivity.
+Qed.

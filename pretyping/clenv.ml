@@ -409,7 +409,8 @@ let clenv_unify_similar_types clenv c t u =
 let clenv_assign_binding clenv k (sigma,c) =
   let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
   let clenv' = { clenv with evd = evar_merge clenv.evd sigma} in
-  let c_typ = clenv_hnf_constr clenv' (clenv_get_type_of clenv' c) in
+  let c_typ = nf_betaiota (clenv_get_type_of clenv' c) in
+  let c_typ = clenv_hnf_constr clenv' c_typ in
   let status,clenv'',c = clenv_unify_similar_types clenv' c c_typ k_typ in
 (*  let evd,c' = w_coerce (cl_env clenv') c c_typ k_typ clenv'.evd in*)
   { clenv'' with evd = meta_assign k (c,status) clenv''.evd }
