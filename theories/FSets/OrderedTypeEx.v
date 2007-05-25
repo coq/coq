@@ -73,7 +73,7 @@ End Nat_as_OT.
 
 (** [Z] is an ordered type with respect to the usual order on integers. *)
 
-Open Scope Z_scope.
+Open Local Scope Z_scope.
 
 Module Z_as_OT <: UsualOrderedType.
 
@@ -103,7 +103,7 @@ End Z_as_OT.
 
 (** [positive] is an ordered type with respect to the usual order on natural numbers. *) 
 
-Open Scope positive_scope.
+Open Local Scope positive_scope.
 
 Module Positive_as_OT <: UsualOrderedType.
   Definition t:=positive.
@@ -145,7 +145,7 @@ End Positive_as_OT.
 
 (** [N] is an ordered type with respect to the usual order on natural numbers. *) 
 
-Open Scope positive_scope.
+Open Local Scope positive_scope.
 
 Module N_as_OT <: UsualOrderedType.
   Definition t:=N.

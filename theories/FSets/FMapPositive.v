@@ -20,7 +20,7 @@ Require Import FMapInterface.
 
 Set Implicit Arguments.
 
-Open Scope positive_scope.
+Open Local Scope positive_scope.
 
 (** * An implementation of [FMapInterface.S] for positive keys. *)
 

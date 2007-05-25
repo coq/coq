@@ -30,7 +30,7 @@ Module Raw (I:Int)(X: OrderedType).
 Import I.
 Module II:=MoreInt(I).
 Import II.
-Open Scope Int_scope.
+Open Local Scope Int_scope.
 
 Module E := X.
 Module MX := OrderedTypeFacts X.
@@ -1229,7 +1229,7 @@ Proof.
  apply compare_flatten_1.
 Qed.
 
-Open Scope Z_scope.
+Open Local Scope Z_scope.
 
 (** termination of [compare_aux] *)
  
@@ -1967,7 +1967,7 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
   Definition flatten_slist (e:enumeration D.t)(He:sorted_e e) := 
    LO.MapS.Build_slist (sorted_flatten_e He). 
 
-  Open Scope Z_scope.
+  Open Local Scope Z_scope.
 
   Definition compare_aux : 
    forall (e1 e2:enumeration D.t)(He1:sorted_e e1)(He2: sorted_e e2), 
