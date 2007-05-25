@@ -28,7 +28,7 @@ Module Raw (I:Int)(X:OrderedType).
 Import I.
 Module II:=MoreInt(I).
 Import II.
-Open Scope Int_scope.
+Open Local Scope Int_scope.
 
 Module E := X.
 Module MX := OrderedTypeFacts X.
@@ -2286,7 +2286,7 @@ Qed.
 
 (** termination of [compare_aux] *)
 
-Open Scope Z_scope.
+Open Local Scope Z_scope.
  
 Fixpoint measure_e_t (s : tree) : Z := match s with
   | Leaf => 0
