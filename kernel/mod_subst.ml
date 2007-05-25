@@ -172,51 +172,57 @@ exception ChangeDomain of resolver
 let join (subst1 : substitution) (subst2 : substitution) = 
   let apply_subst (sub : substitution) key (mp,resolve) =
    let mp',resolve' =
-    match subst_mp0 sub mp with
-       None -> mp, None
-     | Some (mp',resolve') -> mp',resolve' in
+     match subst_mp0 sub mp with
+	 None -> mp, None
+       | Some (mp',resolve') -> mp',resolve' in
    let resolve'' : resolver option =
-    try
-     let res =
-      match resolve with
-         Some res -> res
-       | None ->
-          match resolve' with
-             None -> raise BothSubstitutionsAreIdentitySubstitutions
-           | Some res -> raise (ChangeDomain res)
-     in
-      Some
-       (List.map
-         (fun (kn,topt) ->
-           kn,
-           match topt with
-              None ->
-               (match key with
-                   MSI msid ->
-                    let kn' = replace_mp_in_con (MPself msid) mp kn in
-                     apply_opt_resolver resolve' kn'
-                 | MBI mbid ->
-                    let kn' = replace_mp_in_con (MPbound mbid) mp kn in
-                     apply_opt_resolver resolve' kn')
-            | Some t -> Some (subst_mps sub t)) res)
-    with
-       BothSubstitutionsAreIdentitySubstitutions -> None
-     | ChangeDomain res ->
-        Some
-         ((List.map
-            (fun (kn,topt) ->
-              let key' =
-               match key with
-                  MSI msid -> MPself msid
-                | MBI mbid -> MPbound mbid in
-              (* let's replace mp with key in kn *)
-              let kn' = replace_mp_in_con mp key' kn in
-               kn',topt)) res)
+     try
+       let res =
+	 match resolve with
+             Some res -> res
+	   | None ->
+               match resolve' with
+		   None -> raise BothSubstitutionsAreIdentitySubstitutions
+		 | Some res -> raise (ChangeDomain res)
+       in
+	 Some
+	   (List.map
+              (fun (kn,topt) ->
+		 kn,
+		 match topt with
+		     None ->
+		       (match key with
+			    MSI msid ->
+			      let kn' = replace_mp_in_con (MPself msid) mp kn in
+				apply_opt_resolver resolve' kn'
+			  | MBI mbid ->
+			      let kn' = replace_mp_in_con (MPbound mbid) mp kn in
+				apply_opt_resolver resolve' kn')
+		   | Some t -> Some (subst_mps sub t)) res)
+     with
+	 BothSubstitutionsAreIdentitySubstitutions -> None
+       | ChangeDomain res ->
+	   let rec changeDom = function
+	     | [] -> []
+	     | (kn,topt)::r ->
+		 let key' =
+		   match key with
+                       MSI msid -> MPself msid
+                     | MBI mbid -> MPbound mbid in
+		 let kn' = replace_mp_in_con mp key' kn in
+		   if kn==kn' then
+		     (*the key does not appear in kn, we remove it
+		       from the resolver that we are building*)
+		     changeDom r
+		   else
+		     (kn',topt)::(changeDom r)
+	   in
+	     Some (changeDom res)
    in
-    mp',resolve'' in
+     mp',resolve'' in
   let subst = Umap.mapi (apply_subst subst2) subst1 in
-  Umap.fold Umap.add subst2 subst
-
+    Umap.fold Umap.add subst2 subst
+      
 let rec occur_in_path uid path =
  match uid,path with
   | MSI sid,MPself sid' -> sid = sid'
@@ -254,7 +260,8 @@ let force fsubst r =
 
 let subst_substituted s r =
   match !r with
-  | LSval a -> ref (LSlazy(s,a))
-  | LSlazy(s',a) ->
-      let s'' = join s' s in
-      ref (LSlazy(s'',a))
+    | LSval a -> ref (LSlazy(s,a))
+    | LSlazy(s',a) ->
+	let s'' = join s' s in
+	  ref (LSlazy(s'',a))
+	    
