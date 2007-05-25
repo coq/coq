@@ -280,13 +280,14 @@ GEXTEND Gram
   ;
   (* Inductive schemes *)
   scheme:
-    [ [ id = identref; ":="; dep = dep_scheme; "for"; ind = global;
-        IDENT "Sort"; s = sort ->
-          (id,dep,ind,s) ] ]
+    [ [ id = identref; ":="; kind = scheme_kind  -> (id,kind) ] ]
   ;
-  dep_scheme:
-    [ [ IDENT "Induction" -> true
-      | IDENT "Minimality" -> false ] ]
+  scheme_kind:
+    [ [ IDENT "Induction"; "for"; ind = global;
+          IDENT "Sort"; s = sort-> InductionScheme(true,ind,s)
+      | IDENT "Minimality"; "for"; ind = global;
+          IDENT "Sort"; s = sort-> InductionScheme(false,ind,s)
+      | IDENT "Equality"; "for" ; ind = global -> EqualityScheme(ind)  ] ]
   ;
   (* Various Binders *)
 (*

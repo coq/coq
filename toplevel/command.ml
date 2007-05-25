@@ -648,8 +648,15 @@ let build_corecursive l b =
   interp_recursive IsCoFixpoint fixl b
 
 (* 3d| Schemes *)
+let rec split_scheme = function
+  | [] -> [],[]
+  | (id,t)::q -> let l1,l2 = split_scheme q in 
+    ( match t with
+      | InductionScheme (x,y,z) -> ((id,x,y,z)::l1),l2
+      | EqualityScheme  x -> l1,((id,x)::l2)
+    )
 
-let build_scheme lnamedepindsort = 
+let build_induction_scheme lnamedepindsort = 
   let lrecnames = List.map (fun ((_,f),_,_,_) -> f) lnamedepindsort
   and sigma = Evd.empty
   and env0 = Global.env() in
@@ -674,6 +681,19 @@ let build_scheme lnamedepindsort =
   in 
   let _ = List.fold_right2 declare listdecl lrecnames [] in
   if_verbose ppnl (recursive_message Fixpoint lrecnames)
+
+let build_scheme l = 
+  let ischeme,escheme = split_scheme l in
+    if (ischeme <> []) && (escheme <> []) 
+    then
+      error "Do not declare equality and induction scheme at the same time."
+    else (
+      if ischeme <> [] then build_induction_scheme ischeme;
+    List.iter ( fun (_,eq)-> let ind = Nametab.global_inductive eq
+(* vsiles :This will be replace with the boolean when it will be commited *)
+      in Pp.msgnl (print_constr (mkInd ind))
+    ) escheme
+  )
 
 let rec get_concl n t = 
   if n = 0 then t

@@ -1934,11 +1934,13 @@ let rec xlate_vernac =
 	  (CT_cofix_rec_list (strip_mutcorec lm, List.map strip_mutcorec lmi))
    | VernacScheme [] -> xlate_error "induction scheme"
    | VernacScheme (lm :: lmi) ->
-      let strip_ind ((_,id), depstr, inde, sort) =
+      let strip_ind = function
+      | ((_,id), InductionScheme (depstr, inde, sort)) ->
            CT_scheme_spec
             (xlate_ident id, xlate_dep depstr, 
 	    CT_coerce_ID_to_FORMULA (loc_qualid_to_ct_ID inde),
-	     xlate_sort sort) in
+	     xlate_sort sort)
+      | ((_,id), EqualityScheme _) -> xlate_error "TODO: Scheme Equality" in
         CT_ind_scheme
 	  (CT_scheme_spec_list (strip_ind lm, List.map strip_ind lmi))
    | VernacCombinedScheme _ -> xlate_error "TODO: Combined Scheme"

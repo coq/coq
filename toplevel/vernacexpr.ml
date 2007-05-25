@@ -168,6 +168,10 @@ type proof_end =
   | Admitted
   | Proved of opacity_flag * (lident * theorem_kind option) option
 
+type scheme =
+  | InductionScheme of bool * lreference * sort_expr
+  | EqualityScheme of lreference
+
 type vernac_expr =
   (* Control *)
   | VernacList of located_vernac_expr list
@@ -199,7 +203,7 @@ type vernac_expr =
   | VernacInductive of inductive_flag * (inductive_expr * decl_notation) list
   | VernacFixpoint of (fixpoint_expr * decl_notation) list * bool
   | VernacCoFixpoint of (cofixpoint_expr * decl_notation) list * bool
-  | VernacScheme of (lident * bool * lreference * sort_expr) list
+  | VernacScheme of (lident * scheme) list
   | VernacCombinedScheme of lident * lident list
 
   (* Gallina extensions *)
