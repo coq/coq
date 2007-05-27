@@ -59,7 +59,7 @@ Module Raw (X: DecidableType).
         if X.eq_dec x y then l else y :: remove x l
     end.
 
-  Fixpoint fold (B : Set) (f : elt -> B -> B) (s : t) {struct s} : 
+  Fixpoint fold (B : Type) (f : elt -> B -> B) (s : t) {struct s} : 
    B -> B := fun i => match s with
                       | nil => i
                       | x :: l => fold f l (f x i)
@@ -293,7 +293,7 @@ Module Raw (X: DecidableType).
   Qed.
 
   Lemma fold_1 :
-   forall (s : t) (Hs : NoDup s) (A : Set) (i : A) (f : elt -> A -> A),
+   forall (s : t) (Hs : NoDup s) (A : Type) (i : A) (f : elt -> A -> A),
    fold f s i = fold_left (fun a e => f e a) (elements s) i.
   Proof.
   induction s; simpl; auto; intros.
@@ -791,7 +791,7 @@ Module Make (X: DecidableType) <: S with Module E := X.
  Definition is_empty (s : t) : bool := Raw.is_empty s.
  Definition elements (s : t) : list elt := Raw.elements s.
  Definition choose (s:t) : option elt := Raw.choose s.
- Definition fold (B : Set) (f : elt -> B -> B) (s : t) : B -> B := Raw.fold (B:=B) f s. 
+ Definition fold (B : Type) (f : elt -> B -> B) (s : t) : B -> B := Raw.fold (B:=B) f s. 
  Definition cardinal (s : t) : nat := Raw.cardinal s.
  Definition filter (f : elt -> bool) (s : t) : t :=
    Build_slist (Raw.filter_unique (unique s) f).
@@ -872,7 +872,7 @@ Module Make (X: DecidableType) <: S with Module E := X.
   Lemma diff_3 : In x s -> ~ In x s' -> In x (diff s s').
   Proof. exact (fun H => Raw.diff_3 s.(unique) s'.(unique) H). Qed.
  
-  Lemma fold_1 : forall (A : Set) (i : A) (f : elt -> A -> A),
+  Lemma fold_1 : forall (A : Type) (i : A) (f : elt -> A -> A),
       fold f s i = fold_left (fun a e => f e a) (elements s) i.
   Proof. exact (Raw.fold_1 s.(unique)). Qed.
 

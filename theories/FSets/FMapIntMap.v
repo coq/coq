@@ -320,11 +320,11 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
   (** unfortunately, the [MapFold] of [IntMap] isn't compatible with 
    the FMap interface. We use a naive version for now : *)
 
-  Definition fold (B:Set)(f:key -> A -> B -> B)(m:t A)(i:B) : B := 
+  Definition fold (B:Type)(f:key -> A -> B -> B)(m:t A)(i:B) : B := 
     fold_left (fun a p => f (fst p) (snd p) a) (elements m) i.
 
   Lemma fold_1 :
-	forall (B:Set) (i : B) (f : key -> A -> B -> B),
+	forall (B:Type) (i : B) (f : key -> A -> B -> B),
         fold f m i = fold_left (fun a p => f (fst p) (snd p) a) (elements m) i.
   Proof. auto. Qed.
 

@@ -957,11 +957,11 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   Qed.
 
 
-  Definition fold (A B : Set) (f: positive -> A -> B -> B) (tr: t A) (v: B) :=
+  Definition fold (A : Set)(B : Type) (f: positive -> A -> B -> B) (tr: t A) (v: B) :=
      List.fold_left (fun a p => f (fst p) (snd p) a) (elements tr) v.
   
   Lemma fold_1 :
-    forall (A:Set)(m:t A)(B:Set)(i : B) (f : key -> A -> B -> B),
+    forall (A:Set)(m:t A)(B:Type)(i : B) (f : key -> A -> B -> B),
     fold f m i = fold_left (fun a p => f (fst p) (snd p) a) (elements m) i.
   Proof.
   intros; unfold fold; auto.

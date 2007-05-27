@@ -447,7 +447,7 @@ Module Properties (M: S).
   *)
 
   Lemma fold_0 : 
-      forall s (A : Set) (i : A) (f : elt -> A -> A),
+      forall s (A : Type) (i : A) (f : elt -> A -> A),
       exists l : list elt,
         NoDup l /\
         (forall x : elt, In x s <-> InA E.eq x l) /\

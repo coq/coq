@@ -20,11 +20,11 @@ Unset Strict Implicit.
 (* end hide *)
 
 (** Compatibility of a  boolean function with respect to an equality. *)
-Definition compat_bool (A:Set)(eqA: A->A->Prop)(f: A-> bool) :=
+Definition compat_bool (A:Type)(eqA: A->A->Prop)(f: A-> bool) :=
   forall x y : A, eqA x y -> f x = f y.
 
 (** Compatibility of a predicate with respect to an equality. *)
-Definition compat_P (A:Set)(eqA: A->A->Prop)(P : A -> Prop) :=
+Definition compat_P (A:Type)(eqA: A->A->Prop)(P : A -> Prop) :=
   forall x y : A, eqA x y -> P x -> P y.
 
 Hint Unfold compat_bool compat_P.
@@ -101,7 +101,7 @@ Module Type S.
   The order in which the elements of [s] are presented to [f]
   is unspecified. *)
 
-  Parameter fold : forall A : Set, (elt -> A -> A) -> t -> A -> A.
+  Parameter fold : forall A : Type, (elt -> A -> A) -> t -> A -> A.
   (** [fold f s a] computes [(f xN ... (f x2 (f x1 a))...)],
   where [x1 ... xN] are the elements of [s], in increasing order. *)
 
@@ -216,7 +216,7 @@ Module Type S.
   Parameter diff_3 : In x s -> ~ In x s' -> In x (diff s s').
  
   (** Specification of [fold] *)  
-  Parameter fold_1 : forall (A : Set) (i : A) (f : elt -> A -> A),
+  Parameter fold_1 : forall (A : Type) (i : A) (f : elt -> A -> A),
       fold f s i = fold_left (fun a e => f e a) (elements s) i.
 
   (** Specification of [cardinal] *)  
@@ -401,7 +401,7 @@ Module Type Sdep.
 
   Parameter
     fold :
-      forall (A : Set) (f : elt -> A -> A) (s : t) (i : A),
+      forall (A : Type) (f : elt -> A -> A) (s : t) (i : A),
       {r : A | let (l,_) := elements s in 
                   r = fold_left (fun a e => f e a) l i}.
 

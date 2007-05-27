@@ -1073,17 +1073,17 @@ Hint Resolve elements_sort.
 
 (** * Fold *)
 
-Fixpoint fold (A : Set) (f : key -> elt -> A -> A)(s : t elt) {struct s} : A -> A := 
+Fixpoint fold (A : Type) (f : key -> elt -> A -> A)(s : t elt) {struct s} : A -> A := 
  fun a => match s with
   | Leaf => a
   | Node l x e r _ => fold f r (f x e (fold f l a))
  end.
 
-Definition fold' (A : Set) (f : key -> elt -> A -> A)(s : t elt) := 
+Definition fold' (A : Type) (f : key -> elt -> A -> A)(s : t elt) := 
   L.fold f (elements s).
 
 Lemma fold_equiv_aux :
- forall (A : Set) (s : t elt) (f : key -> elt -> A -> A) (a : A) acc,
+ forall (A : Type) (s : t elt) (f : key -> elt -> A -> A) (a : A) acc,
  L.fold f (elements_aux acc s) a = L.fold f acc (fold f s a).
 Proof.
  simple induction s.
@@ -1095,7 +1095,7 @@ Proof.
 Qed.
 
 Lemma fold_equiv :
- forall (A : Set) (s : t elt) (f : key -> elt -> A -> A) (a : A),
+ forall (A : Type) (s : t elt) (f : key -> elt -> A -> A) (a : A),
  fold f s a = fold' f s a.
 Proof.
  unfold fold', elements in |- *. 
@@ -1106,7 +1106,7 @@ Proof.
 Qed.
 
 Lemma fold_1 : 
- forall (s:t elt)(Hs:bst s)(A : Set)(i:A)(f : key -> elt -> A -> A),
+ forall (s:t elt)(Hs:bst s)(A : Type)(i:A)(f : key -> elt -> A -> A),
  fold f s i = fold_left (fun a p => f (fst p) (snd p) a) (elements s) i.
 Proof.
  intros.
@@ -1739,7 +1739,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Definition map2 f m (m':t elt') : t elt'' := 
   Bbst (Raw.map2_bst f m m') (Raw.map2_avl f m m').
  Definition elements m : list (key*elt) := Raw.elements m.(this).
- Definition fold (A:Set) (f:key->elt->A->A) m i := Raw.fold (A:=A) f m.(this) i.
+ Definition fold (A:Type) (f:key->elt->A->A) m i := Raw.fold (A:=A) f m.(this) i.
  Definition equal cmp m m' : bool := 
    if (Raw.equal cmp m.(is_bst) m'.(is_bst)) then true else false.
 
@@ -1797,7 +1797,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Lemma find_2 : forall m x e, find x m = Some e -> MapsTo x e m.
  Proof. intros m; exact (@Raw.find_2 elt m.(this)). Qed.
 
- Lemma fold_1 : forall m (A : Set) (i : A) (f : key -> elt -> A -> A),
+ Lemma fold_1 : forall m (A : Type) (i : A) (f : key -> elt -> A -> A),
         fold f m i = fold_left (fun a p => f (fst p) (snd p) a) (elements m) i.
  Proof. intros m; exact (@Raw.fold_1 elt m.(this) m.(is_bst)). Qed.
 

@@ -115,7 +115,7 @@ Module DepOfNodep (M: S) <: Sdep with Module E := M.E.
    Defined. 
 
   Definition fold :
-    forall (A : Set) (f : elt -> A -> A) (s : t) (i : A),
+    forall (A : Type) (f : elt -> A -> A) (s : t) (i : A),
     {r : A |   let (l,_) := elements s in 
                   r = fold_left (fun a e => f e a) l i}.
   Proof. 
@@ -648,11 +648,11 @@ Module NodepOfDep (M: Sdep) <: S with Module E := M.E.
     destruct (M.elements s); auto.
   Qed.
 
-  Definition fold (B : Set) (f : elt -> B -> B) (i : t) 
+  Definition fold (B : Type) (f : elt -> B -> B) (i : t) 
     (s : B) : B := let (fold, _) := fold f i s in fold.
 
   Lemma fold_1 :
-   forall (s : t) (A : Set) (i : A) (f : elt -> A -> A),
+   forall (s : t) (A : Type) (i : A) (f : elt -> A -> A),
    fold f s i = fold_left (fun a e => f e a) (elements s) i.
   Proof.
     intros; unfold fold in |- *; case (M.fold f s i); unfold elements in *; 

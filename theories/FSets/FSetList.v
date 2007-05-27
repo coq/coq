@@ -145,7 +145,7 @@ Module Raw (X: OrderedType).
     | _, _ => false
     end.
 
-  Fixpoint fold (B : Set) (f : elt -> B -> B) (s : t) {struct s} : 
+  Fixpoint fold (B : Type) (f : elt -> B -> B) (s : t) {struct s} : 
    B -> B := fun i => match s with
                       | nil => i
                       | x :: l => fold f l (f x i)
@@ -750,7 +750,7 @@ Module Raw (X: OrderedType).
   Qed.   
    
   Lemma fold_1 :
-   forall (s : t) (Hs : Sort s) (A : Set) (i : A) (f : elt -> A -> A),
+   forall (s : t) (Hs : Sort s) (A : Type) (i : A) (f : elt -> A -> A),
    fold f s i = fold_left (fun a e => f e a) (elements s) i.
   Proof.
   induction s.
@@ -1097,7 +1097,7 @@ Module Make (X: OrderedType) <: S with Module E := X.
  Definition min_elt (s : t) : option elt := Raw.min_elt s.
  Definition max_elt (s : t) : option elt := Raw.max_elt s.
  Definition choose (s : t) : option elt  := Raw.choose s.
- Definition fold (B : Set) (f : elt -> B -> B) (s : t) : B -> B := Raw.fold (B:=B) f s. 
+ Definition fold (B : Type) (f : elt -> B -> B) (s : t) : B -> B := Raw.fold (B:=B) f s. 
  Definition cardinal (s : t) : nat := Raw.cardinal s.
  Definition filter (f : elt -> bool) (s : t) : t :=
    Build_slist (Raw.filter_sort (sorted s) f).
@@ -1180,7 +1180,7 @@ Module Make (X: OrderedType) <: S with Module E := X.
   Lemma diff_3 : In x s -> ~ In x s' -> In x (diff s s').
   Proof. exact (fun H => Raw.diff_3 s.(sorted) s'.(sorted) H). Qed.
  
-  Lemma fold_1 : forall (A : Set) (i : A) (f : elt -> A -> A),
+  Lemma fold_1 : forall (A : Type) (i : A) (f : elt -> A -> A),
       fold f s i = fold_left (fun a e => f e a) (elements s) i.
   Proof. exact (Raw.fold_1 s.(sorted)). Qed.
 

@@ -99,7 +99,7 @@ Module Type S.
          Elements of this list are sorted with respect to their first components. 
          Useful to specify [fold] ... *)
 
-    Parameter fold : forall A: Set, (key -> elt -> A -> A) -> t elt -> A -> A.
+    Parameter fold : forall A: Type, (key -> elt -> A -> A) -> t elt -> A -> A.
     (** [fold f m a] computes [(f kN dN ... (f k1 d1 a)...)], 
 	where [k1] ... [kN] are the keys of all bindings in [m] 
 	(in increasing order), and [d1] ... [dN] are the associated data. *)
@@ -166,7 +166,7 @@ Module Type S.
 
     (** Specification of [fold] *)  
       Parameter fold_1 :
-	forall (A : Set) (i : A) (f : key -> elt -> A -> A),
+	forall (A : Type) (i : A) (f : key -> elt -> A -> A),
         fold f m i = fold_left (fun a p => f (fst p) (snd p) a) (elements m) i.
  
    Definition Equal cmp m m' := 

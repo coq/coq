@@ -349,13 +349,13 @@ Qed.
 
 (** * [fold] *)
 
-Function fold (A:Set)(f:key->elt->A->A)(m:t elt) (acc:A) {struct m} :  A :=
+Function fold (A:Type)(f:key->elt->A->A)(m:t elt) (acc:A) {struct m} :  A :=
   match m with
    | nil => acc
    | (k,e)::m' => fold f m' (f k e acc)
   end.
 
-Lemma fold_1 : forall m (A:Set)(i:A)(f:key->elt->A->A),
+Lemma fold_1 : forall m (A:Type)(i:A)(f:key->elt->A->A),
   fold f m i = fold_left (fun a p => f (fst p) (snd p) a) (elements m) i.
 Proof. 
  intros; functional induction (fold f m i); auto.
@@ -1060,7 +1060,7 @@ Section Elt.
  Definition map2 f m (m':t elt') : t elt'' := 
    Build_slist (Raw.map2_sorted f m.(sorted) m'.(sorted)).
  Definition elements m : list (key*elt) := @Raw.elements elt m.(this).
- Definition fold (A:Set)(f:key->elt->A->A) m (i:A) : A := @Raw.fold elt A f m.(this) i.
+ Definition fold (A:Type)(f:key->elt->A->A) m (i:A) : A := @Raw.fold elt A f m.(this) i.
  Definition equal cmp m m' : bool := @Raw.equal elt cmp m.(this) m'.(this).
 
  Definition MapsTo x e m : Prop := Raw.PX.MapsTo x e m.(this).
@@ -1114,7 +1114,7 @@ Section Elt.
  Lemma elements_3 : forall m, sort lt_key (elements m).  
  Proof. intros m; exact (@Raw.elements_3 elt m.(this) m.(sorted)). Qed.
 
- Lemma fold_1 : forall m (A : Set) (i : A) (f : key -> elt -> A -> A),
+ Lemma fold_1 : forall m (A : Type) (i : A) (f : key -> elt -> A -> A),
         fold f m i = fold_left (fun a p => f (fst p) (snd p) a) (elements m) i.
  Proof. intros m; exact (@Raw.fold_1 elt m.(this)). Qed.
 
