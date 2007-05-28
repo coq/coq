@@ -23,6 +23,7 @@ Notations and implicit arguments
 - New modifier in "Implicit Arguments" to force an implicit argument to
   be maximally inserted.
 - Level "constr" moved from 9 to 8.
+- Structure/Record now printed as Record (unless option Printing All is set).
 
 Tactic Language
 

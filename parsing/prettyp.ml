@@ -320,11 +320,45 @@ let pr_mutual_inductive finite indl =
     prlist_with_sep (fun () -> fnl () ++ str"  with ")
       print_one_inductive indl)
 
+let get_fields =
+  let rec prodec_rec l subst c =
+    match kind_of_term c with
+    | Prod (na,t,c) ->
+	let id = match na with Name id -> id | Anonymous -> id_of_string "_" in
+	prodec_rec ((id,true,substl subst t)::l) (mkVar id::subst) c
+    | LetIn (na,b,_,c) ->
+	let id = match na with Name id -> id | Anonymous -> id_of_string "_" in
+	prodec_rec ((id,false,substl subst b)::l) (mkVar id::subst) c
+    | _               -> l
+  in 
+  prodec_rec [] []
+
+let pr_record (sp,tyi) =
+  let (ref, params, arity, cstrnames, cstrtypes) = build_inductive sp tyi in
+  let env = Global.env () in
+  let envpar = push_rel_context params env in
+  let fields = get_fields cstrtypes.(0) in
+  hov 0 (
+    hov 0 (
+      str "Record " ++ pr_global (IndRef (sp,tyi)) ++ brk(1,4) ++ 
+      print_params env params ++
+      str ": " ++ pr_lconstr_env envpar arity ++ brk(1,2) ++ 
+      str ":= " ++ pr_id cstrnames.(0)) ++ 
+    brk(1,2) ++
+    hv 2 (str "{ " ++
+      prlist_with_sep (fun () -> str "; " ++ brk(1,0))
+        (fun (id,b,c) -> 
+	  pr_id id ++ str (if b then " : " else " := ") ++ 
+	  pr_lconstr_env envpar c) fields) ++ str" }")
+
 let gallina_print_inductive sp =
   let (mib,mip) = Global.lookup_inductive (sp,0) in
   let mipv = mib.mind_packets in
   let names = list_tabulate (fun x -> (sp,x)) (Array.length mipv) in
-  pr_mutual_inductive mib.mind_finite names ++ fnl () ++ fnl () ++
+  (if mib.mind_record & not !Options.raw_print then
+    pr_record (List.hd names)
+  else
+    pr_mutual_inductive mib.mind_finite names) ++ fnl () ++ fnl () ++
   print_inductive_implicit_args sp mipv ++
   print_inductive_argument_scopes sp mipv
 
