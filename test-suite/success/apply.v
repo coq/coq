@@ -112,3 +112,54 @@ Goal forall p q1 q2, f (f q1 (Zpos p)) (f q2 (Zpos p)) = Z0.
 intros; rewrite g with (p:=p).
 reflexivity.
 Qed.
+
+(* A funny example where the behavior differs depending on which of a
+   multiple solution to a unification problem is chosen (an instance
+   of this case can be found in the proof of Buchberger.BuchRed.nf_divp) *)
+
+Definition succ x := S x.
+Goal forall (I : nat -> Set) (P : nat -> Prop) (Q : forall n:nat, I n -> Prop),
+  (forall x y, P x -> Q x y) -> 
+  (forall x, P (S x)) -> forall y: I (S 0), Q (succ 0) y.
+intros.
+apply H with (y:=y). 
+(* [x] had two possible instances: [S 0], coming from unifying the
+   type of [y] with [I ?n] and [succ 0] coming from the unification with
+   the goal; only the first one allows to make the next apply (which
+   does not work modulo delta) working *)
+apply H0.
+Qed.
+
+(* A similar example with a arbitrary long conversion between the two
+   possible instances *)
+
+Fixpoint compute_succ x := 
+  match x with O => S 0 | S n => S (compute_succ n) end.
+
+Goal forall (I : nat -> Set) (P : nat -> Prop) (Q : forall n:nat, I n -> Prop),
+  (forall x y, P x -> Q x y) -> 
+  (forall x, P (S x)) -> forall y: I (S 100), Q (compute_succ 100) y.
+intros.
+apply H with (y:=y). 
+apply H0.
+Qed.
+
+(* Another example with multiple convertible solutions to the same
+   metavariable (extracted from Algebra.Hom_module.Hom_module, 10th
+   subgoal which precisely fails) *)
+
+Definition ID (A:Type) := A.
+Goal forall f:Type -> Type, 
+  forall (P : forall A:Type, A -> Prop), 
+  (forall (B:Type) x, P (f B) x -> P (f B) x) -> 
+  (forall (A:Type) x, P (f (f A)) x) -> 
+  forall (A:Type) (x:f (f A)), P (f (ID (f A))) x.
+intros.
+apply H.
+(* The parameter [B] had two possible instances: [ID (f A)] by direct
+   unification and [f A] by unification of the type of [x]; only the
+   first choice makes the next command fail, as it was
+   (unfortunately?) in Hom_module *)
+try apply H.
+unfold ID; apply H0.
+Qed.

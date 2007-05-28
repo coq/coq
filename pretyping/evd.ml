@@ -334,9 +334,13 @@ let map_fl f cfl = { cfl with rebus=f cfl.rebus }
     (e.g. the solution [P] to [?X u v = P u v] can be eta-expanded twice)
 *)
 
-type instance_status =
-  | IsSuperType | IsSubType
-  | ConvUpToEta of int | Coercible of types | Processed
+type instance_constraint =
+    IsSuperType | IsSubType | ConvUpToEta of int | UserGiven
+
+type instance_typing_status =
+    TypeNotProcessed | TypeProcessed
+
+type instance_status = instance_constraint * instance_typing_status
 
 (* Clausal environments *)
 
@@ -543,7 +547,7 @@ let retract_coercible_metas evd =
   let mc,ml = 
     Metamap.fold (fun n v (mc,ml) -> 
       match v with
-	| Clval (na,(b,s),typ) when s <> Processed ->
+	| Clval (na,(b,(UserGiven,TypeNotProcessed as s)),typ) ->
 	    (n,b.rebus,s)::mc, Metamap.add n (Cltyp (na,typ)) ml
 	| v ->
 	    mc, Metamap.add n v ml)
@@ -556,7 +560,7 @@ let rec list_assoc_in_triple x = function
 
 let subst_defined_metas bl c = 
   let rec substrec c = match kind_of_term c with
-    | Meta i -> list_assoc_in_triple i bl
+    | Meta i -> substrec (list_assoc_in_triple i bl)
     | _ -> map_constr substrec c
   in try Some (substrec c) with Not_found -> None
 

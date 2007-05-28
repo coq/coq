@@ -896,8 +896,8 @@ let meta_value evd mv =
 
 let meta_reducible_instance evd b =
   let fm = Metaset.elements b.freemetas in
-  let s = List.fold_left (fun l mv -> 
-    try let g,s = meta_fvalue evd mv in (mv,(g.rebus,s))::l 
+  let metas = List.fold_left (fun l mv -> 
+    try let g,(_,s) = meta_fvalue evd mv in (mv,(g.rebus,s))::l 
     with Anomaly _ | Not_found -> l) [] fm in 
   let rec irec u =
     let u = whd_betaiota u in
@@ -906,8 +906,8 @@ let meta_reducible_instance evd b =
 	let m = try destMeta c with _ -> destMeta (pi1 (destCast c)) in
 	(match
 	  try
-	    let g,s = List.assoc m s in
-	    if isConstruct g or s = Processed then Some g else None
+	    let g,s = List.assoc m metas in
+	    if isConstruct g or s = TypeProcessed then Some g else None
 	  with Not_found -> None
 	  with
 	    | Some g -> irec (mkCase (ci,p,g,bl))
@@ -916,15 +916,15 @@ let meta_reducible_instance evd b =
 	let m = try destMeta f with _ -> destMeta (pi1 (destCast f)) in
 	(match
 	  try
-	    let g,s = List.assoc m s in
-	    if isLambda g or s = Processed then Some g else None
+	    let g,s = List.assoc m metas in
+	    if isLambda g or s = TypeProcessed then Some g else None
 	  with Not_found -> None
-	  with
-	    | Some g -> irec (mkApp (g,l))
-	    | None -> mkApp (f,Array.map irec l))
+	 with
+	   | Some g -> irec (mkApp (g,l))
+	   | None -> mkApp (f,Array.map irec l))
     | Meta m ->
-	(try let g,s = List.assoc m s in if s = Processed then irec g else u
-	with Not_found -> u)
+	(try let g,s = List.assoc m metas in if s=TypeProcessed then irec g else u
+	 with Not_found -> u)
     | _ -> map_constr irec u
   in 
   if fm = [] then (* nf_betaiota? *) b.rebus else irec b.rebus

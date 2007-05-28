@@ -65,11 +65,13 @@ let prod_pb = function ConvUnderApp _ -> topconv | pb -> pb
 let opp_status = function
   | IsSuperType -> IsSubType
   | IsSubType -> IsSuperType
-  | ConvUpToEta _ | Coercible _ | Processed as x -> x
+  | ConvUpToEta _ | UserGiven as x -> x
+
+let add_type_status (x,y) = ((x,TypeNotProcessed),(y,TypeNotProcessed))
 
 let extract_instance_status = function
-  | Cumul -> (IsSubType,IsSuperType)
-  | ConvUnderApp (n1,n2) -> ConvUpToEta n1, ConvUpToEta n2
+  | Cumul -> add_type_status (IsSubType, IsSuperType)
+  | ConvUnderApp (n1,n2) -> add_type_status (ConvUpToEta n1, ConvUpToEta n2)
 
 let rec assoc_pair x = function
     [] -> raise Not_found
@@ -83,7 +85,7 @@ let rec subst_meta_instances bl c =
 let solve_pattern_eqn_array env f l c (metasubst,evarsubst) =
   match kind_of_term f with
     | Meta k -> 
-	let pb = ConvUpToEta (Array.length l) in
+	let pb = (ConvUpToEta (Array.length l),TypeNotProcessed) in
 	(k,solve_pattern_eqn env (Array.to_list l) c,pb)::metasubst,evarsubst
     | Evar ev ->
       (* Currently unused: incompatible with eauto/eassumption backtracking *)
@@ -183,9 +185,9 @@ let unify_0_with_initial_metas metas env sigma cv_pb mod_delta m n =
       (if mod_delta then is_fconv (conv_pb_of cv_pb) env sigma m n
        else eq_constr m n)
     then 
-      ([],[])
+      (metas,[])
     else 
-      let (mc,ec) = unirec_rec env cv_pb ([],[]) m n in
+      let (mc,ec) = unirec_rec env cv_pb (metas,[]) m n in
 	((*sort_eqns*) mc, (*sort_eqns*) ec)
 
 let unify_0 = unify_0_with_initial_metas []
@@ -228,19 +230,25 @@ let rec unify_with_eta keptside mod_delta env sigma k1 k2 c1 c2 =
 
 let merge_instances env sigma mod_delta st1 st2 c1 c2 =
   match (opp_status st1, st2) with
+  | (UserGiven, ConvUpToEta n2) ->
+      unify_with_eta left mod_delta env sigma 0 n2 c1 c2
+  | (ConvUpToEta n1, UserGiven) ->
+      unify_with_eta right mod_delta env sigma n1 0 c1 c2
   | (ConvUpToEta n1, ConvUpToEta n2) ->
       let side = left (* arbitrary choice, but agrees with compatibility *) in
       unify_with_eta side mod_delta env sigma n1 n2 c1 c2
-  | ((IsSubType | ConvUpToEta _ | Coercible _ | Processed as oppst1),
-     (IsSubType | ConvUpToEta _ | Coercible _ | Processed)) ->
+  | ((IsSubType | ConvUpToEta _ | UserGiven as oppst1),
+     (IsSubType | ConvUpToEta _ | UserGiven)) ->
       let res = unify_0 env sigma Cumul mod_delta c2 c1 in
       if oppst1=st2 then (* arbitrary choice *) (left, st1, res)
-      else (st2=IsSubType, ConvUpToEta 0, res)
-  | ((IsSuperType | ConvUpToEta _ | Coercible _ | Processed as oppst1),
-     (IsSuperType | ConvUpToEta _ | Coercible _ | Processed)) ->
+      else if st2=IsSubType or st1=UserGiven then (left, st1, res)
+      else (right, st2, res)
+  | ((IsSuperType | ConvUpToEta _ | UserGiven as oppst1),
+     (IsSuperType | ConvUpToEta _ | UserGiven)) ->
       let res = unify_0 env sigma Cumul mod_delta c1 c2 in
       if oppst1=st2 then (* arbitrary choice *) (left, st1, res)
-      else (st2=IsSuperType, ConvUpToEta 0, res)
+      else if st2=IsSuperType or st1=UserGiven then (left, st1, res)
+      else (right, st2, res)
   | (IsSuperType,IsSubType) ->
       (try (left, IsSubType, unify_0 env sigma Cumul mod_delta c2 c1)
        with _ -> (right, IsSubType, unify_0 env sigma Cumul mod_delta c1 c2))
@@ -323,7 +331,25 @@ let w_coerce env c ctyp target evd =
     (evd',j'.uj_val)
   with e when precatchable_exception e ->
     evd,c
- 
+
+let unify_0_meta_type env evd mod_delta mv c =
+  let sigma = evars_of evd in
+  let metamap = metas_of evd in
+  let mvty = Typing.meta_type evd mv in
+  let mvty = Tacred.hnf_constr env sigma mvty in
+  (* nf_betaiota was before in type_of - useful to reduce
+     types like (x:A)([x]P u) *)
+  let c = refresh_universes c in
+  let nty = get_type_of_with_meta env sigma metamap c in
+  let nty = Tacred.hnf_constr env sigma (nf_betaiota nty) in
+  if occur_meta mvty then
+    try (evd,c),(unify_0 env sigma Cumul mod_delta nty mvty)
+    with e when precatchable_exception e -> (evd,c),([],[])
+  else
+    (* Try to coerce to the type of [k]; cannot merge with the
+       previous case because Coercion does not handle Meta *)
+    w_coerce env c nty mvty evd,([],[])
+
 (* [w_merge env sigma b metas evars] merges common instances in metas
    or in evars, possibly generating new unification problems; if [b]
    is true, unification of types of metas is required *)
@@ -335,17 +361,19 @@ let w_merge env with_types mod_delta metas evars evd =
     match (evars,metas) with
     | [], [] -> evd
 
-    | ((evn,_ as ev),rhs)::t, metas ->
+    | ((evn,_ as ev),rhs)::evars', metas ->
 	(match kind_of_term rhs with
 
-	| Meta k -> w_merge_rec evd ((k,mkEvar ev,ConvUpToEta 0)::metas) t
+	| Meta k ->
+            w_merge_rec evd ((k,mkEvar ev,(ConvUpToEta 0,TypeNotProcessed))::metas)
+              evars
 
 	| krhs ->
     	      if is_defined_evar evd ev then
 		let v = Evd.existential_value (evars_of evd) ev in
-		let (metas',evars') =
+		let (metas',evars'') =
 		  unify_0 env (evars_of evd) topconv mod_delta rhs v in
-		w_merge_rec evd (metas'@metas) (evars'@t)
+		w_merge_rec evd (metas'@metas) (evars''@evars')
     	      else begin
 		let rhs' =
 		  if occur_meta rhs then subst_meta_instances metas rhs
@@ -356,56 +384,41 @@ let w_merge env with_types mod_delta metas evars evd =
                 match krhs with
 		  | App (f,cl) when is_mimick_head f ->
 		      (try 
-		        w_merge_rec (fst (evar_define env ev rhs' evd)) metas t
+		        w_merge_rec (fst (evar_define env ev rhs' evd)) 
+                          metas evars'
 		      with ex when precatchable_exception ex ->
                         let evd' =
                           mimick_evar evd mod_delta f (Array.length cl) evn in
 			w_merge_rec evd' metas evars)
                   | _ ->
                       (* ensure tail recursion in non-mimickable case! *)
-		      w_merge_rec (fst (evar_define env ev rhs' evd)) metas t
+		      w_merge_rec (fst (evar_define env ev rhs' evd)) 
+                        metas evars'
 	      end)
 
-      | ([], (mv,n,status)::t) ->
+      | ([], (mv,n,(status,to_type))::metas) ->
+	  let evd,n =
+	    if with_types & to_type = TypeNotProcessed then
+              let evd_n,(mc,ec) = unify_0_meta_type env evd mod_delta mv n in
+	      ty_metas := mc @ !ty_metas;
+	      ty_evars := ec @ !ty_evars;
+	      evd_n
+	    else
+	      evd,n in
     	  if meta_defined evd mv then
-	    let n',status' = meta_fvalue evd mv in
+	    let n',(status',_) = meta_fvalue evd mv in
 	    let n' = n'.rebus in
             let (take_left,st,(metas',evars')) =
 	      merge_instances env (evars_of evd) mod_delta status' status n' n
 	    in
-	    let evd' = if take_left then evd else meta_reassign mv (n,st) evd 
+	    let evd' = 
+              if take_left then evd 
+              else meta_reassign mv (n,(st,TypeProcessed)) evd 
 	    in
-            w_merge_rec evd' (metas'@t) evars'
+            w_merge_rec evd' (metas'@metas) evars'
     	  else
-	    begin
-	      let evd,n =
-		if with_types & status <> Processed then
-                  let sigma = evars_of evd in
-		  let metas = metas_of evd in
-	          let mvty = Typing.meta_type evd mv in
-		  let mvty = Tacred.hnf_constr env sigma mvty in
-		  (* nf_betaiota was before in type_of - useful to reduce
-		     types like (x:A)([x]P u) *)
-		  let n = refresh_universes n in
-		  let nty = get_type_of_with_meta env sigma metas n in
-		  let nty = Tacred.hnf_constr env sigma (nf_betaiota nty) in
-		  if occur_meta mvty then
-		    (try 
-		      let (mc,ec) = unify_0 env sigma Cumul mod_delta nty mvty
-		      in
-		      ty_metas := mc @ !ty_metas;
-		      ty_evars := ec @ !ty_evars;
-		      evd,n
-		    with e when precatchable_exception e -> evd,n)
-		  else
-		    (* Try to coerce to the type of [k]; cannot merge with the
-		       previous case because Coercion does not handle Meta *)
-		    w_coerce env n nty mvty evd
-		else
-		  evd,n in
-	      let evd' = meta_assign mv (n,status) evd in
-	      w_merge_rec evd' t []
-	    end
+	    let evd' = meta_assign mv (n,(status,TypeProcessed)) evd in
+	    w_merge_rec evd' metas []
 		
   and mimick_evar evd mod_delta hdc nargs sp =
     let ev = Evd.find (evars_of evd) sp in
@@ -428,6 +441,10 @@ let w_merge env with_types mod_delta metas evars evd =
   else
     evd'
 
+let w_unify_meta_types env evd =
+  let metas,evd = retract_coercible_metas evd in
+  w_merge env true true metas [] evd
+
 (* [w_unify env evd M N]
    performs a unification of M and N, generating a bunch of
    unification constraints in the process.  These constraints
@@ -442,7 +459,7 @@ let w_unify_core_0 env with_types cv_pb mod_delta m n evd =
   let (mc1,evd') = retract_coercible_metas evd in
   let (mc2,ec) = 
     unify_0_with_initial_metas mc1 env (evars_of evd') cv_pb mod_delta m n in 
-  w_merge env with_types mod_delta (mc1@mc2) ec evd'
+  w_merge env with_types mod_delta mc2 ec evd'
 
 let w_unify_0 env = w_unify_core_0 env false
 let w_typed_unify env = w_unify_core_0 env true

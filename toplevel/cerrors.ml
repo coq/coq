@@ -28,10 +28,6 @@ let guill s = "\""^s^"\""
 let where s =
   if !Options.debug then  (str"in " ++ str s ++ str":" ++ spc ()) else (mt ())
 
-let anomaly_string () = str "Anomaly: "
-
-let report () = (str "." ++ spc () ++ str "Please report.")
-
 (* assumption : explain_sys_exn does NOT end with a 'FNL anymore! *)
 
 let rec explain_exn_default_aux anomaly_string report_fn = function
@@ -127,8 +123,12 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
       hov 0 (anomaly_string () ++ str "Uncaught exception " ++ 
 	       str (Printexc.to_string reraise) ++ report_fn ())
 
+let anomaly_string () = str "Anomaly: "
+
+let report () = (str "." ++ spc () ++ str "Please report.")
+
 let explain_exn_default =
-    explain_exn_default_aux (fun () -> str "Anomaly: ") report
+  explain_exn_default_aux anomaly_string report
 
 let raise_if_debug e =
   if !Options.debug then raise e

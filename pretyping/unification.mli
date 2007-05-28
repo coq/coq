@@ -24,6 +24,8 @@ val w_unify :
 val w_unify_to_subterm :
   env -> ?mod_delta:bool -> constr * constr -> evar_defs -> evar_defs * constr
 
+val w_unify_meta_types : env -> evar_defs -> evar_defs
+
 (*i This should be in another module i*)
 
 (* [abstract_list_all env sigma t c l]                     *)

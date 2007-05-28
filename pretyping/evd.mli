@@ -104,16 +104,20 @@ val metavars_of : constr -> Metaset.t
 val mk_freelisted : constr -> constr freelisted
 val map_fl : ('a -> 'b) -> 'a freelisted -> 'b freelisted
 
-(* Status of an instance wrt to the meta it solves:
+(* Possible constraints over the instance of a metavariable:
   - a supertype of the meta (e.g. the solution to ?X <= T is a supertype of ?X)
   - a subtype of the meta (e.g. the solution to T <= ?X is a supertype of ?X)
   - a term that can be eta-expanded n times while still being a solution
     (e.g. the solution [P] to [?X u v = P u v] can be eta-expanded twice)
 *)
 
-type instance_status =
-  | IsSuperType | IsSubType
-  | ConvUpToEta of int | Coercible of types | Processed
+type instance_constraint = 
+    IsSuperType | IsSubType | ConvUpToEta of int | UserGiven
+
+type instance_typing_status =
+    TypeNotProcessed | TypeProcessed
+
+type instance_status = instance_constraint * instance_typing_status
 
 type clbinding =
   | Cltyp of name * constr freelisted

@@ -196,7 +196,9 @@ let clenv_assign mv rhs clenv =
         error_incompatible_inst clenv mv
       else
 	clenv
-    else {clenv with evd = meta_assign mv (rhs_fls.rebus,ConvUpToEta 0) clenv.evd}
+    else 
+      let st = (ConvUpToEta 0,TypeNotProcessed) in
+      {clenv with evd = meta_assign mv (rhs_fls.rebus,st) clenv.evd}
   with Not_found -> 
     error "clenv_assign: undefined meta"
 
@@ -241,25 +243,7 @@ let clenv_unify allow_K cv_pb t1 t2 clenv =
   { clenv with evd = w_unify allow_K clenv.env cv_pb t1 t2 clenv.evd }
 
 let clenv_unify_meta_types clenv =
-  List.fold_left (fun clenv (k,m) ->
-    match m with
-    | Cltyp _ -> clenv
-    | Clval (na,(c,s),k_typ) ->
-	let k_typ = clenv_hnf_constr clenv k_typ.rebus in
-	match s with
-        | Coercible c_typ when not (occur_meta k_typ) -> 
-	    let evd,c' = w_coerce (cl_env clenv) c.rebus c_typ k_typ clenv.evd in
-	    {clenv with evd = meta_reassign k (c',ConvUpToEta 0) clenv.evd}
-	| _ -> 
-	    (* nf_betaiota was before in type_of - useful to reduce
-	       types like (x:A)([x]P u) *)
-	    let c_typ = nf_betaiota (clenv_get_type_of clenv c.rebus) in
-	    let c_typ = clenv_hnf_constr clenv c_typ in
-	    (* Try to infer some Meta/Evar from the type of [c] *)
-	    try clenv_unify true CUMUL c_typ k_typ clenv
-	    with e when precatchable_exception e -> clenv)
-    clenv (meta_list clenv.evd)
-
+  { clenv with evd = w_unify_meta_types clenv.env clenv.evd }
 
 let clenv_unique_resolver allow_K clenv gl =
   if isMeta (fst (whd_stack clenv.templtyp.rebus)) then
@@ -398,13 +382,13 @@ let rec similar_type_shapes t u =
 let clenv_unify_similar_types clenv c t u =
   if occur_meta u then
     if similar_type_shapes t u then
-      try Processed, clenv_unify true CUMUL t u clenv, c
-      with e when precatchable_exception e -> Coercible t, clenv, c
+      try TypeProcessed, clenv_unify true CUMUL t u clenv, c
+      with e when precatchable_exception e -> TypeNotProcessed, clenv, c
     else
-      Coercible t, clenv, c
+      TypeNotProcessed, clenv, c
   else
     let evd,c = w_coerce (cl_env clenv) c t u clenv.evd in
-    Processed, { clenv with evd = evd }, c
+    TypeProcessed, { clenv with evd = evd }, c
 
 let clenv_assign_binding clenv k (sigma,c) =
   let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
@@ -413,7 +397,7 @@ let clenv_assign_binding clenv k (sigma,c) =
   let c_typ = clenv_hnf_constr clenv' c_typ in
   let status,clenv'',c = clenv_unify_similar_types clenv' c c_typ k_typ in
 (*  let evd,c' = w_coerce (cl_env clenv') c c_typ k_typ clenv'.evd in*)
-  { clenv'' with evd = meta_assign k (c,status) clenv''.evd }
+  { clenv'' with evd = meta_assign k (c,(UserGiven,status)) clenv''.evd }
 
 let clenv_match_args bl clenv =
   if bl = [] then
