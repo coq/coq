@@ -203,7 +203,7 @@ let bigN_of_pos_bigint dloc n =
   result hght (word_of_pos_bigint dloc hght n)
   
 let bigN_error_negative dloc =
-  Util.user_err_loc (dloc, "interp_bigN", Pp.str "bogN are only non-negative numbers")
+  Util.user_err_loc (dloc, "interp_bigN", Pp.str "bigN are only non-negative numbers")
 
 let interp_bigN dloc n = 
   if is_pos_or_zero n then
@@ -281,7 +281,7 @@ let interp_bigZ dloc n =
   if is_pos_or_zero n then
     RApp (dloc, ref_pos, [bigN_of_pos_bigint dloc n])
   else
-    RApp (dloc, ref_neg, [bigN_of_pos_bigint dloc n])
+    RApp (dloc, ref_neg, [bigN_of_pos_bigint dloc (neg n)])
 
 (* pretty printing functions for bigZ *)
 let bigint_of_bigZ = function
