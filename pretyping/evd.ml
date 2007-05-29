@@ -378,6 +378,7 @@ type hole_kind =
   | CasesType
   | InternalHole
   | TomatchTypeParameter of inductive * int
+  | GoalEvar
 
 type conv_pb = Reduction.conv_pb
 type evar_constraint = conv_pb * Environ.env * constr * constr
@@ -395,6 +396,9 @@ let subst_evar_defs_light sub evd =
 
 let create_evar_defs sigma =
   { evars=sigma; conv_pbs=[]; history=[]; metas=Metamap.empty }
+let create_goal_evar_defs sigma =
+  let h = fold (fun mv _ l -> (mv,(dummy_loc,GoalEvar))::l) sigma [] in
+  { evars=sigma; conv_pbs=[]; history=h; metas=Metamap.empty }
 let evars_of d = d.evars
 let evars_reset_evd evd d = {d with evars = evd}
 let reset_evd (sigma,mmap) d = {d with evars = sigma; metas=mmap}

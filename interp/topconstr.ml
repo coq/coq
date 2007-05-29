@@ -348,7 +348,7 @@ let rec subst_aconstr subst bound raw =
 	if ref' == ref then raw else
 	  AHole (Evd.InternalHole)
   | AHole (Evd.BinderType _ | Evd.QuestionMark _ | Evd.CasesType 
-    | Evd.InternalHole | Evd.TomatchTypeParameter _) -> raw
+    | Evd.InternalHole | Evd.TomatchTypeParameter _ | Evd.GoalEvar ) -> raw
 
   | ACast (r1,k) -> 
       match k with

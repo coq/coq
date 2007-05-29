@@ -312,31 +312,32 @@ let explain_occur_check env ev rhs =
   pt ++ spc () ++ str "that would depend on itself."
 
 let explain_hole_kind env = function
-  | QuestionMark _ -> str "a term for this placeholder"
+  | QuestionMark _ -> str "this placeholder"
   | CasesType ->
       str "the type of this pattern-matching problem"
   | BinderType (Name id) ->
-      str "a type for " ++ Nameops.pr_id id
+      str "the type of " ++ Nameops.pr_id id
   | BinderType Anonymous ->
-      str "a type for this anonymous binder"
+      str "the type of this anonymous binder"
   | ImplicitArg (c,(n,ido)) ->
       let id = out_some ido in
-      str "an instance for the implicit parameter " ++
+      str "the implicit parameter " ++
       pr_id id ++ spc () ++ str "of" ++
       spc () ++ Nametab.pr_global_env Idset.empty c
   | InternalHole ->
-      str "a term for an internal placeholder"
+      str "an internal placeholder"
   | TomatchTypeParameter (tyi,n) ->
       str "the " ++ nth n ++
       str " argument of the inductive type (" ++ pr_inductive env tyi ++
       str ") of this term"
+  | GoalEvar ->
+      str "an existential variable"
 
 let explain_not_clean env ev t k =
   let env = make_all_name_different env in
-  let c = mkRel (Intset.choose (free_rels t)) in
   let id = Evd.string_of_existential ev in
-  let var = pr_lconstr_env env c in
-  str "Tried to define " ++ explain_hole_kind env k ++
+  let var = pr_lconstr_env env t in
+  str "Tried to instantiate " ++ explain_hole_kind env k ++
   str " (" ++ str id ++ str ")" ++ spc () ++
   str "with a term using variable " ++ var ++ spc () ++
   str "which is not in its scope."

@@ -132,7 +132,7 @@ let clenv_environments_evars env evd bound t =
 
 let clenv_conv_leq env sigma t c bound =
   let ty = Retyping.get_type_of env sigma c in
-  let evd = Evd.create_evar_defs sigma in
+  let evd = Evd.create_goal_evar_defs sigma in
   let evars,args,_ = clenv_environments_evars env evd (Some bound) ty in
   let evars = Evarconv.the_conv_x_leq env t (applist (c,args)) evars in
   let evars,_ = Evarconv.consider_remaining_unif_problems env evars in
@@ -141,7 +141,7 @@ let clenv_conv_leq env sigma t c bound =
   args
 
 let mk_clenv_from_n gls n (c,cty) =
-  let evd = create_evar_defs gls.sigma in
+  let evd = create_goal_evar_defs gls.sigma in
   let (env,args,concl) = clenv_environments evd n cty in
   { templval = mk_freelisted (match args with [] -> c | _ -> applist (c,args));
     templtyp = mk_freelisted concl;
@@ -263,7 +263,8 @@ let clenv_pose_dependent_evars clenv =
   List.fold_left
     (fun clenv mv ->
       let ty = clenv_meta_type clenv mv in
-      let (evd,evar) = new_evar clenv.evd (cl_env clenv) ty in
+      let (evd,evar) = 
+	new_evar clenv.evd (cl_env clenv) ~src:(dummy_loc,GoalEvar) ty in
       clenv_assign mv evar {clenv with evd=evd})
     clenv
     dep_mvs

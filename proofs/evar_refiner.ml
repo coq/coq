@@ -51,6 +51,6 @@ let instantiate_pf_com n com pfts =
   in 
   let env = Evd.evar_env evi in
   let rawc = Constrintern.intern_constr sigma env com in 
-  let evd = create_evar_defs sigma in
+  let evd = create_goal_evar_defs sigma in
   let evd' = w_refine sp rawc evd in
     change_constraints_pftreestate (evars_of evd') pfts

@@ -89,7 +89,7 @@ let e_res_pf clenv gls =
 (* let unifyTerms m n = walking (fun wc -> fst (w_Unify CONV m n [] wc)) *)
 let unifyTerms m n gls = 
   let env = pf_env gls in
-  let evd = create_evar_defs (project gls) in
+  let evd = create_goal_evar_defs (project gls) in
   let evd' = Unification.w_unify false env CONV m n evd in
   tclIDTAC {it = gls.it; sigma = evars_of evd'}
 

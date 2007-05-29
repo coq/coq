@@ -51,7 +51,7 @@ let instantiate n rawc ido gl =
       error "not enough uninstantiated existential variables";
     if n <= 0 then error "incorrect existential variable index";
     let ev,_ =  destEvar (List.nth evl (n-1)) in
-    let evd' = w_refine ev rawc (create_evar_defs sigma)  in
+    let evd' = w_refine ev rawc (create_goal_evar_defs sigma)  in
       Refiner.tclEVARS (evars_of evd') gl
 	
 (*
@@ -68,7 +68,7 @@ let instantiate_tac = function
 *)
 
 let let_evar name typ gls =
-  let evd = Evd.create_evar_defs gls.sigma in
+  let evd = Evd.create_goal_evar_defs gls.sigma in
   let evd',evar = Evarutil.new_evar evd (pf_env gls) typ in
   Refiner.tclTHEN (Refiner.tclEVARS (evars_of evd'))
     (Tactics.letin_tac true name evar nowhere) gls

@@ -312,7 +312,8 @@ let applyHead env evd n c  =
     else 
       match kind_of_term (whd_betadeltaiota env (evars_of evd) cty) with
         | Prod (_,c1,c2) ->
-            let (evd',evar) = Evarutil.new_evar evd env c1 in
+            let (evd',evar) = 
+	      Evarutil.new_evar evd env ~src:(dummy_loc,GoalEvar) c1 in
 	    apprec (n-1) (mkApp(c,[|evar|])) (subst1 evar c2) evd'
 	| _ -> error "Apply_Head_Then"
   in 

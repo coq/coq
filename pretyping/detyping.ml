@@ -633,7 +633,7 @@ let rec subst_rawconstr subst raw =
 	if ref' == ref then raw else
 	  RHole (loc,InternalHole)
   | RHole (loc, (BinderType _ | QuestionMark _ | CasesType |
-      InternalHole | TomatchTypeParameter _)) -> raw
+      InternalHole | TomatchTypeParameter _ | GoalEvar)) -> raw
 
   | RCast (loc,r1,k) -> 
       (match k with 
