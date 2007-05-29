@@ -352,9 +352,8 @@ let explain_hole_kind env = function
 
 let explain_not_clean ctx ev t k =
   let ctx = make_all_name_different ctx in
-  let c = mkRel (Intset.choose (free_rels t)) in
   let id = Evd.string_of_existential ev in
-  let var = pr_lconstr_env ctx c in
+  let var = pr_lconstr_env ctx t in
   str"Tried to define " ++ explain_hole_kind ctx k ++
   str" (" ++ str id ++ str ")" ++ spc() ++
   str"with a term using variable " ++ var ++ spc () ++

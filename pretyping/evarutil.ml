@@ -424,6 +424,8 @@ let need_restriction k args = not (array_for_all (closedn k) args)
  * false. The problem is that we won't get the right error message.
  *)
 
+exception NotClean of constr
+
 let real_clean env isevars ev evi args rhs =
   let evd = ref isevars in
   let subst = List.map (fun (x,y) -> (y,mkVar x)) (list_uniquize args) in
@@ -434,7 +436,7 @@ let real_clean env isevars ev evi args rhs =
  	 else
 	   (* Flex/Rel problem: unifiable as a pattern iff Rel in ev scope *)
 	   (try List.assoc (mkRel (i-k)) subst 
-	    with Not_found -> if rigid then raise Exit else t)
+	    with Not_found -> if rigid then raise (NotClean t) else t)
       | Evar (ev,args) ->
           if Evd.is_defined_evar !evd (ev,args) then
             subs rigid k (existential_value (evars_of !evd) (ev,args))
@@ -460,7 +462,7 @@ let real_clean env isevars ev evi args rhs =
 		 or List.exists (fun (id',_,_) -> id=id') (evar_context evi)
 	     *)
              then t
-             else raise Exit)
+             else raise (NotClean t))
                
       | _ ->
 	  (* Flex/Rigid problem (or assimilated if not normal): we "imitate" *)
@@ -470,8 +472,8 @@ let real_clean env isevars ev evi args rhs =
   let rhs = whd_beta rhs (* heuristic *) in
   let body = 
     try subs true 0 rhs
-    with Exit -> 
-      error_not_clean env (evars_of !evd) ev rhs (evar_source ev !evd) in
+    with NotClean t -> 
+      error_not_clean env (evars_of !evd) ev t (evar_source ev !evd) in
   (!evd,body)
 
 (* [evar_define] solves the problem lhs = rhs when lhs is an uninstantiated
