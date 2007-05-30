@@ -828,7 +828,7 @@ let rec pr_vernac = function
 	| PrintImplicit qid -> str"Print Implicit" ++ spc()  ++ pr_reference qid
 (* spiwack: command printing all the axioms and section variables used in a 
          term *)
-	| PrintNeededAssumptions qid -> str"Print Needed Assumptions"++spc()++pr_reference qid
+	| PrintNeededAssumptions qid -> str"Print Assumptions"++spc()++pr_reference qid
       in pr_printable p
   | VernacSearch (sea,sea_r) -> pr_search sea sea_r pr_pattern_expr
   | VernacLocate loc -> 

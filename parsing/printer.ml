@@ -486,7 +486,7 @@ let pr_assumptionset env s =
       str "Section Variables:" ++ fnl () ++
       (Environ.AssumptionSet.fold 
             (function Variable (id,typ ) -> fun s -> 
-                       str (string_of_identifier id)++str " : "++pr_ltype typ++spc ()++s)
+                       s++str (string_of_identifier id)++str " : "++pr_ltype typ++spc ())
             vars (fnl ()))
     else
       mt ()
@@ -494,7 +494,7 @@ let pr_assumptionset env s =
     if not (Environ.AssumptionSet.is_empty axioms) then
       str "Axioms:" ++ fnl () ++
       (Environ.AssumptionSet.fold
-            (function Axiom (cst, typ) -> fun s -> (pr_constant env cst)++str " : "++pr_ltype typ++spc ()++s)
+            (function Axiom (cst, typ) -> fun s -> s++(pr_constant env cst)++str " : "++pr_ltype typ++spc ())
             axioms (mt ()))
     else
       mt ()

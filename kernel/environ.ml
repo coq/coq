@@ -543,15 +543,19 @@ let ( ** ) s1 s2  = AssumptionSet.union s1 s2
 
 let rec needed_assumptions t env =   
  (* goes recursively into the terms to see if it depends on assumptions
-    the 3 important cases are : Var _ which simply means that the term refers
-    to a section variable,
+    the 3 important cases are : Var _ which means that the term refers
+    to a section variable or a "Let" definition,
                                 Rel _ which means the term is a variable
     which has been bound earlier by a Lambda or a Prod (returns [] )
                                 Const _ where we need to first unfold
     the constant and return the needed assumptions of its body in the 
     environnement *)
   match kind_of_term t with
-    | Var id -> AssumptionSet.singleton (Variable (id,named_type id env))
+    | Var id -> (* a var can be either a variable, or a "Let" definition.*)
+                (match named_body id env with
+                | None ->
+                      AssumptionSet.singleton (Variable (id,named_type id env))
+		| Some bdy -> needed_assumptions bdy env)
     | Meta _ | Evar _ -> assert false
     | Cast (e1,_,e2) | Prod (_,e1,e2) | Lambda (_,e1,e2) -> 
                    (needed_assumptions e1 env)**(needed_assumptions e2 env)
