@@ -436,7 +436,7 @@ Definition mul_norm x y :=
        let zx := BigZ.div zx (BigZ.Pos gcd) in
        let d := BigN.div d gcd in
        if BigN.eq_bool d BigN.one then Qz (BigZ.mul zx ny)
-       else Qq (BigZ.mul zx ny) (BigN.pred d)
+       else Qq (BigZ.mul zx ny) d
  | Qq nx dx, Qz zy =>   
    if BigZ.eq_bool zy BigZ.zero then zero
    else	
@@ -447,10 +447,8 @@ Definition mul_norm x y :=
        let zy := BigZ.div zy (BigZ.Pos gcd) in
        let d := BigN.div d gcd in
        if BigN.eq_bool d BigN.one then Qz (BigZ.mul zy nx)
-       else Qq (BigZ.mul zy nx) (BigN.pred d)
+       else Qq (BigZ.mul zy nx) d
  | Qq nx dx, Qq ny dy => 
-     let dx := BigN.succ dx in
-     let dy := BigN.succ dy in
      let (nx, dy) := 
        let gcd := BigN.gcd (BigZ.to_N nx) dy in
        if BigN.eq_bool gcd BigN.one then (nx, dy)
@@ -461,7 +459,7 @@ Definition mul_norm x y :=
        else (BigZ.div ny (BigZ.Pos gcd), BigN.div dx gcd) in
      let d := (BigN.mul dx dy) in
      if BigN.eq_bool d BigN.one then Qz (BigZ.mul ny nx) 
-     else Qq (BigZ.mul ny nx) (BigN.pred d)
+     else Qq (BigZ.mul ny nx) d
  end.
 
 
