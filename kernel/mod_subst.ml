@@ -25,7 +25,7 @@ let apply_opt_resolver resolve kn =
  match resolve with
     None -> None
   | Some resolve ->
-     try List.assoc kn resolve with Not_found -> assert false
+     try List.assoc kn resolve with Not_found -> None
 
 type substitution_domain = MSI of mod_self_id | MBI of mod_bound_id
 
@@ -110,6 +110,16 @@ let subst_con sub con =
           None -> con',mkConst con'
         | Some t -> con',t
 
+let subst_con0 sub con =
+ let mp,dir,l = repr_con con in
+  match subst_mp0 sub mp with
+      None -> None
+    | Some (mp',resolve) ->
+	let con' = make_con mp' dir l in
+       match apply_opt_resolver resolve con with
+           None -> Some (mkConst con')
+         | Some t -> Some t
+
 (* Here the semantics is completely unclear.
    What does "Hint Unfold t" means when "t" is a parameter?
    Does the user mean "Unfold X.t" or does she mean "Unfold y"
@@ -119,16 +129,14 @@ let subst_evaluable_reference subst = function
   | EvalVarRef id -> EvalVarRef id
   | EvalConstRef kn -> EvalConstRef (fst (subst_con subst kn))
 
-(* 
-This should be rewritten to prevent duplication of constr's when not
-necessary.
-For now, it uses map_constr and is rather ineffective
-*)
 
 let rec map_kn f f' c = 
   let func = map_kn f f' in
     match kind_of_term c with
-      | Const kn -> f' kn
+      | Const kn -> 
+	  (match f' kn with
+	       None -> c
+	     | Some const ->const)
       | Ind (kn,i) -> 
          (match f kn with
              None -> c
@@ -138,18 +146,64 @@ let rec map_kn f f' c =
          (match f kn with
              None -> c
            | Some kn' ->
-	      mkConstruct ((kn',i),j))
-      | Case (ci,p,c,l) ->
-	  let ci' =
-           { ci with
-              ci_ind =
-               let (kn,i) = ci.ci_ind in
-                match f kn with None -> ci.ci_ind | Some kn' -> kn',i } in
-	  mkCase (ci', func p, func c, array_smartmap func l) 
-      | _ -> map_constr func c
+	       mkConstruct ((kn',i),j))
+      | Case (ci,p,ct,l) -> 
+	  let ci_ind =
+            let (kn,i) = ci.ci_ind in
+              (match f kn with None -> ci.ci_ind | Some kn' -> kn',i ) in
+	  let p' = func p in
+	  let ct' = func ct in
+	  let l' = array_smartmap func l in
+	    if (ci.ci_ind==ci_ind && p'==p 
+		&& l'==l && ct'==ct)then c
+	    else 
+	      mkCase ({ci with ci_ind = ci_ind},
+		      p',ct', l')  
+      | Cast (ct,k,t) -> 
+	  let ct' = func ct in
+	  let t'= func t in
+	    if (t'==t && ct'==ct) then c 
+	    else mkCast (ct', k, t')
+      | Prod (na,t,ct) -> 
+	  let ct' = func ct in
+	  let t'= func t in
+	    if (t'==t && ct'==ct) then c 
+	    else mkProd (na, t', ct')
+      | Lambda (na,t,ct) -> 
+	  let ct' = func ct in
+	  let t'= func t in
+	    if (t'==t && ct'==ct) then c 
+	    else mkLambda (na, t', ct')
+      | LetIn (na,b,t,ct) -> 
+	  let ct' = func ct in
+	  let t'= func t in
+	  let b'= func b in
+	    if (t'==t && ct'==ct && b==b') then c 
+	    else mkLetIn (na, b', t', ct')
+      | App (ct,l) -> 
+	  let ct' = func ct in
+	  let l' = array_smartmap func l in
+	    if (ct'== ct && l'==l) then c
+	    else mkApp (ct',l')
+      | Evar (e,l) -> 
+	  let l' = array_smartmap func l in
+	    if (l'==l) then c
+	    else mkEvar (e,l')
+      | Fix (ln,(lna,tl,bl)) ->
+	  let tl' = array_smartmap func tl in
+	  let bl' = array_smartmap func bl in
+	    if (bl == bl'&& tl == tl') then c  
+	    else mkFix (ln,(lna,tl',bl'))
+      | CoFix(ln,(lna,tl,bl)) ->
+	  let tl' = array_smartmap func tl in
+	  let bl' = array_smartmap func bl in
+	    if (bl == bl'&& tl == tl') then c  
+	    else mkCoFix (ln,(lna,tl',bl'))
+      | _ -> c
+
 
 let subst_mps sub = 
-  map_kn (subst_kn0 sub) (fun con -> snd (subst_con sub con))
+  map_kn (subst_kn0 sub) (subst_con0 sub)
 
 let rec replace_mp_in_mp mpfrom mpto mp =
   match mp with
@@ -172,50 +226,57 @@ exception ChangeDomain of resolver
 let join (subst1 : substitution) (subst2 : substitution) = 
   let apply_subst (sub : substitution) key (mp,resolve) =
    let mp',resolve' =
-    match subst_mp0 sub mp with
-       None -> mp, None
-     | Some (mp',resolve') -> mp',resolve' in
+     match subst_mp0 sub mp with
+	 None -> mp, None
+       | Some (mp',resolve') -> mp',resolve' in
    let resolve'' : resolver option =
-    try
-     let res =
-      match resolve with
-         Some res -> res
-       | None ->
-          match resolve' with
-             None -> raise BothSubstitutionsAreIdentitySubstitutions
-           | Some res -> raise (ChangeDomain res)
-     in
-      Some
-       (List.map
-         (fun (kn,topt) ->
-           kn,
-           match topt with
-              None ->
-               (match key with
-                   MSI msid ->
-                    let kn' = replace_mp_in_con (MPself msid) mp kn in
-                     apply_opt_resolver resolve' kn'
-                 | MBI mbid ->
-                    let kn' = replace_mp_in_con (MPbound mbid) mp kn in
-                     apply_opt_resolver resolve' kn')
-            | Some t -> Some (subst_mps sub t)) res)
-    with
-       BothSubstitutionsAreIdentitySubstitutions -> None
-     | ChangeDomain res ->
-        Some
-         ((List.map
-            (fun (kn,topt) ->
-              let key' =
-               match key with
-                  MSI msid -> MPself msid
-                | MBI mbid -> MPbound mbid in
-              (* let's replace mp with key in kn *)
-              let kn' = replace_mp_in_con mp key' kn in
-               kn',topt)) res)
+     try
+       let res =
+	 match resolve with
+             Some res -> res
+	   | None ->
+               match resolve' with
+		   None -> raise BothSubstitutionsAreIdentitySubstitutions
+		 | Some res -> raise (ChangeDomain res)
+       in
+	 Some
+	   (List.map
+              (fun (kn,topt) ->
+		 kn,
+		 match topt with
+		     None ->
+		       (match key with
+			    MSI msid ->
+			      let kn' = replace_mp_in_con (MPself msid) mp kn in
+				apply_opt_resolver resolve' kn'
+			  | MBI mbid ->
+			      let kn' = replace_mp_in_con (MPbound mbid) mp kn in
+				apply_opt_resolver resolve' kn')
+		   | Some t -> Some (subst_mps sub t)) res)
+     with
+	 BothSubstitutionsAreIdentitySubstitutions -> None
+       | ChangeDomain res ->
+	   let rec changeDom = function
+	     | [] -> []
+	     | (kn,topt)::r ->
+		 let key' =
+		   match key with
+                       MSI msid -> MPself msid
+                     | MBI mbid -> MPbound mbid in
+		 let kn' = replace_mp_in_con mp key' kn in
+		   if kn==kn' then
+		     (*the key does not appear in mp, we remove it
+		       from the resolver that we are building*)
+		     changeDom r
+		   else
+		     (kn',topt)::(changeDom r)
+	   in
+	     Some (changeDom res)
    in
-    mp',resolve'' in
+     mp',resolve'' in
   let subst = Umap.mapi (apply_subst subst2) subst1 in
-  Umap.fold Umap.add subst2 subst
+    Umap.fold Umap.add subst2 subst
+ 
 
 let rec occur_in_path uid path =
  match uid,path with
