@@ -395,3 +395,11 @@ Definition head031 (i:int31) :=
                                           end)
        i On
 .
+
+Definition tail031 (i:int31) :=
+  recr _ (fun _ => T31) (fun b si rec n => match b with 
+                                          | D0 => rec (add31 n In)
+                                          | D1 => n
+                                          end)
+       i On
+.

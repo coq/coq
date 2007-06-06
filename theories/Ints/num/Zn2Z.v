@@ -37,6 +37,7 @@ Section Zn2Z.
  Let w_to_Z        := w_op.(znz_to_Z).
  Let w_of_pos      := w_op.(znz_of_pos).
  Let w_head0       := w_op.(znz_head0).
+ Let w_tail0       := w_op.(znz_tail0).
 
  Let w_0            := w_op.(znz_0).
  Let w_1            := w_op.(znz_1).
@@ -118,6 +119,10 @@ Section Zn2Z.
  Let head0 :=
   Eval lazy beta delta [ww_head0] in 
   ww_head0 w_0 w_0W w_compare w_head0 w_add2 w_zdigits _ww_zdigits.
+
+ Let tail0 :=
+  Eval lazy beta delta [ww_tail0] in 
+  ww_tail0 w_0 w_0W w_compare w_tail0 w_add2 w_zdigits _ww_zdigits.
 
  Let ww_WW := Eval lazy beta delta [ww_WW] in (@ww_WW w).
  Let ww_0W := Eval lazy beta delta [ww_0W] in (@ww_0W w).
@@ -284,7 +289,7 @@ Section Zn2Z.
    
  Definition mk_zn2z_op := 
   mk_znz_op _ww_digits _ww_zdigits
-    to_Z ww_of_pos head0
+    to_Z ww_of_pos head0 tail0
     W0 ww_1 ww_Bm1
     ww_WW ww_W0 ww_0W  
     compare eq0
@@ -305,7 +310,7 @@ Section Zn2Z.
 
  Definition mk_zn2z_op_karatsuba := 
    mk_znz_op _ww_digits _ww_zdigits
-    to_Z ww_of_pos head0
+    to_Z ww_of_pos head0 tail0
     W0 ww_1 ww_Bm1
     ww_WW ww_W0 ww_0W  
     compare eq0
@@ -364,6 +369,7 @@ Section Zn2Z.
     (spec_gcd_gt op_spec)
     (spec_gcd op_spec) 
     (spec_head0 op_spec) 
+    (spec_tail0 op_spec) 
     (spec_add_mul_div op_spec)
     (spec_pos_mod)
     (spec_is_even)
@@ -641,6 +647,16 @@ Section Zn2Z.
   refine (spec_ww_head0 w_0 w_0W w_compare w_head0 
            w_add2 w_zdigits _ww_zdigits 
    w_to_Z _ _ _ _ _ _ _);auto.
+  exact (spec_0W op_spec).
+  exact (spec_compare op_spec).
+  exact (spec_zdigits op_spec).
+ Qed.
+
+ Let spec_ww_tail0  : forall x,  0 < [|x|] ->
+  exists y, 0 <= y /\ [|x|] = (2 * y + 1) * 2 ^ [|tail0 x|].
+ Proof.
+  refine (spec_ww_tail0 (w_digits := w_digits) w_0 w_0W w_compare w_tail0 
+           w_add2 w_zdigits _ww_zdigits w_to_Z _ _ _ _ _ _ _);auto.
   exact (spec_0W op_spec).
   exact (spec_compare op_spec).
   exact (spec_zdigits op_spec).

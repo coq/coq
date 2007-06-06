@@ -27,6 +27,7 @@ Section ZnZ_Op.
     znz_to_Z   : znz -> Z;
     znz_of_pos : positive -> N * znz;
     znz_head0  : znz -> znz;
+    znz_tail0  : znz -> znz;
     (* Basic constructors *)
     znz_0   : znz;
     znz_1   : znz;
@@ -91,6 +92,7 @@ Section Spec.
  Let w_to_Z        := w_op.(znz_to_Z).
  Let w_of_pos      := w_op.(znz_of_pos).
  Let w_head0       := w_op.(znz_head0).
+ Let w_tail0       := w_op.(znz_tail0).
 
  Let w0            := w_op.(znz_0).
  Let w1            := w_op.(znz_1).
@@ -238,6 +240,8 @@ Section Spec.
     (* shift operations *)
     spec_head0  : forall x,  0 < [|x|] ->
 	 wB/ 2 <= 2 ^ ([|w_head0 x|]) * [|x|] < wB;  
+    spec_tail0  : forall x, 0 < [|x|] -> 
+         exists y, 0 <= y /\ [|x|] = (2 * y + 1) * (2 ^ [|w_tail0 x|]) ;  
     spec_add_mul_div : forall x y p,
        [|p|] <= Zpos w_digits ->
        [| w_add_mul_div p x y |] =

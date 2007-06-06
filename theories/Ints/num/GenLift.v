@@ -27,6 +27,7 @@ Section GenLift.
  Variable w_compare : w -> w -> comparison.
  Variable ww_compare : zn2z w -> zn2z w -> comparison.
  Variable w_head0 : w -> w.
+ Variable w_tail0 : w -> w.
  Variable w_add: w -> w -> zn2z w.
  Variable w_add_mul_div : w -> w -> w -> w.
  Variable ww_sub: zn2z w -> zn2z w -> zn2z w.
@@ -45,6 +46,18 @@ Section GenLift.
     | _ => w_0W (w_head0 xh)
     end
   end.
+
+
+ Definition ww_tail0 x :=
+  match x with
+  | W0 => ww_zdigits
+  | WW xh xl =>
+    match w_compare w_0 xl with
+    | Eq => w_add w_zdigits (w_tail0 xh)
+    | _ => w_0W (w_tail0 xl)
+    end
+  end.
+
 
   (* 0 < p < ww_digits *)
  Definition ww_add_mul_div p x y := 
@@ -106,6 +119,8 @@ Section GenLift.
   Variable spec_ww_digits : ww_Digits = xO w_digits.
   Variable spec_w_head0  : forall x,  0 < [|x|] ->
 	 wB/ 2 <= 2 ^ ([|w_head0 x|]) * [|x|] < wB.
+  Variable spec_w_tail0 : forall x, 0 < [|x|] -> 
+         exists y, 0 <= y /\ [|x|] = (2* y + 1) * (2 ^ [|w_tail0 x|]).
   Variable spec_w_add_mul_div : forall x y p,
        [|p|] <= Zpos w_digits ->
        [| w_add_mul_div p x y |] =
@@ -165,6 +180,55 @@ Section GenLift.
    rewrite <- Zpower_exp;zarith. 
    rewrite Zmult_comm;ring_simplify (Zpos w_digits - p + p);fold wB;zarith.
    assert (H1 := spec_to_Z xh);zarith.
+  Qed.
+
+  Lemma spec_ww_tail0  : forall x,  0 < [[x]] ->
+	 exists y, 0 <= y /\ [[x]] = (2 * y + 1) * 2 ^ [[ww_tail0 x]].
+  Proof.
+   destruct x as [ |xh xl];simpl ww_to_Z;intros H.
+   unfold Zlt in H;discriminate H.
+   assert (H0 := spec_compare w_0 xl);rewrite spec_w_0 in H0.
+   destruct (w_compare w_0 xl).
+   rewrite <- H0; rewrite Zplus_0_r.
+   case (spec_to_Z (w_tail0 xh)); intros HH1 HH2.
+   generalize H; rewrite <- H0; rewrite Zplus_0_r; clear H; intros H.
+   case (@spec_w_tail0 xh).
+     apply Zmult_lt_reg_r with wB; auto with zarith.
+     unfold base; auto with zarith.
+   intros z (Hz1, Hz2); exists z; split; auto.
+   rewrite spec_w_add; rewrite (fun x => Zplus_comm [|x|]).
+   rewrite spec_zdigits; rewrite Zpower_exp; auto with zarith.
+   rewrite Zmult_assoc; rewrite <- Hz2; auto.
+
+   case (spec_to_Z (w_tail0 xh)); intros HH1 HH2.
+   case (spec_w_tail0 H0); intros z (Hz1, Hz2).
+   assert (Hp: [|w_tail0 xl|] < Zpos w_digits).
+     case (Zle_or_lt (Zpos w_digits) [|w_tail0 xl|]); auto; intros H1.
+     absurd (2 ^  (Zpos w_digits) <= 2 ^ [|w_tail0 xl|]).
+       apply Zlt_not_le.
+       case (spec_to_Z xl); intros HH3 HH4.
+       apply Zle_lt_trans with (2 := HH4).
+       apply Zle_trans with (1 * 2 ^ [|w_tail0 xl|]); auto with zarith.
+       rewrite Hz2.
+       apply Zmult_le_compat_r; auto with zarith.
+     apply Zpower_le_monotone; auto with zarith.
+   exists ([|xh|] * (2 ^ ((Zpos w_digits - [|w_tail0 xl|]) - 1)) + z); split.
+     apply Zplus_le_0_compat; auto.
+     apply Zmult_le_0_compat; auto with zarith.
+     case (spec_to_Z xh); auto.
+   rewrite spec_w_0W.
+   rewrite (Zmult_plus_distr_r 2); rewrite <- Zplus_assoc.
+   rewrite Zmult_plus_distr_l; rewrite <- Hz2.
+   apply f_equal2 with (f := Zplus); auto.
+   rewrite (Zmult_comm 2).
+   repeat rewrite <- Zmult_assoc.
+   apply f_equal2 with (f := Zmult); auto.
+   case (spec_to_Z (w_tail0 xl)); intros HH3 HH4.
+   pattern 2 at 2; rewrite <- Zpower_exp_1.
+   lazy beta; repeat rewrite <- Zpower_exp; auto with zarith.
+   unfold base; apply f_equal with (f := Zpower 2); auto with zarith.
+
+   contradict H0; case (spec_to_Z xl); auto with zarith.
   Qed.
 
   Hint Rewrite Zdiv_0 Zmult_0_l Zplus_0_l Zmult_0_r Zplus_0_r

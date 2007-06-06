@@ -13,6 +13,7 @@ Definition int31_op : znz_op int31.
  exact (phi). (* conversion to Z *)
  exact (positive_to_int31). (* positive -> N*int31 :  p => N,i where p = N*2^31+phi i *)
  exact head031.  (* number of head 0 *)
+ exact tail031.  (* number of tail 0 *)
 
  (* Basic constructors *)
  exact 0. (* 0 *)
