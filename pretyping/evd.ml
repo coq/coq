@@ -338,7 +338,7 @@ type instance_constraint =
     IsSuperType | IsSubType | ConvUpToEta of int | UserGiven
 
 type instance_typing_status =
-    TypeNotProcessed | TypeProcessed
+    CoerceToType | TypeNotProcessed | TypeProcessed
 
 type instance_status = instance_constraint * instance_typing_status
 
@@ -551,7 +551,7 @@ let retract_coercible_metas evd =
   let mc,ml = 
     Metamap.fold (fun n v (mc,ml) -> 
       match v with
-	| Clval (na,(b,(UserGiven,TypeNotProcessed as s)),typ) ->
+	| Clval (na,(b,(UserGiven,CoerceToType as s)),typ) ->
 	    (n,b.rebus,s)::mc, Metamap.add n (Cltyp (na,typ)) ml
 	| v ->
 	    mc, Metamap.add n v ml)

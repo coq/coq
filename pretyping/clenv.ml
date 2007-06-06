@@ -386,7 +386,7 @@ let clenv_unify_similar_types clenv c t u =
       try TypeProcessed, clenv_unify true CUMUL t u clenv, c
       with e when precatchable_exception e -> TypeNotProcessed, clenv, c
     else
-      TypeNotProcessed, clenv, c
+      CoerceToType, clenv, c
   else
     let evd,c = w_coerce (cl_env clenv) c t u clenv.evd in
     TypeProcessed, { clenv with evd = evd }, c

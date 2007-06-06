@@ -115,7 +115,7 @@ type instance_constraint =
     IsSuperType | IsSubType | ConvUpToEta of int | UserGiven
 
 type instance_typing_status =
-    TypeNotProcessed | TypeProcessed
+    CoerceToType | TypeNotProcessed | TypeProcessed
 
 type instance_status = instance_constraint * instance_typing_status
 
