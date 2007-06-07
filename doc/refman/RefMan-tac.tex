@@ -139,20 +139,27 @@ usable in the proof development.
 
 \begin{Variants}
 
-\item {\tt clear {\ident$_1$} {\ldots} {\ident$_n$}.}
+\item {\tt clear {\ident$_1$} {\ldots} {\ident$_n$}}
   
   This is equivalent to {\tt clear {\ident$_1$}. {\ldots} clear
     {\ident$_n$}.}
   
-\item {\tt clearbody {\ident}.}\tacindex{clearbody}
-  
+\item {\tt clearbody {\ident}}\tacindex{clearbody}
+
   This tactic expects {\ident} to be a local definition then clears
   its body. Otherwise said, this tactic turns a definition into an
   assumption.
 
-\item \texttt{clear - {\ident}.} 
+\item \texttt{clear - {\ident$_1$} {\ldots} {\ident$_n$}}
 
-  This tactic clears all hypotheses except the ones depending in {\ident}.
+  This tactic clears all hypotheses except the ones depending in 
+  the hypotheses named {\ident$_1$} {\ldots} {\ident$_n$} and in the
+  goal.
+
+\item \texttt{clear}
+
+  This tactic clears all hypotheses except the ones depending in 
+  goal.
 
 \end{Variants}
 
