@@ -20,11 +20,11 @@ open Inductiveops
 open Typeops
 open Evd
 
-let meta_type env mv =
+let meta_type evd mv =
   let ty =
-    try Evd.meta_ftype env mv
+    try Evd.meta_ftype evd mv
     with Not_found -> error ("unknown meta ?"^string_of_int mv) in
-  meta_instance env ty
+  meta_instance evd ty
 
 let vect_lift = Array.mapi lift
 let vect_lift_type = Array.mapi (fun i t -> type_app (lift i) t)

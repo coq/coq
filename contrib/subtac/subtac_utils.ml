@@ -173,6 +173,7 @@ let string_of_hole_kind = function
   | CasesType -> "CasesType"
   | InternalHole -> "InternalHole"
   | TomatchTypeParameter _ -> "TomatchTypeParameter"
+  | GoalEvar -> "GoalEvar"
       
 let evars_of_term evc init c = 
   let rec evrec acc c =

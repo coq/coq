@@ -338,7 +338,7 @@ let unify_to_type env evd mod_delta c u =
   let sigma = evars_of evd in
   let c = refresh_universes c in
   let t = get_type_of_with_meta env sigma (metas_of evd) c in
-  let t = Tacred.hnf_constr env sigma (nf_betaiota t) in
+  let t = Tacred.hnf_constr env sigma (nf_betaiota (nf_meta evd t)) in
   let u = Tacred.hnf_constr env sigma u in
   try unify_0 env sigma Cumul mod_delta t u
   with e when precatchable_exception e -> ([],[])
@@ -410,12 +410,15 @@ let w_merge env with_types mod_delta metas evars evd =
     match metas with
     | (mv,c,(status,to_type))::metas ->
         let ((evd,c),(metas'',evars'')),eqns =
-	  if with_types & to_type = CoerceToType then
-            (* Some coercion may have to be inserted *)
-	    (unify_or_coerce_type env evd mod_delta mv c,[])
-	  else
-            (* No coercion needed: delay the unification of types *)
-	    ((evd,c),([],[])),(mv,c)::eqns in
+	  if with_types & to_type <> TypeProcessed then
+	    if to_type = CoerceToType then
+              (* Some coercion may have to be inserted *)
+	      (unify_or_coerce_type env evd mod_delta mv c,[])
+	    else
+              (* No coercion needed: delay the unification of types *)
+	      ((evd,c),([],[])),(mv,c)::eqns
+	  else 
+	    ((evd,c),([],[])),eqns in
     	if meta_defined evd mv then
 	  let {rebus=c'},(status',_) = meta_fvalue evd mv in
           let (take_left,st,(metas',evars')) =
