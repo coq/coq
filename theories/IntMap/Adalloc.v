@@ -64,20 +64,20 @@ Section AdAlloc.
 
   Lemma ad_alloc_opt_optimal_1 :
    forall (m:Map A) (a:ad),
-     Nle (ad_alloc_opt m) a = false -> {y : A | MapGet A m a = Some y}.
+     Nleb (ad_alloc_opt m) a = false -> {y : A | MapGet A m a = Some y}.
   Proof.
     induction m as [| a y| m0 H m1 H0]. simpl in |- *. unfold Nle in |- *. simpl in |- *. intros. discriminate H.
     simpl in |- *. intros b H. elim (sumbool_of_bool (Neqb a N0)). intro H0. rewrite H0 in H.
-    unfold Nle in H. cut (N0 = b). intro. split with y. rewrite <- H1. rewrite H0. reflexivity.
+    unfold Nleb in H. cut (N0 = b). intro. split with y. rewrite <- H1. rewrite H0. reflexivity.
     rewrite <- (N_of_nat_of_N b).
     rewrite <- (le_n_O_eq _ (le_S_n _ _ (leb_complete_conv _ _ H))). reflexivity.
     intro H0. rewrite H0 in H. discriminate H.
     intros. simpl in H1. elim (Ndouble_or_double_plus_un a). intro H2. elim H2. intros a0 H3.
-    rewrite H3 in H1. elim (H _ (Nlt_double_mono_conv _ _ (Nmin_lt_3 _ _ _ H1))). intros y H4.
+    rewrite H3 in H1. elim (H _ (Nltb_double_mono_conv _ _ (Nmin_lt_3 _ _ _ H1))). intros y H4.
     split with y. rewrite H3. rewrite MapGet_M2_bit_0_0. rewrite Ndouble_div2. assumption.
     apply Ndouble_bit0.
     intro H2. elim H2. intros a0 H3. rewrite H3 in H1.
-    elim (H0 _ (Nlt_double_plus_one_mono_conv _ _ (Nmin_lt_4 _ _ _ H1))). intros y H4.
+    elim (H0 _ (Nltb_double_plus_one_mono_conv _ _ (Nmin_lt_4 _ _ _ H1))). intros y H4.
     split with y. rewrite H3. rewrite MapGet_M2_bit_0_1. rewrite Ndouble_plus_one_div2.
     assumption.
     apply Ndouble_plus_one_bit0.
@@ -85,7 +85,7 @@ Section AdAlloc.
 
   Lemma ad_alloc_opt_optimal :
    forall (m:Map A) (a:ad),
-     Nle (ad_alloc_opt m) a = false -> in_dom A a m = true.
+     Nleb (ad_alloc_opt m) a = false -> in_dom A a m = true.
   Proof.
     intros. unfold in_dom in |- *. elim (ad_alloc_opt_optimal_1 m a H). intros y H0. rewrite H0.
     reflexivity.

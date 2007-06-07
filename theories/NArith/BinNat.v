@@ -70,6 +70,21 @@ Definition Nplus n m :=
 
 Infix "+" := Nplus : N_scope.
 
+(** Substraction *)
+
+Definition Nminus (x y:N) :=
+  match x, y with
+    | N0, _ => N0
+    | x, N0 => x
+    | Npos x', Npos y' =>
+      match Pcompare x' y' Eq with
+        | Lt | Eq => N0
+        | Gt => Npos (x' - y')
+      end
+  end.
+
+Infix "-" := Nminus : N_scope.
+
 (** Multiplication *)
 
 Definition Nmult n m :=
@@ -92,6 +107,28 @@ Definition Ncompare n m :=
   end.
 
 Infix "?=" := Ncompare (at level 70, no associativity) : N_scope.
+
+Definition Nlt (x y:N) := (x ?= y) = Lt.
+Definition Ngt (x y:N) := (x ?= y) = Gt.
+Definition Nle (x y:N) := (x ?= y) <> Gt.
+Definition Nge (x y:N) := (x ?= y) <> Lt.
+
+Infix "<=" := Nle : N_scope.
+Infix "<" := Nlt : N_scope.
+Infix ">=" := Nge : N_scope.
+Infix ">" := Ngt : N_scope.
+
+(** Min and max *)
+
+Definition Nmin (n n' : N) := match Ncompare n n' with 
+ | Lt | Eq => n
+ | Gt => n'
+ end.
+
+Definition Nmax (n n' : N) := match Ncompare n n' with 
+ | Lt | Eq => n'
+ | Gt => n
+ end.
 
 (** convenient induction principles *)
 
@@ -215,6 +252,23 @@ intro n; pattern n in |- *; apply Nind; clear n; simpl in |- *.
   trivial.
   intros n IHn m p H0; do 2 rewrite Nplus_succ in H0.
   apply IHn; apply Nsucc_inj; assumption.
+Qed.
+
+(** Properties of substraction. *)
+
+Lemma Nle_Nminus_N0 : forall n n':N, n <= n' -> n-n' = N0.
+Proof.
+  destruct n; destruct n'; simpl; intros; auto.
+  elim H; auto.
+  red in H; simpl in *.
+  intros; destruct (Pcompare p p0 Eq); auto.
+  elim H; auto.
+Qed.
+
+Lemma Nminus_N0_Nle : forall n n':N, n-n' = N0 -> n <= n'.
+Proof.
+  destruct n; destruct n'; red; simpl; intros; try discriminate.
+  destruct (Pcompare p p0 Eq); discriminate.
 Qed.
 
 (** Properties of multiplication *)

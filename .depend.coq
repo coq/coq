@@ -21,7 +21,7 @@ theories/FSets/FMapWeakFacts.vo: theories/FSets/FMapWeakFacts.v theories/Bool/Bo
 theories/FSets/FMapWeakInterface.vo: theories/FSets/FMapWeakInterface.v theories/FSets/FSetInterface.vo theories/FSets/FSetWeakInterface.vo
 theories/FSets/FMapWeakList.vo: theories/FSets/FMapWeakList.v theories/FSets/FSetInterface.vo theories/FSets/FSetWeakInterface.vo theories/FSets/FMapWeakInterface.vo
 theories/FSets/FMapWeak.vo: theories/FSets/FMapWeak.v theories/Logic/DecidableType.vo theories/Logic/DecidableTypeEx.vo theories/FSets/FMapWeakInterface.vo theories/FSets/FMapWeakList.vo theories/FSets/FMapWeakFacts.vo
-theories/FSets/FMapPositive.vo: theories/FSets/FMapPositive.v theories/Bool/Bool.vo theories/ZArith/ZArith.vo theories/FSets/OrderedType.vo theories/FSets/FMapInterface.vo
+theories/FSets/FMapPositive.vo: theories/FSets/FMapPositive.v theories/Bool/Bool.vo theories/ZArith/ZArith.vo theories/FSets/OrderedType.vo theories/FSets/OrderedTypeEx.vo theories/FSets/FMapInterface.vo
 theories/FSets/FMapIntMap.vo: theories/FSets/FMapIntMap.v theories/Bool/Bool.vo theories/NArith/NArith.vo theories/NArith/Ndigits.vo theories/NArith/Ndec.vo theories/NArith/Nnat.vo theories/IntMap/Allmaps.vo theories/FSets/OrderedType.vo theories/FSets/OrderedTypeEx.vo theories/FSets/FMapInterface.vo theories/FSets/FMapList.vo
 theories/FSets/FSetToFiniteSet.vo: theories/FSets/FSetToFiniteSet.v theories/Sets/Ensembles.vo theories/Sets/Finite_sets.vo theories/FSets/FSetInterface.vo theories/FSets/FSetProperties.vo theories/FSets/OrderedTypeEx.vo
 theories/FSets/FMapAVL.vo: theories/FSets/FMapAVL.v theories/FSets/FSetInterface.vo theories/FSets/FMapInterface.vo theories/FSets/FMapList.vo theories/ZArith/ZArith.vo theories/ZArith/Int.vo
@@ -141,7 +141,7 @@ theories/Arith/Peano_dec.vo: theories/Arith/Peano_dec.v theories/Logic/Decidable
 theories/Arith/Euclid.vo: theories/Arith/Euclid.v theories/Arith/Mult.vo theories/Arith/Compare_dec.vo theories/Arith/Wf_nat.vo
 theories/Arith/Plus.vo: theories/Arith/Plus.v theories/Arith/Le.vo theories/Arith/Lt.vo
 theories/Arith/Wf_nat.vo: theories/Arith/Wf_nat.v theories/Arith/Lt.vo
-theories/Arith/Max.vo: theories/Arith/Max.v theories/Arith/Arith.vo
+theories/Arith/Max.vo: theories/Arith/Max.v theories/Arith/Le.vo
 theories/Arith/Bool_nat.vo: theories/Arith/Bool_nat.v theories/Arith/Compare_dec.vo theories/Arith/Peano_dec.vo theories/Bool/Sumbool.vo
 theories/Arith/Factorial.vo: theories/Arith/Factorial.v theories/Arith/Plus.vo theories/Arith/Mult.vo theories/Arith/Lt.vo
 theories/Arith/Arith_base.vo: theories/Arith/Arith_base.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Plus.vo theories/Arith/Gt.vo theories/Arith/Minus.vo theories/Arith/Mult.vo theories/Arith/Between.vo theories/Arith/Peano_dec.vo theories/Arith/Compare_dec.vo theories/Arith/Factorial.vo
@@ -156,7 +156,7 @@ theories/NArith/BinPos.vo: theories/NArith/BinPos.v theories/Logic/Eqdep_dec.vo 
 theories/NArith/Pnat.vo: theories/NArith/Pnat.v theories/NArith/BinPos.vo theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Gt.vo theories/Arith/Plus.vo theories/Arith/Mult.vo theories/Arith/Minus.vo
 theories/NArith/BinNat.vo: theories/NArith/BinNat.v theories/NArith/BinPos.vo
 theories/NArith/NArith.vo: theories/NArith/NArith.v theories/NArith/BinPos.vo theories/NArith/BinNat.vo contrib/setoid_ring/NArithRing.vo
-theories/NArith/Nnat.vo: theories/NArith/Nnat.v theories/Arith/Arith_base.vo theories/Arith/Compare_dec.vo theories/Bool/Sumbool.vo theories/Arith/Div2.vo theories/NArith/BinPos.vo theories/NArith/BinNat.vo theories/NArith/Pnat.vo
+theories/NArith/Nnat.vo: theories/NArith/Nnat.v theories/Arith/Arith_base.vo theories/Arith/Compare_dec.vo theories/Bool/Sumbool.vo theories/Arith/Div2.vo theories/Arith/Min.vo theories/Arith/Max.vo theories/NArith/BinPos.vo theories/NArith/BinNat.vo theories/NArith/Pnat.vo
 theories/NArith/Ndigits.vo: theories/NArith/Ndigits.v theories/Bool/Bool.vo theories/Bool/Bvector.vo theories/NArith/BinPos.vo theories/NArith/BinNat.vo
 theories/NArith/Ndec.vo: theories/NArith/Ndec.v theories/Bool/Bool.vo theories/Bool/Sumbool.vo theories/Arith/Arith.vo theories/NArith/BinPos.vo theories/NArith/BinNat.vo theories/NArith/Pnat.vo theories/NArith/Nnat.vo theories/NArith/Ndigits.vo
 theories/NArith/Ndist.vo: theories/NArith/Ndist.v theories/Arith/Arith.vo theories/Arith/Min.vo theories/NArith/BinPos.vo theories/NArith/BinNat.vo theories/NArith/Ndigits.vo
@@ -242,7 +242,7 @@ theories/FSets/FMapWeakFacts.vo: theories/FSets/FMapWeakFacts.v theories/Bool/Bo
 theories/FSets/FMapWeakInterface.vo: theories/FSets/FMapWeakInterface.v theories/FSets/FSetInterface.vo theories/FSets/FSetWeakInterface.vo
 theories/FSets/FMapWeakList.vo: theories/FSets/FMapWeakList.v theories/FSets/FSetInterface.vo theories/FSets/FSetWeakInterface.vo theories/FSets/FMapWeakInterface.vo
 theories/FSets/FMapWeak.vo: theories/FSets/FMapWeak.v theories/Logic/DecidableType.vo theories/Logic/DecidableTypeEx.vo theories/FSets/FMapWeakInterface.vo theories/FSets/FMapWeakList.vo theories/FSets/FMapWeakFacts.vo
-theories/FSets/FMapPositive.vo: theories/FSets/FMapPositive.v theories/Bool/Bool.vo theories/ZArith/ZArith.vo theories/FSets/OrderedType.vo theories/FSets/FMapInterface.vo
+theories/FSets/FMapPositive.vo: theories/FSets/FMapPositive.v theories/Bool/Bool.vo theories/ZArith/ZArith.vo theories/FSets/OrderedType.vo theories/FSets/OrderedTypeEx.vo theories/FSets/FMapInterface.vo
 theories/FSets/FMapIntMap.vo: theories/FSets/FMapIntMap.v theories/Bool/Bool.vo theories/NArith/NArith.vo theories/NArith/Ndigits.vo theories/NArith/Ndec.vo theories/NArith/Nnat.vo theories/IntMap/Allmaps.vo theories/FSets/OrderedType.vo theories/FSets/OrderedTypeEx.vo theories/FSets/FMapInterface.vo theories/FSets/FMapList.vo
 theories/FSets/FSetToFiniteSet.vo: theories/FSets/FSetToFiniteSet.v theories/Sets/Ensembles.vo theories/Sets/Finite_sets.vo theories/FSets/FSetInterface.vo theories/FSets/FSetProperties.vo theories/FSets/OrderedTypeEx.vo
 theories/FSets/FMapAVL.vo: theories/FSets/FMapAVL.v theories/FSets/FSetInterface.vo theories/FSets/FMapInterface.vo theories/FSets/FMapList.vo theories/ZArith/ZArith.vo theories/ZArith/Int.vo
@@ -282,54 +282,6 @@ theories/Reals/DiscrR.vo: theories/Reals/DiscrR.v theories/Reals/RIneq.vo contri
 theories/Reals/Rbase.vo: theories/Reals/Rbase.v theories/Reals/Rdefinitions.vo theories/Reals/Raxioms.vo theories/Reals/RIneq.vo theories/Reals/DiscrR.vo
 theories/Reals/LegacyRfield.vo: theories/Reals/LegacyRfield.v theories/Reals/Raxioms.vo contrib/field/LegacyField.vo
 theories/Reals/Rpow_def.vo: theories/Reals/Rpow_def.v theories/Reals/Rdefinitions.vo
-theories/Reals/R_Ifp.vo: theories/Reals/R_Ifp.v theories/Reals/Rbase.vo contrib/omega/Omega.vo
-theories/Reals/Rbasic_fun.vo: theories/Reals/Rbasic_fun.v theories/Reals/Rbase.vo theories/Reals/R_Ifp.vo contrib/fourier/Fourier.vo
-theories/Reals/R_sqr.vo: theories/Reals/R_sqr.v theories/Reals/Rbase.vo theories/Reals/Rbasic_fun.vo
-theories/Reals/SplitAbsolu.vo: theories/Reals/SplitAbsolu.v theories/Reals/Rbasic_fun.vo
-theories/Reals/SplitRmult.vo: theories/Reals/SplitRmult.v theories/Reals/Rbase.vo
-theories/Reals/ArithProp.vo: theories/Reals/ArithProp.v theories/Reals/Rbase.vo theories/Reals/Rbasic_fun.vo theories/Arith/Even.vo theories/Arith/Div2.vo contrib/setoid_ring/ArithRing.vo
-theories/Reals/Rfunctions.vo: theories/Reals/Rfunctions.v contrib/setoid_ring/ArithRing.vo theories/Reals/Rbase.vo theories/Reals/Rpow_def.vo theories/Reals/R_Ifp.vo theories/Reals/Rbasic_fun.vo theories/Reals/R_sqr.vo theories/Reals/SplitAbsolu.vo theories/Reals/SplitRmult.vo theories/Reals/ArithProp.vo contrib/omega/Omega.vo theories/ZArith/Zpower.vo
-theories/Reals/Rseries.vo: theories/Reals/Rseries.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Logic/Classical.vo theories/Arith/Compare.vo
-theories/Reals/SeqProp.vo: theories/Reals/SeqProp.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Logic/Classical.vo theories/Arith/Max.vo
-theories/Reals/Rcomplete.vo: theories/Reals/Rcomplete.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/SeqProp.vo theories/Arith/Max.vo
-theories/Reals/PartSum.vo: theories/Reals/PartSum.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/Rcomplete.vo theories/Arith/Max.vo
-theories/Reals/AltSeries.vo: theories/Reals/AltSeries.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/SeqProp.vo theories/Reals/PartSum.vo theories/Arith/Max.vo
-theories/Reals/Binomial.vo: theories/Reals/Binomial.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/PartSum.vo
-theories/Reals/Rsigma.vo: theories/Reals/Rsigma.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/PartSum.vo
-theories/Reals/Rprod.vo: theories/Reals/Rprod.v theories/Arith/Compare.vo theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/PartSum.vo theories/Reals/Binomial.vo
-theories/Reals/Cauchy_prod.vo: theories/Reals/Cauchy_prod.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/PartSum.vo
-theories/Reals/Alembert.vo: theories/Reals/Alembert.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/SeqProp.vo theories/Reals/PartSum.vo theories/Arith/Max.vo
-theories/Reals/SeqSeries.vo: theories/Reals/SeqSeries.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Arith/Max.vo theories/Reals/Rseries.vo theories/Reals/SeqProp.vo theories/Reals/Rcomplete.vo theories/Reals/PartSum.vo theories/Reals/AltSeries.vo theories/Reals/Binomial.vo theories/Reals/Rsigma.vo theories/Reals/Rprod.vo theories/Reals/Cauchy_prod.vo theories/Reals/Alembert.vo
-theories/Reals/Rtrigo_fun.vo: theories/Reals/Rtrigo_fun.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo
-theories/Reals/Rtrigo_def.vo: theories/Reals/Rtrigo_def.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo theories/Reals/Rtrigo_fun.vo theories/Arith/Max.vo
-theories/Reals/Rtrigo_alt.vo: theories/Reals/Rtrigo_alt.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo theories/Reals/Rtrigo_def.vo
-theories/Reals/Cos_rel.vo: theories/Reals/Cos_rel.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo theories/Reals/Rtrigo_def.vo
-theories/Reals/Cos_plus.vo: theories/Reals/Cos_plus.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo theories/Reals/Rtrigo_def.vo theories/Reals/Cos_rel.vo theories/Arith/Max.vo
-theories/Reals/Rtrigo.vo: theories/Reals/Rtrigo.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo theories/Reals/Rtrigo_fun.vo theories/Reals/Rtrigo_def.vo theories/Reals/Rtrigo_alt.vo theories/Reals/Cos_rel.vo theories/Reals/Cos_plus.vo theories/ZArith/ZArith_base.vo theories/ZArith/Zcomplements.vo theories/Logic/Classical_Prop.vo
-theories/Reals/Rlimit.vo: theories/Reals/Rlimit.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Logic/Classical_Prop.vo contrib/fourier/Fourier.vo
-theories/Reals/Rderiv.vo: theories/Reals/Rderiv.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rlimit.vo contrib/fourier/Fourier.vo theories/Logic/Classical_Prop.vo theories/Logic/Classical_Pred_Type.vo contrib/omega/Omega.vo
-theories/Reals/RList.vo: theories/Reals/RList.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo
-theories/Reals/Ranalysis1.vo: theories/Reals/Ranalysis1.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rlimit.vo theories/Reals/Rderiv.vo
-theories/Reals/Ranalysis2.vo: theories/Reals/Ranalysis2.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Ranalysis1.vo
-theories/Reals/Ranalysis3.vo: theories/Reals/Ranalysis3.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Ranalysis1.vo theories/Reals/Ranalysis2.vo
-theories/Reals/Rtopology.vo: theories/Reals/Rtopology.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Ranalysis1.vo theories/Reals/RList.vo theories/Logic/Classical_Prop.vo theories/Logic/Classical_Pred_Type.vo
-theories/Reals/MVT.vo: theories/Reals/MVT.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Ranalysis1.vo theories/Reals/Rtopology.vo
-theories/Reals/PSeries_reg.vo: theories/Reals/PSeries_reg.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo theories/Reals/Ranalysis1.vo theories/Arith/Max.vo theories/Arith/Even.vo
-theories/Reals/Exp_prop.vo: theories/Reals/Exp_prop.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo theories/Reals/Rtrigo.vo theories/Reals/Ranalysis1.vo theories/Reals/PSeries_reg.vo theories/Arith/Div2.vo theories/Arith/Even.vo theories/Arith/Max.vo
-theories/Reals/Rtrigo_reg.vo: theories/Reals/Rtrigo_reg.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo theories/Reals/Rtrigo.vo theories/Reals/Ranalysis1.vo theories/Reals/PSeries_reg.vo
-theories/Reals/Rsqrt_def.vo: theories/Reals/Rsqrt_def.v theories/Bool/Sumbool.vo theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo theories/Reals/Ranalysis1.vo
-theories/Reals/R_sqrt.vo: theories/Reals/R_sqrt.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rsqrt_def.vo
-theories/Reals/Rtrigo_calc.vo: theories/Reals/Rtrigo_calc.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo theories/Reals/Rtrigo.vo theories/Reals/R_sqrt.vo
-theories/Reals/Rgeom.vo: theories/Reals/Rgeom.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo theories/Reals/Rtrigo.vo theories/Reals/R_sqrt.vo
-theories/Reals/Sqrt_reg.vo: theories/Reals/Sqrt_reg.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Ranalysis1.vo theories/Reals/R_sqrt.vo
-theories/Reals/Ranalysis4.vo: theories/Reals/Ranalysis4.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo theories/Reals/Rtrigo.vo theories/Reals/Ranalysis1.vo theories/Reals/Ranalysis3.vo theories/Reals/Exp_prop.vo
-theories/Reals/Rpower.vo: theories/Reals/Rpower.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo theories/Reals/Rtrigo.vo theories/Reals/Ranalysis1.vo theories/Reals/Exp_prop.vo theories/Reals/Rsqrt_def.vo theories/Reals/R_sqrt.vo theories/Reals/MVT.vo theories/Reals/Ranalysis4.vo
-theories/Reals/Ranalysis.vo: theories/Reals/Ranalysis.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rtrigo.vo theories/Reals/SeqSeries.vo theories/Reals/Ranalysis1.vo theories/Reals/Ranalysis2.vo theories/Reals/Ranalysis3.vo theories/Reals/Rtopology.vo theories/Reals/MVT.vo theories/Reals/PSeries_reg.vo theories/Reals/Exp_prop.vo theories/Reals/Rtrigo_reg.vo theories/Reals/Rsqrt_def.vo theories/Reals/R_sqrt.vo theories/Reals/Rtrigo_calc.vo theories/Reals/Rgeom.vo theories/Reals/RList.vo theories/Reals/Sqrt_reg.vo theories/Reals/Ranalysis4.vo theories/Reals/Rpower.vo
-theories/Reals/NewtonInt.vo: theories/Reals/NewtonInt.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo theories/Reals/Rtrigo.vo theories/Reals/Ranalysis.vo
-theories/Reals/RiemannInt_SF.vo: theories/Reals/RiemannInt_SF.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Ranalysis.vo theories/Logic/Classical_Prop.vo
-theories/Reals/RiemannInt.vo: theories/Reals/RiemannInt.v theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo theories/Reals/Ranalysis.vo theories/Reals/Rbase.vo theories/Reals/RiemannInt_SF.vo theories/Logic/Classical_Prop.vo theories/Logic/Classical_Pred_Type.vo theories/Arith/Max.vo
-theories/Reals/Integration.vo: theories/Reals/Integration.v theories/Reals/NewtonInt.vo theories/Reals/RiemannInt_SF.vo theories/Reals/RiemannInt.vo
-theories/Reals/Reals.vo: theories/Reals/Reals.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo theories/Reals/Rtrigo.vo theories/Reals/Ranalysis.vo theories/Reals/Integration.vo
 theories/Sorting/Heap.vo: theories/Sorting/Heap.v theories/Lists/List.vo theories/Sets/Multiset.vo theories/Sorting/Permutation.vo theories/Relations/Relations.vo theories/Sorting/Sorting.vo
 theories/Sorting/Permutation.vo: theories/Sorting/Permutation.v theories/Relations/Relations.vo theories/Lists/List.vo theories/Sets/Multiset.vo theories/Arith/Arith.vo
 theories/Sorting/Sorting.vo: theories/Sorting/Sorting.v theories/Lists/List.vo theories/Sets/Multiset.vo theories/Sorting/Permutation.vo theories/Relations/Relations.vo
@@ -341,6 +293,31 @@ theories/QArith/Qring.vo: theories/QArith/Qring.v contrib/setoid_ring/Ring.vo th
 theories/QArith/Qreals.vo: theories/QArith/Qreals.v theories/Reals/Rbase.vo theories/QArith/QArith_base.vo
 theories/QArith/QArith.vo: theories/QArith/QArith.v theories/QArith/QArith_base.vo theories/QArith/Qring.vo theories/QArith/Qreduction.vo
 theories/QArith/Qcanon.vo: theories/QArith/Qcanon.v contrib/setoid_ring/Field.vo theories/QArith/QArith.vo theories/ZArith/Znumtheory.vo theories/Logic/Eqdep_dec.vo
+theories/Ints/Z/IntsZmisc.vo: theories/Ints/Z/IntsZmisc.v theories/ZArith/ZArith.vo
+theories/Ints/Z/Pmod.vo: theories/Ints/Z/Pmod.v theories/Ints/Z/IntsZmisc.vo theories/ZArith/Zwf.vo theories/ZArith/ZArith.vo theories/ZArith/Znumtheory.vo
+theories/Ints/Tactic.vo: theories/Ints/Tactic.v
+theories/Ints/Z/ZAux.vo: theories/Ints/Z/ZAux.v contrib/setoid_ring/ArithRing.vo theories/ZArith/ZArith.vo theories/ZArith/Znumtheory.vo theories/Ints/Tactic.vo
+theories/Ints/Z/ZPowerAux.vo: theories/Ints/Z/ZPowerAux.v theories/ZArith/ZArith.vo theories/ZArith/Znumtheory.vo theories/Ints/Tactic.vo
+theories/Ints/Z/ZDivModAux.vo: theories/Ints/Z/ZDivModAux.v theories/ZArith/ZArith.vo theories/ZArith/Znumtheory.vo theories/Ints/Tactic.vo theories/Ints/Z/ZAux.vo theories/Ints/Z/ZPowerAux.vo
+theories/Ints/Z/Zmod.vo: theories/Ints/Z/Zmod.v theories/ZArith/ZArith.vo theories/Ints/Z/ZAux.vo
+theories/Ints/Basic_type.vo: theories/Ints/Basic_type.v theories/ZArith/ZArith.vo theories/Ints/Z/ZDivModAux.vo theories/Ints/Z/ZPowerAux.vo
+theories/Ints/Int31.vo: theories/Ints/Int31.v theories/ZArith/ZArith.vo theories/Ints/Basic_type.vo
+theories/Ints/num/GenBase.vo: theories/Ints/num/GenBase.v theories/ZArith/ZArith.vo theories/Ints/Z/ZAux.vo theories/Ints/Z/ZDivModAux.vo theories/Ints/Z/ZPowerAux.vo theories/Ints/Basic_type.vo theories/Logic/JMeq.vo
+theories/Ints/num/ZnZ.vo: theories/Ints/num/ZnZ.v theories/Ints/Tactic.vo theories/ZArith/ZArith.vo theories/ZArith/Znumtheory.vo theories/Ints/Basic_type.vo theories/Ints/num/GenBase.vo
+theories/Ints/num/GenAdd.vo: theories/Ints/num/GenAdd.v theories/ZArith/ZArith.vo theories/Ints/Z/ZAux.vo theories/Ints/Z/ZDivModAux.vo theories/Ints/Basic_type.vo theories/Ints/num/GenBase.vo
+theories/Ints/num/GenSub.vo: theories/Ints/num/GenSub.v theories/ZArith/ZArith.vo theories/Ints/Z/ZAux.vo theories/Ints/Z/ZDivModAux.vo theories/Ints/Basic_type.vo theories/Ints/num/GenBase.vo
+theories/Ints/num/GenMul.vo: theories/Ints/num/GenMul.v theories/ZArith/ZArith.vo theories/Ints/Z/ZAux.vo theories/Ints/Z/ZDivModAux.vo theories/Ints/Basic_type.vo theories/Ints/num/GenBase.vo
+theories/Ints/num/GenDivn1.vo: theories/Ints/num/GenDivn1.v theories/ZArith/ZArith.vo theories/Ints/Z/ZDivModAux.vo theories/Ints/Z/ZPowerAux.vo theories/Ints/Basic_type.vo theories/Ints/num/GenBase.vo
+theories/Ints/num/GenDiv.vo: theories/Ints/num/GenDiv.v theories/ZArith/ZArith.vo theories/Ints/Z/ZAux.vo theories/Ints/Z/ZDivModAux.vo theories/Ints/Z/ZPowerAux.vo theories/Ints/Z/Zmod.vo theories/Ints/Basic_type.vo theories/Ints/num/GenBase.vo theories/Ints/num/GenDivn1.vo theories/Ints/num/GenAdd.vo theories/Ints/num/GenSub.vo
+theories/Ints/num/GenSqrt.vo: theories/Ints/num/GenSqrt.v theories/ZArith/ZArith.vo theories/Ints/Z/ZAux.vo theories/Ints/Z/ZDivModAux.vo theories/Ints/Z/ZPowerAux.vo theories/Ints/Basic_type.vo theories/Ints/num/GenBase.vo
+theories/Ints/num/GenLift.vo: theories/Ints/num/GenLift.v theories/ZArith/ZArith.vo theories/Ints/Z/ZAux.vo theories/Ints/Z/ZPowerAux.vo theories/Ints/Z/ZDivModAux.vo theories/Ints/Z/Zmod.vo theories/Ints/Basic_type.vo theories/Ints/num/GenBase.vo
+theories/Ints/num/Zn2Z.vo: theories/Ints/num/Zn2Z.v theories/ZArith/ZArith.vo theories/Ints/Z/ZAux.vo theories/Ints/Z/ZDivModAux.vo theories/Ints/Basic_type.vo theories/Ints/num/GenBase.vo theories/Ints/num/GenAdd.vo theories/Ints/num/GenSub.vo theories/Ints/num/GenMul.vo theories/Ints/num/GenSqrt.vo theories/Ints/num/GenLift.vo theories/Ints/num/GenDivn1.vo theories/Ints/num/GenDiv.vo theories/Ints/num/ZnZ.vo
+theories/Ints/num/Nbasic.vo: theories/Ints/num/Nbasic.v theories/ZArith/ZArith.vo theories/Ints/Basic_type.vo
+theories/Ints/num/NMake.vo: theories/Ints/num/NMake.v theories/ZArith/ZArith.vo theories/Ints/Basic_type.vo theories/Ints/num/ZnZ.vo theories/Ints/num/Zn2Z.vo theories/Ints/num/Nbasic.vo theories/Ints/num/GenMul.vo theories/Ints/num/GenDivn1.vo
+theories/Ints/BigN.vo: theories/Ints/BigN.v theories/Ints/Int31.vo theories/Ints/num/NMake.vo theories/Ints/num/ZnZ.vo
+theories/Ints/num/ZMake.vo: theories/Ints/num/ZMake.v theories/ZArith/ZArith.vo
+theories/Ints/BigZ.vo: theories/Ints/BigZ.v theories/Ints/BigN.vo theories/Ints/num/ZMake.vo
+theories/Ints/num/QMake.vo: theories/Ints/num/QMake.v theories/Bool/Bool.vo theories/ZArith/ZArith.vo theories/Arith/Arith.vo theories/Ints/BigN.vo theories/Ints/BigZ.vo
 contrib/omega/OmegaLemmas.vo: contrib/omega/OmegaLemmas.v theories/ZArith/ZArith_base.vo
 contrib/omega/Omega.vo: contrib/omega/Omega.v theories/ZArith/ZArith_base.vo contrib/omega/OmegaLemmas.vo theories/ZArith/Zhints.vo
 contrib/romega/ReflOmegaCore.vo: contrib/romega/ReflOmegaCore.v theories/Arith/Arith.vo theories/Lists/List.vo theories/Bool/Bool.vo theories/ZArith/ZArith_base.vo contrib/omega/OmegaLemmas.vo theories/Logic/Decidable.vo

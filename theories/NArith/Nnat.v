@@ -12,6 +12,8 @@ Require Import Arith_base.
 Require Import Compare_dec.
 Require Import Sumbool.
 Require Import Div2.
+Require Import Min.
+Require Import Max.
 Require Import BinPos.
 Require Import BinNat.
 Require Import Pnat.
@@ -108,6 +110,27 @@ Proof.
   apply N_of_nat_of_N.
 Qed.
 
+Lemma nat_of_Nminus :
+  forall a a', nat_of_N (Nminus a a') = ((nat_of_N a)-(nat_of_N a'))%nat.
+Proof.
+  destruct a; destruct a'; simpl; auto with arith.
+  case_eq (Pcompare p p0 Eq); simpl; intros.
+  rewrite (Pcompare_Eq_eq _ _ H); auto with arith.
+  symmetry; apply not_le_minus_0.
+  generalize (nat_of_P_lt_Lt_compare_morphism _ _ H); auto with arith.
+  apply nat_of_P_minus_morphism; auto.
+Qed.
+
+Lemma N_of_minus :
+  forall n n', N_of_nat (n-n') = Nminus (N_of_nat n) (N_of_nat n').
+Proof.
+  intros.
+  pattern n at 1; rewrite <- (nat_of_N_of_nat n).
+  pattern n' at 1; rewrite <- (nat_of_N_of_nat n').
+  rewrite <- nat_of_Nminus.
+  apply N_of_nat_of_N.
+Qed.
+
 Lemma nat_of_Nmult : 
   forall a a', nat_of_N (Nmult a a') = (nat_of_N a)*(nat_of_N a').
 Proof.
@@ -174,4 +197,44 @@ Proof.
   pattern n at 1; rewrite <- (nat_of_N_of_nat n).
   pattern n' at 1; rewrite <- (nat_of_N_of_nat n').
   symmetry; apply nat_of_Ncompare.
+Qed.
+
+Lemma nat_of_Nmin :
+  forall a a', nat_of_N (Nmin a a') = min (nat_of_N a) (nat_of_N a').
+Proof.
+  intros; unfold Nmin; rewrite nat_of_Ncompare.
+  unfold nat_compare.
+  destruct (lt_eq_lt_dec (nat_of_N a) (nat_of_N a')) as [[|]|]; 
+    simpl; intros; symmetry; auto with arith.
+  apply min_l; rewrite e; auto with arith.
+Qed.
+
+Lemma N_of_min :
+  forall n n', N_of_nat (min n n') = Nmin (N_of_nat n) (N_of_nat n').
+Proof.
+  intros.
+  pattern n at 1; rewrite <- (nat_of_N_of_nat n).
+  pattern n' at 1; rewrite <- (nat_of_N_of_nat n').
+  rewrite <- nat_of_Nmin.
+  apply N_of_nat_of_N.
+Qed.
+
+Lemma nat_of_Nmax :
+  forall a a', nat_of_N (Nmax a a') = max (nat_of_N a) (nat_of_N a').
+Proof.
+  intros; unfold Nmax; rewrite nat_of_Ncompare.
+  unfold nat_compare.
+  destruct (lt_eq_lt_dec (nat_of_N a) (nat_of_N a')) as [[|]|]; 
+    simpl; intros; symmetry; auto with arith.
+  apply max_r; rewrite e; auto with arith.
+Qed.
+
+Lemma N_of_max :
+  forall n n', N_of_nat (max n n') = Nmax (N_of_nat n) (N_of_nat n').
+Proof.
+  intros.
+  pattern n at 1; rewrite <- (nat_of_N_of_nat n).
+  pattern n' at 1; rewrite <- (nat_of_N_of_nat n').
+  rewrite <- nat_of_Nmax.
+  apply N_of_nat_of_N.
 Qed.

@@ -37,6 +37,13 @@ Proof.
  induction p; destruct p'; simpl; intros; try discriminate; auto.
 Qed.
 
+Lemma Peqb_complete : forall p p', Peqb p p' = true -> p = p'.
+Proof.
+  intros.
+  apply Pcompare_Eq_eq.
+  apply Peqb_Pcompare; auto.
+Qed.
+
 Lemma Pcompare_Peqb : forall p p', Pcompare p p' Eq = Eq -> Peqb p p' = true.
 Proof. 
 intros; rewrite <- (Pcompare_Eq_eq _ _ H).
@@ -208,205 +215,220 @@ Qed.
 
 (** A boolean order on [N] *)
 
-Definition Nle (a b:N) := leb (nat_of_N a) (nat_of_N b).
+Definition Nleb (a b:N) := leb (nat_of_N a) (nat_of_N b).
 
-Lemma Nle_Ncompare : forall a b, Nle a b = true <-> Ncompare a b <> Gt.
+Lemma Nleb_Nle : forall a b, Nleb a b = true <-> Nle a b.
 Proof.
- intros; rewrite nat_of_Ncompare.
- unfold Nle; apply leb_compare.
+ intros; unfold Nle; rewrite nat_of_Ncompare.
+ unfold Nleb; apply leb_compare.
 Qed.
 
-Lemma Nle_refl : forall a, Nle a a = true.
+Lemma Nleb_refl : forall a, Nleb a a = true.
 Proof.
-  intro. unfold Nle in |- *. apply leb_correct. apply le_n.
+  intro. unfold Nleb in |- *. apply leb_correct. apply le_n.
 Qed.
 
-Lemma Nle_antisym :
- forall a b, Nle a b = true -> Nle b a = true -> a = b.
+Lemma Nleb_antisym :
+ forall a b, Nleb a b = true -> Nleb b a = true -> a = b.
 Proof.
-  unfold Nle in |- *. intros. rewrite <- (N_of_nat_of_N a). rewrite <- (N_of_nat_of_N b).
+  unfold Nleb in |- *. intros. rewrite <- (N_of_nat_of_N a). rewrite <- (N_of_nat_of_N b).
   rewrite (le_antisym _ _ (leb_complete _ _ H) (leb_complete _ _ H0)). reflexivity.
 Qed.
 
-Lemma Nle_trans :
- forall a b c, Nle a b = true -> Nle b c = true -> Nle a c = true.
+Lemma Nleb_trans :
+ forall a b c, Nleb a b = true -> Nleb b c = true -> Nleb a c = true.
 Proof.
-  unfold Nle in |- *. intros. apply leb_correct. apply le_trans with (m := nat_of_N b).
+  unfold Nleb in |- *. intros. apply leb_correct. apply le_trans with (m := nat_of_N b).
   apply leb_complete. assumption.
   apply leb_complete. assumption.
 Qed.
 
-Lemma Nle_lt_trans :
+Lemma Nleb_ltb_trans :
  forall a b c,
-   Nle a b = true -> Nle c b = false -> Nle c a = false.
+   Nleb a b = true -> Nleb c b = false -> Nleb c a = false.
 Proof.
-  unfold Nle in |- *. intros. apply leb_correct_conv. apply le_lt_trans with (m := nat_of_N b).
+  unfold Nleb in |- *. intros. apply leb_correct_conv. apply le_lt_trans with (m := nat_of_N b).
   apply leb_complete. assumption.
   apply leb_complete_conv. assumption.
 Qed.
 
-Lemma Nlt_le_trans :
+Lemma Nltb_leb_trans :
  forall a b c,
-   Nle b a = false -> Nle b c = true -> Nle c a = false.
+   Nleb b a = false -> Nleb b c = true -> Nleb c a = false.
 Proof.
-  unfold Nle in |- *. intros. apply leb_correct_conv. apply lt_le_trans with (m := nat_of_N b).
+  unfold Nleb in |- *. intros. apply leb_correct_conv. apply lt_le_trans with (m := nat_of_N b).
   apply leb_complete_conv. assumption.
   apply leb_complete. assumption.
 Qed.
 
-Lemma Nlt_trans :
+Lemma Nltb_trans :
  forall a b c,
-   Nle b a = false -> Nle c b = false -> Nle c a = false.
+   Nleb b a = false -> Nleb c b = false -> Nleb c a = false.
 Proof.
-  unfold Nle in |- *. intros. apply leb_correct_conv. apply lt_trans with (m := nat_of_N b).
+  unfold Nleb in |- *. intros. apply leb_correct_conv. apply lt_trans with (m := nat_of_N b).
   apply leb_complete_conv. assumption.
   apply leb_complete_conv. assumption.
 Qed.
 
-Lemma Nlt_le_weak : forall a b:N, Nle b a = false -> Nle a b = true.
+Lemma Nltb_leb_weak : forall a b:N, Nleb b a = false -> Nleb a b = true.
 Proof.
-  unfold Nle in |- *. intros. apply leb_correct. apply lt_le_weak.
+  unfold Nleb in |- *. intros. apply leb_correct. apply lt_le_weak.
   apply leb_complete_conv. assumption.
 Qed.
 
-Lemma Nle_double_mono :
+Lemma Nleb_double_mono :
  forall a b,
-   Nle a b = true -> Nle (Ndouble a) (Ndouble b) = true.
+   Nleb a b = true -> Nleb (Ndouble a) (Ndouble b) = true.
 Proof.
-  unfold Nle in |- *. intros. rewrite nat_of_Ndouble. rewrite nat_of_Ndouble. apply leb_correct.
+  unfold Nleb in |- *. intros. rewrite nat_of_Ndouble. rewrite nat_of_Ndouble. apply leb_correct.
   simpl in |- *. apply plus_le_compat. apply leb_complete. assumption.
   apply plus_le_compat. apply leb_complete. assumption.
   apply le_n.
 Qed.
 
-Lemma Nle_double_plus_one_mono :
+Lemma Nleb_double_plus_one_mono :
  forall a b,
-   Nle a b = true ->
-   Nle (Ndouble_plus_one a) (Ndouble_plus_one b) = true.
+   Nleb a b = true ->
+   Nleb (Ndouble_plus_one a) (Ndouble_plus_one b) = true.
 Proof.
-  unfold Nle in |- *. intros. rewrite nat_of_Ndouble_plus_one. rewrite nat_of_Ndouble_plus_one.
+  unfold Nleb in |- *. intros. rewrite nat_of_Ndouble_plus_one. rewrite nat_of_Ndouble_plus_one.
   apply leb_correct. apply le_n_S. simpl in |- *. apply plus_le_compat. apply leb_complete.
   assumption.
   apply plus_le_compat. apply leb_complete. assumption.
   apply le_n.
 Qed.
 
-Lemma Nle_double_mono_conv :
+Lemma Nleb_double_mono_conv :
  forall a b,
-   Nle (Ndouble a) (Ndouble b) = true -> Nle a b = true.
+   Nleb (Ndouble a) (Ndouble b) = true -> Nleb a b = true.
 Proof.
-  unfold Nle in |- *. intros a b. rewrite nat_of_Ndouble. rewrite nat_of_Ndouble. intro.
+  unfold Nleb in |- *. intros a b. rewrite nat_of_Ndouble. rewrite nat_of_Ndouble. intro.
   apply leb_correct. apply (mult_S_le_reg_l 1). apply leb_complete. assumption.
 Qed.
 
-Lemma Nle_double_plus_one_mono_conv :
+Lemma Nleb_double_plus_one_mono_conv :
  forall a b,
-   Nle (Ndouble_plus_one a) (Ndouble_plus_one b) = true ->
-   Nle a b = true.
+   Nleb (Ndouble_plus_one a) (Ndouble_plus_one b) = true ->
+   Nleb a b = true.
 Proof.
-  unfold Nle in |- *. intros a b. rewrite nat_of_Ndouble_plus_one. rewrite nat_of_Ndouble_plus_one.
+  unfold Nleb in |- *. intros a b. rewrite nat_of_Ndouble_plus_one. rewrite nat_of_Ndouble_plus_one.
   intro. apply leb_correct. apply (mult_S_le_reg_l 1). apply le_S_n. apply leb_complete.
   assumption.
 Qed.
 
-Lemma Nlt_double_mono :
+Lemma Nltb_double_mono :
  forall a b,
-   Nle a b = false -> Nle (Ndouble a) (Ndouble b) = false.
+   Nleb a b = false -> Nleb (Ndouble a) (Ndouble b) = false.
 Proof.
-  intros. elim (sumbool_of_bool (Nle (Ndouble a) (Ndouble b))). intro H0.
-  rewrite (Nle_double_mono_conv _ _ H0) in H. discriminate H.
+  intros. elim (sumbool_of_bool (Nleb (Ndouble a) (Ndouble b))). intro H0.
+  rewrite (Nleb_double_mono_conv _ _ H0) in H. discriminate H.
   trivial.
 Qed.
 
-Lemma Nlt_double_plus_one_mono :
+Lemma Nltb_double_plus_one_mono :
  forall a b,
-   Nle a b = false ->
-   Nle (Ndouble_plus_one a) (Ndouble_plus_one b) = false.
+   Nleb a b = false ->
+   Nleb (Ndouble_plus_one a) (Ndouble_plus_one b) = false.
 Proof.
-  intros. elim (sumbool_of_bool (Nle (Ndouble_plus_one a) (Ndouble_plus_one b))). intro H0.
-  rewrite (Nle_double_plus_one_mono_conv _ _ H0) in H. discriminate H.
+  intros. elim (sumbool_of_bool (Nleb (Ndouble_plus_one a) (Ndouble_plus_one b))). intro H0.
+  rewrite (Nleb_double_plus_one_mono_conv _ _ H0) in H. discriminate H.
   trivial.
 Qed.
 
-Lemma Nlt_double_mono_conv :
+Lemma Nltb_double_mono_conv :
  forall a b,
-   Nle (Ndouble a) (Ndouble b) = false -> Nle a b = false.
+   Nleb (Ndouble a) (Ndouble b) = false -> Nleb a b = false.
 Proof.
-  intros. elim (sumbool_of_bool (Nle a b)). intro H0. rewrite (Nle_double_mono _ _ H0) in H.
+  intros. elim (sumbool_of_bool (Nleb a b)). intro H0. rewrite (Nleb_double_mono _ _ H0) in H.
   discriminate H.
   trivial.
 Qed.
 
-Lemma Nlt_double_plus_one_mono_conv :
+Lemma Nltb_double_plus_one_mono_conv :
  forall a b,
-   Nle (Ndouble_plus_one a) (Ndouble_plus_one b) = false ->
-   Nle a b = false.
+   Nleb (Ndouble_plus_one a) (Ndouble_plus_one b) = false ->
+   Nleb a b = false.
 Proof.
-  intros. elim (sumbool_of_bool (Nle a b)). intro H0.
-  rewrite (Nle_double_plus_one_mono _ _ H0) in H. discriminate H.
+  intros. elim (sumbool_of_bool (Nleb a b)). intro H0.
+  rewrite (Nleb_double_plus_one_mono _ _ H0) in H. discriminate H.
   trivial.
 Qed.
 
-(* A [min] function over [N] *)
+(* An alternate [min] function over [N] *)
 
-Definition Nmin (a b:N) := if Nle a b then a else b.
+Definition Nmin' (a b:N) := if Nleb a b then a else b.
+
+Lemma Nmin_Nmin' : forall a b, Nmin a b = Nmin' a b.
+Proof.
+ unfold Nmin, Nmin', Nleb; intros.
+ rewrite nat_of_Ncompare.
+ generalize (leb_compare (nat_of_N a) (nat_of_N b)); 
+ destruct (nat_compare (nat_of_N a) (nat_of_N b)); 
+ destruct (leb (nat_of_N a) (nat_of_N b)); intuition.
+ lapply H1; intros; discriminate.
+ lapply H1; intros; discriminate.
+Qed.
 
 Lemma Nmin_choice : forall a b, {Nmin a b = a} + {Nmin a b = b}.
 Proof.
-  unfold Nmin in |- *. intros. elim (sumbool_of_bool (Nle a b)). intro H. left. rewrite H.
-  reflexivity.
-  intro H. right. rewrite H. reflexivity.
+  unfold Nmin in *; intros; destruct (Ncompare a b); auto.
 Qed.
 
-Lemma Nmin_le_1 : forall a b, Nle (Nmin a b) a = true.
+Lemma Nmin_le_1 : forall a b, Nleb (Nmin a b) a = true.
 Proof.
-  unfold Nmin in |- *. intros. elim (sumbool_of_bool (Nle a b)). intro H. rewrite H.
-  apply Nle_refl.
-  intro H. rewrite H. apply Nlt_le_weak. assumption.
+  intros; rewrite Nmin_Nmin'.
+  unfold Nmin'; elim (sumbool_of_bool (Nleb a b)). intro H. rewrite H.
+  apply Nleb_refl.
+  intro H. rewrite H. apply Nltb_leb_weak. assumption.
 Qed.
 
-Lemma Nmin_le_2 : forall a b, Nle (Nmin a b) b = true.
+Lemma Nmin_le_2 : forall a b, Nleb (Nmin a b) b = true.
 Proof.
-  unfold Nmin in |- *. intros. elim (sumbool_of_bool (Nle a b)). intro H. rewrite H. assumption.
-  intro H. rewrite H. apply Nle_refl.
+  intros; rewrite Nmin_Nmin'.
+  unfold Nmin'; elim (sumbool_of_bool (Nleb a b)). intro H. rewrite H. assumption.
+  intro H. rewrite H. apply Nleb_refl.
 Qed.
 
 Lemma Nmin_le_3 :
- forall a b c, Nle a (Nmin b c) = true -> Nle a b = true.
+ forall a b c, Nleb a (Nmin b c) = true -> Nleb a b = true.
 Proof.
-  unfold Nmin in |- *. intros. elim (sumbool_of_bool (Nle b c)). intro H0. rewrite H0 in H.
+  intros; rewrite Nmin_Nmin' in *. 
+  unfold Nmin' in *; elim (sumbool_of_bool (Nleb b c)). intro H0. rewrite H0 in H.
   assumption.
-  intro H0. rewrite H0 in H. apply Nlt_le_weak. apply Nle_lt_trans with (b := c); assumption.
+  intro H0. rewrite H0 in H. apply Nltb_leb_weak. apply Nleb_ltb_trans with (b := c); assumption.
 Qed.
 
 Lemma Nmin_le_4 :
- forall a b c, Nle a (Nmin b c) = true -> Nle a c = true.
+ forall a b c, Nleb a (Nmin b c) = true -> Nleb a c = true.
 Proof.
-  unfold Nmin in |- *. intros. elim (sumbool_of_bool (Nle b c)). intro H0. rewrite H0 in H.
-  apply Nle_trans with (b := b); assumption.
+  intros; rewrite Nmin_Nmin' in *. 
+  unfold Nmin' in *; elim (sumbool_of_bool (Nleb b c)). intro H0. rewrite H0 in H.
+  apply Nleb_trans with (b := b); assumption.
   intro H0. rewrite H0 in H. assumption.
 Qed.
 
 Lemma Nmin_le_5 :
  forall a b c,
-   Nle a b = true -> Nle a c = true -> Nle a (Nmin b c) = true.
+   Nleb a b = true -> Nleb a c = true -> Nleb a (Nmin b c) = true.
 Proof.
   intros. elim (Nmin_choice b c). intro H1. rewrite H1. assumption.
   intro H1. rewrite H1. assumption.
 Qed.
 
 Lemma Nmin_lt_3 :
- forall a b c, Nle (Nmin b c) a = false -> Nle b a = false.
+ forall a b c, Nleb (Nmin b c) a = false -> Nleb b a = false.
 Proof.
-  unfold Nmin in |- *. intros. elim (sumbool_of_bool (Nle b c)). intro H0. rewrite H0 in H.
+  intros; rewrite Nmin_Nmin' in *. 
+  unfold Nmin' in *. intros. elim (sumbool_of_bool (Nleb b c)). intro H0. rewrite H0 in H.
   assumption.
-  intro H0. rewrite H0 in H. apply Nlt_trans with (b := c); assumption.
+  intro H0. rewrite H0 in H. apply Nltb_trans with (b := c); assumption.
 Qed.
 
 Lemma Nmin_lt_4 :
- forall a b c, Nle (Nmin b c) a = false -> Nle c a = false.
+ forall a b c, Nleb (Nmin b c) a = false -> Nleb c a = false.
 Proof.
-  unfold Nmin in |- *. intros. elim (sumbool_of_bool (Nle b c)). intro H0. rewrite H0 in H.
-  apply Nlt_le_trans with (b := b); assumption.
+  intros; rewrite Nmin_Nmin' in *. 
+  unfold Nmin' in *. elim (sumbool_of_bool (Nleb b c)). intro H0. rewrite H0 in H.
+  apply Nltb_leb_trans with (b := b); assumption.
   intro H0. rewrite H0 in H. assumption.
 Qed.

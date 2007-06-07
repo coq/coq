@@ -14,7 +14,7 @@ Require Import BinPos.
 (** Properties of the injection from binary positive numbers to Peano 
     natural numbers *)
 
-(** Original development by Pierre Crégut, CNET, Lannion, France *)
+(** Original development by Pierre CrÃ©gut, CNET, Lannion, France *)
 
 Require Import Le.
 Require Import Lt.

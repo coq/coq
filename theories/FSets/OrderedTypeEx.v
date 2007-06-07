@@ -154,16 +154,16 @@ Module N_as_OT <: UsualOrderedType.
   Definition eq_sym := @sym_eq t.
   Definition eq_trans := @trans_eq t.
 
-  Definition lt p q:= Nle q p = false.
+  Definition lt p q:= Nleb q p = false.
  
-  Definition lt_trans := Nlt_trans.
+  Definition lt_trans := Nltb_trans.
 
   Lemma lt_not_eq : forall x y : t, lt x y -> ~ eq x y.
   Proof.
   intros; intro.
   rewrite H0 in H.
   unfold lt in H.
-  rewrite Nle_refl in H; discriminate.
+  rewrite Nleb_refl in H; discriminate.
   Qed.
 
   Definition compare : forall x y : t, Compare lt eq x y.
@@ -172,16 +172,15 @@ Module N_as_OT <: UsualOrderedType.
   case_eq ((x ?= y)%N); intros.
   apply EQ; apply Ncompare_Eq_eq; auto.
   apply LT; unfold lt; auto.
-   generalize (Nle_Ncompare y x).
-   destruct (Nle y x); auto.
-   rewrite <- Ncompare_antisym.
+   generalize (Nleb_Nle y x).
+   unfold Nle; rewrite <- Ncompare_antisym.
    destruct (x ?= y)%N; simpl; try discriminate.
-   intros (H0,_); elim H0; auto.
+   clear H; intros H.
+   destruct (Nleb y x); intuition.
   apply GT; unfold lt.
-   generalize (Nle_Ncompare x y).
-   destruct (Nle x y); auto.
-   destruct (x ?= y)%N; simpl; try discriminate.
-   intros (H0,_); elim H0; auto.
+   generalize (Nleb_Nle x y).
+   unfold Nle; destruct (x ?= y)%N; simpl; try discriminate.
+   destruct (Nleb x y); intuition.
   Defined.
 
 End N_as_OT.

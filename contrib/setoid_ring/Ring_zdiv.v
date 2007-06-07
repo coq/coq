@@ -11,20 +11,10 @@ Require Import BinPos.
 Require Import BinNat.
 Require Import ZArith_base.
 
-Definition Nge a b :=
+Definition Ngeb a b :=
   match a with
    N0 => false
  | Npos na => match Pcompare na b Eq with Lt => false | _ => true end end.
-
-Definition Nminus a b := match a, b with
-  | N0, _ => N0
-  | _ , N0 => a
-  | Npos na, Npos nb => 
-      match (na - nb)%positive with
-        xH => match Pcompare na nb Eq with Eq => N0 | _ => Npos xH end
-      | t => Npos t
-      end
-  end.
 
 Fixpoint pdiv_eucl (a b:positive) {struct a} : N * N :=
   match a with
@@ -33,24 +23,24 @@ Fixpoint pdiv_eucl (a b:positive) {struct a} : N * N :=
     | xO a' =>
        let (q, r) := pdiv_eucl a' b in
        let r' := (2 * r)%N in
-        if (Nge r' b) then(2 * q + 1, (Nminus r'  (Npos b)))%N
+        if (Ngeb r' b) then(2 * q + 1, (Nminus r'  (Npos b)))%N
         else  (2 * q, r')%N
     | xI a' =>
        let (q, r) := pdiv_eucl a' b in
        let r' := (2 * r + 1)%N in
-        if (Nge r' b) then(2 * q + 1, (Nminus r' (Npos b)))%N
+        if (Ngeb r' b) then(2 * q + 1, (Nminus r' (Npos b)))%N
         else  (2 * q, r')%N
   end.
 
 
-Theorem Nge_correct: forall a b, 
-  if Nge a b then a = ((Nminus a (Npos b)) + Npos b)%N else True.
+Theorem Ngeb_correct: forall a b, 
+  if Ngeb a b then a = ((Nminus a (Npos b)) + Npos b)%N else True.
 destruct a; intros; simpl; auto.
   case_eq (Pcompare p b Eq); intros; auto.
   rewrite (Pcompare_Eq_eq _ _ H).
   assert (HH: forall p, Pminus p p = xH).
     intro p0; unfold Pminus; rewrite Pminus_mask_diag; auto.
-  rewrite HH; auto.
+  simpl; auto.
   generalize (Pplus_minus _ _ H).
   case (p - b)%positive; intros; subst;
   unfold Nplus; rewrite Pplus_comm; trivial.
@@ -79,7 +69,7 @@ Theorem pdiv_eucl_correct: forall a b,
 induction a; unfold pdiv_eucl; fold pdiv_eucl.
   intros b; generalize (IHa b); case pdiv_eucl.
     intros q1 r1 Hq1.
-     generalize (Nge_correct (2 * r1 + 1) b); case Nge; intros H.
+     generalize (Ngeb_correct (2 * r1 + 1) b); case Ngeb; intros H.
      set (u := Nminus (2 * r1 + 1) (Npos b)) in * |- *.
      assert (HH: Z_of_N u = (Z_of_N (2 * r1 + 1) - Zpos b)%Z).
         rewrite H; z_of_n_tac; simpl.
@@ -91,7 +81,7 @@ induction a; unfold pdiv_eucl; fold pdiv_eucl.
      rewrite Zpos_xI; rewrite Hq1; z_of_n_tac; ztac; auto.
   intros b; generalize (IHa b); case pdiv_eucl.
     intros q1 r1 Hq1.
-     generalize (Nge_correct (2 * r1) b); case Nge; intros H.
+     generalize (Ngeb_correct (2 * r1) b); case Ngeb; intros H.
      set (u := Nminus (2 * r1) (Npos b)) in * |- *.
      assert (HH: Z_of_N u = (Z_of_N (2 * r1) - Zpos b)%Z).
         rewrite H; z_of_n_tac; simpl.

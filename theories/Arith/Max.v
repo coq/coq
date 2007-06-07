@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-Require Import Arith.
+Require Import Le.
 
 Open Local Scope nat_scope.
 

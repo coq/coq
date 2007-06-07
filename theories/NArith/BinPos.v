@@ -13,7 +13,7 @@ Unset Boxed Definitions.
 (**********************************************************************)
 (** Binary positive numbers *)
 
-(** Original development by Pierre Crégut, CNET, Lannion, France *)
+(** Original development by Pierre CrÃ©gut, CNET, Lannion, France *)
 
 Inductive positive : Set :=
 | xI : positive -> positive
@@ -219,6 +219,16 @@ Fixpoint Pcompare (x y:positive) (r:comparison) {struct y} : comparison :=
   end.
 
 Infix "?=" := Pcompare (at level 70, no associativity) : positive_scope.
+
+Definition Pmin (p p' : positive) := match Pcompare p p' Eq with 
+ | Lt | Eq => p 
+ | Gt => p'
+ end.
+
+Definition Pmax (p p' : positive) := match Pcompare p p' Eq with 
+ | Lt | Eq => p' 
+ | Gt => p
+ end.
 
 (**********************************************************************)
 (** Miscellaneous properties of binary positive numbers *)
