@@ -665,6 +665,23 @@ Proof.
 auto.
 Qed.
 
+Lemma filter_add_1 : forall s x, f x = true -> 
+ filter f (add x s) [=] add x (filter f s). 
+Proof.
+red; intros; set_iff; do 2 (rewrite filter_iff; auto); set_iff.
+intuition.
+rewrite <- H; apply Comp; auto.
+Qed.
+
+Lemma filter_add_2 : forall s x, f x = false -> 
+ filter f (add x s) [=] filter f s. 
+Proof.
+red; intros; do 2 (rewrite filter_iff; auto); set_iff.
+intuition.
+assert (f x = f a) by (apply Comp; auto).
+rewrite H in H1; rewrite H2 in H1; discriminate.
+Qed.
+
 Lemma add_filter_1 : forall s s' x, 
  f x=true -> (Add x s s') -> (Add x (filter f s) (filter f s')).
 Proof.

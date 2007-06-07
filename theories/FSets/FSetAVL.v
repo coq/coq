@@ -2576,6 +2576,9 @@ Qed.
 
 End Raw.
 
+Set Implicit Arguments. 
+Unset Strict Implicit.
+
 (** * Encapsulation
 
    Now, in order to really provide a functor implementing [S], we 
@@ -2602,21 +2605,21 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  
  Definition mem (x:elt)(s:t) : bool := Raw.mem x s.
 
- Definition empty : t := Bbst _ Raw.empty_bst Raw.empty_avl.
+ Definition empty : t := Bbst Raw.empty_bst Raw.empty_avl.
  Definition is_empty (s:t) : bool := Raw.is_empty s.
- Definition singleton (x:elt) : t := Bbst _ (Raw.singleton_bst x) (Raw.singleton_avl x).
+ Definition singleton (x:elt) : t := Bbst (Raw.singleton_bst x) (Raw.singleton_avl x).
  Definition add (x:elt)(s:t) : t := 
-   Bbst _ (Raw.add_bst s x (is_bst s) (is_avl s)) 
-          (Raw.add_avl s x (is_avl s)). 
+   Bbst (Raw.add_bst s x (is_bst s) (is_avl s)) 
+        (Raw.add_avl s x (is_avl s)). 
  Definition remove (x:elt)(s:t) : t := 
-   Bbst _ (Raw.remove_bst s x (is_bst s) (is_avl s)) 
-          (Raw.remove_avl s x (is_avl s)). 
+   Bbst (Raw.remove_bst s x (is_bst s) (is_avl s)) 
+        (Raw.remove_avl s x (is_avl s)). 
  Definition inter (s s':t) : t := 
-   Bbst _ (Raw.inter_bst _ _ (is_bst s) (is_avl s) (is_bst s') (is_avl s'))  
-          (Raw.inter_avl _ _ (is_avl s) (is_avl s')).
+   Bbst (Raw.inter_bst _ _ (is_bst s) (is_avl s) (is_bst s') (is_avl s'))  
+        (Raw.inter_avl _ _ (is_avl s) (is_avl s')).
  Definition diff (s s':t) : t := 
-   Bbst _ (Raw.diff_bst _ _ (is_bst s) (is_avl s) (is_bst s') (is_avl s'))  
-          (Raw.diff_avl _ _ (is_avl s) (is_avl s')).
+   Bbst (Raw.diff_bst _ _ (is_bst s) (is_avl s) (is_bst s') (is_avl s'))  
+        (Raw.diff_avl _ _ (is_avl s) (is_avl s')).
  Definition elements (s:t) : list elt := Raw.elements s.
  Definition min_elt (s:t) : option elt := Raw.min_elt s.
  Definition max_elt (s:t) : option elt := Raw.max_elt s.
@@ -2624,26 +2627,26 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Definition fold (B : Type) (f : elt -> B -> B) (s:t) : B -> B := Raw.fold f s. 
  Definition cardinal (s:t) : nat := Raw.cardinal s.
  Definition filter (f : elt -> bool) (s:t) : t := 
-   Bbst _ (Raw.filter_bst f _ (is_bst s) (is_avl s))
-          (Raw.filter_avl f _ (is_avl s)). 
+   Bbst (Raw.filter_bst f _ (is_bst s) (is_avl s))
+        (Raw.filter_avl f _ (is_avl s)). 
  Definition for_all (f : elt -> bool) (s:t) : bool := Raw.for_all f s.
  Definition exists_ (f : elt -> bool) (s:t) : bool := Raw.exists_ f s.
  Definition partition (f : elt -> bool) (s:t) : t * t :=
    let p := Raw.partition f s in
-   (Bbst (fst p) (Raw.partition_bst_1 f _ (is_bst s) (is_avl s)) 
-                 (Raw.partition_avl_1 f _ (is_avl s)),
-    Bbst (snd p) (Raw.partition_bst_2 f _ (is_bst s) (is_avl s)) 
-                 (Raw.partition_avl_2 f _ (is_avl s))).
+   (Bbst (Raw.partition_bst_1 f _ (is_bst s) (is_avl s)) 
+         (Raw.partition_avl_1 f _ (is_avl s)),
+    Bbst (Raw.partition_bst_2 f _ (is_bst s) (is_avl s)) 
+         (Raw.partition_avl_2 f _ (is_avl s))).
 
  Definition union (s s':t) : t :=
    let (u,p) := Raw.union _ _ (is_bst s) (is_avl s) (is_bst s') (is_avl s') in 
    let (b,p) := p in 
    let (a,_) := p in 
-   Bbst u b a.
+   Bbst b a.
 
  Definition union' (s s' : t) : t := 
-   Bbst _ (Raw.union'_bst _ _ (is_bst s) (is_avl s) (is_bst s') (is_avl s'))  
-          (Raw.union'_avl _ _ (is_avl s) (is_avl s')).
+   Bbst (Raw.union'_bst _ _ (is_bst s) (is_avl s) (is_bst s') (is_avl s'))  
+        (Raw.union'_avl _ _ (is_avl s) (is_avl s')).
 
  Definition equal (s s': t) : bool := if Raw.equal _ _ (is_bst s) (is_bst s') then true else false. 
  Definition equal' (s s':t) : bool := Raw.equal' s s'.
@@ -2817,7 +2820,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Qed.
  
  Lemma fold_1 : forall (A : Type) (i : A) (f : elt -> A -> A),
-      fold A f s i = fold_left (fun a e => f e a) (elements s) i.
+      fold f s i = fold_left (fun a e => f e a) (elements s) i.
  Proof. 
  unfold fold, elements; intros; apply Raw.fold_1; auto.
  Qed.

@@ -287,19 +287,17 @@ End BoolSpec.
 
 (** * [E.eq] and [Equal] are setoid equalities *)
 
-Definition E_ST : Setoid_Theory elt E.eq.
-Proof.
-constructor; [apply E.eq_refl|apply E.eq_sym|apply E.eq_trans].
-Qed.
+Add Relation elt E.eq 
+ reflexivity proved by E.eq_refl 
+ symmetry proved by E.eq_sym
+ transitivity proved by E.eq_trans 
+ as EltSetoid.
 
-Add Setoid elt E.eq E_ST as EltSetoid.
-
-Definition Equal_ST : Setoid_Theory t Equal.
-Proof. 
-constructor; [apply eq_refl | apply eq_sym | apply eq_trans].
-Qed.
-
-Add Setoid t Equal Equal_ST as EqualSetoid.
+Add Relation t Equal 
+ reflexivity proved by eq_refl 
+ symmetry proved by eq_sym
+ transitivity proved by eq_trans 
+ as EqualSetoid.
 
 Add Morphism In with signature E.eq ==> Equal ==> iff as In_m.
 Proof.
@@ -396,6 +394,65 @@ rewrite H in H1; rewrite H0 in H1; intuition.
 rewrite H in H1; rewrite H0 in H1; intuition.
 Qed.
 
+
+(* [Subset] is a setoid order *)
+
+Lemma Subset_refl : forall s, s[<=]s.
+Proof. red; auto. Qed.
+
+Lemma Subset_trans : forall s s' s'', s[<=]s'->s'[<=]s''->s[<=]s''.
+Proof. unfold Subset; eauto. Qed.
+
+Add Relation t Subset 
+ reflexivity proved by Subset_refl
+ transitivity proved by Subset_trans
+ as SubsetSetoid.
+
+Add Morphism In with signature E.eq ==> Subset ++> impl as In_s_m.
+Proof.
+unfold Subset, impl; intros; eauto.
+Qed.
+
+Add Morphism Empty with signature Subset --> impl as Empty_s_m.
+Proof. 
+unfold Subset, Empty, impl; firstorder.
+Qed.
+
+Add Morphism add with signature E.eq ==> Subset ++> Subset as add_s_m.
+Proof.
+unfold Subset; intros x y H s s' H0 a.
+do 2 rewrite add_iff; rewrite H; intuition.
+Qed.
+
+Add Morphism remove with signature E.eq ==> Subset ++> Subset as remove_s_m.
+Proof.
+unfold Subset; intros x y H s s' H0 a.
+do 2 rewrite remove_iff; rewrite H; intuition.
+Qed.
+
+Add Morphism union with signature Subset ++> Subset ++> Subset as union_s_m.
+Proof.
+unfold Equal; intros s s' H s'' s''' H0 a.
+do 2 rewrite union_iff; intuition.
+Qed.
+
+Add Morphism inter with signature Subset ++> Subset ++> Subset as inter_s_m.
+Proof.
+unfold Equal; intros s s' H s'' s''' H0 a.
+do 2 rewrite inter_iff; intuition.
+Qed.
+
+Add Morphism diff with signature Subset ++> Subset --> Subset as diff_s_m.
+Proof.
+unfold Subset; intros s s' H s'' s''' H0 a.
+do 2 rewrite diff_iff; intuition.
+Qed.
+
+Add Morphism Subset with signature Subset --> Subset ++> impl as  Subset_s_m.
+Proof.
+unfold Subset, impl; auto.
+Qed.
+
 (* [fold], [filter], [for_all], [exists_] and [partition] cannot be proved morphism
    without additional hypothesis on [f]. For instance: *)
 
@@ -405,11 +462,18 @@ Proof.
 unfold Equal; intros; repeat rewrite filter_iff; auto; rewrite H0; tauto.
 Qed.
 
+Lemma filter_subset : forall f, compat_bool E.eq f -> 
+  forall s s', s[<=]s' -> filter f s [<=] filter f s'.
+Proof.
+unfold Subset; intros; rewrite filter_iff in *; intuition.
+Qed.
+
 (* For [elements], [min_elt], [max_elt] and [choose], we would need setoid 
    structures on [list elt] and [option elt]. *)
 
 (* Later:
 Add Morphism cardinal ; cardinal_m.
 *)
+
 
 End Facts.
