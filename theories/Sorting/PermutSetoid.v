@@ -187,7 +187,7 @@ Qed.
 
 Lemma NoDupA_eqlistA_permut : 
   forall l l', NoDupA eqA l -> NoDupA eqA l' -> 
-    eqlistA eqA l l' -> permutation l l'.
+    equivlistA eqA l l' -> permutation l l'.
 Proof.
   intros.
   red; unfold meq; intros.

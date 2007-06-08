@@ -53,7 +53,15 @@ Hint Constructors NoDupA.
 
 (** lists with same elements modulo [eqA] *)
 
-Definition eqlistA l l' := forall x, InA x l <-> InA x l'.
+Definition equivlistA l l' := forall x, InA x l <-> InA x l'.
+
+(** lists with same elements modulo [eqA] at the same place *)
+
+Inductive eqlistA : list A -> list A -> Prop := 
+    | eqlistA_nil : eqlistA nil nil
+    | eqlistA_cons : forall x x' l l', 
+         eqA x x' -> eqlistA l l' -> eqlistA (x::l) (x'::l').
+Hint Constructors eqlistA.
 
 (** Results concerning lists modulo [eqA] *)
 
@@ -298,10 +306,10 @@ rewrite removeA_InA.
 intuition.
 Qed. 
 
-Lemma removeA_eqlistA : forall l l' x, 
-  ~InA x l -> eqlistA (x :: l) l' -> eqlistA l (removeA x l').
+Lemma removeA_equivlistA : forall l l' x, 
+  ~InA x l -> equivlistA (x :: l) l' -> equivlistA l (removeA x l').
 Proof.  
-unfold eqlistA; intros. 
+unfold equivlistA; intros. 
 rewrite removeA_InA.
 split; intros.
 rewrite <- H0; split; auto.
@@ -338,6 +346,66 @@ assert (InA y (x' :: s')) by (rewrite H3; auto).
 inversion_clear H7; auto.
 elim H6; auto.
 Qed.
+
+(** Some results about [eqlistA] *)
+
+Lemma eqlistA_app : forall l1 l1' l2 l2', 
+   eqlistA l1 l1' -> eqlistA l2 l2' -> eqlistA (l1++l2) (l1'++l2').
+Proof.
+intros l1 l1' l2 l2' H; revert l2 l2'; induction H; simpl; auto.
+Qed.
+
+Lemma eqlistA_rev_app : forall l1 l1', 
+   eqlistA l1 l1' -> forall l2 l2', eqlistA l2 l2' -> 
+   eqlistA ((rev l1)++l2) ((rev l1')++l2').
+Proof.
+induction 1; auto.
+simpl; intros.
+do 2 rewrite app_ass; simpl; auto.
+Qed.
+
+Lemma eqlistA_rev : forall l1 l1', 
+   eqlistA l1 l1' -> eqlistA (rev l1) (rev l1').
+Proof.
+intros.
+rewrite (app_nil_end (rev l1)).
+rewrite (app_nil_end (rev l1')).
+apply eqlistA_rev_app; auto.
+Qed.
+
+Lemma SortA_equivlistA_eqlistA : forall l l', 
+   SortA l -> SortA l' -> equivlistA l l' -> eqlistA l l'.
+Proof.
+induction l; destruct l'; simpl; intros; auto.
+destruct (H1 a); assert (H4 : InA a nil) by auto; inversion H4.  
+destruct (H1 a); assert (H4 : InA a nil) by auto; inversion H4.  
+inversion_clear H; inversion_clear H0.
+assert (forall y, InA y l -> ltA a y).
+intros; eapply SortA_InfA_InA with (l:=l); eauto.
+assert (forall y, InA y l' -> ltA a0 y).
+intros; eapply SortA_InfA_InA with (l:=l'); eauto.
+clear H3 H4.
+assert (eqA a a0).
+ destruct (H1 a).
+ destruct (H1 a0).
+ assert (InA a (a0::l')) by auto.
+ inversion_clear H8; auto.
+ assert (InA a0 (a::l)) by auto.
+ inversion_clear H8; auto.
+ elim (@ltA_not_eqA a a); auto.
+ apply ltA_trans with a0; auto.
+constructor; auto.
+apply IHl; auto.
+split; intros.
+destruct (H1 x).
+assert (H8 : InA x (a0::l')) by auto; inversion_clear H8; auto. 
+elim (@ltA_not_eqA a x); eauto.
+destruct (H1 x).
+assert (H8 : InA x (a::l)) by auto; inversion_clear H8; auto. 
+elim (@ltA_not_eqA a0 x); eauto.
+Qed.
+
+
 
 Section Fold.
 
@@ -390,14 +458,14 @@ Proof.
  trans_st (f a (f x (fold_right f i (removeA x l)))).
 Qed.   
 
-Lemma fold_right_equal :
+Lemma fold_right_equivlistA :
   forall s s', NoDupA s -> NoDupA s' ->
-  eqlistA s s' -> eqB (fold_right f i s) (fold_right f i s').
+  equivlistA s s' -> eqB (fold_right f i s) (fold_right f i s').
 Proof.
  simple induction s.
  destruct s'; simpl.
  intros; refl_st; auto.
- unfold eqlistA; intros.
+ unfold equivlistA; intros.
  destruct (H1 a).
  assert (X : InA a nil); auto; inversion X.
  intros x l Hrec s' N N' E; simpl in *.
@@ -406,12 +474,21 @@ Proof.
  apply Hrec; auto.
  inversion N; auto.
  apply removeA_NoDupA; auto; apply eqA_trans.
- apply removeA_eqlistA; auto.
+ apply removeA_equivlistA; auto.
  inversion_clear N; auto.
  sym_st.
  apply removeA_fold_right; auto.
- unfold eqlistA in E.
+ unfold equivlistA in E.
  rewrite <- E; auto.
+Qed.
+
+(* for this one, the transpose hyp is not required *)
+Lemma fold_right_eqlistA : 
+   forall s s', eqlistA s s' -> 
+   eqB (fold_right f i s) (fold_right f i s').
+Proof.
+induction 1; simpl; auto.
+refl_st.
 Qed.
 
 Lemma fold_right_add :
@@ -426,9 +503,9 @@ Proof.
  (* if x=x' *)
  destruct (eqA_dec x x').
  apply Comp; auto.
- apply fold_right_equal; auto.
+ apply fold_right_equivlistA; auto.
  inversion_clear N'; trivial.
- unfold eqlistA; unfold addlistA in EQ; intros.
+ unfold equivlistA; unfold addlistA in EQ; intros.
  destruct (EQ x0); clear EQ.
  split; intros.
  destruct H; auto.

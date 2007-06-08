@@ -977,5 +977,94 @@ Module Properties (M: S).
   rewrite (cardinal_1 (min_elt_3 H)) in Heqn; inversion Heqn.
   Qed.  
 
+  Lemma elements_eqlistA_max : forall s s' x, 
+   Above x s -> Add x s s' -> 
+     eqlistA E.eq (elements s') (elements s ++ x::nil).
+  Proof.
+  intros.
+  eapply SortA_equivlistA_eqlistA; eauto.
+   apply E.lt_trans.
+   apply lt_eq.
+   apply eq_lt.
+  apply (@SortA_app E.t E.eq); auto.
+  intros.
+  inversion_clear H2.
+  rewrite <- elements_iff in H1.
+  apply lt_eq with x; auto.
+  inversion H3.
+  red; intros.
+  red in H0.
+  generalize (H0 x0); clear H0; intros.
+  do 2 rewrite elements_iff in H0.
+  rewrite H0; clear H0.
+  intuition.
+  rewrite InA_alt.
+  exists x; split; auto.
+  apply in_or_app; simpl; auto.
+  rewrite InA_alt in H1; destruct H1; intuition.
+  rewrite InA_alt; exists x1; split; auto; apply in_or_app; auto.
+  destruct (InA_app H0); auto.
+  inversion_clear H1; auto.
+  inversion H2.
+  Qed.
+
+  Lemma elements_eqlistA_min : forall s s' x, 
+   Below x s -> Add x s s' -> 
+     eqlistA E.eq (elements s') (x::elements s).
+  Proof.
+  intros.
+  eapply SortA_equivlistA_eqlistA; eauto.
+   apply E.lt_trans.
+   apply lt_eq.
+   apply eq_lt.
+  change (sort E.lt ((x::nil) ++ elements s)).
+  apply (@SortA_app E.t E.eq); auto.
+  intros.
+  inversion_clear H1.
+  rewrite <- elements_iff in H2.
+  apply eq_lt with x; auto.
+  inversion H3.
+  red; intros.
+  red in H0.
+  generalize (H0 x0); clear H0; intros.
+  do 2 rewrite elements_iff in H0.
+  rewrite H0; clear H0.
+  intuition.
+  inversion_clear H0; auto.
+  Qed.
+
+  Lemma fold_3 :
+   forall s s' x (A : Set) (eqA : A -> A -> Prop)
+     (st : Setoid_Theory A eqA) (i : A) (f : elt -> A -> A),
+   compat_op E.eq eqA f ->
+   Above x s -> Add x s s' -> eqA (fold f s' i) (f x (fold f s i)).
+  Proof.
+  intros.
+  do 2 rewrite M.fold_1.
+  do 2 rewrite <- fold_left_rev_right.
+  change (f x (fold_right f i (rev (elements s)))) with 
+    (fold_right f i (rev (x::nil)++rev (elements s))).
+  apply (@fold_right_eqlistA E.t E.eq A eqA st); auto.
+  rewrite <- distr_rev.
+  apply eqlistA_rev.
+  apply elements_eqlistA_max; auto.
+  Qed.
+
+  Lemma fold_4 :
+   forall s s' x (A : Set) (eqA : A -> A -> Prop)
+     (st : Setoid_Theory A eqA) (i : A) (f : elt -> A -> A),
+   compat_op E.eq eqA f ->
+   Below x s -> Add x s s' -> eqA (fold f s' i) (fold f s (f x i)).
+  Proof.
+  intros.
+  do 2 rewrite M.fold_1.
+  set (g:=fun (a : A) (e : elt) => f e a).
+  change (eqA (fold_left g (elements s') i) (fold_left g (x::elements s) i)).
+  unfold g.
+  do 2 rewrite <- fold_left_rev_right.
+  apply (@fold_right_eqlistA E.t E.eq A eqA st); auto.
+  apply eqlistA_rev.
+  apply elements_eqlistA_min; auto.
+  Qed.
 
 End Properties.
