@@ -126,3 +126,12 @@ bapply lemma ltac:(fun H => destruct H as [H _]; apply H in J).
 
 Tactic Notation "apply" "<-" constr(lemma) "in" ident(J) :=
 bapply lemma ltac:(fun H => destruct H as [_ H]; apply H in J).
+
+(** A tactic simpler than auto that is useful for ending proofs "in one step" *)
+Tactic Notation "now" tactic(t) :=
+t;
+match goal with
+| H : _ |- _ => solve [inversion H]
+| _ => solve [trivial | reflexivity | symmetry; trivial | discriminate | split]
+| _ => fail 1 "Cannot solve this goal"
+end.
