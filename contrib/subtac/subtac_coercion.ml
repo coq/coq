@@ -131,25 +131,27 @@ module Coercion = struct
     and coerce' env x y : (Term.constr -> Term.constr) option =
       let subco () = subset_coerce env isevars x y in
       let rec coerce_application typ c c' l l' =
+	let len = Array.length l in
 	let rec aux tele typ i co = 
-	  if i < Array.length l then
+	  if i < len then
 	    let hdx = l.(i) and hdy = l'.(i) in
 	      try isevars := the_conv_x_leq env hdx hdy !isevars;
 		let (n, eqT, restT) = destProd typ in
 		aux (hdx :: tele) (subst1 hdy restT) (succ i) co
 	      with Reduction.NotConvertible ->
 		let (n, eqT, restT) = destProd typ in
-		let args = List.rev (mkRel 1 :: lift_args 1 tele) in
+		let restargs = lift_args 1 
+		  (List.rev (Array.to_list (Array.sub l (succ i) (len - (succ i)))))
+		in 
+		let args = List.rev (restargs @ mkRel 1 :: lift_args 1 tele) in
 		let pred = mkLambda (n, eqT, applistc (lift 1 c) args) in
 		let eq = mkApp (Lazy.force eq_ind, [| eqT; hdx; hdy |]) in
 (* 		let jmeq = mkApp (Lazy.force jmeq_ind, [| eqT; hdx; eqT; hdy |]) in *)
 		let evar = make_existential dummy_loc env isevars eq in
 		let eq_app x = mkApp (Lazy.force eq_rect,
 				      [| eqT; hdx; pred; x; hdy; evar|]) in
-(* 		let jeq_app x = mkApp (Lazy.force eq_rect, *)
-(* 				      [| eqT; hdx; pred; x; hdy; evar|]) *)
 		  trace (str"Inserting coercion at application");
-		  aux (hdx :: tele) (subst1 hdy restT) (succ i)  (fun x -> eq_app (co x))
+		  aux (hdy :: tele) (subst1 hdy restT) (succ i)  (fun x -> eq_app (co x))
 	  else co
 	in aux [] typ 0 (fun x -> x)
       in
@@ -260,9 +262,9 @@ module Coercion = struct
 		     if Array.length l = Array.length l' then
 		       let evm = evars_of !isevars in
 		       let lam_type = Typing.type_of env evm c in
-			 if not (is_arity env evm lam_type) then (
+(* 			 if not (is_arity env evm lam_type) then ( *)
 			   Some (coerce_application lam_type c c' l l')
-			 ) else subco ()
+(* 			 ) else subco () *)
 		     else subco ()
 		 | _ -> subco ())
 	  | _, _ ->  subco ()

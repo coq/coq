@@ -400,18 +400,16 @@ let add_mutual_definitions l nvrec =
 let admit_obligations n =
   let prg = get_prog n in
   let obls, rem = prg.prg_obligations in
-  let obls' = 
-    Array.mapi (fun i x -> 
+    Array.iteri (fun i x -> 
 		 match x.obl_body with 
 		     None -> 
                        let x = subst_deps_obl obls x in
 		       let kn = Declare.declare_constant x.obl_name (ParameterEntry (x.obl_type,false), IsAssumption Conjectural) in
 			 assumption_message x.obl_name;
-			 { x with obl_body = Some (mkConst kn) }
-		   | Some _ -> x)
-      obls
-  in
-    ignore(update_obls prg obls' 0)
+			 obls.(i) <- { x with obl_body = Some (mkConst kn) }
+		   | Some _ -> ())
+      obls;
+    ignore(update_obls prg obls 0)
 
 exception Found of int
 

@@ -43,5 +43,6 @@ Extract Inductive prod => "pair" [ "" ].
 Extract Inductive sigT => "pair" [ "" ].
 
 Require Export ProofIrrelevance.
+Require Export Coq.subtac.Heq.
 
 Delimit Scope program_scope with program.

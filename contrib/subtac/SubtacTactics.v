@@ -117,11 +117,15 @@ Require Import Eqdep.
 
 Ltac elim_eq_rect :=
   match goal with
-  | [ |- ?t ] => 
-    match t with
-    context [ @eq_rect _ _ _ _ _ ?p ] => 
-      let t := fresh "t" in 
-      set (t := p); simpl in t ; 
-	try ((case t ; clear t) || (clearbody t; rewrite (UIP_refl _ _ t); clear t))
-    end
+    | [ |- ?t ] => 
+      match t with
+        | context [ @eq_rect _ _ _ _ _ ?p ] => 
+          let P := fresh "P" in 
+            set (P := p); simpl in P ; 
+	      try ((case P ; clear P) || (clearbody P; rewrite (UIP_refl _ _ P); clear P))
+        | context [ @eq_rect _ _ _ _ _ ?p _ ] => 
+          let P := fresh "P" in 
+            set (P := p); simpl in P ; 
+	      try ((case P ; clear P) || (clearbody P; rewrite (UIP_refl _ _ P); clear P))
+      end
   end.

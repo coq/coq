@@ -174,7 +174,7 @@ let string_of_hole_kind = function
   | InternalHole -> "InternalHole"
   | TomatchTypeParameter _ -> "TomatchTypeParameter"
   | GoalEvar -> "GoalEvar"
-      
+
 let evars_of_term evc init c = 
   let rec evrec acc c =
     match kind_of_term c with

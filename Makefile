@@ -1130,7 +1130,8 @@ CCVO=
 
 DPVO=contrib/dp/Dp.vo
 
-SUBTACVO=contrib/subtac/SubtacTactics.vo contrib/subtac/Utils.vo contrib/subtac/FixSub.vo contrib/subtac/Subtac.vo \
+SUBTACVO=contrib/subtac/SubtacTactics.vo contrib/subtac/Heq.vo \
+	contrib/subtac/Utils.vo contrib/subtac/FixSub.vo contrib/subtac/Subtac.vo \
 	contrib/subtac/FunctionalExtensionality.vo
 
 RTAUTOVO = \

@@ -163,6 +163,10 @@ let subtac (loc, command) =
 		str "Uncoercible terms:" ++ spc ()
 		++ x ++ spc () ++ str "and" ++ spc () ++ y
 	in msg_warning cmds
+
+    | Cases.PatternMatchingError (env, exn) as e ->
+	debug 2 (Himsg.explain_pattern_matching_error env exn);
+	raise e
     
     | Type_errors.TypeError (env, exn) as e ->
 	debug 2 (Himsg.explain_type_error env exn);
