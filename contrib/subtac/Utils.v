@@ -25,8 +25,13 @@ Notation "'forall' { x : A | P } , Q" :=
   (forall x:{x:A|P}, Q)
   (at level 200, x ident, right associativity).
 
-Require Import Coq.Bool.Sumbool.	
+Require Import Coq.Bool.Sumbool.
+(** Construct a dependent disjunction from a boolean. *)
 Notation "'dec'" := (sumbool_of_bool) (at level 0). 
+
+(** The notations [in_right] and [in_left] construct objects of a dependent disjunction. *)
+Notation in_right := (@right _ _ _).
+Notation in_left := (@left _ _ _).
 
 (** Default simplification tactic. *)
 Ltac subtac_simpl := simpl ; intros ; destruct_conjs ; simpl in * ; try subst ; 

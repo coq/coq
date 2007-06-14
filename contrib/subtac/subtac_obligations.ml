@@ -352,8 +352,7 @@ and solve_obligation_by_tac prg obls i tac =
 	   else false
 	 with _ -> false)  
 
-and solve_obligations n tac = 
-  let prg = get_prog n in
+and solve_prg_obligations prg tac = 
   let obls, rem = prg.prg_obligations in
   let rem = ref rem in
   let obls' = Array.copy obls in
@@ -364,6 +363,13 @@ and solve_obligations n tac =
       obls'
   in
     update_obls prg obls' !rem
+
+and solve_obligations n tac = 
+  let prg = get_prog n in
+    solve_prg_obligations prg tac
+
+and solve_all_obligations tac = 
+  ProgMap.iter (fun k v -> ignore(solve_prg_obligations v tac)) !from_prg
       
 and try_solve_obligations n tac = 
   ignore (solve_obligations n tac)

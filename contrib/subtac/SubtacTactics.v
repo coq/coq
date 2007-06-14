@@ -40,6 +40,19 @@ Ltac destruct_one_ex :=
 
 Ltac destruct_exists := repeat (destruct_one_ex).
 
+Tactic Notation "destruct" "exist" ident(t) ident(Ht) := destruct t as [t Ht].
+
+Tactic Notation "destruct" "or" ident(H) := destruct H as [H|H].
+
+Tactic Notation "contradiction" "by" constr(t) := 
+  let H := fresh in assert t as H by auto with * ; contradiction.
+
+Ltac discriminates :=
+  match goal with
+    | [ H : ?x <> ?x |- _ ] => elim H ; reflexivity
+    | _ => discriminate
+  end.
+
 Ltac destruct_conjs := repeat (destruct_one_pair || destruct_one_ex).
 
 Ltac on_last_hyp tac := 

@@ -1755,8 +1755,8 @@ let build_ineqs prevpatterns pats liftsign =
 			  succ n, (* nth pattern *)
 			  mkApp (Lazy.force eq_ind,
 				[| lift (lens + liftsign) ppat_ty ;
-				   ppat_c ; 
-				   (*liftn liftsign lens ppat_c ; *)
+(* 				   ppat_c ;  *)
+				   liftn liftsign (succ lens) ppat_c ;
 				   lift len' curpat_c |]) :: 
 			    List.map 
 			    (fun t -> 
