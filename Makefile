@@ -1780,9 +1780,9 @@ cleanconfig::
 alldepend: depend dependcoq 
 
 dependcoq: beforedepend
-	$(MAKE) .depend.coq
+	$(MAKE) MAKEDEPEND=1 .depend.coq
 
-\.depend.coq:
+.depend.coq:
 	$(COQDEP) -coqlib . -R theories Coq -R contrib Coq $(COQINCLUDES) \
 	 $(ALLFSETS:.vo=.v) $(ALLREALS:.vo=.v) $(ALLVO:.vo=.v) > .depend.coq
 
@@ -1819,7 +1819,7 @@ ml4filesml: .depend.camlp4
 	$(MAKE) -f Makefile.dep $(ML4FILESML)
 
 \.depend: */*.mli */*/*.mli */*.ml */*/*.ml $(ML4FILES) kernel/byterun/*.c
-	$(MAKE) depend
+	$(MAKE) MAKEDEPEND=1 depend
 
 depend: beforedepend dependp4 ml4filesml
 # 1. We express dependencies of the .ml files w.r.t their grammars
@@ -1853,8 +1853,10 @@ devel:
 	$(MAKE) -f dev/Makefile.devel setup-devel
 	$(MAKE) $(DEBUGPRINTERS)
 
+ifndef MAKEDEPEND
 -include .depend
 -include .depend.coq
+endif
 
 clean::
 	find . -name "\.#*" -exec rm -f {} \;
