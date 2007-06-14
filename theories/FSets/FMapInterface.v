@@ -13,9 +13,10 @@
 (** This file proposes an interface for finite maps *)
 
 (* begin hide *)
+Require Export Bool.
+Require Export OrderedType.
 Set Implicit Arguments.
 Unset Strict Implicit.
-Require Import FSetInterface. 
 (* end hide *)
 
 (** When compared with Ocaml Map, this signature has been split in two: 

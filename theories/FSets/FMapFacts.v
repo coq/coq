@@ -555,3 +555,474 @@ Qed.
 End BoolSpec.
 
 End Facts.
+
+Module Properties (M: S).
+ Module F:=Facts M. 
+ Import F.
+ Module O:=KeyOrderedType M.E.
+ Import O.
+ Import M.
+
+ Section Elt. 
+  Variable elt:Set.
+
+  Definition cardinal (m:t elt) := length (elements m).
+
+  Definition Add x (e:elt) m m' := forall y, find y m' = find y (add x e m).
+
+  Definition Above x (m:t elt) := forall y, In y m -> E.lt y x.
+  Definition Below x (m:t elt) := forall y, In y m -> E.lt x y.
+
+  Section Elements.
+
+  Lemma elements_Empty : forall m:t elt, Empty m <-> elements m = nil.
+  Proof.
+  intros.
+  unfold Empty.
+  split; intros.
+  assert (forall a, ~ List.In a (elements m)).
+   red; intros.
+   apply (H (fst a) (snd a)).
+   rewrite elements_mapsto_iff.
+   rewrite InA_alt; exists a; auto.
+   split; auto; split; auto.
+  destruct (elements m); auto.
+  elim (H0 p); simpl; auto.
+  red; intros.
+  rewrite elements_mapsto_iff in H0.
+  rewrite InA_alt in H0; destruct H0.
+  rewrite H in H0; destruct H0 as (_,H0); inversion H0.
+  Qed.
+
+  Notation eqke := (@eqke elt).
+  Notation eqk := (@eqk elt).
+  Notation ltk := (@ltk elt).
+
+  Definition gtb (p p':key*elt) := match E.compare (fst p) (fst p') with GT _ => true | _ => false end.
+  Definition leb p := fun p' => negb (gtb p p'). 
+
+  Lemma gtb_1 : forall p p', gtb p p' = true <-> ltk p' p.
+  Proof.
+   intros (x,e) (y,e'); unfold gtb, O.ltk; simpl.
+   destruct (E.compare x y); intuition; try discriminate; ME.order.
+  Qed.
+
+  Lemma leb_1 : forall p p', leb p p' = true <-> ~ltk p' p.
+  Proof.
+   intros (x,e) (y,e'); unfold leb, gtb, O.ltk; simpl.
+   destruct (E.compare x y); intuition; try discriminate; ME.order.
+  Qed.
+
+  Lemma gtb_compat : forall p, compat_bool eqke (gtb p).
+  Proof.
+   red; intros (x,e) (a,e') (b,e'') H; red in H; simpl in *; destruct H.
+   generalize (gtb_1 (x,e) (a,e'))(gtb_1 (x,e) (b,e'')); 
+    destruct (gtb (x,e) (a,e')); destruct (gtb (x,e) (b,e'')); auto.
+   unfold O.ltk in *; simpl in *; intros.
+   symmetry; rewrite H2.
+   apply ME.eq_lt with a; auto.
+   rewrite <- H1; auto.
+   unfold O.ltk in *; simpl in *; intros.
+   rewrite H1.
+   apply ME.eq_lt with b; auto.
+   rewrite <- H2; auto.
+  Qed.
+
+  Lemma leb_compat : forall p, compat_bool eqke (leb p).
+  Proof.
+   red; intros x a b H.
+   unfold leb; f_equal; apply gtb_compat; auto.
+  Qed.
+
+  Hint Resolve gtb_compat leb_compat elements_3.
+
+  Lemma elements_split : forall p m, 
+    elements m = 
+    List.filter (gtb p) (elements m) ++ List.filter (leb p) (elements m).
+  Proof.
+  unfold leb; intros.
+  apply filter_split with (eqA:=eqk) (ltA:=ltk); eauto.
+  intros; destruct x; destruct y; destruct p.
+  rewrite gtb_1 in H; unfold O.ltk in H; simpl in *.
+  assert (~ltk (t1,e0) (k,e1)).
+   unfold gtb, O.ltk in *; simpl in *.
+   destruct (E.compare k t1); intuition; try discriminate; ME.order.
+  unfold O.ltk in *; simpl in *; ME.order.
+  Qed.
+
+  Lemma sort_equivlistA_eqlistA : forall l l' : list (key*elt),
+   sort ltk l -> sort ltk l' -> equivlistA eqke l l' -> eqlistA eqke l l'.
+  Proof.
+  apply SortA_equivlistA_eqlistA; eauto; 
+  unfold O.eqke, O.ltk; simpl; intuition; eauto.
+  Qed.
+
+  Ltac clean_eauto := unfold O.eqke, O.ltk; simpl; intuition; eauto.
+
+  Lemma elements_Add : forall m m' x e, ~In x m -> Add x e m m' -> 
+    eqlistA eqke (elements m') 
+      (List.filter (gtb (x,e)) (elements m) ++ 
+       (x,e)::List.filter (leb (x,e)) (elements m)).
+  Proof.
+  intros.
+  apply sort_equivlistA_eqlistA; auto.
+  apply (@SortA_app _ eqke); auto.
+  apply (@filter_sort _ eqke); auto; clean_eauto.
+  constructor; auto.
+  apply (@filter_sort _ eqke); auto; clean_eauto.
+  rewrite (@InfA_alt _ eqke); auto; try (clean_eauto; fail).
+  apply (@filter_sort _ eqke); auto; clean_eauto.
+  intros.
+  rewrite filter_InA in H1; auto; destruct H1.
+  rewrite leb_1 in H2.
+  destruct y; unfold O.ltk in *; simpl in *.
+  rewrite <- elements_mapsto_iff in H1.
+  assert (~E.eq x t0).
+   swap H.
+   exists e0; apply MapsTo_1 with t0; auto.
+  ME.order.
+  intros.
+  rewrite filter_InA in H1; auto; destruct H1.
+  rewrite gtb_1 in H3.
+  destruct y; destruct x0; unfold O.ltk in *; simpl in *.
+  inversion_clear H2.
+  red in H4; simpl in *; destruct H4.
+  ME.order.
+  rewrite filter_InA in H4; auto; destruct H4.
+  rewrite leb_1 in H4.
+  unfold O.ltk in *; simpl in *; ME.order.
+  red; intros a; destruct a.
+  rewrite InA_app_iff; rewrite InA_cons.
+  do 2 (rewrite filter_InA; auto).
+  do 2 rewrite <- elements_mapsto_iff.
+  rewrite leb_1; rewrite gtb_1.
+  rewrite find_mapsto_iff; rewrite (H0 t0); rewrite <- find_mapsto_iff.
+  rewrite add_mapsto_iff.
+  unfold O.eqke, O.ltk; simpl.
+  destruct (E.compare t0 x); intuition.
+  right; split; auto; ME.order.
+  ME.order.
+  elim H.
+  exists e0; apply MapsTo_1 with t0; auto.
+  right; right; split; auto; ME.order.
+  ME.order.
+  right; split; auto; ME.order.
+  Qed.
+
+  Lemma elements_eqlistA_max : forall m m' x e, 
+   Above x m -> Add x e m m' -> 
+     eqlistA eqke (elements m') (elements m ++ (x,e)::nil).
+  Proof.
+  intros.
+  apply sort_equivlistA_eqlistA; auto.
+  apply (@SortA_app _ eqke); auto.
+  intros.
+  inversion_clear H2.
+  destruct x0; destruct y.
+  rewrite <- elements_mapsto_iff in H1.
+  unfold O.eqke, O.ltk in *; simpl in *; destruct H3.
+  apply ME.lt_eq with x; auto.
+  apply H; firstorder.
+  inversion H3.
+  red; intros a; destruct a.
+  rewrite InA_app_iff; rewrite InA_cons; rewrite InA_nil.
+  do 2 rewrite <- elements_mapsto_iff.
+  rewrite find_mapsto_iff; rewrite (H0 t0); rewrite <- find_mapsto_iff.
+  rewrite add_mapsto_iff; unfold O.eqke; simpl.
+  intuition.
+  destruct (ME.eq_dec x t0); auto.
+  elimtype False.
+  assert (In t0 m).
+   exists e0; auto.
+  generalize (H t0 H1).
+  ME.order.
+  Qed.
+
+  Lemma elements_eqlistA_min : forall m m' x e, 
+   Below x m -> Add x e m m' -> 
+     eqlistA eqke (elements m') ((x,e)::elements m).
+  Proof.
+  intros.
+  apply sort_equivlistA_eqlistA; auto.
+  change (sort ltk (((x,e)::nil) ++ elements m)).
+  apply (@SortA_app _ eqke); auto.
+  intros.
+  inversion_clear H1.
+  destruct y; destruct x0.
+  rewrite <- elements_mapsto_iff in H2.
+  unfold O.eqke, O.ltk in *; simpl in *; destruct H3.
+  apply ME.eq_lt with x; auto.
+  apply H; firstorder.
+  inversion H3.
+  red; intros a; destruct a.
+  rewrite InA_cons.
+  do 2 rewrite <- elements_mapsto_iff.
+  rewrite find_mapsto_iff; rewrite (H0 t0); rewrite <- find_mapsto_iff.
+  rewrite add_mapsto_iff; unfold O.eqke; simpl.
+  intuition.
+  destruct (ME.eq_dec x t0); auto.
+  elimtype False.
+  assert (In t0 m).
+   exists e0; auto.
+  generalize (H t0 H1).
+  ME.order.
+  Qed.
+
+  End Elements.
+
+  Section Cardinal.
+
+  Lemma cardinal_Empty : forall m, Empty m <-> cardinal m = 0.
+  Proof.
+   intros.
+   rewrite elements_Empty.
+   unfold cardinal.
+   destruct (elements m); intuition; discriminate.
+  Qed.
+
+  Lemma cardinal_inv_1 : forall (m:t elt), cardinal m = 0 -> Empty m. 
+  Proof. 
+    intros m; unfold cardinal; intros H e a.
+    rewrite elements_mapsto_iff.
+    destruct (elements m); simpl in *; discriminate || red; inversion 1.
+  Qed.
+
+  Lemma cardinal_inv_2 :
+   forall m n, cardinal m = S n -> { p : key*elt | MapsTo (fst p) (snd p) m }.
+  Proof. 
+    intros; unfold cardinal in *.
+    generalize (elements_2 (m:=m)).
+    destruct (elements m); try discriminate. 
+    exists p; auto.
+    destruct p; simpl; auto.
+    apply H0; constructor; red; auto.
+  Qed.
+
+  Lemma cardinal_1 : forall (m:t elt), Empty m -> cardinal m = 0.
+  Proof.
+    intros; rewrite <- cardinal_Empty; auto.
+  Qed.
+
+  Lemma cardinal_2 : forall m m' x e, ~In x m -> Add x e m m' -> 
+    cardinal m' = S (cardinal m).
+  Proof.
+  intros.
+  unfold cardinal.
+  unfold key.
+  rewrite (eqlistA_length (elements_Add H H0)); simpl.
+  rewrite app_length; simpl.
+  rewrite <- plus_n_Sm.
+  f_equal.
+  rewrite <- app_length.
+  f_equal.
+  symmetry; apply elements_split; auto.
+  Qed.
+
+  End Cardinal.
+
+  Section Min_Max_Elt.
+
+  (** We emulate two [max_elt] and [min_elt] functions. *)
+  
+  Fixpoint max_elt_aux (l:list (key*elt)) := match l with 
+    | nil => None 
+    | (x,e)::nil => Some (x,e)
+    | (x,e)::l => max_elt_aux l
+    end.
+  Definition max_elt m := max_elt_aux (elements m).
+
+  Lemma max_elt_Above : 
+   forall m x e, max_elt m = Some (x,e) -> Above x (remove x m).
+  Proof.
+  red; intros.
+  rewrite remove_in_iff in H0.
+  destruct H0.
+  rewrite elements_in_iff in H1.
+  destruct H1.
+  unfold max_elt in *.
+  generalize (elements_3 m).
+  revert x e H y x0 H0 H1.
+  induction (elements m).
+  simpl; intros; try discriminate.
+  intros.
+  destruct a; destruct l; simpl in *.
+  injection H; clear H; intros; subst.
+  inversion_clear H1.
+  red in H; simpl in *; intuition.
+  elim H0; eauto.
+  inversion H.
+  change (max_elt_aux (p::l) = Some (x,e)) in H.
+  generalize (IHl x e H); clear IHl; intros IHl.
+  inversion_clear H1; [ | inversion_clear H2; eauto ].
+  red in H3; simpl in H3; destruct H3.
+  destruct p as (p1,p2).
+  destruct (ME.eq_dec p1 x).
+  apply ME.lt_eq with p1; auto.
+   inversion_clear H2.
+   inversion_clear H5.
+   red in H2; simpl in H2; ME.order.
+  apply E.lt_trans with p1; auto.
+   inversion_clear H2.
+   inversion_clear H5.
+   red in H2; simpl in H2; ME.order.
+  eapply IHl; eauto.
+  econstructor; eauto.
+  red; eauto.
+  inversion H2; auto.
+  Qed.
+  
+  Lemma max_elt_MapsTo : 
+   forall m x e, max_elt m = Some (x,e) -> MapsTo x e m.
+  Proof.
+  intros.
+  unfold max_elt in *.
+  rewrite elements_mapsto_iff.
+  induction (elements m).
+  simpl; try discriminate.
+  destruct a; destruct l; simpl in *.
+  injection H; intros; subst; constructor; red; auto.
+  constructor 2; auto.
+  Qed.
+
+  Lemma max_elt_Empty : 
+   forall m, max_elt m = None -> Empty m.
+  Proof.
+  intros.
+  unfold max_elt in *.
+  rewrite elements_Empty.
+  induction (elements m); auto.
+  destruct a; destruct l; simpl in *; try discriminate.
+  assert (H':=IHl H); discriminate.
+  Qed.
+
+  Definition min_elt m : option (key*elt) := match elements m with 
+   | nil => None
+   | (x,e)::_ => Some (x,e)
+  end.
+
+  Lemma min_elt_Below : 
+   forall m x e, min_elt m = Some (x,e) -> Below x (remove x m).
+  Proof.
+  unfold min_elt, Below; intros.
+  rewrite remove_in_iff in H0; destruct H0.
+  rewrite elements_in_iff in H1.
+  destruct H1.
+  generalize (elements_3 m).
+  destruct (elements m).
+  try discriminate.
+  destruct p; injection H; intros; subst.
+  inversion_clear H1.
+  red in H2; destruct H2; simpl in *; ME.order.
+  inversion_clear H4.
+  rewrite (@InfA_alt _ (@eqke elt)) in H3; eauto.
+  apply (H3 (y,x0)); auto.
+  unfold lt_key; simpl; intuition; eauto.
+  unfold eqke, lt_key; simpl; intuition; eauto.
+  unfold eqke, lt_key; simpl; intuition; eauto.
+  Qed.
+  
+  Lemma min_elt_MapsTo : 
+   forall m x e, min_elt m = Some (x,e) -> MapsTo x e m.
+  Proof.
+  intros.
+  unfold min_elt in *.
+  rewrite elements_mapsto_iff.
+  destruct (elements m).
+  simpl; try discriminate.
+  destruct p; simpl in *.
+  injection H; intros; subst; constructor; red; auto.
+  Qed.
+
+  Lemma min_elt_Empty : 
+   forall m, min_elt m = None -> Empty m.
+  Proof.
+  intros.
+  unfold min_elt in *.
+  rewrite elements_Empty.
+  destruct (elements m); auto.
+  destruct p; simpl in *; discriminate.
+  Qed.
+
+  End Min_Max_Elt.
+
+  Section Induction_Principles.
+ 
+  Lemma map_induction :
+   forall P : t elt -> Type,
+   (forall m, Empty m -> P m) ->
+   (forall m m', P m -> forall x e, ~In x m -> Add x e m m' -> P m') ->
+   forall m, P m.
+  Proof.
+  intros; remember (cardinal m) as n; revert m Heqn; induction n; intros.
+  apply X; apply cardinal_inv_1; auto.
+
+  destruct (cardinal_inv_2 (sym_eq Heqn)) as ((x,e),H0); simpl in *.
+  assert (Add x e (remove x m) m).
+   red; intros.
+   rewrite add_o; rewrite remove_o; destruct (ME.eq_dec x y); eauto.
+  apply X0 with (remove x m) x e; auto.
+  apply IHn; auto.
+  assert (S n = S (cardinal (remove x m))).
+   rewrite Heqn; eapply cardinal_2; eauto.
+  inversion H1; auto.
+  Qed.
+
+  Lemma map_induction_max :
+   forall P : t elt -> Type,
+   (forall m, Empty m -> P m) ->
+   (forall m m', P m -> forall x e, Above x m -> Add x e m m' -> P m') ->
+   forall m, P m.
+  Proof.
+  intros; remember (cardinal m) as n; revert m Heqn; induction n; intros.
+  apply X; apply cardinal_inv_1; auto.
+
+  case_eq (max_elt m); intros.
+  destruct p.
+  assert (Add k e (remove k m) m).
+   red; intros.
+   rewrite add_o; rewrite remove_o; destruct (ME.eq_dec k y); eauto.
+   apply find_1; apply MapsTo_1 with k; auto.
+   apply max_elt_MapsTo; auto.
+  apply X0 with (remove k m) k e; auto.
+  apply IHn.
+  assert (S n = S (cardinal (remove k m))).
+   rewrite Heqn.
+   eapply cardinal_2; eauto.
+  inversion H1; auto. 
+  eapply max_elt_Above; eauto.
+
+  apply X; apply max_elt_Empty; auto.
+  Qed.
+
+  Lemma map_induction_min :
+   forall P : t elt -> Type,
+   (forall m, Empty m -> P m) ->
+   (forall m m', P m -> forall x e, Below x m -> Add x e m m' -> P m') ->
+   forall m, P m.
+  Proof.
+  intros; remember (cardinal m) as n; revert m Heqn; induction n; intros.
+  apply X; apply cardinal_inv_1; auto.
+
+  case_eq (min_elt m); intros.
+  destruct p.
+  assert (Add k e (remove k m) m).
+   red; intros.
+   rewrite add_o; rewrite remove_o; destruct (ME.eq_dec k y); eauto.
+   apply find_1; apply MapsTo_1 with k; auto.
+   apply min_elt_MapsTo; auto.
+  apply X0 with (remove k m) k e; auto.
+  apply IHn.
+  assert (S n = S (cardinal (remove k m))).
+   rewrite Heqn.
+   eapply cardinal_2; eauto.
+  inversion H1; auto. 
+  eapply min_elt_Below; eauto.
+
+  apply X; apply min_elt_Empty; auto.
+  Qed.
+
+  End Induction_Principles.
+ End Elt.
+
+End Properties.
+

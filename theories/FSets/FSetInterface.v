@@ -19,16 +19,6 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 (* end hide *)
 
-(** Compatibility of a  boolean function with respect to an equality. *)
-Definition compat_bool (A:Type)(eqA: A->A->Prop)(f: A-> bool) :=
-  forall x y : A, eqA x y -> f x = f y.
-
-(** Compatibility of a predicate with respect to an equality. *)
-Definition compat_P (A:Type)(eqA: A->A->Prop)(P : A -> Prop) :=
-  forall x y : A, eqA x y -> P x -> P y.
-
-Hint Unfold compat_bool compat_P.
-
 (** * Non-dependent signature
 
     Signature [S] presents sets as purely informative programs 

@@ -478,27 +478,19 @@ Hint Resolve equal_mem_1 subset_mem_1 choose_mem_1
    add_mem_3 add_equal remove_mem_3 remove_equal : set.
 
 
-(** General recursion principes based on [cardinal] *)
-
-Lemma cardinal_set_rec:  forall (P:t->Type),
- (forall s s', equal s s'=true -> P s -> P s') -> 
- (forall s x, mem x s=false -> P s -> P (add x s)) -> 
- P empty -> forall n s, cardinal s=n -> P s.
-Proof.
-intros.
-apply cardinal_induction with n; auto; intros.
-apply X with empty; auto with set.
-apply X with (add x s0); auto with set.
-apply equal_1; intro a; rewrite add_iff; rewrite (H1 a); tauto.
-apply X0; auto with set; apply mem_3; auto.
-Qed.
+(** General recursion principle *)
 
 Lemma set_rec:  forall (P:t->Type),
- (forall s s', equal s s'=true -> P s -> P s') ->
+ (forall s s', equal s s'=true -> P s -> P s') -> 
  (forall s x, mem x s=false -> P s -> P (add x s)) -> 
  P empty -> forall s, P s.
 Proof.
-intros;apply cardinal_set_rec with (cardinal s);auto.
+intros.
+apply set_induction; auto; intros.
+apply X with empty; auto with set.
+apply X with (add x s0); auto with set.
+apply equal_1; intro a; rewrite add_iff; rewrite (H0 a); tauto.
+apply X0; auto with set; apply mem_3; auto.
 Qed.
 
 (** Properties of [fold] *)
@@ -870,9 +862,9 @@ assert (fgt : transpose (@eq _) (fun x:elt=>plus ((f x)+(g x)))). red; intros; o
 assert (st := gen_st nat).
 intros s;pattern s; apply set_rec.
 intros.
-rewrite <- (fold_equal _ _ st _ fc ft 0 _ _ H).
-rewrite <- (fold_equal _ _ st _ gc gt 0 _ _ H).
-rewrite <- (fold_equal _ _ st _ fgc fgt 0 _ _ H); auto.
+rewrite <- (fold_equal _ _ st _ fc 0 _ _ H).
+rewrite <- (fold_equal _ _ st _ gc 0 _ _ H).
+rewrite <- (fold_equal _ _ st _ fgc 0 _ _ H); auto.
 intros; do 3 (rewrite (fold_add _ _ st);auto).
 rewrite H0;simpl;omega.
 intros; do 3 rewrite (fold_empty _ _ st);auto.
@@ -891,7 +883,7 @@ assert (ct : transpose (@eq _) (fun x => plus (if f x then 1 else 0))).
 intros s;pattern s; apply set_rec.
 intros.
 change elt with E.t.
-rewrite <- (fold_equal _ _ st _ cc ct 0 _ _ H).
+rewrite <- (fold_equal _ _ st _ cc 0 _ _ H).
 rewrite <- (MP.Equal_cardinal (filter_equal Hf (equal_2 H))); auto.
 intros; rewrite (fold_add _ _ st _ cc ct); auto.
 generalize (@add_filter_1 f Hf s0 (add x s0) x) (@add_filter_2 f Hf s0 (add x s0) x) .

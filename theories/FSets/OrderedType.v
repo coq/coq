@@ -137,9 +137,9 @@ Ltac abstraction := match goal with
  | H1: ~lt ?x ?y, H2: ~eq ?y ?x |- _ => 
      generalize (le_neq H1 (neq_sym H2)); clear H1 H2; intro; abstraction
  (* Then, we generalize all interesting facts *)
- | H : lt ?x ?y |- _ => revert H; abstraction
- | H : ~lt ?x ?y |- _ => revert H; abstraction  
  | H : ~eq ?x ?y |- _ =>  revert H; abstraction
+ | H : ~lt ?x ?y |- _ => revert H; abstraction  
+ | H : lt ?x ?y |- _ => revert H; abstraction
  | H : eq ?x ?y |- _ =>  revert H; abstraction
  | _ => idtac
 end.
@@ -192,7 +192,7 @@ Ltac do_lt x y LT := match goal with
  | |- lt ?z x -> _ => let H := fresh "H" in 
      (intro H; generalize (lt_trans H LT); intro); do_lt x y LT
  | |- lt _ _ -> _ => intro; do_lt x y LT
- (* Ge *)
+ (* GE *)
  | |- ~lt y x -> _ => intros _; do_lt x y LT
  | |- ~lt x ?z -> _ => let H := fresh "H" in 
      (intro H; generalize (le_lt_trans H LT); intro); do_lt x y LT

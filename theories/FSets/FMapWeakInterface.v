@@ -13,10 +13,12 @@
 (** This file proposes an interface for finite maps over keys with decidable 
      equality, but no decidable order. *)
 
+(* begin hide *)
+Require Export Bool.
+Require Export DecidableType.
 Set Implicit Arguments.
 Unset Strict Implicit.
-Require Import FSetInterface. 
-Require Import FSetWeakInterface. 
+(* end hide *)
 
 Module Type S.
 
