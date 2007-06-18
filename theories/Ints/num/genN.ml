@@ -770,8 +770,11 @@ let print_Make () =
   fprintf fmt "  end.\n";
   fprintf fmt "\n";
 
+  fprintf fmt "Definition pheight p := Peano.pred (nat_of_P (get_height w0_op.(znz_digits) (plength p))).";
+  fprintf fmt "\n";
+
   fprintf fmt " Definition of_pos x :=\n";
-  fprintf fmt "  let h := nat_of_P (pheight x) in\n"; 
+  fprintf fmt "  let h := pheight x in\n"; 
   fprintf fmt "  match h with\n";
   let rec print_S s fmt i =
    if i = 0 then fprintf fmt "%s" s

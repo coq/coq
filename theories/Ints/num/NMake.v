@@ -8,15 +8,6 @@ Require Import GenDivn1.
 
 
 
-Fixpoint plength (p: positive) : positive :=
-  match p with 
-    xH => xH
-  | xO p1 => Psucc (plength p1)
-  | xI p1 => Psucc (plength p1)
-  end.
-
-Definition pheight p := plength (Ppred (plength (Ppred p))).
-
 Module Type W0Type.
  Parameter w : Set.
  Parameter w_op : znz_op w.
@@ -3450,8 +3441,10 @@ Module Make (W0:W0Type).
   | Gt => gcd_gt (digits a) gcd_cont a b
   end.
 
+ Definition pheight p := Peano.pred (nat_of_P (get_height w0_op.(znz_digits) (plength p))). 
+
  Definition of_pos x :=
-  let h := nat_of_P (pheight x) in
+  let h := pheight x in
   match h with
   | O => reduce_0 (snd (w0_op.(znz_of_pos) x))
   | (S O) => reduce_1 (snd (w1_op.(znz_of_pos) x))
