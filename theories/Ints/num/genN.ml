@@ -952,7 +952,7 @@ let print_Make () =
   fprintf fmt "  Definition safe_shiftl n x :=\n";
   fprintf fmt "    itert _ double_size (shiftl n) \n";
   fprintf fmt "      (fun x => match compare n (head0 x) with Gt => false | _ => true end) \n";
-  fprintf fmt "       (digits x) x.\n ";
+  fprintf fmt "       (digits n) x.\n ";
   fprintf fmt "\n";
 
   (* even *)
