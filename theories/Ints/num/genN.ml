@@ -812,6 +812,159 @@ let print_Make () =
   fprintf fmt "\n";
 
 
+ (* Head0 *)
+  fprintf fmt " Definition head0 w := match w with\n";
+  for i = 0 to size do
+    fprintf fmt " | %s%i w=> %s%i (w%i_op.(znz_head0) w)\n"  c i c i i;
+  done;
+  fprintf fmt " | %sn n w=> %sn n ((make_op n).(znz_head0) w)\n" c c;
+  fprintf fmt " end.\n";
+  fprintf fmt "\n";
+
+ (* Tail0 *)
+  fprintf fmt " Definition tail0 w := match w with\n";
+  for i = 0 to size do
+    fprintf fmt " | %s%i w=> %s%i (w%i_op.(znz_tail0) w)\n"  c i c i i;
+  done;
+  fprintf fmt " | %sn n w=> %sn n ((make_op n).(znz_tail0) w)\n" c c;
+  fprintf fmt " end.\n";
+  fprintf fmt "\n";
+
+  (* Number of digits *)
+  fprintf fmt " Definition %sdigits x :=\n" c;
+  fprintf fmt "  match x with\n";
+  fprintf fmt "  | %s0 _ => N0 w0_op.(znz_zdigits)\n" c;
+  for i = 1 to size do 
+    fprintf fmt "  | %s%i _ => reduce_%i w%i_op.(znz_zdigits)\n" c i i i;
+  done;
+  fprintf fmt "  | %sn n _ => reduce_n n (make_op n).(znz_zdigits)\n \n" c;
+  fprintf fmt "  end.\n";
+  fprintf fmt "\n";
+
+
+  fprintf fmt " Definition level ";
+  for i = 0 to size do 
+    fprintf fmt "f%i " i;
+  done;
+  fprintf fmt " fn x y: %s_ :=  match x, y with\n" t;
+  fprintf fmt "  | %s0 wx, %s0 wy => f0 wx wy \n" c c;
+  for j = 1 to size do 
+    fprintf fmt "  | %s0 wx, %s%i wy => f%i "  c c j j;
+    if j = 1 then fprintf fmt "(WW w_0 wx) wy\n"
+    else fprintf fmt "(extend%i w0 (WW w_0 wx)) wy\n" (j-1)
+  done;
+  fprintf fmt "  | %s0 wx, %sn n wy =>\n" c c; 
+  fprintf fmt "    fn n (extend n w%i (extend%i w0 (WW w_0 wx))) wy\n"
+    size size;
+  for i = 1 to size do
+    fprintf fmt "  | %s%i wx, %s0 wy =>\n" c i c;
+    fprintf fmt 
+     "    f%i wx " i;
+    if i = 1 then fprintf fmt "(WW w_0 wy)\n"
+    else fprintf fmt "(extend%i w0 (WW w_0 wy))\n" (i-1);
+    for j = 1 to size do
+      fprintf fmt "  | %s%i wx, %s%i wy => " c i c j;
+      if i < j then fprintf fmt "f%i (extend%i w%i wx) wy\n" j (j-i) (i-1)
+      else if i = j then  fprintf fmt "f%i wx wy\n" j 
+      else fprintf fmt "f%i wx (extend%i w%i wy)\n" i (i-j) (j-1)
+    done;
+    fprintf fmt   
+      "  | %s%i wx, %sn n wy => fn n (extend n w%i (extend%i w%i wx)) wy\n" 
+      c i c size (size-i+1) (i-1)
+  done;
+  fprintf fmt "  | %sn n wx, %s0 wy =>\n" c c; 
+  fprintf fmt "    fn n wx (extend n w%i (extend%i w0 (WW w_0 wy)))\n" 
+    size size;
+  for j = 1 to size do
+    fprintf fmt 
+      "  | %sn n wx, %s%i wy => fn n wx (extend n w%i (extend%i w%i wy))\n"
+       c c j size (size-j+1) (j-1); 
+  done; 
+  fprintf fmt "  | %sn n wx, %sn m wy =>\n" c c;
+  fprintf fmt "    match extend_to_max w%i n m wx wy with\n" size;
+  fprintf fmt "    | inl wx' => fn m wx' wy\n";
+  fprintf fmt "    | inr wy' => fn n wx wy'\n";
+  fprintf fmt "    end\n";
+  fprintf fmt "  end.\n";
+  fprintf fmt "\n";
+
+ (* Shiftr *)
+  for i = 0 to size do
+    fprintf fmt " Definition shiftr%i n x := w%i_op.(znz_add_mul_div) (w%i_op.(znz_sub) w%i_op.(znz_zdigits) n) w%i_op.(znz_0) x.\n" i i i i i;
+  done;
+  fprintf fmt " Definition shiftrn n p x := (make_op n).(znz_add_mul_div) ((make_op n).(znz_sub) (make_op n).(znz_zdigits) p) (make_op n).(znz_0) x.\n";
+  fprintf fmt "\n";
+
+  fprintf fmt " Definition shiftr := \n";
+  fprintf fmt "  Eval lazy beta delta [level] in \n";
+  fprintf fmt "     level (fun n x => %s0 (shiftr0 n x))\n" c;
+  for i = 1 to size do
+  fprintf fmt "           (fun n x => reduce_%i (shiftr%i n x))\n" i i;
+  done;
+  fprintf fmt "           (fun n p x => reduce_n n (shiftrn n p x)).\n";
+  fprintf fmt "\n";
+
+
+  fprintf fmt " Definition safe_shiftr n x := \n";
+  fprintf fmt "   match compare n (Ndigits x) with\n ";
+  fprintf fmt "   |  Lt => shiftr n x \n";
+  fprintf fmt "   | _ => N0 w_0\n";
+  fprintf fmt "   end.\n";
+  fprintf fmt "\n";
+
+ (* Shiftl *)
+  for i = 0 to size do
+    fprintf fmt " Definition shiftl%i n x := w%i_op.(znz_add_mul_div) n x w%i_op.(znz_0).\n" i i i
+  done;
+  fprintf fmt " Definition shiftln n p x := (make_op n).(znz_add_mul_div) p x (make_op n).(znz_0).\n";
+  fprintf fmt " Definition shiftl := \n";
+  fprintf fmt "  Eval lazy beta delta [level] in \n";
+  fprintf fmt "     level (fun n x => %s0 (shiftl0 n x))\n" c;
+  for i = 1 to size do
+  fprintf fmt "           (fun n x => reduce_%i (shiftl%i n x))\n" i i;
+  done;
+  fprintf fmt "           (fun n p x => reduce_n n (shiftln n p x)).\n";
+  fprintf fmt "\n";
+  fprintf fmt "\n";
+
+ (* Double size *)
+  fprintf fmt " Definition double_size w := match w with\n";
+  fprintf fmt " | N0 w=> N1 (WW w_0 w)\n";
+  for i = 1 to size-1 do
+    fprintf fmt " | N%i w=> N%i (extend1 _ w)\n"  i (i + 1);
+  done;
+  fprintf fmt " | N%i w=> Nn 0 (extend1 _ w)\n" size ;
+  fprintf fmt " | Nn n w=> Nn (S n) (extend1 _ w)\n";
+  fprintf fmt " end.\n";
+  fprintf fmt "\n";
+
+ (* Safe shiftl *)
+  fprintf fmt "  Section itert. \n";
+  fprintf fmt "  Variable A: Set.\n";
+  fprintf fmt "  Variable f: A -> A.\n";
+  fprintf fmt "  Variable g: A -> A.\n";
+  fprintf fmt "  Variable t: A -> bool.\n";
+  fprintf fmt "  Fixpoint itert p x :=\n";
+  fprintf fmt "    if t x then g x else\n ";
+  fprintf fmt "      match p with xH => x | xO p1 => itert p1 (f x) | xI p1 => itert p1 (f x) end.\n";
+  fprintf fmt "  End itert.\n";
+  fprintf fmt "\n";
+  fprintf fmt "  Definition safe_shiftl n x :=\n";
+  fprintf fmt "    itert _ double_size (shiftl n) \n";
+  fprintf fmt "      (fun x => match compare n (head0 x) with Gt => false | _ => true end) \n";
+  fprintf fmt "       (digits x) x.\n ";
+  fprintf fmt "\n";
+
+  (* even *)
+  fprintf fmt " Definition is_even x :=\n";
+  fprintf fmt "  match x with\n";
+  for i = 0 to size do
+    fprintf fmt "  | %s%i wx => w%i_op.(znz_is_even) wx\n" c i i
+  done;
+  fprintf fmt "  | %sn n wx => (make_op n).(znz_is_even) wx\n" c;
+  fprintf fmt "  end.\n";
+  fprintf fmt "\n";
+
   fprintf fmt "End Make.\n";
   fprintf fmt "\n";
   pp_print_flush fmt ()

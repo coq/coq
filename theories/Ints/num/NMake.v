@@ -6,8 +6,6 @@ Require Import Nbasic.
 Require Import GenMul.
 Require Import GenDivn1.
 
-
-
 Module Type W0Type.
  Parameter w : Set.
  Parameter w_op : znz_op w.
@@ -248,6 +246,21 @@ Module Make (W0:W0Type).
  Definition w11_eq0 := w11_op.(znz_eq0).
  Definition w12_eq0 := w12_op.(znz_eq0).
 
+ Definition w0_0W := w0_op.(znz_0W).
+ Definition w1_0W := w1_op.(znz_0W).
+ Definition w2_0W := w2_op.(znz_0W).
+ Definition w3_0W := w3_op.(znz_0W).
+ Definition w4_0W := w4_op.(znz_0W).
+ Definition w5_0W := w5_op.(znz_0W).
+ Definition w6_0W := w6_op.(znz_0W).
+ Definition w7_0W := w7_op.(znz_0W).
+ Definition w8_0W := w8_op.(znz_0W).
+ Definition w9_0W := w9_op.(znz_0W).
+ Definition w10_0W := w10_op.(znz_0W).
+ Definition w11_0W := w11_op.(znz_0W).
+ Definition w12_0W := w12_op.(znz_0W).
+
+ Definition w0_WW := w0_op.(znz_WW).
 
  Definition w0_add_c := w0_op.(znz_add_c).
  Definition w1_add_c := w1_op.(znz_add_c).
@@ -1361,31 +1374,31 @@ Module Make (W0:W0Type).
      @w_mul_add w12 W0 w12_succ w12_add_c w12_mul_c.
 
  Definition w0_mul_add_n1 :=
-  @gen_mul_add_n1 w0 w_0 w0_op.(znz_WW) w0_op.(znz_0W) w0_mul_add.
+  @gen_mul_add_n1 w0 w_0 w0_op.(znz_WW) w0_0W w0_mul_add.
  Definition w1_mul_add_n1 :=
-  @gen_mul_add_n1 w1 W0 w1_op.(znz_WW) w1_op.(znz_0W) w1_mul_add.
+  @gen_mul_add_n1 w1 W0 w1_op.(znz_WW) w1_0W w1_mul_add.
  Definition w2_mul_add_n1 :=
-  @gen_mul_add_n1 w2 W0 w2_op.(znz_WW) w2_op.(znz_0W) w2_mul_add.
+  @gen_mul_add_n1 w2 W0 w2_op.(znz_WW) w2_0W w2_mul_add.
  Definition w3_mul_add_n1 :=
-  @gen_mul_add_n1 w3 W0 w3_op.(znz_WW) w3_op.(znz_0W) w3_mul_add.
+  @gen_mul_add_n1 w3 W0 w3_op.(znz_WW) w3_0W w3_mul_add.
  Definition w4_mul_add_n1 :=
-  @gen_mul_add_n1 w4 W0 w4_op.(znz_WW) w4_op.(znz_0W) w4_mul_add.
+  @gen_mul_add_n1 w4 W0 w4_op.(znz_WW) w4_0W w4_mul_add.
  Definition w5_mul_add_n1 :=
-  @gen_mul_add_n1 w5 W0 w5_op.(znz_WW) w5_op.(znz_0W) w5_mul_add.
+  @gen_mul_add_n1 w5 W0 w5_op.(znz_WW) w5_0W w5_mul_add.
  Definition w6_mul_add_n1 :=
-  @gen_mul_add_n1 w6 W0 w6_op.(znz_WW) w6_op.(znz_0W) w6_mul_add.
+  @gen_mul_add_n1 w6 W0 w6_op.(znz_WW) w6_0W w6_mul_add.
  Definition w7_mul_add_n1 :=
-  @gen_mul_add_n1 w7 W0 w7_op.(znz_WW) w7_op.(znz_0W) w7_mul_add.
+  @gen_mul_add_n1 w7 W0 w7_op.(znz_WW) w7_0W w7_mul_add.
  Definition w8_mul_add_n1 :=
-  @gen_mul_add_n1 w8 W0 w8_op.(znz_WW) w8_op.(znz_0W) w8_mul_add.
+  @gen_mul_add_n1 w8 W0 w8_op.(znz_WW) w8_0W w8_mul_add.
  Definition w9_mul_add_n1 :=
-  @gen_mul_add_n1 w9 W0 w9_op.(znz_WW) w9_op.(znz_0W) w9_mul_add.
+  @gen_mul_add_n1 w9 W0 w9_op.(znz_WW) w9_0W w9_mul_add.
  Definition w10_mul_add_n1 :=
-  @gen_mul_add_n1 w10 W0 w10_op.(znz_WW) w10_op.(znz_0W) w10_mul_add.
+  @gen_mul_add_n1 w10 W0 w10_op.(znz_WW) w10_0W w10_mul_add.
  Definition w11_mul_add_n1 :=
-  @gen_mul_add_n1 w11 W0 w11_op.(znz_WW) w11_op.(znz_0W) w11_mul_add.
+  @gen_mul_add_n1 w11 W0 w11_op.(znz_WW) w11_0W w11_mul_add.
  Definition w12_mul_add_n1 :=
-  @gen_mul_add_n1 w12 W0 w12_op.(znz_WW) w12_op.(znz_0W) w12_mul_add.
+  @gen_mul_add_n1 w12 W0 w12_op.(znz_WW) w12_0W w12_mul_add.
 
  Definition mul x y :=
   match x, y with
@@ -1466,12 +1479,9 @@ Module Make (W0:W0Type).
   | N0 wx, Nn n wy =>
     if w0_eq0 wx then zero
     else
-    let (w,r) := 
-      gen_mul_add_mn1 w_0 (fun r => extend11 w0 (WW w_0 r))
-      w12_op.(znz_0W) w12_op.(znz_WW)
-      (w0_mul_add_n1 12) (S n) wy wx w_0 in
-    if w0_eq0 w then Nn n r
-    else Nn (S n) (WW (extend n w12 (extend12 w0 (WW w_0 w))) r)
+    let (w,r) := w12_mul_add_n1 (S n) wy (extend11 w0 (WW w_0 wx)) W0 in
+    if w12_eq0 w then Nn n r
+    else Nn (S n) (WW (extend n w12 (WW W0 w)) r)
   | N1 wx, N0 wy =>
     if w0_eq0 wy then zero
     else
@@ -1525,12 +1535,9 @@ Module Make (W0:W0Type).
     if w1_eq0 w then N12 r
     else Nn 0 (WW (extend11 w0 w) r)
   | N1 wx, Nn n wy =>
-    let (w,r) := 
-      gen_mul_add_mn1 W0 (fun r => extend11 w0 r)
-      w12_op.(znz_0W) w12_op.(znz_WW)
-      (w1_mul_add_n1 11) (S n) wy wx W0 in
-    if w1_eq0 w then Nn n r
-    else Nn (S n) (WW (extend n w12 (extend12 w0 w)) r)
+    let (w,r) := w12_mul_add_n1 (S n) wy (extend11 w0 wx) W0 in
+    if w12_eq0 w then Nn n r
+    else Nn (S n) (WW (extend n w12 (WW W0 w)) r)
   | N2 wx, N0 wy =>
     if w0_eq0 wy then zero
     else
@@ -2150,19 +2157,13 @@ Module Make (W0:W0Type).
   | Nn n wx, N0 wy =>
     if w0_eq0 wy then zero
     else
-    let (w,r) := 
-      gen_mul_add_mn1 w_0 (fun r => extend11 w0 (WW w_0 r))
-      w12_op.(znz_0W) w12_op.(znz_WW)
-      (w0_mul_add_n1 12) (S n) wx wy w_0 in
-    if w0_eq0 w then Nn n r
-    else Nn (S n) (WW (extend n w12 (extend12 w0 (WW w_0 w))) r)
-  | Nn n wx, N1 wy =>   
-    let (w,r) := 
-      gen_mul_add_mn1 W0 (fun r => extend11 w0 r)
-      w12_op.(znz_0W) w12_op.(znz_WW)
-      (w1_mul_add_n1 11) (S n) wx wy W0 in
-    if w1_eq0 w then Nn n r
-    else Nn (S n) (WW (extend n w12 (extend12 w0 w)) r)
+    let (w,r) := w12_mul_add_n1 (S n) wx (extend11 w0 (WW w_0 wy)) W0 in
+    if w12_eq0 w then Nn n r
+    else Nn (S n) (WW (extend n w12 (WW W0 w)) r)
+  | Nn n wx, N1 wy =>
+    let (w,r) := w12_mul_add_n1 (S n) wx (extend11 w0 wy) W0 in
+    if w12_eq0 w then Nn n r
+    else Nn (S n) (WW (extend n w12 (WW W0 w)) r)
   | Nn n wx, N2 wy =>
     let (w,r) := w12_mul_add_n1 (S n) wx (extend10 w1 wy) W0 in
     if w12_eq0 w then Nn n r
@@ -2377,152 +2378,152 @@ Module Make (W0:W0Type).
   match x, y with
   | N0 wx, N0 wy => let (q, r):= w0_div_gt wx wy in (reduce_0 q, reduce_0 r)
   | N0 wx, N1 wy =>
-    let wx':= GenBase.extend w0_op.(znz_0W) 0 wx in
+    let wx':= GenBase.extend w0_0W 0 wx in
     let (q, r):= w1_div_gt wx' wy in
     (reduce_1 q, reduce_1 r)
   | N0 wx, N2 wy =>
-    let wx':= GenBase.extend w0_op.(znz_0W) 1 wx in
+    let wx':= GenBase.extend w0_0W 1 wx in
     let (q, r):= w2_div_gt wx' wy in
     (reduce_2 q, reduce_2 r)
   | N0 wx, N3 wy =>
-    let wx':= GenBase.extend w0_op.(znz_0W) 2 wx in
+    let wx':= GenBase.extend w0_0W 2 wx in
     let (q, r):= w3_div_gt wx' wy in
     (reduce_3 q, reduce_3 r)
   | N0 wx, N4 wy =>
-    let wx':= GenBase.extend w0_op.(znz_0W) 3 wx in
+    let wx':= GenBase.extend w0_0W 3 wx in
     let (q, r):= w4_div_gt wx' wy in
     (reduce_4 q, reduce_4 r)
   | N0 wx, N5 wy =>
-    let wx':= GenBase.extend w0_op.(znz_0W) 4 wx in
+    let wx':= GenBase.extend w0_0W 4 wx in
     let (q, r):= w5_div_gt wx' wy in
     (reduce_5 q, reduce_5 r)
   | N0 wx, N6 wy =>
-    let wx':= GenBase.extend w0_op.(znz_0W) 5 wx in
+    let wx':= GenBase.extend w0_0W 5 wx in
     let (q, r):= w6_div_gt wx' wy in
     (reduce_6 q, reduce_6 r)
   | N0 wx, N7 wy =>
-    let wx':= GenBase.extend w0_op.(znz_0W) 6 wx in
+    let wx':= GenBase.extend w0_0W 6 wx in
     let (q, r):= w7_div_gt wx' wy in
     (reduce_7 q, reduce_7 r)
   | N0 wx, N8 wy =>
-    let wx':= GenBase.extend w0_op.(znz_0W) 7 wx in
+    let wx':= GenBase.extend w0_0W 7 wx in
     let (q, r):= w8_div_gt wx' wy in
     (reduce_8 q, reduce_8 r)
   | N0 wx, N9 wy =>
-    let wx':= GenBase.extend w0_op.(znz_0W) 8 wx in
+    let wx':= GenBase.extend w0_0W 8 wx in
     let (q, r):= w9_div_gt wx' wy in
     (reduce_9 q, reduce_9 r)
   | N0 wx, N10 wy =>
-    let wx':= GenBase.extend w0_op.(znz_0W) 9 wx in
+    let wx':= GenBase.extend w0_0W 9 wx in
     let (q, r):= w10_div_gt wx' wy in
     (reduce_10 q, reduce_10 r)
   | N0 wx, N11 wy =>
-    let wx':= GenBase.extend w0_op.(znz_0W) 10 wx in
+    let wx':= GenBase.extend w0_0W 10 wx in
     let (q, r):= w11_div_gt wx' wy in
     (reduce_11 q, reduce_11 r)
   | N0 wx, N12 wy =>
-    let wx':= GenBase.extend w0_op.(znz_0W) 11 wx in
+    let wx':= GenBase.extend w0_0W 11 wx in
     let (q, r):= w12_div_gt wx' wy in
     (reduce_12 q, reduce_12 r)
   | N0 wx, Nn n wy =>
-    let wx':= extend n w12 (GenBase.extend w0_op.(znz_0W) 12 wx) in
+    let wx':= extend n w12 (GenBase.extend w0_0W 12 wx) in
     let (q, r):= (make_op n).(znz_div_gt) wx' wy in
     (reduce_n n q, reduce_n n r)
   | N1 wx, N0 wy => let (q, r):= w0_divn1 1 wx wy in (reduce_1 q, reduce_0 r)
   | N1 wx, N1 wy => let (q, r):= w1_div_gt wx wy in (reduce_1 q, reduce_1 r)
   | N1 wx, N2 wy =>
-    let wx':= GenBase.extend w1_op.(znz_0W) 0 wx in
+    let wx':= GenBase.extend w1_0W 0 wx in
     let (q, r):= w2_div_gt wx' wy in
     (reduce_2 q, reduce_2 r)
   | N1 wx, N3 wy =>
-    let wx':= GenBase.extend w1_op.(znz_0W) 1 wx in
+    let wx':= GenBase.extend w1_0W 1 wx in
     let (q, r):= w3_div_gt wx' wy in
     (reduce_3 q, reduce_3 r)
   | N1 wx, N4 wy =>
-    let wx':= GenBase.extend w1_op.(znz_0W) 2 wx in
+    let wx':= GenBase.extend w1_0W 2 wx in
     let (q, r):= w4_div_gt wx' wy in
     (reduce_4 q, reduce_4 r)
   | N1 wx, N5 wy =>
-    let wx':= GenBase.extend w1_op.(znz_0W) 3 wx in
+    let wx':= GenBase.extend w1_0W 3 wx in
     let (q, r):= w5_div_gt wx' wy in
     (reduce_5 q, reduce_5 r)
   | N1 wx, N6 wy =>
-    let wx':= GenBase.extend w1_op.(znz_0W) 4 wx in
+    let wx':= GenBase.extend w1_0W 4 wx in
     let (q, r):= w6_div_gt wx' wy in
     (reduce_6 q, reduce_6 r)
   | N1 wx, N7 wy =>
-    let wx':= GenBase.extend w1_op.(znz_0W) 5 wx in
+    let wx':= GenBase.extend w1_0W 5 wx in
     let (q, r):= w7_div_gt wx' wy in
     (reduce_7 q, reduce_7 r)
   | N1 wx, N8 wy =>
-    let wx':= GenBase.extend w1_op.(znz_0W) 6 wx in
+    let wx':= GenBase.extend w1_0W 6 wx in
     let (q, r):= w8_div_gt wx' wy in
     (reduce_8 q, reduce_8 r)
   | N1 wx, N9 wy =>
-    let wx':= GenBase.extend w1_op.(znz_0W) 7 wx in
+    let wx':= GenBase.extend w1_0W 7 wx in
     let (q, r):= w9_div_gt wx' wy in
     (reduce_9 q, reduce_9 r)
   | N1 wx, N10 wy =>
-    let wx':= GenBase.extend w1_op.(znz_0W) 8 wx in
+    let wx':= GenBase.extend w1_0W 8 wx in
     let (q, r):= w10_div_gt wx' wy in
     (reduce_10 q, reduce_10 r)
   | N1 wx, N11 wy =>
-    let wx':= GenBase.extend w1_op.(znz_0W) 9 wx in
+    let wx':= GenBase.extend w1_0W 9 wx in
     let (q, r):= w11_div_gt wx' wy in
     (reduce_11 q, reduce_11 r)
   | N1 wx, N12 wy =>
-    let wx':= GenBase.extend w1_op.(znz_0W) 10 wx in
+    let wx':= GenBase.extend w1_0W 10 wx in
     let (q, r):= w12_div_gt wx' wy in
     (reduce_12 q, reduce_12 r)
   | N1 wx, Nn n wy =>
-    let wx':= extend n w12 (GenBase.extend w1_op.(znz_0W) 11 wx) in
+    let wx':= extend n w12 (GenBase.extend w1_0W 11 wx) in
     let (q, r):= (make_op n).(znz_div_gt) wx' wy in
     (reduce_n n q, reduce_n n r)
   | N2 wx, N0 wy => let (q, r):= w0_divn1 2 wx wy in (reduce_2 q, reduce_0 r)
   | N2 wx, N1 wy => let (q, r):= w1_divn1 1 wx wy in (reduce_2 q, reduce_1 r)
   | N2 wx, N2 wy => let (q, r):= w2_div_gt wx wy in (reduce_2 q, reduce_2 r)
   | N2 wx, N3 wy =>
-    let wx':= GenBase.extend w2_op.(znz_0W) 0 wx in
+    let wx':= GenBase.extend w2_0W 0 wx in
     let (q, r):= w3_div_gt wx' wy in
     (reduce_3 q, reduce_3 r)
   | N2 wx, N4 wy =>
-    let wx':= GenBase.extend w2_op.(znz_0W) 1 wx in
+    let wx':= GenBase.extend w2_0W 1 wx in
     let (q, r):= w4_div_gt wx' wy in
     (reduce_4 q, reduce_4 r)
   | N2 wx, N5 wy =>
-    let wx':= GenBase.extend w2_op.(znz_0W) 2 wx in
+    let wx':= GenBase.extend w2_0W 2 wx in
     let (q, r):= w5_div_gt wx' wy in
     (reduce_5 q, reduce_5 r)
   | N2 wx, N6 wy =>
-    let wx':= GenBase.extend w2_op.(znz_0W) 3 wx in
+    let wx':= GenBase.extend w2_0W 3 wx in
     let (q, r):= w6_div_gt wx' wy in
     (reduce_6 q, reduce_6 r)
   | N2 wx, N7 wy =>
-    let wx':= GenBase.extend w2_op.(znz_0W) 4 wx in
+    let wx':= GenBase.extend w2_0W 4 wx in
     let (q, r):= w7_div_gt wx' wy in
     (reduce_7 q, reduce_7 r)
   | N2 wx, N8 wy =>
-    let wx':= GenBase.extend w2_op.(znz_0W) 5 wx in
+    let wx':= GenBase.extend w2_0W 5 wx in
     let (q, r):= w8_div_gt wx' wy in
     (reduce_8 q, reduce_8 r)
   | N2 wx, N9 wy =>
-    let wx':= GenBase.extend w2_op.(znz_0W) 6 wx in
+    let wx':= GenBase.extend w2_0W 6 wx in
     let (q, r):= w9_div_gt wx' wy in
     (reduce_9 q, reduce_9 r)
   | N2 wx, N10 wy =>
-    let wx':= GenBase.extend w2_op.(znz_0W) 7 wx in
+    let wx':= GenBase.extend w2_0W 7 wx in
     let (q, r):= w10_div_gt wx' wy in
     (reduce_10 q, reduce_10 r)
   | N2 wx, N11 wy =>
-    let wx':= GenBase.extend w2_op.(znz_0W) 8 wx in
+    let wx':= GenBase.extend w2_0W 8 wx in
     let (q, r):= w11_div_gt wx' wy in
     (reduce_11 q, reduce_11 r)
   | N2 wx, N12 wy =>
-    let wx':= GenBase.extend w2_op.(znz_0W) 9 wx in
+    let wx':= GenBase.extend w2_0W 9 wx in
     let (q, r):= w12_div_gt wx' wy in
     (reduce_12 q, reduce_12 r)
   | N2 wx, Nn n wy =>
-    let wx':= extend n w12 (GenBase.extend w2_op.(znz_0W) 10 wx) in
+    let wx':= extend n w12 (GenBase.extend w2_0W 10 wx) in
     let (q, r):= (make_op n).(znz_div_gt) wx' wy in
     (reduce_n n q, reduce_n n r)
   | N3 wx, N0 wy => let (q, r):= w0_divn1 3 wx wy in (reduce_3 q, reduce_0 r)
@@ -2530,43 +2531,43 @@ Module Make (W0:W0Type).
   | N3 wx, N2 wy => let (q, r):= w2_divn1 1 wx wy in (reduce_3 q, reduce_2 r)
   | N3 wx, N3 wy => let (q, r):= w3_div_gt wx wy in (reduce_3 q, reduce_3 r)
   | N3 wx, N4 wy =>
-    let wx':= GenBase.extend w3_op.(znz_0W) 0 wx in
+    let wx':= GenBase.extend w3_0W 0 wx in
     let (q, r):= w4_div_gt wx' wy in
     (reduce_4 q, reduce_4 r)
   | N3 wx, N5 wy =>
-    let wx':= GenBase.extend w3_op.(znz_0W) 1 wx in
+    let wx':= GenBase.extend w3_0W 1 wx in
     let (q, r):= w5_div_gt wx' wy in
     (reduce_5 q, reduce_5 r)
   | N3 wx, N6 wy =>
-    let wx':= GenBase.extend w3_op.(znz_0W) 2 wx in
+    let wx':= GenBase.extend w3_0W 2 wx in
     let (q, r):= w6_div_gt wx' wy in
     (reduce_6 q, reduce_6 r)
   | N3 wx, N7 wy =>
-    let wx':= GenBase.extend w3_op.(znz_0W) 3 wx in
+    let wx':= GenBase.extend w3_0W 3 wx in
     let (q, r):= w7_div_gt wx' wy in
     (reduce_7 q, reduce_7 r)
   | N3 wx, N8 wy =>
-    let wx':= GenBase.extend w3_op.(znz_0W) 4 wx in
+    let wx':= GenBase.extend w3_0W 4 wx in
     let (q, r):= w8_div_gt wx' wy in
     (reduce_8 q, reduce_8 r)
   | N3 wx, N9 wy =>
-    let wx':= GenBase.extend w3_op.(znz_0W) 5 wx in
+    let wx':= GenBase.extend w3_0W 5 wx in
     let (q, r):= w9_div_gt wx' wy in
     (reduce_9 q, reduce_9 r)
   | N3 wx, N10 wy =>
-    let wx':= GenBase.extend w3_op.(znz_0W) 6 wx in
+    let wx':= GenBase.extend w3_0W 6 wx in
     let (q, r):= w10_div_gt wx' wy in
     (reduce_10 q, reduce_10 r)
   | N3 wx, N11 wy =>
-    let wx':= GenBase.extend w3_op.(znz_0W) 7 wx in
+    let wx':= GenBase.extend w3_0W 7 wx in
     let (q, r):= w11_div_gt wx' wy in
     (reduce_11 q, reduce_11 r)
   | N3 wx, N12 wy =>
-    let wx':= GenBase.extend w3_op.(znz_0W) 8 wx in
+    let wx':= GenBase.extend w3_0W 8 wx in
     let (q, r):= w12_div_gt wx' wy in
     (reduce_12 q, reduce_12 r)
   | N3 wx, Nn n wy =>
-    let wx':= extend n w12 (GenBase.extend w3_op.(znz_0W) 9 wx) in
+    let wx':= extend n w12 (GenBase.extend w3_0W 9 wx) in
     let (q, r):= (make_op n).(znz_div_gt) wx' wy in
     (reduce_n n q, reduce_n n r)
   | N4 wx, N0 wy => let (q, r):= w0_divn1 4 wx wy in (reduce_4 q, reduce_0 r)
@@ -2575,39 +2576,39 @@ Module Make (W0:W0Type).
   | N4 wx, N3 wy => let (q, r):= w3_divn1 1 wx wy in (reduce_4 q, reduce_3 r)
   | N4 wx, N4 wy => let (q, r):= w4_div_gt wx wy in (reduce_4 q, reduce_4 r)
   | N4 wx, N5 wy =>
-    let wx':= GenBase.extend w4_op.(znz_0W) 0 wx in
+    let wx':= GenBase.extend w4_0W 0 wx in
     let (q, r):= w5_div_gt wx' wy in
     (reduce_5 q, reduce_5 r)
   | N4 wx, N6 wy =>
-    let wx':= GenBase.extend w4_op.(znz_0W) 1 wx in
+    let wx':= GenBase.extend w4_0W 1 wx in
     let (q, r):= w6_div_gt wx' wy in
     (reduce_6 q, reduce_6 r)
   | N4 wx, N7 wy =>
-    let wx':= GenBase.extend w4_op.(znz_0W) 2 wx in
+    let wx':= GenBase.extend w4_0W 2 wx in
     let (q, r):= w7_div_gt wx' wy in
     (reduce_7 q, reduce_7 r)
   | N4 wx, N8 wy =>
-    let wx':= GenBase.extend w4_op.(znz_0W) 3 wx in
+    let wx':= GenBase.extend w4_0W 3 wx in
     let (q, r):= w8_div_gt wx' wy in
     (reduce_8 q, reduce_8 r)
   | N4 wx, N9 wy =>
-    let wx':= GenBase.extend w4_op.(znz_0W) 4 wx in
+    let wx':= GenBase.extend w4_0W 4 wx in
     let (q, r):= w9_div_gt wx' wy in
     (reduce_9 q, reduce_9 r)
   | N4 wx, N10 wy =>
-    let wx':= GenBase.extend w4_op.(znz_0W) 5 wx in
+    let wx':= GenBase.extend w4_0W 5 wx in
     let (q, r):= w10_div_gt wx' wy in
     (reduce_10 q, reduce_10 r)
   | N4 wx, N11 wy =>
-    let wx':= GenBase.extend w4_op.(znz_0W) 6 wx in
+    let wx':= GenBase.extend w4_0W 6 wx in
     let (q, r):= w11_div_gt wx' wy in
     (reduce_11 q, reduce_11 r)
   | N4 wx, N12 wy =>
-    let wx':= GenBase.extend w4_op.(znz_0W) 7 wx in
+    let wx':= GenBase.extend w4_0W 7 wx in
     let (q, r):= w12_div_gt wx' wy in
     (reduce_12 q, reduce_12 r)
   | N4 wx, Nn n wy =>
-    let wx':= extend n w12 (GenBase.extend w4_op.(znz_0W) 8 wx) in
+    let wx':= extend n w12 (GenBase.extend w4_0W 8 wx) in
     let (q, r):= (make_op n).(znz_div_gt) wx' wy in
     (reduce_n n q, reduce_n n r)
   | N5 wx, N0 wy => let (q, r):= w0_divn1 5 wx wy in (reduce_5 q, reduce_0 r)
@@ -2617,35 +2618,35 @@ Module Make (W0:W0Type).
   | N5 wx, N4 wy => let (q, r):= w4_divn1 1 wx wy in (reduce_5 q, reduce_4 r)
   | N5 wx, N5 wy => let (q, r):= w5_div_gt wx wy in (reduce_5 q, reduce_5 r)
   | N5 wx, N6 wy =>
-    let wx':= GenBase.extend w5_op.(znz_0W) 0 wx in
+    let wx':= GenBase.extend w5_0W 0 wx in
     let (q, r):= w6_div_gt wx' wy in
     (reduce_6 q, reduce_6 r)
   | N5 wx, N7 wy =>
-    let wx':= GenBase.extend w5_op.(znz_0W) 1 wx in
+    let wx':= GenBase.extend w5_0W 1 wx in
     let (q, r):= w7_div_gt wx' wy in
     (reduce_7 q, reduce_7 r)
   | N5 wx, N8 wy =>
-    let wx':= GenBase.extend w5_op.(znz_0W) 2 wx in
+    let wx':= GenBase.extend w5_0W 2 wx in
     let (q, r):= w8_div_gt wx' wy in
     (reduce_8 q, reduce_8 r)
   | N5 wx, N9 wy =>
-    let wx':= GenBase.extend w5_op.(znz_0W) 3 wx in
+    let wx':= GenBase.extend w5_0W 3 wx in
     let (q, r):= w9_div_gt wx' wy in
     (reduce_9 q, reduce_9 r)
   | N5 wx, N10 wy =>
-    let wx':= GenBase.extend w5_op.(znz_0W) 4 wx in
+    let wx':= GenBase.extend w5_0W 4 wx in
     let (q, r):= w10_div_gt wx' wy in
     (reduce_10 q, reduce_10 r)
   | N5 wx, N11 wy =>
-    let wx':= GenBase.extend w5_op.(znz_0W) 5 wx in
+    let wx':= GenBase.extend w5_0W 5 wx in
     let (q, r):= w11_div_gt wx' wy in
     (reduce_11 q, reduce_11 r)
   | N5 wx, N12 wy =>
-    let wx':= GenBase.extend w5_op.(znz_0W) 6 wx in
+    let wx':= GenBase.extend w5_0W 6 wx in
     let (q, r):= w12_div_gt wx' wy in
     (reduce_12 q, reduce_12 r)
   | N5 wx, Nn n wy =>
-    let wx':= extend n w12 (GenBase.extend w5_op.(znz_0W) 7 wx) in
+    let wx':= extend n w12 (GenBase.extend w5_0W 7 wx) in
     let (q, r):= (make_op n).(znz_div_gt) wx' wy in
     (reduce_n n q, reduce_n n r)
   | N6 wx, N0 wy => let (q, r):= w0_divn1 6 wx wy in (reduce_6 q, reduce_0 r)
@@ -2656,31 +2657,31 @@ Module Make (W0:W0Type).
   | N6 wx, N5 wy => let (q, r):= w5_divn1 1 wx wy in (reduce_6 q, reduce_5 r)
   | N6 wx, N6 wy => let (q, r):= w6_div_gt wx wy in (reduce_6 q, reduce_6 r)
   | N6 wx, N7 wy =>
-    let wx':= GenBase.extend w6_op.(znz_0W) 0 wx in
+    let wx':= GenBase.extend w6_0W 0 wx in
     let (q, r):= w7_div_gt wx' wy in
     (reduce_7 q, reduce_7 r)
   | N6 wx, N8 wy =>
-    let wx':= GenBase.extend w6_op.(znz_0W) 1 wx in
+    let wx':= GenBase.extend w6_0W 1 wx in
     let (q, r):= w8_div_gt wx' wy in
     (reduce_8 q, reduce_8 r)
   | N6 wx, N9 wy =>
-    let wx':= GenBase.extend w6_op.(znz_0W) 2 wx in
+    let wx':= GenBase.extend w6_0W 2 wx in
     let (q, r):= w9_div_gt wx' wy in
     (reduce_9 q, reduce_9 r)
   | N6 wx, N10 wy =>
-    let wx':= GenBase.extend w6_op.(znz_0W) 3 wx in
+    let wx':= GenBase.extend w6_0W 3 wx in
     let (q, r):= w10_div_gt wx' wy in
     (reduce_10 q, reduce_10 r)
   | N6 wx, N11 wy =>
-    let wx':= GenBase.extend w6_op.(znz_0W) 4 wx in
+    let wx':= GenBase.extend w6_0W 4 wx in
     let (q, r):= w11_div_gt wx' wy in
     (reduce_11 q, reduce_11 r)
   | N6 wx, N12 wy =>
-    let wx':= GenBase.extend w6_op.(znz_0W) 5 wx in
+    let wx':= GenBase.extend w6_0W 5 wx in
     let (q, r):= w12_div_gt wx' wy in
     (reduce_12 q, reduce_12 r)
   | N6 wx, Nn n wy =>
-    let wx':= extend n w12 (GenBase.extend w6_op.(znz_0W) 6 wx) in
+    let wx':= extend n w12 (GenBase.extend w6_0W 6 wx) in
     let (q, r):= (make_op n).(znz_div_gt) wx' wy in
     (reduce_n n q, reduce_n n r)
   | N7 wx, N0 wy => let (q, r):= w0_divn1 7 wx wy in (reduce_7 q, reduce_0 r)
@@ -2692,27 +2693,27 @@ Module Make (W0:W0Type).
   | N7 wx, N6 wy => let (q, r):= w6_divn1 1 wx wy in (reduce_7 q, reduce_6 r)
   | N7 wx, N7 wy => let (q, r):= w7_div_gt wx wy in (reduce_7 q, reduce_7 r)
   | N7 wx, N8 wy =>
-    let wx':= GenBase.extend w7_op.(znz_0W) 0 wx in
+    let wx':= GenBase.extend w7_0W 0 wx in
     let (q, r):= w8_div_gt wx' wy in
     (reduce_8 q, reduce_8 r)
   | N7 wx, N9 wy =>
-    let wx':= GenBase.extend w7_op.(znz_0W) 1 wx in
+    let wx':= GenBase.extend w7_0W 1 wx in
     let (q, r):= w9_div_gt wx' wy in
     (reduce_9 q, reduce_9 r)
   | N7 wx, N10 wy =>
-    let wx':= GenBase.extend w7_op.(znz_0W) 2 wx in
+    let wx':= GenBase.extend w7_0W 2 wx in
     let (q, r):= w10_div_gt wx' wy in
     (reduce_10 q, reduce_10 r)
   | N7 wx, N11 wy =>
-    let wx':= GenBase.extend w7_op.(znz_0W) 3 wx in
+    let wx':= GenBase.extend w7_0W 3 wx in
     let (q, r):= w11_div_gt wx' wy in
     (reduce_11 q, reduce_11 r)
   | N7 wx, N12 wy =>
-    let wx':= GenBase.extend w7_op.(znz_0W) 4 wx in
+    let wx':= GenBase.extend w7_0W 4 wx in
     let (q, r):= w12_div_gt wx' wy in
     (reduce_12 q, reduce_12 r)
   | N7 wx, Nn n wy =>
-    let wx':= extend n w12 (GenBase.extend w7_op.(znz_0W) 5 wx) in
+    let wx':= extend n w12 (GenBase.extend w7_0W 5 wx) in
     let (q, r):= (make_op n).(znz_div_gt) wx' wy in
     (reduce_n n q, reduce_n n r)
   | N8 wx, N0 wy => let (q, r):= w0_divn1 8 wx wy in (reduce_8 q, reduce_0 r)
@@ -2725,23 +2726,23 @@ Module Make (W0:W0Type).
   | N8 wx, N7 wy => let (q, r):= w7_divn1 1 wx wy in (reduce_8 q, reduce_7 r)
   | N8 wx, N8 wy => let (q, r):= w8_div_gt wx wy in (reduce_8 q, reduce_8 r)
   | N8 wx, N9 wy =>
-    let wx':= GenBase.extend w8_op.(znz_0W) 0 wx in
+    let wx':= GenBase.extend w8_0W 0 wx in
     let (q, r):= w9_div_gt wx' wy in
     (reduce_9 q, reduce_9 r)
   | N8 wx, N10 wy =>
-    let wx':= GenBase.extend w8_op.(znz_0W) 1 wx in
+    let wx':= GenBase.extend w8_0W 1 wx in
     let (q, r):= w10_div_gt wx' wy in
     (reduce_10 q, reduce_10 r)
   | N8 wx, N11 wy =>
-    let wx':= GenBase.extend w8_op.(znz_0W) 2 wx in
+    let wx':= GenBase.extend w8_0W 2 wx in
     let (q, r):= w11_div_gt wx' wy in
     (reduce_11 q, reduce_11 r)
   | N8 wx, N12 wy =>
-    let wx':= GenBase.extend w8_op.(znz_0W) 3 wx in
+    let wx':= GenBase.extend w8_0W 3 wx in
     let (q, r):= w12_div_gt wx' wy in
     (reduce_12 q, reduce_12 r)
   | N8 wx, Nn n wy =>
-    let wx':= extend n w12 (GenBase.extend w8_op.(znz_0W) 4 wx) in
+    let wx':= extend n w12 (GenBase.extend w8_0W 4 wx) in
     let (q, r):= (make_op n).(znz_div_gt) wx' wy in
     (reduce_n n q, reduce_n n r)
   | N9 wx, N0 wy => let (q, r):= w0_divn1 9 wx wy in (reduce_9 q, reduce_0 r)
@@ -2755,19 +2756,19 @@ Module Make (W0:W0Type).
   | N9 wx, N8 wy => let (q, r):= w8_divn1 1 wx wy in (reduce_9 q, reduce_8 r)
   | N9 wx, N9 wy => let (q, r):= w9_div_gt wx wy in (reduce_9 q, reduce_9 r)
   | N9 wx, N10 wy =>
-    let wx':= GenBase.extend w9_op.(znz_0W) 0 wx in
+    let wx':= GenBase.extend w9_0W 0 wx in
     let (q, r):= w10_div_gt wx' wy in
     (reduce_10 q, reduce_10 r)
   | N9 wx, N11 wy =>
-    let wx':= GenBase.extend w9_op.(znz_0W) 1 wx in
+    let wx':= GenBase.extend w9_0W 1 wx in
     let (q, r):= w11_div_gt wx' wy in
     (reduce_11 q, reduce_11 r)
   | N9 wx, N12 wy =>
-    let wx':= GenBase.extend w9_op.(znz_0W) 2 wx in
+    let wx':= GenBase.extend w9_0W 2 wx in
     let (q, r):= w12_div_gt wx' wy in
     (reduce_12 q, reduce_12 r)
   | N9 wx, Nn n wy =>
-    let wx':= extend n w12 (GenBase.extend w9_op.(znz_0W) 3 wx) in
+    let wx':= extend n w12 (GenBase.extend w9_0W 3 wx) in
     let (q, r):= (make_op n).(znz_div_gt) wx' wy in
     (reduce_n n q, reduce_n n r)
   | N10 wx, N0 wy => let (q, r):= w0_divn1 10 wx wy in (reduce_10 q, reduce_0 r)
@@ -2782,15 +2783,15 @@ Module Make (W0:W0Type).
   | N10 wx, N9 wy => let (q, r):= w9_divn1 1 wx wy in (reduce_10 q, reduce_9 r)
   | N10 wx, N10 wy => let (q, r):= w10_div_gt wx wy in (reduce_10 q, reduce_10 r)
   | N10 wx, N11 wy =>
-    let wx':= GenBase.extend w10_op.(znz_0W) 0 wx in
+    let wx':= GenBase.extend w10_0W 0 wx in
     let (q, r):= w11_div_gt wx' wy in
     (reduce_11 q, reduce_11 r)
   | N10 wx, N12 wy =>
-    let wx':= GenBase.extend w10_op.(znz_0W) 1 wx in
+    let wx':= GenBase.extend w10_0W 1 wx in
     let (q, r):= w12_div_gt wx' wy in
     (reduce_12 q, reduce_12 r)
   | N10 wx, Nn n wy =>
-    let wx':= extend n w12 (GenBase.extend w10_op.(znz_0W) 2 wx) in
+    let wx':= extend n w12 (GenBase.extend w10_0W 2 wx) in
     let (q, r):= (make_op n).(znz_div_gt) wx' wy in
     (reduce_n n q, reduce_n n r)
   | N11 wx, N0 wy => let (q, r):= w0_divn1 11 wx wy in (reduce_11 q, reduce_0 r)
@@ -2806,11 +2807,11 @@ Module Make (W0:W0Type).
   | N11 wx, N10 wy => let (q, r):= w10_divn1 1 wx wy in (reduce_11 q, reduce_10 r)
   | N11 wx, N11 wy => let (q, r):= w11_div_gt wx wy in (reduce_11 q, reduce_11 r)
   | N11 wx, N12 wy =>
-    let wx':= GenBase.extend w11_op.(znz_0W) 0 wx in
+    let wx':= GenBase.extend w11_0W 0 wx in
     let (q, r):= w12_div_gt wx' wy in
     (reduce_12 q, reduce_12 r)
   | N11 wx, Nn n wy =>
-    let wx':= extend n w12 (GenBase.extend w11_op.(znz_0W) 1 wx) in
+    let wx':= extend n w12 (GenBase.extend w11_0W 1 wx) in
     let (q, r):= (make_op n).(znz_div_gt) wx' wy in
     (reduce_n n q, reduce_n n r)
   | N12 wx, N0 wy => let (q, r):= w0_divn1 12 wx wy in (reduce_12 q, reduce_0 r)
@@ -2827,55 +2828,55 @@ Module Make (W0:W0Type).
   | N12 wx, N11 wy => let (q, r):= w11_divn1 1 wx wy in (reduce_12 q, reduce_11 r)
   | N12 wx, N12 wy => let (q, r):= w12_div_gt wx wy in (reduce_12 q, reduce_12 r)
   | N12 wx, Nn n wy =>
-    let wx':= extend n w12 (GenBase.extend w12_op.(znz_0W) 0 wx) in
+    let wx':= extend n w12 (GenBase.extend w12_0W 0 wx) in
     let (q, r):= (make_op n).(znz_div_gt) wx' wy in
     (reduce_n n q, reduce_n n r)
   | Nn n wx, N0 wy =>
-    let wy':= GenBase.extend w0_op.(znz_0W) 11 wy in
+    let wy':= GenBase.extend w0_0W 11 wy in
     let (q, r):= w12_divn1 (S n) wx wy' in
     (reduce_n n q, reduce_12 r)
   | Nn n wx, N1 wy =>
-    let wy':= GenBase.extend w1_op.(znz_0W) 10 wy in
+    let wy':= GenBase.extend w1_0W 10 wy in
     let (q, r):= w12_divn1 (S n) wx wy' in
     (reduce_n n q, reduce_12 r)
   | Nn n wx, N2 wy =>
-    let wy':= GenBase.extend w2_op.(znz_0W) 9 wy in
+    let wy':= GenBase.extend w2_0W 9 wy in
     let (q, r):= w12_divn1 (S n) wx wy' in
     (reduce_n n q, reduce_12 r)
   | Nn n wx, N3 wy =>
-    let wy':= GenBase.extend w3_op.(znz_0W) 8 wy in
+    let wy':= GenBase.extend w3_0W 8 wy in
     let (q, r):= w12_divn1 (S n) wx wy' in
     (reduce_n n q, reduce_12 r)
   | Nn n wx, N4 wy =>
-    let wy':= GenBase.extend w4_op.(znz_0W) 7 wy in
+    let wy':= GenBase.extend w4_0W 7 wy in
     let (q, r):= w12_divn1 (S n) wx wy' in
     (reduce_n n q, reduce_12 r)
   | Nn n wx, N5 wy =>
-    let wy':= GenBase.extend w5_op.(znz_0W) 6 wy in
+    let wy':= GenBase.extend w5_0W 6 wy in
     let (q, r):= w12_divn1 (S n) wx wy' in
     (reduce_n n q, reduce_12 r)
   | Nn n wx, N6 wy =>
-    let wy':= GenBase.extend w6_op.(znz_0W) 5 wy in
+    let wy':= GenBase.extend w6_0W 5 wy in
     let (q, r):= w12_divn1 (S n) wx wy' in
     (reduce_n n q, reduce_12 r)
   | Nn n wx, N7 wy =>
-    let wy':= GenBase.extend w7_op.(znz_0W) 4 wy in
+    let wy':= GenBase.extend w7_0W 4 wy in
     let (q, r):= w12_divn1 (S n) wx wy' in
     (reduce_n n q, reduce_12 r)
   | Nn n wx, N8 wy =>
-    let wy':= GenBase.extend w8_op.(znz_0W) 3 wy in
+    let wy':= GenBase.extend w8_0W 3 wy in
     let (q, r):= w12_divn1 (S n) wx wy' in
     (reduce_n n q, reduce_12 r)
   | Nn n wx, N9 wy =>
-    let wy':= GenBase.extend w9_op.(znz_0W) 2 wy in
+    let wy':= GenBase.extend w9_0W 2 wy in
     let (q, r):= w12_divn1 (S n) wx wy' in
     (reduce_n n q, reduce_12 r)
   | Nn n wx, N10 wy =>
-    let wy':= GenBase.extend w10_op.(znz_0W) 1 wy in
+    let wy':= GenBase.extend w10_0W 1 wy in
     let (q, r):= w12_divn1 (S n) wx wy' in
     (reduce_n n q, reduce_12 r)
   | Nn n wx, N11 wy =>
-    let wy':= GenBase.extend w11_op.(znz_0W) 0 wy in
+    let wy':= GenBase.extend w11_0W 0 wy in
     let (q, r):= w12_divn1 (S n) wx wy' in
     (reduce_n n q, reduce_12 r)
   | Nn n wx, N12 wy =>
@@ -2973,151 +2974,151 @@ Module Make (W0:W0Type).
   match x, y with
   | N0 wx, N0 wy => reduce_0 (w0_mod_gt wx wy)
   | N0 wx, N1 wy =>
-    let wx':= GenBase.extend w0_op.(znz_0W) 0 wx in
+    let wx':= GenBase.extend w0_0W 0 wx in
     reduce_1 (w1_mod_gt wx' wy)
   | N0 wx, N2 wy =>
-    let wx':= GenBase.extend w0_op.(znz_0W) 1 wx in
+    let wx':= GenBase.extend w0_0W 1 wx in
     reduce_2 (w2_mod_gt wx' wy)
   | N0 wx, N3 wy =>
-    let wx':= GenBase.extend w0_op.(znz_0W) 2 wx in
+    let wx':= GenBase.extend w0_0W 2 wx in
     reduce_3 (w3_mod_gt wx' wy)
   | N0 wx, N4 wy =>
-    let wx':= GenBase.extend w0_op.(znz_0W) 3 wx in
+    let wx':= GenBase.extend w0_0W 3 wx in
     reduce_4 (w4_mod_gt wx' wy)
   | N0 wx, N5 wy =>
-    let wx':= GenBase.extend w0_op.(znz_0W) 4 wx in
+    let wx':= GenBase.extend w0_0W 4 wx in
     reduce_5 (w5_mod_gt wx' wy)
   | N0 wx, N6 wy =>
-    let wx':= GenBase.extend w0_op.(znz_0W) 5 wx in
+    let wx':= GenBase.extend w0_0W 5 wx in
     reduce_6 (w6_mod_gt wx' wy)
   | N0 wx, N7 wy =>
-    let wx':= GenBase.extend w0_op.(znz_0W) 6 wx in
+    let wx':= GenBase.extend w0_0W 6 wx in
     reduce_7 (w7_mod_gt wx' wy)
   | N0 wx, N8 wy =>
-    let wx':= GenBase.extend w0_op.(znz_0W) 7 wx in
+    let wx':= GenBase.extend w0_0W 7 wx in
     reduce_8 (w8_mod_gt wx' wy)
   | N0 wx, N9 wy =>
-    let wx':= GenBase.extend w0_op.(znz_0W) 8 wx in
+    let wx':= GenBase.extend w0_0W 8 wx in
     reduce_9 (w9_mod_gt wx' wy)
   | N0 wx, N10 wy =>
-    let wx':= GenBase.extend w0_op.(znz_0W) 9 wx in
+    let wx':= GenBase.extend w0_0W 9 wx in
     reduce_10 (w10_mod_gt wx' wy)
   | N0 wx, N11 wy =>
-    let wx':= GenBase.extend w0_op.(znz_0W) 10 wx in
+    let wx':= GenBase.extend w0_0W 10 wx in
     reduce_11 (w11_mod_gt wx' wy)
   | N0 wx, N12 wy =>
-    let wx':= GenBase.extend w0_op.(znz_0W) 11 wx in
+    let wx':= GenBase.extend w0_0W 11 wx in
     reduce_12 (w12_mod_gt wx' wy)
   | N0 wx, Nn n wy =>
-    let wx':= extend n w12 (GenBase.extend w0_op.(znz_0W) 12 wx) in
+    let wx':= extend n w12 (GenBase.extend w0_0W 12 wx) in
     reduce_n n ((make_op n).(znz_mod_gt) wx' wy)
   | N1 wx, N0 wy => reduce_0 (w0_modn1 1 wx wy)
   | N1 wx, N1 wy => reduce_1 (w1_mod_gt wx wy)
   | N1 wx, N2 wy =>
-    let wx':= GenBase.extend w1_op.(znz_0W) 0 wx in
+    let wx':= GenBase.extend w1_0W 0 wx in
     reduce_2 (w2_mod_gt wx' wy)
   | N1 wx, N3 wy =>
-    let wx':= GenBase.extend w1_op.(znz_0W) 1 wx in
+    let wx':= GenBase.extend w1_0W 1 wx in
     reduce_3 (w3_mod_gt wx' wy)
   | N1 wx, N4 wy =>
-    let wx':= GenBase.extend w1_op.(znz_0W) 2 wx in
+    let wx':= GenBase.extend w1_0W 2 wx in
     reduce_4 (w4_mod_gt wx' wy)
   | N1 wx, N5 wy =>
-    let wx':= GenBase.extend w1_op.(znz_0W) 3 wx in
+    let wx':= GenBase.extend w1_0W 3 wx in
     reduce_5 (w5_mod_gt wx' wy)
   | N1 wx, N6 wy =>
-    let wx':= GenBase.extend w1_op.(znz_0W) 4 wx in
+    let wx':= GenBase.extend w1_0W 4 wx in
     reduce_6 (w6_mod_gt wx' wy)
   | N1 wx, N7 wy =>
-    let wx':= GenBase.extend w1_op.(znz_0W) 5 wx in
+    let wx':= GenBase.extend w1_0W 5 wx in
     reduce_7 (w7_mod_gt wx' wy)
   | N1 wx, N8 wy =>
-    let wx':= GenBase.extend w1_op.(znz_0W) 6 wx in
+    let wx':= GenBase.extend w1_0W 6 wx in
     reduce_8 (w8_mod_gt wx' wy)
   | N1 wx, N9 wy =>
-    let wx':= GenBase.extend w1_op.(znz_0W) 7 wx in
+    let wx':= GenBase.extend w1_0W 7 wx in
     reduce_9 (w9_mod_gt wx' wy)
   | N1 wx, N10 wy =>
-    let wx':= GenBase.extend w1_op.(znz_0W) 8 wx in
+    let wx':= GenBase.extend w1_0W 8 wx in
     reduce_10 (w10_mod_gt wx' wy)
   | N1 wx, N11 wy =>
-    let wx':= GenBase.extend w1_op.(znz_0W) 9 wx in
+    let wx':= GenBase.extend w1_0W 9 wx in
     reduce_11 (w11_mod_gt wx' wy)
   | N1 wx, N12 wy =>
-    let wx':= GenBase.extend w1_op.(znz_0W) 10 wx in
+    let wx':= GenBase.extend w1_0W 10 wx in
     reduce_12 (w12_mod_gt wx' wy)
   | N1 wx, Nn n wy =>
-    let wx':= extend n w12 (GenBase.extend w1_op.(znz_0W) 11 wx) in
+    let wx':= extend n w12 (GenBase.extend w1_0W 11 wx) in
     reduce_n n ((make_op n).(znz_mod_gt) wx' wy)
   | N2 wx, N0 wy => reduce_0 (w0_modn1 2 wx wy)
   | N2 wx, N1 wy => reduce_1 (w1_modn1 1 wx wy)
   | N2 wx, N2 wy => reduce_2 (w2_mod_gt wx wy)
   | N2 wx, N3 wy =>
-    let wx':= GenBase.extend w2_op.(znz_0W) 0 wx in
+    let wx':= GenBase.extend w2_0W 0 wx in
     reduce_3 (w3_mod_gt wx' wy)
   | N2 wx, N4 wy =>
-    let wx':= GenBase.extend w2_op.(znz_0W) 1 wx in
+    let wx':= GenBase.extend w2_0W 1 wx in
     reduce_4 (w4_mod_gt wx' wy)
   | N2 wx, N5 wy =>
-    let wx':= GenBase.extend w2_op.(znz_0W) 2 wx in
+    let wx':= GenBase.extend w2_0W 2 wx in
     reduce_5 (w5_mod_gt wx' wy)
   | N2 wx, N6 wy =>
-    let wx':= GenBase.extend w2_op.(znz_0W) 3 wx in
+    let wx':= GenBase.extend w2_0W 3 wx in
     reduce_6 (w6_mod_gt wx' wy)
   | N2 wx, N7 wy =>
-    let wx':= GenBase.extend w2_op.(znz_0W) 4 wx in
+    let wx':= GenBase.extend w2_0W 4 wx in
     reduce_7 (w7_mod_gt wx' wy)
   | N2 wx, N8 wy =>
-    let wx':= GenBase.extend w2_op.(znz_0W) 5 wx in
+    let wx':= GenBase.extend w2_0W 5 wx in
     reduce_8 (w8_mod_gt wx' wy)
   | N2 wx, N9 wy =>
-    let wx':= GenBase.extend w2_op.(znz_0W) 6 wx in
+    let wx':= GenBase.extend w2_0W 6 wx in
     reduce_9 (w9_mod_gt wx' wy)
   | N2 wx, N10 wy =>
-    let wx':= GenBase.extend w2_op.(znz_0W) 7 wx in
+    let wx':= GenBase.extend w2_0W 7 wx in
     reduce_10 (w10_mod_gt wx' wy)
   | N2 wx, N11 wy =>
-    let wx':= GenBase.extend w2_op.(znz_0W) 8 wx in
+    let wx':= GenBase.extend w2_0W 8 wx in
     reduce_11 (w11_mod_gt wx' wy)
   | N2 wx, N12 wy =>
-    let wx':= GenBase.extend w2_op.(znz_0W) 9 wx in
+    let wx':= GenBase.extend w2_0W 9 wx in
     reduce_12 (w12_mod_gt wx' wy)
   | N2 wx, Nn n wy =>
-    let wx':= extend n w12 (GenBase.extend w2_op.(znz_0W) 10 wx) in
+    let wx':= extend n w12 (GenBase.extend w2_0W 10 wx) in
     reduce_n n ((make_op n).(znz_mod_gt) wx' wy)
   | N3 wx, N0 wy => reduce_0 (w0_modn1 3 wx wy)
   | N3 wx, N1 wy => reduce_1 (w1_modn1 2 wx wy)
   | N3 wx, N2 wy => reduce_2 (w2_modn1 1 wx wy)
   | N3 wx, N3 wy => reduce_3 (w3_mod_gt wx wy)
   | N3 wx, N4 wy =>
-    let wx':= GenBase.extend w3_op.(znz_0W) 0 wx in
+    let wx':= GenBase.extend w3_0W 0 wx in
     reduce_4 (w4_mod_gt wx' wy)
   | N3 wx, N5 wy =>
-    let wx':= GenBase.extend w3_op.(znz_0W) 1 wx in
+    let wx':= GenBase.extend w3_0W 1 wx in
     reduce_5 (w5_mod_gt wx' wy)
   | N3 wx, N6 wy =>
-    let wx':= GenBase.extend w3_op.(znz_0W) 2 wx in
+    let wx':= GenBase.extend w3_0W 2 wx in
     reduce_6 (w6_mod_gt wx' wy)
   | N3 wx, N7 wy =>
-    let wx':= GenBase.extend w3_op.(znz_0W) 3 wx in
+    let wx':= GenBase.extend w3_0W 3 wx in
     reduce_7 (w7_mod_gt wx' wy)
   | N3 wx, N8 wy =>
-    let wx':= GenBase.extend w3_op.(znz_0W) 4 wx in
+    let wx':= GenBase.extend w3_0W 4 wx in
     reduce_8 (w8_mod_gt wx' wy)
   | N3 wx, N9 wy =>
-    let wx':= GenBase.extend w3_op.(znz_0W) 5 wx in
+    let wx':= GenBase.extend w3_0W 5 wx in
     reduce_9 (w9_mod_gt wx' wy)
   | N3 wx, N10 wy =>
-    let wx':= GenBase.extend w3_op.(znz_0W) 6 wx in
+    let wx':= GenBase.extend w3_0W 6 wx in
     reduce_10 (w10_mod_gt wx' wy)
   | N3 wx, N11 wy =>
-    let wx':= GenBase.extend w3_op.(znz_0W) 7 wx in
+    let wx':= GenBase.extend w3_0W 7 wx in
     reduce_11 (w11_mod_gt wx' wy)
   | N3 wx, N12 wy =>
-    let wx':= GenBase.extend w3_op.(znz_0W) 8 wx in
+    let wx':= GenBase.extend w3_0W 8 wx in
     reduce_12 (w12_mod_gt wx' wy)
   | N3 wx, Nn n wy =>
-    let wx':= extend n w12 (GenBase.extend w3_op.(znz_0W) 9 wx) in
+    let wx':= extend n w12 (GenBase.extend w3_0W 9 wx) in
     reduce_n n ((make_op n).(znz_mod_gt) wx' wy)
   | N4 wx, N0 wy => reduce_0 (w0_modn1 4 wx wy)
   | N4 wx, N1 wy => reduce_1 (w1_modn1 3 wx wy)
@@ -3125,31 +3126,31 @@ Module Make (W0:W0Type).
   | N4 wx, N3 wy => reduce_3 (w3_modn1 1 wx wy)
   | N4 wx, N4 wy => reduce_4 (w4_mod_gt wx wy)
   | N4 wx, N5 wy =>
-    let wx':= GenBase.extend w4_op.(znz_0W) 0 wx in
+    let wx':= GenBase.extend w4_0W 0 wx in
     reduce_5 (w5_mod_gt wx' wy)
   | N4 wx, N6 wy =>
-    let wx':= GenBase.extend w4_op.(znz_0W) 1 wx in
+    let wx':= GenBase.extend w4_0W 1 wx in
     reduce_6 (w6_mod_gt wx' wy)
   | N4 wx, N7 wy =>
-    let wx':= GenBase.extend w4_op.(znz_0W) 2 wx in
+    let wx':= GenBase.extend w4_0W 2 wx in
     reduce_7 (w7_mod_gt wx' wy)
   | N4 wx, N8 wy =>
-    let wx':= GenBase.extend w4_op.(znz_0W) 3 wx in
+    let wx':= GenBase.extend w4_0W 3 wx in
     reduce_8 (w8_mod_gt wx' wy)
   | N4 wx, N9 wy =>
-    let wx':= GenBase.extend w4_op.(znz_0W) 4 wx in
+    let wx':= GenBase.extend w4_0W 4 wx in
     reduce_9 (w9_mod_gt wx' wy)
   | N4 wx, N10 wy =>
-    let wx':= GenBase.extend w4_op.(znz_0W) 5 wx in
+    let wx':= GenBase.extend w4_0W 5 wx in
     reduce_10 (w10_mod_gt wx' wy)
   | N4 wx, N11 wy =>
-    let wx':= GenBase.extend w4_op.(znz_0W) 6 wx in
+    let wx':= GenBase.extend w4_0W 6 wx in
     reduce_11 (w11_mod_gt wx' wy)
   | N4 wx, N12 wy =>
-    let wx':= GenBase.extend w4_op.(znz_0W) 7 wx in
+    let wx':= GenBase.extend w4_0W 7 wx in
     reduce_12 (w12_mod_gt wx' wy)
   | N4 wx, Nn n wy =>
-    let wx':= extend n w12 (GenBase.extend w4_op.(znz_0W) 8 wx) in
+    let wx':= extend n w12 (GenBase.extend w4_0W 8 wx) in
     reduce_n n ((make_op n).(znz_mod_gt) wx' wy)
   | N5 wx, N0 wy => reduce_0 (w0_modn1 5 wx wy)
   | N5 wx, N1 wy => reduce_1 (w1_modn1 4 wx wy)
@@ -3158,28 +3159,28 @@ Module Make (W0:W0Type).
   | N5 wx, N4 wy => reduce_4 (w4_modn1 1 wx wy)
   | N5 wx, N5 wy => reduce_5 (w5_mod_gt wx wy)
   | N5 wx, N6 wy =>
-    let wx':= GenBase.extend w5_op.(znz_0W) 0 wx in
+    let wx':= GenBase.extend w5_0W 0 wx in
     reduce_6 (w6_mod_gt wx' wy)
   | N5 wx, N7 wy =>
-    let wx':= GenBase.extend w5_op.(znz_0W) 1 wx in
+    let wx':= GenBase.extend w5_0W 1 wx in
     reduce_7 (w7_mod_gt wx' wy)
   | N5 wx, N8 wy =>
-    let wx':= GenBase.extend w5_op.(znz_0W) 2 wx in
+    let wx':= GenBase.extend w5_0W 2 wx in
     reduce_8 (w8_mod_gt wx' wy)
   | N5 wx, N9 wy =>
-    let wx':= GenBase.extend w5_op.(znz_0W) 3 wx in
+    let wx':= GenBase.extend w5_0W 3 wx in
     reduce_9 (w9_mod_gt wx' wy)
   | N5 wx, N10 wy =>
-    let wx':= GenBase.extend w5_op.(znz_0W) 4 wx in
+    let wx':= GenBase.extend w5_0W 4 wx in
     reduce_10 (w10_mod_gt wx' wy)
   | N5 wx, N11 wy =>
-    let wx':= GenBase.extend w5_op.(znz_0W) 5 wx in
+    let wx':= GenBase.extend w5_0W 5 wx in
     reduce_11 (w11_mod_gt wx' wy)
   | N5 wx, N12 wy =>
-    let wx':= GenBase.extend w5_op.(znz_0W) 6 wx in
+    let wx':= GenBase.extend w5_0W 6 wx in
     reduce_12 (w12_mod_gt wx' wy)
   | N5 wx, Nn n wy =>
-    let wx':= extend n w12 (GenBase.extend w5_op.(znz_0W) 7 wx) in
+    let wx':= extend n w12 (GenBase.extend w5_0W 7 wx) in
     reduce_n n ((make_op n).(znz_mod_gt) wx' wy)
   | N6 wx, N0 wy => reduce_0 (w0_modn1 6 wx wy)
   | N6 wx, N1 wy => reduce_1 (w1_modn1 5 wx wy)
@@ -3189,25 +3190,25 @@ Module Make (W0:W0Type).
   | N6 wx, N5 wy => reduce_5 (w5_modn1 1 wx wy)
   | N6 wx, N6 wy => reduce_6 (w6_mod_gt wx wy)
   | N6 wx, N7 wy =>
-    let wx':= GenBase.extend w6_op.(znz_0W) 0 wx in
+    let wx':= GenBase.extend w6_0W 0 wx in
     reduce_7 (w7_mod_gt wx' wy)
   | N6 wx, N8 wy =>
-    let wx':= GenBase.extend w6_op.(znz_0W) 1 wx in
+    let wx':= GenBase.extend w6_0W 1 wx in
     reduce_8 (w8_mod_gt wx' wy)
   | N6 wx, N9 wy =>
-    let wx':= GenBase.extend w6_op.(znz_0W) 2 wx in
+    let wx':= GenBase.extend w6_0W 2 wx in
     reduce_9 (w9_mod_gt wx' wy)
   | N6 wx, N10 wy =>
-    let wx':= GenBase.extend w6_op.(znz_0W) 3 wx in
+    let wx':= GenBase.extend w6_0W 3 wx in
     reduce_10 (w10_mod_gt wx' wy)
   | N6 wx, N11 wy =>
-    let wx':= GenBase.extend w6_op.(znz_0W) 4 wx in
+    let wx':= GenBase.extend w6_0W 4 wx in
     reduce_11 (w11_mod_gt wx' wy)
   | N6 wx, N12 wy =>
-    let wx':= GenBase.extend w6_op.(znz_0W) 5 wx in
+    let wx':= GenBase.extend w6_0W 5 wx in
     reduce_12 (w12_mod_gt wx' wy)
   | N6 wx, Nn n wy =>
-    let wx':= extend n w12 (GenBase.extend w6_op.(znz_0W) 6 wx) in
+    let wx':= extend n w12 (GenBase.extend w6_0W 6 wx) in
     reduce_n n ((make_op n).(znz_mod_gt) wx' wy)
   | N7 wx, N0 wy => reduce_0 (w0_modn1 7 wx wy)
   | N7 wx, N1 wy => reduce_1 (w1_modn1 6 wx wy)
@@ -3218,22 +3219,22 @@ Module Make (W0:W0Type).
   | N7 wx, N6 wy => reduce_6 (w6_modn1 1 wx wy)
   | N7 wx, N7 wy => reduce_7 (w7_mod_gt wx wy)
   | N7 wx, N8 wy =>
-    let wx':= GenBase.extend w7_op.(znz_0W) 0 wx in
+    let wx':= GenBase.extend w7_0W 0 wx in
     reduce_8 (w8_mod_gt wx' wy)
   | N7 wx, N9 wy =>
-    let wx':= GenBase.extend w7_op.(znz_0W) 1 wx in
+    let wx':= GenBase.extend w7_0W 1 wx in
     reduce_9 (w9_mod_gt wx' wy)
   | N7 wx, N10 wy =>
-    let wx':= GenBase.extend w7_op.(znz_0W) 2 wx in
+    let wx':= GenBase.extend w7_0W 2 wx in
     reduce_10 (w10_mod_gt wx' wy)
   | N7 wx, N11 wy =>
-    let wx':= GenBase.extend w7_op.(znz_0W) 3 wx in
+    let wx':= GenBase.extend w7_0W 3 wx in
     reduce_11 (w11_mod_gt wx' wy)
   | N7 wx, N12 wy =>
-    let wx':= GenBase.extend w7_op.(znz_0W) 4 wx in
+    let wx':= GenBase.extend w7_0W 4 wx in
     reduce_12 (w12_mod_gt wx' wy)
   | N7 wx, Nn n wy =>
-    let wx':= extend n w12 (GenBase.extend w7_op.(znz_0W) 5 wx) in
+    let wx':= extend n w12 (GenBase.extend w7_0W 5 wx) in
     reduce_n n ((make_op n).(znz_mod_gt) wx' wy)
   | N8 wx, N0 wy => reduce_0 (w0_modn1 8 wx wy)
   | N8 wx, N1 wy => reduce_1 (w1_modn1 7 wx wy)
@@ -3245,19 +3246,19 @@ Module Make (W0:W0Type).
   | N8 wx, N7 wy => reduce_7 (w7_modn1 1 wx wy)
   | N8 wx, N8 wy => reduce_8 (w8_mod_gt wx wy)
   | N8 wx, N9 wy =>
-    let wx':= GenBase.extend w8_op.(znz_0W) 0 wx in
+    let wx':= GenBase.extend w8_0W 0 wx in
     reduce_9 (w9_mod_gt wx' wy)
   | N8 wx, N10 wy =>
-    let wx':= GenBase.extend w8_op.(znz_0W) 1 wx in
+    let wx':= GenBase.extend w8_0W 1 wx in
     reduce_10 (w10_mod_gt wx' wy)
   | N8 wx, N11 wy =>
-    let wx':= GenBase.extend w8_op.(znz_0W) 2 wx in
+    let wx':= GenBase.extend w8_0W 2 wx in
     reduce_11 (w11_mod_gt wx' wy)
   | N8 wx, N12 wy =>
-    let wx':= GenBase.extend w8_op.(znz_0W) 3 wx in
+    let wx':= GenBase.extend w8_0W 3 wx in
     reduce_12 (w12_mod_gt wx' wy)
   | N8 wx, Nn n wy =>
-    let wx':= extend n w12 (GenBase.extend w8_op.(znz_0W) 4 wx) in
+    let wx':= extend n w12 (GenBase.extend w8_0W 4 wx) in
     reduce_n n ((make_op n).(znz_mod_gt) wx' wy)
   | N9 wx, N0 wy => reduce_0 (w0_modn1 9 wx wy)
   | N9 wx, N1 wy => reduce_1 (w1_modn1 8 wx wy)
@@ -3270,16 +3271,16 @@ Module Make (W0:W0Type).
   | N9 wx, N8 wy => reduce_8 (w8_modn1 1 wx wy)
   | N9 wx, N9 wy => reduce_9 (w9_mod_gt wx wy)
   | N9 wx, N10 wy =>
-    let wx':= GenBase.extend w9_op.(znz_0W) 0 wx in
+    let wx':= GenBase.extend w9_0W 0 wx in
     reduce_10 (w10_mod_gt wx' wy)
   | N9 wx, N11 wy =>
-    let wx':= GenBase.extend w9_op.(znz_0W) 1 wx in
+    let wx':= GenBase.extend w9_0W 1 wx in
     reduce_11 (w11_mod_gt wx' wy)
   | N9 wx, N12 wy =>
-    let wx':= GenBase.extend w9_op.(znz_0W) 2 wx in
+    let wx':= GenBase.extend w9_0W 2 wx in
     reduce_12 (w12_mod_gt wx' wy)
   | N9 wx, Nn n wy =>
-    let wx':= extend n w12 (GenBase.extend w9_op.(znz_0W) 3 wx) in
+    let wx':= extend n w12 (GenBase.extend w9_0W 3 wx) in
     reduce_n n ((make_op n).(znz_mod_gt) wx' wy)
   | N10 wx, N0 wy => reduce_0 (w0_modn1 10 wx wy)
   | N10 wx, N1 wy => reduce_1 (w1_modn1 9 wx wy)
@@ -3293,13 +3294,13 @@ Module Make (W0:W0Type).
   | N10 wx, N9 wy => reduce_9 (w9_modn1 1 wx wy)
   | N10 wx, N10 wy => reduce_10 (w10_mod_gt wx wy)
   | N10 wx, N11 wy =>
-    let wx':= GenBase.extend w10_op.(znz_0W) 0 wx in
+    let wx':= GenBase.extend w10_0W 0 wx in
     reduce_11 (w11_mod_gt wx' wy)
   | N10 wx, N12 wy =>
-    let wx':= GenBase.extend w10_op.(znz_0W) 1 wx in
+    let wx':= GenBase.extend w10_0W 1 wx in
     reduce_12 (w12_mod_gt wx' wy)
   | N10 wx, Nn n wy =>
-    let wx':= extend n w12 (GenBase.extend w10_op.(znz_0W) 2 wx) in
+    let wx':= extend n w12 (GenBase.extend w10_0W 2 wx) in
     reduce_n n ((make_op n).(znz_mod_gt) wx' wy)
   | N11 wx, N0 wy => reduce_0 (w0_modn1 11 wx wy)
   | N11 wx, N1 wy => reduce_1 (w1_modn1 10 wx wy)
@@ -3314,10 +3315,10 @@ Module Make (W0:W0Type).
   | N11 wx, N10 wy => reduce_10 (w10_modn1 1 wx wy)
   | N11 wx, N11 wy => reduce_11 (w11_mod_gt wx wy)
   | N11 wx, N12 wy =>
-    let wx':= GenBase.extend w11_op.(znz_0W) 0 wx in
+    let wx':= GenBase.extend w11_0W 0 wx in
     reduce_12 (w12_mod_gt wx' wy)
   | N11 wx, Nn n wy =>
-    let wx':= extend n w12 (GenBase.extend w11_op.(znz_0W) 1 wx) in
+    let wx':= extend n w12 (GenBase.extend w11_0W 1 wx) in
     reduce_n n ((make_op n).(znz_mod_gt) wx' wy)
   | N12 wx, N0 wy => reduce_0 (w0_modn1 12 wx wy)
   | N12 wx, N1 wy => reduce_1 (w1_modn1 11 wx wy)
@@ -3333,43 +3334,43 @@ Module Make (W0:W0Type).
   | N12 wx, N11 wy => reduce_11 (w11_modn1 1 wx wy)
   | N12 wx, N12 wy => reduce_12 (w12_mod_gt wx wy)
   | N12 wx, Nn n wy =>
-    let wx':= extend n w12 (GenBase.extend w12_op.(znz_0W) 0 wx) in
+    let wx':= extend n w12 (GenBase.extend w12_0W 0 wx) in
     reduce_n n ((make_op n).(znz_mod_gt) wx' wy)
   | Nn n wx, N0 wy =>
-    let wy':= GenBase.extend w0_op.(znz_0W) 11 wy in
+    let wy':= GenBase.extend w0_0W 11 wy in
     reduce_12 (w12_modn1 (S n) wx wy')
   | Nn n wx, N1 wy =>
-    let wy':= GenBase.extend w1_op.(znz_0W) 10 wy in
+    let wy':= GenBase.extend w1_0W 10 wy in
     reduce_12 (w12_modn1 (S n) wx wy')
   | Nn n wx, N2 wy =>
-    let wy':= GenBase.extend w2_op.(znz_0W) 9 wy in
+    let wy':= GenBase.extend w2_0W 9 wy in
     reduce_12 (w12_modn1 (S n) wx wy')
   | Nn n wx, N3 wy =>
-    let wy':= GenBase.extend w3_op.(znz_0W) 8 wy in
+    let wy':= GenBase.extend w3_0W 8 wy in
     reduce_12 (w12_modn1 (S n) wx wy')
   | Nn n wx, N4 wy =>
-    let wy':= GenBase.extend w4_op.(znz_0W) 7 wy in
+    let wy':= GenBase.extend w4_0W 7 wy in
     reduce_12 (w12_modn1 (S n) wx wy')
   | Nn n wx, N5 wy =>
-    let wy':= GenBase.extend w5_op.(znz_0W) 6 wy in
+    let wy':= GenBase.extend w5_0W 6 wy in
     reduce_12 (w12_modn1 (S n) wx wy')
   | Nn n wx, N6 wy =>
-    let wy':= GenBase.extend w6_op.(znz_0W) 5 wy in
+    let wy':= GenBase.extend w6_0W 5 wy in
     reduce_12 (w12_modn1 (S n) wx wy')
   | Nn n wx, N7 wy =>
-    let wy':= GenBase.extend w7_op.(znz_0W) 4 wy in
+    let wy':= GenBase.extend w7_0W 4 wy in
     reduce_12 (w12_modn1 (S n) wx wy')
   | Nn n wx, N8 wy =>
-    let wy':= GenBase.extend w8_op.(znz_0W) 3 wy in
+    let wy':= GenBase.extend w8_0W 3 wy in
     reduce_12 (w12_modn1 (S n) wx wy')
   | Nn n wx, N9 wy =>
-    let wy':= GenBase.extend w9_op.(znz_0W) 2 wy in
+    let wy':= GenBase.extend w9_0W 2 wy in
     reduce_12 (w12_modn1 (S n) wx wy')
   | Nn n wx, N10 wy =>
-    let wy':= GenBase.extend w10_op.(znz_0W) 1 wy in
+    let wy':= GenBase.extend w10_0W 1 wy in
     reduce_12 (w12_modn1 (S n) wx wy')
   | Nn n wx, N11 wy =>
-    let wy':= GenBase.extend w11_op.(znz_0W) 0 wy in
+    let wy':= GenBase.extend w11_0W 0 wy in
     reduce_12 (w12_modn1 (S n) wx wy')
   | Nn n wx, N12 wy =>
     let wy':= wy in
@@ -3441,8 +3442,7 @@ Module Make (W0:W0Type).
   | Gt => gcd_gt (digits a) gcd_cont a b
   end.
 
- Definition pheight p := Peano.pred (nat_of_P (get_height w0_op.(znz_digits) (plength p))). 
-
+Definition pheight p := Peano.pred (nat_of_P (get_height w0_op.(znz_digits) (plength p))).
  Definition of_pos x :=
   let h := pheight x in
   match h with
@@ -3486,6 +3486,396 @@ Module Make (W0:W0Type).
   | N11 wx => w11_op.(znz_to_Z) wx
   | N12 wx => w12_op.(znz_to_Z) wx
   | Nn n wx => (make_op n).(znz_to_Z) wx
+  end.
+
+ Definition head0 w := match w with
+ | N0 w=> N0 (w0_op.(znz_head0) w)
+ | N1 w=> N1 (w1_op.(znz_head0) w)
+ | N2 w=> N2 (w2_op.(znz_head0) w)
+ | N3 w=> N3 (w3_op.(znz_head0) w)
+ | N4 w=> N4 (w4_op.(znz_head0) w)
+ | N5 w=> N5 (w5_op.(znz_head0) w)
+ | N6 w=> N6 (w6_op.(znz_head0) w)
+ | N7 w=> N7 (w7_op.(znz_head0) w)
+ | N8 w=> N8 (w8_op.(znz_head0) w)
+ | N9 w=> N9 (w9_op.(znz_head0) w)
+ | N10 w=> N10 (w10_op.(znz_head0) w)
+ | N11 w=> N11 (w11_op.(znz_head0) w)
+ | N12 w=> N12 (w12_op.(znz_head0) w)
+ | Nn n w=> Nn n ((make_op n).(znz_head0) w)
+ end.
+
+ Definition tail0 w := match w with
+ | N0 w=> N0 (w0_op.(znz_tail0) w)
+ | N1 w=> N1 (w1_op.(znz_tail0) w)
+ | N2 w=> N2 (w2_op.(znz_tail0) w)
+ | N3 w=> N3 (w3_op.(znz_tail0) w)
+ | N4 w=> N4 (w4_op.(znz_tail0) w)
+ | N5 w=> N5 (w5_op.(znz_tail0) w)
+ | N6 w=> N6 (w6_op.(znz_tail0) w)
+ | N7 w=> N7 (w7_op.(znz_tail0) w)
+ | N8 w=> N8 (w8_op.(znz_tail0) w)
+ | N9 w=> N9 (w9_op.(znz_tail0) w)
+ | N10 w=> N10 (w10_op.(znz_tail0) w)
+ | N11 w=> N11 (w11_op.(znz_tail0) w)
+ | N12 w=> N12 (w12_op.(znz_tail0) w)
+ | Nn n w=> Nn n ((make_op n).(znz_tail0) w)
+ end.
+
+ Definition Ndigits x :=
+  match x with
+  | N0 _ => N0 w0_op.(znz_zdigits)
+  | N1 _ => reduce_1 w1_op.(znz_zdigits)
+  | N2 _ => reduce_2 w2_op.(znz_zdigits)
+  | N3 _ => reduce_3 w3_op.(znz_zdigits)
+  | N4 _ => reduce_4 w4_op.(znz_zdigits)
+  | N5 _ => reduce_5 w5_op.(znz_zdigits)
+  | N6 _ => reduce_6 w6_op.(znz_zdigits)
+  | N7 _ => reduce_7 w7_op.(znz_zdigits)
+  | N8 _ => reduce_8 w8_op.(znz_zdigits)
+  | N9 _ => reduce_9 w9_op.(znz_zdigits)
+  | N10 _ => reduce_10 w10_op.(znz_zdigits)
+  | N11 _ => reduce_11 w11_op.(znz_zdigits)
+  | N12 _ => reduce_12 w12_op.(znz_zdigits)
+  | Nn n _ => reduce_n n (make_op n).(znz_zdigits)
+ 
+  end.
+
+ Definition level f0 f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12  fn x y: t_ :=  match x, y with
+  | N0 wx, N0 wy => f0 wx wy 
+  | N0 wx, N1 wy => f1 (WW w_0 wx) wy
+  | N0 wx, N2 wy => f2 (extend1 w0 (WW w_0 wx)) wy
+  | N0 wx, N3 wy => f3 (extend2 w0 (WW w_0 wx)) wy
+  | N0 wx, N4 wy => f4 (extend3 w0 (WW w_0 wx)) wy
+  | N0 wx, N5 wy => f5 (extend4 w0 (WW w_0 wx)) wy
+  | N0 wx, N6 wy => f6 (extend5 w0 (WW w_0 wx)) wy
+  | N0 wx, N7 wy => f7 (extend6 w0 (WW w_0 wx)) wy
+  | N0 wx, N8 wy => f8 (extend7 w0 (WW w_0 wx)) wy
+  | N0 wx, N9 wy => f9 (extend8 w0 (WW w_0 wx)) wy
+  | N0 wx, N10 wy => f10 (extend9 w0 (WW w_0 wx)) wy
+  | N0 wx, N11 wy => f11 (extend10 w0 (WW w_0 wx)) wy
+  | N0 wx, N12 wy => f12 (extend11 w0 (WW w_0 wx)) wy
+  | N0 wx, Nn n wy =>
+    fn n (extend n w12 (extend12 w0 (WW w_0 wx))) wy
+  | N1 wx, N0 wy =>
+    f1 wx (WW w_0 wy)
+  | N1 wx, N1 wy => f1 wx wy
+  | N1 wx, N2 wy => f2 (extend1 w0 wx) wy
+  | N1 wx, N3 wy => f3 (extend2 w0 wx) wy
+  | N1 wx, N4 wy => f4 (extend3 w0 wx) wy
+  | N1 wx, N5 wy => f5 (extend4 w0 wx) wy
+  | N1 wx, N6 wy => f6 (extend5 w0 wx) wy
+  | N1 wx, N7 wy => f7 (extend6 w0 wx) wy
+  | N1 wx, N8 wy => f8 (extend7 w0 wx) wy
+  | N1 wx, N9 wy => f9 (extend8 w0 wx) wy
+  | N1 wx, N10 wy => f10 (extend9 w0 wx) wy
+  | N1 wx, N11 wy => f11 (extend10 w0 wx) wy
+  | N1 wx, N12 wy => f12 (extend11 w0 wx) wy
+  | N1 wx, Nn n wy => fn n (extend n w12 (extend12 w0 wx)) wy
+  | N2 wx, N0 wy =>
+    f2 wx (extend1 w0 (WW w_0 wy))
+  | N2 wx, N1 wy => f2 wx (extend1 w0 wy)
+  | N2 wx, N2 wy => f2 wx wy
+  | N2 wx, N3 wy => f3 (extend1 w1 wx) wy
+  | N2 wx, N4 wy => f4 (extend2 w1 wx) wy
+  | N2 wx, N5 wy => f5 (extend3 w1 wx) wy
+  | N2 wx, N6 wy => f6 (extend4 w1 wx) wy
+  | N2 wx, N7 wy => f7 (extend5 w1 wx) wy
+  | N2 wx, N8 wy => f8 (extend6 w1 wx) wy
+  | N2 wx, N9 wy => f9 (extend7 w1 wx) wy
+  | N2 wx, N10 wy => f10 (extend8 w1 wx) wy
+  | N2 wx, N11 wy => f11 (extend9 w1 wx) wy
+  | N2 wx, N12 wy => f12 (extend10 w1 wx) wy
+  | N2 wx, Nn n wy => fn n (extend n w12 (extend11 w1 wx)) wy
+  | N3 wx, N0 wy =>
+    f3 wx (extend2 w0 (WW w_0 wy))
+  | N3 wx, N1 wy => f3 wx (extend2 w0 wy)
+  | N3 wx, N2 wy => f3 wx (extend1 w1 wy)
+  | N3 wx, N3 wy => f3 wx wy
+  | N3 wx, N4 wy => f4 (extend1 w2 wx) wy
+  | N3 wx, N5 wy => f5 (extend2 w2 wx) wy
+  | N3 wx, N6 wy => f6 (extend3 w2 wx) wy
+  | N3 wx, N7 wy => f7 (extend4 w2 wx) wy
+  | N3 wx, N8 wy => f8 (extend5 w2 wx) wy
+  | N3 wx, N9 wy => f9 (extend6 w2 wx) wy
+  | N3 wx, N10 wy => f10 (extend7 w2 wx) wy
+  | N3 wx, N11 wy => f11 (extend8 w2 wx) wy
+  | N3 wx, N12 wy => f12 (extend9 w2 wx) wy
+  | N3 wx, Nn n wy => fn n (extend n w12 (extend10 w2 wx)) wy
+  | N4 wx, N0 wy =>
+    f4 wx (extend3 w0 (WW w_0 wy))
+  | N4 wx, N1 wy => f4 wx (extend3 w0 wy)
+  | N4 wx, N2 wy => f4 wx (extend2 w1 wy)
+  | N4 wx, N3 wy => f4 wx (extend1 w2 wy)
+  | N4 wx, N4 wy => f4 wx wy
+  | N4 wx, N5 wy => f5 (extend1 w3 wx) wy
+  | N4 wx, N6 wy => f6 (extend2 w3 wx) wy
+  | N4 wx, N7 wy => f7 (extend3 w3 wx) wy
+  | N4 wx, N8 wy => f8 (extend4 w3 wx) wy
+  | N4 wx, N9 wy => f9 (extend5 w3 wx) wy
+  | N4 wx, N10 wy => f10 (extend6 w3 wx) wy
+  | N4 wx, N11 wy => f11 (extend7 w3 wx) wy
+  | N4 wx, N12 wy => f12 (extend8 w3 wx) wy
+  | N4 wx, Nn n wy => fn n (extend n w12 (extend9 w3 wx)) wy
+  | N5 wx, N0 wy =>
+    f5 wx (extend4 w0 (WW w_0 wy))
+  | N5 wx, N1 wy => f5 wx (extend4 w0 wy)
+  | N5 wx, N2 wy => f5 wx (extend3 w1 wy)
+  | N5 wx, N3 wy => f5 wx (extend2 w2 wy)
+  | N5 wx, N4 wy => f5 wx (extend1 w3 wy)
+  | N5 wx, N5 wy => f5 wx wy
+  | N5 wx, N6 wy => f6 (extend1 w4 wx) wy
+  | N5 wx, N7 wy => f7 (extend2 w4 wx) wy
+  | N5 wx, N8 wy => f8 (extend3 w4 wx) wy
+  | N5 wx, N9 wy => f9 (extend4 w4 wx) wy
+  | N5 wx, N10 wy => f10 (extend5 w4 wx) wy
+  | N5 wx, N11 wy => f11 (extend6 w4 wx) wy
+  | N5 wx, N12 wy => f12 (extend7 w4 wx) wy
+  | N5 wx, Nn n wy => fn n (extend n w12 (extend8 w4 wx)) wy
+  | N6 wx, N0 wy =>
+    f6 wx (extend5 w0 (WW w_0 wy))
+  | N6 wx, N1 wy => f6 wx (extend5 w0 wy)
+  | N6 wx, N2 wy => f6 wx (extend4 w1 wy)
+  | N6 wx, N3 wy => f6 wx (extend3 w2 wy)
+  | N6 wx, N4 wy => f6 wx (extend2 w3 wy)
+  | N6 wx, N5 wy => f6 wx (extend1 w4 wy)
+  | N6 wx, N6 wy => f6 wx wy
+  | N6 wx, N7 wy => f7 (extend1 w5 wx) wy
+  | N6 wx, N8 wy => f8 (extend2 w5 wx) wy
+  | N6 wx, N9 wy => f9 (extend3 w5 wx) wy
+  | N6 wx, N10 wy => f10 (extend4 w5 wx) wy
+  | N6 wx, N11 wy => f11 (extend5 w5 wx) wy
+  | N6 wx, N12 wy => f12 (extend6 w5 wx) wy
+  | N6 wx, Nn n wy => fn n (extend n w12 (extend7 w5 wx)) wy
+  | N7 wx, N0 wy =>
+    f7 wx (extend6 w0 (WW w_0 wy))
+  | N7 wx, N1 wy => f7 wx (extend6 w0 wy)
+  | N7 wx, N2 wy => f7 wx (extend5 w1 wy)
+  | N7 wx, N3 wy => f7 wx (extend4 w2 wy)
+  | N7 wx, N4 wy => f7 wx (extend3 w3 wy)
+  | N7 wx, N5 wy => f7 wx (extend2 w4 wy)
+  | N7 wx, N6 wy => f7 wx (extend1 w5 wy)
+  | N7 wx, N7 wy => f7 wx wy
+  | N7 wx, N8 wy => f8 (extend1 w6 wx) wy
+  | N7 wx, N9 wy => f9 (extend2 w6 wx) wy
+  | N7 wx, N10 wy => f10 (extend3 w6 wx) wy
+  | N7 wx, N11 wy => f11 (extend4 w6 wx) wy
+  | N7 wx, N12 wy => f12 (extend5 w6 wx) wy
+  | N7 wx, Nn n wy => fn n (extend n w12 (extend6 w6 wx)) wy
+  | N8 wx, N0 wy =>
+    f8 wx (extend7 w0 (WW w_0 wy))
+  | N8 wx, N1 wy => f8 wx (extend7 w0 wy)
+  | N8 wx, N2 wy => f8 wx (extend6 w1 wy)
+  | N8 wx, N3 wy => f8 wx (extend5 w2 wy)
+  | N8 wx, N4 wy => f8 wx (extend4 w3 wy)
+  | N8 wx, N5 wy => f8 wx (extend3 w4 wy)
+  | N8 wx, N6 wy => f8 wx (extend2 w5 wy)
+  | N8 wx, N7 wy => f8 wx (extend1 w6 wy)
+  | N8 wx, N8 wy => f8 wx wy
+  | N8 wx, N9 wy => f9 (extend1 w7 wx) wy
+  | N8 wx, N10 wy => f10 (extend2 w7 wx) wy
+  | N8 wx, N11 wy => f11 (extend3 w7 wx) wy
+  | N8 wx, N12 wy => f12 (extend4 w7 wx) wy
+  | N8 wx, Nn n wy => fn n (extend n w12 (extend5 w7 wx)) wy
+  | N9 wx, N0 wy =>
+    f9 wx (extend8 w0 (WW w_0 wy))
+  | N9 wx, N1 wy => f9 wx (extend8 w0 wy)
+  | N9 wx, N2 wy => f9 wx (extend7 w1 wy)
+  | N9 wx, N3 wy => f9 wx (extend6 w2 wy)
+  | N9 wx, N4 wy => f9 wx (extend5 w3 wy)
+  | N9 wx, N5 wy => f9 wx (extend4 w4 wy)
+  | N9 wx, N6 wy => f9 wx (extend3 w5 wy)
+  | N9 wx, N7 wy => f9 wx (extend2 w6 wy)
+  | N9 wx, N8 wy => f9 wx (extend1 w7 wy)
+  | N9 wx, N9 wy => f9 wx wy
+  | N9 wx, N10 wy => f10 (extend1 w8 wx) wy
+  | N9 wx, N11 wy => f11 (extend2 w8 wx) wy
+  | N9 wx, N12 wy => f12 (extend3 w8 wx) wy
+  | N9 wx, Nn n wy => fn n (extend n w12 (extend4 w8 wx)) wy
+  | N10 wx, N0 wy =>
+    f10 wx (extend9 w0 (WW w_0 wy))
+  | N10 wx, N1 wy => f10 wx (extend9 w0 wy)
+  | N10 wx, N2 wy => f10 wx (extend8 w1 wy)
+  | N10 wx, N3 wy => f10 wx (extend7 w2 wy)
+  | N10 wx, N4 wy => f10 wx (extend6 w3 wy)
+  | N10 wx, N5 wy => f10 wx (extend5 w4 wy)
+  | N10 wx, N6 wy => f10 wx (extend4 w5 wy)
+  | N10 wx, N7 wy => f10 wx (extend3 w6 wy)
+  | N10 wx, N8 wy => f10 wx (extend2 w7 wy)
+  | N10 wx, N9 wy => f10 wx (extend1 w8 wy)
+  | N10 wx, N10 wy => f10 wx wy
+  | N10 wx, N11 wy => f11 (extend1 w9 wx) wy
+  | N10 wx, N12 wy => f12 (extend2 w9 wx) wy
+  | N10 wx, Nn n wy => fn n (extend n w12 (extend3 w9 wx)) wy
+  | N11 wx, N0 wy =>
+    f11 wx (extend10 w0 (WW w_0 wy))
+  | N11 wx, N1 wy => f11 wx (extend10 w0 wy)
+  | N11 wx, N2 wy => f11 wx (extend9 w1 wy)
+  | N11 wx, N3 wy => f11 wx (extend8 w2 wy)
+  | N11 wx, N4 wy => f11 wx (extend7 w3 wy)
+  | N11 wx, N5 wy => f11 wx (extend6 w4 wy)
+  | N11 wx, N6 wy => f11 wx (extend5 w5 wy)
+  | N11 wx, N7 wy => f11 wx (extend4 w6 wy)
+  | N11 wx, N8 wy => f11 wx (extend3 w7 wy)
+  | N11 wx, N9 wy => f11 wx (extend2 w8 wy)
+  | N11 wx, N10 wy => f11 wx (extend1 w9 wy)
+  | N11 wx, N11 wy => f11 wx wy
+  | N11 wx, N12 wy => f12 (extend1 w10 wx) wy
+  | N11 wx, Nn n wy => fn n (extend n w12 (extend2 w10 wx)) wy
+  | N12 wx, N0 wy =>
+    f12 wx (extend11 w0 (WW w_0 wy))
+  | N12 wx, N1 wy => f12 wx (extend11 w0 wy)
+  | N12 wx, N2 wy => f12 wx (extend10 w1 wy)
+  | N12 wx, N3 wy => f12 wx (extend9 w2 wy)
+  | N12 wx, N4 wy => f12 wx (extend8 w3 wy)
+  | N12 wx, N5 wy => f12 wx (extend7 w4 wy)
+  | N12 wx, N6 wy => f12 wx (extend6 w5 wy)
+  | N12 wx, N7 wy => f12 wx (extend5 w6 wy)
+  | N12 wx, N8 wy => f12 wx (extend4 w7 wy)
+  | N12 wx, N9 wy => f12 wx (extend3 w8 wy)
+  | N12 wx, N10 wy => f12 wx (extend2 w9 wy)
+  | N12 wx, N11 wy => f12 wx (extend1 w10 wy)
+  | N12 wx, N12 wy => f12 wx wy
+  | N12 wx, Nn n wy => fn n (extend n w12 (extend1 w11 wx)) wy
+  | Nn n wx, N0 wy =>
+    fn n wx (extend n w12 (extend12 w0 (WW w_0 wy)))
+  | Nn n wx, N1 wy => fn n wx (extend n w12 (extend12 w0 wy))
+  | Nn n wx, N2 wy => fn n wx (extend n w12 (extend11 w1 wy))
+  | Nn n wx, N3 wy => fn n wx (extend n w12 (extend10 w2 wy))
+  | Nn n wx, N4 wy => fn n wx (extend n w12 (extend9 w3 wy))
+  | Nn n wx, N5 wy => fn n wx (extend n w12 (extend8 w4 wy))
+  | Nn n wx, N6 wy => fn n wx (extend n w12 (extend7 w5 wy))
+  | Nn n wx, N7 wy => fn n wx (extend n w12 (extend6 w6 wy))
+  | Nn n wx, N8 wy => fn n wx (extend n w12 (extend5 w7 wy))
+  | Nn n wx, N9 wy => fn n wx (extend n w12 (extend4 w8 wy))
+  | Nn n wx, N10 wy => fn n wx (extend n w12 (extend3 w9 wy))
+  | Nn n wx, N11 wy => fn n wx (extend n w12 (extend2 w10 wy))
+  | Nn n wx, N12 wy => fn n wx (extend n w12 (extend1 w11 wy))
+  | Nn n wx, Nn m wy =>
+    match extend_to_max w12 n m wx wy with
+    | inl wx' => fn m wx' wy
+    | inr wy' => fn n wx wy'
+    end
+  end.
+
+ Definition shiftr0 n x := w0_op.(znz_add_mul_div) (w0_op.(znz_sub) w0_op.(znz_zdigits) n) w0_op.(znz_0) x.
+ Definition shiftr1 n x := w1_op.(znz_add_mul_div) (w1_op.(znz_sub) w1_op.(znz_zdigits) n) w1_op.(znz_0) x.
+ Definition shiftr2 n x := w2_op.(znz_add_mul_div) (w2_op.(znz_sub) w2_op.(znz_zdigits) n) w2_op.(znz_0) x.
+ Definition shiftr3 n x := w3_op.(znz_add_mul_div) (w3_op.(znz_sub) w3_op.(znz_zdigits) n) w3_op.(znz_0) x.
+ Definition shiftr4 n x := w4_op.(znz_add_mul_div) (w4_op.(znz_sub) w4_op.(znz_zdigits) n) w4_op.(znz_0) x.
+ Definition shiftr5 n x := w5_op.(znz_add_mul_div) (w5_op.(znz_sub) w5_op.(znz_zdigits) n) w5_op.(znz_0) x.
+ Definition shiftr6 n x := w6_op.(znz_add_mul_div) (w6_op.(znz_sub) w6_op.(znz_zdigits) n) w6_op.(znz_0) x.
+ Definition shiftr7 n x := w7_op.(znz_add_mul_div) (w7_op.(znz_sub) w7_op.(znz_zdigits) n) w7_op.(znz_0) x.
+ Definition shiftr8 n x := w8_op.(znz_add_mul_div) (w8_op.(znz_sub) w8_op.(znz_zdigits) n) w8_op.(znz_0) x.
+ Definition shiftr9 n x := w9_op.(znz_add_mul_div) (w9_op.(znz_sub) w9_op.(znz_zdigits) n) w9_op.(znz_0) x.
+ Definition shiftr10 n x := w10_op.(znz_add_mul_div) (w10_op.(znz_sub) w10_op.(znz_zdigits) n) w10_op.(znz_0) x.
+ Definition shiftr11 n x := w11_op.(znz_add_mul_div) (w11_op.(znz_sub) w11_op.(znz_zdigits) n) w11_op.(znz_0) x.
+ Definition shiftr12 n x := w12_op.(znz_add_mul_div) (w12_op.(znz_sub) w12_op.(znz_zdigits) n) w12_op.(znz_0) x.
+ Definition shiftrn n p x := (make_op n).(znz_add_mul_div) ((make_op n).(znz_sub) (make_op n).(znz_zdigits) p) (make_op n).(znz_0) x.
+
+ Definition shiftr := 
+  Eval lazy beta delta [level] in 
+     level (fun n x => N0 (shiftr0 n x))
+           (fun n x => reduce_1 (shiftr1 n x))
+           (fun n x => reduce_2 (shiftr2 n x))
+           (fun n x => reduce_3 (shiftr3 n x))
+           (fun n x => reduce_4 (shiftr4 n x))
+           (fun n x => reduce_5 (shiftr5 n x))
+           (fun n x => reduce_6 (shiftr6 n x))
+           (fun n x => reduce_7 (shiftr7 n x))
+           (fun n x => reduce_8 (shiftr8 n x))
+           (fun n x => reduce_9 (shiftr9 n x))
+           (fun n x => reduce_10 (shiftr10 n x))
+           (fun n x => reduce_11 (shiftr11 n x))
+           (fun n x => reduce_12 (shiftr12 n x))
+           (fun n p x => reduce_n n (shiftrn n p x)).
+
+ Definition safe_shiftr n x := 
+   match compare n (Ndigits x) with
+    |  Lt => shiftr n x 
+   | _ => N0 w_0
+   end.
+
+ Definition shiftl0 n x := w0_op.(znz_add_mul_div) n x w0_op.(znz_0).
+ Definition shiftl1 n x := w1_op.(znz_add_mul_div) n x w1_op.(znz_0).
+ Definition shiftl2 n x := w2_op.(znz_add_mul_div) n x w2_op.(znz_0).
+ Definition shiftl3 n x := w3_op.(znz_add_mul_div) n x w3_op.(znz_0).
+ Definition shiftl4 n x := w4_op.(znz_add_mul_div) n x w4_op.(znz_0).
+ Definition shiftl5 n x := w5_op.(znz_add_mul_div) n x w5_op.(znz_0).
+ Definition shiftl6 n x := w6_op.(znz_add_mul_div) n x w6_op.(znz_0).
+ Definition shiftl7 n x := w7_op.(znz_add_mul_div) n x w7_op.(znz_0).
+ Definition shiftl8 n x := w8_op.(znz_add_mul_div) n x w8_op.(znz_0).
+ Definition shiftl9 n x := w9_op.(znz_add_mul_div) n x w9_op.(znz_0).
+ Definition shiftl10 n x := w10_op.(znz_add_mul_div) n x w10_op.(znz_0).
+ Definition shiftl11 n x := w11_op.(znz_add_mul_div) n x w11_op.(znz_0).
+ Definition shiftl12 n x := w12_op.(znz_add_mul_div) n x w12_op.(znz_0).
+ Definition shiftln n p x := (make_op n).(znz_add_mul_div) p x (make_op n).(znz_0).
+ Definition shiftl := 
+  Eval lazy beta delta [level] in 
+     level (fun n x => N0 (shiftl0 n x))
+           (fun n x => reduce_1 (shiftl1 n x))
+           (fun n x => reduce_2 (shiftl2 n x))
+           (fun n x => reduce_3 (shiftl3 n x))
+           (fun n x => reduce_4 (shiftl4 n x))
+           (fun n x => reduce_5 (shiftl5 n x))
+           (fun n x => reduce_6 (shiftl6 n x))
+           (fun n x => reduce_7 (shiftl7 n x))
+           (fun n x => reduce_8 (shiftl8 n x))
+           (fun n x => reduce_9 (shiftl9 n x))
+           (fun n x => reduce_10 (shiftl10 n x))
+           (fun n x => reduce_11 (shiftl11 n x))
+           (fun n x => reduce_12 (shiftl12 n x))
+           (fun n p x => reduce_n n (shiftln n p x)).
+
+
+ Definition double_size w := match w with
+ | N0 w=> N1 (WW w_0 w)
+ | N1 w=> N2 (extend1 _ w)
+ | N2 w=> N3 (extend1 _ w)
+ | N3 w=> N4 (extend1 _ w)
+ | N4 w=> N5 (extend1 _ w)
+ | N5 w=> N6 (extend1 _ w)
+ | N6 w=> N7 (extend1 _ w)
+ | N7 w=> N8 (extend1 _ w)
+ | N8 w=> N9 (extend1 _ w)
+ | N9 w=> N10 (extend1 _ w)
+ | N10 w=> N11 (extend1 _ w)
+ | N11 w=> N12 (extend1 _ w)
+ | N12 w=> Nn 0 (extend1 _ w)
+ | Nn n w=> Nn (S n) (extend1 _ w)
+ end.
+
+  Section itert. 
+  Variable A: Set.
+  Variable f: A -> A.
+  Variable g: A -> A.
+  Variable t: A -> bool.
+  Fixpoint itert p x :=
+    if t x then g x else
+       match p with xH => x | xO p1 => itert p1 (f x) | xI p1 => itert p1 (f x) end.
+  End itert.
+
+  Definition safe_shiftl n x :=
+    itert _ double_size (shiftl n) 
+      (fun x => match compare n (head0 x) with Gt => false | _ => true end) 
+       (digits x) x.
+ 
+ Definition is_even x :=
+  match x with
+  | N0 wx => w0_op.(znz_is_even) wx
+  | N1 wx => w1_op.(znz_is_even) wx
+  | N2 wx => w2_op.(znz_is_even) wx
+  | N3 wx => w3_op.(znz_is_even) wx
+  | N4 wx => w4_op.(znz_is_even) wx
+  | N5 wx => w5_op.(znz_is_even) wx
+  | N6 wx => w6_op.(znz_is_even) wx
+  | N7 wx => w7_op.(znz_is_even) wx
+  | N8 wx => w8_op.(znz_is_even) wx
+  | N9 wx => w9_op.(znz_is_even) wx
+  | N10 wx => w10_op.(znz_is_even) wx
+  | N11 wx => w11_op.(znz_is_even) wx
+  | N12 wx => w12_op.(znz_is_even) wx
+  | Nn n wx => (make_op n).(znz_is_even) wx
   end.
 
 End Make.
