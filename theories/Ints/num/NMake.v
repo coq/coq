@@ -3858,7 +3858,7 @@ Definition pheight p := Peano.pred (nat_of_P (get_height w0_op.(znz_digits) (ple
   Definition safe_shiftl n x :=
     itert _ double_size (shiftl n) 
       (fun x => match compare n (head0 x) with Gt => false | _ => true end) 
-       (digits x) x.
+       (digits n) x.
  
  Definition is_even x :=
   match x with
