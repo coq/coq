@@ -3845,20 +3845,22 @@ Definition pheight p := Peano.pred (nat_of_P (get_height w0_op.(znz_digits) (ple
  | Nn n w=> Nn (S n) (extend1 _ w)
  end.
 
-  Section itert. 
-  Variable A: Set.
-  Variable f: A -> A.
-  Variable g: A -> A.
-  Variable t: A -> bool.
-  Fixpoint itert p x :=
-    if t x then g x else
-       match p with xH => x | xO p1 => itert p1 (f x) | xI p1 => itert p1 (f x) end.
-  End itert.
+  Definition safe_shiftl_aux_body cont n x :=
+    match compare n (head0 x)  with
+       Gt => cont n (double_size x)
+    |  _ => shiftl n x
+    end.
+
+ Fixpoint safe_shiftl_aux p cont n x  {struct p} :=
+    safe_shiftl_aux_body 
+       (fun n x => match p with
+        | xH => cont n x
+        | xO p => safe_shiftl_aux p (safe_shiftl_aux p cont) n x
+        | xI p => safe_shiftl_aux p (safe_shiftl_aux p cont) n x
+        end) n x.
 
   Definition safe_shiftl n x :=
-    itert _ double_size (shiftl n) 
-      (fun x => match compare n (head0 x) with Gt => false | _ => true end) 
-       (digits n) x.
+  safe_shiftl_aux (digits n) (fun n x => N0 w0_op.(znz_0)) n x.
  
  Definition is_even x :=
   match x with

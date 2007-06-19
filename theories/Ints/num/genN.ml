@@ -939,21 +939,24 @@ let print_Make () =
   fprintf fmt "\n";
 
  (* Safe shiftl *)
-  fprintf fmt "  Section itert. \n";
-  fprintf fmt "  Variable A: Set.\n";
-  fprintf fmt "  Variable f: A -> A.\n";
-  fprintf fmt "  Variable g: A -> A.\n";
-  fprintf fmt "  Variable t: A -> bool.\n";
-  fprintf fmt "  Fixpoint itert p x :=\n";
-  fprintf fmt "    if t x then g x else\n ";
-  fprintf fmt "      match p with xH => x | xO p1 => itert p1 (f x) | xI p1 => itert p1 (f x) end.\n";
-  fprintf fmt "  End itert.\n";
+
+  fprintf fmt "  Definition safe_shiftl_aux_body cont n x :=\n";
+  fprintf fmt "    match compare n (head0 x)  with\n";
+  fprintf fmt "       Gt => cont n (double_size x)\n";
+  fprintf fmt "    |  _ => shiftl n x\n";
+  fprintf fmt "    end.\n";
+  fprintf fmt "\n";
+  fprintf fmt " Fixpoint safe_shiftl_aux p cont n x  {struct p} :=\n";
+  fprintf fmt "    safe_shiftl_aux_body \n";
+  fprintf fmt "       (fun n x => match p with\n";
+  fprintf fmt "        | xH => cont n x\n";
+  fprintf fmt "        | xO p => safe_shiftl_aux p (safe_shiftl_aux p cont) n x\n";
+  fprintf fmt "        | xI p => safe_shiftl_aux p (safe_shiftl_aux p cont) n x\n";
+  fprintf fmt "        end) n x.\n";
   fprintf fmt "\n";
   fprintf fmt "  Definition safe_shiftl n x :=\n";
-  fprintf fmt "    itert _ double_size (shiftl n) \n";
-  fprintf fmt "      (fun x => match compare n (head0 x) with Gt => false | _ => true end) \n";
-  fprintf fmt "       (digits n) x.\n ";
-  fprintf fmt "\n";
+  fprintf fmt "  safe_shiftl_aux (digits n) (fun n x => N0 w0_op.(znz_0)) n x.\n";
+  fprintf fmt " \n";
 
   (* even *)
   fprintf fmt " Definition is_even x :=\n";
