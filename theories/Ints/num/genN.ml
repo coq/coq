@@ -1,6 +1,6 @@
 open Format
 
-let size = 3
+let size = 12
 let sizeaux = 1
 
 let t = "t"
@@ -12,7 +12,7 @@ let basename = "N"
 
 let print_header fmt l =
   let l = "ZArith"::"Basic_type"::"ZnZ"::"Zn2Z"::"Nbasic"::"GenMul"::
-	  "GenDivn1"::"Lucas"::l in
+	  "GenDivn1"::l in
   List.iter (fun s -> fprintf fmt "Require Import %s.\n" s) l;
   fprintf fmt "\n"
 
@@ -590,9 +590,10 @@ let print_Make () =
   
   for i = 0 to size do
     fprintf fmt " Definition w%i_divn1 :=\n"  i;
-    fprintf fmt "  gen_divn1 w%i_op.(znz_digits) w%i_op.(znz_0)\n" i i;
+    fprintf fmt "  gen_divn1 w%i_op.(znz_zdigits) w%i_op.(znz_0)\n" i i;
     fprintf fmt "    w%i_op.(znz_WW) w%i_op.(znz_head0)\n" i i;
-    fprintf fmt "    w%i_op.(znz_add_mul_div) w%i_op.(znz_div21).\n" i i
+    fprintf fmt "    w%i_op.(znz_add_mul_div) w%i_op.(znz_div21)\n" i i;
+    fprintf fmt "    w%i_op.(znz_compare) w%i_op.(znz_sub).\n" i i;
   done;
   fprintf fmt "\n";
 
@@ -665,10 +666,13 @@ let print_Make () =
   
   for i = 0 to size do
     fprintf fmt " Definition w%i_modn1 :=\n"  i;
-    fprintf fmt "  gen_modn1 w%i_op.(znz_digits) w%i_op.(znz_0)\n" i i;
+    fprintf fmt "  gen_modn1 w%i_op.(znz_zdigits) w%i_op.(znz_0)\n" i i;
     fprintf fmt 
-      "    w%i_op.(znz_head0) w%i_op.(znz_add_mul_div) w%i_op.(znz_div21).\n"
-      i i i
+      "    w%i_op.(znz_head0) w%i_op.(znz_add_mul_div) w%i_op.(znz_div21)\n"
+      i i i;
+    fprintf fmt 
+      "    w%i_op.(znz_compare) w%i_op.(znz_sub).\n"
+      i i;
   done;
   fprintf fmt "\n";
 
