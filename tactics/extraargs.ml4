@@ -282,9 +282,9 @@ let pr_r_int31_field _ _ _ i31f =
 
 let pr_retroknowledge_field _ _ _ f =
   match f with
-  | Retroknowledge.KEq -> str "equality"
+ (* | Retroknowledge.KEq -> str "equality"
   | Retroknowledge.KNat natf -> pr_r_nat_field () () () natf
-  | Retroknowledge.KN nf -> pr_r_n_field () () () nf
+  | Retroknowledge.KN nf -> pr_r_n_field () () () nf *)
   | Retroknowledge.KInt31 (group, i31f) -> (pr_r_int31_field () () () i31f) ++
                                            str "in " ++ str group 
 
@@ -331,13 +331,16 @@ PRINTED BY pr_r_int31_field
 | [ "int31" "div" ] -> [ Retroknowledge.Int31Div ]
 | [ "int31" "addmuldiv" ] -> [ Retroknowledge.Int31AddMulDiv ]
 | [ "int31" "compare" ] -> [ Retroknowledge.Int31Compare ]
+| [ "int31" "head0" ] -> [ Retroknowledge.Int31Head0 ]
+| [ "int31" "tail0" ] -> [ Retroknowledge.Int31Tail0 ]
+
 END
 
 ARGUMENT EXTEND retroknowledge_field 
 TYPED AS r_field 
 PRINTED BY pr_retroknowledge_field
-| [ "equality" ] -> [ Retroknowledge.KEq ]
+(*| [ "equality" ] -> [ Retroknowledge.KEq ]
 | [ retroknowledge_nat(n)] -> [ Retroknowledge.KNat n ]
-| [ retroknowledge_binary_n (n)] -> [ Retroknowledge.KN n ]
+| [ retroknowledge_binary_n (n)] -> [ Retroknowledge.KN n ]*)
 | [ retroknowledge_int31 (i) "in" string(g)] -> [ Retroknowledge.KInt31(g,i) ]
 END

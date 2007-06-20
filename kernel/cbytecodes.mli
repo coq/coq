@@ -90,6 +90,9 @@ type instruction =
 					   cf COMPAREINT31 in 
 					   kernel/byterun/coq_interp.c
 					   for more info *)
+  | Khead0int31                         (* Give the numbers of 0 in head of a in31*)
+  | Ktail0int31                         (* Give the numbers of 0 in tail of a in31 
+                                           ie low bits *)
   | Kisconst of Label.t                 (* conditional jump *)
   | Kareconst of int*Label.t            (* conditional jump *)
   | Kcompint31                          (* dynamic compilation of int31 *)

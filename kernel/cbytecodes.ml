@@ -89,10 +89,13 @@ type instruction =
   | Kaddmuldivint31                     (* generic operation for shifting and
 					   cycling. Takes 3 int31 i j and s,
 					   and returns x*2^s+y/(2^(31-s) *)
-  | Kcompareint31                        (* unsigned comparison of int31
+  | Kcompareint31                       (* unsigned comparison of int31
 					   cf COMPAREINT31 in 
 					   kernel/byterun/coq_interp.c
 					   for more info *)
+  | Khead0int31                         (* Give the numbers of 0 in head of a in31*)
+  | Ktail0int31                         (* Give the numbers of 0 in tail of a in31 
+                                           ie low bits *)
   | Kisconst of Label.t                 (* conditional jump *)
   | Kareconst of int*Label.t            (* conditional jump *)
   | Kcompint31                          (* dynamic compilation of int31 *)
@@ -196,6 +199,8 @@ let rec instruction ppf = function
   | Kdiv21int31 -> fprintf ppf "\tdiv21int31"
   | Kdivint31 -> fprintf ppf "\tdivint31"
   | Kcompareint31 -> fprintf ppf "\tcompareint31"
+  | Khead0int31 -> fprintf ppf "\thead0int31"
+  | Ktail0int31 -> fprintf ppf "\ttail0int31"
   | Kaddmuldivint31 -> fprintf ppf "\taddmuldivint31"
   | Kisconst lbl -> fprintf ppf "\tisconst %i" lbl
   | Kareconst(n,lbl) -> fprintf ppf "\tareconst %i %i" n lbl

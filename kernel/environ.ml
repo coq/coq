@@ -463,6 +463,12 @@ fun env field value ->
 	                               op kn
       | _ -> anomaly "Environ.register: should be a constant"
   in
+  let add_int31_unop_from_const op =
+    match value with
+      | Const kn ->  retroknowledge add_int31_op env value 1
+	                               op kn
+      | _ -> anomaly "Environ.register: should be a constant"
+  in
   (* subfunction which completes the function constr_of_int31 above
      by performing the actual retroknowledge operations *)
   let add_int31_decompilation_from_type rk = 
@@ -499,7 +505,6 @@ fun env field value ->
     | KInt31 (_, Int31MinusC) -> add_int31_binop_from_const Cbytecodes.Ksubcint31
     | KInt31 (_, Int31MinusCarryC) -> add_int31_binop_from_const 
 	                                           Cbytecodes.Ksubcarrycint31
-    | KInt31 (_, Int31PlusC) -> add_int31_binop_from_const Cbytecodes.Kaddcint31
     | KInt31 (_, Int31Times) -> add_int31_binop_from_const Cbytecodes.Kmulint31
     | KInt31 (_, Int31TimesC) -> add_int31_binop_from_const Cbytecodes.Kmulcint31
     | KInt31 (_, Int31Div21) -> (* this is a ternary operation *)
@@ -516,7 +521,9 @@ fun env field value ->
 	                               Cbytecodes.Kaddmuldivint31 kn
 				 | _ -> anomaly "Environ.register: should be a constant")
     | KInt31 (_, Int31Compare) -> add_int31_binop_from_const Cbytecodes.Kcompareint31
-    | _ -> env.retroknowledge
+    | KInt31 (_, Int31Head0) -> add_int31_unop_from_const Cbytecodes.Khead0int31
+    | KInt31 (_, Int31Tail0) -> add_int31_unop_from_const Cbytecodes.Ktail0int31 
+    | _ -> env.retroknowledge 
   in
   Retroknowledge.add_field retroknowledge_with_reactive_info field value
   }

@@ -58,11 +58,13 @@ type int31_field =
   | Int31Div
   | Int31AddMulDiv
   | Int31Compare
+  | Int31Head0
+  | Int31Tail0
 
 type field =
-  | KEq
+ (* | KEq
   | KNat of nat_field
-  | KN of n_field
+  | KN of n_field *)
   | KInt31 of string*int31_field
 
 

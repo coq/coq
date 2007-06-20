@@ -240,6 +240,8 @@ let emit_instr = function
   | Kdivint31 -> out opDIVINT31
   | Kaddmuldivint31 -> out opADDMULDIVINT31
   | Kcompareint31 -> out opCOMPAREINT31
+  | Khead0int31 -> out opHEAD0INT31
+  | Ktail0int31 -> out opTAIL0INT31
   | Kisconst lbl -> out opISCONST; out_label lbl
   | Kareconst(n,lbl) -> out opARECONST; out_int n; out_label lbl
   | Kcompint31 -> out opCOMPINT31

@@ -403,3 +403,6 @@ Definition tail031 (i:int31) :=
                                           end)
        i On
 .
+
+Register head031 as int31 head0 in "coq_int31" by True.
+Register tail031 as int31 tail0 in "coq_int31" by True. 

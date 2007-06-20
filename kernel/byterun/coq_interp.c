@@ -1255,6 +1255,36 @@ value coq_interprete
         Next;
       }
  
+      Instruct (HEAD0INT31) {
+	int r = 0;
+        uint32 x;
+        print_instr("HEAD0INT31");
+	x = (uint32) accu;
+        if (!(x & 0xFFFF0000)) { x <<= 16; r += 16; }
+        if (!(x & 0xFF000000)) { x <<= 8;  r += 8; }
+        if (!(x & 0xF0000000)) { x <<= 4;  r += 4; }
+        if (!(x & 0xC0000000)) { x <<= 2;  r += 2; }
+        if (!(x & 0x80000000)) { x <<=1;   r += 1; }
+        if (!(x & 0x80000000)) {           r += 1; }
+        accu = value_of_uint32(r);
+        Next;
+      }
+        
+      Instruct (TAIL0INT31) {
+	int r = 0;
+        uint32 x;
+        print_instr("TAIL0INT31");
+	x = (((uint32) accu >> 1) | 0x80000000);
+        if (!(x & 0xFFFF)) { x >>= 16; r += 16; }
+        if (!(x & 0x00FF)) { x >>= 8;  r += 8; }
+        if (!(x & 0x000F)) { x >>= 4;  r += 4; }
+        if (!(x & 0x0003)) { x >>= 2;  r += 2; }
+        if (!(x & 0x0001)) { x >>=1;   r += 1; }
+        if (!(x & 0x0001)) {           r += 1; }
+        accu = value_of_uint32(r);
+        Next;
+      }
+
       Instruct (ISCONST) {
         /* Branches if the accu does not contain a constant
            (i.e., a non-block value) */
