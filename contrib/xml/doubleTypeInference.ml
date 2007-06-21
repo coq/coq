@@ -26,31 +26,13 @@ let cprop =
    (N.mk_label "CProp")
 ;;
 
-let whd_betadeltaiotacprop env evar_map ty =
+let whd_betadeltaiotacprop env _evar_map ty =
  let module R = Rawterm in
-  let red_exp =
-   R.Hnf  (*** Instead CProp is made Opaque ***)
-(*
-   R.Cbv
-    {R.rBeta = true ; R.rIota = true ; R.rDelta = true; R.rZeta=true ;
-     R.rConst = [Names.EvalConstRef cprop]
-    }
-*)
-  in
-Conv_oracle.set_opaque_const cprop;
-prerr_endline "###whd_betadeltaiotacprop:" ;
-let xxx =
-(*Pp.msgerr (Printer.pr_lconstr_env env ty);*)
-prerr_endline "";
-   (fst (Redexpr.reduction_of_red_expr red_exp)) env evar_map ty
-in
-prerr_endline "###FINE" ;
-(*
-Pp.msgerr (Printer.pr_lconstr_env env xxx);
-*)
-prerr_endline "";
-Conv_oracle.set_transparent_const cprop;
-xxx
+ let module C = Closure in
+ let module CR = C.RedFlags in
+ (*** CProp is made Opaque ***)
+ let flags = CR.red_sub C.betadeltaiota (CR.fCONST cprop) in
+ C.whd_val (C.create_clos_infos flags env) (C.inject ty)
 ;;
 
 

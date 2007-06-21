@@ -461,11 +461,42 @@ let kind_of_constant kn =
   match Declare.constant_kind (Nametab.sp_of_global(Libnames.ConstRef kn)) with
     | DK.IsAssumption DK.Definitional -> "AXIOM","Declaration"
     | DK.IsAssumption DK.Logical -> "AXIOM","Axiom"
-    | DK.IsAssumption DK.Conjectural -> "AXIOM","Conjecture"
+    | DK.IsAssumption DK.Conjectural ->
+        Pp.warning "Conjecture not supported in dtd (used Declaration instead)";
+        "AXIOM","Declaration"
     | DK.IsDefinition DK.Definition -> "DEFINITION","Definition"
-    | DK.IsDefinition DK.Example -> "DEFINITION","Example"
-    | DK.IsDefinition _ -> Util.anomaly "Unsupported constant kind"
-    | DK.IsProof thm -> "THEOREM",DK.string_of_theorem_kind thm
+    | DK.IsDefinition DK.Example -> 
+        Pp.warning "Example not supported in dtd (used Definition instead)";
+        "DEFINITION","Definition"
+    | DK.IsDefinition DK.Coercion ->
+        Pp.warning "Coercion not supported in dtd (used Definition instead)";
+        "DEFINITION","Definition"
+    | DK.IsDefinition DK.SubClass ->
+        Pp.warning "SubClass not supported in dtd (used Definition instead)";
+        "DEFINITION","Definition"
+    | DK.IsDefinition DK.CanonicalStructure ->
+        Pp.warning "CanonicalStructure not supported in dtd (used Definition instead)";
+        "DEFINITION","Definition"
+    | DK.IsDefinition DK.Fixpoint ->
+        Pp.warning "Fixpoint not supported in dtd (used Definition instead)";
+        "DEFINITION","Definition"
+    | DK.IsDefinition DK.CoFixpoint ->
+        Pp.warning "CoFixpoint not supported in dtd (used Definition instead)";
+        "DEFINITION","Definition"
+    | DK.IsDefinition DK.Scheme ->
+        Pp.warning "Scheme not supported in dtd (used Definition instead)";
+        "DEFINITION","Definition"
+    | DK.IsDefinition DK.StructureComponent ->
+        Pp.warning "StructureComponent not supported in dtd (used Definition instead)";
+        "DEFINITION","Definition"
+    | DK.IsDefinition DK.IdentityCoercion ->
+        Pp.warning "IdentityCoercion not supported in dtd (used Definition instead)";
+        "DEFINITION","Definition"
+    | DK.IsProof (DK.Theorem|DK.Lemma|DK.Corollary|DK.Fact|DK.Remark as thm) ->
+        "THEOREM",DK.string_of_theorem_kind thm
+    | DK.IsProof _ ->
+        Pp.warning "Unsupported theorem kind (used Theorem instead)";
+        "THEOREM",DK.string_of_theorem_kind DK.Theorem
 ;;
 
 let kind_of_global r =

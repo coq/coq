@@ -37,11 +37,7 @@ module type RedFlagsSig = sig
   type reds
   type red_kind
 
-  (* The different kind of reduction *)
-  (* Const/Var means the reference as argument should be unfolded *)
-  (* Constbut/Varbut means all references except the ones as argument
-     of Constbut/Varbut should be unfolded (there may be several such
-     Constbut/Varbut *)
+  (* The different kinds of reduction *)
   val fBETA : red_kind
   val fDELTA : red_kind
   val fIOTA : red_kind
