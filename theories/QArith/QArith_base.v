@@ -165,6 +165,13 @@ Infix "/" := Qdiv : Q_scope.
 
 Notation " ' x " := (Zpos x) (at level 20, no associativity) : Z_scope.
 
+Lemma Qmake_Qdiv : forall a b, a#b==inject_Z a/inject_Z ('b).
+Proof.
+intros a b.
+unfold Qeq.
+simpl.
+ring.
+Qed.
 
 (** * Setoid compatibility results *)
 
@@ -416,6 +423,11 @@ Qed.
 
 (** * Inverse and division. *) 
 
+Lemma Qinv_involutive : forall q, (/ / q) == q.
+Proof.
+intros [[|n|n] d]; red; simpl; reflexivity.
+Qed.
+
 Theorem Qmult_inv_r : forall x, ~ x == 0 -> x*(/x) == 1.
 Proof.
   intros (x1, x2); unfold Qeq, Qdiv, Qmult; case x1; simpl;
@@ -641,50 +653,45 @@ Proof.
   Close Scope Z_scope.
 Qed.
 
+Lemma Qmult_le_0_compat : forall a b, 0 <= a -> 0 <= b -> 0 <= a*b.
+Proof.
+intros a b Ha Hb.
+unfold Qle in *.
+simpl in *.
+auto with *.
+Qed.
+
+Lemma Qinv_le_0_compat : forall a, 0 <= a -> 0 <= /a.
+Proof.
+intros [[|n|n] d] Ha; assumption.
+Qed.
+
 (** * Rational to the n-th power *)
 
-Fixpoint Qpower (q:Q)(n:nat) { struct n } : Q := 
-  match n with 
-    | O => 1
-    | S n => q * (Qpower q n)
-  end. 
+Definition Qpower_positive (q:Q)(p:positive) : Q := 
+ pow_pos Qmult q p.
 
-Notation " q ^ n " := (Qpower q n) : Q_scope.
-
-Lemma Qpower_1 : forall n, 1^n == 1.
+Add Morphism Qpower_positive with signature Qeq ==> eq ==> Qeq as Qpower_positive_comp.
 Proof.
-  induction n; simpl; auto with qarith.
-  rewrite IHn; auto with qarith.
+intros x1 x2 Hx y.
+unfold Qpower_positive.
+induction y; simpl;
+try rewrite IHy;
+try rewrite Hx;
+reflexivity.
 Qed.
 
-Lemma Qpower_0 : forall n, n<>O -> 0^n == 0.
+Definition Qpower (q:Q) (z:Z) :=
+    match z with
+      | Zpos p => Qpower_positive q p
+      | Z0 => 1
+      | Zneg p => /Qpower_positive q p
+    end.
+
+Notation " q ^ z " := (Qpower q z) : Q_scope.
+
+Add Morphism Qpower with signature Qeq ==> eq ==> Qeq as Qpower_comp.
 Proof.
-  destruct n; simpl.
-  destruct 1; auto.
-  intros. 
-  compute; auto.
+intros x1 x2 Hx [|y|y]; try reflexivity;
+simpl; rewrite Hx; reflexivity.
 Qed.
-
-Lemma Qpower_pos : forall p n, 0 <= p -> 0 <= p^n.
-Proof.
-  induction n; simpl; auto with qarith.
-  intros; compute; intro; discriminate.
-  intros.
-  apply Qle_trans with (0*(p^n)).
-  compute; intro; discriminate.
-  apply Qmult_le_compat_r; auto.
-Qed.
-
-Lemma Qinv_power_n : forall n p, (1#p)^n == /(inject_Z ('p))^n.
-Proof.
-  induction n.
-  compute; auto.
-  simpl.
-  intros; rewrite IHn; clear IHn.
-  unfold Qdiv; rewrite Qinv_mult_distr.
-  setoid_replace (1#p) with (/ inject_Z ('p)).
-  apply Qeq_refl.
-  compute; auto.
-Qed.
-
-

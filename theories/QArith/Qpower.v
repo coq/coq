@@ -1,0 +1,139 @@
+Require Import Qfield.
+
+Lemma Qpower_positive_1 : forall n, Qpower_positive 1 n == 1.
+Proof.
+induction n;
+simpl; try rewrite IHn; reflexivity.
+Qed.
+
+Lemma Qpower_1 : forall n, 1^n == 1.
+Proof.
+  intros [|n|n]; simpl; try rewrite Qpower_positive_1; reflexivity.
+Qed.
+
+Lemma Qpower_positive_0 : forall n, Qpower_positive 0 n == 0.
+Proof.
+induction n;
+simpl; try rewrite IHn; reflexivity.
+Qed.
+
+Lemma Qpower_0 : forall n, (n<>0)%Z -> 0^n == 0.
+Proof.
+  intros [|n|n] Hn; try (elim Hn; reflexivity); simpl;
+  rewrite Qpower_positive_0; reflexivity.
+Qed.
+
+Lemma Qpower_not_0_positive : forall a n, ~a==0 -> ~Qpower_positive a n == 0.
+Proof.
+intros a n X H.
+apply X; clear X.
+induction n; simpl in *; try assumption;
+destruct (Qmult_integral _ _ H);
+try destruct (Qmult_integral _ _ H0); auto.
+Qed.
+
+Lemma Qpower_pos_positive : forall p n, 0 <= p -> 0 <= Qpower_positive p n.
+intros p n Hp.
+induction n; simpl; repeat apply Qmult_le_0_compat;assumption.
+Qed.
+
+Lemma Qpower_pos : forall p n, 0 <= p -> 0 <= p^n.
+Proof.
+  intros p [|n|n] Hp; simpl; try discriminate;
+  try apply Qinv_le_0_compat;  apply Qpower_pos_positive; assumption.
+Qed.
+
+Lemma Qmult_power_positive  : forall a b n, Qpower_positive (a*b) n == (Qpower_positive a n)*(Qpower_positive b n).
+Proof.
+induction n;
+simpl; repeat rewrite IHn; ring.
+Qed.
+
+Lemma Qmult_power : forall a b n, (a*b)^n == a^n*b^n.
+Proof.
+  intros a b [|n|n]; simpl; 
+  try rewrite Qmult_power_positive;
+  try rewrite Qinv_mult_distr;
+  reflexivity.
+Qed.
+
+Lemma Qinv_power_positive  : forall a n, Qpower_positive (/a) n == /(Qpower_positive a n).
+Proof.
+induction n;
+simpl; repeat (rewrite IHn || rewrite Qinv_mult_distr); reflexivity.
+Qed.
+
+Lemma Qinv_power : forall a n, (/a)^n == /a^n.
+Proof.
+  intros a [|n|n]; simpl; 
+  try rewrite Qinv_power_positive;
+  reflexivity.
+Qed.
+
+Lemma Qdiv_power : forall a b n, (a/b)^n == (a^n/b^n).
+Proof.
+unfold Qdiv.
+intros a b n.
+rewrite Qmult_power.
+rewrite Qinv_power.
+reflexivity.
+Qed.
+
+Lemma Qinv_power_n : forall n p, (1#p)^n == /(inject_Z ('p))^n.
+Proof.
+intros n p.
+rewrite Qmake_Qdiv.
+rewrite Qdiv_power.
+rewrite Qpower_1.
+unfold Qdiv.
+ring.
+Qed.
+
+Lemma Qpower_plus_positive : forall a n m, Qpower_positive a (n+m) == (Qpower_positive a n)*(Qpower_positive a m).
+Proof.
+intros a n m.
+unfold Qpower_positive.
+apply pow_pos_Pplus.
+apply Q_Setoid.
+apply Qmult_comp.
+apply Qmult_comm.
+apply Qmult_assoc.
+Qed.
+
+Lemma Qpower_opp : forall a n, a^(-n) == /a^n.
+Proof.
+intros a [|n|n]; simpl; try reflexivity.
+symmetry; apply Qinv_involutive.
+Qed.
+
+Lemma Qpower_minus_positive : forall a (n m:positive), (Pcompare n m Eq=Gt)%positive -> Qpower_positive a (n-m)%positive == (Qpower_positive a n)/(Qpower_positive a m).
+Proof.
+intros a n m H.
+destruct (Qeq_dec a 0).
+ rewrite q.
+ repeat rewrite Qpower_positive_0.
+ reflexivity.
+rewrite <- (Qdiv_mult_l (Qpower_positive a (n - m)) (Qpower_positive a m)).
+ apply Qpower_not_0_positive; assumption.
+apply Qdiv_comp;[|reflexivity].
+rewrite Qmult_comm.
+rewrite <- Qpower_plus_positive.
+rewrite Pplus_minus.
+reflexivity.
+assumption.
+Qed.
+
+Lemma Qpower_plus : forall a n m, ~a==0 -> a^(n+m) == a^n*a^m.
+Proof.
+intros a [|n|n] [|m|m] H; simpl; try ring;
+try rewrite Qpower_plus_positive;
+try apply Qinv_mult_distr; try reflexivity;
+case_eq ((n ?= m)%positive Eq); intros H0; simpl;
+ try rewrite Qpower_minus_positive;
+ try rewrite (Pcompare_Eq_eq _ _ H0);
+ try (field; try split; apply Qpower_not_0_positive);
+ try assumption;
+ apply ZC2;
+ assumption.
+Qed.
+

@@ -930,7 +930,9 @@ INTSVO=\
 QARITHVO=\
  theories/QArith/QArith_base.vo theories/QArith/Qreduction.vo \
  theories/QArith/Qring.vo       theories/QArith/Qreals.vo \
- theories/QArith/QArith.vo	theories/QArith/Qcanon.vo 
+ theories/QArith/QArith.vo	theories/QArith/Qcanon.vo \
+ theories/QArith/Qfield.vo	theories/QArith/Qpower.vo \
+ theories/QArith/Qabs.vo
 
 LISTSVO=\
  theories/Lists/MonoList.vo \

@@ -145,6 +145,7 @@ Qed.
 
 Definition Qplus' (p q : Q) := Qred (Qplus p q).
 Definition Qmult' (p q : Q) := Qred (Qmult p q). 
+Definition Qminus' x y := Qred (Qminus x y).
 
 Lemma Qplus'_correct : forall p q : Q, (Qplus' p q)==(Qplus p q).
 Proof.
@@ -154,6 +155,11 @@ Qed.
 Lemma Qmult'_correct : forall p q : Q, (Qmult' p q)==(Qmult p q).
 Proof.
   intros; unfold Qmult' in |- *; apply Qred_correct; auto.
+Qed.
+
+Lemma Qminus'_correct : forall p q : Q, (Qminus' p q)==(Qminus p q).
+Proof.
+  intros; unfold Qminus' in |- *; apply Qred_correct; auto.
 Qed.
 
 Add Morphism Qplus' : Qplus'_comp.
@@ -167,3 +173,7 @@ Add Morphism Qmult' : Qmult'_comp.
   rewrite H; rewrite H0; auto with qarith.
 Qed.
 
+Add Morphism Qminus' : Qminus'_comp.
+  intros; unfold Qminus' in |- *.
+  rewrite H; rewrite H0; auto with qarith.
+Qed.
