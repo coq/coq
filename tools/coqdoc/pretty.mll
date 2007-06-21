@@ -461,9 +461,8 @@ and doc_bol = parse
   | space* section space+ ([^'\n' '*'] | '*'+ [^'\n' ')' '*'])* ('*'+ '\n')?
       { let eol, lex = strip_eol (lexeme lexbuf) in
         let lev, s = sec_title lex in
-Printf.eprintf "%s %d" s (if eol then 1 else 2);
-        section lev (fun () -> ignore (doc (from_string s)));
-	if eol then doc_bol lexbuf else doc lexbuf }
+          section lev (fun () -> ignore (doc (from_string s)));
+	  if eol then doc_bol lexbuf else doc lexbuf }
   | space* '-'+
       { let n = count_dashes (lexeme lexbuf) in
 	if n >= 4 then rule () else item n;

@@ -236,7 +236,7 @@ Module DecidableEqDep (M:DecidableType).
 End DecidableEqDep.
 
 (************************************************************************)
-(** ** B Definition of the functor that builds properties of dependent equalities on decidable sets in Set *)
+(** ** Definition of the functor that builds properties of dependent equalities on decidable sets in Set *)
 
 (** The signature of decidable sets in [Set] *)
 
