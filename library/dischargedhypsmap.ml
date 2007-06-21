@@ -31,7 +31,7 @@ let get_discharged_hyps sp =
   try
    Spmap.find sp !discharged_hyps_map
   with Not_found ->
-   anomaly ("No discharged hypothesis for object " ^ string_of_path sp)
+    []
 
 (*s Registration as global tables and rollback. *)
 

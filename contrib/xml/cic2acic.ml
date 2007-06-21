@@ -22,8 +22,13 @@ let get_module_path_of_section_path path =
    List.filter
     (function modul -> Libnames.is_dirpath_prefix_of modul dirpath) modules
   with
-     [modul] -> modul
-   | _ -> raise TwoModulesWhoseDirPathIsOneAPrefixOfTheOther
+     [] -> 
+       Pp.warning ("Modules not supported: reference to "^
+         Libnames.string_of_path path^" will be wrong");
+       dirpath
+   | [modul] -> modul
+   | _ -> 
+       raise TwoModulesWhoseDirPathIsOneAPrefixOfTheOther
 ;;
 
 (*CSC: Problem: here we are using the wrong (???) hypothesis that there do *)
@@ -652,11 +657,13 @@ print_endline "PASSATO" ; flush stdout ;
                          A.ALambdas (new_passed_lambdas, t')
                  )
            | T.LetIn (n,s,t,d) ->
-              let n' =
+              let id =
                match n with
-                  N.Anonymous -> N.Anonymous
-                | _ ->
-                  N.Name (Nameops.next_name_away n (Termops.ids_of_context env))
+                   N.Anonymous -> N.id_of_string "_X"
+                 | N.Name id -> id
+              in
+              let n' =
+               N.Name (Nameops.next_ident_away id (Termops.ids_of_context env))
               in
                Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
                let sourcesort =
