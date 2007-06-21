@@ -363,7 +363,7 @@ theories/Ints/num/GenDiv.vo: theories/Ints/num/GenDiv.v theories/ZArith/ZArith.v
 theories/Ints/num/GenSqrt.vo: theories/Ints/num/GenSqrt.v theories/ZArith/ZArith.vo theories/Ints/Z/ZAux.vo theories/Ints/Z/ZDivModAux.vo theories/Ints/Z/ZPowerAux.vo theories/Ints/Basic_type.vo theories/Ints/num/GenBase.vo
 theories/Ints/num/GenLift.vo: theories/Ints/num/GenLift.v theories/ZArith/ZArith.vo theories/Ints/Z/ZAux.vo theories/Ints/Z/ZPowerAux.vo theories/Ints/Z/ZDivModAux.vo theories/Ints/Z/Zmod.vo theories/Ints/Basic_type.vo theories/Ints/num/GenBase.vo
 theories/Ints/num/Zn2Z.vo: theories/Ints/num/Zn2Z.v theories/ZArith/ZArith.vo theories/Ints/Z/ZAux.vo theories/Ints/Z/ZDivModAux.vo theories/Ints/Basic_type.vo theories/Ints/num/GenBase.vo theories/Ints/num/GenAdd.vo theories/Ints/num/GenSub.vo theories/Ints/num/GenMul.vo theories/Ints/num/GenSqrt.vo theories/Ints/num/GenLift.vo theories/Ints/num/GenDivn1.vo theories/Ints/num/GenDiv.vo theories/Ints/num/ZnZ.vo
-theories/Ints/num/Nbasic.vo: theories/Ints/num/Nbasic.v theories/ZArith/ZArith.vo theories/Ints/Basic_type.vo
+theories/Ints/num/Nbasic.vo: theories/Ints/num/Nbasic.v theories/ZArith/ZArith.vo theories/Ints/Z/ZAux.vo theories/Ints/Z/ZDivModAux.vo theories/Ints/Basic_type.vo
 theories/Ints/num/NMake.vo: theories/Ints/num/NMake.v theories/ZArith/ZArith.vo theories/Ints/Basic_type.vo theories/Ints/num/ZnZ.vo theories/Ints/num/Zn2Z.vo theories/Ints/num/Nbasic.vo theories/Ints/num/GenMul.vo theories/Ints/num/GenDivn1.vo
 theories/Ints/BigN.vo: theories/Ints/BigN.v theories/Ints/Int31.vo theories/Ints/num/NMake.vo theories/Ints/num/ZnZ.vo
 theories/Ints/num/ZMake.vo: theories/Ints/num/ZMake.v theories/ZArith/ZArith.vo
