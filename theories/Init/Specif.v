@@ -201,6 +201,7 @@ Proof.
 Qed.
 
 Hint Resolve left right inleft inright: core v62.
+Hint Resolve exist exist2 existT existT2: core.
 
 (* Compatibility *)
 
