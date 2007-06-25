@@ -70,6 +70,8 @@ Ltac Qcst t :=
 
 Ltac Qpow_tac t :=
   match t with
+  | Z0 => N0
+  | Zpos ?n => Ncst (Npos n)
   | Z_of_N ?n => Ncst n
   | NtoZ ?n => Ncst n
   | _ => NotConstant
@@ -108,6 +110,16 @@ Let ex6 : (1#1)+(1#1) == 2#1.
 Qed.
 
 Let ex7 : forall x : Q, x-x== 0#1.
+  intro.
+  ring.
+Qed.
+
+Let ex8 : forall x : Q, x^1 == x.
+  intro.
+  ring.
+Qed.
+
+Let ex9 : forall x : Q, x^0 == 1.
   intro.
   ring.
 Qed.
