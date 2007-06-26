@@ -402,14 +402,15 @@ let unregister env field =
 	(*there is only one matching kind due to the fact that Environ.env
           is abstract, and that the only function which add elements to the
           retroknowledge is Environ.register which enforces this shape *)
-        let Ind i31t = retroknowledge find env field in 
-	let i31c = Construct (i31t, 1) in
-	  {env with retroknowledge = 
-	      remove (retroknowledge clear_info env i31c) field}
+	(match retroknowledge find env field with 
+	   | Ind i31t -> let i31c = Construct (i31t, 1) in
+	     {env with retroknowledge = 
+		 remove (retroknowledge clear_info env i31c) field}
+	   | _ -> assert false)
     |_ -> {env with retroknowledge =
 	   try 
 	     remove (retroknowledge clear_info env 
-                                         (retroknowledge find env field)) field
+                       (retroknowledge find env field)) field
 	   with Not_found ->
 	     retroknowledge remove env field}
 
