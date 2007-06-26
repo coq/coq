@@ -279,6 +279,7 @@ let pr_r_int31_field _ _ _ i31f =
     | Retroknowledge.Int31PhiInv -> str "phi inv"
     | Retroknowledge.Int31Plus -> str "plus"
     | Retroknowledge.Int31Times -> str "times"
+    | _ -> assert false	
 
 let pr_retroknowledge_field _ _ _ f =
   match f with
