@@ -165,6 +165,39 @@ Section Map.
 Variables A B : Type.
 Variable f : A -> B.
 CoFixpoint map (s:Stream A) : Stream B := Cons (f (hd s)) (map (tl s)).
+
+Lemma Str_nth_tl_map : forall n s, Str_nth_tl n (map s)= map (Str_nth_tl n s).
+Proof.
+induction n.
+reflexivity.
+simpl.
+intros s.
+apply IHn.
+Qed.
+
+Lemma Str_nth_map : forall n s, Str_nth n (map s)= f (Str_nth n s).
+Proof.
+intros n s.
+unfold Str_nth.
+rewrite Str_nth_tl_map.
+reflexivity.
+Qed.
+
+Lemma ForAll_map : forall (P:Stream B -> Prop) (S:Stream A), ForAll (fun s => P
+(map s)) S <-> ForAll P (map S).
+Proof.
+intros P S.
+split; generalize S; clear S; cofix; intros S; constructor;
+destruct H as [H0 H]; firstorder.
+Qed.
+
+Lemma Exists_map : forall (P:Stream B -> Prop) (S:Stream A), Exists (fun s => P
+(map s)) S -> Exists P (map S).
+Proof.
+intros P S H.
+(induction H;[left|right]); firstorder.
+Defined.
+
 End Map.
 
 Section Constant_Stream.
@@ -172,5 +205,35 @@ Variable A : Type.
 Variable a : A.
 CoFixpoint const  : Stream A := Cons a const.
 End Constant_Stream.
+
+Section Zip.
+
+Variable A B C : Type.
+Variable f: A -> B -> C.
+
+CoFixpoint zipWith (a:Stream A) (b:Stream B) : Stream C :=
+Cons (f (hd a) (hd b)) (zipWith (tl a) (tl b)).
+
+Lemma Str_nth_tl_zipWith : forall n (a:Stream A) (b:Stream B), 
+ Str_nth_tl n (zipWith a b)= zipWith (Str_nth_tl n a) (Str_nth_tl n b).
+Proof.
+induction n.
+reflexivity.
+intros [x xs] [y ys].
+unfold Str_nth in *.
+simpl in *.
+apply IHn.
+Qed.
+
+Lemma Str_nth_zipWith : forall n (a:Stream A) (b:Stream B), Str_nth n (zipWith a
+ b)= f (Str_nth n a) (Str_nth n b).
+Proof.
+intros.
+unfold Str_nth.
+rewrite Str_nth_tl_zipWith.
+reflexivity.
+Qed.
+
+End Zip.
 
 Unset Implicit Arguments.
