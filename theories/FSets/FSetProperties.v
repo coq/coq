@@ -783,14 +783,17 @@ Module Properties (M: S).
    transpose eqA f ->
    ~ In x s -> Add x s s' -> eqA (fold f s' i) (f x (fold f s i)).
   Proof.
-  intros; destruct (fold_0 s i f) as (l,(Hl, (Hl1, Hl2))); 
-    destruct (fold_0 s' i f) as (l',(Hl', (Hl'1, Hl'2))).
-  rewrite Hl2; rewrite Hl'2; clear Hl2 Hl'2.
-  apply fold_right_add with (eqA:=E.eq)(eqB:=eqA); auto.
-  eauto.
-  exact eq_dec.
-  rewrite <- Hl1; auto.
-  intros; rewrite <- Hl1; rewrite <- Hl'1; auto.
+  intros; do 2 rewrite M.fold_1; do 2 rewrite <- fold_left_rev_right.
+  trans_st (fold_right f i (rev ((List.filter (gtb x) (elements s) ++
+                                 x :: List.filter (leb x) (elements s))))).
+  apply fold_right_eqlistA with (eqA:=E.eq) (eqB:=eqA); auto.
+  apply eqlistA_rev.
+  apply elements_Add; auto.
+  rewrite distr_rev; simpl.
+  rewrite app_ass; simpl.
+  pattern (elements s) at 3; rewrite (elements_split x s).
+  rewrite distr_rev; simpl.
+  apply fold_right_commutes with (eqA:=E.eq) (eqB:=eqA); auto.
   Qed.
 
   (** More properties of [fold] : behavior with respect to Above/Below *) 

@@ -508,51 +508,6 @@ rewrite (find_1 H4) in H0; discriminate.
 rewrite (find_1 H4) in H1; discriminate.
 Qed.
 
-Fixpoint findA (A B:Set)(f : A -> bool) (l:list (A*B)) : option B := 
- match l with  
-  | nil => None 
-  | (a,b)::l => if f a then Some b else findA f l
- end.
-
-Lemma findA_NoDupA : 
- forall (A B:Set)
- (eqA:A->A->Prop)
- (eqA_sym: forall a b, eqA a b -> eqA b a)
- (eqA_trans: forall a b c, eqA a b -> eqA b c -> eqA a c)
- (eqA_dec : forall a a', { eqA a a' }+{~eqA a a' }) 
- (l:list (A*B))(x:A)(e:B),  
- NoDupA (fun p p' => eqA (fst p) (fst p')) l -> 
- (InA (fun p p' => eqA (fst p) (fst p') /\ snd p = snd p') (x,e) l <->
-  findA (fun y:A => if eqA_dec x y then true else false) l = Some e).
-Proof.
-induction l; simpl; intros.
-split; intros; try discriminate.
-inversion H0.
-destruct a as (y,e').
-inversion_clear H.
-split; intros.
-inversion_clear H.
-simpl in *; destruct H2; subst e'.
-destruct (eqA_dec x y); intuition.
-destruct (eqA_dec x y); simpl.
-destruct H0.
-generalize e0 H2 eqA_trans eqA_sym; clear.
-induction l.
-inversion 2.
-inversion_clear 2; intros; auto.
-destruct a.
-compute in H; destruct H.
-subst b.
-constructor 1; auto.
-simpl.
-apply eqA_trans with x; auto.
-rewrite <- IHl; auto.
-destruct (eqA_dec x y); simpl in *.
-inversion H; clear H; intros; subst e'; auto.
-constructor 2.
-rewrite IHl; auto.
-Qed.
-
 Lemma elements_o : forall m x, 
  find x m = findA (eqb x) (elements m).
 Proof.

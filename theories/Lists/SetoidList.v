@@ -387,8 +387,43 @@ case_eq (f a); auto; intros.
 rewrite H3 in H; auto; try discriminate.
 Qed.
 
+Section Fold.
 
-Section Remove.
+Variable B:Set.
+Variable eqB:B->B->Prop.
+
+(** Compatibility of a two-argument function with respect to two equalities. *)
+Definition compat_op (f : A -> B -> B) :=
+  forall (x x' : A) (y y' : B), eqA x x' -> eqB y y' -> eqB (f x y) (f x' y').
+
+(** Two-argument functions that allow to reorder their arguments. *)
+Definition transpose (f : A -> B -> B) :=
+  forall (x y : A) (z : B), eqB (f x (f y z)) (f y (f x z)). 
+
+Variable st:Setoid_Theory _ eqB.
+Variable f:A->B->B.
+Variable i:B.
+Variable Comp:compat_op f.
+
+Lemma fold_right_eqlistA : 
+   forall s s', eqlistA s s' -> 
+   eqB (fold_right f i s) (fold_right f i s').
+Proof.
+induction 1; simpl; auto.
+refl_st.
+Qed.
+
+Variable Ass:transpose f.
+
+Lemma fold_right_commutes : forall s1 s2 x, 
+  eqB (fold_right f i (s1++x::s2)) (f x (fold_right f i (s1++s2))).
+Proof.
+induction s1; simpl; auto; intros.
+refl_st.
+trans_st (f a (f x (fold_right f i (s1++s2)))).
+Qed.
+
+Section Remove_And_More_Fold.
 
 Hypothesis eqA_dec : forall x y : A, {eqA x y}+{~(eqA x y)}.
 
@@ -492,26 +527,6 @@ inversion_clear H7; auto.
 elim H6; auto.
 Qed.
 
-
-Section Fold.
-
-Variable B:Set.
-Variable eqB:B->B->Prop.
-
-(** Compatibility of a two-argument function with respect to two equalities. *)
-Definition compat_op (f : A -> B -> B) :=
-  forall (x x' : A) (y y' : B), eqA x x' -> eqB y y' -> eqB (f x y) (f x' y').
-
-(** Two-argument functions that allow to reorder their arguments. *)
-Definition transpose (f : A -> B -> B) :=
-  forall (x y : A) (z : B), eqB (f x (f y z)) (f y (f x z)). 
-
-Variable st:Setoid_Theory _ eqB.
-Variable f:A->B->B.
-Variable Comp:compat_op f.
-Variable Ass:transpose f.
-Variable i:B.
-
 Lemma removeA_fold_right_0 :
   forall s x, ~InA x s ->
   eqB (fold_right f i s) (fold_right f i (removeA x s)).
@@ -564,15 +579,6 @@ Proof.
  rewrite <- E; auto.
 Qed.
 
-(* for this one, the transpose hyp is not required *)
-Lemma fold_right_eqlistA : 
-   forall s s', eqlistA s s' -> 
-   eqB (fold_right f i s) (fold_right f i s').
-Proof.
-induction 1; simpl; auto.
-refl_st.
-Qed.
-
 Lemma fold_right_add :
   forall s' s x, NoDupA s -> NoDupA s' -> ~ InA x s ->
   addlistA x s s' -> eqB (fold_right f i s') (f x (fold_right f i s)).
@@ -613,9 +619,9 @@ Proof.
  destruct H; auto; destruct n; auto.
 Qed.
 
-End Fold.
+End Remove_And_More_Fold.
 
-End Remove.
+End Fold.
 
 End Type_with_equality.
 

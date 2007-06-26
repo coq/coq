@@ -568,6 +568,7 @@ Module Properties (M: S).
 
   Definition cardinal (m:t elt) := length (elements m).
 
+  Definition Equal (m m':t elt) := forall y, find y m = find y m'.
   Definition Add x (e:elt) m m' := forall y, find y m' = find y (add x e m).
 
   Definition Above x (m:t elt) := forall y, In y m -> E.lt y x.
@@ -766,6 +767,16 @@ Module Properties (M: S).
    exists e0; auto.
   generalize (H t0 H1).
   ME.order.
+  Qed.
+
+  Lemma elements_Equal_eqlistA : forall (m m': t elt), 
+   Equal m m' -> eqlistA eqke (elements m) (elements m').
+  Proof.
+  intros.
+  apply sort_equivlistA_eqlistA; auto.
+  red; intros.
+  destruct x; do 2 rewrite <- elements_mapsto_iff.
+  do 2 rewrite find_mapsto_iff; rewrite H; split; auto.
   Qed.
 
   End Elements.
@@ -1022,6 +1033,48 @@ Module Properties (M: S).
   Qed.
 
   End Induction_Principles.
+
+  Section Fold_properties.
+
+  Lemma fold_Equal : forall s1 s2 (A:Set)(eqA:A->A->Prop)(st:Setoid_Theory A eqA)
+   (f:key->elt->A->A)(i:A), 
+   compat_op (@O.eqke _) eqA (fun y =>f (fst y) (snd y)) -> 
+   Equal s1 s2 -> 
+   eqA (fold f s1 i) (fold f s2 i).
+  Proof.
+  intros.
+  do 2 rewrite fold_1.
+  do 2 rewrite <- fold_left_rev_right.
+  apply fold_right_eqlistA with (eqA:=@O.eqke _) (eqB:=eqA); auto.
+  apply eqlistA_rev.
+  apply elements_Equal_eqlistA; auto.
+  Qed.
+
+  Lemma fold_Add : forall s1 s2 x e (A:Set)(eqA:A->A->Prop)(st:Setoid_Theory A eqA)
+   (f:key->elt->A->A)(i:A), 
+   compat_op (@O.eqke _) eqA (fun y =>f (fst y) (snd y)) -> 
+   transpose eqA (fun y =>f (fst y) (snd y)) -> 
+   ~In x s1 -> Add x e s1 s2 -> 
+   eqA (fold f s2 i) (f x e (fold f s1 i)).
+  Proof.
+  intros; do 2 rewrite fold_1; do 2 rewrite <- fold_left_rev_right.
+  set (f':=fun (y:key*elt) x0 => f (fst y) (snd y) x0) in *.
+  change (f x e (fold_right f' i (rev (elements s1))))
+   with (f' (x,e) (fold_right f' i (rev (elements s1)))).
+  trans_st (fold_right f' i (rev ((filter (gtb (x, e)) (elements s1) ++
+                              (x, e) :: filter (leb (x, e)) (elements s1))))).
+  apply fold_right_eqlistA with (eqA:=@eqke _) (eqB:=eqA); auto.
+  apply eqlistA_rev.
+  apply elements_Add; auto.
+  rewrite distr_rev; simpl.
+  rewrite app_ass; simpl.
+  pattern (elements s1) at 3; rewrite (elements_split (x,e) s1).
+  rewrite distr_rev; simpl.
+  apply fold_right_commutes with (eqA:=@eqke _) (eqB:=eqA); auto.
+  Qed.
+
+  End Fold_properties.
+
  End Elt.
 
 End Properties.
