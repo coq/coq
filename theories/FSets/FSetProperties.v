@@ -459,6 +459,13 @@ Module Properties (M: S).
 
   Section Elements.
 
+  (* First, a specialized version of SortA_equivlistA_eqlistA: *)
+  Lemma sort_equivlistA_eqlistA : forall l l' : list elt,
+   sort E.lt l -> sort E.lt l' -> equivlistA E.eq l l' -> eqlistA E.eq l l'.
+  Proof.
+  apply SortA_equivlistA_eqlistA; eauto.
+  Qed.
+
   Lemma elements_Empty : forall s, Empty s <-> elements s = nil.
   Proof.
   intros.
@@ -479,6 +486,9 @@ Module Properties (M: S).
 
   Definition gtb x y := match E.compare x y with GT _ => true | _ => false end.
   Definition leb x := fun y => negb (gtb x y).
+
+  Definition elements_lt x s := List.filter (gtb x) (elements s).
+  Definition elements_ge x s := List.filter (leb x) (elements s).
 
   Lemma gtb_1 : forall x y, gtb x y = true <-> E.lt y x.
   Proof.
@@ -512,9 +522,9 @@ Module Properties (M: S).
   Hint Resolve gtb_compat leb_compat.
 
   Lemma elements_split : forall x s, 
-   elements s = List.filter (gtb x) (elements s) ++ List.filter (leb x) (elements s).
+   elements s = elements_lt x s ++ elements_ge x s.
   Proof.
-  unfold leb; intros.
+  unfold elements_lt, elements_ge, leb; intros.
   eapply (@filter_split _ E.eq); eauto. ME.order. ME.order. ME.order.
   intros.
   rewrite gtb_1 in H.
@@ -523,18 +533,10 @@ Module Properties (M: S).
   ME.order.
   Qed.
 
-  (* a specialized version of SortA_equivlistA_eqlistA: *)
-  Lemma sort_equivlistA_eqlistA : forall l l' : list elt,
-   sort E.lt l -> sort E.lt l' -> equivlistA E.eq l l' -> eqlistA E.eq l l'.
-  Proof.
-  apply SortA_equivlistA_eqlistA; eauto.
-  Qed.
-
   Lemma elements_Add : forall s s' x, ~In x s -> Add x s s' -> 
-    eqlistA E.eq (elements s') 
-      (List.filter (gtb x) (elements s) ++ x::List.filter (leb x) (elements s)).
+    eqlistA E.eq (elements s') (elements_lt x s ++ x :: elements_ge x s). 
   Proof.
-  intros.
+  intros; unfold elements_ge, elements_lt.
   apply sort_equivlistA_eqlistA; auto.
   apply (@SortA_app _ E.eq); auto.
   apply (@filter_sort _ E.eq); auto; eauto.
@@ -567,7 +569,7 @@ Module Properties (M: S).
   ME.order.
   Qed.
 
-  Lemma elements_eqlistA_max : forall s s' x, 
+  Lemma elements_Add_Above : forall s s' x, 
    Above x s -> Add x s s' -> 
      eqlistA E.eq (elements s') (elements s ++ x::nil).
   Proof.
@@ -584,7 +586,7 @@ Module Properties (M: S).
   do 2 rewrite <- elements_iff; rewrite (H0 a); intuition.
   Qed.
 
-  Lemma elements_eqlistA_min : forall s s' x, 
+  Lemma elements_Add_Below : forall s s' x, 
    Below x s -> Add x s s' -> 
      eqlistA E.eq (elements s') (x::elements s).
   Proof.
@@ -784,14 +786,13 @@ Module Properties (M: S).
    ~ In x s -> Add x s s' -> eqA (fold f s' i) (f x (fold f s i)).
   Proof.
   intros; do 2 rewrite M.fold_1; do 2 rewrite <- fold_left_rev_right.
-  trans_st (fold_right f i (rev ((List.filter (gtb x) (elements s) ++
-                                 x :: List.filter (leb x) (elements s))))).
+  trans_st (fold_right f i (rev (elements_lt x s ++ x :: elements_ge x s))).
   apply fold_right_eqlistA with (eqA:=E.eq) (eqB:=eqA); auto.
   apply eqlistA_rev.
   apply elements_Add; auto.
   rewrite distr_rev; simpl.
   rewrite app_ass; simpl.
-  pattern (elements s) at 3; rewrite (elements_split x s).
+  rewrite (elements_split x s).
   rewrite distr_rev; simpl.
   apply fold_right_commutes with (eqA:=E.eq) (eqB:=eqA); auto.
   Qed.
@@ -812,7 +813,7 @@ Module Properties (M: S).
   apply (@fold_right_eqlistA E.t E.eq A eqA st); auto.
   rewrite <- distr_rev.
   apply eqlistA_rev.
-  apply elements_eqlistA_max; auto.
+  apply elements_Add_Above; auto.
   Qed.
 
   Lemma fold_4 :
@@ -829,7 +830,7 @@ Module Properties (M: S).
   do 2 rewrite <- fold_left_rev_right.
   apply (@fold_right_eqlistA E.t E.eq A eqA st); auto.
   apply eqlistA_rev.
-  apply elements_eqlistA_min; auto.
+  apply elements_Add_Below; auto.
   Qed.
 
   End Fold_Basic.

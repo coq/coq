@@ -493,9 +493,9 @@ Module Properties (M: S).
   rewrite Hl2; rewrite Hl'2; clear Hl2 Hl'2.
   apply fold_right_add with (eqA:=E.eq)(eqB:=eqA); auto.
   eauto.
-  exact eq_dec.
   rewrite <- Hl1; auto.
-  intros; rewrite <- Hl1; rewrite <- Hl'1; auto.
+  intros a; rewrite InA_cons; rewrite <- Hl1; rewrite <- Hl'1; 
+   rewrite (H2 a); intuition.
   Qed.
 
   (** Similar specifications for [cardinal]. *)

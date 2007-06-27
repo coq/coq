@@ -566,6 +566,10 @@ Module Properties (M: S).
  Section Elt. 
   Variable elt:Set.
 
+  Notation eqke := (@eqke elt).
+  Notation eqk := (@eqk elt).
+  Notation ltk := (@ltk elt).
+
   Definition cardinal (m:t elt) := length (elements m).
 
   Definition Equal (m m':t elt) := forall y, find y m = find y m'.
@@ -595,12 +599,20 @@ Module Properties (M: S).
   rewrite H in H0; destruct H0 as (_,H0); inversion H0.
   Qed.
 
-  Notation eqke := (@eqke elt).
-  Notation eqk := (@eqk elt).
-  Notation ltk := (@ltk elt).
+  Lemma sort_equivlistA_eqlistA : forall l l' : list (key*elt),
+   sort ltk l -> sort ltk l' -> equivlistA eqke l l' -> eqlistA eqke l l'.
+  Proof.
+  apply SortA_equivlistA_eqlistA; eauto; 
+  unfold O.eqke, O.ltk; simpl; intuition; eauto.
+  Qed.
+
+  Ltac clean_eauto := unfold O.eqke, O.ltk; simpl; intuition; eauto.
 
   Definition gtb (p p':key*elt) := match E.compare (fst p) (fst p') with GT _ => true | _ => false end.
   Definition leb p := fun p' => negb (gtb p p'). 
+
+  Definition elements_lt p m := List.filter (gtb p) (elements m).
+  Definition elements_ge p m := List.filter (leb p) (elements m).
 
   Lemma gtb_1 : forall p p', gtb p p' = true <-> ltk p' p.
   Proof.
@@ -638,10 +650,9 @@ Module Properties (M: S).
   Hint Resolve gtb_compat leb_compat elements_3.
 
   Lemma elements_split : forall p m, 
-    elements m = 
-    List.filter (gtb p) (elements m) ++ List.filter (leb p) (elements m).
+    elements m = elements_lt p m ++ elements_ge p m.
   Proof.
-  unfold leb; intros.
+  unfold elements_lt, elements_ge, leb; intros.
   apply filter_split with (eqA:=eqk) (ltA:=ltk); eauto.
   intros; destruct x; destruct y; destruct p.
   rewrite gtb_1 in H; unfold O.ltk in H; simpl in *.
@@ -651,21 +662,11 @@ Module Properties (M: S).
   unfold O.ltk in *; simpl in *; ME.order.
   Qed.
 
-  Lemma sort_equivlistA_eqlistA : forall l l' : list (key*elt),
-   sort ltk l -> sort ltk l' -> equivlistA eqke l l' -> eqlistA eqke l l'.
-  Proof.
-  apply SortA_equivlistA_eqlistA; eauto; 
-  unfold O.eqke, O.ltk; simpl; intuition; eauto.
-  Qed.
-
-  Ltac clean_eauto := unfold O.eqke, O.ltk; simpl; intuition; eauto.
-
   Lemma elements_Add : forall m m' x e, ~In x m -> Add x e m m' -> 
     eqlistA eqke (elements m') 
-      (List.filter (gtb (x,e)) (elements m) ++ 
-       (x,e)::List.filter (leb (x,e)) (elements m)).
+                 (elements_lt (x,e) m ++ (x,e):: elements_ge (x,e) m).
   Proof.
-  intros.
+  intros; unfold elements_lt, elements_ge.
   apply sort_equivlistA_eqlistA; auto.
   apply (@SortA_app _ eqke); auto.
   apply (@filter_sort _ eqke); auto; clean_eauto.
@@ -710,7 +711,7 @@ Module Properties (M: S).
   right; split; auto; ME.order.
   Qed.
 
-  Lemma elements_eqlistA_max : forall m m' x e, 
+  Lemma elements_Add_Above : forall m m' x e, 
    Above x m -> Add x e m m' -> 
      eqlistA eqke (elements m') (elements m ++ (x,e)::nil).
   Proof.
@@ -739,7 +740,7 @@ Module Properties (M: S).
   ME.order.
   Qed.
 
-  Lemma elements_eqlistA_min : forall m m' x e, 
+  Lemma elements_Add_Below : forall m m' x e, 
    Below x m -> Add x e m m' -> 
      eqlistA eqke (elements m') ((x,e)::elements m).
   Proof.
@@ -827,6 +828,13 @@ Module Properties (M: S).
   rewrite <- app_length.
   f_equal.
   symmetry; apply elements_split; auto.
+  Qed.
+
+  Lemma cardinal_Equal : forall m m', Equal m m' -> cardinal m = cardinal m'.
+  Proof.
+  unfold cardinal; intros.
+  apply eqlistA_length with (eqA:=eqke).
+  apply elements_Equal_eqlistA; auto.
   Qed.
 
   End Cardinal.
@@ -925,11 +933,11 @@ Module Properties (M: S).
   inversion_clear H1.
   red in H2; destruct H2; simpl in *; ME.order.
   inversion_clear H4.
-  rewrite (@InfA_alt _ (@eqke elt)) in H3; eauto.
+  rewrite (@InfA_alt _ eqke) in H3; eauto.
   apply (H3 (y,x0)); auto.
   unfold lt_key; simpl; intuition; eauto.
-  unfold eqke, lt_key; simpl; intuition; eauto.
-  unfold eqke, lt_key; simpl; intuition; eauto.
+  intros (x1,x2) (y1,y2) (z1,z2); compute; intuition; eauto.
+  intros (x1,x2) (y1,y2) (z1,z2); compute; intuition; eauto.
   Qed.
   
   Lemma min_elt_MapsTo : 
@@ -1036,41 +1044,82 @@ Module Properties (M: S).
 
   Section Fold_properties.
 
+  Lemma fold_Empty : forall s (A:Set)(f:key->elt->A->A)(i:A),
+   Empty s -> fold f s i = i.
+  Proof.
+  intros.
+  rewrite fold_1.
+  rewrite elements_Empty in H; rewrite H; simpl; auto.
+  Qed.
+
   Lemma fold_Equal : forall s1 s2 (A:Set)(eqA:A->A->Prop)(st:Setoid_Theory A eqA)
    (f:key->elt->A->A)(i:A), 
-   compat_op (@O.eqke _) eqA (fun y =>f (fst y) (snd y)) -> 
+   compat_op eqke eqA (fun y =>f (fst y) (snd y)) -> 
    Equal s1 s2 -> 
    eqA (fold f s1 i) (fold f s2 i).
   Proof.
   intros.
   do 2 rewrite fold_1.
   do 2 rewrite <- fold_left_rev_right.
-  apply fold_right_eqlistA with (eqA:=@O.eqke _) (eqB:=eqA); auto.
+  apply fold_right_eqlistA with (eqA:=eqke) (eqB:=eqA); auto.
   apply eqlistA_rev.
   apply elements_Equal_eqlistA; auto.
   Qed.
 
   Lemma fold_Add : forall s1 s2 x e (A:Set)(eqA:A->A->Prop)(st:Setoid_Theory A eqA)
    (f:key->elt->A->A)(i:A), 
-   compat_op (@O.eqke _) eqA (fun y =>f (fst y) (snd y)) -> 
+   compat_op eqke eqA (fun y =>f (fst y) (snd y)) -> 
    transpose eqA (fun y =>f (fst y) (snd y)) -> 
    ~In x s1 -> Add x e s1 s2 -> 
    eqA (fold f s2 i) (f x e (fold f s1 i)).
   Proof.
   intros; do 2 rewrite fold_1; do 2 rewrite <- fold_left_rev_right.
-  set (f':=fun (y:key*elt) x0 => f (fst y) (snd y) x0) in *.
+  set (f':=fun y x0 => f (fst y) (snd y) x0) in *.
   change (f x e (fold_right f' i (rev (elements s1))))
    with (f' (x,e) (fold_right f' i (rev (elements s1)))).
-  trans_st (fold_right f' i (rev ((filter (gtb (x, e)) (elements s1) ++
-                              (x, e) :: filter (leb (x, e)) (elements s1))))).
-  apply fold_right_eqlistA with (eqA:=@eqke _) (eqB:=eqA); auto.
+  trans_st (fold_right f' i 
+              (rev (elements_lt (x, e) s1 ++ (x,e) :: elements_ge (x, e) s1))).
+  apply fold_right_eqlistA with (eqA:=eqke) (eqB:=eqA); auto.
   apply eqlistA_rev.
   apply elements_Add; auto.
   rewrite distr_rev; simpl.
   rewrite app_ass; simpl.
-  pattern (elements s1) at 3; rewrite (elements_split (x,e) s1).
+  rewrite (elements_split (x,e) s1).
   rewrite distr_rev; simpl.
-  apply fold_right_commutes with (eqA:=@eqke _) (eqB:=eqA); auto.
+  apply fold_right_commutes with (eqA:=eqke) (eqB:=eqA); auto.
+  Qed.
+
+  Lemma fold_Add_Above : forall s1 s2 x e (A:Set)(eqA:A->A->Prop)(st:Setoid_Theory A eqA)
+   (f:key->elt->A->A)(i:A), 
+   compat_op eqke eqA (fun y =>f (fst y) (snd y)) -> 
+   Above x s1 -> Add x e s1 s2 -> 
+   eqA (fold f s2 i) (f x e (fold f s1 i)).
+  Proof.
+  intros; do 2 rewrite fold_1; do 2 rewrite <- fold_left_rev_right.
+  set (f':=fun y x0 => f (fst y) (snd y) x0) in *.
+  trans_st (fold_right f' i (rev (elements s1 ++ (x,e)::nil))).
+  apply fold_right_eqlistA with (eqA:=eqke) (eqB:=eqA); auto.
+  apply eqlistA_rev.
+  apply elements_Add_Above; auto.
+  rewrite distr_rev; simpl.
+  refl_st.
+  Qed.
+
+  Lemma fold_Add_Below : forall s1 s2 x e (A:Set)(eqA:A->A->Prop)(st:Setoid_Theory A eqA)
+   (f:key->elt->A->A)(i:A), 
+   compat_op eqke eqA (fun y =>f (fst y) (snd y)) -> 
+   Below x s1 -> Add x e s1 s2 -> 
+   eqA (fold f s2 i) (fold f s1 (f x e i)).
+  Proof.
+  intros; do 2 rewrite fold_1; do 2 rewrite <- fold_left_rev_right.
+  set (f':=fun y x0 => f (fst y) (snd y) x0) in *.
+  trans_st (fold_right f' i (rev (((x,e)::nil)++elements s1))).
+  apply fold_right_eqlistA with (eqA:=eqke) (eqB:=eqA); auto.
+  apply eqlistA_rev.
+  simpl; apply elements_Add_Below; auto.
+  rewrite distr_rev; simpl.
+  rewrite fold_right_app.
+  refl_st.
   Qed.
 
   End Fold_properties.

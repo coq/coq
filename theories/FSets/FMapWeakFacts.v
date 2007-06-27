@@ -552,3 +552,198 @@ Qed.
 End BoolSpec.
 
 End Facts.
+
+
+Module Properties (M: S).
+ Module F:=Facts M. 
+ Import F.
+ Import M.
+
+ Section Elt. 
+  Variable elt:Set.
+
+  Definition cardinal (m:t elt) := length (elements m).
+
+  Definition Equal (m m':t elt) := forall y, find y m = find y m'.
+  Definition Add x (e:elt) m m' := forall y, find y m' = find y (add x e m).
+
+  Notation eqke := (@eq_key_elt elt).
+  Notation eqk := (@eq_key elt).
+
+  Lemma elements_Empty : forall m:t elt, Empty m <-> elements m = nil.
+  Proof.
+  intros.
+  unfold Empty.
+  split; intros.
+  assert (forall a, ~ List.In a (elements m)).
+   red; intros.
+   apply (H (fst a) (snd a)).
+   rewrite elements_mapsto_iff.
+   rewrite InA_alt; exists a; auto.
+   split; auto; split; auto.
+  destruct (elements m); auto.
+  elim (H0 p); simpl; auto.
+  red; intros.
+  rewrite elements_mapsto_iff in H0.
+  rewrite InA_alt in H0; destruct H0.
+  rewrite H in H0; destruct H0 as (_,H0); inversion H0.
+  Qed.
+
+  Lemma fold_Empty : forall m (A:Set)(f:key->elt->A->A)(i:A),
+   Empty m -> fold f m i = i.
+  Proof.
+  intros.
+  rewrite fold_1.
+  rewrite elements_Empty in H; rewrite H; simpl; auto.
+  Qed.
+
+  Lemma NoDupA_eqk_eqke : forall l, NoDupA eqk l -> NoDupA eqke l.
+  Proof.
+  induction 1; auto.
+  constructor; auto.
+  swap H.
+  destruct x as (x,y).
+  rewrite InA_alt in *; destruct H1 as ((a,b),((H1,H2),H3)); simpl in *.
+  exists (a,b); auto.
+  Qed.
+
+  Lemma fold_Equal : forall m1 m2 (A:Set)(eqA:A->A->Prop)(st:Setoid_Theory A eqA)
+   (f:key->elt->A->A)(i:A), 
+   compat_op eqke eqA (fun y =>f (fst y) (snd y)) -> 
+   transpose eqA (fun y => f (fst y) (snd y)) -> 
+   Equal m1 m2 -> 
+   eqA (fold f m1 i) (fold f m2 i).
+  Proof.
+  assert (eqke_refl : forall p, eqke p p).
+   red; auto.
+  assert (eqke_sym : forall p p', eqke p p' -> eqke p' p).
+   intros (x1,x2) (y1,y2); unfold eq_key_elt; simpl; intuition.
+  assert (eqke_trans : forall p p' p'', eqke p p' -> eqke p' p'' -> eqke p p'').
+   intros (x1,x2) (y1,y2) (z1,z2); unfold eq_key_elt; simpl.
+   intuition; eauto; congruence.
+  intros; do 2 rewrite fold_1; do 2 rewrite <- fold_left_rev_right.
+  apply fold_right_equivlistA with (eqA:=eqke) (eqB:=eqA); auto.
+  apply NoDupA_rev; auto; apply NoDupA_eqk_eqke; apply elements_3.
+  apply NoDupA_rev; auto; apply NoDupA_eqk_eqke; apply elements_3.
+  red; intros.
+  do 2 rewrite InA_rev.
+  destruct x; do 2 rewrite <- elements_mapsto_iff.
+  do 2 rewrite find_mapsto_iff.
+  rewrite H1; split; auto.
+  Qed.
+
+  Lemma fold_Add : forall m1 m2 x e (A:Set)(eqA:A->A->Prop)(st:Setoid_Theory A eqA)
+   (f:key->elt->A->A)(i:A), 
+   compat_op eqke eqA (fun y =>f (fst y) (snd y)) -> 
+   transpose eqA (fun y =>f (fst y) (snd y)) -> 
+   ~In x m1 -> Add x e m1 m2 -> 
+   eqA (fold f m2 i) (f x e (fold f m1 i)).
+  Proof.
+  assert (eqke_refl : forall p, eqke p p).
+   red; auto.
+  assert (eqke_sym : forall p p', eqke p p' -> eqke p' p).
+   intros (x1,x2) (y1,y2); unfold eq_key_elt; simpl; intuition.
+  assert (eqke_trans : forall p p' p'', eqke p p' -> eqke p' p'' -> eqke p p'').
+   intros (x1,x2) (y1,y2) (z1,z2); unfold eq_key_elt; simpl.
+   intuition; eauto; congruence.
+  intros; do 2 rewrite fold_1; do 2 rewrite <- fold_left_rev_right.
+  set (f':=fun y x0 => f (fst y) (snd y) x0) in *.
+  change (f x e (fold_right f' i (rev (elements m1))))
+   with (f' (x,e) (fold_right f' i (rev (elements m1)))).
+  apply fold_right_add with (eqA:=eqke)(eqB:=eqA); auto.
+  apply NoDupA_rev; auto; apply NoDupA_eqk_eqke; apply elements_3.
+  apply NoDupA_rev; auto; apply NoDupA_eqk_eqke; apply elements_3.
+  rewrite InA_rev.
+  swap H1.
+  exists e.
+  rewrite elements_mapsto_iff; auto.
+  intros a.
+  rewrite InA_cons; do 2 rewrite InA_rev; 
+  destruct a as (a,b); do 2 rewrite <- elements_mapsto_iff.
+  do 2 rewrite find_mapsto_iff; unfold eq_key_elt; simpl.
+  rewrite H2.
+  rewrite add_o.
+  destruct (E.eq_dec x a); intuition.
+  inversion H3; auto.
+  f_equal; auto.
+  elim H1.
+  exists b; apply MapsTo_1 with a; auto.
+  elim n; auto.
+  Qed.
+
+  Lemma cardinal_fold : forall m, cardinal m = fold (fun _ _ => S) m 0.
+  Proof.
+  intros; unfold cardinal; rewrite fold_1.
+  symmetry; apply fold_left_length; auto.
+  Qed.
+ 
+  Lemma Equal_cardinal : forall m m', Equal m m' -> cardinal m = cardinal m'.
+  Proof.
+  intros; do 2 rewrite cardinal_fold.
+  apply fold_Equal with (eqA:=@eq _); auto.
+  constructor; auto; congruence.
+  red; auto.
+  red; auto.
+  Qed.
+
+  Lemma cardinal_1 : forall m, Empty m -> cardinal m = 0.
+  Proof.
+  intros; unfold cardinal; rewrite elements_Empty in H; rewrite H; simpl; auto.
+  Qed.
+
+  Lemma cardinal_2 :
+    forall m m' x e, ~ In x m -> Add x e m m' -> cardinal m' = S (cardinal m).
+  Proof.
+  intros; do 2 rewrite cardinal_fold.
+  change S with ((fun _ _ => S) x e).
+  apply fold_Add; auto.
+  constructor; intros; auto; congruence.
+  red; simpl; auto.
+  red; simpl; auto.
+  Qed.
+
+  Lemma cardinal_inv_1 : forall m, cardinal m = 0 -> Empty m. 
+  Proof. 
+  unfold cardinal; intros m H a e.
+  rewrite elements_mapsto_iff.    
+  destruct (elements m); simpl in *.
+  red; inversion 1.
+  inversion H.
+  Qed.
+  Hint Resolve cardinal_inv_1.
+
+  Lemma cardinal_inv_2 :
+   forall m n, cardinal m = S n -> { p : key*elt | MapsTo (fst p) (snd p) m }.
+  Proof. 
+  unfold cardinal; intros.
+  generalize (elements_mapsto_iff m).
+  destruct (elements m); try discriminate. 
+  exists p; auto.
+  rewrite H0; destruct p; simpl; auto.
+  constructor; red; auto.
+  Qed.
+
+  Lemma map_induction :
+   forall P : t elt -> Type,
+   (forall m, Empty m -> P m) ->
+   (forall m m', P m -> forall x e, ~In x m -> Add x e m m' -> P m') ->
+   forall m, P m.
+  Proof.
+  intros; remember (cardinal m) as n; revert m Heqn; induction n; intros.
+  apply X; apply cardinal_inv_1; auto.
+
+  destruct (cardinal_inv_2 (sym_eq Heqn)) as ((x,e),H0); simpl in *.
+  assert (Add x e (remove x m) m).
+   red; intros.
+   rewrite add_o; rewrite remove_o; destruct (E.eq_dec x y); eauto.
+  apply X0 with (remove x m) x e; auto.
+  apply IHn; auto.
+  assert (S n = S (cardinal (remove x m))).
+   rewrite Heqn; eapply cardinal_2; eauto.
+  inversion H1; auto.
+  Qed.
+
+ End Elt.
+
+End Properties.
+
