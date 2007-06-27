@@ -185,7 +185,7 @@ Proof.
   destruct H2; apply eqA_trans with a; auto.
 Qed.
 
-Lemma NoDupA_eqlistA_permut : 
+Lemma NoDupA_equivlistA_permut : 
   forall l l', NoDupA eqA l -> NoDupA eqA l' -> 
     equivlistA eqA l l' -> permutation l l'.
 Proof.
