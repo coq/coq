@@ -887,7 +887,7 @@ let clear_last = tclLAST_HYP (fun c -> (clear [destVar c]))
 let case_last  = tclLAST_HYP simplest_case
 
 let rec explicit_intro_names = function
-| (IntroWildcard | IntroAnonymous) :: l -> explicit_intro_names l
+| (IntroWildcard | IntroAnonymous | IntroFresh _) :: l -> explicit_intro_names l
 | IntroIdentifier id :: l -> id :: explicit_intro_names l
 | IntroOrAndPattern ll :: l' -> 
     List.flatten (List.map (fun l -> explicit_intro_names (l@l')) ll)
@@ -912,6 +912,10 @@ let rec intros_patterns avoid thin destopt = function
   | IntroAnonymous :: l ->
       tclTHEN
         (intro_gen (IntroAvoid (avoid@explicit_intro_names l)) destopt true)
+        (intros_patterns avoid thin destopt l)
+  | IntroFresh id :: l ->
+      tclTHEN
+        (intro_gen (IntroBasedOn (id, avoid@explicit_intro_names l)) destopt true)
         (intros_patterns avoid thin destopt l)
   | IntroOrAndPattern ll :: l' ->
       tclTHEN
@@ -940,6 +944,7 @@ let make_id s = fresh_id [] (match s with Prop _ -> hid | Type _ -> xid)
 
 let prepare_intros s ipat gl = match ipat with
   | IntroAnonymous -> make_id s gl, tclIDTAC
+  | IntroFresh id -> fresh_id [] id gl, tclIDTAC
   | IntroWildcard -> let id = make_id s gl in id, thin [id]
   | IntroIdentifier id -> id, tclIDTAC
   | IntroOrAndPattern ll -> make_id s gl, 
@@ -1251,7 +1256,7 @@ let rec first_name_buggy = function
   | IntroOrAndPattern ((p::_)::_) -> first_name_buggy p
   | IntroWildcard -> None
   | IntroIdentifier id -> Some id
-  | IntroAnonymous -> assert false
+  | IntroAnonymous | IntroFresh _ -> assert false
 
 let consume_pattern avoid id gl = function
   | [] -> (IntroIdentifier (fresh_id avoid id gl), [])

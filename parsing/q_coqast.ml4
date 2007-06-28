@@ -59,6 +59,7 @@ let mlexpr_of_intro_pattern = function
   | Genarg.IntroOrAndPattern _ -> failwith "mlexpr_of_intro_pattern: TODO"
   | Genarg.IntroWildcard -> <:expr< Genarg.IntroWildcard >>
   | Genarg.IntroAnonymous -> <:expr< Genarg.IntroAnonymous >>
+  | Genarg.IntroFresh id -> <:expr< Genarg.IntroFresh (mlexpr_of_ident $dloc$ id) >>
   | Genarg.IntroIdentifier id ->
       <:expr< Genarg.IntroIdentifier (mlexpr_of_ident $dloc$ id) >>
 

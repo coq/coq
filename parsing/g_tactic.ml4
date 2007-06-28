@@ -176,6 +176,7 @@ GEXTEND Gram
       | "("; tc = LIST0 simple_intropattern SEP "," ; ")" -> IntroOrAndPattern [tc]
       | "()" -> IntroOrAndPattern [[]]
       | "_" -> IntroWildcard
+      | "@"; prefix = ident -> IntroFresh prefix
       | "?" -> IntroAnonymous
       | id = ident -> IntroIdentifier id
       ] ]

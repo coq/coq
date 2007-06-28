@@ -1415,6 +1415,7 @@ An introduction pattern is either:
 \begin{itemize}
 \item the wildcard: {\tt \_}
 \item the pattern \texttt{?}
+\item the pattern \texttt{@\ident}
 \item a variable
 \item a disjunction of lists of patterns:
   {\tt [$p_{11}$ {\ldots} $p_{1m_1}$ | {\ldots} | $p_{11}$ {\ldots} $p_{nm_n}$]}
@@ -1428,6 +1429,8 @@ structure of the pattern given as argument:
   immediately clear (cf~\ref{clear}) the corresponding hypothesis;
 \item introduction on \texttt{?} do the introduction, and let Coq
   choose a fresh name for the variable;
+\item introduction on \texttt{@\ident} do the introduction, and let Coq
+  choose a fresh name for the variable based on {\ident};
 \item introduction on a variable behaves like described in~\ref{intro}; 
 \item introduction over a
 list of patterns $p_1~\ldots~p_n$ is equivalent to the sequence of
