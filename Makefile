@@ -875,7 +875,7 @@ SORTINGVO=\
  theories/Sorting/Heap.vo	theories/Sorting/Permutation.vo \
  theories/Sorting/Sorting.vo	theories/Sorting/PermutSetoid.vo \
  theories/Sorting/PermutEq.vo
- 
+
 BOOLVO=\
  theories/Bool/Bool.vo  	theories/Bool/IfProp.vo \
  theories/Bool/Zerob.vo 	theories/Bool/DecBool.vo \
@@ -1046,6 +1046,34 @@ REALSVO=$(REALSBASEVO) $(REALS_$(REALS))
 
 ALLREALS=$(REALSBASEVO) $(REALS_all)
 
+NUMBERSDIR=theories/Numbers
+NATURALDIR=$(NUMBERSDIR)/Natural
+NATAXIOMSDIR=$(NATURALDIR)/Axioms
+NATURALAXIOMSVO=\
+  $(NATAXIOMSDIR)/NAxioms.vo	$(NATAXIOMSDIR)/NDepRec.vo\
+  $(NATAXIOMSDIR)/NDomain.vo	$(NATAXIOMSDIR)/NLt.vo\
+  $(NATAXIOMSDIR)/NMiscFunct.vo	$(NATAXIOMSDIR)/NIso.vo\
+  $(NATAXIOMSDIR)/NOtherInd.vo	$(NATAXIOMSDIR)/NPlusLt.vo\
+  $(NATAXIOMSDIR)/NPlus.vo	$(NATAXIOMSDIR)/NStrongRec.vo\
+  $(NATAXIOMSDIR)/NTimesLt.vo	$(NATAXIOMSDIR)/NTimes.vo
+
+NATURALPEANOVO=$(NATURALDIR)/Peano/NPeano.vo
+NATURALBINARYVO=$(NATURALDIR)/Binary/NBinary.vo
+NATURALVO=$(NATURALAXIOMSVO) $(NATURALPEANOVO) $(NATURALBINARYVO)
+
+INTEGERDIR=$(NUMBERSDIR)/Integer
+INTAXIOMSDIR=$(INTEGERDIR)/Axioms
+INTEGERAXIOMSVO=\
+  $(INTAXIOMSDIR)/ZAxioms.vo	$(INTAXIOMSDIR)/ZDomain.vo\
+  $(INTAXIOMSDIR)/ZOrder.vo	$(INTAXIOMSDIR)/ZPlusOrder.vo\
+  $(INTAXIOMSDIR)/ZPlus.vo	$(INTAXIOMSDIR)/ZTimesOrder.vo\
+  $(INTAXIOMSDIR)/ZTimes.vo
+
+INTEGERNATPAIRSVO=$(INTEGERDIR)/NatPairs/ZNatPairs.vo
+INTEGERVO=$(INTEGERAXIOMSVO) $(INTEGERNATPAIRSVO)
+
+NUMBERSVO=$(NATURALVO) $(INTEGERVO)
+
 SETOIDSVO=theories/Setoids/Setoid.vo
 
 THEORIESVO =\
@@ -1079,6 +1107,11 @@ reals: $(REALSVO)
 allreals: $(ALLREALS)
 setoids: $(SETOIDSVO)
 sorting: $(SORTINGVO)
+# numbers
+natural: $(NATURALVO)
+integer: $(INTEGERVO)
+rational: $(RATIONALVO)
+numbers: $(NUMBERSVO)
 
 noreal: logic arith bool zarith qarith lists sets fsets intmap relations \
 	wellfounded setoids sorting
