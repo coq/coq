@@ -992,3 +992,8 @@ and raw_of_eqn env constr construct_nargs branch =
 
 let extern_constr_pattern env pat =
   extern true (None,[]) Idset.empty (raw_of_pat env pat)
+
+let extern_rel_context where env sign =
+  let a = detype_rel_context where [] (names_of_rel_context env) sign in
+  let vars = vars_of_env env in
+  snd (extern_local_binder (None,[]) vars a)

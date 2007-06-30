@@ -42,6 +42,8 @@ val extern_constr_in_scope : bool -> scope_name -> env -> constr -> constr_expr
 val extern_reference : loc -> Idset.t -> global_reference -> reference
 val extern_type : bool -> env -> types -> constr_expr
 val extern_sort : sorts -> rawsort
+val extern_rel_context : constr option -> env -> 
+  rel_context -> local_binder list
 
 (* Printing options *)
 val print_implicits : bool ref

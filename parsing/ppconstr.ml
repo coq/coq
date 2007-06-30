@@ -233,10 +233,6 @@ let pr_delimited_binders kw pr_c bl =
       pr_com_at n ++ kw() ++ pr_undelimited_binders pr_c bdl
   | _ -> assert false
 
-let pr_let_binder pr x a =
-  hov 0 (hov 0 (pr_name x ++ brk(0,1) ++ str ":=") ++
-         pr_sep_com (fun () -> brk(0,1)) (pr ltop) a)
-
 let rec extract_prod_binders = function
 (*  | CLetIn (loc,na,b,c) as x ->
       let bl,c = extract_prod_binders c in

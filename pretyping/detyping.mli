@@ -40,6 +40,9 @@ val detype_case :
 
 val detype_sort : sorts -> rawsort
 
+val detype_rel_context : constr option -> identifier list -> names_context ->
+  rel_context -> (name * rawconstr option * rawconstr) list
+
 (* look for the index of a named var or a nondep var as it is renamed *)
 val lookup_name_as_renamed  : env -> constr -> identifier -> int option
 val lookup_index_as_renamed : env -> constr -> int -> int option
@@ -57,4 +60,3 @@ val simple_cases_matrix_of_branches :
   inductive -> int list -> rawconstr list -> cases_clauses
 val return_type_of_predicate :
   inductive -> int -> int -> rawconstr -> predicate_pattern * rawconstr option
-

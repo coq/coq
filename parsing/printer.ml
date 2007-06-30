@@ -171,15 +171,7 @@ let pr_named_context env ne_context =
           ne_context ~init:(mt ()))
 
 let pr_rel_context env rel_context =
-  let rec prec env = function
-    | [] -> (mt ()) 
-    | [b] -> str "(" ++ pr_rel_decl env b ++ str")"
-    | b::rest ->
-        let pb = pr_rel_decl env b in
-        let penvtl = prec (push_rel b env) rest in
-        str "(" ++ pb ++ str")" ++ spc () ++ penvtl
-  in 
-  hov 0 (prec env (List.rev rel_context))
+  pr_binders (extern_rel_context None env rel_context)
 
 let pr_rel_context_of env =
   pr_rel_context env (rel_context env)
