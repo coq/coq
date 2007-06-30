@@ -533,21 +533,21 @@ and detype_binder isgoal bk avoid env na ty c =
   | BLambda -> RLambda (dl, na',detype isgoal avoid env ty, r)
   | BLetIn -> RLetIn (dl, na',detype isgoal avoid env ty, r)
 
-let rec detype_rel_context where avoid env = 
-  let rec aux avoid env sign = function
-  | [] -> sign
+let rec detype_rel_context where avoid env sign =
+  let where = option_map (fun c -> it_mkLambda_or_LetIn c sign) where in
+  let rec aux avoid env = function
+  | [] -> []
   | (na,b,t)::rest ->
       let na',avoid' =
 	match where with
 	| None -> na,avoid
 	| Some c ->
-	    let c = it_mkLambda_or_LetIn c rest in
 	    if b<>None then concrete_let_name None avoid env na c
 	    else concrete_name None avoid env na c in
       let b = option_map (detype false avoid env) b in
       let t = detype false avoid env t in
-      aux avoid' (add_name na' env) ((na',b,t)::sign) rest
-  in aux avoid env []
+      (na',b,t) :: aux avoid' (add_name na' env) rest
+  in aux avoid env (List.rev sign)
 
 (**********************************************************************)
 (* Module substitution: relies on detyping                            *)
