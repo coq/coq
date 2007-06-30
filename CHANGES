@@ -15,6 +15,13 @@ Libraries
   incompatibilities].
 - Boolean operators moved from module Bool to module Datatypes.
 
+Language
+
+- Sort of Record/Structure, Inductive and CoInductive defaults to Type
+  if omitted
+- Record/Structure now usable for defining coinductive types
+  (e.g. "Record stream := { hd : nat; tl : stream }.")
+
 Notations and implicit arguments
 
 - New options "Set Maximal Implicit Insertion", "Set Reversible Pattern

@@ -149,8 +149,9 @@ GEXTEND Gram
   ;
   gallina_ext:
     [ [ b = record_token; oc = opt_coercion; name = identref;
-        ps = LIST0 binder_let; ":";
-	s = lconstr; ":="; cstr = OPT identref; "{";
+        ps = LIST0 binder_let; 
+	s = [ ":"; s = lconstr -> s | -> CSort (loc,Rawterm.RType None) ];
+	":="; cstr = OPT identref; "{";
         fs = LIST0 record_field SEP ";"; "}" ->
 	  VernacRecord (b,(oc,name),ps,s,cstr,fs)
 (* Non porté ?
@@ -224,7 +225,8 @@ GEXTEND Gram
     ;
   (* Inductives and records *)
   inductive_definition:
-    [ [ id = identref; indpar = LIST0 binder_let; ":"; c = lconstr;
+    [ [ id = identref; indpar = LIST0 binder_let; 
+        c = [ ":"; c = lconstr -> c | -> CSort (loc,Rawterm.RType None) ];
         ":="; lc = constructor_list; ntn = decl_notation ->
 	  ((id,indpar,c,lc),ntn) ] ]
   ;

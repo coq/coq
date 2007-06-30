@@ -218,6 +218,9 @@ val rename_bound_var : env -> identifier list -> types -> types
 val process_rel_context : (rel_declaration -> env -> env) -> env -> env
 val assums_of_rel_context : rel_context -> (name * constr) list
 val lift_rel_context : int -> rel_context -> rel_context
+val substl_rel_context : constr list -> rel_context -> rel_context
+val map_rel_context_with_binders : 
+  (int -> constr -> constr) -> rel_context -> rel_context
 val fold_named_context_both_sides :
   ('a -> named_declaration -> named_declaration list -> 'a) ->
     named_context -> init:'a -> 'a
