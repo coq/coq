@@ -7,6 +7,33 @@ Hint Extern 1 (?f _ _ _ = ?f _ _ _) => f_equal.
 (** Pour l'instant, on utilise le tiers exclu a un endroit *)
 Require Import Classical.
 
+Ltac dec := 
+  let H := fresh "H" in 
+  destruct lt_eq_lt_dec as [[H|H]|H] ||
+  destruct le_lt_dec as [H|H] || 
+  destruct eq_nat_dec as [H|H] || fail; 
+  simpl; 
+  trivial; 
+  try (intros; discriminate); 
+  try (elimtype False; omega);
+  match goal with 
+    | H:?n=?n  |- _ => clear H
+    | H:?n<=?n |- _ => clear H
+    | _ => idtac
+  end.
+
+Ltac orb H :=  destruct (orb_false_elim _ _ H); auto.
+
+Ltac inv_clear H := inversion H; try clear H; subst.
+
+(*
+Ltac name_of te := 
+ match goal with 
+  | H : te |- _ => H
+ end.
+Tactic Notation "elim_on" constr(t):= let H:=name_of t in elim H.
+*)
+
 
 (** * Les termes *)
 
@@ -46,6 +73,8 @@ Fixpoint freevar (n:nat)(t:term) { struct t } : bool :=
 
 Definition clos t := forall n, freevar n t = false.
 
+(** Listes de termes clos *)
+
 Inductive clos_list : list term -> Prop := 
  | clos_list_nil : clos_list nil
  | clos_list_cons : forall a l, clos a -> clos_list l -> clos_list (a::l).
@@ -54,6 +83,13 @@ Hint Constructors clos_list.
 (** termes clos au dela d'un certain indice *)
 
 Definition clos_after n t := forall m, n<=m -> freevar m t = false. 
+
+Fixpoint clos_after' n t { struct t } := match t with 
+ | TDummy => True
+ | TVar k => k < n 
+ | TFun t => clos_after' (S n) t
+ | t1@t2 => clos_after' n t1 /\ clos_after' n t2
+end.
 
 (** Substitution de n par u dans t (pour un u forcement clos).
     Les indices au dela de n dans t sont decrementes de 1. *)
@@ -119,27 +155,54 @@ decide equality.
 apply eq_nat_dec.
 Qed.
 
+Lemma clos_alt : forall t, clos t <-> clos_after 0 t.
+Proof.
+ unfold clos, clos_after; intuition.
+Qed.
+
+Lemma clos_after_alt : 
+ forall t n, clos_after n t <-> clos_after' n t.
+Proof.
+ induction t; unfold clos_after in *; simpl; intros.
+ intuition.
+ split; intros; try dec.
+ destruct (le_lt_dec n0 n) as [H'|H']; auto.
+ generalize (H _ H'); dec.
+ rewrite <- IHt.
+ intuition; simpl.
+ replace m with (S (pred m)) by omega.
+ apply H; omega.
+ rewrite <- IHt1; rewrite <- IHt2.
+ intuition; simpl; orb (H _ H0).
+Qed. 
+
+Ltac simpl_clos_after := repeat rewrite clos_after_alt in *; 
+ simpl in *; repeat rewrite <- clos_after_alt in *.
+
 Lemma clos_after_App1 : 
  forall n t1 t2, clos_after n (t1@t2) -> clos_after n t1.
 Proof.
- unfold clos_after; simpl; intros.
- destruct (orb_false_elim _ _ (H _ H0)); auto.
+ intros; simpl_clos_after; intuition.
 Qed.
 
 Lemma clos_after_App2 : 
  forall n t1 t2, clos_after n (t1@t2) -> clos_after n t2.
 Proof.
- unfold clos_after; simpl; intros.
- destruct (orb_false_elim _ _ (H _ H0)); auto.
+ intros; simpl_clos_after; intuition.
 Qed.
 
 Lemma clos_after_Fun : 
  forall n t, clos_after n (TFun t) -> clos_after (S n) t.
 Proof.
- unfold clos_after; simpl; intros.
- assert (n <= m-1) by omega.
- replace m with (S (m-1)) by omega; auto.
+ intros; simpl_clos_after; intuition.
 Qed.
+
+Lemma clos_after_Var : 
+ forall n k, clos_after n (TVar k) -> k < n.
+Proof.
+ intros; simpl_clos_after; intuition.
+Qed.
+
 
 Lemma clos_list_alt : forall l, clos_list l <-> forall u, In u l -> clos u.
 Proof.
@@ -166,65 +229,26 @@ Proof.
  rewrite IHl; intuition.
 Qed.
 
-Ltac dec := 
-  let H := fresh "H" in 
-  destruct lt_eq_lt_dec as [[H|H]|H] ||
-  destruct le_lt_dec as [H|H] || 
-  destruct eq_nat_dec as [H|H] || idtac; 
-  simpl; 
-  trivial; 
-  try (intros; discriminate); 
-  try (elimtype False; omega);
-  match goal with 
-    | H:?n=?n  |- _ => clear H
-    | H:?n<=?n |- _ => clear H
-    | _ => idtac
-  end.
-
-Ltac orb H :=  destruct (orb_false_elim _ _ H); auto.
-
-Ltac inv_clear H := inversion H; try clear H; subst.
-
-(*
-Ltac name_of te := 
- match goal with 
-  | H : te |- _ => H
- end.
-Tactic Notation "elim_on" constr(t):= let H:=name_of t in elim H.
-*)
-
 Lemma subst_clos_after : forall t n, 
    clos_after n t <-> (forall n0 t0, n <= n0 -> subst n0 t0 t = t).
 Proof.
- induction t; unfold clos_after in *; simpl; intros.
+ induction t; simpl; intros; simpl_clos_after.
  (* Dummy *)
  intuition.
  (* Var *)
- intuition; dec; subst.
- generalize (H _ H0); dec.
- assert (H' : n0 <= n) by omega; generalize (H _ H'); dec.
- generalize (H _ TDummy H0); dec.
+ intuition; try dec.
+ destruct (le_lt_dec n0 n) as [H'|H']; auto.
+ generalize (H n TDummy H'); dec.
  (* Fun *)
- destruct (IHt (S n)) as [IHa IHb]; clear IHt.
- split; intros.
- f_equal; apply IHa; auto with arith; intros.
- destruct m; auto with arith.
- inversion H1.
- apply IHb; auto with arith; intros.
- destruct n0; auto with arith.
- inversion H1.
- assert (H' : n <= n0) by omega; generalize (H _ t0 H'); congruence.
+ rewrite IHt; intuition.
+ replace n0 with (S (pred n0)) by omega.
+ assert (n <= pred n0) by omega.
+ generalize (H _ t0 H1); inversion 1; auto.
  (* Apply *)
- destruct (IHt1 n) as [IH1a IH1b]; clear IHt1.
- destruct (IHt2 n) as [IH2a IH2b]; clear IHt2.
- split; intros.
- f_equal; [apply IH1a | apply IH2a]; auto with arith; intros.
- orb (H _ H1).
- orb (H _ H1).
- rewrite IH1b; auto with arith; intros.
- rewrite IH2b; auto with arith; intros.
- generalize (H _ t0 H1); congruence.
- generalize (H _ t0 H1); congruence.
+ rewrite IHt1; rewrite IHt2.
+ intuition.
+ generalize (H _ t0 H0); inversion 1; auto.
+ generalize (H _ t0 H0); inversion 1; auto.
 Qed.
 
 Lemma clos_closbis : forall t, clos t <-> closbis t.
@@ -254,18 +278,12 @@ Hint Extern 1 (?t=?t[_;;=_]) => (symmetry; auto).
 Lemma subst_freevar : forall t n u m, n <= m -> 
   clos u -> clos_after (S m) t -> clos_after m (t[n:=u]).
 Proof.
-unfold clos_after; induction t; simpl; auto; intros.
-assert (~ S m <= n).
- intro H'; generalize (H1 _ H'); dec.
-clear H1; do 3 dec.
-apply IHt with (S m); auto with arith.
-intros m1 Hm1.
-replace m1 with (S (pred m1)) by omega; auto with arith.
-apply orb_false_intro.
-apply IHt1 with m; auto with arith.
-intros m1 Hm1; orb (H1 _ Hm1).
-apply IHt2 with m; auto with arith.
-intros m1 Hm1; orb (H1 _ Hm1).
+induction t; simpl; intros; simpl_clos_after; auto with arith.
+dec.
+simpl_clos_after; omega.
+red in H0; red; auto.
+simpl_clos_after; omega.
+intuition.
 Qed.
 
 Lemma subst_list_iter_freevar : forall l n t, 
@@ -310,8 +328,9 @@ Lemma subst_commut : forall u u', clos u -> clos u' ->
  forall t n n', n<=n' -> t[S n':=u'][n:=u] = t[n:=u][n':=u'].
 Proof.
 induction t; simpl; intros; auto with arith.
-do 4 dec; auto.
+repeat dec; auto.
 Qed.
+
 Hint Resolve subst_commut.
 
 Lemma subst_list_iter_commut : forall l t u n, 
@@ -418,36 +437,14 @@ where "u --:> v" := (ESmallStep u v).
 
 Hint Constructors ESmallStep.
 
-Inductive ESmallSteps : eterm -> eterm -> Prop :=
-  | ESmallSteps_refl : forall t, (t==:>t)
-  | ESmallSteps_trans : forall t u r, (t--:>u) -> (u==:>r) -> (t==:>r)
-where "u ==:> v" := (ESmallSteps u v).
-
-Hint Constructors ESmallSteps.
-
 Fixpoint ESmallStepN n := match n with 
   | O => fun t r => t=r
   | S n => fun t r => exists s, (t--:>s) /\ ESmallStepN n s r
  end.
 Notation "t ==[ n ]:> u" := (ESmallStepN n t u) (at level 100, n at next level).
 
-Definition ESmallSteps' t u := exists n, ESmallStepN n t u.
-Notation "t ==[]:> u" := (ESmallSteps' t u) (at level 100, n at next level).
-
-Lemma ESmallSteps_alt : forall t u, (t==:>u) <-> (t==[]:>u).
-Proof.
- split.
- induction 1.
- exists 0; simpl; auto.
- destruct IHESmallSteps as (n,H1).
- exists (S n); simpl; exists u; auto.
- destruct 1 as (n,H).
- revert t u H.
- induction n; simpl.
- intros; rewrite H; auto.
- destruct 1 as (s,(H1,H2)); eauto.
-Qed.
-
+Definition ESmallSteps t u := exists n, ESmallStepN n t u.
+Notation "t ==:> u" := (ESmallSteps t u) (at level 100).
 
 Lemma ESmallStep_v2et : forall t u, (t--:>u) -> forall v, t = v2et v -> 
  u = v2et v.
@@ -458,47 +455,52 @@ Qed.
 Lemma ESmallSteps_v2et : forall t u, (t==:>u) -> forall v, t = v2et v -> 
  u = v2et v.
 Proof.
- induction 1; auto.
- intros.
- apply IHESmallSteps.
+ intros t u (n,H); revert t H.
+ induction n; simpl; try congruence.
+ intros t (s,(H,H')) v Hv.
+ eapply IHn; eauto.
  eapply ESmallStep_v2et; eauto.
 Qed.
 
 Lemma ESmallSteps_trans2 : forall t u r,
   (t==:>u) -> (u==:>r) -> (t==:>r).
 Proof.
-  induction 1; intros; auto.
-  eapply ESmallSteps_trans; eauto.
+  intros t u r (n,H) (n',H'); exists (n+n'); revert t H.
+  induction n; simpl; firstorder; congruence.
 Qed.
 
 Lemma ESmallSteps_app1 : 
  forall t u r, (t==:>u) -> (t@:r ==:> u@:r).
 Proof.
- induction 1; auto.
- eapply ESmallSteps_trans; eauto.
+ intros t u r (n,H); exists n; revert t H.
+ induction n; simpl; try congruence.
+ intros t (s,(H,H')); exists (s@:r); auto.
 Qed.
 
 Lemma ESmallSteps_app2 : 
  forall t u r, (t==:>u) -> (r@:t ==:> r@:u).
 Proof.
- induction 1; auto.
- eapply ESmallSteps_trans; eauto.
+ intros t u r (n,H); exists n; revert t H.
+ induction n; simpl; try congruence.
+ intros t (s,(H,H')); exists (r@:s); auto.
 Qed.
-
+(*
 (**  I) -> II) *)
 
 Lemma BigStep_ESmallSteps : forall e t v, 
   (e|=t-->v) -> (t2et e t ==:> v2et v).
 Proof.
  induction 1; simpl; auto; intros.
- rewrite H; simpl; auto.
+ exists 0; simpl; auto.
+ exists 0; rewrite H; simpl; auto.
+ exists 0; simpl; auto.
  eapply ESmallSteps_trans2.
  eapply ESmallSteps_app1; eauto.
  eapply ESmallSteps_trans2.
  eapply ESmallSteps_app2; eauto.
- eapply ESmallSteps_trans2; simpl; eauto.
+ destruct IHBigStep3 as (n,H3); exists (S n); simpl; eauto.
 Qed.
-
+*)
 
 
 
@@ -533,10 +535,12 @@ repeat split; simpl; auto; destruct H1; auto.
 exists u'; auto.
 Qed.
 
+(** II) -> I) *)
 
-Lemma ESmallStepN_BigStep : forall n t e v, 
-  (t2et e t ==[n]:> v2et v) -> (e|=t-->v).
+Lemma ESmallSteps_BigStep : forall t e v, 
+  (t2et e t ==:> v2et v) -> (e|=t-->v).
 Proof.
+ intros t e v (n,H); revert t e v H.
  induction n using lt_wf_ind.
  induction t; simpl; auto; intros.
 
@@ -551,7 +555,6 @@ Proof.
  apply v2et_inj.
  symmetry.
  apply (ESmallSteps_v2et (v2et v0) (v2et v)); auto.
- rewrite ESmallSteps_alt.
  exists n; auto.
  destruct n; simpl in *.
  destruct v; discriminate.
@@ -571,18 +574,6 @@ Proof.
  eapply (H n1); eauto; omega.
  eapply (H n3); eauto; omega.
 Qed.
-
-(** II) -> I) *)
-
-Lemma ESmallSteps_BigStep : forall e t v, 
-  (t2et e t ==:> v2et v) -> (e|=t-->v).
-Proof.
-intros.
-rewrite ESmallSteps_alt in H.
-destruct H as (n,H).
-eapply ESmallStepN_BigStep; eauto.
-Qed.
-
 
 
 
@@ -604,15 +595,7 @@ Inductive SmallStep : term -> term -> Prop :=
   | SmallStep_app1 : forall u v t, (u-->v) -> (u@t-->v@t)
   | SmallStep_app2 : forall u v t, (u-->v) -> (t@u-->t@v)
 where "t --> u" := (SmallStep t u).
-
 Hint Constructors SmallStep.
-
-Inductive SmallSteps : term -> term -> Prop :=
-  | SmallSteps_refl : forall t, (t==>t)
-  | SmallSteps_trans : forall t u r, (t-->u) -> (u==>r) -> (t==>r)
-where "t ==> u" := (SmallSteps t u).
-
-Hint Constructors SmallSteps.
 
 Fixpoint SmallStepN n := match n with 
   | O => fun t r => t=r
@@ -620,23 +603,8 @@ Fixpoint SmallStepN n := match n with
  end.
 Notation " t ==[ n ]> u " := (SmallStepN n t u) (at level 100, n at next level).
 
-Definition SmallSteps' t u := exists n, SmallStepN n t u.
-Notation " t ==[]> u" := (SmallSteps' t u) (at level 100, n at next level).
-
-Lemma SmallSteps_alt : forall t u, (t==>u) <-> (t==[]>u).
-Proof.
- split.
- induction 1.
- exists 0; simpl; auto.
- destruct IHSmallSteps as (n,H1).
- exists (S n); simpl; exists u; auto.
- destruct 1 as (n,H).
- revert t u H.
- induction n; simpl.
- intros; rewrite H; auto.
- destruct 1 as (s,(H1,H2)); eauto.
-Qed.
-
+Definition SmallSteps t u := exists n, SmallStepN n t u.
+Notation " t ==> u" := (SmallSteps t u).
 
 
 
@@ -746,30 +714,11 @@ Qed.
 Lemma eclos_t2et : forall t e, env_clos e -> clos_after (length e) t -> 
  eclos (t2et e t).
 Proof.
- induction t; simpl; intros.
- constructor.
- red in H0; simpl in H0.
- assert (~(length e <= n)).
-  generalize (H0 n).
-  destruct (eq_nat_dec n n).
-  intros; intro.
-  assert (H3:= H1 H2); discriminate.
-  elim n0; auto.
- assert (n<length e) by omega.
- clear H0 H1.
- revert n H H2; clear; induction e; simpl; intros.
- inversion H2.
+ induction t; simpl; intros; simpl_clos_after; intuition.
+ revert n H H0; clear; induction e; simpl; intros.
+ inversion H0.
  inversion_clear H.
  destruct n; simpl; auto with arith.
-
- constructor; auto.
- apply clos_after_Fun; auto.
-
- constructor; auto.
- apply IHt1; auto.
- eapply clos_after_App1; eauto.
- apply IHt2; auto.
- eapply clos_after_App2; eauto.
 Qed.
 
 Lemma ESmallStep_eclos : forall t u, (t--:>u) -> eclos t -> eclos u.
@@ -789,12 +738,109 @@ Qed.
 Lemma ESmallSteps_SmallSteps : forall t u, eclos t -> 
  (t==:>u) -> (et2t t ==> et2t u).
 Proof.
-induction 2; auto; intros.
-econstructor.
+intros t u H (n,H'); exists n; revert t u H H'.
+induction n; simpl; auto.
+intros t u H (s,(H1,H2)).
+exists (et2t s); split; auto.
 eapply ESmallStep_SmallStep; eauto.
-apply IHESmallSteps.
+apply IHn; auto.
 eapply ESmallStep_eclos; eauto.
 Qed.
+(*
+(* I) -> III) *)
+
+Lemma BigStep_SmallSteps : forall e t v, 
+ env_clos e -> clos_after (length e) t -> 
+ (e|=t-->v) -> (do_env_subst e t ==> v2t v). 
+Proof.
+intros.
+rewrite <- et2t_t2et; auto.
+rewrite <- et2t_v2et; auto.
+apply ESmallSteps_SmallSteps.
+apply eclos_t2et; auto.
+apply BigStep_ESmallSteps; auto.
+Qed.
+*)
+
+Lemma SmallSteps_trans : forall t u r,
+  (t-->u) -> (u==>r) -> (t==>r).
+Proof.
+  intros t u r H (n,H'); exists (S n); simpl; firstorder.
+Qed.
+
+Lemma SmallSteps_trans2 : forall t u r,
+  (t==>u) -> (u==>r) -> (t==>r).
+Proof.
+  intros t u r (n,H) (n',H'); exists (n+n'); revert t H.
+  induction n; simpl; auto; firstorder; congruence.
+Qed.
+
+Lemma SmallSteps_app1 : 
+ forall t u r, (t==>u) -> (t@r ==> u@r).
+Proof.
+ intros t u r (n,H); exists n; revert t H.
+ induction n; simpl; try congruence.
+ intros t (s,(H,H')); exists (s@r); auto.
+Qed.
+
+Lemma SmallSteps_app2 : 
+ forall t u r, (t==>u) -> (r@t ==> r@u).
+Proof.
+ intros t u r (n,H); exists n; revert t H.
+ induction n; simpl; try congruence.
+ intros t (s,(H,H')); exists (r@s); auto.
+Qed.
+
+Lemma BigStep_val_clos : forall e t v, env_clos e -> clos_after (length e) t -> 
+ (e|=t-->v) -> val_clos v.
+Proof.
+induction 3; simpl; intros; simpl_clos_after; auto.
+revert n H1 H0; induction e.
+ inversion 2.
+ inversion_clear H.
+ destruct n; simpl; eauto with arith.
+ inversion 1; subst; auto.
+destruct H0.
+assert (val_clos (VClos e' t)) by auto.
+inversion_clear H2; auto.
+Qed.
+
+(* Idem I) -> III), mais en direct... *)
+
+Lemma BigStep_SmallSteps : forall e t v, 
+ env_clos e -> clos_after (length e) t -> 
+ (e|=t-->v) -> (do_env_subst e t ==> v2t v).
+Proof.
+ induction 3; simpl; intros; simpl_clos_after; auto.
+ exists 0; unfold do_env_subst; simpl; auto.
+ exists 0; unfold do_env_subst; simpl; auto.
+  replace (n-0) with n by omega.
+  revert n H1 H0; induction e.
+   inversion 2.
+   destruct n; simpl in *; intros.
+   inv_clear H1; auto.
+   inv_clear H.
+   apply IHe; auto with arith.
+ exists 0; unfold do_env_subst; simpl; auto.
+  rewrite subst_list_equiv; auto.
+ destruct H0.
+ unfold do_env_subst in *; simpl.
+ apply SmallSteps_trans2 with (v2t (VClos e' t) @ t2 [0::=map v2t e]).
+ apply SmallSteps_app1; auto.
+ apply SmallSteps_trans2 with (v2t (VClos e' t) @ v2t v2).
+ apply SmallSteps_app2; auto.
+ simpl.
+ eapply SmallSteps_trans; eauto.
+ assert (H3:=BigStep_val_clos _ _ _ H H0 H1_).
+ inversion_clear H3.
+ assert (H3:=BigStep_val_clos _ _ _ H H1 H1_0).
+ rewrite subst_list_iter_commut; auto.
+ change (t[0;;=map v2t (v2::e')] ==> v2t v).
+ rewrite subst_list_equiv; auto.
+ Qed. 
+
+
+
 
 
 
@@ -865,7 +911,6 @@ destruct (IHSmallStep t2) as (u,Hu); auto.
 exists (t1@:u); auto.
 Qed.
 
-
 Lemma SmallStepN_ESmallSteps : forall n t u, eclos t -> normal u -> 
  (et2t t ==[n]> u) -> exists u', (t==:>u') /\ et2t u' = u.
 Proof.
@@ -881,12 +926,12 @@ destruct (SmallStepN_unique_nf _ _ _ _ H1 H2 H4) as (p,(Hp1,Hp2)).
 assert (H5:=ESmallStep_eclos _ _ Ht' H0).
 destruct (H _ Hp2 _ _ H5 H1 Hp1) as (u',(Hu1,Hu2)).
 exists u'; split; auto.
-econstructor; eauto.
+apply ESmallSteps_trans2 with t'; auto; exists 1; simpl; firstorder.
 
 destruct n.
 simpl in *; subst u.
-exists t; auto.
-simpl in H0; destruct H2 as (u0,(Hu1,Hu2)).
+exists t; split; auto; exists 0; simpl; auto.
+simpl in H2; destruct H2 as (u0,(Hu1,Hu2)).
 destruct (SmallStep_not_enormal _ _ Hu1); auto.
 elim (H3 _ H2).
 Qed.
@@ -896,9 +941,7 @@ Qed.
 Lemma SmallSteps_ESmallSteps : forall t u, clos t -> normal u -> 
  (t==>u) -> exists u', (t2et nil t ==:> u') /\ et2t u' = u.
 Proof.
-intros.
-rewrite SmallSteps_alt in H1.
-destruct H1 as (n,H1).
+intros t u H H0 (n,H1).
 apply (SmallStepN_ESmallSteps n (t2et nil t) u); auto.
 apply eclos_t2et; simpl; auto.
 red; intros; apply H; auto.
@@ -907,15 +950,32 @@ unfold do_env_subst.
 rewrite <- subst_list_equiv; simpl; auto.
 Qed.
 
-(** III) -> I) *)
 
+
+
+Lemma IsValue_normal : forall t, IsValue t -> normal t.
+Proof.
+ intros t H u H'.
+ induction H'; inversion H.
+Qed. 
+
+Lemma IsValue_alt : forall t, IsValue t <-> exists v, v2t v=t.
+Proof. 
+ split; intros.
+ induction H; auto; intros.
+ exists VDummy; auto.
+ exists (VClos nil t); simpl; auto.
+ destruct H as (v,Hv).
+ subst; apply IsValue_v2t.
+Qed.
+
+(** III) -> I) *)
+(*
 Lemma SmallSteps_BigStep : forall t u, clos t -> IsValue u -> 
  (t==>u) -> exists v, (nil |= t --> v) /\ v2t v = u.
 Proof.
  intros.
- assert (normal u).
- intros r Hr.
- inversion H0; subst; inversion Hr.
+ assert (H2:= IsValue_normal _ H0).
  destruct (SmallSteps_ESmallSteps _ _ H H2 H1).
  destruct H3.
  assert (exists v', x = v2et v' /\ v2t v' = u).
@@ -929,6 +989,123 @@ Proof.
  apply ESmallSteps_BigStep.
  subst; auto.
 Qed.
+*)
+
+(** III) -> I) de maniere directe *)
+
+(* Le lemme crucial: inversion de la reduction d'une application *)
+
+Lemma SmallStepN_inv_app : forall n t u r, IsValue r -> 
+(t@u ==[n]> r) -> 
+exists t', exists r', exists n1, exists n2, exists n3, 
+  S (n1+n2+n3) = n /\ 
+  IsValue r' /\
+  (u ==[n1]> r') /\
+  (t ==[n2]> TFun t')  /\
+  (t'[0:=r'] ==[n3]> r).
+Proof.
+induction n; simpl; intros.
+subst r; inversion H.
+
+destruct H0 as (s,(Hs1,Hs2)).
+inv_clear Hs1.
+
+exists t1; exists u; exists 0; exists 0; exists n.
+repeat split; simpl; auto.
+
+rename v into t'.
+destruct (IHn _ _ _ H Hs2) as (t1,(u1,(n1,(n2,(n3,(A,(B,(C,(D,E))))))))); clear IHn.
+exists t1; exists u1; exists n1; exists (S n2); exists n3.
+repeat split; simpl; auto; destruct A; auto.
+omega.
+exists t'; auto.
+
+rename v into u'.
+destruct (IHn _ _ _ H Hs2) as (t1,(u1,(n1,(n2,(n3,(A,(B,(C,(D,E))))))))); clear IHn.
+exists t1; exists u1; exists (S n1); exists n2; exists n3.
+repeat split; simpl; auto; destruct A; auto.
+exists u'; auto.
+Qed.
+
+Lemma SmallStep_clos : forall t u, (t-->u) -> clos t -> clos u.
+Proof.
+induction 1.
+repeat rewrite clos_alt; simpl_clos_after.
+destruct 1.
+apply subst_freevar; auto.
+rewrite clos_alt; auto.
+revert IHSmallStep; repeat rewrite clos_alt; simpl_clos_after; intuition.
+revert IHSmallStep; repeat rewrite clos_alt; simpl_clos_after; intuition.
+Qed.
+Hint Resolve SmallStep_clos.
+
+Lemma SmallStepN_clos : forall n t u, (t==[n]>u) -> clos t -> clos u.
+Proof.
+induction n; simpl in *; intuition.
+subst; auto.
+destruct H as (s,(A,b)).
+eauto.
+Qed.
+
+Lemma SmallSteps_BigStep : forall e t u,  
+ env_clos e -> clos_after (length e) t -> IsValue u -> 
+ (t[0 ::= map v2t e] ==> u) -> 
+ exists v, (e|=t-->v) /\ v2t v = u /\ val_clos v.
+Proof.
+intros e t u H H0 H1 (n,H2); revert e t u H H0 H1 H2.
+induction n using lt_wf_ind; intros.
+destruct t; simpl in *; simpl_clos_after.
+(* Dummy *)
+exists VDummy; split; [ | split ]; simpl; auto.
+destruct n; simpl in *; auto.
+destruct H3 as (s,(Hs1,_)); inversion Hs1.
+(* Var *)
+rename n0 into k.
+replace (k-0) with k in H3 by omega.
+assert (exists v, val_clos v /\ nth_error e k = Some v /\ 
+                  nth k (map v2t e) (TVar (k - length (map v2t e))) = v2t v).
+ clear - H1 H0; revert k H1 H0; induction e; simpl in *.
+ inversion 1.
+ destruct k.
+ exists a; auto.
+ inversion_clear H0; split; auto.
+ intros; inversion_clear H0; 
+  destruct (IHe k) as (v,(A,B)); auto with arith.
+ exists v; auto.
+destruct H4 as (v,(Hv1,(Hv2,Hv3))); rewrite Hv3 in H3; clear Hv3.
+exists v; split; [ | split ]; eauto.
+destruct n; simpl in *; auto.
+destruct H3 as (s,(Hs1,_)); destruct v; simpl; inversion Hs1.
+(* Fun *)
+exists (VClos e t); split; [ | split ]; auto.
+destruct n; simpl in *; auto.
+rewrite subst_list_equiv; auto.
+destruct H3 as (s,(Hs1,_)); inversion Hs1.
+(* Apply *)
+destruct H1.
+destruct (SmallStepN_inv_app _ _ _ _ H2 H3) as 
+ (t',(u',(n1,(n2,(n3,(A,(B,(C,(D,E))))))))).
+assert (n1<n) by omega.
+assert (n2<n) by omega.
+assert (n3<n) by omega.
+destruct (H n1 H5 e t2 u') as (v',(Av',(Bv',Cv'))); auto.
+destruct (H n2 H6 e t1 (TFun t')) as (v0,(Av0,(Bv0,Cv0))); auto.
+destruct v0; simpl in *; try discriminate.
+inversion_clear Cv0.
+inversion Bv0; clear Bv0; subst t'.
+rewrite subst_list_iter_commut in E; auto.
+subst u'.
+change (t [0;;=map v2t (v'::l)] ==[n3]>u) in E.
+destruct (H n3 H7 (v'::l) t u) as (v,(Av,(Bv,Cv))); auto.
+rewrite <- subst_list_equiv; auto.
+exists v; eauto.
+apply (SmallStepN_clos _ _ _ C).
+rewrite clos_alt.
+rewrite <- subst_list_equiv; auto.
+apply subst_list_iter_freevar; simpl; auto.
+rewrite map_length; auto.
+Qed.
+
 
 
 
@@ -980,23 +1157,71 @@ Proof.
  constructor; auto.
 Qed.
 
-Lemma SmallSteps_trans2 : forall t u r,
-  (t==>u) -> (u==>r) -> (t==>r).
+Reserved Notation "t ==:>> u" (at level 100).
+
+Inductive ESmallSteps' : eterm -> eterm -> Prop :=
+  | ESmallSteps_refl : forall t, (t==:>>t)
+  | ESmallSteps_trans : forall t u r, (t--:>u) -> (u==:>>r) -> (t==:>>r)
+where "u ==:>> v" := (ESmallSteps' u v).
+
+Hint Constructors ESmallSteps'.
+
+Lemma ESmallSteps_alt : forall t u, (t==:>>u) <-> (t==:>u).
+Proof.
+ split.
+ induction 1.
+ exists 0; simpl; auto.
+ destruct IHESmallSteps' as (n,H1).
+ exists (S n); simpl; exists u; auto.
+ destruct 1 as (n,H).
+ revert t u H.
+ induction n; simpl.
+ intros; rewrite H; auto.
+ destruct 1 as (s,(H1,H2)); eauto.
+Qed.
+
+
+
+Reserved Notation "t ==>> u" (at level 100).
+
+Inductive SmallSteps' : term -> term -> Prop :=
+  | SmallSteps'_refl : forall t, (t==>>t)
+  | SmallSteps'_trans : forall t u r, (t-->u) -> (u==>>r) -> (t==>>r)
+where "t ==>> u" := (SmallSteps' t u).
+
+Hint Constructors SmallSteps'.
+
+Lemma SmallSteps_alt : forall t u, (t==>>u) <-> (t==>u).
+Proof.
+ split.
+ induction 1.
+ exists 0; simpl; auto.
+ destruct IHSmallSteps' as (n,H1).
+ exists (S n); simpl; exists u; auto.
+ destruct 1 as (n,H).
+ revert t u H.
+ induction n; simpl.
+ intros; rewrite H; auto.
+ destruct 1 as (s,(H1,H2)); eauto.
+Qed.
+
+Lemma SmallSteps'_trans2 : forall t u r,
+  (t==>>u) -> (u==>>r) -> (t==>>r).
 Proof.
   induction 1; intros; auto.
-  eapply SmallSteps_trans; eauto.
+  eapply SmallSteps'_trans; eauto.
 Qed.
 
-Lemma SmallSteps_app1 : forall t u r, (t==>u) -> (t@r==>u@r).
+Lemma SmallSteps'_app1 : forall t u r, (t==>>u) -> (t@r==>>u@r).
 Proof.
  induction 1; auto.
- eapply SmallSteps_trans; eauto.
+ eapply SmallSteps'_trans; eauto.
 Qed.
 
-Lemma SmallSteps_app2 : forall t u r, (t==>u) -> (r@t==>r@u).
+Lemma SmallSteps'_app2 : forall t u r, (t==>>u) -> (r@t==>>r@u).
 Proof.
  induction 1; auto.
- eapply SmallSteps_trans; eauto.
+ eapply SmallSteps'_trans; eauto.
 Qed.
 
 Lemma v2et_inj_list: forall vl vl', map v2et vl = map v2et vl' -> vl = vl'.
@@ -1026,14 +1251,4 @@ inversion_clear H.
 do 2 (rewrite <- subst_list_iter_commut; auto); f_equal.
 replace (S (length l + n)) with (length l + (S n)) by omega; auto.
 rewrite clos_list_app_iff; auto.
-Qed.
-
-Lemma IsValue_alt : forall t, IsValue t <-> exists v, v2t v=t.
-Proof. 
- split; intros.
- induction H; auto; intros.
- exists VDummy; auto.
- exists (VClos nil t); simpl; auto.
- destruct H as (v,Hv).
- subst; apply IsValue_v2t.
 Qed.
