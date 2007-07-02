@@ -61,10 +61,6 @@ val intern_pattern : env -> cases_pattern_expr ->
   Names.identifier list *
     ((Names.identifier * Names.identifier) list * Rawterm.cases_pattern) list
 
-val intern_pattern : env -> cases_pattern_expr ->
-  Names.identifier list *
-    ((Names.identifier * Names.identifier) list * Rawterm.cases_pattern) list
-
 (*s Composing internalisation with pretyping *)
 
 (* Main interpretation function *)
