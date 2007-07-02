@@ -142,3 +142,19 @@ Ltac elim_eq_rect :=
 	      try ((case P ; clear P) || (clearbody P; rewrite (UIP_refl _ _ P); clear P))
       end
   end.
+
+Ltac real_elim_eq_rect :=
+  match goal with
+    | [ |- ?t ] => 
+      match t with
+        | context [ @eq_rect _ _ _ _ _ ?p ] => 
+          let P := fresh "P" in 
+            set (P := p); simpl in P ; 
+	      ((case P ; clear P) || (clearbody P; rewrite (UIP_refl _ _ P); clear P))
+        | context [ @eq_rect _ _ _ _ _ ?p _ ] => 
+          let P := fresh "P" in 
+            set (P := p); simpl in P ; 
+	      ((case P ; clear P) || (clearbody P; rewrite (UIP_refl _ _ P); clear P))
+      end
+  end.
+ 

@@ -42,10 +42,8 @@ Extraction Inline proj1_sig.
 Extract Inductive unit => "unit" [ "()" ].
 Extract Inductive bool => "bool" [ "true" "false" ].
 Extract Inductive sumbool => "bool" [ "true" "false" ].
-Axiom pair : Type -> Type -> Type.
-Extract Constant pair "'a" "'b" => " 'a * 'b ".
-Extract Inductive prod => "pair" [ "" ].
-Extract Inductive sigT => "pair" [ "" ].
+(* Extract Inductive prod "'a" "'b" => " 'a * 'b " [ "(,)" ]. *)
+(* Extract Inductive sigT => "prod" [ "" ]. *)
 
 Require Export ProofIrrelevance.
 Require Export Coq.subtac.Heq.

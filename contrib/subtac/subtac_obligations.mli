@@ -21,6 +21,8 @@ val solve_obligations : Names.identifier option -> Proof_type.tactic -> int
 
 val solve_all_obligations : Proof_type.tactic -> unit 
 
+val try_solve_obligation : int -> Names.identifier option -> Proof_type.tactic -> unit
+
 val try_solve_obligations : Names.identifier option -> Proof_type.tactic -> unit
 
 val show_obligations : Names.identifier option -> unit

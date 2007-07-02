@@ -104,6 +104,13 @@ VERNAC COMMAND EXTEND Subtac_Obligations
 | [ "Next" "Obligation" ] -> [ Subtac_obligations.next_obligation None ]
 END
 
+VERNAC COMMAND EXTEND Subtac_Solve_Obligation
+| [ "Solve" "Obligation" integer(num) "of" ident(name) "using" tactic(t) ] -> 
+    [ Subtac_obligations.try_solve_obligation num (Some name) (Tacinterp.interp t) ]
+| [ "Solve" "Obligation" integer(num) "using" tactic(t) ] -> 
+    [ Subtac_obligations.try_solve_obligation num None (Tacinterp.interp t) ]
+      END
+
 VERNAC COMMAND EXTEND Subtac_Solve_Obligations
 | [ "Solve" "Obligations" "of" ident(name) "using" tactic(t) ] -> 
     [ Subtac_obligations.try_solve_obligations (Some name) (Tacinterp.interp t) ]

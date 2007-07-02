@@ -32,6 +32,7 @@ let fix_sub_ref = make_ref ["subtac";"FixSub"] "Fix_sub"
 let fix_measure_sub_ref = make_ref ["subtac";"FixSub"] "Fix_measure_sub"
 let lt_ref = make_ref ["Init";"Peano"] "lt"
 let lt_wf_ref = make_ref ["Wf_nat"] "lt_wf"
+let refl_ref = make_ref ["Init";"Logic"] "refl_equal"
 
 let make_ref s = Qualid (dummy_loc, qualid_of_string s)
 let sig_ref = make_ref "Init.Specif.sig"

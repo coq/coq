@@ -113,15 +113,6 @@ let (input,output) =
       export_function = (fun x -> Some x) }
     
 open Evd
-
-let terms_of_evar ev = 
-  match ev.evar_body with
-      Evar_defined b ->
-	let nc = Environ.named_context_of_val ev.evar_hyps in
-	let body = Termops.it_mkNamedLambda_or_LetIn b nc in
-	let typ = Termops.it_mkNamedProd_or_LetIn ev.evar_concl nc in
-	  body, typ
-    | _ -> assert(false)
 	  
 let rec intset_to = function
     -1 -> Intset.empty
@@ -371,6 +362,13 @@ and solve_obligations n tac =
 and solve_all_obligations tac = 
   ProgMap.iter (fun k v -> ignore(solve_prg_obligations v tac)) !from_prg
       
+and try_solve_obligation n prg tac = 
+  let prg = get_prog prg in 
+  let obls, rem = prg.prg_obligations in
+  let obls' = Array.copy obls in
+    if solve_obligation_by_tac prg obls' n tac then
+      ignore(update_obls prg obls' (pred rem));
+    
 and try_solve_obligations n tac = 
   ignore (solve_obligations n tac)
 

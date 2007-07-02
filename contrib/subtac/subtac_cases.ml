@@ -1612,18 +1612,20 @@ let constr_of_pat env isevars arsign pat avoid =
 	     print_env env ++ str" should have type: " ++ my_print_constr env ty);
     match pat with
     | PatVar (l,name) -> 
+	trace (str "Treating pattern variable " ++ str (string_of_id (id_of_name name)));
 	let name, avoid = match name with
 	    Name n -> name, avoid
 	  | Anonymous -> 
 	      let previd, id = prime avoid (Name (id_of_string "wildcard")) in
 		Name id, id :: avoid 
 	in
-(* 	  trace (str "Treating pattern variable " ++ str (string_of_id (id_of_name name))); *)
+	  trace (str "Treated pattern variable " ++ str (string_of_id (id_of_name name)));
 	  PatVar (l, name), [name, None, ty] @ realargs, mkRel 1, ty, (List.map (fun x -> mkRel 1) realargs), 1, avoid
     | PatCstr (l,((_, i) as cstr),args,alias) ->
-	let _ind = inductive_of_constructor cstr in
+	let cind = inductive_of_constructor cstr in
 	let IndType (indf, _) = find_rectype env (Evd.evars_of !isevars) (lift (-(List.length realargs)) ty) in
 	let ind, params = dest_ind_family indf in
+	if ind <> cind then error_bad_constructor_loc l cstr ind;
 	let cstrs = get_constructors env indf in
 	let ci = cstrs.(i-1) in
 	let nb_args_constr = ci.cs_nargs in
@@ -1694,18 +1696,24 @@ let eq_id avoid id =
 let rels_of_patsign = 
   List.map (fun ((na, b, t) as x) -> 
     match b with 
-      | Some t when kind_of_term t = Rel 0 -> (na, None, t)
+      | Some t' when kind_of_term t' = Rel 0 -> (na, None, t)
       | _ -> x)
 
-let vars_of_ctx = 
-  List.rev_map (fun (na, b, t) -> 
-    match b with 
-      | Some t when kind_of_term t = Rel 0 -> hole
-      | _ ->
-	  match na with
-	      Anonymous -> raise (Invalid_argument "vars_of_ctx")
-	    | Name n -> RVar (dummy_loc, n))
-
+let vars_of_ctx ctx = 
+  let _, y =
+    List.fold_right (fun (na, b, t)  (prev, vars) -> 
+      match b with 
+	| Some t' when kind_of_term t' = Rel 0 -> 
+	    prev, 
+	    (RApp (dummy_loc, 
+		(RRef (dummy_loc, Lazy.force refl_ref)), [hole; RVar (dummy_loc, prev)])) :: vars
+	| _ ->
+	    match na with
+		Anonymous -> raise (Invalid_argument "vars_of_ctx")
+	      | Name n -> n, RVar (dummy_loc, n) :: vars)
+      ctx (id_of_string "vars_of_ctx: error", [])
+  in List.rev y
+      
 let unsafe_fold_right f = function
     hd :: tl -> List.fold_right f tl hd
   | [] -> raise (Invalid_argument "unsafe_fold_right")
@@ -1827,7 +1835,7 @@ let constrs_of_pats typing_fun tycon env isevars eqns tomatchs sign neqs eqs ari
 	   (* lift to get outside of past patterns to get terms in the combined environment. *)
 	   (fun (pats, n) (sign, c, (s, args), p) ->
 	     let len = List.length sign in
-	       ((sign, lift n c, (s, List.map (lift n) args), p) :: pats, len + n))
+	       ((rels_of_patsign sign, lift n c, (s, List.map (lift n) args), p) :: pats, len + n))
 	   ([], 0) pats 
 	 in
 	 let rhs_rels' = rels_of_patsign rhs_rels in
