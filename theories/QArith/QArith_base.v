@@ -38,8 +38,8 @@ Notation " 1 " := (1#1) : Q_scope.
 Definition Qeq (p q : Q) := (Qnum p * QDen q)%Z = (Qnum q * QDen p)%Z.
 Definition Qle (x y : Q) := (Qnum x * QDen y <= Qnum y * QDen x)%Z.
 Definition Qlt (x y : Q) := (Qnum x * QDen y < Qnum y * QDen x)%Z.
-Notation Qgt := (fun x y : Q => Qlt y x).
-Notation Qge := (fun x y : Q => Qle y x).
+Notation Qgt := (fun a b : Q => Qlt b a).
+Notation Qge := (fun a b : Q => Qle b a).
 
 Infix "==" := Qeq (at level 70, no associativity) : Q_scope. 
 Infix "<" := Qlt : Q_scope.
