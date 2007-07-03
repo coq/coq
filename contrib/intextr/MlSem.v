@@ -1,4 +1,19 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(************************************************************************)
+(*                                                                      *)
+(* Equivalence of two semantics for mini-ML terms                       *)
+(*                                                                      *)
+(************************************************************************)
+
+Require Export Ml.
 Require Import List Arith Max Omega Bool Setoid Wf_nat.
+
 
 Hint Extern 1 (?f _ = ?f _) => f_equal.
 Hint Extern 1 (?f _ _ = ?f _ _) => f_equal.
@@ -54,6 +69,7 @@ Reserved Notation      "t ==[ n ]=> u "    (at level 100, n at next level).
 
 (** * Les termes *)
 
+(* Defined in Ml.v 
 Inductive term : Set :=
   | TDummy : term
   | TVar : nat -> term
@@ -68,6 +84,7 @@ with pat : Set :=
 .
 
 Notation "a @ b" := (TApply a b) (at level 40).
+*)
 
 Definition fstpat (p:pat) := let (k,_):=p in k.
 Definition sndpat (p:pat) := let (_,t):=p in t.
