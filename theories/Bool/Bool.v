@@ -691,3 +691,11 @@ Lemma negb_prop_involutive : forall b, Is_true b -> ~ Is_true (negb b).
 Proof.
   destruct b; intuition.
 Qed.
+
+(* Compatibility *)
+
+Notation andb := Datatypes.andb (only parsing).
+Notation orb := Datatypes.orb (only parsing).
+Notation implb := Datatypes.implb (only parsing).
+Notation xorb := Datatypes.xorb (only parsing).
+Notation negb := Datatypes.negb (only parsing).
