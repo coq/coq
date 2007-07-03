@@ -999,12 +999,12 @@ Qed.
 
 Lemma SmallStepN_inv_app : forall n t u r, IsValue r -> 
 (t@u ==[n]=> r) -> 
-(exists t', exists r', exists n1, exists n2, exists n3, 
+exists t', exists r', exists n1, exists n2, exists n3, 
   S (n1+n2+n3) = n /\ 
   IsValue r' /\
   (u ==[n1]=> r') /\
   (   (t ==[n2]=> TFun t') /\ (t'[0:=r'] ==[n3]=> r)
-   \/ (t ==[n2]=> TFix t') /\ (t'[0:=r'][0:=TFix t'] ==[n3]=> r))).
+   \/ (t ==[n2]=> TFix t') /\ (t'[0:=r'][0:=TFix t'] ==[n3]=> r)).
 Proof.
 induction n; simpl; intros.
 (* 0 etape : impossible car (t@u) n'est pas une valeur *)
@@ -1032,6 +1032,101 @@ exists t1; exists u1; exists (S n1); exists n2; exists n3.
 repeat split; simpl; auto; destruct A; auto.
 destruct D; intuition; exists u'; auto.
 Qed.
+
+Lemma SmallStepN_inv_let : forall n t u r, IsValue r -> 
+(TLet t u ==[n]=> r) -> 
+exists r', exists n1, exists n2, 
+  S (n1+n2) = n /\ 
+  IsValue r' /\
+  (t ==[n1]=> r') /\
+  (u[0:=r'] ==[n2]=> r).
+Proof.
+induction n; simpl; intros.
+(* 0 etape : impossible car (TLet t u) n'est pas une valeur *)
+subst r; inversion H.
+(* (n+1) etapes. *)
+destruct H0 as (s,(Hs1,Hs2)).
+inv_clear Hs1.
+(* zeta *)
+exists t; exists 0; exists n.
+repeat split; simpl; auto.
+(* let *)
+rename v into t'.
+destruct (IHn _ _ _ H Hs2) as (t1,(n1,(n2,(A,(B,(C,D)))))); clear IHn.
+exists t1; exists (S n1); exists n2.
+repeat split; simpl; auto.
+exists t'; auto.
+Qed.
+
+Lemma SmallStepN_inv_constr : forall n k t tl r, IsValue r -> 
+(TConstr k (t::tl) ==[n]=> r) -> 
+exists u, exists ul, exists n1, exists n2,  
+  n1+n2 = n /\ 
+  r = TConstr k (u::ul) /\ 
+  (t ==[n1]=> u) /\
+  (TConstr k tl ==[n2]=> TConstr k ul).
+Proof.
+induction n; simpl; intros.
+(* n=0 *)
+exists t; exists tl; exists 0; exists 0.
+repeat split; simpl; auto.
+(* 0<n *)
+destruct H0 as (s,(Hs1,Hs2)).
+inv_clear Hs1.
+inv_clear H3.
+(* reduction dans t *)
+destruct (IHn _ _ _ _ H Hs2) as (u,(ul,(n1,(n2,(A,(B,(C,D))))))); clear IHn.
+exists u; exists ul; exists (S n1); exists n2.
+repeat split; simpl; auto.
+exists v; split; auto.
+(* reduction dans tl *)
+assert (TConstr k tl ==[1]=> TConstr k ul0).
+ simpl; exists (TConstr k ul0); split; simpl; auto.
+destruct (IHn _ _ _ _ H Hs2) as (u,(ul,(n1,(n2,(A,(B,(C,D))))))); clear IHn.
+exists u; exists ul; exists n1; exists (S n2).
+repeat split; simpl; auto.
+omega.
+exists (TConstr k ul0); split; auto.
+Qed.
+
+Lemma SmallStepN_inv_constrnil : forall n k r, 
+(TConstr k nil ==[n]=> r) -> r = TConstr k nil /\ n = 0.
+Proof.
+destruct n; simpl; intros.
+subst; auto.
+destruct H as (s,(Hs1,Hs2)).
+inversion_clear Hs1.
+inversion H.
+Qed.
+
+Lemma SmallStepN_inv_match : forall n t pl r, IsValue r -> 
+(TMatch t pl ==[n]=> r) -> 
+exists k, exists tl, exists u, exists n1, exists n2,
+  S (n1+n2) = n /\
+  IsValue_list tl /\
+  (t ==[n1]=> TConstr k tl) /\
+  nth_error pl k = Some (Patc (length tl) u) /\
+  (u [ 0 ::= rev tl ] ==[n2]=> r).
+Proof.
+induction n; simpl; intros.
+(* 0 etape : impossible car (TMatch t pl) n'est pas une valeur *)
+subst r; inversion H.
+(* (n+1) etapes. *)
+destruct H0 as (s,(Hs1,Hs2)).
+inv_clear Hs1.
+(* iota *)
+exists n0; exists tl; exists u; exists 0; exists n.
+repeat split; simpl; auto.
+(* match *)
+rename v into t'.
+destruct (IHn _ _ _ H Hs2) as (k,(tl,(u,(n1,(n2,(A,(B,(C,(D,E))))))))); clear IHn.
+exists k; exists tl; exists u; exists (S n1); exists n2.
+repeat split; simpl; auto.
+exists t'; auto.
+Qed.
+
+
+
 
 (** (1) -> (2) *)
 
@@ -1148,15 +1243,16 @@ Lemma SmallSteps_BigStep : forall e t u,
  (t[0::=map v2t e] ==> u) -> 
  exists v, (e|=t-->v) /\ v2t v = u /\ val_clos v.
 Proof.
-intros e t u H H0 H1 (n,H2); revert e t u H H0 H1 H2.
-induction n using lt_wf_ind; intros.
-destruct t; simpl in *; simpl_clos_after.
+intros e t u H H0 H1 (n,H2); revert t e u H H0 H1 H2.
+induction n using lt_wf_ind.
+set (n':=n); assert (Hn' : n'<=n) by (unfold n'; auto with arith); clearbody n'.
+intro t; revert n' Hn'; pattern t.
+apply term_ind2_zero; clear t; intros; simpl in *; simpl_clos_after.
 (* Dummy *)
 exists VDummy; split; [ | split ]; simpl; auto.
-destruct n; simpl in *; auto.
+destruct n'; simpl in *; auto.
 destruct H3 as (s,(Hs1,_)); inversion Hs1.
 (* Var *)
-rename n0 into k.
 replace (k-0) with k in H3 by omega.
 assert (exists v, val_clos v /\ nth_error e k = Some v /\ 
                   nth k (map v2t e) (TVar (k - length (map v2t e))) = v2t v).
@@ -1170,45 +1266,58 @@ assert (exists v, val_clos v /\ nth_error e k = Some v /\
  exists v; auto.
 destruct H4 as (v,(Hv1,(Hv2,Hv3))); rewrite Hv3 in H3; clear Hv3.
 exists v; split; [ | split ]; eauto.
-destruct n; simpl in *; auto.
+destruct n'; simpl in *; auto.
 destruct H3 as (s,(Hs1,_)); destruct v; simpl; inversion_clear Hs1.
  elim (IsValue_list_normal _ (IsValue_list_v2t l) _ H3).
 (* Let *)
-
-admit.
-
+clear H0 H1; destruct H3.
+destruct (SmallStepN_inv_let _ _ _ _ H4 H5) as 
+ (t',(n1,(n2,(A,(B,(C,D)))))).
+assert (n1<n) by omega.
+assert (n2<n) by omega.
+destruct (H n1 H3 t1 e t') as (v1,(Av1,(Bv1,Cv1))); auto.
+destruct (H n2 H6 t2 (v1::e) u) as (v2,(Av2,(Bv2,Cv2))); auto.
+subst t'.
+rewrite <- subst_list_equiv; auto.
+simpl.
+rewrite <- subst_list_iter_commut; auto.
+rewrite subst_list_equiv; auto.
+exists v2; repeat split; eauto.
 (* Fun *)
+clear H0.
 exists (VClos e t); split; [ | split ]; auto.
-destruct n; simpl in *; auto.
+destruct n'; simpl in *; auto.
 rewrite subst_list_equiv; auto.
-destruct H3 as (s,(Hs1,_)); inversion Hs1.
+destruct H4 as (s,(Hs1,_)); inversion Hs1.
 (* Fix *)
+clear H0.
 exists (VClos_rec e t); split; [ | split ]; auto.
-destruct n; simpl in *; auto.
+destruct n'; simpl in *; auto.
 rewrite subst_list_equiv; auto.
-destruct H3 as (s,(Hs1,_)); inversion Hs1.
+destruct H4 as (s,(Hs1,_)); inversion Hs1.
 (* Apply *)
-destruct H1.
-destruct (SmallStepN_inv_app _ _ _ _ H2 H3) as 
+clear H0 H1.
+destruct H3.
+destruct (SmallStepN_inv_app _ _ _ _ H4 H5) as 
  (t',(u',(n1,(n2,(n3,(A,(B,(C,D)))))))).
 assert (n1<n) by omega.
 assert (n2<n) by omega.
 assert (n3<n) by omega.
-destruct (H n1 H5 e t2 u') as (v',(Av',(Bv',Cv'))); auto.
+destruct (H n1 H3 t2 e u') as (v',(Av',(Bv',Cv'))); auto.
 destruct D as [(D,E)|(D,E)].
 (* Apply/Fun *)
-destruct (H n2 H6 e t1 (TFun t')) as (v0,(Av0,(Bv0,Cv0))); auto.
+destruct (H n2 H6 t1 e (TFun t')) as (v0,(Av0,(Bv0,Cv0))); auto.
 destruct v0; simpl in *; try discriminate.
 inversion_clear Cv0.
 inversion Bv0; clear Bv0; subst t'.
 subst u'.
 rewrite subst_list_iter_commut in E; auto.
 change (t [0;;=map v2t (v'::l)] ==[n3]=>u) in E.
-destruct (H n3 H7 (v'::l) t u) as (v,(Av,(Bv,Cv))); auto.
+destruct (H n3 H7 t (v'::l) u) as (v,(Av,(Bv,Cv))); auto.
 rewrite <- subst_list_equiv; auto.
 exists v; eauto.
 (* Apply/Fix *)
-destruct (H n2 H6 e t1 (TFix t')) as (v0,(Av0,(Bv0,Cv0))); auto.
+destruct (H n2 H6 t1 e (TFix t')) as (v0,(Av0,(Bv0,Cv0))); auto.
 destruct v0; simpl in *; try discriminate.
 inversion_clear Cv0.
 inversion Bv0; clear Bv0; subst t'.
@@ -1220,17 +1329,83 @@ rewrite subst_list_iter_commut in E; auto.
 rewrite subst_list_iter_commut in E; auto.
 rewrite subst_commut in E; auto.
 change (t [0;;=map v2t (v'::(VClos_rec l t)::l)] ==[n3]=>u) in E.
-destruct (H n3 H7 (v'::(VClos_rec l t)::l) t u) as (v,(Av,(Bv,Cv))); auto.
+destruct (H n3 H7 t (v'::(VClos_rec l t)::l) u) as (v,(Av,(Bv,Cv))); auto.
 rewrite <- subst_list_equiv; auto.
 exists v; eauto.
 (* Constr *)
-
-admit.
-
+revert u H2 H3 H4; induction tl; simpl in *; intros.
+destruct (SmallStepN_inv_constrnil _ _ _ H4); subst; simpl in *.
+exists (VConstr k nil); auto.
+match type of IHtl with ?U->_ => assert (E:U) by eauto end; 
+ generalize (IHtl E); clear IHtl E; intro IHtl.
+destruct (SmallStepN_inv_constr _ _ _ _ _ H3 H4) as 
+ (r,(rl,(n1,(n2,(A,(B,(C,D))))))); clear H4.
+subst u; inversion_clear H3; inversion_clear H4.
+destruct n1.
+ (* n1 = 0, n2 = n' *)
+ simpl in A; subst n2.
+ destruct (IHtl (TConstr k rl)) as (vl,(Hvl1,(Hvl2,Hvl3))); auto; clear IHtl.
+ inv_clear Hvl1; simpl in *; rename vl0 into vl.
+ injection Hvl2; clear Hvl2; intros.
+ inversion_clear Hvl3.
+ assert ( a = a \/ In a tl ) by auto.
+ assert (0 <= n) by auto with arith.
+ destruct (H0 a H7 0 H8 e r) as (v,(Hv1,(Hv2,Hv3))); auto; clear H0 H7 H8.
+ exists (VConstr k (v::vl)); split; [ | split]; simpl; auto.
+ (* n1 > 0, n2 < n' *)
+ clear IHtl.
+ assert (n2 < n) by omega.
+ destruct (H n2 H4 (TConstr k tl) e (TConstr k rl)) as (v,(Hv1,(Hv2,Hv3))); auto.
+ simpl_clos_after; auto.
+ inv_clear Hv1.
+ simpl in Hv2; injection Hv2; clear Hv2; intros.
+ inversion_clear Hv3.
+ assert (a = a \/ In a tl) by auto.
+ assert (S n1 <= n) by omega.
+ destruct (H0 a H8 (S n1) H9 e r) as (v,(Hv1',(Hv2',Hv3'))); auto.
+ exists (VConstr k (v::vl)); split; [ | split]; simpl; auto.
 (* Match *)
-
-admit.
-
+clear H0 H1.
+destruct H3.
+destruct (SmallStepN_inv_match _ _ _ _ H4 H5) as 
+ (k,(tl,(r,(n1,(n2,(A,(B,(C,(D,E))))))))); clear H5.
+assert (exists r0, In (Patc (length tl) r0) pl /\ 
+                   nth_error pl k = Some (Patc (length tl) r0) /\ 
+                   r0[(length tl)::=map v2t e] = r).
+ clear - D.
+ revert k D; induction pl; destruct k; simpl.
+ inversion 1.
+ inversion 1.
+ destruct a; intro I; injection I; clear I; intros.
+ subst; exists t; auto.
+ intros.
+ destruct (IHpl _ D) as (r0,(H1,H2)).
+  exists r0; auto.
+destruct H3 as (r0,(R,(R',R''))); clear D.
+assert (n1<n) by omega.
+assert (n2<n) by omega.
+destruct (H n1 H3 t e (TConstr k tl)) as (v,(Hv1,(Hv2,Hv3))); auto.
+destruct v; simpl in Hv2; try discriminate; injection Hv2; clear Hv2; intros; subst.
+inversion_clear Hv3.
+rewrite <- map_rev in E.
+rewrite map_length in E.
+destruct (H n2 H5 r0 (rev l ++ e) u) as (v,(Hv1',(Hv2',Hv3'))); auto.
+apply env_clos_revapp; auto.
+rewrite app_length; rewrite rev_length.
+generalize (H1 _ R); rewrite map_length; auto.
+rewrite <- subst_list_equiv; auto.
+rewrite <- subst_list_equiv in E; auto.
+rewrite <- subst_list_equiv in E; auto.
+replace (length l) with (length (map v2t (rev l)) + 0) in E.
+rewrite subst_list_iter_commut2 in E; auto.
+rewrite <- map_app in E; auto.
+apply v2t_env_clos; apply env_clos_rev; auto.
+rewrite map_length; rewrite rev_length; omega.
+apply v2t_env_clos; apply env_clos_rev; auto.
+apply v2t_env_clos; apply env_clos_revapp; auto.
+exists v; split; [ | split]; auto.
+econstructor; eauto.
+rewrite map_length; auto.
 Qed.
 
 
