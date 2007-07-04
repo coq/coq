@@ -253,10 +253,9 @@ let resolver_of_environment mbid modtype mp env =
 
 
 let strengthen_const env mp l cb = 
-  match cb.const_opaque, cb.const_body with
-  | false, Some _ -> cb
-  | true, Some _ 
-  | _, None -> 
+  match cb.const_body with
+  | Some _ -> cb
+  | None -> 
       let const = mkConst (make_con mp empty_dirpath l) in 
       let const_subs = Some (Declarations.from_val const) in
 	{cb with 
