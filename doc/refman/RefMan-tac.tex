@@ -665,6 +665,10 @@ to $T$.
   This generalizes {\term} but also {\em all} hypotheses which depend
   on {\term}. It clears the generalized hypotheses.
 
+\item {\tt revert \term$_1$ \dots\ \term$_n$}\tacindex{revert}
+ 
+  This is equivalent to a {\tt generalize} followed by a {\tt clear}.
+
 \end{Variants}
 
 \subsection{\tt change \term
@@ -1390,6 +1394,15 @@ last introduced hypothesis.
   analysis without recursion. It behaves as {\tt elim \term} but using
   a case-analysis elimination principle and not a recursive one.
 
+\item{\tt case\_eq \term}\label{case_eq}\tacindex{case\_eq}
+
+ The tactic {\tt case\_eq} is a variant of the {\tt case} tactic that
+ allow to perform case analysis on a term without completely 
+ forgetting its original form. This is done by generating 
+ equalities between the original form of the term and the outcomes of 
+ the case analysis. 
+
+
 \item {\tt case {\term} with \term$_1$ \dots\ \term$_n$}
   \tacindex{case \dots\ with}
 
@@ -1407,6 +1420,7 @@ last introduced hypothesis.
     {\num}; case {\tt {\ident}}} where {\ident} is the name given by
   {\tt intros until {\num}} to the {\num}-th non-dependent premise of
   the goal.
+
 
 \end{Variants}
 
@@ -1821,6 +1835,22 @@ and are registered using the command
 {\tt Declare Right Step {\term}.}
 \end{quote}
 \end{Variants}
+
+
+\subsection{\tt f\_equal
+\label{f-equal}
+\tacindex{f\_equal}}
+
+This tactic applies to a goal of the form $f\ a_1\ \ldots\ a_n = f'\
+a'_1\ \ldots\ a'_n$. Using {\tt f\_equal} on such a goal leads to
+subgoals $f=f'$ and $a_1=a'_1$ and so on up to $a_n=a'_n$. Amongst 
+these subgoals, the simple ones (e.g. provable by
+reflexivity or congruence) are automatically solved by {\tt f\_equal}.
+
+\Rem {\tt f\_equal} currently handles goals with only up to 5 arguments
+(i.e. $n\leq 5$). 
+
+
 
 \section{Equality and inductive sets}
 
