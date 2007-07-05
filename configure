@@ -386,30 +386,34 @@ esac
 
 # lablgtk2 and CoqIDE
 
-if [ "$coqide_spec" = "no" ] ; then
-if test -x "${CAMLLIB}/lablgtk2" ; then
-    if grep -q -w convert_with_fallback "${CAMLLIB}/lablgtk2/glib.mli" ; then
-	if test -f "${CAMLLIB}/threads/threads.cmxa" ; then
-            echo "LablGtk2 found, native threads: native CoqIde will be available"
-	    COQIDE=opt;
-        else
-            echo "LablGtk2 found, no native threads: bytecode CoqIde will be available"
-	    COQIDE=byte
-	fi
-	if grep "class view " "${CAMLLIB}/lablgtk2/gText.mli" | grep -q "\[>" ; then
-	    LABLGTKGE26=yes;
-        else
-	    LABLGTKGE26=no
-	fi;
-    else
-        echo "LablGtk2 found but too old: CoqIde will not be available"
-        COQIDE=no;
-    fi
-else
+# -byte-only should imply -coqide byte, unless the user decides otherwise
+
+if [ "$best_compiler" = "byte" -a "$coqide_spec" = "no" ]; then 
+    coqide_spec=yes
+    COQIDE=byte
+fi
+
+# Which coqide is asked ? which one is possible ?
+
+if [ "$coqide_spec" = "yes" -a "$COQIDE" = "no" ]; then 
+    echo "CoqIde disabled as requested"
+elif [ ! -x "${CAMLLIB}/lablgtk2" ]; then
     echo "LablGtk2 not found: CoqIde will not be available"
     COQIDE=no
+elif [ -z "`grep -w convert_with_fallback ${CAMLLIB}/lablgtk2/glib.mli`" ]; then
+    echo "LablGtk2 found but too old: CoqIde will not be available"
+    COQIDE=no;
+elif [ "$coqide_spec" = "yes" -a "$COQIDE" = "byte" ]; then 
+    echo "LablGtk2 found, bytecode CoqIde will be used as requested"
+    COQIDE=byte
+elif [ ! -f "${CAMLLIB}/threads/threads.cmxa" ]; then 
+    echo "LablGtk2 found, no native threads: bytecode CoqIde will be available"
+    COQIDE=byte
+else 
+    echo "LablGtk2 found, native threads: native CoqIde will be available"
+    COQIDE=opt
 fi
-fi
+
 
 # Tell on windows if ocaml understands cygwin or windows path formats
 
@@ -748,15 +752,17 @@ if test "$coq_debug_flag" = "-g" ; then
   chmod a-w,a+x $OCAMLDEBUGCOQ
 fi
 
-##################################################
-# Fixing lablgtk types
+####################################################
+# Fixing lablgtk types (before/after 2.6.0) 
 ####################################################
 
-if [ "$LABLGTKGE26" = "yes" ] ; then
-  cp -f ide/undo_lablgtk_ge26.mli ide/undo.mli
-else
-  cp -f ide/undo_lablgtk_lt26.mli ide/undo.mli
-fi
+if [ ! "$COQIDE" = "no" ]; then 
+    if grep "class view " "$CAMLLIB/lablgtk2/gText.mli" | grep -q "\[>" ; then
+	cp -f ide/undo_lablgtk_ge26.mli ide/undo.mli
+    else
+	cp -f ide/undo_lablgtk_lt26.mli ide/undo.mli
+    fi
+fi  
 
 ##################################################
 # The end
