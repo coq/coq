@@ -137,3 +137,25 @@ case_eq ((n ?= m)%positive Eq); intros H0; simpl;
  assumption.
 Qed.
 
+Lemma Qpower_mult_positive : forall a n m, Qpower_positive a (n*m) == Qpower_positive (Qpower_positive a n) m.
+Proof.
+intros a n m.
+induction n using Pind.
+ reflexivity.
+rewrite Pmult_Sn_m.
+rewrite Pplus_one_succ_l.
+do 2 rewrite Qpower_plus_positive.
+rewrite IHn.
+rewrite Qmult_power_positive.
+reflexivity.
+Qed.
+
+Lemma Qpower_mult : forall a n m, a^(n*m) ==  (a^n)^m.
+Proof.
+intros a [|n|n] [|m|m]; simpl; 
+ try rewrite Qpower_positive_1; 
+ try rewrite Qpower_mult_positive;
+ try rewrite Qinv_power_positive;
+ try rewrite Qinv_involutive;
+ try reflexivity.
+Qed.
