@@ -8,7 +8,7 @@
 
 (*i camlp4deps: "parsing/grammar.cma" i*)
 
-(* $Id:$ *)
+(* $Id$ *)
 
 open Term
 open Termops
@@ -1179,6 +1179,7 @@ let base_leaf_eq func eqs f_id g =
 
 let f_S t = mkApp(delayed_force coq_S, [|t|]);;
 
+
 let rec introduce_all_values_eq  cont_tac functional termine 
     f p heq1 pmax bounds le_proofs eqs ids =
   function
@@ -1245,13 +1246,15 @@ let rec introduce_all_values_eq  cont_tac functional termine
 			   let def_na,_,_ = destProd t in 
 			   Nameops.out_name k_na,Nameops.out_name def_na
 			 in
-			 observe_tac "general_rewrite_bindings" ( (general_rewrite_bindings false
-			   (mkVar heq,
+			 let c_b = (mkVar heq,
 			    ExplicitBindings
 			      [dummy_loc, NamedHyp k_id,
 			       f_S(mkVar pmax');
-			       dummy_loc, NamedHyp def_id, f]) false))
-			   g
+			       dummy_loc, NamedHyp def_id, f])
+			 in
+			   observe_tac "general_rewrite_bindings" ( (general_rewrite_bindings false
+								       c_b false))
+			     g
 		     )
 		     [tclIDTAC;
 		      tclTHENLIST
@@ -1412,10 +1415,11 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
       with e -> 
 	begin 
 	  if Tacinterp.get_debug () <> Tactic_debug.DebugOff
-	  then anomalylabstrm "" (str "Cannot create equation Lemma " ++ Cerrors.explain_exn e);
-	  stop := true;
+	  then anomalylabstrm "" (str "Cannot create equation Lemma " ++ Cerrors.explain_exn e)
+	  else anomaly "Cannot create equation Lemma"
+	  ;
 (* 	  ignore(try Vernacentries.vernac_reset_name (Util.dummy_loc,functional_id) with _ -> ()); *)
-(* 	  anomaly "Cannot create equation Lemma" *)
+	  stop := true;
 	end
     end;
     if not !stop
