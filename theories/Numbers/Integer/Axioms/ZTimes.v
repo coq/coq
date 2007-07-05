@@ -5,10 +5,11 @@ Require Import ZPlus.
 
 Module Type TimesSignature.
 Declare Module Export PlusModule : PlusSignature.
+Open Local Scope ZScope.
 
 Parameter Inline times : Z -> Z -> Z.
 
-Notation "x * y" := (times x y).
+Notation "x * y" := (times x y) : ZScope.
 
 Add Morphism times with signature E ==> E ==> E as times_wd.
 
@@ -31,8 +32,8 @@ French (deux fois trois) and Russian (dvazhdy tri) implies 3 + 3, not
 End TimesSignature.
 
 Module TimesProperties (Export TimesModule : TimesSignature).
-
 Module Export PlusPropertiesModule := PlusProperties PlusModule.
+Open Local Scope ZScope.
 
 Theorem times_P : forall n m, n * (P m) == n * m - n.
 Proof.

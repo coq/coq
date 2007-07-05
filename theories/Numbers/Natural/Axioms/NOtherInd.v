@@ -1,5 +1,6 @@
 Require Export NDomain.
 Declare Module Export DomainModule : DomainSignature.
+Open Local Scope NScope.
 
 Parameter O : N.
 Parameter S : N -> N.

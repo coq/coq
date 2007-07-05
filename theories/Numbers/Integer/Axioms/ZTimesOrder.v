@@ -1,7 +1,6 @@
 Require Import ZPlus.
 Require Import ZTimes.
 Require Import ZOrder.
-(* Warning: Trying to mask the absolute name "Plus"!!! *)
 Require Import ZPlusOrder.
 
 Module TimesOrderProperties (Export TimesModule : TimesSignature)
@@ -11,6 +10,7 @@ Module TimesOrderProperties (Export TimesModule : TimesSignature)
 Module Export TimesPropertiesModule := TimesProperties TimesModule.
 Module Export PlusOrderPropertiesModule :=
   PlusOrderProperties TimesModule.PlusModule OrderModule.
+Open Local Scope ZScope.
 
 Theorem mult_lt_compat_r : forall n m p, 0 < p -> n < m -> n * p < m * p.
 Proof.

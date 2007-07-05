@@ -15,12 +15,15 @@ Add Relation Z E
  transitivity proved by (proj1 (proj2 E_equiv))
 as E_rel.
 
-Notation "x == y" := (E x y) (at level 70).
-Notation "x # y" := (~ E x y) (at level 70).
+Delimit Scope ZScope with Int.
+Bind Scope ZScope with Z.
+Notation "x == y" := (E x y) (at level 70) : ZScope.
+Notation "x # y" := (~ E x y) (at level 70) : ZScope.
 
 End DomainSignature.
 
 Module DomainProperties (Export DomainModule : DomainSignature).
+Open Local Scope ZScope.
 
 Add Morphism e with signature E ==> E ==> eq_bool as e_wd.
 Proof.

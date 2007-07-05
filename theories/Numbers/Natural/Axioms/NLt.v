@@ -2,10 +2,11 @@ Require Export NAxioms.
 
 Module Type LtSignature.
 Declare Module Export NatModule : NatSignature.
+Open Local Scope NScope.
 
 Parameter Inline lt : N -> N -> bool.
 
-Notation "x < y" := (lt x y).
+Notation "x < y" := (lt x y) : NScope.
 
 Add Morphism lt with signature E ==> E ==> eq_bool as lt_wd.
 
@@ -13,9 +14,9 @@ Axiom lt_0 : forall x, ~ (x < 0).
 Axiom lt_S : forall x y, x < S y <-> x < y \/ x == y.
 End LtSignature.
 
-Module LtProperties (Export LtModule : LtSignature).
-
-Module Export NatPropertiesModule := NatProperties NatModule.
+Module LtProperties (Import LtModule : LtSignature).
+Module Import NatPropertiesModule := NatProperties NatModule.
+Open Local Scope NScope.
 
 Theorem lt_n_Sn : forall n, n < S n.
 Proof.

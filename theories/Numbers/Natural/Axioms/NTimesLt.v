@@ -2,13 +2,13 @@ Require Export NLt.
 Require Export NTimes.
 Require Export NPlusLt.
 
-Module TimesLtProperties (Export TimesModule : TimesSignature)
-                         (Export LtModule : LtSignature with
+Module TimesLtProperties (Import TimesModule : TimesSignature)
+                         (Import LtModule : LtSignature with
                             Module NatModule := TimesModule.PlusModule.NatModule).
-
 Module Export TimesPropertiesModule := TimesProperties TimesModule.
 Module Export LtPropertiesModule := LtProperties LtModule.
 Module Export PlusLtPropertiesModule := PlusLtProperties TimesModule.PlusModule LtModule.
+Open Local Scope NScope.
 
 Lemma mult_S_lt_compat_l : forall n m p, m < p -> S n * m < S n * p.
 Proof.

@@ -2,8 +2,8 @@ Require Import NAxioms.
 
 Module Homomorphism (Nat1 Nat2 : NatSignature).
 
-Module Import DomainProperties1 := DomainProperties Nat1.DomainModule.
-Module Import DomainProperties2 := DomainProperties Nat2.DomainModule.
+(*Module Import DomainProperties1 := DomainProperties Nat1.DomainModule.
+Module Import DomainProperties2 := DomainProperties Nat2.DomainModule.*)
 (* This registers Nat1.Domain.E and Nat2.Domain.E as setoid relations *)
 
 Notation Local N1 := Nat1.DomainModule.N.

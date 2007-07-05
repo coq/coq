@@ -10,6 +10,7 @@ Require Import NTimesLt.
 Module MiscFunctFunctor (NatMod : NatSignature).
 Module Export NatPropertiesModule := NatProperties NatMod.
 Module Export StrongRecPropertiesModule := StrongRecProperties NatMod.
+Open Local Scope NScope.
 
 (*****************************************************)
 (**                   Addition                       *)
@@ -317,7 +318,7 @@ Qed.
 End DefaultPlusModule.
 
 Module DefaultTimesModule <: TimesSignature.
-Module Export PlusModule := DefaultPlusModule.
+Module Import PlusModule := DefaultPlusModule.
 
 Definition times := times.
 
@@ -360,11 +361,11 @@ Qed.
 
 End DefaultLtModule.
 
-Module Export DefaultPlusProperties := PlusProperties DefaultPlusModule.
-Module Export DefaultTimesProperties := TimesProperties DefaultTimesModule.
-Module Export DefaultLtProperties := LtProperties DefaultLtModule.
-Module Export DefaultPlusLtProperties := PlusLtProperties DefaultPlusModule DefaultLtModule.
-Module Export DefaultTimesLtProperties := TimesLtProperties DefaultTimesModule DefaultLtModule.
+Module Import DefaultPlusProperties := PlusProperties DefaultPlusModule.
+Module Import DefaultTimesProperties := TimesProperties DefaultTimesModule.
+Module Import DefaultLtProperties := LtProperties DefaultLtModule.
+Module Import DefaultPlusLtProperties := PlusLtProperties DefaultPlusModule DefaultLtModule.
+Module Import DefaultTimesLtProperties := TimesLtProperties DefaultTimesModule DefaultLtModule.
 
 (*Opaque MiscFunctFunctor.plus.
 Check plus_comm. (* This produces the following *)

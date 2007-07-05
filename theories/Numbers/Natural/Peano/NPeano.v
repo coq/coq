@@ -6,7 +6,10 @@ Require Import NPlusLt.
 Require Import NTimesLt.
 Require Import NMiscFunct.
 
-Module PeanoDomain <: DomainEqSignature.
+Module PeanoDomain : DomainEqSignature
+  with Definition N := nat
+  with Definition E := (@eq nat)
+  with Definition e := eq_nat_bool.
 
 Definition N := nat.
 Definition E := (@eq nat).
@@ -28,14 +31,22 @@ Add Relation N E
 as E_rel.
 
 End PeanoDomain.
+Open Scope NScope.
+Import PeanoDomain.
 
 Module PeanoNat <: NatSignature.
-
 Module Export DomainModule := PeanoDomain.
 
 Definition O := 0.
 Definition S := S.
 
+(* For the following line, it is important that we declared
+PeanoDomain module above to be transparent, i.e., we used "<:"
+operator intead of ":". If we used ":", then the value of N, i.e.,
+nat, would not be visible here. Therefore, the type of E, which is
+N -> N -> Prop, would not be coercible to nat -> nat -> Prop.
+So we would not be able to claim that S is a morphism with respect
+to E. The same goes for defining * in terms of +, etc. *)
 Add Morphism S with signature E ==> E as S_wd.
 Proof.
 congruence.

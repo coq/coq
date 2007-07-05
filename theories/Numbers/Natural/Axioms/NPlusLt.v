@@ -1,12 +1,12 @@
 Require Export NPlus.
 Require Export NLt.
 
-Module PlusLtProperties (Export PlusModule : PlusSignature)
-                        (Export LtModule : LtSignature with
+Module PlusLtProperties (Import PlusModule : PlusSignature)
+                        (Import LtModule : LtSignature with
                            Module NatModule := PlusModule.NatModule).
-
 Module Export PlusPropertiesModule := PlusProperties PlusModule.
 Module Export LtPropertiesModule := LtProperties LtModule.
+Open Local Scope NScope.
 
 (* Print All locks up here !!! *)
 Theorem lt_plus_trans : forall n m p, n < m -> n < m + p.

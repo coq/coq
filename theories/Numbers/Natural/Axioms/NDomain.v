@@ -28,8 +28,10 @@ Add Relation N E
  transitivity proved by (proj1 (proj2 E_equiv))
 as E_rel.
 
-Notation "x == y" := (E x y) (at level 70).
-Notation "x # y" := (~ E x y) (at level 70).
+Delimit Scope NScope with Nat.
+Bind Scope NScope with N.
+Notation "x == y" := (E x y) (at level 70) : NScope.
+Notation "x # y" := (~ E x y) (at level 70) : NScope.
 
 End DomainSignature.
 
@@ -51,14 +53,17 @@ Add Relation N E
  transitivity proved by (proj1 (proj2 E_equiv))
 as E_rel.
 
-Notation "x == y" := (E x y) (at level 70).
-Notation "x # y" := ((E x y) -> False) (at level 70).
+Delimit Scope NScope with Nat.
+Bind Scope NScope with N.
+Notation "x == y" := (E x y) (at level 70) : NScope.
+Notation "x # y" := ((E x y) -> False) (at level 70) : NScope.
 (* Why do we need a new notation for Leibniz equality? See DepRec.v *)
 
 End DomainEqSignature.
 
-Module DomainProperties (Export DomainModule : DomainSignature).
+Module DomainProperties (Import DomainModule : DomainSignature).
 (* It also accepts module of type NatDomainEq *)
+Open Local Scope NScope.
 
 (* The following easily follows from transitivity of e and E, but
 we need to deal with the coercion *)

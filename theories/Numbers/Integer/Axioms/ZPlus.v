@@ -4,14 +4,15 @@ Require Import ZAxioms.
 
 Module Type PlusSignature.
 Declare Module Export IntModule : IntSignature.
+Open Local Scope ZScope.
 
 Parameter Inline plus : Z -> Z -> Z.
 Parameter Inline minus : Z -> Z -> Z.
 Parameter Inline uminus : Z -> Z.
 
-Notation "x + y" := (plus x y).
-Notation "x - y" := (minus x y).
-Notation "- x" := (uminus x).
+Notation "x + y" := (plus x y) : ZScope.
+Notation "x - y" := (minus x y) : ZScope.
+Notation "- x" := (uminus x) : ZScope.
 
 Add Morphism plus with signature E ==> E ==> E as plus_wd.
 Add Morphism minus with signature E ==> E ==> E as minus_wd.
@@ -29,8 +30,8 @@ Axiom uminus_S : forall n, - (S n) == P (- n).
 End PlusSignature.
 
 Module PlusProperties (Export PlusModule : PlusSignature).
-
 Module Export IntPropertiesModule := IntProperties IntModule.
+Open Local Scope ZScope.
 
 Theorem plus_P : forall n m, P n + m == P (n + m).
 Proof.

@@ -3,12 +3,13 @@ Require Import ZDomain.
 
 Module Type IntSignature.
 Declare Module Export DomainModule : DomainSignature.
+Open Local Scope ZScope.
 
 Parameter Inline O : Z.
 Parameter Inline S : Z -> Z.
 Parameter Inline P : Z -> Z.
 
-Notation "0" := O.
+Notation "0" := O : ZScope.
 
 Add Morphism S with signature E ==> E as S_wd.
 Add Morphism P with signature E ==> E as P_wd.
@@ -26,8 +27,8 @@ End IntSignature.
 
 
 Module IntProperties (Export IntModule : IntSignature).
-
 Module Export DomainPropertiesModule := DomainProperties DomainModule.
+Open Local Scope ZScope.
 
 Ltac induct n :=
   try intros until n;

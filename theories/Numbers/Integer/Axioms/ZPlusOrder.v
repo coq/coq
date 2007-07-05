@@ -1,13 +1,14 @@
 Require Import ZOrder.
 Require Import ZPlus.
-(* Warning: Trying to mask the absolute name "Plus"!!! *)
 
 Module PlusOrderProperties (Export PlusModule : PlusSignature)
                            (Export OrderModule : OrderSignature with
                              Module IntModule := PlusModule.IntModule).
-
+(* Warning: Notation _ == _ was already used in scope ZScope !!! *)
 Module Export PlusPropertiesModule := PlusProperties PlusModule.
 Module Export OrderPropertiesModule := OrderProperties OrderModule.
+(* <W> Grammar extension: in [tactic:simple_tactic], some rule has been masked !!! *)
+Open Local Scope ZScope.
 
 Theorem plus_lt_compat_l : forall n m p, n < m <-> p + n < p + m.
 Proof.

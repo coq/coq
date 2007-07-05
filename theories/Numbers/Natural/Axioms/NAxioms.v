@@ -6,12 +6,20 @@ Require Export NDomain.
 
 Module Type NatSignature.
 Declare Module Export DomainModule : DomainSignature.
+(* We use Export in the previous line to make sure that if we import a
+module of type NatSignature, then we also import (i.e., get access
+without path qualifiers to) DomainModule. For example, the functor
+NatProperties below, which accepts an implementation of NatSignature
+as an argument and imports it, will have access to N. Indeed, it does
+not make sense to get unqualified access to O and S but not to N. *)
+
+Open Local Scope NScope.
 
 Parameter Inline O : N.
 Parameter Inline S : N -> N.
 
-Notation "0" := O.
-Notation "1" := (S O).
+Notation "0" := O : NScope.
+Notation "1" := (S O) : NScope.
 
 Add Morphism S with signature E ==> E as S_wd.
 
@@ -166,9 +174,9 @@ Implicit Arguments recursion_S [A].
 
 End NatSignature.
 
-Module NatProperties (Export NatModule : NatSignature).
-
-Module Export  DomainPropertiesModule := DomainProperties DomainModule.
+Module NatProperties (Import NatModule : NatSignature).
+Module Export DomainPropertiesModule := DomainProperties DomainModule.
+Open Local Scope NScope.
 
 (* This tactic applies the induction axioms and solves the resulting
 goal "pred_wd E P" *)

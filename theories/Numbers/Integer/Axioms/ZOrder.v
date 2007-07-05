@@ -1,18 +1,18 @@
 Require Import NumPrelude.
 Require Import ZDomain.
 Require Import ZAxioms.
-Require Import Coq.ZArith.Zmisc. (* for iter_nat *)
 
 Module Type OrderSignature.
 Declare Module Export IntModule : IntSignature.
+Open Local Scope ZScope.
 
 Parameter Inline lt : Z -> Z -> bool.
 Parameter Inline le : Z -> Z -> bool.
 Add Morphism lt with signature E ==> E ==> eq_bool as lt_wd.
 Add Morphism le with signature E ==> E ==> eq_bool as le_wd.
 
-Notation "n <  m" := (lt n m).
-Notation "n <= m" := (le n m).
+Notation "n <  m" := (lt n m) : ZScope.
+Notation "n <= m" := (le n m) : ZScope.
 
 Axiom le_lt : forall n m, n <= m <-> n < m \/ n == m.
 Axiom lt_irr : forall n, ~ (n < n).
@@ -23,6 +23,7 @@ End OrderSignature.
 
 Module OrderProperties (Export OrderModule : OrderSignature).
 Module Export IntPropertiesModule := IntProperties IntModule.
+Open Local Scope ZScope.
 
 Ltac le_intro1 := rewrite le_lt; left.
 Ltac le_intro2 := rewrite le_lt; right.
@@ -294,31 +295,36 @@ Proof.
 intros n H. apply S_wd in H. rewrite S_P in H. now apply neq_Sn_n with (n := n).
 Qed.
 
-Lemma lt_n_Skn :
-  forall (n : Z) (k : nat), n < iter_nat (Datatypes.S k) Z S n.
+Definition nth_S (n : nat) (m : Z) :=
+  nat_rec (fun _ => Z) m (fun _ l => S l) n.
+Definition nth_P (n : nat) (m : Z) :=
+  nat_rec (fun _ => Z) m (fun _ l => P l) n.
+
+Lemma lt_m_Skm :
+  forall (n : nat) (m : Z), m < nth_S (Datatypes.S n) m.
 Proof.
-intro n; induction k as [| k IH]; simpl in *.
+intros n m; induction n as [| n IH]; simpl in *.
 apply lt_n_Sn. now apply lt_n_Sm.
 Qed.
 
-Lemma lt_Pkn_n :
-  forall (n : Z) (k : nat), iter_nat (Datatypes.S k) Z P n < n.
+Lemma lt_Pkm_m :
+  forall (n : nat) (m : Z), nth_P (Datatypes.S n) m < m.
 Proof.
-intro n; induction k as [| k IH]; simpl in *.
+intros n m; induction n as [| n IH]; simpl in *.
 apply lt_Pn_n. now apply lt_Pn_m.
 Qed.
 
-Theorem neq_n_Skn :
-  forall (n : Z) (k : nat), iter_nat (Datatypes.S k) Z S n # n.
+Theorem neq_m_Skm :
+  forall (n : nat) (m : Z), nth_S (Datatypes.S n) m # m.
 Proof.
-intros n k H. pose proof (lt_n_Skn n k) as H1. rewrite H in H1.
+intros n m H. pose proof (lt_m_Skm n m) as H1. rewrite H in H1.
 false_hyp H1 lt_irr.
 Qed.
 
-Theorem neq_Pkn_n :
-  forall (n : Z) (k : nat), iter_nat (Datatypes.S k) Z P n # n.
+Theorem neq_Pkm_m :
+  forall (n : nat) (m : Z), nth_P (Datatypes.S n) m # m.
 Proof.
-intros n k H. pose proof (lt_Pkn_n n k) as H1. rewrite H in H1.
+intros n m H. pose proof (lt_Pkm_m n m) as H1. rewrite H in H1.
 false_hyp H1 lt_irr.
 Qed.
 

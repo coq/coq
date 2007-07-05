@@ -2,10 +2,13 @@ Require Export NAxioms.
 
 Module Type PlusSignature.
 Declare Module Export NatModule : NatSignature.
+(* We use Export here because if we have an access to plus,
+then we need also an access to S and N *)
+Open Local Scope NScope.
 
 Parameter Inline plus : N -> N -> N.
 
-Notation "x + y" := (plus x y).
+Notation "x + y" := (plus x y) : NScope.
 
 Add Morphism plus with signature E ==> E ==> E as plus_wd.
 
@@ -14,11 +17,11 @@ Axiom plus_Sn_m : forall n m, (S n) + m == S (n + m).
 
 End PlusSignature.
 
-Module PlusProperties (Export PlusModule : PlusSignature).
-
+Module PlusProperties (Import PlusModule : PlusSignature).
 Module Export NatPropertiesModule := NatProperties NatModule.
+Open Local Scope NScope.
 
-Lemma plus_0_r : forall n, n + 0 == n.
+Theorem plus_0_r : forall n, n + 0 == n.
 Proof.
 induct n.
 now rewrite plus_0_n.
@@ -27,13 +30,13 @@ rewrite plus_Sn_m.
 now rewrite IH.
 Qed.
 
-Lemma plus_0_l : forall n, 0 + n == n.
+Theorem plus_0_l : forall n, 0 + n == n.
 Proof.
 intro n.
 now rewrite plus_0_n.
 Qed.
 
-Lemma plus_n_Sm : forall n m, n + S m == S (n + m).
+Theorem plus_n_Sm : forall n m, n + S m == S (n + m).
 Proof.
 intros n m; generalize n; clear n. induct n.
 now repeat rewrite plus_0_n.
@@ -41,13 +44,13 @@ intros x IH.
 repeat rewrite plus_Sn_m; now rewrite IH.
 Qed.
 
-Lemma plus_Sn_m : forall n m, S n + m == S (n + m).
+Theorem plus_Sn_m : forall n m, S n + m == S (n + m).
 Proof.
 intros.
 now rewrite plus_Sn_m.
 Qed.
 
-Lemma plus_comm : forall n m, n + m == m + n.
+Theorem plus_comm : forall n m, n + m == m + n.
 Proof.
 intros n m; generalize n; clear n. induct n.
 rewrite plus_0_l; now rewrite plus_0_r.
@@ -55,7 +58,7 @@ intros x IH.
 rewrite plus_Sn_m; rewrite plus_n_Sm; now rewrite IH.
 Qed.
 
-Lemma plus_assoc : forall n m p, n + (m + p) == (n + m) + p.
+Theorem plus_assoc : forall n m p, n + (m + p) == (n + m) + p.
 Proof.
 intros n m p; generalize n; clear n. induct n.
 now repeat rewrite plus_0_l.
@@ -63,24 +66,39 @@ intros x IH.
 repeat rewrite plus_Sn_m; now rewrite IH.
 Qed.
 
-Lemma plus_1_l : forall n, 1 + n == S n.
+Theorem plus_shuffle1 : forall n m p q, (n + m) + (p + q) == (n + p) + (m + q).
+Proof.
+intros n m p q.
+rewrite <- (plus_assoc n m (p + q)). rewrite (plus_comm m (p + q)).
+rewrite <- (plus_assoc p q m). rewrite (plus_assoc n p (q + m)).
+now rewrite (plus_comm q m).
+Qed.
+
+Theorem plus_shuffle2 : forall n m p q, (n + m) + (p + q) == (n + q) + (m + p).
+Proof.
+intros n m p q.
+rewrite <- (plus_assoc n m (p + q)). rewrite (plus_assoc m p q).
+rewrite (plus_comm (m + p) q). now rewrite <- (plus_assoc n q (m + p)).
+Qed.
+
+Theorem plus_1_l : forall n, 1 + n == S n.
 Proof.
 intro n; rewrite plus_Sn_m; now rewrite plus_0_n.
 Qed.
 
-Lemma plus_1_r : forall n, n + 1 == S n.
+Theorem plus_1_r : forall n, n + 1 == S n.
 Proof.
 intro n; rewrite plus_comm; apply plus_1_l.
 Qed.
 
-Lemma plus_cancel_l : forall n m p, p + n == p + m -> n == m.
+Theorem plus_cancel_l : forall n m p, p + n == p + m -> n == m.
 Proof.
 induct p.
 do 2 rewrite plus_0_n; trivial.
 intros p IH H. do 2 rewrite plus_Sn_m in H. apply S_inj in H. now apply IH.
 Qed.
 
-Lemma plus_cancel_r : forall n m p, n + p == m + p -> n == m.
+Theorem plus_cancel_r : forall n m p, n + p == m + p -> n == m.
 Proof.
 intros n m p.
 rewrite plus_comm.
@@ -88,7 +106,7 @@ set (k := p + n); rewrite plus_comm; unfold k.
 apply plus_cancel_l.
 Qed.
 
-Lemma plus_eq_0 : forall n m, n + m == 0 -> n == 0 /\ m == 0.
+Theorem plus_eq_0 : forall n m, n + m == 0 -> n == 0 /\ m == 0.
 Proof.
 intros n m; induct n.
 rewrite plus_0_n; now split.
@@ -96,7 +114,7 @@ intros n IH H. rewrite plus_Sn_m in H.
 absurd_hyp H; [|assumption]. unfold not; apply S_0.
 Qed.
 
-Lemma succ_plus_discr : forall n m, m # S (n + m).
+Theorem succ_plus_discr : forall n m, m # S (n + m).
 Proof.
 intro n; induct m.
 intro H. apply S_0 with (n := (n + 0)). now apply (proj2 (proj2 E_equiv)). (* symmetry *)
@@ -104,19 +122,19 @@ intros m IH H. apply S_inj in H. rewrite plus_n_Sm in H.
 unfold not in IH; now apply IH.
 Qed.
 
-Lemma n_SSn : forall n, n # S (S n).
+Theorem n_SSn : forall n, n # S (S n).
 Proof.
 intro n. pose proof (succ_plus_discr 1 n) as H.
 rewrite plus_Sn_m in H; now rewrite plus_0_n in H.
 Qed.
 
-Lemma n_SSSn : forall n, n # S (S (S n)).
+Theorem n_SSSn : forall n, n # S (S (S n)).
 Proof.
 intro n. pose proof (succ_plus_discr (S (S 0)) n) as H.
 do 2 rewrite plus_Sn_m in H. now rewrite plus_0_n in H.
 Qed.
 
-Lemma n_SSSSn : forall n, n # S (S (S (S n))).
+Theorem n_SSSSn : forall n, n # S (S (S (S n))).
 Proof.
 intro n. pose proof (succ_plus_discr (S (S (S 0))) n) as H.
 do 3 rewrite plus_Sn_m in H. now rewrite plus_0_n in H.
@@ -138,7 +156,7 @@ Qed.
 
 Definition plus_eq_1_dec (m n : N) : bool := recursion true (fun _ _ => false) m.
 
-Lemma plus_eq_1_dec_step_wd : fun2_wd E eq_bool eq_bool (fun _ _ => false).
+Theorem plus_eq_1_dec_step_wd : fun2_wd E eq_bool eq_bool (fun _ _ => false).
 Proof.
 unfold fun2_wd; intros. unfold eq_bool. reflexivity.
 Qed.
@@ -153,13 +171,13 @@ unfold eq_fun2; unfold eq_bool; reflexivity.
 assumption.
 Qed.
 
-Lemma plus_eq_1_dec_0 : forall n, plus_eq_1_dec 0 n = true.
+Theorem plus_eq_1_dec_0 : forall n, plus_eq_1_dec 0 n = true.
 Proof.
 intro n. unfold plus_eq_1_dec.
 now apply recursion_0.
 Qed.
 
-Lemma plus_eq_1_dec_S : forall m n, plus_eq_1_dec (S n) m = false.
+Theorem plus_eq_1_dec_S : forall m n, plus_eq_1_dec (S n) m = false.
 Proof.
 intros n m. unfold plus_eq_1_dec.
 now rewrite (recursion_S eq_bool);

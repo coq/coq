@@ -8,11 +8,12 @@ n) must coincide with (A n') whenever n == n'. However, it is possible
 to try to use arbitrary domain and require that n == n' -> A n = A n'. *)
 
 Module Type DepRecSignature.
-Declare Module DomainModule : DomainEqSignature.
+Declare Module Export DomainModule : DomainEqSignature.
 Declare Module Export NatModule : NatSignature with
   Module DomainModule := DomainModule.
 (* Instead of these two lines, I would like to say
-Declare Module Export Nat : NatSignature with Module Domain : NatDomainEq. *)
+Declare Module Export Nat : NatSignature with Module Domain : NatEqDomain. *)
+Open Local Scope NScope.
 
 Parameter Inline dep_recursion :
   forall A : N -> Set, A 0 -> (forall n, A n -> A (S n)) -> forall n, A n.
@@ -27,11 +28,11 @@ Axiom dep_recursion_S :
 
 End DepRecSignature.
 
-Module DepRecTimesProperties (Export DepRecModule : DepRecSignature)
-                             (Export TimesModule : TimesSignature
+Module DepRecTimesProperties (Import DepRecModule : DepRecSignature)
+                             (Import TimesModule : TimesSignature
                                 with Module PlusModule.NatModule := DepRecModule.NatModule).
-
 Module Export TimesPropertiesModule := TimesProperties TimesModule.
+Open Local Scope NScope.
 
 Theorem not_0_implies_S_dep : forall n, n # O -> {m : N | n == S m}.
 Proof.
