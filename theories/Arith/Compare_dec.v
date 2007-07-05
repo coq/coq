@@ -34,7 +34,7 @@ Defined.
 Definition le_lt_dec n m : {n <= m} + {m < n}.
   induction n.
   auto with arith.
-  induction m.
+  destruct m.
   auto with arith.
   elim (IHn m); auto with arith.
 Defined.
