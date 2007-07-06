@@ -1484,6 +1484,15 @@ is a synonym for the pattern {\tt [$p_1$ {\ldots} $p_n$]}, i.e. it
 corresponds to the decomposition of an hypothesis typed by an
 inductive type with a single constructor.
 
+\Rem An additional abbreviation is allowed for sequences of rightmost
+binary conjonctions: pattern 
+{\tt \{} $p_1$ {\tt ,} {\ldots} {\tt ,} $p_n$ {\tt \}} 
+is a synonym for pattern 
+{\tt (} $p_1$ {\tt , (} $p_2$ {\tt ,} {\ldots} {\tt (}$p_{n-1}${\tt ,}$p_n${\tt )} {\ldots}  {\tt ))}.
+In particular it can be used to introduce existential hypothesis
+and/or n-ary conjonctions. 
+
+
 \begin{coq_example}
 Lemma intros_test : forall A B C:Prop, A \/ B /\ C -> (A -> C) -> C.
 intros A B C [a| [_ c]] f.
