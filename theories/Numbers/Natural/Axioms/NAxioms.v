@@ -174,7 +174,7 @@ Implicit Arguments recursion_S [A].
 
 End NatSignature.
 
-Module NatProperties (Import NatModule : NatSignature).
+Module NatProperties (Export NatModule : NatSignature).
 Module Export DomainPropertiesModule := DomainProperties DomainModule.
 Open Local Scope NScope.
 

@@ -15,7 +15,7 @@ Axiom times_Sn_m : forall n m, (S n) * m == m + n * m.
 
 End TimesSignature.
 
-Module TimesProperties (Import TimesModule : TimesSignature).
+Module TimesProperties (Export TimesModule : TimesSignature).
 Module Export PlusPropertiesModule := PlusProperties PlusModule.
 Open Local Scope NScope.
 

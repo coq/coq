@@ -1,6 +1,4 @@
-Require Import NumPrelude.
-Require Import ZDomain.
-Require Import ZAxioms.
+Require Export ZAxioms.
 
 Module Type PlusSignature.
 Declare Module Export IntModule : IntSignature.

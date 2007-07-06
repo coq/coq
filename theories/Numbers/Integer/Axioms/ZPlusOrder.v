@@ -1,8 +1,8 @@
-Require Import ZOrder.
-Require Import ZPlus.
+Require Export ZOrder.
+Require Export ZPlus.
 
-Module PlusOrderProperties (Export PlusModule : PlusSignature)
-                           (Export OrderModule : OrderSignature with
+Module PlusOrderProperties (PlusModule : PlusSignature)
+                           (OrderModule : OrderSignature with
                              Module IntModule := PlusModule.IntModule).
 (* Warning: Notation _ == _ was already used in scope ZScope !!! *)
 Module Export PlusPropertiesModule := PlusProperties PlusModule.

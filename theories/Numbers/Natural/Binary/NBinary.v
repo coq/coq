@@ -1,18 +1,16 @@
 Require Import NArith.
 Require Import Ndec.
 
-Require Import NDepRec.
-Require Import NAxioms.
-Require Import NPlus.
-Require Import NTimes.
-Require Import NLt.
-Require Import NPlusLt.
-Require Import NTimesLt.
-Require Import NMiscFunct.
+Require Export NDepRec.
+Require Export NTimesLt.
+Require Export NMiscFunct.
 
-Open Scope N_scope.
+Open Local Scope N_scope.
 
-Module BinaryDomain <: DomainEqSignature.
+Module BinaryDomain : DomainEqSignature
+  with Definition N := N
+  with Definition E := (@eq N)
+  with Definition e := Neqb.
 
 Definition N := N.
 Definition E := (@eq N).
@@ -188,17 +186,16 @@ Qed.
 
 End BinaryLt.
 
-Module Export BinaryPlusProperties := PlusProperties BinaryPlus.
-Module Export BinaryTimesProperties := TimesProperties BinaryTimes.
-Module Export BinaryDepRecTimesProperties :=
-  DepRecTimesProperties BinaryDepRec BinaryTimes.
-Module Export BinaryLtProperties := LtProperties BinaryLt.
-Module Export BinaryPlusLtProperties := PlusLtProperties BinaryPlus BinaryLt.
 Module Export BinaryTimesLtProperties := TimesLtProperties BinaryTimes BinaryLt.
 
-Module Export BinaryRecEx := MiscFunctFunctor BinaryNat.
+(*Module Export BinaryRecEx := MiscFunctFunctor BinaryNat.*)
+
+(* Just some fun comparing the efficiency of the generic log defined
+by strong (course-of-value) recursion and the log defined by recursion
+on notation *)
 (* Time Eval compute in (log 100000). *) (* 98 sec *)
 
+(*
 Fixpoint binposlog (p : positive) : N :=
 match p with
 | xH => 0
@@ -211,11 +208,5 @@ match n with
 | 0 => 0
 | Npos p => binposlog p
 end.
-
+*)
 (* Eval compute in (binlog 1000000000000000000). *) (* Works very fast *)
-
-
-(*Check nat_total_order : forall n m : N, (n = m -> False) -> lt n m \/ lt m n.
-Check mult_positive : forall n m : N, lt 0 n -> lt 0 m -> lt 0 (n * m).*)
-
-Close Scope N_scope.

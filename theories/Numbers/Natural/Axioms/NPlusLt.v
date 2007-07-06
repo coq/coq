@@ -1,8 +1,8 @@
 Require Export NPlus.
 Require Export NLt.
 
-Module PlusLtProperties (Import PlusModule : PlusSignature)
-                        (Import LtModule : LtSignature with
+Module PlusLtProperties (PlusModule : PlusSignature)
+                        (LtModule : LtSignature with
                            Module NatModule := PlusModule.NatModule).
 Module Export PlusPropertiesModule := PlusProperties PlusModule.
 Module Export LtPropertiesModule := LtProperties LtModule.

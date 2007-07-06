@@ -1,7 +1,4 @@
-Require Import NumPrelude.
-Require Import ZDomain.
-Require Import ZAxioms.
-Require Import ZPlus.
+Require Export ZPlus.
 
 Module Type TimesSignature.
 Declare Module Export PlusModule : PlusSignature.

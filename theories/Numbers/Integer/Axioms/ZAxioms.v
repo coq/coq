@@ -1,5 +1,4 @@
-Require Import NumPrelude.
-Require Import ZDomain.
+Require Export ZDomain.
 
 Module Type IntSignature.
 Declare Module Export DomainModule : DomainSignature.
@@ -24,7 +23,6 @@ Axiom induction :
     (forall x, Q x -> Q (P x)) -> forall x, Q x.
 
 End IntSignature.
-
 
 Module IntProperties (Export IntModule : IntSignature).
 Module Export DomainPropertiesModule := DomainProperties DomainModule.

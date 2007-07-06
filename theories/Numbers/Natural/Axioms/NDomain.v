@@ -61,7 +61,7 @@ Notation "x # y" := ((E x y) -> False) (at level 70) : NScope.
 
 End DomainEqSignature.
 
-Module DomainProperties (Import DomainModule : DomainSignature).
+Module DomainProperties (Export DomainModule : DomainSignature).
 (* It also accepts module of type NatDomainEq *)
 Open Local Scope NScope.
 

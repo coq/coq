@@ -1,11 +1,6 @@
-Require Import Bool. (* To get the negb function *)
-Require Import NAxioms.
-Require Import NStrongRec.
-Require Import NPlus.
-Require Import NTimes.
-Require Import NLt.
-Require Import NPlusLt.
-Require Import NTimesLt.
+Require Export Bool. (* To get the negb function *)
+Require Export NStrongRec.
+Require Export NTimesLt.
 
 Module MiscFunctFunctor (NatMod : NatSignature).
 Module Export NatPropertiesModule := NatProperties NatMod.
@@ -318,7 +313,7 @@ Qed.
 End DefaultPlusModule.
 
 Module DefaultTimesModule <: TimesSignature.
-Module Import PlusModule := DefaultPlusModule.
+Module PlusModule := DefaultPlusModule.
 
 Definition times := times.
 
@@ -361,11 +356,11 @@ Qed.
 
 End DefaultLtModule.
 
-Module Import DefaultPlusProperties := PlusProperties DefaultPlusModule.
-Module Import DefaultTimesProperties := TimesProperties DefaultTimesModule.
-Module Import DefaultLtProperties := LtProperties DefaultLtModule.
-Module Import DefaultPlusLtProperties := PlusLtProperties DefaultPlusModule DefaultLtModule.
-Module Import DefaultTimesLtProperties := TimesLtProperties DefaultTimesModule DefaultLtModule.
+Module Export DefaultPlusProperties := PlusProperties DefaultPlusModule.
+Module Export DefaultTimesProperties := TimesProperties DefaultTimesModule.
+Module Export DefaultLtProperties := LtProperties DefaultLtModule.
+Module Export DefaultPlusLtProperties := PlusLtProperties DefaultPlusModule DefaultLtModule.
+Module Export DefaultTimesLtProperties := TimesLtProperties DefaultTimesModule DefaultLtModule.
 
 (*Opaque MiscFunctFunctor.plus.
 Check plus_comm. (* This produces the following *)

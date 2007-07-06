@@ -17,7 +17,7 @@ Axiom plus_Sn_m : forall n m, (S n) + m == S (n + m).
 
 End PlusSignature.
 
-Module PlusProperties (Import PlusModule : PlusSignature).
+Module PlusProperties (Export PlusModule : PlusSignature).
 Module Export NatPropertiesModule := NatProperties NatModule.
 Open Local Scope NScope.
 

@@ -1,4 +1,4 @@
-Require Import NAxioms.
+Require Export NAxioms.
 
 Module Homomorphism (Nat1 Nat2 : NatSignature).
 

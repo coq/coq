@@ -14,8 +14,8 @@ Axiom lt_0 : forall x, ~ (x < 0).
 Axiom lt_S : forall x y, x < S y <-> x < y \/ x == y.
 End LtSignature.
 
-Module LtProperties (Import LtModule : LtSignature).
-Module Import NatPropertiesModule := NatProperties NatModule.
+Module LtProperties (Export LtModule : LtSignature).
+Module Export NatPropertiesModule := NatProperties NatModule.
 Open Local Scope NScope.
 
 Theorem lt_n_Sn : forall n, n < S n.

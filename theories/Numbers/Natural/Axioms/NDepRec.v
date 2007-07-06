@@ -1,6 +1,4 @@
-Require Import NAxioms.
-Require Import NPlus.
-Require Import NTimes.
+Require Export NTimes.
 
 (* Here we allow dependent recursion only for domains with Libniz
 equality. The reason is that, if the domain is A : nat -> Set, then (A
@@ -28,9 +26,10 @@ Axiom dep_recursion_S :
 
 End DepRecSignature.
 
-Module DepRecTimesProperties (Import DepRecModule : DepRecSignature)
-                             (Import TimesModule : TimesSignature
-                                with Module PlusModule.NatModule := DepRecModule.NatModule).
+Module DepRecTimesProperties
+  (Export DepRecModule : DepRecSignature)
+  (TimesModule : TimesSignature
+    with Module PlusModule.NatModule := DepRecModule.NatModule).
 Module Export TimesPropertiesModule := TimesProperties TimesModule.
 Open Local Scope NScope.
 

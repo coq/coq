@@ -1,12 +1,9 @@
-Require Import ZPlus.
-Require Import ZTimes.
-Require Import ZOrder.
-Require Import ZPlusOrder.
+Require Export ZTimes.
+Require Export ZPlusOrder.
 
-Module TimesOrderProperties (Export TimesModule : TimesSignature)
-                            (Export OrderModule : OrderSignature with
+Module TimesOrderProperties (TimesModule : TimesSignature)
+                            (OrderModule : OrderSignature with
                               Module IntModule := TimesModule.PlusModule.IntModule).
-
 Module Export TimesPropertiesModule := TimesProperties TimesModule.
 Module Export PlusOrderPropertiesModule :=
   PlusOrderProperties TimesModule.PlusModule OrderModule.

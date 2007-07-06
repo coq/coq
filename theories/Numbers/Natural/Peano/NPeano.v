@@ -1,10 +1,6 @@
-Require Import NDepRec.
-Require Import NPlus.
-Require Import NTimes.
-Require Import NLt.
-Require Import NPlusLt.
-Require Import NTimesLt.
-Require Import NMiscFunct.
+Require Export NDepRec.
+Require Export NTimesLt.
+Require Export NMiscFunct.
 
 Module PeanoDomain : DomainEqSignature
   with Definition N := nat
@@ -31,8 +27,6 @@ Add Relation N E
 as E_rel.
 
 End PeanoDomain.
-Open Scope NScope.
-Import PeanoDomain.
 
 Module PeanoNat <: NatSignature.
 Module Export DomainModule := PeanoDomain.
@@ -40,13 +34,6 @@ Module Export DomainModule := PeanoDomain.
 Definition O := 0.
 Definition S := S.
 
-(* For the following line, it is important that we declared
-PeanoDomain module above to be transparent, i.e., we used "<:"
-operator intead of ":". If we used ":", then the value of N, i.e.,
-nat, would not be visible here. Therefore, the type of E, which is
-N -> N -> Prop, would not be coercible to nat -> nat -> Prop.
-So we would not be able to claim that S is a morphism with respect
-to E. The same goes for defining * in terms of +, etc. *)
 Add Morphism S with signature E ==> E as S_wd.
 Proof.
 congruence.
@@ -161,11 +148,6 @@ Qed.
 
 End PeanoTimes.
 
-(* Some checks:
-Check times_eq_1 : forall n m, n * m = 1 -> n = 1 /\ m = 1.
-Eval compute in times_eq_0_dec 0 5.
-Eval compute in times_eq_0_dec 5 0. *)
-
 Module PeanoLt <: LtSignature.
 Module Export NatModule := PeanoNat.
 
@@ -190,43 +172,10 @@ End PeanoLt.
 
 (* Obtaining properties for +, *, <, and their combinations *)
 
-Module Export PeanoPlusProperties := PlusProperties PeanoPlus.
-Module Export PeanoTimesProperties := TimesProperties PeanoTimes.
-Module Export PeanoLtProperties := LtProperties PeanoLt.
-Module Export PeanoPlusLtProperties := PlusLtProperties PeanoPlus PeanoLt.
 Module Export PeanoTimesLtProperties := TimesLtProperties PeanoTimes PeanoLt.
 Module Export PeanoDepRecTimesProperties :=
   DepRecTimesProperties PeanoDepRec PeanoTimes.
 
-Module MiscFunctModule := MiscFunctFunctor PeanoNat.
+(*Module MiscFunctModule := MiscFunctFunctor PeanoNat.*)
+(* The instruction above adds about 1M to the size of the .vo file !!! *)
 
-(*Eval compute in MiscFunctModule.lt 6 5.*)
-
-(*Set Printing All.*)
-(*Check plus_comm.
-Goal forall x y : nat, x + y = y + x.
-intros x y.
-rewrite plus_comm. reflexivity. (* does now work -- but the next line does *)
-apply plus_comm.*)
-
-(*Opaque plus.
-Eval compute in (forall n m : N, E m (PeanoPlus.Nat.S (PeanoPlus.plus n m)) -> False).
-
-Eval compute in (plus_eq_1_dec 1 1).
-Opaque plus_eq_1_dec.
-Check plus_eq_1.
-Eval compute in (forall m n : N,
-       E (PeanoPlus.plus m n) (PeanoPlus.Nat.S PeanoPlus.Nat.O) ->
-       (plus_eq_1_dec m n = true ->
-        E m PeanoPlus.Nat.O /\ E n (PeanoPlus.Nat.S PeanoPlus.Nat.O)) /\
-       (plus_eq_1_dec m n = false ->
-        E m (PeanoPlus.Nat.S PeanoPlus.Nat.O) /\ E n PeanoPlus.Nat.O)).*)
-
-(*Require Import rec_ex.
-
-Module Import PeanoRecursionExamples := RecursionExamples PeanoNat.
-
-Eval compute in mult 3 15.
-Eval compute in e 100 100.
-Eval compute in log 8.
-Eval compute in half 0.*)

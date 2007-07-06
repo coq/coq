@@ -1,4 +1,4 @@
-Require Import NumPrelude.
+Require Export NumPrelude.
 
 Module Type DomainSignature.
 

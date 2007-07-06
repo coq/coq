@@ -1,21 +1,12 @@
-Require Import NDomain.
-Require Import NAxioms.
-Require Import NPlus.
-Require Import NTimes.
-Require Import NLt.
-Require Import NPlusLt.
-Require Import NTimesLt.
+Require Export NTimesLt.
+Require Export ZTimesOrder.
 
-Require Import ZDomain.
-Require Import ZAxioms.
-Require Import ZPlus.
-Require Import ZTimes.
-Require Import ZOrder.
-Require Import ZPlusOrder.
-Require Import ZTimesOrder.
+Module NatPairsDomain (Export NPlusModule : NPlus.PlusSignature) :
+  ZDomain.DomainSignature
+  with Definition Z := (N * N)%type.
+  with Definition E (p1 p2 : Z) := ((fst p1) + (snd p2) == (fst p2) + (snd p1))%Nat.
+  with Definition e (p1 p2 : Z) := e ((fst p1) + (snd p2)) ((fst p2) + (snd p1))%Nat.
 
-Module NatPairsDomain (NPlusModule : NPlus.PlusSignature) <:
-  ZDomain.DomainSignature.
 Module Export NPlusPropertiesModule := NPlus.PlusProperties NPlusModule.
 
 Definition Z : Set := (N * N)%type.
