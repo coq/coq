@@ -824,9 +824,13 @@ and pr_atom1 = function
   | TacTransitivity c -> str "transitivity" ++ pr_constrarg c
 
   (* Equality and inversion *)
-  | TacRewrite (b,ev,c,cl) -> 
-      hov 1 (str (if ev then "erewrite" else "rewrite") ++ pr_orient b ++
-             spc() ++ pr_with_bindings c ++ pr_clauses pr_ident cl) 
+  | TacRewrite (ev,l,cl) -> 
+      hov 1 (str (if ev then "erewrite" else "rewrite") ++ 
+	     prlist_with_sep
+	     (fun () -> str ","++spc())
+	     (fun (b,c) -> pr_orient b ++ spc() ++ pr_with_bindings c)
+	     l
+	     ++ pr_clauses pr_ident cl) 
   | TacInversion (DepInversion (k,c,ids),hyp) ->
       hov 1 (str "dependent " ++ pr_induction_kind k ++ spc () ++
       pr_quantified_hypothesis hyp ++

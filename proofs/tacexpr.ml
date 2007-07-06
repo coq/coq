@@ -185,7 +185,7 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacTransitivity of 'constr 
 
   (* Equality and inversion *)
-  | TacRewrite of bool * evars_flag * 'constr with_bindings * 'id gclause
+  | TacRewrite of evars_flag * (bool * 'constr with_bindings) list * 'id gclause
   | TacInversion of ('constr,'id) inversion_strength * quantified_hypothesis
       
   (* For ML extensions *)

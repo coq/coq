@@ -1728,6 +1728,16 @@ This happens if \term$_1$ does not occur in the goal.
   \tacindex{rewrite <- \dots\ in}
   Uses the equality \term$_1${\tt=}\term$_2$ from right to left to
   rewrite in \textit{clause} as explained above.
+
+\item {\tt rewrite $\term_1$, \ldots, $term_n$}\\
+  Is equivalent to {\tt rewrite $\term_1$; \ldots; rewrite $\term_n$}.
+  Orientation {\tt ->} or {\tt <-} can be inserted before each term. 
+  
+\item {\tt rewrite $\term_1$, \ldots, $term_n$ in \textit{clause}}\\
+  Is equivalent to {\tt rewrite $\term_1$ in \textit{clause}; \ldots; 
+  rewrite $\term_n$ in \textit{clause}}.
+  Orientation {\tt ->} or {\tt <-} can be inserted before each term. 
+
 \end{Variants}
 
 

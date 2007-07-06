@@ -744,9 +744,11 @@ let rec intern_atomic lf ist x =
   | TacTransitivity c -> TacTransitivity (intern_constr ist c)
 
   (* Equality and inversion *)
-  | TacRewrite (b,ev,c,cl) -> 
-      TacRewrite (b,ev,intern_constr_with_bindings ist c,
-		  clause_app (intern_hyp_location ist) cl)
+  | TacRewrite (ev,l,cl) -> 
+      TacRewrite 
+	(ev, 
+	 List.map (fun (b,c) -> (b,intern_constr_with_bindings ist c)) l,
+	 clause_app (intern_hyp_location ist) cl)
   | TacInversion (inv,hyp) ->
       TacInversion (intern_inversion_strength lf ist inv,
         intern_quantified_hypothesis ist hyp)
@@ -2158,9 +2160,9 @@ and interp_atomic ist gl = function
   | TacTransitivity c -> h_transitivity (pf_interp_constr ist gl c)
 
   (* Equality and inversion *)
-  | TacRewrite (b,ev,c,cl) -> 
-      Equality.general_multi_rewrite b ev
-	(interp_constr_with_bindings ist gl c) 
+  | TacRewrite (ev,l,cl) -> 
+      Equality.general_multi_multi_rewrite ev
+	(List.map (fun (b,c) -> (b, interp_constr_with_bindings ist gl c)) l)
 	(interp_clause ist gl cl)
   | TacInversion (DepInversion (k,c,ids),hyp) ->
       Inv.dinv k (option_map (pf_interp_constr ist gl) c)
@@ -2451,8 +2453,10 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacTransitivity c -> TacTransitivity (subst_rawconstr subst c)
 
   (* Equality and inversion *)
-  | TacRewrite (b,ev,c,cl) -> 
-      TacRewrite (b,ev,subst_raw_with_bindings subst c,cl)
+  | TacRewrite (ev,l,cl) -> 
+      TacRewrite (ev, 
+		  List.map (fun (b,c) ->b,subst_raw_with_bindings subst c) l,
+		  cl)
   | TacInversion (DepInversion (k,c,l),hyp) ->
      TacInversion (DepInversion (k,option_map (subst_rawconstr subst) c,l),hyp)
   | TacInversion (NonDepInversion _,_) as x -> x

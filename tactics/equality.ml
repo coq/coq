@@ -166,6 +166,12 @@ let general_multi_rewrite l2r with_evars c cl =
 	      (general_rewrite_ebindings l2r c with_evars)
 	      do_hyps
 
+let rec general_multi_multi_rewrite with_evars l cl = match l with 
+  | [] -> tclIDTAC
+  | (l2r,c)::l -> 
+      tclTHEN (general_multi_rewrite l2r with_evars c cl)
+	(general_multi_multi_rewrite with_evars l cl)
+
 (* Conditional rewriting, the success of a rewriting is related 
    to the resolution of the conditions by a given tactic *)
 

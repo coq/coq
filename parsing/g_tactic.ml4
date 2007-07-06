@@ -317,6 +317,9 @@ GEXTEND Gram
   rename : 
     [ [ id1 = id_or_meta; IDENT "into"; id2 = id_or_meta -> (id1,id2) ] ]
   ; 
+  rewriter : 
+    [ [ b = orient; c = constr_with_bindings -> (b,c) ] ]
+  ; 
   simple_tactic:
     [ [ 
       (* Basic tactics *)
@@ -436,10 +439,10 @@ GEXTEND Gram
       | IDENT "transitivity"; c = constr -> TacTransitivity c
 
       (* Equality and inversion *)
-      | IDENT "rewrite"; b = orient; c = constr_with_bindings ; cl = clause ->
-	  TacRewrite (b,false,c,cl)
-      | IDENT "erewrite"; b = orient; c = constr_with_bindings ; cl = clause ->
-	  TacRewrite (b,true,c,cl)
+      | IDENT "rewrite"; l = LIST1 rewriter SEP ","; cl = clause -> 
+	  TacRewrite (false,l,cl)
+      | IDENT "erewrite"; l = LIST1 rewriter SEP ","; cl = clause ->
+	  TacRewrite (true,l,cl)
       | IDENT "dependent"; k =
 	  [ IDENT "simple"; IDENT "inversion" -> SimpleInversion
 	  | IDENT "inversion" -> FullInversion
