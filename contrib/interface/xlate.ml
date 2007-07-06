@@ -1197,7 +1197,8 @@ and xlate_tac =
 	  CT_use_inversion (id, xlate_formula c,
 	    CT_id_list (List.map xlate_hyp idlist))
     | TacExtend (_,"omega", []) -> CT_omega
-    | TacRename (id1, id2) -> CT_rename(xlate_hyp id1, xlate_hyp id2)
+    | TacRename [id1, id2] -> CT_rename(xlate_hyp id1, xlate_hyp id2)
+    | TacRename _ -> xlate_error "TODO: add support for n-ary rename"
     | TacClearBody([]) -> assert false
     | TacClearBody(a::l) -> 
 	CT_clear_body (CT_id_ne_list (xlate_hyp a, List.map xlate_hyp l))
