@@ -179,6 +179,12 @@ GEXTEND Gram
     [ [ "["; tc = LIST1 intropatterns SEP "|" ; "]" -> IntroOrAndPattern tc
       | "("; tc = LIST0 simple_intropattern SEP "," ; ")" -> IntroOrAndPattern [tc]
       | "()" -> IntroOrAndPattern [[]]
+      | "{"; tc = LIST0 simple_intropattern SEP "," ; "}" -> 
+	  (* {A,B,C} is translated into (A,(B,C)) *)
+	  let rec pairify = function 
+	    | ([]|[_]|[_;_]) as l -> IntroOrAndPattern [l]
+	    | t::q -> IntroOrAndPattern [[t;pairify q]]
+	  in pairify tc
       | "_" -> IntroWildcard
       | "?" -> IntroAnonymous
       | id = ident -> IntroIdentifier id
