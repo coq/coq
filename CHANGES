@@ -8,10 +8,10 @@ Bug fixes
 Libraries
 
 - Better computational behavior of some constants (eq_nat_dec and 
-  le_lt_dec more efficient, Positive_as_OT.compare transparent 
-  in OrderedTypeEx.v, ...) [exceptionally source of incompatibilities].
+  le_lt_dec more efficient, Z_lt_le_dec and Positive_as_OT.compare 
+  transparent) [exceptionally source of incompatibilities].
 - Loading FSets/FMap used to open unwanted scopes of integer datatypes 
-  (see bug #1347). These scopes may need to be opened manually now.
+  (see bug #1347). These scopes may need to be manually opened now.
 
 Changes from V8.1gamma to V8.1
 ==============================
