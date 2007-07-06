@@ -62,6 +62,8 @@ Miscellaneous
 
 - Syntax of "Test Printing Let ref" and "Test Printing If ref" changed into
   "Test Printing Let for ref" and "Test Printing If for ref".
+- Added the possibility to choose the location of tabs in coqide:
+  (in Edit->Preferences->Misc)
 
 Changes from V8.1gamma to V8.1
 ==============================
