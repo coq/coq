@@ -1237,7 +1237,7 @@ let rec introduce_all_values_eq  cont_tac functional termine
 		  [cont_tac pmax' le_proofs';
 		   h_intros [heq;heq2];
 		   observe_tac "rewriteRL" (tclTRY (rewriteLR (mkVar heq2)));
-		   tclTHENS
+		   tclTRY (tclTHENS
 		     ( fun g -> 
 			 let t_eq = compute_renamed_type g (mkVar heq) in 
 			 let k_id,def_id = 
@@ -1259,7 +1259,7 @@ let rec introduce_all_values_eq  cont_tac functional termine
 		     [tclIDTAC;
 		      tclTHENLIST
 			[apply (delayed_force le_lt_n_Sm);
-			 compute_le_proofs le_proofs']]])
+			 compute_le_proofs le_proofs']])])
 	     functional termine f p heq1 new_pmax
 	     (p'::bounds)((mkVar pmax)::le_proofs) eqs
              (heq2::heq::hle2::hle1::new_pmax::p'::hex'::v'::ids) args]
