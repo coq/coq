@@ -10,10 +10,21 @@ Commands
 
 Libraries
 
-- Better computational behavior of some constants (eq_nat_dec more
-  efficient, Z_lt_le_dec transparent, ...) [exceptionally source of
-  incompatibilities].
+- Better computational behavior of some constants (eq_nat_dec and 
+  le_lt_dec more efficient, Z_lt_le_dec and Positive_as_OT.compare 
+  transparent, ...) [exceptionally source of incompatibilities].
 - Boolean operators moved from module Bool to module Datatypes.
+- Improvements to NArith (Nminus, Nmin, Nmax), and to QArith (in particular 
+  a better power function). 
+- In SetoidList, eqlistA now express that two lists have similar elements 
+  at the same position, while the predicate previously called eqlistA 
+  is now equivlistA (this one only states that the lists contains the same 
+  elements, nothing more). 
+- Improved FSets/FMaps. In particular FMap now provides an induction principle 
+  on maps, and some properties about FSets and fold need less hypothesis. 
+  The polymorphic parameter for the fold function is now in Type. 
+- Loading FSets/FMap used to open unwanted scopes of integer datatypes 
+  (see bug #1347). These scopes may need to be opened manually now.
 
 Language
 
@@ -57,6 +68,10 @@ Tactics
   allows support for coercions and more inference of implicit arguments.
 - Application of "f_equal"-style lemmas works better.
 - New intro pattern "@A", which genererates a fresh name based on A.
+- New intro pattern "{A,B,C}" synonym to "(A,(B,C))"
+- New syntax "rewrite A,B" for "rewrite A; rewrite B"
+- New syntax "rename a into b, c into d" for "rename a into b; rename c into d"  
+
 
 Miscellaneous
 
