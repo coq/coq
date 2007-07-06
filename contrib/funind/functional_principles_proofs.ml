@@ -140,7 +140,7 @@ let change_hyp_with_using msg hyp_id t tac : tactic =
       [tclTHENLIST 
       [	
 	(* observe_tac "change_hyp_with_using thin" *) (thin [hyp_id]);
-	(* observe_tac "change_hyp_with_using rename " *) (h_rename prov_id hyp_id)
+	(* observe_tac "change_hyp_with_using rename " *) (h_rename [prov_id,hyp_id])
       ]] g
 
 exception TOREMOVE
@@ -573,7 +573,7 @@ let instanciate_hyps_with_args (do_prove:identifier list -> tactic) hyps args_id
 	  tclTHENLIST[
 	    forward None (Genarg.IntroIdentifier prov_hid) (mkApp(mkVar hid,args));
 	    thin [hid];
-	    h_rename prov_hid hid
+	    h_rename [prov_hid,hid]
 	  ] g
       )
       ( (*

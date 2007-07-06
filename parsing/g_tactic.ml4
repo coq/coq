@@ -314,6 +314,9 @@ GEXTEND Gram
     [ [ IDENT "by"; tac = tactic_expr LEVEL "3" -> TacComplete tac
       | -> TacId [] ] ]
   ;
+  rename : 
+    [ [ id1 = id_or_meta; IDENT "into"; id2 = id_or_meta -> (id1,id2) ] ]
+  ; 
   simple_tactic:
     [ [ 
       (* Basic tactics *)
@@ -415,8 +418,7 @@ GEXTEND Gram
       | IDENT "clearbody"; l = LIST1 id_or_meta -> TacClearBody l
       | IDENT "move"; id1 = id_or_meta; IDENT "after"; id2 = id_or_meta -> 
 	  TacMove (true,id1,id2)
-      | IDENT "rename"; id1 = id_or_meta; IDENT "into"; id2 = id_or_meta -> 
-	  TacRename (id1,id2)
+      | IDENT "rename"; l = LIST1 rename SEP "," -> TacRename l
 
       (* Constructors *)
       | IDENT "left"; bl = with_bindings -> TacLeft bl

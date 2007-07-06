@@ -205,8 +205,11 @@ let thin_body_no_check ids gl =
 let move_hyp_no_check with_dep id1 id2 gl = 
   refiner (Prim (Move (with_dep,id1,id2))) gl
 
-let rename_hyp_no_check id1 id2 gl = 
-  refiner (Prim (Rename (id1,id2))) gl
+let rec rename_hyp_no_check l gl = match l with 
+  | [] -> tclIDTAC gl 
+  | (id1,id2)::l -> 
+      tclTHEN (refiner (Prim (Rename (id1,id2)))) 
+	(rename_hyp_no_check l) gl
 
 let mutual_fix f n others gl = 
   with_check (refiner (Prim (FixRule (f,n,others)))) gl
@@ -234,7 +237,7 @@ let convert_hyp d      = with_check (convert_hyp_no_check d)
 let thin l             = with_check (thin_no_check l)
 let thin_body c        = with_check (thin_body_no_check c)
 let move_hyp b id id'  = with_check (move_hyp_no_check b id id') 
-let rename_hyp id id'  = with_check (rename_hyp_no_check id id')
+let rename_hyp l       = with_check (rename_hyp_no_check l)
 
 (* Pretty-printers *)
 

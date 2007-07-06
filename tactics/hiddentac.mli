@@ -74,7 +74,7 @@ val h_lapply          : constr -> tactic
 val h_clear           : bool -> identifier list -> tactic
 val h_clear_body      : identifier list -> tactic
 val h_move            : bool -> identifier -> identifier -> tactic
-val h_rename          : identifier -> identifier -> tactic
+val h_rename          : (identifier*identifier) list -> tactic
 
 
 (* Constructors *)

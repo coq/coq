@@ -204,6 +204,15 @@ This renames hypothesis {\ident$_1$} into {\ident$_2$} in the current
 context\footnote{but it does not rename the hypothesis in the
   proof-term...}
 
+\begin{Variants}
+
+\item {\tt rename {\ident$_1$} into {\ident$_2$}, \ldots,
+    {\ident$_{2k-1}$} into {\ident$_{2k}$}}
+
+ Is equivalent to the sequence of the corresponding atomic {\tt rename}. 
+
+\end{Variants}
+
 \begin{ErrMsgs}
 
 \item \errindex{{\ident$_2$} not found}

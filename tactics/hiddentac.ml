@@ -92,8 +92,8 @@ let h_clear b l = abstract_tactic (TacClear (b,l))
 let h_clear_body l = abstract_tactic (TacClearBody l) (clear_body l)
 let h_move dep id1 id2 =
   abstract_tactic (TacMove (dep,id1,id2)) (move_hyp dep id1 id2)
-let h_rename id1 id2 =
-  abstract_tactic (TacRename (id1,id2)) (rename_hyp id1 id2)
+let h_rename l =
+  abstract_tactic (TacRename l) (rename_hyp l)
 
 (* Constructors *)
 let h_left l    = abstract_tactic (TacLeft l) (left_with_ebindings l)

@@ -782,10 +782,14 @@ and pr_atom1 = function
       hov 1
         (str "move" ++ brk (1,1) ++ pr_ident id1 ++ spc () ++ 
 	 str "after" ++ brk (1,1) ++ pr_ident id2)
-  | TacRename (id1,id2) ->
+  | TacRename l ->
       hov 1
-        (str "rename" ++ brk (1,1) ++ pr_ident id1 ++ spc () ++ 
-	 str "into" ++ brk (1,1) ++ pr_ident id2)
+        (str "rename" ++ brk (1,1) ++
+         prlist_with_sep 
+	   (fun () -> str "," ++ brk (1,1))
+	   (fun (i1,i2) -> 
+	      pr_ident i1 ++ spc () ++ str "into" ++ spc () ++ pr_ident i2)
+	   l)
 
   (* Constructors *)
   | TacLeft l -> hov 1 (str "left" ++ pr_bindings l)

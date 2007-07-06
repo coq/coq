@@ -132,7 +132,7 @@ val convert_hyp_no_check      : named_declaration -> tactic
 val thin_no_check             : identifier list -> tactic
 val thin_body_no_check        : identifier list -> tactic
 val move_hyp_no_check         : bool -> identifier -> identifier -> tactic
-val rename_hyp_no_check       : identifier -> identifier -> tactic
+val rename_hyp_no_check       : (identifier*identifier) list -> tactic
 val mutual_fix      :
   identifier -> int -> (identifier * int * constr) list -> tactic
 val mutual_cofix    : identifier -> (identifier * constr) list -> tactic
@@ -150,7 +150,7 @@ val convert_hyp      : named_declaration -> tactic
 val thin             : identifier list -> tactic
 val thin_body        : identifier list -> tactic
 val move_hyp         : bool -> identifier -> identifier -> tactic
-val rename_hyp       : identifier -> identifier -> tactic
+val rename_hyp       : (identifier*identifier) list -> tactic
 
 (*s Tactics handling a list of goals. *)
 

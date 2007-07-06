@@ -159,7 +159,7 @@ val keep          : identifier list -> tactic
 val new_hyp       : int option -> constr with_ebindings -> tactic
 
 val move_hyp      : bool -> identifier -> identifier -> tactic
-val rename_hyp    : identifier -> identifier -> tactic
+val rename_hyp    : (identifier * identifier) list -> tactic
 
 (*s Resolution tactics. *)
 
