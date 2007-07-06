@@ -7,17 +7,11 @@ Bug fixes
 
 Libraries
 
-- Proofs of eq_nat_dec and le_lt_dec have been simplified (only one
-induction). This improves drastically the behavior of Coq virtual
-machine when computing with these terms. This changes should normally
-have no noticeable effect on compatibility. 
-- In file OrderedTypeEx.v containing examples of ready-to-use ordered
-types of FSets/FMaps, comparison function for the "positive" datatype
-can now compute properly (Defined is used instead of Qed). Proof
-scripts using Positive_as_OT might have to be slightly adapted.
-- Loading FSets/FMap used to open unwanted scopes of integer
-datatypes (see bug #1347). These scopes may need to be opened manually
-now.
+- Better computational behavior of some constants (eq_nat_dec and 
+  le_lt_dec more efficient, Positive_as_OT.compare transparent 
+  in OrderedTypeEx.v, ...) [exceptionally source of incompatibilities].
+- Loading FSets/FMap used to open unwanted scopes of integer datatypes 
+  (see bug #1347). These scopes may need to be opened manually now.
 
 Changes from V8.1gamma to V8.1
 ==============================
