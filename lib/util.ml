@@ -445,6 +445,14 @@ let list_fold_map' f l e =
 
 let list_map_assoc f = List.map (fun (x,a) -> (x,f a))
 
+(* list_combinations [[a;b];[c;d]] gives [[a;c];[a;d];[b;c];[b;d]] *)
+
+let rec list_combinations = function 
+  | [] -> [[]]
+  | l::ll -> 
+      let res = list_combinations ll in 
+      list_map_append (fun x -> List.map (fun l -> x::l) res) l
+
 (* Arrays *)
 
 let array_exists f v = 

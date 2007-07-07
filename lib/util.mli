@@ -138,6 +138,9 @@ val list_join_map : ('a -> 'b list) -> 'a list -> 'b list
 val list_fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
 val list_fold_map' : ('b -> 'a -> 'c * 'a) -> 'b list -> 'a -> 'c list * 'a
 val list_map_assoc : ('a -> 'b) -> ('c * 'a) list -> ('c * 'b) list
+(* list_combinations [[a;b];[c;d]] gives [[a;c];[a;d];[b;c];[b;d]] *)
+val list_combinations : 'a list list -> 'a list list
+
 
 (*s Arrays. *)
 

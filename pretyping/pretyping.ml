@@ -43,6 +43,34 @@ open Inductiveops
 
 (************************************************************************)
 
+(* An auxiliary function for searching for fixpoint guard indexes *)
+
+exception Found of int array
+
+let search_guard loc env possible_indexes fixdefs = 
+  (* Standard situation with only one possibility for each fix. *)
+  (* We treat it separately in order to get proper error msg. *)
+  if List.for_all (fun l->1=List.length l) possible_indexes then 
+    let indexes = Array.of_list (List.map List.hd possible_indexes) in 
+    let fix = ((indexes, 0),fixdefs) in
+    (try check_fix env fix with 
+       | e -> if loc = dummy_loc then raise e else Stdpp.raise_with_loc loc e);
+    indexes
+  else
+    (* we now search recursively amoungst all combinations *)
+    (try     
+       List.iter 
+	 (fun l -> 
+	    let indexes = Array.of_list l in 
+	    let fix = ((indexes, 0),fixdefs) in
+	    try check_fix env fix; raise (Found indexes) 
+	    with TypeError _ -> ())
+	 (list_combinations possible_indexes); 
+       let errmsg = "cannot guess decreasing argument of fix" in 
+       if loc = dummy_loc then error errmsg else 
+	 user_err_loc (loc,"search_guard", Pp.str errmsg)
+     with Found indexes -> indexes)
+
 (* To embed constr in rawconstr *)
 let ((constr_in : constr -> Dyn.t),
      (constr_out : Dyn.t -> constr)) = create "constr"
@@ -266,6 +294,8 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     | RProp c -> judge_of_prop_contents c
     | RType _ -> judge_of_new_Type ()
 
+  exception Found of fixpoint
+
   (* [pretype tycon env isevars lvar lmeta cstr] attempts to type [cstr] *)
   (* in environment [env], with existential variables [(evars_of isevars)] and *)
   (* the type constraint tycon *)
@@ -342,28 +372,22 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	evar_type_fixpoint loc env isevars names ftys vdefj;
 	let fixj = match fixkind with
 	  | RFix (vn,i) ->
-	      let guard_indexes = Array.mapi 
+	      (* First, let's find the guard indexes. *)
+	      (* If recursive argument was not given by user, we try all args.
+	         An earlier approach was to look only for inductive arguments,
+		 but doing it properly involves delta-reduction, and it finally 
+                 doesn't seem to worth the effort (except for huge mutual 
+		 fixpoints ?) *)
+	      let possible_indexes = Array.to_list (Array.mapi 
 		(fun i (n,_) -> match n with 
-		   | Some n -> n 
-		   | None -> 
-		       (* Recursive argument was not given by the user : We
-			  check that there is only one inductive argument *)
-		       let ctx = ctxtv.(i) in 
-		       let isIndApp t = 
-			 isInd (fst (decompose_app (strip_head_cast t))) in
-			 (* This could be more precise (e.g. do some delta) *)
-		       let lb = List.rev_map (fun (_,_,t) -> isIndApp t) ctx in
-		       try (list_unique_index true lb) - 1
-		       with Not_found -> 
-			 Util.user_err_loc
-			   (loc,"pretype",
-			    Pp.str "cannot guess decreasing argument of fix"))
-		vn 
-	      in
-	      let fix = ((guard_indexes, i),(names,ftys,Array.map j_val vdefj)) in
-	      (try check_fix env fix with e -> Stdpp.raise_with_loc loc e);
-	      make_judge (mkFix fix) ftys.(i)
-	  | RCoFix i -> 
+		   | Some n -> [n]
+		   | None -> list_map_i (fun i _ -> i) 0 ctxtv.(i))
+		vn)
+	      in 
+	      let fixdecls = (names,ftys,Array.map j_val vdefj) in 
+	      let indexes = search_guard loc env possible_indexes fixdecls in 
+	      make_judge (mkFix ((indexes,i),fixdecls)) ftys.(i)
+	  | RCoFix i ->
 	      let cofix = (i,(names,ftys,Array.map j_val vdefj)) in
 	      (try check_cofix env cofix with e -> Stdpp.raise_with_loc loc e);
 	      make_judge (mkCoFix cofix) ftys.(i) in

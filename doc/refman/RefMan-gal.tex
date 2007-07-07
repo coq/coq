@@ -1329,9 +1329,8 @@ syntactical constraints on a special argument called the decreasing
 argument. They are needed to ensure that the {\tt Fixpoint} definition
 always terminates. The point of the {\tt \{struct \ident {\tt \}}}
 annotation is to let the user tell the system which argument decreases
-along the recursive calls. This annotation may be left implicit for
-fixpoints where only one argument has an inductive type. For instance,
-one can define the addition function as :
+along the recursive calls. For instance, one can define the addition 
+function as :
 
 \begin{coq_example}
 Fixpoint add (n m:nat) {struct n} : nat :=
@@ -1340,6 +1339,15 @@ Fixpoint add (n m:nat) {struct n} : nat :=
   | S p => S (add p m)
   end.
 \end{coq_example}
+
+The {\tt \{struct \ident {\tt \}}} annotation may be left implicit, in
+this case the system try successively arguments from left to right
+until it finds one that satisfies the decreasing condition. Note that
+some fixpoints may have several arguments that fit as decreasing
+arguments, and this choice influences the reduction of the
+fixpoint. Hence an explicit annotation must be used if the leftmost
+decreasing argument is not the desired one. Writing explicit
+annotations can also speed up type-checking of large mutual fixpoints.
 
 The {\tt match} operator matches a value (here \verb:n:) with the
 various constructors of its (inductive) type. The remaining arguments

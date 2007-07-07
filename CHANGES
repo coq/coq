@@ -1,6 +1,12 @@
 Changes from V8.1 to V8.2
 =========================
 
+Language 
+
+- If a fixpoint is not written with an explicit { struct ... }, then 
+  all arguments are tried successively (from left to right) until one is 
+  found that satisfies the structural decreasing condition.
+
 Commands
 
 - Added option Global to "Implicit Arguments" and "Arguments Scope" for

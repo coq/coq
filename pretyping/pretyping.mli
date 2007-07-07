@@ -18,6 +18,11 @@ open Rawterm
 open Evarutil
 (*i*)
 
+(* An auxiliary function for searching for fixpoint guard indexes *)
+
+val search_guard : 
+    Util.loc -> env -> int list list -> rec_declaration -> int array
+
 type typing_constraint = OfType of types option | IsType
 
 type var_map = (identifier * unsafe_judgment) list

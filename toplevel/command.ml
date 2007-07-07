@@ -452,13 +452,27 @@ let build_mutual l finite =
 
 (* 3c| Fixpoints and co-fixpoints *)
 
-let recursive_message = function
-  | [] -> anomaly "no recursive definition"
-  | [id] -> pr_id id ++ str " is recursively defined"
-  | l -> hov 0 (prlist_with_sep pr_coma pr_id l ++
-		    spc () ++ str "are recursively defined")
+let pr_rank = function 
+  | 0 -> str "1st"
+  | 1 -> str "2nd"
+  | 2 -> str "3rd"
+  | n -> str ((string_of_int n)^"th")
 
-let corecursive_message = function
+let recursive_message indexes = function
+  | [] -> anomaly "no recursive definition"
+  | [id] -> pr_id id ++ str " is recursively defined" ++
+      (match indexes with 
+	 | Some [|i|] -> str " (decreasing on "++pr_rank i++str " argument)"
+ 	 | _ -> mt ())
+  | l -> hov 0 (prlist_with_sep pr_coma pr_id l ++
+		  spc () ++ str "are recursively defined" ++
+		  match indexes with 
+		    | Some a -> spc () ++ str "(decreasing respectively on " ++
+			prlist_with_sep pr_coma pr_rank (Array.to_list a) ++
+			str " arguments)"
+		    | None -> mt ())
+
+let corecursive_message _ = function
   | [] -> error "no corecursive definition"
   | [id] -> pr_id id ++ str " is corecursively defined"
   | l -> hov 0 (prlist_with_sep pr_coma pr_id l ++
@@ -572,19 +586,18 @@ let prepare_recursive_declaration fixnames fixtypes fixdefs =
   let names = List.map (fun id -> Name id) fixnames in
   (Array.of_list names, Array.of_list fixtypes, Array.of_list defs)
 
-let compute_guardness_evidence (n,_) fixl fixtype =
+let compute_possible_guardness_evidences (n,_) fixl fixtype =
   match n with 
-  | Some n -> n 
+  | Some n -> [n] 
   | None -> 
-      (* Recursive argument was not given by the user : 
-	 We check that there is only one inductive argument *)
+      (* If recursive argument was not given by user, we try all args.
+	 An earlier approach was to look only for inductive arguments,
+	 but doing it properly involves delta-reduction, and it finally 
+         doesn't seem to worth the effort (except for huge mutual 
+	 fixpoints ?) *)
       let m = local_binders_length fixl.fix_binders in
       let ctx = fst (Sign.decompose_prod_n_assum m fixtype) in
-      let isIndApp t = isInd (fst (decompose_app (strip_head_cast t))) in 
-      (* This could be more precise (e.g. do some delta) *)
-      let lb = List.rev_map (fun (_,_,t) -> isIndApp t) ctx in
-      try (list_unique_index true lb) - 1
-      with Not_found -> error "the recursive argument needs to be specified"
+      list_map_i (fun i _ -> i) 0 ctx
 
 let interp_recursive fixkind l boxed =
   let env = Global.env() in
@@ -618,18 +631,20 @@ let interp_recursive fixkind l boxed =
 
   (* Build the fix declaration block *)
   let fixdecls = prepare_recursive_declaration fixnames fixtypes fixdefs in
-  let fixdecls = 
+  let indexes, fixdecls = 
     match fixkind with
     | IsFixpoint wfl ->
-	let fixwf = list_map3 compute_guardness_evidence wfl fixl fixtypes in
-	list_map_i (fun i _ -> mkFix ((Array.of_list fixwf,i),fixdecls)) 0 l
+	let possible_indexes = 
+	  list_map3 compute_possible_guardness_evidences wfl fixl fixtypes in
+	let indexes = search_guard dummy_loc env possible_indexes fixdecls in 
+	Some indexes, list_map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 l
     | IsCoFixpoint ->
-	list_map_i (fun i _ -> mkCoFix (i,fixdecls)) 0 l
+	None, list_map_i (fun i _ -> mkCoFix (i,fixdecls)) 0 l
   in
 
   (* Declare the recursive definitions *)
   ignore (list_map3 (declare_fix boxed kind) fixnames fixdecls fixtypes);
-  if_verbose ppnl (recursive_message kind fixnames);
+  if_verbose ppnl (recursive_message kind indexes fixnames);
 
   (* Declare notations *)
   List.iter (declare_interning_data ([],[])) notations
@@ -680,7 +695,7 @@ let build_induction_scheme lnamedepindsort =
     ConstRef kn :: lrecref
   in 
   let _ = List.fold_right2 declare listdecl lrecnames [] in
-  if_verbose ppnl (recursive_message Fixpoint lrecnames)
+  if_verbose ppnl (recursive_message Fixpoint None lrecnames)
 
 let build_scheme l = 
   let ischeme,escheme = split_scheme l in
@@ -745,7 +760,7 @@ let build_combined_scheme name schemes =
              const_entry_opaque = false;
 	     const_entry_boxed = Options.boxed_definitions() } in
   let _ = declare_constant (snd name) (DefinitionEntry ce, IsDefinition Scheme) in
-    if_verbose ppnl (recursive_message Fixpoint [snd name])
+    if_verbose ppnl (recursive_message Fixpoint None [snd name])
 
 (* 4| Goal declaration *)
 
