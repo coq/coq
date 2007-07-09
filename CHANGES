@@ -5,6 +5,12 @@ Bug fixes
 
 - Many bugs have been fixed (cf coq-bugs web page)
 
+Tactics
+ 
+- All known failures of ROmega have been fixed. It should now be a 
+  faithful and quicker replacement for Omega (except when nat parts
+  are involved). ROmega and Omega now handle <->. 
+
 Libraries
 
 - Better computational behavior of some constants (eq_nat_dec and 

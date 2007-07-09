@@ -8,16 +8,16 @@ Lemma test_romega_0 :
   0<= m <= 1 -> 0<= m' <= 1 -> (0 < m <-> 0 < m') -> m = m'.
 Proof.
 intros.
-(*omega.*)
-Admitted.
+omega.
+Qed.
 
 Lemma test_romega_0b : 
  forall m m', 
   0<= m <= 1 -> 0<= m' <= 1 -> (0 < m <-> 0 < m') -> m = m'.
 Proof.
 intros m m'.
-(*omega.*)
-Admitted.
+omega.
+Qed.
 
 Lemma test_romega_1 : 
  forall (z z1 z2 : Z), 

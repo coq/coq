@@ -6,6 +6,10 @@
 
  *************************************************************************)
 
+(* The addition on int, since it while be hidden soon by the one on BigInt *)
+
+let (+.) = (+)
+
 open Const_omega
 module OmegaSolver = Omega.MakeOmegaSolver (Bigint)
 open OmegaSolver
@@ -792,6 +796,9 @@ and oproposition_of_constr env ((negated,depends,origin,path) as ctxt) gl c =
     | Kimp(t1,t2) ->
 	binprop env ctxt (not negated) (not negated) gl 
 	  (fun i x y -> Pimp(i,x,y)) t1 t2
+    | Kapp("iff",[t1;t2]) ->
+	binprop env ctxt negated negated gl 
+	  (fun i x y -> Pand(i,x,y)) (Term.mkArrow t1 t2) (Term.mkArrow t2 t1)
     | _ -> Pprop c
   with e when Logic.catchable_exception e -> Pprop c
 
@@ -995,10 +1002,10 @@ let rec equas_of_solution_tree = function
       list_union (equas_of_solution_tree t1) (equas_of_solution_tree t2)
   | Leaf s -> s.s_equa_deps
 
-
-(* Because of really_useful_prop, decidable formulas such as Pfalse
-   and Ptrue are moved to Pprop, thus breaking the decidability check
-   in ReflOmegaCore.concl_to_hyp... *)
+(* [really_useful_prop] pushes useless props in a new Pprop variable *)
+(* Things get shorter, but may also get wrong, since a Prop is considered 
+   to be undecidable in ReflOmegaCore.concl_to_hyp, whereas for instance 
+   Pfalse is decidable. So should not be used on conclusion (??) *)
 
 let really_useful_prop l_equa c =
   let rec real_of = function
@@ -1033,6 +1040,14 @@ let really_useful_prop l_equa c =
   match loop c with
     None -> Pprop (real_of c)
   | Some t -> t
+
+let rec vars_of_prop = function 
+  | Pequa(_,e) -> vars_of_equations [e]
+  | Pnot p -> vars_of_prop p
+  | Por(_,p1,p2) -> list_union (vars_of_prop p1) (vars_of_prop p2)
+  | Pand(_,p1,p2) -> list_union (vars_of_prop p1) (vars_of_prop p2)
+  | Pimp(_,p1,p2) -> list_union (vars_of_prop p1) (vars_of_prop p2)
+  | _ -> []
 
 let rec display_solution_tree ch = function
     Leaf t -> 
@@ -1160,9 +1175,14 @@ let replay_history env env_hyp =
       |	CONSTANT_NUL e :: l ->
 	  mkApp (Lazy.force coq_s_constant_nul, 
 		 [|  mk_nat (get_hyp env_hyp e) |])
-      |	NEGATE_CONTRADICT(e1,e2,b) :: l ->
+      |	NEGATE_CONTRADICT(e1,e2,true) :: l ->
 	  mkApp (Lazy.force coq_s_negate_contradict, 
 		 [|  mk_nat (get_hyp env_hyp e1.id);
+		     mk_nat (get_hyp env_hyp e2.id) |])
+      |	NEGATE_CONTRADICT(e1,e2,false) :: l ->
+	  mkApp (Lazy.force coq_s_negate_contradict_inv, 
+		 [|  mk_nat (List.length e2.body); 
+		     mk_nat (get_hyp env_hyp e1.id);
 		     mk_nat (get_hyp env_hyp e2.id) |])
       | SPLIT_INEQ(e,(e1,l1),(e2,l2)) :: l ->
 	  let i =  get_hyp env_hyp e.id in
@@ -1254,14 +1274,18 @@ let resolution env full_reified_goal systems_list =
   let l_hyps = id_concl :: list_remove id_concl l_hyps' in
   let useful_hyps =
     List.map (fun id -> List.assoc id full_reified_goal) l_hyps in
-  let useful_vars = vars_of_equations equations in
+  let useful_vars = 
+    let really_useful_vars = vars_of_equations equations in
+    let concl_vars = vars_of_prop (List.assoc id_concl full_reified_goal) in     
+    list_uniq (List.sort compare (really_useful_vars @ concl_vars))
+  in 
   (* variables a introduire *)
   let to_introduce = add_stated_equations env solution_tree in
   let stated_vars =  List.map (fun (v,_,_,_) -> v) to_introduce in
   let l_generalize_arg = List.map (fun (_,t,_,_) -> t) to_introduce in
   let hyp_stated_vars = List.map (fun (_,_,_,id) -> CCEqua id) to_introduce in
   (* L'environnement de base se construit en deux morceaux :
-     - les variables des équations utiles
+     - les variables des équations utiles (et de la conclusion)
      - les nouvelles variables declarées durant les preuves *)
   let all_vars_env = useful_vars @ stated_vars in
   let basic_env =
@@ -1280,8 +1304,7 @@ let resolution env full_reified_goal systems_list =
               to_introduce in
   let reified_concl = 
     match useful_hyps with
-      (Pnot p) :: _ ->
-	reified_of_proposition env (really_useful_prop useful_equa_id p)
+      (Pnot p) :: _ -> reified_of_proposition env p
     | _ ->  reified_of_proposition env Pfalse in
   let l_reified_terms =
     (List.map
@@ -1301,9 +1324,13 @@ let resolution env full_reified_goal systems_list =
 	          [| e.e_trace |]
       |	((O_left | O_mono) :: l) -> app coq_p_left [| loop l |]
       |	(O_right :: l) -> app coq_p_right [| loop l |] in
-    app coq_pair_step 
-        [| mk_nat (list_index e.e_origin.o_hyp l_hyps) ;
-	   loop e.e_origin.o_path |] in
+    let correct_index = 
+      let i = list_index e.e_origin.o_hyp l_hyps in 
+      (* PL: it seems that additionnally introduced hyps are in the way during 
+             normalization, hence this index shifting... *) 
+      if i=0 then 0 else i +. List.length to_introduce
+    in 	
+    app coq_pair_step [| mk_nat correct_index; loop e.e_origin.o_path |] in
   let normalization_trace =
     mk_list (Lazy.force coq_h_step) (List.map normalize_equation equations) in
 

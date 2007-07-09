@@ -8,16 +8,16 @@ Lemma test_romega_0 :
   0<= m <= 1 -> 0<= m' <= 1 -> (0 < m <-> 0 < m') -> m = m'.
 Proof.
 intros.
-(*romega.*)
-Admitted.
+romega.
+Qed.
 
 Lemma test_romega_0b : 
  forall m m', 
   0<= m <= 1 -> 0<= m' <= 1 -> (0 < m <-> 0 < m') -> m = m'.
 Proof.
 intros m m'.
-(*romega.*)
-Admitted.
+romega.
+Qed.
 
 Lemma test_romega_1 : 
  forall (z z1 z2 : Z), 
@@ -42,8 +42,8 @@ Lemma test_romega_1b :
     z >= 0.
 Proof.
 intros z z1 z2.
-(* romega. *) 
-Admitted.
+romega.
+Qed.
 
 Lemma test_romega_2 : forall a b c:Z, 
  0<=a-b<=1 -> b-c<=2 -> a-c<=3.
@@ -56,8 +56,8 @@ Lemma test_romega_2b : forall a b c:Z,
  0<=a-b<=1 -> b-c<=2 -> a-c<=3.
 Proof.
 intros a b c.
-(*romega.*)
-Admitted.
+romega.
+Qed.
 
 Lemma test_romega_3 : forall a b h hl hr ha hb, 
  0 <= ha - hl <= 1 -> 
@@ -115,22 +115,22 @@ Qed.
 Lemma test_romega_6b : forall z, z>=0 -> 0>z+2 -> False.
 Proof.
 intros z.
-(*romega. *)
-Admitted.
+romega.
+Qed.
 
 Lemma test_romega_7 : forall z, 
   0>=0 /\ z=0 \/ 0<=0 /\ z =0 -> 1 = z+1.
 Proof.
 intros.
-(*romega.*)
-Admitted.
+romega.
+Qed.
 
 Lemma test_romega_7b : forall z, 
   0>=0 /\ z=0 \/ 0<=0 /\ z =0 -> 1 = z+1.
 Proof.
 intros.
-(*romega.*)
-Admitted.
+romega.
+Qed.
 
 (* Magaud #240 *)
 
@@ -144,6 +144,9 @@ intros x y.
 romega.
 Qed.
 
+(* Besson #1298 *)
 
-
-
+Lemma test_romega9 : forall z z':Z, z<>z' -> z'=z -> False.
+intros.
+romega.
+Qed.

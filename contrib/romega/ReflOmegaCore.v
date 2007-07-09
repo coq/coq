@@ -1848,6 +1848,15 @@ Definition exact_divide (k : Z) (body : term) (t : nat)
           end
       | false => TrueTerm
       end
+  | NeqTerm (Tint Z0) b =>
+      match eq_term (scalar_norm t (body * Tint k)%term) b with
+      | true =>
+          match eq_Z k 0 with
+          | true => FalseTerm
+          | false => NeqTerm (Tint 0) body
+          end
+      | false => TrueTerm
+      end
   | _ => TrueTerm
   end.
 
@@ -1858,16 +1867,22 @@ Theorem exact_divide_valid :
 unfold valid1, exact_divide in |- *; intros k1 k2 t ep e p1; Simplify;
  simpl in |- *; auto; elim_eq_term (scalar_norm t (k2 * Tint k1)%term) t1;
  simpl in |- *; auto; elim_eq_Z k1 0; simpl in |- *; 
- auto; intros H1 H2; elim H2; elim scalar_norm_stable; 
- simpl in |- *; generalize H1; case (interp_term e k2); 
+ auto; intros H1 H2; elim H2; elim scalar_norm_stable;
+ simpl in |- *; 
+ [
+ generalize H1; case (interp_term e k2); 
  try trivial;
  (case k1; simpl in |- *;
    [ intros; absurd (0 = 0); assumption
    | intros p2 p3 H3 H4; discriminate H4
-   | intros p2 p3 H3 H4; discriminate H4 ]).
-
+   | intros p2 p3 H3 H4; discriminate H4 ])
+ |
+ subst k1; rewrite Zmult_comm; simpl in *; intros; absurd (0=0); trivial
+ |
+ generalize H1; case (interp_term e k2); 
+ try trivial; intros p2 p3 H3 H4; discriminate H4
+ ].
 Qed.
-
 
 
 (* \paragraph{[O_DIV_APPROX]}
@@ -1954,7 +1969,7 @@ Definition state (m : Z) (s : step) (prop1 prop2 : proposition) :=
   match prop1 with
   | EqTerm (Tint Z0) b1 =>
       match prop2 with
-      | EqTerm (Tint Z0) (b2 + - b3)%term =>
+      | EqTerm b2 b3 =>
           EqTerm (Tint 0) (rewrite s (b1 + (- b3 + b2) * Tint m)%term)
       | _ => TrueTerm
       end
@@ -1965,10 +1980,8 @@ Theorem state_valid : forall (m : Z) (s : step), valid2 (state m s).
 
 unfold valid2 in |- *; intros m s ep e p1 p2; unfold state in |- *; Simplify;
  simpl in |- *; auto; elim (rewrite_stable s e); simpl in |- *; 
- intros H1 H2; elim H1;
- rewrite (Zplus_comm (- interp_term e t5) (interp_term e t3)); 
- elim H2; simpl in |- *; reflexivity.
-
+ intros H1 H2; elim H1.
+ rewrite H2; rewrite Zplus_opp_l; simpl; reflexivity.
 Qed.
 
 (* \subsubsection{Tactiques générant plusieurs but}
