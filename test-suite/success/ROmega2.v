@@ -4,6 +4,20 @@ Require Import ZArith ROmega.
 
 Open Scope Z_scope.
 
+
+(* First a simplified version used during debug of romega on Test46 *)
+Lemma Test46_simplified : 
+forall v1 v2 v5 : Z,
+0 = v2 + v5 ->
+0 < v5 ->
+0 < v2 ->
+4*v2 <> 5*v1.
+intros.
+romega.
+Qed.
+
+
+(* The complete problem *)
 Lemma Test46 : 
 forall v1 v2 v3 v4 v5 : Z,
 ((2 * v4) + (5)) + (8 * v2) <= ((4 * v4) + (3 * v4)) + (5 * v4) ->
@@ -23,6 +37,5 @@ forall v1 v2 v3 v4 v5 : Z,
 ((7 * v1) + (1 * v3)) + ((2 * v3) + (1 * v3)) >= ((6 * v5) + (4)) + ((1) + (9))
 -> False.
 intros.
-(*romega.*)
-Admitted.
-
+romega.
+Qed.

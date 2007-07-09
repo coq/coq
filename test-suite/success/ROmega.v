@@ -7,8 +7,8 @@ Lemma lem1 :
  forall x y : Z, (-5 < x < 5)%Z -> (-5 < y)%Z -> (-5 < x + y + 5)%Z.
 Proof.
 intros x y.
- (*romega.*)
-Admitted.
+romega.
+Qed.
 
 (* Proposed by Pierre Crégut *)
 
@@ -22,8 +22,8 @@ Qed.
 Lemma lem3 : forall x y : Z, x = y -> (x + x)%Z = (y + y)%Z.
 Proof.
 intros.
- (*romega.*)
-Admitted.
+romega. 
+Qed.
 
 (* Proposed by Jean-Christophe Filliâtre: confusion between an Omega *)
 (* internal variable and a section variable (June 2001) *)
@@ -68,7 +68,7 @@ Variable n : nat.
 Variable ap_n : n <> 0.
 Let delta := f n ap_n.
 Lemma lem7 : n = n.
- (*romega.*) (*ROMEGA CANT DEAL WITH NAT*)
+ (*romega. ---> ROMEGA CANT DEAL WITH NAT*)
 Admitted.
 End C.
 
@@ -76,7 +76,7 @@ End C.
 Require Import Omega.
 Lemma lem8 : forall H : 0 = 0 -> 0 = 0, H = H -> 0 = 0.
 intros.
-(* romega.*) (*ROMEGA CANT DEAL WITH NAT*)
+(* romega. ---> ROMEGA CANT DEAL WITH NAT*)
 Admitted.
 
 (* Bug that what caused by the use of intro_using in Omega *)
@@ -84,7 +84,7 @@ Require Import Omega.
 Lemma lem9 :
  forall p q : nat, ~ (p <= q /\ p < q \/ q <= p /\ p < q) -> p < p \/ p <= p.
 intros.
-(* romega.*)(*ROMEGA CANT DEAL WITH NAT*) 
+(* romega. ---> ROMEGA CANT DEAL WITH NAT*) 
 Admitted.
 
 (* Check that the interpretation of mult on nat enforces its positivity *)
