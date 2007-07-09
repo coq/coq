@@ -26,9 +26,9 @@
 
 include config/Makefile
 
-.PHONY: NOARG
+.PHONY: NOARG world worldnodep
 
-NOARG: world
+NOARG: worldnodep
 
 help:
 	@echo "Please use either"
