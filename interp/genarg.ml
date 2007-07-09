@@ -87,7 +87,7 @@ let rec pr_intro_pattern = function
   | IntroWildcard -> str "_"
   | IntroIdentifier id -> pr_id id
   | IntroAnonymous -> str "?"
-  | IntroFresh id -> str "@" ++ pr_id id
+  | IntroFresh id -> str "?" ++ pr_id id
 
 and pr_case_intro_pattern = function
   | [pl] ->
