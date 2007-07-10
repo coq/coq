@@ -692,6 +692,22 @@ Proof.
   destruct b; intuition.
 Qed.
 
+(* Rewrite rules about andb, orb and if (used in romega) *)
+
+Lemma andb_if : forall (A:Set)(a a':A)(b b' : bool), 
+  (if b && b' then a else a') = 
+  (if b then if b' then a else a' else a').
+Proof.
+ destruct b; destruct b'; auto.
+Qed.
+
+Lemma negb_if : forall (A:Set)(a a':A)(b:bool), 
+ (if negb b then a else a') = 
+ (if b then a' else a).
+Proof.
+ destruct b; auto.
+Qed.
+
 (* Compatibility *)
 
 Notation andb := Datatypes.andb (only parsing).

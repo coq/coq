@@ -371,7 +371,7 @@ theories/Ints/BigZ.vo: theories/Ints/BigZ.v theories/Ints/BigN.vo theories/Ints/
 theories/Ints/num/QMake.vo: theories/Ints/num/QMake.v theories/Bool/Bool.vo theories/ZArith/ZArith.vo theories/Arith/Arith.vo theories/Ints/BigN.vo theories/Ints/BigZ.vo
 contrib/omega/OmegaLemmas.vo: contrib/omega/OmegaLemmas.v theories/ZArith/ZArith_base.vo
 contrib/omega/Omega.vo: contrib/omega/Omega.v theories/ZArith/ZArith_base.vo contrib/omega/OmegaLemmas.vo theories/ZArith/Zhints.vo
-contrib/romega/ReflOmegaCore.vo: contrib/romega/ReflOmegaCore.v theories/Arith/Arith.vo theories/Lists/List.vo theories/Bool/Bool.vo theories/ZArith/ZArith_base.vo contrib/omega/OmegaLemmas.vo theories/Logic/Decidable.vo
+contrib/romega/ReflOmegaCore.vo: contrib/romega/ReflOmegaCore.v theories/Lists/List.vo theories/Bool/Bool.vo theories/Bool/Sumbool.vo theories/Arith/EqNat.vo contrib/setoid_ring/Ring_theory.vo theories/Logic/Decidable.vo theories/ZArith/ZArith_base.vo
 contrib/romega/ROmega.vo: contrib/romega/ROmega.v contrib/romega/ReflOmegaCore.vo
 contrib/ring/LegacyArithRing.vo: contrib/ring/LegacyArithRing.v theories/Bool/Bool.vo contrib/ring/LegacyRing.vo theories/Arith/Arith.vo theories/Logic/Eqdep_dec.vo
 contrib/ring/Ring_normalize.vo: contrib/ring/Ring_normalize.v contrib/ring/LegacyRing_theory.vo contrib/ring/Quote.vo

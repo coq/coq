@@ -89,3 +89,13 @@ Proof.
     intros n H1 H2. discriminate H2.
     intros n H1 z H2 H3. case (H2 _ H3). reflexivity.
 Defined.
+
+Lemma beq_nat_true : forall x y, beq_nat x y = true -> x=y.
+Proof.
+ induction x; destruct y; simpl; auto; intros; discriminate.
+Qed.
+
+Lemma beq_nat_false : forall x y, beq_nat x y = false -> x<>y.
+Proof.
+ induction x; destruct y; simpl; auto; intros; discriminate.
+Qed.

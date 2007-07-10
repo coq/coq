@@ -71,7 +71,7 @@ let coq_modules =
     @ [["Coq"; "omega"; "OmegaLemmas"]]
     @ [["Coq"; "Lists"; "List"]]
     @ [module_refl_path]
-
+    @ [module_refl_path@["ZOmega"]]
 
 let constant = Coqlib.gen_constant_in_modules "Omega" coq_modules
 
@@ -121,8 +121,7 @@ let coq_I = lazy(constant "I")
 let coq_cons =  lazy (constant "cons")
 let coq_nil =  lazy (constant "nil")
 
-let coq_pcons = lazy (constant "Pcons")
-let coq_pnil = lazy (constant "Pnil")
+(* ReflOmegaCore/ZOmega *)
 
 let coq_h_step = lazy (constant "h_step")
 let coq_pair_step = lazy (constant  "pair_step")
@@ -131,7 +130,6 @@ let coq_p_right = lazy (constant  "P_RIGHT")
 let coq_p_invert = lazy (constant  "P_INVERT")
 let coq_p_step = lazy (constant  "P_STEP")
 let coq_p_nop = lazy (constant  "P_NOP")
-
 
 let coq_t_int = lazy (constant  "Tint")
 let coq_t_plus = lazy (constant  "Tplus")
@@ -301,14 +299,7 @@ let mk_list typ l =
 	Term.mkApp (Lazy.force coq_cons, [|typ; step; loop l |]) in
   loop l
 
-let mk_plist l =
-  let rec loop = function
-    | [] ->
-	(Lazy.force coq_pnil)
-    | (step :: l) -> 
-	Term.mkApp (Lazy.force coq_pcons, [| step; loop l |]) in
-  loop l
-
+let mk_plist l = mk_list Term.mkProp l
 
 let mk_shuffle_list l = mk_list (Lazy.force coq_t_fusion) l
 
