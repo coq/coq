@@ -36,13 +36,6 @@ let coq_constant locstr dir s = constr_of_global (coq_reference locstr dir s)
 let gen_reference = coq_reference
 let gen_constant = coq_constant
 
-let list_try_find f = 
-  let rec try_find_f = function
-    | [] -> raise Not_found
-    | h::t -> try f h with Not_found -> try_find_f t
-  in 
-  try_find_f
-
 let has_suffix_in_dirs dirs ref =
   let dir = dirpath (sp_of_global ref) in
   List.exists (fun d -> is_dirpath_prefix_of d dir) dirs
