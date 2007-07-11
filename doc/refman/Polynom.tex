@@ -298,7 +298,8 @@ describes their syntax and effects:
 \item[abstract] declares the ring as abstract. This is the default.
 \item[decidable \term] declares the ring as computational. The expression 
   \term{} is
-  the correctness proof of an equality test {\tt ?=!}. Its type should be of
+  the correctness proof of an equality test {\tt ?=!} (which should be
+  evaluable). Its type should be of
   the form {\tt forall x y, x?=!y = true $\rightarrow$ x == y}.
 \item[morphism \term] declares the ring as a customized one. The expression 
   \term{} is
@@ -314,7 +315,9 @@ describes their syntax and effects:
 \item[constants [\ltac]] specifies a tactic expression that, given a term,
   returns either an object of the coefficient set that is mapped to
   the expression via the morphism, or returns {\tt
-  InitialRing.NotConstant}. Abstract (semi-)rings need not define this.
+  InitialRing.NotConstant}. The default behaviour is to map only 0 and
+  1 to their counterpart in the coefficient set. This is generally not
+  desirable for non trivial computational rings.
 \item[preprocess [\ltac]]
   specifies a tactic that is applied as a preliminary step for {\tt
   ring} and {\tt ring\_simplify}. It can be used to transform a goal

@@ -13,6 +13,7 @@ Require Import BinNat.
 Require Import Setoid.
 Require Import Ring_theory.
 Require Import Ring_polynom.
+Import List.
 
 Set Implicit Arguments.
 
@@ -172,7 +173,7 @@ Section ZMORPHISM.
  Lemma gen_Zeqb_ok : forall x y, 
    Zeq_bool x y = true -> [x] == [y].
  Proof.
-  intros x y H; repeat rewrite same_genZ.
+  intros x y H.
   assert (H1 := Zeqb_ok x y H);unfold IDphi in H1.
   rewrite H1;rrefl.
  Qed.
@@ -365,9 +366,236 @@ Section NMORPHISM.
 
 End NMORPHISM.
 
+(* Words on N : initial structure for almost-rings. *)
+Definition Nword := list N.
+Definition NwO : Nword := nil.
+Definition NwI : Nword := 1%N :: nil.
+
+Definition Nwcons n (w : Nword) : Nword :=
+  match w, n with
+  | nil, 0%N => nil
+  | _, _ => n :: w
+  end.
+
+Fixpoint Nwadd (w1 w2 : Nword) {struct w1} : Nword :=
+  match w1, w2 with
+  | n1::w1', n2:: w2' => (n1+n2)%N :: Nwadd w1' w2'
+  | nil, _ => w2
+  | _, nil => w1
+  end.
+
+Definition Nwopp (w:Nword) : Nword := Nwcons 0%N w.
+
+Definition Nwsub w1 w2 := Nwadd w1 (Nwopp w2).
+
+Fixpoint Nwscal (n : N) (w : Nword) {struct w} : Nword :=
+  match w with
+  | m :: w' => (n*m)%N :: Nwscal n w'
+  | nil => nil
+  end.
+
+Fixpoint Nwmul (w1 w2 : Nword) {struct w1} : Nword :=
+  match w1 with
+  | 0%N::w1' => Nwopp (Nwmul w1' w2)
+  | n1::w1' => Nwsub (Nwscal n1 w2) (Nwmul w1' w2)
+  | nil => nil
+  end.
+Fixpoint Nw_is0 (w : Nword) : bool :=
+  match w with
+  | nil => true
+  | 0%N :: w' => Nw_is0 w'
+  | _ => false
+  end. 
+
+Fixpoint Nweq_bool (w1 w2 : Nword) {struct w1} : bool :=
+  match w1, w2 with
+  | n1::w1', n2::w2' =>
+     if Neq_bool n1 n2 then Nweq_bool w1' w2' else false
+  | nil, _ => Nw_is0 w2
+  | _, nil => Nw_is0 w1
+  end.
+
+Section NWORDMORPHISM.
+ Variable R : Type.
+ Variable (rO rI : R) (radd rmul rsub: R->R->R) (ropp : R -> R).
+ Variable req : R -> R -> Prop.
+  Notation "0" := rO.  Notation "1" := rI.
+  Notation "x + y" := (radd x y).  Notation "x * y " := (rmul x y).
+  Notation "x - y " := (rsub x y).  Notation "- x" := (ropp x).
+  Notation "x == y" := (req x y).
+  Variable Rsth : Setoid_Theory R req.
+     Add Setoid R req Rsth as R_setoid5.
+     Ltac rrefl := gen_reflexivity Rsth.
+ Variable Reqe : ring_eq_ext radd rmul ropp req.
+   Add Morphism radd : radd_ext5.  exact (Radd_ext Reqe). Qed.
+   Add Morphism rmul : rmul_ext5.  exact (Rmul_ext Reqe). Qed.
+   Add Morphism ropp : ropp_ext5.  exact (Ropp_ext Reqe). Qed.
+
+ Variable ARth : almost_ring_theory 0 1 radd rmul rsub ropp req.
+   Add Morphism rsub : rsub_ext7. exact (ARsub_ext Rsth Reqe ARth). Qed.
+   Ltac norm := gen_srewrite 0 1 radd rmul rsub ropp req Rsth Reqe ARth.
+   Ltac add_push := gen_add_push radd Rsth Reqe ARth.
+
+ Fixpoint gen_phiNword (w : Nword) : R :=
+  match w with
+  | nil => 0
+  | n :: nil => gen_phiN rO rI radd rmul n
+  | N0 :: w' => - gen_phiNword w'
+  | n::w' => gen_phiN rO rI radd rmul n - gen_phiNword w'
+  end.
+
+ Lemma gen_phiNword0_ok : forall w, Nw_is0 w = true -> gen_phiNword w == 0.
+Proof.
+induction w; simpl in |- *; intros; auto.
+ reflexivity.
+
+ destruct a.
+  destruct w.
+   reflexivity.
+
+   rewrite IHw in |- *; trivial.
+   apply (ARopp_zero Rsth Reqe ARth).
+
+   discriminate.
+Qed.
+
+  Lemma gen_phiNword_cons : forall w n,
+    gen_phiNword (n::w) == gen_phiN rO rI radd rmul n - gen_phiNword w.
+induction w.
+ destruct n; simpl in |- *; norm.
+
+ intros.
+ destruct n; norm.
+Qed.
+
+  Lemma gen_phiNword_Nwcons : forall w n,
+    gen_phiNword (Nwcons n w) == gen_phiN rO rI radd rmul n - gen_phiNword w.
+destruct w; intros.
+ destruct n; norm.
+
+ unfold Nwcons in |- *.
+ rewrite gen_phiNword_cons in |- *.
+ reflexivity.
+Qed.
+
+ Lemma gen_phiNword_ok : forall w1 w2,
+   Nweq_bool w1 w2 = true -> gen_phiNword w1 == gen_phiNword w2.
+induction w1; intros.
+ simpl in |- *.
+ rewrite (gen_phiNword0_ok _ H) in |- *.
+ reflexivity.
+
+ rewrite gen_phiNword_cons in |- *.
+ destruct w2.
+  simpl in H.
+  destruct a; try  discriminate.
+  rewrite (gen_phiNword0_ok _ H) in |- *.
+  norm.
+
+  simpl in H.
+  rewrite gen_phiNword_cons in |- *.
+  case_eq (Neq_bool a n); intros.
+   rewrite H0 in H.
+   rewrite <- (Neq_bool_ok _ _ H0) in |- *.
+   rewrite (IHw1 _ H) in |- *.
+   reflexivity.
+
+   rewrite H0 in H;  discriminate H.
+Qed.
+
+
+Lemma Nwadd_ok : forall x y,
+   gen_phiNword (Nwadd x y) == gen_phiNword x + gen_phiNword y.
+induction x; intros.
+ simpl in |- *.
+ norm.
+
+ destruct y.
+  simpl Nwadd; norm.
+
+  simpl Nwadd in |- *.
+  repeat rewrite gen_phiNword_cons in |- *.
+  rewrite (fun sreq => gen_phiN_add Rsth sreq (ARth_SRth ARth)) in |- *.
+   destruct Reqe; constructor; trivial.
+
+   rewrite IHx in |- *.
+   norm.
+   add_push (- gen_phiNword x); reflexivity.
+Qed.
+
+Lemma Nwopp_ok : forall x, gen_phiNword (Nwopp x) == - gen_phiNword x.
+simpl in |- *.
+unfold Nwopp in |- *; simpl in |- *.
+intros.
+rewrite gen_phiNword_Nwcons in |- *; norm.
+Qed.
+
+Lemma Nwscal_ok : forall n x,
+  gen_phiNword (Nwscal n x) == gen_phiN rO rI radd rmul n * gen_phiNword x.
+induction x; intros.
+ norm.
+
+ simpl Nwscal in |- *.
+ repeat rewrite gen_phiNword_cons in |- *.
+ rewrite (fun sreq => gen_phiN_mult Rsth sreq (ARth_SRth ARth)) in |- *.
+  destruct Reqe; constructor; trivial.
+
+  rewrite IHx in |- *.
+  norm.
+Qed.
+
+Lemma Nwmul_ok : forall x y,
+   gen_phiNword (Nwmul x y) == gen_phiNword x * gen_phiNword y.
+induction x; intros.
+ norm.
+
+ destruct a.
+  simpl Nwmul in |- *.
+  rewrite Nwopp_ok in |- *.
+  rewrite IHx in |- *.
+  rewrite gen_phiNword_cons in |- *.
+  norm.
+
+  simpl Nwmul in |- *.
+  unfold Nwsub in |- *.
+  rewrite Nwadd_ok in |- *.
+  rewrite Nwscal_ok in |- *.
+  rewrite Nwopp_ok in |- *.
+  rewrite IHx in |- *.
+  rewrite gen_phiNword_cons in |- *.
+  norm.
+Qed.
+
+(* Proof that [.] satisfies morphism specifications *)
+ Lemma gen_phiNword_morph : 
+  ring_morph 0 1 radd rmul rsub ropp req
+   NwO NwI Nwadd Nwmul Nwsub Nwopp Nweq_bool gen_phiNword.
+constructor.
+ reflexivity.
+
+ reflexivity.
+
+ exact Nwadd_ok.
+
+ intros.
+ unfold Nwsub in |- *.
+ rewrite Nwadd_ok in |- *.
+ rewrite Nwopp_ok in |- *.
+ norm.
+
+ exact Nwmul_ok.
+
+ exact Nwopp_ok.
+
+ exact gen_phiNword_ok.
+Qed.
+
+End NWORDMORPHISM.
+
+
+
  (* syntaxification of constants in an abstract ring:
-    the inverse of gen_phiPOS 
-    Why we do not reconnize only rI ?????? *)
+    the inverse of gen_phiPOS *)
  Ltac inv_gen_phi_pos rI add mul t :=
    let rec inv_cst t :=
    match t with
@@ -389,6 +617,18 @@ End NMORPHISM.
    | _ => NotConstant
    end in
    inv_cst t.
+
+(* The (partial) inverse of gen_phiNword *)
+ Ltac inv_gen_phiNword rO rI add mul opp t :=
+   match t with
+     rO => constr:NwO
+   | _ =>
+     match inv_gen_phi_pos rI add mul t with
+       NotConstant => NotConstant
+     | ?p => constr:(Npos p::nil)
+     end
+   end.
+
 
 (* The inverse of gen_phiN *)
  Ltac inv_gen_phiN rO rI add mul t :=
@@ -417,9 +657,18 @@ End NMORPHISM.
      end
    end.
 
-(* A simpl tactic reconninzing nothing *)
- Ltac inv_morph_nothing t := constr:(NotConstant).
+(* A simple tactic recognizing only 0 and 1. The inv_gen_phiX above
+   are only optimisations that directly returns the reifid constant
+   instead of resorting to the constant propagation of the simplification
+   algorithm. *) 
+Ltac inv_gen_phi rO rI cO cI t :=
+  match t with
+  | rO => cO
+  | rI => cI
+  end.
 
+(* A simple tactic recognizing no constant *)
+ Ltac inv_morph_nothing t := constr:(NotConstant).
 
 Ltac coerce_to_almost_ring set ext rspec :=
   match type of rspec with
@@ -441,7 +690,7 @@ Ltac abstract_ring_morphism set ext rspec :=
   | ring_theory _ _ _ _ _ _ _ => constr:(gen_phiZ_morph set ext rspec)
   | semi_ring_theory _ _ _ _ _ => constr:(gen_phiN_morph set ext rspec)
   | almost_ring_theory _ _ _ _ _ _ _ =>
-      fail 1 "an almost ring cannot be abstract"
+      constr:(gen_phiNword_morph set ext rspec)
   | _ => fail 1 "bad ring structure"
   end.
 
@@ -502,7 +751,7 @@ Ltac ring_elements set ext rspec pspec sspec rk :=
        | ring_morph _ _ _ _ _ _ _  _ _ _ _ _ _  _ _ => m 
        | @semi_morph _ _ _ _ _ _  _ _ _ _ _  _ _   => 
            constr:(SRmorph_Rmorph set m) 
-       | _ => fail 2 " ici"
+       | _ => fail 2 "ring anomaly"
        end
     | _ => fail 1 "ill-formed ring kind"
     end in

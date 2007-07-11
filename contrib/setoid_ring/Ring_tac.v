@@ -108,31 +108,37 @@ Ltac FV Cst CstPow add mul sub opp pow t fv :=
  (* syntaxification of ring expressions *)
 Ltac mkPolexpr C Cst CstPow radd rmul rsub ropp rpow t fv := 
  let rec mkP t :=
+    let f :=
     match Cst t with
     | InitialRing.NotConstant =>
         match t with 
         | (radd ?t1 ?t2) => 
+          fun _ =>
           let e1 := mkP t1 in
           let e2 := mkP t2 in constr:(PEadd e1 e2)
         | (rmul ?t1 ?t2) => 
+          fun _ =>
           let e1 := mkP t1 in
           let e2 := mkP t2 in constr:(PEmul e1 e2)
         | (rsub ?t1 ?t2) => 
+          fun _ => 
           let e1 := mkP t1 in
           let e2 := mkP t2 in constr:(PEsub e1 e2)
         | (ropp ?t1) =>
+          fun _ =>
           let e1 := mkP t1 in constr:(PEopp e1)
         | (rpow ?t1 ?n) =>
           match CstPow n with
           | InitialRing.NotConstant => 
-            let p := Find_at t fv in constr:(PEX C p)
-          | ?c => let e1 := mkP t1 in constr:(PEpow e1 c)
+            fun _ => let p := Find_at t fv in constr:(PEX C p)
+          | ?c => fun _ => let e1 := mkP t1 in constr:(PEpow e1 c)
           end
         | _ =>
-          let p := Find_at t fv in constr:(PEX C p)
+          fun _ => let p := Find_at t fv in constr:(PEX C p)
         end
-    | ?c => constr:(PEc c)
-    end
+    | ?c => fun _ => constr:(@PEc C c)
+    end in
+    f ()
  in mkP t.
 
 Ltac ParseRingComponents lemma :=
