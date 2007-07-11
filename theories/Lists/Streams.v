@@ -146,6 +146,15 @@ Inductive Exists ( x: Stream ) : Prop :=
 CoInductive ForAll (x: Stream) : Prop :=
     HereAndFurther : P x -> ForAll (tl x) -> ForAll x.
 
+Lemma ForAll_Str_nth_tl : forall m x, ForAll x -> ForAll (Str_nth_tl m x).
+Proof.
+induction m.
+ tauto.
+intros x [_ H].
+simpl.
+apply IHm.
+assumption.
+Qed.
 
 Section Co_Induction_ForAll.
 Variable Inv : Stream -> Prop.
