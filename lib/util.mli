@@ -92,7 +92,6 @@ val list_assign : 'a list -> int -> 'a -> 'a list
 val list_distinct : 'a list -> bool
 val list_duplicates : 'a list -> 'a list
 val list_filter2 : ('a -> 'b -> bool) -> 'a list * 'b list -> 'a list * 'b list
-
 (* [list_smartmap f [a1...an] = List.map f [a1...an]] but if for all i
    [ f ai == ai], then [list_smartmap f l==l] *)
 val list_smartmap : ('a -> 'a) -> 'a list -> 'a list
@@ -102,9 +101,12 @@ val list_map2_i :
   (int -> 'a -> 'b -> 'c) -> int -> 'a list -> 'b list -> 'c list
 val list_map3 :
   ('a -> 'b -> 'c -> 'd) -> 'a list -> 'b list -> 'c list -> 'd list
+(* [list_index] returns the 1st index of an element in a list (counting from 1) *)
 val list_index : 'a -> 'a list -> int
 (* [list_unique_index x l] returns [Not_found] if [x] doesn't occur exactly once *)
 val list_unique_index : 'a -> 'a list -> int 
+(* [list_index0] behaves as [list_index] except that it starts counting at 0 *)
+val list_index0 : 'a -> 'a list -> int
 val list_iter_i :  (int -> 'a -> unit) -> 'a list -> unit
 val list_fold_left_i :  (int -> 'a -> 'b -> 'a) -> int -> 'a -> 'b list -> 'a
 val list_fold_right_and_left :
@@ -118,6 +120,8 @@ val list_sep_last : 'a list -> 'a * 'a list
 val list_try_find_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b
 val list_try_find : ('a -> 'b) -> 'a list -> 'b
 val list_uniquize : 'a list -> 'a list
+(* merges two sorted lists and preserves the uniqueness property: *)
+val list_merge_uniq : ('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
 val list_subset : 'a list -> 'a list -> bool
 val list_splitby : ('a -> bool) -> 'a list -> 'a list * 'a list
 val list_split3 : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
@@ -125,20 +129,28 @@ val list_firstn : int -> 'a list -> 'a list
 val list_last : 'a list -> 'a
 val list_lastn : int -> 'a list -> 'a list
 val list_skipn : int -> 'a list -> 'a list 
+val list_addn : int -> 'a -> 'a list -> 'a list
 val list_prefix_of : 'a list -> 'a list -> bool
 val list_drop_prefix : 'a list -> 'a list -> 'a list
 (* [map_append f [x1; ...; xn]] returns [(f x1)@(f x2)@...@(f xn)] *)
 val list_map_append : ('a -> 'b list) -> 'a list -> 'b list
+val list_join_map : ('a -> 'b list) -> 'a list -> 'b list
 (* raises [Invalid_argument] if the two lists don't have the same length *)
 val list_map_append2 : ('a -> 'b -> 'c list) -> 'a list -> 'b list -> 'c list
 val list_share_tails : 'a list -> 'a list -> 'a list * 'a list * 'a list
-val list_join_map : ('a -> 'b list) -> 'a list -> 'b list
 (* [list_fold_map f e_0 [l_1...l_n] = e_n,[k_1...k_n]]
    where [(e_i,k_i)=f e_{i-1} l_i] *)
 val list_fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
 val list_fold_map' : ('b -> 'a -> 'c * 'a) -> 'b list -> 'a -> 'c list * 'a
 val list_map_assoc : ('a -> 'b) -> ('c * 'a) list -> ('c * 'b) list
-(* list_combinations [[a;b];[c;d]] gives [[a;c];[a;d];[b;c];[b;d]] *)
+(* A generic cartesian product: for any operator (**), 
+   [list_cartesian (**) [x1;x2] [y1;y2] = [x1**y1; x1**y2; x2**y1; x2**y1]], 
+   and so on if there are more elements in the lists. *)
+val list_cartesian : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
+(* [list_cartesians] is an n-ary cartesian product: it iterates 
+   [list_cartesian] over a list of lists.  *)
+val list_cartesians : ('a -> 'b -> 'b) -> 'b -> 'a list list -> 'b list
+(* list_combinations [[a;b];[c;d]] returns [[a;c];[a;d];[b;c];[b;d]] *)
 val list_combinations : 'a list list -> 'a list list
 
 

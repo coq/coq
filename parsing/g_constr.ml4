@@ -44,7 +44,7 @@ let rec index_and_rec_order_of_annot loc bl ann =
     | [_], (None, r) -> Some 0, r
     | lids, (Some x, ro) ->
         let ids = List.map snd lids in
-        (try Some (list_index (snd x) ids - 1), ro
+        (try Some (list_index0 (snd x) ids), ro
         with Not_found ->
           user_err_loc(fst x,"index_of_annot", Pp.str"no such fix variable"))
     | _, (None, r) -> None, r

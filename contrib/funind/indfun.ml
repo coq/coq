@@ -516,7 +516,7 @@ let do_generate_principle on_error register_built interactive_proof fixpoint_exp
 			 (Topconstr.names_of_local_assums args) 
 		     in 
 		     let annot = 
-		       try Some (list_index (Name id) names - 1), Topconstr.CStructRec 
+		       try Some (list_index0 (Name id) names), Topconstr.CStructRec 
 		       with Not_found -> 
 			 raise (UserError("",str "Cannot find argument " ++ 
 					    Ppconstr.pr_id id)) 

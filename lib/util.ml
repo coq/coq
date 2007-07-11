@@ -216,6 +216,8 @@ let list_index x =
   in 
   index_x 1
 
+let list_index0 x l = list_index x l - 1 
+
 let list_unique_index x = 
   let rec index_x n = function
     | y::l -> 
@@ -329,6 +331,18 @@ let rec list_distinct l =
     | [] -> true
   in loop l
 
+let rec list_merge_uniq cmp l1 l2 =
+  match l1, l2 with
+  | [], l2 -> l2
+  | l1, [] -> l1
+  | h1 :: t1, h2 :: t2 ->
+      let c = cmp h1 h2 in 
+      if c = 0 
+      then h1 :: list_merge_uniq cmp t1 t2
+      else if c <= 0 
+      then h1 :: list_merge_uniq cmp t1 l2
+      else h2 :: list_merge_uniq cmp l1 t2
+
 let rec list_duplicates = function
   | [] -> []
   | x::l ->
@@ -389,6 +403,9 @@ let rec list_skipn n l = match n,l with
   | _, [] -> failwith "list_fromn"
   | n, _::l -> list_skipn (pred n) l
 
+let rec list_addn n x l = 
+  if n = 0 then l else x :: (list_addn (pred n) x l)
+
 let list_prefix_of prefl l = 
   let rec prefrec = function
     | (h1::t1, h2::t2) -> h1 = h2 && prefrec (t1,t2)
@@ -410,6 +427,7 @@ let list_drop_prefix p l =
       | None -> l
 
 let list_map_append f l = List.flatten (List.map f l)
+let list_join_map = list_map_append   (* Alias *)
 
 let list_map_append2 f l1 l2 = List.flatten (List.map2 f l1 l2)
 
@@ -419,8 +437,6 @@ let list_share_tails l1 l2 =
     | (l1,l2) -> (List.rev l1, List.rev l2, acc)
   in 
   shr_rev [] (List.rev l1, List.rev l2)
-
-let list_join_map f l = List.flatten (List.map f l)
 
 let rec list_fold_map f e = function
   |  []  -> (e,[])
@@ -445,13 +461,22 @@ let list_fold_map' f l e =
 
 let list_map_assoc f = List.map (fun (x,a) -> (x,f a))
 
+(* A generic cartesian product: for any operator (**), 
+   [list_cartesian (**) [x1;x2] [y1;y2] = [x1**y1; x1**y2; x2**y1; x2**y1]], 
+   and so on if there are more elements in the lists. *)
+
+let rec list_cartesian op l1 l2 = 
+  list_map_append (fun x -> List.map (op x) l2) l1
+
+(* [list_cartesians] is an n-ary cartesian product: it iterates 
+   [list_cartesian] over a list of lists.  *)
+
+let list_cartesians op init ll = 
+  List.fold_right (list_cartesian op) ll [init]
+
 (* list_combinations [[a;b];[c;d]] gives [[a;c];[a;d];[b;c];[b;d]] *)
 
-let rec list_combinations = function 
-  | [] -> [[]]
-  | l::ll -> 
-      let res = list_combinations ll in 
-      list_map_append (fun x -> List.map (fun l -> x::l) res) l
+let list_combinations l = list_cartesians (fun x l -> x::l) [] l
 
 (* Arrays *)
 

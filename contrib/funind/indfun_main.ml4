@@ -169,7 +169,7 @@ VERNAC ARGUMENT EXTEND rec_definition2
 	   | Struct id -> id | Wf(_,Some id,_) -> id | Mes(_,Some id,_) -> id 
 	   | Wf(_,None,_) | Mes(_,None,_) -> failwith "check_exists_args" 
 	 in 
-	 (try ignore(Util.list_index (Name id) names - 1); annot
+	 (try ignore(Util.list_index0 (Name id) names); annot
 	  with Not_found ->  Util.user_err_loc
             (Util.dummy_loc,"Function",
              Pp.str "No argument named " ++ Nameops.pr_id id)

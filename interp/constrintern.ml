@@ -789,8 +789,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
         let lf = List.map (fun (id,_,_,_,_) -> id) dl in
         let dl = Array.of_list dl in
 	let n =
-	  try
-	    (list_index iddef lf) -1
+	  try list_index0 iddef lf
           with Not_found ->
 	    raise (InternalisationError (locid,UnboundFixName (false,iddef)))
 	in
@@ -827,8 +826,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
         let lf = List.map (fun (id,_,_,_) -> id) dl in
         let dl = Array.of_list dl in
 	let n =
-          try 
-	    (list_index iddef lf) -1
+          try list_index0 iddef lf
           with Not_found ->
 	    raise (InternalisationError (locid,UnboundFixName (true,iddef)))
 	in

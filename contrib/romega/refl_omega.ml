@@ -6,10 +6,7 @@
 
  *************************************************************************)
 
-(* The addition on int, since it while be hidden soon by the one on BigInt *)
-
-let (+.) = (+)
-
+open Util
 open Const_omega
 module OmegaSolver = Omega.MakeOmegaSolver (Bigint)
 open OmegaSolver
@@ -25,65 +22,6 @@ let pp i = print_int i; print_newline (); flush stdout
 
 (* More readable than the prefix notation *)
 let (>>) = Tacticals.tclTHEN
-
-(* [list_index t l = i] \eqv $nth l i = t \wedge \forall j < i nth l j != t$ *)
-
-let list_index t = 
-  let rec loop i = function
-    | (u::l) -> if u = t then i else loop (succ i) l
-    | [] -> raise Not_found in
-  loop 0
-
-(* [list_uniq l = filter_i (x i -> nth l (i-1) != x) l] *)
-let list_uniq l  = 
-  let rec uniq = function
-      x :: ((y :: _) as l) when x = y -> uniq l
-    | x :: l -> x :: uniq l
-    | [] -> [] in
-  uniq (List.sort compare l)
-
-(* $\forall x. mem x  (list\_union l1 l2) \eqv x \in \{l1\} \cup \{l2\}$ *)
-let list_union l1 l2 =
-  let rec loop buf = function
-      x :: r -> if List.mem x l2 then loop buf r else loop (x :: buf) r
-    | [] -> buf in
-  loop l2 l1
-
-(* $\forall x. 
-      mem \;\; x \;\; (list\_intersect\;\; l1\;\;l2) \eqv x \in \{l1\} 
-       \cap \{l2\}$ *)
-let list_intersect l1 l2 =
-  let rec loop buf = function
-      x :: r -> if List.mem x l2 then loop (x::buf) r else loop buf r
-    | [] -> buf in
-  loop [] l1
-
-(* cartesian product. Elements are lists and are concatenated.
-   $cartesian [x_1 ... x_n] [y_1 ... y_p] = [x_1 @ y_1, x_2 @ y_1 ... x_n @ y_1 , x_1 @ y_2 ... x_n @ y_p]$ *)
-
-let rec cartesien l1 l2 =
-  let rec loop = function
-      (x2 :: r2) -> List.map (fun x1 -> x1 @ x2) l1 @ loop r2
-    | [] -> [] in
-  loop l2
-
-(* remove element e from list l *)
-let list_remove e l =
-  let rec loop = function
-      x :: l -> if x = e then loop l else x :: loop l
-    | [] -> [] in
-  loop l
-
-(* equivalent of the map function but no element is added when the function
-   raises an exception (and the computation silently continues) *)
-let map_exc f = 
-  let rec loop = function 
-    (x::l) -> 
-      begin match try Some (f x) with exc -> None with
-        Some v -> v :: loop l | None -> loop l
-      end
-    | [] -> [] in
-  loop 
 
 let mkApp = Term.mkApp
 
@@ -174,6 +112,7 @@ type environment = {
 (* \subsection{Solution tree}
    Définition d'une solution trouvée par Omega sous la forme d'un identifiant,
    d'un ensemble d'équation dont dépend la solution et d'une trace *)
+(* La liste des dépendances est triée et sans redondance *)
 type solution = {
   s_index : int;
   s_equa_deps : int list;
@@ -280,7 +219,7 @@ let unintern_omega env id =
    calcul des variables utiles. *)
 
 let add_reified_atom t env =
-  try list_index t env.terms
+  try list_index0 t env.terms
   with Not_found ->
     let i = List.length env.terms in
     env.terms <- env.terms @ [t]; i
@@ -291,7 +230,7 @@ let get_reified_atom env =
 (* \subsection{Gestion de l'environnement de proposition pour Omega} *)
 (* ajout d'une proposition *)
 let add_prop env t =
-  try list_index t env.props
+  try list_index0 t env.props
   with Not_found ->
     let i = List.length env.props in  env.props <- env.props @ [t]; i
 
@@ -469,22 +408,34 @@ Ces fonctions préparent les traces utilisées par la tactique réfléchie
 pour faire des opérations de normalisation sur les équations.  *)
 
 (* \subsection{Extractions des variables d'une équation} *)
-(* Extraction des variables d'une équation *)
+(* Extraction des variables d'une équation. *)
+(* Chaque fonction retourne une liste triée sans redondance *)
+
+let (@@) = list_merge_uniq compare
 
 let rec vars_of_formula = function
   | Oint _ -> []
-  | Oplus (e1,e2)  -> (vars_of_formula e1) @ (vars_of_formula e2)
-  | Omult (e1,e2)  -> (vars_of_formula e1) @ (vars_of_formula e2)
-  | Ominus (e1,e2) -> (vars_of_formula e1) @ (vars_of_formula e2)
-  | Oopp e -> (vars_of_formula e)
+  | Oplus (e1,e2) -> (vars_of_formula e1) @@ (vars_of_formula e2)
+  | Omult (e1,e2) -> (vars_of_formula e1) @@ (vars_of_formula e2)
+  | Ominus (e1,e2) -> (vars_of_formula e1) @@ (vars_of_formula e2)
+  | Oopp e -> vars_of_formula e
   | Oatom i -> [i]
   | Oufo _ -> []
 
-let vars_of_equations l =
-  let rec loop = function
-      e :: l -> vars_of_formula e.e_left @ vars_of_formula e.e_right @ loop l
-    | [] -> [] in
-  list_uniq (List.sort compare (loop l))
+let rec vars_of_equations = function
+  | [] -> [] 
+  | e::l -> 
+      (vars_of_formula e.e_left) @@
+      (vars_of_formula e.e_right) @@
+      (vars_of_equations l)
+
+let rec vars_of_prop = function 
+  | Pequa(_,e) -> vars_of_equations [e]
+  | Pnot p -> vars_of_prop p
+  | Por(_,p1,p2) -> (vars_of_prop p1) @@ (vars_of_prop p2)
+  | Pand(_,p1,p2) -> (vars_of_prop p1) @@ (vars_of_prop p2)
+  | Pimp(_,p1,p2) -> (vars_of_prop p1) @@ (vars_of_prop p2)
+  | Pprop _ | Ptrue | Pfalse -> []
 
 (* \subsection{Multiplication par un scalaire} *)
 
@@ -881,7 +832,7 @@ let destructurate_hyps syst =
       (i,t) :: l -> 
 	let l_syst1 = destructurate_pos_hyp i []  [] t in
 	let l_syst2 = loop l in
-	cartesien l_syst1 l_syst2
+	list_cartesian (@) l_syst1 l_syst2
     | [] -> [[]] in
   loop syst
 
@@ -924,9 +875,9 @@ let display_systems syst_list =
 let rec hyps_used_in_trace = function
   | act :: l -> 
       begin match act with
-	| HYP e -> e.id :: hyps_used_in_trace l
+	| HYP e -> [e.id] @@ (hyps_used_in_trace l)
 	| SPLIT_INEQ (_,(_,act1),(_,act2)) -> 
-	    hyps_used_in_trace act1 @ hyps_used_in_trace act2
+	    hyps_used_in_trace act1 @@ hyps_used_in_trace act2
 	| _ -> hyps_used_in_trace l
       end
   | [] -> []
@@ -950,14 +901,15 @@ let rec variable_stated_in_trace = function
 ;;
 
 let add_stated_equations env tree = 
-  let rec loop = function
-      Tree(_,t1,t2) -> 
-	list_union (loop t1) (loop t2)
-    | Leaf s -> variable_stated_in_trace s.s_trace in
   (* Il faut trier les variables par ordre d'introduction pour ne pas risquer
      de définir dans le mauvais ordre *)
   let stated_equations = 
-    List.sort (fun x y -> Pervasives.(-) x.st_var y.st_var) (loop tree) in
+    let cmpvar x y = Pervasives.(-) x.st_var y.st_var in 
+    let rec loop = function
+      | Tree(_,t1,t2) -> List.merge cmpvar (loop t1) (loop t2)
+      | Leaf s -> List.sort cmpvar (variable_stated_in_trace s.s_trace) 
+    in loop tree
+  in 
   let add_env st = 
     (* On retransforme la définition de v en formule reifiée *)
     let v_def = oformula_of_omega env st.st_def in
@@ -978,10 +930,15 @@ let add_stated_equations env tree =
 (* Calcule la liste des éclatements à réaliser sur les hypothèses 
    nécessaires pour extraire une liste d'équations donnée *)
 
+(* PL: experimentally, the result order of the following function seems 
+   _very_ crucial for efficiency. No idea why. Do not remove the List.rev
+   or modify the current semantics of Util.list_union (some elements of first 
+   arg, then second arg), unless you know what you're doing. *)
+
 let rec get_eclatement env = function
     i :: r -> 
       let l = try (get_equation env i).e_depends with Not_found -> [] in
-      list_union l (get_eclatement env r)
+      list_union (List.rev l) (get_eclatement env r)
   | [] -> []
 
 let select_smaller l = 
@@ -992,14 +949,13 @@ let filter_compatible_systems required systems =
   let rec select = function
       (x::l) -> 
 	if List.mem x required then select l
-	else if List.mem (barre x) required then raise Exit 
+	else if List.mem (barre x) required then failwith "Exit" 
 	else x :: select l
     | [] -> [] in
-  map_exc (function (sol,splits) -> (sol,select splits)) systems
+  map_succeed (function (sol,splits) -> (sol,select splits)) systems
 
 let rec equas_of_solution_tree = function
-    Tree(_,t1,t2) -> 
-      list_union (equas_of_solution_tree t1) (equas_of_solution_tree t2)
+    Tree(_,t1,t2) -> (equas_of_solution_tree t1)@@(equas_of_solution_tree t2)
   | Leaf s -> s.s_equa_deps
 
 (* [really_useful_prop] pushes useless props in a new Pprop variable *)
@@ -1040,14 +996,6 @@ let really_useful_prop l_equa c =
   match loop c with
     None -> Pprop (real_of c)
   | Some t -> t
-
-let rec vars_of_prop = function 
-  | Pequa(_,e) -> vars_of_equations [e]
-  | Pnot p -> vars_of_prop p
-  | Por(_,p1,p2) -> list_union (vars_of_prop p1) (vars_of_prop p2)
-  | Pand(_,p1,p2) -> list_union (vars_of_prop p1) (vars_of_prop p2)
-  | Pimp(_,p1,p2) -> list_union (vars_of_prop p1) (vars_of_prop p2)
-  | _ -> []
 
 let rec display_solution_tree ch = function
     Leaf t -> 
@@ -1103,7 +1051,7 @@ let mk_direction_list l =
 (* \section{Rejouer l'historique} *)
 
 let get_hyp env_hyp i =
-  try list_index (CCEqua i) env_hyp
+  try list_index0 (CCEqua i) env_hyp
   with Not_found -> failwith (Printf.sprintf "get_hyp %d" i)
 
 let replay_history env env_hyp =
@@ -1267,17 +1215,17 @@ let resolution env full_reified_goal systems_list =
     print_newline()
   end;
   (* calcule la liste de toutes les hypothèses utilisées dans l'arbre de solution *)
-  let useful_equa_id = list_uniq (equas_of_solution_tree solution_tree) in
+  let useful_equa_id = equas_of_solution_tree solution_tree in
   (* recupere explicitement ces equations *)
   let equations = List.map (get_equation env) useful_equa_id in
-  let l_hyps' = list_uniq (List.map (fun e -> e.e_origin.o_hyp) equations) in
+  let l_hyps' = list_uniquize (List.map (fun e -> e.e_origin.o_hyp) equations) in
   let l_hyps = id_concl :: list_remove id_concl l_hyps' in
   let useful_hyps =
     List.map (fun id -> List.assoc id full_reified_goal) l_hyps in
   let useful_vars = 
     let really_useful_vars = vars_of_equations equations in
     let concl_vars = vars_of_prop (List.assoc id_concl full_reified_goal) in     
-    list_uniq (List.sort compare (really_useful_vars @ concl_vars))
+    really_useful_vars @@ concl_vars
   in 
   (* variables a introduire *)
   let to_introduce = add_stated_equations env solution_tree in
@@ -1325,10 +1273,10 @@ let resolution env full_reified_goal systems_list =
       |	((O_left | O_mono) :: l) -> app coq_p_left [| loop l |]
       |	(O_right :: l) -> app coq_p_right [| loop l |] in
     let correct_index = 
-      let i = list_index e.e_origin.o_hyp l_hyps in 
+      let i = list_index0 e.e_origin.o_hyp l_hyps in 
       (* PL: it seems that additionnally introduced hyps are in the way during 
              normalization, hence this index shifting... *) 
-      if i=0 then 0 else i +. List.length to_introduce
+      if i=0 then 0 else Pervasives.(+) i (List.length to_introduce)
     in 	
     app coq_pair_step [| mk_nat correct_index; loop e.e_origin.o_path |] in
   let normalization_trace =

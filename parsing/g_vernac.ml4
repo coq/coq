@@ -253,7 +253,7 @@ GEXTEND Gram
           let ni =
             match fst annot with
                 Some id ->
-                  (try Some (list_index (Name id) names - 1)
+                  (try Some (list_index0 (Name id) names)
                    with Not_found ->  Util.user_err_loc
                      (loc,"Fixpoint",
                       Pp.str "No argument named " ++ Nameops.pr_id id))

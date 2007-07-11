@@ -247,9 +247,6 @@ module SearchProblem = struct
 	with e when Logic.catchable_exception e ->
 	  filter_tactics (glls,v) tacl
 
-  let rec list_addn n x l = 
-    if n = 0 then l else x :: (list_addn (pred n) x l)
-
   (* Ordering of states is lexicographic on depth (greatest first) then
      number of remaining goals. *)
   let compare s s' =
