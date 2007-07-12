@@ -66,7 +66,7 @@ Ltac ztac := repeat (rewrite Zmult_plus_distr_l ||
 
 Theorem pdiv_eucl_correct: forall a b,
   let (q,r) := pdiv_eucl a b in Zpos a = (Z_of_N q * Zpos b + Z_of_N r)%Z.
-induction a; unfold pdiv_eucl; fold pdiv_eucl.
+induction a; cbv beta iota delta [pdiv_eucl]; fold pdiv_eucl; cbv zeta.
   intros b; generalize (IHa b); case pdiv_eucl.
     intros q1 r1 Hq1.
      generalize (Ngeb_correct (2 * r1 + 1) b); case Ngeb; intros H.

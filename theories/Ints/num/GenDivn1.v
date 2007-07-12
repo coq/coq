@@ -99,7 +99,7 @@ Section GENDIVN1.
   Proof.
    induction n;intros.
    exact (spec_div21 a b2p_le H).
-   unfold gen_divn1_0, gen_divn1_0_aux;fold gen_divn1_0.
+   simpl (gen_divn1_0 (S n) r a); unfold gen_divn1_0_aux.
    assert (H1 := spec_split n a);destruct (gen_split w_0 n a) as (hh,hl).
    rewrite H1.
    assert (H2 := IHn r hh H);destruct (gen_divn1_0 n r hh) as (qh,rh).
@@ -180,10 +180,12 @@ Section GENDIVN1.
   Proof.
    case (spec_to_Z p); intros HH0 HH1.
    induction n;intros.
-   unfold gen_divn1_p, gen_divn1_p_aux, gen_to_Z, gen_wB, gen_digits.
+   simpl (gen_divn1_p 0 r h l).
+   unfold gen_to_Z, gen_wB, gen_digits.
    rewrite <- spec_add_mul_divp.
    exact (spec_div21 (w_add_mul_div p h l) b2p_le H).
-   unfold gen_divn1_p,gen_divn1_p_aux;fold gen_divn1_p.
+   simpl (gen_divn1_p (S n) r h l).
+   unfold gen_divn1_p_aux.
    assert (H1 := spec_split n h);destruct (gen_split w_0 n h) as (hh,hl).
    rewrite H1. rewrite <- gen_wB_wwB.
    assert (H2 := spec_split n l);destruct (gen_split w_0 n l) as (lh,ll).
@@ -333,7 +335,7 @@ Section GENDIVN1.
   auto with zarith.
   assert (U0 := spec_gen_to_Z w_digits w_to_Z spec_to_Z n w0);
    assert (U1 := spec_gen_to_Z w_digits w_to_Z spec_to_Z n w1).
-  unfold gen_to_Z,zn2z_to_Z;fold (gen_to_Z w_digits w_to_Z).
+  simpl [!S n|WW w0 w1!].
   unfold gen_wB,base;rewrite Zdiv_shift_r;auto with zarith.
   replace (2 ^ (Zpos (gen_digits w_digits (S n)) - Zpos w_digits)) with
    (2^(Zpos (gen_digits w_digits n) - Zpos w_digits) * 

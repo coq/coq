@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-(* Contribution by Claude Marché and Xavier Urbain *)
+(* Contribution by Claude MarchÃ© and Xavier Urbain *)
 
 (** Euclidean Division
 
@@ -129,7 +129,8 @@ Lemma Z_div_mod_POS :
     forall a:positive,
       let (q, r) := Zdiv_eucl_POS a b in Zpos a = b * q + r /\ 0 <= r < b.
 Proof.
-simple induction a; unfold Zdiv_eucl_POS in |- *; fold Zdiv_eucl_POS in |- *.
+simple induction a; cbv beta iota delta [Zdiv_eucl_POS] in |- *;
+  fold Zdiv_eucl_POS in |- *; cbv zeta.
 
 intro p; case (Zdiv_eucl_POS p b); intros q r [H0 H1].
 generalize (Zgt_cases b (2 * r + 1)).
@@ -238,7 +239,8 @@ Qed.
 Lemma Z_div_POS_ge0 :
   forall (b:Z) (a:positive), let (q, _) := Zdiv_eucl_POS a b in q >= 0.
 Proof.
-  simple induction a; unfold Zdiv_eucl_POS in |- *; fold Zdiv_eucl_POS in |- *.
+  simple induction a; cbv beta iota delta [Zdiv_eucl_POS] in |- *;
+    fold Zdiv_eucl_POS in |- *; cbv zeta.
   intro p; case (Zdiv_eucl_POS p b).
   intros; case (Zgt_bool b (2 * z0 + 1)); intros; omega.
   intro p; case (Zdiv_eucl_POS p b).

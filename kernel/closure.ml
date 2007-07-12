@@ -980,7 +980,7 @@ and knht e t stk =
 
 (************************************************************************)
 
-(* Computes a normal form from the result of knh. *)
+(* Computes a weak head normal form from the result of knh. *)
 let rec knr info m stk =
   match m.term with
   | FLambda(n,tys,f,e) when red_set info.i_flags fBETA ->
@@ -1082,6 +1082,11 @@ and norm_head info m =
           let fbds =
             Array.map (mk_clos (subs_liftn (Array.length na) e)) bds in
           mkCoFix(n,(na, Array.map (kl info) ftys, Array.map (kl info) fbds))
+      | FFix((n,(na,tys,bds)),e) ->
+          let ftys = Array.map (mk_clos e) tys in
+          let fbds =
+            Array.map (mk_clos (subs_liftn (Array.length na) e)) bds in
+          mkFix(n,(na, Array.map (kl info) ftys, Array.map (kl info) fbds))
       | FEvar(i,args) -> mkEvar(i, Array.map (kl info) args)
       | t -> term_of_fconstr m
 
