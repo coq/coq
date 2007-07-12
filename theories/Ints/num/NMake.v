@@ -799,7 +799,7 @@ Module Make (W0:W0Type).
   let op := make_op n in
   match op.(znz_sub_c) x y with
   | C0 r => Nn n r
-  | C1 r => Nn (S n) (WW op.(znz_1) r)  end.
+  | C1 r => N0 w_0  end.
 
  Definition sub x y :=
   match x, y with
