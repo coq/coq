@@ -166,8 +166,10 @@ let decl_constant na c =
       const_entry_boxed = true}, 
     IsProof Lemma))
 
-let ltac_call tac args =
+let ltac_call tac (args:glob_tactic_arg list) =
   TacArg(TacCall(dummy_loc, ArgArg(dummy_loc, Lazy.force tac),args))
+let ltac_acall tac (args:glob_tactic_arg list) =
+  TacCall(dummy_loc, ArgArg(dummy_loc, Lazy.force tac),args)
 
 let ltac_lcall tac args =
   TacArg(TacCall(dummy_loc, ArgVar(dummy_loc, id_of_string tac),args))
@@ -276,11 +278,17 @@ let coq_mk_reqe = my_constant "mk_reqe"
 let coq_semi_ring_theory = my_constant "semi_ring_theory"
 let coq_mk_seqe = my_constant "mk_seqe"
 
+let ltac_inv_morph_gen = zltac"inv_gen_phi"
 let ltac_inv_morphZ = zltac"inv_gen_phiZ"
 let ltac_inv_morphN = zltac"inv_gen_phiN"
+let ltac_inv_morphNword = zltac"inv_gen_phiNword"
 let coq_abstract = my_constant"Abstract"
 let coq_comp = my_constant"Computational"
 let coq_morph = my_constant"Morphism"
+
+(* morphism *)
+let coq_ring_morph = my_constant "ring_morph"
+let coq_semi_morph = my_constant "semi_morph"
 
 (* power function *)
 let ltac_inv_morph_nothing = zltac"inv_morph_nothing"
@@ -527,6 +535,18 @@ let dest_ring env sigma th_spec =
     | _ -> error "bad ring structure"
 
 
+let dest_morph env sigma m_spec =
+  let m_typ = Retyping.get_type_of env sigma m_spec in
+  match kind_of_term m_typ with
+      App(f,[|r;zero;one;add;mul;sub;opp;req;
+              c;czero;cone;cadd;cmul;csub;copp;ceqb;phi|])
+        when f = Lazy.force coq_ring_morph ->
+          (c,czero,cone,cadd,cmul,Some csub,Some copp,ceqb,phi)
+    | App(f,[|r;zero;one;add;mul;req;c;czero;cone;cadd;cmul;ceqb;phi|])
+        when f = Lazy.force coq_semi_morph ->
+        (c,czero,cone,cadd,cmul,None,None,ceqb,phi)
+    | _ -> error "bad morphism structure"
+
 
 type coeff_spec =
     Computational of constr (* equality test *)
@@ -545,22 +565,34 @@ type cst_tac_spec =
     CstTac of raw_tactic_expr
   | Closed of reference list
 
-let interp_cst_tac kind (zero,one,add,mul,opp) cst_tac =
+let interp_cst_tac env sigma rk kind (zero,one,add,mul,opp) cst_tac =
   match cst_tac with
       Some (CstTac t) -> Tacinterp.glob_tactic t
     | Some (Closed lc) -> closed_term_ast (List.map Nametab.global lc)
     | None ->
-        (match opp, kind with
-            None, _ ->
+        (match rk, opp, kind with
+            Abstract, None, _ ->
               let t = ArgArg(dummy_loc,Lazy.force ltac_inv_morphN) in
               TacArg(TacCall(dummy_loc,t,List.map carg [zero;one;add;mul]))
-          | Some opp, Some _ ->
+          | Abstract, Some opp, Some _ ->
               let t = ArgArg(dummy_loc, Lazy.force ltac_inv_morphZ) in
               TacArg(TacCall(dummy_loc,t,List.map carg [zero;one;add;mul;opp]))
-          | _ -> error"a tactic must be specified for an almost_ring")
+          | Abstract, Some opp, None ->
+              let t = ArgArg(dummy_loc, Lazy.force ltac_inv_morphNword) in
+              TacArg
+                (TacCall(dummy_loc,t,List.map carg [zero;one;add;mul;opp]))
+          | Computational _,_,_ ->
+              let t = ArgArg(dummy_loc, Lazy.force ltac_inv_morph_gen) in
+              TacArg
+                (TacCall(dummy_loc,t,List.map carg [zero;one;zero;one]))
+          | Morphism mth,_,_ ->
+              let (_,czero,cone,_,_,_,_,_,_) = dest_morph env sigma mth in
+              let t = ArgArg(dummy_loc, Lazy.force ltac_inv_morph_gen) in
+              TacArg
+                (TacCall(dummy_loc,t,List.map carg [zero;one;czero;cone])))
 
 let make_hyp env c =
-  let t = (Typeops.typing env c).uj_type in
+  let t = Retyping.get_type_of env Evd.empty c in
   lapp coq_mkhypo [|t;c|]
 
 let make_hyp_list env lH =
@@ -618,7 +650,8 @@ let add_theory name rth eqth morphth cst_tac (pre,post) power sign div =
 
   let lemma1 = decl_constant (string_of_id name^"_ring_lemma1") lemma1 in
   let lemma2 = decl_constant (string_of_id name^"_ring_lemma2") lemma2 in
-  let cst_tac = interp_cst_tac kind (zero,one,add,mul,opp) cst_tac in
+  let cst_tac =
+    interp_cst_tac env sigma morphth kind (zero,one,add,mul,opp) cst_tac in
   let pretac =
     match pre with
         Some t -> Tacinterp.glob_tactic t
@@ -995,7 +1028,8 @@ let add_field_theory name fth eqth morphth cst_tac inj (pre,post) power sign odi
   let lemma3 = decl_constant (string_of_id name^"_field_lemma3") lemma3 in
   let lemma4 = decl_constant (string_of_id name^"_field_lemma4") lemma4 in
   let cond_lemma = decl_constant (string_of_id name^"_lemma5") cond_lemma in
-  let cst_tac = interp_cst_tac kind (zero,one,add,mul,opp) cst_tac in
+  let cst_tac =
+    interp_cst_tac env sigma morphth kind (zero,one,add,mul,opp) cst_tac in
   let pretac =
     match pre with
         Some t -> Tacinterp.glob_tactic t
