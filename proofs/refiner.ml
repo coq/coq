@@ -223,9 +223,7 @@ let refiner = function
              ref = Some(Daimon,[])})
 
 
-let local_Constraints gl = refiner (Prim Change_evars) gl
-
-let norm_evar_tac = local_Constraints
+let norm_evar_tac gl = refiner (Prim Change_evars) gl
 
 let norm_evar_proof sigma pf =
   let nf_subgoal i sgl =
@@ -311,6 +309,9 @@ let idtac_valid = function
 
 (* [goal_goal_list : goal sigma -> goal list sigma] *)
 let goal_goal_list gls = {it=[gls.it];sigma=gls.sigma}
+
+(* forces propagation of evar constraints *)
+let tclNORMEVAR = norm_evar_tac
 
 (* identity tactic without any message *)
 let tclIDTAC gls = (goal_goal_list gls, idtac_valid)

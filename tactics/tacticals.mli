@@ -24,6 +24,7 @@ open Tacexpr
 
 (* Tacticals i.e. functions from tactics to tactics. *)
 
+val tclNORMEVAR      : tactic
 val tclIDTAC         : tactic
 val tclIDTAC_MESSAGE : std_ppcmds -> tactic
 val tclORELSE        : tactic -> tactic -> tactic
