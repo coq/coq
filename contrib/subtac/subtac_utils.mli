@@ -100,6 +100,12 @@ val mkProj1 : constr -> constr -> constr -> constr
 val mkProj1 : constr -> constr -> constr -> constr
 val mk_ex_pi1 : constr -> constr -> constr -> constr
 val mk_ex_pi1 : constr -> constr -> constr -> constr
+val mk_eq : types -> constr -> constr -> types
+val mk_eq_refl : types -> constr -> constr
+val mk_JMeq : types -> constr-> types -> constr -> types
+val mk_JMeq_refl : types -> constr -> constr
+val mk_conj : types list -> types
+val mk_not : types -> types
 
 val build_dependent_sum : (identifier * types) list -> Proof_type.tactic * types
 val and_tac : (identifier * 'a * constr * Proof_type.tactic) list ->  

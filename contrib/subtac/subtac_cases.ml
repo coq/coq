@@ -1558,14 +1558,7 @@ let inh_conv_coerce_to_tycon loc env isevars j tycon =
     | None -> j
 
 let out_ind = function IsInd (_, IndType(x, y)) -> (x, y) | _ -> assert(false)
-  
-let list_mapi f l = 
-  let rec aux n = function
-      [] -> []
-    | hd :: tl -> f n hd :: aux (succ n) tl
-  in aux 0 l
 	       
-
 let string_of_name name = 
   match name with
     | Anonymous -> "anonymous"
@@ -1596,7 +1589,6 @@ let mk_eq_refl typ x = mkApp (Lazy.force eq_refl, [| typ; x |])
 let mk_JMeq typ x typ' y = mkApp (Lazy.force Subtac_utils.jmeq_ind, [| typ; x ; typ'; y |])
 let mk_JMeq_refl typ x = mkApp (Lazy.force Subtac_utils.jmeq_refl, [| typ; x |])
     
-
 let hole = RHole (dummy_loc, Evd.QuestionMark true)
 
 let context_of_arsign l =
@@ -1713,21 +1705,6 @@ let vars_of_ctx ctx =
 	      | Name n -> n, RVar (dummy_loc, n) :: vars)
       ctx (id_of_string "vars_of_ctx: error", [])
   in List.rev y
-      
-let unsafe_fold_right f = function
-    hd :: tl -> List.fold_right f tl hd
-  | [] -> raise (Invalid_argument "unsafe_fold_right")
-
-let mk_conj l =
-  let conj_typ = Lazy.force Subtac_utils.and_typ in
-    unsafe_fold_right
-      (fun c conj ->
-	 mkApp (conj_typ, [| c ; conj |]))
-      l
-
-let mk_not c =
-  let notc = Lazy.force Subtac_utils.not_ref in
-    mkApp (notc, [| c |])
 
 let rec is_included x y = 
   match x, y with
@@ -1763,7 +1740,6 @@ let build_ineqs prevpatterns pats liftsign =
 			  succ n, (* nth pattern *)
 			  mkApp (Lazy.force eq_ind,
 				[| lift (lens + liftsign) ppat_ty ;
-(* 				   ppat_c ;  *)
 				   liftn liftsign (succ lens) ppat_c ;
 				   lift len' curpat_c |]) :: 
 			    List.map 
@@ -1800,11 +1776,6 @@ let lift_rel_contextn n k sign =
     | [] -> []
   in
   liftrec (rel_context_length sign + k) sign
-
-let lift_arsign n (x, y) =
-  match lift_rel_context n (x :: y) with
-    | x :: y -> x, y
-    | [] -> assert(false)
 
 let constrs_of_pats typing_fun tycon env isevars eqns tomatchs sign neqs eqs arity =
   let i = ref 0 in

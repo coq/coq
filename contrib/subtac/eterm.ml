@@ -13,46 +13,15 @@ open Pp
 open Util
 open Subtac_utils
 
-let reverse_array arr = 
-  Array.of_list (List.rev (Array.to_list arr))
-    
 let trace s = 
   if !Options.debug then (msgnl s; msgerr s)
   else ()
-
-(** Utilities to find indices in lists *)
-let list_index x l =
-  let rec aux i = function
-      k :: tl -> if k = x then i else aux (succ i) tl
-    | [] -> raise Not_found
-  in aux 0 l
-
-let list_assoc_index x l =
-  let rec aux i = function
-      (k, _, v) :: tl -> if k = x then i else aux (succ i) tl
-    | [] -> raise Not_found
-  in aux 0 l
-
-let rec list_split_at n l = 
-  match n with
-    | 0 -> ([], l)
-    | n' ->
-	match l with
-	  | [] -> assert(false)
-	  | hd :: tl -> let (l, r) = list_split_at (pred n') tl in
-	      (hd :: l, r)
 
 (** Substitute evar references in t using De Bruijn indices, 
   where n binders were passed through. *)
 let subst_evar_constr evs n t = 
   let seen = ref Intset.empty in
-  let evar_info id = 
-    let rec aux i = function
-	(k, x) :: tl -> 
-	  if k = id then x else aux (succ i) tl
-      | [] -> raise Not_found
-    in aux 0 evs
-  in
+  let evar_info id = List.assoc id evs in
   let rec substrec depth c = match kind_of_term c with
     | Evar (k, args) ->
 	let (id, idstr), hyps, chop, _, _ = 
@@ -66,7 +35,7 @@ let subst_evar_constr evs n t =
 	  *)
 	let args = 
 	  let n = match chop with None -> 0 | Some c -> c in 
-	  let (l, r) = list_split_at n (List.rev (Array.to_list args)) in
+	  let (l, r) = list_chop n (List.rev (Array.to_list args)) in
 	    List.rev r
 	in
 	let args =
@@ -94,10 +63,7 @@ let subst_evar_constr evs n t =
 (** Substitute variable references in t using De Bruijn indices, 
   where n binders were passed through. *)
 let subst_vars acc n t = 
-  let var_index id = 
-    let idx = list_index id acc in
-      idx + 1
-  in
+  let var_index id = Util.list_index id acc in
   let rec substrec depth c = match kind_of_term c with
     | Var v -> (try mkRel (depth + (var_index v)) with Not_found -> c)
     | _ -> map_constr_with_binders succ substrec depth c
@@ -131,12 +97,9 @@ let etype_of_evar evs hyps concl =
 
 open Tacticals
     
-let rec take n l = 
-  if n = 0 then [] else List.hd l :: take (pred n) (List.tl l)    
-
 let trunc_named_context n ctx = 
   let len = List.length ctx in
-    take (len - n) ctx
+    list_firstn (len - n) ctx
   
 let rec chop_product n t = 
   if n = 0 then Some t
@@ -200,11 +163,7 @@ let eterm_obligations name nclen isevars evm fs t tycon =
      with _ -> ());
     Array.of_list (List.rev evars), t'
 
-let mkMetas n = 
-  let rec aux i acc = 
-    if i > 0 then aux (pred i) (Evarutil.mk_new_meta () :: acc)
-    else acc
-  in aux n []
+let mkMetas n = list_tabulate (fun _ -> Evarutil.mk_new_meta ()) n
 
 (* let eterm evm t (tycon : types option) =  *)
 (*   let t, tycon, evs = eterm_term evm t tycon in *)
