@@ -1,3 +1,0 @@
-Require Import BinNat.
-Extraction NoInline Ndouble Ndouble_plus_one.
-
