@@ -65,7 +65,7 @@ let repr_dirpath x = x
 let empty_dirpath = []
 
 let string_of_dirpath = function
-  | [] -> "<empty>"
+  | [] -> ""
   | sl ->
       String.concat "." (List.map string_of_id (List.rev sl))
 

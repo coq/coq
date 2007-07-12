@@ -131,8 +131,12 @@ and merge_with env mtb with_decl =
 	    let equiv = 
  	      match old.msb_equiv with
 		| None -> Some mp
-		| Some mp' -> 
-		    check_modpath_equiv env' mp mp';
+		| Some mp' ->
+		    begin
+		      try 
+			check_modpath_equiv env' mp mp'
+		      with Not_equiv_path -> error_not_equal mp mp
+		    end;
 		    Some mp
 	    in
 	    let msb =

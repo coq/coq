@@ -33,10 +33,11 @@ let error_not_a_functor _ = error "Application of not a functor"
 
 let error_incompatible_modtypes _ _ = error "Incompatible module types"
 
-let error_not_equal _ _ = error "Not equal modules"
+let error_not_equal p1 p2 = error ((string_of_mp p1)^" and "^(string_of_mp p2)^" are not equal modules")
 
-let error_not_match l _ = error ("Signature components for label "^string_of_label l^" do not match")
-
+let error_not_match l l1 l2 = error (l1^" is not a subtype of "^l2^": "^
+				       "Signature components for label "^(string_of_label l)^" do not match.")
+  
 let error_no_such_label l = error ("No such label "^string_of_label l)
 
 let error_incompatible_labels l l' = 
@@ -89,7 +90,7 @@ let error_circularity_in_subtyping l l1 l2 =
   error ("An occurrence of "^l^" creates a circularity\n during the subtyping verification between "^l1^" and "^l2^".")
 
 let error_no_such_label_sub l l1 l2 =
-  error (l1^" is not a subtype of "^l2^".\nThe field "^(string_of_label l)^" is missing (or invisible) in "^l1^".")
+  error (l1^" is not a subtype of "^l2^":"^"The field "^(string_of_label l)^" is missing in "^l1^".")
 
 
 let rec scrape_modtype env = function
@@ -124,6 +125,7 @@ let destr_functor = function
   | MTBfunsig (arg_id,arg_t,body_t) -> (arg_id,arg_t,body_t)
   | mtb -> error_not_a_functor mtb
  
+exception Not_equiv_path 
 
 let rec check_modpath_equiv env mp1 mp2 = 
   if mp1=mp2 then () else
@@ -132,7 +134,7 @@ let rec check_modpath_equiv env mp1 mp2 =
       | None ->
 	  let mb2 = lookup_module mp2 env in
 	    (match mb2.mod_equiv with
-	      | None -> error_not_equal mp1 mp2
+	      | None -> raise Not_equiv_path
 	      | Some mp2' -> check_modpath_equiv env mp2' mp1)
       | Some mp1' -> check_modpath_equiv env mp2 mp1'
 
@@ -253,9 +255,10 @@ let resolver_of_environment mbid modtype mp env =
 
 
 let strengthen_const env mp l cb = 
-  match cb.const_body with
-  | Some _ -> cb
-  | None -> 
+ match cb.const_opaque, cb.const_body with
+  | false, Some _ -> cb
+  | true, Some _ 
+  | _, None -> 
       let const = mkConst (make_con mp empty_dirpath l) in 
       let const_subs = Some (Declarations.from_val const) in
 	{cb with 

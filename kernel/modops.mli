@@ -21,6 +21,7 @@ open Mod_subst
 (* Various operations on modules and module types *)
 
 exception Circularity of string
+exception Not_equiv_path
 
 (* recursively unfold MTBdent module types *)
 val scrape_modtype : env -> module_type_body -> module_type_body
@@ -70,7 +71,7 @@ val error_incompatible_modtypes :
 
 val error_not_equal : module_path -> module_path -> 'a
 
-val error_not_match : label -> specification_body -> 'a
+val error_not_match : label -> string -> string -> 'a
   
 val error_incompatible_labels : label -> label -> 'a
 
