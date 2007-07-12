@@ -13,6 +13,15 @@ open Decl_kinds
 open Util
 open Evd
 
+let pperror cmd = Util.errorlabstrm "Subtac" cmd
+let error s = pperror (str s)
+
+exception NoObligations of identifier option
+
+let explain_no_obligations = function
+    Some ident -> str "No obligations for program " ++ str (string_of_id ident)
+  | None -> str "No obligations remaining"
+
 type obligation_info = (Names.identifier * Term.types * bool * Intset.t) array
 
 type obligation =
@@ -213,21 +222,21 @@ let init_prog_info n b t deps nvrec obls =
     { prg_name = n ; prg_body = b; prg_type = red t; prg_obligations = (obls', Array.length obls');
       prg_deps = deps; prg_nvrec = nvrec; }
     
-let pperror cmd = Util.errorlabstrm "Subtac" cmd
-let error s = pperror (str s)
-
 let get_prog name =
   let prg_infos = !from_prg in
     match name with
 	Some n -> 
 	  (try ProgMap.find n prg_infos
-	   with Not_found -> error ("No obligations for program " ^ string_of_id n))
+	   with Not_found -> raise (NoObligations (Some n)))
       | None -> 
 	  (let n = map_cardinal prg_infos in
 	     match n with 
-		 0 -> error "No obligations remaining"
+		 0 -> raise (NoObligations None)
 	       | 1 -> map_first prg_infos
 	       | _ -> error "More than one program with unsolved obligations")
+
+let get_prog_err n = 
+  try get_prog n with NoObligations id -> pperror (explain_no_obligations id)
 
 let obligations_solved prg = (snd prg.prg_obligations) = 0
 
@@ -316,7 +325,7 @@ let rec solve_obligation prg num =
 
 and subtac_obligation (user_num, name, typ) =
   let num = pred user_num in
-  let prg = get_prog name in
+  let prg = get_prog_err name in
   let obls, rem = prg.prg_obligations in
     if num < Array.length obls then
       let obl = obls.(num) in
@@ -356,7 +365,7 @@ and solve_prg_obligations prg tac =
     update_obls prg obls' !rem
 
 and solve_obligations n tac = 
-  let prg = get_prog n in
+  let prg = get_prog_err n in
     solve_prg_obligations prg tac
 
 and solve_all_obligations tac = 
@@ -370,12 +379,12 @@ and try_solve_obligation n prg tac =
       ignore(update_obls prg obls' (pred rem));
     
 and try_solve_obligations n tac = 
-  ignore (solve_obligations n tac)
+  try ignore (solve_obligations n tac) with NoObligations _ -> ()
 
 and auto_solve_obligations n : unit =
   Options.if_verbose msgnl (str "Solving obligations automatically...");
   try_solve_obligations n !default_tactic
-    
+      
 let add_definition n b t obls =
   Options.if_verbose pp (str (string_of_id n) ++ str " has type-checked");
   let prg = init_prog_info n b t [] (Array.make 0 0) obls in
@@ -402,7 +411,7 @@ let add_mutual_definitions l nvrec =
     List.iter (fun x -> auto_solve_obligations (Some x)) deps
 
 let admit_obligations n =
-  let prg = get_prog n in
+  let prg = get_prog_err n in
   let obls, rem = prg.prg_obligations in
     Array.iteri (fun i x -> 
 		 match x.obl_body with 
@@ -423,7 +432,7 @@ let array_find f arr =
   with Found i -> i
 
 let next_obligation n =
-  let prg = get_prog n in
+  let prg = get_prog_err n in
   let obls, rem = prg.prg_obligations in
   let i = 
     array_find (fun x ->  x.obl_body = None && deps_remaining obls x.obl_deps = [])
@@ -432,7 +441,7 @@ let next_obligation n =
       
 open Pp
 let show_obligations n =
-  let prg = get_prog n in
+  let prg = get_prog_err n in
   let n = prg.prg_name in
   let obls, rem = prg.prg_obligations in
     msgnl (int rem ++ str " obligation(s) remaining: ");

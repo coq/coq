@@ -28,3 +28,8 @@ val try_solve_obligations : Names.identifier option -> Proof_type.tactic -> unit
 val show_obligations : Names.identifier option -> unit
 
 val admit_obligations : Names.identifier option -> unit
+
+exception NoObligations of Names.identifier option
+
+val explain_no_obligations : Names.identifier option -> Pp.std_ppcmds
+
