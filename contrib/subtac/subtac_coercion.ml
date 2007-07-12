@@ -26,7 +26,6 @@ open Subtac_utils
 open Coqlib
 open Printer
 open Subtac_errors
-open Context
 open Eterm
 open Pp
 

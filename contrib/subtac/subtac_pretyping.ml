@@ -36,7 +36,6 @@ open Subtac_utils
 open Coqlib
 open Printer
 open Subtac_errors
-open Context
 open Eterm
 
 module Pretyping = Subtac_pretyping_F.SubtacPretyping_F(Subtac_coercion.Coercion)
