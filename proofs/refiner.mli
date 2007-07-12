@@ -28,7 +28,7 @@ val pf_hyps : goal sigma -> named_context
 val unpackage : 'a sigma -> evar_map ref * 'a
 val repackage : evar_map ref -> 'a -> 'a sigma
 val apply_sig_tac :
-  evar_map ref -> ('a sigma -> 'b sigma * 'c) -> 'a -> 'b * 'c
+  evar_map ref -> (goal sigma -> (goal list) sigma * validation) -> goal -> (goal list) * validation
 
 type transformation_tactic = proof_tree -> (goal list * validation)
 

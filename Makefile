@@ -1453,6 +1453,10 @@ tags:
               "--regex=/exception[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/val[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/module[ \t]+\([^ \t]+\)/\1/"
+	find . -maxdepth 3 -name "*.ml4" | sort -r | xargs \
+	etags --append --language=none\
+	      "--regex=/[ \t]*\([^: \t]+\)[ \t]*:/\1/"
+
 
 otags: 
 	find . -maxdepth 3 -name "*.ml" -o -name "*.mli" \
