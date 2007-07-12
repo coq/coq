@@ -212,7 +212,6 @@ Section GenMul.
  (*Section GenProof. *)
   Variable w_digits : positive.
   Variable w_to_Z : w -> Z.
-  Variable more_than_one_bit: 1 < Zpos w_digits.
 
   Notation wB  := (base w_digits).
   Notation wwB := (base (ww_digits w_digits)).
@@ -236,6 +235,7 @@ Section GenMul.
   Notation "[! n | x !]" := (gen_to_Z w_digits w_to_Z n x)
     (at level 0, x at level 99).
 
+  Variable spec_more_than_1_digit: 1 < Zpos w_digits.
   Variable spec_w_0   : [|w_0|] = 0.
   Variable spec_w_1   : [|w_1|] = 1.
 

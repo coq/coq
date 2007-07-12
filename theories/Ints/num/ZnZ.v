@@ -168,6 +168,7 @@ Section Spec.
     spec_of_pos : forall p,
            Zpos p = (Z_of_N (fst (w_of_pos p)))*wB + [|(snd (w_of_pos p))|];
     spec_zdigits : [| w_zdigits |] = Zpos w_digits;
+    spec_more_than_1_digit: 1 < Zpos w_digits;
 
     (* Basic constructors *)
     spec_0   : [|w0|] = 0;

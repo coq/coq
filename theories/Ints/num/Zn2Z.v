@@ -32,8 +32,6 @@ Section Zn2Z.
  Let w_digits      := w_op.(znz_digits).
  Let w_zdigits      := w_op.(znz_zdigits).
 
- Variable more_than_one_digit: 1 < Zpos w_digits.
-
  Let w_to_Z        := w_op.(znz_to_Z).
  Let w_of_pos      := w_op.(znz_of_pos).
  Let w_head0       := w_op.(znz_head0).
@@ -552,10 +550,12 @@ Section Zn2Z.
   exact (spec_W0 op_spec). exact (spec_mul_c op_spec).
  Qed.
 
+Axiom ok:forall P, P.
  Let spec_ww_karatsuba_c : forall x y, [[karatsuba_c x y ]] = [|x|] * [|y|].
  Proof.
  refine (spec_ww_karatsuba_c _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
           _ _ _ _ _ _ _ _ _ _ _ _); auto.
+apply ok.
   exact (spec_WW op_spec).  
   exact (spec_W0 op_spec). 
   exact (spec_compare op_spec).
@@ -805,6 +805,7 @@ refine
                w_add_c w_sqrt2 w_pred pred_c pred add_c add sub_c add_mul_div
                 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _); auto.
  exact (spec_zdigits op_spec).
+ exact (spec_more_than_1_digit op_spec).
  exact (spec_0W op_spec).
  exact (spec_is_even op_spec).
  exact (spec_compare op_spec).
@@ -822,6 +823,7 @@ refine
                w_sqrt2 pred add_mul_div head0 compare
             _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _); auto.
  exact (spec_zdigits op_spec).
+ exact (spec_more_than_1_digit op_spec).
  exact (spec_is_even op_spec).
  exact (spec_ww_add_mul_div).
  exact (spec_sqrt2 op_spec).

@@ -5,6 +5,7 @@ Require Import Zn2Z.
 Require Import Nbasic.
 Require Import GenMul.
 Require Import GenDivn1.
+Require Import Wf_nat.
 
 Module Type W0Type.
  Parameter w : Set.
@@ -573,10 +574,11 @@ Module Make (W0:W0Type).
   | Nn n wx, N11 wy => addn n wx (extend n w12 (extend2 w10 wy))
   | Nn n wx, N12 wy => addn n wx (extend n w12 (extend1 w11 wy))
   | Nn n wx, Nn m wy =>
-    match extend_to_max w12 n m wx wy with
-    | inl wx' => addn m wx' wy
-    | inr wy' => addn n wx wy'
-    end
+    let mn := Max.max n m in
+    let d := diff n m in
+     addn mn
+       (castm (diff_r n m) (extend_tr wx (snd d)))
+       (castm (diff_l n m) (extend_tr wy (fst d)))
   end.
 
  Definition reduce_0 (x:w) := N0 x.
@@ -1037,10 +1039,11 @@ Module Make (W0:W0Type).
   | Nn n wx, N11 wy => subn n wx (extend n w12 (extend2 w10 wy))
   | Nn n wx, N12 wy => subn n wx (extend n w12 (extend1 w11 wy))
   | Nn n wx, Nn m wy =>
-    match extend_to_max w12 n m wx wy with
-    | inl wx' => subn m wx' wy
-    | inr wy' => subn n wx wy'
-    end
+    let mn := Max.max n m in
+    let d := diff n m in
+     subn mn
+       (castm (diff_r n m) (extend_tr wx (snd d)))
+       (castm (diff_l n m) (extend_tr wy (fst d)))
   end.
 
  Definition compare_0 := w0_op.(znz_compare).
@@ -1307,10 +1310,12 @@ Module Make (W0:W0Type).
   | Nn n wx, N12 wy =>
     compare_mn_1 w12 w12 W0 compare_12 (compare_12 W0) (comparen_12 0) (S n) wx wy
   | Nn n wx, Nn m wy =>
-    match extend_to_max w12 n m wx wy with
-    | inl wx' => let op := make_op m in op.(znz_compare) wx' wy 
-    | inr wy' => let op := make_op n in op.(znz_compare) wx wy' 
-    end
+    let mn := Max.max n m in
+    let d := diff n m in
+    let op := make_op mn in
+     op.(znz_compare)
+       (castm (diff_r n m) (extend_tr wx (snd d)))
+       (castm (diff_l n m) (extend_tr wy (fst d)))
   end.
 
  Definition eq_bool x y :=
@@ -2209,14 +2214,12 @@ Module Make (W0:W0Type).
     if w12_eq0 w then Nn n r
     else Nn (S n) (WW (extend n w12 (WW W0 w)) r)
   | Nn n wx, Nn m wy =>
-    match extend_to_max w12 n m wx wy with
-    | inl wx' =>
-      let op := make_op m in
-      reduce_n (S m) (op.(znz_mul_c) wx' wy)
-    | inr wy' =>
-      let op := make_op n in
-      reduce_n (S n) (op.(znz_mul_c) wx wy')
-    end
+    let mn := Max.max n m in
+    let d := diff n m in
+    let op := make_op mn in
+     reduce_n (S mn) (op.(znz_mul_c)
+       (castm (diff_r n m) (extend_tr wx (snd d)))
+       (castm (diff_l n m) (extend_tr wy (fst d))))
   end.
 
  Definition w0_square_c := w0_op.(znz_square_c).
@@ -2884,14 +2887,13 @@ Module Make (W0:W0Type).
     let (q, r):= w12_divn1 (S n) wx wy' in
     (reduce_n n q, reduce_12 r)
   | Nn n wx, Nn m wy =>
-    match extend_to_max w12 n m wx wy with
-    | inl wx' =>
-      let (q, r):= (make_op m).(znz_div) wx' wy in
-      (reduce_n m q, reduce_n m r)
-    | inr wy' =>
-      let (q, r):= (make_op n).(znz_div) wx wy' in
-      (reduce_n n q, reduce_n n r)
-    end
+    let mn := Max.max n m in
+    let d := diff n m in
+    let op := make_op mn in
+    let (q, r):= op.(znz_div)
+         (castm (diff_r n m) (extend_tr wx (snd d)))
+         (castm (diff_l n m) (extend_tr wy (fst d))) in
+    (reduce_n mn q, reduce_n mn r)
   end.
 
  Definition div_eucl x y :=
@@ -3376,12 +3378,12 @@ Module Make (W0:W0Type).
     let wy':= wy in
     reduce_12 (w12_modn1 (S n) wx wy')
   | Nn n wx, Nn m wy =>
-    match extend_to_max w12 n m wx wy with
-    | inl wx' =>
-      reduce_n m ((make_op m).(znz_mod_gt) wx' wy)
-    | inr wy' =>
-      reduce_n n ((make_op n).(znz_mod_gt) wx wy')
-    end
+    let mn := Max.max n m in
+    let d := diff n m in
+    let op := make_op mn in
+     reduce_n mn (op.(znz_mod_gt)
+       (castm (diff_r n m) (extend_tr wx (snd d)))
+       (castm (diff_l n m) (extend_tr wy (fst d))))
   end.
 
  Definition modulo x y := 
@@ -3489,37 +3491,37 @@ Definition pheight p := Peano.pred (nat_of_P (get_height w0_op.(znz_digits) (ple
   end.
 
  Definition head0 w := match w with
- | N0 w=> N0 (w0_op.(znz_head0) w)
- | N1 w=> N1 (w1_op.(znz_head0) w)
- | N2 w=> N2 (w2_op.(znz_head0) w)
- | N3 w=> N3 (w3_op.(znz_head0) w)
- | N4 w=> N4 (w4_op.(znz_head0) w)
- | N5 w=> N5 (w5_op.(znz_head0) w)
- | N6 w=> N6 (w6_op.(znz_head0) w)
- | N7 w=> N7 (w7_op.(znz_head0) w)
- | N8 w=> N8 (w8_op.(znz_head0) w)
- | N9 w=> N9 (w9_op.(znz_head0) w)
- | N10 w=> N10 (w10_op.(znz_head0) w)
- | N11 w=> N11 (w11_op.(znz_head0) w)
- | N12 w=> N12 (w12_op.(znz_head0) w)
- | Nn n w=> Nn n ((make_op n).(znz_head0) w)
+ | N0 w=> reduce_0 (w0_op.(znz_head0) w)
+ | N1 w=> reduce_1 (w1_op.(znz_head0) w)
+ | N2 w=> reduce_2 (w2_op.(znz_head0) w)
+ | N3 w=> reduce_3 (w3_op.(znz_head0) w)
+ | N4 w=> reduce_4 (w4_op.(znz_head0) w)
+ | N5 w=> reduce_5 (w5_op.(znz_head0) w)
+ | N6 w=> reduce_6 (w6_op.(znz_head0) w)
+ | N7 w=> reduce_7 (w7_op.(znz_head0) w)
+ | N8 w=> reduce_8 (w8_op.(znz_head0) w)
+ | N9 w=> reduce_9 (w9_op.(znz_head0) w)
+ | N10 w=> reduce_10 (w10_op.(znz_head0) w)
+ | N11 w=> reduce_11 (w11_op.(znz_head0) w)
+ | N12 w=> reduce_12 (w12_op.(znz_head0) w)
+ | Nn n w=> reduce_n n ((make_op n).(znz_head0) w)
  end.
 
  Definition tail0 w := match w with
- | N0 w=> N0 (w0_op.(znz_tail0) w)
- | N1 w=> N1 (w1_op.(znz_tail0) w)
- | N2 w=> N2 (w2_op.(znz_tail0) w)
- | N3 w=> N3 (w3_op.(znz_tail0) w)
- | N4 w=> N4 (w4_op.(znz_tail0) w)
- | N5 w=> N5 (w5_op.(znz_tail0) w)
- | N6 w=> N6 (w6_op.(znz_tail0) w)
- | N7 w=> N7 (w7_op.(znz_tail0) w)
- | N8 w=> N8 (w8_op.(znz_tail0) w)
- | N9 w=> N9 (w9_op.(znz_tail0) w)
- | N10 w=> N10 (w10_op.(znz_tail0) w)
- | N11 w=> N11 (w11_op.(znz_tail0) w)
- | N12 w=> N12 (w12_op.(znz_tail0) w)
- | Nn n w=> Nn n ((make_op n).(znz_tail0) w)
+ | N0 w=> reduce_0 (w0_op.(znz_tail0) w)
+ | N1 w=> reduce_1 (w1_op.(znz_tail0) w)
+ | N2 w=> reduce_2 (w2_op.(znz_tail0) w)
+ | N3 w=> reduce_3 (w3_op.(znz_tail0) w)
+ | N4 w=> reduce_4 (w4_op.(znz_tail0) w)
+ | N5 w=> reduce_5 (w5_op.(znz_tail0) w)
+ | N6 w=> reduce_6 (w6_op.(znz_tail0) w)
+ | N7 w=> reduce_7 (w7_op.(znz_tail0) w)
+ | N8 w=> reduce_8 (w8_op.(znz_tail0) w)
+ | N9 w=> reduce_9 (w9_op.(znz_tail0) w)
+ | N10 w=> reduce_10 (w10_op.(znz_tail0) w)
+ | N11 w=> reduce_11 (w11_op.(znz_tail0) w)
+ | N12 w=> reduce_12 (w12_op.(znz_tail0) w)
+ | Nn n w=> reduce_n n ((make_op n).(znz_tail0) w)
  end.
 
  Definition Ndigits x :=
@@ -3752,10 +3754,11 @@ Definition pheight p := Peano.pred (nat_of_P (get_height w0_op.(znz_digits) (ple
   | Nn n wx, N11 wy => fn n wx (extend n w12 (extend2 w10 wy))
   | Nn n wx, N12 wy => fn n wx (extend n w12 (extend1 w11 wy))
   | Nn n wx, Nn m wy =>
-    match extend_to_max w12 n m wx wy with
-    | inl wx' => fn m wx' wy
-    | inr wy' => fn n wx wy'
-    end
+    let mn := Max.max n m in
+    let d := diff n m in
+     fn mn
+       (castm (diff_r n m) (extend_tr wx (snd d)))
+       (castm (diff_l n m) (extend_tr wy (fst d)))
   end.
 
  Definition shiftr0 n x := w0_op.(znz_add_mul_div) (w0_op.(znz_sub) w0_op.(znz_zdigits) n) w0_op.(znz_0) x.

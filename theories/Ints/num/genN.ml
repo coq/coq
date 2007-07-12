@@ -5,6 +5,7 @@ let sizeaux = 1
 
 let t = "t"
 let c = "N"
+let gen_proof = false
 
 (******* Start Printing ********)
 let basename = "N"
@@ -12,7 +13,7 @@ let basename = "N"
 
 let print_header fmt l =
   let l = "ZArith"::"Basic_type"::"ZnZ"::"Zn2Z"::"Nbasic"::"GenMul"::
-	  "GenDivn1"::l in
+	  "GenDivn1"::"Wf_nat"::l in
   List.iter (fun s -> fprintf fmt "Require Import %s.\n" s) l;
   fprintf fmt "\n"
 
@@ -242,10 +243,11 @@ let print_Make () =
        c c j size (size-j+1) (j-1); 
   done; 
   fprintf fmt "  | %sn n wx, %sn m wy =>\n" c c;
-  fprintf fmt "    match extend_to_max w%i n m wx wy with\n" size;
-  fprintf fmt "    | inl wx' => addn m wx' wy\n";
-  fprintf fmt "    | inr wy' => addn n wx wy'\n";
-  fprintf fmt "    end\n";
+  fprintf fmt "    let mn := Max.max n m in\n";
+  fprintf fmt "    let d := diff n m in\n";
+  fprintf fmt "     addn mn\n";
+  fprintf fmt "       (castm (diff_r n m) (extend_tr wx (snd d)))\n";
+  fprintf fmt "       (castm (diff_l n m) (extend_tr wy (fst d)))\n";
   fprintf fmt "  end.\n";
   fprintf fmt "\n";
 
@@ -356,10 +358,11 @@ let print_Make () =
        c c j size (size-j+1) (j-1); 
   done; 
   fprintf fmt "  | %sn n wx, %sn m wy =>\n" c c;
-  fprintf fmt "    match extend_to_max w%i n m wx wy with\n" size;
-  fprintf fmt "    | inl wx' => subn m wx' wy\n";
-  fprintf fmt "    | inr wy' => subn n wx wy'\n";
-  fprintf fmt "    end\n";
+  fprintf fmt "    let mn := Max.max n m in\n";
+  fprintf fmt "    let d := diff n m in\n";
+  fprintf fmt "     subn mn\n";
+  fprintf fmt "       (castm (diff_r n m) (extend_tr wx (snd d)))\n";
+  fprintf fmt "       (castm (diff_l n m) (extend_tr wy (fst d)))\n";
   fprintf fmt "  end.\n";
   fprintf fmt "\n"; 
 
@@ -397,12 +400,12 @@ let print_Make () =
       j size j (size - j)
   done;
   fprintf fmt "  | %sn n wx, %sn m wy =>\n" c c;
-  fprintf fmt "    match extend_to_max w%i n m wx wy with\n" size;
-  fprintf fmt 
-    "    | inl wx' => let op := make_op m in op.(znz_compare) wx' wy \n";
-  fprintf fmt 
-    "    | inr wy' => let op := make_op n in op.(znz_compare) wx wy' \n";
-  fprintf fmt "    end\n";
+  fprintf fmt "    let mn := Max.max n m in\n";
+  fprintf fmt "    let d := diff n m in\n";
+  fprintf fmt "    let op := make_op mn in\n";
+  fprintf fmt "     op.(znz_compare)\n";
+  fprintf fmt "       (castm (diff_r n m) (extend_tr wx (snd d)))\n";
+  fprintf fmt "       (castm (diff_l n m) (extend_tr wy (fst d)))\n";
   fprintf fmt "  end.\n";
   fprintf fmt "\n";
 
@@ -525,14 +528,12 @@ let print_Make () =
   done;
 
   fprintf fmt "  | %sn n wx, %sn m wy =>\n" c c;
-  fprintf fmt "    match extend_to_max w%i n m wx wy with\n" size;
-  fprintf fmt "    | inl wx' =>\n";
-  fprintf fmt "      let op := make_op m in\n";
-  fprintf fmt "      reduce_n (S m) (op.(znz_mul_c) wx' wy)\n";
-  fprintf fmt "    | inr wy' =>\n";
-  fprintf fmt "      let op := make_op n in\n";
-  fprintf fmt "      reduce_n (S n) (op.(znz_mul_c) wx wy')\n";
-  fprintf fmt "    end\n";
+  fprintf fmt "    let mn := Max.max n m in\n";
+  fprintf fmt "    let d := diff n m in\n";
+  fprintf fmt "    let op := make_op mn in\n";
+  fprintf fmt "     reduce_n (S mn) (op.(znz_mul_c)\n";
+  fprintf fmt "       (castm (diff_r n m) (extend_tr wx (snd d)))\n";
+  fprintf fmt "       (castm (diff_l n m) (extend_tr wy (fst d))))\n";
   fprintf fmt "  end.\n";
   fprintf fmt "\n";
   
@@ -636,14 +637,13 @@ let print_Make () =
     fprintf fmt "    (reduce_n n q, reduce_%i r)\n" size
   done;
   fprintf fmt "  | %sn n wx, %sn m wy =>\n" c c;
-  fprintf fmt "    match extend_to_max w%i n m wx wy with\n" size;
-  fprintf fmt "    | inl wx' =>\n";
-  fprintf fmt "      let (q, r):= (make_op m).(znz_div) wx' wy in\n";
-  fprintf fmt "      (reduce_n m q, reduce_n m r)\n";
-  fprintf fmt "    | inr wy' =>\n";
-  fprintf fmt "      let (q, r):= (make_op n).(znz_div) wx wy' in\n";
-  fprintf fmt "      (reduce_n n q, reduce_n n r)\n";
-  fprintf fmt "    end\n";
+  fprintf fmt "    let mn := Max.max n m in\n";
+  fprintf fmt "    let d := diff n m in\n";
+  fprintf fmt "    let op := make_op mn in\n";
+  fprintf fmt "    let (q, r):= op.(znz_div)\n";
+  fprintf fmt "         (castm (diff_r n m) (extend_tr wx (snd d)))\n";
+  fprintf fmt "         (castm (diff_l n m) (extend_tr wy (fst d))) in\n";
+  fprintf fmt "    (reduce_n mn q, reduce_n mn r)\n";
   fprintf fmt "  end.\n";
   fprintf fmt "\n";
 
@@ -710,12 +710,12 @@ let print_Make () =
     fprintf fmt "    reduce_%i (w%i_modn1 (S n) wx wy')\n" size size;
   done;
   fprintf fmt "  | %sn n wx, %sn m wy =>\n" c c;
-  fprintf fmt "    match extend_to_max w%i n m wx wy with\n" size;
-  fprintf fmt "    | inl wx' =>\n";
-  fprintf fmt "      reduce_n m ((make_op m).(znz_mod_gt) wx' wy)\n";
-  fprintf fmt "    | inr wy' =>\n";
-  fprintf fmt "      reduce_n n ((make_op n).(znz_mod_gt) wx wy')\n";
-  fprintf fmt "    end\n";
+  fprintf fmt "    let mn := Max.max n m in\n";
+  fprintf fmt "    let d := diff n m in\n";
+  fprintf fmt "    let op := make_op mn in\n";
+  fprintf fmt "     reduce_n mn (op.(znz_mod_gt)\n";
+  fprintf fmt "       (castm (diff_r n m) (extend_tr wx (snd d)))\n";
+  fprintf fmt "       (castm (diff_l n m) (extend_tr wy (fst d))))\n";
   fprintf fmt "  end.\n";
   fprintf fmt "\n";
   
@@ -815,25 +815,25 @@ let print_Make () =
  (* Head0 *)
   fprintf fmt " Definition head0 w := match w with\n";
   for i = 0 to size do
-    fprintf fmt " | %s%i w=> %s%i (w%i_op.(znz_head0) w)\n"  c i c i i;
+    fprintf fmt " | %s%i w=> reduce_%i (w%i_op.(znz_head0) w)\n"  c i i i;
   done;
-  fprintf fmt " | %sn n w=> %sn n ((make_op n).(znz_head0) w)\n" c c;
+  fprintf fmt " | %sn n w=> reduce_n n ((make_op n).(znz_head0) w)\n" c;
   fprintf fmt " end.\n";
   fprintf fmt "\n";
 
  (* Tail0 *)
   fprintf fmt " Definition tail0 w := match w with\n";
   for i = 0 to size do
-    fprintf fmt " | %s%i w=> %s%i (w%i_op.(znz_tail0) w)\n"  c i c i i;
+    fprintf fmt " | %s%i w=> reduce_%i (w%i_op.(znz_tail0) w)\n"  c i i i;
   done;
-  fprintf fmt " | %sn n w=> %sn n ((make_op n).(znz_tail0) w)\n" c c;
+  fprintf fmt " | %sn n w=> reduce_n n ((make_op n).(znz_tail0) w)\n" c;
   fprintf fmt " end.\n";
   fprintf fmt "\n";
 
   (* Number of digits *)
   fprintf fmt " Definition %sdigits x :=\n" c;
   fprintf fmt "  match x with\n";
-  fprintf fmt "  | %s0 _ => N0 w0_op.(znz_zdigits)\n" c;
+  fprintf fmt "  | %s0 _ => %s0 w0_op.(znz_zdigits)\n" c c;
   for i = 1 to size do 
     fprintf fmt "  | %s%i _ => reduce_%i w%i_op.(znz_zdigits)\n" c i i i;
   done;
@@ -881,10 +881,11 @@ let print_Make () =
        c c j size (size-j+1) (j-1); 
   done; 
   fprintf fmt "  | %sn n wx, %sn m wy =>\n" c c;
-  fprintf fmt "    match extend_to_max w%i n m wx wy with\n" size;
-  fprintf fmt "    | inl wx' => fn m wx' wy\n";
-  fprintf fmt "    | inr wy' => fn n wx wy'\n";
-  fprintf fmt "    end\n";
+  fprintf fmt "    let mn := Max.max n m in\n";
+  fprintf fmt "    let d := diff n m in\n";
+  fprintf fmt "     fn mn\n";
+  fprintf fmt "       (castm (diff_r n m) (extend_tr wx (snd d)))\n";
+  fprintf fmt "       (castm (diff_l n m) (extend_tr wy (fst d)))\n";
   fprintf fmt "  end.\n";
   fprintf fmt "\n";
 
@@ -908,7 +909,7 @@ let print_Make () =
   fprintf fmt " Definition safe_shiftr n x := \n";
   fprintf fmt "   match compare n (Ndigits x) with\n ";
   fprintf fmt "   |  Lt => shiftr n x \n";
-  fprintf fmt "   | _ => N0 w_0\n";
+  fprintf fmt "   | _ => %s0 w_0\n" c;
   fprintf fmt "   end.\n";
   fprintf fmt "\n";
 
@@ -929,12 +930,12 @@ let print_Make () =
 
  (* Double size *)
   fprintf fmt " Definition double_size w := match w with\n";
-  fprintf fmt " | N0 w=> N1 (WW w_0 w)\n";
+  fprintf fmt " | %s0 w=> N1 (WW w_0 w)\n" c;
   for i = 1 to size-1 do
-    fprintf fmt " | N%i w=> N%i (extend1 _ w)\n"  i (i + 1);
+    fprintf fmt " | %s%i w=> %s%i (extend1 _ w)\n"  c i c (i + 1);
   done;
-  fprintf fmt " | N%i w=> Nn 0 (extend1 _ w)\n" size ;
-  fprintf fmt " | Nn n w=> Nn (S n) (extend1 _ w)\n";
+  fprintf fmt " | %s%i w=> %sn 0 (extend1 _ w)\n" c size c ;
+  fprintf fmt " | %sn n w=> %sn (S n) (extend1 _ w)\n" c c;
   fprintf fmt " end.\n";
   fprintf fmt "\n";
 
@@ -955,7 +956,7 @@ let print_Make () =
   fprintf fmt "        end) n x.\n";
   fprintf fmt "\n";
   fprintf fmt "  Definition safe_shiftl n x :=\n";
-  fprintf fmt "  safe_shiftl_aux (digits n) (fun n x => N0 w0_op.(znz_0)) n x.\n";
+  fprintf fmt "  safe_shiftl_aux (digits n) (fun n x => %s0 w0_op.(znz_0)) n x.\n" c;
   fprintf fmt " \n";
 
   (* even *)
@@ -968,6 +969,282 @@ let print_Make () =
   fprintf fmt "  end.\n";
   fprintf fmt "\n";
 
+  if gen_proof then
+  begin
+  fprintf fmt "(* Proof section *)\n";
+  fprintf fmt "\n";
+
+  fprintf fmt " Let w0_spec: znz_spec w0_op := W0.w_spec.\n";
+  for i = 1 to 3 do
+    fprintf fmt " Let w%i_spec: znz_spec w%i_op := mk_znz2_spec w%i_spec.\n" i i (i-1) 
+  done;
+  for i = 4 to size + 3 do
+    fprintf fmt " Let w%i_spec : znz_spec w%i_op := mk_znz2_karatsuba_spec w%i_spec.\n" i i (i-1)
+  done;
+  fprintf fmt "\n";
+
+  fprintf fmt " Theorem make_op_S: forall n,\n";
+  fprintf fmt "   make_op (S n) = mk_zn2z_op_karatsuba (make_op n).\n";
+  fprintf fmt " intro n; pattern n; apply lt_wf_ind; clear n.\n";
+  fprintf fmt " intros n; case n; clear n.\n";
+  fprintf fmt "   intros _; unfold make_op, make_op_aux, w%i_op; apply refl_equal.\n" (size + 2);
+  fprintf fmt " intros n; case n; clear n.\n";
+  fprintf fmt "   intros _; unfold make_op, make_op_aux, w%i_op; apply refl_equal.\n" (size + 3);
+  fprintf fmt " intros n; case n; clear n.\n";
+  fprintf fmt "   intros _; unfold make_op, make_op_aux, w%i_op, w%i_op; apply refl_equal.\n" (size + 3) (size + 2);
+  fprintf fmt " intros n Hrec.\n";
+  fprintf fmt "   change (make_op (S (S (S (S n))))) with\n";
+  fprintf fmt "          (mk_zn2z_op_karatsuba (mk_zn2z_op_karatsuba (mk_zn2z_op_karatsuba (make_op (S n))))).\n";
+  fprintf fmt "   change (make_op (S (S (S n)))) with\n";
+  fprintf fmt "         (mk_zn2z_op_karatsuba (mk_zn2z_op_karatsuba (mk_zn2z_op_karatsuba (make_op n)))).\n";
+  fprintf fmt "   rewrite Hrec; auto with arith.\n";
+  fprintf fmt " Qed.\n";
+  fprintf fmt " \n";
+
+  fprintf fmt " Let wn_spec: forall n, znz_spec (make_op n).\n";
+  fprintf fmt "  intros n; elim n; clear n.\n";
+  fprintf fmt "    exact w%i_spec.\n" (size + 1);
+  fprintf fmt "  intros n Hrec; rewrite make_op_S.\n";
+  fprintf fmt "  exact (mk_znz2_karatsuba_spec Hrec).\n";
+  fprintf fmt " Qed.\n";
+  fprintf fmt " \n";
+
+  fprintf fmt " Open Scope Z_scope.\n";
+  fprintf fmt " Notation \"[ x ]\" := (to_Z x).\n";
+  fprintf fmt " \n";
+  fprintf fmt " Theorem succ_spec: forall n, [succ n] = [n] + 1.\n";
+  fprintf fmt " Proof.\n";
+  fprintf fmt "  intros n; case n; unfold succ, to_Z.\n";
+  for i = 0 to size do
+     fprintf fmt  "  intros n1; generalize (spec_succ_c w%i_spec n1);\n" i;
+     fprintf fmt  "  unfold succ, to_Z, w%i_succ_c; case znz_succ_c; auto.\n" i;
+     fprintf fmt  "     intros ww H; rewrite <- H.\n";
+     fprintf fmt  "     refine (f_equal2 Zplus  (f_equal2 Zmult (spec_1 w%i_spec) _) _); auto.\n" i;
+  done;
+  fprintf fmt "  intros k n1; generalize (spec_succ_c (wn_spec k) n1).\n";
+  fprintf fmt "  unfold succ, to_Z; case znz_succ_c; auto.\n";
+  fprintf fmt "  intros ww H; rewrite <- H.\n";
+  fprintf fmt "  rewrite make_op_S.\n";
+  fprintf fmt "  refine (f_equal2 Zplus  (f_equal2 Zmult (spec_1 (wn_spec k)) _) _); auto.\n";
+  fprintf fmt "  Qed.\n ";
+  fprintf fmt "\n";
+
+  for i = 0 to size do
+    fprintf fmt "  Let spec_w%i_add: forall x y, [w%i_add x y] = [%s%i x] + [%s%i y].\n" i i c i c i;
+    fprintf fmt "  Proof.\n";
+    fprintf fmt "  intros n m; unfold to_Z, w%i_add, w%i_add_c.\n" i i;
+    fprintf fmt "   generalize (spec_add_c w%i_spec n m); case znz_add_c; auto.\n" i;
+    fprintf fmt "  intros ww H; rewrite <- H.\n"; 
+    fprintf fmt "  refine (f_equal2 Zplus  (f_equal2 Zmult (spec_1 w%i_spec) _) _); auto.\n" i;
+    fprintf fmt "  Qed.\n";
+    fprintf fmt "  Hint Rewrite spec_w%i_add: addr.\n" i;
+    fprintf fmt "\n";
+  done;
+  fprintf fmt "  Let spec_wn_add: forall n x y, [addn n x y] = [%sn n x] + [%sn n y].\n" c c;
+  fprintf fmt "  Proof.\n";
+  fprintf fmt "  intros k n m; unfold to_Z, addn.\n";
+  fprintf fmt "   generalize (spec_add_c (wn_spec k) n m); case znz_add_c; auto.\n";
+  fprintf fmt "  intros ww H; rewrite <- H; rewrite make_op_S.\n"; 
+  fprintf fmt "  refine (f_equal2 Zplus  (f_equal2 Zmult (spec_1 (wn_spec k)) _) _); auto.\n";
+  fprintf fmt "  Qed.\n";
+  fprintf fmt "  Hint Rewrite spec_wn_add: addr.\n";
+  fprintf fmt "\n";
+
+  for i = 0 to size do
+    fprintf fmt "  Let spec_w%i_eq0: forall x, if w%i_eq0 x then [%s%i x] = 0 else True.\n" i i c i;
+    fprintf fmt "  Proof.\n";
+    fprintf fmt "  intros x; unfold w%i_eq0.\n" i;
+    fprintf fmt "   generalize (spec_eq0 w%i_spec x); case znz_eq0; auto.\n" i;
+    fprintf fmt "  Qed.\n";
+    fprintf fmt "\n";
+  done;
+
+  fprintf fmt "  Let spec_extendn_0: forall n wx, [%sn n (extend n _ wx)] = [%sn 0 wx].\n" c c;
+  fprintf fmt "  intros n; elim n; auto.\n";
+  fprintf fmt "  intros n1 Hrec wx; simpl extend; rewrite <- Hrec; auto.\n";
+  fprintf fmt "  unfold to_Z.\n";
+  fprintf fmt "  case n1; auto; intros n2; repeat rewrite make_op_S; auto.\n";
+  fprintf fmt "  Qed.\n";
+  fprintf fmt "  Hint Rewrite spec_extendn_0: extr.\n";
+  fprintf fmt "\n";
+  fprintf fmt "  Let spec_extendn0_0: forall n wx, [%sn (S n) (WW W0 wx)] = [%sn n wx].\n" c c;
+  fprintf fmt "  Proof.\n";
+  fprintf fmt "  intros n x; unfold to_Z.\n";
+  fprintf fmt "  rewrite make_op_S; auto.\n";
+  fprintf fmt "  rewrite <- (Zplus_0_l (znz_to_Z (make_op n) x)).\n";
+  fprintf fmt "  refine (f_equal2 Zplus _ _); auto.\n";
+  fprintf fmt "  case n; auto.\n";
+  fprintf fmt "  intros n1; rewrite make_op_S; auto.\n";
+  fprintf fmt "  Qed.\n";
+  fprintf fmt "  Hint Rewrite spec_extendn_0: extr.\n";
+  fprintf fmt "\n";
+  fprintf fmt "  Let spec_extend_tr: forall m n (w: word _ (S n)),\n";
+  fprintf fmt "  [%sn (m + n) (extend_tr w m)] = [%sn n w].\n" c c;
+  fprintf fmt "  Proof.\n";
+  fprintf fmt "  induction m; auto.\n";
+  fprintf fmt "  intros n x; simpl extend_tr.\n";
+  fprintf fmt "  simpl plus; rewrite spec_extendn0_0; auto.\n";
+  fprintf fmt "  Qed.\n";
+  fprintf fmt "  Hint Rewrite spec_extend_tr: extr.\n";
+  fprintf fmt "\n";
+  fprintf fmt "  Let spec_cast_l: forall n m x1,\n";
+  fprintf fmt "  [%sn (Max.max n m)\n" c;
+  fprintf fmt "   (castm (diff_r n m) (extend_tr x1 (snd (diff n m))))] =\n";
+  fprintf fmt "  [%sn n x1].\n" c;
+  fprintf fmt "  Proof.\n";
+  fprintf fmt "  intros n m x1; case (diff_r n m); simpl castm.\n";
+  fprintf fmt "  rewrite spec_extend_tr; auto.\n";
+  fprintf fmt "  Qed.\n";
+  fprintf fmt "  Hint Rewrite spec_cast_l: extr.\n";
+  fprintf fmt "\n";
+  fprintf fmt "  Let spec_cast_r: forall n m x1,\n";
+  fprintf fmt "  [%sn (Max.max n m)\n" c;
+  fprintf fmt "   (castm (diff_l n m) (extend_tr x1 (fst (diff n m))))] =\n";
+  fprintf fmt "  [%sn m x1].\n" c;
+  fprintf fmt "  Proof.\n";
+  fprintf fmt "  intros n m x1; case (diff_l n m); simpl castm.\n";
+  fprintf fmt "  rewrite spec_extend_tr; auto.\n";
+  fprintf fmt "  Qed.\n";
+  fprintf fmt "  Hint Rewrite spec_cast_r: extr.\n";
+  fprintf fmt "\n";
+
+  fprintf fmt "  Let spec_extend0_0: forall wx, [%s1 (WW w_0 wx)] = [%s0 wx].\n" c c;
+  fprintf fmt "  Proof.\n";
+  fprintf fmt "  intros x; unfold to_Z.\n";
+  fprintf fmt "  rewrite <- (Zplus_0_l (znz_to_Z w0_op x)).\n";
+  fprintf fmt "  refine (f_equal2 Zplus _ _); auto.\n";
+  fprintf fmt "  rewrite <- (Zmult_0_l (base (znz_digits w0_op))).\n";
+  fprintf fmt "  refine (f_equal2 Zmult (spec_0 w0_spec) _); auto.\n";
+  fprintf fmt "  Qed.\n";
+  fprintf fmt "  Hint Rewrite spec_extend0_0: extr.\n";
+  fprintf fmt "  \n";
+
+  for i = 1 to size do
+    for j = 1 to size - i do
+    fprintf fmt "  Let spec_extend%i_%i: forall wx, [%s%i (extend%i _ wx)] = [%s%i wx].\n" i j c (i + j) i c j;
+    fprintf fmt "  Proof.
+  intros x; unfold extend%i, to_Z.\n" j;
+    fprintf fmt "  rewrite <- (Zplus_0_l (znz_to_Z w%i_op x)).\n" j;
+    fprintf fmt "  refine (f_equal2 Zplus _ _); auto.\n";
+    fprintf fmt "  Qed.\n";
+    fprintf fmt "  Hint Rewrite spec_extend%i_%i: extr.\n" i j;
+    fprintf fmt "\n";
+    done;
+  fprintf fmt "  Let spec_extend%i_0: forall wx, [%sn 0 (extend%i _ wx)] = [N%i wx].\n" i c i (size + 1 - i);
+  fprintf fmt "  Proof.\n";
+  fprintf fmt "  intros x; unfold extend%i, to_Z; auto.\n" (size + 1 - i);
+  fprintf fmt "  Qed.\n";
+  fprintf fmt "  Hint Rewrite spec_extend%i_0: extr.\n" i;
+  fprintf fmt "  \n";
+
+  done;
+
+  fprintf fmt "  Theorem spec_add: forall x y, [add x y] = [x] + [y].\n";
+  fprintf fmt "  Proof.\n";
+  fprintf fmt "  intros x y; case x; unfold add; (intros n x1 || intros x1);\n";
+  fprintf fmt "    case y; intros m y1 || intros y1; autorewrite with extr addr; auto;\n";
+  fprintf fmt "    generalize (spec_w0_eq0 x1) || generalize (spec_w0_eq0 y1); \n";
+  fprintf fmt "    case w0_eq0; intros HH; autorewrite with extr addr; try rewrite HH; \n";
+  fprintf fmt "    try rewrite Zplus_0_r; auto.\n";
+  fprintf fmt "  Qed.  \n";
+
+  fprintf fmt "  Let spec_reduce_0: forall x, [reduce_0 x] = [%s0 x].\n" c;
+  fprintf fmt "  Proof.\n";
+  fprintf fmt "  intros x; unfold to_Z, reduce_0.\n";
+  fprintf fmt "  auto.\n";
+  fprintf fmt "  Qed.\n";
+  fprintf fmt "  \n";
+
+  for i = 1 to size + 1 do
+   if (i == size + 1) then
+    fprintf fmt "  Let spec_reduce_%i: forall x, [reduce_%i x] = [%sn 0 x].\n" i i c
+   else
+    fprintf fmt "  Let spec_reduce_%i: forall x, [reduce_%i x] = [%s%i x].\n" i i c i;
+    fprintf fmt "  Proof.\n";
+    fprintf fmt "  intros x; case x; unfold reduce_%i.\n" i;
+    fprintf fmt "  exact (spec_0 w0_spec).\n";
+    fprintf fmt "  intros x1 y1.\n";
+    fprintf fmt "  generalize (spec_w%i_eq0 x1); \n" (i - 1);
+    fprintf fmt "    case w%i_eq0; intros H1; auto.\n" (i - 1);
+    if i <> 1 then 
+      fprintf fmt "  rewrite spec_reduce_%i.\n" (i - 1);
+    fprintf fmt "  rewrite <- (Zplus_0_l [N%i y1]).\n" (i - 1);
+    fprintf fmt "  refine (f_equal2 Zplus _ _); auto.\n";
+    fprintf fmt "  unfold to_Z in H1; rewrite H1; auto.\n";
+    fprintf fmt "  Qed.\n";
+    fprintf fmt "  \n";
+  done;
+
+  fprintf fmt "  Let spec_reduce_n: forall n x, [reduce_n n x] = [%sn n x].\n" c;
+  fprintf fmt "  Proof.\n";
+  fprintf fmt "  intros n; elim n; simpl reduce_n.\n";
+  fprintf fmt "    intros x; rewrite <- spec_reduce_%i; auto.\n" (size + 1);
+  fprintf fmt "  intros n1 Hrec x; case x.\n";
+  fprintf fmt "  unfold to_Z; rewrite make_op_S; auto.\n";
+  fprintf fmt "  exact (spec_0 w0_spec).\n";
+  fprintf fmt "  intros x1 y1; case x1; auto.\n";
+  fprintf fmt "  rewrite Hrec.\n";
+  fprintf fmt "  rewrite <- (Zplus_0_l [%sn n1 y1]).\n" c;
+  fprintf fmt "  unfold to_Z; rewrite make_op_S.\n";
+  fprintf fmt "  refine (f_equal2 Zplus _ _); auto.\n";
+  fprintf fmt "  case n1; auto; intros; rewrite make_op_S; auto.\n";
+  fprintf fmt "  Qed.\n";
+  fprintf fmt "  \n";
+
+  fprintf fmt "   Let to_Z_pos: forall x, 0 <= [x].\n";
+  fprintf fmt "   Proof.\n";
+  fprintf fmt "   intros x; case x; unfold to_Z.\n";
+  for i = 0 to size do
+    fprintf fmt "   intros x1; case (spec_to_Z w%i_spec x1); auto.\n" i;
+  done;
+  fprintf fmt "   intros n x1; case (spec_to_Z (wn_spec n) x1); auto.\n";
+  fprintf fmt "   Qed.\n";
+  fprintf fmt "   \n";
+
+  fprintf fmt "  Let spec_pred: forall x, 0 < [x] -> [pred x] = [x] - 1.\n";
+  fprintf fmt "  Proof.\n";
+  fprintf fmt "  intros x; case x; unfold pred.\n";
+  for i = 0 to size do
+    fprintf fmt "  intros x1 H1; unfold w%i_pred_c; \n" i;
+    fprintf fmt "  generalize (spec_pred_c w%i_spec x1); case znz_pred_c; intros y1.\n" i;
+    fprintf fmt "  rewrite spec_reduce_%i; auto.\n" i;
+    fprintf fmt "  unfold interp_carry; unfold to_Z.\n";
+    fprintf fmt "  case (spec_to_Z w%i_spec x1); intros HH1 HH2.\n" i;
+    fprintf fmt "  case (spec_to_Z w%i_spec y1); intros HH3 HH4 HH5.\n" i;
+    fprintf fmt "  assert (znz_to_Z w%i_op x1 - 1 < 0); auto with zarith.\n" i;
+    fprintf fmt "  unfold to_Z in H1; auto with zarith.\n";
+  done;
+  fprintf fmt "  intros n x1 H1;  \n";
+  fprintf fmt "    generalize (spec_pred_c (wn_spec n) x1); case znz_pred_c; intros y1.\n";
+  fprintf fmt "    rewrite spec_reduce_n; auto.\n";
+  fprintf fmt "  unfold interp_carry; unfold to_Z.\n";
+  fprintf fmt "  case (spec_to_Z (wn_spec n) x1); intros HH1 HH2.\n";
+  fprintf fmt "  case (spec_to_Z (wn_spec n) y1); intros HH3 HH4 HH5.\n";
+  fprintf fmt "  assert (znz_to_Z (make_op n) x1 - 1 < 0); auto with zarith.\n";
+  fprintf fmt "  unfold to_Z in H1; auto with zarith.\n";
+  fprintf fmt "  Qed.\n";
+  fprintf fmt "  \n";
+
+  fprintf fmt "  Let spec_pred0: forall x, [x] = 0 -> [pred x] = 0.\n";
+  fprintf fmt "  Proof.\n";
+  fprintf fmt "  intros x; case x; unfold pred.\n";
+  for i = 0 to size do
+    fprintf fmt "  intros x1 H1; unfold w%i_pred_c; \n" i;
+    fprintf fmt "    generalize (spec_pred_c w%i_spec x1); case znz_pred_c; intros y1.\n" i;
+    fprintf fmt "  unfold interp_carry; unfold to_Z.\n";
+    fprintf fmt "  unfold to_Z in H1; auto with zarith.\n";
+    fprintf fmt "  case (spec_to_Z w%i_spec y1); intros HH3 HH4; auto with zarith.\n" i;
+    fprintf fmt "  intros; exact (spec_0 w0_spec).\n";
+  done;
+  fprintf fmt "  intros n x1 H1; \n";
+  fprintf fmt "    generalize (spec_pred_c (wn_spec n) x1); case znz_pred_c; intros y1.\n";
+  fprintf fmt "  unfold interp_carry; unfold to_Z.\n";
+  fprintf fmt "  unfold to_Z in H1; auto with zarith.\n";
+  fprintf fmt "  case (spec_to_Z (wn_spec n) y1); intros HH3 HH4; auto with zarith.\n";
+  fprintf fmt "  intros; exact (spec_0 w0_spec).\n";
+  fprintf fmt "  Qed.\n";
+  fprintf fmt "  \n";
+  end;
   fprintf fmt "End Make.\n";
   fprintf fmt "\n";
   pp_print_flush fmt ()

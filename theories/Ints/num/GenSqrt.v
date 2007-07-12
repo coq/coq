@@ -207,6 +207,8 @@ Section GenSqrt.
   Variable spec_w_1   : [|w_1|] = 1.
   Variable spec_w_Bm1 : [|w_Bm1|] = wB - 1.
   Variable spec_w_zdigits : [|w_zdigits|] = Zpos w_digits.
+  Variable spec_more_than_1_digit: 1 < Zpos w_digits.
+
   Variable spec_ww_zdigits : [[ww_zdigits]] = Zpos (xO w_digits).
   Variable spec_to_Z  : forall x, 0 <= [|x|] < wB.
   Variable spec_to_w_Z  : forall x, 0 <= [[x]] < wwB.
@@ -272,7 +274,8 @@ Section GenSqrt.
 
  Lemma spec_ww_is_even : forall x,
       if ww_is_even x then [[x]] mod 2 = 0 else [[x]] mod 2 = 1.
- intros x; case x; simpl ww_is_even.
+clear spec_more_than_1_digit. 
+intros x; case x; simpl ww_is_even.
  simpl.
  rewrite Zmod_def_small; auto with zarith.
  intros w1 w2; simpl.
@@ -284,6 +287,7 @@ Section GenSqrt.
  apply Zdivide_mult_r; apply Zpower_divide; auto with zarith.
  red; simpl; auto.
  Qed.
+
 
  Theorem  spec_w_div21c : forall a1 a2 b,
      wB/2 <= [|b|] ->
@@ -356,8 +360,6 @@ Section GenSqrt.
  Theorem C0_id: forall p, [+|C0 p|] = [|p|].
  intros p; simpl; auto.
  Qed.
-
- Hypothesis more_than_one_bit: 1 < Zpos w_digits.
 
  Theorem add_mult_div_2: forall w,
     [|w_add_mul_div (w_pred w_zdigits) w_0 w|] = [|w|] / 2.

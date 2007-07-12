@@ -2,6 +2,7 @@ Require Import ZArith.
 Require Import ZAux.
 Require Import ZDivModAux.
 Require Import Basic_type.
+Require Import Max.
 
 (* To compute the necessary height *)
 
@@ -96,8 +97,6 @@ rewrite Zplus_comm; rewrite Zminus_plus.
 apply plength_pred_correct.
 Qed.
 
-
-
 Definition zn2z_word_comm : forall w n, zn2z (word w n) = word (zn2z w) n.
  fix zn2z_word_comm 2.
  intros w n; case n.
@@ -117,39 +116,92 @@ Fixpoint extend (n:nat) {struct n} : forall w:Set, zn2z w -> word w (S n) :=
 
 Section ExtendMax.
 
- Variable w:Set.
+Open Scope nat_scope.
 
- Definition Tmax n m :=
-  (  {p:nat| word (word w n) p = word w m} 
-    + {p:nat| word (word w m) p = word w n})%type.
+Fixpoint plusnS (n m: nat) {struct n} : (n + S m = S (n + m))%nat :=
+  match n return  (n + S m = S (n + m))%nat with
+  | 0 => refl_equal (S m)
+  | S n1 =>
+      let v := S (S n1 + m) in
+      eq_ind_r (fun n => S n = v) (refl_equal v) (plusnS n1 m)
+  end.
 
- Definition max : forall n m, Tmax n m.
-  fix max 1;intros n.
-  case n.
-  intros m;left;exists m;exact (refl_equal (word w m)).
-  intros n0 m;case m.
-  right;exists (S n0);exact (refl_equal (word w (S n0))).
-  intros m0;case (max n0 m0);intros H;case H;intros p Heq.
-  left;exists p;simpl.
-   case (zn2z_word_comm (word w n0) p).
-   case Heq.
-   exact (refl_equal (zn2z (word (word w n0) p))).
-  right;exists p;simpl.
-   case (zn2z_word_comm (word w m0) p).
-   case Heq.
-   exact (refl_equal (zn2z (word (word w m0) p))).
- Defined.
+Fixpoint plusn0 n : n + 0 = n :=
+  match n return (n + 0 = n) with
+  | 0 => refl_equal 0
+  | S n1 =>
+      let v := S n1 in
+      eq_ind_r (fun n : nat => S n = v) (refl_equal v) (plusn0 n1)
+  end.
 
- Definition extend_to_max : 
-  forall n m (x:zn2z (word w n)) (y:zn2z (word w m)), 
-        (zn2z (word w m) + zn2z (word w n))%type.
-  intros n m x y.
-   case (max n m);intros (p, Heq);case Heq.
-   left;exact (extend p (word w n) x).
-   right;exact (extend p (word w m) y).
- Defined. 
+ Fixpoint diff (m n: nat) {struct m}: nat * nat :=
+   match m, n with
+     O, n => (O, n)
+   | m, O => (m, O)
+   | S m1, S n1 => diff m1 n1
+   end.
+
+Fixpoint diff_l (m n : nat) {struct m} : fst (diff m n) + n = max m n :=
+  match m return fst (diff m n) + n = max m n with
+  | 0 =>
+      match n return (n = max 0 n) with
+      | 0 => refl_equal _
+      | S n0 => refl_equal _
+      end
+  | S m1 =>
+      match n return (fst (diff (S m1) n) + n = max (S m1) n)
+      with
+      | 0 => plusn0 _
+      | S n1 =>
+          let v := fst (diff m1 n1) + n1 in
+          let v1 := fst (diff m1 n1) + S n1 in
+          eq_ind v (fun n => v1 = S n) 
+            (eq_ind v1 (fun n => v1 = n) (refl_equal v1) (S v) (plusnS _ _))
+            _ (diff_l _ _)
+      end
+  end.
+
+Fixpoint diff_r (m n: nat) {struct m}: snd (diff m n) + m = max m n :=
+  match m return (snd (diff m n) + m = max m n) with
+  | 0 =>
+      match n return (snd (diff 0 n) + 0 = max 0 n) with
+      | 0 => refl_equal _
+      | S _ => plusn0 _
+      end
+  | S m => 
+      match n return (snd (diff (S m) n) + S m = max (S m) n) with
+      | 0 => refl_equal (snd (diff (S m) 0) + S m)
+      | S n1 =>
+          let v := S (max m n1) in
+          eq_ind_r (fun n => n = v)
+            (eq_ind_r (fun n => S n = v)
+               (refl_equal v) (diff_r _ _)) (plusnS _ _)
+      end
+  end.
+
+ Variable w: Set.
+
+ Definition castm (m n: nat) (H: m = n) (x: word w (S m)):
+     (word w (S n)) :=
+ match H in (_ = y) return (word w (S y)) with
+ | refl_equal => x
+ end.
+
+Variable m: nat.
+Variable v: (word w (S m)).
+
+Fixpoint extend_tr (n : nat) {struct n}: (word w (S (n + m))) :=
+  match n  return (word w (S (n + m))) with
+  | O => v
+  | S n1 => WW W0 (extend_tr n1)
+  end.
 
 End ExtendMax.
+
+Implicit Arguments extend_tr[w m].
+Implicit Arguments castm[w m n].
+
+
 
 Section Reduce.
 
