@@ -51,13 +51,11 @@ type ltac_sign = identifier list * unbound_ltac_var_map
 
 val intern_constr : evar_map -> env -> constr_expr -> rawconstr
 
+val intern_type : evar_map -> env -> constr_expr -> rawconstr
+
 val intern_gen : bool -> evar_map -> env ->
   ?impls:full_implicits_env -> ?allow_soapp:bool -> ?ltacvars:ltac_sign ->
   constr_expr -> rawconstr
-
-val intern_pattern : env -> cases_pattern_expr ->
-  Names.identifier list *
-    ((Names.identifier * Names.identifier) list * Rawterm.cases_pattern) list
 
 val intern_pattern : env -> cases_pattern_expr ->
   Names.identifier list *

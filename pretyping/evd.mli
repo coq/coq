@@ -123,7 +123,7 @@ val evars_reset_evd  : evar_map ->  evar_defs -> evar_defs
 type hole_kind =
   | ImplicitArg of global_reference * (int * identifier option)
   | BinderType of name
-  | QuestionMark
+  | QuestionMark of bool (* Can it be turned into an obligation ? *)
   | CasesType
   | InternalHole
   | TomatchTypeParameter of inductive * int

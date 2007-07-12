@@ -1,3 +1,4 @@
+(* -*- coq-prog-args: ("-emacs-U" "-debug") -*- *)
 Require Import List.
 Require Import Coq.subtac.Utils.
 
@@ -21,63 +22,25 @@ Section Map_DependentRecursor.
   Variable l : list U.
   Variable f : { x : U | In x l } -> V.
 
+  Obligations Tactic := unfold sub_list in * ; 
+    subtac_simpl ; intuition.
+
   Program Fixpoint map_rec ( l' : list U | sub_list l' l )
-    { measure l' length } : { r : list V | length r = length l' } :=
+    { measure length l' } : { r : list V | length r = length l' } :=
     match l' with
     nil => nil
     | cons x tl => let tl' := map_rec tl in
 	f x :: tl'
     end.
     
-    Obligation 1.
-    intros.
-    destruct tl' ; simpl ; simpl in e.
-    subst x0 tl0.
-    rewrite <- Heql'.
-    rewrite e.
-    auto.
-    Qed.
-
-    Obligation 2.
-    simpl.
-    intros.
-    destruct l'.
-    simpl in Heql'.
-    destruct x0 ; simpl ; try discriminate.
-    inversion Heql'.
-    inversion s.
-    apply H.
-    auto with datatypes.
-    Qed.
-
-
-    Obligation 3 of map_rec.
-    simpl.
-    intros.
-    rewrite <- Heql'.
+  Next Obligation.
+    destruct_call map_rec.
+    simpl in *.
+    subst l'.
     simpl ; auto with arith.
-    Qed.
-
-    Obligation 4.
-    simpl.
-    intros.
-    destruct l'.
-    simpl in Heql'.
-    destruct x0 ; simpl ; try discriminate.
-    inversion Heql'.
-    subst x tl.
-    apply sub_list_tl with u ; auto.
-    Qed.
-  
-    Obligation 5.
-    intros.
-    rewrite <- Heql' ; auto.
-    Qed.
-    
-    Program Definition map : list V := map_rec l.
-    Obligation 1.
-      split ; auto.
-    Qed.
+  Qed.
+      
+  Program Definition map : list V := map_rec l.
     
 End Map_DependentRecursor.
 

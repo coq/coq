@@ -45,7 +45,7 @@ type aconstr =
   | ASort of rawsort
   | AHole of Evd.hole_kind
   | APatVar of patvar
-  | ACast of aconstr * cast_type * aconstr
+  | ACast of aconstr * aconstr cast_type
 
 (**********************************************************************)
 (* Re-interpret a notation as a rawconstr, taking care of binders     *)
@@ -102,7 +102,10 @@ let rawconstr_of_aconstr_with_binders loc g f e = function
   | AIf (c,(na,po),b1,b2) ->
       let e,na = name_fold_map g e na in
       RIf (loc,f e c,(na,option_map (f e) po),f e b1,f e b2)
-  | ACast (c,k,t) -> RCast (loc,f e c, k,f e t)
+  | ACast (c,k) -> RCast (loc,f e c, 
+			  match k with 
+			    | CastConv (k,t) -> CastConv (k,f e t)
+			    | CastCoerce -> CastCoerce)
   | ASort x -> RSort (loc,x)
   | AHole x  -> RHole (loc,x)
   | APatVar n -> RPatVar (loc,(false,n))
@@ -196,7 +199,9 @@ let aconstr_and_vars_of_rawconstr a =
   | RIf (loc,c,(na,po),b1,b2) ->
       add_name found na;
       AIf (aux c,(na,option_map aux po),aux b1,aux b2)
-  | RCast (_,c,k,t) -> ACast (aux c,k,aux t)
+  | RCast (_,c,k) -> ACast (aux c, 
+			    match k with CastConv (k,t) -> CastConv (k,aux t) 
+			      | CastCoerce -> CastCoerce)
   | RSort (_,s) -> ASort s
   | RHole (_,w) -> AHole w
   | RRef (_,r) -> ARef r
@@ -342,15 +347,21 @@ let rec subst_aconstr subst bound raw =
       let ref',t = subst_global subst ref in 
 	if ref' == ref then raw else
 	  AHole (Evd.InternalHole)
-  | AHole (Evd.BinderType _ | Evd.QuestionMark | Evd.CasesType |
-      Evd.InternalHole | Evd.TomatchTypeParameter _) -> raw
+  | AHole (Evd.BinderType _ | Evd.QuestionMark _ | Evd.CasesType 
+    | Evd.InternalHole | Evd.TomatchTypeParameter _) -> raw
 
-  | ACast (r1,k,r2) -> 
-      let r1' = subst_aconstr subst bound r1 
-      and r2' = subst_aconstr subst bound r2 in
-	if r1' == r1 && r2' == r2 then raw else
-	  ACast (r1',k,r2')
-
+  | ACast (r1,k) -> 
+      match k with
+	  CastConv (k, r2) ->
+	    let r1' = subst_aconstr subst bound r1 
+	    and r2' = subst_aconstr subst bound r2 in
+	      if r1' == r1 && r2' == r2 then raw else
+		ACast (r1',CastConv (k,r2'))
+	| CastCoerce ->
+	    let r1' = subst_aconstr subst bound r1 in
+	      if r1' == r1 then raw else
+		ACast (r1',CastCoerce)
+		  
 
 let encode_list_value l = RApp (dummy_loc,RVar (dummy_loc,ldots_var),l)
 
@@ -454,8 +465,10 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
       let (alp,sigma) =
 	List.fold_left2 (match_names metas) (alp,sigma) nal1 nal2 in
       match_ alp metas sigma c1 c2
-  | RCast(_,c1,_,t1), ACast(c2,_,t2) ->
+  | RCast(_,c1, CastConv(_,t1)), ACast(c2, CastConv (_,t2)) ->
       match_ alp metas (match_ alp metas sigma c1 c2) t1 t2
+  | RCast(_,c1, CastCoerce), ACast(c2, CastCoerce) ->
+      match_ alp metas sigma c1 c2
   | RSort (_,s1), ASort s2 when s1 = s2 -> sigma
   | RPatVar _, AHole _ -> (*Don't hide Metas, they bind in ltac*) raise No_match
   | a, AHole _ -> sigma
@@ -554,7 +567,7 @@ type constr_expr =
   | CPatVar of loc * (bool * patvar)
   | CEvar of loc * existential_key
   | CSort of loc * rawsort
-  | CCast of loc * constr_expr * cast_type * constr_expr
+  | CCast of loc * constr_expr * constr_expr cast_type
   | CNotation of loc * notation * constr_expr list
   | CPrim of loc * prim_token
   | CDelimiters of loc * string * constr_expr
@@ -616,7 +629,7 @@ let constr_loc = function
   | CPatVar (loc,_) -> loc
   | CEvar (loc,_) -> loc
   | CSort (loc,_) -> loc
-  | CCast (loc,_,_,_) -> loc
+  | CCast (loc,_,_) -> loc
   | CNotation (loc,_,_) -> loc
   | CPrim (loc,_) -> loc
   | CDelimiters (loc,_,_) -> loc
@@ -694,7 +707,8 @@ let fold_constr_expr_with_binders g f n acc = function
   | CApp (loc,(_,t),l) -> List.fold_left (f n) (f n acc t) (List.map fst l)
   | CProdN (_,l,b) | CLambdaN (_,l,b) -> fold_constr_expr_binders g f n acc b l
   | CLetIn (_,na,a,b) -> fold_constr_expr_binders g f n acc b [[na],a]
-  | CCast (loc,a,_,b) -> f n (f n acc a) b
+  | CCast (loc,a,CastConv(_,b)) -> f n (f n acc a) b
+  | CCast (loc,a,CastCoerce) -> f n acc a
   | CNotation (_,_,l) -> List.fold_left (f n) acc l
   | CDelimiters (loc,_,a) -> f n acc a
   | CHole _ | CEvar _ | CPatVar _ | CSort _ | CPrim _ | CDynamic _  | CRef _ ->
@@ -731,7 +745,7 @@ let occur_var_constr_expr id c = Idset.mem id (free_vars_of_constr_expr c)
 let mkIdentC id  = CRef (Ident (dummy_loc, id))
 let mkRefC r     = CRef r
 let mkAppC (f,l) = CApp (dummy_loc, (None,f), List.map (fun x -> (x,None)) l)
-let mkCastC (a,k,b)  = CCast (dummy_loc,a,k,b)
+let mkCastC (a,k)  = CCast (dummy_loc,a,k)
 let mkLambdaC (idl,a,b) = CLambdaN (dummy_loc,[idl,a],b)
 let mkLetInC (id,a,b)   = CLetIn (dummy_loc,id,a,b)
 let mkProdC (idl,a,b)   = CProdN (dummy_loc,[idl,a],b)
@@ -786,7 +800,8 @@ let map_constr_expr_with_binders g f e = function
   | CLambdaN (loc,bl,b) ->
       let (e,bl) = map_binders f g e bl in CLambdaN (loc,bl,f e b)
   | CLetIn (loc,na,a,b) -> CLetIn (loc,na,f e a,f (name_fold g (snd na) e) b)
-  | CCast (loc,a,k,b) -> CCast (loc,f e a,k,f e b)
+  | CCast (loc,a,CastConv (k,b)) -> CCast (loc,f e a,CastConv(k, f e b))
+  | CCast (loc,a,CastCoerce) -> CCast (loc,f e a,CastCoerce)
   | CNotation (loc,n,l) -> CNotation (loc,n,List.map (f e) l)
   | CDelimiters (loc,s,a) -> CDelimiters (loc,s,f e a)
   | CHole _ | CEvar _ | CPatVar _ | CSort _ 

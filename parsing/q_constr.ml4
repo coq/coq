@@ -73,7 +73,7 @@ EXTEND
     | "0"
       [ s = sort -> <:expr< Rawterm.RSort ($dloc$,s) >>
       | id = ident -> <:expr< Rawterm.RVar ($dloc$,$id$) >>
-      | "_" -> <:expr< Rawterm.RHole ($dloc$,QuestionMark) >>
+      | "_" -> <:expr< Rawterm.RHole ($dloc$, QuestionMark False) >>
       | "?"; id = ident -> <:expr< Rawterm.RPatVar($dloc$,(False,$id$)) >>
       | "{"; c1 = constr; "}"; "+"; "{"; c2 = constr; "}" ->
           apply_ref <:expr< coq_sumbool_ref >> [c1;c2]

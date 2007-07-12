@@ -1253,7 +1253,7 @@ open Evd
 
 let solvable_by_tactic env evi (ev,args) src = 
   match (!implicit_tactic, src) with
-  | Some tac, (ImplicitArg _ | QuestionMark)
+  | Some tac, (ImplicitArg _ | QuestionMark _)
       when 
 	Environ.named_context_of_val evi.evar_hyps = 
 	Environ.named_context env ->

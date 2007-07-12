@@ -36,6 +36,9 @@ val declare_definition : identifier -> definition_kind ->
 
 val syntax_definition : identifier -> constr_expr -> bool -> bool -> unit
 
+val declare_one_assumption : coercion_flag -> assumption_kind -> Term.types -> 
+  Names.variable located -> unit
+
 val declare_assumption : identifier located list ->
   coercion_flag -> assumption_kind -> local_binder list -> constr_expr -> unit
 
@@ -51,6 +54,8 @@ val build_corecursive : (cofixpoint_expr * decl_notation) list -> bool -> unit
 val build_scheme : (identifier located * bool * reference * rawsort) list -> unit
 
 val generalize_constr_expr : constr_expr -> local_binder list -> constr_expr
+
+val abstract_constr_expr : constr_expr -> local_binder list -> constr_expr
 
 val start_proof : identifier -> goal_kind -> constr ->
   declaration_hook -> unit

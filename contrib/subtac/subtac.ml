@@ -37,85 +37,11 @@ open Subtac_utils
 open Coqlib
 open Printer
 open Subtac_errors
-open Context
 open Eterm
 
 let require_library dirpath =
   let qualid = (dummy_loc, qualid_of_dirpath (dirpath_of_string dirpath)) in
     Library.require_library [qualid] None
-(*
-let subtac_one_fixpoint env isevars (f, decl) = 
-  let ((id, n, bl, typ, body), decl) = 
-    Subtac_interp_fixpoint.rewrite_fixpoint env [] (f, decl) 
-  in
-  let _ = 
-    try trace (str "Working on a single fixpoint rewritten as: " ++ spc () ++
-	       Ppconstr.pr_constr_expr body)
-    with _ -> ()
-  in ((id, n, bl, typ, body), decl)
-*)
-	      
-let subtac_fixpoint isevars l = 
-  (* TODO: Copy command.build_recursive *)
-  ()
-(*
-let save id const (locality,kind) hook =
-  let {const_entry_body = pft;
-       const_entry_type = tpo;
-       const_entry_opaque = opacity } = const in
-  let l,r = match locality with
-    | Local when Lib.sections_are_opened () ->
-        let k = logical_kind_of_goal_kind kind in
-	let c = SectionLocalDef (pft, tpo, opacity) in
-	let _ = declare_variable id (Lib.cwd(), c, k) in
-	(Local, VarRef id)
-    | Local ->
-        let k = logical_kind_of_goal_kind kind in
-        let kn = declare_constant id (DefinitionEntry const, k) in
-	(Global, ConstRef kn)
-    | Global ->
-        let k = logical_kind_of_goal_kind kind in
-        let kn = declare_constant id (DefinitionEntry const, k) in
-	(Global, ConstRef kn) in
-  Pfedit.delete_current_proof ();
-  hook l r;
-  definition_message id
-
-let save_named opacity =
-  let id,(const,persistence,hook) = Pfedit.cook_proof () in
-  let const = { const with const_entry_opaque = opacity } in
-  save id const persistence hook
-
-let check_anonymity id save_ident =
-  if atompart_of_id id <> "Unnamed_thm" then
-    error "This command can only be used for unnamed theorem"
-(*
-    message("Overriding name "^(string_of_id id)^" and using "^save_ident)
-*)
-
-let save_anonymous opacity save_ident =
-  let id,(const,persistence,hook) = Pfedit.cook_proof () in
-  let const = { const with const_entry_opaque = opacity } in
-  check_anonymity id save_ident;
-  save save_ident const persistence hook
-
-let save_anonymous_with_strength kind opacity save_ident =
-  let id,(const,_,hook) = Pfedit.cook_proof () in
-  let const = { const with const_entry_opaque = opacity } in
-  check_anonymity id save_ident;
-  (* we consider that non opaque behaves as local for discharge *)
-  save save_ident const (Global, Proof kind) hook
-
-let subtac_end_proof = function
-  | Admitted -> admit ()
-  | Proved (is_opaque,idopt) ->
-    if_verbose show_script ();
-    match idopt with
-    | None -> save_named is_opaque
-    | Some ((_,id),None) -> save_anonymous is_opaque id
-    | Some ((_,id),Some kind) -> save_anonymous_with_strength kind is_opaque id
-
-	*)
 
 open Pp
 open Ppconstr
@@ -142,48 +68,45 @@ let start_proof_com env isevars sopt kind (bl,t) hook =
       
 let print_subgoals () = Options.if_verbose (fun () -> msg (Printer.pr_open_subgoals ())) ()
 
-let subtac_utils_path =
-  make_dirpath (List.map id_of_string ["Utils";contrib_name;"Coq"])
-let utils_tac s =
-  lazy(make_kn (MPfile subtac_utils_path) (make_dirpath []) (mk_label s))
-
-let utils_call tac args =
-  TacArg(TacCall(dummy_loc, ArgArg(dummy_loc, Lazy.force (utils_tac tac)),args))
-
 let start_proof_and_print env isevars idopt k t hook =
   start_proof_com env isevars idopt k t hook;
   print_subgoals ()
-  (*if !pcoq <> None then (out_some !pcoq).start_proof ()*)
+	  
+let _ = Detyping.set_detype_anonymous (fun loc n -> RVar (loc, id_of_string ("Anonymous_REL_" ^ string_of_int n)))
+  
+let assumption_message id =
+  Options.if_verbose message ((string_of_id id) ^ " is assumed")
 
-let _ = Subtac_obligations.set_default_tactic 
-    (Tacinterp.eval_tactic (utils_call "subtac_simpl" []))
+let declare_assumption env isevars idl is_coe k bl c =
+  if not (Pfedit.refining ()) then 
+    let evm, c, typ = 
+      Subtac_pretyping.subtac_process env isevars (snd (List.hd idl)) [] (Command.generalize_constr_expr c bl) None 
+    in
+      List.iter (Command.declare_one_assumption is_coe k c) idl
+  else
+    errorlabstrm "Command.Assumption"
+	(str "Cannot declare an assumption while in proof editing mode.")
+
+let vernac_assumption env isevars kind l =
+  List.iter (fun (is_coe,(idl,c)) -> declare_assumption env isevars idl is_coe kind [] c) l
 
 
 let subtac (loc, command) =
   check_required_library ["Coq";"Init";"Datatypes"];
   check_required_library ["Coq";"Init";"Specif"];
-  (* check_required_library ["Coq";"Logic";"JMeq"]; *)
+(*   check_required_library ["Coq";"Logic";"JMeq"]; *)
   require_library "Coq.subtac.FixSub";
   require_library "Coq.subtac.Utils";
+  require_library "Coq.Logic.JMeq";
   let env = Global.env () in
   let isevars = ref (create_evar_defs Evd.empty) in
   try
-    match command with
+  match command with
 	VernacDefinition (defkind, (locid, id), expr, hook) -> 
 	    (match expr with
 		 ProveBody (bl, c) -> Subtac_pretyping.subtac_proof env isevars id bl c None
-(* 		   let evm, c, ctyp =  in *)
-(* 		     trace (str "Starting proof"); *)
-(* 		     Command.start_proof id goal_kind c hook; *)
-(* 		     trace (str "Started proof");	      *)
-		     
 	       | DefineBody (bl, _, c, tycon) -> 
-		   Subtac_pretyping.subtac_proof env isevars id bl c tycon
-		     (* let tac = Eterm.etermtac (evm, c) in  *)
-		     (* 		     trace (str "Starting proof"); *)
-		     (* 		     Command.start_proof id goal_kind ctyp hook; *)
-		     (* 		     trace (str "Started proof"); *)
-		     (* 		     Pfedit.by tac) *))
+		   Subtac_pretyping.subtac_proof env isevars id bl c tycon)
       | VernacFixpoint (l, b) -> 
 	  let _ = trace (str "Building fixpoint") in
 	    ignore(Subtac_command.build_recursive l b)
@@ -199,6 +122,8 @@ let subtac (loc, command) =
 	  start_proof_and_print env isevars (Some id) (Global, Proof thkind) (bl,t) hook
 
 
+      | VernacAssumption (stre,l) -> 
+	  vernac_assumption env isevars stre l
 
       (*| VernacEndProof e -> 
 	  subtac_end_proof e*)
@@ -237,6 +162,10 @@ let subtac (loc, command) =
 		str "Uncoercible terms:" ++ spc ()
 		++ x ++ spc () ++ str "and" ++ spc () ++ y
 	in msg_warning cmds
+
+    | Cases.PatternMatchingError (env, exn) as e ->
+	debug 2 (Himsg.explain_pattern_matching_error env exn);
+	raise e
     
     | Type_errors.TypeError (env, exn) as e ->
 	debug 2 (Himsg.explain_type_error env exn);

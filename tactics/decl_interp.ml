@@ -346,7 +346,7 @@ let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
 	(fun (loc,(id,_)) -> 
 	   RVar (loc,id)) params in 
     let dum_args= 
-      list_tabulate (fun _ -> RHole (dummy_loc,Evd.QuestionMark))
+      list_tabulate (fun _ -> RHole (dummy_loc,Evd.QuestionMark false))
 	oib.Declarations.mind_nrealargs in
       raw_app(dummy_loc,rind,rparams@rparams_rec@dum_args) in
   let pat_vars,aliases,patt = interp_pattern env pat in
@@ -369,7 +369,7 @@ let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
   let term2 =
     RLetIn(dummy_loc,Anonymous,
 	   RCast(dummy_loc,raw_of_pat npatt,
-		 CastConv DEFAULTcast,app_ind),term1) in
+		 CastConv (DEFAULTcast,app_ind)),term1) in
   let term3=List.fold_right let_in_one_alias aliases term2 in  
   let term4=List.fold_right prod_one_id loc_ids term3 in
   let term5=List.fold_right prod_one_hyp params term4 in

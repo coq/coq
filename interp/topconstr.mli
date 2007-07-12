@@ -41,7 +41,7 @@ type aconstr =
   | ASort of rawsort
   | AHole of Evd.hole_kind
   | APatVar of patvar
-  | ACast of aconstr * cast_type * aconstr
+  | ACast of aconstr * aconstr cast_type
 
 (**********************************************************************)
 (* Translate a rawconstr into a notation given the list of variables  *)
@@ -127,7 +127,7 @@ type constr_expr =
   | CPatVar of loc * (bool * patvar)
   | CEvar of loc * existential_key
   | CSort of loc * rawsort
-  | CCast of loc * constr_expr * cast_type * constr_expr
+  | CCast of loc * constr_expr * constr_expr cast_type
   | CNotation of loc * notation * constr_expr list
   | CPrim of loc * prim_token
   | CDelimiters of loc * string * constr_expr
@@ -167,7 +167,7 @@ val ids_of_cases_indtype : constr_expr -> identifier list
 val mkIdentC : identifier -> constr_expr
 val mkRefC : reference -> constr_expr
 val mkAppC : constr_expr * constr_expr list -> constr_expr
-val mkCastC : constr_expr * cast_type * constr_expr -> constr_expr
+val mkCastC : constr_expr * constr_expr cast_type -> constr_expr
 val mkLambdaC : name located list * constr_expr * constr_expr -> constr_expr
 val mkLetInC : name located * constr_expr * constr_expr -> constr_expr
 val mkProdC : name located list * constr_expr * constr_expr -> constr_expr

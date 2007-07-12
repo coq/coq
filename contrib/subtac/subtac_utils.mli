@@ -27,6 +27,7 @@ val fix_sub_ref : global_reference lazy_t
 val fix_measure_sub_ref : global_reference lazy_t
 val lt_ref : global_reference lazy_t
 val lt_wf_ref : global_reference lazy_t
+val refl_ref : global_reference lazy_t
 val sig_ref : reference
 val proj1_sig_ref : reference
 val proj2_sig_ref : reference
@@ -37,13 +38,16 @@ val eq_ind : constr lazy_t
 val eq_rec : constr lazy_t
 val eq_rect : constr lazy_t
 val eq_refl : constr lazy_t
-val eq_ind_ref : global_reference lazy_t
-val refl_equal_ref : global_reference lazy_t
+
+val not_ref : constr lazy_t
+val and_typ : constr lazy_t
 
 val eqdep_ind : constr lazy_t
 val eqdep_rec : constr lazy_t
-val eqdep_ind_ref : global_reference lazy_t
-val eqdep_intro_ref : global_reference lazy_t
+
+val jmeq_ind : constr lazy_t
+val jmeq_rec : constr lazy_t
+val jmeq_refl : constr lazy_t
 
 val boolind : constr lazy_t
 val sumboolind : constr lazy_t
@@ -79,10 +83,11 @@ val wf_relations : (constr, constr lazy_t) Hashtbl.t
 type binders = local_binder list
 val app_opt : ('a -> 'a) option -> 'a -> 'a
 val print_args : env -> constr array -> std_ppcmds
-val make_existential : loc -> env -> evar_defs ref -> types -> constr
+val make_existential : loc -> ?opaque:bool -> env -> evar_defs ref -> types -> constr
 val make_existential_expr : loc -> 'a -> 'b -> constr_expr
 val string_of_hole_kind : hole_kind -> string
-val non_instanciated_map : env -> evar_defs ref -> evar_map
+val evars_of_term : evar_map -> evar_map -> constr -> evar_map
+val non_instanciated_map : env -> evar_defs ref -> evar_map -> evar_map
 val global_kind : logical_kind
 val goal_kind : locality_flag * goal_object_kind
 val global_proof_kind : logical_kind
@@ -95,6 +100,12 @@ val mkProj1 : constr -> constr -> constr -> constr
 val mkProj1 : constr -> constr -> constr -> constr
 val mk_ex_pi1 : constr -> constr -> constr -> constr
 val mk_ex_pi1 : constr -> constr -> constr -> constr
+val mk_eq : types -> constr -> constr -> types
+val mk_eq_refl : types -> constr -> constr
+val mk_JMeq : types -> constr-> types -> constr -> types
+val mk_JMeq_refl : types -> constr -> constr
+val mk_conj : types list -> types
+val mk_not : types -> types
 
 val build_dependent_sum : (identifier * types) list -> Proof_type.tactic * types
 val and_tac : (identifier * 'a * constr * Proof_type.tactic) list ->  
@@ -102,7 +113,6 @@ val and_tac : (identifier * 'a * constr * Proof_type.tactic) list ->
 
 val destruct_ex : constr -> constr -> constr list
 
-val rewrite_cases : Environ.env -> Rawterm.rawconstr -> Rawterm.rawconstr
 val id_of_name : name -> identifier
 
 val definition_message : identifier -> unit
@@ -114,3 +124,7 @@ val string_of_list : string -> ('a -> string) -> 'a list -> string
 val string_of_intset : Intset.t -> string
 
 val pr_evar_defs : evar_defs -> Pp.std_ppcmds
+
+val utils_call : string -> Tacexpr.glob_tactic_arg list -> Tacexpr.glob_tactic_expr
+
+val pp_list : ('a -> Pp.std_ppcmds) -> 'a list -> Pp.std_ppcmds

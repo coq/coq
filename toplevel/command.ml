@@ -111,7 +111,7 @@ let constant_entry_of_com (bl,com,comtypopt,opacity,boxed) =
     | Some comtyp ->
 	(* We use a cast to avoid troubles with evars in comtyp *)
 	(* that can only be resolved knowing com *)
-	let b = abstract_constr_expr (mkCastC (com, Rawterm.CastConv DEFAULTcast,comtyp)) bl in
+	let b = abstract_constr_expr (mkCastC (com, Rawterm.CastConv (DEFAULTcast,comtyp))) bl in
 	let (body,typ) = destSubCast (interp_constr sigma env b) in
 	{ const_entry_body = body;
 	  const_entry_type = Some typ;
@@ -699,8 +699,8 @@ let save id const (locality,kind) hook =
         let kn = declare_constant id (DefinitionEntry const, k) in
 	(Global, ConstRef kn) in
   Pfedit.delete_current_proof ();
-  hook l r;
-  definition_message id
+  definition_message id;
+  hook l r
 
 let save_named opacity =
   let id,(const,persistence,hook) = Pfedit.cook_proof () in
@@ -736,8 +736,8 @@ let admit () =
   let kn =
     declare_constant id (ParameterEntry typ, IsAssumption Conjectural) in
   Pfedit.delete_current_proof ();
-  hook Global (ConstRef kn);
-  assumption_message id
+  assumption_message id;
+  hook Global (ConstRef kn)
 
 let get_current_context () =
   try Pfedit.get_current_goal_context ()

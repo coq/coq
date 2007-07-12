@@ -32,9 +32,19 @@ type pattern_matching_error =
 
 exception PatternMatchingError of env * pattern_matching_error
 
+val raise_pattern_matching_error : (loc * env * pattern_matching_error) -> 'a
+
 val error_wrong_numarg_constructor_loc : loc -> env -> constructor -> int -> 'a
 
 val error_wrong_numarg_inductive_loc : loc -> env -> inductive -> int -> 'a
+
+val error_bad_constructor_loc : loc -> constructor -> inductive -> 'a
+
+val error_bad_pattern_loc : loc -> constructor -> constr -> 'a
+
+val error_wrong_predicate_arity_loc : loc -> env -> constr -> constr -> constr -> 'a
+
+val error_needs_inversion : env -> constr -> types -> 'a
 
 (*s Compilation of pattern-matching. *)
 

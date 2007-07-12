@@ -233,7 +233,7 @@ let rec pat_of_raw metas vars = function
       PSort s
   | RHole _ ->
       PMeta None
-  | RCast (_,c,_,t) ->
+  | RCast (_,c,_) ->
       Options.if_verbose
         Pp.warning "Cast not taken into account in constr pattern";
       pat_of_raw metas vars c

@@ -44,7 +44,7 @@ val detype_sort : sorts -> rawsort
 val lookup_name_as_renamed  : env -> constr -> identifier -> int option
 val lookup_index_as_renamed : env -> constr -> int -> int option
 
-
+val set_detype_anonymous : (loc -> int -> rawconstr) -> unit
 val force_wildcard : unit -> bool
 val synthetize_type : unit -> bool
 val force_if : case_info -> bool

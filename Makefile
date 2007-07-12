@@ -306,11 +306,10 @@ CCCMO=contrib/cc/ccalgo.cmo contrib/cc/ccproof.cmo contrib/cc/cctac.cmo \
   contrib/cc/g_congruence.cmo 
 
 SUBTACCMO=contrib/subtac/subtac_utils.cmo contrib/subtac/eterm.cmo \
-  contrib/subtac/g_eterm.cmo contrib/subtac/context.cmo \
+  contrib/subtac/g_eterm.cmo \
   contrib/subtac/subtac_errors.cmo contrib/subtac/subtac_coercion.cmo \
   contrib/subtac/subtac_obligations.cmo contrib/subtac/subtac_cases.cmo \
   contrib/subtac/subtac_pretyping_F.cmo contrib/subtac/subtac_pretyping.cmo \
-  contrib/subtac/subtac_interp_fixpoint.cmo \
   contrib/subtac/subtac_command.cmo contrib/subtac/subtac.cmo \
   contrib/subtac/g_subtac.cmo
 
@@ -1080,7 +1079,8 @@ JPROVERVO=
 
 CCVO=
 
-SUBTACVO=contrib/subtac/Utils.vo contrib/subtac/FixSub.vo contrib/subtac/Subtac.vo \
+SUBTACVO=contrib/subtac/SubtacTactics.vo contrib/subtac/Heq.vo \
+	contrib/subtac/Utils.vo contrib/subtac/FixSub.vo contrib/subtac/Subtac.vo \
        contrib/subtac/FunctionalExtensionality.vo
 
 RTAUTOVO = \
@@ -1777,7 +1777,7 @@ depend: beforedepend dependp4 ml4filesml
 	  echo `$(CAMLP4DEPS) $$f` >> .depend; \
 	done
 # 5.  We express dependencies of .o files
-	$(CC) -MM kernel/byterun/*.c >> .depend
+	$(CC) -I $(CAMLHLIB) -MM kernel/byterun/*.c >> .depend
 # 6. Finally, we erase the generated .ml files
 	rm -f $(ML4FILESML)
 # 7. Since .depend contains correct dependencies .depend.devel can be deleted

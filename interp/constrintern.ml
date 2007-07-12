@@ -424,17 +424,17 @@ let rec subst_pat_iterator y t (subst,p) = match p with
       let pl = simple_product_of_cases_patterns l' in
       List.map (fun (subst',pl) -> subst'@subst,PatCstr (loc,id,pl,alias)) pl
 
-let subst_cases_pattern loc (ids,asubst as aliases) intern subst scopes a =
-  let rec aux aliases subst = function
+let subst_cases_pattern loc alias intern subst scopes a =
+  let rec aux alias subst = function
   | AVar id ->
       begin
 	(* subst remembers the delimiters stack in the interpretation *)
 	(* of the notations *)
 	try 
 	  let (a,(scopt,subscopes)) = List.assoc id subst in
-	  intern (subscopes@scopes) ([],[]) scopt a
+	    intern (subscopes@scopes) ([],[]) scopt a
 	with Not_found -> 
-	  if id = ldots_var then [],[[], PatVar (loc,Name id)] else
+	  if id = ldots_var then [], [[], PatVar (loc,Name id)] else
 	  anomaly ("Unbound pattern notation variable: "^(string_of_id id))
 	  (*
 	  (* Happens for local notation joint with inductive/fixpoint defs *)
@@ -444,33 +444,34 @@ let subst_cases_pattern loc (ids,asubst as aliases) intern subst scopes a =
 	  *)
       end
   | ARef (ConstructRef c) ->
-      (ids,[asubst, PatCstr (loc,c, [], alias_of aliases)])
+      ([],[[], PatCstr (loc,c, [], alias)])
   | AApp (ARef (ConstructRef (ind,_ as c)),args) ->
       let nparams = (fst (Global.lookup_inductive ind)).Declarations.mind_nparams in
       let _,args = list_chop nparams args in
-      let idslpll = List.map (aux ([],[]) subst) args in
-      let ids',pll = product_of_cases_patterns ids idslpll in
+      let idslpll = List.map (aux Anonymous subst) args in
+      let ids',pll = product_of_cases_patterns [] idslpll in
       let pl' = List.map (fun (subst,pl) -> 
-        subst,PatCstr (loc,c,pl,alias_of aliases)) pll in
-      ids', pl'
+        subst,PatCstr (loc,c,pl,alias)) pll in
+	ids', pl'
   | AList (x,_,iter,terminator,lassoc) ->
       (try 
         (* All elements of the list are in scopes (scopt,subscopes) *)
 	let (a,(scopt,subscopes)) = List.assoc x subst in
-        let termin = aux ([],[]) subst terminator in
+        let termin = aux Anonymous subst terminator in
         let l = decode_patlist_value a in
         let idsl,v =
 	  List.fold_right (fun a (tids,t) -> 
-            let uids,u = aux ([],[]) ((x,(a,(scopt,subscopes)))::subst) iter in
+            let uids,u = aux Anonymous ((x,(a,(scopt,subscopes)))::subst) iter in
             let pll = List.map (subst_pat_iterator ldots_var t) u in
             tids@uids, List.flatten pll)
             (if lassoc then List.rev l else l) termin in
-        ids@idsl, v
+        idsl, List.map (fun ((subst, pl) as x) -> 
+	  match pl with PatCstr (loc, c, pl, Anonymous) -> (subst, PatCstr (loc, c, pl, alias)) | _ -> x) v
       with Not_found -> 
           anomaly "Inconsistent substitution of recursive notation")
   | t -> user_err_loc (loc,"",str "Invalid notation for pattern")
-  in aux aliases subst a
-
+  in aux alias subst a
+    
 (* Differentiating between constructors and matching variables *)
 type pattern_qualid_kind =
   | ConstrPat of (constructor * cases_pattern list)
@@ -565,11 +566,12 @@ let rec intern_cases_pattern genv scopes (ids,subst as aliases) tmp_scope =
       intern_cases_pattern genv scopes aliases tmp_scope a
   | CPatNotation (loc, ntn, args) ->
       let ntn,args = contract_pat_notation ntn args in
-      let ((ids,c),df) = Notation.interp_notation loc ntn (tmp_scope,scopes) in
+      let ((ids',c),df) = Notation.interp_notation loc ntn (tmp_scope,scopes) in
       if !dump then dump_notation_location (patntn_loc loc args ntn) df;
-      let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids args in
-      subst_cases_pattern loc aliases (intern_cases_pattern genv) subst scopes 
+      let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids' args in
+      let ids'',pl = subst_cases_pattern loc (alias_of aliases) (intern_cases_pattern genv) subst scopes 
 	c
+      in ids@ids'', pl
   | CPatPrim (loc, p) ->
       let a = alias_of aliases in
       let (c,df) = Notation.interp_prim_token_cases_pattern loc p a 
@@ -915,7 +917,7 @@ let internalise sigma globalenv env allow_soapp lvar c =
         let p' = option_map (intern_type env'') po in
         RIf (loc, c', (na', p'), intern env b1, intern env b2)
     | CHole loc -> 
-	RHole (loc, Evd.QuestionMark)
+	RHole (loc, Evd.QuestionMark true)
     | CPatVar (loc, n) when allow_soapp ->
 	RPatVar (loc, n)
     | CPatVar (loc, (false,n)) ->
@@ -926,8 +928,10 @@ let internalise sigma globalenv env allow_soapp lvar c =
 	REvar (loc, n, None)
     | CSort (loc, s) ->
 	RSort(loc,s)
-    | CCast (loc, c1, k, c2) ->
-	RCast (loc,intern env c1,k,intern_type env c2)
+    | CCast (loc, c1, CastConv (k, c2)) ->
+	RCast (loc,intern env c1, CastConv (k, intern_type env c2))
+    | CCast (loc, c1, CastCoerce) ->
+	RCast (loc,intern env c1, CastCoerce)
 
     | CDynamic (loc,d) -> RDynamic (loc,d)
 
@@ -1086,6 +1090,8 @@ let intern_gen isarity sigma env
     allow_soapp (ltacvars,Environ.named_context env, [], impls) c
 
 let intern_constr sigma env c = intern_gen false sigma env c 
+
+let intern_type sigma env c = intern_gen true sigma env c 
 
 let intern_pattern env patt =
   try

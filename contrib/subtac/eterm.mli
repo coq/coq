@@ -18,7 +18,10 @@ val mkMetas : int -> constr list
 
 (* val eterm_term : evar_map -> constr -> types option -> constr * types option * (identifier * types) list *)
 
-val eterm_obligations : identifier -> int -> evar_map -> constr -> types option -> 
-  (identifier * types * Intset.t) array * constr (* Obl. name, type as product and dependencies as indexes into the array *)
+(* id, named context length, evars, number of
+   function prototypes to try to clear from evars contexts, object and optional type *)
+val eterm_obligations : identifier -> int -> evar_defs -> evar_map -> int -> constr -> types option -> 
+  (identifier * types * bool * Intset.t) array * constr
+    (* Obl. name, type as product, opacity (true = opaque) and dependencies as indexes into the array *)
 
 val etermtac : open_constr -> tactic

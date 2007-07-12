@@ -191,9 +191,11 @@ let rec check_same_type ty1 ty2 =
   | CHole _, CHole _ -> ()
   | CPatVar(_,i1), CPatVar(_,i2) when i1=i2 -> ()
   | CSort(_,s1), CSort(_,s2) when s1=s2 -> ()
-  | CCast(_,a1,_,b1), CCast(_,a2,_,b2) ->
+  | CCast(_,a1,CastConv (_,b1)), CCast(_,a2, CastConv(_,b2)) ->
       check_same_type a1 a2;
       check_same_type b1 b2
+  | CCast(_,a1,CastCoerce), CCast(_,a2, CastCoerce) ->
+      check_same_type a1 a2
   | CNotation(_,n1,e1), CNotation(_,n2,e2) when n1=n2 ->
       List.iter2 check_same_type e1 e2
   | CPrim(_,i1), CPrim(_,i2) when i1=i2 -> ()
@@ -283,8 +285,8 @@ let rec same_raw c d =
   | RSort(_,s1), RSort(_,s2) -> if s1<>s2 then failwith "RSort"
   | RHole _, _ -> ()
   | _, RHole _ -> ()
-  | RCast(_,c1,_,_),r2 -> same_raw c1 r2
-  | r1, RCast(_,c2,_,_) -> same_raw r1 c2
+  | RCast(_,c1,_),r2 -> same_raw c1 r2
+  | r1, RCast(_,c2,_) -> same_raw r1 c2
   | RDynamic(_,d1), RDynamic(_,d2) -> if d1<>d2 then failwith"RDynamic"
   | _ -> failwith "same_raw"
      
@@ -744,8 +746,10 @@ let rec extern inctx scopes vars r =
 
   | RHole (loc,e) -> CHole loc
 
-  | RCast (loc,c,k,t) ->
-      CCast (loc,sub_extern true scopes vars c,k,extern_typ scopes vars t)
+  | RCast (loc,c, CastConv (k,t)) ->
+      CCast (loc,sub_extern true scopes vars c, CastConv (k,extern_typ scopes vars t))
+  | RCast (loc,c, CastCoerce) ->
+      CCast (loc,sub_extern true scopes vars c, CastCoerce)
 
   | RDynamic (loc,d) -> CDynamic (loc,d)
 
