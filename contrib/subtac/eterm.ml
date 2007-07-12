@@ -71,24 +71,26 @@ let subst_vars acc n t =
     substrec 0 t
 
 (** Rewrite type of an evar ([ H1 : t1, ... Hn : tn |- concl ])
-  to a product : forall H1 : t1, ..., forall Hn : tn, concl.
+    to a product : forall H1 : t1, ..., forall Hn : tn, concl.
     Changes evars and hypothesis references to variable references.
+    A little optimization: don't include unnecessary let-ins and their dependencies.
 *)
 let etype_of_evar evs hyps concl =
   let rec aux acc n = function
       (id, copt, t) :: tl ->
 	let t', s = subst_evar_constr evs n t in
 	let t'' = subst_vars acc 0 t' in
-	let copt', s = 
-	  match copt with
+	let rest, s' = aux (id :: acc) (succ n) tl in
+	let s' = Intset.union s s' in
+	  (match copt with
 	      Some c -> 
-		let c', s' = subst_evar_constr evs n c in
-		  Some c', Intset.union s s'
-	    | None -> None, s
-	in
-	let copt' = option_map (subst_vars acc 0) copt' in
- 	let rest, s' = aux (id :: acc) (succ n) tl in
-	  mkNamedProd_or_LetIn (id, copt', t'') rest, Intset.union s' s
+		if noccurn 1 rest then lift (-1) rest, s'
+		else
+		  let c', s'' = subst_evar_constr evs n c in
+		  let c' = subst_vars acc 0 c' in
+		    mkNamedProd_or_LetIn (id, Some c', t'') rest, Intset.union s'' s'
+	    | None -> 
+		mkNamedProd_or_LetIn (id, None, t'') rest, s')
     | [] ->
 	let t', s = subst_evar_constr evs n concl in
 	  subst_vars acc 0 t', s
