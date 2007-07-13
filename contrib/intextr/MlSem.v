@@ -448,6 +448,16 @@ Proof.
  rewrite IHl; auto.
 Qed.
 
+Lemma clos_rev_list : forall l, clos_list l -> clos_list (rev l).
+Proof.
+  intros.
+  rewrite clos_list_alt; intros x Hx.
+  rewrite <- In_rev in Hx.
+  revert x Hx.
+  rewrite <- clos_list_alt; auto.
+Qed.
+Hint Resolve clos_rev_list.
+
 Lemma clos_list_cons_iff : forall a l, clos_list (a::l) <-> clos a /\ clos_list l.
 Proof.
  split; inversion 1; auto.
@@ -925,8 +935,68 @@ Proof.
 Qed.
 
 
+(* Propriétés annexes de SmallSteps, utilisées par l'extraction interne *)
+
+Definition SmallSteps_fun t1 v1 v :=
+  match t1 with
+    | TFun t => (t[0 := v1] ==> v)
+    | TFix t => (t[0 := v1][0 := t1] ==> v)
+    | _ => False
+  end.
+
+Lemma SmallSteps_beta_iotafix : forall t1 t2 v t v1,
+  (t1 ==> t) -> (t2 ==> v1) -> SmallSteps_fun t v1 v -> IsValue v1 ->
+  (t1 @ t2 ==> v).
+Proof.
+  intros.
+  apply SmallSteps_trans2 with (t@t2).
+  apply SmallSteps_app1; auto.
+  apply SmallSteps_trans2 with (t@v1).
+  apply SmallSteps_app2; auto.
+  destruct t; simpl in *; try contradiction.
+  apply SmallSteps_trans with (t[0:=v1]); auto.
+  apply SmallSteps_trans with (t[0:=v1][0:=TFix t]); auto.
+Qed.
+
+Lemma SmallSteps_iota : forall t pl v n tl u,
+  (t ==> TConstr n tl) ->
+  nth_error pl n = Some (Patc (length tl) u) ->
+  (u[0 ;;= rev tl] ==> v) ->
+  IsValue_list tl ->
+  clos_list tl ->
+  (TMatch t pl ==> v).
+Proof.
+  intros.
+  eapply SmallSteps_trans2.
+  eapply SmallSteps_match; eauto.
+  eapply SmallSteps_trans; eauto.
+  assert (Hclos : clos_list (rev tl)) by auto.
+  rewrite <- (subst_list_equiv u (rev tl) 0 Hclos).
+  trivial.
+Qed.
+
+Inductive SmallSteps_list : list term -> list term -> Prop :=
+  | SmallSteps_list_nil : SmallSteps_list nil nil
+  | SmallSteps_list_const : forall t tl v vl,
+      (t ==> v) ->
+      SmallSteps_list tl vl ->
+      SmallSteps_list (t::tl) (v::vl).
+Hint Constructors SmallSteps_list.
+
+Lemma SmallSteps_constr : forall n tl vl,
+  SmallSteps_list tl vl -> (TConstr n tl ==> TConstr n vl).
+Proof.
+  induction tl as [ | t tl].
+  intros [ _ | v vl H ]; [exists 0; simpl; auto | inversion H].
+  intros [ H | v vl H ]; inversion H; subst; clear H.
+  eapply SmallSteps_trans2.
+  eapply SmallSteps_constr1; eauto.
+  eapply SmallSteps_constr2; eauto.
+Qed.
+
 
 (* Reductions et cloture: *)
+
 
 Lemma BigStep_val_clos : forall e t v, env_clos e -> clos_after (length e) t ->
  (e|=t-->v) -> val_clos v.
@@ -1233,8 +1303,6 @@ Proof.
  apply env_clos_revapp; auto.
  rewrite app_length; rewrite rev_length; rewrite H2; auto.
  apply v2t_env_clos; apply env_clos_revapp; auto.
- rewrite <- map_rev; apply v2t_env_clos; apply env_clos_rev; auto.
- rewrite <- map_rev; apply v2t_env_clos; apply env_clos_rev; auto.
  rewrite rev_length; rewrite map_length; auto.
  (* nil *)
  exists 0; simpl; auto.

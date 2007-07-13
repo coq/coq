@@ -2,108 +2,206 @@ Require Import Ml.
 Require Import MlSem.
 Require Import List Bool.
 
+Set Implicit Arguments.
+Unset Strict Implicit.
+
+
 (***** Définitions pour preuves de programmes extraits *****)
 
-Fixpoint internalize_nat n := match n with
-  | O => TConstr 0 nil
-  | S n => TConstr 1 (internalize_nat n :: nil)
-end.
+(* Un type de données simple *)
+
+Fixpoint internalize_nat n :=
+  match n with
+    | O => TConstr 0 nil
+    | S n => TConstr 1 (internalize_nat n :: nil)
+  end.
 
 Coercion internalize_nat : nat >-> term.
 
-Lemma intern_clos : forall (n:nat), clos n.
+Lemma intern_nat_clos : forall (n:nat), clos n.
 Proof.
-intros; rewrite clos_alt.
-induction n; intros; simpl_clos_after; intuition; subst; auto.
+  intros; rewrite clos_alt.
+  induction n; intros; simpl_clos_after; intuition; subst; auto.
 Qed.
-Hint Resolve intern_clos.
+Hint Resolve intern_nat_clos.
 
-Lemma intern_IsValue : forall (n:nat), IsValue n.
+Lemma intern_nat_IsValue : forall (n:nat), IsValue n.
 Proof.
-induction n; simpl; auto.
+  induction n; simpl; auto.
 Qed.
-Hint Resolve intern_IsValue.
+Hint Resolve intern_nat_IsValue.
+
+(* Un type dépendant avec paramètres *)
+
+Section Internalize_sig.
+
+  Variable A : Type.
+  Variable P : A -> Prop.
+  Variable internalize_A : A -> term.
+  Coercion Local internalize_A : A >-> term.
+  Let sig_P := sig P.
+
+  Hypothesis intern_A_clos : forall (a:A), clos a.
+  Hypothesis intern_A_IsValue : forall (a:A), IsValue a.
+
+  Definition internalize_sig (x : sig_P) :=
+    match x with
+      exist x _ => TConstr 0 (TDummy::TDummy::(x:term)::TDummy::nil)
+    end.
+  Coercion internalize_sig : sig_P >-> term.
+
+  Lemma intern_sig_clos : forall (x:sig_P), clos x.
+  Proof.
+    intros; rewrite clos_alt.
+    induction x; intros; simpl_clos_after; intuition; subst; auto;
+    simpl_clos_after; auto.
+    rewrite <- clos_alt.
+    apply intern_A_clos.
+  Qed.
+
+  Lemma intern_sig_IsValue : forall (x:sig_P), IsValue x.
+  Proof.
+    induction x; simpl; auto.
+    repeat constructor; apply intern_A_IsValue.
+  Qed.
+
+End Internalize_sig.
+
+Hint Resolve intern_sig_clos.
+Hint Resolve intern_sig_IsValue.
+
+(* Intantiation à nat *)
+
+Definition sig_nat := @sig nat.
+
+Definition internalize_sig_nat P (x : sig_nat P) :=
+  internalize_sig internalize_nat x.
+
+Coercion internalize_sig_nat : sig_nat >-> term.
+
+
+(***** La tactique *****)
+
+Ltac extauto_absurd :=
+  match goal with
+    | H : context [ match ?a with end ] |- _ => destruct a
+  end.
+
+Ltac extauto :=
+  intros; simpl;
+  match goal with
+    | |- context [ (internalize_nat ?n) [_:=_] ] => rewrite (subst_clos n); extauto
+    | |- context [ (internalize_nat ?n) [_;;=_] ] => rewrite (subst_list_clos n); extauto
+
+    | |- context [TMatch (internalize_nat ?n) _ ] =>
+      trivial; induction n; simpl in *;
+      try extauto_absurd; subst; extauto
+
+    | |- (?a @ _ ==> _) =>
+      try unfold a; trivial;
+      eapply SmallSteps_beta_iotafix;
+      extauto
+
+    | |- (TMatch (TConstr ?n ?tl) ?l ==> _) =>
+      eapply SmallSteps_iota with (pl:=l) (n:=n) (tl:=tl);
+      extauto
+
+    | |- (TConstr _ ?l ==> _) =>
+      eapply SmallSteps_constr with (tl:=l);
+      extauto
+
+    | |- (TFun _ ==> _) => exists 0; simpl
+    | |- (TFix _ ==> _) => exists 0; simpl
+    | |- (TDummy ==> _) => exists 0; simpl
+    | |- (internalize_nat _ ==> _) => exists 0; simpl
+    | |- SmallSteps_list _ _ => econstructor; extauto
+    | _ => idtac
+  end; try (progress eauto; extauto).
+
 
 (***** Preuve de plus *****)
 
 Internal Extraction plus.
 
-Lemma l1 : forall t, clos t -> IsValue t -> 
-  (plus__extr @ 0 @ t ==> t).
-Proof.
-unfold plus__extr; intros.
-eapply SmallSteps_trans.
-eapply SmallStep_app1.
-eapply SmallStep_iotafix; auto.
-simpl.
-eapply SmallSteps_trans.
-eapply SmallStep_beta; auto.
-simpl.
-eapply SmallSteps_trans.
-eapply SmallStep_iota; eauto.
-simpl; auto.
-exists 0; simpl; auto.
-rewrite <- subst_list_equiv; auto; apply subst_list_clos; auto.
-Qed.
-
-
-Lemma l2 : forall t u, clos t -> clos u -> IsValue t -> IsValue u -> 
-    (plus__extr @ (TConstr 1 (t::nil)) @ u ==>
-     TConstr 1 (plus__extr @ t @ u :: nil)).
-Proof.
-unfold plus__extr; intros.
-eapply SmallSteps_trans.
-eapply SmallStep_app1.
-eapply SmallStep_iotafix; auto.
-match goal with |- context foo [ TFix ?fi ] => set (f:=fi) end.
-simpl.
-rewrite (subst_clos _ H).
-eapply SmallSteps_trans.
-eapply SmallStep_beta; auto.
-simpl.
-rewrite (subst_clos _ H).
-eapply SmallSteps_trans.
-eapply SmallStep_iota; eauto.
-simpl; auto.
-simpl.
-rewrite <- subst_list_equiv; auto; rewrite subst_list_clos; auto.
-unfold f.
-exists 0; simpl; auto.
-Qed.
-
-Lemma l3 : forall (n m : nat),
+(* La tactique extauto devrait pouvoir résoudre la correction pour les
+   fonctions simples sur les entiers... reste encore à tester les
+   fonctions définies par patterns imbriqués. *)
+Lemma plus__extr_correct : forall (n m : nat),
   (plus__extr @ n @ m ==> n+m).
 Proof.
-induction n; simpl; intros.
-apply l1; auto.
-eapply SmallSteps_trans2.
-eapply l2; auto.
-eapply SmallSteps_constr1; eauto.
+  extauto.
 Qed.
 
-(***** pred *****)
+(* Autre approche en utilisant Functional Scheme... dans ce cas, la
+   tactique n'aurait pas besoin de faire d'induction, Functional
+   Scheme donnant directement les équations à résoudre.
+   Mais FS ne semple pas pas aimer les fonctions avec types dépendants
+   (cf sig) *)
+Functional Scheme plus_ind := Induction for plus Sort Prop.
+
+Lemma plus__extr_correct' : forall (n m : nat),
+  (plus__extr @ n @ m ==> n+m).
+Proof.
+  intros.
+  functional induction (n+m); extauto.
+Qed.
+
+
+(***** Preuve de pred *****)
 
 Internal Extraction pred.
 
-Lemma l4 : forall (n:nat),
-  pred__extr @ n ==> pred n.
+Lemma pred__extr_correct : forall (n:nat), (pred__extr @ n ==> pred n).
 Proof.
-unfold pred__extr; intros.
-eapply SmallSteps_trans.
-eapply SmallStep_beta; auto.
-simpl.
-destruct n; simpl.
-(* n=0 *)
-eapply SmallSteps_trans.
-eapply SmallStep_iota; simpl; auto.
-exists 0; simpl; auto.
-(* n>0 *)
-eapply SmallSteps_trans.
-eapply SmallStep_iota; simpl; auto.
-exists 0; simpl; auto.
+  extauto.
 Qed.
 
-(*** le point-fixe le plus simple possible ****)
+
+(***** Prédécesseur avec précondition *****)
+
+Definition pred2 : forall n, n <> 0 -> nat.
+Proof.
+  intros n H.
+  destruct n; intros.
+  destruct H; auto.
+  exact n.
+Defined.
+
+Internal Extraction pred2.
+(*
+   Functional Scheme pred2_ind := Induction for pred2 Sort Prop.
+   renvoie une erreur :
+   "Anomaly: uncaught exception Not_found. Please report."
+*)
+
+Lemma pred2__extr_correct : forall n (H:n <> 0) p,
+  p = pred2 H ->
+  (pred2__extr @ n @ TDummy ==> p).
+Proof.
+  extauto.
+Qed.
+
+
+(***** Prédécesseur avec précondition et postcondition *****)
+
+Definition pred3 : forall n, n <> 0 -> {p | n = S p}.
+Proof.
+  intros; destruct n.
+  destruct H; simpl; auto.
+  exists n; auto.
+Defined.
+
+Internal Extraction pred3.
+
+Lemma pred3__extr_correct : forall n (H:n<>0), let P p := n = S p in
+  forall (p:sig_nat P), p = pred3 H ->
+  (pred3__extr @ n @ TDummy ==> p).
+Proof.
+  extauto.
+Qed.
+
+
+(*** Le point-fixe le plus simple possible ****)
 
 Fixpoint test n :=
   match n with
@@ -113,23 +211,8 @@ Fixpoint test n :=
 
 Internal Extraction test.
 
-Lemma l5 : forall (n:nat),
+Lemma test__extr_correct : forall (n:nat),
   test__extr @ n ==> test n.
 Proof.
-fix 1.
-unfold test__extr; intros.
-eapply SmallSteps_trans.
-eapply SmallStep_iotafix; simpl; auto.
-simpl.
-rewrite (subst_clos _ (intern_clos n)).
-destruct n; simpl.
-eapply SmallSteps_trans.
-eapply SmallStep_iota; simpl; auto.
-exists 0; simpl; auto.
-eapply SmallSteps_trans.
-eapply SmallStep_iota; simpl; auto.
-simpl.
-apply l5; auto.
+  extauto.
 Qed.
-
-Print l5.
