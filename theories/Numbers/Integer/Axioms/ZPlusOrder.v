@@ -1,14 +1,13 @@
 Require Export ZOrder.
 Require Export ZPlus.
 
-Module PlusOrderProperties (PlusModule : PlusSignature)
-                           (OrderModule : OrderSignature with
-                             Module IntModule := PlusModule.IntModule).
-(* Warning: Notation _ == _ was already used in scope ZScope !!! *)
-Module Export PlusPropertiesModule := PlusProperties PlusModule.
-Module Export OrderPropertiesModule := OrderProperties OrderModule.
+Module ZPlusOrderProperties (Import ZPlusModule : ZPlusSignature)
+                            (Import ZOrderModule : ZOrderSignature with
+                              Module IntModule := ZPlusModule.IntModule).
+Module Export ZPlusPropertiesModule := ZPlusProperties ZPlusModule.
+Module Export ZOrderPropertiesModule := ZOrderProperties ZOrderModule.
 (* <W> Grammar extension: in [tactic:simple_tactic], some rule has been masked !!! *)
-Open Local Scope ZScope.
+Open Local Scope IntScope.
 
 Theorem plus_lt_compat_l : forall n m p, n < m <-> p + n < p + m.
 Proof.
@@ -44,19 +43,19 @@ Qed.
 
 Theorem plus_lt_le_compat : forall n m p q, n < m -> p <= q -> n + p < m + q.
 Proof.
-intros n m p q H1 H2. le_elim H2. now apply plus_lt_compat.
+intros n m p q H1 H2. Zle_elim H2. now apply plus_lt_compat.
 rewrite H2. now apply -> plus_lt_compat_r.
 Qed.
 
 Theorem plus_le_lt_compat : forall n m p q, n <= m -> p < q -> n + p < m + q.
 Proof.
-intros n m p q H1 H2. le_elim H1. now apply plus_lt_compat.
+intros n m p q H1 H2. Zle_elim H1. now apply plus_lt_compat.
 rewrite H1. now apply -> plus_lt_compat_l.
 Qed.
 
 Theorem plus_le_compat : forall n m p q, n <= m -> p <= q -> n + p <= m + q.
 Proof.
-intros n m p q H1 H2. le_elim H1. le_intro1; now apply plus_lt_le_compat.
+intros n m p q H1 H2. Zle_elim H1. Zle_intro1; now apply plus_lt_le_compat.
 rewrite H1. now apply -> plus_le_compat_l.
 Qed.
 
@@ -71,7 +70,7 @@ induct n.
 induct_ord m.
 intro H; false_hyp H lt_irr.
 intros m H1 IH H2. rewrite uminus_S. rewrite uminus_0 in *.
-le_elim H1. apply IH in H1. now apply lt_Pn_m.
+Zle_elim H1. apply IH in H1. now apply lt_Pn_m.
 rewrite <- H1; rewrite uminus_0; apply lt_Pn_n.
 intros m H1 IH H2. apply lt_n_Pm in H2. apply -> le_gt in H1. false_hyp H2 H1.
 intros n IH m H. rewrite uminus_S.
@@ -158,4 +157,4 @@ intros n m p. rewrite (minus_le_nondecr_l (n + p) m p).
 rewrite <- plus_minus_distr. rewrite minus_diag. now rewrite plus_n_0.
 Qed.
 
-End PlusOrderProperties.
+End ZPlusOrderProperties.

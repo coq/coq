@@ -2,19 +2,15 @@ Require Export NAxioms.
 
 Module Homomorphism (Nat1 Nat2 : NatSignature).
 
-(*Module Import DomainProperties1 := DomainProperties Nat1.DomainModule.
-Module Import DomainProperties2 := DomainProperties Nat2.DomainModule.*)
-(* This registers Nat1.Domain.E and Nat2.Domain.E as setoid relations *)
-
-Notation Local N1 := Nat1.DomainModule.N.
-Notation Local N2 := Nat2.DomainModule.N.
-Notation Local E1 := Nat1.DomainModule.E.
-Notation Local E2 := Nat2.DomainModule.E.
+Notation Local N1 := Nat1.NDomainModule.N.
+Notation Local N2 := Nat2.NDomainModule.N.
+Notation Local E1 := Nat1.NDomainModule.E.
+Notation Local E2 := Nat2.NDomainModule.E.
 Notation Local O1 := Nat1.O.
 Notation Local O2 := Nat2.O.
 Notation Local S1 := Nat1.S.
 Notation Local S2 := Nat2.S.
-Notation Local "x == y" := (Nat2.DomainModule.E x y) (at level 70).
+Notation Local "x == y" := (Nat2.NDomainModule.E x y) (at level 70).
 
 Definition homomorphism (f : N1 -> N2) : Prop :=
   f O1 == O2 /\ forall x : N1, f (S1 x) == S2 (f x).
@@ -43,7 +39,7 @@ Theorem natural_isomorphism_S :
   forall x : N1, natural_isomorphism (S1 x) == S2 (natural_isomorphism x).
 Proof.
 unfold natural_isomorphism;
-intro x; now rewrite (Nat1.recursion_S Nat2.DomainModule.E);
+intro x; now rewrite (Nat1.recursion_S Nat2.NDomainModule.E);
 [| unfold fun2_wd; intros; apply Nat2.S_wd |].
 Qed.
 
@@ -64,12 +60,12 @@ NatProperties Nat1, it refers to Nat1.induction. *)
 Module Hom12 := Homomorphism Nat1 Nat2.
 Module Hom21 := Homomorphism Nat2 Nat1.
 
-Notation Local N1 := Nat1.DomainModule.N.
-Notation Local N2 := Nat2.DomainModule.N.
+Notation Local N1 := Nat1.NDomainModule.N.
+Notation Local N2 := Nat2.NDomainModule.N.
 Notation Local h12 := Hom12.natural_isomorphism.
 Notation Local h21 := Hom21.natural_isomorphism.
 
-Notation Local "x == y" := (Nat1.DomainModule.E x y) (at level 70).
+Notation Local "x == y" := (Nat1.NDomainModule.E x y) (at level 70).
 
 Lemma iso_inverse :
   forall x : N1, h21 (h12 x) == x.
@@ -91,10 +87,10 @@ Module Hom21 := Homomorphism Nat2 Nat1.
 Module Inverse121 := Inverse Nat1 Nat2.
 Module Inverse212 := Inverse Nat2 Nat1.
 
-Notation Local N1 := Nat1.DomainModule.N.
-Notation Local N2 := Nat2.DomainModule.N.
-Notation Local E1 := Nat1.DomainModule.E.
-Notation Local E2 := Nat2.DomainModule.E.
+Notation Local N1 := Nat1.NDomainModule.N.
+Notation Local N2 := Nat2.NDomainModule.N.
+Notation Local E1 := Nat1.NDomainModule.E.
+Notation Local E2 := Nat2.NDomainModule.E.
 Notation Local h12 := Hom12.natural_isomorphism.
 Notation Local h21 := Hom21.natural_isomorphism.
 

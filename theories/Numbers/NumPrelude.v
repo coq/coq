@@ -18,7 +18,14 @@ Definition eq_bool := (@eq bool).
 Inductive eq_true : bool -> Prop := is_eq_true : eq_true true.
 Coercion eq_true : bool >-> Sortclass.
 
-Theorem neg_eq_true : forall x : bool, ~ x -> x = false.
+Theorem eq_true_unfold : forall b : bool, b <-> b = true.
+Proof.
+intro b; split; intro H.
+now inversion H.
+now rewrite H.
+Qed.
+
+Theorem eq_true_neg : forall x : bool, ~ x -> x = false.
 Proof.
 intros x H; destruct x; [elim (H is_eq_true) | reflexivity].
 Qed.

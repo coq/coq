@@ -1,11 +1,14 @@
 Require Export NDepRec.
-Require Export NTimesLt.
+Require Export NTimesOrder.
+Require Export NMinus.
 Require Export NMiscFunct.
 
-Module PeanoDomain : DomainEqSignature
-  with Definition N := nat
+Module NPeanoDomain <: NDomainEqSignature.
+(*  with Definition N := nat
   with Definition E := (@eq nat)
-  with Definition e := eq_nat_bool.
+  with Definition e := eq_nat_bool.*)
+
+Delimit Scope NatScope with Nat.
 
 Definition N := nat.
 Definition E := (@eq nat).
@@ -26,10 +29,10 @@ Add Relation N E
  transitivity proved by (proj1 (proj2 E_equiv))
 as E_rel.
 
-End PeanoDomain.
+End NPeanoDomain.
 
 Module PeanoNat <: NatSignature.
-Module Export DomainModule := PeanoDomain.
+Module Export NDomainModule := NPeanoDomain.
 
 Definition O := 0.
 Definition S := S.
@@ -80,9 +83,9 @@ Qed.
 
 End PeanoNat.
 
-Module PeanoDepRec <: DepRecSignature.
+Module NPeanoDepRec <: NDepRecSignature.
 
-Module Export DomainModule := PeanoDomain.
+Module Export NDomainModule := NPeanoDomain.
 Module Export NatModule <: NatSignature := PeanoNat.
 
 Definition dep_recursion := nat_rec.
@@ -101,10 +104,9 @@ Proof.
 reflexivity.
 Qed.
 
-End PeanoDepRec.
+End NPeanoDepRec.
 
-Module PeanoPlus <: PlusSignature.
-
+Module NPeanoPlus <: NPlusSignature.
 Module Export NatModule := PeanoNat.
 
 Definition plus := plus.
@@ -124,10 +126,10 @@ Proof.
 reflexivity.
 Qed.
 
-End PeanoPlus.
+End NPeanoPlus.
 
-Module PeanoTimes <: TimesSignature.
-Module Export PlusModule := PeanoPlus.
+Module NPeanoTimes <: NTimesSignature.
+Module Export NPlusModule := NPeanoPlus.
 
 Definition times := mult.
 
@@ -146,9 +148,9 @@ Proof.
 auto.
 Qed.
 
-End PeanoTimes.
+End NPeanoTimes.
 
-Module PeanoLt <: LtSignature.
+Module NPeanoLt <: NLtSignature.
 Module Export NatModule := PeanoNat.
 
 Definition lt := lt_bool.
@@ -168,14 +170,15 @@ Proof.
 exact lt_bool_S.
 Qed.
 
-End PeanoLt.
+End NPeanoLt.
+
+Module NPeanoPred <: NPredSignature.
 
 (* Obtaining properties for +, *, <, and their combinations *)
 
-Module Export PeanoTimesLtProperties := TimesLtProperties PeanoTimes PeanoLt.
-Module Export PeanoDepRecTimesProperties :=
-  DepRecTimesProperties PeanoDepRec PeanoTimes.
+Module Export NPeanoTimesLtProperties := NTimesLtProperties NPeanoTimes NPeanoLt.
+Module Export NPeanoDepRecTimesProperties :=
+  NDepRecTimesProperties NPeanoDepRec NPeanoTimes.
 
-(*Module MiscFunctModule := MiscFunctFunctor PeanoNat.*)
-(* The instruction above adds about 1M to the size of the .vo file !!! *)
-
+Module MiscFunctModule := MiscFunctFunctor PeanoNat.
+(* The instruction above adds about 0.5M to the size of the .vo file !!! *)

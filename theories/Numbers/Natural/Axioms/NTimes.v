@@ -1,23 +1,23 @@
 Require Export NPlus.
 
-Module Type TimesSignature.
-Declare Module Export PlusModule : PlusSignature.
-Open Local Scope NScope.
+Module Type NTimesSignature.
+Declare Module Export NPlusModule : NPlusSignature.
+Open Local Scope NatScope.
 
 Parameter Inline times : N -> N -> N.
 
-Notation "x * y" := (times x y) : NScope.
+Notation "x * y" := (times x y) : NatScope.
 
 Add Morphism times with signature E ==> E ==> E as times_wd.
 
 Axiom times_0_n : forall n, 0 * n == 0.
 Axiom times_Sn_m : forall n m, (S n) * m == m + n * m.
 
-End TimesSignature.
+End NTimesSignature.
 
-Module TimesProperties (Export TimesModule : TimesSignature).
-Module Export PlusPropertiesModule := PlusProperties PlusModule.
-Open Local Scope NScope.
+Module NTimesProperties (Import NTimesModule : NTimesSignature).
+Module Export NPlusPropertiesModule := NPlusProperties NPlusModule.
+Open Local Scope NatScope.
 
 Theorem mult_0_r : forall n, n * 0 == 0.
 Proof.
@@ -160,4 +160,4 @@ apply plus_eq_0 in H; destruct H as [H1 H2];
 apply plus_eq_0 in H2; destruct H2 as [H3 _]; rewrite H1; rewrite H3; now split.
 Qed.
 
-End TimesProperties.
+End NTimesProperties.

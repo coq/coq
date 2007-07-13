@@ -1,25 +1,23 @@
 Require Export NAxioms.
 
-Module Type PlusSignature.
+Module Type NPlusSignature.
 Declare Module Export NatModule : NatSignature.
-(* We use Export here because if we have an access to plus,
-then we need also an access to S and N *)
-Open Local Scope NScope.
+Open Local Scope NatScope.
 
 Parameter Inline plus : N -> N -> N.
 
-Notation "x + y" := (plus x y) : NScope.
+Notation "x + y" := (plus x y) : NatScope.
 
 Add Morphism plus with signature E ==> E ==> E as plus_wd.
 
 Axiom plus_0_n : forall n, 0 + n == n.
 Axiom plus_Sn_m : forall n m, (S n) + m == S (n + m).
 
-End PlusSignature.
+End NPlusSignature.
 
-Module PlusProperties (Export PlusModule : PlusSignature).
+Module NPlusProperties (Import NPlusModule : NPlusSignature).
 Module Export NatPropertiesModule := NatProperties NatModule.
-Open Local Scope NScope.
+Open Local Scope NatScope.
 
 Theorem plus_0_r : forall n, n + 0 == n.
 Proof.
@@ -199,4 +197,4 @@ rewrite plus_Sn_m in H. apply S_inj in H.
 apply plus_eq_0 in H; split; [apply S_wd | ]; tauto.
 Qed.
 
-End PlusProperties.
+End NPlusProperties.

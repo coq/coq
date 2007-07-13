@@ -1,12 +1,12 @@
 Require Export ZPlus.
 
-Module Type TimesSignature.
-Declare Module Export PlusModule : PlusSignature.
-Open Local Scope ZScope.
+Module Type ZTimesSignature.
+Declare Module Export ZPlusModule : ZPlusSignature.
+Open Local Scope IntScope.
 
 Parameter Inline times : Z -> Z -> Z.
 
-Notation "x * y" := (times x y) : ZScope.
+Notation "x * y" := (times x y) : IntScope.
 
 Add Morphism times with signature E ==> E ==> E as times_wd.
 
@@ -26,11 +26,11 @@ French (deux fois trois) and Russian (dvazhdy tri) implies 3 + 3, not
 2 + 2 + 2. So it would possibly be more reasonable to define multiplication
 (here as well as in set theory) by recursion on the first argument. *)
 
-End TimesSignature.
+End ZTimesSignature.
 
-Module TimesProperties (Export TimesModule : TimesSignature).
-Module Export PlusPropertiesModule := PlusProperties PlusModule.
-Open Local Scope ZScope.
+Module ZTimesProperties (Import ZTimesModule : ZTimesSignature).
+Module Export ZPlusPropertiesModule := ZPlusProperties ZPlusModule.
+Open Local Scope IntScope.
 
 Theorem times_P : forall n m, n * (P m) == n * m - n.
 Proof.
@@ -130,4 +130,4 @@ intros p IH. do 2 rewrite times_S. rewrite times_plus_distr_r. now rewrite IH.
 intros p IH. do 2 rewrite times_P. rewrite times_minus_distr_r. now rewrite IH.
 Qed.
 
-End TimesProperties.
+End ZTimesProperties.

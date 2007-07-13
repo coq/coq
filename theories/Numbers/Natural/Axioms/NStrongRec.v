@@ -1,8 +1,8 @@
 Require Export NAxioms.
 
-Module StrongRecProperties (NatModule : NatSignature).
+Module StrongRecProperties (Import NatModule : NatSignature).
 Module Export NatPropertiesModule := NatProperties NatModule.
-Open Local Scope NScope.
+Open Local Scope NatScope.
 
 Section StrongRecursion.
 

@@ -1,12 +1,12 @@
 Require Export NPlus.
-Require Export NLt.
+Require Export NOrder.
 
-Module PlusLtProperties (PlusModule : PlusSignature)
-                        (LtModule : LtSignature with
-                           Module NatModule := PlusModule.NatModule).
-Module Export PlusPropertiesModule := PlusProperties PlusModule.
-Module Export LtPropertiesModule := LtProperties LtModule.
-Open Local Scope NScope.
+Module NPlusOrderProperties (Import NPlusModule : NPlusSignature)
+                         (Import NOrderModule : NOrderSignature with
+                           Module NatModule := NPlusModule.NatModule).
+Module Export NPlusPropertiesModule := NPlusProperties NPlusModule.
+Module Export NOrderPropertiesModule := NOrderProperties NOrderModule.
+Open Local Scope NatScope.
 
 (* Print All locks up here !!! *)
 Theorem lt_plus_trans : forall n m p, n < m -> n < m + p.
@@ -21,7 +21,7 @@ Lemma plus_lt_compat_l : forall n m p, n < m -> p + n < p + m.
 Proof.
 intros n m p H; induct p.
 do 2 rewrite plus_0_n; assumption.
-intros x IH. do 2 rewrite plus_Sn_m. now apply <- S_respects_lt.
+intros x IH. do 2 rewrite plus_Sn_m. now apply <- lt_resp_S.
 Qed.
 
 Lemma plus_lt_compat_r : forall n m p, n < m -> n + p < m + p.
@@ -44,7 +44,7 @@ intros n m p; induct p.
 now do 2 rewrite plus_0_n.
 intros x IH H.
 do 2 rewrite plus_Sn_m in H.
-apply IH; now apply -> S_respects_lt.
+apply IH; now apply -> lt_resp_S.
 Qed.
 
-End PlusLtProperties.
+End NPlusOrderProperties.

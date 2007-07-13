@@ -1,20 +1,20 @@
 Require Export ZTimes.
 Require Export ZPlusOrder.
 
-Module TimesOrderProperties (TimesModule : TimesSignature)
-                            (OrderModule : OrderSignature with
-                              Module IntModule := TimesModule.PlusModule.IntModule).
-Module Export TimesPropertiesModule := TimesProperties TimesModule.
-Module Export PlusOrderPropertiesModule :=
-  PlusOrderProperties TimesModule.PlusModule OrderModule.
-Open Local Scope ZScope.
+Module ZTimesOrderProperties (Import ZTimesModule : ZTimesSignature)
+                             (Import ZOrderModule : ZOrderSignature with
+                               Module IntModule := ZTimesModule.ZPlusModule.IntModule).
+Module Export ZTimesPropertiesModule := ZTimesProperties ZTimesModule.
+Module Export ZPlusOrderPropertiesModule :=
+  ZPlusOrderProperties ZTimesModule.ZPlusModule ZOrderModule.
+Open Local Scope IntScope.
 
 Theorem mult_lt_compat_r : forall n m p, 0 < p -> n < m -> n * p < m * p.
 Proof.
 intros n m p; induct_ord p.
 intros H _; false_hyp H lt_irr.
 intros p H IH H1 H2. do 2 rewrite times_S.
-apply -> lt_S in H1; le_elim H1.
+apply -> lt_S in H1; Zle_elim H1.
 apply plus_lt_compat. now apply IH. assumption.
 rewrite <- H1. do 2 rewrite times_0; now do 2 rewrite plus_0.
 intros p H IH H1 H2. apply lt_n_Pm in H1. apply -> le_gt in H.
@@ -29,9 +29,9 @@ Qed.
 
 Theorem mult_lt_le_compat_r : forall n m p, 0 < p -> n <= m -> n * p <= m * p.
 Proof.
-intros n m p H1 H2; le_elim H2.
-le_intro1; now apply mult_lt_compat_r.
-rewrite H2. now le_intro2.
+intros n m p H1 H2; Zle_elim H2.
+Zle_intro1; now apply mult_lt_compat_r.
+rewrite H2. now Zle_intro2.
 Qed.
 
 Theorem mult_lt_le_compat_l : forall n m p, 0 < p -> n <= m -> p * n <= p * m.
@@ -86,4 +86,4 @@ false_hyp H4 H2.
 apply neq_symm. apply lt_neq. now apply mult_pos_pos.
 Qed.
 
-End TimesOrderProperties.
+End ZTimesOrderProperties.

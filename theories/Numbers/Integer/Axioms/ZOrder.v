@@ -1,45 +1,45 @@
 Require Export ZAxioms.
 
-Module Type OrderSignature.
+Module Type ZOrderSignature.
 Declare Module Export IntModule : IntSignature.
-Open Local Scope ZScope.
+Open Local Scope IntScope.
 
 Parameter Inline lt : Z -> Z -> bool.
 Parameter Inline le : Z -> Z -> bool.
 Add Morphism lt with signature E ==> E ==> eq_bool as lt_wd.
 Add Morphism le with signature E ==> E ==> eq_bool as le_wd.
 
-Notation "n <  m" := (lt n m) : ZScope.
-Notation "n <= m" := (le n m) : ZScope.
+Notation "n <  m" := (lt n m) : IntScope.
+Notation "n <= m" := (le n m) : IntScope.
 
 Axiom le_lt : forall n m, n <= m <-> n < m \/ n == m.
 Axiom lt_irr : forall n, ~ (n < n).
 Axiom lt_S : forall n m, n < (S m) <-> n <= m.
 
-End OrderSignature.
+End ZOrderSignature.
 
 
-Module OrderProperties (Export OrderModule : OrderSignature).
+Module ZOrderProperties (Import ZOrderModule : ZOrderSignature).
 Module Export IntPropertiesModule := IntProperties IntModule.
-Open Local Scope ZScope.
+Open Local Scope IntScope.
 
-Ltac le_intro1 := rewrite le_lt; left.
-Ltac le_intro2 := rewrite le_lt; right.
-Ltac le_elim H := rewrite le_lt in H; destruct H as [H | H].
+Ltac Zle_intro1 := rewrite le_lt; left.
+Ltac Zle_intro2 := rewrite le_lt; right.
+Ltac Zle_elim H := rewrite le_lt in H; destruct H as [H | H].
 
 Theorem le_refl : forall n, n <= n.
 Proof.
-intro n; now le_intro2.
+intro n; now Zle_intro2.
 Qed.
 
 Theorem lt_n_Sn : forall n, n < S n.
 Proof.
-intro n. rewrite lt_S. now le_intro2.
+intro n. rewrite lt_S. now Zle_intro2.
 Qed.
 
 Theorem le_n_Sn : forall n, n <= S n.
 Proof.
-intro; le_intro1; apply lt_n_Sn.
+intro; Zle_intro1; apply lt_n_Sn.
 Qed.
 
 Theorem lt_Pn_n : forall n, P n < n.
@@ -49,17 +49,17 @@ Qed.
 
 Theorem le_Pn_n : forall n, P n <= n.
 Proof.
-intro; le_intro1; apply lt_Pn_n.
+intro; Zle_intro1; apply lt_Pn_n.
 Qed.
 
 Theorem lt_n_Sm : forall n m, n < m -> n < S m.
 Proof.
-intros. rewrite lt_S. now le_intro1.
+intros. rewrite lt_S. now Zle_intro1.
 Qed.
 
 Theorem le_n_Sm : forall n m, n <= m -> n <= S m.
 Proof.
-intros n m H; rewrite <- lt_S in H; now le_intro1.
+intros n m H; rewrite <- lt_S in H; now Zle_intro1.
 Qed.
 
 Theorem lt_n_m_P : forall n m, n < m <-> n <= P m.
@@ -69,7 +69,7 @@ Qed.
 
 Theorem not_le_n_Pn : forall n, ~ n <= P n.
 Proof.
-intros n H; le_elim H.
+intros n H; Zle_elim H.
 apply lt_n_Sm in H; rewrite S_P in H; false_hyp H lt_irr.
 pose proof (lt_Pn_n n) as H1; rewrite <- H in H1; false_hyp H1 lt_irr.
 Qed.
@@ -84,28 +84,28 @@ Proof.
 intro n; induct_n m (P n).
 split; intro H. false_hyp H lt_irr. false_hyp H not_le_n_Pn.
 intros m IH; split; intro H.
-apply -> lt_S in H; le_elim H.
+apply -> lt_S in H; Zle_elim H.
 apply -> IH in H; now apply le_n_Sm.
-rewrite <- H; rewrite S_P; now le_intro2.
+rewrite <- H; rewrite S_P; now Zle_intro2.
 apply -> le_S in H; destruct H as [H | H].
 apply <- IH in H. now apply lt_n_Sm. rewrite H; rewrite P_S; apply lt_n_Sn.
 intros m IH; split; intro H.
 pose proof H as H1. apply lt_n_Sm in H; rewrite S_P in H.
-apply -> IH in H; le_elim H. now apply -> lt_n_m_P.
+apply -> IH in H; Zle_elim H. now apply -> lt_n_m_P.
 rewrite H in H1; false_hyp H1 lt_irr.
 pose proof H as H1. apply le_n_Sm in H. rewrite S_P in H.
-apply <- IH in H. apply -> lt_n_m_P in H. le_elim H.
+apply <- IH in H. apply -> lt_n_m_P in H. Zle_elim H.
 assumption. apply P_inj in H; rewrite H in H1; false_hyp H1 not_le_n_Pn.
 Qed.
 
 Theorem lt_Pn_m : forall n m, n < m -> P n < m.
 Proof.
-intros; rewrite lt_P; now le_intro1.
+intros; rewrite lt_P; now Zle_intro1.
 Qed.
 
 Theorem le_Pn_m : forall n m, n <= m -> P n <= m.
 Proof.
-intros n m H; rewrite <- lt_P in H; now le_intro1.
+intros n m H; rewrite <- lt_P in H; now Zle_intro1.
 Qed.
 
 Theorem lt_n_m_S : forall n m, n < m <-> S n <= m.
@@ -120,7 +120,7 @@ Qed.
 
 Theorem le_Sn_m : forall n m, S n <= m -> n <= m.
 Proof.
-intros n m H; rewrite <- lt_n_m_S in H; now le_intro1.
+intros n m H; rewrite <- lt_n_m_S in H; now Zle_intro1.
 Qed.
 
 Theorem lt_n_Pm : forall n m, n < P m -> n < m.
@@ -130,7 +130,7 @@ Qed.
 
 Theorem le_n_Pm : forall n m, n <= P m -> n <= m.
 Proof.
-intros n m H; rewrite <- lt_n_m_P in H; now le_intro1.
+intros n m H; rewrite <- lt_n_m_P in H; now Zle_intro1.
 Qed.
 
 Theorem lt_respects_S : forall n m, n < m <-> S n < S m.
@@ -185,30 +185,30 @@ Proof.
 intros n m; induct_n n m.
 intros p H _; false_hyp H lt_irr.
 intros n IH p H1 H2. apply lt_Sn_m in H1. pose proof (IH p H1 H2) as H3.
-rewrite lt_n_m_S in H3; le_elim H3.
-assumption. rewrite <- H3 in H2. rewrite lt_S in H2; le_elim H2.
+rewrite lt_n_m_S in H3; Zle_elim H3.
+assumption. rewrite <- H3 in H2. rewrite lt_S in H2; Zle_elim H2.
 elimtype False; apply lt_irr with (n := n); now apply IH.
 rewrite H2 in H1; false_hyp H1 lt_irr.
-intros n IH p H1 H2. apply lt_Pn_m. rewrite lt_P in H1; le_elim H1.
+intros n IH p H1 H2. apply lt_Pn_m. rewrite lt_P in H1; Zle_elim H1.
 now apply IH. now rewrite H1.
 Qed.
 
 Theorem le_trans : forall n m p, n <= m -> m <= p -> n <= p.
 Proof.
-intros n m p H1 H2; le_elim H1.
-le_elim H2. le_intro1; now apply lt_trans with (m := m).
-le_intro1; now rewrite <- H2. now rewrite H1.
+intros n m p H1 H2; Zle_elim H1.
+Zle_elim H2. Zle_intro1; now apply lt_trans with (m := m).
+Zle_intro1; now rewrite <- H2. now rewrite H1.
 Qed.
 
 Theorem le_lt_trans : forall n m p, n <= m -> m < p -> n < p.
 Proof.
-intros n m p H1 H2; le_elim H1.
+intros n m p H1 H2; Zle_elim H1.
 now apply lt_trans with (m := m). now rewrite H1.
 Qed.
 
 Theorem lt_le_trans : forall n m p, n < m -> m <= p -> n < p.
 Proof.
-intros n m p H1 H2; le_elim H2.
+intros n m p H1 H2; Zle_elim H2.
 now apply lt_trans with (m := m). now rewrite <- H2.
 Qed.
 
@@ -219,7 +219,7 @@ Qed.
 
 Theorem le_antisym : forall n m, n <= m -> m <= n -> n == m.
 Proof.
-intros n m H1 H2; le_elim H1; le_elim H2.
+intros n m H1 H2; Zle_elim H1; Zle_elim H2.
 elimtype False; apply lt_irr with (n := n); now apply lt_trans with (m := m).
 now symmetry. assumption. assumption.
 Qed.
@@ -231,7 +231,7 @@ Qed.
 
 Theorem not_le_Sn_n : forall n, ~ S n <= n.
 Proof.
-intros n H; le_elim H. false_hyp H not_lt_Sn_n.
+intros n H; Zle_elim H. false_hyp H not_lt_Sn_n.
 pose proof (lt_n_Sn n) as H1. rewrite H in H1; false_hyp H1 lt_irr.
 Qed.
 
@@ -357,8 +357,8 @@ intros Qz QS k k_ge_z.
 assert (H : forall n, Q' n). induct_n n z; unfold Q'.
 intros m H1 H2. apply -> le_gt in H1; false_hyp H2 H1.
 intros n IH m H2 H3.
-rewrite lt_S in H3; le_elim H3. now apply IH.
-le_elim H2. rewrite_S_P m.
+rewrite lt_S in H3; Zle_elim H3. now apply IH.
+Zle_elim H2. rewrite_S_P m.
 apply QS. now apply -> lt_n_m_P. apply IH. now apply -> lt_n_m_P.
 rewrite H3; apply lt_Pn_n. now rewrite <- H2.
 intros n IH m H2 H3. apply IH. assumption. now apply lt_n_Pm.
@@ -385,8 +385,8 @@ assert (H : forall n, Q' n). induct_n n z; unfold Q'.
 intros m H1 H2. apply -> le_gt in H1; false_hyp H2 H1.
 intros n IH m H2 H3. apply IH. assumption. now apply lt_Sn_m.
 intros n IH m H2 H3.
-rewrite lt_P in H3; le_elim H3. now apply IH.
-le_elim H2. rewrite_P_S m.
+rewrite lt_P in H3; Zle_elim H3. now apply IH.
+Zle_elim H2. rewrite_P_S m.
 apply QP. now apply -> lt_n_m_S. apply IH. now apply -> lt_n_m_S.
 rewrite H3; apply lt_n_Sn. now rewrite H2.
 pose proof (H (P k)) as H1; unfold Q' in H1. apply H1.
@@ -403,9 +403,9 @@ Theorem induction_ord_n :
 Proof.
 intros Qz QS QP n.
 destruct (lt_total n z) as [H | [H | H]].
-now apply left_induction; [| | le_intro1].
+now apply left_induction; [| | Zle_intro1].
 now rewrite H.
-now apply right_induction; [| | le_intro1].
+now apply right_induction; [| | Zle_intro1].
 Qed.
 
 End Center.
@@ -447,5 +447,5 @@ Ltac induct_ord n :=
   let m := fresh "m" in
   let H := fresh "H" in intros n m H; qmorphism n m | | |].
 
-End OrderProperties.
+End ZOrderProperties.
 

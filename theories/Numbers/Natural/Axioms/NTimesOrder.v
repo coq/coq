@@ -1,14 +1,13 @@
 Require Export NTimes.
-Require Export NPlusLt.
+Require Export NPlusOrder.
 
-Module TimesLtProperties (TimesModule : TimesSignature)
-                         (LtModule : LtSignature with
-                            Module NatModule := TimesModule.PlusModule.NatModule).
-Module Export TimesPropertiesModule :=
-  TimesProperties TimesModule.
-Module Export PlusLtPropertiesModule :=
-  PlusLtProperties TimesModule.PlusModule LtModule.
-Open Local Scope NScope.
+Module NTimesOrderProperties (Import NTimesModule : NTimesSignature)
+                          (Import NOrderModule : NOrderSignature with
+                            Module NatModule := NTimesModule.NPlusModule.NatModule).
+Module Export NTimesPropertiesModule :=  NTimesProperties NTimesModule.
+Module Export NPlusOrderPropertiesModule :=
+  NPlusOrderProperties NTimesModule.NPlusModule NOrderModule.
+Open Local Scope NatScope.
 
 Lemma mult_S_lt_compat_l : forall n m p, m < p -> S n * m < S n * p.
 Proof.
@@ -61,4 +60,4 @@ now apply mult_S_lt_compat_l; assumption.
 now apply mult_lt_compat_r; [| apply lt_positive with (n := p)].
 Qed.
 
-End TimesLtProperties.
+End NTimesOrderProperties.

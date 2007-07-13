@@ -1,6 +1,6 @@
 Require Export NumPrelude.
 
-Module Type DomainSignature.
+Module Type ZDomainSignature.
 
 Parameter Z : Set.
 Parameter E : relation Z.
@@ -15,15 +15,15 @@ Add Relation Z E
  transitivity proved by (proj1 (proj2 E_equiv))
 as E_rel.
 
-Delimit Scope ZScope with Int.
-Bind Scope ZScope with Z.
-Notation "x == y" := (E x y) (at level 70) : ZScope.
-Notation "x # y" := (~ E x y) (at level 70) : ZScope.
+Delimit Scope IntScope with Int.
+Bind Scope IntScope with Z.
+Notation "x == y" := (E x y) (at level 70) : IntScope.
+Notation "x # y" := (~ E x y) (at level 70) : IntScope.
 
-End DomainSignature.
+End ZDomainSignature.
 
-Module DomainProperties (Export DomainModule : DomainSignature).
-Open Local Scope ZScope.
+Module ZDomainProperties (Import ZDomainModule : ZDomainSignature).
+Open Local Scope IntScope.
 
 Add Morphism e with signature E ==> E ==> eq_bool as e_wd.
 Proof.
@@ -42,4 +42,4 @@ Proof.
 intros n m H1 H2; symmetry in H2; false_hyp H2 H1.
 Qed.
 
-End DomainProperties.
+End ZDomainProperties.

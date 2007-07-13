@@ -2,12 +2,13 @@ Require Import NArith.
 Require Import Ndec.
 
 Require Export NDepRec.
-Require Export NTimesLt.
+Require Export NTimesOrder.
+Require Export NMinus.
 Require Export NMiscFunct.
 
 Open Local Scope N_scope.
 
-Module BinaryDomain : DomainEqSignature
+Module NBinaryDomain : NDomainEqSignature
   with Definition N := N
   with Definition E := (@eq N)
   with Definition e := Neqb.
@@ -31,11 +32,10 @@ Add Relation N E
  transitivity proved by (proj1 (proj2 E_equiv))
 as E_rel.
 
-End BinaryDomain.
+End NBinaryDomain.
 
 Module BinaryNat <: NatSignature.
-
-Module Export DomainModule := BinaryDomain.
+Module Export NDomainModule := NBinaryDomain.
 
 Definition O := N0.
 Definition S := Nsucc.
@@ -92,8 +92,8 @@ Qed.
 
 End BinaryNat.
 
-Module BinaryDepRec <: DepRecSignature.
-Module Export DomainModule := BinaryDomain.
+Module NBinaryDepRec <: NDepRecSignature.
+Module Export NDomainModule := NBinaryDomain.
 Module Export NatModule := BinaryNat.
 
 Definition dep_recursion := Nrec.
@@ -112,10 +112,9 @@ Proof.
 intros A a f n; unfold dep_recursion; unfold Nrec; now rewrite Nrect_step.
 Qed.
 
-End BinaryDepRec.
+End NBinaryDepRec.
 
-Module BinaryPlus <: PlusSignature.
-
+Module NBinaryPlus <: NPlusSignature.
 Module Export NatModule := BinaryNat.
 
 Definition plus := Nplus.
@@ -135,10 +134,10 @@ Proof.
 exact Nplus_succ.
 Qed.
 
-End BinaryPlus.
+End NBinaryPlus.
 
-Module BinaryTimes <: TimesSignature.
-Module Export PlusModule := BinaryPlus.
+Module NBinaryTimes <: NTimesSignature.
+Module Export NPlusModule := NBinaryPlus.
 
 Definition times := Nmult.
 
@@ -157,9 +156,9 @@ Proof.
 exact Nmult_Sn_m.
 Qed.
 
-End BinaryTimes.
+End NBinaryTimes.
 
-Module BinaryLt <: LtSignature.
+Module NBinaryLt <: NLtSignature.
 Module Export NatModule := BinaryNat.
 
 Definition lt (m n : N) := less_than (Ncompare m n).
@@ -184,9 +183,9 @@ assert (H2 : lt x y <-> Ncompare x y = Lt);
 pose proof (Ncompare_n_Sm x y) as H. tauto.
 Qed.
 
-End BinaryLt.
+End NBinaryLt.
 
-Module Export BinaryTimesLtProperties := TimesLtProperties BinaryTimes BinaryLt.
+Module Export NBinaryTimesLtProperties := NTimesLtProperties NBinaryTimes NBinaryLt.
 
 (*Module Export BinaryRecEx := MiscFunctFunctor BinaryNat.*)
 

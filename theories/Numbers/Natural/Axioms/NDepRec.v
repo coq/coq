@@ -5,13 +5,13 @@ equality. The reason is that, if the domain is A : nat -> Set, then (A
 n) must coincide with (A n') whenever n == n'. However, it is possible
 to try to use arbitrary domain and require that n == n' -> A n = A n'. *)
 
-Module Type DepRecSignature.
-Declare Module Export DomainModule : DomainEqSignature.
+Module Type NDepRecSignature.
+Declare Module Export NDomainModule : NDomainEqSignature.
 Declare Module Export NatModule : NatSignature with
-  Module DomainModule := DomainModule.
+  Module NDomainModule := NDomainModule.
 (* Instead of these two lines, I would like to say
-Declare Module Export Nat : NatSignature with Module Domain : NatEqDomain. *)
-Open Local Scope NScope.
+Declare Module Export Nat : NatSignature with Module NDomain : NatEqDomain. *)
+Open Local Scope NatScope.
 
 Parameter Inline dep_recursion :
   forall A : N -> Set, A 0 -> (forall n, A n -> A (S n)) -> forall n, A n.
@@ -24,14 +24,14 @@ Axiom dep_recursion_S :
   forall (A : N -> Set) (a : A 0) (f : forall n, A n -> A (S n)) (n : N),
     dep_recursion A a f (S n) = f n (dep_recursion A a f n).
 
-End DepRecSignature.
+End NDepRecSignature.
 
-Module DepRecTimesProperties
-  (Export DepRecModule : DepRecSignature)
-  (TimesModule : TimesSignature
-    with Module PlusModule.NatModule := DepRecModule.NatModule).
-Module Export TimesPropertiesModule := TimesProperties TimesModule.
-Open Local Scope NScope.
+Module NDepRecTimesProperties
+  (Import NDepRecModule : NDepRecSignature)
+  (Import NTimesModule : NTimesSignature
+    with Module NPlusModule.NatModule := NDepRecModule.NatModule).
+Module Export NTimesPropertiesModule := NTimesProperties NTimesModule.
+Open Local Scope NatScope.
 
 Theorem not_0_implies_S_dep : forall n, n # O -> {m : N | n == S m}.
 Proof.
@@ -68,4 +68,4 @@ intros n _ m _ H.
 rewrite times_Sn_m in H; rewrite plus_Sn_m in H; now apply S_0 in H.
 Qed.
 
-End DepRecTimesProperties.
+End NDepRecTimesProperties.

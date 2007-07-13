@@ -1,16 +1,16 @@
 Require Export ZAxioms.
 
-Module Type PlusSignature.
+Module Type ZPlusSignature.
 Declare Module Export IntModule : IntSignature.
-Open Local Scope ZScope.
+Open Local Scope IntScope.
 
 Parameter Inline plus : Z -> Z -> Z.
 Parameter Inline minus : Z -> Z -> Z.
 Parameter Inline uminus : Z -> Z.
 
-Notation "x + y" := (plus x y) : ZScope.
-Notation "x - y" := (minus x y) : ZScope.
-Notation "- x" := (uminus x) : ZScope.
+Notation "x + y" := (plus x y) : IntScope.
+Notation "x - y" := (minus x y) : IntScope.
+Notation "- x" := (uminus x) : IntScope.
 
 Add Morphism plus with signature E ==> E ==> E as plus_wd.
 Add Morphism minus with signature E ==> E ==> E as minus_wd.
@@ -25,11 +25,11 @@ Axiom minus_S : forall n m, n - (S m) == P (n - m).
 Axiom uminus_0 : - 0 == 0.
 Axiom uminus_S : forall n, - (S n) == P (- n).
 
-End PlusSignature.
+End ZPlusSignature.
 
-Module PlusProperties (Export PlusModule : PlusSignature).
+Module ZPlusProperties (Import ZPlusModule : ZPlusSignature).
 Module Export IntPropertiesModule := IntProperties IntModule.
-Open Local Scope ZScope.
+Open Local Scope IntScope.
 
 Theorem plus_P : forall n m, P n + m == P (n + m).
 Proof.
@@ -218,4 +218,4 @@ Proof.
 intros n m H. rewrite <- (plus_minus_inverse m n). rewrite H. apply plus_n_0.
 Qed.
 
-End PlusProperties.
+End ZPlusProperties.

@@ -5,21 +5,21 @@ Require Export NDomain.
 *********************************************************************)
 
 Module Type NatSignature.
-Declare Module Export DomainModule : DomainSignature.
+Declare Module Export NDomainModule : NDomainSignature.
 (* We use Export in the previous line to make sure that if we import a
 module of type NatSignature, then we also import (i.e., get access
-without path qualifiers to) DomainModule. For example, the functor
+without path qualifiers to) NDomainModule. For example, the functor
 NatProperties below, which accepts an implementation of NatSignature
 as an argument and imports it, will have access to N. Indeed, it does
 not make sense to get unqualified access to O and S but not to N. *)
 
-Open Local Scope NScope.
+Open Local Scope NatScope.
 
 Parameter Inline O : N.
 Parameter Inline S : N -> N.
 
-Notation "0" := O : NScope.
-Notation "1" := (S O) : NScope.
+Notation "0" := O : NatScope.
+Notation "1" := (S O) : NatScope.
 
 Add Morphism S with signature E ==> E as S_wd.
 
@@ -174,9 +174,56 @@ Implicit Arguments recursion_S [A].
 
 End NatSignature.
 
-Module NatProperties (Export NatModule : NatSignature).
-Module Export DomainPropertiesModule := DomainProperties DomainModule.
-Open Local Scope NScope.
+(* We would like to have a signature for the predecessor: first, to be
+able to provide an efficient implementation, and second, to be able to
+use this function in the signatures defining other functions, e.g.,
+subtraction. If we just define predecessor by recursion in
+NatProperties functor, we would not be able to use it in other
+signatures. We cannot put the functor NDefPred below in a different
+file because the definition of the predecessor uses recursion and the
+proof of injectivity of the successor uses the predecessor. *)
+
+Module Type NPredSignature.
+Declare Module Export NatModule : NatSignature.
+Open Local Scope NatScope.
+
+Parameter Inline P : N -> N.
+
+Add Morphism P with signature E ==> E as P_wd.
+
+Axiom P_0 : P 0 == 0.
+Axiom P_S : forall n, P (S n) == n.
+
+End NPredSignature.
+
+Module NDefPred (Import NM : NatSignature) <: NPredSignature.
+Module NatModule := NM.
+Open Local Scope NatScope.
+
+Definition P (n : N) : N := recursion 0 (fun m _ : N => m) n.
+
+Add Morphism P with signature E ==> E as P_wd.
+Proof.
+intros; unfold P.
+now apply recursion_wd with (EA := E); [| unfold eq_fun2; now intros |].
+Qed.
+
+Theorem P_0 : P 0 == 0.
+Proof.
+unfold P; now rewrite recursion_0.
+Qed.
+
+Theorem P_S : forall n, P (S n) == n.
+Proof.
+intro n; unfold P; now rewrite (recursion_S E); [| unfold fun2_wd; now intros |].
+Qed.
+
+End NDefPred.
+
+Module NatProperties (Import NatModule : NatSignature).
+Module Export NDomainPropertiesModule := NDomainProperties NDomainModule.
+Module Import NDefPredModule := NDefPred NatModule. (* Many warnings are printed here !!! *)
+Open Local Scope NatScope.
 
 (* This tactic applies the induction axioms and solves the resulting
 goal "pred_wd E P" *)
@@ -223,30 +270,12 @@ change (LE_Set bool (if_zero false true (S n)) (if_zero false true 0)).
 rewrite H. unfold LE_Set. reflexivity.
 Qed.
 
-Definition pred (n : N) : N := recursion 0 (fun m _ => m) n.
-
-Add Morphism pred with signature E ==> E as pred_wd.
-Proof.
-intros; unfold pred.
-now apply recursion_wd with (EA := E); [| unfold eq_fun2; now intros |].
-Qed.
-
-Theorem pred_0 : pred 0 == 0.
-Proof.
-unfold pred; now rewrite recursion_0.
-Qed.
-
-Theorem pred_S : forall n, pred (S n) == n.
-Proof.
-intro n; unfold pred; now rewrite (recursion_S E); [| unfold fun2_wd; now intros |].
-Qed.
-
 Theorem S_inj : forall m n, S m == S n -> m == n.
 Proof.
 intros m n H.
-setoid_replace m with (pred (S m)) by (symmetry; apply pred_S).
-setoid_replace n with (pred (S n)) by (symmetry; apply pred_S).
-now apply pred_wd.
+setoid_replace m with (P (S m)) by (symmetry; apply P_S).
+setoid_replace n with (P (S n)) by (symmetry; apply P_S).
+now apply P_wd.
 Qed.
 
 Theorem not_eq_S : forall n m, n # m -> S n # S m.

@@ -1,6 +1,6 @@
 Require Export NumPrelude.
 
-Module Type DomainSignature.
+Module Type NDomainSignature.
 
 Parameter Inline N : Set.
 Parameter Inline E : relation N.
@@ -28,17 +28,17 @@ Add Relation N E
  transitivity proved by (proj1 (proj2 E_equiv))
 as E_rel.
 
-Delimit Scope NScope with Nat.
-Bind Scope NScope with N.
-Notation "x == y" := (E x y) (at level 70) : NScope.
-Notation "x # y" := (~ E x y) (at level 70) : NScope.
+Delimit Scope NatScope with Nat.
+Bind Scope NatScope with N.
+Notation "x == y" := (E x y) (at level 70) : NatScope.
+Notation "x # y" := (~ E x y) (at level 70) : NatScope.
 
-End DomainSignature.
+End NDomainSignature.
 
-(* Now we give DomainSignature, but with E being Leibniz equality. If
+(* Now we give NDomainSignature, but with E being Leibniz equality. If
 an implementation uses this signature, then more facts may be proved
 about it. *)
-Module Type DomainEqSignature.
+Module Type NDomainEqSignature.
 
 Parameter Inline N : Set.
 Definition E := (@eq N).
@@ -53,17 +53,17 @@ Add Relation N E
  transitivity proved by (proj1 (proj2 E_equiv))
 as E_rel.
 
-Delimit Scope NScope with Nat.
-Bind Scope NScope with N.
-Notation "x == y" := (E x y) (at level 70) : NScope.
-Notation "x # y" := ((E x y) -> False) (at level 70) : NScope.
+Delimit Scope NatScope with Nat.
+Bind Scope NatScope with N.
+Notation "x == y" := (E x y) (at level 70) : NatScope.
+Notation "x # y" := ((E x y) -> False) (at level 70) : NatScope.
 (* Why do we need a new notation for Leibniz equality? See DepRec.v *)
 
-End DomainEqSignature.
+End NDomainEqSignature.
 
-Module DomainProperties (Export DomainModule : DomainSignature).
+Module NDomainProperties (Import NDomainModule : NDomainSignature).
 (* It also accepts module of type NatDomainEq *)
-Open Local Scope NScope.
+Open Local Scope NatScope.
 
 (* The following easily follows from transitivity of e and E, but
 we need to deal with the coercion *)
@@ -79,4 +79,4 @@ assert (x == y); [rewrite Exx'; now rewrite Eyy' |
 rewrite <- H2; assert (H3 : e x y); [now apply -> E_equiv_e | now inversion H3]]].
 Qed.
 
-End DomainProperties.
+End NDomainProperties.

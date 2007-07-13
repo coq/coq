@@ -1,11 +1,10 @@
-Require Export Bool. (* To get the negb function *)
+Require Import Bool. (* To get the orb and negb function *)
 Require Export NStrongRec.
-Require Export NTimesLt.
+Require Export NTimesOrder.
 
-Module MiscFunctFunctor (NatMod : NatSignature).
-Module Export NatPropertiesModule := NatProperties NatMod.
+Module MiscFunctFunctor (Import NatMod : NatSignature).
 Module Export StrongRecPropertiesModule := StrongRecProperties NatMod.
-Open Local Scope NScope.
+Open Local Scope NatScope.
 
 (*****************************************************)
 (**                   Addition                       *)
@@ -83,6 +82,16 @@ Definition lt (m : N) : N -> bool :=
   recursion (if_zero false true)
             (fun _ f => fun n => recursion false (fun n' _ => f n') n)
             m.
+
+(* It would be more efficient to make a three-way comparison, i.e.,
+return Eq, Lt, or Gt, but since these are no-use default functions,
+we define <= as (< or =) *)
+Definition le (n m : N) := lt n m || e n m.
+
+Theorem le_lt : forall n m, le n m <-> lt n m \/ n == m.
+Proof.
+intros n m. rewrite E_equiv_e. unfold le.
+do 4 rewrite eq_true_unfold.
 
 Lemma lt_base_wd : eq_fun E eq_bool (if_zero false true) (if_zero false true).
 unfold eq_fun, eq_bool; intros; apply if_zero_wd; now unfold LE_Set.
@@ -286,7 +295,7 @@ Qed.
 (** via recursion, we form the corresponding modules and *)
 (** apply the properties functors to these modules       *)
 
-Module DefaultPlusModule <: PlusSignature.
+Module NDefaultPlusModule <: NPlusSignature.
 
 Module NatModule := NatMod.
 (* If we used the name NatModule instead of NatMod then this would
@@ -310,10 +319,10 @@ Proof.
 exact plus_S.
 Qed.
 
-End DefaultPlusModule.
+End NDefaultPlusModule.
 
-Module DefaultTimesModule <: TimesSignature.
-Module PlusModule := DefaultPlusModule.
+Module NDefaultTimesModule <: NTimesSignature.
+Module NPlusModule := NDefaultPlusModule.
 
 Definition times := times.
 
@@ -332,9 +341,9 @@ Proof.
 exact times_S.
 Qed.
 
-End DefaultTimesModule.
+End NDefaultTimesModule.
 
-Module DefaultLtModule <: LtSignature.
+Module NDefaultOrderModule <: NOrderSignature.
 Module NatModule := NatMod.
 
 Definition lt := lt.
@@ -354,16 +363,9 @@ Proof.
 exact lt_S.
 Qed.
 
-End DefaultLtModule.
+End NDefaultOrderModule.
 
-Module Export DefaultPlusProperties := PlusProperties DefaultPlusModule.
-Module Export DefaultTimesProperties := TimesProperties DefaultTimesModule.
-Module Export DefaultLtProperties := LtProperties DefaultLtModule.
-Module Export DefaultPlusLtProperties := PlusLtProperties DefaultPlusModule DefaultLtModule.
-Module Export DefaultTimesLtProperties := TimesLtProperties DefaultTimesModule DefaultLtModule.
-
-(*Opaque MiscFunctFunctor.plus.
-Check plus_comm. (* This produces the following *)
-Eval compute in (forall n m : PlusModule.NatModule.DomainModule.N, plus n m == plus m n).*)
+Module Export DefaultTimesOrderProperties :=
+  NTimesOrderProperties NDefaultTimesModule NDefaultOrderModule.
 
 End MiscFunctFunctor.
