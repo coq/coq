@@ -1230,10 +1230,11 @@ Proof.
  destruct (Hr1 r2'); auto.
  destruct b.
  (* bst join *)
- apply join_bst; try apply inter_avl; firstorder.
+ apply join_bst; try apply inter_avl; auto; 
+  intro y; [rewrite (H22 y)|rewrite (H24 y)]; intuition.
  (* bst concat *)
  apply concat_bst; try apply inter_avl; auto.
- intros; generalize (H22 y1) (H24 y2); intuition eauto.
+ intros y1 y2; rewrite (H22 y1), (H24 y2); intuition eauto.
  (* in *)
  intros.
  destruct (split_in_1 r x1 y H16 H17). 
@@ -1245,30 +1246,25 @@ Proof.
  destruct b.
  (* in join *)
  rewrite join_in; try apply inter_avl; auto.
- rewrite H30.
- rewrite H28.
- intuition_in.
+ rewrite H30, H28; intuition_in.
  apply In_1 with x1; auto.
  (* in concat *)
  rewrite concat_in; try apply inter_avl; auto.
- intros.
- intros; generalize (H28 y1) (H30 y2); intuition eauto.
- rewrite H30.
- rewrite H28.
- intuition_in.
+ intros y1 y2; rewrite (H28 y1), (H30 y2); intuition eauto.
+ rewrite H30, H28; intuition_in.
  generalize (H26 (In_1 _ _ _ H22 H35)); intro; discriminate.
 Qed.
 
 Lemma inter_bst : forall s1 s2, bst s1 -> avl s1 -> bst s2 -> avl s2 -> 
  bst (inter s1 s2). 
 Proof. 
- intros; generalize (inter_bst_in s1 s2); intuition.
+ intros s1 s2 B1 A1 B2 A2; destruct (inter_bst_in s1 s2 B1 A1 B2 A2); auto.
 Qed.
 
 Lemma inter_in : forall s1 s2 y, bst s1 -> avl s1 -> bst s2 -> avl s2 -> 
  (In y (inter s1 s2) <-> In y s1 /\ In y s2).
 Proof. 
- intros; generalize (inter_bst_in s1 s2); firstorder.
+ intros s1 s2 y B1 A1 B2 A2; destruct (inter_bst_in s1 s2 B1 A1 B2 A2); auto.
 Qed.
 
 (** * Difference *)
@@ -1314,9 +1310,10 @@ Proof.
  destruct b.
  (* bst concat *)
  apply concat_bst; try apply diff_avl; auto.
- intros; generalize (H22 y1) (H24 y2); intuition eauto.
+ intros y1 y2; rewrite (H22 y1), (H24 y2); intuition eauto.
  (* bst join *)
- apply join_bst; try apply diff_avl; firstorder.
+ apply join_bst; try apply diff_avl; auto; 
+  intro y; [rewrite (H22 y)|rewrite (H24 y)]; intuition.
  (* in *)
  intros.
  destruct (split_in_1 r x1 y H16 H17). 
@@ -1330,28 +1327,24 @@ Proof.
  rewrite concat_in; try apply diff_avl; auto.
  intros.
  intros; generalize (H28 y1) (H30 y2); intuition eauto.
- rewrite H30.
- rewrite H28.
- intuition_in.
+ rewrite H30, H28; intuition_in.
  elim H35; apply In_1 with x1; auto.
  (* in join *)
  rewrite join_in; try apply diff_avl; auto.
- rewrite H30.
- rewrite H28.
- intuition_in.
+ rewrite H30, H28; intuition_in.
  generalize (H26 (In_1 _ _ _ H34 H24)); intro; discriminate.
 Qed.
 
 Lemma diff_bst : forall s1 s2, bst s1 -> avl s1 -> bst s2 -> avl s2 -> 
  bst (diff s1 s2). 
 Proof. 
- intros; generalize (diff_bst_in s1 s2); intuition.
+ intros s1 s2 B1 A1 B2 A2; destruct (diff_bst_in s1 s2 B1 A1 B2 A2); auto.
 Qed.
 
 Lemma diff_in : forall s1 s2 y, bst s1 -> avl s1 -> bst s2 -> avl s2 -> 
  (In y (diff s1 s2) <-> In y s1 /\ ~In y s2).
 Proof. 
- intros; generalize (diff_bst_in s1 s2); firstorder.
+ intros s1 s2 y B1 A1 B2 A2; destruct (diff_bst_in s1 s2 B1 A1 B2 A2); auto.
 Qed.
 
 (** * Elements *)
