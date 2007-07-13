@@ -10,7 +10,6 @@
 (** Coq objects used in romega *)
 
 (* from Logic *)
-val coq_eq : Term.constr lazy_t
 val coq_refl_equal : Term.constr lazy_t
 val coq_and : Term.constr lazy_t
 val coq_not : Term.constr lazy_t
@@ -26,7 +25,6 @@ val coq_p_left : Term.constr lazy_t
 val coq_p_right : Term.constr lazy_t
 val coq_p_invert : Term.constr lazy_t
 val coq_p_step : Term.constr lazy_t
-val coq_p_nop : Term.constr lazy_t
 
 val coq_t_int : Term.constr lazy_t
 val coq_t_plus : Term.constr lazy_t
@@ -50,13 +48,11 @@ val coq_p_and : Term.constr lazy_t
 val coq_p_imp : Term.constr lazy_t
 val coq_p_prop : Term.constr lazy_t
 
-val coq_t_fusion : Term.constr lazy_t
 val coq_f_equal : Term.constr lazy_t
 val coq_f_cancel : Term.constr lazy_t
 val coq_f_left : Term.constr lazy_t
 val coq_f_right : Term.constr lazy_t
 
-val coq_step : Term.constr lazy_t
 val coq_c_do_both : Term.constr lazy_t
 val coq_c_do_left : Term.constr lazy_t
 val coq_c_do_right : Term.constr lazy_t
@@ -108,6 +104,7 @@ val coq_d_mono : Term.constr lazy_t
 val coq_e_split : Term.constr lazy_t
 val coq_e_extract : Term.constr lazy_t
 val coq_e_solve : Term.constr lazy_t
+
 val coq_interp_sequent : Term.constr lazy_t
 val coq_do_omega : Term.constr lazy_t
 
