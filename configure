@@ -266,6 +266,8 @@ if test -e .svn/entries ; then
     checkedout=svn
 elif [ -d '{arch}' ]; then
     checkedout=gnuarch
+elif [ -z "${GIT_DIR}" ] && [ -d .git ] || [ -d "${GIT_DIR}" ]; then
+    checkedout=git
 else
     checkedout=0
 fi

@@ -89,6 +89,7 @@ Miscellaneous
   "Test Printing Let for ref" and "Test Printing If for ref".
 - Added the possibility to choose the location of tabs in coqide:
   (in Edit->Preferences->Misc)
+- An overhauled build system (new Makefiles); see dev/doc/build-system.txt
 
 Changes from V8.1gamma to V8.1
 ==============================

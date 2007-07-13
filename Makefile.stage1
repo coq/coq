@@ -1,0 +1,20 @@
+#######################################################################
+#  v      #   The Coq Proof Assistant  /  The Coq Development Team    #
+# <O___,, #        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              #
+#   \VV/  #############################################################
+#    //   #      This file is distributed under the terms of the      #
+#         #       GNU Lesser General Public License Version 2.1       #
+#######################################################################
+
+include Makefile.build
+
+include $(ML4FILES:.ml4=.ml4.d)
+-include $(MLFILES:.ml=.ml.d)
+-include $(MLIFILES:.mli=.mli.d)
+##Depends upon the fact that all .ml4.d for stage1 files are empty
+-include $(STAGE1_ML4:.ml4=.ml4.ml.d)
+-include parsing/q_constr.ml4.ml.d
+-include $(shell find kernel/byterun -name '*.c' -printf '%p.d\n')
+
+.PHONY: stage1
+stage1: $(STAGE1)

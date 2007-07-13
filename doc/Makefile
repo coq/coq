@@ -85,6 +85,7 @@ clean:
 	rm -f refman/euclid.ml{,i} refman/heapsort.ml{,i}
 	rm -f common/version.tex
 	rm -f refman/*.eps refman/Reference-Manual.html
+	rm -f coq.tex
 
 cleanall: clean
 	rm -f */*.ps */*.pdf

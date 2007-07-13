@@ -38,6 +38,11 @@ WHAT DO YOU NEED ?
      - Objective Caml version 3.07 or later
        (available at http://caml.inria.fr/)
 
+     - GNU Make version 3.80 or later
+       (available at http://www.gnu.org/software/make/, but also a
+        standard or optional add-on part to most Unices and Unix
+        clones, sometimes under the name "gmake".)
+
      - a C compiler
 
 

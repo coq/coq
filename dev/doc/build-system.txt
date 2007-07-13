@@ -1,0 +1,180 @@
+Since July 2007, Coq features a build system overhauled by Pierre
+Corbineau and Lionel Elie Mamane.
+
+This file documents what a Coq developer needs to know about the build
+system. If you want to enhance the build system itself (or are curious
+about its implementation details), see build-system.dev.txt .
+
+The build system is not at its optimal state, see TODO section.
+
+Stages in build system
+----------------------
+
+The build system is separated into three stages, corresponding to the
+tool(s) necessary to compute the dependencies necessary at this stage:
+
+stage1: ocamldep, sed, camlp4 without Coq extensions
+stage2: camlp4 with grammar.cma and/or q_constr.cmo
+stage3: coqdep (.vo)
+
+The file "Makefile" itself serves as minimum stage for targets that
+should not need any dependency (such as *clean*).
+
+Changes (for old-timers)
+------------------------
+
+The contents of the old Makefile has been mostly split into:
+
+ - variable declarations for file lists in Makefile.common.
+
+   These declarations are now static (for faster Makefile execution),
+   so their definitions are order-dependent.
+
+ - actual building rules and compiler flags variables in
+   Makefile.build
+
+
+The handling of globals is now: the globals of FOO.v are in FOO.glob
+and the global glob.dump is created by concatenation of all .glob
+files. In particular, .glob files are now always created.
+
+Dependencies
+------------
+
+There are no dependencies in the archive anymore, they are always
+bootstrapped. The dependencies of a file FOO are in FOO.d . This
+enables partial recalculation of dependencies (only the dependencies
+of changed files are recomputed).
+
+If you add a dependency to a Coq camlp4 extension (grammar.cma or
+q_constr.cmo), then see sections ".ml4 files" and "new files".
+
+.ml4 files
+----------
+
+The camlp4-preprocessed version of FOO.ml4 is FOO.ml4.preprocessed and
+can be obtained with:
+ make FOO.ml4.preprocessed
+
+If a .ml4 file uses a grammar extension from Coq (such as grammar.cma
+or q_constr.cmo), it must contain a line like:
+ (*i camlp4deps: "grammar.cma q_constr.cmo" i*)
+
+If it uses a standard grammar extension, it must contain a line like:
+ (*i camlp4use: "pa_ifdef.cmo" i*)
+
+It can naturally contain both a camlp4deps and a camlp4use line. Both
+are used for preprocessing. It is thus _not_ necessary to add a
+specific rule for a .ml4 file in the Makefile.build just because it
+uses grammar extensions.
+
+If you add a _new_ grammar extension to Coq:
+
+ - if it can be built at stage1, that is the .ml4 file does not use a
+   Coq grammar extension itself, then add it, and all .cmo files it
+   needs to STAGE1_TARGETS and STAGE_ML4 in Makefile.common. See the
+   handling of grammar.cma and q_constr.cmo for an example.
+
+ - if it cannot be built at stage1, that is the .ml4 file itself needs
+   to be preprocessed with a Coq camlp4 grammar extension, then,
+   congratulations, you need to add a new stage between stage1 and
+   stage2.
+
+New files
+---------
+
+For a new file, in most cases, you just have to add it to the proper
+file list(s) in Makefile.common, such as ARITHVO or TACTICS.
+
+The list of all ml4 files is not handled manually anymore.
+
+Exceptions are:
+
+ - The file is necessary at stage1, that it is necessary to build the
+   Coq camlp4 grammar extensions. In this case, make sure it ends up
+   in STAGE1_CMO and (for .ml4 files) STAGE1_ML4. See the handling of
+   grammar.cma and/or q_constr.cmo for an example.
+
+ - if the file needs to be compiled with -rectypes, add it to
+   RECTYPESML in Makefile.common. If it is a .ml4 file, implement
+   RECTYPESML4 or '(*i ocamlflags i*)'; see TODO.
+
+New PHONY targets
+-----------------
+
+If you want to add a new PHONY target to the build system, that is a
+target that is not the name of the file it creates, then:
+
+ - add its rule to Makefile.build
+ - add the target to STAGEn_TARGETS, with n being the smallest stage
+   it can be built at, that is:
+   * 1 for OCaml code that doesn't use any Coq camlp4 grammar extension
+   * 2 for OCaml code that uses (directly or indirectly) a Coq
+       camlp4 grammar extension. Indirectly means a dependency of it
+       does.
+   * 3 for Coq (.v) code.
+
+TODO
+----
+
+delegate pa_extend.cmo to camlp4use statements and remove it from
+standard camlp4 options.
+
+maybe manage compilation flags (such as -rectypes or the CoqIDE ones)
+from a
+ (*i ocamlflags: "-rectypes" i*)
+statement in the .ml(4) files themselves, like camlp4use. The CoqIDE
+files could have
+ (*i ocamlflags: "${COQIDEFLAGS}" i*)
+and COQIDEFLAGS is still defined (and exported by) the Makefile.build.
+
+Clean up doc/Makefile
+
+config/Makefile looks like it contains a lot of unused variables,
+clean that up (are any maybe used by nightly scripts on
+pauillac?). Also, the COQTOP variable from config/Makefile (and used
+in contribs) has a very poorly chosen name, because "coqtop" is the
+name of a Coq executable! For example, in the Coq makefile it is
+immediately clobbered by "bin/coqtop$(EXE)"! Rename it to COQROOT or
+COQTREE or COQDIR or ...
+
+Promote the granular .glob handling to official way of doing things
+for Coq developments, that is implement it in coq_makefile and the
+contribs. Here are a few hints:
+
+>> Les fichiers de constantes produits par -dump-glob sont maintenant
+>> produits par fichier et sont ensuite concaténés dans
+>> glob.dump. Ilsont produits par défaut (avec les bonnes
+>> dépendances).
+
+> C'est une chose que l'on voulait faire aussi.
+
+(J'ai testé et débogué ce concept sur CoRN dans les derniers mois.)
+
+> Est-ce que vous sauriez modifier coq_makefile pour qu'il procède de
+> la même façon
+
+Dans cette optique, il serait alors plus propre de changer coqdep pour
+qu'il produise directement l'output que nous mettons maintenant dans
+les .v.d (qui est celui de coqdoc post-processé avec sed).
+
+Si cette manière de gérer les glob devient le standard béni
+officiellement par "the Coq development team", ne voudrions nous pas
+changer coqc pour qu'il produise FOO.glob lors de la compilation de
+FOO.v par défaut (sans argument "-dump-glob")?
+
+> et que la production de a.html par coqdoc n'ait une dépendance qu'en
+> les a.v et a.glob correspondant ?
+
+Je crois que coqdoc exige un glob-dump unique, il convient donc de
+concaténer les .glob correspondants. Soit un glob-dump global par
+projet (par Makefile), soit un glob-dump global par .v(o), qui
+contient son .glob et ceux de tous les .v(o) atteignables par le
+graphe des dépendances. CoRN contient déjà un outil de calcul de
+partie atteignable du graphe des dépendances (il y est pour un autre
+usage, pour calculer les .v à mettre dans les différents tarballs sur
+http://corn.cs.ru.nl/download.html; les parties partielles sont
+définies par liste de fichiers .v + toutes leurs dépendances
+(in)directes), il serait alors adéquat de le mettre dans les tools de
+Coq.
+

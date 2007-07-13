@@ -6,6 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(*i camlp4use: "pa_ifdef.cmo" i*)
+(* WARNING
+ * camlp4deps will not work for this file unless Makefile system enhanced.
+ *)
+
 (* $Id$ *)
 
 open Util
@@ -99,6 +104,10 @@ let dir_ml_load s =
 (* TO DO: .cma loading without toplevel *)
     | WithoutTop ->
       ifdef Byte then
+	(* WARNING
+	 * if this code section starts to use a module not used elsewhere
+	 * in this file, the Makefile dependency logic needs to be updated.
+	 *)
         let _,gname = where_in_path !coq_mlpath_copy s in
         try
           Dynlink.loadfile gname;

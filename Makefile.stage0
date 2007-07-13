@@ -6,10 +6,11 @@
 #         #       GNU Lesser General Public License Version 2.1       #
 #######################################################################
 
-# This Makefile is designed to make the .ml files corresponding to .ml4 files
+include Makefile.build
 
-include Makefile
-include .depend.camlp4
+.PHONY: stage0
+stage0: $(ML4FILES:.ml4=.ml4.d)
 
-.ml4.ml:
-	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pa_ifdef.cmo pr_o.cmo `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl $< > $@ || rm -f $@
+##Somehow, make decides to delete the .ml4.d files if they are -include'd.
+##This "stage0" hack to have them include'd, but no spurious error message
+##on bootstrap. GNU Make bug suspected.

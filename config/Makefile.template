@@ -15,6 +15,9 @@
 #
 #############################################################################
 
+#Variable used to detect whether ./configure has run successfully.
+COQ_CONFIGURED=yes
+
 # Local use (no installation)
 LOCAL=LOCALINSTALLATION
 
