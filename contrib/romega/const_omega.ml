@@ -48,63 +48,15 @@ let dest_const_apply t =
     | _ -> raise Destruct
   in  Nametab.id_of_global ref, args
 
-let recognize_number t =
-  let rec loop t =
-    let f,l = dest_const_apply t in
-    match Names.string_of_id f,l with
-       "xI",[t] -> Bigint.add Bigint.one (Bigint.mult Bigint.two (loop t))
-     | "xO",[t] -> Bigint.mult Bigint.two (loop t)
-     | "xH",[] -> Bigint.one
-     | _ -> failwith "not a number" in
-  let f,l = dest_const_apply t in
-    match Names.string_of_id f,l with
-        "Zpos",[t] -> loop t
-      | "Zneg",[t] -> Bigint.neg (loop t)
-      | "Z0",[] -> Bigint.zero
-      | _ -> failwith "not a number";;
-
-
 let logic_dir = ["Coq";"Logic";"Decidable"]
 
 let coq_modules =
   Coqlib.init_modules @ [logic_dir] @ Coqlib.arith_modules @ Coqlib.zarith_base_modules
-    @ [["Coq"; "omega"; "OmegaLemmas"]]
     @ [["Coq"; "Lists"; "List"]]
     @ [module_refl_path]
     @ [module_refl_path@["ZOmega"]]
 
 let constant = Coqlib.gen_constant_in_modules "Omega" coq_modules
-
-let coq_xH = lazy (constant "xH")
-let coq_xO = lazy (constant "xO")
-let coq_xI = lazy (constant "xI")
-let coq_Z0 = lazy (constant "Z0")
-let coq_Zpos = lazy (constant "Zpos")
-let coq_Zneg = lazy (constant "Zneg")
-let coq_Z = lazy (constant "Z")
-let coq_comparison = lazy (constant  "comparison")
-let coq_Gt = lazy (constant "Gt")
-let coq_Lt = lazy (constant "Lt")
-let coq_Eq = lazy (constant "Eq")
-let coq_Zplus = lazy (constant "Zplus")
-let coq_Zmult = lazy (constant  "Zmult")
-let coq_Zopp = lazy (constant "Zopp")
-
-let coq_Zminus = lazy (constant "Zminus")
-let coq_Zsucc = lazy (constant  "Zsucc")
-let coq_Zgt = lazy (constant "Zgt")
-let coq_Zle = lazy (constant "Zle")
-let coq_Z_of_nat = lazy (constant  "Z_of_nat")
-
-(* Peano *)
-let coq_le = lazy(constant "le")
-let coq_gt = lazy(constant "gt")
-
-(* Integers *)
-let coq_nat = lazy(constant "nat")
-let coq_S = lazy(constant "S")
-let coq_O = lazy(constant "O")
-let coq_minus = lazy(constant "minus")
 
 (* Logic *)
 let coq_eq = lazy(constant  "eq")
@@ -114,12 +66,7 @@ let coq_not = lazy(constant "not")
 let coq_or = lazy(constant "or")
 let coq_True = lazy(constant "True")
 let coq_False = lazy(constant "False")
-let coq_ex = lazy(constant "ex")
 let coq_I = lazy(constant "I")
-
-(* Lists *)
-let coq_cons =  lazy (constant "cons")
-let coq_nil =  lazy (constant "nil")
 
 (* ReflOmegaCore/ZOmega *)
 
@@ -138,6 +85,7 @@ let coq_t_opp = lazy (constant  "Topp")
 let coq_t_minus = lazy (constant  "Tminus")
 let coq_t_var = lazy (constant  "Tvar")
 
+let coq_proposition = lazy (constant  "proposition")
 let coq_p_eq = lazy (constant  "EqTerm")
 let coq_p_leq = lazy (constant  "LeqTerm")
 let coq_p_geq = lazy (constant  "GeqTerm")
@@ -151,14 +99,6 @@ let coq_p_or = lazy (constant  "Tor")
 let coq_p_and = lazy (constant  "Tand")
 let coq_p_imp = lazy (constant  "Timp")
 let coq_p_prop = lazy (constant  "Tprop")
-
-let coq_proposition = lazy (constant  "proposition")
-let coq_interp_sequent = lazy (constant  "interp_goal_concl")
-let coq_normalize_sequent = lazy (constant  "normalize_goal")
-let coq_execute_sequent = lazy (constant  "execute_goal")
-let coq_do_concl_to_hyp =  lazy (constant  "do_concl_to_hyp")
-let coq_sequent_to_hyps = lazy (constant  "goal_to_hyps")
-let coq_normalize_hyps_goal = lazy (constant  "normalize_hyps_goal")
 
 (* Constructors for shuffle tactic *)
 let coq_t_fusion =  lazy (constant  "t_fusion")
@@ -194,8 +134,7 @@ let coq_c_red4 = lazy (constant  "C_RED4")
 let coq_c_red5 = lazy (constant  "C_RED5")
 let coq_c_red6 = lazy (constant  "C_RED6")
 let coq_c_mult_opp_left = lazy (constant  "C_MULT_OPP_LEFT")
-let coq_c_mult_assoc_reduced = 
-  lazy (constant  "C_MULT_ASSOC_REDUCED")
+let coq_c_mult_assoc_reduced = lazy (constant  "C_MULT_ASSOC_REDUCED")
 let coq_c_minus = lazy (constant  "C_MINUS")
 let coq_c_mult_comm = lazy (constant  "C_MULT_COMM")
 
@@ -223,29 +162,10 @@ let coq_e_split = lazy  (constant  "E_SPLIT")
 let coq_e_extract = lazy  (constant  "E_EXTRACT")
 let coq_e_solve = lazy  (constant  "E_SOLVE")
 
-let coq_decompose_solve_valid = 
-  lazy (constant   "decompose_solve_valid")
-let coq_do_reduce_lhyps = lazy (constant   "do_reduce_lhyps")
+let coq_interp_sequent = lazy (constant  "interp_goal_concl")
 let coq_do_omega = lazy (constant  "do_omega")
 
 (* \subsection{Construction d'expressions} *)
-
-
-let mk_var v = Term.mkVar (Names.id_of_string v)
-let mk_plus t1 t2 = Term.mkApp (Lazy.force coq_Zplus,[|  t1; t2 |])
-let mk_times t1 t2 = Term.mkApp (Lazy.force coq_Zmult, [| t1; t2 |])
-let mk_minus t1 t2 = Term.mkApp (Lazy.force coq_Zminus, [| t1;t2 |])
-let mk_eq t1 t2 = Term.mkApp (Lazy.force coq_eq, [| Lazy.force coq_Z; t1; t2 |])
-let mk_le t1 t2 = Term.mkApp (Lazy.force coq_Zle, [|t1; t2 |])
-let mk_gt t1 t2 = Term.mkApp (Lazy.force coq_Zgt, [|t1; t2 |])
-let mk_inv t = Term.mkApp (Lazy.force coq_Zopp, [|t |])
-let mk_and t1 t2 =  Term.mkApp (Lazy.force coq_and, [|t1; t2 |])
-let mk_or t1 t2 =  Term.mkApp (Lazy.force coq_or, [|t1; t2 |])
-let mk_not t = Term.mkApp (Lazy.force coq_not, [|t |])
-let mk_eq_rel t1 t2 = Term.mkApp (Lazy.force coq_eq, [|
-				Lazy.force coq_comparison; t1; t2 |])
-let mk_inj t = Term.mkApp (Lazy.force coq_Z_of_nat, [|t |])
-
 
 let do_left t = 
   if t = Lazy.force coq_c_nop then Lazy.force coq_c_nop
@@ -270,26 +190,19 @@ let rec do_list = function
   | [x] -> x
   | (x::l) -> do_seq x (do_list l)
 
-let mk_integer n =
-  let rec loop n = 
-    if n=Bigint.one then Lazy.force coq_xH else
-      let (q,r) = Bigint.euclid n Bigint.two in
-      Term.mkApp
-        ((if r = Bigint.zero then Lazy.force coq_xO else Lazy.force coq_xI),
-	[| loop q |]) in
-    
-    if n = Bigint.zero then Lazy.force coq_Z0 
-    else
-      if Bigint.is_strictly_pos n then
-        Term.mkApp (Lazy.force coq_Zpos, [| loop n |])
-      else
-        Term.mkApp (Lazy.force coq_Zneg, [| loop (Bigint.neg n) |])
+(* Nat *)
 
-let mk_Z = mk_integer
+let coq_S = lazy(constant "S")
+let coq_O = lazy(constant "O")
 
 let rec mk_nat = function
   | 0 -> Lazy.force coq_O
   | n -> Term.mkApp (Lazy.force coq_S, [| mk_nat (n-1) |])
+
+(* Lists *)
+
+let coq_cons =  lazy (constant "cons")
+let coq_nil =  lazy (constant "nil")
 
 let mk_list typ l =
   let rec loop = function
@@ -303,3 +216,136 @@ let mk_plist l = mk_list Term.mkProp l
 
 let mk_shuffle_list l = mk_list (Lazy.force coq_t_fusion) l
 
+
+type parse_term = 
+  | Tplus of Term.constr * Term.constr 
+  | Tmult of Term.constr * Term.constr
+  | Tminus of Term.constr * Term.constr
+  | Topp of Term.constr
+  | Tsucc of Term.constr
+  | Tnum of Bigint.bigint
+  | Tother 
+
+type parse_rel = 
+  | Req of Term.constr * Term.constr
+  | Rne of Term.constr * Term.constr
+  | Rlt of Term.constr * Term.constr
+  | Rle of Term.constr * Term.constr
+  | Rgt of Term.constr * Term.constr
+  | Rge of Term.constr * Term.constr
+  | Rtrue
+  | Rfalse
+  | Rnot of Term.constr
+  | Ror of Term.constr * Term.constr
+  | Rand of Term.constr * Term.constr
+  | Rimp of Term.constr * Term.constr
+  | Riff of Term.constr * Term.constr
+  | Rother
+
+let parse_logic_rel c = 
+ try match destructurate c with
+   | Kapp("True",[]) -> Rtrue
+   | Kapp("False",[]) -> Rfalse
+   | Kapp("not",[t]) -> Rnot t
+   | Kapp("or",[t1;t2]) -> Ror (t1,t2) 
+   | Kapp("and",[t1;t2]) -> Rand (t1,t2)
+   | Kimp(t1,t2) -> Rimp (t1,t2)
+   | Kapp("iff",[t1;t2]) -> Riff (t1,t2)
+   | _ -> Rother
+ with e when Logic.catchable_exception e -> Rother
+
+
+module type Int = sig
+  val typ : Term.constr Lazy.t
+  val plus : Term.constr Lazy.t 
+  val mult : Term.constr Lazy.t
+  val opp : Term.constr Lazy.t
+  val minus : Term.constr Lazy.t
+
+  val mk : Bigint.bigint -> Term.constr
+  val parse_term : Term.constr -> parse_term
+  val parse_rel : Proof_type.goal Tacmach.sigma -> Term.constr -> parse_rel
+  (* check whether t is built only with numbers and + * - *)
+  val is_scalar : Term.constr -> bool 
+end
+
+module Z : Int = struct 
+
+let typ = lazy (constant "Z")
+let plus = lazy (constant "Zplus")
+let mult = lazy (constant  "Zmult")
+let opp = lazy (constant "Zopp")
+let minus = lazy (constant "Zminus")
+
+let coq_xH = lazy (constant "xH")
+let coq_xO = lazy (constant "xO")
+let coq_xI = lazy (constant "xI")
+let coq_Z0 = lazy (constant "Z0")
+let coq_Zpos = lazy (constant "Zpos")
+let coq_Zneg = lazy (constant "Zneg")
+
+let recognize t =
+  let rec loop t =
+    let f,l = dest_const_apply t in
+    match Names.string_of_id f,l with
+       "xI",[t] -> Bigint.add Bigint.one (Bigint.mult Bigint.two (loop t))
+     | "xO",[t] -> Bigint.mult Bigint.two (loop t)
+     | "xH",[] -> Bigint.one
+     | _ -> failwith "not a number" in
+  let f,l = dest_const_apply t in
+    match Names.string_of_id f,l with
+        "Zpos",[t] -> loop t
+      | "Zneg",[t] -> Bigint.neg (loop t)
+      | "Z0",[] -> Bigint.zero
+      | _ -> failwith "not a number";;
+
+let rec mk_positive n = 
+  if n=Bigint.one then Lazy.force coq_xH 
+  else
+    let (q,r) = Bigint.euclid n Bigint.two in
+    Term.mkApp
+      ((if r = Bigint.zero then Lazy.force coq_xO else Lazy.force coq_xI),
+       [| mk_positive q |]) 
+
+let mk_Z n =
+  if n = Bigint.zero then Lazy.force coq_Z0 
+  else if Bigint.is_strictly_pos n then
+    Term.mkApp (Lazy.force coq_Zpos, [| mk_positive n |])
+  else
+    Term.mkApp (Lazy.force coq_Zneg, [| mk_positive (Bigint.neg n) |])
+
+let mk = mk_Z
+
+let parse_term t = 
+  try match destructurate t with
+    | Kapp("Zplus",[t1;t2]) -> Tplus (t1,t2)
+    | Kapp("Zminus",[t1;t2]) -> Tminus (t1,t2)
+    | Kapp("Zmult",[t1;t2]) -> Tmult (t1,t2)
+    | Kapp("Zopp",[t]) -> Topp t
+    | Kapp("Zsucc",[t]) -> Tsucc t
+    | Kapp(("Zpos"|"Zneg"|"Z0"),_) -> 
+	(try Tnum (recognize t) with _ -> Tother)
+    | _ -> Tother
+  with e when Logic.catchable_exception e -> Tother
+    
+let parse_rel gl t = 
+  try match destructurate t with 
+    | Kapp("eq",[typ;t1;t2]) 
+      when destructurate (Tacmach.pf_nf gl typ) = Kapp("Z",[]) -> Req (t1,t2)
+    | Kapp("Zne",[t1;t2]) -> Rne (t1,t2)
+    | Kapp("Zle",[t1;t2]) -> Rle (t1,t2)
+    | Kapp("Zlt",[t1;t2]) -> Rlt (t1,t2)
+    | Kapp("Zge",[t1;t2]) -> Rge (t1,t2)
+    | Kapp("Zgt",[t1;t2]) -> Rgt (t1,t2)
+    | _ -> parse_logic_rel t 
+  with e when Logic.catchable_exception e -> Rother
+
+let is_scalar t =
+  let rec aux t = match destructurate t with
+    | Kapp(("Zplus"|"Zminus"|"Zmult"),[t1;t2]) -> aux t1 & aux t2
+    | Kapp(("Zopp"|"Zsucc"),[t]) -> aux t
+    | Kapp(("Zpos"|"Zneg"|"Z0"),_) -> let _ = recognize t in true
+    | _ -> false in
+  try aux t with _ -> false
+
+end
