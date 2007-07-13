@@ -137,6 +137,20 @@ case_eq ((n ?= m)%positive Eq); intros H0; simpl;
  assumption.
 Qed.
 
+Lemma Qpower_plus' : forall a n m, (n+m <> 0)%Z -> a^(n+m) == a^n*a^m.
+Proof.
+intros a n m H.
+destruct (Qeq_dec a 0)as [X|X].
+rewrite X.
+rewrite Qpower_0.
+assumption.
+destruct n; destruct m; try (elim H; reflexivity);
+ simpl; repeat rewrite Qpower_positive_0; ring_simplify;
+ reflexivity.
+apply Qpower_plus.
+assumption.
+Qed.
+
 Lemma Qpower_mult_positive : forall a n m, Qpower_positive a (n*m) == Qpower_positive (Qpower_positive a n) m.
 Proof.
 intros a n m.
@@ -158,4 +172,21 @@ intros a [|n|n] [|m|m]; simpl;
  try rewrite Qinv_power_positive;
  try rewrite Qinv_involutive;
  try reflexivity.
+Qed.
+
+Lemma Zpower_Qpower : forall (a n:Z), (0<=n)%Z -> inject_Z (a^n) == (inject_Z a)^n.
+Proof.
+intros a [|n|n] H;[reflexivity| |elim H; reflexivity].
+induction n using Pind.
+ replace (a^1)%Z with a by ring.
+ ring.
+rewrite Zpos_succ_morphism.
+unfold Zsucc.
+rewrite Zpower_exp; auto with *; try discriminate.
+rewrite Qpower_plus'; try discriminate.
+rewrite <- IHn.
+ discriminate.
+replace (a^'n*a^1)%Z with (a^'n*a)%Z by ring.
+ring_simplify.
+reflexivity.
 Qed.
