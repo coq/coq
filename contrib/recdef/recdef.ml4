@@ -1415,7 +1415,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
       with e -> 
 	begin 
 	  if Tacinterp.get_debug () <> Tactic_debug.DebugOff
-	  then anomalylabstrm "" (str "Cannot create equation Lemma " ++ Cerrors.explain_exn e)
+	  then pperrnl (str "Cannot create equation Lemma " ++ Cerrors.explain_exn e)
 	  else anomaly "Cannot create equation Lemma"
 	  ;
 (* 	  ignore(try Vernacentries.vernac_reset_name (Util.dummy_loc,functional_id) with _ -> ()); *)
