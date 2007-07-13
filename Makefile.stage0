@@ -14,3 +14,8 @@ stage0: $(ML4FILES:.ml4=.ml4.d)
 ##Somehow, make decides to delete the .ml4.d files if they are -include'd.
 ##This "stage0" hack to have them include'd, but no spurious error message
 ##on bootstrap. GNU Make bug suspected.
+
+# For emacs: 
+# Local Variables: 
+# mode: makefile 
+# End:

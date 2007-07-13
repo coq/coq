@@ -867,3 +867,8 @@ endif
 devel: $(DEBUGPRINTERS)
 
 ###########################################################################
+
+# For emacs: 
+# Local Variables: 
+# mode: makefile 
+# End:

@@ -18,3 +18,8 @@ include $(ML4FILES:.ml4=.ml4.d)
 
 .PHONY: stage1
 stage1: $(STAGE1)
+
+# For emacs: 
+# Local Variables: 
+# mode: makefile 
+# End:

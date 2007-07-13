@@ -12,3 +12,8 @@ include Makefile.stage1
 
 .PHONY: stage2
 stage2: $(COQDEP)
+
+# For emacs: 
+# Local Variables: 
+# mode: makefile 
+# End:

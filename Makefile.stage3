@@ -12,3 +12,8 @@ include Makefile.stage2
 
 .PHONY: stage3
 stage3: world
+
+# For emacs: 
+# Local Variables: 
+# mode: makefile 
+# End:

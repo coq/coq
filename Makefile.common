@@ -800,3 +800,9 @@ VO_TARGETS:=logic arith bool narith zarith qarith lists strings sets \
 STAGE3_TARGETS:=world install coqide coqide-files coq coqlib \
   coqlight states pcoq-files check init theories theories-light contrib \
   doc $(VO_TARGETS)
+
+
+# For emacs: 
+# Local Variables: 
+# mode: makefile 
+# End:
