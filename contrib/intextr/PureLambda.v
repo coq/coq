@@ -5,16 +5,16 @@ Hint Extern 1 (?f _ _ = ?f _ _) => f_equal.
 Hint Extern 1 (?f _ _ _ = ?f _ _ _) => f_equal.
 
 
-Ltac dec := 
-  let H := fresh "H" in 
+Ltac dec :=
+  let H := fresh "H" in
   destruct lt_eq_lt_dec as [[H|H]|H] ||
-  destruct le_lt_dec as [H|H] || 
-  destruct eq_nat_dec as [H|H] || fail; 
-  simpl; 
-  trivial; 
-  try (intros; discriminate); 
+  destruct le_lt_dec as [H|H] ||
+  destruct eq_nat_dec as [H|H] || fail;
+  simpl;
+  trivial;
+  try (intros; discriminate);
   try (elimtype False; omega);
-  match goal with 
+  match goal with
     | H:?n=?n  |- _ => clear H
     | H:?n<=?n |- _ => clear H
     | _ => idtac
@@ -25,10 +25,10 @@ Ltac inv_clear H := inversion H; try clear H; subst.
 
 (** *  Sommaire des notations semantiques: *)
 
-(** Bigstep avec environnement: *) 
+(** Bigstep avec environnement: *)
 Reserved Notation      "e |= t --> v"      (at level 100, t at next level).
 (** Un pas de smallstep *)
-Reserved Notation      "t --> u"           (at level 100).  
+Reserved Notation      "t --> u"           (at level 100).
 (** Zero, un ou plusieurs pas de smallstep *)
 Reserved Notation      "t ==> u"           (at level 100).
 (** n pas de smallstep *)
@@ -53,7 +53,7 @@ Notation "a @ b" := (TApply a b) (at level 40).
 (** Les valeurs possibles apres evaluation : constantes ou clotures *)
 
 Inductive value : Set:=
-  | VDummy : value 
+  | VDummy : value
   | VClos : list value -> term -> value
 .
 
@@ -62,8 +62,8 @@ Inductive value : Set:=
 
 (** Est-ce que n est libre dans t ? *)
 
-Fixpoint freevar (n:nat)(t:term) { struct t } : bool := 
- match t with 
+Fixpoint freevar (n:nat)(t:term) { struct t } : bool :=
+ match t with
     | TDummy => false
     | TVar k => if eq_nat_dec k n then true else false
     | TFun t => freevar (S n) t
@@ -76,18 +76,18 @@ Definition clos t := forall n, freevar n t = false.
 
 (** Listes de termes clos *)
 
-Inductive clos_list : list term -> Prop := 
+Inductive clos_list : list term -> Prop :=
  | clos_list_nil : clos_list nil
  | clos_list_cons : forall a l, clos a -> clos_list l -> clos_list (a::l).
 Hint Constructors clos_list.
 
 (** termes clos au dela d'un certain indice *)
 
-Definition clos_after n t := forall m, n<=m -> freevar m t = false. 
+Definition clos_after n t := forall m, n<=m -> freevar m t = false.
 
-Fixpoint clos_after' n t { struct t } := match t with 
+Fixpoint clos_after' n t { struct t } := match t with
  | TDummy => True
- | TVar k => k < n 
+ | TVar k => k < n
  | TFun t => clos_after' (S n) t
  | t1@t2 => clos_after' n t1 /\ clos_after' n t2
 end.
@@ -98,7 +98,7 @@ end.
 Fixpoint subst n u t {struct t} :=
   match t with
     | TDummy => TDummy
-    | TVar k => 
+    | TVar k =>
         match lt_eq_lt_dec k n with
           | inleft (left _) => TVar k
           | inleft (right _) => u
@@ -109,15 +109,15 @@ Fixpoint subst n u t {struct t} :=
   end
 .
 
-Notation "t [ n := u ]" := (subst n u t) 
+Notation "t [ n := u ]" := (subst n u t)
  (at level 20, n at next level, left associativity).
 
-(** Substitution par paquet: 
-    Si l = [u0;u1;...], on remplace n par u0, n+1 par u1, etc. 
+(** Substitution par paquet:
+    Si l = [u0;u1;...], on remplace n par u0, n+1 par u1, etc.
     Les indices au dela de n+(length l) sont decrementes de (length l). *)
 
-Fixpoint subst_list n l t {struct t} := match t with 
-   | TDummy => TDummy 
+Fixpoint subst_list n l t {struct t} := match t with
+   | TDummy => TDummy
    | TVar k => if (le_lt_dec n k) then nth (k-n) l (TVar (k-length l))
                else TVar k
    | TFun t => TFun (subst_list (S n) l t)
@@ -125,11 +125,11 @@ Fixpoint subst_list n l t {struct t} := match t with
   end
 .
 
-Notation "t [ n ::= l ]" := (subst_list n l t) 
+Notation "t [ n ::= l ]" := (subst_list n l t)
  (at level 20, n at next level, left associativity).
 
 
-(** Une presentation alternative de la substitution par paquet, 
+(** Une presentation alternative de la substitution par paquet,
     par iteration de subst *)
 
 Fixpoint subst_list_iter n l t {struct l} := match l with
@@ -138,7 +138,7 @@ Fixpoint subst_list_iter n l t {struct l} := match l with
   end
 .
 
-Notation "t [ n ;;= l ]" := (subst_list_iter n l t) 
+Notation "t [ n ;;= l ]" := (subst_list_iter n l t)
  (at level 20, n at next level, left associativity).
 
 (** Une valeur peut etre vue en tant que terme *)
@@ -159,7 +159,7 @@ Proof.
  unfold clos, clos_after; intuition.
 Qed.
 
-Lemma clos_after_alt : 
+Lemma clos_after_alt :
  forall t n, clos_after n t <-> clos_after' n t.
 Proof.
  induction t; unfold clos_after in *; simpl; intros.
@@ -173,9 +173,9 @@ Proof.
  apply H; omega.
  rewrite <- IHt1; rewrite <- IHt2.
  intuition; simpl; destruct (orb_false_elim _ _ (H _ H0)); auto.
-Qed. 
+Qed.
 
-Ltac simpl_clos_after := repeat rewrite clos_after_alt in *; 
+Ltac simpl_clos_after := repeat rewrite clos_after_alt in *;
  simpl in *; repeat rewrite <- clos_after_alt in *.
 
 Lemma clos_list_alt : forall l, clos_list l <-> forall u, In u l -> clos u.
@@ -187,14 +187,14 @@ Proof.
  rewrite IHl in H1; auto.
  constructor; auto.
  rewrite IHl; auto.
-Qed. 
+Qed.
 
 Lemma clos_list_cons_iff : forall a l, clos_list (a::l) <-> clos a /\ clos_list l.
 Proof.
  split; inversion 1; auto.
 Qed.
 
-Lemma clos_list_app_iff : forall l l', 
+Lemma clos_list_app_iff : forall l l',
  clos_list (l++l') <-> clos_list l /\ clos_list l'.
 Proof.
  induction l; simpl; auto.
@@ -203,7 +203,7 @@ Proof.
  rewrite IHl; intuition.
 Qed.
 
-Lemma subst_clos_after_iff : forall t n, 
+Lemma subst_clos_after_iff : forall t n,
    clos_after n t <-> (forall n0 t0, n <= n0 -> subst n0 t0 t = t).
 Proof.
  induction t; simpl; intros; simpl_clos_after.
@@ -245,7 +245,7 @@ Qed.
 Hint Resolve subst_list_clos.
 Hint Extern 1 (?t=?t[_;;=_]) => (symmetry; auto).
 
-Lemma subst_clos_after : forall t n u m, n <= m -> 
+Lemma subst_clos_after : forall t n u m, n <= m ->
   clos u -> clos_after (S m) t -> clos_after m (t[n:=u]).
 Proof.
 induction t; simpl; intros; simpl_clos_after; auto with arith.
@@ -256,9 +256,9 @@ simpl_clos_after; omega.
 intuition.
 Qed.
 
-Lemma subst_list_iter_clos_after : forall l n t, 
-  clos_list l -> 
-  clos_after (n+length l) t -> 
+Lemma subst_list_iter_clos_after : forall l n t,
+  clos_list l ->
+  clos_after (n+length l) t ->
   clos_after n (t[n;;=l]).
 Proof.
 induction l; simpl; auto; intros.
@@ -269,7 +269,7 @@ apply subst_clos_after; auto with arith.
 rewrite <- plus_n_Sm in H0; auto.
 Qed.
 
-Lemma subst_list_equiv : forall t l n, 
+Lemma subst_list_equiv : forall t l n,
  clos_list l -> t[n;;=l] = t[n::=l].
 Proof.
 intros t l; revert t; induction l; simpl; auto; intros.
@@ -294,7 +294,7 @@ rewrite <- IHt; auto.
 rewrite <- IHt1; rewrite <- IHt2; auto.
 Qed.
 
-Lemma subst_commut : forall u u', clos u -> clos u' -> 
+Lemma subst_commut : forall u u', clos u -> clos u' ->
  forall t n n', n<=n' -> t[S n':=u'][n:=u] = t[n:=u][n':=u'].
 Proof.
 induction t; simpl; intros; auto with arith.
@@ -303,8 +303,8 @@ Qed.
 
 Hint Resolve subst_commut.
 
-Lemma subst_list_iter_commut : forall l t u n, 
- clos u -> clos_list l -> 
+Lemma subst_list_iter_commut : forall l t u n,
+ clos u -> clos_list l ->
  t[S n;;=l][n:=u] = t[n:=u][n;;=l].
 Proof.
 induction l; simpl; auto; intros.
@@ -324,16 +324,16 @@ Hint Resolve subst_list_iter_commut.
 (**  Le predicat d'evaluation d'un terme dans un environnement (liste de valeurs) *)
 
 Inductive BigStep : list value -> term -> value -> Prop:=
-  | BigStep_Dum : forall e,  
+  | BigStep_Dum : forall e,
      (e |= TDummy --> VDummy)
-  | BigStep_Var : forall n e v, nth_error e n = Some v -> 
+  | BigStep_Var : forall n e v, nth_error e n = Some v ->
      (e |= TVar n --> v)
-  | BigStep_Fun : forall e t, 
+  | BigStep_Fun : forall e t,
      (e |= TFun t --> VClos e t)
   | BigStep_App : forall e e' t t1 t2 v v2,
-     (e |= t1-->VClos e' t) -> 
-     (e |= t2-->v2) -> 
-     (v2::e'|=t-->v) -> 
+     (e |= t1-->VClos e' t) ->
+     (e |= t2-->v2) ->
+     (v2::e'|=t-->v) ->
      (e |= t1@t2-->v)
 where "e |= t --> v" := (BigStep e t v).
 
@@ -342,18 +342,18 @@ Hint Constructors BigStep.
 
 (** * (2) Semantique small-step completement sans environnement *)
 
-Inductive IsValue : term -> Prop := 
-  | IsValue_Dummy : IsValue TDummy 
+Inductive IsValue : term -> Prop :=
+  | IsValue_Dummy : IsValue TDummy
   | IsValue_Fun : forall t, IsValue (TFun t).
 
 Inductive SmallStep : term -> term -> Prop :=
-  | SmallStep_beta : forall t1 t2, IsValue t2 -> 
+  | SmallStep_beta : forall t1 t2, IsValue t2 ->
     ((TFun t1)@t2 --> t1[0:=t2])
   | SmallStep_app1 : forall u v t, (u-->v) -> (u@t-->v@t)
   | SmallStep_app2 : forall u v t, (u-->v) -> (t@u-->t@v)
 where "t --> u" := (SmallStep t u).
 
-Fixpoint SmallStepN n := match n with 
+Fixpoint SmallStepN n := match n with
   | O => fun t r => t=r
   | S n => fun t r => exists s, (t-->s) /\ (s ==[n]=> r)
  end
@@ -373,27 +373,27 @@ Proof.
 Qed.
 Hint Resolve IsValue_v2t.
 
-Inductive val_clos : value -> Prop := 
+Inductive val_clos : value -> Prop :=
  | clos_VDummy : val_clos VDummy
- | clos_Vclos : forall e t, env_clos e -> 
+ | clos_Vclos : forall e t, env_clos e ->
                             clos_after (S (length e)) t ->
                             val_clos (VClos e t)
-with env_clos : list value -> Prop := 
- | clos_nil : env_clos nil 
+with env_clos : list value -> Prop :=
+ | clos_nil : env_clos nil
  | clos_cons : forall v e, val_clos v -> env_clos e -> env_clos (v::e).
 
 Hint Constructors val_clos env_clos.
 
-Scheme val_clos_ind2 := Minimality for val_clos Sort Prop 
+Scheme val_clos_ind2 := Minimality for val_clos Sort Prop
 with env_clos_ind2 := Minimality for env_clos Sort Prop.
 
 Lemma v2t_clos : forall v, val_clos v -> clos (v2t v). (* RECIPROQUE FAUSSE ! *)
 Proof.
- apply (val_clos_ind2 
-         (fun v => clos (v2t v)) 
-         (fun e => forall t, In t (map v2t e) -> clos t)); 
+ apply (val_clos_ind2
+         (fun v => clos (v2t v))
+         (fun e => forall t, In t (map v2t e) -> clos t));
  simpl; auto; intros.
- 
+
  red; simpl; auto.
 
  red; intros; simpl.
@@ -403,7 +403,7 @@ Proof.
  rewrite map_length; auto.
 
  contradiction.
- 
+
  intuition.
  subst t; auto.
 Qed.
@@ -432,7 +432,7 @@ Proof.
   induction n; simpl; auto; firstorder; congruence.
 Qed.
 
-Lemma SmallSteps_app1 : 
+Lemma SmallSteps_app1 :
  forall t u r, (t==>u) -> (t@r ==> u@r).
 Proof.
  intros t u r (n,H); exists n; revert t H.
@@ -440,7 +440,7 @@ Proof.
  intros t (s,(H,H')); exists (s@r); auto.
 Qed.
 
-Lemma SmallSteps_app2 : 
+Lemma SmallSteps_app2 :
  forall t u r, (t==>u) -> (r@t ==> r@u).
 Proof.
  intros t u r (n,H); exists n; revert t H.
@@ -450,7 +450,7 @@ Qed.
 
 (* Reductions et cloture: *)
 
-Lemma BigStep_val_clos : forall e t v, env_clos e -> clos_after (length e) t -> 
+Lemma BigStep_val_clos : forall e t v, env_clos e -> clos_after (length e) t ->
  (e|=t-->v) -> val_clos v.
 Proof.
 induction 3; simpl; intros; simpl_clos_after; auto.
@@ -485,13 +485,13 @@ eauto.
 Qed.
 
 
-(* Le lemme crucial pour le sens dur de l'equivalence ((2)->(1)) : 
+(* Le lemme crucial pour le sens dur de l'equivalence ((2)->(1)) :
    inversion de la reduction d'une application *)
 
-Lemma SmallStepN_inv_app : forall n t u r, IsValue r -> 
-(t@u ==[n]=> r) -> 
-exists t', exists r', exists n1, exists n2, exists n3, 
-  S (n1+n2+n3) = n /\ 
+Lemma SmallStepN_inv_app : forall n t u r, IsValue r ->
+(t@u ==[n]=> r) ->
+exists t', exists r', exists n1, exists n2, exists n3,
+  S (n1+n2+n3) = n /\
   IsValue r' /\
   (u ==[n1]=> r') /\
   (t ==[n2]=> TFun t')  /\
@@ -522,8 +522,8 @@ Qed.
 
 (** (1) -> (2) *)
 
-Lemma BigStep_SmallSteps : forall e t v, 
- env_clos e -> clos_after (length e) t -> 
+Lemma BigStep_SmallSteps : forall e t v,
+ env_clos e -> clos_after (length e) t ->
  (e|=t-->v) -> (t[0::=map v2t e] ==> v2t v).
 Proof.
  induction 3; simpl; intros; simpl_clos_after; auto.
@@ -551,14 +551,14 @@ Proof.
  rewrite subst_list_iter_commut; auto.
  change (t[0;;=map v2t (v2::e')] ==> v2t v).
  rewrite subst_list_equiv; auto.
- Qed. 
+ Qed.
 
 
 (** (2) -> (1) *)
 
-Lemma SmallSteps_BigStep : forall e t u,  
- env_clos e -> clos_after (length e) t -> IsValue u -> 
- (t[0::=map v2t e] ==> u) -> 
+Lemma SmallSteps_BigStep : forall e t u,
+ env_clos e -> clos_after (length e) t -> IsValue u ->
+ (t[0::=map v2t e] ==> u) ->
  exists v, (e|=t-->v) /\ v2t v = u /\ val_clos v.
 Proof.
 intros e t u H H0 H1 (n,H2); revert e t u H H0 H1 H2.
@@ -571,14 +571,14 @@ destruct H3 as (s,(Hs1,_)); inversion Hs1.
 (* Var *)
 rename n0 into k.
 replace (k-0) with k in H3 by omega.
-assert (exists v, val_clos v /\ nth_error e k = Some v /\ 
+assert (exists v, val_clos v /\ nth_error e k = Some v /\
                   nth k (map v2t e) (TVar (k - length (map v2t e))) = v2t v).
  clear - H1 H0; revert k H1 H0; induction e; simpl in *.
  inversion 1.
  destruct k.
  exists a; auto.
  inversion_clear H0; split; auto.
- intros; inversion_clear H0; 
+ intros; inversion_clear H0;
   destruct (IHe k) as (v,(A,B)); auto with arith.
  exists v; auto.
 destruct H4 as (v,(Hv1,(Hv2,Hv3))); rewrite Hv3 in H3; clear Hv3.
@@ -592,7 +592,7 @@ rewrite subst_list_equiv; auto.
 destruct H3 as (s,(Hs1,_)); inversion Hs1.
 (* Apply *)
 destruct H1.
-destruct (SmallStepN_inv_app _ _ _ _ H2 H3) as 
+destruct (SmallStepN_inv_app _ _ _ _ H2 H3) as
  (t',(u',(n1,(n2,(n3,(A,(B,(C,(D,E))))))))).
 assert (n1<n) by omega.
 assert (n2<n) by omega.
@@ -620,7 +620,7 @@ Qed.
 
 (* (1)->(2) *)
 
-Lemma BigStep_SmallSteps_clos : forall t v, clos t -> 
+Lemma BigStep_SmallSteps_clos : forall t v, clos t ->
  (nil|=t-->v) -> (t ==> v2t v).
 Proof.
 intros.
@@ -631,7 +631,7 @@ rewrite <- subst_list_equiv; auto.
 Qed.
 
 
-Lemma SmallSteps_BigStep_clos : forall t u, clos t -> IsValue u -> 
+Lemma SmallSteps_BigStep_clos : forall t u, clos t -> IsValue u ->
  (t==>u) -> exists v, (nil|=t-->v) /\ v2t v = u /\ val_clos v.
 Proof.
 intros.
@@ -641,7 +641,7 @@ rewrite <- subst_list_equiv; auto.
 Qed.
 
 (* NB: (IsValue u) implique l'existence d'un v' tel que (v2t v' = t)
-   mais rien n'oblige v et v' a coincider. Ils sont juste equivalents 
-   au sens ou v2t v = v2t v'. 
-*) 
+   mais rien n'oblige v et v' a coincider. Ils sont juste equivalents
+   au sens ou v2t v = v2t v'.
+*)
 
