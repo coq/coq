@@ -12,7 +12,7 @@ Require Export Field.
 Require Export QArith_base.
 Require Import NArithRing.
 
-(** * A ring tactic for rational numbers *)
+(** * field and ring tactics for rational numbers *)
 
 Definition Qeq_bool (x y : Q) :=
   if Qeq_dec x y then true else false.
@@ -21,6 +21,11 @@ Lemma Qeq_bool_correct : forall x y : Q, Qeq_bool x y = true -> x==y.
 Proof.
   intros x y; unfold Qeq_bool in |- *; case (Qeq_dec x y); simpl in |- *; auto.
   intros _ H; inversion H.
+Qed.
+
+Lemma Qeq_bool_complete : forall x y : Q, x==y -> Qeq_bool x y = true.
+Proof.
+  intros x y; unfold Qeq_bool in |- *; case (Qeq_dec x y); simpl in |- *; auto.
 Qed.
 
 Definition Qsft : field_theory 0 1 Qplus Qmult Qminus Qopp Qdiv Qinv Qeq.
@@ -77,7 +82,12 @@ Ltac Qpow_tac t :=
   | _ => NotConstant
   end.
 
-Add Field Qfield : Qsft(decidable Qeq_bool_correct, constants [Qcst], power_tac Qpower_theory [Qpow_tac]).
+Add Field Qfield : Qsft 
+ (decidable Qeq_bool_correct, 
+  completeness Qeq_bool_complete,
+  constants [Qcst], 
+  power_tac Qpower_theory [Qpow_tac]).
+
 (** Exemple of use: *)
 
 Section Examples. 
@@ -109,7 +119,7 @@ Let ex6 : (1#1)+(1#1) == 2#1.
   ring.
 Qed.
 
-Let ex7 : forall x : Q, x-x== 0#1.
+Let ex7 : forall x : Q, x-x== 0.
   intro.
   ring.
 Qed.
@@ -124,7 +134,7 @@ Let ex9 : forall x : Q, x^0 == 1.
   ring.
 Qed.
 
-Example test_field : forall x y : Q, ~(y==0) -> (x/y)*y == x.
+Let ex10 : forall x y : Q, ~(y==0) -> (x/y)*y == x.
 intros.
 field.
 auto.

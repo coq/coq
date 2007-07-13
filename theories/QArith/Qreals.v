@@ -11,19 +11,15 @@
 Require Export Rbase.
 Require Export QArith_base.
 
-(** A field tactic for rational numbers. *)
+(** Injection of rational numbers into real numbers. *)
 
-(** Since field cannot operate on setoid datatypes (yet?), 
-  we translate Q goals into reals before applying field. *)
+Definition Q2R (x : Q) : R := (IZR (Qnum x) * / IZR (QDen x))%R.
 
 Lemma IZR_nz : forall p : positive, IZR (Zpos p) <> 0%R.
 intros; apply not_O_IZR; auto with qarith.
 Qed.
 
-Hint Immediate IZR_nz.
-Hint Resolve Rmult_integral_contrapositive.
-
-Definition Q2R (x : Q) : R := (IZR (Qnum x) * / IZR (QDen x))%R.
+Hint Resolve IZR_nz Rmult_integral_contrapositive.
 
 Lemma eqR_Qeq : forall x y : Q, Q2R x = Q2R y -> x==y.
 Proof.
@@ -171,7 +167,7 @@ Lemma Q2R_minus : forall x y : Q, Q2R (x-y) = (Q2R x - Q2R y)%R.
 unfold Qminus in |- *; intros; rewrite Q2R_plus; rewrite Q2R_opp; auto.
 Qed.
 
-Lemma Q2R_inv : forall x : Q, ~ x==0#1 -> Q2R (/x) = (/ Q2R x)%R.
+Lemma Q2R_inv : forall x : Q, ~ x==0 -> Q2R (/x) = (/ Q2R x)%R.
 Proof.
 unfold Qinv, Q2R, Qeq in |- *; intros (x1, x2); unfold Qden, Qnum in |- *.
 case x1.
@@ -185,7 +181,7 @@ intros;
 Qed.
 
 Lemma Q2R_div :
- forall x y : Q, ~ y==0#1 -> Q2R (x/y) = (Q2R x / Q2R y)%R.
+ forall x y : Q, ~ y==0 -> Q2R (x/y) = (Q2R x / Q2R y)%R.
 Proof.
 unfold Qdiv, Rdiv in |- *.
 intros; rewrite Q2R_mult.
@@ -194,16 +190,24 @@ Qed.
 
 Hint Rewrite Q2R_plus Q2R_mult Q2R_opp Q2R_minus Q2R_inv Q2R_div : q2r_simpl.
 
+Section LegacyQField.
+
+(** In the past, the field tactic was not able to deal with setoid datatypes,
+    so translating from Q to R and applying field on reals was a workaround. 
+    See now Qfield for a direct field tactic on Q. *) 
+
 Ltac QField := apply eqR_Qeq; autorewrite with q2r_simpl; try field; auto.
 
 (** Examples of use: *)
 
-Goal forall x y z : Q, (x+y)*z == (x*z)+(y*z).
+Let ex1 : forall x y z : Q, (x+y)*z == (x*z)+(y*z).
 intros; QField.
-Abort.
+Qed.
 
-Goal forall x y : Q, ~ y==0#1 -> (x/y)*y == x.
+Let ex2 : forall x y : Q, ~ y==0 -> (x/y)*y == x.
 intros; QField.
 intro; apply H; apply eqR_Qeq.
 rewrite H0; unfold Q2R in |- *; simpl in |- *; field; auto with real.
-Abort.
+Qed.
+
+End LegacyQField.
