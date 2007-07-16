@@ -812,8 +812,7 @@ endif
 # NOT to generate object code.
 %.ml4.d: %.ml4
 	$(SHOW)'CAMLP4DEPS $<'
-	$(HIDE)echo > "$@"
-#	$(HIDE)( echo -n '$*.cmo $*.cmx $*.ml4.ml.d: ' && $(CAMLP4DEPS) "$<" ) > "$@"
+	$(HIDE)( echo -n '$*.cmo $*.cmx $*.ml4.ml.d: ' && $(CAMLP4DEPS) "$<" ) > "$@"
 
 %.ml4.ml.d: %.ml4 | $(GENFILES) $(ML4FILES:.ml4=.ml) %.ml4.d
 #Critical section:
