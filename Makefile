@@ -82,7 +82,7 @@ stage3 $(STAGE3_TARGETS): stage2
 
 .PHONY: clean objclean cruftclean indepclean archclean ml4clean clean-ide depclean distclean cleanconfig cleantheories docclean
 
-clean: objclean cruftclean depclean
+clean: objclean cruftclean depclean docclean
 
 objclean: archclean indepclean
 
@@ -102,7 +102,11 @@ indepclean:
 	rm -f revision
 
 docclean:
+ifdef COQ_CONFIGURED
 	$(MAKE) -C doc clean
+else
+	$(warning Clean of documentation requires "./configure" to be run; not done.)
+endif
 
 archclean: clean-ide cleantheories
 	rm -f $(COQTOPOPT) $(BESTCOQTOP) $(COQC) $(COQMKTOP)
@@ -127,7 +131,7 @@ depclean:
 cleanconfig:
 	rm -f config/Makefile config/coq_config.ml dev/ocamldebug-v7 ide/undo.mli
 
-distclean: clean cleanconfig docclean
+distclean: clean cleanconfig
 
 cleantheories:
 	rm -f states/*.coq
