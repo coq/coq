@@ -849,7 +849,7 @@ endif
 	$(SHOW)'CCDEP     $<'
 	$(HIDE)$(CC) -MM -MG -MQ "$@" -MQ "$(<:.c=.o)" $(CFLAGS) $(CINCLUDES) $< > $@
 
-.PRECIOUS: %.ml %.mli %.d %.ml4.d kernel/copcodes.ml
+.SECONDARY: $(GENFILES)
 
 ###########################################################################
 # this sets up developper supporting stuff

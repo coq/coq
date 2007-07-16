@@ -9,6 +9,7 @@
 include Makefile.stage2
 
 -include $(VFILES:.v=.v.d)
+.SECONDARY: $(VFILES:.v=.v.d)
 
 .PHONY: stage3
 stage3: world

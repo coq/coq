@@ -37,9 +37,6 @@ Le Makefile a été séparé en plusieurs fichiers :
 The build needs to be cut in stages because make will not take into
 account one include when making another include.
 
-Because a weird not completely understood situation, there is actually
-a stage0, see the comment in Makefile.stage0.
-
 Parallélisation
 ---------------
 

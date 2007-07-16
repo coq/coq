@@ -57,14 +57,11 @@ define stage-template
 endef
 endif
 
-stage0: always
-	$(call stage-template,0)
-
-%.o: stage0
+%.o: always
 	$(call stage-template,1)
 
 #STAGE1_TARGETS includes all object files necessary for $(STAGE1)
-stage1 $(STAGE1_TARGETS): stage0
+stage1 $(STAGE1_TARGETS): always
 	$(call stage-template,1)
 
 %.cmo %.cmx %.cmi %.cma %.cmxa %.ml4.preprocessed: stage1

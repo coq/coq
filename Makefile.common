@@ -440,6 +440,7 @@ MLIFILES := $(shell find . '(' -name '*.mli' ')' -printf '%P\n') \
   $(GENMLIFILES)
 ML4FILES := $(shell find . '(' -name '*.ml4' ')' -printf '%P\n')
 VFILES   := $(shell find . '(' -name '*.v'   ')' -printf '%P\n')
+CFILES   := $(shell find kernel/byterun -name '*.c' -printf '%p\n')
 
 ML4FILESML:= $(ML4FILES:.ml4=.ml)
 
@@ -786,7 +787,7 @@ STAGE1_TARGETS:= $(STAGE1) \
   $(filter-out parsing/q_constr.cmo,$(STAGE1_CMO)) \
   $(STAGE1_CMO:.cmo=.cmi) $(STAGE1_CMO:.cmo=.cmx) $(GENFILES) \
   source-doc revision toplevel/mltop.byteml toplevel/mltop.optml \
-  $(GRAMMARML4:.ml4=.ml4.preprocessed)
+  $(STAGE1_ML4:.ml4=.ml4.preprocessed)
 STAGE2_TARGETS:=$(COQBINARIES) lib kernel byterun library proofs tactics \
   interp parsing pretyping highparsing toplevel hightactics \
   coqide-binaries coqide-byte coqide-opt $(COQIDEOPT) $(COQIDEBYTE) $(COQIDE) \

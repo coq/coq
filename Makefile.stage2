@@ -9,6 +9,7 @@
 include Makefile.stage1
 
 -include $(ML4FILES:.ml4=.ml4.ml.d)
+.SECONDARY: $(ML4FILES:.ml4=.ml4.ml.d)
 
 .PHONY: stage2
 stage2: $(COQDEP)
