@@ -8,6 +8,11 @@
 
 (*i $Id$ i*)
 
+
+(*i camlp4use: "pr_o.cmo" i*) 
+(* Add pr_o.cmo to circumvent a useless-warning bug when preprocessed with
+ * ast-based camlp4 *)
+
 open Pp
 open Token
 

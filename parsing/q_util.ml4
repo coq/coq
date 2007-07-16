@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(*i camlp4use: "q_MLast.cmo" i*)
+
 (* $Id$ *)
 
 (* This file defines standard combinators to build ml expressions *)

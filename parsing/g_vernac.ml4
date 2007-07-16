@@ -6,8 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
 (*i camlp4deps: "parsing/grammar.cma" i*)
+(*i camlp4use: "pa_extend.cmo" i*)
+
+(* $Id$ *)
+
 
 open Pp
 open Util

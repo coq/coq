@@ -6,8 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
 (*i camlp4deps: "parsing/grammar.cma" i*)
+(*i camlp4use: "pa_extend.cmo q_MLast.cmo" i*)
+
+(* $Id$ *)
+
 
 open Decl_expr
 open Names

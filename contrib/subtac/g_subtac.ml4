@@ -6,13 +6,16 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(*i camlp4deps: "parsing/grammar.cma" i*)
+(*i camlp4use: "pa_extend.cmo" i*) 
+
+
 (*
   Syntax for the subtac terms and types.
   Elaborated from correctness/psyntax.ml4 by Jean-Christophe Filliâtre *)
 
 (* $Id$ *)
 
-(*i camlp4deps: "parsing/grammar.cma" i*)
 
 open Options
 open Util

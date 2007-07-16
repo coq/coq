@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i camlp4use: "pa_ifdef.cmo" i*)
+(*i camlp4use: "q_MLast.cmo pa_ifdef.cmo" i*)
 
 (* $Id$ *)
 

@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(*i camlp4use: "pa_extend.cmo q_MLast.cmo" i*)
+
 (* $Id: g_constr.ml4,v 1.58 2005/12/30 10:55:32 herbelin Exp $ *)
 
 open Rawterm

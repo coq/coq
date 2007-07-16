@@ -79,9 +79,9 @@ DEPFLAGS=$(LOCALINCLUDES)
 
 OCAMLC_P4O=$(OCAMLC) -pp $(CAMLP4O) $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp $(CAMLP4O) $(OPTFLAGS)
-CAMLP4EXTENDFLAGS=-I . pa_extend.cmo pa_extend_m.cmo q_MLast.cmo
+CAMLP4EXTENDFLAGS=-I . #grammar dependencies are now in camlp4use statements 
 CAMLP4DEPS=sed -n -e 's@^(\*.*camlp4deps: "\(.*\)".*\*)@\1@p'
-CAMLP4USE=sed -n -e 's@^(\*.*camlp4\(deps\|use\): "\(.*\)".*\*)@\2@p'
+CAMLP4USE=sed -n -e 's@^(\*.*camlp4use: "\(.*\)".*\*)@\1@p'
 
 COQINCLUDES=          # coqtop includes itself the needed paths
 COQ_XML=	# is "-xml" when building XML library
@@ -702,11 +702,11 @@ toplevel/mltop.cmx: toplevel/mltop.optml | toplevel/mltop.ml4.ml.d toplevel/mlto
 ## In other words, the Byte-only code doesn't import a new module.
 toplevel/mltop.byteml: toplevel/mltop.ml4 # no camlp4deps here
 	$(SHOW)'CAMLP4O   $<'	
-	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4USE) $<` pr_o.cmo -DByte -impl $< > $@
+	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4USE) $<` pr_o.cmo `$(CAMLP4DEPS) $<` -DByte -impl $< > $@
 
 toplevel/mltop.optml: toplevel/mltop.ml4 # no camlp4deps here 
 	$(SHOW)'CAMLP4O   $<'	
-	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4USE) $<` pr_o.cmo -impl $< > $@
+	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4USE) $<` pr_o.cmo `$(CAMLP4DEPS) $<` -impl $< > $@
 
 # files compiled with -rectypes
 
@@ -722,17 +722,6 @@ $(1:.ml=.cmx): $(1) | $(1).d
 endef
 
 $(foreach f,$(RECTYPESML),$(eval $(call rectypes-rules-template,$(f))))
-
-# Add pr_o.cmo to circumvent a useless-warning bug when preprocessed with
-# ast-based camlp4
-
-parsing/lexer.cmx: parsing/lexer.ml4 | parsing/lexer.ml4.ml.d parsing/lexer.ml4.d
-	$(SHOW)'OCAMLOPT4 $<'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4USE) $<` pr_o.cmo -impl" -c -impl $<
-
-parsing/lexer.cmo: parsing/lexer.ml4 | parsing/lexer.ml4.ml.d parsing/lexer.ml4.d
-	$(SHOW)'OCAMLC4   $<'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4USE) $<` pr_o.cmo -impl" -c -impl $<
 
 # pretty printing of the revision number when compiling a checked out
 # source tree
@@ -780,7 +769,7 @@ endif
 
 %.cmo: %.ml4 | %.ml4.ml.d %.ml4.d
 	$(SHOW)'OCAMLC4   $<'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4USE) $<` $(CAMLP4COMPAT) -impl" -c -impl $<
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4USE) $<` `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl" -c -impl $<
 
 %.cmo: %.ml | %.ml.d
 	$(SHOW)'OCAMLC    $<'
@@ -792,7 +781,7 @@ endif
 
 %.cmx: %.ml4 | %.ml4.ml.d %.ml4.d
 	$(SHOW)'OCAMLOPT4 $<'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4USE) $<` $(CAMLP4COMPAT) -impl" -c -impl $<
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4USE) $<` `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl" -c -impl $<
 
 %.cmx: %.ml | %.ml.d
 	$(SHOW)'OCAMLOPT  $<'
@@ -808,7 +797,7 @@ endif
 
 %.ml4.preprocessed: %.ml4 | %.ml4.d
 	$(SHOW)'CAMLP4O $<'
-	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo `$(CAMLP4USE) $<` $(CAMLP4COMPAT) -impl $< > $@
+	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4USE) $<` pr_o.cmo `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl $< > $@
 
 %.vo %.glob: %.v states/initial.coq $(VO_TOOLS_STRICT) | %.v.d  $(VO_TOOLS_ORDER_ONLY)
 	$(SHOW)'COQC      $<'
@@ -830,7 +819,7 @@ endif
 #Critical section:
 # Nobody (in a make -j) should touch the .ml file here.
 	$(SHOW)'OCAMLDEP4 $<'
-	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo `$(CAMLP4USE) $<` $(CAMLP4COMPAT) -impl $< > $*.ml
+	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4USE) $<` pr_o.cmo `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl $< > $*.ml
 	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) $*.ml > "$@"
 	$(HIDE)echo "let keep_ocamldep_happy Do_not_compile_me = assert false" > $*.ml
 #End critical section

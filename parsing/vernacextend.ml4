@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(*i camlp4use: "pa_extend.cmo q_MLast.cmo" i*)
+
 (* $Id$ *)
 
 open Genarg
