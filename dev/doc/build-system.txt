@@ -38,6 +38,8 @@ The handling of globals is now: the globals of FOO.v are in FOO.glob
 and the global glob.dump is created by concatenation of all .glob
 files. In particular, .glob files are now always created.
 
+See also section "cleaning targets"
+
 Dependencies
 ------------
 
@@ -48,6 +50,28 @@ of changed files are recomputed).
 
 If you add a dependency to a Coq camlp4 extension (grammar.cma or
 q_constr.cmo), then see sections ".ml4 files" and "new files".
+
+Cleaning Targets
+----------------
+
+Targets for cleaning various parts:
+
+ - distclean: clean everything; must leave only what should end up in
+   distribution tarball and/or is in a svn checkout.
+
+ - clean: clean everything except effect of "./configure" and documentation.
+
+ - cleanconfig: clean effect of "./configure" only
+
+ - archclean:  remove all architecture-dependent   generated files
+ - indepclean: remove all architecture-independent generated files
+   (not documentation)
+
+ - objclean: clean all generated files, but not Makefile meta-data
+   (e.g. dependencies), nor debugging/development information nor
+   other cruft (e.g. editor backup files), nor documentation
+
+ - docclean: clean documentation
 
 .ml4 files
 ----------

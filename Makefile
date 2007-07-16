@@ -80,21 +80,28 @@ stage3 $(STAGE3_TARGETS): stage2
 # Cleaning
 ###########################################################################
 
-.PHONY: clean archclean ml4clean clean-ide depclean distclean cleanconfig cleantheories doclean
+.PHONY: clean objclean cruftclean indepclean archclean ml4clean clean-ide depclean distclean cleanconfig cleantheories docclean
 
-clean: archclean ml4clean depclean
+clean: objclean cruftclean depclean
+
+objclean: archclean indepclean
+
+cruftclean: ml4clean
+	find . -name '*~' -or -name '*.annot' | xargs rm -f
+	rm -f gmon.out core
+
+indepclean:
 	rm -f $(GENFILES)
 	rm -f $(COQTOPBYTE) $(COQCBYTE) bin/coq-interface$(EXE) bin/parser$(EXE)
-	find . -name '*~' -or -name '*.cm[ioa]' -or -name '*.annot' | xargs rm -f
+	find . -name '*~' -or -name '*.cm[ioa]' | xargs rm -f
 	find contrib -name '*.vo' -or -name '*.glob' | xargs rm -f
-	rm -f gmon.out core
 	rm -f */*.pp[iox] contrib/*/*.pp[iox]
 	rm -rf $(SOURCEDOCDIR)
 	rm -f toplevel/mltop.byteml toplevel/mltop.optml
 	rm -f glob.dump
 	rm -f revision
 
-doclean:
+docclean:
 	$(MAKE) -C doc clean
 
 archclean: clean-ide cleantheories
@@ -105,7 +112,7 @@ archclean: clean-ide cleantheories
 	rm -f $(TOOLS)
 	rm -f $(MINICOQ)
 
-clean-ide: 
+clean-ide:
 	rm -f $(COQIDEVO) $(COQIDEVO:.vo=.glob) $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)
 	rm -f ide/extract_index.ml ide/find_phrase.ml ide/highlight.ml
 	rm -f ide/config_lexer.ml ide/config_parser.mli ide/config_parser.ml
@@ -120,7 +127,7 @@ depclean:
 cleanconfig:
 	rm -f config/Makefile config/coq_config.ml dev/ocamldebug-v7 ide/undo.mli
 
-distclean: clean cleanconfig
+distclean: clean cleanconfig docclean
 
 cleantheories:
 	rm -f states/*.coq
