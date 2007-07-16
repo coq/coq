@@ -859,7 +859,7 @@ endif
 # to actually depend on the header files.
 %.c.d: %.c
 	$(SHOW)'CCDEP     $<'
-	$(HIDE)$(CC) -MM -MG $(CFLAGS) $(CINCLUDES) $< | sed 's/\(.*\)\.o[[:space:]]*:/\1.o \1.c.d:/'  > $@
+	$(HIDE)$(CC) -MM -MG -MQ "$@" -MQ "$(<:.c=.o)" $(CFLAGS) $(CINCLUDES) $< > $@
 
 .PRECIOUS: %.ml %.mli %.d %.ml4.d kernel/copcodes.ml
 
