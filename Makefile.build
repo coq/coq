@@ -841,13 +841,9 @@ endif
 	$(HIDE)$(COQDEP) -coqlib . -R theories Coq -R contrib Coq $(COQINCLUDES) \
   "$<" | sed 's/\(.*\)\.vo[[:space:]]*:/\1.vo \1.glob:/' > "$@"
 
-# The use of the -MG flag here presupposes that all generated C header
-# (.h) files do not themselves #include other (non-system) header files.
-# It this changes in future, then the calculation of the dependencies needs
-# to actually depend on the header files.
-%.c.d: %.c
+%.c.d: %.c | $(GENHFILES)
 	$(SHOW)'CCDEP     $<'
-	$(HIDE)$(CC) -MM -MG -MQ "$@" -MQ "$(<:.c=.o)" $(CFLAGS) $(CINCLUDES) $< > $@
+	$(HIDE)$(CC) -MM -MQ "$@" -MQ "$(<:.c=.o)" $(CFLAGS) $(CINCLUDES) $< > $@
 
 .SECONDARY: $(GENFILES)
 
