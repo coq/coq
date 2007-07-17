@@ -845,7 +845,12 @@ endif
 	$(SHOW)'CCDEP     $<'
 	$(HIDE)$(CC) -MM -MQ "$@" -MQ "$(<:.c=.o)" $(CFLAGS) $(CINCLUDES) $< > $@
 
-.SECONDARY: $(GENFILES)
+## The GENFILES and ML4FILESML files need to be secondary, else they
+## get deleted by make after the dependencies get generated. This may
+## at first sight be a good thing, but then if any one .ml.d
+## dependency needs to be regenerated, these files get regenerated,
+## which triggers the recalculation of _all_ .ml.d dependencies!
+.SECONDARY: $(GENFILES) $(ML4FILESML)
 
 ###########################################################################
 # this sets up developper supporting stuff
