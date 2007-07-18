@@ -38,10 +38,26 @@ WHAT DO YOU NEED ?
      - Objective Caml version 3.07 or later
        (available at http://caml.inria.fr/)
 
-     - GNU Make version 3.80 or later
-       (available at http://www.gnu.org/software/make/, but also a
+     - GNU Make version 3.81 or later
+       (
+	available at http://www.gnu.org/software/make/, but also a
         standard or optional add-on part to most Unices and Unix
-        clones, sometimes under the name "gmake".)
+        clones, sometimes under the name "gmake".
+
+	If a new enough version is not included in your system, nor
+        easily available as an add-on, this should get you a working
+        make:
+
+	#Download it (wget is an example, use your favourite FTP or HTTP client)
+	wget http://ftp.gnu.org/pub/gnu/make/make-3.81.tar.bz2
+	bzip9 -cd make-3.81.tar.bz2 | tar x
+	#If you don't have bzip2, you can download the gzipped version instead.
+        cd make-3.81
+        ./configure --prefix=$(HOME)
+	make install
+
+	Then, make sure that $(HOME)/bin is first in your $PATH.
+       )
 
      - a C compiler
 
