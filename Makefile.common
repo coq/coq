@@ -29,7 +29,11 @@ COQIDEBYTE:=bin/coqide.byte$(EXE)
 COQIDEOPT:=bin/coqide.opt$(EXE)
 COQIDE:=bin/coqide$(EXE)
 
+ifeq ($(BEST),opt)
 COQBINARIES:= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQTOP)
+else
+COQBINARIES:= $(COQMKTOP) $(COQC) $(COQTOPBYTE)               $(COQTOP)
+endif
 OTHERBINARIES:=$(COQMKTOPBYTE) $(COQCBYTE)
 
 MINICOQ:=bin/minicoq$(EXE)
