@@ -53,10 +53,10 @@ WHAT DO YOU NEED ?
 	bzip9 -cd make-3.81.tar.bz2 | tar x
 	#If you don't have bzip2, you can download the gzipped version instead.
         cd make-3.81
-        ./configure --prefix=$(HOME)
+        ./configure --prefix=${HOME}
 	make install
 
-	Then, make sure that $(HOME)/bin is first in your $PATH.
+	Then, make sure that ${HOME}/bin is first in your $PATH.
        )
 
      - a C compiler
