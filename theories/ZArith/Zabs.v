@@ -7,7 +7,7 @@
 (************************************************************************)
 (*i $Id$ i*)
 
-(** Binary Integers (Pierre Crégut (CNET, Lannion, France) *)
+(** Binary Integers (Pierre CrÃ©gut (CNET, Lannion, France) *)
 
 Require Import Arith_base.
 Require Import BinPos.
@@ -70,6 +70,13 @@ Proof.
       (intros H2; rewrite H2); auto.
 Qed.
 
+Lemma Zabs_spec : forall x:Z, 
+  0 <= x /\ Zabs x = x \/ 
+  0 > x /\ Zabs x = -x. 
+Proof.
+ intros; unfold Zabs, Zle, Zgt; destruct x; simpl; intuition discriminate.
+Qed.
+
 (** * Triangular inequality *)
 
 Hint Local Resolve Zle_neg_pos: zarith.
@@ -87,6 +94,16 @@ Proof.
       try rewrite Zopp_plus_distr; auto with zarith.
   apply Zplus_le_compat; simpl in |- *; auto with zarith.
   apply Zplus_le_compat; simpl in |- *; auto with zarith.
+Qed.
+
+(** * A characterization of the sign function: *)
+
+Lemma Zsgn_spec : forall x:Z, 
+  0 < x /\ Zsgn x = 1 \/ 
+  0 = x /\ Zsgn x = 0 \/ 
+  0 > x /\ Zsgn x = -1.
+Proof. 
+ intros; unfold Zsgn, Zle, Zgt; destruct x; compute; intuition.
 Qed.
 
 (** * Absolute value and multiplication *)

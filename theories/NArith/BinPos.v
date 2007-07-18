@@ -220,6 +220,22 @@ Fixpoint Pcompare (x y:positive) (r:comparison) {struct y} : comparison :=
 
 Infix "?=" := Pcompare (at level 70, no associativity) : positive_scope.
 
+Definition Plt (x y:positive) := (Pcompare x y Eq) = Lt.
+Definition Pgt (x y:positive) := (Pcompare x y Eq) = Gt.
+Definition Ple (x y:positive) := (Pcompare x y Eq) <> Gt.
+Definition Pge (x y:positive) := (Pcompare x y Eq) <> Lt.
+
+Infix "<=" := Ple : positive_scope.
+Infix "<" := Plt : positive_scope.
+Infix ">=" := Pge : positive_scope.
+Infix ">" := Pgt : positive_scope.
+
+Notation "x <= y <= z" := (x <= y /\ y <= z) : positive_scope.
+Notation "x <= y < z" := (x <= y /\ y < z) : positive_scope.
+Notation "x < y < z" := (x < y /\ y < z) : positive_scope.
+Notation "x < y <= z" := (x < y /\ y <= z) : positive_scope.
+
+
 Definition Pmin (p p' : positive) := match Pcompare p p' Eq with 
  | Lt | Eq => p 
  | Gt => p'
@@ -959,6 +975,11 @@ Qed.
 (**********************************************************************)
 (** Properties of subtraction on binary positive numbers *)
 
+Lemma Ppred_minus : forall p, Ppred p = Pminus p xH.
+Proof.
+  destruct p; compute; auto.
+Qed.
+
 Lemma double_eq_zero_inversion :
   forall p:positive_mask, Pdouble_mask p = IsNul -> p = IsNul.
 Proof.
@@ -989,6 +1010,33 @@ Proof.
     [ simpl in |- *; rewrite IHp; simpl in |- *; trivial
       | simpl in |- *; rewrite IHp; auto
       | auto ].
+Qed.
+
+Lemma Pminus_mask_carry_diag : forall p, Pminus_mask_carry p p = IsNeg.
+Proof.
+  induction p; simpl; auto; rewrite IHp; auto.
+Qed.
+
+Lemma Pminus_mask_IsNeg : forall p q:positive, 
+ Pminus_mask p q = IsNeg -> Pminus_mask_carry p q = IsNeg.
+Proof.
+  induction p; destruct q; simpl; intros; auto; try discriminate.
+
+  unfold Pdouble_mask in H.
+  generalize (IHp q).
+  destruct (Pminus_mask p q); try discriminate.
+  intro H'; rewrite H'; auto.
+
+  unfold Pdouble_plus_one_mask in H.
+  destruct (Pminus_mask p q); simpl; auto; try discriminate.
+
+  unfold Pdouble_plus_one_mask in H.
+  destruct (Pminus_mask_carry p q); simpl; auto; try discriminate.
+
+  unfold Pdouble_mask in H.
+  generalize (IHp q).
+  destruct (Pminus_mask p q); try discriminate.
+  intro H'; rewrite H'; auto.
 Qed.
 
 Lemma ZL10 :
@@ -1099,3 +1147,26 @@ Proof.
     intros H2 H3; elim H3; intros H4 H5; unfold Pminus in |- *; 
       rewrite H2; exact H4.
 Qed.
+
+(* When x<y, the substraction of x by y returns 1 *)
+
+Lemma Pminus_mask_Lt : forall p q:positive, p<q -> Pminus_mask p q = IsNeg.
+Proof.
+  unfold Plt; induction p; destruct q; simpl; intros; auto; try discriminate.
+  rewrite IHp; simpl; auto.
+  rewrite IHp; simpl; auto.
+  apply Pcompare_Gt_Lt; auto.
+  destruct (Pcompare_Lt_Lt _ _ H).
+  rewrite Pminus_mask_IsNeg; simpl; auto.
+  subst q; rewrite Pminus_mask_carry_diag; auto.
+  rewrite IHp; simpl; auto.
+Qed. 
+
+Lemma Pminus_Lt : forall p q:positive, p<q -> p-q = xH.
+Proof.
+  intros; unfold Plt, Pminus; rewrite Pminus_mask_Lt; auto.
+Qed.
+
+
+
+

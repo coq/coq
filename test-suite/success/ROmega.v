@@ -68,31 +68,29 @@ Variable n : nat.
 Variable ap_n : n <> 0.
 Let delta := f n ap_n.
 Lemma lem7 : n = n.
- (*romega. ---> ROMEGA CANT DEAL WITH NAT*)
-Admitted.
+ romega with nat.
+Qed.
 End C.
 
 (* Problem of dependencies *)
 Require Import Omega.
 Lemma lem8 : forall H : 0 = 0 -> 0 = 0, H = H -> 0 = 0.
 intros.
-(* romega. ---> ROMEGA CANT DEAL WITH NAT*)
-Admitted.
+romega with nat.
+Qed.
 
 (* Bug that what caused by the use of intro_using in Omega *)
 Require Import Omega.
 Lemma lem9 :
  forall p q : nat, ~ (p <= q /\ p < q \/ q <= p /\ p < q) -> p < p \/ p <= p.
 intros.
-(* romega. ---> ROMEGA CANT DEAL WITH NAT*) 
-Admitted.
+romega with nat.
+Qed.
 
 (* Check that the interpretation of mult on nat enforces its positivity *)
 (* Submitted by Hubert Thierry (bug #743) *)
-(* Postponed... problem with goals of the form "(n*m=0)%nat -> (n*m=0)%Z"
-Require Omega.
-Lemma lem10 : (n, m : nat) (le n (plus n (mult n m))).
+(* Postponed... problem with goals of the form "(n*m=0)%nat -> (n*m=0)%Z" *)
+Lemma lem10 : forall n m : nat, le n (plus n (mult n m)).
 Proof.
-Intros; Omega.
+intros; romega with nat.
 Qed.
-*)

@@ -7,8 +7,8 @@
 (***********************************************************************)
 
 (* Finite sets library.  
- * Authors: Pierre Letouzey and Jean-Christophe Filliâtre 
- * Institution: LRI, CNRS UMR 8623 - Université Paris Sud
+ * Authors: Pierre Letouzey and Jean-Christophe FilliÃ¢tre 
+ * Institution: LRI, CNRS UMR 8623 - UniversitÃ© Paris Sud
  *              91405 Orsay, France *)
 
 (* $Id$ *)
@@ -352,46 +352,15 @@ Module MoreInt (I:Int).
   Ltac i2z_refl := 
     i2z_gen;
     match goal with |- ?t => 
-      let e := p2ep t 
-	in 
-	(change (ep2p e); 
-	  apply norm_ep_correct2; 
-	    simpl)
+      let e := p2ep t in 
+      change (ep2p e); apply norm_ep_correct2; simpl
     end.
 
-  Ltac iauto := i2z_refl; auto.
-  Ltac iomega := i2z_refl; intros; romega.
-
-  Open Scope Z_scope.
-
-  Lemma max_spec : forall (x y:Z), 
-    x >= y /\ Zmax x y = x  \/
-    x < y /\ Zmax x y = y.
-  Proof.
-    intros; unfold Zmax, Zlt, Zge.
-    destruct (Zcompare x y); [ left | right | left ]; split; auto; discriminate.
-  Qed.
-
-  Ltac omega_max_genspec x y := 
-    generalize (max_spec x y); 
-    (let z := fresh "z" in let Hz := fresh "Hz" in 
-     set (z:=Zmax x y); clearbody z).
-
-  Ltac omega_max_loop := 
-    match goal with 
-      (* hack: we don't want [i2z (height ...)] to be reduced by romega later... *)
-      | |- context [ i2z (?f ?x) ] => 
-          let i := fresh "i2z" in (set (i:=i2z (f x)); clearbody i); omega_max_loop
-      | |- context [ Zmax ?x ?y ] => omega_max_genspec x y; omega_max_loop
-      | _ => intros
-    end.
-
-  Ltac omega_max := i2z_refl; omega_max_loop; try romega.
+  (* i2z_refl can be replaced below by (simpl in *; i2z). 
+     The reflexive version improves compilation of AVL files by about 15%  *)
   
-  Ltac false_omega := i2z_refl; intros; romega.
-  Ltac false_omega_max := elimtype False; omega_max.
+  Ltac omega_max := i2z_refl; romega with Z.
 
-  Open Scope Int_scope.
 End MoreInt.
 
 

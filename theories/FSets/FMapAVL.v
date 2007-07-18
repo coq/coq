@@ -416,7 +416,7 @@ Ltac bal_tac :=
 
 Ltac bal_tac_imp := match goal with 
   | |- context [ assert_false ] => 
-      inv avl; avl_nns; simpl in *; false_omega
+      inv avl; avl_nns; simpl in *; omega_max
   | _ => idtac
 end.
 
@@ -703,7 +703,7 @@ Proof.
  rewrite e3; simpl;destruct 1.
  split.
  apply bal_avl; auto.
- simpl; omega_max.
+ omega_max.
  omega_bal.
 Qed.
 

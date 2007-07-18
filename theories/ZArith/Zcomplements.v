@@ -10,7 +10,7 @@
 
 Require Import ZArithRing.
 Require Import ZArith_base.
-Require Import Omega.
+Require Export Omega.
 Require Import Wf_nat.
 Open Local Scope Z_scope.
 

@@ -461,7 +461,7 @@ Lemma bal_in : forall l x r y, avl l -> avl r ->
 Proof.
  bal_tac; 
  solve [repeat rewrite create_in; intuition_in
-       |inv avl; avl_nns; simpl in *; false_omega].
+       |inv avl; avl_nns; simpl in *; omega_max].
 Qed.
 
 Ltac omega_bal := match goal with 
@@ -1856,7 +1856,7 @@ Qed.
 Lemma height_0 : forall s, avl s -> height s = 0 -> s = Leaf.
 Proof.
  destruct 1; intuition; simpl in *.
- avl_nns; simpl in *; false_omega_max.
+ avl_nns; simpl in *; elimtype False; omega_max.
 Qed.   
 
 (** * Union

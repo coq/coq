@@ -321,6 +321,7 @@ let parse_term t =
     | Kapp("Zmult",[t1;t2]) -> Tmult (t1,t2)
     | Kapp("Zopp",[t]) -> Topp t
     | Kapp("Zsucc",[t]) -> Tsucc t
+    | Kapp("Zpred",[t]) -> Tplus(t, mk_Z (Bigint.neg Bigint.one))
     | Kapp(("Zpos"|"Zneg"|"Z0"),_) -> 
 	(try Tnum (recognize t) with _ -> Tother)
     | _ -> Tother
@@ -341,7 +342,7 @@ let parse_rel gl t =
 let is_scalar t =
   let rec aux t = match destructurate t with
     | Kapp(("Zplus"|"Zminus"|"Zmult"),[t1;t2]) -> aux t1 & aux t2
-    | Kapp(("Zopp"|"Zsucc"),[t]) -> aux t
+    | Kapp(("Zopp"|"Zsucc"|"Zpred"),[t]) -> aux t
     | Kapp(("Zpos"|"Zneg"|"Z0"),_) -> let _ = recognize t in true
     | _ -> false in
   try aux t with _ -> false

@@ -9,7 +9,7 @@
 (*i $Id$ i*)
 
 (***********************************************************)
-(** Binary Integers (Pierre Crégut, CNET, Lannion, France) *)
+(** Binary Integers (Pierre CrÃ©gut, CNET, Lannion, France) *)
 (***********************************************************)
 
 Require Export BinPos.
@@ -967,6 +967,21 @@ Qed.
 (**********************************************************************)
 (** * Relating binary positive numbers and binary integers *)
 
+Lemma Zpos_eq : forall p q, p = q -> Zpos p = Zpos q.
+Proof.
+  intros; f_equal; auto.
+Qed.
+
+Lemma Zpos_eq_rev : forall p q, Zpos p = Zpos q -> p = q.
+Proof.
+  inversion 1; auto.
+Qed.
+
+Lemma Zpos_eq_iff : forall p q, p = q <-> Zpos p = Zpos q.
+Proof.
+  split; [apply Zpos_eq|apply Zpos_eq_rev].
+Qed.
+
 Lemma Zpos_xI : forall p:positive, Zpos (xI p) = Zpos 2 * Zpos p + Zpos 1.
 Proof.
   intro; apply refl_equal.
@@ -1061,3 +1076,4 @@ Definition Z_of_N (x:N) := match x with
                              | N0 => Z0
                              | Npos p => Zpos p
                            end.
+

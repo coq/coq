@@ -10,14 +10,14 @@ intros x y.
  omega.
 Qed.
 
-(* Proposed by Pierre Crégut *)
+(* Proposed by Pierre CrÃ©gut *)
 
 Lemma lem2 : forall x : Z, (x < 4)%Z -> (x > 2)%Z -> x = 3%Z.
 intro.
  omega.
 Qed.
 
-(* Proposed by Jean-Christophe Filliâtre *)
+(* Proposed by Jean-Christophe FilliÃ¢tre *)
 
 Lemma lem3 : forall x y : Z, x = y -> (x + x)%Z = (y + y)%Z.
 Proof.
@@ -25,7 +25,7 @@ intros.
  omega.
 Qed.
 
-(* Proposed by Jean-Christophe Filliâtre: confusion between an Omega *)
+(* Proposed by Jean-Christophe FilliÃ¢tre: confusion between an Omega *)
 (* internal variable and a section variable (June 2001) *)
 
 Section A.
@@ -87,10 +87,8 @@ Qed.
 
 (* Check that the interpretation of mult on nat enforces its positivity *)
 (* Submitted by Hubert Thierry (bug #743) *)
-(* Postponed... problem with goals of the form "(n*m=0)%nat -> (n*m=0)%Z"
-Require Omega.
-Lemma lem10 : (n, m : nat) (le n (plus n (mult n m))).
+(* Postponed... problem with goals of the form "(n*m=0)%nat -> (n*m=0)%Z" *)
+Lemma lem10 : forall n m:nat, le n (plus n (mult n m)).
 Proof.
-Intros; Omega.
+intros; omega with *.
 Qed.
-*)

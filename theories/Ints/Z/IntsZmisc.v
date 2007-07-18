@@ -100,7 +100,7 @@ Definition is_lt (n m : positive) :=
   end.
 Infix "?<" := is_lt (at level 70, no associativity) : P_scope.
 
-Lemma is_lt_spec : forall n m, if n ?< m then n < m else m <= n. 
+Lemma is_lt_spec : forall n m, if n ?< m then (n < m)%Z else (m <= n)%Z. 
 Proof.
  intros n m; unfold is_lt, Zlt, Zle, Zcompare.
  rewrite (ZC4 m n);destruct ((n ?= m) Eq);trivial;try (intro;discriminate).
