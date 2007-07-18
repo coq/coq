@@ -51,7 +51,7 @@ reflexive, symmetric and transitive.
 A parametric unary function $f$ of type
 \texttt{forall ($x_1$:$T_1$) \ldots ($x_n$:$T_n$), $A_1$ -> $A_2$}
 covariantly respects two parametric relation instances $R_1$ and $R_2$ if,
-whenever $m, n$ satisfy $R_1~x~y$, their images $(f~x)$ and $(f~y)$ 
+whenever $x, y$ satisfy $R_1~x~y$, their images $(f~x)$ and $(f~y)$ 
 satisfy $R_2~(f~x)~(f~y)$ . An $f$ that respects its input and output relations
 will be called a unary covariant \emph{morphism}. We can also say that $f$ is
 a monotone function with respect to $R_1$ and $R_2$. The sequence $x_1,\ldots x_n$ represents the parameters of the morphism.
@@ -139,13 +139,13 @@ A parametric relation
 can be declared with the following command
 
 \comindex{Add Relation}
-\begin{verse}
+\begin{quote}
   \texttt{Add Relation} \textit{A Aeq}\\
   ~\zeroone{\texttt{reflexivity proved by} \textit{refl}}\\
   ~\zeroone{\texttt{symmetry proved by} \textit{sym}}\\
   ~\zeroone{\texttt{transitivity proved by} \textit{trans}}\\
   \texttt{~as} \textit{id}.
-\end{verse}
+\end{quote}
 after having required the \texttt{Setoid} module with the
 \texttt{Require Setoid} command.
 
@@ -182,14 +182,14 @@ that are syntactic compositions of parametric morphism instances declared with
 the following command.
 
 \comindex{Add Morphism}
-\begin{verse}
+\begin{quote}
   \texttt{Add Morphism} \textit{f}\\
   \texttt{~with signature} \textit{sig}\\
   \texttt{~as id}.\\
   \texttt{Proof}\\
   ~\ldots\\
   \texttt{Qed}
-\end{verse}
+\end{quote}
 
 The command declares \textit{f} as a parametric morphism of signature
 \textit{sig}. The identifier \textit{id} gives a unique name to the morphism
@@ -361,12 +361,12 @@ set of alternative new goals. To force one particular choice, the user
 can switch to the following alternative syntax for rewriting:
 
 \comindex{setoid\_rewrite}
-\begin{verse}
+\begin{quote}
   \texttt{setoid\_rewrite} \zeroone{\textit{orientation}} \textit{term}
   \zeroone{\texttt{in} \textit{ident}}\\
   \texttt{~generate side conditions}
   \textit{term}$_1$ \ldots \textit{term}$_n$\\
-\end{verse}
+\end{quote}
 Up to the \texttt{generate side conditions} part, the syntax is 
 equivalent to the
 one of the \texttt{rewrite} tactic. Additionally, the user can specify a list
@@ -460,41 +460,41 @@ the prefixed tactics it is possible to pass additional arguments such as
 \texttt{generate side conditions} or \texttt{using relation}.
 
 \comindex{setoid\_reflexivity}
-\begin{verse}
+\begin{quote}
   \texttt{setoid\_reflexivity}
-\end{verse}
+\end{quote}
 
 \comindex{setoid\_symmetry}
-\begin{verse}
+\begin{quote}
   \texttt{setoid\_symmetry}
   \zeroone{\texttt{in} \textit{ident}}\\
-\end{verse}
+\end{quote}
 
 \comindex{setoid\_transitivity}
-\begin{verse}
+\begin{quote}
   \texttt{setoid\_transitivity}
-\end{verse}
+\end{quote}
 
 \comindex{setoid\_rewrite}
-\begin{verse}
+\begin{quote}
   \texttt{setoid\_rewrite} \zeroone{\textit{orientation}} \textit{term}\\
   ~\zeroone{\texttt{in} \textit{ident}}\\
   ~\zeroone{\texttt{generate side conditions}
   \textit{term}$_1$ \ldots \textit{term}$_n$}\\
-\end{verse}
+\end{quote}
 
 The \texttt{generate side conditions} argument cannot be passed to the
 unprefixed form.
 
 \comindex{setoid\_replace}
-\begin{verse}
+\begin{quote}
   \texttt{setoid\_replace} \textit{term} \texttt{with} \textit{term}
   ~\zeroone{\texttt{in} \textit{ident}}\\
   ~\zeroone{\texttt{using relation} \textit{term}}\\
   ~\zeroone{\texttt{generate side conditions}
   \textit{term}$_1$ \ldots \textit{term}$_n$}\\
   ~\zeroone{\texttt{by} \textit{tactic}}
-\end{verse}
+\end{quote}
 
 The  \texttt{generate  side  conditions} and  \texttt{using  relation}
 arguments cannot be passed to the unprefixed form. The latter argument
@@ -521,9 +521,9 @@ Due to backward compatibility reasons, the following syntax for the
 declaration of setoids and morphisms is also accepted.
 
 \comindex{Add Setoid}
-\begin{verse}
+\begin{quote}
   \texttt{Add Setoid} \textit{A Aeq ST} \texttt{as} \textit{ident}
-\end{verse}
+\end{quote}
 where \textit{Aeq} is a congruence relation without parameters,
 \textit{A} is its carrier and \textit{ST} is an object of type
 \verb|(Setoid_Theory A Aeq)| (i.e. a record packing together the reflexivity,
@@ -531,12 +531,12 @@ symmetry and transitivity lemmas). Notice that the syntax is not completely
 backward compatible since the identifier was not required.
 
 \comindex{Add Morphism}
-\begin{verse}
+\begin{quote}
   \texttt{Add Morphism} \textit{ f }:\textit{ ident}.\\
   Proof.\\
   \ldots\\
   Qed.
-\end{verse}
+\end{quote}
 
 The latter command is restricted to the declaration of morphisms without
 parameters. It is not fully backward compatible since the property the user

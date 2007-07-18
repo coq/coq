@@ -1,5 +1,4 @@
-\chapter{The {\Coq} library}
-\index{Theories}\label{Theories}
+\chapter[The {\Coq} library]{The {\Coq} library\index{Theories}\label{Theories}}
 
 The \Coq\ library is structured into three parts:
 
@@ -23,8 +22,7 @@ The \Coq\ library is structured into three parts:
 
 This chapter briefly reviews these libraries.
 
-\section{The basic library}
-\label{Prelude}
+\section[The basic library]{The basic library\label{Prelude}}
 
 This section lists the basic notions and results which are directly
 available in the standard \Coq\ system\footnote{Most 
@@ -39,7 +37,7 @@ root directory; this includes the modules
 and {\tt Wf}.
 Module {\tt Logic\_Type} also makes it in the initial state}.
 
-\subsection{Notations} \label{Notations}
+\subsection[Notations]{Notations\label{Notations}}
 
 This module defines the parsing and pretty-printing of many symbols
 (infixes, prefixes, etc.). However, it does not assign a meaning to these
@@ -84,8 +82,7 @@ Notation & Precedence & Associativity \\
 \label{init-notations}
 \end{figure}
 
-\subsection{Logic} 
-\label{Logic}
+\subsection[Logic]{Logic\label{Logic}}
 
 \begin{figure}
 \begin{centerframe}
@@ -130,8 +127,8 @@ primitive universal quantification (it is a dependent product over a
 proposition). The primitive universal quantification allows both
 first-order and higher-order quantification.
 
-\subsubsection{Propositional Connectives} \label{Connectives}
-\index{Connectives}
+\subsubsection[Propositional Connectives]{Propositional Connectives\label{Connectives}
+\index{Connectives}}
 
 First, we find propositional calculus connectives:
 \ttindex{True}
@@ -173,8 +170,8 @@ Definition iff (P Q:Prop) := (P -> Q) /\ (Q -> P).
 Definition IF_then_else (P Q R:Prop) := P /\ Q \/ ~ P /\ R.
 \end{coq_example*}
 
-\subsubsection{Quantifiers} \label{Quantifiers}
-\index{Quantifiers}
+\subsubsection[Quantifiers]{Quantifiers\label{Quantifiers}
+\index{Quantifiers}}
 
 Then we find first-order quantifiers:
 \ttindex{all}
@@ -208,8 +205,8 @@ The following abbreviations are allowed:
 The type annotation \texttt{:A} can be omitted when \texttt{A} can be
 synthesized by the system.
 
-\subsubsection{Equality} \label{Equality}
-\index{Equality}
+\subsubsection[Equality]{Equality\label{Equality}
+\index{Equality}}
 
 Then, we find equality, defined as an inductive relation. That is,
 given a \verb:Type: \verb:A: and an \verb:x: of type \verb:A:, the
@@ -226,8 +223,7 @@ Inductive eq (A:Type) (x:A) : A -> Prop :=
     refl_equal : eq A x x.
 \end{coq_example*}
 
-\subsubsection{Lemmas} 
-\label{PreludeLemmas}
+\subsubsection[Lemmas]{Lemmas\label{PreludeLemmas}}
 
 Finally, a few easy lemmas are provided.
 
@@ -297,9 +293,8 @@ Theorem f_equal3 :
 Abort.
 \end{coq_eval}
 
-\subsection{Datatypes}
-\label{Datatypes}
-\index{Datatypes}
+\subsection[Datatypes]{Datatypes\label{Datatypes}
+\index{Datatypes}}
 
 \begin{figure}
 \begin{centerframe}
@@ -331,11 +326,9 @@ In the basic library, we find the definition\footnote{They are in {\tt
 defined as inductive constructions over the sort \verb:Set:. Some of
 them come with a special syntax shown on Figure~\ref{specif-syntax}.
 
-\subsubsection{Programming} 
-\label{Programming}
+\subsubsection[Programming]{Programming\label{Programming}
 \index{Programming}
 \label{libnats}
-
 \ttindex{unit}
 \ttindex{tt}
 \ttindex{bool}
@@ -348,7 +341,7 @@ them come with a special syntax shown on Figure~\ref{specif-syntax}.
 \ttindex{Some}
 \ttindex{None}
 \ttindex{identity}
-\ttindex{refl\_identity}
+\ttindex{refl\_identity}}
 
 \begin{coq_example*}
 Inductive unit : Set := tt.
@@ -834,8 +827,7 @@ additional document \verb!Library.dvi!. They are also accessible on the WWW
 through the \Coq\ homepage
 \footnote{\texttt{http://coq.inria.fr}}.
 
-\subsection{Notations for integer arithmetics}
-\index{Arithmetical notations}
+\subsection[Notations for integer arithmetics]{Notations for integer arithmetics\index{Arithmetical notations}}
 
 On figure \ref{zarith-syntax} is described the syntax of expressions
 for integer arithmetics. It is provided by requiring and opening the
@@ -890,9 +882,8 @@ Open Scope Z_scope.
 Check 2 + 3.
 \end{coq_example}
 
-\subsection{Peano's arithmetic (\texttt{nat})}
-\index{Peano's arithmetic}
-\ttindex{nat\_scope}
+\subsection[Peano's arithmetic (\texttt{nat})]{Peano's arithmetic (\texttt{nat})\index{Peano's arithmetic}
+\ttindex{nat\_scope}}
 
 While in the initial state, many operations and predicates of Peano's
 arithmetic are defined, further operations and results belong to other
@@ -926,8 +917,7 @@ Notation & Interpretation \\
 
 \subsection{Real numbers library}
 
-\subsubsection{Notations for real numbers}
-\index{Notations for real numbers}
+\subsubsection[Notations for real numbers]{Notations for real numbers\index{Notations for real numbers}}
 
 This is provided by requiring and opening the module {\tt Reals} and
 opening scope {\tt R\_scope}. This set of notations is very similar to
@@ -1032,8 +1022,7 @@ in document \url{http://coq.inria.fr/~desmettr/Reals.ps}.
 Reset Initial.
 \end{coq_eval}
 
-\subsection{List library}
-\index{Notations for lists}
+\subsection[List library]{List library\index{Notations for lists}
 \ttindex{length}
 \ttindex{head}
 \ttindex{tail}
@@ -1043,7 +1032,7 @@ Reset Initial.
 \ttindex{map}
 \ttindex{flat\_map}
 \ttindex{fold\_left}
-\ttindex{fold\_right}
+\ttindex{fold\_right}}
 
 Some elementary operations on polymorphic lists are defined here. They
 can be accessed by requiring module {\tt List}.
@@ -1082,9 +1071,8 @@ Notation & Interpretation & Precedence & Associativity\\
 \end{figure}
 
 
-\section{Users' contributions}
-\index{Contributions}
-\label{Contributions}
+\section[Users' contributions]{Users' contributions\index{Contributions}
+\label{Contributions}}
 
 Numerous users' contributions have been collected and are available at
 URL \url{coq.inria.fr/contribs/}.  On this web page, you have a list

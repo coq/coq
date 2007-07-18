@@ -1,8 +1,8 @@
-\chapter{Calculus of Inductive Constructions}
+\chapter[Calculus of Inductive Constructions]{Calculus of Inductive Constructions
 \label{Cic}
 \index{Cic@\textsc{CIC}}
 \index{pCic@p\textsc{CIC}}
-\index{Calculus of (Co)Inductive Constructions}
+\index{Calculus of (Co)Inductive Constructions}}
 
 The underlying formal language of {\Coq} is a {\em Calculus of
   Constructions} with {\em Inductive Definitions}.  It is presented in
@@ -53,7 +53,7 @@ formulation of type theory including the possibility of inductive
 constructions, Barendregt~\cite{Bar91} studies the modern form of type
 theory.
 
-\section{The terms}\label{Terms}
+\section[The terms]{The terms\label{Terms}}
 
 In most type theories, one usually makes a syntactic distinction
 between types and terms. This is not the case for \CIC\ which defines
@@ -78,8 +78,8 @@ functions which associate to each natural number $n$ an object of
 type $(P~n)$ and consequently represent proofs of the formula
 ``$\forall x.P(x)$''.
 
-\subsection{Sorts}\label{Sorts}
-\index{Sorts}
+\subsection[Sorts]{Sorts\label{Sorts}
+\index{Sorts}}
 Types are seen as terms of the language and then should belong to
 another type. The type of a type is always a constant of the language
 called a {\em sort}.
@@ -214,13 +214,13 @@ $\lb~x:T\mto U$ and $\forall x:T, U$ the occurrences of $x$ in $U$
 are bound.  They are represented by de Bruijn indexes in the internal
 structure of terms.
 
-\paragraph{Substitution.} \index{Substitution}
+\paragraph[Substitution.]{Substitution.\index{Substitution}}
 The notion of substituting a term $t$ to free occurrences of a
 variable $x$ in a term $u$ is defined as usual. The resulting term
 is written $\subst{u}{x}{t}$.
 
 
-\section{Typed terms}\label{Typed-terms}
+\section[Typed terms]{Typed terms\label{Typed-terms}}
 
 As objects of type theory, terms are subjected to {\em type
 discipline}. The well typing of a term depends on an environment which
@@ -257,7 +257,7 @@ and if $(x:=t:T) \in \Gamma$ then $(x:=t:T) \in \Delta$.
 A variable $x$ is said to be free in $\Gamma$ if $\Gamma$ contains a
 declaration $y:T$ such that $x$ is free in $T$.
 
-\paragraph{Environment.}\index{Environment}
+\paragraph[Environment.]{Environment.\index{Environment}}
 Because we are manipulating global declarations (constants and global
 assumptions), we also need to consider a global environment $E$.
 
@@ -281,7 +281,7 @@ rules to which the following definitions apply: if the name $c$ is
 declared in $E$, we write $c \in E$ and if $c:T$ or $c:=t:T$ is
 declared in $E$, we write $(c : T) \in E$.
 
-\paragraph{Typing rules.}\label{Typing-rules}\index{Typing rules}
+\paragraph[Typing rules.]{Typing rules.\label{Typing-rules}\index{Typing rules}}
 In the following, we assume $E$ is a valid environment wrt to
 inductive definitions.  We define simultaneously two
 judgments.  The first one \WTEG{t}{T} means the term $t$ is well-typed
@@ -348,11 +348,9 @@ well-typed without having $((\lb~x:T\mto u)~t)$ well-typed (where
 $T$ is a type of $t$). This is because the value $t$ associated to $x$
 may be used in a conversion rule (see section \ref{conv-rules}).
 
-\section{Conversion rules}
-\index{Conversion rules}
-\label{conv-rules}
-\paragraph{$\beta$-reduction.}
-\label{beta}\index{beta-reduction@$\beta$-reduction}
+\section[Conversion rules]{Conversion rules\index{Conversion rules}
+\label{conv-rules}}
+\paragraph[$\beta$-reduction.]{$\beta$-reduction.\label{beta}\index{beta-reduction@$\beta$-reduction}}
 
 We want to be able to identify some terms as we can identify the
 application of a function to a given argument with its result. For
@@ -372,8 +370,7 @@ confluence, strong normalization, subject reduction. These results are
 theoretically of great importance but we will not detail them here and
 refer the interested reader to \cite{Coq85}.
 
-\paragraph{$\iota$-reduction.}
-\label{iota}\index{iota-reduction@$\iota$-reduction}
+\paragraph[$\iota$-reduction.]{$\iota$-reduction.\label{iota}\index{iota-reduction@$\iota$-reduction}}
 A specific conversion rule is associated to the inductive objects in
 the environment.  We shall give later on (section \ref{iotared}) the
 precise rules but it just says that a destructor applied to an object
@@ -382,8 +379,7 @@ called $\iota$-reduction and is more precisely studied in
 \cite{Moh93,Wer94}.
 
 
-\paragraph{$\delta$-reduction.}
-\label{delta}\index{delta-reduction@$\delta$-reduction}
+\paragraph[$\delta$-reduction.]{$\delta$-reduction.\label{delta}\index{delta-reduction@$\delta$-reduction}}
 
 We may have defined variables in contexts or constants in the global
 environment. It is legal to identify such a reference with its value,
@@ -393,8 +389,7 @@ reduction is called $\delta$-reduction and shows as follows.
 $$\WTEGRED{x}{\triangleright_{\delta}}{t}~~~~~\mbox{if $(x:=t:T) \in \Gamma$}~~~~~~~~~\WTEGRED{c}{\triangleright_{\delta}}{t}~~~~~\mbox{if $(c:=t:T) \in E$}$$
 
 
-\paragraph{$\zeta$-reduction.}
-\label{zeta}\index{zeta-reduction@$\zeta$-reduction}
+\paragraph[$\zeta$-reduction.]{$\zeta$-reduction.\label{zeta}\index{zeta-reduction@$\zeta$-reduction}}
 
 Coq allows also to remove local definitions occurring in terms by
 replacing the defined variable by its value. The declaration being
@@ -403,9 +398,8 @@ called $\zeta$-reduction and shows as follows.
 
 $$\WTEGRED{\kw{let}~x:=u~\kw{in}~t}{\triangleright_{\zeta}}{\subst{t}{x}{u}}$$
 
-\paragraph{Convertibility.}
-\label{convertibility}
-\index{beta-reduction@$\beta$-reduction}\index{iota-reduction@$\iota$-reduction}\index{delta-reduction@$\delta$-reduction}\index{zeta-reduction@$\zeta$-reduction}
+\paragraph[Convertibility.]{Convertibility.\label{convertibility}
+\index{beta-reduction@$\beta$-reduction}\index{iota-reduction@$\iota$-reduction}\index{delta-reduction@$\delta$-reduction}\index{zeta-reduction@$\zeta$-reduction}}
 
 Let us write $\WTEGRED{t}{\triangleright}{u}$ for the contextual closure of the relation $t$ reduces to $u$ in the environment $E$ and context $\Gamma$ with one of the previous reduction $\beta$, $\iota$, $\delta$ or $\zeta$.
 
@@ -457,7 +451,7 @@ $\lb~x:T\mto (t\ x)$ and $t$ can be identified.
 \Rem The $\eta$-reduction is not taken into account in the
 convertibility rule of \Coq.
 
-\paragraph{Normal form.}\index{Normal form}\label{Normal-form}\label{Head-normal-form}\index{Head normal form}
+\paragraph[Normal form.]{Normal form.\index{Normal form}\label{Normal-form}\label{Head-normal-form}\index{Head normal form}}
 A term which cannot be any more reduced is said to be in {\em normal
   form}. There are several ways (or strategies) to apply the reduction
 rule. Among them, we have to mention the {\em head reduction} which
@@ -536,7 +530,7 @@ derive the following property.
                 {\WF{E;\Def{\Delta}{c}{t}{T}}{\Delta}}}
 
 
-\section{Inductive Definitions}\label{Cic-inductive-definitions}
+\section[Inductive Definitions]{Inductive Definitions\label{Cic-inductive-definitions}}
 
 A (possibly mutual) inductive definition is specified by giving the
 names and the type of the inductive sets or families to be
@@ -787,7 +781,7 @@ to inconsistent systems. We restrict ourselves to definitions which
 satisfy a syntactic criterion of positivity. Before giving the formal
 rules, we need a few definitions:
 
-\paragraph{Definitions}\index{Positivity}\label{Positivity}
+\paragraph[Definitions]{Definitions\index{Positivity}\label{Positivity}}
 
 A type $T$ is an {\em arity of sort $s$}\index{Arity} if it converts
 to the sort $s$ or to a product $\forall~x:T,U$ with $U$ an arity
@@ -922,8 +916,7 @@ Inductive exType (P:Type->Prop) : Type
 %is recursive or not.  We shall write the type $(x:_R T)C$ if it is 
 %a recursive argument and $(x:_P T)C$ if the argument is not recursive.
 
-\paragraph{Sort-polymorphism of inductive families.}
-\index{Sort-polymorphism of inductive families}
+\paragraph[Sort-polymorphism of inductive families.]{Sort-polymorphism of inductive families.\index{Sort-polymorphism of inductive families}}
 
 From {\Coq} version 8.1, inductive families declared in {\Type} are
 polymorphic over their arguments in {\Type}.
@@ -1119,9 +1112,8 @@ this version of Coq to factorize the operator for primitive recursion
 into two more primitive operations as was first suggested by Th. Coquand
 in~\cite{Coq92}.  One is the definition by pattern-matching. The second one is a definition by guarded fixpoints. 
 
-\subsubsection{The {\tt match\ldots with \ldots end} construction.}
-\label{Caseexpr}
-\index{match@{\tt match\ldots with\ldots end}}
+\subsubsection[The {\tt match\ldots with \ldots end} construction.]{The {\tt match\ldots with \ldots end} construction.\label{Caseexpr}
+\index{match@{\tt match\ldots with\ldots end}}}
 
 The basic idea of this destructor operation is that we have an object
 $m$ in an inductive type $I$ and we want to prove a property $(P~m)$
@@ -1192,9 +1184,7 @@ compact notation~:
 % \Case{\bool}{l}{\Nil~ \mbox{\tt =>}~\true~ |~ (\cons~a~m)~
 %  \mbox{\tt =>}~ \false}
 
-\paragraph{Allowed elimination sorts.}
-
-\index{Elimination sorts}
+\paragraph[Allowed elimination sorts.]{Allowed elimination sorts.\index{Elimination sorts}}
 
 An important question for building the typing rule for \kw{match} is
 what can be the type of $P$ with respect to the type of the inductive
@@ -1302,10 +1292,9 @@ the two projections on this type.
 %problems if extracted terms are explicitly used such as in the 
 %{\tt Program} tactic or when extracting ML programs.
 
-\paragraph{Empty and singleton elimination}
-\label{singleton}
+\paragraph[Empty and singleton elimination]{Empty and singleton elimination\label{singleton}
 \index{Elimination!Singleton elimination}
-\index{Elimination!Empty elimination}
+\index{Elimination!Empty elimination}}
 
 There are special inductive definitions in \Prop\ for which more
 eliminations are allowed. 
@@ -1417,8 +1406,8 @@ H:(\LengthA~L~N) \\ P:\forall l:\ListA, \forall n:\nat, (\LengthA~l~n)\ra
       \end{array}}
     {\Case{P}{H}{f_1~|~f_2}:(P~L~N~H)}\]
 
-\paragraph{Definition of $\iota$-reduction.}\label{iotared}
-\index{iota-reduction@$\iota$-reduction}
+\paragraph[Definition of $\iota$-reduction.]{Definition of $\iota$-reduction.\label{iotared}
+\index{iota-reduction@$\iota$-reduction}}
 We still have to define the $\iota$-reduction in the general case.
 
 A $\iota$-redex is a term of the following form:
@@ -1432,8 +1421,7 @@ to the general reduction rule:
 \[ \Case{P}{(c_{p_i}~q_1\ldots  q_r~a_1\ldots  a_m)}{f_1|\ldots |
     f_n} \triangleright_{\iota} (f_i~a_1\ldots a_m) \]
 
-\subsection{Fixpoint definitions}
-\label{Fix-term} \index{Fix@{\tt Fix}}
+\subsection[Fixpoint definitions]{Fixpoint definitions\label{Fix-term} \index{Fix@{\tt Fix}}}
 The second operator for elimination is fixpoint definition. 
 This fixpoint may involve several mutually recursive definitions.
 The basic concrete syntax for a recursive set of mutually recursive 
@@ -1566,8 +1554,7 @@ Print sizet.
 \end{coq_example}
 
 
-\subsubsection{Reduction rule}
-\index{iota-reduction@$\iota$-reduction}
+\subsubsection[Reduction rule]{Reduction rule\index{iota-reduction@$\iota$-reduction}}
 Let $F$ be the set of declarations: $f_1/k_1:A_1:=t_1 \ldots
 f_n/k_n:A_n:=t_n$.
 The reduction for fixpoints is:
@@ -1651,8 +1638,9 @@ More information on coinductive definitions can be found
 in~\cite{Gimenez95b,Gim98,GimCas05}.
 %They are described in chapter~\ref{Coinductives}.
 
-\section{\iCIC : the Calculus of Inductive Construction with
-  impredicative \Set}\label{impredicativity}
+\section[\iCIC : the Calculus of Inductive Construction with
+  impredicative \Set]{\iCIC : the Calculus of Inductive Construction with
+  impredicative \Set\label{impredicativity}}
 
 \Coq{} can be used as a type-checker for \iCIC{}, the original 
 Calculus of Inductive Constructions with an impredicative sort \Set{}

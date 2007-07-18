@@ -1,12 +1,10 @@
-\chapter{Detailed examples of tactics}
-\label{Tactics-examples}
+\chapter[Detailed examples of tactics]{Detailed examples of tactics\label{Tactics-examples}}
 
 This chapter presents detailed examples of certain tactics, to
 illustrate their behavior.
 
-\section{\tt refine}
-\tacindex{refine}
-\label{refine-example}
+\section[\tt refine]{\tt refine\tacindex{refine}
+\label{refine-example}}
 
 This tactic applies to any goal. It behaves like {\tt exact} with a
 big difference : the user can leave some holes (denoted by \texttt{\_} or 
@@ -101,9 +99,8 @@ Defined.
 % Abort.
 % \end{coq_eval}
 
-\section{\tt eapply}
-\tacindex{eapply}
-\label{eapply-example}
+\section[\tt eapply]{\tt eapply\tacindex{eapply}
+\label{eapply-example}}
 \Example
 Assume we have a relation on {\tt nat} which is transitive:
 
@@ -193,9 +190,8 @@ apply Rmp.
 Reset R.
 \end{coq_eval}
 
-\section{{\tt Scheme}}
-\comindex{Scheme}
-\label{Scheme-examples}
+\section[{\tt Scheme}]{{\tt Scheme}\comindex{Scheme}
+\label{Scheme-examples}}
 
 \firstexample
 \example{Induction scheme for \texttt{tree} and \texttt{forest}}
@@ -271,9 +267,27 @@ Check odd_even.
 The type of {\tt even\_odd} shares the same premises but the
 conclusion is {\tt (n:nat)(even n)->(Q n)}.
 
-\section{{\tt Functional Scheme} and {\tt functional induction}}
-\comindex{Functional Scheme}\tacindex{functional induction}
-\label{FunScheme-examples}
+\subsection[{\tt Combined Scheme}]{{\tt Combined Scheme}\comindex{Combined Scheme}
+\label{CombinedScheme-examples}}
+
+We can define the induction principles for trees and forests using:
+\begin{coq_example}
+Scheme tree_forest_ind := Induction for tree Sort Prop
+  with forest_tree_ind := Induction for forest Sort Prop.
+\end{coq_example}
+
+Then we can build the combined induction principle:
+\begin{coq_example}
+Combined Scheme tree_forest_mutind from tree_forest_ind, forest_tree_ind.
+\end{coq_example}
+
+The type of {\tt tree\_forest\_mutrec} will be:
+\begin{coq_example}
+Check tree_forest_mutind.
+\end{coq_example}
+
+\section[{\tt Functional Scheme} and {\tt functional induction}]{{\tt Functional Scheme} and {\tt functional induction}\comindex{Functional Scheme}\tacindex{functional induction}
+\label{FunScheme-examples}}
 
 \firstexample
 \example{Induction scheme for \texttt{div2}}
@@ -413,9 +427,8 @@ Check tree_size_ind2.
 
 
 
-\section{{\tt inversion}}
-\tacindex{inversion}
-\label{inversion-examples}
+\section[{\tt inversion}]{{\tt inversion}\tacindex{inversion}
+\label{inversion-examples}}
 
 \subsection*{Generalities about inversion}
 
@@ -573,8 +586,7 @@ inversion H using leminv.
 Reset Initial.
 \end{coq_eval}
 
-\section{\tt autorewrite}
-\label{autorewrite-example}
+\section[\tt autorewrite]{\tt autorewrite\label{autorewrite-example}}
 
 Here are two examples of {\tt autorewrite} use. The first one ({\em Ackermann
 function}) shows actually a quite basic use where there is no conditional
@@ -646,9 +658,8 @@ autorewrite with base1 using reflexivity || simpl.
 Reset Initial.
 \end{coq_eval}
 
-\section{\tt quote}
-\tacindex{quote}
-\label{quote-examples}
+\section[\tt quote]{\tt quote\tacindex{quote}
+\label{quote-examples}}
 
 The tactic \texttt{quote} allows to use Barendregt's so-called
 2-level approach without writing any ML code. Suppose you have a

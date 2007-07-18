@@ -1,5 +1,4 @@
-\chapter{Extensions of \Gallina{}}
-\label{Gallina-extension}\index{Gallina}
+\chapter[Extensions of \Gallina{}]{Extensions of \Gallina{}\label{Gallina-extension}\index{Gallina}}
 
 {\gallina} is the kernel language of {\Coq}. We describe here extensions of
 the Gallina's syntax.
@@ -251,7 +250,7 @@ Definition not (b:bool) :=
   end.
 \end{coq_example}
 
-can be alternatively written
+\noindent can be alternatively written
 
 \begin{coq_eval}
 Reset not.
@@ -610,8 +609,7 @@ Function plus (n m : nat) {struct n} : nat :=
   end.
 \end{coq_example*}
 
-\paragraph{Limitations}
-\label{sec:Function-limitations}
+\paragraph[Limitations]{Limitations\label{sec:Function-limitations}}
 \term$_0$ must be build as a \emph{pure pattern-matching tree}
 (\texttt{match...with}) with applications only \emph{at the end} of
 each branch.  For now dependent cases are not treated.
@@ -1381,10 +1379,9 @@ coercion between {\class$_1$} and {\class$_2$}.
 More details and examples, and a description of the commands related
 to coercions are provided in chapter \ref{Coercions-full}.
 
-\section{Printing constructions in full}
-\label{SetPrintingAll}
+\section[Printing constructions in full]{Printing constructions in full\label{SetPrintingAll}
 \comindex{Set Printing All}
-\comindex{Unset Printing All}
+\comindex{Unset Printing All}}
 
 Coercions, implicit arguments, the type of pattern-matching, but also
 notations (see chapter \ref{Addoc-syntax}) can obfuscate the behavior
@@ -1405,10 +1402,9 @@ printing features, use the command
 {\tt Unset Printing All.}
 \end{quote}
 
-\section{Printing universes}
-\label{PrintingUniverses}
+\section[Printing universes]{Printing universes\label{PrintingUniverses}
 \comindex{Set Printing Universes}
-\comindex{Unset Printing Universes}
+\comindex{Unset Printing Universes}}
 
 The following command:
 \begin{quote}

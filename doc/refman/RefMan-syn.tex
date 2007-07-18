@@ -1,5 +1,4 @@
-\chapter{Syntax extensions and interpretation scopes}
-\label{Addoc-syntax}
+\chapter[Syntax extensions and interpretation scopes]{Syntax extensions and interpretation scopes\label{Addoc-syntax}}
 
 In this chapter, we introduce advanced commands to modify the way
 {\Coq} parses and prints objects, i.e. the translations between the
@@ -16,9 +15,8 @@ version 8.0. The underlying AST structure is also no longer available.
 The functionalities of the command {\tt Syntactic Definition} are
 still available, see section \ref{Abbreviations}.
 
-\section{Notations}
-\label{Notation}
-\comindex{Notation}
+\section[Notations]{Notations\label{Notation}
+\comindex{Notation}}
 
 \subsection{Basic notations}
 
@@ -61,9 +59,8 @@ and pretty-printer of {\Coq} already know how to deal with the
 syntactic expression (see \ref{ReservedNotation}), explicit precedences and
 associativity rules have to be given.
 
-\subsection{Precedences and associativity}
-\index{Precedences}
-\index{Associativity}
+\subsection[Precedences and associativity]{Precedences and associativity\index{Precedences}
+\index{Associativity}}
 
 Mixing different symbolic notations in a same text may cause serious
 parsing ambiguity. To deal with the ambiguity of notations, {\Coq}
@@ -631,9 +628,8 @@ Notations do not survive the end of sections. They survive modules
 unless the command {\tt Notation Local} is used instead of {\tt
 Notation}.
 
-\section{Interpretation scopes}
-\index{Interpretation scopes}
-\label{scopes}
+\section[Interpretation scopes]{Interpretation scopes\index{Interpretation scopes}
+\label{scopes}}
 % Introduction
 
 An {\em interpretation scope} is a set of notations for terms with
@@ -788,8 +784,7 @@ interpretation. See the next section.
 \SeeAlso The command to show the scopes bound to the arguments of a
 function is described in section \ref{About}.
 
-\subsection{The {\tt type\_scope} interpretation scope}
-\index{type\_scope}
+\subsection[The {\tt type\_scope} interpretation scope]{The {\tt type\_scope} interpretation scope\index{type\_scope}}
 
 The scope {\tt type\_scope} has a special status. It is a primitive
 interpretation scope which is temporarily activated each time a
@@ -929,10 +924,9 @@ This displays all the notations, delimiting keys and corresponding
 class of all the existing interpretation scopes.
 It also displays the lonely notations.
 
-\section{Abbreviations}
-\index{Abbreviations}
+\section[Abbreviations]{Abbreviations\index{Abbreviations}
 \label{Abbreviations}
-\comindex{Notation}
+\comindex{Notation}}
 
 An {\em abbreviation} is a name denoting a (presumably) more complex
 expression. An abbreviation is a special form of notation with no

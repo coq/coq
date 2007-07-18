@@ -835,13 +835,14 @@ performs the conversion in hypotheses $H_1\ldots H_n$.
 %voir reduction__conv_x : histoires d'univers.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{{\tt cbv \flag$_1$ \dots\ \flag$_n$}, {\tt lazy \flag$_1$
+\subsection[{\tt cbv \flag$_1$ \dots\ \flag$_n$}, {\tt lazy \flag$_1$
+\dots\ \flag$_n$} and {\tt compute}]
+{{\tt cbv \flag$_1$ \dots\ \flag$_n$}, {\tt lazy \flag$_1$
 \dots\ \flag$_n$} and {\tt compute}
 \tacindex{cbv}
 \tacindex{lazy}
 \tacindex{compute}
-\tacindex{vm\_compute}}
-\label{vmcompute}
+\tacindex{vm\_compute}\label{vmcompute}}
 
 These parameterized reduction tactics apply to any goal and perform
 the normalization of the goal according to the specified flags. Since
@@ -1007,7 +1008,7 @@ with its $\beta\iota$-normal form.
 
 This tactic applies to any goal. The term \term\ is reduced using the {\tt red}
 tactic. Every occurrence of the resulting term in the goal is then
-substituted for \term.
+replaced by \term.
 
 \begin{Variants}
 \item {\tt fold} \term$_1$ \dots\ \term$_n$ 
@@ -1151,8 +1152,7 @@ equivalent to {\tt intros; apply ci}.
 
 \end{Variants}
 
-\section{Eliminations (Induction and Case Analysis)}
-\label{Tac-induction}
+\section[Eliminations (Induction and Case Analysis)]{Eliminations (Induction and Case Analysis)\label{Tac-induction}}
 Elimination tactics are useful to prove statements by induction or
 case analysis.  Indeed, they make use of the elimination (or
 induction) principles generated with inductive definitions (see
@@ -1486,10 +1486,10 @@ exact c.
 Qed.
 \end{coq_example}
 
-%\subsection{\tt FixPoint \dots}\tacindex{Fixpoint}
+%\subsection[\tt FixPoint \dots]{\tt FixPoint \dots\tacindex{Fixpoint}}
 %Not yet documented.
 
-\subsection {\tt double induction \ident$_1$ \ident$_2$
+\subsection{\tt double induction \ident$_1$ \ident$_2$
 \tacindex{double induction}}
 
 This tactic applies to any goal. If the variables {\ident$_1$} and
@@ -1797,8 +1797,7 @@ When several hypotheses have the form {\tt \ident=t} or {\tt
     for which an equality exists.
 \end{Variants}
 
-\subsection{{\tt stepl {\term}}}
-\tacindex{stepl}
+\subsection[{\tt stepl {\term}}]{{\tt stepl {\term}}\tacindex{stepl}}
 
 This tactic is for chaining rewriting steps. It assumes a goal of the
 form ``$R$ {\term}$_1$ {\term}$_2$'' where $R$ is a binary relation
@@ -1884,7 +1883,7 @@ of an inductive datatype. If $G$ is the current goal, it leaves the sub-goals
 of \term$_1$ and \term$_2$ must satisfy the same restrictions as in the tactic
 \texttt{decide equality}.
 
-\subsection {\tt discriminate {\ident}
+\subsection{\tt discriminate {\ident}
 \label{discriminate}
 \tacindex{discriminate}}
 
@@ -2303,8 +2302,7 @@ the instance with the tactic {\tt inversion}.
 
 
 
-\subsection{\tt functional inversion \ident}
-\label{sec:functional-inversion}
+\subsection[\tt functional inversion \ident]{\tt functional inversion \ident\label{sec:functional-inversion}}
 
 \texttt{functional inversion} is a \emph{highly} experimental tactic
 which performs inversion on hypothesis \ident\ of the form
@@ -2362,8 +2360,7 @@ datatype: see~\ref{quote-examples} for the full details.
 % En attente d'un moyen de valoriser les fichiers de demos
 % \SeeAlso file \texttt{theories/DEMOS/DemoQuote.v} in the distribution
 
-\section{Classical tactics}
-\label{ClassicalTactics}
+\section[Classical tactics]{Classical tactics\label{ClassicalTactics}}
 
 In order to ease the proving process, when the {\tt Classical} module is loaded. A few more tactics are available. Make sure to load the module using the \texttt{Require Import} command.
 
@@ -2662,7 +2659,7 @@ vernacular command.
 %% \end{ErrMsgs}
 
 
-% \subsection{\tt Linear}\tacindex{Linear}\label{Linear}
+% \subsection[\tt Linear]{\tt Linear\tacindex{Linear}\label{Linear}}
 % The tactic \texttt{Linear}, due to Jean-Christophe Filli{\^a}atre
 % \cite{Fil94}, implements a decision procedure for {\em Direct
 %   Predicate Calculus}, that is first-order Gentzen's Sequent Calculus
@@ -3289,9 +3286,8 @@ e.g. \texttt{Require Import A.}).
 
 \subsection{Setting implicit automation tactics}
 
-\subsubsection{\tt Proof with {\tac}.}
-\label{ProofWith}
-\comindex{Proof with}
+\subsubsection[\tt Proof with {\tac}.]{\tt Proof with {\tac}.\label{ProofWith}
+\comindex{Proof with}}
 
   This command may be used to start a proof. It defines a default
   tactic to be used each time a tactic command {\tac$_1$} is ended by
@@ -3300,8 +3296,7 @@ e.g. \texttt{Require Import A.}).
 
 \SeeAlso {\tt Proof.} in section~\ref{BeginProof}.
 
-\subsubsection{\tt Declare Implicit Tactic {\tac}.}
-\comindex{Declare Implicit Tactic}
+\subsubsection[\tt Declare Implicit Tactic {\tac}.]{\tt Declare Implicit Tactic {\tac}.\comindex{Declare Implicit Tactic}}
 
 This command declares a tactic to be used to solve implicit arguments
 that {\Coq} does not know how to solve by unification. It is used
@@ -3330,14 +3325,14 @@ The tactic {\tt exists (n // m)} did not fail. The hole was solved by
 The {\tt Scheme} command is a high-level tool for generating
 automatically (possibly mutual) induction principles for given types
 and sorts.  Its syntax follows the schema:
-\begin{tabbing}
+\begin{quote}
 {\tt Scheme {\ident$_1$} := Induction for \ident'$_1$ Sort {\sort$_1$} \\
   with\\
-  \mbox{}\hspace{0.1cm} \dots\ \\
+  \mbox{}\hspace{0.1cm} \dots\\
         with {\ident$_m$} := Induction for {\ident'$_m$} Sort
         {\sort$_m$}}
-\end{tabbing}
-\ident'$_1$ \dots\ \ident'$_m$ are different inductive type
+\end{quote}
+where \ident'$_1$ \dots\ \ident'$_m$ are different inductive type
 identifiers belonging to the same package of mutual inductive
 definitions. This command generates {\ident$_1$}\dots{} {\ident$_m$}
 to be mutually recursive definitions. Each term {\ident$_i$} proves a
@@ -3366,14 +3361,14 @@ The {\tt Functional Scheme} command is a high-level experimental
 tool for generating automatically induction principles
 corresponding to (possibly mutually recursive) functions.  Its
 syntax follows the schema:
-\begin{tabbing}
+\begin{quote}
 {\tt Functional Scheme {\ident$_1$} := Induction for \ident'$_1$ Sort {\sort$_1$} \\
   with\\
   \mbox{}\hspace{0.1cm} \dots\ \\
         with {\ident$_m$} := Induction for {\ident'$_m$} Sort
         {\sort$_m$}}
-\end{tabbing}  
-\ident'$_1$ \dots\ \ident'$_m$ are different mutually defined function
+\end{quote}  
+where \ident'$_1$ \dots\ \ident'$_m$ are different mutually defined function
 names (they must be in the same order as when they were defined).
 This command generates the induction principles
 \ident$_1$\dots\ident$_m$, following the recursive structure and case

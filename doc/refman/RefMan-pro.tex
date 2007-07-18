@@ -1,6 +1,5 @@
-\chapter{Proof handling}
-\index{Proof editing}
-\label{Proof-handling}
+\chapter[Proof handling]{Proof handling\index{Proof editing}
+\label{Proof-handling}}
 
 In \Coq's proof editing mode all top-level commands documented in 
 chapter \ref{Vernacular-commands} remain available
@@ -41,8 +40,7 @@ proof editing mode, \Coq~ raises the error message : \errindex{No focused
 
 \section{Switching on/off the proof editing mode}
 
-\subsection{\tt Goal {\form}.}
-\comindex{Goal}\label{Goal}
+\subsection[\tt Goal {\form}.]{\tt Goal {\form}.\comindex{Goal}\label{Goal}}
 This command switches \Coq~ to editing proof mode and sets {\form} as
 the original goal. It associates the name {\tt Unnamed\_thm} to
 that goal.
@@ -58,7 +56,7 @@ that goal.
 
 \SeeAlso section \ref{Theorem}
 
-\subsection{\tt Qed.}\comindex{Qed}\label{Qed}
+\subsection[\tt Qed.]{\tt Qed.\comindex{Qed}\label{Qed}}
 This command is available in interactive editing proof mode when the
 proof is completed.  Then {\tt Qed} extracts a proof term from the
 proof script, switches back to {\Coq} top-level and attaches the
@@ -107,13 +105,12 @@ memory overflow.
   Are equivalent to {\tt Save {\ident}.} 
 \end{Variants}
 
-\subsection{\tt Admitted.}\comindex{Admitted}\label{Admitted}
+\subsection[\tt Admitted.]{\tt Admitted.\comindex{Admitted}\label{Admitted}}
 This command is available in interactive editing proof mode to give up
 the current proof and declare the initial goal as an axiom.
 
-\subsection{\tt Theorem {\ident} : {\form}.}
-\comindex{Theorem}
-\label{Theorem}
+\subsection[\tt Theorem {\ident} : {\form}.]{\tt Theorem {\ident} : {\form}.\comindex{Theorem}
+\label{Theorem}}
 
 This command switches to interactive editing proof mode and declares
 {\ident} as being the name of the original goal {\form}. When declared
@@ -163,9 +160,8 @@ as a {\tt Theorem}, the name {\ident} is known at all section levels:
   current section.
 \end{Variants}
 
-\subsection{\tt Proof {\term}.}
-\comindex{Proof}
-\label{BeginProof}
+\subsection[\tt Proof {\term}.]{\tt Proof {\term}.\comindex{Proof}
+\label{BeginProof}}
 This command applies in proof editing mode. It is equivalent to {\tt
   exact {\term}; Save.} That is, you have to give the full proof in
 one gulp, as a proof term (see section \ref{exact}).
@@ -179,8 +175,7 @@ one gulp, as a proof term (see section \ref{exact}).
 
 \SeeAlso {\tt Proof with {\tac}.} in section~\ref{ProofWith}.
 
-\subsection{\tt Abort.}
-\comindex{Abort}
+\subsection[\tt Abort.]{\tt Abort.\comindex{Abort}}
 
 This command cancels the current proof development, switching back to
 the previous proof development, or to the \Coq\ toplevel if no other
@@ -202,14 +197,14 @@ proof was edited.
 
 \end{Variants}
 
-\subsection{\tt Suspend.}
-\comindex{Suspend}
+%%%%
+\subsection[\tt Suspend.]{\tt Suspend.\comindex{Suspend}}
 
 This command applies in proof editing mode. It switches back to the
 \Coq\ toplevel, but without canceling the current proofs.
 
-\subsection{\tt Resume.}
-\comindex{Resume}\label{Resume}
+%%%%
+\subsection[\tt Resume.]{\tt Resume.\comindex{Resume}\label{Resume}}
 
 This commands switches back to the editing of the last edited proof.
 
@@ -230,10 +225,28 @@ This commands switches back to the editing of the last edited proof.
 \item \errindex{No such proof}
 \end{ErrMsgs}
 
-\section{Navigation in the proof tree}
 
-\subsection{\tt Undo.}
-\comindex{Undo}
+%%%%
+\subsection[\tt Existential {\num} := {\term}.]{\tt Existential  {\num} := {\term}.\comindex{Existential}
+\label{Existential}}
+
+This command allows to instantiate an existential variable. {\tt \num}
+is an index in the list of uninstantiated existential variables
+displayed by {\tt Show Existentials.} (described in section~\ref{Show})
+
+This command is intented to be used to instantiate existential
+variables when the proof is completed but some uninstantiated
+existential variables remain. To instantiate existential variables
+during proof edition, you should use the tactic {\tt instantiate}.
+
+\SeeAlso {\tt instantiate (\num:= \term).} in section~\ref{instantiate}.
+
+
+%%%%%%%%
+\section{Navigation in the proof tree}
+%%%%%%%%
+
+\subsection[\tt Undo.]{\tt Undo.\comindex{Undo}}
 
 This command cancels the effect of the last tactic command.  Thus, it
 backtracks one step.
@@ -251,28 +264,26 @@ backtracks one step.
 
 \end{Variants}
 
-\subsection{\tt Set Undo {\num}.}
-\comindex{Set Undo}
+\subsection[\tt Set Undo {\num}.]{\tt Set Undo {\num}.\comindex{Set Undo}}
 
 This command changes the maximum number of {\tt Undo}'s that will be
 possible when doing a proof. It only affects proofs started after
 this command, such that if you want to change the current undo limit
 inside a proof, you should first restart this proof.
 
-\subsection{\tt Unset Undo.}
-\comindex{Unset Undo}
+\subsection[\tt Unset Undo.]{\tt Unset Undo.\comindex{Unset Undo}}
 
 This command resets the default number of possible {\tt Undo} commands
 (which is currently 12).
 
-\subsection{\tt Restart.}\comindex{Restart}
+\subsection[\tt Restart.]{\tt Restart.\comindex{Restart}}
 This command restores the proof editing process to the original goal.
 
 \begin{ErrMsgs}
 \item \errindex{No focused proof to restart}
 \end{ErrMsgs}
 
-\subsection{\tt Focus.}\comindex{Focus}
+\subsection[\tt Focus.]{\tt Focus.\comindex{Focus}}
 This focuses the attention on the first subgoal to prove and the printing
 of the other subgoals is suspended until the focused subgoal is
 solved or unfocused. This is useful when there are many current
@@ -284,13 +295,13 @@ This focuses the attention on the $\num^{\scriptsize th}$ subgoal to prove.
 
 \end{Variant}
 
-\subsection{\tt Unfocus.}\comindex{Unfocus}
+\subsection[\tt Unfocus.]{\tt Unfocus.\comindex{Unfocus}}
 Turns off the focus mode.
 
 
 \section{Displaying information}
 
-\subsection{\tt Show.}\comindex{Show}\label{Show}
+\subsection[\tt Show.]{\tt Show.\comindex{Show}\label{Show}}
 This command displays the current goals.
 
 \begin{Variants}
@@ -361,16 +372,18 @@ In the case of a non-product goal, it prints nothing.
 This command is similar to the previous one, it simulates the naming 
 process of an {\tt Intros}.
 
+\item{\tt Show Existentials}\comindex{Show Existentials}\\ It displays
+the set of all uninstantiated existential variables in the current proof tree, 
+along with the type and the context of each variable.
+
 \end{Variants}
 
-\subsection{\tt Set Hyps Limit {\num}.}
-\comindex{Set Hyps Limit}
+\subsection[\tt Set Hyps Limit {\num}.]{\tt Set Hyps Limit {\num}.\comindex{Set Hyps Limit}}
 This command sets the maximum number of hypotheses displayed in
 goals after the application of a tactic. 
 All the hypotheses remains usable in the proof development.
 
-\subsection{\tt Unset Hyps Limit.}
-\comindex{Unset Hyps Limit}
+\subsection[\tt Unset Hyps Limit.]{\tt Unset Hyps Limit.\comindex{Unset Hyps Limit}}
 This command goes back to the default mode which is to print all
 available hypotheses.
 

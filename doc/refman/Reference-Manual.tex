@@ -1,9 +1,9 @@
-\RequirePackage{ifpdf}
-\ifpdf
-  \documentclass[11pt,a4paper,pdftex]{book}
-\else
+%\RequirePackage{ifpdf}
+%\ifpdf
+%  \documentclass[11pt,a4paper,pdftex]{book}
+%\else
   \documentclass[11pt,a4paper]{book}
-\fi
+%\fi
 
 \usepackage[latin1]{inputenc}
 \usepackage[T1]{fontenc}
@@ -14,8 +14,9 @@
 \usepackage{amssymb}
 \usepackage{alltt}
 \usepackage{hevea}
-
 \usepackage{ifpdf}
+\usepackage[headings]{fullpage}
+\usepackage{headers} % in this directory
 
 % for coqide
 \ifpdf   % si on est pas en pdflatex
@@ -25,26 +26,34 @@
 \fi
 
 
-%\includeonly{RefMan-gal.v,RefMan-ltac.v,RefMan-lib.v,Cases.v}
+%\includeonly{Setoid}
 
 \input{../common/version.tex}
 \input{../common/macros.tex}% extension .tex pour htmlgen
 \input{../common/title.tex}% extension .tex pour htmlgen
-\input{./headers.tex}% extension .tex pour htmlgen
+%\input{headers}
 
+\usepackage[linktocpage,colorlinks,bookmarks=false]{hyperref}
+% The manual advises to load hyperref package last to be able to redefine
+% necessary commands.
+% The above should work for both latex and pdflatex. Even if PDF is produced
+% through DVI and PS using dvips and ps2pdf, hyperlinks should still work.
+% linktocpage option makes page numbers, not section names, to be links in
+% the table of contents.
+% colorlinks option colors the links instead of using boxes.
 \begin{document}
 %BEGIN LATEX
 \sloppy\hbadness=5000
 %END LATEX
 
-\tophtml{}
 %BEGIN LATEX
-\coverpage{Reference Manual}{The Coq Development Team}
-  {This material may be distributed only subject to the terms and
-   conditions set forth in the Open Publication License, v1.0 or later
-   (the latest version is presently available at
-   \ahrefurl{http://www.opencontent.org/openpub}).
-   Options A and B of the licence are {\em not} elected.}
+\coverpage{Reference Manual}
+{The Coq Development Team}
+{This material may be distributed only subject to the terms and
+conditions set forth in the Open Publication License, v1.0 or later
+(the latest version is presently available at
+\url{http://www.opencontent.org/openpub}).
+Options A and B of the licence are {\em not} elected.}
 %END LATEX
 
 %\defaultheaders
@@ -56,7 +65,9 @@
 %END LATEX
 
 \part{The language}
+%BEGIN LATEX
 \defaultheaders
+%END LATEX
 \include{RefMan-gal.v}% Gallina
 \include{RefMan-ext.v}% Gallina extensions
 \include{RefMan-lib.v}% The coq library

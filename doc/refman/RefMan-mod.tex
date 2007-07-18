@@ -262,7 +262,7 @@ some of the fields and give one of its possible implementations:
 \begin{coq_example}
 Module Type SIG2.
   Declare Module M1 : SIG.
-  Declare Module M2 <: SIG.
+  Module M2 <: SIG.
     Definition T := M1.T.
     Parameter x : T.
   End M2.
@@ -296,18 +296,18 @@ Reset Initial.
   also appear inside modules and module types. Note that in case of a
   module definition like:
 
-    \medskip
+    \smallskip
     \noindent
     {\tt Module N : SIG := M.} 
-    \medskip
+    \smallskip
 
     or
 
-    \medskip
+    \smallskip
     {\tt Module N : SIG.\\
       \ \ \dots\\
       End N.}
-    \medskip 
+    \smallskip 
     
     hints and the like valid for \texttt{N} are not those defined in
     \texttt{M} (or the module body) but the ones defined in
@@ -315,7 +315,7 @@ Reset Initial.
 
 \end{Remarks}
 
-\subsection{Import {\qualid}
+\subsection{\tt Import {\qualid}
 \comindex{Import}
 \label{Import}}
 

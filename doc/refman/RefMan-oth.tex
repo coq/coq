@@ -1,10 +1,9 @@
-\chapter{Vernacular commands}
-\label{Vernacular-commands}
-\label{Other-commands}
+\chapter[Vernacular commands]{Vernacular commands\label{Vernacular-commands}
+\label{Other-commands}}
 
 \section{Displaying}
 
-\subsection{\tt Print {\qualid}.}\comindex{Print}
+\subsection[\tt Print {\qualid}.]{\tt Print {\qualid}.\comindex{Print}}
 This command displays on the screen informations about the declared or
 defined object referred by {\qualid}.
 
@@ -33,7 +32,7 @@ arguments and argument scopes.
 %to be computed and displays it.
 \end{Variants}
 
-\subsection{\tt Print All.}\comindex{Print All}
+\subsection[\tt Print All.]{\tt Print All.\comindex{Print All}}
 This command displays informations about the current state of the
 environment, including sections and modules.
 
@@ -53,14 +52,12 @@ displays the objects defined since the beginning of this section.
 
 \section{Requests to the environment}
 
-\subsection{\tt Check {\term}.}
-\label{Check}
-\comindex{Check}
+\subsection[\tt Check {\term}.]{\tt Check {\term}.\label{Check}
+\comindex{Check}}
 This command displays the type of {\term}. When called in proof mode, 
 the term is checked in the local context of the current subgoal.
 
-\subsection{\tt Eval {\rm\sl convtactic} in {\term}.}
-\comindex{Eval}
+\subsection[\tt Eval {\rm\sl convtactic} in {\term}.]{\tt Eval {\rm\sl convtactic} in {\term}.\comindex{Eval}}
 
 This command performs the specified reduction on {\term}, and displays
 the resulting term with its type. The term to be reduced may depend on
@@ -69,9 +66,8 @@ progress).
 
 \SeeAlso section~\ref{Conversion-tactics}.
 
-\subsection{\tt Extraction \term.}
-\label{ExtractionTerm}
-\comindex{Extraction} 
+\subsection[\tt Extraction \term.]{\tt Extraction \term.\label{ExtractionTerm}
+\comindex{Extraction}} 
 This command displays the extracted term from
 {\term}. The extraction is processed according to the distinction
 between {\Set} and {\Prop}; that is to say, between logical and
@@ -87,8 +83,7 @@ displayed as in \Coq\ terms.
 
 \SeeAlso chapter~\ref{Extraction}.
 
-\subsection{\tt Opaque \qualid$_1$ \dots \qualid$_n$.}
-\comindex{Opaque}\label{Opaque} This command tells not to unfold the
+\subsection[\tt Opaque \qualid$_1$ \dots \qualid$_n$.]{\tt Opaque \qualid$_1$ \dots \qualid$_n$.\comindex{Opaque}\label{Opaque}} This command tells not to unfold the
 the constants {\qualid$_1$} \dots {\qualid$_n$} in tactics using
 $\delta$-conversion. Unfolding a constant is replacing it by its
 definition. {\tt Opaque} can only apply on constants originally
@@ -113,8 +108,7 @@ environment}\\
     and if \texttt{bar} does not exist, \texttt{foo} is set opaque.
 \end{ErrMsgs}
 
-\subsection{\tt Transparent \qualid$_1$ \dots \qualid$_n$.}
-\comindex{Transparent}\label{Transparent}
+\subsection[\tt Transparent \qualid$_1$ \dots \qualid$_n$.]{\tt Transparent \qualid$_1$ \dots \qualid$_n$.\comindex{Transparent}\label{Transparent}}
 This command is the converse of {\tt Opaque} and can only apply on constants originally defined as {\tt Transparent} to restore their initial behaviour after an {\tt Opaque} command.
 
 The constants automatically declared transparent are the ones defined by a proof ended by {\tt Defined}, or by a {\tt
@@ -142,7 +136,7 @@ environment}\\
 \SeeAlso sections \ref{Conversion-tactics}, \ref{Automatizing},
 \ref{Theorem}
 
-\subsection{\tt Search {\qualid}.}\comindex{Search}
+\subsection[\tt Search {\qualid}.]{\tt Search {\qualid}.\comindex{Search}}
 This command displays the name and type of all theorems of the current
 context whose statement's conclusion has the form {\tt ({\qualid} t1 ..
   tn)}.  This command is useful to remind the user of the name of
@@ -172,7 +166,7 @@ No module \module{} has been required (see section~\ref{Require}).
 
 \end{Variants}
 
-\subsection{\tt SearchAbout {\qualid}.}\comindex{SearchAbout}
+\subsection[\tt SearchAbout {\qualid}.]{\tt SearchAbout {\qualid}.\comindex{SearchAbout}}
 This command displays the name and type of all objects (theorems,
 axioms, etc) of the current context whose statement contains \qualid.
 This command is useful to remind the user of the name of library
@@ -223,7 +217,7 @@ This restricts the search to constructions not defined in modules
 
 \end{Variants}
 
-\subsection{\tt SearchPattern {\term}.}\comindex{SearchPattern}
+\subsection[\tt SearchPattern {\term}.]{\tt SearchPattern {\term}.\comindex{SearchPattern}}
 
 This command displays the name and type of all theorems of the current
 context whose statement's conclusion matches the expression {\term}
@@ -258,7 +252,7 @@ This restricts the search to constructions not defined in modules
 
 \end{Variants}
 
-\subsection{\tt SearchRewrite {\term}.}\comindex{SearchRewrite}
+\subsection[\tt SearchRewrite {\term}.]{\tt SearchRewrite {\term}.\comindex{SearchRewrite}}
 
 This command displays the name and type of all theorems of the current
 context whose statement's conclusion is an equality of which one side matches
@@ -283,7 +277,7 @@ This restricts the search to constructions not defined in modules
 
 \end{Variants}
 
-% \subsection{\tt SearchIsos {\term}.}\comindex{SearchIsos}
+% \subsection[\tt SearchIsos {\term}.]{\tt SearchIsos {\term}.\comindex{SearchIsos}}
 % \label{searchisos}
 % \texttt{SearchIsos} searches terms by their type modulo isomorphism.
 % This command displays the full name of all constants, variables,
@@ -312,8 +306,8 @@ This restricts the search to constructions not defined in modules
 % For more informations about the exact working of this command, see
 % \cite{Del97}.
 
-\subsection{\tt Locate {\qualid}.}\comindex{Locate}
-\label{Locate}
+\subsection[\tt Locate {\qualid}.]{\tt Locate {\qualid}.\comindex{Locate}
+\label{Locate}}
 This command displays the full name of the qualified identifier {\qualid}
 and consequently the \Coq\ module in which it is defined.
 
@@ -373,22 +367,19 @@ This command opens a browser window and displays the result of seeking
 for all statements that match the pattern {\pattern}. Holes in the
 pattern are represented by the wildcard character ``\_''.
 
-\subsubsection{\tt Whelp Instance {\pattern}.}
-\comindex{Whelp Instance}
+\subsubsection[\tt Whelp Instance {\pattern}.]{\tt Whelp Instance {\pattern}.\comindex{Whelp Instance}}
 
 This command opens a browser window and displays the result of seeking
 for all statements that are instances of the pattern {\pattern}. The
 pattern is here assumed to be an universally quantified expression.
 
-\subsubsection{\tt Whelp Elim {\qualid}.}
-\comindex{Whelp Elim}
+\subsubsection[\tt Whelp Elim {\qualid}.]{\tt Whelp Elim {\qualid}.\comindex{Whelp Elim}}
 
 This command opens a browser window and displays the result of seeking
 for all statements that have the ``form'' of an elimination scheme
 over the type denoted by {\qualid}.
 
-\subsubsection{\tt Whelp Hint {\term}.}
-\comindex{Whelp Hint}
+\subsubsection[\tt Whelp Hint {\term}.]{\tt Whelp Hint {\term}.\comindex{Whelp Hint}}
 
 This command opens a browser window and displays the result of seeking
 for all statements that can be instantiated so that to prove the
@@ -410,8 +401,7 @@ for \Coq's toplevel. This kind of file is called a {\em script} for
 \Coq\index{Script file}. The standard (and default) extension of
 \Coq's script files is {\tt .v}.
 
-\subsection{\tt Load {\ident}.}
-\comindex{Load}\label{Load}
+\subsection[\tt Load {\ident}.]{\tt Load {\ident}.\comindex{Load}\label{Load}}
 This command loads the file named {\ident}{\tt .v}, searching
 successively in each of the directories specified in the {\em
   loadpath}. (see section \ref{loadpath})
@@ -435,7 +425,7 @@ successively in each of the directories specified in the {\em
 \item \errindex{Can't find file {\ident} on loadpath}
 \end{ErrMsgs}
 
-\section{Compiled files}\label{compiled}\index{Compiled files}
+\section[Compiled files]{Compiled files\label{compiled}\index{Compiled files}}
 
 This feature allows to build files for a quick loading. When loaded,
 the commands contained in a compiled file will not be {\em replayed}.
@@ -498,7 +488,7 @@ waste of time.
 % \SeeAlso sections \ref{Opaque}, \ref{loadpath}, chapter
 % \ref{Addoc-coqc}
 
-%\subsection{\tt Import {\qualid}.}\comindex{Import}
+%\subsection[\tt Import {\qualid}.]{\tt Import {\qualid}.\comindex{Import}}
 %\label{Import}
 
 %%%%%%%%%%%%
@@ -507,9 +497,8 @@ waste of time.
 % the treatment of normal modules and libraries by Export omitted
 
 
-\subsection{\tt Require {\dirpath}.}
-\label{Require}
-\comindex{Require}
+\subsection[\tt Require {\dirpath}.]{\tt Require {\dirpath}.\label{Require}
+\comindex{Require}}
 
 This command looks in the loadpath for a file containing module
 {\dirpath}, then loads and opens (imports) its contents.
@@ -574,13 +563,11 @@ These different variants can be combined.
 
 \SeeAlso chapter \ref{Addoc-coqc}
 
-\subsection{\tt Print Modules.}
-\comindex{Print Modules}
+\subsection[\tt Print Modules.]{\tt Print Modules.\comindex{Print Modules}}
 This command shows the currently loaded and currently opened
 (imported) modules.
 
-\subsection{\tt Declare ML Module {\str$_1$} .. {\str$_n$}.}
-\comindex{Declare ML Module}
+\subsection[\tt Declare ML Module {\str$_1$} .. {\str$_n$}.]{\tt Declare ML Module {\str$_1$} .. {\str$_n$}.\comindex{Declare ML Module}}
 This commands loads the Objective Caml compiled files {\str$_1$} \dots
 {\str$_n$} (dynamic link). It is mainly used to load tactics
 dynamically.
@@ -597,23 +584,22 @@ files is only possible under the bytecode version of {\tt coqtop}
 \item \errindex{Loading of ML object file forbidden in a native Coq}
 \end{ErrMsgs}
 
-\subsection{\tt Print ML Modules.}\comindex{Print ML Modules}
+\subsection[\tt Print ML Modules.]{\tt Print ML Modules.\comindex{Print ML Modules}}
 This print the name of all \ocaml{} modules loaded with \texttt{Declare
   ML Module}. To know from where these module were loaded, the user
 should use the command \texttt{Locate File} (see page \pageref{Locate File})
 
-\section{Loadpath}
-\label{loadpath}\index{Loadpath}
+\section[Loadpath]{Loadpath\label{loadpath}\index{Loadpath}}
 
 There are currently two loadpaths in \Coq. A loadpath where seeking
 {\Coq} files (extensions {\tt .v} or {\tt .vo} or {\tt .vi}) and one where
 seeking Objective Caml files. The default loadpath contains the
 directory ``\texttt{.}'' denoting the current directory and mapped to the empty logical path (see section \ref{LongNames}).
 
-\subsection{\tt Pwd.}\comindex{Pwd}\label{Pwd}
+\subsection[\tt Pwd.]{\tt Pwd.\comindex{Pwd}\label{Pwd}}
 This command displays the current working directory.
 
-\subsection{\tt Cd {\str}.}\comindex{Cd}
+\subsection[\tt Cd {\str}.]{\tt Cd {\str}.\comindex{Cd}}
 This command changes the current directory according to {\str} 
 which can be any valid path.
 
@@ -622,8 +608,7 @@ which can be any valid path.
   Is equivalent to {\tt Pwd.}
 \end{Variants}
 
-\subsection{\tt Add LoadPath {\str} as {\dirpath}.}
-\comindex{Add LoadPath}\label{AddLoadPath}
+\subsection[\tt Add LoadPath {\str} as {\dirpath}.]{\tt Add LoadPath {\str} as {\dirpath}.\comindex{Add LoadPath}\label{AddLoadPath}}
 
 This command adds the path {\str} to the current {\Coq} loadpath and
 maps it to the logical directory {\dirpath}, which means that every
@@ -637,7 +622,7 @@ through logical name ``{\dirpath}{\tt{.M}}''.
 Performs as {\tt Add LoadPath {\str} as {\dirpath}} but for the empty directory path.
 \end{Variants}
 
-\subsection{\tt Add Rec LoadPath {\str} as {\dirpath}.}\comindex{Add Rec LoadPath}\label{AddRecLoadPath}
+\subsection[\tt Add Rec LoadPath {\str} as {\dirpath}.]{\tt Add Rec LoadPath {\str} as {\dirpath}.\comindex{Add Rec LoadPath}\label{AddRecLoadPath}}
 This command adds the directory {\str} and all its subdirectories 
 to the current \Coq\ loadpath. The top directory {\str} is mapped to the logical directory {\dirpath} while any subdirectory {\textsl{pdir}} is mapped to logical directory {\dirpath}{\tt{.pdir}} and so on.
 
@@ -648,47 +633,45 @@ to the current \Coq\ loadpath. The top directory {\str} is mapped to the logical
 Works as {\tt Add Rec LoadPath {\str} as {\dirpath}} but for the empty logical directory path.
 \end{Variants}
 
-\subsection{\tt Remove LoadPath {\str}.}\comindex{Remove LoadPath}
+\subsection[\tt Remove LoadPath {\str}.]{\tt Remove LoadPath {\str}.\comindex{Remove LoadPath}}
 This command removes the path {\str} from the current \Coq\ loadpath.
 
-\subsection{\tt Print LoadPath.}\comindex{Print LoadPath}
+\subsection[\tt Print LoadPath.]{\tt Print LoadPath.\comindex{Print LoadPath}}
 This command displays the current \Coq\ loadpath.
 
-\subsection{\tt Add ML Path {\str}.}\comindex{Add ML Path}
+\subsection[\tt Add ML Path {\str}.]{\tt Add ML Path {\str}.\comindex{Add ML Path}}
 This command adds the path {\str} to the current Objective Caml loadpath (see
 the command {\tt Declare ML Module} in the section \ref{compiled}).
 
 \Rem This command is implied by {\tt Add LoadPath {\str} as {\dirpath}}.
 
-\subsection{\tt Add Rec ML Path {\str}.}\comindex{Add Rec ML Path}
+\subsection[\tt Add Rec ML Path {\str}.]{\tt Add Rec ML Path {\str}.\comindex{Add Rec ML Path}}
 This command adds the directory {\str} and all its subdirectories 
 to the current Objective Caml loadpath (see
 the command {\tt Declare ML Module} in the section \ref{compiled}).
 
 \Rem This command is implied by {\tt Add Rec LoadPath {\str} as {\dirpath}}.
 
-\subsection{\tt Print ML Path {\str}.}\comindex{Print ML Path}
+\subsection[\tt Print ML Path {\str}.]{\tt Print ML Path {\str}.\comindex{Print ML Path}}
 This command displays the current Objective Caml loadpath.
 This command makes sense only under the bytecode version of {\tt
 coqtop}, i.e. using option {\tt -byte} (see the
 command {\tt Declare ML Module} in the section
 \ref{compiled}).
 
-\subsection{\tt Locate File {\str}.}\comindex{Locate
-  File}\label{Locate File}
+\subsection[\tt Locate File {\str}.]{\tt Locate File {\str}.\comindex{Locate
+  File}\label{Locate File}}
 This command displays the location of file {\str} in the current loadpath.
 Typically, {\str} is a \texttt{.cmo} or \texttt{.vo} or \texttt{.v} file.
 
-\subsection{\tt Locate Library {\dirpath}.}
-\comindex{Locate Library}
+\subsection[\tt Locate Library {\dirpath}.]{\tt Locate Library {\dirpath}.\comindex{Locate Library}}
 This command gives the status of the \Coq\ module {\dirpath}. It tells if the
 module is loaded and if not searches in the load path for a module
 of logical name {\dirpath}.
 
 \section{States and Reset}
 
-\subsection{\tt Reset \ident.}
-\comindex{Reset}
+\subsection[\tt Reset \ident.]{\tt Reset \ident.\comindex{Reset}}
 This command removes all the objects in the environment since \ident\ 
 was introduced, including \ident. \ident\ may be the name of a defined
 or declared object as well as the name of a section.  One cannot reset
@@ -698,8 +681,7 @@ over the name of a module or of an object inside a module.
 \item \ident: \errindex{no such entry}
 \end{ErrMsgs}
 
-\subsection{\tt Back.}
-\comindex{Back}
+\subsection[\tt Back.]{\tt Back.\comindex{Back}}
 
 This commands undoes all the effects of the last vernacular
 command. This does not include commands that only access to the
@@ -718,8 +700,7 @@ file are considered as a single command.
   Happens when there is vernacular command to undo.
 \end{ErrMsgs}
 
-\subsection{\tt Restore State \str.}
-\comindex{Restore State}
+\subsection[\tt Restore State \str.]{\tt Restore State \str.\comindex{Restore State}}
   Restores the state contained in the file \str.
 
 \begin{Variants}
@@ -731,8 +712,7 @@ file are considered as a single command.
   interactively.
 \end{Variants}
 
-\subsection{\tt Write State \str.}
-\comindex{Write State}
+\subsection[\tt Write State \str.]{\tt Write State \str.\comindex{Write State}}
 Writes the current state into a file \str{} for
 use in a further session. This file can be given as the {\tt
   inputstate} argument of the commands {\tt coqtop} and {\tt coqc}.
@@ -745,10 +725,10 @@ use in a further session. This file can be given as the {\tt
 
 \section{Quitting and debugging}
 
-\subsection{\tt Quit.}\comindex{Quit}
+\subsection[\tt Quit.]{\tt Quit.\comindex{Quit}}
 This command permits to quit \Coq.
 
-\subsection{\tt Drop.}\comindex{Drop}\label{Drop}
+\subsection[\tt Drop.]{\tt Drop.\comindex{Drop}\label{Drop}}
 
 This is used mostly as a debug facility by \Coq's implementors
 and does not concern the casual user.
@@ -782,44 +762,43 @@ go();;
   environment variable \texttt{COQTOP} to the root of your copy of the sources (see section \ref{EnvVariables}).
 \end{Warnings}
 
-\subsection{\tt Time \textrm{\textsl{command}}.}\comindex{Time}
-\label{time}
+\subsection[\tt Time \textrm{\textsl{command}}.]{\tt Time \textrm{\textsl{command}}.\comindex{Time}
+\label{time}}
 This command executes the vernac command \textrm{\textsl{command}}
 and display the time needed to execute it.
 
 \section{Controlling display}
 
-\subsection{\tt Set Silent.}
-\comindex{Begin Silent}
+\subsection[\tt Set Silent.]{\tt Set Silent.\comindex{Set Silent}
 \label{Begin-Silent}
-\index{Silent mode}
+\index{Silent mode}}
 This command turns off the normal displaying.
 
-\subsection{\tt Unset Silent.}\comindex{End Silent}
+\subsection[\tt Unset Silent.]{\tt Unset Silent.\comindex{Unset Silent}}
 This command turns the normal display on.
 
-\subsection{\tt Set Printing Width {\integer}.}\comindex{Set Printing Width}
+\subsection[\tt Set Printing Width {\integer}.]{\tt Set Printing Width {\integer}.\comindex{Set Printing Width}}
 This command sets which left-aligned part of the width of the screen
 is used for display. 
 
-\subsection{\tt Unset Printing Width.}\comindex{Unset Printing Width}
+\subsection[\tt Unset Printing Width.]{\tt Unset Printing Width.\comindex{Unset Printing Width}}
 This command resets the width of the screen used for display to its
 default value (which is 78 at the time of writing this documentation).
 
-\subsection{\tt Test Printing Width.}\comindex{Test Printing Width}
+\subsection[\tt Test Printing Width.]{\tt Test Printing Width.\comindex{Test Printing Width}}
 This command displays the current screen width used for display.
 
-\subsection{\tt Set Printing Depth {\integer}.}\comindex{Set Printing Depth}
+\subsection[\tt Set Printing Depth {\integer}.]{\tt Set Printing Depth {\integer}.\comindex{Set Printing Depth}}
 This command sets the nesting depth of the formatter used for
 pretty-printing. Beyond this depth, display of subterms is replaced by
 dots. 
 
-\subsection{\tt Unset Printing Depth.}\comindex{Unset Printing Depth}
+\subsection[\tt Unset Printing Depth.]{\tt Unset Printing Depth.\comindex{Unset Printing Depth}}
 This command resets the nesting depth of the formatter used for
 pretty-printing to its default value (at the
 time of writing this documentation, the default value is 50).
 
-\subsection{\tt Test Printing Depth.}\comindex{Test Printing Depth}
+\subsection[\tt Test Printing Depth.]{\tt Test Printing Depth.\comindex{Test Printing Depth}}
 This command displays the current nesting depth used for display.
 
 %\subsection{\tt Explain ...}

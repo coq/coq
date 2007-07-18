@@ -212,6 +212,8 @@ let def_token =
   | "Scheme"
   | "Inductive"
   | "CoInductive"
+  | "Program" space+ "Definition"
+  | "Program" space+ "Fixpoint"
 
 let decl_token = 
   "Hypothesis" 
@@ -455,11 +457,11 @@ and doc = parse
 	start_inline_coq (); escaped_coq lexbuf; end_inline_coq ();
 	doc lexbuf }
   | "[[" '\n' space*
-      { formatted := true; start_code ();
+      { formatted := true; line_break (); start_inline_coq ();
 	indentation (count_spaces (lexeme lexbuf)); 
-	without_gallina coq lexbuf; 
-	end_code (); formatted := false;
-	doc lexbuf }
+	let eol = body_bol lexbuf in 
+	  end_inline_coq (); formatted := false;
+	  if eol then doc_bol lexbuf else doc lexbuf}
   | '*'* "*)" space* '\n'
       { true }
   | '*'* "*)"
@@ -570,6 +572,8 @@ and body_bol = parse
 
 and body = parse
   | '\n' {line_break(); body_bol lexbuf}
+  | '\n'+ space* "]]"
+      { if not !formatted then begin symbol (lexeme lexbuf); body lexbuf end else true }
   | eof { false }
   | '.' space* '\n' | '.' space* eof { char '.'; line_break(); true }      
   | '.' space+ { char '.'; char ' '; false }
@@ -577,12 +581,14 @@ and body = parse
 	     if eol then body_bol lexbuf else body lexbuf }
   | identifier 
       { let s = lexeme lexbuf in 
-	  ident s (lexeme_start lexbuf); body lexbuf }
+	  ident s (lexeme_start lexbuf); 
+	  body lexbuf }
   | token
       { let s = lexeme lexbuf in
 	  symbol s; body lexbuf }
   | _ { let c = lexeme_char lexbuf 0 in 
-	  char c; body lexbuf }
+	  char c; 
+          body lexbuf }
 
 and skip_hide = parse
   | eof | end_hide { () }

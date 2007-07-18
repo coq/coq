@@ -6,9 +6,9 @@
 \newcommand{\texmacs}{\TeX{}macs}
 \newcommand{\monurl}[1]{#1}
 %HEVEA\renewcommand{\monurl}[1]{\ahref{#1}{#1}}
-%HEVEA\newcommand{\lnot}{not}
-%HEVEA\newcommand{\lor}{or}
-%HEVEA\newcommand{\land}{\&}
+%\newcommand{\lnot}{not} % Hevea handles these symbols nicely
+%\newcommand{\lor}{or}
+%\newcommand{\land}{\&}
 %%% attention : -- dans un argument de \texttt est affiché comme un
 %%% seul - d'où l'utilisation de la macro suivante
 \newcommand{\mm}{\symbol{45}\symbol{45}}
@@ -440,8 +440,7 @@ Default behavior is to assume ASCII 7 bits input files.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{The coqdoc \LaTeX{} style file}
-\label{section:coqdoc.sty}
+\subsection[The coqdoc \LaTeX{} style file]{The coqdoc \LaTeX{} style file\label{section:coqdoc.sty}}
 
 In case you choose to produce a document without the default \LaTeX{}
 preamble (by using option \verb|--no-preamble|), then you must insert
