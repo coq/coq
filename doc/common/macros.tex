@@ -26,13 +26,13 @@
 %END LATEX
 %HEVEA \newenvironment{centerframe}{\begin{center}}{\end{center}}
 
-%HEVEA \newcommand{\vec}[1]{\mathbf{#1}}
-%HEVEA \newcommand{\ominus}{-}
-%HEVEA \renewcommand{\oplus}{+}
-%HEVEA \renewcommand{\otimes}{\times}
-%HEVEA \newcommand{\land}{\wedge}
-%HEVEA \newcommand{\lor}{\vee}
-%HEVEA \newcommand{\k}[1]{#1}
+%HEVEA \renewcommand{\vec}[1]{\mathbf{#1}}
+%\renewcommand{\ominus}{-} % Hevea does a good job translating these commands
+%\renewcommand{\oplus}{+}
+%\renewcommand{\otimes}{\times}
+%\newcommand{\land}{\wedge}
+%\newcommand{\lor}{\vee}
+%HEVEA \renewcommand{\k}[1]{#1} % \k{a} is supposed to produce a with a little stroke
 %HEVEA \newcommand{\phantom}[1]{\qquad}
 
 %%%%%%%%%%%%%%%%%%%%%%%
@@ -275,7 +275,7 @@
 \newcommand{\If}{{\textbf{if }}}
 \newcommand{\Else}{{\textbf{else }}}
 \newcommand{\Then} {{\textbf{then }}}
-\newcommand{\Let}{{\textbf{let }}}
+%\newcommand{\Let}{{\textbf{let }}} % looks like this is never used
 \newcommand{\Where}{{\textbf{where rec }}}
 \newcommand{\Function}{{\textbf{function }}}
 \newcommand{\Rec}{{\textbf{rec }}}

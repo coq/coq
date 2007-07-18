@@ -116,7 +116,7 @@ REFMANCOQTEXFILES=\
   refman/Setoid.v.tex refman/Helm.tex # refman/Natural.v.tex
 
 REFMANTEXFILES=\
-  refman/headers.tex \
+  refman/headers.sty \
   refman/Reference-Manual.tex refman/RefMan-pre.tex \
   refman/RefMan-int.tex refman/RefMan-pro.tex \
   refman/RefMan-com.tex \
@@ -152,7 +152,7 @@ refman/Reference-Manual.pdf: refman/Reference-Manual.tex
 
 ### Reference Manual (browsable format)
 
-refman/Reference-Manual.html: refman/Reference-Manual.dvi # to ensure bbl file
+refman/Reference-Manual.html: refman/headers.hva refman/Reference-Manual.dvi # to ensure bbl file
 	(cd refman; hevea -fix -exec xxdate.exe ./Reference-Manual.tex)
 
 refman/html/index.html: refman/Reference-Manual.html $(REFMANPNGFILES) \
