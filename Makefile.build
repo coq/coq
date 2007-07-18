@@ -136,13 +136,14 @@ $(LIBCOQRUN): kernel/byterun/coq_jumptbl.h $(BYTERUN)
 kernel/byterun/coq_jumptbl.h : kernel/byterun/coq_instruct.h
 	sed -n -e '/^  /s/ \([A-Z]\)/ \&\&coq_lbl_\1/gp' \
                -e '/^}/q' kernel/byterun/coq_instruct.h > \
-                          kernel/byterun/coq_jumptbl.h
-
+                          kernel/byterun/coq_jumptbl.h \
+	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
 kernel/copcodes.ml: kernel/byterun/coq_instruct.h
 	sed -n -e '/^enum/p' -e 's/,//g' -e '/^  /p' \
 	kernel/byterun/coq_instruct.h | \
-	awk -f kernel/make-opcodes > kernel/copcodes.ml
+	awk -f kernel/make-opcodes > kernel/copcodes.ml \
+	|| ( RV=$$?; rm -f "$@"; exit $${RV} )
 
 
 ###########################################################################
@@ -524,7 +525,7 @@ theories/Init/%.vo theories/Init/%.glob: theories/Init/%.v $(VO_TOOLS_STRICT) | 
 # globalizations (for coqdoc)
 
 glob.dump: $(THEORIESVO:.vo=.glob) $(CONTRIBVO:.vo=.glob) 
-	cat $^ > "$@"
+	cat $^ > "$@" || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
 ###########################################################################
 # tools
@@ -702,11 +703,13 @@ toplevel/mltop.cmx: toplevel/mltop.optml | toplevel/mltop.ml4.ml.d toplevel/mlto
 ## In other words, the Byte-only code doesn't import a new module.
 toplevel/mltop.byteml: toplevel/mltop.ml4 # no camlp4deps here
 	$(SHOW)'CAMLP4O   $<'	
-	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4USE) $<` pr_o.cmo -DByte -impl $< > $@
+	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4USE) $<` pr_o.cmo -DByte -impl $< > $@ \
+	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
 toplevel/mltop.optml: toplevel/mltop.ml4 # no camlp4deps here 
 	$(SHOW)'CAMLP4O   $<'	
-	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4USE) $<` pr_o.cmo -impl $< > $@
+	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4USE) $<` pr_o.cmo -impl $< > $@ \
+	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
 # files compiled with -rectypes
 
@@ -797,7 +800,8 @@ endif
 
 %.ml4.preprocessed: %.ml4 | %.ml4.d
 	$(SHOW)'CAMLP4O $<'
-	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4USE) $<` pr_o.cmo `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl $< > $@
+	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4USE) $<` pr_o.cmo `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl $< > $@ \
+	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
 %.vo %.glob: %.v states/initial.coq $(VO_TOOLS_STRICT) | %.v.d  $(VO_TOOLS_ORDER_ONLY)
 	$(SHOW)'COQC      $<'
@@ -812,14 +816,16 @@ endif
 # NOT to generate object code.
 %.ml4.d: %.ml4
 	$(SHOW)'CAMLP4DEPS $<'
-	$(HIDE)( echo -n '$*.cmo $*.cmx $*.ml4.ml.d: ' && $(CAMLP4DEPS) "$<" ) > "$@"
+	$(HIDE)( echo -n '$*.cmo $*.cmx $*.ml4.ml.d: ' && $(CAMLP4DEPS) "$<" ) > "$@" \
+	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
 %.ml4.ml.d: %.ml4 | $(GENFILES) $(ML4FILES:.ml4=.ml) %.ml4.d
 #Critical section:
 # Nobody (in a make -j) should touch the .ml file here.
 	$(SHOW)'OCAMLDEP4 $<'
-	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4USE) $<` pr_o.cmo `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl $< > $*.ml
-	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) $*.ml > "$@"
+	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4USE) $<` pr_o.cmo `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl $< > $*.ml \
+	  || ( RV=$$?; rm -f "$*.ml"; exit $${RV} )
+	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) $*.ml > "$@" || ( RV=$$?; rm -f "$@"; exit $${RV} )
 	$(HIDE)echo "let keep_ocamldep_happy Do_not_compile_me = assert false" > $*.ml
 #End critical section
 
@@ -834,16 +840,33 @@ endif
 ## Veerry nasty hack to keep ocamldep happy
 %.ml: | %.ml4
 	$(SHOW)'TOUCH     $@'
-	$(HIDE)echo "let keep_ocamldep_happy Do_not_compile_me = assert false" > $@
+	$(HIDE)echo "let keep_ocamldep_happy Do_not_compile_me = assert false" > $@ \
+	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
-%.v.d: %.v | $(COQDEP)
+# Another nasty hack. The making of .v.d files is split in two so that
+# make notices if coqdep fails (returns an error exit code). If we
+# just make %.v.d directly from %.v with
+#	$(HIDE)$(COQDEP) -coqlib . -R theories Coq -R contrib Coq $(COQINCLUDES) \
+#  "$<" | sed 's/\(.*\)\.vo[[:space:]]*:/\1.vo \1.glob:/' > "$@"
+# then the exit code of the whole pipe is the exit code of ... sed,
+# that is always 0. And make doesn't notice that coqdep failed and
+# merrily accepts that the .v.d file is just empty.
+# We could also make a complex shell script with ERR trapping and all
+# that, but more complex and fragile than this.
+# make will delete .raw files because they are intermediate.
+%.v.d.raw: %.v | $(COQDEP)
 	$(SHOW)'COQDEP    $<'
-	$(HIDE)$(COQDEP) -coqlib . -R theories Coq -R contrib Coq $(COQINCLUDES) \
-  "$<" | sed 's/\(.*\)\.vo[[:space:]]*:/\1.vo \1.glob:/' > "$@"
+	$(HIDE)$(COQDEP) -coqlib . -R theories Coq -R contrib Coq $(COQINCLUDES) "$<" > "$@" \
+	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
+
+%.v.d: %.v.d.raw
+	$(HIDE)sed 's/\(.*\)\.vo[[:space:]]*:/\1.vo \1.glob:/' < "$<" > "$@" \
+	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
 %.c.d: %.c | $(GENHFILES)
 	$(SHOW)'CCDEP     $<'
-	$(HIDE)$(CC) -MM -MQ "$@" -MQ "$(<:.c=.o)" $(CFLAGS) $(CINCLUDES) $< > $@
+	$(HIDE)$(CC) -MM -MQ "$@" -MQ "$(<:.c=.o)" $(CFLAGS) $(CINCLUDES) $< > $@ \
+	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
 ## The GENFILES and ML4FILESML files need to be secondary, else they
 ## get deleted by make after the dependencies get generated. This may
