@@ -57,6 +57,15 @@ define stage-template
 endef
 endif
 
+UNSAVED_FILES:=$(shell find . -name '.\#*')
+ifdef UNSAVED_FILES
+$(error You have unsaved changes in your editor (emacs?); cancel them or save before proceeding. \
+Or your editor crashed. Then, you may want to consider whether you want to restore the autosaves)
+#If you try to simply remove this explicit test, the compilation may
+#fail later. In particular, if a .#*.v file exists, coqdep fails to
+#run.
+endif
+
 %.o: always
 	$(call stage-template,1)
 
