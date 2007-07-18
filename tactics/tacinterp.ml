@@ -1063,22 +1063,25 @@ let interp_ltac_var coerce ist env locid =
   with Not_found -> anomaly "Detected as ltac var at interning time"
 
 (* Interprets an identifier which must be fresh *)
-let coerce_to_ident env = function
+let coerce_to_ident fresh env = function
   | VIntroPattern (IntroIdentifier id) -> id
-  | VConstr c when isVar c & not (is_variable env (destVar c)) ->
-      (* This happens e.g. in definitions like "Tac H = clear H; intro H" *)
+  | VConstr c when isVar c & not (fresh & is_variable env (destVar c)) ->
+      (* We need it fresh for intro e.g. in "Tac H = clear H; intro H" *)
       destVar c
   | v -> raise (CannotCoerceTo "a fresh identifier")
 
-let interp_ident ist gl id =
+let interp_ident_gen fresh ist gl id =
   let env = pf_env gl in
-  try try_interp_ltac_var (coerce_to_ident env) ist (Some env) (dloc,id)
+  try try_interp_ltac_var (coerce_to_ident fresh env) ist (Some env) (dloc,id)
   with Not_found -> id
 
+let interp_ident = interp_ident_gen false 
+let interp_fresh_ident = interp_ident_gen true
+
 (* Interprets an optional identifier which must be fresh *)
-let interp_name ist gl = function
+let interp_fresh_name ist gl = function
   | Anonymous -> Anonymous
-  | Name id -> Name (interp_ident ist gl id)
+  | Name id -> Name (interp_fresh_ident ist gl id)
 
 let coerce_to_intro_pattern env = function
   | VIntroPattern ipat -> ipat
@@ -1847,7 +1850,8 @@ and interp_genarg ist gl x =
       in_gen wit_intro_pattern
         (interp_intro_pattern ist gl (out_gen globwit_intro_pattern x))
   | IdentArgType ->
-      in_gen wit_ident (interp_ident ist gl (out_gen globwit_ident x))
+      in_gen wit_ident
+        (interp_fresh_ident ist gl (out_gen globwit_ident x))
   | VarArgType ->
       in_gen wit_var (interp_hyp ist gl (out_gen globwit_var x))
   | RefArgType ->
@@ -2052,7 +2056,7 @@ and interp_atomic ist gl = function
   | TacIntrosUntil hyp ->
       h_intros_until (interp_quantified_hypothesis ist hyp)
   | TacIntroMove (ido,ido') ->
-      h_intro_move (option_map (interp_ident ist gl) ido)
+      h_intro_move (option_map (interp_fresh_ident ist gl) ido)
       (option_map (interp_hyp ist gl) ido')
   | TacAssumption -> h_assumption
   | TacExact c -> h_exact (pf_interp_casted_constr ist gl c)
@@ -2065,14 +2069,14 @@ and interp_atomic ist gl = function
   | TacElimType c -> h_elim_type (pf_interp_type ist gl c)
   | TacCase cb -> h_case (interp_constr_with_bindings ist gl cb)
   | TacCaseType c -> h_case_type (pf_interp_type ist gl c)
-  | TacFix (idopt,n) -> h_fix (option_map (interp_ident ist gl) idopt) n
+  | TacFix (idopt,n) -> h_fix (option_map (interp_fresh_ident ist gl) idopt) n
   | TacMutualFix (id,n,l) ->
-      let f (id,n,c) = (interp_ident ist gl id,n,pf_interp_type ist gl c) in
-      h_mutual_fix (interp_ident ist gl id) n (List.map f l)
-  | TacCofix idopt -> h_cofix (option_map (interp_ident ist gl) idopt)
+      let f (id,n,c) = (interp_fresh_ident ist gl id,n,pf_interp_type ist gl c)
+      in h_mutual_fix (interp_fresh_ident ist gl id) n (List.map f l)
+  | TacCofix idopt -> h_cofix (option_map (interp_fresh_ident ist gl) idopt)
   | TacMutualCofix (id,l) ->
-      let f (id,c) = (interp_ident ist gl id,pf_interp_type ist gl c) in
-      h_mutual_cofix (interp_ident ist gl id) (List.map f l)
+      let f (id,c) = (interp_fresh_ident ist gl id,pf_interp_type ist gl c) in
+      h_mutual_cofix (interp_fresh_ident ist gl id) (List.map f l)
   | TacCut c -> h_cut (pf_interp_type ist gl c)
   | TacAssert (t,ipat,c) ->
       let c = (if t=None then pf_interp_constr else pf_interp_type) ist gl c in
@@ -2083,7 +2087,7 @@ and interp_atomic ist gl = function
   | TacGeneralizeDep c -> h_generalize_dep (pf_interp_constr ist gl c)
   | TacLetTac (na,c,clp) ->
       let clp = interp_clause ist gl clp in
-      h_let_tac (interp_name ist gl na) (pf_interp_constr ist gl c) clp
+      h_let_tac (interp_fresh_name ist gl na) (pf_interp_constr ist gl c) clp
 
   (* Automation tactics *)
   | TacTrivial (lems,l) -> 
@@ -2133,7 +2137,7 @@ and interp_atomic ist gl = function
   | TacRename l ->
       h_rename (List.map (fun (id1,id2) -> 
 			    interp_hyp ist gl id1, 
-			    interp_ident ist gl (snd id2)) l)
+			    interp_fresh_ident ist gl (snd id2)) l)
 
   (* Constructors *)
   | TacLeft bl -> h_left (interp_bindings ist gl bl)
@@ -2197,7 +2201,8 @@ and interp_atomic ist gl = function
 	  (interp_intro_pattern ist gl (out_gen globwit_intro_pattern x))
     | IdentArgType -> 
         VIntroPattern 
-	  (IntroIdentifier (interp_ident ist gl (out_gen globwit_ident x)))
+	  (IntroIdentifier
+              (interp_fresh_ident ist gl (out_gen globwit_ident x)))
     | VarArgType ->
         mk_hyp_value ist gl (out_gen globwit_var x)
     | RefArgType -> 
