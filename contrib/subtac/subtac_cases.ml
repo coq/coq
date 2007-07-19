@@ -2071,7 +2071,16 @@ let liftn_rel_context n k sign =
   in
     liftrec (k + rel_context_length sign) sign
 
-
+let nf_evars_env evar_defs (env : env) : env = 
+  let nf t = nf_isevar evar_defs t in
+  let env0 : env = reset_context env in 
+  let f e (na, b, t) e' : env =
+    Environ.push_named (na, option_map nf b, nf t) e'
+  in
+  let env' = Environ.fold_named_context f ~init:env0 env in
+    Environ.fold_rel_context (fun e (na, b, t) e' -> Environ.push_rel (na, option_map nf b, nf t) e')
+     ~init:env' env
+      
 let compile_cases loc (typing_fun, isevars) (tycon : Evarutil.type_constraint) env (predopt, tomatchl, eqns) =
   (* We build the matrix of patterns and right-hand-side *)
   let matx = matx_of_eqns env eqns in
@@ -2079,6 +2088,11 @@ let compile_cases loc (typing_fun, isevars) (tycon : Evarutil.type_constraint) e
   (* We build the vector of terms to match consistently with the *)
   (* constructors found in patterns *)
   let tomatchs = coerce_to_indtype typing_fun isevars env matx tomatchl in
+(*   isevars := nf_evar_defs !isevars; *)
+(*   let env = nf_evars_env !isevars (env : env) in *)
+(*      trace (str "Evars : " ++ my_print_evardefs !isevars); *)
+(*     trace (str "Env : " ++ my_print_env env); *)
+    
   let tomatchs, tomatchs_lets = abstract_tomatch env tomatchs in
   let tomatchs_len = List.length tomatchs_lets in
   let tycon = lift_tycon tomatchs_len tycon in

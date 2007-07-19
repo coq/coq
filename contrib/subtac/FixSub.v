@@ -1,6 +1,8 @@
 Require Import Wf.
 Require Import Coq.subtac.Utils.
 
+(** Reformulation of the Wellfounded module using subsets where possible. *)
+
 Section Well_founded.
   Variable A : Type.
   Variable R : A -> A -> Prop.

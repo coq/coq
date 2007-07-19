@@ -1,9 +1,7 @@
 Ltac induction_with_subterm c H :=
   let x := fresh "x" in
   let y := fresh "y" in
-  (set(x := c) ; assert(y:x = c) by reflexivity ;
-  rewrite <- y in H ; 
-  induction H ; subst).
+  (remember c as x ; rewrite <- y in H ; induction H ; subst).
 
 Ltac induction_on_subterm c :=
   let x := fresh "x" in

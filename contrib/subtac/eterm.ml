@@ -113,6 +113,9 @@ let rec chop_product n t =
 let eterm_obligations name nclen isevars evm fs t tycon = 
   (* 'Serialize' the evars, we assume that the types of the existentials
      refer to previous existentials in the list only *)
+  trace (str " In eterm: isevars: " ++ my_print_evardefs isevars);
+  trace (str "Term given to eterm" ++ spc () ++
+	    Termops.print_constr_env (Global.env ()) t);
   let evl = List.rev (to_list evm) in
   let evn = 
     let i = ref (-1) in
@@ -153,8 +156,6 @@ let eterm_obligations name nclen isevars evm fs t tycon =
     List.map (fun (_, ((_, name), _, opaque, typ, deps)) -> name, typ, not (opaque = None), deps) evts
   in
     (try
-       trace (str "Term given to eterm" ++ spc () ++
-		Termops.print_constr_env (Global.env ()) t);
        trace (str "Term constructed in eterm" ++ spc () ++
 		Termops.print_constr_env (Global.env ()) t');
        ignore(iter
