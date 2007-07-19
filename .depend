@@ -836,15 +836,15 @@ kernel/sign.cmo: lib/util.cmi kernel/term.cmi kernel/names.cmi \
 kernel/sign.cmx: lib/util.cmx kernel/term.cmx kernel/names.cmx \
     kernel/sign.cmi 
 kernel/subtyping.cmo: lib/util.cmi kernel/univ.cmi kernel/typeops.cmi \
-    kernel/term.cmi kernel/sign.cmi kernel/reduction.cmi kernel/names.cmi \
-    kernel/modops.cmi kernel/mod_subst.cmi kernel/inductive.cmi \
-    kernel/environ.cmi kernel/entries.cmi kernel/declarations.cmi \
-    kernel/subtyping.cmi 
+    kernel/term.cmi kernel/sign.cmi kernel/reduction.cmi kernel/pre_env.cmi \
+    kernel/names.cmi kernel/modops.cmi kernel/mod_subst.cmi \
+    kernel/inductive.cmi kernel/environ.cmi kernel/entries.cmi \
+    kernel/declarations.cmi kernel/subtyping.cmi 
 kernel/subtyping.cmx: lib/util.cmx kernel/univ.cmx kernel/typeops.cmx \
-    kernel/term.cmx kernel/sign.cmx kernel/reduction.cmx kernel/names.cmx \
-    kernel/modops.cmx kernel/mod_subst.cmx kernel/inductive.cmx \
-    kernel/environ.cmx kernel/entries.cmx kernel/declarations.cmx \
-    kernel/subtyping.cmi 
+    kernel/term.cmx kernel/sign.cmx kernel/reduction.cmx kernel/pre_env.cmx \
+    kernel/names.cmx kernel/modops.cmx kernel/mod_subst.cmx \
+    kernel/inductive.cmx kernel/environ.cmx kernel/entries.cmx \
+    kernel/declarations.cmx kernel/subtyping.cmi 
 kernel/term.cmo: lib/util.cmi kernel/univ.cmi lib/pp.cmi kernel/names.cmi \
     lib/hashcons.cmi kernel/esubst.cmi kernel/term.cmi 
 kernel/term.cmx: lib/util.cmx kernel/univ.cmx lib/pp.cmx kernel/names.cmx \
@@ -4154,39 +4154,34 @@ tools/coq_makefile.cmx:
 tools/coq-tex.cmo: 
 tools/coq-tex.cmx: 
 coq_fix_code.o: kernel/byterun/coq_fix_code.c \
-  /usr/lib/ocaml/3.09.2/caml/config.h \
-  /usr/lib/ocaml/3.09.2/caml/compatibility.h \
-  /usr/lib/ocaml/3.09.2/caml/misc.h /usr/lib/ocaml/3.09.2/caml/config.h \
-  /usr/lib/ocaml/3.09.2/caml/mlvalues.h /usr/lib/ocaml/3.09.2/caml/misc.h \
-  /usr/lib/ocaml/3.09.2/caml/fail.h /usr/lib/ocaml/3.09.2/caml/mlvalues.h \
-  /usr/lib/ocaml/3.09.2/caml/memory.h kernel/byterun/coq_instruct.h \
+  /usr/lib/ocaml/caml/config.h /usr/lib/ocaml/caml/compatibility.h \
+  /usr/lib/ocaml/caml/misc.h /usr/lib/ocaml/caml/config.h \
+  /usr/lib/ocaml/caml/mlvalues.h /usr/lib/ocaml/caml/misc.h \
+  /usr/lib/ocaml/caml/fail.h /usr/lib/ocaml/caml/mlvalues.h \
+  /usr/lib/ocaml/caml/memory.h kernel/byterun/coq_instruct.h \
   kernel/byterun/coq_fix_code.h
 coq_interp.o: kernel/byterun/coq_interp.c kernel/byterun/coq_gc.h \
-  /usr/lib/ocaml/3.09.2/caml/mlvalues.h \
-  /usr/lib/ocaml/3.09.2/caml/compatibility.h \
-  /usr/lib/ocaml/3.09.2/caml/config.h /usr/lib/ocaml/3.09.2/caml/misc.h \
-  /usr/lib/ocaml/3.09.2/caml/alloc.h \
-  /usr/lib/ocaml/3.09.2/caml/mlvalues.h kernel/byterun/coq_instruct.h \
-  kernel/byterun/coq_fix_code.h kernel/byterun/coq_memory.h \
-  /usr/lib/ocaml/3.09.2/caml/config.h /usr/lib/ocaml/3.09.2/caml/fail.h \
-  /usr/lib/ocaml/3.09.2/caml/misc.h /usr/lib/ocaml/3.09.2/caml/memory.h \
-  kernel/byterun/coq_values.h kernel/byterun/coq_jumptbl.h
+  /usr/lib/ocaml/caml/mlvalues.h /usr/lib/ocaml/caml/compatibility.h \
+  /usr/lib/ocaml/caml/config.h /usr/lib/ocaml/caml/misc.h \
+  /usr/lib/ocaml/caml/alloc.h /usr/lib/ocaml/caml/mlvalues.h \
+  kernel/byterun/coq_instruct.h kernel/byterun/coq_fix_code.h \
+  kernel/byterun/coq_memory.h /usr/lib/ocaml/caml/config.h \
+  /usr/lib/ocaml/caml/fail.h /usr/lib/ocaml/caml/misc.h \
+  /usr/lib/ocaml/caml/memory.h kernel/byterun/coq_values.h \
+  kernel/byterun/coq_jumptbl.h
 coq_memory.o: kernel/byterun/coq_memory.c kernel/byterun/coq_gc.h \
-  /usr/lib/ocaml/3.09.2/caml/mlvalues.h \
-  /usr/lib/ocaml/3.09.2/caml/compatibility.h \
-  /usr/lib/ocaml/3.09.2/caml/config.h /usr/lib/ocaml/3.09.2/caml/misc.h \
-  /usr/lib/ocaml/3.09.2/caml/alloc.h \
-  /usr/lib/ocaml/3.09.2/caml/mlvalues.h kernel/byterun/coq_instruct.h \
-  kernel/byterun/coq_fix_code.h kernel/byterun/coq_memory.h \
-  /usr/lib/ocaml/3.09.2/caml/config.h /usr/lib/ocaml/3.09.2/caml/fail.h \
-  /usr/lib/ocaml/3.09.2/caml/misc.h /usr/lib/ocaml/3.09.2/caml/memory.h \
-  kernel/byterun/coq_interp.h
+  /usr/lib/ocaml/caml/mlvalues.h /usr/lib/ocaml/caml/compatibility.h \
+  /usr/lib/ocaml/caml/config.h /usr/lib/ocaml/caml/misc.h \
+  /usr/lib/ocaml/caml/alloc.h /usr/lib/ocaml/caml/mlvalues.h \
+  kernel/byterun/coq_instruct.h kernel/byterun/coq_fix_code.h \
+  kernel/byterun/coq_memory.h /usr/lib/ocaml/caml/config.h \
+  /usr/lib/ocaml/caml/fail.h /usr/lib/ocaml/caml/misc.h \
+  /usr/lib/ocaml/caml/memory.h kernel/byterun/coq_interp.h
 coq_values.o: kernel/byterun/coq_values.c kernel/byterun/coq_fix_code.h \
-  /usr/lib/ocaml/3.09.2/caml/mlvalues.h \
-  /usr/lib/ocaml/3.09.2/caml/compatibility.h \
-  /usr/lib/ocaml/3.09.2/caml/config.h /usr/lib/ocaml/3.09.2/caml/misc.h \
+  /usr/lib/ocaml/caml/mlvalues.h /usr/lib/ocaml/caml/compatibility.h \
+  /usr/lib/ocaml/caml/config.h /usr/lib/ocaml/caml/misc.h \
   kernel/byterun/coq_instruct.h kernel/byterun/coq_memory.h \
-  /usr/lib/ocaml/3.09.2/caml/config.h /usr/lib/ocaml/3.09.2/caml/fail.h \
-  /usr/lib/ocaml/3.09.2/caml/mlvalues.h /usr/lib/ocaml/3.09.2/caml/misc.h \
-  /usr/lib/ocaml/3.09.2/caml/memory.h kernel/byterun/coq_values.h \
-  /usr/lib/ocaml/3.09.2/caml/alloc.h
+  /usr/lib/ocaml/caml/config.h /usr/lib/ocaml/caml/fail.h \
+  /usr/lib/ocaml/caml/mlvalues.h /usr/lib/ocaml/caml/misc.h \
+  /usr/lib/ocaml/caml/memory.h kernel/byterun/coq_values.h \
+  /usr/lib/ocaml/caml/alloc.h

@@ -194,7 +194,7 @@ let check_inductive cst env msid1 l info1 mib2 spec2 path1 path2 =
   in
     cst
     
-let check_constant cst env msid1 l info1 cb2 spec2 path1 path2 = 
+let check_constant cst env msid1 l info1 cb2 spec2 msid2 path1 path2 = 
   let error () = error_not_match l
     (String.concat "." (List.map string_of_id (List.rev path1)))
     (String.concat "." (List.map string_of_id (List.rev path2))) in
@@ -255,17 +255,53 @@ let check_constant cst env msid1 l info1 cb2 spec2 path1 path2 =
       let cst = check_type cst env typ1 typ2 in
       let con = make_con (MPself msid1) empty_dirpath l in
       let cst =
-       match cb2.const_body with
-         | None -> cst
-         | Some lc2 ->
-	     let c2 = Declarations.force lc2 in
-	     let c1 = match cb1.const_body with
-	       | Some lc1 -> Declarations.force lc1
-	       | None -> mkConst con
-	     in
-	       check_conv cst conv env c1 c2
+	match cb2.const_body with
+	  | None -> cst
+	  | Some lc2 ->
+	      let c2 = Declarations.force lc2 in
+	      let c1 = match cb1.const_body with
+		| Some lc1 -> Declarations.force lc1
+		| None -> mkConst con
+	      in
+		begin
+		  match cb1.const_opaque,cb2.const_opaque with
+		      false,false |true,true ->
+			check_conv cst conv env c1 c2
+		    | false,true -> 
+			begin
+			  match kind_of_term c1 with
+			    | Const con' ->
+				let c1 = 
+				  match (Pre_env.lookup_constant con' 
+					   (pre_env env)).const_body with
+				      Some c -> Declarations.force c
+				    | None -> mkConst con'
+				in
+				  check_conv cst conv env c1 c2
+			    | _ ->
+				check_conv cst conv env c1 c2
+			end
+		    | true,false->
+			begin
+			  match (kind_of_term c2) with
+			    | Const con'-> 
+				if con' = con 
+				then cst
+				else
+				let c2 = 
+				  match (Pre_env.lookup_constant con' 
+					   (pre_env env)).const_body with
+				      Some c -> Declarations.force c
+				    | None -> mkConst con'
+				in
+				  check_conv cst conv env c1 c2
+			    | _ ->
+				check_conv cst conv env c1 c2
+			end
+		end
+		  
       in
-       cst
+	cst
    | IndType ((kn,i),mind1) ->
       ignore (Util.error (
        "The kernel does not recognize yet that a parameter can be " ^
@@ -334,7 +370,7 @@ and check_signatures cst env (msid1,sig1) (msid2,sig2') path1 path2=
     in
       match spec2 with
 	| SPBconst cb2 ->
-	    check_constant cst env msid1 l info1 cb2 spec2 path1 path2
+	    check_constant cst env msid1 l info1 cb2 spec2 msid2 path1 path2
 	| SPBmind mib2 -> 
 	    check_inductive cst env msid1 l info1 mib2 spec2 path1 path2
 	| SPBmodule msb2 -> 
