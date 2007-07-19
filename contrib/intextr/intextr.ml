@@ -14,6 +14,7 @@ open Term
 open Declare
 open Entries
 open Names
+open Nametab
 open Libnames
 open Pp
 open Coqlib
@@ -63,6 +64,7 @@ let id_term =
 
 type term =
   | TDummy
+  | TConstant of constr
   | TVar of int
   | TLet of term * term
   | TFun of term
@@ -80,6 +82,8 @@ let rec mkNat = function
 let rec mkTerm = function
   | TDummy ->
       Lazy.force coq_TDummy
+  | TConstant c ->
+      c
   | TVar i ->
       mkApp (Lazy.force coq_TVar, [| mkNat i |])
   | TLet (a, b) ->
@@ -179,12 +183,22 @@ and extract_app env head args =
 (*s Extraction of a constant applied to arguments. *)
 
 and extract_cst_app env kn args =
-  (* TODO *)
   let _, _, name = repr_con kn in
-  msgnl (str ("WARNING: the constant " ^
-                (string_of_label name) ^
-                " has been replaced by TDummy!"));
-  extract_app env TDummy args
+  let name = string_of_label name in
+  let name__extr = name ^ "__extr" in
+  let id = make_short_qualid (id_of_string name__extr) in
+  let kn__extr =
+    try
+      TConstant (mkConst (locate_constant id))
+    with Not_found ->
+      msgnl
+        (str
+           (Printf.sprintf
+              "WARNING: %s does not exist, %s has been replaced by TDummy!"
+              name__extr name));
+      TDummy
+  in
+  extract_app env kn__extr args
 
 (*s Extraction of an inductive constructor applied to arguments. *)
 
@@ -208,13 +222,12 @@ and extract_case env ((kn, i) as ip, c, br) =
   (* [br]: bodies of each branch (in functional form) *)
   (* [ni]: number of arguments without parameters in each branch *)
   let ni = mis_constr_nargs_env env ip in
-  let (nparam, _) = inductive_nargs env ip in
   assert (Array.length ni = Array.length br);
   let br = Array.mapi
     (fun i b ->
        let nb = ni.(i) in
        let branch = extract_term env b [] in
-       Patc (nparam+nb, del_lambda branch nb)) br in
+       Patc (nb, del_lambda branch nb)) br in
   TMatch (extract_term env c [], Array.to_list br)
 
 (*s Extraction of a (co)-fixpoint. *)
