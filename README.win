@@ -36,8 +36,6 @@ COMPILATION.
          - Windows cvs client (very useful if you have access to the Coq
            archive).
 
-    If you are lost, you could find help at: coq-bugs@pauillac.inria.fr.
-
     Good luck :-)
 
     The Coq Team.
