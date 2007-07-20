@@ -30,36 +30,6 @@ Global Index}
 \newcommand{\errindexbis}[2]{\texttt{#1}\index[error]{#2}}
 \newcommand{\ttindex}[1]{\index{#1@\texttt{#1}}}
 
-% The following code creates another command \@indexlabel, which,
-% along with Hevea's \@currentlabel serves to store the current values
-% of counters. However, \@currentlabel keeps the value of counters
-% incremented by \refstepcounter (see the definition of
-% \refstepcounter in latexcommon.hva), which includes chapter and
-% section counters, as well as theorems, \items, etc. On the other
-% hand, \@indexlabel keeps only the values of sectioning counters.
-% This is done by redefining the sectioning commands.
-\newcommand{\@indexlabel}{}
-\let\oldchapter=\chapter
-\let\oldsection=\section
-\let\oldsubsection=\subsection
-\let\oldsubsubsection=\subsubsection
-\let\oldparagraph=\paragraph
-\let\oldsubparagraph=\subparagraph
-\renewcommand{\chapter}[1]{\oldchapter{#1}\let\@indexlabel=\@currentlabel}
-\renewcommand{\section}[1]{\oldsection{#1}\let\@indexlabel=\@currentlabel}
-\renewcommand{\subsection}[1]{\oldsubsection{#1}\let\@indexlabel=\@currentlabel}
-\renewcommand{\subsubsection}[1]{\oldsubsubsection{#1}\let\@indexlabel=\@currentlabel}
-\renewcommand{\paragraph}[1]{\oldparagraph{#1}\let\@indexlabel=\@currentlabel}
-\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\let\@indexlabel=\@currentlabel}
-% The only difference of the following command with the original one
-% defined in index.hva is that the latter uses \@currentlabel instead
-% of \@indexlabel
-\renewcommand{\index}[2][default]
-{\if@refs
-\sbox{\@indexbox}{\@indexwrite[#1]{#2}{\@indexlabel}}
-\@locname{\usebox{\@indexbox}}{}
-\fi}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % For the Addendum table of contents
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
