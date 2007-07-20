@@ -13,7 +13,7 @@
 
 We present here the new \Program\ tactic commands, used to build certified
 \Coq\ programs, elaborating them from their algorithmic skeleton and a
-rich specification. It can be sought of as a dual of extraction
+rich specification \cite{Sozeau06}. It can be sought of as a dual of extraction
 (chapter \ref{Extraction}). The goal of \Program~is to program as in a regular
 functional programming language whilst using as rich a specification as 
 desired and proving that the code meets the specification using the whole \Coq{} proof
@@ -66,23 +66,31 @@ will be first rewrote to:
   
   This permits to get the proper equalities in the context of proof
   obligations inside clauses, without which reasoning is very limited.
+
+\item Generation of inequalities. If a pattern intersects with a
+  previous one, an inequality is added in the context of the second
+  branch. See for example the definition of {\tt div2} below, where the second
+  branch is typed in a context where $\forall p, \_ <> S (S p)$.
   
 \item Coercion. If the object being matched is coercible to an inductive
   type, the corresponding coercion will be automatically inserted. This also
   works with the previous mechanism.
 \end{itemize}
 
+If you do specify a {\tt return} or {\tt in} clause the typechecker will
+fall back directly to \Coq's usual typing of dependent pattern-matching.
+
+
 The next two commands are similar to their standard counterparts
 Definition (section \ref{Simpl-definitions}) and Fixpoint (section \ref{Fixpoint}) in that
 they define constants. However, they may require the user to prove some
-goals to construct the final definitions. {\em Note:} every subtac
-definition must end with the {\tt Defined} vernacular.
+goals to construct the final definitions.
 
 \subsection{\tt Program Definition {\ident} := {\term}.
   \comindex{Program Definition}\label{ProgramDefinition}}
 
-This command types the value {\term} in \Russell\ and generate subgoals
-corresponding to proof obligations. Once solved, it binds the final
+This command types the value {\term} in \Russell\ and generate proof
+obligations. Once solved using the commands shown below, it binds the final
 \Coq\ term to the name {\ident} in the environment.
 
 \begin{ErrMsgs}
@@ -122,6 +130,7 @@ corresponding to proof obligations. Once solved, it binds the final
 
 The structural fixpoint operator behaves just like the one of Coq
 (section \ref{Fixpoint}), except it may also generate obligations.
+It works with mutually recursive definitions too.
 
 \begin{coq_example}
 Program Fixpoint div2 (n : nat) : { x : nat | n = 2 * x \/ n = 2 * x + 1 } :=
@@ -152,395 +161,59 @@ Program Fixpoint div2 (n : nat) {measure id n} : { x : nat | n = 2 * x \/ n = 2 
   end.
 \end{coq_example}
 
+\emph{Caution:} When defining structurally recursive functions, the
+generated obligations should have the prototype of the currently defined functional
+in their context. In this case, the obligations should be transparent
+(e.g. using Defined or Save) so that the guardedness condition on
+recursive calls can be checked by the
+kernel's type-checker. There is an optimization in the generation of
+obligations which gets rid of the hypothesis corresponding to the
+functionnal when it is not necessary, so that the obligation can be
+declared opaque (e.g. using Qed). However, as soon as it appears in the
+context, the proof of the obligation is \emph{required} to be declared transparent.
+
+No such problems arise when using measures or well-founded recursion.
+
 \subsection{\tt Program Lemma {\ident} : type.
   \comindex{Program Lemma}
   \label{ProgramLemma}}
 
 The \Russell\ language can also be used to type statements of logical
 properties. It will currently fail if the traduction to \Coq\
-generates obligations though it can be useful to insert automatic coercions.
+generates obligations though it can be useful to insert automatic
+coercions. In the former case, one can first define the lemma's
+statement using {\tt Program Definition} and use it as the goal afterwards.
+
+The {\tt Program} prefix can similarly be used as a prefix for {\tt Variable}, {\tt
+  Hypothesis}, {\tt Axiom} etc...
 
 \subsection{Solving obligations}
-The following commands are available to manipulate obligations:
+The following commands are available to manipulate obligations. The
+optional identifier is used when multiple functions have unsolved
+obligations (e.g. when defining mutually recursive blocks). The optional
+tactic is replaced by the default one if not specified.
 
 \begin{itemize}
+\item {\tt Obligations Tactic := \tacexpr} Sets the default obligation
+  solving tactic applied to all obligations automatically, whether to
+  solve them or when starting to prove one, e.g. using {\tt Next}.
 \item {\tt Obligations [of \ident]} Displays all remaining
   obligations.
 \item {\tt Next Obligation [of \ident]} Start the proof of the next
   unsolved obligation.
 \item {\tt Obligation num [of \ident]} Start the proof of
   obligation {\tt num}.
-\item {\tt Solve Obligations [of \ident] using} {\tacexpr} Tries to solve
-  each obligation using the given tactic.
+\item {\tt Solve Obligations [of \ident] [using \tacexpr]} Tries to solve
+  each obligation of \ident using the given tactic.
+\item {\tt Solve All Obligations [using \tacexpr]} Tries to solve
+  each obligation of every program using the given tactic.
 \item {\tt Admit Obligations [of \ident]} Admits all
   obligations (does not work with structurally recursive programs).
-\item {\tt Obligations Tactic := \tacexpr} Sets the default obligation
-  solving tactic applied to all obligations.
 \end{itemize}
-  
 
-% \subsection{\tt Program Fixpoint {\ident} {(\ident_$_0$ : \type_$_0$)
-%     \cdots (\ident_$_n$ : \type_$_n$)} {\tt \{wf}
-%   \ident$_i$ \term_{wf} {\tt \}} : type$_t$ := \term$_0$
-%   \comindex{Program Fixpoint Wf}
-%   \label{ProgramFixpointWf}}
-
-% To be accepted, a well-founded {\tt Fixpoint} definition has to satisfy some
-% logical constraints on the decreasing argument. 
-% They are needed to ensure that the {\tt Fixpoint} definition
-% always terminates. The point of the {\tt \{wf \ident \term {\tt \}}}
-% annotation is to let the user tell the system which argument decreases
-% in which well-founded relation along the recursive calls. 
-% The term \term$_0$ will be typed in a different context than usual,
-% The typing problem will in fact be reduced to: 
-
-% % \begin{center}
-% %   {\tt forall} {\params} {\ident : (\ident$_0$ : type$_0$) \cdots
-% %     \{ \ident$_i'$ : \type$_i$ | \term_{wf} \ident$_i'$ \ident$_i$ \}
-% %     \cdots (\ident$_n$ : type$_n$), type$_t$} : type$_t$ := \term$_0$
-% % \end{center}
-
-% \begin{coq_example}
-% Program Fixpoint id (n : nat) : { x : nat | x = n } :=
-%   match n with
-%   | O => O
-%   | S p => S (id p)
-%   end
-% \end{coq_example}
-
-% The {\tt match} operator matches a value (here \verb:n:) with the
-% various constructors of its (inductive) type. The remaining arguments
-% give the respective values to be returned, as functions of the
-% parameters of the corresponding constructor. Thus here when \verb:n:
-% equals \verb:O: we return \verb:0:, and when \verb:n: equals 
-% \verb:(S p): we return \verb:(S (id p)):.
-
-% The {\tt match} operator is formally described
-% in detail in Section~\ref{Caseexpr}.  The system recognizes that in
-% the inductive call {\tt (id p)} the argument actually
-% decreases because it is a {\em pattern variable} coming from {\tt match
-%   n with}.
-
-% Here again, proof obligations may be generated. In our example, we would
-% have one for each branch:
-% \begin{coq_example}
-% Show.
-% \end{coq_example}
-% \begin{coq_eval}
-% Abort.
-% \end{coq_eval}
-
-
-
-
-% \asubsection{A detailed example: Euclidean division}
-
-% The file {\tt Euclid} contains the proof of Euclidean division
-% (theorem {\tt eucl\_dev}). The natural numbers defined in the example
-% files are unary integers defined by two constructors $O$ and $S$:
-% \begin{coq_example*}
-% Inductive nat : Set :=
-%   | O : nat
-%   | S : nat -> nat.
-% \end{coq_example*}
-
-% This module contains a theorem {\tt eucl\_dev}, and its extracted term
-% is of type 
-% \begin{verbatim}
-% forall b:nat, b > 0 -> forall a:nat, diveucl a b
-% \end{verbatim}
-% where {\tt diveucl} is a type for the pair of the quotient and the modulo.
-% We can now extract this program to \ocaml:
-
-% \begin{coq_eval}
-% Reset Initial.
-% \end{coq_eval}
-% \begin{coq_example}
-% Require Import Euclid.
-% Extraction Inline Wf_nat.gt_wf_rec Wf_nat.lt_wf_rec.
-% Recursive Extraction  eucl_dev.
-% \end{coq_example}
-
-% The inlining of {\tt gt\_wf\_rec} and {\tt lt\_wf\_rec} is not
-% mandatory. It only enhances readability of extracted code. 
-% You can then copy-paste the output to a file {\tt euclid.ml} or let 
-% \Coq\ do it for you with the following command: 
-
-% \begin{coq_example}
-% Extraction "euclid" eucl_dev.
-% \end{coq_example}
-
-% Let us play the resulting program:
-
-% \begin{verbatim}
-% # #use "euclid.ml";;
-% type sumbool = Left | Right
-% type nat = O | S of nat
-% type diveucl = Divex of nat * nat
-% val minus : nat -> nat -> nat = <fun>
-% val le_lt_dec : nat -> nat -> sumbool = <fun>
-% val le_gt_dec : nat -> nat -> sumbool = <fun>
-% val eucl_dev : nat -> nat -> diveucl = <fun>
-% # eucl_dev (S (S O)) (S (S (S (S (S O)))));;
-% - : diveucl = Divex (S (S O), S O)
-% \end{verbatim}
-% It is easier to test on \ocaml\ integers:
-% \begin{verbatim}
-% # let rec i2n = function 0 -> O | n -> S (i2n (n-1));;
-% val i2n : int -> nat = <fun>
-% # let rec n2i = function O -> 0 | S p -> 1+(n2i p);;
-% val n2i : nat -> int = <fun>
-% # let div a b = 
-%      let Divex (q,r) = eucl_dev (i2n b) (i2n a) in (n2i q, n2i r);;
-% div : int -> int -> int * int = <fun>
-% # div 173 15;;
-% - : int * int = 11, 8
-% \end{verbatim}
-
-% \asubsection{Another detailed example: Heapsort}
-
-% The file {\tt Heap.v}
-% contains the proof of an efficient list sorting algorithm described by
-% Bjerner. Is is an adaptation of the well-known {\em heapsort}
-% algorithm to functional languages. The main function is {\tt
-% treesort}, whose type is shown below: 
-
-
-% \begin{coq_eval}
-% Reset Initial.
-% Require Import Relation_Definitions.
-% Require Import List.
-% Require Import Sorting.
-% Require Import Permutation.
-% \end{coq_eval}
-% \begin{coq_example}
-% Require Import Heap.
-% Check treesort.
-% \end{coq_example}
-
-% Let's now extract this function: 
-
-% \begin{coq_example}
-% Extraction Inline sort_rec is_heap_rec.
-% Extraction NoInline list_to_heap.
-% Extraction "heapsort" treesort.
-% \end{coq_example}
-
-% One more time, the {\tt Extraction Inline} and {\tt NoInline}
-% directives are cosmetic. Without it, everything goes right, 
-% but the output is less readable.
-% Here is the produced file {\tt heapsort.ml}: 
-
-% \begin{verbatim}
-% type nat =
-%   | O
-%   | S of nat
-
-% type 'a sig2 =
-%   'a
-%   (* singleton inductive, whose constructor was exist2 *)
-  
-% type sumbool =
-%   | Left
-%   | Right
-
-% type 'a list =
-%   | Nil
-%   | Cons of 'a * 'a list
-
-% type 'a multiset =
-%   'a -> nat
-%   (* singleton inductive, whose constructor was Bag *)
-  
-% type 'a merge_lem =
-%   'a list
-%   (* singleton inductive, whose constructor was merge_exist *)
-  
-% (** val merge : ('a1 -> 'a1 -> sumbool) -> ('a1 -> 'a1 -> sumbool) ->
-%                 'a1 list -> 'a1 list -> 'a1 merge_lem **)
-
-% let rec merge leA_dec eqA_dec l1 l2 =
-%   match l1 with
-%     | Nil -> l2
-%     | Cons (a, l) ->
-%         let rec f = function
-%           | Nil -> Cons (a, l)
-%           | Cons (a0, l3) ->
-%               (match leA_dec a a0 with
-%                  | Left -> Cons (a,
-%                      (merge leA_dec eqA_dec l (Cons (a0, l3))))
-%                  | Right -> Cons (a0, (f l3)))
-%         in f l2
-
-% type 'a tree =
-%   | Tree_Leaf
-%   | Tree_Node of 'a * 'a tree * 'a tree
-
-% type 'a insert_spec =
-%   'a tree
-%   (* singleton inductive, whose constructor was insert_exist *)
-  
-% (** val insert : ('a1 -> 'a1 -> sumbool) -> ('a1 -> 'a1 -> sumbool) ->
-%                  'a1 tree -> 'a1 -> 'a1 insert_spec **)
-
-% let rec insert leA_dec eqA_dec t a =
-%   match t with
-%     | Tree_Leaf -> Tree_Node (a, Tree_Leaf, Tree_Leaf)
-%     | Tree_Node (a0, t0, t1) ->
-%         let h3 = fun x -> insert leA_dec eqA_dec t0 x in
-%         (match leA_dec a0 a with
-%            | Left -> Tree_Node (a0, t1, (h3 a))
-%            | Right -> Tree_Node (a, t1, (h3 a0)))
-
-% type 'a build_heap =
-%   'a tree
-%   (* singleton inductive, whose constructor was heap_exist *)
-  
-% (** val list_to_heap : ('a1 -> 'a1 -> sumbool) -> ('a1 -> 'a1 ->
-%                        sumbool) -> 'a1 list -> 'a1 build_heap **)
-
-% let rec list_to_heap leA_dec eqA_dec = function
-%   | Nil -> Tree_Leaf
-%   | Cons (a, l0) ->
-%       insert leA_dec eqA_dec (list_to_heap leA_dec eqA_dec l0) a
-
-% type 'a flat_spec =
-%   'a list
-%   (* singleton inductive, whose constructor was flat_exist *)
-  
-% (** val heap_to_list : ('a1 -> 'a1 -> sumbool) -> ('a1 -> 'a1 ->
-%                        sumbool) -> 'a1 tree -> 'a1 flat_spec **)
-
-% let rec heap_to_list leA_dec eqA_dec = function
-%   | Tree_Leaf -> Nil
-%   | Tree_Node (a, t0, t1) -> Cons (a,
-%       (merge leA_dec eqA_dec (heap_to_list leA_dec eqA_dec t0)
-%         (heap_to_list leA_dec eqA_dec t1)))
-
-% (** val treesort : ('a1 -> 'a1 -> sumbool) -> ('a1 -> 'a1 -> sumbool)
-%                    -> 'a1 list -> 'a1 list sig2 **)
-
-% let treesort leA_dec eqA_dec l =
-%   heap_to_list leA_dec eqA_dec (list_to_heap leA_dec eqA_dec l)
-
-% \end{verbatim}
-
-% Let's test it: 
-% % Format.set_margin 72;;
-% \begin{verbatim}
-% # #use "heapsort.ml";;
-% type sumbool = Left | Right
-% type nat = O | S of nat
-% type 'a tree = Tree_Leaf | Tree_Node of 'a * 'a tree * 'a tree
-% type 'a list = Nil | Cons of 'a * 'a list
-% val merge : 
-%   ('a -> 'a -> sumbool) -> 'b -> 'a list -> 'a list -> 'a list = <fun>
-% val heap_to_list : 
-%   ('a -> 'a -> sumbool) -> 'b -> 'a tree -> 'a list = <fun>
-% val insert : 
-%   ('a -> 'a -> sumbool) -> 'b -> 'a tree -> 'a -> 'a tree = <fun>
-% val list_to_heap : 
-%   ('a -> 'a -> sumbool) -> 'b -> 'a list -> 'a tree = <fun>
-% val treesort : 
-%   ('a -> 'a -> sumbool) -> 'b -> 'a list -> 'a list = <fun>
-% \end{verbatim}
-
-% One can remark that the argument of {\tt treesort} corresponding to 
-% {\tt eqAdec} is never used in the informative part of the terms, 
-% only in the logical parts. So the extracted {\tt treesort} never use
-% it, hence this {\tt 'b} argument. We will use {\tt ()} for this
-% argument. Only remains the {\tt leAdec}
-% argument (of type {\tt 'a -> 'a -> sumbool}) to really provide.
-
-% \begin{verbatim}
-% # let leAdec x y = if x <= y then Left else Right;;
-% val leAdec : 'a -> 'a -> sumbool = <fun>
-% # let rec listn = function 0 -> Nil
-%                          | n -> Cons(Random.int 10000,listn (n-1));;
-% val listn : int -> int list = <fun>
-% # treesort leAdec () (listn 9);;
-% - : int list = Cons (160, Cons (883, Cons (1874, Cons (3275, Cons 
-%   (5392, Cons (7320, Cons (8512, Cons (9632, Cons (9876, Nil)))))))))
-% \end{verbatim}
-
-% Some tests on longer lists (10000 elements) show that the program is
-% quite efficient for Caml code.
-
-
-% \asubsection{The Standard Library} 
-
-% As a test, we propose an automatic extraction of the 
-% Standard Library of \Coq. In particular, we will find back the
-% two previous examples, {\tt Euclid} and {\tt Heapsort}. 
-% Go to directory {\tt contrib/extraction/test} of the sources of \Coq,
-% and run commands: 
-% \begin{verbatim}
-% make tree; make
-% \end{verbatim}
-% This will extract all Standard Library files and compile them. 
-% It is done via many {\tt Extraction Module}, with some customization
-% (see subdirectory {\tt custom}).
-
-% %The result of this extraction of the Standard Library can be browsed
-% %at URL 
-% %\begin{flushleft}
-% %\url{http://www.lri.fr/~letouzey/extraction}.
-% %\end{flushleft}
-                                
-% %Reals theory is normally not extracted, since it is an axiomatic 
-% %development. We propose nonetheless a dummy realization of those
-% %axioms, to test, run: \\
-% %
-% %\mbox{\tt make reals}\\
-
-% This test works also with Haskell. In the same directory, run:
-% \begin{verbatim}
-% make tree; make -f Makefile.haskell
-% \end{verbatim}
-% The haskell compiler currently used is {\tt hbc}.  Any other should
-% also work, just adapt the {\tt Makefile.haskell}. In particular {\tt
-%  ghc} is known to work.
-
-% \asubsection{Extraction's horror museum}
-
-% Some pathological examples of extraction are grouped in the file
-% \begin{verbatim}
-% contrib/extraction/test_extraction.v
-% \end{verbatim}
-% of the sources of \Coq.
-
-% \asubsection{Users' Contributions}
-
-%  Several of the \Coq\ Users' Contributions use extraction to produce 
-%  certified programs. In particular the following ones have an automatic 
-%  extraction test (just run {\tt make} in those directories): 
-
-%  \begin{itemize}
-%  \item Bordeaux/Additions
-%  \item Bordeaux/EXCEPTIONS
-%  \item Bordeaux/SearchTrees
-%  \item Dyade/BDDS
-%  \item Lannion
-%  \item Lyon/CIRCUITS
-%  \item Lyon/FIRING-SQUAD
-%  \item Marseille/CIRCUITS
-%  \item Muenchen/Higman
-%  \item Nancy/FOUnify
-%  \item Rocq/ARITH/Chinese
-%  \item Rocq/COC
-%  \item Rocq/GRAPHS
-%  \item Rocq/HIGMAN
-%  \item Sophia-Antipolis/Stalmarck
-%  \item Suresnes/BDD
-%  \end{itemize}
-
-%  Lannion, Rocq/HIGMAN and Lyon/CIRCUITS are a bit particular. They are 
-%  the only examples of developments where {\tt Obj.magic} are needed.
-%  This is probably due to an heavy use of impredicativity.
-%  After compilation those two examples run nonetheless,
-%  thanks to the correction of the extraction~\cite{Let02}. 
-
-% $Id$ 
+The module {\tt Coq.subtac.Utils} defines the default tactic for solving
+obligations called {\tt subtac\_simpl}. Importing it also adds some
+useful notations, as documented in the file itself.
 
 %%% Local Variables: 
 %%% mode: latex

@@ -319,6 +319,10 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
     (* 	 evars; *)
     (*      with _ -> ());     *)
     Subtac_obligations.add_definition recname evars_def fullctyp evars
+
+let nf_evar_context isevars ctx = 
+  List.map (fun (n, b, t) -> 
+    (n, option_map (Evarutil.nf_isevar isevars) b, Evarutil.nf_isevar isevars t)) ctx
     
 let build_mutrec l boxed = 
   let sigma = Evd.empty and env = Global.env () in 
@@ -384,10 +388,13 @@ let build_mutrec l boxed =
       let (isevars, info, def) = defrec.(i) in
 	(*       let _ = try trace (str "In solve evars, isevars is: " ++ Evd.pr_evar_defs !isevars) with _ -> () in *)
       let def = evar_nf isevars def in
+      let x, y, typ = arrec.(i) in
+      let typ = evar_nf isevars typ in
+      arrec.(i) <- (x, y, typ);
+      let rec_sign = nf_evar_context !isevars rec_sign in
       let isevars = Evd.undefined_evars !isevars in
 	(*       let _ = try trace (str "In solve evars, undefined is: " ++ Evd.pr_evar_defs isevars) with _ -> () in *)
       let evm = Evd.evars_of isevars in
-      let _, _, typ = arrec.(i) in
       let id = namerec.(i) in
 	(* Generalize by the recursive prototypes  *)
       let def = 

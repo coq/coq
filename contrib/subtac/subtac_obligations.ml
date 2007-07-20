@@ -109,13 +109,13 @@ let _ =
 let progmap_union = ProgMap.fold ProgMap.add
 
 let cache (_, (infos, tac)) =
-  from_prg := progmap_union infos !from_prg;
+  from_prg := infos;
   default_tactic_expr := tac
 
 let (input,output) = 
   declare_object
     { (default_object "Program state") with
-      cache_function = cache ; 
+      cache_function = cache;
       load_function = (fun _ -> cache);
       open_function = (fun _ -> cache);
       classify_function = (fun _ -> Dispose);
