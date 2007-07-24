@@ -152,8 +152,15 @@ Ltac ParseRingComponents lemma :=
 
 (* ring tactics *)
 
+Ltac relation_carrier req :=
+  let ty := type of req in
+  match eval hnf in ty with
+   ?R -> _ => R
+  | _ => fail 1000 "Equality has no relation type"
+  end.
+
 Ltac FV_hypo_tac mkFV req lH :=
-  let R := match type of req with ?R -> _ => R end in
+  let R := relation_carrier req in
   let FV_hypo_l_tac h :=
     match h with @mkhypo (req ?pe _) _ => mkFV pe end in
   let FV_hypo_r_tac h :=
