@@ -1,3 +1,4 @@
+Require Import Ring.
 Require Export NPlus.
 
 Module Type NTimesSignature.
@@ -159,5 +160,43 @@ apply S_inj in H; rewrite mult_comm in H; rewrite times_Sn_m in H;
 apply plus_eq_0 in H; destruct H as [H1 H2];
 apply plus_eq_0 in H2; destruct H2 as [H3 _]; rewrite H1; rewrite H3; now split.
 Qed.
+
+(* See the notes on the theorem plus_repl_pair in NPlus.v *)
+
+Theorem plus_mult_repl_pair : forall a n m n' m' u v,
+  a * n + u == a * m + v -> n + m' == n' + m -> a * n' + u == a * m' + v.
+Proof.
+induct a.
+intros; repeat rewrite times_0_n in *; now repeat rewrite plus_0_n in *.
+intros a IH n m n' m' u v H1 H2.
+repeat rewrite times_Sn_m in *.
+(*setoid_replace (n + a * n) with (a * n + n) in H1 by (apply plus_comm).
+setoid_replace (m + a * m) with (a * m + m) in H1 by (apply plus_comm).*)
+setoid_replace (n' + a * n') with (a * n' + n') by (apply plus_comm).
+setoid_replace (m' + a * m') with (a * m' + m') by (apply plus_comm).
+do 2 rewrite <- plus_assoc. apply IH with n m; [| assumption]. do 2 rewrite plus_assoc.
+setoid_replace ((a * n) + n') with (n' + a * n) by (apply plus_comm).
+setoid_replace (a * m + m') with (m' + a * m) by (apply plus_comm).
+do 2 rewrite <- plus_assoc. apply plus_repl_pair with n m; [| assumption].
+now do 2 rewrite plus_assoc.
+Qed.
+
+Theorem semi_ring : semi_ring_theory 0 (S 0) plus times E.
+Proof.
+constructor.
+exact plus_0_l.
+exact plus_comm.
+exact plus_assoc.
+exact mult_1_l.
+exact mult_0_l.
+exact mult_comm.
+exact mult_assoc.
+exact mult_plus_distr_r.
+Qed.
+
+Add Ring SR : semi_ring.
+Goal forall x y z : N, (x + y) * z == z * y + x * z.
+intros. Set Printing All. ring.
+
 
 End NTimesProperties.

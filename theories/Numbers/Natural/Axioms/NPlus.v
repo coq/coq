@@ -112,6 +112,14 @@ intros n IH H. rewrite plus_Sn_m in H.
 absurd_hyp H; [|assumption]. unfold not; apply S_0.
 Qed.
 
+Theorem plus_eq_S :
+  forall n m p, n + m == S p -> (exists n', n == S n') \/ (exists m', m == S m').
+Proof.
+intros n m p; nondep_induct n.
+intro H; rewrite plus_0_l in H; right; now exists p.
+intros n _; left; now exists n.
+Qed.
+
 Theorem succ_plus_discr : forall n m, m # S (n + m).
 Proof.
 intro n; induct m.
@@ -196,5 +204,74 @@ split; [intro H1; discriminate | intros _ ].
 rewrite plus_Sn_m in H. apply S_inj in H.
 apply plus_eq_0 in H; split; [apply S_wd | ]; tauto.
 Qed.
+
+(* One could define n <= m := exists p, p + n == m. Then we have
+dichotomy:
+
+forall n m, n <= m \/ m <= n,
+
+i.e.,
+
+forall n m, (exists p, p + n == m) \/ (exists p, p + m == n)     (1)
+
+We will need (1) in the proof of induction principle for integers
+constructed as pairs of natural numbers. The formula (1) can be proved
+using properties of order and truncated subtraction. Thus, p would be
+m - n or n - m and (1) would hold by theorem minus_plus from Minus.v
+depending on whether n <= m or m <= n. However, in proving induction
+for integers constructed from natural numbers we do not need to
+require implementations of order and minus; it is enough to prove (1)
+here. *)
+
+Theorem plus_dichotomy : forall n m, (exists p, p + n == m) \/ (exists p, p + m == n).
+Proof.
+intros n m; induct n.
+left; exists m; apply plus_0_r.
+intros n IH.
+(* destruct IH as [p H | p H]. does not print a goal in ProofGeneral *)
+destruct IH as [[p H] | [p H]].
+destruct (O_or_S p) as [H1 | [p' H1]]; rewrite H1 in H.
+rewrite plus_0_l in H. right; exists (S 0); rewrite H; rewrite plus_Sn_m; now rewrite plus_0_l.
+left; exists p'; rewrite plus_n_Sm; now rewrite plus_Sn_m in H.
+right; exists (S p). rewrite plus_Sn_m; now rewrite H.
+Qed.
+
+(* In proving the correctness of the definition of multiplication on
+integers constructed from pairs of natural numbers, we'll need the
+following fact about natural numbers:
+
+a * x + u == a * y + v -> x + y' == x' + y -> a * x' + u = a * y' + v  (2)
+
+Here x + y' == x' + y represents equality of integers (x, y) and
+(x', y'), since a pair of natural numbers represents their integer
+difference. On integers, the (2) could be proved by moving
+a * y to the left, factoring out a and replacing x - y by x' - y'.
+However, the whole point is that we are only in the process of
+constructing integers, so this has to be proved for natural numbers,
+where we cannot move terms from one side of an equation to the other.
+We first prove the special case of (2) where a == 1. *)
+
+Theorem plus_repl_pair : forall n m n' m' u v,
+  n + u == m + v -> n + m' == n' + m -> n' + u == m' + v.
+Proof.
+induct n.
+intros m n' m' u v H1 H2. rewrite plus_0_l in H1. rewrite plus_0_l in H2.
+rewrite H1; rewrite H2. now rewrite plus_assoc.
+intros n IH m n' m' u v H1 H2. rewrite plus_Sn_m in H1. rewrite plus_Sn_m in H2.
+assert (H : (exists m'', m == S m'') \/ ((exists v', v == S v') /\ (exists n'', n' == S n''))).
+symmetry in H1; symmetry in H2;
+destruct (plus_eq_S m v (n + u) H1); destruct (plus_eq_S n' m (n + m') H2).
+now left. now left. right; now split. now left.
+(* destruct H as [[m'' H] | [v' H3] [n'' H4]]. *)
+(* The command above produces a warning and the PG does not show a goal !!! *) 
+destruct H as [[m'' H] | [[v' H3] [n'' H4]]].
+rewrite H in H1, H2. rewrite plus_Sn_m in H1; rewrite plus_n_Sm in H2.
+apply S_inj in H1; apply S_inj in H2. now apply (IH m'').
+rewrite H3; rewrite H4; rewrite plus_Sn_m; rewrite plus_n_Sm; apply S_wd.
+rewrite H3 in H1; rewrite H4 in H2; rewrite plus_Sn_m in H2; rewrite plus_n_Sm in H1;
+apply S_inj in H1; apply S_inj in H2. now apply (IH m).
+Qed.
+
+(* The formula (2) will be proved in NTimes.v *)
 
 End NPlusProperties.

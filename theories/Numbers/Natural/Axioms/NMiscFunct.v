@@ -91,7 +91,21 @@ Definition le (n m : N) := lt n m || e n m.
 Theorem le_lt : forall n m, le n m <-> lt n m \/ n == m.
 Proof.
 intros n m. rewrite E_equiv_e. unfold le.
-do 4 rewrite eq_true_unfold.
+do 3 rewrite eq_true_unfold.
+assert (H : lt n m || e n m = true <-> lt n m = true \/ e n m = true).
+split; [apply orb_prop | apply orb_true_intro].
+now rewrite H.
+Qed.
+
+Theorem le_intro_left : forall n m, lt n m -> le n m.
+Proof.
+intros; rewrite le_lt; now left.
+Qed.
+
+Theorem le_intro_right : forall n m, n == m -> le n m.
+Proof.
+intros; rewrite le_lt; now right.
+Qed.
 
 Lemma lt_base_wd : eq_fun E eq_bool (if_zero false true) (if_zero false true).
 unfold eq_fun, eq_bool; intros; apply if_zero_wd; now unfold LE_Set.
@@ -128,6 +142,11 @@ Qed.
 (* Note that if we unfold lt along with eq_fun above, then "apply" signals
 as error "Impossible to unify", not just, e.g., "Cannot solve second-order
 unification problem". Something is probably wrong. *)
+
+Add Morphism le with signature E ==> E ==> eq_bool as le_wd.
+Proof.
+intros x1 x2 H1 x3 x4 H2; unfold le; rewrite H1; now rewrite H2.
+Qed.
 
 Theorem lt_base_eq : forall n, lt 0 n = if_zero false true n.
 Proof.
@@ -174,8 +193,9 @@ now unfold eq_bool.
 unfold fun2_wd; intros; now apply lt_wd.
 Qed.
 
-Theorem lt_S : forall m n, lt m (S n) <-> lt m n \/ m == n.
+Theorem lt_S : forall m n, lt m (S n) <-> le m n.
 Proof.
+assert (A : forall m n, lt m (S n) <-> lt m n \/ m == n).
 induct m.
 nondep_induct n;
 [split; intro; [now right | apply lt_0_1] |
@@ -188,8 +208,8 @@ false_hyp H lt_0. false_hyp H S_0.
 intro m. pose proof (IH m) as H; clear IH.
 assert (lt (S n) (S (S m)) <-> lt n (S m)); [apply lt_Sn_Sm |].
 assert (lt (S n) (S m) <-> lt n m); [apply lt_Sn_Sm |].
-assert (S n == S m <-> n == m); [split; [ apply S_inj | apply S_wd]|].
-tauto.
+assert (S n == S m <-> n == m); [split; [ apply S_inj | apply S_wd]|]. tauto.
+intros; rewrite le_lt; apply A.
 Qed.
 
 (*****************************************************)
@@ -347,10 +367,24 @@ Module NDefaultOrderModule <: NOrderSignature.
 Module NatModule := NatMod.
 
 Definition lt := lt.
+Definition le := le.
 
 Add Morphism lt with signature E ==> E ==> eq_bool as lt_wd.
 Proof.
 exact lt_wd.
+Qed.
+
+Add Morphism le with signature E ==> E ==> eq_bool as le_wd.
+Proof.
+exact le_wd.
+Qed.
+
+(* This produces a warning about a morphism redeclaration. Why is not
+there a warning after declaring lt? *)
+
+Theorem le_lt : forall x y, le x y <-> lt x y \/ x == y.
+Proof.
+exact le_lt.
 Qed.
 
 Theorem lt_0 : forall x, ~ (lt x 0).
@@ -358,7 +392,7 @@ Proof.
 exact lt_0.
 Qed.
 
-Theorem lt_S : forall x y, lt x (S y) <-> lt x y \/ x == y.
+Theorem lt_S : forall x y, lt x (S y) <-> le x y.
 Proof.
 exact lt_S.
 Qed.

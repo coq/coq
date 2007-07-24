@@ -55,7 +55,7 @@ intros n m p q; induct n.
 intros; rewrite times_0_n; apply mult_positive;
 [assumption | apply lt_positive with (n := p); assumption].
 intros x IH H1 H2.
-apply lt_transitive with (m := ((S x) * q)).
+apply lt_trans with (m := ((S x) * q)).
 now apply mult_S_lt_compat_l; assumption.
 now apply mult_lt_compat_r; [| apply lt_positive with (n := p)].
 Qed.

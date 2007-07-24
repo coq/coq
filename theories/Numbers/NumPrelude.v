@@ -1,4 +1,5 @@
 Require Export Setoid.
+Require Import Bool.
 
 (*
 Contents:
@@ -273,6 +274,13 @@ Proof.
 induction x; now simpl.
 Qed.
 
+Theorem eq_nat_correct : forall x y, eq_nat_bool x y <-> x = y.
+Proof.
+intros; split.
+now apply eq_nat_bool_implies_eq.
+intro H; rewrite H; apply eq_nat_bool_refl.
+Qed.
+
 (* The boolean less function can be defined as
 fun n m => proj1_sig (nat_lt_ge_bool n m)
 using the standard library.
@@ -292,15 +300,37 @@ match n, m with
 | _, 0 => false
 end.
 
+Fixpoint le_bool (n m : nat) {struct n} : bool :=
+match n, m with
+| 0, _ => true
+| S n', S m' => le_bool n' m'
+| S _, 0 => false
+end.
+
 (* The following properties are used both in Peano.v and in MPeano.v *)
+
+Lemma le_lt_bool : forall x y, le_bool x y = (lt_bool x y) || (eq_nat_bool x y).
+Proof.
+induction x as [| x IH]; destruct y; simpl; (reflexivity || apply IH).
+Qed.
+
+Theorem le_lt : forall x y, le_bool x y <-> lt_bool x y \/ x = y.
+Proof.
+intros x y. rewrite le_lt_bool.
+setoid_replace (eq_true (lt_bool x y || eq_nat_bool x y)) with
+  (lt_bool x y = true \/ eq_nat_bool x y = true) using relation iff.
+do 2 rewrite <- eq_true_unfold. now rewrite eq_nat_correct.
+rewrite eq_true_unfold. split; [apply orb_prop | apply orb_true_intro].
+Qed. (* Can be simplified *)
 
 Theorem lt_bool_0 : forall x, ~ (lt_bool x 0).
 Proof.
 destruct x as [|x]; simpl; now intro.
 Qed.
 
-Theorem lt_bool_S : forall x y, lt_bool x (S y) <-> lt_bool x y \/ x = y.
+Theorem lt_bool_S : forall x y, lt_bool x (S y) <-> le_bool x y.
 Proof.
+assert (A : forall x y, lt_bool x (S y) <-> lt_bool x y \/ x = y).
 induction x as [| x IH]; destruct y as [| y]; simpl.
 split; [now right | now intro].
 split; [now left | now intro].
@@ -308,6 +338,7 @@ split; [intro H; false_hyp H lt_bool_0 |
 intro H; destruct H as [H | H]; now auto].
 assert (H : x = y <-> S x = S y); [split; auto|].
 rewrite <- H; apply IH.
+intros; rewrite le_lt; apply A.
 Qed.
 
 (** Miscellaneous *)

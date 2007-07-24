@@ -9,6 +9,8 @@ Parameter Inline le : N -> N -> bool.
 
 Notation "x < y" := (lt x y) : NatScope.
 Notation "x <= y" := (le x y) : NatScope.
+Notation "x > y" := (lt y x) (only parsing) : NatScope.
+Notation "x >= y" := (le y x) (only parsing) : NatScope.
 
 Add Morphism lt with signature E ==> E ==> eq_bool as lt_wd.
 Add Morphism le with signature E ==> E ==> eq_bool as le_wd.
@@ -62,7 +64,7 @@ Proof.
 induct n; [apply lt_n_Sn | intros x H; now apply lt_closed_S].
 Qed.
 
-Theorem lt_transitive : forall n m p, n < m -> m < p -> n < p.
+Theorem lt_trans : forall n m p, n < m -> m < p -> n < p.
 Proof.
 intros n m p; induct m.
 intros H1 H2; absurd_hyp H1; [ apply lt_0 | assumption].
@@ -72,12 +74,31 @@ apply IH; [assumption | apply lt_S_lt; assumption].
 rewrite H1; apply lt_S_lt; assumption.
 Qed.
 
+Theorem le_trans : forall n m p, n <= m -> m <= p -> n <= p.
+Proof.
+intros n m p H1 H2; le_elim H1.
+le_elim H2. le_intro1; now apply lt_trans with (m := m).
+le_intro1; now rewrite <- H2. now rewrite H1.
+Qed.
+
+Theorem le_lt_trans : forall n m p, n <= m -> m < p -> n < p.
+Proof.
+intros n m p H1 H2; le_elim H1.
+now apply lt_trans with (m := m). now rewrite H1.
+Qed.
+
+Theorem lt_le_trans : forall n m p, n < m -> m <= p -> n < p.
+Proof.
+intros n m p H1 H2; le_elim H2.
+now apply lt_trans with (m := m). now rewrite <- H2.
+Qed.
+
 Theorem lt_positive : forall n m, n < m -> 0 < m.
 Proof.
 intros n m; induct n.
 trivial.
 intros x IH H.
-apply lt_transitive with (m := S x); [apply lt_0_Sn | apply H].
+apply lt_trans with (m := S x); [apply lt_0_Sn | apply H].
 Qed.
 
 Theorem lt_resp_S : forall n m, S n < S m <-> n < m.
@@ -90,7 +111,7 @@ induct m.
 intro H; false_hyp H lt_0.
 intros x IH H.
 apply -> lt_S in H; le_elim H.
-apply lt_transitive with (m := S x).
+apply lt_trans with (m := S x).
 apply IH; assumption.
 apply lt_n_Sn.
 rewrite H; apply lt_n_Sn.
@@ -109,7 +130,7 @@ split; intro H; [false_hyp H lt_0 |
 le_elim H; [false_hyp H lt_0 | false_hyp H S_0]].
 intros m; split; intro H.
 apply -> lt_S in H. le_elim H; [le_intro1; now apply <- lt_resp_S | le_intro2; now apply S_wd].
-le_elim H; [apply lt_transitive with (m := S n); [apply lt_n_Sn | assumption] |
+le_elim H; [apply lt_trans with (m := S n); [apply lt_n_Sn | assumption] |
 apply S_inj in H; rewrite H; apply lt_n_Sn].
 Qed.
 
@@ -123,11 +144,18 @@ Proof.
 intros; le_intro1; now apply <- lt_le_S_l.
 Qed.
 
-Theorem lt_irreflexive : forall n, ~ (n < n).
+Theorem lt_irr : forall n, ~ (n < n).
 Proof.
 induct n.
 apply lt_0.
 intro x; unfold not; intros H1 H2; apply H1; now apply -> lt_resp_S.
+Qed.
+
+Theorem le_antisym : forall n m, n <= m -> m <= n -> n == m.
+Proof.
+intros n m H1 H2; le_elim H1; le_elim H2.
+elimtype False; apply lt_irr with (n := n); now apply lt_trans with (m := m).
+now symmetry. assumption. assumption.
 Qed.
 
 Theorem neq_0_lt : forall n, 0 # n -> 0 < n.
@@ -144,10 +172,10 @@ intro H; absurd_hyp H; [apply lt_0 | assumption].
 unfold not; intros; now apply S_0 with (n := n).
 Qed.
 
-Theorem lt_asymmetric : forall n m, ~ (n < m /\ m < n).
+Theorem lt_asymm : forall n m, ~ (n < m /\ m < n).
 Proof.
 unfold not; intros n m [H1 H2].
-now apply (lt_transitive n m n) in H1; [false_hyp H1 lt_irreflexive|].
+now apply (lt_trans n m n) in H1; [false_hyp H1 lt_irr|].
 Qed.
 
 Theorem le_0_l: forall n, 0 <= n.
@@ -163,16 +191,30 @@ intros n IH. destruct IH as [H | H].
 assert (H1 : S n <= m); [now apply -> lt_le_S_l | apply -> le_lt in H1; tauto].
 destruct H as [H | H].
 right; right; rewrite H; apply lt_n_Sn.
-right; right; apply lt_transitive with (m := n); [assumption | apply lt_n_Sn].
+right; right; apply lt_trans with (m := n); [assumption | apply lt_n_Sn].
 Qed.
 
-Theorem lt_dichotomy : forall n m, n < m \/ ~ n < m.
+(** The law of excluded middle for < *)
+Theorem lt_em : forall n m, n < m \/ ~ n < m.
 Proof.
 intros n m; pose proof (lt_trichotomy n m) as H.
 destruct H as [H1 | H1]; [now left |].
 destruct H1 as [H2 | H2].
-right; rewrite H2; apply lt_irreflexive.
-right; intro; apply (lt_asymmetric n m); split; assumption.
+right; rewrite H2; apply lt_irr.
+right; intro; apply (lt_asymm n m); split; assumption.
+Qed.
+
+Theorem not_lt : forall n m, ~ (n < m) <-> n >= m.
+Proof.
+intros n m; split; intro H.
+destruct (lt_trichotomy n m) as [H1 | [H1 | H1]].
+false_hyp H1 H. rewrite H1; apply le_refl. now le_intro1.
+intro; now apply (le_lt_trans m n m) in H; [false_hyp H lt_irr |].
+Qed.
+
+Theorem lt_or_ge : forall n m, n < m \/ n >= m.
+Proof.
+intros n m; rewrite <- not_lt; apply lt_em.
 Qed.
 
 Theorem nat_total_order : forall n m, n # m -> n < m \/ m < n.

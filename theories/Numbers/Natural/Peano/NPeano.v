@@ -1,3 +1,5 @@
+Require Import Minus.
+
 Require Export NDepRec.
 Require Export NTimesOrder.
 Require Export NMinus.
@@ -150,14 +152,25 @@ Qed.
 
 End NPeanoTimes.
 
-Module NPeanoLt <: NLtSignature.
+Module NPeanoOrder <: NOrderSignature.
 Module Export NatModule := PeanoNat.
 
 Definition lt := lt_bool.
+Definition le := le_bool.
 
 Add Morphism lt with signature E ==> E ==> eq_bool as lt_wd.
 Proof.
 unfold E, eq_bool; congruence.
+Qed.
+
+Add Morphism le with signature E ==> E ==> eq_bool as le_wd.
+Proof.
+unfold E, eq_bool; congruence.
+Qed.
+
+Theorem le_lt : forall x y, le x y <-> lt x y \/ x = y.
+Proof.
+exact le_lt.
 Qed.
 
 Theorem lt_0 : forall x, ~ (lt x 0).
@@ -165,20 +178,70 @@ Proof.
 exact lt_bool_0.
 Qed.
 
-Theorem lt_S : forall x y, lt x (S y) <-> lt x y \/ x = y.
+Theorem lt_S : forall x y, lt x (S y) <-> le x y.
 Proof.
 exact lt_bool_S.
 Qed.
 
-End NPeanoLt.
+End NPeanoOrder.
 
 Module NPeanoPred <: NPredSignature.
+Module Export NatModule := PeanoNat.
+
+Definition P (n : nat) :=
+match n with
+| 0 => 0
+| S n' => n'
+end.
+
+Add Morphism P with signature E ==> E as P_wd.
+Proof.
+unfold E; congruence.
+Qed.
+
+Theorem P_0 : P 0 = 0.
+Proof.
+reflexivity.
+Qed.
+
+Theorem P_S : forall n, P (S n) = n.
+Proof.
+now intro.
+Qed.
+
+End NPeanoPred.
+
+Module NPeanoMinus <: NMinusSignature.
+Module Export NPredModule := NPeanoPred.
+
+Definition minus := minus.
+
+Add Morphism minus with signature E ==> E ==> E as minus_wd.
+Proof.
+unfold E; congruence.
+Qed.
+
+Theorem minus_0_r : forall n, n - 0 = n.
+Proof.
+now destruct n.
+Qed.
+
+Theorem minus_S_r : forall n m, n - (S m) = P (n - m).
+Proof.
+induction n as [| n IH]; simpl.
+now intro.
+destruct m; simpl; [apply minus_0_r | apply IH].
+Qed.
+
+End NPeanoMinus.
 
 (* Obtaining properties for +, *, <, and their combinations *)
 
-Module Export NPeanoTimesLtProperties := NTimesLtProperties NPeanoTimes NPeanoLt.
+Module Export NPeanoTimesOrderProperties := NTimesOrderProperties NPeanoTimes NPeanoOrder.
 Module Export NPeanoDepRecTimesProperties :=
   NDepRecTimesProperties NPeanoDepRec NPeanoTimes.
+Module Export NPeanoMinusProperties :=
+  NMinusProperties NPeanoMinus NPeanoPlus NPeanoOrder.
 
 Module MiscFunctModule := MiscFunctFunctor PeanoNat.
 (* The instruction above adds about 0.5M to the size of the .vo file !!! *)

@@ -34,7 +34,7 @@ Qed.
 Lemma plus_lt_compat : forall n m p q, n < m -> p < q -> n + p < m + q.
 Proof.
 intros n m p q H1 H2.
-apply lt_transitive with (m := m + p);
+apply lt_trans with (m := m + p);
 [now apply plus_lt_compat_r | now apply plus_lt_compat_l].
 Qed.
 

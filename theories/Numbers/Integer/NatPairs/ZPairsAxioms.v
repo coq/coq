@@ -1,4 +1,3 @@
-Require Export NMinus.
 Require Export NTimesOrder.
 Require Export ZTimesOrder.
 
@@ -51,6 +50,13 @@ Add Relation Z E
  transitivity proved by (proj1 (proj2 E_equiv))                                                  
 as E_rel.
 
+Add Morphism (@pair N N)
+  with signature NDomainModule.E ==> NDomainModule.E ==> E
+  as pair_wd.
+Proof.
+intros x1 x2 H1 y1 y2 H2; unfold E; simpl; rewrite H1; now rewrite H2.
+Qed.
+
 End NatPairsDomain.
 
 Module NatPairsInt (Import NPlusModule : NPlusSignature) <: IntSignature.
@@ -93,16 +99,34 @@ intro x; unfold S, P, E; simpl.
 rewrite plus_Sn_m; now rewrite plus_n_Sm.
 Qed.
 
-Theorem induction :
-  forall Q : Z -> Prop,
-    NumPrelude.pred_wd E Q -> Q 0 ->
-    (forall x, Q x -> Q (S x)) ->
-    (forall x, Q x -> Q (P x)) -> forall x, Q x.
+Section Induction.
+Open Scope NatScope. (* automatically closes at the end of the section *)
+Variable Q : Z -> Prop.
+Hypothesis Q_wd : pred_wd E Q.
+
+Add Morphism Q with signature E ==> iff as Q_morph.
 Proof.
-intros Q Q_wd Q0 QS QP x; unfold O, S, P in *.
+exact Q_wd.
+Qed.
 
+Theorem induction :
+  Q 0 -> (forall x, Q x -> Q (S x)) -> (forall x, Q x -> Q (P x)) -> forall x, Q x.
+Proof.
+intros Q0 QS QP x; unfold O, S, P, pred_wd, E in *.
+destruct x as [n m].
+cut (forall p : N, Q (p, 0)); [intro H1 |].
+cut (forall p : N, Q (0, p)); [intro H2 |].
+destruct (plus_dichotomy n m) as [[p H] | [p H]].
+rewrite (Q_wd (n, m) (0, p)); simpl. rewrite plus_0_l; now rewrite plus_comm. apply H2.
+rewrite (Q_wd (n, m) (p, 0)); simpl. now rewrite plus_0_r. apply H1.
+induct p. assumption. intros p IH.
+replace 0 with (fst (0, p)); [| reflexivity].
+replace p with (snd (0, p)); [| reflexivity]. now apply QP.
+induct p. assumption. intros p IH.
+replace 0 with (snd (p, 0)); [| reflexivity].
+replace p with (fst (p, 0)); [| reflexivity]. now apply QS.
+Qed.
 
+End Induction.
 
-
-Definition N_Z (n : nat) := nat_rec (fun _ : nat => Z) 0 (fun _ p => S p).
-
+End NatPairsInt.
