@@ -401,6 +401,7 @@ let add_quant state id pol (nvars,valid1,patt1,valid2,patt2) =
      qe_rhs_valid=valid2}::state.quant
 
 let add_inst state (inst,int_subst) = 
+  check_for_interrupt ();
   if state.rew_depth > 0 then 
   let subst = build_subst (forest state) int_subst in
   let prfhead= mkVar inst.qe_hyp_id in
@@ -724,7 +725,8 @@ let find_instances state =
   let _ =
     debug msgnl (str "Running E-matching algorithm ... ");
     try
-      while true do 
+      while true do
+	check_for_interrupt ();
 	do_match state res pb_stack 
       done;
       anomaly "get out of here !"
@@ -734,7 +736,9 @@ let find_instances state =
 let rec execute first_run state =
   debug msgnl (str "Executing ... ");
   try
-    while one_step state do ()
+    while 
+      check_for_interrupt ();
+      one_step state do ()
     done;
     match check_disequalities state with
 	None -> 

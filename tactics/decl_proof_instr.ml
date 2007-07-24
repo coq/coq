@@ -22,6 +22,7 @@ open Decl_mode
 open Decl_interp
 open Rawterm
 open Names
+open Nameops
 open Declarations
 open Tactics
 open Tacticals
@@ -822,9 +823,55 @@ let cast_tac id_or_thesis typ gls =
       
 (* per cases *)
 
-let start_tree env ind = 
-  let constrs = (snd (Inductive.lookup_mind_specif env ind)).mind_consnames in
-    Split (Idset.empty,ind,Array.map (fun _ -> None) constrs)
+let is_rec_pos (main_ind,wft) =
+  match main_ind with
+      None -> false
+    | Some index -> 
+	match fst (Rtree.dest_node wft) with
+	    Mrec i when i = index -> true
+	  | _ -> false
+
+let rec constr_trees (main_ind,wft) ind =
+    match Rtree.dest_node wft with
+      Norec,_ -> 
+	let itree = 
+	  (snd (Global.lookup_inductive ind)).mind_recargs in 
+	  constr_trees (None,itree) ind
+    | _,constrs -> main_ind,constrs
+
+let constr_args rp constr =
+  let main_ind,constrs = constr_trees rp (fst constr) in
+  let ctree = constrs.(pred (snd constr)) in
+    array_map_to_list (fun t -> main_ind,t) 
+      (snd (Rtree.dest_node ctree))
+
+let ind_args rp ind =
+    let main_ind,constrs = constr_trees rp ind in
+    let args ctree =     
+      Array.map (fun t -> main_ind,t) (snd (Rtree.dest_node ctree)) in
+      Array.map args constrs
+
+let init_tree ids ind rp nexti =
+  let indargs = ind_args rp ind in
+  let do_i i arp = (Array.map is_rec_pos arp),nexti i arp in
+    Split_patt (ids,ind,Array.mapi do_i indargs)
+
+let map_tree_rp rp id_fun mapi = function
+    Split_patt (ids,ind,branches) ->
+  let indargs = ind_args rp ind in 
+  let do_i i (recargs,bri) = recargs,mapi i indargs.(i) bri in
+    Split_patt (id_fun ids,ind,Array.mapi do_i branches)
+  | _ -> failwith "map_tree_rp: not a splitting node"
+
+let map_tree id_fun mapi = function
+    Split_patt (ids,ind,branches) ->
+  let do_i i (recargs,bri) = recargs,mapi i bri in
+    Split_patt (id_fun ids,ind,Array.mapi do_i branches)
+  | _ -> failwith "map_tree: not a splitting node"
+
+
+let start_tree env ind rp = 
+  init_tree Idset.empty ind rp (fun _ _ -> None)
 
 let build_per_info etype casee gls = 
   let concl=pf_concl gls in
@@ -837,11 +884,11 @@ let build_per_info etype casee gls =
       destInd hd 
     with _ -> 
       error "Case analysis must be done on an inductive object" in
-  let nparams =
-    let mind = fst (Global.lookup_inductive ind) in
-     match etype with
-	 ET_Induction -> mind.mind_nparams_rec
-       | _ -> mind.mind_nparams in
+  let mind,oind = Global.lookup_inductive ind in
+  let nparams,index =
+    match etype with
+	ET_Induction -> mind.mind_nparams_rec,Some (snd ind)
+      | _ -> mind.mind_nparams,None in
   let params,real_args = list_chop nparams args in
   let abstract_obj c body = 
     let typ=pf_type_of gls c in 
@@ -855,7 +902,8 @@ let build_per_info etype casee gls =
    per_pred=pred;
    per_args=real_args;
    per_params=params;
-   per_nparams=nparams}
+   per_nparams=nparams;   
+   per_wf=index,oind.mind_recargs}
 
 let per_tac etype casee gls=
   let env=pf_env gls in
@@ -865,14 +913,14 @@ let per_tac etype casee gls=
 	  let is_dep,per_info = build_per_info etype c gls in
 	  let ek = 
 	    if is_dep then
-	      EK_dep (start_tree env per_info.per_ind)
+	      EK_dep (start_tree env per_info.per_ind per_info.per_wf)
 	    else EK_unknown in
 	    tcl_change_info 
 	      {pm_stack=
 		  Per(etype,per_info,ek,[])::info.pm_stack} gls
       | Virtual cut ->
 	  assert (cut.cut_stat.st_label=Anonymous);
-	  let id = pf_get_new_id (id_of_string "_matched") gls in
+	  let id = pf_get_new_id (id_of_string "anonymous_matched") gls in
 	  let c = mkVar id in
 	  let modified_cut = 
 	    {cut with cut_stat={cut.cut_stat with st_label=Name id}} in
@@ -916,120 +964,109 @@ let suppose_tac hyps gls0 =
 
 (* pattern matching compiling *)
 
-let rec nb_prod_after n c=
-  match kind_of_term c with
-    | Prod (_,_,b) ->if n>0 then nb_prod_after (n-1) b else 
-	1+(nb_prod_after 0 b)
-    | _ -> 0
+let rec skip_args rest ids n =
+  if n <= 0 then
+    Close_patt rest
+  else
+    Skip_patt (ids,skip_args rest ids (pred n))
 
-let constructor_arities env ind =
-  let nparams = (fst (Global.lookup_inductive ind)).mind_nparams in
-  let constr_types = Inductiveops.arities_of_constructors env ind in 
-  let hyp = nb_prod_after nparams in	
-    Array.map hyp constr_types
-
-let rec n_push rest ids n = 
-  if n<=0 then Pop rest else Push (ids,n_push rest ids (pred n)) 
-
-let explode_branches ids env ind rest=
-  Array.map (fun n -> Some (Idset.empty,n_push rest ids n)) (constructor_arities env ind)
-
-let rec tree_of_pats env ((id,_) as cpl) pats =
+let rec tree_of_pats ((id,_) as cpl) pats =
   match pats with 
-      [] -> End_of_branch cpl
+      [] -> End_patt cpl
     | args::stack ->
 	match args with
-	    [] -> Pop (tree_of_pats env cpl stack)
-	  | patt :: rest_args ->
+	    [] -> Close_patt (tree_of_pats cpl stack)
+	  | (patt,rp) :: rest_args ->
 	      match patt with
 		  PatVar (_,v) -> 
-		    Push (Idset.singleton id,
-			  tree_of_pats env cpl (rest_args::stack))
-		|  PatCstr (_,(ind,cnum),args,nam) ->
-		     let _,mind = Inductive.lookup_mind_specif env ind in
-		     let br= Array.map (fun _ -> None) mind.mind_consnames in
-		       br.(pred cnum) <- 
-			 Some (Idset.singleton id,
-			       tree_of_pats env cpl (args::rest_args::stack));
-		       Split(Idset.empty,ind,br)
+		    Skip_patt (Idset.singleton id,
+			       tree_of_pats cpl (rest_args::stack))
+		| PatCstr (_,(ind,cnum),args,nam) ->
+		    let nexti i ati =
+		      if i = pred cnum then 
+			let nargs = 
+			  list_map_i (fun j a -> (a,ati.(j))) 0 args in
+			  Some (Idset.singleton id,
+				tree_of_pats cpl (nargs::rest_args::stack))
+		      else None
+		      in init_tree Idset.empty ind rp nexti
 
-let rec add_branch env ((id,_) as cpl) pats tree=
+let rec add_branch ((id,_) as cpl) pats tree=
   match pats with 
       [] -> 
 	begin
 	  match tree with
-	      End_of_branch cpl0 -> End_of_branch cpl0 
-		(* this ensures precedence *) 
+	      End_patt cpl0 -> End_patt cpl0 
+		(* this ensures precedence for overlapping patterns *) 
 	    | _ -> anomaly "tree is expected to end here"
 	end
     | args::stack ->
 	match args with 
 	    [] ->
 	      begin
-		match tree with 
-		    Pop t -> Pop (add_branch env cpl stack t)
+		match tree with
+		   Close_patt t -> 
+		     Close_patt (add_branch cpl stack t)
 		  | _ -> anomaly "we should pop here" 
 	      end
-	  | patt :: rest_args ->
+	  | (patt,rp) :: rest_args ->
 	      match patt with
 		  PatVar (_,v) ->
 		    begin
 		      match tree with 
-			  Push (ids,t) -> 
-			    Push (Idset.add id ids,
-				  add_branch env cpl (rest_args::stack) t)
-			| Split (ids,ind,br) ->
-			    Split (Idset.add id ids,
-				   ind,array_map2 
-				     (append_branch env cpl 1 
-					(rest_args::stack)) 
-				     (constructor_arities env ind) br)
+			  Skip_patt (ids,t) -> 
+			    Skip_patt (Idset.add id ids,
+				       add_branch cpl (rest_args::stack) t)
+			| Split_patt (_,_,_) ->
+			    map_tree (Idset.add id)
+			      (fun i bri ->  
+				 append_branch cpl 1 (rest_args::stack) bri) 
+			      tree
 			| _ -> anomaly "No pop/stop expected here"  
 		    end
 		| PatCstr (_,(ind,cnum),args,nam) ->
-		    match tree with
-			Push (ids,t) ->
-			  let br = explode_branches ids env ind t in
-			  let _ =
-			    br.(pred cnum)<- 
-			      option_map
-			      (fun (ids,tree) -> 
-				 Idset.add id ids,
-				 add_branch env cpl 
-				   (args::rest_args::stack) tree) 
-			      br.(pred cnum) in
-			    Split (ids,ind,br)
-		      | Split (ids,ind0,br0) ->
+		      match tree with
+			Skip_patt (ids,t) ->
+			  let nexti i ati =
+			    if i = pred cnum then 
+			      let nargs = 
+				list_map_i (fun j a -> (a,ati.(j))) 0 args in
+				Some (Idset.add id ids,
+				      add_branch cpl (nargs::rest_args::stack)
+					(skip_args t ids (Array.length ati)))
+			    else 
+			      Some (ids,
+				    skip_args t ids (Array.length ati))
+			  in init_tree ids ind rp nexti
+		      | Split_patt (_,ind0,_) ->
 			  if (ind <> ind0) then error
 			    (* this can happen with coercions *)
-	                      "Case pattern belongs to wrong inductive type";
-			  let br=Array.copy br0 in
-			  let ca = constructor_arities env ind in
-			  let _= br.(pred cnum)<-
-			    append_branch env cpl 0 (args::rest_args::stack) 
-			    ca.(pred cnum) br.(pred cnum) in 
-			    Split (ids,ind,br)
+	                    "Case pattern belongs to wrong inductive type";
+			  let mapi i ati bri =
+			    if i = pred cnum then 
+			      let nargs = 
+				list_map_i (fun j a -> (a,ati.(j))) 0 args in
+				append_branch cpl 0 
+				  (nargs::rest_args::stack) bri
+			    else bri in
+			    map_tree_rp rp (fun ids -> ids) mapi tree
 		      | _ -> anomaly "No pop/stop expected here"
-and append_branch env ((id,_) as cpl) depth pats nargs = function
+and append_branch ((id,_) as cpl) depth pats = function
     Some (ids,tree) -> 
-      Some (Idset.add id ids,append_tree env cpl depth pats tree)
+      Some (Idset.add id ids,append_tree cpl depth pats tree)
   | None ->
-      Some (* (n_push (tree_of_pats env cpl pats) 
-	      (Idset.singleton id) nargs) *)
-	   (Idset.singleton id,tree_of_pats env cpl pats)
-and append_tree env ((id,_) as cpl) depth pats tree =
-  if depth<=0 then add_branch env cpl pats tree
+      Some (Idset.singleton id,tree_of_pats cpl pats)
+and append_tree ((id,_) as cpl) depth pats tree =
+  if depth<=0 then add_branch cpl pats tree
   else match tree with
-      Pop t -> Pop (append_tree env cpl (pred depth) pats t)
-    | Push (ids,t) -> Push (Idset.add id ids,
-				   append_tree env cpl depth pats t)
-    | End_of_branch _ -> anomaly "Premature end of branch"
-    | Split (ids,ind,branches) -> 
-	Split (Idset.add id ids,ind,
-	       array_map2 
-		 (append_branch env cpl (succ depth) pats) 
-		 (constructor_arities env ind)
-		 branches)
+      Close_patt t -> 
+	Close_patt (append_tree cpl (pred depth) pats t)
+    | Skip_patt (ids,t) -> 
+	Skip_patt (Idset.add id ids,append_tree cpl depth pats t)
+    | End_patt _ -> anomaly "Premature end of branch"
+    | Split_patt (_,_,_) -> 
+	map_tree (Idset.add id) 
+	  (fun i bri -> append_branch cpl (succ depth) pats bri) tree 
 
 (* suppose it is *)
 
@@ -1107,8 +1144,8 @@ let rec register_dep_subcase id env per_info pat = function
     EK_nodep -> error  "Only \"suppose it is\" can be used here."
   | EK_unknown -> 
       register_dep_subcase id env per_info pat
-	(EK_dep (start_tree env per_info.per_ind))
-  | EK_dep tree -> EK_dep (add_branch env id [[pat]] tree)
+	(EK_dep (start_tree env per_info.per_ind per_info.per_wf))
+  | EK_dep tree -> EK_dep (add_branch id [[pat,per_info.per_wf]] tree)
   
 let case_tac params pat_info hyps gls0 =
   let info = get_its_info gls0 in
@@ -1135,176 +1172,152 @@ let case_tac params pat_info hyps gls0 =
 (* end cases *)
 
 type instance_stack =
-    (constr option*bool*(constr list) list) list
+    (constr option*(constr list) list) list
 
 let initial_instance_stack ids =
-  List.map (fun id -> id,[None,false,[]]) ids
+  List.map (fun id -> id,[None,[]]) ids
 
 let push_one_arg arg = function 
     [] -> anomaly "impossible"
-  | (head,is_rec,args) :: ctx -> 
-      ((head,is_rec,(arg::args)) :: ctx)
+  | (head,args) :: ctx -> 
+      ((head,(arg::args)) :: ctx)
 
 let push_arg arg stacks =
   List.map (fun (id,stack) -> (id,push_one_arg arg stack)) stacks
   
 
-let push_one_head c is_rec ids (id,stack) = 
+let push_one_head c ids (id,stack) = 
   let head = if Idset.mem id ids then Some c else None in
-    id,(head,is_rec,[]) :: stack
+    id,(head,[]) :: stack
 
-let push_head c is_rec ids stacks =
-  List.map (push_one_head c is_rec ids) stacks
+let push_head c ids stacks =
+  List.map (push_one_head c ids) stacks
 
-let pop_one rec_flag (id,stack) =  
+let pop_one (id,stack) =  
   let nstack=
     match stack with
 	[] -> anomaly "impossible"
       | [c] as l -> l
-      | (Some head,is_rec,args)::(head0,is_rec0,args0)::ctx ->
+      | (Some head,args)::(head0,args0)::ctx ->
 	  let arg = applist (head,(List.rev args)) in
-	    rec_flag:= !rec_flag || is_rec;
-	    (head0,is_rec0,(arg::args0))::ctx
-     | (None,is_rec,args)::(head0,is_rec0,args0)::ctx ->
-	 rec_flag:= !rec_flag || is_rec;
-	 (head0,is_rec0,(args@args0))::ctx
+	    (head0,(arg::args0))::ctx
+     | (None,args)::(head0,args0)::ctx ->
+	 (head0,(args@args0))::ctx
   in id,nstack
 
 let pop_stacks stacks =
-  let rec_flag= ref false in 
-  let nstacks = List.map (pop_one rec_flag) stacks in
-    !rec_flag , nstacks
+  List.map pop_one stacks
 
 let patvar_base = id_of_string "__"
 
-let test_fun (str:string) = ()
-
-let hrec_for obj_id fix_id per_info gls=
+let hrec_for fix_id per_info gls obj_id =
   let obj=mkVar obj_id in
   let typ=pf_get_hyp_typ gls obj_id in
   let rc,hd1=decompose_prod typ in
   let cind,all_args=decompose_app typ in
-    match kind_of_term cind with
-	Ind ind when ind=per_info.per_ind ->
-	  let params,args= list_chop per_info.per_nparams all_args in 
-	    if try 
-	      (List.for_all2 eq_constr params per_info.per_params)
-	    with Invalid_argument _ -> false then
-	      let hd2 = applist (mkVar fix_id,args@[obj]) in
-		Some (compose_lam rc (whd_beta hd2))
-	    else None
-      | _ -> None
+  let ind = destInd cind in assert (ind=per_info.per_ind);
+  let params,args= list_chop per_info.per_nparams all_args in 
+  assert begin
+    try List.for_all2 eq_constr params per_info.per_params with 
+        Invalid_argument _ -> false end;
+  let hd2 = applist (mkVar fix_id,args@[obj]) in 
+    compose_lam rc (whd_beta hd2)
+
+let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
+  match tree, objs  with
+      Close_patt t,_ ->  
+	let args0 = pop_stacks args in	
+	  execute_cases fix_name per_info tacnext args0 objs nhrec t gls
+    | Skip_patt (_,t),skipped::next_objs -> 
+	let args0 = push_arg skipped args in
+	  execute_cases fix_name per_info tacnext args0 next_objs nhrec t gls
+    | End_patt (id,nhyps),[] -> 
+	begin
+	  match List.assoc id args with
+	      [None,br_args] -> 
+		let metas = 
+		  list_tabulate (fun n -> mkMeta (succ n)) nhyps in
+		  tclTHEN
+		    (tclDO nhrec introf)
+		    (tacnext 
+		       (applist (mkVar id,List.rev_append br_args metas))) gls
+	    | _ -> anomaly "wrong stack size"
+	end
+    | Split_patt (ids,ind,br), casee::next_objs ->
+	let (mind,oind) as spec = Global.lookup_inductive ind in
+	let nparams = mind.mind_nparams in
+	let concl=pf_concl gls in
+	let env=pf_env gls in
+	let ctyp=pf_type_of gls casee in
+	let hd,all_args = decompose_app (special_whd gls ctyp) in
+	let _ = assert (destInd hd = ind) in (* just in case *)
+	let params,real_args = list_chop nparams all_args in
+	let abstract_obj c body = 
+	  let typ=pf_type_of gls c in 
+	    lambda_create env (typ,subst_term c body) in
+	let elim_pred = List.fold_right abstract_obj    
+	  real_args (lambda_create env (ctyp,subst_term casee concl)) in
+	let case_info = Inductiveops.make_case_info env ind RegularStyle in
+	let gen_arities = Inductive.arities_of_constructors ind spec in
+	let f_ids typ = 
+	  let sign = 
+	    fst (Sign.decompose_prod_assum (Term.prod_applist typ params)) in
+	    find_intro_names sign gls in
+	let constr_args_ids = Array.map f_ids gen_arities in
+	let case_term =	 
+	  mkCase(case_info,elim_pred,casee,
+		 Array.mapi (fun i _ -> mkMeta (succ i)) constr_args_ids) in
+	let branch_tac i (recargs,bro) gls0 =
+	  let args_ids = constr_args_ids.(i) in
+	  let rec aux n = function
+	      [] -> 
+		assert (n=Array.length recargs); 
+		next_objs,[],nhrec
+	    | id :: q -> 
+		let objs,recs,nrec = aux (succ n) q in
+		  if recargs.(n) 
+		  then (mkVar id::objs),(id::recs),succ nrec 
+		  else (mkVar id::objs),recs,nrec in
+	  let objs,recs,nhrec = aux 0 args_ids in
+	    tclTHENLIST
+	      [tclMAP intro_mustbe_force args_ids;
+	       begin
+		 fun gls1 -> 
+		   let hrecs = 
+		     List.map 
+		       (fun id -> 
+			  hrec_for (out_name fix_name) per_info gls1 id) 
+		       recs in
+		     generalize hrecs gls1
+	       end;
+	       match bro with
+		   None -> 
+		     msg_warning (str "missing case");
+		     tacnext (mkMeta 1)
+		 | Some (sub_ids,tree) ->
+		     let br_args =
+		       List.filter 
+			 (fun (id,_) -> Idset.mem id sub_ids) args in 
+		     let construct = 
+		       applist (mkConstruct(ind,succ i),params) in
+		     let p_args = 
+		       push_head construct ids br_args in
+		       execute_cases fix_name per_info tacnext 
+			 p_args objs nhrec tree] gls0 in
+	  tclTHENSV 
+	    (refine case_term)
+	    (Array.mapi branch_tac br) gls
+    | Split_patt (_, _, _) , [] -> 
+	anomaly "execute_cases : Nothing to split"
+    | Skip_patt _ , [] -> 
+	anomaly "execute_cases : Nothing to skip"
+    | End_patt (_,_) , _ :: _  -> 
+	anomaly "execute_cases : End of branch with garbage left"
 
 
-(* custom elim performs the case analysis of hypothesis id from the local 
-context, 
 
-- generalizing hypotheses below id
-- computing the elimination predicate (abstract inductive predicate) 
-- build case analysis term 
-- generalize rec_calls (use wf_paths)
-- vector of introduced identifiers per branch 
-
-match id in t return p with
- C1 ... => ?1 
-|C2 ... => ?2
-...
-end*)
-
-
-let rec execute_cases at_top fix_name per_info kont0 stacks tree gls = 
-  match tree with
-      Pop t ->  
-	let is_rec,nstacks =  pop_stacks stacks in
-	  if is_rec then
-	    let _ = test_fun "is_rec=true" in
-	     let c_id = pf_get_new_id (id_of_string "_hrec") gls in
-	       tclTHEN 
-		 (intro_mustbe_force c_id)
-		 (execute_cases false fix_name per_info kont0 nstacks t) gls
-	  else
-	    execute_cases false fix_name per_info kont0 nstacks t gls
-    | Push (_,t) -> 
-	let id = pf_get_new_id patvar_base gls in
-	let nstacks = push_arg (mkVar id) stacks in
-	let kont = execute_cases false fix_name per_info kont0 nstacks t in
-	  tclTHEN
-	    (intro_mustbe_force id)
-	    begin
-	      match fix_name with
-		  Anonymous -> kont
-		| Name fix_id ->  
-		    (fun gls -> 
-		       if at_top then
-			 kont gls
-		       else
-			 match hrec_for id fix_id per_info gls with
-			     None -> kont gls
-			   | Some c_obj ->
-			       let c_id = 
-				 pf_get_new_id (id_of_string "_hrec") gls in
-				 tclTHENLIST 
-				   [generalize [c_obj];
-				    intro_mustbe_force c_id;
-				    kont] gls)
-	    end gls
-    | Split(ids,ind,br) ->
-	let (_,typ,_)=
-	  try destProd (pf_concl gls) with Invalid_argument _ -> 
-	    anomaly "Sub-object not found." in
-	let hd,args=decompose_app (special_whd gls typ) in
-	if try ind <> destInd hd with Invalid_argument _ -> true then 
-	  (* argument of an inductive family : intro + discard *) 
-	  tclTHEN intro 
-	    (execute_cases at_top fix_name per_info kont0 stacks tree) gls
-	else
-	  begin
-	    let nparams = (fst (Global.lookup_inductive ind)).mind_nparams in
-	    let params = list_firstn nparams args in
-	    let constr i =applist (mkConstruct(ind,succ i),params) in
-	    let next_tac is_rec i = function
-		Some (sub_ids,tree) ->
-		  let br_stacks =
-		    List.filter (fun (id,_) -> Idset.mem id sub_ids) stacks in
-		  let p_stacks = 
-		    push_head (constr i) is_rec ids br_stacks in
-		    execute_cases false fix_name per_info kont0 p_stacks tree 
-	      | None -> 
-		  msg_warning (str "missing case");
-		  kont0 (mkMeta 1) 
-	    in
-	    let id = pf_get_new_id patvar_base gls in
-	    let kont is_rec = 			
-	      tclTHENSV
-		(general_case_analysis (mkVar id,NoBindings))
-		(Array.mapi (next_tac is_rec) br) in
-	      tclTHEN 
-		(intro_mustbe_force id)
-		begin
-		  match fix_name with
-		      Anonymous -> kont false
-		    | Name fix_id ->  
-			(fun gls -> 
-			   if at_top then
-			     kont false gls
-			   else
-			     match hrec_for id fix_id per_info gls with
-				 None -> kont false gls
-			       | Some c_obj ->
-				   tclTHENLIST 
-				     [generalize [c_obj];
-				      kont true] gls)
-		end gls
-	  end
-    | End_of_branch (id,nhyps) -> 
-	match List.assoc id stacks with
-	    [None,_,args] -> 
-	      let metas = 
-		list_tabulate (fun n -> mkMeta (succ n)) nhyps in
-		kont0 
-		  (applist (mkVar id,List.rev_append args metas)) gls
-	  | _ -> anomaly "wrong stack size"
- 
+(* end focus/claim *)
+		
 let end_tac et2 gls =
   let info = get_its_info gls in
   let et1,pi,ek,clauses = 
@@ -1342,31 +1355,35 @@ let end_tac et2 gls =
 		 simple_induct (AnonHyp (succ (List.length pi.per_args)));
 		 default_justification (List.map mkVar clauses)]
 	  | ET_Case_analysis,EK_dep tree ->
-	      tclTHENLIST 
-		[generalize (pi.per_args@[pi.per_casee]);
-		 execute_cases true Anonymous pi 
+		 execute_cases Anonymous pi 
 		   (fun c -> tclTHENLIST 
 		      [refine c;
 		       clear clauses;
 		       justification assumption])
-		   (initial_instance_stack clauses) tree]	
+		   (initial_instance_stack clauses) [pi.per_casee] 0 tree
 	  | ET_Induction,EK_dep tree ->
-	      tclTHEN (generalize (pi.per_args@[pi.per_casee]))
-		begin
-		  fun gls0 -> 
-		    let fix_id = pf_get_new_id (id_of_string "_fix") gls0 in
-		      tclTHEN 
-			(fix (Some fix_id) (succ (List.length pi.per_args))) 
-			(execute_cases true (Name fix_id) pi 
-			   (fun c ->
-			      tclTHENLIST 
-				[clear [fix_id];
-				 refine c;
-				 clear clauses;
-				 justification assumption
-				 (* justification automation_tac *)])
-			   (initial_instance_stack clauses) tree) gls0
-		end	
+	      let nargs = (List.length pi.per_args) in
+		tclTHEN (generalize (pi.per_args@[pi.per_casee]))
+		  begin
+		    fun gls0 -> 
+		      let fix_id = 
+			pf_get_new_id (id_of_string "_fix") gls0 in
+		      let c_id = 
+			pf_get_new_id (id_of_string "_main_arg") gls0 in
+			tclTHENLIST
+			  [fix (Some fix_id) (succ nargs);
+			   tclDO nargs introf;
+			   intro_mustbe_force c_id;
+			   execute_cases (Name fix_id) pi 
+			     (fun c ->
+				tclTHENLIST 
+				  [clear [fix_id];
+				   refine c;
+				   clear clauses;
+				   justification assumption])
+			     (initial_instance_stack clauses) 
+			     [mkVar c_id]  0 tree] gls0
+		  end	
       end gls
 
 (* escape *)
@@ -1374,7 +1391,7 @@ let end_tac et2 gls =
 let rec abstract_metas n avoid head = function
     [] -> 1,head,[]
   | (meta,typ)::rest -> 
-      let id = Nameops.next_ident_away (id_of_string "_sbgl") avoid in
+      let id = next_ident_away (id_of_string "_sbgl") avoid in
       let p,term,args = abstract_metas (succ n) (id::avoid) head rest in 
 	succ p,mkLambda(Name id,typ,subst_meta [meta,mkRel p] term),
       (mkMeta n)::args 

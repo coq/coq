@@ -112,8 +112,9 @@ END
 
 
 let default_declarative_automation gls = 
-  tclORELSE 
-    (Cctac.congruence_tac !congruence_depth []) 
+  tclORELSE
+    (tclORELSE (Auto.h_trivial [] None) 
+    (Cctac.congruence_tac !congruence_depth []))
     (gen_ground_tac true 
        (Some (tclTHEN
 		default_solver

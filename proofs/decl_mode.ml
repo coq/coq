@@ -41,15 +41,18 @@ let check_not_proof_mode str =
    error str
 
 type split_tree=
-    Push of (Idset.t * split_tree)
-  | Split of (Idset.t * inductive * (Idset.t * split_tree) option array)
-  | Pop of split_tree
-  | End_of_branch of (identifier * int)
+    Skip_patt of Idset.t * split_tree
+  | Split_patt of Idset.t * inductive * 
+		(bool array * (Idset.t * split_tree) option) array
+  | Close_patt of split_tree
+  | End_patt of (identifier * int)
 
 type elim_kind =
     EK_dep of split_tree
   | EK_nodep
   | EK_unknown
+
+type recpath = int option*Declarations.wf_paths
 
 type per_info = 
     {per_casee:constr;
@@ -58,7 +61,8 @@ type per_info =
      per_pred:constr;
      per_args:constr list;
      per_params:constr list;
-     per_nparams:int}
+     per_nparams:int;
+     per_wf:recpath}
 
 type stack_info = 
     Per of Decl_expr.elim_type * per_info * elim_kind * identifier list
