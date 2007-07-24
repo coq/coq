@@ -465,7 +465,8 @@ let op_smorph r add mul req m1 m2 =
 
 let default_ring_equality (r,add,mul,opp,req) =
   let is_setoid = function
-      {rel_refl=Some _; rel_sym=Some _;rel_trans=Some _} -> true
+      {rel_refl=Some _; rel_sym=Some _;rel_trans=Some _;rel_aeq=rel} ->
+        eq_constr req rel (* Qu: use conversion ? *)
     | _ -> false in
   match default_relation_for_carrier ~filter:is_setoid r with
       Leibniz _ ->
@@ -625,6 +626,7 @@ let interp_sign env sign =
        (* Same remark on ill-typed terms ... *)
 
 let add_theory name rth eqth morphth cst_tac (pre,post) power sign =
+  check_required_library (cdir@["Ring_base"]);
   let env = Global.env() in
   let sigma = Evd.empty in
   let (kind,r,zero,one,add,mul,sub,opp,req) = dest_ring env sigma rth in
@@ -986,6 +988,7 @@ let default_field_equality r inv req =
         inv_m.lem
 
 let add_field_theory name fth eqth morphth cst_tac inj (pre,post) power sign =
+  check_required_library (cdir@["Field_tac"]);
   let env = Global.env() in
   let sigma = Evd.empty in
   let (kind,r,zero,one,add,mul,sub,opp,div,inv,req,rth) =
