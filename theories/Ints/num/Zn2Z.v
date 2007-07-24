@@ -861,7 +861,37 @@ refine
   rewrite (spec_zdigits op_spec).
   rewrite <- Zpos_xO; exact spec_ww_digits.
  Qed.
- 
-
 End Zn2Z. 
+ 
+Section MulAdd.
+ 
+  Variable w: Set.
+  Variable op: znz_op w.
+  Variable sop: znz_spec op.
+
+  Definition mul_add:= w_mul_add (znz_0 op) (znz_succ op) (znz_add_c op) (znz_mul_c op).
+
+  Notation "[| x |]" := (znz_to_Z op x)  (at level 0, x at level 99).
+
+  Notation "[|| x ||]" :=
+   (zn2z_to_Z (base (znz_digits op)) (znz_to_Z op) x)  (at level 0, x at level 99).
+
+
+  Lemma spec_mul_add: forall x y z,
+     let (zh, zl) := mul_add x y z in
+  [||WW zh zl||] = [|x|] * [|y|] + [|z|].
+  Proof.
+  intros x y z.
+   refine (spec_w_mul_add _ _ _ _ _ _ _ _ _ _ _ _ x y z); auto.
+  exact (spec_0 sop).
+  exact (spec_to_Z sop).
+  exact (spec_succ sop).
+  exact (spec_add_c sop).
+  exact (spec_mul_c sop).
+  Qed.
+
+End MulAdd.
+
+
+
  
