@@ -85,6 +85,9 @@ stage2 $(STAGE2_TARGETS): stage1
 stage3 $(STAGE3_TARGETS): stage2
 	$(call stage-template,3)
 
+glob.dump: stage2
+	$(call stage-template,3)
+
 ###########################################################################
 # Cleaning
 ###########################################################################

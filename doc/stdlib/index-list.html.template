@@ -64,12 +64,27 @@ through the <tt>Require Import</tt> command.</p>
     theories/Logic/Hurkens.v
     theories/Logic/ProofIrrelevance.v
     theories/Logic/ProofIrrelevanceFacts.v
+    theories/Logic/ConstructiveEpsilon.v
+  </dd>
+    
+  <dt> <b>Bool</b>:
+       Booleans (basic functions and results)
+  </dt>
+  <dd> 
+    theories/Bool/Bool.v
+    theories/Bool/BoolEq.v
+    theories/Bool/DecBool.v
+    theories/Bool/IfProp.v
+    theories/Bool/Sumbool.v
+    theories/Bool/Zerob.v
+    theories/Bool/Bvector.v
   </dd>
     
   <dt> <b>Arith</b>:
     Basic Peano arithmetic
   </dt>
   <dd> 
+    theories/Arith/Arith_base.v
     theories/Arith/Le.v
     theories/Arith/Lt.v
     theories/Arith/Plus.v
@@ -84,7 +99,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/Arith/Max.v
     theories/Arith/Compare.v
     theories/Arith/Div2.v
-    theories/Arith/Div.v
     theories/Arith/EqNat.v
     theories/Arith/Euclid.v
     theories/Arith/Even.v
@@ -129,6 +143,7 @@ through the <tt>Require Import</tt> command.</p>
     (theories/ZArith/ZArith_base.v)
     theories/ZArith/Zcomplements.v
     theories/ZArith/Zsqrt.v
+    theories/ZArith/Zpow_def.v
     theories/ZArith/Zpower.v
     theories/ZArith/Zdiv.v
     theories/ZArith/Zlogarithm.v
@@ -144,12 +159,162 @@ through the <tt>Require Import</tt> command.</p>
   </dt>
   <dd>
     theories/QArith/QArith_base.v
+    theories/QArith/Qabs.v
+    theories/QArith/Qpower.v
     theories/QArith/Qreduction.v
     theories/QArith/Qring.v
+    theories/QArith/Qfield.v
     (theories/QArith/QArith.v)
     theories/QArith/Qreals.v
     theories/QArith/Qcanon.v
   </dd>
+    
+    
+  <dt> <b>Relations</b>:
+       Relations (definitions and basic results)
+  </dt>
+  <dd> 
+    theories/Relations/Relation_Definitions.v
+    theories/Relations/Relation_Operators.v
+    theories/Relations/Relations.v
+    theories/Relations/Operators_Properties.v
+    theories/Relations/Rstar.v
+    theories/Relations/Newman.v
+  </dd>
+    
+  <dt> <b>Sets</b>:
+       Sets (classical, constructive, finite, infinite, powerset, etc.)
+  </dt>
+  <dd> 
+    theories/Sets/Classical_sets.v
+    theories/Sets/Constructive_sets.v
+    theories/Sets/Cpo.v
+    theories/Sets/Ensembles.v
+    theories/Sets/Finite_sets_facts.v
+    theories/Sets/Finite_sets.v
+    theories/Sets/Image.v
+    theories/Sets/Infinite_sets.v
+    theories/Sets/Integers.v
+    theories/Sets/Multiset.v
+    theories/Sets/Partial_Order.v
+    theories/Sets/Permut.v
+    theories/Sets/Powerset_Classical_facts.v
+    theories/Sets/Powerset_facts.v
+    theories/Sets/Powerset.v
+    theories/Sets/Relations_1_facts.v
+    theories/Sets/Relations_1.v
+    theories/Sets/Relations_2_facts.v
+    theories/Sets/Relations_2.v
+    theories/Sets/Relations_3_facts.v
+    theories/Sets/Relations_3.v
+    theories/Sets/Uniset.v
+  </dd>
+    
+  <dt> <b>Setoids</b>:
+  <dd> 
+    theories/Setoids/Setoid.v
+  </dd>
+    
+  <dt> <b>Lists</b>:
+    Polymorphic lists, Streams (infinite sequences)
+  </dt>
+  <dd> 
+    theories/Lists/List.v
+    theories/Lists/ListSet.v
+    theories/Lists/MonoList.v
+    theories/Lists/SetoidList.v
+    theories/Lists/Streams.v
+    theories/Lists/TheoryList.v
+    theories/Lists/ListTactics.v
+  </dd>
+
+  <dt> <b>Sorting</b>:
+    Axiomatizations of sorts
+  </dt>
+  <dd> 
+    theories/Sorting/Heap.v
+    theories/Sorting/Permutation.v
+    theories/Sorting/Sorting.v
+    theories/Sorting/PermutEq.v
+    theories/Sorting/PermutSetoid.v
+  </dd>
+
+  <dt> <b>Wellfounded</b>:
+       Well-founded Relations
+  </dt>
+  <dd> 
+    theories/Wellfounded/Disjoint_Union.v
+    theories/Wellfounded/Inclusion.v
+    theories/Wellfounded/Inverse_Image.v
+    theories/Wellfounded/Lexicographic_Exponentiation.v
+    theories/Wellfounded/Lexicographic_Product.v
+    theories/Wellfounded/Transitive_Closure.v
+    theories/Wellfounded/Union.v
+    theories/Wellfounded/Wellfounded.v
+    theories/Wellfounded/Well_Ordering.v
+  </dd>
+    
+
+  <dt> <b>IntMap</b>:
+    An implementation of finite sets/maps as trees indexed by addresses
+  </dt>
+  <dd> 
+    theories/IntMap/Adalloc.v
+    theories/IntMap/Map.v
+    theories/IntMap/Fset.v
+    theories/IntMap/Mapaxioms.v
+    theories/IntMap/Mapiter.v
+    theories/IntMap/Mapcanon.v
+    theories/IntMap/Mapsubset.v
+    theories/IntMap/Lsort.v
+    theories/IntMap/Mapfold.v
+    theories/IntMap/Mapcard.v
+    theories/IntMap/Mapc.v
+    theories/IntMap/Maplists.v
+    theories/IntMap/Allmaps.v
+  </dd>
+    
+  <dt> <b>FSets</b>:
+    Modular implementation of finite sets/maps using lists
+  </dt>
+  <dd>
+    theories/FSets/OrderedType.v
+    theories/FSets/OrderedTypeAlt.v
+    theories/FSets/OrderedTypeEx.v
+    theories/FSets/FSetInterface.v
+    theories/FSets/FSetBridge.v
+    theories/FSets/FSetProperties.v
+    theories/FSets/FSetEqProperties.v
+    theories/FSets/FSetList.v
+    (theories/FSets/FSets.v)
+    theories/FSets/FSetFacts.v
+    theories/FSets/FSetAVL.v
+    theories/FSets/FSetToFiniteSet.v
+    theories/FSets/FSetWeakProperties.v
+    theories/FSets/FSetWeakInterface.v
+    theories/FSets/FSetWeakFacts.v
+    theories/FSets/FSetWeakList.v
+    theories/FSets/FSetWeak.v
+    theories/FSets/FMapInterface.v
+    theories/FSets/FMapList.v
+    theories/FSets/FMapPositive.v
+    theories/FSets/FMapIntMap.v
+    theories/FSets/FMapFacts.v
+    (theories/FSets/FMaps.v)
+    theories/FSets/FMapAVL.v
+    theories/FSets/FMapWeakInterface.v
+    theories/FSets/FMapWeakList.v
+    theories/FSets/FMapWeak.v
+    theories/FSets/FMapWeakFacts.v
+  </dd>
+
+<!--  <dt> <b>Strings</b>
+    Implementation of string as list of ascii characters
+  </dt>
+  <dd>
+    theories/Strings/Ascii.v
+    theories/Strings/String.v
+  </dd> -->
     
   <dt> <b>Reals</b>:
     Formalization of real numbers
@@ -196,6 +361,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Reals/Rcomplete.v
     theories/Reals/RiemannInt.v
     theories/Reals/RiemannInt_SF.v
+    theories/Reals/Rpow_def.v
     theories/Reals/Rpower.v
     theories/Reals/Rprod.v
     theories/Reals/Rsqrt_def.v
@@ -207,164 +373,34 @@ through the <tt>Require Import</tt> command.</p>
     theories/Reals/SeqProp.v
     theories/Reals/SeqSeries.v
     theories/Reals/Sqrt_reg.v
+    theories/Reals/LegacyRfield.v
     (theories/Reals/Reals.v)
   </dd>
-    
-  <dt> <b>Sets</b>:
-       Sets (classical, constructive, finite, infinite, powerset, etc.)
+
+  <dt> <b>Ints</b>:
+    Machine efficient large integers
   </dt>
   <dd> 
-    theories/Sets/Classical_sets.v
-    theories/Sets/Constructive_sets.v
-    theories/Sets/Cpo.v
-    theories/Sets/Ensembles.v
-    theories/Sets/Finite_sets_facts.v
-    theories/Sets/Finite_sets.v
-    theories/Sets/Image.v
-    theories/Sets/Infinite_sets.v
-    theories/Sets/Integers.v
-    theories/Sets/Multiset.v
-    theories/Sets/Partial_Order.v
-    theories/Sets/Permut.v
-    theories/Sets/Powerset_Classical_facts.v
-    theories/Sets/Powerset_facts.v
-    theories/Sets/Powerset.v
-    theories/Sets/Relations_1_facts.v
-    theories/Sets/Relations_1.v
-    theories/Sets/Relations_2_facts.v
-    theories/Sets/Relations_2.v
-    theories/Sets/Relations_3_facts.v
-    theories/Sets/Relations_3.v
-    theories/Sets/Uniset.v
-  </dd>
-    
-  <dt> <b>Relations</b>:
-       Relations (definitions and basic results)
-  </dt>
-  <dd> 
-    theories/Relations/Relation_Definitions.v
-    theories/Relations/Relation_Operators.v
-    theories/Relations/Relations.v
-    theories/Relations/Operators_Properties.v
-    theories/Relations/Rstar.v
-    theories/Relations/Newman.v
-  </dd>
-    
-  <dt> <b>Wellfounded</b>:
-       Well-founded Relations
-  </dt>
-  <dd> 
-    theories/Wellfounded/Disjoint_Union.v
-    theories/Wellfounded/Inclusion.v
-    theories/Wellfounded/Inverse_Image.v
-    theories/Wellfounded/Lexicographic_Exponentiation.v
-    theories/Wellfounded/Lexicographic_Product.v
-    theories/Wellfounded/Transitive_Closure.v
-    theories/Wellfounded/Union.v
-    theories/Wellfounded/Wellfounded.v
-    theories/Wellfounded/Well_Ordering.v
-  </dd>
-    
-  <dt> <b>Setoids</b>:
-  <dd> 
-    theories/Setoids/Setoid.v
-  </dd>
-    
-  <dt> <b>Bool</b>:
-       Booleans (basic functions and results)
-  </dt>
-  <dd> 
-    theories/Bool/Bool.v
-    theories/Bool/BoolEq.v
-    theories/Bool/DecBool.v
-    theories/Bool/IfProp.v
-    theories/Bool/Sumbool.v
-    theories/Bool/Zerob.v
-    theories/Bool/Bvector.v
-  </dd>
-    
-  <dt> <b>Lists</b>:
-    Polymorphic lists, Streams (infinite sequences)
-  </dt>
-  <dd> 
-    theories/Lists/List.v
-    theories/Lists/ListSet.v
-    theories/Lists/MonoList.v
-    theories/Lists/SetoidList.v
-    theories/Lists/Streams.v
-    theories/Lists/TheoryList.v
+    theories/Ints/Basic_type.v
+    theories/Ints/BigN.v
+    theories/Ints/BigZ.v
+    theories/Ints/Int31.v
+    theories/Ints/Tactic.v
+    theories/Ints/num/GenAdd.v
+    theories/Ints/num/GenBase.v
+    theories/Ints/num/GenDivn1.v
+    theories/Ints/num/GenDiv.v
+    theories/Ints/num/GenLift.v
+    theories/Ints/num/GenMul.v
+    theories/Ints/num/GenSqrt.v
+    theories/Ints/num/GenSub.v
+    theories/Ints/num/Nbasic.v
+    theories/Ints/num/NMake.v
+    theories/Ints/num/QMake.v
+    theories/Ints/num/ZMake.v
+    theories/Ints/num/Zn2Z.v
+    theories/Ints/num/ZnZ.v
   </dd>
 
-  <dt> <b>FSets</b>:
-    Modular implementation of finite sets/maps using lists
-  </dt>
-  <dd>
-    theories/FSets/OrderedType.v
-    theories/FSets/OrderedTypeAlt.v
-    theories/FSets/OrderedTypeEx.v
-    theories/FSets/FSetInterface.v
-    theories/FSets/FSetBridge.v
-    theories/FSets/FSetProperties.v
-    theories/FSets/FSetEqProperties.v
-    theories/FSets/FSetList.v
-    (theories/FSets/FSets.v)
-    theories/FSets/FSetFacts.v
-    theories/FSets/FSetAVL.v
-    theories/FSets/FSetToFiniteSet.v
-    theories/FSets/FSetWeakProperties.v
-    theories/FSets/FSetWeakInterface.v
-    theories/FSets/FSetWeakFacts.v
-    theories/FSets/FSetWeakList.v
-    theories/FSets/FSetWeak.v
-    theories/FSets/FMapInterface.v
-    theories/FSets/FMapList.v
-    theories/FSets/FMapPositive.v
-    theories/FSets/FMapIntMap.v
-    theories/FSets/FMapFacts.v
-    (theories/FSets/FMaps.v)
-    theories/FSets/FMapAVL.v
-    theories/FSets/FMapWeakInterface.v
-    theories/FSets/FMapWeakList.v
-    theories/FSets/FMapWeak.v
-    theories/FSets/FMapWeakFacts.v
-  </dd>
-
-  <dt> <b>IntMap</b>:
-    An implementation of finite sets/maps as trees indexed by addresses
-  </dt>
-  <dd> 
-    theories/IntMap/Adalloc.v
-    theories/IntMap/Map.v
-    theories/IntMap/Fset.v
-    theories/IntMap/Mapaxioms.v
-    theories/IntMap/Mapiter.v
-    theories/IntMap/Mapcanon.v
-    theories/IntMap/Mapsubset.v
-    theories/IntMap/Lsort.v
-    theories/IntMap/Mapfold.v
-    theories/IntMap/Mapcard.v
-    theories/IntMap/Mapc.v
-    theories/IntMap/Maplists.v
-    theories/IntMap/Allmaps.v
-  </dd>
-    
-  <dt> <b>Strings</b>
-    Implementation of string as list of ascii characters
-  </dt>
-  <dd>
-    theories/Strings/Ascii.v
-    theories/Strings/String.v
-  </dd>
-    
-  <dt> <b>Sorting</b>:
-    Axiomatizations of sorts
-  </dt>
-  <dd> 
-    theories/Sorting/Heap.v
-    theories/Sorting/Permutation.v
-    theories/Sorting/Sorting.v
-    theories/Sorting/PermutEq.v
-    theories/Sorting/PermutSetoid.v
-  </dd>
 
 </dl>

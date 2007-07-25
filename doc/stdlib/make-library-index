@@ -7,27 +7,30 @@ FILE=$1
 cp -f $FILE.template tmp
 echo -n Building file index-list.prehtml ...
 
-for i in ../theories/*; do
-    echo $i
+LIBDIRS="Init Logic Bool Arith NArith ZArith QArith Relations Sets Setoids Lists Sorting Wellfounded IntMap FSets Reals Ints Ints/num"
 
-  d=`basename $i`
-  if [ "$d" != "Num" -a "$d" != "CVS" ]; then
-  for j in $i/*.v; do
-    b=`basename $j .v`
-    rm -f tmp2
-    grep -q theories/$d/$b.v tmp
-    a=$?
-    if [ $a = 0 ]; then
-      sed -e "s:theories/$d/$b.v:<a href=\"Coq.$d.$b.html\">$b</a>:g" tmp > tmp2
-      mv -f tmp2 tmp
-    else
-      echo Warning: theories/$d/$b.v is missing in the template file
+for k in $LIBDIRS; do
+    i=../theories/$k
+    echo $i
+    
+    d=`basename $i`
+    if [ "$d" != "Num" -a "$d" != "CVS" ]; then
+	for j in $i/*.v; do
+	    b=`basename $j .v`
+	    rm -f tmp2
+	    grep -q theories/$k/$b.v tmp
+	    a=$?
+	    if [ $a = 0 ]; then
+		sed -e "s:theories/$k/$b.v:<a href=\"Coq.$d.$b.html\">$b</a>:g" tmp > tmp2
+		mv -f tmp2 tmp
+	    else
+		echo Warning: theories/$k/$b.v is missing in the template file
+	    fi
+	done
     fi
-  done
-  fi
-  rm -f tmp2
-  sed -e "s/#$d#//" tmp > tmp2
-  mv -f tmp2 tmp
+    rm -f tmp2
+    sed -e "s/#$d#//" tmp > tmp2
+    mv -f tmp2 tmp
 done
 a=`grep theories tmp`
 if [ $? = 0 ]; then echo Warning: extra files:; echo $a; fi

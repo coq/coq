@@ -212,18 +212,30 @@ faq/html/index.html: faq/FAQ.v.html
 # Standard library
 ######################################################################
 
-GLOBDUMP=$(COQTOP)/glob.dump
+GLOBDUMP=../glob.dump
 
-LIBDIRS= Logic Bool Arith ZArith QArith Reals Lists Sets Relations Sorting Wellfounded IntMap FSets
+LIBDIRS= Init Logic Bool Arith NArith ZArith QArith Relations Sets Setoids Lists Sorting Wellfounded IntMap FSets Reals 
+# We avoid Strings as String.v contains unicode caracters that make latex fail
+
+LIBDIRS+= Ints Ints/num
+# LIBDIRS+= Ints/List Ints/Z
+# LIBDIRS+= Numbers Numbers/Natural/Axioms Numbers/Natural/Binary Numbers/Natural/Peano Numbers/Integer/Axioms Numbers/Integer/NatPairs Numbers/Rational
+
+
+ALLTHEORIES_V=$(foreach dir, $(LIBDIRS), $(wildcard $(COQTOP)/theories/$(dir)/*.v))
+ALLTHEORIES_GLOB = $(ALLTHEORIES_V:%.v=%.glob)
 
 ### Standard library (browsable html format)
 
-stdlib/index-body.html: $(GLOBDUMP)
+$(GLOBDUMP): $(ALLTHEORIES_GLOB)
+	$(MAKE) -C .. $(@:../%=%)
+
+stdlib/index-body.html: $(GLOBDUMP) $(ALLTHEORIES_V)
 	- rm -rf stdlib/html
 	mkdir stdlib/html
 	(cd stdlib/html;\
 	 $(COQDOC) -q --multi-index --html --glob-from $(GLOBDUMP)\
-	  -R $(COQTOP)/theories Coq $(COQTOP)/theories/*/*.v)
+	  -R $(COQTOP)/theories Coq $(ALLTHEORIES_V))
 	mv stdlib/html/index.html stdlib/index-body.html
 
 stdlib/index-list.html: stdlib/index-list.html.template
