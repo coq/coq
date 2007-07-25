@@ -123,13 +123,27 @@ Exceptions are:
    RECTYPESML in Makefile.common. If it is a .ml4 file, implement
    RECTYPESML4 or '(*i ocamlflags i*)'; see TODO.
 
-New PHONY targets
------------------
+ - the file needs a specific Makefile entry; add it to Makefile.build
 
-If you want to add a new PHONY target to the build system, that is a
-target that is not the name of the file it creates, then:
+ - the files produced from the added file do not match an existing
+   pattern or entry in "Makefile". (All the common cases of
+   .ml{,i,l,y,4}, .v, .c, ... files that produces (respectively)
+   .cm[iox], .vo, .glob, .o, ... files with the same basename are
+   already covered.) In this case, see section "New targets".
 
- - add its rule to Makefile.build
+New targets
+-----------
+
+If you want to add:
+
+ - a new PHONY target to the build system, that is a target that is
+   not the name of the file it creates,
+
+ - a normal target is not already mapped to a stage by "Makefile"
+
+ then:
+
+ - add the necessary rule to Makefile.build, if any
  - add the target to STAGEn_TARGETS, with n being the smallest stage
    it can be built at, that is:
    * 1 for OCaml code that doesn't use any Coq camlp4 grammar extension
@@ -137,6 +151,11 @@ target that is not the name of the file it creates, then:
        camlp4 grammar extension. Indirectly means a dependency of it
        does.
    * 3 for Coq (.v) code.
+
+   *or*
+
+   add a pattern matching the target to the pattern lists for the
+   smallest stage it can be built at in "Makefile".
 
 TODO
 ----

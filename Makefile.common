@@ -805,7 +805,7 @@ VO_TARGETS:=logic arith bool narith zarith qarith lists strings sets \
   funind cc subtac rtauto
 STAGE3_TARGETS:=world install coqide coqide-files coq coqlib \
   coqlight states pcoq-files check init theories theories-light contrib \
-  doc $(VO_TARGETS)
+  doc glob.dump $(VO_TARGETS)
 
 
 # For emacs: 
