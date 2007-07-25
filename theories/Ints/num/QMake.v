@@ -557,6 +557,7 @@ Module Qif.
   | BigN.N10 _ => true
   | BigN.N11 _ => true
   | BigN.N12 _ => true
+  | BigN.N13 _ => true
   | BigN.Nn n _ => true
   end.
 
@@ -759,6 +760,7 @@ Module Qbi.
   | BigN.N10 _ => true
   | BigN.N11 _ => true
   | BigN.N12 _ => true
+  | BigN.N13 _ => true
   | BigN.Nn n _ => true
   end.
  
