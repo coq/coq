@@ -632,7 +632,7 @@ case $ARCH in
    	ESCEMACSLIB=`echo $EMACSLIB |sed -e 's|\\\|\\\\\\\|g'`
    	ESCCOQDOCDIR=`echo $COQDOCDIR |sed -e 's|\\\|\\\\\\\|g'`
    	ESCCAMLP4BIN=`echo $CAMLP4BIN |sed -e 's|\\\|\\\\\\\|g'`
-	ESCCAMLP$LIB=`echo $CAMLP4LIB |sed -e 's|\\\|\\\\\\\|g'`
+	ESCCAMLP4LIB=`echo $CAMLP4LIB |sed -e 's|\\\|\\\\\\\|g'`
 	;;
     *)
         ESCCOQTOP="$COQTOP"
