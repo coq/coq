@@ -212,7 +212,7 @@ faq/html/index.html: faq/FAQ.v.html
 # Standard library
 ######################################################################
 
-GLOBDUMP=../glob.dump
+GLOBDUMP=$(COQTOP)/glob.dump
 
 LIBDIRS= Init Logic Bool Arith NArith ZArith QArith Relations Sets Setoids Lists Sorting Wellfounded IntMap FSets Reals 
 # We avoid Strings as String.v contains unicode caracters that make latex fail
