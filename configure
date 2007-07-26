@@ -306,13 +306,9 @@ if test ! -f "$CAMLC" ; then
 fi
 
 # Under Windows, OCaml only understands Windows filenames (C:\...)
-echo DEBUG CAMLBIN = $CAMLBIN
-
 case $ARCH in
     win32) CAMLBIN=`cygpath -w ${CAMLBIN}`;;
 esac
-
-echo DEBUG CAMLBIN = $CAMLBIN
 
 # this fixes a camlp4 bug under FreeBSD
 # ("native-code program cannot do a dynamic load")
