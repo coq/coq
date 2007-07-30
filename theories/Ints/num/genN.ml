@@ -6,15 +6,20 @@ let sizeaux = 1
 let t = "t"
 let c = "N"
 let gen_proof = false
-let gen_proof1 = false
-let gen_proof2 = false
+let gen_proof1 = (* true *) false
+let gen_proof2 = (* true *) false
 let gen_proof3 = false
-let gen_proof4 = false
+let gen_proof4 = (* true *) false
 let gen_proof5 = false
-let gen_proof6 = false
+let gen_proof6 = (* true *) false
 let gen_proof7 = false
 let gen_proof8 = false
 let gen_proof9 = false
+let gen_proof10 = (* true *) false
+let gen_proof11 = false
+let gen_proof12 = false
+let gen_proof13 = false
+let gen_proof14 = (* true *) false
 
 
 (******* Start Printing ********)
@@ -1492,25 +1497,8 @@ let print_Make () =
   fprintf fmt "\n";
 
 
-  if gen_proof then
+  if gen_proof10 then
   begin
-  fprintf fmt " Let gen_make: forall n y, GenBase.gen_to_Z (znz_digits w%i_op) (znz_to_Z w%i_op) (S n) y =\n" size size;
-  fprintf fmt "      znz_to_Z (make_op n) y.\n";
-  fprintf fmt " Proof.\n";
-  fprintf fmt " intros n; elim n; auto.\n";
-  fprintf fmt " intros n1 Hrec y; case y; auto.\n";
-  fprintf fmt "  rewrite make_op_S; auto.\n";
-  fprintf fmt " intros yh yl; rewrite znz_to_Z_n.\n";
-  fprintf fmt " replace (base (znz_digits (make_op n1))) with (GenBase.gen_wB (znz_digits w%i_op) (S n1)).\n" size;
-  fprintf fmt " rewrite <- Hrec; rewrite <- Hrec; auto.\n";
-  fprintf fmt " elim n1; clear Hrec y yh yl n1; auto.\n";
-  fprintf fmt " intros n1 Hrec; rewrite make_op_S.\n";
-  fprintf fmt " change (%sznz_digits (word w%i (S (S n1))) (mk_zn2z_op_karatsuba (make_op n1))) with (xO (znz_digits (make_op n1))).\n" "@" size;
-  fprintf fmt " rewrite base_xO; rewrite <- Hrec.\n";
-  fprintf fmt " unfold GenBase.gen_wB; rewrite <- base_xO; auto.\n";
-  fprintf fmt " Qed.\n";
-
-
 
   fprintf fmt " Fixpoint nmake_op (ww:Set) (ww_op: znz_op ww) (n: nat) : \n";
   fprintf fmt "       znz_op (word ww n) :=\n";
@@ -1519,47 +1507,14 @@ let print_Make () =
   fprintf fmt "  | S n1 => mk_zn2z_op (nmake_op ww ww_op n1) \n";
   fprintf fmt "  end.\n";
   fprintf fmt "\n";
-  fprintf fmt " Theorem digits_th1: forall w (x: znz_op w) (y: znz_op w),\n";
-  fprintf fmt "  znz_digits x = znz_digits y ->\n";
-  fprintf fmt "  znz_digits (mk_zn2z_op x) = znz_digits (mk_zn2z_op y).\n";
-  fprintf fmt " intros ww x y H.\n";
-  fprintf fmt " simpl; unfold zn2z_to_Z; rewrite H; auto.\n";
-  fprintf fmt " Qed.\n";
-  fprintf fmt "\n";
-  fprintf fmt "\n";
-  fprintf fmt " Theorem digits_th2: forall w (x: znz_op w) (y: znz_op w),\n";
-  fprintf fmt "  znz_digits x = znz_digits y ->\n";
-  fprintf fmt "  znz_digits (mk_zn2z_op_karatsuba x) = znz_digits (mk_zn2z_op y).\n";
-  fprintf fmt " intros ww x y H.\n";
-  fprintf fmt " simpl; unfold zn2z_to_Z; rewrite H; auto.\n";
-  fprintf fmt " Qed.\n";
-  fprintf fmt "\n";
-  fprintf fmt " Theorem make_th1: forall w (x: znz_op w) (y: znz_op w),\n";
-  fprintf fmt "  znz_digits x = znz_digits y ->\n";
-  fprintf fmt "  znz_to_Z x = znz_to_Z y ->\n";
-  fprintf fmt "  znz_to_Z (mk_zn2z_op x) = znz_to_Z (mk_zn2z_op y).\n";
-  fprintf fmt " intros ww x y H H1.\n";
-  fprintf fmt " simpl; unfold zn2z_to_Z; rewrite H; \n";
-  fprintf fmt "   rewrite H1; auto.\n";
-  fprintf fmt " Qed.\n";
-  fprintf fmt "\n";
-  fprintf fmt " Theorem make_th2: forall w (x: znz_op w) (y: znz_op w),\n";
-  fprintf fmt "  znz_digits x = znz_digits y ->\n";
-  fprintf fmt "  znz_to_Z x = znz_to_Z y -> \n";
-  fprintf fmt "  znz_to_Z (mk_zn2z_op_karatsuba x) = znz_to_Z (mk_zn2z_op y).\n";
-  fprintf fmt " intros ww x y H H1.\n";
-  fprintf fmt " simpl; unfold zn2z_to_Z; rewrite H; \n";
-  fprintf fmt "   rewrite H1; auto.\n";
-  fprintf fmt " Qed.\n";
-  fprintf fmt "\n";
   fprintf fmt " Let nmake_op0 := nmake_op _ w0_op.\n";
   fprintf fmt "\n";
-  fprintf fmt " Theorem make_th3: forall ww (w_op: znz_op ww) x, \n";
+  fprintf fmt " Theorem nmake_op_S: forall ww (w_op: znz_op ww) x, \n";
   fprintf fmt "   nmake_op _ w_op (S x) = mk_zn2z_op (nmake_op _ w_op x).\n";
   fprintf fmt " auto.\n";
   fprintf fmt " Qed.\n";
   fprintf fmt "\n";
-  fprintf fmt " Theorem make_th4:  forall x,\n";
+  fprintf fmt " Theorem nmake_op0_S:  forall x,\n";
   fprintf fmt "   nmake_op0 (S x) = mk_zn2z_op (nmake_op0 x).\n";
   fprintf fmt " auto.\n";
   fprintf fmt " Qed.\n";
@@ -1574,15 +1529,48 @@ let print_Make () =
 
   for i = 1 to size do
     fprintf fmt " Theorem digits_%i: znz_digits w%i_op = znz_digits (nmake_op0 %i).\n" i i i;
-  fprintf fmt " rewrite make_th4; unfold w%i_op.\n" i;
-  fprintf fmt " exact_no_check (digits_th1 _ _ _ digits_%i).\n" (i  - 1);
+  fprintf fmt " rewrite nmake_op0_S; unfold w%i_op.\n" i;
+  if i <= 3 then 
+    fprintf fmt " rewrite digits_zop; rewrite digits_%i.\n" (i  - 1)
+  else
+    fprintf fmt " rewrite digits_kzop; rewrite digits_%i.\n" (i  - 1);
+  fprintf fmt " rewrite <- digits_zop; auto.\n";
   fprintf fmt " Qed.\n";
   fprintf fmt "\n";
   fprintf fmt " Theorem nmake_%i: znz_to_Z w%i_op = znz_to_Z (nmake_op0 %i).\n" i i i;
-  fprintf fmt " rewrite make_th4; unfold w%i_op.\n" i;
-  fprintf fmt " exact_no_check (make_th1 _ _ _ digits_%i nmake_%i).\n" (i - 1) (i -1);
+  fprintf fmt " rewrite nmake_op0_S; unfold w%i_op.\n" i;
+  if i <= 3 then
+    fprintf fmt " rewrite make_zop; rewrite digits_%i; rewrite nmake_%i.\n" (i - 1) (i -1)
+    else
+    fprintf fmt " rewrite make_kzop; rewrite digits_%i; rewrite nmake_%i.\n" (i - 1) (i -1);
+  fprintf fmt " rewrite <- make_zop; auto.\n";
   fprintf fmt " Qed.\n";
   done;
+
+  fprintf fmt " Let gen_digits: forall n, \n";
+  fprintf fmt "   base (znz_digits (make_op n)) = (GenBase.gen_wB (znz_digits w%i_op) (S n)).\n" size;
+  fprintf fmt " intros n; elim n; clear n.\n";
+  fprintf fmt " unfold make_op, make_op_aux; unfold w%i_op; unfold word.\n" (size + 1);
+  fprintf fmt " rewrite digits_kzop.\n";
+  fprintf fmt " unfold GenBase.gen_wB, GenBase.gen_digits; auto.\n";
+
+  fprintf fmt " intros n Hrec; rewrite make_op_S.\n";
+  fprintf fmt " change (%sznz_digits (word w%i (S (S n))) (mk_zn2z_op_karatsuba (make_op n))) with (xO (znz_digits (make_op n))).\n" "@" size;
+  fprintf fmt " rewrite base_xO; rewrite Hrec.\n";
+  fprintf fmt " unfold GenBase.gen_wB; rewrite <- base_xO; auto.\n";
+  fprintf fmt " Qed.\n";
+  fprintf fmt " \n";
+  fprintf fmt " Let gen_make: forall n y, GenBase.gen_to_Z (znz_digits w%i_op) (znz_to_Z w%i_op) (S n) y =\n" size size;
+  fprintf fmt "      znz_to_Z (make_op n) y.\n";
+  fprintf fmt " Proof.\n";
+  fprintf fmt " intros n; elim n; auto.\n";
+  fprintf fmt " intros n1 Hrec y; case y; auto.\n";
+  fprintf fmt "  rewrite make_op_S; auto.\n";
+  fprintf fmt " intros yh yl; rewrite znz_to_Z_n.\n";
+  fprintf fmt " rewrite gen_digits.\n";
+  fprintf fmt " rewrite <- Hrec; rewrite <- Hrec; auto.\n";
+  fprintf fmt " Qed.\n";
+  fprintf fmt "\n";
 
 
   fprintf fmt " Theorem digits_gend:forall n ww (w_op: znz_op ww), \n";
@@ -1629,6 +1617,32 @@ let print_Make () =
   fprintf fmt " rewrite Hrec; auto; rewrite H3; auto.\n";
   fprintf fmt " Qed.\n";
   fprintf fmt " \n";
+
+  for i = 2 to size do
+    for j = 1 to i - 1 do
+      fprintf fmt " Let digits_%i_%i: znz_digits (nmake_op _ w%i_op %i) = znz_digits (nmake_op _ w0_op %i).\n" j (i - j) j (i - j) i;
+      fprintf fmt " Proof.\n";
+      fprintf fmt " replace (nmake_op _ w0_op %i) with (nmake_op _ (nmake_op _ w0_op %i) %i).\n" i j (i - j);
+      fprintf fmt " generalize (digits_clean _ _ _ %i digits_%i).\n" (i- j) j;
+      fprintf fmt " unfold nmake_op0; auto.\n";
+      fprintf fmt " unfold nmake_op; auto.\n";
+      fprintf fmt " Qed.\n";
+      fprintf fmt "\n";
+    done
+   done;
+
+  for i = 2 to size do
+    for j = 1 to i - 1 do
+      fprintf fmt " Let nmake_op_%i_%i: znz_to_Z (nmake_op _ w%i_op %i) = znz_to_Z (nmake_op _ w0_op %i).\n" j (i - j) j (i - j) i;
+      fprintf fmt " Proof.\n";
+      fprintf fmt " replace (nmake_op _ w0_op %i) with (nmake_op _ (nmake_op _ w0_op %i) %i).\n" i j (i - j);
+      fprintf fmt " generalize (nmake_clean _ _ _ %i digits_%i nmake_%i).\n" (i- j) j j;
+      fprintf fmt " unfold nmake_op0; auto.\n";
+      fprintf fmt " unfold nmake_op; auto.\n";
+      fprintf fmt " Qed.\n";
+      fprintf fmt "\n";
+    done
+   done
   end;
 
   (* Comparison *)
@@ -1639,7 +1653,7 @@ let print_Make () =
   fprintf fmt "    | Gt => [x] > [y]\n";
   fprintf fmt "    end.\n";
   fprintf fmt " Proof.\n";
-  if gen_proof then
+  if gen_proof11 then
   begin
   for i= 0 to size do
     fprintf fmt " assert(F1_%i:= (spec_0 w%i_spec)).\n" i i;
@@ -1656,15 +1670,9 @@ let print_Make () =
       fprintf fmt "      apply spec_compare_mn_1; auto.\n";
       fprintf fmt "      rewrite <- nmake_gen; rewrite nmake_%i. \n" i;
       if (i == 0) || (j == 0) then
-        fprintf fmt "       unfold nmake_op0; auto.\n"
+        fprintf fmt "      unfold nmake_op0; auto.\n"
       else
-        begin
-        fprintf fmt "       replace (nmake_op0 %i) with (nmake_op _ (nmake_op0 %i) %i).\n" i j (i-j);
-        fprintf fmt "       apply cancel_app.\n";         
-        fprintf fmt "       exact (nmake_clean _ _ _ %i digits_%i nmake_%i).\n" (i - j) j j;
-        fprintf fmt "       unfold nmake_op0, nmake_op; auto.\n";         
-        end;
-
+        fprintf fmt "      rewrite nmake_op_%i_%i; unfold nmake_op0, nmake_op; auto.\n" j (i - j);
     done;
     fprintf fmt "  exact (spec_compare w%i_spec x).\n" i;
     for j = i + 1  to size do
@@ -1673,14 +1681,9 @@ let print_Make () =
       fprintf fmt "      apply spec_compare_mn_1; auto.\n";
       fprintf fmt "      rewrite <- nmake_gen; rewrite nmake_%i.\n" j;
       if (i == 0)  then
-         fprintf fmt "      unfold nmake_op0; auto.\n"
+         fprintf fmt "     unfold nmake_op0; auto.\n"
        else
-         begin
-         fprintf fmt "      replace (nmake_op0 %i) with (nmake_op _ (nmake_op0 %i) %i).\n" j i (j - i);
-         fprintf fmt "      apply cancel_app.\n";         
-         fprintf fmt "      exact (nmake_clean _ _ _ %i digits_%i nmake_%i).\n" (j - i) i i;
-         fprintf fmt "      unfold nmake_op0, nmake_op; auto.\n";
-         end;
+        fprintf fmt "      rewrite nmake_op_%i_%i; unfold nmake_op0, nmake_op; auto.\n" i (j - i);
     done;
     fprintf fmt "    intros n y; apply spec_opp; unfold comparen_%i, w%i, w_0, compare_0.\n" i i;
     fprintf fmt "    rewrite <- gen_make.\n";
@@ -1695,12 +1698,7 @@ let print_Make () =
      if (i == 0)  then
         fprintf fmt "        unfold nmake_op0; auto.\n"
       else
-        begin
-        fprintf fmt "        replace (nmake_op0 %i) with (nmake_op _ (nmake_op0 %i) %i).\n" size i (size - i);
-        fprintf fmt "        apply cancel_app.\n";         
-        fprintf fmt "        exact (nmake_clean _ _ _ %i digits_%i nmake_%i).\n" (size - i) i i;
-        fprintf fmt "        unfold nmake_op0, nmake_op; auto.\n";
-        end;
+        fprintf fmt "      rewrite nmake_op_%i_%i; unfold nmake_op0, nmake_op; auto.\n" i (size - i);
      fprintf fmt "       intros x1; case (F3_%i x1); split; auto.\n" i;
      fprintf fmt "       apply Zlt_trans with (1 := H0); unfold base; apply ZPowerAux.Zpower_lt_monotone.\n";
      fprintf fmt "         auto with zarith.\n";
@@ -1724,12 +1722,7 @@ let print_Make () =
      if (i == 0)  then
         fprintf fmt "        unfold nmake_op0; auto.\n"
       else
-        begin
-        fprintf fmt "        replace (nmake_op0 %i) with (nmake_op _ (nmake_op0 %i) %i).\n" size i (size - i);
-        fprintf fmt "        apply cancel_app.\n";         
-        fprintf fmt "        exact (nmake_clean _ _ _ %i digits_%i nmake_%i).\n" (size - i) i i;
-        fprintf fmt "        unfold nmake_op0, nmake_op; auto.\n";
-        end;
+        fprintf fmt "      rewrite nmake_op_%i_%i; unfold nmake_op0, nmake_op; auto.\n" i (size - i);
      fprintf fmt "      intros x1; case (F3_%i x1); split; auto.\n" i;
      fprintf fmt "      apply Zlt_trans with (1 := H0); unfold base; apply ZPowerAux.Zpower_lt_monotone.\n";
      fprintf fmt "        auto with zarith.\n";
@@ -1748,6 +1741,490 @@ let print_Make () =
   end else
   fprintf fmt " Admitted.\n";
   fprintf fmt "\n";
+
+
+  if gen_proof12 then
+  begin
+  for i = 0 to size do
+    fprintf fmt " Let spec_w%i_mul_add: forall x y z,\n" i;
+    fprintf fmt "  let (q,r) := w%i_mul_add x y z in\n" i;
+    fprintf fmt "  znz_to_Z w%i_op q * (base (znz_digits w%i_op))  +  znz_to_Z w%i_op r =\n" i i i;
+    fprintf fmt "  znz_to_Z w%i_op x * znz_to_Z w%i_op y + znz_to_Z w%i_op z :=\n" i i i ;
+    fprintf fmt "   (spec_mul_add w%i_spec).\n" i;
+    fprintf fmt "\n";
+  done;
+  for i = 0 to size do
+
+
+    fprintf fmt " Theorem spec_w%i_mul_add_n1: forall n x y z,\n" i;
+    fprintf fmt "  let (q,r) := w%i_mul_add_n1 n x y z in\n" i;
+    fprintf fmt "  znz_to_Z w%i_op q * (base (znz_digits (nmake_op _ w%i_op n)))  +\n" i i;
+    fprintf fmt "  znz_to_Z (nmake_op _ w%i_op n) r =\n" i;
+    fprintf fmt "  znz_to_Z (nmake_op _ w%i_op n) x * znz_to_Z w%i_op y +\n" i i;
+    fprintf fmt "  znz_to_Z w%i_op z.\n" i;
+    fprintf fmt " Proof.\n";
+    fprintf fmt " intros n x y z; unfold w%i_mul_add_n1.\n" i;
+    fprintf fmt " rewrite nmake_gen.\n";
+    fprintf fmt " rewrite digits_gend.\n";
+    fprintf fmt " change (base (GenBase.gen_digits (znz_digits w%i_op) n)) with\n" i;
+    fprintf fmt "        (GenBase.gen_wB (znz_digits w%i_op) n).\n" i;
+    fprintf fmt " apply spec_gen_mul_add_n1; auto.\n";
+    if i == 0 then fprintf fmt " exact (spec_0 w%i_spec).\n" i;
+    fprintf fmt " exact (spec_WW w%i_spec).\n" i;
+    fprintf fmt " exact (spec_0W w%i_spec).\n" i;
+    fprintf fmt " exact (spec_mul_add w%i_spec).\n" i;
+    fprintf fmt " Qed.\n";
+    fprintf fmt "\n";
+  done;
+  end;
+
+  fprintf fmt " Theorem spec_mul: forall x y, [mul x y] =[x] * [y].\n";
+  fprintf fmt " Proof.\n";
+  if gen_proof13 then
+   begin
+  fprintf fmt "  intros x; case x; clear x.\n";
+  fprintf fmt "    intros x y; case y; clear y; unfold mul.\n";
+  fprintf fmt "    intros y; rewrite spec_reduce_1; unfold to_Z.\n";
+  fprintf fmt "     generalize (spec_mul_c w0_spec x y).\n";
+  fprintf fmt "     intros HH; rewrite <- HH; clear HH; auto.\n";
+
+  fprintf fmt "   intros y; unfold zero, w0_eq0, w_0.\n";
+  fprintf fmt "     generalize (spec_eq0 w0_spec x); case znz_eq0.\n";
+  fprintf fmt "     unfold to_Z; intros HH; rewrite HH; auto.\n";
+  fprintf fmt "       rewrite (spec_0 w0_spec); auto.\n";
+  fprintf fmt "     intros _.\n";
+  fprintf fmt "       generalize (spec_w0_mul_add_n1 1 y x (znz_0 w0_op)); case w0_mul_add_n1.\n";
+  fprintf fmt "       intros yh yl.\n";
+  fprintf fmt "         generalize (spec_eq0 w0_spec yh); case znz_eq0.\n";
+  fprintf fmt "         intros HH; rewrite HH; auto; rewrite Zmult_0_l; rewrite Zplus_0_l; clear HH.\n";
+  fprintf fmt "           unfold to_Z; rewrite (spec_0 w0_spec); rewrite Zplus_0_r.\n";
+  fprintf fmt "           rewrite nmake_1; rewrite nmake_0; unfold nmake_op0.\n";
+  fprintf fmt "           intros HH; rewrite Zmult_comm; rewrite <- HH.\n";
+  fprintf fmt "           auto.\n";
+  fprintf fmt "         intros _.\n";
+  fprintf fmt "           rewrite (spec_0 w0_spec); rewrite Zplus_0_r.\n";
+  fprintf fmt "           unfold to_Z; rewrite nmake_1; rewrite nmake_0; unfold nmake_op0.\n";
+  fprintf fmt "           intros HH; rewrite Zmult_comm; rewrite <- HH.\n";
+  fprintf fmt "           rewrite znz_to_Z_2; rewrite znz_to_Z_1.\n";
+  fprintf fmt "           rewrite (spec_0 w0_spec); rewrite Zmult_0_l; rewrite Zplus_0_l.\n";
+  fprintf fmt "           rewrite nmake_1; rewrite nmake_0; rewrite digits_1; unfold nmake_op0; auto.\n";
+
+
+  for j = 2 to size - 1 do
+    fprintf fmt "   intros y; unfold zero, w0_eq0, w_0.\n";
+    fprintf fmt "     generalize (spec_eq0 w0_spec x); case znz_eq0.\n";
+    fprintf fmt "     unfold to_Z; intros HH; rewrite HH; auto.\n";
+    fprintf fmt "       rewrite (spec_0 w0_spec); auto.\n";
+    fprintf fmt "     intros _.\n";
+    fprintf fmt "       generalize (spec_w0_mul_add_n1 %i y x (znz_0 w0_op)); case w0_mul_add_n1.\n" j;
+    fprintf fmt "       intros yh yl.\n";
+    fprintf fmt "         generalize (spec_eq0 w0_spec yh); case znz_eq0.\n";
+    fprintf fmt "         intros HH; rewrite HH; auto; rewrite Zmult_0_l; rewrite Zplus_0_l; clear HH.\n";
+    fprintf fmt "           unfold to_Z; rewrite (spec_0 w0_spec); rewrite Zplus_0_r.\n";
+    fprintf fmt "           rewrite nmake_%i; rewrite nmake_0; unfold nmake_op0.\n" j;
+    fprintf fmt "           intros HH; rewrite Zmult_comm; rewrite <- HH.\n";
+    fprintf fmt "           auto.\n";
+    fprintf fmt "         intros _.\n";
+    fprintf fmt "           rewrite (spec_0 w0_spec); rewrite Zplus_0_r.\n";
+    fprintf fmt "           unfold to_Z; rewrite nmake_%i; rewrite nmake_0; unfold nmake_op0.\n" j;
+    fprintf fmt "           intros HH; rewrite Zmult_comm; rewrite <- HH; clear HH.\n";
+    fprintf fmt "           rewrite znz_to_Z_%i.\n" (j + 1);
+    fprintf fmt "           generalize (spec_extend%i_1 (WW (znz_0 w0_op) yh)); unfold to_Z.\n" (j - 1);
+    fprintf fmt "           intros HH; rewrite HH; clear HH.\n";
+    fprintf fmt "           rewrite znz_to_Z_1.\n";
+    fprintf fmt "           rewrite (spec_0 w0_spec); rewrite Zmult_0_l; rewrite Zplus_0_l.\n";
+    fprintf fmt "           rewrite nmake_%i; rewrite nmake_0; rewrite digits_%i; unfold nmake_op0; auto.\n" j j;
+
+  done;
+
+  fprintf fmt "   intros y; unfold to_Z, zero, w0_eq0, w_0.\n";
+  fprintf fmt "     generalize (spec_eq0 w0_spec x); case znz_eq0.\n";
+  fprintf fmt "     intros HH; rewrite HH; auto.\n";
+  fprintf fmt "       rewrite (spec_0 w0_spec); auto.\n";
+  fprintf fmt "     intros _.\n";
+  fprintf fmt "       generalize (spec_w0_mul_add_n1 %i y x (znz_0 w0_op)); case w0_mul_add_n1.\n" size;
+  fprintf fmt "       intros yh yl.\n";
+  fprintf fmt "         generalize (spec_eq0 w0_spec yh); case znz_eq0.\n";
+  fprintf fmt "         intros HH; rewrite HH; auto; rewrite Zmult_0_l; rewrite Zplus_0_l; clear HH.\n";
+  fprintf fmt "           rewrite (spec_0 w0_spec); rewrite Zplus_0_r.\n";
+  fprintf fmt "           rewrite nmake_%i; rewrite nmake_0; unfold nmake_op0.\n" size;
+  fprintf fmt "           intros HH; rewrite Zmult_comm; rewrite <- HH.\n";
+  fprintf fmt "           auto.\n";
+  fprintf fmt "         intros _.\n";
+  fprintf fmt "           rewrite (spec_0 w0_spec); rewrite Zplus_0_r.\n";
+  fprintf fmt "           rewrite nmake_%i; rewrite nmake_0; unfold nmake_op0.\n" size;
+  fprintf fmt "           intros HH; rewrite Zmult_comm; rewrite <- HH; clear HH.\n";
+  fprintf fmt "           simpl make_op; rewrite znz_to_Z_%i.\n" (size + 1);
+  fprintf fmt "           generalize (spec_extend%i_1 (WW (znz_0 w0_op) yh)); unfold to_Z.\n" (size - 1);
+  fprintf fmt "           intros HH; rewrite HH; clear HH.\n";
+  fprintf fmt "           rewrite znz_to_Z_1.\n";
+  fprintf fmt "           rewrite (spec_0 w0_spec); rewrite Zmult_0_l; rewrite Zplus_0_l.\n";
+  fprintf fmt "           rewrite nmake_%i; rewrite nmake_0; rewrite digits_%i; unfold nmake_op0; auto.\n" size size;
+  fprintf fmt "   intros n y; unfold to_Z, zero, w0_eq0, w_0.\n";
+  fprintf fmt "     generalize (spec_eq0 w0_spec x); case znz_eq0.\n";
+  fprintf fmt "     intros HH; rewrite HH; auto.\n";
+  fprintf fmt "       rewrite (spec_0 w0_spec); auto.\n";
+  fprintf fmt "     intros _.\n";
+  fprintf fmt "       generalize (spec_w%i_mul_add_n1 (S n) y (extend%i w0 (WW (znz_0 w0_op) x)) W0); case w%i_mul_add_n1.\n" size (size - 1) size;
+  fprintf fmt "       intros yh yl.\n";
+  fprintf fmt "         rewrite Zplus_0_r.\n";
+  fprintf fmt "         unfold w%i_eq0; generalize (spec_eq0 w%i_spec yh); case znz_eq0.\n" size size;
+  fprintf fmt "         intros HH; rewrite HH; auto; rewrite Zmult_0_l; rewrite Zplus_0_l; clear HH.\n";
+  fprintf fmt "           generalize (spec_extend%i_1 (WW (znz_0 w0_op) x)); unfold to_Z.\n" (size - 1);
+  fprintf fmt "           intros HH; rewrite HH; clear HH.\n";
+  fprintf fmt "           rewrite <- gen_make; rewrite <- nmake_gen.\n";
+  fprintf fmt "           intros HH; rewrite HH; clear HH.\n";
+  fprintf fmt "           rewrite Zmult_comm; rewrite znz_to_Z_1.\n";
+  fprintf fmt "           rewrite (spec_0 w0_spec); rewrite Zmult_0_l; rewrite Zplus_0_l.\n";
+  fprintf fmt "           rewrite <- gen_make; rewrite <- nmake_gen; auto.\n";
+  fprintf fmt "         intros _.\n";
+  fprintf fmt "           rewrite (znz_to_Z_n n).\n";
+  fprintf fmt "           generalize (spec_extend%i_1 (WW (znz_0 w0_op) x)); unfold to_Z.\n" (size - 1);
+  fprintf fmt "           intros HH; rewrite HH; clear HH.\n";
+  fprintf fmt "           rewrite znz_to_Z_1.\n";
+  fprintf fmt "           rewrite (spec_0 w0_spec); rewrite Zmult_0_l; rewrite Zplus_0_l.\n";
+  fprintf fmt "           generalize (spec_extendn_0 n (WW W0 yh)); unfold to_Z.\n";
+  fprintf fmt "           intros HH; rewrite HH; clear HH.\n";
+  fprintf fmt "           simpl make_op; rewrite znz_to_Z_%i.\n" (size + 1);
+  fprintf fmt "           rewrite Zmult_0_l; rewrite Zplus_0_l.\n";
+  fprintf fmt "           rewrite <- gen_make; rewrite <- nmake_gen.\n";
+  fprintf fmt "           rewrite <- gen_make; rewrite <- nmake_gen.\n";
+  fprintf fmt "           rewrite digits_gend.\n";
+  fprintf fmt "           rewrite gen_digits; unfold GenBase.gen_wB.\n";
+  fprintf fmt "           intros HH; rewrite HH; clear HH.\n";
+  fprintf fmt "           rewrite Zmult_comm; auto.\n";
+  
+  for i = 1 to size do
+    fprintf fmt "   intros x y; case y; clear y; unfold mul.\n";
+    if i = 1 then 
+      begin
+        fprintf fmt "   intros y; unfold to_Z, zero, w0_eq0, w_0.\n";
+        fprintf fmt "     generalize (spec_eq0 w0_spec y); case znz_eq0.\n";
+        fprintf fmt "     intros HH; rewrite HH; auto; clear HH.\n";
+        fprintf fmt "       rewrite (spec_0 w0_spec); rewrite Zmult_0_r; auto.\n";
+        fprintf fmt "     intros _.\n";
+        fprintf fmt "       generalize (spec_w0_mul_add_n1 1 x y (znz_0 w0_op)); case w0_mul_add_n1.\n";
+        fprintf fmt "       intros yh yl.\n";
+        fprintf fmt "         generalize (spec_eq0 w0_spec yh); case znz_eq0.\n";
+        fprintf fmt "         intros HH; rewrite HH; auto; rewrite Zmult_0_l; rewrite Zplus_0_l; clear HH.\n";
+        fprintf fmt "           rewrite (spec_0 w0_spec); rewrite Zplus_0_r.\n";
+        fprintf fmt "           rewrite nmake_1; rewrite nmake_0; unfold nmake_op0.\n";
+        fprintf fmt "           intros HH; rewrite <- HH.\n";
+        fprintf fmt "           auto.\n";
+        fprintf fmt "         intros _.\n";
+        fprintf fmt "           rewrite (spec_0 w0_spec); rewrite Zplus_0_r.\n";
+        fprintf fmt "           rewrite nmake_1; rewrite nmake_0; unfold nmake_op0.\n";
+        fprintf fmt "           intros HH; rewrite <- HH.\n";
+        fprintf fmt "           rewrite znz_to_Z_2; rewrite znz_to_Z_1.\n";
+        fprintf fmt "           rewrite (spec_0 w0_spec); rewrite Zmult_0_l; rewrite Zplus_0_l.\n";
+        fprintf fmt "           rewrite nmake_1; rewrite nmake_0; rewrite digits_1; unfold nmake_op0; auto.\n";
+      end
+    else if i = size then 
+      begin
+        fprintf fmt "   intros y; unfold to_Z, zero, w0_eq0, w_0.\n";
+        fprintf fmt "     generalize (spec_eq0 w0_spec y); case znz_eq0.\n";
+        fprintf fmt "     intros HH; rewrite HH; auto; clear HH.\n";
+        fprintf fmt "       rewrite (spec_0 w0_spec); rewrite Zmult_0_r; auto.\n";
+        fprintf fmt "     intros _.\n";
+        fprintf fmt "       generalize (spec_w0_mul_add_n1 %i x y (znz_0 w0_op)); case w0_mul_add_n1.\n" size;
+        fprintf fmt "       intros yh yl.\n";
+        fprintf fmt "         generalize (spec_eq0 w0_spec yh); case znz_eq0.\n";
+        fprintf fmt "         intros HH; rewrite HH; auto; rewrite Zmult_0_l; rewrite Zplus_0_l; clear HH.\n";
+        fprintf fmt "           rewrite (spec_0 w0_spec); rewrite Zplus_0_r.\n";
+        fprintf fmt "           rewrite nmake_%i; rewrite nmake_0; unfold nmake_op0.\n" size;
+        fprintf fmt "           intros HH; rewrite <- HH.\n";
+        fprintf fmt "           auto.\n";
+        fprintf fmt "         intros _.\n";
+        fprintf fmt "           rewrite (spec_0 w0_spec); rewrite Zplus_0_r.\n";
+        fprintf fmt "           rewrite nmake_%i; rewrite nmake_0; unfold nmake_op0.\n" size;
+        fprintf fmt "           intros HH; rewrite <- HH; clear HH.\n";
+        fprintf fmt "           simpl make_op; rewrite znz_to_Z_%i.\n" (size + 1);
+        fprintf fmt "           generalize (spec_extend%i_1 (WW (znz_0 w0_op) yh)); unfold to_Z.\n" (size - 1);
+        fprintf fmt "           intros HH; rewrite HH; clear HH.\n";
+        fprintf fmt "           rewrite znz_to_Z_1.\n";
+        fprintf fmt "           rewrite (spec_0 w0_spec); rewrite Zmult_0_l; rewrite Zplus_0_l.\n";
+        fprintf fmt "           rewrite nmake_%i; rewrite nmake_0; rewrite digits_%i; unfold nmake_op0; auto.\n" size size;
+      end
+    else
+      begin
+        fprintf fmt "   intros y; unfold to_Z, zero, w0_eq0, w_0.\n";
+        fprintf fmt "     generalize (spec_eq0 w0_spec y); case znz_eq0.\n";
+        fprintf fmt "     intros HH; rewrite HH; auto; clear HH.\n";
+        fprintf fmt "       rewrite (spec_0 w0_spec); rewrite Zmult_0_r; auto.\n";
+        fprintf fmt "     intros _.\n";
+        fprintf fmt "       generalize (spec_w0_mul_add_n1 %i x y (znz_0 w0_op)); case w0_mul_add_n1.\n" i;
+        fprintf fmt "       intros yh yl.\n";
+        fprintf fmt "         generalize (spec_eq0 w0_spec yh); case znz_eq0.\n";
+        fprintf fmt "         intros HH; rewrite HH; auto; rewrite Zmult_0_l; rewrite Zplus_0_l; clear HH.\n";
+        fprintf fmt "           rewrite (spec_0 w0_spec); rewrite Zplus_0_r.\n";
+        fprintf fmt "           rewrite nmake_%i; rewrite nmake_0; unfold nmake_op0.\n" i;
+        fprintf fmt "           intros HH; rewrite <- HH.\n";
+        fprintf fmt "           auto.\n";
+        fprintf fmt "         intros _.\n";
+        fprintf fmt "           rewrite (spec_0 w0_spec); rewrite Zplus_0_r.\n";
+        fprintf fmt "           rewrite nmake_%i; rewrite nmake_0; unfold nmake_op0.\n" i;
+        fprintf fmt "           intros HH; rewrite <- HH; clear HH.\n";
+        fprintf fmt "           rewrite znz_to_Z_%i.\n" (i + 1);
+        fprintf fmt "           generalize (spec_extend%i_%i (WW (znz_0 w0_op) yh)); unfold to_Z.\n" (i - 1) 1;
+        fprintf fmt "           intros HH; rewrite HH; clear HH.\n";
+        fprintf fmt "           rewrite znz_to_Z_1.\n";
+        fprintf fmt "           rewrite (spec_0 w0_spec); rewrite Zmult_0_l; rewrite Zplus_0_l.\n";
+        fprintf fmt "           rewrite nmake_%i; rewrite nmake_0; rewrite digits_%i; unfold nmake_op0; auto.\n" i i;
+      end;
+    for j = 1 to size do
+ fprintf fmt "  (* i = %i j = %i *)\n" i j;
+      if i = j then
+        begin
+          fprintf fmt "   intros y; unfold to_Z.\n";
+          fprintf fmt "     generalize (spec_mul_c w%i_spec x y).\n" i;
+          fprintf fmt "     intros HH; rewrite <- HH; clear HH; auto.\n";
+        end 
+      else 
+        begin
+	let min,max, wmin, wmax = 
+	  if i < j then i, j, "x", "y" else j, i, "y", "x" in
+	if max = size then
+          begin
+            fprintf fmt "   intros y; unfold to_Z, zero, w%i_eq0, w_0.\n" min;
+            fprintf fmt "       generalize (spec_w%i_mul_add_n1 %i %s %s W0); case w%i_mul_add_n1.\n" min (max -min) wmax wmin min;
+            fprintf fmt "       intros yh yl.\n";
+            fprintf fmt "         generalize (spec_eq0 w%i_spec yh); case znz_eq0.\n" min;
+            fprintf fmt "         intros HH; rewrite HH; auto; rewrite Zmult_0_l; rewrite Zplus_0_l; clear HH.\n";
+            fprintf fmt "           rewrite Zplus_0_r.\n";
+            fprintf fmt "           rewrite nmake_%i; rewrite nmake_%i; unfold nmake_op0.\n" max min;
+            fprintf fmt "           rewrite nmake_op_%i_%i.\n" min (max - min);
+            if i = min then
+              fprintf fmt "           intros HH; rewrite Zmult_comm; rewrite <- HH; clear HH.\n"
+            else
+              fprintf fmt "           intros HH; rewrite <- HH; clear HH.\n";
+            fprintf fmt "           auto.\n";
+            fprintf fmt "         intros _.\n";
+            fprintf fmt "           rewrite Zplus_0_r.\n";
+            fprintf fmt "           rewrite nmake_%i; rewrite nmake_%i; unfold nmake_op0.\n" max min;
+            fprintf fmt "           rewrite nmake_op_%i_%i.\n" min (max - min);
+            if i = min then
+              fprintf fmt "           intros HH; rewrite Zmult_comm; rewrite <- HH; clear HH.\n"
+            else
+              fprintf fmt "           intros HH; rewrite <- HH; clear HH.\n";
+            fprintf fmt "           simpl make_op; rewrite znz_to_Z_%i.\n" (max + 1);
+            fprintf fmt "           generalize (spec_extend%i_%i yh); unfold to_Z.\n" (max - min) min;
+            fprintf fmt "           intros HH; rewrite HH; clear HH.\n";
+            fprintf fmt "           rewrite nmake_%i; rewrite digits_%i; unfold nmake_op0.\n" min max;
+            fprintf fmt "           rewrite nmake_%i; unfold nmake_op0.\n" max;
+            fprintf fmt "           rewrite digits_%i_%i; auto.\n" min (max - min);
+          end
+	else 
+          begin
+            fprintf fmt "   intros y; unfold to_Z, zero, w0_eq0, w_0.\n";
+            fprintf fmt "       generalize (spec_w%i_mul_add_n1 %i %s %s W0); case w%i_mul_add_n1.\n" min (max - min) wmax wmin min;
+            fprintf fmt "       intros yh yl.\n";
+            fprintf fmt "         unfold w%i_eq0; generalize (spec_eq0 w%i_spec yh); case znz_eq0.\n" min min;
+            fprintf fmt "         intros HH; rewrite HH; auto; rewrite Zmult_0_l; rewrite Zplus_0_l; clear HH.\n";
+            fprintf fmt "           rewrite Zplus_0_r.\n";
+            fprintf fmt "           rewrite nmake_%i; rewrite nmake_%i; unfold nmake_op0.\n" max min;
+            if i = min then
+              fprintf fmt "           rewrite Zmult_comm; rewrite nmake_op_%i_%i; auto.\n" min (max - min)
+            else
+              fprintf fmt "           rewrite nmake_op_%i_%i; auto.\n" min (max - min);
+            fprintf fmt "         intros _.\n";
+            fprintf fmt "           rewrite Zplus_0_r.\n";
+            fprintf fmt "           rewrite digits_%i_%i.\n" min (max - min);
+            fprintf fmt "           rewrite nmake_%i; rewrite nmake_%i; unfold nmake_op0.\n" min max;
+            fprintf fmt "           rewrite nmake_op_%i_%i.\n" min (max - min);
+            if i = min then
+              fprintf fmt "           intros HH; rewrite Zmult_comm; rewrite <- HH; clear HH.\n"
+            else
+              fprintf fmt "           intros HH; rewrite <- HH; clear HH.\n";
+            fprintf fmt "           rewrite znz_to_Z_%i.\n" (max + 1);
+            fprintf fmt "           generalize (spec_extend%i_%i yh); unfold to_Z.\n" (max - min) min;
+            fprintf fmt "           intros HH; rewrite HH; clear HH.\n";
+            fprintf fmt "           rewrite nmake_%i; rewrite nmake_%i; rewrite digits_%i; unfold nmake_op0; auto.\n" min max max;
+          end
+      end
+    done;
+    if i = size then 
+      begin
+        fprintf fmt "   intros n y; unfold to_Z, zero, w%i_eq0, w_0.\n" size;
+        fprintf fmt "       generalize (spec_w%i_mul_add_n1 (S n) y x W0); case w%i_mul_add_n1.\n" size size;
+        fprintf fmt "       intros yh yl.\n";
+        fprintf fmt "         rewrite Zplus_0_r.\n";
+        fprintf fmt "         generalize (spec_eq0 w%i_spec yh); case znz_eq0.\n" size;
+        fprintf fmt "         intros HH; rewrite HH; auto; rewrite Zmult_0_l; rewrite Zplus_0_l; clear HH.\n";
+        fprintf fmt "           rewrite <- gen_make; rewrite <- nmake_gen.\n";
+        fprintf fmt "           intros HH; rewrite HH; clear HH.\n";
+        fprintf fmt "           rewrite Zmult_comm.\n";
+        fprintf fmt "           rewrite <- gen_make; rewrite <- nmake_gen; auto.\n";
+        fprintf fmt "         intros _.\n";
+        fprintf fmt "           rewrite (znz_to_Z_n n).\n";
+        fprintf fmt "           generalize (spec_extendn_0 n (WW W0 yh)); unfold to_Z.\n";
+        fprintf fmt "           intros HH; rewrite HH; clear HH.\n";
+        fprintf fmt "           simpl make_op; rewrite znz_to_Z_%i.\n" (size + 1);
+        fprintf fmt "           rewrite Zmult_0_l; rewrite Zplus_0_l.\n";
+        fprintf fmt "           rewrite <- gen_make; rewrite <- nmake_gen.\n";
+        fprintf fmt "           rewrite <- gen_make; rewrite <- nmake_gen.\n";
+        fprintf fmt "           rewrite digits_gend.\n";
+        fprintf fmt "           rewrite gen_digits; unfold GenBase.gen_wB.\n";
+        fprintf fmt "           intros HH; rewrite HH; clear HH.\n";
+        fprintf fmt "           rewrite Zmult_comm; auto.\n";
+      end
+    else
+      begin
+        fprintf fmt "   intros n y; unfold to_Z, zero, w%i_eq0, w_0.\n" size;
+        fprintf fmt "       generalize (spec_w%i_mul_add_n1 (S n) y (extend%i _ x) W0); case w%i_mul_add_n1.\n" size (size - i) size;
+        fprintf fmt "       intros yh yl.\n";
+        fprintf fmt "         rewrite Zplus_0_r.\n";
+        fprintf fmt "         unfold w%i_eq0; generalize (spec_eq0 w%i_spec yh); case znz_eq0.\n" size size;
+        fprintf fmt "         intros HH; rewrite HH; auto; rewrite Zmult_0_l; rewrite Zplus_0_l; clear HH.\n";
+        fprintf fmt "           generalize (spec_extend%i_%i x); unfold to_Z.\n" (size -i) i;
+        fprintf fmt "           intros HH; rewrite HH; clear HH.\n";
+        fprintf fmt "           rewrite <- gen_make; rewrite <- nmake_gen.\n";
+        fprintf fmt "           intros HH; rewrite HH; clear HH.\n";
+        fprintf fmt "           rewrite Zmult_comm.\n";
+        fprintf fmt "           rewrite <- gen_make; rewrite <- nmake_gen; auto.\n";
+        fprintf fmt "         intros _.\n";
+        fprintf fmt "           rewrite (znz_to_Z_n n).\n";
+        fprintf fmt "           generalize (spec_extend%i_%i x); unfold to_Z.\n" (size - i) i;
+        fprintf fmt "           intros HH; rewrite HH; clear HH.\n";
+        fprintf fmt "           generalize (spec_extendn_0 n (WW W0 yh)); unfold to_Z.\n";
+        fprintf fmt "           intros HH; rewrite HH; clear HH.\n";
+        fprintf fmt "           simpl make_op; rewrite znz_to_Z_%i.\n" (size + 1);
+        fprintf fmt "           rewrite Zmult_0_l; rewrite Zplus_0_l.\n";
+        fprintf fmt "           rewrite <- gen_make; rewrite <- nmake_gen.\n";
+        fprintf fmt "           rewrite <- gen_make; rewrite <- nmake_gen.\n";
+        fprintf fmt "           rewrite digits_gend.\n";
+        fprintf fmt "           rewrite gen_digits; unfold GenBase.gen_wB.\n";
+        fprintf fmt "           intros HH; rewrite HH; clear HH.\n";
+        fprintf fmt "           rewrite Zmult_comm; auto.\n";
+      end;    
+  done;
+
+  fprintf fmt "   intros n x y; case y; clear y; unfold mul.\n";
+  fprintf fmt "   intros y; unfold to_Z, zero, w0_eq0, w%i_eq0, w_0.\n" size;
+  fprintf fmt "     generalize (spec_eq0 w0_spec y); case znz_eq0.\n";
+  fprintf fmt "     intros HH; rewrite HH; auto; clear HH.\n";
+  fprintf fmt "       rewrite (spec_0 w0_spec); rewrite Zmult_0_r; auto.\n";
+  fprintf fmt "     intros _.\n";
+  fprintf fmt "       generalize (spec_w%i_mul_add_n1 (S n) x (extend%i w0 (WW (znz_0 w0_op) y)) W0); case w%i_mul_add_n1.\n" size (size - 1) size;
+  fprintf fmt "       intros yh yl.\n";
+  fprintf fmt "         generalize (spec_eq0 w%i_spec yh); case znz_eq0.\n" size;
+  fprintf fmt "         intros HH; rewrite HH; auto; rewrite Zmult_0_l; rewrite Zplus_0_l; clear HH.\n";
+  fprintf fmt "           rewrite Zplus_0_r.\n";
+  fprintf fmt "           generalize (spec_extend%i_1 (WW (znz_0 w0_op) y)); unfold to_Z.\n" (size - 1);
+  fprintf fmt "           intros HH; rewrite HH; clear HH.\n";
+  fprintf fmt "           rewrite znz_to_Z_1.\n";
+  fprintf fmt "           rewrite (spec_0 w0_spec); rewrite Zmult_0_l; rewrite Zplus_0_l.\n";
+  fprintf fmt "           rewrite <- gen_make; rewrite <- nmake_gen.\n";
+  fprintf fmt "           rewrite <- gen_make; rewrite <- nmake_gen; auto.\n";
+  fprintf fmt "         intros _.\n";
+  fprintf fmt "           rewrite Zplus_0_r.\n";
+  fprintf fmt "           generalize (spec_extend%i_1 (WW (znz_0 w0_op) y)); unfold to_Z.\n" (size - 1);
+  fprintf fmt "           intros HH; rewrite HH; clear HH.\n";
+  fprintf fmt "           rewrite znz_to_Z_1.\n";
+  fprintf fmt "           rewrite (spec_0 w0_spec); rewrite Zmult_0_l; rewrite Zplus_0_l.\n";
+  fprintf fmt "           rewrite (znz_to_Z_n n).\n";
+  fprintf fmt "           generalize (spec_extendn_0 n (WW W0 yh)); unfold to_Z.\n";
+  fprintf fmt "           intros HH; rewrite HH; clear HH.\n";
+  fprintf fmt "           simpl make_op; rewrite znz_to_Z_%i.\n" (size + 1);
+  fprintf fmt "           rewrite Zmult_0_l; rewrite Zplus_0_l.\n";
+  fprintf fmt "           rewrite <- gen_make; rewrite <- nmake_gen.\n";
+  fprintf fmt "           rewrite <- gen_make; rewrite <- nmake_gen; auto.\n";
+  fprintf fmt "           rewrite nmake_%i; rewrite nmake_0;  unfold nmake_op0.\n" size;
+  fprintf fmt "           intros HH; rewrite <- HH; clear HH.\n";
+  fprintf fmt "           rewrite digits_gend; rewrite gen_digits; auto.\n";
+  
+  for j = 1 to size - 1 do
+    fprintf fmt "   intros y; unfold to_Z, zero, w%i_eq0, w_0.\n" size;
+    fprintf fmt "       generalize (spec_w%i_mul_add_n1 (S n) x (extend%i _ y) W0); case w%i_mul_add_n1.\n" size (size - j) size;
+    fprintf fmt "       intros yh yl.\n";
+    fprintf fmt "         generalize (spec_eq0 w%i_spec yh); case znz_eq0.\n" size;
+    fprintf fmt "         intros HH; rewrite HH; auto; rewrite Zmult_0_l; rewrite Zplus_0_l; clear HH.\n";
+    fprintf fmt "           rewrite Zplus_0_r.\n";
+    fprintf fmt "           rewrite nmake_%i; rewrite nmake_%i; unfold nmake_op0.\n" size j;
+    fprintf fmt "           generalize (spec_extend%i_%i y); unfold to_Z.\n" (size - j) j;
+    fprintf fmt "           rewrite nmake_%i; unfold nmake_op0.\n" size;
+    fprintf fmt "           intros HH; rewrite HH; clear HH.\n";
+    fprintf fmt "           rewrite <- gen_make; rewrite <- nmake_gen.\n";
+    fprintf fmt "           rewrite <- gen_make; rewrite <- nmake_gen.\n";
+    fprintf fmt "           rewrite nmake_%i; unfold nmake_op0; auto.\n" j;
+    fprintf fmt "         intros _.\n";
+    fprintf fmt "           rewrite Zplus_0_r.\n";
+    fprintf fmt "           generalize (spec_extend%i_%i y); unfold to_Z.\n" (size - j) j;
+    fprintf fmt "           rewrite nmake_%i; unfold nmake_op0.\n" size;
+    fprintf fmt "           intros HH; rewrite HH; clear HH.\n";
+    fprintf fmt "           rewrite (znz_to_Z_n n).\n";
+    fprintf fmt "           generalize (spec_extendn_0 n (WW W0 yh)); unfold to_Z.\n";
+    fprintf fmt "           intros HH; rewrite HH; clear HH.\n";
+    fprintf fmt "           simpl make_op; rewrite znz_to_Z_%i.\n" (size + 1);
+    fprintf fmt "           rewrite Zmult_0_l; rewrite Zplus_0_l.\n";
+    fprintf fmt "           rewrite digits_gend; rewrite gen_digits; auto.\n";
+    fprintf fmt "           rewrite nmake_%i; unfold nmake_op0; auto.\n" size;
+    fprintf fmt "           rewrite <- gen_make; rewrite <- nmake_gen.\n";
+    fprintf fmt "           rewrite <- gen_make; rewrite <- nmake_gen; auto.\n";
+  done;
+  fprintf fmt "   intros y; unfold to_Z, zero, w%i_eq0, w_0.\n" size;
+  fprintf fmt "       generalize (spec_w%i_mul_add_n1 (S n) x y W0); case w%i_mul_add_n1.\n" size size;
+  fprintf fmt "       intros yh yl.\n";
+  fprintf fmt "         generalize (spec_eq0 w%i_spec yh); case znz_eq0.\n" size;
+  fprintf fmt "         intros HH; rewrite HH; auto; rewrite Zmult_0_l; rewrite Zplus_0_l; clear HH.\n";
+  fprintf fmt "           rewrite Zplus_0_r.\n";
+  fprintf fmt "           rewrite nmake_%i; unfold nmake_op0.\n" size;
+  fprintf fmt "           rewrite <- gen_make; rewrite <- nmake_gen.\n";
+  fprintf fmt "           rewrite <- gen_make; rewrite <- nmake_gen; auto.\n";
+  fprintf fmt "         intros _.\n";
+  fprintf fmt "           rewrite Zplus_0_r.\n";
+  fprintf fmt "           rewrite nmake_%i; unfold nmake_op0.\n" size;
+  fprintf fmt "           rewrite (znz_to_Z_n n).\n";
+  fprintf fmt "           generalize (spec_extendn_0 n (WW W0 yh)); unfold to_Z.\n";
+  fprintf fmt "           intros HH; rewrite HH; clear HH.\n";
+  fprintf fmt "           simpl make_op; rewrite znz_to_Z_%i.\n" (size + 1);
+  fprintf fmt "           rewrite Zmult_0_l; rewrite Zplus_0_l.\n";
+  fprintf fmt "           rewrite digits_gend; rewrite gen_digits; auto.\n";
+  fprintf fmt "           rewrite nmake_%i; unfold nmake_op0; auto.\n" size;
+  fprintf fmt "           rewrite <- gen_make; rewrite <- nmake_gen.\n";
+  fprintf fmt "           rewrite <- gen_make; rewrite <- nmake_gen; auto.\n";
+  fprintf fmt "    intros m y.\n";
+  fprintf fmt "    rewrite spec_reduce_n.\n";
+  fprintf fmt "    unfold to_Z.\n";
+  fprintf fmt "    generalize (spec_mul_c (wn_spec (Max.max n m))\n";
+  fprintf fmt "                (castm (diff_r n m)\n";
+  fprintf fmt "                 (extend_tr x (snd (diff n m))))\n";
+  fprintf fmt "                (castm (diff_l n m)\n";
+  fprintf fmt "                 (extend_tr y (fst (diff n m)))));\n";
+  fprintf fmt "       case znz_mul_c.\n";
+  fprintf fmt "    generalize (spec_cast_l n m x); simpl to_Z; simpl word; intros HH; rewrite HH; clear HH.\n";
+  fprintf fmt "    generalize (spec_cast_r n m y); simpl to_Z; simpl word; intros HH; rewrite HH; clear HH.\n";
+  fprintf fmt "    rewrite make_op_S; auto.\n";
+  fprintf fmt "    intros x1 y1.\n";
+  fprintf fmt "    rewrite (znz_to_Z_n (Max.max n m)).\n";
+  fprintf fmt "    generalize (spec_cast_l n m x); simpl to_Z; simpl word; intros HH; rewrite HH; clear HH.\n";
+  fprintf fmt "    generalize (spec_cast_r n m y); simpl to_Z; simpl word; intros HH; rewrite HH; clear HH.\n";
+  fprintf fmt "    simpl zn2z_to_Z; auto.\n";
+  fprintf fmt "    Qed.\n";
+  end
+  
+  else
+    fprintf fmt " Admitted.\n";    
+  fprintf fmt "\n";    
+
+  fprintf fmt " Theorem spec_sqrt : forall x,\n";
+  fprintf fmt "       [sqrt x] ^ 2 <= [x] < ([sqrt x] + 1) ^ 2.\n";
+  fprintf fmt " Proof.\n";
+  if gen_proof14 then
+  begin
+  fprintf fmt " intros x; case x; unfold sqrt.\n";
+  for i = 0 to size do
+    fprintf fmt "   intros y; rewrite spec_reduce_%i.\n" i;
+    fprintf fmt "   unfold to_Z, w%i_sqrt.\n" i;
+    fprintf fmt "   exact (spec_sqrt w%i_spec y).\n" i;
+  done;
+  fprintf fmt "   intros n y; rewrite spec_reduce_n.\n";
+  fprintf fmt "   exact (spec_sqrt (wn_spec n) y).\n";
+  fprintf fmt "  Qed.\n";
+  end
+  else
+   fprintf fmt " Admitted.\n";    
+  fprintf fmt "\n";    
+
 
   fprintf fmt "End Make.\n";
   fprintf fmt "\n";

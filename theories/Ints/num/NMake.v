@@ -4356,5 +4356,14 @@ Definition pheight p := Peano.pred (nat_of_P (get_height w0_op.(znz_digits) (ple
  Proof.
  Admitted.
 
+ Theorem spec_mul: forall x y, [mul x y] =[x] * [y].
+ Proof.
+ Admitted.
+
+ Theorem spec_sqrt : forall x,
+       [sqrt x] ^ 2 <= [x] < ([sqrt x] + 1) ^ 2.
+ Proof.
+ Admitted.
+
 End Make.
 

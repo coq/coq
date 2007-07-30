@@ -4,6 +4,8 @@ Require Import ZDivModAux.
 Require Import Basic_type.
 Require Import Max.
 Require Import GenBase.
+Require Import ZnZ.
+Require Import Zn2Z.
 
 (* To compute the necessary height *)
 
@@ -462,3 +464,40 @@ End AddS.
  Proof.
  intros A B f g x H; rewrite H; auto.
  Qed.
+
+
+ Section SimplOp.
+
+ Variable w: Set.
+
+ Theorem digits_zop: forall w (x: znz_op w),
+  znz_digits (mk_zn2z_op x) = xO (znz_digits x).
+ intros ww x; auto.
+ Qed.
+
+ Theorem digits_kzop: forall w (x: znz_op w),
+  znz_digits (mk_zn2z_op_karatsuba x) = xO (znz_digits x).
+ intros ww x; auto.
+ Qed.
+
+ Theorem make_zop: forall w (x: znz_op w),
+  znz_to_Z (mk_zn2z_op x) = 
+    fun z => match z with 
+                W0 => 0
+             | WW xh xl => znz_to_Z x xh * base (znz_digits x) 
+                                + znz_to_Z x xl
+             end.
+ intros ww x; auto.
+ Qed.
+
+ Theorem make_kzop: forall w (x: znz_op w),
+  znz_to_Z (mk_zn2z_op_karatsuba x) = 
+    fun z => match z with 
+                W0 => 0
+             | WW xh xl => znz_to_Z x xh * base (znz_digits x) 
+                                + znz_to_Z x xl
+             end.
+ intros ww x; auto.
+ Qed.
+
+ End SimplOp.
