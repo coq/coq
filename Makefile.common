@@ -438,14 +438,14 @@ GENMLFILES:=$(LEXFILES:.mll=.ml) $(YACCFILES:.mly=.ml) \
 GENMLIFILES:=$(YACCFILES:.mly=.mli)
 GENHFILES:=kernel/byterun/coq_jumptbl.h
 GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES)
-MLFILES  := $(shell find . '(' -name '*.ml'  ')' -printf '%P\n' | \
+MLFILES  := $(shell find . '(' -name '*.ml'  ')' | sed 's|^\./||' | \
   while read f; do if ! [ -e "$${f}4" ]; then echo "$$f"; fi; done) \
   $(GENMLFILES)
-MLIFILES := $(shell find . '(' -name '*.mli' ')' -printf '%P\n') \
+MLIFILES := $(shell find . '(' -name '*.mli' ')' | sed 's|^\./||') \
   $(GENMLIFILES)
-ML4FILES := $(shell find . '(' -name '*.ml4' ')' -printf '%P\n')
-VFILES   := $(shell find . '(' -name '*.v'   ')' -printf '%P\n')
-CFILES   := $(shell find kernel/byterun -name '*.c' -printf '%p\n')
+ML4FILES := $(shell find . '(' -name '*.ml4' ')' | sed 's|^\./||')
+VFILES   := $(shell find . '(' -name '*.v'   ')' | sed 's|^\./||')
+CFILES   := $(shell find kernel/byterun -name '*.c')
 
 ML4FILESML:= $(ML4FILES:.ml4=.ml)
 
