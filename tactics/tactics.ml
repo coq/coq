@@ -1680,8 +1680,127 @@ let error_ind_scheme s =
   let s = if s <> "" then s^" " else s in
   error ("Cannot recognise "^s^"an induction schema")
 
+let mkEq t x y = 
+  mkApp (build_coq_eq (), [| t; x; y |])
+    
+let mkRefl t x = 
+  mkApp ((build_coq_eq_data ()).refl, [| t; x |])
 
+let mkCoe a x p px y eq = 
+  mkApp (out_some (build_coq_eq_data ()).rect, [| a; x; p; px; y; eq |])
 
+let lift_togethern n l =
+  let l', _ =
+    List.fold_right
+      (fun x (acc, n) ->
+	(lift n x :: acc, succ n))
+      l ([], n)
+  in l'
+      
+let lift_together l = lift_togethern 0 l
+
+let lift_list l = List.map (lift 1) l
+
+let make_abstract_generalize gl id concl ctx c eqs args refls coe = 
+  let meta = Evarutil.new_meta() in
+  let cstr = 
+    (* Substitute the coerced term using equalities into the conclusion. *)
+    let concl = subst1 coe (subst_var id concl) in
+    (* Abstract by equalitites *)
+    let abseqs = it_mkProd_or_LetIn ~init:concl (List.map (fun x -> (Anonymous, None, x)) eqs) in 
+    (* Abstract by the "generalized" hypothesis *)
+    let abshyp = mkProd (Name id, c, abseqs) in
+    (* Abstract by the extension of the context *)
+    let genctyp = it_mkProd_or_LetIn ~init:abshyp ctx in
+    (* The goal will become this product. *)
+    let genc = mkCast (mkMeta meta, DEFAULTcast, genctyp) in      
+    (* Apply the old arguments giving the proper instantiation of the hyp *)
+    let instc = mkApp (genc, Array.of_list args) in
+    (* Then apply to the original instanciated hyp. *)
+    let newc = mkApp (instc, [| mkVar id |]) in
+    (* Finaly, apply the reflexivity proofs, to get a term of type gl again *)
+    let appeqs = mkApp (newc, Array.of_list refls) in
+      appeqs
+  in cstr
+    
+let abstract_args gl id = 
+  let c = pf_get_hyp_typ gl id in
+  let env = pf_env gl in
+  let concl = pf_concl gl in
+  let avoid = ref [] in
+  let get_id name = 
+    let id = fresh_id !avoid (match name with Name n -> n | Anonymous -> id_of_string "gen_x") gl in 
+      avoid := id :: !avoid; id
+  in
+  match kind_of_term c with
+      App (f, args) -> 
+	(* Build application generalized w.r.t. the argument plus the necessary eqs.
+	   From env |- c : forall G, T and args : G we build
+	   (G' : ctx, env ; G' |- args' : G, eqs := G'_i = G_i, refls : G' = G)
+
+	   eqs are not lifted w.r.t. each other yet. (* will be needed when going to dependent indexes *)
+	*)
+	let aux (prod, ctx, c, args, eqs, refls, finalargs, env) arg =
+	  let (name, ty, arity) = destProd prod in
+	    match kind_of_term arg with
+	      | Var _ | Rel _ -> 
+		  let finalarg = lift (List.length ctx) arg in
+		    (* FIXME: also false when the quant var has not a type convertible to ty *)
+		    (subst1 arg arity, ctx, mkApp (c, [|arg|]), args, eqs, refls, (Anonymous, finalarg, finalarg) :: finalargs, env)
+	      | _ ->
+		  let name = get_id name in
+		  let arity = subst1 (mkRel 1) arity in
+		  let ctx = (Name name, None, ty) :: ctx in
+		  let c' = mkApp (lift 1 c, [|mkRel 1|]) in
+		  let args = arg :: args in
+		  let liftarg = lift (List.length ctx) arg in
+		  let eq = mkEq ty (mkRel 1) liftarg in
+		  let eqs = eq :: lift_list eqs in (* FIXME: should be heterogenous in general *)
+		  let refls = mkRefl ty arg :: refls in
+		  let finalargs = (Name name, mkRel 1, liftarg) :: List.map (fun (x, y, z) -> (x, lift 1 y, lift 1 z)) finalargs in
+		    (arity, ctx, c', args, eqs, refls, finalargs, env)
+	in 
+	let arity, ctx, c', args, eqs, refls, finalargs, env = 
+	  Array.fold_left aux (pf_type_of gl f, [],f,[],[],[],[],env) args
+	in
+	let _, _, _, coe = 
+	  let alleqslen = List.length eqs in
+	  let ctxlen = List.length ctx in
+	  let n_lift = alleqslen + ctxlen + 1 in
+	  let aux (prod, c, eqsrel, coe) (name, arg, oldarg) after =
+	    let (name, ty, arity) = destProd prod in
+	      match kind_of_term oldarg with
+		| Var _ | Rel _ -> 
+		    (subst1 arg arity, mkApp (c, [|arg|]), eqsrel, coe)
+		| _ ->
+		    let c' = mkApp (c, [|arg|]) in
+		    let pred = 
+		      mkLambda (name, ty, applist (lift 1 c, (mkRel 1) :: 
+			List.map (fun (_, x, _) -> lift 1 x) after))
+		    in
+		    let coe' =
+		      mkCoe ty arg pred coe oldarg (mkRel eqsrel)
+		    in
+		      (arity, c', eqsrel - 1, coe')
+	  in 
+	  let rec fold acc l =
+	    match l with
+	      | hd :: tl -> fold (aux acc hd tl) tl
+	      | [] -> acc
+	  in
+	    fold (lift n_lift (pf_type_of gl f), lift n_lift f, alleqslen, mkRel (succ alleqslen)) 
+	      (List.rev_map (fun (x, y, z) -> x, lift (alleqslen + 1) y, lift (alleqslen + 1) z) finalargs)
+	in
+	let eqs = lift_togethern 1 eqs in
+	let args, refls = List.rev args, List.rev refls in
+	  Some (make_abstract_generalize gl id concl ctx c' eqs args refls coe)
+    | _ -> None
+
+let abstract_generalize id gl =
+  let newc = abstract_args gl id in
+    match newc with
+      | None -> tclIDTAC gl
+      | Some newc -> refine newc gl
 
 let occur_rel n c = 
   let res = not (noccurn n c) in

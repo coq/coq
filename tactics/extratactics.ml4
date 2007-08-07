@@ -444,3 +444,9 @@ TACTIC EXTEND eapply_in
    "in" hyp(id) ] -> [ apply_in true id (c::cl) ]
 END
 
+(* sozeau: abs/gen for induction on instantiated dependent inductives, using "Ford" induction as 
+  defined by Conor McBride *)
+TACTIC EXTEND generalize_eqs
+| ["generalize_eqs" hyp(id) ] -> [ abstract_generalize id ]
+END
+

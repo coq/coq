@@ -325,3 +325,4 @@ val tclABSTRACT : identifier option -> tactic -> tactic
 
 val admit_as_an_axiom : tactic
 
+val abstract_generalize : identifier -> tactic
