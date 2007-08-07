@@ -1,4 +1,14 @@
-Require Export Coq.subtac.SubtacTactics.
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+
+(*i $Id$ i*)
+
+Require Export Coq.Program.Tactics.
 
 Set Implicit Arguments.
 
@@ -46,12 +56,8 @@ Notation "'dec'" := (sumbool_of_bool) (at level 0).
 Notation in_right := (@right _ _ _).
 Notation in_left := (@left _ _ _).
 
-(** Default simplification tactic. *)
-
-Ltac subtac_simpl := simpl ; intros ; destruct_conjs ; simpl in * ; try subst ; 
-  try (solve [ red ; intros ; discriminate ]) ; auto with *.  
-
 (** Extraction directives *)
+
 Extraction Inline proj1_sig.
 Extract Inductive unit => "unit" [ "()" ].
 Extract Inductive bool => "bool" [ "true" "false" ].
@@ -59,7 +65,6 @@ Extract Inductive sumbool => "bool" [ "true" "false" ].
 (* Extract Inductive prod "'a" "'b" => " 'a * 'b " [ "(,)" ]. *)
 (* Extract Inductive sigT => "prod" [ "" ]. *)
 
-Require Export ProofIrrelevance.
-Require Export Coq.subtac.Heq.
+(** The scope in which programs are typed (not their types). *)
 
-Delimit Scope program_scope with program.
+Delimit Scope program_scope with prg.

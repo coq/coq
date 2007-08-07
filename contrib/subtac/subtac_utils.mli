@@ -125,6 +125,6 @@ val string_of_intset : Intset.t -> string
 
 val pr_evar_defs : evar_defs -> Pp.std_ppcmds
 
-val utils_call : string -> Tacexpr.glob_tactic_arg list -> Tacexpr.glob_tactic_expr
+val tactics_call : string -> Tacexpr.glob_tactic_arg list -> Tacexpr.glob_tactic_expr
 
 val pp_list : ('a -> Pp.std_ppcmds) -> 'a list -> Pp.std_ppcmds

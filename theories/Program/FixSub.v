@@ -1,5 +1,6 @@
 Require Import Wf.
-Require Import Coq.subtac.Utils.
+Require Import Coq.Program.Utils.
+Require Import ProofIrrelevance.
 
 (** Reformulation of the Wellfounded module using subsets where possible. *)
 

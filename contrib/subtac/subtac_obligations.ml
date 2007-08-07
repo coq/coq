@@ -13,7 +13,7 @@ open Decl_kinds
 open Util
 open Evd
 
-let pperror cmd = Util.errorlabstrm "Subtac" cmd
+let pperror cmd = Util.errorlabstrm "Program" cmd
 let error s = pperror (str s)
 
 exception NoObligations of identifier option
@@ -96,7 +96,7 @@ let from_prg : program_info ProgMap.t ref = ref ProgMap.empty
 let freeze () = !from_prg, !default_tactic_expr
 let unfreeze (v, t) = from_prg := v; set_default_tactic t
 let init () =
-  from_prg := ProgMap.empty; set_default_tactic (Subtac_utils.utils_call "subtac_simpl" [])
+  from_prg := ProgMap.empty; set_default_tactic (Subtac_utils.tactics_call "program_simpl" [])
 
 let _ = 
   Summary.declare_summary "program-tcc-table"

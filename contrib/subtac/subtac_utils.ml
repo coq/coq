@@ -10,7 +10,7 @@ let ($) f x = f x
 (****************************************************************************)
 (* Library linking *)
 
-let contrib_name = "subtac"
+let contrib_name = "Program"
 
 let subtac_dir = [contrib_name]
 let fix_sub_module = "FixSub"
@@ -28,8 +28,8 @@ let make_ref l s = lazy (init_reference l s)
 let well_founded_ref = make_ref ["Init";"Wf"] "Well_founded"
 let acc_ref = make_ref  ["Init";"Wf"] "Acc"
 let acc_inv_ref = make_ref  ["Init";"Wf"] "Acc_inv"
-let fix_sub_ref = make_ref ["subtac";"FixSub"] "Fix_sub"
-let fix_measure_sub_ref = make_ref ["subtac";"FixSub"] "Fix_measure_sub"
+let fix_sub_ref = make_ref [contrib_name;"FixSub"] "Fix_sub"
+let fix_measure_sub_ref = make_ref [contrib_name;"FixSub"] "Fix_measure_sub"
 let lt_ref = make_ref ["Init";"Peano"] "lt"
 let lt_wf_ref = make_ref ["Wf_nat"] "lt_wf"
 let refl_ref = make_ref ["Init";"Logic"] "refl_equal"
@@ -441,11 +441,11 @@ let pr_evar_defs evd =
       str"METAS:"++brk(0,1)++pr_meta_map evd in
   v 0 (pp_evm ++ pp_met)
 
-let subtac_utils_path =
-  make_dirpath (List.map id_of_string ["Utils";contrib_name;"Coq"])
-let utils_tac s =
-  lazy(make_kn (MPfile subtac_utils_path) (make_dirpath []) (mk_label s))
+let contrib_tactics_path =
+  make_dirpath (List.map id_of_string ["Tactics";contrib_name;"Coq"])
+let tactics_tac s =
+  lazy(make_kn (MPfile contrib_tactics_path) (make_dirpath []) (mk_label s))
 
-let utils_call tac args =
-  TacArg(TacCall(dummy_loc, ArgArg(dummy_loc, Lazy.force (utils_tac tac)),args))
+let tactics_call tac args =
+  TacArg(TacCall(dummy_loc, ArgArg(dummy_loc, Lazy.force (tactics_tac tac)),args))
 

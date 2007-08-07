@@ -95,8 +95,8 @@ let subtac (loc, command) =
   check_required_library ["Coq";"Init";"Datatypes"];
   check_required_library ["Coq";"Init";"Specif"];
 (*   check_required_library ["Coq";"Logic";"JMeq"]; *)
-  require_library "Coq.subtac.FixSub";
-  require_library "Coq.subtac.Utils";
+  require_library "Coq.Program.FixSub";
+  require_library "Coq.Program.Tactics";
   require_library "Coq.Logic.JMeq";
   let env = Global.env () in
   let isevars = ref (create_evar_defs Evd.empty) in
@@ -124,6 +124,10 @@ let subtac (loc, command) =
 
       | VernacAssumption (stre,nl,l) -> 
 	  vernac_assumption env isevars stre l nl
+
+(*       | VernacCoFixpoint (l, b) ->  *)
+(* 	  let _ = trace (str "Building cofixpoint") in *)
+(* 	    ignore(Subtac_command.build_recursive l b) *)
 
       (*| VernacEndProof e -> 
 	  subtac_end_proof e*)
