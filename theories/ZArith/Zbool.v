@@ -104,7 +104,7 @@ Qed.
 
 Lemma Zle_bool_imp_le : forall n m:Z, Zle_bool n m = true -> (n <= m)%Z.
 Proof.
-  unfold Zle_bool, Zle in |- *. intros x y. unfold not in |- *. 
+  unfold Zle_bool, Zle in |- *. intros x y. unfold not in |- *.
   case (x ?= y)%Z; intros; discriminate.
 Qed.
 
@@ -176,6 +176,18 @@ Lemma Zge_is_le_bool : forall n m:Z, (n >= m)%Z <-> Zle_bool m n = true.
 Proof.
   intros. split. intro. apply Zle_imp_le_bool. apply Zge_le. assumption.
   intro. apply Zle_ge. apply Zle_bool_imp_le. assumption.
+Qed.
+
+Lemma Zlt_is_lt_bool : forall n m:Z, (n < m)%Z <-> Zlt_bool n m = true.
+Proof.
+intros n m; unfold Zlt_bool, Zlt.
+destruct (n ?= m)%Z; simpl; split; now intro.
+Qed.
+
+Lemma Zgt_is_gt_bool : forall n m:Z, (n > m)%Z <-> Zgt_bool n m = true.
+Proof.
+intros n m; unfold Zgt_bool, Zgt.
+destruct (n ?= m)%Z; simpl; split; now intro.
 Qed.
 
 Lemma Zlt_is_le_bool :

@@ -247,30 +247,6 @@ Proof.
       | simplify_eq H; intro E; rewrite E; trivial ].
 Qed.
 
-(*************************************************************************)
-(** **  Properties of the direct definition of successor and predecessor *)
-
-Lemma Zpred'_succ' : forall n:Z, Zpred' (Zsucc' n) = n.
-Proof.
-  intro x; destruct x; simpl in |- *.
-    reflexivity.
-  destruct p; simpl in |- *; try rewrite Pdouble_minus_one_o_succ_eq_xI;
-    reflexivity.
-  destruct p; simpl in |- *; try rewrite Psucc_o_double_minus_one_eq_xO;
-    reflexivity.
-Qed.
-
-Lemma Zsucc'_discr : forall n:Z, n <> Zsucc' n.
-Proof.
-  intro x; destruct x; simpl in |- *.
-  discriminate.
-  injection; apply Psucc_discr.
-  destruct p; simpl in |- *.
-    discriminate.
-    intro H; symmetry  in H; injection H; apply double_moins_un_xO_discr.
-    discriminate.
-Qed.
-
 (**********************************************************************)
 (** ** Other properties of binary integer numbers *)
 
@@ -313,8 +289,13 @@ Qed.
 Theorem Zopp_plus_distr : forall n m:Z, - (n + m) = - n + - m.
 Proof.
   intro x; destruct x as [| p| p]; intro y; destruct y as [| q| q];
-    simpl in |- *; reflexivity || destruct ((p ?= q)%positive Eq); 
+    simpl in |- *; reflexivity || destruct ((p ?= q)%positive Eq);
       reflexivity.
+Qed.
+
+Theorem Zopp_succ : forall n:Z, Zopp (Zsucc n) = Zpred (Zopp n).
+Proof.
+intro; unfold Zsucc; now rewrite Zopp_plus_distr.
 Qed.
 
 (** ** opposite is inverse for addition *)
@@ -586,10 +567,10 @@ Theorem Zsucc_pred : forall n:Z, n = Zsucc (Zpred n).
 Proof.
   intros n; unfold Zsucc, Zpred in |- *; rewrite <- Zplus_assoc; simpl in |- *;
     rewrite Zplus_0_r; trivial with arith.
-Qed. 
+Qed.
 
 Hint Immediate Zsucc_pred: zarith.
- 
+
 Theorem Zpred_succ : forall n:Z, n = Zpred (Zsucc n).
 Proof.
   intros m; unfold Zpred, Zsucc in |- *; rewrite <- Zplus_assoc; simpl in |- *;
@@ -603,7 +584,59 @@ Proof.
     do 2 rewrite <- Zplus_assoc; do 2 rewrite (Zplus_comm (Zpos 1));
       unfold Zsucc in H; rewrite H; trivial with arith.
 Qed.
- 
+
+(*************************************************************************)
+(** **  Properties of the direct definition of successor and predecessor *)
+
+Theorem Zsucc_succ' : forall n:Z, Zsucc n = Zsucc' n.
+Proof.
+destruct n as [| p | p]; simpl.
+reflexivity.
+now rewrite Pplus_one_succ_r.
+now destruct p as [q | q |].
+Qed.
+
+Theorem Zpred_pred' : forall n:Z, Zpred n = Zpred' n.
+Proof.
+destruct n as [| p | p]; simpl.
+reflexivity.
+now destruct p as [q | q |].
+now rewrite Pplus_one_succ_r.
+Qed.
+
+Theorem Zsucc'_inj : forall n m:Z, Zsucc' n = Zsucc' m -> n = m.
+Proof.
+intros n m; do 2 rewrite <- Zsucc_succ'; now apply Zsucc_inj.
+Qed.
+
+Theorem Zsucc'_pred' : forall n:Z, Zsucc' (Zpred' n) = n.
+Proof.
+intro; rewrite <- Zsucc_succ'; rewrite <- Zpred_pred';
+symmetry; apply Zsucc_pred.
+Qed.
+
+Theorem Zpred'_succ' : forall n:Z, Zpred' (Zsucc' n) = n.
+Proof.
+intro; apply Zsucc'_inj; now rewrite Zsucc'_pred'.
+Qed.
+
+Theorem Zpred'_inj : forall n m:Z, Zpred' n = Zpred' m -> n = m.
+Proof.
+intros n m H.
+rewrite <- (Zsucc'_pred' n); rewrite <- (Zsucc'_pred' m); now rewrite H.
+Qed.
+
+Theorem Zsucc'_discr : forall n:Z, n <> Zsucc' n.
+Proof.
+  intro x; destruct x; simpl in |- *.
+  discriminate.
+  injection; apply Psucc_discr.
+  destruct p; simpl in |- *.
+    discriminate.
+    intro H; symmetry  in H; injection H; apply double_moins_un_xO_discr.
+    discriminate.
+Qed.
+
 (** Misc properties, usually redundant or non natural *)
 
 Lemma Zsucc_eq_compat : forall n m:Z, n = m -> Zsucc n = Zsucc m.
@@ -645,6 +678,22 @@ Qed.
 
 (** ** Relating [minus] with [plus] and [Zsucc] *)
 
+Lemma Zminus_plus_distr : forall n m p:Z, n - (m + p) = n - m - p.
+Proof.
+intros; unfold Zminus; rewrite Zopp_plus_distr; apply Zplus_assoc.
+Qed.
+
+Lemma Zminus_succ_l : forall n m:Z, Zsucc (n - m) = Zsucc n - m.
+Proof.
+  intros n m; unfold Zminus, Zsucc in |- *; rewrite (Zplus_comm n (- m));
+    rewrite <- Zplus_assoc; apply Zplus_comm.
+Qed.
+
+Lemma Zminus_succ_r : forall n m:Z, n - (Zsucc m) = Zpred (n - m).
+Proof.
+intros; unfold Zsucc; now rewrite Zminus_plus_distr.
+Qed.
+
 Lemma Zplus_minus_eq : forall n m p:Z, n = m + p -> p = n - m.
 Proof.
   intros n m p H; unfold Zminus in |- *; apply (Zplus_reg_l m);
@@ -663,12 +712,6 @@ Lemma Zplus_minus : forall n m:Z, n + (m - n) = m.
 Proof.
   unfold Zminus in |- *; intros n m; rewrite Zplus_permute; rewrite Zplus_opp_r;
     apply Zplus_0_r.
-Qed.
-
-Lemma Zminus_succ_l : forall n m:Z, Zsucc (n - m) = Zsucc n - m.
-Proof.
-  intros n m; unfold Zminus, Zsucc in |- *; rewrite (Zplus_comm n (- m));
-    rewrite <- Zplus_assoc; apply Zplus_comm.
 Qed.
 
 Lemma Zminus_plus_simpl_l : forall n m p:Z, p + n - (p + m) = n - m.
@@ -967,17 +1010,17 @@ Qed.
 (**********************************************************************)
 (** * Relating binary positive numbers and binary integers *)
 
-Lemma Zpos_eq : forall p q, p = q -> Zpos p = Zpos q.
+Lemma Zpos_eq : forall p q:positive, p = q -> Zpos p = Zpos q.
 Proof.
   intros; f_equal; auto.
 Qed.
 
-Lemma Zpos_eq_rev : forall p q, Zpos p = Zpos q -> p = q.
+Lemma Zpos_eq_rev : forall p q:positive, Zpos p = Zpos q -> p = q.
 Proof.
   inversion 1; auto.
 Qed.
 
-Lemma Zpos_eq_iff : forall p q, p = q <-> Zpos p = Zpos q.
+Lemma Zpos_eq_iff : forall p q:positive, p = q <-> Zpos p = Zpos q.
 Proof.
   split; [apply Zpos_eq|apply Zpos_eq_rev].
 Qed.
