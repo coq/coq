@@ -13,5 +13,5 @@ Require Export Logic.
 Require Export Datatypes.
 Require Export Specif.
 Require Export Peano.
-Require Export Wf.
+Require Export Coq.Init.Wf.
 Require Export Coq.Init.Tactics.

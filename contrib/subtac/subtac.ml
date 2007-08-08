@@ -95,7 +95,7 @@ let subtac (loc, command) =
   check_required_library ["Coq";"Init";"Datatypes"];
   check_required_library ["Coq";"Init";"Specif"];
 (*   check_required_library ["Coq";"Logic";"JMeq"]; *)
-  require_library "Coq.Program.FixSub";
+  require_library "Coq.Program.Wf";
   require_library "Coq.Program.Tactics";
   require_library "Coq.Logic.JMeq";
   let env = Global.env () in

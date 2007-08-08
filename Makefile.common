@@ -751,8 +751,8 @@ CCVO:=
 
 DPVO:=contrib/dp/Dp.vo
 
-SUBTACVO:=theories/Program/Tactics.vo theories/Program/Heq.vo \
-	theories/Program/Utils.vo theories/Program/FixSub.vo theories/Program/Program.vo \
+SUBTACVO:=theories/Program/Tactics.vo theories/Program/Equality.vo \
+	theories/Program/Utils.vo theories/Program/Wf.vo theories/Program/Program.vo \
 	theories/Program/FunctionalExtensionality.vo
 
 RTAUTOVO:= \
