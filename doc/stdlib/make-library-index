@@ -7,7 +7,7 @@ FILE=$1
 cp -f $FILE.template tmp
 echo -n Building file index-list.prehtml ...
 
-LIBDIRS="Init Logic Bool Arith NArith ZArith QArith Relations Sets Setoids Lists Sorting Wellfounded IntMap FSets Reals Ints Ints/num"
+LIBDIRS="Init Logic Bool Arith NArith ZArith QArith Relations Sets Setoids Lists Sorting Wellfounded IntMap FSets Reals Ints Ints/num Program"
 
 for k in $LIBDIRS; do
     i=../theories/$k

@@ -402,5 +402,17 @@ through the <tt>Require Import</tt> command.</p>
     theories/Ints/num/ZnZ.v
   </dd>
 
+    
+  <dt> <b>Program</b>:
+    Support for dependently-typed programming.
+  </dt>
+  <dd> 
+    theories/Program/Wf.v
+    theories/Program/Equality.v
+    theories/Program/Tactics.v
+    theories/Program/Utils.v
+    theories/Program/Program.v
+    theories/Program/FunctionalExtensionality.v
+  </dd>
 
 </dl>

@@ -1,4 +1,4 @@
-Require Import Wf.
+Require Import Coq.Init.Wf.
 Require Import Coq.Program.Utils.
 Require Import ProofIrrelevance.
 

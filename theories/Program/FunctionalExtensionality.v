@@ -1,5 +1,5 @@
 Require Import Coq.Program.Utils.
-Require Import Coq.Program.FixSub.
+Require Import Coq.Program.Wf.
 
 (** The converse of functional equality. *)
 

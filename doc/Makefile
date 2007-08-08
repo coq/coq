@@ -214,7 +214,7 @@ faq/html/index.html: faq/FAQ.v.html
 
 GLOBDUMP=$(COQTOP)/glob.dump
 
-LIBDIRS= Init Logic Bool Arith NArith ZArith QArith Relations Sets Setoids Lists Sorting Wellfounded IntMap FSets Reals 
+LIBDIRS= Init Logic Bool Arith NArith ZArith QArith Relations Sets Setoids Lists Sorting Wellfounded IntMap FSets Reals Program
 # We avoid Strings as String.v contains unicode caracters that make latex fail
 
 LIBDIRS+= Ints Ints/num
