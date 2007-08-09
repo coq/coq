@@ -53,6 +53,8 @@ val build_corecursive : (cofixpoint_expr * decl_notation) list -> bool -> unit
 
 val build_scheme : (identifier located * bool * reference * rawsort) list -> unit
 
+val build_combined_scheme : identifier located -> identifier located list -> unit
+
 val generalize_constr_expr : constr_expr -> local_binder list -> constr_expr
 
 val abstract_constr_expr : constr_expr -> local_binder list -> constr_expr

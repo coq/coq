@@ -657,6 +657,58 @@ let build_scheme lnamedepindsort =
   let _ = List.fold_right2 declare listdecl lrecnames [] in
   if_verbose ppnl (recursive_message Fixpoint lrecnames)
 
+let rec get_concl n t = 
+  if n = 0 then t
+  else
+    match kind_of_term t with
+	Prod (_,_,t) -> get_concl (pred n) t
+      | _ -> raise (Invalid_argument "get_concl")
+
+let cut_last l = 
+  let rec aux acc = function
+      hd :: [] -> List.rev acc, hd
+    | hd :: tl -> aux (hd :: acc) tl
+    | [] -> raise (Invalid_argument "cut_last")
+  in aux [] l
+	
+let build_combined_scheme name schemes =
+  let env = Global.env () in
+  let defs = 
+    List.map (fun x -> 
+		let refe = Ident x in
+		let qualid = qualid_of_reference refe in
+		let cst = Nametab.locate_constant (snd qualid) in
+		  qualid, cst, Typeops.type_of_constant env cst)
+      schemes
+  in
+  let (qid, c, t) = List.hd defs in
+  let nargs = 
+    let (_, arity, _) = destProd t in
+      nb_prod arity
+  in
+  let prods = nb_prod t - nargs in
+  let defs, (qid, c, t) = cut_last defs in
+  let (args, concl) = decompose_prod_n prods t in
+  let concls = List.map (fun (_, cst, t) -> cst, get_concl prods t) defs in
+  let coqand = Coqlib.build_coq_and () and coqconj = Coqlib.build_coq_conj () in
+  let relargs = rel_vect 0 prods in
+  let concl_typ, concl_bod = 
+    List.fold_right
+      (fun (cst, x) (acct, accb) -> 
+	 mkApp (coqand, [| x; acct |]),
+	 mkApp (coqconj, [| x; acct; mkApp(mkConst cst, relargs); accb |])) 
+      concls (concl, mkApp (mkConst c, relargs))
+  in
+  let ctx = List.map (fun (x, y) -> x, None, y) args in
+  let typ = it_mkProd_wo_LetIn concl_typ ctx in
+  let body = it_mkLambda_or_LetIn concl_bod ctx in
+  let ce = { const_entry_body = body;
+             const_entry_type = Some typ;
+             const_entry_opaque = false;
+	     const_entry_boxed = Options.boxed_definitions() } in
+  let _ = declare_constant (snd name) (DefinitionEntry ce, IsDefinition Scheme) in
+    if_verbose ppnl (recursive_message Fixpoint [snd name])
+
 (* 4| Goal declaration *)
 
 let start_proof id kind c hook =
