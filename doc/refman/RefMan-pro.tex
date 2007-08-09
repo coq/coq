@@ -299,7 +299,7 @@ This focuses the attention on the $\num^{\scriptsize th}$ subgoal to prove.
 Turns off the focus mode.
 
 
-\section{Displaying information}
+\section{Requesting information}
 
 \subsection[\tt Show.]{\tt Show.\comindex{Show}\label{Show}}
 This command displays the current goals.
@@ -378,14 +378,32 @@ along with the type and the context of each variable.
 
 \end{Variants}
 
+
+\subsection[\tt Guarded.]
+
+Some tactics (e.g. refine \ref{refine}) allow to build proofs using
+fixpoint or co-fixpoint constructions. Due to the incremental nature
+of interactive proof construction, the check of the termination (or
+guardedness) of the recursive calls in the fixpoint or cofixpoint
+constructions is postponed to the time of the completion of the proof.
+
+The command \verb!Guarded! allows to verify if the guard condition for
+fixpoint and cofixpoint is violated at some time of the construction
+of the proof without having to wait the completion of the proof."
+
+
 \subsection[\tt Set Hyps Limit {\num}.]{\tt Set Hyps Limit {\num}.\comindex{Set Hyps Limit}}
 This command sets the maximum number of hypotheses displayed in
 goals after the application of a tactic. 
 All the hypotheses remains usable in the proof development.
 
+
 \subsection[\tt Unset Hyps Limit.]{\tt Unset Hyps Limit.\comindex{Unset Hyps Limit}}
 This command goes back to the default mode which is to print all
 available hypotheses.
+
+
+
 
 \section{$DPL$ : A Declarative proof language for Coq \emph{(experimental)} }
 

@@ -393,31 +393,16 @@ let arity_of_case_predicate env (ind,params) dep k =
 (* A function which checks that a term well typed verifies both
    syntactic conditions *)
 
-let control_only_guard env = 
-  let rec control_rec c = match kind_of_term c with
-    | Rel _ | Var _    -> ()
-    | Sort _ | Meta _ -> ()
-    | Ind _       -> ()
-    | Construct _ -> ()
-    | Const _        -> ()
-    | CoFix (_,(_,tys,bds) as cofix) ->
-	Inductive.check_cofix env cofix;
-	Array.iter control_rec tys;
-	Array.iter control_rec bds;
-    | Fix (_,(_,tys,bds) as fix) ->
-	Inductive.check_fix env fix; 
-	Array.iter control_rec tys;
-	Array.iter control_rec bds;
-    | Case(_,p,c,b) -> control_rec p;control_rec c;Array.iter control_rec b
-    | Evar (_,cl)        -> Array.iter control_rec cl
-    | App (c,cl)         -> control_rec c; Array.iter control_rec cl
-    | Cast (c1,_, c2)  -> control_rec c1; control_rec c2
-    | Prod (_,c1,c2)     -> control_rec c1; control_rec c2
-    | Lambda (_,c1,c2)   -> control_rec c1; control_rec c2
-    | LetIn (_,c1,c2,c3) -> control_rec c1; control_rec c2; control_rec c3
+let control_only_guard env c = 
+  let check_fix_cofix e c = match kind_of_term c with
+    | CoFix (_,(_,_,_) as cofix) ->
+	Inductive.check_cofix e cofix
+    | Fix (_,(_,_,_) as fix) ->
+	Inductive.check_fix e fix
+    | _ -> ()
   in 
-  control_rec 
-
+    iter_constr_with_full_binders push_rel check_fix_cofix env c
+   
 let subst_inductive subst (kn,i as ind) = 
   let kn' = Mod_subst.subst_kn subst kn in
   if kn == kn' then ind else (kn',i)
