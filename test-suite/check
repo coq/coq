@@ -145,12 +145,82 @@ test_complexity() {
     fi
 }
 
+test_bugs () {
+    # Process verifications concerning submitted bugs. A message is
+    # printed for all opened bugs (still active or seem to be closed.
+    # For closed bugs that behave as expected, no message is printed
+
+    # All files are assumed to have <# of the bug>.v as a name
+
+    echo "Testing opened bugs..."
+    # We first test opened bugs that should not succeed
+    files=`/bin/ls -1 $1/opened/shoulnotsucceed/*.v 2> /dev/null`
+    for f in $files; do 
+	nbtests=`expr $nbtests + 1`
+	printf "    "$f"..."
+	$command $f $2 > /dev/null 2>&1 
+	if [ $? = 0 ]; then
+	    echo "still active"
+	    nbtestsok=`expr $nbtestsok + 1`
+        else 
+	    echo "Error! (bug seems to be closed, please check)"
+        fi 
+    done
+
+    # And opened bugs that should not fail
+    files=`/bin/ls -1 $1/opened/shouldnotfail/*.v 2> /dev/null`
+    for f in $files; do 
+	nbtests=`expr $nbtests + 1`
+	printf "    "$f"..."
+	$command $f > /dev/null 2>&1
+	if [ $? != 0 ]; then 
+	    echo "still active"
+	    nbtestsok=`expr $nbtestsok + 1`
+        else 
+	    echo "Error! (bug seems to be closed, please check)"
+        fi 
+    done
+
+    echo "Testing closed bugs..."
+    # Then closed bugs that should succeed
+    files=`/bin/ls -1 $1/closed/shouldsucceed/*.v 2> /dev/null`
+    for f in $files; do 
+	nbtests=`expr $nbtests + 1`
+	printf "    "$f"..."
+	$command $f $2 > /dev/null 2>&1 
+	if [ $? = 0 ]; then
+	    echo "Ok"
+	    nbtestsok=`expr $nbtestsok + 1`
+        else 
+	    echo "Error! (bug seems to be opened, please check)"
+        fi 
+    done
+
+
+    # At last, we test closed bugs that should fail
+    files=`/bin/ls -1 $1/bugs/closed/shouldfail/*.v 2> /dev/null`
+    for f in $files; do 
+	nbtests=`expr $nbtests + 1`
+	printf "    "$f"..."
+	$command $f > /dev/null 2>&1
+	if [ $? != 0 ]; then 
+	    echo "Ok"
+	    nbtestsok=`expr $nbtestsok + 1`
+        else 
+	    echo "Error! (bug seems to be opend, please check)"
+        fi 
+    done
+    
+}
+
 # Programme principal
 
 echo "Success tests"
 test_success success
 echo "Failure tests"
 test_failure failure
+echo "Bugs test"
+test_bugs bugs
 echo "Output tests"
 test_output output
 echo "Parser tests"
