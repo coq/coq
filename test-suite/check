@@ -219,7 +219,7 @@ echo "Success tests"
 test_success success
 echo "Failure tests"
 test_failure failure
-echo "Bugs test"
+echo "Bugs tests"
 test_bugs bugs
 echo "Output tests"
 test_output output
