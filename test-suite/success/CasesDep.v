@@ -430,3 +430,51 @@ Definition f0 (F : False) (ty : bool) : bProp ty :=
   | _, false => F
   | _, true => I
   end.
+
+(* Simplification of bug/wish #1671 *)
+
+Inductive I : unit -> Type :=
+| C : forall a, I a -> I tt.
+
+(*
+Definition F (l:I tt) : l = l := 
+match l return l = l with
+| C tt (C _ l')  => refl_equal (C tt (C _ l'))
+end.
+
+one would expect that the compilation of F (this involves
+some kind of pattern-unification) would produce: 
+*)
+
+Definition F (l:I tt) : l = l := 
+match l return l = l with
+| C tt l' => match l' return C _ l' = C _ l' with C _ l''  => refl_equal (C tt (C _ l'')) end
+end.
+
+Inductive J : nat -> Type :=
+| D : forall a, J (S a) -> J a.
+
+(*
+Definition G (l:J O) : l = l := 
+match l return l = l with
+| D O (D 1 l')  => refl_equal (D O (D 1 l'))
+| D _ _  => refl_equal _
+end.
+
+one would expect that the compilation of G (this involves inversion)
+would produce:
+*)
+
+Definition G (l:J O) : l = l := 
+match l return l = l with
+| D 0 l'' =>
+    match l'' as _l'' in J n return
+      match n return forall l:J n, Prop with
+      | O => fun _ => l = l
+      | S p => fun l'' => D p l'' = D p l''
+      end _l'' with
+    | D 1 l'  => refl_equal (D O (D 1 l'))
+    | _ => refl_equal _
+    end
+| _ => refl_equal _
+end.
