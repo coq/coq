@@ -996,18 +996,18 @@ let abstract_predicate env sigma indf cur tms = function
       (* Depending on whether the predicate is dependent or not, and has real
          args or not, we lift it to make room for [sign] *)
       (* Even if not intrinsically dep, we move the predicate into a dep one *)
-      let sign,k =
+      let sign,q =
         if names = [] & n <> 1 then
           (* Real args were not considered *)
           (if dep<>Anonymous then
-            ((let (_,c,t) = List.hd sign in (dep,c,t)::List.tl sign),n-1)
+            (let (_,c,t) = List.hd sign in (dep,c,t)::List.tl sign)
           else
-            (sign,n))
+            sign),n
         else
           (* Real args are OK *)
-          (List.map2 (fun na (_,c,t) -> (na,c,t)) (dep::names) sign,
-           if dep<>Anonymous then 0 else 1) in
-      let pred = lift_predicate k pred in
+          (List.map2 (fun na (_,c,t) -> (na,c,t)) (dep::names) sign,1) in
+      let q,k = if dep <> Anonymous then (q-1,2) else (q,1) in
+      let pred = liftn_predicate q k pred in
       let pred = extract_predicate [] (pred,tms) in
       (true, it_mkLambda_or_LetIn_name env pred sign)
 
@@ -1026,7 +1026,7 @@ let rec known_dependent = function
 let expand_arg n alreadydep (na,t) deps (k,pred) =
   (* current can occur in pred even if the original problem is not dependent *)
   let dep =
-    if alreadydep<>Anonymous then alreadydep
+    if alreadydep<>Anonymous then if na <> Anonymous then na else alreadydep
     else if deps = [] && noccurn_predicate 1 pred then Anonymous
     else Name (id_of_string "x") in
   let pred = if dep<>Anonymous then pred else lift_predicate (-1) pred in
