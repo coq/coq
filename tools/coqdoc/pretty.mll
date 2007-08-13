@@ -388,7 +388,9 @@ rule coq_bol = parse
 	coq_bol lexbuf }
   | space* "(*"
       { let eol = comment lexbuf in
-	  if eol then coq_bol lexbuf else coq lexbuf }
+	  if eol 
+	  then begin line_break(); coq_bol lexbuf end 
+	  else coq lexbuf }
   | eof 
       { () }
   | _
@@ -580,7 +582,7 @@ and comments = parse
 (*s Skip comments *)
 
 and comment = parse
-  | "(*" { ignore (comment lexbuf); comment lexbuf }
+  | "(*" { comment lexbuf }
   | "*)" space* '\n'+ { true }
   | "*)" { false }
   | eof  { false }
@@ -605,7 +607,9 @@ and body = parse
   | '.' space* '\n' | '.' space* eof { char '.'; line_break(); true }      
   | '.' space+ { char '.'; char ' '; false }
   | "(*" { let eol = comment lexbuf in 
-	     if eol then body_bol lexbuf else body lexbuf }
+	     if eol 
+	     then begin line_break(); body_bol lexbuf end
+	     else body lexbuf }
   | identifier 
       { let s = lexeme lexbuf in 
 	  ident s (lexeme_start lexbuf); 
