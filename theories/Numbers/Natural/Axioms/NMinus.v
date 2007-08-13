@@ -71,7 +71,7 @@ Proof.
 intros n m H; pattern n, m; apply le_ind_rel.
 unfold rel_wd; intros x x' H1 y y' H2; rewrite H1; now rewrite H2.
 intro; rewrite minus_0_r; now rewrite plus_0_r.
-clear n m H. intros n m _ H2. rewrite minus_comm_S. rewrite plus_n_Sm.
+clear n m H. intros n m _ H2. rewrite minus_comm_S. rewrite plus_S_r.
 now rewrite H2.
 assumption.
 Qed.

@@ -28,6 +28,31 @@ Ltac le_intro1 := rewrite le_lt; left.
 Ltac le_intro2 := rewrite le_lt; right.
 Ltac le_elim H := rewrite le_lt in H; destruct H as [H | H].
 
+Lemma lt_stepl : forall x y z, x < y -> x == z -> z < y.
+Proof.
+intros x y z H1 H2; now rewrite <- H2.
+Qed.
+
+Lemma lt_stepr : forall x y z, x < y -> y == z -> x < z.
+Proof.
+intros x y z H1 H2; now rewrite <- H2.
+Qed.
+
+Lemma le_stepl : forall x y z, x <= y -> x == z -> z <= y.
+Proof.
+intros x y z H1 H2; now rewrite <- H2.
+Qed.
+
+Lemma le_stepr : forall x y z, x <= y -> y == z -> x <= z.
+Proof.
+intros x y z H1 H2; now rewrite <- H2.
+Qed.
+
+Declare Left  Step lt_stepl.
+Declare Right Step lt_stepr.
+Declare Left  Step le_stepl.
+Declare Right Step le_stepr.
+
 Theorem le_refl : forall n, n <= n.
 Proof.
 intro; now le_intro2.
@@ -223,11 +248,11 @@ intros n m H; destruct (lt_trichotomy n m) as [A | A]; [now left |].
 now destruct A as [A | A]; [elim H | right].
 Qed.
 
-Theorem lt_exists_pred : forall n, 0 < n -> exists m, n == S m.
+Theorem lt_exists_pred : forall n m, m < n -> exists p, n == S p.
 Proof.
-induct n.
-intro H; false_hyp H lt_0.
-intros n IH H; now exists n.
+nondep_induct n.
+intros m H; false_hyp H lt_0.
+intros n _ _; now exists n.
 Qed.
 
 (** Elimination principles for < and <= *)

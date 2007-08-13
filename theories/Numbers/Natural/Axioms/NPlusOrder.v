@@ -4,7 +4,7 @@ Require Export NOrder.
 Module NPlusOrderProperties (Import NPlusModule : NPlusSignature)
                          (Import NOrderModule : NOrderSignature with
                            Module NatModule := NPlusModule.NatModule).
-Module Export NPlusPropertiesModule := NPlusProperties NPlusModule.
+Module Export NPlusPropertiesModule := NPlusProperties NatModule NPlusModule.
 Module Export NOrderPropertiesModule := NOrderProperties NOrderModule.
 Open Local Scope NatScope.
 
@@ -14,37 +14,69 @@ Proof.
 intros n m p; induct p.
 now rewrite plus_0_r.
 intros x IH H.
-rewrite plus_n_Sm. apply lt_closed_S. apply IH; apply H.
+rewrite plus_S_r. apply lt_closed_S. apply IH; apply H.
 Qed.
 
-Lemma plus_lt_compat_l : forall n m p, n < m -> p + n < p + m.
+Theorem plus_lt_compat_l : forall n m p, n < m -> p + n < p + m.
 Proof.
 intros n m p H; induct p.
-do 2 rewrite plus_0_n; assumption.
-intros x IH. do 2 rewrite plus_Sn_m. now apply <- lt_resp_S.
+do 2 rewrite plus_0_l; assumption.
+intros x IH. do 2 rewrite plus_S_l. now apply <- lt_resp_S.
 Qed.
 
-Lemma plus_lt_compat_r : forall n m p, n < m -> n + p < m + p.
+Theorem plus_lt_compat_r : forall n m p, n < m -> n + p < m + p.
 Proof.
 intros n m p H; rewrite plus_comm.
 set (k := p + n); rewrite plus_comm; unfold k; clear k.
 now apply plus_lt_compat_l.
 Qed.
 
-Lemma plus_lt_compat : forall n m p q, n < m -> p < q -> n + p < m + q.
+Theorem plus_lt_compat : forall n m p q, n < m -> p < q -> n + p < m + q.
 Proof.
 intros n m p q H1 H2.
 apply lt_trans with (m := m + p);
 [now apply plus_lt_compat_r | now apply plus_lt_compat_l].
 Qed.
 
-Lemma plus_lt_reg_l : forall n m p, p + n < p + m -> n < m.
+Theorem plus_lt_cancel_l : forall p n m, p + n < p + m <-> n < m.
 Proof.
-intros n m p; induct p.
-now do 2 rewrite plus_0_n.
-intros x IH H.
-do 2 rewrite plus_Sn_m in H.
-apply IH; now apply -> lt_resp_S.
+intros p n m; induct p.
+now do 2 rewrite plus_0_l.
+intros p IH.
+do 2 rewrite plus_S_l. now rewrite lt_resp_S.
+Qed.
+
+Theorem plus_lt_cancel_r : forall p n m, n + p < m + p <-> n < m.
+Proof.
+intros p n m;
+setoid_replace (n + p) with (p + n) by apply plus_comm;
+setoid_replace (m + p) with (p + m) by apply plus_comm;
+apply plus_lt_cancel_l.
+Qed.
+
+(* The following property is similar to plus_repl_pair in NPlus.v
+and is used to prove the correctness of the definition of order
+on integers constructed from pairs of natural numbers *)
+
+Theorem plus_lt_repl_pair : forall n m n' m' u v,
+  n + u < m + v -> n + m' == n' + m -> n' + u < m' + v.
+Proof.
+intros n m n' m' u v H1 H2.
+apply <- (plus_lt_cancel_r (n + m')) in H1.
+set (k := n + m') in H1 at 2; rewrite H2 in H1; unfold k in H1; clear k.
+rewrite <- plus_assoc in H1.
+setoid_replace (m + v + (n + m')) with (n + m' + (m + v)) in H1 by apply plus_comm.
+rewrite <- plus_assoc in H1. apply -> plus_lt_cancel_l in H1.
+rewrite plus_assoc in H1. setoid_replace (m + v) with (v + m) in H1 by apply plus_comm.
+rewrite plus_assoc in H1. apply -> plus_lt_cancel_r in H1.
+now rewrite plus_comm in H1.
+Qed.
+
+Theorem plus_gt_S :
+  forall n m p, n + m > S p -> (exists n', n == S n') \/ (exists m', m == S m').
+Proof.
+intros n m p H. apply lt_exists_pred in H. destruct H as [q H].
+now apply plus_eq_S in H.
 Qed.
 
 End NPlusOrderProperties.

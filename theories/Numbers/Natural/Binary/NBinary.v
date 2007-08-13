@@ -124,12 +124,12 @@ Proof.
 unfold E; congruence.
 Qed.
 
-Theorem plus_0_n : forall n, 0 + n = n.
+Theorem plus_0_l : forall n, 0 + n = n.
 Proof.
 exact Nplus_0_l.
 Qed.
 
-Theorem plus_Sn_m : forall n m, (S n) + m = S (n + m).
+Theorem plus_S_l : forall n m, (S n) + m = S (n + m).
 Proof.
 exact Nplus_succ.
 Qed.
@@ -146,26 +146,41 @@ Proof.
 unfold E; congruence.
 Qed.
 
-Theorem times_0_n : forall n, 0 * n = 0.
+Theorem times_0_r : forall n, n * 0 = 0.
 Proof.
-exact Nmult_0_l.
+intro n; rewrite Nmult_comm; apply Nmult_0_l.
 Qed.
 
-Theorem times_Sn_m : forall n m, (S n) * m = m + n * m.
+Theorem times_S_r : forall n m, n * (S m) = n * m + n.
 Proof.
-exact Nmult_Sn_m.
+intros n m; rewrite Nmult_comm; rewrite Nmult_Sn_m.
+rewrite Nplus_comm; now rewrite Nmult_comm.
 Qed.
 
 End NBinaryTimes.
 
-Module NBinaryLt <: NLtSignature.
+Module NBinaryOrder <: NOrderSignature.
 Module Export NatModule := BinaryNat.
 
-Definition lt (m n : N) := less_than (Ncompare m n).
+Definition lt (m n : N) := comp_bool (Ncompare m n) Lt.
+Definition le (m n : N) := let c := (Ncompare m n) in orb (comp_bool c Lt) (comp_bool c Eq).
 
 Add Morphism lt with signature E ==> E ==> eq_bool as lt_wd.
 Proof.
 unfold E; congruence.
+Qed.
+
+Add Morphism le with signature E ==> E ==> eq_bool as le_wd.
+Proof.
+unfold E; congruence.
+Qed.
+
+Theorem le_lt : forall n m, le n m <-> lt n m \/ n = m.
+Proof.
+intros n m.
+assert (H : (n ?= m) = Eq <-> n = m).
+(split; intro H); [now apply Ncompare_Eq_eq | rewrite H; apply Ncompare_refl].
+unfold le, lt; rewrite eq_true_or. repeat rewrite comp_bool_correct. now rewrite H.
 Qed.
 
 Theorem lt_0 : forall x, ~ (lt x 0).
@@ -173,19 +188,21 @@ Proof.
 unfold lt; destruct x as [|x]; simpl; now intro.
 Qed.
 
-Theorem lt_S : forall x y, lt x (S y) <-> lt x y \/ x = y.
+Theorem lt_S : forall x y, lt x (S y) <-> le x y.
 Proof.
-intros x y.
+intros x y. rewrite le_lt.
 assert (H1 : lt x (S y) <-> Ncompare x (S y) = Lt);
-[unfold lt, less_than; destruct (x ?= S y); simpl; split; now intro |].
+[unfold lt, comp_bool; destruct (x ?= S y); simpl; split; now intro |].
 assert (H2 : lt x y <-> Ncompare x y = Lt);
-[unfold lt, less_than; destruct (x ?= y); simpl; split; now intro |].
+[unfold lt, comp_bool; destruct (x ?= y); simpl; split; now intro |].
 pose proof (Ncompare_n_Sm x y) as H. tauto.
 Qed.
 
-End NBinaryLt.
+End NBinaryOrder.
 
-Module Export NBinaryTimesLtProperties := NTimesLtProperties NBinaryTimes NBinaryLt.
+Module Export NBinaryTimesOrderProperties := NTimesOrderProperties NBinaryTimes NBinaryOrder.
+
+(* Todo: N implements NPred.v and NMinus.v *)
 
 (*Module Export BinaryRecEx := MiscFunctFunctor BinaryNat.*)
 

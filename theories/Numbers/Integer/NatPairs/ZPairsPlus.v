@@ -1,6 +1,6 @@
-Require Export NTimesOrder.
-Require Export ZTimesOrder.
-Require Import ZPairsAxioms.
+Require Import NPlus.
+Require Export ZPlus.
+Require Export ZPairsAxioms.
 
 Module NatPairsPlus (Import NPlusModule : NPlusSignature) <: ZPlusSignature.
 Module Export IntModule := NatPairsInt NPlusModule.
@@ -46,12 +46,12 @@ Open Local Scope IntScope.
 
 Theorem plus_0 : forall n, 0 + n == n.
 Proof.
-intro n; unfold plus, E; simpl. now do 2 rewrite NPlusModule.plus_0_n.
+intro n; unfold plus, E; simpl. now do 2 rewrite NPlusModule.plus_0_l.
 Qed.
 
 Theorem plus_S : forall n m, (S n) + m == S (n + m).
 Proof.
-intros n m; unfold plus, E; simpl. now do 2 rewrite NPlusModule.plus_Sn_m.
+intros n m; unfold plus, E; simpl. now do 2 rewrite NPlusModule.plus_S_l.
 Qed.
 
 Theorem minus_0 : forall n, n - 0 == n.
@@ -61,12 +61,12 @@ Qed.
 
 Theorem minus_S : forall n m, n - (S m) == P (n - m).
 Proof.
-intros n m; unfold minus, E; simpl. symmetry; now rewrite plus_n_Sm.
+intros n m; unfold minus, E; simpl. symmetry; now rewrite plus_S_r.
 Qed.
 
 Theorem uminus_0 : - 0 == 0.
 Proof.
-unfold uminus, E; simpl. now rewrite plus_0_n.
+unfold uminus, E; simpl. now rewrite plus_0_l.
 Qed.
 
 Theorem uminus_S : forall n, - (S n) == P (- n).
@@ -77,6 +77,6 @@ Qed.
 End NatPairsPlus.
 
 Module NatPairsPlusProperties (NPlusModule : NPlusSignature).
-Module NatPairsPlusModule := NatPairsPlus NPlusModule.
+Module Export NatPairsPlusModule := NatPairsPlus NPlusModule.
 Module Export NatPairsPlusPropertiesModule := ZPlusProperties NatPairsPlusModule.
 End NatPairsPlusProperties.

@@ -1,9 +1,10 @@
+Require Import Ring.
 Require Export NumPrelude.
 
 Module Type NDomainSignature.
 
 Parameter Inline N : Set.
-Parameter Inline E : relation N.
+Parameter Inline E : N -> N -> Prop.
 Parameter Inline e : N -> N -> bool.
 
 (* Theoretically, we it is enough to have decidable equality e only.
@@ -65,6 +66,11 @@ Module NDomainProperties (Import NDomainModule : NDomainSignature).
 (* It also accepts module of type NatDomainEq *)
 Open Local Scope NatScope.
 
+Theorem Zneq_symm : forall n m, n # m -> m # n.
+Proof.
+intros n m H1 H2; symmetry in H2; false_hyp H2 H1.
+Qed.
+
 (* The following easily follows from transitivity of e and E, but
 we need to deal with the coercion *)
 Add Morphism e with signature E ==> E ==> eq_bool as e_wd.
@@ -78,5 +84,18 @@ assert (x' == y'); [apply <- E_equiv_e; now rewrite H1 |
 assert (x == y); [rewrite Exx'; now rewrite Eyy' |
 rewrite <- H2; assert (H3 : e x y); [now apply -> E_equiv_e | now inversion H3]]].
 Qed.
+
+Theorem NE_stepl : forall x y z : N, x == y -> x == z -> z == y.
+Proof.
+intros x y z H1 H2; now rewrite <- H1.
+Qed.
+
+Declare Left Step NE_stepl.
+
+(* The right step lemma is just transitivity of E *)
+Declare Right Step (proj1 (proj2 E_equiv)).
+
+Ltac stepl_ring t := stepl t; [| ring].
+Ltac stepr_ring t := stepr t; [| ring].
 
 End NDomainProperties.

@@ -4,48 +4,56 @@ Module Type NPlusSignature.
 Declare Module Export NatModule : NatSignature.
 Open Local Scope NatScope.
 
-Parameter Inline plus : N -> N -> N.
+Parameter (*Inline*) plus : N -> N -> N.
 
 Notation "x + y" := (plus x y) : NatScope.
 
 Add Morphism plus with signature E ==> E ==> E as plus_wd.
 
-Axiom plus_0_n : forall n, 0 + n == n.
-Axiom plus_Sn_m : forall n m, (S n) + m == S (n + m).
+Axiom plus_0_l : forall n, 0 + n == n.
+Axiom plus_S_l : forall n m, (S n) + m == S (n + m).
 
 End NPlusSignature.
 
-Module NPlusProperties (Import NPlusModule : NPlusSignature).
+Module NPlusProperties
+  (NatMod : NatSignature)
+  (Import NPlusModule : NPlusSignature with Module NatModule := NatMod).
 Module Export NatPropertiesModule := NatProperties NatModule.
+Import NatMod.
 Open Local Scope NatScope.
+
+(* If H1 : t1 == u1 and H2 : t2 == u2 then "add_equations H1 H2 as H3"
+adds the hypothesis H3 : t1 + t2 == u1 + u2 *)
+Tactic Notation "add_equations" constr(H1) constr(H2) "as" ident(H3) :=
+match (type of H1) with
+| ?t1 == ?u1 => match (type of H2) with
+              | ?t2 == ?u2 => pose proof (plus_wd t1 u1 H1 t2 u2 H2) as H3
+              | _ => fail 2 ":" H2 "is not an equation"
+              end
+| _ => fail 1 ":" H1 "is not an equation"
+end.
 
 Theorem plus_0_r : forall n, n + 0 == n.
 Proof.
 induct n.
-now rewrite plus_0_n.
+now rewrite plus_0_l.
 intros x IH.
-rewrite plus_Sn_m.
+rewrite plus_S_l.
 now rewrite IH.
 Qed.
 
-Theorem plus_0_l : forall n, 0 + n == n.
-Proof.
-intro n.
-now rewrite plus_0_n.
-Qed.
-
-Theorem plus_n_Sm : forall n m, n + S m == S (n + m).
+Theorem plus_S_r : forall n m, n + S m == S (n + m).
 Proof.
 intros n m; generalize n; clear n. induct n.
-now repeat rewrite plus_0_n.
+now repeat rewrite plus_0_l.
 intros x IH.
-repeat rewrite plus_Sn_m; now rewrite IH.
+repeat rewrite plus_S_l; now rewrite IH.
 Qed.
 
-Theorem plus_Sn_m : forall n m, S n + m == S (n + m).
+Theorem plus_S_l : forall n m, S n + m == S (n + m).
 Proof.
 intros.
-now rewrite plus_Sn_m.
+now rewrite plus_S_l.
 Qed.
 
 Theorem plus_comm : forall n m, n + m == m + n.
@@ -53,7 +61,7 @@ Proof.
 intros n m; generalize n; clear n. induct n.
 rewrite plus_0_l; now rewrite plus_0_r.
 intros x IH.
-rewrite plus_Sn_m; rewrite plus_n_Sm; now rewrite IH.
+rewrite plus_S_l; rewrite plus_S_r; now rewrite IH.
 Qed.
 
 Theorem plus_assoc : forall n m p, n + (m + p) == (n + m) + p.
@@ -61,7 +69,7 @@ Proof.
 intros n m p; generalize n; clear n. induct n.
 now repeat rewrite plus_0_l.
 intros x IH.
-repeat rewrite plus_Sn_m; now rewrite IH.
+repeat rewrite plus_S_l; now rewrite IH.
 Qed.
 
 Theorem plus_shuffle1 : forall n m p q, (n + m) + (p + q) == (n + p) + (m + q).
@@ -81,7 +89,7 @@ Qed.
 
 Theorem plus_1_l : forall n, 1 + n == S n.
 Proof.
-intro n; rewrite plus_Sn_m; now rewrite plus_0_n.
+intro n; rewrite plus_S_l; now rewrite plus_0_l.
 Qed.
 
 Theorem plus_1_r : forall n, n + 1 == S n.
@@ -92,8 +100,8 @@ Qed.
 Theorem plus_cancel_l : forall n m p, p + n == p + m -> n == m.
 Proof.
 induct p.
-do 2 rewrite plus_0_n; trivial.
-intros p IH H. do 2 rewrite plus_Sn_m in H. apply S_inj in H. now apply IH.
+do 2 rewrite plus_0_l; trivial.
+intros p IH H. do 2 rewrite plus_S_l in H. apply S_inj in H. now apply IH.
 Qed.
 
 Theorem plus_cancel_r : forall n m p, n + p == m + p -> n == m.
@@ -107,8 +115,8 @@ Qed.
 Theorem plus_eq_0 : forall n m, n + m == 0 -> n == 0 /\ m == 0.
 Proof.
 intros n m; induct n.
-rewrite plus_0_n; now split.
-intros n IH H. rewrite plus_Sn_m in H.
+rewrite plus_0_l; now split.
+intros n IH H. rewrite plus_S_l in H.
 absurd_hyp H; [|assumption]. unfold not; apply S_0.
 Qed.
 
@@ -124,26 +132,8 @@ Theorem succ_plus_discr : forall n m, m # S (n + m).
 Proof.
 intro n; induct m.
 intro H. apply S_0 with (n := (n + 0)). now apply (proj2 (proj2 E_equiv)). (* symmetry *)
-intros m IH H. apply S_inj in H. rewrite plus_n_Sm in H.
+intros m IH H. apply S_inj in H. rewrite plus_S_r in H.
 unfold not in IH; now apply IH.
-Qed.
-
-Theorem n_SSn : forall n, n # S (S n).
-Proof.
-intro n. pose proof (succ_plus_discr 1 n) as H.
-rewrite plus_Sn_m in H; now rewrite plus_0_n in H.
-Qed.
-
-Theorem n_SSSn : forall n, n # S (S (S n)).
-Proof.
-intro n. pose proof (succ_plus_discr (S (S 0)) n) as H.
-do 2 rewrite plus_Sn_m in H. now rewrite plus_0_n in H.
-Qed.
-
-Theorem n_SSSSn : forall n, n # S (S (S (S n))).
-Proof.
-intro n. pose proof (succ_plus_discr (S (S (S 0))) n) as H.
-do 3 rewrite plus_Sn_m in H. now rewrite plus_0_n in H.
 Qed.
 
 (* The following section is devoted to defining a function that, given
@@ -154,8 +144,8 @@ main property of the function is also proved .*)
 Theorem plus_eq_1 :
   forall m n, m + n == 1 ->  (m == 0 /\ n == 1) \/ (m == 1 /\ n == 0).
 induct m.
-intros n H; rewrite plus_0_n in H; left; now split.
-intros n IH m H; rewrite plus_Sn_m in H; apply S_inj in H;
+intros n H; rewrite plus_0_l in H; left; now split.
+intros n IH m H; rewrite plus_S_l in H; apply S_inj in H;
 apply plus_eq_0 in H; destruct H as [H1 H2];
 now right; split; [apply S_wd |].
 Qed.
@@ -201,7 +191,7 @@ rewrite plus_eq_1_dec_0.
 split; [intros; now split | intro H1; discriminate H1].
 intros m _ H. rewrite plus_eq_1_dec_S.
 split; [intro H1; discriminate | intros _ ].
-rewrite plus_Sn_m in H. apply S_inj in H.
+rewrite plus_S_l in H. apply S_inj in H.
 apply plus_eq_0 in H; split; [apply S_wd | ]; tauto.
 Qed.
 
@@ -231,47 +221,9 @@ intros n IH.
 (* destruct IH as [p H | p H]. does not print a goal in ProofGeneral *)
 destruct IH as [[p H] | [p H]].
 destruct (O_or_S p) as [H1 | [p' H1]]; rewrite H1 in H.
-rewrite plus_0_l in H. right; exists (S 0); rewrite H; rewrite plus_Sn_m; now rewrite plus_0_l.
-left; exists p'; rewrite plus_n_Sm; now rewrite plus_Sn_m in H.
-right; exists (S p). rewrite plus_Sn_m; now rewrite H.
+rewrite plus_0_l in H. right; exists (S 0); rewrite H; rewrite plus_S_l; now rewrite plus_0_l.
+left; exists p'; rewrite plus_S_r; now rewrite plus_S_l in H.
+right; exists (S p). rewrite plus_S_l; now rewrite H.
 Qed.
-
-(* In proving the correctness of the definition of multiplication on
-integers constructed from pairs of natural numbers, we'll need the
-following fact about natural numbers:
-
-a * x + u == a * y + v -> x + y' == x' + y -> a * x' + u = a * y' + v  (2)
-
-Here x + y' == x' + y represents equality of integers (x, y) and
-(x', y'), since a pair of natural numbers represents their integer
-difference. On integers, the (2) could be proved by moving
-a * y to the left, factoring out a and replacing x - y by x' - y'.
-However, the whole point is that we are only in the process of
-constructing integers, so this has to be proved for natural numbers,
-where we cannot move terms from one side of an equation to the other.
-We first prove the special case of (2) where a == 1. *)
-
-Theorem plus_repl_pair : forall n m n' m' u v,
-  n + u == m + v -> n + m' == n' + m -> n' + u == m' + v.
-Proof.
-induct n.
-intros m n' m' u v H1 H2. rewrite plus_0_l in H1. rewrite plus_0_l in H2.
-rewrite H1; rewrite H2. now rewrite plus_assoc.
-intros n IH m n' m' u v H1 H2. rewrite plus_Sn_m in H1. rewrite plus_Sn_m in H2.
-assert (H : (exists m'', m == S m'') \/ ((exists v', v == S v') /\ (exists n'', n' == S n''))).
-symmetry in H1; symmetry in H2;
-destruct (plus_eq_S m v (n + u) H1); destruct (plus_eq_S n' m (n + m') H2).
-now left. now left. right; now split. now left.
-(* destruct H as [[m'' H] | [v' H3] [n'' H4]]. *)
-(* The command above produces a warning and the PG does not show a goal !!! *) 
-destruct H as [[m'' H] | [[v' H3] [n'' H4]]].
-rewrite H in H1, H2. rewrite plus_Sn_m in H1; rewrite plus_n_Sm in H2.
-apply S_inj in H1; apply S_inj in H2. now apply (IH m'').
-rewrite H3; rewrite H4; rewrite plus_Sn_m; rewrite plus_n_Sm; apply S_wd.
-rewrite H3 in H1; rewrite H4 in H2; rewrite plus_Sn_m in H2; rewrite plus_n_Sm in H1;
-apply S_inj in H1; apply S_inj in H2. now apply (IH m).
-Qed.
-
-(* The formula (2) will be proved in NTimes.v *)
 
 End NPlusProperties.

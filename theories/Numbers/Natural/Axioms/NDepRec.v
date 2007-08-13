@@ -50,8 +50,8 @@ use E instead of = in our formulas. *)
 Proof.
 intros m n; pattern m; apply dep_recursion; clear m.
 intro H.
-rewrite plus_0_n in H. left; now split.
-intros m IH H. rewrite plus_Sn_m in H. apply S_inj in H.
+rewrite plus_0_l in H. left; now split.
+intros m IH H. rewrite plus_S_l in H. apply S_inj in H.
 apply plus_eq_0 in H. destruct H as [H1 H2].
 right; now split; [rewrite H1 |].
 Qed.
@@ -65,7 +65,7 @@ intros; left; reflexivity.
 intros; left; reflexivity.
 intros; right; reflexivity.
 intros n _ m _ H.
-rewrite times_Sn_m in H; rewrite plus_Sn_m in H; now apply S_0 in H.
+rewrite times_S_l in H. rewrite plus_S_r in H; now apply S_0 in H.
 Qed.
 
 End NDepRecTimesProperties.

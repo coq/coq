@@ -16,7 +16,7 @@ not make sense to get unqualified access to O and S but not to N. *)
 Open Local Scope NatScope.
 
 Parameter Inline O : N.
-Parameter Inline S : N -> N.
+Parameter (*Inline*) S : N -> N.
 
 Notation "0" := O : NatScope.
 Notation "1" := (S O) : NatScope.
@@ -174,14 +174,21 @@ Implicit Arguments recursion_S [A].
 
 End NatSignature.
 
-(* We would like to have a signature for the predecessor: first, to be
-able to provide an efficient implementation, and second, to be able to
-use this function in the signatures defining other functions, e.g.,
-subtraction. If we just define predecessor by recursion in
-NatProperties functor, we would not be able to use it in other
-signatures. We cannot put the functor NDefPred below in a different
-file because the definition of the predecessor uses recursion and the
-proof of injectivity of the successor uses the predecessor. *)
+(* We use the predecessor function to prove the injectivity of S. There
+are two ways to get this function: define it by primitive recursion, or
+declare a signature and allow the user to provide an implementation,
+similar to how this is done to plus, times, etc. We would like to use
+the first option: first, to allow the user to provide an efficient
+implementation, and second, to be able to use predecessor in signatures
+defining other functions, e.g., subtraction. If we just define
+predecessor by recursion in the NatProperties functor, we would not be
+able to use it in other signatures, since those signatures do not invoke
+the NatProperties functor. After giving a signature for the predecessor,
+we define the functor NDefPred, which defines an implementation of a
+predecessor by primitive recursion. We cannot put NDefPred in a
+different file because the definition of the predecessor uses recursion,
+which is introduced in this file, and the proof of injectivity of the
+successor (also in this file) uses the predecessor. *)
 
 Module Type NPredSignature.
 Declare Module Export NatModule : NatSignature.
@@ -235,6 +242,21 @@ Ltac induct n :=
   let m := fresh "m" in
   let H := fresh "H" in intros n m H; qmorphism n m | |].
 
+Theorem nondep_induction :
+  forall P : N -> Prop, NumPrelude.pred_wd E P ->
+    P 0 -> (forall n, P (S n)) -> forall n, P n.
+Proof.
+intros; apply induction; auto.
+Qed.
+
+Ltac nondep_induct n :=
+  try intros until n;
+  pattern n; apply nondep_induction; clear n;
+  [unfold NumPrelude.pred_wd;
+  let n := fresh "n" in
+  let m := fresh "m" in
+  let H := fresh "H" in intros n m H; qmorphism n m | |].
+
 Definition if_zero (A : Set) (a b : A) (n : N) : A :=
   recursion a (fun _ _ => b) n.
 
@@ -278,16 +300,52 @@ setoid_replace n with (P (S n)) by (symmetry; apply P_S).
 now apply P_wd.
 Qed.
 
-Theorem not_eq_S : forall n m, n # m -> S n # S m.
+Theorem S_inj_contrap : forall n m, n # m -> S n # S m.
 Proof.
 intros n m H1 H2. apply S_inj in H2. now apply H1.
 Qed.
 
-Theorem not_eq_Sn_n : forall n, S n # n.
+Definition iter_S (k : nat) (n : N) :=
+  nat_rec (fun _ => N) n (fun _ p => S p) k.
+
+Add Morphism iter_S with signature (@eq nat) ==> E ==> E as iter_S_wd.
 Proof.
-induct n.
+intros k n m; induction k as [| k IH]; simpl in *.
+trivial.
+intro; apply S_wd; now apply IH.
+Qed.
+
+Theorem iter_S_S : forall (k : nat) (n : N), iter_S k (S n) == S (iter_S k n).
+Proof.
+now (intros k n; induction k; simpl); [| apply S_wd].
+Qed.
+
+Theorem iter_S_neq_0 : forall k : nat, iter_S (Datatypes.S k) 0 # 0.
+Proof.
+destruct k; simpl; apply S_0.
+Qed.
+
+Theorem iter_S_neq : forall (k : nat) (n : N), iter_S (Datatypes.S k) n # n.
+Proof.
+intro k; induct n; simpl.
 apply S_0.
-intros n IH H. apply S_inj in H. now apply IH.
+intros n IH H. apply S_inj in H. apply IH. now rewrite <- iter_S_S.
+Qed.
+
+Theorem S_neq : forall n, S n # n.
+Proof.
+intro n; apply (iter_S_neq 0 n).
+(* "apply iter_S_neq with (k := 0) (n := n)" does not work here !!! *)
+Qed.
+
+Theorem SS_neq : forall n, S (S n) # n.
+Proof.
+intro n; apply (iter_S_neq 1 n).
+Qed.
+
+Theorem SSS_neq : forall n, S (S (S n)) # n.
+Proof.
+intro n; apply (iter_S_neq 2 n).
 Qed.
 
 Theorem not_all_eq_0 : ~ forall n, n == 0.
@@ -301,21 +359,6 @@ intro n; split.
 induct n; [intro H; now elim H | intros n _ _; now exists n].
 intro H; destruct H as [m H]; rewrite H; apply S_0.
 Qed.
-
-Theorem nondep_induction :
-  forall P : N -> Prop, NumPrelude.pred_wd E P ->
-    P 0 -> (forall n, P (S n)) -> forall n, P n.
-Proof.
-intros; apply induction; auto.
-Qed.
-
-Ltac nondep_induct n :=
-  try intros until n;
-  pattern n; apply nondep_induction; clear n;
-  [unfold NumPrelude.pred_wd;
-  let n := fresh "n" in
-  let m := fresh "m" in
-  let H := fresh "H" in intros n m H; qmorphism n m | |].
 
 Theorem O_or_S : forall n, n == 0 \/ exists m, n == S m.
 Proof.

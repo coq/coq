@@ -42,16 +42,15 @@ Qed.
 (*****************************************************)
 (**                  Multiplication                  *)
 
-Definition times (x y : N) := recursion 0 (fun x p => plus y p) x.
+Definition times (x y : N) := recursion 0 (fun _ p => plus p x) y.
 
-Lemma times_step_wd : forall y, fun2_wd E E E (fun x p => plus y p).
+Lemma times_step_wd : forall x, fun2_wd E E E (fun _ p => plus p x).
 Proof.
-unfold fun2_wd. intros y _ _ _ p p' Ezz'.
-now apply plus_wd.
+unfold fun2_wd. intros. now apply plus_wd.
 Qed.
 
 Lemma times_step_equal :
-  forall y y', y == y' -> eq_fun2 E E E (fun x p => plus y p) (fun x p => plus y' p).
+  forall x x', x == x' -> eq_fun2 E E E (fun _ p => plus p x) (fun x p => plus p x').
 Proof.
 unfold eq_fun2; intros; apply plus_wd; assumption.
 Qed.
@@ -64,12 +63,12 @@ apply recursion_wd with (EA := E).
 reflexivity. apply times_step_equal. assumption. assumption.
 Qed.
 
-Theorem times_0 : forall y, times 0 y == 0.
+Theorem times_0_r : forall x, times x 0 == 0.
 Proof.
-intro y. unfold times. now rewrite recursion_0.
+intro. unfold times. now rewrite recursion_0.
 Qed.
 
-Theorem times_S : forall x y, times (S x) y == plus y (times x y).
+Theorem times_S_r : forall x y, times x (S y) == plus (times x y) x.
 Proof.
 intros x y; unfold times.
 now rewrite (recursion_S E); [| apply times_step_wd |].
@@ -91,7 +90,7 @@ Definition le (n m : N) := lt n m || e n m.
 Theorem le_lt : forall n m, le n m <-> lt n m \/ n == m.
 Proof.
 intros n m. rewrite E_equiv_e. unfold le.
-do 3 rewrite eq_true_unfold.
+do 3 rewrite eq_true_unfold_pos.
 assert (H : lt n m || e n m = true <-> lt n m = true \/ e n m = true).
 split; [apply orb_prop | apply orb_true_intro].
 now rewrite H.
@@ -329,12 +328,12 @@ Proof.
 exact plus_wd.
 Qed.
 
-Theorem plus_0_n : forall n, plus 0 n == n.
+Theorem plus_0_l : forall n, plus 0 n == n.
 Proof.
 exact plus_0.
 Qed.
 
-Theorem plus_Sn_m : forall n m, plus (S n) m == S (plus n m).
+Theorem plus_S_l : forall n m, plus (S n) m == S (plus n m).
 Proof.
 exact plus_S.
 Qed.
@@ -351,15 +350,8 @@ Proof.
 exact times_wd.
 Qed.
 
-Theorem times_0_n : forall n, times 0 n == 0.
-Proof.
-exact times_0.
-Qed.
-
-Theorem times_Sn_m : forall n m, times (S n) m == plus m (times n m).
-Proof.
-exact times_S.
-Qed.
+Definition times_0_r := times_0_r.
+Definition times_S_r := times_S_r.
 
 End NDefaultTimesModule.
 

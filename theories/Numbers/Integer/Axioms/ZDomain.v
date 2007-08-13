@@ -2,9 +2,9 @@ Require Export NumPrelude.
 
 Module Type ZDomainSignature.
 
-Parameter Z : Set.
-Parameter E : relation Z.
-Parameter e : Z -> Z -> bool.
+Parameter Inline Z : Set.
+Parameter Inline E : Z -> Z -> Prop.
+Parameter Inline e : Z -> Z -> bool.
 
 Axiom E_equiv_e : forall x y : Z, E x y <-> e x y.
 Axiom E_equiv : equiv Z E.
@@ -41,5 +41,15 @@ Theorem neq_symm : forall n m, n # m -> m # n.
 Proof.
 intros n m H1 H2; symmetry in H2; false_hyp H2 H1.
 Qed.
+
+Theorem ZE_stepl : forall x y z : Z, x == y -> x == z -> z == y.
+Proof.
+intros x y z H1 H2; now rewrite <- H1.
+Qed.
+
+Declare Left Step ZE_stepl.
+
+(* The right step lemma is just transitivity of E *)
+Declare Right Step (proj1 (proj2 E_equiv)).
 
 End ZDomainProperties.

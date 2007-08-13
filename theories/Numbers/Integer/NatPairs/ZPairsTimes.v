@@ -1,12 +1,14 @@
+Require Import Ring.
+Require Import NTimes.
+Require Export ZTimes.
 Require Export ZPairsPlus.
 
 Module NatPairsTimes (Import NTimesModule : NTimesSignature) <: ZTimesSignature.
-Module Import ZPlusModule := NatPairsPlus NTimesModule.NPlusModule. (* "NTimesModule." is optional *)
+Module Export ZPlusModule := NatPairsPlus NTimesModule.NPlusModule. (* "NTimesModule." is optional *)
+Module Import NTimesPropertiesModule := NTimesProperties NTimesModule.
 Open Local Scope NatScope.
 
 Definition times (n m : Z) :=
-(*  let (n1, n2) := n in
-  let (m1, m2) := m in (n1 * m1 + n2 * m2, n1 * m2 + n2 * m1).*)
   ((fst n) * (fst m) + (snd n) * (snd m), (fst n) * (snd m) + (snd n) * (fst m)).
 
 Notation "x * y" := (times x y) : IntScope.
@@ -14,24 +16,40 @@ Notation "x * y" := (times x y) : IntScope.
 Add Morphism times with signature E ==> E ==> E as times_wd.
 Proof.
 unfold times, E; intros x1 y1 H1 x2 y2 H2; simpl.
-assert ((fst x1) + (fst y1) == (fst y1) + (fst x1)).
+stepl_ring (fst x1 * fst x2 + (snd x1 * snd x2 + fst y1 * snd y2 + snd y1 * fst y2)).
+stepr_ring (fst x1 * snd x2 + (fst y1 * fst y2 + snd y1 * snd y2 + snd x1 * fst x2)).
+apply plus_times_repl_pair with (n := fst y2) (m := snd y2); [| now idtac].
+stepl_ring (snd x1 * snd x2 + (fst x1 * fst y2 + fst y1 * snd y2 + snd y1 * fst y2)).
+stepr_ring (snd x1 * fst x2 + (fst x1 * snd y2 + fst y1 * fst y2 + snd y1 * snd y2)).
+apply plus_times_repl_pair with (n := snd y2) (m := fst y2);
+  [| rewrite plus_comm; symmetry; now rewrite plus_comm].
+stepl_ring (snd y2 * snd x1 + (fst x1 * fst y2 + fst y1 * snd y2 + snd y1 * fst y2)).
+stepr_ring (snd y2 * fst x1 + (snd x1 * fst y2 + fst y1 * fst y2 + snd y1 * snd y2)).
+apply plus_times_repl_pair with (n := snd y1) (m := fst y1);
+  [| rewrite plus_comm; symmetry; now rewrite plus_comm].
+stepl_ring (fst y2 * fst x1 + (snd y2 * snd y1 + fst y1 * snd y2 + snd y1 * fst y2)).
+stepr_ring (fst y2 * snd x1 + (snd y2 * fst y1 + fst y1 * fst y2 + snd y1 * snd y2)).
+apply plus_times_repl_pair with (n := fst y1) (m := snd y1); [| now idtac].
 ring.
+Qed.
 
+Open Local Scope IntScope.
 
-Axiom times_0 : forall n, n * 0 == 0.
-Axiom times_S : forall n m, n * (S m) == n * m + n.
+Theorem times_0 : forall n, n * 0 == 0.
+Proof.
+intro n; unfold times, E; simpl.
+repeat rewrite times_0_r. now rewrite plus_assoc.
+Qed.
 
-(* Here recursion is done on the second argument to conform to the
-usual definition of ordinal multiplication in set theory, which is not
-commutative. It seems, however, that this definition in set theory is
-unfortunate for two reasons. First, multiplication of two ordinals A
-and B can be defined as (an order type of) the cartesian product B x A
-(not A x B) ordered lexicographically. For example, omega * 2 =
-2 x omega = {(0,0) < (0,1) < (0,2) < ... < (1,0) < (1,1) < (1,2) < ...},
-while 2 * omega = omega x 2 = {(0,0) < (0,1) < (1,0) < (1,1) < (2,0) <
-(2,1) < ...} = omega. Secondly, the way the product 2 * 3 is said in
-French (deux fois trois) and Russian (dvazhdy tri) implies 3 + 3, not
-2 + 2 + 2. So it would possibly be more reasonable to define multiplication
-(here as well as in set theory) by recursion on the first argument. *)
+Theorem times_S : forall n m, n * (S m) == n * m + n.
+Proof.
+intros n m; unfold times, S, E; simpl.
+do 2 rewrite times_S_r. ring.
+Qed.
 
-End ZTimesSignature.
+End NatPairsTimes.
+
+Module NatPairsTimesProperties (NTimesModule : NTimesSignature).
+Module Export NatPairsTimesModule := NatPairsTimes NTimesModule.
+Module Export NatPairsTimesPropertiesModule := ZTimesProperties NatPairsTimesModule.
+End NatPairsTimesProperties.

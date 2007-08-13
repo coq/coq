@@ -1,14 +1,19 @@
 Require Export Setoid.
-Require Import Bool.
+Require Export Bool.
+(* Standard library. Export, not Import, because if a file
+importing the current file wants to use. e.g.,
+Theorem eq_true_or : forall b1 b2 : bool, b1 || b2 <-> b1 \/ b2,
+then it needs to know about bool and have a notation ||. *)
+
 
 (*
 Contents:
 - Coercion from bool to Prop
+- Extension of the tactics stepl and stepr
 - An attempt to extend setoid rewrite to formulas with quantifiers
 - Extentional properties of predicates, relations and functions
   (well-definedness and equality)
 - Relations on cartesian product
-- Some boolean functions on nat
 - Miscellaneous
 *)
 
@@ -19,17 +24,65 @@ Definition eq_bool := (@eq bool).
 Inductive eq_true : bool -> Prop := is_eq_true : eq_true true.
 Coercion eq_true : bool >-> Sortclass.
 
-Theorem eq_true_unfold : forall b : bool, b <-> b = true.
+Theorem eq_true_unfold_pos : forall b : bool, b <-> b = true.
 Proof.
-intro b; split; intro H.
-now inversion H.
-now rewrite H.
+intro b; split; intro H. now inversion H. now rewrite H.
 Qed.
 
-Theorem eq_true_neg : forall x : bool, ~ x -> x = false.
+Theorem eq_true_unfold_neg : forall b : bool, ~ b <-> b = false.
 Proof.
-intros x H; destruct x; [elim (H is_eq_true) | reflexivity].
+intros b; destruct b; simpl; rewrite eq_true_unfold_pos.
+split; intro H; [elim (H (refl_equal true)) | discriminate H].
+split; intro H; [reflexivity | discriminate].
 Qed.
+
+Theorem eq_true_or : forall b1 b2 : bool, b1 || b2 <-> b1 \/ b2.
+Proof.
+destruct b1; destruct b2; simpl; tauto.
+Qed.
+
+Theorem eq_true_and : forall b1 b2 : bool, b1 && b2 <-> b1 /\ b2.
+Proof.
+destruct b1; destruct b2; simpl; tauto.
+Qed.
+
+Theorem eq_true_neg : forall b : bool, negb b <-> ~ b.
+Proof.
+destruct b; simpl; rewrite eq_true_unfold_pos; rewrite eq_true_unfold_neg;
+split; now intro.
+Qed.
+
+Theorem eq_true_iff : forall b1 b2 : bool, b1 = b2 <-> (b1 <-> b2).
+Proof.
+intros b1 b2; split; intro H.
+now rewrite H.
+destruct b1; destruct b2; simpl; try reflexivity.
+apply -> eq_true_unfold_neg. rewrite H. now intro.
+symmetry; apply -> eq_true_unfold_neg. rewrite <- H; now intro.
+Qed.
+
+(** Extension of the tactics stepl and stepr to make them
+applicable to hypotheses *)
+
+Tactic Notation "stepl" constr(t1') "in" hyp(H) :=
+match (type of H) with
+| ?R ?t1 ?t2 =>
+  let H1 := fresh in
+  cut (R t1' t2); [clear H; intro H | stepl t1; [assumption |]]
+| _ => fail 1 ": the hypothesis" H "does not have the form (R t1 t2)"
+end.
+
+Tactic Notation "stepl" constr(t1') "in" hyp(H) "by" tactic(r) := stepl t1' in H; [| r].
+
+Tactic Notation "stepr" constr(t2') "in" hyp(H) :=
+match (type of H) with
+| ?R ?t1 ?t2 =>
+  let H1 := fresh in
+  cut (R t1 t2'); [clear H; intro H | stepr t2; [assumption |]]
+| _ => fail 1 ": the hypothesis" H "does not have the form (R t1 t2)"
+end.
+
+Tactic Notation "stepr" constr(t2') "in" hyp(H) "by" tactic(r) := stepr t2' in H; [| r].
 
 (** An attempt to extend setoid rewrite to formulas with quantifiers *)
 
@@ -252,99 +305,21 @@ End RelationOnProduct.
 Implicit Arguments prod_rel [A B].
 Implicit Arguments prod_rel_equiv [A B].
 
-(** Some boolean functions on nat. Their analogs are available in the
-standard library; however, we provide simpler definitions. Used in
-defining  implementations of natural numbers. *)
-
-Fixpoint eq_nat_bool (x y : nat) {struct x} : bool :=
-match x, y with
-| 0, 0 => true
-| S x', S y' => eq_nat_bool x' y'
-| _, _ => false
-end.
-
-Theorem eq_nat_bool_implies_eq : forall x y, eq_nat_bool x y -> x = y.
-Proof.
-induction x; destruct y; simpl; intro H; try (reflexivity || inversion H).
-apply IHx in H; now rewrite H.
-Qed.
-
-Theorem eq_nat_bool_refl : forall x, eq_nat_bool x x.
-Proof.
-induction x; now simpl.
-Qed.
-
-Theorem eq_nat_correct : forall x y, eq_nat_bool x y <-> x = y.
-Proof.
-intros; split.
-now apply eq_nat_bool_implies_eq.
-intro H; rewrite H; apply eq_nat_bool_refl.
-Qed.
-
-(* The boolean less function can be defined as
-fun n m => proj1_sig (nat_lt_ge_bool n m)
-using the standard library.
-However, this definitionseems too complex. First, there are many
-functions involved: nat_lt_ge_bool is defined (in Coq.Arith.Bool_nat)
-using bool_of_sumbool and
-lt_ge_dec : forall x y : nat, {x < y} + {x >= y},
-where the latter function is defined using sumbool_not and
-le_lt_dec : forall n m : nat, {n <= m} + {m < n}.
-Second, this definition is not the most efficient, especially since
-le_lt_dec is proved using tactics, not by giving the explicit proof term. *)
-
-Fixpoint lt_bool (n m : nat) {struct n} : bool :=
-match n, m with
-| 0, S _ => true
-| S n', S m' => lt_bool n' m'
-| _, 0 => false
-end.
-
-Fixpoint le_bool (n m : nat) {struct n} : bool :=
-match n, m with
-| 0, _ => true
-| S n', S m' => le_bool n' m'
-| S _, 0 => false
-end.
-
-(* The following properties are used both in Peano.v and in MPeano.v *)
-
-Lemma le_lt_bool : forall x y, le_bool x y = (lt_bool x y) || (eq_nat_bool x y).
-Proof.
-induction x as [| x IH]; destruct y; simpl; (reflexivity || apply IH).
-Qed.
-
-Theorem le_lt : forall x y, le_bool x y <-> lt_bool x y \/ x = y.
-Proof.
-intros x y. rewrite le_lt_bool.
-setoid_replace (eq_true (lt_bool x y || eq_nat_bool x y)) with
-  (lt_bool x y = true \/ eq_nat_bool x y = true) using relation iff.
-do 2 rewrite <- eq_true_unfold. now rewrite eq_nat_correct.
-rewrite eq_true_unfold. split; [apply orb_prop | apply orb_true_intro].
-Qed. (* Can be simplified *)
-
-Theorem lt_bool_0 : forall x, ~ (lt_bool x 0).
-Proof.
-destruct x as [|x]; simpl; now intro.
-Qed.
-
-Theorem lt_bool_S : forall x y, lt_bool x (S y) <-> le_bool x y.
-Proof.
-assert (A : forall x y, lt_bool x (S y) <-> lt_bool x y \/ x = y).
-induction x as [| x IH]; destruct y as [| y]; simpl.
-split; [now right | now intro].
-split; [now left | now intro].
-split; [intro H; false_hyp H lt_bool_0 |
-intro H; destruct H as [H | H]; now auto].
-assert (H : x = y <-> S x = S y); [split; auto|].
-rewrite <- H; apply IH.
-intros; rewrite le_lt; apply A.
-Qed.
-
 (** Miscellaneous *)
 
-Definition less_than (x : comparison) : bool :=
-match x with Lt => true | _ => false end.
+Definition comp_bool (x y : comparison) : bool :=
+match x, y with
+| Lt, Lt => true
+| Eq, Eq => true
+| Gt, Gt => true
+| _, _   => false
+end.
+
+Theorem comp_bool_correct : forall x y : comparison,
+  comp_bool x y <-> x = y.
+Proof.
+destruct x; destruct y; simpl; split; now intro.
+Qed.
 
 Definition LE_Set : forall A : Set, relation A := (@eq).
 
