@@ -40,6 +40,7 @@ type value =
 (* Signature for interpretation: val\_interp and interpretation functions *)
 and interp_sign =
   { lfun : (identifier * value) list;
+    avoid_ids : identifier list;
     debug : debug_info }
 
 (* Transforms an id into a constr if possible *)
@@ -119,7 +120,7 @@ val interp_ltac_constr : interp_sign -> goal sigma -> glob_tactic_expr ->
 val interp_redexp : Environ.env -> Evd.evar_map -> raw_red_expr -> red_expr
 
 (* Interprets tactic expressions *)
-val interp_tac_gen : (identifier * value) list -> 
+val interp_tac_gen : (identifier * value) list -> identifier list ->
                  debug_info -> raw_tactic_expr -> tactic
 
 val interp_hyp :  interp_sign -> goal sigma -> identifier located -> identifier

@@ -101,8 +101,10 @@ let catch_error loc tac g =
 
 (* Signature for interpretation: val_interp and interpretation functions *)
 type interp_sign =
-  { lfun : (identifier * value) list;
-    debug : debug_info }
+    { lfun : (identifier * value) list;
+      avoid_ids : identifier list; (* ids inherited fromm the call context
+				      (needed to get fresh ids) *)
+      debug : debug_info }
 
 let check_is_value = function
   | VRTactic _ -> (* These are goals produced by Match *)
@@ -1243,7 +1245,7 @@ let rec constr_list_aux env = function
 
 let constr_list ist env = constr_list_aux env ist.lfun
 
-(*Extract the identifier list from lfun: join all branches (what to do else?)*)
+(* Extract the identifier list from lfun: join all branches (what to do else?)*)
 let rec intropattern_ids = function
   | IntroIdentifier id -> [id]
   | IntroOrAndPattern ll -> 
@@ -1260,7 +1262,7 @@ let default_fresh_id = id_of_string "H"
 
 let interp_fresh_id ist gl l =
   let ids = map_succeed (function ArgVar(_,id) -> id | _ -> failwith "") l in
-  let avoid = extract_ids ids ist.lfun in
+  let avoid = (extract_ids ids ist.lfun) @ ist.avoid_ids in
   let id = 
     if l = [] then default_fresh_id 
     else
@@ -1613,7 +1615,8 @@ and interp_ltac_reference isapplied mustbetac ist gl = function
       let v = List.assoc id ist.lfun in
       if mustbetac then coerce_to_tactic loc id v else v
   | ArgArg (loc,r) ->
-      let v = val_interp {lfun=[];debug=ist.debug} gl (lookup r) in
+      let ids = extract_ids [] ist.lfun in
+      let v = val_interp {lfun=[];avoid_ids=ids; debug=ist.debug} gl (lookup r) in
       if isapplied then v else locate_tactic_call loc v
 
 and interp_tacarg ist gl = function
@@ -2263,18 +2266,18 @@ let make_empty_glob_sign () =
     gsigma = Evd.empty; genv = Global.env() }
 
 (* Initial call for interpretation *)
-let interp_tac_gen lfun debug t gl = 
-  interp_tactic { lfun=lfun; debug=debug } 
+let interp_tac_gen lfun avoid_ids debug t gl = 
+  interp_tactic { lfun=lfun; avoid_ids=avoid_ids; debug=debug } 
     (intern_tactic {
       ltacvars = (List.map fst lfun, []); ltacrecvars = [];
       gsigma = project gl; genv = pf_env gl } t) gl
 
-let eval_tactic t gls = interp_tactic { lfun=[]; debug=get_debug() } t gls
+let eval_tactic t gls = interp_tactic { lfun=[]; avoid_ids=[]; debug=get_debug() } t gls
 
-let interp t = interp_tac_gen [] (get_debug()) t
+let interp t = interp_tac_gen [] [] (get_debug()) t
 
 let eval_ltac_constr gl t =
-  interp_ltac_constr { lfun=[]; debug=get_debug() } gl
+  interp_ltac_constr { lfun=[]; avoid_ids=[]; debug=get_debug() } gl
     (intern_tactic (make_empty_glob_sign ()) t )
 
 (* Hides interpretation for pretty-print *)
@@ -2674,7 +2677,7 @@ let glob_tactic_env l env x =
     x
 
 let interp_redexp env sigma r = 
-  let ist = { lfun=[]; debug=get_debug () } in
+  let ist = { lfun=[]; avoid_ids=[]; debug=get_debug () } in
   let gist = {(make_empty_glob_sign ()) with genv = env; gsigma = sigma } in
   interp_red_expr ist sigma env (intern_red_expr gist r)
 
@@ -2684,7 +2687,7 @@ let interp_redexp env sigma r =
 let _ = Auto.set_extern_interp
   (fun l -> 
     let l = List.map (fun (id,c) -> (id,VConstr c)) l in
-    interp_tactic {lfun=l;debug=get_debug()})
+    interp_tactic {lfun=l;avoid_ids=[];debug=get_debug()})
 let _ = Auto.set_extern_intern_tac 
   (fun l ->
     Options.with_option strict_check

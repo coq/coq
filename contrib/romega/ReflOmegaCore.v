@@ -2160,7 +2160,7 @@ Theorem not_exact_divide_valid :
 Proof.
  unfold valid_hyps, not_exact_divide in |- *; intros;
  generalize (nth_valid ep e i lp); Simplify.
- rewrite (scalar_norm_add_stable t e), <-H0.
+ rewrite (scalar_norm_add_stable t e), <-H1.
  do 2 rewrite <- scalar_norm_add_stable; simpl in *; intros.
  absurd (interp_term e body * k1 + k2 = 0); 
  [ now apply OMEGA4 | symmetry; auto ].
@@ -2370,9 +2370,9 @@ Theorem exact_divide_valid :
 Proof.
  unfold valid1, exact_divide in |- *; intros k1 k2 t ep e p1; 
  Simplify; simpl; auto; subst; 
- rewrite <- scalar_norm_stable; simpl; intros; 
- [ destruct (mult_integral _ _ (sym_eq H)); intuition
- | swap H; rewrite <- H1, mult_0_l; auto
+ rewrite <- scalar_norm_stable; simpl; intros;
+ [ destruct (mult_integral _ _ (sym_eq H0)); intuition
+ | swap H0; rewrite <- H1, mult_0_l; auto
  ].
 Qed.
 
