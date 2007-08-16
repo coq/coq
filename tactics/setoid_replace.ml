@@ -802,15 +802,16 @@ let new_morphism m signature id hook =
 	    try find_relation_class output' 
 	    with Not_found -> errorlabstrm "Add Morphism"
 	      (str "Not a valid signature: " ++ pr_lconstr output' ++
-		  str " is neither a registered relation nor the Leibniz " ++
-		  str " equality.") in
+		 str " is neither a registered relation nor the Leibniz " ++
+		 str " equality.") in
 	  let rel_a,rel_quantifiers_no =
             match rel with
 		Relation rel -> rel.rel_a, rel.rel_quantifiers_no
               | Leibniz (Some t) -> t, 0
-              | Leibniz None -> assert false in
+              | Leibniz None -> let _,t = decompose_prod typ in t, 0 in
 	  let rel_a_n =
-            clos_norm_flags Closure.betaiotazeta empty_env Evd.empty rel_a in
+            clos_norm_flags Closure.betaiotazeta empty_env Evd.empty rel_a 
+	  in
 	    try
               let _,output_rel_a_n = decompose_lam_n rel_quantifiers_no rel_a_n in
               let argsrev,_ = decompose_prod output_rel_a_n in
