@@ -68,6 +68,30 @@ let hm2 s =
   let n = String.length s in
   if n > 1 && s.[0] = '.' && s.[1] = '/' then String.sub s 2 (n-2) else s
 
+(* The list of all theories in the standard library /!\ order does matter *)
+let theories_dirs_map = [
+    "theories/Program", "Program" ; 
+    "theories/FSets", "FSets" ; 
+    "theories/IntMap", "IntMap" ; 
+    "theories/Reals", "Reals" ; 
+    "theories/Strings", "Strings" ; 
+    "theories/Sorting", "Sorting" ; 
+    "theories/Setoids", "Setoids" ; 
+    "theories/Sets", "Sets" ; 
+    "theories/Lists", "Lists" ; 
+    "theories/Wellfounded", "Wellfounded" ; 
+    "theories/Relations", "Relations" ; 
+    "theories/Ints", "Ints" ; 
+    "theories/Numbers", "Numbers" ; 
+    "theories/QArith", "QArith" ; 
+    "theories/NArith", "NArith" ; 
+    "theories/ZArith", "ZArith" ; 
+    "theories/Arith", "Arith" ; 
+    "theories/Bool", "Bool" ; 
+    "theories/Logic", "Logic" ; 
+    "theories/Init", "Init"
+  ]
+
 (* Initializes the LoadPath according to COQLIB and Coq_config *)
 let init_load_path () =
   (* developper specific directories to open *)
@@ -76,24 +100,29 @@ let init_load_path () =
     (* variable COQLIB overrides the default library *)
     getenv_else "COQLIB"
       (if Coq_config.local || !Options.boot then Coq_config.coqtop
-       else Coq_config.coqlib) in
-  (* first user-contrib *)
+	else Coq_config.coqlib) in
   let user_contrib = coqlib/"user-contrib" in
-  if Sys.file_exists user_contrib then 
-    Mltop.add_rec_path user_contrib Nameops.default_root_prefix;
-  (* then standard library *)
-  let vdirs = [ "theories"; "contrib" ] in
-  let dirs = "states" :: dev @ vdirs in
-  List.iter (fun s -> coq_add_rec_path (coqlib/s)) dirs;
+  let dirs = "states" :: "contrib" :: dev in
   let camlp4 = getenv_else "CAMLP4LIB" Coq_config.camlp4lib in
-  add_ml_include camlp4;
-  (* then current directory *)
-  Mltop.add_path "." Nameops.default_root_prefix;
-  (* additional loadpath, given with -I -include -R options *)
-  List.iter 
-    (fun (s,alias,reci) ->
-       if reci then Mltop.add_rec_path s alias else Mltop.add_path s alias)
-    (List.rev !includes)
+    (* first user-contrib *)
+    if Sys.file_exists user_contrib then 
+      Mltop.add_rec_path user_contrib Nameops.default_root_prefix;
+    (* then states, contrib and dev *)
+    List.iter (fun s -> coq_add_rec_path (coqlib/s)) dirs;
+    (* then standard library *)
+    List.iter 
+      (fun (s,alias) -> Mltop.add_rec_path (coqlib/s) (Names.make_dirpath [Names.id_of_string alias; Nameops.coq_root])) 
+      theories_dirs_map;
+    (* then camlp4lib *)
+    add_ml_include camlp4;
+    (* then current directory *)
+    Mltop.add_path "." Nameops.default_root_prefix;
+    (* additional loadpath, given with -I -include -R options *)
+    List.iter 
+      (fun (s,alias,reci) ->
+	if reci then Mltop.add_rec_path s alias else Mltop.add_path s alias)
+      (List.rev !includes)
+      
 let init_library_roots () =
   includes := []
 
