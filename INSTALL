@@ -50,7 +50,7 @@ WHAT DO YOU NEED ?
 
 	#Download it (wget is an example, use your favourite FTP or HTTP client)
 	wget http://ftp.gnu.org/pub/gnu/make/make-3.81.tar.bz2
-	bzip9 -cd make-3.81.tar.bz2 | tar x
+	bzip2 -cd make-3.81.tar.bz2 | tar x
 	#If you don't have bzip2, you can download the gzipped version instead.
         cd make-3.81
         ./configure --prefix=${HOME}
