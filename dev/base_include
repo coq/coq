@@ -64,9 +64,10 @@ open Pattern
 open Cbv
 open Classops
 open Pretyping
+open Pretyping.Default
+open Pretyping.Default.Cases
 open Cbv
 open Classops
-open Pretyping
 open Clenv
 open Rawterm
 open Coercion
