@@ -164,7 +164,7 @@ Program Fixpoint div2 (n : nat) {measure id n} : { x : nat | n = 2 * x \/ n = 2 
 \emph{Caution:} When defining structurally recursive functions, the
 generated obligations should have the prototype of the currently defined functional
 in their context. In this case, the obligations should be transparent
-(e.g. using Defined or Save) so that the guardedness condition on
+(e.g. using Defined) so that the guardedness condition on
 recursive calls can be checked by the
 kernel's type-checker. There is an optimization in the generation of
 obligations which gets rid of the hypothesis corresponding to the
