@@ -1874,47 +1874,49 @@ let general_setoid_replace rewrite_tac try_prove_eq_tac_opt relation c1 c2 ~new_
       | Some tac ->  Tacticals.tclTRY (Tacticals.tclCOMPLETE tac )
   in 
   try
-  let relation =
-   match relation with
-      Some rel ->
-       (try
-         match find_relation_class rel with
-            Relation sa -> sa
-          | Leibniz _ -> raise Optimize
-        with
-         Not_found ->
-          errorlabstrm "Setoid_rewrite"
-           (pr_lconstr rel ++ str " is not a registered relation."))
-    | None ->
-       match default_relation_for_carrier (pf_type_of gl c1) with
-          Relation sa -> sa
-        | Leibniz _ -> raise Optimize
-  in
-   let eq_left_to_right = mkApp (relation.rel_aeq, [| c1 ; c2 |]) in
-   let eq_right_to_left = mkApp (relation.rel_aeq, [| c2 ; c1 |]) in
-   let replace dir eq =
-    tclTHENS (assert_tac false Anonymous eq)
-      [onLastHyp (fun id ->
-        tclTHEN
-          (rewrite_tac dir (mkVar id) ~new_goals)
-          (clear [id]));
-       try_prove_eq_tac]
-   in
-    tclORELSE
-     (replace true eq_left_to_right) (replace false eq_right_to_left) gl
- with
-  Optimize -> (* (!replace tac_opt c1 c2) gl *)
-    let eq =  mkApp (Lazy.force  coq_eq, [| pf_type_of gl c1;c2 ; c1 |]) in 
-    tclTHENS (assert_tac false Anonymous eq)
-      [onLastHyp (fun id ->
-		    tclTHEN
-		      (rewrite_tac false (mkVar id) ~new_goals)
-		      (clear [id]));
-       try_prove_eq_tac] gl
+    let carrier,args = decompose_app (pf_type_of gl c1) in
+    let relation =
+      match relation with
+	  Some rel ->
+	    (try
+		match find_relation_class rel with
+		    Relation sa -> if not (eq_constr carrier sa.rel_a) then 		    
+			errorlabstrm "Setoid_rewrite"
+			  (str "the carrier of " ++ pr_lconstr rel ++ 
+			      str " does not match the type of " ++ pr_lconstr c1);
+		      sa
+		  | Leibniz _ -> raise Optimize
+              with
+		  Not_found ->
+		    errorlabstrm "Setoid_rewrite"
+		      (pr_lconstr rel ++ str " is not a registered relation."))
+	| None ->
+	    match default_relation_for_carrier (pf_type_of gl c1) with
+		Relation sa -> sa
+              | Leibniz _ -> raise Optimize
+    in
+    let eq_left_to_right = mkApp (relation.rel_aeq, Array.of_list (List.append args [ c1 ; c2 ])) in
+    let eq_right_to_left = mkApp (relation.rel_aeq, Array.of_list (List.append args [ c2 ; c1 ])) in
+    let replace dir eq =
+      tclTHENS (assert_tac false Anonymous eq)
+	[onLastHyp (fun id ->
+          tclTHEN
+            (rewrite_tac dir (mkVar id) ~new_goals)
+            (clear [id]));
+	 try_prove_eq_tac]
+    in
+      tclORELSE
+	(replace true eq_left_to_right) (replace false eq_right_to_left) gl
+  with
+      Optimize -> (* (!replace tac_opt c1 c2) gl *)
+	let eq =  mkApp (Lazy.force  coq_eq, [| pf_type_of gl c1;c2 ; c1 |]) in 
+	  tclTHENS (assert_tac false Anonymous eq)
+	    [onLastHyp (fun id ->
+	      tclTHEN
+		(rewrite_tac false (mkVar id) ~new_goals)
+		(clear [id]));
+	     try_prove_eq_tac] gl
       
-
-
-
 let setoid_replace = general_setoid_replace general_s_rewrite
 let setoid_replace_in  tac_opt id relation c1 c2 ~new_goals gl = 
   general_setoid_replace (general_s_rewrite_in id)  tac_opt relation c1 c2 ~new_goals gl
