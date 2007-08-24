@@ -95,9 +95,9 @@ let pr_patnotation = pr_notation_gen decode_patlist_value
 let pr_delimiters key strm =
   strm ++ str ("%"^key)
 
-let pr_located pr ((b,e),x) =
-  if Options.do_translate() && (b,e)<>dummy_loc then
-    let (b,e) = unloc (b,e) in
+let pr_located pr (loc,x) =
+  if Options.do_translate() && loc<>dummy_loc then
+    let (b,e) = unloc loc in
     comment b ++ pr x ++ comment e
   else pr x
 
@@ -142,7 +142,7 @@ let pr_opt_type_spc pr = function
   | CHole _ -> mt ()
   | t ->  str " :" ++ pr_sep_com (fun()->brk(1,2)) (pr ltop) t
 
-let pr_lident (b,_ as loc,id) =
+let pr_lident (loc,id) =
   if loc <> dummy_loc then
     let (b,_) = unloc loc in
     pr_located pr_id (make_loc (b,b+String.length(string_of_id id)),id)
