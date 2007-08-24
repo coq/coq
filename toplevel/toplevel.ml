@@ -139,16 +139,16 @@ let print_highlight_location ib loc =
 
 (* Functions to report located errors in a file. *)
 
-let print_location_in_file s inlibrary fname (bp,ep) =
+let print_location_in_file s inlibrary fname loc =
   let errstrm = (str"Error while reading " ++ str s ++ str" :" ++ fnl ()) in
-  if (bp,ep) = dummy_loc then 
+  if loc = dummy_loc then 
     (errstrm ++ str", unknown location." ++ fnl ())
   else
     if inlibrary then
       (errstrm ++ str"Module " ++ str ("\""^fname^"\"") ++
-       str" characters " ++ Cerrors.print_loc (bp,ep) ++ fnl ())
+       str" characters " ++ Cerrors.print_loc loc ++ fnl ())
     else
-    let (bp,ep) = unloc (bp,ep) in
+    let (bp,ep) = unloc loc in
     let ic = open_in fname in
     let rec line_of_pos lin bol cnt =
       if cnt < bp then
@@ -172,15 +172,16 @@ let print_command_location ib dloc =
            str(String.sub ib.str (bp-ib.start) (ep-bp)) ++ fnl ())
     | None -> (mt ())
 
-let valid_loc dloc (b,e) =
-  (b,e) <> dummy_loc
+let valid_loc dloc loc =
+  loc <> dummy_loc
   & match dloc with
-    | Some (bd,ed) -> bd<=b & e<=ed
+    | Some dloc ->
+	let (bd,ed) = unloc dloc in let (b,e) = unloc loc in bd<=b & e<=ed
     | _ -> true
 	  
-let valid_buffer_loc ib dloc (b,e) =
-  valid_loc dloc (b,e) & 
-  let (b,e) = unloc (b,e) in b-ib.start >= 0 & e-ib.start < ib.len & b<=e 
+let valid_buffer_loc ib dloc loc =
+  valid_loc dloc loc & 
+  let (b,e) = unloc loc in b-ib.start >= 0 & e-ib.start < ib.len & b<=e 
 
 (*s The Coq prompt is the name of the focused proof, if any, and "Coq"
     otherwise. We trap all exceptions to prevent the error message printing

@@ -28,7 +28,7 @@ open Tacinterp
 
 let pr_spc_lconstr = pr_sep_com spc pr_lconstr_expr
 
-let pr_lident (b,_ as loc,id) =
+let pr_lident (loc,id) =
   if loc <> dummy_loc then
     let (b,_) = unloc loc in
     pr_located pr_id (make_loc (b,b+String.length(string_of_id id)),id)
@@ -39,7 +39,7 @@ let string_of_fqid fqid =
 
 let pr_fqid fqid = str (string_of_fqid fqid)
 
-let pr_lfqid (_,_ as loc,fqid) =
+let pr_lfqid (loc,fqid) =
   if loc <> dummy_loc then
    let (b,_) = unloc loc in
     pr_located pr_fqid (make_loc (b,b+String.length(string_of_fqid fqid)),fqid)
