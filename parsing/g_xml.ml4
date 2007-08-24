@@ -166,13 +166,9 @@ let rec interp_xml_constr = function
       let tm = interp_xml_inductiveTerm y in
       let brs = List.map interp_xml_pattern yl in
       let brns = Array.to_list (compute_branches_lengths ind) in
-      let mat =
-	(* warning: source of variable capture if branch not eta-expanded *)
-	simple_cases_matrix_of_branches [] ind brns brs in
+      let mat = simple_cases_matrix_of_branches ind brns brs in
       let nparams,n = compute_inductive_nargs ind in
-      let nal,rtn = 
-	(* warning: source of variable capture if branch not eta-expanded *)
-	return_type_of_predicate [] ind nparams n p in
+      let nal,rtn = return_type_of_predicate ind nparams n p in
       RCases (loc,rtn,[tm,nal],mat)
   | XmlTag (loc,"MUTIND",al,[]) ->
       RRef (loc, IndRef (get_xml_inductive al))
