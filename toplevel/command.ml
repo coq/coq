@@ -563,13 +563,18 @@ type fixpoint_expr = {
   fix_type : constr_expr
 }
 
-let interp_fix_type isevars env fix =
-  interp_type_evars isevars env 
-    (generalize_constr_expr fix.fix_type fix.fix_binders)
+let interp_fix_context isevars env fix =
+  interp_context_evars isevars env fix.fix_binders
 
-let interp_fix_body isevars env impls fix fixtype =
-  interp_casted_constr_evars isevars env ~impls
-    (abstract_constr_expr fix.fix_body fix.fix_binders) fixtype
+let interp_fix_ccl isevars (env,_) fix =
+  interp_type_evars isevars env fix.fix_type
+
+let interp_fix_body isevars env_rec impls (_,ctx) fix ccl =
+  let env = push_rel_context ctx env_rec in
+  let body = interp_casted_constr_evars isevars env ~impls fix.fix_body ccl in
+  it_mkLambda_or_LetIn body ctx
+
+let build_fix_type (_,ctx) ccl = it_mkProd_or_LetIn ccl ctx
 
 let declare_fix boxed kind f def t =
   let ce = {
@@ -607,7 +612,9 @@ let interp_recursive fixkind l boxed =
 
   (* Interp arities allowing for unresolved types *)
   let isevars = ref (Evd.create_evar_defs Evd.empty) in
-  let fixtypes = List.map (interp_fix_type isevars env) fixl in
+  let fixctxs = List.map (interp_fix_context isevars env) fixl in
+  let fixccls = List.map2 (interp_fix_ccl isevars) fixctxs fixl in
+  let fixtypes = List.map2 build_fix_type fixctxs fixccls in
   let env_rec = push_named_types env fixnames fixtypes in
 
   (* Get interpretation metadatas *)
@@ -618,7 +625,7 @@ let interp_recursive fixkind l boxed =
   let fixdefs = 
     States.with_heavy_rollback (fun () -> 
       List.iter (declare_interning_data impls) notations;
-      List.map2 (interp_fix_body isevars env_rec impls) fixl fixtypes)
+      list_map3 (interp_fix_body isevars env_rec impls) fixctxs fixl fixccls)
       () in
 
   (* Instantiate evars and check all are resolved *)
