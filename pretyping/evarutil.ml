@@ -394,40 +394,49 @@ and clear_hyps_in_evi evd evi ids =
     { evi with
 	evar_concl = nconcl;
 	evar_hyps  = nhyps}
-      
 
 let need_restriction k args = not (array_for_all (closedn k) args)
 
 (* We try to instantiate the evar assuming the body won't depend
  * on arguments that are not Rels or Vars, or appearing several times
  * (i.e. we tackle only Miller-Pfenning patterns unification) 
-
- * 1) Let a unification problem "env |- ev[hyps:=args] = rhs"
+ *
+ * 1) Let "env |- ?ev[hyps:=args] = rhs" be the unification problem
  * 2) We limit it to a patterns unification problem "env |- ev[subst] = rhs"
- * where only Rel's and Var's are relevant in subst
- * 3) We recur on rhs, "imitating" the term failing if some Rel/Var not in scope
-
+ *    where only Rel's and Var's are relevant in subst
+ * 3) We recur on rhs, "imitating" the term, and failing if some Rel/Var is 
+ *    not in the scope of ?ev. For instance, the problem
+ *    "y:nat |- ?x[] = y" where "|- ?1:nat" is not satisfiable because
+ *    ?1 would be instantiated by y which is not in the scope of ?1.
+ * 4) We try to "project" the term if the process of imitation fails
+ *    and that only one projection is possible
+ *
  * Note: we don't assume rhs in normal form, it may fail while it would
  * have succeeded after some reductions
  *)
+
 (* Note: error_not_clean should not be an error: it simply means that the
- * conversion test that lead to the faulty call to [real_clean] should return
+ * conversion test that leads to the faulty call to [real_clean] should return
  * false. The problem is that we won't get the right error message.
  *)
 
 exception NotClean of constr
 
-let real_clean env isevars ev evi args rhs =
+let rec real_clean env isevars ev subst rhs =
   let evd = ref isevars in
-  let subst = List.map (fun (x,y) -> (y,mkVar x)) (list_uniquize args) in
+  let subst' = List.map (fun (x,y) -> (y,mkVar x)) subst in
   let rec subs rigid k t =
     match kind_of_term t with
       | Rel i ->
  	 if i<=k then t
  	 else
 	   (* Flex/Rel problem: unifiable as a pattern iff Rel in ev scope *)
-	   (try List.assoc (mkRel (i-k)) subst 
-	    with Not_found -> if rigid then raise (NotClean t) else t)
+	   (try List.assoc (mkRel (i-k)) subst' 
+	    with Not_found ->
+	      if rigid then
+		try unique_projection env evd (mkRel (i-k)) subst
+		with Not_found -> raise (NotClean t)
+	      else t)
       | Evar (ev,args) ->
           if Evd.is_defined_evar !evd (ev,args) then
             subs rigid k (existential_value (evars_of !evd) (ev,args))
@@ -440,21 +449,8 @@ let real_clean env isevars ev evi args rhs =
 	      mkEvar (ev,args')
       | Var id ->
 	  (* Flex/Var problem: unifiable as a pattern iff Var in scope of ev *)
-          (try List.assoc t subst
-           with Not_found ->
-             if
-               not rigid 
-	     (* I don't understand this line: vars from evar_context evi
-		are private (especially some of them are freshly
-		generated in push_rel_context_to_named_context). They
-		have a priori nothing to do with the vars in env. I
-		remove the test [HH 25/8/06]
-
-		 or List.exists (fun (id',_,_) -> id=id') (evar_context evi)
-	     *)
-             then t
-             else raise (NotClean t))
-               
+          (try List.assoc t subst'
+           with Not_found -> if not rigid then t else raise (NotClean t))
       | _ ->
 	  (* Flex/Rigid problem (or assimilated if not normal): we "imitate" *)
 	  map_constr_with_binders succ (subs rigid) k t
@@ -467,39 +463,70 @@ let real_clean env isevars ev evi args rhs =
       error_not_clean env (evars_of !evd) ev t (evar_source ev !evd) in
   (!evd,body)
 
-(* [evar_define] solves the problem lhs = rhs when lhs is an uninstantiated
- * evar, i.e. tries to find the body ?sp for lhs=mkEvar (sp,args)
- * ?sp [ sp.hyps \ args ]  unifies to rhs
- * ?sp must be a closed term, not referring to itself.
- * Not so trivial because some terms of args may be terms that are not
- * variables. In this case, the non-var-or-Rels arguments are replaced
- * by <implicit>. [clean_rhs] will ignore this part of the subtitution. 
- * This leads to incompleteness (we don't deal with pbs that require
- * inference of dependent types), but it seems sensible.
+(* [unique_projection] addresses an ad hoc form of "projection" (see foldnr in
+ * test-suite/success/Fixpoint.v for an example of use).
+ * [unique_projection] solves a problem ?n[...;x:=?m[...;y:=t;...]] = t 
+ * by defining ?m:=y and ?n:=x Check that (x,y) is the only such pair
+ * solving the problem; also instantiate the type of [?m] if it is an evar.
  *
- * If after cleaning, some free vars still occur, the function [restrict_hyps]
- * tries to narrow the env of the evars that depend on Rels.
- *
- * If after that free Rels still occur it means that the instantiation
- * cannot be done, as in  [x:?1; y:nat; z:(le y y)] x=z
- * ?1 would be instantiated by (le y y) but y is not in the scope of ?1
+ * Warning: [unique_projection] is primarily designed for [t] normal
+ * (e.g. [t] is a Rel), it would require [conv] for more complex [t] and
+ * [e_conv] for [t] with evars...
+ *)
+
+and unique_projection env evd t subst =
+  (* Search in the instance of ?n for an evar with [t] occurring
+     exactly once in its own instance *)
+  let evars =
+    map_succeed (fun (x,y) ->
+      match kind_of_term y with
+      | Evar (ev,argsv) ->
+	  let evi = Evd.find (evars_of !evd) ev in
+	  let subst = make_subst (evar_env evi) (Array.to_list argsv) in
+	  let subst' = List.filter (fun (y,a) -> a=t) subst in
+	  if List.length subst' = 1 then (ev,fst (List.hd subst'),evi,subst,x)
+	  else failwith ""
+      | _ -> failwith "") subst in
+  (* Check if only one such evar exists in the instance of ?n *)
+  match evars with
+  | [(ev,y,evi,subst,x)] -> 
+      evd := Evd.evar_define ev (mkVar y) !evd;
+      let ty = Retyping.get_type_of env (evars_of !evd) t in
+      let ty = whd_betadeltaiota env (evars_of !evd) ty in
+      if not (isSort ty) & isEvar evi.evar_concl then
+	begin
+	  (* Don't try to instantiate if a sort because if evar_concl is an
+             evar it may commit to a univ level which is not the right
+             one (however, regarding coercions, because t is obtained by
+             unif, we know that no coercion can be inserted) *)
+	  let ty' = replace_vars subst evi.evar_concl in
+	  evd := fst (evar_define env (destEvar ty') ty !evd)
+	end;
+      mkVar x
+  | _ -> raise Not_found
+
+(* [evar_define] solves the problem "?ev[args] = rhs" when "?ev" is an 
+ * uninstantiated such that "hyps |- ?ev : typ". Otherwise said,
+ * [evar_define] tries to find an instance lhs such that
+ * "lhs [ hyps \ args ]" unifies to rhs. The term "lhs" must be closed in
+ * context "hyps" and not referring to itself.
  *)
 
 (* env needed for error messages... *)
-let evar_define env (ev,argsv) rhs isevars =
+and evar_define env (ev,argsv) rhs isevars =
   if occur_evar ev rhs
   then error_occur_check env (evars_of isevars) ev rhs;
   let args = Array.to_list argsv in 
   let evi = Evd.find (evars_of isevars) ev in
   (* the bindings to invert *)
   let worklist = make_subst (evar_env evi) args in
-  let (isevars',body) = real_clean env isevars ev evi worklist rhs in
+  let (isevars',body) = real_clean env isevars ev worklist rhs in
   if occur_meta body then error "Meta cannot occur in evar body"
   else
     (* needed only if an inferred type *)
     let body = refresh_universes body in
 (* Cannot strictly type instantiations since the unification algorithm
- * does not unifies applications from left to right.
+ * does not unify applications from left to right.
  * e.g problem f x == g y yields x==y and f==g (in that order) 
  * Another problem is that type variables are evars of type Type
    let _ =

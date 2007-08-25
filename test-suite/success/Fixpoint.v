@@ -29,3 +29,22 @@ CoFixpoint g (n:nat) (m:=pred n) (l:Stream m) (p:=S n) : Stream p :=
 
 Eval compute in (fun l => match g 2 (Consn 0 6 l) with Consn _ a _ => a end).
 
+(* Check inference of simple types even in presence of (non ambiguous)
+   dependencies (needs revision ) *)
+
+Section folding.
+
+Inductive vector (A:Type) : nat -> Type :=
+  | Vnil : vector A 0
+  | Vcons : forall (a:A) (n:nat), vector A n -> vector A (S n).
+
+Variables (B C : Set) (g : B -> C -> C) (c : C).
+
+Fixpoint foldrn n bs :=
+  match bs with
+  | Vnil => c
+  | Vcons b _ tl => g b (foldrn _ tl)
+  end.
+
+End folding.
+
