@@ -126,7 +126,7 @@ let collect_non_rec env =
       let i = 
         list_try_find_i
           (fun i f ->
-             if List.for_all (fun (_, _, def) -> not (occur_var env f def)) ldefrec
+             if List.for_all (fun (_, def) -> not (occur_var env f def)) ldefrec
              then i else failwith "try_find_i")
           0 lnamerec 
       in
@@ -324,22 +324,18 @@ let nf_evar_context isevars ctx =
   List.map (fun (n, b, t) -> 
     (n, option_map (Evarutil.nf_isevar isevars) b, Evarutil.nf_isevar isevars t)) ctx
     
-let build_mutrec l boxed = 
+let build_mutrec lnameargsardef boxed = 
   let sigma = Evd.empty and env = Global.env () in 
   let nc = named_context env in
   let nc_len = named_context_length nc in
-  let lnameargsardef =
-    (*List.map (fun (f, d) -> Subtac_interp_fixpoint.rewrite_fixpoint env protos (f, d))*)
-    l
-  in
   let lrecnames = List.map (fun ((f,_,_,_,_),_) -> f) lnameargsardef 
   and nv = List.map (fun ((_,n,_,_,_),_) -> n) lnameargsardef
   in
+  let isevars = ref (Evd.create_evar_defs sigma) in	  
     (* Build the recursive context and notations for the recursive types *)
   let (rec_sign,rec_env,rec_impls,arityl) = 
     List.fold_left 
       (fun (sign,env,impls,arl) ((recname, n, bl,arityc,body),_) -> 
-	 let isevars = ref (Evd.create_evar_defs sigma) in	  
 	 let arityc = Command.generalize_constr_expr arityc bl in
 	 let arity = interp_type isevars env arityc in
 	 let impl = 
@@ -347,7 +343,7 @@ let build_mutrec l boxed =
 	   then Impargs.compute_implicits env arity
 	   else [] in
 	 let impls' =(recname,([],impl,compute_arguments_scope arity))::impls in
-	   ((recname,None,arity) :: sign, Environ.push_named (recname,None,arity) env, impls', (isevars, None, arity)::arl))
+	   ((recname,None,arity) :: sign, Environ.push_named (recname,None,arity) env, impls', (None, arity)::arl))
       ([],env,[],[]) lnameargsardef in
   let arityl = List.rev arityl in
   let notations = 
@@ -355,7 +351,6 @@ let build_mutrec l boxed =
       lnameargsardef [] in
 
   let recdef =
-
     (* Declare local notations *)
     let fs = States.freeze() in
     let def = 
@@ -363,17 +358,17 @@ let build_mutrec l boxed =
 	List.iter (fun (df,c,scope) -> (* No scope for tmp notation *)
 	 Metasyntax.add_notation_interpretation df rec_impls c None) notations;
 	List.map2
-	  (fun ((_,_,bl,_,def),_) (isevars, info, arity) ->
+	  (fun ((_,_,bl,_,def),_) (info, arity) ->
 	     match info with
 		 None ->
 		   let def = abstract_constr_expr def bl in
-		     isevars, info, interp_casted_constr isevars rec_env ~impls:([],rec_impls)
+		     info, interp_casted_constr isevars rec_env ~impls:([],rec_impls)
 		       def arity
 	       | Some (n, artyp, wfrel, fun_bl, intern_bl, intern_arity) ->
 		   let rec_env = push_rel_context fun_bl rec_env in
 		   let cstr = interp_casted_constr isevars rec_env ~impls:([],rec_impls)
 				def intern_arity
-		   in isevars, info, it_mkLambda_or_LetIn cstr fun_bl)
+		   in info, it_mkLambda_or_LetIn cstr fun_bl)
           lnameargsardef arityl
       with e ->
 	States.unfreeze fs; raise e in
@@ -381,20 +376,36 @@ let build_mutrec l boxed =
   in
   let (lnonrec,(namerec,defrec,arrec,nvrec)) = 
     collect_non_rec env lrecnames recdef arityl nv in
+  if lnonrec <> [] then 
+    errorlabstrm "Subtac_command.build_mutrec"
+      (str "Non-recursive definitions not allowed in mutual fixpoint blocks");
   let recdefs = Array.length defrec in
-    (* Solve remaining evars *)
+    trace (str "built recursive definitions");
+    (* Normalize all types and defs with respect to *all* evars *)
+    Array.iteri 
+      (fun i (info, def) ->
+	let def = evar_nf isevars def in
+	let y, typ = arrec.(i) in
+	let typ = evar_nf isevars typ in
+	  arrec.(i) <- (y, typ);
+	  defrec.(i) <- (info, def))
+      defrec;
+    trace (str "normalized w.r.t. evars");
+  (* Normalize rec_sign which was built earlier *)
+  let rec_sign = nf_evar_context !isevars rec_sign in
+    trace (str "normalized context");
+  (* Get the interesting evars, those that were not instanciated *)
+  let isevars = Evd.undefined_evars !isevars in
+    trace (str "got undefined evars" ++ Evd.pr_evar_defs isevars);
+  let evm = Evd.evars_of isevars in
+  trace (str "got the evm, recdefs is " ++ int recdefs);
+  (* Solve remaining evars *)
   let rec collect_evars i acc = 
     if i < recdefs then
-      let (isevars, info, def) = defrec.(i) in
-	(*       let _ = try trace (str "In solve evars, isevars is: " ++ Evd.pr_evar_defs !isevars) with _ -> () in *)
-      let def = evar_nf isevars def in
-      let x, y, typ = arrec.(i) in
-      let typ = evar_nf isevars typ in
-      arrec.(i) <- (x, y, typ);
-      let rec_sign = nf_evar_context !isevars rec_sign in
-      let isevars = Evd.undefined_evars !isevars in
-	(*       let _ = try trace (str "In solve evars, undefined is: " ++ Evd.pr_evar_defs isevars) with _ -> () in *)
-      let evm = Evd.evars_of isevars in
+      let (info, def) = defrec.(i) in
+      let y, typ = arrec.(i) in
+	trace (str "got the def" ++ int i);
+      let _ = try trace (str "In collect evars, isevars is: " ++ Evd.pr_evar_defs isevars) with _ -> () in
       let id = namerec.(i) in
 	(* Generalize by the recursive prototypes  *)
       let def = 
@@ -402,12 +413,14 @@ let build_mutrec l boxed =
       and typ = 
 	Termops.it_mkNamedProd_or_LetIn typ rec_sign
       in
+      let evm = Subtac_utils.evars_of_term evm Evd.empty def in
       let evars, def = Eterm.eterm_obligations id nc_len isevars evm recdefs def (Some typ) in
 	collect_evars (succ i) ((id, def, typ, evars) :: acc)
     else acc
   in 
   let defs = collect_evars 0 [] in
     Subtac_obligations.add_mutual_definitions (List.rev defs) nvrec
+    
       
 let out_n = function
     Some n -> n

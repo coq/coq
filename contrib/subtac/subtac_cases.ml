@@ -1714,14 +1714,17 @@ let rec is_included x y =
 	if i = i' then List.for_all2 is_included args args'
 	else false
 
-(* liftsign is the current pattern's signature length *)
+(* liftsign is the current pattern's complete signature length. Hence pats is already typed in its
+   full signature. However prevpatterns are in the original one signature per pattern form.
+ *)
 let build_ineqs prevpatterns pats liftsign =
   let _tomatchs = List.length pats in
   let diffs = 
     List.fold_left 
       (fun c eqnpats -> 
-	 let acc = List.fold_left2
-	   (fun acc (ppat_sign, ppat_c, (ppat_ty, ppat_tyargs), ppat) 
+	  let acc = List.fold_left2
+	    (* ppat is the pattern we are discriminating against, curpat is the current one. *)
+	    (fun acc (ppat_sign, ppat_c, (ppat_ty, ppat_tyargs), ppat) 
 	      (curpat_sign, curpat_c, (curpat_ty, curpat_tyargs), curpat) ->
 	      match acc with
 		  None -> None
@@ -1731,21 +1734,19 @@ let build_ineqs prevpatterns pats liftsign =
 		      let lens = List.length ppat_sign in
 		      (* Accumulated length of previous pattern's signatures *)
 		      let len' = lens + len in
-			trace (str "Lifting " ++ my_print_constr Environ.empty_env curpat_c ++ str " by "
-				  ++ int len');
+(* 			trace (str "Lifting " ++ my_print_constr Environ.empty_env curpat_c ++ str " by " *)
+(* 				  ++ int len'); *)
+(* 			trace (str "treating " ++ my_print_constr (push_rel_context ppat_sign Environ.empty_env) ppat_c); *)
 		      let acc = 
 			((* Jump over previous prevpat signs *)
 			  lift_rel_context len ppat_sign @ sign, 
 			  len',
 			  succ n, (* nth pattern *)
 			  mkApp (Lazy.force eq_ind,
-				[| lift (lens + liftsign) ppat_ty ;
-				   liftn liftsign (succ lens) ppat_c ;
+				[| lift (len + liftsign) ppat_ty ;
+				   liftn (len + liftsign) (succ lens) ppat_c ;
 				   lift len' curpat_c |]) :: 
-			    List.map 
-			    (fun t -> 
-			      liftn (List.length curpat_sign) (succ len') (* Jump over the curpat signature *)
-			      (lift lens t (* Jump over this prevpat signature *))) c)
+			    List.map (lift lens (* Jump over this prevpat signature *)) c)
 		      in Some acc
 		    else None)
 	   (Some ([], 0, 0, [])) eqnpats pats
@@ -1789,7 +1790,7 @@ let constrs_of_pats typing_fun tycon env isevars eqns tomatchs sign neqs eqs ari
 		  (idents, pat' :: newpatterns, cpat :: pats))
 	      ([], [], []) eqn.patterns sign
 	 in
-	 let newpatterns = List.rev newpatterns and pats = List.rev pats in
+	 let newpatterns = List.rev newpatterns and opats = List.rev pats in
 	 let rhs_rels, pats, signlen = 
 	   List.fold_left 
 	     (fun (renv, pats, n) (sign,c, (s, args), p) -> 
@@ -1801,18 +1802,17 @@ let constrs_of_pats typing_fun tycon env isevars eqns tomatchs sign neqs eqs ari
 		 (* lift to get outside of previous pattern's signatures. *)
 		 (sign', liftn n (succ len) c, (s, List.map (liftn n (succ len)) args), p) :: pats,
 		 len + n))
-	     ([], [], 0) pats in
+	     ([], [], 0) opats in
 	 let pats, _ = List.fold_left 
 	   (* lift to get outside of past patterns to get terms in the combined environment. *)
 	   (fun (pats, n) (sign, c, (s, args), p) ->
 	     let len = List.length sign in
 	       ((rels_of_patsign sign, lift n c, (s, List.map (lift n) args), p) :: pats, len + n))
-	   ([], 0) pats 
+	   ([], 0) pats
 	 in
+	 let ineqs = build_ineqs prevpatterns pats signlen in
 	 let rhs_rels' = rels_of_patsign rhs_rels in
 	 let _signenv = push_rel_context rhs_rels' env in
-(* 	   trace (str "Env with signature is: " ++ my_print_env _signenv);  *)
-	 let ineqs = build_ineqs prevpatterns pats signlen in
 	 let eqs_rels = 
 	   let eqs = (*List.concat (List.rev eqs)*) context_of_arsign eqs in
 	   let args, nargs = 
@@ -1831,11 +1831,12 @@ let constrs_of_pats typing_fun tycon env isevars eqns tomatchs sign neqs eqs ari
 (* 	       trace (str " subtituted equalities " ++ my_print_rel_context _signenv eqs''); *)
 	     eqs''
 	 in
+	   trace (str "Env with signature is: " ++ my_print_env _signenv);
 	 let rhs_rels', lift_ineqs = 
 	   match ineqs with
 	       None -> eqs_rels @ rhs_rels', 0
 	     | Some ineqs -> 
-		 (* 		 let _ = trace (str"Generated inequalities: " ++ my_print_constr env ineqs) in *)
+		 let _ = trace (str"Generated inequalities: " ++ my_print_constr _signenv ineqs) in
 		 lift_rel_context 1 eqs_rels @ ((Anonymous, None, ineqs) :: rhs_rels'), 1
 	 in
 	 let rhs_env = push_rels rhs_rels' env in
@@ -1873,7 +1874,7 @@ let constrs_of_pats typing_fun tycon env isevars eqns tomatchs sign neqs eqs ari
 	   let rhs = { eqn.rhs with it = branch } in
 	     (branch_decl :: branches,
 	      { eqn with patterns = newpatterns; rhs = rhs } :: eqns,
-	      pats :: prevpatterns))
+	      opats :: prevpatterns))
       ([], [], []) eqns
   in x, y
       
