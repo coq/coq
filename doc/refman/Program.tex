@@ -174,6 +174,14 @@ context, the proof of the obligation is \emph{required} to be declared transpare
 
 No such problems arise when using measures or well-founded recursion.
 
+An important point about wellfounded and measure-based functions is the following:
+The recursive prototype of a function of type
+{\binder$_1$}\ldots{\binder$_n$} \{ {\tt measure m \binder$_i$} \}:{\type$_1$}, 
+inside the body is
+\verb|{|{\binder$_i'$ \verb$|$ {\tt m} $x_i'$ < {\tt m} $x_i$}\verb|}|\ldots{\binder$_n$},{\type$_1$}. 
+So any arguments appearing before the recursive one are ignored for the
+recursive calls, hence they are constant.
+
 \subsection{\tt Program Lemma {\ident} : type.
   \comindex{Program Lemma}
   \label{ProgramLemma}}
@@ -214,6 +222,39 @@ tactic is replaced by the default one if not specified.
 The module {\tt Coq.Program.Tactics} defines the default tactic for solving
 obligations called {\tt program\_simpl}. Importing 
 {\tt Coq.Program.Program} also adds some useful notations, as documented in the file itself.
+
+\section{Frequently Asked Questions
+  \comindex{Program FAQ}
+  \label{ProgramFAQ}}
+
+\begin{itemize}
+\item {Ill-formed recursive definitions}
+  This error can happen when one tries to define a
+  function by structural recursion on a subset object, which means the Coq
+  function looks like:
+  
+  \verb$Program Fixpoint f (x : A | P) := match x with A b => f b end.$
+  
+  Supposing $b : A$, the argument at the recursive call to f is not a
+  direct subterm of x as b is wrapped inside an exist constructor to build
+  an object of type \verb${x : A | P}$.  Hence the definition is rejected
+  by the guardedness condition checker. However you can do
+  wellfounded recursion on subset objects like this:
+  
+\begin{verbatim}
+Program Fixpoint f (x : A | P) { measure size } :=
+  match x with A b => f b end.
+\end{verbatim}
+  
+  You will then just have to prove that the measure decreases at each recursive
+  call. There are three drawbacks though: 
+  \begin{enumerate}
+  \item You have to define size yourself;
+  \item The reduction is a little more involved, although it works
+    using lazy evaluation;
+  \item Mutual recursion isn't possible anymore. What would it mean ?
+  \end{enumerate}
+\end{itemize}
 
 %%% Local Variables: 
 %%% mode: latex
