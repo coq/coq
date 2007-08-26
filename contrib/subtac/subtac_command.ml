@@ -242,11 +242,12 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
   let intern_arity = it_mkProd_or_LetIn top_arity after in
     (try trace (str "After length: " ++ int after_length ++ str "Top env: " ++ prr top_bl ++ spc () ++ str "Top arity: " ++ my_print_constr top_env top_arity);
        trace (str "Before lifting arity: " ++ my_print_constr env top_arity) with _ -> ());
-  (* Top arity is in top_env = after :: arg :: before *)
-(*   let intern_arity' = liftn 1 (succ after_length) top_arity in (\* arity in after :: wfarg :: arg :: before *\) *)
+  (* Top arity is in top_env = arg :: before *)
+  let intern_arity = liftn 2 1 intern_arity in
+  (* arity in something :: wfarg :: arg :: before were what refered to arg now refers to something *)
 (*       (try trace (str "projection: " "After lifting arity: " ++ my_print_constr env intern_arity' ++ spc ()); *)
 (* 	 trace (str "Intern env: " ++ prr intern_bl ++ str "intern_arity': " ++ my_print_constr _intern_env intern_arity') with _ -> ()); *)
-  let intern_arity = substl [projection] intern_arity in (* substitute the projection of wfarg for arg *)
+  let intern_arity = substl [projection] intern_arity in (* substitute the projection of wfarg for something *)
   (try trace (str "Top arity after subst: " ++ my_print_constr (Global.env ()) intern_arity) with _ -> ());
 (*   let intern_arity = liftn 1 (succ after_length) intern_arity in (\* back in after :: wfarg :: arg :: before (ie, jump over arg) *\) *)
 (*   (try trace (str "Top arity after subst and lift: " ++ my_print_constr (Global.env ()) intern_arity) with _ -> ()); *)
