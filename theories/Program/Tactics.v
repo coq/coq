@@ -162,4 +162,4 @@ Tactic Notation "dependent" "induction" ident(H) "generalizing" ne_hyp_list(l) :
 (** The default simplification tactic used by Program. *)
 
 Ltac program_simpl := simpl ; intros ; destruct_conjs ; simpl in * ; try subst ; 
-  try (solve [ red ; intros ; discriminate ]) ; auto with *.  
+  try (solve [ red ; intros ; destruct_conjs ; discriminate ]) ; auto with *.  

@@ -61,3 +61,105 @@ Ltac elim_eq_rect :=
       end
   end.
 
+(** Rewrite using uniqueness of indentity proofs [H = refl_equal X]. *)
+
+Ltac simpl_uip :=
+  match goal with
+    [ H : ?X = ?X |- _ ] => rewrite (UIP_refl _ _ H) in *; clear H
+  end.
+
+(** Simplify equalities appearing in the context and goal. *)
+
+Ltac simpl_eq := simpl ; repeat (elim_eq_rect ; simpl) ; repeat (simpl_uip ; simpl).
+
+(** Try to abstract a proof of equality, if no proof of the same equality is present in the context. *)
+
+Ltac abstract_eq_hyp H' p := 
+  match type of p with
+    ?X = ?Y => 
+    match goal with 
+      | [ H : X = Y |- _ ] => fail 1
+      | _ => set (H':=p) ; try (change p with H') ; clearbody H'
+    end
+  end.
+
+(** Apply the tactic tac to proofs of equality appearing as coercion arguments. 
+   Just redefine this tactic (using [Ltac on_coerce_proof tac ::=]) to handle custom coercion operators.
+   *)
+
+Ltac on_coerce_proof tac :=
+  match goal with
+    [ |- ?T ] =>
+    match T with
+      | context [ eq_rect _ _ _ _ ?p ] => tac p
+    end
+  end.
+
+(** Abstract proofs of equalities of coercions. *)
+
+Ltac abstract_eq_proof := on_coerce_proof ltac:(fun p => let H := fresh "eqH" in abstract_eq_hyp H p).
+
+Ltac abstract_eq_proofs := repeat abstract_eq_proof.
+  
+(** Factorize proofs, by using proof irrelevance so that two proofs of the same equality 
+   in the goal become convertible. *)
+
+Ltac pi_eq_proof_hyp p :=
+  match type of p with
+    ?X = ?Y => 
+    match goal with 
+      | [ H : X = Y |- _ ] => 
+        match p with
+          | H => fail 2
+          | _ => rewrite (proof_irrelevance (X = Y) p H)
+        end
+      | _ => fail " No hypothesis with same type "
+    end
+  end.
+
+(** Factorize proofs of equality appearing as coercion arguments. *)
+
+Ltac pi_eq_proof := on_coerce_proof pi_eq_proof_hyp.
+
+Ltac pi_eq_proofs := repeat pi_eq_proof.
+
+(** The two preceding tactics in sequence. *)
+
+Ltac clear_eq_proofs :=
+  abstract_eq_proofs ; pi_eq_proofs.
+
+Hint Rewrite <- eq_rect_eq : refl_id.
+
+(** The refl_id database should be populated with lemmas of the form
+   [coerce_* t (refl_equal _) = t]. *)
+
+Ltac rewrite_refl_id := autorewrite with refl_id.
+
+(** Clear the context and goal of equality proofs. *)
+
+Ltac clear_eq_ctx :=
+  rewrite_refl_id ; clear_eq_proofs.
+
+(** Reapeated elimination of [eq_rect] applications. 
+   Abstracting equalities makes it run much faster than an naive implementation. *)
+
+Ltac simpl_eqs := 
+  repeat (elim_eq_rect ; simpl ; clear_eq_ctx).
+
+(** Clear unused reflexivity proofs. *)
+
+Ltac clear_refl_eq := 
+  match goal with [ H : ?X = ?X |- _ ] => clear H end.
+Ltac clear_refl_eqs := repeat clear_refl_eq.
+
+(** Clear unused equality proofs. *)
+
+Ltac clear_eq := 
+  match goal with [ H : _ = _ |- _ ] => clear H end.
+Ltac clear_eqs := repeat clear_eq.
+
+(** Combine all the tactics to simplify goals containing coercions. *)
+
+Ltac simplify_eqs := 
+  simpl ; simpl_eqs ; clear_eq_ctx ; clear_refl_eqs ;  
+    try subst ; simpl ; repeat simpl_uip ; rewrite_refl_id.
