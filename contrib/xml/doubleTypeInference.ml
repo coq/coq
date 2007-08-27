@@ -51,7 +51,7 @@ let type_judgment env sigma j =
 ;;
 
 let type_judgment_cprop env sigma j =
-  match Term.kind_of_term(whd_betadeltaiotacprop env sigma (Term.body_of_type j.Environ.uj_type)) with
+  match Term.kind_of_term(whd_betadeltaiotacprop env sigma j.Environ.uj_type) with
     | Term.Sort s -> Some {Environ.utj_val = j.Environ.uj_val; Environ.utj_type = s }
     | _ -> None  (* None means the CProp constant *)
 ;;

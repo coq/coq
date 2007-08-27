@@ -138,7 +138,7 @@ let (loop_ids : tactic) = fun gl ->
 	  then
 	    tclTHEN (clear [id]) (arec al) gl
 	  else if n >= 7 & String.sub s 0 7 = "Variant" then begin
-	    match pf_matches gl eq_pattern (body_of_type a) with
+	    match pf_matches gl eq_pattern a with
 	      | [_; _,varphi; _] when isVar varphi ->
 		  let phi = destVar varphi in
 		  if Termops.occur_var env phi concl then
@@ -159,7 +159,6 @@ let (assumption_bis : tactic) = fun gl ->
   let rec arec = function
     | [] -> Util.error "No such assumption"
     | (s,a) :: al ->
-	let a = body_of_type a in
 	if pf_conv_x_leq gl a concl then 
           refine (mkVar s) gl
 	else if pf_is_matching gl and_pattern a then

@@ -82,7 +82,7 @@ let judge_of_relative env n =
   try
     let (_,_,typ) = lookup_rel n env in
     { uj_val  = mkRel n;
-      uj_type = type_app (lift n) typ }
+      uj_type = lift n typ }
   with Not_found -> 
     error_unbound_rel env n
 
@@ -192,7 +192,7 @@ let judge_of_abstraction env name var j =
 
 let judge_of_letin env name defj typj j =
   { uj_val = mkLetIn (name, defj.uj_val, typj.utj_val, j.uj_val) ;
-    uj_type = type_app (subst1 defj.uj_val) j.uj_type }
+    uj_type = subst1 defj.uj_val j.uj_type }
 
 (* Type of an application. *)
 

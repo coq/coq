@@ -1772,8 +1772,7 @@ let subst_rel_context k ctx subst =
 let lift_rel_contextn n k sign =
   let rec liftrec k = function
     | (na,c,t)::sign ->
-	(na,option_map (liftn n k) c,type_app (liftn n k) t)
-	::(liftrec (k-1) sign)
+	(na,option_map (liftn n k) c,liftn n k t)::(liftrec (k-1) sign)
     | [] -> []
   in
   liftrec (rel_context_length sign + k) sign
@@ -2066,8 +2065,7 @@ let build_dependent_signature env evars avoid tomatchs arsign =
 let liftn_rel_context n k sign =  
   let rec liftrec k = function
     | (na,c,t)::sign ->
-	(na,option_map (liftn n k) c,type_app (liftn n k) t)
-	::(liftrec (k-1) sign)
+	(na,option_map (liftn n k) c,liftn n k t)::(liftrec (k-1) sign)
     | [] -> []
   in
     liftrec (k + rel_context_length sign) sign

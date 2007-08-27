@@ -67,8 +67,6 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	
   let mt_evd = Evd.empty
     
-  let vect_lift_type = Array.mapi (fun i t -> type_app (lift i) t)
-      
   (* Utilisé pour inférer le prédicat des Cases *)
   (* Semble exagérement fort *)
   (* Faudra préférer une unification entre les types de toutes les clauses *)
@@ -113,7 +111,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
     let id = strip_meta id in (* May happen in tactics defined by Grammar *)
       try
 	let (n,typ) = lookup_rel_id id (rel_context env) in
-	  { uj_val  = mkRel n; uj_type = type_app (lift n) typ }
+	  { uj_val  = mkRel n; uj_type = lift n typ }
       with Not_found ->
 	try
 	  List.assoc id lvar

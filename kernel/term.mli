@@ -61,17 +61,12 @@ type constr
    and application grouping *)
 val eq_constr : constr -> constr -> bool
 
-(* [types] is the same as [constr] but is intended to be used where a
-   {\em type} in CCI sense is expected (Rem:plurial form since [type] is a
-   reserved ML keyword) *)
+(* [types] is the same as [constr] but is intended to be used for
+   documentation to indicate that such or such function specifically works
+   with {\em types} (i.e. terms of type a sort). 
+   (Rem:plurial form since [type] is a reserved ML keyword) *)
 
 type types = constr
-
-(*s Functions about [types] *)
-
-val type_app : (constr -> constr) -> types -> types
-
-val body_of_type : types -> constr
 
 (*s Functions for dealing with constr terms.
   The following functions are intended to simplify and to uniform the 

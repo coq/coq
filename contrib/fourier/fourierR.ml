@@ -492,7 +492,7 @@ let rec fourier gl=
       in tac gl)
      with _ -> 
     (* les hypothèses *)
-    let hyps = List.map (fun (h,t)-> (mkVar h,(body_of_type t)))
+    let hyps = List.map (fun (h,t)-> (mkVar h,t))
                         (list_of_sign (pf_hyps gl)) in
     let lineq =ref [] in
     List.iter (fun h -> try (lineq:=(ineq1_of_constr h)@(!lineq))

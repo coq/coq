@@ -92,7 +92,7 @@ let push_named_to_rel_context hyps ctxt =
   let rec push = function
     | (id,b,t) :: l ->
 	let s, hyps = push l in
-	let d = (Name id, option_map (subst_vars s) b, type_app (subst_vars s) t) in
+	let d = (Name id, option_map (subst_vars s) b, subst_vars s t) in
 	id::s, d::hyps
     | [] -> [],[] in
   let s, hyps = push hyps in

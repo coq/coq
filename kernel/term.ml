@@ -636,10 +636,6 @@ type types = constr
 
 type strategy = types option 
 
-let type_app f tt = f tt
-
-let body_of_type ty = ty
-
 type named_declaration = identifier * constr option * types
 type rel_declaration = name * constr option * types
 

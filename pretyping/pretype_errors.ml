@@ -51,7 +51,7 @@ let j_nf_evar sigma j =
 let jl_nf_evar sigma jl = List.map (j_nf_evar sigma) jl
 let jv_nf_evar sigma = Array.map (j_nf_evar sigma)
 let tj_nf_evar sigma {utj_val=v;utj_type=t} =
-  {utj_val=type_app (nf_evar sigma) v;utj_type=t}
+  {utj_val=nf_evar sigma v;utj_type=t}
 
 let env_ise sigma env =
   let sign = named_context_val env in

@@ -241,16 +241,15 @@ let typeur sigma metamap =
     | T.Var id ->
         (try
           let (_,_,ty) = Environ.lookup_named id env in
-          T.body_of_type ty
+          ty
         with Not_found ->
           Util.anomaly ("type_of: variable "^(Names.string_of_id id)^" unbound"))
     | T.Const c ->
         let cb = Environ.lookup_constant c env in
         Typeops.type_of_constant_type env (cb.Declarations.const_type)
     | T.Evar ev -> Evd.existential_type sigma ev
-    | T.Ind ind -> T.body_of_type (Inductiveops.type_of_inductive env ind)
-    | T.Construct cstr ->
-       T.body_of_type (Inductiveops.type_of_constructor env cstr)
+    | T.Ind ind -> Inductiveops.type_of_inductive env ind
+    | T.Construct cstr -> Inductiveops.type_of_constructor env cstr
     | T.Case (_,p,c,lf) ->
         let Inductiveops.IndType(_,realargs) =
           try Inductiveops.find_rectype env sigma (type_of env c)

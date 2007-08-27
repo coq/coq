@@ -135,13 +135,13 @@ let implicits_to_ast_list implicits =
 let make_variable_ast name typ implicits =
   (VernacAssumption
     ((Local,Definitional),false,(*inline flag*)
-     [false,([dummy_loc,name], constr_to_ast (body_of_type typ))]))
+     [false,([dummy_loc,name], constr_to_ast typ)]))
   ::(implicits_to_ast_list implicits);;
     
 
 let make_definition_ast name c typ implicits =
   VernacDefinition ((Global,false,Definition), (dummy_loc,name), DefineBody ([], None,
-    (constr_to_ast c), Some (constr_to_ast (body_of_type typ))),
+    (constr_to_ast c), Some (constr_to_ast typ)),
     (fun _ _ -> ()))
   ::(implicits_to_ast_list implicits);;
 

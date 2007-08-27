@@ -157,7 +157,6 @@ val hdchar : env -> types -> string
 val id_of_name_using_hdchar :
   env -> types -> name -> identifier
 val named_hd : env -> types -> name -> name
-val named_hd_type : env -> types -> name -> name
 
 val mkProd_name : env -> name * types * types -> types
 val mkLambda_name : env -> name * types * constr -> constr

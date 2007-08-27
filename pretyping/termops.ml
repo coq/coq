@@ -214,7 +214,7 @@ let push_named_rec_types (lna,typarray,_) env =
     array_map2_i
       (fun i na t ->
 	 match na with
-	   | Name id -> (id, None, type_app (lift i) t)
+	   | Name id -> (id, None, lift i t)
 	   | Anonymous -> anomaly "Fix declarations must be named")
       lna typarray in
   Array.fold_left
@@ -305,11 +305,8 @@ let map_constr_with_named_binders g f l c = match kind_of_term c with
    (co-)fixpoint) *)
 
 let fold_rec_types g (lna,typarray,_) e =
-  let ctxt =
-    array_map2_i
-      (fun i na t -> (na, None, type_app (lift i) t)) lna typarray in
-  Array.fold_left
-    (fun e assum -> g assum e) e ctxt
+  let ctxt = array_map2_i (fun i na t -> (na, None, lift i t)) lna typarray in
+  Array.fold_left (fun e assum -> g assum e) e ctxt
 
 
 let map_constr_with_binders_left_to_right g f l c = match kind_of_term c with
@@ -670,7 +667,7 @@ let subst_term_occ_decl locs c (id,bodyopt,typ as d) =
     | None -> (id,None,subst_term_occ locs c typ)
     | Some body -> 
 	if locs = [] then
-	  (id,Some (subst_term c body),type_app (subst_term c) typ)
+	  (id,Some (subst_term c body),subst_term c typ)
 	else if List.mem 0 locs then 
 	  d
 	else 
@@ -753,20 +750,18 @@ let named_hd env a = function
   | Anonymous -> Name (id_of_string (hdchar env a)) 
   | x         -> x
 
-let named_hd_type env a = named_hd env (body_of_type a)
-
-let mkProd_name   env (n,a,b) = mkProd (named_hd_type env a n, a, b)
-let mkLambda_name env (n,a,b) = mkLambda (named_hd_type env a n, a, b)
+let mkProd_name   env (n,a,b) = mkProd (named_hd env a n, a, b)
+let mkLambda_name env (n,a,b) = mkLambda (named_hd env a n, a, b)
 
 let lambda_name = mkLambda_name
 let prod_name = mkProd_name
 
-let prod_create   env (a,b) = mkProd (named_hd_type env a Anonymous, a, b)
-let lambda_create env (a,b) =  mkLambda (named_hd_type env a Anonymous, a, b)
+let prod_create   env (a,b) = mkProd (named_hd env a Anonymous, a, b)
+let lambda_create env (a,b) =  mkLambda (named_hd env a Anonymous, a, b)
 
 let name_assumption env (na,c,t) =
   match c with
-    | None      -> (named_hd_type env t na, None, t)
+    | None      -> (named_hd env t na, None, t)
     | Some body -> (named_hd env body na, c, t)
 
 let name_context env hyps =

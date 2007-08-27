@@ -26,9 +26,6 @@ let meta_type evd mv =
     with Not_found -> error ("unknown meta ?"^string_of_int mv) in
   meta_instance evd ty
 
-let vect_lift = Array.mapi lift
-let vect_lift_type = Array.mapi (fun i t -> type_app (lift i) t)
-
 let constant_type_knowing_parameters env cst jl =
   let paramstyp = Array.map (fun j -> j.uj_type) jl in
   type_of_constant_knowing_parameters env (constant_type env cst) paramstyp
@@ -170,7 +167,7 @@ let mcheck env evd c t =
 let mtype_of env evd c =
   let j = execute env evd (nf_evar (evars_of evd) c) in
   (* No normalization: it breaks Pattern! *)
-  (*nf_betaiota*) (body_of_type j.uj_type)
+  (*nf_betaiota*) j.uj_type
 
 let msort_of env evd c =
   let j = execute env evd (nf_evar (evars_of evd) c) in

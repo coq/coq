@@ -329,14 +329,13 @@ let mk_variable_obj id body typ =
   let variables = search_variables () in
   let params = filter_params variables hyps'' in
    Acic.Variable
-    (Names.string_of_id id, unsharedbody,
-     (Unshare.unshare (Term.body_of_type typ)), params)
+    (Names.string_of_id id, unsharedbody, Unshare.unshare typ, params)
 ;;
 
 (* Unsharing is not performed on the body, that must be already unshared. *)
 (* The evar map and the type, instead, are unshared by this function.     *)
 let mk_current_proof_obj is_a_variable id bo ty evar_map env =
- let unshared_ty = Unshare.unshare (Term.body_of_type ty) in
+ let unshared_ty = Unshare.unshare ty in
  let metasenv =
   List.map
    (function
@@ -384,7 +383,7 @@ let mk_current_proof_obj is_a_variable id bo ty evar_map env =
 
 let mk_constant_obj id bo ty variables hyps =
  let hyps = string_list_of_named_context_list hyps in
- let ty = Unshare.unshare (Term.body_of_type ty) in
+ let ty = Unshare.unshare ty in
  let params = filter_params variables hyps in
   match bo with
      None ->
@@ -413,7 +412,7 @@ let mk_inductive_obj sp mib packs variables nparams hyps finite =
         let cons =
          (Array.fold_right (fun (name,lc) i -> (name,lc)::i)
           (Array.mapi
-           (fun j x ->(x,Unshare.unshare (Term.body_of_type lc.(j)))) consnames)
+           (fun j x ->(x,Unshare.unshare lc.(j))) consnames)
           []
          )
         in
