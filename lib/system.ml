@@ -116,7 +116,7 @@ let where_in_path path filename =
 	  (lpe, f)
       | (lpe, f) :: l' -> 
 	  if cont then
-	    check_and_warn true (acc ^ "; ") l'
+	    check_and_warn true (acc ^ (string_of_physical_path lpe) ^ "; ") l'
 	  else
 	    check_and_warn true 
 	      (filename ^ " has been found in [ " ^ (string_of_physical_path lpe) ^ "; ") l' 
