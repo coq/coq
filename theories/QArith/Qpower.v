@@ -190,3 +190,15 @@ replace (a^'n*a^1)%Z with (a^'n*a)%Z by ring.
 ring_simplify.
 reflexivity.
 Qed.
+
+Lemma Qsqr_nonneg : forall a, 0 <= a^2.
+Proof.
+intros a.
+destruct (Qlt_le_dec 0 a) as [A|A].
+apply (Qmult_le_0_compat a a);
+ (apply Qlt_le_weak; assumption).
+setoid_replace (a^2) with ((-a)*(-a)) by ring.
+rewrite Qle_minus_iff in A.
+setoid_replace (0+ - a) with (-a) in A by ring.
+apply Qmult_le_0_compat; assumption.
+Qed.

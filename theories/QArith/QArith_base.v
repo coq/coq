@@ -130,6 +130,12 @@ Hint Resolve (Seq_refl Q Qeq Q_Setoid): qarith.
 Hint Resolve (Seq_sym Q Qeq Q_Setoid): qarith.
 Hint Resolve (Seq_trans Q Qeq Q_Setoid): qarith.
 
+Theorem Qnot_eq_sym : forall x y, ~x == y -> ~y == x. 
+Proof.
+ auto with qarith.
+Qed.
+
+Hint Resolve Qnot_eq_sym : qarith.
 
 (** * Addition, multiplication and opposite *)
 
@@ -564,6 +570,9 @@ Proof.
   unfold Qle, Qlt, Qeq; intros; apply Zle_lt_or_eq; auto.
 Qed.
 
+Hint Resolve Qle_not_lt Qlt_not_le Qnot_le_lt Qnot_lt_le 
+ Qlt_le_weak Qlt_not_eq Qle_antisym Qle_refl: qartih.
+
 (** Some decidability results about orders. *)
 
 Lemma Q_dec : forall x y, {x<y} + {y<x} + {x==y}.
@@ -664,6 +673,46 @@ Qed.
 Lemma Qinv_le_0_compat : forall a, 0 <= a -> 0 <= /a.
 Proof.
 intros [[|n|n] d] Ha; assumption.
+Qed.
+
+Lemma Qle_shift_div_l : forall a b c, 
+ 0 < c -> a*c <= b -> a <= b/c.
+Proof.
+intros a b c Hc H.
+apply Qmult_lt_0_le_reg_r with (c).
+ assumption.
+setoid_replace (b/c*c) with (c*(b/c)) by apply Qmult_comm.
+rewrite Qmult_div_r; try assumption.
+auto with *.
+Qed.
+
+Lemma Qle_shift_recip_l : forall a c, 
+ 0 < c -> a*c <= 1 -> a <= /c.
+Proof.
+intros a c Hc H.
+setoid_replace (/c) with (1*/c) by (symmetry; apply Qmult_1_l).
+change (a <= 1/c).
+apply Qle_shift_div_l; assumption.
+Qed.
+
+Lemma Qle_shift_div_r : forall a b c, 
+ 0 < b -> a <= c*b -> a/b <= c.
+Proof.
+intros a b c Hc H.
+apply Qmult_lt_0_le_reg_r with b.
+ assumption.
+setoid_replace (a/b*b) with (b*(a/b)) by apply Qmult_comm.
+rewrite Qmult_div_r; try assumption.
+auto with *.
+Qed.
+
+Lemma Qle_shift_recip_r : forall b c, 
+ 0 < b -> 1 <= c*b -> /b <= c.
+Proof.
+intros b c Hc H.
+setoid_replace (/b) with (1*/b) by (symmetry; apply Qmult_1_l).
+change (1/b <= c).
+apply Qle_shift_div_r; assumption.
 Qed.
 
 (** * Rational to the n-th power *)
