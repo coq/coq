@@ -160,6 +160,16 @@ let pr_prim_token = function
   | Numeral n -> Bigint.pr_bigint n
   | String s -> qs s
 
+let pr_evar pr n l =
+  str (Evd.string_of_existential n) ++ 
+  (match l with
+   | Some l ->
+       pr_in_comment
+         (fun l -> 
+	   str"[" ++ hov 0 (prlist_with_sep pr_coma (pr ltop) l) ++ str"]")
+         l
+   | None -> mt())
+
 let las = lapp
 let lpator = 100
 
@@ -559,7 +569,7 @@ let rec pr sep inherited a =
       lif
      
   | CHole _ -> str "_", latom
-  | CEvar (_,n) -> str (Evd.string_of_existential n), latom
+  | CEvar (_,n,l) -> pr_evar (pr mt) n l, latom
   | CPatVar (_,(_,p)) -> str "?" ++ pr_patvar p, latom
   | CSort (_,s) -> pr_rawsort s, latom
   | CCast (_,a,CastConv (k,b)) ->

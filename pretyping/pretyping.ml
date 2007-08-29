@@ -229,37 +229,25 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     | Anonymous -> name'
     | _ -> name
 
-  (*
-    let evar_type_case isevars env ct pt lft p c =
-    let (mind,bty,rslty) = type_case_branches env (evars_of isevars) ct pt p c
-    in check_branches_message isevars env (c,ct) (bty,lft); (mind,rslty)
-  *)
-
-  let strip_meta id = (* For Grammar v7 compatibility *)
-    let s = string_of_id id in
-      if s.[0]='$' then id_of_string (String.sub s 1 (String.length s - 1))
-      else id
-
   let pretype_id loc env (lvar,unbndltacvars) id =
-    let id = strip_meta id in (* May happen in tactics defined by Grammar *)
-      try
-	let (n,typ) = lookup_rel_id id (rel_context env) in
-	  { uj_val  = mkRel n; uj_type = lift n typ }
-      with Not_found ->
-	try
-	  List.assoc id lvar
-	with Not_found ->
-	  try
-	    let (_,_,typ) = lookup_named id env in
-	      { uj_val  = mkVar id; uj_type = typ }
-	  with Not_found ->
-	    try (* To build a nicer ltac error message *)
-	      match List.assoc id unbndltacvars with
-		| None -> user_err_loc (loc,"",
-					str "variable " ++ pr_id id ++ str " should be bound to a term")
-		| Some id0 -> Pretype_errors.error_var_not_found_loc loc id0
-	    with Not_found ->
-	      error_var_not_found_loc loc id
+    try
+      let (n,typ) = lookup_rel_id id (rel_context env) in
+      { uj_val  = mkRel n; uj_type = lift n typ }
+    with Not_found ->
+    try
+      List.assoc id lvar
+    with Not_found ->
+    try
+      let (_,_,typ) = lookup_named id env in
+      { uj_val  = mkVar id; uj_type = typ }
+    with Not_found ->
+    try (* To build a nicer ltac error message *)
+      match List.assoc id unbndltacvars with
+      | None -> user_err_loc (loc,"",
+	  str "variable " ++ pr_id id ++ str " should be bound to a term")
+      | Some id0 -> Pretype_errors.error_var_not_found_loc loc id0
+    with Not_found ->
+      error_var_not_found_loc loc id
 
   (* make a dependent predicate from an undependent one *)
 

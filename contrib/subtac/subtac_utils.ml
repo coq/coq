@@ -163,7 +163,7 @@ let make_existential loc ?(opaque = true) env isevars c =
 
 let make_existential_expr loc env c =
   let key = Evarutil.new_untyped_evar () in
-  let evar = Topconstr.CEvar (loc, key) in
+  let evar = Topconstr.CEvar (loc, key, None) in
     debug 2 (str "Constructed evar " ++ int key);
     evar
 

@@ -920,8 +920,8 @@ let internalise sigma globalenv env allow_patvar lvar c =
 	RPatVar (loc, n)
     | CPatVar (loc, _) ->
 	raise (InternalisationError (loc,NegativeMetavariable))
-    | CEvar (loc, n) ->
-	REvar (loc, n, None)
+    | CEvar (loc, n, l) ->
+	REvar (loc, n, option_map (List.map (intern env)) l)
     | CSort (loc, s) ->
 	RSort(loc,s)
     | CCast (loc, c1, CastConv (k, c2)) ->

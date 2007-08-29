@@ -105,13 +105,8 @@ let idopt_of_name = function
   | Name id -> Some id
   | Anonymous -> None
 
-let extern_evar loc n =
-(*
-  msgerrnl (str 
-    "Warning: existential variable turned into meta-variable during externalization");
-  CPatVar (loc,(false,make_ident "META" (Some n)))
-*)
-  CEvar (loc,n)
+let extern_evar loc n l =
+  if !print_evar_arguments then CEvar (loc,n,l) else CEvar (loc,n,None)
 
 let rawdebug = ref false
 
@@ -662,9 +657,11 @@ let rec extern inctx scopes vars r =
 
   | REvar (loc,n,None) when !print_meta_as_hole -> CHole loc
 
-  | REvar (loc,n,_) -> (* we drop args *) extern_evar loc n
+  | REvar (loc,n,l) ->
+      extern_evar loc n (option_map (List.map (extern false scopes vars)) l)
 
-  | RPatVar (loc,n) -> if !print_meta_as_hole then CHole loc else CPatVar (loc,n)
+  | RPatVar (loc,n) ->
+      if !print_meta_as_hole then CHole loc else CPatVar (loc,n)
 
   | RApp (loc,f,args) ->
       (match f with

@@ -125,7 +125,7 @@ type constr_expr =
       * constr_expr * constr_expr
   | CHole of loc
   | CPatVar of loc * (bool * patvar)
-  | CEvar of loc * existential_key
+  | CEvar of loc * existential_key * constr_expr list option
   | CSort of loc * rawsort
   | CCast of loc * constr_expr * constr_expr cast_type
   | CNotation of loc * notation * constr_expr list

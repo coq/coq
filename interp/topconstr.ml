@@ -565,7 +565,7 @@ type constr_expr =
       * constr_expr * constr_expr
   | CHole of loc
   | CPatVar of loc * (bool * patvar)
-  | CEvar of loc * existential_key
+  | CEvar of loc * existential_key * constr_expr list option
   | CSort of loc * rawsort
   | CCast of loc * constr_expr * constr_expr cast_type
   | CNotation of loc * notation * constr_expr list
@@ -627,7 +627,7 @@ let constr_loc = function
   | CIf (loc,_,_,_,_) -> loc
   | CHole loc -> loc
   | CPatVar (loc,_) -> loc
-  | CEvar (loc,_) -> loc
+  | CEvar (loc,_,_) -> loc
   | CSort (loc,_) -> loc
   | CCast (loc,_,_) -> loc
   | CNotation (loc,_,_) -> loc
