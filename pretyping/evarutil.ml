@@ -397,6 +397,23 @@ and clear_hyps_in_evi evd evi ids =
 
 let need_restriction k args = not (array_for_all (closedn k) args)
 
+(* A utility to circumvent the introduction of aliases to rel by the
+   pattern-matching compilation algorithm *)
+
+let rec expand_var env x = match kind_of_term x with
+  | Rel n -> 
+      begin try match pi2 (lookup_rel n env) with
+      | Some t when isRel t -> expand_var env (lift n t)
+      | _ -> x
+      with Not_found -> x
+      end
+  | Var id -> 
+      begin match pi2 (lookup_named id env) with
+      | Some t when isVar t -> expand_var env t
+      | _ -> x
+      end
+  | _ -> x
+
 (* We try to instantiate the evar assuming the body won't depend
  * on arguments that are not Rels or Vars, or appearing several times
  * (i.e. we tackle only Miller-Pfenning patterns unification) 
@@ -424,14 +441,15 @@ exception NotClean of constr
 
 let rec real_clean env isevars ev subst rhs =
   let evd = ref isevars in
-  let subst' = List.map (fun (x,y) -> (y,mkVar x)) subst in
+  let invert_binding (x,y) = (expand_var env y,mkVar x) in
+  let subst' = List.map invert_binding subst in
   let rec subs rigid k t =
     match kind_of_term t with
       | Rel i ->
  	 if i<=k then t
  	 else
 	   (* Flex/Rel problem: unifiable as a pattern iff Rel in ev scope *)
-	   (try List.assoc (mkRel (i-k)) subst' 
+	   (try List.assoc (expand_var env (mkRel (i-k))) subst' 
 	    with Not_found ->
 	      if rigid then
 		try unique_projection env evd (mkRel (i-k)) subst
