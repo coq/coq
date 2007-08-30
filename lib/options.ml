@@ -125,4 +125,4 @@ let browser_cmd_fmt =
   Not_found ->
    if Sys.os_type = "Win32"
    then "C:\\PROGRA~1\\INTERN~1\\IEXPLORE ", ""
-   else "netscape -remote \"OpenURL(", ")\""
+   else "firefox -remote \"OpenURL(", ")\""

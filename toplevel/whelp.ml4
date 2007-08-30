@@ -32,8 +32,30 @@ open Tacmach
 (* Coq interface to the Whelp query engine developed at 
    the University of Bologna *)
 
+let whelp_server_name = ref "http://mowgli.cs.unibo.it:58080"
+let getter_server_name = ref "http://mowgli.cs.unibo.it:58081"
+
+open Goptions
+
+let _ =
+  declare_string_option 
+    { optsync  = false;
+      optname  = "Whelp server";
+      optkey   = (SecondaryTable ("Whelp","Server"));
+      optread  = (fun () -> !whelp_server_name);
+      optwrite = (fun s -> whelp_server_name := s) }
+
+let _ =
+  declare_string_option 
+    { optsync  = false;
+      optname  = "Whelp getter";
+      optkey   = (SecondaryTable ("Whelp","Getter"));
+      optread  = (fun () -> !getter_server_name);
+      optwrite = (fun s -> getter_server_name := s) }
+
+
 let make_whelp_request req c =
-  "http://mowgli.cs.unibo.it/forward/58080/apply?xmluri=http%3A%2F%2Fmowgli.cs.unibo.it%3A58081%2Fgetempty&param.profile=firewall&profile=firewall&param.keys=d_c%2CC1%2CHC2%2CL&param.embedkeys=d_c%2CTC1%2CHC2%2CL&param.thkeys=T1%2CT2%2CL%2CE&param.prooftreekeys=HAT%2CG%2CHAO%2CL&param.media-type=text%2Fhtml&param.thmedia-type=&prooftreemedia-type=&param.doctype-public=&param.encoding=&param.thencoding=&param.prooftreeencoding=&advanced=no&keys=S%2CT1%2CT2%2CL%2CRT%2CE&param.expression=" ^ c ^ "&param.action=" ^ req
+  !whelp_server_name ^ "/apply?xmluri=" ^ !getter_server_name ^ "/getempty&param.profile=firewall&profile=firewall&param.keys=d_c%2CC1%2CHC2%2CL&param.embedkeys=d_c%2CTC1%2CHC2%2CL&param.thkeys=T1%2CT2%2CL%2CE&param.prooftreekeys=HAT%2CG%2CHAO%2CL&param.media-type=text%2Fhtml&param.thmedia-type=&prooftreemedia-type=&param.doctype-public=&param.encoding=&param.thencoding=&param.prooftreeencoding=&advanced=no&keys=S%2CT1%2CT2%2CL%2CRT%2CE&param.expression=" ^ c ^ "&param.action=" ^ req
 
 let b = Buffer.create 16
 
