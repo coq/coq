@@ -416,7 +416,7 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
        CT_coerce_ID_to_FORMULA(CT_metaid (string_of_id s))
    | CPatVar (_, (true, s)) ->
        xlate_error "Second order variable not supported"
-   | CEvar (_, _) -> xlate_error "CEvar not supported"
+   | CEvar _ -> xlate_error "CEvar not supported"
    | CCoFix (_, (_, id), lm::lmi) -> 
      let strip_mutcorec (fid, bl,arf, ardef) =
 	CT_cofix_rec (xlate_ident fid, xlate_binder_list bl,

@@ -161,14 +161,14 @@ let pr_prim_token = function
   | String s -> qs s
 
 let pr_evar pr n l =
-  str (Evd.string_of_existential n) ++ 
+  hov 0 (str (Evd.string_of_existential n) ++
   (match l with
    | Some l ->
-       pr_in_comment
+       spc () ++ pr_in_comment
          (fun l -> 
 	   str"[" ++ hov 0 (prlist_with_sep pr_coma (pr ltop) l) ++ str"]")
          l
-   | None -> mt())
+   | None -> mt()))
 
 let las = lapp
 let lpator = 100
