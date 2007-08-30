@@ -341,10 +341,31 @@ directly from the {\Coq} toplevel or from {\CoqIDE}, assuming a
 graphical environment is also running. The browser to use can be
 selected by setting the environment variable {\tt
 COQREMOTEBROWSER}. If not explicitly set, it defaults to
-\verb!netscape -remote "OpenURL(%s)"!  or
+\verb!firefox -remote "OpenURL(%s)"!  or
 \verb!C:\\PROGRA~1\\INTERN~1\\IEXPLORE %s!, depending on the
 underlying operating system (in the command, the string \verb!%s!
 serves as metavariable for the url to open).
+The Whelp tool relies on a dedicated Whelp server and on another server
+called Getter that retrieves formal documents. The default Whelp server name
+can be obtained using the command {\tt Test Whelp Server}
+\comindex{Test Whelp Server} and the default Getter can be obtained
+using the command: {\tt Test Whelp Getter} \comindex{Test Whelp
+Getter}. The Whelp server name can be changed using the command:
+
+\smallskip
+\noindent {\tt Set Whelp Server {\str}}.\\
+where {\str} is a URL (e.g. {\tt http://mowgli.cs.unibo.it:58080}).
+\comindex{Set Whelp Server}
+\smallskip
+
+\noindent The Getter can be changed using the command:
+\smallskip
+
+\noindent {\tt Set Whelp Getter {\str}}.\\
+where {\str} is a URL (e.g. {\tt http://mowgli.cs.unibo.it:58081}).  
+\comindex{Set Whelp Getter}
+
+\bigskip
 
 The {\sc Whelp} commands are:
 
