@@ -388,7 +388,7 @@ let simpl_iter () =
 
 (* The boolean value is_mes expresses that the termination is expressed
   using a measure function instead of a well-founded relation. *)
-let tclUSER is_mes l g = 
+let tclUSER tac is_mes l g = 
   let clear_tac = 
     match l with 
       | None -> h_clear true []
@@ -398,8 +398,8 @@ let tclUSER is_mes l g =
     [
       clear_tac;
       if is_mes 
-      then unfold_in_concl [([], evaluable_of_global_reference (delayed_force ltof_ref))]
-      else tclIDTAC
+      then tclTHEN (unfold_in_concl [([], evaluable_of_global_reference (delayed_force ltof_ref))]) tac
+      else tac (* tclIDTAC *)
     ]
     g
     
@@ -572,7 +572,7 @@ let retrieve_acc_var g =
     (fun id -> string_match (string_of_id id);id)
     hyps 
 
-let rec introduce_all_values is_mes acc_inv func context_fn
+let rec introduce_all_values concl_tac is_mes acc_inv func context_fn
     eqs  hrec args values specs =
     (match args with
     [] -> 
@@ -589,7 +589,7 @@ let rec introduce_all_values is_mes acc_inv func context_fn
 	let hspec = next_global_ident_away true hspec_id ids in
 	let tac =  
 	  observe_tac "introduce_all_values" (
-	    introduce_all_values is_mes acc_inv func context_fn eqs
+	    introduce_all_values concl_tac is_mes acc_inv func context_fn eqs
 	      hrec args
 	      (rec_res::values)(hspec::specs)) in
 	(tclTHENS
@@ -609,6 +609,7 @@ let rec introduce_all_values is_mes acc_inv func context_fn
 		      observe_tac "user proof" 
 			(fun g ->  
 			   tclUSER
+			     concl_tac
 			     is_mes
 			     (Some (hrec::hspec::(retrieve_acc_var g)@specs))
 			     g
@@ -621,11 +622,11 @@ let rec introduce_all_values is_mes acc_inv func context_fn
     )
  
 	   
-let rec_leaf_terminate is_mes acc_inv hrec (func:global_reference) eqs expr =
+let rec_leaf_terminate concl_tac is_mes acc_inv hrec (func:global_reference) eqs expr =
   match find_call_occs 0 (mkVar (get_f (constr_of_reference func))) expr with
   | context_fn, args ->
       observe_tac "introduce_all_values" 
-	(introduce_all_values is_mes acc_inv func context_fn eqs  hrec args  [] [])
+	(introduce_all_values concl_tac is_mes acc_inv func context_fn eqs  hrec args  [] [])
 (*
 let proveterminate rec_arg_id is_mes acc_inv (hrec:identifier)  
   (f_constr:constr) (func:global_reference) base_leaf rec_leaf = 
@@ -766,10 +767,10 @@ let hyp_terminates nb_args func =
 	     
 
 
-let tclUSER_if_not_mes is_mes names_to_suppress = 
+let tclUSER_if_not_mes concl_tac is_mes names_to_suppress = 
   if is_mes 
   then tclCOMPLETE (h_simplest_apply (delayed_force well_founded_ltof))
-  else tclUSER is_mes names_to_suppress
+  else tclUSER concl_tac is_mes names_to_suppress
 
 let termination_proof_header is_mes input_type ids args_id relation
     rec_arg_num rec_arg_id tac wf_tac : tactic = 
@@ -860,7 +861,7 @@ let rec instantiate_lambda t l =
 ;;
 
 
-let whole_start nb_args is_mes func input_type relation rec_arg_num  : tactic = 
+let whole_start (concl_tac:tactic) nb_args is_mes func input_type relation rec_arg_num  : tactic = 
   begin 
     fun g -> 
       let ids = ids_of_named_context (pf_hyps g) in
@@ -903,13 +904,13 @@ let whole_start nb_args is_mes func input_type relation rec_arg_num  : tactic =
 	      (mkVar f_id)
 	      func
 	      base_leaf_terminate 
-	      rec_leaf_terminate
+	      (rec_leaf_terminate concl_tac)
 	      []
 	      expr
 	   )
 	     g 
 	)
-	tclUSER_if_not_mes 
+	(tclUSER_if_not_mes concl_tac)
 	g 
   end
 
@@ -980,10 +981,11 @@ let prove_with_tcc lemma _ : tactic =
 	  (* 	      default_auto *)
       ]
       gls
+
       
 	     
 
-let open_new_goal using_lemmas ref goal_name (gls_type,decompose_and_tac,nb_goal)   = 
+let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref goal_name (gls_type,decompose_and_tac,nb_goal)   = 
   let current_proof_name = get_current_proof_name () in
   let name = match goal_name with 
     | Some s -> s 
@@ -1008,12 +1010,23 @@ let open_new_goal using_lemmas ref goal_name (gls_type,decompose_and_tac,nb_goal
 	| _ -> anomaly "equation_lemma: not a constant"
     in
     let lemma = mkConst (Lib.make_con na) in 
-    Array.iteri 
-      (fun i _ -> 
-	 by (observe_tac ("reusing lemma "^(string_of_id na)) (prove_with_tcc lemma i)))
-      (Array.make nb_goal ())
-    ;
+(*     Array.iteri  *)
+(*       (fun i _ ->  *)
+(* 	 by (observe_tac ("reusing lemma "^(string_of_id na)) (prove_with_tcc lemma (nb_goal - i)))) *)
+(*       (Array.make nb_goal ()) *)
+(*     ; *)
     ref := Some lemma ;
+    Options.silently (Vernacentries.interp (Vernacexpr.VernacAbort None));
+    build_proof 
+      (  fun gls ->
+	   let hid = next_global_ident_away true h_id (pf_ids_of_hyps gls) in 
+	   tclTHENSEQ 
+	     [
+	       h_generalize [lemma];
+	       h_intro hid;
+	       Elim.h_decompose_and (mkVar hid); 
+	     ] gls)
+      (gen_eauto(* default_eauto *) false (false,5) [] (Some []));
     Command.save_named opacity;
   in
   start_proof
@@ -1046,6 +1059,8 @@ let open_new_goal using_lemmas ref goal_name (gls_type,decompose_and_tac,nb_goal
     defined ()
   
 ;;    
+
+
 let com_terminate 
     tcc_lemma_name 
     tcc_lemma_ref 
@@ -1057,17 +1072,20 @@ let com_terminate
     thm_name using_lemmas 
     nb_args
     hook =
-  let (evmap, env) = Command.get_current_context() in
-  start_proof thm_name
-    (Global, Proof Lemma) (Environ.named_context_val env)
-    (hyp_terminates nb_args fonctional_ref) hook;
-  by (observe_tac "whole_start" (whole_start nb_args is_mes fonctional_ref
+  let start_proof (tac_start:tactic) (tac_end:tactic) = 
+    let (evmap, env) = Command.get_current_context() in
+    start_proof thm_name
+      (Global, Proof Lemma) (Environ.named_context_val env)
+      (hyp_terminates nb_args fonctional_ref) hook;
+    by (observe_tac "starting_tac" tac_start);
+    by (observe_tac "whole_start" (whole_start tac_end nb_args is_mes fonctional_ref
 				   input_type relation rec_arg_num ))
     
-  ;
+  in
+  start_proof tclIDTAC tclIDTAC;
   try 
     let new_goal_type = build_new_goal_type () in 
-    open_new_goal using_lemmas tcc_lemma_ref
+    open_new_goal start_proof using_lemmas tcc_lemma_ref
       (Some tcc_lemma_name)
       (new_goal_type)
   with Failure "empty list of subgoals!" -> 

@@ -1305,13 +1305,13 @@ let prove_with_tcc tcc_lemma_constr eqs : tactic =
     | None -> anomaly "No tcc proof !!"
     | Some lemma ->
 	fun gls ->
-	  let hid = next_global_ident_away true h_id (pf_ids_of_hyps gls) in
+(* 	  let hid = next_global_ident_away true h_id (pf_ids_of_hyps gls) in *)
 (* 	  let ids = hid::pf_ids_of_hyps gls in  *)
 	  tclTHENSEQ
 	    [
-	      generalize [lemma];
-	      h_intro hid;
-	      Elim.h_decompose_and (mkVar hid);
+(* 	      generalize [lemma]; *)
+(* 	      h_intro hid; *)
+(* 	      Elim.h_decompose_and (mkVar hid); *)
 	      tclTRY(list_rewrite true eqs);
 (* 	      (fun g ->  *)
 (* 		 let ids' = pf_ids_of_hyps g in  *)
@@ -1367,7 +1367,7 @@ let new_prove_with_tcc is_mes acc_inv hrec tcc_lemma_constr eqs : tactic =
     | None -> tclIDTAC_MESSAGE (str "No tcc proof !!")
     | Some lemma -> 
 	fun gls ->
-	  let tcc_hyp = next_global_ident_away true (Names.id_of_string "tcc_p") (pf_ids_of_hyps gls) in 
+(* 	  let tcc_hyp = next_global_ident_away true (Names.id_of_string "tcc_p") (pf_ids_of_hyps gls) in  *)
 	    (tclTHENSEQ 
 	    [
 	      backtrack_eqs_until_hrec hrec eqs;
@@ -1376,18 +1376,18 @@ let new_prove_with_tcc is_mes acc_inv hrec tcc_lemma_constr eqs : tactic =
 		   (apply (mkVar hrec))
 		   [ tclTHENSEQ 
 		       [
-			 generalize [lemma];
-			 h_intro tcc_hyp;
-			 begin 
-			   let eqs' : identifier list = 
-			     let sec_vars = 
-			       List.filter Termops.is_section_variable (pf_ids_of_hyps gls) 
-			     in
-			     sec_vars@eqs
-			   in
-			   keep (tcc_hyp::eqs')
-			 end;
-			 Elim.h_decompose_and (mkVar tcc_hyp); 
+(* 			 generalize [lemma]; *)
+(* 			 h_intro tcc_hyp; *)
+(* 			 begin  *)
+(* 			   let eqs' : identifier list =  *)
+(* 			     let sec_vars =  *)
+(* 			       List.filter Termops.is_section_variable (pf_ids_of_hyps gls)  *)
+(* 			     in *)
+(* 			     sec_vars@eqs *)
+(* 			   in *)
+(* 			   keep (tcc_hyp::eqs') *)
+(* 			 end; *)
+(* 			 Elim.h_decompose_and (mkVar tcc_hyp);  *)
 			 
 			 apply (Lazy.force acc_inv);
 			 (fun g -> 
@@ -1460,7 +1460,7 @@ let prove_principle_for_gen
   let wf_tac = 
     if is_mes 
     then 
-      (fun b -> Recdef.tclUSER_if_not_mes b None)
+      (fun b -> Recdef.tclUSER_if_not_mes tclIDTAC b None)
     else fun _ -> prove_with_tcc tcc_lemma_ref []
   in
   let real_rec_arg_num = rec_arg_num - princ_info.nparams in 
@@ -1512,8 +1512,25 @@ let prove_principle_for_gen
       g
   in
   let args_ids = List.map (fun (na,_,_) -> Nameops.out_name na) princ_info.args in
+  let lemma = 
+    match !tcc_lemma_ref with 
+     | None -> anomaly ( "No tcc proof !!")
+     | Some lemma -> lemma
+  in
+
+  let start_tac gls = 
+      let hid = next_global_ident_away true (id_of_string "prov") (pf_ids_of_hyps gls) in
+      tclTHENSEQ
+	[
+	  generalize [lemma];
+	  h_intro hid;
+	  Elim.h_decompose_and (mkVar hid);
+	]
+	gls
+  in
   tclTHENSEQ
-    [ 
+    [ 	      
+      observe_tac "start_tac" start_tac;
       h_intros 
 	(List.rev_map (fun (na,_,_) -> Nameops.out_name na) 
 	   (princ_info.args@princ_info.branches@princ_info.predicates@princ_info.params)
