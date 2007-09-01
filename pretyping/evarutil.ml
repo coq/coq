@@ -467,7 +467,7 @@ let rec real_clean env isevars ev subst rhs =
 	      mkEvar (ev,args')
       | Var id ->
 	  (* Flex/Var problem: unifiable as a pattern iff Var in scope of ev *)
-          (try List.assoc t subst'
+          (try List.assoc (expand_var env t) subst'
            with Not_found -> if not rigid then t else raise (NotClean t))
       | _ ->
 	  (* Flex/Rigid problem (or assimilated if not normal): we "imitate" *)
