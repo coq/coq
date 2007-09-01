@@ -161,7 +161,11 @@ Program Fixpoint div2 (n : nat) {measure id n} : { x : nat | n = 2 * x \/ n = 2 
   end.
 \end{coq_example}
 
-\emph{Caution:} When defining structurally recursive functions, the
+The \verb|measure| keyword expects a measure function into the naturals, whereas
+\verb|wf| expects a relation.
+
+\paragraph{Caution}
+When defining structurally recursive functions, the
 generated obligations should have the prototype of the currently defined functional
 in their context. In this case, the obligations should be transparent
 (e.g. using Defined) so that the guardedness condition on
@@ -174,7 +178,7 @@ context, the proof of the obligation is \emph{required} to be declared transpare
 
 No such problems arise when using measures or well-founded recursion.
 
-An important point about wellfounded and measure-based functions is the following:
+An important point about well-founded and measure-based functions is the following:
 The recursive prototype of a function of type
 {\binder$_1$}\ldots{\binder$_n$} \{ {\tt measure m \binder$_i$} \}:{\type$_1$}, 
 inside the body is
