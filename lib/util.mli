@@ -125,6 +125,7 @@ val list_merge_uniq : ('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
 val list_subset : 'a list -> 'a list -> bool
 val list_splitby : ('a -> bool) -> 'a list -> 'a list * 'a list
 val list_split3 : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
+val list_partition_by : ('a -> 'a -> bool) -> 'a list -> 'a list list
 val list_firstn : int -> 'a list -> 'a list
 val list_last : 'a list -> 'a
 val list_lastn : int -> 'a list -> 'a list

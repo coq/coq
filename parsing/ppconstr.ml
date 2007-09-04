@@ -167,7 +167,7 @@ let pr_evar pr n l =
        spc () ++ pr_in_comment
          (fun l -> 
 	   str"[" ++ hov 0 (prlist_with_sep pr_coma (pr ltop) l) ++ str"]")
-         l
+         (List.rev l)
    | None -> mt()))
 
 let las = lapp

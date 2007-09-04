@@ -378,6 +378,14 @@ let rec list_split3 = function
   | (x,y,z)::l ->
       let (rx, ry, rz) = list_split3 l in (x::rx, y::ry, z::rz)
 
+let rec list_insert_in_class f a = function
+  | [] -> [[a]]
+  | (b::_ as l)::classes when f a b -> (a::l)::classes
+  | l::classes -> l :: list_insert_in_class f a classes
+
+let list_partition_by f l =
+  List.fold_right (list_insert_in_class f) l []
+
 let list_firstn n l =
   let rec aux acc = function
     | (0, l) -> List.rev acc

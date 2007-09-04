@@ -139,59 +139,98 @@ let new_untyped_evar =
  * functional operations on evar sets *
  *------------------------------------*)
 
-(* All ids of sign must be distincts! *)
 let new_evar_instance sign evd typ ?(src=(dummy_loc,InternalHole)) instance =
-  let ctxt = named_context_of_val sign in
-    assert (List.length instance = named_context_length ctxt); 
-    if not (list_distinct (ids_of_named_context ctxt)) then 
-      anomaly "new_evar_instance: two vars have the same name";
-    let newev = new_untyped_evar() in
-      (evar_declare sign newev typ ~src:src evd,
-      mkEvar (newev,Array.of_list instance))
+  assert
+    (let ctxt = named_context_of_val sign in
+     List.length instance = named_context_length ctxt &
+     list_distinct (ids_of_named_context ctxt));
+  let newev = new_untyped_evar() in
+  let evd = evar_declare sign newev typ ~src:src evd in
+  (evd,mkEvar (newev,Array.of_list instance))
 
-let make_subst env args =
-  snd (fold_named_context
-    (fun env (id,b,c) (args,l) ->
+(* Knowing that [Gamma |- ev : T] and that [ev] is applied to [args],
+ * [make_projectable_subst ev args] builds the substitution [Gamma:=args].
+ * If a variable and an alias of it are bound to the same instance, we skip
+ * the alias (we just use eq_constr -- instead of conv --, since anyway,
+ * only instances that are variables -- or evars -- are later considered;
+ * morever, we can bet that similar instances came at some time from
+ * the very same substitution. The removal of aliased duplicates is
+ * useful to ensure the uniqueness of a projection.
+*)
+
+let make_projectable_subst sigma evi args =
+  let sign = evar_context evi in
+  let rec alias_of_var id = 
+    match pi2 (Sign.lookup_named id sign) with
+    | Some t when isVar t -> alias_of_var (destVar t)
+    | _ -> id in
+  snd (Sign.fold_named_context
+    (fun (id,b,c) (args,l) ->
        match b, args with
-	 | (* None *) _ , a::rest -> (rest, (id,a)::l)
-(*	 | Some _, _ -> g*)
+	 | Some c, a::rest when
+	     isVar c & eq_constr a (snd (List.assoc (destVar c) l)) -> (rest,l)
+	 | _, a::rest -> (rest, (id, (alias_of_var id,whd_evar sigma a))::l)
 	 | _ -> anomaly "Instance does not match its signature")
-    env ~init:(List.rev args,[]))
+    sign ~init:(List.rev (Array.to_list args),[]))
 
-(* [new_isevar] declares a new existential in an env env with type typ *)
-(* Converting the env into the sign of the evar to define *)
+let make_pure_subst evi args =
+  snd (Sign.fold_named_context
+    (fun (id,b,c) (args,l) ->
+       match args with
+	 | a::rest -> (rest, (id,a)::l)
+	 | _ -> anomaly "Instance does not match its signature")
+    (evar_context evi) ~init:(List.rev (Array.to_list args),[]))
 
-let dummy_var = mkVar (id_of_string "_")
+(* [push_rel_context_to_named_context] builds the defining context and the
+ * initial instance of an evar. If the evar is to be used in context
+ * 
+ * Gamma =  a1     ...    an xp      ...       x1
+ *          \- named part -/ \- de Bruijn part -/
+ * 
+ * then the x1...xp are turned into variables so that the evar is declared in
+ * context 
+ *
+ *          a1     ...    an xp      ...       x1
+ *          \----------- named part ------------/
+ *
+ * but used applied to the initial instance "a1 ... an Rel(p) ... Rel(1)"
+ * so that ev[a1:=a1 ... an:=an xp:=Rel(p) ... x1:=Rel(1)] is correctly typed
+ * in context Gamma.
+ * 
+ * Remark 1: The instance is reverted in practice (i.e. Rel(1) comes first)
+ * Remark 2: If some of the ai or xj are definitions, we keep them in the
+ *   instance. This is necessary so that no unfolding of local definitions
+ *   happens when inferring implicit arguments (consider e.g. the problem
+ *   "x:nat; x':=x; f:forall x, x=x -> Prop |- f _ (refl_equal x')"
+ *   we want the hole to be instantiated by x', not by x (which would have the
+ *   case in [real_clean] if x' had disappear of the instance).
+ *   Note that at any time, if, in some context env, the instance of
+ *   declaration x:A is t and the instance of definition x':=phi(x) is u, then 
+ *   we have the property that u and phi(t) are convertible in env.
+ *)
 
 let push_rel_context_to_named_context env typ =
-  (* compute the instance relative to the named context *)
-  let vars = 
-    fold_named_context (fun env (id,b,_) l -> mkVar id :: l) env ~init:[] in
-    (* move the rel context to a named context and extend the instance 
-       with vars of the rel context *)
-    (*
-      let fv = free_rels typ in
-    *)
-  let avoid = ids_of_named_context (named_context env) in
-  let n = rel_context_length (rel_context env) in
-  let (subst, _, _, inst, env) =
+  (* compute the instances relative to the named context and rel_context *)
+  let ids = List.map pi1 (named_context env) in
+  let inst_vars = List.map mkVar ids in
+  let inst_rels = List.rev (rel_list 0 (nb_rel env)) in
+  (* move the rel context to a named context and extend the named instance *)
+  (* with vars of the rel context *)
+  (* We do keep the instances corresponding to local definition (see above) *)
+  let (subst, _, env) =
     Sign.fold_rel_context
-      (fun (na,c,t) (subst, n, avoid, inst, env) ->
-	(*
-	  match na with
-	  | Anonymous when not (Intset.mem n fv) -> 
-	  (dummy_var::subst, n-1, avoid, inst, env)
-	  | _ ->
-	*)
+      (fun (na,c,t) (subst, avoid, env) ->
 	let id = next_name_away na avoid in
-	  ((mkVar id)::subst, n-1, id::avoid, mkRel n::inst,
-	  push_named (id,option_map (substl subst) c,substl subst t) env))
-      (rel_context env) ~init:([], n, avoid, vars, env) in
-    (named_context_val env, substl subst typ, inst)
+	let d = (id,option_map (substl subst) c,substl subst t) in
+	(mkVar id :: subst, id::avoid, push_named d env))
+      (rel_context env) ~init:([], ids, env) in
+  (named_context_val env, substl subst typ, inst_rels@inst_vars)
       
+(* [new_evar] declares a new existential in an env env with type typ *)
+(* Converting the env into the sign of the evar to define *)
+
 let new_evar evd env ?(src=(dummy_loc,InternalHole)) typ =
   let sign,typ',instance = push_rel_context_to_named_context env typ in
-    assert (not (dependent dummy_var typ));
     new_evar_instance sign evd typ' ~src:src instance
 
   (* The same using side-effect *)
@@ -229,8 +268,8 @@ let evar_well_typed_body evd ev evi body =
 let strict_inverse = false
 
 let inverse_instance env isevars ev evi inst rhs =
-  let subst = make_subst (evar_env evi) (Array.to_list inst) in
-  let subst = List.map (fun (x,y) -> (y,mkVar x)) subst in
+  let subst = make_projectable_subst (evars_of isevars) evi inst in
+  let subst = List.map (fun (x,(_,y)) -> (y,mkVar x)) subst in
   let evd = ref isevars in
   let error () = 
     error_not_clean env (evars_of !evd) ev rhs (evar_source ev !evd) in
@@ -278,15 +317,15 @@ let is_defined_equation env evd (ev,inst) rhs =
 
 (* Redefines an evar with a smaller context (i.e. it may depend on less
  * variables) such that c becomes closed.
- * Example: in [x:?1; y:(list ?2)] <?3>x=y /\ x=(nil bool)
+ * Example: in "fun (x:?1) (y:list ?2) => x = y :> ?3 /\ x = nil bool"
  * ?3 <-- ?1          no pb: env of ?3 is larger than ?1's
- * ?1 <-- (list ?2)   pb: ?2 may depend on x, but not ?1.
+ * ?1 <-- list ?2     pb: ?2 may depend on x, but not ?1.
  * What we do is that ?2 is defined by a new evar ?4 whose context will be
  * a prefix of ?2's env, included in ?1's env.
-
- Concretely, the assumptions are "env |- ev : T" and "Gamma |-
- ev[hyps:=args]" for some Gamma whose de Bruijn context has length k.
- We create "env' |- ev' : T" for some env' <= env and define ev:=ev'
+ *
+ * Concretely, the assumptions are "env |- ev : T" and "Gamma |-
+ * ev[hyps:=args]" for some Gamma whose de Bruijn context has length k.
+ * We create "env' |- ev' : T" for some env' <= env and define ev:=ev'
 *)
 
 let do_restrict_hyps env k evd ev args =
@@ -307,7 +346,6 @@ let do_restrict_hyps env k evd ev args =
     evd := Evd.evar_define ev nc !evd;
     let (evn,_) = destEvar nc in
       mkEvar(evn,Array.of_list ncargs)
-	
 
 exception Dependency_error of identifier
 	
@@ -397,22 +435,48 @@ and clear_hyps_in_evi evd evi ids =
 
 let need_restriction k args = not (array_for_all (closedn k) args)
 
-(* A utility to circumvent the introduction of aliases to rel by the
-   pattern-matching compilation algorithm *)
+(* [find_projectable_vars env sigma y subst] finds all vars of [subst]
+ * that project on [y] up to variables aliasing.  In case of solutions that
+ * differ only up to aliasing, the binding that requires the less
+ * steps of alias reduction is kept. At the end, only one solution up
+ * to aliasing is kept.
+ *
+ * [find_projectable_vars] also unifies against evars that themselves mention
+ * [y] and recursively.
+ *
+ * In short, the following situations give the following solutions:
+ *
+ * problem                        evar ctxt   soluce remark
+ * z1; z2:=z1 |- ?ev[z1;z2] = z1  y1:A; y2:=y1  y1  \ thanks to defs kept in
+ * z1; z2:=z1 |- ?ev[z1;z2] = z2  y1:A; y2:=y1  y2  / subst and preferring =
+ * z1; z2:=z1 |- ?ev[z1]    = z2  y1:A          y1  thanks to is_conv
+ * z1; z2:=z1 |- ?ev[z2]    = z1  y1:A          y1  thanks to is_conv
+ * z3         |- ?ev[z3;z3] = z3  y1:A; y2:=y1  y2  see make_projectable_subst
+ *
+ * Remark: [find_projectable_vars] assumes that identical instances of
+ * variables in the same set of aliased variables are already removed (see
+ * [make_projectable_subst])
+ *)
 
-let rec expand_var env x = match kind_of_term x with
-  | Rel n -> 
-      begin try match pi2 (lookup_rel n env) with
-      | Some t when isRel t -> expand_var env (lift n t)
-      | _ -> x
-      with Not_found -> x
-      end
-  | Var id -> 
-      begin match pi2 (lookup_named id env) with
-      | Some t when isVar t -> expand_var env t
-      | _ -> x
-      end
-  | _ -> x
+type evar_projection = 
+| ProjectVar 
+| ProjectEvar of existential * evar_info * (identifier * evar_projection) list
+
+let rec find_projectable_vars env sigma y subst =
+  let is_projectable (id,(idc,y')) =
+    if is_conv env sigma y y' then (idc,(y'=y,(id,ProjectVar)))
+    else if isEvar y' then
+      let (ev,argsv as t) = destEvar y' in
+      let evi = Evd.find sigma ev in
+      let subst = make_projectable_subst sigma evi argsv in
+      let l = find_projectable_vars env sigma y subst in
+      if l <> [] then (idc,(true,(id,ProjectEvar (t,evi,l))))
+      else failwith ""
+    else failwith "" in
+  let l = map_succeed is_projectable subst in
+  let l = list_partition_by (fun (idc,_) (idc',_) -> idc = idc') l in
+  let l = List.map (List.map snd) l in
+  List.map (fun l -> try List.assoc true l with Not_found -> snd (List.hd l)) l
 
 (* We try to instantiate the evar assuming the body won't depend
  * on arguments that are not Rels or Vars, or appearing several times
@@ -441,20 +505,13 @@ exception NotClean of constr
 
 let rec real_clean env isevars ev subst rhs =
   let evd = ref isevars in
-  let invert_binding (x,y) = (expand_var env y,mkVar x) in
-  let subst' = List.map invert_binding subst in
   let rec subs rigid k t =
     match kind_of_term t with
       | Rel i ->
  	 if i<=k then t
  	 else
-	   (* Flex/Rel problem: unifiable as a pattern iff Rel in ev scope *)
-	   (try List.assoc (expand_var env (mkRel (i-k))) subst' 
-	    with Not_found ->
-	      if rigid then
-		try unique_projection env evd (mkRel (i-k)) subst
-		with Not_found -> raise (NotClean t)
-	      else t)
+	   (* Flex/Rel problem: unifiable iff Rel projectable from ev subst *)
+	   project rigid env evd (mkRel (i-k)) subst
       | Evar (ev,args) ->
           if Evd.is_defined_evar !evd (ev,args) then
             subs rigid k (existential_value (evars_of !evd) (ev,args))
@@ -466,9 +523,8 @@ let rec real_clean env isevars ev subst rhs =
 	    else
 	      mkEvar (ev,args')
       | Var id ->
-	  (* Flex/Var problem: unifiable as a pattern iff Var in scope of ev *)
-          (try List.assoc (expand_var env t) subst'
-           with Not_found -> if not rigid then t else raise (NotClean t))
+	  (* Flex/Var problem: unifiable iff Var projectable from ev subst *)
+	  project rigid env evd t subst
       | _ ->
 	  (* Flex/Rigid problem (or assimilated if not normal): we "imitate" *)
 	  map_constr_with_binders succ (subs rigid) k t
@@ -481,47 +537,42 @@ let rec real_clean env isevars ev subst rhs =
       error_not_clean env (evars_of !evd) ev t (evar_source ev !evd) in
   (!evd,body)
 
-(* [unique_projection] addresses an ad hoc form of "projection" (see foldnr in
- * test-suite/success/Fixpoint.v for an example of use).
- * [unique_projection] solves a problem ?n[...;x:=?m[...;y:=t;...]] = t 
- * by defining ?m:=y and ?n:=x Check that (x,y) is the only such pair
- * solving the problem; also instantiate the type of [?m] if it is an evar.
+(* Assume a set of solutions to the following two kinds of problems:
  *
- * Warning: [unique_projection] is primarily designed for [t] normal
- * (e.g. [t] is a Rel), it would require [conv] for more complex [t] and
- * [e_conv] for [t] with evars...
+ * - ?n[...;x:=y;...] = y
+ * - ?n[...;x:=?m[args];...] = y with ?m[args] = y recursively solvable
+ *   
+ * If the set of solutions is a singleton, [project_variable] instantiates
+ * the auxiliary evars (?m etc) and return the instance of ?n=x. It
+ * also instantiates the type of [?m] if this type is an evar.
+ *
+ * (see test-suite/success/Fixpoint.v for an example of application of
+ * the second kind of problem).
  *)
 
-and unique_projection env evd t subst =
-  (* Search in the instance of ?n for an evar with [t] occurring
-     exactly once in its own instance *)
-  let evars =
-    map_succeed (fun (x,y) ->
-      match kind_of_term y with
-      | Evar (ev,argsv) ->
-	  let evi = Evd.find (evars_of !evd) ev in
-	  let subst = make_subst (evar_env evi) (Array.to_list argsv) in
-	  let subst' = List.filter (fun (y,a) -> a=t) subst in
-	  if List.length subst' = 1 then (ev,fst (List.hd subst'),evi,subst,x)
-	  else failwith ""
-      | _ -> failwith "") subst in
-  (* Check if only one such evar exists in the instance of ?n *)
-  match evars with
-  | [(ev,y,evi,subst,x)] -> 
-      evd := Evd.evar_define ev (mkVar y) !evd;
-      let ty = Retyping.get_type_of env (evars_of !evd) t in
-      let ty = whd_betadeltaiota env (evars_of !evd) ty in
+and project rigid env isevars t subst =
+  let rec aux = function
+  | [] -> raise Not_found
+  | (id,_)::_::_ ->
+      if rigid then raise Not_found else (* Irreversible choice *) mkVar id
+  | [id,ProjectVar] -> mkVar id
+  | [id,ProjectEvar ((ev,argsv),evi,sols)] ->
+      isevars := Evd.evar_define ev (aux sols) !isevars;
+      let ty = Retyping.get_type_of env (evars_of !isevars) t in
+      let ty = whd_betadeltaiota env (evars_of !isevars) ty in
       if not (isSort ty) & isEvar evi.evar_concl then
 	begin
 	  (* Don't try to instantiate if a sort because if evar_concl is an
              evar it may commit to a univ level which is not the right
              one (however, regarding coercions, because t is obtained by
              unif, we know that no coercion can be inserted) *)
+	  let subst = make_pure_subst evi argsv in
 	  let ty' = replace_vars subst evi.evar_concl in
-	  evd := fst (evar_define env (destEvar ty') ty !evd)
+	  isevars := fst (evar_define env (destEvar ty') ty !isevars)
 	end;
-      mkVar x
-  | _ -> raise Not_found
+      mkVar id in
+  try aux (List.rev (find_projectable_vars env (evars_of !isevars) t subst))
+  with Not_found -> if not rigid then t else raise (NotClean t)
 
 (* [evar_define] solves the problem "?ev[args] = rhs" when "?ev" is an 
  * uninstantiated such that "hyps |- ?ev : typ". Otherwise said,
@@ -534,11 +585,10 @@ and unique_projection env evd t subst =
 and evar_define env (ev,argsv) rhs isevars =
   if occur_evar ev rhs
   then error_occur_check env (evars_of isevars) ev rhs;
-  let args = Array.to_list argsv in 
   let evi = Evd.find (evars_of isevars) ev in
   (* the bindings to invert *)
-  let worklist = make_subst (evar_env evi) args in
-  let (isevars',body) = real_clean env isevars ev worklist rhs in
+  let subst = make_projectable_subst (evars_of isevars) evi argsv in
+  let (isevars',body) = real_clean env isevars ev subst rhs in
   if occur_meta body then error "Meta cannot occur in evar body"
   else
     (* needed only if an inferred type *)

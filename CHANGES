@@ -6,6 +6,7 @@ Language
 - If a fixpoint is not written with an explicit { struct ... }, then 
   all arguments are tried successively (from left to right) until one is 
   found that satisfies the structural decreasing condition.
+- Improved inference of implicit arguments.
 
 Commands
 
@@ -80,8 +81,7 @@ Tactics
   is still legal but equivalent to intros ?a ?b.
 - New intro pattern "{A,B,C}" synonym to "(A,(B,C))"
 - New syntax "rewrite A,B" for "rewrite A; rewrite B"
-- New syntax "rename a into b, c into d" for "rename a into b; rename c into d"  
-
+- New syntax "rename a into b, c into d" for "rename a into b; rename c into d"
 
 Miscellaneous
 
@@ -89,6 +89,8 @@ Miscellaneous
   "Test Printing Let for ref" and "Test Printing If for ref".
 - Added the possibility to choose the location of tabs in coqide:
   (in Edit->Preferences->Misc)
+- New commands "Set Whelp Server" and "Set Whelp Getter" to customize the
+  Whelp search tool.
 - An overhauled build system (new Makefiles); see dev/doc/build-system.txt
 
 Changes from V8.1gamma to V8.1
