@@ -400,9 +400,13 @@ let control_only_guard env c =
     | Fix (_,(_,_,_) as fix) ->
 	Inductive.check_fix e fix
     | _ -> ()
-  in 
-    iter_constr_with_full_binders push_rel check_fix_cofix env c
-   
+  in
+  let rec iter env c = 
+    check_fix_cofix env c; 
+    iter_constr_with_full_binders push_rel iter env c
+  in
+  iter env c
+
 let subst_inductive subst (kn,i as ind) = 
   let kn' = Mod_subst.subst_kn subst kn in
   if kn == kn' then ind else (kn',i)
