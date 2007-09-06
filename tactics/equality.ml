@@ -656,13 +656,13 @@ let minimal_free_rels env sigma (c,cty) =
 
 let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
   let { intro = exist_term } = find_sigma_data sort_of_ty in 
-  let isevars = ref (Evd.create_goal_evar_defs sigma) in
+  let evdref = ref (Evd.create_goal_evar_defs sigma) in
   let rec sigrec_clausal_form siglen p_i =
     if siglen = 0 then
       (* is the default value typable with the expected type *)
       let dflt_typ = type_of env sigma dflt in
-      if Evarconv.e_cumul env isevars dflt_typ p_i then
-	(* the_conv_x had a side-effect on isevars *)
+      if Evarconv.e_cumul env evdref dflt_typ p_i then
+	(* the_conv_x had a side-effect on evdref *)
 	dflt
       else
 	error "Cannot solve an unification problem"
@@ -670,18 +670,18 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
       let (a,p_i_minus_1) = match whd_beta_stack p_i with
 	| (_sigS,[a;p]) -> (a,p)
  	| _ -> anomaly "sig_clausal_form: should be a sigma type" in
-      let ev = Evarutil.e_new_evar isevars env a in
+      let ev = Evarutil.e_new_evar evdref env a in
       let rty = beta_applist(p_i_minus_1,[ev]) in
       let tuple_tail = sigrec_clausal_form (siglen-1) rty in
       match
-	Evd.existential_opt_value (Evd.evars_of !isevars) 
+	Evd.existential_opt_value (Evd.evars_of !evdref) 
 	(destEvar ev)
       with
 	| Some w -> applist(exist_term,[a;p_i_minus_1;w;tuple_tail])
 	| None -> anomaly "Not enough components to build the dependent tuple"
   in
   let scf = sigrec_clausal_form siglen ty in
-  Evarutil.nf_evar (Evd.evars_of !isevars) scf
+  Evarutil.nf_evar (Evd.evars_of !evdref) scf
 
 (* The problem is to build a destructor (a generalization of the
    predecessor) which, when applied to a term made of constructors

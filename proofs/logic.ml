@@ -70,9 +70,9 @@ let with_check = Options.with_option check
    (instead of iterating on the list of identifier to be removed, which
    forces the user to give them in order). *)
 let clear_hyps sigma ids gl =
-  let evd = ref (Evd.create_goal_evar_defs sigma) in
-  let ngl = Evarutil.clear_hyps_in_evi evd gl ids in
-    (ngl, evars_of !evd)
+  let evdref = ref (Evd.create_goal_evar_defs sigma) in
+  let ngl = Evarutil.clear_hyps_in_evi evdref gl ids in
+    (ngl, evars_of !evdref)
 
 (* The ClearBody tactic *)
 

@@ -42,6 +42,7 @@ open Pretyping
 open Evarutil
 open Evarconv
 open Notation
+open Evd
 
 let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,a,b))
 let mkProdCit = List.fold_right (fun (x,a) b -> mkProdC(x,a,b))
@@ -304,30 +305,30 @@ let check_all_names_different indl =
   let l = list_intersect ind_names cstr_names in
   if l <> [] then raise (InductiveError (SameNamesOverlap l))
 
-let mk_mltype_data isevars env assums arity indname =
-  let is_ml_type = is_sort env (Evd.evars_of !isevars) arity in
+let mk_mltype_data evdref env assums arity indname =
+  let is_ml_type = is_sort env (evars_of !evdref) arity in
   (is_ml_type,indname,assums)
 
 let prepare_param = function
   | (na,None,t) -> out_name na, LocalAssum t 
   | (na,Some b,_) -> out_name na, LocalDef b
 
-let interp_ind_arity isevars env ind =
-  interp_type_evars isevars env ind.ind_arity
+let interp_ind_arity evdref env ind =
+  interp_type_evars evdref env ind.ind_arity
 
-let interp_cstrs isevars env impls mldata arity ind =
+let interp_cstrs evdref env impls mldata arity ind =
   let cnames,ctyps = List.split ind.ind_lc in
   (* Complete conclusions of constructor types if given in ML-style syntax *)
   let ctyps' = List.map2 (complete_conclusion mldata) cnames ctyps in
   (* Interpret the constructor types *)
-  let ctyps'' = List.map (interp_type_evars isevars env ~impls) ctyps' in
+  let ctyps'' = List.map (interp_type_evars evdref env ~impls) ctyps' in
   (cnames, ctyps'')
 
 let interp_mutual paramsl indl notations finite = 
   check_all_names_different indl;
   let env0 = Global.env() in
-  let isevars = ref (Evd.create_evar_defs Evd.empty) in
-  let env_params, ctx_params = interp_context_evars isevars env0 paramsl in
+  let evdref = ref (Evd.create_evar_defs Evd.empty) in
+  let env_params, ctx_params = interp_context_evars evdref env0 paramsl in
   let indnames = List.map (fun ind -> ind.ind_name) indl in
 
   (* Names of parameters as arguments of the inductive type (defs removed) *)
@@ -335,33 +336,33 @@ let interp_mutual paramsl indl notations finite =
   let params = List.map (fun (na,_,_) -> out_name na) assums in
 
   (* Interpret the arities *)
-  let arities = List.map (interp_ind_arity isevars env_params) indl in
+  let arities = List.map (interp_ind_arity evdref env_params) indl in
   let fullarities = List.map (fun c -> it_mkProd_or_LetIn c ctx_params) arities in
   let env_ar = push_types env0 indnames fullarities in
   let env_ar_params = push_rel_context ctx_params env_ar in
 
   (* Compute interpretation metadatas *)
   let impls = compute_interning_datas env0 params indnames fullarities in
-  let mldatas = List.map2 (mk_mltype_data isevars env_params params) arities indnames in
+  let mldatas = List.map2 (mk_mltype_data evdref env_params params) arities indnames in
 
   let constructors =
     States.with_heavy_rollback (fun () -> 
      (* Temporary declaration of notations and scopes *)
      List.iter (declare_interning_data impls) notations;
      (* Interpret the constructor types *)
-     list_map3 (interp_cstrs isevars env_ar_params impls) mldatas arities indl)
+     list_map3 (interp_cstrs evdref env_ar_params impls) mldatas arities indl)
      () in
 
   (* Instantiate evars and check all are resolved *)
-  let isevars,_ = consider_remaining_unif_problems env_params !isevars in
-  let sigma = Evd.evars_of isevars in
+  let evd,_ = consider_remaining_unif_problems env_params !evdref in
+  let sigma = evars_of evd in
   let constructors = List.map (fun (idl,cl) -> (idl,List.map (nf_evar sigma) cl)) constructors in
   let ctx_params = Sign.map_rel_context (nf_evar sigma) ctx_params in
   let arities = List.map (nf_evar sigma) arities in
-  List.iter (check_evars env_params Evd.empty isevars) arities;
-  Sign.iter_rel_context (check_evars env0 Evd.empty isevars) ctx_params;
+  List.iter (check_evars env_params Evd.empty evd) arities;
+  Sign.iter_rel_context (check_evars env0 Evd.empty evd) ctx_params;
   List.iter (fun (_,ctyps) ->
-    List.iter (check_evars env_ar_params Evd.empty isevars) ctyps)
+    List.iter (check_evars env_ar_params Evd.empty evd) ctyps)
     constructors;
   
   (* Build the inductive entries *)
@@ -563,15 +564,15 @@ type fixpoint_expr = {
   fix_type : constr_expr
 }
 
-let interp_fix_context isevars env fix =
-  interp_context_evars isevars env fix.fix_binders
+let interp_fix_context evdref env fix =
+  interp_context_evars evdref env fix.fix_binders
 
-let interp_fix_ccl isevars (env,_) fix =
-  interp_type_evars isevars env fix.fix_type
+let interp_fix_ccl evdref (env,_) fix =
+  interp_type_evars evdref env fix.fix_type
 
-let interp_fix_body isevars env_rec impls (_,ctx) fix ccl =
+let interp_fix_body evdref env_rec impls (_,ctx) fix ccl =
   let env = push_rel_context ctx env_rec in
-  let body = interp_casted_constr_evars isevars env ~impls fix.fix_body ccl in
+  let body = interp_casted_constr_evars evdref env ~impls fix.fix_body ccl in
   it_mkLambda_or_LetIn body ctx
 
 let build_fix_type (_,ctx) ccl = it_mkProd_or_LetIn ccl ctx
@@ -611,9 +612,9 @@ let interp_recursive fixkind l boxed =
   let fixnames = List.map (fun fix -> fix.fix_name) fixl in
 
   (* Interp arities allowing for unresolved types *)
-  let isevars = ref (Evd.create_evar_defs Evd.empty) in
-  let fixctxs = List.map (interp_fix_context isevars env) fixl in
-  let fixccls = List.map2 (interp_fix_ccl isevars) fixctxs fixl in
+  let evdref = ref (Evd.create_evar_defs Evd.empty) in
+  let fixctxs = List.map (interp_fix_context evdref env) fixl in
+  let fixccls = List.map2 (interp_fix_ccl evdref) fixctxs fixl in
   let fixtypes = List.map2 build_fix_type fixctxs fixccls in
   let env_rec = push_named_types env fixnames fixtypes in
 
@@ -625,15 +626,15 @@ let interp_recursive fixkind l boxed =
   let fixdefs = 
     States.with_heavy_rollback (fun () -> 
       List.iter (declare_interning_data impls) notations;
-      list_map3 (interp_fix_body isevars env_rec impls) fixctxs fixl fixccls)
+      list_map3 (interp_fix_body evdref env_rec impls) fixctxs fixl fixccls)
       () in
 
   (* Instantiate evars and check all are resolved *)
-  let isevars,_ = consider_remaining_unif_problems env_rec !isevars in
-  let fixdefs = List.map (nf_evar (Evd.evars_of isevars)) fixdefs in
-  let fixtypes = List.map (nf_evar (Evd.evars_of isevars)) fixtypes in
-  List.iter (check_evars env_rec Evd.empty isevars) fixdefs;
-  List.iter (check_evars env Evd.empty isevars) fixtypes;
+  let evd,_ = consider_remaining_unif_problems env_rec !evdref in
+  let fixdefs = List.map (nf_evar (evars_of evd)) fixdefs in
+  let fixtypes = List.map (nf_evar (evars_of evd)) fixtypes in
+  List.iter (check_evars env_rec Evd.empty evd) fixdefs;
+  List.iter (check_evars env Evd.empty evd) fixtypes;
   check_mutuality env kind (List.combine fixnames fixdefs);
 
   (* Build the fix declaration block *)

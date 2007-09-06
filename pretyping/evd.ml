@@ -69,7 +69,7 @@ let define evd ev body =
       evar_body = Evar_defined body } in
   match oldinfo.evar_body with
     | Evar_empty -> Evarmap.add ev newinfo evd
-    | _ -> anomaly "Evd.define: cannot define an isevar twice"
+    | _ -> anomaly "Evd.define: cannot define an evar twice"
     
 let is_evar sigma ev = mem sigma ev
 
@@ -408,8 +408,8 @@ let evar_source ev d =
   with Not_found -> (dummy_loc, InternalHole)
 
 (* define the existential of section path sp as the constr body *)
-let evar_define sp body isevars =
-  {isevars with evars = define isevars.evars sp body}
+let evar_define sp body evd =
+  {evd with evars = define evd.evars sp body}
 
 let evar_declare hyps evn ty ?(src=(dummy_loc,InternalHole)) evd =
   { evd with
@@ -420,24 +420,24 @@ let evar_declare hyps evn ty ?(src=(dummy_loc,InternalHole)) evd =
        evar_extra=None};
     history = (evn,src)::evd.history }
 
-let is_defined_evar isevars (n,_) = is_defined isevars.evars n
+let is_defined_evar evd (n,_) = is_defined evd.evars n
 
 (* Does k corresponds to an (un)defined existential ? *)
-let is_undefined_evar isevars c = match kind_of_term c with
-  | Evar ev -> not (is_defined_evar isevars ev)
+let is_undefined_evar evd c = match kind_of_term c with
+  | Evar ev -> not (is_defined_evar evd ev)
   | _ -> false
 
-let undefined_evars isevars = 
-  let evd = 
+let undefined_evars evd = 
+  let evars = 
     fold (fun ev evi sigma -> if evi.evar_body = Evar_empty then 
 	    add sigma ev evi else sigma) 
-      isevars.evars empty
+      evd.evars empty
   in 
-    { isevars with evars = evd }
+    { evd with evars = evars }
 
 (* extracts conversion problems that satisfy predicate p *)
 (* Note: conv_pbs not satisying p are stored back in reverse order *)
-let get_conv_pbs isevars p =
+let get_conv_pbs evd p =
   let (pbs,pbs1) = 
     List.fold_left
       (fun (pbs,pbs1) pb ->
@@ -446,13 +446,13 @@ let get_conv_pbs isevars p =
          else 
 	   (pbs,pb::pbs1))
       ([],[])
-      isevars.conv_pbs
+      evd.conv_pbs
   in
-  {isevars with conv_pbs = pbs1},
+  {evd with conv_pbs = pbs1},
   pbs
 
-let evar_merge isevars evars =
-  { isevars with evars = merge isevars.evars evars }
+let evar_merge evd evars =
+  { evd with evars = merge evd.evars evars }
 
 (**********************************************************)
 (* Sort variables *)
