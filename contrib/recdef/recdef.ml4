@@ -69,7 +69,8 @@ let h_intros l =
 
 let do_observe_tac s tac g =
   let goal = begin (Printer.pr_goal (sig_it g)) end in
- try let v = tac g in msgnl (goal ++ fnl () ++ (str s)++(str " ")++(str "finished")); v
+ try let v = tac g in msgnl (goal ++ fnl () ++ (str "recdef ") ++
+    (str s)++(str " ")++(str "finished")); v
  with e ->
    msgnl (str "observation "++str s++str " raised exception " ++ 
 	    Cerrors.explain_exn e ++ str " on goal " ++ goal ); 
@@ -148,7 +149,8 @@ let rank_for_arg_list h =
   | x::tl -> if predicate h x then Some i else rank_aux (i+1) tl in
   rank_aux 0;;
 
-let rec find_call_occs  =
+let rec (find_call_occs : int -> constr -> constr -> 
+  (constr list -> constr) * constr list list) =
  fun nb_lam f expr ->
   match (kind_of_term expr) with
     App (g, args) when g = f -> 
@@ -229,8 +231,6 @@ let rec find_call_occs  =
   | Fix(_) -> error "find_call_occs : Fix"
   | CoFix(_) -> error "find_call_occs : CoFix";;
 
-
-
 let coq_constant s =
   Coqlib.gen_constant_in_modules "RecursiveDefinition" 
     (Coqlib.init_modules @ Coqlib.arith_modules) s;;
@@ -286,47 +286,44 @@ let coq_conj = function () -> find_reference ["Coq";"Init";"Logic"] "conj"
 let nat = function () -> (coq_constant "nat")
 let lt = function () -> (coq_constant "lt")
 
+(* This is simply an implementation of the case_eq tactic.  this code
+  should be replaced with the tactic defined in Ltac in Init/Tactics.v *)
 let  mkCaseEq a  : tactic =
      (fun g ->
-	(* commentaire de Yves: on pourra avoir des problemes si
-	   a n'est pas bien type dans l'environnement du but *)
        let type_of_a = pf_type_of g a in
-       (tclTHEN (h_generalize [mkApp(delayed_force refl_equal, [| type_of_a; a|])])
-	  (tclTHEN 
-	     (fun g2 ->
-		change_in_concl None 
-		  (pattern_occs [([-1], a)] (pf_env g2) Evd.empty (pf_concl g2))
-		  g2)
-	     (simplest_case a))) g);;
+       tclTHENLIST
+         [h_generalize [mkApp(delayed_force refl_equal, [| type_of_a; a|])];
+          fun g2 ->
+	    change_in_concl None 
+	      (pattern_occs [([-1], a)] (pf_env g2) Evd.empty (pf_concl g2))
+		  g2;
+	  simplest_case a] g);;
 
-let  mkDestructEq not_on_hyp expr g =
-	let hyps = pf_hyps g in 
-(* 	let rec is_expr_context b c =  *)
-(* 	  if c = expr  *)
-(* 	  then true  *)
-(* 	  else fold_constr is_expr_context b c  *)
-(* 	in *)
-	let to_revert = 
-	  Util.map_succeed 
-	    (fun (id,_,t) -> 
-	       if List.mem id not_on_hyp || not (Termops.occur_term expr t)   then failwith "is_expr_context";
-	       id 
-	    )
-	    hyps
-	in
-	let to_revert_constr = List.rev_map mkVar to_revert in 
-	  
-	(* commentaire de Yves: on pourra avoir des problemes si
-	   a n'est pas bien type dans l'environnement du but *)
-       let type_of_a = pf_type_of g expr in
-       (tclTHEN (h_generalize (mkApp(delayed_force refl_equal, [| type_of_a; expr|])::to_revert_constr))
-	  (tclTHEN 
-	     (fun g2 ->
-		change_in_concl None 
-		  (pattern_occs [([-1], expr)] (pf_env g2) Evd.empty (pf_concl g2))
-		  g2)
-	     (simplest_case expr))), to_revert
-
+(* This is like the previous one except that it also rewrite on all
+  hypotheses except the ones given in the first argument.  All the
+  modified hypotheses are generalized in the process and should be
+  introduced back later; the result is the pair of the tactic and the
+  list of hypotheses that have been generalized and cleared. *)
+let mkDestructEq :
+  identifier list -> constr -> goal sigma -> tactic * identifier list =
+  fun not_on_hyp expr g ->
+  let hyps = pf_hyps g in 
+  let to_revert = 
+    Util.map_succeed 
+      (fun (id,_,t) -> 
+        if List.mem id not_on_hyp || not (Termops.occur_term expr t)
+        then failwith "is_expr_context";
+        id) hyps in
+  let to_revert_constr = List.rev_map mkVar to_revert in 
+  let type_of_expr = pf_type_of g expr in
+  let new_hyps = mkApp(delayed_force refl_equal, [|type_of_expr; expr|])::
+           to_revert_constr in
+    tclTHENLIST
+     [h_generalize new_hyps;
+      fun g2 ->
+	change_in_concl None 
+	  (pattern_occs [([-1], expr)] (pf_env g2) Evd.empty (pf_concl g2)) g2;
+      simplest_case expr], to_revert
 
 let rec  mk_intros_and_continue thin_intros (extra_eqn:bool)
     cont_function (eqs:constr list) nb_lam (expr:constr) g =
@@ -378,13 +375,13 @@ let const_of_ref = function
     ConstRef kn -> kn
   | _ -> anomaly "ConstRef expected"
 
-let simpl_iter () =
+let simpl_iter clause =
   reduce 
     (Lazy
        {rBeta=true;rIota=true;rZeta= true; rDelta=false;
         rConst = [ EvalConstRef (const_of_ref (delayed_force iter_ref))]})
 (*     (Simpl (Some ([],mkConst (const_of_ref (delayed_force iter_ref))))) *)
-    onConcl
+    clause
 
 (* The boolean value is_mes expresses that the termination is expressed
   using a measure function instead of a well-founded relation. *)
@@ -398,8 +395,11 @@ let tclUSER tac is_mes l g =
     [
       clear_tac;
       if is_mes 
-      then tclTHEN (unfold_in_concl [([], evaluable_of_global_reference (delayed_force ltof_ref))]) tac
-      else tac (* tclIDTAC *)
+      then tclTHEN
+             (unfold_in_concl [([], evaluable_of_global_reference
+                                      (delayed_force ltof_ref))])
+             tac
+      else tac
     ]
     g
     
@@ -418,22 +418,22 @@ let base_leaf_terminate (func:global_reference) eqs expr =
 	   [k';h] -> k',h
 	 | _ -> assert false
      in
-     tclTHENLIST [observe_tac "first split" (split (ImplicitBindings [expr]));
-		  observe_tac "second split" (split (ImplicitBindings [delayed_force coq_O]));
-		  observe_tac "intro k" (h_intro k');
-                  observe_tac "case on k" 
-		      (tclTHENS 
-			 (simplest_case (mkVar k'))
-			 [(tclTHEN (h_intro h) 
-		     	     (tclTHEN (simplest_elim 
-					 (mkApp (delayed_force gt_antirefl,
-						 [| delayed_force coq_O |])))
-				default_auto)); tclIDTAC ]);
-                  intros;
-		  simpl_iter();
-		  unfold_constr func;
-                  list_rewrite true eqs;
-		  default_auto ] g);;
+     tclTHENLIST
+     [observe_tac "first split" (split (ImplicitBindings [expr]));
+      observe_tac "second split"
+        (split (ImplicitBindings [delayed_force coq_O]));
+      observe_tac "intro k" (h_intro k');
+      observe_tac "case on k" 
+        (tclTHENS (simplest_case (mkVar k'))
+        [(tclTHEN (h_intro h) 
+          (tclTHEN (simplest_elim (mkApp (delayed_force gt_antirefl,
+					 [| delayed_force coq_O |])))
+            default_auto)); tclIDTAC ]);
+      intros;
+      simpl_iter onConcl;
+      unfold_constr func;
+      list_rewrite true eqs;
+      default_auto] g);;
 
 (* La fonction est donnee en premier argument a la 
    fonctionnelle suivie d'autres Lambdas et de Case ...
@@ -462,8 +462,7 @@ let rec compute_le_proofs = function
 	      apply_with_bindings
 		(le_trans,
 		 ExplicitBindings[dummy_loc,NamedHyp m_id,a])
-		g
-	   )
+		g)
 	   [compute_le_proofs tl; 
             tclORELSE (apply (delayed_force le_n)) assumption])
 
@@ -529,7 +528,7 @@ let rec introduce_all_equalities func eqs values specs bound le_proofs
 	     ];
 	   observe_tac "clearing k " (clear [k]);
 	   observe_tac "intros k h' def" (h_intros [k;h';def]);
-	   observe_tac "simple_iter" (simpl_iter());
+	   observe_tac "simple_iter" (simpl_iter onConcl);
 	   observe_tac "unfold functional" 
 	     (unfold_in_concl[([1],evaluable_of_global_reference func)]);
 	   observe_tac "rewriting equations" 
@@ -558,7 +557,7 @@ let rec introduce_all_equalities func eqs values specs bound le_proofs
 	     (mkVar pmax) ((mkVar pmax)::le_proofs)
 	     (heq::cond_eqs)] g;;
     
-let string_match  s =
+let string_match s =
  try 
   for i = 0 to 3  do
     if String.get s i <> String.get "Acc_" i then failwith "string_match"
@@ -627,60 +626,6 @@ let rec_leaf_terminate concl_tac is_mes acc_inv hrec (func:global_reference) eqs
   | context_fn, args ->
       observe_tac "introduce_all_values" 
 	(introduce_all_values concl_tac is_mes acc_inv func context_fn eqs  hrec args  [] [])
-(*
-let proveterminate rec_arg_id is_mes acc_inv (hrec:identifier)  
-  (f_constr:constr) (func:global_reference) base_leaf rec_leaf = 
-  let rec proveterminate (eqs:constr list) (expr:constr)  =
-    try
-      (*  let _ = msgnl (str "entering proveterminate") in *)
-      let v =
-	match (kind_of_term expr) with
-	    Case (ci, t, a, l) -> 
-	      (match find_call_occs 0 f_constr a with
-		   _,[] ->
-		     (fun g -> 
-			let destruct_tac,rev_to_thin_intro = mkDestructEq rec_arg_id a g in 
-			tclTHENS destruct_tac
-			  (list_map_i 
-			     (fun i -> mk_intros_and_continue 
-				(List.rev rev_to_thin_intro) 
-				true 
-				proveterminate 
-				eqs
-				ci.ci_cstr_nargs.(i)
-			     )
-			     0
-			     (Array.to_list l) 
-			  ) g)
-		 | _, _::_ -> 
-		     (
-		       match find_call_occs  0 f_constr expr with
-	     		   _,[] -> observe_tac "base_leaf" (base_leaf func eqs expr)
-			 | _, _:: _ -> 
-			     observe_tac "rec_leaf" 
-			       (rec_leaf is_mes acc_inv hrec  func eqs expr)
-		     )
-	      )
-	  | _ ->  (match find_call_occs  0 f_constr expr with
-	     	       _,[] -> 
-			 (try 
-			    observe_tac "base_leaf" (base_leaf func eqs expr)
-			  with e -> 
-			    (msgerrnl (str "failure in base case");raise e ))
-		     | _, _::_ -> 
-			 observe_tac "rec_leaf" 
-			   (rec_leaf is_mes acc_inv hrec  func eqs expr)
-		  ) in
-      (*  let _ = msgnl(str "exiting proveterminate") in *)
-      v
-    with e -> 
-      begin 
-	msgerrnl(str "failure in proveterminate"); 
-	raise e
-      end
-  in 
-  proveterminate 
-*)
 
 let proveterminate rec_arg_id is_mes acc_inv (hrec:identifier)  
   (f_constr:constr) (func:global_reference) base_leaf rec_leaf = 
@@ -688,50 +633,38 @@ let proveterminate rec_arg_id is_mes acc_inv (hrec:identifier)
     try
       (*  let _ = msgnl (str "entering proveterminate") in *)
       let v =
-	match (kind_of_term expr) with
-	    Case (ci, t, a, l) -> 
-	      (match find_call_occs 0 f_constr a with
-		   _,[] ->
-		     (fun g -> 
-			let destruct_tac,rev_to_thin_intro = mkDestructEq rec_arg_id a g in 
-			tclTHENS destruct_tac
-			  (list_map_i 
-			     (fun i -> mk_intros_and_continue 
+        match (kind_of_term expr) with
+	  Case (ci, t, a, l) -> 
+	  (match find_call_occs 0 f_constr a with
+	    _,[] ->
+	    (fun g -> 
+	      let destruct_tac, rev_to_thin_intro =
+                mkDestructEq rec_arg_id a g in 
+		tclTHENS destruct_tac
+		  (list_map_i 
+		    (fun i -> mk_intros_and_continue 
 				(List.rev rev_to_thin_intro) 
 				true 
 				proveterminate 
 				eqs
-				ci.ci_cstr_nargs.(i)
-			     )
-			     0
-			     (Array.to_list l) 
-			  ) g)
-		 | _, _::_ -> 
-		     (
-		       match find_call_occs  0 f_constr expr with
-	     		   _,[] -> observe_tac "base_leaf" (base_leaf func eqs expr)
-			 | _, _:: _ -> 
-			     observe_tac "rec_leaf" 
-			       (rec_leaf is_mes acc_inv hrec  func eqs expr)
-		     )
-	      )
-	  | _ ->  (match find_call_occs  0 f_constr expr with
-	     	       _,[] -> 
-			 (try 
-			    observe_tac "base_leaf" (base_leaf func eqs expr)
-			  with e -> 
-			    (msgerrnl (str "failure in base case");raise e ))
-		     | _, _::_ -> 
-			 observe_tac "rec_leaf" 
-			   (rec_leaf is_mes acc_inv hrec  func eqs expr)
-		  ) in
-      (*  let _ = msgnl(str "exiting proveterminate") in *)
+				ci.ci_cstr_nargs.(i))
+		    0 (Array.to_list l)) g)
+		  | _, _::_ -> 
+		    (match find_call_occs  0 f_constr expr with
+	     	      _,[] -> observe_tac "base_leaf" (base_leaf func eqs expr)
+		    | _, _:: _ -> 
+		      observe_tac "rec_leaf" 
+		      (rec_leaf is_mes acc_inv hrec  func eqs expr)))
+	  | _ ->
+            (match find_call_occs  0 f_constr expr with
+	      _,[] -> 
+	      (try observe_tac "base_leaf" (base_leaf func eqs expr)
+	       with e -> (msgerrnl (str "failure in base case");raise e ))
+	    | _, _::_ -> 
+	      observe_tac "rec_leaf"
+	        (rec_leaf is_mes acc_inv hrec func eqs expr)) in
       v
-    with e -> 
-      begin 
-	msgerrnl(str "failure in proveterminate"); 
-	raise e
-      end
+    with e -> begin msgerrnl(str "failure in proveterminate"); raise e end
   in 
   proveterminate 
 
@@ -914,12 +847,10 @@ let whole_start (concl_tac:tactic) nb_args is_mes func input_type relation rec_a
 	g 
   end
 
-
 let get_current_subgoals_types () = 
   let pts =  get_pftreestate () in 
   let _,subs = extract_open_pftreestate pts in 
   List.map snd (List.sort (fun (x,_) (y,_) -> x -y )subs )
-
 
 let build_and_l l = 
   let and_constr =  Coqlib.build_coq_and () in 
@@ -1151,27 +1082,24 @@ let (declare_f : identifier -> logical_kind -> constr list -> global_reference -
   fun f_id kind input_type fterm_ref ->
     declare_fun f_id kind (value_f input_type fterm_ref);;
 
+let rec n_x_id ids n =
+  if n = 0 then []
+  else let x = next_global_ident_away true x_id ids in
+          x::n_x_id (x::ids) (n-1);;
+
 let start_equation (f:global_reference) (term_f:global_reference) 
   (cont_tactic:identifier list -> tactic) g =
   let ids = pf_ids_of_hyps g in
   let terminate_constr = constr_of_reference term_f in 
   let nargs = nb_prod (type_of_const terminate_constr) in 
-  let x = 
-    let rec f ids n =
-      if n = 0 
-      then []
-      else 
-	let x = next_global_ident_away true x_id ids in 
-	x::f (x::ids) (n-1)
-    in
-    f ids nargs
-  in
+  let x = n_x_id ids nargs in
   tclTHENLIST [
     h_intros x;
-    observe_tac "unfold_constr f" (unfold_constr f);
-    observe_tac "simplest_case" (simplest_case (mkApp (terminate_constr, Array.of_list (List.map mkVar x))));
-    observe_tac "prove_eq" (cont_tactic x)] g
-;;
+    unfold_in_concl [([], evaluable_of_global_reference f)];
+    observe_tac "simplest_case" 
+      (simplest_case (mkApp (terminate_constr,
+                             Array.of_list (List.map mkVar x))));
+    observe_tac "prove_eq" (cont_tactic x)] g;;
 
 let base_leaf_eq func eqs f_id g =
   let ids = pf_ids_of_hyps g in
@@ -1190,7 +1118,7 @@ let base_leaf_eq func eqs f_id g =
 	   (mkApp(mkVar heq1, 
 		  [|mkApp (delayed_force coq_S, [|mkVar p|]);
 		    mkApp(delayed_force lt_n_Sn, [|mkVar p|]); f_id|])));
-      simpl_iter();
+      simpl_iter onConcl;
       tclTRY (unfold_in_concl [([1], evaluable_of_global_reference func)]);
       list_rewrite true eqs;
       apply (delayed_force refl_equal)] g;;
@@ -1198,30 +1126,32 @@ let base_leaf_eq func eqs f_id g =
 let f_S t = mkApp(delayed_force coq_S, [|t|]);;
 
 
-let rec introduce_all_values_eq  cont_tac functional termine 
+let rec introduce_all_values_eq cont_tac functional termine 
     f p heq1 pmax bounds le_proofs eqs ids =
   function
       [] ->
+       let heq2 = next_global_ident_away true heq_id ids in
 	tclTHENLIST
-	  [tclTHENS
+	  [forward None (IntroIdentifier heq2)
+             (mkApp(mkVar heq1, [|f_S(f_S(mkVar pmax))|]));
+           simpl_iter (onHyp heq2);
+           unfold_in_hyp [([1], evaluable_of_global_reference 
+                             (reference_of_constr functional))]
+             (([], heq2), Tacexpr.InHyp);
+           tclTHENS
 	     (fun gls -> 
-		let t_eq = compute_renamed_type gls (mkVar heq1) in 
-		let k_id,def_id = 
-		  let k_na,_,t = destProd t_eq in 
-		  let _,_,t  = destProd t in 
-		  let def_na,_,_ = destProd t in 
-		  Nameops.out_name k_na,Nameops.out_name def_na
+		let t_eq = compute_renamed_type gls (mkVar heq2) in 
+		let def_id = 
+		  let _,_,t  = destProd t_eq in let def_na,_,_ = destProd t in 
+		  Nameops.out_name def_na
 		in
-		general_rewrite_bindings false
-		(mkVar heq1,
-		 ExplicitBindings[dummy_loc,NamedHyp k_id,
-				  f_S(f_S(mkVar pmax));
-				  dummy_loc,NamedHyp def_id,
-				  f]) false gls )
+		observe_tac "rewrite heq" (general_rewrite_bindings false
+		(mkVar heq2,
+		 ExplicitBindings[dummy_loc,NamedHyp def_id,
+				  f]) false) gls)
 	     [tclTHENLIST
-		[simpl_iter();
-		 unfold_constr (reference_of_constr functional);
-		 list_rewrite true eqs; cont_tac pmax le_proofs];
+		[observe_tac "list_rewrite" (list_rewrite true eqs);
+                 cont_tac pmax le_proofs];
 	      tclTHENLIST[apply (delayed_force le_lt_SS);
 			compute_le_proofs le_proofs]]]
     | arg::args ->
@@ -1254,7 +1184,8 @@ let rec introduce_all_values_eq  cont_tac functional termine
 		tclTHENLIST
 		  [cont_tac pmax' le_proofs';
 		   h_intros [heq;heq2];
-		   observe_tac "rewriteRL" (tclTRY (rewriteLR (mkVar heq2)));
+		   observe_tac ("rewriteRL " ^ (string_of_id heq2))
+                     (tclTRY (rewriteLR (mkVar heq2)));
 		   tclTRY (tclTHENS
 		     ( fun g -> 
 			 let t_eq = compute_renamed_type g (mkVar heq) in 
@@ -1295,7 +1226,7 @@ let rec_leaf_eq termine f ids functional eqs expr fn args =
   let hle1 = next_global_ident_away true hle_id ids in
   let ids = hle1::ids in
     tclTHENLIST
-      [h_intros [v;hex];
+      [observe_tac "intros v hex" (h_intros [v;hex]);
        simplest_elim (mkVar hex);
        h_intros [p;heq1];
        h_generalize [mkApp(delayed_force le_n,[|mkVar p|])];
@@ -1303,37 +1234,34 @@ let rec_leaf_eq termine f ids functional eqs expr fn args =
        observe_tac "introduce_all_values_eq" (introduce_all_values_eq
 	 (fun _ _ -> tclIDTAC)
 	 functional termine f p heq1 p [] [] eqs ids args);
-       apply (delayed_force refl_equal)]
+       observe_tac "failing here" (apply (delayed_force refl_equal))]
 
 let rec prove_eq  (termine:constr) (f:constr)(functional:global_reference)
-    (eqs:constr list)
-  (expr:constr) =
+    (eqs:constr list) (expr:constr) =
 (*   tclTRY *)
   (match kind_of_term expr with
-      Case(ci,t,a,l) ->
-	(match find_call_occs 0 f a with
-	     _,[] -> 
-	       (fun g -> 
-		  let destruct_tac,rev_to_thin_intro = mkDestructEq [] a g in 
-		  tclTHENS destruct_tac
-		    (list_map_i  
-		       (fun i -> mk_intros_and_continue (List.rev rev_to_thin_intro) true 
+     Case(ci,t,a,l) ->
+     (match find_call_occs 0 f a with
+	_,[] -> 
+	(fun g -> 
+	  let destruct_tac,rev_to_thin_intro = mkDestructEq [] a g in 
+	  tclTHENS
+            (tclTHEN destruct_tac
+	    (list_map_i  
+	       (fun i -> mk_intros_and_continue
+                          (List.rev rev_to_thin_intro) true 
 			  (prove_eq termine f functional)  
-			  eqs
-			  ci.ci_cstr_nargs.(i)
-		       )
-		       0
-		       (Array.to_list l) 
-		    ) g)
+			  eqs ci.ci_cstr_nargs.(i))
+	       0 (Array.to_list l)) g)
 	   | _,_::_ ->
-               	(match find_call_occs 0 f expr with
-	     _,[] -> base_leaf_eq functional eqs f
-	   | fn,args ->
-	       fun g ->
-		 let ids = ids_of_named_context (pf_hyps g) in
-	       rec_leaf_eq termine f ids
-		 (constr_of_reference functional)
-		 eqs expr fn args g))
+	      (match find_call_occs 0 f expr with
+		_,[] -> base_leaf_eq functional eqs f
+	      | fn,args ->
+	        fun g ->
+		  let ids = ids_of_named_context (pf_hyps g) in
+	          rec_leaf_eq termine f ids
+		    (constr_of_reference functional)
+		    eqs expr fn args g))
        | _ -> 
 	   (match find_call_occs 0 f expr with
 		_,[] -> base_leaf_eq functional eqs f
