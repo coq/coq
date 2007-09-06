@@ -293,10 +293,10 @@ let  mkCaseEq a  : tactic =
        let type_of_a = pf_type_of g a in
        tclTHENLIST
          [h_generalize [mkApp(delayed_force refl_equal, [| type_of_a; a|])];
-          fun g2 ->
+          (fun g2 ->
 	    change_in_concl None 
 	      (pattern_occs [([-1], a)] (pf_env g2) Evd.empty (pf_concl g2))
-		  g2;
+		  g2);
 	  simplest_case a] g);;
 
 (* This is like the previous one except that it also rewrite on all
@@ -320,9 +320,9 @@ let mkDestructEq :
            to_revert_constr in
     tclTHENLIST
      [h_generalize new_hyps;
-      fun g2 ->
+      (fun g2 ->
 	change_in_concl None 
-	  (pattern_occs [([-1], expr)] (pf_env g2) Evd.empty (pf_concl g2)) g2;
+	  (pattern_occs [([-1], expr)] (pf_env g2) Evd.empty (pf_concl g2)) g2);
       simplest_case expr], to_revert
 
 let rec  mk_intros_and_continue thin_intros (extra_eqn:bool)
@@ -1246,7 +1246,7 @@ let rec prove_eq  (termine:constr) (f:constr)(functional:global_reference)
 	(fun g -> 
 	  let destruct_tac,rev_to_thin_intro = mkDestructEq [] a g in 
 	  tclTHENS
-            (tclTHEN destruct_tac
+            destruct_tac
 	    (list_map_i  
 	       (fun i -> mk_intros_and_continue
                           (List.rev rev_to_thin_intro) true 
