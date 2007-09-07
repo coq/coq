@@ -84,6 +84,25 @@ repeat rewrite <- Zabs_Zmult.
 apply Zabs_triangle.
 Qed.
 
+Lemma Qabs_Qmult : forall a b, Qabs (a*b) == (Qabs a)*(Qabs b).
+Proof.
+intros [an ad] [bn bd].
+simpl.
+rewrite Zabs_Zmult.
+reflexivity.
+Qed.
+
+Lemma Qle_Qabs : forall a, a <= Qabs a.
+Proof.
+intros a.
+apply Qabs_case; auto with *.
+intros H.
+apply Qle_trans with 0; try assumption.
+change 0 with (-0).
+apply Qopp_le_compat.
+assumption.
+Qed.
+
 Lemma Qabs_triangle_reverse : forall x y, Qabs x - Qabs y <= Qabs (x - y).
 Proof.
 intros x y.
@@ -94,10 +113,4 @@ setoid_replace (Qabs x) with (Qabs (x-y+y)).
 apply Qabs_triangle.
 apply Qabs_wd.
 ring.
-Qed.
-
-Definition Qminus' x y := Qred (Qminus x y).
-Lemma Qminus'_correct : forall p q : Q, (Qminus' p q)==(Qminus p q).
-Proof.
-  intros; unfold Qminus' in |- *; apply Qred_correct; auto.
 Qed.

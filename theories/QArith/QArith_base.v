@@ -686,7 +686,7 @@ rewrite Qmult_div_r; try assumption.
 auto with *.
 Qed.
 
-Lemma Qle_shift_recip_l : forall a c, 
+Lemma Qle_shift_inv_l : forall a c, 
  0 < c -> a*c <= 1 -> a <= /c.
 Proof.
 intros a c Hc H.
@@ -706,13 +706,64 @@ rewrite Qmult_div_r; try assumption.
 auto with *.
 Qed.
 
-Lemma Qle_shift_recip_r : forall b c, 
+Lemma Qle_shift_inv_r : forall b c, 
  0 < b -> 1 <= c*b -> /b <= c.
 Proof.
 intros b c Hc H.
 setoid_replace (/b) with (1*/b) by (symmetry; apply Qmult_1_l).
 change (1/b <= c).
 apply Qle_shift_div_r; assumption.
+Qed.
+
+Lemma Qinv_lt_0_compat : forall a, 0 < a -> 0 < /a.
+Proof.
+intros [[|n|n] d] Ha; assumption.
+Qed.
+
+Lemma Qlt_shift_div_l : forall a b c,
+ 0 < c -> a*c < b -> a < b/c.
+Proof.
+intros a b c Hc H.
+apply Qnot_le_lt.
+intros H0.
+apply (Qlt_not_le _ _ H).
+apply Qmult_lt_0_le_reg_r with (/c).
+ apply Qinv_lt_0_compat.
+ assumption.
+setoid_replace (a*c/c) with (a) by (apply Qdiv_mult_l; auto with *).
+assumption.
+Qed.
+
+Lemma Qlt_shift_inv_l : forall a c,
+ 0 < c -> a*c < 1 -> a < /c.
+Proof.
+intros a c Hc H.
+setoid_replace (/c) with (1*/c) by (symmetry; apply Qmult_1_l).
+change (a < 1/c).
+apply Qlt_shift_div_l; assumption.
+Qed.
+
+Lemma Qlt_shift_div_r : forall a b c,
+ 0 < b -> a < c*b -> a/b < c.
+Proof.
+intros a b c Hc H.
+apply Qnot_le_lt.
+intros H0.
+apply (Qlt_not_le _ _ H).
+apply Qmult_lt_0_le_reg_r with (/b).
+ apply Qinv_lt_0_compat.
+ assumption.
+setoid_replace (c*b/b) with (c) by (apply Qdiv_mult_l; auto with *).
+assumption.
+Qed.
+
+Lemma Qlt_shift_inv_r : forall b c,
+ 0 < b -> 1 < c*b -> /b < c.
+Proof.
+intros b c Hc H.
+setoid_replace (/b) with (1*/b) by (symmetry; apply Qmult_1_l).
+change (1/b < c).
+apply Qlt_shift_div_r; assumption.
 Qed.
 
 (** * Rational to the n-th power *)
