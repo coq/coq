@@ -4,13 +4,12 @@ Require Export Bool.
 importing the current file wants to use. e.g.,
 Theorem eq_true_or : forall b1 b2 : bool, b1 || b2 <-> b1 \/ b2,
 then it needs to know about bool and have a notation ||. *)
-
+Require Export QRewrite.
 
 (*
 Contents:
 - Coercion from bool to Prop
 - Extension of the tactics stepl and stepr
-- An attempt to extend setoid rewrite to formulas with quantifiers
 - Extentional properties of predicates, relations and functions
   (well-definedness and equality)
 - Relations on cartesian product
@@ -21,7 +20,8 @@ Contents:
 
 Definition eq_bool := (@eq bool).
 
-Inductive eq_true : bool -> Prop := is_eq_true : eq_true true.
+(*Inductive eq_true : bool -> Prop := is_eq_true : eq_true true.*)
+(* This has been added to theories/Datatypes.v *)
 Coercion eq_true : bool >-> Sortclass.
 
 Theorem eq_true_unfold_pos : forall b : bool, b <-> b = true.
@@ -84,145 +84,13 @@ end.
 
 Tactic Notation "stepr" constr(t2') "in" hyp(H) "by" tactic(r) := stepr t2' in H; [| r].
 
-(** An attempt to extend setoid rewrite to formulas with quantifiers *)
-
-(* The following algorithm was explained to me by Bruno Barras.
-
-In the future, we need to prove that some predicates are
-well-defined w.r.t. a setoid relation, i.e., we need to prove theorems
-of the form "forall x y, x == y -> (P x <-> P y)". The reason is that it
-makes sense to do induction only on predicates that satisfy this
-property. Ideally, such goal should be proved by saying "intros x y H;
-rewrite H; reflexivity".
-
-Now, such predicates P may contain quantifiers besides setoid
-morphisms. However, the tactic "rewrite" (which in this case stands
-for "setoid_rewrite") currently cannot handle universal quantifiers as
-well as lambda abstractions, which are part of the existential
-quantifier notation (recall that "exists x, P" stands for "ex (fun x
-=> p)").
-
-Therefore, to prove that P x <-> P y, we proceed as follows. Suppose
-that P x is C[forall z, Q[x,z]] where C is a context, i.e., a term
-with a hole. We assume that the hole of C does not occur inside
-another quantifier, i.e., that forall z, Q[x,z] is a top-level
-quantifier in P. The notation Q[x,z] means that the term Q contains
-free occurrences of variables x and z. We prove that forall z, Q[x,z]
-<-> forall z, Q[y,z]. To do this, we show that forall z, Q[x,z] <->
-Q[y,z]. After performing "intro z", this goal is handled recursively,
-until no more quantifiers are left in Q.
-
-After we obtain the goal
-
-H : x == y
-H1 : forall z, Q[x,z] <-> forall z, Q[y,z]
-=================================
-C[forall z, Q[x,z]] <-> C[forall z, Q[y,z]]
-
-we say "rewrite H1". Repeating this for other quantifier subformulas
-in P, we make them all identical in P x and P y. After that, saying
-"rewrite H" solves the goal.
-
-To implement this algorithm, we need the following theorems:
-
-Theorem forall_morphism :
-  forall (A : Set) (P Q : A -> Prop),
-    (forall x : A, P x <-> Q x) -> ((forall x : A, P x) <-> (forall x : A, Q x)).
-
-Theorem exists_morphism :
-  forall (A : Set) (P Q : A -> Prop),
-    (forall x : A, P x <-> Q x) -> (ex P <-> ex Q)
-
-Below, we obtain them by registering the universal and existential
-quantifiers as setoid morphisms, though they can be proved without any
-reference to setoids. Ideally, registering quantifiers as morphisms
-should take care of setoid rewriting in the presence of quantifiers,
-but as described above, this is currently not so, and we have to
-handle quantifiers manually.
-
-The job of deriving P x <-> P y from x == y is done by the tactic
-qmorphism x y below. *)
-
-Section Quantifiers.
-
-Variable A : Set.
-
-Definition predicate := A -> Prop.
-
-Definition equiv_predicate : relation predicate :=
-  fun (P1 P2 : predicate) => forall x : A, P1 x <-> P2 x.
-
-Theorem equiv_predicate_refl : reflexive predicate equiv_predicate.
-Proof.
-unfold reflexive, equiv_predicate. reflexivity.
-Qed.
-
-Theorem equiv_predicate_symm : symmetric predicate equiv_predicate.
-Proof.
-firstorder.
-Qed.
-
-Theorem equiv_predicate_trans : transitive predicate equiv_predicate.
-Proof.
-firstorder.
-Qed.
-
-Add Relation predicate equiv_predicate
-  reflexivity proved by equiv_predicate_refl
-  symmetry proved by equiv_predicate_symm
-  transitivity proved by equiv_predicate_trans
-as equiv_predicate_rel.
-
-Add Morphism (@ex A)
-  with signature equiv_predicate ==> iff
-  as exists_morphism.
-Proof.
-firstorder.
-Qed.
-
-Add Morphism (fun P : predicate => forall x : A, P x)
-  with signature equiv_predicate ==> iff
-  as forall_morphism.
-Proof.
-firstorder.
-Qed.
-
-End Quantifiers.
-
-(* replace x by y in t *)
-Ltac repl x y t :=
-match t with
-| context C [x] => let t' := (context C [y]) in repl x y t'
-| _ => t
-end.
-
-Ltac qmorphism x y :=
-lazymatch goal with
-| |- ?P <-> ?P => reflexivity
-| |- context [ex ?P] =>
-  match P with
-  | context [x] =>
-    let P' := repl x y P in
-      setoid_replace (ex P) with (ex P') using relation iff;
-      [qmorphism x y |
-       apply exists_morphism; unfold equiv_predicate; intros; qmorphism x y]
-  end
-| |- context [forall z, @?P z] =>
-  match P with
-  | context [x] =>
-    let P' := repl x y P in
-      setoid_replace (forall z, P z) with (forall z, P' z) using relation iff;
-      [qmorphism x y |
-       apply forall_morphism; unfold equiv_predicate; intros; qmorphism x y]
-  end
-| _ => setoid_replace x with y; [reflexivity | assumption]
-end.
-
 (** Extentional properties of predicates, relations and functions *)
+
+Definition predicate (A : Type) := A -> Prop.
 
 Section ExtensionalProperties.
 
-Variables A B C : Set.
+Variables A B C : Type.
 Variable EA : relation A.
 Variable EB : relation B.
 Variable EC : relation C.
@@ -233,12 +101,6 @@ Definition fun_wd (f : A -> B) := forall x y : A, EA x y -> EB (f x) (f y).
 
 Definition fun2_wd (f : A -> B -> C) :=
   forall x x' : A, EA x x' -> forall y y' : B, EB y y' -> EC (f x y) (f x' y').
-
-Definition pred_wd (P : predicate A) :=
-  forall x y, EA x y -> (P x <-> P y).
-
-Definition rel_wd (R : relation A) :=
-  forall x x', EA x x' -> forall y y', EA y y' -> (R x y <-> R x' y').
 
 Definition eq_fun : relation (A -> B) :=
   fun f f' => forall x x' : A, EA x x' -> EB (f x) (f' x').
@@ -256,8 +118,32 @@ Implicit Arguments fun_wd [A B].
 Implicit Arguments fun2_wd [A B C].
 Implicit Arguments eq_fun [A B].
 Implicit Arguments eq_fun2 [A B C].
-Implicit Arguments pred_wd [A].
-Implicit Arguments rel_wd [A].
+
+Definition predicate_wd (A : Type) (EA : relation A) := fun_wd EA iff.
+
+Definition rel_wd (A B : Type) (EA : relation A) (EB : relation B) :=
+  fun2_wd EA EB iff.
+
+Implicit Arguments predicate_wd [A].
+Implicit Arguments rel_wd [A B].
+
+Ltac solve_predicate_wd :=
+unfold predicate_wd;
+let x := fresh "x" in
+let y := fresh "y" in
+let H := fresh "H" in
+  intros x y H; qiff x y H.
+
+(* The following tactic uses solve_predicate_wd to solve the goals
+relating to well-defidedness that are produced by applying induction.
+We declare it to take the tactic that applies the induction theorem
+and not the induction theorem itself because the tactic may, for
+example, supply additional arguments, as does NZinduct_center in
+NZBase.v *)
+Ltac induction_maker n t :=
+  try intros until n;
+  pattern n; t; clear n;
+  [solve_predicate_wd | ..].
 
 (** Relations on cartesian product. Used in MiscFunct for defining
 functions whose domain is a product of sets by primitive recursion *)
@@ -307,6 +193,69 @@ Implicit Arguments prod_rel_equiv [A B].
 
 (** Miscellaneous *)
 
+Theorem neg_false : forall P : Prop, ~ P <-> (P <-> False).
+Proof.
+intro P; unfold not; split; intro H; [split; intro H1;
+[apply H; assumption | elim H1] | apply (proj1 H)].
+Qed.
+
+(* This tactic replaces P in the goal with False.
+The goal ~ P should be solvable by "apply H". *)
+Ltac rewrite_false P H :=
+setoid_replace P with False using relation iff;
+[| apply -> neg_false; apply H].
+
+Tactic Notation "symmetry" constr(Eq) :=
+lazymatch Eq with
+| ?E ?t1 ?t2 => setoid_replace (E t1 t2) with (E t2 t1) using relation iff;
+  [| split; intro; symmetry; assumption]
+| _ => fail Eq "does not have the form (E t1 t2)"
+end.
+
+Theorem and_cancel_l : forall A B C : Prop,
+  (B -> A) -> (C -> A ) -> ((A /\ B <-> A /\ C) <-> (B <-> C)).
+Proof.
+intros; tauto.
+Qed.
+
+Theorem and_cancel_r : forall A B C : Prop,
+  (B -> A) -> (C -> A ) -> ((B /\ A <-> C /\ A) <-> (B <-> C)).
+Proof.
+intros; tauto.
+Qed.
+
+Theorem or_cancel_l : forall A B C : Prop,
+  (B -> ~A) -> (C -> ~ A) -> ((A \/ B <-> A \/ C) <-> (B <-> C)).
+Proof.
+intros; tauto.
+Qed.
+
+Theorem or_cancel_r : forall A B C : Prop,
+  (B -> ~A) -> (C -> ~ A) -> ((B \/ A <-> C \/ A) <-> (B <-> C)).
+Proof.
+intros; tauto.
+Qed.
+
+Theorem or_iff_compat_l : forall A B C : Prop,
+  (B <-> C) -> (A \/ B <-> A \/ C).
+Proof.
+intros; tauto.
+Qed.
+
+Theorem or_iff_compat_r : forall A B C : Prop,
+  (B <-> C) -> (B \/ A <-> C \/ A).
+Proof.
+intros; tauto.
+Qed.
+
+Lemma iff_stepl : forall A B C : Prop, (A <-> B) -> (A <-> C) -> (C <-> B).
+Proof.
+intros; tauto.
+Qed.
+
+Declare Left Step iff_stepl.
+Declare Right Step iff_trans.
+
 Definition comp_bool (x y : comparison) : bool :=
 match x, y with
 | Lt, Lt => true
@@ -335,3 +284,9 @@ Add Relation (fun A : Set => A) LE_Set
  symmetry proved by (fun A : Set => (proj2 (proj2 (eq_equiv A))))
  transitivity proved by (fun A : Set => (proj1 (proj2 (eq_equiv A))))
 as EA_rel.
+
+(*
+ Local Variables:
+ tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
+ End:
+*)

@@ -34,22 +34,22 @@ as E_rel.
 
 End NBinaryDomain.
 
-Module BinaryNat <: NatSignature.
+Module BinaryNat <: NBaseSig.
 Module Export NDomainModule := NBinaryDomain.
 
 Definition O := N0.
 Definition S := Nsucc.
 
-Add Morphism S with signature E ==> E as S_wd.
+Add Morphism S with signature E ==> E as succ_wd.
 Proof.
 congruence.
 Qed.
 
 Theorem induction :
-  forall P : N -> Prop, pred_wd E P ->
+  forall P : N -> Prop, predicate_wd E P ->
     P 0 -> (forall n, P n -> P (S n)) -> forall n, P n.
 Proof.
-intros P P_wd; apply Nind.
+intros P predicate_wd; apply Nind.
 Qed.
 
 Definition recursion (A : Set) (a : A) (f : N -> A -> A) (n : N) :=
@@ -79,7 +79,7 @@ Proof.
 intros A a f; unfold recursion; unfold Nrec; now rewrite Nrect_base.
 Qed.
 
-Theorem recursion_S :
+Theorem recursion_succ :
   forall (A : Set) (EA : relation A) (a : A) (f : N -> A -> A),
     EA a a -> fun2_wd E EA EA f ->
       forall n : N, EA (recursion a f (S n)) (f n (recursion a f n)).
@@ -94,7 +94,7 @@ End BinaryNat.
 
 Module NBinaryDepRec <: NDepRecSignature.
 Module Export NDomainModule := NBinaryDomain.
-Module Export NatModule := BinaryNat.
+Module Export NBaseMod := BinaryNat.
 
 Definition dep_recursion := Nrec.
 
@@ -105,7 +105,7 @@ Proof.
 intros A a f; unfold dep_recursion; unfold Nrec; now rewrite Nrect_base.
 Qed.
 
-Theorem dep_recursion_S :
+Theorem dep_recursion_succ :
   forall (A : N -> Set) (a : A 0) (f : forall n, A n -> A (S n)) (n : N),
     dep_recursion A a f (S n) = f n (dep_recursion A a f n).
 Proof.
@@ -114,8 +114,8 @@ Qed.
 
 End NBinaryDepRec.
 
-Module NBinaryPlus <: NPlusSignature.
-Module Export NatModule := BinaryNat.
+Module NBinaryPlus <: NPlusSig.
+Module Export NBaseMod := BinaryNat.
 
 Definition plus := Nplus.
 
@@ -129,15 +129,15 @@ Proof.
 exact Nplus_0_l.
 Qed.
 
-Theorem plus_S_l : forall n m, (S n) + m = S (n + m).
+Theorem plus_succ_l : forall n m, (S n) + m = S (n + m).
 Proof.
 exact Nplus_succ.
 Qed.
 
 End NBinaryPlus.
 
-Module NBinaryTimes <: NTimesSignature.
-Module Export NPlusModule := NBinaryPlus.
+Module NBinaryTimes <: NTimesSig.
+Module Export NPlusMod := NBinaryPlus.
 
 Definition times := Nmult.
 
@@ -151,16 +151,16 @@ Proof.
 intro n; rewrite Nmult_comm; apply Nmult_0_l.
 Qed.
 
-Theorem times_S_r : forall n m, n * (S m) = n * m + n.
+Theorem times_succ_r : forall n m, n * (S m) = n * m + n.
 Proof.
-intros n m; rewrite Nmult_comm; rewrite Nmult_Sn_m.
+intros n m; rewrite Nmult_comm; rewrite Nmult_succn_m.
 rewrite Nplus_comm; now rewrite Nmult_comm.
 Qed.
 
 End NBinaryTimes.
 
-Module NBinaryOrder <: NOrderSignature.
-Module Export NatModule := BinaryNat.
+Module NBinaryOrder <: NOrderSig.
+Module Export NBaseMod := BinaryNat.
 
 Definition lt (m n : N) := comp_bool (Ncompare m n) Lt.
 Definition le (m n : N) := let c := (Ncompare m n) in orb (comp_bool c Lt) (comp_bool c Eq).
@@ -188,14 +188,14 @@ Proof.
 unfold lt; destruct x as [|x]; simpl; now intro.
 Qed.
 
-Theorem lt_S : forall x y, lt x (S y) <-> le x y.
+Theorem lt_succ : forall x y, lt x (S y) <-> le x y.
 Proof.
 intros x y. rewrite le_lt.
 assert (H1 : lt x (S y) <-> Ncompare x (S y) = Lt);
 [unfold lt, comp_bool; destruct (x ?= S y); simpl; split; now intro |].
 assert (H2 : lt x y <-> Ncompare x y = Lt);
 [unfold lt, comp_bool; destruct (x ?= y); simpl; split; now intro |].
-pose proof (Ncompare_n_Sm x y) as H. tauto.
+pose proof (Ncompare_n_succm x y) as H. tauto.
 Qed.
 
 End NBinaryOrder.
@@ -226,3 +226,10 @@ match n with
 end.
 *)
 (* Eval compute in (binlog 1000000000000000000). *) (* Works very fast *)
+
+
+(*
+ Local Variables:
+ tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
+ End:
+*)

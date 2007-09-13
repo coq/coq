@@ -53,3 +53,10 @@ Declare Left Step ZE_stepl.
 Declare Right Step (proj1 (proj2 E_equiv)).
 
 End ZDomainProperties.
+
+
+(*
+ Local Variables:
+ tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
+ End:
+*)

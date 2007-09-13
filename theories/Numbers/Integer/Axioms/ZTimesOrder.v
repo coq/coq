@@ -3,7 +3,7 @@ Require Export ZPlusOrder.
 
 Module ZTimesOrderProperties (Import ZTimesModule : ZTimesSignature)
                              (Import ZOrderModule : ZOrderSignature with
-                               Module IntModule := ZTimesModule.ZPlusModule.IntModule).
+                               Module ZBaseMod := ZTimesModule.ZPlusModule.ZBaseMod).
 Module Export ZTimesPropertiesModule := ZTimesProperties ZTimesModule.
 Module Export ZPlusOrderPropertiesModule :=
   ZPlusOrderProperties ZTimesModule.ZPlusModule ZOrderModule.
@@ -13,11 +13,11 @@ Theorem mult_lt_compat_r : forall n m p, 0 < p -> n < m -> n * p < m * p.
 Proof.
 intros n m p; induct_ord p.
 intros H _; false_hyp H lt_irr.
-intros p H IH H1 H2. do 2 rewrite times_S.
-apply -> lt_S in H1; Zle_elim H1.
+intros p H IH H1 H2. do 2 rewrite times_succ.
+apply -> lt_succ in H1; Zle_elim H1.
 apply plus_lt_compat. now apply IH. assumption.
 rewrite <- H1. do 2 rewrite times_0; now do 2 rewrite plus_0.
-intros p H IH H1 H2. apply lt_n_Pm in H1. apply -> le_gt in H.
+intros p H IH H1 H2. apply lt_n_predm in H1. apply -> le_gt in H.
 false_hyp H1 H.
 Qed.
 
@@ -87,3 +87,10 @@ apply neq_symm. apply lt_neq. now apply mult_pos_pos.
 Qed.
 
 End ZTimesOrderProperties.
+
+
+(*
+ Local Variables:
+ tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
+ End:
+*)

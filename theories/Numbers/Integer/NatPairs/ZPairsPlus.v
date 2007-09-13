@@ -2,8 +2,8 @@ Require Import NPlus.
 Require Export ZPlus.
 Require Export ZPairsAxioms.
 
-Module NatPairsPlus (Import NPlusModule : NPlusSignature) <: ZPlusSignature.
-Module Export IntModule := NatPairsInt NPlusModule.
+Module NatPairsPlus (Import NPlusMod : NPlusSig) <: ZPlusSignature.
+Module Export ZBaseMod := NatPairsInt NPlusMod.
 Open Local Scope NatScope.
 
 Definition plus (x y : Z) := ((fst x) + (fst y), (snd x) + (snd y)).
@@ -31,7 +31,7 @@ Add Morphism minus with signature E ==> E ==> E as minus_wd.
 Proof.
 unfold E, plus; intros x1 y1 H1 x2 y2 H2; simpl.
 rewrite plus_comm in H2. symmetry in H2; rewrite plus_comm in H2.
-pose proof (NPlusModule.plus_wd (fst x1 + snd y1) (fst y1 + snd x1) H1
+pose proof (NPlusMod.plus_wd (fst x1 + snd y1) (fst y1 + snd x1) H1
                                 (snd x2 + fst y2) (snd y2 + fst x2) H2) as H.
 rewrite plus_shuffle1. symmetry. now rewrite plus_shuffle1.
 Qed.
@@ -46,12 +46,12 @@ Open Local Scope IntScope.
 
 Theorem plus_0 : forall n, 0 + n == n.
 Proof.
-intro n; unfold plus, E; simpl. now do 2 rewrite NPlusModule.plus_0_l.
+intro n; unfold plus, E; simpl. now do 2 rewrite NPlusMod.plus_0_l.
 Qed.
 
-Theorem plus_S : forall n m, (S n) + m == S (n + m).
+Theorem plus_succ : forall n m, (S n) + m == S (n + m).
 Proof.
-intros n m; unfold plus, E; simpl. now do 2 rewrite NPlusModule.plus_S_l.
+intros n m; unfold plus, E; simpl. now do 2 rewrite NPlusMod.plus_succ_l.
 Qed.
 
 Theorem minus_0 : forall n, n - 0 == n.
@@ -59,9 +59,9 @@ Proof.
 intro n; unfold minus, E; simpl. now do 2 rewrite plus_0_r.
 Qed.
 
-Theorem minus_S : forall n m, n - (S m) == P (n - m).
+Theorem minus_succ : forall n m, n - (S m) == P (n - m).
 Proof.
-intros n m; unfold minus, E; simpl. symmetry; now rewrite plus_S_r.
+intros n m; unfold minus, E; simpl. symmetry; now rewrite plus_succ_r.
 Qed.
 
 Theorem uminus_0 : - 0 == 0.
@@ -69,14 +69,21 @@ Proof.
 unfold uminus, E; simpl. now rewrite plus_0_l.
 Qed.
 
-Theorem uminus_S : forall n, - (S n) == P (- n).
+Theorem uminus_succ : forall n, - (S n) == P (- n).
 Proof.
 reflexivity.
 Qed.
 
 End NatPairsPlus.
 
-Module NatPairsPlusProperties (NPlusModule : NPlusSignature).
-Module Export NatPairsPlusModule := NatPairsPlus NPlusModule.
+Module NatPairsPlusProperties (NPlusMod : NPlusSig).
+Module Export NatPairsPlusModule := NatPairsPlus NPlusMod.
 Module Export NatPairsPlusPropertiesModule := ZPlusProperties NatPairsPlusModule.
 End NatPairsPlusProperties.
+
+
+(*
+ Local Variables:
+ tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
+ End:
+*)

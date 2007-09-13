@@ -2,12 +2,12 @@ Require Import NPlusOrder.
 Require Export ZPlusOrder.
 Require Export ZPairsPlus.
 
-Module NatPairsOrder (Import NPlusModule : NPlusSignature)
-                     (Import NOrderModule : NOrderSignature
-                        with Module NatModule := NPlusModule.NatModule) <: ZOrderSignature.
+Module NatPairsOrder (Import NPlusMod : NPlusSig)
+                     (Import NOrderModule : NOrderSig
+                        with Module NBaseMod := NPlusMod.NBaseMod) <: ZOrderSignature.
 Module Import NPlusOrderPropertiesModule :=
-  NPlusOrderProperties NPlusModule NOrderModule.
-Module Export IntModule := NatPairsInt NPlusModule.
+  NPlusOrderProperties NPlusMod NOrderModule.
+Module Export ZBaseMod := NatPairsInt NPlusMod.
 Open Local Scope NatScope.
 
 Definition lt (p1 p2 : Z) := (fst p1) + (snd p2) < (fst p2) + (snd p1).
@@ -58,17 +58,17 @@ unfold le, E; intros x1 y1 H1 x2 y2 H2; simpl.
 rewrite eq_true_iff. do 2 rewrite le_lt.
 pose proof (lt_wd x1 y1 H1 x2 y2 H2) as H; unfold lt in H; rewrite H; clear H.
 (* This is a remark about an extra level of definitions created by
-"with Module NatModule := NPlusModule.NatModule" constraint in the beginning
+"with Module NBaseMod := NPlusMod.NBaseMod" constraint in the beginning
 of this functor. We cannot just say "fold (x1 == x2)%Int" because it turns out
-that it expand to (NPlusModule.NatModule.NDomainModule.E ... ...), since
-NPlusModule was imported first. On the other hand, the goal uses
-NOrderModule.NatModule.NDomainModule.E, or just NDomainModule.E, since le_lt
+that it expand to (NPlusMod.NBaseMod.NDomainModule.E ... ...), since
+NPlusMod was imported first. On the other hand, the goal uses
+NOrderModule.NBaseMod.NDomainModule.E, or just NDomainModule.E, since le_lt
 theorem was proved in NOrderDomain module. (E without qualifiers refers to
 ZDomainModule.E.) Therefore, we issue the "replace" command. It would be nicer,
-though, if the constraint "with Module NatModule := NPlusModule.NatModule" in the
+though, if the constraint "with Module NBaseMod := NPlusMod.NBaseMod" in the
 declaration of this functor would not create an extra level of definitions
 and there would be only one NDomainModule.E. *)
-replace NDomainModule.E with NPlusModule.NatModule.NDomainModule.E by reflexivity.
+replace NDomainModule.E with NPlusMod.NBaseMod.NDomainModule.E by reflexivity.
 fold (x1 == x2)%Int. fold (y1 == y2)%Int.
 assert (H1' : (x1 == y1)%Int); [exact H1 |].
 (* We do this instead of "fold (x1 == y1)%Int in H1" *)
@@ -86,26 +86,33 @@ Qed.
 Theorem lt_irr : forall n : Z, ~ (n < n).
 Proof.
 intros n; unfold lt, E; simpl. apply lt_irr.
-(* refers to NPlusOrderPropertiesModule.NOrderPropertiesModule.lt_irr *)
+(* refers to NPlusOrderPropertiesModule.NOrderPropFunctModule.lt_irr *)
 Qed.
 
-Theorem lt_S : forall n m, n < (S m) <-> n <= m.
+Theorem lt_succ : forall n m, n < (S m) <-> n <= m.
 Proof.
-intros n m; unfold lt, le, E; simpl. rewrite plus_S_l; apply lt_S.
+intros n m; unfold lt, le, E; simpl. rewrite plus_succ_l; apply lt_succ.
 Qed.
 
 End NatPairsOrder.
 
 (* Since to define the order on integers we need both plus and order
 on natural numbers, we can export the properties of plus and order together *)
-(*Module NatPairsPlusOrderProperties (NPlusModule : NPlusSignature)
-                                   (NOrderModule : NOrderSignature
-                                     with Module NatModule := NPlusModule.NatModule).
-Module Export NatPairsPlusModule := NatPairsPlus NPlusModule.
-Module Export NatPairsOrderModule := NatPairsOrder NPlusModule NOrderModule.
+(*Module NatPairsPlusOrderProperties (NPlusMod : NPlusSig)
+                                   (NOrderModule : NOrderSig
+                                     with Module NBaseMod := NPlusMod.NBaseMod).
+Module Export NatPairsPlusModule := NatPairsPlus NPlusMod.
+Module Export NatPairsOrderModule := NatPairsOrder NPlusMod NOrderModule.
 Module Export NatPairsPlusOrderPropertiesModule :=
   ZPlusOrderProperties NatPairsPlusModule NatPairsOrderModule.
 End NatPairsPlusOrderProperties.*)
-(* We cannot prove to Coq that NatPairsPlusModule.IntModule and
-NatPairsOrderModule.IntModule are the same *)
+(* We cannot prove to Coq that NatPairsPlusModule.ZBaseMod and
+NatPairsOrderModule.ZBaseMod are the same *)
 
+
+
+(*
+ Local Variables:
+ tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
+ End:
+*)

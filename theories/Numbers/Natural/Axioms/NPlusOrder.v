@@ -1,11 +1,13 @@
 Require Export NPlus.
 Require Export NOrder.
+Require Import NZPlusOrder.
 
-Module NPlusOrderProperties (Import NPlusModule : NPlusSignature)
-                         (Import NOrderModule : NOrderSignature with
-                           Module NatModule := NPlusModule.NatModule).
-Module Export NPlusPropertiesModule := NPlusProperties NatModule NPlusModule.
-Module Export NOrderPropertiesModule := NOrderProperties NOrderModule.
+Module NPlusOrderPropFunct
+  (Import NPlusMod : NPlusSig)
+  (Import NOrderMod : NOrderSig with Module NBaseMod := NPlusMod.NBaseMod).
+Module Export NPlusPropMod := NPlusPropFunct NPlusMod.
+Module Export NOrderPropMod := NOrderPropFunct NOrderMod.
+Module Export NZPlusOrderPropMod := NZPlusOrderPropFunct NZPlusMod NZOrderMod.
 Open Local Scope NatScope.
 
 (* Print All locks up here !!! *)
@@ -14,14 +16,14 @@ Proof.
 intros n m p; induct p.
 now rewrite plus_0_r.
 intros x IH H.
-rewrite plus_S_r. apply lt_closed_S. apply IH; apply H.
+rewrite plus_succ_r. apply lt_closed_succ. apply IH; apply H.
 Qed.
 
 Theorem plus_lt_compat_l : forall n m p, n < m -> p + n < p + m.
 Proof.
 intros n m p H; induct p.
 do 2 rewrite plus_0_l; assumption.
-intros x IH. do 2 rewrite plus_S_l. now apply <- lt_resp_S.
+intros x IH. do 2 rewrite plus_succ_l. now apply <- lt_resp_succ.
 Qed.
 
 Theorem plus_lt_compat_r : forall n m p, n < m -> n + p < m + p.
@@ -43,7 +45,7 @@ Proof.
 intros p n m; induct p.
 now do 2 rewrite plus_0_l.
 intros p IH.
-do 2 rewrite plus_S_l. now rewrite lt_resp_S.
+do 2 rewrite plus_succ_l. now rewrite lt_resp_succ.
 Qed.
 
 Theorem plus_lt_cancel_r : forall p n m, n + p < m + p <-> n < m.
@@ -72,11 +74,20 @@ rewrite plus_assoc in H1. apply -> plus_lt_cancel_r in H1.
 now rewrite plus_comm in H1.
 Qed.
 
-Theorem plus_gt_S :
-  forall n m p, n + m > S p -> (exists n', n == S n') \/ (exists m', m == S m').
+Theorem plus_gt_succ :
+  forall n m p, S p < n + m -> (exists n', n == S n') \/ (exists m', m == S m').
 Proof.
-intros n m p H. apply lt_exists_pred in H. destruct H as [q H].
-now apply plus_eq_S in H.
+intros n m p H.
+apply <- lt_le_succ in H.
+apply lt_exists_pred in H. destruct H as [q H].
+now apply plus_eq_succ in H.
 Qed.
 
 End NPlusOrderProperties.
+
+
+(*
+ Local Variables:
+ tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
+ End:
+*)

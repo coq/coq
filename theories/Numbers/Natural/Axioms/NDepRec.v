@@ -7,10 +7,10 @@ to try to use arbitrary domain and require that n == n' -> A n = A n'. *)
 
 Module Type NDepRecSignature.
 Declare Module Export NDomainModule : NDomainEqSignature.
-Declare Module Export NatModule : NatSignature with
+Declare Module Export NBaseMod : NBaseSig with
   Module NDomainModule := NDomainModule.
 (* Instead of these two lines, I would like to say
-Declare Module Export Nat : NatSignature with Module NDomain : NatEqDomain. *)
+Declare Module Export Nat : NBaseSig with Module NDomain : NatEqDomain. *)
 Open Local Scope NatScope.
 
 Parameter Inline dep_recursion :
@@ -20,7 +20,7 @@ Axiom dep_recursion_0 :
   forall (A : N -> Set) (a : A 0) (f : forall n, A n -> A (S n)),
     dep_recursion A a f 0 = a.
 
-Axiom dep_recursion_S :
+Axiom dep_recursion_succ :
   forall (A : N -> Set) (a : A 0) (f : forall n, A n -> A (S n)) (n : N),
     dep_recursion A a f (S n) = f n (dep_recursion A a f n).
 
@@ -28,12 +28,12 @@ End NDepRecSignature.
 
 Module NDepRecTimesProperties
   (Import NDepRecModule : NDepRecSignature)
-  (Import NTimesModule : NTimesSignature
-    with Module NPlusModule.NatModule := NDepRecModule.NatModule).
-Module Export NTimesPropertiesModule := NTimesProperties NTimesModule.
+  (Import NTimesMod : NTimesSig
+    with Module NPlusMod.NBaseMod := NDepRecModule.NBaseMod).
+Module Export NTimesPropertiesModule := NTimesPropFunct NTimesMod.
 Open Local Scope NatScope.
 
-Theorem not_0_implies_S_dep : forall n, n # O -> {m : N | n == S m}.
+Theorem not_0_implies_succ_dep : forall n, n # O -> {m : N | n == S m}.
 Proof.
 intro n; pattern n; apply dep_recursion; clear n;
 [intro H; now elim H | intros n _ _; now exists n].
@@ -51,7 +51,7 @@ Proof.
 intros m n; pattern m; apply dep_recursion; clear m.
 intro H.
 rewrite plus_0_l in H. left; now split.
-intros m IH H. rewrite plus_S_l in H. apply S_inj in H.
+intros m IH H. rewrite plus_succ_l in H. apply succ_inj in H.
 apply plus_eq_0 in H. destruct H as [H1 H2].
 right; now split; [rewrite H1 |].
 Qed.
@@ -65,7 +65,14 @@ intros; left; reflexivity.
 intros; left; reflexivity.
 intros; right; reflexivity.
 intros n _ m _ H.
-rewrite times_S_l in H. rewrite plus_S_r in H; now apply S_0 in H.
+rewrite times_succ_l in H. rewrite plus_succ_r in H; now apply succ_0 in H.
 Qed.
 
 End NDepRecTimesProperties.
+
+
+(*
+ Local Variables:
+ tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
+ End:
+*)

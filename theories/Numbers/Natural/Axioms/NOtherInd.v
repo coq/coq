@@ -8,7 +8,7 @@ Parameter S : N -> N.
 Notation "0" := O.
 
 Definition induction :=
-forall P : N -> Prop, pred_wd E P ->
+forall P : N -> Prop, predicate_wd E P ->
     P 0 -> (forall n : N, P n -> P (S n)) -> forall n : N, P n.
 
 Definition other_induction :=
@@ -19,20 +19,20 @@ forall P : N -> Prop,
 
 Theorem other_ind_implies_ind : other_induction -> induction.
 Proof.
-unfold induction, other_induction; intros OI P P_wd Base Step.
-apply OI; unfold pred_wd in P_wd.
-intros; now apply -> (P_wd 0).
-intros n Pn m EmSn; now apply -> (P_wd (S n)); [apply Step|].
+unfold induction, other_induction; intros OI P predicate_wd Base Step.
+apply OI; unfold predicate_wd in predicate_wd.
+intros; now apply -> (predicate_wd 0).
+intros n Pn m EmSn; now apply -> (predicate_wd (S n)); [apply Step|].
 Qed.
 
 Theorem ind_implies_other_ind : induction -> other_induction.
 Proof.
 intros I P Base Step.
-set (Q := fun n => forall m, m == n -> P m).
-cut (forall n, Q n).
-unfold Q; intros H n; now apply (H n).
+set (A := fun n => forall m, m == n -> P m).
+cut (forall n, A n).
+unfold A; intros H n; now apply (H n).
 apply I.
-unfold pred_wd, Q. intros x y Exy.
+unfold predicate_wd, A. intros x y Exy.
 split; intros H m Em; apply H; [now rewrite Exy | now rewrite <- Exy].
 exact Base.
 intros n Qn m EmSn; now apply Step with (n := n); [apply Qn |].
@@ -42,14 +42,14 @@ Qed.
 other_induction and we proved the base case and the induction step, we
 can in fact show that the predicate in question is well-defined, and
 therefore we can turn this other induction into the standard one. *)
-Theorem other_ind_implies_pred_wd :
+Theorem other_ind_implies_predicate_wd :
 other_induction ->
   forall P : N -> Prop,
     (forall n : N, n == 0 -> P n) ->
     (forall n : N, P n -> forall m : N, m == S n -> P m) ->
-    pred_wd E P.
+    predicate_wd E P.
 Proof.
-intros OI P Base Step; unfold pred_wd.
+intros OI P Base Step; unfold predicate_wd.
 intros x; pattern x; apply OI; clear x.
 (* Base case *)
 intros x H1 y H2.
@@ -87,7 +87,7 @@ Axiom recursion_0 :
   forall (a : A) (f : N -> A -> A),
     EA a a -> forall x : N, x == 0 -> EA (recursion a f x) a.
 
-Axiom recursion_S :
+Axiom recursion_succ :
   forall (a : A) (f : N -> A -> A),
     EA a a -> fun2_wd E EA EA f ->
       forall n m : N, n == S m -> EA (recursion a f n) (f m (recursion a f m)).
@@ -114,10 +114,10 @@ now apply EA_trans with (y := a').
 intros x IH y H y' H1.
 rewrite H in H1; symmetry in H1.
 assert (EA (recursion a f y) (f x (recursion a f x))).
-apply recursion_S. now apply EA_neighbor with (a' := a').
+apply recursion_succ. now apply EA_neighbor with (a' := a').
 assumption. now symmetry.
 assert (EA (f' x (recursion a' f' x)) (recursion a' f' y')).
-symmetry; apply recursion_S. now apply EA_neighbor with (a' := a). assumption.
+symmetry; apply recursion_succ. now apply EA_neighbor with (a' := a). assumption.
 now symmetry.
 assert (EA (f x (recursion a f x)) (f' x (recursion a' f' x))).
 apply Eff'. reflexivity. apply IH. reflexivity.
@@ -130,7 +130,7 @@ Axiom recursion_0' :
   forall (a : A) (f : N -> A -> A),
     forall x : N, x == 0 -> recursion a f x = a.
 
-Axiom recursion_S' :
+Axiom recursion_succ' :
   forall (a : A) (f : N -> A -> A),
     EA a a -> fun2_wd E EA EA f ->
       forall n m : N, n == S m -> EA (recursion a f n) (f m (recursion a f m)).
@@ -147,10 +147,10 @@ intros x Ex0 x' Exx'. rewrite Ex0 in Exx'. symmetry in Exx'.
 replace (recursion a f x) with a. replace (recursion a' f' x') with a'.
 assumption. symmetry; now apply recursion_0'. symmetry; now apply recursion_0'.
 intros x IH y EySx y' Eyy'. rewrite EySx in Eyy'. symmetry in Eyy'.
-apply EA_trans with (y := (f x (recursion a f x))). now apply recursion_S'.
+apply EA_trans with (y := (f x (recursion a f x))). now apply recursion_succ'.
 apply EA_trans with (y := (f' x (recursion a' f' x))).
 apply Eff'. reflexivity. now apply IH.
-symmetry; now apply recursion_S'.
+symmetry; now apply recursion_succ'.
 Qed.
 
 
@@ -158,3 +158,10 @@ Qed.
 End Recursion.
 
 Implicit Arguments recursion [A].
+
+
+(*
+ Local Variables:
+ tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
+ End:
+*)

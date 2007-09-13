@@ -2,7 +2,7 @@ Require Import Bool. (* To get the orb and negb function *)
 Require Export NStrongRec.
 Require Export NTimesOrder.
 
-Module MiscFunctFunctor (Import NatMod : NatSignature).
+Module MiscFunctFunctor (Import NatMod : NBaseSig).
 Module Export StrongRecPropertiesModule := StrongRecProperties NatMod.
 Open Local Scope NatScope.
 
@@ -33,10 +33,10 @@ intro y. unfold plus.
 rewrite recursion_0. apply (proj1 E_equiv).
 Qed.
 
-Theorem plus_S : forall x y, plus (S x) y == S (plus x y).
+Theorem plus_succ : forall x y, plus (S x) y == S (plus x y).
 Proof.
 intros x y; unfold plus.
-now rewrite (recursion_S E); [|apply plus_step_wd|].
+now rewrite (recursion_succ E); [|apply plus_step_wd|].
 Qed.
 
 (*****************************************************)
@@ -68,10 +68,10 @@ Proof.
 intro. unfold times. now rewrite recursion_0.
 Qed.
 
-Theorem times_S_r : forall x y, times x (S y) == plus (times x y) x.
+Theorem times_succ_r : forall x y, times x (S y) == plus (times x y) x.
 Proof.
 intros x y; unfold times.
-now rewrite (recursion_S E); [| apply times_step_wd |].
+now rewrite (recursion_succ E); [| apply times_step_wd |].
 Qed.
 
 (*****************************************************)
@@ -107,7 +107,7 @@ intros; rewrite le_lt; now right.
 Qed.
 
 Lemma lt_base_wd : eq_fun E eq_bool (if_zero false true) (if_zero false true).
-unfold eq_fun, eq_bool; intros; apply if_zero_wd; now unfold LE_Set.
+unfold eq_fun, eq_bool; intros; apply if_zero_wd; now unfold LE_succet.
 Qed.
 
 Lemma lt_step_wd :
@@ -155,7 +155,7 @@ Qed.
 Theorem lt_step_eq : forall m n, lt (S m) n = recursion false (fun n' _ => lt m n') n.
 Proof.
 intros m n; unfold lt.
-pose proof (recursion_S (eq_fun E eq_bool) (if_zero false true)
+pose proof (recursion_succ (eq_fun E eq_bool) (if_zero false true)
   (fun _ f => fun n => recursion false (fun n' _ => f n') n)
   lt_base_wd lt_step_wd m n n) as H.
 unfold eq_bool in H.
@@ -175,39 +175,39 @@ lt_step n (recursion lt_base lt_step n)? *)
 
 Lemma lt_0_1 : lt 0 1.
 Proof.
-rewrite lt_base_eq; now rewrite if_zero_S.
+rewrite lt_base_eq; now rewrite if_zero_succ.
 Qed.
 
-Lemma lt_0_Sn : forall n, lt 0 (S n).
+Lemma lt_0_succn : forall n, lt 0 (S n).
 Proof.
-intro n; rewrite lt_base_eq; now rewrite if_zero_S.
+intro n; rewrite lt_base_eq; now rewrite if_zero_succ.
 Qed.
 
-Lemma lt_Sn_Sm : forall n m, lt (S n) (S m) <-> lt n m.
+Lemma lt_succn_succm : forall n m, lt (S n) (S m) <-> lt n m.
 Proof.
 intros n m.
-rewrite lt_step_eq. rewrite (recursion_S eq_bool).
+rewrite lt_step_eq. rewrite (recursion_succ eq_bool).
 reflexivity.
 now unfold eq_bool.
 unfold fun2_wd; intros; now apply lt_wd.
 Qed.
 
-Theorem lt_S : forall m n, lt m (S n) <-> le m n.
+Theorem lt_succ : forall m n, lt m (S n) <-> le m n.
 Proof.
 assert (A : forall m n, lt m (S n) <-> lt m n \/ m == n).
 induct m.
 nondep_induct n;
 [split; intro; [now right | apply lt_0_1] |
-intro n; split; intro; [left |]; apply lt_0_Sn].
+intro n; split; intro; [left |]; apply lt_0_succn].
 intros n IH. nondep_induct n0.
 split.
-intro. assert (H1 : lt n 0); [now apply -> lt_Sn_Sm | false_hyp H1 lt_0].
+intro. assert (H1 : lt n 0); [now apply -> lt_succn_succm | false_hyp H1 lt_0].
 intro H; destruct H as [H | H].
-false_hyp H lt_0. false_hyp H S_0.
+false_hyp H lt_0. false_hyp H succ_0.
 intro m. pose proof (IH m) as H; clear IH.
-assert (lt (S n) (S (S m)) <-> lt n (S m)); [apply lt_Sn_Sm |].
-assert (lt (S n) (S m) <-> lt n m); [apply lt_Sn_Sm |].
-assert (S n == S m <-> n == m); [split; [ apply S_inj | apply S_wd]|]. tauto.
+assert (lt (S n) (S (S m)) <-> lt n (S m)); [apply lt_succn_succm |].
+assert (lt (S n) (S m) <-> lt n m); [apply lt_succn_succm |].
+assert (S n == S m <-> n == m); [split; [ apply succ_inj | apply succ_wd]|]. tauto.
 intros; rewrite le_lt; apply A.
 Qed.
 
@@ -238,10 +238,10 @@ unfold even.
 now rewrite recursion_0.
 Qed.
 
-Theorem even_S : forall x : N, even (S x) = negb (even x).
+Theorem even_succ : forall x : N, even (S x) = negb (even x).
 Proof.
 unfold even.
-intro x; rewrite (recursion_S (@eq bool)); try reflexivity.
+intro x; rewrite (recursion_succ (@eq bool)); try reflexivity.
 unfold fun2_wd.
 intros _ _ _ b b' Ebb'. destruct b; destruct b'; now simpl.
 Qed.
@@ -305,7 +305,7 @@ rewrite <- H; clear H.
 assert (H : e y 1 = e y' 1); [now apply e_wd|].
 rewrite <- H; clear H.
 assert (H : S (g (half y)) == S (g' (half y')));
-[apply S_wd; apply Egg'; now apply half_wd|].
+[apply succ_wd; apply Egg'; now apply half_wd|].
 now destruct (e y 0); destruct (e y 1).
 Qed.
 
@@ -314,12 +314,12 @@ Qed.
 (** via recursion, we form the corresponding modules and *)
 (** apply the properties functors to these modules       *)
 
-Module NDefaultPlusModule <: NPlusSignature.
+Module NDefaultPlusModule <: NPlusSig.
 
-Module NatModule := NatMod.
-(* If we used the name NatModule instead of NatMod then this would
+Module NBaseMod := NatMod.
+(* If we used the name NBaseMod instead of NatMod then this would
 produce many warnings like "Trying to mask the absolute name
-NatModule", "Trying to mask the absolute name Nat.O" etc. *)
+NBaseMod", "Trying to mask the absolute name Nat.O" etc. *)
 
 Definition plus := plus.
 
@@ -333,15 +333,15 @@ Proof.
 exact plus_0.
 Qed.
 
-Theorem plus_S_l : forall n m, plus (S n) m == S (plus n m).
+Theorem plus_succ_l : forall n m, plus (S n) m == S (plus n m).
 Proof.
-exact plus_S.
+exact plus_succ.
 Qed.
 
 End NDefaultPlusModule.
 
-Module NDefaultTimesModule <: NTimesSignature.
-Module NPlusModule := NDefaultPlusModule.
+Module NDefaultTimesModule <: NTimesSig.
+Module NPlusMod := NDefaultPlusModule.
 
 Definition times := times.
 
@@ -351,12 +351,12 @@ exact times_wd.
 Qed.
 
 Definition times_0_r := times_0_r.
-Definition times_S_r := times_S_r.
+Definition times_succ_r := times_succ_r.
 
 End NDefaultTimesModule.
 
-Module NDefaultOrderModule <: NOrderSignature.
-Module NatModule := NatMod.
+Module NDefaultOrderModule <: NOrderSig.
+Module NBaseMod := NatMod.
 
 Definition lt := lt.
 Definition le := le.
@@ -384,9 +384,9 @@ Proof.
 exact lt_0.
 Qed.
 
-Theorem lt_S : forall x y, lt x (S y) <-> le x y.
+Theorem lt_succ : forall x y, lt x (S y) <-> le x y.
 Proof.
-exact lt_S.
+exact lt_succ.
 Qed.
 
 End NDefaultOrderModule.
@@ -395,3 +395,10 @@ Module Export DefaultTimesOrderProperties :=
   NTimesOrderProperties NDefaultTimesModule NDefaultOrderModule.
 
 End MiscFunctFunctor.
+
+
+(*
+ Local Variables:
+ tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
+ End:
+*)

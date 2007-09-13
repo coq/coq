@@ -1,6 +1,6 @@
 Require Export NAxioms.
 
-Module Homomorphism (Nat1 Nat2 : NatSignature).
+Module Homomorphism (Nat1 Nat2 : NBaseSig).
 
 Notation Local N1 := Nat1.NDomainModule.N.
 Notation Local N2 := Nat2.NDomainModule.N.
@@ -26,7 +26,7 @@ unfold natural_isomorphism.
 intros x y Exy.
 apply Nat1.recursion_wd with (EA := E2).
 reflexivity.
-unfold eq_fun2. intros _ _ _ y' y'' H. now apply Nat2.S_wd.
+unfold eq_fun2. intros _ _ _ y' y'' H. now apply Nat2.succ_wd.
 assumption.
 Qed.
 
@@ -35,27 +35,27 @@ Proof.
 unfold natural_isomorphism; now rewrite Nat1.recursion_0.
 Qed.
 
-Theorem natural_isomorphism_S :
+Theorem natural_isomorphism_succ :
   forall x : N1, natural_isomorphism (S1 x) == S2 (natural_isomorphism x).
 Proof.
 unfold natural_isomorphism;
-intro x; now rewrite (Nat1.recursion_S Nat2.NDomainModule.E);
-[| unfold fun2_wd; intros; apply Nat2.S_wd |].
+intro x; now rewrite (Nat1.recursion_succ Nat2.NDomainModule.E);
+[| unfold fun2_wd; intros; apply Nat2.succ_wd |].
 Qed.
 
 Theorem iso_hom : homomorphism natural_isomorphism.
 Proof.
 unfold homomorphism, natural_isomorphism; split;
-[exact natural_isomorphism_0 | exact natural_isomorphism_S].
+[exact natural_isomorphism_0 | exact natural_isomorphism_succ].
 Qed.
 
 End Homomorphism.
 
-Module Inverse (Nat1 Nat2 : NatSignature).
+Module Inverse (Nat1 Nat2 : NBaseSig).
 
-Module Import NatProperties1 := NatProperties Nat1.
+Module Import NBasePropMod1 := NBasePropFunct Nat1.
 (* This makes the tactic induct available. Since it is taken from
-NatProperties Nat1, it refers to Nat1.induction. *)
+NBasePropFunct Nat1, it refers to Nat1.induction. *)
 
 Module Hom12 := Homomorphism Nat1 Nat2.
 Module Hom21 := Homomorphism Nat2 Nat1.
@@ -73,13 +73,13 @@ Proof.
 induct x.
 now rewrite Hom12.natural_isomorphism_0; rewrite Hom21.natural_isomorphism_0.
 intros x IH.
-rewrite Hom12.natural_isomorphism_S; rewrite Hom21.natural_isomorphism_S;
+rewrite Hom12.natural_isomorphism_succ; rewrite Hom21.natural_isomorphism_succ;
 now rewrite IH.
 Qed.
 
 End Inverse.
 
-Module Isomorphism (Nat1 Nat2 : NatSignature).
+Module Isomorphism (Nat1 Nat2 : NBaseSig).
 
 Module Hom12 := Homomorphism Nat1 Nat2.
 Module Hom21 := Homomorphism Nat2 Nat1.
@@ -109,3 +109,10 @@ apply Inverse212.iso_inverse.
 Qed.
 
 End Isomorphism.
+
+
+(*
+ Local Variables:
+ tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
+ End:
+*)

@@ -3,7 +3,7 @@ Require Export ZPlus.
 
 Module ZPlusOrderProperties (Import ZPlusModule : ZPlusSignature)
                             (Import ZOrderModule : ZOrderSignature with
-                              Module IntModule := ZPlusModule.IntModule).
+                              Module ZBaseMod := ZPlusModule.ZBaseMod).
 Module Export ZPlusPropertiesModule := ZPlusProperties ZPlusModule.
 Module Export ZOrderPropertiesModule := ZOrderProperties ZOrderModule.
 (* <W> Grammar extension: in [tactic:simple_tactic], some rule has been masked !!! *)
@@ -13,8 +13,8 @@ Theorem plus_lt_compat_l : forall n m p, n < m <-> p + n < p + m.
 Proof.
 intros n m p; induct p.
 now do 2 rewrite plus_0.
-intros p IH. do 2 rewrite plus_S. now rewrite <- lt_respects_S.
-intros p IH. do 2 rewrite plus_P. now rewrite <- lt_respects_P.
+intros p IH. do 2 rewrite plus_succ. now rewrite <- lt_respects_succ.
+intros p IH. do 2 rewrite plus_pred. now rewrite <- lt_respects_pred.
 Qed.
 
 Theorem plus_lt_compat_r : forall n m p, n < m <-> n + p < m + p.
@@ -25,7 +25,7 @@ Qed.
 
 Theorem plus_le_compat_l : forall n m p, n <= m <-> p + n <= p + m.
 Proof.
-intros n m p; do 2 rewrite <- lt_S. rewrite <- plus_n_Sm;
+intros n m p; do 2 rewrite <- lt_succ. rewrite <- plus_n_succm;
 apply plus_lt_compat_l.
 Qed.
 
@@ -69,14 +69,14 @@ Proof.
 induct n.
 induct_ord m.
 intro H; false_hyp H lt_irr.
-intros m H1 IH H2. rewrite uminus_S. rewrite uminus_0 in *.
-Zle_elim H1. apply IH in H1. now apply lt_Pn_m.
-rewrite <- H1; rewrite uminus_0; apply lt_Pn_n.
-intros m H1 IH H2. apply lt_n_Pm in H2. apply -> le_gt in H1. false_hyp H2 H1.
-intros n IH m H. rewrite uminus_S.
-apply -> lt_S_P in H. apply IH in H. rewrite uminus_P in H. now apply -> lt_S_P.
-intros n IH m H. rewrite uminus_P.
-apply -> lt_P_S in H. apply IH in H. rewrite uminus_S in H. now apply -> lt_P_S.
+intros m H1 IH H2. rewrite uminus_succ. rewrite uminus_0 in *.
+Zle_elim H1. apply IH in H1. now apply lt_predn_m.
+rewrite <- H1; rewrite uminus_0; apply lt_predn_n.
+intros m H1 IH H2. apply lt_n_predm in H2. apply -> le_gt in H1. false_hyp H2 H1.
+intros n IH m H. rewrite uminus_succ.
+apply -> lt_succ_pred in H. apply IH in H. rewrite uminus_pred in H. now apply -> lt_succ_pred.
+intros n IH m H. rewrite uminus_pred.
+apply -> lt_pred_succ in H. apply IH in H. rewrite uminus_succ in H. now apply -> lt_pred_succ.
 Qed.
 
 Theorem lt_opp : forall n m, n < m <-> - m < - n.
@@ -158,3 +158,10 @@ rewrite <- plus_minus_distr. rewrite minus_diag. now rewrite plus_n_0.
 Qed.
 
 End ZPlusOrderProperties.
+
+
+(*
+ Local Variables:
+ tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
+ End:
+*)

@@ -1,10 +1,10 @@
-Require Import Minus.
+(*Require Import Minus.*)
 
 Require Export NPlus.
-Require Export NDepRec.
+(*Require Export NDepRec.
 Require Export NTimesOrder.
 Require Export NMinus.
-Require Export NMiscFunct.
+Require Export NMiscFunct.*)
 
 (* First we define the functions that will be suppled as
 implementations. The parameters in module types, to which these
@@ -57,85 +57,69 @@ end.
 Delimit Scope NatScope with Nat.
 Open Scope NatScope.
 
-(* Domain *)
+Module NPeanoBaseMod <: NBaseSig.
 
-Module Export NPeanoDomain <: NDomainEqSignature.
+Theorem E_equiv : equiv nat (@eq nat).
+Proof (eq_equiv nat).
 
-Definition N := nat.
-Definition E := (@eq nat).
-Definition e := e.
-
-Theorem E_equiv_e : forall x y : N, E x y <-> e x y.
-Proof.
-induction x; destruct y; simpl; try now split; intro.
-rewrite <- IHx; split; intro H; [now injection H | now rewrite H].
-Qed.
-
-Definition E_equiv : equiv N E := eq_equiv N.
-
-Add Relation N E
- reflexivity proved by (proj1 E_equiv)
- symmetry proved by (proj2 (proj2 E_equiv))
- transitivity proved by (proj1 (proj2 E_equiv))
-as E_rel.
-
-End NPeanoDomain.
-
-Module Export PeanoNat <: NatSignature.
-Module (*Import*) NDomainModule := NPeanoDomain.
-
-Definition O := 0.
-Definition S := S.
-
-Add Morphism S with signature E ==> E as S_wd.
+Theorem succ_wd : fun_wd (@eq nat) (@eq nat) S.
 Proof.
 congruence.
 Qed.
 
+Theorem succ_inj : forall n1 n2 : nat, S n1 = S n2 -> n1 = n2.
+Proof.
+intros n1 n2 H; now simplify_eq H.
+Qed.
+
+Theorem succ_neq_0 : forall n : nat, S n <> 0.
+Proof.
+intros n H; simplify_eq H.
+Qed.
+
 Theorem induction :
-  forall P : nat -> Prop, pred_wd (@eq nat) P ->
-    P 0 -> (forall n, P n -> P (S n)) -> forall n, P n.
+  forall A : nat -> Prop, predicate_wd (@eq nat) A ->
+    A 0 -> (forall n : nat, A n -> A (S n)) -> forall n : nat, A n.
 Proof.
-intros P W Base Step n; elim n; assumption.
+intros; now apply nat_ind.
 Qed.
 
-Definition recursion := fun A : Set => nat_rec (fun _ => A).
-Implicit Arguments recursion [A].
+Definition N := nat.
+Definition E := (@eq nat).
+Definition O := 0.
+Definition S := S.
 
-Theorem recursion_wd :
-forall (A : Set) (EA : relation A),
-  forall a a' : A, EA a a' ->
-    forall f f' : N -> A -> A, eq_fun2 E EA EA f f' ->
-      forall x x' : N, x = x' ->
-        EA (recursion a f x) (recursion a' f' x').
+End NPeanoBaseMod.
+
+Module NPeanoPlusMod <: NPlusSig.
+Module NBaseMod := NPeanoBaseMod.
+
+Theorem plus_wd : fun2_wd (@eq nat) (@eq nat) (@eq nat) plus.
 Proof.
-unfold fun2_wd, E.
-intros A EA a a' Eaa' f f' Eff'.
-induction x as [| n IH]; intros x' H; rewrite <- H; simpl.
-assumption.
-apply Eff'; [reflexivity | now apply IH].
+congruence.
 Qed.
 
-Theorem recursion_0 :
-  forall (A : Set) (a : A) (f : N -> A -> A), recursion a f O = a.
+Theorem plus_0_l : forall n, 0 + n = n.
 Proof.
 reflexivity.
 Qed.
 
-Theorem recursion_S :
-forall (A : Set) (EA : relation A) (a : A) (f : N -> A -> A),
-  EA a a -> fun2_wd E EA EA f ->
-    forall n : N, EA (recursion a f (S n)) (f n (recursion a f n)).
+Theorem plus_succ_l : forall n m, (S n) + m = S (n + m).
 Proof.
-intros A EA a f EAaa f_wd. unfold fun2_wd, E in *.
-induction n; simpl; now apply f_wd.
+reflexivity.
 Qed.
 
-End PeanoNat.
+Definition plus := plus.
+
+End NPeanoPlusMod.
+
+Module Export NPeanoBasePropMod := NBasePropFunct NPeanoBaseMod.
+Module Export NPeanoPlusPropMod := NPlusPropFunct NPeanoPlusMod.
+
 
 Module Export NPeanoDepRec <: NDepRecSignature.
 Module Import NDomainModule := NPeanoDomain.
-Module Import NatModule := PeanoNat.
+Module Import NBaseMod := PeanoNat.
 
 Definition dep_recursion := nat_rec.
 
@@ -146,7 +130,7 @@ Proof.
 reflexivity.
 Qed.
 
-Theorem dep_recursion_S :
+Theorem dep_recursion_succ :
   forall (A : N -> Set) (a : A 0) (f : forall n, A n -> A (S n)) (n : N),
     dep_recursion A a f (S n) = f n (dep_recursion A a f n).
 Proof.
@@ -155,8 +139,8 @@ Qed.
 
 End NPeanoDepRec.
 
-Module Export NPeanoOrder <: NOrderSignature.
-Module Import NatModule := PeanoNat.
+Module Export NPeanoOrder <: NOrderSig.
+Module Import NBaseMod := PeanoNat.
 
 Definition lt := lt.
 Definition le := le.
@@ -189,7 +173,7 @@ Proof.
 destruct x as [|x]; simpl; now intro.
 Qed.
 
-Lemma lt_S_bool : forall x y, lt x (S y) = le x y.
+Lemma lt_succ_bool : forall x y, lt x (S y) = le x y.
 Proof.
 unfold lt, le; induction x as [| x IH]; destruct y as [| y];
 simpl; try reflexivity.
@@ -197,39 +181,15 @@ destruct x; now simpl.
 apply IH.
 Qed.
 
-Theorem lt_S : forall x y, lt x (S y) <-> le x y.
+Theorem lt_succ : forall x y, lt x (S y) <-> le x y.
 Proof.
-intros; rewrite <- eq_true_iff; apply lt_S_bool.
+intros; rewrite <- eq_true_iff; apply lt_succ_bool.
 Qed.
 
 End NPeanoOrder.
 
-Module Export NPeanoPlus <: NPlusSignature.
-Module (*Import*) NatModule := PeanoNat.
-
-Definition plus := plus.
-
-Notation "x + y" := (plus x y) : NatScope.
-
-Add Morphism plus with signature E ==> E ==> E as plus_wd.
-Proof.
-unfold E; congruence.
-Qed.
-
-Theorem plus_0_l : forall n, 0 + n = n.
-Proof.
-reflexivity.
-Qed.
-
-Theorem plus_S_l : forall n m, (S n) + m = S (n + m).
-Proof.
-reflexivity.
-Qed.
-
-End NPeanoPlus.
-
-Module Export NPeanoTimes <: NTimesSignature.
-Module Import NPlusModule := NPeanoPlus.
+Module Export NPeanoTimes <: NTimesSig.
+Module Import NPlusMod := NPeanoPlus.
 
 Definition times := mult.
 
@@ -243,7 +203,7 @@ Proof.
 auto.
 Qed.
 
-Theorem times_S_r : forall n m, n * (S m) = n * m + n.
+Theorem times_succ_r : forall n m, n * (S m) = n * m + n.
 Proof.
 auto.
 Qed.
@@ -251,7 +211,7 @@ Qed.
 End NPeanoTimes.
 
 Module Export NPeanoPred <: NPredSignature.
-Module Export NatModule := PeanoNat.
+Module Export NBaseMod := PeanoNat.
 
 Definition P (n : nat) :=
 match n with
@@ -259,17 +219,17 @@ match n with
 | S n' => n'
 end.
 
-Add Morphism P with signature E ==> E as P_wd.
+Add Morphism P with signature E ==> E as pred_wd.
 Proof.
 unfold E; congruence.
 Qed.
 
-Theorem P_0 : P 0 = 0.
+Theorem pred_0 : P 0 = 0.
 Proof.
 reflexivity.
 Qed.
 
-Theorem P_S : forall n, P (S n) = n.
+Theorem pred_succ : forall n, P (S n) = n.
 Proof.
 now intro.
 Qed.
@@ -291,7 +251,7 @@ Proof.
 now destruct n.
 Qed.
 
-Theorem minus_S_r : forall n m, n - (S m) = P (n - m).
+Theorem minus_succ_r : forall n m, n - (S m) = P (n - m).
 Proof.
 induction n as [| n IH]; simpl.
 now intro.
@@ -311,6 +271,44 @@ Module Export NPeanoMinusProperties :=
 Module MiscFunctModule := MiscFunctFunctor PeanoNat.
 (* The instruction above adds about 0.5M to the size of the .vo file !!! *)
 
+Theorem E_equiv_e : forall x y : N, E x y <-> e x y.
+Proof.
+induction x; destruct y; simpl; try now split; intro.
+rewrite <- IHx; split; intro H; [now injection H | now rewrite H].
+Qed.
+
+Definition recursion := fun A : Set => nat_rec (fun _ => A).
+Implicit Arguments recursion [A].
+
+Theorem recursion_wd :
+forall (A : Set) (EA : relation A),
+  forall a a' : A, EA a a' ->
+    forall f f' : N -> A -> A, eq_fun2 E EA EA f f' ->
+      forall x x' : N, x = x' ->
+        EA (recursion a f x) (recursion a' f' x').
+Proof.
+unfold fun2_wd, E.
+intros A EA a a' Eaa' f f' Eff'.
+induction x as [| n IH]; intros x' H; rewrite <- H; simpl.
+assumption.
+apply Eff'; [reflexivity | now apply IH].
+Qed.
+
+Theorem recursion_0 :
+  forall (A : Set) (a : A) (f : N -> A -> A), recursion a f O = a.
+Proof.
+reflexivity.
+Qed.
+
+Theorem recursion_succ :
+forall (A : Set) (EA : relation A) (a : A) (f : N -> A -> A),
+  EA a a -> fun2_wd E EA EA f ->
+    forall n : N, EA (recursion a f (S n)) (f n (recursion a f n)).
+Proof.
+intros A EA a f EAaa f_wd. unfold fun2_wd, E in *.
+induction n; simpl; now apply f_wd.
+Qed.
+
 (*Lemma e_implies_E : forall n m, e n m = true -> n = m.
 Proof.
 intros n m H; rewrite <- eq_true_unfold_pos in H;
@@ -320,3 +318,10 @@ Qed.
 Add Ring SR : semi_ring (decidable e_implies_E).
 
 Goal forall x y : nat, x + y = y + x. intros. ring.*)
+
+
+(*
+ Local Variables:
+ tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
+ End:
+*)

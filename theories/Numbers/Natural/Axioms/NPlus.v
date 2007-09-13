@@ -1,208 +1,138 @@
-Require Export NAxioms.
+Require Import NZPlus.
+Require Export NBase.
 
-Module Type NPlusSignature.
-Declare Module Export NatModule : NatSignature.
+Module Type NPlusSig.
+
+Declare Module Export NBaseMod : NBaseSig.
 Open Local Scope NatScope.
 
-Parameter (*Inline*) plus : N -> N -> N.
+Parameter Inline plus : N -> N -> N.
 
 Notation "x + y" := (plus x y) : NatScope.
 
 Add Morphism plus with signature E ==> E ==> E as plus_wd.
 
-Axiom plus_0_l : forall n, 0 + n == n.
-Axiom plus_S_l : forall n m, (S n) + m == S (n + m).
+Axiom plus_0_l : forall n : N, 0 + n == n.
+Axiom plus_succ_l : forall n m : N, (S n) + m == S (n + m).
 
-End NPlusSignature.
+End NPlusSig.
 
-Module NPlusProperties
-  (NatMod : NatSignature)
-  (Import NPlusModule : NPlusSignature with Module NatModule := NatMod).
-Module Export NatPropertiesModule := NatProperties NatModule.
-Import NatMod.
+Module NPlusPropFunct (Import NPlusMod : NPlusSig).
+Module Export NBasePropMod := NBasePropFunct NBaseMod.
 Open Local Scope NatScope.
 
-(* If H1 : t1 == u1 and H2 : t2 == u2 then "add_equations H1 H2 as H3"
-adds the hypothesis H3 : t1 + t2 == u1 + u2 *)
-Tactic Notation "add_equations" constr(H1) constr(H2) "as" ident(H3) :=
-match (type of H1) with
-| ?t1 == ?u1 => match (type of H2) with
-              | ?t2 == ?u2 => pose proof (plus_wd t1 u1 H1 t2 u2 H2) as H3
-              | _ => fail 2 ":" H2 "is not an equation"
-              end
-| _ => fail 1 ":" H1 "is not an equation"
-end.
+(*Theorem plus_wd : fun2_wd E E E plus.
+Proof plus_wd.
 
-Theorem plus_0_r : forall n, n + 0 == n.
-Proof.
-induct n.
-now rewrite plus_0_l.
-intros x IH.
-rewrite plus_S_l.
-now rewrite IH.
-Qed.
+Theorem plus_0_l : forall n : N, 0 + n == n.
+Proof plus_0_l.
 
-Theorem plus_S_r : forall n m, n + S m == S (n + m).
-Proof.
-intros n m; generalize n; clear n. induct n.
-now repeat rewrite plus_0_l.
-intros x IH.
-repeat rewrite plus_S_l; now rewrite IH.
-Qed.
+Theorem plus_succ_l : forall n m : N, (S n) + m == S (n + m).
+Proof plus_succ_l.*)
 
-Theorem plus_S_l : forall n m, S n + m == S (n + m).
-Proof.
-intros.
-now rewrite plus_S_l.
-Qed.
+Module NZPlusMod <: NZPlusSig.
 
-Theorem plus_comm : forall n m, n + m == m + n.
-Proof.
-intros n m; generalize n; clear n. induct n.
-rewrite plus_0_l; now rewrite plus_0_r.
-intros x IH.
-rewrite plus_S_l; rewrite plus_S_r; now rewrite IH.
-Qed.
+Module NZBaseMod <: NZBaseSig := NZBaseMod.
 
-Theorem plus_assoc : forall n m p, n + (m + p) == (n + m) + p.
-Proof.
-intros n m p; generalize n; clear n. induct n.
-now repeat rewrite plus_0_l.
-intros x IH.
-repeat rewrite plus_S_l; now rewrite IH.
-Qed.
+Definition NZplus := plus.
 
-Theorem plus_shuffle1 : forall n m p q, (n + m) + (p + q) == (n + p) + (m + q).
-Proof.
-intros n m p q.
-rewrite <- (plus_assoc n m (p + q)). rewrite (plus_comm m (p + q)).
-rewrite <- (plus_assoc p q m). rewrite (plus_assoc n p (q + m)).
-now rewrite (plus_comm q m).
-Qed.
+(* Axioms*)
+Add Morphism NZplus with signature E ==> E ==> E as NZplus_wd.
+Proof plus_wd.
+Definition NZplus_0_l := plus_0_l.
+Definition NZplus_succ_l := plus_succ_l.
 
-Theorem plus_shuffle2 : forall n m p q, (n + m) + (p + q) == (n + q) + (m + p).
-Proof.
-intros n m p q.
-rewrite <- (plus_assoc n m (p + q)). rewrite (plus_assoc m p q).
-rewrite (plus_comm (m + p) q). now rewrite <- (plus_assoc n q (m + p)).
-Qed.
+End NZPlusMod.
 
-Theorem plus_1_l : forall n, 1 + n == S n.
-Proof.
-intro n; rewrite plus_S_l; now rewrite plus_0_l.
-Qed.
+Module Export NZPlusPropMod := NZPlusPropFunct NZPlusMod.
 
-Theorem plus_1_r : forall n, n + 1 == S n.
-Proof.
-intro n; rewrite plus_comm; apply plus_1_l.
-Qed.
+(** Theorems that are valid for both natural numbers and integers *)
 
-Theorem plus_cancel_l : forall n m p, p + n == p + m -> n == m.
-Proof.
-induct p.
-do 2 rewrite plus_0_l; trivial.
-intros p IH H. do 2 rewrite plus_S_l in H. apply S_inj in H. now apply IH.
-Qed.
+Theorem plus_0_r : forall n : N, n + 0 == n.
+Proof NZplus_0_r.
 
-Theorem plus_cancel_r : forall n m p, n + p == m + p -> n == m.
-Proof.
-intros n m p.
-rewrite plus_comm.
-set (k := p + n); rewrite plus_comm; unfold k.
-apply plus_cancel_l.
-Qed.
+Theorem plus_succ_r : forall n m : N, n + S m == S (n + m).
+Proof NZplus_succ_r.
 
-Theorem plus_eq_0 : forall n m, n + m == 0 -> n == 0 /\ m == 0.
+Theorem plus_comm : forall n m : N, n + m == m + n.
+Proof NZplus_comm.
+
+Theorem plus_assoc : forall n m p : N, n + (m + p) == (n + m) + p.
+Proof NZplus_assoc.
+
+Theorem plus_shuffle1 : forall n m p q : N, (n + m) + (p + q) == (n + p) + (m + q).
+Proof NZplus_shuffle1.
+
+Theorem plus_shuffle2 : forall n m p q : N, (n + m) + (p + q) == (n + q) + (m + p).
+Proof NZplus_shuffle2.
+
+Theorem plus_1_l : forall n : N, 1 + n == S n.
+Proof NZplus_1_l.
+
+Theorem plus_1_r : forall n : N, n + 1 == S n.
+Proof NZplus_1_r.
+
+Theorem plus_cancel_l : forall n m p : N, p + n == p + m <-> n == m.
+Proof NZplus_cancel_l.
+
+Theorem plus_cancel_r : forall n m p : N, n + p == m + p <-> n == m.
+Proof NZplus_cancel_r.
+
+(** Theorems that are valid for natural numbers but cannot be proved for NZ *)
+
+Theorem plus_eq_0 : forall n m : N, n + m == 0 <-> n == 0 /\ m == 0.
 Proof.
 intros n m; induct n.
-rewrite plus_0_l; now split.
-intros n IH H. rewrite plus_S_l in H.
-absurd_hyp H; [|assumption]. unfold not; apply S_0.
+(* The next command does not work with the axiom plus_0_l from NPlusSig *)
+rewrite plus_0_l. intuition reflexivity.
+intros n IH. rewrite plus_succ_l.
+rewrite_false (S (n + m) == 0) succ_neq_0.
+rewrite_false (S n == 0) succ_neq_0. tauto.
 Qed.
 
-Theorem plus_eq_S :
-  forall n m p, n + m == S p -> (exists n', n == S n') \/ (exists m', m == S m').
+Theorem plus_eq_succ :
+  forall n m : N, (exists p : N, n + m == S p) <->
+                    (exists n' : N, n == S n') \/ (exists m' : N, m == S m').
 Proof.
-intros n m p; nondep_induct n.
-intro H; rewrite plus_0_l in H; right; now exists p.
-intros n _; left; now exists n.
+intros n m; nondep_induct n.
+split; intro H.
+destruct H as [p H]. rewrite plus_0_l in H; right; now exists p.
+destruct H as [[n' H] | [m' H]].
+symmetry in H; false_hyp H succ_neq_0.
+exists m'; now rewrite plus_0_l.
+intro n; split; intro H.
+left; now exists n.
+exists (n + m); now rewrite plus_succ_l.
 Qed.
 
-Theorem succ_plus_discr : forall n m, m # S (n + m).
+Theorem plus_eq_1 : forall n m : N,
+  n + m == 1 -> n == 1 /\ m == 0 \/ n == 0 /\ m == 1.
+Proof.
+intros n m H.
+assert (H1 : exists p : N, n + m == S p) by now exists 0.
+apply -> plus_eq_succ in H1. destruct H1 as [[n' H1] | [m' H1]].
+left. rewrite H1 in H; rewrite plus_succ_l in H; apply succ_inj in H.
+apply -> plus_eq_0 in H. destruct H as [H2 H3]; rewrite H2 in H1; now split.
+right. rewrite H1 in H; rewrite plus_succ_r in H; apply succ_inj in H.
+apply -> plus_eq_0 in H. destruct H as [H2 H3]; rewrite H3 in H1; now split.
+Qed.
+
+Theorem succ_plus_discr : forall n m : N, m ~= S (n + m).
 Proof.
 intro n; induct m.
-intro H. apply S_0 with (n := (n + 0)). now apply (proj2 (proj2 E_equiv)). (* symmetry *)
-intros m IH H. apply S_inj in H. rewrite plus_S_r in H.
+apply neq_symm. apply succ_neq_0.
+intros m IH H. apply succ_inj in H. rewrite plus_succ_r in H.
 unfold not in IH; now apply IH.
 Qed.
 
-(* The following section is devoted to defining a function that, given
-two numbers whose some equals 1, decides which number equals 1. The
-main property of the function is also proved .*)
-
-(* First prove a theorem with ordinary disjunction *)
-Theorem plus_eq_1 :
-  forall m n, m + n == 1 ->  (m == 0 /\ n == 1) \/ (m == 1 /\ n == 0).
-induct m.
-intros n H; rewrite plus_0_l in H; left; now split.
-intros n IH m H; rewrite plus_S_l in H; apply S_inj in H;
-apply plus_eq_0 in H; destruct H as [H1 H2];
-now right; split; [apply S_wd |].
-Qed.
-
-Definition plus_eq_1_dec (m n : N) : bool := recursion true (fun _ _ => false) m.
-
-Theorem plus_eq_1_dec_step_wd : fun2_wd E eq_bool eq_bool (fun _ _ => false).
-Proof.
-unfold fun2_wd; intros. unfold eq_bool. reflexivity.
-Qed.
-
-Add Morphism plus_eq_1_dec with signature E ==> E ==> eq_bool as plus_eq_1_dec_wd.
-Proof.
-unfold fun2_wd, plus_eq_1_dec.
-intros x x' Exx' y y' Eyy'.
-apply recursion_wd with (EA := eq_bool).
-unfold eq_bool; reflexivity.
-unfold eq_fun2; unfold eq_bool; reflexivity.
-assumption.
-Qed.
-
-Theorem plus_eq_1_dec_0 : forall n, plus_eq_1_dec 0 n = true.
-Proof.
-intro n. unfold plus_eq_1_dec.
-now apply recursion_0.
-Qed.
-
-Theorem plus_eq_1_dec_S : forall m n, plus_eq_1_dec (S n) m = false.
-Proof.
-intros n m. unfold plus_eq_1_dec.
-now rewrite (recursion_S eq_bool);
-[| unfold eq_bool | apply plus_eq_1_dec_step_wd].
-Qed.
-
-Theorem plus_eq_1_dec_correct :
-  forall m n, m + n == 1 ->
-    (plus_eq_1_dec m n = true  -> m == 0 /\ n == 1) /\
-    (plus_eq_1_dec m n = false -> m == 1 /\ n == 0).
-Proof.
-intros m n; induct m.
-intro H. rewrite plus_0_l in H.
-rewrite plus_eq_1_dec_0.
-split; [intros; now split | intro H1; discriminate H1].
-intros m _ H. rewrite plus_eq_1_dec_S.
-split; [intro H1; discriminate | intros _ ].
-rewrite plus_S_l in H. apply S_inj in H.
-apply plus_eq_0 in H; split; [apply S_wd | ]; tauto.
-Qed.
-
-(* One could define n <= m := exists p, p + n == m. Then we have
+(* One could define n <= m as exists p : N, p + n == m. Then we have
 dichotomy:
 
-forall n m, n <= m \/ m <= n,
+forall n m : N, n <= m \/ m <= n,
 
 i.e.,
 
-forall n m, (exists p, p + n == m) \/ (exists p, p + m == n)     (1)
+forall n m : N, (exists p : N, p + n == m) \/ (exists p : N, p + m == n)     (1)
 
 We will need (1) in the proof of induction principle for integers
 constructed as pairs of natural numbers. The formula (1) can be proved
@@ -213,17 +143,24 @@ for integers constructed from natural numbers we do not need to
 require implementations of order and minus; it is enough to prove (1)
 here. *)
 
-Theorem plus_dichotomy : forall n m, (exists p, p + n == m) \/ (exists p, p + m == n).
+Theorem plus_dichotomy :
+  forall n m : N, (exists p : N, p + n == m) \/ (exists p : N, p + m == n).
 Proof.
 intros n m; induct n.
 left; exists m; apply plus_0_r.
 intros n IH.
-(* destruct IH as [p H | p H]. does not print a goal in ProofGeneral *)
 destruct IH as [[p H] | [p H]].
-destruct (O_or_S p) as [H1 | [p' H1]]; rewrite H1 in H.
-rewrite plus_0_l in H. right; exists (S 0); rewrite H; rewrite plus_S_l; now rewrite plus_0_l.
-left; exists p'; rewrite plus_S_r; now rewrite plus_S_l in H.
-right; exists (S p). rewrite plus_S_l; now rewrite H.
+destruct (zero_or_succ p) as [H1 | [p' H1]]; rewrite H1 in H.
+rewrite plus_0_l in H. right; exists (S 0); rewrite H; rewrite plus_succ_l; now rewrite plus_0_l.
+left; exists p'; rewrite plus_succ_r; now rewrite plus_succ_l in H.
+right; exists (S p). rewrite plus_succ_l; now rewrite H.
 Qed.
 
-End NPlusProperties.
+End NPlusPropFunct.
+
+
+(*
+ Local Variables:
+ tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
+ End:
+*)

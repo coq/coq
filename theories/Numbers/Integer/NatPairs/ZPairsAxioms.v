@@ -1,17 +1,17 @@
 Require Import NPlus.
 Require Export ZAxioms.
 
-Module NatPairsDomain (Import NPlusModule : NPlusSignature) <: ZDomainSignature.
+Module NatPairsDomain (Import NPlusMod : NPlusSig) <: ZDomainSignature.
 (*  with Definition Z :=
-    (NPM.NatModule.DomainModule.N * NPM.NatModule.DomainModule.N)%type
+    (NPM.NBaseMod.DomainModule.N * NPM.NBaseMod.DomainModule.N)%type
   with Definition E :=
     fun p1 p2  =>
-      NPM.NatModule.DomainModule.E (NPM.plus (fst p1) (snd p2)) (NPM.plus (fst p2) (snd p1))
+      NPM.NBaseMod.DomainModule.E (NPM.plus (fst p1) (snd p2)) (NPM.plus (fst p2) (snd p1))
   with Definition e :=
     fun p1 p2  =>
-      NPM.NatModule.DomainModule.e (NPM.plus (fst p1) (snd p2)) (NPM.plus (fst p2) (snd p1)).*)
+      NPM.NBaseMod.DomainModule.e (NPM.plus (fst p1) (snd p2)) (NPM.plus (fst p2) (snd p1)).*)
 
-Module Export NPlusPropertiesModule := NPlusProperties NatModule NPlusModule.
+Module Export NPlusPropMod := NPlusPropFunct NBaseMod NPlusMod.
 Open Local Scope NatScope.
 
 Definition Z : Set := (N * N)%type.
@@ -68,14 +68,14 @@ Qed.
 
 End NatPairsDomain.
 
-Module NatPairsInt (Import NPlusModule : NPlusSignature) <: IntSignature.
-Module Export ZDomainModule := NatPairsDomain NPlusModule.
+Module NatPairsInt (Import NPlusMod : NPlusSig) <: ZBaseSig.
+Module Export ZDomainModule := NatPairsDomain NPlusMod.
 Module Export ZDomainModuleProperties := ZDomainProperties ZDomainModule.
 Open Local Scope IntScope.
 
 Definition O : Z := (0, 0)%Nat.
-Definition S (n : Z) := (NatModule.S (fst n), snd n).
-Definition P (n : Z) := (fst n, NatModule.S (snd n)).
+Definition S (n : Z) := (NBaseMod.S (fst n), snd n).
+Definition P (n : Z) := (fst n, NBaseMod.S (snd n)).
 (* Unfortunately, we do not have P (S n) = n but only P (S n) == n.
 It could be possible to consider as "canonical" only pairs where one of
 the elements is 0, and make all operations convert canonical values into
@@ -84,47 +84,47 @@ and because we do not have the predecessor function on N at this point. *)
 
 Notation "0" := O : IntScope.
 
-Add Morphism S with signature E ==> E as S_wd.
+Add Morphism S with signature E ==> E as succ_wd.
 Proof.
 unfold S, E; intros n m H; simpl.
-do 2 rewrite plus_S_l; now rewrite H.
+do 2 rewrite plus_succ_l; now rewrite H.
 Qed.
 
-Add Morphism P with signature E ==> E as P_wd.
+Add Morphism P with signature E ==> E as pred_wd.
 Proof.
 unfold P, E; intros n m H; simpl.
-do 2 rewrite plus_S_r; now rewrite H.
+do 2 rewrite plus_succ_r; now rewrite H.
 Qed.
 
-Theorem S_inj : forall x y : Z, S x == S y -> x == y.
+Theorem succ_inj : forall x y : Z, S x == S y -> x == y.
 Proof.
 unfold S, E; simpl; intros x y H.
-do 2 rewrite plus_S_l in H. now apply S_inj in H.
+do 2 rewrite plus_succ_l in H. now apply succ_inj in H.
 Qed.
 
-Theorem S_P : forall x : Z, S (P x) == x.
+Theorem succ_pred : forall x : Z, S (P x) == x.
 Proof.
 intro x; unfold S, P, E; simpl.
-rewrite plus_S_l; now rewrite plus_S_r.
+rewrite plus_succ_l; now rewrite plus_succ_r.
 Qed.
 
 Section Induction.
 Open Scope NatScope. (* automatically closes at the end of the section *)
-Variable Q : Z -> Prop.
-Hypothesis Q_wd : pred_wd E Q.
+Variable A : Z -> Prop.
+Hypothesis Q_wd : predicate_wd E A.
 
-Add Morphism Q with signature E ==> iff as Q_morph.
+Add Morphism A with signature E ==> iff as Q_morph.
 Proof.
 exact Q_wd.
 Qed.
 
 Theorem induction :
-  Q 0 -> (forall x, Q x -> Q (S x)) -> (forall x, Q x -> Q (P x)) -> forall x, Q x.
+  A 0 -> (forall x, A x -> A (S x)) -> (forall x, A x -> A (P x)) -> forall x, A x.
 Proof.
-intros Q0 QS QP x; unfold O, S, P, pred_wd, E in *.
+intros Q0 QS QP x; unfold O, S, P, predicate_wd, E in *.
 destruct x as [n m].
-cut (forall p : N, Q (p, 0)); [intro H1 |].
-cut (forall p : N, Q (0, p)); [intro H2 |].
+cut (forall p : N, A (p, 0)); [intro H1 |].
+cut (forall p : N, A (0, p)); [intro H2 |].
 destruct (plus_dichotomy n m) as [[p H] | [p H]].
 rewrite (Q_wd (n, m) (0, p)); simpl. rewrite plus_0_l; now rewrite plus_comm. apply H2.
 rewrite (Q_wd (n, m) (p, 0)); simpl. now rewrite plus_0_r. apply H1.
@@ -139,3 +139,10 @@ Qed.
 End Induction.
 
 End NatPairsInt.
+
+
+(*
+ Local Variables:
+ tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
+ End:
+*)

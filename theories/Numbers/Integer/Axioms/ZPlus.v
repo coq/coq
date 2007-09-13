@@ -1,7 +1,7 @@
 Require Export ZAxioms.
 
 Module Type ZPlusSignature.
-Declare Module Export IntModule : IntSignature.
+Declare Module Export ZBaseMod : ZBaseSig.
 Open Local Scope IntScope.
 
 Parameter Inline plus : Z -> Z -> Z.
@@ -17,62 +17,62 @@ Add Morphism minus with signature E ==> E ==> E as minus_wd.
 Add Morphism uminus with signature E ==> E as uminus_wd.
 
 Axiom plus_0 : forall n, 0 + n == n.
-Axiom plus_S : forall n m, (S n) + m == S (n + m).
+Axiom plus_succ : forall n m, (S n) + m == S (n + m).
 
 Axiom minus_0 : forall n, n - 0 == n.
-Axiom minus_S : forall n m, n - (S m) == P (n - m).
+Axiom minus_succ : forall n m, n - (S m) == P (n - m).
 
 Axiom uminus_0 : - 0 == 0.
-Axiom uminus_S : forall n, - (S n) == P (- n).
+Axiom uminus_succ : forall n, - (S n) == P (- n).
 
 End ZPlusSignature.
 
 Module ZPlusProperties (Import ZPlusModule : ZPlusSignature).
-Module Export IntPropertiesModule := IntProperties IntModule.
+Module Export ZBasePropFunctModule := ZBasePropFunct ZBaseMod.
 Open Local Scope IntScope.
 
-Theorem plus_P : forall n m, P n + m == P (n + m).
+Theorem plus_pred : forall n m, P n + m == P (n + m).
 Proof.
-intros n m. rewrite_S_P n at 2. rewrite plus_S. now rewrite P_S.
+intros n m. rewrite_succ_pred n at 2. rewrite plus_succ. now rewrite pred_succ.
 Qed.
 
-Theorem minus_P : forall n m, n - (P m) == S (n - m).
+Theorem minus_pred : forall n m, n - (P m) == S (n - m).
 Proof.
-intros n m. rewrite_S_P m at 2. rewrite minus_S. now rewrite S_P.
+intros n m. rewrite_succ_pred m at 2. rewrite minus_succ. now rewrite succ_pred.
 Qed.
 
-Theorem uminus_P : forall n, - (P n) == S (- n).
+Theorem uminus_pred : forall n, - (P n) == S (- n).
 Proof.
-intro n. rewrite_S_P n at 2. rewrite uminus_S. now rewrite S_P.
+intro n. rewrite_succ_pred n at 2. rewrite uminus_succ. now rewrite succ_pred.
 Qed.
 
 Theorem plus_n_0 : forall n, n + 0 == n.
 Proof.
 induct n.
 now rewrite plus_0.
-intros n IH. rewrite plus_S. now rewrite IH.
-intros n IH. rewrite plus_P. now rewrite IH.
+intros n IH. rewrite plus_succ. now rewrite IH.
+intros n IH. rewrite plus_pred. now rewrite IH.
 Qed.
 
-Theorem plus_n_Sm : forall n m, n + S m == S (n + m).
+Theorem plus_n_succm : forall n m, n + S m == S (n + m).
 Proof.
 intros n m; induct n.
 now do 2 rewrite plus_0.
-intros n IH. do 2 rewrite plus_S. now rewrite IH.
-intros n IH. do 2 rewrite plus_P. rewrite IH. rewrite P_S; now rewrite S_P.
+intros n IH. do 2 rewrite plus_succ. now rewrite IH.
+intros n IH. do 2 rewrite plus_pred. rewrite IH. rewrite pred_succ; now rewrite succ_pred.
 Qed.
 
-Theorem plus_n_Pm : forall n m, n + P m == P (n + m).
+Theorem plus_n_predm : forall n m, n + P m == P (n + m).
 Proof.
-intros n m; rewrite_S_P m at 2. rewrite plus_n_Sm; now rewrite P_S.
+intros n m; rewrite_succ_pred m at 2. rewrite plus_n_succm; now rewrite pred_succ.
 Qed.
 
 Theorem plus_opp_minus : forall n m, n + (- m) == n - m.
 Proof.
 induct m.
 rewrite uminus_0; rewrite minus_0; now rewrite plus_n_0.
-intros m IH. rewrite uminus_S; rewrite minus_S. rewrite plus_n_Pm; now rewrite IH.
-intros m IH. rewrite uminus_P; rewrite minus_P. rewrite plus_n_Sm; now rewrite IH.
+intros m IH. rewrite uminus_succ; rewrite minus_succ. rewrite plus_n_predm; now rewrite IH.
+intros m IH. rewrite uminus_pred; rewrite minus_pred. rewrite plus_n_succm; now rewrite IH.
 Qed.
 
 Theorem minus_0_n : forall n, 0 - n == - n.
@@ -80,38 +80,38 @@ Proof.
 intro n; rewrite <- plus_opp_minus; now rewrite plus_0.
 Qed.
 
-Theorem minus_Sn_m : forall n m, S n - m == S (n - m).
+Theorem minus_succn_m : forall n m, S n - m == S (n - m).
 Proof.
-intros n m; do 2 rewrite <- plus_opp_minus; now rewrite plus_S.
+intros n m; do 2 rewrite <- plus_opp_minus; now rewrite plus_succ.
 Qed.
 
-Theorem minus_Pn_m : forall n m, P n - m == P (n - m).
+Theorem minus_predn_m : forall n m, P n - m == P (n - m).
 Proof.
-intros n m. rewrite_S_P n at 2; rewrite minus_Sn_m; now rewrite P_S.
+intros n m. rewrite_succ_pred n at 2; rewrite minus_succn_m; now rewrite pred_succ.
 Qed.
 
 Theorem plus_assoc : forall n m p, n + (m + p) == (n + m) + p.
 Proof.
 intros n m p; induct n.
 now do 2 rewrite plus_0.
-intros n IH. do 3 rewrite plus_S. now rewrite IH.
-intros n IH. do 3 rewrite plus_P. now rewrite IH.
+intros n IH. do 3 rewrite plus_succ. now rewrite IH.
+intros n IH. do 3 rewrite plus_pred. now rewrite IH.
 Qed.
 
 Theorem plus_comm : forall n m, n + m == m + n.
 Proof.
 intros n m; induct n.
 rewrite plus_0; now rewrite plus_n_0.
-intros n IH; rewrite plus_S; rewrite plus_n_Sm; now rewrite IH.
-intros n IH; rewrite plus_P; rewrite plus_n_Pm; now rewrite IH.
+intros n IH; rewrite plus_succ; rewrite plus_n_succm; now rewrite IH.
+intros n IH; rewrite plus_pred; rewrite plus_n_predm; now rewrite IH.
 Qed.
 
 Theorem minus_diag : forall n, n - n == 0.
 Proof.
 induct n.
 now rewrite minus_0.
-intros n IH. rewrite minus_S; rewrite minus_Sn_m; rewrite P_S; now rewrite IH.
-intros n IH. rewrite minus_P; rewrite minus_Pn_m; rewrite S_P; now rewrite IH.
+intros n IH. rewrite minus_succ; rewrite minus_succn_m; rewrite pred_succ; now rewrite IH.
+intros n IH. rewrite minus_pred; rewrite minus_predn_m; rewrite succ_pred; now rewrite IH.
 Qed.
 
 Theorem plus_opp_r : forall n, n + (- n) == 0.
@@ -144,16 +144,16 @@ Theorem double_opp : forall n, - (- n) == n.
 Proof.
 induct n.
 now do 2 rewrite uminus_0.
-intros n IH. rewrite uminus_S; rewrite uminus_P; now rewrite IH.
-intros n IH. rewrite uminus_P; rewrite uminus_S; now rewrite IH.
+intros n IH. rewrite uminus_succ; rewrite uminus_pred; now rewrite IH.
+intros n IH. rewrite uminus_pred; rewrite uminus_succ; now rewrite IH.
 Qed.
 
 Theorem opp_plus_distr : forall n m, - (n + m) == - n + (- m).
 Proof.
 intros n m; induct n.
 rewrite uminus_0; now do 2 rewrite plus_0.
-intros n IH. rewrite plus_S; do 2 rewrite uminus_S. rewrite IH. now rewrite plus_P.
-intros n IH. rewrite plus_P; do 2 rewrite uminus_P. rewrite IH. now rewrite plus_S.
+intros n IH. rewrite plus_succ; do 2 rewrite uminus_succ. rewrite IH. now rewrite plus_pred.
+intros n IH. rewrite plus_pred; do 2 rewrite uminus_pred. rewrite IH. now rewrite plus_succ.
 Qed.
 
 Theorem opp_minus_distr : forall n m, - (n - m) == - n + m.
@@ -219,3 +219,10 @@ intros n m H. rewrite <- (plus_minus_inverse m n). rewrite H. apply plus_n_0.
 Qed.
 
 End ZPlusProperties.
+
+
+(*
+ Local Variables:
+ tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
+ End:
+*)

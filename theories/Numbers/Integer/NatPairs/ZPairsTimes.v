@@ -3,9 +3,9 @@ Require Import NTimes.
 Require Export ZTimes.
 Require Export ZPairsPlus.
 
-Module NatPairsTimes (Import NTimesModule : NTimesSignature) <: ZTimesSignature.
-Module Export ZPlusModule := NatPairsPlus NTimesModule.NPlusModule. (* "NTimesModule." is optional *)
-Module Import NTimesPropertiesModule := NTimesProperties NTimesModule.
+Module NatPairsTimes (Import NTimesMod : NTimesSig) <: ZTimesSignature.
+Module Export ZPlusModule := NatPairsPlus NTimesMod.NPlusMod. (* "NTimesMod." is optional *)
+Module Import NTimesPropertiesModule := NTimesPropFunct NTimesMod.
 Open Local Scope NatScope.
 
 Definition times (n m : Z) :=
@@ -41,15 +41,22 @@ intro n; unfold times, E; simpl.
 repeat rewrite times_0_r. now rewrite plus_assoc.
 Qed.
 
-Theorem times_S : forall n m, n * (S m) == n * m + n.
+Theorem times_succ : forall n m, n * (S m) == n * m + n.
 Proof.
 intros n m; unfold times, S, E; simpl.
-do 2 rewrite times_S_r. ring.
+do 2 rewrite times_succ_r. ring.
 Qed.
 
 End NatPairsTimes.
 
-Module NatPairsTimesProperties (NTimesModule : NTimesSignature).
-Module Export NatPairsTimesModule := NatPairsTimes NTimesModule.
+Module NatPairsTimesProperties (NTimesMod : NTimesSig).
+Module Export NatPairsTimesModule := NatPairsTimes NTimesMod.
 Module Export NatPairsTimesPropertiesModule := ZTimesProperties NatPairsTimesModule.
 End NatPairsTimesProperties.
+
+
+(*
+ Local Variables:
+ tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
+ End:
+*)

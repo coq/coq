@@ -1,7 +1,7 @@
 Require Export NAxioms.
 
-Module StrongRecProperties (Import NatModule : NatSignature).
-Module Export NatPropertiesModule := NatProperties NatModule.
+Module StrongRecProperties (Import NBaseMod : NBaseSig).
+Module Export NBasePropMod := NBasePropFunct NBaseMod.
 Open Local Scope NatScope.
 
 Section StrongRecursion.
@@ -66,3 +66,10 @@ End StrongRecursion.
 Implicit Arguments strong_rec [A].
 
 End StrongRecProperties.
+
+
+(*
+ Local Variables:
+ tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
+ End:
+*)
