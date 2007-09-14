@@ -11,6 +11,8 @@
 open Term 
 open Proof_type
 
+val proof_tac: Ccproof.proof -> Proof_type.tactic
+
 val cc_tactic : int -> constr list -> tactic
 
 val cc_fail : tactic
