@@ -77,3 +77,22 @@ Theorem discr2 : Some true = Some false -> False.
 intros.
  congruence.
 Qed.
+
+Set Implicit Arguments.
+
+Parameter elt: Set.
+Parameter elt_eq: forall (x y: elt), {x = y} + {x <> y}.
+Definition t (A: Set) := elt -> A.
+Definition get (A: Set) (x: elt) (m: t A) := m x.
+Definition set (A: Set) (x: elt) (v: A) (m: t A) :=
+    fun (y: elt) => if elt_eq y x then v else m y.
+Lemma gsident:
+  forall (A: Set) (i j: elt) (m: t A), get j (set i (get i m) m) = get j m.
+Proof.
+  intros. unfold get, set. case (elt_eq j i); intro.
+  congruence.
+  auto.
+Qed.
+            
+            
+            
