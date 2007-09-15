@@ -7,7 +7,11 @@ export COQLIB=COQLIBDIRECTORY
 export COQTH=$COQLIB/theories
 CAMLBIN=CAMLBINDIRECTORY
 OCAMLDEBUG=$CAMLBIN/ocamldebug
-export CAMLP4LIB=`$CAMLBIN/camlp4 -where`
+if [ -x "$CAMLBIN/camlp5" ]; then 
+  export CAMLP4LIB=`$CAMLBIN/camlp5 -where`
+else
+  export CAMLP4LIB=`$CAMLBIN/camlp4 -where`
+fi
 
 exec $OCAMLDEBUG \
 	-I $CAMLP4LIB \

@@ -228,6 +228,8 @@ case $arch_spec in
 	    # cygwin returns a name of the form /cygdrive/c/... 
 	    # that coqc does not understand; need to transform it
 	    COQTOP=`echo $COQTOP | sed -e "s#.*cygdrive.\(.\)#\1:#"`
+	elif test -x /bin/uname ; then
+	    ARCH=`/bin/uname -s`
 	elif test -x /usr/bin/uname ; then
 	    ARCH=`/usr/bin/uname -s`
 	else
@@ -359,17 +361,28 @@ fi
 
 CAMLLIB=`"$CAMLC" -where`
 
-# Camlp4 (greatly simplified since merged with ocaml)
+# Camlp4 / Camlp5 configuration
+# Very basic for the moment: if camlp5 exists, we use it...
 
+if [ -x "${CAMLLIB}/camlp5" ] ; then 
+    CAMLP4=camlp5
+    camlp4oexec=`echo $camlp4oexec | sed -e 's/4/5/'`
+else
+    case  $CAMLVERSION in 
+	3.10*)
+	    echo "Objective Caml 3.10 found but no Camlp5 installed"
+	    echo "Configuration script failed!"
+	    exit 1;;  
+	*) 
+	    CAMLP4=camlp4;;
+    esac
+fi
+CAMLP4LIB=+$CAMLP4
+FULLCAMLP4LIB=${CAMLLIB}/$CAMLP4
+# Assume that camlp(4|5) binaries are at the same place as ocaml ones
+# (this should become configurable some day) 
 CAMLP4BIN=${CAMLBIN}
 
-#case $OS in
-#  Win32)
-    CAMLP4LIB=+camlp4
-# ;;
-#  *)
-#    CAMLP4LIB=${CAMLLIB}/camlp4
-#esac
 
 # OS dependent libraries
 
@@ -612,13 +625,14 @@ escape_var () {
 EOF
 }
 
-export COQTOP BINDIR LIBDIR CAMLBIN CAMLLIB
+export COQTOP BINDIR LIBDIR CAMLBIN CAMLLIB CAMLP4 CAMLP4LIB FULLCAMLP4LIB
 ESCCOQTOP="`VAR=COQTOP escape_var`"
 ESCBINDIR="`VAR=BINDIR escape_var`"
 ESCLIBDIR="`VAR=LIBDIR escape_var`"
 ESCCAMLDIR="`VAR=CAMLBIN escape_var`"
 ESCCAMLLIB="`VAR=CAMLLIB escape_var`"
-ESCCAMLP4LIB="$ESCCAMLLIB"/camlp4
+ESCCAMLP4="`VAR=CAMLP4 escape_var`"
+ESCCAMLP4LIB="`VAR=FULLCAMLP4LIB escape_var`"
 
 mlconfig_file="$COQSRC/config/coq_config.ml"
 rm -f $mlconfig_file
@@ -631,6 +645,7 @@ let coqlib = "$ESCLIBDIR"
 let coqtop = "$ESCCOQTOP"
 let camldir = "$ESCCAMLDIR"
 let camllib = "$ESCCAMLLIB"
+let camlp4 = "$ESCCAMLP4"
 let camlp4lib = "$ESCCAMLP4LIB"
 let best = "$best_compiler"
 let arch = "$ARCH"
@@ -741,15 +756,10 @@ OCAMLDEBUGCOQ=$COQTOP/dev/ocamldebug-coq
 
 if test "$coq_debug_flag" = "-g" ; then
   rm -f $OCAMLDEBUGCOQ
-  if [ "$CAMLP4LIB" = "+camlp4" ] ; then
-    CAMLP4LIBFORCAMLDEBUG=$CAMLLIB/camlp4
-  else
-    CAMLP4LIBFORCAMLDEBUG=$CAMLP4LIB
-  fi
   sed -e "s|COQTOPDIRECTORY|$COQTOP|" \
       -e "s|COQLIBDIRECTORY|$LIBDIR|" \
       -e "s|CAMLBINDIRECTORY|$CAMLBIN|" \
-      -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIBFORCAMLDEBUG|" \
+      -e "s|CAMLP4LIBDIRECTORY|$FULLCAMLP4LIB|"\
       $OCAMLDEBUGCOQ.template > $OCAMLDEBUGCOQ
   chmod a-w,a+x $OCAMLDEBUGCOQ
 fi

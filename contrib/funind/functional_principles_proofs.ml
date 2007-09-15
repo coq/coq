@@ -1350,8 +1350,8 @@ let build_clause eqs =
 	      (fun id -> ([],id),Tacexpr.InHyp)
 	      eqs
 	   );
-    onconcl = false; 
-    concl_occs = [] 
+    Tacexpr.onconcl = false; 
+    Tacexpr.concl_occs = [] 
   }
 
 let rec rewrite_eqs_in_eqs eqs = 

@@ -6,14 +6,26 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i camlp4use: "pa_ifdef.cmo" i*)
+(*i camlp4use: "pa_macro.cmo" i*)
 
 (* Compatibility file depending on ocaml version *)
 
-(* IFDEF not available in 3.06; use ifdef instead *)
+IFDEF OCAML309 THEN DEFINE OCAML308 END
 
-(* type loc is different in 3.08 *)
-ifdef OCAML_308 then
+IFDEF CAMLP5 THEN 
+module M = struct 
+type loc = Stdpp.location
+let dummy_loc = Stdpp.dummy_loc
+let make_loc = Stdpp.make_loc
+let unloc loc = Stdpp.first_pos loc, Stdpp.last_pos loc
+let join_loc loc1 loc2 =
+ if loc1 = dummy_loc or loc2 = dummy_loc then dummy_loc
+ else Stdpp.encl_loc loc1 loc2
+type token = string*string
+type lexer = token Token.glexer
+let using l x = l.Token.tok_using x
+end
+ELSE IFDEF OCAML308 THEN
 module M = struct
 type loc = Token.flocation
 let dummy_loc = Token.dummy_loc
@@ -26,16 +38,34 @@ let unloc (b,e) =
   assert (dummy_loc = (b,e) or make_loc loc = (b,e));
 *)
   loc
+let join_loc loc1 loc2 =
+ if loc1 = dummy_loc or loc2 = dummy_loc then dummy_loc
+ else (fst loc1, snd loc2) 
+type token = Token.t
+type lexer = Token.lexer
+let using l x = l.Token.using x
 end
-else
+ELSE 
 module M = struct
 type loc = int * int
 let dummy_loc = (0,0)
 let make_loc x = x
 let unloc x = x
+let join_loc loc1 loc2 =
+ if loc1 = dummy_loc or loc2 = dummy_loc then dummy_loc
+ else (fst loc1, snd loc2)
+type token = Token.t
+type lexer = Token.lexer
+let using l x = l.Token.using x
 end
+END
+END
 
 type loc = M.loc
 let dummy_loc = M.dummy_loc
-let unloc = M.unloc
 let make_loc = M.make_loc
+let unloc = M.unloc
+let join_loc = M.join_loc
+type token = M.token
+type lexer = M.lexer
+let using = M.using

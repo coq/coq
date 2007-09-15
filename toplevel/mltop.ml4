@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i camlp4use: "pa_ifdef.cmo" i*)
+(*i camlp4use: "pa_macro.cmo" i*)
 (* WARNING
  * camlp4deps will not work for this file unless Makefile system enhanced.
  *)
@@ -103,7 +103,7 @@ let dir_ml_load s =
                 str s; str" to Coq code." >])
 (* TO DO: .cma loading without toplevel *)
     | WithoutTop ->
-      ifdef Byte then
+      IFDEF Byte THEN
 	(* WARNING
 	 * if this code section starts to use a module not used elsewhere
 	 * in this file, the Makefile dependency logic needs to be updated.
@@ -117,7 +117,7 @@ let dir_ml_load s =
 	    [Filename.dirname gname]
 	with | Dynlink.Error a ->
           errorlabstrm "Mltop.load_object" [< str (Dynlink.error_message a) >]
-      else ()
+      ELSE () END
     | Native ->
 	errorlabstrm "Mltop.no_load_object"
           [< str"Loading of ML object file forbidden in a native Coq" >]

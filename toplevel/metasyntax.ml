@@ -28,7 +28,7 @@ open Notation
 (**********************************************************************)
 (* Tokens                                                             *)
 
-let cache_token (_,s) = Pcoq.lexer.Token.using ("", s)
+let cache_token (_,s) = Compat.using Pcoq.lexer ("", s)
 
 let (inToken, outToken) =
   declare_object {(default_object "TOKEN") with
