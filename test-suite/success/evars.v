@@ -74,3 +74,15 @@ eauto.
 
 Check (exist _ O (refl_equal 0) : {n:nat|n=0}).
 Check (exist _ O I : {n:nat|True}).
+
+(* An example (initially from Marseille/Fairisle) that involves an evar with
+   different solutions (Input, Output or bool) that may or may not be
+   considered distinct depending on which kind of conversion is used *)
+
+Section A.
+Definition STATE := (nat * bool)%type.
+Let Input := bool.
+Let Output := bool.
+Parameter Out : STATE -> Output.
+Check fun (s : STATE) (reg : Input) => reg = Out s.
+End A.

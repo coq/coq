@@ -436,6 +436,20 @@ and clear_hyps_in_evi evdref evi ids =
 
 let need_restriction k args = not (array_for_all (closedn k) args)
 
+let rec expand_var env x = match kind_of_term x with
+  | Rel n ->
+      begin try match pi2 (lookup_rel n env) with
+      | Some t when isRel t -> expand_var env (lift n t)
+      | _ -> x
+      with Not_found -> x
+      end
+  | Var id ->
+      begin match pi2 (lookup_named id env) with
+      | Some t when isVar t -> expand_var env t
+      | _ -> x
+      end
+  | _ -> x
+
 (* [find_projectable_vars env sigma y subst] finds all vars of [subst]
  * that project on [y] up to variables aliasing.  In case of solutions that
  * differ only up to aliasing, the binding that requires the less
@@ -465,7 +479,8 @@ type evar_projection =
 
 let rec find_projectable_vars env sigma y subst =
   let is_projectable (id,(idc,y')) =
-    if is_conv env sigma y y' then (idc,(y'=y,(id,ProjectVar)))
+    if y = y' or expand_var env y = expand_var env y'
+    then (idc,(y'=y,(id,ProjectVar)))
     else if isEvar y' then
       let (evk,argsv as t) = destEvar y' in
       let evi = Evd.find sigma evk in
