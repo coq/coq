@@ -176,13 +176,9 @@ let ltac_lcall tac args =
 
 let carg c = TacDynamic(dummy_loc,Pretyping.constr_in c)
 
-let dummy_goal env =
-  {Evd.it=
-    {Evd.evar_concl=mkProp;
-     Evd.evar_hyps=named_context_val env;
-     Evd.evar_body=Evd.Evar_empty;
-     Evd.evar_extra=None};
-   Evd.sigma=Evd.empty}
+let dummy_goal env = 
+  {Evd.it = Evd.make_evar (named_context_val env) mkProp;
+   Evd.sigma = Evd.empty}
 
 let exec_tactic env n f args =
   let lid = list_tabulate(fun i -> id_of_string("x"^string_of_int i)) n in

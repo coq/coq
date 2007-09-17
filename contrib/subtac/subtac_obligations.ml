@@ -51,10 +51,7 @@ let default_tactic_expr : Tacexpr.glob_tactic_expr ref = ref (Obj.magic ())
 
 let set_default_tactic t = default_tactic_expr := t; default_tactic := Tacinterp.eval_tactic t
 
-let evar_of_obligation o = { evar_hyps = Global.named_context_val () ;
-			     evar_concl = o.obl_type ; 
-			     evar_body = Evar_empty ;
-			     evar_extra = None }
+let evar_of_obligation o = make_evar (Global.named_context_val ()) o.obl_type
 
 let subst_deps obls deps t =
   Intset.fold

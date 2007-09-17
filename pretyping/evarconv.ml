@@ -88,10 +88,9 @@ let evar_apprec env evd stack c =
   in aux (c, append_stack_list stack empty_stack)
 
 let apprec_nohdbeta env evd c =
-  let (t,stack as s) = Reductionops.whd_stack c in
-  match kind_of_term t with
-    | (Case _ | Fix _) -> evar_apprec env evd [] c
-    | _ -> s
+  match kind_of_term (fst (Reductionops.whd_stack c)) with
+    | (Case _ | Fix _) -> applist (evar_apprec env evd [] c)
+    | _ -> c
 
 (* [check_conv_record (t1,l1) (t2,l2)] tries to decompose the problem
    (t1 l1) = (t2 l2) into a problem
@@ -171,13 +170,8 @@ let ise_array2 evd f v1 v2 =
 
 let rec evar_conv_x env evd pbty term1 term2 = 
   let sigma = evars_of evd in
-  let term1 = whd_castappevar sigma term1 in
-  let term2 = whd_castappevar sigma term2 in
-(*
-  if eq_constr term1 term2 then 
-    true
-  else 
-*)
+  let term1 = apprec_nohdbeta env evd (whd_castappevar sigma term1) in
+  let term2 = apprec_nohdbeta env evd (whd_castappevar sigma term2) in
   (* Maybe convertible but since reducing can erase evars which [evar_apprec]
      could have found, we do it only if the terms are free of evar.
      Note: incomplete heuristic... *)
@@ -188,10 +182,8 @@ let rec evar_conv_x env evd pbty term1 term2 =
     solve_simple_eqn evar_conv_x env evd (pbty,destEvar term1,term2)
   else if is_undefined_evar evd term2 then
     solve_simple_eqn evar_conv_x env evd (pbty,destEvar term2,term1)
-  else 
-    let (t1,l1) = apprec_nohdbeta env evd term1 in
-    let (t2,l2) = apprec_nohdbeta env evd term2 in
-    evar_eqappr_x env evd pbty (t1,l1) (t2,l2)
+  else
+    evar_eqappr_x env evd pbty (decompose_app term1) (decompose_app term2)
 
 and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
   (* Evar must be undefined since we have whd_ised *)
@@ -522,12 +514,14 @@ let first_order_unification env evd pbty (term1,l1) (term2,l2) =
 	evar_conv_x env evd pbty (applist(term1,l1)) (applist(term2,l2))
 
 let consider_remaining_unif_problems env evd =
-  let (evd,pbs) = get_conv_pbs evd (fun _ -> true) in
+  let (evd,pbs) = extract_all_conv_pbs evd in
   List.fold_left
     (fun (evd,b as p) (pbty,env,t1,t2) ->
-      if b then first_order_unification env evd pbty 
-	(apprec_nohdbeta env evd (whd_castappevar (evars_of evd) t1))
-	(apprec_nohdbeta env evd (whd_castappevar (evars_of evd) t2))
+      if b then
+	let t1 = apprec_nohdbeta env evd (whd_castappevar (evars_of evd) t1) in
+	let t2 = apprec_nohdbeta env evd (whd_castappevar (evars_of evd) t2) in
+	first_order_unification env evd pbty 
+	  (decompose_app t1) (decompose_app t2)
       else p)
     (evd,true)
     pbs

@@ -394,7 +394,7 @@ let w_merge env with_types mod_delta metas evars evd =
           match kind_of_term rhs with
 	  | App (f,cl) when is_mimick_head f ->
 	      (try 
-		  w_merge_rec (fst (evar_define env ev rhs' evd)) 
+		  w_merge_rec (evar_define env ev rhs' evd)
                     metas evars' eqns
 		with ex when precatchable_exception ex ->
                   let evd' =
@@ -402,7 +402,7 @@ let w_merge env with_types mod_delta metas evars evd =
 		  w_merge_rec evd' metas evars eqns)
           | _ ->
               (* ensure tail recursion in non-mimickable case! *)
-	      w_merge_rec (fst (evar_define env ev rhs' evd)) metas evars' eqns
+	      w_merge_rec (evar_define env ev rhs' evd) metas evars' eqns
 	  end
     | [] -> 
 

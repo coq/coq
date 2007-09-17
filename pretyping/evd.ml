@@ -31,9 +31,23 @@ type evar_info = {
   evar_concl : constr;
   evar_hyps : named_context_val;
   evar_body : evar_body;
+  evar_filter : bool list;
   evar_extra : Dyn.t option}
 
+let make_evar hyps ccl = {
+  evar_concl = ccl;
+  evar_hyps = hyps;
+  evar_body = Evar_empty;
+  evar_filter = List.map (fun _ -> true) (named_context_of_val hyps);
+  evar_extra = None
+}
+
+let evar_concl evi = evi.evar_concl
+let evar_hyps evi = evi.evar_hyps
 let evar_context evi = named_context_of_val evi.evar_hyps
+let evar_body evi = evi.evar_body
+let evar_filter evi = evi.evar_filter
+let evar_env evd = Global.env_of_context evd.evar_hyps
 
 let eq_evar_info ei1 ei2 =
   ei1 == ei2 || 
@@ -49,42 +63,37 @@ let empty = Evarmap.empty
 
 let to_list evc = (* Workaround for change in Map.fold behavior *)
   let l = ref [] in 
-    Evarmap.iter (fun ev x -> l:=(ev,x)::!l) evc;
-    !l
+  Evarmap.iter (fun evk x -> l := (evk,x)::!l) evc;
+  !l
 
-let dom evc = Evarmap.fold (fun ev _ acc -> ev::acc) evc []
+let dom evc = Evarmap.fold (fun evk _ acc -> evk::acc) evc []
 let find evc k = Evarmap.find k evc
 let remove evc k = Evarmap.remove k evc
 let mem evc k = Evarmap.mem k evc
 let fold = Evarmap.fold
 
-let add evd ev newinfo =  Evarmap.add ev newinfo evd
+let add evd evk newinfo =  Evarmap.add evk newinfo evd
 
-let define evd ev body = 
+let define evd evk body = 
   let oldinfo =
-    try find evd ev
+    try find evd evk
     with Not_found -> error "Evd.define: cannot define undeclared evar" in
   let newinfo =
     { oldinfo with
       evar_body = Evar_defined body } in
   match oldinfo.evar_body with
-    | Evar_empty -> Evarmap.add ev newinfo evd
+    | Evar_empty -> Evarmap.add evk newinfo evd
     | _ -> anomaly "Evd.define: cannot define an evar twice"
-    
-let is_evar sigma ev = mem sigma ev
 
-let is_defined sigma ev =
-  let info = find sigma ev in 
+let is_evar sigma evk = mem sigma evk
+
+let is_defined sigma evk =
+  let info = find sigma evk in 
   not (info.evar_body = Evar_empty)
 
-let evar_concl ev = ev.evar_concl
-let evar_hyps ev = ev.evar_hyps
-let evar_body ev = ev.evar_body
-let evar_env evd = Global.env_of_context evd.evar_hyps
+let string_of_existential evk = "?" ^ string_of_int evk
 
-let string_of_existential ev = "?" ^ string_of_int ev
-
-let existential_of_int ev = ev
+let existential_of_int evk = evk
 
 (*******************************************************************)
 (* Formerly Instantiate module *)
@@ -121,6 +130,7 @@ let existential_type sigma (n,args) =
     with Not_found ->
       anomaly ("Evar "^(string_of_existential n)^" was not declared") in
   let hyps = evar_context info in
+  let _,hyps = list_filter2 (fun b c -> b) (evar_filter info,hyps) in
   instantiate_evar hyps info.evar_concl (Array.to_list args)
 
 exception NotInstantiatedEvar
@@ -128,6 +138,7 @@ exception NotInstantiatedEvar
 let existential_value sigma (n,args) =
   let info = find sigma n in
   let hyps = evar_context info in
+  let _,hyps = list_filter2 (fun b c -> b) (evar_filter info,hyps) in
   match evar_body info with
     | Evar_defined c ->
 	instantiate_evar hyps c (Array.to_list args)
@@ -385,6 +396,7 @@ type evar_constraint = conv_pb * Environ.env * constr * constr
 type evar_defs =
     { evars : evar_map;
       conv_pbs : evar_constraint list;
+      last_mods : existential_key list;
       history : (existential_key * (loc * hole_kind)) list;
       metas : clbinding Metamap.t }
 
@@ -395,32 +407,43 @@ let subst_evar_defs_light sub evd =
     metas = Metamap.map (map_clb (subst_mps sub)) evd.metas }
 
 let create_evar_defs sigma =
-  { evars=sigma; conv_pbs=[]; history=[]; metas=Metamap.empty }
+  { evars=sigma; conv_pbs=[]; last_mods = []; history=[]; metas=Metamap.empty }
 let create_goal_evar_defs sigma =
   let h = fold (fun mv _ l -> (mv,(dummy_loc,GoalEvar))::l) sigma [] in
-  { evars=sigma; conv_pbs=[]; history=h; metas=Metamap.empty }
+  { evars=sigma; conv_pbs=[]; last_mods = []; history=h; metas=Metamap.empty }
 let evars_of d = d.evars
 let evars_reset_evd evd d = {d with evars = evd}
 let reset_evd (sigma,mmap) d = {d with evars = sigma; metas=mmap}
 let add_conv_pb pb d = {d with conv_pbs = pb::d.conv_pbs}
-let evar_source ev d =
-  try List.assoc ev d.history
+let evar_source evk d =
+  try List.assoc evk d.history
   with Not_found -> (dummy_loc, InternalHole)
 
 (* define the existential of section path sp as the constr body *)
-let evar_define sp body evd =
-  {evd with evars = define evd.evars sp body}
-
-let evar_declare hyps evn ty ?(src=(dummy_loc,InternalHole)) evd =
+let evar_define evk body evd =
   { evd with
-    evars = add evd.evars evn
-      {evar_hyps=hyps; 
-       evar_concl=ty; 
-       evar_body=Evar_empty; 
-       evar_extra=None};
-    history = (evn,src)::evd.history }
+    evars = define evd.evars evk body;
+    last_mods = evk :: evd.last_mods }
 
-let is_defined_evar evd (n,_) = is_defined evd.evars n
+let evar_declare hyps evk ty ?(src=(dummy_loc,InternalHole)) ?(filter=None) evd =
+  let filter =
+    if filter = None then
+      List.map (fun _ -> true) (named_context_of_val hyps)
+    else
+      (let filter = out_some filter in
+      assert (List.length filter = List.length (named_context_of_val hyps));
+      filter)
+  in
+  { evd with
+    evars = add evd.evars evk
+      {evar_hyps = hyps;
+       evar_concl = ty;
+       evar_body = Evar_empty;
+       evar_filter = filter;
+       evar_extra = None};
+    history = (evk,src)::evd.history }
+
+let is_defined_evar evd (evk,_) = is_defined evd.evars evk
 
 (* Does k corresponds to an (un)defined existential ? *)
 let is_undefined_evar evd c = match kind_of_term c with
@@ -429,15 +452,15 @@ let is_undefined_evar evd c = match kind_of_term c with
 
 let undefined_evars evd = 
   let evars = 
-    fold (fun ev evi sigma -> if evi.evar_body = Evar_empty then 
-	    add sigma ev evi else sigma) 
+    fold (fun evk evi sigma -> if evi.evar_body = Evar_empty then 
+	    add sigma evk evi else sigma) 
       evd.evars empty
   in 
     { evd with evars = evars }
 
 (* extracts conversion problems that satisfy predicate p *)
 (* Note: conv_pbs not satisying p are stored back in reverse order *)
-let get_conv_pbs evd p =
+let extract_conv_pbs evd p =
   let (pbs,pbs1) = 
     List.fold_left
       (fun (pbs,pbs1) pb ->
@@ -448,8 +471,14 @@ let get_conv_pbs evd p =
       ([],[])
       evd.conv_pbs
   in
-  {evd with conv_pbs = pbs1},
+  {evd with conv_pbs = pbs1; last_mods = []},
   pbs
+
+let extract_changed_conv_pbs evd p =
+  extract_conv_pbs evd (p evd.last_mods)
+
+let extract_all_conv_pbs evd =
+  extract_conv_pbs evd (fun _ -> true)
 
 let evar_merge evd evars =
   { evd with evars = merge evd.evars evars }

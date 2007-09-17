@@ -1,3 +1,4 @@
+
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -13,6 +14,7 @@ open Util
 open Names
 open Term
 open Sign
+open Environ
 open Libnames
 open Mod_subst
 open Termops
@@ -32,12 +34,21 @@ type evar_body =
 
 type evar_info = {
   evar_concl : constr;
-  evar_hyps : Environ.named_context_val;
+  evar_hyps : named_context_val;
   evar_body : evar_body;
+  evar_filter : bool list;
   evar_extra : Dyn.t option}
 
 val eq_evar_info : evar_info -> evar_info -> bool
+
+val make_evar : named_context_val -> types -> evar_info
+val evar_concl : evar_info -> constr
 val evar_context : evar_info -> named_context
+val evar_hyps : evar_info -> named_context_val
+val evar_body : evar_info -> evar_body
+val evar_filter : evar_info -> bool list
+val evar_env :  evar_info -> env
+
 type evar_map
 
 val empty : evar_map
@@ -58,11 +69,6 @@ val define : evar_map -> evar -> constr -> evar_map
 val is_evar : evar_map -> evar -> bool
 
 val is_defined : evar_map -> evar -> bool
-
-val evar_concl : evar_info -> constr
-val evar_hyps : evar_info -> Environ.named_context_val
-val evar_body : evar_info -> evar_body
-val evar_env :  evar_info -> Environ.env
 
 val string_of_existential : evar -> string
 val existential_of_int : int -> evar
@@ -151,8 +157,8 @@ val is_defined_evar :  evar_defs -> existential -> bool
 val is_undefined_evar :  evar_defs -> constr -> bool
 val undefined_evars : evar_defs -> evar_defs
 val evar_declare :
-  Environ.named_context_val -> evar -> types -> ?src:loc * hole_kind ->
-  evar_defs -> evar_defs
+  named_context_val -> evar -> types -> ?src:loc * hole_kind ->
+      ?filter:bool list option -> evar_defs -> evar_defs
 val evar_define : evar -> constr -> evar_defs -> evar_defs
 val evar_source : existential_key -> evar_defs -> loc * hole_kind
 
@@ -161,10 +167,13 @@ val evar_merge : evar_defs -> evar_map -> evar_defs
 
 (* Unification constraints *)
 type conv_pb = Reduction.conv_pb
-type evar_constraint = conv_pb * Environ.env * constr * constr
+type evar_constraint = conv_pb * env * constr * constr
 val add_conv_pb :  evar_constraint -> evar_defs -> evar_defs
-val get_conv_pbs : evar_defs -> (evar_constraint -> bool) -> 
-  evar_defs * evar_constraint list
+val extract_changed_conv_pbs : evar_defs -> 
+      (existential_key list -> evar_constraint -> bool) ->
+      evar_defs * evar_constraint list
+val extract_all_conv_pbs : evar_defs -> evar_defs * evar_constraint list
+
 
 (* Metas *)
 val meta_list : evar_defs -> (metavariable * clbinding) list

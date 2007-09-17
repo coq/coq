@@ -68,6 +68,7 @@ Proof. trivial. Qed.
 Hint Resolve contradiction.
 Goal False.
 eauto.
+Abort.
 
 (* This used to fail in V8.1beta because first-order unification was
    used before using type information *)
@@ -86,3 +87,39 @@ Let Output := bool.
 Parameter Out : STATE -> Output.
 Check fun (s : STATE) (reg : Input) => reg = Out s.
 End A.
+
+(* An example extracted from FMapAVL which (may) test restriction on
+   evars problems of the form ?n[args1]=?n[args2] with distinct args1
+   and args2 *)
+
+Set Implicit Arguments.
+Parameter t:Set->Set.
+Parameter map:forall elt elt' : Set, (elt -> elt') -> t elt -> t elt'.
+Parameter avl: forall elt : Set, t elt -> Prop.
+Parameter bst: forall elt : Set, t elt -> Prop.
+Parameter map_avl: forall (elt elt' : Set) (f : elt -> elt') (m : t elt),
+   avl m -> avl (map f m).
+Parameter map_bst: forall (elt elt' : Set) (f : elt -> elt') (m : t elt),
+   bst m -> bst (map f m).
+Record bbst (elt:Set) : Set := 
+  Bbst {this :> t elt; is_bst : bst this; is_avl: avl this}.
+Definition t' := bbst.
+Section B.
+Variables elt elt': Set.
+Definition map' f (m:t' elt) : t' elt' := 
+  Bbst (map_bst f m.(is_bst)) (map_avl f m.(is_avl)).
+End B.
+
+(* An example from Lexicographic_Exponentiation that tests the 
+   contraction of reducible fixpoints in type inference *)
+
+Require Import List.
+Check (fun (A:Set) (a b x:A) (l:list A) 
+  (H : l ++ cons x nil = cons b (cons a nil)) =>
+  app_inj_tail l (cons b nil) _ _ H).
+
+(* An example from NMake (simplified), that uses restriction in solve_refl *)
+
+Parameter g:(nat->nat)->(nat->nat).
+Fixpoint G p cont {struct p} :=
+  g (fun n => match p with O => cont | S p => G p cont end n).
