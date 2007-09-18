@@ -387,7 +387,7 @@ let extend_evar env evdref k (evk1,args1) c =
   let filter = if List.for_all (fun x -> x) filter then None else Some filter in
   let evar1' = e_new_evar evdref extenv ~filter:filter ty in
   let evk1',args1'_in_env = destEvar evar1' in
-  let args1'_in_extenv = overwrite_first args1'_in_env (Array.map (lift k) args1) in
+  let args1'_in_extenv = Array.map (lift k) (overwrite_first args1'_in_env args1) in
   (evar1',(evk1',args1'_in_extenv))
 
 let subfilter p filter l =
@@ -776,6 +776,7 @@ let rec invert_instance env evd (evk,_ as ev) subst rhs =
     | Var id -> project_variable env' t k t
     | Evar (evk',args' as ev') ->
 	(* Evar/Evar problem (but left evar is virtual) *)
+	let subst = List.map (fun (id,(idc,c)) -> (id,(idc,lift k c))) subst in
 	let projs' =
 	  array_map_to_list (invert_subst env (evars_of !evdref) subst) args'
 	in
@@ -796,10 +797,10 @@ let rec invert_instance env evd (evk,_ as ev) subst rhs =
 	  let (evar'',ev'') = extend_evar env' evdref k ev t in
 	  let evd =
 	    (* Try to project (a restriction of) the left evar ... *)
-	    try solve_evar_evar_l2r evar_define env !evdref ev'' ev t
+	    try solve_evar_evar_l2r evar_define env' !evdref ev'' ev t
 	    with CannotProject filter'' ->
 	    (* ... or postpone the problem *)
-	    postpone_evar_evar env !evdref filter'' ev'' filter' ev' in
+	    postpone_evar_evar env' !evdref filter'' ev'' filter' ev' in
 	  evdref := evd;
 	  evar'')
     | _ ->

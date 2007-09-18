@@ -109,6 +109,7 @@ Variables elt elt': Set.
 Definition map' f (m:t' elt) : t' elt' := 
   Bbst (map_bst f m.(is_bst)) (map_avl f m.(is_avl)).
 End B.
+Unset Implicit Arguments.
 
 (* An example from Lexicographic_Exponentiation that tests the 
    contraction of reducible fixpoints in type inference *)
@@ -123,3 +124,29 @@ Check (fun (A:Set) (a b x:A) (l:list A)
 Parameter g:(nat->nat)->(nat->nat).
 Fixpoint G p cont {struct p} :=
   g (fun n => match p with O => cont | S p => G p cont end n).
+
+(* An example from Bordeaux/Cantor that applies evar restriction 
+   below  a binder *)
+
+Require Import Relations.
+Parameter lex : forall (A B : Set), (forall (a1 a2:A), {a1=a2}+{a1<>a2})
+-> relation A -> relation B -> A * B -> A * B -> Prop.
+Check 
+ forall (A B : Set) eq_A_dec o1 o2, 
+ antisymmetric A o1 -> transitive A o1 -> transitive B o2 ->
+ transitive _ (lex _ _ eq_A_dec o1 o2).
+
+(* Another example from Julien Forest that tests unification below binders *)
+
+Require Import List.
+Set Implicit Arguments.
+Parameter
+ merge : forall (A B : Set) (eqA : forall (a1 a2 : A), {a1=a2}+{a1<>a2})
+                         (eqB : forall (b1 b2 : B), {b1=b2}+{b1<>b2})
+                        (partial_res l : list (A*B)), option (list (A*B)).
+Axiom merge_correct :
+   forall (A B : Set) eqA eqB (l1 l2 : list (A*B)),
+       (forall a2 b2 c2, In (a2,b2) l2 -> In (a2,c2) l2 -> b2 = c2) ->
+       match merge eqA eqB l1 l2 with _ => True end.
+Unset Implicit Arguments.
+

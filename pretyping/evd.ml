@@ -616,10 +616,15 @@ let pr_meta_map mmap =
   in
   prlist pr_meta_binding (metamap_to_list mmap)
 
-let pr_idl idl = prlist_with_sep pr_spc pr_id idl
+let pr_decl ((id,b,_),ok) =
+  match b with
+  | None -> if ok then pr_id id else (str "{" ++ pr_id id ++ str "}")
+  | Some c -> str (if ok then "(" else "{") ++ pr_id id ++ str ":=" ++ 
+      print_constr c ++ str (if ok then ")" else "}")
 
 let pr_evar_info evi =
-  let phyps = pr_idl (List.rev (ids_of_named_context (evar_context evi))) in
+  let decls = List.combine (evar_context evi) (evar_filter evi) in
+  let phyps = prlist_with_sep pr_spc pr_decl (List.rev decls) in
   let pty = print_constr evi.evar_concl in
   let pb =
     match evi.evar_body with
