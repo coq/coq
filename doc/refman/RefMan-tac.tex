@@ -938,7 +938,12 @@ $\beta\iota$-reduction rule.  Then it expands transparent constants
 and tries to reduce {\tt T'} according, once more, to $\beta\iota$
 rules. But when the $\iota$ rule is not applicable then possible
 $\delta$-reductions are not applied.  For instance trying to use {\tt
-  simpl} on {\tt (plus n O)=n} does change nothing.
+simpl} on {\tt (plus n O)=n} does change nothing.  Notice that only
+transparent constants whose name can be reused as such in the
+recursive calls are possibly unfolded. For instance a constant defined
+by {\tt plus' := plus} is possibly unfolded and reused in the
+recursive calls, but a constant such as {\tt succ := plus (S O)} is
+never unfolded.
 
 \tacindex{simpl \dots\ in}
 \begin{Variants}
