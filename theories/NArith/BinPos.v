@@ -980,6 +980,35 @@ Proof.
   destruct p; compute; auto.
 Qed.
 
+Definition Ppred_mask (p : positive_mask) :=
+match p with
+| IsPos xH => IsNul
+| IsPos q => IsPos (Ppred q)
+| IsNul => IsNeg
+| IsNeg => IsNeg
+end.
+
+Lemma Pminus_mask_succ_r :
+  forall p q : positive, Pminus_mask p (Psucc q) = Pminus_mask_carry p q.
+Proof.
+induction p; destruct q; simpl in *; (now try rewrite IHp) || (now destruct p).
+Qed.
+
+Theorem Pminus_mask_carry_spec :
+  forall p q : positive, Pminus_mask_carry p q = Ppred_mask (Pminus_mask p q).
+Proof.
+induction p; destruct q; simpl; try reflexivity;
+try rewrite IHp; try now destruct (Pminus_mask p q) as [| r |]; [| destruct r |].
+now destruct p.
+Qed.
+
+Theorem Pminus_succ_r : forall p q : positive, p - (Psucc q) = Ppred (p - q).
+Proof.
+intros p q; unfold Pminus. rewrite Pminus_mask_succ_r.
+rewrite Pminus_mask_carry_spec.
+now destruct (Pminus_mask p q) as [| r |]; [| destruct r |].
+Qed.
+
 Lemma double_eq_zero_inversion :
   forall p:positive_mask, Pdouble_mask p = IsNul -> p = IsNul.
 Proof.

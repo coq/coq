@@ -59,6 +59,16 @@ Definition Nsucc n :=
   | Npos p => Npos (Psucc p)
   end.
 
+(** Predecessor *)
+
+Definition Npred (n : N) := match n with
+| N0 => N0
+| Npos p => match p with
+  | xH => N0
+  | _ => Npos (Ppred p)
+  end
+end.
+
 (** Addition *)
 
 Definition Nplus n m :=
@@ -70,9 +80,20 @@ Definition Nplus n m :=
 
 Infix "+" := Nplus : N_scope.
 
-(** Substraction *)
+(** Subtraction *)
 
-Definition Nminus (x y:N) :=
+Definition Nminus (n m : N) :=
+match n, m with
+| N0, _ => N0
+| n, N0 => n
+| Npos n', Npos m' =>
+  match Pminus_mask n' m' with
+  | IsPos p => Npos p
+  | _ => N0
+  end
+end.
+
+(*Definition Nminus (x y:N) :=
   match x, y with
     | N0, _ => N0
     | x, N0 => x
@@ -81,7 +102,7 @@ Definition Nminus (x y:N) :=
         | Lt | Eq => N0
         | Gt => Npos (x' - y')
       end
-  end.
+      end.*)
 
 Infix "-" := Nminus : N_scope.
 
@@ -195,6 +216,15 @@ Proof.
 intros P a f; unfold Nrec; apply Nrect_step.
 Qed.
 
+(** Properties of successor and predecessor *)
+
+Theorem Npred_succ : forall n : N, Npred (Nsucc n) = n.
+Proof.
+destruct n as [| p]; simpl. reflexivity.
+case_eq (Psucc p); try (intros q H; rewrite <- H; now rewrite Ppred_succ).
+intro H; false_hyp H Psucc_not_one.
+Qed.
+
 (** Properties of addition *)
 
 Theorem Nplus_0_l : forall n:N, N0 + n = n.
@@ -254,9 +284,9 @@ intro n; pattern n in |- *; apply Nind; clear n; simpl in |- *.
   apply IHn; apply Nsucc_inj; assumption.
 Qed.
 
-(** Properties of substraction. *)
+(** Properties of subtraction. *)
 
-Lemma Nle_Nminus_N0 : forall n n':N, n <= n' -> n-n' = N0.
+(*Lemma Nle_Nminus_N0 : forall n n' : N, n <= n' -> n - n' = N0.
 Proof.
   destruct n; destruct n'; simpl; intros; auto.
   elim H; auto.
@@ -264,11 +294,39 @@ Proof.
   intros; destruct (Pcompare p p0 Eq); auto.
   elim H; auto.
 Qed.
-
-Lemma Nminus_N0_Nle : forall n n':N, n-n' = N0 -> n <= n'.
 Proof.
-  destruct n; destruct n'; red; simpl; intros; try discriminate.
-  destruct (Pcompare p p0 Eq); discriminate.
+destruct n as [| p]; destruct n' as [| q]; simpl; intros; auto.
+now elim H.
+red in H; simpl in *.
+case_eq (Pcompare p q Eq); intro H1.
+assert (H2 : p = q); [now apply Pcompare_Eq_eq |]. now rewrite H2, Pminus_mask_diag.
+now rewrite Pminus_mask_Lt.
+false_hyp H1 H.
+Qed.*)
+
+Lemma Nminus_N0_Nle : forall n n' : N, n - n' = N0 <-> n <= n'.
+Proof.
+destruct n as [| p]; destruct n' as [| q]; unfold Nle; simpl;
+split; intro H; try discriminate; try reflexivity.
+now elim H.
+intro H1; apply Pminus_mask_Gt in H1. destruct H1 as [h [H1 _]].
+rewrite H1 in H; discriminate.
+case_eq (Pcompare p q Eq); intro H1; rewrite H1 in H; try now elim H.
+assert (H2 : p = q); [now apply Pcompare_Eq_eq |]. now rewrite H2, Pminus_mask_diag.
+now rewrite Pminus_mask_Lt.
+Qed.
+
+Theorem Nminus_0_r : forall n : N, n - N0 = n.
+Proof.
+now destruct n.
+Qed.
+
+Theorem Nminus_succ_r : forall n m : N, n - (Nsucc m) = Npred (n - m).
+Proof.
+destruct n as [| p]; destruct m as [| q]; try reflexivity.
+now destruct p.
+simpl. rewrite Pminus_mask_succ_r, Pminus_mask_carry_spec.
+now destruct (Pminus_mask p q) as [| r |]; [| destruct r |].
 Qed.
 
 (** Properties of multiplication *)
@@ -348,13 +406,6 @@ destruct n; destruct m; simpl; auto.
 exact (Pcompare_antisym p p0 Eq).
 Qed.
 
-(** 0 is the least natural number *)
-
-Theorem Ncompare_0 : forall n : N, Ncompare n N0 <> Lt.
-Proof.
-destruct n; discriminate.
-Qed.
-
 Theorem Ncompare_n_Sm :
   forall n m : N, Ncompare n (Nsucc m) = Lt <-> Ncompare n m = Lt \/ n = m.
 Proof.
@@ -365,6 +416,13 @@ assert (p = q <-> Npos p = Npos q); [split; congruence | tauto].
 intros H; destruct H; discriminate.
 pose proof (proj2 (Pcompare_p_Sq p q));
 assert (p = q <-> Npos p = Npos q); [split; congruence | tauto].
+Qed.
+
+(** 0 is the least natural number *)
+
+Theorem Ncompare_0 : forall n : N, Ncompare n N0 <> Lt.
+Proof.
+destruct n; discriminate.
 Qed.
 
 (** Dividing by 2 *)

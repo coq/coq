@@ -120,8 +120,11 @@ Proof.
   destruct a; destruct a'; simpl; auto with arith.
   case_eq (Pcompare p p0 Eq); simpl; intros.
   rewrite (Pcompare_Eq_eq _ _ H); auto with arith.
-  symmetry; apply not_le_minus_0.
-  generalize (nat_of_P_lt_Lt_compare_morphism _ _ H); auto with arith.
+  rewrite Pminus_mask_diag. simpl. apply minus_n_n.
+  rewrite Pminus_mask_Lt. pose proof (nat_of_P_lt_Lt_compare_morphism _ _ H). simpl.
+  symmetry; apply not_le_minus_0. auto with arith. assumption.
+  pose proof (Pminus_mask_Gt p p0 H) as H1. destruct H1 as [q [H1 _]]. rewrite H1; simpl.
+  replace q with (Pminus p p0) by (unfold Pminus; now rewrite H1).
   apply nat_of_P_minus_morphism; auto.
 Qed.
 

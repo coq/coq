@@ -40,10 +40,9 @@ destruct a; intros; simpl; auto.
   rewrite (Pcompare_Eq_eq _ _ H).
   assert (HH: forall p, Pminus p p = xH).
     intro p0; unfold Pminus; rewrite Pminus_mask_diag; auto.
-  simpl; auto.
-  generalize (Pplus_minus _ _ H).
-  case (p - b)%positive; intros; subst;
-  unfold Nplus; rewrite Pplus_comm; trivial.
+  apply Pcompare_Eq_eq in H. now rewrite Pminus_mask_diag.
+  pose proof (Pminus_mask_Gt p b H) as H1. destruct H1 as [d [H2 [H3 _]]].
+  rewrite H2. rewrite <- H3. unfold Nplus. now rewrite Pplus_comm.
 Qed.
 
 Theorem Z_of_N_plus: 
