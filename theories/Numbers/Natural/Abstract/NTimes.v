@@ -2,63 +2,16 @@ Require Export Ring.
 (* Since we define a ring below, it should be possible to call the tactic
 ring in the modules that use this module. Hence Export, not Import. *)
 Require Export NPlus.
-Require Import NZTimes.
 
-Module Type NTimesSig.
-Declare Module Export NPlusMod : NPlusSig.
+Module NTimesPropFunct (Import NAxiomsMod : NAxiomsSig).
+Module Export NPlusPropMod := NPlusPropFunct NAxiomsMod.
 Open Local Scope NatScope.
-
-Parameter Inline times : N -> N -> N.
-
-Notation "x * y" := (times x y) : NatScope.
-
-Add Morphism times with signature E ==> E ==> E as times_wd.
-
-Axiom times_0_r : forall n, n * 0 == 0.
-Axiom times_succ_r : forall n m, n * (S m) == n * m + n.
-
-(* Here recursion is done on the second argument to conform to the
-usual definition of ordinal multiplication in set theory, which is not
-commutative. It seems, however, that this definition in set theory is
-unfortunate for two reasons. First, multiplication A * B of two ordinals A
-and B can be defined as (an order type of) the cartesian product B x A
-(not A x B) ordered lexicographically. For example, omega * 2 =
-2 x omega = {(0,0) < (0,1) < (0,2) < ... < (1,0) < (1,1) < (1,2) < ...},
-while 2 * omega = omega x 2 = {(0,0) < (0,1) < (1,0) < (1,1) < (2,0) <
-(2,1) < ...} = omega. Secondly, the way the product 2 * 3 is said in
-French (deux fois trois) and Russian (dvazhdy tri) implies 3 + 3, not
-2 + 2 + 2. So it would possibly be more reasonable to define multiplication
-(here as well as in set theory) by recursion on the first argument. *)
-
-End NTimesSig.
-
-Module NTimesPropFunct (Import NTimesMod : NTimesSig).
-Module Export NPlusPropMod := NPlusPropFunct NPlusMod.
-Open Local Scope NatScope.
-
-(*Theorem times_wd : fun2_wd E E E times.
-Proof times_wd.
 
 Theorem times_0_r : forall n, n * 0 == 0.
 Proof times_0_r.
 
 Theorem times_succ_r : forall n m, n * (S m) == n * m + n.
-Proof times_succ_r.*)
-
-Module NZTimesMod <: NZTimesSig.
-Module NZPlusMod <: NZPlusSig := NZPlusMod.
-Definition NZtimes := times.
-
-(* Axioms *)
-
-Add Morphism NZtimes with signature E ==> E ==> E as NZtimes_wd.
-Proof times_wd.
-Definition NZtimes_0_r := times_0_r.
-Definition NZtimes_succ_r := times_succ_r.
-
-End NZTimesMod.
-
-Module Export NZTimesPropMod := NZTimesPropFunct NZTimesMod.
+Proof times_succ_r.
 
 (** Theorems that are valid for both natural numbers and integers *)
 
@@ -110,19 +63,19 @@ intros; now left.
 intros; now left.
 intros; now right.
 intros m IH H1. rewrite times_succ_l in H1.
-rewrite plus_succ_r in H1. now apply succ_neq_0 in H1.
+rewrite plus_succ_r in H1. now apply neq_succ_0 in H1.
 Qed.
 
 Theorem times_eq_1 : forall n m, n * m == 1 -> n == 1 /\ m == 1.
 Proof.
 intros n m; induct n.
-intro H; rewrite times_0_l in H; symmetry in H; false_hyp H succ_neq_0.
+intro H; rewrite times_0_l in H; symmetry in H; false_hyp H neq_succ_0.
 intros n IH H. rewrite times_succ_l in H. apply plus_eq_1 in H.
 destruct H as [[H1 H2] | [H1 H2]].
-apply IH in H1. destruct H1 as [_ H1]. rewrite H1 in H2; false_hyp H2 succ_neq_0.
+apply IH in H1. destruct H1 as [_ H1]. rewrite H1 in H2; false_hyp H2 neq_succ_0.
 apply times_eq_0 in H1. destruct H1 as [H1 | H1].
 rewrite H1; now split.
-rewrite H2 in H1; false_hyp H1 succ_neq_0.
+rewrite H2 in H1; false_hyp H1 neq_succ_0.
 Qed.
 
 (* In proving the correctness of the definition of multiplication on
@@ -144,7 +97,7 @@ Theorem plus_times_repl_pair : forall a n m n' m' u v,
   a * n + u == a * m + v -> n + m' == n' + m -> a * n' + u == a * m' + v.
 Proof.
 intros a n m n' m' u v H1 H2.
-apply (times_wd a a) in H2; [| reflexivity].
+apply (@times_wd a a) in H2; [| reflexivity].
 do 2 rewrite times_plus_distr_l in H2.
 symmetry in H2; add_equations H1 H2 as H3.
 stepl (a * n + (u + a * n' + a * m)) in H3 by ring.

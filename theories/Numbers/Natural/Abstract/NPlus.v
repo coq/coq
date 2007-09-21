@@ -1,50 +1,14 @@
-Require Import NZPlus.
 Require Export NBase.
 
-Module Type NPlusSig.
-
-Declare Module Export NBaseMod : NBaseSig.
+Module NPlusPropFunct (Import NAxiomsMod : NAxiomsSig).
+Module Export NBasePropMod := NBasePropFunct NAxiomsMod.
 Open Local Scope NatScope.
-
-Parameter Inline plus : N -> N -> N.
-
-Notation "x + y" := (plus x y) : NatScope.
-
-Add Morphism plus with signature E ==> E ==> E as plus_wd.
-
-Axiom plus_0_l : forall n : N, 0 + n == n.
-Axiom plus_succ_l : forall n m : N, (S n) + m == S (n + m).
-
-End NPlusSig.
-
-Module NPlusPropFunct (Import NPlusMod : NPlusSig).
-Module Export NBasePropMod := NBasePropFunct NBaseMod.
-Open Local Scope NatScope.
-
-(*Theorem plus_wd : fun2_wd E E E plus.
-Proof plus_wd.
 
 Theorem plus_0_l : forall n : N, 0 + n == n.
 Proof plus_0_l.
 
 Theorem plus_succ_l : forall n m : N, (S n) + m == S (n + m).
-Proof plus_succ_l.*)
-
-Module NZPlusMod <: NZPlusSig.
-
-Module NZBaseMod <: NZBaseSig := NZBaseMod.
-
-Definition NZplus := plus.
-
-(* Axioms*)
-Add Morphism NZplus with signature E ==> E ==> E as NZplus_wd.
-Proof plus_wd.
-Definition NZplus_0_l := plus_0_l.
-Definition NZplus_succ_l := plus_succ_l.
-
-End NZPlusMod.
-
-Module Export NZPlusPropMod := NZPlusPropFunct NZPlusMod.
+Proof plus_succ_l.
 
 (** Theorems that are valid for both natural numbers and integers *)
 
@@ -86,8 +50,8 @@ intros n m; induct n.
 (* The next command does not work with the axiom plus_0_l from NPlusSig *)
 rewrite plus_0_l. intuition reflexivity.
 intros n IH. rewrite plus_succ_l.
-rewrite_false (S (n + m) == 0) succ_neq_0.
-rewrite_false (S n == 0) succ_neq_0. tauto.
+rewrite_false (S (n + m) == 0) neq_succ_0.
+rewrite_false (S n == 0) neq_succ_0. tauto.
 Qed.
 
 Theorem plus_eq_succ :
@@ -98,7 +62,7 @@ intros n m; nondep_induct n.
 split; intro H.
 destruct H as [p H]. rewrite plus_0_l in H; right; now exists p.
 destruct H as [[n' H] | [m' H]].
-symmetry in H; false_hyp H succ_neq_0.
+symmetry in H; false_hyp H neq_succ_0.
 exists m'; now rewrite plus_0_l.
 intro n; split; intro H.
 left; now exists n.
@@ -120,9 +84,22 @@ Qed.
 Theorem succ_plus_discr : forall n m : N, m ~= S (n + m).
 Proof.
 intro n; induct m.
-apply neq_symm. apply succ_neq_0.
+apply neq_symm. apply neq_succ_0.
 intros m IH H. apply succ_inj in H. rewrite plus_succ_r in H.
 unfold not in IH; now apply IH.
+Qed.
+
+Theorem plus_pred_l : forall n m : N, n ~= 0 -> P n + m == P (n + m).
+Proof.
+intros n m; nondep_induct n.
+intro H; now elim H.
+intros n IH; rewrite plus_succ_l; now do 2 rewrite pred_succ.
+Qed.
+
+Theorem plus_pred_r : forall n m : N, m ~= 0 -> n + P m == P (n + m).
+Proof.
+intros n m H; rewrite (plus_comm n (P m));
+rewrite (plus_comm n m); now apply plus_pred_l.
 Qed.
 
 (* One could define n <= m as exists p : N, p + n == m. Then we have

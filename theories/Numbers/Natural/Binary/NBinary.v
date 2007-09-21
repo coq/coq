@@ -1,30 +1,44 @@
 Require Import NArith.
-Require Import Ndec.
+Require Import NMinus.
 
-Require Export NDepRec.
-Require Export NTimesOrder.
-Require Export NMinus.
-Require Export NMiscFunct.
+Module NBinaryAxiomsMod <: NAxiomsSig.
 
 Open Local Scope N_scope.
 
-Module NBinaryDomain : NDomainEqSignature
-  with Definition N := N
-  with Definition E := (@eq N)
-  with Definition e := Neqb.
-
 Definition N := N.
 Definition E := (@eq N).
-Definition e := Neqb.
+Definition O := 0.
+Definition S := Nsucc.
 
-Theorem E_equiv_e : forall x y : N, E x y <-> e x y.
-Proof.
-unfold E, e; intros x y; split; intro H;
-[rewrite H; now rewrite Neqb_correct |
-apply Neqb_complete; now inversion H].
-Qed.
+(*Definition Npred (n : N) := match n with
+| 0 => 0
+| Npos p => match p with
+  | xH => 0
+  | _ => Npos (Ppred p)
+  end
+end.*)
 
-Definition E_equiv : equiv N E := eq_equiv N.
+Definition P := Npred.
+Definition plus := Nplus.
+Definition minus := Nminus.
+
+(*Definition minus (n m : N) :=
+match n, m with
+| N0, _ => N0
+| n, N0 => n
+| Npos n', Npos m' =>
+  match Pminus_mask n' m' with
+  | IsPos p => Npos p
+  | _ => N0
+  end
+end.*)
+
+Definition times := Nmult.
+Definition lt := Nlt.
+Definition le := Nle.
+
+Theorem E_equiv : equiv N E.
+Proof (eq_equiv N).
 
 Add Relation N E
  reflexivity proved by (proj1 E_equiv)
@@ -32,24 +46,102 @@ Add Relation N E
  transitivity proved by (proj1 (proj2 E_equiv))
 as E_rel.
 
-End NBinaryDomain.
-
-Module BinaryNat <: NBaseSig.
-Module Export NDomainModule := NBinaryDomain.
-
-Definition O := N0.
-Definition S := Nsucc.
-
 Add Morphism S with signature E ==> E as succ_wd.
 Proof.
 congruence.
 Qed.
 
-Theorem induction :
-  forall P : N -> Prop, predicate_wd E P ->
-    P 0 -> (forall n, P n -> P (S n)) -> forall n, P n.
+Add Morphism P with signature E ==> E as pred_wd.
 Proof.
-intros P predicate_wd; apply Nind.
+congruence.
+Qed.
+
+Add Morphism plus with signature E ==> E ==> E as plus_wd.
+Proof.
+congruence.
+Qed.
+
+Add Morphism minus with signature E ==> E ==> E as minus_wd.
+Proof.
+congruence.
+Qed.
+
+Add Morphism times with signature E ==> E ==> E as times_wd.
+Proof.
+congruence.
+Qed.
+
+Add Morphism lt with signature E ==> E ==> iff as lt_wd.
+Proof.
+unfold E; intros x1 x2 H1 y1 y2 H2; rewrite H1; now rewrite H2.
+Qed.
+
+Add Morphism le with signature E ==> E ==> iff as le_wd.
+Proof.
+unfold E; intros x1 x2 H1 y1 y2 H2; rewrite H1; now rewrite H2.
+Qed.
+
+Theorem induction :
+  forall A : N -> Prop, predicate_wd E A ->
+    A 0 -> (forall n, A n -> A (Nsucc n)) -> forall n, A n.
+Proof.
+intros A predicate_wd; apply Nind.
+Qed.
+
+Theorem pred_0 : Npred 0 = 0.
+Proof.
+reflexivity.
+Qed.
+
+Theorem pred_succ : forall n : N, Npred (Nsucc n) = n.
+Proof.
+destruct n as [| p]; simpl. reflexivity.
+case_eq (Psucc p); try (intros q H; rewrite <- H; now rewrite Ppred_succ).
+intro H; false_hyp H Psucc_not_one.
+Qed.
+
+Theorem plus_0_l : forall n : N, 0 + n = n.
+Proof Nplus_0_l.
+
+Theorem plus_succ_l : forall n m : N, (Nsucc n) + m = Nsucc (n + m).
+Proof Nplus_succ.
+
+Theorem minus_0_r : forall n : N, n - 0 = n.
+Proof Nminus_0_r.
+
+Theorem minus_succ_r : forall n m : N, n - (S m) = P (n - m).
+Proof Nminus_succ_r.
+
+Theorem times_0_r : forall n : N, n * 0 = 0.
+Proof.
+intro n; rewrite Nmult_comm; apply Nmult_0_l.
+Qed.
+
+Theorem times_succ_r : forall n m : N, n * (Nsucc m) = n * m + n.
+Proof.
+intros n m; rewrite Nmult_comm, Nmult_Sn_m.
+now rewrite Nplus_comm, Nmult_comm.
+Qed.
+
+Theorem le_lt_or_eq : forall n m : N, n <= m <-> n < m \/ n = m.
+Proof.
+intros n m.
+assert (H : (n ?= m) = Eq <-> n = m).
+split; intro H; [now apply Ncompare_Eq_eq | rewrite H; apply Ncompare_refl].
+unfold Nle, Nlt. rewrite <- H.
+destruct (n ?= m); split; intro H1; (try discriminate); try (now left); try now right.
+now elim H1. destruct H1; discriminate.
+Qed.
+
+Theorem nlt_0_r : forall n : N, ~ (n < 0).
+Proof.
+unfold Nlt; destruct n as [| p]; simpl; discriminate.
+Qed.
+
+Theorem lt_succ_le : forall n m : N, n < (S m) <-> n <= m.
+Proof.
+intros x y. rewrite le_lt_or_eq.
+unfold Nlt, Nle, S; apply Ncompare_n_Sm.
 Qed.
 
 Definition recursion (A : Set) (a : A) (f : N -> A -> A) (n : N) :=
@@ -82,7 +174,7 @@ Qed.
 Theorem recursion_succ :
   forall (A : Set) (EA : relation A) (a : A) (f : N -> A -> A),
     EA a a -> fun2_wd E EA EA f ->
-      forall n : N, EA (recursion a f (S n)) (f n (recursion a f n)).
+      forall n : N, EA (recursion a f (Nsucc n)) (f n (recursion a f n)).
 Proof.
 unfold E, recursion, Nrec, fun2_wd; intros A EA a f EAaa f_wd n; pattern n; apply Nind.
 rewrite Nrect_step; rewrite Nrect_base; now apply f_wd.
@@ -90,8 +182,11 @@ clear n; intro n; do 2 rewrite Nrect_step; intro IH. apply f_wd; [reflexivity|].
 now rewrite Nrect_step.
 Qed.
 
-End BinaryNat.
+End NBinaryAxiomsMod.
 
+Module Export NBinaryMinusPropMod := NMinusPropFunct NBinaryAxiomsMod.
+
+(*
 Module NBinaryDepRec <: NDepRecSignature.
 Module Export NDomainModule := NBinaryDomain.
 Module Export NBaseMod := BinaryNat.
@@ -124,16 +219,6 @@ Proof.
 unfold E; congruence.
 Qed.
 
-Theorem plus_0_l : forall n, 0 + n = n.
-Proof.
-exact Nplus_0_l.
-Qed.
-
-Theorem plus_succ_l : forall n m, (S n) + m = S (n + m).
-Proof.
-exact Nplus_succ.
-Qed.
-
 End NBinaryPlus.
 
 Module NBinaryTimes <: NTimesSig.
@@ -146,16 +231,6 @@ Proof.
 unfold E; congruence.
 Qed.
 
-Theorem times_0_r : forall n, n * 0 = 0.
-Proof.
-intro n; rewrite Nmult_comm; apply Nmult_0_l.
-Qed.
-
-Theorem times_succ_r : forall n m, n * (S m) = n * m + n.
-Proof.
-intros n m; rewrite Nmult_comm; rewrite Nmult_succn_m.
-rewrite Nplus_comm; now rewrite Nmult_comm.
-Qed.
 
 End NBinaryTimes.
 
@@ -195,7 +270,7 @@ assert (H1 : lt x (S y) <-> Ncompare x (S y) = Lt);
 [unfold lt, comp_bool; destruct (x ?= S y); simpl; split; now intro |].
 assert (H2 : lt x y <-> Ncompare x y = Lt);
 [unfold lt, comp_bool; destruct (x ?= y); simpl; split; now intro |].
-pose proof (Ncompare_n_succm x y) as H. tauto.
+pose proof (Ncompare_n_Sm    m x y) as H. tauto.
 Qed.
 
 End NBinaryOrder.
@@ -227,7 +302,7 @@ end.
 *)
 (* Eval compute in (binlog 1000000000000000000). *) (* Works very fast *)
 
-
+*)
 (*
  Local Variables:
  tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"

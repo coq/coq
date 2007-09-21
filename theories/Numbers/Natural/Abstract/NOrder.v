@@ -1,76 +1,26 @@
-Require Export NBase.
-Require Import NZOrder.
+Require Export NTimes.
 
-Module Type NOrderSig.
-Declare Module Export NBaseMod : NBaseSig.
+Module NOrderPropFunct (Import NAxiomsMod : NAxiomsSig).
+Module Export NTimesPropMod := NTimesPropFunct NAxiomsMod.
 Open Local Scope NatScope.
 
-Parameter Inline lt : N -> N -> Prop.
-Parameter Inline le : N -> N -> Prop.
+(* The tactics le_less, le_equal and le_elim are inherited from NZOrder.v *)
 
-Notation "x < y" := (lt x y) : NatScope.
-Notation "x <= y" := (le x y) : NatScope.
-Notation "x > y" := (lt y x) (only parsing) : NatScope.
-Notation "x >= y" := (le y x) (only parsing) : NatScope.
+(* Axioms *)
 
-Add Morphism lt with signature E ==> E ==> iff as lt_wd.
-Add Morphism le with signature E ==> E ==> iff as le_wd.
+Theorem le_lt_or_eq : forall x y, x <= y <-> x < y \/ x == y.
+Proof le_lt_or_eq.
 
-Axiom le_lt_or_eq : forall x y, x <= y <-> x < y \/ x == y.
-Axiom nlt_0_r : forall x, ~ (x < 0).
-Axiom lt_succ_le : forall x y, x < S y <-> x <= y.
+Theorem nlt_0_r : forall x, ~ (x < 0).
+Proof nlt_0_r.
 
-End NOrderSig.
-
-Module NOrderPropFunct (Import NOrderModule : NOrderSig).
-Module Export NBasePropMod := NBasePropFunct NBaseMod.
-Open Local Scope NatScope.
-
-Ltac le_intro1 := rewrite le_lt_or_eq; left.
-Ltac le_intro2 := rewrite le_lt_or_eq; right.
-Ltac le_elim H := rewrite le_lt_or_eq in H; destruct H as [H | H].
-
-Theorem lt_succ_lt : forall n m : N, S n < m -> n < m.
-Proof.
-intro n; induct m.
-intro H; false_hyp H nlt_0_r.
-intros m IH H. apply <- lt_succ_le. apply -> lt_succ_le in H. le_elim H.
-le_intro1; now apply IH.
-rewrite <- H; le_intro1. apply <- lt_succ_le; now le_intro2.
-Qed.
-
-Theorem lt_irrefl : forall n : N, ~ (n < n).
-Proof.
-induct n.
-apply nlt_0_r.
-intros n IH H. apply -> lt_succ_le in H; le_elim H.
-apply lt_succ_lt in H; now apply IH.
-assert (n < S n) by (apply <- lt_succ_le; now le_intro2).
-rewrite H in *; now apply IH.
-Qed.
-
-Module NZOrderMod <: NZOrderSig.
-Module NZBaseMod := NZBaseMod.
-
-Definition NZlt := lt.
-Definition NZle := le.
-
-Add Morphism NZlt with signature E ==> E ==> iff as NZlt_wd.
-Proof lt_wd.
-
-Add Morphism NZle with signature E ==> E ==> iff as NZle_wd.
-Proof le_wd.
-
-Definition NZle_lt_or_eq := le_lt_or_eq.
-Definition NZlt_succ_le := lt_succ_le.
-Definition NZlt_succ_lt := lt_succ_lt.
-Definition NZlt_irrefl := lt_irrefl.
-
-End NZOrderMod.
-
-Module Export NZOrderPropMod := NZOrderPropFunct NZOrderMod.
+Theorem lt_succ_le : forall x y, x < S y <-> x <= y.
+Proof lt_succ_le.
 
 (* Renaming theorems from NZOrder.v *)
+
+Theorem lt_irrefl : forall n : N, ~ (n < n).
+Proof NZOrdAxiomsMod.NZlt_irrefl.
 
 Theorem lt_le_incl : forall n m : N, n < m -> n <= m.
 Proof NZlt_le_incl.
@@ -107,6 +57,9 @@ Proof NZnle_succ_l.
 
 Theorem lt_le_succ : forall n m : N, n < m <-> S n <= m.
 Proof NZlt_le_succ.
+
+Theorem lt_succ_lt : forall n m : N, S n < m -> n < m.
+Proof NZlt_succ_lt.
 
 Theorem le_succ_le : forall n m : N, S n <= m -> n <= m.
 Proof NZle_succ_le.
@@ -196,13 +149,13 @@ Theorem left_induction :
         forall n : N, n <= z -> A n.
 Proof NZleft_induction.
 
-Theorem central_induction :
+Theorem order_induction :
   forall A : N -> Prop, predicate_wd E A ->
     forall z : N, A z ->
       (forall n : N, z <= n -> A n -> A (S n)) ->
       (forall n : N, n < z  -> A (S n) -> A n) ->
         forall n : N, A n.
-Proof NZcentral_induction.
+Proof NZorder_induction.
 
 Theorem right_induction' :
   forall A : N -> Prop, predicate_wd E A ->
@@ -245,7 +198,7 @@ Proof NZle_ind.
 Theorem le_0_l : forall n : N, 0 <= n.
 Proof.
 induct n.
-now le_intro2.
+now le_equal.
 intros; now apply le_le_succ.
 Qed.
 
@@ -254,9 +207,11 @@ Proof.
 intros n H; apply <- lt_le_succ in H; false_hyp H nlt_0_r.
 Qed.
 
-Theorem le_0_eq_0 : forall n, n <= 0 -> n == 0.
+Theorem le_0_eq_0 : forall n, n <= 0 <-> n == 0.
 Proof.
-intros n H; le_elim H; [false_hyp H nlt_0_r | assumption].
+intros n; split; intro H.
+le_elim H; [false_hyp H nlt_0_r | assumption].
+le_equal.
 Qed.
 
 Theorem lt_0_succ : forall n, 0 < S n.
@@ -271,9 +226,11 @@ trivial.
 intros n IH H. apply IH; now apply lt_succ_lt.
 Qed.
 
-Theorem neq_0_lt_0 : forall n, 0 ~= n -> 0 < n.
+Theorem neq_0_lt_0 : forall n, n ~= 0 <-> 0 < n.
 Proof.
-nondep_induct n. intro H; now elim H. intros; apply lt_0_succ.
+nondep_induct n.
+split; intro H; [now elim H | intro; now apply lt_irrefl with 0].
+intro n; split; intro H; [apply lt_0_succ | apply neq_succ_0].
 Qed.
 
 Lemma Acc_nonneg_lt : forall n : N,
@@ -309,7 +266,7 @@ intros Base Step; induct n.
 intros; apply Base.
 intros n IH m H. elim H using le_ind.
 solve_predicate_wd.
-apply Step; [| apply IH]; now le_intro2.
+apply Step; [| apply IH]; now le_equal.
 intros k H1 H2. apply le_succ_le in H1. auto.
 Qed.
 
@@ -328,6 +285,103 @@ intros k H1 H2. apply lt_succ_lt in H1. auto.
 Qed.
 
 End RelElim.
+
+(** Predecessor and order *)
+
+Theorem succ_pred_pos : forall n : N, 0 < n -> S (P n) == n.
+Proof.
+intros n H; apply succ_pred; intro H1; rewrite H1 in H.
+false_hyp H lt_irrefl.
+Qed.
+
+Theorem le_pred_l : forall n : N, P n <= n.
+Proof.
+nondep_induct n.
+rewrite pred_0; le_equal.
+intros; rewrite pred_succ;  apply le_succ_r.
+Qed.
+
+Theorem lt_pred_l : forall n : N, n ~= 0 -> P n < n.
+Proof.
+nondep_induct n.
+intro H; elimtype False; now apply H.
+intros; rewrite pred_succ;  apply lt_succ_r.
+Qed.
+
+Theorem le_le_pred : forall n m : N, n <= m -> P n <= m.
+Proof.
+intros n m H; apply le_trans with n. apply le_pred_l. assumption.
+Qed.
+
+Theorem lt_lt_pred : forall n m : N, n < m -> P n < m.
+Proof.
+intros n m H; apply le_lt_trans with n. apply le_pred_l. assumption.
+Qed.
+
+Theorem lt_le_pred : forall n m : N, n < m -> n <= P m. (* Converse is false for n == m == 0 *)
+Proof.
+intro n; nondep_induct m.
+intro H; false_hyp H nlt_0_r.
+intros m IH. rewrite pred_succ; now apply -> lt_succ_le.
+Qed.
+
+Theorem lt_pred_le : forall n m : N, P n < m -> n <= m. (* Converse is false for n == m == 0 *)
+Proof.
+intros n m; nondep_induct n.
+rewrite pred_0; intro H; le_less.
+intros n IH. rewrite pred_succ in IH. now apply -> lt_le_succ.
+Qed.
+
+Theorem lt_pred_lt : forall n m : N, n < P m -> n < m.
+Proof.
+intros n m H; apply lt_le_trans with (P m); [assumption | apply le_pred_l].
+Qed.
+
+Theorem le_pred_le : forall n m : N, n <= P m -> n <= m.
+Proof.
+intros n m H; apply le_trans with (P m); [assumption | apply le_pred_l].
+Qed.
+
+Theorem pred_le_mono : forall n m : N, n <= m -> P n <= P m. (* Converse is false for n == 1, m == 0 *)
+Proof.
+intros n m H; elim H using le_ind_rel.
+solve_rel_wd.
+intro; rewrite pred_0; apply le_0_l.
+intros p q H1 _; now do 2 rewrite pred_succ.
+Qed.
+
+Theorem pred_lt_mono : forall n m : N, n ~= 0 -> (n < m <-> P n < P m).
+Proof.
+intros n m H1; split; intro H2.
+assert (m ~= 0). apply <- neq_0_lt_0. now apply lt_lt_0 with n.
+now rewrite <- (succ_pred n) in H2; rewrite <- (succ_pred m) in H2;
+[apply <- succ_lt_mono | | |].
+assert (m ~= 0). apply <- neq_0_lt_0. apply lt_lt_0 with (P n).
+apply lt_le_trans with (P m). assumption. apply le_pred_l.
+apply -> succ_lt_mono in H2. now do 2 rewrite succ_pred in H2.
+Qed.
+
+Theorem lt_succ_lt_pred : forall n m : N, S n < m <-> n < P m.
+Proof.
+intros n m. rewrite pred_lt_mono. apply neq_succ_0. now rewrite pred_succ.
+Qed.
+
+Theorem le_succ_le_pred : forall n m : N, S n <= m -> n <= P m. (* Converse is false for n == m == 0 *)
+Proof.
+intros n m H. apply lt_le_pred. now apply <- lt_le_succ.
+Qed.
+
+Theorem lt_pred_lt_succ : forall n m : N, P n < m -> n < S m. (* Converse is false for n == m == 0 *)
+Proof.
+intros n m H. apply <- lt_succ_le. now apply lt_pred_le.
+Qed.
+
+Theorem le_pred_le_succ : forall n m : N, P n <= m <-> n <= S m.
+Proof.
+intros n m; nondep_induct n.
+rewrite pred_0. split; intro H; apply le_0_l.
+intro n. rewrite pred_succ. apply succ_le_mono.
+Qed.
 
 End NOrderPropFunct.
 

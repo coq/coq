@@ -134,6 +134,23 @@ let y := fresh "y" in
 let H := fresh "H" in
   intros x y H; qiff x y H.
 
+Ltac solve_rel_wd :=
+unfold rel_wd, fun2_wd;
+let x1 := fresh "x" in
+let y1 := fresh "y" in
+let H1 := fresh "H" in
+let x2 := fresh "x" in
+let y2 := fresh "y" in
+let H2 := fresh "H" in
+  intros x1 y1 H1 x2 y2 H2;
+  qsetoid_rewrite H1;
+  qiff x2 y2 H2.
+(* The tactic solve_rel_wd is not very efficient because qsetoid_rewrite
+uses qiff to take the formula apart in order to make it quantifier-free,
+and then qiff is called again and takes the formula apart for the second
+time. It is better to analyze the formula once and generalize qiff to take
+a list of equalities that it has to rewrite. *)
+
 (* The following tactic uses solve_predicate_wd to solve the goals
 relating to well-defidedness that are produced by applying induction.
 We declare it to take the tactic that applies the induction theorem
@@ -204,6 +221,10 @@ The goal ~ P should be solvable by "apply H". *)
 Ltac rewrite_false P H :=
 setoid_replace P with False using relation iff;
 [| apply -> neg_false; apply H].
+
+Ltac rewrite_true P H :=
+setoid_replace P with True using relation iff;
+[| split; intro; [constructor | apply H]].
 
 Tactic Notation "symmetry" constr(Eq) :=
 lazymatch Eq with

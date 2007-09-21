@@ -4,7 +4,7 @@ Require Import NZPlusOrder.
 
 Module NPlusOrderPropFunct
   (Import NPlusMod : NPlusSig)
-  (Import NOrderMod : NOrderSig with Module NBaseMod := NPlusMod.NBaseMod).
+  (Import NOrderMod : NOrderSig with Module NAxiomsMod := NPlusMod.NAxiomsMod).
 Module Export NPlusPropMod := NPlusPropFunct NPlusMod.
 Module Export NOrderPropMod := NOrderPropFunct NOrderMod.
 Module Export NZPlusOrderPropMod := NZPlusOrderPropFunct NZPlusMod NZOrderMod.
