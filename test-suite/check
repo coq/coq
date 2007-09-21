@@ -198,7 +198,7 @@ test_bugs () {
 
 
     # At last, we test closed bugs that should fail
-    files=`/bin/ls -1 $1/bugs/closed/shouldfail/*.v 2> /dev/null`
+    files=`/bin/ls -1 $1/closed/shouldfail/*.v 2> /dev/null`
     for f in $files; do 
 	nbtests=`expr $nbtests + 1`
 	printf "    "$f"..."
@@ -207,7 +207,7 @@ test_bugs () {
 	    echo "Ok"
 	    nbtestsok=`expr $nbtestsok + 1`
         else 
-	    echo "Error! (bug seems to be opend, please check)"
+	    echo "Error! (bug seems to be opened, please check)"
         fi 
     done
     
