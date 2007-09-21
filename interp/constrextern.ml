@@ -923,6 +923,8 @@ let rec raw_of_pat env = function
   | PCase ((LetStyle,[|n|],ind,None),PMeta None,tm,[|b|]) ->
       let nal,b = it_destRLambda_or_LetIn_names n (raw_of_pat env b) in
       RLetTuple (loc,nal,(Anonymous,None),raw_of_pat env tm,b)
+  | PCase (_,PMeta None,tm,[||]) ->
+      RCases (loc,None,[raw_of_pat env tm,(Anonymous,None)],[])
   | PCase ((_,cstr_nargs,indo,ind_nargs),p,tm,bv) ->
       let brs = Array.to_list (Array.map (raw_of_pat env) bv) in
       let brns = Array.to_list cstr_nargs in

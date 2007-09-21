@@ -436,9 +436,16 @@ let rec intern_intro_pattern lf ist = function
 and intern_case_intro_pattern lf ist =
   List.map (List.map (intern_intro_pattern lf ist))
 
-let intern_quantified_hypothesis ist x =
-  (* We use identifier both for variables and quantified hyps (no way to
-     statically check the existence of a quantified hyp); thus nothing to do *)
+let intern_quantified_hypothesis ist = function
+  | AnonHyp n -> AnonHyp n
+  | NamedHyp id ->
+      (* Uncomment to disallow "intros until n" in ltac when n is not bound *)
+      NamedHyp ((*snd (intern_hyp ist (dloc,*)id(* ))*))
+      
+let intern_binding_name ist x =
+  (* We use identifier both for variables and binding names *)
+  (* Todo: consider the body of the lemma to which the binding refer 
+     and if a term w/o ltac vars, check the name is indeed quantified *)
   x
 
 let intern_constr_gen isarity {ltacvars=lfun; gsigma=sigma; genv=env} c =
@@ -453,7 +460,7 @@ let intern_type = intern_constr_gen true
 
 (* Globalize bindings *)
 let intern_binding ist (loc,b,c) =
-  (loc,intern_quantified_hypothesis ist b,intern_constr ist c)
+  (loc,intern_binding_name ist b,intern_constr ist c)
 
 let intern_bindings ist = function
   | NoBindings -> NoBindings
@@ -1465,8 +1472,17 @@ let interp_quantified_hypothesis ist = function
   | AnonHyp n -> AnonHyp n
   | NamedHyp id ->
       try try_interp_ltac_var coerce_to_quantified_hypothesis ist None(dloc,id)
-      with Not_found 
-      | Stdpp.Exc_located (_, UserError _) | UserError _ (*Compat provisoire*)
+      with Not_found | Stdpp.Exc_located (_, UserError _) | UserError _
+   -> NamedHyp id
+
+let interp_binding_name ist = function
+  | AnonHyp n -> AnonHyp n
+  | NamedHyp id ->
+      (* If a name is bound, it has to be a quantified hypothesis *)
+      (* user has to use other names for variables if these ones clash with *)
+      (* a name intented to be used as a (non-variable) identifier *)
+      try try_interp_ltac_var coerce_to_quantified_hypothesis ist None(dloc,id)
+      with Not_found | Stdpp.Exc_located (_, UserError _) | UserError _ 
    -> NamedHyp id
 
 (* Quantified named or numbered hypothesis or hypothesis in context *)
@@ -1495,7 +1511,7 @@ let interp_induction_arg ist gl = function
 	(pf_interp_constr ist gl (RVar (loc,id),Some (CRef (Ident (loc,id)))))
 
 let interp_binding ist gl (loc,b,c) =
-  (loc,interp_quantified_hypothesis ist b,pf_interp_constr ist gl c)
+  (loc,interp_binding_name ist b,pf_interp_constr ist gl c)
 
 let interp_bindings ist gl = function
 | NoBindings -> NoBindings
@@ -2349,7 +2365,8 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacMutualCofix (id,l) ->
       TacMutualCofix (id, List.map (fun (id,c) -> (id,subst_rawconstr subst c)) l)
   | TacCut c -> TacCut (subst_rawconstr subst c)
-  | TacAssert (b,na,c) -> TacAssert (b,na,subst_rawconstr subst c)
+  | TacAssert (b,na,c) ->
+      TacAssert (option_map (subst_tactic subst) b,na,subst_rawconstr subst c)
   | TacGeneralize cl -> TacGeneralize (List.map (subst_rawconstr subst) cl)
   | TacGeneralizeDep c -> TacGeneralizeDep (subst_rawconstr subst c)
   | TacLetTac (id,c,clp) -> TacLetTac (id,subst_rawconstr subst c,clp)
