@@ -7,3 +7,16 @@ fix F (t : t) : P t :=
      : forall P : t -> Type,
        (let x := t in forall x0 : x, P x0 -> P (k x0)) -> forall t : t, P t
 
+proj = 
+fun (x y : nat) (P : nat -> Type) (def : P x) (prf : P y) =>
+match eq_nat_dec x y with
+| left eqprf =>
+    match eqprf in (_ = z) return (P z) with
+    | refl_equal => def
+    end
+| right _ => prf
+end
+     : forall (x y : nat) (P : nat -> Type), P x -> P y -> P y
+
+
+Argument scopes are [nat_scope nat_scope _ _ _]

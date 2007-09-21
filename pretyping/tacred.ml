@@ -355,9 +355,9 @@ let reduce_fix_use_function f whfun fix stack =
 	       Reduced (contract_fix_use_function f fix,stack')
 	   | _ -> NotReducible)
 
-let contract_cofix_use_function f (bodynum,(names,_,bodies as typedbodies)) =
+let contract_cofix_use_function f (bodynum,(_names,_,bodies as typedbodies)) =
   let nbodies = Array.length bodies in
-  let make_Fi j = match f names.(j) with
+  let make_Fi j = match f j with
     | None -> mkCoFix(j,typedbodies)
     | Some c -> c in
   let subbodies = list_tabulate make_Fi nbodies in
@@ -368,15 +368,25 @@ let reduce_mind_case_use_function func env mia =
     | Construct(ind_sp,i) ->
 	let real_cargs = list_skipn mia.mci.ci_npar mia.mcargs in
 	applist (mia.mlf.(i-1), real_cargs)
-    | CoFix cofix ->
-	let build_cofix_name = function
-	  | Name id when isConst func ->
-	      let (mp,dp,_) = repr_con (destConst func) in
-	      let kn = make_con mp dp (label_of_id id) in
-	      (match constant_opt_value env kn with
-		| None -> None
-		| Some _ -> Some (mkConst kn))
-	  | _ -> None in 
+    | CoFix (bodynum,(names,_,_) as cofix) ->
+	let build_cofix_name =
+	  if isConst func then
+	    let (mp,dp,_) = repr_con (destConst func) in
+	    fun i ->
+	      if i = bodynum then Some func
+	      else match names.(i) with
+		| Name id ->
+		    (* In case of a call to another component of a block of 
+		       mutual inductive, try to reuse the global name if
+		       the block was indeed initially built as a global 
+		       definition *)
+		    let kn = make_con mp dp (label_of_id id) in
+		    try match constant_opt_value env kn with
+		      | None -> None
+		      | Some _ -> Some (mkConst kn)
+		    with Not_found -> None
+	  else
+	    fun _ -> None in
 	let cofix_def = contract_cofix_use_function build_cofix_name cofix in
 	mkCase (mia.mci, mia.mP, applist(cofix_def,mia.mcargs), mia.mlf)
     | _ -> assert false

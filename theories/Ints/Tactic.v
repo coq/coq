@@ -65,16 +65,16 @@ Ltac case_eq name :=
 
 Ltac eq_tac := 
  match goal with
-      |-  (?f _ = ?f _) => apply f_equal with (f := f)
- |     |-  (?f ?X _ = ?f  ?X _) => apply f_equal with (f := f  X)
- |     |-  (?f _ _ = ?f  _ _) => apply f_equal2 with (f := f)
- |     |-  (?f ?X ?Y _ = ?f ?X ?Y _) => apply f_equal with (f := f X Y)
- |     |-  (?f ?X _ _ = ?f ?X _ _) => apply f_equal2 with (f := f X)
- |     |-  (?f _ _ _ = ?f _ _ _) => apply f_equal3 with (f := f)
- |     |-  (?f ?X ?Y ?Z _ = ?f ?X ?Y ?Z _) => apply f_equal with (f := f X Y Z)
- |     |-  (?f ?X ?Y _ _ = ?f ?X ?Y _ _) => apply f_equal2 with (f := f X Y)
- |     |-  (?f ?X _ _ _ = ?f ?X _ _ _) => apply f_equal3 with (f := f X)
- |     |-  (?f _ _ _ _ _ = ?f _ _ _ _) => apply f_equal4 with (f := f)
+       |-  (?g _ = ?g _) => apply f_equal with (f := g)
+ |     |-  (?g ?X _ = ?g  ?X _) => apply f_equal with (f := g  X)
+ |     |-  (?g _ _ = ?g  _ _) => apply f_equal2 with (f := g)
+ |     |-  (?g ?X ?Y _ = ?g ?X ?Y _) => apply f_equal with (f := g X Y)
+ |     |-  (?g ?X _ _ = ?g ?X _ _) => apply f_equal2 with (f := g X)
+ |     |-  (?g _ _ _ = ?g _ _ _) => apply f_equal3 with (f := g)
+ |     |-  (?g ?X ?Y ?Z _ = ?g ?X ?Y ?Z _) => apply f_equal with (f := g X Y Z)
+ |     |-  (?g ?X ?Y _ _ = ?g ?X ?Y _ _) => apply f_equal2 with (f := g X Y)
+ |     |-  (?g ?X _ _ _ = ?g ?X _ _ _) => apply f_equal3 with (f := g X)
+ |     |-  (?g _ _ _ _ _ = ?g _ _ _ _) => apply f_equal4 with (f := g)
  end.
 
 (************************************** 
