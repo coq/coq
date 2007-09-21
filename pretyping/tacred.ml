@@ -375,6 +375,7 @@ let reduce_mind_case_use_function func env mia =
 	    fun i ->
 	      if i = bodynum then Some func
 	      else match names.(i) with
+		| Anonymous -> None
 		| Name id ->
 		    (* In case of a call to another component of a block of 
 		       mutual inductive, try to reuse the global name if
