@@ -721,6 +721,66 @@ file are considered as a single command.
   Happens when there is vernacular command to undo.
 \end{ErrMsgs}
 
+\subsection[\tt Backtrack $\num_1$ $\num_2$ $\num_3$.]{\tt Backtrack $\num_1$ $\num_2$ $\num_3$.\comindex{Backtrack}}
+
+This command is dedicated for the use in graphical interfaces.  It
+allows to backtrack to a particular \emph{global} state. Typically a
+state corresponding to a previous line in a script, which includes
+declaration environment but also proof environment (see
+chapter~\ref{Proof-handling}). The three numbers $\num_1$, $\num_2$
+and $\num_3$ represent the following:
+\begin{itemize}
+\item How many \texttt{Abort} (currently opened nested proofs that must
+  be forgotten) must be done ($\num_3$). 
+\item Which proof state must be unburied ($\num_2$) (once aborts have
+  been done).
+\item Which declaration environment state must be unburied ($\num_1$).
+\end{itemize}
+
+Proof state and environment state are represented by numbers. Notice
+that these numbers are displayed in \Coq\ prompt when in
+\texttt{-emacs} mode. More precisely the prompt in \texttt{-emacs}
+mode is the following:
+
+\verb!<prompt>! \emph{curpr} \verb!<! $\num_1$
+\verb!|! \emph{currently opened proofs}
+\verb!|! $\num_2$ \verb!< </prompt>!
+
+Where:
+
+\begin{itemize}
+\item \emph{curpr} is the name of the current proof (if there is
+  one, otherwise \texttt{Coq} is displayed, see
+chapter~\ref{Proof-handling}).
+\item $\num_1$ is the environment state number after the last
+  command.
+\item $\num_2$ is the current proof state number.
+\item \emph{currently opened proofs} is a \verb!|!-separated list of
+  currently opened  proof names.
+\end{itemize}
+
+It is then possible to compute the \texttt{Backtrack} command to
+unbury the state corresponding to a particular prompt. For example,
+suppose the current prompt is:
+
+\verb!<! goal4 \verb!<! 35
+\verb!|! goal1 goal2 goal4 goal3 
+\verb!|! 8 \verb!< </prompt>!
+
+and we want to backtrack to a state labelled by:
+
+\verb!<! goal2 \verb!<! 32
+\verb!|! goal1 goal2
+\verb!|! 12 \verb!< </prompt>!
+
+We have to perform \verb!Backtrack 32 12 2!, i.e. go to environment
+state 32, do 2 Aborts (to cancel goal4 and goal3) and undo proof until
+state 12.
+
+\subsection[\tt BackTo.]{\tt BackTo n.\comindex{BackTo}}
+Is a more basic form of \texttt{Backtrack} where only the first
+argument (global environment number) is given.
+
 \subsection[\tt Restore State \str.]{\tt Restore State \str.\comindex{Restore State}}
   Restores the state contained in the file \str.
 
