@@ -1752,8 +1752,14 @@ dependp4: $(ML4FILES)
 	  echo `$(CAMLP4DEPS) $$f` >> .depend.camlp4; \
 	done
 
+# Produce the .ml files using Makefile.dep
+.PHONY: ml4filesml
+ml4filesml:: .depend.camlp4
+	$(MAKE) -f Makefile.dep $(ML4FILESML)
+
+
 .PHONY: depend
-depend: $(BEFOREDEPEND) dependp4 $(ML4FILESML)
+depend: $(BEFOREDEPEND) dependp4 ml4filesml
 # 1. We express dependencies of the .ml files w.r.t their grammars
 # 2. Then we are able to produce the .ml files using Makefile.dep
 # 3. We compute the dependencies inside the .ml files using ocamldep
