@@ -112,12 +112,11 @@ type alias_constr =
 
 let mkSpecialLetInJudge j (na,(deppat,nondeppat,d,t)) =
   { uj_val =
-      (match d with
+     (if isRel deppat then subst1 nondeppat j.uj_val
+      else match d with
 	| DepAlias -> mkLetIn (na,deppat,t,j.uj_val)
 	| NonDepAlias ->
-	    if (not (dependent (mkRel 1) j.uj_type))
-	      or (* A leaf: *) isRel deppat
-	    then 
+	    if (not (dependent (mkRel 1) j.uj_type)) then 
 	      (* The body of pat is not needed to type j - see *)
 	      (* insert_aliases - and both deppat and nondeppat have the *)
 	      (* same type, then one can freely substitute one by the other *)
