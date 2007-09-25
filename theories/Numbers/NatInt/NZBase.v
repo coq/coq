@@ -69,8 +69,8 @@ End CentralInduction.
 Tactic Notation "NZinduct" ident(n) :=
   induction_maker n ltac:(apply NZinduction).
 
-Tactic Notation "NZinduct" ident(n) constr(z) :=
-  induction_maker n ltac:(apply NZcentral_induction with (z := z)).
+Tactic Notation "NZinduct" ident(n) constr(u) :=
+  induction_maker n ltac:(apply NZcentral_induction with (z := u)).
 
 End NZBasePropFunct.
 

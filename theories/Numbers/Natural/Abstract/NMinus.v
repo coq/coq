@@ -2,13 +2,13 @@ Require Export NTimesOrder.
 
 Module NMinusPropFunct (Import NAxiomsMod : NAxiomsSig).
 Module Export NTimesOrderPropMod := NTimesOrderPropFunct NAxiomsMod.
-Open Local Scope NatScope.
+Open Local Scope NatIntScope.
 
 Theorem minus_0_r : forall n : N, n - 0 == n.
-Proof minus_0_r.
+Proof NZminus_0_r.
 
 Theorem minus_succ_r : forall n m : N, n - (S m) == P (n - m).
-Proof minus_succ_r.
+Proof NZminus_succ_r.
 
 Theorem minus_1_r : forall n : N, n - 1 == P n.
 Proof.
@@ -85,7 +85,7 @@ intros n m p H; double_induct n m.
 intros m H1; rewrite minus_0_l in H1. symmetry in H1; false_hyp H1 H.
 intro n; rewrite minus_0_r; now rewrite plus_0_l.
 intros n m IH H1. rewrite minus_succ in H1. apply IH in H1.
-rewrite plus_succ_l; now apply succ_wd.
+rewrite plus_succ_l; now rewrite H1.
 Qed.
 
 Theorem minus_plus_distr : forall n m p : N, n - (m + p) == (n - m) - p.
@@ -126,7 +126,7 @@ Qed.
 
 Theorem times_pred_r : forall n m : N, n * (P m) == n * m - n.
 Proof.
-intro n; nondep_induct m.
+intros n m; cases m.
 now rewrite pred_0, times_0_r, minus_0_l.
 intro m; rewrite pred_succ, times_succ_r, <- plus_minus_assoc.
 le_equal.

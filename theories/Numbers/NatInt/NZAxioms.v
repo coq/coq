@@ -8,6 +8,7 @@ Parameter Inline NZ0 : NZ.
 Parameter Inline NZsucc : NZ -> NZ.
 Parameter Inline NZpred : NZ -> NZ.
 Parameter Inline NZplus : NZ -> NZ -> NZ.
+Parameter Inline NZminus : NZ -> NZ -> NZ.
 Parameter Inline NZtimes : NZ -> NZ -> NZ.
 
 Axiom NZE_equiv : equiv NZ NZE.
@@ -20,6 +21,7 @@ as NZE_rel.
 Add Morphism NZsucc with signature NZE ==> NZE as NZsucc_wd.
 Add Morphism NZpred with signature NZE ==> NZE as NZpred_wd.
 Add Morphism NZplus with signature NZE ==> NZE ==> NZE as NZplus_wd.
+Add Morphism NZminus with signature NZE ==> NZE ==> NZE as NZminus_wd.
 Add Morphism NZtimes with signature NZE ==> NZE ==> NZE as NZtimes_wd.
 
 Delimit Scope NatIntScope with NatInt.
@@ -31,6 +33,7 @@ Notation "'S'" := NZsucc : NatIntScope.
 Notation "'P'" := NZpred : NatIntScope.
 Notation "1" := (S 0) : NatIntScope.
 Notation "x + y" := (NZplus x y) : NatIntScope.
+Notation "x - y" := (NZminus x y) : NatIntScope.
 Notation "x * y" := (NZtimes x y) : NatIntScope.
 
 Axiom NZpred_succ : forall n : NZ, P (S n) == n.
@@ -41,6 +44,9 @@ Axiom NZinduction :
 
 Axiom NZplus_0_l : forall n : NZ, 0 + n == n.
 Axiom NZplus_succ_l : forall n m : NZ, (S n) + m == S (n + m).
+
+Axiom NZminus_0_r : forall n : NZ, n - 0 == n.
+Axiom NZminus_succ_r : forall n m : NZ, n - (S m) == P (n - m).
 
 Axiom NZtimes_0_r : forall n : NZ, n * 0 == 0.
 Axiom NZtimes_succ_r : forall n m : NZ, n * (S m) == n * m + n.
@@ -59,6 +65,8 @@ Add Morphism NZle with signature NZE ==> NZE ==> iff as NZle_wd.
 
 Notation "x < y" := (NZlt x y) : NatIntScope.
 Notation "x <= y" := (NZle x y) : NatIntScope.
+Notation "x > y" := (NZlt y x) (only parsing) : NatIntScope.
+Notation "x >= y" := (NZle y x) (only parsing) : NatIntScope.
 
 Axiom NZle_lt_or_eq : forall n m : NZ, n <= m <-> n < m \/ n == m.
 Axiom NZlt_irrefl : forall n : NZ, ~ (n < n).

@@ -5,17 +5,6 @@ Module NZPlusPropFunct (Import NZAxiomsMod : NZAxiomsSig).
 Module Export NZBasePropMod := NZBasePropFunct NZAxiomsMod.
 Open Local Scope NatIntScope.
 
-(** If H1 : t1 == u1 and H2 : t2 == u2 then "add_equations H1 H2 as H3"
-adds the hypothesis H3 : t1 + t2 == u1 + u2 *)
-Tactic Notation "add_equations" constr(H1) constr(H2) "as" ident(H3) :=
-match (type of H1) with
-| ?t1 == ?u1 => match (type of H2) with
-              | ?t2 == ?u2 => assert (H3 : t1 + t2 == u1 + u2); [now apply NZplus_wd |]
-              | _ => fail 2 ":" H2 "is not an equation"
-              end
-| _ => fail 1 ":" H1 "is not an equation"
-end.
-
 Theorem NZplus_0_r : forall n : NZ, n + 0 == n.
 Proof.
 NZinduct n. now rewrite NZplus_0_l.
@@ -79,6 +68,11 @@ Theorem NZplus_cancel_r : forall n m p : NZ, n + p == m + p <-> n == m.
 Proof.
 intros n m p. rewrite (NZplus_comm n p); rewrite (NZplus_comm m p).
 apply NZplus_cancel_l.
+Qed.
+
+Theorem NZminus_1_r : forall n : NZ, n - 1 == P n.
+Proof.
+intro n; rewrite NZminus_succ_r; now rewrite NZminus_0_r.
 Qed.
 
 End NZPlusPropFunct.

@@ -2,13 +2,12 @@ Require Export NAxioms.
 Require Import NZTimesOrder. (* The last property functor on NZ, which subsumes all others *)
 
 Module NBasePropFunct (Import NAxiomsMod : NAxiomsSig).
-Open Local Scope NatScope.
+Open Local Scope NatIntScope.
 
 (* We call the last property functor on NZ, which includes all the previous
 ones, to get all properties of NZ at once. This way we will include them
 only one time. *)
 
-Module NZOrdAxiomsMod := NNZFunct NAxiomsMod.
 Module Export NZTimesOrderMod := NZTimesOrderPropFunct NZOrdAxiomsMod.
 
 (* Here we probably need to re-prove all axioms declared in NAxioms.v to
@@ -20,19 +19,11 @@ this way, one only has to consult, for example, NPlus.v to see all
 available properties for plus (i.e., one does not have to go to NAxioms.v
 and NZPlus.v). *)
 
-Theorem E_equiv : equiv N E.
-Proof E_equiv.
-
-Theorem induction :
-  forall A : N -> Prop, predicate_wd E A ->
-    A 0 -> (forall n : N, A n -> A (S n)) -> forall n : N, A n.
-Proof induction.
+Theorem pred_succ : forall n : N, P (S n) == n.
+Proof NZpred_succ.
 
 Theorem pred_0 : P 0 == 0.
 Proof pred_0.
-
-Theorem pred_succ : forall n : N, P (S n) == n.
-Proof pred_succ.
 
 Theorem neq_symm : forall n m : N, n ~= m -> m ~= n.
 Proof NZneq_symm.
@@ -46,37 +37,79 @@ Proof NZsucc_inj_wd.
 Theorem succ_inj_wd_neg : forall n m : N, S n ~= S m <-> n ~= m.
 Proof NZsucc_inj_wd_neg.
 
+(* Now we prove that the successor of a number is not zero by defining a
+function (by recursion) that maps 0 to false and the successor to true *)
+
+Definition if_zero (A : Set) (a b : A) (n : N) : A :=
+  recursion a (fun _ _ => b) n.
+
+Add Morphism if_zero with signature @eq ==> @eq ==> E ==> @eq as if_zero_wd.
+Proof.
+intros; unfold if_zero. apply recursion_wd with (EA := (@eq A)).
+reflexivity. unfold eq_fun2; now intros. assumption.
+Qed.
+
+Theorem if_zero_0 : forall (A : Set) (a b : A), if_zero A a b 0 = a.
+Proof.
+unfold if_zero; intros; now rewrite recursion_0.
+Qed.
+
+Theorem if_zero_succ : forall (A : Set) (a b : A) (n : N), if_zero A a b (S n) = b.
+Proof.
+intros; unfold if_zero.
+now rewrite (@recursion_succ A (@eq A)); [| | unfold fun2_wd; now intros].
+Qed.
+
+Implicit Arguments if_zero [A].
+
+Theorem neq_succ_0 : forall n : N, ~ S n == 0.
+Proof.
+intros n H.
+assert (true = false); [| discriminate].
+replace true with (if_zero false true (S n)) by apply if_zero_succ.
+pattern false at 2; replace false with (if_zero false true 0) by apply if_zero_0.
+now rewrite H.
+Qed.
+
+(* Next, we show that all numbers are nonnegative and recover regular induction
+from the bidirectional induction on NZ *)
+
+Theorem le_0_l : forall n : N, 0 <= n.
+Proof.
+NZinduct n.
+le_equal.
+intro n; split.
+apply NZle_le_succ.
+intro H; apply -> NZle_succ_le_or_eq_succ in H; destruct H as [H | H].
+assumption.
+symmetry in H; false_hyp H neq_succ_0.
+Qed.
+
+Theorem induction :
+  forall A : N -> Prop, predicate_wd E A ->
+    A 0 -> (forall n : N, A n -> A (S n)) -> forall n : N, A n.
+Proof.
+intros A A_wd A0 AS n; apply NZright_induction with 0; try assumption.
+intros; auto; apply le_0_l. apply le_0_l.
+Qed.
+
 (* The theorems NZinduction, NZcentral_induction and the tactic NZinduct
-refer to bidirectional induction, which is not so useful on natural
+refer to bidirectional induction, which is not useful on natural
 numbers. Therefore, we define a new induction tactic for natural numbers.
 We do not have to call "Declare Left Step" and "Declare Right Step"
 commands again, since the data for stepl and stepr tactics is inherited
-from NZ. *)
+from N. *)
 
-Tactic Notation "induct" ident(n) := induction_maker n ltac:(apply induction).
-(* FIXME: "Ltac induct n := induction_maker n ltac:(apply induction)" does not work (bug 1703) *)
+Ltac induct n := induction_maker n ltac:(apply induction).
 
-(* Now we add properties peculiar to natural numbers *)
-
-Theorem nondep_induction :
+Theorem case_analysis :
   forall A : N -> Prop, predicate_wd E A ->
     A 0 -> (forall n : N, A (S n)) -> forall n : N, A n.
 Proof.
 intros; apply induction; auto.
 Qed.
 
-Tactic Notation "nondep_induct" ident(n) :=
-  induction_maker n ltac:(apply nondep_induction).
-
-(* The fact "forall n : N, S n ~= 0" can be proved either by building a
-function (using recursion) that maps 0 ans S n to two provably different
-terms, or from the axioms of order *)
-
-Theorem neq_succ_0 : forall n : N, S n ~= 0.
-Proof.
-intros n H. apply nlt_0_r with n. rewrite <- H.
-apply <- lt_succ_le. apply <- le_lt_or_eq. now right.
-Qed.
+Ltac cases n := induction_maker n ltac:(apply case_analysis).
 
 Theorem neq_0 : ~ forall n, n == 0.
 Proof.
@@ -85,19 +118,21 @@ Qed.
 
 Theorem neq_0_succ : forall n, n ~= 0 <-> exists m, n == S m.
 Proof.
-nondep_induct n. split; intro H;
+cases n. split; intro H;
 [now elim H | destruct H as [m H]; symmetry in H; false_hyp H neq_succ_0].
 intro n; split; intro H; [now exists n | apply neq_succ_0].
 Qed.
 
 Theorem zero_or_succ : forall n, n == 0 \/ exists m, n == S m.
 Proof.
-nondep_induct n; [now left | intros n; right; now exists n].
+cases n.
+now left.
+intro n; right; now exists n.
 Qed.
 
 Theorem eq_pred_0 : forall n : N, P n == 0 <-> n == 0 \/ n == 1.
 Proof.
-nondep_induct n.
+cases n.
 rewrite pred_0. setoid_replace (0 == 1) with False using relation iff. tauto.
 split; intro H; [symmetry in H; false_hyp H neq_succ_0 | elim H].
 intro n. rewrite pred_succ. rewrite_false (S n == 0) neq_succ_0.
@@ -106,18 +141,18 @@ Qed.
 
 Theorem succ_pred : forall n : N, n ~= 0 -> S (P n) == n.
 Proof.
-nondep_induct n.
+cases n.
 intro H; elimtype False; now apply H.
 intros; now rewrite pred_succ.
 Qed.
 
 Theorem pred_inj : forall n m : N, n ~= 0 -> m ~= 0 -> P n == P m -> n == m.
 Proof.
-intros n m; nondep_induct n.
+intros n m; cases n.
 intros H; elimtype False; now apply H.
-intros n H1; nondep_induct m.
+intros n _; cases m.
 intros H; elimtype False; now apply H.
-intros m H2 H3. do 2 rewrite pred_succ in H3. now apply succ_wd.
+intros m H2 H3. do 2 rewrite pred_succ in H3. now rewrite H3.
 Qed.
 
 (* The following induction principle is useful for reasoning about, e.g.,
@@ -144,7 +179,7 @@ Qed.
 
 End PairInduction.
 
-Tactic Notation "pair_induct" ident(n) := induction_maker n ltac:(apply pair_induction).
+(*Ltac pair_induct n := induction_maker n ltac:(apply pair_induction).*)
 
 (* The following is useful for reasoning about, e.g., Ackermann function *)
 Section TwoDimensionalInduction.
@@ -171,11 +206,11 @@ Qed.
 
 End TwoDimensionalInduction.
 
-Tactic Notation "two_dim_induct" ident(n) ident(m) :=
+(*Ltac two_dim_induct n m :=
   try intros until n;
   try intros until m;
   pattern n, m; apply two_dim_induction; clear n m;
-  [solve_rel_wd | | | ].
+  [solve_rel_wd | | | ].*)
 
 Section DoubleInduction.
 
@@ -193,12 +228,12 @@ Theorem double_induction :
    (forall n m : N, R n m -> R (S n) (S m)) -> forall n m : N, R n m.
 Proof.
 intros H1 H2 H3; induct n; auto.
-intros n IH; nondep_induct m; auto.
+intros n H; cases m; auto.
 Qed.
 
 End DoubleInduction.
 
-Tactic Notation "double_induct" ident(n) ident(m) :=
+Ltac double_induct n m :=
   try intros until n;
   try intros until m;
   pattern n, m; apply double_induction; clear n m;

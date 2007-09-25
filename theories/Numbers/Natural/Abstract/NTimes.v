@@ -5,13 +5,13 @@ Require Export NPlus.
 
 Module NTimesPropFunct (Import NAxiomsMod : NAxiomsSig).
 Module Export NPlusPropMod := NPlusPropFunct NAxiomsMod.
-Open Local Scope NatScope.
+Open Local Scope NatIntScope.
 
 Theorem times_0_r : forall n, n * 0 == 0.
-Proof times_0_r.
+Proof NZtimes_0_r.
 
 Theorem times_succ_r : forall n m, n * (S m) == n * m + n.
-Proof times_succ_r.
+Proof NZtimes_succ_r.
 
 (** Theorems that are valid for both natural numbers and integers *)
 
@@ -39,7 +39,7 @@ Proof NZtimes_1_l.
 Theorem times_1_r : forall n : N, n * 1 == n.
 Proof NZtimes_1_r.
 
-Lemma semi_ring : semi_ring_theory 0 1 plus times E.
+Lemma semi_ring : semi_ring_theory 0 1 NZplus NZtimes E.
 Proof.
 constructor.
 exact plus_0_l.
@@ -97,9 +97,10 @@ Theorem plus_times_repl_pair : forall a n m n' m' u v,
   a * n + u == a * m + v -> n + m' == n' + m -> a * n' + u == a * m' + v.
 Proof.
 intros a n m n' m' u v H1 H2.
-apply (@times_wd a a) in H2; [| reflexivity].
-do 2 rewrite times_plus_distr_l in H2.
-symmetry in H2; add_equations H1 H2 as H3.
+apply (@NZtimes_wd a a) in H2; [| reflexivity].
+do 2 rewrite times_plus_distr_l in H2. symmetry in H2.
+assert (H3 : (a * n + u) + (a * n' + a * m) == (a * m + v) + (a * n + a * m'))
+  by now apply NZplus_wd.
 stepl (a * n + (u + a * n' + a * m)) in H3 by ring.
 stepr (a * n + (a * m + v + a * m')) in H3 by ring.
 apply -> plus_cancel_l in H3.

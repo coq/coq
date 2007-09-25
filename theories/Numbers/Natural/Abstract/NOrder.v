@@ -2,20 +2,17 @@ Require Export NTimes.
 
 Module NOrderPropFunct (Import NAxiomsMod : NAxiomsSig).
 Module Export NTimesPropMod := NTimesPropFunct NAxiomsMod.
-Open Local Scope NatScope.
+Open Local Scope NatIntScope.
 
 (* The tactics le_less, le_equal and le_elim are inherited from NZOrder.v *)
 
 (* Axioms *)
 
 Theorem le_lt_or_eq : forall x y, x <= y <-> x < y \/ x == y.
-Proof le_lt_or_eq.
-
-Theorem nlt_0_r : forall x, ~ (x < 0).
-Proof nlt_0_r.
+Proof NZle_lt_or_eq.
 
 Theorem lt_succ_le : forall x y, x < S y <-> x <= y.
-Proof lt_succ_le.
+Proof NZlt_succ_le.
 
 (* Renaming theorems from NZOrder.v *)
 
@@ -195,11 +192,11 @@ Proof NZle_ind.
 
 (** Theorems that are true for natural numbers but not for integers *)
 
-Theorem le_0_l : forall n : N, 0 <= n.
+(* "le_0_l : forall n : N, 0 <= n" was proved in NBase.v *)
+
+Theorem nlt_0_r : forall n : N, ~ n < 0.
 Proof.
-induct n.
-now le_equal.
-intros; now apply le_le_succ.
+intro n; apply -> le_nlt. apply le_0_l.
 Qed.
 
 Theorem nle_succ_0 : forall n, ~ (S n <= 0).
@@ -228,19 +225,19 @@ Qed.
 
 Theorem neq_0_lt_0 : forall n, n ~= 0 <-> 0 < n.
 Proof.
-nondep_induct n.
+cases n.
 split; intro H; [now elim H | intro; now apply lt_irrefl with 0].
 intro n; split; intro H; [apply lt_0_succ | apply neq_succ_0].
 Qed.
 
 Lemma Acc_nonneg_lt : forall n : N,
-  Acc (fun n m => 0 <= n /\ n < m) n -> Acc lt n.
+  Acc (fun n m => 0 <= n /\ n < m) n -> Acc NZlt n.
 Proof.
 intros n H; induction H as [n _ H2];
 constructor; intros y H; apply H2; split; [apply le_0_l | assumption].
 Qed.
 
-Theorem lt_wf : well_founded lt.
+Theorem lt_wf : well_founded NZlt.
 Proof.
 unfold well_founded; intro n; apply Acc_nonneg_lt. apply NZlt_wf.
 Qed.
@@ -296,14 +293,14 @@ Qed.
 
 Theorem le_pred_l : forall n : N, P n <= n.
 Proof.
-nondep_induct n.
+cases n.
 rewrite pred_0; le_equal.
 intros; rewrite pred_succ;  apply le_succ_r.
 Qed.
 
 Theorem lt_pred_l : forall n : N, n ~= 0 -> P n < n.
 Proof.
-nondep_induct n.
+cases n.
 intro H; elimtype False; now apply H.
 intros; rewrite pred_succ;  apply lt_succ_r.
 Qed.
@@ -320,14 +317,14 @@ Qed.
 
 Theorem lt_le_pred : forall n m : N, n < m -> n <= P m. (* Converse is false for n == m == 0 *)
 Proof.
-intro n; nondep_induct m.
+intro n; cases m.
 intro H; false_hyp H nlt_0_r.
 intros m IH. rewrite pred_succ; now apply -> lt_succ_le.
 Qed.
 
 Theorem lt_pred_le : forall n m : N, P n < m -> n <= m. (* Converse is false for n == m == 0 *)
 Proof.
-intros n m; nondep_induct n.
+intros n m; cases n.
 rewrite pred_0; intro H; le_less.
 intros n IH. rewrite pred_succ in IH. now apply -> lt_le_succ.
 Qed.
@@ -378,7 +375,7 @@ Qed.
 
 Theorem le_pred_le_succ : forall n m : N, P n <= m <-> n <= S m.
 Proof.
-intros n m; nondep_induct n.
+intros n m; cases n.
 rewrite pred_0. split; intro H; apply le_0_l.
 intro n. rewrite pred_succ. apply succ_le_mono.
 Qed.

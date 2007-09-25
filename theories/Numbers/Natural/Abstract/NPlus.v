@@ -2,13 +2,13 @@ Require Export NBase.
 
 Module NPlusPropFunct (Import NAxiomsMod : NAxiomsSig).
 Module Export NBasePropMod := NBasePropFunct NAxiomsMod.
-Open Local Scope NatScope.
+Open Local Scope NatIntScope.
 
 Theorem plus_0_l : forall n : N, 0 + n == n.
-Proof plus_0_l.
+Proof NZplus_0_l.
 
 Theorem plus_succ_l : forall n m : N, (S n) + m == S (n + m).
-Proof plus_succ_l.
+Proof NZplus_succ_l.
 
 (** Theorems that are valid for both natural numbers and integers *)
 
@@ -42,7 +42,7 @@ Proof NZplus_cancel_l.
 Theorem plus_cancel_r : forall n m p : N, n + p == m + p <-> n == m.
 Proof NZplus_cancel_r.
 
-(** Theorems that are valid for natural numbers but cannot be proved for NZ *)
+(** Theorems that are valid for natural numbers but cannot be proved for N *)
 
 Theorem plus_eq_0 : forall n m : N, n + m == 0 <-> n == 0 /\ m == 0.
 Proof.
@@ -58,7 +58,7 @@ Theorem plus_eq_succ :
   forall n m : N, (exists p : N, n + m == S p) <->
                     (exists n' : N, n == S n') \/ (exists m' : N, m == S m').
 Proof.
-intros n m; nondep_induct n.
+intros n m; cases n.
 split; intro H.
 destruct H as [p H]. rewrite plus_0_l in H; right; now exists p.
 destruct H as [[n' H] | [m' H]].
@@ -91,7 +91,7 @@ Qed.
 
 Theorem plus_pred_l : forall n m : N, n ~= 0 -> P n + m == P (n + m).
 Proof.
-intros n m; nondep_induct n.
+intros n m; cases n.
 intro H; now elim H.
 intros n IH; rewrite plus_succ_l; now do 2 rewrite pred_succ.
 Qed.

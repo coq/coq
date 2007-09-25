@@ -164,7 +164,7 @@ Qed.
 
 Theorem lt_0 : forall n, ~ lt n 0.
 Proof.
-nondep_induct n.
+ases/g
 rewrite lt_base_eq; rewrite if_zero_0; now intro.
 intros n; rewrite lt_step_eq. rewrite recursion_0. now intro.
 Qed.
@@ -196,10 +196,10 @@ Theorem lt_succ : forall m n, lt m (S n) <-> le m n.
 Proof.
 assert (A : forall m n, lt m (S n) <-> lt m n \/ m == n).
 induct m.
-nondep_induct n;
+ases/g
 [split; intro; [now right | apply lt_0_1] |
 intro n; split; intro; [left |]; apply lt_0_succn].
-intros n IH. nondep_induct n0.
+ases/g
 split.
 intro. assert (H1 : lt n 0); [now apply -> lt_succn_succm | false_hyp H1 lt_0].
 intro H; destruct H as [H | H].
