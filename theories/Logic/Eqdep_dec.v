@@ -303,3 +303,15 @@ Module DecidableEqDepSet (M:DecidableSet).
   Notation inj_pairT2 := inj_pair2.
 
 End DecidableEqDepSet.
+
+  (** From decidability to inj_pair2 **)
+Lemma inj_pair2_eq_dec : forall A:Type, (forall x y:A, {x=y}+{x<>y}) ->
+   ( forall (P:A -> Type) (p:A) (x y:P p), existT P p x = existT P p y -> x = y ).
+Proof. 
+  intros A eq_dec.
+  apply eq_dep_eq__inj_pair2.
+  apply eq_rect_eq__eq_dep_eq.
+  unfold Eq_rect_eq. 
+  apply eq_rect_eq_dec.
+  apply eq_dec.
+Qed.
