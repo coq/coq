@@ -88,6 +88,14 @@ Parameter Out : STATE -> Output.
 Check fun (s : STATE) (reg : Input) => reg = Out s.
 End A.
 
+(* The return predicate found should be: "in _=U return U" *)
+(* (feature already available in V8.0) *)
+
+Definition g (T1 T2:Type) (x:T1) (e:T1=T2) : T2 :=
+  match e with
+  | refl_equal => x
+  end.
+
 (* An example extracted from FMapAVL which (may) test restriction on
    evars problems of the form ?n[args1]=?n[args2] with distinct args1
    and args2 *)
@@ -121,9 +129,9 @@ Check (fun (A:Set) (a b x:A) (l:list A)
 
 (* An example from NMake (simplified), that uses restriction in solve_refl *)
 
-Parameter g:(nat->nat)->(nat->nat).
+Parameter h:(nat->nat)->(nat->nat).
 Fixpoint G p cont {struct p} :=
-  g (fun n => match p with O => cont | S p => G p cont end n).
+  h (fun n => match p with O => cont | S p => G p cont end n).
 
 (* An example from Bordeaux/Cantor that applies evar restriction 
    below  a binder *)
@@ -150,3 +158,31 @@ Axiom merge_correct :
        match merge eqA eqB l1 l2 with _ => True end.
 Unset Implicit Arguments.
 
+(* An example from Bordeaux/Additions that tests restriction below binders *)
+
+Section Additions_while.
+
+Variable A : Set.
+Variables P Q : A -> Prop.
+Variable le : A -> A -> Prop.
+Hypothesis Q_dec : forall s : A, P s -> {Q s} + {~ Q s}.
+Hypothesis le_step : forall s : A, ~ Q s -> P s -> {s' | P s' /\ le s' s}.
+Hypothesis le_wf : well_founded le.
+
+Lemma loopexec : forall s : A, P s -> {s' : A | P s' /\ Q s'}.
+refine
+  (well_founded_induction_type le_wf (fun s => _ -> {s' : A | _ /\ _})
+    (fun s hr i =>
+       match Q_dec s i with
+       | left _ => _
+       | right _ =>
+           match le_step s _ _ with
+           | exist s' h' =>
+               match hr s' _ _ with
+               | exist s'' _ => exist _ s'' _
+               end
+           end
+       end)).
+Abort.
+
+End Additions_while.

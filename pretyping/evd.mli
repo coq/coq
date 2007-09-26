@@ -158,7 +158,7 @@ val is_undefined_evar :  evar_defs -> constr -> bool
 val undefined_evars : evar_defs -> evar_defs
 val evar_declare :
   named_context_val -> evar -> types -> ?src:loc * hole_kind ->
-      ?filter:bool list option -> evar_defs -> evar_defs
+      ?filter:bool list -> evar_defs -> evar_defs
 val evar_define : evar -> constr -> evar_defs -> evar_defs
 val evar_source : existential_key -> evar_defs -> loc * hole_kind
 

@@ -34,10 +34,10 @@ val new_untyped_evar : unit -> existential_key
 (***********************************************************)
 (* Creating a fresh evar given their type and context *)
 val new_evar :
-  evar_defs -> env -> ?src:loc * hole_kind -> ?filter:bool list option -> types -> evar_defs * constr
+  evar_defs -> env -> ?src:loc * hole_kind -> ?filter:bool list -> types -> evar_defs * constr
 (* the same with side-effects *)
 val e_new_evar :
-  evar_defs ref -> env -> ?src:loc * hole_kind -> ?filter:bool list option -> types -> constr
+  evar_defs ref -> env -> ?src:loc * hole_kind -> ?filter:bool list -> types -> constr
 
 (* Create a fresh evar in a context different from its definition context:
    [new_evar_instance sign evd ty inst] creates a new evar of context
@@ -46,7 +46,7 @@ val e_new_evar :
    of [inst] are typed in the occurrence context and their type (seen
    as a telescope) is [sign] *)
 val new_evar_instance :
- named_context_val -> evar_defs -> types -> ?src:loc * hole_kind -> ?filter:bool list option -> constr list -> evar_defs * constr
+ named_context_val -> evar_defs -> types -> ?src:loc * hole_kind -> ?filter:bool list -> constr list -> evar_defs * constr
 
 (***********************************************************)
 (* Instantiate evars *)

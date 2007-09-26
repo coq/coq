@@ -425,7 +425,7 @@ let evar_define evk body evd =
     evars = define evd.evars evk body;
     last_mods = evk :: evd.last_mods }
 
-let evar_declare hyps evk ty ?(src=(dummy_loc,InternalHole)) ?(filter=None) evd =
+let evar_declare hyps evk ty ?(src=(dummy_loc,InternalHole)) ?filter evd =
   let filter =
     if filter = None then
       List.map (fun _ -> true) (named_context_of_val hyps)
