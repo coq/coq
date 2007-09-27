@@ -32,6 +32,7 @@ Libraries
   The polymorphic parameter for the fold function is now in Type. 
 - Loading FSets/FMap used to open unwanted scopes of integer datatypes 
   (see bug #1347). These scopes may need to be opened manually now.
+- Few changes in Reals (lemmas on prod_f_SO now on prod_f_R0).
 
 Language
 
