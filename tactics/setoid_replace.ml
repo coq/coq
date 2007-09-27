@@ -110,7 +110,7 @@ let current_constant id =
   with Not_found ->
     anomalylabstrm ""
       (str "Setoid: cannot find " ++ pr_id id ++
-       str "(if loading Setoid.v under coqtop, use option \"-top Coq.Setoids.Setoid\")")
+       str "(if loading Setoid.v under coqtop, use option \"-top Coq.Setoids.Setoid_tac\")")
 
 (* From Setoid.v *)
 
@@ -123,69 +123,69 @@ let coq_transitive =
 let coq_relation =
  lazy(gen_constant ["Relations"; "Relation_Definitions"] "relation")
 
-let coq_Relation_Class = lazy(constant ["Setoid"] "Relation_Class")
-let coq_Argument_Class = lazy(constant ["Setoid"] "Argument_Class")
+let coq_Relation_Class = lazy(constant ["Setoid_tac"] "Relation_Class")
+let coq_Argument_Class = lazy(constant ["Setoid_tac"] "Argument_Class")
 let coq_Setoid_Theory = lazy(constant ["Setoid"] "Setoid_Theory")
-let coq_Morphism_Theory = lazy(constant ["Setoid"] "Morphism_Theory")
-let coq_Build_Morphism_Theory= lazy(constant ["Setoid"] "Build_Morphism_Theory")
-let coq_Compat = lazy(constant ["Setoid"] "Compat")
+let coq_Morphism_Theory = lazy(constant ["Setoid_tac"] "Morphism_Theory")
+let coq_Build_Morphism_Theory= lazy(constant ["Setoid_tac"] "Build_Morphism_Theory")
+let coq_Compat = lazy(constant ["Setoid_tac"] "Compat")
 
-let coq_AsymmetricReflexive = lazy(constant ["Setoid"] "AsymmetricReflexive")
-let coq_SymmetricReflexive = lazy(constant ["Setoid"] "SymmetricReflexive")
-let coq_SymmetricAreflexive = lazy(constant ["Setoid"] "SymmetricAreflexive")
-let coq_AsymmetricAreflexive = lazy(constant ["Setoid"] "AsymmetricAreflexive")
-let coq_Leibniz = lazy(constant ["Setoid"] "Leibniz")
+let coq_AsymmetricReflexive = lazy(constant ["Setoid_tac"] "AsymmetricReflexive")
+let coq_SymmetricReflexive = lazy(constant ["Setoid_tac"] "SymmetricReflexive")
+let coq_SymmetricAreflexive = lazy(constant ["Setoid_tac"] "SymmetricAreflexive")
+let coq_AsymmetricAreflexive = lazy(constant ["Setoid_tac"] "AsymmetricAreflexive")
+let coq_Leibniz = lazy(constant ["Setoid_tac"] "Leibniz")
 
-let coq_RAsymmetric = lazy(constant ["Setoid"] "RAsymmetric")
-let coq_RSymmetric = lazy(constant ["Setoid"] "RSymmetric")
-let coq_RLeibniz = lazy(constant ["Setoid"] "RLeibniz")
+let coq_RAsymmetric = lazy(constant ["Setoid_tac"] "RAsymmetric")
+let coq_RSymmetric = lazy(constant ["Setoid_tac"] "RSymmetric")
+let coq_RLeibniz = lazy(constant ["Setoid_tac"] "RLeibniz")
 
-let coq_ASymmetric = lazy(constant ["Setoid"] "ASymmetric")
-let coq_AAsymmetric = lazy(constant ["Setoid"] "AAsymmetric")
+let coq_ASymmetric = lazy(constant ["Setoid_tac"] "ASymmetric")
+let coq_AAsymmetric = lazy(constant ["Setoid_tac"] "AAsymmetric")
 
 let coq_seq_refl = lazy(constant ["Setoid"] "Seq_refl")
 let coq_seq_sym = lazy(constant ["Setoid"] "Seq_sym")
 let coq_seq_trans = lazy(constant ["Setoid"] "Seq_trans")
 
-let coq_variance = lazy(constant ["Setoid"] "variance")
-let coq_Covariant = lazy(constant ["Setoid"] "Covariant")
-let coq_Contravariant = lazy(constant ["Setoid"] "Contravariant")
-let coq_Left2Right = lazy(constant ["Setoid"] "Left2Right")
-let coq_Right2Left = lazy(constant ["Setoid"] "Right2Left")
-let coq_MSNone = lazy(constant ["Setoid"] "MSNone")
-let coq_MSCovariant = lazy(constant ["Setoid"] "MSCovariant")
-let coq_MSContravariant = lazy(constant ["Setoid"] "MSContravariant")
+let coq_variance = lazy(constant ["Setoid_tac"] "variance")
+let coq_Covariant = lazy(constant ["Setoid_tac"] "Covariant")
+let coq_Contravariant = lazy(constant ["Setoid_tac"] "Contravariant")
+let coq_Left2Right = lazy(constant ["Setoid_tac"] "Left2Right")
+let coq_Right2Left = lazy(constant ["Setoid_tac"] "Right2Left")
+let coq_MSNone = lazy(constant ["Setoid_tac"] "MSNone")
+let coq_MSCovariant = lazy(constant ["Setoid_tac"] "MSCovariant")
+let coq_MSContravariant = lazy(constant ["Setoid_tac"] "MSContravariant")
 
-let coq_singl = lazy(constant ["Setoid"] "singl")
-let coq_cons = lazy(constant ["Setoid"] "necons")
+let coq_singl = lazy(constant ["Setoid_tac"] "singl")
+let coq_cons = lazy(constant ["Setoid_tac"] "necons")
 
 let coq_equality_morphism_of_asymmetric_areflexive_transitive_relation =
- lazy(constant ["Setoid"]
+ lazy(constant ["Setoid_tac"]
   "equality_morphism_of_asymmetric_areflexive_transitive_relation")
 let coq_equality_morphism_of_symmetric_areflexive_transitive_relation =
- lazy(constant ["Setoid"]
+ lazy(constant ["Setoid_tac"]
   "equality_morphism_of_symmetric_areflexive_transitive_relation")
 let coq_equality_morphism_of_asymmetric_reflexive_transitive_relation =
- lazy(constant ["Setoid"]
+ lazy(constant ["Setoid_tac"]
   "equality_morphism_of_asymmetric_reflexive_transitive_relation")
 let coq_equality_morphism_of_symmetric_reflexive_transitive_relation =
- lazy(constant ["Setoid"]
+ lazy(constant ["Setoid_tac"]
   "equality_morphism_of_symmetric_reflexive_transitive_relation")
 let coq_make_compatibility_goal =
- lazy(constant ["Setoid"] "make_compatibility_goal")
+ lazy(constant ["Setoid_tac"] "make_compatibility_goal")
 let coq_make_compatibility_goal_eval_ref =
- lazy(eval_reference ["Setoid"] "make_compatibility_goal")
+ lazy(eval_reference ["Setoid_tac"] "make_compatibility_goal")
 let coq_make_compatibility_goal_aux_eval_ref =
- lazy(eval_reference ["Setoid"] "make_compatibility_goal_aux")
+ lazy(eval_reference ["Setoid_tac"] "make_compatibility_goal_aux")
 
-let coq_App = lazy(constant ["Setoid"] "App")
-let coq_ToReplace = lazy(constant ["Setoid"] "ToReplace")
-let coq_ToKeep = lazy(constant ["Setoid"] "ToKeep")
-let coq_ProperElementToKeep = lazy(constant ["Setoid"] "ProperElementToKeep")
-let coq_fcl_singl = lazy(constant ["Setoid"] "fcl_singl")
-let coq_fcl_cons = lazy(constant ["Setoid"] "fcl_cons")
+let coq_App = lazy(constant ["Setoid_tac"] "App")
+let coq_ToReplace = lazy(constant ["Setoid_tac"] "ToReplace")
+let coq_ToKeep = lazy(constant ["Setoid_tac"] "ToKeep")
+let coq_ProperElementToKeep = lazy(constant ["Setoid_tac"] "ProperElementToKeep")
+let coq_fcl_singl = lazy(constant ["Setoid_tac"] "fcl_singl")
+let coq_fcl_cons = lazy(constant ["Setoid_tac"] "fcl_cons")
 
-let coq_setoid_rewrite = lazy(constant ["Setoid"] "setoid_rewrite")
+let coq_setoid_rewrite = lazy(constant ["Setoid_tac"] "setoid_rewrite")
 let coq_proj1 = lazy(gen_constant ["Init"; "Logic"] "proj1")
 let coq_proj2 = lazy(gen_constant ["Init"; "Logic"] "proj2")
 let coq_unit = lazy(gen_constant ["Init"; "Datatypes"] "unit")
@@ -193,18 +193,18 @@ let coq_tt = lazy(gen_constant ["Init"; "Datatypes"] "tt")
 let coq_eq = lazy(gen_constant ["Init"; "Logic"] "eq")
 
 let coq_morphism_theory_of_function =
- lazy(constant ["Setoid"] "morphism_theory_of_function")
+ lazy(constant ["Setoid_tac"] "morphism_theory_of_function")
 let coq_morphism_theory_of_predicate =
- lazy(constant ["Setoid"] "morphism_theory_of_predicate")
+ lazy(constant ["Setoid_tac"] "morphism_theory_of_predicate")
 let coq_relation_of_relation_class =
- lazy(eval_reference ["Setoid"] "relation_of_relation_class")
+ lazy(eval_reference ["Setoid_tac"] "relation_of_relation_class")
 let coq_directed_relation_of_relation_class =
- lazy(eval_reference ["Setoid"] "directed_relation_of_relation_class")
-let coq_interp = lazy(eval_reference ["Setoid"] "interp")
+ lazy(eval_reference ["Setoid_tac"] "directed_relation_of_relation_class")
+let coq_interp = lazy(eval_reference ["Setoid_tac"] "interp")
 let coq_Morphism_Context_rect2 =
- lazy(eval_reference ["Setoid"] "Morphism_Context_rect2")
+ lazy(eval_reference ["Setoid_tac"] "Morphism_Context_rect2")
 let coq_iff = lazy(gen_constant ["Init";"Logic"] "iff")
-let coq_impl = lazy(constant ["Setoid"] "impl")
+let coq_impl = lazy(constant ["Setoid_tac"] "impl")
 
 
 (************************* Table of declared relations **********************)
