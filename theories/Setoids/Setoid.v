@@ -9,6 +9,8 @@
 
 (*i $Id$: i*)
 
+Set Implicit Arguments.
+
 Require Export Setoid_tac.
 Require Export Setoid_Prop.
 
