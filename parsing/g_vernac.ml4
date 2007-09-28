@@ -285,7 +285,8 @@ GEXTEND Gram
   ;
   (* Inductive schemes *)
   scheme:
-    [ [ id = identref; ":="; kind = scheme_kind  -> (id,kind) ] ]
+    [ [ kind = scheme_kind -> (None,kind)
+      | id = identref; ":="; kind = scheme_kind -> (Some id,kind) ] ]
   ;
   scheme_kind:
     [ [ IDENT "Induction"; "for"; ind = global;

@@ -203,7 +203,7 @@ type vernac_expr =
   | VernacInductive of inductive_flag * (inductive_expr * decl_notation) list
   | VernacFixpoint of (fixpoint_expr * decl_notation) list * bool
   | VernacCoFixpoint of (cofixpoint_expr * decl_notation) list * bool
-  | VernacScheme of (lident * scheme) list
+  | VernacScheme of (lident option * scheme) list
   | VernacCombinedScheme of lident * lident list
 
   (* Gallina extensions *)

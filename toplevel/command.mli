@@ -52,7 +52,7 @@ val build_recursive : (fixpoint_expr * decl_notation) list -> bool -> unit
 
 val build_corecursive : (cofixpoint_expr * decl_notation) list -> bool -> unit
 
-val build_scheme : (identifier located * scheme ) list -> unit
+val build_scheme : (identifier located option * scheme ) list -> unit
 
 val build_combined_scheme : identifier located -> identifier located list -> unit
 

@@ -671,13 +671,54 @@ let build_corecursive l b =
   interp_recursive IsCoFixpoint fixl b
 
 (* 3d| Schemes *)
-let rec split_scheme = function
+let rec split_scheme l = 
+ let env = Global.env() in
+ match l with
   | [] -> [],[]
-  | (id,t)::q -> let l1,l2 = split_scheme q in 
+  | (Some id,t)::q -> let l1,l2 = split_scheme q in 
     ( match t with
       | InductionScheme (x,y,z) -> ((id,x,y,z)::l1),l2
-      | EqualityScheme  x -> l1,((id,x)::l2)
+      | EqualityScheme  x -> l1,(x::l2)
     )
+(*
+ if no name has been provided, we build one from the types of the ind
+requested 
+*)
+  | (None,t)::q ->
+       let l1,l2 = split_scheme q in
+    ( match t with
+      | InductionScheme (x,y,z) ->
+             let ind = mkInd (Nametab.global_inductive y) in
+             let sort_of_ind = family_of_sort (Typing.sort_of env Evd.empty ind)
+in
+             let z' = family_of_sort (interp_sort z) in
+             let suffix = (
+                match sort_of_ind with
+                | InProp ->
+                    if x then (match z' with
+                       | InProp -> "_ind_nodep"
+                       | InSet -> "_rec_nodep"
+                       | InType -> "_rect_nodep")
+                    else ( match z' with
+                       | InProp -> "_ind"
+                       | InSet -> "_rec"
+                       | InType -> "_rect" )
+                | _ ->
+                    if x then (match z' with
+                       | InProp -> "_ind"
+                       | InSet -> "_rec"
+                       | InType -> "_rect" )
+                    else (match z' with
+                       | InProp -> "_ind_nodep"
+                       | InSet  -> "_rec_nodep"
+                       | InType -> "_rect_nodep")
+                ) in
+            let newid = (string_of_id (Pcoq.coerce_global_to_id y))^suffix in
+            let newref = (dummy_loc,id_of_string newid) in
+          ((newref,x,y,z)::l1),l2
+      | EqualityScheme  x -> l1,(x::l2)
+    )
+
 
 let build_induction_scheme lnamedepindsort = 
   let lrecnames = List.map (fun ((_,f),_,_,_) -> f) lnamedepindsort
@@ -707,13 +748,16 @@ let build_induction_scheme lnamedepindsort =
 
 let build_scheme l = 
   let ischeme,escheme = split_scheme l in
+(* we want 1 kind of scheme at a time so we check if the user
+tried to declare different schemes at once *)
     if (ischeme <> []) && (escheme <> []) 
     then
       error "Do not declare equality and induction scheme at the same time."
     else (
       if ischeme <> [] then build_induction_scheme ischeme;
-    List.iter ( fun (_,eq)-> let ind = Nametab.global_inductive eq
-(* vsiles :This will be replace with the boolean when it will be commited *)
+      List.iter ( fun indname ->
+        let ind = Nametab.global_inductive indname
+(* vsiles :This will be replace with the boolean eq when it will be commited *)
       in Pp.msgnl (print_constr (mkInd ind))
     ) escheme
   )

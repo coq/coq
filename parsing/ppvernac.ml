@@ -279,15 +279,21 @@ let pr_binders_arg =
 let pr_and_type_binders_arg bl =
   pr_binders_arg bl
 
-let pr_onescheme (id,schem) =
+let pr_onescheme (idop,schem) =
   match schem with 
   | InductionScheme (dep,ind,s) ->
-    hov 0 (pr_lident id ++ str" :=") ++ spc() ++
+    (match idop with
+      | Some id -> hov 0 (pr_lident id ++ str" :=") ++ spc()
+      | None -> spc ()
+    ) ++
     hov 0 ((if dep then str"Induction for" else str"Minimality for")
     ++ spc() ++ pr_reference ind) ++ spc() ++ 
     hov 0 (str"Sort" ++ spc() ++ pr_rawsort s)
   | EqualityScheme ind -> 
-    hov 0 (pr_lident id ++ str" :=") ++ spc() ++
+    (match idop with
+      | Some id -> hov 0 (pr_lident id ++ str" :=") ++ spc()
+      | None -> spc()
+    ) ++
     hov 0 (str"Equality for")
     ++ spc() ++ pr_reference ind
 

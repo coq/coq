@@ -1940,12 +1940,17 @@ let rec xlate_vernac =
    | VernacScheme [] -> xlate_error "induction scheme"
    | VernacScheme (lm :: lmi) ->
       let strip_ind = function
-      | ((_,id), InductionScheme (depstr, inde, sort)) ->
+      | (Some (_,id), InductionScheme (depstr, inde, sort)) ->
            CT_scheme_spec
             (xlate_ident id, xlate_dep depstr, 
 	    CT_coerce_ID_to_FORMULA (loc_qualid_to_ct_ID inde),
 	     xlate_sort sort)
-      | ((_,id), EqualityScheme _) -> xlate_error "TODO: Scheme Equality" in
+      | (None, InductionScheme (depstr, inde, sort)) ->
+           CT_scheme_spec
+            (xlate_ident (id_of_string ""), xlate_dep depstr,
+            CT_coerce_ID_to_FORMULA (loc_qualid_to_ct_ID inde),
+             xlate_sort sort)
+      | (_, EqualityScheme _) -> xlate_error "TODO: Scheme Equality" in
         CT_ind_scheme
 	  (CT_scheme_spec_list (strip_ind lm, List.map strip_ind lmi))
    | VernacCombinedScheme _ -> xlate_error "TODO: Combined Scheme"
