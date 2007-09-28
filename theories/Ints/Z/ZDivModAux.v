@@ -142,7 +142,7 @@ Hint Resolve Zlt_gt Zle_ge: zarith.
   replace (c * a / b * b) with (c * a - (c * a) mod b).
   rewrite Zmult_minus_distr_l.
   unfold Zminus; apply Zplus_le_compat_l.
-  match goal with |- - ? X <= -?Y => assert (Y <= X); auto with zarith end.
+  match goal with |- - ?X <= -?Y => assert (Y <= X); auto with zarith end.
   apply Zle_trans with ((c mod b) * (a mod b)); auto with zarith.
   rewrite Zmod_mult; case (Zmod_le_first ((c mod b) * (a mod b)) b); 
     auto with zarith.

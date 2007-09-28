@@ -272,7 +272,7 @@ let add_keyword str =
 (* Adding a new token (keyword or special token). *)
 let add_token (con, str) = match con with
   | "" -> add_keyword str
-  | "METAIDENT" | "IDENT" | "FIELD" | "INT" | "STRING" | "EOI"
+  | "METAIDENT" | "PATTERNIDENT" | "IDENT" | "FIELD" | "INT" | "STRING" | "EOI"
       -> ()
   | _ ->
       raise (Token.Error ("\
@@ -463,14 +463,16 @@ let process_chars bp c cs =
     | Some t -> (("", t), (bp, ep))
     | None -> err (bp, ep) Undefined_token
 
-(* Parse what follows a dot *)
-let parse_after_dot bp c = parser
+(* Parse what follows a dot/question mark *)
+let parse_after_dot bp c =
+  let constructor = if c = '?' then "PATTERNIDENT" else "FIELD" in
+  parser
   | [< ' ('a'..'z' | 'A'..'Z' | '_' as c); len = ident_tail (store 0 c) >] ->
-      ("FIELD", get_buff len)
+      (constructor, get_buff len)
   | [< s >] ->
       match lookup_utf8 s with
       | Some (Utf8Letter n) -> 
-	  ("FIELD", get_buff (ident_tail (nstore n 0 s) s))
+	  (constructor, get_buff (ident_tail (nstore n 0 s) s))
       | Some (Utf8IdentPart _ | AsciiChar | Utf8Symbol) | None -> 
 	  fst (process_chars bp c s)
 
@@ -481,7 +483,7 @@ let rec next_token = parser bp
   | [< ''$'; len = ident_tail (store 0 '$') >] ep -> 
       comment_stop bp;
       (("METAIDENT", get_buff len), (bp,ep))
-  | [< ''.' as c; t = parse_after_dot bp c >] ep ->
+  | [< ' ('.' | '?') as c; t = parse_after_dot bp c >] ep ->
       comment_stop bp;
       if Options.do_translate() & t=("",".") then between_com := true;
       (t, (bp,ep))

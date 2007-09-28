@@ -27,12 +27,18 @@ GEXTEND Gram
   GLOBAL: 
     bigint natural integer identref name ident var preident
     fullyqualid qualid reference dirpath
-    ne_string string;
+    ne_string string pattern_ident pattern_identref;
   preident:
     [ [ s = IDENT -> s ] ]
   ;
   ident:
     [ [ s = IDENT -> id_of_string s ] ]
+  ;
+  pattern_ident:
+    [ [ s = PATTERNIDENT -> id_of_string s ] ]
+  ;
+  pattern_identref:
+    [ [ id = pattern_ident -> (loc, id) ] ]
   ;
   var: (* as identref, but interpret as a term identifier in ltac *)
     [ [ id = ident -> (loc,id) ] ]

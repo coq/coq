@@ -157,7 +157,7 @@ GEXTEND Gram
     | "10" LEFTA
       [ f=operconstr; args=LIST1 appl_arg -> CApp(loc,(None,f),args)
       | "@"; f=global; args=LIST0 NEXT -> CAppExpl(loc,(None,f),args)
-      | "@"; "?"; (locid,id) = identref; args=LIST1 identref ->
+      | "@"; (locid,id) = pattern_identref; args=LIST1 identref ->
           let args = List.map (fun x -> CRef (Ident x), None) args in
           CApp(loc,(None,CPatVar(locid,(true,id))),args) ]
     | "9"
@@ -222,7 +222,7 @@ GEXTEND Gram
       | n=INT -> CPrim (loc, Numeral (Bigint.of_string n))
       | s=string -> CPrim (loc, String s)
       | "_" -> CHole loc
-      | "?"; id=ident -> CPatVar(loc,(false,id)) ] ]
+      | id=pattern_ident -> CPatVar(loc,(false,id)) ] ]
   ;
   fix_constr:
     [ [ fx1=single_fix -> mk_single_fix fx1

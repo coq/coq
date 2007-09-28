@@ -188,7 +188,7 @@ GEXTEND Gram
 	    | t::q -> IntroOrAndPattern [[t;pairify q]]
 	  in pairify tc
       | "_" -> IntroWildcard
-      | "?"; prefix = ident -> IntroFresh prefix
+      | prefix = pattern_ident -> IntroFresh prefix
       | "?" -> IntroAnonymous
       | id = ident -> IntroIdentifier id
       ] ]

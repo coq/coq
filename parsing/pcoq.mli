@@ -132,6 +132,8 @@ module Prim :
     val ident : identifier Gram.Entry.e
     val name : name located Gram.Entry.e
     val identref : identifier located Gram.Entry.e
+    val pattern_ident : identifier Gram.Entry.e
+    val pattern_identref : identifier located Gram.Entry.e
     val base_ident : identifier Gram.Entry.e
     val natural : int Gram.Entry.e
     val bigint : Bigint.bigint Gram.Entry.e

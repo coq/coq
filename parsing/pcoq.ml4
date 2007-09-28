@@ -399,6 +399,8 @@ module Prim =
 
     let name = Gram.Entry.create "Prim.name"
     let identref = Gram.Entry.create "Prim.identref"
+    let pattern_ident = Gram.Entry.create "pattern_ident"
+    let pattern_identref = Gram.Entry.create "pattern_identref"
 
     (* A synonym of ident - maybe ident will be located one day *)
     let base_ident = Gram.Entry.create "Prim.base_ident"
