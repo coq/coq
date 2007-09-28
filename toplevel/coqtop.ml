@@ -131,7 +131,9 @@ let set_opt () = re_exec_version := "opt"
 let re_exec is_ide =
   let s = !re_exec_version in
   let is_native = (Mltop.get()) = Mltop.Native in
-  let prog = Sys.argv.(0) in
+  let prog =
+    try Unix.readlink "/proc/self/exe"
+    with Unix.Unix_error _ -> Sys.argv.(0) in
   if (is_native && s = "byte") || ((not is_native) && s = "opt")
   then begin
     let s = if s = "" then if is_native then "opt" else "byte" else s in
