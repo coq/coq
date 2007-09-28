@@ -1273,9 +1273,12 @@ let interp_fresh_id ist gl l =
   let id = 
     if l = [] then default_fresh_id 
     else
-      id_of_string (String.concat "" (List.map (function
-	| ArgArg s -> s
-	| ArgVar (_,id) -> string_of_id (interp_ident ist gl id)) l)) in 
+      let s =
+	String.concat "" (List.map (function
+	  | ArgArg s -> s
+	  | ArgVar (_,id) -> string_of_id (interp_ident ist gl id)) l) in
+      let s = if Lexer.is_keyword s then s^"0" else s in
+      id_of_string s in
   Tactics.fresh_id avoid id gl
 
 (* To retype a list of key*constr with undefined key *)
