@@ -695,7 +695,9 @@ let rec intern_atomic lf ist x =
   | TacDestructHyp (b,id) -> TacDestructHyp(b,intern_hyp ist id)
   | TacDestructConcl -> TacDestructConcl
   | TacSuperAuto (n,l,b1,b2) -> TacSuperAuto (n,l,b1,b2)
-  | TacDAuto (n,p) -> TacDAuto (option_map (intern_or_var ist) n,p)
+  | TacDAuto (n,p,lems) ->
+      TacDAuto (option_map (intern_or_var ist) n,p,
+        List.map (intern_constr ist) lems)
 
   (* Derived basic tactics *)
   | TacSimpleInduction h ->
@@ -2121,7 +2123,9 @@ and interp_atomic ist gl = function
   | TacDestructHyp (b,id) -> Dhyp.h_destructHyp b (interp_hyp ist gl id)
   | TacDestructConcl -> Dhyp.h_destructConcl
   | TacSuperAuto (n,l,b1,b2) -> Auto.h_superauto n l b1 b2
-  | TacDAuto (n,p) -> Auto.h_dauto (option_map (interp_int_or_var ist) n,p)
+  | TacDAuto (n,p,lems) ->
+      Auto.h_dauto (option_map (interp_int_or_var ist) n,p)
+      (pf_interp_constr_list ist gl lems)
 
   (* Derived basic tactics *)
   | TacSimpleInduction h ->
@@ -2435,7 +2439,7 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacDestructHyp (b,id) -> TacDestructHyp(b,id)
   | TacDestructConcl -> TacDestructConcl
   | TacSuperAuto (n,l,b1,b2) -> TacSuperAuto (n,l,b1,b2)
-  | TacDAuto (n,p) -> TacDAuto (n,p)
+  | TacDAuto (n,p,lems) -> TacDAuto (n,p,List.map (subst_rawconstr subst) lems)
 
   (* Derived basic tactics *)
   | TacSimpleInduction h as x -> x
