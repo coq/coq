@@ -314,9 +314,11 @@ let merge_disc g u v =
 (* Universe inconsistency: error raised when trying to enforce a relation
    that would create a cycle in the graph of universes. *)
 
-exception UniverseInconsistency
+type order_request = Lt | Le | Eq
 
-let error_inconsistency () = raise UniverseInconsistency
+exception UniverseInconsistency of order_request * universe * universe
+
+let error_inconsistency o u v = raise (UniverseInconsistency (o,Atom u,Atom v))
 
 (* enforce_univ_leq : universe_level -> universe_level -> unit *)
 (* enforce_univ_leq u v will force u<=v if possible, will fail otherwise *)
@@ -326,7 +328,7 @@ let enforce_univ_leq u v g =
   match compare g u v with
     | NLE -> 
 	(match compare g v u with
-           | LT -> error_inconsistency()
+           | LT -> error_inconsistency Le u v
            | LE -> merge g v u
            | NLE -> setleq g u v
            | EQ -> anomaly "Univ.compare")
@@ -339,11 +341,11 @@ let enforce_univ_eq u v g =
   let g = declare_univ v g in
   match compare g u v with
     | EQ -> g
-    | LT -> error_inconsistency()
+    | LT -> error_inconsistency Eq u v
     | LE -> merge g u v
     | NLE -> 
 	(match compare g v u with
-           | LT -> error_inconsistency()
+           | LT -> error_inconsistency Eq u v
            | LE -> merge g v u
            | NLE -> merge_disc g u v
            | EQ -> anomaly "Univ.compare")
@@ -355,11 +357,11 @@ let enforce_univ_lt u v g =
   match compare g u v with
     | LT -> g
     | LE -> setlt g u v
-    | EQ -> error_inconsistency()
+    | EQ -> error_inconsistency Lt u v
     | NLE -> 
 	(match compare g v u with
            | NLE -> setlt g u v
-           | _ -> error_inconsistency())
+           | _ -> error_inconsistency Lt u v)
 
 (*
 let enforce_univ_relation g = function 

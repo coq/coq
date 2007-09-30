@@ -64,8 +64,15 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
       hov 0 (anomaly_string () ++ str "uncaught exception Invalid_argument " ++ str (guill s) ++ report_fn ())
   | Sys.Break -> 
       hov 0 (fnl () ++ str "User interrupt.")
-  | Univ.UniverseInconsistency -> 
-      hov 0 (str "Error: Universe inconsistency.")
+  | Univ.UniverseInconsistency (o,u,v) ->
+      let msg = 
+	if !Constrextern.print_universes then
+	  spc() ++ str "(cannot enforce" ++ spc() ++ Univ.pr_uni u ++ spc() ++
+          str (match o with Univ.Lt -> "<" | Univ.Le -> "<=" | Univ.Eq -> "=")
+	  ++ spc() ++ Univ.pr_uni v ++ str")"
+	else
+	  mt() in
+      hov 0 (str "Error: Universe inconsistency" ++ msg ++ str ".")
   | TypeError(ctx,te) -> 
       hov 0 (str "Error:" ++ spc () ++ Himsg.explain_type_error ctx te)
   | PretypeError(ctx,te) ->

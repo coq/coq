@@ -49,7 +49,9 @@ val enforce_eq : constraint_function
   universes graph. It raises the exception [UniverseInconsistency] if the
   constraints are not satisfiable. *)
 
-exception UniverseInconsistency
+type order_request = Lt | Le | Eq
+
+exception UniverseInconsistency of order_request * universe * universe
 
 val merge_constraints : constraints -> universes -> universes
 

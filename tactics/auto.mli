@@ -174,11 +174,11 @@ val fmt_autotactic : auto_tactic -> Pp.std_ppcmds
 (*s The following is not yet up to date -- Papageno. *)
 
 (* DAuto *)
-val dauto : int option * int option -> tactic
+val dauto : int option * int option -> constr list -> tactic
 val default_search_decomp : int ref
 val default_dauto : tactic
 
-val h_dauto : int option * int option -> tactic
+val h_dauto : int option * int option -> constr list -> tactic
 (* SuperAuto *)
 
 type autoArguments =

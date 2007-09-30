@@ -766,8 +766,9 @@ and pr_atom1 = function
   | TacAuto (n,lems,db) ->
       hov 0 (str "auto" ++ pr_opt (pr_or_var int) n ++ 
              pr_auto_using pr_constr lems ++ pr_hintbases db)
-  | TacDAuto (n,p) ->
-      hov 1 (str "auto" ++ pr_opt (pr_or_var int) n ++ str "decomp" ++ pr_opt int p)
+  | TacDAuto (n,p,lems) ->
+      hov 1 (str "auto" ++ pr_opt (pr_or_var int) n ++ str "decomp" ++ 
+             pr_opt int p ++ pr_auto_using pr_constr lems)
 
   (* Context management *)
   | TacClear (true,[]) as t -> pr_atom0 t

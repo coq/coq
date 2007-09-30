@@ -16,6 +16,8 @@ Commands
   generation of elimination schemes.
 - Modification of the Scheme command so you can ask for the name to be
   automatically computed (e.g. Scheme Induction for nat Sort Set).
+- Source of universe inconsistencies now printed when option 
+  "Set Printing Universes" is activated,
 
 Libraries
 
@@ -35,6 +37,8 @@ Libraries
 - Loading FSets/FMap used to open unwanted scopes of integer datatypes 
   (see bug #1347). These scopes may need to be opened manually now.
 - Few changes in Reals (lemmas on prod_f_SO now on prod_f_R0).
+- Slight restructuration and extension of the Logic library regarding choice
+  and classical logic.
 
 Language
 

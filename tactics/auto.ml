@@ -797,23 +797,23 @@ let h_auto n lems l =
    l'instant *)
 let default_search_decomp = ref 1
 
-let destruct_auto des_opt n gl = 
+let destruct_auto des_opt lems n gl = 
   let hyps = pf_hyps gl in
-  search_gen des_opt n [searchtable_map "core"] 
-    (make_local_hint_db [] gl) hyps gl
+  search_gen des_opt n (List.map searchtable_map ["core";"extcore"])
+    (make_local_hint_db lems gl) hyps gl
     
-let dautomatic des_opt n = tclTRY (destruct_auto des_opt n)
+let dautomatic des_opt lems n = tclTRY (destruct_auto des_opt lems n)
 
-let default_dauto = dautomatic !default_search_decomp !default_search_depth
+let dauto (n,p) lems =
+  let p = match p with Some p -> p | None -> !default_search_decomp in
+  let n = match n with Some n -> n | None -> !default_search_depth in
+  dautomatic p lems n
 
-let dauto = function
-  | None, None     -> default_dauto
-  | Some n, None   -> dautomatic !default_search_decomp n
-  | Some n, Some p -> dautomatic p n
-  | None, Some p   -> dautomatic p !default_search_depth
+let default_dauto = dauto (None,None) []
 
-let h_dauto (n,p) =
-  Refiner.abstract_tactic (TacDAuto (inj_or_var n,p)) (dauto (n,p))
+let h_dauto (n,p) lems =
+  Refiner.abstract_tactic (TacDAuto (inj_or_var n,p,List.map inj_open lems))
+    (dauto (n,p) lems)
 
 (***************************************)
 (*** A new formulation of Auto *********)

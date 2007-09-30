@@ -414,8 +414,10 @@ GEXTEND Gram
       | IDENT "dconcl"  -> TacDestructConcl
       | IDENT "superauto"; l = autoargs -> TacSuperAuto l
 *)
-      | IDENT "auto"; n = OPT int_or_var; IDENT "decomp"; p = OPT natural ->
-	  TacDAuto (n, p)
+      | IDENT "auto"; IDENT "decomp"; p = OPT natural;
+          lems = auto_using -> TacDAuto (None,p,lems)
+      | IDENT "auto"; n = OPT int_or_var; IDENT "decomp"; p = OPT natural;
+          lems = auto_using -> TacDAuto (n,p,lems)
 
       (* Context management *)
       | IDENT "clear"; "-"; l = LIST1 id_or_meta -> TacClear (true, l)

@@ -91,6 +91,17 @@ Proof.
     right; apply (Ext A False); split; [ exact H | apply False_ind ].
 Qed.
 
+(** A weakest form of propositional extensionality: extensionality for
+    provable propositions only *)
+
+Definition provable_prop_extensionality := forall A:Prop, A -> A = True.
+
+Lemma provable_prop_ext :
+  prop_extensionality -> provable_prop_extensionality.
+Proof.
+  intros Ext A Ha; apply Ext; split; trivial.
+Qed.
+
 (************************************************************************)
 (** * Classical logic and proof-irrelevance *)
 
@@ -105,6 +116,7 @@ Qed.
         (just take the identity), which
      implies the existence of a fixpoint operator in [A]
         (e.g. take the Y combinator of lambda-calculus)
+
 *)
 
 Definition inhabited (A:Prop) := A.
@@ -142,6 +154,10 @@ Proof.
   rewrite (g1_o_g2 (fun x:A => f (g1 x x))).
   reflexivity.
 Qed.
+
+(** Remark: [prop_extensionality] can be replaced in lemma [ext_prop_fixpoint]
+    by the weakest property [provable_prop_extensionality].
+*)
 
 (************************************************************************)
 (** ** CC |- prop_ext /\ dep elim on bool -> proof-irrelevance  *)
@@ -229,6 +245,11 @@ Section Proof_irrelevance_Prop_Ext_CC.
   Qed.
 
 End Proof_irrelevance_Prop_Ext_CC.
+
+(** Remark: [prop_extensionality] can be replaced in lemma
+    [ext_prop_dep_proof_irrel_gen] by the weakest property
+    [provable_prop_extensionality].  
+*)
 
 (************************************************************************)
 (** ** CIC |- prop. ext. -> proof-irrelevance                   *)

@@ -89,6 +89,8 @@ Theorem iff_sym : forall A B:Prop, (A <-> B) -> (B <-> A).
 
 End Equivalence.
 
+Hint Unfold iff: extcore.
+
 (** [(IF_then_else P Q R)], written [IF P then Q else R] denotes
     either [P] and [Q], or [~P] and [Q] *)
 

@@ -95,9 +95,9 @@ Section ChoiceSchemes.
 
 Variables A B :Type.
 
-Variables P:A->Prop.
+Variable P:A->Prop.
 
-Variables R:A->B->Prop.
+Variable R:A->B->Prop.
 
 (** ** Constructive choice and description *)
 
@@ -396,6 +396,16 @@ Proof.
   intro x; apply IndPrem; eauto.
 Qed.
 
+Lemma fun_choice_and_indep_general_prem_iff_guarded_fun_choice :
+  FunctionalChoiceOnInhabitedSet /\ IndependenceOfGeneralPremises
+  <-> GuardedFunctionalChoice.
+Proof.
+  auto decomp using
+    guarded_fun_choice_imp_indep_of_general_premises,
+    guarded_fun_choice_imp_fun_choice,
+    fun_choice_and_indep_general_prem_imp_guarded_fun_choice.
+Qed.
+
 (** AC_fun + Drinker = OAC_fun *)
 
 (** This was already observed by Bell [Bell] *)
@@ -425,6 +435,16 @@ Proof.
   destruct (AC_fun A B Inh (fun x y => (exists y, R x y) -> R x y)) as (f,Hf).
   intro x; apply (Drinker B (R x) Inh).
   exists f; assumption.
+Qed.
+
+Lemma fun_choice_and_small_drinker_iff_omniscient_fun_choice :
+  FunctionalChoiceOnInhabitedSet /\ SmallDrinker'sParadox 
+  <-> OmniscientFunctionalChoice.
+Proof.
+  auto decomp using 
+    omniscient_fun_choice_imp_small_drinker,
+    omniscient_fun_choice_imp_fun_choice,
+    fun_choice_and_small_drinker_imp_omniscient_fun_choice.
 Qed.
 
 (** OAC_fun = GAC_fun *)
@@ -614,6 +634,14 @@ Proof.
   destruct Heq using eq_indd; trivial.
 Qed.
 
+Theorem dep_iff_non_dep_functional_rel_reification : 
+  FunctionalRelReification <-> DependentFunctionalRelReification.
+Proof.
+  auto decomp using
+    non_dep_dep_functional_rel_reification,
+    dep_non_dep_functional_rel_reification.
+Qed.
+
 (**********************************************************************)
 (** * Non contradiction of constructive descriptions wrt functional axioms of choice *)
 
@@ -649,10 +677,10 @@ Qed.
 (** ** Non contradiction of definite description *)
 
 Lemma relative_non_contradiction_of_definite_descr :
-  (ConstructiveDefiniteDescription -> False)
-  -> (FunctionalRelReification -> False).
+  forall C:Prop, (ConstructiveDefiniteDescription -> C)
+  -> (FunctionalRelReification -> C).
 Proof.
-  intros H FunReify.
+  intros C H FunReify.
   assert (DepFunReify := non_dep_dep_functional_rel_reification FunReify).
   pose (A0 := { A:Type & { P:A->Prop & exists! x, P x }}).
   pose (B0 := fun x:A0 => projT1 x).
@@ -674,6 +702,19 @@ Proof.
   intro x.
   apply (proj2_sig (DefDescr B (R x) (H x))).
 Qed.
+
+(** Remark, the following lemma morally holds:
+
+Definition In_propositional_context (A:Type) := forall C:Prop, (A -> C) -> C.
+
+Lemma constructive_definite_descr_in_prop_context_iff_fun_reification :
+   In_propositional_context ConstructiveDefiniteDescription
+   <-> FunctionalRelReification.
+
+but expecting [FunctionalRelReification] to be applied on the same
+Type universes on both sides of the equivalence breaks the
+stratification of universes.
+*)
 
 (**********************************************************************)
 (** * Excluded-middle + definite description => computational excluded-middle *)
