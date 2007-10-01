@@ -170,15 +170,19 @@ let ise_array2 evd f v1 v2 =
 
 let rec evar_conv_x env evd pbty term1 term2 = 
   let sigma = evars_of evd in
-  let term1 = apprec_nohdbeta env evd (whd_castappevar sigma term1) in
-  let term2 = apprec_nohdbeta env evd (whd_castappevar sigma term2) in
+  let term1 = whd_castappevar sigma term1 in
+  let term2 = whd_castappevar sigma term2 in
   (* Maybe convertible but since reducing can erase evars which [evar_apprec]
      could have found, we do it only if the terms are free of evar.
      Note: incomplete heuristic... *)
   if is_ground_term evd term1 && is_ground_term evd term2 &
-     is_fconv pbty env (evars_of evd) term1 term2 then
-      (evd,true)
-  else if is_undefined_evar evd term1 then
+     is_fconv pbty env (evars_of evd) term1 term2
+  then
+    (evd,true)
+  else
+  let term1 = apprec_nohdbeta env evd term1 in
+  let term2 = apprec_nohdbeta env evd term2 in
+  if is_undefined_evar evd term1 then
     solve_simple_eqn evar_conv_x env evd (pbty,destEvar term1,term2)
   else if is_undefined_evar evd term2 then
     solve_simple_eqn evar_conv_x env evd (pbty,destEvar term2,term1)
