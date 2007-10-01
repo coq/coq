@@ -1203,8 +1203,10 @@ and xlate_tac =
     | TacClearBody([]) -> assert false
     | TacClearBody(a::l) -> 
 	CT_clear_body (CT_id_ne_list (xlate_hyp a, List.map xlate_hyp l))
-    | TacDAuto (a, b) ->
+    | TacDAuto (a, b, []) ->
 	CT_dauto(xlate_int_or_var_opt_to_int_opt a, xlate_int_opt b)
+    | TacDAuto (a, b, _) ->
+	xlate_error "TODO: dauto using"
     | TacNewDestruct(a,b,c) ->
 	CT_new_destruct (* Julien F. : est-ce correct *)
 	  (List.map  xlate_int_or_constr a, xlate_using b, 
