@@ -48,9 +48,11 @@ description principles
 
 We let also
 
-IPL_2^2 = 2nd-order impredicative, 2nd-order functional minimal predicate logic
-IPL_2   = 2nd-order impredicative minimal predicate logic
+IPL_2   = 2nd-order impredicative minimal predicate logic (with ex. quant.)
 IPL^2   = 2nd-order functional minimal predicate logic (with ex. quant.)
+IPL_2^2 = 2nd-order impredicative, 2nd-order functional minimal pred. logic (with ex. quant.)
+
+with no prerequisite on the non-emptyness of domains
 
 Table of contents
 
@@ -58,9 +60,9 @@ Table of contents
 
 2. IPL_2^2 |- AC_rel + AC! = AC_fun
 
-3. 1. AC_rel + PI -> GAC_rel  and  PL_2 |- AC_rel + IGP -> GAC_rel and GAC_rel = OAC_rel
+3. typed IPL_2 + Sigma-types + PI |- AC_rel = GAC_rel  and  IPL_2 |- AC_rel + IGP -> GAC_rel and IPL_2 |- GAC_rel = OAC_rel
 
-4. 2. IPL^2 |- AC_fun + IGP = GAC_fun = OAC_fun = AC_fun + Drinker
+4. IPL^2 |- AC_fun + IGP = GAC_fun = OAC_fun = AC_fun + Drinker
 
 5. Derivability of choice for decidable relations with well-ordered codomain
 
@@ -289,7 +291,7 @@ Proof.
   exists f; exact H0.
 Qed.
 
-Theorem FunChoice_Equiv_RelChoice_and_ParamDefinDescr :
+Corollary FunChoice_Equiv_RelChoice_and_ParamDefinDescr :
   forall A B, FunctionalChoice_on A B <-> 
     RelationalChoice_on A B /\ FunctionalRelReification_on A B.
 Proof.
@@ -305,7 +307,7 @@ Qed.
 
 (** We show that the guarded relational formulation of the axiom of Choice
    comes from the non guarded formulation in presence either of the
-   independance of premises or proof-irrelevance *)
+   independance of general premises or proof-irrelevance *)
 
 (**********************************************************************)
 (** ** AC_rel + PI -> GAC_rel and AC_rel + IGP -> GAC_rel and GAC_rel = OAC_rel *)
@@ -352,9 +354,17 @@ Proof.
   exists R'; firstorder.
 Qed.
 
+Lemma subset_types_imp_guarded_rel_choice_iff_rel_choice :
+  ProofIrrelevance -> (GuardedRelationalChoice <-> RelationalChoice).
+Proof.
+  auto decomp using
+    guarded_rel_choice_imp_rel_choice,
+    rel_choice_and_proof_irrel_imp_guarded_rel_choice.
+Qed.
+
 (** OAC_rel = GAC_rel *)
 
-Lemma guarded_iff_omniscient_rel_choice :
+Corollary guarded_iff_omniscient_rel_choice :
   GuardedRelationalChoice <-> OmniscientRelationalChoice.
 Proof.
   split.
@@ -396,7 +406,7 @@ Proof.
   intro x; apply IndPrem; eauto.
 Qed.
 
-Lemma fun_choice_and_indep_general_prem_iff_guarded_fun_choice :
+Corollary fun_choice_and_indep_general_prem_iff_guarded_fun_choice :
   FunctionalChoiceOnInhabitedSet /\ IndependenceOfGeneralPremises
   <-> GuardedFunctionalChoice.
 Proof.
@@ -437,7 +447,7 @@ Proof.
   exists f; assumption.
 Qed.
 
-Lemma fun_choice_and_small_drinker_iff_omniscient_fun_choice :
+Corollary fun_choice_and_small_drinker_iff_omniscient_fun_choice :
   FunctionalChoiceOnInhabitedSet /\ SmallDrinker'sParadox 
   <-> OmniscientFunctionalChoice.
 Proof.
@@ -452,7 +462,7 @@ Qed.
 (** This is derivable from the intuitionistic equivalence between IGP and Drinker
 but we give a direct proof *)
 
-Lemma guarded_iff_omniscient_fun_choice :
+Theorem guarded_iff_omniscient_fun_choice :
   GuardedFunctionalChoice <-> OmniscientFunctionalChoice.
 Proof.
   split.
@@ -634,7 +644,7 @@ Proof.
   destruct Heq using eq_indd; trivial.
 Qed.
 
-Theorem dep_iff_non_dep_functional_rel_reification : 
+Corollary dep_iff_non_dep_functional_rel_reification : 
   FunctionalRelReification <-> DependentFunctionalRelReification.
 Proof.
   auto decomp using
@@ -647,11 +657,11 @@ Qed.
 
 (** ** Non contradiction of indefinite description *)
 
-Lemma relative_non_contradiction_of_indefinite_desc :
-  (ConstructiveIndefiniteDescription -> False)
-  -> (FunctionalChoice -> False).
+Lemma relative_non_contradiction_of_indefinite_descr :
+  forall C:Prop, (ConstructiveIndefiniteDescription -> C)
+  -> (FunctionalChoice -> C).
 Proof.
-  intros H AC_fun.
+  intros C H AC_fun.
   assert (AC_depfun := non_dep_dep_functional_choice AC_fun).
   pose (A0 := { A:Type & { P:A->Prop & exists x, P x }}).
   pose (B0 := fun x:A0 => projT1 x).
@@ -703,17 +713,21 @@ Proof.
   apply (proj2_sig (DefDescr B (R x) (H x))).
 Qed.
 
-(** Remark, the following lemma morally holds:
+(** Remark, the following corollaries morally hold:
 
 Definition In_propositional_context (A:Type) := forall C:Prop, (A -> C) -> C.
 
-Lemma constructive_definite_descr_in_prop_context_iff_fun_reification :
+Corollary constructive_definite_descr_in_prop_context_iff_fun_reification :
+   In_propositional_context ConstructiveIndefiniteDescription
+   <-> FunctionalChoice.
+
+Corollary constructive_definite_descr_in_prop_context_iff_fun_reification :
    In_propositional_context ConstructiveDefiniteDescription
    <-> FunctionalRelReification.
 
-but expecting [FunctionalRelReification] to be applied on the same
-Type universes on both sides of the equivalence breaks the
-stratification of universes.
+but expecting [FunctionalChoice] (resp. [FunctionalRelReification]) to
+be applied on the same Type universes on both sides of the first
+(resp. second) equivalence breaks the stratification of universes.
 *)
 
 (**********************************************************************)
@@ -752,3 +766,13 @@ Proof.
   left; trivial.
   right; trivial.
 Qed.  
+
+Corollary fun_reification_descr_computational_excluded_middle_in_prop_context :
+  FunctionalRelReification ->
+  (forall P:Prop, P \/ ~ P) -> 
+  forall C:Prop, ((forall P:Prop, {P} + {~ P}) -> C) -> C.
+Proof.
+  intros FunReify EM C; auto decomp using
+    constructive_definite_descr_excluded_middle,
+    (relative_non_contradiction_of_definite_descr (C:=C)).
+Qed.
