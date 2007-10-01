@@ -52,9 +52,3 @@ rewrite_succP t ltac:(fun x t => (set (x := t) in |-* at k)) (fun x => (P (S x))
 than in the goal. For the reason of many possible variants, the core
 of the tactic is factored out. *)
 
-
-(*
- Local Variables:
- tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
- End:
-*)

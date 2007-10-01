@@ -226,12 +226,15 @@ Ltac rewrite_true P H :=
 setoid_replace P with True using relation iff;
 [| split; intro; [constructor | apply H]].
 
-Tactic Notation "symmetry" constr(Eq) :=
+(*Ltac symmetry Eq :=
 lazymatch Eq with
 | ?E ?t1 ?t2 => setoid_replace (E t1 t2) with (E t2 t1) using relation iff;
   [| split; intro; symmetry; assumption]
 | _ => fail Eq "does not have the form (E t1 t2)"
-end.
+end.*)
+(* This does not work because there already is a tactic "symmetry".
+Declaring "symmetry" a tactic notation does not work because it conflicts
+with "symmetry in": it thinks that "in" is a term. *)
 
 Theorem and_cancel_l : forall A B C : Prop,
   (B -> A) -> (C -> A ) -> ((A /\ B <-> A /\ C) <-> (B <-> C)).

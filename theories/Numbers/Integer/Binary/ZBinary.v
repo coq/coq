@@ -197,8 +197,3 @@ End ZBinOrder.
 Module Export ZTimesOrderPropertiesModule :=
   ZTimesOrderProperties ZBinTimes ZBinOrder.
 
-(*
- Local Variables:
- tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
- End:
-*)

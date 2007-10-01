@@ -104,8 +104,8 @@ lazymatch (type of H) with
     let x1 := fresh "x" in
     let x2 := fresh "x" in
     set (x1 := t1); set (x2 := t2);
-    assert (H1 : E x1 x2); [apply H |];
-    assert (H2 : (fun x => G x) x1 <-> (fun x => G x) x2); [qiff x1 x2 H1 |];
+    assert (H1 : E x1 x2) by apply H;
+    assert (H2 : (fun x => G x) x1 <-> (fun x => G x) x2) by qiff x1 x2 H1;
     unfold x1 in *; unfold x2 in *; apply <- H2;
     clear H1 H2 x1 x2
   | _ => pattern t1; qsetoid_rewrite H
@@ -114,11 +114,15 @@ lazymatch (type of H) with
 end.
 
 Tactic Notation "qsetoid_rewrite" "<-" constr(H) :=
-let H1 := fresh in
-  pose proof H as H1;
-  symmetry in H1;
-  qsetoid_rewrite H1;
-  clear H1.
+match goal with
+| |- ?G =>
+  let H1 := fresh in
+    pose proof H as H1;
+    symmetry in H1; (* symmetry unfolds the beta-redex in the goal (!), so we have to restore the goal *)
+    change G;
+    qsetoid_rewrite H1;
+    clear H1
+end.
 
 Tactic Notation "qsetoid_replace" constr(t1) "with" constr(t2)
                 "using" "relation" constr(E) :=
@@ -141,7 +145,18 @@ as E_rel.
 
 Notation "x == y" := (E x y) (at level 70).
 
+Parameter P : nat -> nat.
+Add Morphism S with signature E ==> E as S_morph. Admitted.
+Add Morphism P with signature E ==> E as P_morph. Admitted.
 Add Morphism plus with signature E ==> E ==> E as plus_morph. Admitted.
+
+Theorem Zplus_pred : forall n m : nat, P n + m == P (n + m).
+Proof.
+intros n m.
+cut (forall n : nat, S (P n) == n). intro H.
+pattern n at 2.
+qsetoid_rewrite <- (H n).
+Admitted.
 
 Goal forall x, x == x + x ->
   (exists y, forall z, y == y + z -> exists u, x == u) /\ x == 0.

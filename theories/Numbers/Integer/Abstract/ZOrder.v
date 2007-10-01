@@ -1,458 +1,296 @@
-Require Export ZAxioms.
+Require Export ZTimes.
 
-Module Type ZOrderSignature.
-Declare Module Export ZBaseMod : ZBaseSig.
-Open Local Scope IntScope.
+Module ZOrderPropFunct (Import ZAxiomsMod : ZAxiomsSig).
+Module Export ZTimesPropMod := ZTimesPropFunct ZAxiomsMod.
+Open Local Scope NatIntScope.
 
-Parameter Inline lt : Z -> Z -> bool.
-Parameter Inline le : Z -> Z -> bool.
-Add Morphism lt with signature E ==> E ==> eq_bool as lt_wd.
-Add Morphism le with signature E ==> E ==> eq_bool as le_wd.
+(* Axioms *)
 
-Notation "n <  m" := (lt n m) : IntScope.
-Notation "n <= m" := (le n m) : IntScope.
+Theorem Zle_lt_or_eq : forall n m : Z, n <= m <-> n < m \/ n == m.
+Proof NZle_lt_or_eq.
 
-Axiom le_lt : forall n m, n <= m <-> n < m \/ n == m.
-Axiom lt_irr : forall n, ~ (n < n).
-Axiom lt_succ : forall n m, n < (S m) <-> n <= m.
+Theorem Zlt_irrefl : forall n : Z, ~ n < n.
+Proof NZlt_irrefl.
 
-End ZOrderSignature.
+Theorem Zlt_succ_le : forall n m : Z, n < S m <-> n <= m.
+Proof NZlt_succ_le.
 
+(* Renaming theorems from NZOrder.v *)
 
-Module ZOrderProperties (Import ZOrderModule : ZOrderSignature).
-Module Export ZBasePropFunctModule := ZBasePropFunct ZBaseMod.
-Open Local Scope IntScope.
+Theorem Zlt_le_incl : forall n m : Z, n < m -> n <= m.
+Proof NZlt_le_incl.
 
-Ltac Zle_intro1 := rewrite le_lt; left.
-Ltac Zle_intro2 := rewrite le_lt; right.
-Ltac Zle_elim H := rewrite le_lt in H; destruct H as [H | H].
+Theorem Zlt_neq : forall n m : Z, n < m -> n ~= m.
+Proof NZlt_neq.
 
-Theorem le_refl : forall n, n <= n.
-Proof.
-intro n; now Zle_intro2.
-Qed.
+Theorem Zle_refl : forall n : Z, n <= n.
+Proof NZle_refl.
 
-Theorem lt_n_succn : forall n, n < S n.
-Proof.
-intro n. rewrite lt_succ. now Zle_intro2.
-Qed.
+Theorem Zlt_succ_r : forall n : Z, n < S n.
+Proof NZlt_succ_r.
 
-Theorem le_n_succn : forall n, n <= S n.
-Proof.
-intro; Zle_intro1; apply lt_n_succn.
-Qed.
+Theorem Zle_succ_r : forall n : Z, n <= S n.
+Proof NZle_succ_r.
 
-Theorem lt_predn_n : forall n, P n < n.
-Proof.
-intro n; rewrite_succ_pred n at 2; apply lt_n_succn.
-Qed.
+Theorem Zlt_lt_succ : forall n m : Z, n < m -> n < S m.
+Proof NZlt_lt_succ.
 
-Theorem le_predn_n : forall n, P n <= n.
-Proof.
-intro; Zle_intro1; apply lt_predn_n.
-Qed.
+Theorem Zle_le_succ : forall n m : Z, n <= m -> n <= S m.
+Proof NZle_le_succ.
 
-Theorem lt_n_succm : forall n m, n < m -> n < S m.
-Proof.
-intros. rewrite lt_succ. now Zle_intro1.
-Qed.
+Theorem Zle_succ_le_or_eq_succ : forall n m : Z, n <= S m <-> n <= m \/ n == S m.
+Proof NZle_succ_le_or_eq_succ.
 
-Theorem le_n_succm : forall n m, n <= m -> n <= S m.
-Proof.
-intros n m H; rewrite <- lt_succ in H; now Zle_intro1.
-Qed.
+Theorem Zneq_succ_l : forall n : Z, S n ~= n.
+Proof NZneq_succ_l.
 
-Theorem lt_n_m_pred : forall n m, n < m <-> n <= P m.
-Proof.
-intros n m; rewrite_succ_pred m; rewrite pred_succ; apply lt_succ.
-Qed.
+Theorem Znlt_succ_l : forall n : Z, ~ S n < n.
+Proof NZnlt_succ_l.
 
-Theorem not_le_n_predn : forall n, ~ n <= P n.
-Proof.
-intros n H; Zle_elim H.
-apply lt_n_succm in H; rewrite succ_pred in H; false_hyp H lt_irr.
-pose proof (lt_predn_n n) as H1; rewrite <- H in H1; false_hyp H1 lt_irr.
-Qed.
+Theorem Znle_succ_l : forall n : Z, ~ S n <= n.
+Proof NZnle_succ_l.
 
-Theorem le_succ : forall n m, n <= S m <-> n <= m \/ n == S m.
-Proof.
-intros n m; rewrite le_lt. now rewrite lt_succ.
-Qed.
+Theorem Zlt_le_succ : forall n m : Z, n < m <-> S n <= m.
+Proof NZlt_le_succ.
 
-Theorem lt_pred : forall n m, (P n) < m <-> n <= m.
-Proof.
-intro n; induct_n m (P n).
-split; intro H. false_hyp H lt_irr. false_hyp H not_le_n_predn.
-intros m IH; split; intro H.
-apply -> lt_succ in H; Zle_elim H.
-apply -> IH in H; now apply le_n_succm.
-rewrite <- H; rewrite succ_pred; now Zle_intro2.
-apply -> le_succ in H; destruct H as [H | H].
-apply <- IH in H. now apply lt_n_succm. rewrite H; rewrite pred_succ; apply lt_n_succn.
-intros m IH; split; intro H.
-pose proof H as H1. apply lt_n_succm in H; rewrite succ_pred in H.
-apply -> IH in H; Zle_elim H. now apply -> lt_n_m_pred.
-rewrite H in H1; false_hyp H1 lt_irr.
-pose proof H as H1. apply le_n_succm in H. rewrite succ_pred in H.
-apply <- IH in H. apply -> lt_n_m_pred in H. Zle_elim H.
-assumption. apply pred_inj in H; rewrite H in H1; false_hyp H1 not_le_n_predn.
-Qed.
+Theorem Zlt_succ_lt : forall n m : Z, S n < m -> n < m.
+Proof NZlt_succ_lt.
 
-Theorem lt_predn_m : forall n m, n < m -> P n < m.
-Proof.
-intros; rewrite lt_pred; now Zle_intro1.
-Qed.
+Theorem Zle_succ_le : forall n m : Z, S n <= m -> n <= m.
+Proof NZle_succ_le.
 
-Theorem le_predn_m : forall n m, n <= m -> P n <= m.
-Proof.
-intros n m H; rewrite <- lt_pred in H; now Zle_intro1.
-Qed.
+Theorem Zsucc_lt_mono : forall n m : Z, n < m <-> S n < S m.
+Proof NZsucc_lt_mono.
 
-Theorem lt_n_m_succ : forall n m, n < m <-> S n <= m.
-Proof.
-intros n m; rewrite_pred_succ n; rewrite succ_pred; apply lt_pred.
-Qed.
+Theorem Zsucc_le_mono : forall n m : Z, n <= m <-> S n <= S m.
+Proof NZsucc_le_mono.
 
-Theorem lt_succn_m : forall n m, S n < m -> n < m.
-Proof.
-intros n m H; rewrite_pred_succ n; now apply lt_predn_m.
-Qed.
+Theorem Zlt_asymm : forall n m, n < m -> ~ m < n.
+Proof NZlt_asymm.
 
-Theorem le_succn_m : forall n m, S n <= m -> n <= m.
-Proof.
-intros n m H; rewrite <- lt_n_m_succ in H; now Zle_intro1.
-Qed.
+Theorem Zlt_trans : forall n m p : Z, n < m -> m < p -> n < p.
+Proof NZlt_trans.
 
-Theorem lt_n_predm : forall n m, n < P m -> n < m.
-Proof.
-intros n m H; rewrite_succ_pred m; now apply lt_n_succm.
-Qed.
+Theorem Zle_trans : forall n m p : Z, n <= m -> m <= p -> n <= p.
+Proof NZle_trans.
 
-Theorem le_n_predm : forall n m, n <= P m -> n <= m.
-Proof.
-intros n m H; rewrite <- lt_n_m_pred in H; now Zle_intro1.
-Qed.
+Theorem Zle_lt_trans : forall n m p : Z, n <= m -> m < p -> n < p.
+Proof NZle_lt_trans.
 
-Theorem lt_respects_succ : forall n m, n < m <-> S n < S m.
-Proof.
-intros n m. rewrite lt_n_m_succ. symmetry. apply lt_succ.
-Qed.
+Theorem Zlt_le_trans : forall n m p : Z, n < m -> m <= p -> n < p.
+Proof NZlt_le_trans.
 
-Theorem le_respects_succ : forall n m, n <= m <-> S n <= S m.
-Proof.
-intros n m. do 2 rewrite le_lt.
-firstorder using lt_respects_succ succ_wd succ_inj.
-Qed.
+Theorem Zle_antisymm : forall n m : Z, n <= m -> m <= n -> n == m.
+Proof NZle_antisymm.
 
-Theorem lt_respects_pred : forall n m, n < m <-> P n < P m.
-Proof.
-intros n m. rewrite lt_n_m_pred. symmetry; apply lt_pred.
-Qed.
+(** Trichotomy, decidability, and double negation elimination *)
 
-Theorem le_respects_pred : forall n m, n <= m <-> P n <= P m.
-Proof.
-intros n m. do 2 rewrite le_lt.
-firstorder using lt_respects_pred pred_wd pred_inj.
-Qed.
+Theorem Zlt_trichotomy : forall n m : Z,  n < m \/ n == m \/ m < n.
+Proof NZlt_trichotomy.
 
-Theorem lt_succ_pred : forall n m, S n < m <-> n < P m.
-Proof.
-intros n m; rewrite_pred_succ n at 2; apply lt_respects_pred.
-Qed.
+Theorem Zle_gt_cases : forall n m : Z, n <= m \/ n > m.
+Proof NZle_gt_cases.
 
-Theorem le_succ_pred : forall n m, S n <= m <-> n <= P m.
-Proof.
-intros n m; rewrite_pred_succ n at 2; apply le_respects_pred.
-Qed.
+Theorem Zlt_ge_cases : forall n m : Z, n < m \/ n >= m.
+Proof NZlt_ge_cases.
 
-Theorem lt_pred_succ : forall n m, P n < m <-> n < S m.
-Proof.
-intros n m; rewrite_succ_pred n at 2; apply lt_respects_succ.
-Qed.
+Theorem Zle_ngt : forall n m : Z, n <= m <-> ~ n > m.
+Proof NZle_ngt.
 
-Theorem le_pred_succ : forall n m, P n <= m <-> n <= S m.
-Proof.
-intros n m; rewrite_succ_pred n at 2; apply le_respects_succ.
-Qed.
+Theorem Znlt_ge : forall n m : Z, ~ n < m <-> n >= m.
+Proof NZnlt_ge.
 
-Theorem lt_neq : forall n m, n < m -> n # m.
-Proof.
-intros n m H1 H2; rewrite H2 in H1; false_hyp H1 lt_irr.
-Qed.
+Theorem Zlt_em : forall n m : Z, n < m \/ ~ n < m.
+Proof NZlt_em.
 
-Theorem lt_trans : forall n m p, n < m -> m < p -> n < p.
-Proof.
-intros n m; induct_n n m.
-intros p H _; false_hyp H lt_irr.
-intros n IH p H1 H2. apply lt_succn_m in H1. pose proof (IH p H1 H2) as H3.
-rewrite lt_n_m_succ in H3; Zle_elim H3.
-assumption. rewrite <- H3 in H2. rewrite lt_succ in H2; Zle_elim H2.
-elimtype False; apply lt_irr with (n := n); now apply IH.
-rewrite H2 in H1; false_hyp H1 lt_irr.
-intros n IH p H1 H2. apply lt_predn_m. rewrite lt_pred in H1; Zle_elim H1.
-now apply IH. now rewrite H1.
-Qed.
+Theorem Zlt_dne : forall n m, ~ ~ n < m <-> n < m.
+Proof NZlt_dne.
 
-Theorem le_trans : forall n m p, n <= m -> m <= p -> n <= p.
-Proof.
-intros n m p H1 H2; Zle_elim H1.
-Zle_elim H2. Zle_intro1; now apply lt_trans with (m := m).
-Zle_intro1; now rewrite <- H2. now rewrite H1.
-Qed.
+Theorem Znle_gt : forall n m : Z, ~ n <= m <-> n > m.
+Proof NZnle_gt.
 
-Theorem le_lt_trans : forall n m p, n <= m -> m < p -> n < p.
-Proof.
-intros n m p H1 H2; Zle_elim H1.
-now apply lt_trans with (m := m). now rewrite H1.
-Qed.
+Theorem Zlt_nge : forall n m : Z, n < m <-> ~ n >= m.
+Proof NZlt_nge.
 
-Theorem lt_le_trans : forall n m p, n < m -> m <= p -> n < p.
-Proof.
-intros n m p H1 H2; Zle_elim H2.
-now apply lt_trans with (m := m). now rewrite <- H2.
-Qed.
+Theorem Zle_em : forall n m : Z, n <= m \/ ~ n <= m.
+Proof NZle_em.
 
-Theorem lt_asymm : forall n m, n < m -> ~ m < n.
-Proof.
-intros n m H1 H2; apply lt_irr with (n := n); now apply lt_trans with (m := m).
-Qed.
+Theorem Zle_dne : forall n m : Z, ~ ~ n <= m <-> n <= m.
+Proof NZle_dne.
 
-Theorem le_antisym : forall n m, n <= m -> m <= n -> n == m.
-Proof.
-intros n m H1 H2; Zle_elim H1; Zle_elim H2.
-elimtype False; apply lt_irr with (n := n); now apply lt_trans with (m := m).
-now symmetry. assumption. assumption.
-Qed.
+Theorem Zlt_nlt_succ : forall n m : Z, n < m <-> ~ m < S n.
+Proof NZlt_nlt_succ.
 
-Theorem not_lt_succn_n : forall n, ~ S n < n.
-Proof.
-intros n H; apply (lt_asymm n (S n)). apply lt_n_succn. assumption.
-Qed.
+Theorem Zlt_exists_pred :
+  forall z n : Z, z < n -> exists k : Z, n == S k /\ z <= k.
+Proof NZlt_exists_pred.
 
-Theorem not_le_succn_n : forall n, ~ S n <= n.
-Proof.
-intros n H; Zle_elim H. false_hyp H not_lt_succn_n.
-pose proof (lt_n_succn n) as H1. rewrite H in H1; false_hyp H1 lt_irr.
-Qed.
+Theorem Zlt_succ_iter_r :
+  forall (n : nat) (m : Z), m < NZsucc_iter (Datatypes.S n) m.
+Proof NZlt_succ_iter_r.
 
-Theorem lt_gt : forall n m, n < m -> m < n -> False.
-Proof.
-intros n m H1 H2; apply lt_irr with (n := n); now apply lt_trans with (m := m).
-Qed.
+Theorem Zneq_succ_iter_l :
+  forall (n : nat) (m : Z), NZsucc_iter (Datatypes.S n) m ~= m.
+Proof NZneq_succ_iter_l.
 
-Theorem lt_total : forall n m,  n < m \/ n == m \/ m < n.
-Proof.
-intros n m; induct_n n m.
-right; now left.
-intros n IH; destruct IH as [H | [H | H]].
-rewrite lt_n_m_succ in H. rewrite le_lt in H; tauto.
-right; right; rewrite H; apply lt_n_succn.
-right; right; now apply lt_n_succm.
-intros n IH; destruct IH as [H | [H | H]].
-left; now apply lt_predn_m.
-left; rewrite H; apply lt_predn_n.
-rewrite lt_n_m_pred in H. rewrite le_lt in H.
-setoid_replace (m == P n) with (P n == m) in H using relation iff. tauto.
-split; intro; now symmetry.
-Qed.
-
-Theorem le_gt : forall n m, n <= m <-> ~ m < n.
-Proof.
-intros n m. rewrite -> le_lt.
-pose proof (lt_total n m). pose proof (lt_gt n m).
-assert (n == m -> ~ m < n); [intro A; rewrite A; apply lt_irr |].
-tauto.
-Qed.
-
-Theorem lt_ge : forall n m, n < m <-> ~ m <= n.
-Proof.
-intros n m. rewrite -> le_lt.
-pose proof (lt_total m n). pose proof (lt_gt n m).
-assert (n < m -> m # n); [intros A B; rewrite B in A; false_hyp A lt_irr |].
-tauto.
-Qed.
-
-Theorem lt_discrete : forall n m, n < m -> m < S n -> False.
-Proof.
-intros n m H1 H2; apply -> lt_succ in H2; apply -> lt_ge in H1; false_hyp H2 H1.
-Qed.
-
-(* Decidability of order can be proved either from totality or from the fact
-that < and <= are boolean functions *)
-
-(** A corollary of having an order is that Z is infinite in both
-directions *)
-
-Theorem neq_succn_n : forall n, S n # n.
-Proof.
-intros n H. pose proof (lt_n_succn n) as H1. rewrite H in H1. false_hyp H1 lt_irr.
-Qed.
-
-Theorem neq_predn_n : forall n, P n # n.
-Proof.
-intros n H. apply succ_wd in H. rewrite succ_pred in H. now apply neq_succn_n with (n := n).
-Qed.
-
-Definition nth_succ (n : nat) (m : Z) :=
-  nat_rec (fun _ => Z) m (fun _ l => S l) n.
-Definition nth_pred (n : nat) (m : Z) :=
-  nat_rec (fun _ => Z) m (fun _ l => P l) n.
-
-Lemma lt_m_succkm :
-  forall (n : nat) (m : Z), m < nth_succ (Datatypes.S n) m.
-Proof.
-intros n m; induction n as [| n IH]; simpl in *.
-apply lt_n_succn. now apply lt_n_succm.
-Qed.
-
-Lemma lt_predkm_m :
-  forall (n : nat) (m : Z), nth_pred (Datatypes.S n) m < m.
-Proof.
-intros n m; induction n as [| n IH]; simpl in *.
-apply lt_predn_n. now apply lt_predn_m.
-Qed.
-
-Theorem neq_m_succkm :
-  forall (n : nat) (m : Z), nth_succ (Datatypes.S n) m # m.
-Proof.
-intros n m H. pose proof (lt_m_succkm n m) as H1. rewrite H in H1.
-false_hyp H1 lt_irr.
-Qed.
-
-Theorem neq_predkm_m :
-  forall (n : nat) (m : Z), nth_pred (Datatypes.S n) m # m.
-Proof.
-intros n m H. pose proof (lt_predkm_m n m) as H1. rewrite H in H1.
-false_hyp H1 lt_irr.
-Qed.
-
-(** Stronger variant of induction with assumptions n >= 0 (n <= 0)
+(** Stronger variant of induction with assumptions n >= 0 (n < 0)
 in the induction step *)
 
-Section Induction.
+Theorem Zright_induction :
+  forall A : Z -> Prop, predicate_wd E A ->
+    forall z : Z, A z ->
+      (forall n : Z, z <= n -> A n -> A (S n)) ->
+        forall n : Z, z <= n -> A n.
+Proof NZright_induction.
 
-Variable A : Z -> Prop.
-Hypothesis Q_wd : predicate_wd E A.
+Theorem Zleft_induction :
+  forall A : Z -> Prop, predicate_wd E A ->
+    forall z : Z, A z ->
+      (forall n : Z, n < z -> A (S n) -> A n) ->
+        forall n : Z, n <= z -> A n.
+Proof NZleft_induction.
 
-Add Morphism A with signature E ==> iff as Q_morph.
-Proof Q_wd.
+Theorem Zorder_induction :
+  forall A : Z -> Prop, predicate_wd E A ->
+    forall z : Z, A z ->
+      (forall n : Z, z <= n -> A n -> A (S n)) ->
+      (forall n : Z, n < z -> A (S n) -> A n) ->
+        forall n : Z, A n.
+Proof NZorder_induction.
 
-Section Center.
-
-Variable z : Z. (* A z is the basis of induction *)
-
-Section RightInduction.
-
-Let Q' := fun n : Z => forall m, z <= m -> m < n -> A m.
-
-Add Morphism Q' with signature E ==> iff as Q'_pos_wd.
+Theorem Zorder_induction' :
+  forall A : Z -> Prop, predicate_wd E A ->
+    forall z : Z, A z ->
+      (forall n : Z, z <= n -> A n -> A (S n)) ->
+      (forall n : Z, n <= z -> A n -> A (P n)) ->
+        forall n : Z, A n.
 Proof.
-intros x1 x2 H; unfold Q'; qmorphism x1 x2.
+intros A A_wd z Az AS AP n; apply Zorder_induction with (z := z); try assumption.
+intros m H1 H2. apply AP in H2; [| now apply -> Zlt_le_succ].
+unfold predicate_wd, fun_wd in A_wd; apply -> (A_wd (P (S m)) m);
+[assumption | apply Zpred_succ].
 Qed.
 
-Theorem right_induction :
-  A z -> (forall n, z <= n -> A n -> A (S n)) -> forall n, z <= n -> A n.
+Theorem Zright_induction' :
+  forall A : Z -> Prop, predicate_wd E A ->
+    forall z : Z,
+      (forall n : Z, n <= z -> A n) ->
+      (forall n : Z, z <= n -> A n -> A (S n)) ->
+        forall n : Z, A n.
+Proof NZright_induction'.
+
+Theorem Zstrong_right_induction' :
+  forall A : Z -> Prop, predicate_wd E A ->
+    forall z : Z,
+      (forall n : Z, n <= z -> A n) ->
+      (forall n : Z, z <= n -> (forall m : Z, z <= m -> m < n -> A m) -> A n) ->
+        forall n : Z, A n.
+Proof NZstrong_right_induction'.
+
+(** Elimintation principle for < *)
+
+Theorem Zlt_ind :
+  forall A : Z -> Prop, predicate_wd E A ->
+    forall n : Z,
+      A (S n) ->
+      (forall m : Z, n < m -> A m -> A (S m)) ->
+        forall m : Z, n < m -> A m.
+Proof NZlt_ind.
+
+(** Elimintation principle for <= *)
+
+Theorem Zle_ind :
+  forall A : Z -> Prop, predicate_wd E A ->
+    forall n : Z,
+      A n ->
+      (forall m : Z, n <= m -> A m -> A (S m)) ->
+        forall m : Z, n <= m -> A m.
+Proof NZle_ind.
+
+Ltac Zinduct n := induction_maker n ltac:(apply Zorder_induction with (z := 0)).
+
+(** Theorems that are either not valid on N or have different proofs on N and Z *)
+
+Theorem Zlt_pred_l : forall n : Z, P n < n.
 Proof.
-intros Qz QS k k_ge_z.
-assert (H : forall n, Q' n). induct_n n z; unfold Q'.
-intros m H1 H2. apply -> le_gt in H1; false_hyp H2 H1.
-intros n IH m H2 H3.
-rewrite lt_succ in H3; Zle_elim H3. now apply IH.
-Zle_elim H2. rewrite_succ_pred m.
-apply QS. now apply -> lt_n_m_pred. apply IH. now apply -> lt_n_m_pred.
-rewrite H3; apply lt_predn_n. now rewrite <- H2.
-intros n IH m H2 H3. apply IH. assumption. now apply lt_n_predm.
-pose proof (H (S k)) as H1; unfold Q' in H1. apply H1.
-apply k_ge_z. apply lt_n_succn.
+intro n; pattern n at 2; qsetoid_rewrite <- (Zsucc_pred n); apply Zlt_succ_r.
 Qed.
 
-End RightInduction.
-
-Section LeftInduction.
-
-Let Q' := fun n : Z => forall m, m <= z -> n < m -> A m.
-
-Add Morphism Q' with signature E ==> iff as Q'_neg_wd.
+Theorem Zle_pred_l : forall n : Z, P n <= n.
 Proof.
-intros x1 x2 H; unfold Q'; qmorphism x1 x2.
+intro; le_less; apply Zlt_pred_l.
 Qed.
 
-Theorem left_induction :
-  A z -> (forall n, n <= z -> A n -> A (P n)) -> forall n, n <= z -> A n.
+Theorem Zlt_le_pred : forall n m : Z, n < m <-> n <= P m.
 Proof.
-intros Qz QP k k_le_z.
-assert (H : forall n, Q' n). induct_n n z; unfold Q'.
-intros m H1 H2. apply -> le_gt in H1; false_hyp H2 H1.
-intros n IH m H2 H3. apply IH. assumption. now apply lt_succn_m.
-intros n IH m H2 H3.
-rewrite lt_pred in H3; Zle_elim H3. now apply IH.
-Zle_elim H2. rewrite_pred_succ m.
-apply QP. now apply -> lt_n_m_succ. apply IH. now apply -> lt_n_m_succ.
-rewrite H3; apply lt_n_succn. now rewrite H2.
-pose proof (H (P k)) as H1; unfold Q' in H1. apply H1.
-apply k_le_z. apply lt_predn_n.
+intros n m; rewrite <- (Zsucc_pred m); rewrite Zpred_succ. apply Zlt_succ_le.
 Qed.
 
-End LeftInduction.
-
-Theorem induction_ord_n :
-  A z ->
-  (forall n, z <= n -> A n -> A (S n)) ->
-  (forall n, n <= z -> A n -> A (P n)) ->
-    forall n, A n.
+Theorem Znle_pred_r : forall n : Z, ~ n <= P n.
 Proof.
-intros Qz QS QP n.
-destruct (lt_total n z) as [H | [H | H]].
-now apply left_induction; [| | Zle_intro1].
-now rewrite H.
-now apply right_induction; [| | Zle_intro1].
+intro; rewrite <- Zlt_le_pred; apply Zlt_irrefl.
 Qed.
 
-End Center.
-
-Theorem induction_ord :
-  A 0 ->
-  (forall n, 0 <= n -> A n -> A (S n)) ->
-  (forall n, n <= 0 -> A n -> A (P n)) ->
-    forall n, A n.
-Proof (induction_ord_n 0).
-
-Theorem lt_ind : forall (n : Z),
-  A (S n) ->
-  (forall m : Z, n < m -> A m -> A (S m)) ->
-   forall m : Z, n < m -> A m.
+Theorem Zlt_pred_le : forall n m : Z, P n < m <-> n <= m.
 Proof.
-intros n H1 H2 m H3.
-apply right_induction with (S n). assumption.
-intros; apply H2; try assumption. now apply <- lt_n_m_succ.
-now apply -> lt_n_m_succ.
+intros n m; pattern n at 2; qsetoid_rewrite <- (Zsucc_pred n).
+apply Zlt_le_succ.
 Qed.
 
-Theorem le_ind : forall (n : Z),
-  A n ->
-  (forall m : Z, n <= m -> A m -> A (S m)) ->
-   forall m : Z, n <= m -> A m.
+Theorem Zlt_lt_pred : forall n m : Z, n < m -> P n < m.
 Proof.
-intros n H1 H2 m H3.
-now apply right_induction with n.
+intros; apply <- Zlt_pred_le; le_less.
 Qed.
 
-End Induction.
+Theorem Zle_le_pred : forall n m : Z, n <= m -> P n <= m.
+Proof.
+intros; le_less; now apply <- Zlt_pred_le.
+Qed.
 
-Ltac induct_ord n :=
-  try intros until n;
-  pattern n; apply induction_ord; clear n;
-  [unfold NumPrelude.predicate_wd;
-  let n := fresh "n" in
-  let m := fresh "m" in
-  let H := fresh "H" in intros n m H; qmorphism n m | | |].
+Theorem Zlt_pred_lt : forall n m : Z, n < P m -> n < m.
+Proof.
+intros n m H; apply Zlt_trans with (P m); [assumption | apply Zlt_pred_l].
+Qed.
 
-End ZOrderProperties.
+Theorem Zle_pred_lt : forall n m : Z, n <= P m -> n <= m.
+Proof.
+intros; le_less; now apply <- Zlt_le_pred.
+Qed.
 
+Theorem Zpred_lt_mono : forall n m : Z, n < m <-> P n < P m.
+Proof.
+intros; rewrite Zlt_le_pred; symmetry; apply Zlt_pred_le.
+Qed.
 
+Theorem Zpred_le_mono : forall n m : Z, n <= m <-> P n <= P m.
+Proof.
+intros; rewrite <- Zlt_pred_le; now rewrite Zlt_le_pred.
+Qed.
 
-(*
- Local Variables:
- tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
- End:
-*)
+Theorem Zlt_succ_lt_pred : forall n m : Z, S n < m <-> n < P m.
+Proof.
+intros n m; now rewrite (Zpred_lt_mono (S n) m), Zpred_succ.
+Qed.
+
+Theorem Zle_succ_le_pred : forall n m : Z, S n <= m <-> n <= P m.
+Proof.
+intros n m; now rewrite (Zpred_le_mono (S n) m), Zpred_succ.
+Qed.
+
+Theorem Zlt_pred_lt_succ : forall n m : Z, P n < m <-> n < S m.
+Proof.
+intros; rewrite Zlt_pred_le; symmetry; apply Zlt_succ_le.
+Qed.
+
+Theorem Zle_pred_lt_succ : forall n m : Z, P n <= m <-> n <= S m.
+Proof.
+intros n m; now rewrite (Zpred_le_mono n (S m)), Zpred_succ.
+Qed.
+
+Theorem Zneq_pred_l : forall n : Z, P n ~= n.
+Proof.
+intro; apply Zlt_neq; apply Zlt_pred_l.
+Qed.
+
+End ZOrderPropFunct.
+

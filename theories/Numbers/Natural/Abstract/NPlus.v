@@ -42,7 +42,7 @@ Proof NZplus_cancel_l.
 Theorem plus_cancel_r : forall n m p : N, n + p == m + p <-> n == m.
 Proof NZplus_cancel_r.
 
-(** Theorems that are valid for natural numbers but cannot be proved for N *)
+(** Theorems that are valid for natural numbers but cannot be proved for Z *)
 
 Theorem plus_eq_0 : forall n m : N, n + m == 0 <-> n == 0 /\ m == 0.
 Proof.
@@ -135,9 +135,3 @@ Qed.
 
 End NPlusPropFunct.
 
-
-(*
- Local Variables:
- tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
- End:
-*)

@@ -72,9 +72,3 @@ Axiom NZle_lt_or_eq : forall n m : NZ, n <= m <-> n < m \/ n == m.
 Axiom NZlt_irrefl : forall n : NZ, ~ (n < n).
 Axiom NZlt_succ_le : forall n m : NZ, n < S m <-> n <= m.
 End NZOrdAxiomsSig.
-
-(*
- Local Variables:
- tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
- End:
-*)

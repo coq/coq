@@ -286,24 +286,6 @@ Qed.
 
 (** Properties of subtraction. *)
 
-(*Lemma Nle_Nminus_N0 : forall n n' : N, n <= n' -> n - n' = N0.
-Proof.
-  destruct n; destruct n'; simpl; intros; auto.
-  elim H; auto.
-  red in H; simpl in *.
-  intros; destruct (Pcompare p p0 Eq); auto.
-  elim H; auto.
-Qed.
-Proof.
-destruct n as [| p]; destruct n' as [| q]; simpl; intros; auto.
-now elim H.
-red in H; simpl in *.
-case_eq (Pcompare p q Eq); intro H1.
-assert (H2 : p = q); [now apply Pcompare_Eq_eq |]. now rewrite H2, Pminus_mask_diag.
-now rewrite Pminus_mask_Lt.
-false_hyp H1 H.
-Qed.*)
-
 Lemma Nminus_N0_Nle : forall n n' : N, n - n' = N0 <-> n <= n'.
 Proof.
 destruct n as [| p]; destruct n' as [| q]; unfold Nle; simpl;
@@ -404,6 +386,11 @@ Lemma Ncompare_antisym : forall n m, CompOpp (n ?= m) = (m ?= n).
 Proof.
 destruct n; destruct m; simpl; auto.
 exact (Pcompare_antisym p p0 Eq).
+Qed.
+
+Theorem Nlt_irrefl : forall n : N, ~ n < n.
+Proof.
+intro n; unfold Nlt; now rewrite Ncompare_refl.
 Qed.
 
 Theorem Ncompare_n_Sm :

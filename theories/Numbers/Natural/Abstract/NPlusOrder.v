@@ -85,9 +85,3 @@ Qed.
 
 End NPlusOrderProperties.
 
-
-(*
- Local Variables:
- tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
- End:
-*)

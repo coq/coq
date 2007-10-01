@@ -81,9 +81,3 @@ Module Export NatPairsPlusModule := NatPairsPlus NPlusMod.
 Module Export NatPairsPlusPropertiesModule := ZPlusProperties NatPairsPlusModule.
 End NatPairsPlusProperties.
 
-
-(*
- Local Variables:
- tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
- End:
-*)

@@ -100,9 +100,3 @@ Ltac stepr_ring t := stepr t; [| ring].
 
 End NDomainProperties.
 
-
-(*
- Local Variables:
- tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
- End:
-*)

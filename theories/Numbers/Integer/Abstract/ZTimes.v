@@ -1,127 +1,108 @@
+Require Export Ring.
 Require Export ZPlus.
 
-Module Type ZTimesSignature.
-Declare Module Export ZPlusModule : ZPlusSignature.
-Open Local Scope IntScope.
+Module ZTimesPropFunct (Import ZAxiomsMod : ZAxiomsSig).
+Module Export ZPlusPropMod := ZPlusPropFunct ZAxiomsMod.
+Open Local Scope NatIntScope.
 
-Parameter Inline times : Z -> Z -> Z.
+Theorem Ztimes_0_r : forall n : Z, n * 0 == 0.
+Proof NZtimes_0_r.
 
-Notation "x * y" := (times x y) : IntScope.
+Theorem Ztimes_succ_r : forall n m : Z, n * (S m) == n * m + n.
+Proof NZtimes_succ_r.
 
-Add Morphism times with signature E ==> E ==> E as times_wd.
+(** Theorems that are valid for both natural numbers and integers *)
 
-Axiom times_0 : forall n, n * 0 == 0.
-Axiom times_succ : forall n m, n * (S m) == n * m + n.
+Theorem Ztimes_0_l : forall n : Z, 0 * n == 0.
+Proof NZtimes_0_l.
 
-End ZTimesSignature.
+Theorem Ztimes_succ_l : forall n m : Z, (S n) * m == n * m + m.
+Proof NZtimes_succ_l.
 
-Module ZTimesProperties (Import ZTimesModule : ZTimesSignature).
-Module Export ZPlusPropertiesModule := ZPlusProperties ZPlusModule.
-Open Local Scope IntScope.
+Theorem Ztimes_comm : forall n m : Z, n * m == m * n.
+Proof NZtimes_comm.
 
-Theorem times_pred : forall n m, n * (P m) == n * m - n.
+Theorem Ztimes_plus_distr_r : forall n m p : Z, (n + m) * p == n * p + m * p.
+Proof NZtimes_plus_distr_r.
+
+Theorem Ztimes_plus_distr_l : forall n m p : Z, n * (m + p) == n * m + n * p.
+Proof NZtimes_plus_distr_l.
+
+Theorem Ztimes_assoc : forall n m p : Z, n * (m * p) == (n * m) * p.
+Proof NZtimes_assoc.
+
+Theorem Ztimes_1_l : forall n : Z, 1 * n == n.
+Proof NZtimes_1_l.
+
+Theorem Ztimes_1_r : forall n : Z, n * 1 == n.
+Proof NZtimes_1_r.
+
+(* The following two theorems are true in an ordered ring,
+but since they don't mention order, we'll put them here *)
+
+Theorem Ztimes_eq_0 : forall n m : Z, n * m == 0 -> n == 0 \/ m == 0.
+Proof NZtimes_eq_0.
+
+Theorem Ztimes_neq_0 : forall n m : Z, n ~= 0 /\ m ~= 0 <-> n * m ~= 0.
+Proof NZtimes_neq_0.
+
+(** Z forms a ring *)
+
+Lemma Zring : ring_theory 0 1 NZplus NZtimes NZminus Zopp NZE.
 Proof.
-intros n m. rewrite_succ_pred m at 2. rewrite times_succ. rewrite <- plus_minus_distr.
-rewrite minus_diag. now rewrite plus_n_0.
+constructor.
+exact Zplus_0_l.
+exact Zplus_comm.
+exact Zplus_assoc.
+exact Ztimes_1_l.
+exact Ztimes_comm.
+exact Ztimes_assoc.
+exact Ztimes_plus_distr_r.
+intros; now rewrite Zplus_opp_minus.
+exact Zplus_opp_r.
 Qed.
 
-Theorem times_0_n : forall n, 0 * n == 0.
+Add Ring ZR : Zring.
+
+(** Theorems that are either not valid on N or have different proofs on N and Z *)
+
+Theorem Ztimes_pred_r : forall n m : Z, n * (P m) == n * m - n.
 Proof.
-induct n.
-now rewrite times_0.
-intros n IH. rewrite times_succ. rewrite IH; now rewrite plus_0.
-intros n IH. rewrite times_pred. rewrite IH; now rewrite minus_0.
+intros n m.
+pattern m at 2; qsetoid_rewrite <- (Zsucc_pred m).
+now rewrite Ztimes_succ_r, <- Zplus_minus_assoc, Zminus_diag, Zplus_0_r.
 Qed.
 
-Theorem times_succn_m : forall n m, (S n) * m == n * m + m.
+Theorem Ztimes_pred_l : forall n m : Z, (P n) * m == n * m - m.
 Proof.
-induct m.
-do 2 rewrite times_0. now rewrite plus_0.
-intros m IH. do 2 rewrite times_succ. rewrite IH.
-do 2 rewrite <- plus_assoc. apply plus_wd. reflexivity.
-do 2 rewrite plus_n_succm; now rewrite plus_comm.
-intros m IH. do 2 rewrite times_pred. rewrite IH.
-rewrite <- plus_minus_swap. do 2 rewrite <- plus_minus_distr.
-apply plus_wd. reflexivity.
-rewrite minus_succ. now rewrite minus_predn_m.
+intros n m; rewrite (Ztimes_comm (P n) m), (Ztimes_comm n m). apply Ztimes_pred_r.
 Qed.
 
-Theorem times_predn_m : forall n m, (P n) * m == n * m - m.
+Theorem Ztimes_opp_r : forall n m : Z, n * (- m) == - (n * m).
 Proof.
-intros n m. rewrite_succ_pred n at 2. rewrite times_succn_m.
-rewrite <- plus_minus_distr. rewrite minus_diag; now rewrite plus_n_0.
+intros; ring.
 Qed.
 
-Theorem times_comm : forall n m, n * m == m * n.
+Theorem Ztimes_opp_l : forall n m : Z, (- n) * m == - (n * m).
 Proof.
-intros n m; induct n.
-rewrite times_0_n; now rewrite times_0.
-intros n IH. rewrite times_succn_m; rewrite times_succ; now rewrite IH.
-intros n IH. rewrite times_predn_m; rewrite times_pred; now rewrite IH.
+intros; ring.
 Qed.
 
-Theorem times_opp_r : forall n m, n * (- m) == - (n * m).
+Theorem Ztimes_opp_opp : forall n m : Z, (- n) * (- m) == n * m.
 Proof.
-intros n m; induct m.
-rewrite uminus_0; rewrite times_0; now rewrite uminus_0.
-intros m IH. rewrite uminus_succ. rewrite times_pred; rewrite times_succ. rewrite IH.
-rewrite <- plus_opp_minus; now rewrite opp_plus_distr.
-intros m IH. rewrite uminus_pred. rewrite times_pred; rewrite times_succ. rewrite IH.
-now rewrite opp_minus_distr.
+intros; ring.
 Qed.
 
-Theorem times_opp_l : forall n m, (- n) * m == - (n * m).
+Theorem Ztimes_minus_distr_r : forall n m p : Z, n * (m - p) == n * m - n * p.
 Proof.
-intros n m; rewrite (times_comm (- n) m); rewrite (times_comm n m);
-now rewrite times_opp_r.
+intros; ring.
 Qed.
 
-Theorem times_opp_opp : forall n m, (- n) * (- m) == n * m.
+Theorem Ztimes_minus_distr_l : forall n m p : Z, (n - m) * p == n * p - m * p.
 Proof.
-intros n m. rewrite times_opp_l. rewrite times_opp_r. now rewrite double_opp.
+intros; ring.
 Qed.
 
-Theorem times_plus_distr_r : forall n m p, n * (m + p) == n * m + n * p.
-Proof.
-intros n m p; induct m.
-rewrite times_0; now do 2 rewrite plus_0.
-intros m IH. rewrite plus_succ. do 2 rewrite times_succ. rewrite IH.
-do 2 rewrite <- plus_assoc; apply plus_wd; [reflexivity | apply plus_comm].
-intros m IH. rewrite plus_pred. do 2 rewrite times_pred. rewrite IH.
-apply plus_minus_swap.
-Qed.
-
-Theorem times_plus_distr_l : forall n m p, (n + m) * p == n * p + m * p.
-Proof.
-intros n m p; rewrite (times_comm (n + m) p); rewrite times_plus_distr_r;
-rewrite (times_comm p n); now rewrite (times_comm p m).
-Qed.
-
-Theorem times_minus_distr_r : forall n m p, n * (m - p) == n * m - n * p.
-Proof.
-intros n m p.
-do 2 rewrite <- plus_opp_minus. rewrite times_plus_distr_r. now rewrite times_opp_r.
-Qed.
-
-Theorem times_minus_distr_l : forall n m p, (n - m) * p == n * p - m * p.
-Proof.
-intros n m p.
-do 2 rewrite <- plus_opp_minus. rewrite times_plus_distr_l. now rewrite times_opp_l.
-Qed.
-
-Theorem times_assoc : forall n m p, n * (m * p) == (n * m) * p.
-Proof.
-intros n m p; induct p.
-now do 3 rewrite times_0.
-intros p IH. do 2 rewrite times_succ. rewrite times_plus_distr_r. now rewrite IH.
-intros p IH. do 2 rewrite times_pred. rewrite times_minus_distr_r. now rewrite IH.
-Qed.
-
-End ZTimesProperties.
+End ZTimesPropFunct.
 
 
-(*
- Local Variables:
- tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
- End:
-*)

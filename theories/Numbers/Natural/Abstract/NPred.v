@@ -44,9 +44,3 @@ Qed.
 
 End NDefPred.
 
-
-(*
- Local Variables:
- tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
- End:
-*)

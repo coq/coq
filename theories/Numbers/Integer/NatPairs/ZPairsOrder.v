@@ -110,9 +110,3 @@ End NatPairsPlusOrderProperties.*)
 NatPairsOrderModule.ZBaseMod are the same *)
 
 
-
-(*
- Local Variables:
- tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
- End:
-*)

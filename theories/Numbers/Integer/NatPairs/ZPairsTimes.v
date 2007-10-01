@@ -54,9 +54,3 @@ Module Export NatPairsTimesModule := NatPairsTimes NTimesMod.
 Module Export NatPairsTimesPropertiesModule := ZTimesProperties NatPairsTimesModule.
 End NatPairsTimesProperties.
 
-
-(*
- Local Variables:
- tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
- End:
-*)

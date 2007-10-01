@@ -67,9 +67,3 @@ Implicit Arguments strong_rec [A].
 
 End StrongRecProperties.
 
-
-(*
- Local Variables:
- tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
- End:
-*)

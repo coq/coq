@@ -61,31 +61,64 @@ apply NZle_lt_trans with (m + p);
 [now apply -> NZplus_le_mono_r | now apply -> NZplus_lt_mono_l].
 Qed.
 
-Theorem NZplus_le_lt_mono_opp : forall n m p q : NZ, n <= m -> p + m < q + n -> p < q.
+Theorem NZle_lt_plus_lt : forall n m p q : NZ, n <= m -> p + m < q + n -> p < q.
 Proof.
-intros n m p q H1 H2. destruct (NZle_lt_dec q p); [| assumption].
-pose proof (NZplus_le_mono q p n m H H1) as H3. apply <- NZnle_lt in H2.
+intros n m p q H1 H2. destruct (NZle_gt_cases q p); [| assumption].
+pose proof (NZplus_le_mono q p n m H H1) as H3. apply <- NZnle_gt in H2.
 false_hyp H3 H2.
 Qed.
 
-Theorem NZplus_lt_inv : forall n m p q : NZ, n + m < p + q -> n < p \/ m < q.
+Theorem NZlt_le_plus_lt : forall n m p q : NZ, n < m -> p + m <= q + n -> p < q.
+Proof.
+intros n m p q H1 H2. destruct (NZle_gt_cases q p); [| assumption].
+pose proof (NZplus_le_lt_mono q p n m H H1) as H3. apply <- NZnle_gt in H3.
+false_hyp H2 H3.
+Qed.
+
+Theorem NZle_le_plus_lt : forall n m p q : NZ, n <= m -> p + m <= q + n -> p <= q.
+Proof.
+intros n m p q H1 H2. destruct (NZle_gt_cases p q); [assumption |].
+pose proof (NZplus_lt_le_mono q p n m H H1) as H3. apply <- NZnle_gt in H3.
+false_hyp H2 H3.
+Qed.
+
+Theorem NZplus_lt_cases : forall n m p q : NZ, n + m < p + q -> n < p \/ m < q.
 Proof.
 intros n m p q H;
-destruct (NZle_lt_dec p n) as [H1 | H1].
-destruct (NZle_lt_dec q m) as [H2 | H2].
-pose proof (NZplus_le_mono p n q m H1 H2) as H3. apply -> NZle_nlt in H3.
+destruct (NZle_gt_cases p n) as [H1 | H1].
+destruct (NZle_gt_cases q m) as [H2 | H2].
+pose proof (NZplus_le_mono p n q m H1 H2) as H3. apply -> NZle_ngt in H3.
 false_hyp H H3.
 now right. now left.
 Qed.
 
-Theorem NZplus_lt_inv_0 : forall n m : NZ, n + m < 0 -> n < 0 \/ m < 0.
+Theorem NZplus_le_cases : forall n m p q : NZ, n + m <= p + q -> n <= p \/ m <= q.
 Proof.
-intros n m H; apply NZplus_lt_inv; now rewrite NZplus_0_l.
+intros n m p q H.
+destruct (NZle_gt_cases n p) as [H1 | H1]. now left.
+destruct (NZle_gt_cases m q) as [H2 | H2]. now right.
+assert (H3 : p + q < n + m) by now apply NZplus_lt_mono.
+apply -> NZle_ngt in H. false_hyp H3 H.
 Qed.
 
-Theorem NZplus_gt_inv_0 : forall n m : NZ, 0 < n + m -> 0 < n \/ 0 < m.
+Theorem NZplus_neg_cases : forall n m : NZ, n + m < 0 -> n < 0 \/ m < 0.
 Proof.
-intros n m H; apply NZplus_lt_inv; now rewrite NZplus_0_l.
+intros n m H; apply NZplus_lt_cases; now rewrite NZplus_0_l.
+Qed.
+
+Theorem NZplus_pos_cases : forall n m : NZ, 0 < n + m -> 0 < n \/ 0 < m.
+Proof.
+intros n m H; apply NZplus_lt_cases; now rewrite NZplus_0_l.
+Qed.
+
+Theorem NZplus_nonpos_cases : forall n m : NZ, n + m <= 0 -> n <= 0 \/ m <= 0.
+Proof.
+intros n m H; apply NZplus_le_cases; now rewrite NZplus_0_l.
+Qed.
+
+Theorem NZplus_nonneg_cases : forall n m : NZ, 0 <= n + m -> 0 <= n \/ 0 <= m.
+Proof.
+intros n m H; apply NZplus_le_cases; now rewrite NZplus_0_l.
 Qed.
 
 (** Multiplication and order *)
@@ -107,7 +140,7 @@ intros p H IH n m H1. do 2 rewrite NZtimes_succ_l.
 le_elim H. assert (LR : forall n m : NZ, n < m -> p * n + n < p * m + m).
 intros n1 m1 H2. apply NZplus_lt_mono; [now apply -> IH | assumption].
 split; [apply LR |]. intro H2. apply -> NZlt_dne; intro H3.
-apply <- NZle_nlt in H3. le_elim H3.
+apply <- NZle_ngt in H3. le_elim H3.
 apply NZlt_asymm in H2. apply H2. now apply LR.
 rewrite H3 in H2; false_hyp H2 NZlt_irrefl.
 rewrite <- H; do 2 rewrite NZtimes_0_l; now do 2 rewrite NZplus_0_l.
@@ -124,13 +157,13 @@ Theorem NZtimes_lt_mono_neg_l : forall p n m : NZ, p < 0 -> (n < m <-> p * m < p
 Proof.
 NZord_induct p.
 intros n m H; false_hyp H NZlt_irrefl.
-intros p H1 _ n m H2. apply NZlt_succ_lt in H2. apply <- NZnle_lt in H2. false_hyp H1 H2.
+intros p H1 _ n m H2. apply NZlt_succ_lt in H2. apply <- NZnle_gt in H2. false_hyp H1 H2.
 intros p H IH n m H1. apply -> NZlt_le_succ in H.
 le_elim H. assert (LR : forall n m : NZ, n < m -> p * m < p * n).
-intros n1 m1 H2. apply (NZplus_le_lt_mono_opp n1 m1).
+intros n1 m1 H2. apply (NZle_lt_plus_lt n1 m1).
 now le_less. do 2 rewrite <- NZtimes_succ_l. now apply -> IH.
 split; [apply LR |]. intro H2. apply -> NZlt_dne; intro H3.
-apply <- NZle_nlt in H3. le_elim H3.
+apply <- NZle_ngt in H3. le_elim H3.
 apply NZlt_asymm in H2. apply H2. now apply LR.
 rewrite H3 in H2; false_hyp H2 NZlt_irrefl.
 rewrite (NZtimes_lt_pred p (S p)); [reflexivity |].
@@ -175,13 +208,13 @@ Theorem NZtimes_cancel_l : forall n m p : NZ, p ~= 0 -> (p * n == p * m <-> n ==
 Proof.
 intros n m p H; split; intro H1.
 destruct (NZlt_trichotomy p 0) as [H2 | [H2 | H2]].
-apply -> NZE_dne; intro H3. apply -> NZneq_lt_or_gt in H3. destruct H3 as [H3 | H3].
+apply -> NZeq_dne; intro H3. apply -> NZneq_lt_gt_cases in H3. destruct H3 as [H3 | H3].
 assert (H4 : p * m < p * n); [now apply -> NZtimes_lt_mono_neg_l |].
 rewrite H1 in H4; false_hyp H4 NZlt_irrefl.
 assert (H4 : p * n < p * m); [now apply -> NZtimes_lt_mono_neg_l |].
 rewrite H1 in H4; false_hyp H4 NZlt_irrefl.
 false_hyp H2 H.
-apply -> NZE_dne; intro H3. apply -> NZneq_lt_or_gt in H3. destruct H3 as [H3 | H3].
+apply -> NZeq_dne; intro H3. apply -> NZneq_lt_gt_cases in H3. destruct H3 as [H3 | H3].
 assert (H4 : p * n < p * m); [now apply -> NZtimes_lt_mono_pos_l |].
 rewrite H1 in H4; false_hyp H4 NZlt_irrefl.
 assert (H4 : p * m < p * n); [now apply -> NZtimes_lt_mono_pos_l |].
@@ -306,10 +339,35 @@ split; intro H1; rewrite H1 in H;
 (rewrite NZtimes_0_l in H || rewrite NZtimes_0_r in H); now apply H.
 Qed.
 
-End NZTimesOrderPropFunct.
+Theorem NZtimes_pos : forall n m : NZ, 0 < n * m <-> (0 < n /\ 0 < m) \/ (m < 0 /\ n < 0).
+Proof.
+intros n m; split; [intro H | intros [[H1 H2] | [H1 H2]]].
+destruct (NZlt_trichotomy n 0) as [H1 | [H1 | H1]];
+[| rewrite H1 in H; rewrite NZtimes_0_l in H; false_hyp H NZlt_irrefl |];
+(destruct (NZlt_trichotomy m 0) as [H2 | [H2 | H2]];
+[| rewrite H2 in H; rewrite NZtimes_0_r in H; false_hyp H NZlt_irrefl |]);
+try (left; now split); try (right; now split).
+assert (H3 : n * m < 0) by now apply NZtimes_neg_pos.
+elimtype False; now apply (NZlt_asymm (n * m) 0).
+assert (H3 : n * m < 0) by now apply NZtimes_pos_neg.
+elimtype False; now apply (NZlt_asymm (n * m) 0).
+now apply NZtimes_pos_pos. now apply NZtimes_neg_neg.
+Qed.
 
-(*
- Local Variables:
- tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
- End:
-*)
+Theorem NZtimes_neg :
+  forall n m : NZ, n * m < 0 <-> (n < 0 /\ m > 0) \/ (n > 0 /\ m < 0).
+Proof.
+intros n m; split; [intro H | intros [[H1 H2] | [H1 H2]]].
+destruct (NZlt_trichotomy n 0) as [H1 | [H1 | H1]];
+[| rewrite H1 in H; rewrite NZtimes_0_l in H; false_hyp H NZlt_irrefl |];
+(destruct (NZlt_trichotomy m 0) as [H2 | [H2 | H2]];
+[| rewrite H2 in H; rewrite NZtimes_0_r in H; false_hyp H NZlt_irrefl |]);
+try (left; now split); try (right; now split).
+assert (H3 : n * m > 0) by now apply NZtimes_neg_neg.
+elimtype False; now apply (NZlt_asymm (n * m) 0).
+assert (H3 : n * m > 0) by now apply NZtimes_pos_pos.
+elimtype False; now apply (NZlt_asymm (n * m) 0).
+now apply NZtimes_neg_pos. now apply NZtimes_pos_neg.
+Qed.
+
+End NZTimesOrderPropFunct.

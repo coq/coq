@@ -74,9 +74,3 @@ Tactic Notation "NZinduct" ident(n) constr(u) :=
 
 End NZBasePropFunct.
 
-(*
- Local Variables:
- tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
- End:
-*)
-

@@ -40,9 +40,3 @@ Theorem Zplus_eqmod_compat_r :
 intros p n m k; rewrite (Zplus_comm n k); rewrite (Zplus_comm m k);
 apply Zplus_eqmod_compat_l.
 Qed.
-
-(*
- Local Variables:
- tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
- End:
-*)

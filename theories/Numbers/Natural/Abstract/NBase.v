@@ -37,6 +37,12 @@ Proof NZsucc_inj_wd.
 Theorem succ_inj_wd_neg : forall n m : N, S n ~= S m <-> n ~= m.
 Proof NZsucc_inj_wd_neg.
 
+(* Decidability of equality was proved only in NZOrder, but since it
+does not mention order, we'll put it here *)
+
+Theorem eq_em : forall n m : N, n == m \/ n ~= m.
+Proof NZeq_em.
+
 (* Now we prove that the successor of a number is not zero by defining a
 function (by recursion) that maps 0 to false and the successor to true *)
 
@@ -241,9 +247,3 @@ Ltac double_induct n m :=
 
 End NBasePropFunct.
 
-
-(*
- Local Variables:
- tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
- End:
-*)

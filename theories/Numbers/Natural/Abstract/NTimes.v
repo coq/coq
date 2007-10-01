@@ -39,7 +39,7 @@ Proof NZtimes_1_l.
 Theorem times_1_r : forall n : N, n * 1 == n.
 Proof NZtimes_1_r.
 
-Lemma semi_ring : semi_ring_theory 0 1 NZplus NZtimes E.
+Lemma Nsemi_ring : semi_ring_theory 0 1 NZplus NZtimes E.
 Proof.
 constructor.
 exact plus_0_l.
@@ -52,7 +52,7 @@ exact times_assoc.
 exact times_plus_distr_r.
 Qed.
 
-Add Ring SR : semi_ring.
+Add Ring NSR : Nsemi_ring.
 
 (** Theorems that cannot be proved in NZTimes *)
 
@@ -112,9 +112,3 @@ Qed.
 
 End NTimesPropFunct.
 
-
-(*
- Local Variables:
- tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
- End:
-*)

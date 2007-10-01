@@ -8,16 +8,16 @@ Open Local Scope NatIntScope.
 
 (* Axioms *)
 
-Theorem le_lt_or_eq : forall x y, x <= y <-> x < y \/ x == y.
+Theorem le_lt_or_eq : forall n m : N, n <= m <-> n < m \/ n == m.
 Proof NZle_lt_or_eq.
 
-Theorem lt_succ_le : forall x y, x < S y <-> x <= y.
+Theorem lt_irrefl : forall n : N, ~ n < n.
+Proof NZlt_irrefl.
+
+Theorem lt_succ_le : forall n m : N, n < S m <-> n <= m.
 Proof NZlt_succ_le.
 
 (* Renaming theorems from NZOrder.v *)
-
-Theorem lt_irrefl : forall n : N, ~ (n < n).
-Proof NZOrdAxiomsMod.NZlt_irrefl.
 
 Theorem lt_le_incl : forall n m : N, n < m -> n <= m.
 Proof NZlt_le_incl.
@@ -67,9 +67,6 @@ Proof NZsucc_lt_mono.
 Theorem succ_le_mono : forall n m : N, n <= m <-> S n <= S m.
 Proof NZsucc_le_mono.
 
-Theorem lt_lt_false : forall n m, n < m -> m < n -> False.
-Proof NZlt_lt_false.
-
 Theorem lt_asymm : forall n m, n < m -> ~ m < n.
 Proof NZlt_asymm.
 
@@ -93,23 +90,32 @@ Proof NZle_antisymm.
 Theorem lt_trichotomy : forall n m : N,  n < m \/ n == m \/ m < n.
 Proof NZlt_trichotomy.
 
-Theorem le_lt_dec : forall n m : N, n <= m \/ m < n.
-Proof NZle_lt_dec.
+Theorem le_gt_cases : forall n m : N, n <= m \/ n > m.
+Proof NZle_gt_cases.
 
-Theorem le_nlt : forall n m : N, n <= m <-> ~ m < n.
-Proof NZle_nlt.
+Theorem lt_ge_cases : forall n m : N, n < m \/ n >= m.
+Proof NZlt_ge_cases.
 
-Theorem lt_dec : forall n m : N, n < m \/ ~ n < m.
-Proof NZlt_dec.
+Theorem le_ngt : forall n m : N, n <= m <-> ~ n > m.
+Proof NZle_ngt.
+
+Theorem nlt_ge : forall n m : N, ~ n < m <-> n >= m.
+Proof NZnlt_ge.
+
+Theorem lt_em : forall n m : N, n < m \/ ~ n < m.
+Proof NZlt_em.
 
 Theorem lt_dne : forall n m, ~ ~ n < m <-> n < m.
 Proof NZlt_dne.
 
-Theorem nle_lt : forall n m : N, ~ n <= m <-> m < n.
-Proof NZnle_lt.
+Theorem nle_gt : forall n m : N, ~ n <= m <-> n > m.
+Proof NZnle_gt.
 
-Theorem le_dec : forall n m : N, n <= m \/ ~ n <= m.
-Proof NZle_dec.
+Theorem lt_nge : forall n m : N, n < m <-> ~ n >= m.
+Proof NZlt_nge.
+
+Theorem le_em : forall n m : N, n <= m \/ ~ n <= m.
+Proof NZle_em.
 
 Theorem le_dne : forall n m : N, ~ ~ n <= m <-> n <= m.
 Proof NZle_dne.
@@ -196,7 +202,7 @@ Proof NZle_ind.
 
 Theorem nlt_0_r : forall n : N, ~ n < 0.
 Proof.
-intro n; apply -> le_nlt. apply le_0_l.
+intro n; apply -> le_ngt. apply le_0_l.
 Qed.
 
 Theorem nle_succ_0 : forall n, ~ (S n <= 0).
@@ -382,9 +388,3 @@ Qed.
 
 End NOrderPropFunct.
 
-
-(*
- Local Variables:
- tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
- End:
-*)

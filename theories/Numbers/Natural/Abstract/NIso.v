@@ -110,9 +110,3 @@ Qed.
 
 End Isomorphism.
 
-
-(*
- Local Variables:
- tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
- End:
-*)

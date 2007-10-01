@@ -28,14 +28,23 @@ Proof NZplus_lt_le_mono.
 Theorem plus_le_lt_mono : forall n m p q : N, n <= m -> p < q -> n + p < m + q.
 Proof NZplus_le_lt_mono.
 
-Theorem plus_le_lt_mono_opp : forall n m p q : N, n <= m -> p + m < q + n -> p < q.
-Proof NZplus_le_lt_mono_opp.
+Theorem le_lt_plus_lt : forall n m p q : N, n <= m -> p + m < q + n -> p < q.
+Proof NZle_lt_plus_lt.
 
-Theorem plus_lt_inv : forall n m p q : N, n + m < p + q -> n < p \/ m < q.
-Proof NZplus_lt_inv.
+Theorem lt_le_plus_lt : forall n m p q : N, n < m -> p + m <= q + n -> p < q.
+Proof NZlt_le_plus_lt.
 
-Theorem plus_gt_inv_0 : forall n m : N, 0 < n + m -> 0 < n \/ 0 < m.
-Proof NZplus_gt_inv_0.
+Theorem le_le_plus_lt : forall n m p q : N, n <= m -> p + m <= q + n -> p <= q.
+Proof NZle_le_plus_lt.
+
+Theorem plus_lt_cases : forall n m p q : N, n + m < p + q -> n < p \/ m < q.
+Proof NZplus_lt_cases.
+
+Theorem plus_le_cases : forall n m p q : NZ, n + m <= p + q -> n <= p \/ m <= q.
+Proof NZplus_le_cases.
+
+Theorem plus_pos_cases : forall n m : NZ, 0 < n + m -> 0 < n \/ 0 < m.
+Proof NZplus_pos_cases.
 
 (** Theorems true for natural numbers *)
 
@@ -123,11 +132,12 @@ Proof NZtimes_eq_0.
 Theorem times_neq_0 : forall n m : N, n ~= 0 /\ m ~= 0 <-> n * m ~= 0.
 Proof NZtimes_neq_0.
 
+Theorem times_pos : forall n m : N, n * m > 0 <-> n > 0 /\ m > 0.
+Proof.
+intros n m; split; [intro H | intros [H1 H2]].
+apply -> NZtimes_pos in H. destruct H as [[H1 H2] | [H1 H2]]. now split. false_hyp H1 nlt_0_r.
+now apply times_pos_pos.
+Qed.
+
 End NTimesOrderPropFunct.
 
-
-(*
- Local Variables:
- tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
- End:
-*)

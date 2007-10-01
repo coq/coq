@@ -127,7 +127,7 @@ intros n m. do 2 rewrite NZle_lt_or_eq.
 rewrite <- NZsucc_lt_mono; now rewrite NZsucc_inj_wd.
 Qed.
 
-Theorem NZlt_lt_false : forall n m, n < m -> m < n -> False.
+Theorem NZlt_asymm : forall n m, n < m -> ~ m < n.
 Proof.
 intros n m; NZinduct n m.
 intros H _; false_hyp H NZlt_irrefl.
@@ -138,11 +138,6 @@ apply NZlt_lt_succ in H2. apply -> NZlt_le_succ in H1. le_elim H1.
 now apply H. rewrite H1 in H2; false_hyp H2 NZlt_irrefl.
 Qed.
 
-Theorem NZlt_asymm : forall n m, n < m -> ~ m < n.
-Proof.
-intros n m; unfold not; apply NZlt_lt_false.
-Qed.
-
 Theorem NZlt_trans : forall n m p : NZ, n < m -> m < p -> n < p.
 Proof.
 intros n m p; NZinduct p m.
@@ -151,8 +146,8 @@ intro p. do 2 rewrite NZlt_succ_le.
 split; intros H H1 H2.
 le_less; le_elim H2; [now apply H | now rewrite H2 in H1].
 assert (n <= p) as H3. apply H. assumption. now le_less.
-le_elim H3. assumption. rewrite <- H3 in H2. elimtype False.
-now apply (NZlt_lt_false n m).
+le_elim H3. assumption. rewrite <- H3 in H2.
+elimtype False; now apply (NZlt_asymm n m).
 Qed.
 
 Theorem NZle_trans : forall n m p : NZ, n <= m -> m <= p -> n <= p.
@@ -177,7 +172,7 @@ Qed.
 Theorem NZle_antisymm : forall n m : NZ, n <= m -> m <= n -> n == m.
 Proof.
 intros n m H1 H2; now (le_elim H1; le_elim H2);
-[elimtype False; apply (NZlt_lt_false n m) | | |].
+[elimtype False; apply (NZlt_asymm n m) | | |].
 Qed.
 
 (** Trichotomy, decidability, and double negation elimination *)
@@ -187,12 +182,18 @@ Proof.
 intros n m; NZinduct n m.
 right; now left.
 intro n; rewrite NZlt_succ_le. stepr ((S n < m \/ S n == m) \/ m <= n) by tauto.
-rewrite <- (NZle_lt_or_eq (S n) m). symmetry (n == m).
+rewrite <- (NZle_lt_or_eq (S n) m).
+setoid_replace (n == m) with (m == n) using relation iff by now split.
 stepl (n < m \/ m < n \/ m == n) by tauto. rewrite <- NZle_lt_or_eq.
 apply or_iff_compat_r. apply NZlt_le_succ.
 Qed.
 
-Theorem NZE_dec : forall n m : NZ, n == m \/ n ~= m.
+(* Decidability of equality, even though true in each finite ring, does not
+have a uniform proof. Otherwise, the proof for two fixed numbers would
+reduce to a normal form that will say if the numbers are equal or not,
+which cannot be true in all finite rings. Therefore, we prove decidability
+in the presence of order. *)
+Theorem NZeq_em : forall n m : NZ, n == m \/ n ~= m.
 Proof.
 intros n m; destruct (NZlt_trichotomy n m) as [H | [H | H]].
 right; intro H1; rewrite H1 in H; false_hyp H NZlt_irrefl.
@@ -200,69 +201,88 @@ now left.
 right; intro H1; rewrite H1 in H; false_hyp H NZlt_irrefl.
 Qed.
 
-Theorem NZE_dne : forall n m, ~ ~ n == m <-> n == m.
+Theorem NZeq_dne : forall n m, ~ ~ n == m <-> n == m.
 Proof.
 intros n m; split; intro H.
-destruct (NZE_dec n m) as [H1 | H1].
+destruct (NZeq_em n m) as [H1 | H1].
 assumption. false_hyp H1 H.
 intro H1; now apply H1.
 Qed.
 
-Theorem NZneq_lt_or_gt : forall n m : NZ, n ~= m <-> n < m \/ m < n.
+Theorem NZneq_lt_gt_cases : forall n m : NZ, n ~= m <-> n < m \/ n > m.
 Proof.
 intros n m; split.
 pose proof (NZlt_trichotomy n m); tauto.
 intros H H1; destruct H as [H | H]; rewrite H1 in H; false_hyp H NZlt_irrefl.
 Qed.
 
-Theorem NZle_lt_dec : forall n m : NZ, n <= m \/ m < n.
+Theorem NZle_gt_cases : forall n m : NZ, n <= m \/ n > m.
 Proof.
 intros n m; destruct (NZlt_trichotomy n m) as [H | [H | H]].
 left; now le_less. left; now le_equal. now right.
 Qed.
 
-Theorem NZle_nlt : forall n m : NZ, n <= m <-> ~ m < n.
+(* The following theorem is cleary redundant, but helps not to
+remember whether one has to say le_gt_cases or lt_ge_cases *)
+Theorem NZlt_ge_cases : forall n m : NZ, n < m \/ n >= m.
+Proof.
+intros n m; destruct (NZle_gt_cases m n); try (now left); try (now right).
+Qed.
+
+Theorem NZle_ngt : forall n m : NZ, n <= m <-> ~ n > m.
 Proof.
 intros n m. split; intro H; [intro H1 |].
 eapply NZle_lt_trans in H; [| eassumption ..]. false_hyp H NZlt_irrefl.
-destruct (NZle_lt_dec n m) as [H1 | H1].
+destruct (NZle_gt_cases n m) as [H1 | H1].
 assumption. false_hyp H1 H.
 Qed.
 
-Theorem NZlt_dec : forall n m : NZ, n < m \/ ~ n < m.
+(* Redundant but useful *)
+Theorem NZnlt_ge : forall n m : NZ, ~ n < m <-> n >= m.
 Proof.
-intros n m; destruct (NZle_lt_dec m n);
-[right; now apply -> NZle_nlt | now left].
+intros n m; symmetry; apply NZle_ngt.
+Qed.
+
+Theorem NZlt_em : forall n m : NZ, n < m \/ ~ n < m.
+Proof.
+intros n m; destruct (NZle_gt_cases m n);
+[right; now apply -> NZle_ngt | now left].
 Qed.
 
 Theorem NZlt_dne : forall n m, ~ ~ n < m <-> n < m.
 Proof.
 intros n m; split; intro H;
-[destruct (NZlt_dec n m) as [H1 | H1]; [assumption | false_hyp H1 H] |
+[destruct (NZlt_em n m) as [H1 | H1]; [assumption | false_hyp H1 H] |
 intro H1; false_hyp H H1].
 Qed.
 
-Theorem NZnle_lt : forall n m : NZ, ~ n <= m <-> m < n.
+Theorem NZnle_gt : forall n m : NZ, ~ n <= m <-> n > m.
 Proof.
-intros n m. rewrite NZle_nlt. apply NZlt_dne.
+intros n m. rewrite NZle_ngt. apply NZlt_dne.
 Qed.
 
-Theorem NZle_dec : forall n m : NZ, n <= m \/ ~ n <= m.
+(* Redundant but useful *)
+Theorem NZlt_nge : forall n m : NZ, n < m <-> ~ n >= m.
 Proof.
-intros n m; destruct (NZle_lt_dec n m);
-[now left | right; now apply <- NZnle_lt].
+intros n m; symmetry; apply NZnle_gt.
+Qed.
+
+Theorem NZle_em : forall n m : NZ, n <= m \/ ~ n <= m.
+Proof.
+intros n m; destruct (NZle_gt_cases n m);
+[now left | right; now apply <- NZnle_gt].
 Qed.
 
 Theorem NZle_dne : forall n m : NZ, ~ ~ n <= m <-> n <= m.
 Proof.
 intros n m; split; intro H;
-[destruct (NZle_dec n m) as [H1 | H1]; [assumption | false_hyp H1 H] |
+[destruct (NZle_em n m) as [H1 | H1]; [assumption | false_hyp H1 H] |
 intro H1; false_hyp H H1].
 Qed.
 
 Theorem NZlt_nlt_succ : forall n m : NZ, n < m <-> ~ m < S n.
 Proof.
-intros n m; rewrite NZlt_succ_le; symmetry; apply NZnle_lt.
+intros n m; rewrite NZlt_succ_le; symmetry; apply NZnle_gt.
 Qed.
 
 (* The difference between integers and natural numbers is that for
@@ -276,7 +296,7 @@ Lemma NZlt_exists_pred_strong :
   forall z n m : NZ, z < m -> m <= n -> exists k : NZ, m == S k /\ z <= k.
 Proof.
 intro z; NZinduct n z.
-intros m H1 H2; apply <- NZnle_lt in H1; false_hyp H2 H1.
+intros m H1 H2; apply <- NZnle_gt in H1; false_hyp H2 H1.
 intro n; split; intros IH m H1 H2.
 apply -> NZle_succ_le_or_eq_succ in H2; destruct H2 as [H2 | H2].
 now apply IH. exists n. now split; [| rewrite <- NZlt_succ_le; rewrite <- H2].
@@ -354,7 +374,7 @@ Qed.
 
 Lemma NZrbase : A' z.
 Proof.
-intros m H1 H2. apply -> NZle_nlt in H1. false_hyp H2 H1.
+intros m H1 H2. apply -> NZle_ngt in H1. false_hyp H2 H1.
 Qed.
 
 Lemma NZA'A_right : (forall n : NZ, A' n) -> forall n : NZ, z <= n -> A n.
@@ -401,7 +421,7 @@ Qed.
 Lemma NZlbase : A' (S z).
 Proof.
 intros m H1 H2. apply <- NZlt_le_succ in H2.
-apply -> NZle_nlt in H1. false_hyp H2 H1.
+apply -> NZle_ngt in H1. false_hyp H2 H1.
 Qed.
 
 Lemma NZA'A_left : (forall n : NZ, A' n) -> forall n : NZ, n <= z -> A n.
@@ -523,7 +543,7 @@ unfold well_founded.
 apply NZstrong_right_induction' with (z := z).
 apply NZAcc_lt_wd.
 intros n H; constructor; intros y [H1 H2].
-apply <- NZnle_lt in H2. elim H2. now apply NZle_trans with z.
+apply <- NZnle_gt in H2. elim H2. now apply NZle_trans with z.
 intros n H1 H2; constructor; intros m [H3 H4]. now apply H2.
 Qed.
 
@@ -531,8 +551,3 @@ End WF.
 
 End NZOrderPropFunct.
 
-(*
- Local Variables:
- tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
- End:
-*)

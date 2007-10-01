@@ -70,11 +70,16 @@ intros n m H. rewrite plus_comm. rewrite plus_minus_assoc; [assumption |].
 rewrite plus_comm. apply plus_minus.
 Qed.
 
-Theorem plus_minus_eq : forall n m p : N, m + p == n -> n - m == p.
+Theorem plus_minus_eq_l : forall n m p : N, m + p == n -> n - m == p.
 Proof.
 intros n m p H. symmetry.
-assert (H1 : m + p - m == n - m). now rewrite H.
+assert (H1 : m + p - m == n - m) by now rewrite H.
 rewrite plus_comm in H1. now rewrite plus_minus in H1.
+Qed.
+
+Theorem plus_minus_eq_r : forall n m p : N, m + p == n -> n - p == m.
+Proof.
+intros n m p H; rewrite plus_comm in H; now apply plus_minus_eq_l.
 Qed.
 
 (* This could be proved by adding m to both sides. Then the proof would
@@ -137,7 +142,7 @@ Theorem times_minus_distr_r : forall n m p : N, (n - m) * p == n * p - m * p.
 Proof.
 intros n m p; induct n.
 now rewrite minus_0_l, times_0_l, minus_0_l.
-intros n IH. destruct (le_lt_dec m n) as [H | H].
+intros n IH. destruct (le_gt_cases m n) as [H | H].
 rewrite minus_succ_l; [assumption |]. do 2 rewrite times_succ_l.
 rewrite (plus_comm ((n - m) * p) p), (plus_comm (n * p) p).
 rewrite <- (plus_minus_assoc p (n * p) (m * p)); [now apply times_le_mono_r |].
@@ -156,9 +161,3 @@ Qed.
 
 End NMinusPropFunct.
 
-
-(*
- Local Variables:
- tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
- End:
-*)

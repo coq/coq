@@ -194,9 +194,3 @@ end.
 *)
 (* Eval compute in (binlog 1000000000000000000). *) (* Works very fast *)
 
-
-(*
- Local Variables:
- tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
- End:
-*)
