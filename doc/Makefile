@@ -1,6 +1,6 @@
 # Makefile for the Coq documentation
 
-# COQTOP needs to be set to a coq source repository
+# COQSRC needs to be set to a coq source repository
 
 # To compile documentation, you need the following tools:
 # Dvi: latex (latex2e), bibtex, makeindex
@@ -18,9 +18,9 @@ PDFLATEX=pdflatex
 HEVEALIB=/usr/local/lib/hevea:/usr/lib/hevea
 TEXINPUTS=$(HEVEALIB):.:
 
-DOCCOQTOP=$(COQTOP)/bin/coqtop
-COQTEX=$(COQTOP)/bin/coq-tex -n 72 -image $(DOCCOQTOP) -v -sl -small
-COQDOC=$(COQTOP)/bin/coqdoc
+COQTOP=$(COQSRC)/bin/coqtop
+COQTEX=$(COQSRC)/bin/coq-tex -n 72 -image $(COQTOP) -v -sl -small
+COQDOC=$(COQSRC)/bin/coqdoc
 
 #VERSION=POSITIONNEZ-CETTE-VARIABLE
 
@@ -76,7 +76,7 @@ rectutorial:\
 clean:
 	rm -f */*.dvi */*.aux */*.log */*.bbl */*.blg */*.toc \
 	*/*.idx */*~ */*.ilg */*.ind */*.dvi.gz */*.ps.gz */*.pdf.gz\
-	*/*.???idx */*.???ind */*.v.tex */*.atoc */*.lof\
+	*/*.???idx */*.???ind */*.v.tex */*.atoc */*.lof \
 	*/*.hatoc */*.haux */*.hcomind */*.herrind */*.hidx */*.hind \
 	*/*.htacind */*.htoc */*.v.html
 	rm -f stdlib/index-list.html stdlib/index-body.html \
@@ -211,7 +211,7 @@ faq/html/index.html: faq/FAQ.v.html
 # Standard library
 ######################################################################
 
-GLOBDUMP=$(COQTOP)/glob.dump
+GLOBDUMP=$(COQSRC)/glob.dump
 
 LIBDIRS= Logic Bool Arith ZArith QArith Reals Lists Sets Relations Sorting Wellfounded IntMap FSets
 
@@ -222,11 +222,11 @@ stdlib/index-body.html: $(GLOBDUMP)
 	mkdir stdlib/html
 	(cd stdlib/html;\
 	 $(COQDOC) -q --multi-index --html --glob-from $(GLOBDUMP)\
-	  -R $(COQTOP)/theories Coq $(COQTOP)/theories/*/*.v)
+	  -R $(COQSRC)/theories Coq $(COQSRC)/theories/*/*.v)
 	mv stdlib/html/index.html stdlib/index-body.html
 
 stdlib/index-list.html: stdlib/index-list.html.template
-	COQTOP=$(COQTOP) ./stdlib/make-library-index stdlib/index-list.html
+	COQTOP=$(COQSRC) ./stdlib/make-library-index stdlib/index-list.html
 
 stdlib/html/index.html: stdlib/index-list.html stdlib/index-body.html stdlib/index-trailer.html
 	cat stdlib/index-list.html > $@
@@ -238,8 +238,8 @@ stdlib/html/index.html: stdlib/index-list.html stdlib/index-body.html stdlib/ind
 stdlib/Library.coqdoc.tex: 
 	(for dir in $(LIBDIRS) ; do \
 	  $(COQDOC) -q --gallina --body-only --latex --stdout \
-	    --coqlib_path $(COQTOP) \
-            -R $(COQTOP)/theories Coq "$(COQTOP)/theories/$$dir/"*.v >> $@ ; done)
+	    --coqlib_path $(COQSRC) \
+            -R $(COQSRC)/theories Coq "$(COQSRC)/theories/$$dir/"*.v >> $@ ; done)
 
 stdlib/Library.dvi: $(COMMON) stdlib/Library.coqdoc.tex stdlib/Library.tex
 	(cd stdlib;\
@@ -282,8 +282,8 @@ install-doc: install-meta install-doc-html install-doc-printable
 install-meta:
 	mkdir $(DOCDIC)
 	cp LICENCE $(DOCDIC)/LICENCE.doc
-#	cp $(COQTOP)/LICENCE $(COQTOP)/CREDITS $(COQTOP)/COPYRIGHT $(DOCDIC)
-#	cp $(COQTOP)/README $(COQTOP)/CHANGES $(DOCDIC)
+#	cp $(COQSRC)/LICENCE $(COQSRC)/CREDITS $(COQSRC)/COPYRIGHT $(DOCDIC)
+#	cp $(COQSRC)/README $(COQSRC)/CHANGES $(DOCDIC)
 
 install-doc-html: all-html
 	mkdir $(HTMLINSTALLDIR)

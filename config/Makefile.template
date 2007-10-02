@@ -31,7 +31,7 @@ EMACSLIB="EMACSLIBDIRECTORY"
 EMACS=EMACSCOMMAND
 
 # Path to Coq distribution
-COQTOP=COQTOPDIRECTORY
+COQSRC=COQSRCDIRECTORY
 VERSION=COQVERSION
 
 # Directory containing Camlp4 binaries. Can be empty if camlp4 is in the PATH

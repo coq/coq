@@ -694,7 +694,7 @@ chmod a-w "$mlconfig_file"
 rm -f "$COQSRC/config/Makefile"
 
 sed -e "s|LOCALINSTALLATION|$local|" \
-    -e "s|COQTOPDIRECTORY|$ESCCOQTOP|" \
+    -e "s|COQSRCDIRECTORY|$COQSRC|" \
     -e "s|COQVERSION|$VERSION|" \
     -e "s|BINDIRDIRECTORY|$ESCBINDIR|" \
     -e "s|COQLIBDIRECTORY|$ESCLIBDIR|" \
