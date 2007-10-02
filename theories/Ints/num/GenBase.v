@@ -132,6 +132,21 @@ Section GenBase.
     | Gt => Gt
     end
   end.
+
+
+ (* Return the low part of the composed word*)
+ Fixpoint get_low (n : nat) {struct n}:
+  word w n -> w :=
+  match n return (word w n -> w) with
+  | 0%nat => fun x => x
+  | S n1 =>
+      fun x =>
+      match x with
+      | W0 => w_0
+      | WW _ x1 => get_low n1 x1
+      end
+  end.
+
   
  Section GenProof.
   Notation wB  := (base w_digits).
@@ -288,24 +303,72 @@ Section GenBase.
    ring.
   Qed.
 
-  Lemma spec_gen_to_Z : 
-   forall n (x:word w n), 0 <= gen_to_Z n x < gen_wB n.
+  Lemma gen_wB_pos:
+   forall n, 0 <= gen_wB n.
+ Proof.
+ intros n; unfold gen_wB, base; auto with zarith.
+ Qed.
+
+  Lemma gen_wB_more_digits:
+  forall n, wB <= gen_wB n.
   Proof.
-   clear spec_w_0 spec_w_1 spec_w_Bm1 w_0 w_1 w_Bm1.
-   induction n;intros. exact (spec_to_Z x).
-   unfold gen_to_Z;fold gen_to_Z.
-   destruct x;unfold zn2z_to_Z.
-   unfold gen_wB,base;split;auto with zarith.
-   assert (U0:= IHn w0);assert (U1:= IHn w1).
-   split;auto with zarith.
-   apply Zlt_le_trans with ((gen_wB n - 1) * gen_wB n + gen_wB n).
-   assert (gen_to_Z n w0*gen_wB n <= (gen_wB n - 1)*gen_wB n).
-   apply Zmult_le_compat_r;auto with zarith.
-   auto with zarith.
-   rewrite <- gen_wB_wwB.
-   replace ((gen_wB n - 1) * gen_wB n + gen_wB n) with (gen_wB n * gen_wB n);
-    [auto with zarith | ring].
-  Qed. 
+  clear spec_w_0 spec_w_1 spec_w_Bm1 w_0 w_1 w_Bm1.
+  intros n; elim n; clear n; auto.
+    unfold gen_wB, gen_digits; auto with zarith.
+  intros n H1; rewrite <- gen_wB_wwB.
+  apply Zle_trans with (wB * 1).
+    rewrite Zmult_1_r; apply Zle_refl.
+  apply Zmult_le_compat; auto with zarith.
+  apply Zle_trans with wB; auto with zarith.
+  unfold base.
+  rewrite <- (ZAux.Zpower_exp_0 2).
+  apply Zpower_le_monotone2; auto with zarith.
+  unfold base; auto with zarith.
+  Qed.
+
+  Lemma spec_gen_to_Z : 
+   forall n (x:word w n), 0 <= [!n | x!] < gen_wB n.
+  Proof.
+  clear spec_w_0 spec_w_1 spec_w_Bm1 w_0 w_1 w_Bm1.
+  induction n;intros. exact (spec_to_Z x).
+  unfold gen_to_Z;fold gen_to_Z.
+  destruct x;unfold zn2z_to_Z.
+  unfold gen_wB,base;split;auto with zarith.
+  assert (U0:= IHn w0);assert (U1:= IHn w1).
+  split;auto with zarith.
+  apply Zlt_le_trans with ((gen_wB n - 1) * gen_wB n + gen_wB n).
+  assert (gen_to_Z n w0*gen_wB n <= (gen_wB n - 1)*gen_wB n).
+  apply Zmult_le_compat_r;auto with zarith.
+  auto with zarith.
+  rewrite <- gen_wB_wwB.
+  replace ((gen_wB n - 1) * gen_wB n + gen_wB n) with (gen_wB n * gen_wB n);
+   [auto with zarith | ring].
+  Qed.
+
+  Lemma spec_get_low:
+  forall n x, 
+     [!n | x!] < wB ->  [|get_low n x|] = [!n | x!].
+  Proof.
+  clear spec_w_1 spec_w_Bm1.
+  intros n; elim n; auto; clear n.
+  intros n Hrec x; case x; clear x; auto.
+  intros xx yy H1; simpl in H1.
+  assert (F1: [!n | xx!] = 0).
+    case (Zle_lt_or_eq 0 ([!n | xx!])); auto.
+      case (spec_gen_to_Z n xx); auto.
+     intros F2.
+     assert (F3 := gen_wB_more_digits n).
+    assert (F4: 0 <= [!n | yy!]).
+      case (spec_gen_to_Z n yy); auto.
+    assert (F5: 1 * wB <=  [!n | xx!] * gen_wB n);
+     auto with zarith.
+    apply Zmult_le_compat; auto with zarith.
+    unfold base; auto with zarith.
+  simpl get_low; simpl gen_to_Z.
+  generalize H1; clear H1.
+  rewrite F1; rewrite Zmult_0_l; rewrite Zplus_0_l.
+  intros H1; apply Hrec; auto.
+  Qed.
 
   Lemma spec_gen_WW : forall n (h l : word w n),
     [!S n|gen_WW n h l!] = [!n|h!] * gen_wB n + [!n|l!].
@@ -374,6 +437,7 @@ Section GenBase.
    apply wB_lex_inv;trivial.
    apply Zlt_gt;apply wB_lex_inv;apply Zgt_lt;trivial.
   Qed.
+
    
  End GenProof.
 

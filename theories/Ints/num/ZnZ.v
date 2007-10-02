@@ -239,8 +239,10 @@ Section Spec.
 
  
     (* shift operations *)
+    spec_head00:  forall x, [|x|] = 0 -> [|w_head0 x|] = Zpos w_digits;
     spec_head0  : forall x,  0 < [|x|] ->
 	 wB/ 2 <= 2 ^ ([|w_head0 x|]) * [|x|] < wB;  
+    spec_tail00:  forall x, [|x|] = 0 -> [|w_tail0 x|] = Zpos w_digits;
     spec_tail0  : forall x, 0 < [|x|] -> 
          exists y, 0 <= y /\ [|x|] = (2 * y + 1) * (2 ^ [|w_tail0 x|]) ;  
     spec_add_mul_div : forall x y p,

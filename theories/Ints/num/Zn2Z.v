@@ -550,12 +550,11 @@ Section Zn2Z.
   exact (spec_W0 op_spec). exact (spec_mul_c op_spec).
  Qed.
 
-Axiom ok:forall P, P.
  Let spec_ww_karatsuba_c : forall x y, [[karatsuba_c x y ]] = [|x|] * [|y|].
  Proof.
  refine (spec_ww_karatsuba_c _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
           _ _ _ _ _ _ _ _ _ _ _ _); auto.
-apply ok.
+  unfold w_digits; apply spec_more_than_1_digit; auto.
   exact (spec_WW op_spec).  
   exact (spec_W0 op_spec). 
   exact (spec_compare op_spec).
@@ -641,6 +640,17 @@ apply ok.
  rewrite Zpos_xO; auto with zarith.
  Qed.
 
+
+ Let spec_ww_head00  : forall x,  [|x|] = 0 -> [|head0 x|] = Zpos _ww_digits.
+ Proof.
+ refine (spec_ww_head00 w_0 w_0W 
+                w_compare w_head0 w_add2 w_zdigits _ww_zdigits
+                w_to_Z _ _ _ (refl_equal _ww_digits) _ _ _ _); auto.
+ exact (spec_compare op_spec).
+ exact (spec_head00 op_spec).
+ exact (spec_zdigits op_spec).
+ Qed.
+
  Let spec_ww_head0  : forall x,  0 < [|x|] ->
 	 wwB/ 2 <= 2 ^ [|head0 x|] * [|x|] < wwB.
  Proof.
@@ -651,6 +661,17 @@ apply ok.
   exact (spec_compare op_spec).
   exact (spec_zdigits op_spec).
  Qed.
+
+ Let spec_ww_tail00  : forall x,  [|x|] = 0 -> [|tail0 x|] = Zpos _ww_digits.
+ Proof.
+ refine (spec_ww_tail00 w_0 w_0W 
+                w_compare w_tail0 w_add2 w_zdigits _ww_zdigits
+                w_to_Z _ _ _ (refl_equal _ww_digits) _ _ _ _); auto.
+ exact (spec_compare op_spec).
+ exact (spec_tail00 op_spec).
+ exact (spec_zdigits op_spec).
+ Qed.
+
 
  Let spec_ww_tail0  : forall x,  0 < [|x|] ->
   exists y, 0 <= y /\ [|x|] = (2 * y + 1) * 2 ^ [|tail0 x|].
