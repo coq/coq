@@ -867,7 +867,7 @@ endif
 
 %.c.d: %.c | $(GENHFILES)
 	$(SHOW)'CCDEP     $<'
-	$(HIDE)$(CC) -MM -MQ "$@" -MQ "$(<:.c=.o)" $(CFLAGS) $(CINCLUDES) $< > $@ \
+	$(HIDE)$(CC) -MM -MQ "$@" -MQ "$(<:.c=.o)" $(CFLAGS) $< > $@ \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
 .SECONDARY: $(GENFILES)
