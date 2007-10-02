@@ -1772,7 +1772,7 @@ depend: $(BEFOREDEPEND) dependp4 ml4filesml
 	  echo `$(CAMLP4DEPS) $$f` >> .depend; \
 	done
 # 5.  We express dependencies of .o files
-	$(CC) -I $(CAMLHLIB) -MM kernel/byterun/*.c >> .depend
+	$(CC) -MM kernel/byterun/*.c >> .depend
 # 6. Finally, we erase the generated .ml files
 	rm -f $(ML4FILESML)
 # 7. Since .depend contains correct dependencies .depend.devel can be deleted
