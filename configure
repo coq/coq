@@ -7,7 +7,7 @@
 ##################################
 
 VERSION=trunk
-DATE="Nov. 2006"
+DATE="Oct. 2007"
 
 # a local which command for sh
 which () {
@@ -108,7 +108,6 @@ arch_spec=no
 coqide_spec=no
 with_geoproof=false
 
-# COQTOP=`pwd`
 COQSRC=`pwd`
 
 # Parse command-line arguments
@@ -125,7 +124,7 @@ while : ; do
 		    reals_opt=yes
 		    reals=all;;
     -src|--src) src_spec=yes
-                COQTOP="$2"
+                COQSRC="$2"
 	        shift;;
     -bindir|--bindir) bindir_spec=yes
                       bindir="$2"
@@ -312,7 +311,12 @@ if test ! -f "$CAMLC" ; then
     exit 1
 fi
 
-# this fixes a camlp4 bug under FreeBSD 
+# Under Windows, OCaml only understands Windows filenames (C:\...)
+case $ARCH in
+    win32) CAMLBIN=`cygpath -w ${CAMLBIN}`;;
+esac
+
+# this fixes a camlp4 bug under FreeBSD
 # ("native-code program cannot do a dynamic load")
 if [ `uname -s` = "FreeBSD" ]; then camlp4oexec=$camlp4oexec.byte; fi
 
@@ -359,7 +363,11 @@ fi
 
 # For coqmktop & bytecode compiler
 
-CAMLLIB=`"$CAMLC" -where`
+case $ARCH in
+  win32) # Awful trick to get around ^M character at the end of CAMLLIB
+         CAMLLIB="C:\OCaml\lib";;
+  *) CAMLLIB=`"$CAMLC" -where`
+esac
 
 # Camlp4 / Camlp5 configuration
 # Very basic for the moment: if camlp5 exists, we use it...
@@ -458,14 +466,13 @@ esac
 ###########################################
 # bindir, libdir, mandir, etc.
 
-canonical_pwd () {
-ocaml 2>&1 1>/dev/null <<EOF
-  prerr_endline(Sys.getcwd());;
-EOF
-}
-
 case $src_spec in
-  no) COQTOP=`canonical_pwd`
+  no) COQTOP=${COQSRC}
+esac
+
+# OCaml only understand Windows filenames (C:\...)
+case $ARCH in
+    win32) COQTOP=`cygpath -w ${COQTOP}`
 esac
 
 case $ARCH in
@@ -625,14 +632,33 @@ escape_var () {
 EOF
 }
 
-export COQTOP BINDIR LIBDIR CAMLBIN CAMLLIB CAMLP4 CAMLP4LIB FULLCAMLP4LIB
-ESCCOQTOP="`VAR=COQTOP escape_var`"
-ESCBINDIR="`VAR=BINDIR escape_var`"
-ESCLIBDIR="`VAR=LIBDIR escape_var`"
-ESCCAMLDIR="`VAR=CAMLBIN escape_var`"
-ESCCAMLLIB="`VAR=CAMLLIB escape_var`"
-ESCCAMLP4="`VAR=CAMLP4 escape_var`"
-ESCCAMLP4LIB="`VAR=FULLCAMLP4LIB escape_var`"
+# damned backslashes under M$Windows
+case $ARCH in
+    win32)
+	ESCCOQTOP=`echo $COQTOP |sed -e 's|\\\|\\\\\\\|g'`
+	ESCBINDIR=`echo $BINDIR |sed -e 's|\\\|\\\\\\\|g'`
+	ESCLIBDIR=`echo $LIBDIR |sed -e 's|\\\|\\\\\\\|g'`
+	ESCCAMLDIR=`echo $CAMLBIN |sed -e 's|\\\|\\\\\\\|g'`
+	ESCCAMLLIB=`echo $CAMLLIB |sed -e 's|\\\|\\\\\\\|g'`
+  	ESCMANDIR=`echo $MANDIR |sed -e 's|\\\|\\\\\\\|g'`
+   	ESCEMACSLIB=`echo $EMACSLIB |sed -e 's|\\\|\\\\\\\|g'`
+   	ESCCOQDOCDIR=`echo $COQDOCDIR |sed -e 's|\\\|\\\\\\\|g'`
+   	ESCCAMLP4BIN=`echo $CAMLP4BIN |sed -e 's|\\\|\\\\\\\|g'`
+	ESCCAMLP4LIB=`echo $CAMLP4LIB |sed -e 's|\\\|\\\\\\\|g'`
+	;;
+    *)
+        ESCCOQTOP="$COQTOP"
+	ESCBINDIR="$BINDIR"
+	ESCLIBDIR="$LIBDIR"
+	ESCCAMLDIR="$CAMLBIN"
+	ESCCAMLLIB="$CAMLLIB"
+  	ESCMANDIR="$MANDIR"
+   	ESCEMACSLIB="$EMACSLIB"
+   	ESCCOQDOCDIR="$COQDOCDIR"
+   	ESCCAMLP4BIN="$CAMLP4BIN"
+   	ESCCAMLP4LIB="$CAMLP4LIB"
+	;;
+esac
 
 mlconfig_file="$COQSRC/config/coq_config.ml"
 rm -f $mlconfig_file
@@ -684,27 +710,6 @@ chmod a-w "$mlconfig_file"
 
 rm -f "$COQSRC/config/Makefile"
 
-# damned backslashes under M$Windows (bis)
-case $ARCH in
-    win32)
-	ESCCOQTOP=`echo $COQTOP |sed -e 's|\\\|\\\\\\\|g'`
-	ESCBINDIR=`echo $BINDIR |sed -e 's|\\\|\\\\\\\|g'`
-	ESCLIBDIR=`echo $LIBDIR |sed -e 's|\\\|\\\\\\\|g'`
-  	ESCMANDIR=`echo $MANDIR |sed -e 's|\\\|\\\\\\\|g'`
-   	ESCEMACSLIB=`echo $EMACSLIB |sed -e 's|\\\|\\\\\\\|g'`
-   	ESCCOQDOCDIR=`echo $COQDOCDIR |sed -e 's|\\\|\\\\\\\|g'`
-   	ESCCAMLP4BIN=`echo $CAMLP4BIN |sed -e 's|\\\|\\\\\\\|g'`
-	;;
-    *)
-        ESCCOQTOP="$COQTOP"
-	ESCBINDIR="$BINDIR"
-	ESCLIBDIR="$LIBDIR"
-  	ESCMANDIR="$MANDIR"
-   	ESCEMACSLIB="$EMACSLIB"
-   	ESCCOQDOCDIR="$COQDOCDIR"
-   	ESCCAMLP4BIN="$CAMLP4BIN" ;;
-esac
-
 sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|COQTOPDIRECTORY|$ESCCOQTOP|" \
     -e "s|COQVERSION|$VERSION|" \
@@ -752,7 +757,7 @@ chmod a-w "$COQSRC/config/Makefile"
 # Building the $COQTOP/dev/ocamldebug-coq file
 ##################################################
 
-OCAMLDEBUGCOQ=$COQTOP/dev/ocamldebug-coq
+OCAMLDEBUGCOQ=$COQSRC/dev/ocamldebug-coq
 
 if test "$coq_debug_flag" = "-g" ; then
   rm -f $OCAMLDEBUGCOQ
