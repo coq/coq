@@ -2,16 +2,166 @@ Require Import ZTimesOrder.
 Require Import ZArith.
 
 Open Local Scope Z_scope.
-Module Export ZBinDomain <: ZDomainSignature.
-Delimit Scope IntScope with Int.
-(* Is this really necessary? Without it, applying ZDomainProperties
-functor to this module produces an error since the functor opens the
-scope. *)
 
-Definition Z := Z.
-Definition E := (@eq Z).
-Definition e := Zeq_bool.
+Module ZBinAxiomsMod <: ZAxiomsSig.
+Module Export NZOrdAxiomsMod <: NZOrdAxiomsSig.
+Module Export NZAxiomsMod <: NZAxiomsSig.
 
+Definition NZ := Z.
+Definition NZE := (@eq Z).
+Definition NZ0 := 0.
+Definition NZsucc := Zsucc'.
+Definition NZpred := Zpred'.
+Definition NZplus := Zplus.
+Definition NZminus := Zminus.
+Definition NZtimes := Zmult.
+
+Theorem NZE_equiv : equiv Z NZE.
+Proof.
+exact (@eq_equiv Z).
+Qed.
+
+Add Relation Z NZE
+ reflexivity proved by (proj1 NZE_equiv)
+ symmetry proved by (proj2 (proj2 NZE_equiv))
+ transitivity proved by (proj1 (proj2 NZE_equiv))
+as NZE_rel.
+
+Add Morphism NZsucc with signature NZE ==> NZE as NZsucc_wd.
+Proof.
+congruence.
+Qed.
+
+Add Morphism NZpred with signature NZE ==> NZE as NZpred_wd.
+Proof.
+congruence.
+Qed.
+
+Add Morphism NZplus with signature NZE ==> NZE ==> NZE as NZplus_wd.
+Proof.
+congruence.
+Qed.
+
+Add Morphism NZminus with signature NZE ==> NZE ==> NZE as NZminus_wd.
+Proof.
+congruence.
+Qed.
+
+Add Morphism NZtimes with signature NZE ==> NZE ==> NZE as NZtimes_wd.
+Proof.
+congruence.
+Qed.
+
+Theorem NZpred_succ : forall n : Z, NZpred (NZsucc n) = n.
+Proof.
+exact Zpred'_succ'.
+Qed.
+
+Theorem NZinduction :
+  forall A : Z -> Prop, predicate_wd NZE A ->
+    A 0 -> (forall n : Z, A n <-> A (NZsucc n)) -> forall n : Z, A n.
+Proof.
+intros A A_wd A0 AS n; apply Zind; clear n.
+assumption.
+intros; now apply -> AS.
+intros n H. rewrite <- (Zsucc'_pred' n) in H. now apply <- AS.
+Qed.
+
+Theorem NZplus_0_l : forall n : Z, 0 + n = n.
+Proof.
+exact Zplus_0_l.
+Qed.
+
+Theorem NZplus_succ_l : forall n m : Z, (NZsucc n) + m = NZsucc (n + m).
+Proof.
+intros; do 2 rewrite <- Zsucc_succ'; apply Zplus_succ_l.
+Qed.
+
+Theorem NZminus_0_r : forall n : Z, n - 0 = n.
+Proof.
+exact Zminus_0_r.
+Qed.
+
+Theorem NZminus_succ_r : forall n m : Z, n - (NZsucc m) = NZpred (n - m).
+Proof.
+intros; rewrite <- Zsucc_succ'; rewrite <- Zpred_pred';
+apply Zminus_succ_r.
+Qed.
+
+Theorem NZtimes_0_r : forall n : Z, n * 0 = 0.
+Proof.
+exact Zmult_0_r.
+Qed.
+
+Theorem NZtimes_succ_r : forall n m : Z, n * (NZsucc m) = n * m + n.
+Proof.
+intros; rewrite <- Zsucc_succ'; apply Zmult_succ_r.
+Qed.
+
+End NZAxiomsMod.
+
+Definition NZlt := Zlt.
+Definition NZle := Zle.
+
+Add Morphism NZlt with signature NZE ==> NZE ==> iff as NZlt_wd.
+Proof.
+unfold NZE. intros n1 n2 H1 m1 m2 H2; rewrite H1; now rewrite H2.
+Qed.
+
+Add Morphism NZle with signature NZE ==> NZE ==> iff as NZle_wd.
+Proof.
+unfold NZE. intros n1 n2 H1 m1 m2 H2; rewrite H1; now rewrite H2.
+Qed.
+
+Theorem NZle_lt_or_eq : forall n m : Z, n <= m <-> n < m \/ n = m.
+Proof.
+intros n m; split. apply Zle_lt_or_eq.
+intro H; destruct H as [H | H]. now apply Zlt_le_weak. rewrite H; apply Zle_refl.
+Qed.
+
+Theorem NZlt_irrefl : forall n : Z, ~ n < n.
+Proof.
+exact Zlt_irrefl.
+Qed.
+
+Theorem NZlt_succ_le : forall n m : Z, n < (NZsucc m) <-> n <= m.
+Proof.
+intros; unfold NZsucc; rewrite <- Zsucc_succ'; split;
+[apply Zlt_succ_le | apply Zle_lt_succ].
+Qed.
+
+End NZOrdAxiomsMod.
+
+Definition Zopp := Zopp.
+
+Add Morphism Zopp with signature NZE ==> NZE as Zopp_wd.
+Proof.
+congruence.
+Qed.
+
+Theorem Zsucc_pred : forall n : Z, NZsucc (NZpred n) = n.
+Proof.
+exact Zsucc'_pred'.
+Qed.
+
+Theorem Zopp_0 : - 0 = 0.
+Proof.
+reflexivity.
+Qed.
+
+Theorem Zopp_succ : forall n : Z, - (NZsucc n) = NZpred (- n).
+Proof.
+intro; rewrite <- Zsucc_succ'; rewrite <- Zpred_pred'. apply Zopp_succ.
+Qed.
+
+End ZBinAxiomsMod.
+
+Module Export ZBinTimesOrderPropMod := ZTimesOrderPropFunct ZBinAxiomsMod.
+
+
+
+
+(*
 Theorem E_equiv_e : forall x y : Z, E x y <-> e x y.
 Proof.
 intros x y; unfold E, e, Zeq_bool; split; intro H.
@@ -22,178 +172,4 @@ case_eq (x ?= y); intro H1; rewrite H1 in H; simpl in H;
 [reflexivity | discriminate H | discriminate H].
 now apply Zcompare_Eq_eq.
 Qed.
-
-Theorem E_equiv : equiv Z E.
-Proof.
-apply eq_equiv with (A := Z). (* It does not work without "with (A := Z)" though it looks like it should *)
-Qed.
-
-Add Relation Z E
- reflexivity proved by (proj1 E_equiv)
- symmetry proved by (proj2 (proj2 E_equiv))
- transitivity proved by (proj1 (proj2 E_equiv))
-as E_rel.
-
-End ZBinDomain.
-
-Module Export ZBinInt <: IntSignature.
-Module Export ZDomainModule := ZBinDomain.
-
-Definition O := 0.
-Definition S := Zsucc'.
-Definition P := Zpred'.
-
-Add Morphism S with signature E ==> E as S_wd.
-Proof.
-intros; unfold E; congruence.
-Qed.
-
-Add Morphism P with signature E ==> E as P_wd.
-Proof.
-intros; unfold E; congruence.
-Qed.
-
-Theorem S_inj : forall x y : Z, S x = S y -> x = y.
-Proof.
-exact Zsucc'_inj.
-Qed.
-
-Theorem S_P : forall x : Z, S (P x) = x.
-Proof.
-exact Zsucc'_pred'.
-Qed.
-
-Theorem induction :
-  forall Q : Z -> Prop,
-    pred_wd E Q -> Q 0 ->
-    (forall x, Q x -> Q (S x)) ->
-    (forall x, Q x -> Q (P x)) -> forall x, Q x.
-Proof.
-intros; now apply Zind.
-Qed.
-
-End ZBinInt.
-
-Module Export ZBinPlus <: ZPlusSignature.
-Module Export IntModule := ZBinInt.
-
-Definition plus := Zplus.
-Definition minus := Zminus.
-Definition uminus := Zopp.
-
-Add Morphism plus with signature E ==> E ==> E as plus_wd.
-Proof.
-intros; congruence.
-Qed.
-
-Add Morphism minus with signature E ==> E ==> E as minus_wd.
-Proof.
-intros; congruence.
-Qed.
-
-Add Morphism uminus with signature E ==> E as uminus_wd.
-Proof.
-intros; congruence.
-Qed.
-
-Theorem plus_0 : forall n, 0 + n = n.
-Proof.
-exact Zplus_0_l.
-Qed.
-
-Theorem plus_S : forall n m, (S n) + m = S (n + m).
-Proof.
-intros; do 2 rewrite <- Zsucc_succ'; apply Zplus_succ_l.
-Qed.
-
-Theorem minus_0 : forall n, n - 0 = n.
-Proof.
-exact Zminus_0_r.
-Qed.
-
-Theorem minus_S : forall n m, n - (S m) = P (n - m).
-Proof.
-intros; rewrite <- Zsucc_succ'; rewrite <- Zpred_pred';
-apply Zminus_succ_r.
-Qed.
-
-Theorem uminus_0 : - 0 = 0.
-Proof.
-reflexivity.
-Qed.
-
-Theorem uminus_S : forall n, - (S n) = P (- n).
-Admitted.
-
-End ZBinPlus.
-
-Module Export ZBinTimes <: ZTimesSignature.
-Module Export ZPlusModule := ZBinPlus.
-
-Definition times := Zmult.
-
-Add Morphism times with signature E ==> E ==> E as times_wd.
-Proof.
-congruence.
-Qed.
-
-Theorem times_0 : forall n, n * 0 = 0.
-Proof.
-exact Zmult_0_r.
-Qed.
-
-Theorem times_S : forall n m, n * (S m) = n * m + n.
-Proof.
-intros; rewrite <- Zsucc_succ'; apply Zmult_succ_r.
-Qed.
-
-End ZBinTimes.
-
-Module Export ZBinOrder <: ZOrderSignature.
-Module Export IntModule := ZBinInt.
-
-Definition lt := Zlt_bool.
-Definition le := Zle_bool.
-
-Add Morphism lt with signature E ==> E ==> eq_bool as lt_wd.
-Proof.
-congruence.
-Qed.
-
-Add Morphism le with signature E ==> E ==> eq_bool as le_wd.
-Proof.
-congruence.
-Qed.
-
-Theorem le_lt : forall n m, le n m <-> lt n m \/ n = m.
-Proof.
-intros; unfold lt, le, Zlt_bool, Zle_bool.
-case_eq (n ?= m); intro H.
-apply Zcompare_Eq_eq in H; rewrite H; now split; intro; [right |].
-now split; intro; [left |].
-split; intro H1. now idtac.
-destruct H1 as [H1 | H1].
-assumption. unfold E in H1; rewrite H1 in H. now rewrite Zcompare_refl in H.
-Qed.
-
-Theorem lt_irr : forall n, ~ (lt n n).
-Proof.
-intro n; rewrite eq_true_unfold_pos; intro H.
-assert (H1 : (Zlt n n)).
-change (if true then (Zlt n n) else (Zge n n)). rewrite <- H.
-unfold lt. apply Zlt_cases.
-false_hyp H1 Zlt_irrefl.
-Qed.
-
-Theorem lt_S : forall n m, lt n (S m) <-> le n m.
-Proof.
-intros; unfold lt, le, S; do 2 rewrite eq_true_unfold_pos.
-rewrite <- Zsucc_succ'; rewrite <- Zlt_is_lt_bool; rewrite <- Zle_is_le_bool.
-split; intro; [now apply Zlt_succ_le | now apply Zle_lt_succ].
-Qed.
-
-End ZBinOrder.
-
-Module Export ZTimesOrderPropertiesModule :=
-  ZTimesOrderProperties ZBinTimes ZBinOrder.
-
+*)
