@@ -1,6 +1,6 @@
 # Makefile for the Coq documentation
 
-# COQTOP needs to be set to a coq source repository
+# COQSRC needs to be set to a coq source repository
 
 # To compile documentation, you need the following tools:
 # Dvi: latex (latex2e), bibtex, makeindex
@@ -16,11 +16,11 @@ MAKEINDEX=makeindex
 PDFLATEX=pdflatex
 
 HEVEALIB=/usr/local/lib/hevea:/usr/lib/hevea
-export TEXINPUTS=$(COQTOP)/doc:$(HEVEALIB):
+export TEXINPUTS=$(COQSRC)/doc:$(HEVEALIB):
 
-DOCCOQTOP=$(COQTOP)/bin/coqtop
-COQTEX=$(COQTOP)/bin/coq-tex -n 72 -image $(DOCCOQTOP) -v -sl -small
-COQDOC=$(COQTOP)/bin/coqdoc
+COQTOP=$(COQSRC)/bin/coqtop
+COQTEX=$(COQSRC)/bin/coq-tex -n 72 -image $(COQTOP) -v -sl -small
+COQDOC=$(COQSRC)/bin/coqdoc
 
 #VERSION=POSITIONNEZ-CETTE-VARIABLE
 
@@ -212,7 +212,7 @@ faq/html/index.html: faq/FAQ.v.html
 # Standard library
 ######################################################################
 
-GLOBDUMP=$(COQTOP)/glob.dump
+GLOBDUMP=$(COQSRC)/glob.dump
 
 LIBDIRS= Init Logic Bool Arith NArith ZArith QArith Relations Sets Setoids Lists Sorting Wellfounded IntMap FSets Reals Program
 # We avoid Strings as String.v contains unicode caracters that make latex fail
@@ -222,7 +222,7 @@ LIBDIRS+= Ints Ints/num
 # LIBDIRS+= Numbers Numbers/Natural/Axioms Numbers/Natural/Binary Numbers/Natural/Peano Numbers/Integer/Axioms Numbers/Integer/NatPairs Numbers/Rational
 
 
-ALLTHEORIES_V=$(foreach dir, $(LIBDIRS), $(wildcard $(COQTOP)/theories/$(dir)/*.v))
+ALLTHEORIES_V=$(foreach dir, $(LIBDIRS), $(wildcard $(COQSRC)/theories/$(dir)/*.v))
 ALLTHEORIES_GLOB = $(ALLTHEORIES_V:%.v=%.glob)
 
 ### Standard library (browsable html format)
@@ -235,11 +235,11 @@ stdlib/index-body.html: $(GLOBDUMP) $(ALLTHEORIES_V)
 	mkdir stdlib/html
 	(cd stdlib/html;\
 	 $(COQDOC) -q --multi-index --html --glob-from $(GLOBDUMP)\
-	  -R $(COQTOP)/theories Coq $(ALLTHEORIES_V))
+	  -R $(COQSRC)/theories Coq $(ALLTHEORIES_V))
 	mv stdlib/html/index.html stdlib/index-body.html
 
 stdlib/index-list.html: stdlib/index-list.html.template
-	COQTOP=$(COQTOP) ./stdlib/make-library-index stdlib/index-list.html
+	COQTOP=$(COQSRC) ./stdlib/make-library-index stdlib/index-list.html
 
 stdlib/html/index.html: stdlib/index-list.html stdlib/index-body.html stdlib/index-trailer.html
 	cat stdlib/index-list.html > $@
@@ -251,8 +251,8 @@ stdlib/html/index.html: stdlib/index-list.html stdlib/index-body.html stdlib/ind
 stdlib/Library.coqdoc.tex: 
 	(for dir in $(LIBDIRS) ; do \
 	  $(COQDOC) -q --gallina --body-only --latex --stdout \
-	    --coqlib_path $(COQTOP) \
-            -R $(COQTOP)/theories Coq "$(COQTOP)/theories/$$dir/"*.v >> $@ ; done)
+	    --coqlib_path $(COQSRC) \
+            -R $(COQSRC)/theories Coq "$(COQSRC)/theories/$$dir/"*.v >> $@ ; done)
 
 stdlib/Library.dvi: $(COMMON) stdlib/Library.coqdoc.tex stdlib/Library.tex
 	(cd stdlib;\
@@ -295,8 +295,8 @@ install-doc: install-meta install-doc-html install-doc-printable
 install-meta:
 	mkdir $(DOCDIC)
 	cp LICENCE $(DOCDIC)/LICENCE.doc
-#	cp $(COQTOP)/LICENCE $(COQTOP)/CREDITS $(COQTOP)/COPYRIGHT $(DOCDIC)
-#	cp $(COQTOP)/README $(COQTOP)/CHANGES $(DOCDIC)
+#	cp $(COQSRC)/LICENCE $(COQTOP)/CREDITS $(COQSRC)/COPYRIGHT $(DOCDIC)
+#	cp $(COQSRC)/README $(COQSRC)/CHANGES $(DOCDIC)
 
 install-doc-html: all-html
 	mkdir $(HTMLINSTALLDIR)
