@@ -943,6 +943,7 @@ type morphism_signature =
  (bool option * Topconstr.constr_expr) list * Topconstr.constr_expr
 
 let new_named_morphism id m sign =
+  Coqlib.check_required_library ["Coq";"Setoids";"Setoid_tac"];
  let sign =
   match sign with
      None -> None
@@ -1130,21 +1131,23 @@ let int_add_relation id a aeq refl sym trans =
 
 (* The vernac command "Add Relation ..." *)
 let add_relation id a aeq refl sym trans =
- int_add_relation id (constr_of a) (constr_of aeq) (option_map constr_of refl)
-  (option_map constr_of sym) (option_map constr_of trans)
+  Coqlib.check_required_library ["Coq";"Setoids";"Setoid_tac"];
+  int_add_relation id (constr_of a) (constr_of aeq) (option_map constr_of refl)
+    (option_map constr_of sym) (option_map constr_of trans)
 
 (************************ Add Setoid ******************************************)
 
 (* The vernac command "Add Setoid" *)
 let add_setoid id a aeq th =
- let a = constr_of a in
- let aeq = constr_of aeq in
- let th = constr_of th in
- let env = Global.env () in
- let a_quantifiers_rev = check_a env a in
+  Coqlib.check_required_library ["Coq";"Setoids";"Setoid_tac"];
+  let a = constr_of a in
+  let aeq = constr_of aeq in
+  let th = constr_of th in
+  let env = Global.env () in
+  let a_quantifiers_rev = check_a env a in
   check_eq env a_quantifiers_rev a aeq  ;
   check_setoid_theory env a_quantifiers_rev a aeq  th ;
-   let a_instance = apply_to_rels a a_quantifiers_rev in
+  let a_instance = apply_to_rels a a_quantifiers_rev in
    let aeq_instance = apply_to_rels aeq a_quantifiers_rev in
    let th_instance = apply_to_rels th a_quantifiers_rev in
    let refl =
