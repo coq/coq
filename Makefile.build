@@ -75,7 +75,7 @@ OCAMLOPT += $(CAMLFLAGS)
 
 BYTEFLAGS=$(MLINCLUDES) $(CAMLDEBUG) $(USERFLAGS)
 OPTFLAGS=$(MLINCLUDES) $(CAMLTIMEPROF) $(USERFLAGS)
-DEPFLAGS=$(LOCALINCLUDES)
+DEPFLAGS= -slash $(LOCALINCLUDES)
 
 CAMLP4EXTENDFLAGS=-I . #grammar dependencies are now in camlp4use statements 
 CAMLP4DEPS=sed -n -e 's@^(\*.*camlp4deps: "\(.*\)".*\*)@\1@p'
@@ -121,12 +121,6 @@ endif
 ###########################################################################
 
 CINCLUDES= -I $(CAMLHLIB)
-
-ifeq ($(CAMLVERSION),OCAML307)
-  CFLAGS=-fno-defer-pop -Wall -Wno-unused -DOCAML_307
-else
-  CFLAGS=-fno-defer-pop -Wall -Wno-unused
-endif
 
 # libcoqrun.a 
 
@@ -867,7 +861,7 @@ endif
 
 %.c.d: %.c | $(GENHFILES)
 	$(SHOW)'CCDEP     $<'
-	$(HIDE)$(CC) -MM -MQ "$@" -MQ "$(<:.c=.o)" $(CFLAGS) $< > $@ \
+	$(HIDE)$(CC) -MM -MQ "$@" -MQ "$(<:.c=.o)" $(CFLAGS) -isystem $(CAMLHLIB) $< > $@ \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
 .SECONDARY: $(GENFILES)

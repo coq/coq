@@ -73,6 +73,9 @@ CAMLDEBUG=COQDEBUGFLAG
 # User compilation flag
 USERFLAGS=
 
+# Flags for GCC
+CFLAGS=CCOMPILEFLAGS
+
 # Compilation profile flag
 CAMLTIMEPROF=COQPROFILEFLAG
 
