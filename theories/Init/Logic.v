@@ -314,8 +314,22 @@ Proof.
   auto.
 Qed.
 
-(** Being inhabited *)
+(** * Being inhabited *)
+
+(** The predicate [inhabited] can be used in different contexts. If [A] is
+    thought as a type, [inhabited A] states that [A] is inhabited. If [A] is
+    thought as a computationally relevant proposition, then 
+    [inhabited A] weakens [A] so as to hide its computational meaning.
+    The so-weakened proof remains computationally relevant but only in
+    a propositional context.
+*)
 
 Inductive inhabited (A:Type) : Prop := inhabits : A -> inhabited A.
 
 Hint Resolve inhabits: core.
+
+Lemma exists_inhabited : forall (A:Type) (P:A->Prop), 
+  (exists x, P x) -> inhabited A.
+Proof.
+  destruct 1; auto.
+Qed.

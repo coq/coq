@@ -270,7 +270,7 @@ Notation eq_dep_eq__inj_pairT2 := eq_dep_eq__inj_pair2.
  
 
 (************************************************************************)
-(** *** C. Definition of the functor that builds properties of dependent equalities assuming axiom eq_rect_eq *)
+(** * Definition of the functor that builds properties of dependent equalities assuming axiom eq_rect_eq *)
 
 Module Type EqdepElimination.
 

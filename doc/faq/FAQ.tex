@@ -478,8 +478,9 @@ equations have to be treated by hand or using specialised tactics.
 \Question{What axioms can be safely added to {\Coq}?}
 
 There are a few typical useful axioms that are independent from the
-Calculus of Inductive Constructions and that can be safely added to
-{\Coq}. These axioms are stated in the directory {\tt Logic} of the
+Calculus of Inductive Constructions and that are considered consistent with
+the theory of {\Coq}.
+Most of these axioms are stated in the directory {\tt Logic} of the
 standard library of {\Coq}. The most interesting ones are
 
 \begin{itemize}
@@ -487,6 +488,8 @@ standard library of {\Coq}. The most interesting ones are
 \item Proof-irrelevance: $\forall A:Prop \forall p_1 p_2:A, p_1=p_2$
 \item Unicity of equality proofs (or equivalently Streicher's axiom $K$):
 $\forall A \forall x y:A \forall p_1 p_2:x=y, p_1=p_2$
+\item Hilbert's $\epsilon$ operator: if $A \neq \emptyset$, then there is $\epsilon_P$ such that $\exists x P(x) \rightarrow P(\epsilon_P)$
+\item Church's $\iota$ operator: if $A \neq \emptyset$, then there is $\iota_P$ such that $\exists! x P(x) \rightarrow P(\iota_P)$
 \item The axiom of unique choice: $\forall x \exists! y R(x,y) \rightarrow \exists f \forall x R(x,f(x))$
 \item The functional axiom of choice: $\forall x \exists y R(x,y) \rightarrow \exists f \forall x R(x,f(x))$
 \item Extensionality of predicates: $\forall P Q:A\rightarrow Prop, (\forall x, P(x) \leftrightarrow Q(x)) \rightarrow P=Q$

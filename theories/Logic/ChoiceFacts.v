@@ -1,4 +1,3 @@
-(* -*- coding: utf-8 -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -60,17 +59,19 @@ Table of contents
 
 2. IPL_2^2 |- AC_rel + AC! = AC_fun
 
-3. typed IPL_2 + Sigma-types + PI |- AC_rel = GAC_rel  and  IPL_2 |- AC_rel + IGP -> GAC_rel and IPL_2 |- GAC_rel = OAC_rel
+3.1. typed IPL_2 + Sigma-types + PI |- AC_rel = GAC_rel  and  IPL_2 |- AC_rel + IGP -> GAC_rel and IPL_2 |- GAC_rel = OAC_rel
 
-4. IPL^2 |- AC_fun + IGP = GAC_fun = OAC_fun = AC_fun + Drinker
+3.2. IPL^2 |- AC_fun + IGP = GAC_fun = OAC_fun = AC_fun + Drinker
 
-5. Derivability of choice for decidable relations with well-ordered codomain
+3.3. D_iota -> ID_iota  and  D_epsilon <-> ID_epsilon + Drinker
 
-6. Equivalence of choices on dependent or non dependent functional types
+4. Derivability of choice for decidable relations with well-ordered codomain
 
-7. Non contradiction of constructive descriptions wrt functional choices
+5. Equivalence of choices on dependent or non dependent functional types
 
-8. Definite description transports classical logic to the computational world
+6. Non contradiction of constructive descriptions wrt functional choices
+
+7. Definite description transports classical logic to the computational world
 
 References:
 
@@ -85,8 +86,6 @@ intentional type theory, Journal of Symbolic Logic 70(2):488-514, 2005.
 *)
 
 Set Implicit Arguments.
-
-Notation Local "'inhabited' A" := A (at level 10, only parsing).
 
 (**********************************************************************)
 (** * Definitions *)
@@ -185,15 +184,15 @@ Definition OmniscientFunctionalChoice_on :=
 
 (** D_epsilon *)
 
-Definition ClassicalIndefiniteDescription := 
+Definition EpsilonStatement_on := 
   forall P:A->Prop,
-    A -> { x:A | (exists x, P x) -> P x }.
+    inhabited A -> { x:A | (exists x, P x) -> P x }.
 
 (** D_iota *)
 
-Definition ClassicalDefiniteDescription := 
+Definition IotaStatement_on := 
   forall P:A->Prop,
-    A -> { x:A | (exists! x, P x) -> P x }.
+    inhabited A -> { x:A | (exists! x, P x) -> P x }.
 
 End ChoiceSchemes.
 
@@ -225,6 +224,11 @@ Notation ConstructiveDefiniteDescription :=
 Notation ConstructiveIndefiniteDescription := 
   (forall A, ConstructiveIndefiniteDescription_on A).
 
+Notation IotaStatement := 
+  (forall A, IotaStatement_on A).
+Notation EpsilonStatement := 
+  (forall A, EpsilonStatement_on A).
+
 (** Subclassical schemes *)
 
 Definition ProofIrrelevance :=
@@ -240,16 +244,17 @@ Definition SmallDrinker'sParadox :=
     exists x, (exists x, P x) -> P x.
 
 (**********************************************************************)
-(** * AC_rel + PDP = AC_fun
+(** * AC_rel + AC! = AC_fun
 
    We show that the functional formulation of the axiom of Choice
    (usual formulation in type theory) is equivalent to its relational
-   formulation (only formulation of set theory) + the axiom of
-   (parametric) definite description (aka axiom of unique choice) *)
+   formulation (only formulation of set theory) + functional relation
+   reification (aka axiom of unique choice, or, principle of (parametric)
+   definite descriptions) *)
 
 (** This shows that the axiom of choice can be assumed (under its
    relational formulation) without known inconsistency with classical logic,
-   though definite description conflicts with classical logic *)
+   though functional relation reification conflicts with classical logic *)
 
 Lemma description_rel_choice_imp_funct_choice :
   forall A B : Type,
@@ -303,11 +308,13 @@ Proof.
 Qed.
 
 (**********************************************************************)
-(** * Connection between the guarded, non guarded and descriptive choices and *)
+(** * Connection between the guarded, non guarded and omniscient choices *)
 
-(** We show that the guarded relational formulation of the axiom of Choice
-   comes from the non guarded formulation in presence either of the
-   independance of general premises or proof-irrelevance *)
+(** We show that the guarded formulations of the axiom of choice
+   are equivalent to their "omniscient" variant and comes from the non guarded
+   formulation in presence either of the independance of general premises 
+   or subset types (themselves derivable from subtypes thanks to proof-
+   irrelevance) *)
 
 (**********************************************************************)
 (** ** AC_rel + PI -> GAC_rel and AC_rel + IGP -> GAC_rel and GAC_rel = OAC_rel *)
@@ -387,6 +394,7 @@ Proof.
   tauto.
   exists (f tt); auto.
 Qed.
+
 
 Lemma guarded_fun_choice_imp_fun_choice :
   GuardedFunctionalChoice -> FunctionalChoiceOnInhabitedSet.
@@ -471,6 +479,57 @@ Proof.
   intros OAC_fun A B P R Inh H.
   destruct (OAC_fun A B R Inh) as (f,Hf).
   exists f; firstorder.
+Qed.
+
+(**********************************************************************)
+(** ** D_iota -> ID_iota  and  D_epsilon <-> ID_epsilon + Drinker *)
+
+(** D_iota -> ID_iota *)
+
+Lemma iota_imp_constructive_definite_description :
+  IotaStatement -> ConstructiveDefiniteDescription.
+Proof.
+  intros D_iota A P H.
+  destruct D_iota with (P:=P) as (x,H1).
+  destruct H; red in H; auto.
+  exists x; apply H1; assumption.
+Qed.
+
+(** ID_epsilon + Drinker <-> D_epsilon *)
+
+Lemma epsilon_imp_constructive_indefinite_description:
+  EpsilonStatement -> ConstructiveIndefiniteDescription.
+Proof.
+  intros D_epsilon A P H.
+  destruct D_epsilon with (P:=P) as (x,H1).
+  destruct H; auto.
+  exists x; apply H1; assumption.
+Qed.
+
+Lemma constructive_indefinite_description_and_small_drinker_imp_epsilon :
+  SmallDrinker'sParadox -> ConstructiveIndefiniteDescription ->
+  EpsilonStatement.
+Proof.
+  intros Drinkers D_epsilon A P Inh; 
+  apply D_epsilon; apply Drinkers; assumption.
+Qed.
+
+Lemma epsilon_imp_small_drinker :
+  EpsilonStatement -> SmallDrinker'sParadox.
+Proof.
+  intros D_epsilon A P Inh; edestruct D_epsilon; eauto.
+Qed.
+
+Theorem constructive_indefinite_description_and_small_drinker_iff_epsilon :
+  (SmallDrinker'sParadox * ConstructiveIndefiniteDescription ->
+  EpsilonStatement) *
+  (EpsilonStatement ->
+   SmallDrinker'sParadox * ConstructiveIndefiniteDescription).
+Proof.
+  auto decomp using
+    epsilon_imp_constructive_indefinite_description,
+    constructive_indefinite_description_and_small_drinker_imp_epsilon,
+    epsilon_imp_small_drinker.
 Qed.
 
 (**********************************************************************)

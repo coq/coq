@@ -8,12 +8,13 @@
 
 (*i $Id$ i*)
 
-(** This file provides classical logic and definite description *)
+(** This file provides classical logic and definite description, which is
+    equivalent to providing classical logic and Church's iota operator *)
 
-(** Classical definite description operator (i.e. iota) implies
-    excluded-middle in [Set] and leads to a classical world populated
-    with non computable functions. It conflicts with the
-    impredicativity of [Set] *)
+(** Classical logic and definite descriptions implies excluded-middle
+    in [Set] and leads to a classical world populated with non
+    computable functions. It conflicts with the impredicativity of
+    [Set] *)
 
 Set Implicit Arguments.
 

@@ -37,8 +37,9 @@ Libraries
 - Loading FSets/FMap used to open unwanted scopes of integer datatypes 
   (see bug #1347). These scopes may need to be opened manually now.
 - Few changes in Reals (lemmas on prod_f_SO now on prod_f_R0).
-- Slight restructuration and extension of the Logic library regarding choice
-  and classical logic.
+- Slight restructuration of the Logic library regarding choice and classical
+  logic. Addition of files providing intuitionistic axiomatizations of
+  descriptions: Epsilon.v, Description.v and IndefiniteDescription.v
 
 Language
 

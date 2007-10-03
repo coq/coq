@@ -8,9 +8,15 @@
 
 (*i $Id$ i*)
 
-(** This file provides classical logic, and functional choice *)
+(** This file provides classical logic and functional choice; this
+    especially provides both indefinite descriptions and choice functions
+    but this is weaker than providing epsilon operator and classical logic
+    as the indefinite descriptions provided by the axiom of choice can
+    be used only in a propositional context (especially, they cannot
+    be used to build choice functions outside the scope of a theorem
+    proof) *)
 
-(** This file extends ClassicalUniqueChoice.v with the axiom of choice.
+(** This file extends ClassicalUniqueChoice.v with full choice.
     As ClassicalUniqueChoice.v, it implies the double-negation of
     excluded-middle in [Set] and leads to a classical world populated
     with non computable functions. Especially it conflicts with the

@@ -8,7 +8,11 @@
 
 (*i $Id$ i*)
 
-(** This file provides classical logic and unique choice *)
+(** This file provides classical logic and unique choice; this is
+    weaker than providing iota operator and classical logic as the
+    definite descriptions provided by the axiom of unique choice can
+    be used only in a propositional context (especially, they cannot
+    be used to build functions outside the scope of a theorem proof) *)
 
 (** Classical logic and unique choice, as shown in
     [ChicliPottierSimpson02], implies the double-negation of

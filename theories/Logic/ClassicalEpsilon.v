@@ -8,10 +8,10 @@
 
 (*i $Id$ i*)
 
-(** This file provides classical logic and indefinite description
-    (Hilbert's epsilon operator) *)
+(** This file provides classical logic and indefinite description under
+    the form of Hilbert's epsilon operator *)
 
-(** Classical epsilon's operator (i.e. indefinite description) implies
+(** Hilbert's epsilon operator and classical logic implies
     excluded-middle in [Set] and leads to a classical world populated
     with non computable functions. It conflicts with the
     impredicativity of [Set] *)
