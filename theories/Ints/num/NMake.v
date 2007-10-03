@@ -8,12 +8,12 @@ Require Import GenMul.
 Require Import GenDivn1.
 Require Import Wf_nat.
 
- (***************************************************************)
- (*                                                             *)
- (*        File automatically generated DO NOT EDIT             *)
- (*        Constructors: 13  Generated Proofs: false            *)
- (*                                                             *)
- (***************************************************************)
+(***************************************************************)
+(*                                                             *)
+(*        File automatically generated DO NOT EDIT             *)
+(*        Constructors: 13  Generated Proofs: false            *)
+(*                                                             *)
+(***************************************************************)
 
 Module Type W0Type.
  Parameter w : Set.
@@ -212,7 +212,7 @@ Module Make (W0:W0Type).
  Admitted.
 
 
- Theorem to_Z_pos: forall x, 0 <= [x].
+ Theorem spec_pos: forall x, 0 <= [x].
  Admitted.
 
  Section LevelAndIter.
@@ -1729,7 +1729,7 @@ Module Make (W0:W0Type).
     end
   end.
 
- Theorem succ_spec: forall n, [succ n] = [n] + 1.
+ Theorem spec_succ: forall n, [succ n] = [n] + 1.
  Admitted.
 
  (***************************************************************)
@@ -1949,7 +1949,7 @@ Module Make (W0:W0Type).
     end
   end.
 
- Let spec_pred: forall x, 0 < [x] -> [pred x] = [x] - 1.
+ Theorem spec_pred: forall x, 0 < [x] -> [pred x] = [x] - 1.
  Admitted.
  
  (***************************************************************)
@@ -2912,7 +2912,7 @@ Admitted.
  Theorem spec_div_eucl: forall x y,
       0 < [y] ->
       let (q,r) := div_eucl x y in
-      [q] = [x] / [y] /\ [r] = [x] mod [y].
+      ([q], [r]) = Zdiv_eucl [x] [y].
  Admitted.
 
  Definition div x y := fst (div_eucl x y).
@@ -3458,6 +3458,12 @@ Admitted.
 
  Theorem spec_is_even: forall x,
    if is_even x then [x] mod 2 = 0 else [x] mod 2 = 1.
+ Admitted.
+
+ Theorem spec_0: [zero] = 0.
+ Admitted.
+
+ Theorem spec_1: [one] = 1.
  Admitted.
 
 End Make.

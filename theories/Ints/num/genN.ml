@@ -44,12 +44,12 @@ let start_file post l =
 let print_Make () =
   let fmt = start_file "Make" [] in
 
-  fprintf fmt " (***************************************************************)\n";
-  fprintf fmt " (*                                                             *)\n";
-  fprintf fmt " (*        File automatically generated DO NOT EDIT             *)\n";
-  fprintf fmt " (*        Constructors: %i  Generated Proofs: %b          %s %s *)\n" size gen_proof (if size < 10 then " " else  "") (if gen_proof then " " else "");
-  fprintf fmt " (*                                                             *)\n";
-  fprintf fmt " (***************************************************************)\n\n";
+  fprintf fmt "(***************************************************************)\n";
+  fprintf fmt "(*                                                             *)\n";
+  fprintf fmt "(*        File automatically generated DO NOT EDIT             *)\n";
+  fprintf fmt "(*        Constructors: %i  Generated Proofs: %b          %s %s *)\n" size gen_proof (if size < 10 then " " else  "") (if gen_proof then " " else "");
+  fprintf fmt "(*                                                             *)\n";
+  fprintf fmt "(***************************************************************)\n\n";
 
 
   fprintf fmt "Module Type W0Type.\n";
@@ -136,6 +136,8 @@ let print_Make () =
   fprintf fmt " Open Scope Z_scope.\n";
   fprintf fmt " Notation \"[ x ]\" := (to_Z x).\n";
   fprintf fmt " \n";
+
+
 
 
   if gen_proof then
@@ -454,7 +456,7 @@ let print_Make () =
 
 
 
-  fprintf fmt " Theorem to_Z_pos: forall x, 0 <= [x].\n";
+  fprintf fmt " Theorem spec_pos: forall x, 0 <= [x].\n";
   if gen_proof then
   begin
   fprintf fmt " Proof.\n";
@@ -1022,7 +1024,7 @@ let print_Make () =
   fprintf fmt "  end.\n";
   fprintf fmt "\n";
 
-  fprintf fmt " Theorem succ_spec: forall n, [succ n] = [n] + 1.\n";
+  fprintf fmt " Theorem spec_succ: forall n, [succ n] = [n] + 1.\n";
   if gen_proof then
   begin
   fprintf fmt " Proof.\n";
@@ -1157,7 +1159,7 @@ let print_Make () =
   fprintf fmt "  end.\n";
   fprintf fmt "\n";
 
-  fprintf fmt " Let spec_pred: forall x, 0 < [x] -> [pred x] = [x] - 1.\n";
+  fprintf fmt " Theorem spec_pred: forall x, 0 < [x] -> [pred x] = [x] - 1.\n";
   if gen_proof then
   begin
   fprintf fmt " Proof.\n";
@@ -2039,7 +2041,7 @@ let print_Make () =
   fprintf fmt " Theorem spec_div_eucl: forall x y,\n";
   fprintf fmt "      0 < [y] ->\n";
   fprintf fmt "      let (q,r) := div_eucl x y in\n";
-  fprintf fmt "      [q] = [x] / [y] /\\ [r] = [x] mod [y].\n";
+  fprintf fmt "      ([q], [r]) = Zdiv_eucl [x] [y].\n";
   if gen_proof then 
   begin
   fprintf fmt " Proof.\n";
@@ -2049,14 +2051,18 @@ let print_Make () =
   fprintf fmt "   exact (spec_1 w0_spec).\n";
   fprintf fmt " intros x y H; generalize (spec_compare x y);\n";
   fprintf fmt "   unfold div_eucl; case compare; try rewrite F0;\n";
-  fprintf fmt "   try rewrite F1; intros; try split; auto with zarith.\n";
-  fprintf fmt " rewrite H0; apply sym_equal; apply Z_div_same; auto with zarith.\n";
-  fprintf fmt " rewrite H0; apply sym_equal; apply Z_mod_same; auto with zarith.\n";
-  fprintf fmt " apply sym_equal; apply ZDivModAux.Zdiv_lt_0.\n";
-  fprintf fmt " generalize (to_Z_pos x); auto with zarith.\n";
-  fprintf fmt " apply sym_equal; apply ZAux.Zmod_def_small; auto with zarith.\n";
-  fprintf fmt " generalize (to_Z_pos x); auto with zarith.\n";
-  fprintf fmt " apply (spec_div_gt x y); auto.\n";
+  fprintf fmt "   try rewrite F1; intros; auto with zarith.\n";
+  fprintf fmt " rewrite H0; generalize (Z_div_same [y] (Zlt_gt _ _ H))\n";
+  fprintf fmt "                        (Z_mod_same [y] (Zlt_gt _ _ H));\n";
+  fprintf fmt "  unfold Zdiv, Zmod; case Zdiv_eucl; intros; subst; auto.\n";
+  fprintf fmt " assert (F2: 0 <= [x] < [y]).\n";
+  fprintf fmt "   generalize (spec_pos x); auto.\n";
+  fprintf fmt " generalize (ZDivModAux.Zdiv_lt_0 _ _ F2)\n";
+  fprintf fmt "            (Zmod_def_small _ _ F2);\n";
+  fprintf fmt "  unfold Zdiv, Zmod; case Zdiv_eucl; intros; subst; auto.\n";
+  fprintf fmt " generalize (spec_div_gt _ _ H0 H); auto.\n";
+  fprintf fmt " unfold Zdiv, Zmod; case Zdiv_eucl; case div_gt.\n";
+  fprintf fmt " intros a b c d (H1, H2); subst; auto.\n";
   fprintf fmt " Qed.\n";
   end
   else
@@ -2073,7 +2079,8 @@ let print_Make () =
   fprintf fmt " Proof.\n";
   fprintf fmt " intros x y H1; unfold div; generalize (spec_div_eucl x y H1);\n";
   fprintf fmt "   case div_eucl; simpl fst.\n";
-  fprintf fmt " intros xx yy (H2, H3); auto with zarith.\n";
+  fprintf fmt " intros xx yy; unfold Zdiv; case Zdiv_eucl; intros qq rr H; \n";
+  fprintf fmt "  injection H; auto.\n";
   fprintf fmt " Qed.\n";
   end
   else
@@ -2202,7 +2209,7 @@ let print_Make () =
   fprintf fmt "   try rewrite F1; intros; try split; auto with zarith.\n";
   fprintf fmt " rewrite H0; apply sym_equal; apply Z_mod_same; auto with zarith.\n";
   fprintf fmt " apply sym_equal; apply ZAux.Zmod_def_small; auto with zarith.\n";
-  fprintf fmt " generalize (to_Z_pos x); auto with zarith.\n";
+  fprintf fmt " generalize (spec_pos x); auto with zarith.\n";
   fprintf fmt " apply spec_mod_gt; auto.\n";
   fprintf fmt " Qed.\n";
   end
@@ -3122,10 +3129,10 @@ let print_Make () =
   begin
   fprintf fmt " Proof.\n";
   fprintf fmt " intros x.\n";
-  fprintf fmt " assert (F1:= to_Z_pos (head0 x)).\n";
+  fprintf fmt " assert (F1:= spec_pos (head0 x)).\n";
   fprintf fmt " assert (F2: 0 < Zpos (digits x)).\n";
   fprintf fmt "   red; auto.\n";
-  fprintf fmt " case (Zle_lt_or_eq _ _ (to_Z_pos x)); intros HH.\n";
+  fprintf fmt " case (Zle_lt_or_eq _ _ (spec_pos x)); intros HH.\n";
   fprintf fmt " generalize HH; rewrite <- (spec_double_size x); intros HH1.\n";
   fprintf fmt " case (spec_head0 x HH); intros _ HH2.\n";
   fprintf fmt " case (spec_head0 _ HH1).\n";
@@ -3136,7 +3143,7 @@ let print_Make () =
   fprintf fmt " apply Zle_not_lt.\n";
   fprintf fmt " apply Zmult_le_compat_r; auto with zarith.\n";
   fprintf fmt " apply Zpower_le_monotone; auto; auto with zarith.\n";
-  fprintf fmt " generalize (to_Z_pos (head0 (double_size x))); auto with zarith.\n";
+  fprintf fmt " generalize (spec_pos (head0 (double_size x))); auto with zarith.\n";
   fprintf fmt " assert (HH5: 2 ^[head0 x] <= 2 ^(Zpos (digits x) - 1)).\n";
   fprintf fmt "   case (Zle_lt_or_eq 1 [x]); auto with zarith; intros HH5.\n";
   fprintf fmt "   apply Zmult_le_reg_r with (2 ^ 1); auto with zarith.\n";
@@ -3182,10 +3189,10 @@ let print_Make () =
   fprintf fmt " intros x.\n";
   fprintf fmt " assert (F: 0 < Zpos (digits x)).\n";
   fprintf fmt "  red; auto.\n";
-  fprintf fmt " case (Zle_lt_or_eq _ _ (to_Z_pos (head0 (double_size x)))); auto; intros F0.\n";
-  fprintf fmt " case (Zle_lt_or_eq _ _ (to_Z_pos (head0 x))); intros F1.\n";
+  fprintf fmt " case (Zle_lt_or_eq _ _ (spec_pos (head0 (double_size x)))); auto; intros F0.\n";
+  fprintf fmt " case (Zle_lt_or_eq _ _ (spec_pos (head0 x))); intros F1.\n";
   fprintf fmt "   apply Zlt_le_trans with (2 := (spec_double_size_head0 x)); auto with zarith.\n";
-  fprintf fmt " case (Zle_lt_or_eq _ _ (to_Z_pos x)); intros F3.\n";
+  fprintf fmt " case (Zle_lt_or_eq _ _ (spec_pos x)); intros F3.\n";
   fprintf fmt " generalize F3; rewrite <- (spec_double_size x); intros F4.\n";
   fprintf fmt " absurd (2 ^ (Zpos (xO (digits x)) - 1) < 2 ^ (Zpos (digits x))).\n";
   fprintf fmt "   apply Zle_not_lt.\n";
@@ -3352,6 +3359,27 @@ let print_Make () =
   fprintf fmt " Admitted.\n";
   fprintf fmt "\n";
 
+  fprintf fmt " Theorem spec_0: [zero] = 0.\n";
+  if gen_proof then
+  begin
+  fprintf fmt " Proof.\n";
+  fprintf fmt " exact (spec_0 w0_spec).\n";
+  fprintf fmt " Qed.\n";
+  end
+  else
+  fprintf fmt " Admitted.\n";
+  fprintf fmt "\n";
+
+  fprintf fmt " Theorem spec_1: [one] = 1.\n";
+  if gen_proof then
+  begin
+  fprintf fmt " Proof.\n";
+  fprintf fmt " exact (spec_1 w0_spec).\n";
+  fprintf fmt " Qed.\n";
+  end
+  else
+  fprintf fmt " Admitted.\n";
+  fprintf fmt "\n";
 
 
   fprintf fmt "End Make.\n";
