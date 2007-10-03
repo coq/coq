@@ -32,18 +32,20 @@ let abstract_scheme env c l lname_typ =
   List.fold_left2 
     (fun t (locc,a) (na,_,ta) ->
        let na = match kind_of_term a with Var id -> Name id | _ -> na in
+(* [occur_meta ta] test removed for support of eelim/ecase but consequences
+   are unclear...
        if occur_meta ta then error "cannot find a type for the generalisation"
-       else if occur_meta a then lambda_name env (na,ta,t)
+       else *) if occur_meta a then lambda_name env (na,ta,t)
        else lambda_name env (na,ta,subst_term_occ locc a t))
     c
     (List.rev l)
     lname_typ
 
-let abstract_list_all env sigma typ c l =
-  let ctxt,_ = decomp_n_prod env sigma (List.length l) typ in
+let abstract_list_all env evd typ c l =
+  let ctxt,_ = decomp_n_prod env (evars_of evd) (List.length l) typ in
   let p = abstract_scheme env c (List.map (function a -> [],a) l) ctxt in 
   try 
-    if is_conv_leq env sigma (Typing.type_of env sigma p) typ then p
+    if is_conv_leq env (evars_of evd) (Typing.mtype_of env evd p) typ then p
     else error "abstract_list_all"
   with UserError _ ->
     raise (PretypeError (env,CannotGeneralize typ))
@@ -576,11 +578,10 @@ let w_unify_to_subterm_list env mod_delta allow_K oplist t evd =
     (evd,[])
 
 let secondOrderAbstraction env mod_delta allow_K typ (p, oplist) evd =
-  let sigma = evars_of evd in
   let (evd',cllist) =
     w_unify_to_subterm_list env mod_delta allow_K oplist typ evd in
   let typp = Typing.meta_type evd' p in
-  let pred = abstract_list_all env sigma typp typ cllist in
+  let pred = abstract_list_all env evd' typp typ cllist in
   w_unify_0 env topconv mod_delta (mkMeta p) pred evd'
 
 let w_unify2 env mod_delta allow_K cv_pb ty1 ty2 evd =

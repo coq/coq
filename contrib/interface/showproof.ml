@@ -1208,11 +1208,12 @@ let rec natural_ntree ig ntree =
 	  | TacExtend (_,"CutIntro",[a]) ->
 	      let _c = out_gen wit_constr a in
 	      natural_cutintro ig lh g gs a ltree
-	  | TacCase (c,_) -> natural_case ig lh g gs ge (snd c) ltree false
+	  | TacCase (_,(c,_)) -> natural_case ig lh g gs ge (snd c) ltree false
 	  | TacExtend (_,"CaseIntro",[a]) ->
 	      let c = out_gen wit_constr a in
 	      natural_case ig lh g gs ge c ltree true
-	  | TacElim ((c,_),_) -> natural_elim ig lh g gs ge (snd c) ltree false
+	  | TacElim (_,(c,_),_) ->
+	      natural_elim ig lh g gs ge (snd c) ltree false
 	  | TacExtend (_,"ElimIntro",[a]) ->
 	      let c = out_gen wit_constr a in
 	      natural_elim ig lh g gs ge c ltree true

@@ -124,9 +124,10 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacExactNoCheck of 'constr
   | TacVmCastNoCheck of 'constr
   | TacApply of evars_flag * 'constr with_bindings
-  | TacElim of 'constr with_bindings * 'constr with_bindings option
+  | TacElim of evars_flag * 'constr with_bindings * 
+      'constr with_bindings option
   | TacElimType of 'constr
-  | TacCase of 'constr with_bindings
+  | TacCase of evars_flag * 'constr with_bindings
   | TacCaseType of 'constr
   | TacFix of identifier option * int
   | TacMutualFix of identifier * int * (identifier * int * 'constr) list
@@ -140,11 +141,11 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
 
   (* Derived basic tactics *)
   | TacSimpleInduction of quantified_hypothesis
-  | TacNewInduction of 'constr induction_arg list * 'constr with_bindings option
-      * intro_pattern_expr
+  | TacNewInduction of evars_flag * 'constr with_bindings induction_arg list * 
+      'constr with_bindings option * intro_pattern_expr
   | TacSimpleDestruct of quantified_hypothesis
-  | TacNewDestruct of 'constr induction_arg list * 'constr with_bindings option
-      * intro_pattern_expr
+  | TacNewDestruct of evars_flag * 'constr with_bindings induction_arg list *
+      'constr with_bindings option * intro_pattern_expr
 
   | TacDoubleInduction of quantified_hypothesis * quantified_hypothesis
   | TacDecomposeAnd of 'constr

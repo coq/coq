@@ -60,25 +60,22 @@ let clenv_cast_meta clenv =
   in 
   crec
 
-let clenv_refine clenv gls =
+let clenv_refine with_evars clenv gls =
+  let clenv = if with_evars then clenv_pose_dependent_evars clenv else clenv in
   tclTHEN
     (tclEVARS (evars_of clenv.evd)) 
     (refine (clenv_cast_meta clenv (clenv_value clenv)))
     gls
 
 
-let res_pf clenv ?(allow_K=false) gls =
-  clenv_refine (clenv_unique_resolver allow_K clenv gls) gls
+let res_pf clenv ?(with_evars=false) ?(allow_K=false) gls =
+  clenv_refine with_evars (clenv_unique_resolver allow_K clenv gls) gls
 
 let elim_res_pf_THEN_i clenv tac gls =  
   let clenv' = (clenv_unique_resolver true clenv gls) in
-  tclTHENLASTn (clenv_refine clenv') (tac clenv') gls
+  tclTHENLASTn (clenv_refine false clenv') (tac clenv') gls
 
-
-let e_res_pf clenv gls =
-  clenv_refine (evar_clenv_unique_resolver clenv gls) gls
-
-
+let e_res_pf clenv = res_pf clenv ~with_evars:true ~allow_K:false
 
 
 (* [unifyTerms] et [unify] ne semble pas gérer les Meta, en

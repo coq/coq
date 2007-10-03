@@ -492,12 +492,12 @@ let intern_clause_pattern ist (l,occl) =
 
   (* TODO: catch ltac vars *)
 let intern_induction_arg ist = function
-  | ElimOnConstr c -> ElimOnConstr (intern_constr ist c)
+  | ElimOnConstr c -> ElimOnConstr (intern_constr_with_bindings ist c)
   | ElimOnAnonHyp n as x -> x
   | ElimOnIdent (loc,id) ->
       if !strict_check then
 	(* If in a defined tactic, no intros-until *)
-	ElimOnConstr (intern_constr ist (CRef (Ident (dloc,id))))
+	ElimOnConstr (intern_constr ist (CRef (Ident (dloc,id))),NoBindings)
       else
 	ElimOnIdent (loc,id)
 
@@ -660,11 +660,11 @@ let rec intern_atomic lf ist x =
   | TacExactNoCheck c -> TacExactNoCheck (intern_constr ist c)
   | TacVmCastNoCheck c -> TacVmCastNoCheck (intern_constr ist c)
   | TacApply (ev,cb) -> TacApply (ev,intern_constr_with_bindings ist cb)
-  | TacElim (cb,cbo) ->
-      TacElim (intern_constr_with_bindings ist cb,
+  | TacElim (ev,cb,cbo) ->
+      TacElim (ev,intern_constr_with_bindings ist cb,
                option_map (intern_constr_with_bindings ist) cbo)
   | TacElimType c -> TacElimType (intern_type ist c)
-  | TacCase cb -> TacCase (intern_constr_with_bindings ist cb)
+  | TacCase (ev,cb) -> TacCase (ev,intern_constr_with_bindings ist cb)
   | TacCaseType c -> TacCaseType (intern_type ist c)
   | TacFix (idopt,n) -> TacFix (option_map (intern_ident lf ist) idopt,n)
   | TacMutualFix (id,n,l) ->
@@ -702,14 +702,14 @@ let rec intern_atomic lf ist x =
   (* Derived basic tactics *)
   | TacSimpleInduction h ->
       TacSimpleInduction (intern_quantified_hypothesis ist h)
-  | TacNewInduction (lc,cbo,ids) ->
-      TacNewInduction (List.map (intern_induction_arg ist) lc,
+  | TacNewInduction (ev,lc,cbo,ids) ->
+      TacNewInduction (ev,List.map (intern_induction_arg ist) lc,
                option_map (intern_constr_with_bindings ist) cbo,
                (intern_intro_pattern lf ist ids))
   | TacSimpleDestruct h ->
       TacSimpleDestruct (intern_quantified_hypothesis ist h)
-  | TacNewDestruct (c,cbo,ids) ->
-      TacNewDestruct (List.map (intern_induction_arg ist) c,
+  | TacNewDestruct (ev,c,cbo,ids) ->
+      TacNewDestruct (ev,List.map (intern_induction_arg ist) c,
                option_map (intern_constr_with_bindings ist) cbo,
 	       (intern_intro_pattern lf ist ids))
   | TacDoubleInduction (h1,h2) ->
@@ -1558,14 +1558,6 @@ let interp_declared_or_quantified_hypothesis ist gl = function
 	    (coerce_to_decl_or_quant_hyp env) ist (Some env) (dloc,id)
       with Not_found -> NamedHyp id
 
-let interp_induction_arg ist gl = function
-  | ElimOnConstr c -> ElimOnConstr (pf_interp_constr ist gl c)
-  | ElimOnAnonHyp n as x -> x
-  | ElimOnIdent (loc,id) ->
-      if Tactics.is_quantified_hypothesis id gl then ElimOnIdent (loc,id)
-      else ElimOnConstr
-	(pf_interp_constr ist gl (RVar (loc,id),Some (CRef (Ident (loc,id)))))
-
 let interp_binding ist gl (loc,b,c) =
   (loc,interp_binding_name ist b,pf_interp_open_constr false ist gl c)
 
@@ -1579,6 +1571,15 @@ let interp_constr_with_bindings ist gl (c,bl) =
 
 let interp_open_constr_with_bindings ist gl (c,bl) =
   (pf_interp_open_constr false ist gl c, interp_bindings ist gl bl)
+
+let interp_induction_arg ist gl = function
+  | ElimOnConstr c -> ElimOnConstr (interp_constr_with_bindings ist gl c)
+  | ElimOnAnonHyp n as x -> x
+  | ElimOnIdent (loc,id) ->
+      if Tactics.is_quantified_hypothesis id gl then ElimOnIdent (loc,id)
+      else ElimOnConstr
+	(pf_interp_constr ist gl (RVar (loc,id),Some (CRef (Ident (loc,id)))),
+	 NoBindings)
 
 let mk_constr_value ist gl c = VConstr (pf_interp_constr ist gl c)
 let mk_hyp_value ist gl c = VConstr (mkVar (interp_hyp ist gl c))
@@ -2085,11 +2086,11 @@ and interp_atomic ist gl = function
   | TacExactNoCheck c -> h_exact_no_check (pf_interp_constr ist gl c)
   | TacVmCastNoCheck c -> h_vm_cast_no_check (pf_interp_constr ist gl c)
   | TacApply (ev,cb) -> h_apply ev (interp_constr_with_bindings ist gl cb)
-  | TacElim (cb,cbo) ->
-      h_elim (interp_constr_with_bindings ist gl cb)
+  | TacElim (ev,cb,cbo) ->
+      h_elim ev (interp_constr_with_bindings ist gl cb)
                 (option_map (interp_constr_with_bindings ist gl) cbo)
   | TacElimType c -> h_elim_type (pf_interp_type ist gl c)
-  | TacCase cb -> h_case (interp_constr_with_bindings ist gl cb)
+  | TacCase (ev,cb) -> h_case ev (interp_constr_with_bindings ist gl cb)
   | TacCaseType c -> h_case_type (pf_interp_type ist gl c)
   | TacFix (idopt,n) -> h_fix (option_map (interp_fresh_ident ist gl) idopt) n
   | TacMutualFix (id,n,l) ->
@@ -2130,14 +2131,14 @@ and interp_atomic ist gl = function
   (* Derived basic tactics *)
   | TacSimpleInduction h ->
       h_simple_induction (interp_quantified_hypothesis ist h)
-  | TacNewInduction (lc,cbo,ids) ->
-      h_new_induction (List.map (interp_induction_arg ist gl) lc)
+  | TacNewInduction (ev,lc,cbo,ids) ->
+      h_new_induction ev (List.map (interp_induction_arg ist gl) lc)
         (option_map (interp_constr_with_bindings ist gl) cbo)
         (interp_intro_pattern ist gl ids)
   | TacSimpleDestruct h ->
       h_simple_destruct (interp_quantified_hypothesis ist h)
-  | TacNewDestruct (c,cbo,ids) -> 
-      h_new_destruct (List.map (interp_induction_arg ist gl) c)
+  | TacNewDestruct (ev,c,cbo,ids) -> 
+      h_new_destruct ev (List.map (interp_induction_arg ist gl) c)
         (option_map (interp_constr_with_bindings ist gl) cbo)
         (interp_intro_pattern ist gl ids)
   | TacDoubleInduction (h1,h2) ->
@@ -2337,7 +2338,7 @@ let subst_raw_with_bindings subst (c,bl) =
   (subst_rawconstr subst c, subst_bindings subst bl)
 
 let subst_induction_arg subst = function
-  | ElimOnConstr c -> ElimOnConstr (subst_rawconstr subst c)
+  | ElimOnConstr c -> ElimOnConstr (subst_raw_with_bindings subst c)
   | ElimOnAnonHyp n as x -> x
   | ElimOnIdent id as x -> x
 
@@ -2413,11 +2414,11 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacExactNoCheck c -> TacExactNoCheck (subst_rawconstr subst c)
   | TacVmCastNoCheck c -> TacVmCastNoCheck (subst_rawconstr subst c)
   | TacApply (ev,cb) -> TacApply (ev,subst_raw_with_bindings subst cb)
-  | TacElim (cb,cbo) ->
-      TacElim (subst_raw_with_bindings subst cb,
+  | TacElim (ev,cb,cbo) ->
+      TacElim (ev,subst_raw_with_bindings subst cb,
                option_map (subst_raw_with_bindings subst) cbo)
   | TacElimType c -> TacElimType (subst_rawconstr subst c)
-  | TacCase cb -> TacCase (subst_raw_with_bindings subst cb)
+  | TacCase (ev,cb) -> TacCase (ev,subst_raw_with_bindings subst cb)
   | TacCaseType c -> TacCaseType (subst_rawconstr subst c)
   | TacFix (idopt,n) as x -> x
   | TacMutualFix (id,n,l) ->
@@ -2443,12 +2444,12 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
 
   (* Derived basic tactics *)
   | TacSimpleInduction h as x -> x
-  | TacNewInduction (lc,cbo,ids) -> (* Pierre C. est-ce correct? *)
-      TacNewInduction (List.map (subst_induction_arg subst) lc,
+  | TacNewInduction (ev,lc,cbo,ids) ->
+      TacNewInduction (ev,List.map (subst_induction_arg subst) lc,
                option_map (subst_raw_with_bindings subst) cbo, ids)
   | TacSimpleDestruct h as x -> x
-  | TacNewDestruct (c,cbo,ids) ->
-      TacNewDestruct (List.map (subst_induction_arg subst) c,  (* Julien F. est-ce correct? *)
+  | TacNewDestruct (ev,c,cbo,ids) ->
+      TacNewDestruct (ev,List.map (subst_induction_arg subst) c,
                option_map (subst_raw_with_bindings subst) cbo, ids)
   | TacDoubleInduction (h1,h2) as x -> x
   | TacDecomposeAnd c -> TacDecomposeAnd (subst_rawconstr subst c)

@@ -61,7 +61,7 @@ let general_elim_clause with_evars cls c elim = match cls with
       (* was tclWEAK_PROGRESS which only fails for tactics generating one 
          subgoal and did not fail for useless conditional rewritings generating
          an extra condition *)
-      tclNOTSAMEGOAL (general_elim c elim ~allow_K:false)
+      tclNOTSAMEGOAL (general_elim with_evars c elim ~allow_K:false)
   | Some id ->
       general_elim_in with_evars id c elim 
 

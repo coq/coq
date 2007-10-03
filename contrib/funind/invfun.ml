@@ -513,7 +513,7 @@ and intros_with_rewrite_aux : tactic =
 		      Tauto.tauto g
 		  | Case(_,_,v,_) -> 
 		      tclTHENSEQ[
-			h_case (v,Rawterm.NoBindings);
+			h_case false (v,Rawterm.NoBindings);
 			intros_with_rewrite
 		      ] g
 		  | LetIn _ -> 
@@ -550,7 +550,7 @@ let rec reflexivity_with_destruct_cases g =
       match kind_of_term (snd (destApp (pf_concl g))).(2) with 
 	| Case(_,_,v,_) -> 
 	    tclTHENSEQ[
-	      h_case (v,Rawterm.NoBindings);
+	      h_case false (v,Rawterm.NoBindings);
 	      intros;
 	      observe_tac "reflexivity_with_destruct_cases" reflexivity_with_destruct_cases 
 	    ]
@@ -720,7 +720,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	(h_generalize [mkApp(applist(graph_principle,params),Array.map (fun c -> applist(c,params)) lemmas)]);
 	h_intro graph_principle_id;
 	observe_tac "" (tclTHEN_i 
-	  (observe_tac "elim" ((elim (mkVar hres,Rawterm.NoBindings) (Some (mkVar graph_principle_id,Rawterm.NoBindings)))))
+	  (observe_tac "elim" ((elim false (mkVar hres,Rawterm.NoBindings) (Some (mkVar graph_principle_id,Rawterm.NoBindings)))))
 	  (fun i g -> observe_tac "prove_branche" (prove_branche i) g ))
       ]
       g

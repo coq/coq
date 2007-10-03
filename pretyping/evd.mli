@@ -215,3 +215,4 @@ val pr_evar_info : evar_info -> Pp.std_ppcmds
 val pr_evar_map  : evar_map -> Pp.std_ppcmds
 val pr_evar_defs : evar_defs -> Pp.std_ppcmds
 val pr_sort_constraints : evar_map -> Pp.std_ppcmds
+val pr_metaset : Metaset.t -> Pp.std_ppcmds

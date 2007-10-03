@@ -84,6 +84,9 @@ Tactics
 - The "with" arguments are now typed using informations from the current goal:
   allows support for coercions and more inference of implicit arguments.
 - Application of "f_equal"-style lemmas works better.
+- Tactics elim, case, destruct and induction now support variants eelim,
+  ecase, edestruct and einduction.
+- Tactics destruct and induction now support option "with".
 - New intro pattern "?A", which genererates a fresh name based on A.
   Caveat about a slight loss of compatibility:
   Some intro patterns don't need space between them. In particular

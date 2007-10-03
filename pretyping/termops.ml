@@ -517,8 +517,8 @@ let free_rels m =
 let collect_metas c = 
   let rec collrec acc c =
     match kind_of_term c with
-      | Meta mv -> mv::acc
-      | _         -> fold_constr collrec acc c
+      | Meta mv -> list_add_set mv acc
+      | _       -> fold_constr collrec acc c
   in
   List.rev (collrec [] c)
 

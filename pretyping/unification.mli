@@ -28,8 +28,8 @@ val w_unify_meta_types : env -> evar_defs -> evar_defs
 
 (*i This should be in another module i*)
 
-(* [abstract_list_all env sigma t c l]                     *)
+(* [abstract_list_all env evd t c l]                       *)
 (* abstracts the terms in l over c to get a term of type t *)
 (* (exported for inv.ml) *)
 val abstract_list_all :
-  env -> evar_map -> constr -> constr -> constr list -> constr
+  env -> evar_defs -> constr -> constr -> constr list -> constr

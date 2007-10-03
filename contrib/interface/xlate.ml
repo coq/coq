@@ -663,7 +663,8 @@ let xlate_largs_to_id_opt largs =
     | _ -> assert false;;
 
 let xlate_int_or_constr = function
-    ElimOnConstr a -> CT_coerce_FORMULA_to_FORMULA_OR_INT(xlate_formula a)
+    ElimOnConstr (a,NoBindings) -> CT_coerce_FORMULA_to_FORMULA_OR_INT(xlate_formula a)
+  | ElimOnConstr _ -> xlate_error "TODO: ElimOnConstr with bindings"
   | ElimOnIdent(_,i) ->
       CT_coerce_ID_OR_INT_to_FORMULA_OR_INT
       	(CT_coerce_ID_to_ID_OR_INT(xlate_ident i))
@@ -1162,10 +1163,13 @@ and xlate_tac =
 	CT_generalize_dependent (xlate_formula c)
     | TacElimType c -> CT_elim_type (xlate_formula c)
     | TacCaseType c -> CT_case_type (xlate_formula c)
-    | TacElim ((c1,sl), u) ->
+    | TacElim (false,(c1,sl), u) ->
      CT_elim (xlate_formula c1, xlate_bindings sl, xlate_using u)
-    | TacCase (c1,sl) ->
+    | TacCase (false,(c1,sl)) ->
      CT_casetac (xlate_formula c1, xlate_bindings sl)
+    | TacElim (true,_,_) | TacCase (true,_)
+    | TacNewDestruct (true,_,_,_) | TacNewInduction (true,_,_,_) ->
+	xlate_error "TODO: eelim, ecase, edestruct, einduction"
     | TacSimpleInduction h -> CT_induction (xlate_quantified_hypothesis h)
     | TacSimpleDestruct h -> CT_destruct (xlate_quantified_hypothesis h)
     | TacCut c -> CT_cut (xlate_formula c)
@@ -1207,12 +1211,12 @@ and xlate_tac =
 	CT_dauto(xlate_int_or_var_opt_to_int_opt a, xlate_int_opt b)
     | TacDAuto (a, b, _) ->
 	xlate_error "TODO: dauto using"
-    | TacNewDestruct(a,b,c) ->
-	CT_new_destruct (* Julien F. : est-ce correct *)
+    | TacNewDestruct(false,a,b,c) ->
+	CT_new_destruct
 	  (List.map  xlate_int_or_constr a, xlate_using b, 
 	   xlate_with_names c)
-    | TacNewInduction(a,b,c) ->
-	CT_new_induction (* Pierre C. : est-ce correct *)
+    | TacNewInduction(false,a,b,c) ->
+	CT_new_induction
 	  (List.map xlate_int_or_constr a, xlate_using b,
 	   xlate_with_names c)
     (*| TacInstantiate (a, b, cl) -> 

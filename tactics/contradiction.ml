@@ -77,7 +77,7 @@ let contradiction_term (c,lbind as cl) gl =
   let typ = pf_type_of gl c in
   let _, ccl = splay_prod env sigma typ in
   if is_empty_type ccl then
-    tclTHEN (elim cl None) (tclTRY assumption) gl
+    tclTHEN (elim false cl None) (tclTRY assumption) gl
   else
     try
       if lbind = NoBindings then

@@ -910,7 +910,7 @@ let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
 	   let rec_id = pf_nth_hyp_id g 1 in
 	   tclTHENSEQ
 	     [(* observe_tac "generalize_non_dep in generate_equation_lemma" *) (generalize_non_dep rec_id);
-	      (* observe_tac "h_case" *) (h_case(mkVar rec_id,Rawterm.NoBindings));
+	      (* observe_tac "h_case" *) (h_case false (mkVar rec_id,Rawterm.NoBindings));
 	      intros_reflexivity] g
 	)
       ]

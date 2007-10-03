@@ -22,8 +22,8 @@ let is_rec_info scheme_info =
 
 let choose_dest_or_ind scheme_info =
     if is_rec_info scheme_info
-    then Tactics.new_induct
-    else Tactics.new_destruct
+    then Tactics.new_induct false
+    else Tactics.new_destruct false
 
 
 let functional_induction with_clean c princl pat =
@@ -77,7 +77,7 @@ let functional_induction with_clean c princl pat =
 	if princ_infos.Tactics.farg_in_concl 
 	then [c] else [] 
       in
-      List.map (fun c -> Tacexpr.ElimOnConstr c) (args@c_list) 
+      List.map (fun c -> Tacexpr.ElimOnConstr (c,NoBindings)) (args@c_list) 
     in 
     let princ' = Some (princ,bindings) in 
     let princ_vars = 

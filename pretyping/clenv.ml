@@ -218,7 +218,8 @@ let clenv_wtactic f clenv = {clenv with evd = f clenv.evd }
  * returns a list of the metavars which appear in the type of
  * the metavar mv.  The list is unordered. *)
 
-let clenv_metavars clenv mv = (meta_ftype clenv mv).freemetas
+let clenv_metavars evd mv =
+  (mk_freelisted (meta_instance evd (meta_ftype evd mv))).freemetas
 
 let dependent_metas clenv mvs conclmetas =
   List.fold_right
@@ -269,9 +270,7 @@ let clenv_pose_dependent_evars clenv =
     clenv
     dep_mvs
 
-let evar_clenv_unique_resolver clenv gls =
-  clenv_pose_dependent_evars (clenv_unique_resolver false clenv gls)
-
+let evar_clenv_unique_resolver = clenv_unique_resolver
 
 (******************************************************************)
 

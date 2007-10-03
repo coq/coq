@@ -111,9 +111,11 @@ let mk_cofix_tac (loc,id,bl,ann,ty) =
   (id,CProdN(loc,bl,ty))
 
 (* Functions overloaded by quotifier *)
-let induction_arg_of_constr c =
-  try ElimOnIdent (constr_loc c,snd(coerce_to_id c))
-  with _ -> ElimOnConstr c
+let induction_arg_of_constr (c,lbind as clbind) =
+  if lbind = NoBindings then
+    try ElimOnIdent (constr_loc c,snd(coerce_to_id c))
+    with _ -> ElimOnConstr clbind
+  else ElimOnConstr clbind
 
 (* Auxiliary grammar rules *)
 
@@ -147,7 +149,7 @@ GEXTEND Gram
   ;
   induction_arg:
     [ [ n = natural -> ElimOnAnonHyp n
-      | c = constr -> induction_arg_of_constr c
+      | c = constr_with_bindings -> induction_arg_of_constr c
     ] ]
   ;
   quantified_hypothesis:
@@ -343,9 +345,12 @@ GEXTEND Gram
       | IDENT "apply"; cl = constr_with_bindings -> TacApply (false,cl)
       | IDENT "eapply"; cl = constr_with_bindings -> TacApply (true,cl)
       | IDENT "elim"; cl = constr_with_bindings; el = OPT eliminator ->
-          TacElim (cl,el)
+          TacElim (false,cl,el)
+      | IDENT "eelim"; cl = constr_with_bindings; el = OPT eliminator ->
+          TacElim (true,cl,el)
       | IDENT "elimtype"; c = constr -> TacElimType c
-      | IDENT "case"; cl = constr_with_bindings -> TacCase cl
+      | IDENT "case"; cl = constr_with_bindings -> TacCase (false,cl)
+      | IDENT "ecase"; cl = constr_with_bindings -> TacCase (true,cl)
       | IDENT "casetype"; c = constr -> TacCaseType c
       | "fix"; n = natural -> TacFix (None,n)
       | "fix"; id = ident; n = natural -> TacFix (Some id,n)
@@ -389,13 +394,17 @@ GEXTEND Gram
       | IDENT "simple"; IDENT"induction"; h = quantified_hypothesis ->
           TacSimpleInduction h
       | IDENT "induction"; lc = LIST1 induction_arg; ids = with_names; 
-	  el = OPT eliminator -> TacNewInduction (lc,el,ids)
+	  el = OPT eliminator -> TacNewInduction (false,lc,el,ids)
+      | IDENT "einduction"; lc = LIST1 induction_arg; ids = with_names; 
+	  el = OPT eliminator -> TacNewInduction (true,lc,el,ids)
       | IDENT "double"; IDENT "induction"; h1 = quantified_hypothesis;
 	  h2 = quantified_hypothesis -> TacDoubleInduction (h1,h2)
-      | IDENT "simple"; IDENT"destruct"; h = quantified_hypothesis ->
+      | IDENT "simple"; IDENT "destruct"; h = quantified_hypothesis ->
           TacSimpleDestruct h
       | IDENT "destruct"; lc = LIST1 induction_arg; ids = with_names; 
-	  el = OPT eliminator -> TacNewDestruct (lc,el,ids)
+	  el = OPT eliminator -> TacNewDestruct (false,lc,el,ids)
+      | IDENT "edestruct"; lc = LIST1 induction_arg; ids = with_names; 
+	  el = OPT eliminator -> TacNewDestruct (true,lc,el,ids)
       | IDENT "decompose"; IDENT "record" ; c = constr -> TacDecomposeAnd c
       | IDENT "decompose"; IDENT "sum"; c = constr -> TacDecomposeOr c
       | IDENT "decompose"; "["; l = LIST1 smart_global; "]"; c = constr

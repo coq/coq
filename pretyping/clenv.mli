@@ -75,9 +75,9 @@ val clenv_unique_resolver :
   bool -> clausenv -> evar_info sigma -> clausenv
 
 (* same as above ([allow_K=false]) but replaces remaining metas
-   with fresh evars *)
+   with fresh evars if [evars_flag] is [true] *)
 val evar_clenv_unique_resolver :
-  clausenv -> evar_info sigma -> clausenv
+  bool -> clausenv -> evar_info sigma -> clausenv
 
 val clenv_pose_dependent_evars : clausenv -> clausenv
 

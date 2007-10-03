@@ -231,27 +231,29 @@ type elim_scheme = {
 
 val compute_elim_sig : ?elimc: constr with_ebindings -> types -> elim_scheme
 
-val general_elim  :
+val general_elim  : evars_flag ->
   constr with_ebindings -> constr with_ebindings -> ?allow_K:bool -> tactic
 val general_elim_in : evars_flag -> 
   identifier -> constr with_ebindings -> constr with_ebindings -> tactic
 
-val default_elim  : constr with_ebindings -> tactic
+val default_elim  : evars_flag -> constr with_ebindings -> tactic
 val simplest_elim : constr -> tactic
-val elim          : constr with_ebindings -> constr with_ebindings option -> tactic
+val elim : 
+  evars_flag -> constr with_ebindings -> constr with_ebindings option -> tactic
+
 val simple_induct : quantified_hypothesis -> tactic
 
-val new_induct : constr induction_arg list -> constr with_ebindings option ->
-  intro_pattern_expr -> tactic
+val new_induct : evars_flag -> constr with_ebindings induction_arg list -> 
+  constr with_ebindings option -> intro_pattern_expr -> tactic
 
 (*s Case analysis tactics. *)
 
-val general_case_analysis : constr with_ebindings ->  tactic
+val general_case_analysis : evars_flag -> constr with_ebindings ->  tactic
 val simplest_case         : constr -> tactic
 
 val simple_destruct          : quantified_hypothesis -> tactic
-val new_destruct : constr induction_arg list -> constr with_ebindings option ->
-  intro_pattern_expr -> tactic
+val new_destruct : evars_flag -> constr with_ebindings induction_arg list -> 
+  constr with_ebindings option -> intro_pattern_expr -> tactic
 
 (*s Eliminations giving the type instead of the proof. *)
 

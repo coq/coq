@@ -23,7 +23,7 @@ let inj_id id = (dummy_loc,id)
 let inj_open c = (Evd.empty,c)
 let inj_open_wb (c,b) = ((Evd.empty,c),b)
 let inj_ia = function
-  | ElimOnConstr c -> ElimOnConstr (inj_open c)
+  | ElimOnConstr c -> ElimOnConstr (inj_open_wb c)
   | ElimOnIdent id -> ElimOnIdent id
   | ElimOnAnonHyp n -> ElimOnAnonHyp n
 let inj_occ (occ,c) = (occ,inj_open c)
@@ -42,11 +42,11 @@ let h_vm_cast_no_check c =
 let h_apply ev cb    =
   abstract_tactic (TacApply (ev,inj_open_wb cb))
     (apply_with_ebindings_gen ev cb)
-let h_elim cb cbo    =
-  abstract_tactic (TacElim (inj_open_wb cb,option_map inj_open_wb cbo))
-    (elim cb cbo)
+let h_elim ev cb cbo    =
+  abstract_tactic (TacElim (ev,inj_open_wb cb,option_map inj_open_wb cbo))
+    (elim ev cb cbo)
 let h_elim_type c    = abstract_tactic (TacElimType (inj_open c)) (elim_type c)
-let h_case cb        = abstract_tactic (TacCase (inj_open_wb cb)) (general_case_analysis cb)
+let h_case ev cb     = abstract_tactic (TacCase (ev,inj_open_wb cb)) (general_case_analysis ev cb)
 let h_case_type c    = abstract_tactic (TacCaseType (inj_open c)) (case_type c)
 let h_fix ido n      = abstract_tactic (TacFix (ido,n)) (fix ido n)
 let h_mutual_fix id n l =
@@ -77,12 +77,12 @@ let h_simple_induction h =
   abstract_tactic (TacSimpleInduction h) (simple_induct h)
 let h_simple_destruct h  =
   abstract_tactic (TacSimpleDestruct h) (simple_destruct h)
-let h_new_induction c e idl =
-  abstract_tactic (TacNewInduction (List.map inj_ia c,option_map inj_open_wb e,idl))
-    (new_induct c e idl)
-let h_new_destruct c e idl =
-  abstract_tactic (TacNewDestruct (List.map inj_ia c,option_map inj_open_wb e,idl))
-    (new_destruct c e idl)
+let h_new_induction ev c e idl =
+  abstract_tactic (TacNewInduction (ev,List.map inj_ia c,option_map inj_open_wb e,idl))
+    (new_induct ev c e idl)
+let h_new_destruct ev c e idl =
+  abstract_tactic (TacNewDestruct (ev,List.map inj_ia c,option_map inj_open_wb e,idl))
+    (new_destruct ev c e idl)
 let h_specialize n d = abstract_tactic (TacSpecialize (n,inj_open_wb d)) (new_hyp n d)
 let h_lapply c = abstract_tactic (TacLApply (inj_open c)) (cut_and_apply c)
 
@@ -124,8 +124,8 @@ let h_transitivity c =
 
 let h_simplest_apply c  = h_apply false (c,NoBindings)
 let h_simplest_eapply c = h_apply true (c,NoBindings)
-let h_simplest_elim c   = h_elim (c,NoBindings) None
-let h_simplest_case   c = h_case (c,NoBindings)
+let h_simplest_elim c   = h_elim false (c,NoBindings) None
+let h_simplest_case   c = h_case false (c,NoBindings)
 
 let h_intro_patterns l = abstract_tactic (TacIntroPattern l) (intro_patterns l)
 

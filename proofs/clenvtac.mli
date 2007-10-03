@@ -16,11 +16,14 @@ open Sign
 open Evd
 open Clenv
 open Proof_type
+open Tacexpr
 (*i*)
 
 (* Tactics *)
 val unify : constr -> tactic
-val clenv_refine : clausenv -> tactic
-val res_pf : clausenv -> ?allow_K:bool -> tactic
-val e_res_pf : clausenv -> tactic
+val clenv_refine : evars_flag -> clausenv -> tactic
+val res_pf : clausenv -> ?with_evars:evars_flag -> ?allow_K:bool -> tactic
 val elim_res_pf_THEN_i : clausenv -> (clausenv -> tactic array) -> tactic
+
+(* Compatibility, use res_pf ?with_evars:true instead *)
+val e_res_pf : clausenv -> tactic

@@ -111,7 +111,8 @@ let make_inv_predicate env sigma indf realargs id status concl =
               | None ->
 		let sort = get_sort_of env sigma concl in
 		let p = make_arity env true indf sort in
-		Unification.abstract_list_all env sigma p concl (realargs@[mkVar id]) in
+		Unification.abstract_list_all env (Evd.create_evar_defs sigma)
+		  p concl (realargs@[mkVar id]) in
 	  let hyps,bodypred = decompose_lam_n_assum (nrealargs+1) pred in
 	  (* We lift to make room for the equations *)
 	  (hyps,lift nrealargs bodypred)

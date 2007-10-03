@@ -27,6 +27,7 @@ install_printer Top_printers.ppenv
 install_printer Top_printers.ppgoal
 install_printer Top_printers.ppsigmagoal
 install_printer Top_printers.pproof
+install_printer Top_printers.ppmetas
 install_printer Top_printers.ppevd
 install_printer Top_printers.ppevm
 install_printer Top_printers.ppclenv

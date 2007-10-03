@@ -17,6 +17,7 @@ open Genarg
 open Tacexpr
 open Rawterm
 open Evd
+open Clenv
 (*i*)
 
 (* Tactics for the interpreter. They left a trace in the proof tree
@@ -35,10 +36,10 @@ val h_vm_cast_no_check  : constr -> tactic
 
 val h_apply           : evars_flag -> constr with_ebindings -> tactic
 
-val h_elim            : constr with_ebindings ->
+val h_elim            : evars_flag -> constr with_ebindings ->
                         constr with_ebindings option -> tactic
 val h_elim_type       : constr -> tactic
-val h_case            : constr with_ebindings -> tactic
+val h_case            : evars_flag -> constr with_ebindings -> tactic
 val h_case_type       : constr -> tactic
 
 val h_mutual_fix      : identifier -> int ->
@@ -59,11 +60,11 @@ val h_instantiate     : int -> Rawterm.rawconstr ->
 val h_simple_induction   : quantified_hypothesis -> tactic
 val h_simple_destruct    : quantified_hypothesis -> tactic
 val h_new_induction   :
-  constr induction_arg list -> constr with_ebindings option ->
-  intro_pattern_expr -> tactic
+  evars_flag -> constr with_ebindings induction_arg list ->
+    constr with_ebindings option -> intro_pattern_expr -> tactic
 val h_new_destruct    :
-  constr induction_arg list -> constr with_ebindings option -> 
-  intro_pattern_expr -> tactic
+  evars_flag -> constr with_ebindings induction_arg list ->
+    constr with_ebindings option -> intro_pattern_expr -> tactic
 val h_specialize      : int option -> constr with_ebindings -> tactic
 val h_lapply          : constr -> tactic
 

@@ -427,8 +427,8 @@ let pr_clause_pattern pr_id = function
 
 let pr_orient b = if b then mt () else str " <-"
 
-let pr_induction_arg prc = function
-  | ElimOnConstr c -> prc c
+let pr_induction_arg prlc prc = function
+  | ElimOnConstr c -> pr_with_bindings prlc prc c
   | ElimOnIdent (loc,id) -> pr_with_comments loc (pr_id id)
   | ElimOnAnonHyp n -> int n
 
@@ -680,11 +680,12 @@ and pr_atom1 = function
   | TacApply (ev,cb) ->
       hov 1 (str (if ev then "eapply" else "apply") ++ spc () ++ 
              pr_with_bindings cb)
-  | TacElim (cb,cbo) ->
-      hov 1 (str "elim" ++ pr_arg pr_with_bindings cb ++ 
+  | TacElim (ev,cb,cbo) ->
+      hov 1 (str (if ev then "eelim" else "elim") ++ pr_arg pr_with_bindings cb ++ 
         pr_opt pr_eliminator cbo)
   | TacElimType c -> hov 1 (str "elimtype" ++ pr_constrarg c)
-  | TacCase cb -> hov 1 (str "case" ++ spc () ++ pr_with_bindings cb)
+  | TacCase (ev,cb) ->
+      hov 1 (str (if ev then "ecase" else "case") ++ spc () ++ pr_with_bindings cb)
   | TacCaseType c -> hov 1 (str "casetype" ++ pr_constrarg c)
   | TacFix (ido,n) -> hov 1 (str "fix" ++ pr_opt pr_id ido ++ pr_intarg n)
   | TacMutualFix (id,n,l) ->
@@ -726,16 +727,16 @@ and pr_atom1 = function
   (* Derived basic tactics *)
   | TacSimpleInduction h ->
       hov 1 (str "simple induction" ++ pr_arg pr_quantified_hypothesis h)
-  | TacNewInduction (h,e,ids) ->
-      hov 1 (str "induction" ++ spc () ++
-	     prlist_with_sep spc (pr_induction_arg pr_constr) h ++
+  | TacNewInduction (ev,h,e,ids) ->
+      hov 1 (str (if ev then "einduction" else "induction") ++ spc () ++
+	     prlist_with_sep spc (pr_induction_arg pr_lconstr pr_constr) h ++
 	     pr_with_names ids ++
              pr_opt pr_eliminator e)
   | TacSimpleDestruct h ->
       hov 1 (str "simple destruct" ++ pr_arg pr_quantified_hypothesis h)
-  | TacNewDestruct (h,e,ids) ->
-      hov 1 (str "destruct" ++ spc () ++
-             prlist_with_sep spc (pr_induction_arg pr_constr) h ++ 
+  | TacNewDestruct (ev,h,e,ids) ->
+      hov 1 (str (if ev then "edestruct" else "destruct") ++ spc () ++
+             prlist_with_sep spc (pr_induction_arg pr_lconstr pr_constr) h ++ 
 	     pr_with_names ids ++
              pr_opt pr_eliminator e)
   | TacDoubleInduction (h1,h2) ->

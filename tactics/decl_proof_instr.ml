@@ -762,7 +762,7 @@ let rec consider_match may_intro introduced available expected gls =
 		 try conjunction_arity id gls with 
 		     Not_found -> error "matching hypothesis not found" in 
 		 tclTHENLIST 
-		   [general_case_analysis (mkVar id,NoBindings);
+		   [general_case_analysis false (mkVar id,NoBindings);
 		    intron_then nhyps []
 		      (fun l -> consider_match may_intro introduced 
 			 (List.rev_append l rest_ids) expected)] gls)
@@ -1347,7 +1347,7 @@ let end_tac et2 gls =
 	      tclSOLVE [simplest_elim pi.per_casee]	
 	  | ET_Case_analysis,EK_nodep ->
 	      tclTHEN 
-		(general_case_analysis (pi.per_casee,NoBindings))
+		(general_case_analysis false (pi.per_casee,NoBindings))
 		(default_justification (List.map mkVar clauses))
 	  | ET_Induction,EK_nodep ->
 	      tclTHENLIST

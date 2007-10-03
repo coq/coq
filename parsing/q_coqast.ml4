@@ -227,18 +227,18 @@ let mlexpr_of_binding_kind = function
   | Rawterm.NoBindings -> 
        <:expr< Rawterm.NoBindings >>
 
-let mlexpr_of_induction_arg = function
-  | Tacexpr.ElimOnConstr c ->
-      <:expr< Tacexpr.ElimOnConstr $mlexpr_of_constr c$ >>
-  | Tacexpr.ElimOnIdent (_,id) -> 
-      <:expr< Tacexpr.ElimOnIdent $dloc$ $mlexpr_of_ident id$ >>
-  | Tacexpr.ElimOnAnonHyp n ->
-      <:expr< Tacexpr.ElimOnAnonHyp $mlexpr_of_int n$ >>
-
 let mlexpr_of_binding = mlexpr_of_pair mlexpr_of_binding_kind mlexpr_of_constr
 
 let mlexpr_of_constr_with_binding =
   mlexpr_of_pair mlexpr_of_constr mlexpr_of_binding_kind
+
+let mlexpr_of_induction_arg = function
+  | Tacexpr.ElimOnConstr c ->
+      <:expr< Tacexpr.ElimOnConstr $mlexpr_of_constr_with_binding c$ >>
+  | Tacexpr.ElimOnIdent (_,id) -> 
+      <:expr< Tacexpr.ElimOnIdent $dloc$ $mlexpr_of_ident id$ >>
+  | Tacexpr.ElimOnAnonHyp n ->
+      <:expr< Tacexpr.ElimOnAnonHyp $mlexpr_of_int n$ >>
 
 let mlexpr_of_clause_pattern _ = failwith "mlexpr_of_clause_pattern: TODO"
 
@@ -287,15 +287,15 @@ let rec mlexpr_of_atomic_tactic = function
       <:expr< Tacexpr.TacVmCastNoCheck $mlexpr_of_constr c$ >>
   | Tacexpr.TacApply (false,cb) ->
       <:expr< Tacexpr.TacApply False $mlexpr_of_constr_with_binding cb$ >>
-  | Tacexpr.TacElim (cb,cbo) ->
+  | Tacexpr.TacElim (false,cb,cbo) ->
       let cb = mlexpr_of_constr_with_binding cb in
       let cbo = mlexpr_of_option mlexpr_of_constr_with_binding cbo in
-      <:expr< Tacexpr.TacElim $cb$ $cbo$ >>
+      <:expr< Tacexpr.TacElim False $cb$ $cbo$ >>
   | Tacexpr.TacElimType c ->
       <:expr< Tacexpr.TacElimType $mlexpr_of_constr c$ >>
-  | Tacexpr.TacCase cb ->
+  | Tacexpr.TacCase (false,cb) ->
       let cb = mlexpr_of_constr_with_binding cb in
-      <:expr< Tacexpr.TacCase $cb$ >>
+      <:expr< Tacexpr.TacCase False $cb$ >>
   | Tacexpr.TacCaseType c ->
       <:expr< Tacexpr.TacCaseType $mlexpr_of_constr c$ >>
   | Tacexpr.TacFix (ido,n) ->
@@ -335,18 +335,18 @@ let rec mlexpr_of_atomic_tactic = function
   (* Derived basic tactics *)
   | Tacexpr.TacSimpleInduction h ->
       <:expr< Tacexpr.TacSimpleInduction ($mlexpr_of_quantified_hypothesis h$) >>
-  | Tacexpr.TacNewInduction (cl,cbo,ids) ->
+  | Tacexpr.TacNewInduction (false,cl,cbo,ids) ->
       let cbo = mlexpr_of_option mlexpr_of_constr_with_binding cbo in
       let ids = mlexpr_of_intro_pattern ids in
 (*       let ids = mlexpr_of_option mlexpr_of_intro_pattern ids in *)
 (*       <:expr< Tacexpr.TacNewInduction $mlexpr_of_induction_arg c$ $cbo$ $ids$>> *)
-      <:expr< Tacexpr.TacNewInduction $mlexpr_of_list mlexpr_of_induction_arg cl$ $cbo$ $ids$>>
+      <:expr< Tacexpr.TacNewInduction False $mlexpr_of_list mlexpr_of_induction_arg cl$ $cbo$ $ids$>>
   | Tacexpr.TacSimpleDestruct h ->
       <:expr< Tacexpr.TacSimpleDestruct $mlexpr_of_quantified_hypothesis h$ >>
-  | Tacexpr.TacNewDestruct (c,cbo,ids) ->
+  | Tacexpr.TacNewDestruct (false,c,cbo,ids) ->
       let cbo = mlexpr_of_option mlexpr_of_constr_with_binding cbo in
       let ids = mlexpr_of_intro_pattern ids in
-      <:expr< Tacexpr.TacNewDestruct $mlexpr_of_list mlexpr_of_induction_arg c$ $cbo$ $ids$ >>
+      <:expr< Tacexpr.TacNewDestruct False $mlexpr_of_list mlexpr_of_induction_arg c$ $cbo$ $ids$ >>
 
   (* Context management *)
   | Tacexpr.TacClear (b,l) ->
