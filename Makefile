@@ -86,7 +86,7 @@ OCAMLOPT += $(CAMLFLAGS)
 
 BYTEFLAGS=$(MLINCLUDES) $(CAMLDEBUG) $(USERFLAGS)
 OPTFLAGS=$(MLINCLUDES) $(CAMLTIMEPROF) $(INLINEFLAG) $(USERFLAGS)
-DEPFLAGS=$(LOCALINCLUDES)
+DEPFLAGS= -slash $(LOCALINCLUDES)
 
 OCAMLC_P4O=$(OCAMLC) -pp $(CAMLP4O) $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp $(CAMLP4O) $(OPTFLAGS)
@@ -351,12 +351,6 @@ OBJSCMO=$(CONFIG) $(LIBREP) $(KERNEL) $(LIBRARY) $(PRETYPING) $(INTERP) \
 ###########################################################################
 
 CINCLUDES= -I $(CAMLHLIB)
-
-ifeq ($(CAMLVERSION),OCAML307)
-  CFLAGS=-fno-defer-pop -Wall -Wno-unused -DOCAML_307
-else
-  CFLAGS=-fno-defer-pop -Wall -Wno-unused
-endif
 
 # libcoqrun.a 
 
@@ -1653,12 +1647,6 @@ archclean::
 	$(SHOW)'OCAMLC4   $<'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl" -c -impl $<
 
-%.ml: %.ml4
-	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pa_ifdef.cmo pr_o.cmo `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl $< > $@ || rm -f $@
-
-#.v.vo:
-#	$(BOOTCOQTOP) -compile $*
-
 .el.elc:
 	echo "(setq load-path (cons \".\" load-path))" > $*.compile
 	echo "(byte-compile-file \"$<\")" >> $*.compile
@@ -1772,7 +1760,7 @@ depend: $(BEFOREDEPEND) dependp4 ml4filesml
 	  echo `$(CAMLP4DEPS) $$f` >> .depend; \
 	done
 # 5.  We express dependencies of .o files
-	$(CC) -MM kernel/byterun/*.c >> .depend
+	$(CC) -MM -isystem $(CAMLHLIB) kernel/byterun/*.c >> .depend
 # 6. Finally, we erase the generated .ml files
 	rm -f $(ML4FILESML)
 # 7. Since .depend contains correct dependencies .depend.devel can be deleted
@@ -1793,7 +1781,6 @@ devel:
 
 -include .depend
 -include .depend.coq
--include .depend.camlp4
 
 clean::
 	find . -name "\.#*" -exec rm -f {} \;

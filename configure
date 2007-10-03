@@ -86,6 +86,7 @@ coq_profile_flag=
 coq_annotate_flag=
 coq_inline_flag=
 best_compiler=opt
+cflags="-fno-defer-pop -Wall -Wno-unused"
 
 gcc_exec=gcc
 ar_exec=ar
@@ -359,10 +360,18 @@ fi
 # For coqmktop & bytecode compiler
 
 case $ARCH in
-  win32) # Awful trick to get around ^M character at the end of CAMLLIB
-         CAMLLIB="C:\OCaml\lib";;
-  *) CAMLLIB=`"$CAMLC" -where`
+    win32) # Awfull trick to get around a ^M problem at the end of CAMLLIB
+      CAMLLIB=`"$CAMLC" -where | sed -e 's/^\(.*\)$/\1/'` ;;
+    *)
+      CAMLLIB=`"$CAMLC" -where`
+  esac
+  
+# We need to set va special flag for OCaml 3.07
+case  $CAMLVERSION in 
+    3.07*)
+      cflags="$cflags -DOCAML_307";;
 esac
+ 
 
 # Camlp4 (greatly simplified since merged with ocaml)
 
@@ -388,7 +397,8 @@ case $ARCH in
         esac;;
   alpha) OSDEPLIBS="-cclib -lunix";;
   win32) OS="Win32" 
-	 OSDEPLIBS="-cclib -lunix";;
+	 OSDEPLIBS="-cclib -lunix"
+	 cflags="-mno-cygwin $cflags";;
   *) OSDEPLIBS="-cclib -lunix"
 esac
 
@@ -716,6 +726,7 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|COQPROFILEFLAG|$coq_profile_flag|" \
     -e "s|COQINLINEFLAG|$coq_inline_flag|" \
     -e "s|CAMLANNOTATEFLAG|$coq_annotate_flag|" \
+    -e "s|CCOMPILEFLAGS|$cflags|" \
     -e "s|BESTCOMPILER|$best_compiler|" \
     -e "s|EXECUTEEXTENSION|$EXE|" \
     -e "s|BYTECAMLC|$bytecamlc|" \
