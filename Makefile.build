@@ -324,7 +324,7 @@ contrib/contrib.cmxa: $(CONTRIB:.cmo=.cmx)
 # target to build CoqIde
 coqide:: coqide-files coqide-binaries states
 
-COQIDEFLAGS=-thread -I +lablgtk2
+COQIDEFLAGS=-thread $(COQIDEINCLUDES)
 
 .SUFFIXES:.vo
 
