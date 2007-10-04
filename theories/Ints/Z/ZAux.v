@@ -7,9 +7,9 @@
 (*************************************************************)
 
 (**********************************************************************
-     Aux.v                                                                                           
-                                                                                                          
-     Auxillary functions & Theorems                                              
+     Aux.v
+
+     Auxillary functions & Theorems
  **********************************************************************)
 
 Require Import ArithRing.
@@ -368,6 +368,12 @@ intros p2 _; apply Zpower_pos_nat.
 intros p2 H1; case H1; auto.
 Qed.
 
+Theorem Zgt_pow_1 : forall n m : Z, 0 < n -> 1 < m -> 1 < m ^ n.
+Proof.
+intros n m H1 H2.
+replace 1 with (m ^ 0) by apply Zpower_exp_0.
+apply Zpower_lt_monotone; auto with zarith.
+Qed.
 
 (************************************** 
   Properties Zmod 
@@ -397,7 +403,7 @@ replace ((n * (a / n) + a mod n) + (n * (b / n) + b mod n))
 apply Z_mod_plus; auto with zarith.
 ring.
 Qed.
- 
+
 Theorem Zmod_mod: forall a n, 0 < n -> (a mod n) mod n = a mod n.
 intros a n H.
 pattern a at 2; rewrite (Z_div_mod_eq a n); auto with zarith.
@@ -448,6 +454,60 @@ Theorem Zmod_le: forall a n, 0 < n -> 0 <= a -> (Zmod a n) <= a.
 intros a n H1 H2; case (Zle_or_lt n  a); intros H3.
 case (Z_mod_lt a n); auto with zarith.
 rewrite Zmod_def_small; auto with zarith.
+Qed.
+
+Lemma Zplus_mod_idemp_l: forall a b n, 0 < n -> (a mod n + b) mod n = (a + b) mod n.
+Proof.
+intros. rewrite Zmod_plus; auto.
+rewrite Zmod_mod; auto.
+symmetry; apply Zmod_plus; auto.
+Qed.
+
+Lemma Zplus_mod_idemp_r: forall a b n, 0 < n -> (b + a mod n) mod n = (b + a) mod n.
+Proof.
+intros a b n H; repeat rewrite (Zplus_comm b).
+apply Zplus_mod_idemp_l; auto.
+Qed.
+
+Lemma Zminus_mod_idemp_l: forall a b n, 0 < n -> (a mod n - b) mod n = (a - b) mod n.
+Proof.
+intros. rewrite Zmod_minus; auto.
+rewrite Zmod_mod; auto.
+symmetry; apply Zmod_minus; auto.
+Qed.
+
+Lemma Zminus_mod_idemp_r: forall a b n, 0 < n -> (a - b mod n) mod n = (a - b) mod n.
+Proof.
+intros. rewrite Zmod_minus; auto.
+rewrite Zmod_mod; auto.
+symmetry; apply Zmod_minus; auto.
+Qed.
+
+Lemma Zmult_mod_idemp_l: forall a b n, 0 < n -> (a mod n * b) mod n = (a * b) mod n.
+Proof.
+intros; rewrite Zmod_mult; auto.
+rewrite Zmod_mod; auto.
+symmetry; apply Zmod_mult; auto.
+Qed.
+
+Lemma Zmult_mod_idemp_r: forall a b n, 0 < n -> (b * (a mod n)) mod n = (b * a) mod n.
+Proof.
+intros a b n H; repeat rewrite (Zmult_comm b).
+apply Zmult_mod_idemp_l; auto.
+Qed.
+
+Lemma Zmod_div_mod: forall n m a, 0 < n -> 0 < m ->
+  (n | m) -> a mod n = (a mod m) mod n.
+Proof.
+intros n m a H1 H2 H3.
+pattern a at 1; rewrite (Z_div_mod_eq a m); auto with zarith.
+case H3; intros q Hq; pattern m at 1; rewrite Hq.
+rewrite (Zmult_comm q).
+rewrite Zmod_plus; auto.
+rewrite <- Zmult_assoc; rewrite Zmod_mult; auto.
+rewrite Z_mod_same; try rewrite Zmult_0_l; auto with zarith.
+rewrite (Zmod_def_small 0); auto with zarith.
+rewrite Zplus_0_l; rewrite Zmod_mod; auto with zarith.
 Qed.
 
 (** A better way to compute Zpower mod **)
@@ -701,18 +761,6 @@ intros H2; absurd (0 <= Zgcd a b); auto with zarith.
 generalize (Zgcd_is_pos a b); auto with zarith.
 Qed.
 
-
-Theorem rel_prime_mod: forall p q, 0 < q -> rel_prime p q -> rel_prime (p mod q) q.
-intros p q H H0.
-assert (H1: Bezout p q 1).
-apply rel_prime_bezout; auto.
-inversion_clear H1 as [q1 r1 H2].
-apply bezout_rel_prime.
-apply Bezout_intro with q1  (r1 + q1 * (p / q)).
-rewrite <- H2.
-pattern p at 3; rewrite (Z_div_mod_eq p q); try ring; auto with zarith.
-Qed.
-
 Theorem rel_prime_mod_rev: forall p q, 0 < q -> rel_prime (p mod q) q -> rel_prime p q.
 intros p q H H0.
 rewrite (Z_div_mod_eq p q); auto with zarith.
@@ -744,6 +792,24 @@ exists 1; auto with zarith.
 apply Zis_gcd_sym; auto.
 Qed.
 
+Theorem rel_prime_mod: forall p q, 0 < q -> rel_prime p q -> rel_prime (p mod q) q.
+intros p q H H0.
+assert (H1: Bezout p q 1).
+apply rel_prime_bezout; auto.
+inversion_clear H1 as [q1 r1 H2].
+apply bezout_rel_prime.
+apply Bezout_intro with q1  (r1 + q1 * (p / q)).
+rewrite <- H2.
+pattern p at 3; rewrite (Z_div_mod_eq p q); try ring; auto with zarith.
+Qed.
+
+Theorem Zrel_prime_neq_mod_0: forall a b, 1 < b -> rel_prime a b -> a mod b <> 0.
+Proof.
+intros a b H H1 H2.
+case (not_rel_prime_0 _ H).
+rewrite <- H2.
+apply rel_prime_mod; auto with zarith.
+Qed.
 
 Theorem rel_prime_Zpower_r: forall i p q, 0 < i -> rel_prime p q -> rel_prime p (q^i).
 intros i p q Hi Hpq; generalize Hi; pattern i; apply natlike_ind; auto with zarith; clear i Hi.
@@ -1369,4 +1435,27 @@ Ltac pos_tac :=
      [idtac; repeat rewrite Zpos_eq_Z_of_nat_o_nat_of_P; eq_tac | injection tmp; auto]
   end; autorewrite with pos_morph.
 
+(**************************************
+  Bounded induction
+**************************************)
+
+Theorem Zbounded_induction :
+  (forall Q : Z -> Prop, forall b : Z,
+    Q 0 ->
+    (forall n, 0 <= n -> n < b - 1 -> Q n -> Q (n + 1)) ->
+      forall n, 0 <= n -> n < b -> Q n)%Z.
+Proof.
+intros Q b Q0 QS.
+set (Q' := fun n => (n < b /\ Q n) \/ (b <= n)).
+assert (H : forall n, 0 <= n -> Q' n).
+apply natlike_rec2; unfold Q'.
+destruct (Zle_or_lt b 0) as [H | H]. now right. left; now split.
+intros n H IH. destruct IH as [[IH1 IH2] | IH].
+destruct (Zle_or_lt (b - 1) n) as [H1 | H1].
+right; auto with zarith.
+left. split; [auto with zarith | now apply (QS n)].
+right; auto with zarith.
+unfold Q' in *; intros n H1 H2. destruct (H n H1) as [[H3 H4] | H3].
+assumption. apply Zle_not_lt in H3. false_hyp H2 H3.
+Qed.
 

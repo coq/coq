@@ -531,7 +531,6 @@ INTSVO:=\
  theories/Ints/Z/IntsZmisc.vo theories/Ints/Z/Pmod.vo \
  theories/Ints/Tactic.vo theories/Ints/Z/ZAux.vo \
  theories/Ints/Z/ZPowerAux.vo theories/Ints/Z/ZDivModAux.vo \
- theories/Ints/Z/Zmod.vo \
  theories/Ints/Basic_type.vo theories/Ints/Int31.vo \
  theories/Ints/num/GenBase.vo theories/Ints/num/ZnZ.vo \
  theories/Ints/num/GenAdd.vo theories/Ints/num/GenSub.vo \
@@ -710,7 +709,9 @@ INTEGERBINARYVO:=$(INTEGERDIR)/Binary/ZBinary.vo
 
 INTEGERNATPAIRSVO:=$(INTEGERDIR)/NatPairs/ZNatPairs.vo
 
-INTEGERVO:=$(INTEGERABSTRACTVO) $(INTEGERBINARYVO) $(INTEGERNATPAIRSVO)
+INTEGERTREEMODVO:=$(INTEGERDIR)/TreeMod/ZTreeMod.vo
+
+INTEGERVO:=$(INTEGERABSTRACTVO) $(INTEGERBINARYVO) $(INTEGERNATPAIRSVO) $(INTEGERTREEMODVO)
 
 NUMBERSVO:=$(NATURALVO) $(INTEGERVO)
 

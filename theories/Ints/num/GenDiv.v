@@ -12,7 +12,6 @@ Require Import ZArith.
 Require Import ZAux.
 Require Import ZDivModAux.
 Require Import ZPowerAux.
-Require Import Zmod.
 Require Import Basic_type.
 Require Import GenBase.
 Require Import GenDivn1.

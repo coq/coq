@@ -25,7 +25,6 @@ In that case, we could get rid of setoids as well as arrive at integers as
 signed natural numbers. *)
 Definition NZplus (n m : Z) := ((fst n) + (fst m), (snd n) + (snd m)).
 Definition NZminus (n m : Z) := ((fst n) + (snd m), (snd n) + (fst m)).
-Definition NZuminus (n : Z) := (snd n, fst n).
 (* Unfortunately, the elements of the pair keep increasing, even during
 subtraction *)
 Definition NZtimes (n m : Z) :=
