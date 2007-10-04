@@ -43,6 +43,8 @@ usage () {
     echo -e "\tSpecifies where Coqdoc style files are to be installed\n"
     echo "-camldir"
     echo -e "\tTells configure where to look for OCaml files\n"
+    echo "-lablgtkdir"
+    echo -e "\tTells configure where to look for Lablgtk files\n"
     echo "-arch"
     echo -e "\tSpecifies the architecture\n"
     echo "-opt"
@@ -101,6 +103,7 @@ mandir_spec=no
 emacslib_spec=no
 emacs_spec=no
 camldir_spec=no
+lablgtkdir_spec=no
 coqdocdir_spec=no
 fsets_opt=no
 fsets=all
@@ -148,6 +151,9 @@ while : ; do
 		      shift;;
     -camldir|--camldir) camldir_spec=yes
 	                camldir="$2"
+			shift;;
+    -lablgtkdir|--lablgtkdir) lablgtkdir_spec=yes
+	                lablgtkdir="$2"
 			shift;;
     -arch|--arch) arch_spec=yes
                   arch=$2
@@ -404,6 +410,10 @@ esac
 
 # lablgtk2 and CoqIDE
 
+case $lablgtkdir_spec in
+    no) lablgtkdir=${CAMLLIB}/lablgtk2
+esac
+
 # -byte-only should imply -coqide byte, unless the user decides otherwise
 
 if [ "$best_compiler" = "byte" -a "$coqide_spec" = "no" ]; then 
@@ -415,10 +425,10 @@ fi
 
 if [ "$coqide_spec" = "yes" -a "$COQIDE" = "no" ]; then 
     echo "CoqIde disabled as requested"
-elif [ ! -x "${CAMLLIB}/lablgtk2" ]; then
+elif [ ! -f "$lablgtkdir/glib.mli" ]; then
     echo "LablGtk2 not found: CoqIde will not be available"
     COQIDE=no
-elif [ -z "`grep -w convert_with_fallback ${CAMLLIB}/lablgtk2/glib.mli`" ]; then
+elif [ -z "`grep -w convert_with_fallback "$lablgtkdir/glib.mli"`" ]; then
     echo "LablGtk2 found but too old: CoqIde will not be available"
     COQIDE=no;
 elif [ "$coqide_spec" = "yes" -a "$COQIDE" = "byte" ]; then 
@@ -432,6 +442,16 @@ else
     COQIDE=opt
 fi
 
+case $COQIDE in
+    byte|opt)
+        case $lablgtkdir_spec in
+            no)  LABLGTKLIB=+lablgtk2                   # Pour le message
+                 LABLGTKINCLUDES="-I $LABLGTKLIB";;     # Pour le makefile
+            yes) LABLGTKLIB="$lablgtkdir"               # Pour le message
+                 LABLGTKINCLUDES="-I \"$LABLGTKLIB\"";; # Pour le makefile
+        esac;;
+    no) LABLGTKINCLUDES="";;
+esac
 
 # Tell on windows if ocaml understands cygwin or windows path formats
 
@@ -595,6 +615,9 @@ echo "  Objective-Caml/Camlp4 version     : $CAMLVERSION"
 echo "  Objective-Caml/Camlp4 binaries in : $CAMLBIN"
 echo "  Objective-Caml library in         : $CAMLLIB"
 echo "  Camlp4 library in                 : $CAMLP4LIB"
+if test "$COQIDE" != "no"; then
+echo "  Lablgtk2 library in               : $LABLGTKLIB"
+fi
 if test "$fsets" = "all"; then
 echo "  FSets theory                      : All"
 else
@@ -639,6 +662,7 @@ case $ARCH in
    	ESCCOQDOCDIR=`echo $COQDOCDIR |sed -e 's|\\\|\\\\\\\|g'`
    	ESCCAMLP4BIN=`echo $CAMLP4BIN |sed -e 's|\\\|\\\\\\\|g'`
 	ESCCAMLP4LIB=`echo $CAMLP4LIB |sed -e 's|\\\|\\\\\\\|g'`
+	ESCLABLGTKINCLUDES=`echo $LABLGTKINCLUDES |sed -e 's|\\\|\\\\\\\|g'`
 	;;
     *)
         ESCCOQTOP="$COQTOP"
@@ -651,6 +675,7 @@ case $ARCH in
    	ESCCOQDOCDIR="$COQDOCDIR"
    	ESCCAMLP4BIN="$CAMLP4BIN"
    	ESCCAMLP4LIB="$CAMLP4LIB"
+	ESCLABLGTKINCLUDES="$LABLGTKINCLUDES"
 	;;
 esac
 
@@ -722,6 +747,7 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIB|" \
     -e "s|CAMLP4TOOL|$camlp4oexec|" \
     -e "s|CAMLP4COMPATFLAGS|$CAMLP4COMPAT|" \
+    -e "s|LABLGTKINCLUDES|$ESCLABLGTKINCLUDES|" \
     -e "s|COQDEBUGFLAG|$coq_debug_flag|" \
     -e "s|COQPROFILEFLAG|$coq_profile_flag|" \
     -e "s|COQINLINEFLAG|$coq_inline_flag|" \
@@ -774,7 +800,7 @@ fi
 ####################################################
 
 if [ ! "$COQIDE" = "no" ]; then 
-    if grep "class view " "$CAMLLIB/lablgtk2/gText.mli" | grep -q "\[>" ; then
+    if grep "class view " "$lablgtkdir/gText.mli" | grep -q "\[>" ; then
 	cp -f ide/undo_lablgtk_ge26.mli ide/undo.mli
     else
 	cp -f ide/undo_lablgtk_lt26.mli ide/undo.mli
