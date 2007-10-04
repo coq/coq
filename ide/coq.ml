@@ -152,6 +152,7 @@ let interp verbosely s =
 		  | VernacFixpoint _
 		  | VernacCoFixpoint _
 		  | VernacEndProof _
+                  | VernacScheme _ 
 		    -> Options.make_silent (not verbosely)
 		  | _ -> ()
 	      end;
