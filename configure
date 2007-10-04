@@ -418,6 +418,17 @@ if [ $COQIDE != no ] ; then
   fi
 fi
 
+case $COQIDE in
+    byte|opt)
+        case $lablgtkdir_spec in
+            no)  LABLGTKLIB=+lablgtk2                   # Pour le message
+                 LABLGTKINCLUDES="-I $LABLGTKLIB";;     # Pour le makefile
+            yes) LABLGTKLIB="$lablgtkdir"               # Pour le message
+                 LABLGTKINCLUDES="-I \"$LABLGTKLIB\"";; # Pour le makefile
+        esac;;
+    no) LABLGTKINCLUDES="";;
+esac
+
 # Tell on windows if ocaml understands cygwin or windows path formats
 
 #"$CAMLC" -o config/giveostype config/giveostype.ml
@@ -592,7 +603,7 @@ case $ARCH in
 	ESCLIBDIR=`echo $LIBDIR |sed -e 's|\\\|\\\\\\\|g'`
 	ESCCAMLLIB=`echo $CAMLLIB |sed -e 's|\\\|\\\\\\\|g'`
 	ESCCAMLP4LIB=`echo $CAMLP4LIB |sed -e 's|\\\|\\\\\\\|g'`
-        ESCLABLGTKLIB=`echo $lablgtkdir |sed -e 's|\\\|\\\\\\\|g'`
+        ESCLABLGTKLIB=`echo $LABLGTKLIB |sed -e 's|\\\|\\\\\\\|g'`
 	;;
     *)
         ESCCOQTOP="$COQTOP"
@@ -600,7 +611,7 @@ case $ARCH in
 	ESCLIBDIR="$LIBDIR"
 	ESCCAMLLIB="$CAMLLIB"
    	ESCCAMLP4LIB="$CAMLP4LIB"
-        ESCLABLGTKLIB="$lablgtkdir"
+        ESCLABLGTKLIB="$LABLGTKLIB"
 	;;
 esac
 
@@ -694,6 +705,7 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIB|" \
     -e "s|CAMLP4TOOL|$camlp4oexec|" \
     -e "s|CAMLP4COMPATFLAGS|$CAMLP4COMPAT|" \
+    -e "s|LABLGTKINCLUDES|$LABLGTKINCLUDES|" \
     -e "s|COQDEBUGFLAG|$coq_debug_flag|" \
     -e "s|COQPROFILEFLAG|$coq_profile_flag|" \
     -e "s|BESTCOMPILER|$best_compiler|" \

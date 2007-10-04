@@ -78,7 +78,7 @@ LOCALINCLUDES=-I config -I tools -I tools/coqdoc \
 OCAMLC += $(CAMLFLAGS)
 OCAMLOPT += $(CAMLFLAGS)
 
-MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
+MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB) $(COQIDEINCLUDES)
 
 BYTEFLAGS=$(MLINCLUDES) $(CAMLDEBUG)
 OPTFLAGS=$(MLINCLUDES) $(CAMLTIMEPROF)
@@ -524,7 +524,7 @@ COQIDECMO=ide/utils/okey.cmo ide/utils/config_file.cmo \
 	  ide/coq_tactics.cmo  ide/command_windows.cmo ide/coqide.cmo
 
 COQIDECMX=$(COQIDECMO:.cmo=.cmx)
-COQIDEFLAGS=-thread -I +lablgtk2
+COQIDEFLAGS=-thread $(COQIDEINCLUDES)
 beforedepend:: ide/config_lexer.ml ide/find_phrase.ml ide/highlight.ml
 beforedepend:: ide/config_parser.mli ide/config_parser.ml
 beforedepend:: ide/utf8_convert.ml
