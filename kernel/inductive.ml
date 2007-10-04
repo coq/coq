@@ -656,21 +656,32 @@ let check_one_fix renv recpos def =
       let (f,l) = decompose_app (whd_betaiotazeta renv.env t) in
       match kind_of_term f with
         | Rel p -> 
-            List.iter (check_rec_call renv) l;
             (* Test if [p] is a fixpoint (recursive call) *) 
 	    if renv.rel_min <= p & p < renv.rel_min+nfi then
-              (* the position of the invoked fixpoint: *) 
-	      let glob = renv.rel_min+nfi-1-p in
-              (* the decreasing arg of the rec call: *)
-	      let np = recpos.(glob) in
-              if List.length l <= np then error_partial_apply renv glob
-              else
-	        (match list_chop np l with
-		    (la,(z::lrest)) -> 
-                      (* Check the decreasing arg is smaller *)
-	              if not (check_is_subterm renv z) then
-                        error_illegal_rec_call renv glob z
-	          | _ -> assert false)
+              begin
+                List.iter (check_rec_call renv) l;
+                (* the position of the invoked fixpoint: *) 
+	        let glob = renv.rel_min+nfi-1-p in
+                (* the decreasing arg of the rec call: *)
+	        let np = recpos.(glob) in
+                if List.length l <= np then error_partial_apply renv glob
+                else
+	          match list_chop np l with
+		      (la,(z::lrest)) -> 
+                        (* Check the decreasing arg is smaller *)
+	                if not (check_is_subterm renv z) then
+                          error_illegal_rec_call renv glob z
+	            | _ -> assert false
+              end
+            else
+              begin
+                match pi2 (lookup_rel p renv.env) with
+                | None ->
+                    List.iter (check_rec_call renv) l
+                | Some c ->
+                    try List.iter (check_rec_call renv) l
+                    with FixGuardError _ -> check_rec_call renv (applist(c,l))
+              end
 
         | Case (ci,p,c_0,lrest) ->
             List.iter (check_rec_call renv) (c_0::p::l);
@@ -736,8 +747,18 @@ let check_one_fix renv recpos def =
 	    let renv' = push_fix_renv renv recdef in
 	    Array.iter (check_rec_call renv') bodies
 
-        | (Ind _ | Construct _ | Var _ | Sort _) ->
+        | (Ind _ | Construct _ | Sort _) ->
             List.iter (check_rec_call renv) l
+
+        | Var id ->
+            begin
+              match pi2 (lookup_named id renv.env) with
+              | None ->
+                  List.iter (check_rec_call renv) l
+              | Some c ->
+                  try List.iter (check_rec_call renv) l
+                  with (FixGuardError _) -> check_rec_call renv (applist(c,l))
+            end
 
         (* l is not checked because it is considered as the meta's context *)
         | (Evar _ | Meta _) -> ()
