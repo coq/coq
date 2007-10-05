@@ -1754,10 +1754,15 @@ depend: $(BEFOREDEPEND) dependp4 ml4filesml
 	$(OCAMLDEP) $(DEPFLAGS) */*.mli */*/*.mli */*.ml */*/*.ml > .depend
 # 4. We express dependencies of .cmo and .cmx files w.r.t their grammars
 	for f in $(ML4FILES); do \
-	  printf "%s" `dirname $$f`/`basename $$f .ml4`".cmo: " >> .depend; \
-	  echo `$(CAMLP4DEPS) $$f` >> .depend; \
-	  printf "%s" `dirname $$f`/`basename $$f .ml4`".cmx: " >> .depend; \
-	  echo `$(CAMLP4DEPS) $$f` >> .depend; \
+	  bn=`dirname $$f`/`basename $$f .ml4`; \
+	  deps=`$(CAMLP4DEPS) $$f`; \
+	  if [[ $${deps} != "" ]]; then \
+	    /bin/mv -f .depend .depend.tmp; \
+	    sed -e "\|^$${bn}.cmo|s|^$${bn}.cmo: \(.*\)$$|$${bn}.cmo: $${deps} \1|" \
+	        -e "\|^$${bn}.cmx|s|^$${bn}.cmx: \(.*\)$$|$${bn}.cmx: $${deps} \1|" \
+	        .depend.tmp > .depend; \
+	    /bin/rm -f .depend.tmp; \
+	  fi; \
 	done
 # 5.  We express dependencies of .o files
 	$(CC) -MM -isystem $(CAMLHLIB) kernel/byterun/*.c >> .depend
