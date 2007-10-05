@@ -1162,7 +1162,7 @@ $(COQDEP): $(COQDEPCMO)
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ unix.cma $(COQDEPCMO) $(OSDEPLIBS)
 
-BEFOREDEPEND+= tools/coqdep_lexer.ml $(COQDEP)
+BEFOREDEPEND+= tools/coqdep_lexer.ml
 
 GALLINACMO=tools/gallina_lexer.cmo tools/gallina.cmo
 
@@ -1495,7 +1495,7 @@ ML4FILES +=parsing/g_minicoq.ml4 \
 	   parsing/g_decl_mode.ml4
 
 
-# BEFOREDEPEND+= $(GRAMMARCMO)
+BEFOREDEPEND+= $(GRAMMARCMO)
 
 # BEFOREDEPEND+= parsing/pcoq.ml parsing/extend.ml
 
@@ -1710,7 +1710,7 @@ cleanconfig::
 
 alldepend: depend dependcoq 
 
-dependcoq:
+dependcoq: $(BEFOREDEPEND) $(COQDEP)
 	$(COQDEP) -coqlib . -R theories Coq -R contrib Coq $(COQINCLUDES) \
 	 $(ALLFSETS:.vo=.v) $(ALLREALS:.vo=.v) $(ALLVO:.vo=.v) > .depend.coq
 
@@ -1730,11 +1730,12 @@ scratchdepend: dependp4
 # We proceed in several steps:
 
 ML4FILESML = $(ML4FILES:.ml4=.ml)
+.SECONDARY: $(ML4FILESML)
 
 # Expresses dependencies of the .ml4 files w.r.t their grammars
 
 .PHONY: dependp4
-dependp4: $(ML4FILES)
+dependp4: 
 	rm -f .depend.camlp4
 	for f in $(ML4FILES); do \
 	  printf "%s" `dirname $$f`/`basename $$f .ml4`".ml: " >> .depend.camlp4; \
@@ -1743,12 +1744,12 @@ dependp4: $(ML4FILES)
 
 # Produce the .ml files using Makefile.dep
 .PHONY: ml4filesml
-ml4filesml:: .depend.camlp4
+ml4filesml:: .depend.camlp4 parsing/grammar.cma
 	$(MAKE) -f Makefile.dep $(ML4FILESML)
 
 
 .PHONY: depend
-depend: $(BEFOREDEPEND) dependp4 ml4filesml
+depend: dependp4 ml4filesml $(BEFOREDEPEND)
 # 1. We express dependencies of the .ml files w.r.t their grammars
 # 2. Then we are able to produce the .ml files using Makefile.dep
 # 3. We compute the dependencies inside the .ml files using ocamldep
