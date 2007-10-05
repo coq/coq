@@ -35,6 +35,7 @@ val fnl : unit -> std_ppcmds
 val pifb : unit -> std_ppcmds
 val ws : int -> std_ppcmds
 val mt : unit -> std_ppcmds
+val ismt : std_ppcmds -> bool
 
 val comment : int -> std_ppcmds
 val comments : ((int * int) * string) list ref

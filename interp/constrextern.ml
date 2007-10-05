@@ -386,7 +386,7 @@ let rec match_cases_pattern metas sigma a1 a2 = match (a1,a2) with
   | r1, AVar id2 when List.mem id2 metas -> bind_env sigma id2 r1
   | PatVar (_,Anonymous), AHole _ -> sigma
   | a, AHole _ -> sigma
-  | PatCstr (loc,(ind,_ as r1),args1,Anonymous), _ ->
+  | PatCstr (loc,(ind,_ as r1),args1,_), _ ->
       let nparams =
 	(fst (Global.lookup_inductive ind)).Declarations.mind_nparams in
       let l2 =
@@ -441,15 +441,15 @@ and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
   | (keyrule,pat,n as _rule)::rules ->
       try
 	(* Check the number of arguments expected by the notation *)
-	let loc = match t,n with
+	let loc,na = match t,n with
 	  | PatCstr (_,f,l,_), Some n when List.length l > n ->
 	      raise No_match
-	  | PatCstr (loc,_,_,_),_ -> loc
-	  | PatVar (loc,_),_ -> loc in
+	  | PatCstr (loc,_,_,na),_ -> loc,na
+	  | PatVar (loc,na),_ -> loc,na in
 	(* Try matching ... *)
 	let subst = match_aconstr_cases_pattern t pat in
 	(* Try availability of interpretation ... *)
-        match keyrule with
+	let p = match keyrule with
           | NotationRule (sc,ntn) ->
 	      (match availability_of_notation (sc,ntn) allscopes with
                   (* Uninterpretation is not allowed in current context *)
@@ -464,7 +464,8 @@ and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
 		  insert_pat_delimiters loc (make_pat_notation loc ntn l) key)
           | SynDefRule kn ->
 	      let qid = shortest_qualid_of_syndef vars kn in
-              CPatAtom (loc,Some (Qualid (loc, qid)))
+              CPatAtom (loc,Some (Qualid (loc, qid))) in
+	insert_pat_alias loc p na
       with
 	  No_match -> extern_symbol_pattern allscopes vars t rules
 

@@ -140,6 +140,8 @@ let strbrk s =
     else if p=n then [< >] else [< str (String.sub s p (n-p)) >]
   in aux 0 0
 
+let ismt s = try let _ = Stream.empty s in true with Stream.Failure -> false
+
 (* boxing commands *)
 let h n s = [< 'Ppcmd_box(Pp_hbox n,s) >]
 let v n s = [< 'Ppcmd_box(Pp_vbox n,s) >]

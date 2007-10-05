@@ -58,6 +58,8 @@ let print_basename sp = pr_global (ConstRef sp)
 
 let print_closed_sections = ref false
 
+let with_line_skip p = if ismt p then mt() else (fnl () ++ p)
+
 (********************************)
 (** Printing implicit arguments *)
 			  		  
@@ -140,12 +142,7 @@ let print_name_infos ref =
       str "Expanded type for implicit arguments" ++ fnl () ++ 
       print_ref true ref ++ fnl()
     else mt() in
-  (if (List.filter is_status_implicit impl<>[])
-      or not (List.for_all ((=) None) scopes) 
-  then fnl()
-  else mt())
-  ++ type_for_implicit 
-  ++ print_impl_args impl ++ print_argument_scopes scopes
+  type_for_implicit ++ print_impl_args impl ++ print_argument_scopes scopes
 
 let print_id_args_data test pr id l =
   if List.exists test l then
@@ -261,10 +258,10 @@ let print_named_def name body typ =
   (str "*** [" ++ str name ++ str " " ++
      hov 0 (str ":=" ++ brk (1,2) ++ pbody ++ spc () ++
 	      str ":" ++ brk (1,2) ++ ptyp) ++
-	   str "]" ++ fnl ())
+	   str "]")
 
 let print_named_assum name typ =
-  (str "*** [" ++ str name ++ str " : " ++ pr_ltype typ ++ str "]" ++ fnl ())
+  str "*** [" ++ str name ++ str " : " ++ pr_ltype typ ++ str "]"
 
 let gallina_print_named_decl (id,c,typ) =
   let s = string_of_id id in
@@ -358,21 +355,24 @@ let gallina_print_inductive sp =
   (if mib.mind_record & not !Options.raw_print then
     pr_record (List.hd names)
   else
-    pr_mutual_inductive mib.mind_finite names) ++ fnl () ++ fnl () ++
-  print_inductive_implicit_args sp mipv ++
-  print_inductive_argument_scopes sp mipv
+    pr_mutual_inductive mib.mind_finite names) ++ fnl () ++
+  with_line_skip 
+    (print_inductive_implicit_args sp mipv ++
+     print_inductive_argument_scopes sp mipv)
+
+let print_named_decl sp = 
+  gallina_print_named_decl (get_variable sp) ++ fnl ()
 
 let gallina_print_section_variable sp =
-  let d = get_variable sp in
-  gallina_print_named_decl d ++ 
-  print_name_infos (VarRef sp)
+  print_named_decl sp ++
+  with_line_skip (print_name_infos (VarRef sp))
 
 let print_body = function
   | Some lc  -> pr_lconstr (Declarations.force lc)
   | None -> (str"<no body>")
 
 let print_typed_body (val_0,typ) =
-  (print_body val_0 ++ fnl () ++ str "     : " ++ pr_ltype typ ++ fnl ())
+  (print_body val_0 ++ fnl () ++ str "     : " ++ pr_ltype typ)
 
 let ungeneralized_type_of_constant_type = function
   | PolymorphicArity (ctx,a) -> mkArity (ctx, Type a.poly_level)
@@ -387,14 +387,15 @@ let print_constant with_values sep sp =
     | None -> 
 	str"*** [ " ++ 
 	print_basename sp ++ str " : " ++ cut () ++ pr_ltype typ ++ 
-	str" ]" ++ fnl ()
+	str" ]"
     | _ -> 
 	print_basename sp ++ str sep ++ cut () ++
-	(if with_values then print_typed_body (val_0,typ) else pr_ltype typ) ++
-	fnl ())
+	(if with_values then print_typed_body (val_0,typ) else pr_ltype typ))
+  ++ fnl ()
 
 let gallina_print_constant_with_infos sp =
-  print_constant true " = " sp ++ print_name_infos (ConstRef sp)
+  print_constant true " = " sp ++ 
+  with_line_skip (print_name_infos (ConstRef sp))
 
 let gallina_print_syntactic_def kn =
   let sep = " := "
@@ -411,7 +412,7 @@ let gallina_print_leaf_entry with_values ((sp,kn as oname),lobj) =
       | (_,"VARIABLE") ->
 	  (* Outside sections, VARIABLES still exist but only with universes 
              constraints *)
-	  (try Some(gallina_print_section_variable (basename sp)) with Not_found -> None)
+	  (try Some(print_named_decl (basename sp)) with Not_found -> None)
       | (_,"CONSTANT") ->
 	  Some (print_constant with_values sep (constant_of_kn kn))
       | (_,"INDUCTIVE") ->
@@ -659,8 +660,9 @@ let print_opaque_name qid =
 let print_about ref = 
   let k = locate_any_name ref in
   begin match k with
-  | Term ref -> 
-      print_ref false ref ++ print_name_infos ref ++ print_opacity ref
+  | Term ref ->
+      print_ref false ref ++ fnl () ++ print_name_infos ref ++ 
+      print_opacity ref
   | Syntactic kn ->
       print_syntactic_def kn
   | Dir _ | ModuleType _ | Undefined _ ->

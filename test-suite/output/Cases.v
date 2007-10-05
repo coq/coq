@@ -20,3 +20,16 @@ Definition proj (x y:nat) (P:nat -> Type) (def:P x) (prf:P y) : P y :=
  end.
 
 Print proj.
+
+(* Use notations even below aliases *)
+
+Require Import List.
+
+Fixpoint foo (A:Type) (l:list A) : option A :=
+  match l with
+  | nil => None
+  | x0 :: nil => Some x0
+  | x0 :: (x1 :: xs) as l0 => foo A l0
+  end.
+
+Print foo.
