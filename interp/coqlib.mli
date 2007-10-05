@@ -73,6 +73,7 @@ val path_of_false : constructor
 val glob_true : global_reference
 val glob_false : global_reference
 
+
 (* Equality *)
 val glob_eq : global_reference
 
@@ -83,6 +84,12 @@ val glob_eq : global_reference
    applied to [()] to get the actual constr or pattern at runtime *)
 
 type 'a delayed = unit -> 'a
+
+type coq_bool_data = {
+  andb : constr;
+  andb_prop : constr;
+  andb_true_intro : constr}
+val build_bool_type : coq_bool_data delayed
 
 (*s For Equality tactics *)
 type coq_sigma_data = {

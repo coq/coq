@@ -51,6 +51,23 @@ Definition negb (b:bool) := if b then false else true.
 Infix "||" := orb (at level 50, left associativity) : bool_scope.
 Infix "&&" := andb (at level 40, left associativity) : bool_scope.
 
+(*******************************)
+(** * Properties of [andb]     *)
+(*******************************)
+
+Lemma andb_prop : forall a b:bool, andb a b = true -> a = true /\ b = true.
+Proof.
+  destruct a; destruct b; intros; split; try (reflexivity || discriminate).
+Qed.
+Hint Resolve andb_prop: bool v62.
+
+Lemma andb_true_intro :
+  forall b1 b2:bool, b1 = true /\ b2 = true -> andb b1 b2 = true.
+Proof.
+  destruct b1; destruct b2; simpl in |- *; tauto || auto with bool.
+Qed.
+Hint Resolve andb_true_intro: bool v62.
+
 (** Interpretation of booleans as propositions *)
 
 Inductive eq_true : bool -> Prop := is_eq_true : eq_true true.

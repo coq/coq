@@ -801,13 +801,16 @@ let inject_at_positions env sigma (eq,(t,t1,t2)) id posns =
 	let injfun = mkNamedLambda e t injbody in
 	let pf = applist(eq.congr,[t;resty;injfun;t1;t2;mkVar id]) in
 	let ty = simplify_args env sigma (get_type_of env sigma pf) in
-	(pf,ty))
+	  (pf,ty))
       posns in
   if injectors = [] then
     errorlabstrm "Equality.inj" (str "Failed to decompose the equality");
   tclMAP
     (fun (pf,ty) -> tclTHENS (cut ty) [tclIDTAC; refine pf])
     injectors
+
+exception Not_dep_pair
+
 
 let injEq ipats (eq,(t,t1,t2)) id gls =
   let sigma = project gls in
@@ -825,10 +828,44 @@ let injEq ipats (eq,(t,t1,t2)) id gls =
 	let t1 = try_delta_expand env sigma t1 in
 	let t2 = try_delta_expand env sigma t2 in
 *)
+        try (
+(* fetch the informations of the  pair *)
+        let ceq = constr_of_global Coqlib.glob_eq in
+        let sigTconstr () = (Coqlib.build_sigma_type()).Coqlib.typ in
+        let eqTypeDest = fst (destApp t) in 
+        let _,ar1 = destApp t1 and
+            _,ar2 = destApp t2 in
+        let ind = destInd ar1.(0) in
+        let inj2 = Coqlib.coq_constant "inj_pair2_eq_dec is missing"
+            ["Logic";"Eqdep_dec"] "inj_pair2_eq_dec" in
+(* check whether the equality deals with dep pairs or not *)
+(* if yes, check if the user has declared the dec principle *)
+(* and compare the fst arguments of the dep pair *)
+        let new_eq_args = [|type_of env sigma (ar1.(3));ar1.(3);ar2.(3)|] in
+        if ( (eqTypeDest = sigTconstr()) &&
+             (Ind_tables.check_dec_proof ind=true) &&
+             (is_conv env sigma (ar1.(2)) (ar2.(2)) = true))
+              then ( 
+(* Require Import Eqdec_dec copied from vernac_require in vernacentries.ml*)
+              let qidl = qualid_of_reference 
+                (Ident (dummy_loc,id_of_string "Eqdep_dec")) in
+              Library.require_library [qidl] (Some false); 
+(* cut with the good equality and prove the requested goal *)
+              tclTHENS (cut (mkApp (ceq,new_eq_args)) )
+               [tclIDTAC; tclTHEN (apply (
+                  mkApp(inj2,
+                        [|ar1.(0);Ind_tables.find_eq_dec_proof ind;
+                          ar1.(1);ar1.(2);ar1.(3);ar2.(3)|])
+                  )) (Auto.trivial [] [])
+                ] gls
+(* not a dep eq or no decidable type found *)
+            ) else (raise Not_dep_pair) 
+        ) with _ -> (
 	tclTHEN 
 	  (inject_at_positions env sigma (eq,(t,t1,t2)) id posns)
 	  (intros_pattern None ipats)
 	  gls
+        )
 
 let inj ipats = onEquality (injEq ipats)
 

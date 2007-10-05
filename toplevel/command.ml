@@ -42,6 +42,8 @@ open Pretyping
 open Evarutil
 open Evarconv
 open Notation
+open Goptions
+open Mod_subst
 open Evd
 
 let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,a,b))
@@ -195,6 +197,8 @@ let declare_assumption idl is_coe k bl c nl=
 (* 3a| Elimination schemes for mutual inductive definitions *)
 
 open Indrec
+open Inductiveops
+
 
 let non_type_eliminations = 
   [ (InProp,elimination_suffix InProp);
@@ -250,12 +254,174 @@ let declare_one_elimination ind =
 	 let _ = declare (mindstr^suff) elim None in ())
        non_type_eliminations
 
+(* bool eq declaration flag && eq dec declaration flag *)
+let eq_flag = ref false 
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optname  = "automatic declaration of boolean equality";
+      optkey   = (SecondaryTable ("Equality","Scheme"));
+      optread  = (fun () -> !eq_flag) ;
+      optwrite = (fun b -> eq_flag := b) }
+
+(* boolean equality *)
+let (inScheme,outScheme) =  
+  declare_object {(default_object "EQSCHEME") with 
+                    cache_function = Ind_tables.cache_scheme; 
+                    load_function = (fun _ -> Ind_tables.cache_scheme); 
+                    subst_function = Auto_ind_decl.subst_in_constr; 
+                    export_function = Ind_tables.export_scheme } 
+
+let declare_eq_scheme sp = 
+  let mib = Global.lookup_mind sp in
+  let nb_ind = Array.length mib.mind_packets in
+  let eq_array = Auto_ind_decl.make_eq_scheme sp in
+    for i=0 to (nb_ind-1) do
+    let cpack = Array.get mib.mind_packets i in
+    let nam = id_of_string ((string_of_id cpack.mind_typename)^"_beq")
+    in
+      let cst_entry = {const_entry_body = eq_array.(i);
+                       const_entry_type = None;
+                       const_entry_opaque = false;
+                       const_entry_boxed = Options.boxed_definitions() } 
+      in
+      let cst_decl =  (DefinitionEntry cst_entry),(IsDefinition Definition)
+      in
+        let cst = Declare.declare_constant nam cst_decl in
+          Lib.add_anonymous_leaf (inScheme ((sp,i),mkConst cst));
+          definition_message nam
+    done
+(* decidability of eq *)
+
+(* Cut a context ctx in 2 parts (ctx1,ctx2) with ctx1 containing k 
+   variables *) 
+let context_chop k ctx = 
+  let rec chop_aux acc = function 
+    | (0, l2) -> (List.rev acc, l2) 
+    | (n, ((_,Some _,_ as h)::t)) -> chop_aux (h::acc) (n, t) 
+    | (n, (h::t)) -> chop_aux (h::acc) (pred n, t) 
+    | (_, []) -> failwith "context_chop" 
+  in chop_aux [] (k,ctx)
+
+
+let (inBoolLeib,outBoolLeib) =
+  declare_object {(default_object "BOOLLIEB") with
+                    cache_function = Ind_tables.cache_bl;
+                    load_function = (fun _ -> Ind_tables.cache_bl);
+                    subst_function = Auto_ind_decl.subst_in_constr;
+                    export_function = Ind_tables.export_bool_leib }
+
+let (inLeibBool,outLeibBool) =
+  declare_object {(default_object "LIEBBOOL") with
+                    cache_function = Ind_tables.cache_lb;
+                    load_function = (fun _ -> Ind_tables.cache_lb);
+                    subst_function = Auto_ind_decl.subst_in_constr;
+                    export_function = Ind_tables.export_leib_bool }
+
+let (inDec,outDec) =
+  declare_object {(default_object "EQDEC") with
+                    cache_function = Ind_tables.cache_dec;
+                    load_function = (fun _ -> Ind_tables.cache_dec);
+                    subst_function = Auto_ind_decl.subst_in_constr;
+                    export_function = Ind_tables.export_dec_proof }
+
+let start_proof id kind c hook =
+  let sign = Global.named_context () in
+  let sign = clear_proofs sign in
+  Pfedit.start_proof id kind sign c hook
+
+let save id const (locality,kind) hook =
+  let {const_entry_body = pft;
+       const_entry_type = tpo;
+       const_entry_opaque = opacity } = const in
+  let l,r = match locality with
+    | Local when Lib.sections_are_opened () ->
+        let k = logical_kind_of_goal_kind kind in
+	let c = SectionLocalDef (pft, tpo, opacity) in
+	let _ = declare_variable id (Lib.cwd(), c, k) in
+	(Local, VarRef id)
+    | Local ->
+        let k = logical_kind_of_goal_kind kind in
+        let kn = declare_constant id (DefinitionEntry const, k) in
+	(Global, ConstRef kn)
+    | Global ->
+        let k = logical_kind_of_goal_kind kind in
+        let kn = declare_constant id (DefinitionEntry const, k) in
+	(Global, ConstRef kn) in
+  Pfedit.delete_current_proof ();
+  definition_message id;
+  hook l r
+
+let save_named opacity =
+  let id,(const,persistence,hook) = Pfedit.cook_proof () in
+  let const = { const with const_entry_opaque = opacity } in
+  save id const persistence hook
+
+let make_eq_decidability ind = 
+    (* fetching data *)
+    let mib = Global.lookup_mind (fst ind) in
+    let nparams = mib.mind_nparams in
+    let nparrec = mib.mind_nparams_rec in
+    let lnonparrec,lnamesparrec = 
+      context_chop (nparams-nparrec) mib.mind_params_ctxt in
+    let proof_name = (string_of_id(
+          Array.get mib.mind_packets (snd ind)).mind_typename)^"_eq_dec" in
+    let bl_name  =(string_of_id(
+          Array.get mib.mind_packets (snd ind)).mind_typename)^"_dec_bl" in
+    let lb_name  =(string_of_id(
+          Array.get mib.mind_packets (snd ind)).mind_typename)^"_dec_lb" in
+  (* main calls*)
+    if Ind_tables.check_bl_proof ind
+    then (message (bl_name^" is already declared."))
+    else (
+      start_proof (id_of_string bl_name)
+         (Global,Proof Theorem) 
+         (Auto_ind_decl.compute_bl_goal ind lnamesparrec nparrec)  
+            (fun _ _ -> ());
+      Auto_ind_decl.compute_bl_tact ind lnamesparrec nparrec;
+      save_named true; 
+      Lib.add_anonymous_leaf 
+        (inBoolLeib (ind,mkConst (Lib.make_con (id_of_string bl_name))))
+(*        definition_message (id_of_string bl_name) *)
+    );
+    if Ind_tables.check_lb_proof ind 
+    then (message (lb_name^" is already declared."))
+    else (
+      start_proof (id_of_string lb_name)
+        (Global,Proof Theorem) 
+        (Auto_ind_decl.compute_lb_goal ind lnamesparrec nparrec)
+        ( fun _ _ -> ());
+      Auto_ind_decl.compute_lb_tact ind lnamesparrec nparrec;
+      save_named true;
+      Lib.add_anonymous_leaf 
+        (inLeibBool (ind,mkConst (Lib.make_con (id_of_string lb_name))))
+(*      definition_message (id_of_string lb_name) *)
+    );
+    if Ind_tables.check_dec_proof ind
+    then (message (proof_name^" is already declared."))
+    else (
+      start_proof (id_of_string proof_name)
+        (Global,Proof Theorem) 
+        (Auto_ind_decl.compute_dec_goal ind lnamesparrec nparrec)
+        ( fun _ _ -> ());
+      Auto_ind_decl.compute_dec_tact ind lnamesparrec nparrec;
+      save_named true;
+      Lib.add_anonymous_leaf 
+        (inDec (ind,mkConst (Lib.make_con (id_of_string proof_name))))
+(*      definition_message (id_of_string proof_name) *)
+  )
+
+(* end of automated definition on ind*)
+
 let declare_eliminations sp =
   let mib = Global.lookup_mind sp in
-  if mib.mind_finite then
+  if mib.mind_finite then begin
+    if (!eq_flag) then (declare_eq_scheme sp);
     for i = 0 to Array.length mib.mind_packets - 1 do
-      declare_one_elimination (sp,i)
-    done
+      declare_one_elimination (sp,i);
+      if (!eq_flag) then (make_eq_decidability (sp,i));
+    done;
+  end
 
 (* 3b| Mutual inductive definitions *)
 
@@ -419,7 +585,6 @@ let prepare_inductive ntnl indl =
     }) indl in
   List.fold_right option_cons ntnl [], indl
 
-open Goptions
 
 let elim_flag = ref true
 let _ =
@@ -755,12 +920,12 @@ tried to declare different schemes at once *)
       error "Do not declare equality and induction scheme at the same time."
     else (
       if ischeme <> [] then build_induction_scheme ischeme;
-      List.iter ( fun indname ->
+      List.iter ( fun indname -> 
         let ind = Nametab.global_inductive indname
-(* vsiles :This will be replace with the boolean eq when it will be commited *)
-      in Pp.msgnl (print_constr (mkInd ind))
-    ) escheme
-  )
+        in declare_eq_scheme (fst ind);
+           make_eq_decidability ind 
+      ) escheme
+    )
 
 let rec get_concl n t = 
   if n = 0 then t
@@ -815,12 +980,6 @@ let build_combined_scheme name schemes =
     if_verbose ppnl (recursive_message Fixpoint None [snd name])
 
 (* 4| Goal declaration *)
-
-let start_proof id kind c hook =
-  let sign = Global.named_context () in
-  let sign = clear_proofs sign in
-  Pfedit.start_proof id kind sign c hook
-
 let start_proof_com sopt kind (bl,t) hook =
   let id = match sopt with
     | Some id ->
@@ -836,33 +995,6 @@ let start_proof_com sopt kind (bl,t) hook =
   let c = interp_type Evd.empty env (generalize_constr_expr t bl) in
   let _ = Typeops.infer_type env c in
   start_proof id kind c hook
-
-let save id const (locality,kind) hook =
-  let {const_entry_body = pft;
-       const_entry_type = tpo;
-       const_entry_opaque = opacity } = const in
-  let l,r = match locality with
-    | Local when Lib.sections_are_opened () ->
-        let k = logical_kind_of_goal_kind kind in
-	let c = SectionLocalDef (pft, tpo, opacity) in
-	let _ = declare_variable id (Lib.cwd(), c, k) in
-	(Local, VarRef id)
-    | Local ->
-        let k = logical_kind_of_goal_kind kind in
-        let kn = declare_constant id (DefinitionEntry const, k) in
-	(Global, ConstRef kn)
-    | Global ->
-        let k = logical_kind_of_goal_kind kind in
-        let kn = declare_constant id (DefinitionEntry const, k) in
-	(Global, ConstRef kn) in
-  Pfedit.delete_current_proof ();
-  definition_message id;
-  hook l r
-
-let save_named opacity =
-  let id,(const,persistence,hook) = Pfedit.cook_proof () in
-  let const = { const with const_entry_opaque = opacity } in
-  save id const persistence hook
 
 let check_anonymity id save_ident =
   if atompart_of_id id <> "Unnamed_thm" then
@@ -900,3 +1032,5 @@ let get_current_context () =
   try Pfedit.get_current_goal_context ()
   with e when Logic.catchable_exception e -> 
     (Evd.empty, Global.env())
+
+

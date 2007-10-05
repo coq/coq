@@ -308,25 +308,11 @@ Hint Resolve orb_comm orb_assoc: bool v62.
 (** * Properties of [andb]     *)
 (*******************************)
 
-Lemma andb_prop : forall a b:bool, a && b = true -> a = true /\ b = true.
-Proof.
-  destruct a; destruct b; simpl in |- *; try (intro H; discriminate H);
-    auto with bool.
-Qed.
-Hint Resolve andb_prop: bool v62.
-
 Lemma andb_true_eq :
   forall a b:bool, true = a && b -> true = a /\ true = b.
 Proof.
   destruct a; destruct b; auto.
 Defined.
-
-Lemma andb_true_intro :
-  forall b1 b2:bool, b1 = true /\ b2 = true -> b1 && b2 = true.
-Proof.
-  destruct b1; destruct b2; simpl in |- *; tauto || auto with bool.
-Qed.
-Hint Resolve andb_true_intro: bool v62.
 
 Lemma andb_false_intro1 : forall b1 b2:bool, b1 = false -> b1 && b2 = false.
 Proof.
