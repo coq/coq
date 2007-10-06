@@ -1643,7 +1643,7 @@ archclean::
 
 .ml4.cmx:
 	$(SHOW)'OCAMLOPT4 $<'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENSIONS) `$(CAMLP4DEPS) $<` $(CAML4OPTIONS) -impl" -c -impl $<
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENSIONS) `$(CAMLP4DEPS) $<` $(CAMLP4OPTIONS) -impl" -c -impl $<
 
 .ml4.cmo:
 	$(SHOW)'OCAMLC4   $<'

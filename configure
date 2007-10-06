@@ -409,7 +409,7 @@ else
 fi
 
 case $CAMLP4LIB in
-    +*) FULLCAMLP4LIB=$COQLIB/`echo $CAMLPALIB | cut -b 2-`;;
+    +*) FULLCAMLP4LIB=$CAMLLIB/`echo $CAMLP4LIB | cut -b 2-`;;
     *)  FULLCAMLP4LIB=$CAMLP4LIB;;
 esac
 
