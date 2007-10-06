@@ -169,6 +169,14 @@ let pp_global r =
   if is_inline_custom r then str (find_custom r) 
   else P.pp_global !local_mpl  r
 
+let is_infix r = 
+  is_inline_custom r && 
+  (let s = find_custom r in s.[0] = '(' && s.[String.length s-1] = ')')
+
+let get_infix r = 
+  let s = find_custom r in 
+  String.sub s 1 (String.length s - 2)
+
 let empty_env () = [], P.globals ()
 
 exception NoRecord
@@ -187,6 +195,10 @@ let rec pp_type par vl t =
     | Tmeta _ | Tvar' _ | Taxiom -> assert false
     | Tvar i -> (try pp_tvar (List.nth vl (pred i)) 
 		 with _ -> (str "'a" ++ int i))
+    | Tglob (r,[a1;a2]) when is_infix r -> 
+	pp_par par 
+	  (pp_rec true a1 ++ spc () ++ str (get_infix r) ++ spc () ++ 
+	   pp_rec true a2)
     | Tglob (r,[]) -> pp_global r
     | Tglob (r,l) -> 
 	if r = IndRef (kn_sig,0) then 
@@ -259,6 +271,11 @@ let rec pp_expr par env args =
     | MLcons (Record projs, r, args') -> 
 	assert (args=[]); 
 	pp_record_pat (projs, List.map (pp_expr true env []) args')
+    | MLcons (_,r,[arg1;arg2]) when is_infix r -> 
+	assert (args=[]); 
+	pp_par par
+	  ((pp_expr true env [] arg1) ++ spc () ++ str (get_infix r) ++
+	   spc () ++ (pp_expr true env [] arg2))
     | MLcons (_,r,args') -> 
 	assert (args=[]);
 	let tuple = pp_tuple (pp_expr true env []) args' in 
@@ -330,10 +347,12 @@ and pp_one_pat env i (r,ids,t) =
     let projs = find_projections i in 
     pp_record_pat (projs, List.rev_map pr_id ids), expr
   with NoRecord -> 
-    let args = 
-      if ids = [] then (mt ()) 
-      else str " " ++ pp_boxed_tuple pr_id (List.rev ids) in 
-    pp_global r ++ args, expr
+    (match List.rev ids with 
+      | [i1;i2] when is_infix r -> 
+	  pr_id i1 ++ str " " ++ str (get_infix r) ++ str " " ++ pr_id i2
+      | [] -> pp_global r
+      | ids -> pp_global r ++ str " " ++ pp_boxed_tuple pr_id ids), 
+    expr
   
 and pp_pat env (info,factors) pv = 
   prvecti 
