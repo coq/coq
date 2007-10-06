@@ -189,7 +189,7 @@ let ast_iter_references do_term do_cons do_type a =
 	  if lang () = Ocaml then record_iter_references do_term i; 
 	  do_cons r 
       | MLcase (i,_,v) -> 
-	  if lang () = Ocaml then record_iter_references do_term i; 
+	  if lang () = Ocaml then record_iter_references do_term (fst i); 
 	  Array.iter (fun (r,_,_) -> do_cons r) v
       | _ -> ()
   in iter a

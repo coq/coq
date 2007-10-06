@@ -263,7 +263,7 @@ let rec pp_expr par env args =
 	assert (args=[]);
 	let tuple = pp_tuple (pp_expr true env []) args' in 
 	pp_par par (pp_global r ++ spc () ++ tuple)
-    | MLcase (i, t, pv) ->
+    | MLcase ((i,factors), t, pv) ->
 	let expr = if i = Coinductive then 
 	  (str "Lazy.force" ++ spc () ++ pp_expr true env [] t)
 	else 
@@ -301,7 +301,7 @@ let rec pp_expr par env args =
 	     apply
       	       (pp_par par' 
       		  (v 0 (str "match " ++ expr ++ str " with" ++
-			fnl () ++ str "  | " ++ pp_pat env i pv))))
+			fnl () ++ str "  | " ++ pp_pat env (i,factors) pv))))
     | MLfix (i,ids,defs) ->
 	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
       	pp_fix par env' i (Array.of_list (List.rev ids'),defs) args
@@ -335,16 +335,26 @@ and pp_one_pat env i (r,ids,t) =
       else str " " ++ pp_boxed_tuple pr_id (List.rev ids) in 
     pp_global r ++ args, expr
   
-and pp_pat env i pv = 
-  prvect_with_sep (fun () -> (fnl () ++ str "  | ")) 
-    (fun x -> let s1,s2 = pp_one_pat env i x in 
-     hov 2 (s1 ++ str " ->" ++ spc () ++ s2)) pv
+and pp_pat env (info,factors) pv = 
+  prvecti 
+    (fun i x -> if List.mem i factors then mt () else 
+       let s1,s2 = pp_one_pat env info x in 
+       hov 2 (s1 ++ str " ->" ++ spc () ++ s2) ++
+       (if factors = [] && i = Array.length pv-1 then mt () 
+	else fnl () ++ str "  | ")) pv 
+  ++ 
+  match factors with 
+     | [] -> mt ()
+     | i::_ -> 
+	 let (_,ids,t) = pv.(i) in 
+	 let t = ast_lift (-List.length ids) t in 
+	 hov 2 (str "_ ->" ++ spc () ++ pp_expr (expr_needs_par t) env [] t)
 
 and pp_function env f t =
   let bl,t' = collect_lams t in
   let bl,env' = push_vars bl env in
   match t' with 
-    | MLcase(i,MLrel 1,pv) when i=Standard -> 
+    | MLcase(i,MLrel 1,pv) when fst i=Standard -> 
 	if not (ast_occurs 1 (MLcase(i,MLdummy,pv))) then 
 	  (f ++ pr_binding (List.rev (List.tl bl)) ++
        	     str " = function" ++ fnl () ++

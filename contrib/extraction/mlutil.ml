@@ -658,20 +658,27 @@ let check_generalizable_case unsafe br =
     if check_and_generalize br.(i) <> f then raise Impossible 
   done; f
 
-(*s Do all branches correspond to the same thing? *)
+(*s Detecting similar branches of a match *)
 
-let check_constant_case br = 
-  if Array.length br = 0 then raise Impossible; 
-  let (r,l,t) = br.(0) in
-  let n = List.length l in 
-  if ast_occurs_itvl 1 n t then raise Impossible; 
-  let cst = ast_lift (-n) t in 
-  for i = 1 to Array.length br - 1 do 
-    let (r,l,t) = br.(i) in
-    let n = List.length l in
-    if (ast_occurs_itvl 1 n t) || (cst <> (ast_lift (-n) t)) 
-    then raise Impossible
-  done; cst
+(* If several branches of a match are equal (and independent from their 
+   patterns) we will print them using a _ pattern. If _all_ branches 
+   are equal, we remove the match.
+*)
+
+let common_branches br = 
+  let tab = Hashtbl.create 13 in 
+  for i = 0 to Array.length br - 1 do 
+    let (r,ids,t) = br.(i) in 
+    let n = List.length ids in 
+    if not (ast_occurs_itvl 1 n t) then 
+       let t = ast_lift (-n) t in 
+       let l = try Hashtbl.find tab t with Not_found -> [] in 
+       Hashtbl.replace tab t (i::l)
+  done; 
+  let best = ref [] in 
+  Hashtbl.iter 
+    (fun _ l -> if List.length l > List.length !best then best := l) tab; 
+  if List.length !best < 2 then [] else !best
 
 (*s If all branches are functions, try to permut the case and the functions. *)
 
@@ -805,18 +812,20 @@ and simpl_case o i br e =
       let f = check_generalizable_case o.opt_case_idg br in 
       simpl o (MLapp (MLlam (anonymous,f),[e]))
     with Impossible -> 
-      try (* Is each branch independant of [e] ? *) 
-	if not o.opt_case_cst then raise Impossible;
-	check_constant_case br 
-      with Impossible ->
+      (* Detect common branches *)
+      let common_br = if not o.opt_case_cst then [] else common_branches br in
+      if List.length common_br = Array.length br && br <> [||] then 
+	let (_,ids,t) = br.(0) in ast_lift (-List.length ids) t
+      else 
+	let new_i = (fst i, common_br) in 
 	(* Swap the case and the lam if possible *)
 	if o.opt_case_fun 
 	then 
 	  let ids,br = permut_case_fun br [] in 
 	  let n = List.length ids in 
-	  if n <> 0 then named_lams ids (MLcase (i,ast_lift n e, br))
-	  else MLcase (i,e,br) 
-	else MLcase (i,e,br)
+	  if n <> 0 then named_lams ids (MLcase (new_i,ast_lift n e, br))
+	  else MLcase (new_i,e,br) 
+	else MLcase (new_i,e,br)
 
 let rec post_simpl = function 
   | MLletin(_,c,e) when (is_atomic (eta_red c)) -> 

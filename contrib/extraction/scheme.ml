@@ -105,7 +105,7 @@ let rec pp_expr env args =
 		 prlist_with_sep spc (pp_cons_args env) args')
 	in 
 	if i = Coinductive then paren (str "delay " ++ st) else st 
-    | MLcase (i,t, pv) ->
+    | MLcase ((i,_),t, pv) ->
 	let e = 
 	  if i <> Coinductive then pp_expr env [] t 	
 	  else paren (str "force" ++ spc () ++ pp_expr env [] t)

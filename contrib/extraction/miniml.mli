@@ -58,6 +58,8 @@ type inductive_info =
   | Standard 
   | Record of global_reference list 
 
+type case_info = int list (* list of branches to merge in a _ pattern *)
+
 (* A [ml_ind_packet] is the miniml counterpart of a [one_inductive_body]. 
    If the inductive is logical ([ip_logical = false]), then all other fields
    are unused. Otherwise, 
@@ -92,7 +94,7 @@ type ml_ast =
   | MLletin  of identifier * ml_ast * ml_ast
   | MLglob   of global_reference
   | MLcons   of inductive_info * global_reference * ml_ast list
-  | MLcase   of inductive_info * ml_ast * 
+  | MLcase   of (inductive_info*case_info) * ml_ast * 
       (global_reference * identifier list * ml_ast) array
   | MLfix    of int * identifier array * ml_ast array
   | MLexn    of string

@@ -161,10 +161,10 @@ let rec pp_expr par env args =
 	assert (args=[]);
 	pp_par par (pp_global r ++ spc () ++ 
 		    prlist_with_sep spc (pp_expr true env []) args')
-    | MLcase (_,t, pv) ->
+    | MLcase ((_,factors),t, pv) ->
       	apply (pp_par par' 
 		 (v 0 (str "case " ++ pp_expr false env [] t ++ str " of" ++
-		       fnl () ++ str "  " ++ pp_pat env pv)))
+		       fnl () ++ str "  " ++ pp_pat env factors pv)))
     | MLfix (i,ids,defs) ->
 	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
       	pp_fix par env' i (Array.of_list (List.rev ids'),defs) args
@@ -177,7 +177,7 @@ let rec pp_expr par env args =
 	pp_apply (str "unsafeCoerce") par (pp_expr true env [] a :: args)
     | MLaxiom -> pp_par par (str "Prelude.error \"AXIOM TO BE REALIZED\"")
 
-and pp_pat env pv = 
+and pp_pat env factors pv = 
   let pp_one_pat (name,ids,t) =
     let ids,env' = push_vars (List.rev ids) env in
     let par = expr_needs_par t in
@@ -189,7 +189,18 @@ and pp_pat env pv =
 			 (fun () -> (spc ())) pr_id (List.rev ids))) ++
 	   str " ->" ++ spc () ++ pp_expr par env' [] t)
   in 
-  (prvect_with_sep (fun () -> (fnl () ++ str "  ")) pp_one_pat pv)
+  prvecti 
+    (fun i x -> if List.mem i factors then mt () else 
+       (pp_one_pat pv.(i) ++
+	if factors = [] && i = Array.length pv - 1 then mt ()
+	else fnl () ++ str "  ")) pv
+  ++
+  match factors with 
+    | [] -> mt ()
+    | i::_ -> 
+	let (_,ids,t) = pv.(i) in 
+	let t = ast_lift (-List.length ids) t in 
+	hov 2 (str "_ ->" ++ spc () ++ pp_expr (expr_needs_par t) env [] t)
 
 (*s names of the functions ([ids]) are already pushed in [env],
     and passed here just for convenience. *)
