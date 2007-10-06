@@ -42,9 +42,11 @@ usage () {
     echo "-coqdocdir"
     echo -e "\tSpecifies where Coqdoc style files are to be installed\n"
     echo "-camldir"
-    echo -e "\tTells configure where to look for OCaml files\n"
+    echo -e "\tSpecifies the path to the OCaml library\n"
     echo "-lablgtkdir"
-    echo -e "\tTells configure where to look for Lablgtk files\n"
+    echo -e "\tSpecifies the path to the Lablgtk library\n"
+    echo "-camlp5dir"
+    echo -e "\tSpecifies where to look for the Camlp5 library and tells to use it\n"
     echo "-arch"
     echo -e "\tSpecifies the architecture\n"
     echo "-opt"
@@ -155,6 +157,9 @@ while : ; do
     -lablgtkdir|--lablgtkdir) lablgtkdir_spec=yes
 	                lablgtkdir="$2"
 			shift;;
+    -camlp5dir|--camlp5dir)
+	                camlp5dir="$2"
+			shift;;
     -arch|--arch) arch_spec=yes
                   arch=$2
 		  shift;;
@@ -235,6 +240,8 @@ case $arch_spec in
 	    # cygwin returns a name of the form /cygdrive/c/... 
 	    # that coqc does not understand; need to transform it
 	    COQTOP=`echo $COQTOP | sed -e "s#.*cygdrive.\(.\)#\1:#"`
+	elif test -x /bin/uname ; then
+	    ARCH=`/bin/uname -s`
 	elif test -x /usr/bin/uname ; then
 	    ARCH=`/usr/bin/uname -s`
 	else
@@ -324,18 +331,22 @@ if [ `uname -s` = "FreeBSD" ]; then camlp4oexec=$camlp4oexec.byte; fi
 CAMLVERSION=`"$bytecamlc" -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
 
 case $CAMLVERSION in
-    1.*|2.*|3.00|3.01|3.02|3.03|3.03alpha|3.04|3.05beta|3.05|3.08.0)
+    1.*|2.*|3.00|3.01|3.02|3.03|3.03alpha|3.04|3.05beta|3.05|3.06|3.08.0)
 	echo "Your version of Objective-Caml is $CAMLVERSION."
 	if [ "$CAMLVERSION" = "3.08.0" ] ; then
-	    echo "You need Objective-Caml 3.06 or later (to the exception of 3.08.0)!"
+	    echo "You need Objective-Caml 3.07 or later (to the exception of 3.08.0)!"
 	else
-	    echo "You need Objective-Caml 3.06 or later!"
+	    echo "You need Objective-Caml 3.07 or later!"
 	fi
 	echo "Configuration script failed!"
 	exit 1;;
-    3.06|3.07*|3.08*)
-	echo "You have Objective-Caml $CAMLVERSION. Good!"
-	coq_inline_flag="-inline 0";;
+    3.07*)
+        cflags="$cflags -DOCAML_307"
+	coq_inline_flag="-inline 0"
+	echo "You have Objective-Caml $CAMLVERSION. Good!";;
+    3.08*)
+	coq_inline_flag="-inline 0"
+	echo "You have Objective-Caml $CAMLVERSION. Good!";;
     ?*)
 	CAMLP4COMPAT="-loc loc" 
 	echo "You have Objective-Caml $CAMLVERSION. Good!";;
@@ -372,24 +383,40 @@ case $ARCH in
       CAMLLIB=`"$CAMLC" -where`
   esac
   
-# We need to set va special flag for OCaml 3.07
-case  $CAMLVERSION in 
-    3.07*)
-      cflags="$cflags -DOCAML_307";;
+
+# Camlp4 / Camlp5 configuration
+# Very basic for the moment: if camlp5 exists, we use it...
+
+if [ "$camlp5dir" != "" ]; then
+    CAMLP4=camlp5
+    CAMLP4LIB=$camlp5dir
+    camlp4oexec=`echo $camlp4oexec | sed -e 's/4/5/'`
+elif [ "$CAMLTAG" = "OCAML310" ]; then
+    if [ -x "${CAMLLIB}/camlp5" ]; then 
+	CAMLP4=camlp5
+    elif [ -x "${CAMLLIB}/site-lib/camlp5" ]; then 
+	CAMLP4=site-lib/camlp5
+    else
+	echo "Objective Caml 3.10 found but no Camlp5 installed"
+	echo "Configuration script failed!"
+	exit 1
+    fi
+    CAMLP4LIB=+$CAMLP4
+    camlp4oexec=`echo $camlp4oexec | sed -e 's/4/5/'`
+else 
+    CAMLP4=camlp4
+    CAMLP4LIB=+$CAMLP4
+fi
+
+case $CAMLP4LIB in
+    +*) FULLCAMLP4LIB=$COQLIB/`echo $CAMLPALIB | cut -b 2-`;;
+    *)  FULLCAMLP4LIB=$CAMLP4LIB;;
 esac
- 
 
-# Camlp4 (greatly simplified since merged with ocaml)
-
+# Assume that camlp(4|5) binaries are at the same place as ocaml ones
+# (this should become configurable some day) 
 CAMLP4BIN=${CAMLBIN}
 
-#case $OS in
-#  Win32)
-    CAMLP4LIB=+camlp4
-# ;;
-#  *)
-#    CAMLP4LIB=${CAMLLIB}/camlp4
-#esac
 
 # OS dependent libraries
 
@@ -410,10 +437,6 @@ esac
 
 # lablgtk2 and CoqIDE
 
-case $lablgtkdir_spec in
-    no) lablgtkdir=${CAMLLIB}/lablgtk2
-esac
-
 # -byte-only should imply -coqide byte, unless the user decides otherwise
 
 if [ "$best_compiler" = "byte" -a "$coqide_spec" = "no" ]; then 
@@ -425,21 +448,37 @@ fi
 
 if [ "$coqide_spec" = "yes" -a "$COQIDE" = "no" ]; then 
     echo "CoqIde disabled as requested"
-elif [ ! -f "$lablgtkdir/glib.mli" ]; then
-    echo "LablGtk2 not found: CoqIde will not be available"
-    COQIDE=no
-elif [ -z "`grep -w convert_with_fallback "$lablgtkdir/glib.mli"`" ]; then
-    echo "LablGtk2 found but too old: CoqIde will not be available"
-    COQIDE=no;
-elif [ "$coqide_spec" = "yes" -a "$COQIDE" = "byte" ]; then 
-    echo "LablGtk2 found, bytecode CoqIde will be used as requested"
-    COQIDE=byte
-elif [ ! -f "${CAMLLIB}/threads/threads.cmxa" ]; then 
-    echo "LablGtk2 found, no native threads: bytecode CoqIde will be available"
-    COQIDE=byte
-else 
-    echo "LablGtk2 found, native threads: native CoqIde will be available"
-    COQIDE=opt
+else
+    case $lablgtkdir_spec in
+	no) 
+	    if [ -f "${CAMLLIB}/lablgtk2/glib.mli" ]; then
+		lablgtkdir=${CAMLLIB}/lablgtk2
+	    elif [ -f "${CAMLLIB}/site-lib/lablgtk2/glib.mli" ]; then
+		lablgtkdir=${CAMLLIB}/site-lib/lablgtk2
+	    else
+		echo "LablGtk2 not found: CoqIde will not be available"
+		COQIDE=no
+	    fi;;
+	yes)
+	    if [ ! -f "$lablgtkdir/glib.mli" ]; then
+		echo "Incorrect LablGtk2 library (glib.mli not found)"
+		echo "Configuration script failed!"
+		exit 1
+	    fi;;
+    esac
+    if [ -z "`grep -w convert_with_fallback "$lablgtkdir/glib.mli"`" ]; then
+	echo "LablGtk2 found but too old: CoqIde will not be available"
+	COQIDE=no;
+    elif [ "$coqide_spec" = "yes" -a "$COQIDE" = "byte" ]; then 
+	echo "LablGtk2 found, bytecode CoqIde will be used as requested"
+	COQIDE=byte
+    elif [ ! -f "${CAMLLIB}/threads/threads.cmxa" ]; then 
+	echo "LablGtk2 found, no native threads: bytecode CoqIde will be available"
+	COQIDE=byte
+    else 
+	echo "LablGtk2 found, native threads: native CoqIde will be available"
+	COQIDE=opt
+    fi
 fi
 
 case $COQIDE in
@@ -690,6 +729,7 @@ let coqlib = "$ESCLIBDIR"
 let coqtop = "$ESCCOQTOP"
 let camldir = "$ESCCAMLDIR"
 let camllib = "$ESCCAMLLIB"
+let camlp4 = "$CAMLP4"
 let camlp4lib = "$ESCCAMLP4LIB"
 let best = "$best_compiler"
 let arch = "$ARCH"
@@ -782,15 +822,10 @@ OCAMLDEBUGCOQ=$COQSRC/dev/ocamldebug-coq
 
 if test "$coq_debug_flag" = "-g" ; then
   rm -f $OCAMLDEBUGCOQ
-  if [ "$CAMLP4LIB" = "+camlp4" ] ; then
-    CAMLP4LIBFORCAMLDEBUG=$CAMLLIB/camlp4
-  else
-    CAMLP4LIBFORCAMLDEBUG=$CAMLP4LIB
-  fi
   sed -e "s|COQTOPDIRECTORY|$COQTOP|" \
       -e "s|COQLIBDIRECTORY|$LIBDIR|" \
       -e "s|CAMLBINDIRECTORY|$CAMLBIN|" \
-      -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIBFORCAMLDEBUG|" \
+      -e "s|CAMLP4LIBDIRECTORY|$FULLCAMLP4LIB|"\
       $OCAMLDEBUGCOQ.template > $OCAMLDEBUGCOQ
   chmod a-w,a+x $OCAMLDEBUGCOQ
 fi

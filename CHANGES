@@ -1,3 +1,14 @@
+Changes from V8.1pl1 to V8.1pl2
+===============================
+
+Installation
+
+- Support for compilation with ocaml 3.10 and (transitional) camlp5.
+
+Bug fixes 
+
+- Many bugs have been fixed (cf coq-bugs web page)
+
 Changes from V8.1 to V8.1pl1
 ============================
 

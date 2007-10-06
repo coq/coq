@@ -12,4 +12,4 @@ include Makefile
 include .depend.camlp4
 
 .ml4.ml:
-	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pa_ifdef.cmo pr_o.cmo `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl $< > $@ || rm -f $@
+	$(CAMLP4O) $(CAMLP4EXTENSIONS) pr_o.cmo `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl $< > $@ || rm -f $@

@@ -29,6 +29,29 @@ open Ppextend
    we unfreeze the state of the lexer. This restores the behaviour of the
    lexer. B.B. *)
 
+IFDEF CAMLP5 THEN 
+
+let lexer = {
+  Token.tok_func = Lexer.func;
+  Token.tok_using = Lexer.add_token;
+  Token.tok_removing = (fun _ -> ());
+  Token.tok_match = Token.default_match;
+  (* Token.parse = Lexer.tparse; *)
+  Token.tok_comm = None;
+  Token.tok_text = Lexer.token_text }
+
+module L =
+  struct
+    type te = string * string
+    let lexer = lexer
+  end
+
+(* The parser of Coq *)
+
+module G = Grammar.GMake(L)
+
+ELSE 
+
 let lexer = {
   Token.func = Lexer.func;
   Token.using = Lexer.add_token;
@@ -44,6 +67,8 @@ module L =
 (* The parser of Coq *)
 
 module G = Grammar.Make(L)
+
+END
 
 let grammar_delete e rls =
   List.iter
@@ -95,7 +120,7 @@ type ext_kind =
   | ByGrammar of
       grammar_object G.Entry.e * Gramext.position option *
       (string option * Gramext.g_assoc option *
-       (Token.t Gramext.g_symbol list * Gramext.g_action) list) list
+       (Compat.token Gramext.g_symbol list * Gramext.g_action) list) list
   | ByGEXTEND of (unit -> unit) * (unit -> unit)
 
 let camlp4_state = ref []

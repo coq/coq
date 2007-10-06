@@ -90,7 +90,8 @@ DEPFLAGS= -slash $(LOCALINCLUDES)
 
 OCAMLC_P4O=$(OCAMLC) -pp $(CAMLP4O) $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp $(CAMLP4O) $(OPTFLAGS)
-CAMLP4EXTENDFLAGS=-I . pa_extend.cmo pa_extend_m.cmo q_MLast.cmo
+CAMLP4EXTENSIONS=-I . pa_extend.cmo pa_extend_m.cmo q_MLast.cmo pa_macro.cmo
+CAMLP4OPTIONS=$(CAMLP4COMPAT) -D$(CAMLVERSION)
 CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)|\1|p'
 
 COQINCLUDES=          # coqtop includes itself the needed paths
@@ -1478,7 +1479,7 @@ dev/printers.cma: $(PRINTERSCMO)
 parsing/grammar.cma: $(GRAMMARCMO)
 	$(SHOW)'Testing $@'
 	@touch test.ml4
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) $(GRAMMARCMO) -impl" -impl test.ml4 -o test-grammar
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENSIONS) $(GRAMMARCMO) -impl" -impl test.ml4 -o test-grammar
 	@rm -f test-grammar test.*
 	$(SHOW)'OCAMLC -a $@'   
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(GRAMMARCMO) -linkall -a -o $@
@@ -1499,11 +1500,11 @@ BEFOREDEPEND+= $(GRAMMARCMO)
 
 # BEFOREDEPEND+= parsing/pcoq.ml parsing/extend.ml
 
-# File using pa_ifdef and only necessary for parsing ml files
+# File using pa_macro and only necessary for parsing ml files
 
 parsing/q_coqast.cmo: parsing/q_coqast.ml4
 	$(SHOW)'OCAMLC4  $<' 
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pa_ifdef.cmo $(CAMLP4COMPAT) -impl" -c -impl $<
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENSIONS) $(CAMLP4OPTIONS) -impl" -c -impl $<
 
 # toplevel/mltop.ml4 (ifdef Byte)
 
@@ -1517,11 +1518,11 @@ toplevel/mltop.cmx: toplevel/mltop.optml
 
 toplevel/mltop.byteml: toplevel/mltop.ml4
 	$(SHOW)'CAMLP4O   $<'	
-	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pa_ifdef.cmo pr_o.cmo -DByte -impl $< > $@ || rm -f $@
+	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENSIONS) pr_o.cmo -DByte -impl $< > $@ || rm -f $@
 
 toplevel/mltop.optml: toplevel/mltop.ml4
 	$(SHOW)'CAMLP4O   $<'	
-	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pa_ifdef.cmo pr_o.cmo -impl $< > $@ || rm -f $@
+	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENSIONS) pr_o.cmo -impl $< > $@ || rm -f $@
 
 ML4FILES += toplevel/mltop.ml4
 
@@ -1566,11 +1567,11 @@ ML4FILES += lib/pp.ml4 lib/compat.ml4
 
 lib/compat.cmo: lib/compat.ml4
 	$(SHOW)'OCAMLC4  $<' 
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pa_ifdef.cmo -impl" -c -impl $<
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENSIONS) $(CAMLP4OPTIONS) -impl" -c -impl $<
 
 lib/compat.cmx: lib/compat.ml4
 	$(SHOW)'OCAMLOPT  $<' 
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pa_ifdef.cmo -impl" -c -impl $<
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENSIONS) $(CAMLP4OPTIONS) -impl" -c -impl $<
 
 # files compiled with camlp4 because of streams syntax
 
@@ -1586,11 +1587,11 @@ ML4FILES += contrib/xml/xml.ml4		\
 
 parsing/lexer.cmx: parsing/lexer.ml4
 	$(SHOW)'OCAMLOPT4 $<'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` pr_o.cmo -impl" -c -impl $<
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENSIONS) pr_o.cmo `$(CAMLP4DEPS) $<` -impl" -c -impl $<
 
 parsing/lexer.cmo: parsing/lexer.ml4
 	$(SHOW)'OCAMLC4   $<'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` pr_o.cmo -impl" -c -impl $<
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENSIONS) pr_o.cmo `$(CAMLP4DEPS) $<` -impl" -c -impl $<
 
 # pretty printing of the revision number when compiling a checked out
 # source tree
@@ -1642,11 +1643,11 @@ archclean::
 
 .ml4.cmx:
 	$(SHOW)'OCAMLOPT4 $<'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl" -c -impl $<
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENSIONS) `$(CAMLP4DEPS) $<` $(CAML4OPTIONS) -impl" -c -impl $<
 
 .ml4.cmo:
 	$(SHOW)'OCAMLC4   $<'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl" -c -impl $<
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENSIONS) `$(CAMLP4DEPS) $<` $(CAMLP4OPTIONS) -impl" -c -impl $<
 
 .el.elc:
 	echo "(setq load-path (cons \".\" load-path))" > $*.compile
