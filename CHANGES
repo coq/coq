@@ -1,6 +1,10 @@
 Changes from V8.0pl3 to V8.0pl?
 ===============================
 
+Installation
+
+- Support for compilation with ocaml 3.10 and (transitional) camlp5.
+
 Tactics
 
 - Compatibility of auto hints search order made compatible even when

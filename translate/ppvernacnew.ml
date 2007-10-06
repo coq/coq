@@ -30,11 +30,23 @@ open Tacinterp
 
 let pr_spc_type = pr_sep_com spc pr_type
 
-let pr_lident (b,_ as loc,id) =
+let pr_lident (loc,id) =
   if loc <> dummy_loc then
     let (b,_) = unloc loc in
     pr_located pr_id (make_loc (b,b+String.length(string_of_id id)),id)
   else pr_id id
+
+let string_of_fqid fqid =
+ String.concat "." (List.map string_of_id fqid)
+
+let pr_fqid fqid = str (string_of_fqid fqid)
+
+let pr_lfqid (loc,fqid) =
+  if loc <> dummy_loc then
+   let (b,_) = unloc loc in
+    pr_located pr_fqid (make_loc (b,b+String.length(string_of_fqid fqid)),fqid)
+  else
+   pr_fqid fqid
 
 let pr_lname = function
     (loc,Name id) -> pr_lident (loc,id)

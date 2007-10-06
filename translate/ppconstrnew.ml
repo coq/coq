@@ -94,9 +94,9 @@ let pr_delimiters key strm =
 
 let surround p = hov 1 (str"(" ++ p ++ str")")
 
-let pr_located pr ((b,e),x) =
-  if Options.do_translate() && (b,e)<>dummy_loc then
-    let (b,e) = unloc (b,e) in
+let pr_located pr (loc,x) =
+  if Options.do_translate() && loc<>dummy_loc then
+    let (b,e) = unloc loc in
     comment b ++ pr x ++ comment e
   else pr x
 
@@ -145,7 +145,7 @@ let pr_name = function
   | Anonymous -> str"_"
   | Name id -> pr_id id
 
-let pr_lident (b,_ as loc,id) =
+let pr_lident (loc,id) =
   if loc <> dummy_loc then
     let (b,_) = unloc loc in
     pr_located pr_id (make_loc (b,b+String.length(string_of_id id)),id)

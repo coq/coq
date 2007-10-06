@@ -53,7 +53,7 @@ let coqsearch = ["version_searchisos.cmo"; "cmd_searchisos_line.cmo"]
 
 (* 4. Toplevel objects *)
 let camlp4objs =
-  ["camlp4_top.cma"; "pa_o.cmo"; "pa_op.cmo"; "pa_extend.cmo"; "q_util.cmo"; "q_coqast.cmo" ]
+  ["camlp5_top.cma"; "camlp5o.cma"; "pa_o.cmo"; "pa_op.cmo"; "pa_extend.cmo"; "q_util.cmo"; "q_coqast.cmo" ]
 let topobjs = camlp4objs
 
 let gramobjs = []
@@ -335,7 +335,7 @@ let main () =
     (* add topstart.cmo explicitly because we shunted ocamlmktop wrapper *)
     let args = if !top then args @ [ "topstart.cmo" ] else args in
     (* Now, with the .cma, we MUST use the -linkall option *)
-    let command = String.concat " " ((prog^" -linkall")::args) in
+    let command = String.concat " " ((prog^" -rectypes -linkall")::args) in
     if !echo then 
       begin 
 	print_endline command; 

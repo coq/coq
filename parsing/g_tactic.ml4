@@ -35,7 +35,7 @@ let local_compute = [FBeta;FIota;FDeltaBut [];FZeta]
 
 let error_oldelim _ = error "OldElim no longer supported"
 
-let join_to_constr loc c2 = (fst loc), snd (Topconstr.constr_loc c2)
+let join_to_constr loc c2 = fst (unloc loc), snd (unloc (Topconstr.constr_loc c2))
 
 (* Auxiliary grammar rules *)
 
@@ -137,9 +137,9 @@ GEXTEND Gram
   bindings:
     [ [ c1 = constr; ":="; c2 = constr; bl = LIST0 simple_binding ->
           ExplicitBindings
-            ((join_to_constr loc c2,NamedHyp (snd(coerce_to_id c1)), c2) :: bl)
+            ((make_loc (join_to_constr loc c2),NamedHyp (snd(coerce_to_id c1)), c2) :: bl)
       | n = natural; ":="; c = constr; bl = LIST0 simple_binding ->
-	  ExplicitBindings ((join_to_constr loc c,AnonHyp n, c) :: bl)
+	  ExplicitBindings ((make_loc (join_to_constr loc c),AnonHyp n, c) :: bl)
       | c1 = constr; bl = LIST0 constr ->
 	  ImplicitBindings (c1 :: bl) ] ]
   ;

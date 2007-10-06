@@ -13,7 +13,7 @@ open Q_util
 open Q_coqast
 open Ast
 
-let join_loc (deb1,_) (_,fin2) = (deb1,fin2)
+let join_loc = Util.join_loc
 let loc = Util.dummy_loc
 let default_loc = <:expr< Util.dummy_loc >>
 
@@ -287,7 +287,7 @@ EXTEND
         let t, g = interp_entry_name loc e in (g, Some (s,t))
       | s = STRING ->
 	  if String.length s > 0 && Util.is_letter s.[0] then
-	    Pcoq.lexer.Token.using ("", s);
+	    Compat.using Pcoq.lexer ("", s);
         (<:expr< (Gramext.Stoken (Extend.terminal $str:s$)) >>, None)
     ] ]
   ;

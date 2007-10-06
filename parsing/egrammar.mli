@@ -36,7 +36,8 @@ val extend_grammar : all_grammar_command -> unit
 (* Add grammar rules for tactics *)
 type grammar_tactic_production =
   | TacTerm of string
-  | TacNonTerm of loc * (Token.t Gramext.g_symbol * Genarg.argument_type) * string option
+  | TacNonTerm of
+      loc * (Compat.token Gramext.g_symbol * Genarg.argument_type) * string option
 
 val extend_tactic_grammar :
   string -> (string * grammar_tactic_production list) list -> unit
@@ -53,8 +54,7 @@ val reset_extend_grammars_v8 : unit -> unit
 val subst_all_grammar_command :
   Names.substitution -> all_grammar_command -> all_grammar_command
 
-val interp_entry_name : string -> string -> 
-  entry_type * Token.t Gramext.g_symbol
+val interp_entry_name : string -> string -> entry_type * Compat.token Gramext.g_symbol
 
 val recover_notation_grammar :
   notation -> (precedence * tolerability list) -> notation_grammar

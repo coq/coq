@@ -17,6 +17,7 @@ val coqtop : string     (* where are the sources *)
 
 val camllib : string    (* for Dynlink *)
 
+val camlp4 : string     (* exact name of camlp4: either "camlp4" ou "camlp5" *)
 val camlp4lib : string  (* where is the library of Camlp4 *)
 
 val best : string       (* byte/opt *)

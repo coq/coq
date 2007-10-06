@@ -14,7 +14,7 @@ open Q_coqast
 open Ast
 open Argextend
 
-let join_loc (deb1,_) (_,fin2) = (deb1,fin2)
+let join_loc = Compat.join_loc
 let loc = Util.dummy_loc
 let default_loc = <:expr< Util.dummy_loc >>
 

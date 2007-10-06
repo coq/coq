@@ -19,13 +19,18 @@ let purge_str s =
   if String.length s == 0 || s.[0] <> '$' then s
   else String.sub s 1 (String.length s - 1)
 
+IFDEF OCAML308 THEN DEFINE NOP END
+IFDEF OCAML309 THEN DEFINE NOP END
+IFDEF CAMLP5 THEN DEFINE NOP END
+
 let anti loc x =
   let e =
-    let loc = 
-      ifdef OCAML_308 then
+    let loc =
+      IFDEF NOP THEN 
         loc
-      else
-        (1, snd loc - fst loc)
+      ELSE 
+	(1, snd loc - fst loc)
+      END 
     in <:expr< $lid:purge_str x$ >>
   in
   <:expr< $anti:e$ >>
@@ -93,13 +98,13 @@ and expr_list_of_ast_list al =
     (fun a e2 -> match a with
        | (Coqast.Node (_, "$LIST", [Coqast.Nmeta (locv, pv)])) ->
            let e1 = anti locv pv in
-           let loc = (fst(MLast.loc_of_expr e1), snd(MLast.loc_of_expr e2)) in
+           let loc = join_loc (MLast.loc_of_expr e1) (MLast.loc_of_expr e2) in
 	     if e2 = (let loc = dummy_loc in <:expr< [] >>)
 	     then <:expr< $e1$ >>
 	     else <:expr< ( $lid:"@"$ $e1$ $e2$) >>
        | _ ->
            let e1 = mlexpr_of_ast a in
-           let loc = (fst(MLast.loc_of_expr e1), snd(MLast.loc_of_expr e2)) in
+           let loc = join_loc (MLast.loc_of_expr e1) (MLast.loc_of_expr e2) in
 	   <:expr< [$e1$ :: $e2$] >> )
     al (let loc = dummy_loc in <:expr< [] >>)
 
@@ -107,7 +112,7 @@ and expr_list_of_var_list sl =
   let loc = dummy_loc in
   List.fold_right
     (fun e1 e2 ->
-       let loc = (fst (MLast.loc_of_expr e1), snd (MLast.loc_of_expr e2)) in
+       let loc = join_loc (MLast.loc_of_expr e1) (MLast.loc_of_expr e2) in
        <:expr< [$e1$ :: $e2$] >>)
     sl <:expr< [] >>
 

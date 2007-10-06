@@ -21,10 +21,13 @@ open Extend
 
 (* The lexer and parser of Coq. *)
 
-val lexer : Token.lexer
+val lexer : Compat.lexer
 
-module Gram : Grammar.S with type te = Token.t
+module Gram : Grammar.S with type te = Compat.token
 
+val entry_print : 'a Gram.Entry.e -> unit
+
+(* The superclass of all grammar entries *)
 type grammar_object
 type typed_entry
 
@@ -36,12 +39,12 @@ val get_constr_entry :
   bool -> constr_entry -> grammar_object Gram.Entry.e * int option * bool
 
 val symbol_of_production : Gramext.g_assoc option -> constr_entry ->
-  bool -> constr_production_entry -> Token.t Gramext.g_symbol
+  bool -> constr_production_entry -> Compat.token Gramext.g_symbol
 
 val grammar_extend :
   'a Gram.Entry.e -> Gramext.position option ->
     (string option * Gramext.g_assoc option *
-     (Token.t Gramext.g_symbol list * Gramext.g_action) list) list
+     (Compat.token Gramext.g_symbol list * Gramext.g_action) list) list
     -> unit
 
 val remove_grammars : int -> unit
@@ -184,6 +187,11 @@ module Vernac_ :
   end
 
 val reset_all_grammars : unit -> unit
+
+(* Binding entry names to campl4 entries *)
+
+val symbol_of_production : Gramext.g_assoc option -> constr_entry ->
+  bool -> constr_production_entry -> Compat.token Gramext.g_symbol
 
 (* Registering/resetting the level of an entry *)
 

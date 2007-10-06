@@ -50,9 +50,12 @@ OCAMLC=BYTECAMLC
 OCAMLOPT=NATIVECAMLC
 
 # Caml link command and Caml make top command
-CAMLLINK=BYTECAMLC
-CAMLOPTLINK=NATIVECAMLC
-CAMLMKTOP=ocamlmktop
+CAMLLINK="BYTECAMLC"
+CAMLOPTLINK="NATIVECAMLC"
+CAMLMKTOP="CAMLMKTOPEXEC"
+
+# Caml flags
+CAMLFLAGS=-rectypes
 
 # Compilation debug flag
 CAMLDEBUG=COQDEBUGFLAG
@@ -62,10 +65,6 @@ CAMLTIMEPROF=COQPROFILEFLAG
 
 # The best compiler: native (=opt) or bytecode (=byte) if no native compiler
 BEST=BESTCOMPILER
-
-# For Camlp4 use
-P4=$(COQTOP)/bin/$(ARCH)/call_camlp4 -I $(COQTOP)/src/parsing
-P4DEP=$(COQTOP)/bin/$(ARCH)/camlp4dep
 
 # Your architecture
 # Can be obtain by UNIX command arch

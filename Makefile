@@ -75,6 +75,9 @@ LOCALINCLUDES=-I config -I tools -I tools/coqdoc \
 	      -I contrib/funind -I contrib/first-order \
               -I contrib/field
 
+OCAMLC += $(CAMLFLAGS)
+OCAMLOPT += $(CAMLFLAGS)
+
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
 BYTEFLAGS=$(MLINCLUDES) $(CAMLDEBUG)
@@ -84,8 +87,9 @@ DEPFLAGS=-slash $(LOCALINCLUDES)
 
 OCAMLC_P4O=$(OCAMLC) -pp $(CAMLP4O) $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp $(CAMLP4O) $(OPTFLAGS)
-CAMLP4EXTENDFLAGS=-I . pa_extend.cmo pa_extend_m.cmo pa_ifdef.cmo q_MLast.cmo 
-CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)$$|\1|p'
+CAMLP4EXTENSIONS=-I . pa_extend.cmo pa_extend_m.cmo q_MLast.cmo pa_macro.cmo
+CAMLP4OPTIONS=$(CAMLP4COMPAT) -D$(CAMLVERSION)
+CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)|\1|p'
 
 COQINCLUDES=          # coqtop includes itself the needed paths
 GLOB=           # is "-dump-glob file" when making the doc
@@ -1309,6 +1313,10 @@ GRAMMARSCMO=\
 GRAMMARCMO=$(GRAMMARNEEDEDCMO) $(CAMLP4EXTENSIONSCMO) $(GRAMMARSCMO)
 
 parsing/grammar.cma: $(GRAMMARCMO)
+	$(SHOW)'Testing $@'
+	@touch test.ml4
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENSIONS) $(GRAMMARCMO) -impl" -impl test.ml4 -o test-grammar
+	@rm -f test-grammar test.*
 	$(SHOW)'OCAMLC -a $@'   
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(GRAMMARCMO) -linkall -a -o $@
 
@@ -1329,7 +1337,15 @@ ML4FILES +=parsing/g_basevernac.ml4 parsing/g_minicoq.ml4 \
 
 # beforedepend:: $(GRAMMARCMO)
 
-# beforedepend:: parsing/pcoq.ml parsing/extend.ml
+BEFOREDEPEND+= $(GRAMMARCMO)
+
+# BEFOREDEPEND+= parsing/pcoq.ml parsing/extend.ml
+
+# File using pa_macro and only necessary for parsing ml files
+
+parsing/q_coqast.cmo: parsing/q_coqast.ml4
+	$(SHOW)'OCAMLC4  $<' 
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENSIONS) $(CAMLP4OPTIONS) -impl" -c -impl $<
 
 # toplevel/mltop.ml4 (ifdef Byte)
 
@@ -1343,11 +1359,11 @@ toplevel/mltop.cmx: toplevel/mltop.optml
 
 toplevel/mltop.byteml: toplevel/mltop.ml4
 	$(SHOW)'CAMLP4O   $<'	
-	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo -DByte -impl $< > $@ || rm -f $@
+	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENSIONS) pr_o.cmo -DByte -impl $< > $@ || rm -f $@
 
 toplevel/mltop.optml: toplevel/mltop.ml4
 	$(SHOW)'CAMLP4O   $<'	
-	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo -impl $< > $@ || rm -f $@
+	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENSIONS) pr_o.cmo -impl $< > $@ || rm -f $@
 
 ML4FILES += toplevel/mltop.ml4
 
@@ -1384,11 +1400,11 @@ proofs/tacexpr.cmx: proofs/tacexpr.ml
 
 lib/compat.cmo: lib/compat.ml4
 	$(SHOW)'OCAMLC4  $<' 
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) -impl" -c -impl $<
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENSIONS) $(CAMLP4OPTIONS) -impl" -c -impl $<
 
 lib/compat.cmx: lib/compat.ml4
 	$(SHOW)'OCAMLOPT  $<' 
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) -impl" -c -impl $<
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENSIONS) $(CAMLP4OPTIONS) -impl" -c -impl $<
 
 # files compiled with camlp4 because of streams syntax
 
@@ -1404,13 +1420,13 @@ ML4FILES += lib/pp.ml4 			\
 # Add pr_o.cmo to circumvent a useless-warning bug when preprocessed with
 # ast-based camlp4
 
-#parsing/lexer.cmx: parsing/lexer.ml4
-#	$(SHOW)'OCAMLOPT4 $<'
-#	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` pr_o.cmo -impl" -c -impl $<
+parsing/lexer.cmx: parsing/lexer.ml4
+	$(SHOW)'OCAMLOPT4 $<'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENSIONS) pr_o.cmo `$(CAMLP4DEPS) $<` -impl" -c -impl $<
 
-#parsing/lexer.cmo: parsing/lexer.ml4
-#	$(SHOW)'OCAMLC4   $<'
-#	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` pr_o.cmo -impl" -c -impl $<
+parsing/lexer.cmo: parsing/lexer.ml4
+	$(SHOW)'OCAMLC4   $<'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENSIONS) pr_o.cmo `$(CAMLP4DEPS) $<` -impl" -c -impl $<
 
 
 
@@ -1446,11 +1462,11 @@ ML4FILES += lib/pp.ml4 			\
 
 .ml4.cmx:
 	$(SHOW)'OCAMLOPT4 $<'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl" -c -impl $<
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENSIONS) `$(CAMLP4DEPS) $<` $(CAML4OPTIONS) -impl" -c -impl $<
 
 .ml4.cmo:
 	$(SHOW)'OCAMLC4   $<'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl" -c -impl $<
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENSIONS) `$(CAMLP4DEPS) $<` $(CAMLP4OPTIONS) -impl" -c -impl $<
 
 #.v.vo:
 #	$(BOOTCOQTOP) -compile $*
