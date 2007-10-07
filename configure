@@ -411,6 +411,13 @@ else
     CAMLP4LIB=+$CAMLP4
 fi
 
+if [ "$CAMLP4" = "camlp5" ] && `$camlp4oexec -v 2>&1 | grep -q 5.00`; then
+    echo "Camlp5 version 5.00 not supported: versions 4.0x or >= 5.01 are OK."
+    echo "Configuration script failed!"
+    exit 1
+fi
+
+
 case $CAMLP4LIB in
     +*) FULLCAMLP4LIB=$CAMLLIB/`echo $CAMLP4LIB | cut -b 2-`;;
     *)  FULLCAMLP4LIB=$CAMLP4LIB;;
