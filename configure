@@ -42,9 +42,11 @@ usage () {
     echo "-coqdocdir"
     echo -e "\tSpecifies where Coqdoc style files are to be installed\n"
     echo "-camldir"
-    echo -e "\tTells configure where to look for OCaml files\n"
+    echo -e "\tSpecifies the path to the OCaml library\n"
     echo "-lablgtkdir"
-    echo -e "\tTells configure where to look for Lablgtk files\n"
+    echo -e "\tSpecifies the path to the Lablgtk library\n"
+    echo "-camlp5dir"
+    echo -e "\tSpecifies where to look for the Camlp5 library and tells to use it\n"
     echo "-arch"
     echo -e "\tSpecifies the architecture\n"
     echo "-opt"
@@ -153,6 +155,9 @@ while : ; do
 			shift;;
     -lablgtkdir|--lablgtkdir) lablgtkdir_spec=yes
 	                lablgtkdir="$2"
+			shift;;
+    -camlp5dir|--camlp5dir)
+	                camlp5dir="$2"
 			shift;;
     -arch|--arch) arch_spec=yes
                   arch=$2
@@ -385,21 +390,32 @@ esac
 # Camlp4 / Camlp5 configuration
 # Very basic for the moment: if camlp5 exists, we use it...
 
-if [ -x "${CAMLLIB}/camlp5" ] ; then 
-    CAMLP4=camlp5
+if [ "$camlp5dir" != "" ]; then
+    CAMLP4=$camlp5dir
+    CAMLP4LIB=$camlp5dir
     camlp4oexec=`echo $camlp4oexec | sed -e 's/4/5/'`
-else
-    case  $CAMLVERSION in 
-	3.10*)
-	    echo "Objective Caml 3.10 found but no Camlp5 installed"
-	    echo "Configuration script failed!"
-	    exit 1;;  
-	*) 
-	    CAMLP4=camlp4;;
-    esac
+elif [ "$CAMLTAG" = "OCAML310" ]; then
+    if [ -x "${CAMLLIB}/camlp5" ]; then 
+	CAMLP4=camlp5
+    elif [ -x "${CAMLLIB}/site-lib/camlp5" ]; then 
+	CAMLP4=site-lib/camlp5
+    else
+	echo "Objective Caml 3.10 found but no Camlp5 installed"
+	echo "Configuration script failed!"
+	exit 1
+    fi
+    CAMLP4LIB=+$CAMLP4
+    camlp4oexec=`echo $camlp4oexec | sed -e 's/4/5/'`
+else 
+    CAMLP4=camlp4
+    CAMLP4LIB=+$CAMLP4
 fi
-CAMLP4LIB=+$CAMLP4
-FULLCAMLP4LIB=${CAMLLIB}/$CAMLP4
+
+case $CAMLP4LIB in
+    +*) FULLCAMLP4LIB=$CAMLLIB/`echo $CAMLP4LIB | cut -b 2-`;;
+    *)  FULLCAMLP4LIB=$CAMLP4LIB;;
+esac
+
 # Assume that camlp(4|5) binaries are at the same place as ocaml ones
 # (this should become configurable some day) 
 CAMLP4BIN=${CAMLBIN}
@@ -424,10 +440,6 @@ esac
 
 # lablgtk2 and CoqIDE
 
-case $lablgtkdir_spec in
-    no) lablgtkdir=${CAMLLIB}/lablgtk2
-esac
-
 # -byte-only should imply -coqide byte, unless the user decides otherwise
 
 if [ "$best_compiler" = "byte" -a "$coqide_spec" = "no" ]; then 
@@ -439,21 +451,37 @@ fi
 
 if [ "$coqide_spec" = "yes" -a "$COQIDE" = "no" ]; then 
     echo "CoqIde disabled as requested"
-elif [ ! -f "$lablgtkdir/glib.mli" ]; then
-    echo "LablGtk2 not found: CoqIde will not be available"
-    COQIDE=no
-elif [ -z "`grep -w convert_with_fallback "$lablgtkdir/glib.mli"`" ]; then
-    echo "LablGtk2 found but too old: CoqIde will not be available"
-    COQIDE=no;
-elif [ "$coqide_spec" = "yes" -a "$COQIDE" = "byte" ]; then 
-    echo "LablGtk2 found, bytecode CoqIde will be used as requested"
-    COQIDE=byte
-elif [ ! -f "${CAMLLIB}/threads/threads.cmxa" ]; then 
-    echo "LablGtk2 found, no native threads: bytecode CoqIde will be available"
-    COQIDE=byte
-else 
-    echo "LablGtk2 found, native threads: native CoqIde will be available"
-    COQIDE=opt
+else
+    case $lablgtkdir_spec in
+	no) 
+	    if [ -f "${CAMLLIB}/lablgtk2/glib.mli" ]; then
+		lablgtkdir=${CAMLLIB}/lablgtk2
+	    elif [ -f "${CAMLLIB}/site-lib/lablgtk2/glib.mli" ]; then
+		lablgtkdir=${CAMLLIB}/site-lib/lablgtk2
+	    else
+		echo "LablGtk2 not found: CoqIde will not be available"
+		COQIDE=no
+	    fi;;
+	yes)
+	    if [ ! -f "$lablgtkdir/glib.mli" ]; then
+		echo "Incorrect LablGtk2 library (glib.mli not found)"
+		echo "Configuration script failed!"
+		exit 1
+	    fi;;
+    esac
+    if [ -z "`grep -w convert_with_fallback "$lablgtkdir/glib.mli"`" ]; then
+	echo "LablGtk2 found but too old: CoqIde will not be available"
+	COQIDE=no;
+    elif [ "$coqide_spec" = "yes" -a "$COQIDE" = "byte" ]; then 
+	echo "LablGtk2 found, bytecode CoqIde will be used as requested"
+	COQIDE=byte
+    elif [ ! -f "${CAMLLIB}/threads/threads.cmxa" ]; then 
+	echo "LablGtk2 found, no native threads: bytecode CoqIde will be available"
+	COQIDE=byte
+    else 
+	echo "LablGtk2 found, native threads: native CoqIde will be available"
+	COQIDE=opt
+    fi
 fi
 
 case $COQIDE in
