@@ -31,10 +31,6 @@ open Mlutil
 
 exception I of inductive_info
 
-(* A set of all inductive currently being computed, 
-   to avoid loops in [extract_inductive] *)
-let internal_call = ref KNset.empty
-
 (* A set of all fixpoint functions currently being extracted *)
 let current_fixpoints = ref ([] : constant list)
 
@@ -303,13 +299,15 @@ and extract_type_scheme env db c p =
 (*S Extraction of an inductive type. *)
 
 and extract_ind env kn = (* kn is supposed to be in long form *)
-  try 
-    if KNset.mem kn !internal_call then lookup_ind kn (* Already started. *)
-    else if visible_kn kn then lookup_ind kn (* Standard situation. *)
-    else raise Not_found (* Never trust the table for a internal kn. *)
+  let mib = Environ.lookup_mind kn env in
+  try
+    (* For a same kn, we can get various bodies due to module substitutions.
+       We hence check that the mib has not changed from recording 
+       time to retrieving time. Ideally we should also check the env. *)
+    let (mib0,ml_ind) = lookup_ind kn in 
+    if not (mib = mib0) then raise Not_found; 
+    ml_ind
   with Not_found -> 
-    internal_call := KNset.add kn !internal_call;
-    let mib = Environ.lookup_mind kn env in 
     (* First, if this inductive is aliased via a Module, *)
     (* we process the original inductive. *)
     option_iter (fun kn -> ignore (extract_ind env kn)) mib.mind_equiv; 
@@ -335,7 +333,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	     ip_types = t }) 
 	mib.mind_packets 
     in 
-    add_ind kn 
+    add_ind kn mib
       {ind_info = Standard; 
        ind_nparams = npar; 
        ind_packets = packets; 
@@ -425,8 +423,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	     ind_packets = packets; 
 	     ind_equiv = mib.mind_equiv}
     in
-    add_ind kn i; 
-    internal_call := KNset.remove kn !internal_call;
+    add_ind kn mib i; 
     i
 
 (*s [extract_type_cons] extracts the type of an inductive 
