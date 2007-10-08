@@ -11,6 +11,7 @@
 open Names
 open Libnames
 open Miniml
+open Declarations
 
 val id_of_global : global_reference -> identifier
 
@@ -55,8 +56,8 @@ val lookup_term : constant -> ml_decl
 val add_type : constant -> ml_schema -> unit
 val lookup_type : constant -> ml_schema
 
-val add_ind : kernel_name -> ml_ind -> unit
-val lookup_ind : kernel_name -> ml_ind
+val add_ind : kernel_name -> mutual_inductive_body -> ml_ind -> unit
+val lookup_ind : kernel_name -> mutual_inductive_body * ml_ind
 
 val add_recursors : Environ.env -> kernel_name -> unit
 val is_recursor : global_reference -> bool 

@@ -77,9 +77,9 @@ let lookup_type kn = Cmap.find kn !types
 
 (*s Inductives table. *)
 
-let inductives = ref (KNmap.empty : ml_ind KNmap.t)
+let inductives = ref (KNmap.empty : (mutual_inductive_body * ml_ind) KNmap.t)
 let init_inductives () = inductives := KNmap.empty
-let add_ind kn m = inductives := KNmap.add kn m !inductives
+let add_ind kn mib ml_ind = inductives := KNmap.add kn (mib,ml_ind) !inductives
 let lookup_ind kn = KNmap.find kn !inductives
 
 (*s Recursors table. *)
@@ -124,8 +124,9 @@ let reset_tables () =
 
 let id_of_global = function 
   | ConstRef kn -> let _,_,l = repr_con kn in id_of_label l
-  | IndRef (kn,i) -> (lookup_ind kn).ind_packets.(i).ip_typename
-  | ConstructRef ((kn,i),j) -> (lookup_ind kn).ind_packets.(i).ip_consnames.(j-1)
+  | IndRef (kn,i) -> (snd (lookup_ind kn)).ind_packets.(i).ip_typename
+  | ConstructRef ((kn,i),j) -> 
+      (snd (lookup_ind kn)).ind_packets.(i).ip_consnames.(j-1)
   | _ -> assert false
 
 let pr_global r = pr_id (id_of_global r)
