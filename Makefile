@@ -1712,7 +1712,7 @@ cleanconfig::
 alldepend: depend dependcoq 
 
 dependcoq: $(BEFOREDEPEND) $(COQDEP)
-	$(COQDEP) -coqlib . -R theories Coq -R contrib Coq $(COQINCLUDES) \
+	$(COQDEP) -slash -coqlib . -R theories Coq -R contrib Coq $(COQINCLUDES) \
 	 $(ALLFSETS:.vo=.v) $(ALLREALS:.vo=.v) $(ALLVO:.vo=.v) > .depend.coq
 
 # Build dependencies ignoring failures in building ml files from ml4 files
