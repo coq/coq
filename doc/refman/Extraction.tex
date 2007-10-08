@@ -231,7 +231,7 @@ variables has to be given. The syntax is then:
 \item{\tt Extract Constant \qualid\ \str$_1$ \ldots \str$_n$ => \str.} ~\par
 \end{description}
 
-The number of type variable given is checked by the system. 
+The number of type variables is checked by the system. 
 
 \Example
 \begin{coq_example}
@@ -272,6 +272,14 @@ Typical examples are the following:
 Extract Inductive unit => "unit" [ "()" ].
 Extract Inductive bool => "bool" [ "true" "false" ].
 Extract Inductive sumbool => "bool" [ "true" "false" ].
+\end{coq_example}
+
+If an inductive constructor or type has arity 2 and the corresponding 
+string is enclosed by parenthesis, then the rest of the string is used
+as infix constructor or type. 
+\begin{coq_example}
+Extract Inductive list => "list" [ "[]" "(::)" ].
+Extract Inductive prod => "(*)"  [ "(,)" ].
 \end{coq_example}
 
 
