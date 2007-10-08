@@ -15,6 +15,7 @@ fi
 
 exec $OCAMLDEBUG \
 	-I $CAMLP4LIB \
+	-I $COQTOP \
 	-I $COQTOP/config \
 	-I $COQTOP/lib -I $COQTOP/kernel \
 	-I $COQTOP/library -I $COQTOP/pretyping -I $COQTOP/parsing \
