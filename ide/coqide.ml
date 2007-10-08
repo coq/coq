@@ -1719,9 +1719,10 @@ let create_input_tab filename =
   let v_box = GPack.hbox ~homogeneous:false () in
   let _ = GMisc.image ~packing:v_box#pack () in
   let _ = GMisc.label ~text:filename ~packing:v_box#pack () in
+  let appendp x = ignore ((notebook ())#append_page
+		~tab_label:v_box#coerce x) in  
   let fr1 = GBin.frame ~shadow_type:`ETCHED_OUT
-    ~packing:((notebook ())#append_page
-		~tab_label:v_box#coerce) () 
+    ~packing:appendp () 
   in 
   let sw1 = GBin.scrolled_window
     ~vpolicy:`AUTOMATIC 
