@@ -853,7 +853,7 @@ endif
 # make will delete .raw files because they are intermediate.
 %.v.d.raw: %.v | $(COQDEP)
 	$(SHOW)'COQDEP    $<'
-	$(HIDE)$(COQDEP) -coqlib . -R theories Coq -R contrib Coq $(COQINCLUDES) "$<" > "$@" \
+	$(HIDE)$(COQDEP) -slash -coqlib . -R theories Coq -R contrib Coq $(COQINCLUDES) "$<" > "$@" \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
 %.v.d: %.v.d.raw
