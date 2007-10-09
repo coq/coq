@@ -163,13 +163,13 @@ let warning_log_ax r =
 		  spc () ++ str "may lead to incorrect or non-terminating ML terms.")
 
 let check_inside_module () = 
-  try 
-    ignore (Lib.what_is_opened ()); 
-    Options.if_verbose warning
-      ("Extraction inside an opened module is experimental.\n"^
-       "In case of problem, close it first.\n"); 
-    Pp.flush_all ()
-  with Not_found -> ()
+  if Lib.is_modtype () then 
+    err (str "You can't do that within a Module Type." ++ fnl () ++
+	 str "Close it and try again.") 
+  else if Lib.is_module () then 
+    msg_warning
+      (str "Extraction inside an opened module is experimental.\n" ++
+       str "In case of problem, close it first.\n")
 
 let check_inside_section () = 
   if Lib.sections_are_opened () then 
