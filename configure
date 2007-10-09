@@ -291,7 +291,7 @@ fi
 case $camldir_spec in
     no) CAMLC=`which $bytecamlc`
 	case "$CAMLC" in
-	    "") echo "$bytecamlc is not present in your path !"
+	    "") echo "$bytecamlc is not present in your path!"
 		echo "Give me manually the path to the $bytecamlc executable [/usr/local/bin by default]: "
 		read CAMLC
 		
@@ -351,7 +351,7 @@ case $CAMLVERSION in
 	echo "You have Objective-Caml $CAMLVERSION. Good!";;
     *)
 	echo "I found the Objective-Caml compiler but cannot find its version number!"
-	echo "Is it installed properly ?"
+	echo "Is it installed properly?"
 	echo "Configuration script failed!"
 	exit 1;;
 esac
@@ -363,11 +363,19 @@ CAMLTAG=OCAML`echo $CAMLVERSION | sed -e "s/\([1-9]\)\.\([0-9]*\).*/\1\2/g"`
 if [ "$best_compiler" = "opt" ] ; then
   if test -e `which "$nativecamlc"` ; then
       CAMLOPTVERSION=`"$nativecamlc" -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
-      if [ "$CAMLOPTVERSION" != "$CAMLVERSION" ] ; then
-	  echo "native and bytecode compilers do not have the same version!"; fi
+      if [ "`uname -s`" = "Darwin" -a "$ARCH" = "i386" ]; then
+	  case $CAMLOPTVERSION in
+	      3.09.3|3.1?*) ;;
+	      *) echo "Native compilation on MacOS X Pentium requires Objective-Caml >= 3.09.3,"
+		 best_compiler=byte
+		 echo "only the bytecode version of Coq will be available."
+	  esac
+      elif [ "$CAMLOPTVERSION" != "$CAMLVERSION" ] ; then
+	  echo "Native and bytecode compilers do not have the same version!";
+      fi
       echo "You have native-code compilation. Good!"
   else
-      best_compiler=byte ;
+      best_compiler=byte
       echo "You have only bytecode compilation."
   fi
 fi
@@ -400,7 +408,7 @@ elif [ "$CAMLTAG" = "OCAML310" ]; then
     elif [ -x "${CAMLLIB}/site-lib/camlp5" ]; then 
 	CAMLP4=site-lib/camlp5
     else
-	echo "Objective Caml 3.10 found but no Camlp5 installed"
+	echo "Objective Caml 3.10 found but no Camlp5 installed."
 	echo "Configuration script failed!"
 	exit 1
     fi
@@ -457,7 +465,7 @@ fi
 # Which coqide is asked ? which one is possible ?
 
 if [ "$coqide_spec" = "yes" -a "$COQIDE" = "no" ]; then 
-    echo "CoqIde disabled as requested"
+    echo "CoqIde disabled as requested."
 else
     case $lablgtkdir_spec in
 	no) 
@@ -465,28 +473,28 @@ else
 		lablgtkdir=${CAMLLIB}/lablgtk2
 	    elif [ -f "${CAMLLIB}/site-lib/lablgtk2/glib.mli" ]; then
 		lablgtkdir=${CAMLLIB}/site-lib/lablgtk2
-	    else
-		echo "LablGtk2 not found: CoqIde will not be available"
-		COQIDE=no
 	    fi;;
 	yes)
 	    if [ ! -f "$lablgtkdir/glib.mli" ]; then
-		echo "Incorrect LablGtk2 library (glib.mli not found)"
+		echo "Incorrect LablGtk2 library (glib.mli not found)."
 		echo "Configuration script failed!"
 		exit 1
 	    fi;;
     esac
-    if [ -z "`grep -w convert_with_fallback "$lablgtkdir/glib.mli"`" ]; then
-	echo "LablGtk2 found but too old: CoqIde will not be available"
+    if [ "$lablgtkdir" = "" ]; then
+	echo "LablGtk2 not found: CoqIde will not be available."
+	COQIDE=no
+    elif [ -z "`grep -w convert_with_fallback "$lablgtkdir/glib.mli"`" ]; then
+	echo "LablGtk2 found but too old: CoqIde will not be available."
 	COQIDE=no;
     elif [ "$coqide_spec" = "yes" -a "$COQIDE" = "byte" ]; then 
-	echo "LablGtk2 found, bytecode CoqIde will be used as requested"
+	echo "LablGtk2 found, bytecode CoqIde will be used as requested."
 	COQIDE=byte
     elif [ ! -f "${CAMLLIB}/threads/threads.cmxa" ]; then 
-	echo "LablGtk2 found, no native threads: bytecode CoqIde will be available"
+	echo "LablGtk2 found, no native threads: bytecode CoqIde will be available."
 	COQIDE=byte
     else 
-	echo "LablGtk2 found, native threads: native CoqIde will be available"
+	echo "LablGtk2 found, native threads: native CoqIde will be available."
 	COQIDE=opt
     fi
 fi
