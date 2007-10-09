@@ -32,6 +32,7 @@ val error_MPfile_as_mod : dir_path -> 'a
 val error_record : global_reference -> 'a 
 val check_inside_module : unit -> unit
 val check_inside_section : unit -> unit
+val check_loaded_modfile : module_path -> unit
 
 (*s utilities concerning [module_path]. *)
 

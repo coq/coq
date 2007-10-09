@@ -92,7 +92,8 @@ module Visit : VISIT = struct
   let needed_kn kn = KNset.mem kn v.kn
   let needed_con c = Cset.mem c v.con
   let needed_mp mp = MPset.mem mp v.mp
-  let add_mp mp = v.mp <- MPset.union (prefixes_mp mp) v.mp
+  let add_mp mp = 
+    check_loaded_modfile mp; v.mp <- MPset.union (prefixes_mp mp) v.mp
   let add_kn kn = v.kn <- KNset.add kn v.kn; add_mp (modpath kn)
   let add_con c = v.con <- Cset.add c v.con; add_mp (con_modpath c)
   let add_ref = function 

@@ -60,7 +60,6 @@ let at_toplevel mp =
 let visible_kn kn = at_toplevel (base_mp (modpath kn))
 let visible_con kn = at_toplevel (base_mp (con_modpath kn))
 
-
 (*S The main tables: constants, inductives, records, ... *)
 
 (*s Constants tables. *) 
@@ -211,6 +210,11 @@ let error_MPfile_as_mod d =
 let error_record r = 
   err (str "Record " ++ pr_global r ++ str " has an anonymous field." ++ fnl () ++
        str "To help extraction, please use an explicit name.") 
+
+let check_loaded_modfile mp = match base_mp mp with 
+  | MPfile dp -> if not (Library.library_is_loaded dp) then 
+      err (str ("Please load library "^(string_of_dirpath dp^" first.")))
+  | _ -> ()
 
 (*S The Extraction auxiliary commands *)
 
