@@ -129,7 +129,19 @@ let id_of_global = function
       (snd (lookup_ind kn)).ind_packets.(i).ip_consnames.(j-1)
   | _ -> assert false
 
-let pr_global r = pr_id (id_of_global r)
+let pr_global r = 
+ try Printer.pr_global r 
+ with _ -> pr_id (id_of_global r)
+
+(* idem, but with qualification, and only for constants. *)
+
+let pr_long_global r = 
+  try Printer.pr_global r 
+  with _ -> match r with
+    | ConstRef kn -> 
+	let mp,_,l = repr_con kn in 
+	str ((string_of_mp mp)^"."^(string_of_label l))
+    | _ -> assert false
 
 (*S Warning and Error messages. *)
 
@@ -165,10 +177,10 @@ let check_inside_section () =
 	 str "Close it and try again.")
 
 let error_constant r = 
-  err (Printer.pr_global r ++ str " is not a constant.") 
+  err (pr_global r ++ str " is not a constant.") 
 
 let error_inductive r = 
-  err (Printer.pr_global r ++ spc () ++ str "is not an inductive type.")
+  err (pr_global r ++ spc () ++ str "is not an inductive type.")
 
 let error_nb_cons () = 
   err (str "Not the right number of constructors.")
@@ -188,21 +200,16 @@ let error_scheme () =
   err (str "No Scheme modular extraction available yet.")
 
 let error_not_visible r = 
-  err (Printer.pr_global r ++ str " is not directly visible.\n" ++
+  err (pr_global r ++ str " is not directly visible.\n" ++
        str "For example, it may be inside an applied functor." ++
        str "Use Recursive Extraction to get the whole environment.")
-
-let error_unqualified_name s1 s2 = 
-  err (str (s1 ^ " is used in " ^ s2 ^ " where it cannot be disambiguated\n" ^
-	    "in ML from another name sharing the same basename.\n"  ^
-	    "Please do some renaming.\n"))
 
 let error_MPfile_as_mod d = 
   err (str ("The whole file "^(string_of_dirpath d)^".v is used somewhere as a module.\n"^
 	    "Extraction cannot currently deal with this situation.\n"))
 
 let error_record r = 
-  err (str "Record " ++ Printer.pr_global r ++ str " has an anonymous field." ++ fnl () ++
+  err (str "Record " ++ pr_global r ++ str " has an anonymous field." ++ fnl () ++
        str "To help extraction, please use an explicit name.") 
 
 (*S The Extraction auxiliary commands *)
@@ -311,7 +318,7 @@ let _ = declare_summary "Extraction Lang"
 	  { freeze_function = (fun () -> !lang_ref);
 	    unfreeze_function = ((:=) lang_ref);
 	    init_function = (fun () -> lang_ref := Ocaml);
-	    survive_module = false;
+	    survive_module = true;
 	    survive_section = true }  
 	  
 let extraction_language x = Lib.add_anonymous_leaf (extr_lang x)
@@ -343,28 +350,21 @@ let (inline_extraction,_) =
        load_function = (fun _ (_,(b,l)) -> add_inline_entries b l);
        export_function = (fun x -> Some x); 
        classify_function = (fun (_,o) -> Substitute o); 
-       (*CSC: The following substitution may istantiate a realized parameter.
-         The right solution would be to make the substitution erase the
-         realizer from the table. However, this is not allowed by Coq.
-         In this particular case, though, keeping the realizer is place seems
-         to be harmless since the current code looks for a realizer only
-         when the constant is a parameter. However, if this behaviour changes
-         subtle bugs can happear in the future. *)
        subst_function =
-        (fun (_,s,(b,l)) -> (b,(List.map (fun x -> fst (subst_global s x)) l)))}
+        (fun (_,s,(b,l)) -> (b,(List.map (fun x -> fst (subst_global s x)) l)))
+    }
 
 let _ = declare_summary "Extraction Inline"
 	  { freeze_function = (fun () -> !inline_table);
 	    unfreeze_function = ((:=) inline_table);
 	    init_function = (fun () -> inline_table := empty_inline_table);
-	    survive_module = false;
+	    survive_module = true;
 	    survive_section = true }
 
 (* Grammar entries. *)
 
 let extraction_inline b l =
   check_inside_section (); 
-  check_inside_module ();
   let refs = List.map Nametab.global l in 
   List.iter 
     (fun r -> match r with 
@@ -381,11 +381,11 @@ let print_extraction_inline () =
     (str "Extraction Inline:" ++ fnl () ++ 
      Refset.fold
        (fun r p -> 
-	  (p ++ str "   " ++ Printer.pr_global r ++ fnl ())) i' (mt ()) ++
+	  (p ++ str "  " ++ pr_long_global r ++ fnl ())) i' (mt ()) ++
      str "Extraction NoInline:" ++ fnl () ++ 
      Refset.fold
        (fun r p -> 
-	  (p ++ str "   " ++ Printer.pr_global r ++ fnl ())) n (mt ()))
+	  (p ++ str "  " ++ pr_long_global r ++ fnl ())) n (mt ()))
 
 (* Reset part *)
 
@@ -424,20 +424,23 @@ let (in_customs,_) =
     {(default_object "ML extractions") with 
        cache_function = (fun (_,(r,ids,s)) -> add_custom r ids s);
        load_function = (fun _ (_,(r,ids,s)) -> add_custom r ids s);
-       export_function = (fun x -> Some x)}
+       export_function = (fun x -> Some x); 
+       classify_function = (fun (_,o) -> Substitute o); 
+       subst_function =
+        (fun (_,s,(r,ids,str)) -> (fst (subst_global s r), ids, str))
+    }
 
 let _ = declare_summary "ML extractions"
 	  { freeze_function = (fun () -> !customs);
 	    unfreeze_function = ((:=) customs);
 	    init_function = (fun () -> customs := Refmap.empty);
-	    survive_module = false;
+	    survive_module = true;
 	    survive_section = true }
 
 (* Grammar entries. *)
 
 let extract_constant_inline inline r ids s =
   check_inside_section ();
-  check_inside_module ();
   let g = Nametab.global r in 
   match g with 
     | ConstRef kn -> 
@@ -456,7 +459,6 @@ let extract_constant_inline inline r ids s =
 
 let extract_inductive r (s,l) =
   check_inside_section ();
-  check_inside_module ();
   let g = Nametab.global r in 
   match g with
     | IndRef ((kn,i) as ip) ->
