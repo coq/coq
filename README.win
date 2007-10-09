@@ -34,13 +34,16 @@ COMPILATION.
     3- In order to compile Coqide, you will need the LablGTK library
        See: http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html
 
-    3- In a shell window, type successively
+       You also need to install the GTK libraries for Windows (see the
+       installation instruction for LablGTK)
+
+    4- In a shell window, type successively
 
         ./configure
         make world
         make install
 
-    4- Though not nescessary, you can find useful:
+    5- Though not nescessary, you can find useful:
          - Windows version of (X)Emacs: it is a powerful environment for
            developpers with coloured syntax, modes for compilation and debug,
            and many more. It is free. See: http://www.gnu.org/software.
