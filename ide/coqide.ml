@@ -2043,8 +2043,8 @@ let main files =
 			    !flash_info "Cannot print: this buffer has no name"
 			| Some f ->
 			    let cmd = 
-			      "cd " ^ Filename.dirname f ^ "; " ^
-				!current.cmd_coqdoc ^ " -ps " ^ Filename.basename f ^ 
+			      "cd " ^ Filename.quote (Filename.dirname f) ^ "; " ^
+				!current.cmd_coqdoc ^ " -ps " ^ Filename.quote (Filename.basename f) ^ 
 				" | " ^ !current.cmd_print
 			    in
 			    let s,_ = run_command av#insert_message cmd in
@@ -2071,8 +2071,8 @@ let main files =
 				  | _ -> assert false
 			    in
 			    let cmd = 
-			      "cd " ^ Filename.dirname f ^ "; " ^
-				!current.cmd_coqdoc ^ " --" ^ kind ^ " -o " ^ output ^ " " ^ basef
+			      "cd " ^ Filename.quote (Filename.dirname f) ^ "; " ^
+				!current.cmd_coqdoc ^ " --" ^ kind ^ " -o " ^ (Filename.quote output) ^ " " ^ (Filename.quote basef)
 			    in
 			    let s,_ = run_command av#insert_message cmd in
 			      !flash_info (cmd ^ 
@@ -2419,7 +2419,7 @@ let main files =
 				       | Some f ->
 					   save_f ();
 					   let l,r = !current.cmd_editor in
-					   let _ = run_command av#insert_message (l ^ f ^ r) in
+					   let _ = run_command av#insert_message (l ^ (Filename.quote f) ^ r) in
 					     av#revert)
 			    in
 			    let _ = edit_f#add_separator () in
@@ -2865,7 +2865,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 						| Some f ->
 						    let s,res = run_command 
 						      av#insert_message 
-						      (!current.cmd_coqc ^ " " ^ f) 
+						      (!current.cmd_coqc ^ " " ^ (Filename.quote f)) 
 						    in
 						      if s = Unix.WEXITED 0 then
 							!flash_info (f ^ " successfully compiled")
@@ -2885,14 +2885,21 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					  let make_f () =
 					    let v = get_active_view () in
 					    let av = out_some v.analyzed_view in
-					      (*
-						save_f ();
-					      *)
-					      av#insert_message "Command output:\n";
-					      let s,res = run_command av#insert_message !current.cmd_make in
-						last_make := res;
-						last_make_index := 0;
-						!flash_info (!current.cmd_make ^ if s = Unix.WEXITED 0 then " succeeded" else " failed")
+					      match av#filename with
+						| None -> 
+						    !flash_info "Cannot make: this buffer has no name"
+						| Some f ->
+						    let cmd = 
+						      "cd " ^ Filename.quote (Filename.dirname f) ^ "; " ^ !current.cmd_make in
+
+						      (*
+							save_f ();
+						      *)
+						      av#insert_message "Command output:\n";
+						      let s,res = run_command av#insert_message !current.cmd_make in
+							last_make := res;
+							last_make_index := 0;
+							!flash_info (!current.cmd_make ^ if s = Unix.WEXITED 0 then " succeeded" else " failed")
 					  in
 					  let _ = externals_factory#add_item "_Make" 
 					    ~key:GdkKeysyms._F6
@@ -2945,9 +2952,15 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					  let coq_makefile_f () =
 					    let v = get_active_view () in
 					    let av = out_some v.analyzed_view in
-					    let s,res = run_command av#insert_message !current.cmd_coqmakefile in
-					      !flash_info 
-						(!current.cmd_coqmakefile ^ if s = Unix.WEXITED 0 then " succeeded" else " failed")
+					      match av#filename with
+						| None -> 
+						    !flash_info "Cannot make makefile: this buffer has no name"
+						| Some f ->
+						    let cmd = 
+						      "cd " ^ Filename.quote (Filename.dirname f) ^ "; " ^ !current.cmd_coqmakefile in
+						    let s,res = run_command av#insert_message cmd in
+						      !flash_info 
+							(!current.cmd_coqmakefile ^ if s = Unix.WEXITED 0 then " succeeded" else " failed")
 					  in
 					  let _ = externals_factory#add_item "_Make makefile" ~callback:coq_makefile_f 
 					  in
