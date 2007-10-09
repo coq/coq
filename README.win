@@ -6,7 +6,12 @@ THE COQ V8.1 SYSTEM
 INSTALLATION.
 =============
 
-    See the file INSTALL.win for installation procedure.
+    The Coq package for Windows comes with an auto-installer. It will
+install Coq binaries and libraries under any directory you specify
+(C:\Program Files\Coq is the default path). It also creates shortcuts
+in the Windows menus. Alternatively, you can launch Coq using Coq.bat
+and Coqide.bat in the installation directory (C:\Program Files\Coq by
+default).
 
 COMPILATION.
 ============
@@ -15,28 +20,32 @@ COMPILATION.
     distribution. If you really need to recompile under Windows, here
     are some indications:
 
-    1- Install ocaml version 3.07 or later, Visual C++ (needed
-       for the -custom option of ocaml) and MASM (needed if you want
-       to produce a native version).
+    1- Install ocaml for Windows (MinGW port), preferably version 3.09.3.
+       See: http://caml.inria.fr
 
-    2- Install a complete set of Unix utilities (used by Makefiles). 
-       See: http://sources.redhat.com/cygwin/.
+    2- Install a shell environment with at least:
+         - a C compiler (gcc),
+         - the GNU make utility
 
-    3- Under cygwin, type successively
+       The Cygwin environment is well suited for compiling Coq
+       (official packages are made using Cygwin) See:
+       http://www.cygwin.com
+
+    3- In order to compile Coqide, you will need the LablGTK library
+       See: http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html
+
+    3- In a shell window, type successively
 
         ./configure
         make world
         make install
-        make clean
 
     4- Though not nescessary, you can find useful:
          - Windows version of (X)Emacs: it is a powerful environment for
            developpers with coloured syntax, modes for compilation and debug,
            and many more. It is free. See: http://www.gnu.org/software.
-         - Windows cvs client (very useful if you have access to the Coq
+         - Windows subversion client (very useful if you have access to the Coq
            archive).
-
-    If you are lost, you could find help at: coq-bugs@pauillac.inria.fr.
 
     Good luck :-)
 
