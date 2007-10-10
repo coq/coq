@@ -5,16 +5,51 @@
 WHAT DO YOU NEED ?
 ==================
 
-   Coq is designed to work on computers equipped with the Unix operating 
-   system. In order to compile Coq V8.1 you need:
+   Coq is designed to work on computers equipped with a POSIX (Unix or
+   a clone) operating system. It also works under Microsoft Windows
+   (see INSTALL.win); for a precompiled MacOS X package, see
+   INSTALL.macosx.
+
+   Coq is known to be actively used under GNU/Linux (i386, amd64 and
+   ppc) and FreeBSD. Automated tests are run under many, many
+   different architectures under GNU/Linux.
+
+   Naturally, Coq will run faster on an architecture where OCaml can
+   compile to native code, rather than only bytecode. At time of
+   writing, that is IA32, PowerPC, AMD64, Alpha, Sparc, Mips, IA64,
+   HPPA and StrongArm. See
+   http://caml.inria.fr/ocaml/portability.en.html for details.
+
+
+   Your OS may already contain Coq under the form of a precompiled
+   package or ready-to-compile port. In this case, and if the supplied
+   version suits you, follow the usual procedure for your OS to
+   install it. E.g.:
+
+   - Debian GNU/Linux (or Debian GNU/k*BSD or ...):
+
+     aptitude install coq
+
+   - Gentoo GNU/Linux: emerge sci-mathematics/coq
+
+
+   Should you need or prefer to compile Coq V8.1 yourself, you need:
 
      - Objective Caml version 3.07 or later
        (available at http://caml.inria.fr/)
-  
-   Until now, it has mainly been tested on Sun workstations running Solaris,
-   and DEC alpha and Pentium workstations running Linux. By FTP, Coq
-   comes as a single compressed tar-file. You have probably already
-   decompressed it if you are reading this document.
+
+       For Ocaml version >= 3.10.0, you also need to install camlp5
+       version <= 4.08, or 5.01 transitional
+       (see http://pauillac.inria.fr/~ddr/camlp5/)
+
+     - GNU Make
+
+     - a C compiler
+
+     - for Coqide, the Lablgtk development files, and the GTK libraries
+
+   By FTP, Coq comes as a single compressed tar-file. You have
+   probably already decompressed it if you are reading this document.
 
 
 QUICK INSTALLATION PROCEDURE.
