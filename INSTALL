@@ -38,6 +38,10 @@ WHAT DO YOU NEED ?
      - Objective Caml version 3.07 or later
        (available at http://caml.inria.fr/)
 
+       For Ocaml version >= 3.10.0, you also need to install camlp5
+       (version <= 4.08, or 5.01 transitional)
+  
+
      - GNU Make version 3.81 or later
        (
 	available at http://www.gnu.org/software/make/, but also a
@@ -61,6 +65,7 @@ WHAT DO YOU NEED ?
 
      - a C compiler
 
+     - for Coqide, the Lablgtk development files, and the GTK libraries
 
    By FTP, Coq comes as a single compressed tar-file. You have
    probably already decompressed it if you are reading this document.
