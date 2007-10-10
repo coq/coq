@@ -8,24 +8,66 @@ DISCLAIMER: CoqIde is ongoing work. Eventhough it should never let you
 	    loose a proof, you may encounter unexpected bugs.
  	    Do not hesitate to send suggestions/bug reports.
 
+DISTRIBUTION PACKAGES
+
+Your POSIX operating system may already contain precompiled packages
+for Coq, including CoqIde, or a ready-to-compile... If the version
+provided there suits you, follow the usual procedure for your
+operating system.
+
+E.g., on Debian GNU/Linux (or Debian GNU/k*BSD or ...), do:
+   aptitude install coqide
+On Gentoo GNU/Linux, do:
+   USE=ide emerge sci-mathematics/coq
+
+Else, read the rest of this document to compile your own CoqIde.
+
 REQUIREMENT:
 	- OCaml >= 3.07 with native thread support.
 	- make world must succeed.
 	- The graphical toolkit Gtk 2.x. See http://www.gtk.org.
-	  The official supported version is at least 2.2.x.
-	  You may still compile CoqIde with older 2.0.x versions and 
+	  The official supported version is at least 2.8.x.
+	  You may still compile CoqIde with older versions and 
           use all features.
 	  Run 
 		"pkg-config --modversion gtk+-2.0"
 	  to check your version.
-	 All recent distributions have precompiled packages.
-	 Do not forget to install the developement headers packages.
-	 As for Debian/woody, 
+          All recent distributions have precompiled packages.
+          Do not forget to install the development headers packages.
+          As for Debian or Ubuntu, 
 		apt-get install libgtk2.0-dev 
-	 should be enough.
+          should be enough.
+
+        - The OCaml bindings for for GTK+ 2.x, lablgtk2.
+
+	  Your distribution may contain precompiled packages. For
+          example, for Debian, run
+                aptitude install liblablgtk2-ocaml-dev
+
+          If it does not, see
+          http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html .
+
+          The latest official release of lablftk2 is here:
+          http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/dist/lablgtk-2.10.0.tar.gz
+
+          Note that even if its README requires ocaml > 3.07, it works
+          ok with 3.07. If you are in a hurry just run :
+
+              cd /tmp && \
+              wget \
+               http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/dist/lablgtk-2.10.0.tar.gz && \
+              tar zxvf lablgtk-2.10.0.tar.gz && \
+              cd lablgtk-2.10.0 && \
+              ./configure && \
+              make world && \
+              make install
+
+   	  You must have write access to the OCaml standard library path.
+
+          If this fails, read lablgtk-2.10.0/README.
 
 INSTALLATION
- 0) For optimal performance, OCaml must support native threads (aka pthreads). 
+0)  For optimal performance, OCaml must support native threads (aka pthreads). 
     If this not the case, this means that Coq computations will be slow and 
     "make ide" will fail. Use "make bin/coqide.byte" instead. To fix this 
     problem, just recompile OCaml from source and configure OCaml with : 
@@ -33,26 +75,7 @@ INSTALLATION
     In case you install over an existing copy of OCaml, you should better 
     empty the OCaml installation directory.
 
- 1) You need to install the OCaml stub library lablgtk2. See 
-       	http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html
-    The first official release of lablftk2 is here:
-	http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/dist/lablgtk-2.2.0.tar.gz
-    Note that even if its README requires ocaml > 3.07, it works ok with 3.07.
-    If you are in a hurry just run :
-    
-cd /tmp && \
-wget \
- http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/dist/lablgtk-2.2.0.tar.gz && \
-tar zxvf lablgtk-2.2.0.tar.gz && \
-cd lablgtk-2.2.0 && \
-./configure && \
-make world && \
-make install
-
-   You must have write access to the OCaml standard library path.
-   If this fails read lablgtk-2.2.0/README.
-
-2) Go into your Coq source directory and, as usual, configure with:
+1) Go into your Coq source directory and, as usual, configure with:
 
 	./configure
 
@@ -68,7 +91,7 @@ make install
    In case you are upgrading from an old version you may need to run
 	make clean-ide
 
-3) You may now run bin/coqide
+2) You may now run bin/coqide
 
 
 NOTES
