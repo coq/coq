@@ -1959,11 +1959,22 @@ let setoid_symmetry gl =
   Optimize -> symmetry_red true gl
 
 let setoid_symmetry_in id gl =
- let new_hyp =
-  let _,he,c1,c2 = analyse_hypothesis gl (mkVar id) in
-   mkApp (he, [| c2 ; c1 |])
- in
- cut_replacing id new_hyp (tclTHEN setoid_symmetry) gl
+  let ctype = pf_type_of gl (mkVar id) in
+  let binders,concl = Sign.decompose_prod_assum ctype in
+  let (equiv, args) = decompose_app concl in
+  let rec split_last_two = function
+    | [c1;c2] -> [],(c1, c2)
+    | x::y::z -> let l,res = split_last_two (y::z) in x::l, res
+    | _ -> error "The term provided is not an equivalence" 
+  in
+  let others,(c1,c2) = split_last_two args in
+  let he,c1,c2 =  mkApp (equiv, Array.of_list others),c1,c2 in
+  let new_hyp' =  mkApp (he, [| c2 ; c1 |]) in
+  let new_hyp = it_mkProd_or_LetIn new_hyp'  binders in
+  tclTHENS (cut new_hyp)
+    [ intro_replacing id;
+      tclTHENLIST [ intros; setoid_symmetry; apply (mkVar id); assumption ] ]
+    gl
 
 let setoid_transitivity c gl =
  try
