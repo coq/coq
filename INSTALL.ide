@@ -26,8 +26,8 @@ REQUIREMENT:
 	- OCaml >= 3.07 with native threads support.
 	- make world must succeed.
 	- The graphical toolkit GTK+ 2.x. See http://www.gtk.org.
-	  The official supported version is at least 2.2.x.
-	  You may still compile CoqIde with older 2.0.x versions and 
+	  The official supported version is at least 2.8.x.
+	  You may still compile CoqIde with older versions and 
           use all features.
 	  Run 
 		"pkg-config --modversion gtk+-2.0"
@@ -40,7 +40,6 @@ REQUIREMENT:
           install GTK+ 2.x should you need to force it for one reason
           or another.)
 
-
         - The OCaml bindings for for GTK+ 2.x, lablgtk2.
 
 	  Your distribution may contain precompiled packages. For
@@ -51,23 +50,23 @@ REQUIREMENT:
           http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html .
 
           The first official release of lablftk2 is here:
-          http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/dist/lablgtk-2.2.0.tar.gz
+          http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/dist/lablgtk-2.10.0.tar.gz
 
           Note that even if its README requires ocaml > 3.07, it works
           ok with 3.07. If you are in a hurry just run :
 
               cd /tmp && \
               wget \
-               http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/dist/lablgtk-2.2.0.tar.gz && \
-              tar zxvf lablgtk-2.2.0.tar.gz && \
-              cd lablgtk-2.2.0 && \
+               http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/dist/lablgtk-2.10.0.tar.gz && \
+              tar zxvf lablgtk-2.10.0.tar.gz && \
+              cd lablgtk-2.10.0 && \
               ./configure && \
               make world && \
               make install
 
    	  You must have write access to the OCaml standard library path.
 
-          If this fails, read lablgtk-2.2.0/README.
+          If this fails, read lablgtk-2.10.0/README.
 
 
 INSTALLATION
