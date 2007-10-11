@@ -1731,7 +1731,6 @@ scratchdepend: dependp4
 # We proceed in several steps:
 
 ML4FILESML = $(ML4FILES:.ml4=.ml)
-.SECONDARY: $(ML4FILESML)
 
 # Expresses dependencies of the .ml4 files w.r.t their grammars
 
@@ -1771,6 +1770,8 @@ depend: dependp4 ml4filesml $(BEFOREDEPEND)
 	$(CC) -MM -isystem $(CAMLHLIB) kernel/byterun/*.c >> .depend
 # 6. Finally, we erase the generated .ml files
 	rm -f $(ML4FILESML)
+#    and the .cmo and .cmi files needed by grammar.cma
+	rm -f rm parsing/*.cm[io] lib/pp.cm[io] lib/compat.cm[io]
 # 7. Since .depend contains correct dependencies .depend.devel can be deleted
 # (see dev/Makefile.dir for details about this file)
 	if [ -e makefile ]; then >.depend.devel; else rm -f .depend.devel; fi
