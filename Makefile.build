@@ -811,9 +811,14 @@ endif
 
 # .ml4.d contains the dependencies to generate the .ml from the .ml4
 # NOT to generate object code.
+ifdef NO_RECOMPILE_ML4
+  SEP:=$(ORDER_ONLY_SEP)
+else
+  SEP:=
+endif
 %.ml4.d: %.ml4
 	$(SHOW)'CAMLP4DEPS $<'
-	$(HIDE)( echo -n '$*.cmo $*.cmx $*.ml4.ml.d: ' && $(CAMLP4DEPS) "$<" ) > "$@" \
+	$(HIDE)( echo -n '$*.cmo $*.cmx $*.ml4.ml.d: $(SEP)' && $(CAMLP4DEPS) "$<" ) > "$@" \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
 %.ml4.ml.d: %.ml4 | $(GENFILES) $(ML4FILES:.ml4=.ml) %.ml4.d

@@ -40,6 +40,50 @@ files. In particular, .glob files are now always created.
 
 See also section "cleaning targets"
 
+Reducing build system overhead
+------------------------------
+
+When you are actively working on a file in a "make a change, make to
+test, make a change, make to test", etc mode, here are a few tips to
+save precious time:
+
+ - Always ask for what you want directly (e.g. bin/coqtop,
+   foo/bar.cmo, ...), don't do "make world" and interrupt
+   it when it has done what you want. This will try to minimise the
+   stage at which what you ask for is done (instead of maximising it
+   in order to maximise parallelism of the build process).
+
+   For example, if you only want to test whether bin/coqtop still
+   builds (and eventually start it to test your bugfix or new
+   feature), don't do "make world" and interrupt it when bin/coqtop is
+   built. Use "make bin/coqtop" or "make coqbinaries" or something
+   like that. This will avoid entering the stage 3, and cut build
+   system overhead by 50% (1.2s instead of 2.4 on writer's machine).
+
+ - You can turn off rebuilding of the standard library each time
+   bin/coqtop is rebuilt with NO_RECOMPILE_LIB=1.
+
+ - If you want to avoid all .ml4 files being recompiled only because
+   grammar.cma was rebuilt, do "make ml4depclean" once and then use
+   NO_RECOMPILE_ML4=1.
+
+ - The CM_STAGE1=1 option to make will build all .cm* files mentioned
+   as targets on the command line in stage1. Whether this will work is
+   your responsibility. It should work for .ml files that don't depend
+   (nor directly nor indirectly through transitive closure of the
+   dependencies) on any .ml4 file, or where those dependencies can be
+   safely ignored in the current situation (e.g. all these .ml4 files
+   don't need to be recompiled).
+
+   This will avoid entering the stage2 (a reduction of 33% in
+   overhead, 0.4s on the writer's machine).
+
+ - To jump directly into a stage (e.g. because you know nothing is to
+   be done in stage 1 or (1 and 2) or because you know that the target
+   you give can be, in this situation, done in a lower stage than the
+   build system dares to), use GOTO_STAGE=n. This will jump into stage
+   n and try to do the targets you gave in that stage.
+
 Dependencies
 ------------
 

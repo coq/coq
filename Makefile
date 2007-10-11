@@ -24,13 +24,34 @@
 # by Emacs' next-error.
 ###########################################################################
 
+FIND_VCS_CLAUSE:='(' -name '{arch}' -or -name '.svn' -or -name '_darcs' -or -name '.git' -or -name "$${GIT_DIR}" ')' -prune -or
+FIND_PRINTF_P:=-print | sed 's|^\./||'
+
+export YACCFILES:=$(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.mly' ')' $(FIND_PRINTF_P))
+export LEXFILES := $(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.mll' ')' $(FIND_PRINTF_P))
+export GENMLFILES:=$(LEXFILES:.mll=.ml) $(YACCFILES:.mly=.ml) \
+  scripts/tolink.ml kernel/copcodes.ml
+export GENMLIFILES:=$(YACCFILES:.mly=.mli)
+export GENHFILES:=kernel/byterun/coq_jumptbl.h
+export GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES)
+export MLFILES  := $(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.ml'  ')' $(FIND_PRINTF_P) | \
+  while read f; do if ! [ -e "$${f}4" ]; then echo "$$f"; fi; done) \
+  $(GENMLFILES)
+export MLIFILES := $(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.mli' ')' $(FIND_PRINTF_P)) \
+  $(GENMLIFILES)
+export ML4FILES := $(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.ml4' ')' $(FIND_PRINTF_P))
+export VFILES   := $(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.v'   ')' $(FIND_PRINTF_P))
+export CFILES   := $(shell find kernel/byterun -name '*.c')
+
+export ML4FILESML:= $(ML4FILES:.ml4=.ml)
+
 include Makefile.common
 
 NOARG: world
 
-.PHONY: stage1 stage2 stage3 NOARG help world revision always tags otags
+.PHONY: NOARG help always tags otags
 
-always:
+always: ;
 
 help:
 	@echo "Please use either"
@@ -66,6 +87,19 @@ Or your editor crashed. Then, you may want to consider whether you want to resto
 #run.
 endif
 
+ifdef GOTO_STAGE
+config/Makefile Makefile.common Makefile.build Makefile: ;
+
+.DEFAULT:
+	$(call stage-template,$(GOTO_STAGE))
+else
+
+.PHONY: stage1 stage2 stage3 world revision
+
+# This is to remove the built-in rule "%: %.o"
+# Otherwise, "make foo" recurses into stage1, trying to build foo.o .
+%: %.o
+
 %.o: always
 	$(call stage-template,1)
 
@@ -73,8 +107,17 @@ endif
 stage1 $(STAGE1_TARGETS): always
 	$(call stage-template,1)
 
-%.cmo %.cmx %.cmi %.cma %.cmxa %.ml4.preprocessed: stage1
+CAML_OBJECT_PATTERNS:=%.cmo %.cmx %.cmi %.cma %.cmxa
+ifdef CM_STAGE1
+$(CAML_OBJECT_PATTERNS): always
+	$(call stage-template,1)
+
+%.ml4.preprocessed: stage1
 	$(call stage-template,2)
+else
+$(CAML_OBJECT_PATTERNS) %.ml4.preprocessed: stage1
+	$(call stage-template,2)
+endif
 
 stage2 $(STAGE2_TARGETS): stage1
 	$(call stage-template,2)
@@ -85,11 +128,13 @@ stage2 $(STAGE2_TARGETS): stage1
 stage3 $(STAGE3_TARGETS): stage2
 	$(call stage-template,3)
 
+endif #GOTO_STAGE
+
 ###########################################################################
 # Cleaning
 ###########################################################################
 
-.PHONY: clean objclean cruftclean indepclean archclean ml4clean clean-ide depclean distclean cleanconfig cleantheories docclean
+.PHONY: clean objclean cruftclean indepclean archclean ml4clean clean-ide ml4depclean depclean distclean cleanconfig cleantheories docclean
 
 clean: objclean cruftclean depclean docclean
 
@@ -134,8 +179,11 @@ clean-ide:
 ml4clean:
 	rm -f $(ML4FILESML) $(ML4FILESML:.ml=.ml4.preprocessed)
 
+ml4depclean:
+	find . -name '*.ml4.d' | xargs rm -f
+
 depclean:
-	find . -name '*.d' | xargs  rm -f
+	find . -name '*.d' | xargs rm -f
 
 cleanconfig:
 	rm -f config/Makefile config/coq_config.ml dev/ocamldebug-v7 ide/undo.mli
@@ -190,7 +238,3 @@ ifdef COQ_CONFIGURED
 else
 	@echo "Please run ./configure first" >&2; exit 1
 endif
-
-# This is to remove the built-in rule "%: %.o"
-# Otherwise, "make foo" recurses into stage1, trying to build foo.o .
-%: %.o
