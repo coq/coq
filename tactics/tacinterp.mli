@@ -41,7 +41,8 @@ type value =
 and interp_sign =
   { lfun : (identifier * value) list;
     avoid_ids : identifier list;
-    debug : debug_info }
+    debug : debug_info;
+    last_loc : loc }
 
 (* Transforms an id into a constr if possible *)
 val constr_of_id : Environ.env -> identifier -> constr

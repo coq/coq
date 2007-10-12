@@ -102,9 +102,10 @@ let catch_error loc tac g =
 (* Signature for interpretation: val_interp and interpretation functions *)
 type interp_sign =
     { lfun : (identifier * value) list;
-      avoid_ids : identifier list; (* ids inherited fromm the call context
+      avoid_ids : identifier list; (* ids inherited from the call context
 				      (needed to get fresh ids) *)
-      debug : debug_info }
+      debug : debug_info;
+      last_loc : loc }
 
 let check_is_value = function
   | VRTactic _ -> (* These are goals produced by Match *)
@@ -1057,6 +1058,19 @@ let set_debug pos = debug := pos
 (* Gives the state of debug *)
 let get_debug () = !debug
 
+let debugging_step ist pp =
+  match ist.debug with
+  | DebugOn lev ->
+      safe_msgnl (str "Level " ++ int lev ++ str": " ++ pp ++ fnl())
+  | _ -> ()
+
+let debugging_exception_step ist signal_anomaly e pp =
+  let explain_exc =
+    if signal_anomaly then explain_logic_error
+    else explain_logic_error_no_anomaly in
+  debugging_step ist 
+    (pp ++ spc() ++ str "raised the exception" ++ fnl() ++ !explain_exc e)
+
 let error_ltac_variable loc id env v s =
    user_err_loc (loc, "", str "Ltac variable " ++ pr_id id ++ 
    str " is bound to" ++ spc () ++ pr_value env v ++ spc () ++ 
@@ -1448,34 +1462,18 @@ let interp_may_eval f ist gl = function
   | ConstrTerm c -> 
      try 
 	f ist gl c
-     with e -> 
-	begin 
-	  match ist.debug with 
-	    DebugOn lev -> 
-	    safe_msgnl (str "Level " ++ int lev ++
-                          str ": interpretation of term " ++ 
-			   Printer.pr_rawconstr_env (pf_env gl) (fst c) ++
-			   str " raised an exception" ++
-			   fnl() ++
-			   !Tactic_debug.explain_logic_error_no_anomaly e)
-	| _ -> ()
-     end;
-     raise e  
+     with e ->
+       debugging_exception_step ist false e
+         (str"interpretation of term " ++ pr_rawconstr_env (pf_env gl)(fst c));
+       raise e  
 
 (* Interprets a constr expression possibly to first evaluate *)
 let interp_constr_may_eval ist gl c =
   let csr = 
     try
       interp_may_eval pf_interp_constr ist gl c
-    with e -> 
-      begin match ist.debug with
-	  DebugOn lev -> 
-	    safe_msgnl (str "Level " ++ int lev ++
-                           str ": evaluation of term raised an exception" ++
-			   fnl() ++
-			   !Tactic_debug.explain_logic_error_no_anomaly e)
-	| _ -> ()
-      end;
+    with e ->
+      debugging_exception_step ist false e (str "evaluation of term");
       raise e
   in
   begin
@@ -1599,7 +1597,7 @@ let rec val_interp ist gl (tac:glob_tactic_expr) =
   | TacMatch (lz,c,lmr) -> interp_match ist gl lz c lmr
   | TacArg a -> interp_tacarg ist gl a
   (* Delayed evaluation *)
-  | t -> VTactic (dloc,eval_tactic ist t)
+  | t -> VTactic (ist.last_loc,eval_tactic ist t)
 
   in check_for_interrupt (); 
     match ist.debug with
@@ -1636,8 +1634,10 @@ and interp_ltac_reference isapplied mustbetac ist gl = function
       if mustbetac then coerce_to_tactic loc id v else v
   | ArgArg (loc,r) ->
       let ids = extract_ids [] ist.lfun in
-      let v = val_interp {lfun=[];avoid_ids=ids; debug=ist.debug} gl (lookup r) in
-      if isapplied then v else locate_tactic_call loc v
+      let ist = 
+        { lfun=[]; debug=ist.debug; avoid_ids=ids;
+          last_loc = if isapplied then ist.last_loc else loc } in
+      val_interp ist gl (lookup r)
 
 and interp_tacarg ist gl = function
   | TacVoid -> VVoid
@@ -1682,32 +1682,15 @@ and interp_app ist gl fv largs loc =
       let (newlfun,lvar,lval)=head_with_value (var,largs) in
       if lvar=[] then
 	let v = 
-          let res = 
-	    try
-	      val_interp { ist with lfun=newlfun@olfun } gl body
-	    with e ->
-	      begin match ist.debug with
-		  DebugOn lev -> 
-		    safe_msgnl 
-		      (str "Level " ++ int lev ++ 
-			  str ": evaluation raises an exception" ++
-                          fnl() ++
-			  !Tactic_debug.explain_logic_error_no_anomaly e)
-		| _ -> ()
-	      end;
-	      raise e
-	  in
-	    (match ist.debug with
-		DebugOn lev -> 
-		  safe_msgnl (str "Level " ++ int lev ++ 
-				 str ": evaluation returns" ++ fnl() ++
-				 pr_value (Some (pf_env gl)) res)
-	      | _ -> ());
-	    res
-	in
-
-        if lval=[] then locate_tactic_call loc v
-	else interp_app ist gl v lval loc
+	  try
+            let lloc = if lval=[] then loc else ist.last_loc in
+	    val_interp { ist with lfun=newlfun@olfun; last_loc=lloc } gl body
+	  with e ->
+            debugging_exception_step ist false e (str "evaluation");
+	    raise e in
+        debugging_step ist 
+	  (str "evaluation returns" ++ fnl() ++ pr_value (Some (pf_env gl)) v);
+        if lval=[] then v else interp_app ist gl v lval loc
       else
         VFun(newlfun@olfun,lvar,body)
     | _ ->
@@ -1955,34 +1938,25 @@ and interp_match ist g lz constr lmr =
         (try eval_with_fail ist lz g t
          with e when is_match_catchable e -> apply_match ist csr [])
     | (Pat ([],Term c,mt))::tl ->
-        (try let lm = 
-              (try matches c csr with 
-                e -> 
-                  (match ist.debug with
-                    DebugOn lev ->
-                      safe_msgnl (str "Level " ++ int lev ++
-                             str ": matching with pattern" ++ fnl() ++
-                         Printer.pr_constr_pattern_env (pf_env g) c ++ fnl() ++
-                         str "raised the exception" ++ fnl() ++
-                         !Tactic_debug.explain_logic_error_no_anomaly e)
-                  | _ -> ()); raise e) in
-            (try let lm = List.map (fun (id,c) -> (id,VConstr c)) lm in
-               eval_with_fail { ist with lfun=lm@ist.lfun } lz g mt
+        (try
+            let lm = 
+              try matches c csr
+              with e ->
+                debugging_exception_step ist false e
+                  (str "matching with pattern" ++ fnl () ++
+                   pr_constr_pattern_env (pf_env g) c);
+                raise e in
+            try
+              let lm = List.map (fun (id,c) -> (id,VConstr c)) lm in
+              eval_with_fail { ist with lfun=lm@ist.lfun } lz g mt
             with e ->
-               (match ist.debug with
-                  DebugOn lev -> 
-                    safe_msgnl (str "rule body for pattern" ++ fnl() ++
-                    Printer.pr_constr_pattern_env (pf_env g) c ++ fnl() ++
-                    str "raised the exception" ++ fnl() ++
-                    !Tactic_debug.explain_logic_error_no_anomaly e)
-                | _ -> ()); raise e)
+              debugging_exception_step ist false e
+                (str "rule body for pattern" ++
+                 pr_constr_pattern_env (pf_env g) c);
+              raise e
          with e when is_match_catchable e ->
-            (match ist.debug with
-               DebugOn lev ->
-                 safe_msgnl (str "Level " ++ int lev ++ 
-                       str ":switching to the next rule");
-             | DebugOff -> ());
-            apply_match ist csr tl)
+           debugging_step ist (str "switching to the next rule");
+           apply_match ist csr tl)
 
     | (Pat ([],Subterm (id,c),mt))::tl ->
         (try apply_match_subterm ist 0 (id,c) csr mt
@@ -1991,49 +1965,33 @@ and interp_match ist g lz constr lmr =
       errorlabstrm "Tacinterp.apply_match" (str
         "No matching clauses for match") in
   let csr = 
-      try interp_ltac_constr ist g constr with
-        e -> (match ist.debug with
-               DebugOn lev ->
-               safe_msgnl (str "Level " ++ int lev ++ 
-                      str ": evaluation of the matched expression raised " ++
-                      str "the exception" ++ fnl() ++
-                      !Tactic_debug.explain_logic_error e)
-             | _ -> ()); raise e in
+      try interp_ltac_constr ist g constr with e ->
+        debugging_exception_step ist true e
+          (str "evaluation of the matched expression");
+        raise e in
   let ilr = read_match_rule (fst (constr_list ist (pf_env g))) lmr in
   let res = 
-     try apply_match ist csr ilr with
-       e -> 
-           begin match ist.debug with
-             DebugOn lev ->
-                safe_msgnl (str "Level " ++ int lev ++ 
-                        str ": match expression failed with error" ++ fnl() ++
-                    !Tactic_debug.explain_logic_error e)
-           | _ -> ()
-           end;
-           raise e in
-     (if ist.debug <> DebugOff then
-     safe_msgnl (str "match expression returns " ++
-            pr_value (Some (pf_env g)) res));
-     res
+     try apply_match ist csr ilr with e -> 
+       debugging_exception_step ist true e (str "match expression");
+       raise e in
+  debugging_step ist 
+    (str "match expression returns " ++ pr_value (Some (pf_env g)) res);
+  res
 
 (* Interprets tactic expressions : returns a "constr" *)
 and interp_ltac_constr ist gl e =
   let result = 
-  try (val_interp ist gl e) with Not_found -> 
-    begin match ist.debug with
-      DebugOn lev ->
-       safe_msgnl (str "Level " ++ int lev ++ 
-                   str ": evaluation failed for" ++ fnl() ++
-                       Pptactic.pr_glob_tactic (pf_env gl) e)
-    | _ -> ()
-    end;
+  try val_interp ist gl e with Not_found -> 
+    debugging_step ist 
+      (str "evaluation failed for" ++ fnl() ++
+       Pptactic.pr_glob_tactic (pf_env gl) e);
     raise Not_found in
-  try let cresult = constr_of_value (pf_env gl) result in
-    (if !debug <> DebugOff then 
-        safe_msgnl (Pptactic.pr_glob_tactic (pf_env gl) e ++ fnl() ++
-        str " has value " ++ fnl() ++ print_constr_env (pf_env gl) cresult);
-     cresult)
-        
+  try
+    let cresult = constr_of_value (pf_env gl) result in
+    debugging_step ist
+      (Pptactic.pr_glob_tactic (pf_env gl) e ++ fnl() ++
+       str " has value " ++ fnl() ++ print_constr_env (pf_env gl) cresult);
+     cresult
   with Not_found ->
     errorlabstrm ""
       (str "Must evaluate to a term" ++ fnl() ++ 
@@ -2289,17 +2247,20 @@ let make_empty_glob_sign () =
 
 (* Initial call for interpretation *)
 let interp_tac_gen lfun avoid_ids debug t gl = 
-  interp_tactic { lfun=lfun; avoid_ids=avoid_ids; debug=debug } 
+  interp_tactic { lfun=lfun; avoid_ids=avoid_ids; debug=debug; last_loc=dloc } 
     (intern_tactic {
       ltacvars = (List.map fst lfun, []); ltacrecvars = [];
       gsigma = project gl; genv = pf_env gl } t) gl
 
-let eval_tactic t gls = interp_tactic { lfun=[]; avoid_ids=[]; debug=get_debug() } t gls
+let eval_tactic t gls =
+  interp_tactic { lfun=[]; avoid_ids=[]; debug=get_debug(); last_loc=dloc }
+    t gls
 
 let interp t = interp_tac_gen [] [] (get_debug()) t
 
 let eval_ltac_constr gl t =
-  interp_ltac_constr { lfun=[]; avoid_ids=[]; debug=get_debug() } gl
+  interp_ltac_constr 
+    { lfun=[]; avoid_ids=[]; debug=get_debug(); last_loc=dloc } gl
     (intern_tactic (make_empty_glob_sign ()) t )
 
 (* Hides interpretation for pretty-print *)
@@ -2700,7 +2661,7 @@ let glob_tactic_env l env x =
     x
 
 let interp_redexp env sigma r = 
-  let ist = { lfun=[]; avoid_ids=[]; debug=get_debug () } in
+  let ist = { lfun=[]; avoid_ids=[]; debug=get_debug (); last_loc=dloc } in
   let gist = {(make_empty_glob_sign ()) with genv = env; gsigma = sigma } in
   interp_red_expr ist sigma env (intern_red_expr gist r)
 
@@ -2710,7 +2671,7 @@ let interp_redexp env sigma r =
 let _ = Auto.set_extern_interp
   (fun l -> 
     let l = List.map (fun (id,c) -> (id,VConstr c)) l in
-    interp_tactic {lfun=l;avoid_ids=[];debug=get_debug()})
+    interp_tactic {lfun=l;avoid_ids=[];debug=get_debug(); last_loc=dloc})
 let _ = Auto.set_extern_intern_tac 
   (fun l ->
     Options.with_option strict_check

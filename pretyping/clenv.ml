@@ -62,6 +62,7 @@ let subst_clenv sub clenv =
     env = clenv.env }
 
 let clenv_nf_meta clenv c = nf_meta clenv.evd c
+let clenv_term clenv c = meta_instance clenv.evd c
 let clenv_meta_type clenv mv = Typing.meta_type clenv.evd mv
 let clenv_value clenv = meta_instance clenv.evd clenv.templval
 let clenv_type clenv = meta_instance clenv.evd clenv.templtyp
@@ -313,12 +314,12 @@ let clenv_fchain ?(allow_K=true) mv clenv nextclenv =
   (* unify the type of the template of [nextclenv] with the type of [mv] *)
   let clenv'' =
     clenv_unify allow_K CUMUL
-      (clenv_nf_meta clenv' nextclenv.templtyp.rebus)
+      (clenv_term clenv' nextclenv.templtyp)
       (clenv_meta_type clenv' mv)
       clenv' in
   (* assign the metavar *)
   let clenv''' =
-    clenv_assign mv (clenv_nf_meta clenv' nextclenv.templval.rebus) clenv''
+    clenv_assign mv (clenv_term clenv' nextclenv.templval) clenv''
   in 
   clenv'''
 
