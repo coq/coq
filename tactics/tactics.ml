@@ -903,7 +903,7 @@ let elimination_in_clause_scheme with_evars id elimclause indclause gl =
   let hyp = mkVar id in
   let hyp_typ = pf_type_of gl hyp in
   let hypclause = mk_clenv_from_n gl (Some 0) (hyp, hyp_typ) in
-  let elimclause'' = clenv_fchain hypmv elimclause' hypclause in  
+  let elimclause'' = clenv_fchain ~allow_K:false hypmv elimclause' hypclause in
   let new_hyp_typ  = clenv_type elimclause'' in
   if eq_constr hyp_typ new_hyp_typ then
     errorlabstrm "general_rewrite_in" 

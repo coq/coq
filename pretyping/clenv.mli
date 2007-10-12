@@ -61,7 +61,8 @@ val mk_clenv_type_of : evar_info sigma -> constr -> clausenv
 (* linking of clenvs *)
 
 val connect_clenv : evar_info sigma -> clausenv -> clausenv
-val clenv_fchain : metavariable -> clausenv -> clausenv -> clausenv
+val clenv_fchain : 
+  ?allow_K:bool -> metavariable -> clausenv -> clausenv -> clausenv
 
 (***************************************************************)
 (* Unification with clenvs *)
