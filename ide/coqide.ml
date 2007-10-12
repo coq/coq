@@ -3335,7 +3335,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
        \nContributors : Jean-Christophe Filliâtre\
        \n               Pierre Letouzey, Claude Marché\n\
        \nFeature wish or bug report: use Web interface\n\
-       \n\thttp://coq.inria.fr/bin/coq-bugs\n\
+       \n\thttp://logical.futurs.inria.fr/coq-bugs\n\
        \nVersion information\
        \n-------------------\n"
 							      in
