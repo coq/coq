@@ -90,7 +90,7 @@ endif
 ifdef GOTO_STAGE
 config/Makefile Makefile.common Makefile.build Makefile: ;
 
-.DEFAULT:
+%: always
 	$(call stage-template,$(GOTO_STAGE))
 else
 
