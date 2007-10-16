@@ -153,6 +153,9 @@ let interp verbosely s =
 		  | VernacCoFixpoint _
 		  | VernacEndProof _
                   | VernacScheme _ 
+		  | VernacExtend("Extraction", _)
+		  | VernacExtend("ExtractionLibrary",_)
+		  | VernacExtend("RecursiveExtractionLibrary",_)
 		    -> Options.make_silent (not verbosely)
 		  | _ -> ()
 	      end;
