@@ -21,8 +21,8 @@ let init_size=5
 
 let cc_verbose=ref false 
 
-let debug msg (stdpp:std_ppcmds) = 
-  if !cc_verbose then msg stdpp
+let debug f x = 
+  if !cc_verbose then f x
 
 let _=
   let gdopt=
@@ -179,7 +179,7 @@ type state =
      mutable diseq: disequality list;
      mutable quant: quant_eq list;
      mutable pa_classes: Intset.t;
-     q_history: (constr,unit) Hashtbl.t;
+     q_history: (identifier,int array) Hashtbl.t;
      mutable rew_depth:int;
      mutable changed:bool}
 
@@ -307,7 +307,7 @@ let new_representative ()=
     
 let rec constr_of_term = function
     Symb s->s
-  | Eps -> anomaly "epsilon constant has no value" 
+  | Eps -> mkMeta 0
   | Constructor cinfo -> mkConstruct cinfo.ci_constr 
   | Appli (s1,s2)->
       make_app [(constr_of_term s2)] s1
@@ -329,6 +329,12 @@ let rec inst_pattern subst = function
       List.fold_right
 	(fun spat f -> Appli (f,inst_pattern subst spat))
 	   args t  
+
+let pr_idx_term state i = str "[" ++ int i ++ str ":=" ++
+  Termops.print_constr (constr_of_term (term state.uf i)) ++ str "]"
+
+let pr_term t = str "[" ++
+  Termops.print_constr (constr_of_term t) ++ str "]"
 
 let rec add_term state t= 
   let uf=state.uf in
@@ -400,33 +406,53 @@ let add_quant state id pol (nvars,valid1,patt1,valid2,patt2) =
      qe_rhs= patt2;
      qe_rhs_valid=valid2}::state.quant
 
+let is_redundant state id args =
+  try  
+    let norm_args = Array.map (find state.uf) args in
+    let prev_args = Hashtbl.find_all state.q_history id in
+    List.exists 
+      (fun old_args -> 
+	 Util.array_for_all2 (fun i j -> i = find state.uf j) 
+         norm_args old_args) 
+      prev_args
+    with Not_found -> false
+
 let add_inst state (inst,int_subst) = 
   check_for_interrupt ();
-  if state.rew_depth > 0 then 
-  let subst = build_subst (forest state) int_subst in
-  let prfhead= mkVar inst.qe_hyp_id in
-  let args = Array.map constr_of_term subst in
-  let _ = array_rev args in (* highest deBruijn index first *)
-  let prf= mkApp(prfhead,args) in
-    try Hashtbl.find state.q_history prf
-    with Not_found ->
-      (* this instance is new, we can go on *)
-      let s = inst_pattern subst inst.qe_lhs 
-      and t = inst_pattern subst inst.qe_rhs in
-	state.changed<-true;
-	state.rew_depth<-pred state.rew_depth;
-	if inst.qe_pol then
-	  begin
-	    debug msgnl 
-	      (str "adding new equality, depth="++ int state.rew_depth);
-	    add_equality state prf s t
-	  end
-	else
-	  begin
-	    debug msgnl (str "adding new disequality, depth="++ 
-			   int state.rew_depth);
-	    add_disequality state (Hyp prf) s t 
-	  end
+  if state.rew_depth > 0 then
+  if is_redundant state inst.qe_hyp_id int_subst then
+    debug msgnl (str "discarding redundant (dis)equality")
+  else   
+    begin
+      Hashtbl.add state.q_history inst.qe_hyp_id int_subst;
+      let subst = build_subst (forest state) int_subst in
+      let prfhead= mkVar inst.qe_hyp_id in
+      let args = Array.map constr_of_term subst in
+      let _ = array_rev args in (* highest deBruijn index first *)
+      let prf= mkApp(prfhead,args) in
+	  let s = inst_pattern subst inst.qe_lhs 
+	  and t = inst_pattern subst inst.qe_rhs in
+	    state.changed<-true;
+	    state.rew_depth<-pred state.rew_depth;
+	    if inst.qe_pol then
+	      begin
+		debug (fun () -> 
+		  msgnl 
+		   (str "Adding new equality, depth="++ int state.rew_depth);
+	          msgnl (str "  [" ++ Termops.print_constr prf ++ str " : " ++ 
+			   pr_term s ++ str " == " ++ pr_term t ++ str "]")) ();
+		add_equality state prf s t
+	      end
+	    else
+	      begin
+		debug (fun () -> 
+		  msgnl 
+		   (str "Adding new disequality, depth="++ int state.rew_depth);
+	          msgnl (str "  [" ++ Termops.print_constr prf ++ str " : " ++ 
+			   pr_term s ++ str " <> " ++ pr_term t ++ str "]")) ();
+		add_disequality state (Hyp prf) s t 
+	      end
+  end
 
 let link uf i j eq = (* links i -> j *)
   let node=uf.map.(i) in 
@@ -449,7 +475,8 @@ let join_path uf i j=
   min_path (down_path uf i [],down_path uf j [])
 
 let union state i1 i2 eq=
-  debug msgnl (str "Linking " ++ int i1 ++ str " and " ++ int i2 ++ str ".");
+  debug (fun () -> msgnl (str "Linking " ++ pr_idx_term state i1 ++ 
+		 str " and " ++ pr_idx_term state i2 ++ str ".")) ();
   let r1= get_representative state.uf i1 
   and r2= get_representative state.uf i2 in
     link state.uf i1 i2 eq;
@@ -484,8 +511,9 @@ let union state i1 i2 eq=
 	| _,_ -> () 
             
 let merge eq state = (* merge and no-merge *)
-  debug msgnl 
-    (str "Merging " ++ int eq.lhs ++ str " and " ++ int eq.rhs ++ str ".");
+  debug (fun () -> msgnl 
+    (str "Merging " ++ pr_idx_term state eq.lhs ++ 
+       str " and " ++ pr_idx_term state eq.rhs ++ str ".")) ();
   let uf=state.uf in
   let i=find uf eq.lhs 
   and j=find uf eq.rhs in
@@ -496,8 +524,8 @@ let merge eq state = (* merge and no-merge *)
 	union state j i (swap eq)
 
 let update t state = (* update 1 and 2 *)
-  debug msgnl 
-    (str "Updating term " ++ int t ++ str ".");
+  debug (fun () -> msgnl 
+    (str "Updating term " ++ pr_idx_term state t ++ str ".")) ();
   let (i,j) as sign = signature state.uf t in
   let (u,v) = subterms state.uf t in
   let rep = get_representative state.uf i in
@@ -557,8 +585,8 @@ let process_constructor_mark t i rep pac state =
 	    end
 
 let process_mark t m state = 
-  debug msgnl 
-    (str "Processing mark for term " ++ int t ++ str ".");
+  debug (fun () -> msgnl 
+    (str "Processing mark for term " ++ pr_idx_term state t ++ str ".")) ();
   let i=find state.uf t in
   let rep=get_representative state.uf i in
     match m with
@@ -574,9 +602,9 @@ let check_disequalities state =
   let uf=state.uf in
   let rec check_aux = function
       dis::q -> 
-	debug msg 
-	(str "Checking if " ++ int dis.lhs ++ str " = " ++ 
-	 int dis.rhs ++ str " ... ");  
+	debug (fun () -> msg   
+	(str "Checking if " ++ pr_idx_term state dis.lhs ++ str " = " ++ 
+	 pr_idx_term state dis.rhs ++ str " ... ")) ();  
 	if find uf dis.lhs=find uf dis.rhs then 
 	  begin debug msgnl (str "Yes");Some dis end 
 	else
@@ -657,13 +685,15 @@ let rec do_match state res pb_stack =
 		  else
 		    if mp.mp_subst.(pred i) = cl then
 		      Stack.push {mp with mp_stack=remains} pb_stack
+		    else (* mismatch for non-linear variable in pattern *) ()
 	      | PApp (f,[]) ->
 		  begin
 		    try let j=Hashtbl.find uf.syms f in
 		      if find uf j =cl then
 			Stack.push {mp with mp_stack=remains} pb_stack
 		    with Not_found -> ()
-		  end
+		 
+ end
 	      | PApp(f, ((last_arg::rem_args) as args)) ->
 		  try 
 		    let j=Hashtbl.find uf.syms f in
@@ -671,7 +701,7 @@ let rec do_match state res pb_stack =
 		    let rep=get_representative uf cl in
 		    let good_terms = PafMap.find paf rep.functions in
 		    let aux i = 
-		      let (s,t) = ST.rev_query i state.sigtable in
+		      let (s,t) = signature state.uf i in
 			Stack.push 
 			  {mp with 
 			     mp_subst=Array.copy mp.mp_subst;
