@@ -3389,6 +3389,21 @@ general principle of mutual induction for objects in type {\term$_i$}.
 
   Same as before but defines a non-dependent elimination principle more
   natural in case of inductively defined relations. 
+
+\item {\tt Scheme Equality for \ident$_1$}
+
+  Tries to generate an boolean equality and a proof of the
+  decidability of the usual equality.
+
+\item {\tt Scheme Induction for \ident$_1$ Sort {\sort$_1$} \\
+  with\\
+  \mbox{}\hspace{0.1cm} \dots\\
+        with Induction for {\ident$_m$} Sort
+        {\sort$_m$}}
+
+  If you do not provide the name of the schemes, they will be automatically 
+  computed from the sorts involved (works also with Minimality).
+
 \end{Variants}
 
 \SeeAlso \ref{Scheme-examples}
