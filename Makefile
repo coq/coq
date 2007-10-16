@@ -1758,7 +1758,7 @@ depend: dependp4 ml4filesml $(BEFOREDEPEND)
 	for f in $(ML4FILES); do \
 	  bn=`dirname $$f`/`basename $$f .ml4`; \
 	  deps=`$(CAMLP4DEPS) $$f`; \
-	  if [[ $${deps} != "" ]]; then \
+	  if [ -n "$${deps}" ]; then \
 	    /bin/mv -f .depend .depend.tmp; \
 	    sed -e "\|^$${bn}.cmo|s|^$${bn}.cmo: \(.*\)$$|$${bn}.cmo: $${deps} \1|" \
 	        -e "\|^$${bn}.cmx|s|^$${bn}.cmx: \(.*\)$$|$${bn}.cmx: $${deps} \1|" \
