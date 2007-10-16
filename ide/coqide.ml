@@ -2856,10 +2856,10 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 						| None -> 
 						    !flash_info "Active buffer has no name"
 						| Some f ->
-						    let s,res = run_command 
-						      av#insert_message 
-						      (!current.cmd_coqc ^ " " ^ (Filename.quote f)) 
-						    in
+						    let cmd = !current.cmd_coqc ^ " -I " 
+						      ^ (Filename.quote (Filename.dirname f))
+						      ^ " " ^ (Filename.quote f) in
+						    let s,res = run_command av#insert_message cmd in
 						      if s = Unix.WEXITED 0 then
 							!flash_info (f ^ " successfully compiled")
 						      else begin
@@ -2876,7 +2876,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 
 					  (* Command/Make Menu *)
 					  let make_f () =
-					    let v = get_active_view () in
+					    let v = get_current_view () in
 					    let av = out_some v.analyzed_view in
 					      match av#filename with
 						| None -> 
@@ -2942,7 +2942,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 
 					  (* Command/CoqMakefile Menu*)
 					  let coq_makefile_f () =
-					    let v = get_active_view () in
+					    let v = get_current_view () in
 					    let av = out_some v.analyzed_view in
 					      match av#filename with
 						| None -> 
