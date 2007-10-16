@@ -25,6 +25,9 @@ Proof NZlt_le_incl.
 Theorem lt_neq : forall n m : N, n < m -> n ~= m.
 Proof NZlt_neq.
 
+Theorem lt_le_neq : forall n m : N, n < m <-> n <= m /\ n ~= m.
+Proof NZlt_le_neq.
+
 Theorem le_refl : forall n : N, n <= n.
 Proof NZle_refl.
 

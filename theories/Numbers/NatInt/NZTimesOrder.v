@@ -61,6 +61,37 @@ apply NZle_lt_trans with (m + p);
 [now apply -> NZplus_le_mono_r | now apply -> NZplus_lt_mono_l].
 Qed.
 
+Theorem NZplus_pos_pos : forall n m : NZ, 0 < n -> 0 < m -> 0 < n + m.
+Proof.
+intros n m H1 H2. rewrite <- (NZplus_0_l 0). now apply NZplus_lt_mono.
+Qed.
+
+Theorem NZplus_pos_nonneg : forall n m : NZ, 0 < n -> 0 <= m -> 0 < n + m.
+Proof.
+intros n m H1 H2. rewrite <- (NZplus_0_l 0). now apply NZplus_lt_le_mono.
+Qed.
+
+Theorem NZplus_nonneg_pos : forall n m : NZ, 0 <= n -> 0 < m -> 0 < n + m.
+Proof.
+intros n m H1 H2. rewrite <- (NZplus_0_l 0). now apply NZplus_le_lt_mono.
+Qed.
+
+Theorem NZplus_nonneg_nonneg : forall n m : NZ, 0 <= n -> 0 <= m -> 0 <= n + m.
+Proof.
+intros n m H1 H2. rewrite <- (NZplus_0_l 0). now apply NZplus_le_mono.
+Qed.
+
+Theorem NZlt_plus_pos_l : forall n m : NZ, 0 < n -> m < n + m.
+Proof.
+intros n m H. apply -> (NZplus_lt_mono_r 0 n m) in H.
+now rewrite NZplus_0_l in H.
+Qed.
+
+Theorem NZlt_plus_pos_r : forall n m : NZ, 0 < n -> m < m + n.
+Proof.
+intros; rewrite NZplus_comm; now apply NZlt_plus_pos_l.
+Qed.
+
 Theorem NZle_lt_plus_lt : forall n m p q : NZ, n <= m -> p + m < q + n -> p < q.
 Proof.
 intros n m p q H1 H2. destruct (NZle_gt_cases q p); [| assumption].
@@ -75,7 +106,7 @@ pose proof (NZplus_le_lt_mono q p n m H H1) as H3. apply <- NZnle_gt in H3.
 false_hyp H2 H3.
 Qed.
 
-Theorem NZle_le_plus_lt : forall n m p q : NZ, n <= m -> p + m <= q + n -> p <= q.
+Theorem NZle_le_plus_le : forall n m p q : NZ, n <= m -> p + m <= q + n -> p <= q.
 Proof.
 intros n m p q H1 H2. destruct (NZle_gt_cases p q); [assumption |].
 pose proof (NZplus_lt_le_mono q p n m H H1) as H3. apply <- NZnle_gt in H3.
@@ -368,6 +399,16 @@ elimtype False; now apply (NZlt_asymm (n * m) 0).
 assert (H3 : n * m > 0) by now apply NZtimes_pos_pos.
 elimtype False; now apply (NZlt_asymm (n * m) 0).
 now apply NZtimes_neg_pos. now apply NZtimes_pos_neg.
+Qed.
+
+Theorem NZtimes_2_mono_l : forall n m : NZ, n < m -> 1 + (1 + 1) * n < (1 + 1) * m.
+Proof.
+intros n m H. apply -> NZlt_le_succ in H.
+apply -> (NZtimes_le_mono_pos_l (S n) m (1 + 1)) in H.
+repeat rewrite NZtimes_plus_distr_r in *; repeat rewrite NZtimes_1_l in *.
+repeat rewrite NZplus_succ_r in *. repeat rewrite NZplus_succ_l in *. rewrite NZplus_0_l.
+now apply <- NZlt_le_succ.
+apply NZplus_pos_pos; now apply NZlt_succ_r.
 Qed.
 
 End NZTimesOrderPropFunct.

@@ -44,6 +44,13 @@ Proof.
 intros n m H1 H2; rewrite H2 in H1; false_hyp H1 NZlt_irrefl.
 Qed.
 
+Theorem NZlt_le_neq : forall n m : NZ, n < m <-> n <= m /\ n ~= m.
+Proof.
+intros n m; split; [intro H | intros [H1 H2]].
+split. le_less. now apply NZlt_neq.
+le_elim H1. assumption. false_hyp H1 H2.
+Qed.
+
 Theorem NZle_refl : forall n : NZ, n <= n.
 Proof.
 intro; now le_equal.

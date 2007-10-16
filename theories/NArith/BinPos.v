@@ -965,11 +965,41 @@ Proof.
   rewrite H; apply Pcompare_p_Sp.
 Qed.
 
+Lemma Plt_lt_succ : forall n m : positive, n < m -> n < Psucc m.
+Proof.
+unfold Plt; intros n m H; apply <- Pcompare_p_Sq; now left.
+Qed.
+
 (** 1 is the least positive number *)
 
 Lemma Pcompare_1 : forall p, ~ (p ?= xH) Eq = Lt.
 Proof.
   destruct p; discriminate.
+Qed.
+
+Lemma Plt_irrefl : forall p : positive, ~ p < p.
+Proof.
+intro p; unfold Plt; rewrite Pcompare_refl; discriminate.
+Qed.
+
+Lemma Plt_trans : forall n m p : positive, n < m -> m < p -> n < p.
+Proof.
+intros n m p; unfold Plt; elim p using Pind.
+intros _ H; false_hyp H Pcompare_1.
+clear p; intros p IH H1 H2. apply -> Pcompare_p_Sq in H2.
+apply Plt_lt_succ. destruct H2 as [H2 | H2].
+now apply IH. now rewrite H2 in H1.
+Qed.
+
+Theorem Plt_ind : forall (A : positive -> Prop) (n : positive),
+  A (Psucc n) ->
+    (forall m : positive, n < m -> A m -> A (Psucc m)) ->
+      forall m : positive, n < m -> A m.
+Proof.
+intros A n AB AS m. elim m using Pind; unfold Plt.
+intro H; false_hyp H Pcompare_1.
+clear m; intros m H1 H2. apply -> Pcompare_p_Sq in H2. destruct H2 as [H2 | H2].
+auto. now rewrite <- H2.
 Qed.
 
 (**********************************************************************)

@@ -23,6 +23,9 @@ Proof NZlt_le_incl.
 Theorem Zlt_neq : forall n m : Z, n < m -> n ~= m.
 Proof NZlt_neq.
 
+Theorem Zlt_le_neq : forall n m : Z, n < m <-> n <= m /\ n ~= m.
+Proof NZlt_le_neq.
+
 Theorem Zle_refl : forall n : Z, n <= n.
 Proof NZle_refl.
 

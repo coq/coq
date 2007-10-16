@@ -132,7 +132,14 @@ Qed.
 
 End NZOrdAxiomsMod.
 
-Definition Zopp := Zopp.
+Definition Zopp (x : Z) :=
+match x with
+| Z0 => Z0
+| Zpos x => Zneg x
+| Zneg x => Zpos x
+end.
+
+Notation "- x" := (Zopp x) : Z_scope.
 
 Add Morphism Zopp with signature NZE ==> NZE as Zopp_wd.
 Proof.

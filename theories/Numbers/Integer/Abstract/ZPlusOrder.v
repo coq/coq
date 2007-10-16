@@ -30,14 +30,32 @@ Proof NZplus_lt_le_mono.
 Theorem Zplus_le_lt_mono : forall n m p q : Z, n <= m -> p < q -> n + p < m + q.
 Proof NZplus_le_lt_mono.
 
+Theorem Zplus_pos_pos : forall n m : Z, 0 < n -> 0 < m -> 0 < n + m.
+Proof NZplus_pos_pos.
+
+Theorem Zplus_pos_nonneg : forall n m : Z, 0 < n -> 0 <= m -> 0 < n + m.
+Proof NZplus_pos_nonneg.
+
+Theorem Zplus_nonneg_pos : forall n m : Z, 0 <= n -> 0 < m -> 0 < n + m.
+Proof NZplus_nonneg_pos.
+
+Theorem Zplus_nonneg_nonneg : forall n m : Z, 0 <= n -> 0 <= m -> 0 <= n + m.
+Proof NZplus_nonneg_nonneg.
+
+Theorem Zlt_plus_pos_l : forall n m : Z, 0 < n -> m < n + m.
+Proof NZlt_plus_pos_l.
+
+Theorem Zlt_plus_pos_r : forall n m : Z, 0 < n -> m < m + n.
+Proof NZlt_plus_pos_r.
+
 Theorem Zle_lt_plus_lt : forall n m p q : Z, n <= m -> p + m < q + n -> p < q.
 Proof NZle_lt_plus_lt.
 
 Theorem Zlt_le_plus_lt : forall n m p q : Z, n < m -> p + m <= q + n -> p < q.
 Proof NZlt_le_plus_lt.
 
-Theorem Zle_le_plus_lt : forall n m p q : Z, n <= m -> p + m <= q + n -> p <= q.
-Proof NZle_le_plus_lt.
+Theorem Zle_le_plus_le : forall n m p q : Z, n <= m -> p + m <= q + n -> p <= q.
+Proof NZle_le_plus_le.
 
 Theorem Zplus_lt_cases : forall n m p q : Z, n + m < p + q -> n < p \/ m < q.
 Proof NZplus_lt_cases.
@@ -56,89 +74,6 @@ Proof NZplus_nonpos_cases.
 
 Theorem Zplus_nonneg_cases : forall n m : Z, 0 <= n + m -> 0 <= n \/ 0 <= m.
 Proof NZplus_nonneg_cases.
-
-(** Multiplication and order *)
-
-Theorem Ztimes_lt_pred :
-  forall p q n m : Z, S p == q -> (p * n < p * m <-> q * n + m < q * m + n).
-Proof NZtimes_lt_pred.
-
-Theorem Ztimes_lt_mono_pos_l : forall p n m : Z, 0 < p -> (n < m <-> p * n < p * m).
-Proof NZtimes_lt_mono_pos_l.
-
-Theorem Ztimes_lt_mono_pos_r : forall p n m : Z, 0 < p -> (n < m <-> n * p < m * p).
-Proof NZtimes_lt_mono_pos_r.
-
-Theorem Ztimes_lt_mono_neg_l : forall p n m : Z, p < 0 -> (n < m <-> p * m < p * n).
-Proof NZtimes_lt_mono_neg_l.
-
-Theorem Ztimes_lt_mono_neg_r : forall p n m : Z, p < 0 -> (n < m <-> m * p < n * p).
-Proof NZtimes_lt_mono_neg_r.
-
-Theorem Ztimes_le_mono_nonneg_l : forall n m p : Z, 0 <= p -> n <= m -> p * n <= p * m.
-Proof NZtimes_le_mono_nonneg_l.
-
-Theorem Ztimes_le_mono_nonpos_l : forall n m p : Z, p <= 0 -> n <= m -> p * m <= p * n.
-Proof NZtimes_le_mono_nonpos_l.
-
-Theorem Ztimes_le_mono_nonneg_r : forall n m p : Z, 0 <= p -> n <= m -> n * p <= m * p.
-Proof NZtimes_le_mono_nonneg_r.
-
-Theorem Ztimes_le_mono_nonpos_r : forall n m p : Z, p <= 0 -> n <= m -> m * p <= n * p.
-Proof NZtimes_le_mono_nonpos_r.
-
-Theorem Ztimes_cancel_l : forall n m p : Z, p ~= 0 -> (p * n == p * m <-> n == m).
-Proof NZtimes_cancel_l.
-
-Theorem Ztimes_le_mono_pos_l : forall n m p : Z, 0 < p -> (n <= m <-> p * n <= p * m).
-Proof NZtimes_le_mono_pos_l.
-
-Theorem Ztimes_le_mono_pos_r : forall n m p : Z, 0 < p -> (n <= m <-> n * p <= m * p).
-Proof NZtimes_le_mono_pos_r.
-
-Theorem Ztimes_le_mono_neg_l : forall n m p : Z, p < 0 -> (n <= m <-> p * m <= p * n).
-Proof NZtimes_le_mono_neg_l.
-
-Theorem Ztimes_le_mono_neg_r : forall n m p : Z, p < 0 -> (n <= m <-> m * p <= n * p).
-Proof NZtimes_le_mono_neg_r.
-
-Theorem Ztimes_lt_mono :
-  forall n m p q : Z, 0 <= n -> n < m -> 0 <= p -> p < q -> n * p < m * q.
-Proof NZtimes_lt_mono.
-
-Theorem Ztimes_le_mono :
-  forall n m p q : Z, 0 <= n -> n <= m -> 0 <= p -> p <= q -> n * p <= m * q.
-Proof NZtimes_le_mono.
-
-Theorem Ztimes_pos_pos : forall n m : Z, 0 < n -> 0 < m -> 0 < n * m.
-Proof NZtimes_pos_pos.
-
-Theorem Ztimes_nonneg_nonneg : forall n m : Z, 0 <= n -> 0 <= m -> 0 <= n * m.
-Proof NZtimes_nonneg_nonneg.
-
-Theorem Ztimes_neg_neg : forall n m : Z, n < 0 -> m < 0 -> 0 < n * m.
-Proof NZtimes_neg_neg.
-
-Theorem Ztimes_nonpos_nonpos : forall n m : Z, n <= 0 -> m <= 0 -> 0 <= n * m.
-Proof NZtimes_nonpos_nonpos.
-
-Theorem Ztimes_pos_neg : forall n m : Z, 0 < n -> m < 0 -> n * m < 0.
-Proof NZtimes_pos_neg.
-
-Theorem Ztimes_nonneg_nonpos : forall n m : Z, 0 <= n -> m <= 0 -> n * m <= 0.
-Proof NZtimes_nonneg_nonpos.
-
-Theorem Ztimes_neg_pos : forall n m : Z, n < 0 -> 0 < m -> n * m < 0.
-Proof NZtimes_neg_pos.
-
-Theorem Ztimes_nonpos_nonneg : forall n m : Z, n <= 0 -> 0 <= m -> n * m <= 0.
-Proof NZtimes_nonpos_nonneg.
-
-Theorem Ztimes_eq_0 : forall n m : Z, n * m == 0 -> n == 0 \/ m == 0.
-Proof NZtimes_eq_0.
-
-Theorem Ztimes_neq_0 : forall n m : Z, n ~= 0 /\ m ~= 0 <-> n * m ~= 0.
-Proof NZtimes_neq_0.
 
 (** Theorems that are either not valid on N or have different proofs on N and Z *)
 
@@ -252,7 +187,7 @@ Qed.
 
 Theorem Zle_le_minus_lt : forall n m p q : Z, n <= m -> p - n <= q - m -> p <= q.
 Proof.
-intros n m p q H1 H2. apply (Zle_le_plus_lt (- m) (- n));
+intros n m p q H1 H2. apply (Zle_le_plus_le (- m) (- n));
 [now apply -> Zopp_le_mono | now do 2 rewrite Zplus_opp_minus].
 Qed.
 

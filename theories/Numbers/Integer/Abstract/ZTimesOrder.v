@@ -94,6 +94,9 @@ Theorem Ztimes_neg :
   forall n m : Z, n * m < 0 <-> (n < 0 /\ m > 0) \/ (n > 0 /\ m < 0).
 Proof NZtimes_neg.
 
+Theorem Ztimes_2_mono_l : forall n m : Z, n < m -> 1 + (1 + 1) * n < (1 + 1) * m.
+Proof NZtimes_2_mono_l.
+
 (** Theorems that are either not valid on N or have different proofs on N and Z *)
 
 (* None? *)

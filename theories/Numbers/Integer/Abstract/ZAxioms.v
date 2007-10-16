@@ -10,7 +10,7 @@ Open Local Scope NatIntScope.
 Notation Z := NZ (only parsing).
 Notation E := NZE (only parsing).
 
-Parameter Inline Zopp : Z -> Z.
+Parameter Zopp : Z -> Z.
 
 Add Morphism Zopp with signature E ==> E as Zopp_wd.
 
