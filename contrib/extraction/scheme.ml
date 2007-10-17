@@ -30,16 +30,10 @@ let keywords =
     Idset.empty
 
 let preamble _ _ usf = 
-  str ";; This extracted scheme code relies on some additional macros" ++ 
-  fnl () ++
-  str ";; available at http://www.pps.jussieu.fr/~letouzey/scheme" ++
-  fnl () ++
-  str "(load \"macros_extr.scm\")" ++
-  fnl () ++ fnl () ++
-  (if usf.mldummy then 
-     str "(define __ (lambda (_) __))" 
-     ++ fnl () ++ fnl()
-   else mt ())
+  str ";; This extracted scheme code relies on some additional macros\n" ++ 
+  str ";; available at http://www.pps.jussieu.fr/~letouzey/scheme\n" ++
+  str "(load \"macros_extr.scm\")\n\n" ++
+  (if usf.mldummy then str "(define __ (lambda (_) __))\n\n" else mt ())
 
 let pr_id id = 
   let s = string_of_id id in
@@ -60,7 +54,7 @@ let pp_apply st _ = function
   | [] -> st 
   | [a] -> hov 2 (paren (st ++ spc () ++ a))
   | args -> hov 2 (paren (str "@ " ++ st ++ 
-			  (prlist (fun x -> spc () ++ x) args))) 
+			  (prlist_strict (fun x -> spc () ++ x) args)))
 
 (*s The pretty-printer for Scheme syntax *)
 
@@ -189,9 +183,11 @@ let pp_structure_elem = function
 
 let pp_struct = 
   let pp_sel (mp,sel) = 
-    push_visible mp; let p = prlist pp_structure_elem sel in pop_visible (); p
+    push_visible mp; 
+    let p = prlist_strict pp_structure_elem sel in 
+    pop_visible (); p
   in
-  prlist pp_sel
+  prlist_strict pp_sel
 
 let scheme_descr = {
   keywords = keywords;  

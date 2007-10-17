@@ -321,11 +321,14 @@ let print_structure_to_file (fn,si,mo) struc =
   let ft = match cout with 
     | None -> !Pp_control.std_ft
     | Some cout -> Pp_control.with_output_to cout in 
-  let devnull = Format.make_formatter (fun _ _ _ -> ()) (fun _ -> ()) in 
   begin try 
     msg_with ft (d.preamble mo used_modules unsafe_needs);
-    msg_with devnull (d.pp_struct struc); (* for computing objects to duplicate *)
-    reset_renaming_tables OnlyLocal; 
+    if lang () = Ocaml then begin 
+      (* for computing objects to duplicate *)
+      let devnull = Format.make_formatter (fun _ _ _ -> ()) (fun _ -> ()) in
+      msg_with devnull (d.pp_struct struc);
+      reset_renaming_tables OnlyLocal; 
+    end; 
     msg_with ft (d.pp_struct struc);
     option_iter close_out cout; 
   with e -> 

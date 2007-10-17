@@ -255,6 +255,9 @@ val pr_opt : ('a -> std_ppcmds) -> 'a option -> std_ppcmds
 val nth : int -> std_ppcmds
 
 val prlist : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
+(* unlike all other functions below, [prlist] works lazily.
+   if a strict behavior is needed, use [prlist_strict] instead. *)
+val prlist_strict :  ('a -> std_ppcmds) -> 'a list -> std_ppcmds
 val prlist_with_sep :
    (unit -> std_ppcmds) -> ('b -> std_ppcmds) -> 'b list -> std_ppcmds
 val prvect : ('a -> std_ppcmds) -> 'a array -> std_ppcmds

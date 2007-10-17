@@ -69,34 +69,21 @@ let keywords =
     "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr" ; "unit" ; "_" ; "__" ] 
   Idset.empty
 
+let pp_open mp = str ("open "^ string_of_modfile mp ^"\n")
+
 let preamble _ used_modules usf = 
-  let pp_mp = function 
-    | MPfile d -> pr_upper_id (List.hd (repr_dirpath d))
-    | _ -> assert false 
-  in 
-  prlist (fun mp -> str "open " ++ pp_mp mp ++ fnl ()) used_modules
-  ++ 
-  (if used_modules = [] then mt () else fnl ())
-  ++
-  (if usf.tdummy || usf.tunknown then str "type __ = Obj.t" ++ fnl() else mt())
-  ++
+  prlist pp_open used_modules ++
+  (if used_modules = [] then mt () else fnl ()) ++
+  (if usf.tdummy || usf.tunknown then str "type __ = Obj.t\n" else mt()) ++
   (if usf.mldummy then 
-     str "let __ = let rec f _ = Obj.repr f in Obj.repr f" ++ fnl ()
-   else mt ()) 
-  ++ 
+     str "let __ = let rec f _ = Obj.repr f in Obj.repr f\n"
+   else mt ()) ++
   (if usf.tdummy || usf.tunknown || usf.mldummy then fnl () else mt ())
 
 let sig_preamble _ used_modules usf =
-  let pp_mp = function 
-    | MPfile d -> pr_upper_id (List.hd (repr_dirpath d))
-    | _ -> assert false 
-  in 
-  prlist (fun mp -> str "open " ++ pp_mp mp ++ fnl ()) used_modules
-  ++ 
-  (if used_modules = [] then mt () else fnl ())
-  ++
-  (if usf.tdummy || usf.tunknown then str "type __ = Obj.t" ++ fnl() ++ fnl () 
-   else mt()) 
+  prlist pp_open used_modules ++
+  (if used_modules = [] then mt () else fnl ()) ++
+  (if usf.tdummy || usf.tunknown then str "type __ = Obj.t\n\n" else mt())
 
 (*s The pretty-printer for Ocaml syntax*)
 
@@ -648,7 +635,8 @@ let pp_struct s =
     let p = pp_structure_elem s ++ fnl2 () in 
     pop_visible (); p
   in
-  prlist (fun (mp,sel) -> prlist identity (map_succeed (pp mp) sel)) s
+  prlist_strict 
+    (fun (mp,sel) -> prlist_strict identity (map_succeed (pp mp) sel)) s
 
 let pp_signature s = 
   let pp mp s = 
@@ -656,7 +644,8 @@ let pp_signature s =
     let p = pp_specif s ++ fnl2 () in 
     pop_visible (); p
   in 
-  prlist (fun (mp,sign) -> prlist identity (map_succeed (pp mp) sign)) s
+  prlist_strict
+    (fun (mp,sign) -> prlist_strict identity (map_succeed (pp mp) sign)) s
 
 let pp_decl d = 
   try pp_decl d with Failure "empty phrase" -> mt ()

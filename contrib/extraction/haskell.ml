@@ -31,20 +31,17 @@ let keywords =
   Idset.empty
 
 let preamble mod_name used_modules usf =
-  let pp_mp = function 
-    | MPfile d -> pr_upper_id (List.hd (repr_dirpath d))
-    | _ -> assert false 
-  in  
+  let pp_import mp = str ("import qualified "^ string_of_modfile mp ^"\n")
+  in 
   (if not usf.magic then mt () 
    else
      str "{-# OPTIONS_GHC -cpp -fglasgow-exts #-}\n" ++
      str "{- For Hugs, use the option -F\"cpp -P -traditional\" -}\n\n")
   ++
-  str "module " ++ pr_upper_id mod_name ++ str " where" ++ fnl () 
-  ++ fnl() ++ 
-  str "import qualified Prelude" ++ fnl() ++
-  prlist (fun mp -> str "import qualified " ++ pp_mp mp ++ fnl ()) used_modules
-  ++ fnl () ++
+  str "module " ++ pr_upper_id mod_name ++ str " where" ++ fnl2 () ++
+  str "import qualified Prelude" ++ fnl () ++
+  prlist pp_import used_modules ++ fnl () ++ 
+  (if used_modules = [] then mt () else fnl ()) ++
   (if not usf.magic then mt () 
    else str "\
 #ifdef __GLASGOW_HASKELL__
@@ -54,14 +51,10 @@ unsafeCoerce = GHC.Base.unsafeCoerce#
 -- HUGS
 import qualified IOExts
 unsafeCoerce = IOExts.unsafeCoerce
-#endif")
-  ++
-  fnl() ++ fnl() 
+#endif" ++ fnl2 ())
   ++
   (if not usf.mldummy then mt () 
-   else
-     str "__ = Prelude.error \"Logical or arity value used\"" 
-     ++ fnl () ++ fnl())
+   else str "__ = Prelude.error \"Logical or arity value used\"" ++ fnl2 ())
 
 let pp_abst = function
   | [] -> (mt ())
@@ -320,9 +313,11 @@ let pp_structure_elem = function
 
 let pp_struct = 
   let pp_sel (mp,sel) = 
-    push_visible mp; let p = prlist pp_structure_elem sel in pop_visible (); p
+    push_visible mp; 
+    let p = prlist_strict pp_structure_elem sel in 
+    pop_visible (); p
   in 
-  prlist pp_sel 
+  prlist_strict pp_sel 
 
 
 let haskell_descr = {
