@@ -116,7 +116,8 @@ let standard sds sps =
   end;
   print "clean:\n";
   print "\trm -f *.cmo *.cmi *.cmx *.o $(VOFILES) $(VIFILES) $(GFILES) *~\n";
-  print "\trm -f all.ps all-gal.ps $(HTMLFILES) $(GHTMLFILES)\n";
+  print "\trm -f all.ps all-gal.ps all.glob $(VFILES:.v=.glob) $(HTMLFILES) \
+         $(GHTMLFILES) $(VFILES:.v=.tex) $(VFILES:.v=.g.tex)\n";
   List.iter
     (fun (file,_,_) -> print "\t- rm -f "; print file; print "\n")
     sps;
@@ -138,17 +139,17 @@ let standard sds sps =
 
 let implicit () =
   let ml_rules () =
-    print ".mli.cmi:\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
-    print ".ml.cmo:\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $(PP) $<\n\n";
-    print ".ml.cmx:\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $(PP) $<\n\n";
+    print "%.cmi: %.mli\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
+    print "%.cmo: %.ml\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $(PP) $<\n\n";
+    print "%.cmx: %.ml\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $(PP) $<\n\n";
   and v_rule () =
-    print ".v.vo:\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
-    print ".v.vi:\n\t$(COQC) -i $(COQDEBUG) $(COQFLAGS) $*\n\n";
-    print ".v.g:\n\t$(GALLINA) $<\n\n";
-    print ".v.tex:\n\t$(COQDOC) -latex $< -o $@\n\n";
-    print ".v.html:\n\t$(COQDOC) -html $< -o $@\n\n";
-    print ".v.g.tex:\n\t$(COQDOC) -latex -g $< -o $@\n\n";
-    print ".v.g.html:\n\t$(COQDOC) -html -g $< -o $@\n\n"
+    print "%.vo %.glob: %.v\n\t$(COQC) -dump-glob $*.glob $(COQDEBUG) $(COQFLAGS) $*\n\n";
+    print "%.vi: %.v\n\t$(COQC) -i $(COQDEBUG) $(COQFLAGS) $*\n\n";
+    print "%.g: %.v\n\t$(GALLINA) $<\n\n";
+    print "%.tex: %.v\n\t$(COQDOC) -latex $< -o $@\n\n";
+    print "%.html: %.v %.glob\n\t$(COQDOC) -glob-from $*.glob  -html $< -o $@\n\n";
+    print "%.g.tex: %.v\n\t$(COQDOC) -latex -g $< -o $@\n\n";
+    print "%.g.html: %.v %.glob\n\t$(COQDOC) -glob-from $*.glob -html -g $< -o $@\n\n"
   and ml_suffixes =
     if !some_mlfile then 
       [ ".mli"; ".ml"; ".cmo"; ".cmi"; ".cmx" ]
@@ -197,7 +198,7 @@ let variables l =
   if !impredicative_set = true then print "OTHERFLAGS=-impredicative-set\n";
   print "COQFLAGS=-q $(OPT) $(COQLIBS) $(OTHERFLAGS) $(COQ_XML)\n";
   print "COQC=$(COQBIN)coqc\n";
-  print "GALLINA=gallina\n";
+  print "GALLINA=$(COQBIN)gallina\n";
   print "COQDOC=$(COQBIN)coqdoc\n";
   print "CAMLC=ocamlc -c\n";
   print "CAMLOPTC=ocamlopt -c\n";
