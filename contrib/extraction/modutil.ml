@@ -86,56 +86,6 @@ let rec replicate_msid meb mtb = match meb,mtb with
       if msig' == msig then MTBsig (msid, msig) else MTBsig (msid, msig')
   | _ -> mtb
 
-
-(*S More functions concerning [module_path]. *)
-
-let rec mp_length = function
-  | MPdot (mp, _) -> 1 + (mp_length mp)
-  | _ -> 1
-
-let rec prefixes_mp mp = match mp with 
-  | MPdot (mp',_) -> MPset.add mp (prefixes_mp mp')
-  | _ -> MPset.singleton mp 
-
-let rec common_prefix prefixes_mp1 mp2 = 
-  if MPset.mem mp2 prefixes_mp1 then mp2 
-  else match mp2 with 
-    | MPdot (mp,_) -> common_prefix prefixes_mp1 mp 
-    | _ -> raise Not_found
-
-let common_prefix_from_list mp0 mpl = 
-  let prefixes_mp0 = prefixes_mp mp0 in 
-  let rec f = function 
-    | [] -> raise Not_found
-    | mp1 :: l -> try common_prefix prefixes_mp0 mp1 with Not_found -> f l
-  in f mpl
-
-let rec modfile_of_mp mp = match mp with 
-  | MPfile _ -> mp
-  | MPdot (mp,_) -> modfile_of_mp mp 
-  | _ -> raise Not_found
-
-let rec parse_labels ll = function 
-  | MPdot (mp,l) -> parse_labels (l::ll) mp 
-  | mp -> mp,ll
-
-let labels_of_mp mp = parse_labels [] mp 
-
-let labels_of_ref r = 
- let mp,_,l =
-  match r with
-     ConstRef con -> repr_con con
-   | IndRef (kn,_)
-   | ConstructRef ((kn,_),_) -> repr_kn kn
-   | VarRef _ -> assert false
- in
-  parse_labels [l] mp
-
-let rec add_labels_mp mp = function 
-  | [] -> mp 
-  | l :: ll -> add_labels_mp (MPdot (mp,l)) ll
-
-
 (*S Functions upon ML modules. *)
 
 (*s Apply some functions upon all [ml_decl] and [ml_spec] found in a 
@@ -200,7 +150,9 @@ let ind_iter_references do_term do_cons do_type kn ind =
   let packet_iter ip p = 
     do_type (IndRef ip); 
     if lang () = Ocaml then 
-      option_iter (fun kne -> do_type (IndRef (kne,snd ip))) ind.ind_equiv; 
+      (match ind.ind_equiv with 
+	 | Equiv kne -> do_type (IndRef (kne, snd ip)); 
+	 | _ -> ()); 
     Array.iteri (fun j -> cons_iter (ip,j+1)) p.ip_types 
   in
   if lang () = Ocaml then record_iter_references do_term ind.ind_info; 
@@ -228,13 +180,13 @@ let struct_iter_references do_term do_cons do_type =
 
 (*s Get all references used in one [ml_structure], either in [list] or [set]. *)
 
-type 'a updown = { mutable up : 'a ; mutable down : 'a }
+type 'a kinds = { mutable typ : 'a ; mutable trm : 'a; mutable cons : 'a }
 
 let struct_get_references empty add struc = 
-  let o = { up = empty ; down = empty } in 
-  let do_term r = o.down <- add r o.down in
-  let do_cons r = o.up <- add r o.up in 
-  let do_type = if lang () = Haskell then do_cons else do_term in 
+  let o = { typ = empty ; trm = empty ; cons = empty } in 
+  let do_type r = o.typ <- add r o.typ in 
+  let do_term r = o.trm <- add r o.trm in
+  let do_cons r = o.cons <- add r o.cons in 
   struct_iter_references do_term do_cons do_type struc; o
 
 let struct_get_references_set = struct_get_references Refset.empty Refset.add
@@ -251,7 +203,9 @@ end
 
 let struct_get_references_list struc = 
   let o = struct_get_references Orefset.empty Orefset.add struc in 
-  { up = Orefset.list o.up; down = Orefset.list o.down }
+  { typ = Orefset.list o.typ; 
+    trm = Orefset.list o.trm; 
+    cons = Orefset.list o.cons }
 
 
 (*s Searching occurrences of a particular term (no lifting done). *)
@@ -363,38 +317,40 @@ let dfix_to_mlfix rv av i =
   let c = Array.map (subst 0) av 
   in MLfix(i, ids, c)
 
-let rec optim prm s = function
+let rec optim to_appear s = function
   | [] -> []
   | (Dtype (r,_,Tdummy _) | Dterm(r,MLdummy,_)) as d :: l ->
-      if List.mem r prm.to_appear then d :: (optim prm s l) else optim prm s l
+      if List.mem r to_appear 
+      then d :: (optim to_appear s l) 
+      else optim to_appear s l
   | Dterm (r,t,typ) :: l ->
       let t = normalize (ast_glob_subst !s t) in 
       let i = inline r t in 
       if i then s := Refmap.add r t !s; 
-      if not i || prm.modular || List.mem r prm.to_appear 
+      if not i || modular () || List.mem r to_appear 
       then 
 	let d = match optimize_fix t with 
 	  | MLfix (0, _, [|c|]) -> 
 	      Dfix ([|r|], [|ast_subst (MLglob r) c|], [|typ|])
 	  | t -> Dterm (r, t, typ)
-	in d :: (optim prm s l)
-      else optim prm s l
-  | d :: l -> d :: (optim prm s l)
+	in d :: (optim to_appear s l)
+      else optim to_appear s l
+  | d :: l -> d :: (optim to_appear s l)
 
-let rec optim_se top prm s = function 
+let rec optim_se top to_appear s = function 
   | [] -> [] 
   | (l,SEdecl (Dterm (r,a,t))) :: lse -> 
       let a = normalize (ast_glob_subst !s a) in 
       let i = inline r a in 
       if i then s := Refmap.add r a !s; 
-      if top && i && not prm.modular && not (List.mem r prm.to_appear)
-      then optim_se top prm s lse
+      if top && i && not (modular ()) && not (List.mem r to_appear)
+      then optim_se top to_appear s lse
       else 
 	let d = match optimize_fix a with 
 	  | MLfix (0, _, [|c|]) -> 
 	      Dfix ([|r|], [|ast_subst (MLglob r) c|], [|t|])
 	  | a -> Dterm (r, a, t)
-	in (l,SEdecl d) :: (optim_se top prm s lse)
+	in (l,SEdecl d) :: (optim_se top to_appear s lse)
   | (l,SEdecl (Dfix (rv,av,tv))) :: lse -> 
       let av = Array.map (fun a -> normalize (ast_glob_subst !s a)) av in 
       let all = ref true in 
@@ -405,22 +361,22 @@ let rec optim_se top prm s = function
 	then s := Refmap.add rv.(i) (dfix_to_mlfix rv av i) !s
 	else all := false
       done; 
-      if !all && top && not prm.modular 
-	&& (array_for_all (fun r -> not (List.mem r prm.to_appear)) rv)  
-      then optim_se top prm s lse
-      else (l,SEdecl (Dfix (rv, av, tv))) :: (optim_se top prm s lse)
+      if !all && top && not (modular ())
+	&& (array_for_all (fun r -> not (List.mem r to_appear)) rv)  
+      then optim_se top to_appear s lse
+      else (l,SEdecl (Dfix (rv, av, tv))) :: (optim_se top to_appear s lse)
   | (l,SEmodule m) :: lse -> 
-      let m = { m with ml_mod_expr = optim_me prm s m.ml_mod_expr}
-      in (l,SEmodule m) :: (optim_se top prm s lse)
-  | se :: lse -> se :: (optim_se top prm s lse) 
+      let m = { m with ml_mod_expr = optim_me to_appear s m.ml_mod_expr}
+      in (l,SEmodule m) :: (optim_se top to_appear s lse)
+  | se :: lse -> se :: (optim_se top to_appear s lse) 
 
-and optim_me prm s = function 
-  | MEstruct (msid, lse) -> MEstruct (msid, optim_se false prm s lse)
+and optim_me to_appear s = function 
+  | MEstruct (msid, lse) -> MEstruct (msid, optim_se false to_appear s lse)
   | MEident mp as me -> me
-  | MEapply (me, me') -> MEapply (optim_me prm s me, optim_me prm s me')
-  | MEfunctor (mbid,mt,me) -> MEfunctor (mbid,mt, optim_me prm s me)
+  | MEapply (me, me') -> 
+      MEapply (optim_me to_appear s me, optim_me to_appear s me')
+  | MEfunctor (mbid,mt,me) -> MEfunctor (mbid,mt, optim_me to_appear s me)
 
-let optimize_struct prm before struc = 
+let optimize_struct to_appear struc = 
   let subst = ref (Refmap.empty : ml_ast Refmap.t) in 
-  option_iter (fun l -> ignore (optim prm subst l)) before; 
-  List.map (fun (mp,lse) -> (mp, optim_se true prm subst lse)) struc
+  List.map (fun (mp,lse) -> (mp, optim_se true to_appear subst lse)) struc

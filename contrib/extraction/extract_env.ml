@@ -21,7 +21,9 @@ open Modutil
 open Common
 open Mod_subst
 
-(*s Obtaining Coq environment. *)
+(***************************************)
+(*S Part I: computing Coq environment. *)
+(***************************************)
 
 let toplevel_env () = 
   let seg = Lib.contents_after None in 
@@ -156,22 +158,19 @@ let rec extract_msig env mp = function
 	(l,Spec s) :: (extract_msig env mp msig)
       end
   | (l,SPBmodule {msb_modtype=mtb}) :: msig -> 
-      (l,Smodule (extract_mtb env None mtb)) :: (extract_msig env mp msig)
+      (l,Smodule (extract_mtb env mtb)) :: (extract_msig env mp msig)
   | (l,SPBmodtype mtb) :: msig -> 
-      (l,Smodtype (extract_mtb env None mtb)) :: (extract_msig env mp msig)
+      (l,Smodtype (extract_mtb env mtb)) :: (extract_msig env mp msig)
 
-and extract_mtb env mpo = function 
+and extract_mtb env = function 
   | MTBident kn -> Visit.add_kn kn; MTident kn 
   | MTBfunsig (mbid, mtb, mtb') -> 
       let mp = MPbound mbid in 
       let env' = Modops.add_module mp (Modops.module_body_of_type mtb) env in 
-      MTfunsig (mbid, extract_mtb env None mtb, 
-		extract_mtb env' None mtb') 
+      MTfunsig (mbid, extract_mtb env mtb, 
+		extract_mtb env' mtb') 
   | MTBsig (msid, msig) -> 
-      let mp, msig = match mpo with 
-	| None -> MPself msid, msig
-	| Some mp -> mp, Modops.subst_signature_msid msid mp msig
-      in
+      let mp = MPself msid in 
       let env' = Modops.add_signature mp msig env in 
       MTsig (msid, extract_msig env' mp msig) 
 
@@ -216,19 +215,20 @@ let rec extract_msb env mp all = function
       let ms = extract_msb env mp all msb in
       let kn = make_kn mp empty_dirpath l in
       if all || Visit.needed_kn kn then 
-	(l,SEmodtype (extract_mtb env None mtb)) :: ms
+	(l,SEmodtype (extract_mtb env mtb)) :: ms
       else ms
 
 and extract_meb env mpo all = function 
-  | MEBident (MPfile d) -> error_MPfile_as_mod d (* temporary (I hope) *)
-  | MEBident mp -> Visit.add_mp mp; MEident mp 
+  | MEBident mp -> 
+      if is_modfile mp && not (modular ()) then error_MPfile_as_mod mp; 
+      Visit.add_mp mp; MEident mp 
   | MEBapply (meb, meb',_) -> 
       MEapply (extract_meb env None true meb, 
 	       extract_meb env None true meb')
   | MEBfunctor (mbid, mtb, meb) -> 
       let mp = MPbound mbid in 
       let env' = Modops.add_module mp (Modops.module_body_of_type mtb) env in 
-      MEfunctor (mbid, extract_mtb env None mtb, 
+      MEfunctor (mbid, extract_mtb env mtb, 
 		 extract_meb env' None true meb)
   | MEBstruct (msid, msb) -> 
       let mp,msb = match mpo with 
@@ -247,7 +247,7 @@ and extract_module env mp all mb =
   (* a msid different from the one of the module. Here is the patch. *)
   let mtb = replicate_msid meb mtb in
   { ml_mod_expr = extract_meb env (Some mp) all meb;
-    ml_mod_type = extract_mtb env None mtb }
+    ml_mod_type = extract_mtb env mtb }
 
 let unpack = function MEstruct (_,sel) -> sel | _ -> assert false 
 
@@ -260,14 +260,118 @@ let mono_environment refs mpl =
   List.rev_map 
     (fun (mp,m) -> mp, unpack (extract_meb env (Some mp) false m)) l
 
-    
-(*s Recursive extraction in the Coq toplevel. The vernacular command is
-    \verb!Recursive Extraction! [qualid1] ... [qualidn]. We use [extract_env]
-    to get the saturated environment to extract. *)
+(**************************************)
+(*S Part II : Input/Output primitives *)
+(**************************************)
 
-let mono_extraction (f,m) qualids = 
-  check_inside_section (); 
-  check_inside_module ();
+let descr () = match lang () with 
+  | Ocaml -> Ocaml.ocaml_descr 
+  | Haskell -> Haskell.haskell_descr 
+  | Scheme -> Scheme.scheme_descr
+
+(* From a filename string "foo.ml" or "foo", builds "foo.ml" and "foo.mli" 
+   Works similarly for the other languages. *)
+
+let mono_filename f = 
+  let d = descr () in 
+  match f with 
+    | None -> None, None, id_of_string "Main"
+    | Some f -> 
+	let f = 
+	  if Filename.check_suffix f d.file_suffix then 
+	    Filename.chop_suffix f d.file_suffix 
+	  else f
+	in 
+	Some (f^d.file_suffix), option_map ((^) f) d.sig_suffix, id_of_string f
+
+(* Builds a suitable filename from a module id *)
+
+let module_filename m = 
+  let d = descr () in 
+  let f = if d.capital_file then String.capitalize else String.uncapitalize in 
+  let fn = f (string_of_id m) in
+  Some (fn^d.file_suffix), option_map ((^) fn) d.sig_suffix, m
+
+(*s Extraction of one decl to stdout. *)
+
+let print_one_decl struc mp decl =
+  let d = descr () in 
+  reset_renaming_tables AllButExternal; 
+  ignore (create_renamings struc);
+  push_visible mp; 
+  msgnl (d.pp_decl decl); 
+  pop_visible ()
+
+(*s Extraction of a ml struct to a file. *)
+
+let print_structure_to_file (fn,si,mo) struc =
+  let d = descr () in 
+  reset_renaming_tables AllButExternal; 
+  let used_modules = create_renamings struc in 
+  let unsafe_needs = {
+    mldummy = struct_ast_search ((=) MLdummy) struc; 
+    tdummy = struct_type_search Mlutil.isDummy struc; 
+    tunknown = struct_type_search ((=) Tunknown) struc; 
+    magic = 
+      if lang () <> Haskell then false 
+      else struct_ast_search (function MLmagic _ -> true | _ -> false) struc }
+  in
+  (* print the implementation *)
+  let cout = option_map open_out fn in 
+  let ft = match cout with 
+    | None -> !Pp_control.std_ft
+    | Some cout -> Pp_control.with_output_to cout in 
+  let devnull = Format.make_formatter (fun _ _ _ -> ()) (fun _ -> ()) in 
+  begin try 
+    msg_with ft (d.preamble mo used_modules unsafe_needs);
+    msg_with devnull (d.pp_struct struc); (* for computing objects to duplicate *)
+    reset_renaming_tables OnlyLocal; 
+    msg_with ft (d.pp_struct struc);
+    option_iter close_out cout; 
+  with e -> 
+    option_iter close_out cout; raise e
+  end;
+  option_iter info_file fn;
+  (* print the signature *)
+  option_iter 
+    (fun si -> 
+       let cout = open_out si in
+       let ft = Pp_control.with_output_to cout in
+       begin try 
+	 msg_with ft (d.sig_preamble mo used_modules unsafe_needs);
+	 reset_renaming_tables OnlyLocal;
+	 msg_with ft (d.pp_sig (signature_of_structure struc));
+	 close_out cout;
+       with e -> 
+	 close_out cout; raise e 
+       end; 
+       info_file si)
+    si
+
+
+(*********************************************)
+(*s Part III: the actual extraction commands *)
+(*********************************************)
+
+
+let reset () =  
+  Visit.reset (); reset_tables (); reset_renaming_tables Everything
+
+let init modular = 
+  check_inside_section (); check_inside_module ();
+  set_keywords (descr ()).keywords;
+  set_modular modular;
+  reset ();
+  if modular && lang () = Scheme then error_scheme ()
+
+
+(*s Recursive extraction in the Coq toplevel. The vernacular command is
+    \verb!Recursive Extraction! [qualid1] ... [qualidn]. Also used when 
+    extracting to a file with the command: 
+    \verb!Extraction "file"! [qualid1] ... [qualidn]. *)
+
+let full_extraction f qualids = 
+  init false; 
   let rec find = function 
     | [] -> [],[]
     | q::l -> 
@@ -276,116 +380,44 @@ let mono_extraction (f,m) qualids =
 	  let mp = Nametab.locate_module (snd (qualid_of_reference q))
 	  in refs,(mp::mps)
 	with Not_found -> (Nametab.global q)::refs, mps 
-  in 	    
+  in  
   let refs,mps = find qualids in
-  let prm = {modular=false; mod_name = m; to_appear= refs} in
-  let struc = optimize_struct prm None (mono_environment refs mps) in 
-  print_structure_to_file f prm struc; 
-  Visit.reset ();
-  reset_tables ()
+  let struc = optimize_struct refs (mono_environment refs mps) in 
+  warning_axioms (); 
+  print_structure_to_file (mono_filename f) struc; 
+  reset ()
 
-let extraction_rec = mono_extraction (None,id_of_string "Main")
 
-(*s Extraction in the Coq toplevel. We display the extracted term in
-    Ocaml syntax and we use the Coq printers for globals. The
-    vernacular command is \verb!Extraction! [qualid]. *)
+(*s Simple extraction in the Coq toplevel. The vernacular command 
+    is \verb!Extraction! [qualid]. *)
 
-let extraction qid = 
-  check_inside_section (); 
-  check_inside_module ();
+let simple_extraction qid = 
+  init false; 
   try 
     let _ = Nametab.locate_module (snd (qualid_of_reference qid)) in 
-    extraction_rec [qid]
+    full_extraction None [qid]
   with Not_found -> 
     let r = Nametab.global qid in 
     if is_custom r then
       msgnl (str "User defined extraction:" ++ spc () ++ 
 	       str (find_custom r) ++ fnl ()) 
     else
-      let prm = 
-	{ modular = false; mod_name = id_of_string "Main"; to_appear = [r]} in
-      let struc = optimize_struct prm None (mono_environment [r] []) in 
+      let struc = optimize_struct [r] (mono_environment [r] []) in
       let d = get_decl_in_structure r struc in 
+      warning_axioms (); 
       print_one_decl struc (modpath_of_r r) d;
-      Visit.reset (); 
-      reset_tables () 
-
-(*s Extraction to a file (necessarily recursive). 
-    The vernacular command is 
-    \verb!Extraction "file"! [qualid1] ... [qualidn].*)
-
-let lang_suffix () = match lang () with 
-  | Ocaml -> ".ml",".mli"
-  | Haskell -> ".hs",".hi"
-  | Scheme -> ".scm",".scm"
-  | Toplevel -> assert false
-
-let filename f = 
-  let s,s' = lang_suffix () in
-  if Filename.check_suffix f s then 
-    let f' = Filename.chop_suffix f s in 
-    Some (f,f'^s'),id_of_string f' 
-  else Some (f^s,f^s'),id_of_string f
-
-let extraction_file f vl =
-  if lang () = Toplevel then error_toplevel () 
-  else mono_extraction (filename f) vl
-
-(*s Extraction of a module at the toplevel. *)
-
-let extraction_module m = 
-  check_inside_section (); 
-  check_inside_module ();
-  begin match lang () with 
-    | Toplevel -> error_toplevel ()
-    | Scheme -> error_scheme ()
-    | _ -> ()
-  end; 
-  let q = snd (qualid_of_reference m) in 
-  let mp = 
-    try Nametab.locate_module q with Not_found -> error_unknown_module q
-  in 
-  let b = is_modfile mp in 
-  let prm = {modular=b; mod_name = id_of_string ""; to_appear= []} in
-  Visit.reset ();
-  Visit.add_mp mp; 
-  let env = Global.env () in 
-  let l = List.rev (environment_until None) in 
-  let struc = 
-    List.rev_map (fun (mp,m) -> mp, unpack (extract_meb env (Some mp) b m)) l
-  in
-  let struc = optimize_struct prm None struc in 
-  let struc = 
-    let bmp = base_mp mp in 
-    try [bmp, List.assoc bmp struc] with Not_found -> assert false
-  in
-  print_structure_to_file None prm struc; 
-  Visit.reset (); 
-  reset_tables ()
+      reset ()
 
 
 (*s (Recursive) Extraction of a library. The vernacular command is 
   \verb!(Recursive) Extraction Library! [M]. *) 
 
-let module_file_name m = match lang () with 
-  | Ocaml -> let f = String.uncapitalize (string_of_id m) in  f^".ml", f^".mli"
-  | Haskell -> let f = String.capitalize (string_of_id m) in f^".hs", f^".hi"
-  | _ -> assert false
-
-let dir_module_of_id m = 
-  let q = make_short_qualid m in 
-  try Nametab.full_name_module q with Not_found -> error_unknown_module q
-
 let extraction_library is_rec m =
-  check_inside_section (); 
-  check_inside_module ();  
-  begin match lang () with 
-    | Toplevel -> error_toplevel ()
-    | Scheme -> error_scheme ()
-    | _ -> () 
-  end; 
-  let dir_m = dir_module_of_id m in 
-  Visit.reset (); 
+  init true; 
+  let dir_m = 
+    let q = make_short_qualid m in 
+    try Nametab.full_name_module q with Not_found -> error_unknown_module q
+  in 
   Visit.add_mp (MPfile dir_m); 
   let env = Global.env () in	
   let l = List.rev (environment_until (Some dir_m)) in 
@@ -395,22 +427,20 @@ let extraction_library is_rec m =
     else l
   in 
   let struc = List.fold_left select [] l in 
-  let dummy_prm = {modular=true; mod_name=m; to_appear=[]} in
-  let struc = optimize_struct dummy_prm None struc in 
+  let struc = optimize_struct [] struc in 
+  warning_axioms (); 
+  record_contents_fstlev struc; 
   let rec print = function 
     | [] -> () 
     | (MPfile dir, _) :: l when not is_rec && dir <> dir_m -> print l 
     | (MPfile dir, sel) as e :: l -> 
 	let short_m = snd (split_dirpath dir) in
-	let f = module_file_name short_m in 
-	let prm = {modular=true;mod_name=short_m;to_appear=[]} in
-	print_structure_to_file (Some f) prm [e]; 
+	print_structure_to_file (module_filename short_m) [e]; 
 	print l 
     | _ -> assert false
   in 
   print struc; 
-  Visit.reset ();
-  reset_tables ()
+  reset ()
 
 
 

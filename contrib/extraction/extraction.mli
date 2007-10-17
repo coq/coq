@@ -26,16 +26,6 @@ val extract_fixpoint :
 
 val extract_inductive : env -> kernel_name -> ml_ind
 
-(*s ML declaration corresponding to a Coq reference. *)
-
-val extract_declaration : env -> global_reference -> ml_decl
-
-(*s Without doing complete extraction, just guess what a constant would be. *) 
-
-type kind = Logical | Term | Type 
-
-val constant_kind : env -> constant_body -> kind
-
 (*s Is a [ml_decl] or a [ml_spec] logical ? *) 
 
 val logical_decl : ml_decl -> bool

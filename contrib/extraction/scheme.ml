@@ -18,7 +18,7 @@ open Libnames
 open Miniml
 open Mlutil
 open Table
-open Ocaml
+open Common
 
 (*s Scheme renaming issues. *)
 
@@ -29,14 +29,14 @@ let keywords =
       "error"; "delay"; "force"; "_"; "__"] 
     Idset.empty
 
-let preamble _ _ (mldummy,_,_) _ = 
+let preamble _ _ usf = 
   str ";; This extracted scheme code relies on some additional macros" ++ 
   fnl () ++
   str ";; available at http://www.pps.jussieu.fr/~letouzey/scheme" ++
   fnl () ++
   str "(load \"macros_extr.scm\")" ++
   fnl () ++ fnl () ++
-  (if mldummy then 
+  (if usf.mldummy then 
      str "(define __ (lambda (_) __))" 
      ++ fnl () ++ fnl()
    else mt ())
@@ -62,12 +62,9 @@ let pp_apply st _ = function
   | args -> hov 2 (paren (str "@ " ++ st ++ 
 			  (prlist (fun x -> spc () ++ x) args))) 
 
-(*s The pretty-printing functor. *)
+(*s The pretty-printer for Scheme syntax *)
 
-module Make = functor(P : Mlpp_param) -> struct
-
-let pp_global r = P.pp_global [initial_path] r
-let empty_env () = [], P.globals()
+let pp_global k r = str (Common.pp_global k r)
 
 (*s Pretty-printing of expressions.  *)
 
@@ -95,12 +92,12 @@ let rec pp_expr env args =
 			 (pr_id (List.hd i) ++ spc () ++ pp_expr env [] a1)) 
 		    ++ spc () ++ hov 0 (pp_expr env' [] a2)))))
     | MLglob r -> 
-	apply (pp_global r)
+	apply (pp_global Term r)
     | MLcons (i,r,args') ->
 	assert (args=[]);
 	let st = 
 	  str "`" ++ 
-	  paren (pp_global r ++ 
+	  paren (pp_global Cons r ++ 
 		 (if args' = [] then mt () else spc ()) ++
 		 prlist_with_sep spc (pp_cons_args env) args')
 	in 
@@ -125,7 +122,7 @@ let rec pp_expr env args =
 
 and pp_cons_args env = function 
   | MLcons (i,r,args) when i<>Coinductive -> 
-      paren (pp_global r ++ 
+      paren (pp_global Cons r ++ 
 	     (if args = [] then mt () else spc ()) ++
 	     prlist_with_sep spc (pp_cons_args env) args)
   | e -> str "," ++ pp_expr env [] e
@@ -137,7 +134,7 @@ and pp_one_pat env (r,ids,t) =
     if ids = [] then mt () 
     else (str " " ++ prlist_with_sep spc pr_id (List.rev ids))
   in 
-  (pp_global r ++ args), (pp_expr env' [] t)
+  (pp_global Cons r ++ args), (pp_expr env' [] t)
   
 and pp_pat env pv = 
   prvect_with_sep fnl  
@@ -160,11 +157,11 @@ and pp_fix env j (ids,bl) args =
 
 (*s Pretty-printing of a declaration. *)
 
-let pp_decl _ = function
+let pp_decl = function
   | Dind _ -> mt ()
   | Dtype _ -> mt () 
   | Dfix (rv, defs,_) ->
-      let ppv = Array.map pp_global rv in 
+      let ppv = Array.map (pp_global Term) rv in 
       prvect_with_sep fnl 
 	(fun (pi,ti) -> 
 	   hov 2 
@@ -177,23 +174,33 @@ let pp_decl _ = function
       if is_inline_custom r then mt () 
       else 
 	if is_custom r then 
-	  hov 2 (paren (str "define " ++ pp_global r ++ spc () ++ 
+	  hov 2 (paren (str "define " ++ pp_global Term r ++ spc () ++ 
 			  str (find_custom r))) ++ fnl () ++ fnl () 
 	else 
-	  hov 2 (paren (str "define " ++ pp_global r ++ spc () ++
+	  hov 2 (paren (str "define " ++ pp_global Term r ++ spc () ++
 			  pp_expr (empty_env ()) [] a)) ++ fnl () ++ fnl ()
 
-let pp_structure_elem mp = function 
-  | (l,SEdecl d) -> pp_decl mp d
+let pp_structure_elem = function 
+  | (l,SEdecl d) -> pp_decl d
   | (l,SEmodule m) -> 
       failwith "TODO: Scheme extraction of modules not implemented yet"
   | (l,SEmodtype m) -> 
       failwith "TODO: Scheme extraction of modules not implemented yet"
 
 let pp_struct = 
-  prlist (fun (mp,sel) -> prlist (pp_structure_elem mp) sel)
+  let pp_sel (mp,sel) = 
+    push_visible mp; let p = prlist pp_structure_elem sel in pop_visible (); p
+  in
+  prlist pp_sel
 
-let pp_signature s = assert false
-
-end
-
+let scheme_descr = {
+  keywords = keywords;  
+  file_suffix = ".scm"; 
+  capital_file = false;  
+  preamble = preamble; 
+  pp_struct = pp_struct; 
+  sig_suffix = None;
+  sig_preamble = (fun _ _ _ -> mt ()); 
+  pp_sig = (fun _ -> mt ()); 
+  pp_decl = pp_decl; 
+}

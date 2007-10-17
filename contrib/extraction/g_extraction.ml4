@@ -31,19 +31,18 @@ VERNAC ARGUMENT EXTEND language
 | [ "Ocaml" ] -> [ Ocaml ]
 | [ "Haskell" ] -> [ Haskell ]
 | [ "Scheme" ] -> [ Scheme ]
-| [ "Toplevel" ] -> [ Toplevel ]
 END
 
 (* Extraction commands *)
 
 VERNAC COMMAND EXTEND Extraction
 (* Extraction in the Coq toplevel *)
-| [ "Extraction" global(x) ] -> [ extraction x ]
-| [ "Recursive" "Extraction" ne_global_list(l) ] -> [ extraction_rec l ]
+| [ "Extraction" global(x) ] -> [ simple_extraction x ]
+| [ "Recursive" "Extraction" ne_global_list(l) ] -> [ full_extraction None l ]
 
 (* Monolithic extraction to a file *)
 | [ "Extraction" string(f) ne_global_list(l) ] 
-  -> [ extraction_file f l ]
+  -> [ full_extraction (Some f) l ]
 END
 
 (* Modular extraction (one Coq library = one ML module) *)

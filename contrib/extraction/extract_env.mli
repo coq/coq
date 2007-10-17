@@ -13,8 +13,6 @@
 open Names
 open Libnames
 
-val extraction : reference -> unit
-val extraction_rec : reference list -> unit
-val extraction_file : string -> reference list -> unit
-val extraction_module : reference -> unit
+val simple_extraction : reference -> unit
+val full_extraction : string option -> reference list -> unit
 val extraction_library : bool -> identifier -> unit

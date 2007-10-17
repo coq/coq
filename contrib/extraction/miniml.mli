@@ -78,11 +78,16 @@ type ml_ind_packet = {
 
 (* [ip_nparams] contains the number of parameters. *)
 
+type equiv = 
+  | NoEquiv
+  | Equiv of kernel_name 
+  | RenEquiv of string
+
 type ml_ind = {
   ind_info : inductive_info;
   ind_nparams : int; 	       
   ind_packets : ml_ind_packet array;
-  ind_equiv : kernel_name option
+  ind_equiv : equiv
 }
 
 (*s ML terms. *)
@@ -151,24 +156,28 @@ type ml_structure = (module_path * ml_module_structure) list
 
 type ml_signature = (module_path * ml_module_sig) list
 
-(*s Pretty-printing of MiniML in a given concrete syntax is parameterized
-    by a function [pp_global] that pretty-prints global references. 
-    The resulting pretty-printer is a module of type [Mlpp] providing
-    functions to print types, terms and declarations. *)
+type unsafe_needs = {
+  mldummy : bool; 
+  tdummy : bool; 
+  tunknown : bool; 
+  magic : bool
+}
 
-module type Mlpp_param = sig
-  val globals : unit -> Idset.t
-  val pp_global : module_path list -> global_reference -> std_ppcmds
-  val pp_module : module_path list -> module_path -> std_ppcmds
-end
+type language_descr = {
+  keywords : Idset.t; 
 
-module type Mlpp = sig
-  val pp_decl : module_path list -> ml_decl -> std_ppcmds
-  val pp_struct : ml_structure -> std_ppcmds
-  val pp_signature : ml_signature -> std_ppcmds
-end
+  (* Concerning the source file *)
+  file_suffix : string;  
+  capital_file : bool; (* should we capitalize filenames ? *)
+  preamble : identifier -> module_path list -> unsafe_needs -> std_ppcmds; 
+  pp_struct : ml_structure -> std_ppcmds; 
 
-type extraction_params =  
-  { modular : bool; 
-    mod_name : identifier; 
-    to_appear : global_reference list }
+  (* Concerning a possible interface file *)
+  sig_suffix : string option; 
+  sig_preamble : identifier -> module_path list -> unsafe_needs -> std_ppcmds;
+  pp_sig : ml_signature -> std_ppcmds; 
+
+  (* for an isolated declaration print *)
+  pp_decl : ml_decl -> std_ppcmds; 
+
+}  

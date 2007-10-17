@@ -337,7 +337,10 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
       {ind_info = Standard; 
        ind_nparams = npar; 
        ind_packets = packets; 
-       ind_equiv = mib.mind_equiv };
+       ind_equiv = match mib.mind_equiv with 
+         | None -> NoEquiv 
+	 | Some kn -> Equiv kn
+      };
     (* Second pass: we extract constructors *)
     for i = 0 to mib.mind_ntypes - 1 do
       let p = packets.(i) in 
@@ -421,7 +424,9 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
     let i = {ind_info = ind_info; 
 	     ind_nparams = npar; 
 	     ind_packets = packets; 
-	     ind_equiv = mib.mind_equiv}
+	     ind_equiv = match mib.mind_equiv with 
+	       | None -> NoEquiv
+	       | Some kn -> Equiv kn }
     in
     add_ind kn mib i; 
     i
@@ -828,18 +833,18 @@ let extract_constant env kn cb =
     | None -> (* A logical axiom is risky, an informative one is fatal. *) 
         (match flag_of_type env typ with
 	   | (Info,TypeScheme) -> 
-	       if not (is_custom r) then warning_info_ax r; 
+	       if not (is_custom r) then add_info_axiom r; 
 	       let n = type_scheme_nb_args env typ in 
 	       let ids = iterate (fun l -> anonymous::l) n [] in 
 	       Dtype (r, ids, Taxiom) 
            | (Info,Default) -> 
-	       if not (is_custom r) then warning_info_ax r; 
+	       if not (is_custom r) then add_info_axiom r; 
 	       let t = snd (record_constant_type env kn (Some typ)) in 
 	       Dterm (r, MLaxiom, type_expunge env t) 
            | (Logic,TypeScheme) -> 
-	       warning_log_ax r; Dtype (r, [], Tdummy Ktype)
+	       add_log_axiom r; Dtype (r, [], Tdummy Ktype)
 	   | (Logic,Default) -> 
-	       warning_log_ax r; Dterm (r, MLdummy, Tdummy Kother))
+	       add_log_axiom r; Dterm (r, MLdummy, Tdummy Kother))
     | Some body ->
 	(match flag_of_type env typ with
 	   | (Logic, Default) -> Dterm (r, MLdummy, Tdummy Kother)
@@ -879,24 +884,6 @@ let extract_inductive env kn =
     Array.map (fun p -> { p with ip_types = Array.map f p.ip_types }) 
       ind.ind_packets
   in { ind with ind_packets = packets }
-
-(*s From a global reference to a ML declaration. *)
-
-let extract_declaration env r = match r with
-  | ConstRef kn -> extract_constant env kn (Environ.lookup_constant kn env)
-  | IndRef (kn,_) -> Dind (kn, extract_inductive env kn)
-  | ConstructRef ((kn,_),_) -> Dind (kn, extract_inductive env kn)
-  | VarRef kn -> assert false
-
-(*s Without doing complete extraction, just guess what a constant would be. *) 
-
-type kind = Logical | Term | Type 
-    
-let constant_kind env cb = 
-  match flag_of_type env (Typeops.type_of_constant_type env cb.const_type) with 
-    | (Logic,_) -> Logical
-    | (Info,TypeScheme) -> Type
-    | (Info,Default) -> Term
 
 (*s Is a [ml_decl] logical ? *) 
 

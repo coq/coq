@@ -20,36 +20,48 @@ open Util
 open Pp
 open Miniml
 
-(*S Utilities concerning [module_path] and [kernel_names] *)
+(*S Utilities about [module_path] and [kernel_names] and [global_reference] *)
 
-let occur_kn_in_ref kn =
- function
+let occur_kn_in_ref kn = function
   | IndRef (kn',_)
   | ConstructRef ((kn',_),_) -> kn = kn'
   | ConstRef _ -> false
   | VarRef _ -> assert false
-
-let modpath_of_r r = match r with 
-    | ConstRef kn -> con_modpath kn
-    | IndRef (kn,_)
-    | ConstructRef ((kn,_),_) -> modpath kn
-    | VarRef _ -> assert false
-
-let label_of_r r = match r with 
-    | ConstRef kn -> con_label kn
-    | IndRef (kn,_)
-    | ConstructRef ((kn,_),_) -> label kn
-    | VarRef _ -> assert false
-
-let current_toplevel () = fst (Lib.current_prefix ())
+      
+let modpath_of_r = function 
+  | ConstRef kn -> con_modpath kn
+  | IndRef (kn,_)
+  | ConstructRef ((kn,_),_) -> modpath kn
+  | VarRef _ -> assert false
+      
+let label_of_r = function 
+  | ConstRef kn -> con_label kn
+  | IndRef (kn,_)
+  | ConstructRef ((kn,_),_) -> label kn
+  | VarRef _ -> assert false
 
 let rec base_mp = function 
   | MPdot (mp,l) -> base_mp mp 
   | mp -> mp 
 
+let rec mp_length = function
+  | MPdot (mp, _) -> 1 + (mp_length mp)
+  | _ -> 1
+
 let is_modfile = function 
   | MPfile _ -> true 
   | _ -> false
+
+let string_of_modfile = function 
+  | MPfile f -> String.capitalize (string_of_id (List.hd (repr_dirpath f)))
+  | _ -> assert false
+
+let rec modfile_of_mp = function 
+  | (MPfile _) as mp -> mp
+  | MPdot (mp,_) -> modfile_of_mp mp 
+  | _ -> raise Not_found
+
+let current_toplevel () = fst (Lib.current_prefix ())
 
 let is_toplevel mp = 
   mp = initial_path || mp = current_toplevel ()
@@ -60,7 +72,55 @@ let at_toplevel mp =
 let visible_kn kn = at_toplevel (base_mp (modpath kn))
 let visible_con kn = at_toplevel (base_mp (con_modpath kn))
 
+let rec prefixes_mp mp = match mp with 
+  | MPdot (mp',_) -> MPset.add mp (prefixes_mp mp')
+  | _ -> MPset.singleton mp 
+
+let rec get_nth_label_mp n mp = match mp with 
+  | MPdot (mp,l) -> if n=1 then l else get_nth_label_mp (n-1) mp 
+  | _ -> failwith "get_nth_label: not enough MPdot"
+
+let get_nth_label n r = 
+  if n=0 then label_of_r r else get_nth_label_mp n (modpath_of_r r)
+
+let rec common_prefix prefixes_mp1 mp2 = 
+  if MPset.mem mp2 prefixes_mp1 then mp2 
+  else match mp2 with 
+    | MPdot (mp,_) -> common_prefix prefixes_mp1 mp 
+    | _ -> raise Not_found
+
+let common_prefix_from_list mp0 mpl = 
+  let prefixes_mp0 = prefixes_mp mp0 in 
+  let rec f = function 
+    | [] -> raise Not_found
+    | mp1 :: l -> try common_prefix prefixes_mp0 mp1 with Not_found -> f l
+  in f mpl
+
+let rec parse_labels ll = function 
+  | MPdot (mp,l) -> parse_labels (l::ll) mp 
+  | mp -> mp,ll
+
+let labels_of_mp mp = parse_labels [] mp 
+
+let labels_of_ref r = 
+ let mp,_,l =
+  match r with
+     ConstRef con -> repr_con con
+   | IndRef (kn,_)
+   | ConstructRef ((kn,_),_) -> repr_kn kn
+   | VarRef _ -> assert false
+ in
+  parse_labels [l] mp
+
+let rec add_labels_mp mp = function 
+  | [] -> mp 
+  | l :: ll -> add_labels_mp (MPdot (mp,l)) ll
+
+
 (*S The main tables: constants, inductives, records, ... *)
+
+(* Theses tables are not registered within coq save/undo mechanism 
+   since we reset their contents at each run of Extraction *)
 
 (*s Constants tables. *) 
 
@@ -109,11 +169,26 @@ let add_projection n kn = projs := Refmap.add (ConstRef kn) n !projs
 let is_projection r = Refmap.mem r !projs
 let projection_arity r = Refmap.find r !projs
 
+(*s Table of used axioms *)
+
+let info_axioms = ref Refset.empty
+let log_axioms = ref Refset.empty
+let init_axioms () = info_axioms := Refset.empty; log_axioms := Refset.empty
+let add_info_axiom r = info_axioms := Refset.add r !info_axioms
+let add_log_axiom r = log_axioms := Refset.add r !log_axioms
+
+(*s Extraction mode: modular or monolithic *)
+
+let modular_ref = ref false
+
+let set_modular b = modular_ref := b
+let modular () = !modular_ref
+
 (*s Tables synchronization. *)
 
 let reset_tables () = 
   init_terms (); init_types (); init_inductives (); init_recursors (); 
-  init_projs ()
+  init_projs (); init_axioms ()
 
 (*s Printing. *)
 
@@ -146,20 +221,33 @@ let pr_long_global r =
 
 let err s = errorlabstrm "Extraction" s
 
+let warning_axioms () = 
+  let info_axioms = Refset.elements !info_axioms in 
+  if info_axioms = [] then () 
+  else begin
+    let s = if List.length info_axioms = 1 then "axiom" else "axioms" in 
+    msg_warning 
+      (str ("The following "^s^" must be realized in the extracted code:")
+       ++ hov 1 (spc () ++ prlist_with_sep spc pr_global info_axioms) 
+       ++ str "." ++ fnl ())
+  end;
+  let log_axioms = Refset.elements !log_axioms in 
+  if log_axioms = [] then ()
+  else begin
+    let s = if List.length log_axioms = 1 then "axiom was" else "axioms were" 
+    in 
+    msg_warning
+      (str ("The following logical "^s^" encountered:") ++
+       hov 1 (spc () ++ prlist_with_sep spc pr_global log_axioms ++ str ".\n") ++
+       str "Having invalid logical axiom in the environment when extracting" ++
+       spc () ++ str "may lead to incorrect or non-terminating ML terms." ++
+       fnl ())
+  end
+
 let error_axiom_scheme r i = 
   err (str "The type scheme axiom " ++ spc () ++
        pr_global r ++ spc () ++ str "needs " ++ pr_int i ++ 
        str " type variable(s).") 
-
-let warning_info_ax r =
-  msg_warning (str "You must realize axiom " ++
-		  pr_global r ++ str " in the extracted code.")
-
-let warning_log_ax r = 
-  msg_warning (str "This extraction depends on logical axiom" ++ spc () ++ 
-		  pr_global r ++ str "." ++ spc() ++ 
-		  str "Having false logical axiom in the environment when extracting" ++ 
-		  spc () ++ str "may lead to incorrect or non-terminating ML terms.")
 
 let check_inside_module () = 
   if Lib.is_modtype () then 
@@ -186,14 +274,10 @@ let error_nb_cons () =
 
 let error_module_clash s = 
   err (str ("There are two Coq modules with ML name " ^ s ^".\n") ++ 
-       str "This is not allowed in ML. Please do some renaming first.")
+       str "This is not supported yet. Please do some renaming first.") 
 
 let error_unknown_module m = 
   err (str "Module" ++ spc () ++ pr_qualid m ++ spc () ++ str "not found.") 
-
-let error_toplevel () = 
-  err (str "Toplevel pseudo-ML language can be used only at Coq toplevel.\n" ++
-       str "You should use Extraction Language Ocaml or Haskell before.") 
 
 let error_scheme () = 
   err (str "No Scheme modular extraction available yet.")
@@ -203,9 +287,11 @@ let error_not_visible r =
        str "For example, it may be inside an applied functor." ++
        str "Use Recursive Extraction to get the whole environment.")
 
-let error_MPfile_as_mod d = 
-  err (str ("The whole file "^(string_of_dirpath d)^".v is used somewhere as a module.\n"^
-	    "Extraction cannot currently deal with this situation.\n"))
+let error_MPfile_as_mod mp = 
+  err (str ("The whole file "^(string_of_modfile mp)^
+	    ".v is used somewhere as a module.\n"^
+	    "Monolithic Extraction cannot deal with this situation.\n"^
+	    "Please use (Recursive) Extraction Library instead.\n"))
 
 let error_record r = 
   err (str "Record " ++ pr_global r ++ str " has an anonymous field." ++ fnl () ++
@@ -216,7 +302,15 @@ let check_loaded_modfile mp = match base_mp mp with
       err (str ("Please load library "^(string_of_dirpath dp^" first.")))
   | _ -> ()
 
+let info_file f =   
+  Options.if_verbose message 
+    ("The file "^f^" has been created by extraction.")
+
+
 (*S The Extraction auxiliary commands *)
+
+(* The objects defined below should survive an arbitrary time, 
+   so we register them to coq save/undo mechanism. *)
 
 (*s Extraction AutoInline *)
 
@@ -305,7 +399,7 @@ let _ = declare_int_option
 
 (*s Extraction Lang *)
 
-type lang = Ocaml | Haskell | Scheme | Toplevel
+type lang = Ocaml | Haskell | Scheme
 
 let lang_ref = ref Ocaml
 
@@ -326,7 +420,6 @@ let _ = declare_summary "Extraction Lang"
 	    survive_section = true }  
 	  
 let extraction_language x = Lib.add_anonymous_leaf (extr_lang x)
-
 
 (*s Extraction Inline/NoInline *)
 

@@ -8,20 +8,4 @@
 
 (*i $Id$ i*)
 
-(*s Some utility functions to be reused in module [Haskell]. *)
-
-open Pp
-open Miniml
-open Names
-
-val keywords : Idset.t
-
-val preamble : 
-  extraction_params -> module_path list -> bool*bool*bool -> bool -> std_ppcmds
-
-module Make : functor(P : Mlpp_param) -> Mlpp
-
-
-
-
-
+val scheme_descr : Miniml.language_descr 

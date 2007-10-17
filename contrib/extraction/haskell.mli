@@ -8,13 +8,5 @@
 
 (*i $Id$ i*)
 
-open Pp
-open Names
-open Miniml
+val haskell_descr : Miniml.language_descr
 
-val keywords : Idset.t
-
-val preamble : 
-  extraction_params -> module_path list -> bool*bool*bool -> bool -> std_ppcmds
-
-module Make : functor(P : Mlpp_param) -> Mlpp
