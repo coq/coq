@@ -109,9 +109,16 @@ let patterns_of_constr env nrels term=
 	then 
 	  let patt1,rels1 = pattern_of_constr env args.(1)
 	  and patt2,rels2 = pattern_of_constr env args.(2) in
-	  let valid1 = (Intset.cardinal rels1 = nrels && non_trivial patt1) 
-	  and valid2 = (Intset.cardinal rels2 = nrels && non_trivial patt2) in
-	    if valid1 || valid2 then 
+	  let valid1 = 
+	    if Intset.cardinal rels1 <> nrels then Creates_variables
+	    else if non_trivial patt1 then Normal
+	    else Trivial args.(0) 
+	  and valid2 =
+	    if Intset.cardinal rels2 <> nrels then Creates_variables
+	    else if non_trivial patt2 then Normal
+	    else Trivial args.(0) in
+	    if valid1 <> Creates_variables
+	      || valid2 <> Creates_variables  then 
 	      nrels,valid1,patt1,valid2,patt2
 	    else raise Not_found
 	else raise Not_found
@@ -150,7 +157,7 @@ let litteral_of_constr env term=
 	
 let rec make_prb gls depth additionnal_terms =
   let env=pf_env gls in
-  let state = empty depth in
+  let state = empty depth gls in
   let pos_hyps = ref [] in
   let neg_hyps =ref [] in
     List.iter

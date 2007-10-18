@@ -16,6 +16,9 @@ open Pp
 open Goptions
 open Names
 open Term
+open Tacmach
+open Evd
+open Proof_type
 
 let init_size=5
 
@@ -97,7 +100,7 @@ type cinfo=
 
 type term=
     Symb of constr
-  | Eps
+  | Eps of identifier
   | Appli of term*term
   | Constructor of cinfo (* constructor arity + nhyps *)
 
@@ -122,14 +125,19 @@ type equality = rule eq
 
 type disequality = from eq
 
+type patt_kind =
+    Normal 
+  | Trivial of types
+  | Creates_variables
+
 type quant_eq =
     {qe_hyp_id: identifier;
      qe_pol: bool;
      qe_nvars:int;
      qe_lhs: ccpattern;
-     qe_lhs_valid:bool;
+     qe_lhs_valid:patt_kind;
      qe_rhs: ccpattern;
-     qe_rhs_valid:bool}
+     qe_rhs_valid:patt_kind}
 
 let swap eq : equality =
   let swap_rule=match eq.rule with
@@ -145,10 +153,11 @@ type inductive_status =
   | Total of (int * pa_constructor)
 
 type representative=
-    {mutable nfathers:int;
+    {mutable weight:int;
      mutable lfathers:Intset.t;
      mutable fathers:Intset.t;
      mutable inductive_status: inductive_status;
+     class_type : Term.types;
      mutable functions: Intset.t PafMap.t;
      mutable constructors: int PacMap.t} (*pac -> term = app(constr,t) *)
 
@@ -181,7 +190,9 @@ type state =
      mutable pa_classes: Intset.t;
      q_history: (identifier,int array) Hashtbl.t;
      mutable rew_depth:int;
-     mutable changed:bool}
+     mutable changed:bool;
+     by_type: (types,Intset.t) Hashtbl.t;
+     mutable gls:Proof_type.goal Tacmach.sigma}
 
 let dummy_node =
   {clas=Eqto(min_int,{lhs=min_int;rhs=min_int;rule=Congruence});
@@ -189,7 +200,7 @@ let dummy_node =
    vertex=Leaf;
    term=Symb (mkRel min_int)}
 
-let empty depth:state =
+let empty depth gls:state =
   {uf=
      {max_size=init_size;
       size=0;
@@ -206,7 +217,9 @@ let empty depth:state =
   pa_classes=Intset.empty;
   q_history=Hashtbl.create init_size;
   rew_depth=depth;
-  changed=false}
+  by_type=Hashtbl.create init_size;
+  changed=false;
+  gls=gls}
 
 let forest state = state.uf 
        
@@ -233,7 +246,7 @@ let get_constructor_info uf i=
     | _ -> anomaly "get_constructor: not a constructor"
 	
 let size uf i=
-  (get_representative uf i).nfathers
+  (get_representative uf i).weight
 
 let axioms uf = uf.axioms
 
@@ -241,13 +254,13 @@ let epsilons uf = uf.epsilons
 
 let add_lfather uf i t=
   let r=get_representative uf i in
-    r.nfathers<-r.nfathers+1;
+    r.weight<-r.weight+1;
     r.lfathers<-Intset.add t r.lfathers;
     r.fathers <-Intset.add t r.fathers
 
 let add_rfather uf i t=
   let r=get_representative uf i in
-    r.nfathers<-r.nfathers+1;
+    r.weight<-r.weight+1;
     r.fathers <-Intset.add t r.fathers
 
 exception Discriminable of int * pa_constructor * int * pa_constructor 
@@ -295,11 +308,12 @@ let next uf=
     uf.size<-nsize; 
     size
 	
-let new_representative ()=
-  {nfathers=0;
+let new_representative typ =
+  {weight=0;
    lfathers=Intset.empty;
    fathers=Intset.empty;
    inductive_status=Unknown;
+   class_type=typ;
    functions=PafMap.empty;
    constructors=PacMap.empty}
     
@@ -307,7 +321,7 @@ let new_representative ()=
     
 let rec constr_of_term = function
     Symb s->s
-  | Eps -> mkMeta 0
+  | Eps id -> mkVar id
   | Constructor cinfo -> mkConstruct cinfo.ci_constr 
   | Appli (s1,s2)->
       make_app [(constr_of_term s2)] s1
@@ -341,19 +355,20 @@ let rec add_term state t=
     try Hashtbl.find uf.syms t with 
 	Not_found ->
 	  let b=next uf in
+	  let typ = pf_type_of state.gls (constr_of_term t) in
 	  let new_node=
 	    match t with
-		Symb _ ->
+		Symb s ->
 		  let paf =
 		    {fsym=b;
 		     fnargs=0} in
 		    Queue.add (b,Fmark paf) state.marks;
-		    {clas= Rep (new_representative ());
+		    {clas= Rep (new_representative typ);
 		     cpath= -1;
 		     vertex= Leaf;
 		     term= t}
-	      | Eps -> 
-		  {clas= Rep (new_representative ());
+	      | Eps id -> 
+		  {clas= Rep (new_representative typ);
 		   cpath= -1;
 		   vertex= Leaf;
 		   term= t}
@@ -362,7 +377,7 @@ let rec add_term state t=
 		    add_lfather uf (find uf i1) b;
 		    add_rfather uf (find uf i2) b;
 		    state.terms<-Intset.add b state.terms;
-		    {clas= Rep (new_representative ());
+		    {clas= Rep (new_representative typ);
 		     cpath= -1;
 		     vertex= Node(i1,i2);
 		     term= t}
@@ -376,13 +391,17 @@ let rec add_term state t=
 		     arity= cinfo.ci_arity;
 		     args=[]} in
 		    Queue.add (b,Cmark pac) state.marks;
-		    {clas=Rep (new_representative ());
+		    {clas=Rep (new_representative typ);
 		     cpath= -1;
 		     vertex=Leaf;
 		     term=t}
 	  in
 	    uf.map.(b)<-new_node;
 	    Hashtbl.add uf.syms t b;
+	    Hashtbl.replace state.by_type typ 
+	      (Intset.add b 
+		 (try Hashtbl.find state.by_type typ with 
+		      Not_found -> Intset.empty));
 	    b
 
 let add_equality state c s t=
@@ -480,8 +499,12 @@ let union state i1 i2 eq=
   let r1= get_representative state.uf i1 
   and r2= get_representative state.uf i2 in
     link state.uf i1 i2 eq;
+    Hashtbl.replace state.by_type r1.class_type 
+      (Intset.remove i1 
+	 (try Hashtbl.find state.by_type r1.class_type with 
+	      Not_found -> Intset.empty));
     let f= Intset.union r1.fathers r2.fathers in
-      r2.nfathers<-Intset.cardinal f;
+      r2.weight<-Intset.cardinal f;
       r2.fathers<-f;
       r2.lfathers<-Intset.union r1.lfathers r2.lfathers;
       ST.delete_set state.sigtable r1.fathers;
@@ -630,16 +653,35 @@ let one_step state =
 	    update t state;
 	    true
 	with Not_found -> false
-	  
+
+let __eps__ = id_of_string "_eps_"  
+
+let new_state_var typ state =
+  let id = pf_get_new_id __eps__ state.gls in
+    state.gls<-
+      {state.gls with it =
+	  {state.gls.it with evar_hyps = 
+	      Environ.push_named_context_val (id,None,typ) 
+		state.gls.it.evar_hyps}};
+    id
 
 let complete_one_class state i=
   match (get_representative state.uf i).inductive_status with
       Partial pac ->
-	let rec app t n = 
+	let rec app t typ n = 
 	  if n<=0 then t else
-	    app (Appli(t,Eps)) (n-1) in
+	    let _,etyp,rest= destProd typ in
+	    let id = new_state_var etyp state in
+		app (Appli(t,Eps id)) (substl [mkVar id] rest) (n-1) in
+	let _c = pf_type_of state.gls
+	  (constr_of_term (term state.uf pac.cnode)) in
+	let _args = 
+	  List.map (fun i -> constr_of_term (term state.uf  i)) 
+	    pac.args in
+	let typ = prod_applist _c (List.rev _args) in 
+	let ct = app (term state.uf i) typ pac.arity in
 	  state.uf.epsilons <- pac :: state.uf.epsilons; 
-	  ignore (add_term state (app (term state.uf i) pac.arity))
+	  ignore (add_term state ct)
     | _ -> anomaly "wrong incomplete class" 
 
 let complete state =
@@ -653,18 +695,18 @@ type matching_problem =
 let make_fun_table state =
   let uf= state.uf in
   let funtab=ref PafMap.empty in
-  for cl=0 to pred uf.size do 
-    match uf.map.(cl).clas with
-	Rep rep ->
-	  PafMap.iter 
-	    (fun paf _ -> 
-	       let elem = 
-		 try PafMap.find paf !funtab 
-		 with Not_found -> Intset.empty in
-		 funtab:= PafMap.add paf (Intset.add cl elem) !funtab) 
-	    rep.functions
-      | _ -> ()   
-  done;
+  Array.iteri 
+    (fun i inode -> if i < uf.size then
+       match inode.clas with
+	   Rep rep ->
+	     PafMap.iter 
+	       (fun paf _ -> 
+		  let elem = 
+		    try PafMap.find paf !funtab 
+		    with Not_found -> Intset.empty in
+		    funtab:= PafMap.add paf (Intset.add i elem) !funtab) 
+	       rep.functions
+	 | _ -> ()) state.uf.map;
     !funtab
   
 
@@ -692,11 +734,10 @@ let rec do_match state res pb_stack =
 		      if find uf j =cl then
 			Stack.push {mp with mp_stack=remains} pb_stack
 		    with Not_found -> ()
-		 
- end
+		  end
 	      | PApp(f, ((last_arg::rem_args) as args)) ->
 		  try 
-		    let j=Hashtbl.find uf.syms f in
+		    let j=Hashtbl.find uf.syms f in 
 		    let paf={fsym=j;fnargs=List.length args} in
 		    let rep=get_representative uf cl in
 		    let good_terms = PafMap.find paf rep.functions in
@@ -708,7 +749,7 @@ let rec do_match state res pb_stack =
 			     mp_stack=
 			      (PApp(f,rem_args),s) :: 
 				(last_arg,t) :: remains} pb_stack in
-		      Intset.iter aux good_terms 
+		      Intset.iter aux good_terms
 		  with Not_found -> ()
 
 let paf_of_patt syms = function
@@ -723,28 +764,50 @@ let init_pb_stack state =
   let funtab = make_fun_table state in
   let aux inst =
     begin
-      if inst.qe_lhs_valid then
-	try 
-	  let paf= paf_of_patt syms inst.qe_lhs in
-	  let good_classes = PafMap.find paf funtab in
-	    Intset.iter (fun i -> 
-			 Stack.push 
-			   {mp_subst = Array.make inst.qe_nvars (-1); 
-			    mp_inst=inst;
-			    mp_stack=[inst.qe_lhs,i]} pb_stack) good_classes
-	with Not_found -> ()
+      let good_classes =
+	match inst.qe_lhs_valid with
+	  Creates_variables -> Intset.empty
+	| Normal ->
+	    begin 
+	      try 
+		let paf= paf_of_patt syms inst.qe_lhs in
+		  PafMap.find paf funtab
+	      with Not_found -> Intset.empty
+	    end
+	| Trivial typ -> 
+	    begin 
+	      try 
+		Hashtbl.find state.by_type typ
+	      with Not_found -> Intset.empty
+	    end in
+	Intset.iter (fun i -> 
+		       Stack.push 
+			 {mp_subst = Array.make inst.qe_nvars (-1); 
+			  mp_inst=inst;
+			  mp_stack=[inst.qe_lhs,i]} pb_stack) good_classes
     end;
     begin 
-      if inst.qe_rhs_valid then
-	try 
-	  let paf= paf_of_patt syms inst.qe_rhs in
-	  let good_classes = PafMap.find paf funtab in
-	    Intset.iter (fun i -> 
-			   Stack.push 
-			     {mp_subst = Array.make inst.qe_nvars (-1); 
-			      mp_inst=inst;
-			      mp_stack=[inst.qe_rhs,i]} pb_stack) good_classes
-	with Not_found -> ()
+      let good_classes =
+	match inst.qe_rhs_valid with
+	  Creates_variables -> Intset.empty
+	| Normal ->
+	    begin 
+	      try 
+		let paf= paf_of_patt syms inst.qe_rhs in
+		  PafMap.find paf funtab
+	      with Not_found -> Intset.empty
+	    end
+	| Trivial typ -> 
+	    begin 
+	      try 
+		Hashtbl.find state.by_type typ
+	      with Not_found -> Intset.empty
+	    end in
+	Intset.iter (fun i -> 
+		       Stack.push 
+			 {mp_subst = Array.make inst.qe_nvars (-1); 
+			  mp_inst=inst;
+			  mp_stack=[inst.qe_rhs,i]} pb_stack) good_classes
     end in
     List.iter aux state.quant;
     pb_stack

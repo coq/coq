@@ -19,9 +19,14 @@ type cinfo =
 
 type term =
     Symb of constr
-  | Eps
+  | Eps of identifier
   | Appli of term*term
   | Constructor of cinfo (* constructor arity + nhyps *)
+
+type patt_kind =
+    Normal 
+  | Trivial of types
+  | Creates_variables
 
 type ccpattern =
     PApp of term * ccpattern list
@@ -70,7 +75,7 @@ val axioms : forest -> (constr, term * term) Hashtbl.t
 
 val epsilons : forest -> pa_constructor list
 
-val empty : int -> state
+val empty : int -> Proof_type.goal Tacmach.sigma -> state
 
 val add_term : state -> term -> int
 
@@ -79,8 +84,7 @@ val add_equality : state -> constr -> term -> term -> unit
 val add_disequality : state -> from -> term -> term -> unit
 
 val add_quant : state -> identifier -> bool -> 
-  int * bool * ccpattern * bool * ccpattern -> unit
-
+  int * patt_kind * ccpattern * patt_kind * ccpattern -> unit
 
 val tail_pac : pa_constructor -> pa_constructor
 
@@ -102,9 +106,9 @@ type quant_eq=
      qe_pol: bool;
      qe_nvars:int;
      qe_lhs: ccpattern;
-     qe_lhs_valid:bool;
+     qe_lhs_valid:patt_kind;
      qe_rhs: ccpattern;
-     qe_rhs_valid:bool}
+     qe_rhs_valid:patt_kind}
 
 
 type pa_fun=
