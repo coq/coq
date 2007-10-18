@@ -270,6 +270,7 @@ CMXA:=$(CMA:.cma=.cmxa)
 # Beware that highparsing.cma should appear before hightactics.cma
 # respecting this order is useful for developers that want to load or link
 # the libraries directly
+
 LINKCMO:=$(CONFIG) lib/lib.cma kernel/kernel.cma library/library.cma \
         pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
         parsing/parsing.cma tactics/tactics.cma toplevel/toplevel.cma \
@@ -381,6 +382,8 @@ GRAMMARSCMO:=\
   parsing/g_ltac.cmo parsing/g_constr.cmo
 
 GRAMMARCMO:=$(GRAMMARNEEDEDCMO) $(CAMLP4EXTENSIONSCMO) $(GRAMMARSCMO)
+
+GRAMMARCMA:=parsing/grammar.cma
 
 GRAMMARML4:=lib/compat.ml4 lib/pp.ml4 parsing/q_util.ml4 parsing/pcoq.ml4 \
   parsing/argextend.ml4 parsing/tacextend.ml4 parsing/vernacextend.ml4 \
