@@ -161,7 +161,10 @@ let parse_args () =
     | ("-v"|"--version") :: _ ->
         Usage.version ()
     | "-where" :: _ -> 
-	print_endline Coq_config.coqlib; exit 0
+	let coqlib =
+	  try Sys.getenv "COQLIB" with Not_found -> Coq_config.coqlib 
+	in
+	  print_endline coqlib; exit 0
     | f :: rem -> 
 	if Sys.file_exists f then
 	  parse (f::cfiles,args) rem
