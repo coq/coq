@@ -1,15 +1,17 @@
-Require Import Ring_polynom.
-
-
 Require Import NArith.
 Require Import Relation_Definitions.
 Require Import Setoid.
-Require Import Ring_polynom.
+(*****)
+Require Import NRing.
+(*****)
+(*Require Import Ring_polynom.*)
+(*****)
 Require Import List.
 Require Import Bool.
 Require Import OrderedRing.
 Require Import Refl.
 Require Import CheckerMaker.
+Require VarMap.
 
 Set Implicit Arguments.
 
@@ -126,11 +128,50 @@ Qed.
 (* Begin Micromega *)
 
 Definition PExprC := PExpr C. (* arbitrary expressions built from +, *, - *)
-Definition PolC := Pol C. (* polynomials in generalized Horner form, defined in Ring_polynom *)
-Definition Env := list R.
+Definition PolC := Pol C. (* polynomials in generalized Horner form, defined in Ring_polynom or NRing *)
+(*****)
+Definition Env := VarMap.t R. (* For interpreting PExprC *)
+Definition PolEnv := VarMap.off_map R. (* For interpreting PolC *)
+(*****)
+(*Definition Env := list R.
+Definition PolEnv := list R.*)
+(*****)
 
-Definition eval_pexpr : Env -> PExprC -> R := PEeval 0 rplus rtimes rminus ropp phi pow_phi rpow.
-Definition eval_pol : Env -> PolC -> R := Pphi 0 rplus rtimes phi.
+(* What benefit do we get, in the case of NRing, from defining eval_pexpr
+explicitely below and not through PEeval, as the following lemma says? The
+function eval_pexpr seems to be a straightforward special case of PEeval
+when the environment (i.e., the second last argument of PEeval) of type
+off_map (which is (option positive * t)) is (None, env). *)
+
+(*****)
+Fixpoint eval_pexpr (l : Env) (pe : PExprC) {struct pe} : R :=
+match pe with
+| PEc c => phi c
+| PEX j => VarMap.find 0 j l
+| PEadd pe1 pe2 => (eval_pexpr l pe1) + (eval_pexpr l pe2)
+| PEsub pe1 pe2 => (eval_pexpr l pe1) - (eval_pexpr l pe2)
+| PEmul pe1 pe2 => (eval_pexpr l pe1) * (eval_pexpr l pe2)
+| PEopp pe1 => - (eval_pexpr l pe1)
+| PEpow pe1 n => rpow (eval_pexpr l pe1) (pow_phi n)
+end.
+
+Lemma eval_pexpr_PEeval : forall (env : Env) (pe : PExprC),
+  eval_pexpr env pe =
+  PEeval 0 rplus rtimes rminus ropp phi pow_phi rpow (None, env) pe.
+Proof.
+induction pe; simpl; intros.
+reflexivity.
+reflexivity.
+rewrite <- IHpe1; rewrite <- IHpe2; reflexivity.
+rewrite <- IHpe1; rewrite <- IHpe2; reflexivity.
+rewrite <- IHpe1; rewrite <- IHpe2; reflexivity.
+rewrite <- IHpe; reflexivity.
+rewrite <- IHpe; reflexivity.
+Qed.
+(*****)
+(*Definition eval_pexpr : Env -> PExprC -> R :=
+  PEeval 0 rplus rtimes rminus ropp phi pow_phi rpow.*)
+(*****)
 
 Inductive Op2 : Set := (* binary relations *)
 | OpEq
@@ -464,8 +505,6 @@ Definition inconsistent_cone_member (l : list NFormula) (p : PExprC) :=
   exists op : Op1, Cone l p op /\
     forall env : Env, ~ eval_op1 op (eval_pexpr env p).
 
-Implicit Arguments make_impl [A].
-
 (* If some element of a cone is inconsistent, then the base of the cone
 is also inconsistent *)
 
@@ -485,17 +524,29 @@ Qed.
 Definition normalise_pexpr : PExprC -> PolC :=
   norm_aux cO cI cplus ctimes cminus copp ceqb.
 
-Let Reqe := mk_reqe rplus rtimes ropp req
-  sor.(SORplus_wd)
-  sor.(SORtimes_wd)
-  sor.(SORopp_wd).
+(* The following definition we don't really need, hence it is commented *)
+(*Definition eval_pol : PolEnv -> PolC -> R := Pphi 0 rplus rtimes phi.*)
 
-Theorem normalise_pexpr_correct :
-  forall (env : Env) (e : PExprC), eval_pexpr env e == eval_pol env (normalise_pexpr e).
-intros env e. unfold eval_pexpr, eval_pol, normalise_pexpr.
-apply (norm_aux_spec sor.(SORsetoid) Reqe (Rth_ARth sor.(SORsetoid) Reqe sor.(SORrt))
-addon.(SORrm) addon.(SORpower) nil). constructor.
-Qed.
+(* roughly speaking, normalise_pexpr_correct is a proof of
+  forall env p, eval_pexpr env p == eval_pol env (normalise_pexpr p) *)
+
+(*****)
+Definition normalise_pexpr_correct :=
+let Rops_wd := mk_reqe rplus rtimes ropp req
+                       sor.(SORplus_wd)
+                       sor.(SORtimes_wd)
+                       sor.(SORopp_wd) in
+  norm_aux_spec sor.(SORsetoid) Rops_wd (Rth_ARth sor.(SORsetoid) Rops_wd sor.(SORrt))
+                addon.(SORrm) addon.(SORpower).
+(*****)
+(*Definition normalise_pexpr_correct :=
+let Rops_wd := mk_reqe rplus rtimes ropp req
+                       sor.(SORplus_wd)
+                       sor.(SORtimes_wd)
+                       sor.(SORopp_wd) in
+  norm_aux_spec sor.(SORsetoid) Rops_wd (Rth_ARth sor.(SORsetoid) Rops_wd sor.(SORrt))
+                addon.(SORrm) addon.(SORpower) nil.*)
+(*****)
 
 (* Check that a formula f is inconsistent by normalizing and comparing the
 resulting constant with 0 *)
@@ -517,10 +568,16 @@ Lemma check_inconsistent_sound :
   forall (p : PExprC) (op : Op1),
     check_inconsistent (p, op) = true -> forall env, ~ eval_op1 op (eval_pexpr env p).
 Proof.
-intros p op H1 env. unfold check_inconsistent in H1.
-destruct op; simpl; rewrite normalise_pexpr_correct;
-destruct (normalise_pexpr p); simpl; try discriminate H1;
-rewrite <- addon.(SORrm).(morph0).
+intros p op H1 env. unfold check_inconsistent, normalise_pexpr in H1.
+destruct op; simpl;
+(*****)
+rewrite eval_pexpr_PEeval;
+(*****)
+(*unfold eval_pexpr;*)
+(*****)
+rewrite normalise_pexpr_correct;
+destruct (norm_aux cO cI cplus ctimes cminus copp ceqb p); simpl; try discriminate H1;
+try rewrite <- addon.(SORrm).(morph0); trivial.
 now apply cneqb_sound.
 apply cleb_sound in H1. now apply -> (Rle_ngt sor).
 apply cltb_sound in H1. now apply -> (Rlt_nge sor).
