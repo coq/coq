@@ -696,7 +696,7 @@ INTEGERVO:=$(INTEGERABSTRACTVO) $(INTEGERBINARYVO) $(INTEGERNATPAIRSVO) $(INTEGE
 
 NUMBERSVO:=$(NATURALVO) $(INTEGERVO)
 
-SETOIDSVO:= theories/Setoids/Setoid_tac.v theories/Setoids/Setoid_Prop.v theories/Setoids/Setoid.vo
+SETOIDSVO:= theories/Setoids/Setoid_tac.vo theories/Setoids/Setoid_Prop.vo theories/Setoids/Setoid.vo
 
 THEORIESVO:=\
   $(INITVO) $(LOGICVO) $(ARITHVO) $(BOOLVO) $(NARITHVO) $(ZARITHVO) \
