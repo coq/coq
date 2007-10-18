@@ -709,7 +709,7 @@ THEORIESLIGHTVO:= $(INITVO) $(LOGICVO) $(ARITHVO)
 ## Contribs
 
 OMEGAVO:=\
- contrib/omega/OmegaLemmas.vo contrib/omega/Omega.vo
+ contrib/omega/PreOmega.vo contrib/omega/OmegaLemmas.vo contrib/omega/Omega.vo
 
 ROMEGAVO:=\
  contrib/romega/ReflOmegaCore.vo contrib/romega/ROmega.vo 
