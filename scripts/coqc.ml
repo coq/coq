@@ -158,10 +158,13 @@ let parse_args () =
       | "-unboxed-values" | "-unboxed-definitions" | "-draw-vm-instr" 
 	  as o) :: rem ->
 	parse (cfiles,o::args) rem
+    | "-where" :: _ -> 
+	let coqlib = 
+	  try Sys.getenv "COQLIB" with Not_found -> Coq_config.coqlib 
+	in
+	  print_endline coqlib; exit 0
     | ("-v"|"--version") :: _ ->
         Usage.version ()
-    | "-where" :: _ -> 
-	print_endline Coq_config.coqlib; exit 0
     | f :: rem -> 
 	if Sys.file_exists f then
 	  parse (f::cfiles,args) rem
