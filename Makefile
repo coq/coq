@@ -1264,6 +1264,8 @@ install-tools::
 LIBFILES=$(THEORIESVO) $(CONTRIBVO)
 LIBFILESLIGHT=$(THEORIESLIGHTVO)
 
+
+GRAMMARCMA=parsing/grammar.cma
 OBJECTCMA=lib/lib.cma kernel/kernel.cma library/library.cma \
         pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
         parsing/parsing.cma tactics/tactics.cma toplevel/toplevel.cma \
@@ -1280,7 +1282,7 @@ install-library:
 	$(MKDIR) $(FULLCOQLIB)/states
 	cp states/*.coq $(FULLCOQLIB)/states
 	$(MKDIR) $(FULLCOQLIB)/user-contrib
-	cp $(OBJECTCMA) $(OBJECTCMXA) $(FULLCOQLIB)
+	cp $(OBJECTCMA) $(OBJECTCMXA) $(GRAMMARCMA) $(FULLCOQLIB)
 
 install-library-light:
 	$(MKDIR) $(FULLCOQLIB)
