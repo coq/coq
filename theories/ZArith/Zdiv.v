@@ -218,6 +218,35 @@ Qed.
 
 Implicit Arguments Zdiv_eucl_extended.
 
+(** Uniqueness theorems *)
+
+Theorem Zdiv_mod_unique :
+ forall b q1 q2 r1 r2:Z,
+  0 <= r1 < Zabs b -> 0 <= r2 < Zabs b ->
+  b*q1 + r1=b*q2+r2 -> q1=q2/\r1=r2.
+Proof.
+intros b q1 q2 r1 r2 Hr1 Hr2 H.
+assert (H0:=Zeq_minus _ _ H).
+replace (b * q1 + r1 - (b * q2 + r2))
+ with (b*(q1-q2) - (r2-r1)) in H0 by ring.
+assert (H1:=Zminus_eq _ _ H0).
+destruct (Z_dec q1 q2).
+ elim (Zlt_not_le (Zabs (r2 - r1)) (Zabs b)).
+  apply Zabs_ind;  omega.
+ rewrite <- H1.
+ replace (Zabs b) with (1*(Zabs b)) by ring.
+ rewrite Zabs_Zmult. 
+ rewrite (Zmult_comm (Zabs b)).
+ apply Zmult_le_compat_r; auto with *.
+ change 1 with (Zsucc 0).
+ apply Zlt_le_succ.
+ destruct s; apply Zabs_ind; omega.
+split; try assumption.
+rewrite e in H1.
+ring_simplify in H1.
+omega.
+Qed.
+
 (** * Auxiliary lemmas about [Zdiv] and [Zmod] *)
 
 Lemma Z_div_mod_eq : forall a b:Z, b > 0 -> a = b * Zdiv a b + Zmod a b.
@@ -303,6 +332,13 @@ Proof.
   omega.
 Qed.
 
+Lemma Z_div_le : forall a b c:Z, c > 0 -> a <= b -> a / c <= b / c.
+Proof.
+intros a b c H H0.
+apply Zge_le.
+apply Z_div_ge; auto with *.
+Qed.
+
 Lemma Z_mod_plus : forall a b c:Z, c > 0 -> (a + b * c) mod c = a mod c.
 Proof.
   intros a b c cPos.
@@ -355,9 +391,60 @@ Proof.
   ring.
 Qed.
 
+Lemma Zdiv_opp_opp : forall a b:Z, Zdiv (-a) (-b) = Zdiv a b.
+Proof.
+intros [|a|a] [|b|b];
+ try reflexivity;
+ unfold Zdiv;
+ simpl;
+ destruct (Zdiv_eucl_POS a (Zpos b)); destruct z0; try reflexivity.
+Qed.
+
 Lemma Z_div_mult : forall a b:Z, b > 0 -> a * b / b = a.
   intros; replace (a * b) with (0 + a * b); auto.
   rewrite Z_div_plus; auto.
+Qed.
+
+Lemma Zdiv_mult_cancel_r : forall (a b c:Z), 
+ (c <> 0) -> (a*c/(b*c) = a/b).
+Proof.
+assert (X: forall a b c, b > 0 -> c > 0 -> a * c / (b * c) = a / b).
+ intros a b c Hb Hc.
+ assert (X:=Z_div_mod (a*c) (b*c)).
+ assert (Y:=Z_div_mod a b Hb).
+ unfold Zdiv.
+ destruct (Zdiv_eucl (a*c) (b*c)).
+ destruct (Zdiv_eucl a b).
+ destruct Y as [Y0 Y1].
+ rewrite Y0 in X.
+ clear Y0.
+ destruct X as [X0 X1].
+  auto with *.
+ replace ((b*z1 + z2)* c) with
+  ((b*c)*z1 + z2*c) in X0 by ring.
+ destruct (Zdiv_mod_unique (b*c) z1 z (z2*c) z0); try rewrite Zabs_eq; auto with *.
+ split; auto with *.
+ apply Zmult_lt_compat_r; auto with *.
+intros a b c Hc.
+destruct (Z_dec b 0) as [Hb|Hb].
+ destruct Hb as [Hb|Hb];
+  destruct (not_Zeq_inf _ _ Hc).
+    rewrite <- (Zdiv_opp_opp a b).
+    replace (b*c) with ((-b)*(-c)) by ring.
+    replace (a*c) with ((-a)*(-c)) by ring.
+    apply X; auto with *.
+   rewrite <- (Zdiv_opp_opp a b).
+   rewrite <- Zdiv_opp_opp.
+   replace (-(b*c)) with ((-b)*c) by ring.
+   replace (-(a*c)) with ((-a)*c) by ring.
+   apply X; auto with *.
+  rewrite <- Zdiv_opp_opp.
+  replace (-(b*c)) with (b*(-c)) by ring.
+  replace (-(a*c)) with (a*(-c)) by ring.
+  apply X; auto with *.
+ apply X; auto with *.
+rewrite Hb.
+destruct (a*c); destruct a; reflexivity.
 Qed.
 
 Lemma Z_mult_div_ge : forall a b:Z, b > 0 -> b * (a / b) <= a.
