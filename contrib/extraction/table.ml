@@ -287,11 +287,13 @@ let error_not_visible r =
        str "For example, it may be inside an applied functor." ++
        str "Use Recursive Extraction to get the whole environment.")
 
-let error_MPfile_as_mod mp = 
-  err (str ("The whole file "^(string_of_modfile mp)^
-	    ".v is used somewhere as a module.\n"^
+let error_MPfile_as_mod mp b = 
+  let s1 = if b then "asked" else "required" in 
+  let s2 = if b then "extract some objects of this module or\n" else "" in
+  err (str ("Extraction of file "^(string_of_modfile mp)^
+	    ".v as a module is "^s1^".\n"^
 	    "Monolithic Extraction cannot deal with this situation.\n"^
-	    "Please use (Recursive) Extraction Library instead.\n"))
+	    "Please "^s2^"use (Recursive) Extraction Library instead.\n"))
 
 let error_record r = 
   err (str "Record " ++ pr_global r ++ str " has an anonymous field." ++ fnl () ++

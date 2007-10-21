@@ -28,7 +28,7 @@ val error_module_clash : string -> 'a
 val error_unknown_module : qualid -> 'a
 val error_scheme : unit -> 'a
 val error_not_visible : global_reference -> 'a
-val error_MPfile_as_mod : module_path -> 'a
+val error_MPfile_as_mod : module_path -> bool -> 'a
 val error_record : global_reference -> 'a 
 val check_inside_module : unit -> unit
 val check_inside_section : unit -> unit

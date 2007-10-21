@@ -220,7 +220,7 @@ let rec extract_msb env mp all = function
 
 and extract_meb env mpo all = function 
   | MEBident mp -> 
-      if is_modfile mp && not (modular ()) then error_MPfile_as_mod mp; 
+      if is_modfile mp && not (modular ()) then error_MPfile_as_mod mp false; 
       Visit.add_mp mp; MEident mp 
   | MEBapply (meb, meb',_) -> 
       MEapply (extract_meb env None true meb, 
@@ -380,8 +380,9 @@ let full_extraction f qualids =
     | q::l -> 
 	let refs,mps = find l in 
 	try 
-	  let mp = Nametab.locate_module (snd (qualid_of_reference q))
-	  in refs,(mp::mps)
+	  let mp = Nametab.locate_module (snd (qualid_of_reference q)) in 
+	  if is_modfile mp then error_MPfile_as_mod mp true; 
+	  refs,(mp::mps)
 	with Not_found -> (Nametab.global q)::refs, mps 
   in  
   let refs,mps = find qualids in
@@ -397,7 +398,8 @@ let full_extraction f qualids =
 let simple_extraction qid = 
   init false; 
   try 
-    let _ = Nametab.locate_module (snd (qualid_of_reference qid)) in 
+    let mp = Nametab.locate_module (snd (qualid_of_reference qid)) in 
+    if is_modfile mp then error_MPfile_as_mod mp true; 
     full_extraction None [qid]
   with Not_found -> 
     let r = Nametab.global qid in 
