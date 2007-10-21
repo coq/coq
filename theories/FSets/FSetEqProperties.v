@@ -76,7 +76,7 @@ Qed.
   
 Lemma empty_mem: mem x empty=false.
 Proof. 
-rewrite <- not_mem_iff; auto.
+rewrite <- not_mem_iff; auto with set.
 Qed.
 
 Lemma is_empty_equal_empty: is_empty s = equal s empty.
@@ -88,17 +88,17 @@ Qed.
   
 Lemma choose_mem_1: choose s=Some x -> mem x s=true.
 Proof.  
-auto.
+auto with set.
 Qed.
 
 Lemma choose_mem_2: choose s=None -> is_empty s=true.
 Proof.
-auto.
+auto with set.
 Qed.
 
 Lemma add_mem_1: mem x (add x s)=true.
 Proof.
-auto.
+auto with set.
 Qed.  
  
 Lemma add_mem_2: ~E.eq x y -> mem y (add x s)=mem y s.
@@ -108,7 +108,7 @@ Qed.
 
 Lemma remove_mem_1: mem x (remove x s)=false.
 Proof. 
-rewrite <- not_mem_iff; auto.
+rewrite <- not_mem_iff; auto with set.
 Qed. 
  
 Lemma remove_mem_2: ~E.eq x y -> mem y (remove x s)=mem y s.
@@ -216,7 +216,7 @@ Proof.
 intros.
 generalize (@choose_1 s) (@choose_2 s).
 destruct (choose s);intros.
-exists e;auto.
+exists e;auto with set.
 generalize (H1 (refl_equal None)); clear H1.
 intros; rewrite (is_empty_1 H1) in H; discriminate.
 Qed.
@@ -233,7 +233,7 @@ Qed.
 Lemma add_mem_3: 
  mem y s=true -> mem y (add x s)=true.
 Proof.
-auto.
+auto with set.
 Qed.
 
 Lemma add_equal: 
@@ -260,7 +260,7 @@ Qed.
 Lemma add_remove: 
  mem x s=true -> equal (add x (remove x s)) s=true.
 Proof.
-intros; apply equal_1; apply add_remove; auto.
+intros; apply equal_1; apply add_remove; auto with set.
 Qed.
 
 Lemma remove_add: 
@@ -275,9 +275,9 @@ Qed.
 Lemma is_empty_cardinal: is_empty s = zerob (cardinal s).
 Proof.
 intros; apply bool_1; split; intros.
-rewrite cardinal_1; simpl; auto.
+rewrite cardinal_1; simpl; auto with set.
 assert (cardinal s = 0) by (apply zerob_true_elim; auto).
-auto.
+auto with set.
 Qed.
 
 (** Properties of [singleton] *)
@@ -295,7 +295,7 @@ Qed.
 
 Lemma singleton_mem_3: mem y (singleton x)=true -> E.eq x y.
 Proof.
-auto.
+intros; apply singleton_1; auto with set.
 Qed.
 
 (** Properties of [union] *)
@@ -358,7 +358,7 @@ Lemma union_subset_3:
  subset s s''=true -> subset s' s''=true -> 
   subset (union s s') s''=true.
 Proof.
-intros; apply subset_1; apply union_subset_3; auto.
+intros; apply subset_1; apply union_subset_3; auto with set.
 Qed.
 
 (** Properties of [inter] *) 
@@ -433,7 +433,7 @@ Lemma inter_subset_3:
  subset s'' s=true -> subset s'' s'=true -> 
   subset s'' (inter s s')=true.
 Proof.
-intros; apply subset_1; apply inter_subset_3; auto.
+intros; apply subset_1; apply inter_subset_3; auto with set.
 Qed.
 
 (** Properties of [diff] *)
@@ -516,7 +516,7 @@ Qed.
 Lemma fold_equal: 
  equal s s'=true -> eqA (fold f s i) (fold f s' i).
 Proof. 
-intros; apply fold_equal with (eqA:=eqA); auto.
+intros; apply fold_equal with (eqA:=eqA); auto with set.
 Qed.
    
 Lemma fold_add: 
@@ -529,13 +529,13 @@ Qed.
 Lemma add_fold: 
   mem x s=true -> eqA (fold f (add x s) i) (fold f s i).
 Proof.
-intros; apply add_fold with (eqA:=eqA); auto.
+intros; apply add_fold with (eqA:=eqA); auto with set.
 Qed.
 
 Lemma remove_fold_1: 
  mem x s=true -> eqA (f x (fold f (remove x s) i)) (fold f s i).
 Proof.
-intros; apply remove_fold_1 with (eqA:=eqA); auto.
+intros; apply remove_fold_1 with (eqA:=eqA); auto with set.
 Qed.
 
 Lemma remove_fold_2: 
@@ -573,13 +573,13 @@ Qed.
 Lemma remove_cardinal_1: 
  forall s x, mem x s=true -> S (cardinal (remove x s))=cardinal s.
 Proof.
-intros; apply remove_cardinal_1; auto.
+intros; apply remove_cardinal_1; auto with set.
 Qed.
 
 Lemma remove_cardinal_2: 
  forall s x, mem x s=false -> cardinal (remove x s)=cardinal s.
 Proof.
-auto with set.
+intros; apply Equal_cardinal; apply equal_2; auto with set.
 Qed.
 
 Lemma union_cardinal: 
@@ -593,7 +593,7 @@ Qed.
 Lemma subset_cardinal: 
  forall s s', subset s s'=true -> cardinal s<=cardinal s'.
 Proof.
-intros; apply subset_cardinal; auto.
+intros; apply subset_cardinal; auto with set.
 Qed.
 
 Section Bool.
@@ -636,7 +636,7 @@ Proof.
 intros; apply bool_1; split; intros. 
 destruct (exists_2 Comp H) as (a,(Ha1,Ha2)).
 apply bool_6.
-red; intros; apply (@is_empty_2 _ H0 a); auto.
+red; intros; apply (@is_empty_2 _ H0 a); auto with set.
 generalize (@choose_1 (filter f s)) (@choose_2 (filter f s)).
 destruct (choose (filter f s)).
 intros H0 _; apply exists_1; auto.
@@ -648,13 +648,13 @@ Qed.
 Lemma partition_filter_1: 
  forall s, equal (fst (partition f s)) (filter f s)=true.
 Proof. 
-auto.
+auto with set.
 Qed.
 
 Lemma partition_filter_2: 
  forall s, equal (snd (partition f s)) (filter (fun x => negb (f x)) s)=true.
 Proof. 
-auto.
+auto with set.
 Qed.
 
 Lemma filter_add_1 : forall s x, f x = true -> 
@@ -912,13 +912,13 @@ trans_st (fold f s0 i).
 apply fold_equal with (eqA:=eqA); auto.
 rewrite equal_sym; auto.
 trans_st (fold g s0 i).
-apply H0; intros; apply H1; auto.
-elim  (equal_2 H x); auto; intros.
-apply fold_equal with (eqA:=eqA); auto.
+apply H0; intros; apply H1; auto with set.
+elim  (equal_2 H x); auto with set; intros.
+apply fold_equal with (eqA:=eqA); auto with set.
 trans_st (f x (fold f s0 i)).
-apply fold_add with (eqA:=eqA); auto.
-trans_st (g x (fold f s0 i)).
-trans_st (g x (fold g s0 i)).
+apply fold_add with (eqA:=eqA); auto with set.
+trans_st (g x (fold f s0 i)); auto with set.
+trans_st (g x (fold g s0 i)); auto with set.
 sym_st; apply fold_add with (eqA:=eqA); auto.
 trans_st i; [idtac | sym_st ]; apply fold_empty; auto.
 Qed.

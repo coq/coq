@@ -112,9 +112,9 @@ intros.
 intuition.
 destruct (E.eq_dec x y); [left|right].
 split; auto.
-symmetry; apply (MapsTo_fun (e':=e) H); auto.
+symmetry; apply (MapsTo_fun (e':=e) H); auto with map.
 split; auto; apply add_3 with x e; auto.
-subst; auto.
+subst; auto with map.
 Qed.
 
 Lemma add_in_iff : forall m x y e, In y (add x e m) <-> E.eq x y \/ In y m.
@@ -202,27 +202,27 @@ split.
 case_eq (find x m); intros.
 exists e.
 split.
-apply (MapsTo_fun (m:=map f m) (x:=x)); auto.
-apply find_2; auto.
+apply (MapsTo_fun (m:=map f m) (x:=x)); auto with map.
+apply find_2; auto with map.
 assert (In x (map f m)) by (exists b; auto).
 destruct (map_2 H1) as (a,H2).
 rewrite (find_1 H2) in H; discriminate.
 intros (a,(H,H0)).
-subst b; auto.
+subst b; auto with map.
 Qed.
 
 Lemma map_in_iff : forall m x (f : elt -> elt'), 
  In x (map f m) <-> In x m.
 Proof.
-split; intros; eauto.
+split; intros; eauto with map.
 destruct H as (a,H).
-exists (f a); auto.
+exists (f a); auto with map.
 Qed.
 
 Lemma mapi_in_iff : forall m x (f:key->elt->elt'),
  In x (mapi f m) <-> In x m.
 Proof.
-split; intros; eauto.
+split; intros; eauto with map.
 destruct H as (a,H).
 destruct (mapi_1 f H) as (y,(H0,H1)).
 exists (f y a); auto.
@@ -238,9 +238,9 @@ Proof.
 intros; case_eq (find x m); intros.
 exists e.
 destruct (@mapi_1 _ _ m x e f) as (y,(H1,H2)).
-apply find_2; auto.
-exists y; repeat split; auto.
-apply (MapsTo_fun (m:=mapi f m) (x:=x)); auto.
+apply find_2; auto with map.
+exists y; repeat split; auto with map.
+apply (MapsTo_fun (m:=mapi f m) (x:=x)); auto with map.
 assert (In x (mapi f m)) by (exists b; auto).
 destruct (mapi_2 H1) as (a,H2).
 rewrite (find_1 H2) in H0; discriminate.
@@ -345,24 +345,24 @@ Qed.
 Lemma add_eq_o : forall m x y e, 
  E.eq x y -> find y (add x e m) = Some e.
 Proof.
-auto.
+auto with map.
 Qed.
 
 Lemma add_neq_o : forall m x y e, 
  ~ E.eq x y -> find y (add x e m) = find y m. 
 Proof.
 intros.
-case_eq (find y m); intros; auto.
-case_eq (find y (add x e m)); intros; auto.
+case_eq (find y m); intros; auto with map.
+case_eq (find y (add x e m)); intros; auto with map.
 rewrite <- H0; symmetry.
-apply find_1; apply add_3 with x e; auto.
+apply find_1; apply add_3 with x e; auto with map.
 Qed.
-Hint Resolve add_neq_o.
+Hint Resolve add_neq_o : map.
 
 Lemma add_o : forall m x y e, 
  find y (add x e m) = if E.eq_dec x y then Some e else find y m.
 Proof.
-intros; destruct (E.eq_dec x y); auto.
+intros; destruct (E.eq_dec x y); auto with map.
 Qed.
 
 Lemma add_eq_b : forall m x y e, 
@@ -394,23 +394,23 @@ destruct (find y (remove x m)); auto.
 destruct 2.
 exists e; rewrite H0; auto.
 Qed.
-Hint Resolve remove_eq_o.
+Hint Resolve remove_eq_o : map.
 
 Lemma remove_neq_o : forall m x y, 
  ~ E.eq x y -> find y (remove x m) = find y m. 
 Proof.
 intros.
-case_eq (find y m); intros; auto.
-case_eq (find y (remove x m)); intros; auto.
+case_eq (find y m); intros; auto with map.
+case_eq (find y (remove x m)); intros; auto with map.
 rewrite <- H0; symmetry.
-apply find_1; apply remove_3 with x; auto.
+apply find_1; apply remove_3 with x; auto with map.
 Qed.
-Hint Resolve remove_neq_o.
+Hint Resolve remove_neq_o : map.
 
 Lemma remove_o : forall m x y, 
  find y (remove x m) = if E.eq_dec x y then None else find y m.
 Proof.
-intros; destruct (E.eq_dec x y); auto.
+intros; destruct (E.eq_dec x y); auto with map.
 Qed.
 
 Lemma remove_eq_b : forall m x y, 
@@ -494,15 +494,15 @@ Proof.
 intros.
 case_eq (find x m); intros.
 rewrite <- H0.
-apply map2_1; auto.
-left; exists e; auto.
+apply map2_1; auto with map.
+left; exists e; auto with map.
 case_eq (find x m'); intros.
 rewrite <- H0; rewrite <- H1.
 apply map2_1; auto.
-right; exists e; auto.
+right; exists e; auto with map.
 rewrite H.
-case_eq (find x (map2 f m m')); intros; auto.
-assert (In x (map2 f m m')) by (exists e; auto).
+case_eq (find x (map2 f m m')); intros; auto with map.
+assert (In x (map2 f m m')) by (exists e; auto with map).
 destruct (map2_2 H3) as [(e0,H4)|(e0,H4)].
 rewrite (find_1 H4) in H0; discriminate.
 rewrite (find_1 H4) in H1; discriminate.
@@ -667,7 +667,7 @@ Module Properties (M: S).
   inversion H3; auto.
   f_equal; auto.
   elim H1.
-  exists b; apply MapsTo_1 with a; auto.
+  exists b; apply MapsTo_1 with a; auto with map.
   elim n; auto.
   Qed.
 
@@ -710,7 +710,7 @@ Module Properties (M: S).
   red; inversion 1.
   inversion H.
   Qed.
-  Hint Resolve cardinal_inv_1.
+  Hint Resolve cardinal_inv_1 : map.
 
   Lemma cardinal_inv_2 :
    forall m n, cardinal m = S n -> { p : key*elt | MapsTo (fst p) (snd p) m }.
@@ -735,12 +735,12 @@ Module Properties (M: S).
   destruct (cardinal_inv_2 (sym_eq Heqn)) as ((x,e),H0); simpl in *.
   assert (Add x e (remove x m) m).
    red; intros.
-   rewrite add_o; rewrite remove_o; destruct (E.eq_dec x y); eauto.
-  apply X0 with (remove x m) x e; auto.
-  apply IHn; auto.
+   rewrite add_o; rewrite remove_o; destruct (E.eq_dec x y); eauto with map.
+  apply X0 with (remove x m) x e; auto with map.
+  apply IHn; auto with map.
   assert (S n = S (cardinal (remove x m))).
-   rewrite Heqn; eapply cardinal_2; eauto.
-  inversion H1; auto.
+   rewrite Heqn; eapply cardinal_2; eauto with map.
+  inversion H1; auto with map.
   Qed.
 
  End Elt.

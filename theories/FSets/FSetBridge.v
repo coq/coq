@@ -27,7 +27,7 @@ Module DepOfNodep (M: S) <: Sdep with Module E := M.E.
    
   Definition empty : {s : t | Empty s}.
   Proof. 
-    exists empty; auto.
+    exists empty; auto with set.
   Qed.
 
   Definition is_empty : forall s : t, {Empty s} + {~ Empty s}.
@@ -66,12 +66,12 @@ Module DepOfNodep (M: S) <: Sdep with Module E := M.E.
     {s' : t | forall y : elt, In y s' <-> ~ E.eq x y /\ In y s}.
   Proof.
     intros; exists (remove x s); intuition.
-    absurd (In x (remove x s)); auto.
+    absurd (In x (remove x s)); auto with set.
     apply In_1 with y; auto. 
     elim (ME.eq_dec x y); intros; auto.
-    absurd (In x (remove x s)); auto.
+    absurd (In x (remove x s)); auto with set.
     apply In_1 with y; auto. 
-    eauto.
+    eauto with set.
   Qed.
 
   Definition union :
@@ -83,14 +83,14 @@ Module DepOfNodep (M: S) <: Sdep with Module E := M.E.
   Definition inter :
     forall s s' : t, {s'' : t | forall x : elt, In x s'' <-> In x s /\ In x s'}.
   Proof. 
-    intros; exists (inter s s'); intuition; eauto.
+    intros; exists (inter s s'); intuition; eauto with set.
   Qed.
 
   Definition diff :
     forall s s' : t, {s'' : t | forall x : elt, In x s'' <-> In x s /\ ~ In x s'}.
   Proof. 
-    intros; exists (diff s s'); intuition; eauto. 
-    absurd (In x s'); eauto. 
+    intros; exists (diff s s'); intuition; eauto with set. 
+    absurd (In x s'); eauto with set. 
   Qed. 
  
   Definition equal : forall s s' : t, {Equal s s'} + {~ Equal s s'}.
@@ -150,7 +150,7 @@ Module DepOfNodep (M: S) <: Sdep with Module E := M.E.
     exists (filter (fdec Pdec) s).
     intro H; assert (compat_bool E.eq (fdec Pdec)); auto.
     intuition.
-    eauto.
+    eauto with set.
     generalize (filter_2 H0 H1).
     unfold fdec in |- *.
     case (Pdec x); intuition.
@@ -226,7 +226,7 @@ Module DepOfNodep (M: S) <: Sdep with Module E := M.E.
     generalize H4; unfold For_all, Equal in |- *; intuition.
     elim (H0 x); intros.
     assert (fdec Pdec x = true).
-     eauto.      
+     eapply filter_2; eauto with set.
     generalize H8; unfold fdec in |- *; case (Pdec x); intuition.
     inversion H9.
     generalize H; unfold For_all, Equal in |- *; intuition.
@@ -238,8 +238,8 @@ Module DepOfNodep (M: S) <: Sdep with Module E := M.E.
     set (b := fdec Pdec x) in *; generalize (refl_equal b);
      pattern b at -1 in |- *; case b; unfold b in |- *; 
      [ left | right ].
-    elim (H4 x); intros _ B; apply B; auto.
-    elim (H x); intros _ B; apply B; auto.
+    elim (H4 x); intros _ B; apply B; auto with set.
+    elim (H x); intros _ B; apply B; auto with set.
     apply filter_3; auto.
     rewrite H5; auto.
     eapply (filter_1 (s:=s) (x:=x) H2); elim (H4 x); intros B _; apply B;

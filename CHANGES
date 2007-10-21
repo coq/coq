@@ -36,6 +36,11 @@ Libraries
   The polymorphic parameter for the fold function is now in Type. 
 - Loading FSets/FMap used to open unwanted scopes of integer datatypes 
   (see bug #1347). These scopes may need to be opened manually now.
+- Hints in FSetInterface.v have been transfered from the core database 
+  to a "set" database, and some expensive hints have been downgraded 
+  as "Immediate". A compatibility "oldset" database retains these expensive
+  hints, so using "(e)auto with set oldset" should help porting scripts. 
+  Same for FSetWeakInterface and FMap(Weak)Interface. 
 - Few changes in Reals (lemmas on prod_f_SO now on prod_f_R0).
 - Slight restructuration of the Logic library regarding choice and classical
   logic. Addition of files providing intuitionistic axiomatizations of

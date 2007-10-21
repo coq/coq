@@ -455,7 +455,7 @@ Module Properties (M: S).
         fold f s i = fold_right f i l.
   Proof.
   intros; exists (rev (elements s)); split.
-  apply NoDupA_rev; auto.
+  apply NoDupA_rev; auto with set.
   exact E.eq_trans.
   split; intros.
   rewrite elements_iff; do 2 rewrite InA_alt.
@@ -583,9 +583,9 @@ Module Properties (M: S).
   Proof.
   simple induction n; intros; auto.
   destruct (cardinal_inv_2 H) as (x,H0). 
-  apply X0 with (remove x s) x; auto.
-  apply X1; auto.
-  rewrite (cardinal_2 (x:=x)(s:=remove x s)(s':=s)) in H; auto.
+  apply X0 with (remove x s) x; auto with set.
+  apply X1; auto with set.
+  rewrite (cardinal_2 (x:=x)(s:=remove x s)(s':=s)) in H; auto with set.
   Qed.
 
   Lemma set_induction :
@@ -608,7 +608,7 @@ Module Properties (M: S).
 
   Lemma fold_empty : eqA (fold f empty i) i.
   Proof. 
-  apply fold_1; auto.
+  apply fold_1; auto with set.
   Qed.
 
   Lemma fold_equal : 
@@ -643,7 +643,7 @@ Module Properties (M: S).
   Proof.
   intros.
   sym_st.
-  apply fold_2 with (eqA:=eqA); auto.
+  apply fold_2 with (eqA:=eqA); auto with set.
   Qed.
 
   Lemma remove_fold_2: forall s x, ~In x s -> 
@@ -779,7 +779,7 @@ Module Properties (M: S).
 
   Lemma empty_cardinal : cardinal empty = 0.
   Proof.
-  rewrite cardinal_fold; apply fold_1; auto.
+  rewrite cardinal_fold; apply fold_1; auto with set.
   Qed.
 
   Hint Immediate empty_cardinal cardinal_1 : set.

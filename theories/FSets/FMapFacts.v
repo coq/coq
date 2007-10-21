@@ -114,9 +114,9 @@ intros.
 intuition.
 destruct (eq_dec x y); [left|right].
 split; auto.
-symmetry; apply (MapsTo_fun (e':=e) H); auto.
+symmetry; apply (MapsTo_fun (e':=e) H); auto with map.
 split; auto; apply add_3 with x e; auto.
-subst; auto.
+subst; auto with map.
 Qed.
 
 Lemma add_in_iff : forall m x y e, In y (add x e m) <-> E.eq x y \/ In y m.
@@ -204,27 +204,27 @@ split.
 case_eq (find x m); intros.
 exists e.
 split.
-apply (MapsTo_fun (m:=map f m) (x:=x)); auto.
-apply find_2; auto.
+apply (MapsTo_fun (m:=map f m) (x:=x)); auto with map.
+apply find_2; auto with map.
 assert (In x (map f m)) by (exists b; auto).
 destruct (map_2 H1) as (a,H2).
 rewrite (find_1 H2) in H; discriminate.
 intros (a,(H,H0)).
-subst b; auto.
+subst b; auto with map.
 Qed.
 
 Lemma map_in_iff : forall m x (f : elt -> elt'), 
  In x (map f m) <-> In x m.
 Proof.
-split; intros; eauto.
+split; intros; eauto with map.
 destruct H as (a,H).
-exists (f a); auto.
+exists (f a); auto with map.
 Qed.
 
 Lemma mapi_in_iff : forall m x (f:key->elt->elt'),
  In x (mapi f m) <-> In x m.
 Proof.
-split; intros; eauto.
+split; intros; eauto with map.
 destruct H as (a,H).
 destruct (mapi_1 f H) as (y,(H0,H1)).
 exists (f y a); auto.
@@ -240,9 +240,9 @@ Proof.
 intros; case_eq (find x m); intros.
 exists e.
 destruct (@mapi_1 _ _ m x e f) as (y,(H1,H2)).
-apply find_2; auto.
-exists y; repeat split; auto.
-apply (MapsTo_fun (m:=mapi f m) (x:=x)); auto.
+apply find_2; auto with map.
+exists y; repeat split; auto with map.
+apply (MapsTo_fun (m:=mapi f m) (x:=x)); auto with map.
 assert (In x (mapi f m)) by (exists b; auto).
 destruct (mapi_2 H1) as (a,H2).
 rewrite (find_1 H2) in H0; discriminate.
@@ -345,24 +345,24 @@ Qed.
 Lemma add_eq_o : forall m x y e, 
  E.eq x y -> find y (add x e m) = Some e.
 Proof.
-auto.
+auto with map.
 Qed.
 
 Lemma add_neq_o : forall m x y e, 
  ~ E.eq x y -> find y (add x e m) = find y m. 
 Proof.
 intros.
-case_eq (find y m); intros; auto.
-case_eq (find y (add x e m)); intros; auto.
+case_eq (find y m); intros; auto with map.
+case_eq (find y (add x e m)); intros; auto with map.
 rewrite <- H0; symmetry.
-apply find_1; apply add_3 with x e; auto.
+apply find_1; apply add_3 with x e; auto with map.
 Qed.
-Hint Resolve add_neq_o.
+Hint Resolve add_neq_o : map.
 
 Lemma add_o : forall m x y e, 
  find y (add x e m) = if eq_dec x y then Some e else find y m.
 Proof.
-intros; destruct (eq_dec x y); auto.
+intros; destruct (eq_dec x y); auto with map.
 Qed.
 
 Lemma add_eq_b : forall m x y e, 
@@ -394,23 +394,23 @@ destruct (find y (remove x m)); auto.
 destruct 2.
 exists e; rewrite H0; auto.
 Qed.
-Hint Resolve remove_eq_o.
+Hint Resolve remove_eq_o : map.
 
 Lemma remove_neq_o : forall m x y, 
  ~ E.eq x y -> find y (remove x m) = find y m. 
 Proof.
 intros.
-case_eq (find y m); intros; auto.
-case_eq (find y (remove x m)); intros; auto.
+case_eq (find y m); intros; auto with map.
+case_eq (find y (remove x m)); intros; auto with map.
 rewrite <- H0; symmetry.
-apply find_1; apply remove_3 with x; auto.
+apply find_1; apply remove_3 with x; auto with map.
 Qed.
-Hint Resolve remove_neq_o.
+Hint Resolve remove_neq_o : map.
 
 Lemma remove_o : forall m x y, 
  find y (remove x m) = if eq_dec x y then None else find y m.
 Proof.
-intros; destruct (eq_dec x y); auto.
+intros; destruct (eq_dec x y); auto with map.
 Qed.
 
 Lemma remove_eq_b : forall m x y, 
@@ -495,14 +495,14 @@ intros.
 case_eq (find x m); intros.
 rewrite <- H0.
 apply map2_1; auto.
-left; exists e; auto.
+left; exists e; auto with map.
 case_eq (find x m'); intros.
 rewrite <- H0; rewrite <- H1.
 apply map2_1; auto.
-right; exists e; auto.
+right; exists e; auto with map.
 rewrite H.
-case_eq (find x (map2 f m m')); intros; auto.
-assert (In x (map2 f m m')) by (exists e; auto).
+case_eq (find x (map2 f m m')); intros; auto with map.
+assert (In x (map2 f m m')) by (exists e; auto with map).
 destruct (map2_2 H3) as [(e0,H4)|(e0,H4)].
 rewrite (find_1 H4) in H0; discriminate.
 rewrite (find_1 H4) in H1; discriminate.
@@ -647,13 +647,13 @@ Module Properties (M: S).
    unfold leb; f_equal; apply gtb_compat; auto.
   Qed.
 
-  Hint Resolve gtb_compat leb_compat elements_3.
+  Hint Resolve gtb_compat leb_compat elements_3 : map.
 
   Lemma elements_split : forall p m, 
     elements m = elements_lt p m ++ elements_ge p m.
   Proof.
   unfold elements_lt, elements_ge, leb; intros.
-  apply filter_split with (eqA:=eqk) (ltA:=ltk); eauto.
+  apply filter_split with (eqA:=eqk) (ltA:=ltk); eauto with map.
   intros; destruct x; destruct y; destruct p.
   rewrite gtb_1 in H; unfold O.ltk in H; simpl in *.
   assert (~ltk (t1,e0) (k,e1)).
@@ -667,15 +667,15 @@ Module Properties (M: S).
                  (elements_lt (x,e) m ++ (x,e):: elements_ge (x,e) m).
   Proof.
   intros; unfold elements_lt, elements_ge.
-  apply sort_equivlistA_eqlistA; auto.
-  apply (@SortA_app _ eqke); auto.
-  apply (@filter_sort _ eqke); auto; clean_eauto.
-  constructor; auto.
-  apply (@filter_sort _ eqke); auto; clean_eauto.
-  rewrite (@InfA_alt _ eqke); auto; try (clean_eauto; fail).
-  apply (@filter_sort _ eqke); auto; clean_eauto.
+  apply sort_equivlistA_eqlistA; auto with map.
+  apply (@SortA_app _ eqke); auto with map.
+  apply (@filter_sort _ eqke); auto with map; clean_eauto.
+  constructor; auto with map.
+  apply (@filter_sort _ eqke); auto with map; clean_eauto.
+  rewrite (@InfA_alt _ eqke); auto with map; try (clean_eauto; fail).
+  apply (@filter_sort _ eqke); auto with map; clean_eauto.
   intros.
-  rewrite filter_InA in H1; auto; destruct H1.
+  rewrite filter_InA in H1; auto with map; destruct H1.
   rewrite leb_1 in H2.
   destruct y; unfold O.ltk in *; simpl in *.
   rewrite <- elements_mapsto_iff in H1.
@@ -684,18 +684,18 @@ Module Properties (M: S).
    exists e0; apply MapsTo_1 with t0; auto.
   ME.order.
   intros.
-  rewrite filter_InA in H1; auto; destruct H1.
+  rewrite filter_InA in H1; auto with map; destruct H1.
   rewrite gtb_1 in H3.
   destruct y; destruct x0; unfold O.ltk in *; simpl in *.
   inversion_clear H2.
   red in H4; simpl in *; destruct H4.
   ME.order.
-  rewrite filter_InA in H4; auto; destruct H4.
+  rewrite filter_InA in H4; auto with map; destruct H4.
   rewrite leb_1 in H4.
   unfold O.ltk in *; simpl in *; ME.order.
   red; intros a; destruct a.
   rewrite InA_app_iff; rewrite InA_cons.
-  do 2 (rewrite filter_InA; auto).
+  do 2 (rewrite filter_InA; auto with map).
   do 2 rewrite <- elements_mapsto_iff.
   rewrite leb_1; rewrite gtb_1.
   rewrite find_mapsto_iff; rewrite (H0 t0); rewrite <- find_mapsto_iff.
@@ -716,8 +716,8 @@ Module Properties (M: S).
      eqlistA eqke (elements m') (elements m ++ (x,e)::nil).
   Proof.
   intros.
-  apply sort_equivlistA_eqlistA; auto.
-  apply (@SortA_app _ eqke); auto.
+  apply sort_equivlistA_eqlistA; auto with map.
+  apply (@SortA_app _ eqke); auto with map.
   intros.
   inversion_clear H2.
   destruct x0; destruct y.
@@ -745,9 +745,9 @@ Module Properties (M: S).
      eqlistA eqke (elements m') ((x,e)::elements m).
   Proof.
   intros.
-  apply sort_equivlistA_eqlistA; auto.
+  apply sort_equivlistA_eqlistA; auto with map.
   change (sort ltk (((x,e)::nil) ++ elements m)).
-  apply (@SortA_app _ eqke); auto.
+  apply (@SortA_app _ eqke); auto with map.
   intros.
   inversion_clear H1.
   destruct y; destruct x0.
@@ -774,7 +774,7 @@ Module Properties (M: S).
    Equal m m' -> eqlistA eqke (elements m) (elements m').
   Proof.
   intros.
-  apply sort_equivlistA_eqlistA; auto.
+  apply sort_equivlistA_eqlistA; auto with map.
   red; intros.
   destruct x; do 2 rewrite <- elements_mapsto_iff.
   do 2 rewrite find_mapsto_iff; rewrite H; split; auto.
@@ -978,12 +978,12 @@ Module Properties (M: S).
   destruct (cardinal_inv_2 (sym_eq Heqn)) as ((x,e),H0); simpl in *.
   assert (Add x e (remove x m) m).
    red; intros.
-   rewrite add_o; rewrite remove_o; destruct (ME.eq_dec x y); eauto.
-  apply X0 with (remove x m) x e; auto.
-  apply IHn; auto.
+   rewrite add_o; rewrite remove_o; destruct (ME.eq_dec x y); eauto with map.
+  apply X0 with (remove x m) x e; auto with map.
+  apply IHn; auto with map.
   assert (S n = S (cardinal (remove x m))).
-   rewrite Heqn; eapply cardinal_2; eauto.
-  inversion H1; auto.
+   rewrite Heqn; eapply cardinal_2; eauto with map.
+  inversion H1; auto with map.
   Qed.
 
   Lemma map_induction_max :
@@ -1002,11 +1002,11 @@ Module Properties (M: S).
    rewrite add_o; rewrite remove_o; destruct (ME.eq_dec k y); eauto.
    apply find_1; apply MapsTo_1 with k; auto.
    apply max_elt_MapsTo; auto.
-  apply X0 with (remove k m) k e; auto.
+  apply X0 with (remove k m) k e; auto with map.
   apply IHn.
   assert (S n = S (cardinal (remove k m))).
    rewrite Heqn.
-   eapply cardinal_2; eauto.
+   eapply cardinal_2; eauto with map.
   inversion H1; auto. 
   eapply max_elt_Above; eauto.
 
@@ -1033,7 +1033,7 @@ Module Properties (M: S).
   apply IHn.
   assert (S n = S (cardinal (remove k m))).
    rewrite Heqn.
-   eapply cardinal_2; eauto.
+   eapply cardinal_2; eauto with map.
   inversion H1; auto. 
   eapply min_elt_Below; eauto.
 

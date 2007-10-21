@@ -12,8 +12,7 @@
 
 (** Set interfaces for types with only a decidable equality, but no ordering *)
 
-Require Export Bool.
-Require Export DecidableType.
+Require Export Bool DecidableType.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
@@ -229,13 +228,21 @@ Module Type S.
 
   End Spec.
 
-  Hint Immediate In_1.
-  
-  Hint Resolve mem_1 mem_2 equal_1 equal_2 subset_1 subset_2 empty_1
-    is_empty_1 is_empty_2 choose_1 choose_2 add_1 add_2 add_3 remove_1
-    remove_2 remove_3 singleton_1 singleton_2 union_1 union_2 union_3 inter_1
-    inter_2 inter_3 diff_1 diff_2 diff_3 filter_1 filter_2 filter_3 for_all_1
-    for_all_2 exists_1 exists_2 partition_1 partition_2 elements_1 elements_2
-    elements_3.
+  Hint Resolve mem_1 equal_1 subset_1 empty_1
+    is_empty_1 choose_1 choose_2 add_1 add_2 remove_1
+    remove_2 singleton_2 union_1 union_2 union_3
+    inter_3 diff_3 fold_1 filter_3 for_all_1 exists_1
+    partition_1 partition_2 elements_1 elements_3 
+    : set.
+  Hint Immediate In_1 mem_2 equal_2 subset_2 is_empty_2 add_3
+    remove_3 singleton_1 inter_1 inter_2 diff_1 diff_2
+    filter_1 filter_2 for_all_2 exists_2 elements_2 
+    : set.
+  (* for compatibility with earlier hints *)
+  Hint Resolve In_1 mem_2 equal_2 subset_2 is_empty_2 add_3
+    remove_3 singleton_1 inter_1 inter_2 diff_1 diff_2
+    filter_1 filter_2 for_all_2 exists_2 elements_2 
+    : oldset.
+
 
 End S.

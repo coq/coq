@@ -13,12 +13,9 @@
 (** This file proposes an interface for finite maps over keys with decidable 
      equality, but no decidable order. *)
 
-(* begin hide *)
-Require Export Bool.
-Require Export DecidableType.
+Require Export Bool DecidableType.
 Set Implicit Arguments.
 Unset Strict Implicit.
-(* end hide *)
 
 Module Type S.
 
@@ -195,9 +192,13 @@ Module Type S.
 	(x:key)(f:option elt->option elt'->option elt''), 
         In x (map2 f m m') -> In x m \/ In x m'.
 
-  Hint Immediate MapsTo_1 mem_2 is_empty_2.
-  
-  Hint Resolve mem_1 is_empty_1 is_empty_2 add_1 add_2 add_3 remove_1
-    remove_2 remove_3 find_1 find_2 fold_1 map_1 map_2 mapi_1 mapi_2. 
+  Hint Immediate MapsTo_1 mem_2 is_empty_2
+    map_2 mapi_2 add_3 remove_3 find_2
+    : map.
+  Hint Resolve mem_1 is_empty_1 is_empty_2 add_1 add_2 remove_1
+    remove_2 find_1 fold_1 map_1 mapi_1 mapi_2
+    : map.
+  (** for compatibility with earlier hints *)
+  Hint Resolve map_2 mapi_2 add_3 remove_3 find_2 : oldmap.
 
 End S.

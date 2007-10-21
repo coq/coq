@@ -258,7 +258,8 @@ apply H0; auto.
 symmetry.
 rewrite H0; intros.
 destruct H1 as (_,H1).
-apply H1; auto.
+apply H1; auto with set.
+apply elements_2; auto with set.
 Qed.
 
 Lemma exists_b : compat_bool E.eq f -> 
@@ -271,7 +272,7 @@ destruct (existsb f (elements s)); destruct (exists_ f s); auto; intros.
 rewrite <- H1; intros.
 destruct H0 as (H0,_).
 destruct H0 as (a,(Ha1,Ha2)); auto.
-exists a; auto.
+exists a; intuition; auto with set.
 symmetry.
 rewrite H0.
 destruct H1 as (_,H1).
@@ -420,7 +421,7 @@ Add Relation t Subset
 
 Add Morphism In with signature E.eq ==> Subset ++> impl as In_s_m.
 Proof.
-unfold Subset, impl; intros; eauto.
+unfold Subset, impl; intros; eauto with set.
 Qed.
 
 Add Morphism Empty with signature Subset --> impl as Empty_s_m.

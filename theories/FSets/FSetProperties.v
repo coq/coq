@@ -239,7 +239,7 @@ Module Properties (M: S).
   Proof.
   unfold Equal; intros; set_iff.
   destruct (ME.eq_dec x a); intuition.
-  left; eauto.
+  left; eauto with set.
   Qed.
 
   Lemma union_subset_1 : s [<=] union s s'.
@@ -525,7 +525,7 @@ Module Properties (M: S).
    elements s = elements_lt x s ++ elements_ge x s.
   Proof.
   unfold elements_lt, elements_ge, leb; intros.
-  eapply (@filter_split _ E.eq); eauto. ME.order. ME.order. ME.order.
+  eapply (@filter_split _ E.eq); eauto with set. ME.order. ME.order. ME.order.
   intros.
   rewrite gtb_1 in H.
   assert (~E.lt y x).
@@ -537,13 +537,13 @@ Module Properties (M: S).
     eqlistA E.eq (elements s') (elements_lt x s ++ x :: elements_ge x s). 
   Proof.
   intros; unfold elements_ge, elements_lt.
-  apply sort_equivlistA_eqlistA; auto.
+  apply sort_equivlistA_eqlistA; auto with set.
   apply (@SortA_app _ E.eq); auto.
-  apply (@filter_sort _ E.eq); auto; eauto.
+  apply (@filter_sort _ E.eq); auto with set; eauto with set.
   constructor; auto.
-  apply (@filter_sort _ E.eq); auto; eauto.
+  apply (@filter_sort _ E.eq); auto with set; eauto with set.
   rewrite Inf_alt; auto; intros.
-  apply (@filter_sort _ E.eq); auto; eauto.
+  apply (@filter_sort _ E.eq); auto with set; eauto with set.
   rewrite filter_InA in H1; auto; destruct H1.
   rewrite leb_1 in H2.
   rewrite <- elements_iff in H1.
@@ -574,8 +574,8 @@ Module Properties (M: S).
      eqlistA E.eq (elements s') (elements s ++ x::nil).
   Proof.
   intros.
-  apply sort_equivlistA_eqlistA; auto.
-  apply (@SortA_app _ E.eq); auto.
+  apply sort_equivlistA_eqlistA; auto with set.
+  apply (@SortA_app _ E.eq); auto with set.
   intros.
   inversion_clear H2.
   rewrite <- elements_iff in H1.
@@ -591,9 +591,9 @@ Module Properties (M: S).
      eqlistA E.eq (elements s') (x::elements s).
   Proof.
   intros.
-  apply sort_equivlistA_eqlistA; auto.
+  apply sort_equivlistA_eqlistA; auto with set.
   change (sort E.lt ((x::nil) ++ elements s)).
-  apply (@SortA_app _ E.eq); auto.
+  apply (@SortA_app _ E.eq); auto with set.
   intros.
   inversion_clear H1.
   rewrite <- elements_iff in H2.
@@ -615,7 +615,7 @@ Module Properties (M: S).
   intros.
   do 2 rewrite M.cardinal_1.
   apply (@eqlistA_length _ E.eq); auto.
-  apply sort_equivlistA_eqlistA; auto.
+  apply sort_equivlistA_eqlistA; auto with set.
   red; intro a.
   do 2 rewrite <- elements_iff; auto.
   Qed.
@@ -755,7 +755,7 @@ Module Properties (M: S).
         fold f s i = fold_right f i l.
   Proof.
   intros; exists (rev (elements s)); split.
-  apply NoDupA_rev; auto.
+  apply NoDupA_rev; auto with set.
   exact E.eq_trans.
   split; intros.
   rewrite elements_iff; do 2 rewrite InA_alt.
@@ -843,7 +843,7 @@ Module Properties (M: S).
 
   Lemma fold_empty : forall i, eqA (fold f empty i) i.
   Proof. 
-  intros; apply fold_1; auto.
+  intros; apply fold_1; auto with set.
   Qed.
 
   Lemma fold_equal : 
@@ -853,7 +853,7 @@ Module Properties (M: S).
   do 2 rewrite <- fold_left_rev_right.
   apply (@fold_right_eqlistA E.t E.eq A eqA st); auto.
   apply eqlistA_rev.
-  apply sort_equivlistA_eqlistA; auto.
+  apply sort_equivlistA_eqlistA; auto with set.
   red; intro a; do 2 rewrite <- elements_iff; auto.
   Qed.
 
@@ -882,7 +882,7 @@ Module Properties (M: S).
   Proof.
   intros.
   sym_st.
-  apply fold_2 with (eqA:=eqA); auto.
+  apply fold_2 with (eqA:=eqA); auto with set.
   Qed.
 
   Lemma remove_fold_2: forall i s x, ~In x s -> 
@@ -983,7 +983,7 @@ Module Properties (M: S).
 
   Lemma empty_cardinal : cardinal empty = 0.
   Proof.
-  rewrite cardinal_fold; apply fold_1; auto.
+  rewrite cardinal_fold; apply fold_1; auto with set.
   Qed.
 
   Hint Immediate empty_cardinal cardinal_1 : set.
