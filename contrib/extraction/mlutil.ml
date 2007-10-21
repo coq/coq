@@ -573,14 +573,20 @@ let eta_red e =
   if n = 0 then e 
   else match t with 
     | MLapp (f,a) -> 
-	let m = (List.length a) - n in 
-	if m < 0 then e 
-	else
-	  let a1,a2 = list_chop m a in 
-	  let f = if m = 0 then f else MLapp (f,a1) in 
-	  if test_eta_args_lift 0 n a2 && not (ast_occurs_itvl 1 n f)
-	  then ast_lift (-n) f
-	  else e 
+	let m = List.length a in 
+	let ids,body,args = 
+	  if m = n then 
+	    [], f, a
+	  else if m < n then 
+	    snd (list_chop (n-m) ids), f, a 
+	  else (* m > n *)
+	    let a1,a2 = list_chop (m-n) a in 
+	    [], MLapp (f,a1), a2
+	in 
+	let p = List.length args in  
+	if test_eta_args_lift 0 p args && not (ast_occurs_itvl 1 p body)
+	then named_lams ids (ast_lift (-p) body)
+	else e
     | _ -> e
 
 (*s Computes all head linear beta-reductions possible in [(t a)].
@@ -1131,7 +1137,9 @@ let is_not_strict t =
    Futhermore we don't expand fixpoints. *)
 
 let inline_test t = 
-  not (is_fix (eta_red t)) && (ml_size t < 12 && is_not_strict t)
+  let t1 = eta_red t in 
+  let t2 = snd (collect_lams t1) in
+  not (is_fix t2) && ml_size t < 12 && is_not_strict t
 
 let manual_inline_list = 
   let mp = MPfile (dirpath_of_string "Coq.Init.Wf") in 
