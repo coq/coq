@@ -70,7 +70,8 @@ LIBREP:=\
   lib/hashcons.cmo lib/dyn.cmo lib/system.cmo lib/options.cmo \
   lib/bstack.cmo lib/edit.cmo lib/gset.cmo lib/gmap.cmo \
   lib/tlm.cmo lib/gmapl.cmo lib/profile.cmo lib/explore.cmo \
-  lib/predicate.cmo lib/rtree.cmo lib/heap.cmo
+  lib/predicate.cmo lib/rtree.cmo lib/heap.cmo \
+  lib/biassoc.cmo
 # Rem: Cygwin already uses variable LIB 
 
 BYTERUN:=\
@@ -120,6 +121,8 @@ INTERP:=\
   toplevel/discharge.cmo library/declare.cmo
 
 PROOFS:=\
+  proofs/transactional_stack.cmo proofs/permutation.cmo \
+  proofs/subproof.cmo proofs/proo.cmo \
   proofs/tacexpr.cmo proofs/proof_type.cmo proofs/redexpr.cmo \
   proofs/proof_trees.cmo proofs/logic.cmo \
   proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
