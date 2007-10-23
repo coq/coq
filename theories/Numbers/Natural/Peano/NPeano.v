@@ -6,7 +6,7 @@ Module Export NZOrdAxiomsMod <: NZOrdAxiomsSig.
 Module Export NZAxiomsMod <: NZAxiomsSig.
 
 Definition NZ := nat.
-Definition NZE := (@eq nat).
+Definition NZeq := (@eq nat).
 Definition NZ0 := 0.
 Definition NZsucc := S.
 Definition NZpred := pred.
@@ -14,40 +14,40 @@ Definition NZplus := plus.
 Definition NZminus := minus.
 Definition NZtimes := mult.
 
-Theorem NZE_equiv : equiv nat NZE.
+Theorem NZE_equiv : equiv nat NZeq.
 Proof (eq_equiv nat).
 
-Add Relation nat NZE
+Add Relation nat NZeq
  reflexivity proved by (proj1 NZE_equiv)
  symmetry proved by (proj2 (proj2 NZE_equiv))
  transitivity proved by (proj1 (proj2 NZE_equiv))
 as NZE_rel.
 
-(* If we say "Add Relation nat (@eq nat)" instead of "Add Relation nat NZE"
+(* If we say "Add Relation nat (@eq nat)" instead of "Add Relation nat NZeq"
 then the theorem generated for succ_wd below is forall x, succ x = succ x,
 which does not match the axioms in NAxiomsSig *)
 
-Add Morphism NZsucc with signature NZE ==> NZE as NZsucc_wd.
+Add Morphism NZsucc with signature NZeq ==> NZeq as NZsucc_wd.
 Proof.
 congruence.
 Qed.
 
-Add Morphism NZpred with signature NZE ==> NZE as NZpred_wd.
+Add Morphism NZpred with signature NZeq ==> NZeq as NZpred_wd.
 Proof.
 congruence.
 Qed.
 
-Add Morphism NZplus with signature NZE ==> NZE ==> NZE as NZplus_wd.
+Add Morphism NZplus with signature NZeq ==> NZeq ==> NZeq as NZplus_wd.
 Proof.
 congruence.
 Qed.
 
-Add Morphism NZminus with signature NZE ==> NZE ==> NZE as NZminus_wd.
+Add Morphism NZminus with signature NZeq ==> NZeq ==> NZeq as NZminus_wd.
 Proof.
 congruence.
 Qed.
 
-Add Morphism NZtimes with signature NZE ==> NZE ==> NZE as NZtimes_wd.
+Add Morphism NZtimes with signature NZeq ==> NZeq ==> NZeq as NZtimes_wd.
 Proof.
 congruence.
 Qed.
@@ -99,14 +99,14 @@ End NZAxiomsMod.
 Definition NZlt := lt.
 Definition NZle := le.
 
-Add Morphism NZlt with signature NZE ==> NZE ==> iff as NZlt_wd.
+Add Morphism NZlt with signature NZeq ==> NZeq ==> iff as NZlt_wd.
 Proof.
-unfold NZE; intros x1 x2 H1 y1 y2 H2; rewrite H1; now rewrite H2.
+unfold NZeq; intros x1 x2 H1 y1 y2 H2; rewrite H1; now rewrite H2.
 Qed.
 
-Add Morphism NZle with signature NZE ==> NZE ==> iff as NZle_wd.
+Add Morphism NZle with signature NZeq ==> NZeq ==> iff as NZle_wd.
 Proof.
-unfold NZE; intros x1 x2 H1 y1 y2 H2; rewrite H1; now rewrite H2.
+unfold NZeq; intros x1 x2 H1 y1 y2 H2; rewrite H1; now rewrite H2.
 Qed.
 
 Theorem NZle_lt_or_eq : forall n m : nat, n <= m <-> n < m \/ n = m.
@@ -143,11 +143,11 @@ Proof.
 reflexivity.
 Qed.
 
-Theorem recursion_wd : forall (A : Set) (EA : relation A),
-  forall a a' : A, EA a a' ->
-    forall f f' : nat -> A -> A, eq_fun2 (@eq nat) EA EA f f' ->
+Theorem recursion_wd : forall (A : Set) (Aeq : relation A),
+  forall a a' : A, Aeq a a' ->
+    forall f f' : nat -> A -> A, eq_fun2 (@eq nat) Aeq Aeq f f' ->
       forall n n' : nat, n = n' ->
-        EA (recursion a f n) (recursion a' f' n').
+        Aeq (recursion a f n) (recursion a' f' n').
 Proof.
 unfold eq_fun2; induction n; intros n' Enn'; rewrite <- Enn' in *; simpl; auto.
 Qed.
@@ -159,9 +159,9 @@ reflexivity.
 Qed.
 
 Theorem recursion_succ :
-  forall (A : Set) (EA : relation A) (a : A) (f : nat -> A -> A),
-    EA a a -> fun2_wd (@eq nat) EA EA f ->
-      forall n : nat, EA (recursion a f (S n)) (f n (recursion a f n)).
+  forall (A : Set) (Aeq : relation A) (a : A) (f : nat -> A -> A),
+    Aeq a a -> fun2_wd (@eq nat) Aeq Aeq f ->
+      forall n : nat, Aeq (recursion a f (S n)) (f n (recursion a f n)).
 Proof.
 unfold eq_fun2; induction n; simpl; auto.
 Qed.

@@ -8,7 +8,7 @@ Module Export NZOrdAxiomsMod <: NZOrdAxiomsSig.
 Module Export NZAxiomsMod <: NZAxiomsSig.
 
 Definition NZ := Z.
-Definition NZE := (@eq Z).
+Definition NZeq := (@eq Z).
 Definition NZ0 := 0.
 Definition NZsucc := Zsucc'.
 Definition NZpred := Zpred'.
@@ -16,38 +16,38 @@ Definition NZplus := Zplus.
 Definition NZminus := Zminus.
 Definition NZtimes := Zmult.
 
-Theorem NZE_equiv : equiv Z NZE.
+Theorem NZE_equiv : equiv Z NZeq.
 Proof.
 exact (@eq_equiv Z).
 Qed.
 
-Add Relation Z NZE
+Add Relation Z NZeq
  reflexivity proved by (proj1 NZE_equiv)
  symmetry proved by (proj2 (proj2 NZE_equiv))
  transitivity proved by (proj1 (proj2 NZE_equiv))
 as NZE_rel.
 
-Add Morphism NZsucc with signature NZE ==> NZE as NZsucc_wd.
+Add Morphism NZsucc with signature NZeq ==> NZeq as NZsucc_wd.
 Proof.
 congruence.
 Qed.
 
-Add Morphism NZpred with signature NZE ==> NZE as NZpred_wd.
+Add Morphism NZpred with signature NZeq ==> NZeq as NZpred_wd.
 Proof.
 congruence.
 Qed.
 
-Add Morphism NZplus with signature NZE ==> NZE ==> NZE as NZplus_wd.
+Add Morphism NZplus with signature NZeq ==> NZeq ==> NZeq as NZplus_wd.
 Proof.
 congruence.
 Qed.
 
-Add Morphism NZminus with signature NZE ==> NZE ==> NZE as NZminus_wd.
+Add Morphism NZminus with signature NZeq ==> NZeq ==> NZeq as NZminus_wd.
 Proof.
 congruence.
 Qed.
 
-Add Morphism NZtimes with signature NZE ==> NZE ==> NZE as NZtimes_wd.
+Add Morphism NZtimes with signature NZeq ==> NZeq ==> NZeq as NZtimes_wd.
 Proof.
 congruence.
 Qed.
@@ -58,7 +58,7 @@ exact Zpred'_succ'.
 Qed.
 
 Theorem NZinduction :
-  forall A : Z -> Prop, predicate_wd NZE A ->
+  forall A : Z -> Prop, predicate_wd NZeq A ->
     A 0 -> (forall n : Z, A n <-> A (NZsucc n)) -> forall n : Z, A n.
 Proof.
 intros A A_wd A0 AS n; apply Zind; clear n.
@@ -103,14 +103,14 @@ End NZAxiomsMod.
 Definition NZlt := Zlt.
 Definition NZle := Zle.
 
-Add Morphism NZlt with signature NZE ==> NZE ==> iff as NZlt_wd.
+Add Morphism NZlt with signature NZeq ==> NZeq ==> iff as NZlt_wd.
 Proof.
-unfold NZE. intros n1 n2 H1 m1 m2 H2; rewrite H1; now rewrite H2.
+unfold NZeq. intros n1 n2 H1 m1 m2 H2; rewrite H1; now rewrite H2.
 Qed.
 
-Add Morphism NZle with signature NZE ==> NZE ==> iff as NZle_wd.
+Add Morphism NZle with signature NZeq ==> NZeq ==> iff as NZle_wd.
 Proof.
-unfold NZE. intros n1 n2 H1 m1 m2 H2; rewrite H1; now rewrite H2.
+unfold NZeq. intros n1 n2 H1 m1 m2 H2; rewrite H1; now rewrite H2.
 Qed.
 
 Theorem NZle_lt_or_eq : forall n m : Z, n <= m <-> n < m \/ n = m.
@@ -139,9 +139,7 @@ match x with
 | Zneg x => Zpos x
 end.
 
-Notation "- x" := (Zopp x) : Z_scope.
-
-Add Morphism Zopp with signature NZE ==> NZE as Zopp_wd.
+Add Morphism Zopp with signature NZeq ==> NZeq as Zopp_wd.
 Proof.
 congruence.
 Qed.

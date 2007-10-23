@@ -1,8 +1,9 @@
 Require Export ZAxioms.
 Require Import NZTimesOrder.
 
-Module ZBasePropFunct (Import ZAxiomsMod : ZAxiomsSig).
-Open Local Scope NatIntScope.
+Module ZBasePropFunct (Export ZAxiomsMod : ZAxiomsSig).
+
+Open Local Scope IntScope.
 
 Module Export NZTimesOrderMod := NZTimesOrderPropFunct NZOrdAxiomsMod.
 
@@ -22,7 +23,7 @@ Theorem Zsucc_inj_wd_neg : forall n m : Z, S n ~= S m <-> n ~= m.
 Proof NZsucc_inj_wd_neg.
 
 Theorem Zcentral_induction :
-forall A : Z -> Prop, predicate_wd E A ->
+forall A : Z -> Prop, predicate_wd Zeq A ->
   forall z : Z, A z ->
     (forall n : Z, A n <-> A (S n)) ->
       forall n : Z, A n.

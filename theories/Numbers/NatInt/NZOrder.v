@@ -347,9 +347,9 @@ in the induction step *)
 Section Induction.
 
 Variable A : NZ -> Prop.
-Hypothesis A_wd : predicate_wd NZE A.
+Hypothesis A_wd : predicate_wd NZeq A.
 
-Add Morphism A with signature NZE ==> iff as A_morph.
+Add Morphism A with signature NZeq ==> iff as A_morph.
 Proof A_wd.
 
 Section Center.
@@ -532,12 +532,12 @@ Variable z : NZ.
 
 Let R (n m : NZ) := z <= n /\ n < m.
 
-Add Morphism R with signature NZE ==> NZE ==> iff as R_wd.
+Add Morphism R with signature NZeq ==> NZeq ==> iff as R_wd.
 Proof.
 intros x1 x2 H1 x3 x4 H2; unfold R; rewrite H1; now rewrite H2.
 Qed.
 
-Lemma NZAcc_lt_wd : predicate_wd NZE (Acc R).
+Lemma NZAcc_lt_wd : predicate_wd NZeq (Acc R).
 Proof.
 unfold predicate_wd, fun_wd.
 intros x1 x2 H; split; intro H1; destruct H1 as [H2];

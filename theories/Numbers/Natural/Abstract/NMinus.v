@@ -2,7 +2,11 @@ Require Export NTimesOrder.
 
 Module NMinusPropFunct (Import NAxiomsMod : NAxiomsSig).
 Module Export NTimesOrderPropMod := NTimesOrderPropFunct NAxiomsMod.
-Open Local Scope NatIntScope.
+Open Local Scope NatScope.
+
+Theorem minus_wd :
+  forall n1 n2 : N, n1 == n2 -> forall m1 m2 : N, m1 == m2 -> n1 - m1 == n2 - m2.
+Proof NZminus_wd.
 
 Theorem minus_0_r : forall n : N, n - 0 == n.
 Proof NZminus_0_r.

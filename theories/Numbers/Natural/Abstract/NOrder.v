@@ -2,11 +2,19 @@ Require Export NTimes.
 
 Module NOrderPropFunct (Import NAxiomsMod : NAxiomsSig).
 Module Export NTimesPropMod := NTimesPropFunct NAxiomsMod.
-Open Local Scope NatIntScope.
+Open Local Scope NatScope.
 
 (* The tactics le_less, le_equal and le_elim are inherited from NZOrder.v *)
 
 (* Axioms *)
+
+Theorem lt_wd :
+  forall n1 n2 : N, n1 == n2 -> forall m1 m2 : N, m1 == m2 -> (n1 < m1 <-> n2 < m2).
+Proof NZlt_wd.
+
+Theorem le_wd :
+  forall n1 n2 : N, n1 == n2 -> forall m1 m2 : N, m1 == m2 -> (n1 <= m1 <-> n2 <= m2).
+Proof NZle_wd.
 
 Theorem le_lt_or_eq : forall n m : N, n <= m <-> n < m \/ n == m.
 Proof NZle_lt_or_eq.
@@ -142,21 +150,21 @@ Proof NZneq_succ_iter_l.
 in the induction step *)
 
 Theorem right_induction :
-  forall A : N -> Prop, predicate_wd E A ->
+  forall A : N -> Prop, predicate_wd Neq A ->
     forall z : N, A z ->
       (forall n : N, z <= n -> A n -> A (S n)) ->
         forall n : N, z <= n -> A n.
 Proof NZright_induction.
 
 Theorem left_induction :
-  forall A : N -> Prop, predicate_wd E A ->
+  forall A : N -> Prop, predicate_wd Neq A ->
     forall z : N, A z ->
       (forall n : N, n < z -> A (S n) -> A n) ->
         forall n : N, n <= z -> A n.
 Proof NZleft_induction.
 
 Theorem order_induction :
-  forall A : N -> Prop, predicate_wd E A ->
+  forall A : N -> Prop, predicate_wd Neq A ->
     forall z : N, A z ->
       (forall n : N, z <= n -> A n -> A (S n)) ->
       (forall n : N, n < z  -> A (S n) -> A n) ->
@@ -164,7 +172,7 @@ Theorem order_induction :
 Proof NZorder_induction.
 
 Theorem right_induction' :
-  forall A : N -> Prop, predicate_wd E A ->
+  forall A : N -> Prop, predicate_wd Neq A ->
     forall z : N,
       (forall n : N, n <= z -> A n) ->
       (forall n : N, z <= n -> A n -> A (S n)) ->
@@ -172,7 +180,7 @@ Theorem right_induction' :
 Proof NZright_induction'.
 
 Theorem strong_right_induction' :
-  forall A : N -> Prop, predicate_wd E A ->
+  forall A : N -> Prop, predicate_wd Neq A ->
     forall z : N,
       (forall n : N, n <= z -> A n) ->
       (forall n : N, z <= n -> (forall m : N, z <= m -> m < n -> A m) -> A n) ->
@@ -182,7 +190,7 @@ Proof NZstrong_right_induction'.
 (** Elimintation principle for < *)
 
 Theorem lt_ind :
-  forall A : N -> Prop, predicate_wd E A ->
+  forall A : N -> Prop, predicate_wd Neq A ->
     forall n : N,
       A (S n) ->
       (forall m : N, n < m -> A m -> A (S m)) ->
@@ -192,7 +200,7 @@ Proof NZlt_ind.
 (** Elimintation principle for <= *)
 
 Theorem le_ind :
-  forall A : N -> Prop, predicate_wd E A ->
+  forall A : N -> Prop, predicate_wd Neq A ->
     forall n : N,
       A n ->
       (forall m : N, n <= m -> A m -> A (S m)) ->
@@ -258,9 +266,9 @@ Section RelElim.
 (* FIXME: Variable R : relation N. -- does not work *)
 
 Variable R : N -> N -> Prop.
-Hypothesis R_wd : rel_wd E E R.
+Hypothesis R_wd : rel_wd Neq Neq R.
 
-Add Morphism R with signature E ==> E ==> iff as R_morph2.
+Add Morphism R with signature Neq ==> Neq ==> iff as R_morph2.
 Proof R_wd.
 
 Theorem le_ind_rel :

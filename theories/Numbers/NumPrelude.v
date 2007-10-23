@@ -91,26 +91,26 @@ Definition predicate (A : Type) := A -> Prop.
 Section ExtensionalProperties.
 
 Variables A B C : Type.
-Variable EA : relation A.
-Variable EB : relation B.
-Variable EC : relation C.
+Variable Aeq : relation A.
+Variable Beq : relation B.
+Variable Ceq : relation C.
 
 (* "wd" stands for "well-defined" *)
 
-Definition fun_wd (f : A -> B) := forall x y : A, EA x y -> EB (f x) (f y).
+Definition fun_wd (f : A -> B) := forall x y : A, Aeq x y -> Beq (f x) (f y).
 
 Definition fun2_wd (f : A -> B -> C) :=
-  forall x x' : A, EA x x' -> forall y y' : B, EB y y' -> EC (f x y) (f x' y').
+  forall x x' : A, Aeq x x' -> forall y y' : B, Beq y y' -> Ceq (f x y) (f x' y').
 
 Definition eq_fun : relation (A -> B) :=
-  fun f f' => forall x x' : A, EA x x' -> EB (f x) (f' x').
+  fun f f' => forall x x' : A, Aeq x x' -> Beq (f x) (f' x').
 
 (* Note that reflexivity of eq_fun means that every function
-is well-defined w.r.t. EA and EB, i.e.,
-forall x x' : A, EA x x' -> EB (f x) (f x') *)
+is well-defined w.r.t. Aeq and Beq, i.e.,
+forall x x' : A, Aeq x x' -> Beq (f x) (f x') *)
 
 Definition eq_fun2 (f f' : A -> B -> C) :=
-  forall x x' : A, EA x x' -> forall y y' : B, EB y y' -> EC (f x y) (f' x' y').
+  forall x x' : A, Aeq x x' -> forall y y' : B, Beq y y' -> Ceq (f x y) (f' x' y').
 
 End ExtensionalProperties.
 
@@ -119,10 +119,10 @@ Implicit Arguments fun2_wd [A B C].
 Implicit Arguments eq_fun [A B].
 Implicit Arguments eq_fun2 [A B C].
 
-Definition predicate_wd (A : Type) (EA : relation A) := fun_wd EA iff.
+Definition predicate_wd (A : Type) (Aeq : relation A) := fun_wd Aeq iff.
 
-Definition rel_wd (A B : Type) (EA : relation A) (EB : relation B) :=
-  fun2_wd EA EB iff.
+Definition rel_wd (A B : Type) (Aeq : relation A) (Beq : relation B) :=
+  fun2_wd Aeq Beq iff.
 
 Implicit Arguments predicate_wd [A].
 Implicit Arguments rel_wd [A B].
@@ -168,14 +168,14 @@ functions whose domain is a product of sets by primitive recursion *)
 Section RelationOnProduct.
 
 Variables A B : Set.
-Variable EA : relation A.
-Variable EB : relation B.
+Variable Aeq : relation A.
+Variable Beq : relation B.
 
-Hypothesis EA_equiv : equiv A EA.
-Hypothesis EB_equiv : equiv B EB.
+Hypothesis EA_equiv : equiv A Aeq.
+Hypothesis EB_equiv : equiv B Beq.
 
 Definition prod_rel : relation (A * B) :=
-  fun p1 p2 => EA (fst p1) (fst p2) /\ EB (snd p1) (snd p2).
+  fun p1 p2 => Aeq (fst p1) (fst p2) /\ Beq (snd p1) (snd p2).
 
 Lemma prod_rel_refl : reflexive (A * B) prod_rel.
 Proof.

@@ -1,20 +1,39 @@
-Require Export NumPrelude.
 Require Export NZAxioms.
 
 Set Implicit Arguments.
 
 Module Type ZAxiomsSig.
 Declare Module Export NZOrdAxiomsMod : NZOrdAxiomsSig.
-Open Local Scope NatIntScope.
 
-Notation Z := NZ (only parsing).
-Notation E := NZE (only parsing).
+Delimit Scope IntScope with Int.
+Notation Z := NZ.
+Notation Zeq := NZeq.
+Notation Z0 := NZ0.
+Notation Z1 := (NZsucc NZ0).
+Notation S := NZsucc.
+Notation P := NZpred.
+Notation Zplus := NZplus.
+Notation Ztimes := NZtimes.
+Notation Zminus := NZminus.
+Notation "x == y"  := (NZeq x y) (at level 70) : IntScope.
+Notation "x ~= y" := (~ NZeq x y) (at level 70) : IntScope.
+Notation "0" := NZ0 : IntScope.
+Notation "1" := (NZsucc NZ0) : IntScope.
+Notation "x + y" := (NZplus x y) : IntScope.
+Notation "x - y" := (NZminus x y) : IntScope.
+Notation "x * y" := (NZtimes x y) : IntScope.
+Notation "x < y" := (NZlt x y) : IntScope.
+Notation "x <= y" := (NZle x y) : IntScope.
+Notation "x > y" := (NZlt y x) (only parsing) : IntScope.
+Notation "x >= y" := (NZle y x) (only parsing) : IntScope.
 
 Parameter Zopp : Z -> Z.
 
-Add Morphism Zopp with signature E ==> E as Zopp_wd.
+Add Morphism Zopp with signature Zeq ==> Zeq as Zopp_wd.
 
-Notation "- x" := (Zopp x) (at level 35, right associativity) : NatIntScope.
+Notation "- x" := (Zopp x) (at level 35, right associativity) : IntScope.
+
+Open Local Scope IntScope.
 
 (* Integers are obtained by postulating that every number has a predecessor *)
 Axiom Zsucc_pred : forall n : Z, S (P n) == n.

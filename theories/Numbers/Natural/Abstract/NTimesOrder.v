@@ -2,7 +2,7 @@ Require Export NOrder.
 
 Module NTimesOrderPropFunct (Import NAxiomsMod : NAxiomsSig).
 Module Export NOrderPropMod := NOrderPropFunct NAxiomsMod.
-Open Local Scope NatIntScope.
+Open Local Scope NatScope.
 
 Theorem plus_lt_mono_l : forall n m p : N, n < m <-> p + n < p + m.
 Proof NZplus_lt_mono_l.

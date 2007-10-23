@@ -1,49 +1,49 @@
-Require Export NAxioms.
+Require Import NBase.
 
-Module Homomorphism (Nat1 Nat2 : NBaseSig).
+Module Homomorphism (NAxiomsMod1 NAxiomsMod2 : NAxiomsSig).
 
-Notation Local N1 := Nat1.NDomainModule.N.
-Notation Local N2 := Nat2.NDomainModule.N.
-Notation Local E1 := Nat1.NDomainModule.E.
-Notation Local E2 := Nat2.NDomainModule.E.
-Notation Local O1 := Nat1.O.
-Notation Local O2 := Nat2.O.
-Notation Local S1 := Nat1.S.
-Notation Local S2 := Nat2.S.
-Notation Local "x == y" := (Nat2.NDomainModule.E x y) (at level 70).
+Module NBasePropMod2 := NBasePropFunct NAxiomsMod2.
+
+Notation Local N1 := NAxiomsMod1.N.
+Notation Local N2 := NAxiomsMod2.N.
+Notation Local Eq1 := NAxiomsMod1.Neq.
+Notation Local Eq2 := NAxiomsMod2.Neq.
+Notation Local O1 := NAxiomsMod1.N0.
+Notation Local O2 := NAxiomsMod2.N0.
+Notation Local S1 := NAxiomsMod1.S.
+Notation Local S2 := NAxiomsMod2.S.
+Notation Local "n == m" := (Eq2 n m) (at level 70, no associativity).
 
 Definition homomorphism (f : N1 -> N2) : Prop :=
-  f O1 == O2 /\ forall x : N1, f (S1 x) == S2 (f x).
+  f O1 == O2 /\ forall n : N1, f (S1 n) == S2 (f n).
 
 Definition natural_isomorphism : N1 -> N2 :=
-  Nat1.recursion O2 (fun (x : N1) (p : N2) => S2 p).
+  NAxiomsMod1.recursion O2 (fun (n : N1) (p : N2) => S2 p).
 
-Add Morphism natural_isomorphism
-with signature E1 ==> E2
-as natural_isomorphism_wd.
+Add Morphism natural_isomorphism with signature Eq1 ==> Eq2 as natural_isomorphism_wd.
 Proof.
 unfold natural_isomorphism.
-intros x y Exy.
-apply Nat1.recursion_wd with (EA := E2).
+intros n m Eqxy.
+apply NAxiomsMod1.recursion_wd with (Aeq := Eq2).
 reflexivity.
-unfold eq_fun2. intros _ _ _ y' y'' H. now apply Nat2.succ_wd.
+unfold eq_fun2. intros _ _ _ y' y'' H. now apply NBasePropMod2.succ_wd.
 assumption.
 Qed.
 
 Theorem natural_isomorphism_0 : natural_isomorphism O1 == O2.
 Proof.
-unfold natural_isomorphism; now rewrite Nat1.recursion_0.
+unfold natural_isomorphism; now rewrite NAxiomsMod1.recursion_0.
 Qed.
 
 Theorem natural_isomorphism_succ :
-  forall x : N1, natural_isomorphism (S1 x) == S2 (natural_isomorphism x).
+  forall n : N1, natural_isomorphism (S1 n) == S2 (natural_isomorphism n).
 Proof.
-unfold natural_isomorphism;
-intro x; now rewrite (Nat1.recursion_succ Nat2.NDomainModule.E);
-[| unfold fun2_wd; intros; apply Nat2.succ_wd |].
+unfold natural_isomorphism.
+intro n. now rewrite (@NAxiomsMod1.recursion_succ N2 NAxiomsMod2.Neq);
+[| unfold fun2_wd; intros; apply NBasePropMod2.succ_wd |].
 Qed.
 
-Theorem iso_hom : homomorphism natural_isomorphism.
+Theorem hom_nat_iso : homomorphism natural_isomorphism.
 Proof.
 unfold homomorphism, natural_isomorphism; split;
 [exact natural_isomorphism_0 | exact natural_isomorphism_succ].
@@ -51,61 +51,59 @@ Qed.
 
 End Homomorphism.
 
-Module Inverse (Nat1 Nat2 : NBaseSig).
+Module Inverse (NAxiomsMod1 NAxiomsMod2 : NAxiomsSig).
 
-Module Import NBasePropMod1 := NBasePropFunct Nat1.
+Module Import NBasePropMod1 := NBasePropFunct NAxiomsMod1.
 (* This makes the tactic induct available. Since it is taken from
-NBasePropFunct Nat1, it refers to Nat1.induction. *)
+(NBasePropFunct NAxiomsMod1), it refers to induction on N1. *)
 
-Module Hom12 := Homomorphism Nat1 Nat2.
-Module Hom21 := Homomorphism Nat2 Nat1.
+Module Hom12 := Homomorphism NAxiomsMod1 NAxiomsMod2.
+Module Hom21 := Homomorphism NAxiomsMod2 NAxiomsMod1.
 
-Notation Local N1 := Nat1.NDomainModule.N.
-Notation Local N2 := Nat2.NDomainModule.N.
+Notation Local N1 := NAxiomsMod1.N.
+Notation Local N2 := NAxiomsMod2.N.
 Notation Local h12 := Hom12.natural_isomorphism.
 Notation Local h21 := Hom21.natural_isomorphism.
 
-Notation Local "x == y" := (Nat1.NDomainModule.E x y) (at level 70).
+Notation Local "n == m" := (NAxiomsMod1.Neq n m) (at level 70, no associativity).
 
-Lemma iso_inverse :
-  forall x : N1, h21 (h12 x) == x.
+Lemma inverse_nat_iso : forall n : N1, h21 (h12 n) == n.
 Proof.
-induct x.
-now rewrite Hom12.natural_isomorphism_0; rewrite Hom21.natural_isomorphism_0.
-intros x IH.
-rewrite Hom12.natural_isomorphism_succ; rewrite Hom21.natural_isomorphism_succ;
-now rewrite IH.
+induct n.
+now rewrite Hom12.natural_isomorphism_0, Hom21.natural_isomorphism_0.
+intros n IH.
+now rewrite Hom12.natural_isomorphism_succ, Hom21.natural_isomorphism_succ, IH.
 Qed.
 
 End Inverse.
 
-Module Isomorphism (Nat1 Nat2 : NBaseSig).
+Module Isomorphism (NAxiomsMod1 NAxiomsMod2 : NAxiomsSig).
 
-Module Hom12 := Homomorphism Nat1 Nat2.
-Module Hom21 := Homomorphism Nat2 Nat1.
+Module Hom12 := Homomorphism NAxiomsMod1 NAxiomsMod2.
+Module Hom21 := Homomorphism NAxiomsMod2 NAxiomsMod1.
 
-Module Inverse121 := Inverse Nat1 Nat2.
-Module Inverse212 := Inverse Nat2 Nat1.
+Module Inverse12 := Inverse NAxiomsMod1 NAxiomsMod2.
+Module Inverse21 := Inverse NAxiomsMod2 NAxiomsMod1.
 
-Notation Local N1 := Nat1.NDomainModule.N.
-Notation Local N2 := Nat2.NDomainModule.N.
-Notation Local E1 := Nat1.NDomainModule.E.
-Notation Local E2 := Nat2.NDomainModule.E.
+Notation Local N1 := NAxiomsMod1.N.
+Notation Local N2 := NAxiomsMod2.N.
+Notation Local Eq1 := NAxiomsMod1.Neq.
+Notation Local Eq2 := NAxiomsMod2.Neq.
 Notation Local h12 := Hom12.natural_isomorphism.
 Notation Local h21 := Hom21.natural_isomorphism.
 
 Definition isomorphism (f1 : N1 -> N2) (f2 : N2 -> N1) : Prop :=
   Hom12.homomorphism f1 /\ Hom21.homomorphism f2 /\
-  forall x : N1, E1 (f2 (f1 x)) x /\
-  forall y : N2, E2 (f1 (f2 y)) y.
+  forall n : N1, Eq1 (f2 (f1 n)) n /\
+  forall n : N2, Eq2 (f1 (f2 n)) n.
 
-Theorem iso_iso : isomorphism h12 h21.
+Theorem iso_nat_iso : isomorphism h12 h21.
 Proof.
 unfold isomorphism.
-split. apply Hom12.iso_hom.
-split. apply Hom21.iso_hom.
-split. apply Inverse121.iso_inverse.
-apply Inverse212.iso_inverse.
+split. apply Hom12.hom_nat_iso.
+split. apply Hom21.hom_nat_iso.
+split. apply Inverse12.inverse_nat_iso.
+apply Inverse21.inverse_nat_iso.
 Qed.
 
 End Isomorphism.

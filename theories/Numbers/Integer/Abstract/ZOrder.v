@@ -2,7 +2,7 @@ Require Export ZTimes.
 
 Module ZOrderPropFunct (Import ZAxiomsMod : ZAxiomsSig).
 Module Export ZTimesPropMod := ZTimesPropFunct ZAxiomsMod.
-Open Local Scope NatIntScope.
+Open Local Scope IntScope.
 
 (* Axioms *)
 
@@ -140,21 +140,21 @@ Proof NZneq_succ_iter_l.
 in the induction step *)
 
 Theorem Zright_induction :
-  forall A : Z -> Prop, predicate_wd E A ->
+  forall A : Z -> Prop, predicate_wd Zeq A ->
     forall z : Z, A z ->
       (forall n : Z, z <= n -> A n -> A (S n)) ->
         forall n : Z, z <= n -> A n.
 Proof NZright_induction.
 
 Theorem Zleft_induction :
-  forall A : Z -> Prop, predicate_wd E A ->
+  forall A : Z -> Prop, predicate_wd Zeq A ->
     forall z : Z, A z ->
       (forall n : Z, n < z -> A (S n) -> A n) ->
         forall n : Z, n <= z -> A n.
 Proof NZleft_induction.
 
 Theorem Zorder_induction :
-  forall A : Z -> Prop, predicate_wd E A ->
+  forall A : Z -> Prop, predicate_wd Zeq A ->
     forall z : Z, A z ->
       (forall n : Z, z <= n -> A n -> A (S n)) ->
       (forall n : Z, n < z -> A (S n) -> A n) ->
@@ -162,7 +162,7 @@ Theorem Zorder_induction :
 Proof NZorder_induction.
 
 Theorem Zorder_induction' :
-  forall A : Z -> Prop, predicate_wd E A ->
+  forall A : Z -> Prop, predicate_wd Zeq A ->
     forall z : Z, A z ->
       (forall n : Z, z <= n -> A n -> A (S n)) ->
       (forall n : Z, n <= z -> A n -> A (P n)) ->
@@ -175,7 +175,7 @@ unfold predicate_wd, fun_wd in A_wd; apply -> (A_wd (P (S m)) m);
 Qed.
 
 Theorem Zright_induction' :
-  forall A : Z -> Prop, predicate_wd E A ->
+  forall A : Z -> Prop, predicate_wd Zeq A ->
     forall z : Z,
       (forall n : Z, n <= z -> A n) ->
       (forall n : Z, z <= n -> A n -> A (S n)) ->
@@ -183,7 +183,7 @@ Theorem Zright_induction' :
 Proof NZright_induction'.
 
 Theorem Zstrong_right_induction' :
-  forall A : Z -> Prop, predicate_wd E A ->
+  forall A : Z -> Prop, predicate_wd Zeq A ->
     forall z : Z,
       (forall n : Z, n <= z -> A n) ->
       (forall n : Z, z <= n -> (forall m : Z, z <= m -> m < n -> A m) -> A n) ->
@@ -193,7 +193,7 @@ Proof NZstrong_right_induction'.
 (** Elimintation principle for < *)
 
 Theorem Zlt_ind :
-  forall A : Z -> Prop, predicate_wd E A ->
+  forall A : Z -> Prop, predicate_wd Zeq A ->
     forall n : Z,
       A (S n) ->
       (forall m : Z, n < m -> A m -> A (S m)) ->
@@ -203,7 +203,7 @@ Proof NZlt_ind.
 (** Elimintation principle for <= *)
 
 Theorem Zle_ind :
-  forall A : Z -> Prop, predicate_wd E A ->
+  forall A : Z -> Prop, predicate_wd Zeq A ->
     forall n : Z,
       A n ->
       (forall m : Z, n <= m -> A m -> A (S m)) ->

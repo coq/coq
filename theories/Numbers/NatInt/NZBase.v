@@ -14,7 +14,7 @@ intros x y z H1 H2; now rewrite <- H1.
 Qed.
 
 Declare Left Step NZE_stepl.
-(* The right step lemma is just the transitivity of NZE *)
+(* The right step lemma is just the transitivity of NZeq *)
 Declare Right Step (proj1 (proj2 NZE_equiv)).
 
 Theorem NZsucc_inj : forall n1 n2 : NZ, S n1 == S n2 -> n1 == n2.
@@ -48,9 +48,9 @@ declaration of the morphism below because the "predicate NZ" is not
 recognized as a type of function. Maybe it should do "eval hnf" or
 something like this. The same goes for "relation". *)
 
-Hypothesis A_wd : predicate_wd NZE A.
+Hypothesis A_wd : predicate_wd NZeq A.
 
-Add Morphism A with signature NZE ==> iff as A_morph.
+Add Morphism A with signature NZeq ==> iff as A_morph.
 Proof A_wd.
 
 Theorem NZcentral_induction :

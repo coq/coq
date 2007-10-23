@@ -2,7 +2,7 @@ Require Export ZPlusOrder.
 
 Module ZTimesOrderPropFunct (Import ZAxiomsMod : ZAxiomsSig).
 Module Export ZPlusOrderPropMod := ZPlusOrderPropFunct ZAxiomsMod.
-Open Local Scope NatIntScope.
+Open Local Scope IntScope.
 
 (** Theorems that are true on both natural numbers and integers *)
 

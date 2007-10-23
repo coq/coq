@@ -1,8 +1,9 @@
 Require Export NAxioms.
 Require Import NZTimesOrder. (* The last property functor on NZ, which subsumes all others *)
 
-Module NBasePropFunct (Import NAxiomsMod : NAxiomsSig).
-Open Local Scope NatIntScope.
+Module NBasePropFunct (Export NAxiomsMod : NAxiomsSig).
+
+Open Local Scope NatScope.
 
 (* We call the last property functor on NZ, which includes all the previous
 ones, to get all properties of NZ at once. This way we will include them
@@ -16,8 +17,14 @@ since unfolding is done only inside a functor. In fact, we'll do it in the
 files that prove the corresponding properties. In those files, we will also
 rename properties proved in NZ files by removing NZ from their names. In
 this way, one only has to consult, for example, NPlus.v to see all
-available properties for plus (i.e., one does not have to go to NAxioms.v
-and NZPlus.v). *)
+available properties for plus, i.e., one does not have to go to NAxioms.v
+for axioms and NZPlus.v for theorems. *)
+
+Theorem succ_wd : forall n1 n2 : N, n1 == n2 -> S n1 == S n2.
+Proof NZsucc_wd.
+
+Theorem pred_wd : forall n1 n2 : N, n1 == n2 -> P n1 == P n2.
+Proof NZpred_wd.
 
 Theorem pred_succ : forall n : N, P (S n) == n.
 Proof NZpred_succ.
@@ -49,9 +56,9 @@ function (by recursion) that maps 0 to false and the successor to true *)
 Definition if_zero (A : Set) (a b : A) (n : N) : A :=
   recursion a (fun _ _ => b) n.
 
-Add Morphism if_zero with signature @eq ==> @eq ==> E ==> @eq as if_zero_wd.
+Add Morphism if_zero with signature @eq ==> @eq ==> Neq ==> @eq as if_zero_wd.
 Proof.
-intros; unfold if_zero. apply recursion_wd with (EA := (@eq A)).
+intros; unfold if_zero. apply recursion_wd with (Aeq := (@eq A)).
 reflexivity. unfold eq_fun2; now intros. assumption.
 Qed.
 
@@ -92,7 +99,7 @@ symmetry in H; false_hyp H neq_succ_0.
 Qed.
 
 Theorem induction :
-  forall A : N -> Prop, predicate_wd E A ->
+  forall A : N -> Prop, predicate_wd Neq A ->
     A 0 -> (forall n : N, A n -> A (S n)) -> forall n : N, A n.
 Proof.
 intros A A_wd A0 AS n; apply NZright_induction with 0; try assumption.
@@ -109,7 +116,7 @@ from N. *)
 Ltac induct n := induction_maker n ltac:(apply induction).
 
 Theorem case_analysis :
-  forall A : N -> Prop, predicate_wd E A ->
+  forall A : N -> Prop, predicate_wd Neq A ->
     A 0 -> (forall n : N, A (S n)) -> forall n : N, A n.
 Proof.
 intros; apply induction; auto.
@@ -167,9 +174,9 @@ Fibonacci numbers *)
 Section PairInduction.
 
 Variable A : N -> Prop.
-Hypothesis A_wd : predicate_wd E A.
+Hypothesis A_wd : predicate_wd Neq A.
 
-Add Morphism A with signature E ==> iff as A_morph.
+Add Morphism A with signature Neq ==> iff as A_morph.
 Proof.
 exact A_wd.
 Qed.
@@ -191,9 +198,9 @@ End PairInduction.
 Section TwoDimensionalInduction.
 
 Variable R : N -> N -> Prop.
-Hypothesis R_wd : rel_wd E E R.
+Hypothesis R_wd : rel_wd Neq Neq R.
 
-Add Morphism R with signature E ==> E ==> iff as R_morph.
+Add Morphism R with signature Neq ==> Neq ==> iff as R_morph.
 Proof.
 exact R_wd.
 Qed.
@@ -221,9 +228,9 @@ End TwoDimensionalInduction.
 Section DoubleInduction.
 
 Variable R : N -> N -> Prop.
-Hypothesis R_wd : rel_wd E E R.
+Hypothesis R_wd : rel_wd Neq Neq R.
 
-Add Morphism R with signature E ==> E ==> iff as R_morph1.
+Add Morphism R with signature Neq ==> Neq ==> iff as R_morph1.
 Proof.
 exact R_wd.
 Qed.

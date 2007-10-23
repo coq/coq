@@ -5,7 +5,11 @@ Require Export NPlus.
 
 Module NTimesPropFunct (Import NAxiomsMod : NAxiomsSig).
 Module Export NPlusPropMod := NPlusPropFunct NAxiomsMod.
-Open Local Scope NatIntScope.
+Open Local Scope NatScope.
+
+Theorem times_wd :
+  forall n1 n2 : N, n1 == n2 -> forall m1 m2 : N, m1 == m2 -> n1 * m1 == n2 * m2.
+Proof NZtimes_wd.
 
 Theorem times_0_r : forall n, n * 0 == 0.
 Proof NZtimes_0_r.
@@ -39,7 +43,7 @@ Proof NZtimes_1_l.
 Theorem times_1_r : forall n : N, n * 1 == n.
 Proof NZtimes_1_r.
 
-Lemma Nsemi_ring : semi_ring_theory 0 1 NZplus NZtimes E.
+Lemma Nsemi_ring : semi_ring_theory 0 1 NZplus NZtimes Neq.
 Proof.
 constructor.
 exact plus_0_l.

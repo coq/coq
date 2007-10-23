@@ -3,7 +3,7 @@ Require Export ZPlus.
 
 Module ZTimesPropFunct (Import ZAxiomsMod : ZAxiomsSig).
 Module Export ZPlusPropMod := ZPlusPropFunct ZAxiomsMod.
-Open Local Scope NatIntScope.
+Open Local Scope IntScope.
 
 Theorem Ztimes_0_r : forall n : Z, n * 0 == 0.
 Proof NZtimes_0_r.
@@ -48,7 +48,7 @@ Proof NZtimes_neq_0.
 
 (** Z forms a ring *)
 
-Lemma Zring : ring_theory 0 1 NZplus NZtimes NZminus Zopp NZE.
+Lemma Zring : ring_theory 0 1 NZplus NZtimes NZminus Zopp NZeq.
 Proof.
 constructor.
 exact Zplus_0_l.

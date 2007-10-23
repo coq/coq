@@ -7,7 +7,7 @@ Module Export NZOrdAxiomsMod <: NZOrdAxiomsSig.
 Module Export NZAxiomsMod <: NZAxiomsSig.
 
 Definition NZ := N.
-Definition NZE := (@eq N).
+Definition NZeq := (@eq N).
 Definition NZ0 := 0.
 Definition NZsucc := Nsucc.
 Definition NZpred := Npred.
@@ -15,42 +15,42 @@ Definition NZplus := Nplus.
 Definition NZminus := Nminus.
 Definition NZtimes := Nmult.
 
-Theorem NZE_equiv : equiv N NZE.
+Theorem NZE_equiv : equiv N NZeq.
 Proof (eq_equiv N).
 
-Add Relation N NZE
+Add Relation N NZeq
  reflexivity proved by (proj1 NZE_equiv)
  symmetry proved by (proj2 (proj2 NZE_equiv))
  transitivity proved by (proj1 (proj2 NZE_equiv))
 as NZE_rel.
 
-Add Morphism NZsucc with signature NZE ==> NZE as NZsucc_wd.
+Add Morphism NZsucc with signature NZeq ==> NZeq as NZsucc_wd.
 Proof.
 congruence.
 Qed.
 
-Add Morphism NZpred with signature NZE ==> NZE as NZpred_wd.
+Add Morphism NZpred with signature NZeq ==> NZeq as NZpred_wd.
 Proof.
 congruence.
 Qed.
 
-Add Morphism NZplus with signature NZE ==> NZE ==> NZE as NZplus_wd.
+Add Morphism NZplus with signature NZeq ==> NZeq ==> NZeq as NZplus_wd.
 Proof.
 congruence.
 Qed.
 
-Add Morphism NZminus with signature NZE ==> NZE ==> NZE as NZminus_wd.
+Add Morphism NZminus with signature NZeq ==> NZeq ==> NZeq as NZminus_wd.
 Proof.
 congruence.
 Qed.
 
-Add Morphism NZtimes with signature NZE ==> NZE ==> NZE as NZtimes_wd.
+Add Morphism NZtimes with signature NZeq ==> NZeq ==> NZeq as NZtimes_wd.
 Proof.
 congruence.
 Qed.
 
 Theorem NZinduction :
-  forall A : N -> Prop, predicate_wd NZE A ->
+  forall A : N -> Prop, predicate_wd NZeq A ->
     A 0 -> (forall n, A n <-> A (Nsucc n)) -> forall n : N, A n.
 Proof.
 intros A A_wd A0 AS. apply Nind. assumption. intros; now apply -> AS.
@@ -91,14 +91,14 @@ End NZAxiomsMod.
 Definition NZlt := Nlt.
 Definition NZle := Nle.
 
-Add Morphism NZlt with signature NZE ==> NZE ==> iff as NZlt_wd.
+Add Morphism NZlt with signature NZeq ==> NZeq ==> iff as NZlt_wd.
 Proof.
-unfold NZE; intros x1 x2 H1 y1 y2 H2; rewrite H1; now rewrite H2.
+unfold NZeq; intros x1 x2 H1 y1 y2 H2; rewrite H1; now rewrite H2.
 Qed.
 
-Add Morphism NZle with signature NZE ==> NZE ==> iff as NZle_wd.
+Add Morphism NZle with signature NZeq ==> NZeq ==> iff as NZle_wd.
 Proof.
-unfold NZE; intros x1 x2 H1 y1 y2 H2; rewrite H1; now rewrite H2.
+unfold NZeq; intros x1 x2 H1 y1 y2 H2; rewrite H1; now rewrite H2.
 Qed.
 
 Theorem NZle_lt_or_eq : forall n m : N, n <= m <-> n < m \/ n = m.
@@ -135,14 +135,14 @@ reflexivity.
 Qed.
 
 Theorem recursion_wd :
-forall (A : Set) (EA : relation A),
-  forall a a' : A, EA a a' ->
-    forall f f' : N -> A -> A, eq_fun2 NZE EA EA f f' ->
+forall (A : Set) (Aeq : relation A),
+  forall a a' : A, Aeq a a' ->
+    forall f f' : N -> A -> A, eq_fun2 NZeq Aeq Aeq f f' ->
       forall x x' : N, x = x' ->
-        EA (recursion a f x) (recursion a' f' x').
+        Aeq (recursion a f x) (recursion a' f' x').
 Proof.
-unfold fun2_wd, NZE, eq_fun2.
-intros A EA a a' Eaa' f f' Eff'.
+unfold fun2_wd, NZeq, eq_fun2.
+intros A Aeq a a' Eaa' f f' Eff'.
 intro x; pattern x; apply Nind.
 intros x' H; now rewrite <- H.
 clear x.
@@ -158,11 +158,11 @@ intros A a f; unfold recursion; unfold Nrec; now rewrite Nrect_base.
 Qed.
 
 Theorem recursion_succ :
-  forall (A : Set) (EA : relation A) (a : A) (f : N -> A -> A),
-    EA a a -> fun2_wd NZE EA EA f ->
-      forall n : N, EA (recursion a f (Nsucc n)) (f n (recursion a f n)).
+  forall (A : Set) (Aeq : relation A) (a : A) (f : N -> A -> A),
+    Aeq a a -> fun2_wd NZeq Aeq Aeq f ->
+      forall n : N, Aeq (recursion a f (Nsucc n)) (f n (recursion a f n)).
 Proof.
-unfold NZE, recursion, Nrec, fun2_wd; intros A EA a f EAaa f_wd n; pattern n; apply Nind.
+unfold NZeq, recursion, Nrec, fun2_wd; intros A Aeq a f EAaa f_wd n; pattern n; apply Nind.
 rewrite Nrect_step; rewrite Nrect_base; now apply f_wd.
 clear n; intro n; do 2 rewrite Nrect_step; intro IH. apply f_wd; [reflexivity|].
 now rewrite Nrect_step.
@@ -171,7 +171,6 @@ Qed.
 End NBinaryAxiomsMod.
 
 Module Export NBinaryMinusPropMod := NMinusPropFunct NBinaryAxiomsMod.
-
 
 (* Some fun comparing the efficiency of the generic log defined
 by strong (course-of-value) recursion and the log defined by recursion

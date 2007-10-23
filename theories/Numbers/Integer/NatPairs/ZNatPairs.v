@@ -49,14 +49,14 @@ Notation "x >= y" := (Zle y x) (only parsing) : IntScope.
 
 Notation Local N := NZ.
 (* To remember N without having to use a long qualifying name. since NZ will be redefined *)
-Notation Local NE := NZE (only parsing).
+Notation Local NE := NZeq (only parsing).
 Notation Local plus_wd := NZplus_wd (only parsing).
 
 Module Export NZOrdAxiomsMod <: NZOrdAxiomsSig.
 Module Export NZAxiomsMod <: NZAxiomsSig.
 
 Definition NZ : Set := Z.
-Definition NZE := Zeq.
+Definition NZeq := Zeq.
 Definition NZ0 := Z0.
 Definition NZsucc := Zsucc.
 Definition NZpred := Zpred.

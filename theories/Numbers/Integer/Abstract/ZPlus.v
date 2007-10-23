@@ -2,7 +2,7 @@ Require Export ZBase.
 
 Module ZPlusPropFunct (Import ZAxiomsMod : ZAxiomsSig).
 Module Export ZBasePropMod := ZBasePropFunct ZAxiomsMod.
-Open Local Scope NatIntScope.
+Open Local Scope IntScope.
 
 Theorem Zplus_0_l : forall n : Z, 0 + n == n.
 Proof NZplus_0_l.

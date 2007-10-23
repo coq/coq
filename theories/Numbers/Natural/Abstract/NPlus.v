@@ -2,7 +2,11 @@ Require Export NBase.
 
 Module NPlusPropFunct (Import NAxiomsMod : NAxiomsSig).
 Module Export NBasePropMod := NBasePropFunct NAxiomsMod.
-Open Local Scope NatIntScope.
+Open Local Scope NatScope.
+
+Theorem plus_wd :
+  forall n1 n2 : N, n1 == n2 -> forall m1 m2 : N, m1 == m2 -> n1 + m1 == n2 + m2.
+Proof NZplus_wd.
 
 Theorem plus_0_l : forall n : N, 0 + n == n.
 Proof NZplus_0_l.
