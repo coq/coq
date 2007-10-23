@@ -224,7 +224,7 @@ let decl_token =
 
 let gallina_ext =
   "Module" 
-  | "Declare"
+  | "Declare" space+ "Module"
   | "Transparent"
   | "Opaque"
   | "Canonical"
@@ -327,25 +327,24 @@ rule coq_bol = parse
   | space* gallina_kw_to_hide
       { let s = lexeme lexbuf in
 	  if !light && section_or_end s then begin 
-	    skip_to_dot lexbuf; 
-	    coq_bol lexbuf 
-	  end else begin
-	    let s = lexeme lexbuf in 
-	    let nbsp = count_spaces s in
-	      indentation nbsp; 
-	      let s = String.sub s nbsp (String.length s - nbsp) in
-		ident s (lexeme_start lexbuf + nbsp); 
-		let eol= body lexbuf in 
-		  if eol then coq_bol lexbuf else coq lexbuf
-	  end }
+	      skip_to_dot lexbuf; 
+	      coq_bol lexbuf 
+	    end else begin
+		let nbsp = count_spaces s in
+		  indentation nbsp; 
+		  let s = String.sub s nbsp (String.length s - nbsp) in
+		    ident s (lexeme_start lexbuf + nbsp); 
+		    let eol= body lexbuf in 
+		      if eol then coq_bol lexbuf else coq lexbuf
+	      end }
   | space* gallina_kw
       { let s = lexeme lexbuf in 
-	let nbsp = count_spaces s in
+        let nbsp = count_spaces s in
+	let s = String.sub s nbsp (String.length s - nbsp)  in
 	  indentation nbsp;
-	  let s = String.sub s nbsp (String.length s - nbsp)  in
-	    ident s (lexeme_start lexbuf + nbsp); 
-	    let eol= body lexbuf in
-	      if eol then coq_bol lexbuf else coq lexbuf }
+	  ident s (lexeme_start lexbuf + nbsp); 
+	  let eol= body lexbuf in
+	    if eol then coq_bol lexbuf else coq lexbuf }
   | space* "(**" space+ "printing" space+ (identifier | token) space+
       { let tok = lexeme lexbuf in
 	let s = printing_token lexbuf in

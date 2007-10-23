@@ -41,8 +41,11 @@ let is_keyword =
       "Mutual"; "Parameter"; "Parameters"; "Print"; "Proof"; "Qed";
       "Record"; "Recursive"; "Remark"; "Require"; "Save"; "Scheme";
       "Section"; "Show"; "Structure"; "Syntactic"; "Syntax"; "Tactic"; "Theorem"; 
-      "Unset"; "Variable"; "Variables"; 
-      "Notation"; 
+      "Set"; "Unset"; "Variable"; "Variables"; 
+      "Notation"; "Reserved Notation"; "Tactic Notation";
+      "Delimit"; "Bind"; "Open"; "Scope";
+      "Boxed"; "Unboxed";
+      "Arguments";
       (* Program *)
       "Program Definition"; "Program Fixpoint"; "Program Lemma";
       "Obligation"; "Obligations"; "Solve"; "using"; "Next Obligation"; "Next";
