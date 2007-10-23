@@ -16,6 +16,8 @@
 
     let empty = Empty
 
+    let is_empty = function Empty -> true | _ -> false
+
     let height = function
         Empty -> 0
       | Node(_,_,_,_,h) -> h
