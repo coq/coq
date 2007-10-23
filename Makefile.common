@@ -122,7 +122,7 @@ INTERP:=\
 
 PROOFS:=\
   proofs/transactional_stack.cmo proofs/permutation.cmo \
-  proofs/subproof.cmo proofs/proo.cmo \
+  proofs/subproof.cmo proofs/proof.cmo \
   proofs/tacexpr.cmo proofs/proof_type.cmo proofs/redexpr.cmo \
   proofs/proof_trees.cmo proofs/logic.cmo \
   proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
