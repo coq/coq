@@ -115,7 +115,7 @@ let subtac (loc, command) =
 	VernacDefinition (defkind, (locid, id), expr, hook) -> 
 	    (match expr with
 		 ProveBody (bl, c) -> ignore(Subtac_pretyping.subtac_proof env isevars id bl c None)
-	       | DefineBody (cbl, bl, c, tycon) -> 
+	       | DefineBody (bl, _, c, tycon) -> 
 		   ignore(Subtac_pretyping.subtac_proof env isevars id bl c tycon))
       | VernacFixpoint (l, b) -> 
 	  let _ = trace (str "Building fixpoint") in
