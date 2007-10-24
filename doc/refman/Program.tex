@@ -191,11 +191,11 @@ recursive calls, hence they are constant.
   \label{ProgramLemma}}
 
 The \Russell\ language can also be used to type statements of logical
-properties. It will currently fail if the traduction to \Coq\
-generates obligations though it can be useful to insert automatic
-coercions. In the former case, one can first define the lemma's
+properties. It will generate obligations, try to solve them
+automatically and fail if some unsolved obligations remain. 
+In this case, one can first define the lemma's
 statement using {\tt Program Definition} and use it as the goal afterwards.
-
+Otherwise the proof will be started with the elobarted version as a goal.
 The {\tt Program} prefix can similarly be used as a prefix for {\tt Variable}, {\tt
   Hypothesis}, {\tt Axiom} etc...
 
@@ -216,9 +216,10 @@ tactic is replaced by the default one if not specified.
 \item {\tt Obligation num [of \ident]} Start the proof of
   obligation {\tt num}.
 \item {\tt Solve Obligations [of \ident] [using \tacexpr]} Tries to solve
-  each obligation of \ident using the given tactic.
+  each obligation of \ident using the given tactic or the default one.
 \item {\tt Solve All Obligations [using \tacexpr]} Tries to solve
-  each obligation of every program using the given tactic.
+  each obligation of every program using the given tactic or the default
+  one (useful for mutually recursive definitions).
 \item {\tt Admit Obligations [of \ident]} Admits all
   obligations (does not work with structurally recursive programs).
 \end{itemize}
