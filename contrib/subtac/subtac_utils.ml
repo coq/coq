@@ -343,14 +343,17 @@ let id_of_name = function
   | Anonymous -> raise (Invalid_argument "id_of_name")
 
 let definition_message id =
-  Options.if_verbose message ((string_of_id id) ^ " is defined")
-
+  Printer.pr_constant (Global.env ()) id ++ str " is defined"
+    
 let recursive_message v =
   match Array.length v with
     | 0 -> error "no recursive definition"
-    | 1 -> (Printer.pr_global v.(0) ++ str " is recursively defined")
-    | _ -> hov 0 (prvect_with_sep pr_coma Printer.pr_global v ++
+    | 1 -> (Printer.pr_constant (Global.env ()) v.(0) ++ str " is recursively defined")
+    | _ -> hov 0 (prvect_with_sep pr_coma (Printer.pr_constant (Global.env ())) v ++
 		    spc () ++ str "are recursively defined")
+
+let print_message m =
+  Options.if_verbose ppnl m
 
 (* Solve an obligation using tactics, return the corresponding proof term *)
 let solve_by_tac evi t =

@@ -175,8 +175,6 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
   let sigma = Evd.empty in
   let isevars = ref (Evd.create_evar_defs sigma) in
   let env = Global.env() in 
-  let nc = named_context env in
-  let nc_len = named_context_length nc in
   let pr c = my_print_constr env c in
   let prr = Printer.pr_rel_context env in
   let _prn = Printer.pr_named_context env in
@@ -318,7 +316,7 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
   let evm = non_instanciated_map env isevars evm in
 
     (*   let _ = try trace (str "Non instanciated evars map: " ++ Evd.pr_evar_map evm)  with _ -> () in *)
-  let evars, evars_def = Eterm.eterm_obligations recname nc_len !isevars evm 0 fullcoqc (Some fullctyp) in
+  let evars, evars_def = Eterm.eterm_obligations env recname !isevars evm 0 fullcoqc (Some fullctyp) in
     (*     (try trace (str "Generated obligations : "); *)
 (*        Array.iter *)
     (* 	 (fun (n, t, _) -> trace (str "Evar " ++ str (string_of_id n) ++ spc () ++ my_print_constr env t)) *)
@@ -332,8 +330,6 @@ let nf_evar_context isevars ctx =
     
 let build_mutrec lnameargsardef boxed = 
   let sigma = Evd.empty and env = Global.env () in 
-  let nc = named_context env in
-  let nc_len = named_context_length nc in
   let lrecnames = List.map (fun ((f,_,_,_,_),_) -> f) lnameargsardef 
   and nv = List.map (fun ((_,n,_,_,_),_) -> n) lnameargsardef
   in
@@ -420,7 +416,7 @@ let build_mutrec lnameargsardef boxed =
 	Termops.it_mkNamedProd_or_LetIn typ rec_sign
       in
       let evm = Subtac_utils.evars_of_term evm Evd.empty def in
-      let evars, def = Eterm.eterm_obligations id nc_len isevars evm recdefs def (Some typ) in
+      let evars, def = Eterm.eterm_obligations env id isevars evm recdefs def (Some typ) in
 	collect_evars (succ i) ((id, def, typ, evars) :: acc)
     else acc
   in 
@@ -435,9 +431,9 @@ let out_n = function
 let build_recursive (lnameargsardef:(fixpoint_expr * decl_notation) list) boxed =
   match lnameargsardef with
     | ((id, (n, CWfRec r), bl, typ, body), no) :: [] -> 
-	build_wellfounded (id, out_n n, bl, typ, body) r false no boxed
+	ignore(build_wellfounded (id, out_n n, bl, typ, body) r false no boxed)
     | ((id, (n, CMeasureRec r), bl, typ, body), no) :: [] -> 
-	build_wellfounded (id, out_n n, bl, typ, body) r true no boxed
+	ignore(build_wellfounded (id, out_n n, bl, typ, body) r true no boxed)
     | l -> 
 	let lnameargsardef = 
 	  List.map (fun ((id, (n, ro), bl, typ, body), no) ->

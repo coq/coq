@@ -63,8 +63,18 @@ let start_proof_com env isevars sopt kind (bl,t) hook =
   let evm, c, typ = 
     Subtac_pretyping.subtac_process env isevars id [] (Command.generalize_constr_expr t bl) None 
   in
-  let _ = Typeops.infer_type env c in
-    Command.start_proof id kind c hook
+    if not (evm = Evd.empty) then 
+      let stmt_id = Nameops.add_suffix id "_stmt" in
+      let obls, c' = eterm_obligations env stmt_id !isevars evm 0 c (Some typ) in
+	match Subtac_obligations.add_definition stmt_id c' typ obls with
+	    Subtac_obligations.Defined cst -> Command.start_proof id kind (constant_value (Global.env()) cst) hook
+	  | _ -> 
+	      errorlabstrm "start_proof" 
+		(str "The statement obligations could not be resolved automatically, " ++ spc () ++
+		    str "write a statement definition first.")
+    else
+      let _ = Typeops.infer_type env c in
+	Command.start_proof id kind c hook
       
 let print_subgoals () = Options.if_verbose (fun () -> msg (Printer.pr_open_subgoals ())) ()
 
@@ -104,9 +114,9 @@ let subtac (loc, command) =
   match command with
 	VernacDefinition (defkind, (locid, id), expr, hook) -> 
 	    (match expr with
-		 ProveBody (bl, c) -> Subtac_pretyping.subtac_proof env isevars id bl c None
-	       | DefineBody (bl, _, c, tycon) -> 
-		   Subtac_pretyping.subtac_proof env isevars id bl c tycon)
+		 ProveBody (bl, c) -> ignore(Subtac_pretyping.subtac_proof env isevars id bl c None)
+	       | DefineBody (cbl, bl, _, c, tycon) -> 
+		   ignore(Subtac_pretyping.subtac_proof env isevars id bl c tycon))
       | VernacFixpoint (l, b) -> 
 	  let _ = trace (str "Building fixpoint") in
 	    ignore(Subtac_command.build_recursive l b)

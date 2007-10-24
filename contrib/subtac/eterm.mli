@@ -7,7 +7,7 @@
 (************************************************************************)
 
 (*i $Id$ i*)
-
+open Environ
 open Tacmach
 open Term
 open Evd
@@ -18,9 +18,9 @@ val mkMetas : int -> constr list
 
 (* val eterm_term : evar_map -> constr -> types option -> constr * types option * (identifier * types) list *)
 
-(* id, named context length, evars, number of
+(* env, id, evars, number of
    function prototypes to try to clear from evars contexts, object and optional type *)
-val eterm_obligations : identifier -> int -> evar_defs -> evar_map -> int -> constr -> types option -> 
+val eterm_obligations : env -> identifier -> evar_defs -> evar_map -> int -> constr -> types option -> 
   (identifier * types * bool * Intset.t) array * constr
     (* Obl. name, type as product, opacity (true = opaque) and dependencies as indexes into the array *)
 

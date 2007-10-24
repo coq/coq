@@ -17,12 +17,16 @@ let trace s =
   if !Options.debug then (msgnl s; msgerr s)
   else ()
 
+let succfix (depth, fixrels) = 
+  (succ depth, List.map succ fixrels)
+
 (** Substitute evar references in t using De Bruijn indices, 
   where n binders were passed through. *)
 let subst_evar_constr evs n t = 
   let seen = ref Intset.empty in
+  let transparent = ref Idset.empty in
   let evar_info id = List.assoc id evs in
-  let rec substrec depth c = match kind_of_term c with
+  let rec substrec (depth, fixrels) c = match kind_of_term c with
     | Evar (k, args) ->
 	let (id, idstr), hyps, chop, _, _ = 
 	  try evar_info k
@@ -42,7 +46,7 @@ let subst_evar_constr evs n t =
 	  let rec aux hyps args acc =
 	     match hyps, args with
 		 ((_, None, _) :: tlh), (c :: tla) -> 
-		   aux tlh tla ((map_constr_with_binders succ substrec depth c) :: acc)
+		   aux tlh tla ((map_constr_with_binders succfix substrec (depth, fixrels) c) :: acc)
 	       | ((_, Some _, _) :: tlh), (_ :: tla) ->
 		   aux tlh tla acc
 	       | [], [] -> acc
@@ -53,11 +57,15 @@ let subst_evar_constr evs n t =
 			int (List.length hyps) ++ str " hypotheses" ++ spc () ++
 			pp_list (fun x -> my_print_constr (Global.env ()) x) args);
  	   with _ -> ());
+	  if List.exists (fun x -> match kind_of_term x with Rel n -> List.mem n fixrels | _ -> false) args then
+	    transparent := Idset.add idstr !transparent;
 	  mkApp (mkVar idstr, Array.of_list args)
-    | _ -> map_constr_with_binders succ substrec depth c
+    | Fix _ ->
+	map_constr_with_binders succfix substrec (depth, 1 :: fixrels) c
+    | _ -> map_constr_with_binders succfix substrec (depth, fixrels) c
   in 
-  let t' = substrec 0 t in
-    t', !seen
+  let t' = substrec (0, []) t in
+    t', !seen, !transparent
 
       
 (** Substitute variable references in t using De Bruijn indices, 
@@ -74,26 +82,29 @@ let subst_vars acc n t =
     to a product : forall H1 : t1, ..., forall Hn : tn, concl.
     Changes evars and hypothesis references to variable references.
     A little optimization: don't include unnecessary let-ins and their dependencies.
-*)
+*) 
 let etype_of_evar evs hyps concl =
   let rec aux acc n = function
       (id, copt, t) :: tl ->
-	let t', s = subst_evar_constr evs n t in
+	let t', s, trans = subst_evar_constr evs n t in
 	let t'' = subst_vars acc 0 t' in
-	let rest, s' = aux (id :: acc) (succ n) tl in
+	let rest, s', trans' = aux (id :: acc) (succ n) tl in
 	let s' = Intset.union s s' in
+	let trans' = Idset.union trans trans' in
 	  (match copt with
 	      Some c -> 
-		if noccurn 1 rest then lift (-1) rest, s'
+		if noccurn 1 rest then lift (-1) rest, s', trans'
 		else
-		  let c', s'' = subst_evar_constr evs n c in
+		  let c', s'', trans'' = subst_evar_constr evs n c in
 		  let c' = subst_vars acc 0 c' in
-		    mkNamedProd_or_LetIn (id, Some c', t'') rest, Intset.union s'' s'
+		    mkNamedProd_or_LetIn (id, Some c', t'') rest, 
+		Intset.union s'' s', 
+		Idset.union trans'' trans'
 	    | None -> 
-		mkNamedProd_or_LetIn (id, None, t'') rest, s')
+		mkNamedProd_or_LetIn (id, None, t'') rest, s', trans')
     | [] ->
-	let t', s = subst_evar_constr evs n concl in
-	  subst_vars acc 0 t', s
+	let t', s, trans = subst_evar_constr evs n concl in
+	  subst_vars acc 0 t', s, trans
   in aux [] 0 (rev hyps)
 
 
@@ -110,12 +121,14 @@ let rec chop_product n t =
       | Prod (_, _, b) ->  if noccurn 1 b then chop_product (pred n) (Termops.pop b) else None
       | _ -> None
 
-let eterm_obligations name nclen isevars evm fs t tycon = 
+let eterm_obligations env name isevars evm fs t tycon = 
   (* 'Serialize' the evars, we assume that the types of the existentials
      refer to previous existentials in the list only *)
   trace (str " In eterm: isevars: " ++ my_print_evardefs isevars);
   trace (str "Term given to eterm" ++ spc () ++
 	    Termops.print_constr_env (Global.env ()) t);
+  let nc = Environ.named_context env in
+  let nc_len = Sign.named_context_length nc in
   let evl = List.rev (to_list evm) in
   let evn = 
     let i = ref (-1) in
@@ -129,8 +142,8 @@ let eterm_obligations name nclen isevars evm fs t tycon =
     fold_right 
       (fun (id, (n, nstr), ev) l ->
 	 let hyps = Environ.named_context_of_val ev.evar_hyps in
-	 let hyps = trunc_named_context nclen hyps in
-	 let evtyp, deps = etype_of_evar l hyps ev.evar_concl in
+	 let hyps = trunc_named_context nc_len hyps in
+	 let evtyp, deps, transp = etype_of_evar l hyps ev.evar_concl in
 	 let evtyp, hyps, chop = 
 	   match chop_product fs evtyp with
 	       Some t -> 
@@ -149,11 +162,11 @@ let eterm_obligations name nclen isevars evm fs t tycon =
 	   y' :: l) 
       evn []
   in 
-  let t', _ = (* Substitute evar refs in the term by variables *)
+  let t', _, transparent = (* Substitute evar refs in the term by variables *)
     subst_evar_constr evts 0 t 
   in
   let evars = 
-    List.map (fun (_, ((_, name), _, opaque, typ, deps)) -> name, typ, not (opaque = None), deps) evts
+    List.map (fun (_, ((_, name), _, opaque, typ, deps)) -> name, typ, not (opaque = None) && not (Idset.mem name transparent), deps) evts
   in
     (try
        trace (str "Term constructed in eterm" ++ spc () ++
