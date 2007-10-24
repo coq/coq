@@ -11,15 +11,37 @@ Proof.
   auto.
 Qed.
 
+(** Eta expansion *)
+
+Axiom eta_expansion_dep : forall A (B : A -> Type) (f : forall x : A, B x), 
+  f = fun x => f x.
+
+Lemma eta_expansion : forall A B (f : A -> B), 
+  f = fun x => f x.
+Proof.
+  intros ; apply eta_expansion_dep.
+Qed.
+
 (** Statements of functional equality for simple and dependent functions. *)
 
-Axiom fun_extensionality : forall A B (f g : A -> B), 
+Axiom fun_extensionality_dep : forall A, forall B : (A -> Type), 
+  forall (f g : forall x : A, B x), 
   (forall x, f x = g x) -> f = g.
 
-Axiom fun_extensionality_dep : forall A, forall B : (A -> Type), forall (f g : forall x : A, B x), 
+Lemma fun_extensionality : forall A B (f g : A -> B), 
   (forall x, f x = g x) -> f = g.
+Proof.
+  intros ; apply fun_extensionality_dep.
+  assumption.
+Qed.
 
 Hint Resolve fun_extensionality fun_extensionality_dep : program.
+
+(** Unification needs help sometimes... *)
+Ltac apply_ext :=
+  match goal with 
+    [ |- ?x = ?y ] => apply (@fun_extensionality _ _ x y)
+  end.
 
 (** The two following lemmas allow to unfold a well-founded fixpoint definition without
    restriction using the functional extensionality axiom. *)
@@ -56,10 +78,5 @@ Proof.
   apply (fun_extensionality_dep _ _ _ _ H).
   rewrite H0 ; auto.
 Qed.
-
-Ltac apply_ext :=
-  match goal with 
-    [ |- ?x = ?y ] => apply (@fun_extensionality _ _ x y)
-  end.
 
 

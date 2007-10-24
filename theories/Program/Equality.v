@@ -75,11 +75,24 @@ Ltac simpl_eq := simpl ; repeat (elim_eq_rect ; simpl) ; repeat (simpl_uip ; sim
 (** Try to abstract a proof of equality, if no proof of the same equality is present in the context. *)
 
 Ltac abstract_eq_hyp H' p := 
+  let ty := type of p in
+  let tyred := eval simpl in ty in
+    match tyred with  
+      ?X = ?Y => 
+      match goal with 
+        | [ H : X = Y |- _ ] => fail 1
+        | _ => set (H':=p) ; try (change p with H') ; clearbody H' ; simpl in H'
+      end
+    end.
+
+(** Try to abstract a proof of equality, if no proof of the same equality is present in the context. *)
+
+Ltac abstract_any_hyp H' p := 
   match type of p with
-    ?X = ?Y => 
+    ?X => 
     match goal with 
-      | [ H : X = Y |- _ ] => fail 1
-      | _ => set (H':=p) ; try (change p with H') ; clearbody H'
+      | [ H : X |- _ ] => fail 1
+      | _ => set (H':=p) ; try (change p with H') ; clearbody H' ; simpl in H'
     end
   end.
 
@@ -87,17 +100,19 @@ Ltac abstract_eq_hyp H' p :=
    Just redefine this tactic (using [Ltac on_coerce_proof tac ::=]) to handle custom coercion operators.
    *)
 
-Ltac on_coerce_proof tac :=
+Ltac on_coerce_proof tac T :=
+  match T with
+    | context [ eq_rect _ _ _ _ ?p ] => tac p
+  end.
+  
+Ltac on_coerce_proof_gl tac :=
   match goal with
-    [ |- ?T ] =>
-    match T with
-      | context [ eq_rect _ _ _ _ ?p ] => tac p
-    end
+    [ |- ?T ] => on_coerce_proof tac T
   end.
 
 (** Abstract proofs of equalities of coercions. *)
 
-Ltac abstract_eq_proof := on_coerce_proof ltac:(fun p => let H := fresh "eqH" in abstract_eq_hyp H p).
+Ltac abstract_eq_proof := on_coerce_proof_gl ltac:(fun p => let H := fresh "eqH" in abstract_eq_hyp H p).
 
 Ltac abstract_eq_proofs := repeat abstract_eq_proof.
   
@@ -105,7 +120,9 @@ Ltac abstract_eq_proofs := repeat abstract_eq_proof.
    in the goal become convertible. *)
 
 Ltac pi_eq_proof_hyp p :=
-  match type of p with
+  let ty := type of p in
+  let tyred := eval simpl in ty in
+  match tyred with
     ?X = ?Y => 
     match goal with 
       | [ H : X = Y |- _ ] => 
@@ -119,7 +136,7 @@ Ltac pi_eq_proof_hyp p :=
 
 (** Factorize proofs of equality appearing as coercion arguments. *)
 
-Ltac pi_eq_proof := on_coerce_proof pi_eq_proof_hyp.
+Ltac pi_eq_proof := on_coerce_proof_gl pi_eq_proof_hyp.
 
 Ltac pi_eq_proofs := repeat pi_eq_proof.
 
