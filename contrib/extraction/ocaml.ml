@@ -95,7 +95,9 @@ let pp_modname mp = str (Common.pp_module mp)
 
 let is_infix r = 
   is_inline_custom r && 
-  (let s = find_custom r in s.[0] = '(' && s.[String.length s-1] = ')')
+  (let s = find_custom r in 
+   let l = String.length s in 
+   l >= 2 && s.[0] = '(' && s.[l-1] = ')')
 
 let get_infix r = 
   let s = find_custom r in 
