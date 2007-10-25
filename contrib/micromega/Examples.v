@@ -1,10 +1,15 @@
 Require Import OrderedRing.
 Require Import RingMicromega.
-Require Import Ring_polynom.
 Require Import ZCoeff.
 Require Import Refl.
 Require Import ZArith.
 Require Import List.
+(*****)
+Require Import NRing.
+Require Import VarMap.
+(*****)
+(*Require Import Ring_polynom.*)
+(*****)
 
 Import OrderedRingSyntax.
 
@@ -55,7 +60,11 @@ Lemma plus_minus : forall x y : R, x + y == 0 -> x - y == 0 -> x < 0 -> False.
 Proof.
 intros x y.
 Open Scope Z_scope.
-set (varmap := fun (x y : R) => x :: y :: nil).
+(*****)
+set (env := fun x y : R => Node (Leaf y) x (Empty _)).
+(*****)
+(*set (env := fun (x y : R) => x :: y :: nil).*)
+(*****)
 set (expr :=
  Build_Formula (PEadd (PEX Z 1) (PEX Z 2)) OpEq (PEc 0)
    :: Build_Formula (PEsub (PEX Z 1) (PEX Z 2)) OpEq (PEc 0)
@@ -63,7 +72,7 @@ set (expr :=
 set (cert :=
    S_Add (S_Mult (S_Pos 0 Zeq_bool Zle_bool 2 (refl_equal true)) (Z_In 2))
      (S_Add (S_Ideal (PEc 1) (Z_In 1)) (S_Ideal (PEc 1) (Z_In 0)))).
-change (make_impl (Zeval_formula (varmap x y)) expr False).
+change (make_impl (Zeval_formula (env x y)) expr False).
 apply (check_formulas_sound sor ZSORaddon expr cert).
 reflexivity.
 Close Scope Z_scope.
@@ -77,7 +86,11 @@ Lemma Zdiscr :
     a * (x * x) + b * x + c == 0 -> 0 <= b * b - four * a * c.
 Proof.
 Open Scope Z_scope.
-set (varmap := fun (a b c x : R) => a :: b :: c :: x:: nil).
+(*****)
+set (env := fun (a b c x : R) => Node (Node (Leaf x) b (Empty _)) a (Leaf c)).
+(*****)
+(*set (env := fun (a b c x : R) => a :: b :: c :: x:: nil).*)
+(*****)
 set (poly1 :=
      (Build_Formula
            (PEadd
@@ -93,10 +106,11 @@ set (wit :=
           (Z_Square
              (PEadd (PEmul (PEc 2) (PEmul (PEX Z 1) (PEX Z 4))) (PEX Z 2))))) :: nil).
 intros a b c x.
-change (make_impl (Zeval_formula (varmap a b c x)) poly1
-  (make_conj (Zeval_formula (varmap a b c x)) poly2)).
+change (make_impl (Zeval_formula (env a b c x)) poly1
+  (make_conj (Zeval_formula (env a b c x)) poly2)).
 apply (check_conj_formulas_sound sor ZSORaddon poly1 poly2 wit).
 reflexivity.
+Close Scope Z_scope.
 Qed.
 
 End Examples.
