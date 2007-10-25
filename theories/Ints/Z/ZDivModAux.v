@@ -211,9 +211,24 @@ Hint Resolve Zlt_gt Zle_ge: zarith.
   rewrite Zmult_assoc; apply Z_div_mod_eq; auto with zarith.
  Qed.
 
- Theorem Zdiv_0: forall a, 0 < a -> 0 / a = 0.
+ Theorem Zdiv_0_l: forall a, 0 / a = 0.
  Proof.
-  intros a H;apply sym_equal;apply Zdiv_unique with (r := 0); auto with zarith.
+  intros a; case a; auto.
+ Qed.
+
+ Theorem Zdiv_0_r: forall a, a / 0 = 0.
+ Proof.
+  intros a; case a; auto.
+ Qed.
+
+ Theorem Zmod_0_l: forall a, 0 mod a = 0.
+ Proof.
+  intros a; case a; auto.
+ Qed.
+
+ Theorem Zmod_0_r: forall a, a mod 0 = 0.
+ Proof.
+  intros a; case a; auto.
  Qed.
 
  Theorem Zdiv_le_upper_bound: 
@@ -448,5 +463,17 @@ Hint Resolve Zlt_gt Zle_ge: zarith.
   replace (2^p) with 0.
   destruct x;change (0<y);auto with zarith.
   destruct p;trivial;discriminate z.
+ Qed.
+
+
+ Theorem Zgcd_div_pos a b:
+   (0 < b)%Z -> (0 < Zgcd a b)%Z -> (0 < b / Zgcd a b)%Z.
+ intros a b Ha Hg.
+ case (Zle_lt_or_eq 0 (b/Zgcd a b)); auto.
+ apply Zdiv_pos; auto with zarith.
+ intros H; generalize Ha.
+ pattern b at 1; rewrite (Zdivide_Zdiv_eq (Zgcd a b) b); auto.
+ rewrite <- H; auto with zarith.
+ assert (F := (Zgcd_is_gcd a b)); inversion F; auto.
  Qed.
  

@@ -729,6 +729,60 @@ apply Zgcd_is_gcd.
 inversion_clear H3; auto.
 Qed.
 
+ Theorem Zggcd_opp: 
+   forall x y, Zggcd (-x) y = 
+      let (p1,p) := Zggcd x y in
+      let (p2,p3) := p in
+       (p1,(-p2,p3))%Z.
+ intros [|x|x] [|y|y]; unfold Zggcd, Zopp; auto.
+ case Pggcd; intros p1 (p2, p3); auto.
+ case Pggcd; intros p1 (p2, p3); auto.
+ case Pggcd; intros p1 (p2, p3); auto.
+ case Pggcd; intros p1 (p2, p3); auto.
+ Qed.
+
+ Theorem Zgcd_inv_0_l: forall x y, (Zgcd x y = 0)%Z -> x = 0%Z.
+ intros x y H.
+ assert (F1: (Zdivide 0 x)%Z).
+  rewrite <- H.
+  generalize (Zgcd_is_gcd x y); intros HH; inversion HH; auto.
+ inversion F1 as[z H1].
+ rewrite H1; ring.
+ Qed.
+
+ Theorem Zgcd_inv_0_r: forall x y, (Zgcd x y = 0)%Z -> y = 0%Z.
+ intros x y H.
+ assert (F1: (Zdivide 0 y)%Z).
+  rewrite <- H.
+  generalize (Zgcd_is_gcd x y); intros HH; inversion HH; auto.
+ inversion F1 as[z H1].
+ rewrite H1; ring.
+ Qed.
+
+ Theorem Zgcd_div: forall a b c,
+  (0 < c -> (c | b) -> (a * b)/c = a * (b/c))%Z.
+ intros a b c H1 H2.
+ inversion H2 as [z Hz].
+ rewrite Hz; rewrite Zmult_assoc.
+ repeat rewrite Z_div_mult; auto with zarith.
+ Qed.
+
+ Theorem Zgcd_div_swap a b c:
+ (0 < Zgcd a b)%Z ->
+ (0 < b)%Z ->
+ (c * a / Zgcd a b * b)%Z = (c * a * (b/Zgcd a b))%Z.
+ intros a b c Hg Hb.
+ assert (F := (Zgcd_is_gcd a b)); inversion F as [F1 F2 F3].
+ pattern b at 2; rewrite (Zdivide_Zdiv_eq (Zgcd a b) b); auto.
+ repeat rewrite Zmult_assoc.
+ apply f_equal2 with (f := Zmult); auto.
+ rewrite Zgcd_div; auto.
+ rewrite <- Zmult_assoc.
+ rewrite (fun x y => Zmult_comm (x /y)); 
+   rewrite <- (Zdivide_Zdiv_eq); auto.
+ Qed.
+
+
 (**************************************
   Properties rel_prime
 **************************************)
@@ -1232,6 +1286,56 @@ forall z n, Zpower_nat_tr z n = Zpower_nat z n.
 intros z n; unfold Zpower_nat_tr.
 rewrite Zpower_tr_aux_correct with (p := 0%nat); auto.
 Qed.
+
+
+ Theorem Zpower_pos_1_r: forall x, Zpower_pos x 1 = x.
+ Proof.
+ intros x; unfold Zpower_pos; simpl; ring.
+ Qed.
+
+ Theorem Zpower_pos_1_l: forall p, Zpower_pos 1 p = 1%Z.
+ Proof.
+ intros p; elim p; clear p.
+ intros p Hrec.
+   rewrite xI_succ_xO; rewrite <- Pplus_diag; rewrite Pplus_one_succ_l.
+   repeat rewrite Zpower_pos_is_exp.
+   rewrite Zpower_pos_1_r.
+   rewrite Hrec; ring.
+ intros p Hrec.
+   rewrite <- Pplus_diag.
+   repeat rewrite Zpower_pos_is_exp.
+   rewrite Hrec; ring.
+ rewrite Zpower_pos_1_r; auto.
+ Qed.
+
+
+
+ Theorem Zpower_pos_0_l: forall p, Zpower_pos 0 p = 0%Z.
+ intros p; elim p; clear p.
+ intros p H1.
+ change (xI p) with (1 + (xO p))%positive.
+ rewrite Zpower_pos_is_exp; rewrite Zpower_pos_1_r; auto.
+ intros p Hrec; rewrite <- Pplus_diag; 
+  rewrite Zpower_pos_is_exp; rewrite Hrec; auto.
+ rewrite Zpower_pos_1_r; auto.
+ Qed.
+
+
+ Theorem Zpower_pos_pos: forall x p, 
+     (0 < x -> 0 < Zpower_pos x p)%Z.
+ Proof.
+ intros x p; elim p; clear p.
+ intros p Hrec H0.
+ rewrite xI_succ_xO; rewrite <- Pplus_diag; rewrite Pplus_one_succ_l.
+   repeat rewrite Zpower_pos_is_exp.
+   rewrite Zpower_pos_1_r.
+   repeat apply Zmult_lt_0_compat; auto.
+ intros p Hrec H0.
+ rewrite <- Pplus_diag.
+   repeat rewrite Zpower_pos_is_exp.
+   repeat apply Zmult_lt_0_compat; auto.
+ rewrite Zpower_pos_1_r; auto.
+ Qed.
 
 (************************************** 
   Definition of Zsquare 

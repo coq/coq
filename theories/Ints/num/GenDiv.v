@@ -944,8 +944,8 @@ Section GenDivGt.
     (spec_add_mul_div bh bl Hb)
     (spec_add_mul_div bl w_0  Hb);
    rewrite spec_w_0; repeat rewrite Zmult_0_l;repeat rewrite Zplus_0_l;
-   rewrite Zdiv_0;repeat rewrite Zplus_0_r.
-   Spec_w_to_Z ah;Spec_w_to_Z bh.    2:apply Zpower_lt_0;zarith.
+   rewrite Zdiv_0_l;repeat rewrite Zplus_0_r.
+   Spec_w_to_Z ah;Spec_w_to_Z bh.    
    unfold base;repeat rewrite Zmod_shift_r;zarith.
    assert (H3:=to_Z_div_minus_p ah HHHH);assert(H4:=to_Z_div_minus_p al HHHH);
    assert (H5:=to_Z_div_minus_p bl HHHH).

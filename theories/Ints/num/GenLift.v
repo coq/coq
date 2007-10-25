@@ -290,7 +290,7 @@ Section GenLift.
    contradict H0; case (spec_to_Z xl); auto with zarith.
   Qed.
 
-  Hint Rewrite Zdiv_0 Zmult_0_l Zplus_0_l Zmult_0_r Zplus_0_r
+  Hint Rewrite Zdiv_0_l Zmult_0_l Zplus_0_l Zmult_0_r Zplus_0_r
     spec_w_W0 spec_w_0W spec_w_WW spec_w_0  
     (wB_div w_digits w_to_Z spec_to_Z) 
     (wB_div_plus w_digits w_to_Z spec_to_Z) : w_rewrite.

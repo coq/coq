@@ -113,3 +113,13 @@ Notation " i * j " := (BigN.mul i j) : bigN_scope.
 Notation " i / j " := (BigN.div i j) : bigN_scope.
 Notation " i ?= j " := (BigN.compare i j) : bigN_scope.
 
+ Theorem succ_pred: forall q,
+  (0 < BigN.to_Z q -> 
+     BigN.to_Z (BigN.succ (BigN.pred q)) = BigN.to_Z q)%Z.
+ intros q Hq.
+ rewrite BigN.spec_succ.
+ rewrite BigN.spec_pred; auto.
+ generalize Hq; set (a := BigN.to_Z q).
+ ring_simplify (a - 1 + 1)%Z; auto.
+ Qed.
+ 

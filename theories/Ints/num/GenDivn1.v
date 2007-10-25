@@ -328,11 +328,7 @@ Section GENDIVN1.
   assert (U3 : 0 < Zpos w_digits). exact (refl_equal Lt).
   destruct x;unfold high;fold high.
   unfold gen_to_Z,zn2z_to_Z;rewrite spec_0.
-  rewrite Zdiv_0;trivial.
-  apply Zpower_lt_0;auto with zarith.
-  change (Zpos (gen_digits w_digits (S n))) with 
-    (2*Zpos (gen_digits w_digits n)).
-  auto with zarith.
+  rewrite Zdiv_0_l;trivial.
   assert (U0 := spec_gen_to_Z w_digits w_to_Z spec_to_Z n w0);
    assert (U1 := spec_gen_to_Z w_digits w_to_Z spec_to_Z n w1).
   simpl [!S n|WW w0 w1!].
@@ -396,10 +392,9 @@ Section GENDIVN1.
    assert ([|w_add_mul_div (w_head0 b) b w_0|] = 
                2 ^ [|w_head0 b|] * [|b|]).
     rewrite (spec_add_mul_div b w_0); auto with zarith.
-    rewrite spec_0;rewrite Zdiv_0; try omega.
+    rewrite spec_0;rewrite Zdiv_0_l; try omega.
     rewrite Zplus_0_r; rewrite Zmult_comm.
     rewrite Zmod_def_small; auto with zarith.
-    apply Zpower_lt_0; try omega.
    assert (H5 := spec_to_Z (high n a)).
    assert 
     ([|w_add_mul_div (w_head0 b) w_0 (high n a)|]
@@ -429,7 +424,7 @@ Section GENDIVN1.
              (w_add_mul_div (w_head0 b) w_0 (high n a)) a
              (gen_0 w_0 n)) as (q,r).
    assert (U:= spec_gen_digits n).
-   rewrite spec_gen_0 in H7;trivial;rewrite Zdiv_0 in H7.
+   rewrite spec_gen_0 in H7;trivial;rewrite Zdiv_0_l in H7.
    rewrite Zplus_0_r in H7.
    rewrite spec_add_mul_div in H7;auto with zarith.
    rewrite spec_0 in H7;rewrite Zmult_0_l in H7;rewrite Zplus_0_l in H7.
@@ -487,7 +482,6 @@ Section GENDIVN1.
    apply Zdiv_lt_upper_bound;auto with zarith.
    rewrite Zmult_comm;auto with zarith.
    exact (spec_gen_to_Z w_digits w_to_Z spec_to_Z n a).
-   apply Zpower_lt_0;auto with zarith.
  Qed.
 
  
