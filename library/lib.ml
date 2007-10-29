@@ -257,14 +257,18 @@ let end_module id =
   let oname,nametab = 
     try match find_entry_p is_something_opened with
       | oname,OpenedModule (_,_,nametab) -> 
-	  let sp = fst oname in
-	  let id' = basename sp in
-	  if id<>id' then error "this is not the last opened module"; 
-	  oname,nametab
-      | _,OpenedModtype _ ->
-	  error "there are some open module types"
-      | _,OpenedSection _ ->
-	  error "there are some open sections"
+	  let id' = basename (fst oname) in
+	    if id<>id' then 
+	      errorlabstrm "end_module" (str "last opened module is " ++ pr_id id'); 
+	    oname,nametab
+      | oname,OpenedModtype _ ->
+	  let id' = basename (fst oname) in
+	    errorlabstrm "end_module" 
+	      (str "module type " ++ pr_id id' ++ str " is still opened")
+      | oname,OpenedSection _ ->
+	  let id' = basename (fst oname) in
+	    errorlabstrm  "end_module" 
+	      (str "section " ++ pr_id id' ++ str " is still opened")
       | _ -> assert false
     with Not_found ->
       error "no opened modules"
@@ -297,14 +301,19 @@ let start_modtype id mp nametab =
 let end_modtype id = 
   let sp,nametab = 
     try match find_entry_p is_something_opened with
-      | sp,OpenedModtype (_,nametab) -> 
-	  let id' = basename (fst sp) in
-	  if id<>id' then error "this is not the last opened module"; 
-	  sp,nametab
-      | _,OpenedModule _ ->
-	  error "there are some open modules"
-      | _,OpenedSection _ ->
-	  error "there are some open sections"
+      | oname,OpenedModtype (_,nametab) -> 
+	  let id' = basename (fst oname) in
+	  if id<>id' then 
+	    errorlabstrm "end_modtype" (str "last opened module type is " ++ pr_id id'); 
+	    oname,nametab
+      | oname,OpenedModule _ ->
+	  let id' = basename (fst oname) in
+	    errorlabstrm "end_modtype" 
+	      (str "module " ++ pr_id id' ++ str " is still opened")
+      | oname,OpenedSection _ ->
+	  let id' = basename (fst oname) in
+	    errorlabstrm "end_modtype" 
+	      (str "section " ++ pr_id id' ++ str " is still opened")
       | _ -> assert false
     with Not_found ->
       error "no opened module types"
@@ -514,9 +523,10 @@ let close_section id =
   let oname,fs = 
     try match find_entry_p is_something_opened with
       | oname,OpenedSection (_,fs) -> 
-	  if id <> basename (fst oname) then
-	    error "this is not the last opened section";
-	  (oname,fs)
+	  let id' = basename (fst oname) in 
+	    if id <> id' then 
+	      errorlabstrm "close_section" (str "last opened section is " ++ pr_id id');
+	    (oname,fs)
       | _ -> assert false 
     with Not_found ->
       error "no opened section"
