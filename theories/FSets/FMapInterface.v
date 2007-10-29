@@ -161,6 +161,9 @@ Module Type S.
       Parameter elements_2 : 
         InA eq_key_elt (x,e) (elements m) -> MapsTo x e m.
       Parameter elements_3 : sort lt_key (elements m).  
+      (* We add artificially elements_3w, a weaker version of 
+         elements_3, for allowing FMapWeak < FMap subtyping. *)
+      Parameter elements_3w : NoDupA eq_key (elements m).  
 
     (** Specification of [fold] *)  
       Parameter fold_1 :

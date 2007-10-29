@@ -12,6 +12,23 @@ Require Export SetoidList.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+(** * Types with Equalities, and nothing more (for subtyping purpose) *)
+
+Module Type EqualityType. 
+
+  Parameter t : Set.
+
+  Parameter eq : t -> t -> Prop.
+
+  Axiom eq_refl : forall x : t, eq x x.
+  Axiom eq_sym : forall x y : t, eq x y -> eq y x.
+  Axiom eq_trans : forall x y z : t, eq x y -> eq y z -> eq x z.
+
+  Hint Immediate eq_sym.
+  Hint Resolve eq_refl eq_trans.
+
+End EqualityType. 
+
 (** * Types with decidable Equalities (but no ordering) *)
 
 Module Type DecidableType. 

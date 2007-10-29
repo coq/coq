@@ -247,6 +247,9 @@ Module Type S.
   Parameter elements_1 : In x s -> InA E.eq x (elements s).
   Parameter elements_2 : InA E.eq x (elements s) -> In x s.
   Parameter elements_3 : sort E.lt (elements s).  
+  (* We add artificially elements_3w, a weaker version of 
+     elements_3, for allowing FSetWeak < FSet subtyping. *)
+  Parameter elements_3w : NoDupA E.eq (elements s).
 
   (** Specification of [min_elt] *)
   Parameter min_elt_1 : min_elt s = Some x -> In x s. 

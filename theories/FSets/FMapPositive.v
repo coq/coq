@@ -166,6 +166,7 @@ Qed.
 Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
 
   Module E:=PositiveOrderedTypeBits.
+  Module ME:=KeyOrderedType E.
 
   Definition key := positive.
 
@@ -786,6 +787,12 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   Proof.
   unfold elements.
   apply xelements_sort; auto.
+  Qed.
+
+  Lemma elements_3w : NoDupA eq_key (elements m).
+  Proof.
+  change eq_key with (@ME.eqk A).
+  apply ME.Sort_NoDupA; apply elements_3; auto.
   Qed.
 
   End FMapSpec.

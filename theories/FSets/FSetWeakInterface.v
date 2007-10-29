@@ -23,7 +23,10 @@ Unset Strict Implicit.
 
 Module Type S.
 
-  Declare Module E : DecidableType.
+  (** The module E of base objects is meant to be a DecidableType
+     (and used to be so). But requiring only an EqualityType here
+     allows subtyping between FSet and FSetWeak *)
+  Declare Module E : EqualityType.
   Definition elt := E.t.
 
   Parameter t : Set. (** the abstract type of sets *)
@@ -67,6 +70,12 @@ Module Type S.
 
   Parameter diff : t -> t -> t.
   (** Set difference. *)
+
+  Definition eq : t -> t -> Prop := Equal.
+  (** EqualityType is a subset of this interface, but not 
+  DecidableType, in order to have FSetWeak < FSet. 
+  Hence no weak sets of weak sets in general, but it works 
+  at least with FSetWeakList.make that provides an eq_dec. *)
 
   Parameter equal : t -> t -> bool.
   (** [equal s1 s2] tests whether the sets [s1] and [s2] are
@@ -121,12 +130,17 @@ Module Type S.
 
   Section Spec. 
 
-  Variable s s' : t.
+  Variable s s' s'': t.
   Variable x y : elt.
 
   (** Specification of [In] *)
   Parameter In_1 : E.eq x y -> In x s -> In y s.
- 
+
+  (** Specification of [eq] *)
+  Parameter eq_refl : eq s s. 
+  Parameter eq_sym : eq s s' -> eq s' s.
+  Parameter eq_trans : eq s s' -> eq s' s'' -> eq s s''.
+
   (** Specification of [mem] *)
   Parameter mem_1 : In x s -> mem x s = true.
   Parameter mem_2 : mem x s = true -> In x s. 
@@ -220,7 +234,9 @@ Module Type S.
   (** Specification of [elements] *)
   Parameter elements_1 : In x s -> InA E.eq x (elements s).
   Parameter elements_2 : InA E.eq x (elements s) -> In x s.
-  Parameter elements_3 : NoDupA E.eq (elements s).
+  (** When compared with ordered FSet, here comes the only 
+      property that is really weaker: *)
+  Parameter elements_3w : NoDupA E.eq (elements s).
 
   (** Specification of [choose] *)
   Parameter choose_1 : choose s = Some x -> In x s.
@@ -232,7 +248,7 @@ Module Type S.
     is_empty_1 choose_1 choose_2 add_1 add_2 remove_1
     remove_2 singleton_2 union_1 union_2 union_3
     inter_3 diff_3 fold_1 filter_3 for_all_1 exists_1
-    partition_1 partition_2 elements_1 elements_3 
+    partition_1 partition_2 elements_1 elements_3w 
     : set.
   Hint Immediate In_1 mem_2 equal_2 subset_2 is_empty_2 add_3
     remove_3 singleton_1 inter_1 inter_2 diff_1 diff_2

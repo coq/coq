@@ -16,16 +16,22 @@
   Moreover, we prove that [E.Eq] and [Equal] are setoid equalities.
 *)
 
-Require Export FSetInterface. 
+Require Import DecidableTypeEx (*FSetWeakInterface*).
+Require Export FSetInterface.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Module Facts (M: S).
-Module ME := OrderedTypeFacts M.E.  
-Import ME.
+Module Facts (M:S).
+Module D:=OT_as_DT M.E.
+(* To Do Later, switch to: 
+   Module Facts (M:FSetWeakInterface.S)
+                (D:DecidableType with Definition t:=M.E.t 
+                                 with Definition eq:=M.E.eq) *)
+Import M.E.
 Import M.
-Import Logic. (* to unmask [eq] *)  
-Import Peano. (* to unmask [lt] *)
+
+Notation eq_dec := D.eq_dec.
+Definition eqb x y := if eq_dec x y then true else false.
 
 (** * Specifications written using equivalences *)
 
@@ -258,8 +264,9 @@ apply H0; auto.
 symmetry.
 rewrite H0; intros.
 destruct H1 as (_,H1).
-apply H1; auto with set.
-apply elements_2; auto with set.
+apply H1; auto.
+rewrite H2.
+rewrite InA_alt; eauto.
 Qed.
 
 Lemma exists_b : compat_bool E.eq f -> 
@@ -272,7 +279,8 @@ destruct (existsb f (elements s)); destruct (exists_ f s); auto; intros.
 rewrite <- H1; intros.
 destruct H0 as (H0,_).
 destruct H0 as (a,(Ha1,Ha2)); auto.
-exists a; intuition; auto with set.
+exists a; split; auto.
+rewrite H2; rewrite InA_alt; eauto.
 symmetry.
 rewrite H0.
 destruct H1 as (_,H1).
@@ -349,7 +357,9 @@ Qed.
 Add Morphism singleton : singleton_m.
 Proof.
 unfold Equal; intros x y H a.
-do 2 rewrite singleton_iff; split; order.
+do 2 rewrite singleton_iff; split; intros.
+apply E.eq_trans with x; auto.
+apply E.eq_trans with y; auto.
 Qed.
 
 Add Morphism add : add_m.
@@ -486,5 +496,15 @@ Qed.
 Add Morphism cardinal ; cardinal_m.
 *)
 
-
 End Facts.
+
+(* Two Annoying Things: 
+  1) Imports work strangly: 
+    After a (M:S)(E:DecidableType) and an Import M 
+    (which contains some E), then E.eq_dec is visible
+    even though it is not in M.E. 
+
+  2) Syntaxe of functor application forbids this: 
+  Module Facts (M:FSetInterface.S) := WeakFacts M (OT_as_DT M.E). 
+  Hence we cannot factor FSetWeakFacts and FSetFacts.
+*)

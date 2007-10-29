@@ -12,13 +12,6 @@ Require Export SetoidList.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-(* TODO concernant la tactique order: 
-   * propagate_lt n'est sans doute pas complet
-   * un propagate_le
-   * exploiter les hypotheses negatives restant a la fin
-   * faire que ca marche meme quand une hypothese depend d'un eq ou lt.
-*) 
-
 (** * Ordered types *)
 
 Inductive Compare (X : Set) (lt eq : X -> X -> Prop) (x y : X) : Set :=
@@ -121,6 +114,13 @@ Module OrderedTypeFacts (O: OrderedType).
   Proof. 
    intuition.
   Qed.
+
+(* TODO concernant la tactique order: 
+   * propagate_lt n'est sans doute pas complet
+   * un propagate_le
+   * exploiter les hypotheses negatives restant a la fin
+   * faire que ca marche meme quand une hypothese depend d'un eq ou lt.
+*) 
 
 Ltac abstraction := match goal with 
  (* First, some obvious simplifications *)

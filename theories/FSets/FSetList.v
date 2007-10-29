@@ -649,6 +649,11 @@ Module Raw (X: OrderedType).
   unfold elements; auto.
   Qed.
 
+  Lemma elements_3w : forall (s : t) (Hs : Sort s), NoDupA E.eq (elements s).  
+  Proof. 
+  unfold elements; auto.
+  Qed.
+
   Lemma min_elt_1 : forall (s : t) (x : elt), min_elt s = Some x -> In x s. 
   Proof.
   intro s; case s; simpl; intros; inversion H; auto.
@@ -1233,6 +1238,8 @@ Module Make (X: OrderedType) <: S with Module E := X.
   Proof. exact (fun H => Raw.elements_2 H). Qed.
   Lemma elements_3 : sort E.lt (elements s).
   Proof. exact (Raw.elements_3 s.(sorted)). Qed.
+  Lemma elements_3w : NoDupA E.eq (elements s).
+  Proof. exact (Raw.elements_3w s.(sorted)). Qed.
 
   Lemma min_elt_1 : min_elt s = Some x -> In x s. 
   Proof. exact (fun H => Raw.min_elt_1 H). Qed.

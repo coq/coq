@@ -19,7 +19,10 @@ Unset Strict Implicit.
 
 Module Type S.
 
-  Declare Module E : DecidableType.
+  (** The module E of base objects is meant to be a DecidableType
+     (and used to be so). But requiring only an EqualityType here
+     allows subtyping between FMap and FMapWeak *)
+  Declare Module E : EqualityType.
 
   Definition key := E.t.
 
@@ -149,7 +152,9 @@ Module Type S.
         MapsTo x e m -> InA eq_key_elt (x,e) (elements m).
       Parameter elements_2 : 
         InA eq_key_elt (x,e) (elements m) -> MapsTo x e m.
-      Parameter elements_3 : NoDupA eq_key (elements m).  
+      (** When compared with ordered FMap, here comes the only 
+         property that is really weaker: *)
+      Parameter elements_3w : NoDupA eq_key (elements m).  
 
     (** Specification of [fold] *)  
       Parameter fold_1 :

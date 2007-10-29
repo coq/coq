@@ -21,10 +21,12 @@ Require Export FMapWeakInterface.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Module Facts (M: S).
+Module Facts (M:S)(D:DecidableType with Definition t:=M.E.t 
+                                   with Definition eq:=M.E.eq).
 Import M.
-Import Logic. (* to unmask [eq] *)  
-Import Peano. (* to unmask [lt] *)
+
+Notation eq_dec := D.eq_dec.
+Definition eqb x y := if eq_dec x y then true else false.
 
 Lemma MapsTo_fun : forall (elt:Set) m x (e e':elt), 
   MapsTo x e m -> MapsTo x e' m -> e=e'.
@@ -110,7 +112,7 @@ Lemma add_mapsto_iff : forall m x y e e',
 Proof. 
 intros.
 intuition.
-destruct (E.eq_dec x y); [left|right].
+destruct (eq_dec x y); [left|right].
 split; auto.
 symmetry; apply (MapsTo_fun (e':=e) H); auto with map.
 split; auto; apply add_3 with x e; auto.
@@ -121,10 +123,10 @@ Lemma add_in_iff : forall m x y e, In y (add x e m) <-> E.eq x y \/ In y m.
 Proof. 
 unfold In; split.
 intros (e',H).
-destruct (E.eq_dec x y) as [E|E]; auto.
+destruct (eq_dec x y) as [E|E]; auto.
 right; exists e'; auto.
 apply (add_3 E H).
-destruct (E.eq_dec x y) as [E|E]; auto.
+destruct (eq_dec x y) as [E|E]; auto.
 intros.
 exists e; apply add_1; auto.
 intros [H|(e',H)].
@@ -289,8 +291,6 @@ Ltac map_iff :=
 
 Section BoolSpec.
 
-Definition eqb x y := if E.eq_dec x y then true else false.
-
 Lemma mem_find_b : forall (elt:Set)(m:t elt)(x:key), mem x m = if find x m then true else false. 
 Proof.
 intros.
@@ -360,9 +360,9 @@ Qed.
 Hint Resolve add_neq_o : map.
 
 Lemma add_o : forall m x y e, 
- find y (add x e m) = if E.eq_dec x y then Some e else find y m.
+ find y (add x e m) = if eq_dec x y then Some e else find y m.
 Proof.
-intros; destruct (E.eq_dec x y); auto with map.
+intros; destruct (eq_dec x y); auto with map.
 Qed.
 
 Lemma add_eq_b : forall m x y e, 
@@ -381,7 +381,7 @@ Lemma add_b : forall m x y e,
  mem y (add x e m) = eqb x y || mem y m. 
 Proof.
 intros; do 2 rewrite mem_find_b; rewrite add_o; unfold eqb.
-destruct (E.eq_dec x y); simpl; auto.
+destruct (eq_dec x y); simpl; auto.
 Qed.
 
 Lemma remove_eq_o : forall m x y, 
@@ -408,9 +408,9 @@ Qed.
 Hint Resolve remove_neq_o : map.
 
 Lemma remove_o : forall m x y, 
- find y (remove x m) = if E.eq_dec x y then None else find y m.
+ find y (remove x m) = if eq_dec x y then None else find y m.
 Proof.
-intros; destruct (E.eq_dec x y); auto with map.
+intros; destruct (eq_dec x y); auto with map.
 Qed.
 
 Lemma remove_eq_b : forall m x y, 
@@ -429,7 +429,7 @@ Lemma remove_b : forall m x y,
  mem y (remove x m) = negb (eqb x y) && mem y m.
 Proof.
 intros; do 2 rewrite mem_find_b; rewrite remove_o; unfold eqb.
-destruct (E.eq_dec x y); auto.
+destruct (eq_dec x y); auto.
 Qed.
 
 Definition option_map (A:Set)(B:Set)(f:A->B)(o:option A) : option B := 
@@ -515,10 +515,10 @@ intros.
 assert (forall e, find x m = Some e <-> InA (eq_key_elt (elt:=elt)) (x,e) (elements m)).
  intros; rewrite <- find_mapsto_iff; apply elements_mapsto_iff.
 assert (NoDupA (eq_key (elt:=elt)) (elements m)). 
- exact (elements_3 m).
-generalize (fun e => @findA_NoDupA _ _ _ E.eq_sym E.eq_trans E.eq_dec (elements m) x e H0).
+ exact (elements_3w m).
+generalize (fun e => @findA_NoDupA _ _ _ D.eq_sym D.eq_trans eq_dec (elements m) x e H0).
 unfold eqb.
-destruct (find x m); destruct (findA (fun y : E.t => if E.eq_dec x y then true else false) (elements m)); 
+destruct (find x m); destruct (findA (fun y:D.t => if eq_dec x y then true else false) (elements m)); 
  simpl; auto; intros.
 symmetry; rewrite <- H1; rewrite <- H; auto.
 symmetry; rewrite <- H1; rewrite <- H; auto.
@@ -538,12 +538,12 @@ rewrite InA_alt in He.
 destruct He as ((y,e'),(Ha1,Ha2)).
 compute in Ha1; destruct Ha1; subst e'.
 exists (y,e); split; simpl; auto.
-unfold eqb; destruct (E.eq_dec x y); intuition.
+unfold eqb; destruct (eq_dec x y); intuition.
 rewrite <- H; rewrite H0.
 destruct H1 as (H1,_).
 destruct H1 as ((y,e),(Ha1,Ha2)); [intuition|].
 simpl in Ha2.
-unfold eqb in *; destruct (E.eq_dec x y); auto; try discriminate.
+unfold eqb in *; destruct (eq_dec x y); auto; try discriminate.
 exists e; rewrite InA_alt.
 exists (y,e); intuition.
 compute; auto.
@@ -554,8 +554,10 @@ End BoolSpec.
 End Facts.
 
 
-Module Properties (M: S).
- Module F:=Facts M. 
+Module Properties 
+ (M:S)(D:DecidableType with Definition t:=M.E.t 
+                       with Definition eq:=M.E.eq).
+ Module F:=Facts M D. 
  Import F.
  Import M.
 
@@ -623,8 +625,8 @@ Module Properties (M: S).
    intuition; eauto; congruence.
   intros; do 2 rewrite fold_1; do 2 rewrite <- fold_left_rev_right.
   apply fold_right_equivlistA with (eqA:=eqke) (eqB:=eqA); auto.
-  apply NoDupA_rev; auto; apply NoDupA_eqk_eqke; apply elements_3.
-  apply NoDupA_rev; auto; apply NoDupA_eqk_eqke; apply elements_3.
+  apply NoDupA_rev; auto; apply NoDupA_eqk_eqke; apply elements_3w.
+  apply NoDupA_rev; auto; apply NoDupA_eqk_eqke; apply elements_3w.
   red; intros.
   do 2 rewrite InA_rev.
   destruct x; do 2 rewrite <- elements_mapsto_iff.
@@ -651,8 +653,8 @@ Module Properties (M: S).
   change (f x e (fold_right f' i (rev (elements m1))))
    with (f' (x,e) (fold_right f' i (rev (elements m1)))).
   apply fold_right_add with (eqA:=eqke)(eqB:=eqA); auto.
-  apply NoDupA_rev; auto; apply NoDupA_eqk_eqke; apply elements_3.
-  apply NoDupA_rev; auto; apply NoDupA_eqk_eqke; apply elements_3.
+  apply NoDupA_rev; auto; apply NoDupA_eqk_eqke; apply elements_3w.
+  apply NoDupA_rev; auto; apply NoDupA_eqk_eqke; apply elements_3w.
   rewrite InA_rev.
   swap H1.
   exists e.
@@ -663,7 +665,7 @@ Module Properties (M: S).
   do 2 rewrite find_mapsto_iff; unfold eq_key_elt; simpl.
   rewrite H2.
   rewrite add_o.
-  destruct (E.eq_dec x a); intuition.
+  destruct (eq_dec x a); intuition.
   inversion H3; auto.
   f_equal; auto.
   elim H1.
@@ -735,7 +737,7 @@ Module Properties (M: S).
   destruct (cardinal_inv_2 (sym_eq Heqn)) as ((x,e),H0); simpl in *.
   assert (Add x e (remove x m) m).
    red; intros.
-   rewrite add_o; rewrite remove_o; destruct (E.eq_dec x y); eauto with map.
+   rewrite add_o; rewrite remove_o; destruct (eq_dec x y); eauto with map.
   apply X0 with (remove x m) x e; auto with map.
   apply IHn; auto with map.
   assert (S n = S (cardinal (remove x m))).

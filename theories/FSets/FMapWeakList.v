@@ -340,7 +340,7 @@ Proof.
 auto.
 Qed.
 
-Lemma elements_3 : forall m (Hm:NoDupA m), NoDupA (elements m). 
+Lemma elements_3w : forall m (Hm:NoDupA m), NoDupA (elements m). 
 Proof. 
  auto.
 Qed.
@@ -951,8 +951,8 @@ Section Elt.
  Proof. intros m; exact (@Raw.elements_1 elt m.(this)). Qed.
  Lemma elements_2 : forall m x e, InA eq_key_elt (x,e) (elements m) -> MapsTo x e m.
  Proof. intros m; exact (@Raw.elements_2 elt m.(this)). Qed.
- Lemma elements_3 : forall m, NoDupA eq_key (elements m).  
- Proof. intros m; exact (@Raw.elements_3 elt m.(this) m.(NoDup)). Qed.
+ Lemma elements_3w : forall m, NoDupA eq_key (elements m).  
+ Proof. intros m; exact (@Raw.elements_3w elt m.(this) m.(NoDup)). Qed.
 
  Lemma fold_1 : forall m (A : Type) (i : A) (f : key -> elt -> A -> A),
         fold f m i = fold_left (fun a p => f (fst p) (snd p) a) (elements m) i.
