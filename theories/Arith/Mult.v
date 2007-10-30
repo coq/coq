@@ -118,7 +118,7 @@ Qed.
 
 Lemma mult_is_one : forall n m, n * m = 1 -> n = 1 /\ m = 1.
 Proof.
-  induction n as [|n IH].
+  destruct n as [|n].
     simpl; intros m H; elim (O_S _ H).
 
     simpl; intros m H.
