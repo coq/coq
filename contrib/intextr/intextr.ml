@@ -202,19 +202,27 @@ and extract_cst_app env kn args =
 
 (*s Extraction of an inductive constructor applied to arguments. *)
 
-and extract_cons_app env ((_, j) as cp) args =
+and extract_cons_app env ((ip, j) as cp) args =
   (* First, we determine the number of arguments expected by the constructor. *)
-  let nb_args = mis_constructor_nargs_env env cp in
+  let (nparam, _) = inductive_nargs env ip in
+  let nb_args = constructor_nrealargs env cp in
   (* Then, we build the closure accordingly. *)
-  let missing = nb_args - List.length args in
-  assert (missing >= 0);
-  (* Otherwise, the constructor is applied to too many arguments. *)
-  let rec add_argument args = function
-    | 0 -> args
-    | n -> add_argument (args @ [TVar (n-1)]) (n-1) (* bad complexity *)
+  let rec eta_expand missing args = function
+    | 0 -> add_lambda (TConstr (j-1, List.rev args)) missing
+    | n -> eta_expand (missing+1) ((TVar (n-1)) :: args) (n-1)
   in
-  let mlargs = List.map (fun c -> extract_term env c []) args in
-  add_lambda (TConstr (j-1, add_argument mlargs missing)) missing
+  let rec discard_params args = function
+    | 0 ->
+        let missing = nb_args - List.length args in
+        assert (missing >= 0);
+        (* otherwise, the constructor is applied to too many arguments *)
+        let mlargs = List.map (fun c -> extract_term env c []) args in
+        eta_expand 0 (List.rev mlargs) missing
+    | n -> match args with
+        | [] -> eta_expand n [] (n+nb_args)
+        | _::q -> discard_params q (n-1)
+  in
+  discard_params args nparam
 
 (*S Extraction of a case. *)
 
