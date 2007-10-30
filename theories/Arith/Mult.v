@@ -104,6 +104,29 @@ Proof.
 Qed.
 Hint Resolve mult_assoc: arith v62.
 
+(** ** Inversion lemmas *)
+
+Lemma mult_is_O : forall n m, n * m = 0 -> n = 0 \/ m = 0.
+Proof.
+  destruct n as [| n]. 
+    intros; left; trivial.
+
+    simpl; intros m H; right. 
+    assert (H':m = 0 /\ n * m = 0) by apply (plus_is_O _ _ H).
+    destruct H'; trivial.
+Qed.
+
+Lemma mult_is_one : forall n m, n * m = 1 -> n = 1 /\ m = 1.
+Proof.
+  induction n as [|n IH].
+    simpl; intros m H; elim (O_S _ H).
+
+    simpl; intros m H.
+    destruct (plus_is_one _ _ H) as [[Hm Hnm] | [Hm Hnm]].
+      rewrite Hm in H; simpl in H; rewrite mult_0_r in H; elim (O_S _ H).
+      rewrite Hm in Hnm; rewrite mult_1_r in Hnm; auto. 
+Qed.
+
 (** * Compatibility with orders *)
 
 Lemma mult_O_le : forall n m, m = 0 \/ n <= m * n.
