@@ -466,11 +466,6 @@ unfold Subset; intros s s' H s'' s''' H0 a.
 do 2 rewrite diff_iff; intuition.
 Qed.
 
-Add Morphism Subset with signature Subset --> Subset ++> impl as  Subset_s_m.
-Proof.
-unfold Subset, impl; auto.
-Qed.
-
 (* [fold], [filter], [for_all], [exists_] and [partition] cannot be proved morphism
    without additional hypothesis on [f]. For instance: *)
 
