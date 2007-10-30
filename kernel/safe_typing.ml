@@ -42,6 +42,11 @@ type module_info =
 let check_label l labset = 
   if Labset.mem l labset then error_existing_label l
 
+let set_engagement_opt oeng env =
+  match oeng with
+      Some eng -> set_engagement eng env
+    | _ -> env
+
 type library_info = dir_path * Digest.t
 
 type safe_environment = 
@@ -51,6 +56,8 @@ type safe_environment =
       labset : Labset.t;
       revsign : module_signature_body;
       revstruct : module_structure_body;
+      univ : Univ.constraints;
+      engagement : engagement option;
       imports : library_info list;
       loads : (module_path * module_body) list }
 
@@ -78,6 +85,8 @@ let rec empty_environment =
     labset = Labset.empty;
     revsign = [];
     revstruct = [];
+    univ = Univ.Constraint.empty;
+    engagement = None;
     imports = [];
     loads = [] }
 
@@ -153,6 +162,8 @@ let add_constant dir l decl senv =
 	  labset = Labset.add l senv.labset;
 	  revsign = (l,SPBconst cb)::senv.revsign;
 	  revstruct = (l,SEBconst cb)::senv.revstruct;
+          univ = senv.univ;
+          engagement = senv.engagement;
 	  imports = senv.imports;
 	  loads = senv.loads }
     
@@ -180,6 +191,8 @@ let add_mind dir l mie senv =
 	labset = Labset.add l senv.labset;  (* TODO: the same as above *)
 	revsign = (l,SPBmind mib)::senv.revsign;
 	revstruct = (l,SEBmind mib)::senv.revstruct;
+        univ = senv.univ;
+        engagement = senv.engagement;
 	imports = senv.imports;
 	loads = senv.loads }
 
@@ -198,6 +211,8 @@ let add_modtype l mte senv =
 	labset = Labset.add l senv.labset;
 	revsign = (l,SPBmodtype mtb)::senv.revsign;
 	revstruct = (l,SEBmodtype mtb)::senv.revstruct;
+        univ = senv.univ;
+        engagement = senv.engagement;
 	imports = senv.imports;
 	loads = senv.loads }
 
@@ -223,6 +238,8 @@ let add_module l me senv =
 	labset = Labset.add l senv.labset;
 	revsign = (l,SPBmodule mspec)::senv.revsign;
 	revstruct = (l,SEBmodule mb)::senv.revstruct;
+        univ = senv.univ;
+        engagement = senv.engagement;
 	imports = senv.imports;
 	loads = senv.loads }
 
@@ -245,6 +262,8 @@ let start_module l senv =
 	labset = Labset.empty;
 	revsign = [];
 	revstruct = [];
+        univ = Univ.Constraint.empty;
+        engagement = None;
 	imports = senv.imports;
 	loads = [] }
 
@@ -274,6 +293,7 @@ let end_module l restype senv =
 	  let mtb = functorize_type res_tb in
 	    mtb, Some mtb, cst
   in
+  let cst = Constraint.union cst senv.univ in
   let mexpr = 
     List.fold_left
       (fun mtb (arg_id,arg_b) -> MEBfunctor (arg_id,arg_b,mtb))
@@ -294,6 +314,7 @@ let end_module l restype senv =
   in
   let mp = MPdot (oldsenv.modinfo.modpath, l) in
   let newenv = oldsenv.env in
+  let newenv = set_engagement_opt senv.engagement newenv in
   let newenv = 
     List.fold_left
       (fun env (mp,mb) -> full_add_module mp mb env) 
@@ -309,6 +330,9 @@ let end_module l restype senv =
 	labset = Labset.add l oldsenv.labset;
 	revsign = (l,SPBmodule mspec)::oldsenv.revsign;
 	revstruct = (l,SEBmodule mb)::oldsenv.revstruct;
+        univ = oldsenv.univ;
+        (* engagement is propagated to the upper level *)
+        engagement = senv.engagement;
 	imports = senv.imports;
 	loads = senv.loads@oldsenv.loads }
 
@@ -333,6 +357,8 @@ let add_module_parameter mbid mte senv =
     labset = senv.labset;
     revsign = [];
     revstruct = [];
+    univ = senv.univ;
+    engagement = senv.engagement;
     imports = senv.imports;
     loads = [] }
 
@@ -355,6 +381,8 @@ let start_modtype l senv =
 	labset = Labset.empty;
 	revsign = [];
 	revstruct = [];
+        univ = Univ.Constraint.empty;
+        engagement = None;
 	imports = senv.imports;
 	loads = [] }
 
@@ -377,6 +405,10 @@ let end_modtype l senv =
   in
   let kn = make_kn oldsenv.modinfo.modpath empty_dirpath l in
   let newenv = oldsenv.env in
+  (* since universes constraints cannot be stored in the modtype,
+     they are propagated to the upper level *)
+  let newenv = add_constraints senv.univ  newenv in
+  let newenv = set_engagement_opt senv.engagement newenv in
   let newenv = 
     List.fold_left
       (fun env (mp,mb) -> full_add_module mp mb env) 
@@ -395,6 +427,8 @@ let end_modtype l senv =
 	labset = Labset.add l oldsenv.labset;
 	revsign = (l,SPBmodtype mtb)::oldsenv.revsign;
 	revstruct = (l,SEBmodtype mtb)::oldsenv.revstruct;
+        univ = Univ.Constraint.union senv.univ oldsenv.univ;
+        engagement = senv.engagement;
 	imports = senv.imports;
 	loads = senv.loads@oldsenv.loads }
   
@@ -404,7 +438,9 @@ let current_msid senv = senv.modinfo.msid
 
 
 let add_constraints cst senv = 
-  {senv with env = Environ.add_constraints cst senv.env}
+  {senv with
+    env = Environ.add_constraints cst senv.env;
+    univ = Univ.Constraint.union cst senv.univ }
 
 (* Check that the engagement expected by a library matches the initial one *)
 let check_engagement env c =
@@ -415,7 +451,9 @@ let check_engagement env c =
         error "Needs option -impredicative-set"
 
 let set_engagement c senv =
-  {senv with env = Environ.set_engagement c senv.env}
+  {senv with
+    env = Environ.set_engagement c senv.env;
+    engagement = Some c }
 
 (* Libraries = Compiled modules *)
 
@@ -454,6 +492,8 @@ let start_library dir senv =
 	labset = Labset.empty;
 	revsign = [];
 	revstruct = [];
+        univ = Univ.Constraint.empty;
+        engagement = None;
 	imports = senv.imports;
 	loads = [] }
 
@@ -475,7 +515,7 @@ let export senv dir =
       mod_type = MTBsig (modinfo.msid, List.rev senv.revsign);
       mod_user_type = None;
       mod_equiv = None;
-      mod_constraints = Constraint.empty }
+      mod_constraints = senv.univ }
   in
     modinfo.msid, (dir,mb,senv.imports,engagement senv.env)
 
