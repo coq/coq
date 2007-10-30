@@ -419,15 +419,18 @@ Qed.
 (* [Subset] is a setoid order *)
 
 Lemma Subset_refl : forall s, s[<=]s.
-Proof. red; auto. Qed.
+Proof. red; auto. Defined.
 
 Lemma Subset_trans : forall s s' s'', s[<=]s'->s'[<=]s''->s[<=]s''.
-Proof. unfold Subset; eauto. Qed.
+Proof. unfold Subset; eauto. Defined.
 
 Add Relation t Subset 
  reflexivity proved by Subset_refl
  transitivity proved by Subset_trans
  as SubsetSetoid.
+(* NB: for the moment, it is important to use Defined and not Qed in 
+   the two previous lemmas, in order to allow conversion of 
+   SubsetSetoid coming from separate Facts modules. See bug #1738. *)
 
 Add Morphism In with signature E.eq ==> Subset ++> impl as In_s_m.
 Proof.
