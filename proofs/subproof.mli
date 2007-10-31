@@ -57,8 +57,8 @@
 *)
 open Term
 
-type ('a,+'b) subproof
-type ('a,+'b) pointer
+type ('a,+'b) subproof constraint 'b = [< `Open | `Resolved | `Subproof ] 
+type ('a,+'b) pointer  constraint 'b = [< `Open | `Resolved | `Subproof ] 
 
 (* Gives the subproof held by a pointer *)
 val get : ('a,'b) pointer -> ('a,'b) subproof
@@ -98,7 +98,7 @@ val is_resolved : ('a,'b) subproof -> bool
 val opengoals : ('a,'b) pointer -> (constr, [> `Open]) pointer array
 
 (* This function returns the result of a resolved subproof *)
-val get_result : ('a,[< `Result ]) subproof -> 'a
+val get_result : ('a,[< `Resolved ]) subproof -> 'a
 
 (* This function returns the actual goal represented by an open 
    goal subproof *)

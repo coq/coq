@@ -16,11 +16,9 @@
 
 (* arnaud: rajouter le blabla sur la  théorie du module ici *)
 
-(* arnaud: penser à garder une liste des positions qui seraient valide ? *)
-
 open Term
 
-type ('a,'b) subproof = ('a,'b) Subproof.subproof 
+type ('a,+'b) subproof = ('a,'b) Subproof.subproof 
      (* rather than opening Subproof *)
 
 open Transactional_stack
@@ -28,6 +26,35 @@ open Transactional_stack
 
 
 type evar = unit (* arnaud: à compléter en temps utile aussi *)
+
+
+
+(* Encoding the type
+     exists 'b 'c.{ sp : ('b,'c) subproof ; pt : ('b,'c) Subproof.pointer }
+   trick from Benjaming Pierce and Daniel Bünzli 
+   
+(cf: http://caml.inria.fr/pub/ml-archives/caml-list/2004/01/52732867110697f55650778d883ae5e9.en.html ) 
+
+*)
+
+type ('b,+'c) mutation = { sp : ('b,'c) subproof ; pt : ('b,'c) Subproof.pointer }
+(* arnaud:    constraint 'c = [< `Open | `Resolved | `Subproof ] *)
+type 't mutation_scope = { bind_mutation:'b 'c.('b,'c) mutation -> 't }
+type packed_mutation = { open_mutation : 't. 't mutation_scope -> 't }
+
+
+(* makes a packed_mutation out of mutation *)
+let pack_mutation mutn =
+  { open_mutation = fun scope -> scope.bind_mutation mutn }
+
+(* uses a scoped function on a packed mutation *)
+let unpack_mutation pck scp =
+  pck.open_mutation scp
+
+
+
+
+
 
 type 'a proof = { (* The root of the proof *)
 		  mutable root : ('a,[ `Subproof | `Resolved ]) Subproof.pointer;
@@ -42,42 +69,21 @@ type 'a proof = { (* The root of the proof *)
 		  mutable dependent_goals : 
 		          ((constr,[ `Subproof | `Resolved | `Open ]) Subproof.pointer, evar) Biassoc.biassoc
 		}
-and 'a undo_action =  (* arnaud: à compléter et nettoyer en temps utile *)
-(*    | MutateBack of (constr,[ `Subproof | `Resolved | `Open ])  Subproof.pointer 
- * (constr,[ `Subproof | `Resolved | `Open ]) subproof *)
+and 'a undo_action = 
     | MutateBack of packed_mutation
     | Unfocus of 'a proof
     | Focus of 'a proof * (constr,[`Subproof|`Resolved|`Open]) Subproof.pointer
-(*    | MutateRootBack of ('a,[ `Subproof | `Resolved ]) Subproof.pointer 
- * ('a,[ `Subproof | `Resolved ]) subproof *)
-
-(* Encoding the type
-     exists 'b 'c.{ sp : ('b,'c) subproof ; pt : ('b,'c) Subproof.pointer }
-   trick from Benjaming Pierce and Daniel Bünzli (cf: http://caml.inria.fr/pub/ml-archives/caml-list/2004/01/52732867110697f55650778d883ae5e9.en.html ) *)
-
-and ('b,'c) mutation = { sp : ('b,'c) subproof ; pt : ('b,'c) Subproof.pointer }
-and 't mutation_scope = { bind_mutation:'b 'c.('b,'c) mutation -> 't }
-and packed_mutation = { open_mutation : 't. 't mutation_scope -> 't }
-
-
-
-(* makes a packed_mutation out of mutation *)
-let pack_mutation mutn =
-  { open_mutation = fun scope -> scope.bind_mutation mutn }
-
-(* uses a scoped function on a packed mutation *)
-let unpack_mutation pck scp =
-  pck.open_mutation scp
 
 
 
 (* Gives the type of a proof action *)
-type 'a action = 'a proof -> 'a undo_action transaction -> unit
+(* arnaud: compléter les commentaires *)
+type 'a _action = 'a proof -> 'a undo_action transaction -> unit
+type 'a action = 'a _action Sequence.sequence
 
-(* arnaud: déplacer les séquences en externe, utiliser 
-  ('a proof -> 'a undo_action transaction) sequence pour les actions.
-   Et fournir l'algèbre correspondante. *)
-type 'b sequence = | Atom of 'b | Compound of 'b sequence*'b sequence
+let compose a b = Sequence.append a b
+
+let null_action = Sequence.element ( fun _ _ -> () )
 
 
 (*** The following functions give more abstract methods to access
@@ -93,6 +99,8 @@ let get_focus pr =
 (* The following function gives the content of the root *)
 let get_root pr =
   pr.root
+
+
 
 (*** The following functions are somewhat unsafe, they are meant to 
      be used by other functions later. They shouldn't be declared in
@@ -127,11 +135,9 @@ let do_packed_mutation =
 
 (* This function interpetes (and execute) a single [undo_action] *)
 let execute_undo_action = function
-(*  | MutateBack(pt, sp) -> Subproof.mutate pt sp *)
   | MutateBack pck -> do_packed_mutation pck
   | Unfocus pr -> unsafe_unfocus pr
   | Focus(pr, pt) -> unsafe_focus pr pt
-(*  | MutateRootBack(pt, sp) -> Subproof.mutate pt sp *)
 				
 
 (* This function interpetes a list of undo action, starting with
@@ -168,10 +174,6 @@ let mutate pt sp tr =
   push (MutateBack (pack_mutation {sp=sp;pt=pt})) tr;
   Subproof.mutate pt sp
 
-(* arnaud:
-let mutate_root pt sp tr = 
-  push (MutateRootBack ( pt , Subproof.get pt)) tr;
-  Subproof.mutate pt sp *)
 
 (* This function focuses the proof [pr] at position [pt] and 
    pushes an [undo_action] into the transaction [tr]. *)
@@ -180,7 +182,7 @@ let focus pt pr tr =
   unsafe_focus pr pt
 
 (* This function unfocuses the proof [pr], fails if 
-   [pr] is not focused (i.e. it shows its root). It
+   [pr] is not focused (i.e. if it shows its root). It
    pushed an [undo_action] into the transaction [tr] *)
 let unfocus pr tr =
   match pr.focus with
@@ -190,6 +192,7 @@ let unfocus pr tr =
 
 (*** The following function are composed transformations ***)
 
+(* arnaud: repasser sur les commentaires *)
 (* This pair of functions tries percolate the resolved subgoal as much
    as possible. It unfocuses the proof as much as needed so that it
    is not focused on a resolved proof *)
@@ -222,22 +225,15 @@ let resolve =
     Subproof.percolate (resolve_iterator tr) (get_root pr);
     unfocus_until_sound pr tr
 
-
-(*** mechanism functions for sequences ***)
-let rec iter f seq =
-  match seq with
-  | Atom a -> f a
-  | Compound (lft,rgt) -> (iter f lft);(iter f rgt)
-
 (*** The following function takes a transformation and make it into 
      a command ***)
 
 let do_command actions pr = 
   let tr = start_transaction pr.undo_stack in
   try 
-   iter (fun action -> action pr tr; resolve pr tr) actions;
+   Sequence.iter (fun action -> action pr tr; resolve pr tr) actions;
    commit tr
-  with e -> (* traitement particulier de Failure ? *)
+  with e -> (* arnaud: traitement particulier de Failure ? *)
     rollback tr;
     raise e
   
@@ -253,6 +249,13 @@ let undo pr =
 
 (*** The following functions define the tactic machinery. They 
      transform a tactical expression into a sequence of actions. ***)
+
+type 'a tactical = 'a action -> 'a action
+
+(* 'a tactical -> 'a action *)
+let close_tactical t = t null_action
+  
+
 (* apply_one *)
 (* apply_all *)
 (* apply_array *)

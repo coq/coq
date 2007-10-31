@@ -73,10 +73,12 @@ and 'a _pointer =
     | Root of 'a _subproof ref
     | Node of 'a _subproof array*int
 
-type ('a,+'b) pointer = 'a _pointer
+type ('a,+'b) pointer = 'a _pointer 
+     constraint 'b = [< `Open | `Resolved | `Subproof ] 
 
 (* This type gives *)
 type ('a,+'b) subproof = 'a _subproof
+     constraint 'b = [< `Open | `Resolved | `Subproof ] 
 
 (* Internal function which gives the subproof contained by the pointer *)
 let get = function
