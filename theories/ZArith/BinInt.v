@@ -739,6 +739,16 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma Zpos_minus_morphism : forall a b:positive, Pcompare a b Eq = Lt -> 
+  Zpos (b-a) = Zpos b - Zpos a.
+Proof.
+  intros.
+  simpl.
+  change Eq with (CompOpp Eq).
+  rewrite <- Pcompare_antisym.
+  rewrite H; simpl; auto.
+Qed.
+
 (** ** Misc redundant properties *)
 
 Lemma Zeq_minus : forall n m:Z, n = m -> n - m = Z0.

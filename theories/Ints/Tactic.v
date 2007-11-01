@@ -52,14 +52,6 @@ Ltac  contradict name :=
 
 
 (**************************************
-  A tactic to do case analysis keeping the equality
-**************************************)
-
-Ltac case_eq name :=
-  generalize (refl_equal name); pattern name at -1 in |- *; case name.
-
-
-(**************************************
  A tactic to use f_equal? theorems 
 **************************************)
 

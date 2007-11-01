@@ -14,81 +14,114 @@ Require Import Omega.
 Require Import Zcomplements.
 Open Local Scope Z_scope.
 
-Section section1.
-
 (** * Definition of powers over [Z]*)
 
 (** [Zpower_nat z n] is the n-th power of [z] when [n] is an unary
     integer (type [nat]) and [z] a signed integer (type [Z]) *) 
 
-  Definition Zpower_nat (z:Z) (n:nat) := iter_nat n Z (fun x:Z => z * x) 1.
+Definition Zpower_nat (z:Z) (n:nat) := iter_nat n Z (fun x:Z => z * x) 1.
 
-  (** [Zpower_nat_is_exp] says [Zpower_nat] is a morphism for
-      [plus : nat->nat] and [Zmult : Z->Z] *)
+(** [Zpower_nat_is_exp] says [Zpower_nat] is a morphism for
+    [plus : nat->nat] and [Zmult : Z->Z] *)
 
-  Lemma Zpower_nat_is_exp :
-    forall (n m:nat) (z:Z),
-      Zpower_nat z (n + m) = Zpower_nat z n * Zpower_nat z m.
-  Proof.
-    intros; elim n;
-      [ simpl in |- *; elim (Zpower_nat z m); auto with zarith
-	| unfold Zpower_nat in |- *; intros; simpl in |- *; rewrite H;
-	  apply Zmult_assoc ].
-  Qed.
+Lemma Zpower_nat_is_exp :
+  forall (n m:nat) (z:Z),
+    Zpower_nat z (n + m) = Zpower_nat z n * Zpower_nat z m.
+Proof.
+  intros; elim n;
+   [ simpl in |- *; elim (Zpower_nat z m); auto with zarith
+     | unfold Zpower_nat in |- *; intros; simpl in |- *; rewrite H;
+       apply Zmult_assoc ].
+Qed.
 
-  (** This theorem shows that powers of unary and binary integers
-     are the same thing, modulo the function convert : [positive -> nat] *)
+(** This theorem shows that powers of unary and binary integers
+   are the same thing, modulo the function convert : [positive -> nat] *)
 
-  Theorem Zpower_pos_nat :
-    forall (z:Z) (p:positive), Zpower_pos z p = Zpower_nat z (nat_of_P p).
-  Proof.
-    intros; unfold Zpower_pos in |- *; unfold Zpower_nat in |- *;
-      apply iter_nat_of_P.
-  Qed.
+Theorem Zpower_pos_nat :
+  forall (z:Z) (p:positive), Zpower_pos z p = Zpower_nat z (nat_of_P p).
+Proof.
+  intros; unfold Zpower_pos in |- *; unfold Zpower_nat in |- *;
+    apply iter_nat_of_P.
+Qed.
 
-  (** Using the theorem [Zpower_pos_nat] and the lemma [Zpower_nat_is_exp] we
-     deduce that the function [[n:positive](Zpower_pos z n)] is a morphism
-     for [add : positive->positive] and [Zmult : Z->Z] *)
+(** Using the theorem [Zpower_pos_nat] and the lemma [Zpower_nat_is_exp] we
+   deduce that the function [[n:positive](Zpower_pos z n)] is a morphism
+   for [add : positive->positive] and [Zmult : Z->Z] *)
 
-  Theorem Zpower_pos_is_exp :
-    forall (n m:positive) (z:Z),
-      Zpower_pos z (n + m) = Zpower_pos z n * Zpower_pos z m.
-  Proof.
-    intros.
-    rewrite (Zpower_pos_nat z n).
-    rewrite (Zpower_pos_nat z m).
-    rewrite (Zpower_pos_nat z (n + m)).
-    rewrite (nat_of_P_plus_morphism n m).
-    apply Zpower_nat_is_exp.
-  Qed.
+Theorem Zpower_pos_is_exp :
+  forall (n m:positive) (z:Z),
+    Zpower_pos z (n + m) = Zpower_pos z n * Zpower_pos z m.
+Proof.
+  intros.
+  rewrite (Zpower_pos_nat z n).
+  rewrite (Zpower_pos_nat z m).
+  rewrite (Zpower_pos_nat z (n + m)).
+  rewrite (nat_of_P_plus_morphism n m).
+  apply Zpower_nat_is_exp.
+Qed.
 
-  Infix "^" := Zpower : Z_scope.
+Theorem Zpower_pos_1_r: forall x, Zpower_pos x 1 = x.
+Proof.
+  intros x; unfold Zpower_pos; simpl; auto with zarith.
+Qed.
 
-  Hint Immediate Zpower_nat_is_exp: zarith.
-  Hint Immediate Zpower_pos_is_exp: zarith.
-  Hint Unfold Zpower_pos: zarith.
-  Hint Unfold Zpower_nat: zarith.
+Theorem Zpower_pos_1_l: forall p, Zpower_pos 1 p = 1.
+Proof.
+  induction p.
+  (* xI *)
+  rewrite xI_succ_xO, <-Pplus_diag, Pplus_one_succ_l.
+  repeat rewrite Zpower_pos_is_exp.
+  rewrite Zpower_pos_1_r, IHp; auto.
+  (* xO *)
+  rewrite <- Pplus_diag.
+  repeat rewrite Zpower_pos_is_exp.
+  rewrite IHp; auto.
+  (* xH *)
+  rewrite Zpower_pos_1_r; auto.
+Qed.
 
-  Lemma Zpower_exp :
-    forall x n m:Z, n >= 0 -> m >= 0 -> x ^ (n + m) = x ^ n * x ^ m.
-  Proof.
-    destruct n; destruct m; auto with zarith.
-    simpl in |- *; intros; apply Zred_factor0.
-    simpl in |- *; auto with zarith.
-    intros; compute in H0; absurd (Datatypes.Lt = Datatypes.Lt); auto with zarith.
-    intros; compute in H0; absurd (Datatypes.Lt = Datatypes.Lt); auto with zarith.
-  Qed.
+Theorem Zpower_pos_0_l: forall p, Zpower_pos 0 p = 0.
+Proof. 
+  induction p.
+  change (xI p) with (1 + (xO p))%positive.
+  rewrite Zpower_pos_is_exp, Zpower_pos_1_r; auto.
+  rewrite <- Pplus_diag.
+  rewrite Zpower_pos_is_exp, IHp; auto.
+  rewrite Zpower_pos_1_r; auto.
+Qed.
 
-End section1.
-
-(** Exporting notation "^" *)
+Theorem Zpower_pos_pos: forall x p, 
+  0 < x -> 0 < Zpower_pos x p.
+Proof.
+  induction p; intros.
+  (* xI *)
+  rewrite xI_succ_xO, <-Pplus_diag, Pplus_one_succ_l.
+  repeat rewrite Zpower_pos_is_exp.
+  rewrite Zpower_pos_1_r.
+  repeat apply Zmult_lt_0_compat; auto.
+  (* xO *)
+  rewrite <- Pplus_diag.
+  repeat rewrite Zpower_pos_is_exp.
+  repeat apply Zmult_lt_0_compat; auto.
+  (* xH *)
+  rewrite Zpower_pos_1_r; auto.
+Qed.
 
 Infix "^" := Zpower : Z_scope.
 
-Hint Immediate Zpower_nat_is_exp: zarith.
-Hint Immediate Zpower_pos_is_exp: zarith.
-Hint Unfold Zpower_pos: zarith.
-Hint Unfold Zpower_nat: zarith.
+Hint Immediate Zpower_nat_is_exp Zpower_pos_is_exp : zarith.
+Hint Unfold Zpower_pos Zpower_nat: zarith.
+
+Lemma Zpower_exp :
+  forall x n m:Z, n >= 0 -> m >= 0 -> x ^ (n + m) = x ^ n * x ^ m.
+Proof.
+  destruct n; destruct m; auto with zarith.
+  simpl in |- *; intros; apply Zred_factor0.
+  simpl in |- *; auto with zarith.
+  intros; compute in H0; absurd (Datatypes.Lt = Datatypes.Lt); auto with zarith.
+  intros; compute in H0; absurd (Datatypes.Lt = Datatypes.Lt); auto with zarith.
+Qed.
+
 
 Section Powers_of_2.
 

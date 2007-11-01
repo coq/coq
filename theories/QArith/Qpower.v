@@ -1,4 +1,4 @@
-Require Import Qfield.
+Require Import Qfield Qreduction.
 
 Lemma Qpower_positive_1 : forall n, Qpower_positive 1 n == 1.
 Proof.
@@ -201,4 +201,33 @@ setoid_replace (a^2) with ((-a)*(-a)) by ring.
 rewrite Qle_minus_iff in A.
 setoid_replace (0+ - a) with (-a) in A by ring.
 apply Qmult_le_0_compat; assumption.
+Qed.
+
+Theorem Qpower_decomp: forall p x y,
+  Qpower_positive (x #y) p == x ^ Zpos p # (Z2P ((Zpos y) ^ Zpos p)).
+Proof.
+induction p; intros; unfold Qmult; simpl.
+(* xI *)
+rewrite IHp, xI_succ_xO, <-Pplus_diag, Pplus_one_succ_l.
+repeat rewrite Zpower_pos_is_exp.
+red; unfold Qmult, Qnum, Qden, Zpower.
+repeat rewrite Zpos_mult_morphism.
+repeat rewrite Z2P_correct.
+repeat rewrite Zpower_pos_1_r; ring.
+apply Zpower_pos_pos; red; auto.
+repeat apply Zmult_lt_0_compat; auto;
+ apply Zpower_pos_pos; red; auto.
+(* xO *)
+rewrite IHp, <-Pplus_diag.
+repeat rewrite Zpower_pos_is_exp.
+red; unfold Qmult, Qnum, Qden, Zpower.
+repeat rewrite Zpos_mult_morphism.
+repeat rewrite Z2P_correct; try ring.
+apply Zpower_pos_pos; red; auto.
+repeat apply Zmult_lt_0_compat; auto;
+ apply Zpower_pos_pos; red; auto.
+(* xO *)
+unfold Qmult; simpl.
+red; simpl; rewrite Zpower_pos_1_r;
+ rewrite Zpos_mult_morphism; ring.
 Qed.

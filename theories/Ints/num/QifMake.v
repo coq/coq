@@ -8,7 +8,7 @@ Require Export BigN.
 Require Export BigZ.
 Require Import QArith.
 Require Import Qcanon.
-Require Import QBAux.
+Require Import Qpower.
 Require Import QMake_base.
 
 Module Qif.

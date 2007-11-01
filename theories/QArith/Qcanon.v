@@ -547,4 +547,14 @@ auto.
 Qed.
 
 
-
+Theorem Qc_decomp: forall x y: Qc,
+  (Qred x = x -> Qred y = y -> (x:Q) = y)-> x = y.
+Proof.
+  intros (q, Hq) (q', Hq'); simpl; intros H.
+  assert (H1 := H Hq Hq').
+  subst q'.
+  assert (Hq = Hq'). 
+  apply Eqdep_dec.eq_proofs_unicity; auto; intros.
+  repeat decide equality.
+  congruence.
+Qed.

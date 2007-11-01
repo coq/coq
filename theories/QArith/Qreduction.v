@@ -177,3 +177,17 @@ Add Morphism Qminus' : Qminus'_comp.
   intros; unfold Qminus' in |- *.
   rewrite H; rewrite H0; auto with qarith.
 Qed.
+
+Lemma Qred_opp: forall q, Qred (-q) = - (Qred q).
+Proof.
+  intros (x, y); unfold Qred; simpl.
+  rewrite Zggcd_opp; case Zggcd; intros p1 (p2, p3); simpl.
+  unfold Qopp; auto.
+Qed.
+
+Theorem Qred_compare: forall x y,
+  Qcompare x y = Qcompare (Qred x) (Qred y).
+Proof.
+  intros x y; apply Qcompare_comp; apply Qeq_sym; apply Qred_correct.
+Qed.
+
