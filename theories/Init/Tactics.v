@@ -55,6 +55,22 @@ Ltac f_equal :=
    | _ => idtac
   end.
 
+(* Specializing universal hypothesis. 
+   The word "specialize" is already used for a not-documented-anymore 
+   tactic still used in some users contribs. Any idea for a better name?
+*)
+
+Tactic Notation "narrow" hyp(H) "with" constr(x) := 
+ generalize (H x); clear H; intro H.
+Tactic Notation "narrow" hyp(H) "with" constr(x) constr(y) := 
+ generalize (H x y); clear H; intro H.
+Tactic Notation "narrow" hyp(H) "with" constr(x) constr(y) constr(z):= 
+ generalize (H x y z); clear H; intro H.
+Tactic Notation "narrow" hyp(H) "with" constr(x) constr(y) constr(z) constr(t):= 
+ generalize (H x y z t); clear H; intro H.
+Tactic Notation "narrow" hyp(H) "with" constr(x) constr(y) constr(z) constr(t) constr(u):= 
+ generalize (H x y z t u); clear H; intro H.
+
 (* Rewriting in all hypothesis several times everywhere *)
 
 Tactic Notation "rewrite_all" constr(eq) := repeat rewrite eq in *.
