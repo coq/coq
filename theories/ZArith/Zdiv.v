@@ -480,6 +480,17 @@ Proof.
   ring.
 Qed.
 
+Lemma Z_div_1 : forall z:Z, (z/1 = z)%Z.
+Proof.
+intros z.
+set (z':=z).
+unfold z' at 1.
+replace z with (0 + z*1)%Z by ring.
+rewrite (Z_div_plus 0 z 1);[reflexivity|constructor].
+Qed.
+
+Hint Resolve Z_div_1 : zarith.
+
 Lemma Z_div_exact_1 : forall a b:Z, b > 0 -> a = b * (a / b) -> a mod b = 0.
   intros a b Hb; generalize (Z_div_mod a b Hb); unfold Zmod, Zdiv in |- *.
   case (Zdiv_eucl a b); intros q r; omega.
