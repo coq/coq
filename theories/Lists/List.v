@@ -314,7 +314,27 @@ Section Facts.
     now_show (H = a \/ In a (y ++ m)).
     elim H2; auto.
   Qed.
-
+  
+  Lemma app_inv_head:
+   forall l l1 l2 : list A, l ++ l1 = l ++ l2 ->  l1 = l2.
+  Proof.
+    induction l; simpl; auto; injection 1; auto.
+  Qed.
+ 
+  Lemma app_inv_tail:
+    forall l l1 l2 : list A, l1 ++ l = l2 ++ l ->  l1 = l2.
+  Proof.
+    intros l l1 l2; revert l1 l2 l.
+    induction l1 as [ | x1 l1]; destruct l2 as [ | x2 l2]; 
+     simpl; auto; intros l H.
+    absurd (length (x2 :: l2 ++ l) <= length l).
+    simpl; rewrite app_length; auto with arith.
+    rewrite <- H; auto with arith.
+    absurd (length (x1 :: l1 ++ l) <= length l).
+    simpl; rewrite app_length; auto with arith.
+    rewrite H; auto with arith.
+    injection H; clear H; intros; f_equal; eauto.
+  Qed.
 
 End Facts.
 
