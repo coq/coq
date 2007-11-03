@@ -15,6 +15,8 @@ Notation P := NZpred.
 Notation plus := NZplus.
 Notation times := NZtimes.
 Notation minus := NZminus.
+Notation lt := NZlt.
+Notation le := NZle.
 Notation "x == y"  := (NZeq x y) (at level 70) : NatScope.
 Notation "x ~= y" := (~ NZeq x y) (at level 70) : NatScope.
 Notation "0" := NZ0 : NatScope.
@@ -36,7 +38,7 @@ Axiom pred_0 : P 0 == 0.
 
 Axiom recursion_wd : forall (A : Set) (Aeq : relation A),
   forall a a' : A, Aeq a a' ->
-    forall f f' : N -> A -> A, eq_fun2 Neq Aeq Aeq f f' ->
+    forall f f' : N -> A -> A, fun2_eq Neq Aeq Aeq f f' ->
       forall x x' : N, x == x' ->
         Aeq (recursion a f x) (recursion a' f' x').
 

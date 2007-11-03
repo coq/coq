@@ -400,6 +400,26 @@ Proof.
 intros Az RS; apply NZstrong_right_induction; now apply NZrs_rs'.
 Qed.
 
+Theorem NZright_induction' :
+  (forall n : NZ, n <= z -> A n) -> right_step -> forall n : NZ, A n.
+Proof.
+intros L R n.
+destruct (NZlt_trichotomy n z) as [H | [H | H]].
+apply L; now le_less.
+apply L; now le_equal.
+apply NZright_induction. apply L; now le_equal. assumption. now le_less.
+Qed.
+
+Theorem NZstrong_right_induction' :
+  (forall n : NZ, n <= z -> A n) -> right_step' -> forall n : NZ, A n.
+Proof.
+intros L R n.
+destruct (NZlt_trichotomy n z) as [H | [H | H]].
+apply L; now le_less.
+apply L; now le_equal.
+apply NZstrong_right_induction. assumption. now le_less.
+Qed.
+
 End RightInduction.
 
 Section LeftInduction.
@@ -447,6 +467,26 @@ Proof.
 intros Az LS; apply NZstrong_left_induction; now apply NZls_ls'.
 Qed.
 
+Theorem NZleft_induction' :
+  (forall n : NZ, z <= n -> A n) -> left_step -> forall n : NZ, A n.
+Proof.
+intros R L n.
+destruct (NZlt_trichotomy n z) as [H | [H | H]].
+apply NZleft_induction. apply R. now le_equal. assumption. now le_less.
+rewrite H; apply R; le_equal.
+apply R; le_less.
+Qed.
+
+Theorem NZstrong_left_induction' :
+  (forall n : NZ, z <= n -> A n) -> left_step' -> forall n : NZ, A n.
+Proof.
+intros R L n.
+destruct (NZlt_trichotomy n z) as [H | [H | H]].
+apply NZstrong_left_induction; auto. le_less.
+rewrite H; apply R; le_equal.
+apply R; le_less.
+Qed.
+
 End LeftInduction.
 
 Theorem NZorder_induction :
@@ -462,28 +502,16 @@ now rewrite H.
 now apply NZright_induction; [| | le_less].
 Qed.
 
-Theorem NZright_induction' :
-  (forall n : NZ, n <= z -> A n) ->
+Theorem NZorder_induction' :
+  A z ->
   (forall n : NZ, z <= n -> A n -> A (S n)) ->
+  (forall n : NZ, n <= z -> A n -> A (P n)) ->
     forall n : NZ, A n.
 Proof.
-intros L R n.
-destruct (NZlt_trichotomy n z) as [H | [H | H]].
-apply L; now le_less.
-apply L; now le_equal.
-apply NZright_induction. apply L; now le_equal. assumption. now le_less.
-Qed.
-
-Theorem NZstrong_right_induction' :
-  (forall n : NZ, n <= z -> A n) ->
-  (forall n : NZ, z <= n -> (forall m : NZ, z <= m -> m < n -> A m) -> A n) ->
-    forall n : NZ, A n.
-Proof.
-intros L R n.
-destruct (NZlt_trichotomy n z) as [H | [H | H]].
-apply L; now le_less.
-apply L; now le_equal.
-apply NZstrong_right_induction. assumption. now le_less.
+intros Az AS AP n; apply NZorder_induction; try assumption.
+intros m H1 H2. apply AP in H2; [| now apply -> NZlt_le_succ].
+unfold predicate_wd, fun_wd in A_wd; apply -> (A_wd (P (S m)) m);
+[assumption | apply NZpred_succ].
 Qed.
 
 End Center.
@@ -494,6 +522,13 @@ Theorem NZorder_induction_0 :
   (forall n : NZ, n < 0  -> A (S n) -> A n) ->
     forall n : NZ, A n.
 Proof (NZorder_induction 0).
+
+Theorem NZorder_induction'_0 :
+  A 0 ->
+  (forall n : NZ, 0 <= n -> A n -> A (S n)) ->
+  (forall n : NZ, n <= 0 -> A n -> A (P n)) ->
+    forall n : NZ, A n.
+Proof (NZorder_induction' 0).
 
 (** Elimintation principle for < *)
 
@@ -530,21 +565,34 @@ Section WF.
 
 Variable z : NZ.
 
-Let R (n m : NZ) := z <= n /\ n < m.
+Let Rlt (n m : NZ) := z <= n /\ n < m.
+Let Rgt (n m : NZ) := m < n /\ n <= z.
 
-Add Morphism R with signature NZeq ==> NZeq ==> iff as R_wd.
+Add Morphism Rlt with signature NZeq ==> NZeq ==> iff as Rlt_wd.
 Proof.
-intros x1 x2 H1 x3 x4 H2; unfold R; rewrite H1; now rewrite H2.
+intros x1 x2 H1 x3 x4 H2; unfold Rlt; rewrite H1; now rewrite H2.
 Qed.
 
-Lemma NZAcc_lt_wd : predicate_wd NZeq (Acc R).
+Add Morphism Rgt with signature NZeq ==> NZeq ==> iff as Rgt_wd.
+Proof.
+intros x1 x2 H1 x3 x4 H2; unfold Rgt; rewrite H1; now rewrite H2.
+Qed.
+
+Lemma NZAcc_lt_wd : predicate_wd NZeq (Acc Rlt).
 Proof.
 unfold predicate_wd, fun_wd.
 intros x1 x2 H; split; intro H1; destruct H1 as [H2];
 constructor; intros; apply H2; now (rewrite H || rewrite <- H).
 Qed.
 
-Theorem NZlt_wf : well_founded R.
+Lemma NZAcc_gt_wd : predicate_wd NZeq (Acc Rgt).
+Proof.
+unfold predicate_wd, fun_wd.
+intros x1 x2 H; split; intro H1; destruct H1 as [H2];
+constructor; intros; apply H2; now (rewrite H || rewrite <- H).
+Qed.
+
+Theorem NZlt_wf : well_founded Rlt.
 Proof.
 unfold well_founded.
 apply NZstrong_right_induction' with (z := z).
@@ -552,6 +600,17 @@ apply NZAcc_lt_wd.
 intros n H; constructor; intros y [H1 H2].
 apply <- NZnle_gt in H2. elim H2. now apply NZle_trans with z.
 intros n H1 H2; constructor; intros m [H3 H4]. now apply H2.
+Qed.
+
+Theorem NZgt_wf : well_founded Rgt.
+Proof.
+unfold well_founded.
+apply NZstrong_left_induction' with (z := z).
+apply NZAcc_gt_wd.
+intros n H; constructor; intros y [H1 H2].
+apply <- NZnle_gt in H2. elim H2. now apply NZle_lt_trans with n.
+intros n H1 H2; constructor; intros m [H3 H4].
+apply H2. assumption. now apply -> NZlt_le_succ.
 Qed.
 
 End WF.

@@ -6,6 +6,7 @@ Theorem eq_true_or : forall b1 b2 : bool, b1 || b2 <-> b1 \/ b2,
 then it needs to know about bool and have a notation ||. *)
 Require Export QRewrite.
 
+Set Implicit Arguments.
 (*
 Contents:
 - Coercion from bool to Prop
@@ -102,30 +103,51 @@ Definition fun_wd (f : A -> B) := forall x y : A, Aeq x y -> Beq (f x) (f y).
 Definition fun2_wd (f : A -> B -> C) :=
   forall x x' : A, Aeq x x' -> forall y y' : B, Beq y y' -> Ceq (f x y) (f x' y').
 
-Definition eq_fun : relation (A -> B) :=
+Definition fun_eq : relation (A -> B) :=
   fun f f' => forall x x' : A, Aeq x x' -> Beq (f x) (f' x').
 
-(* Note that reflexivity of eq_fun means that every function
+(* Note that reflexivity of fun_eq means that every function
 is well-defined w.r.t. Aeq and Beq, i.e.,
 forall x x' : A, Aeq x x' -> Beq (f x) (f x') *)
 
-Definition eq_fun2 (f f' : A -> B -> C) :=
+Definition fun2_eq (f f' : A -> B -> C) :=
   forall x x' : A, Aeq x x' -> forall y y' : B, Beq y y' -> Ceq (f x y) (f' x' y').
 
 End ExtensionalProperties.
 
-Implicit Arguments fun_wd [A B].
-Implicit Arguments fun2_wd [A B C].
-Implicit Arguments eq_fun [A B].
-Implicit Arguments eq_fun2 [A B C].
+(* The following definitions instantiate Beq or Ceq to iff; therefore, they
+have to be outside the ExtensionalProperties section *)
 
 Definition predicate_wd (A : Type) (Aeq : relation A) := fun_wd Aeq iff.
 
-Definition rel_wd (A B : Type) (Aeq : relation A) (Beq : relation B) :=
+Definition relation_wd (A B : Type) (Aeq : relation A) (Beq : relation B) :=
   fun2_wd Aeq Beq iff.
 
-Implicit Arguments predicate_wd [A].
-Implicit Arguments rel_wd [A B].
+Definition relations_eq (A B : Type) (R1 R2 : A -> B -> Prop) :=
+  forall (x : A) (y : B), R1 x y <-> R2 x y.
+
+Theorem relations_eq_equiv :
+  forall (A B : Type), equiv (A -> B -> Prop) (@relations_eq A B).
+Proof.
+intros A B; unfold equiv. split; [| split];
+unfold reflexive, symmetric, transitive, relations_eq.
+reflexivity.
+intros R1 R2 R3 H1 H2 x y; rewrite H1; apply H2.
+now symmetry.
+Qed.
+
+Add Relation (fun A B : Type => A -> B -> Prop) relations_eq
+  reflexivity proved by (fun A B : Type => proj1 (relations_eq_equiv A B))
+  symmetry proved by (fun A B : Type => proj2 (proj2 (relations_eq_equiv A B)))
+  transitivity proved by (fun A B : Type => proj1 (proj2 (relations_eq_equiv A B)))
+as relations_eq_rel.
+
+Add Morphism well_founded with signature relations_eq ==> iff as well_founded_wd.
+Proof.
+unfold relations_eq, well_founded; intros A R1 R2 H;
+split; intros H1 a; induction (H1 a) as [x H2 H3]; constructor;
+intros y H4; apply H3; [now apply <- H | now apply -> H].
+Qed.
 
 Ltac solve_predicate_wd :=
 unfold predicate_wd;
@@ -134,8 +156,8 @@ let y := fresh "y" in
 let H := fresh "H" in
   intros x y H; qiff x y H.
 
-Ltac solve_rel_wd :=
-unfold rel_wd, fun2_wd;
+Ltac solve_relation_wd :=
+unfold relation_wd, fun2_wd;
 let x1 := fresh "x" in
 let y1 := fresh "y" in
 let H1 := fresh "H" in
@@ -145,7 +167,7 @@ let H2 := fresh "H" in
   intros x1 y1 H1 x2 y2 H2;
   qsetoid_rewrite H1;
   qiff x2 y2 H2.
-(* The tactic solve_rel_wd is not very efficient because qsetoid_rewrite
+(* The tactic solve_relation_wd is not very efficient because qsetoid_rewrite
 uses qiff to take the formula apart in order to make it quantifier-free,
 and then qiff is called again and takes the formula apart for the second
 time. It is better to analyze the formula once and generalize qiff to take
@@ -296,21 +318,15 @@ Qed.
 
 Definition LE_Set : forall A : Set, relation A := (@eq).
 
-Lemma eq_equiv : forall A : Set, equiv A (LE_Set A).
+Lemma eq_equiv : forall A : Set, equiv A (@LE_Set A).
 Proof.
 intro A; unfold equiv, LE_Set, reflexive, symmetric, transitive.
 repeat split; [exact (@trans_eq A) | exact (@sym_eq A)].
 (* It is interesting how the tactic split proves reflexivity *)
 Qed.
 
-Add Relation (fun A : Set => A) LE_Set
+(*Add Relation (fun A : Set => A) LE_Set
  reflexivity proved by (fun A : Set => (proj1 (eq_equiv A)))
  symmetry proved by (fun A : Set => (proj2 (proj2 (eq_equiv A))))
  transitivity proved by (fun A : Set => (proj1 (proj2 (eq_equiv A))))
-as EA_rel.
-
-(*
- Local Variables:
- tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
- End:
-*)
+as EA_rel.*)

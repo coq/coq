@@ -145,11 +145,11 @@ Qed.
 
 Theorem recursion_wd : forall (A : Set) (Aeq : relation A),
   forall a a' : A, Aeq a a' ->
-    forall f f' : nat -> A -> A, eq_fun2 (@eq nat) Aeq Aeq f f' ->
+    forall f f' : nat -> A -> A, fun2_eq (@eq nat) Aeq Aeq f f' ->
       forall n n' : nat, n = n' ->
         Aeq (recursion a f n) (recursion a' f' n').
 Proof.
-unfold eq_fun2; induction n; intros n' Enn'; rewrite <- Enn' in *; simpl; auto.
+unfold fun2_eq; induction n; intros n' Enn'; rewrite <- Enn' in *; simpl; auto.
 Qed.
 
 Theorem recursion_0 :
@@ -163,7 +163,7 @@ Theorem recursion_succ :
     Aeq a a -> fun2_wd (@eq nat) Aeq Aeq f ->
       forall n : nat, Aeq (recursion a f (S n)) (f n (recursion a f n)).
 Proof.
-unfold eq_fun2; induction n; simpl; auto.
+induction n; simpl; auto.
 Qed.
 
 End NPeanoAxiomsMod.

@@ -41,7 +41,7 @@ Qed.
 Theorem minus_gt : forall n m : N, n > m -> n - m ~= 0.
 Proof.
 intros n m H; elim H using lt_ind_rel; clear n m H.
-solve_rel_wd.
+solve_relation_wd.
 intro; rewrite minus_0_r; apply neq_succ_0.
 intros; now rewrite minus_succ.
 Qed.

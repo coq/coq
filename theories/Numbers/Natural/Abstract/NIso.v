@@ -26,7 +26,7 @@ unfold natural_isomorphism.
 intros n m Eqxy.
 apply NAxiomsMod1.recursion_wd with (Aeq := Eq2).
 reflexivity.
-unfold eq_fun2. intros _ _ _ y' y'' H. now apply NBasePropMod2.succ_wd.
+unfold fun2_eq. intros _ _ _ y' y'' H. now apply NBasePropMod2.succ_wd.
 assumption.
 Qed.
 

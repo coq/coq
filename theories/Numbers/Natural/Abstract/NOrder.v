@@ -163,14 +163,6 @@ Theorem left_induction :
         forall n : N, n <= z -> A n.
 Proof NZleft_induction.
 
-Theorem order_induction :
-  forall A : N -> Prop, predicate_wd Neq A ->
-    forall z : N, A z ->
-      (forall n : N, z <= n -> A n -> A (S n)) ->
-      (forall n : N, n < z  -> A (S n) -> A n) ->
-        forall n : N, A n.
-Proof NZorder_induction.
-
 Theorem right_induction' :
   forall A : N -> Prop, predicate_wd Neq A ->
     forall z : N,
@@ -179,6 +171,28 @@ Theorem right_induction' :
         forall n : N, A n.
 Proof NZright_induction'.
 
+Theorem left_induction' :
+  forall A : N -> Prop, predicate_wd Neq A ->
+    forall z : N,
+    (forall n : NZ, z <= n -> A n) ->
+    (forall n : N, n < z -> A (S n) -> A n) ->
+      forall n : NZ, A n.
+Proof NZleft_induction'.
+
+Theorem strong_right_induction :
+  forall A : N -> Prop, predicate_wd Neq A ->
+    forall z : N,
+    (forall n : N, z <= n -> (forall m : N, z <= m -> m < n -> A m) -> A n) ->
+       forall n : N, z <= n -> A n.
+Proof NZstrong_right_induction.
+
+Theorem strong_left_induction :
+  forall A : N -> Prop, predicate_wd Neq A ->
+    forall z : N,
+      (forall n : N, n <= z -> (forall m : N, m <= z -> S n <= m -> A m) -> A n) ->
+        forall n : N, n <= z -> A n.
+Proof NZstrong_left_induction.
+
 Theorem strong_right_induction' :
   forall A : N -> Prop, predicate_wd Neq A ->
     forall z : N,
@@ -186,6 +200,33 @@ Theorem strong_right_induction' :
       (forall n : N, z <= n -> (forall m : N, z <= m -> m < n -> A m) -> A n) ->
         forall n : N, A n.
 Proof NZstrong_right_induction'.
+
+Theorem strong_left_induction' :
+  forall A : N -> Prop, predicate_wd Neq A ->
+    forall z : N,
+    (forall n : N, z <= n -> A n) ->
+    (forall n : N, n <= z -> (forall m : N, m <= z -> S n <= m -> A m) -> A n) ->
+      forall n : N, A n.
+Proof NZstrong_left_induction'.
+
+Theorem order_induction :
+  forall A : N -> Prop, predicate_wd Neq A ->
+    forall z : N, A z ->
+      (forall n : N, z <= n -> A n -> A (S n)) ->
+      (forall n : N, n < z  -> A (S n) -> A n) ->
+        forall n : N, A n.
+Proof NZorder_induction.
+
+Theorem order_induction' :
+  forall A : N -> Prop, predicate_wd Neq A ->
+    forall z : N, A z ->
+      (forall n : N, z <= n -> A n -> A (S n)) ->
+      (forall n : N, n <= z -> A n -> A (P n)) ->
+        forall n : N, A n.
+Proof NZorder_induction'.
+
+(* We don't need order_induction_0 and order_induction'_0 (see NZOrder and
+ZOrder) since they boil down to regular induction *)
 
 (** Elimintation principle for < *)
 
@@ -206,6 +247,24 @@ Theorem le_ind :
       (forall m : N, n <= m -> A m -> A (S m)) ->
         forall m : N, n <= m -> A m.
 Proof NZle_ind.
+
+(** Well-founded relations *)
+
+Theorem lt_wf : forall z : N, well_founded (fun n m : N => z <= n /\ n < m).
+Proof NZlt_wf.
+
+Theorem gt_wf : forall z : N, well_founded (fun n m : N => m < n /\ n <= z).
+Proof NZgt_wf.
+
+Theorem lt_wf_0 : well_founded lt.
+Proof.
+assert (H : relations_eq lt (fun n m : N => 0 <= n /\ n < m)).
+intros x y; split.
+intro H; split; [apply le_0_l | assumption]. now intros [_ H].
+rewrite H; apply lt_wf.
+(* does not work:
+setoid_replace lt with (fun n m : N => 0 <= n /\ n < m) using relation relations_eq.*)
+Qed.
 
 (** Theorems that are true for natural numbers but not for integers *)
 
@@ -247,18 +306,6 @@ split; intro H; [now elim H | intro; now apply lt_irrefl with 0].
 intro n; split; intro H; [apply lt_0_succ | apply neq_succ_0].
 Qed.
 
-Lemma Acc_nonneg_lt : forall n : N,
-  Acc (fun n m => 0 <= n /\ n < m) n -> Acc NZlt n.
-Proof.
-intros n H; induction H as [n _ H2];
-constructor; intros y H; apply H2; split; [apply le_0_l | assumption].
-Qed.
-
-Theorem lt_wf : well_founded NZlt.
-Proof.
-unfold well_founded; intro n; apply Acc_nonneg_lt. apply NZlt_wf.
-Qed.
-
 (** Elimination principlies for < and <= for relations *)
 
 Section RelElim.
@@ -266,7 +313,7 @@ Section RelElim.
 (* FIXME: Variable R : relation N. -- does not work *)
 
 Variable R : N -> N -> Prop.
-Hypothesis R_wd : rel_wd Neq Neq R.
+Hypothesis R_wd : relation_wd Neq Neq R.
 
 Add Morphism R with signature Neq ==> Neq ==> iff as R_morph2.
 Proof R_wd.
@@ -359,7 +406,7 @@ Qed.
 Theorem pred_le_mono : forall n m : N, n <= m -> P n <= P m. (* Converse is false for n == 1, m == 0 *)
 Proof.
 intros n m H; elim H using le_ind_rel.
-solve_rel_wd.
+solve_relation_wd.
 intro; rewrite pred_0; apply le_0_l.
 intros p q H1 _; now do 2 rewrite pred_succ.
 Qed.

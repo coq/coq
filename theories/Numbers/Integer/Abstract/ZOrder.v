@@ -153,27 +153,6 @@ Theorem Zleft_induction :
         forall n : Z, n <= z -> A n.
 Proof NZleft_induction.
 
-Theorem Zorder_induction :
-  forall A : Z -> Prop, predicate_wd Zeq A ->
-    forall z : Z, A z ->
-      (forall n : Z, z <= n -> A n -> A (S n)) ->
-      (forall n : Z, n < z -> A (S n) -> A n) ->
-        forall n : Z, A n.
-Proof NZorder_induction.
-
-Theorem Zorder_induction' :
-  forall A : Z -> Prop, predicate_wd Zeq A ->
-    forall z : Z, A z ->
-      (forall n : Z, z <= n -> A n -> A (S n)) ->
-      (forall n : Z, n <= z -> A n -> A (P n)) ->
-        forall n : Z, A n.
-Proof.
-intros A A_wd z Az AS AP n; apply Zorder_induction with (z := z); try assumption.
-intros m H1 H2. apply AP in H2; [| now apply -> Zlt_le_succ].
-unfold predicate_wd, fun_wd in A_wd; apply -> (A_wd (P (S m)) m);
-[assumption | apply Zpred_succ].
-Qed.
-
 Theorem Zright_induction' :
   forall A : Z -> Prop, predicate_wd Zeq A ->
     forall z : Z,
@@ -181,6 +160,28 @@ Theorem Zright_induction' :
       (forall n : Z, z <= n -> A n -> A (S n)) ->
         forall n : Z, A n.
 Proof NZright_induction'.
+
+Theorem Zleft_induction' :
+  forall A : Z -> Prop, predicate_wd Zeq A ->
+    forall z : Z,
+    (forall n : NZ, z <= n -> A n) ->
+    (forall n : Z, n < z -> A (S n) -> A n) ->
+      forall n : NZ, A n.
+Proof NZleft_induction'.
+
+Theorem Zstrong_right_induction :
+  forall A : Z -> Prop, predicate_wd Zeq A ->
+    forall z : Z,
+    (forall n : Z, z <= n -> (forall m : Z, z <= m -> m < n -> A m) -> A n) ->
+       forall n : Z, z <= n -> A n.
+Proof NZstrong_right_induction.
+
+Theorem Zstrong_left_induction :
+  forall A : Z -> Prop, predicate_wd Zeq A ->
+    forall z : Z,
+      (forall n : Z, n <= z -> (forall m : Z, m <= z -> S n <= m -> A m) -> A n) ->
+        forall n : Z, n <= z -> A n.
+Proof NZstrong_left_induction.
 
 Theorem Zstrong_right_induction' :
   forall A : Z -> Prop, predicate_wd Zeq A ->
@@ -190,27 +191,71 @@ Theorem Zstrong_right_induction' :
         forall n : Z, A n.
 Proof NZstrong_right_induction'.
 
+Theorem Zstrong_left_induction' :
+  forall A : Z -> Prop, predicate_wd Zeq A ->
+    forall z : Z,
+    (forall n : Z, z <= n -> A n) ->
+    (forall n : Z, n <= z -> (forall m : Z, m <= z -> S n <= m -> A m) -> A n) ->
+      forall n : Z, A n.
+Proof NZstrong_left_induction'.
+
+Theorem Zorder_induction :
+  forall A : Z -> Prop, predicate_wd Zeq A ->
+    forall z : Z, A z ->
+    (forall n : Z, z <= n -> A n -> A (S n)) ->
+    (forall n : Z, n < z -> A (S n) -> A n) ->
+      forall n : Z, A n.
+Proof NZorder_induction.
+
+Theorem Zorder_induction' :
+  forall A : Z -> Prop, predicate_wd Zeq A ->
+    forall z : Z, A z ->
+    (forall n : Z, z <= n -> A n -> A (S n)) ->
+    (forall n : Z, n <= z -> A n -> A (P n)) ->
+      forall n : Z, A n.
+Proof NZorder_induction'.
+
+Theorem Zorder_induction_0 :
+  forall A : Z -> Prop, predicate_wd Zeq A ->
+    A 0 ->
+    (forall n : Z, 0 <= n -> A n -> A (S n)) ->
+    (forall n : Z, n < 0 -> A (S n) -> A n) ->
+      forall n : Z, A n.
+Proof NZorder_induction_0.
+
+Theorem Zorder_induction'_0 :
+  forall A : Z -> Prop, predicate_wd Zeq A ->
+    A 0 ->
+    (forall n : Z, 0 <= n -> A n -> A (S n)) ->
+    (forall n : Z, n <= 0 -> A n -> A (P n)) ->
+      forall n : Z, A n.
+Proof NZorder_induction'_0.
+
+Ltac Zinduct n := induction_maker n ltac:(apply Zorder_induction_0).
+
 (** Elimintation principle for < *)
 
 Theorem Zlt_ind :
   forall A : Z -> Prop, predicate_wd Zeq A ->
-    forall n : Z,
-      A (S n) ->
-      (forall m : Z, n < m -> A m -> A (S m)) ->
-        forall m : Z, n < m -> A m.
+    forall n : Z, A (S n) ->
+      (forall m : Z, n < m -> A m -> A (S m)) -> forall m : Z, n < m -> A m.
 Proof NZlt_ind.
 
 (** Elimintation principle for <= *)
 
 Theorem Zle_ind :
   forall A : Z -> Prop, predicate_wd Zeq A ->
-    forall n : Z,
-      A n ->
-      (forall m : Z, n <= m -> A m -> A (S m)) ->
-        forall m : Z, n <= m -> A m.
+    forall n : Z, A n ->
+      (forall m : Z, n <= m -> A m -> A (S m)) -> forall m : Z, n <= m -> A m.
 Proof NZle_ind.
 
-Ltac Zinduct n := induction_maker n ltac:(apply Zorder_induction with (z := 0)).
+(** Well-founded relations *)
+
+Theorem Zlt_wf : forall z : Z, well_founded (fun n m : Z => z <= n /\ n < m).
+Proof NZlt_wf.
+
+Theorem Zgt_wf : forall z : Z, well_founded (fun n m : Z => m < n /\ n <= z).
+Proof NZgt_wf.
 
 (** Theorems that are either not valid on N or have different proofs on N and Z *)
 

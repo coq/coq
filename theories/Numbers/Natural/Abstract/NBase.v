@@ -59,7 +59,7 @@ Definition if_zero (A : Set) (a b : A) (n : N) : A :=
 Add Morphism if_zero with signature @eq ==> @eq ==> Neq ==> @eq as if_zero_wd.
 Proof.
 intros; unfold if_zero. apply recursion_wd with (Aeq := (@eq A)).
-reflexivity. unfold eq_fun2; now intros. assumption.
+reflexivity. unfold fun2_eq; now intros. assumption.
 Qed.
 
 Theorem if_zero_0 : forall (A : Set) (a b : A), if_zero A a b 0 = a.
@@ -198,7 +198,7 @@ End PairInduction.
 Section TwoDimensionalInduction.
 
 Variable R : N -> N -> Prop.
-Hypothesis R_wd : rel_wd Neq Neq R.
+Hypothesis R_wd : relation_wd Neq Neq R.
 
 Add Morphism R with signature Neq ==> Neq ==> iff as R_morph.
 Proof.
@@ -223,12 +223,12 @@ End TwoDimensionalInduction.
   try intros until n;
   try intros until m;
   pattern n, m; apply two_dim_induction; clear n m;
-  [solve_rel_wd | | | ].*)
+  [solve_relation_wd | | | ].*)
 
 Section DoubleInduction.
 
 Variable R : N -> N -> Prop.
-Hypothesis R_wd : rel_wd Neq Neq R.
+Hypothesis R_wd : relation_wd Neq Neq R.
 
 Add Morphism R with signature Neq ==> Neq ==> iff as R_morph1.
 Proof.
@@ -250,7 +250,7 @@ Ltac double_induct n m :=
   try intros until n;
   try intros until m;
   pattern n, m; apply double_induction; clear n m;
-  [solve_rel_wd | | | ].
+  [solve_relation_wd | | | ].
 
 End NBasePropFunct.
 

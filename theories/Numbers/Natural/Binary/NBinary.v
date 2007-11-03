@@ -137,11 +137,11 @@ Qed.
 Theorem recursion_wd :
 forall (A : Set) (Aeq : relation A),
   forall a a' : A, Aeq a a' ->
-    forall f f' : N -> A -> A, eq_fun2 NZeq Aeq Aeq f f' ->
+    forall f f' : N -> A -> A, fun2_eq NZeq Aeq Aeq f f' ->
       forall x x' : N, x = x' ->
         Aeq (recursion a f x) (recursion a' f' x').
 Proof.
-unfold fun2_wd, NZeq, eq_fun2.
+unfold fun2_wd, NZeq, fun2_eq.
 intros A Aeq a a' Eaa' f f' Eff'.
 intro x; pattern x; apply Nind.
 intros x' H; now rewrite <- H.
