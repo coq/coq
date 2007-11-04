@@ -135,7 +135,7 @@ let declare_definition prg =
      with _ -> ());
   let ce = 
     { const_entry_body = body;
-      const_entry_type = Some prg.prg_type;
+      const_entry_type = Some (Termops.refresh_universes prg.prg_type);
       const_entry_opaque = false;
       const_entry_boxed = false} 
   in
