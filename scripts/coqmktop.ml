@@ -245,8 +245,7 @@ let declare_loading_string () =
   else if not !top then
     "Mltop.set Mltop.WithoutTop;;\n"
   else
-    "Clflags.recursive_types:=true;;
-     let ppf = Format.std_formatter;;
+    "let ppf = Format.std_formatter;;
      Mltop.set (Mltop.WithTop
        {Mltop.load_obj=Topdirs.dir_load ppf;
         Mltop.use_file=Topdirs.dir_use ppf;
