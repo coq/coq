@@ -10,8 +10,6 @@
 
 (* $Id$ *)
 
-Require Export Extraction.
-
 Extract Inductive unit => unit [ "()" ].
 Extract Inductive bool => bool [ true false ].
 Extract Inductive sumbool => bool [ true false ].
