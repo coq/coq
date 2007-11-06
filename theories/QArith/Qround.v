@@ -35,7 +35,7 @@ Proof.
 intros z.
 unfold Qceiling.
 simpl.
-rewrite Z_div_1.
+rewrite Zdiv_1_r.
 auto with *.
 Qed.
 

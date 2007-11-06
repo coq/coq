@@ -46,6 +46,20 @@ Proof.
  destruct (Zcompare x y); [ left | right | left ]; split; auto; discriminate.
 Qed.
 
+Lemma Zmax_left : forall n m:Z, n>=m -> Zmax n m = n.
+Proof.
+  intros n m; unfold Zmax, Zge; destruct (n ?= m); auto.
+  intro H; elim H; auto.
+Qed.
+
+Lemma Zmax_right : forall n m:Z, n<=m -> Zmax n m = m.
+Proof.
+  intros n m; unfold Zmax, Zle.
+  generalize (Zcompare_Eq_eq n m).
+  destruct (n ?= m); auto.
+  intros _ H; elim H; auto.
+Qed.
+
 (** * Least upper bound properties of max *)
 
 Lemma Zle_max_l : forall n m:Z, n <= Zmax n m.

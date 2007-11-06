@@ -1,6 +1,5 @@
 Require Import ZArith.
 Require Import ZAux.
-Require Import ZDivModAux.
 
 Open Scope Z_scope.
 

@@ -17,9 +17,43 @@ Require Import Logic.
 
 Tactic Notation "revert" ne_hyp_list(l) := generalize l; clear l.
 
+(**************************************
+ A tactic for proof by contradiction
+     with contradict H 
+         H: ~A |-   B      gives           |-   A
+         H: ~A |- ~ B     gives  H: B |-   A
+         H:   A |-   B      gives           |- ~ A
+         H:   A |-   B      gives           |- ~ A
+         H:   A |- ~ B     gives  H: A |- ~ A
+**************************************)
+
+Ltac contradict name := 
+     let term := type of name in (
+     match term with 
+       (~_) => 
+          match goal with 
+            |- ~ _  => let x := fresh in
+                     (intros x; case name; 
+                      generalize x; clear x name;
+                      intro name)
+          | |- _    => case name; clear name
+          end
+     | _ => 
+          match goal with 
+            |- ~ _  => let x := fresh in
+                    (intros x;  absurd term;
+                       [idtac | exact name]; generalize x; clear x name;
+                       intros name)
+          | |- _    => generalize name; absurd term;
+                       [idtac | exact name]; clear name
+          end
+     end).
+
 (* to contradict an hypothesis without copying its type. *)
 
+
 Ltac absurd_hyp h := 
+  (* idtac "absurd_hyp is OBSOLETE: use contradict instead."; *)
   let T := type of h in 
   absurd T.
 
@@ -29,7 +63,9 @@ absurd_hyp H; [apply t | assumption].
 
 (* Transforming a negative goal [ H:~A |- ~B ] into a positive one [ B |- A ]*)
 
-Ltac swap H := intro; apply H; clear H.
+Ltac swap H := 
+  (* idtac "swap is OBSOLETE: use contradict instead."; *)
+  intro; apply H; clear H.
 
 (* A case with no loss of information. *)
 

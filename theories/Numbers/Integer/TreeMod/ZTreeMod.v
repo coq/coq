@@ -79,7 +79,8 @@ Notation "x * y" := (NZtimes x y) : IntScope.
 
 Theorem gt_wB_1 : 1 < wB.
 Proof.
-unfold base. apply Zgt_pow_1; unfold Zlt; auto with zarith.
+unfold base. 
+apply Zpower_gt_1; unfold Zlt; auto with zarith.
 Qed.
 
 Theorem gt_wB_0 : 0 < wB.
@@ -90,22 +91,22 @@ Qed.
 Lemma NZsucc_mod_wB : forall n : Z, (n + 1) mod wB = ((n mod wB) + 1) mod wB.
 Proof.
 intro n.
-pattern 1 at 2. replace 1 with (1 mod wB). rewrite <- Zmod_plus; [ | apply gt_wB_0].
+pattern 1 at 2. replace 1 with (1 mod wB). rewrite <- Zplus_mod.
 reflexivity.
-now rewrite Zmod_def_small; [ | split; [auto with zarith | apply gt_wB_1]].
+now rewrite Zmod_small; [ | split; [auto with zarith | apply gt_wB_1]].
 Qed.
 
 Lemma NZpred_mod_wB : forall n : Z, (n - 1) mod wB = ((n mod wB) - 1) mod wB.
 Proof.
 intro n.
-pattern 1 at 2. replace 1 with (1 mod wB). rewrite <- Zmod_minus; [ | apply gt_wB_0].
+pattern 1 at 2. replace 1 with (1 mod wB). rewrite <- Zminus_mod.
 reflexivity.
-now rewrite Zmod_def_small; [ | split; [auto with zarith | apply gt_wB_1]].
+now rewrite Zmod_small; [ | split; [auto with zarith | apply gt_wB_1]].
 Qed.
 
 Lemma NZ_to_Z_mod : forall n : NZ, [| n |] mod wB = [| n |].
 Proof.
-intro n; rewrite Zmod_def_small. reflexivity. apply w_spec.(spec_to_Z).
+intro n; rewrite Zmod_small. reflexivity. apply w_spec.(spec_to_Z).
 Qed.
 
 Theorem NZpred_succ : forall n : NZ, P (S n) == n.
@@ -147,7 +148,7 @@ setoid_replace (Z_to_NZ (n + 1)) with (S (Z_to_NZ n)) using relation NZeq. assum
 unfold NZeq. rewrite w_spec.(spec_succ).
 unfold NZ_to_Z, Z_to_NZ.
 do 2 (rewrite znz_of_Z_correct; [ | exact w_spec | auto with zarith]).
-symmetry; apply Zmod_def_small; auto with zarith.
+symmetry; apply Zmod_small; auto with zarith.
 Qed.
 
 Lemma B_holds : forall n : Z, 0 <= n < wB -> B n.
@@ -172,7 +173,7 @@ End Induction.
 Theorem NZplus_0_l : forall n : NZ, 0 + n == n.
 Proof.
 intro n; unfold NZplus, NZ0, NZeq. rewrite w_spec.(spec_add). rewrite w_spec.(spec_0).
-rewrite Zplus_0_l. rewrite Zmod_def_small; [reflexivity | apply w_spec.(spec_to_Z)].
+rewrite Zplus_0_l. rewrite Zmod_small; [reflexivity | apply w_spec.(spec_to_Z)].
 Qed.
 
 Theorem NZplus_succ_l : forall n m : NZ, (S n) + m == S (n + m).
@@ -180,7 +181,7 @@ Proof.
 intros n m; unfold NZplus, NZsucc, NZeq. rewrite w_spec.(spec_add).
 do 2 rewrite w_spec.(spec_succ). rewrite w_spec.(spec_add).
 rewrite NZsucc_mod_wB. repeat rewrite Zplus_mod_idemp_l; try apply gt_wB_0.
-rewrite <- (Zplus_assoc ([| n |] mod wB) 1 [| m |]). rewrite Zplus_mod_idemp_l; [ |apply gt_wB_0].
+rewrite <- (Zplus_assoc ([| n |] mod wB) 1 [| m |]). rewrite Zplus_mod_idemp_l.
 rewrite (Zplus_comm 1 [| m |]); now rewrite Zplus_assoc.
 Qed.
 
@@ -194,8 +195,8 @@ Theorem NZminus_succ_r : forall n m : NZ, n - (S m) == P (n - m).
 Proof.
 intros n m; unfold NZminus, NZsucc, NZpred, NZeq.
 rewrite w_spec.(spec_pred). do 2 rewrite w_spec.(spec_sub).
-rewrite w_spec.(spec_succ). rewrite Zminus_mod_idemp_r; [ | apply gt_wB_0].
-rewrite Zminus_mod_idemp_l; [ | apply gt_wB_0].
+rewrite w_spec.(spec_succ). rewrite Zminus_mod_idemp_r.
+rewrite Zminus_mod_idemp_l.
 now replace ([|n|] - ([|m|] + 1))%Z with ([|n|] - [|m|] - 1)%Z by auto with zarith.
 Qed.
 
@@ -209,7 +210,7 @@ Theorem NZtimes_succ_r : forall n m : NZ, n * (S m) == n * m + n.
 Proof.
 intros n m; unfold NZtimes, NZsucc, NZplus, NZeq. rewrite w_spec.(spec_mul).
 rewrite w_spec.(spec_add). rewrite w_spec.(spec_mul). rewrite w_spec.(spec_succ).
-rewrite Zplus_mod_idemp_l; [ | apply gt_wB_0]. rewrite Zmult_mod_idemp_r; [ | apply gt_wB_0].
+rewrite Zplus_mod_idemp_l. rewrite Zmult_mod_idemp_r.
 rewrite Zmult_plus_distr_r. now rewrite Zmult_1_r.
 Qed.
 

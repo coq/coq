@@ -10,8 +10,6 @@ Set Implicit Arguments.
 
 Require Import ZArith.
 Require Import ZAux.
-Require Import ZPowerAux.
-Require Import ZDivModAux.
 Require Import Basic_type.
 Require Import GenBase.
 
@@ -283,7 +281,7 @@ Section GenLift.
    repeat rewrite <- Zmult_assoc.
    apply f_equal2 with (f := Zmult); auto.
    case (spec_to_Z (w_tail0 xl)); intros HH3 HH4.
-   pattern 2 at 2; rewrite <- Zpower_exp_1.
+   pattern 2 at 2; rewrite <- Zpower_1_r.
    lazy beta; repeat rewrite <- Zpower_exp; auto with zarith.
    unfold base; apply f_equal with (f := Zpower 2); auto with zarith.
 
@@ -328,12 +326,12 @@ Section GenLift.
    fold wB.
    rewrite Zmult_plus_distr_l;rewrite <- Zmult_assoc;rewrite <- Zplus_assoc.
    rewrite <- Zpower_2.
-   rewrite <- wwB_wBwB;apply Zmod_unique with [|xh|]. apply lt_0_wwB. 
+   rewrite <- wwB_wBwB;apply Zmod_unique with [|xh|]. 
    exact (spec_ww_to_Z w_digits w_to_Z spec_to_Z (WW xl yh)). ring.
    simpl ww_to_Z; w_rewrite;zarith.
    assert (HH0: [|low p|] = [[p]]).
      rewrite spec_low.
-     apply Zmod_def_small.
+     apply Zmod_small.
      case (spec_to_w_Z p); intros HH1 HH2; split; auto.
      generalize H1; unfold zdigits; rewrite spec_w_0W;
       rewrite spec_zdigits; intros tmp.
@@ -370,7 +368,7 @@ Section GenLift.
      rewrite spec_ww_sub.
      unfold zdigits; rewrite spec_w_0W; rewrite spec_zdigits.
      rewrite <- Zmod_div_mod; auto with zarith.
-     rewrite Zmod_def_small; auto with zarith.
+     rewrite Zmod_small; auto with zarith.
      split; auto with zarith.
      apply Zle_lt_trans with (Zpos w_digits); auto with zarith.
      unfold base; apply Zpower2_lt_lin; auto with zarith.
@@ -407,7 +405,7 @@ Section GenLift.
      ([|xh|]*2^u*wB). 2:ring.
    repeat rewrite <- Zplus_assoc. 
    rewrite (Zplus_comm ([|xh|] * 2 ^ u * wB)).
-   rewrite Z_mod_plus;zarith. rewrite Zmod_mult_0;zarith.
+   rewrite Z_mod_plus;zarith. rewrite Z_mod_mult;zarith.
    unfold base;rewrite <- Zmod_shift_r;zarith. fold base;apply Z_mod_lt;zarith.
    unfold u; split;zarith. 
    split;zarith. unfold u; apply Zdiv_lt_upper_bound;zarith.
@@ -450,7 +448,7 @@ Section GenLift.
    generalize H1; w_rewrite; rewrite spec_zdigits; clear H1; intros H1.
    assert (HH0: [|low p|] = [[p]]).
      rewrite spec_low.
-     apply Zmod_def_small.
+     apply Zmod_small.
      case (spec_to_w_Z p); intros HH1 HH2; split; auto.
      apply Zlt_le_trans with (1 := H1).
      unfold base; apply Zpower2_le_lin; auto with zarith.
@@ -466,7 +464,7 @@ Section GenLift.
      rewrite spec_low.
      rewrite spec_ww_sub; w_rewrite; intros H1.
      rewrite <- Zmod_div_mod; auto with zarith.
-     rewrite Zmod_def_small; auto with zarith.
+     rewrite Zmod_small; auto with zarith.
      split; auto with zarith.
      apply Zle_lt_trans with (Zpos w_digits); auto with zarith.
      unfold base; apply Zpower2_lt_lin; auto with zarith.

@@ -8,7 +8,6 @@
 
 Set Implicit Arguments.
 
-Require Import Tactic.
 Require Import ZArith.
 Require Import Znumtheory.
 Require Import Basic_type.

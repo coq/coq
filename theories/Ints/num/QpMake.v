@@ -2,7 +2,6 @@ Require Import Bool.
 Require Import ZArith.
 Require Import Znumtheory.
 Require Import ZAux.
-Require Import ZDivModAux.
 Require Import Arith.
 Require Export BigN.
 Require Export BigZ.

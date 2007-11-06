@@ -148,6 +148,7 @@ Definition Zsqrt_plain (x:Z) : Z :=
   end.
 
 (** A basic theorem about Zsqrt_plain *)
+
 Theorem Zsqrt_interval :
   forall n:Z,
     0 <= n ->
@@ -161,4 +162,54 @@ Proof.
   intros s [r [Heq Hint]] Hle; assumption.
   intros p Hle; elim Hle; auto.
 Qed.
+
+(** Positivity *)
+
+Theorem Zsqrt_plain_is_pos: forall n, 0 <= n ->  0 <= Zsqrt_plain n.
+Proof.
+  intros n m; case (Zsqrt_interval n); auto with zarith.
+  intros H1 H2; case (Zle_or_lt 0 (Zsqrt_plain n)); auto.
+  intros H3; absurd_hyp H2; auto; apply Zle_not_lt.
+  apply Zle_trans with ( 2 := H1 ).
+  replace ((Zsqrt_plain n + 1) * (Zsqrt_plain n + 1))
+     with (Zsqrt_plain n * Zsqrt_plain n + (2 * Zsqrt_plain n + 1));
+  auto with zarith.
+  ring.
+Qed.
+
+(** Direct correctness on squares. *)
+
+Theorem Zsqrt_square_id: forall a, 0 <= a ->  Zsqrt_plain (a * a) = a.
+Proof.
+  intros a H.
+  generalize (Zsqrt_plain_is_pos (a * a)); auto with zarith; intros Haa.
+  case (Zsqrt_interval (a * a)); auto with zarith.
+  intros H1 H2.
+  case (Zle_or_lt a (Zsqrt_plain (a * a))); intros H3; auto.
+  case Zle_lt_or_eq with (1:=H3); auto; clear H3; intros H3.
+  absurd_hyp H1; auto; apply Zlt_not_le; auto with zarith.
+  apply Zle_lt_trans with (a * Zsqrt_plain (a * a)); auto with zarith.
+  apply Zmult_lt_compat_r; auto with zarith.
+  absurd_hyp H2; auto; apply Zle_not_lt; auto with zarith.
+  apply Zmult_le_compat; auto with zarith.
+Qed.
+
+(** [Zsqrt_plain] is increasing *)
+
+Theorem Zsqrt_le:
+ forall p q, 0 <= p <= q  ->  Zsqrt_plain p <= Zsqrt_plain q.
+Proof.
+  intros p q [H1 H2]; case Zle_lt_or_eq with (1:=H2); clear H2; intros H2; 
+  [ | subst q; auto with zarith].
+  case (Zle_or_lt (Zsqrt_plain p) (Zsqrt_plain q)); auto; intros H3.
+  assert (Hp: (0 <= Zsqrt_plain q)).
+   apply Zsqrt_plain_is_pos; auto with zarith.
+  absurd (q <= p); auto with zarith.
+  apply Zle_trans with ((Zsqrt_plain q + 1) * (Zsqrt_plain q + 1)).
+  case (Zsqrt_interval q); auto with zarith.
+  apply Zle_trans with (Zsqrt_plain p * Zsqrt_plain p); auto with zarith.
+  apply Zmult_le_compat; auto with zarith.
+  case (Zsqrt_interval p); auto with zarith.
+Qed.
+
 

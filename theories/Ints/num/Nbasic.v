@@ -1,6 +1,5 @@
 Require Import ZArith.
 Require Import ZAux.
-Require Import ZDivModAux.
 Require Import Basic_type.
 Require Import Max.
 Require Import GenBase.
@@ -28,13 +27,13 @@ assert (tmp: (forall p, 2 * p = p + p)%Z);
 intros p1 Hp1; rewrite F; rewrite (Zpos_xO p1).
 assert (tmp: (forall p, 2 * p = p + p)%Z); 
   try repeat rewrite tmp; auto with zarith.
-rewrite ZPowerAux.Zpower_exp_1; auto with zarith.
+rewrite Zpower_1_r; auto with zarith.
 Qed.
 
 Theorem plength_pred_correct: forall p, (Zpos p <= 2 ^ Zpos (plength (Ppred p)))%Z.
 intros p; case (Psucc_pred p); intros H1.
 subst; simpl plength.
-rewrite ZPowerAux.Zpower_exp_1; auto with zarith.
+rewrite Zpower_1_r; auto with zarith.
 pattern p at 1; rewrite <- H1.
 rewrite Zpos_succ_morphism; unfold Zsucc; auto with zarith.
 generalize (plength_correct (Ppred p)); auto with zarith.
@@ -296,7 +295,7 @@ Section CompareRec.
  Lemma base_xO: forall n, base (xO n) = (base n)^2.
  Proof.
  intros n1; unfold base.
- rewrite (Zpos_xO n1); rewrite Zmult_comm; rewrite ZAux.Zpower_mult; auto with zarith.
+ rewrite (Zpos_xO n1); rewrite Zmult_comm; rewrite Zpower_mult; auto with zarith.
  Qed.
 
  Let gen_to_Z_pos: forall n x, 0 <= gen_to_Z n x < gen_wB n :=

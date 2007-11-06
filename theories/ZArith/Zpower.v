@@ -14,6 +14,8 @@ Require Import Omega.
 Require Import Zcomplements.
 Open Local Scope Z_scope.
 
+Infix "^" := Zpower : Z_scope.
+
 (** * Definition of powers over [Z]*)
 
 (** [Zpower_nat z n] is the n-th power of [z] when [n] is an unary
@@ -37,7 +39,7 @@ Qed.
 (** This theorem shows that powers of unary and binary integers
    are the same thing, modulo the function convert : [positive -> nat] *)
 
-Theorem Zpower_pos_nat :
+Lemma Zpower_pos_nat :
   forall (z:Z) (p:positive), Zpower_pos z p = Zpower_nat z (nat_of_P p).
 Proof.
   intros; unfold Zpower_pos in |- *; unfold Zpower_nat in |- *;
@@ -48,7 +50,7 @@ Qed.
    deduce that the function [[n:positive](Zpower_pos z n)] is a morphism
    for [add : positive->positive] and [Zmult : Z->Z] *)
 
-Theorem Zpower_pos_is_exp :
+Lemma Zpower_pos_is_exp :
   forall (n m:positive) (z:Z),
     Zpower_pos z (n + m) = Zpower_pos z n * Zpower_pos z m.
 Proof.
@@ -60,68 +62,18 @@ Proof.
   apply Zpower_nat_is_exp.
 Qed.
 
-Theorem Zpower_pos_1_r: forall x, Zpower_pos x 1 = x.
-Proof.
-  intros x; unfold Zpower_pos; simpl; auto with zarith.
-Qed.
-
-Theorem Zpower_pos_1_l: forall p, Zpower_pos 1 p = 1.
-Proof.
-  induction p.
-  (* xI *)
-  rewrite xI_succ_xO, <-Pplus_diag, Pplus_one_succ_l.
-  repeat rewrite Zpower_pos_is_exp.
-  rewrite Zpower_pos_1_r, IHp; auto.
-  (* xO *)
-  rewrite <- Pplus_diag.
-  repeat rewrite Zpower_pos_is_exp.
-  rewrite IHp; auto.
-  (* xH *)
-  rewrite Zpower_pos_1_r; auto.
-Qed.
-
-Theorem Zpower_pos_0_l: forall p, Zpower_pos 0 p = 0.
-Proof. 
-  induction p.
-  change (xI p) with (1 + (xO p))%positive.
-  rewrite Zpower_pos_is_exp, Zpower_pos_1_r; auto.
-  rewrite <- Pplus_diag.
-  rewrite Zpower_pos_is_exp, IHp; auto.
-  rewrite Zpower_pos_1_r; auto.
-Qed.
-
-Theorem Zpower_pos_pos: forall x p, 
-  0 < x -> 0 < Zpower_pos x p.
-Proof.
-  induction p; intros.
-  (* xI *)
-  rewrite xI_succ_xO, <-Pplus_diag, Pplus_one_succ_l.
-  repeat rewrite Zpower_pos_is_exp.
-  rewrite Zpower_pos_1_r.
-  repeat apply Zmult_lt_0_compat; auto.
-  (* xO *)
-  rewrite <- Pplus_diag.
-  repeat rewrite Zpower_pos_is_exp.
-  repeat apply Zmult_lt_0_compat; auto.
-  (* xH *)
-  rewrite Zpower_pos_1_r; auto.
-Qed.
-
-Infix "^" := Zpower : Z_scope.
-
 Hint Immediate Zpower_nat_is_exp Zpower_pos_is_exp : zarith.
 Hint Unfold Zpower_pos Zpower_nat: zarith.
 
-Lemma Zpower_exp :
+Theorem Zpower_exp :
   forall x n m:Z, n >= 0 -> m >= 0 -> x ^ (n + m) = x ^ n * x ^ m.
 Proof.
   destruct n; destruct m; auto with zarith.
-  simpl in |- *; intros; apply Zred_factor0.
-  simpl in |- *; auto with zarith.
-  intros; compute in H0; absurd (Datatypes.Lt = Datatypes.Lt); auto with zarith.
-  intros; compute in H0; absurd (Datatypes.Lt = Datatypes.Lt); auto with zarith.
+  simpl; intros; apply Zred_factor0.
+  simpl; auto with zarith.
+  intros; compute in H0; elim H0; auto.
+  intros; compute in H; elim H; auto.
 Qed.
-
 
 Section Powers_of_2.
 
