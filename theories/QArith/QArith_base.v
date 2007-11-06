@@ -79,9 +79,9 @@ Qed.
 Lemma Qge_alt : forall p q, (p>=q) <-> (p?=q <> Lt).
 Proof.
 unfold Qle, Qcompare, Zle.
-split; intros; swap H.
+split; intros; contradict H.
 rewrite Zcompare_Gt_Lt_antisym; auto.
-rewrite Zcompare_Gt_Lt_antisym in H0; auto.
+rewrite Zcompare_Gt_Lt_antisym in H; auto.
 Qed.
 
 Hint Unfold Qeq Qlt Qle: qarith.

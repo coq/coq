@@ -139,7 +139,7 @@ Theorem Qc_eq_dec : forall x y:Qc, {x=y} + {x<>y}.
 Proof.
   intros.
   destruct (Qeq_dec x y) as [H|H]; auto.
-  right; swap H; subst; auto with qarith.
+  right; contradict H; subst; auto with qarith.
 Defined. 
 
 (** The addition, multiplication and opposite are defined 

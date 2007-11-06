@@ -277,9 +277,9 @@ Module IntProperties (I:Int).
 
  Lemma ne_left_2 : forall x y : int, x<>y -> 0<>(x + - y).
  Proof.
- intros; swap H.
+ intros; contradict H.
  apply (plus_reg_l (-y)).
- now rewrite plus_opp_l, plus_comm, H0.
+ now rewrite plus_opp_l, plus_comm, H.
  Qed.
 
  (* Special lemmas for factorisation. *)
@@ -483,7 +483,7 @@ Module IntProperties (I:Int).
   destruct (eq_dec n m) as [H'|H'].
   right; intuition.
   left; rewrite lt_le_iff.
-  swap H'.
+  contradict H'.
   apply le_antisym; auto.
  Qed.
 
@@ -536,9 +536,9 @@ Module IntProperties (I:Int).
  apply plus_le_compat; auto.
  apply lt_le_weak; auto.
  rewrite lt_le_iff in H0.
- swap H0.
+ contradict H0.
  apply plus_le_reg_r with m.
- rewrite (plus_comm q m), <-H1, (plus_comm p m).
+ rewrite (plus_comm q m), <-H0, (plus_comm p m).
  apply plus_le_compat; auto.
  apply le_refl; auto.
  Qed.
@@ -552,7 +552,7 @@ Module IntProperties (I:Int).
 
  Lemma opp_lt_compat : forall n m, n<m -> -m < -n.
  Proof.
- intros n m; do 2 rewrite lt_le_iff; intros H; swap H.
+ intros n m; do 2 rewrite lt_le_iff; intros H; contradict H.
  rewrite <-(opp_involutive m), <-(opp_involutive n).
  apply opp_le_compat; auto.
  Qed.
@@ -648,8 +648,8 @@ Module IntProperties (I:Int).
  Proof.
  intros.
  subst b; rewrite mult_0_l, plus_0_r.
- swap H.
- symmetry in H1; destruct (mult_integral _ _ H1); congruence.
+ contradict H.
+ symmetry in H; destruct (mult_integral _ _ H); congruence.
  Qed.
 
  Lemma one_neq_zero : 1 <> 0.
@@ -788,8 +788,8 @@ Module IntProperties (I:Int).
  intros n m p.
  do 2 rewrite gt_lt_iff.
  do 2 rewrite le_lt_iff; intros.
- swap H1.
- rewrite lt_0_neg' in H2.
+ contradict H1.
+ rewrite lt_0_neg' in H1.
  rewrite lt_0_neg'.
  rewrite opp_plus_distr.
  rewrite mult_comm, opp_mult_distr_r.
@@ -800,13 +800,13 @@ Module IntProperties (I:Int).
  rewrite le_lt_int in H0.
  apply le_trans with (n+-(1)); auto.
  apply plus_le_compat; [ | apply le_refl ].
- rewrite le_lt_int in H2.
- generalize (mult_le_compat _ _ _ _ (lt_le_weak _ _ H) H2 (le_refl 0) (le_refl 0)).
+ rewrite le_lt_int in H1.
+ generalize (mult_le_compat _ _ _ _ (lt_le_weak _ _ H) H1 (le_refl 0) (le_refl 0)).
  rewrite mult_0_l.
  rewrite mult_plus_distr_l.
  rewrite <- opp_eq_mult_neg_1.
  intros.
- generalize (plus_le_compat _ _ _ _ (le_refl n) H1).
+ generalize (plus_le_compat _ _ _ _ (le_refl n) H2).
  now rewrite plus_permute, opp_def, plus_0_r, plus_0_r.
  Qed.
 
@@ -2372,7 +2372,7 @@ Proof.
  Simplify; simpl; auto; subst; 
  rewrite <- scalar_norm_stable; simpl; intros;
  [ destruct (mult_integral _ _ (sym_eq H0)); intuition
- | swap H0; rewrite <- H1, mult_0_l; auto
+ | contradict H0; rewrite <- H0, mult_0_l; auto
  ].
 Qed.
 

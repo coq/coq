@@ -81,7 +81,7 @@ Proof.
   rewrite IHl in H1.
   intros; destruct (eqA_dec a a0) as [H2|H2]; simpl; auto.
   rewrite multiplicity_InA_O; auto.
-  swap H0.
+  contradict H0.
   apply InA_eqA with a0; auto.
   intros; constructor.
   rewrite multiplicity_InA.

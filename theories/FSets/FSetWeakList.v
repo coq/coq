@@ -777,22 +777,22 @@ Module Raw (X: DecidableType).
    apply remove_2; auto.
    (* In a s' /\ ~ s [=] remove a s' *)
    generalize (mem_2 H); clear H; intro H.
-   swap H'.
+   contradict H'.
    unfold Equal in *; intros b.
    split; intros.
    apply remove_2; auto.
    inversion_clear Hs.
-   swap H2; apply In_eq with b; auto.
-   rewrite <- H0; rewrite InA_cons; auto.
+   contradict H1; apply In_eq with b; auto.
+   rewrite <- H'; rewrite InA_cons; auto.
    assert (In b s') by (apply remove_3 with a; auto).
-   rewrite <- H0, InA_cons in H2; destruct H2; auto.
-   elim (remove_1 Hs' (X.eq_sym H2) H1).
+   rewrite <- H', InA_cons in H1; destruct H1; auto.
+   elim (remove_1 Hs' (X.eq_sym H1) H0).
    (* ~ In a s' *)
    assert (~In a s').
     red; intro H'; rewrite (mem_1 H') in H; discriminate.
-   swap H0.
+   contradict H0.
    unfold Equal in *.
-   rewrite <- H1.
+   rewrite <- H0.
    rewrite InA_cons; auto.
   Qed.
 

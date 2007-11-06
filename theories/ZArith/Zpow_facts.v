@@ -344,7 +344,7 @@ Theorem rel_prime_Zpower_r: forall i p q, 0 < i ->
  rel_prime p q -> rel_prime p (q^i).
 Proof.
   intros i p q Hi Hpq; generalize Hi; pattern i; apply natlike_ind; auto with zarith; clear i Hi.
-  intros H; absurd_hyp H; auto with zarith.
+  intros H; contradict H; auto with zarith.
   intros i Hi Rec _; rewrite Zpower_Zsucc; auto.
   apply rel_prime_mult; auto.
   case Zle_lt_or_eq with (1 := Hi); intros Hi1; subst; auto.
@@ -403,7 +403,7 @@ Proof.
   split; auto with zarith.
   pattern q1 at 1; replace q1 with (q1 * 1); auto with zarith.
   apply Zmult_lt_compat_l; auto with zarith.
-  intros H5; subst; absurd_hyp Hx; auto with zarith.
+  intros H5; subst; contradict Hx; auto with zarith.
   apply Zmult_le_0_reg_r with p1; auto with zarith.
   apply Zdivide_trans with (2 := H); exists p1; auto with zarith.
   intros r2 Hr2; exists (r2 + r1); subst.

@@ -546,7 +546,7 @@ Module Properties (M: S).
   rewrite leb_1 in H2.
   rewrite <- elements_iff in H1.
   assert (~E.eq x y).
-   swap H; rewrite H3; auto.
+   contradict H; rewrite H; auto.
   ME.order.
   intros.
   rewrite filter_InA in H1; auto; destruct H1.

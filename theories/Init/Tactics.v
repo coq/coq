@@ -49,23 +49,23 @@ Ltac contradict name :=
           end
      end).
 
-(* to contradict an hypothesis without copying its type. *)
-
-
-Ltac absurd_hyp h := 
-  (* idtac "absurd_hyp is OBSOLETE: use contradict instead."; *)
-  let T := type of h in 
-  absurd T.
-
-(* A useful complement to absurd_hyp. Here t : ~ A where H : A. *)
-Ltac false_hyp H t :=
-absurd_hyp H; [apply t | assumption].
-
 (* Transforming a negative goal [ H:~A |- ~B ] into a positive one [ B |- A ]*)
 
 Ltac swap H := 
-  (* idtac "swap is OBSOLETE: use contradict instead."; *)
+  idtac "swap is OBSOLETE: use contradict instead.";
   intro; apply H; clear H.
+
+(* to contradict an hypothesis without copying its type. *)
+
+Ltac absurd_hyp h := 
+  idtac "contradict is OBSOLETE: use contradict instead.";
+  let T := type of h in 
+  absurd T.
+
+(* A useful complement to contradict. Here t : ~ A where H : A. *)
+
+Ltac false_hyp h t := 
+  let T := type of h in absurd T; [ apply t | assumption ].
 
 (* A case with no loss of information. *)
 

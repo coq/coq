@@ -663,7 +663,7 @@ Qed.
 Theorem not_rel_prime_0: forall n, 1 < n -> ~ rel_prime 0 n.
 Proof.
   intros n H H1; absurd (n = 1 \/ n = -1).
-  intros [H2 | H2]; subst; absurd_hyp H; auto with zarith.
+  intros [H2 | H2]; subst; contradict H; auto with zarith.
   case (Zis_gcd_unique  0 n n 1); auto.
   apply Zis_gcd_intro; auto.
   exists 0; auto with zarith.
@@ -791,7 +791,7 @@ Proof.
   apply prime_intro; auto with zarith.
   intros n [H1 H2]; case Zle_lt_or_eq with ( 1 := H1 ); auto with zarith;
    clear H1; intros H1.
-  absurd_hyp H2; auto with zarith.
+  contradict H2; auto with zarith.
   subst n; red; auto with zarith.
   apply Zis_gcd_intro; auto with zarith.
 Qed.
@@ -802,7 +802,7 @@ Proof.
   intros n [H1 H2]; case Zle_lt_or_eq with ( 1 := H1 ); auto with zarith;
    clear H1; intros H1.
   case (Zle_lt_or_eq 2 n); auto with zarith; clear H1; intros H1.
-  absurd_hyp H2; auto with zarith.
+  contradict H2; auto with zarith.
   subst n; red; auto with zarith.
   apply Zis_gcd_intro; auto with zarith.
   intros x [q1 Hq1] [q2 Hq2].
@@ -871,10 +871,10 @@ Proof.
   assert (Hp: 0 < p); try apply Zlt_le_trans with 2; try apply prime_ge_2; auto with zarith.
   assert (Hq: 0 < q); try apply Zlt_le_trans with 2; try apply prime_ge_2; auto with zarith.
   case prime_divisors with (2 := H2); auto.
-  intros H4; absurd_hyp Hp; subst; auto with zarith.
+  intros H4; contradict Hp; subst; auto with zarith.
   intros [H4| [H4 | H4]]; subst; auto.
-  absurd_hyp H; auto; apply not_prime_1.
-  absurd_hyp Hp; auto with zarith.
+  contradict H; auto; apply not_prime_1.
+  contradict Hp; auto with zarith.
 Qed.
 
 
@@ -1147,7 +1147,7 @@ Definition rel_prime_dec: forall a b,
 Proof.
   intros a b; case (Z_eq_dec (Zgcd a b) 1); intros H1.
   left; apply -> Zgcd_1_rel_prime; auto.
-  right; swap H1; apply <- Zgcd_1_rel_prime; auto.
+  right; contradict H1; apply <- Zgcd_1_rel_prime; auto.
 Defined.
 
 Definition prime_dec_aux:
@@ -1167,7 +1167,7 @@ Proof.
   intros HH3; subst x; auto.
   case (Z_lt_dec 1 x); intros HH1.
   right; exists x; split; auto with zarith.
-  left; intros n [HHH1 HHH2]; absurd_hyp HHH1; auto with zarith.
+  left; intros n [HHH1 HHH2]; contradict HHH1; auto with zarith.
   right; destruct E as (n,((H0,H2),H3)); exists n; auto with zarith.
 Defined.
 

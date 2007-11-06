@@ -603,9 +603,9 @@ Module Properties
   Proof.
   induction 1; auto.
   constructor; auto.
-  swap H.
+  contradict H.
   destruct x as (x,y).
-  rewrite InA_alt in *; destruct H1 as ((a,b),((H1,H2),H3)); simpl in *.
+  rewrite InA_alt in *; destruct H as ((a,b),((H1,H2),H3)); simpl in *.
   exists (a,b); auto.
   Qed.
 
@@ -656,7 +656,7 @@ Module Properties
   apply NoDupA_rev; auto; apply NoDupA_eqk_eqke; apply elements_3w.
   apply NoDupA_rev; auto; apply NoDupA_eqk_eqke; apply elements_3w.
   rewrite InA_rev.
-  swap H1.
+  contradict H1.
   exists e.
   rewrite elements_mapsto_iff; auto.
   intros a.

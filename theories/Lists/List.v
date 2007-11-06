@@ -919,7 +919,7 @@ Section ListOps.
     apply perm_trans with (l1'++a::l2); auto using Permutation_cons_app.
     apply perm_skip.
     apply (IH a l1' l2 l3' l4); auto.
-    (* swap *)
+    (* contradict *)
     intros x y l l' Hp IH; intros.
     break_list l1 b l1' H; break_list l3 c l3' H0.
     auto.
@@ -1692,8 +1692,8 @@ Section ReDun.
   inversion_clear 1; auto.
   inversion_clear 1.
   constructor.
-  swap H0.
-  apply in_or_app; destruct (in_app_or _ _ _ H); simpl; tauto.
+  contradict H0.
+  apply in_or_app; destruct (in_app_or _ _ _ H0); simpl; tauto.
   apply IHl with a0; auto.
   Qed.
 
@@ -1702,8 +1702,8 @@ Section ReDun.
   induction l; simpl.
   inversion_clear 1; auto.
   inversion_clear 1.
-  swap H0.
-  destruct H.
+  contradict H0.
+  destruct H0.
   subst a0.
   apply in_or_app; right; red; auto.
   destruct (IHl _ _ H1); auto.

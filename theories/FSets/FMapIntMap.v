@@ -465,7 +465,7 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
   intros.
   inversion_clear H.
   assert (~E.eq x k).
-   swap H3.
+   contradict H3.
    destruct H1.
    apply InA_eqA with (x,x0); eauto.
    unfold eq_key, E.eq; eauto.

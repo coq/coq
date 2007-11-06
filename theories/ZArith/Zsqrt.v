@@ -169,7 +169,7 @@ Theorem Zsqrt_plain_is_pos: forall n, 0 <= n ->  0 <= Zsqrt_plain n.
 Proof.
   intros n m; case (Zsqrt_interval n); auto with zarith.
   intros H1 H2; case (Zle_or_lt 0 (Zsqrt_plain n)); auto.
-  intros H3; absurd_hyp H2; auto; apply Zle_not_lt.
+  intros H3; contradict H2; auto; apply Zle_not_lt.
   apply Zle_trans with ( 2 := H1 ).
   replace ((Zsqrt_plain n + 1) * (Zsqrt_plain n + 1))
      with (Zsqrt_plain n * Zsqrt_plain n + (2 * Zsqrt_plain n + 1));
@@ -187,10 +187,10 @@ Proof.
   intros H1 H2.
   case (Zle_or_lt a (Zsqrt_plain (a * a))); intros H3; auto.
   case Zle_lt_or_eq with (1:=H3); auto; clear H3; intros H3.
-  absurd_hyp H1; auto; apply Zlt_not_le; auto with zarith.
+  contradict H1; auto; apply Zlt_not_le; auto with zarith.
   apply Zle_lt_trans with (a * Zsqrt_plain (a * a)); auto with zarith.
   apply Zmult_lt_compat_r; auto with zarith.
-  absurd_hyp H2; auto; apply Zle_not_lt; auto with zarith.
+  contradict H2; auto; apply Zle_not_lt; auto with zarith.
   apply Zmult_le_compat; auto with zarith.
 Qed.
 

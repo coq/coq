@@ -293,7 +293,7 @@ Lemma NoDupA_split : forall l l' x, NoDupA (l++x::l') -> NoDupA (l++l').
 Proof.
  induction l; simpl in *; inversion_clear 1; auto.
  constructor; eauto.
- swap H0.
+ contradict H0.
  rewrite InA_app_iff in *; rewrite InA_cons; intuition.
 Qed.
 
@@ -309,7 +309,7 @@ Proof.
  rewrite InA_app_iff in *; rewrite InA_cons; auto.
  apply H; auto.
  constructor.
- swap H0.
+ contradict H0.
  rewrite InA_app_iff in *; rewrite InA_cons; intuition.
  eapply NoDupA_split; eauto.
 Qed.
@@ -482,9 +482,9 @@ Proof.
  rewrite InA_app_iff in H0.
  split; intros.
  assert (~eqA a x).
-  swap H3; apply InA_eqA with a; auto.
+  contradict H3; apply InA_eqA with a; auto.
  assert (~eqA a y).
-  swap H8; eauto.
+  contradict H8; eauto.
  intuition.
  assert (eqA a x \/ InA a l) by intuition.
  destruct H8; auto.
@@ -569,7 +569,7 @@ destruct H0; apply eqA_trans with a; auto.
 split.
 inversion_clear 1.
 split; auto.
-swap n.
+contradict n.
 apply eqA_trans with y; auto.
 rewrite (IHl x y) in H0; destruct H0; auto.
 destruct 1; inversion_clear H; auto.
@@ -595,7 +595,7 @@ unfold equivlistA; intros.
 rewrite removeA_InA.
 split; intros.
 rewrite <- H0; split; auto.
-swap H.
+contradict H.
 apply InA_eqA with x0; auto.
 rewrite <- (H0 x0) in H1.
 destruct H1.

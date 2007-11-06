@@ -666,7 +666,7 @@ Lemma Z_mod_nz_opp_full : forall a b:Z, a mod b <> 0 ->
  (-a) mod b = b - (a mod b).
 Proof.
   intros.
-  assert (b<>0) by (swap H; subst; rewrite Zmod_0_r; auto).
+  assert (b<>0) by (contradict H; subst; rewrite Zmod_0_r; auto).
   symmetry; apply Zmod_unique_full with (-1-a/b); auto.
   generalize (Z_mod_remainder a b H0); destruct 1; [left|right]; omega.
   rewrite Zmult_minus_distr_l.
@@ -704,7 +704,7 @@ Lemma Z_div_nz_opp_full : forall a b:Z, a mod b <> 0 ->
  (-a)/b = -(a/b)-1.
 Proof.
   intros.
-  assert (b<>0) by (swap H; subst; rewrite Zmod_0_r; auto).
+  assert (b<>0) by (contradict H; subst; rewrite Zmod_0_r; auto).
   symmetry; apply Zdiv_unique_full with (b-a mod b); auto.
   generalize (Z_mod_remainder a b H0); destruct 1; [left|right]; omega.
   pattern a at 1; rewrite (Z_div_mod_eq_full a b H0); ring.
@@ -1122,8 +1122,8 @@ Lemma Odiv_Omod_eq : forall a b, b<>0 ->
 Proof.
   intros.
   assert (Zabs b <> 0).
-   swap H.
-   destruct b; simpl in *; auto with zarith; inversion H0.
+   contradict H.
+   destruct b; simpl in *; auto with zarith; inversion H.
   pattern a at 1; rewrite <- (Zabs_Zsgn a).
   rewrite (Z_div_mod_eq_full (Zabs a) (Zabs b) H0).
   unfold Odiv, Omod.
