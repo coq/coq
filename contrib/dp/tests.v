@@ -2,15 +2,45 @@
 Require Import ZArith.
 Require Import Classical.
 
-Require Export zenon.
-
 Dp_debug.
 Dp_timeout 3.
+
+
+Inductive expr: Set := Some: expr -> expr -> expr | None: expr. 
+Parameter depth: expr -> expr -> nat. 
+
+Fixpoint length (t: expr) : nat :=
+  match t with
+  | None => 0
+  | Some t1 t2 => depth t t1
+  end.
+
+Goal forall e, length e = 0. 
+intros. 
+gwhy.
+ergo.
+Qed.
+
+
+(* polymorphism *)
+Require Import List.
+
+Inductive mylist (A:Set) : Set :=
+  mynil : mylist A
+| mycons : forall a:A, mylist A -> mylist A.
+
+Parameter nlist: mylist nat -> Prop.
+
+ Goal forall l,  nlist l -> True.
+ intros.
+gwhy.
+ simplify. 
+Qed.
 
 (* First example with the 0 and the equality translated *)
 
 Goal 0 = 0.
-zenon.
+simplify.
 Qed.
 
 (* Examples in the Propositional Calculus
@@ -19,27 +49,26 @@ Qed.
 Parameter A C : Prop.
 
 Goal A -> A.
-zenon.
+simplify.
 Qed.
 
 
 Goal A -> (A \/ C).
 
-zenon.
+simplify.
 Qed.
 
 
 Parameter x y z : Z.
 
 Goal x = y -> y = z -> x = z.
-
-zenon.
+ergo.
 Qed.
 
 
 Goal ((((A -> C) -> A) -> A) -> C) -> C.
 
-zenon.
+ergo.
 Qed.
 
 (* Arithmetic *)
