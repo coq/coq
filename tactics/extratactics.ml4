@@ -290,16 +290,17 @@ TACTIC EXTEND evar
 END
 
 open Tacexpr
+open Tacticals
 
 TACTIC EXTEND instantiate
   [ "instantiate" "(" integer(i) ":=" raw(c) ")" hloc(hl) ] ->
     [instantiate i c hl  ]
+| [ "instantiate" ] -> [ tclNORMEVAR ]
 END
 
 
 (** Nijmegen "step" tactic for setoid rewriting *)
 
-open Tacticals
 open Tactics
 open Tactics
 open Libnames

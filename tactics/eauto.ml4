@@ -369,9 +369,7 @@ let eauto debug np lems dbnames =
 	 with Not_found -> error ("EAuto: "^x^": No such Hint database"))
       ("core"::dbnames) 
   in
-  tclTHEN
-    tclNORMEVAR
-    (tclTRY (e_search_auto debug np lems db_list))
+  tclTRY (e_search_auto debug np lems db_list)
 
 let full_eauto debug n lems gl = 
   let dbnames = current_db_names () in
