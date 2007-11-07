@@ -1,3 +1,15 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*                      Evgeny Makarov, INRIA, 2007                     *)
+(************************************************************************)
+
+(*i i*)
+
 Require Export ZTimes.
 
 Module ZOrderPropFunct (Import ZAxiomsMod : ZAxiomsSig).
@@ -5,6 +17,22 @@ Module Export ZTimesPropMod := ZTimesPropFunct ZAxiomsMod.
 Open Local Scope IntScope.
 
 (* Axioms *)
+
+Theorem Zlt_wd :
+  forall n1 n2 : Z, n1 == n2 -> forall m1 m2 : Z, m1 == m2 -> (n1 < m1 <-> n2 < m2).
+Proof NZlt_wd.
+
+Theorem Zle_wd :
+  forall n1 n2 : Z, n1 == n2 -> forall m1 m2 : Z, m1 == m2 -> (n1 <= m1 <-> n2 <= m2).
+Proof NZle_wd.
+
+Theorem Zmin_wd :
+  forall n1 n2 : Z, n1 == n2 -> forall m1 m2 : Z, m1 == m2 -> Zmin n1 m1 == Zmin n2 m2.
+Proof NZmin_wd.
+
+Theorem Zmax_wd :
+  forall n1 n2 : Z, n1 == n2 -> forall m1 m2 : Z, m1 == m2 -> Zmax n1 m1 == Zmax n2 m2.
+Proof NZmax_wd.
 
 Theorem Zle_lt_or_eq : forall n m : Z, n <= m <-> n < m \/ n == m.
 Proof NZle_lt_or_eq.
@@ -14,6 +42,18 @@ Proof NZlt_irrefl.
 
 Theorem Zlt_succ_le : forall n m : Z, n < S m <-> n <= m.
 Proof NZlt_succ_le.
+
+Theorem Zmin_l : forall n m : Z, n <= m -> Zmin n m == n.
+Proof NZmin_l.
+
+Theorem Zmin_r : forall n m : Z, m <= n -> Zmin n m == m.
+Proof NZmin_r.
+
+Theorem Zmax_l : forall n m : Z, m <= n -> Zmax n m == n.
+Proof NZmax_l.
+
+Theorem Zmax_r : forall n m : Z, n <= m -> Zmax n m == m.
+Proof NZmax_r.
 
 (* Renaming theorems from NZOrder.v *)
 
@@ -91,11 +131,17 @@ Proof NZle_antisymm.
 Theorem Zlt_trichotomy : forall n m : Z,  n < m \/ n == m \/ m < n.
 Proof NZlt_trichotomy.
 
+Theorem Zlt_gt_cases : forall n m : Z, n ~= m <-> n < m \/ n > m.
+Proof NZlt_gt_cases.
+
 Theorem Zle_gt_cases : forall n m : Z, n <= m \/ n > m.
 Proof NZle_gt_cases.
 
 Theorem Zlt_ge_cases : forall n m : Z, n < m \/ n >= m.
 Proof NZlt_ge_cases.
+
+Theorem Zle_ge_cases : forall n m : Z, n <= m \/ n >= m.
+Proof NZle_ge_cases.
 
 Theorem Zle_ngt : forall n m : Z, n <= m <-> ~ n > m.
 Proof NZle_ngt.
@@ -164,9 +210,9 @@ Proof NZright_induction'.
 Theorem Zleft_induction' :
   forall A : Z -> Prop, predicate_wd Zeq A ->
     forall z : Z,
-    (forall n : NZ, z <= n -> A n) ->
+    (forall n : Z, z <= n -> A n) ->
     (forall n : Z, n < z -> A (S n) -> A n) ->
-      forall n : NZ, A n.
+      forall n : Z, A n.
 Proof NZleft_induction'.
 
 Theorem Zstrong_right_induction :

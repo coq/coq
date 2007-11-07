@@ -1,8 +1,24 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*                      Evgeny Makarov, INRIA, 2007                     *)
+(************************************************************************)
+
+(*i i*)
+
 Require Export ZBase.
 
 Module ZPlusPropFunct (Import ZAxiomsMod : ZAxiomsSig).
 Module Export ZBasePropMod := ZBasePropFunct ZAxiomsMod.
 Open Local Scope IntScope.
+
+Theorem Zplus_wd :
+  forall n1 n2 : Z, n1 == n2 -> forall m1 m2 : Z, m1 == m2 -> n1 + m1 == n2 + m2.
+Proof NZplus_wd.
 
 Theorem Zplus_0_l : forall n : Z, 0 + n == n.
 Proof NZplus_0_l.

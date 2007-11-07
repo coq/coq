@@ -1,26 +1,64 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*                      Evgeny Makarov, INRIA, 2007                     *)
+(************************************************************************)
+
+(*i i*)
+
 Require Import NMinus. (* The most complete file for natural numbers *)
 Require Export ZTimesOrder. (* The most complete file for integers *)
 
 Module ZPairsAxiomsMod (Import NAxiomsMod : NAxiomsSig) <: ZAxiomsSig.
 Module Import NPropMod := NMinusPropFunct NAxiomsMod. (* Get all properties of natural numbers *)
 
+(* We do not declare ring in Natural/Abstract for two reasons. First, some
+of the properties proved in NPlus and NTimes are used in the new BinNat,
+and it is in turn used in Ring. Using ring in Natural/Abstract would be
+circular. It is possible, however, not to make BinNat dependent on
+Numbers/Natural and prove the properties necessary for ring from scratch
+(this is, of course, how it used to be). In addition, if we define semiring
+structures in the implementation subdirectories of Natural, we are able to
+specify binary natural numbers as the type of coefficients. For these
+reasons we define an abstract semiring here. *)
+
+Open Local Scope NatScope.
+
+Lemma Nsemi_ring : semi_ring_theory 0 1 plus times Neq.
+Proof.
+constructor.
+exact plus_0_l.
+exact plus_comm.
+exact plus_assoc.
+exact times_1_l.
+exact times_0_l.
+exact times_comm.
+exact times_assoc.
+exact times_plus_distr_r.
+Qed.
+
+Add Ring NSR : Nsemi_ring.
+
 (* The definitios of functions (NZplus, NZtimes, etc.) will be unfolded by
 the properties functor. Since we don't want Zplus_comm to refer to unfolded
 definitions of equality: fun p1 p2 : NZ => (fst p1 + snd p2) = (fst p2 + snd p1),
 we will provide an extra layer of definitions. *)
 
-Open Local Scope NatIntScope.
 Definition Z := (N * N)%type.
 Definition Z0 : Z := (0, 0).
 Definition Zeq (p1 p2 : Z) := ((fst p1) + (snd p2) == (fst p2) + (snd p1)).
 Definition Zsucc (n : Z) : Z := (S (fst n), snd n).
 Definition Zpred (n : Z) : Z := (fst n, S (snd n)).
 
-(* We do not have Zpred (Zsucc n) = n but only Zpred (Zsucc n) = n. It
+(* We do not have Zpred (Zsucc n) = n but only Zpred (Zsucc n) == n. It
 could be possible to consider as canonical only pairs where one of the
 elements is 0, and make all operations convert canonical values into other
-canonical values. In that case, we could get rid of setoids as well as
-arrive at integers as signed natural numbers. *)
+canonical values. In that case, we could get rid of setoids and arrive at
+integers as signed natural numbers. *)
 
 Definition Zplus (n m : Z) : Z := ((fst n) + (fst m), (snd n) + (snd m)).
 Definition Zminus (n m : Z) : Z := ((fst n) + (snd m), (snd n) + (fst m)).
@@ -32,6 +70,8 @@ Definition Ztimes (n m : Z) : Z :=
   ((fst n) * (fst m) + (snd n) * (snd m), (fst n) * (snd m) + (snd n) * (fst m)).
 Definition Zlt (n m : Z) := (fst n) + (snd m) < (fst m) + (snd n).
 Definition Zle (n m : Z) := (fst n) + (snd m) <= (fst m) + (snd n).
+Definition Zmin (n m : Z) := (min ((fst n) + (snd m)) ((fst m) + (snd n)), (snd n) + (snd m)).
+Definition Zmax (n m : Z) := (max ((fst n) + (snd m)) ((fst m) + (snd n)), (snd n) + (snd m)).
 
 Delimit Scope IntScope with Int.
 Bind Scope IntScope with Z.
@@ -84,16 +124,16 @@ stepr ((fst p + snd n) + (fst m + snd m)) in H3 by ring.
 now apply -> plus_cancel_r in H3.
 Qed.
 
-Theorem NZE_equiv : equiv Z Zeq.
+Theorem NZeq_equiv : equiv Z Zeq.
 Proof.
 unfold equiv; repeat split; [apply ZE_refl | apply ZE_trans | apply ZE_symm].
 Qed.
 
 Add Relation Z Zeq
- reflexivity proved by (proj1 NZE_equiv)
- symmetry proved by (proj2 (proj2 NZE_equiv))
- transitivity proved by (proj1 (proj2 NZE_equiv))
-as NZE_rel.
+ reflexivity proved by (proj1 NZeq_equiv)
+ symmetry proved by (proj2 (proj2 NZeq_equiv))
+ transitivity proved by (proj1 (proj2 NZeq_equiv))
+as NZeq_rel.
 
 Add Morphism (@pair N N) with signature NE ==> NE ==> Zeq as Zpair_wd.
 Proof.
@@ -152,7 +192,7 @@ ring.
 Qed.
 
 Section Induction.
-Open Scope NatIntScope. (* automatically closes at the end of the section *)
+Open Scope NatScope. (* automatically closes at the end of the section *)
 Variable A : Z -> Prop.
 Hypothesis A_wd : predicate_wd Zeq A.
 
@@ -227,6 +267,8 @@ End NZAxiomsMod.
 
 Definition NZlt := Zlt.
 Definition NZle := Zle.
+Definition NZmin := Zmin.
+Definition NZmax := Zmax.
 
 Add Morphism NZlt with signature Zeq ==> Zeq ==> iff as NZlt_wd.
 Proof.
@@ -255,6 +297,38 @@ fold (n1 == n2)%Int (m1 == m2)%Int; fold (n1 == m1)%Int in H1; fold (n2 == m2)%I
 now rewrite H1, H2.
 Qed.
 
+Add Morphism NZmin with signature Zeq ==> Zeq ==> Zeq as NZmin_wd.
+Proof.
+intros n1 m1 H1 n2 m2 H2; unfold NZmin, Zeq; simpl.
+destruct (le_ge_cases (fst n1 + snd n2) (fst n2 + snd n1)) as [H | H].
+rewrite (min_l (fst n1 + snd n2) (fst n2 + snd n1)). assumption.
+rewrite (min_l (fst m1 + snd m2) (fst m2 + snd m1)).
+now apply -> (NZle_wd n1 m1 H1 n2 m2 H2).
+stepl ((fst n1 + snd m1) + (snd n2 + snd m2)) by ring.
+unfold Zeq in H1. rewrite H1. ring.
+rewrite (min_r (fst n1 + snd n2) (fst n2 + snd n1)). assumption.
+rewrite (min_r (fst m1 + snd m2) (fst m2 + snd m1)).
+now apply -> (NZle_wd n2 m2 H2 n1 m1 H1).
+stepl ((fst n2 + snd m2) + (snd n1 + snd m1)) by ring.
+unfold Zeq in H2. rewrite H2. ring.
+Qed.
+
+Add Morphism NZmax with signature Zeq ==> Zeq ==> Zeq as NZmax_wd.
+Proof.
+intros n1 m1 H1 n2 m2 H2; unfold NZmax, Zeq; simpl.
+destruct (le_ge_cases (fst n1 + snd n2) (fst n2 + snd n1)) as [H | H].
+rewrite (max_r (fst n1 + snd n2) (fst n2 + snd n1)). assumption.
+rewrite (max_r (fst m1 + snd m2) (fst m2 + snd m1)).
+now apply -> (NZle_wd n1 m1 H1 n2 m2 H2).
+stepl ((fst n2 + snd m2) + (snd n1 + snd m1)) by ring.
+unfold Zeq in H2. rewrite H2. ring.
+rewrite (max_l (fst n1 + snd n2) (fst n2 + snd n1)). assumption.
+rewrite (max_l (fst m1 + snd m2) (fst m2 + snd m1)).
+now apply -> (NZle_wd n2 m2 H2 n1 m1 H1).
+stepl ((fst n1 + snd m1) + (snd n2 + snd m2)) by ring.
+unfold Zeq in H1. rewrite H1. ring.
+Qed.
+
 Open Local Scope IntScope.
 
 Theorem NZle_lt_or_eq : forall n m : Z, n <= m <-> n < m \/ n == m.
@@ -270,6 +344,30 @@ Qed.
 Theorem NZlt_succ_le : forall n m : Z, n < (Zsucc m) <-> n <= m.
 Proof.
 intros n m; unfold Zlt, Zle, Zeq; simpl. rewrite plus_succ_l; apply lt_succ_le.
+Qed.
+
+Theorem NZmin_l : forall n m : Z, n <= m -> Zmin n m == n.
+Proof.
+unfold Zmin, Zle, Zeq; simpl; intros n m H.
+rewrite min_l. assumption. ring.
+Qed.
+
+Theorem NZmin_r : forall n m : Z, m <= n -> Zmin n m == m.
+Proof.
+unfold Zmin, Zle, Zeq; simpl; intros n m H.
+rewrite min_r. assumption. ring.
+Qed.
+
+Theorem NZmax_l : forall n m : Z, m <= n -> Zmax n m == n.
+Proof.
+unfold Zmax, Zle, Zeq; simpl; intros n m H.
+rewrite max_l. assumption. ring.
+Qed.
+
+Theorem NZmax_r : forall n m : Z, n <= m -> Zmax n m == m.
+Proof.
+unfold Zmax, Zle, Zeq; simpl; intros n m H.
+rewrite max_r. assumption. ring.
 Qed.
 
 End NZOrdAxiomsMod.

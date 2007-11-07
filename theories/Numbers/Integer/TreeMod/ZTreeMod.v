@@ -1,3 +1,15 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*                      Evgeny Makarov, INRIA, 2007                     *)
+(************************************************************************)
+
+(*i i*)
+
 Require Export NZAxioms.
 Require Import NMake. (* contains W0Type *)
 Require Import ZnZ.
@@ -24,17 +36,17 @@ Definition NZplus := w_op.(znz_add).
 Definition NZminus := w_op.(znz_sub).
 Definition NZtimes := w_op.(znz_mul).
 
-Theorem NZE_equiv : equiv NZ NZeq.
+Theorem NZeq_equiv : equiv NZ NZeq.
 Proof.
 unfold equiv, reflexive, symmetric, transitive, NZeq; repeat split; intros; auto.
 now transitivity [| y |].
 Qed.
 
 Add Relation NZ NZeq
- reflexivity proved by (proj1 NZE_equiv)
- symmetry proved by (proj2 (proj2 NZE_equiv))
- transitivity proved by (proj1 (proj2 NZE_equiv))
-as NZE_rel.
+ reflexivity proved by (proj1 NZeq_equiv)
+ symmetry proved by (proj2 (proj2 NZeq_equiv))
+ transitivity proved by (proj1 (proj2 NZeq_equiv))
+as NZeq_rel.
 
 Add Morphism NZsucc with signature NZeq ==> NZeq as NZsucc_wd.
 Proof.

@@ -1,3 +1,15 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*                      Evgeny Makarov, INRIA, 2007                     *)
+(************************************************************************)
+
+(*i i*)
+
 Require Export NZAxioms.
 
 Set Implicit Arguments.
@@ -15,6 +27,10 @@ Notation P := NZpred.
 Notation Zplus := NZplus.
 Notation Ztimes := NZtimes.
 Notation Zminus := NZminus.
+Notation Zlt := NZlt.
+Notation Zle := NZle.
+Notation Zmin := NZmin.
+Notation Zmax := NZmax.
 Notation "x == y"  := (NZeq x y) (at level 70) : IntScope.
 Notation "x ~= y" := (~ NZeq x y) (at level 70) : IntScope.
 Notation "0" := NZ0 : IntScope.

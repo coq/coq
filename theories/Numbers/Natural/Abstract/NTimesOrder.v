@@ -1,3 +1,15 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*                      Evgeny Makarov, INRIA, 2007                     *)
+(************************************************************************)
+
+(*i i*)
+
 Require Export NOrder.
 
 Module NTimesOrderPropFunct (Import NAxiomsMod : NAxiomsSig).
@@ -85,18 +97,18 @@ Proof.
 intros; apply NZplus_nonneg_pos. apply le_0_l. assumption.
 Qed.
 
-(* The following property is similar to plus_repl_pair in NPlus.v
-and is used to prove the correctness of the definition of order
-on integers constructed from pairs of natural numbers *)
+(* The following property is used to prove the correctness of the
+definition of order on integers constructed from pairs of natural numbers *)
 
-Theorem plus_lt_repl_pair : forall n m n' m' u v,
+Theorem plus_lt_repl_pair : forall n m n' m' u v : N,
   n + u < m + v -> n + m' == n' + m -> n' + u < m' + v.
 Proof.
 intros n m n' m' u v H1 H2.
-symmetry in H2. assert (H3 : n' + m <= n + m'); [now le_equal |].
-assert (H4 : n + u + (n' + m) < m + v + (n + m')); [now apply plus_lt_le_mono |].
-stepl (n + (m + (n' + u))) in H4 by ring. stepr (n + (m + (m' + v))) in H4 by ring.
-now do 2 apply <- plus_lt_mono_l in H4.
+symmetry in H2. assert (H3 : n' + m <= n + m') by now le_equal.
+pose proof (plus_lt_le_mono _ _ _ _ H1 H3) as H4.
+rewrite (plus_shuffle2 n u), (plus_shuffle1 m v), (plus_comm m n) in H4.
+do 2 rewrite <- plus_assoc in H4. do 2 apply <- plus_lt_mono_l in H4.
+now rewrite (plus_comm n' u), (plus_comm m' v).
 Qed.
 
 (** Multiplication and order *)
@@ -123,6 +135,9 @@ Qed.
 
 Theorem times_cancel_l : forall n m p : N, p ~= 0 -> (p * n == p * m <-> n == m).
 Proof NZtimes_cancel_l.
+
+Theorem times_cancel_r : forall n m p : N, p ~= 0 -> (n * p == m * p <-> n == m).
+Proof NZtimes_cancel_r.
 
 Theorem times_le_mono_pos_l : forall n m p : N, 0 < p -> (n <= m <-> p * n <= p * m).
 Proof NZtimes_le_mono_pos_l.

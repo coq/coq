@@ -1,3 +1,15 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*                      Evgeny Makarov, INRIA, 2007                     *)
+(************************************************************************)
+
+(*i i*)
+
 Require Import NZAxioms.
 Require Import NZTimes.
 
@@ -216,7 +228,7 @@ assumption. false_hyp H1 H.
 intro H1; now apply H1.
 Qed.
 
-Theorem NZneq_lt_gt_cases : forall n m : NZ, n ~= m <-> n < m \/ n > m.
+Theorem NZlt_gt_cases : forall n m : NZ, n ~= m <-> n < m \/ n > m.
 Proof.
 intros n m; split.
 pose proof (NZlt_trichotomy n m); tauto.
@@ -231,9 +243,16 @@ Qed.
 
 (* The following theorem is cleary redundant, but helps not to
 remember whether one has to say le_gt_cases or lt_ge_cases *)
+
 Theorem NZlt_ge_cases : forall n m : NZ, n < m \/ n >= m.
 Proof.
 intros n m; destruct (NZle_gt_cases m n); try (now left); try (now right).
+Qed.
+
+Theorem NZle_ge_cases : forall n m : NZ, n <= m \/ n >= m.
+Proof.
+intros n m; destruct (NZle_gt_cases n m) as [H | H].
+now left. right; le_less.
 Qed.
 
 Theorem NZle_ngt : forall n m : NZ, n <= m <-> ~ n > m.

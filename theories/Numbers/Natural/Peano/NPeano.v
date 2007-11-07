@@ -1,4 +1,18 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*                      Evgeny Makarov, INRIA, 2007                     *)
+(************************************************************************)
+
+(*i i*)
+
 Require Import Arith.
+Require Import Min.
+Require Import Max.
 Require Import NMinus.
 
 Module NPeanoAxiomsMod <: NAxiomsSig.
@@ -14,14 +28,14 @@ Definition NZplus := plus.
 Definition NZminus := minus.
 Definition NZtimes := mult.
 
-Theorem NZE_equiv : equiv nat NZeq.
+Theorem NZeq_equiv : equiv nat NZeq.
 Proof (eq_equiv nat).
 
 Add Relation nat NZeq
- reflexivity proved by (proj1 NZE_equiv)
- symmetry proved by (proj2 (proj2 NZE_equiv))
- transitivity proved by (proj1 (proj2 NZE_equiv))
-as NZE_rel.
+ reflexivity proved by (proj1 NZeq_equiv)
+ symmetry proved by (proj2 (proj2 NZeq_equiv))
+ transitivity proved by (proj1 (proj2 NZeq_equiv))
+as NZeq_rel.
 
 (* If we say "Add Relation nat (@eq nat)" instead of "Add Relation nat NZeq"
 then the theorem generated for succ_wd below is forall x, succ x = succ x,
@@ -98,6 +112,8 @@ End NZAxiomsMod.
 
 Definition NZlt := lt.
 Definition NZle := le.
+Definition NZmin := min.
+Definition NZmax := max.
 
 Add Morphism NZlt with signature NZeq ==> NZeq ==> iff as NZlt_wd.
 Proof.
@@ -107,6 +123,16 @@ Qed.
 Add Morphism NZle with signature NZeq ==> NZeq ==> iff as NZle_wd.
 Proof.
 unfold NZeq; intros x1 x2 H1 y1 y2 H2; rewrite H1; now rewrite H2.
+Qed.
+
+Add Morphism NZmin with signature NZeq ==> NZeq ==> NZeq as NZmin_wd.
+Proof.
+congruence.
+Qed.
+
+Add Morphism NZmax with signature NZeq ==> NZeq ==> NZeq as NZmax_wd.
+Proof.
+congruence.
 Qed.
 
 Theorem NZle_lt_or_eq : forall n m : nat, n <= m <-> n < m \/ n = m.
@@ -125,6 +151,26 @@ Qed.
 Theorem NZlt_succ_le : forall n m : nat, n < S m <-> n <= m.
 Proof.
 intros n m; split; [apply lt_n_Sm_le | apply le_lt_n_Sm].
+Qed.
+
+Theorem NZmin_l : forall n m : nat, n <= m -> NZmin n m = n.
+Proof.
+exact min_l.
+Qed.
+
+Theorem NZmin_r : forall n m : nat, m <= n -> NZmin n m = m.
+Proof.
+exact min_r.
+Qed.
+
+Theorem NZmax_l : forall n m : nat, m <= n -> NZmax n m = n.
+Proof.
+exact max_l.
+Qed.
+
+Theorem NZmax_r : forall n m : nat, n <= m -> NZmax n m = m.
+Proof.
+exact max_r.
 Qed.
 
 End NZOrdAxiomsMod.

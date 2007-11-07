@@ -1,7 +1,19 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*                      Evgeny Makarov, INRIA, 2007                     *)
+(************************************************************************)
+
+(*i i*)
+
 Require Export NAxioms.
 Require Import NZTimesOrder. (* The last property functor on NZ, which subsumes all others *)
 
-Module NBasePropFunct (Export NAxiomsMod : NAxiomsSig).
+Module NBasePropFunct (Import NAxiomsMod : NAxiomsSig).
 
 Open Local Scope NatScope.
 
@@ -44,11 +56,14 @@ Proof NZsucc_inj_wd.
 Theorem succ_inj_wd_neg : forall n m : N, S n ~= S m <-> n ~= m.
 Proof NZsucc_inj_wd_neg.
 
-(* Decidability of equality was proved only in NZOrder, but since it
-does not mention order, we'll put it here *)
+(* Decidability and stability of equality was proved only in NZOrder, but
+since it does not mention order, we'll put it here *)
 
 Theorem eq_em : forall n m : N, n == m \/ n ~= m.
 Proof NZeq_em.
+
+Theorem eq_dne : forall n m : N, ~ ~ n == m <-> n == m.
+Proof NZeq_dne.
 
 (* Now we prove that the successor of a number is not zero by defining a
 function (by recursion) that maps 0 to false and the successor to true *)
@@ -75,7 +90,7 @@ Qed.
 
 Implicit Arguments if_zero [A].
 
-Theorem neq_succ_0 : forall n : N, ~ S n == 0.
+Theorem neq_succ_0 : forall n : N, S n ~= 0.
 Proof.
 intros n H.
 assert (true = false); [| discriminate].

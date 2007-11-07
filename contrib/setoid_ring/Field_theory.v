@@ -443,7 +443,7 @@ Add Morphism (pow_pos rmul) : pow_morph.
 intros x y H p;induction p as [p IH| p IH|];simpl;auto;ring[IH].
 Qed.
 
-Add Morphism (pow_N rI rmul) : pow_N_morph.
+Add Morphism (pow_N rI rmul) with signature req ==> (@eq N) ==> req as pow_N_morph.
 intros x y H [|p];simpl;auto. apply pow_morph;trivial.
 Qed.
 (*

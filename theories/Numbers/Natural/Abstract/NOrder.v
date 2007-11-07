@@ -1,3 +1,15 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*                      Evgeny Makarov, INRIA, 2007                     *)
+(************************************************************************)
+
+(*i i*)
+
 Require Export NTimes.
 
 Module NOrderPropFunct (Import NAxiomsMod : NAxiomsSig).
@@ -16,6 +28,14 @@ Theorem le_wd :
   forall n1 n2 : N, n1 == n2 -> forall m1 m2 : N, m1 == m2 -> (n1 <= m1 <-> n2 <= m2).
 Proof NZle_wd.
 
+Theorem min_wd :
+  forall n1 n2 : N, n1 == n2 -> forall m1 m2 : N, m1 == m2 -> min n1 m1 == min n2 m2.
+Proof NZmin_wd.
+
+Theorem max_wd :
+  forall n1 n2 : N, n1 == n2 -> forall m1 m2 : N, m1 == m2 -> max n1 m1 == max n2 m2.
+Proof NZmax_wd.
+
 Theorem le_lt_or_eq : forall n m : N, n <= m <-> n < m \/ n == m.
 Proof NZle_lt_or_eq.
 
@@ -24,6 +44,18 @@ Proof NZlt_irrefl.
 
 Theorem lt_succ_le : forall n m : N, n < S m <-> n <= m.
 Proof NZlt_succ_le.
+
+Theorem min_l : forall n m : N, n <= m -> min n m == n.
+Proof NZmin_l.
+
+Theorem min_r : forall n m : N, m <= n -> min n m == m.
+Proof NZmin_r.
+
+Theorem max_l : forall n m : N, m <= n -> max n m == n.
+Proof NZmax_l.
+
+Theorem max_r : forall n m : N, n <= m -> max n m == m.
+Proof NZmax_r.
 
 (* Renaming theorems from NZOrder.v *)
 
@@ -101,11 +133,17 @@ Proof NZle_antisymm.
 Theorem lt_trichotomy : forall n m : N,  n < m \/ n == m \/ m < n.
 Proof NZlt_trichotomy.
 
+Theorem lt_gt_cases : forall n m : N, n ~= m <-> n < m \/ n > m.
+Proof NZlt_gt_cases.
+
 Theorem le_gt_cases : forall n m : N, n <= m \/ n > m.
 Proof NZle_gt_cases.
 
 Theorem lt_ge_cases : forall n m : N, n < m \/ n >= m.
 Proof NZlt_ge_cases.
+
+Theorem le_ge_cases : forall n m : N, n <= m \/ n >= m.
+Proof NZle_ge_cases.
 
 Theorem le_ngt : forall n m : N, n <= m <-> ~ n > m.
 Proof NZle_ngt.

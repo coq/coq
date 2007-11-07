@@ -1,3 +1,15 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*                      Evgeny Makarov, INRIA, 2007                     *)
+(************************************************************************)
+
+(*i i*)
+
 Require Import ZTimesOrder.
 Require Import ZArith.
 
@@ -16,16 +28,16 @@ Definition NZplus := Zplus.
 Definition NZminus := Zminus.
 Definition NZtimes := Zmult.
 
-Theorem NZE_equiv : equiv Z NZeq.
+Theorem NZeq_equiv : equiv Z NZeq.
 Proof.
 exact (@eq_equiv Z).
 Qed.
 
 Add Relation Z NZeq
- reflexivity proved by (proj1 NZE_equiv)
- symmetry proved by (proj2 (proj2 NZE_equiv))
- transitivity proved by (proj1 (proj2 NZE_equiv))
-as NZE_rel.
+ reflexivity proved by (proj1 NZeq_equiv)
+ symmetry proved by (proj2 (proj2 NZeq_equiv))
+ transitivity proved by (proj1 (proj2 NZeq_equiv))
+as NZeq_rel.
 
 Add Morphism NZsucc with signature NZeq ==> NZeq as NZsucc_wd.
 Proof.
@@ -102,6 +114,8 @@ End NZAxiomsMod.
 
 Definition NZlt := Zlt.
 Definition NZle := Zle.
+Definition NZmin := Zmin.
+Definition NZmax := Zmax.
 
 Add Morphism NZlt with signature NZeq ==> NZeq ==> iff as NZlt_wd.
 Proof.
@@ -111,6 +125,16 @@ Qed.
 Add Morphism NZle with signature NZeq ==> NZeq ==> iff as NZle_wd.
 Proof.
 unfold NZeq. intros n1 n2 H1 m1 m2 H2; rewrite H1; now rewrite H2.
+Qed.
+
+Add Morphism NZmin with signature NZeq ==> NZeq ==> NZeq as NZmin_wd.
+Proof.
+congruence.
+Qed.
+
+Add Morphism NZmax with signature NZeq ==> NZeq ==> NZeq as NZmax_wd.
+Proof.
+congruence.
 Qed.
 
 Theorem NZle_lt_or_eq : forall n m : Z, n <= m <-> n < m \/ n = m.
@@ -128,6 +152,34 @@ Theorem NZlt_succ_le : forall n m : Z, n < (NZsucc m) <-> n <= m.
 Proof.
 intros; unfold NZsucc; rewrite <- Zsucc_succ'; split;
 [apply Zlt_succ_le | apply Zle_lt_succ].
+Qed.
+
+Theorem NZmin_l : forall n m : NZ, n <= m -> NZmin n m = n.
+Proof.
+unfold NZmin, Zmin, Zle; intros n m H.
+destruct (n ?= m); try reflexivity. now elim H.
+Qed.
+
+Theorem NZmin_r : forall n m : NZ, m <= n -> NZmin n m = m.
+Proof.
+unfold NZmin, Zmin, Zle; intros n m H.
+case_eq (n ?= m); intro H1; try reflexivity.
+now apply Zcompare_Eq_eq.
+apply <- Zcompare_Gt_Lt_antisym in H1. now elim H.
+Qed.
+
+Theorem NZmax_l : forall n m : NZ, m <= n -> NZmax n m = n.
+Proof.
+unfold NZmax, Zmax, Zle; intros n m H.
+case_eq (n ?= m); intro H1; try reflexivity.
+apply <- Zcompare_Gt_Lt_antisym in H1. now elim H.
+Qed.
+
+Theorem NZmax_r : forall n m : NZ, n <= m -> NZmax n m = m.
+Proof.
+unfold NZmax, Zmax, Zle; intros n m H.
+case_eq (n ?= m); intro H1.
+now apply Zcompare_Eq_eq. reflexivity. now elim H.
 Qed.
 
 End NZOrdAxiomsMod.
@@ -167,7 +219,7 @@ Module Export ZBinTimesOrderPropMod := ZTimesOrderPropFunct ZBinAxiomsMod.
 
 
 (*
-Theorem E_equiv_e : forall x y : Z, E x y <-> e x y.
+Theorem eq_equiv_e : forall x y : Z, E x y <-> e x y.
 Proof.
 intros x y; unfold E, e, Zeq_bool; split; intro H.
 rewrite H; now rewrite Zcompare_refl.

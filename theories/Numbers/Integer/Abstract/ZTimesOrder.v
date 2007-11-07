@@ -1,3 +1,15 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*                      Evgeny Makarov, INRIA, 2007                     *)
+(************************************************************************)
+
+(*i i*)
+
 Require Export ZPlusOrder.
 
 Module ZTimesOrderPropFunct (Import ZAxiomsMod : ZAxiomsSig).
@@ -36,6 +48,9 @@ Proof NZtimes_le_mono_nonpos_r.
 
 Theorem Ztimes_cancel_l : forall n m p : Z, p ~= 0 -> (p * n == p * m <-> n == m).
 Proof NZtimes_cancel_l.
+
+Theorem Ztimes_cancel_r : forall n m p : Z, p ~= 0 -> (n * p == m * p <-> n == m).
+Proof NZtimes_cancel_r.
 
 Theorem Ztimes_le_mono_pos_l : forall n m p : Z, 0 < p -> (n <= m <-> p * n <= p * m).
 Proof NZtimes_le_mono_pos_l.

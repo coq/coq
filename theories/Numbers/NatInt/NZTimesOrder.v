@@ -1,3 +1,15 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*                      Evgeny Makarov, INRIA, 2007                     *)
+(************************************************************************)
+
+(*i i*)
+
 Require Import NZAxioms.
 Require Import NZOrder.
 
@@ -239,18 +251,23 @@ Theorem NZtimes_cancel_l : forall n m p : NZ, p ~= 0 -> (p * n == p * m <-> n ==
 Proof.
 intros n m p H; split; intro H1.
 destruct (NZlt_trichotomy p 0) as [H2 | [H2 | H2]].
-apply -> NZeq_dne; intro H3. apply -> NZneq_lt_gt_cases in H3. destruct H3 as [H3 | H3].
+apply -> NZeq_dne; intro H3. apply -> NZlt_gt_cases in H3. destruct H3 as [H3 | H3].
 assert (H4 : p * m < p * n); [now apply -> NZtimes_lt_mono_neg_l |].
 rewrite H1 in H4; false_hyp H4 NZlt_irrefl.
 assert (H4 : p * n < p * m); [now apply -> NZtimes_lt_mono_neg_l |].
 rewrite H1 in H4; false_hyp H4 NZlt_irrefl.
 false_hyp H2 H.
-apply -> NZeq_dne; intro H3. apply -> NZneq_lt_gt_cases in H3. destruct H3 as [H3 | H3].
+apply -> NZeq_dne; intro H3. apply -> NZlt_gt_cases in H3. destruct H3 as [H3 | H3].
 assert (H4 : p * n < p * m); [now apply -> NZtimes_lt_mono_pos_l |].
 rewrite H1 in H4; false_hyp H4 NZlt_irrefl.
 assert (H4 : p * m < p * n); [now apply -> NZtimes_lt_mono_pos_l |].
 rewrite H1 in H4; false_hyp H4 NZlt_irrefl.
 now rewrite H1.
+Qed.
+
+Theorem NZtimes_cancel_r : forall n m p : NZ, p ~= 0 -> (n * p == m * p <-> n == m).
+Proof.
+intros n m p. rewrite (NZtimes_comm n p), (NZtimes_comm m p); apply NZtimes_cancel_l.
 Qed.
 
 Theorem NZtimes_le_mono_pos_l : forall n m p : NZ, 0 < p -> (n <= m <-> p * n <= p * m).

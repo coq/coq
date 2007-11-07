@@ -1,3 +1,15 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*                      Evgeny Makarov, INRIA, 2007                     *)
+(************************************************************************)
+
+(*i i*)
+
 Require Export ZAxioms.
 Require Import NZTimesOrder.
 
@@ -6,6 +18,12 @@ Module ZBasePropFunct (Export ZAxiomsMod : ZAxiomsSig).
 Open Local Scope IntScope.
 
 Module Export NZTimesOrderMod := NZTimesOrderPropFunct NZOrdAxiomsMod.
+
+Theorem Zsucc_wd : forall n1 n2 : Z, n1 == n2 -> S n1 == S n2.
+Proof NZsucc_wd.
+
+Theorem Zpred_wd : forall n1 n2 : Z, n1 == n2 -> P n1 == P n2.
+Proof NZpred_wd.
 
 Theorem Zpred_succ : forall n : Z, P (S n) == n.
 Proof NZpred_succ.
@@ -21,6 +39,15 @@ Proof NZsucc_inj_wd.
 
 Theorem Zsucc_inj_wd_neg : forall n m : Z, S n ~= S m <-> n ~= m.
 Proof NZsucc_inj_wd_neg.
+
+(* Decidability and stability of equality was proved only in NZOrder, but
+since it does not mention order, we'll put it here *)
+
+Theorem Zeq_em : forall n m : Z, n == m \/ n ~= m.
+Proof NZeq_em.
+
+Theorem Zeq_dne : forall n m : Z, ~ ~ n == m <-> n == m.
+Proof NZeq_dne.
 
 Theorem Zcentral_induction :
 forall A : Z -> Prop, predicate_wd Zeq A ->
