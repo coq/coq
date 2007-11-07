@@ -29,6 +29,9 @@ let weaker_noccur_between env x nvars t =
    if noccur_between x nvars t' then Some t'
    else None
 
+let is_constructor_head t =
+  isRel(fst(decompose_app t))
+
 (************************************************************************)
 (* Various well-formedness check for inductive declarations            *)
 
@@ -116,6 +119,7 @@ let is_unit constrsinfos =
    | _ -> false
 
 let rec infos_and_sort env t =
+  let t = whd_betadeltaiota env t in
   match kind_of_term t with
     | Prod (name,c1,c2) ->
         let (varj,_) = infer_type env c1 in
@@ -123,8 +127,8 @@ let rec infos_and_sort env t =
 	let logic = is_logic_type varj in
 	let small = Term.is_small varj.utj_type in
 	(logic,small) :: (infos_and_sort env1 c2)
-    | Cast (c,_,_) -> infos_and_sort env c
-    | _ -> []
+    | _ when is_constructor_head t -> []
+    | _ -> anomaly "infos_and_sort: not a positive constructor"
 
 let small_unit constrsinfos =
   let issmall = List.for_all is_small constrsinfos 
