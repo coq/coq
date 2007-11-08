@@ -67,8 +67,10 @@ intros n m; induct n.
 (* The next command does not work with the axiom plus_0_l from NPlusSig *)
 rewrite plus_0_l. intuition reflexivity.
 intros n IH. rewrite plus_succ_l.
-rewrite_false (S (n + m) == 0) neq_succ_0.
-rewrite_false (S n == 0) neq_succ_0. tauto.
+setoid_replace (S (n + m) == 0) with False using relation iff by
+ (apply -> neg_false; apply neq_succ_0).
+setoid_replace (S n == 0) with False using relation iff by
+ (apply -> neg_false; apply neq_succ_0). tauto.
 Qed.
 
 Theorem plus_eq_succ :

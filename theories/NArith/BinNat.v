@@ -99,8 +99,7 @@ Notation Nplus_reg_l := (fun n m p : N => proj1 (plus_cancel_l m p n)) (only par
 
 (** Properties of subtraction. *)
 
-Notation Nminus_N0_Nle :=
-  (fun n m : N => (conj (proj2 (le_minus_0 n m)) (proj1 (le_minus_0 n m)))).
+Notation Nminus_N0_Nle := minus_0_le (only parsing).
 Notation Nminus_0_r := minus_0_r (only parsing).
 Notation Nminus_succ_r := minus_succ_r (only parsing).
 
@@ -117,7 +116,7 @@ Notation Nmult_comm := times_comm (only parsing).
 Notation Nmult_assoc := times_assoc (only parsing).
 Notation Nmult_plus_distr_r := times_plus_distr_r (only parsing).
 Notation Nmult_reg_r :=
-  (fun (n m p : N) (H : p <> N0) => proj1 (times_cancel_r n m p H)).
+  (fun (n m p : N) (H : p <> N0) => proj1 (times_cancel_r n m p H)) (only parsing).
 
 (** Properties of comparison *)
 

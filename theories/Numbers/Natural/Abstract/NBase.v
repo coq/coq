@@ -163,7 +163,9 @@ Proof.
 cases n.
 rewrite pred_0. setoid_replace (0 == 1) with False using relation iff. tauto.
 split; intro H; [symmetry in H; false_hyp H neq_succ_0 | elim H].
-intro n. rewrite pred_succ. rewrite_false (S n == 0) neq_succ_0.
+intro n. rewrite pred_succ.
+setoid_replace (S n == 0) with False using relation iff by
+  (apply -> neg_false; apply neq_succ_0).
 rewrite succ_inj_wd. tauto.
 Qed.
 

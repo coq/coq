@@ -116,7 +116,10 @@ Qed.
 Theorem NZlt_le_succ : forall n m : NZ, n < m <-> S n <= m.
 Proof.
 intro n; NZinduct m n.
-rewrite_false (n < n) NZlt_irrefl. now rewrite_false (S n <= n) NZnle_succ_l.
+setoid_replace (n < n) with False using relation iff by
+  (apply -> neg_false; apply NZlt_irrefl).
+now setoid_replace (S n <= n) with False using relation iff by
+  (apply -> neg_false; apply NZnle_succ_l).
 intro m. rewrite NZlt_succ_le. rewrite NZle_succ_le_or_eq_succ.
 rewrite NZsucc_inj_wd. rewrite (NZle_lt_or_eq n m).
 rewrite or_cancel_r.
