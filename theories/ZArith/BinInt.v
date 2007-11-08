@@ -1125,8 +1125,8 @@ Definition Zabs_N (z:Z) :=
     | Zneg p => Npos p
   end.
 
-Definition Z_of_N (x:N) := match x with
-                             | N0 => Z0
-                             | Npos p => Zpos p
-                           end.
-
+Definition Z_of_N (x:N) := 
+  match x with
+    | N0 => Z0
+    | Npos p => Zpos p
+  end.

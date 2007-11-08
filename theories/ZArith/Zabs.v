@@ -207,3 +207,19 @@ Lemma Zsgn_spec : forall x:Z,
 Proof. 
  intros; unfold Zsgn, Zle, Zgt; destruct x; compute; intuition.
 Qed.
+
+Lemma Zsgn_pos : forall x:Z, Zsgn x = 1 <-> 0 < x.
+Proof.
+ destruct x; now intuition.
+Qed.
+
+Lemma Zsgn_neg : forall x:Z, Zsgn x = -1 <-> x < 0.
+Proof.
+ destruct x; now intuition.
+Qed.
+
+Lemma Zsgn_null : forall x:Z, Zsgn x = 0 <-> x = 0.
+Proof.
+ destruct x; now intuition.
+Qed.
+

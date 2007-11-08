@@ -861,15 +861,18 @@ Proof.
   intros; rewrite Zmult_mod, Zmod_mod, <- Zmult_mod; auto.
 Qed.
 
-Section EqualityModulo.
- (** For a specific number n, equality modulo n is hence a nice setoid
-   equivalence, compatible with the usual operations. But for the
-   moment, Coq setoids cannot be parametric, and all this nice framework
-   will vanish at the end of this section. *)
+(** For a specific number n, equality modulo n is hence a nice setoid
+   equivalence, compatible with the usual operations. Due to restrictions 
+   with Coq setoids, we cannot state this in a section, but it works
+   at least with a module. *)
 
- Variable n:Z.
+Module Type SomeNumber.
+ Parameter n:Z.
+End SomeNumber.
 
- Definition eqm a b := (a mod n = b mod n).
+Module EqualityModulo (M:SomeNumber).
+
+ Definition eqm a b := (a mod M.n = b mod M.n).
  Infix "==" := eqm (at level 70).
 
  Lemma eqm_refl : forall a, a == a.
@@ -907,7 +910,7 @@ Section EqualityModulo.
   rewrite H; red; auto.
  Qed.
 
- Lemma Zmod_eqm : forall a, a mod n == a.
+ Lemma Zmod_eqm : forall a, a mod M.n == a.
  Proof. 
   unfold eqm; intros; apply Zmod_mod.
  Qed.
@@ -1103,62 +1106,11 @@ Qed.
 Implicit Arguments Zdiv_eucl_extended.
 
 (** A third convention: Ocaml.
+   
+     See files ZOdiv_def.v and ZOdiv.v.
      
      Ocaml uses Round-Toward-Zero division: (-a)/b = a/(-b) = -(a/b).
      Hence (-a) mod b = - (a mod b)
            a mod (-b) = a mod b
      And: |r| < |b| and sgn(r) = sgn(a)  (notice the a here instead of b). 
- 
 *)
-
-Definition Odiv a b := 
-  Zdiv (Zabs a) (Zabs b) * Zsgn a * Zsgn b.
-
-Definition Omod a b := 
-  Zmod (Zabs a) (Zabs b) * Zsgn a.
-
-Lemma Odiv_Omod_eq : forall a b, b<>0 -> 
- a = b*(Odiv a b) + (Omod a b).
-Proof.
-  intros.
-  assert (Zabs b <> 0).
-   contradict H.
-   destruct b; simpl in *; auto with zarith; inversion H.
-  pattern a at 1; rewrite <- (Zabs_Zsgn a).
-  rewrite (Z_div_mod_eq_full (Zabs a) (Zabs b) H0).
-  unfold Odiv, Omod.
-  replace (b*(Zabs a/Zabs b * Zsgn a * Zsgn b)) with 
-    ((b*Zsgn b)*(Zabs a/Zabs b)*(Zsgn a)) by ring.
-  rewrite Zsgn_Zabs.
-  ring.
-Qed.
-
-Lemma Odiv_opp_l : forall a b, b<>0 -> Odiv (-a) b = - (Odiv a b).
-Proof.
-  intros; unfold Odiv; rewrite Zabs_Zopp, Zsgn_Zopp; ring.
-Qed.
-
-Lemma Odiv_opp_r : forall a b, b<>0 -> Odiv a (-b) = - (Odiv a b).
-Proof.
-  intros; unfold Odiv; rewrite Zabs_Zopp, Zsgn_Zopp; ring.
-Qed.
-
-Lemma Odiv_opp_opp : forall a b, b<>0 -> Odiv (-a) (-b) = Odiv a b.
-Proof.
-  intros; unfold Odiv; do 2 rewrite Zabs_Zopp, Zsgn_Zopp; ring.
-Qed.
-
-Lemma Omod_opp_l : forall a b, b<>0 -> Omod (-a) b = - (Omod a b).
-Proof.
-  intros; unfold Omod; rewrite Zabs_Zopp, Zsgn_Zopp; ring.
-Qed.
-
-Lemma Omod_opp_r : forall a b, b<>0 -> Omod a (-b) = Omod a b.
-Proof.
-  intros; unfold Omod; rewrite Zabs_Zopp; ring.
-Qed.
-
-Lemma Omod_opp_opp : forall a b, b<>0 -> Omod (-a) (-b) = - (Omod a b).
-Proof.
-  intros; unfold Omod; do 2 rewrite Zabs_Zopp; rewrite Zsgn_Zopp; ring.
-Qed.
