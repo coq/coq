@@ -50,10 +50,12 @@ Defined.
 
 the ML-like program for [induction_ltof1] is : 
 [[
-   let induction_ltof1 F a = indrec ((f a)+1) a 
-   where rec indrec = 
-        function 0    -> (function a -> error)
-               |(S m) -> (function a -> (F a (function y -> indrec y m)));;
+let induction_ltof1 f F a =
+  let rec indrec n k =
+    match n with
+    | O -> error
+    | S m -> F k (indrec m)
+  in indrec (f a + 1) a
 ]]
 
 the ML-like program for [induction_ltof2] is : 
