@@ -763,6 +763,7 @@ exception NotYetSolvable
 let rec invert_instance env evd (evk,_ as ev) subst rhs =
   let evdref = ref evd in
   let progress = ref false in
+  let has_evar_in_subst = List.exists (fun (_,(_,t)) -> isEvar t) subst in
   let project_variable env' t_in_env k t_in_env' =
     (* Evar/Var problem: unifiable iff variable projectable from ev subst *)
     try 
@@ -814,6 +815,13 @@ let rec invert_instance env evd (evk,_ as ev) subst rhs =
 	  evdref := evd;
 	  evar'')
     | _ ->
+        (* A small heuristic on imitation: don't mimic if evars remain in 
+           the substitution: it avoids e.g. to break the dependency in
+           a dependent problem derived from "refine (_ _)"  on goal "A" 
+           which results in unifying ?n[x:=?q[]] = A for 
+           ?p:forall x:?m.?n[x:=x] (the first "_") and ?q:?m (the second "_")
+         *)
+        if has_evar_in_subst then raise NotYetSolvable;
 	progress := true;
 	(* Evar/Rigid problem (or assimilated if not normal): we "imitate" *)
 	map_constr_with_full_binders (fun d (env,k) -> push_rel d env, k+1)
