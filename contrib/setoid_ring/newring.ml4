@@ -565,7 +565,8 @@ type cst_tac_spec =
 let interp_cst_tac env sigma rk kind (zero,one,add,mul,opp) cst_tac =
   match cst_tac with
       Some (CstTac t) -> Tacinterp.glob_tactic t
-    | Some (Closed lc) -> closed_term_ast (List.map Nametab.global lc)
+    | Some (Closed lc) ->
+        closed_term_ast (List.map Syntax_def.global_with_alias lc)
     | None ->
         (match rk, opp, kind with
             Abstract, None, _ ->
@@ -608,7 +609,8 @@ let interp_power env pow =
       let tac = 
         match tac with
         | CstTac t -> Tacinterp.glob_tactic t
-        | Closed lc -> closed_term_ast (List.map Nametab.global lc) in
+        | Closed lc ->
+            closed_term_ast (List.map Syntax_def.global_with_alias lc) in
       let spec = make_hyp env (ic spec) in
       (tac, lapp coq_Some [|carrier; spec|])
 

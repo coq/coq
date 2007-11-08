@@ -443,7 +443,7 @@ and axiomatize_body env r id d = match r with
   | IndRef i ->
       iter_all_constructors i
 	(fun _ c ->
-	   let rc = reference_of_constr c in
+	   let rc = global_of_constr c in
 	   try
 	     begin match tr_global env rc with
 	       | DeclFun (_, _, [], _) -> ()
@@ -460,7 +460,7 @@ and equations_for_case env id vars tv bv ci e br = match kind_of_term e with
       iter_all_constructors ci.ci_ind
 	(fun j cj ->
 	   try
-	     let cjr = reference_of_constr cj in
+	     let cjr = global_of_constr cj in
 	     begin match tr_global env cjr with
 	       | DeclFun (idc, _, l, _) ->
 		   let b = br.(j) in

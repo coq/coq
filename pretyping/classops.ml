@@ -370,8 +370,8 @@ let classes () = Bijint.dom !class_tab
 let coercions () = Gmap.rng !coercion_tab
 let inheritance_graph () = Gmap.to_list !inheritance_graph
 
-let coercion_of_qualid qid =
-  let ref = Nametab.global qid in
+let coercion_of_reference r =
+  let ref = Nametab.global r in
   if not (coercion_exists ref) then
     errorlabstrm "try_add_coercion" 
       (Nametab.pr_global_env Idset.empty ref ++ str" is not a coercion");
@@ -380,7 +380,7 @@ let coercion_of_qualid qid =
 module CoercionPrinting =
   struct
     type t = coe_typ
-    let encode = coercion_of_qualid
+    let encode = coercion_of_reference
     let subst = subst_coe_typ
     let printer x = pr_global_env Idset.empty x
     let key = Goptions.SecondaryTable ("Printing","Coercion")

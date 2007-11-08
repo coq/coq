@@ -236,7 +236,7 @@ let coq_constant s =
     (Coqlib.init_modules @ Coqlib.arith_modules) s;;
 
 let constant sl s =
-  constr_of_reference
+  constr_of_global
     (locate (make_qualid(Names.make_dirpath 
 			   (List.map id_of_string (List.rev sl)))
 	       (id_of_string s)));;
@@ -275,8 +275,8 @@ let acc_inv_id = function () -> (coq_constant "Acc_inv")
 let well_founded_ltof = function () ->  (Coqlib.coq_constant "" ["Arith";"Wf_nat"] "well_founded_ltof")
 let iter_ref = function () -> (try find_reference ["Recdef"] "iter" with Not_found -> error "module Recdef not loaded")
 let max_ref = function () -> (find_reference ["Recdef"] "max")
-let iter = function () -> (constr_of_reference (delayed_force iter_ref))
-let max_constr = function () -> (constr_of_reference (delayed_force max_ref))
+let iter = function () -> (constr_of_global (delayed_force iter_ref))
+let max_constr = function () -> (constr_of_global (delayed_force max_ref))
 
 let ltof_ref = function  () -> (find_reference ["Coq";"Arith";"Wf_nat"] "ltof")
 let coq_conj = function () -> find_reference ["Coq";"Init";"Logic"] "conj"
@@ -622,7 +622,7 @@ let rec introduce_all_values concl_tac is_mes acc_inv func context_fn
  
 	   
 let rec_leaf_terminate concl_tac is_mes acc_inv hrec (func:global_reference) eqs expr =
-  match find_call_occs 0 (mkVar (get_f (constr_of_reference func))) expr with
+  match find_call_occs 0 (mkVar (get_f (constr_of_global func))) expr with
   | context_fn, args ->
       observe_tac "introduce_all_values" 
 	(introduce_all_values concl_tac is_mes acc_inv func context_fn eqs  hrec args  [] [])
@@ -669,13 +669,13 @@ let proveterminate rec_arg_id is_mes acc_inv (hrec:identifier)
   proveterminate 
 
 let hyp_terminates nb_args func = 
-  let a_arrow_b = arg_type (constr_of_reference func) in 
+  let a_arrow_b = arg_type (constr_of_global func) in 
   let rev_args,b = decompose_prod_n nb_args a_arrow_b in 
   let left = 
     mkApp(delayed_force iter, 
 	  Array.of_list 
 	    (lift 5 a_arrow_b:: mkRel 3::
-	       constr_of_reference func::mkRel 1::
+	       constr_of_global func::mkRel 1::
 	       List.rev (list_map_i (fun i _ -> mkRel (6+i)) 0 rev_args)
 	    )
 	 )
@@ -798,7 +798,7 @@ let whole_start (concl_tac:tactic) nb_args is_mes func input_type relation rec_a
   begin 
     fun g -> 
       let ids = ids_of_named_context (pf_hyps g) in
-      let func_body = (def_of_const (constr_of_reference func)) in
+      let func_body = (def_of_const (constr_of_global func)) in
       let (f_name, _, body1) = destLambda func_body in
       let f_id =
 	match f_name with
@@ -864,7 +864,7 @@ let build_and_l l =
 	let c,tac,nb = f pl in 
 	mk_and p1 c, 
 	tclTHENS
-	  (apply (constr_of_reference conj_constr)) 
+	  (apply (constr_of_global conj_constr)) 
 	  [tclIDTAC;
 	   tac
 	  ],nb+1
@@ -1090,7 +1090,7 @@ let rec n_x_id ids n =
 let start_equation (f:global_reference) (term_f:global_reference) 
   (cont_tactic:identifier list -> tactic) g =
   let ids = pf_ids_of_hyps g in
-  let terminate_constr = constr_of_reference term_f in 
+  let terminate_constr = constr_of_global term_f in 
   let nargs = nb_prod (type_of_const terminate_constr) in 
   let x = n_x_id ids nargs in
   tclTHENLIST [
@@ -1136,7 +1136,7 @@ let rec introduce_all_values_eq cont_tac functional termine
              (mkApp(mkVar heq1, [|f_S(f_S(mkVar pmax))|]));
            simpl_iter (onHyp heq2);
            unfold_in_hyp [([1], evaluable_of_global_reference 
-                             (reference_of_constr functional))]
+                             (global_of_constr functional))]
              (([], heq2), Tacexpr.InHyp);
            tclTHENS
 	     (fun gls -> 
@@ -1260,7 +1260,7 @@ let rec prove_eq  (termine:constr) (f:constr)(functional:global_reference)
 	        fun g ->
 		  let ids = ids_of_named_context (pf_hyps g) in
 	          rec_leaf_eq termine f ids
-		    (constr_of_reference functional)
+		    (constr_of_global functional)
 		    eqs expr fn args g))
        | _ -> 
 	   (match find_call_occs 0 f expr with
@@ -1269,7 +1269,7 @@ let rec prove_eq  (termine:constr) (f:constr)(functional:global_reference)
 		  fun g ->
 		    let ids = ids_of_named_context (pf_hyps g) in
 		    observe_tac "rec_leaf_eq" (rec_leaf_eq  
-		      termine f ids (constr_of_reference functional)
+		      termine f ids (constr_of_global functional)
 		      eqs expr fn args) g));;
 
 let (com_eqn : identifier ->
@@ -1285,7 +1285,7 @@ let (com_eqn : identifier ->
 	| _ -> anomaly "terminate_lemma: not a constant"
     in 
     let (evmap, env) = Command.get_current_context() in
-    let f_constr = (constr_of_reference f_ref) in
+    let f_constr = (constr_of_global f_ref) in
     let equation_lemma_type = subst1 f_constr equation_lemma_type in
     (start_proof eq_name (Global, Proof Lemma)
        (Environ.named_context_val env) equation_lemma_type (fun _ _ -> ());
@@ -1293,12 +1293,12 @@ let (com_eqn : identifier ->
        (start_equation f_ref terminate_ref
 	  (fun  x ->
 	     prove_eq 
-	       (constr_of_reference terminate_ref)
+	       (constr_of_global terminate_ref)
 	       f_constr 
 	       functional_ref
 	       []
 	       (instantiate_lambda
-	       	  (def_of_const (constr_of_reference functional_ref))
+	       	  (def_of_const (constr_of_global functional_ref))
 	       	  (f_constr::List.map mkVar x)
 	       )
 	  )
@@ -1371,9 +1371,9 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
     if not !stop
     then
       let eq_ref = Nametab.locate (make_short_qualid equation_id ) in
-      let f_ref = destConst (constr_of_reference f_ref) 
-      and functional_ref = destConst (constr_of_reference functional_ref) 
-      and eq_ref = destConst (constr_of_reference eq_ref) in
+      let f_ref = destConst (constr_of_global f_ref) 
+      and functional_ref = destConst (constr_of_global functional_ref) 
+      and eq_ref = destConst (constr_of_global eq_ref) in
       generate_induction_principle f_ref tcc_lemma_constr
 	functional_ref eq_ref rec_arg_num rec_arg_type (nb_prod res) relation;
       if Options.is_verbose ()

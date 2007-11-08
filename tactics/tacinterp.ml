@@ -383,7 +383,7 @@ let loc_of_by_notation f = function
 let destIndRef = function IndRef ind -> ind | _ -> failwith "destIndRef"
 
 let intern_inductive_or_by_notation = function
-  | AN r -> Nametab.global_inductive r
+  | AN r -> Nametab.inductive_of_reference r
   | ByNotation (loc,ntn) ->
       destIndRef (Notation.interp_notation_as_global_reference loc
         (function IndRef ind -> true | _ -> false) ntn)
@@ -395,9 +395,9 @@ let intern_inductive ist = function
 let intern_global_reference ist = function
   | Ident (loc,id) when find_var id ist -> ArgVar (loc,id)
   | r -> 
-      let loc,qid = qualid_of_reference r in
-      try ArgArg (loc,locate_global qid)
-      with _ -> 
+      let loc,qid as lqid = qualid_of_reference r in
+      try ArgArg (loc,locate_global_with_alias lqid)
+      with Not_found -> 
 	error_global_not_found_loc loc qid
 
 let intern_tac_ref ist = function
@@ -420,8 +420,8 @@ let intern_constr_reference strict ist = function
   | Ident (_,id) when (not strict & find_hyp id ist) or find_ctxvar id ist ->
       RVar (dloc,id), None
   | r ->
-      let loc,qid = qualid_of_reference r in
-      RRef (loc,locate_global qid), if strict then None else Some (CRef r)
+      let loc,_ as lqid = qualid_of_reference r in
+      RRef (loc,locate_global_with_alias lqid), if strict then None else Some (CRef r)
 
 let intern_reference strict ist r =
   (try Reference (intern_tac_ref ist r)
@@ -512,8 +512,8 @@ let short_name = function
   | _ -> None
 
 let interp_global_reference r =
-  let loc,qid = qualid_of_reference r in
-  try locate_global qid
+  let loc,qid as lqid = qualid_of_reference r in
+  try locate_global_with_alias lqid
   with Not_found ->
   match r with 
   | Ident (loc,id) when not !strict_check -> VarRef id

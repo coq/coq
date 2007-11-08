@@ -31,8 +31,8 @@ let dl = dummy_loc
 (****************************************************************************)
 (* Tools for printing of Cases                                              *)
 
-let encode_inductive qid =
-  let indsp = global_inductive qid in
+let encode_inductive r =
+  let indsp = inductive_of_reference r in
   let constr_lengths = mis_constr_nargs indsp in
   (indsp,constr_lengths)
 
@@ -107,13 +107,6 @@ module PrintingCasesLet =
 
 module PrintingIf  = Goptions.MakeRefTable(PrintingCasesIf)
 module PrintingLet = Goptions.MakeRefTable(PrintingCasesLet)
-
-let force_let ci =
-  let indsp = ci.ci_ind in
-  let lc = mis_constr_nargs indsp in PrintingLet.active (indsp,lc)
-let force_if ci =
-  let indsp = ci.ci_ind in
-  let lc = mis_constr_nargs indsp in PrintingIf.active (indsp,lc)
 
 (* Options for printing or not wildcard and synthetisable types *)
 

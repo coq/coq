@@ -79,14 +79,24 @@ let rec set_loc loc _ a =
 let search_syntactic_definition loc kn =
   set_loc loc () (KNmap.find kn !syntax_table)
 
-exception BoundToASyntacticDefThatIsNotARef
-
-let locate_global qid =
+let locate_global_with_alias (loc,qid) =
   match Nametab.extended_locate qid with
   | TrueGlobal ref -> ref
   | SyntacticDef kn -> 
   match search_syntactic_definition dummy_loc kn with
   | Rawterm.RRef (_,ref) -> ref
   | _ -> 
-      errorlabstrm "" (pr_qualid qid ++ 
+      user_err_loc (loc,"",pr_qualid qid ++ 
         str " is bound to a notation that does not denote a reference")
+
+let inductive_of_reference_with_alias r =
+  match locate_global_with_alias (qualid_of_reference r) with
+  | IndRef ind -> ind
+  | ref ->
+      user_err_loc (loc_of_reference r,"global_inductive",
+        pr_reference r ++ spc () ++ str "is not an inductive type")
+
+let global_with_alias r =
+  let (loc,qid as lqid) = qualid_of_reference r in
+  try locate_global_with_alias lqid
+  with Not_found -> Nametab.error_global_not_found_loc loc qid

@@ -35,6 +35,7 @@ open Decl_kinds
 open Topconstr
 open Pretyping
 open Redexpr
+open Syntax_def
 
 (* Pcoq hooks *)
 
@@ -58,7 +59,7 @@ let set_pcoq_hook f = pcoq := Some f
 let cl_of_qualid = function
   | FunClass -> Classops.CL_FUN
   | SortClass -> Classops.CL_SORT
-  | RefClass r -> Class.class_of_global (Nametab.global r)
+  | RefClass r -> Class.class_of_global (global_with_alias r)
 
 (*******************)
 (* "Show" commands *)
@@ -284,8 +285,8 @@ let vernac_bind_scope sc cll =
 
 let vernac_open_close_scope = Notation.open_close_scope
 
-let vernac_arguments_scope local qid scl =
-  Notation.declare_arguments_scope local (global qid) scl
+let vernac_arguments_scope local r scl =
+  Notation.declare_arguments_scope local (global_with_alias r) scl
 
 let vernac_infix = Metasyntax.add_infix
 
@@ -506,24 +507,13 @@ let vernac_require import _ qidl =
   let qidl = List.map qualid_of_reference qidl in
   Library.require_library qidl import
 
-let vernac_canonical locqid =
-  Recordops.declare_canonical_structure (Nametab.global locqid)
-
-let locate_reference ref =
-  let (loc,qid) = qualid_of_reference ref in
-  try match Nametab.extended_locate qid with
-    | TrueGlobal ref -> ref
-    | SyntacticDef kn -> 
-	match Syntax_def.search_syntactic_definition loc kn with
-	  | Rawterm.RRef (_,ref) -> ref
-	  | _ -> raise Not_found
-  with Not_found ->
-    error_global_not_found_loc loc qid
+let vernac_canonical r =
+  Recordops.declare_canonical_structure (global_with_alias r)
 
 let vernac_coercion stre ref qids qidt =
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
-  let ref' = locate_reference ref in
+  let ref' = global_with_alias ref in
   Class.try_add_new_coercion_with_target ref' stre source target;
   if_verbose message ((string_of_reference ref) ^ " is now a coercion")
 
@@ -666,11 +656,11 @@ let vernac_hints = Auto.add_hints
 
 let vernac_syntactic_definition = Command.syntax_definition 
 
-let vernac_declare_implicits local locqid = function
+let vernac_declare_implicits local r = function
   | Some imps ->
-      Impargs.declare_manual_implicits local (Nametab.global locqid) imps
+      Impargs.declare_manual_implicits local (global_with_alias r) imps
   | None -> 
-      Impargs.declare_implicits local (Nametab.global locqid)
+      Impargs.declare_implicits local (global_with_alias r)
 
 let vernac_reserve idl c =
   let t = Constrintern.interp_type Evd.empty (Global.env()) c in
@@ -861,8 +851,8 @@ let _ =
       optread=(fun () -> get_debug () <> Tactic_debug.DebugOff);
       optwrite=vernac_debug }
 
-let vernac_set_opacity opaq locqid =
-  match Nametab.global locqid with
+let vernac_set_opacity opaq r =
+  match global_with_alias r with
     | ConstRef sp ->
 	if opaq then set_opaque_const sp
 	else set_transparent_const sp
@@ -962,7 +952,7 @@ let vernac_print = function
   | PrintCanonicalConversions -> ppnl (Prettyp.print_canonical_projections ())
   | PrintUniverses None -> pp (Univ.pr_universes (Global.universes ()))
   | PrintUniverses (Some s) -> dump_universes s
-  | PrintHint qid -> Auto.print_hint_ref (Nametab.global qid)
+  | PrintHint r -> Auto.print_hint_ref (global_with_alias r)
   | PrintHintGoal -> Auto.print_applicable_hint ()
   | PrintHintDbName s -> Auto.print_hint_db_by_name s
   | PrintRewriteHintDbName s -> Autorewrite.print_rewrite_hintdb s
@@ -977,17 +967,14 @@ let vernac_print = function
   | PrintAbout qid -> msgnl (print_about qid)
   | PrintImplicit qid -> msg (print_impargs qid)
 (*spiwack: prints all the axioms and section variables used by a term *)
-  | PrintNeededAssumptions qid ->
-      let cstr =  constr_of_reference (global qid)
-      in
-      let nassumptions = Environ.needed_assumptions cstr
-                                          (Global.env ())
-      in
+  | PrintNeededAssumptions r ->
+      let cstr = constr_of_global (global_with_alias r) in
+      let nassumptions = Environ.needed_assumptions cstr (Global.env ()) in
       msg 
       (try
         Printer.pr_assumptionset (Global.env ()) nassumptions
       with Not_found ->
-        pr_reference qid ++ str " is closed under the global context")
+        pr_reference r ++ str " is closed under the global context")
 
 let global_module r =
   let (loc,qid) = qualid_of_reference r in
@@ -1003,7 +990,7 @@ let interp_search_restriction = function
 open Search
 
 let interp_search_about_item = function
-  | SearchRef qid -> GlobSearchRef (Nametab.global qid)
+  | SearchRef r -> GlobSearchRef (global_with_alias r)
   | SearchString s -> GlobSearchString s
 
 let vernac_search s r =
@@ -1016,8 +1003,8 @@ let vernac_search s r =
   | SearchRewrite c ->
       let _,pat = interp_constrpattern Evd.empty (Global.env()) c in
       Search.search_rewrite pat r
-  | SearchHead locqid ->
-      Search.search_by_head (Nametab.global locqid) r
+  | SearchHead ref ->
+      Search.search_by_head (global_with_alias ref) r
   | SearchAbout sl ->
       Search.search_about (List.map interp_search_about_item sl) r
 

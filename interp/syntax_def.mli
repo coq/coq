@@ -13,6 +13,7 @@ open Util
 open Names
 open Topconstr
 open Rawterm
+open Libnames
 (*i*)
 
 (* Syntactic definitions. *)
@@ -23,10 +24,16 @@ val declare_syntactic_definition : bool -> identifier -> bool -> aconstr
 val search_syntactic_definition : loc -> kernel_name -> rawconstr
 
 
-(* [locate_global] locates global reference possibly following a chain of 
-   syntactic aliases; raise Not_found if not bound in the global env; 
-   raise an error if bound to a syntactic def that does not denote a
-   reference *)
+(* [locate_global_with_alias] locates global reference possibly following
+   a notation if this notation has a role of aliasing; raise Not_found
+   if not bound in the global env; raise an error if bound to a
+   syntactic def that does not denote a reference *)
 
-val locate_global : Libnames.qualid -> Libnames.global_reference
+val locate_global_with_alias : qualid located -> global_reference
+
+(* Locate a reference taking into account possible "alias" notations *)
+val global_with_alias : reference -> global_reference
+
+(* The same for inductive types *)
+val inductive_of_reference_with_alias : reference -> inductive
 

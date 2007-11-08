@@ -49,8 +49,10 @@ let constr_of_global = function
   | ConstructRef sp -> mkConstruct sp
   | IndRef sp -> mkInd sp
 
+(*
 let constr_of_reference = constr_of_global
 let reference_of_constr = global_of_constr
+*)
 
 module RefOrdered =
   struct

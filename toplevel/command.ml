@@ -853,7 +853,7 @@ requested
        let l1,l2 = split_scheme q in
     ( match t with
       | InductionScheme (x,y,z) ->
-             let ind = mkInd (Nametab.global_inductive y) in
+             let ind = mkInd (Nametab.inductive_of_reference y) in
              let sort_of_ind = family_of_sort (Typing.sort_of env Evd.empty ind)
 in
              let z' = family_of_sort (interp_sort z) in
@@ -892,7 +892,7 @@ let build_induction_scheme lnamedepindsort =
   let lrecspec =
     List.map
       (fun (_,dep,indid,sort) ->
-        let ind = Nametab.global_inductive indid in
+        let ind = Nametab.inductive_of_reference indid in
         let (mib,mip) = Global.lookup_inductive ind in
          (ind,mib,mip,dep,interp_elimination_sort sort)) 
       lnamedepindsort
@@ -921,7 +921,7 @@ tried to declare different schemes at once *)
     else (
       if ischeme <> [] then build_induction_scheme ischeme;
       List.iter ( fun indname -> 
-        let ind = Nametab.global_inductive indname
+        let ind = Nametab.inductive_of_reference indname
         in declare_eq_scheme (fst ind);
            make_eq_decidability ind 
       ) escheme

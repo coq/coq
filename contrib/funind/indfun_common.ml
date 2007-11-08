@@ -131,7 +131,7 @@ let coq_constant s =
     (Coqlib.init_modules @ Coqlib.arith_modules) s;;
 
 let constant sl s =
-  constr_of_reference
+  constr_of_global
     (Nametab.locate (make_qualid(Names.make_dirpath 
 			   (List.map id_of_string (List.rev sl)))
 	       (id_of_string s)));;

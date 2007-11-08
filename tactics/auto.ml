@@ -412,8 +412,8 @@ let add_hints local dbnames0 h =
   | HintsImmediate lhints ->
       add_trivials env sigma (List.map f lhints) local dbnames
   | HintsUnfold lhints ->
-      let f qid =
-	let r = Nametab.global qid in
+      let f r =
+	let r = Syntax_def.locate_global_with_alias (qualid_of_reference r) in
         let r' = match r with
          | ConstRef c -> EvalConstRef c
          | VarRef c -> EvalVarRef c
@@ -427,7 +427,7 @@ let add_hints local dbnames0 h =
   | HintsConstructors lqid ->
       let add_one qid =
         let env = Global.env() and sigma = Evd.empty in
-        let isp = global_inductive qid in
+        let isp = inductive_of_reference qid in
         let consnames = (snd (Global.lookup_inductive isp)).mind_consnames in
         let lcons = list_tabulate
           (fun i -> mkConstruct (isp,i+1)) (Array.length consnames) in
@@ -893,8 +893,8 @@ let superauto n to_add argl  =
 
 let default_superauto g = superauto !default_search_depth [] [] g
 
-let interp_to_add gl locqid =
-  let r = Nametab.global locqid in
+let interp_to_add gl r =
+  let r = Syntax_def.locate_global_with_alias (qualid_of_reference r) in
   let id = id_of_global r in
   (next_ident_away id (pf_ids_of_hyps gl), constr_of_global r)
 

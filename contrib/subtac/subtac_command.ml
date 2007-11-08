@@ -287,7 +287,7 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
   let fix_def =
     match measure_fn with
 	None ->
-	  mkApp (constr_of_reference (Lazy.force fix_sub_ref), 
+	  mkApp (constr_of_global (Lazy.force fix_sub_ref), 
 		 [| argtyp ;
 		    wf_rel ;
 		    make_existential dummy_loc ~opaque:false env isevars wf_proof ;
@@ -295,7 +295,7 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
 		    lift lift_cst intern_body_lam |])
       | Some f ->
 	  lift (succ after_length) 
-	    (mkApp (constr_of_reference (Lazy.force fix_measure_sub_ref), 
+	    (mkApp (constr_of_global (Lazy.force fix_measure_sub_ref), 
 		    [| argtyp ; 
 		       f ;
 		       lift lift_cst prop ;

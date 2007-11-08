@@ -28,6 +28,7 @@ open Command
 open Pfedit
 open Refiner
 open Tacmach
+open Syntax_def
 
 (* Coq interface to the Whelp query engine developed at 
    the University of Bologna *)
@@ -192,13 +193,6 @@ let whelp_locate s =
 let whelp_elim ind = 
   send_whelp "elim" (make_string uri_of_global (IndRef ind))
 
-let locate_inductive r =
-  let (loc,qid) = qualid_of_reference r in
-  try match Syntax_def.locate_global qid with
-    | IndRef ind -> ind
-    | _ -> user_err_loc (loc,"",str "Inductive type expected")
-  with Not_found -> error_global_not_found_loc loc qid
-
 let on_goal f =
   let gls = nth_goal_of_pftreestate 1 (get_pftreestate ()) in
   f (it_mkNamedProd_or_LetIn (pf_concl gls) (pf_hyps gls))
@@ -221,7 +215,7 @@ END
 VERNAC COMMAND EXTEND Whelp
 | [ "Whelp" "Locate" string(s) ] -> [ whelp_locate s ] 
 | [ "Whelp" "Locate" preident(s) ] -> [ whelp_locate s ] 
-| [ "Whelp" "Elim" global(r) ] -> [ whelp_elim (locate_inductive r) ] 
+| [ "Whelp" "Elim" global(r) ] -> [ whelp_elim (inductive_of_reference_with_alias r) ] 
 | [ "Whelp" whelp_constr_request(req) constr(c) ] -> [ whelp_constr_expr req c]
 END
 
