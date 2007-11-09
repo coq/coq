@@ -18,7 +18,7 @@ open Rawterm
 open Genarg
 open Topconstr
 
-let compute = Cbv all_flags
+let all_with delta = make_red_flag [FBeta;FIota;FZeta;delta]
 
 let tactic_kw = [ "->"; "<-" ]
 let _ = List.iter (fun s -> Lexer.add_token("",s)) tactic_kw
@@ -212,30 +212,29 @@ GEXTEND Gram
   ;
   red_flag:
     [ [ IDENT "beta" -> FBeta
-      | IDENT "delta" -> FDeltaBut []
       | IDENT "iota" -> FIota
       | IDENT "zeta" -> FZeta
-      | IDENT "delta"; "["; idl = LIST1 smart_global; "]" -> FConst idl
-      | IDENT "delta"; "-"; "["; idl = LIST1 smart_global; "]" -> FDeltaBut idl
+      | IDENT "delta"; d = delta_flag -> d
     ] ]
   ;
-
   delta_flag:
-    [ [ IDENT "delta"; "["; idl = LIST1 smart_global; "]" -> FConst idl
-      | IDENT "delta"; "-"; "["; idl = LIST1 smart_global; "]" -> FDeltaBut idl
+    [ [ "-"; "["; idl = LIST1 smart_global; "]" -> FDeltaBut idl
+      | "["; idl = LIST1 smart_global; "]" -> FConst idl
+      | -> FDeltaBut []
     ] ]
   ;
-
+  strategy_flag:
+    [ [ s = LIST1 red_flag -> make_red_flag s
+      | d = delta_flag -> all_with d
+    ] ]
+  ;
   red_tactic:
     [ [ IDENT "red" -> Red false
       | IDENT "hnf" -> Hnf
       | IDENT "simpl"; po = OPT pattern_occ -> Simpl po
-      | IDENT "cbv"; s = LIST1 red_flag -> Cbv (make_red_flag s)
-      | IDENT "lazy"; s = LIST1 red_flag -> Lazy (make_red_flag s)
-      | IDENT "compute" -> compute
-      | IDENT "compute"; delta = delta_flag -> 
-	  let s = [FBeta;FIota;FZeta;delta] in 
-	  Cbv (make_red_flag s)
+      | IDENT "cbv"; s = strategy_flag -> Cbv s
+      | IDENT "lazy"; s = strategy_flag -> Lazy s
+      | IDENT "compute"; delta = delta_flag -> Cbv (all_with delta)
       | IDENT "vm_compute" -> CbvVm
       | IDENT "unfold"; ul = LIST1 unfold_occ SEP "," -> Unfold ul
       | IDENT "fold"; cl = LIST1 constr -> Fold cl
@@ -246,9 +245,9 @@ GEXTEND Gram
     [ [ IDENT "red" -> Red false
       | IDENT "hnf" -> Hnf
       | IDENT "simpl"; po = OPT pattern_occ -> Simpl po
-      | IDENT "cbv"; s = LIST1 red_flag -> Cbv (make_red_flag s)
-      | IDENT "lazy"; s = LIST1 red_flag -> Lazy (make_red_flag s)
-      | IDENT "compute" -> compute
+      | IDENT "cbv"; s = strategy_flag -> Cbv s
+      | IDENT "lazy"; s = strategy_flag -> Lazy s
+      | IDENT "compute"; delta = delta_flag -> Cbv (all_with delta)
       | IDENT "vm_compute" -> CbvVm
       | IDENT "unfold"; ul = LIST1 unfold_occ -> Unfold ul
       | IDENT "fold"; cl = LIST1 constr -> Fold cl

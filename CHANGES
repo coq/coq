@@ -18,6 +18,11 @@ Commands
   automatically computed (e.g. Scheme Induction for nat Sort Set).
 - Source of universe inconsistencies now printed when option 
   "Set Printing Universes" is activated,
+- Support for option "[id1 ... idn]", and "-[id1 ... idn]", for the "compute" 
+  reduction strategy, respectively meaning reduce only, or everything
+  but, the constants id1 ... idn. "lazy" alone or followed by
+  "[id1 ... idn]", and "-[id1 ... idn]" also supported, meaning apply
+  all of beta-iota-zeta-delta, possibly restricting delta.
 
 Libraries
 
