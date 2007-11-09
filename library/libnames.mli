@@ -34,11 +34,9 @@ val constr_of_global : global_reference -> constr
    raise [Not_found] if not a global reference *)
 val global_of_constr : constr -> global_reference
 
-(*
 (* Obsolete synonyms for constr_of_global and global_of_constr *)
 val constr_of_reference : global_reference -> constr
 val reference_of_constr : constr -> global_reference
-*)
 
 module Refset : Set.S with type elt = global_reference 
 module Refmap : Map.S with type key = global_reference
