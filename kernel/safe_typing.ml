@@ -109,7 +109,7 @@ let env_of_senv = env_of_safe_env
 (* terms which are closed under the environnement env, i.e
    terms which only depends on constant who are themselves closed *)
 let closed env term = 
-  AssumptionSet.is_empty (needed_assumptions env term)
+  AssumptionSet.is_empty (assumptions env term)
 
 (* the set of safe terms in an environement any recursive set of
    terms who are known not to prove inconsistent statement. It should

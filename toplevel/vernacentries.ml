@@ -967,9 +967,9 @@ let vernac_print = function
   | PrintAbout qid -> msgnl (print_about qid)
   | PrintImplicit qid -> msg (print_impargs qid)
 (*spiwack: prints all the axioms and section variables used by a term *)
-  | PrintNeededAssumptions r ->
+  | PrintAssumptions r ->
       let cstr = constr_of_global (global_with_alias r) in
-      let nassumptions = Environ.needed_assumptions cstr (Global.env ()) in
+      let nassumptions = Environ.assumptions cstr (Global.env ()) in
       msg 
       (try
         Printer.pr_assumptionset (Global.env ()) nassumptions
