@@ -922,9 +922,11 @@ Module EqualityModulo (M:SomeNumber).
 
 End EqualityModulo.
 
-Lemma Zdiv_Zdiv : forall a b c, b>0 -> c>0 -> (a/b)/c = a/(b*c).
+Lemma Zdiv_Zdiv : forall a b c, 0<=b -> 0<=c -> (a/b)/c = a/(b*c).
 Proof.
-  intros a b c H H0.
+  intros a b c Hb Hc.
+  destruct (Zle_lt_or_eq _ _ Hb); [ | subst; rewrite Zdiv_0_r, Zdiv_0_r, Zdiv_0_l; auto].
+  destruct (Zle_lt_or_eq _ _ Hc); [ | subst; rewrite Zmult_0_r, Zdiv_0_r, Zdiv_0_r; auto].
   pattern a at 2;rewrite (Z_div_mod_eq_full a b);auto with zarith.
   pattern (a/b) at 2;rewrite (Z_div_mod_eq_full (a/b) c);auto with zarith.
   replace (b * (c * (a / b / c) + (a / b) mod c) + a mod b) with
@@ -954,9 +956,11 @@ Qed.
 (** A last inequality: *)
 
 Theorem Zdiv_mult_le:
- forall a b c, 0 <= a -> 0 < b -> 0 <= c -> c*(a/b) <= (c*a)/b.
+ forall a b c, 0<=a -> 0<=b -> 0<=c -> c*(a/b) <= (c*a)/b.
 Proof.
   intros a b c H1 H2 H3.
+  destruct (Zle_lt_or_eq _ _ H2); 
+   [ | subst; rewrite Zdiv_0_r, Zdiv_0_r, Zmult_0_r; auto].
   case (Z_mod_lt a b); auto with zarith; intros Hu1 Hu2.
   case (Z_mod_lt c b); auto with zarith; intros Hv1 Hv2.
   apply Zmult_le_reg_r with b; auto with zarith.
@@ -974,6 +978,20 @@ Proof.
   pattern (c * a) at 1; rewrite (Z_div_mod_eq (c * a) b); try ring; 
     auto with zarith.
   pattern a at 1; rewrite (Z_div_mod_eq a b); try ring; auto with zarith.
+Qed.
+
+(** Zmod is related to divisibility (see more in Znumtheory) *)
+
+Lemma Zmod_divides : forall a b, b<>0 -> 
+ (a mod b = 0 <-> exists c, a = b*c).
+Proof.
+ split; intros.
+ exists (a/b).
+ pattern a at 1; rewrite (Z_div_mod_eq_full a b); auto with zarith.
+ destruct H0 as [c Hc].
+ symmetry.
+ apply Zmod_unique_full with c; auto with zarith.
+ red; omega with *.
 Qed.
 
 (** * Compatibility *)
