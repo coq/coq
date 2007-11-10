@@ -578,6 +578,13 @@ Proof.
    auto with zarith.
 Qed.
 
+Theorem ZOdiv_sgn: forall a b, 
+  0 <= Zsgn (a/b) * Zsgn a * Zsgn b.
+Proof.
+  destruct a as [ |a|a]; destruct b as [ |b|b]; simpl; auto with zarith; 
+  unfold ZOdiv; simpl; destruct Pdiv_eucl; simpl; destruct n; simpl; auto with zarith.
+Qed.
+
 (** * Relations between usual operations and Zmod and Zdiv *)
 
 (** First, a result that used to be always valid with Zdiv, 

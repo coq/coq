@@ -604,6 +604,14 @@ Proof.
    auto with zarith.
 Qed.
 
+Theorem Zdiv_sgn: forall a b, 
+  0 <= Zsgn (a/b) * Zsgn a * Zsgn b.
+Proof.
+  destruct a as [ |a|a]; destruct b as [ |b|b]; simpl; auto with zarith; 
+  generalize (Z_div_pos (Zpos a) (Zpos b)); unfold Zdiv, Zdiv_eucl; 
+  destruct Zdiv_eucl_POS as (q,r); destruct r; omega with *.
+Qed.
+
 (** * Relations between usual operations and Zmod and Zdiv *)
 
 Lemma Z_mod_plus_full : forall a b c:Z, (a + b * c) mod c = a mod c.
