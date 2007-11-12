@@ -12,3 +12,5 @@
 
 
 type goal
+
+val build : ?name:string -> hyps:Environ.named_context_val -> concl:Term.constr -> goal

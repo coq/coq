@@ -10,5 +10,22 @@
 
 (* This module implements the abstract interface to goals *)
 
+(* type of the goals *)
+type goal = {
+  content : Evd.evar_info; (* logical information hyps |- concl and alike *)
+  name : string option     (* optional name of the goal to be displayed *)
+}
 
-type goal = Evd.evar_info
+(* access primitive *)
+let hyps gl = gl.content.hyps
+let concl gl = gl.content.concl
+let name gl = gl.name
+
+let build ?name ~hyps ~concl =
+  { content = Evd.make_evar hyps concl ;
+    name = name
+  }
+
+(* arnaud: à commenter bien sûr *)
+let refine defs env check_type step gl =
+  (* Builds an environment containing (hyps gl) *)
