@@ -29,16 +29,22 @@ type evar = unit (* arnaud: à compléter en temps utile aussi *)
 
 
 
-(* Encoding the type
+(* We define a type of stored mutations of subproof pointers. 
+   We actually define it as a pair of a [pointer] and a [subproof].
+   The intended use of a stored mutation is to set the [pointer]
+   content as being the [subproof].
+   Stored mutations are used in the undo mechanism. The undo stacks 
+   stores basically series of such mutations to execute in case an
+   undo is required. *)
+
+(** Encoding the type
      exists 'b 'c.{ sp : ('b,'c) subproof ; pt : ('b,'c) Subproof.pointer }
-   trick from Benjaming Pierce and Daniel Bünzli 
+   trick from Benjamin Pierce and Daniel Bünzli 
    
 (cf: http://caml.inria.fr/pub/ml-archives/caml-list/2004/01/52732867110697f55650778d883ae5e9.en.html ) 
 
-*)
-
+**)
 type ('b,+'c) mutation = { sp : ('b,'c) subproof ; pt : ('b,'c) Subproof.pointer }
-(* arnaud:    constraint 'c = [< `Open | `Resolved | `Subproof ] *)
 type 't mutation_scope = { bind_mutation:'b 'c.('b,'c) mutation -> 't }
 type packed_mutation = { open_mutation : 't. 't mutation_scope -> 't }
 
@@ -51,6 +57,14 @@ let pack_mutation mutn =
 let unpack_mutation pck scp =
   pck.open_mutation scp
 
+(* execute a packed mutation with its expected behavior: sets  the content
+   of the pointer [pt] as [sp] *)
+let do_packed_mutation =
+  let scoped_mutate = 
+    { bind_mutation = fun mtn -> Subproof.mutate mtn.pt mtn.sp }
+  in
+  fun pck ->
+    unpack_mutation pck scoped_mutate
 
 
 
@@ -81,9 +95,9 @@ and 'a undo_action =
 type 'a _action = 'a proof -> 'a undo_action transaction -> unit
 type 'a action = 'a _action Sequence.sequence
 
-let compose a b = Sequence.append a b
+let primitive = Sequence.element
+let compose = Sequence.append
 
-let null_action = Sequence.element ( fun _ _ -> () )
 
 
 (*** The following functions give more abstract methods to access
@@ -125,13 +139,6 @@ let unsafe_unfocus pr =
      proof system, they may be unsafe if not used carefully. There is
      currently no reason to export them in the .mli ***)
 
-let do_packed_mutation =
-  let scoped_mutate = 
-    { bind_mutation = fun mtn -> Subproof.mutate mtn.pt mtn.sp }
-  in
-  fun pck ->
-    unpack_mutation pck scoped_mutate
-
 
 (* This function interpetes (and execute) a single [undo_action] *)
 let execute_undo_action = function
@@ -163,34 +170,48 @@ let fail msg = raise (Failure msg)
 
 
 (*** The functions that come below are meant to be used as 
-     atomic transformations, they raise [Failure] when they fail
+     atomic actions, they raise [Failure] when they fail
      and they push an [undo_action] to revert themselves.
-     They are still internal actions. *)
+     They come in two flavors, [_name] is meant to be used in
+     complex primitive actions, [name] is the exported version, 
+     of type ['a action] ***)
+
+(* This action does nothing, it may be used to end any continuation based action, like tacticals *)
+let null_action = primitive ( fun _ _ -> () )
 
 (* This function performs sound mutation at a given position.
    That is a mutation which stores an undo_action into the 
    transaction [tr] *)
-let mutate pt sp tr =
+
+let _mutate pt sp tr =
   push (MutateBack (pack_mutation {sp=sp;pt=pt})) tr;
   Subproof.mutate pt sp
+
+let mutate =
+  primitive _mutate
 
 
 (* This function focuses the proof [pr] at position [pt] and 
    pushes an [undo_action] into the transaction [tr]. *)
-let focus pt pr tr =
+let _focus pt pr tr =
   push (Unfocus pr) tr;
   unsafe_focus pr pt
+
+let focus =
+  primitive _focus
 
 (* This function unfocuses the proof [pr], fails if 
    [pr] is not focused (i.e. if it shows its root). It
    pushed an [undo_action] into the transaction [tr] *)
-let unfocus pr tr =
+let _unfocus pr tr =
   match pr.focus with
   | [] -> fail (Pp.str "This proof is not focused")
   | pt::_ -> push (Focus (pr,pt)) tr; unsafe_unfocus pr
 
+let unfocus =
+  primitive _unfocus
 
-(*** The following function are composed transformations ***)
+(*** The following function are complex or composed actions ***)
 
 (* arnaud: repasser sur les commentaires *)
 (* This pair of functions tries percolate the resolved subgoal as much
@@ -206,7 +227,7 @@ let resolve =
     match get_focus pr with
     | None -> ()
     | Some pt -> if Subproof.is_resolved (Subproof.get pt) then
-	           (unfocus pr tr;
+	           (_unfocus pr tr;
                     unfocus_until_sound pr tr)
                  else 
                    ()  
@@ -214,25 +235,26 @@ let resolve =
   let resolve_iterator_fun tr pt =
     try 
       let res = Subproof.resolve (Subproof.get pt) in
-      mutate pt res tr
+      _mutate pt res tr
     with Subproof.Unresolved ->
       ()
   in
   let resolve_iterator tr = 
     { Subproof.iterator = fun pt -> resolve_iterator_fun tr pt }
   in
-  fun pr tr ->
-    Subproof.percolate (resolve_iterator tr) (get_root pr);
-    unfocus_until_sound pr tr
+  primitive (fun pr tr ->
+              Subproof.percolate (resolve_iterator tr) (get_root pr);
+              unfocus_until_sound pr tr)
 
 (*** The following function takes a transformation and make it into 
      a command ***)
 
-let do_command actions pr = 
+let do_action actions pr = 
   let tr = start_transaction pr.undo_stack in
   try 
-   Sequence.iter (fun action -> action pr tr; resolve pr tr) actions;
-   commit tr
+    let actions = compose actions resolve in
+    Sequence.iter (fun action -> action pr tr) actions;
+    commit tr
   with e -> (* arnaud: traitement particulier de Failure ? *)
     rollback tr;
     raise e
