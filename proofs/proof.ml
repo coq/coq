@@ -246,7 +246,7 @@ let resolve =
               Subproof.percolate (resolve_iterator tr) (get_root pr);
               unfocus_until_sound pr tr)
 
-(*** The following function takes a transformation and make it into 
+(*** The following function takes an action and makes it into 
      a command ***)
 
 let do_action actions pr = 
