@@ -558,11 +558,12 @@ let rec introduce_all_equalities func eqs values specs bound le_proofs
 	     (heq::cond_eqs)] g;;
     
 let string_match s =
- try 
-  for i = 0 to 3  do
-    if String.get s i <> String.get "Acc_" i then failwith "string_match"
-  done;
- with Invalid_argument _ -> failwith "string_match"
+  if String.length s < 3 then failwith "string_match";
+  try 
+    for i = 0 to 3  do
+      if String.get s i <> String.get "Acc_" i then failwith "string_match"
+    done;
+  with Invalid_argument _ -> failwith "string_match"
 	  
 let retrieve_acc_var g = 
   (* Julien: I don't like this version .... *) 
