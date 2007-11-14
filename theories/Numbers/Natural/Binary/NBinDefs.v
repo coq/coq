@@ -247,16 +247,15 @@ simpl. rewrite Pminus_mask_succ_r, Pminus_mask_carry_spec.
 now destruct (Pminus_mask p q) as [| r |]; [| destruct r |].
 Qed.
 
-Theorem NZtimes_0_r : forall n : NZ, n * N0 = N0.
+Theorem NZtimes_0_l : forall n : NZ, N0 * n = N0.
 Proof.
 destruct n; reflexivity.
 Qed.
 
-Theorem NZtimes_succ_r : forall n m : NZ, n * (NZsucc m) = n * m + n.
+Theorem NZtimes_succ_l : forall n m : NZ, (NZsucc n) * m = n * m + m.
 Proof.
 destruct n as [| n]; destruct m as [| m]; simpl; try reflexivity.
-now rewrite Pmult_1_r.
-now rewrite (Pmult_comm n (Psucc m)), Pmult_Sn_m, (Pplus_comm n), Pmult_comm.
+now rewrite Pmult_Sn_m, Pplus_comm.
 Qed.
 
 End NZAxiomsMod.
@@ -286,7 +285,7 @@ Proof.
 congruence.
 Qed.
 
-Theorem NZle_lt_or_eq : forall n m : N, n <= m <-> n < m \/ n = m.
+Theorem NZlt_eq_cases : forall n m : N, n <= m <-> n < m \/ n = m.
 Proof.
 intros n m. unfold le, lt. rewrite <- Ncompare_eq_correct.
 destruct (n ?= m); split; intro H1; (try discriminate); try (now left); try now right.
@@ -298,7 +297,7 @@ Proof.
 intro n; unfold lt; now rewrite Ncompare_diag.
 Qed.
 
-Theorem NZlt_succ_le : forall n m : NZ, n < (NZsucc m) <-> n <= m.
+Theorem NZlt_succ_r : forall n m : NZ, n < (NZsucc m) <-> n <= m.
 Proof.
 intros n m; unfold lt, le; destruct n as [| p]; destruct m as [| q]; simpl;
 split; intro H; try reflexivity; try discriminate.

@@ -10,6 +10,7 @@
 
 (*i i*)
 
+Require Export Decidable.
 Require Export NAxioms.
 Require Import NZTimesOrder. (* The last property functor on NZ, which subsumes all others *)
 
@@ -59,8 +60,8 @@ Proof NZsucc_inj_wd_neg.
 (* Decidability and stability of equality was proved only in NZOrder, but
 since it does not mention order, we'll put it here *)
 
-Theorem eq_em : forall n m : N, n == m \/ n ~= m.
-Proof NZeq_em.
+Theorem eq_dec : forall n m : N, decidable (n == m).
+Proof NZeq_dec.
 
 Theorem eq_dne : forall n m : N, ~ ~ n == m <-> n == m.
 Proof NZeq_dne.
@@ -99,16 +100,21 @@ pattern false at 2; replace false with (if_zero false true 0) by apply if_zero_0
 now rewrite H.
 Qed.
 
+Theorem neq_0_succ : forall n : N, 0 ~= S n.
+Proof.
+intro n; apply neq_symm; apply neq_succ_0.
+Qed.
+
 (* Next, we show that all numbers are nonnegative and recover regular induction
 from the bidirectional induction on NZ *)
 
 Theorem le_0_l : forall n : N, 0 <= n.
 Proof.
 NZinduct n.
-le_equal.
+now apply NZeq_le_incl.
 intro n; split.
-apply NZle_le_succ.
-intro H; apply -> NZle_succ_le_or_eq_succ in H; destruct H as [H | H].
+apply NZle_le_succ_r.
+intro H; apply -> NZle_succ_r in H; destruct H as [H | H].
 assumption.
 symmetry in H; false_hyp H neq_succ_0.
 Qed.
@@ -144,7 +150,7 @@ Proof.
 intro H; apply (neq_succ_0 0). apply H.
 Qed.
 
-Theorem neq_0_succ : forall n, n ~= 0 <-> exists m, n == S m.
+Theorem neq_0_r : forall n, n ~= 0 <-> exists m, n == S m.
 Proof.
 cases n. split; intro H;
 [now elim H | destruct H as [m H]; symmetry in H; false_hyp H neq_succ_0].

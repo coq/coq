@@ -10,10 +10,15 @@
 
 (*i i*)
 
+Require Export Decidable.
 Require Export ZAxioms.
 Require Import NZTimesOrder.
 
-Module ZBasePropFunct (Export ZAxiomsMod : ZAxiomsSig).
+Module ZBasePropFunct (Import ZAxiomsMod : ZAxiomsSig).
+
+(* Note: writing "Export" instead of "Import" on the previous line leads to
+some warnings about hiding repeated declarations and results in the loss of
+notations in Zplus and later *)
 
 Open Local Scope IntScope.
 
@@ -43,8 +48,8 @@ Proof NZsucc_inj_wd_neg.
 (* Decidability and stability of equality was proved only in NZOrder, but
 since it does not mention order, we'll put it here *)
 
-Theorem Zeq_em : forall n m : Z, n == m \/ n ~= m.
-Proof NZeq_em.
+Theorem Zeq_dec : forall n m : Z, decidable (n == m).
+Proof NZeq_dec.
 
 Theorem Zeq_dne : forall n m : Z, ~ ~ n == m <-> n == m.
 Proof NZeq_dne.

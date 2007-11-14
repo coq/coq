@@ -60,8 +60,8 @@ Axiom NZplus_succ_l : forall n m : NZ, (S n) + m == S (n + m).
 Axiom NZminus_0_r : forall n : NZ, n - 0 == n.
 Axiom NZminus_succ_r : forall n m : NZ, n - (S m) == P (n - m).
 
-Axiom NZtimes_0_r : forall n : NZ, n * 0 == 0.
-Axiom NZtimes_succ_r : forall n m : NZ, n * (S m) == n * m + n.
+Axiom NZtimes_0_l : forall n : NZ, 0 * n == 0.
+Axiom NZtimes_succ_l : forall n m : NZ, S n * m == n * m + m.
 
 End NZAxiomsSig.
 
@@ -84,9 +84,9 @@ Notation "x <= y" := (NZle x y) : NatIntScope.
 Notation "x > y" := (NZlt y x) (only parsing) : NatIntScope.
 Notation "x >= y" := (NZle y x) (only parsing) : NatIntScope.
 
-Axiom NZle_lt_or_eq : forall n m : NZ, n <= m <-> n < m \/ n == m.
+Axiom NZlt_eq_cases : forall n m : NZ, n <= m <-> n < m \/ n == m.
 Axiom NZlt_irrefl : forall n : NZ, ~ (n < n).
-Axiom NZlt_succ_le : forall n m : NZ, n < S m <-> n <= m.
+Axiom NZlt_succ_r : forall n m : NZ, n < S m <-> n <= m.
 
 Axiom NZmin_l : forall n m : NZ, n <= m -> NZmin n m == n.
 Axiom NZmin_r : forall n m : NZ, m <= n -> NZmin n m == m.

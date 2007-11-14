@@ -20,19 +20,19 @@ Theorem times_wd :
   forall n1 n2 : N, n1 == n2 -> forall m1 m2 : N, m1 == m2 -> n1 * m1 == n2 * m2.
 Proof NZtimes_wd.
 
-Theorem times_0_r : forall n, n * 0 == 0.
-Proof NZtimes_0_r.
-
-Theorem times_succ_r : forall n m, n * (S m) == n * m + n.
-Proof NZtimes_succ_r.
-
-(** Theorems that are valid for both natural numbers and integers *)
-
 Theorem times_0_l : forall n : N, 0 * n == 0.
 Proof NZtimes_0_l.
 
 Theorem times_succ_l : forall n m : N, (S n) * m == n * m + m.
 Proof NZtimes_succ_l.
+
+(** Theorems that are valid for both natural numbers and integers *)
+
+Theorem times_0_r : forall n, n * 0 == 0.
+Proof NZtimes_0_r.
+
+Theorem times_succ_r : forall n m, n * (S m) == n * m + n.
+Proof NZtimes_succ_r.
 
 Theorem times_comm : forall n m : N, n * m == m * n.
 Proof NZtimes_comm.
@@ -53,28 +53,6 @@ Theorem times_1_r : forall n : N, n * 1 == n.
 Proof NZtimes_1_r.
 
 (** Theorems that cannot be proved in NZTimes *)
-
-Theorem times_eq_0 : forall n m, n * m == 0 -> n == 0 \/ m == 0.
-Proof.
-induct n; induct m.
-intros; now left.
-intros; now left.
-intros; now right.
-intros m IH H1. rewrite times_succ_l in H1.
-rewrite plus_succ_r in H1. now apply neq_succ_0 in H1.
-Qed.
-
-Theorem times_eq_1 : forall n m : N, n * m == 1 -> n == 1 /\ m == 1.
-Proof.
-intros n m; induct n.
-intro H; rewrite times_0_l in H; symmetry in H; false_hyp H neq_succ_0.
-intros n IH H. rewrite times_succ_l in H. apply plus_eq_1 in H.
-destruct H as [[H1 H2] | [H1 H2]].
-apply IH in H1. destruct H1 as [_ H1]. rewrite H1 in H2; false_hyp H2 neq_succ_0.
-apply times_eq_0 in H1. destruct H1 as [H1 | H1].
-rewrite H1; now split.
-rewrite H2 in H1; false_hyp H1 neq_succ_0.
-Qed.
 
 (* In proving the correctness of the definition of multiplication on
 integers constructed from pairs of natural numbers, we'll need the

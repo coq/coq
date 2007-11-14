@@ -98,14 +98,14 @@ Proof.
 intros n m; induction n m using nat_double_ind; simpl; auto. apply NZminus_0_r.
 Qed.
 
-Theorem NZtimes_0_r : forall n : nat, n * 0 = 0.
+Theorem NZtimes_0_l : forall n : nat, 0 * n = 0.
 Proof.
-exact mult_0_r.
+reflexivity.
 Qed.
 
-Theorem NZtimes_succ_r : forall n m : nat, n * (S m) = n * m + n.
+Theorem NZtimes_succ_l : forall n m : nat, S n * m = n * m + m.
 Proof.
-intros n m; symmetry; apply mult_n_Sm.
+intros n m; now rewrite plus_comm.
 Qed.
 
 End NZAxiomsMod.
@@ -135,7 +135,7 @@ Proof.
 congruence.
 Qed.
 
-Theorem NZle_lt_or_eq : forall n m : nat, n <= m <-> n < m \/ n = m.
+Theorem NZlt_eq_cases : forall n m : nat, n <= m <-> n < m \/ n = m.
 Proof.
 intros n m; split.
 apply le_lt_or_eq.
@@ -148,7 +148,7 @@ Proof.
 exact lt_irrefl.
 Qed.
 
-Theorem NZlt_succ_le : forall n m : nat, n < S m <-> n <= m.
+Theorem NZlt_succ_r : forall n m : nat, n < S m <-> n <= m.
 Proof.
 intros n m; split; [apply lt_n_Sm_le | apply le_lt_n_Sm].
 Qed.

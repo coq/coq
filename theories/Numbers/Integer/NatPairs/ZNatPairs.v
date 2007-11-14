@@ -12,6 +12,7 @@
 
 Require Import NMinus. (* The most complete file for natural numbers *)
 Require Export ZTimesOrder. (* The most complete file for integers *)
+Require Export Ring.
 
 Module ZPairsAxiomsMod (Import NAxiomsMod : NAxiomsSig) <: ZAxiomsSig.
 Module Import NPropMod := NMinusPropFunct NAxiomsMod. (* Get all properties of natural numbers *)
@@ -251,16 +252,16 @@ Proof.
 intros n m; unfold NZminus, Zeq; simpl. symmetry; now rewrite plus_succ_r.
 Qed.
 
-Theorem NZtimes_0_r : forall n : Z, n * 0 == 0.
+Theorem NZtimes_0_l : forall n : Z, 0 * n == 0.
 Proof.
 intro n; unfold NZtimes, Zeq; simpl.
-repeat rewrite times_0_r. now rewrite plus_assoc.
+repeat rewrite times_0_l. now rewrite plus_assoc.
 Qed.
 
-Theorem NZtimes_succ_r : forall n m : Z, n * (Zsucc m) == n * m + n.
+Theorem NZtimes_succ_l : forall n m : Z, (Zsucc n) * m == n * m + m.
 Proof.
 intros n m; unfold NZtimes, NZsucc, Zeq; simpl.
-do 2 rewrite times_succ_r. ring.
+do 2 rewrite times_succ_l. ring.
 Qed.
 
 End NZAxiomsMod.
@@ -292,7 +293,7 @@ Qed.
 Add Morphism NZle with signature Zeq ==> Zeq ==> iff as NZle_wd.
 Proof.
 unfold NZle, Zle, Zeq; intros n1 m1 H1 n2 m2 H2; simpl.
-do 2 rewrite le_lt_or_eq. rewrite (NZlt_wd n1 m1 H1 n2 m2 H2). fold (m1 < m2)%Int.
+do 2 rewrite lt_eq_cases. rewrite (NZlt_wd n1 m1 H1 n2 m2 H2). fold (m1 < m2)%Int.
 fold (n1 == n2)%Int (m1 == m2)%Int; fold (n1 == m1)%Int in H1; fold (n2 == m2)%Int in H2.
 now rewrite H1, H2.
 Qed.
@@ -331,9 +332,9 @@ Qed.
 
 Open Local Scope IntScope.
 
-Theorem NZle_lt_or_eq : forall n m : Z, n <= m <-> n < m \/ n == m.
+Theorem NZlt_eq_cases : forall n m : Z, n <= m <-> n < m \/ n == m.
 Proof.
-intros n m; unfold Zlt, Zle, Zeq; simpl. apply le_lt_or_eq.
+intros n m; unfold Zlt, Zle, Zeq; simpl. apply lt_eq_cases.
 Qed.
 
 Theorem NZlt_irrefl : forall n : Z, ~ (n < n).
@@ -341,9 +342,9 @@ Proof.
 intros n; unfold Zlt, Zeq; simpl. apply lt_irrefl.
 Qed.
 
-Theorem NZlt_succ_le : forall n m : Z, n < (Zsucc m) <-> n <= m.
+Theorem NZlt_succ_r : forall n m : Z, n < (Zsucc m) <-> n <= m.
 Proof.
-intros n m; unfold Zlt, Zle, Zeq; simpl. rewrite plus_succ_l; apply lt_succ_le.
+intros n m; unfold Zlt, Zle, Zeq; simpl. rewrite plus_succ_l; apply lt_succ_r.
 Qed.
 
 Theorem NZmin_l : forall n m : Z, n <= m -> Zmin n m == n.

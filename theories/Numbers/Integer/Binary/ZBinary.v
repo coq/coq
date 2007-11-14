@@ -100,14 +100,14 @@ intros; rewrite <- Zsucc_succ'; rewrite <- Zpred_pred';
 apply Zminus_succ_r.
 Qed.
 
-Theorem NZtimes_0_r : forall n : Z, n * 0 = 0.
+Theorem NZtimes_0_l : forall n : Z, 0 * n = 0.
 Proof.
-exact Zmult_0_r.
+reflexivity.
 Qed.
 
-Theorem NZtimes_succ_r : forall n m : Z, n * (NZsucc m) = n * m + n.
+Theorem NZtimes_succ_l : forall n m : Z, (NZsucc n) * m = n * m + m.
 Proof.
-intros; rewrite <- Zsucc_succ'; apply Zmult_succ_r.
+intros; rewrite <- Zsucc_succ'; apply Zmult_succ_l.
 Qed.
 
 End NZAxiomsMod.
@@ -137,7 +137,7 @@ Proof.
 congruence.
 Qed.
 
-Theorem NZle_lt_or_eq : forall n m : Z, n <= m <-> n < m \/ n = m.
+Theorem NZlt_eq_cases : forall n m : Z, n <= m <-> n < m \/ n = m.
 Proof.
 intros n m; split. apply Zle_lt_or_eq.
 intro H; destruct H as [H | H]. now apply Zlt_le_weak. rewrite H; apply Zle_refl.
@@ -148,7 +148,7 @@ Proof.
 exact Zlt_irrefl.
 Qed.
 
-Theorem NZlt_succ_le : forall n m : Z, n < (NZsucc m) <-> n <= m.
+Theorem NZlt_succ_r : forall n m : Z, n < (NZsucc m) <-> n <= m.
 Proof.
 intros; unfold NZsucc; rewrite <- Zsucc_succ'; split;
 [apply Zlt_succ_le | apply Zle_lt_succ].
@@ -215,6 +215,23 @@ End ZBinAxiomsMod.
 
 Module Export ZBinTimesOrderPropMod := ZTimesOrderPropFunct ZBinAxiomsMod.
 
+(** Z forms a ring *)
+
+(*Lemma Zring : ring_theory 0 1 NZplus NZtimes NZminus Zopp NZeq.
+Proof.
+constructor.
+exact Zplus_0_l.
+exact Zplus_comm.
+exact Zplus_assoc.
+exact Ztimes_1_l.
+exact Ztimes_comm.
+exact Ztimes_assoc.
+exact Ztimes_plus_distr_r.
+intros; now rewrite Zplus_opp_minus.
+exact Zplus_opp_r.
+Qed.
+
+Add Ring ZR : Zring.*)
 
 
 

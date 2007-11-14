@@ -10,7 +10,7 @@
 
 (*i i*)
 
-Require Export ZOrder.
+Require Export ZLt.
 
 Module ZPlusOrderPropFunct (Import ZAxiomsMod : ZAxiomsSig).
 Module Export ZOrderPropMod := ZOrderPropFunct ZAxiomsMod.
@@ -94,25 +94,25 @@ Proof NZplus_nonneg_cases.
 Theorem Zlt_lt_minus : forall n m : Z, n < m <-> 0 < m - n.
 Proof.
 intros n m. stepr (0 + n < m - n + n) by symmetry; apply Zplus_lt_mono_r.
-rewrite Zplus_0_l; now rewrite Zminus_plus_diag.
+rewrite Zplus_0_l; now rewrite Zminus_simpl_r.
 Qed.
 
 Theorem Zle_le_minus : forall n m : Z, n <= m <-> 0 <= m - n.
 Proof.
 intros n m; stepr (0 + n <= m - n + n) by symmetry; apply Zplus_le_mono_r.
-rewrite Zplus_0_l; now rewrite Zminus_plus_diag.
+rewrite Zplus_0_l; now rewrite Zminus_simpl_r.
 Qed.
 
 Theorem Zopp_lt_mono : forall n m : Z, n < m <-> - m < - n.
 Proof.
 intros n m. stepr (m + - m < m + - n) by symmetry; apply Zplus_lt_mono_l.
-do 2 rewrite Zplus_opp_minus. rewrite Zminus_diag. apply Zlt_lt_minus.
+do 2 rewrite Zplus_opp_r. rewrite Zminus_diag. apply Zlt_lt_minus.
 Qed.
 
 Theorem Zopp_le_mono : forall n m : Z, n <= m <-> - m <= - n.
 Proof.
 intros n m. stepr (m + - m <= m + - n) by symmetry; apply Zplus_le_mono_l.
-do 2 rewrite Zplus_opp_minus. rewrite Zminus_diag. apply Zle_le_minus.
+do 2 rewrite Zplus_opp_r. rewrite Zminus_diag. apply Zle_le_minus.
 Qed.
 
 Theorem Zopp_pos_neg : forall n : Z, 0 < - n <-> n < 0.
@@ -137,13 +137,13 @@ Qed.
 
 Theorem Zminus_lt_mono_l : forall n m p : Z, n < m <-> p - m < p - n.
 Proof.
-intros n m p. do 2 rewrite <- Zplus_opp_minus. rewrite <- Zplus_lt_mono_l.
+intros n m p. do 2 rewrite <- Zplus_opp_r. rewrite <- Zplus_lt_mono_l.
 apply Zopp_lt_mono.
 Qed.
 
 Theorem Zminus_lt_mono_r : forall n m p : Z, n < m <-> n - p < m - p.
 Proof.
-intros n m p; do 2 rewrite <- Zplus_opp_minus; apply Zplus_lt_mono_r.
+intros n m p; do 2 rewrite <- Zplus_opp_r; apply Zplus_lt_mono_r.
 Qed.
 
 Theorem Zminus_lt_mono : forall n m p q : Z, n < m -> q < p -> n - p < m - q.
@@ -155,13 +155,13 @@ Qed.
 
 Theorem Zminus_le_mono_l : forall n m p : Z, n <= m <-> p - m <= p - n.
 Proof.
-intros n m p; do 2 rewrite <- Zplus_opp_minus; rewrite <- Zplus_le_mono_l;
+intros n m p; do 2 rewrite <- Zplus_opp_r; rewrite <- Zplus_le_mono_l;
 apply Zopp_le_mono.
 Qed.
 
 Theorem Zminus_le_mono_r : forall n m p : Z, n <= m <-> n - p <= m - p.
 Proof.
-intros n m p; do 2 rewrite <- Zplus_opp_minus; apply Zplus_le_mono_r.
+intros n m p; do 2 rewrite <- Zplus_opp_r; apply Zplus_le_mono_r.
 Qed.
 
 Theorem Zminus_le_mono : forall n m p q : Z, n <= m -> q <= p -> n - p <= m - q.
@@ -188,31 +188,31 @@ Qed.
 Theorem Zle_lt_minus_lt : forall n m p q : Z, n <= m -> p - n < q - m -> p < q.
 Proof.
 intros n m p q H1 H2. apply (Zle_lt_plus_lt (- m) (- n));
-[now apply -> Zopp_le_mono | now do 2 rewrite Zplus_opp_minus].
+[now apply -> Zopp_le_mono | now do 2 rewrite Zplus_opp_r].
 Qed.
 
 Theorem Zlt_le_minus_lt : forall n m p q : Z, n < m -> p - n <= q - m -> p < q.
 Proof.
 intros n m p q H1 H2. apply (Zlt_le_plus_lt (- m) (- n));
-[now apply -> Zopp_lt_mono | now do 2 rewrite Zplus_opp_minus].
+[now apply -> Zopp_lt_mono | now do 2 rewrite Zplus_opp_r].
 Qed.
 
 Theorem Zle_le_minus_lt : forall n m p q : Z, n <= m -> p - n <= q - m -> p <= q.
 Proof.
 intros n m p q H1 H2. apply (Zle_le_plus_le (- m) (- n));
-[now apply -> Zopp_le_mono | now do 2 rewrite Zplus_opp_minus].
+[now apply -> Zopp_le_mono | now do 2 rewrite Zplus_opp_r].
 Qed.
 
 Theorem Zlt_plus_lt_minus_r : forall n m p : Z, n + p < m <-> n < m - p.
 Proof.
 intros n m p. stepl (n + p - p < m - p) by symmetry; apply Zminus_lt_mono_r.
-now rewrite Zplus_minus_diag.
+now rewrite Zplus_simpl_r.
 Qed.
 
 Theorem Zle_plus_le_minus_r : forall n m p : Z, n + p <= m <-> n <= m - p.
 Proof.
 intros n m p. stepl (n + p - p <= m - p) by symmetry; apply Zminus_le_mono_r.
-now rewrite Zplus_minus_diag.
+now rewrite Zplus_simpl_r.
 Qed.
 
 Theorem Zlt_plus_lt_minus_l : forall n m p : Z, n + p < m <-> p < m - n.
@@ -228,13 +228,13 @@ Qed.
 Theorem Zlt_minus_lt_plus_r : forall n m p : Z, n - p < m <-> n < m + p.
 Proof.
 intros n m p. stepl (n - p + p < m + p) by symmetry; apply Zplus_lt_mono_r.
-now rewrite Zminus_plus_diag.
+now rewrite Zminus_simpl_r.
 Qed.
 
 Theorem Zle_minus_le_plus_r : forall n m p : Z, n - p <= m <-> n <= m + p.
 Proof.
 intros n m p. stepl (n - p + p <= m + p) by symmetry; apply Zplus_le_mono_r.
-now rewrite Zminus_plus_diag.
+now rewrite Zminus_simpl_r.
 Qed.
 
 Theorem Zlt_minus_lt_plus_l : forall n m p : Z, n - m < p <-> n < m + p.
@@ -281,31 +281,52 @@ Qed.
 
 Theorem Zminus_neg_cases : forall n m : Z, n - m < 0 -> n < 0 \/ 0 < m.
 Proof.
-intros n m H; rewrite <- Zplus_opp_minus in H.
+intros n m H; rewrite <- Zplus_opp_r in H.
 setoid_replace (0 < m) with (- m < 0) using relation iff by (symmetry; apply Zopp_neg_pos).
 now apply Zplus_neg_cases.
 Qed.
 
 Theorem Zminus_pos_cases : forall n m : Z, 0 < n - m -> 0 < n \/ m < 0.
 Proof.
-intros n m H; rewrite <- Zplus_opp_minus in H.
+intros n m H; rewrite <- Zplus_opp_r in H.
 setoid_replace (m < 0) with (0 < - m) using relation iff by (symmetry; apply Zopp_pos_neg).
 now apply Zplus_pos_cases.
 Qed.
 
 Theorem Zminus_nonpos_cases : forall n m : Z, n - m <= 0 -> n <= 0 \/ 0 <= m.
 Proof.
-intros n m H; rewrite <- Zplus_opp_minus in H.
+intros n m H; rewrite <- Zplus_opp_r in H.
 setoid_replace (0 <= m) with (- m <= 0) using relation iff by (symmetry; apply Zopp_nonpos_nonneg).
 now apply Zplus_nonpos_cases.
 Qed.
 
 Theorem Zminus_nonneg_cases : forall n m : Z, 0 <= n - m -> 0 <= n \/ m <= 0.
 Proof.
-intros n m H; rewrite <- Zplus_opp_minus in H.
+intros n m H; rewrite <- Zplus_opp_r in H.
 setoid_replace (m <= 0) with (0 <= - m) using relation iff by (symmetry; apply Zopp_nonneg_nonpos).
 now apply Zplus_nonneg_cases.
 Qed.
+
+Section PosNeg.
+
+Variable P : Z -> Prop.
+Hypothesis P_wd : predicate_wd Zeq P.
+
+Add Morphism P with signature Zeq ==> iff as P_morph. Proof. exact P_wd. Qed.
+
+Theorem Z0_pos_neg :
+  P 0 -> (forall n : Z, 0 < n -> P n /\ P (- n)) -> forall n : Z, P n.
+Proof.
+intros H1 H2 n. destruct (Zlt_trichotomy n 0) as [H3 | [H3 | H3]].
+apply <- Zopp_pos_neg in H3. apply H2 in H3. destruct H3 as [_ H3].
+now rewrite Zopp_involutive in H3.
+now rewrite H3.
+apply H2 in H3; now destruct H3.
+Qed.
+
+End PosNeg.
+
+Ltac Z0_pos_neg n := induction_maker n ltac:(apply Z0_pos_neg).
 
 End ZPlusOrderPropFunct.
 

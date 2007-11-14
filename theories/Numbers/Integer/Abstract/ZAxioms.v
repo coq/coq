@@ -45,9 +45,13 @@ Notation "x >= y" := (NZle y x) (only parsing) : IntScope.
 
 Parameter Zopp : Z -> Z.
 
+(*Notation "- 1" := (Zopp 1) : IntScope.
+Check (-1).*)
+
 Add Morphism Zopp with signature Zeq ==> Zeq as Zopp_wd.
 
 Notation "- x" := (Zopp x) (at level 35, right associativity) : IntScope.
+Notation "- 1" := (Zopp (NZsucc NZ0)) : IntScope.
 
 Open Local Scope IntScope.
 

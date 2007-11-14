@@ -96,11 +96,20 @@ Proof NZtimes_neg_pos.
 Theorem Ztimes_nonpos_nonneg : forall n m : Z, n <= 0 -> 0 <= m -> n * m <= 0.
 Proof NZtimes_nonpos_nonneg.
 
-Theorem Ztimes_eq_0 : forall n m : Z, n * m == 0 -> n == 0 \/ m == 0.
-Proof NZtimes_eq_0.
+Theorem Zlt_1_times_pos : forall n m : Z, 1 < n -> 0 < m -> 1 < n * m.
+Proof NZlt_1_times_pos.
 
-Theorem Ztimes_neq_0 : forall n m : Z, n ~= 0 /\ m ~= 0 <-> n * m ~= 0.
-Proof NZtimes_neq_0.
+Theorem Zeq_times_0 : forall n m : Z, n * m == 0 <-> n == 0 \/ m == 0.
+Proof NZeq_times_0.
+
+Theorem Zneq_times_0 : forall n m : Z, n ~= 0 /\ m ~= 0 <-> n * m ~= 0.
+Proof NZneq_times_0.
+
+Theorem Zeq_times_0_l : forall n m : Z, n * m == 0 -> m ~= 0 -> n == 0.
+Proof NZeq_times_0_l.
+
+Theorem Zeq_times_0_r : forall n m : Z, n * m == 0 -> n ~= 0 -> m == 0.
+Proof NZeq_times_0_r.
 
 Theorem Ztimes_pos : forall n m : Z, 0 < n * m <-> (0 < n /\ 0 < m) \/ (m < 0 /\ n < 0).
 Proof NZtimes_pos.
@@ -114,7 +123,64 @@ Proof NZtimes_2_mono_l.
 
 (** Theorems that are either not valid on N or have different proofs on N and Z *)
 
-(* None? *)
+Theorem Zlt_1_times_neg : forall n m : Z, n < -1 -> m < 0 -> 1 < n * m.
+Proof.
+intros n m H1 H2. apply -> (NZtimes_lt_mono_neg_r m) in H1.
+apply <- Zopp_pos_neg in H2. rewrite Ztimes_opp_l, Ztimes_1_l in H1.
+now apply Zlt_1_l with (- m).
+assumption.
+Qed.
+
+Theorem Zlt_times_n1_neg : forall n m : Z, 1 < n -> m < 0 -> n * m < -1.
+Proof.
+intros n m H1 H2. apply -> (NZtimes_lt_mono_neg_r m) in H1.
+rewrite Ztimes_1_l in H1. now apply Zlt_n1_r with m.
+assumption.
+Qed.
+
+Theorem Zlt_times_n1_pos : forall n m : Z, n < -1 -> 0 < m -> n * m < -1.
+Proof.
+intros n m H1 H2. apply -> (NZtimes_lt_mono_pos_r m) in H1.
+rewrite Ztimes_opp_l, Ztimes_1_l in H1.
+apply <- Zopp_neg_pos in H2. now apply Zlt_n1_r with (- m).
+assumption.
+Qed.
+
+Theorem Zlt_1_l_times : forall n m : Z, 1 < n -> n * m < -1 \/ n * m == 0 \/ 1 < n * m.
+Proof.
+intros n m H; destruct (Zlt_trichotomy m 0) as [H1 | [H1 | H1]].
+left. now apply Zlt_times_n1_neg.
+right; left; now rewrite H1, Ztimes_0_r.
+right; right; now apply Zlt_1_times_pos.
+Qed.
+
+Theorem Zlt_n1_r_times : forall n m : Z, n < -1 -> n * m < -1 \/ n * m == 0 \/ 1 < n * m.
+Proof.
+intros n m H; destruct (Zlt_trichotomy m 0) as [H1 | [H1 | H1]].
+right; right. now apply Zlt_1_times_neg.
+right; left; now rewrite H1, Ztimes_0_r.
+left. now apply Zlt_times_n1_pos.
+Qed.
+
+Theorem Zeq_times_1 : forall n m : Z, n * m == 1 -> n == 1 \/ n == -1.
+Proof.
+assert (F : ~ 1 < -1).
+intro H.
+assert (H1 : -1 < 0). apply <- Zopp_neg_pos. apply Zlt_succ_diag_r.
+assert (H2 : 1 < 0) by now apply Zlt_trans with (-1). false_hyp H2 Znlt_succ_diag_l.
+Z0_pos_neg n.
+intros m H; rewrite Ztimes_0_l in H; false_hyp H Zneq_succ_diag_r.
+intros n H; split; apply <- Zle_succ_l in H; le_elim H.
+intros m H1; apply (Zlt_1_l_times n m) in H.
+rewrite H1 in H; destruct H as [H | [H | H]].
+false_hyp H F. false_hyp H Zneq_succ_diag_l. false_hyp H Zlt_irrefl.
+intros; now left.
+intros m H1; apply (Zlt_1_l_times n m) in H. rewrite Ztimes_opp_l in H1;
+apply -> Zeq_opp_l in H1. rewrite H1 in H; destruct H as [H | [H | H]].
+false_hyp H Zlt_irrefl. apply -> Zeq_opp_l in H. rewrite Zopp_0 in H.
+false_hyp H Zneq_succ_diag_l. false_hyp H F.
+intros; right; symmetry; now apply Zopp_wd.
+Qed.
 
 End ZTimesOrderPropFunct.
 

@@ -63,8 +63,8 @@ Proof.
 intros n m p; induct p.
 intro; now do 2 rewrite minus_0_r.
 intros p IH H. do 2 rewrite minus_succ_r.
-rewrite <- IH; [now apply le_succ_le |].
-rewrite plus_pred_r. apply minus_gt. now apply <- lt_le_succ.
+rewrite <- IH; [apply lt_le_incl; now apply -> le_succ_l |].
+rewrite plus_pred_r. apply minus_gt. now apply -> le_succ_l.
 reflexivity.
 Qed.
 
@@ -129,7 +129,7 @@ Qed.
 Theorem le_minus_l : forall n m : N, n - m <= n.
 Proof.
 intro n; induct m.
-rewrite minus_0_r; le_equal.
+rewrite minus_0_r; now apply eq_le_incl.
 intros m IH. rewrite minus_succ_r.
 apply le_trans with (n - m); [apply le_pred_l | assumption].
 Qed.
@@ -150,7 +150,7 @@ Proof.
 intros n m; cases m.
 now rewrite pred_0, times_0_r, minus_0_l.
 intro m; rewrite pred_succ, times_succ_r, <- plus_minus_assoc.
-le_equal.
+now apply eq_le_incl.
 now rewrite minus_diag, plus_0_r.
 Qed.
 
@@ -163,7 +163,7 @@ rewrite minus_succ_l; [assumption |]. do 2 rewrite times_succ_l.
 rewrite (plus_comm ((n - m) * p) p), (plus_comm (n * p) p).
 rewrite <- (plus_minus_assoc p (n * p) (m * p)); [now apply times_le_mono_r |].
 now apply <- plus_cancel_l.
-assert (H1 : S n <= m); [now apply -> lt_le_succ |].
+assert (H1 : S n <= m); [now apply <- le_succ_l |].
 setoid_replace (S n - m) with 0 by now apply <- minus_0_le.
 setoid_replace ((S n * p) - m * p) with 0 by (apply <- minus_0_le; now apply times_le_mono_r).
 apply times_0_l.

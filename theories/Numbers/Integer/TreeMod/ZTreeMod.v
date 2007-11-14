@@ -212,18 +212,18 @@ rewrite Zminus_mod_idemp_l.
 now replace ([|n|] - ([|m|] + 1))%Z with ([|n|] - [|m|] - 1)%Z by auto with zarith.
 Qed.
 
-Theorem NZtimes_0_r : forall n : NZ, n * 0 == 0.
+Theorem NZtimes_0_l : forall n : NZ, 0 * n == 0.
 Proof.
 intro n; unfold NZtimes, NZ0, NZ, NZeq. rewrite w_spec.(spec_mul).
-rewrite w_spec.(spec_0). now rewrite Zmult_0_r.
+rewrite w_spec.(spec_0). now rewrite Zmult_0_l.
 Qed.
 
-Theorem NZtimes_succ_r : forall n m : NZ, n * (S m) == n * m + n.
+Theorem NZtimes_succ_l : forall n m : NZ, (S n) * m == n * m + m.
 Proof.
 intros n m; unfold NZtimes, NZsucc, NZplus, NZeq. rewrite w_spec.(spec_mul).
-rewrite w_spec.(spec_add). rewrite w_spec.(spec_mul). rewrite w_spec.(spec_succ).
-rewrite Zplus_mod_idemp_l. rewrite Zmult_mod_idemp_r.
-rewrite Zmult_plus_distr_r. now rewrite Zmult_1_r.
+rewrite w_spec.(spec_add), w_spec.(spec_mul), w_spec.(spec_succ).
+rewrite Zplus_mod_idemp_l, Zmult_mod_idemp_l.
+now rewrite Zmult_plus_distr_l, Zmult_1_l.
 Qed.
 
 End NZBigIntsAxiomsMod.

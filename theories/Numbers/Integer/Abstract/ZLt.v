@@ -34,14 +34,14 @@ Theorem Zmax_wd :
   forall n1 n2 : Z, n1 == n2 -> forall m1 m2 : Z, m1 == m2 -> Zmax n1 m1 == Zmax n2 m2.
 Proof NZmax_wd.
 
-Theorem Zle_lt_or_eq : forall n m : Z, n <= m <-> n < m \/ n == m.
-Proof NZle_lt_or_eq.
+Theorem Zlt_eq_cases : forall n m : Z, n <= m <-> n < m \/ n == m.
+Proof NZlt_eq_cases.
 
 Theorem Zlt_irrefl : forall n : Z, ~ n < n.
 Proof NZlt_irrefl.
 
-Theorem Zlt_succ_le : forall n m : Z, n < S m <-> n <= m.
-Proof NZlt_succ_le.
+Theorem Zlt_succ_r : forall n m : Z, n < S m <-> n <= m.
+Proof NZlt_succ_r.
 
 Theorem Zmin_l : forall n m : Z, n <= m -> Zmin n m == n.
 Proof NZmin_l.
@@ -63,44 +63,44 @@ Proof NZlt_le_incl.
 Theorem Zlt_neq : forall n m : Z, n < m -> n ~= m.
 Proof NZlt_neq.
 
-Theorem Zlt_le_neq : forall n m : Z, n < m <-> n <= m /\ n ~= m.
-Proof NZlt_le_neq.
+Theorem Zle_neq : forall n m : Z, n < m <-> n <= m /\ n ~= m.
+Proof NZle_neq.
 
 Theorem Zle_refl : forall n : Z, n <= n.
 Proof NZle_refl.
 
-Theorem Zlt_succ_r : forall n : Z, n < S n.
-Proof NZlt_succ_r.
+Theorem Zlt_succ_diag_r : forall n : Z, n < S n.
+Proof NZlt_succ_diag_r.
 
-Theorem Zle_succ_r : forall n : Z, n <= S n.
+Theorem Zle_succ_diag_r : forall n : Z, n <= S n.
+Proof NZle_succ_diag_r.
+
+Theorem Zlt_lt_succ_r : forall n m : Z, n < m -> n < S m.
+Proof NZlt_lt_succ_r.
+
+Theorem Zle_le_succ_r : forall n m : Z, n <= m -> n <= S m.
+Proof NZle_le_succ_r.
+
+Theorem Zle_succ_r : forall n m : Z, n <= S m <-> n <= m \/ n == S m.
 Proof NZle_succ_r.
 
-Theorem Zlt_lt_succ : forall n m : Z, n < m -> n < S m.
-Proof NZlt_lt_succ.
+Theorem Zneq_succ_diag_l : forall n : Z, S n ~= n.
+Proof NZneq_succ_diag_l.
 
-Theorem Zle_le_succ : forall n m : Z, n <= m -> n <= S m.
-Proof NZle_le_succ.
+Theorem Zneq_succ_diag_r : forall n : Z, n ~= S n.
+Proof NZneq_succ_diag_r.
 
-Theorem Zle_succ_le_or_eq_succ : forall n m : Z, n <= S m <-> n <= m \/ n == S m.
-Proof NZle_succ_le_or_eq_succ.
+Theorem Znlt_succ_diag_l : forall n : Z, ~ S n < n.
+Proof NZnlt_succ_diag_l.
 
-Theorem Zneq_succ_l : forall n : Z, S n ~= n.
-Proof NZneq_succ_l.
+Theorem Znle_succ_diag_l : forall n : Z, ~ S n <= n.
+Proof NZnle_succ_diag_l.
 
-Theorem Znlt_succ_l : forall n : Z, ~ S n < n.
-Proof NZnlt_succ_l.
+Theorem Zle_succ_l : forall n m : Z, S n <= m <-> n < m.
+Proof NZle_succ_l.
 
-Theorem Znle_succ_l : forall n : Z, ~ S n <= n.
-Proof NZnle_succ_l.
-
-Theorem Zlt_le_succ : forall n m : Z, n < m <-> S n <= m.
-Proof NZlt_le_succ.
-
-Theorem Zlt_succ_lt : forall n m : Z, S n < m -> n < m.
-Proof NZlt_succ_lt.
-
-Theorem Zle_succ_le : forall n m : Z, S n <= m -> n <= m.
-Proof NZle_succ_le.
+Theorem Zlt_succ_l : forall n m : Z, S n < m -> n < m.
+Proof NZlt_succ_l.
 
 Theorem Zsucc_lt_mono : forall n m : Z, n < m <-> S n < S m.
 Proof NZsucc_lt_mono.
@@ -110,6 +110,8 @@ Proof NZsucc_le_mono.
 
 Theorem Zlt_asymm : forall n m, n < m -> ~ m < n.
 Proof NZlt_asymm.
+
+Notation Zlt_ngt := Zlt_asymm (only parsing).
 
 Theorem Zlt_trans : forall n m p : Z, n < m -> m < p -> n < p.
 Proof NZlt_trans.
@@ -126,10 +128,15 @@ Proof NZlt_le_trans.
 Theorem Zle_antisymm : forall n m : Z, n <= m -> m <= n -> n == m.
 Proof NZle_antisymm.
 
+Theorem Zlt_1_l : forall n m : Z, 0 < n -> n < m -> 1 < m.
+Proof NZlt_1_l.
+
 (** Trichotomy, decidability, and double negation elimination *)
 
 Theorem Zlt_trichotomy : forall n m : Z,  n < m \/ n == m \/ m < n.
 Proof NZlt_trichotomy.
+
+Notation Zlt_eq_gt_cases := Zlt_trichotomy (only parsing).
 
 Theorem Zlt_gt_cases : forall n m : Z, n ~= m <-> n < m \/ n > m.
 Proof NZlt_gt_cases.
@@ -149,8 +156,8 @@ Proof NZle_ngt.
 Theorem Znlt_ge : forall n m : Z, ~ n < m <-> n >= m.
 Proof NZnlt_ge.
 
-Theorem Zlt_em : forall n m : Z, n < m \/ ~ n < m.
-Proof NZlt_em.
+Theorem Zlt_dec : forall n m : Z, decidable (n < m).
+Proof NZlt_dec.
 
 Theorem Zlt_dne : forall n m, ~ ~ n < m <-> n < m.
 Proof NZlt_dne.
@@ -161,14 +168,14 @@ Proof NZnle_gt.
 Theorem Zlt_nge : forall n m : Z, n < m <-> ~ n >= m.
 Proof NZlt_nge.
 
-Theorem Zle_em : forall n m : Z, n <= m \/ ~ n <= m.
-Proof NZle_em.
+Theorem Zle_dec : forall n m : Z, decidable (n <= m).
+Proof NZle_dec.
 
 Theorem Zle_dne : forall n m : Z, ~ ~ n <= m <-> n <= m.
 Proof NZle_dne.
 
-Theorem Zlt_nlt_succ : forall n m : Z, n < m <-> ~ m < S n.
-Proof NZlt_nlt_succ.
+Theorem Znlt_succ_r : forall n m : Z, ~ m < S n <-> n < m.
+Proof NZnlt_succ_r.
 
 Theorem Zlt_exists_pred :
   forall z n : Z, z < n -> exists k : Z, n == S k /\ z <= k.
@@ -307,17 +314,17 @@ Proof NZgt_wf.
 
 Theorem Zlt_pred_l : forall n : Z, P n < n.
 Proof.
-intro n; pattern n at 2; qsetoid_rewrite <- (Zsucc_pred n); apply Zlt_succ_r.
+intro n; pattern n at 2; qsetoid_rewrite <- (Zsucc_pred n); apply Zlt_succ_diag_r.
 Qed.
 
 Theorem Zle_pred_l : forall n : Z, P n <= n.
 Proof.
-intro; le_less; apply Zlt_pred_l.
+intro; apply Zlt_le_incl; apply Zlt_pred_l.
 Qed.
 
 Theorem Zlt_le_pred : forall n m : Z, n < m <-> n <= P m.
 Proof.
-intros n m; rewrite <- (Zsucc_pred m); rewrite Zpred_succ. apply Zlt_succ_le.
+intros n m; rewrite <- (Zsucc_pred m); rewrite Zpred_succ. apply Zlt_succ_r.
 Qed.
 
 Theorem Znle_pred_r : forall n : Z, ~ n <= P n.
@@ -328,17 +335,17 @@ Qed.
 Theorem Zlt_pred_le : forall n m : Z, P n < m <-> n <= m.
 Proof.
 intros n m; pattern n at 2; qsetoid_rewrite <- (Zsucc_pred n).
-apply Zlt_le_succ.
+symmetry; apply Zle_succ_l.
 Qed.
 
 Theorem Zlt_lt_pred : forall n m : Z, n < m -> P n < m.
 Proof.
-intros; apply <- Zlt_pred_le; le_less.
+intros; apply <- Zlt_pred_le; now apply Zlt_le_incl.
 Qed.
 
 Theorem Zle_le_pred : forall n m : Z, n <= m -> P n <= m.
 Proof.
-intros; le_less; now apply <- Zlt_pred_le.
+intros; apply Zlt_le_incl; now apply <- Zlt_pred_le.
 Qed.
 
 Theorem Zlt_pred_lt : forall n m : Z, n < P m -> n < m.
@@ -348,7 +355,7 @@ Qed.
 
 Theorem Zle_pred_lt : forall n m : Z, n <= P m -> n <= m.
 Proof.
-intros; le_less; now apply <- Zlt_le_pred.
+intros; apply Zlt_le_incl; now apply <- Zlt_le_pred.
 Qed.
 
 Theorem Zpred_lt_mono : forall n m : Z, n < m <-> P n < P m.
@@ -373,7 +380,7 @@ Qed.
 
 Theorem Zlt_pred_lt_succ : forall n m : Z, P n < m <-> n < S m.
 Proof.
-intros; rewrite Zlt_pred_le; symmetry; apply Zlt_succ_le.
+intros; rewrite Zlt_pred_le; symmetry; apply Zlt_succ_r.
 Qed.
 
 Theorem Zle_pred_lt_succ : forall n m : Z, P n <= m <-> n <= S m.
@@ -384,6 +391,13 @@ Qed.
 Theorem Zneq_pred_l : forall n : Z, P n ~= n.
 Proof.
 intro; apply Zlt_neq; apply Zlt_pred_l.
+Qed.
+
+Theorem Zlt_n1_r : forall n m : Z, n < m -> m < 0 -> n < -1.
+Proof.
+intros n m H1 H2. apply -> Zlt_le_pred in H2.
+setoid_replace (P 0) with (-1) in H2. now apply NZlt_le_trans with m.
+apply <- Zeq_opp_r. now rewrite Zopp_pred, Zopp_0.
 Qed.
 
 End ZOrderPropFunct.

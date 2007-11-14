@@ -64,5 +64,8 @@ Axiom recursion_succ :
     Aeq a a -> fun2_wd Neq Aeq Aeq f ->
       forall n : N, Aeq (recursion a f (S n)) (f n (recursion a f n)).
 
+(*Axiom dep_rec :
+  forall A : N -> Type, A 0 -> (forall n : N, A n -> A (S n)) -> forall n : N, A n.*)
+
 End NAxiomsSig.
 
