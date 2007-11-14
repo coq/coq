@@ -25,10 +25,6 @@ open Transactional_stack
 
 
 
-type evar = unit (* arnaud: à compléter en temps utile aussi *)
-
-
-
 (* We define a type of stored mutations of subproof pointers. 
    We actually define it as a pair of a [pointer] and a [subproof].
    The intended use of a stored mutation is to set the [pointer]
@@ -81,7 +77,8 @@ type 'a proof = { (* The root of the proof *)
 		  undo_stack : 'a undo_action transactional_stack;
 		  (* The dependent goal heap *)
 		  mutable dependent_goals : 
-		          ((constr,[ `Subproof | `Resolved | `Open ]) Subproof.pointer, evar) Biassoc.biassoc
+		          ((constr,[ `Subproof | `Resolved | `Open ]) Subproof.pointer, Evd.evar) Biassoc.biassoc;
+                  mutable eenv : Evd.evar_defs
 		}
 and 'a undo_action = 
     | MutateBack of packed_mutation
@@ -252,7 +249,7 @@ let resolve =
 let do_action actions pr = 
   let tr = start_transaction pr.undo_stack in
   try 
-    let actions = compose actions resolve in
+    let actions = compose actions resolve in (* arnaud:really need a resolve here ? *)
     Sequence.iter (fun action -> action pr tr) actions;
     commit tr
   with e -> (* arnaud: traitement particulier de Failure ? *)
