@@ -75,6 +75,12 @@ Proof NZlt_succ_diag_r.
 Theorem Zle_succ_diag_r : forall n : Z, n <= S n.
 Proof NZle_succ_diag_r.
 
+Theorem Zlt_0_1 : 0 < 1.
+Proof NZlt_0_1.
+
+Theorem Zle_0_1 : 0 <= 1.
+Proof NZle_0_1.
+
 Theorem Zlt_lt_succ_r : forall n m : Z, n < m -> n < S m.
 Proof NZlt_lt_succ_r.
 
@@ -149,6 +155,28 @@ Proof NZlt_ge_cases.
 
 Theorem Zle_ge_cases : forall n m : Z, n <= m \/ n >= m.
 Proof NZle_ge_cases.
+
+(** Instances of the previous theorems for m == 0 *)
+
+Theorem Zneg_pos_cases : forall n : Z, n ~= 0 <-> n < 0 \/ n > 0.
+Proof.
+intro; apply Zlt_gt_cases.
+Qed.
+
+Theorem Znonpos_pos_cases : forall n : Z, n <= 0 \/ n > 0.
+Proof.
+intro; apply Zle_gt_cases.
+Qed.
+
+Theorem Zneg_nonneg_cases : forall n : Z, n < 0 \/ n >= 0.
+Proof.
+intro; apply Zlt_ge_cases.
+Qed.
+
+Theorem Znonpos_nonneg_cases : forall n : Z, n <= 0 \/ n >= 0.
+Proof.
+intro; apply Zle_ge_cases.
+Qed.
 
 Theorem Zle_ngt : forall n m : Z, n <= m <-> ~ n > m.
 Proof NZle_ngt.

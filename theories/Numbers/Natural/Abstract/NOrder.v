@@ -80,6 +80,12 @@ Proof NZlt_succ_diag_r.
 Theorem le_succ_diag_r : forall n : N, n <= S n.
 Proof NZle_succ_diag_r.
 
+Theorem lt_0_1 : 0 < 1.
+Proof NZlt_0_1.
+
+Theorem le_0_1 : 0 <= 1.
+Proof NZle_0_1.
+
 Theorem lt_lt_succ_r : forall n m : N, n < m -> n < S m.
 Proof NZlt_lt_succ_r.
 

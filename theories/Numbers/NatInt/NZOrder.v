@@ -82,6 +82,16 @@ Proof.
 intro; apply NZlt_le_incl; apply NZlt_succ_diag_r.
 Qed.
 
+Theorem NZlt_0_1 : 0 < 1.
+Proof.
+apply NZlt_succ_diag_r.
+Qed.
+
+Theorem NZle_0_1 : 0 <= 1.
+Proof.
+apply NZle_succ_diag_r.
+Qed.
+
 Theorem NZlt_lt_succ_r : forall n m : NZ, n < m -> n < S m.
 Proof.
 intros. rewrite NZlt_succ_r. now apply NZlt_le_incl.

@@ -45,6 +45,15 @@ Proof NZpred_succ.
 Theorem pred_0 : P 0 == 0.
 Proof pred_0.
 
+Theorem Neq_refl : forall n : N, n == n.
+Proof (proj1 NZeq_equiv).
+
+Theorem Neq_symm : forall n m : N, n == m -> m == n.
+Proof (proj2 (proj2 NZeq_equiv)).
+
+Theorem Neq_trans : forall n m p : N, n == m -> m == p -> n == p.
+Proof (proj1 (proj2 NZeq_equiv)).
+
 Theorem neq_symm : forall n m : N, n ~= m -> m ~= n.
 Proof NZneq_symm.
 

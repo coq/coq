@@ -56,6 +56,20 @@ Proof NZeq_times_0_l.
 Theorem eq_times_0_r : forall n m : N, n * m == 0 -> n ~= 0 -> m == 0.
 Proof NZeq_times_0_r.
 
+Theorem square_lt_mono : forall n m : N, n < m <-> n * n < m * m.
+Proof.
+intros n m; split; intro;
+[apply NZsquare_lt_mono_nonneg | apply NZsquare_lt_simpl_nonneg];
+try assumption; apply le_0_l.
+Qed.
+
+Theorem square_le_mono : forall n m : N, n <= m <-> n * n <= m * m.
+Proof.
+intros n m; split; intro;
+[apply NZsquare_le_mono_nonneg | apply NZsquare_le_simpl_nonneg];
+try assumption; apply le_0_l.
+Qed.
+
 Theorem times_2_mono_l : forall n m : N, n < m -> 1 + (1 + 1) * n < (1 + 1) * m.
 Proof NZtimes_2_mono_l.
 
@@ -73,20 +87,22 @@ Qed.
 
 Theorem times_lt_mono : forall n m p q : N, n < m -> p < q -> n * p < m * q.
 Proof.
-intros; apply NZtimes_lt_mono; try assumption; apply le_0_l.
+intros; apply NZtimes_lt_mono_nonneg; try assumption; apply le_0_l.
 Qed.
 
 Theorem times_le_mono : forall n m p q : N, n <= m -> p <= q -> n * p <= m * q.
 Proof.
-intros; apply NZtimes_le_mono; try assumption; apply le_0_l.
+intros; apply NZtimes_le_mono_nonneg; try assumption; apply le_0_l.
 Qed.
 
-Theorem times_pos : forall n m : N, n * m > 0 <-> n > 0 /\ m > 0.
+Theorem lt_0_times : forall n m : N, n * m > 0 <-> n > 0 /\ m > 0.
 Proof.
 intros n m; split; [intro H | intros [H1 H2]].
-apply -> NZtimes_pos in H. destruct H as [[H1 H2] | [H1 H2]]. now split. false_hyp H1 nlt_0_r.
+apply -> NZlt_0_times in H. destruct H as [[H1 H2] | [H1 H2]]. now split. false_hyp H1 nlt_0_r.
 now apply NZtimes_pos_pos.
 Qed.
+
+Notation times_pos := lt_0_times (only parsing).
 
 Theorem eq_times_1 : forall n m : N, n * m == 1 <-> n == 1 /\ m == 1.
 Proof.

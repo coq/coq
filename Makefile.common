@@ -656,6 +656,7 @@ NATINTVO:=\
   $(NATINTDIR)/NZPlus.vo\
   $(NATINTDIR)/NZTimes.vo\
   $(NATINTDIR)/NZOrder.vo\
+  $(NATINTDIR)/NZPlusOrder.vo\
   $(NATINTDIR)/NZTimesOrder.vo
 
 NATURALDIR:=$(NUMBERSDIR)/Natural

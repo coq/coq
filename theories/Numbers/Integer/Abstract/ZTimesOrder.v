@@ -64,37 +64,66 @@ Proof NZtimes_le_mono_neg_l.
 Theorem Ztimes_le_mono_neg_r : forall n m p : Z, p < 0 -> (n <= m <-> m * p <= n * p).
 Proof NZtimes_le_mono_neg_r.
 
-Theorem Ztimes_lt_mono :
+Theorem Ztimes_lt_mono_nonneg :
   forall n m p q : Z, 0 <= n -> n < m -> 0 <= p -> p < q -> n * p < m * q.
-Proof NZtimes_lt_mono.
+Proof NZtimes_lt_mono_nonneg.
 
-Theorem Ztimes_le_mono :
+Theorem Ztimes_lt_mono_nonpos :
+  forall n m p q : Z, m <= 0 -> n < m -> q <= 0 -> p < q ->  m * q < n * p.
+Proof.
+intros n m p q H1 H2 H3 H4.
+apply Zle_lt_trans with (m * p).
+apply Ztimes_le_mono_nonpos_l; [assumption | now apply Zlt_le_incl].
+apply -> Ztimes_lt_mono_neg_r; [assumption | now apply Zlt_le_trans with q].
+Qed.
+
+Theorem Ztimes_le_mono_nonneg :
   forall n m p q : Z, 0 <= n -> n <= m -> 0 <= p -> p <= q -> n * p <= m * q.
-Proof NZtimes_le_mono.
+Proof NZtimes_le_mono_nonneg.
+
+Theorem Ztimes_le_mono_nonpos :
+  forall n m p q : Z, m <= 0 -> n <= m -> q <= 0 -> p <= q ->  m * q <= n * p.
+Proof.
+intros n m p q H1 H2 H3 H4.
+apply Zle_trans with (m * p).
+now apply Ztimes_le_mono_nonpos_l.
+apply Ztimes_le_mono_nonpos_r; [now apply Zle_trans with q | assumption].
+Qed.
 
 Theorem Ztimes_pos_pos : forall n m : Z, 0 < n -> 0 < m -> 0 < n * m.
 Proof NZtimes_pos_pos.
 
-Theorem Ztimes_nonneg_nonneg : forall n m : Z, 0 <= n -> 0 <= m -> 0 <= n * m.
-Proof NZtimes_nonneg_nonneg.
-
 Theorem Ztimes_neg_neg : forall n m : Z, n < 0 -> m < 0 -> 0 < n * m.
 Proof NZtimes_neg_neg.
-
-Theorem Ztimes_nonpos_nonpos : forall n m : Z, n <= 0 -> m <= 0 -> 0 <= n * m.
-Proof NZtimes_nonpos_nonpos.
 
 Theorem Ztimes_pos_neg : forall n m : Z, 0 < n -> m < 0 -> n * m < 0.
 Proof NZtimes_pos_neg.
 
-Theorem Ztimes_nonneg_nonpos : forall n m : Z, 0 <= n -> m <= 0 -> n * m <= 0.
-Proof NZtimes_nonneg_nonpos.
-
 Theorem Ztimes_neg_pos : forall n m : Z, n < 0 -> 0 < m -> n * m < 0.
 Proof NZtimes_neg_pos.
 
+Theorem Ztimes_nonneg_nonneg : forall n m : Z, 0 <= n -> 0 <= m -> 0 <= n * m.
+Proof.
+intros n m H1 H2.
+rewrite <- (Ztimes_0_l m). now apply Ztimes_le_mono_nonneg_r.
+Qed.
+
+Theorem Ztimes_nonpos_nonpos : forall n m : Z, n <= 0 -> m <= 0 -> 0 <= n * m.
+Proof.
+intros n m H1 H2.
+rewrite <- (Ztimes_0_l m). now apply Ztimes_le_mono_nonpos_r.
+Qed.
+
+Theorem Ztimes_nonneg_nonpos : forall n m : Z, 0 <= n -> m <= 0 -> n * m <= 0.
+Proof.
+intros n m H1 H2.
+rewrite <- (Ztimes_0_l m). now apply Ztimes_le_mono_nonpos_r.
+Qed.
+
 Theorem Ztimes_nonpos_nonneg : forall n m : Z, n <= 0 -> 0 <= m -> n * m <= 0.
-Proof NZtimes_nonpos_nonneg.
+Proof.
+intros; rewrite Ztimes_comm; now apply Ztimes_nonneg_nonpos.
+Qed.
 
 Theorem Zlt_1_times_pos : forall n m : Z, 1 < n -> 0 < m -> 1 < n * m.
 Proof NZlt_1_times_pos.
@@ -111,12 +140,90 @@ Proof NZeq_times_0_l.
 Theorem Zeq_times_0_r : forall n m : Z, n * m == 0 -> n ~= 0 -> m == 0.
 Proof NZeq_times_0_r.
 
-Theorem Ztimes_pos : forall n m : Z, 0 < n * m <-> (0 < n /\ 0 < m) \/ (m < 0 /\ n < 0).
-Proof NZtimes_pos.
+Theorem Zlt_0_times : forall n m : Z, 0 < n * m <-> 0 < n /\ 0 < m \/ m < 0 /\ n < 0.
+Proof NZlt_0_times.
 
-Theorem Ztimes_neg :
-  forall n m : Z, n * m < 0 <-> (n < 0 /\ m > 0) \/ (n > 0 /\ m < 0).
-Proof NZtimes_neg.
+Notation Ztimes_pos := Zlt_0_times (only parsing).
+
+Theorem Zlt_times_0 :
+  forall n m : Z, n * m < 0 <-> n < 0 /\ m > 0 \/ n > 0 /\ m < 0.
+Proof.
+intros n m; split; [intro H | intros [[H1 H2] | [H1 H2]]].
+destruct (Zlt_trichotomy n 0) as [H1 | [H1 | H1]];
+[| rewrite H1 in H; rewrite Ztimes_0_l in H; false_hyp H Zlt_irrefl |];
+(destruct (Zlt_trichotomy m 0) as [H2 | [H2 | H2]];
+[| rewrite H2 in H; rewrite Ztimes_0_r in H; false_hyp H Zlt_irrefl |]);
+try (left; now split); try (right; now split).
+assert (H3 : n * m > 0) by now apply Ztimes_neg_neg.
+elimtype False; now apply (Zlt_asymm (n * m) 0).
+assert (H3 : n * m > 0) by now apply Ztimes_pos_pos.
+elimtype False; now apply (Zlt_asymm (n * m) 0).
+now apply Ztimes_neg_pos. now apply Ztimes_pos_neg.
+Qed.
+
+Notation Ztimes_neg := Zlt_times_0 (only parsing).
+
+Theorem Zle_0_times :
+  forall n m : Z, 0 <= n * m -> 0 <= n /\ 0 <= m \/ n <= 0 /\ m <= 0.
+Proof.
+assert (R : forall n : Z, 0 == n <-> n == 0) by (intros; split; apply Zeq_symm).
+intros n m. repeat rewrite Zlt_eq_cases. repeat rewrite R.
+rewrite Zlt_0_times, Zeq_times_0.
+pose proof (Zlt_trichotomy n 0); pose proof (Zlt_trichotomy m 0). tauto.
+Qed.
+
+Notation Ztimes_nonneg := Zle_0_times (only parsing).
+
+Theorem Zle_times_0 :
+  forall n m : Z, n * m <= 0 -> 0 <= n /\ m <= 0 \/ n <= 0 /\ 0 <= m.
+Proof.
+assert (R : forall n : Z, 0 == n <-> n == 0) by (intros; split; apply Zeq_symm).
+intros n m. repeat rewrite Zlt_eq_cases. repeat rewrite R.
+rewrite Zlt_times_0, Zeq_times_0.
+pose proof (Zlt_trichotomy n 0); pose proof (Zlt_trichotomy m 0). tauto.
+Qed.
+
+Notation Ztimes_nonpos := Zle_times_0 (only parsing).
+
+Theorem Zsquare_lt_mono_nonneg : forall n m : Z, 0 <= n -> n < m -> n * n < m * m.
+Proof NZsquare_lt_mono_nonneg.
+
+Theorem Zsquare_lt_mono_nonpos : forall n m : Z, n <= 0 -> m < n -> n * n < m * m.
+Proof.
+intros n m H1 H2. now apply Ztimes_lt_mono_nonpos.
+Qed.
+
+Theorem Zsquare_le_mono_nonneg : forall n m : Z, 0 <= n -> n <= m -> n * n <= m * m.
+Proof NZsquare_le_mono_nonneg.
+
+Theorem Zsquare_le_mono_nonpos : forall n m : Z, n <= 0 -> m <= n -> n * n <= m * m.
+Proof.
+intros n m H1 H2. now apply Ztimes_le_mono_nonpos.
+Qed.
+
+Theorem Zsquare_lt_simpl_nonneg : forall n m : Z, 0 <= m -> n * n < m * m -> n < m.
+Proof NZsquare_lt_simpl_nonneg.
+
+Theorem Zsquare_le_simpl_nonneg : forall n m : Z, 0 <= m -> n * n <= m * m -> n <= m.
+Proof NZsquare_le_simpl_nonneg.
+
+Theorem Zsquare_lt_simpl_nonpos : forall n m : Z, m <= 0 -> n * n < m * m -> m < n.
+Proof.
+intros n m H1 H2. destruct (Zle_gt_cases n 0).
+destruct (NZlt_ge_cases m n).
+assumption. assert (F : m * m <= n * n) by now apply Zsquare_le_mono_nonpos.
+apply -> NZle_ngt in F. false_hyp H2 F.
+now apply Zle_lt_trans with 0.
+Qed.
+
+Theorem Zsquare_le_simpl_nonpos : forall n m : NZ, m <= 0 -> n * n <= m * m -> m <= n.
+Proof.
+intros n m H1 H2. destruct (NZle_gt_cases n 0).
+destruct (NZle_gt_cases m n).
+assumption. assert (F : m * m < n * n) by now apply Zsquare_lt_mono_nonpos.
+apply -> NZlt_nge in F. false_hyp H2 F.
+apply Zlt_le_incl; now apply NZle_lt_trans with 0.
+Qed.
 
 Theorem Ztimes_2_mono_l : forall n m : Z, n < m -> 1 + (1 + 1) * n < (1 + 1) * m.
 Proof NZtimes_2_mono_l.

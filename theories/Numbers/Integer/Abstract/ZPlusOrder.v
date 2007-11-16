@@ -89,6 +89,27 @@ Proof NZplus_nonneg_cases.
 
 (** Theorems that are either not valid on N or have different proofs on N and Z *)
 
+Theorem Zplus_neg_neg : forall n m : Z, n < 0 -> m < 0 -> n + m < 0.
+Proof.
+intros n m H1 H2. rewrite <- (Zplus_0_l 0). now apply Zplus_lt_mono.
+Qed.
+
+Theorem Zplus_neg_nonpos : forall n m : Z, n < 0 -> m <= 0 -> n + m < 0.
+Proof.
+intros n m H1 H2. rewrite <- (Zplus_0_l 0). now apply Zplus_lt_le_mono.
+Qed.
+
+Theorem Zplus_nonpos_neg : forall n m : Z, n <= 0 -> m < 0 -> n + m < 0.
+Proof.
+intros n m H1 H2. rewrite <- (Zplus_0_l 0). now apply Zplus_le_lt_mono.
+Qed.
+
+Theorem Zplus_nonpos_nonpos : forall n m : Z, n <= 0 -> m <= 0 -> n + m <= 0.
+Proof.
+intros n m H1 H2. rewrite <- (Zplus_0_l 0). now apply Zplus_le_mono.
+Qed.
+
+
 (** Minus and order *)
 
 Theorem Zlt_lt_minus : forall n m : Z, n < m <-> 0 < m - n.

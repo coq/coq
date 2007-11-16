@@ -33,6 +33,15 @@ Proof NZpred_wd.
 Theorem Zpred_succ : forall n : Z, P (S n) == n.
 Proof NZpred_succ.
 
+Theorem Zeq_refl : forall n : Z, n == n.
+Proof (proj1 NZeq_equiv).
+
+Theorem Zeq_symm : forall n m : Z, n == m -> m == n.
+Proof (proj2 (proj2 NZeq_equiv)).
+
+Theorem Zeq_trans : forall n m p : Z, n == m -> m == p -> n == p.
+Proof (proj1 (proj2 NZeq_equiv)).
+
 Theorem Zneq_symm : forall n m : Z, n ~= m -> m ~= n.
 Proof NZneq_symm.
 
