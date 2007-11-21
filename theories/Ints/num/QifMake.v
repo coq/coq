@@ -171,12 +171,7 @@ Module Qif.
   | BigN.N6 _ => false
   | BigN.N7 _ => false
   | BigN.N8 _ => false
-  | BigN.N9 _ => true 
-  | BigN.N10 _ => true
-  | BigN.N11 _ => true
-  | BigN.N12 _ => true
-  | BigN.N13 _ => true
-  | BigN.Nn n _ => true
+  | _         => true 
   end.
 
  Definition do_norm_z z :=
