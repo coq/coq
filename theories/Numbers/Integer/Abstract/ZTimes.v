@@ -26,7 +26,7 @@ Proof NZtimes_0_l.
 Theorem Ztimes_succ_l : forall n m : Z, (S n) * m == n * m + m.
 Proof NZtimes_succ_l.
 
-(** Theorems that are valid for both natural numbers and integers *)
+(* Theorems that are valid for both natural numbers and integers *)
 
 Theorem Ztimes_0_r : forall n : Z, n * 0 == 0.
 Proof NZtimes_0_r.
@@ -68,7 +68,7 @@ Proof NZeq_times_0.
 Theorem Zneq_times_0 : forall n m : Z, n ~= 0 /\ m ~= 0 <-> n * m ~= 0.
 Proof NZneq_times_0.
 
-(** Theorems that are either not valid on N or have different proofs on N and Z *)
+(* Theorems that are either not valid on N or have different proofs on N and Z *)
 
 Theorem Ztimes_pred_r : forall n m : Z, n * (P m) == n * m - n.
 Proof.

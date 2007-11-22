@@ -317,7 +317,7 @@ rewrite H; apply lt_wf.
 setoid_replace lt with (fun n m : N => 0 <= n /\ n < m) using relation relations_eq.*)
 Qed.
 
-(** Theorems that are true for natural numbers but not for integers *)
+(* Theorems that are true for natural numbers but not for integers *)
 
 (* "le_0_l : forall n : N, 0 <= n" was proved in NBase.v *)
 

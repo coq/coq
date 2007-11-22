@@ -121,6 +121,17 @@ Proof.
 intros n m p. rewrite (NZtimes_comm n p), (NZtimes_comm m p); apply NZtimes_cancel_l.
 Qed.
 
+Theorem NZtimes_id_l : forall n m : NZ, m ~= 0 -> (n * m == m <-> n == 1).
+Proof.
+intros n m H.
+stepl (n * m == 1 * m) by now rewrite NZtimes_1_l. now apply NZtimes_cancel_r.
+Qed.
+
+Theorem NZtimes_id_r : forall n m : NZ, n ~= 0 -> (n * m == n <-> m == 1).
+Proof.
+intros n m; rewrite NZtimes_comm; apply NZtimes_id_l.
+Qed.
+
 Theorem NZtimes_le_mono_pos_l : forall n m p : NZ, 0 < p -> (n <= m <-> p * n <= p * m).
 Proof.
 intros n m p H; do 2 rewrite NZlt_eq_cases.
@@ -222,6 +233,11 @@ intros n m; split; intro H.
 intro H1; apply -> NZeq_times_0 in H1. tauto.
 split; intro H1; rewrite H1 in H;
 (rewrite NZtimes_0_l in H || rewrite NZtimes_0_r in H); now apply H.
+Qed.
+
+Theorem NZeq_square_0 : forall n : NZ, n * n == 0 <-> n == 0.
+Proof.
+intro n; rewrite NZeq_times_0; tauto.
 Qed.
 
 Theorem NZeq_times_0_l : forall n m : NZ, n * m == 0 -> m ~= 0 -> n == 0.

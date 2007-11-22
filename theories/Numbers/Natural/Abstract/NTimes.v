@@ -52,7 +52,7 @@ Proof NZtimes_1_l.
 Theorem times_1_r : forall n : N, n * 1 == n.
 Proof NZtimes_1_r.
 
-(** Theorems that cannot be proved in NZTimes *)
+(* Theorems that cannot be proved in NZTimes *)
 
 (* In proving the correctness of the definition of multiplication on
 integers constructed from pairs of natural numbers, we'll need the

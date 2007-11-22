@@ -16,8 +16,6 @@ Module ZTimesOrderPropFunct (Import ZAxiomsMod : ZAxiomsSig).
 Module Export ZPlusOrderPropMod := ZPlusOrderPropFunct ZAxiomsMod.
 Open Local Scope IntScope.
 
-(** Theorems that are true on both natural numbers and integers *)
-
 Theorem Ztimes_lt_pred :
   forall p q n m : Z, S p == q -> (p * n < p * m <-> q * n + m < q * m + n).
 Proof NZtimes_lt_pred.
@@ -51,6 +49,12 @@ Proof NZtimes_cancel_l.
 
 Theorem Ztimes_cancel_r : forall n m p : Z, p ~= 0 -> (n * p == m * p <-> n == m).
 Proof NZtimes_cancel_r.
+
+Theorem Ztimes_id_l : forall n m : Z, m ~= 0 -> (n * m == m <-> n == 1).
+Proof NZtimes_id_l.
+
+Theorem Ztimes_id_r : forall n m : Z, n ~= 0 -> (n * m == n <-> m == 1).
+Proof NZtimes_id_r.
 
 Theorem Ztimes_le_mono_pos_l : forall n m p : Z, 0 < p -> (n <= m <-> p * n <= p * m).
 Proof NZtimes_le_mono_pos_l.
@@ -134,6 +138,9 @@ Proof NZeq_times_0.
 Theorem Zneq_times_0 : forall n m : Z, n ~= 0 /\ m ~= 0 <-> n * m ~= 0.
 Proof NZneq_times_0.
 
+Theorem Zeq_square_0 : forall n : Z, n * n == 0 <-> n == 0.
+Proof NZeq_square_0.
+
 Theorem Zeq_times_0_l : forall n m : Z, n * m == 0 -> m ~= 0 -> n == 0.
 Proof NZeq_times_0_l.
 
@@ -185,6 +192,20 @@ Qed.
 
 Notation Ztimes_nonpos := Zle_times_0 (only parsing).
 
+Theorem Zle_0_square : forall n : Z, 0 <= n * n.
+Proof.
+intro n; destruct (Zneg_nonneg_cases n).
+apply Zlt_le_incl; now apply Ztimes_neg_neg.
+now apply Ztimes_nonneg_nonneg.
+Qed.
+
+Notation Zsquare_nonneg := Zle_0_square (only parsing).
+
+Theorem Znlt_square_0 : forall n : Z, ~ n * n < 0.
+Proof.
+intros n H. apply -> Zlt_nge in H. apply H. apply Zsquare_nonneg.
+Qed.
+
 Theorem Zsquare_lt_mono_nonneg : forall n m : Z, 0 <= n -> n < m -> n * n < m * m.
 Proof NZsquare_lt_mono_nonneg.
 
@@ -228,8 +249,6 @@ Qed.
 Theorem Ztimes_2_mono_l : forall n m : Z, n < m -> 1 + (1 + 1) * n < (1 + 1) * m.
 Proof NZtimes_2_mono_l.
 
-(** Theorems that are either not valid on N or have different proofs on N and Z *)
-
 Theorem Zlt_1_times_neg : forall n m : Z, n < -1 -> m < 0 -> 1 < n * m.
 Proof.
 intros n m H1 H2. apply -> (NZtimes_lt_mono_neg_r m) in H1.
@@ -253,7 +272,7 @@ apply <- Zopp_neg_pos in H2. now apply Zlt_n1_r with (- m).
 assumption.
 Qed.
 
-Theorem Zlt_1_l_times : forall n m : Z, 1 < n -> n * m < -1 \/ n * m == 0 \/ 1 < n * m.
+Theorem Zlt_1_times_l : forall n m : Z, 1 < n -> n * m < -1 \/ n * m == 0 \/ 1 < n * m.
 Proof.
 intros n m H; destruct (Zlt_trichotomy m 0) as [H1 | [H1 | H1]].
 left. now apply Zlt_times_n1_neg.
@@ -261,7 +280,7 @@ right; left; now rewrite H1, Ztimes_0_r.
 right; right; now apply Zlt_1_times_pos.
 Qed.
 
-Theorem Zlt_n1_r_times : forall n m : Z, n < -1 -> n * m < -1 \/ n * m == 0 \/ 1 < n * m.
+Theorem Zlt_n1_times_r : forall n m : Z, n < -1 -> n * m < -1 \/ n * m == 0 \/ 1 < n * m.
 Proof.
 intros n m H; destruct (Zlt_trichotomy m 0) as [H1 | [H1 | H1]].
 right; right. now apply Zlt_1_times_neg.
@@ -278,15 +297,46 @@ assert (H2 : 1 < 0) by now apply Zlt_trans with (-1). false_hyp H2 Znlt_succ_dia
 Z0_pos_neg n.
 intros m H; rewrite Ztimes_0_l in H; false_hyp H Zneq_succ_diag_r.
 intros n H; split; apply <- Zle_succ_l in H; le_elim H.
-intros m H1; apply (Zlt_1_l_times n m) in H.
+intros m H1; apply (Zlt_1_times_l n m) in H.
 rewrite H1 in H; destruct H as [H | [H | H]].
 false_hyp H F. false_hyp H Zneq_succ_diag_l. false_hyp H Zlt_irrefl.
 intros; now left.
-intros m H1; apply (Zlt_1_l_times n m) in H. rewrite Ztimes_opp_l in H1;
+intros m H1; apply (Zlt_1_times_l n m) in H. rewrite Ztimes_opp_l in H1;
 apply -> Zeq_opp_l in H1. rewrite H1 in H; destruct H as [H | [H | H]].
 false_hyp H Zlt_irrefl. apply -> Zeq_opp_l in H. rewrite Zopp_0 in H.
 false_hyp H Zneq_succ_diag_l. false_hyp H F.
 intros; right; symmetry; now apply Zopp_wd.
+Qed.
+
+Theorem Zlt_times_diag_l : forall n m : Z, n < 0 -> (1 < m <-> n * m < n).
+Proof.
+intros n m H. stepr (n * m < n * 1) by now rewrite Ztimes_1_r.
+now apply Ztimes_lt_mono_neg_l.
+Qed.
+
+Theorem Zlt_times_diag_r : forall n m : Z, 0 < n -> (1 < m <-> n < n * m).
+Proof.
+intros n m H. stepr (n * 1 < n * m) by now rewrite Ztimes_1_r.
+now apply Ztimes_lt_mono_pos_l.
+Qed.
+
+Theorem Zle_times_diag_l : forall n m : Z, n < 0 -> (1 <= m <-> n * m <= n).
+Proof.
+intros n m H. stepr (n * m <= n * 1) by now rewrite Ztimes_1_r.
+now apply Ztimes_le_mono_neg_l.
+Qed.
+
+Theorem Zle_times_diag_r : forall n m : Z, 0 < n -> (1 <= m <-> n <= n * m).
+Proof.
+intros n m H. stepr (n * 1 <= n * m) by now rewrite Ztimes_1_r.
+now apply Ztimes_le_mono_pos_l.
+Qed.
+
+Theorem Zlt_times_r : forall n m p : Z, 0 < n -> 1 < p -> n < m -> n < m * p.
+Proof.
+intros. stepl (n * 1) by now rewrite Ztimes_1_r.
+apply Ztimes_lt_mono_nonneg.
+now apply Zlt_le_incl. assumption. apply Zle_0_1. assumption.
 Qed.
 
 End ZTimesOrderPropFunct.

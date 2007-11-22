@@ -38,7 +38,7 @@ Proof Zopp_0.
 Theorem Zopp_succ : forall n : Z, - (S n) == P (- n).
 Proof Zopp_succ.
 
-(** Theorems that are valid for both natural numbers and integers *)
+(* Theorems that are valid for both natural numbers and integers *)
 
 Theorem Zplus_0_r : forall n : Z, n + 0 == n.
 Proof NZplus_0_r.
@@ -70,7 +70,7 @@ Proof NZplus_cancel_l.
 Theorem Zplus_cancel_r : forall n m p : Z, n + p == m + p <-> n == m.
 Proof NZplus_cancel_r.
 
-(** Theorems that are either not valid on N or have different proofs on N and Z *)
+(* Theorems that are either not valid on N or have different proofs on N and Z *)
 
 Theorem Zplus_pred_l : forall n m : Z, P n + m == P (n + m).
 Proof.
@@ -198,6 +198,11 @@ Theorem Zminus_minus_distr : forall n m p : Z, n - (m - p) == (n - m) + p.
 Proof.
 intros n m p; rewrite <- Zplus_opp_r, Zopp_minus_distr, Zplus_assoc.
 now rewrite Zplus_opp_r.
+Qed.
+
+Theorem minus_opp_l : forall n m : Z, - n - m == - m - n.
+Proof.
+intros n m. do 2 rewrite <- Zplus_opp_r. now rewrite Zplus_comm.
 Qed.
 
 Theorem Zminus_opp_r : forall n m : Z, n - (- m) == n + m.

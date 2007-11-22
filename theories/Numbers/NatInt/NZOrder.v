@@ -243,6 +243,8 @@ now left.
 right; intro H1; rewrite H1 in H; false_hyp H NZlt_irrefl.
 Qed.
 
+(* DNE stands for double-negation elimination *)
+
 Theorem NZeq_dne : forall n m, ~ ~ n == m <-> n == m.
 Proof.
 intros n m; split; intro H.

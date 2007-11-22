@@ -338,7 +338,7 @@ Proof NZlt_wf.
 Theorem Zgt_wf : forall z : Z, well_founded (fun n m : Z => m < n /\ n <= z).
 Proof NZgt_wf.
 
-(** Theorems that are either not valid on N or have different proofs on N and Z *)
+(* Theorems that are either not valid on N or have different proofs on N and Z *)
 
 Theorem Zlt_pred_l : forall n : Z, P n < n.
 Proof.

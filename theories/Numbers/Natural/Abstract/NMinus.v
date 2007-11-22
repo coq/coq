@@ -100,6 +100,7 @@ Qed.
 
 (* This could be proved by adding m to both sides. Then the proof would
 use plus_minus_assoc and minus_0_le, which is proven below. *)
+
 Theorem plus_minus_eq_nz : forall n m p : N, p ~= 0 -> n - m == p -> m + p == n.
 Proof.
 intros n m p H; double_induct n m.

@@ -59,7 +59,7 @@ Proof NZplus_cancel_l.
 Theorem plus_cancel_r : forall n m p : N, n + p == m + p <-> n == m.
 Proof NZplus_cancel_r.
 
-(** Theorems that are valid for natural numbers but cannot be proved for Z *)
+(* Theorems that are valid for natural numbers but cannot be proved for Z *)
 
 Theorem eq_plus_0 : forall n m : N, n + m == 0 <-> n == 0 /\ m == 0.
 Proof.

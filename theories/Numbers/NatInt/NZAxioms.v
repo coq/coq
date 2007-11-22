@@ -23,6 +23,9 @@ Parameter Inline NZplus : NZ -> NZ -> NZ.
 Parameter Inline NZminus : NZ -> NZ -> NZ.
 Parameter Inline NZtimes : NZ -> NZ -> NZ.
 
+(* Unary minus (opp) is not defined on natural numbers, so we have it for
+integers only *)
+
 Axiom NZeq_equiv : equiv NZ NZeq.
 Add Relation NZ NZeq
  reflexivity proved by (proj1 NZeq_equiv)

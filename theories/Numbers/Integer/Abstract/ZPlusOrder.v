@@ -16,7 +16,7 @@ Module ZPlusOrderPropFunct (Import ZAxiomsMod : ZAxiomsSig).
 Module Export ZOrderPropMod := ZOrderPropFunct ZAxiomsMod.
 Open Local Scope IntScope.
 
-(** Theorems that are true on both natural numbers and integers *)
+(* Theorems that are true on both natural numbers and integers *)
 
 Theorem Zplus_lt_mono_l : forall n m p : Z, n < m <-> p + n < p + m.
 Proof NZplus_lt_mono_l.
@@ -87,7 +87,7 @@ Proof NZplus_nonpos_cases.
 Theorem Zplus_nonneg_cases : forall n m : Z, 0 <= n + m -> 0 <= n \/ 0 <= m.
 Proof NZplus_nonneg_cases.
 
-(** Theorems that are either not valid on N or have different proofs on N and Z *)
+(* Theorems that are either not valid on N or have different proofs on N and Z *)
 
 Theorem Zplus_neg_neg : forall n m : Z, n < 0 -> m < 0 -> n + m < 0.
 Proof.
@@ -109,31 +109,50 @@ Proof.
 intros n m H1 H2. rewrite <- (Zplus_0_l 0). now apply Zplus_le_mono.
 Qed.
 
-
 (** Minus and order *)
 
-Theorem Zlt_lt_minus : forall n m : Z, n < m <-> 0 < m - n.
+Theorem Zlt_0_minus : forall n m : Z, 0 < m - n <-> n < m.
 Proof.
-intros n m. stepr (0 + n < m - n + n) by symmetry; apply Zplus_lt_mono_r.
+intros n m. stepl (0 + n < m - n + n) by symmetry; apply Zplus_lt_mono_r.
 rewrite Zplus_0_l; now rewrite Zminus_simpl_r.
 Qed.
 
-Theorem Zle_le_minus : forall n m : Z, n <= m <-> 0 <= m - n.
+Notation Zminus_pos := Zlt_0_minus (only parsing).
+
+Theorem Zle_0_minus : forall n m : Z, 0 <= m - n <-> n <= m.
 Proof.
-intros n m; stepr (0 + n <= m - n + n) by symmetry; apply Zplus_le_mono_r.
+intros n m; stepl (0 + n <= m - n + n) by symmetry; apply Zplus_le_mono_r.
 rewrite Zplus_0_l; now rewrite Zminus_simpl_r.
 Qed.
+
+Notation Zminus_nonneg := Zle_0_minus (only parsing).
+
+Theorem Zlt_minus_0 : forall n m : Z, n - m < 0 <-> n < m.
+Proof.
+intros n m. stepl (n - m + m < 0 + m) by symmetry; apply Zplus_lt_mono_r.
+rewrite Zplus_0_l; now rewrite Zminus_simpl_r.
+Qed.
+
+Notation Zminus_neg := Zlt_minus_0 (only parsing).
+
+Theorem Zle_minus_0 : forall n m : Z, n - m <= 0 <-> n <= m.
+Proof.
+intros n m. stepl (n - m + m <= 0 + m) by symmetry; apply Zplus_le_mono_r.
+rewrite Zplus_0_l; now rewrite Zminus_simpl_r.
+Qed.
+
+Notation Zminus_nonpos := Zle_minus_0 (only parsing).
 
 Theorem Zopp_lt_mono : forall n m : Z, n < m <-> - m < - n.
 Proof.
 intros n m. stepr (m + - m < m + - n) by symmetry; apply Zplus_lt_mono_l.
-do 2 rewrite Zplus_opp_r. rewrite Zminus_diag. apply Zlt_lt_minus.
+do 2 rewrite Zplus_opp_r. rewrite Zminus_diag. symmetry; apply Zlt_0_minus.
 Qed.
 
 Theorem Zopp_le_mono : forall n m : Z, n <= m <-> - m <= - n.
 Proof.
 intros n m. stepr (m + - m <= m + - n) by symmetry; apply Zplus_le_mono_l.
-do 2 rewrite Zplus_opp_r. rewrite Zminus_diag. apply Zle_le_minus.
+do 2 rewrite Zplus_opp_r. rewrite Zminus_diag. symmetry; apply Zle_0_minus.
 Qed.
 
 Theorem Zopp_pos_neg : forall n : Z, 0 < - n <-> n < 0.

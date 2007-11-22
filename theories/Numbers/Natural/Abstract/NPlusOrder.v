@@ -67,7 +67,7 @@ Proof NZplus_le_cases.
 Theorem plus_pos_cases : forall n m : N, 0 < n + m -> 0 < n \/ 0 < m.
 Proof NZplus_pos_cases.
 
-(** Theorems true for natural numbers *)
+(* Theorems true for natural numbers *)
 
 Theorem le_plus_r : forall n m : N, n <= n + m.
 Proof.

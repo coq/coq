@@ -141,7 +141,7 @@ refer to bidirectional induction, which is not useful on natural
 numbers. Therefore, we define a new induction tactic for natural numbers.
 We do not have to call "Declare Left Step" and "Declare Right Step"
 commands again, since the data for stepl and stepr tactics is inherited
-from N. *)
+from NZ. *)
 
 Ltac induct n := induction_maker n ltac:(apply induction).
 

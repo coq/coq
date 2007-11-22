@@ -32,6 +32,12 @@ Proof NZtimes_cancel_l.
 Theorem times_cancel_r : forall n m p : N, p ~= 0 -> (n * p == m * p <-> n == m).
 Proof NZtimes_cancel_r.
 
+Theorem times_id_l : forall n m : N, m ~= 0 -> (n * m == m <-> n == 1).
+Proof NZtimes_id_l.
+
+Theorem times_id_r : forall n m : N, n ~= 0 -> (n * m == n <-> m == 1).
+Proof NZtimes_id_r.
+
 Theorem times_le_mono_pos_l : forall n m p : N, 0 < p -> (n <= m <-> p * n <= p * m).
 Proof NZtimes_le_mono_pos_l.
 
@@ -49,6 +55,9 @@ Proof NZeq_times_0.
 
 Theorem neq_times_0 : forall n m : N, n ~= 0 /\ m ~= 0 <-> n * m ~= 0.
 Proof NZneq_times_0.
+
+Theorem eq_square_0 : forall n : N, n * n == 0 <-> n == 0.
+Proof NZeq_square_0.
 
 Theorem eq_times_0_l : forall n m : N, n * m == 0 -> m ~= 0 -> n == 0.
 Proof NZeq_times_0_l.
@@ -73,7 +82,7 @@ Qed.
 Theorem times_2_mono_l : forall n m : N, n < m -> 1 + (1 + 1) * n < (1 + 1) * m.
 Proof NZtimes_2_mono_l.
 
-(** Theorems that are either not valid on Z or have different proofs on N and Z *)
+(* Theorems that are either not valid on Z or have different proofs on N and Z *)
 
 Theorem times_le_mono_l : forall n m p : N, n <= m -> p * n <= p * m.
 Proof.
