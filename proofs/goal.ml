@@ -8,6 +8,8 @@
 
 (* $Id$ *)
 
+open Term
+
 (* This module implements the abstract interface to goals *)
 
 (* type of the goals *)
@@ -35,9 +37,15 @@ let of_info ?name evi =
   }
 
 (* return type of the Goal.refine function *)
+(* it contains the new subgoals to produce, a function to reconstruct
+   the proof to the current goal knowing the result of the subgoals,
+   the type and constraint information about the evars of the proof
+   (which has been extended with new ones), and the definitions of
+   the evars to instantiate *)
 type refinement = { reconstruct: Term.constr array -> Term.constr ;
                     subgoals: goal array ;
-                    new_defs: Evd.evar_defs}
+                    new_defs: Evd.evar_defs ;
+                    to_instantiate: Evd.evar_map}
 
 (* a pessimistic (i.e : there won't be many positive answers) filter
    over evar_maps *)
@@ -50,6 +58,50 @@ let evar_map_filter f evm =
 	   ) 
            evm 
            Evd.empty
+
+(* Inverts an array into a gmap (expectingly an array of evars) *)
+(* arnaud: expliquer pour evar vs evar*evar_info *)
+let invert a =
+  let m = ref Gmap.empty in
+  Array.iteri (fun i (e,_) -> m := Gmap.add e i !m) a;
+  !m
+
+(* takes a [Term.constr], an inverted array of evars and instantiates
+   these evars according to an array of [constr]. *)
+(* arnaud; would benefit of curried mkTruc *)
+let rec reconstruct constr subst subconstr =
+  match kind_of_term constr with
+  | Evar (e,_) -> (try subconstr.(Gmap.find e subst) with Not_found -> constr)
+  | Var _ 
+  | Meta _ 
+  | Const _ 
+  | Ind _ 
+  | Construct _ 
+  | Rel _
+  | Sort _  -> constr
+  | Cast (c,k,t) -> mkCast (reconstruct c subst subconstr,
+                            k,
+                            reconstruct t subst subconstr)
+  | Prod (n,t,b) -> mkProd (n,
+                            reconstruct t subst subconstr,
+                            reconstruct b subst subconstr)
+  | Lambda (n,t,b) -> mkLambda (n,
+                                reconstruct t subst subconstr,
+                                reconstruct b subst subconstr)
+  | LetIn (n,c,t,b) -> mkLetIn (n,
+                                 reconstruct c subst subconstr,
+                                 reconstruct t subst subconstr,
+                                 reconstruct b subst subconstr)
+  | App (f, cs) -> mkApp (reconstruct f subst subconstr, 
+                          Array.map (fun c -> reconstruct c subst subconstr) cs)
+  | Case (ci, c, d, bs) -> mkCase (ci,
+                                   reconstruct c subst subconstr,
+                                   reconstruct d subst subconstr,
+                                   Array.map (fun c -> reconstruct c subst subconstr) bs)
+  (*arnaud: faire ces deux là*)
+  | Fix _ -> failwith "Arnaud:Goal.reconstruct:Fix à implémenter"
+  | CoFix _ -> failwith "Arnaud:Goal.reconstruct:CoFix à implémenter"
+  
 
 (* arnaud: à commenter bien sûr *)
 let refine defs env check_type step gl =
@@ -68,6 +120,7 @@ let refine defs env check_type step gl =
   let new_defs = !rdefs in
   (* [delta_evars] holds the evars that have been introduced by this
      refinement (but not immediatly solved) *)
+  (* probablement à speeder up un bit *)
   let delta_evars = evar_map_filter (fun ev evi ->
                                       evi.Evd.evar_body = Evd.Evar_empty &&
                                       not (Evd.mem (Evd.evars_of defs) ev)
@@ -79,5 +132,8 @@ let refine defs env check_type step gl =
   (* subgoals to return *)
   (* arbaud: et les noms? *)
   let subgoals = Array.map (fun (_, evi) -> of_info evi ) subst_array in
-  let subst = (*arnaud: inverse de subst_array*)
+  (* [subst] allows to retrieve the indice of an evar in [subst_array] *)
+  let subst = invert subst_array in
+  (* final reconstruction function *)
+  let freconstruct = reconstruct refine_step subst in (*arnaud: probablement une fonction externe ?*)
   ()
