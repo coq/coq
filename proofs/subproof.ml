@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id: subproof.ml aspiwack $ *)
+(* $Id: pfedit.ml 9154 2006-09-20 17:18:18Z corbinea $ *)
 
 (* arnaud: repasser sur cette description *)
 (* This module implements the primitive data type of the interactive
