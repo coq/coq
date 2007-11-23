@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id: proof.ml aspiwack $ *)
+(* $Id$ *)
 
 (* This module implements the actual proof datatype. It enforces strong
    invariants, and it is the only module that should access the module

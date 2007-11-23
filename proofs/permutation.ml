@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id: permutation.ml aspiwack $ *)
+(* $Id$ *)
 
 (* This module implements the permutations of arrays (it can probably
    be extended to lists). *)

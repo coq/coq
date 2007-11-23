@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id: transactional_stack.ml aspiwack $ *)
+(* $Id$ *)
 
 (* This module implements a datastructure that is not strictly bound
    to the interractive proof system. But currently it is used as an 

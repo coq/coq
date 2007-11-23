@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id: goal.ml aspiwack $ *)
+(* $Id$ *)
 
 (* This module implements the abstract interface to goals *)
 
