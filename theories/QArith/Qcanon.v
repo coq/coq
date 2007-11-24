@@ -101,6 +101,7 @@ Infix "<=" := Qcle : Qc_scope.
 Infix ">" := Qcgt : Qc_scope. 
 Infix ">=" := Qcge : Qc_scope. 
 Notation "x <= y <= z" := (x<=y/\y<=z) : Qc_scope.
+Notation "x < y < z" := (x<y/\y<z) : Qc_scope.
 
 Definition Qccompare (p q : Qc) := (Qcompare p q).
 Notation "p ?= q" := (Qccompare p q) : Qc_scope.
@@ -347,7 +348,7 @@ Proof.
   unfold Qcle, Qclt; intros; eapply Qlt_le_trans; eauto.
 Qed.
 
-Lemma Qlt_trans : forall x y z, x<y -> y<z -> x<z.
+Lemma Qclt_trans : forall x y z, x<y -> y<z -> x<z.
 Proof.
   unfold Qclt; intros; eapply Qlt_trans; eauto.
 Qed.
@@ -472,7 +473,7 @@ Proof.
   compute; auto.
 Qed.
 
-Lemma Qpower_pos : forall p n, 0 <= p -> 0 <= p^n.
+Lemma Qcpower_pos : forall p n, 0 <= p -> 0 <= p^n.
 Proof.
   induction n; simpl; auto with qarith.
   intros; compute; intro; discriminate.
@@ -495,23 +496,6 @@ Proof.
   intros _ H; inversion H.
 Qed.
 
-(*
-Definition Qcrt : Ring_Theory Qcplus Qcmult 1 0 Qcopp Qc_eq_bool.
-Proof.
-constructor.
-exact Qcplus_comm.
-exact Qcplus_assoc.
-exact Qcmult_comm.
-exact Qcmult_assoc.
-exact Qcplus_0_l.
-exact Qcmult_1_l.
-exact Qcplus_opp_r.
-exact Qcmult_plus_distr_l.
-unfold Is_true; intros x y; generalize (Qc_eq_bool_correct x y);
- case (Qc_eq_bool x y); auto.
-Qed.
-Add Ring Qc Qcplus Qcmult 1 0 Qcopp Qc_eq_bool Qcrt [ Qcmake ].
-*)
 Definition Qcrt : ring_theory 0 1 Qcplus Qcmult Qcminus Qcopp (eq(A:=Qc)).
 Proof.
   constructor.
