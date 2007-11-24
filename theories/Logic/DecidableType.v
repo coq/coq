@@ -16,9 +16,9 @@ Unset Strict Implicit.
 
 Module Type EqualityType. 
 
-  Parameter t : Set.
+  Parameter Inline t : Set.
 
-  Parameter eq : t -> t -> Prop.
+  Parameter Inline eq : t -> t -> Prop.
 
   Axiom eq_refl : forall x : t, eq x x.
   Axiom eq_sym : forall x y : t, eq x y -> eq y x.
@@ -33,9 +33,9 @@ End EqualityType.
 
 Module Type DecidableType. 
 
-  Parameter t : Set.
+  Parameter Inline t : Set.
 
-  Parameter eq : t -> t -> Prop.
+  Parameter Inline eq : t -> t -> Prop.
 
   Axiom eq_refl : forall x : t, eq x x.
   Axiom eq_sym : forall x y : t, eq x y -> eq y x.

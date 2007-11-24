@@ -21,10 +21,10 @@ Inductive Compare (X : Set) (lt eq : X -> X -> Prop) (x y : X) : Set :=
 
 Module Type OrderedType.
 
-  Parameter t : Set.
+  Parameter Inline t : Set.
 
-  Parameter eq : t -> t -> Prop.
-  Parameter lt : t -> t -> Prop.
+  Parameter Inline eq : t -> t -> Prop.
+  Parameter Inline lt : t -> t -> Prop.
 
   Axiom eq_refl : forall x : t, eq x x.
   Axiom eq_sym : forall x y : t, eq x y -> eq y x.
