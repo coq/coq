@@ -14,3 +14,18 @@
 type goal
 
 val build : ?name:string -> hyps:Environ.named_context_val -> concl:Term.constr -> goal
+
+(* return type of the Goal.refine function *)
+(* it contains the new subgoals to produce, a function to reconstruct
+   the proof to the current goal knowing the result of the subgoals,
+   the type and constraint information about the evars of the proof
+   (which has been extended with new ones), and the definitions of
+   the evars to instantiate *)
+type refinement = { reconstruct: Term.constr array -> Term.constr ;
+                    subgoals: goal array ;
+                    new_defs: Evd.evar_defs ;
+                    to_instantiate: Evd.evar_map}
+
+
+(* arnaud: à commenter un brin (comme le .ml quoi) *)
+val refine : Evd.evar_defs -> Environ.env -> bool -> Rawterm.rawconstr -> goal -> refinement

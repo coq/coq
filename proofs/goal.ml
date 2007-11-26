@@ -98,12 +98,15 @@ let rec reconstruct constr subst subconstr =
                                    reconstruct c subst subconstr,
                                    reconstruct d subst subconstr,
                                    Array.map (fun c -> reconstruct c subst subconstr) bs)
-  (*arnaud: faire ces deux là*)
-  | Fix _ -> failwith "Arnaud:Goal.reconstruct:Fix à implémenter"
-  | CoFix _ -> failwith "Arnaud:Goal.reconstruct:CoFix à implémenter"
+  | Fix (i, (ns, bs, ts))-> mkFix (i,(ns,
+				       Array.map (fun c -> reconstruct c subst subconstr) bs,
+				       Array.map (fun c -> reconstruct c subst subconstr) ts))
+  | CoFix (i, (ns, bs, ts)) -> mkCoFix (i,(ns,
+				           Array.map (fun c -> reconstruct c subst subconstr) bs,
+				           Array.map (fun c -> reconstruct c subst subconstr) ts))
   
 
-(* arnaud: à commenter bien sûr *)
+(* arnaud: à commenter un brin  *)
 let refine defs env check_type step gl =
   (* building an environement containing [env] and [hyps gl] *)
   let env = Environ.reset_with_named_context (hyps gl) env in
@@ -120,9 +123,10 @@ let refine defs env check_type step gl =
   let new_defs = !rdefs in
   (* [delta_evars] holds the evars that have been introduced by this
      refinement (but not immediatly solved) *)
-  (* probablement à speeder up un bit *)
+  (* arnaud: probablement à speeder up un bit *)
   let delta_evars = evar_map_filter (fun ev evi ->
                                       evi.Evd.evar_body = Evd.Evar_empty &&
+                                      (* arnaud: factoriser la map ?*)
                                       not (Evd.mem (Evd.evars_of defs) ev)
 				   )
                                    (Evd.evars_of new_defs)
@@ -130,10 +134,23 @@ let refine defs env check_type step gl =
   (* [delta_evars] in the shape of an array *)
   let subst_array = Array.of_list (Evd.to_list delta_evars) in
   (* subgoals to return *)
-  (* arbaud: et les noms? *)
+  (* arnaud: et les noms? *)
   let subgoals = Array.map (fun (_, evi) -> of_info evi ) subst_array in
   (* [subst] allows to retrieve the indice of an evar in [subst_array] *)
   let subst = invert subst_array in
   (* final reconstruction function *)
-  let freconstruct = reconstruct refine_step subst in (*arnaud: probablement une fonction externe ?*)
-  ()
+  let freconstruct = reconstruct refine_step subst in
+  (* evars that have been resolved by the refinement *)
+  let newly_defined = evar_map_filter (fun ev evi ->
+					 evi.Evd.evar_body <> Evd.Evar_empty &&
+					 try 
+					   not (Evd.is_defined (Evd.evars_of defs) ev)
+					 with Not_found -> false
+				      )
+                                      (Evd.evars_of new_defs)
+  in
+  { reconstruct = freconstruct ;
+    subgoals = subgoals ;
+    new_defs = new_defs ;
+    to_instantiate = newly_defined
+  }
