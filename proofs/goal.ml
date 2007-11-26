@@ -154,3 +154,19 @@ let refine defs env check_type step gl =
     new_defs = new_defs ;
     to_instantiate = newly_defined
   }
+
+
+(* This function returns a new goal where the evars have been
+   instantiated according to an evar_map *)
+(* arnaud Evarutil ou Reductionops ou Pretype_errors ? *)
+let instantiate em gl =
+  (* note: goals don't have an evar_body *)
+  let content = gl.content in
+  let instantiate =  Evarutil.nf_evar em in
+  { gl with
+  
+    content = { content with
+		Evd.evar_hyps = Environ.map_named_val instantiate content.Evd.evar_hyps;
+		Evd.evar_concl = instantiate content.Evd.evar_concl
+	      }
+  }

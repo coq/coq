@@ -29,3 +29,8 @@ type refinement = { reconstruct: Term.constr array -> Term.constr ;
 
 (* arnaud: à commenter un brin (comme le .ml quoi) *)
 val refine : Evd.evar_defs -> Environ.env -> bool -> Rawterm.rawconstr -> goal -> refinement
+
+
+(* This function returns a new goal where the evars have been
+   instantiated according to an evar_map *)
+val instantiate : Evd.evar_map -> goal -> goal
