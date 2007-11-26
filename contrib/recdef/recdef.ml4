@@ -199,7 +199,7 @@ let rec (find_call_occs : int -> constr -> constr ->
   | Var(id) -> (fun l -> expr), []
   | Meta(_) -> error "find_call_occs : Meta"
   | Evar(_) -> error "find_call_occs : Evar"
-  | Sort(_)  -> error "find_call_occs : Sort"
+  | Sort(_)  -> (fun l -> expr), []
   | Cast(b,_,_) -> find_call_occs nb_lam f b
   | Prod(_,_,_) -> error "find_call_occs : Prod"
   | Lambda(na,t,b) -> 

@@ -1358,8 +1358,17 @@ let rec rewrite_eqs_in_eqs eqs =
   match eqs with 
     | [] -> tclIDTAC
     | eq::eqs -> 
+	
 	  tclTHEN 
-	    (tclMAP (fun id -> tclTRY (Equality.general_rewrite_in true id (mkVar eq) false)) eqs)
+	    (tclMAP 
+	       (fun id gl -> 
+		  observe_tac 
+		    (Format.sprintf "rewrite %s in %s " (string_of_id eq) (string_of_id id)) 
+		    (tclTRY (Equality.general_rewrite_in true id (mkVar eq) false))
+		    gl
+	       ) 
+	       eqs
+	    )
 	    (rewrite_eqs_in_eqs eqs) 
 
 let new_prove_with_tcc is_mes acc_inv hrec tcc_hyps eqs : tactic = 
@@ -1384,7 +1393,7 @@ let new_prove_with_tcc is_mes acc_inv hrec tcc_hyps eqs : tactic =
 		  observe_tac "rew_and_finish"
 		    (tclTHENLIST 
 		       [tclTRY(Recdef.list_rewrite false (List.map mkVar eqs));
-			rewrite_eqs_in_eqs eqs;
+			observe_tac "rewrite_eqs_in_eqs" (rewrite_eqs_in_eqs eqs);
 			(observe_tac "finishing"  
 			   (tclCOMPLETE (
 			      Eauto.gen_eauto false (false,5) [] (Some []))
@@ -1595,12 +1604,13 @@ let prove_principle_for_gen
 		  (* observe_tac "new_prove_with_tcc"  *)
 		    (new_prove_with_tcc 
 		       is_mes acc_inv fix_id  
-		       !tcc_list  
-		       ((List.map 
+		         
+		       (!tcc_list@(List.map 
 			   (fun (na,_,_) -> (Nameops.out_name na)) 
 			   (princ_info.args@princ_info.params)
-			)@ (acc_rec_arg_id::eqs))
+			)@ ([acc_rec_arg_id])) eqs
 		    )
+	       
 	       );
 	     is_valid = is_valid_hypothesis predicates_names
 	   }
