@@ -569,14 +569,14 @@ let rec reflexivity_with_destruct_cases g =
 		     if Equality.discriminable (pf_env g) (project g) t1 t2 
 		     then Equality.discr id g
 		     else if Equality.injectable (pf_env g) (project g) t1 t2
-		     then tclTHEN (Equality.inj [] id) intros_with_rewrite  g
+		     then tclTHENSEQ [Equality.inj [] id;thin [id];intros_with_rewrite]  g
 		     else tclIDTAC g
 		 | _ -> tclIDTAC g
     )
   in
   (tclFIRST
     [ reflexivity;
-      destruct_case ();
+      tclTHEN (tclPROGRESS discr_inject) (destruct_case ());
       (*  We reach this point ONLY if 
 	  the same value is matched (at least) two times 
 	  along binding path.
