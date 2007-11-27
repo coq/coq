@@ -24,7 +24,7 @@ type ('a,+'b) subproof = ('a,'b) Subproof.subproof
 open Transactional_stack
 
 
-
+(* arnaud: j'essaie un encodage basé sur les objets, ça devrait être plus rapide, et plus clair 
 (* We define a type of stored mutations of subproof pointers. 
    We actually define it as a pair of a [pointer] and a [subproof].
    The intended use of a stored mutation is to set the [pointer]
@@ -60,10 +60,14 @@ let do_packed_mutation =
     { bind_mutation = fun mtn -> Subproof.mutate mtn.pt mtn.sp }
   in
   fun pck ->
-    unpack_mutation pck scoped_mutate
+    unpack_mutation pck scoped_mutate *)
 
+type mutation = < mutate:unit>
 
-
+let build_mutation pt sp =
+  object 
+    method mutate = Subproof.mutate pt sp
+  end
 
 
 type 'a proof = { (* The root of the proof *)
@@ -81,7 +85,7 @@ type 'a proof = { (* The root of the proof *)
                   mutable eenv : Evd.evar_defs
 		}
 and 'a undo_action = 
-    | MutateBack of packed_mutation
+    | MutateBack of mutation (* arnaud:packed_mutation*)
     | Unfocus of 'a proof
     | Focus of 'a proof * (constr,[`Subproof|`Resolved|`Open]) Subproof.pointer
 
@@ -139,7 +143,7 @@ let unsafe_unfocus pr =
 
 (* This function interpetes (and execute) a single [undo_action] *)
 let execute_undo_action = function
-  | MutateBack pck -> do_packed_mutation pck
+  | MutateBack mutn -> mutn#mutate (*arnaud: do_packed_mutation pck*)
   | Unfocus pr -> unsafe_unfocus pr
   | Focus(pr, pt) -> unsafe_focus pr pt
 				
@@ -181,8 +185,11 @@ let null_action = primitive ( fun _ _ -> () )
    transaction [tr] *)
 
 let _mutate pt sp tr =
-  push (MutateBack (pack_mutation {sp=sp;pt=pt})) tr;
+  push (MutateBack (build_mutation pt sp)) tr;
   Subproof.mutate pt sp
+(* arnaud:
+  push (MutateBack (pack_mutation {sp=sp;pt=pt})) tr;
+  Subproof.mutate pt sp *)
 
 let mutate =
   primitive _mutate
