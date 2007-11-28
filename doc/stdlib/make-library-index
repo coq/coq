@@ -7,7 +7,7 @@ FILE=$1
 cp -f $FILE.template tmp
 echo -n Building file index-list.prehtml ...
 
-LIBDIRS="Init Logic Bool Arith NArith ZArith QArith Relations Sets Setoids Lists Sorting Wellfounded IntMap FSets Reals Ints Ints/num Program"
+LIBDIRS="Init Logic Bool Arith NArith ZArith QArith Relations Sets Setoids Lists Sorting Wellfounded IntMap FSets Reals Ints Ints/num Ints/Z Program Numbers Numbers/Natural/Abstract Numbers/Natural/Peano Numbers/Natural/Binary Numbers/Integer/Abstract Numbers/Integer/NatPairs Numbers/Integer/Binary Numbers/NatInt Strings" 
 
 for k in $LIBDIRS; do
     i=../theories/$k
@@ -21,7 +21,8 @@ for k in $LIBDIRS; do
 	    grep -q theories/$k/$b.v tmp
 	    a=$?
 	    if [ $a = 0 ]; then
-		sed -e "s:theories/$k/$b.v:<a href=\"Coq.$d.$b.html\">$b</a>:g" tmp > tmp2
+		p=${k//\//.}
+		sed -e "s:theories/$k/$b.v:<a href=\"Coq.$p.$b.html\">$b</a>:g" tmp > tmp2
 		mv -f tmp2 tmp
 	    else
 		echo Warning: theories/$k/$b.v is missing in the template file

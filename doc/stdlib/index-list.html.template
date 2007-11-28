@@ -65,6 +65,9 @@ through the <tt>Require Import</tt> command.</p>
     theories/Logic/ProofIrrelevance.v
     theories/Logic/ProofIrrelevanceFacts.v
     theories/Logic/ConstructiveEpsilon.v
+    theories/Logic/Description.v
+    theories/Logic/Epsilon.v
+    theories/Logic/IndefiniteDescription.v
   </dd>
     
   <dt> <b>Bool</b>:
@@ -119,7 +122,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/NArith/Ndigits.v
     theories/NArith/Ndist.v
     theories/NArith/Ndec.v
-.  </dd>
+  </dd>
 
   <dt> <b>ZArith</b>:
        Binary integers
@@ -152,6 +155,9 @@ through the <tt>Require Import</tt> command.</p>
     theories/ZArith/Zbinary.v
     theories/ZArith/Znumtheory.v
     theories/ZArith/Int.v
+    theories/ZArith/ZOdiv_def.v
+    theories/ZArith/ZOdiv.v
+    theories/ZArith/Zpow_facts.v
   </dd>
 
   <dt> <b>QArith</b>:
@@ -167,9 +173,54 @@ through the <tt>Require Import</tt> command.</p>
     (theories/QArith/QArith.v)
     theories/QArith/Qreals.v
     theories/QArith/Qcanon.v
+    theories/QArith/Qround.v
   </dd>
-    
-    
+
+  <dt> <b>Numbers</b>: 
+    A modular axiomatic construction for numbers
+  </dt>
+  <dd>
+    theories/Numbers/NumPrelude.v
+    theories/Numbers/QRewrite.v
+    theories/Numbers/NatInt/NZBase.v
+    theories/Numbers/NatInt/NZAxioms.v
+    theories/Numbers/NatInt/NZPlus.v
+    theories/Numbers/NatInt/NZTimes.v
+    theories/Numbers/NatInt/NZOrder.v
+    theories/Numbers/NatInt/NZTimesOrder.v
+    theories/Numbers/NatInt/NZPlusOrder.v
+  </dd>
+
+  <dd>
+    theories/Numbers/Natural/Abstract/NOrder.v
+    theories/Numbers/Natural/Abstract/NPlus.v
+    theories/Numbers/Natural/Abstract/NMinus.v
+    theories/Numbers/Natural/Abstract/NTimesOrder.v
+    theories/Numbers/Natural/Abstract/NPlusOrder.v
+    theories/Numbers/Natural/Abstract/NIso.v
+    theories/Numbers/Natural/Abstract/NStrongRec.v
+    theories/Numbers/Natural/Abstract/NBase.v
+    theories/Numbers/Natural/Abstract/NAxioms.v
+    theories/Numbers/Natural/Abstract/NTimes.v
+    theories/Numbers/Natural/Abstract/NDefOps.v
+    theories/Numbers/Natural/Peano/NPeano.v
+    theories/Numbers/Natural/Binary/NBinDefs.v
+    theories/Numbers/Natural/Binary/NBinary.v
+    </dd>
+
+   <dd>
+    theories/Numbers/Integer/Abstract/ZPlus.v
+    theories/Numbers/Integer/Abstract/ZPlusOrder.v
+    theories/Numbers/Integer/Abstract/ZLt.v
+    theories/Numbers/Integer/Abstract/ZDomain.v
+    theories/Numbers/Integer/Abstract/ZAxioms.v
+    theories/Numbers/Integer/Abstract/ZTimes.v
+    theories/Numbers/Integer/Abstract/ZBase.v
+    theories/Numbers/Integer/Abstract/ZTimesOrder.v
+    theories/Numbers/Integer/Binary/ZBinary.v
+    theories/Numbers/Integer/NatPairs/ZNatPairs.v
+   </dd>
+  
   <dt> <b>Relations</b>:
        Relations (definitions and basic results)
   </dt>
@@ -213,6 +264,8 @@ through the <tt>Require Import</tt> command.</p>
   <dt> <b>Setoids</b>:
   <dd> 
     theories/Setoids/Setoid.v
+    theories/Setoids/Setoid_Prop.v
+    theories/Setoids/Setoid_tac.v
   </dd>
     
   <dt> <b>Lists</b>:
@@ -385,7 +438,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Ints/BigN.v
     theories/Ints/BigZ.v
     theories/Ints/Int31.v
-    theories/Ints/Tactic.v
+    theories/Ints/Z/ZAux.v
     theories/Ints/num/GenAdd.v
     theories/Ints/num/GenBase.v
     theories/Ints/num/GenDivn1.v
@@ -396,10 +449,16 @@ through the <tt>Require Import</tt> command.</p>
     theories/Ints/num/GenSub.v
     theories/Ints/num/Nbasic.v
     theories/Ints/num/NMake.v
-    theories/Ints/num/QMake.v
     theories/Ints/num/ZMake.v
     theories/Ints/num/Zn2Z.v
     theories/Ints/num/ZnZ.v
+    theories/Ints/num/BigQ.v
+    theories/Ints/num/QMake_base.v
+    theories/Ints/num/Q0Make.v
+    theories/Ints/num/QbiMake.v
+    theories/Ints/num/QifMake.v
+    theories/Ints/num/QpMake.v
+    theories/Ints/num/QvMake.v
   </dd>
 
     
