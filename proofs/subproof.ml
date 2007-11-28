@@ -44,7 +44,8 @@ type 'a _subproof =
     (* An open goal *)
     | Open of goal
     (* A subproof whose content is resolved, holds its "return value" *)
-    | Resolved of 'a
+    (*arnaud: expliquer les machins de instantiate *)
+    | Resolved of (Evd.evar_map -> 'a -> 'a)*'a
     (* A partially resolved subproof *)
     | Subproof of 'a partially_resolved_subproof
     (* A proof whose open goals have been permuted *)
@@ -65,9 +66,11 @@ type 'a _subproof =
    verbosity, though it will probably impair a bit the legibility of
    the code. The 2/ seems more of a problem thus the actual design 
    choice is probably definite *)
+   (* arnaud: raconter les histoire d'instanciations *)
 and  'a partially_resolved_subproof = 
     { node : constr _subproof array;
-      resolver : constr array -> 'a 
+      resolver : constr array -> 'a;
+      instantiate_once_resolved: Evd.evar_map -> 'a -> 'a
     }
 and 'a _pointer = 
     | Root of 'a _subproof ref
@@ -153,7 +156,7 @@ exception Unresolved
 let rec resolve = 
   let atomic_convert sp = (*converts a Resolved _ into a constr *)
     match simplify sp with
-    | Resolved constr -> constr
+    | Resolved (_,constr) -> constr
     | _ -> raise Unresolved
   in 
   let convert arr =
@@ -164,7 +167,8 @@ let rec resolve =
     | Open _ -> raise Unresolved
     | Resolved _ as sp -> sp
     | Subproof psr -> let sub_constr = convert psr.node in
-	              Resolved (psr.resolver sub_constr)
+	              Resolved (psr.instantiate_once_resolved,
+				psr.resolver sub_constr)
     | _ -> Util.anomaly "Subproof.resolve: failure of simplify"
 
 (* This function returns [true] if it's argument is resolved, and
@@ -212,7 +216,7 @@ let opengoals =
 (* This function returns the result of a resolved subproof *)
 let get_result sp = 
   match simplify sp with
-  | Resolved res -> res
+  | Resolved (_,res) -> res
   | _ -> Util.anomaly "Subproof.get_result: failure of simplify"
 
 (* This function returns the actual goal represented by an open 
@@ -241,13 +245,16 @@ let reorder =
 
 
 (* The following function creates a new subproof *)
-let open_subproof ?(subgoals=[||]) ~resolver =
+let no_instantiate _ _ = Util.anomaly "Subproof.instantiate: this proof does not support instantiation in its resolved form"
+let open_subproof ?(subgoals=[||]) ?(instantiate_once_resolved= no_instantiate) resolver =
    Subproof { node = Array.map (fun g -> Open g) subgoals;
-              resolver = resolver }
+              resolver = resolver;
+	      instantiate_once_resolved = instantiate_once_resolved}
 
 (* The following function creates a new pointer with a new subproof in it *)
-let start_subproof ?(subgoals=[||]) ~resolver =
-  Root (ref (open_subproof ~subgoals:subgoals ~resolver:resolver))
+(* arnaud: vérifier qu'on a pas besoin d'un instantiate *)
+let start_subproof ?(subgoals=[||]) resolver =
+  Root (ref (open_subproof ~subgoals:subgoals resolver))
 
 
 

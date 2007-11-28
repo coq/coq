@@ -110,12 +110,13 @@ val reorder : Permutation.permutation -> ('a, 'b) pointer -> unit
 
 (* The following function creates a new subproof *)
 val open_subproof : ?subgoals:Goal.goal array -> 
-                    resolver:(constr array -> 'a) ->
+                    ?instantiate_once_resolved:(Evd.evar_map -> 'a -> 'a) ->
+                    (constr array -> 'a) ->
                     ('a, [>`Subproof]) subproof
 
 (* The following function creates a new pointer with a new subproof in it *)
 val start_subproof : ?subgoals:Goal.goal array -> 
-                    resolver:(constr array -> 'a) ->
+                    (constr array -> 'a) ->
                     ('a, [>`Subproof]) pointer
 
 
