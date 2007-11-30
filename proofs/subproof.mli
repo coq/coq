@@ -89,6 +89,11 @@ val percolate : iterator -> ('a,'b)  pointer -> unit
 exception Unresolved
 val resolve : ('a,'b) subproof -> ('a, [> `Resolved]) subproof
 
+(* This function perform one step of instantiation (of evars) of a subproof, 
+   it is pure, and is meant to be used together with percolate and the 
+   undo mechanism *)
+val instantiate : Evd.evar_map -> ('a,'b) subproof -> ('a,'b) subproof
+
 (* This function returns [true] if it's argument is resolved, and
    [false] otherwise] *)
 val is_resolved : ('a,'b) subproof -> bool

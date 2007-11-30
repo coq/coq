@@ -153,7 +153,7 @@ let percolate =
    bureaucracy (such as the undo and such) *)
 exception Unresolved
 
-let rec resolve = 
+let resolve = 
   let atomic_convert sp = (*converts a Resolved _ into a constr *)
     match simplify sp with
     | Resolved (_,constr) -> constr
@@ -170,6 +170,16 @@ let rec resolve =
 	              Resolved (psr.instantiate_once_resolved,
 				psr.resolver sub_constr)
     | _ -> Util.anomaly "Subproof.resolve: failure of simplify"
+
+(* This function perform one step of instantiation (of evars) of a subproof, 
+   it is pure, and is meant to be used together with percolate and the 
+   undo mechanism *)
+let instantiate em = function
+  | Open g -> Open (Goal.instantiate em g)
+  (* arnaud: Evarutil ou ...? cf goal.ml *)
+  | Resolved (f,constr) -> Resolved (f, f em constr)
+  | _ as sp -> sp
+
 
 (* This function returns [true] if it's argument is resolved, and
    [false] otherwise] *)

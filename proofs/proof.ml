@@ -236,7 +236,7 @@ let resolve =
                  else 
                    ()  
   in
-  let resolve_iterator_fun tr pt =
+  let resolve_iterator_fun pt tr =
     try 
       let res = Subproof.resolve (Subproof.get pt) in
       _mutate pt res tr
@@ -244,11 +244,24 @@ let resolve =
       ()
   in
   let resolve_iterator tr = 
-    { Subproof.iterator = fun pt -> resolve_iterator_fun tr pt }
+    { Subproof.iterator = fun pt -> resolve_iterator_fun pt tr }
   in
   primitive (fun pr tr ->
               Subproof.percolate (resolve_iterator tr) (get_root pr);
               unfocus_until_sound pr tr)
+
+(* instantiates the evars throughout the proof, according to 
+   an evar_map *)
+(* arnaud: resolve et instantiate, méritent-ils une version en _* ? *)
+let instantiate = 
+  let instantiate_iterator_fun em pt tr = 
+    _mutate pt (Subproof.instantiate em (Subproof.get pt)) tr
+  in
+  let instantiate_iterator em tr =
+    { Subproof.iterator = fun pt -> instantiate_iterator_fun em pt tr }
+  in
+  fun em -> primitive (fun pr tr ->
+	       Subproof.percolate (instantiate_iterator em tr) (get_root pr))
 
 (*** The following function takes an action and makes it into 
      a command ***)
