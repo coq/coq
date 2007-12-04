@@ -24,7 +24,8 @@ val build : ?name:string -> hyps:Environ.named_context_val -> concl:Term.constr 
 type refinement = { reconstruct: Term.constr array -> Term.constr ;
                     subgoals: goal array ;
                     new_defs: Evd.evar_defs ;
-                    to_instantiate: Evd.evar_map}
+                    to_instantiate: Evd.evar_map;
+                    dependencies : Evd.evar option array}
 
 
 (* arnaud: à commenter un brin (comme le .ml quoi) *)

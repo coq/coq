@@ -92,6 +92,17 @@ let map_named_val f (ctxt,ctxtv) =
     List.map (fun (id,body,typ) -> (id, option_map f body, f typ)) ctxt in
   (ctxt,ctxtv)
 
+(* spiwack: an iterator over [named_context_val]s. *)
+(* like [map_named_val] it goes only through the left part (a 
+   [named_context]). The right part being a cache of compiled values.
+   Contrary to [map_named_val] it does not have usage restrictions, 
+   since it does not modify anything *)
+(* arnaud: peut-être introduire un option_iter ? *)
+let iter_named_val f (ctxt, _) =
+    List.iter (function (_, Some body,typ) -> f body; f typ
+                       |(_, None,typ) -> f typ
+	      ) ctxt
+
 let empty_named_context = empty_named_context 
 
 let push_named = push_named

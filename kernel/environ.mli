@@ -83,6 +83,11 @@ val empty_named_context_val : named_context_val
 val map_named_val : 
    (constr -> constr) -> named_context_val -> named_context_val
 
+(* spiwack: an iterator over [named_context_val]s. 
+   Contrary to [map_named_val] it does not have usage restrictions, 
+   since it does not modify anything *)
+val iter_named_val : (constr -> unit) -> named_context_val -> unit
+
 val push_named : named_declaration -> env -> env
 val push_named_context_val  : 
     named_declaration -> named_context_val -> named_context_val

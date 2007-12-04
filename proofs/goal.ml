@@ -45,7 +45,8 @@ let of_info ?name evi =
 type refinement = { reconstruct: Term.constr array -> Term.constr ;
                     subgoals: goal array ;
                     new_defs: Evd.evar_defs ;
-                    to_instantiate: Evd.evar_map}
+                    to_instantiate: Evd.evar_map;
+                    dependencies: Evd.evar option array}
 
 (* a pessimistic (i.e : there won't be many positive answers) filter
    over evar_maps *)
@@ -66,9 +67,60 @@ let invert a =
   Array.iteri (fun i (e,_) -> m := Gmap.add e i !m) a;
   !m
 
+(* arnaud:
+(* Does [e] occur in a type in [evi] *)
+let depends e evi =
+  (* arnaud: *)
+  fail_with "Goal.depends: not yet implemented" *)
+
+(* [trigger_evar cont t] executes [cont] on every evar
+   of [t]*)
+let rec trigger_evar cont t = 
+  match kind_of_term t with
+  (* arnaud: est-ce bien nécessaire de fouiller la substitution ? *)
+  | Evar (e, s) -> cont e; Array.iter (trigger_evar cont) s
+  | Var _ | Meta _ | Const _ | Ind _ | Construct _ | Rel _ | Sort _ -> ()
+  | Cast (c1, _, c2) 
+  | Prod (_, c1, c2)
+  | Lambda (_, c1, c2) -> trigger_evar cont c1; trigger_evar cont c2
+  | LetIn (_, c1, c2, c3) -> trigger_evar cont c1; 
+                             trigger_evar cont c2; 
+			     trigger_evar cont c3
+  | App (f, cs) -> trigger_evar cont f; Array.iter (trigger_evar cont) cs
+  | Case (_, c1, c2, cs) -> trigger_evar cont c1;
+                            trigger_evar cont c2;
+			    Array.iter (trigger_evar cont) cs
+  | Fix (_, (_, bs, ts))
+  | CoFix (_, (_, bs, ts)) -> Array.iter (trigger_evar cont) bs; 
+                              Array.iter (trigger_evar cont) ts
+
+(* Turns an array of evars (actually evar*evar_info) (together with its 
+   inversion trough the function [invert] above) into an array of 
+   bool, in the same order, representing those which are dependent 
+   (i.e. refered to in other ones contexts). 
+   It is non-destructive. *)
+let dependent evars subst =
+  let n = Array.length evars in
+  let res = Array.make n None in
+  if n <= 1 then
+    res
+  else
+    let evar_info_iter f {Evd.evar_concl= concl; Evd.evar_hyps = hyps } =
+      f concl; Environ.iter_named_val f hyps
+    in
+    let make_depend e =
+      try
+	res.(Gmap.find e subst) <- Some e
+      with Not_found -> 
+	()
+    in
+    Array.iter (fun (_,evi) -> evar_info_iter (trigger_evar (make_depend)) evi) evars;
+    res
+  
+
 (* takes a [Term.constr], an inverted array of evars and instantiates
    these evars according to an array of [constr]. *)
-(* arnaud; would benefit of curried mkTruc *)
+(* arnaud: would benefit of curried mkTruc *)
 let rec reconstruct constr subst subconstr =
   match kind_of_term constr with
   | Evar (e,_) -> (try subconstr.(Gmap.find e subst) with Not_found -> constr)
@@ -149,10 +201,16 @@ let refine defs env check_type step gl =
 				      )
                                       (Evd.evars_of new_defs)
   in
+  (* Array of dependencies. [dependencies.(i)] is [None] if no other subgoal
+     depend on the i-th one, and [Some e] if it corresponds to 
+     the evar named [e] in other subgoals *)
+  let dependencies = dependent subst_array subst 
+  in
   { reconstruct = freconstruct ;
     subgoals = subgoals ;
     new_defs = new_defs ;
-    to_instantiate = newly_defined
+    to_instantiate = newly_defined;
+    dependencies = dependencies
   }
 
 
@@ -166,6 +224,10 @@ let instantiate em gl =
   { gl with
   
     content = { content with
+                (* arnaud: map_named_val est a priori ok: si [t] n'a pas
+		   d'evar alors [instantiate t] = [t], sinon [t] n'a
+                   pas de forme compilé donc ça reste correct. Commenter
+                   dans environ.ml(i) (et pre_env.ml(i)?) si ça fonctionne.*)
 		Evd.evar_hyps = Environ.map_named_val instantiate content.Evd.evar_hyps;
 		Evd.evar_concl = instantiate content.Evd.evar_concl
 	      }
