@@ -233,11 +233,6 @@ and check_same_fix_binder bl1 bl2 =
 let same c d = try check_same_type c d; true with _ -> false
 
 (* Idem for rawconstr *)
-let option_iter2 f o1 o2 = 
-  match o1, o2 with
-      Some o1, Some o2 -> f o1 o2
-    | None, None -> ()
-    | _ -> failwith "option"
 
 let array_iter2 f v1 v2 =
   List.iter2 f (Array.to_list v1) (Array.to_list v2)
@@ -256,7 +251,7 @@ let rec same_raw c d =
    | RVar(_,id1), RVar(_,id2) -> if id1<>id2 then failwith "RVar"
    | REvar(_,e1,a1), REvar(_,e2,a2) ->
        if e1 <> e2 then failwith "REvar";
-       option_iter2(List.iter2 same_raw) a1 a2
+       Option.iter2(List.iter2 same_raw) a1 a2
   | RPatVar(_,pv1), RPatVar(_,pv2) -> if pv1<>pv2 then failwith "RPatVar"
   | RApp(_,f1,a1), RApp(_,f2,a2) ->
       List.iter2 same_raw (f1::a1) (f2::a2)
@@ -274,7 +269,7 @@ let rec same_raw c d =
         (fun (t1,(al1,oind1)) (t2,(al2,oind2)) ->
           same_raw t1 t2;
           if al1 <> al2 then failwith "RCases";
-          option_iter2(fun (_,i1,_,nl1) (_,i2,_,nl2) ->
+          Option.iter2(fun (_,i1,_,nl1) (_,i2,_,nl2) ->
             if i1<>i2 || nl1 <> nl2 then failwith "RCases") oind1 oind2) c1 c2;
       List.iter2 (fun (_,_,pl1,b1) (_,_,pl2,b2) ->
         List.iter2 same_patt pl1 pl2;
@@ -290,7 +285,7 @@ let rec same_raw c d =
       array_iter2
         (List.iter2 (fun (na1,bd1,ty1) (na2,bd2,ty2) ->
           if na1<>na2 then failwith "RRec";
-          option_iter2 same_raw bd1 bd2;
+          Option.iter2 same_raw bd1 bd2;
           same_raw ty1 ty2)) bl1 bl2;
       array_iter2 same_raw ty1 ty2;
       array_iter2 same_raw def1 def2
@@ -659,7 +654,7 @@ let rec extern inctx scopes vars r =
   | REvar (loc,n,None) when !print_meta_as_hole -> CHole loc
 
   | REvar (loc,n,l) ->
-      extern_evar loc n (option_map (List.map (extern false scopes vars)) l)
+      extern_evar loc n (Option.map (List.map (extern false scopes vars)) l)
 
   | RPatVar (loc,n) ->
       if !print_meta_as_hole then CHole loc else CPatVar (loc,n)
@@ -699,17 +694,17 @@ let rec extern inctx scopes vars r =
       let vars' = 
 	List.fold_right (name_fold Idset.add)
 	  (cases_predicate_names tml) vars in
-      let rtntypopt' = option_map (extern_typ scopes vars') rtntypopt in
+      let rtntypopt' = Option.map (extern_typ scopes vars') rtntypopt in
       let tml = List.map (fun (tm,(na,x)) ->
         let na' = match na,tm with
             Anonymous, RVar (_,id) when 
-              rtntypopt<>None & occur_rawconstr id (out_some rtntypopt)
+              rtntypopt<>None & occur_rawconstr id (Option.get rtntypopt)
               -> Some Anonymous
           | Anonymous, _ -> None
           | Name id, RVar (_,id') when id=id' -> None
           | Name _, _ -> Some na in
 	(sub_extern false scopes vars tm,
-	(na',option_map (fun (loc,ind,n,nal) ->
+	(na',Option.map (fun (loc,ind,n,nal) ->
 	  let params = list_tabulate
 	    (fun _ -> RHole (dummy_loc,Evd.InternalHole)) n in
 	  let args = List.map (function
@@ -722,15 +717,15 @@ let rec extern inctx scopes vars r =
 
   | RLetTuple (loc,nal,(na,typopt),tm,b) ->
       CLetTuple (loc,nal,
-        (option_map (fun _ -> na) typopt,
-         option_map (extern_typ scopes (add_vname vars na)) typopt),
+        (Option.map (fun _ -> na) typopt,
+         Option.map (extern_typ scopes (add_vname vars na)) typopt),
         sub_extern false scopes vars tm,
         extern false scopes (List.fold_left add_vname vars nal) b)
 
   | RIf (loc,c,(na,typopt),b1,b2) ->
       CIf (loc,sub_extern false scopes vars c,
-        (option_map (fun _ -> na) typopt,
-         option_map (extern_typ scopes (add_vname vars na)) typopt),
+        (Option.map (fun _ -> na) typopt,
+         Option.map (extern_typ scopes (add_vname vars na)) typopt),
         sub_extern false scopes vars b1, sub_extern false scopes vars b2)
 
   | RRec (loc,fk,idv,blv,tyv,bv) ->
@@ -949,12 +944,12 @@ let rec raw_of_pat env = function
       let brs = Array.to_list (Array.map (raw_of_pat env) bv) in
       let brns = Array.to_list cstr_nargs in
         (* ind is None only if no branch and no return type *)
-      let ind = out_some indo in
+      let ind = Option.get indo in
       let mat = simple_cases_matrix_of_branches ind brns brs in
       let indnames,rtn =
 	if p = PMeta None then (Anonymous,None),None
 	else 
-	  let nparams,n = out_some ind_nargs in
+	  let nparams,n = Option.get ind_nargs in
 	  return_type_of_predicate ind nparams n (raw_of_pat env p) in
       RCases (loc,rtn,[raw_of_pat env tm,indnames],mat)
   | PFix f -> Detyping.detype false [] env (mkFix f)

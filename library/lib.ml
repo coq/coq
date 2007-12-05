@@ -513,7 +513,7 @@ let open_section id =
 let discharge_item ((sp,_ as oname),e) =
   match e with
   | Leaf lobj ->
-      option_map (fun o -> (basename sp,o)) (discharge_object (oname,lobj))
+      Option.map (fun o -> (basename sp,o)) (discharge_object (oname,lobj))
   | FrozenState _ -> None
   | ClosedSection _ | ClosedModtype _ | ClosedModule _ -> None
   | OpenedSection _ | OpenedModtype _ | OpenedModule _ | CompilingLibrary _ ->
@@ -539,7 +539,7 @@ let close_section id =
   if !Options.xml_export then !xml_close_section id;
   let newdecls = List.map discharge_item secdecls in
   Summary.section_unfreeze_summaries fs;
-  List.iter (option_iter (fun (id,o) -> add_discharged_leaf id o)) newdecls;
+  List.iter (Option.iter (fun (id,o) -> add_discharged_leaf id o)) newdecls;
   Cooking.clear_cooking_sharing ();
   Nametab.push_dir (Nametab.Until 1) full_olddir (DirClosedSection full_olddir)
 

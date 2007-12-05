@@ -115,7 +115,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
     it_mkProd_or_LetIn 
       ~init:
       (it_mkProd_or_LetIn 
-	 ~init:(option_fold_right
+	 ~init:(Option.fold_right
 			   mkProd_or_LetIn
 			   princ_type_info.indarg
 			   princ_type_info.concl
@@ -564,9 +564,9 @@ let make_scheme (fas : (constant*Rawterm.rawsort) list) : Entries.definition_ent
   let opacity = 
     let finfos = find_Function_infos this_block_funs.(0) in 
     try 
-      let equation =  out_some finfos.equation_lemma in  
+      let equation =  Option.get finfos.equation_lemma in  
       (Global.lookup_constant equation).Declarations.const_opaque 
-    with Failure "out_some" -> (* non recursive definition *) 
+    with Option.IsNone -> (* non recursive definition *) 
       false
   in
   let const = {const with const_entry_opaque = opacity } in 

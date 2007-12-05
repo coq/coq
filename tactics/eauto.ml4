@@ -94,7 +94,7 @@ let e_split = e_constructor_tac (Some 1) 1
 TACTIC EXTEND econstructor
   [ "econstructor" integer(n) "with" bindings(c) ] -> [ e_constructor_tac None n c ]
 | [ "econstructor" integer(n) ] -> [ e_constructor_tac None n NoBindings ]
-| [ "econstructor" tactic_opt(t) ] -> [ e_any_constructor (option_map Tacinterp.eval_tactic t) ] 
+| [ "econstructor" tactic_opt(t) ] -> [ e_any_constructor (Option.map Tacinterp.eval_tactic t) ] 
       END
 
 TACTIC EXTEND eleft
@@ -192,7 +192,7 @@ and e_my_find_search db_list local_db hdc concl =
 		 (e_trivial_fail_db db_list local_db)
 	   | Unfold_nth c -> unfold_in_concl [[],c]
 	   | Extern tacast -> conclPattern concl 
-	       (out_some p) tacast
+	       (Option.get p) tacast
        in 
        (tac,fmt_autotactic t))
        (*i

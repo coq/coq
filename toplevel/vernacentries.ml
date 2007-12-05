@@ -298,7 +298,7 @@ let vernac_notation = Metasyntax.add_notation
 let start_proof_and_print idopt k t hook =
   start_proof_com idopt k t hook;
   print_subgoals ();
-  if !pcoq <> None then (out_some !pcoq).start_proof ()
+  if !pcoq <> None then (Option.get !pcoq).start_proof ()
 
 let vernac_definition (local,_,_ as k) id def hook =
   match def with
@@ -386,7 +386,7 @@ let vernac_declare_module export id binders_ast mty_ast_o =
     Modintern.interp_modtype Modintern.interp_modexpr
      id binders_ast (Some mty_ast_o) None;
   if_verbose message ("Module "^ string_of_id id ^" is declared");
-  option_iter (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
+  Option.iter (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
 
 let vernac_define_module export id binders_ast mty_ast_o mexpr_ast_o = 
   (* We check the state of the system (in section, in module type)
@@ -406,7 +406,7 @@ let vernac_define_module export id binders_ast mty_ast_o mexpr_ast_o =
 	  ("Interactive Module "^ string_of_id id ^" started") ;
         List.iter
          (fun (export,id) ->
-           option_iter
+           Option.iter
             (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
          ) argsexport
     | Some _ ->
@@ -422,13 +422,13 @@ let vernac_define_module export id binders_ast mty_ast_o mexpr_ast_o =
 	  id binders_ast mty_ast_o mexpr_ast_o;
 	if_verbose message 
 	  ("Module "^ string_of_id id ^" is defined");
-        option_iter (fun export -> vernac_import export [Ident (dummy_loc,id)])
+        Option.iter (fun export -> vernac_import export [Ident (dummy_loc,id)])
          export
 
 let vernac_end_module export id =
   Declaremods.end_module id;
   if_verbose message ("Module "^ string_of_id id ^" is defined") ;
-  option_iter (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
+  Option.iter (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
 
 
 let vernac_declare_module_type id binders_ast mty_ast_o =
@@ -447,7 +447,7 @@ let vernac_declare_module_type id binders_ast mty_ast_o =
 	  ("Interactive Module Type "^ string_of_id id ^" started");
         List.iter
          (fun (export,id) ->
-           option_iter
+           Option.iter
             (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
          ) argsexport
 	  
@@ -542,7 +542,7 @@ let vernac_solve n tcom b =
     reset_top_of_script ()
   end;
   print_subgoals();
-  if !pcoq <> None then (out_some !pcoq).solve n
+  if !pcoq <> None then (Option.get !pcoq).solve n
 
   (* A command which should be a tactic. It has been
      added by Christine to patch an error in the design of the proof
@@ -910,12 +910,12 @@ let vernac_check_may_eval redexp glopt rc =
   let j = Typeops.typing env c in
   match redexp with
     | None ->
-	if !pcoq <> None then (out_some !pcoq).print_check env j
+	if !pcoq <> None then (Option.get !pcoq).print_check env j
 	else msg (print_judgment env j)
     | Some r ->
 	let redfun = fst (reduction_of_red_expr (interp_redexp env evmap r)) in
 	if !pcoq <> None
-	then (out_some !pcoq).print_eval redfun env evmap rc j
+	then (Option.get !pcoq).print_eval redfun env evmap rc j
 	else msg (print_eval redfun env evmap rc j)
 
   (* The same but avoiding the current goal context if any *)
@@ -940,7 +940,7 @@ let vernac_print = function
   | PrintMLLoadPath -> Mltop.print_ml_path ()
   | PrintMLModules -> Mltop.print_ml_modules ()
   | PrintName qid -> 
-      if !pcoq <> None then (out_some !pcoq).print_name qid
+      if !pcoq <> None then (Option.get !pcoq).print_name qid
       else msg (print_name qid)
   | PrintOpaqueName qid -> msg (print_opaque_name qid)
   | PrintGraph -> ppnl (Prettyp.print_graph())
@@ -995,7 +995,7 @@ let interp_search_about_item = function
 
 let vernac_search s r =
   let r = interp_search_restriction r in
-  if !pcoq <> None then (out_some !pcoq).search s r else
+  if !pcoq <> None then (Option.get !pcoq).search s r else
   match s with
   | SearchPattern c ->
       let _,pat = interp_constrpattern Evd.empty (Global.env()) c in
@@ -1034,12 +1034,12 @@ let vernac_abort = function
   | None ->
       delete_current_proof ();
       if_verbose message "Current goal aborted";
-      if !pcoq <> None then (out_some !pcoq).abort ""
+      if !pcoq <> None then (Option.get !pcoq).abort ""
   | Some id ->
       delete_proof id;
       let s = string_of_id (snd id) in
       if_verbose message ("Goal "^s^" aborted");
-      if !pcoq <> None then (out_some !pcoq).abort s
+      if !pcoq <> None then (Option.get !pcoq).abort s
 
 let vernac_abort_all () =
   if refining() then begin
@@ -1109,7 +1109,7 @@ let explain_tree occ =
 
 let vernac_show = function
   | ShowGoal nopt ->
-      if !pcoq <> None then (out_some !pcoq).show_goal nopt
+      if !pcoq <> None then (Option.get !pcoq).show_goal nopt
       else msg (match nopt with
 	| None -> pr_open_subgoals ()
 	| Some n -> pr_nth_open_subgoal n)

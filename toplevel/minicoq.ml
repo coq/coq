@@ -54,7 +54,7 @@ let check c =
 
 let definition id ty c =
   let c = globalize [] c in
-  let ty = option_map (globalize []) ty in
+  let ty = Option.map (globalize []) ty in
   let ce = { const_entry_body = c; const_entry_type = ty } in
   let sp = make_path [] id CCI in
   env := add_constant sp ce (locals()) !env;

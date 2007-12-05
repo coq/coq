@@ -23,7 +23,7 @@ open Equality
 
 TACTIC EXTEND replace 
    ["replace" constr(c1) "with" constr(c2) in_arg_hyp(in_hyp) by_arg_tac(tac) ]
--> [ replace_in_clause_maybe_by c1 c2 (glob_in_arg_hyp_to_clause in_hyp) (Util.option_map Tacinterp.eval_tactic tac) ]
+-> [ replace_in_clause_maybe_by c1 c2 (glob_in_arg_hyp_to_clause in_hyp) (Option.map Tacinterp.eval_tactic tac) ]
 END
 
 TACTIC EXTEND replace_term_left
@@ -152,21 +152,21 @@ open Setoid_replace
 
 TACTIC EXTEND setoid_replace
    [ "setoid_replace" constr(c1) "with" constr(c2) by_arg_tac(tac)] ->
-     [ setoid_replace  (Util.option_map Tacinterp.eval_tactic tac) None c1 c2 ~new_goals:[] ]
+     [ setoid_replace  (Option.map Tacinterp.eval_tactic tac) None c1 c2 ~new_goals:[] ]
  | [ "setoid_replace" constr(c1) "with" constr(c2) "using" "relation" constr(rel) by_arg_tac(tac)] ->
-     [ setoid_replace  (Util.option_map Tacinterp.eval_tactic tac) (Some rel) c1 c2 ~new_goals:[] ]
+     [ setoid_replace  (Option.map Tacinterp.eval_tactic tac) (Some rel) c1 c2 ~new_goals:[] ]
  | [ "setoid_replace" constr(c1) "with" constr(c2) "generate" "side" "conditions" constr_list(l) by_arg_tac(tac) ] ->
-     [ setoid_replace  (Util.option_map Tacinterp.eval_tactic tac) None c1 c2 ~new_goals:l ]
+     [ setoid_replace  (Option.map Tacinterp.eval_tactic tac) None c1 c2 ~new_goals:l ]
  | [ "setoid_replace" constr(c1) "with" constr(c2) "using" "relation" constr(rel) "generate" "side" "conditions" constr_list(l) by_arg_tac(tac) ] ->
-     [ setoid_replace  (Util.option_map Tacinterp.eval_tactic tac) (Some rel) c1 c2 ~new_goals:l ]
+     [ setoid_replace  (Option.map Tacinterp.eval_tactic tac) (Some rel) c1 c2 ~new_goals:l ]
  | [ "setoid_replace" constr(c1) "with" constr(c2) "in" hyp(h) by_arg_tac(tac) ] ->
-     [ setoid_replace_in  (Util.option_map Tacinterp.eval_tactic tac) h None c1 c2 ~new_goals:[] ]
+     [ setoid_replace_in  (Option.map Tacinterp.eval_tactic tac) h None c1 c2 ~new_goals:[] ]
  | [ "setoid_replace" constr(c1) "with" constr(c2) "in" hyp(h) "using" "relation" constr(rel) by_arg_tac(tac)] ->
-     [ setoid_replace_in  (Util.option_map Tacinterp.eval_tactic tac) h (Some rel) c1 c2 ~new_goals:[] ]
+     [ setoid_replace_in  (Option.map Tacinterp.eval_tactic tac) h (Some rel) c1 c2 ~new_goals:[] ]
  | [ "setoid_replace" constr(c1) "with" constr(c2) "in" hyp(h) "generate" "side" "conditions" constr_list(l) by_arg_tac(tac)] ->
-     [ setoid_replace_in  (Util.option_map Tacinterp.eval_tactic tac) h None c1 c2 ~new_goals:l ]
+     [ setoid_replace_in  (Option.map Tacinterp.eval_tactic tac) h None c1 c2 ~new_goals:l ]
  | [ "setoid_replace" constr(c1) "with" constr(c2) "in" hyp(h) "using" "relation" constr(rel) "generate" "side" "conditions" constr_list(l) by_arg_tac(tac)] ->
-     [ setoid_replace_in  (Util.option_map Tacinterp.eval_tactic tac) h (Some rel) c1 c2 ~new_goals:l ]
+     [ setoid_replace_in  (Option.map Tacinterp.eval_tactic tac) h (Some rel) c1 c2 ~new_goals:l ]
 END
 
 TACTIC EXTEND setoid_rewrite

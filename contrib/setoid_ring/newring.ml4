@@ -451,7 +451,7 @@ let (theory_to_obj, obj_to_theory) =
 let setoid_of_relation r =
   lapp coq_mk_Setoid
     [|r.rel_a; r.rel_aeq;
-      out_some r.rel_refl; out_some r.rel_sym; out_some r.rel_trans |]
+      Option.get r.rel_refl; Option.get r.rel_sym; Option.get r.rel_trans |]
 
 let op_morph r add mul opp req m1 m2 m3 =
   lapp coq_mk_reqe [| r; add; mul; opp; req; m1; m2; m3 |]

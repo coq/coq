@@ -385,7 +385,7 @@ let rec get_names allow_conj = function
   | IntroOrAndPattern [l] -> 
       if allow_conj then
 	if l = [] then (None,[]) else
-	  let l = List.map (fun id -> out_some (fst (get_names false id))) l in
+	  let l = List.map (fun id -> Option.get (fst (get_names false id))) l in
 	  (Some (List.hd l), l)
       else
 	error "Nested conjunctive patterns not allowed for inversion equations"

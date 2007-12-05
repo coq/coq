@@ -58,7 +58,7 @@ let subst_deps obls deps t =
        let xobl = obls.(x) in
 	 debug 3 (str "Trying to get body of obligation " ++ int x);
        let oblb = 
-	 try out_some xobl.obl_body
+	 try Option.get xobl.obl_body
 	 with _ ->
 	   debug 3 (str "Couldn't get body of obligation " ++ int x);
 	   assert(false)

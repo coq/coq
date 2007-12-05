@@ -274,8 +274,8 @@ GEXTEND Gram
   ;
   rec_annotation:
     [ [ "{"; IDENT "struct"; id=IDENT; "}" -> (Some (id_of_string id), CStructRec)
-      | "{"; IDENT "wf"; rel=constr; id=OPT IDENT; "}" -> (option_map id_of_string id, CWfRec rel) 
-      | "{"; IDENT "measure"; rel=constr; id=OPT IDENT; "}" -> (option_map id_of_string id, CMeasureRec rel) 
+      | "{"; IDENT "wf"; rel=constr; id=OPT IDENT; "}" -> (Option.map id_of_string id, CWfRec rel) 
+      | "{"; IDENT "measure"; rel=constr; id=OPT IDENT; "}" -> (Option.map id_of_string id, CMeasureRec rel) 
       | ->  (None, CStructRec)
       ] ]
   ;

@@ -48,8 +48,8 @@ let functional_induction with_clean c princl pat =
 			| InType -> finfo.rect_lemma
 		    in
 		    let princ =  (* then we get the principle *)
-		      try mkConst (out_some princ_option )
-		      with Failure "out_some" -> 
+		      try mkConst (Option.get princ_option )
+		      with Option.IsNone -> 
 			(*i If there is not default lemma defined then, 
 			  we cross our finger and try to find a lemma named f_ind 
 			  (or f_rec, f_rect) i*)
@@ -589,21 +589,21 @@ let rec add_args id new_args b =
       CApp(loc,(pf,add_args id new_args b), 
 	   List.map (fun (e,o) -> add_args id new_args e,o) bl)
   | CCases(loc,b_option,cel,cal) -> 
-      CCases(loc,option_map (add_args id new_args) b_option,
+      CCases(loc,Option.map (add_args id new_args) b_option,
 	     List.map (fun (b,(na,b_option)) -> 
 			 add_args id new_args b,
-			 (na,option_map (add_args id new_args) b_option)) cel, 
+			 (na,Option.map (add_args id new_args) b_option)) cel, 
 	     List.map (fun (loc,cpl,e) -> (loc,cpl,add_args id new_args e)) cal
 	    )
   | CLetTuple(loc,nal,(na,b_option),b1,b2) -> 
-      CLetTuple(loc,nal,(na,option_map (add_args id new_args) b_option),
+      CLetTuple(loc,nal,(na,Option.map (add_args id new_args) b_option),
 		add_args id new_args b1,
 		add_args id new_args b2
 	       )
 		
   | CIf(loc,b1,(na,b_option),b2,b3) -> 
       CIf(loc,add_args id new_args b1, 
-	  (na,option_map (add_args id new_args) b_option),
+	  (na,Option.map (add_args id new_args) b_option),
 	  add_args id new_args b2,
 	  add_args id new_args b3
 	 )
@@ -722,7 +722,7 @@ let make_graph (f_ref:global_reference) =
 			   )
 		       in 
 		       let rec_id = 
-			 match List.nth bl' (out_some n)  with 
+			 match List.nth bl' (Option.get n)  with 
 			   |(_,Name id) -> id | _ -> anomaly ""
 		       in
 		       let new_args = 

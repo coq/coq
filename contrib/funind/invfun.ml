@@ -665,8 +665,8 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
       if infos.is_general ||  Rtree.is_infinite graph_def.mind_recargs
       then 
 	let eq_lemma = 
-	  try out_some (infos).equation_lemma
-	  with Failure "out_some"  -> anomaly "Cannot find equation lemma"
+	  try Option.get (infos).equation_lemma
+	  with Option.IsNone -> anomaly "Cannot find equation lemma"
 	in 
 	tclTHENSEQ[
 	  tclMAP h_intro ids;
@@ -769,7 +769,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
 	  Array.of_list 
 	    (List.map 
 	       (fun entry -> 
-		  (entry.Entries.const_entry_body, out_some entry.Entries.const_entry_type )
+		  (entry.Entries.const_entry_body, Option.get entry.Entries.const_entry_type )
 	       )
 	       (make_scheme (array_map_to_list (fun const -> const,Rawterm.RType None) funs))
 	    )
@@ -960,13 +960,13 @@ let invfun qhyp f  =
   in
   try 
     let finfos = find_Function_infos f in 
-    let f_correct = mkConst(out_some finfos.correctness_lemma) 
+    let f_correct = mkConst(Option.get finfos.correctness_lemma) 
     and kn = fst finfos.graph_ind
     in
     Tactics.try_intros_until (fun hid -> functional_inversion kn hid (mkConst f)  f_correct) qhyp 
   with 
     | Not_found ->  error "No graph found" 
-    | Failure "out_some"  -> error "Cannot use equivalence with graph!"
+    | Option.IsNone  -> error "Cannot use equivalence with graph!"
 
 
 let invfun qhyp f g = 
@@ -983,23 +983,23 @@ let invfun qhyp f g =
 		     try 
 		       if not (isConst f1) then failwith "";
 		       let finfos = find_Function_infos (destConst f1) in 
-		       let f_correct = mkConst(out_some finfos.correctness_lemma) 
+		       let f_correct = mkConst(Option.get finfos.correctness_lemma) 
 		       and kn = fst finfos.graph_ind
 		       in
 		       functional_inversion kn hid f1 f_correct g
-		     with | Failure "" | Failure "out_some" | Not_found -> 
+		     with | Failure "" | Option.IsNone | Not_found -> 
 		       try 
 			 let f2,_ = decompose_app args.(2) in 
 			 if not (isConst f2) then failwith "";
 			 let finfos = find_Function_infos (destConst f2) in 
-			 let f_correct = mkConst(out_some finfos.correctness_lemma) 
+			 let f_correct = mkConst(Option.get finfos.correctness_lemma) 
 			 and kn = fst finfos.graph_ind
 			 in
 			 functional_inversion kn hid  f2 f_correct g
 		       with
 			 | Failure "" -> 
 			     errorlabstrm "" (str "Hypothesis" ++ Ppconstr.pr_id hid ++ str " must contain at leat one Function")
-			 | Failure "out_some"  ->  
+			 | Option.IsNone  ->  
 			     if do_observe () 
 			     then
 			       error "Cannot use equivalence with graph for any side of the equality"

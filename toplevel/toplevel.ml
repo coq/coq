@@ -103,7 +103,7 @@ let get_bols_of_loc ibuf (bp,ep) =
         lines_rec ll nafter fl 
   in
   let (fl,ll) = lines_rec ibuf.len ([],None) ibuf.bols in
-  (fl,out_some ll)
+  (fl,Option.get ll)
 
 let dotted_location (b,e) =
   if e-b < 3 then 

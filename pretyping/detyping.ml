@@ -303,7 +303,7 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
     then 
       Anonymous, None, None
     else
-      match option_map detype p with
+      match Option.map detype p with
         | None -> Anonymous, None, None
         | Some p ->
             let nl,typ = it_destRLambda_or_LetIn_names k p in
@@ -340,7 +340,7 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
 	array_map3 (extract_nondep_branches testdep) bl bl' consnargsl in
       if array_for_all ((<>) None) nondepbrs then
 	RIf (dl,tomatch,(alias,pred),
-             out_some nondepbrs.(0),out_some nondepbrs.(1))
+             Option.get nondepbrs.(0),Option.get nondepbrs.(1))
       else
 	RCases (dl,pred,[tomatch,(alias,aliastyp)],eqnl)
   | _ ->
@@ -529,7 +529,7 @@ and detype_binder isgoal bk avoid env na ty c =
   | BLetIn -> RLetIn (dl, na',detype isgoal avoid env ty, r)
 
 let rec detype_rel_context where avoid env sign =
-  let where = option_map (fun c -> it_mkLambda_or_LetIn c sign) where in
+  let where = Option.map (fun c -> it_mkLambda_or_LetIn c sign) where in
   let rec aux avoid env = function
   | [] -> []
   | (na,b,t)::rest ->
@@ -539,7 +539,7 @@ let rec detype_rel_context where avoid env sign =
 	| Some c ->
 	    if b<>None then concrete_let_name None avoid env na c
 	    else concrete_name None avoid env na c in
-      let b = option_map (detype false avoid env) b in
+      let b = Option.map (detype false avoid env) b in
       let t = detype false avoid env t in
       (na',b,t) :: aux avoid' (add_name na' env) rest
   in aux avoid env (List.rev sign)
@@ -589,11 +589,11 @@ let rec subst_rawconstr subst raw =
 	  RLetIn (loc,n,r1',r2')
 
   | RCases (loc,rtno,rl,branches) -> 
-      let rtno' = option_smartmap (subst_rawconstr subst) rtno
+      let rtno' = Option.smartmap (subst_rawconstr subst) rtno
       and rl' = list_smartmap (fun (a,x as y) ->
         let a' = subst_rawconstr subst a in
         let (n,topt) = x in 
-        let topt' = option_smartmap
+        let topt' = Option.smartmap
           (fun (loc,(sp,i),x,y as t) ->
             let sp' = subst_kn subst sp in
             if sp == sp' then t else (loc,(sp',i),x,y)) topt in
@@ -611,14 +611,14 @@ let rec subst_rawconstr subst raw =
 	  RCases (loc,rtno',rl',branches')
 
   | RLetTuple (loc,nal,(na,po),b,c) ->
-      let po' = option_smartmap (subst_rawconstr subst) po
+      let po' = Option.smartmap (subst_rawconstr subst) po
       and b' = subst_rawconstr subst b 
       and c' = subst_rawconstr subst c in
 	if po' == po && b' == b && c' == c then raw else
           RLetTuple (loc,nal,(na,po'),b',c')
       
   | RIf (loc,c,(na,po),b1,b2) ->
-      let po' = option_smartmap (subst_rawconstr subst) po
+      let po' = Option.smartmap (subst_rawconstr subst) po
       and b1' = subst_rawconstr subst b1 
       and b2' = subst_rawconstr subst b2 
       and c' = subst_rawconstr subst c in
@@ -631,7 +631,7 @@ let rec subst_rawconstr subst raw =
       let bl' = array_smartmap
         (list_smartmap (fun (na,obd,ty as dcl) ->
           let ty' = subst_rawconstr subst ty in
-          let obd' = option_smartmap (subst_rawconstr subst) obd in
+          let obd' = Option.smartmap (subst_rawconstr subst) obd in
           if ty'==ty & obd'==obd then dcl else (na,obd',ty')))
         bl in
 	if ra1' == ra1 && ra2' == ra2 && bl'==bl then raw else

@@ -89,7 +89,7 @@ let named_context_of_val = fst
    *** /!\ ***   [f t] should be convertible with t *)  
 let map_named_val f (ctxt,ctxtv) = 
   let ctxt =
-    List.map (fun (id,body,typ) -> (id, option_map f body, f typ)) ctxt in
+    List.map (fun (id,body,typ) -> (id, Option.map f body, f typ)) ctxt in
   (ctxt,ctxtv)
 
 let empty_named_context = empty_named_context 

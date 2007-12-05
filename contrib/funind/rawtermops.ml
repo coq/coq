@@ -157,7 +157,7 @@ let change_vars =
 	  let new_mapping = List.fold_left remove_name_from_mapping mapping nal in 
 	  RLetTuple(loc,
 		    nal,
-		    (na, option_map (change_vars mapping) rto), 
+		    (na, Option.map (change_vars mapping) rto), 
 		    change_vars mapping b, 
 		    change_vars new_mapping e
 		   )
@@ -170,7 +170,7 @@ let change_vars =
       | RIf(loc,b,(na,e_option),lhs,rhs) -> 
 	  RIf(loc,
 	      change_vars mapping b,
-	      (na,option_map (change_vars mapping) e_option),
+	      (na,Option.map (change_vars mapping) e_option),
 	      change_vars mapping lhs,
 	      change_vars mapping rhs
 	     )
@@ -338,11 +338,11 @@ let rec alpha_rt excluded rt =
 	  if idmap_is_empty mapping
 	  then rto,t,b
 	  else let replace = change_vars mapping in 
-	  (option_map replace rto, t,replace b)
+	  (Option.map replace rto, t,replace b)
 	in
 	let new_t = alpha_rt new_excluded new_t in 
 	let new_b = alpha_rt new_excluded new_b in 
-	let new_rto = option_map (alpha_rt new_excluded) new_rto  in
+	let new_rto = Option.map (alpha_rt new_excluded) new_rto  in
 	RLetTuple(loc,new_nal,(na,new_rto),new_t,new_b)
     | RCases(loc,infos,el,brl) -> 
 	let new_el = 
@@ -351,7 +351,7 @@ let rec alpha_rt excluded rt =
 	RCases(loc,infos,new_el,List.map (alpha_br excluded) brl) 
     | RIf(loc,b,(na,e_o),lhs,rhs) -> 
 	RIf(loc,alpha_rt excluded b,
-	    (na,option_map (alpha_rt excluded) e_o),
+	    (na,Option.map (alpha_rt excluded) e_o),
 	    alpha_rt excluded lhs,
 	    alpha_rt excluded rhs
 	   )
@@ -487,7 +487,7 @@ let replace_var_by_term x_id term =
       | RLetTuple(loc,nal,(na,rto),def,b) -> 
 	  RLetTuple(loc,
 		    nal,
-		    (na,option_map replace_var_by_pattern rto),
+		    (na,Option.map replace_var_by_pattern rto),
 		    replace_var_by_pattern def,
 		    replace_var_by_pattern b
 		   )
@@ -499,7 +499,7 @@ let replace_var_by_term x_id term =
 		)
       | RIf(loc,b,(na,e_option),lhs,rhs) -> 
 	  RIf(loc, replace_var_by_pattern b,
-	      (na,option_map replace_var_by_pattern e_option),
+	      (na,Option.map replace_var_by_pattern e_option),
 	      replace_var_by_pattern lhs,
 	      replace_var_by_pattern rhs
 	     )
@@ -640,7 +640,7 @@ let zeta_normalize =
       | RLetTuple(loc,nal,(na,rto),def,b) -> 
 	  RLetTuple(loc,
 		    nal,
-		    (na,option_map zeta_normalize_term rto),
+		    (na,Option.map zeta_normalize_term rto),
 		    zeta_normalize_term def,
 		    zeta_normalize_term b
 		   )
@@ -652,7 +652,7 @@ let zeta_normalize =
 		)
       | RIf(loc,b,(na,e_option),lhs,rhs) -> 
 	  RIf(loc, zeta_normalize_term b,
-	      (na,option_map zeta_normalize_term e_option),
+	      (na,Option.map zeta_normalize_term e_option),
 	      zeta_normalize_term lhs,
 	      zeta_normalize_term rhs
 	     )
@@ -695,17 +695,17 @@ let expand_as =
       | RProd(loc,na,t,b) -> RProd(loc,na,expand_as map t, expand_as map b)
       | RLetIn(loc,na,v,b) -> RLetIn(loc,na, expand_as map v,expand_as map b)
       | RLetTuple(loc,nal,(na,po),v,b) ->
-	  RLetTuple(loc,nal,(na,option_map (expand_as map) po),
+	  RLetTuple(loc,nal,(na,Option.map (expand_as map) po),
 		    expand_as map v, expand_as map b)
       | RIf(loc,e,(na,po),br1,br2) ->
-	  RIf(loc,expand_as map e,(na,option_map (expand_as map) po),
+	  RIf(loc,expand_as map e,(na,Option.map (expand_as map) po),
 	      expand_as map br1, expand_as map br2)
       | RRec _ ->  error "Not handled RRec"
       | RDynamic _ -> error "Not handled RDynamic"
       | RCast(loc,b,CastConv(kind,t)) -> RCast(loc,expand_as map b,CastConv(kind,expand_as map t))
       | RCast(loc,b,CastCoerce) -> RCast(loc,expand_as map b,CastCoerce)
       | RCases(loc,po,el,brl) ->
-	  RCases(loc, option_map (expand_as map) po, List.map (fun (rt,t) -> expand_as map rt,t) el,
+	  RCases(loc, Option.map (expand_as map) po, List.map (fun (rt,t) -> expand_as map rt,t) el,
 		List.map (expand_as_br map) brl)
 	    
   and expand_as_br map (loc,idl,cpl,rt) = 

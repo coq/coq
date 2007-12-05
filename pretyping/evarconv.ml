@@ -43,7 +43,7 @@ let eval_flexible_term env c =
   match kind_of_term c with
   | Const c -> constant_opt_value env c
   | Rel n ->
-      (try let (_,v,_) = lookup_rel n env in option_map (lift n) v
+      (try let (_,v,_) = lookup_rel n env in Option.map (lift n) v
       with Not_found -> None)
   | Var id ->
       (try let (_,v,_) = lookup_named id env in v with Not_found -> None)

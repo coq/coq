@@ -368,7 +368,7 @@ let raw_push_named (na,raw_value,raw_typ) env =
   match na with 
     | Anonymous -> env 
     | Name id -> 
-	let value = Util.option_map (Pretyping.Default.understand Evd.empty env) raw_value in 
+	let value = Option.map (Pretyping.Default.understand Evd.empty env) raw_value in 
 	let typ = Pretyping.Default.understand_type Evd.empty env raw_typ in 
 	Environ.push_named (id,value,typ) env
 
@@ -398,12 +398,12 @@ let add_pat_variables pat typ env : Environ.env =
 	   | Anonymous -> assert false
 	   | Name id ->
 	       let new_t =  substl ctxt t in
-	       let new_v = option_map (substl ctxt) v in
+	       let new_v = Option.map (substl ctxt) v in
 	       observe (str "for variable " ++ Ppconstr.pr_id id ++  fnl () ++
 			  str "old type := " ++ Printer.pr_lconstr t ++ fnl () ++
 			  str "new type := " ++ Printer.pr_lconstr new_t ++ fnl () ++
-			  option_fold_right (fun v _ -> str "old value := " ++ Printer.pr_lconstr v ++ fnl ()) v (mt ()) ++
-			  option_fold_right (fun v _ -> str "new value := " ++ Printer.pr_lconstr v ++ fnl ()) new_v (mt ())
+			  Option.fold_right (fun v _ -> str "old value := " ++ Printer.pr_lconstr v ++ fnl ()) v (mt ()) ++
+			  Option.fold_right (fun v _ -> str "new value := " ++ Printer.pr_lconstr v ++ fnl ()) new_v (mt ())
 		       );
 	       (Environ.push_named (id,new_v,new_t) env,mkVar id::ctxt)
       )

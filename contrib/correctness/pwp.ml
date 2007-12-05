@@ -64,7 +64,7 @@ let update_post env top ef c =
 let force_post up env top q e =
   let (res,ef,p,_) = e.info.kappa in
   let q' = 
-    if up then option_map (named_app (update_post env top ef)) q else q 
+    if up then Option.map (named_app (update_post env top ef)) q else q 
   in
   let i = { env = e.info.env; kappa = (res,ef,p,q') } in
   { desc = e.desc; pre = e.pre; post = q'; loc = e.loc; info = i }
@@ -260,7 +260,7 @@ and propagate ren p =
     | Apply (f,l) ->
 	let _,(_,so,ok),(_,_,_,qapp) = effect_app ren env f l in
 	if ok then
-	  let q = option_map (named_app (real_subst_in_constr so)) qapp in
+	  let q = Option.map (named_app (real_subst_in_constr so)) qapp in
 	  post_if_none env q p
 	else
 	  p
@@ -285,7 +285,7 @@ and propagate ren p =
 	    None -> Some (anonymous s)
 	  | Some i -> Some { a_value = conj i.a_value s; a_name = i.a_name }
 	in
-	let q = option_map (named_app abstract_unit) q in
+	let q = Option.map (named_app abstract_unit) q in
 	post_if_none env q p
 
     | SApp ([Variable id], [e1;e2]) 

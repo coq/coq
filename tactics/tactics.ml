@@ -60,7 +60,7 @@ let inj_open c = (Evd.empty,c)
 let inj_occ (occ,c) = (occ,inj_open c)
 
 let inj_red_expr = function
-  | Simpl lo -> Simpl (option_map inj_occ lo)
+  | Simpl lo -> Simpl (Option.map inj_occ lo)
   | Fold l -> Fold (List.map inj_open l)
   | Pattern l -> Pattern (List.map inj_occ l)
   | (ExtraRedExpr _ | CbvVm | Red _ | Hnf | Cbv _ | Lazy _ | Unfold _ as c)
@@ -1694,7 +1694,7 @@ let mkHRefl t x =
 	[| t; x |])
 
 let mkCoe a x p px y eq = 
-  mkApp (out_some (build_coq_eq_data ()).rect, [| a; x; p; px; y; eq |])
+  mkApp (Option.get (build_coq_eq_data ()).rect, [| a; x; p; px; y; eq |])
 
 let lift_togethern n l =
   let l', _ =

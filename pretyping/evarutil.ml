@@ -226,7 +226,7 @@ let push_rel_context_to_named_context env typ =
     Sign.fold_rel_context
       (fun (na,c,t) (subst, avoid, env) ->
 	let id = next_name_away na avoid in
-	let d = (id,option_map (substl subst) c,substl subst t) in
+	let d = (id,Option.map (substl subst) c,substl subst t) in
 	(mkVar id :: subst, id::avoid, push_named d env))
       (rel_context env) ~init:([], ids, env) in
   (named_context_val env, substl subst typ, inst_rels@inst_vars)
@@ -1133,7 +1133,7 @@ let lift_abstr_tycon_type n (abs, t) =
 	  else (Some (init, abs'), t)
 
 let lift_tycon_type n (abs, t) = (abs, lift n t)
-let lift_tycon n = option_map (lift_tycon_type n)
+let lift_tycon n = Option.map (lift_tycon_type n)
 
 let pr_tycon_type env (abs, t) =
   match abs with 

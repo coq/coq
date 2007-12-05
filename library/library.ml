@@ -496,7 +496,7 @@ let register_library (dir,m) =
   (* [needed] is the ordered list of libraries not already loaded *)
 let cache_require (_,(needed,modl,export)) =
   List.iter register_library needed;
-  option_iter (fun exp -> open_libraries exp (List.map find_library modl))
+  Option.iter (fun exp -> open_libraries exp (List.map find_library modl))
     export
 
 let load_require  _ (_,(needed,modl,_)) =
@@ -530,7 +530,7 @@ let require_library qidl export =
   let modrefl = List.map fst modrefl in
     if Lib.is_modtype () || Lib.is_module () then begin
       add_anonymous_leaf (in_require (needed,modrefl,None));
-      option_iter (fun exp ->
+      Option.iter (fun exp ->
 	List.iter (fun dir -> add_anonymous_leaf (in_import(dir,exp))) modrefl)
 	export
     end
@@ -544,7 +544,7 @@ let require_library_from_file idopt file export =
   let needed = List.rev needed in
   if Lib.is_modtype () || Lib.is_module () then begin
     add_anonymous_leaf (in_require (needed,[modref],None));
-    option_iter (fun exp -> add_anonymous_leaf (in_import (modref,exp)))
+    Option.iter (fun exp -> add_anonymous_leaf (in_import (modref,exp)))
       export
   end
   else

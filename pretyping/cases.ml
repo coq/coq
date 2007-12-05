@@ -421,7 +421,7 @@ let mkDeclTomatch na = function
 
 let map_tomatch_type f = function
   | IsInd (t,ind) -> IsInd (f t,map_inductive_type f ind)
-  | NotInd (c,t) -> NotInd (option_map f c, f t)
+  | NotInd (c,t) -> NotInd (Option.map f c, f t)
 
 let liftn_tomatch_type n depth = map_tomatch_type (liftn n depth)
 let lift_tomatch_type n = liftn_tomatch_type n 1
@@ -1139,7 +1139,7 @@ let rec generalize_problem pb = function
       let tomatch = regeneralize_index_tomatch (i+1) tomatch in
       { pb with
 	  tomatch = Abstract d :: tomatch;
-          pred = option_map (generalize_predicate i d) pb'.pred }
+          pred = Option.map (generalize_predicate i d) pb'.pred }
 
 (* No more patterns: typing the right-hand-side of equations *)
 let build_leaf pb =
@@ -1154,7 +1154,7 @@ let build_leaf pb =
 let shift_problem (current,t) pb =
   {pb with
      tomatch = Alias (current,current,NonDepAlias,type_of_tomatch t)::pb.tomatch;
-     pred = option_map (specialize_predicate_var (current,t)) pb.pred;
+     pred = Option.map (specialize_predicate_var (current,t)) pb.pred;
      history = push_history_pattern 0 AliasLeaf pb.history;
      mat = List.map remove_current_pattern pb.mat }
 
@@ -1224,7 +1224,7 @@ let build_branch current deps pb eqns const_info =
   { pb with
       env = push_rels sign pb.env;
       tomatch = List.rev_append currents tomatch;
-      pred = option_map (specialize_predicate (List.rev typs') dep_sign const_info) pb.pred;
+      pred = Option.map (specialize_predicate (List.rev typs') dep_sign const_info) pb.pred;
       history = history;
       mat = List.map (push_rels_eqn_with_names sign) submat }
 
@@ -1291,7 +1291,7 @@ and compile_generalization pb d rest =
     { pb with
        env = push_rel d pb.env;
        tomatch = rest;
-       pred = option_map ungeneralize_predicate pb.pred;
+       pred = Option.map ungeneralize_predicate pb.pred;
        mat = List.map (push_rels_eqn [d]) pb.mat } in
   let j = compile pb in
   { uj_val = mkLambda_or_LetIn d j.uj_val;
@@ -1316,7 +1316,7 @@ and compile_alias pb (deppat,nondeppat,d,t) rest =
     {pb with
        env = newenv;
        tomatch = tomatch;
-       pred = option_map (lift_predicate n) pb.pred;
+       pred = Option.map (lift_predicate n) pb.pred;
        history = history;
        mat = mat } in
   let j = compile pb in
@@ -1500,7 +1500,7 @@ let extract_arity_signature env0 tomatchl tmsign =
     match tm with
       | NotInd (bo,typ) -> 
 	  (match t with
-	    | None -> [na,option_map (lift n) bo,lift n typ]
+	    | None -> [na,Option.map (lift n) bo,lift n typ]
 	    | Some (loc,_,_,_) -> 
  	    user_err_loc (loc,"",
 	    str "Unexpected type annotation for a term of non inductive type"))
@@ -1566,7 +1566,7 @@ let prepare_predicate loc typing_fun evdref env tomatchs sign tycon = function
       let allnames = List.rev (List.map (List.map pi1) arsign) in
       let predcclj = typing_fun (mk_tycon (new_Type ())) env rtntyp in
       let _ = 
-	option_map (fun tycon -> 
+	Option.map (fun tycon -> 
 		      evdref := Coercion.inh_conv_coerces_to loc env !evdref predcclj.uj_val 
 		      (lift_tycon_type (List.length arsign) tycon))
 	  tycon

@@ -70,7 +70,7 @@ LIBREP:=\
   lib/hashcons.cmo lib/dyn.cmo lib/system.cmo lib/options.cmo \
   lib/bstack.cmo lib/edit.cmo lib/gset.cmo lib/gmap.cmo \
   lib/tlm.cmo lib/gmapl.cmo lib/profile.cmo lib/explore.cmo \
-  lib/predicate.cmo lib/rtree.cmo lib/heap.cmo
+  lib/predicate.cmo lib/rtree.cmo lib/heap.cmo lib/option.cmo
 # Rem: Cygwin already uses variable LIB 
 
 BYTERUN:=\
@@ -349,7 +349,7 @@ MINICOQCMO:=$(CONFIG) $(LIBREP) $(KERNEL) \
 GRAMMARNEEDEDCMO:=\
   lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/util.cmo lib/bigint.cmo \
   lib/dyn.cmo lib/options.cmo lib/hashcons.cmo lib/predicate.cmo \
-  lib/rtree.cmo \
+  lib/rtree.cmo lib/option.cmo \
   kernel/names.cmo kernel/univ.cmo \
   kernel/esubst.cmo kernel/term.cmo kernel/mod_subst.cmo kernel/sign.cmo \
   kernel/cbytecodes.cmo kernel/copcodes.cmo kernel/cemitcodes.cmo \

@@ -763,21 +763,21 @@ let find_precedence lev etyps symbols =
 	| ETPattern | ETOther _ -> (* Give a default ? *)
 	    if lev = None then
 	      error "Need an explicit level"
-	    else out_some lev
+	    else Option.get lev
         | ETConstrList _ -> assert false (* internally used in grammar only *)
       with Not_found -> 
 	if lev = None then
 	  error "A left-recursive notation must have an explicit level"
-	else out_some lev)
+	else Option.get lev)
   | Terminal _ ::l when
       (match list_last symbols with Terminal _ -> true |_ -> false)
       -> 
       if lev = None then
 	(Options.if_verbose msgnl (str "Setting notation at level 0"); 0)
-      else out_some lev
+      else Option.get lev
   | _ ->
       if lev = None then error "Cannot determine the level";
-      out_some lev
+      Option.get lev
 
 let check_curly_brackets_notation_exists () =
   try let _ = Notation.level_of_notation "{ _ }" in ()
@@ -839,7 +839,7 @@ let compute_syntax_data (df,modifiers) =
 (* Registration of notations interpretation                            *)
 
 let load_notation _ (_,(_,scope,pat,onlyparse,_)) =
-  option_iter Notation.declare_scope scope
+  Option.iter Notation.declare_scope scope
 
 let open_notation i (_,(_,scope,pat,onlyparse,(ntn,df))) =
   if i=1 & not (Notation.exists_notation_in_scope scope ntn pat) then begin

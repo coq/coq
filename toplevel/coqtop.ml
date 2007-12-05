@@ -321,7 +321,7 @@ let init is_ide =
       set_vm_opt ();
       engage ();
       if (not !batch_mode|| !compile_list=[]) && Global.env_is_empty() then
-        option_iter Declaremods.start_library !toplevel_name;
+        Option.iter Declaremods.start_library !toplevel_name;
       init_library_roots ();
       load_vernac_obj ();
       require ();

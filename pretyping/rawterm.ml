@@ -101,7 +101,7 @@ let cases_predicate_names tml =
 
    - boolean in POldCase means it is recursive
 i*)
-let map_rawdecl f (na,obd,ty) = (na,option_map f obd,f ty)
+let map_rawdecl f (na,obd,ty) = (na,Option.map f obd,f ty)
 
 let map_rawconstr f = function
   | RVar (loc,id) -> RVar (loc,id)
@@ -110,13 +110,13 @@ let map_rawconstr f = function
   | RProd (loc,na,ty,c) -> RProd (loc,na,f ty,f c)
   | RLetIn (loc,na,b,c) -> RLetIn (loc,na,f b,f c)
   | RCases (loc,rtntypopt,tml,pl) ->
-      RCases (loc,option_map f rtntypopt,
+      RCases (loc,Option.map f rtntypopt,
         List.map (fun (tm,x) -> (f tm,x)) tml,
         List.map (fun (loc,idl,p,c) -> (loc,idl,p,f c)) pl)
   | RLetTuple (loc,nal,(na,po),b,c) ->
-      RLetTuple (loc,nal,(na,option_map f po),f b,f c)
+      RLetTuple (loc,nal,(na,Option.map f po),f b,f c)
   | RIf (loc,c,(na,po),b1,b2) ->
-      RIf (loc,f c,(na,option_map f po),f b1,f b2)
+      RIf (loc,f c,(na,Option.map f po),f b1,f b2)
   | RRec (loc,fk,idl,bl,tyl,bv) ->
       RRec (loc,fk,idl,Array.map (List.map (map_rawdecl f)) bl,
             Array.map f tyl,Array.map f bv)
@@ -149,7 +149,7 @@ let map_rawconstr_with_binders_loc loc g f e = function
       let g' id e = snd (g id e) in
       let h (_,idl,p,c) = (loc,idl,p,f (List.fold_right g' idl e) c) in
       RCases
-	(loc,option_map (f e) tyopt,List.map (f e) tml, List.map h pl)
+	(loc,Option.map (f e) tyopt,List.map (f e) tml, List.map h pl)
   | RRec (_,fk,idl,tyl,bv) ->
       let idl',e' = fold_ident g idl e in
       RRec (loc,fk,idl',Array.map (f e) tyl,Array.map (f e') bv)

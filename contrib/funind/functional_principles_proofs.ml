@@ -882,7 +882,7 @@ let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
   let f_def = Global.lookup_constant (destConst f) in
   let eq_lhs = mkApp(f,Array.init (nb_params + nb_args) (fun i -> mkRel(nb_params + nb_args - i))) in
   let f_body =
-    force (out_some f_def.const_body)
+    force (Option.get f_def.const_body)
   in
   let params,f_body_with_params = decompose_lam_n nb_params f_body in
   let (_,num),(_,_,bodies) = destFix f_body_with_params in
@@ -933,8 +933,8 @@ let do_replace params rec_arg_num rev_args_id f fun_num all_funs g =
   let equation_lemma = 
     try 
       let finfos = find_Function_infos (destConst f) in 
-      mkConst (out_some finfos.equation_lemma)
-    with (Not_found | Failure "out_some" as e) -> 
+      mkConst (Option.get finfos.equation_lemma)
+    with (Not_found | Option.IsNone as e) -> 
       let f_id = id_of_label (con_label (destConst f)) in 
       (*i The next call to mk_equation_id is valid since we will construct the lemma
 	Ensures by: obvious
@@ -943,7 +943,7 @@ let do_replace params rec_arg_num rev_args_id f fun_num all_funs g =
       generate_equation_lemma all_funs f fun_num (List.length params) (List.length rev_args_id) rec_arg_num;
       let _ =
 	match e with 
-	  | Failure "out_some" -> 
+	  | Option.IsNone -> 
 	      let finfos = find_Function_infos (destConst f) in 
 	      update_Function 
 		{finfos with

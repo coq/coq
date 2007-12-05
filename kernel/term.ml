@@ -639,10 +639,10 @@ type strategy = types option
 type named_declaration = identifier * constr option * types
 type rel_declaration = name * constr option * types
 
-let map_named_declaration f (id, v, ty) = (id, option_map f v, f ty)
+let map_named_declaration f (id, v, ty) = (id, Option.map f v, f ty)
 let map_rel_declaration = map_named_declaration
 
-let fold_named_declaration f (_, v, ty) a = f ty (option_fold_right f v a)
+let fold_named_declaration f (_, v, ty) a = f ty (Option.fold_right f v a)
 let fold_rel_declaration = fold_named_declaration
 
 (****************************************************************************)
@@ -773,7 +773,7 @@ let substl laml = substnl laml 0
 let subst1 lam = substl [lam]
 
 let substnl_decl laml k (id,bodyopt,typ) =
-  (id,option_map (substnl laml k) bodyopt,substnl laml k typ)
+  (id,Option.map (substnl laml k) bodyopt,substnl laml k typ)
 let substl_decl laml = substnl_decl laml 0
 let subst1_decl lam = substl_decl [lam]
 let subst1_named_decl = subst1_decl

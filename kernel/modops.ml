@@ -163,7 +163,7 @@ and subst_module  sub mb =
      a module M in a signature that is knows to be equivalent to a module M'
      (because the signature is "K with Module M := M'") and we are substituting
      M' with some M''. *)
-  let mpo' = option_smartmap (subst_mp sub) mb.msb_equiv in
+  let mpo' = Option.smartmap (subst_mp sub) mb.msb_equiv in
     if mtb'==mb.msb_modtype && mpo'==mb.msb_equiv then mb else
       { msb_modtype=mtb'; 
 	msb_equiv=mpo'; 
@@ -274,7 +274,7 @@ let resolver_of_environment mbid modtype mp env =
 	   if expecteddef.Declarations.const_inline then
 	     let constant = lookup_constant con' env in
 	     if (not constant.Declarations.const_opaque) then
-	       let constr = option_map Declarations.force
+	       let constr = Option.map Declarations.force
 		 constant.Declarations.const_body in
 		 (con,constr)::(make_resolve r)
 	     else make_resolve r

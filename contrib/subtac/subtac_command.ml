@@ -159,7 +159,7 @@ let list_of_local_binders l =
 
 let lift_binders k n l =
   let rec aux n = function
-    | (id, t, c) :: tl -> (id, option_map (liftn k n) t, liftn k n c) :: aux (pred n) tl
+    | (id, t, c) :: tl -> (id, Option.map (liftn k n) t, liftn k n c) :: aux (pred n) tl
     | [] -> []
   in aux n l
 
@@ -326,7 +326,7 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
 
 let nf_evar_context isevars ctx = 
   List.map (fun (n, b, t) -> 
-    (n, option_map (Evarutil.nf_isevar isevars) b, Evarutil.nf_isevar isevars t)) ctx
+    (n, Option.map (Evarutil.nf_isevar isevars) b, Evarutil.nf_isevar isevars t)) ctx
     
 let build_mutrec lnameargsardef boxed = 
   let sigma = Evd.empty and env = Global.env () in 

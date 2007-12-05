@@ -52,7 +52,7 @@ let gen_crible refopt (fn : global_reference -> env -> constr -> unit) =
 	(try 
 	   let (idc,_,typ) = get_variable (basename sp) in 
            if refopt = None
-	     || head_const typ = constr_of_global (out_some refopt)
+	     || head_const typ = constr_of_global (Option.get refopt)
 	   then
 	     fn (VarRef idc) env typ
 	 with Not_found -> (* we are in a section *) ())
@@ -60,7 +60,7 @@ let gen_crible refopt (fn : global_reference -> env -> constr -> unit) =
 	let cst = locate_constant (qualid_of_sp sp) in
 	let typ = Typeops.type_of_constant env cst in
         if refopt = None
-	  || head_const typ = constr_of_global (out_some refopt)
+	  || head_const typ = constr_of_global (Option.get refopt)
 	then
 	  fn (ConstRef cst) env typ
     | "INDUCTIVE" -> 

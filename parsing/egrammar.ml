@@ -160,7 +160,7 @@ type grammar_tactic_production =
 
 let make_prod_item = function
   | TacTerm s -> (Gramext.Stoken (Lexer.terminal s), None)
-  | TacNonTerm (_,(nont,t), po) -> (nont, option_map (fun p -> (p,t)) po)
+  | TacNonTerm (_,(nont,t), po) -> (nont, Option.map (fun p -> (p,t)) po)
 
 (* Tactic grammar extensions *)
 
@@ -194,7 +194,7 @@ let extend_vernac_command_grammar s gl =
 let find_index s t =
   let t,n = repr_ident (id_of_string t) in
   if s <> t or n = None then raise Not_found;
-  out_some n
+  Option.get n
 
 let rec interp_entry_name up_level s =
   let l = String.length s in
@@ -233,7 +233,7 @@ let make_vprod_item n = function
   | VTerm s -> (Gramext.Stoken (Lexer.terminal s), None)
   | VNonTerm (loc, nt, po) ->
       let (etyp, e) = interp_entry_name n nt in
-      e, option_map (fun p -> (p,etyp)) po
+      e, Option.map (fun p -> (p,etyp)) po
 
 let get_tactic_entry n =
   if n = 0 then

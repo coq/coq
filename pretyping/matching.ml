@@ -153,7 +153,7 @@ let matches_core convert allow_partial_app pat c =
 	  sorec ((na2,t2)::stk) (sorec stk sigma c1 c2) d1 d2
 
       | PRef (ConstRef _ as ref), _ when convert <> None ->
-	  let (env,evars) = out_some convert in
+	  let (env,evars) = Option.get convert in
 	  let c = constr_of_global ref in
 	  if is_conv env evars c cT then sigma
 	  else raise PatternMatchingFailure

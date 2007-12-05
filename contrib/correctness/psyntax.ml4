@@ -787,7 +787,7 @@ END
 
 VERNAC COMMAND EXTEND Correctness
   [ "Correctness" preident(str) program(pgm) then_tac(tac) ]
-   -> [ Ptactic.correctness str pgm (option_map Tacinterp.interp tac) ]
+   -> [ Ptactic.correctness str pgm (Option.map Tacinterp.interp tac) ]
 END
 
 (* Show Programs *)

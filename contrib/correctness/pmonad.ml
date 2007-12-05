@@ -76,9 +76,9 @@ let rec abstract_post ren env (e,q) =
   let after_id id = id_of_string ((string_of_id id) ^ "'") in
   let (_,go) = Peffect.get_repr e in
   let al = List.map (fun id -> (id,after_id id)) go in
-  let q = option_map (named_app (subst_in_constr al)) q in
+  let q = Option.map (named_app (subst_in_constr al)) q in
   let tgo = List.map (fun (id,aid) -> (aid, trad_type_in_env ren env id)) al in
-  option_map (named_app (abstract tgo)) q
+  Option.map (named_app (abstract tgo)) q
 
 (* Translation of effects types in cic types.
  *
@@ -365,7 +365,7 @@ let make_app env ren args ren' (tf,cf) ((bl,cb),s,capp) c =
 	    @(eq_phi ren'' env s svi tf)
 	    @(List.map (fun c -> CC_hole c) holes))
   in
-  let qapp' = option_map (named_app (subst_in_constr svi)) qapp in
+  let qapp' = Option.map (named_app (subst_in_constr svi)) qapp in
   let t = 
     make_let_in ren'' env fe [] (current_vars ren''' outf,qapp')
       (res,tyres) (t,ty)

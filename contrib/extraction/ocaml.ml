@@ -574,7 +574,7 @@ and pp_module_type ol = function
       str "functor (" ++ name ++ str ":" ++ typ ++ str ") ->" ++ fnl () ++ def
   | MTsig (msid, sign) ->
       let tvm = top_visible_mp () in 
-      option_iter (fun l -> add_subst msid (MPdot (tvm, l))) ol; 
+      Option.iter (fun l -> add_subst msid (MPdot (tvm, l))) ol; 
       let mp = MPself msid in
       push_visible mp; 
       let l = map_succeed pp_specif sign in 

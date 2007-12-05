@@ -59,17 +59,17 @@ let rec unloc = function
   | RLetIn (_,na,b,c) -> RLetIn (dummy_loc,na,unloc b,unloc c)
   | RCases (_,rtntypopt,tml,pl) ->
       RCases (dummy_loc,
-        (option_map unloc rtntypopt),
+        (Option.map unloc rtntypopt),
 	List.map (fun (tm,x) -> (unloc tm,x)) tml,
         List.map (fun (_,idl,p,c) -> (dummy_loc,idl,p,unloc c)) pl)
   | RLetTuple (_,nal,(na,po),b,c) ->
-      RLetTuple (dummy_loc,nal,(na,option_map unloc po),unloc b,unloc c)
+      RLetTuple (dummy_loc,nal,(na,Option.map unloc po),unloc b,unloc c)
   | RIf (_,c,(na,po),b1,b2) ->
-      RIf (dummy_loc,unloc c,(na,option_map unloc po),unloc b1,unloc b2)
+      RIf (dummy_loc,unloc c,(na,Option.map unloc po),unloc b1,unloc b2)
   | RRec (_,fk,idl,bl,tyl,bv) ->
       RRec (dummy_loc,fk,idl,
             Array.map (List.map 
-              (fun (na,obd,ty) -> (na,option_map unloc obd, unloc ty)))
+              (fun (na,obd,ty) -> (na,Option.map unloc obd, unloc ty)))
               bl,
             Array.map unloc tyl,
             Array.map unloc bv)

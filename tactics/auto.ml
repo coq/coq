@@ -297,7 +297,7 @@ let subst_autohint (_,subst,(local,name,hintlist as obj)) =
   let trans_clenv clenv = Clenv.subst_clenv subst clenv in
   let trans_data data code = 	      
     { data with
-	pat = option_smartmap (subst_pattern subst) data.pat ;
+	pat = Option.smartmap (subst_pattern subst) data.pat ;
 	code = code ;
     }
   in
@@ -637,7 +637,7 @@ and my_find_search db_list local_db hdc concl =
 		(trivial_fail_db db_list local_db)
 	  | Unfold_nth c -> unfold_in_concl [[],c]
 	  | Extern tacast -> 
-	      conclPattern concl (out_some p) tacast))
+	      conclPattern concl (Option.get p) tacast))
     tacl
 
 and trivial_resolve db_list local_db cl = 
@@ -781,7 +781,7 @@ let gen_auto n lems dbnames =
   | None -> full_auto n lems
   | Some l -> auto n lems l
 
-let inj_or_var = option_map (fun n -> ArgArg n)
+let inj_or_var = Option.map (fun n -> ArgArg n)
 
 let h_auto n lems l =
   Refiner.abstract_tactic (TacAuto (inj_or_var n,List.map inj_open lems,l))

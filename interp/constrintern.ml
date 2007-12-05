@@ -226,7 +226,7 @@ let make_current_scope (tmp_scope,scopes) = option_cons tmp_scope scopes
 let set_var_scope loc id (_,scopt,scopes) varscopes =
   let idscopes = List.assoc id varscopes in
   if !idscopes <> None & 
-    make_current_scope (out_some !idscopes)
+    make_current_scope (Option.get !idscopes)
     <> make_current_scope (scopt,scopes) then
       user_err_loc (loc,"set_var_scope",
       pr_id id ++ str " already occurs in a different scope")
@@ -796,7 +796,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
         let idl = Array.map
           (fun (id,(n,order),bl,ty,bd) ->
 	     let intern_ro_arg c f =
-	       let before, after = list_chop (succ (out_some n)) bl in
+	       let before, after = list_chop (succ (Option.get n)) bl in
 	       let ((ids',_,_),rafter) =
 		 List.fold_left intern_local_binder (env,[]) after in
 	       let ro = (intern (ids', tmp_scope, scopes) c) in
@@ -898,21 +898,21 @@ let internalise sigma globalenv env allow_patvar lvar c =
 	    let (tm,ind),nal = intern_case_item env citm in
 	    (tm,ind)::inds,List.fold_left (push_name_env lvar) env nal)
 	  tms ([],env) in
-        let rtnpo = option_map (intern_type env') rtnpo in
+        let rtnpo = Option.map (intern_type env') rtnpo in
         let eqns' = List.map (intern_eqn (List.length tms) env) eqns in
 	RCases (loc, rtnpo, tms, List.flatten eqns')
     | CLetTuple (loc, nal, (na,po), b, c) ->
 	let env' = reset_tmp_scope env in
         let ((b',(na',_)),ids) = intern_case_item env' (b,(na,None)) in
         let env'' = List.fold_left (push_name_env lvar) env ids in
-        let p' = option_map (intern_type env'') po in
+        let p' = Option.map (intern_type env'') po in
         RLetTuple (loc, nal, (na', p'), b',
                    intern (List.fold_left (push_name_env lvar) env nal) c)
     | CIf (loc, c, (na,po), b1, b2) ->
 	let env' = reset_tmp_scope env in
         let ((c',(na',_)),ids) = intern_case_item env' (c,(na,None)) in
         let env'' = List.fold_left (push_name_env lvar) env ids in
-        let p' = option_map (intern_type env'') po in
+        let p' = Option.map (intern_type env'') po in
         RIf (loc, c', (na', p'), intern env b1, intern env b2)
     | CHole loc -> 
 	RHole (loc, Evd.QuestionMark true)
@@ -921,7 +921,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
     | CPatVar (loc, _) ->
 	raise (InternalisationError (loc,NegativeMetavariable))
     | CEvar (loc, n, l) ->
-	REvar (loc, n, option_map (List.map (intern env)) l)
+	REvar (loc, n, Option.map (List.map (intern env)) l)
     | CSort (loc, s) ->
 	RSort(loc,s)
     | CCast (loc, c1, CastConv (k, c2)) ->

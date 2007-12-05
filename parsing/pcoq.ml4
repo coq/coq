@@ -576,7 +576,7 @@ let find_position forpat other assoc lev =
         | (p,_ as pa)::l when p > n -> pa :: add_level (Some p) l
         | (p,a)::l when p = n ->
 	    if admissible_assoc (a,assoc) then raise Exit;
-	    error_level_assoc p a (out_some assoc)
+	    error_level_assoc p a (Option.get assoc)
 	| l -> after := q; (n,create_assoc assoc)::l
       in
       try
@@ -587,7 +587,7 @@ let find_position forpat other assoc lev =
         level_stack := updated:: !level_stack;
 	let assoc = create_assoc assoc in
 	(if !after = None then Some Gramext.First
-	else Some (Gramext.After (constr_level (out_some !after)))),
+	else Some (Gramext.After (constr_level (Option.get !after)))),
 	Some assoc, Some (constr_level n)
       with
           Exit ->

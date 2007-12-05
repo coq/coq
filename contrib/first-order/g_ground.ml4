@@ -98,16 +98,16 @@ let normalize_evaluables=
 
 TACTIC EXTEND firstorder
     [ "firstorder" tactic_opt(t) "using" ne_reference_list(l) ] -> 
-      [ gen_ground_tac true (option_map eval_tactic t) (Ids l) ]
+      [ gen_ground_tac true (Option.map eval_tactic t) (Ids l) ]
 |   [ "firstorder" tactic_opt(t) "with" ne_preident_list(l) ] -> 
-      [ gen_ground_tac true (option_map eval_tactic t) (Bases l) ]
+      [ gen_ground_tac true (Option.map eval_tactic t) (Bases l) ]
 |   [ "firstorder" tactic_opt(t) ] -> 
-      [ gen_ground_tac true (option_map eval_tactic t) Void ]
+      [ gen_ground_tac true (Option.map eval_tactic t) Void ]
 END
 
 TACTIC EXTEND gintuition
   [ "gintuition" tactic_opt(t) ] ->
-     [ gen_ground_tac false (option_map eval_tactic t) Void ]
+     [ gen_ground_tac false (Option.map eval_tactic t) Void ]
 END
 
 

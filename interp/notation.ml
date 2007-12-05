@@ -133,7 +133,7 @@ let push_scopes = List.fold_right push_scope
 type local_scopes = tmp_scope_name option * scope_name list
 
 let make_current_scopes (tmp_scope,scopes) =
-  option_fold_right push_scope tmp_scope (push_scopes scopes !scope_stack)
+  Option.fold_right push_scope tmp_scope (push_scopes scopes !scope_stack)
 
 (**********************************************************************)
 (* Delimiters *)
@@ -143,7 +143,7 @@ let delimiters_map = ref Gmap.empty
 let declare_delimiters scope key =
   let sc = find_scope scope in
   if sc.delimiters <> None && Options.is_verbose () then begin
-    let old = out_some sc.delimiters in
+    let old = Option.get sc.delimiters in
     Options.if_verbose 
       warning ("Overwritting previous delimiting key "^old^" in scope "^scope)
   end;
@@ -239,12 +239,12 @@ let delay dir int loc x = (dir, (fun () -> int loc x))
 let declare_numeral_interpreter sc dir interp (patl,uninterp,inpat) =
   declare_prim_token_interpreter sc
     (fun cont loc -> function Numeral n-> delay dir interp loc n | p -> cont loc p)
-    (patl, (fun r -> option_map mkNumeral (uninterp r)), inpat)
+    (patl, (fun r -> Option.map mkNumeral (uninterp r)), inpat)
 
 let declare_string_interpreter sc dir interp (patl,uninterp,inpat) =
   declare_prim_token_interpreter sc
     (fun cont loc -> function String s -> delay dir interp loc s | p -> cont loc p)
-    (patl, (fun r -> option_map mkString (uninterp r)), inpat)
+    (patl, (fun r -> Option.map mkString (uninterp r)), inpat)
 
 let check_required_module loc sc (sp,d) =
   try let _ = Nametab.absolute_reference sp in ()
@@ -396,7 +396,7 @@ let uninterp_prim_token_cases_pattern c =
 let availability_of_prim_token printer_scope local_scopes =
   let f scope = Hashtbl.mem prim_token_interpreter_tab scope in
   let scopes = make_current_scopes local_scopes in
-  option_map snd (find_without_delimiters f (Some printer_scope,None) scopes)
+  Option.map snd (find_without_delimiters f (Some printer_scope,None) scopes)
 
 (* Miscellaneous *)
 
@@ -454,7 +454,7 @@ type arguments_scope_discharge_request =
   | ArgsScopeNoDischarge
 
 let load_arguments_scope _ (_,(_,r,scl)) =
-  List.iter (option_iter check_scope) scl;
+  List.iter (Option.iter check_scope) scl;
   arguments_scope := Refmap.add r scl !arguments_scope
 
 let cache_arguments_scope o =

@@ -456,10 +456,10 @@ let gallina_print_leaf_entry with_values c =
 
 let gallina_print_context with_values = 
   let rec prec n = function
-    | h::rest when n = None or out_some n > 0 -> 
+    | h::rest when n = None or Option.get n > 0 -> 
 	(match gallina_print_library_entry with_values h with
 	  | None -> prec n rest
-	  | Some pp -> prec (option_map ((+) (-1)) n) rest ++ pp ++ fnl ())
+	  | Some pp -> prec (Option.map ((+) (-1)) n) rest ++ pp ++ fnl ())
     | _ -> mt ()
   in 
   prec

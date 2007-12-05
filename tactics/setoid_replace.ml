@@ -85,7 +85,7 @@ type morphism_class =
 let subst_mps_in_relation_class subst =
  function
     Relation  t -> Relation  (subst_mps subst t)
-  | Leibniz t -> Leibniz (option_map (subst_mps subst) t) 
+  | Leibniz t -> Leibniz (Option.map (subst_mps subst) t) 
 
 let subst_mps_in_argument_class subst (variance,rel) =
  variance, subst_mps_in_relation_class subst rel
@@ -297,9 +297,9 @@ let relation_morphism_of_constr_morphism =
 let subst_relation subst relation = 
   let rel_a' = subst_mps subst relation.rel_a in
   let rel_aeq' = subst_mps subst relation.rel_aeq in
-  let rel_refl' = option_map (subst_mps subst) relation.rel_refl in
-  let rel_sym' = option_map (subst_mps subst) relation.rel_sym in
-  let rel_trans' = option_map (subst_mps subst) relation.rel_trans in
+  let rel_refl' = Option.map (subst_mps subst) relation.rel_refl in
+  let rel_sym' = Option.map (subst_mps subst) relation.rel_sym in
+  let rel_trans' = Option.map (subst_mps subst) relation.rel_trans in
   let rel_X_relation_class' = subst_mps subst relation.rel_X_relation_class in
   let rel_Xreflexive_relation_class' =
    subst_mps subst relation.rel_Xreflexive_relation_class
@@ -640,9 +640,9 @@ let apply_to_relation subst rel =
    assert (new_quantifiers_no >= 0) ;
    { rel_a = mkApp (rel.rel_a, subst) ;
      rel_aeq = mkApp (rel.rel_aeq, subst) ;
-     rel_refl = option_map (fun c -> mkApp (c,subst)) rel.rel_refl ; 
-     rel_sym = option_map (fun c -> mkApp (c,subst)) rel.rel_sym;
-     rel_trans = option_map (fun c -> mkApp (c,subst)) rel.rel_trans;
+     rel_refl = Option.map (fun c -> mkApp (c,subst)) rel.rel_refl ; 
+     rel_sym = Option.map (fun c -> mkApp (c,subst)) rel.rel_sym;
+     rel_trans = Option.map (fun c -> mkApp (c,subst)) rel.rel_trans;
      rel_quantifiers_no = new_quantifiers_no;
      rel_X_relation_class = mkApp (rel.rel_X_relation_class, subst);
      rel_Xreflexive_relation_class =
@@ -1012,9 +1012,9 @@ let int_add_relation id a aeq refl sym trans =
  let env = Global.env () in
  let a_quantifiers_rev = check_a env a in
   check_eq env a_quantifiers_rev a aeq  ;
-  option_iter (check_refl env a_quantifiers_rev a aeq) refl ;
-  option_iter (check_sym env a_quantifiers_rev a aeq) sym ;
-  option_iter (check_trans env a_quantifiers_rev a aeq) trans ;
+  Option.iter (check_refl env a_quantifiers_rev a aeq) refl ;
+  Option.iter (check_sym env a_quantifiers_rev a aeq) sym ;
+  Option.iter (check_trans env a_quantifiers_rev a aeq) trans ;
   let quantifiers_no = List.length a_quantifiers_rev in
   let aeq_rel =
    { rel_a = a;
@@ -1075,9 +1075,9 @@ let int_add_relation id a aeq refl sym trans =
       let a_instance = apply_to_rels a a_quantifiers_rev in
       let aeq_instance = apply_to_rels aeq a_quantifiers_rev in
       let sym_instance =
-       option_map (fun x -> apply_to_rels x a_quantifiers_rev) sym in
+       Option.map (fun x -> apply_to_rels x a_quantifiers_rev) sym in
       let refl_instance =
-       option_map (fun x -> apply_to_rels x a_quantifiers_rev) refl in
+       Option.map (fun x -> apply_to_rels x a_quantifiers_rev) refl in
       let trans_instance = apply_to_rels trans a_quantifiers_rev in
       let aeq_rel_class_and_var1, aeq_rel_class_and_var2, lemma, output =
        match sym_instance, refl_instance with
@@ -1132,8 +1132,8 @@ let int_add_relation id a aeq refl sym trans =
 (* The vernac command "Add Relation ..." *)
 let add_relation id a aeq refl sym trans =
   Coqlib.check_required_library ["Coq";"Setoids";"Setoid_tac"];
-  int_add_relation id (constr_of a) (constr_of aeq) (option_map constr_of refl)
-    (option_map constr_of sym) (option_map constr_of trans)
+  int_add_relation id (constr_of a) (constr_of aeq) (Option.map constr_of refl)
+    (Option.map constr_of sym) (Option.map constr_of trans)
 
 (************************ Add Setoid ******************************************)
 

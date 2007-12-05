@@ -40,15 +40,13 @@ type struc_typ = {
 let structure_table = ref (Indmap.empty : struc_typ Indmap.t)
 let projection_table = ref Cmap.empty
 
-let option_fold_right f p e = match p with Some a -> f a e | None -> e
-
 let load_structure i (_,(ind,id,kl,projs)) =
   let n = (fst (Global.lookup_inductive ind)).Declarations.mind_nparams in
   let struc =
     { s_CONST = id; s_EXPECTEDPARAM = n; s_PROJ = projs; s_PROJKIND = kl } in
   structure_table := Indmap.add ind struc !structure_table;
   projection_table := 
-    List.fold_right (option_fold_right (fun proj -> Cmap.add proj struc))
+    List.fold_right (Option.fold_right (fun proj -> Cmap.add proj struc))
       projs !projection_table
 
 let cache_structure o =
@@ -60,7 +58,7 @@ let subst_structure (_,subst,((kn,i),id,kl,projs as obj)) =
    (* invariant: struc.s_PROJ is an evaluable reference. Thus we can take *)
    (* the first component of subst_con.                                   *)
    list_smartmap 
-     (option_smartmap (fun kn -> fst (subst_con subst kn)))
+     (Option.smartmap (fun kn -> fst (subst_con subst kn)))
     projs
   in
     if projs' == projs && kn' == kn then obj else
@@ -68,7 +66,7 @@ let subst_structure (_,subst,((kn,i),id,kl,projs as obj)) =
 
 let discharge_structure (_,(ind,id,kl,projs)) =
   Some (Lib.discharge_inductive ind, id, kl,
-        List.map (option_map Lib.discharge_con) projs)
+        List.map (Option.map Lib.discharge_con) projs)
 
 let (inStruc,outStruc) =
   declare_object {(default_object "STRUCTURE") with 

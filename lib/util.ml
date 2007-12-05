@@ -790,42 +790,17 @@ let interval n m =
 
 let in_some x = Some x
 
-let out_some = function
-  | Some x -> x
-  | None -> failwith "out_some"
-
-let option_map f = function
-  | None -> None
-  | Some x -> Some (f x)
-
 let option_cons a l = match a with
   | Some x -> x::l
   | None -> l
 
 let option_fold_left2 f e a b = match (a,b) with
   | Some x, Some y -> f e x y
-  | _ -> e
-
-let option_fold_left f e a = match a with
-  | Some x -> f e x
-  | _ -> e
-
-let option_fold_right f a e = match a with
-  | Some x -> f x e
-  | _ -> e
 
 let option_compare f a b = match (a,b) with
   | None, None -> true
   | Some a', Some b' -> f a' b'
   | _ -> failwith "option_compare"
-
-let option_iter f = function
-  | None -> ()
-  | Some x -> f x
-
-let option_smartmap f a = match a with
-  | None -> a
-  | Some x -> let x' = f x in if x'==x then a else Some x'
 
 let rec filter_some = function
   | [] -> []

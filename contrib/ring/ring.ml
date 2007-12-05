@@ -193,7 +193,7 @@ let _ =
 let subst_morph subst morph = 
   let plusm' = subst_mps subst morph.plusm in
   let multm' = subst_mps subst morph.multm in
-  let oppm' = option_smartmap (subst_mps subst) morph.oppm in
+  let oppm' = Option.smartmap (subst_mps subst) morph.oppm in
     if plusm' == morph.plusm 
       && multm' == morph.multm 
       && oppm' == morph.oppm then 
@@ -215,15 +215,15 @@ let subst_set subst cset =
     if !same then cset else cset'
 
 let subst_theory subst th = 
-  let th_equiv' = option_smartmap (subst_mps subst) th.th_equiv in
-  let th_setoid_th' = option_smartmap (subst_mps subst) th.th_setoid_th in
-  let th_morph' = option_smartmap (subst_morph subst) th.th_morph in
+  let th_equiv' = Option.smartmap (subst_mps subst) th.th_equiv in
+  let th_setoid_th' = Option.smartmap (subst_mps subst) th.th_setoid_th in
+  let th_morph' = Option.smartmap (subst_morph subst) th.th_morph in
   let th_a' = subst_mps subst th.th_a in                   
   let th_plus' = subst_mps subst th.th_plus in
   let th_mult' = subst_mps subst th.th_mult in
   let th_one' = subst_mps subst th.th_one in
   let th_zero' = subst_mps subst th.th_zero in
-  let th_opp' = option_smartmap (subst_mps subst) th.th_opp in
+  let th_opp' = Option.smartmap (subst_mps subst) th.th_opp in
   let th_eq' = subst_mps subst th.th_eq in
   let th_t' = subst_mps subst th.th_t in          
   let th_closed' = subst_set subst th.th_closed in

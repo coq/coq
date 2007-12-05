@@ -94,14 +94,14 @@ let rawconstr_of_aconstr_with_binders loc g f e = function
 	let ((idl,e),patl) =
 	  list_fold_map (cases_pattern_fold_map loc fold) ([],e) patl in
 	(loc,idl,patl,f e rhs)) eqnl in
-      RCases (loc,option_map (f e') rtntypopt,tml',eqnl')
+      RCases (loc,Option.map (f e') rtntypopt,tml',eqnl')
   | ALetTuple (nal,(na,po),b,c) ->
       let e,nal = list_fold_map (name_fold_map g) e nal in 
       let e,na = name_fold_map g e na in
-      RLetTuple (loc,nal,(na,option_map (f e) po),f e b,f e c)
+      RLetTuple (loc,nal,(na,Option.map (f e) po),f e b,f e c)
   | AIf (c,(na,po),b1,b2) ->
       let e,na = name_fold_map g e na in
-      RIf (loc,f e c,(na,option_map (f e) po),f e b1,f e b2)
+      RIf (loc,f e c,(na,Option.map (f e) po),f e b1,f e b2)
   | ACast (c,k) -> RCast (loc,f e c, 
 			  match k with 
 			    | CastConv (k,t) -> CastConv (k,f e t)
@@ -185,20 +185,20 @@ let aconstr_and_vars_of_rawconstr a =
   | RLetIn (_,na,b,c) -> add_name found na; ALetIn (na,aux b,aux c)
   | RCases (_,rtntypopt,tml,eqnl) ->
       let f (_,idl,pat,rhs) = found := idl@(!found); (pat,aux rhs) in
-      ACases (option_map aux rtntypopt,
+      ACases (Option.map aux rtntypopt,
         List.map (fun (tm,(na,x)) ->
 	  add_name found na;
-	  option_iter
+	  Option.iter
 	    (fun (_,_,_,nl) -> List.iter (add_name found) nl) x;
-          (aux tm,(na,option_map (fun (_,ind,n,nal) -> (ind,n,nal)) x))) tml,
+          (aux tm,(na,Option.map (fun (_,ind,n,nal) -> (ind,n,nal)) x))) tml,
         List.map f eqnl)
   | RLetTuple (loc,nal,(na,po),b,c) ->
       add_name found na;
       List.iter (add_name found) nal;
-      ALetTuple (nal,(na,option_map aux po),aux b,aux c)
+      ALetTuple (nal,(na,Option.map aux po),aux b,aux c)
   | RIf (loc,c,(na,po),b1,b2) ->
       add_name found na;
-      AIf (aux c,(na,option_map aux po),aux b1,aux b2)
+      AIf (aux c,(na,Option.map aux po),aux b1,aux b2)
   | RCast (_,c,k) -> ACast (aux c, 
 			    match k with CastConv (k,t) -> CastConv (k,aux t) 
 			      | CastCoerce -> CastCoerce)
@@ -305,11 +305,11 @@ let rec subst_aconstr subst bound raw =
 	  ALetIn (n,r1',r2')
 
   | ACases (rtntypopt,rl,branches) -> 
-      let rtntypopt' = option_smartmap (subst_aconstr subst bound) rtntypopt
+      let rtntypopt' = Option.smartmap (subst_aconstr subst bound) rtntypopt
       and rl' = list_smartmap
         (fun (a,(n,signopt) as x) -> 
 	  let a' = subst_aconstr subst bound a in
-	  let signopt' = option_map (fun ((indkn,i),n,nal as z) ->
+	  let signopt' = Option.map (fun ((indkn,i),n,nal as z) ->
 	    let indkn' = subst_kn subst indkn in
 	    if indkn == indkn' then z else ((indkn',i),n,nal)) signopt in
 	  if a' == a && signopt' == signopt then x else (a',(n,signopt')))
@@ -327,14 +327,14 @@ let rec subst_aconstr subst bound raw =
           ACases (rtntypopt',rl',branches')
 
   | ALetTuple (nal,(na,po),b,c) ->
-      let po' = option_smartmap (subst_aconstr subst bound) po
+      let po' = Option.smartmap (subst_aconstr subst bound) po
       and b' = subst_aconstr subst bound b 
       and c' = subst_aconstr subst bound c in
 	if po' == po && b' == b && c' == c then raw else
 	  ALetTuple (nal,(na,po'),b',c')
 
   | AIf (c,(na,po),b1,b2) ->
-      let po' = option_smartmap (subst_aconstr subst bound) po
+      let po' = Option.smartmap (subst_aconstr subst bound) po
       and b1' = subst_aconstr subst bound b1
       and b2' = subst_aconstr subst bound b2 
       and c' = subst_aconstr subst bound c in
@@ -368,7 +368,7 @@ let encode_list_value l = RApp (dummy_loc,RVar (dummy_loc,ldots_var),l)
 (* Pattern-matching rawconstr and aconstr *)
 
 let abstract_return_type_context pi mklam tml rtno =
-  option_map (fun rtn ->
+  Option.map (fun rtn ->
     let nal =
       List.flatten (List.map (fun (_,(na,t)) ->
 	match t with Some x -> (pi x)@[na] | None -> [na]) tml) in
@@ -663,8 +663,8 @@ let ids_of_cases_indtype =
 let ids_of_cases_tomatch tms =
   List.fold_right
     (fun (_,(ona,indnal)) l ->
-      option_fold_right (fun t -> (@) (ids_of_cases_indtype t))
-      indnal (option_fold_right name_cons ona l))
+      Option.fold_right (fun t -> (@) (ids_of_cases_indtype t))
+      indnal (Option.fold_right name_cons ona l))
     tms []
 
 let is_constructor id =
@@ -715,17 +715,17 @@ let fold_constr_expr_with_binders g f n acc = function
       acc
   | CCases (loc,rtnpo,al,bl) ->
       let ids = ids_of_cases_tomatch al in
-      let acc = option_fold_left (f (List.fold_right g ids n)) acc rtnpo in
+      let acc = Option.fold_left (f (List.fold_right g ids n)) acc rtnpo in
       let acc = List.fold_left (f n) acc (List.map fst al) in
       List.fold_right (fun (loc,patl,rhs) acc ->
 	let ids = ids_of_pattern_list patl in
 	f (Idset.fold g ids n) acc rhs) bl acc
   | CLetTuple (loc,nal,(ona,po),b,c) ->
       let n' = List.fold_right (name_fold g) nal n in
-      f (option_fold_right (name_fold g) ona n') (f n acc b) c
+      f (Option.fold_right (name_fold g) ona n') (f n acc b) c
   | CIf (_,c,(ona,po),b1,b2) ->
       let acc = f n (f n (f n acc b1) b2) c in
-      option_fold_left (f (option_fold_right (name_fold g) ona n)) acc po
+      Option.fold_left (f (Option.fold_right (name_fold g) ona n)) acc po
   | CFix (loc,_,l) ->
       let n' = List.fold_right (fun (id,_,_,_,_) -> g id) l n in
       List.fold_right (fun (_,(_,o),lb,t,c) acc ->
@@ -828,15 +828,15 @@ let map_constr_expr_with_binders g f e = function
       (* TODO: apply g on the binding variables in pat... *)
       let bl = List.map (fun (loc,pat,rhs) -> (loc,pat,f e rhs)) bl in
       let ids = ids_of_cases_tomatch a in
-      let po = option_map (f (List.fold_right g ids e)) rtnpo in
+      let po = Option.map (f (List.fold_right g ids e)) rtnpo in
       CCases (loc, po, List.map (fun (tm,x) -> (f e tm,x)) a,bl)
   | CLetTuple (loc,nal,(ona,po),b,c) ->
       let e' = List.fold_right (name_fold g) nal e in
-      let e'' = option_fold_right (name_fold g) ona e in
-      CLetTuple (loc,nal,(ona,option_map (f e'') po),f e b,f e' c)
+      let e'' = Option.fold_right (name_fold g) ona e in
+      CLetTuple (loc,nal,(ona,Option.map (f e'') po),f e b,f e' c)
   | CIf (loc,c,(ona,po),b1,b2) ->
-      let e' = option_fold_right (name_fold g) ona e in
-      CIf (loc,f e c,(ona,option_map (f e') po),f e b1,f e b2)
+      let e' = Option.fold_right (name_fold g) ona e in
+      CIf (loc,f e c,(ona,Option.map (f e') po),f e b1,f e b2)
   | CFix (loc,id,dl) ->
       CFix (loc,id,List.map (fun (id,n,bl,t,d) -> 
         let (e',bl') = map_local_binders f g e bl in

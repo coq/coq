@@ -59,7 +59,7 @@ let mk_fixb (id,bl,ann,body,(loc,tyc)) =
   (snd id,(n,ro),bl,ty,body)
 
 let mk_cofixb (id,bl,ann,body,(loc,tyc)) =
-  let _ = option_map (fun (aloc,_) ->
+  let _ = Option.map (fun (aloc,_) ->
     Util.user_err_loc
       (aloc,"Constr:mk_cofixb",
        Pp.str"Annotation forbidden in cofix expression")) (fst ann) in

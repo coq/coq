@@ -259,8 +259,8 @@ let compute_manual_implicits flags ref l =
 	with Not_found ->
 	l, None in
       let imps' = merge (k+1) l' imps in
-      let m = option_map (set_maximality imps') m in
-      option_map (set_implicit id imp) m :: imps'
+      let m = Option.map (set_maximality imps') m in
+      Option.map (set_implicit id imp) m :: imps'
   | (Anonymous,_imp)::imps -> 
       None :: merge (k+1) l imps
   | [] when l = [] -> []
