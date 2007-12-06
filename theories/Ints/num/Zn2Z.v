@@ -10,7 +10,6 @@ Set Implicit Arguments.
 
 Require Import ZArith.
 Require Import ZAux.
-Require Import ZDivModAux.
 Require Import Basic_type.
 Require Import GenBase.
 Require Import GenAdd.
@@ -588,7 +587,7 @@ Section Zn2Z.
    _ _ _ _ _ _ _ _ _ _ _ _ _ _ _);auto.
   unfold w_Bm2, w_to_Z, w_pred, w_Bm1.
   rewrite (spec_pred op_spec);rewrite (spec_Bm1 op_spec).
-  unfold w_digits;rewrite Zmod_def_small. ring.
+  unfold w_digits;rewrite Zmod_small. ring.
   assert (H:= wB_pos(znz_digits w_op)). omega.
   exact (spec_WW op_spec). exact (spec_compare op_spec).
   exact (spec_mul_c op_spec).  exact (spec_div21 op_spec).
@@ -621,12 +620,12 @@ Section Zn2Z.
   w_to_Z (low x) = [|x|] mod wB.
   intros x; case x; simpl low.
     unfold ww_to_Z, w_to_Z, w_0; rewrite (spec_0 op_spec); simpl.
-    rewrite Zmod_def_small; auto with zarith.
+    rewrite Zmod_small; auto with zarith.
     split; auto with zarith.
     unfold wB, base; auto with zarith.
   intros xh xl; simpl.
   rewrite Zplus_comm; rewrite Z_mod_plus; auto with zarith.
-  rewrite Zmod_def_small; auto with zarith.
+  rewrite Zmod_small; auto with zarith.
   unfold wB, base; auto with zarith.
  Qed.
 

@@ -577,13 +577,6 @@ Qed.
 
 (** Number of digits in a number *)
 
-Fixpoint Psize (p:positive) : nat := 
-  match p with 
-    | xH => 1%nat
-    | xI p => S (Psize p) 
-    | xO p => S (Psize p)
-  end.
-
 Definition Nsize (n:N) : nat := match n with 
   | N0 => 0%nat
   | Npos p => Psize p

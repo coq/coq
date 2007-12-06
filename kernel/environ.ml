@@ -89,19 +89,8 @@ let named_context_of_val = fst
    *** /!\ ***   [f t] should be convertible with t *)  
 let map_named_val f (ctxt,ctxtv) = 
   let ctxt =
-    List.map (fun (id,body,typ) -> (id, option_map f body, f typ)) ctxt in
+    List.map (fun (id,body,typ) -> (id, Option.map f body, f typ)) ctxt in
   (ctxt,ctxtv)
-
-(* spiwack: an iterator over [named_context_val]s. *)
-(* like [map_named_val] it goes only through the left part (a 
-   [named_context]). The right part being a cache of compiled values.
-   Contrary to [map_named_val] it does not have usage restrictions, 
-   since it does not modify anything *)
-(* arnaud: peut-être introduire un option_iter ? *)
-let iter_named_val f (ctxt, _) =
-    List.iter (function (_, Some body,typ) -> f body; f typ
-                       |(_, None,typ) -> f typ
-	      ) ctxt
 
 let empty_named_context = empty_named_context 
 
@@ -539,14 +528,18 @@ fun env field value ->
   }
 
 
+(**************************************************************)
 (* spiwack: the following definitions are used by the function 
-   needed_assumption which gives as an output the set of all
+   [assumptions] which gives as an output the set of all
    axioms and sections variables on which a given term depends
    in a context (expectingly the Global context) *)
-type assumption =
-  | Variable of identifier*constr
-  | Axiom of constant*constr
 
+type assumption =
+  | Variable of identifier*constr (* A section variable and its type *)
+  | Axiom of constant*constr      (* An axiom and its type*)
+
+
+(* Defines a set of [assumption] *)
 module OrderedAssumption = 
 struct 
   type t = assumption
@@ -555,45 +548,43 @@ end
 
 module AssumptionSet = Set.Make (OrderedAssumption)
 
-(* definition for redability purposes *)
+(* infix definition of set-union for redability purposes *)
 let ( ** ) s1 s2  = AssumptionSet.union s1 s2
 
-let rec needed_assumptions t env =   
- (* goes recursively into the terms to see if it depends on assumptions
-    the 3 important cases are : Var _ which means that the term refers
-    to a section variable or a "Let" definition,
-                                Rel _ which means the term is a variable
-    which has been bound earlier by a Lambda or a Prod (returns [] )
-                                Const _ where we need to first unfold
+let rec assumptions t env =   
+ (* Goes recursively into the terms to see if it depends on assumptions
+    the 3 important cases are : - Const _ where we need to first unfold
     the constant and return the needed assumptions of its body in the 
-    environnement *)
+    environment,
+                                - Rel _ which means the term is a variable
+    which has been bound earlier by a Lambda or a Prod (returns [] ),
+                                - Var _ which means that the term refers
+    to a section variable or a "Let" definition, in the former it is
+    an assumption of [t], in the latter is must be unfolded like a Const.
+    The other cases are straightforward recursion.*)
   match kind_of_term t with
-    | Var id -> (* a var can be either a variable, or a "Let" definition.*)
+    | Var id -> (* a Var can be either a variable, or a "Let" definition.*)
                 (match named_body id env with
                 | None ->
                       AssumptionSet.singleton (Variable (id,named_type id env))
-		| Some bdy -> needed_assumptions bdy env)
-    | Meta _ | Evar _ -> assert false
+		| Some bdy -> assumptions bdy env)
+    | Meta _ | Evar _ -> Util.anomaly "Environ.assumption: does not expect a meta or an evar"
     | Cast (e1,_,e2) | Prod (_,e1,e2) | Lambda (_,e1,e2) -> 
-                   (needed_assumptions e1 env)**(needed_assumptions e2 env)
-    | LetIn (_,e1,e2,e3) ->(needed_assumptions e1 env)**
-                           (needed_assumptions e2 env)**
-                           (needed_assumptions e3 env)
-    | App (e1, e_array) -> (needed_assumptions e1 env)**
-                   (Array.fold_right (fun e -> fun s -> 
-                                               (needed_assumptions e env)**s)
+                   (assumptions e1 env)**(assumptions e2 env)
+    | LetIn (_,e1,e2,e3) ->(assumptions e1 env)**
+                           (assumptions e2 env)**
+                           (assumptions e3 env)
+    | App (e1, e_array) -> (assumptions e1 env)**
+                   (Array.fold_right (fun e s -> (assumptions e env)**s)
                                       e_array AssumptionSet.empty)
-    | Case (_,e1,e2,e_array) -> (needed_assumptions e1 env)**
-                                (needed_assumptions e2 env)**
-                   (Array.fold_right (fun e -> fun s -> 
-                                               (needed_assumptions e env)**s)
+    | Case (_,e1,e2,e_array) -> (assumptions e1 env)**
+                                (assumptions e2 env)**
+                   (Array.fold_right (fun e s -> (assumptions e env)**s)
                                       e_array AssumptionSet.empty)
     | Fix (_,(_, e1_array, e2_array)) | CoFix (_,(_,e1_array, e2_array)) ->
-                   Array.fold_right (fun e -> fun s -> 
-                                              (needed_assumptions e env)**s)
+                   Array.fold_right (fun e s -> (assumptions e env)**s)
                                       e1_array
-                   (Array.fold_right (fun e -> fun s -> 
-                                              (needed_assumptions e env)**s)
+                   (Array.fold_right (fun e s -> (assumptions e env)**s)
                                       e2_array AssumptionSet.empty)
     | Const kn -> 
 	let cb = lookup_constant kn env in
@@ -605,7 +596,7 @@ let rec needed_assumptions t env =
 		| NonPolymorphicType t -> t
 	    in
 	    AssumptionSet.singleton (Axiom (kn,ctype))
-        | Some body -> needed_assumptions (Declarations.force body) env)
+        | Some body -> assumptions (Declarations.force body) env)
     | _ -> AssumptionSet.empty (* closed atomic types + rel *)
 
 (* /spiwack *)

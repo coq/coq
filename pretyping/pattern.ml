@@ -185,7 +185,7 @@ let rec subst_pattern subst pat = match pat with
 	if c' == c && c1' == c1 && c2' == c2 then pat else
 	  PIf (c',c1',c2')
   | PCase ((a,b,ind,n as cs),typ,c,branches) ->
-      let ind' = option_smartmap (Inductiveops.subst_inductive subst) ind in
+      let ind' = Option.smartmap (Inductiveops.subst_inductive subst) ind in
       let typ' = subst_pattern subst typ in 
       let c' = subst_pattern subst c in
       let branches' = array_smartmap (subst_pattern subst) branches in
@@ -234,7 +234,7 @@ let rec pat_of_raw metas vars = function
   | RHole _ ->
       PMeta None
   | RCast (_,c,_) ->
-      Options.if_verbose
+      Flags.if_verbose
         Pp.warning "Cast not taken into account in constr pattern";
       pat_of_raw metas vars c
   | RIf (_,c,(_,None),b1,b2) ->

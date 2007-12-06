@@ -45,4 +45,10 @@ type query = decl list * form
 
 (* prover result *)
 
-type prover_answer = Valid of string option | Invalid | DontKnow | Timeout
+type prover_answer = 
+  | Valid of string option 
+  | Invalid
+  | DontKnow
+  | Timeout
+  | NoAnswer
+

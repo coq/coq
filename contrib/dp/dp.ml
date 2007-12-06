@@ -443,7 +443,7 @@ and axiomatize_body env r id d = match r with
   | IndRef i ->
       iter_all_constructors i
 	(fun _ c ->
-	   let rc = reference_of_constr c in
+	   let rc = global_of_constr c in
 	   try
 	     begin match tr_global env rc with
 	       | DeclFun (_, _, [], _) -> ()
@@ -460,18 +460,20 @@ and equations_for_case env id vars tv bv ci e br = match kind_of_term e with
       iter_all_constructors ci.ci_ind
 	(fun j cj ->
 	   try
-	     let cjr = reference_of_constr cj in
+	     let cjr = global_of_constr cj in
 	     begin match tr_global env cjr with
 	       | DeclFun (idc, _, l, _) ->
 		   let b = br.(j) in
 		   let rec_vars, b = decompose_lam b in
 		   let rec_vars, env = coq_rename_vars env rec_vars in
-		   let b = substl (List.map mkVar rec_vars) b in
+		   let coq_rec_vars = List.map mkVar rec_vars in
+		   let b = substl coq_rec_vars b in
 		   let rec_vars = List.rev rec_vars in
+		   let coq_rec_term = applist (cj, List.rev coq_rec_vars) in
+		   let b = replace_vars [x, coq_rec_term] b in
 		   let bv = bv @ rec_vars in
 		   let rec_vars = List.map string_of_id rec_vars in
-		   let fol_var x =
-		     Fol.App (x, []) in
+		   let fol_var x = Fol.App (x, []) in
 		   let fol_rec_vars = List.map fol_var rec_vars in
 		   let fol_rec_term = App (idc, fol_rec_vars) in
 		   let rec_vars = List.combine rec_vars l in
@@ -641,14 +643,14 @@ let tr_goal gl =
   hyps, c
 
 
-type prover = Simplify | Ergo | Yices | CVCLite | Harvey | Zenon
+type prover = Simplify | Ergo | Yices | CVCLite | Harvey | Zenon | Gwhy
 
 let remove_files = List.iter (fun f -> try Sys.remove f with _ -> ())
 
 let sprintf = Format.sprintf
 
 let call_simplify fwhy =
-  let cmd = sprintf "why --no-arrays --simplify --encoding strat %s" fwhy in
+  let cmd = sprintf "why --no-arrays --simplify --encoding sstrat %s" fwhy in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fsx = Filename.chop_suffix fwhy ".why" ^ "_why.sx" in
   let cmd = 
@@ -755,6 +757,11 @@ let call_harvey fwhy =
   if not !debug then remove_files [fwhy; frv; outf];
   r
 
+let call_gwhy fwhy =
+  let cmd = sprintf "gwhy --no-arrays  %s" fwhy in
+  if Sys.command cmd <> 0 then ignore (Sys.command (sprintf "emacs %s" fwhy));
+  NoAnswer
+
 let ergo_proof_from_file f gl =
   let s =
     let buf = Buffer.create 1024 in
@@ -780,6 +787,7 @@ let call_prover prover q =
     | Zenon -> call_zenon fwhy
     | CVCLite -> call_cvcl fwhy
     | Harvey -> call_harvey fwhy
+    | Gwhy -> call_gwhy fwhy
   
 let dp prover gl =
   let concl_type = pf_type_of gl (pf_concl gl) in
@@ -793,6 +801,7 @@ let dp prover gl =
       | Invalid -> error "Invalid"
       | DontKnow -> error "Don't know"
       | Timeout -> error "Timeout"
+      | NoAnswer -> Tacticals.tclIDTAC gl
     end
   with NotFO ->
     error "Not a first order goal"
@@ -804,6 +813,7 @@ let yices = tclTHEN intros (dp Yices)
 let cvc_lite = tclTHEN intros (dp CVCLite)
 let harvey = dp Harvey
 let zenon = tclTHEN intros (dp Zenon)
+let gwhy = tclTHEN intros (dp Gwhy)
 
 let dp_hint l =
   let env = Global.env () in

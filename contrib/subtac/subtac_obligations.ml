@@ -1,4 +1,3 @@
-(* -*- default-directory: "~/research/coq/trunk/" -*- *)
 open Printf
 open Pp
 open Subtac_utils
@@ -44,7 +43,7 @@ type program_info = {
 }
 
 let assumption_message id =
-  Options.if_verbose message ((string_of_id id) ^ " is assumed")
+  Flags.if_verbose message ((string_of_id id) ^ " is assumed")
 
 let default_tactic : Proof_type.tactic ref = ref Refiner.tclIDTAC
 let default_tactic_expr : Tacexpr.glob_tactic_expr ref = ref (Obj.magic ())
@@ -59,7 +58,7 @@ let subst_deps obls deps t =
        let xobl = obls.(x) in
 	 debug 3 (str "Trying to get body of obligation " ++ int x);
        let oblb = 
-	 try out_some xobl.obl_body
+	 try Option.get xobl.obl_body
 	 with _ ->
 	   debug 3 (str "Couldn't get body of obligation " ++ int x);
 	   assert(false)
@@ -136,14 +135,15 @@ let declare_definition prg =
      with _ -> ());
   let ce = 
     { const_entry_body = body;
-      const_entry_type = Some prg.prg_type;
+      const_entry_type = Some (Termops.refresh_universes prg.prg_type);
       const_entry_opaque = false;
       const_entry_boxed = false} 
   in
-  let _constant = Declare.declare_constant 
+  let c = Declare.declare_constant 
     prg.prg_name (DefinitionEntry ce,IsDefinition Definition)
   in
-    Subtac_utils.definition_message prg.prg_name
+    print_message (definition_message c);
+    c
 
 open Pp
 open Ppconstr
@@ -171,12 +171,11 @@ let declare_mutual_definition l =
         const_entry_type = Some arrec.(i);
         const_entry_opaque = false;
         const_entry_boxed = true} in
-    let kn = Declare.declare_constant fi (DefinitionEntry ce,IsDefinition Fixpoint)
-    in
-      ConstRef kn
+      Declare.declare_constant fi (DefinitionEntry ce,IsDefinition Fixpoint)
   in
   let lrefrec = Array.mapi declare namerec in
-    Options.if_verbose ppnl (recursive_message lrefrec)
+    print_message (recursive_message lrefrec);
+    lrefrec.(0)    
          
 let declare_obligation obl body =
   let ce = 
@@ -188,7 +187,7 @@ let declare_obligation obl body =
   let constant = Declare.declare_constant obl.obl_name 
     (DefinitionEntry ce,IsProof Property)
   in
-    Subtac_utils.definition_message obl.obl_name;
+    print_message (definition_message constant);
     { obl with obl_body = Some (mkConst constant) }
       
 let try_tactics obls = 
@@ -241,34 +240,44 @@ let update_state s =
 (*   msgnl (str "Updating obligations info"); *)
   Lib.add_anonymous_leaf (input s)
 
-let obligations_message rem = 
+type progress = 
+    | Remain of int 
+    | Dependent
+    | Defined of constant
+	  
+let obligations_message rem =
   if rem > 0 then
     if rem = 1 then
-      Options.if_verbose msgnl (int rem ++ str " obligation remaining")
+      Flags.if_verbose msgnl (int rem ++ str " obligation remaining")
     else
-      Options.if_verbose msgnl (int rem ++ str " obligations remaining")
+      Flags.if_verbose msgnl (int rem ++ str " obligations remaining")
   else
-    Options.if_verbose msgnl (str "No more obligations remaining")
-      
+    Flags.if_verbose msgnl (str "No more obligations remaining")
+
 let update_obls prg obls rem = 
   let prg' = { prg with prg_obligations = (obls, rem) } in
     from_prg := map_replace prg.prg_name prg' !from_prg;
     obligations_message rem;
-    if rem > 0 then ()
-    else (
-      match prg'.prg_deps with
-	  [] ->
-	    declare_definition prg';
-	    from_prg := ProgMap.remove prg.prg_name !from_prg
-	| l ->
-	    let progs = List.map (fun x -> ProgMap.find x !from_prg) prg'.prg_deps in
-	      if List.for_all (fun x -> obligations_solved x) progs then 
-		(declare_mutual_definition progs;
-		 from_prg := List.fold_left
-		   (fun acc x -> 
-		     ProgMap.remove x.prg_name acc) !from_prg progs));
-    update_state (!from_prg, !default_tactic_expr);
-    rem
+    let res = 
+      if rem > 0 then Remain rem
+      else (
+	match prg'.prg_deps with
+	    [] ->
+	      let kn = declare_definition prg' in
+		from_prg := ProgMap.remove prg.prg_name !from_prg;
+		Defined kn
+	  | l ->
+	      let progs = List.map (fun x -> ProgMap.find x !from_prg) prg'.prg_deps in
+		if List.for_all (fun x -> obligations_solved x) progs then 
+		  (let kn = declare_mutual_definition progs in
+		     from_prg := List.fold_left
+		       (fun acc x -> 
+			 ProgMap.remove x.prg_name acc) !from_prg progs;
+		    Defined kn)
+		else Dependent);
+    in
+      update_state (!from_prg, !default_tactic_expr);
+      res
 	    
 let is_defined obls x = obls.(x).obl_body <> None
 
@@ -312,8 +321,10 @@ let rec solve_obligation prg num =
 		   let obl = { obl with obl_body = Some (Libnames.constr_of_global gr) } in
 		   let obls = Array.copy obls in
 		   let _ = obls.(num) <- obl in
-		     if update_obls prg obls (pred rem) <> 0 then
-		       auto_solve_obligations (Some prg.prg_name));
+		     match update_obls prg obls (pred rem) with
+			 Remain n when n > 0 ->
+			   ignore(auto_solve_obligations (Some prg.prg_name))
+		       | _ -> ());
 	      trace (str "Started obligation " ++ int user_num ++ str "  proof: " ++
 		       Subtac_utils.my_print_constr (Global.env ()) obl.obl_type);
 	      Pfedit.by !default_tactic
@@ -378,21 +389,22 @@ and try_solve_obligation n prg tac =
 and try_solve_obligations n tac = 
   try ignore (solve_obligations n tac) with NoObligations _ -> ()
 
-and auto_solve_obligations n : unit =
-  Options.if_verbose msgnl (str "Solving obligations automatically...");
-  try_solve_obligations n !default_tactic
+and auto_solve_obligations n : progress =
+  Flags.if_verbose msgnl (str "Solving obligations automatically...");
+  try solve_obligations n !default_tactic with NoObligations _ -> Dependent
       
 let add_definition n b t obls =
-  Options.if_verbose pp (str (string_of_id n) ++ str " has type-checked");
+  Flags.if_verbose pp (str (string_of_id n) ++ str " has type-checked");
   let prg = init_prog_info n b t [] (Array.make 0 0) obls in
   let obls,_ = prg.prg_obligations in
   if Array.length obls = 0 then (
-    Options.if_verbose ppnl (str ".");    
-    declare_definition prg;
-    from_prg := ProgMap.remove prg.prg_name !from_prg)
+    Flags.if_verbose ppnl (str ".");    
+    let cst = declare_definition prg in 
+      from_prg := ProgMap.remove prg.prg_name !from_prg;
+      Defined cst)
   else (
     let len = Array.length obls in
-    let _ = Options.if_verbose ppnl (str ", generating " ++ int len ++ str " obligation(s)") in
+    let _ = Flags.if_verbose ppnl (str ", generating " ++ int len ++ str " obligation(s)") in
       from_prg := ProgMap.add n prg !from_prg; 
       auto_solve_obligations (Some n))
 	
@@ -405,7 +417,7 @@ let add_mutual_definitions l nvrec =
       !from_prg l
   in
     from_prg := upd;
-    List.iter (fun x -> auto_solve_obligations (Some x)) deps
+    List.iter (fun x -> ignore(auto_solve_obligations (Some x))) deps
 
 let admit_obligations n =
   let prg = get_prog_err n in

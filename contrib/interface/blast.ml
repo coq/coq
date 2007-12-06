@@ -187,7 +187,7 @@ and e_my_find_search db_list local_db hdc concl =
 		 (e_trivial_fail_db db_list local_db)
 	   | Unfold_nth c -> unfold_in_concl [[],c]
 	   | Extern tacast -> Auto.conclPattern concl 
-	       (out_some p) tacast
+	       (Option.get p) tacast
        in 
        (free_try tac,fmt_autotactic t))
        (*i
@@ -400,7 +400,7 @@ and my_find_search db_list local_db hdc concl =
 		(trivial_fail_db db_list local_db)
 	  | Unfold_nth c -> unfold_in_concl [[],c]
 	  | Extern tacast -> 
-	      conclPattern concl (out_some p) tacast))
+	      conclPattern concl (Option.get p) tacast))
     tacl
 
 and trivial_resolve db_list local_db cl = 

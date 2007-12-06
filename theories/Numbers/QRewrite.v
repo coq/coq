@@ -1,3 +1,15 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*                      Evgeny Makarov, INRIA, 2007                     *)
+(************************************************************************)
+
+(*i i*)
+
 Require Import List.
 Require Import Setoid.
 
@@ -135,13 +147,13 @@ end.
 (* For testing *)
 
 (*Parameter E : nat -> nat -> Prop.
-Axiom E_equiv : equiv nat E.
+Axiom eq_equiv : equiv nat E.
 
 Add Relation nat E
- reflexivity proved by (proj1 E_equiv)
- symmetry proved by (proj2 (proj2 E_equiv))
- transitivity proved by (proj1 (proj2 E_equiv))
-as E_rel.
+ reflexivity proved by (proj1 eq_equiv)
+ symmetry proved by (proj2 (proj2 eq_equiv))
+ transitivity proved by (proj1 (proj2 eq_equiv))
+as eq_rel.
 
 Notation "x == y" := (E x y) (at level 70).
 
@@ -181,8 +193,3 @@ end.
 
 ra (eqcons H0 (eqcons H1 eqnil)).*)
 
-(*
- Local Variables:
- tags-file-name: "~/coq/trunk/theories/Numbers/TAGS"
- End:
-*)

@@ -82,6 +82,7 @@ clean:
 	rm -f stdlib/index-list.html stdlib/index-body.html \
 	  stdlib/Library.coqdoc.tex stdlib/library.files \
 	  stdlib/library.files.ls
+	rm -f stdlib/html/*.html
 	rm -f refman/euclid.ml{,i} refman/heapsort.ml{,i}
 	rm -f common/version.tex
 	rm -f refman/*.eps refman/Reference-Manual.html
@@ -217,12 +218,12 @@ GLOBDUMP=$(COQSRC)/glob.dump
 LIBDIRS= Init Logic Bool Arith NArith ZArith QArith Relations Sets Setoids Lists Sorting Wellfounded IntMap FSets Reals Program
 # We avoid Strings as String.v contains unicode caracters that make latex fail
 
-LIBDIRS+= Ints Ints/num
-# LIBDIRS+= Ints/List Ints/Z
-# LIBDIRS+= Numbers Numbers/Natural/Axioms Numbers/Natural/Binary Numbers/Natural/Peano Numbers/Integer/Axioms Numbers/Integer/NatPairs Numbers/Rational
+LIBDIRS+= Ints Ints/num Ints/Z
+LIBDIRS+= Numbers Numbers/NatInt Numbers/Natural/Abstract Numbers/Natural/Binary Numbers/Natural/Peano Numbers/Integer/Abstract Numbers/Integer/NatPairs Numbers/Integer/Binary
 
 
-ALLTHEORIES_V=$(foreach dir, $(LIBDIRS), $(wildcard $(COQSRC)/theories/$(dir)/*.v))
+ALLTHEORIES_VO=$(foreach dir, $(LIBDIRS), $(wildcard $(COQSRC)/theories/$(dir)/*.vo))
+ALLTHEORIES_V=$(ALLTHEORIES_VO:%.vo=%.v)
 ALLTHEORIES_GLOB = $(ALLTHEORIES_V:%.v=%.glob)
 
 ### Standard library (browsable html format)

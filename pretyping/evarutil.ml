@@ -226,7 +226,7 @@ let push_rel_context_to_named_context env typ =
     Sign.fold_rel_context
       (fun (na,c,t) (subst, avoid, env) ->
 	let id = next_name_away na avoid in
-	let d = (id,option_map (substl subst) c,substl subst t) in
+	let d = (id,Option.map (substl subst) c,substl subst t) in
 	(mkVar id :: subst, id::avoid, push_named d env))
       (rel_context env) ~init:([], ids, env) in
   (named_context_val env, substl subst typ, inst_rels@inst_vars)
@@ -763,7 +763,6 @@ exception NotYetSolvable
 let rec invert_instance env evd (evk,_ as ev) subst rhs =
   let evdref = ref evd in
   let progress = ref false in
-  let has_evar_in_subst = List.exists (fun (_,(_,t)) -> isEvar t) subst in
   let project_variable env' t_in_env k t_in_env' =
     (* Evar/Var problem: unifiable iff variable projectable from ev subst *)
     try 
@@ -815,13 +814,6 @@ let rec invert_instance env evd (evk,_ as ev) subst rhs =
 	  evdref := evd;
 	  evar'')
     | _ ->
-        (* A small heuristic on imitation: don't mimic if evars remain in 
-           the substitution: it avoids e.g. to break the dependency in
-           a dependent problem derived from "refine (_ _)"  on goal "A" 
-           which results in unifying ?n[x:=?q[]] = A for 
-           ?p:forall x:?m.?n[x:=x] (the first "_") and ?q:?m (the second "_")
-         *)
-        if has_evar_in_subst then raise NotYetSolvable;
 	progress := true;
 	(* Evar/Rigid problem (or assimilated if not normal): we "imitate" *)
 	map_constr_with_full_binders (fun d (env,k) -> push_rel d env, k+1)
@@ -1141,7 +1133,7 @@ let lift_abstr_tycon_type n (abs, t) =
 	  else (Some (init, abs'), t)
 
 let lift_tycon_type n (abs, t) = (abs, lift n t)
-let lift_tycon n = option_map (lift_tycon_type n)
+let lift_tycon n = Option.map (lift_tycon_type n)
 
 let pr_tycon_type env (abs, t) =
   match abs with 

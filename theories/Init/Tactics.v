@@ -17,19 +17,55 @@ Require Import Logic.
 
 Tactic Notation "revert" ne_hyp_list(l) := generalize l; clear l.
 
-(* to contradict an hypothesis without copying its type. *)
+(**************************************
+ A tactic for proof by contradiction
+     with contradict H 
+         H: ~A |-   B      gives           |-   A
+         H: ~A |- ~ B     gives  H: B |-   A
+         H:   A |-   B      gives           |- ~ A
+         H:   A |-   B      gives           |- ~ A
+         H:   A |- ~ B     gives  H: A |- ~ A
+**************************************)
 
-Ltac absurd_hyp h := 
-  let T := type of h in 
-  absurd T.
-
-(* A useful complement to absurd_hyp. Here t : ~ A where H : A. *)
-Ltac false_hyp H t :=
-absurd_hyp H; [apply t | assumption].
+Ltac contradict name := 
+     let term := type of name in (
+     match term with 
+       (~_) => 
+          match goal with 
+            |- ~ _  => let x := fresh in
+                     (intros x; case name; 
+                      generalize x; clear x name;
+                      intro name)
+          | |- _    => case name; clear name
+          end
+     | _ => 
+          match goal with 
+            |- ~ _  => let x := fresh in
+                    (intros x;  absurd term;
+                       [idtac | exact name]; generalize x; clear x name;
+                       intros name)
+          | |- _    => generalize name; absurd term;
+                       [idtac | exact name]; clear name
+          end
+     end).
 
 (* Transforming a negative goal [ H:~A |- ~B ] into a positive one [ B |- A ]*)
 
-Ltac swap H := intro; apply H; clear H.
+Ltac swap H := 
+  idtac "swap is OBSOLETE: use contradict instead.";
+  intro; apply H; clear H.
+
+(* to contradict an hypothesis without copying its type. *)
+
+Ltac absurd_hyp h := 
+  idtac "contradict is OBSOLETE: use contradict instead.";
+  let T := type of h in 
+  absurd T.
+
+(* A useful complement to contradict. Here t : ~ A where H : A. *)
+
+Ltac false_hyp h t := 
+  let T := type of h in absurd T; [ apply t | assumption ].
 
 (* A case with no loss of information. *)
 
@@ -54,6 +90,22 @@ Ltac f_equal :=
       cut (f=f');[cut (e=e');[cut (d=d');[cut (c=c');[cut (b=b');[cut (a=a');[cg|r]|r]|r]|r]|r]|r]
    | _ => idtac
   end.
+
+(* Specializing universal hypothesis. 
+   The word "specialize" is already used for a not-documented-anymore 
+   tactic still used in some users contribs. Any idea for a better name?
+*)
+
+Tactic Notation "narrow" hyp(H) "with" constr(x) := 
+ generalize (H x); clear H; intro H.
+Tactic Notation "narrow" hyp(H) "with" constr(x) constr(y) := 
+ generalize (H x y); clear H; intro H.
+Tactic Notation "narrow" hyp(H) "with" constr(x) constr(y) constr(z):= 
+ generalize (H x y z); clear H; intro H.
+Tactic Notation "narrow" hyp(H) "with" constr(x) constr(y) constr(z) constr(t):= 
+ generalize (H x y z t); clear H; intro H.
+Tactic Notation "narrow" hyp(H) "with" constr(x) constr(y) constr(z) constr(t) constr(u):= 
+ generalize (H x y z t u); clear H; intro H.
 
 (* Rewriting in all hypothesis several times everywhere *)
 

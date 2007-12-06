@@ -41,7 +41,7 @@ let anonymous x = { a_name = Anonymous; a_value = x }
 let anonymous_pre b x = { p_assert = b; p_name = Anonymous; p_value = x }
 
 let force_name f x =
-  option_map (fun q -> { a_name = Name (f q.a_name); a_value = q.a_value }) x
+  Option.map (fun q -> { a_name = Name (f q.a_name); a_value = q.a_value }) x
 
 let force_post_name x = force_name post_name x
 
@@ -143,7 +143,7 @@ let rec type_c_subst s ((id,t),e,p,q) =
   let s' = s @ List.map (fun (x,x') -> (at_id x "", at_id x' "")) s in
   (id, type_v_subst s t), Peffect.subst s e,
   List.map (pre_app (subst_in_constr s)) p,
-  option_map (post_app (subst_in_constr s')) q
+  Option.map (post_app (subst_in_constr s')) q
 
 and type_v_subst s = function
     Ref v -> Ref (type_v_subst s v)
@@ -160,7 +160,7 @@ and binder_subst s = function
 let rec type_c_rsubst s ((id,t),e,p,q) =
   (id, type_v_rsubst s t), e,
     List.map (pre_app (real_subst_in_constr s)) p,
-    option_map (post_app (real_subst_in_constr s)) q
+    Option.map (post_app (real_subst_in_constr s)) q
 
 and type_v_rsubst s = function
     Ref v -> Ref (type_v_rsubst s v)

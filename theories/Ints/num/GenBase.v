@@ -10,8 +10,6 @@ Set Implicit Arguments.
 
 Require Import ZArith.
 Require Import ZAux.
-Require Import ZDivModAux.
-Require Import ZPowerAux.
 Require Import Basic_type.
 Require Import JMeq.
 
@@ -188,7 +186,7 @@ Section GenBase.
 
   Lemma lt_0_wB : 0 < wB.
   Proof. 
-   unfold base;apply Zpower_lt_0. unfold Zlt;reflexivity.
+   unfold base;apply Zpower_gt_0. unfold Zlt;reflexivity.
    unfold Zle;intros H;discriminate H.
   Qed.
 
@@ -208,7 +206,7 @@ Section GenBase.
   Proof.
    assert (H:= wB_pos);rewrite wwB_wBwB;rewrite <-(Zmult_1_r 1).
    rewrite Zpower_2.
-   apply Zmult_lt_compat;(split;[unfold Zlt;reflexivity|trivial]).
+   apply Zmult_lt_compat2;(split;[unfold Zlt;reflexivity|trivial]).
    apply Zlt_le_weak;trivial. 
   Qed.
 
@@ -217,11 +215,11 @@ Section GenBase.
    clear spec_w_0 w_0 spec_w_1 w_1 spec_w_Bm1 w_Bm1 spec_w_WW spec_w_0W 
     spec_to_Z;unfold base.
    assert (2 ^ Zpos w_digits = 2 * (2 ^ (Zpos w_digits - 1))).
-   pattern 2 at 2; rewrite <- Zpower_exp_1.
+   pattern 2 at 2; rewrite <- Zpower_1_r.
    rewrite <- Zpower_exp; auto with zarith.
-   eq_tac; auto with zarith.
+   f_equal; auto with zarith.
    case w_digits; compute; intros; discriminate.
-   rewrite H; eq_tac; auto with zarith.
+   rewrite H; f_equal; auto with zarith.
    rewrite Zmult_comm; apply Z_div_mult; auto with zarith.
   Qed.
 
@@ -239,17 +237,17 @@ Section GenBase.
    (z*wB + [|x|]) mod wwB = (z mod wB)*wB + [|x|].
   Proof.
    intros z x.
-   rewrite Zmod_plus. 2:apply lt_0_wwB.
+   rewrite Zplus_mod. 
    pattern wwB at 1;rewrite wwB_wBwB; rewrite Zpower_2.
    rewrite Zmult_mod_distr_r;try apply lt_0_wB.
-   rewrite (Zmod_def_small [|x|]).
-   apply Zmod_def_small;rewrite wwB_wBwB;apply beta_mult;try apply spec_to_Z.
+   rewrite (Zmod_small [|x|]).
+   apply Zmod_small;rewrite wwB_wBwB;apply beta_mult;try apply spec_to_Z.
    apply Z_mod_lt;apply Zlt_gt;apply lt_0_wB.
    destruct (spec_to_Z x);split;trivial.
    change [|x|] with (0*wB+[|x|]). rewrite wwB_wBwB.
    rewrite Zpower_2;rewrite <- (Zplus_0_r (wB*wB));apply beta_lex_inv.
    apply lt_0_wB. apply spec_to_Z. split;[apply Zle_refl | apply lt_0_wB].
-  Qed.
+ Qed.
 
   Lemma wB_div : forall x y, ([|x|] * wB + [|y|]) / wB = [|x|].
   Proof.
@@ -321,7 +319,7 @@ Section GenBase.
   apply Zmult_le_compat; auto with zarith.
   apply Zle_trans with wB; auto with zarith.
   unfold base.
-  rewrite <- (ZAux.Zpower_exp_0 2).
+  rewrite <- (Zpower_0_r 2).
   apply Zpower_le_monotone2; auto with zarith.
   unfold base; auto with zarith.
   Qed.

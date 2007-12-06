@@ -39,9 +39,9 @@ let add_structure mp msb env =
 
 let rec subst_module sub mb =
   let mtb' = Modops.subst_modtype sub mb.mod_type
-  and meb' = option_smartmap (subst_meb sub) mb.mod_expr
-  and mtb'' = option_smartmap (Modops.subst_modtype sub) mb.mod_user_type
-  and mpo' = option_smartmap (subst_mp sub) mb.mod_equiv in
+  and meb' = Option.smartmap (subst_meb sub) mb.mod_expr
+  and mtb'' = Option.smartmap (Modops.subst_modtype sub) mb.mod_user_type
+  and mpo' = Option.smartmap (subst_mp sub) mb.mod_equiv in
   if (mtb'==mb.mod_type) && (meb'==mb.mod_expr) && 
     (mtb''==mb.mod_user_type) && (mpo'==mb.mod_equiv)
   then mb
@@ -170,7 +170,7 @@ let decl_iter_references do_term do_cons do_type =
 
 let spec_iter_references do_term do_cons do_type = function 
   | Sind (kn,ind) -> ind_iter_references do_term do_cons do_type kn ind
-  | Stype (r,_,ot) -> do_type r; option_iter (type_iter_references do_type) ot
+  | Stype (r,_,ot) -> do_type r; Option.iter (type_iter_references do_type) ot
   | Sval (r,t) -> do_term r; type_iter_references do_type t
 
 let struct_iter_references do_term do_cons do_type = 
@@ -241,7 +241,7 @@ let spec_type_search f = function
   | Sind (_,{ind_packets=p}) -> 
       Array.iter 
 	(fun {ip_types=v} -> Array.iter (List.iter (type_search f)) v) p
-  | Stype (_,_,ot) -> option_iter (type_search f) ot
+  | Stype (_,_,ot) -> Option.iter (type_search f) ot
   | Sval (_,u) -> type_search f u
 
 let struct_type_search f s = 

@@ -14,7 +14,7 @@ open Toplevel
 
 let (/) = Filename.concat
 
-let set_debug () = Options.debug := true
+let set_debug () = Flags.debug := true
 
 (* Loading of the ressource file.
    rcfile is either $HOME/.coqrc.VERSION, or $HOME/.coqrc if the first one
@@ -41,7 +41,7 @@ let load_rcfile() =
         Vernac.load_vernac false !rcfile
       else ()
 	(*
-	Options.if_verbose
+	Flags.if_verbose
 	  mSGNL (str ("No .coqrc or .coqrc."^Coq_config.version^
 			 " found. Skipping rcfile loading."))
 	*)
@@ -49,7 +49,7 @@ let load_rcfile() =
       (msgnl (str"Load of rcfile failed.");
        raise e)
   else 
-    Options.if_verbose msgnl (str"Skipping rcfile loading.")
+    Flags.if_verbose msgnl (str"Skipping rcfile loading.")
 
 let add_ml_include s =
   Mltop.add_ml_dir s
@@ -99,7 +99,7 @@ let init_load_path () =
   let coqlib =
     (* variable COQLIB overrides the default library *)
     getenv_else "COQLIB"
-      (if Coq_config.local || !Options.boot then Coq_config.coqtop
+      (if Coq_config.local || !Flags.boot then Coq_config.coqtop
 	else Coq_config.coqlib) in
   let user_contrib = coqlib/"user-contrib" in
   let dirs = "states" :: "contrib" :: dev in

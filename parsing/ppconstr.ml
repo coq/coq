@@ -96,13 +96,13 @@ let pr_delimiters key strm =
   strm ++ str ("%"^key)
 
 let pr_located pr (loc,x) =
-  if Options.do_translate() && loc<>dummy_loc then
+  if Flags.do_translate() && loc<>dummy_loc then
     let (b,e) = unloc loc in
     comment b ++ pr x ++ comment e
   else pr x
 
 let pr_com_at n =
-  if Options.do_translate() && n <> 0 then comment n 
+  if Flags.do_translate() && n <> 0 then comment n 
   else mt()
 
 let pr_with_comments loc pp = pr_located (fun x -> x) (loc,pp)
@@ -386,12 +386,12 @@ let pr_fixdecl pr prd dangling_with_for (id,(n,ro),bl,t,c) =
       match ro with
 	  CStructRec ->
 	    if List.length ids > 1 && n <> None then 
-	      spc() ++ str "{struct " ++ pr_name (snd (List.nth ids (out_some n))) ++ str"}"
+	      spc() ++ str "{struct " ++ pr_name (snd (List.nth ids (Option.get n))) ++ str"}"
 	    else mt() 
 	| CWfRec c ->
-	    spc () ++ str "{wf " ++ pr lsimple c ++ pr_name (snd (List.nth ids (out_some n))) ++ str"}"
+	    spc () ++ str "{wf " ++ pr lsimple c ++ pr_name (snd (List.nth ids (Option.get n))) ++ str"}"
 	| CMeasureRec c ->
-	    spc () ++ str "{measure " ++ pr lsimple c ++ pr_name (snd (List.nth ids (out_some n))) ++ str"}"
+	    spc () ++ str "{measure " ++ pr lsimple c ++ pr_name (snd (List.nth ids (Option.get n))) ++ str"}"
   in
     pr_recursive_decl pr prd dangling_with_for id bl annot t c
 
@@ -428,7 +428,7 @@ let pr_case_item pr (tm,(na,indnalopt)) =
     | Name id when not (is_var id tm) -> spc () ++ str "as " ++  pr_id id
     | Anonymous when tm_clash (tm,indnalopt) <> None ->
 	(* hide [tm] name to avoid conflicts *)
-	spc () ++ str "as _" (* ++ pr_id (out_some (tm_clash (tm,indnalopt)))*)
+	spc () ++ str "as _" (* ++ pr_id (Option.get (tm_clash (tm,indnalopt)))*)
     | _ -> mt ()) ++
 *)
   (match na with (* Decision of printing "_" or not moved to constrextern.ml *)

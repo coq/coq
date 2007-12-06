@@ -221,7 +221,7 @@ END
 
 let gen_in_arg_hyp_to_clause trad_id (hyps ,concl) : Tacticals.clause = 
   {Tacexpr.onhyps=
-   Util.option_map 
+   Option.map 
      (fun l -> 
 	List.map 
 	  (fun id -> ( ([],trad_id id) ,Tacexpr.InHyp))

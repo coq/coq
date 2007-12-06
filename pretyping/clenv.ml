@@ -106,7 +106,7 @@ let clenv_environments evd bound t =
 	  let dep = dependent (mkRel 1) t2 in
 	  let na' = if dep then na else Anonymous in
 	  let e' = meta_declare mv t1 ~name:na' e in
-	  clrec (e', (mkMeta mv)::metas) (option_map ((+) (-1)) n)
+	  clrec (e', (mkMeta mv)::metas) (Option.map ((+) (-1)) n)
 	    (if dep then (subst1 (mkMeta mv) t2) else t2)
       | (n, LetIn (na,b,_,t)) -> clrec (e,metas) n (subst1 b t)
       | (n, _) -> (e, List.rev metas, t)
@@ -124,7 +124,7 @@ let clenv_environments_evars env evd bound t =
       | (n, Prod (na,t1,t2)) ->
           let e',constr = Evarutil.new_evar e env t1 in
 	  let dep = dependent (mkRel 1) t2 in
-	  clrec (e', constr::ts) (option_map ((+) (-1)) n)
+	  clrec (e', constr::ts) (Option.map ((+) (-1)) n)
 	    (if dep then (subst1 constr t2) else t2)
       | (n, LetIn (na,b,_,t)) -> clrec (e,ts) n (subst1 b t)
       | (n, _) -> (e, List.rev ts, t)

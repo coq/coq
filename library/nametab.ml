@@ -107,7 +107,7 @@ struct
 	      | Absolute (n,_) -> 
 		  (* This is an absolute name, we must keep it 
 		     otherwise it may become unaccessible forever *)
-		  Options.if_verbose
+		  Flags.if_verbose
 		    warning ("Trying to mask the absolute name \"" 
 			     ^ U.to_string n ^ "\"!"); 
 		  current
@@ -147,7 +147,7 @@ let rec push_exactly uname o level (current,dirmap) = function
 	      | Absolute (n,_) -> 
 		  (* This is an absolute name, we must keep it 
 		     otherwise it may become unaccessible forever *)
-		  Options.if_verbose
+		  Flags.if_verbose
 		    warning ("Trying to mask the absolute name \""
   			     ^ U.to_string n ^ "\"!");
 		  current
@@ -427,7 +427,7 @@ let global r =
     | TrueGlobal ref -> ref
     | SyntacticDef _ -> 
         user_err_loc (loc,"global",
-          str "Unexpected reference to a syntactic definition: " ++
+          str "Unexpected reference to a notation: " ++
           pr_qualid qid)
   with Not_found ->
     error_global_not_found_loc loc qid
@@ -497,7 +497,7 @@ let pr_global_env env ref =
   let s = string_of_qualid (shortest_qualid_of_global env ref) in
   (str s)
 
-let global_inductive r =
+let inductive_of_reference r =
   match global r with
   | IndRef ind -> ind
   | ref ->

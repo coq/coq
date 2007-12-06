@@ -258,7 +258,13 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
   apply alist_sorted_sort.
   apply alist_of_Map_sorts.
   Qed.
-  
+
+  Lemma elements_3w : NoDupA eq_key (elements m). 
+  Proof.
+  change eq_key with (@PE.eqk A).
+  apply PE.Sort_NoDupA; apply elements_3; auto.
+  Qed. 
+
   Lemma elements_1 : 
      MapsTo x e m -> InA eq_key_elt (x,e) (elements m).
   Proof.
@@ -459,7 +465,7 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
   intros.
   inversion_clear H.
   assert (~E.eq x k).
-   swap H3.
+   contradict H3.
    destruct H1.
    apply InA_eqA with (x,x0); eauto.
    unfold eq_key, E.eq; eauto.

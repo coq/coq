@@ -230,7 +230,7 @@ let make_resolves env sigma eap c =
   let ents = 
     map_succeed 
       (fun f -> f (c,cty)) 
-      [make_exact_entry; make_apply_entry env sigma (eap,Options.is_verbose())]
+      [make_exact_entry; make_apply_entry env sigma (eap,Flags.is_verbose())]
   in 
   if ents = [] then
     errorlabstrm "Hint" 
@@ -297,7 +297,7 @@ let subst_autohint (_,subst,(local,name,hintlist as obj)) =
   let trans_clenv clenv = Clenv.subst_clenv subst clenv in
   let trans_data data code = 	      
     { data with
-	pat = option_smartmap (subst_pattern subst) data.pat ;
+	pat = Option.smartmap (subst_pattern subst) data.pat ;
 	code = code ;
     }
   in
@@ -412,8 +412,8 @@ let add_hints local dbnames0 h =
   | HintsImmediate lhints ->
       add_trivials env sigma (List.map f lhints) local dbnames
   | HintsUnfold lhints ->
-      let f qid =
-	let r = Nametab.global qid in
+      let f r =
+	let r = Syntax_def.locate_global_with_alias (qualid_of_reference r) in
         let r' = match r with
          | ConstRef c -> EvalConstRef c
          | VarRef c -> EvalVarRef c
@@ -427,7 +427,7 @@ let add_hints local dbnames0 h =
   | HintsConstructors lqid ->
       let add_one qid =
         let env = Global.env() and sigma = Evd.empty in
-        let isp = global_inductive qid in
+        let isp = inductive_of_reference qid in
         let consnames = (snd (Global.lookup_inductive isp)).mind_consnames in
         let lcons = list_tabulate
           (fun i -> mkConstruct (isp,i+1)) (Array.length consnames) in
@@ -637,7 +637,7 @@ and my_find_search db_list local_db hdc concl =
 		(trivial_fail_db db_list local_db)
 	  | Unfold_nth c -> unfold_in_concl [[],c]
 	  | Extern tacast -> 
-	      conclPattern concl (out_some p) tacast))
+	      conclPattern concl (Option.get p) tacast))
     tacl
 
 and trivial_resolve db_list local_db cl = 
@@ -781,7 +781,7 @@ let gen_auto n lems dbnames =
   | None -> full_auto n lems
   | Some l -> auto n lems l
 
-let inj_or_var = option_map (fun n -> ArgArg n)
+let inj_or_var = Option.map (fun n -> ArgArg n)
 
 let h_auto n lems l =
   Refiner.abstract_tactic (TacAuto (inj_or_var n,List.map inj_open lems,l))
@@ -893,8 +893,8 @@ let superauto n to_add argl  =
 
 let default_superauto g = superauto !default_search_depth [] [] g
 
-let interp_to_add gl locqid =
-  let r = Nametab.global locqid in
+let interp_to_add gl r =
+  let r = Syntax_def.locate_global_with_alias (qualid_of_reference r) in
   let id = id_of_global r in
   (next_ident_away id (pf_ids_of_hyps gl), constr_of_global r)
 

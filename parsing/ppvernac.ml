@@ -570,7 +570,7 @@ let rec pr_vernac = function
       let pr_onerec = function
         | (id,(n,ro),bl,type_,def),ntn ->
             let (bl',def,type_) =
-              if Options.do_translate() then extract_def_binders def type_
+              if Flags.do_translate() then extract_def_binders def type_
               else ([],def,type_) in
             let bl = bl @ bl' in
             let ids = List.flatten (List.map name_of_binder bl) in
@@ -607,7 +607,7 @@ let rec pr_vernac = function
   | VernacCoFixpoint (corecs,b) ->
       let pr_onecorec ((id,bl,c,def),ntn) =
         let (bl',def,c) =
-              if Options.do_translate() then extract_def_binders def c
+              if Flags.do_translate() then extract_def_binders def c
               else ([],def,c) in
         let bl = bl @ bl' in
         pr_id id ++ spc() ++ pr_binders bl ++ spc() ++ str":" ++
@@ -747,13 +747,13 @@ let rec pr_vernac = function
 	prlist (function None -> str " _"
                        | Some id -> spc () ++ pr_id id) idl
 	++ str" :=" ++ brk(1,1) ++
-	let idl = List.map out_some (List.filter (fun x -> not (x=None)) idl)in
+	let idl = List.map Option.get (List.filter (fun x -> not (x=None)) idl)in
         pr_raw_tactic_env 
 	  (idl @ List.map snd (List.map fst l))
 	  (Global.env())
 	  body in
       hov 1
-        (((*if !Options.p1 then
+        (((*if !Flags.p1 then
 	  (if rc then str "Recursive " else mt()) ++
 	  str "Tactic Definition " else*)
 	    (* Rec by default *) str "Ltac ") ++
@@ -794,7 +794,7 @@ let rec pr_vernac = function
           spc() ++ str"in" ++ spc () ++ pr_constr c)
       | None -> hov 2 (str"Check" ++ spc() ++ pr_constr c) 
       in 
-      (if io = None then mt() else int (out_some io) ++ str ": ") ++ 
+      (if io = None then mt() else int (Option.get io) ++ str ": ") ++ 
       pr_mayeval r c
   | VernacGlobalCheck c -> hov 2 (str"Type" ++ pr_constrarg c)
   | VernacPrint p -> 
@@ -834,7 +834,7 @@ let rec pr_vernac = function
 	| PrintImplicit qid -> str"Print Implicit" ++ spc()  ++ pr_reference qid
 (* spiwack: command printing all the axioms and section variables used in a 
          term *)
-	| PrintNeededAssumptions qid -> str"Print Assumptions"++spc()++pr_reference qid
+	| PrintAssumptions qid -> str"Print Assumptions"++spc()++pr_reference qid
       in pr_printable p
   | VernacSearch (sea,sea_r) -> pr_search sea sea_r pr_pattern_expr
   | VernacLocate loc -> 

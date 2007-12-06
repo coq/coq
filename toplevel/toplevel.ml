@@ -10,7 +10,7 @@
 
 open Pp
 open Util
-open Options
+open Flags
 open Cerrors
 open Vernac
 open Pcoq
@@ -103,7 +103,7 @@ let get_bols_of_loc ibuf (bp,ep) =
         lines_rec ll nafter fl 
   in
   let (fl,ll) = lines_rec ibuf.len ([],None) ibuf.bols in
-  (fl,out_some ll)
+  (fl,Option.get ll)
 
 let dotted_location (b,e) =
   if e-b < 3 then 
@@ -221,7 +221,7 @@ let make_emacs_prompt() =
       (fun acc x -> acc ^ (if acc <> "" then "|" else "") ^ Names.string_of_id x)
       "" pending in
   let proof_info = if dpth >= 0 then string_of_int dpth else "0" in
-  if !Options.print_emacs then statnum ^ " |" ^ pendingprompt ^ "| " ^ proof_info ^ " < "
+  if !Flags.print_emacs then statnum ^ " |" ^ pendingprompt ^ "| " ^ proof_info ^ " < "
   else ""
 
 (* A buffer to store the current command read on stdin. It is

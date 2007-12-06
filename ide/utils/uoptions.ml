@@ -24,7 +24,7 @@
 
 (** Simple options:
   This will enable very simple configuration, by a mouse-based configurator.
-  Options will be defined by a special function, which will also check
+  Flags.will be defined by a special function, which will also check
   if a value has been provided  by the user in its .gwmlrc file.
   The .gwmlrc will be created by a dedicated tool, which could be used
   to generate both .gwmlrc and .efunsrc files.
@@ -151,7 +151,7 @@ let
         opfile.file_rc) with
       Not_found -> default_value
     | e ->
-        Printf.printf "Options.define_option, for option %s: "
+        Printf.printf "Flags.define_option, for option %s: "
           (match option_name with
              [] -> "???"
            | name :: _ -> name);
@@ -344,7 +344,7 @@ let value_to_string v =
     StringValue s -> s
   | IntValue i -> string_of_int i
   | FloatValue f -> string_of_float f
-  | _ -> failwith "Options: not a string option"
+  | _ -> failwith "Flags. not a string option"
 ;;
       
 let string_to_value s = StringValue s;;
@@ -353,7 +353,7 @@ let value_to_int v =
   match v with
     StringValue s -> int_of_string s
   | IntValue i -> i
-  | _ -> failwith "Options: not an int option"
+  | _ -> failwith "Flags. not an int option"
 ;;
 
 let int_to_value i = IntValue i;;
@@ -375,7 +375,7 @@ let value_to_bool v =
     StringValue s -> bool_of_string s
   | IntValue v when v = 0 -> false
   | IntValue v when v = 1 -> true
-  | _ -> failwith "Options: not a bool option"
+  | _ -> failwith "Flags. not a bool option"
 ;;
 let bool_to_value i = StringValue (string_of_bool i);;
 
@@ -383,7 +383,7 @@ let value_to_float v =
   match v with
     StringValue s -> float_of_string s
   | FloatValue f -> f
-  | _ -> failwith "Options: not a float option"
+  | _ -> failwith "Flags. not a float option"
 ;; 
 
 let float_to_value i = FloatValue i;;
@@ -392,7 +392,7 @@ let value_to_string2 v =
   match v with
     List [s1; s2] | SmallList [s1;s2] -> 
       value_to_string s1, value_to_string s2
-  | _ -> failwith "Options: not a string2 option"
+  | _ -> failwith "Flags. not a string2 option"
 ;;
 
 let string2_to_value (s1, s2) = SmallList [StringValue s1; StringValue s2];;
@@ -401,10 +401,10 @@ let value_to_list v2c v =
   match v with
     List l | SmallList l -> List.rev (List.rev_map v2c l)
   | StringValue s -> failwith (Printf.sprintf 
-        "Options: not a list option (StringValue [%s])" s)
-  | FloatValue _ -> failwith "Options: not a list option (FloatValue)"
-  | IntValue _ -> failwith "Options: not a list option (IntValue)"
-  | Module _ -> failwith "Options: not a list option (Module)"
+        "Flags. not a list option (StringValue [%s])" s)
+  | FloatValue _ -> failwith "Flags. not a list option (FloatValue)"
+  | IntValue _ -> failwith "Flags. not a list option (IntValue)"
+  | Module _ -> failwith "Flags. not a list option (Module)"
 ;;
 
 let list_to_value c2v l =
@@ -458,7 +458,7 @@ let from_value cl = cl.from_value;;
 let value_to_sum l v =
   match v with
     StringValue s -> List.assoc s l
-  | _ -> failwith "Options: not a sum option"
+  | _ -> failwith "Flags. not a sum option"
 ;;
   
 let sum_to_value l v = StringValue (List.assq v l);;
@@ -659,8 +659,8 @@ let value_to_tuple2 (c1, c2) v =
   | List l | SmallList l ->
       Printf.printf "list of %d" (List.length l);
       print_newline ();
-      failwith "Options: not a tuple2 list option"
-  | _ -> failwith "Options: not a tuple2 option"
+      failwith "Flags. not a tuple2 list option"
+  | _ -> failwith "Flags. not a tuple2 option"
 ;;
   
 let tuple2_option p =
@@ -675,7 +675,7 @@ let value_to_tuple3 (c1, c2, c3) v =
     List [v1; v2; v3] -> from_value c1 v1, from_value c2 v2, from_value c3 v3
   | SmallList [v1; v2; v3] ->
       from_value c1 v1, from_value c2 v2, from_value c3 v3
-  | _ -> failwith "Options: not a tuple3 option"
+  | _ -> failwith "Flags. not a tuple3 option"
 ;;
       
 let tuple3_option p =
@@ -691,7 +691,7 @@ let value_to_tuple4 (c1, c2, c3, c4) v =
       (from_value c1 v1, from_value c2 v2, from_value c3 v3, from_value c4 v4)
   | SmallList [v1; v2; v3; v4] ->
       (from_value c1 v1, from_value c2 v2, from_value c3 v3, from_value c4 v4)
-  | _ -> failwith "Options: not a tuple4 option"
+  | _ -> failwith "Flags. not a tuple4 option"
 ;;
       
 let tuple4_option p =

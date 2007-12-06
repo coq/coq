@@ -247,7 +247,7 @@ let build_id_coercion idf_opt source =
       { const_entry_body = mkCast (val_f, DEFAULTcast, typ_f);
 	const_entry_type = Some typ_f;
         const_entry_opaque = false;
-	const_entry_boxed = Options.boxed_definitions()} in
+	const_entry_boxed = Flags.boxed_definitions()} in
   let kn = declare_constant idf (constr_entry,IsDefinition IdentityCoercion) in
   ConstRef kn
 
@@ -318,7 +318,7 @@ let try_add_new_coercion_with_source ref stre ~source =
 
 let add_coercion_hook stre ref = 
   try_add_new_coercion ref stre;
-  Options.if_verbose message
+  Flags.if_verbose message
     (string_of_qualid (shortest_qualid_of_global Idset.empty ref)
     ^ " is now a coercion")
 

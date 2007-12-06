@@ -1070,6 +1070,10 @@ Proof.
 Qed.
 Hint Resolve elements_sort.
 
+Lemma elements_nodup : forall s : t elt, bst s -> NoDupA eqk (elements s).
+Proof.
+ intros; apply Sort_NoDupA; auto.
+Qed.
 
 (** * Fold *)
 
@@ -1331,20 +1335,21 @@ Definition equal_aux :
  { ~ L.Equal cmp (flatten_e e1) (flatten_e e2) }.
 Proof.
  intros cmp e1 e2; pattern e1, e2 in |- *; apply compare_rec2.
- simple destruct x; simple destruct x'; intuition.
+ simple destruct x; simple destruct x'; intros.
  (* x = x' = End *)
- left; unfold L.Equal in |- *; intuition.
+ left; unfold L.Equal in |- *; split; intros.
+ intuition.
  inversion H2.
  (* x = End x' = More *)
  right; simpl in |- *; auto.
- destruct 1.
+ red; destruct 1.
  destruct (H2 k).
  destruct H5; auto.
  exists e; auto.
  inversion H5.
  (* x = More x' = End *)
  right; simpl in |- *; auto.
- destruct 1.
+ red; destruct 1.
  destruct (H2 k).
  destruct H4; auto.
  exists e; auto.
@@ -1353,7 +1358,7 @@ Proof.
  case (X.compare k k0); intro.
  (* k < k0 *)
  right.
- destruct 1. 
+ red; destruct 1. 
  clear H3 H.
  assert (L.PX.In k (flatten_e (More k0 e3 t0 e4))).
   destruct (H2 k).
@@ -1367,7 +1372,7 @@ Proof.
  intros EQ.
  destruct (@cons t e0) as [c1 (H2,(H3,H4))]; try inversion_clear H0; auto.
  destruct (@cons t0 e4) as [c2 (H5,(H6,H7))]; try inversion_clear H1; auto.
- destruct (H c1 c2); clear H; intuition.
+ destruct (H c1 c2); clear H; intros; auto.
  Measure_e; omega.
  left.
  rewrite H4 in e6; rewrite H7 in e6.
@@ -1378,14 +1383,14 @@ Proof.
  simpl; rewrite <- L.equal_cons; auto.
  apply (sorted_flatten_e H0).
  apply (sorted_flatten_e H1).
- swap f.
+ contradict n.
  rewrite H4; rewrite H7; auto.
  right.
- destruct 1.
+ red; destruct 1.
  rewrite (H4 k) in H2; try discriminate; simpl; auto.
  (* k > k0 *)
  right.
- destruct 1. 
+ red; destruct 1. 
  clear H3 H.
  assert (L.PX.In k0 (flatten_e (More k e t e0))).
   destruct (H2 k0).
@@ -1418,13 +1423,14 @@ Proof.
  inversion_clear 2.
  simpl in a; rewrite <- app_nil_end in a.
  simpl in a0; rewrite <- app_nil_end in a0.
- destruct (@equal_aux cmp x x0); intuition.
+ decompose [and] a; decompose [and] a0.
+ destruct (@equal_aux cmp x x0); auto.
  left.
- rewrite H4 in e; rewrite H5 in e.
+ rewrite H2 in e; rewrite H5 in e.
  rewrite Equal_elements; auto.
  right.
- swap n.
- rewrite H4; rewrite H5.
+ contradict n.
+ rewrite H2; rewrite H5.
  rewrite <- Equal_elements; auto.
 Qed.
 
@@ -1582,7 +1588,7 @@ inversion H1; auto.
 intros.
 inversion_clear H1.
 assert (~X.eq x k).
- swap H5.
+ contradict H5.
  destruct H3.
  apply InA_eqA with (x,x0); eauto.
 apply (H2 x).
@@ -1815,6 +1821,9 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
 
  Lemma elements_3 : forall m, sort lt_key (elements m).  
  Proof. intros m; exact (@Raw.elements_sort elt m.(this) m.(is_bst)). Qed.
+
+ Lemma elements_3w : forall m, NoDupA eq_key (elements m).  
+ Proof. intros m; exact (@Raw.elements_nodup elt m.(this) m.(is_bst)). Qed.
 
  Definition Equal cmp m m' := 
    (forall k, In k m <-> In k m') /\ 

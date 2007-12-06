@@ -48,8 +48,8 @@ let functional_induction with_clean c princl pat =
 			| InType -> finfo.rect_lemma
 		    in
 		    let princ =  (* then we get the principle *)
-		      try mkConst (out_some princ_option )
-		      with Failure "out_some" -> 
+		      try mkConst (Option.get princ_option )
+		      with Option.IsNone -> 
 			(*i If there is not default lemma defined then, 
 			  we cross our finger and try to find a lemma named f_ind 
 			  (or f_rec, f_rect) i*)
@@ -354,14 +354,14 @@ let register_struct is_rec fixpoint_exprl =
     | [(fname,_,bl,ret_type,body),_] when not is_rec -> 
 	Command.declare_definition
 	  fname
-	  (Decl_kinds.Global,Options.boxed_definitions (),Decl_kinds.Definition)
+	  (Decl_kinds.Global,Flags.boxed_definitions (),Decl_kinds.Definition)
 	  bl
 	  None
   	  body
 	  (Some ret_type)
 	  (fun _ _ -> ())
     | _ -> 
-	Command.build_recursive fixpoint_exprl (Options.boxed_definitions())
+	Command.build_recursive fixpoint_exprl (Flags.boxed_definitions())
 
 let generate_correction_proof_wf f_ref tcc_lemma_ref   
     is_mes functional_ref eq_ref rec_arg_num rec_arg_type nb_args relation
@@ -589,21 +589,21 @@ let rec add_args id new_args b =
       CApp(loc,(pf,add_args id new_args b), 
 	   List.map (fun (e,o) -> add_args id new_args e,o) bl)
   | CCases(loc,b_option,cel,cal) -> 
-      CCases(loc,option_map (add_args id new_args) b_option,
+      CCases(loc,Option.map (add_args id new_args) b_option,
 	     List.map (fun (b,(na,b_option)) -> 
 			 add_args id new_args b,
-			 (na,option_map (add_args id new_args) b_option)) cel, 
+			 (na,Option.map (add_args id new_args) b_option)) cel, 
 	     List.map (fun (loc,cpl,e) -> (loc,cpl,add_args id new_args e)) cal
 	    )
   | CLetTuple(loc,nal,(na,b_option),b1,b2) -> 
-      CLetTuple(loc,nal,(na,option_map (add_args id new_args) b_option),
+      CLetTuple(loc,nal,(na,Option.map (add_args id new_args) b_option),
 		add_args id new_args b1,
 		add_args id new_args b2
 	       )
 		
   | CIf(loc,b1,(na,b_option),b2,b3) -> 
       CIf(loc,add_args id new_args b1, 
-	  (na,option_map (add_args id new_args) b_option),
+	  (na,Option.map (add_args id new_args) b_option),
 	  add_args id new_args b2,
 	  add_args id new_args b3
 	 )
@@ -722,7 +722,7 @@ let make_graph (f_ref:global_reference) =
 			   )
 		       in 
 		       let rec_id = 
-			 match List.nth bl' (out_some n)  with 
+			 match List.nth bl' (Option.get n)  with 
 			   |(_,Name id) -> id | _ -> anomaly ""
 		       in
 		       let new_args = 

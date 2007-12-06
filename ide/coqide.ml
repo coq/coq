@@ -13,18 +13,15 @@ open Vernacexpr
 open Coq
 open Ideutils
   
-let out_some s = match s with 
-  | None -> failwith "Internal error in out_some" | Some f -> f
-      
 let cb_ = ref None
-let cb () = ((out_some !cb_):GData.clipboard)
+let cb () = ((Option.get !cb_):GData.clipboard)
 let last_cb_content = ref ""
   
 let (message_view:GText.view option ref) = ref None
 let (proof_view:GText.view option ref) = ref None
   
 let (_notebook:GPack.notebook option ref) = ref None
-let notebook () = out_some !_notebook
+let notebook () = Option.get !_notebook
 
 let update_notebook_pos () =
   let pos =
@@ -99,7 +96,7 @@ module Vector = struct
   type 'a t = ('a option) array ref
   let create () = ref [||]
   let length t = Array.length !t
-  let get t i = out_some (Array.get !t i)
+  let get t i = Option.get (Array.get !t i)
   let set t i v = Array.set !t i (Some v)
   let remove t i = Array.set !t i None
   let append t e = t := Array.append !t [|Some e|]; (Array.length !t)-1
@@ -111,7 +108,7 @@ module Vector = struct
   let exists f t =
     let l = Array.length !t in
     let rec test i = 
-      (i < l) && (((!t.(i) <> None) && f (out_some !t.(i))) || test (i+1)) 
+      (i < l) && (((!t.(i) <> None) && f (Option.get !t.(i))) || test (i+1)) 
     in 
       test 0
 end
@@ -310,7 +307,7 @@ let get_input_view i =
 
 let active_view = ref None
 
-let get_active_view () = Vector.get input_views (out_some !active_view)
+let get_active_view () = Vector.get input_views (Option.get !active_view)
 
 let set_active_view i = 
   (match !active_view with  None -> () | Some i -> 
@@ -461,7 +458,7 @@ let rec complete input_buffer w (offset:int) =
       end
 	
 let get_current_word () =
-  let av = out_some ((get_current_view ()).analyzed_view) in 
+  let av = Option.get ((get_current_view ()).analyzed_view) in 
     match GtkBase.Clipboard.wait_for_text (cb ())#as_clipboard with
       | None -> 
 	  prerr_endline "None selected";
@@ -566,11 +563,11 @@ let activate_input i =
   (match !active_view with
      | None -> () 
      | Some n ->
-	 let a_v = out_some (Vector.get input_views n).analyzed_view in
+	 let a_v = Option.get (Vector.get input_views n).analyzed_view in
 	   a_v#deactivate ();
 	   a_v#reset_initial
   );
-  let activate_function = (out_some (Vector.get input_views i).analyzed_view)#activate in
+  let activate_function = (Option.get (Vector.get input_views i).analyzed_view)#activate in
     activate_function ();
     set_active_view i
 
@@ -585,13 +582,13 @@ let warning msg =
 
 class analyzed_view index =
   let {view = input_view_} as current_all_ =  get_input_view index in
-  let proof_view_ = out_some !proof_view in
-  let message_view_ = out_some !message_view in
+  let proof_view_ = Option.get !proof_view in
+  let message_view_ = Option.get !message_view in
 object(self)
   val current_all =  current_all_
   val input_view = current_all_.view
-  val proof_view = out_some !proof_view
-  val message_view = out_some !message_view
+  val proof_view = Option.get !proof_view
+  val message_view = Option.get !message_view
   val input_buffer = input_view_#buffer
   val proof_buffer = proof_view_#buffer
   val message_buffer = message_view_#buffer 
@@ -1008,7 +1005,7 @@ object(self)
       self#insert_message s;
       message_view#misc#draw None;
       if localize then 
-	(match Util.option_map Util.unloc loc with 
+	(match Option.map Util.unloc loc with 
 	  | None -> ()
 	  | Some (start,stop) ->
 	      let convert_pos = byte_offset_to_char_offset phrase in
@@ -1541,7 +1538,7 @@ Please restart and report NOW.";
     deact_id <- Some 
       (input_view#event#connect#key_press self#disconnected_keypress_handler);
     prerr_endline "CONNECTED  inactive : ";
-    print_id (out_some deact_id)
+    print_id (Option.get deact_id)
 
   method activate () =
     is_active <- true;
@@ -1553,9 +1550,9 @@ Please restart and report NOW.";
     act_id <- Some 
       (input_view#event#connect#key_press self#active_keypress_handler);
     prerr_endline "CONNECTED active : ";
-    print_id (out_some act_id);
+    print_id (Option.get act_id);
     match 
-      (out_some ((Vector.get input_views index).analyzed_view)) #filename 
+      (Option.get ((Vector.get input_views index).analyzed_view)) #filename 
     with
       | None -> ()
       | Some f -> let dir = Filename.dirname f in
@@ -1653,7 +1650,7 @@ Please restart and report NOW.";
 			   if auto_complete_on && 
 			     String.length s = 1 && s <> " " && s <> "\n" 
 			   then 
-			     let v = out_some (get_current_view ()).analyzed_view 
+			     let v = Option.get (get_current_view ()).analyzed_view 
 			     in 
 			     let has_completed = 
 			       v#complete_at_offset 
@@ -1670,7 +1667,7 @@ Please restart and report NOW.";
 	      (fun () ->
 		 if input_buffer#modified then 
 		   set_tab_image index 
-		     ~icon:(match (out_some (current_all.analyzed_view))#filename with 
+		     ~icon:(match (Option.get (current_all.analyzed_view))#filename with 
 			      | None -> `SAVE_AS
 			      | Some _ -> `SAVE
 			   )
@@ -1924,20 +1921,20 @@ let main files =
 	let save_f () = 
 	  let current = get_current_view () in
 	    try
-	      (match (out_some current.analyzed_view)#filename with 
+	      (match (Option.get current.analyzed_view)#filename with 
 		 | None ->
 		     begin match GToolbox.select_file ~title:"Save file" ()
 		       with
 			 | None -> ()
 			 | Some f -> 
-			     if (out_some current.analyzed_view)#save_as f then begin
+			     if (Option.get current.analyzed_view)#save_as f then begin
 				 set_current_tab_label (Filename.basename f);
 				 !flash_info ("File " ^ f ^ " saved")
 			       end
 			     else warning ("Save Failed (check if " ^ f ^ " is writable)")
 		     end
 		 | Some f -> 
-		     if (out_some current.analyzed_view)#save f then 
+		     if (Option.get current.analyzed_view)#save f then 
 		       !flash_info ("File " ^ f ^ " saved")
 		     else warning  ("Save Failed (check if " ^ f ^ " is writable)")
 		       
@@ -1952,13 +1949,13 @@ let main files =
 	  in
 	  let saveas_f () = 
 	    let current = get_current_view () in
-	      try (match (out_some current.analyzed_view)#filename with 
+	      try (match (Option.get current.analyzed_view)#filename with 
 		     | None -> 
 			 begin match GToolbox.select_file ~title:"Save file as" ()
 			   with
 			     | None -> ()
 			     | Some f -> 
-				 if (out_some current.analyzed_view)#save_as f then begin
+				 if (Option.get current.analyzed_view)#save_as f then begin
 				     set_current_tab_label (Filename.basename f);
 				     !flash_info "Saved"
 				   end
@@ -1972,7 +1969,7 @@ let main files =
 			   with
 			     | None -> ()
 			     | Some f -> 
-				 if (out_some current.analyzed_view)#save_as f then begin
+				 if (Option.get current.analyzed_view)#save_as f then begin
 				     set_current_tab_label (Filename.basename f);
 				     !flash_info "Saved"
 				   end else !flash_info "Save Failed"
@@ -2028,7 +2025,7 @@ let main files =
 		let close_m =
                   file_factory#add_item "_Close Buffer" ~key:GdkKeysyms._W in
 		let close_f () = 
-		  let v = out_some !active_view in
+		  let v = Option.get !active_view in
 		  let act = get_current_view_page () in
 		    if v = act then !flash_info "Cannot close an active view"
 		    else remove_current_view_page ()
@@ -2038,7 +2035,7 @@ let main files =
 		  (* File/Print Menu *)
 		  let print_f () =
 		    let v = get_current_view () in
-		    let av = out_some v.analyzed_view in
+		    let av = Option.get v.analyzed_view in
 		      match av#filename with
 			| None -> 
 			    !flash_info "Cannot print: this buffer has no name"
@@ -2058,7 +2055,7 @@ let main files =
 		  (* File/Export to Menu *)
 		  let export_f kind () =
 		    let v = get_current_view () in
-		    let av = out_some v.analyzed_view in
+		    let av = Option.get v.analyzed_view in
 		      match av#filename with
 			| None -> 
 			    !flash_info "Cannot print: this buffer has no name"
@@ -2103,7 +2100,7 @@ let main files =
 			      (fun () -> 
 				 Highlight.highlight_all 
 				   (get_current_view()).view#buffer;
-				 (out_some (get_current_view()).analyzed_view)#recenter_insert));
+				 (Option.get (get_current_view()).analyzed_view)#recenter_insert));
 
 		    (* File/Quit Menu *)
 		    let quit_f () =
@@ -2137,7 +2134,7 @@ let main files =
 			ignore(edit_f#add_item "_Undo" ~key:GdkKeysyms._u ~callback:
 				 (do_if_not_computing "undo"
 				    (fun () -> 
-				       ignore ((out_some ((get_current_view()).analyzed_view))#
+				       ignore ((Option.get ((get_current_view()).analyzed_view))#
 						 without_auto_complete 
 						 (fun () -> (get_current_view()).view#undo) ()))));
 			ignore(edit_f#add_item "_Clear Undo Stack" 
@@ -2393,7 +2390,7 @@ let main files =
 			      ~callback:
 			      (do_if_not_computing 
 			      (fun b -> 
-			      let v = out_some (get_current_view ()).analyzed_view 
+			      let v = Option.get (get_current_view ()).analyzed_view 
 			      
 			      in v#complete_at_offset 
 			      ((v#view#buffer#get_iter `SEL_BOUND)#offset)
@@ -2405,7 +2402,7 @@ let main files =
 			    ignore(edit_f#add_item "Complete Word" ~key:GdkKeysyms._slash ~callback:
 				     (fun () -> 
 					ignore (
-						 let av = out_some ((get_current_view()).analyzed_view) in 
+						 let av = Option.get ((get_current_view()).analyzed_view) in 
 						   av#complete_at_offset (av#get_insert)#offset
 					       )));
 
@@ -2414,7 +2411,7 @@ let main files =
 			    let _ = 
 			      edit_f#add_item "External editor" ~callback:
 				(fun () -> 	 
-				   let av = out_some ((get_current_view()).analyzed_view) in 
+				   let av = Option.get ((get_current_view()).analyzed_view) in 
 				     match av#filename with
 				       | None -> ()
 				       | Some f ->
@@ -2480,7 +2477,7 @@ let main files =
 				in
 				let do_or_activate f () = 
 				  let current = get_current_view () in
-				  let analyzed_view = out_some current.analyzed_view in
+				  let analyzed_view = Option.get current.analyzed_view in
 				    if analyzed_view#is_active then 
 				      ignore (f analyzed_view)
 				    else
@@ -2565,7 +2562,7 @@ let main files =
 				  in
 				  let do_if_active_raw f () = 
 				    let current = get_current_view () in
-				    let analyzed_view = out_some current.analyzed_view in
+				    let analyzed_view = Option.get current.analyzed_view in
 				      if analyzed_view#is_active then ignore (f analyzed_view)
 				  in
 				  let do_if_active f =
@@ -2858,7 +2855,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					  (* Command/Compile Menu *)
 					  let compile_f () =
 					    let v = get_current_view () in
-					    let av = out_some v.analyzed_view in
+					    let av = Option.get v.analyzed_view in
 					      save_f ();
 					      match av#filename with
 						| None -> 
@@ -2885,7 +2882,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					  (* Command/Make Menu *)
 					  let make_f () =
 					    let v = get_current_view () in
-					    let av = out_some v.analyzed_view in
+					    let av = Option.get v.analyzed_view in
 					      match av#filename with
 						| None -> 
 						    !flash_info "Cannot make: this buffer has no name"
@@ -2914,7 +2911,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					      let file,line,start,stop,error_msg = search_next_error () in
 						load file;
 						let v = get_current_view () in
-						let av = out_some v.analyzed_view in
+						let av = Option.get v.analyzed_view in
 						let input_buffer = v.view#buffer in
 						  (*
 						    let init = input_buffer#start_iter in
@@ -2940,7 +2937,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					    with Not_found ->
 					      last_make_index := 0;
 					      let v = get_current_view () in
-					      let av = out_some v.analyzed_view in
+					      let av = Option.get v.analyzed_view in
 						av#set_message "No more errors.\n"
 					  in
 					  let _ = 
@@ -2952,7 +2949,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					  (* Command/CoqMakefile Menu*)
 					  let coq_makefile_f () =
 					    let v = get_current_view () in
-					    let av = out_some v.analyzed_view in
+					    let av = Option.get v.analyzed_view in
 					      match av#filename with
 						| None -> 
 						    !flash_info "Cannot make makefile: this buffer has no name"
@@ -2993,7 +2990,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 												if nb#misc#toplevel#get_oid=w#coerce#get_oid then
 												  begin  
 												    let nw = GWindow.window ~show:true () in
-												    let parent = out_some nb#misc#parent in
+												    let parent = Option.get nb#misc#parent in
 												      ignore (nw#connect#destroy 
 														~callback:
 														(fun () -> nb#misc#reparent parent));
@@ -3046,17 +3043,17 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					  let _ = help_factory#add_item "Browse Coq _Manual" 
 					    ~callback:
 					    (fun () -> 
-					       let av = out_some ((get_current_view ()).analyzed_view) in 
+					       let av = Option.get ((get_current_view ()).analyzed_view) in 
 						 browse av#insert_message (!current.doc_url ^ "main.html")) in
 					  let _ = help_factory#add_item "Browse Coq _Library" 
 					    ~callback:
 					    (fun () -> 
-					       let av = out_some ((get_current_view ()).analyzed_view) in 
+					       let av = Option.get ((get_current_view ()).analyzed_view) in 
 						 browse av#insert_message !current.library_url) in
 					  let _ = 
 					    help_factory#add_item "Help for _keyword" ~key:GdkKeysyms._F1
 					      ~callback:(fun () -> 
-							   let av = out_some ((get_current_view ()).analyzed_view) in 
+							   let av = Option.get ((get_current_view ()).analyzed_view) in 
 							     av#help_for_keyword ())
 					  in
 					  let _ = help_factory#add_separator () in
@@ -3405,7 +3402,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 								       (fun _ -> 
 									  if !current.contextual_menus_on_goal then
 									    begin
-									      let w = (out_some (get_active_view ()).analyzed_view) in
+									      let w = (Option.get (get_active_view ()).analyzed_view) in
 										!push_info "Computing advanced goal's menus";
 										prerr_endline "Entering Goal Window. Computing Menus....";
 										w#show_goals_full;

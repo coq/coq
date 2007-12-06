@@ -223,18 +223,7 @@ val intmap_inv : 'a Intmap.t -> 'a -> int list
 
 val interval : int -> int -> int list
 
-val in_some : 'a -> 'a option
-val out_some : 'a option -> 'a
-val option_map : ('a -> 'b) -> 'a option -> 'b option
-val option_cons : 'a option -> 'a list -> 'a list
-val option_fold_right : ('a -> 'b -> 'b) -> 'a option -> 'b -> 'b
-val option_fold_left : ('a -> 'b -> 'a) -> 'a -> 'b option -> 'a
-val option_fold_left2 : ('a -> 'b -> 'c -> 'a) -> 'a -> 'b option ->
-  'c option -> 'a
-val option_iter : ('a -> unit) -> 'a option -> unit
 val option_compare : ('a -> 'b -> bool) -> 'a option -> 'b option -> bool 
-val option_smartmap : ('a -> 'a) -> 'a option -> 'a option
-val filter_some : 'a option list -> 'a list
 
 (* In [map_succeed f l] an element [a] is removed if [f a] raises *)
 (* [Failure _] otherwise behaves as [List.map f l] *)

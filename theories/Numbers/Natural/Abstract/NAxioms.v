@@ -1,3 +1,15 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*                      Evgeny Makarov, INRIA, 2007                     *)
+(************************************************************************)
+
+(*i i*)
+
 Require Export NZAxioms.
 
 Set Implicit Arguments.
@@ -15,8 +27,12 @@ Notation P := NZpred.
 Notation plus := NZplus.
 Notation times := NZtimes.
 Notation minus := NZminus.
-Notation "x == y"  := (NZeq x y) (at level 70) : NatScope.
-Notation "x ~= y" := (~ NZeq x y) (at level 70) : NatScope.
+Notation lt := NZlt.
+Notation le := NZle.
+Notation min := NZmin.
+Notation max := NZmax.
+Notation "x == y"  := (Neq x y) (at level 70) : NatScope.
+Notation "x ~= y" := (~ Neq x y) (at level 70) : NatScope.
 Notation "0" := NZ0 : NatScope.
 Notation "1" := (NZsucc NZ0) : NatScope.
 Notation "x + y" := (NZplus x y) : NatScope.
@@ -36,7 +52,7 @@ Axiom pred_0 : P 0 == 0.
 
 Axiom recursion_wd : forall (A : Set) (Aeq : relation A),
   forall a a' : A, Aeq a a' ->
-    forall f f' : N -> A -> A, eq_fun2 Neq Aeq Aeq f f' ->
+    forall f f' : N -> A -> A, fun2_eq Neq Aeq Aeq f f' ->
       forall x x' : N, x == x' ->
         Aeq (recursion a f x) (recursion a' f' x').
 
@@ -47,6 +63,9 @@ Axiom recursion_succ :
   forall (A : Set) (Aeq : relation A) (a : A) (f : N -> A -> A),
     Aeq a a -> fun2_wd Neq Aeq Aeq f ->
       forall n : N, Aeq (recursion a f (S n)) (f n (recursion a f n)).
+
+(*Axiom dep_rec :
+  forall A : N -> Type, A 0 -> (forall n : N, A n -> A (S n)) -> forall n : N, A n.*)
 
 End NAxiomsSig.
 

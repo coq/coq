@@ -89,9 +89,9 @@ val locate : qualid -> global_reference
 val global : reference -> global_reference
 
 (* The same for inductive types *)
-val global_inductive : reference -> inductive
+val inductive_of_reference : reference -> inductive
 
-(* This locates also syntactic definitions *)
+(* This locates also syntactic definitions; raise [Not_found] if not found *)
 val extended_locate : qualid -> extended_global_reference
 
 (* This locates all names with a given suffix, if qualid is valid as

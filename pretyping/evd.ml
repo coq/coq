@@ -430,7 +430,7 @@ let evar_declare hyps evk ty ?(src=(dummy_loc,InternalHole)) ?filter evd =
     if filter = None then
       List.map (fun _ -> true) (named_context_of_val hyps)
     else
-      (let filter = out_some filter in
+      (let filter = Option.get filter in
       assert (List.length filter = List.length (named_context_of_val hyps));
       filter)
   in

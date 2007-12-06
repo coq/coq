@@ -1,7 +1,20 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*                      Evgeny Makarov, INRIA, 2007                     *)
+(************************************************************************)
+
+(*i i*)
+
+Require Export Decidable.
 Require Export NAxioms.
 Require Import NZTimesOrder. (* The last property functor on NZ, which subsumes all others *)
 
-Module NBasePropFunct (Export NAxiomsMod : NAxiomsSig).
+Module NBasePropFunct (Import NAxiomsMod : NAxiomsSig).
 
 Open Local Scope NatScope.
 
@@ -32,6 +45,15 @@ Proof NZpred_succ.
 Theorem pred_0 : P 0 == 0.
 Proof pred_0.
 
+Theorem Neq_refl : forall n : N, n == n.
+Proof (proj1 NZeq_equiv).
+
+Theorem Neq_symm : forall n m : N, n == m -> m == n.
+Proof (proj2 (proj2 NZeq_equiv)).
+
+Theorem Neq_trans : forall n m p : N, n == m -> m == p -> n == p.
+Proof (proj1 (proj2 NZeq_equiv)).
+
 Theorem neq_symm : forall n m : N, n ~= m -> m ~= n.
 Proof NZneq_symm.
 
@@ -44,11 +66,14 @@ Proof NZsucc_inj_wd.
 Theorem succ_inj_wd_neg : forall n m : N, S n ~= S m <-> n ~= m.
 Proof NZsucc_inj_wd_neg.
 
-(* Decidability of equality was proved only in NZOrder, but since it
-does not mention order, we'll put it here *)
+(* Decidability and stability of equality was proved only in NZOrder, but
+since it does not mention order, we'll put it here *)
 
-Theorem eq_em : forall n m : N, n == m \/ n ~= m.
-Proof NZeq_em.
+Theorem eq_dec : forall n m : N, decidable (n == m).
+Proof NZeq_dec.
+
+Theorem eq_dne : forall n m : N, ~ ~ n == m <-> n == m.
+Proof NZeq_dne.
 
 (* Now we prove that the successor of a number is not zero by defining a
 function (by recursion) that maps 0 to false and the successor to true *)
@@ -59,7 +84,7 @@ Definition if_zero (A : Set) (a b : A) (n : N) : A :=
 Add Morphism if_zero with signature @eq ==> @eq ==> Neq ==> @eq as if_zero_wd.
 Proof.
 intros; unfold if_zero. apply recursion_wd with (Aeq := (@eq A)).
-reflexivity. unfold eq_fun2; now intros. assumption.
+reflexivity. unfold fun2_eq; now intros. assumption.
 Qed.
 
 Theorem if_zero_0 : forall (A : Set) (a b : A), if_zero A a b 0 = a.
@@ -75,7 +100,7 @@ Qed.
 
 Implicit Arguments if_zero [A].
 
-Theorem neq_succ_0 : forall n : N, ~ S n == 0.
+Theorem neq_succ_0 : forall n : N, S n ~= 0.
 Proof.
 intros n H.
 assert (true = false); [| discriminate].
@@ -84,16 +109,21 @@ pattern false at 2; replace false with (if_zero false true 0) by apply if_zero_0
 now rewrite H.
 Qed.
 
+Theorem neq_0_succ : forall n : N, 0 ~= S n.
+Proof.
+intro n; apply neq_symm; apply neq_succ_0.
+Qed.
+
 (* Next, we show that all numbers are nonnegative and recover regular induction
 from the bidirectional induction on NZ *)
 
 Theorem le_0_l : forall n : N, 0 <= n.
 Proof.
 NZinduct n.
-le_equal.
+now apply NZeq_le_incl.
 intro n; split.
-apply NZle_le_succ.
-intro H; apply -> NZle_succ_le_or_eq_succ in H; destruct H as [H | H].
+apply NZle_le_succ_r.
+intro H; apply -> NZle_succ_r in H; destruct H as [H | H].
 assumption.
 symmetry in H; false_hyp H neq_succ_0.
 Qed.
@@ -111,7 +141,7 @@ refer to bidirectional induction, which is not useful on natural
 numbers. Therefore, we define a new induction tactic for natural numbers.
 We do not have to call "Declare Left Step" and "Declare Right Step"
 commands again, since the data for stepl and stepr tactics is inherited
-from N. *)
+from NZ. *)
 
 Ltac induct n := induction_maker n ltac:(apply induction).
 
@@ -129,7 +159,7 @@ Proof.
 intro H; apply (neq_succ_0 0). apply H.
 Qed.
 
-Theorem neq_0_succ : forall n, n ~= 0 <-> exists m, n == S m.
+Theorem neq_0_r : forall n, n ~= 0 <-> exists m, n == S m.
 Proof.
 cases n. split; intro H;
 [now elim H | destruct H as [m H]; symmetry in H; false_hyp H neq_succ_0].
@@ -148,7 +178,9 @@ Proof.
 cases n.
 rewrite pred_0. setoid_replace (0 == 1) with False using relation iff. tauto.
 split; intro H; [symmetry in H; false_hyp H neq_succ_0 | elim H].
-intro n. rewrite pred_succ. rewrite_false (S n == 0) neq_succ_0.
+intro n. rewrite pred_succ.
+setoid_replace (S n == 0) with False using relation iff by
+  (apply -> neg_false; apply neq_succ_0).
 rewrite succ_inj_wd. tauto.
 Qed.
 
@@ -198,7 +230,7 @@ End PairInduction.
 Section TwoDimensionalInduction.
 
 Variable R : N -> N -> Prop.
-Hypothesis R_wd : rel_wd Neq Neq R.
+Hypothesis R_wd : relation_wd Neq Neq R.
 
 Add Morphism R with signature Neq ==> Neq ==> iff as R_morph.
 Proof.
@@ -223,12 +255,12 @@ End TwoDimensionalInduction.
   try intros until n;
   try intros until m;
   pattern n, m; apply two_dim_induction; clear n m;
-  [solve_rel_wd | | | ].*)
+  [solve_relation_wd | | | ].*)
 
 Section DoubleInduction.
 
 Variable R : N -> N -> Prop.
-Hypothesis R_wd : rel_wd Neq Neq R.
+Hypothesis R_wd : relation_wd Neq Neq R.
 
 Add Morphism R with signature Neq ==> Neq ==> iff as R_morph1.
 Proof.
@@ -250,7 +282,7 @@ Ltac double_induct n m :=
   try intros until n;
   try intros until m;
   pattern n, m; apply double_induction; clear n m;
-  [solve_rel_wd | | | ].
+  [solve_relation_wd | | | ].
 
 End NBasePropFunct.
 

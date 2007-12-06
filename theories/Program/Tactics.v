@@ -79,6 +79,9 @@ Ltac on_call f tac :=
   match goal with
     | H : ?T |- _  =>
       match T with
+        | context [f ?x ?y ?z ?w ?v ?u ?a ?b ?c] => tac (f x y z w v u a b c)
+        | context [f ?x ?y ?z ?w ?v ?u ?a ?b] => tac (f x y z w v u a b)
+        | context [f ?x ?y ?z ?w ?v ?u ?a] => tac (f x y z w v u a)
         | context [f ?x ?y ?z ?w ?v ?u] => tac (f x y z w v u)
         | context [f ?x ?y ?z ?w ?v] => tac (f x y z w v)
         | context [f ?x ?y ?z ?w] => tac (f x y z w)
@@ -88,6 +91,9 @@ Ltac on_call f tac :=
       end
     | |- ?T  =>
       match T with
+        | context [f ?x ?y ?z ?w ?v ?u ?a ?b ?c] => tac (f x y z w v u a b c)
+        | context [f ?x ?y ?z ?w ?v ?u ?a ?b] => tac (f x y z w v u a b)
+        | context [f ?x ?y ?z ?w ?v ?u ?a] => tac (f x y z w v u a)
         | context [f ?x ?y ?z ?w ?v ?u] => tac (f x y z w v u)
         | context [f ?x ?y ?z ?w ?v] => tac (f x y z w v)
         | context [f ?x ?y ?z ?w] => tac (f x y z w)

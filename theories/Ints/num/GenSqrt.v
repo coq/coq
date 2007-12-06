@@ -10,8 +10,6 @@ Set Implicit Arguments.
 
 Require Import ZArith.
 Require Import ZAux.
-Require Import ZDivModAux.
-Require Import ZPowerAux.
 Require Import Basic_type.
 Require Import GenBase.
 
@@ -277,10 +275,10 @@ Section GenSqrt.
 clear spec_more_than_1_digit. 
 intros x; case x; simpl ww_is_even.
  simpl.
- rewrite Zmod_def_small; auto with zarith.
+ rewrite Zmod_small; auto with zarith.
  intros w1 w2; simpl.
  unfold base.
- rewrite Zmod_plus; auto with zarith.
+ rewrite Zplus_mod; auto with zarith.
  rewrite (fun x y => (Zdivide_mod (x * y))); auto with zarith.
  rewrite Zplus_0_l; rewrite Zmod_mod; auto with zarith.
  apply spec_w_is_even; auto with zarith.
@@ -313,12 +311,12 @@ intros x; case x; simpl ww_is_even.
  destruct (spec_to_Z a2);auto with zarith.
  intros H1 H2; split.
  unfold interp_carry; autorewrite with w_rewrite rm10; auto with zarith.
- rewrite H2; rewrite Zmod_def_small; auto with zarith.
+ rewrite H2; rewrite Zmod_small; auto with zarith.
  ring.
  destruct (spec_to_Z a2);auto with zarith.
  rewrite spec_w_sub; auto with zarith.
  destruct (spec_to_Z a2) as [H3 H4];auto with zarith.
- rewrite Zmod_def_small; auto with zarith.
+ rewrite Zmod_small; auto with zarith.
  split; auto with zarith.
  assert ([|a2|] < 2 * [|b|]); auto with zarith.
  apply Zlt_le_trans with (2 * (wB / 2)); auto with zarith.
@@ -332,7 +330,7 @@ intros x; case x; simpl ww_is_even.
  intros H1.
  assert (H2: [|w_sub a1 b|] < [|b|]).
  rewrite spec_w_sub; auto with zarith.
- rewrite Zmod_def_small; auto with zarith.
+ rewrite Zmod_small; auto with zarith.
  assert ([|a1|] < 2 * [|b|]); auto with zarith.
  apply Zlt_le_trans with (2 * (wB / 2)); auto with zarith.
  rewrite wB_div_2; auto.
@@ -344,7 +342,7 @@ intros x; case x; simpl ww_is_even.
    auto
  end.
  intros w0 w1; replace [+|C1 w0|] with (wB + [|w0|]).
- rewrite Zmod_def_small; auto with zarith.
+ rewrite Zmod_small; auto with zarith.
  intros (H3, H4); split; auto.
  rewrite Zmult_plus_distr_l.
  rewrite <- Zplus_assoc; rewrite <- H3; ring.
@@ -366,7 +364,7 @@ intros x; case x; simpl ww_is_even.
  intros w1.
  assert (Hp: [|w_pred w_zdigits|] = Zpos w_digits - 1).
    rewrite spec_pred; rewrite spec_w_zdigits.
-   rewrite Zmod_def_small; auto with zarith.
+   rewrite Zmod_small; auto with zarith.
    split; auto with zarith.
    apply Zlt_le_trans with (Zpos w_digits); auto with zarith.
    unfold base; apply Zpower2_le_lin; auto with zarith.
@@ -375,7 +373,7 @@ intros x; case x; simpl ww_is_even.
  match goal with |- context[?X - ?Y] =>
   replace (X - Y) with 1
  end.
- rewrite Zpower_exp_1; rewrite Zmod_def_small; auto with zarith.
+ rewrite Zpower_1_r; rewrite Zmod_small; auto with zarith.
  destruct (spec_to_Z w1) as [H1 H2];auto with zarith.
  split; auto with zarith. 
  apply Zdiv_lt_upper_bound; auto with zarith.  
@@ -388,7 +386,7 @@ intros x; case x; simpl ww_is_even.
  intros w1.
  assert (Hp: [|w_pred w_zdigits|] = Zpos w_digits - 1).
    rewrite spec_pred; rewrite spec_w_zdigits.
-   rewrite Zmod_def_small; auto with zarith.
+   rewrite Zmod_small; auto with zarith.
    split; auto with zarith.
    apply Zlt_le_trans with (Zpos w_digits); auto with zarith.
    unfold base; apply Zpower2_le_lin; auto with zarith.
@@ -397,7 +395,8 @@ intros x; case x; simpl ww_is_even.
   replace (X - Y) with 1
  end; rewrite Hp; try ring.
  rewrite Zpos_minus; auto with zarith.
- rewrite Zpower_exp_1; rewrite Zmod_def_small; auto with zarith.
+ rewrite Zmax_right; auto with zarith.
+ rewrite Zpower_1_r; rewrite Zmod_small; auto with zarith.
  destruct (spec_to_Z w1) as [H1 H2];auto with zarith.
  split; auto with zarith. 
  unfold base.
@@ -405,14 +404,14 @@ intros x; case x; simpl ww_is_even.
  assert (tmp: forall p, 1 + (p - 1) = p); auto with zarith;
   rewrite <- (tmp X); clear tmp
  end.
- rewrite Zpower_exp; try rewrite Zpower_exp_1; auto with zarith.
+ rewrite Zpower_exp; try rewrite Zpower_1_r; auto with zarith.
  assert (tmp: forall p, 1 + (p -1) - 1 = p - 1); auto with zarith;
   rewrite tmp; clear tmp; auto with zarith.
  match goal with |- ?X + ?Y < _ =>
  assert (Y < X); auto with zarith
  end.
  apply Zdiv_lt_upper_bound; auto with zarith.
- pattern 2 at 2; rewrite <- Zpower_exp_1; rewrite <- Zpower_exp;
+ pattern 2 at 2; rewrite <- Zpower_1_r; rewrite <- Zpower_exp;
   auto with zarith.
  assert (tmp: forall p, (p - 1) + 1 = p); auto with zarith;
   rewrite tmp; clear tmp; auto with zarith.
@@ -422,7 +421,7 @@ intros x; case x; simpl ww_is_even.
     [|w_add_mul_div w_1 w w_0|] = 2 * [|w|] mod wB.
  intros w1.
  autorewrite with w_rewrite rm10; auto with zarith.
- rewrite Zpower_exp_1; auto with zarith.
+ rewrite Zpower_1_r; auto with zarith.
  rewrite Zmult_comm; auto.
  Qed.
 
@@ -432,7 +431,7 @@ intros x; case x; simpl ww_is_even.
  rewrite spec_ww_add_mul_div; auto with zarith.
  autorewrite with w_rewrite rm10.
  rewrite spec_w_0W; rewrite spec_w_1. 
- rewrite Zpower_exp_1; auto with zarith.
+ rewrite Zpower_1_r; auto with zarith.
  rewrite Zmult_comm; auto.
  rewrite spec_w_0W; rewrite spec_w_1; auto with zarith.
  red; simpl; intros; discriminate.
@@ -444,22 +443,18 @@ intros x; case x; simpl ww_is_even.
  intros w1.
  rewrite spec_ww_add_mul_div; auto with zarith.
  rewrite spec_w_0W; rewrite spec_w_1; auto with zarith.
- rewrite Zpower_exp_1; auto with zarith.
- eq_tac; auto.
- rewrite Zmult_comm; eq_tac; auto.
+ rewrite Zpower_1_r; auto with zarith.
+ f_equal; auto.
+ rewrite Zmult_comm; f_equal; auto.
  autorewrite with w_rewrite rm10.
  unfold ww_digits, base.
  apply sym_equal; apply Zdiv_unique with (r := 2 ^ (Zpos (ww_digits w_digits) - 1) -1);
   auto with zarith.
- apply Zpower_lt_0; auto with zarith. 
- match goal with  |- 0 <= ?X - 1 =>
-   assert (0 < X); auto with zarith; red; reflexivity
- end.
  unfold ww_digits; split; auto with zarith.
  match goal with  |- 0 <= ?X - 1 =>
    assert (0 < X); auto with zarith
  end.
- apply Zpower_lt_0; auto with zarith. 
+ apply Zpower_gt_0; auto with zarith. 
  match goal with  |- 0 <= ?X - 1 =>
    assert (0 < X); auto with zarith; red; reflexivity
  end.
@@ -468,8 +463,8 @@ intros x; case x; simpl ww_is_even.
   rewrite tmp; clear tmp.
  assert (tmp: forall p, p + p = 2 * p); auto with zarith;
   rewrite tmp; clear tmp.
- eq_tac; auto.
- pattern 2 at 2; rewrite <- Zpower_exp_1; rewrite <- Zpower_exp;
+ f_equal; auto.
+ pattern 2 at 2; rewrite <- Zpower_1_r; rewrite <- Zpower_exp;
   auto with zarith.
  assert (tmp: forall p, 1 + (p - 1) = p); auto with zarith;
   rewrite tmp; clear tmp; auto.
@@ -480,8 +475,8 @@ intros x; case x; simpl ww_is_even.
  red; simpl; intros; discriminate.
  Qed.
 
- Theorem Zmod_plus_one: forall a1 b1, 0 < b1 -> (a1 + b1) mod b1 = a1 mod b1.
- intros a1 b1 H; rewrite Zmod_plus; auto with zarith.
+ Theorem Zplus_mod_one: forall a1 b1, 0 < b1 -> (a1 + b1) mod b1 = a1 mod b1.
+ intros a1 b1 H; rewrite Zplus_mod; auto with zarith.
  rewrite Z_mod_same; try rewrite Zplus_0_r; auto with zarith.
  apply Zmod_mod; auto.
  Qed.
@@ -544,9 +539,10 @@ intros x; case x; simpl ww_is_even.
  match goal with |- context[_ ^ ?X] =>
  assert (tmp: forall p, 1 + (p - 1) = p); auto with zarith;
   rewrite <- (tmp X); clear tmp; rewrite Zpower_exp; 
-  try rewrite Zpower_exp_1; auto with zarith
+  try rewrite Zpower_1_r; auto with zarith
  end.
  rewrite Zpos_minus; auto with zarith.
+ rewrite Zmax_right; auto with zarith.
  ring.
  repeat rewrite C0_id.
  rewrite spec_w_add_c; auto with zarith.
@@ -560,9 +556,10 @@ intros x; case x; simpl ww_is_even.
  match goal with |- context[_ ^ ?X] =>
  assert (tmp: forall p, 1 + (p - 1) = p); auto with zarith;
   rewrite <- (tmp X); clear tmp; rewrite Zpower_exp; 
-  try rewrite Zpower_exp_1; auto with zarith
+  try rewrite Zpower_1_r; auto with zarith
  end.
  rewrite Zpos_minus; auto with zarith.
+ rewrite Zmax_right; auto with zarith.
  ring.
  repeat rewrite C1_plus_wB in H0.
  rewrite C1_plus_wB.
@@ -573,8 +570,8 @@ intros x; case x; simpl ww_is_even.
  end.
  intros c w1; case c.
  intros w2 (Hw1, Hw2); rewrite C0_id in Hw1.
- rewrite <- Zmod_plus_one in Hw1; auto with zarith.
- rewrite Zmod_def_small in Hw1; auto with zarith.
+ rewrite <- Zplus_mod_one in Hw1; auto with zarith.
+ rewrite Zmod_small in Hw1; auto with zarith.
  match goal with |- context[w_is_even ?y] =>
    generalize (spec_w_is_even y);
    case (w_is_even y)
@@ -592,9 +589,10 @@ intros x; case x; simpl ww_is_even.
  match goal with |- context[_ ^ ?X] =>
  assert (tmp: forall p, 1 + (p - 1) = p); auto with zarith;
   rewrite <- (tmp X); clear tmp; rewrite Zpower_exp; 
-  try rewrite Zpower_exp_1; auto with zarith
+  try rewrite Zpower_1_r; auto with zarith
  end.
  rewrite Zpos_minus; auto with zarith.
+ rewrite Zmax_right; auto with zarith.
  ring.
  repeat rewrite C0_id.
  rewrite add_mult_div_2_plus_1.
@@ -610,9 +608,10 @@ intros x; case x; simpl ww_is_even.
  match goal with |- context[_ ^ ?X] =>
  assert (tmp: forall p, 1 + (p - 1) = p); auto with zarith;
   rewrite <- (tmp X); clear tmp; rewrite Zpower_exp; 
-  try rewrite Zpower_exp_1; auto with zarith
+  try rewrite Zpower_1_r; auto with zarith
  end.
  rewrite Zpos_minus; auto with zarith.
+ rewrite Zmax_right; auto with zarith.
  ring.
  split; auto with zarith.
  destruct (spec_to_Z b);auto with zarith.
@@ -620,8 +619,8 @@ intros x; case x; simpl ww_is_even.
  destruct (spec_to_Z b);auto with zarith.
  destruct (spec_to_Z b);auto with zarith.
  intros w2; rewrite C1_plus_wB.
- rewrite <- Zmod_plus_one; auto with zarith.
- rewrite Zmod_def_small; auto with zarith.
+ rewrite <- Zplus_mod_one; auto with zarith.
+ rewrite Zmod_small; auto with zarith.
  intros (Hw1, Hw2).
  match goal with |- context[w_is_even ?y] =>
    generalize (spec_w_is_even y);
@@ -662,7 +661,7 @@ intros x; case x; simpl ww_is_even.
               4 * (2 ^ (Zpos w_digits - 2))).
   change 4 with (2 ^ 2).
   rewrite <- Zpower_exp; auto with zarith.
-  eq_tac; auto with zarith.
+  f_equal; auto with zarith.
   rewrite H.
   rewrite (fun x => (Zmult_comm 4 (2 ^x))).
   rewrite Z_div_mult; auto with zarith.
@@ -670,7 +669,7 @@ intros x; case x; simpl ww_is_even.
 
  Theorem Zsquare_mult: forall p, p ^ 2 = p * p.
  intros p; change 2 with (1 + 1); rewrite Zpower_exp;
-  try rewrite Zpower_exp_1; auto with zarith.
+  try rewrite Zpower_1_r; auto with zarith.
  Qed.
 
  Theorem Zsquare_pos: forall p, 0 <= p ^ 2.
@@ -817,7 +816,7 @@ intros x; case x; simpl ww_is_even.
  rewrite spec_ww_pred.
  rewrite <- Zmod_unique with (q := 1) (r := -wwB + 2 * [[WW w4 w5]]);
   auto with zarith.
- intros Hz1; rewrite Zmod_def_small; auto with zarith.
+ intros Hz1; rewrite Zmod_small; auto with zarith.
  match type of H5 with -?X + ?Y = ?Z =>
   assert (V: Y = Z + X);
   try (rewrite <- H5; ring)
@@ -866,7 +865,7 @@ intros x; case x; simpl ww_is_even.
  rewrite spec_ww_add; auto with zarith.
  rewrite spec_ww_pred; auto with zarith.
  rewrite ww_add_mult_mult_2.
- assert (VV1 := spec_ww_to_Z w_digits w_to_Z spec_to_Z (WW w4 w5)).
+ rename V1 into VV1.
  assert (VV2: 0 <  [[WW w4 w5]]); auto with zarith.
  apply Zlt_le_trans with (wB/ 2 * wB + 0); auto with zarith.
  autorewrite with rm10; apply Zmult_lt_0_compat; auto with zarith.
@@ -886,7 +885,7 @@ intros x; case x; simpl ww_is_even.
  simpl ww_to_Z; assert (V4 := spec_to_Z w5);auto with zarith.
  rewrite <- Zmod_unique with (q := 1) (r := -wwB + 2 * [[WW w4 w5]]);
   auto with zarith.
- intros Hz1; rewrite Zmod_def_small; auto with zarith.
+ intros Hz1; rewrite Zmod_small; auto with zarith.
  match type of H5 with -?X + ?Y = ?Z =>
   assert (V: Y = Z + X);
   try (rewrite <- H5; ring)
@@ -895,7 +894,7 @@ intros x; case x; simpl ww_is_even.
   assert (V1: Y = Z - 1);
   [replace (Z - 1) with (X + (-X + Z -1));
     [rewrite <- Hz1 | idtac]; ring
-   |  idtac]
+    | idtac]
  end.
  rewrite <- Zmod_unique with (q := 1) (r := -wwB + [[z1]] + [[z]]);
   auto with zarith.
@@ -1161,24 +1160,24 @@ intros x; case x; simpl ww_is_even.
   assert (Hp0: 0 < [[ww_head0 x]]).
     generalize (spec_ww_is_even (ww_head0 x)); rewrite H1.
     generalize Hv1; case [[ww_head0 x]].
-    rewrite Zmod_def_small; auto with zarith.
+    rewrite Zmod_small; auto with zarith.
     intros; assert (0 < Zpos p); auto with zarith.
     red; simpl; auto.
     intros p H2; case H2; auto.
   assert (Hp: [[ww_pred (ww_head0 x)]] = [[ww_head0 x]] - 1).
     rewrite spec_ww_pred.
-    rewrite Zmod_def_small; auto with zarith.
+    rewrite Zmod_small; auto with zarith.
   intros H2; split.
     generalize (spec_ww_is_even (ww_pred (ww_head0 x)));
       case ww_is_even; auto.
     rewrite Hp.
-    rewrite Zmod_minus; auto with zarith.
-    rewrite H2; repeat rewrite Zmod_def_small; auto with zarith.
+    rewrite Zminus_mod; auto with zarith.
+    rewrite H2; repeat rewrite Zmod_small; auto with zarith.
   intros H3; rewrite Hp.  
   case (spec_ww_head0 x); auto; intros Hv3 Hv4.
   assert (Hu: forall u, 0 < u -> 2 *  2 ^ (u - 1) = 2 ^u).
     intros u Hu.
-    pattern 2 at 1; rewrite <- Zpower_exp_1.
+    pattern 2 at 1; rewrite <- Zpower_1_r.
     rewrite <- Zpower_exp; auto with zarith.
     ring_simplify (1 + (u - 1)); auto with zarith.
   split; auto with zarith.
@@ -1254,13 +1253,13 @@ intros x; case x; simpl ww_is_even.
   generalize (spec_ww_add_mul_div x W0 (ww_head1 x) Hv2);
      case ww_add_mul_div.
   simpl ww_to_Z; autorewrite with w_rewrite rm10.
-  rewrite Zmod_def_small; auto with zarith.
+  rewrite Zmod_small; auto with zarith.
   intros H2; case (Zmult_integral _ _ (sym_equal H2)); clear H2; intros H2.
   rewrite H2; unfold Zpower, Zpower_pos; simpl; auto with zarith.
   match type of H2 with ?X = ?Y =>
    absurd (Y < X); try (rewrite H2; auto with zarith; fail)
   end.
-  apply Zpower_lt_0; auto with zarith.
+  apply Zpower_gt_0; auto with zarith.
   split; auto with zarith.
   case Hp2; intros _ tmp; apply Zle_lt_trans with (2 := tmp);
    clear tmp.
@@ -1271,7 +1270,7 @@ intros x; case x; simpl ww_is_even.
     generalize (spec_ww_is_even (ww_head1 x)); rewrite Hp1;
       intros tmp; rewrite tmp; rewrite Zplus_0_r; auto.
   intros w0 w1; autorewrite with w_rewrite rm10.
-  rewrite Zmod_def_small; auto with zarith.
+  rewrite Zmod_small; auto with zarith.
   2: rewrite Zmult_comm; auto with zarith.
   intros H2.
   assert (V: wB/4 <= [|w0|]).
@@ -1287,7 +1286,7 @@ intros x; case x; simpl ww_is_even.
   assert (Hv3: [[ww_pred ww_zdigits]]
                  = Zpos (xO w_digits) - 1).
     rewrite spec_ww_pred; rewrite spec_ww_zdigits.
-    rewrite Zmod_def_small; auto with zarith.
+    rewrite Zmod_small; auto with zarith.
     split; auto with zarith.
     apply Zlt_le_trans with (Zpos (xO w_digits)); auto with zarith.
     unfold base; apply Zpower2_le_lin; auto with zarith.  
@@ -1303,8 +1302,8 @@ intros x; case x; simpl ww_is_even.
     simpl ww_to_Z; autorewrite with rm10.
     rewrite Hv3.
     ring_simplify (Zpos (xO w_digits) - (Zpos (xO w_digits) - 1)).
-    rewrite Zpower_exp_1.
-    rewrite Zmod_def_small; auto with zarith.
+    rewrite Zpower_1_r.
+    rewrite Zmod_small; auto with zarith.
     split; auto with zarith.
     apply Zlt_le_trans with (1 := Hv4); auto with zarith.
     unfold base; apply Zpower_le_monotone; auto with zarith.
@@ -1313,15 +1312,15 @@ intros x; case x; simpl ww_is_even.
   assert (Hv6: [|low(ww_add_mul_div (ww_pred ww_zdigits) W0 (ww_head1 x))|]
                  = [[ww_head1 x]]/2).
     rewrite spec_low.
-    rewrite Hv5; rewrite Zmod_def_small; auto with zarith.
+    rewrite Hv5; rewrite Zmod_small; auto with zarith.
   rewrite spec_w_add_mul_div; auto with zarith.
   rewrite spec_w_sub; auto with zarith.
   rewrite spec_w_0.
   simpl ww_to_Z; autorewrite with rm10.
   rewrite Hv6; rewrite spec_w_zdigits.
-  rewrite (fun x y => Zmod_def_small (x - y)).
+  rewrite (fun x y => Zmod_small (x - y)).
   ring_simplify (Zpos w_digits - (Zpos w_digits - [[ww_head1 x]] / 2)).
-  rewrite Zmod_def_small.
+  rewrite Zmod_small.
   simpl ww_to_Z in H2; rewrite H2; auto with zarith.
   intros (H4, H5); split.
   apply Zmult_le_reg_r with (2 ^ [[ww_head1 x]]); auto with zarith.
@@ -1335,7 +1334,7 @@ intros x; case x; simpl ww_is_even.
   assert (tmp: forall p q, p ^ 2 * q ^ 2 = (p * q) ^2);
    try (intros; repeat rewrite Zsquare_mult; ring);
    rewrite tmp; clear tmp.
-  apply ZPowerAux.Zpower_le_monotone_exp; auto with zarith.
+  apply Zpower_le_monotone3; auto with zarith.
   split; auto with zarith.
   pattern [|w2|] at 2; 
      rewrite (Z_div_mod_eq [|w2|] (2 ^ ([[ww_head1 x]] / 2)));
@@ -1361,7 +1360,7 @@ intros x; case x; simpl ww_is_even.
   assert (tmp: forall p q, p ^ 2 * q ^ 2 = (p * q) ^2);
    try (intros; repeat rewrite Zsquare_mult; ring);
    rewrite tmp; clear tmp.
-  apply ZPowerAux.Zpower_le_monotone_exp; auto with zarith.
+  apply Zpower_le_monotone3; auto with zarith.
   split; auto with zarith.
   pattern [|w2|] at 1; rewrite (Z_div_mod_eq [|w2|] (2 ^ ([[ww_head1 x]]/2)));
     auto with zarith.
@@ -1375,7 +1374,7 @@ intros x; case x; simpl ww_is_even.
     auto with zarith.
   apply Zmult_le_compat_l; auto with zarith.
   apply Zpower_le_monotone; auto with zarith.
-  rewrite Zpower_exp_0; autorewrite with rm10; auto.
+  rewrite Zpower_0_r; autorewrite with rm10; auto.
   split; auto with zarith.
   rewrite Hv0 in Hv2; rewrite (Zpos_xO w_digits) in Hv2; auto with zarith.
   apply Zle_lt_trans with (Zpos w_digits); auto with zarith.
@@ -1383,7 +1382,7 @@ intros x; case x; simpl ww_is_even.
   rewrite spec_w_sub; auto with zarith.
   rewrite Hv6; rewrite spec_w_zdigits; auto with zarith.
   assert (Hv7: 0 < [[ww_head1 x]]/2); auto with zarith.
-  rewrite Zmod_def_small; auto with zarith.
+  rewrite Zmod_small; auto with zarith.
   split; auto with zarith.
   assert ([[ww_head1 x]]/2 <= Zpos w_digits); auto with zarith.
   apply Zmult_le_reg_r with 2; auto with zarith.

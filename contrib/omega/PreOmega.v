@@ -412,12 +412,12 @@ Ltac zify_N_op :=
   | |- context [ Z_of_N (Nsucc ?a) ] => rewrite (Z_of_N_succ a)
  
   (* Nmult -> Zmult and a positivity hypothesis *)
-  | H : context [ Z_of_N (Pmult ?a ?b) ] |- _ => 
+  | H : context [ Z_of_N (Nmult ?a ?b) ] |- _ => 
         let H:= fresh "H" in 
-        assert (H:=Z_of_N_le_0 (Pmult a b)); rewrite (Z_of_N_mult a b) in *
-  | |- context [ Z_of_N  (Pmult ?a ?b) ] => 
+        assert (H:=Z_of_N_le_0 (Nmult a b)); rewrite (Z_of_N_mult a b) in *
+  | |- context [ Z_of_N  (Nmult ?a ?b) ] => 
         let H:= fresh "H" in 
-        assert (H:=Z_of_N_le_0 (Pmult a b)); rewrite (Z_of_N_mult a b) in *
+        assert (H:=Z_of_N_le_0 (Nmult a b)); rewrite (Z_of_N_mult a b) in *
 
   (* atoms of type N : we add a positivity condition (if not already there) *) 
   | H : context [ Z_of_N ?a ] |- _ => 

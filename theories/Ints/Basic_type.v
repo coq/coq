@@ -9,9 +9,6 @@
 Set Implicit Arguments.
 
 Require Import ZArith.
-Require Import ZDivModAux.
-Require Import ZPowerAux.
-
 Open Local Scope Z_scope.
 
 Section Carry.

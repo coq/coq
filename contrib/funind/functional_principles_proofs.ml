@@ -47,7 +47,7 @@ let observe_tac_stream s tac g =
 let observe_tac s tac g = observe_tac_stream (str s) tac g
 
 (* let tclTRYD tac =  *)
-(*   if  !Options.debug  || do_observe () *)
+(*   if  !Flags.debug  || do_observe () *)
 (*   then (fun g -> try (\* do_observe_tac ""  *\)tac g with _ -> tclIDTAC g) *)
 (*   else tac *)
 
@@ -882,7 +882,7 @@ let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
   let f_def = Global.lookup_constant (destConst f) in
   let eq_lhs = mkApp(f,Array.init (nb_params + nb_args) (fun i -> mkRel(nb_params + nb_args - i))) in
   let f_body =
-    force (out_some f_def.const_body)
+    force (Option.get f_def.const_body)
   in
   let params,f_body_with_params = decompose_lam_n nb_params f_body in
   let (_,num),(_,_,bodies) = destFix f_body_with_params in
@@ -933,8 +933,8 @@ let do_replace params rec_arg_num rev_args_id f fun_num all_funs g =
   let equation_lemma = 
     try 
       let finfos = find_Function_infos (destConst f) in 
-      mkConst (out_some finfos.equation_lemma)
-    with (Not_found | Failure "out_some" as e) -> 
+      mkConst (Option.get finfos.equation_lemma)
+    with (Not_found | Option.IsNone as e) -> 
       let f_id = id_of_label (con_label (destConst f)) in 
       (*i The next call to mk_equation_id is valid since we will construct the lemma
 	Ensures by: obvious
@@ -943,7 +943,7 @@ let do_replace params rec_arg_num rev_args_id f fun_num all_funs g =
       generate_equation_lemma all_funs f fun_num (List.length params) (List.length rev_args_id) rec_arg_num;
       let _ =
 	match e with 
-	  | Failure "out_some" -> 
+	  | Option.IsNone -> 
 	      let finfos = find_Function_infos (destConst f) in 
 	      update_Function 
 		{finfos with
@@ -1358,60 +1358,54 @@ let rec rewrite_eqs_in_eqs eqs =
   match eqs with 
     | [] -> tclIDTAC
     | eq::eqs -> 
+	
 	  tclTHEN 
-	    (tclMAP (fun id -> tclTRY (Equality.general_rewrite_in true id (mkVar eq) false)) eqs)
+	    (tclMAP 
+	       (fun id gl -> 
+		  observe_tac 
+		    (Format.sprintf "rewrite %s in %s " (string_of_id eq) (string_of_id id)) 
+		    (tclTRY (Equality.general_rewrite_in true id (mkVar eq) false))
+		    gl
+	       ) 
+	       eqs
+	    )
 	    (rewrite_eqs_in_eqs eqs) 
 
-let new_prove_with_tcc is_mes acc_inv hrec tcc_lemma_constr eqs : tactic = 
-   match !tcc_lemma_constr with 
-    | None -> tclIDTAC_MESSAGE (str "No tcc proof !!")
-    | Some lemma -> 
-	fun gls ->
-(* 	  let tcc_hyp = next_global_ident_away true (Names.id_of_string "tcc_p") (pf_ids_of_hyps gls) in  *)
-	    (tclTHENSEQ 
-	    [
-	      backtrack_eqs_until_hrec hrec eqs;
-	      (* observe_tac ("new_prove_with_tcc ( applying "^(string_of_id hrec)^" )" ) *)
-		(tclTHENS  (* We must have exactly ONE subgoal !*)
-		   (apply (mkVar hrec))
-		   [ tclTHENSEQ 
-		       [
-(* 			 generalize [lemma]; *)
-(* 			 h_intro tcc_hyp; *)
-(* 			 begin  *)
-(* 			   let eqs' : identifier list =  *)
-(* 			     let sec_vars =  *)
-(* 			       List.filter Termops.is_section_variable (pf_ids_of_hyps gls)  *)
-(* 			     in *)
-(* 			     sec_vars@eqs *)
-(* 			   in *)
-(* 			   keep (tcc_hyp::eqs') *)
-(* 			 end; *)
-(* 			 Elim.h_decompose_and (mkVar tcc_hyp);  *)
-			 
-			 apply (Lazy.force acc_inv);
-			 (fun g -> 
-			    if is_mes 
-			    then 
-			      unfold_in_concl [([], evaluable_of_global_reference (delayed_force ltof_ref))] g 
-			    else tclIDTAC g
-			 );
-			 observe_tac "rew_and_finish"
-			   (tclTHENLIST 
-			      [tclTRY(Recdef.list_rewrite false (List.map mkVar eqs));
-			       rewrite_eqs_in_eqs eqs;
-			       (observe_tac "finishing"  
-				 (tclCOMPLETE (
-				    Eauto.gen_eauto false (false,5) [] (Some []))
-				 )
-			       )
-			      ]
+let new_prove_with_tcc is_mes acc_inv hrec tcc_hyps eqs : tactic = 
+  fun gls ->
+    (tclTHENSEQ 
+       [
+	 backtrack_eqs_until_hrec hrec eqs;
+	 (* observe_tac ("new_prove_with_tcc ( applying "^(string_of_id hrec)^" )" ) *)
+	 (tclTHENS  (* We must have exactly ONE subgoal !*)
+	    (apply (mkVar hrec))
+	    [ tclTHENSEQ 
+		[
+		  keep (tcc_hyps@eqs);
+		  
+		  apply (Lazy.force acc_inv);
+		  (fun g -> 
+		     if is_mes 
+		     then 
+		       unfold_in_concl [([], evaluable_of_global_reference (delayed_force ltof_ref))] g 
+		     else tclIDTAC g
+		  );
+		  observe_tac "rew_and_finish"
+		    (tclTHENLIST 
+		       [tclTRY(Recdef.list_rewrite false (List.map mkVar eqs));
+			observe_tac "rewrite_eqs_in_eqs" (rewrite_eqs_in_eqs eqs);
+			(observe_tac "finishing"  
+			   (tclCOMPLETE (
+			      Eauto.gen_eauto false (false,5) [] (Some []))
 			   )
-			   ]
-		   ])
+			)
+		       ]
+		    )
+		]
 	    ])
-	      gls
-	      
+       ])
+      gls
+      
 
 let is_valid_hypothesis predicates_name =
   let predicates_name = List.fold_right Idset.add predicates_name Idset.empty in
@@ -1517,16 +1511,42 @@ let prove_principle_for_gen
      | None -> anomaly ( "No tcc proof !!")
      | Some lemma -> lemma
   in
-
+  let rec list_diff del_list check_list =
+    match del_list with
+         [] ->
+           []
+      | f::r ->
+          if List.mem f check_list then
+               list_diff r check_list
+          else
+               f::(list_diff r check_list)
+  in
+  let tcc_list = ref [] in
   let start_tac gls = 
-      let hid = next_global_ident_away true (id_of_string "prov") (pf_ids_of_hyps gls) in
+    let hyps = pf_ids_of_hyps gls in 
+      let hid = 
+	next_global_ident_away true 
+	  (id_of_string "prov") 
+	  hyps
+      in
       tclTHENSEQ
 	[
 	  generalize [lemma];
 	  h_intro hid;
 	  Elim.h_decompose_and (mkVar hid);
-	]
-	gls
+	  (fun g -> 
+	     let new_hyps = pf_ids_of_hyps g in 
+	     tcc_list := list_diff new_hyps (hid::hyps);
+	     if !tcc_list = []
+	     then 
+	       begin 
+		 tcc_list := [hid];
+		 tclIDTAC g
+	       end
+	     else thin [hid] g
+	  )
+	  ]
+	  gls
   in
   tclTHENSEQ
     [ 	      
@@ -1575,14 +1595,22 @@ let prove_principle_for_gen
 	 let pte_info = 
 	   { proving_tac =
 	       (fun eqs -> 
+(* 		  msgnl (str "tcc_list := "++ prlist_with_sep spc Ppconstr.pr_id  !tcc_list); *)
+(* 		  msgnl (str "princ_info.args := "++ prlist_with_sep spc Ppconstr.pr_id  (List.map  (fun (na,_,_) -> (Nameops.out_name na)) princ_info.args)); *)
+(* 		  msgnl (str "princ_info.params := "++ prlist_with_sep spc Ppconstr.pr_id  (List.map  (fun (na,_,_) -> (Nameops.out_name na)) princ_info.params)); *)
+(* 		  msgnl (str "acc_rec_arg_id := "++  Ppconstr.pr_id acc_rec_arg_id); *)
+(* 		  msgnl (str "eqs := "++ prlist_with_sep spc Ppconstr.pr_id  eqs); *)
+
 		  (* observe_tac "new_prove_with_tcc"  *)
 		    (new_prove_with_tcc 
-		       is_mes acc_inv fix_id tcc_lemma_ref 
-		       ((List.map 
-			  (fun (na,_,_) -> (Nameops.out_name na)) 
-			  (princ_info.args@princ_info.params)
-		       )@ (acc_rec_arg_id::eqs))
+		       is_mes acc_inv fix_id  
+		         
+		       (!tcc_list@(List.map 
+			   (fun (na,_,_) -> (Nameops.out_name na)) 
+			   (princ_info.args@princ_info.params)
+			)@ ([acc_rec_arg_id])) eqs
 		    )
+	       
 	       );
 	     is_valid = is_valid_hypothesis predicates_names
 	   }

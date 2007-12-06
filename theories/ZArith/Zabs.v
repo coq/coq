@@ -13,6 +13,8 @@ Require Import Arith_base.
 Require Import BinPos.
 Require Import BinInt.
 Require Import Zorder.
+Require Import Zmax.
+Require Import Znat.
 Require Import ZArith_dec.
 
 Open Local Scope Z_scope.
@@ -63,6 +65,11 @@ Lemma Zabs_pos : forall n:Z, 0 <= Zabs n.
   intro x; destruct x; auto with arith; compute in |- *; intros H; inversion H.
 Qed.
 
+Lemma Zabs_involutive : forall x:Z, Zabs (Zabs x) = Zabs x.
+Proof.
+  intros; apply Zabs_eq; apply Zabs_pos.
+Qed.
+
 Theorem Zabs_eq_case : forall n m:Z, Zabs n = Zabs m -> n = m \/ n = - m.
 Proof.
   intros z1 z2; case z1; case z2; simpl in |- *; auto;
@@ -96,16 +103,6 @@ Proof.
   apply Zplus_le_compat; simpl in |- *; auto with zarith.
 Qed.
 
-(** * A characterization of the sign function: *)
-
-Lemma Zsgn_spec : forall x:Z, 
-  0 < x /\ Zsgn x = 1 \/ 
-  0 = x /\ Zsgn x = 0 \/ 
-  0 > x /\ Zsgn x = -1.
-Proof. 
- intros; unfold Zsgn, Zle, Zgt; destruct x; compute; intuition.
-Qed.
-
 (** * Absolute value and multiplication *)
 
 Lemma Zsgn_Zabs : forall n:Z, n * Zsgn n = Zabs n.
@@ -123,25 +120,106 @@ Proof.
   intros z1 z2; case z1; case z2; simpl in |- *; auto.
 Qed.
 
-(** * Absolute value in nat is compatible with order *)
+Theorem Zabs_square : forall a, Zabs a * Zabs a = a * a.
+Proof.
+  destruct a; simpl; auto.
+Qed.
+
+(** * Results about absolute value in nat. *)
+
+Theorem inj_Zabs_nat : forall z:Z, Z_of_nat (Zabs_nat z) = Zabs z.
+Proof.
+  destruct z; simpl; auto; symmetry; apply Zpos_eq_Z_of_nat_o_nat_of_P.
+Qed.
+
+Theorem Zabs_nat_Z_of_nat: forall n, Zabs_nat (Z_of_nat n) = n.
+Proof.
+  destruct n; simpl; auto.
+  apply nat_of_P_o_P_of_succ_nat_eq_succ.
+Qed.
+
+Lemma Zabs_nat_mult: forall n m:Z, Zabs_nat (n*m) = (Zabs_nat n * Zabs_nat m)%nat.
+Proof.
+  intros; apply inj_eq_rev.
+  rewrite inj_mult; repeat rewrite inj_Zabs_nat; apply Zabs_Zmult.
+Qed. 
+
+Lemma Zabs_nat_Zsucc:
+ forall p, 0 <= p ->  Zabs_nat (Zsucc p) = S (Zabs_nat p).
+Proof.
+  intros; apply inj_eq_rev.
+  rewrite inj_S; repeat rewrite inj_Zabs_nat, Zabs_eq; auto with zarith.
+Qed.
+
+Lemma Zabs_nat_Zplus: 
+ forall x y, 0<=x -> 0<=y -> Zabs_nat (x+y) = (Zabs_nat x + Zabs_nat y)%nat.
+Proof.
+  intros; apply inj_eq_rev.
+  rewrite inj_plus; repeat rewrite inj_Zabs_nat, Zabs_eq; auto with zarith.
+  apply Zplus_le_0_compat; auto.
+Qed.  
+
+Lemma Zabs_nat_Zminus:
+ forall x y, 0 <= x <= y ->  Zabs_nat (y - x) = (Zabs_nat y - Zabs_nat x)%nat.
+Proof.
+  intros x y (H,H').
+  assert (0 <= y) by (apply Zle_trans with x; auto).
+  assert (0 <= y-x) by (apply Zle_minus_le_0; auto).
+  apply inj_eq_rev.
+  rewrite inj_minus; repeat rewrite inj_Zabs_nat, Zabs_eq; auto.
+  rewrite Zmax_right; auto.
+Qed.
+
+Lemma Zabs_nat_le :
+  forall n m:Z, 0 <= n <= m -> (Zabs_nat n <= Zabs_nat m)%nat.
+Proof.
+  intros n m (H,H'); apply inj_le_rev.
+  repeat rewrite inj_Zabs_nat, Zabs_eq; auto.
+  apply Zle_trans with n; auto.
+Qed.
 
 Lemma Zabs_nat_lt :
-  forall n m:Z, 0 <= n /\ n < m -> (Zabs_nat n < Zabs_nat m)%nat.
+  forall n m:Z, 0 <= n < m -> (Zabs_nat n < Zabs_nat m)%nat.
 Proof.
-  intros x y. case x; simpl in |- *. case y; simpl in |- *.
-
-  intro. absurd (0 < 0). compute in |- *. intro H0. discriminate H0. intuition.
-  intros. elim (ZL4 p). intros. rewrite H0. auto with arith.
-  intros. elim (ZL4 p). intros. rewrite H0. auto with arith.
-  
-  case y; simpl in |- *.
-  intros. absurd (Zpos p < 0). compute in |- *. intro H0. discriminate H0. intuition.
-  intros. change (nat_of_P p > nat_of_P p0)%nat in |- *.
-  apply nat_of_P_gt_Gt_compare_morphism.
-  elim H; auto with arith. intro. exact (ZC2 p0 p).
-
-  intros. absurd (Zpos p0 < Zneg p).
-  compute in |- *. intro H0. discriminate H0. intuition.
-
-  intros. absurd (0 <= Zneg p). compute in |- *. auto with arith. intuition.
+  intros n m (H,H'); apply inj_lt_rev.
+  repeat rewrite inj_Zabs_nat, Zabs_eq; auto.
+  apply Zlt_le_weak; apply Zle_lt_trans with n; auto.
 Qed.
+
+(** * Some results about the sign function. *)
+
+Lemma Zsgn_Zmult : forall a b, Zsgn (a*b) = Zsgn a * Zsgn b.
+Proof.
+  destruct a; destruct b; simpl; auto.
+Qed.
+
+Lemma Zsgn_Zopp : forall a, Zsgn (-a) = - Zsgn a.
+Proof.
+  destruct a; simpl; auto.
+Qed.
+
+(** A characterization of the sign function: *)
+
+Lemma Zsgn_spec : forall x:Z, 
+  0 < x /\ Zsgn x = 1 \/ 
+  0 = x /\ Zsgn x = 0 \/ 
+  0 > x /\ Zsgn x = -1.
+Proof. 
+ intros; unfold Zsgn, Zle, Zgt; destruct x; compute; intuition.
+Qed.
+
+Lemma Zsgn_pos : forall x:Z, Zsgn x = 1 <-> 0 < x.
+Proof.
+ destruct x; now intuition.
+Qed.
+
+Lemma Zsgn_neg : forall x:Z, Zsgn x = -1 <-> x < 0.
+Proof.
+ destruct x; now intuition.
+Qed.
+
+Lemma Zsgn_null : forall x:Z, Zsgn x = 0 <-> x = 0.
+Proof.
+ destruct x; now intuition.
+Qed.
+

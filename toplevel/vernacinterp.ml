@@ -64,7 +64,7 @@ let call (opn,converted_args) =
     | Drop -> raise Drop
     | ProtectedLoop -> raise ProtectedLoop
     | e ->
-        if !Options.debug then
+        if !Flags.debug then
 	  msgnl (str"Vernac Interpreter " ++ str !loc);
         raise e
 

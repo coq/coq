@@ -451,7 +451,7 @@ let (theory_to_obj, obj_to_theory) =
 let setoid_of_relation r =
   lapp coq_mk_Setoid
     [|r.rel_a; r.rel_aeq;
-      out_some r.rel_refl; out_some r.rel_sym; out_some r.rel_trans |]
+      Option.get r.rel_refl; Option.get r.rel_sym; Option.get r.rel_trans |]
 
 let op_morph r add mul opp req m1 m2 m3 =
   lapp coq_mk_reqe [| r; add; mul; opp; req; m1; m2; m3 |]
@@ -565,7 +565,8 @@ type cst_tac_spec =
 let interp_cst_tac env sigma rk kind (zero,one,add,mul,opp) cst_tac =
   match cst_tac with
       Some (CstTac t) -> Tacinterp.glob_tactic t
-    | Some (Closed lc) -> closed_term_ast (List.map Nametab.global lc)
+    | Some (Closed lc) ->
+        closed_term_ast (List.map Syntax_def.global_with_alias lc)
     | None ->
         (match rk, opp, kind with
             Abstract, None, _ ->
@@ -608,7 +609,8 @@ let interp_power env pow =
       let tac = 
         match tac with
         | CstTac t -> Tacinterp.glob_tactic t
-        | Closed lc -> closed_term_ast (List.map Nametab.global lc) in
+        | Closed lc ->
+            closed_term_ast (List.map Syntax_def.global_with_alias lc) in
       let spec = make_hyp env (ic spec) in
       (tac, lapp coq_Some [|carrier; spec|])
 

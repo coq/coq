@@ -79,9 +79,9 @@ Qed.
 Lemma Qge_alt : forall p q, (p>=q) <-> (p?=q <> Lt).
 Proof.
 unfold Qle, Qcompare, Zle.
-split; intros; swap H.
+split; intros; contradict H.
 rewrite Zcompare_Gt_Lt_antisym; auto.
-rewrite Zcompare_Gt_Lt_antisym in H0; auto.
+rewrite Zcompare_Gt_Lt_antisym in H; auto.
 Qed.
 
 Hint Unfold Qeq Qlt Qle: qarith.
@@ -492,6 +492,8 @@ Proof.
   Close Scope Z_scope.
 Qed.
 
+Hint Resolve Qle_trans : qarith.
+
 Lemma Qlt_not_eq : forall x y, x<y -> ~ x==y.
 Proof.
   unfold Qlt, Qeq; auto with zarith.
@@ -594,6 +596,8 @@ Proof.
   intros (a1,a2) (b1,b2); unfold Qle, Qlt; simpl.
   do 2 rewrite <- Zopp_mult_distr_l; omega.
 Qed.
+
+Hint Resolve Qopp_le_compat : qarith.
 
 Lemma Qle_minus_iff : forall p q, p <= q <-> 0 <= q+-p.
 Proof.

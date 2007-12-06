@@ -56,7 +56,7 @@ type constant_body = {
     information). *)
 
 let subst_rel_declaration sub (id,copt,t as x) =
-  let copt' = option_smartmap (subst_mps sub) copt in
+  let copt' = Option.smartmap (subst_mps sub) copt in
   let t' = subst_mps sub t in
   if copt == copt' & t == t' then x else (id,copt',t')
 
@@ -198,7 +198,7 @@ let subst_arity sub = function
 (* TODO: should be changed to non-coping after Term.subst_mps *)
 let subst_const_body sub cb = {
     const_hyps = (assert (cb.const_hyps=[]); []);
-    const_body = option_map (subst_constr_subst sub) cb.const_body;
+    const_body = Option.map (subst_constr_subst sub) cb.const_body;
     const_type = subst_arity sub cb.const_type;
     const_body_code = Cemitcodes.subst_to_patch_subst sub cb.const_body_code;
     (*const_type_code = Cemitcodes.subst_to_patch sub cb.const_type_code;*)
@@ -241,7 +241,7 @@ let subst_mind sub mib =
       map_rel_context (subst_mps sub) mib.mind_params_ctxt;
     mind_packets = array_smartmap (subst_mind_packet sub) mib.mind_packets ;
     mind_constraints = mib.mind_constraints ;
-    mind_equiv = option_map (subst_kn sub) mib.mind_equiv }
+    mind_equiv = Option.map (subst_kn sub) mib.mind_equiv }
 
 
 (*s Modules: signature component specifications, module types, and

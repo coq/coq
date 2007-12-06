@@ -11,7 +11,7 @@
 (* $Id$ *)
 
 open Pp
-open Options
+open Flags
 open Names
 open Libnames
 open Term

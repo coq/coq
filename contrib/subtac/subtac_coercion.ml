@@ -132,6 +132,10 @@ module Coercion = struct
       let rec coerce_application typ c c' l l' =
 	let len = Array.length l in
 	let rec aux tele typ i co = 
+(* 	  (try trace (str "coerce_application.aux from " ++ (my_print_constr env x) ++ *)
+(* 			 str " to "++ my_print_constr env y *)
+(* 		       ++ str "in env:" ++ my_print_env env); *)
+(* 	    with _ -> ()); *)
 	  if i < len then
 	    let hdx = l.(i) and hdy = l'.(i) in
 	      try isevars := the_conv_x_leq env hdx hdy !isevars;
@@ -149,14 +153,15 @@ module Coercion = struct
 		let evar = make_existential dummy_loc env isevars eq in
 		let eq_app x = mkApp (Lazy.force eq_rect,
 				      [| eqT; hdx; pred; x; hdy; evar|]) in
-		  trace (str"Inserting coercion at application");
+(* 		  trace (str"Inserting coercion at application"); *)
 		  aux (hdy :: tele) (subst1 hdy restT) (succ i)  (fun x -> eq_app (co x))
 	  else co
 	in aux [] typ 0 (fun x -> x)
       in
-(* 	(try debug 1 (str "coerce' from " ++ (my_print_constr env x) ++  *)
-(* 		    str " to "++ my_print_constr env y); *)
-(* 	 with _ -> ()); *)
+(* 	(try trace (str "coerce' from " ++ (my_print_constr env x) ++ *)
+(* 		       str " to "++ my_print_constr env y *)
+(* 		       ++ str "in env:" ++ my_print_env env); *)
+(* 	  with _ -> ()); *)
 	match (kind_of_term x, kind_of_term y) with
 	  | Sort s, Sort s' -> 
 	      (match s, s' with
@@ -167,6 +172,7 @@ module Coercion = struct
 	  | Prod (name, a, b), Prod (name', a', b') ->
 	      let name' = Name (Nameops.next_ident_away (id_of_string "x") (Termops.ids_of_context env)) in
 	      let env' = push_rel (name', None, a') env in
+		
 	      let c1 = coerce_unify env' (lift 1 a') (lift 1 a) in
 	      let c2 = coerce_unify env' b b' in
 		(match c1, c2 with
@@ -181,10 +187,11 @@ module Coercion = struct
 		  
 	  | App (c, l), App (c', l') ->
 	      (match kind_of_term c, kind_of_term c' with
-		   Ind i, Ind i' -> (* Sigma types *)
+		   Ind i, Ind i' -> (* Inductive types *)
 		     let len = Array.length l in
 		     let existS = Lazy.force existS in
 		     let prod = Lazy.force prod in
+		       (* Sigma types *)
 		       if len = Array.length l' && len = 2 && i = i'
 			 && (i = Term.destInd existS.typ || i = Term.destInd prod.typ)
 		       then 
@@ -298,7 +305,7 @@ module Coercion = struct
   let coerce_itf loc env isevars v t c1 =
     let evars = ref isevars in
     let coercion = coerce loc env evars t c1 in
-      !evars, option_map (app_opt coercion) v, t
+      !evars, Option.map (app_opt coercion) v, t
 	
   (* Taken from pretyping/coercion.ml *)
 
@@ -432,7 +439,7 @@ module Coercion = struct
 	   (match kind_of_term (whd_betadeltaiota env (evars_of isevars) t),
 	      kind_of_term (whd_betadeltaiota env (evars_of isevars) c1) with
 		| Prod (_,t1,t2), Prod (name,u1,u2) -> 
-		    let v' = option_map (whd_betadeltaiota env (evars_of isevars)) v in
+		    let v' = Option.map (whd_betadeltaiota env (evars_of isevars)) v in
 		    let (evd',b) =
 		      match v' with 
 			  Some v' ->
@@ -448,7 +455,7 @@ module Coercion = struct
 			     let env1 = push_rel (x,None,v1) env in
 			     let (evd'', v2', t2') = inh_conv_coerce_to_fail loc env1 evd'
 						       (Some v2) t2 u2 in
-			       (evd'', option_map (fun v2' -> mkLambda (x, v1, v2')) v2', 
+			       (evd'', Option.map (fun v2' -> mkLambda (x, v1, v2')) v2', 
 				mkProd (x, v1, t2'))
 			 | None ->
 			     (* Mismatch on t1 and u1 or not a lambda: we eta-expand *)
@@ -465,7 +472,7 @@ module Coercion = struct
 			     let (evd'', v2', t2') = 
 			       let v2 =
 				 match v with 
-				     Some v -> option_map (fun v1' -> mkApp (lift 1 v, [|v1'|])) v1'
+				     Some v -> Option.map (fun v1' -> mkApp (lift 1 v, [|v1'|])) v1'
 				   | None -> None
 			       and evd', t2 =
 				 match v1' with 
@@ -476,7 +483,7 @@ module Coercion = struct
 			       in
 				 inh_conv_coerce_to_fail loc env1 evd' v2 t2 u2
 			     in
-			       (evd'', option_map (fun v2' -> mkLambda (name, u1, v2')) v2',
+			       (evd'', Option.map (fun v2' -> mkLambda (name, u1, v2')) v2',
 				mkProd (name, u1, t2')))
 		| _ -> raise NoCoercion))
 
@@ -508,9 +515,9 @@ module Coercion = struct
 	  (isevars, cj)
 
   let inh_conv_coerces_to loc env isevars t ((abs, t') as _tycon) =
-(*     (try  *)
+(*     (try *)
 (*        trace (str "Subtac_coercion.inh_conv_coerces_to called for " ++ *)
-(* 	      Termops.print_constr_env env t ++ str " and "++ spc () ++  *)
+(* 	      Termops.print_constr_env env t ++ str " and "++ spc () ++ *)
 (* 	      Evarutil.pr_tycon_type env tycon ++ str " with evars: " ++ spc () ++ *)
 (* 	      Evd.pr_evar_defs isevars ++ str " in env: " ++ spc () ++ *)
 (* 	      Termops.print_env env); *)

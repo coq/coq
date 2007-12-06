@@ -305,7 +305,7 @@ let check_loaded_modfile mp = match base_mp mp with
   | _ -> ()
 
 let info_file f =   
-  Options.if_verbose message 
+  Flags.if_verbose message 
     ("The file "^f^" has been created by extraction.")
 
 

@@ -16,14 +16,19 @@
   Moreover, we prove that [E.Eq] and [Equal] are setoid equalities.
 *)
 
+Require Import DecidableTypeEx.
 Require Export FSetWeakInterface. 
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Module Facts (M: S).
+Module Facts 
+ (M:FSetWeakInterface.S)
+ (D:DecidableType with Definition t:=M.E.t with Definition eq:=M.E.eq).
 Import M.E.
 Import M.
-Import Logic. (* to unmask [eq] *)  
+
+Notation eq_dec := D.eq_dec.
+Definition eqb x y := if eq_dec x y then true else false.
 
 (** * Specifications written using equivalences *)
 
@@ -145,8 +150,6 @@ Ltac set_iff :=
   || rewrite empty_iff)).
 
 (**  * Specifications written using boolean predicates *)
-
-Definition eqb x y := if eq_dec x y then true else false.
 
 Section BoolSpec.
 Variable s s' s'' : t.
@@ -273,8 +276,7 @@ destruct (existsb f (elements s)); destruct (exists_ f s); auto; intros.
 rewrite <- H1; intros.
 destruct H0 as (H0,_).
 destruct H0 as (a,(Ha1,Ha2)); auto.
-exists a; auto.
-split; auto.
+exists a; split; auto.
 rewrite H2; rewrite InA_alt; eauto.
 symmetry.
 rewrite H0.
@@ -296,14 +298,22 @@ Proof.
 constructor; [apply E.eq_refl|apply E.eq_sym|apply E.eq_trans].
 Qed.
 
-Add Setoid elt E.eq E_ST as EltSetoid.
-
 Definition Equal_ST : Setoid_Theory t Equal.
 Proof. 
-constructor; unfold Equal; firstorder.
+constructor; [apply eq_refl | apply eq_sym | apply eq_trans].
 Qed.
 
-Add Setoid t Equal Equal_ST as EqualSetoid.
+Add Relation elt E.eq 
+ reflexivity proved by E.eq_refl 
+ symmetry proved by E.eq_sym
+ transitivity proved by E.eq_trans 
+ as EltSetoid.
+
+Add Relation t Equal 
+ reflexivity proved by eq_refl 
+ symmetry proved by eq_sym
+ transitivity proved by eq_trans 
+ as EqualSetoid.
 
 Add Morphism In with signature E.eq ==> Equal ==> iff as In_m.
 Proof.
@@ -344,9 +354,9 @@ Qed.
 Add Morphism singleton : singleton_m.
 Proof.
 unfold Equal; intros x y H a.
-do 2 rewrite singleton_iff; split.
-intros; apply E.eq_trans with x; auto.
-intros; apply E.eq_trans with y; auto.
+do 2 rewrite singleton_iff; split; intros.
+apply E.eq_trans with x; auto.
+apply E.eq_trans with y; auto.
 Qed.
 
 Add Morphism add : add_m.
@@ -402,6 +412,63 @@ rewrite H in H1; rewrite H0 in H1; intuition.
 rewrite H in H1; rewrite H0 in H1; intuition.
 Qed.
 
+
+(* [Subset] is a setoid order *)
+
+Lemma Subset_refl : forall s, s[<=]s.
+Proof. red; auto. Defined.
+
+Lemma Subset_trans : forall s s' s'', s[<=]s'->s'[<=]s''->s[<=]s''.
+Proof. unfold Subset; eauto. Defined.
+
+Add Relation t Subset 
+ reflexivity proved by Subset_refl
+ transitivity proved by Subset_trans
+ as SubsetSetoid.
+(* NB: for the moment, it is important to use Defined and not Qed in 
+   the two previous lemmas, in order to allow conversion of 
+   SubsetSetoid coming from separate Facts modules. See bug #1738. *)
+
+Add Morphism In with signature E.eq ==> Subset ++> impl as In_s_m.
+Proof.
+unfold Subset, impl; intros; eauto with set.
+Qed.
+
+Add Morphism Empty with signature Subset --> impl as Empty_s_m.
+Proof. 
+unfold Subset, Empty, impl; firstorder.
+Qed.
+
+Add Morphism add with signature E.eq ==> Subset ++> Subset as add_s_m.
+Proof.
+unfold Subset; intros x y H s s' H0 a.
+do 2 rewrite add_iff; rewrite H; intuition.
+Qed.
+
+Add Morphism remove with signature E.eq ==> Subset ++> Subset as remove_s_m.
+Proof.
+unfold Subset; intros x y H s s' H0 a.
+do 2 rewrite remove_iff; rewrite H; intuition.
+Qed.
+
+Add Morphism union with signature Subset ++> Subset ++> Subset as union_s_m.
+Proof.
+unfold Equal; intros s s' H s'' s''' H0 a.
+do 2 rewrite union_iff; intuition.
+Qed.
+
+Add Morphism inter with signature Subset ++> Subset ++> Subset as inter_s_m.
+Proof.
+unfold Equal; intros s s' H s'' s''' H0 a.
+do 2 rewrite inter_iff; intuition.
+Qed.
+
+Add Morphism diff with signature Subset ++> Subset --> Subset as diff_s_m.
+Proof.
+unfold Subset; intros s s' H s'' s''' H0 a.
+do 2 rewrite diff_iff; intuition.
+Qed.
+
 (* [fold], [filter], [for_all], [exists_] and [partition] cannot be proved morphism
    without additional hypothesis on [f]. For instance: *)
 
@@ -409,6 +476,12 @@ Lemma filter_equal : forall f, compat_bool E.eq f ->
   forall s s', s[=]s' -> filter f s [=] filter f s'.
 Proof.
 unfold Equal; intros; repeat rewrite filter_iff; auto; rewrite H0; tauto.
+Qed.
+
+Lemma filter_subset : forall f, compat_bool E.eq f -> 
+  forall s s', s[<=]s' -> filter f s [<=] filter f s'.
+Proof.
+unfold Subset; intros; rewrite filter_iff in *; intuition.
 Qed.
 
 (* For [elements], [min_elt], [max_elt] and [choose], we would need setoid 

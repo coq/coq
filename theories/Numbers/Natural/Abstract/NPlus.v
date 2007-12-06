@@ -1,7 +1,20 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*                      Evgeny Makarov, INRIA, 2007                     *)
+(************************************************************************)
+
+(*i i*)
+
 Require Export NBase.
 
 Module NPlusPropFunct (Import NAxiomsMod : NAxiomsSig).
 Module Export NBasePropMod := NBasePropFunct NAxiomsMod.
+
 Open Local Scope NatScope.
 
 Theorem plus_wd :
@@ -46,19 +59,21 @@ Proof NZplus_cancel_l.
 Theorem plus_cancel_r : forall n m p : N, n + p == m + p <-> n == m.
 Proof NZplus_cancel_r.
 
-(** Theorems that are valid for natural numbers but cannot be proved for Z *)
+(* Theorems that are valid for natural numbers but cannot be proved for Z *)
 
-Theorem plus_eq_0 : forall n m : N, n + m == 0 <-> n == 0 /\ m == 0.
+Theorem eq_plus_0 : forall n m : N, n + m == 0 <-> n == 0 /\ m == 0.
 Proof.
 intros n m; induct n.
 (* The next command does not work with the axiom plus_0_l from NPlusSig *)
 rewrite plus_0_l. intuition reflexivity.
 intros n IH. rewrite plus_succ_l.
-rewrite_false (S (n + m) == 0) neq_succ_0.
-rewrite_false (S n == 0) neq_succ_0. tauto.
+setoid_replace (S (n + m) == 0) with False using relation iff by
+ (apply -> neg_false; apply neq_succ_0).
+setoid_replace (S n == 0) with False using relation iff by
+ (apply -> neg_false; apply neq_succ_0). tauto.
 Qed.
 
-Theorem plus_eq_succ :
+Theorem eq_plus_succ :
   forall n m : N, (exists p : N, n + m == S p) <->
                     (exists n' : N, n == S n') \/ (exists m' : N, m == S m').
 Proof.
@@ -73,16 +88,16 @@ left; now exists n.
 exists (n + m); now rewrite plus_succ_l.
 Qed.
 
-Theorem plus_eq_1 : forall n m : N,
+Theorem eq_plus_1 : forall n m : N,
   n + m == 1 -> n == 1 /\ m == 0 \/ n == 0 /\ m == 1.
 Proof.
 intros n m H.
 assert (H1 : exists p : N, n + m == S p) by now exists 0.
-apply -> plus_eq_succ in H1. destruct H1 as [[n' H1] | [m' H1]].
+apply -> eq_plus_succ in H1. destruct H1 as [[n' H1] | [m' H1]].
 left. rewrite H1 in H; rewrite plus_succ_l in H; apply succ_inj in H.
-apply -> plus_eq_0 in H. destruct H as [H2 H3]; rewrite H2 in H1; now split.
+apply -> eq_plus_0 in H. destruct H as [H2 H3]; rewrite H2 in H1; now split.
 right. rewrite H1 in H; rewrite plus_succ_r in H; apply succ_inj in H.
-apply -> plus_eq_0 in H. destruct H as [H2 H3]; rewrite H3 in H1; now split.
+apply -> eq_plus_0 in H. destruct H as [H2 H3]; rewrite H3 in H1; now split.
 Qed.
 
 Theorem succ_plus_discr : forall n m : N, m ~= S (n + m).

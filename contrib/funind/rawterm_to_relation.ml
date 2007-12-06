@@ -368,7 +368,7 @@ let raw_push_named (na,raw_value,raw_typ) env =
   match na with 
     | Anonymous -> env 
     | Name id -> 
-	let value = Util.option_map (Pretyping.Default.understand Evd.empty env) raw_value in 
+	let value = Option.map (Pretyping.Default.understand Evd.empty env) raw_value in 
 	let typ = Pretyping.Default.understand_type Evd.empty env raw_typ in 
 	Environ.push_named (id,value,typ) env
 
@@ -398,12 +398,12 @@ let add_pat_variables pat typ env : Environ.env =
 	   | Anonymous -> assert false
 	   | Name id ->
 	       let new_t =  substl ctxt t in
-	       let new_v = option_map (substl ctxt) v in
+	       let new_v = Option.map (substl ctxt) v in
 	       observe (str "for variable " ++ Ppconstr.pr_id id ++  fnl () ++
 			  str "old type := " ++ Printer.pr_lconstr t ++ fnl () ++
 			  str "new type := " ++ Printer.pr_lconstr new_t ++ fnl () ++
-			  option_fold_right (fun v _ -> str "old value := " ++ Printer.pr_lconstr v ++ fnl ()) v (mt ()) ++
-			  option_fold_right (fun v _ -> str "new value := " ++ Printer.pr_lconstr v ++ fnl ()) new_v (mt ())
+			  Option.fold_right (fun v _ -> str "old value := " ++ Printer.pr_lconstr v ++ fnl ()) v (mt ()) ++
+			  Option.fold_right (fun v _ -> str "new value := " ++ Printer.pr_lconstr v ++ fnl ()) new_v (mt ())
 		       );
 	       (Environ.push_named (id,new_v,new_t) env,mkVar id::ctxt)
       )
@@ -1181,8 +1181,8 @@ let do_build_inductive
     Array.map (List.map 
       (fun (id,t) -> 
 	 false,((dummy_loc,id),
-		Options.with_option
-		  Options.raw_print
+		Flags.with_option
+		  Flags.raw_print
 		  (Constrextern.extern_rawtype Idset.empty) ((* zeta_normalize *) t)
 	       )
       ))
@@ -1218,7 +1218,7 @@ let do_build_inductive
 (*   in *)
   let _time2 = System.get_time () in 
   try 
-    with_full_print (Options.silently (Command.build_mutual rel_inds)) true
+    with_full_print (Flags.silently (Command.build_mutual rel_inds)) true
   with 
     | UserError(s,msg) as e ->
 	let _time3 = System.get_time () in

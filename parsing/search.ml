@@ -52,7 +52,7 @@ let gen_crible refopt (fn : global_reference -> env -> constr -> unit) =
 	(try 
 	   let (idc,_,typ) = get_variable (basename sp) in 
            if refopt = None
-	     || head_const typ = constr_of_global (out_some refopt)
+	     || head_const typ = constr_of_global (Option.get refopt)
 	   then
 	     fn (VarRef idc) env typ
 	 with Not_found -> (* we are in a section *) ())
@@ -60,7 +60,7 @@ let gen_crible refopt (fn : global_reference -> env -> constr -> unit) =
 	let cst = locate_constant (qualid_of_sp sp) in
 	let typ = Typeops.type_of_constant env cst in
         if refopt = None
-	  || head_const typ = constr_of_global (out_some refopt)
+	  || head_const typ = constr_of_global (Option.get refopt)
 	then
 	  fn (ConstRef cst) env typ
     | "INDUCTIVE" -> 
@@ -214,7 +214,8 @@ let search_about_item (itemref,typ) = function
 let raw_search_about filter_modules display_function l =
   let filter ref' env typ =
     filter_modules ref' env typ &&
-    List.for_all (search_about_item (ref',typ)) l
+    List.for_all (search_about_item (ref',typ)) l && 
+    not (string_string_contains (name_of_reference ref') "_subproof")
   in
   gen_filtered_search filter display_function
 

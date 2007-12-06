@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
+(* $Id: options.ml 10106 2007-08-30 16:56:10Z herbelin $ *)
 
 open Util
 
@@ -100,13 +100,13 @@ let dump_it () =
 
 let _ = at_exit dump_it
 
-(* Options for the virtual machine *)
+(* Flags.for the virtual machine *)
 
 let boxed_definitions = ref true
 let set_boxed_definitions b = boxed_definitions := b
 let boxed_definitions _ = !boxed_definitions 
  
-(* Options for external tools *)
+(* Flags.for external tools *)
 
 let browser_cmd_fmt =
  try

@@ -257,14 +257,18 @@ let end_module id =
   let oname,nametab = 
     try match find_entry_p is_something_opened with
       | oname,OpenedModule (_,_,nametab) -> 
-	  let sp = fst oname in
-	  let id' = basename sp in
-	  if id<>id' then error "this is not the last opened module"; 
-	  oname,nametab
-      | _,OpenedModtype _ ->
-	  error "there are some open module types"
-      | _,OpenedSection _ ->
-	  error "there are some open sections"
+	  let id' = basename (fst oname) in
+	    if id<>id' then 
+	      errorlabstrm "end_module" (str "last opened module is " ++ pr_id id'); 
+	    oname,nametab
+      | oname,OpenedModtype _ ->
+	  let id' = basename (fst oname) in
+	    errorlabstrm "end_module" 
+	      (str "module type " ++ pr_id id' ++ str " is still opened")
+      | oname,OpenedSection _ ->
+	  let id' = basename (fst oname) in
+	    errorlabstrm  "end_module" 
+	      (str "section " ++ pr_id id' ++ str " is still opened")
       | _ -> assert false
     with Not_found ->
       error "no opened modules"
@@ -297,14 +301,19 @@ let start_modtype id mp nametab =
 let end_modtype id = 
   let sp,nametab = 
     try match find_entry_p is_something_opened with
-      | sp,OpenedModtype (_,nametab) -> 
-	  let id' = basename (fst sp) in
-	  if id<>id' then error "this is not the last opened module"; 
-	  sp,nametab
-      | _,OpenedModule _ ->
-	  error "there are some open modules"
-      | _,OpenedSection _ ->
-	  error "there are some open sections"
+      | oname,OpenedModtype (_,nametab) -> 
+	  let id' = basename (fst oname) in
+	  if id<>id' then 
+	    errorlabstrm "end_modtype" (str "last opened module type is " ++ pr_id id'); 
+	    oname,nametab
+      | oname,OpenedModule _ ->
+	  let id' = basename (fst oname) in
+	    errorlabstrm "end_modtype" 
+	      (str "module " ++ pr_id id' ++ str " is still opened")
+      | oname,OpenedSection _ ->
+	  let id' = basename (fst oname) in
+	    errorlabstrm "end_modtype" 
+	      (str "section " ++ pr_id id' ++ str " is still opened")
       | _ -> assert false
     with Not_found ->
       error "no opened module types"
@@ -494,7 +503,7 @@ let open_section id =
       (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
       Nametab.push_dir (Nametab.Until 1) dir (DirOpenSection prefix);
       path_prefix := prefix;
-      if !Options.xml_export then !xml_open_section id;
+      if !Flags.xml_export then !xml_open_section id;
       add_section ()
 
 
@@ -504,7 +513,7 @@ let open_section id =
 let discharge_item ((sp,_ as oname),e) =
   match e with
   | Leaf lobj ->
-      option_map (fun o -> (basename sp,o)) (discharge_object (oname,lobj))
+      Option.map (fun o -> (basename sp,o)) (discharge_object (oname,lobj))
   | FrozenState _ -> None
   | ClosedSection _ | ClosedModtype _ | ClosedModule _ -> None
   | OpenedSection _ | OpenedModtype _ | OpenedModule _ | CompilingLibrary _ ->
@@ -514,9 +523,10 @@ let close_section id =
   let oname,fs = 
     try match find_entry_p is_something_opened with
       | oname,OpenedSection (_,fs) -> 
-	  if id <> basename (fst oname) then
-	    error "this is not the last opened section";
-	  (oname,fs)
+	  let id' = basename (fst oname) in 
+	    if id <> id' then 
+	      errorlabstrm "close_section" (str "last opened section is " ++ pr_id id');
+	    (oname,fs)
       | _ -> assert false 
     with Not_found ->
       error "no opened section"
@@ -526,10 +536,10 @@ let close_section id =
   let full_olddir = fst !path_prefix in
   pop_path_prefix ();
   add_entry (make_oname id) (ClosedSection (List.rev_append secdecls (List.rev secopening)));
-  if !Options.xml_export then !xml_close_section id;
+  if !Flags.xml_export then !xml_close_section id;
   let newdecls = List.map discharge_item secdecls in
   Summary.section_unfreeze_summaries fs;
-  List.iter (option_iter (fun (id,o) -> add_discharged_leaf id o)) newdecls;
+  List.iter (Option.iter (fun (id,o) -> add_discharged_leaf id o)) newdecls;
   Cooking.clear_cooking_sharing ();
   Nametab.push_dir (Nametab.Until 1) full_olddir (DirClosedSection full_olddir)
 

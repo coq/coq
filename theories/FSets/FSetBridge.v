@@ -478,6 +478,10 @@ Module NodepOfDep (M: Sdep) <: S with Module E := M.E.
   Proof. 
     intros; unfold elements in |- *; case (M.elements s); firstorder.
   Qed.
+  Hint Resolve elements_3.
+ 
+  Lemma elements_3w : forall s : t, NoDupA E.eq (elements s).
+  Proof. auto. Qed.
 
   Definition min_elt (s : t) : option elt :=
     match min_elt s with

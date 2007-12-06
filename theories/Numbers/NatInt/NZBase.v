@@ -1,3 +1,15 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*                      Evgeny Makarov, INRIA, 2007                     *)
+(************************************************************************)
+
+(*i i*)
+
 Require Import NZAxioms.
 
 Module NZBasePropFunct (Import NZAxiomsMod : NZAxiomsSig).
@@ -15,7 +27,7 @@ Qed.
 
 Declare Left Step NZE_stepl.
 (* The right step lemma is just the transitivity of NZeq *)
-Declare Right Step (proj1 (proj2 NZE_equiv)).
+Declare Right Step (proj1 (proj2 NZeq_equiv)).
 
 Theorem NZsucc_inj : forall n1 n2 : NZ, S n1 == S n2 -> n1 == n2.
 Proof.
@@ -43,6 +55,7 @@ left-inverse to the successor at this point *)
 Section CentralInduction.
 
 Variable A : NZ -> Prop.
+
 (* FIXME: declaring "A : predicate NZ" leads to the error during the
 declaration of the morphism below because the "predicate NZ" is not
 recognized as a type of function. Maybe it should do "eval hnf" or

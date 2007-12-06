@@ -8,7 +8,7 @@
 
 (*i $ $ i*)
 
-(* digit-based syntax for int31, bigN and bigZ *)
+(* digit-based syntax for int31, bigN bigZ and bigQ *)
 
 open Bigint
 open Libnames
@@ -90,6 +90,15 @@ let bigZ_pos = ConstructRef ((bigZ_id "t_",0),1)
 let bigZ_neg = ConstructRef ((bigZ_id "t_",0),2)
 
 
+(*bigQ stuff*)
+let bigQ_module = ["Coq"; "Ints"; "num"; "BigQ"]
+let qmake_module = ["Coq"; "Ints"; "num"; "QMake_base"]
+let bigQ_path = make_path bigQ_module "bigQ"
+(* big ugly hack bis *)
+let bigQ_id = make_kn qmake_module
+let bigQ_scope = "bigQ_scope"
+
+let bigQ_z =  ConstructRef ((bigQ_id "q_type",0),1)
 
 
 (*** Definition of the Non_closed exception, used in the pretty printing ***)
@@ -308,4 +317,26 @@ let _ = Notation.declare_numeral_interpreter bigZ_scope
   ([RRef (Util.dummy_loc, bigZ_pos);
     RRef (Util.dummy_loc, bigZ_neg)],
    uninterp_bigZ,
+   true)
+
+(*** Parsing for bigQ in digital notation ***)
+let interp_bigQ dloc n = 
+  let ref_z = RRef (dloc, bigQ_z) in
+  let ref_pos = RRef (dloc, bigZ_pos) in
+  let ref_neg = RRef (dloc, bigZ_neg) in
+  if is_pos_or_zero n then
+    RApp (dloc, ref_z,
+       [RApp (dloc, ref_pos, [bigN_of_pos_bigint dloc n])])
+  else
+    RApp (dloc, ref_z,
+       [RApp (dloc, ref_neg, [bigN_of_pos_bigint dloc (neg n)])])
+
+let uninterp_bigQ rc = None
+
+
+(* Actually declares the interpreter for bigQ *)
+let _ = Notation.declare_numeral_interpreter bigQ_scope
+  (bigQ_path, bigQ_module)
+  interp_bigQ
+  ([], uninterp_bigQ,
    true)

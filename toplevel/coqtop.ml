@@ -11,7 +11,7 @@
 open Pp
 open Util
 open System
-open Options
+open Flags
 open Names
 open Libnames
 open Nameops
@@ -83,7 +83,7 @@ let add_load_vernacular verb s =
 let load_vernacular () =
   List.iter
     (fun (s,b) -> 
-      if Options.do_translate () then
+      if Flags.do_translate () then
 	with_option translate_file (Vernac.load_vernac b) s
       else
 	Vernac.load_vernac b s)
@@ -104,7 +104,7 @@ let require () =
 let compile_list = ref ([] : (bool * string) list)
 let add_compile verbose s =
   set_batch_mode ();
-  Options.make_silent true; 
+  Flags.make_silent true; 
   compile_list := (verbose,s) :: !compile_list
 let compile_files () =
   let init_state = States.freeze() in
@@ -113,7 +113,7 @@ let compile_files () =
       (fun (v,f) ->
 	 States.unfreeze init_state;
 	 Constrintern.coqdoc_unfreeze coqdoc_init_state;
-	 if Options.do_translate () then
+	 if Flags.do_translate () then
 	   with_option translate_file (Vernac.compile v) f
 	 else
 	   Vernac.compile v f)
@@ -155,7 +155,7 @@ let use_vm = ref false
 
 let set_vm_opt () =
   Vm.set_transp_values (not !boxed_val);
-  Options.set_boxed_definitions !boxed_def;
+  Flags.set_boxed_definitions !boxed_def;
   Vconv.set_use_vm !use_vm
 
 (*s Parsing of the command line.
@@ -240,7 +240,7 @@ let parse_args is_ide =
     | "-compile-verbose" :: f :: rem -> add_compile true f; parse rem
     | "-compile-verbose" :: []       -> usage ()
 
-    | "-dont-load-proofs" :: rem -> Options.dont_load_proofs := true; parse rem
+    | "-dont-load-proofs" :: rem -> Flags.dont_load_proofs := true; parse rem
 
     | "-translate" :: rem -> make_translate true; parse rem
 
@@ -250,13 +250,13 @@ let parse_args is_ide =
     | "-debug" :: rem -> set_debug (); parse rem
 
     | "-vm" :: rem -> use_vm := true; parse rem
-    | "-emacs" :: rem -> Options.print_emacs := true; Pp.make_pp_emacs(); parse rem
-    | "-emacs-U" :: rem -> Options.print_emacs := true; 
-	Options.print_emacs_safechar := true; Pp.make_pp_emacs(); parse rem
+    | "-emacs" :: rem -> Flags.print_emacs := true; Pp.make_pp_emacs(); parse rem
+    | "-emacs-U" :: rem -> Flags.print_emacs := true; 
+	Flags.print_emacs_safechar := true; Pp.make_pp_emacs(); parse rem
 	  
     | "-where" :: _ -> print_endline (getenv_else "COQLIB" Coq_config.coqlib); exit 0
 
-    | ("-quiet"|"-silent") :: rem -> Options.make_silent true; parse rem
+    | ("-quiet"|"-silent") :: rem -> Flags.make_silent true; parse rem
 
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
 
@@ -274,15 +274,15 @@ let parse_args is_ide =
 
     | ("-m" | "--memory") :: rem -> memory_stat := true; parse rem
 
-    | "-xml" :: rem -> Options.xml_export := true; parse rem
+    | "-xml" :: rem -> Flags.xml_export := true; parse rem
 
     | "-output-context" :: rem -> output_context := true; parse rem
 
-    (* Scanned in Options! *)
+    (* Scanned in Flags. *)
     | "-v7" :: rem -> error "This version of Coq does not support v7 syntax"
     | "-v8" :: rem -> parse rem
 
-    | "-no-hash-consing" :: rem -> Options.hash_cons_proofs := false; parse rem
+    | "-no-hash-consing" :: rem -> Flags.hash_cons_proofs := false; parse rem
 
     | s :: rem -> 
 	if is_ide then begin
@@ -321,7 +321,7 @@ let init is_ide =
       set_vm_opt ();
       engage ();
       if (not !batch_mode|| !compile_list=[]) && Global.env_is_empty() then
-        option_iter Declaremods.start_library !toplevel_name;
+        Option.iter Declaremods.start_library !toplevel_name;
       init_library_roots ();
       load_vernac_obj ();
       require ();

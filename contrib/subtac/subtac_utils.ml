@@ -113,20 +113,20 @@ let debug_on = true
 
 let debug n s = 
   if debug_on then
-    if !Options.debug && n >= debug_level then
+    if !Flags.debug && n >= debug_level then
       msgnl s
     else ()
   else ()
 
 let debug_msg n s = 
   if debug_on then
-    if !Options.debug  && n >= debug_level then s
+    if !Flags.debug  && n >= debug_level then s
     else mt ()
   else mt ()
 
 let trace s = 
   if debug_on then
-    if !Options.debug  && debug_level > 0 then msgnl s
+    if !Flags.debug  && debug_level > 0 then msgnl s
     else ()
   else ()
 
@@ -343,14 +343,17 @@ let id_of_name = function
   | Anonymous -> raise (Invalid_argument "id_of_name")
 
 let definition_message id =
-  Options.if_verbose message ((string_of_id id) ^ " is defined")
-
+  Printer.pr_constant (Global.env ()) id ++ str " is defined"
+    
 let recursive_message v =
   match Array.length v with
     | 0 -> error "no recursive definition"
-    | 1 -> (Printer.pr_global v.(0) ++ str " is recursively defined")
-    | _ -> hov 0 (prvect_with_sep pr_coma Printer.pr_global v ++
+    | 1 -> (Printer.pr_constant (Global.env ()) v.(0) ++ str " is recursively defined")
+    | _ -> hov 0 (prvect_with_sep pr_coma (Printer.pr_constant (Global.env ())) v ++
 		    spc () ++ str "are recursively defined")
+
+let print_message m =
+  Flags.if_verbose ppnl m
 
 (* Solve an obligation using tactics, return the corresponding proof term *)
 let solve_by_tac evi t =

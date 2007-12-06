@@ -8,7 +8,7 @@
 
 open Tacmach
 open Util
-open Options
+open Flags
 open Decl_kinds
 open Pp
 open Entries

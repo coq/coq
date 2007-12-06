@@ -374,10 +374,10 @@ let null_comment s =
 
 let comment_stop ep =
   let current_s = Buffer.contents current in
-  if !Options.xml_export && Buffer.length current > 0 &&
+  if !Flags.xml_export && Buffer.length current > 0 &&
     (!between_com || not(null_comment current_s)) then
       !xml_output_comment current_s;
-  (if Options.do_translate() && Buffer.length current > 0 &&
+  (if Flags.do_translate() && Buffer.length current > 0 &&
     (!between_com || not(null_comment current_s)) then
     let bp = match !comment_begin with
         Some bp -> bp
@@ -412,7 +412,7 @@ let rec comment bp = parser bp2
          | [< '')' >] -> push_string "*)";
          | [< s >] -> real_push_char '*'; comment bp s >] -> ()
   | [< ''"'; s >] ->
-      if Options.do_translate() then (push_string"\"";comm_string bp2 s)
+      if Flags.do_translate() then (push_string"\"";comm_string bp2 s)
       else ignore (string bp2 0 s);
       comment bp s
   | [< _ = Stream.empty >] ep -> err (bp, ep) Unterminated_comment
@@ -485,7 +485,7 @@ let rec next_token = parser bp
       (("METAIDENT", get_buff len), (bp,ep))
   | [< ' ('.' | '?') as c; t = parse_after_dot bp c >] ep ->
       comment_stop bp;
-      if Options.do_translate() & t=("",".") then between_com := true;
+      if Flags.do_translate() & t=("",".") then between_com := true;
       (t, (bp,ep))
   | [< ' ('a'..'z' | 'A'..'Z' | '_' as c);
        len = ident_tail (store 0 c) >] ep ->

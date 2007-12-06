@@ -21,12 +21,12 @@ open Topconstr
 (* debug *)
 
 let deb_mess s =
-  if !Options.debug then begin
+  if !Flags.debug then begin
     msgnl s; pp_flush()
   end
 
 let deb_print f x =
-  if !Options.debug then begin
+  if !Flags.debug then begin
     msgnl (f x); pp_flush()
   end
 
@@ -49,7 +49,7 @@ let reraise_with_loc loc f x =
 
 (* functions on names *)
 
-let at = if !Options.v7 then "@" else "'at'"
+let at = if !Flags.v7 then "@" else "'at'"
 
 let at_id id d = id_of_string ((string_of_id id) ^ at ^ d)
 
@@ -216,7 +216,7 @@ let rec type_v_knsubst s = function
 and type_c_knsubst s ((id,v),e,pl,q) =
   ((id, type_v_knsubst s v), e, 
    List.map (fun p -> { p with p_value = subst_mps s p.p_value }) pl,
-   option_map (fun q -> { q with a_value = subst_mps s q.a_value }) q)
+   Option.map (fun q -> { q with a_value = subst_mps s q.a_value }) q)
 
 and binder_knsubst s (id,b) = 
   (id, match b with BindType v -> BindType (type_v_knsubst s v) | _ -> b)

@@ -1,3 +1,15 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*                      Evgeny Makarov, INRIA, 2007                     *)
+(************************************************************************)
+
+(*i i*)
+
 Require Export NTimesOrder.
 
 Module NMinusPropFunct (Import NAxiomsMod : NAxiomsSig).
@@ -41,7 +53,7 @@ Qed.
 Theorem minus_gt : forall n m : N, n > m -> n - m ~= 0.
 Proof.
 intros n m H; elim H using lt_ind_rel; clear n m H.
-solve_rel_wd.
+solve_relation_wd.
 intro; rewrite minus_0_r; apply neq_succ_0.
 intros; now rewrite minus_succ.
 Qed.
@@ -51,8 +63,8 @@ Proof.
 intros n m p; induct p.
 intro; now do 2 rewrite minus_0_r.
 intros p IH H. do 2 rewrite minus_succ_r.
-rewrite <- IH; [now apply le_succ_le |].
-rewrite plus_pred_r. apply minus_gt. now apply <- lt_le_succ.
+rewrite <- IH; [apply lt_le_incl; now apply -> le_succ_l |].
+rewrite plus_pred_r. apply minus_gt. now apply -> le_succ_l.
 reflexivity.
 Qed.
 
@@ -87,7 +99,8 @@ intros n m p H; rewrite plus_comm in H; now apply plus_minus_eq_l.
 Qed.
 
 (* This could be proved by adding m to both sides. Then the proof would
-use plus_minus_assoc and le_minus_0, which is proven below. *)
+use plus_minus_assoc and minus_0_le, which is proven below. *)
+
 Theorem plus_minus_eq_nz : forall n m p : N, p ~= 0 -> n - m == p -> m + p == n.
 Proof.
 intros n m p H; double_induct n m.
@@ -117,17 +130,17 @@ Qed.
 Theorem le_minus_l : forall n m : N, n - m <= n.
 Proof.
 intro n; induct m.
-rewrite minus_0_r; le_equal.
+rewrite minus_0_r; now apply eq_le_incl.
 intros m IH. rewrite minus_succ_r.
 apply le_trans with (n - m); [apply le_pred_l | assumption].
 Qed.
 
-Theorem le_minus_0 : forall n m : N, n <= m <-> n - m == 0.
+Theorem minus_0_le : forall n m : N, n - m == 0 <-> n <= m.
 Proof.
 double_induct n m.
-intro m; split; intro; [apply minus_0_l | apply le_0_l].
+intro m; split; intro; [apply le_0_l | apply minus_0_l].
 intro m; rewrite minus_0_r; split; intro H;
-[false_hyp H nle_succ_0 | false_hyp H neq_succ_0].
+[false_hyp H neq_succ_0 | false_hyp H nle_succ_0].
 intros n m H. rewrite <- succ_le_mono. now rewrite minus_succ.
 Qed.
 
@@ -138,7 +151,7 @@ Proof.
 intros n m; cases m.
 now rewrite pred_0, times_0_r, minus_0_l.
 intro m; rewrite pred_succ, times_succ_r, <- plus_minus_assoc.
-le_equal.
+now apply eq_le_incl.
 now rewrite minus_diag, plus_0_r.
 Qed.
 
@@ -151,9 +164,9 @@ rewrite minus_succ_l; [assumption |]. do 2 rewrite times_succ_l.
 rewrite (plus_comm ((n - m) * p) p), (plus_comm (n * p) p).
 rewrite <- (plus_minus_assoc p (n * p) (m * p)); [now apply times_le_mono_r |].
 now apply <- plus_cancel_l.
-assert (H1 : S n <= m); [now apply -> lt_le_succ |].
-setoid_replace (S n - m) with 0 by now apply -> le_minus_0.
-setoid_replace ((S n * p) - m * p) with 0 by (apply -> le_minus_0; now apply times_le_mono_r).
+assert (H1 : S n <= m); [now apply <- le_succ_l |].
+setoid_replace (S n - m) with 0 by now apply <- minus_0_le.
+setoid_replace ((S n * p) - m * p) with 0 by (apply <- minus_0_le; now apply times_le_mono_r).
 apply times_0_l.
 Qed.
 

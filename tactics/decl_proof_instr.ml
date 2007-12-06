@@ -530,7 +530,7 @@ let instr_cut mkstat _thus _then cut gls0 =
 
 
 (* iterated equality *)
-let _eq = Libnames.constr_of_reference (Coqlib.glob_eq)
+let _eq = Libnames.constr_of_global (Coqlib.glob_eq)
 
 let decompose_eq id gls =
   let typ = pf_get_hyp_typ gls id in

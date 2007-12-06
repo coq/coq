@@ -256,11 +256,6 @@ Proof.
   rewrite Zpos_xO; simpl in |- *; rewrite Pplus_diag; reflexivity.
 Qed.
 
-Theorem inj_Zabs_nat : forall z:Z, Z_of_nat (Zabs_nat z) = Zabs z.
-Proof.
-destruct z; simpl; auto; symmetry; apply Zpos_eq_Z_of_nat_o_nat_of_P.
-Qed.
-
 (** Misc *)
 
 Theorem intro_Z :

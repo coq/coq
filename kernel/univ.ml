@@ -470,7 +470,7 @@ let is_direct_sort_constraint s v = match s with
 
 let solve_constraints_system levels level_bounds =
   let levels = 
-    Array.map (option_map (function Atom u -> u | _ -> anomaly "expects Atom"))
+    Array.map (Option.map (function Atom u -> u | _ -> anomaly "expects Atom"))
       levels in
   let v = Array.copy level_bounds in
   let nind = Array.length v in

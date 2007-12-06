@@ -352,7 +352,7 @@ let gallina_print_inductive sp =
   let (mib,mip) = Global.lookup_inductive (sp,0) in
   let mipv = mib.mind_packets in
   let names = list_tabulate (fun x -> (sp,x)) (Array.length mipv) in
-  (if mib.mind_record & not !Options.raw_print then
+  (if mib.mind_record & not !Flags.raw_print then
     pr_record (List.hd names)
   else
     pr_mutual_inductive mib.mind_finite names) ++ fnl () ++
@@ -456,10 +456,10 @@ let gallina_print_leaf_entry with_values c =
 
 let gallina_print_context with_values = 
   let rec prec n = function
-    | h::rest when n = None or out_some n > 0 -> 
+    | h::rest when n = None or Option.get n > 0 -> 
 	(match gallina_print_library_entry with_values h with
 	  | None -> prec n rest
-	  | Some pp -> prec (option_map ((+) (-1)) n) rest ++ pp ++ fnl ())
+	  | Some pp -> prec (Option.map ((+) (-1)) n) rest ++ pp ++ fnl ())
     | _ -> mt ()
   in 
   prec

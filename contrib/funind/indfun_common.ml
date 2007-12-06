@@ -131,7 +131,7 @@ let coq_constant s =
     (Coqlib.init_modules @ Coqlib.arith_modules) s;;
 
 let constant sl s =
-  constr_of_reference
+  constr_of_global
     (Nametab.locate (make_qualid(Names.make_dirpath 
 			   (List.map id_of_string (List.rev sl)))
 	       (id_of_string s)));;
@@ -153,7 +153,7 @@ open Entries
 open Decl_kinds
 open Declare
 let definition_message id =
-  Options.if_verbose message ((string_of_id id) ^ " is defined")
+  Flags.if_verbose message ((string_of_id id) ^ " is defined")
 
 
 let save with_clean id const (locality,kind) hook =
@@ -237,8 +237,8 @@ let with_full_print f a =
   let old_implicit_args = Impargs.is_implicit_args ()
   and old_strict_implicit_args =  Impargs.is_strict_implicit_args ()
   and old_contextual_implicit_args = Impargs.is_contextual_implicit_args () in
-  let old_rawprint = !Options.raw_print in 
-  Options.raw_print := true;
+  let old_rawprint = !Flags.raw_print in 
+  Flags.raw_print := true;
   Impargs.make_implicit_args false;
   Impargs.make_strict_implicit_args false;
   Impargs.make_contextual_implicit_args false;
@@ -247,14 +247,14 @@ let with_full_print f a =
     Impargs.make_implicit_args old_implicit_args;
     Impargs.make_strict_implicit_args old_strict_implicit_args;
     Impargs.make_contextual_implicit_args old_contextual_implicit_args;
-    Options.raw_print := old_rawprint;
+    Flags.raw_print := old_rawprint;
     res
   with  
     | e -> 
 	Impargs.make_implicit_args old_implicit_args;
 	Impargs.make_strict_implicit_args old_strict_implicit_args;
 	Impargs.make_contextual_implicit_args old_contextual_implicit_args;
-	Options.raw_print := old_rawprint;
+	Flags.raw_print := old_rawprint;
 	raise e
 
 
@@ -319,12 +319,12 @@ let subst_Function (_,subst,finfos) =
   in
   let function_constant' = do_subst_con finfos.function_constant in 
   let graph_ind' = do_subst_ind finfos.graph_ind in 
-  let equation_lemma' = Util.option_smartmap do_subst_con finfos.equation_lemma in 
-  let correctness_lemma' = Util.option_smartmap do_subst_con finfos.correctness_lemma in 
-  let completeness_lemma' = Util.option_smartmap do_subst_con finfos.completeness_lemma in 
-  let rect_lemma' = Util.option_smartmap do_subst_con finfos.rect_lemma in
-  let rec_lemma' = Util.option_smartmap do_subst_con finfos.rec_lemma in 
-  let prop_lemma' =  Util.option_smartmap do_subst_con finfos.prop_lemma in 
+  let equation_lemma' = Option.smartmap do_subst_con finfos.equation_lemma in 
+  let correctness_lemma' = Option.smartmap do_subst_con finfos.correctness_lemma in 
+  let completeness_lemma' = Option.smartmap do_subst_con finfos.completeness_lemma in 
+  let rect_lemma' = Option.smartmap do_subst_con finfos.rect_lemma in
+  let rec_lemma' = Option.smartmap do_subst_con finfos.rec_lemma in 
+  let prop_lemma' =  Option.smartmap do_subst_con finfos.prop_lemma in 
   if function_constant' == finfos.function_constant && 
     graph_ind' == finfos.graph_ind && 
     equation_lemma' == finfos.equation_lemma &&
@@ -354,12 +354,12 @@ let export_Function infos = Some infos
 let discharge_Function (_,finfos) = 
   let function_constant' = Lib.discharge_con finfos.function_constant
   and graph_ind' = Lib.discharge_inductive finfos.graph_ind 
-  and equation_lemma' = Util.option_smartmap Lib.discharge_con finfos.equation_lemma 
-  and correctness_lemma' = Util.option_smartmap Lib.discharge_con finfos.correctness_lemma 
-  and completeness_lemma' = Util.option_smartmap Lib.discharge_con finfos.completeness_lemma 
-  and rect_lemma' = Util.option_smartmap Lib.discharge_con finfos.rect_lemma 
-  and rec_lemma' = Util.option_smartmap Lib.discharge_con finfos.rec_lemma
-  and prop_lemma' = Util.option_smartmap Lib.discharge_con finfos.prop_lemma
+  and equation_lemma' = Option.smartmap Lib.discharge_con finfos.equation_lemma 
+  and correctness_lemma' = Option.smartmap Lib.discharge_con finfos.correctness_lemma 
+  and completeness_lemma' = Option.smartmap Lib.discharge_con finfos.completeness_lemma 
+  and rect_lemma' = Option.smartmap Lib.discharge_con finfos.rect_lemma 
+  and rec_lemma' = Option.smartmap Lib.discharge_con finfos.rec_lemma
+  and prop_lemma' = Option.smartmap Lib.discharge_con finfos.prop_lemma
   in
   if function_constant' == finfos.function_constant && 
     graph_ind' == finfos.graph_ind && 
@@ -387,12 +387,12 @@ let pr_info f_info =
   str "function_constant := " ++ Printer.pr_lconstr (mkConst f_info.function_constant)++ fnl () ++
     str "function_constant_type := " ++ 
     (try Printer.pr_lconstr (Global.type_of_global (ConstRef f_info.function_constant)) with _ -> mt ()) ++ fnl () ++
-    str "equation_lemma := " ++ (Util.option_fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.equation_lemma (mt ()) ) ++ fnl () ++
-    str "completeness_lemma :=" ++ (Util.option_fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.completeness_lemma (mt ()) ) ++ fnl () ++
-    str "correctness_lemma := " ++ (Util.option_fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.correctness_lemma (mt ()) ) ++ fnl () ++
-    str "rect_lemma := " ++ (Util.option_fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.rect_lemma (mt ()) ) ++ fnl () ++
-    str "rec_lemma := " ++ (Util.option_fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.rec_lemma (mt ()) ) ++ fnl () ++
-    str "prop_lemma := " ++ (Util.option_fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.prop_lemma (mt ()) ) ++ fnl () ++
+    str "equation_lemma := " ++ (Option.fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.equation_lemma (mt ()) ) ++ fnl () ++
+    str "completeness_lemma :=" ++ (Option.fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.completeness_lemma (mt ()) ) ++ fnl () ++
+    str "correctness_lemma := " ++ (Option.fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.correctness_lemma (mt ()) ) ++ fnl () ++
+    str "rect_lemma := " ++ (Option.fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.rect_lemma (mt ()) ) ++ fnl () ++
+    str "rec_lemma := " ++ (Option.fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.rec_lemma (mt ()) ) ++ fnl () ++
+    str "prop_lemma := " ++ (Option.fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.prop_lemma (mt ()) ) ++ fnl () ++
     str "graph_ind := " ++ Printer.pr_lconstr (mkInd f_info.graph_ind) ++ fnl () 
 
 let pr_table tb = 

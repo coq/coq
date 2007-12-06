@@ -27,19 +27,20 @@ Unset Strict Implicit.
 Hint Unfold transpose compat_op.
 Hint Extern 1 (Setoid_Theory _ _) => constructor; congruence.
 
-Module Properties (M: S).
+Module Properties 
+ (M:FSetWeakInterface.S)
+ (D:DecidableType with Definition t:=M.E.t 
+                  with Definition eq:=M.E.eq).
   Import M.E.
   Import M.
+  Module FM := Facts M D.
+  Import FM.
   Import Logic. (* to unmask [eq] *)  
   Import Peano. (* to unmask [lt] *)
-  
-   (** Results about lists without duplicates *)
 
-  Module FM := Facts M.
-  Import FM.
+  (** Results about lists without duplicates *)
 
-  Definition Add (x : elt) (s s' : t) :=
-    forall y : elt, In y s' <-> E.eq x y \/ In y s.
+  Definition Add x s s' := forall y, In y s' <-> E.eq x y \/ In y s.
 
   Lemma In_dec : forall x s, {In x s} + {~ In x s}.
   Proof.
@@ -52,20 +53,20 @@ Module Properties (M: S).
 
   Lemma equal_refl : forall s, s[=]s.
   Proof.
-  unfold Equal; intuition.
+  exact eq_refl.
   Qed.
 
   Lemma equal_sym : forall s s', s[=]s' -> s'[=]s.
   Proof.
-  unfold Equal; intros.
-  rewrite H; intuition.
+  exact eq_sym.
   Qed.
 
   Lemma equal_trans : forall s1 s2 s3, s1[=]s2 -> s2[=]s3 -> s1[=]s3.
   Proof.
-  unfold Equal; intros.
-  rewrite H; exact (H0 a).
+  exact eq_trans.
   Qed.
+
+  Hint Immediate equal_refl equal_sym : set.
 
   Variable s s' s'' s1 s2 s3 : t.
   Variable x x' : elt.
@@ -74,7 +75,12 @@ Module Properties (M: S).
   
   Lemma subset_refl : s[<=]s. 
   Proof.
-  unfold Subset; intuition.
+  apply Subset_refl.
+  Qed.
+
+  Lemma subset_trans : s1[<=]s2 -> s2[<=]s3 -> s1[<=]s3.
+  Proof.
+  apply Subset_trans.
   Qed.
 
   Lemma subset_antisym : s[<=]s' -> s'[<=]s -> s[=]s'.
@@ -82,14 +88,11 @@ Module Properties (M: S).
   unfold Subset, Equal; intuition.
   Qed.
 
-  Lemma subset_trans : s1[<=]s2 -> s2[<=]s3 -> s1[<=]s3.
-  Proof.
-  unfold Subset; intuition.
-  Qed.
+  Hint Immediate subset_refl : set.
 
   Lemma subset_equal : s[=]s' -> s[<=]s'.
   Proof.
-  unfold Subset, Equal; firstorder.
+  unfold Subset, Equal; intros; rewrite <- H; auto.
   Qed.
 
   Lemma subset_empty : empty[<=]s.
@@ -120,7 +123,7 @@ Module Properties (M: S).
 
   Lemma in_subset : In x s1 -> s1[<=]s2 -> In x s2.
   Proof.
-  unfold Subset; intuition.
+  intros; rewrite <- H0; auto.
   Qed.
  
   Lemma double_inclusion : s1[=]s2 <-> s1[<=]s2 /\ s2[<=]s1.
@@ -222,6 +225,21 @@ Module Properties (M: S).
   Lemma union_add : union (add x s) s' [=] add x (union s s').
   Proof.
   unfold Equal; intros; set_iff; tauto.
+  Qed.
+
+  Lemma union_remove_add_1 : 
+   union (remove x s) (add x s') [=] union (add x s) (remove x s').
+  Proof.
+  unfold Equal; intros; set_iff.
+  destruct (eq_dec x a); intuition.
+  Qed.
+
+  Lemma union_remove_add_2 : In x s -> 
+   union (remove x s) (add x s') [=] union s s'.
+  Proof.
+  unfold Equal; intros; set_iff.
+  destruct (eq_dec x a); intuition.
+  left; eauto with set.
   Qed.
 
   Lemma union_subset_1 : s [<=] union s s'.

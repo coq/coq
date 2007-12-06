@@ -85,7 +85,7 @@ type morphism_class =
 let subst_mps_in_relation_class subst =
  function
     Relation  t -> Relation  (subst_mps subst t)
-  | Leibniz t -> Leibniz (option_map (subst_mps subst) t) 
+  | Leibniz t -> Leibniz (Option.map (subst_mps subst) t) 
 
 let subst_mps_in_argument_class subst (variance,rel) =
  variance, subst_mps_in_relation_class subst rel
@@ -259,7 +259,7 @@ let default_relation_for_carrier ?(filter=fun _ -> true) a =
     [] -> Leibniz (Some a)
   | relation::tl ->
      if tl <> [] then
-      Options.if_warn msg_warning
+      Flags.if_warn msg_warning
        (str "There are several relations on the carrier \"" ++
          pr_lconstr a ++ str "\". The relation " ++ prrelation relation ++
          str " is chosen.") ;
@@ -297,9 +297,9 @@ let relation_morphism_of_constr_morphism =
 let subst_relation subst relation = 
   let rel_a' = subst_mps subst relation.rel_a in
   let rel_aeq' = subst_mps subst relation.rel_aeq in
-  let rel_refl' = option_map (subst_mps subst) relation.rel_refl in
-  let rel_sym' = option_map (subst_mps subst) relation.rel_sym in
-  let rel_trans' = option_map (subst_mps subst) relation.rel_trans in
+  let rel_refl' = Option.map (subst_mps subst) relation.rel_refl in
+  let rel_sym' = Option.map (subst_mps subst) relation.rel_sym in
+  let rel_trans' = Option.map (subst_mps subst) relation.rel_trans in
   let rel_X_relation_class' = subst_mps subst relation.rel_X_relation_class in
   let rel_Xreflexive_relation_class' =
    subst_mps subst relation.rel_Xreflexive_relation_class
@@ -347,7 +347,7 @@ let (relation_to_obj, obj_to_relation)=
           match th.rel_sym with
              None -> old_relation.rel_sym
            | Some t -> Some t} in
-        Options.if_warn msg_warning 
+        Flags.if_warn msg_warning 
          (strbrk "The relation " ++ prrelation th' ++
           strbrk " is redeclared. The new declaration" ++
            (match th'.rel_refl with
@@ -412,7 +412,7 @@ let morphism_table_add (m,c) =
     List.find
      (function mor -> mor.args = c.args && mor.output = c.output) old
    in
-    Options.if_warn msg_warning
+    Flags.if_warn msg_warning
      (strbrk "The morphism " ++ prmorphism m old_morph ++
       strbrk " is redeclared. " ++
       strbrk "The new declaration whose compatibility is proved by " ++
@@ -427,7 +427,7 @@ let default_morphism ?(filter=fun _ -> true) m =
       [] -> raise Not_found
     | m1::ml ->
         if ml <> [] then
-          Options.if_warn msg_warning
+          Flags.if_warn msg_warning
             (strbrk "There are several morphisms associated to \"" ++
             pr_lconstr m ++ strbrk "\". Morphism " ++ prmorphism m m1 ++
             strbrk " is randomly chosen.");
@@ -640,9 +640,9 @@ let apply_to_relation subst rel =
    assert (new_quantifiers_no >= 0) ;
    { rel_a = mkApp (rel.rel_a, subst) ;
      rel_aeq = mkApp (rel.rel_aeq, subst) ;
-     rel_refl = option_map (fun c -> mkApp (c,subst)) rel.rel_refl ; 
-     rel_sym = option_map (fun c -> mkApp (c,subst)) rel.rel_sym;
-     rel_trans = option_map (fun c -> mkApp (c,subst)) rel.rel_trans;
+     rel_refl = Option.map (fun c -> mkApp (c,subst)) rel.rel_refl ; 
+     rel_sym = Option.map (fun c -> mkApp (c,subst)) rel.rel_sym;
+     rel_trans = Option.map (fun c -> mkApp (c,subst)) rel.rel_trans;
      rel_quantifiers_no = new_quantifiers_no;
      rel_X_relation_class = mkApp (rel.rel_X_relation_class, subst);
      rel_Xreflexive_relation_class =
@@ -689,7 +689,7 @@ let add_morphism lemma_infos mor_name (m,quantifiers_rev,args,output) =
                   apply_to_rels mext quantifiers_rev |]));
           const_entry_type = None;
           const_entry_opaque = false;
-          const_entry_boxed = Options.boxed_definitions()},
+          const_entry_boxed = Flags.boxed_definitions()},
 	IsDefinition Definition)) ;
      mext 
  in
@@ -705,7 +705,7 @@ let add_morphism lemma_infos mor_name (m,quantifiers_rev,args,output) =
         output = output_constr;
         lem = lem;
         morphism_theory = mmor }));
-   Options.if_verbose ppnl (pr_lconstr m ++ str " is registered as a morphism")
+   Flags.if_verbose ppnl (pr_lconstr m ++ str " is registered as a morphism")
 
 let error_cannot_unify_signature env k t t' =
   errorlabstrm "New Morphism"
@@ -923,7 +923,7 @@ let new_morphism m signature id hook =
 	Pfedit.start_proof id (Global, Proof Lemma) 
 	  (Declare.clear_proofs (Global.named_context ()))
 	  lem hook;
-	Options.if_verbose msg (Printer.pr_open_subgoals ());
+	Flags.if_verbose msg (Printer.pr_open_subgoals ());
       end
 
 let morphism_hook _ ref =
@@ -1012,9 +1012,9 @@ let int_add_relation id a aeq refl sym trans =
  let env = Global.env () in
  let a_quantifiers_rev = check_a env a in
   check_eq env a_quantifiers_rev a aeq  ;
-  option_iter (check_refl env a_quantifiers_rev a aeq) refl ;
-  option_iter (check_sym env a_quantifiers_rev a aeq) sym ;
-  option_iter (check_trans env a_quantifiers_rev a aeq) trans ;
+  Option.iter (check_refl env a_quantifiers_rev a aeq) refl ;
+  Option.iter (check_sym env a_quantifiers_rev a aeq) sym ;
+  Option.iter (check_trans env a_quantifiers_rev a aeq) trans ;
   let quantifiers_no = List.length a_quantifiers_rev in
   let aeq_rel =
    { rel_a = a;
@@ -1043,7 +1043,7 @@ let int_add_relation id a aeq refl sym trans =
             a_quantifiers_rev);
        const_entry_type = None;
        const_entry_opaque = false;
-       const_entry_boxed = Options.boxed_definitions()},
+       const_entry_boxed = Flags.boxed_definitions()},
       IsDefinition Definition) in
   let id_precise = id_of_string (string_of_id id ^ "_precise_relation_class") in
   let xreflexive_relation_class =
@@ -1060,14 +1060,14 @@ let int_add_relation id a aeq refl sym trans =
         Sign.it_mkLambda_or_LetIn xreflexive_relation_class a_quantifiers_rev;
        const_entry_type = None;
        const_entry_opaque = false;
-       const_entry_boxed = Options.boxed_definitions() },
+       const_entry_boxed = Flags.boxed_definitions() },
       IsDefinition Definition) in
   let aeq_rel =
    { aeq_rel with
       rel_X_relation_class = current_constant id;
       rel_Xreflexive_relation_class = current_constant id_precise } in
   Lib.add_anonymous_leaf (relation_to_obj (aeq, aeq_rel)) ;
-  Options.if_verbose ppnl (pr_lconstr aeq ++ str " is registered as a relation");
+  Flags.if_verbose ppnl (pr_lconstr aeq ++ str " is registered as a relation");
   match trans with
      None -> ()
    | Some trans ->
@@ -1075,9 +1075,9 @@ let int_add_relation id a aeq refl sym trans =
       let a_instance = apply_to_rels a a_quantifiers_rev in
       let aeq_instance = apply_to_rels aeq a_quantifiers_rev in
       let sym_instance =
-       option_map (fun x -> apply_to_rels x a_quantifiers_rev) sym in
+       Option.map (fun x -> apply_to_rels x a_quantifiers_rev) sym in
       let refl_instance =
-       option_map (fun x -> apply_to_rels x a_quantifiers_rev) refl in
+       Option.map (fun x -> apply_to_rels x a_quantifiers_rev) refl in
       let trans_instance = apply_to_rels trans a_quantifiers_rev in
       let aeq_rel_class_and_var1, aeq_rel_class_and_var2, lemma, output =
        match sym_instance, refl_instance with
@@ -1120,7 +1120,7 @@ let int_add_relation id a aeq refl sym trans =
           {const_entry_body = Sign.it_mkLambda_or_LetIn lemma a_quantifiers_rev;
            const_entry_type = None;
            const_entry_opaque = false;
-          const_entry_boxed = Options.boxed_definitions()},
+          const_entry_boxed = Flags.boxed_definitions()},
           IsDefinition Definition)
       in
        let a_quantifiers_rev =
@@ -1132,8 +1132,8 @@ let int_add_relation id a aeq refl sym trans =
 (* The vernac command "Add Relation ..." *)
 let add_relation id a aeq refl sym trans =
   Coqlib.check_required_library ["Coq";"Setoids";"Setoid_tac"];
-  int_add_relation id (constr_of a) (constr_of aeq) (option_map constr_of refl)
-    (option_map constr_of sym) (option_map constr_of trans)
+  int_add_relation id (constr_of a) (constr_of aeq) (Option.map constr_of refl)
+    (Option.map constr_of sym) (Option.map constr_of trans)
 
 (************************ Add Setoid ******************************************)
 
@@ -1580,7 +1580,7 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
           (fun i (_,_,mc) -> pr_new_goals i mc) res)
    | [he] -> he
    | he::_ ->
-      Options.if_warn msg_warning
+      Flags.if_warn msg_warning
        (strbrk "The application of the tactic is subject to one of " ++
         strbrk "the following set of side conditions that the user needs " ++
         strbrk "to prove:" ++

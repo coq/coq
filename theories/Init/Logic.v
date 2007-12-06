@@ -16,10 +16,10 @@ Require Import Notations.
 
 (** [True] is the always true proposition *)
 Inductive True : Prop :=
-  I : True. 
+  I : True.
 
 (** [False] is the always false proposition *)
-Inductive False : Prop :=. 
+Inductive False : Prop :=.
 
 (** [not A], written [~A], is the negation of [A] *)
 Definition not (A:Prop) := A -> False.
@@ -30,14 +30,14 @@ Hint Unfold not: core.
 
   (** [and A B], written [A /\ B], is the conjunction of [A] and [B]
 
-      [conj p q] is a proof of [A /\ B] as soon as 
+      [conj p q] is a proof of [A /\ B] as soon as
       [p] is a proof of [A] and [q] a proof of [B]
 
       [proj1] and [proj2] are first and second projections of a conjunction *)
 
 Inductive and (A B:Prop) : Prop :=
-  conj : A -> B -> A /\ B 
-  
+  conj : A -> B -> A /\ B
+
 where "A /\ B" := (and A B) : type_scope.
 
 Section Conjunction.
@@ -60,7 +60,7 @@ End Conjunction.
 
 Inductive or (A B:Prop) : Prop :=
   | or_introl : A -> A \/ B
-  | or_intror : B -> A \/ B 
+  | or_intror : B -> A \/ B
 
 where "A \/ B" := (or A B) : type_scope.
 
@@ -91,6 +91,65 @@ End Equivalence.
 
 Hint Unfold iff: extcore.
 
+(** Some equivalences *)
+
+Theorem neg_false : forall A : Prop, ~ A <-> (A <-> False).
+Proof.
+intro A; unfold not; split.
+intro H; split; [exact H | intro H1; elim H1].
+intros [H _]; exact H.
+Qed.
+
+Theorem and_cancel_l : forall A B C : Prop,
+  (B -> A) -> (C -> A) -> ((A /\ B <-> A /\ C) <-> (B <-> C)).
+Proof.
+intros; tauto.
+Qed.
+
+Theorem and_cancel_r : forall A B C : Prop,
+  (B -> A) -> (C -> A) -> ((B /\ A <-> C /\ A) <-> (B <-> C)).
+Proof.
+intros; tauto.
+Qed.
+
+Theorem or_cancel_l : forall A B C : Prop,
+  (B -> ~ A) -> (C -> ~ A) -> ((A \/ B <-> A \/ C) <-> (B <-> C)).
+Proof.
+intros; tauto.
+Qed.
+
+Theorem or_cancel_r : forall A B C : Prop,
+  (B -> ~ A) -> (C -> ~ A) -> ((B \/ A <-> C \/ A) <-> (B <-> C)).
+Proof.
+intros; tauto.
+Qed.
+
+(** Backward direction of the equivalences above does not need assumptions *)
+
+Theorem and_iff_compat_l : forall A B C : Prop,
+  (B <-> C) -> (A /\ B <-> A /\ C).
+Proof.
+intros; tauto.
+Qed.
+
+Theorem and_iff_compat_r : forall A B C : Prop,
+  (B <-> C) -> (B /\ A <-> C /\ A).
+Proof.
+intros; tauto.
+Qed.
+
+Theorem or_iff_compat_l : forall A B C : Prop,
+  (B <-> C) -> (A \/ B <-> A \/ C).
+Proof.
+intros; tauto.
+Qed.
+
+Theorem or_iff_compat_r : forall A B C : Prop,
+  (B <-> C) -> (B \/ A <-> C \/ A).
+Proof.
+intros; tauto.
+Qed.
+
 (** [(IF_then_else P Q R)], written [IF P then Q else R] denotes
     either [P] and [Q], or [~P] and [Q] *)
 
@@ -105,7 +164,7 @@ Notation "'IF' c1 'then' c2 'else' c3" := (IF_then_else c1 c2 c3)
     expresses the existence of an [x] of some type [A] in [Set] which
     satisfies the predicate [P].  This is existential quantification.
 
-    [ex2 P Q], or simply [exists2 x, P x & Q x], or also 
+    [ex2 P Q], or simply [exists2 x, P x & Q x], or also
     [exists2 x:A, P x & Q x], expresses the existence of an [x] of
     type [A] which satisfies both predicates [P] and [Q].
 
@@ -125,14 +184,14 @@ Inductive ex (A:Type) (P:A -> Prop) : Prop :=
 Inductive ex2 (A:Type) (P Q:A -> Prop) : Prop :=
   ex_intro2 : forall x:A, P x -> Q x -> ex2 (A:=A) P Q.
 
-Definition all (A:Type) (P:A -> Prop) := forall x:A, P x. 
+Definition all (A:Type) (P:A -> Prop) := forall x:A, P x.
 
 (* Rule order is important to give printing priority to fully typed exists *)
 
 Notation "'exists' x , p" := (ex (fun x => p))
   (at level 200, x ident, right associativity) : type_scope.
 Notation "'exists' x : t , p" := (ex (fun x:t => p))
-  (at level 200, x ident, right associativity, 
+  (at level 200, x ident, right associativity,
     format "'[' 'exists'  '/  ' x  :  t ,  '/  ' p ']'")
   : type_scope.
 
@@ -167,14 +226,14 @@ End universal_quantification.
 (** [eq x y], or simply [x=y] expresses the equality of [x] and
     [y]. Both [x] and [y] must belong to the same type [A].
     The definition is inductive and states the reflexivity of the equality.
-    The others properties (symmetry, transitivity, replacement of 
+    The others properties (symmetry, transitivity, replacement of
     equals by equals) are proved below. The type of [x] and [y] can be
     made explicit using the notation [x = y :> A]. This is Leibniz equality
     as it expresses that [x] and [y] are equal iff every property on
     [A] which is true of [x] is also true of [y] *)
 
 Inductive eq (A:Type) (x:A) : A -> Prop :=
-    refl_equal : x = x :>A 
+    refl_equal : x = x :>A
 
 where "x = y :> A" := (@eq A x y) : type_scope.
 
@@ -224,7 +283,7 @@ Section Logic_lemmas.
     Proof.
       red in |- *; intros h1 h2; apply h1; destruct h2; trivial.
     Qed.
-    
+
     Definition sym_equal := sym_eq.
     Definition sym_not_equal := sym_not_eq.
     Definition trans_equal := trans_eq.
@@ -235,12 +294,12 @@ Section Logic_lemmas.
     forall (A:Type) (x:A) (P:A -> Prop), P x -> forall y:A, y = x -> P y.
     intros A x P H y H0; elim sym_eq with (1 := H0); assumption.
   Defined.
-  
+
   Definition eq_rec_r :
     forall (A:Type) (x:A) (P:A -> Set), P x -> forall y:A, y = x -> P y.
     intros A x P H y H0; elim sym_eq with (1 := H0); assumption.
   Defined.
-  
+
   Definition eq_rect_r :
     forall (A:Type) (x:A) (P:A -> Type), P x -> forall y:A, y = x -> P y.
     intros A x P H y H0; elim sym_eq with (1 := H0); assumption.
@@ -248,14 +307,14 @@ Section Logic_lemmas.
 End Logic_lemmas.
 
 Theorem f_equal2 :
-  forall (A1 A2 B:Type) (f:A1 -> A2 -> B) (x1 y1:A1) 
+  forall (A1 A2 B:Type) (f:A1 -> A2 -> B) (x1 y1:A1)
     (x2 y2:A2), x1 = y1 -> x2 = y2 -> f x1 x2 = f y1 y2.
 Proof.
   destruct 1; destruct 1; reflexivity.
 Qed.
 
 Theorem f_equal3 :
-  forall (A1 A2 A3 B:Type) (f:A1 -> A2 -> A3 -> B) (x1 y1:A1) 
+  forall (A1 A2 A3 B:Type) (f:A1 -> A2 -> A3 -> B) (x1 y1:A1)
     (x2 y2:A2) (x3 y3:A3),
     x1 = y1 -> x2 = y2 -> x3 = y3 -> f x1 x2 x3 = f y1 y2 y3.
 Proof.
@@ -263,7 +322,7 @@ Proof.
 Qed.
 
 Theorem f_equal4 :
-  forall (A1 A2 A3 A4 B:Type) (f:A1 -> A2 -> A3 -> A4 -> B) 
+  forall (A1 A2 A3 A4 B:Type) (f:A1 -> A2 -> A3 -> A4 -> B)
     (x1 y1:A1) (x2 y2:A2) (x3 y3:A3) (x4 y4:A4),
     x1 = y1 -> x2 = y2 -> x3 = y3 -> x4 = y4 -> f x1 x2 x3 x4 = f y1 y2 y3 y4.
 Proof.
@@ -297,7 +356,7 @@ Definition uniqueness (A:Type) (P:A->Prop) := forall x y, P x -> P y -> x = y.
 Notation "'exists' ! x , P" := (ex (unique (fun x => P)))
   (at level 200, x ident, right associativity,
     format "'[' 'exists' !  '/  ' x ,  '/  ' P ']'") : type_scope.
-Notation "'exists' ! x : A , P" := 
+Notation "'exists' ! x : A , P" :=
   (ex (unique (fun x:A => P)))
   (at level 200, x ident, right associativity,
     format "'[' 'exists' !  '/  ' x  :  A ,  '/  ' P ']'") : type_scope.
@@ -307,7 +366,7 @@ Lemma unique_existence : forall (A:Type) (P:A->Prop),
 Proof.
   intros A P; split.
   intros ((x,Hx),Huni); exists x; red; auto.
-  intros (x,(Hx,Huni)); split. 
+  intros (x,(Hx,Huni)); split.
   exists x; assumption.
   intros x' x'' Hx' Hx''; transitivity x.
   symmetry; auto.
@@ -318,7 +377,7 @@ Qed.
 
 (** The predicate [inhabited] can be used in different contexts. If [A] is
     thought as a type, [inhabited A] states that [A] is inhabited. If [A] is
-    thought as a computationally relevant proposition, then 
+    thought as a computationally relevant proposition, then
     [inhabited A] weakens [A] so as to hide its computational meaning.
     The so-weakened proof remains computationally relevant but only in
     a propositional context.
@@ -328,8 +387,26 @@ Inductive inhabited (A:Type) : Prop := inhabits : A -> inhabited A.
 
 Hint Resolve inhabits: core.
 
-Lemma exists_inhabited : forall (A:Type) (P:A->Prop), 
+Lemma exists_inhabited : forall (A:Type) (P:A->Prop),
   (exists x, P x) -> inhabited A.
 Proof.
   destruct 1; auto.
 Qed.
+
+(** Declaration of stepl and stepr for eq and iff *)
+
+Lemma eq_stepl : forall (A : Type) (x y z : A), x = y -> x = z -> z = y.
+Proof.
+intros A x y z H1 H2. rewrite <- H2; exact H1.
+Qed.
+
+Declare Left Step eq_stepl.
+Declare Right Step trans_eq.
+
+Lemma iff_stepl : forall A B C : Prop, (A <-> B) -> (A <-> C) -> (C <-> B).
+Proof.
+intros; tauto.
+Qed.
+
+Declare Left Step iff_stepl.
+Declare Right Step iff_trans.

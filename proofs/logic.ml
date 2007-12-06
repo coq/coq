@@ -59,7 +59,7 @@ let rec catchable_exception = function
 (* Tells if the refiner should check that the submitted rules do not
    produce invalid subgoals *)
 let check = ref false
-let with_check = Options.with_option check
+let with_check = Flags.with_option check
 
 (************************************************************************)
 (************************************************************************)

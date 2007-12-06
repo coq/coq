@@ -310,7 +310,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
   with Not_found -> 
     (* First, if this inductive is aliased via a Module, *)
     (* we process the original inductive. *)
-    option_iter (fun kn -> ignore (extract_ind env kn)) mib.mind_equiv; 
+    Option.iter (fun kn -> ignore (extract_ind env kn)) mib.mind_equiv; 
     (* Everything concerning parameters. *)
     (* We do that first, since they are common to all the [mib]. *)
     let mip0 = mib.mind_packets.(0) in 
@@ -413,7 +413,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
             (Inductive.type_of_inductive env (mib,mip0))
 	  in
 	  List.iter 
-	    (option_iter 
+	    (Option.iter 
 	       (fun kn -> if Cset.mem kn !projs then add_projection n kn))
 	    (lookup_projections ip)
 	with Not_found -> ()

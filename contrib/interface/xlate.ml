@@ -306,7 +306,7 @@ let make_fix_struct (n,bl) =
   let nn = List.length names in
   if nn = 1 || n = None then ctv_ID_OPT_NONE
   else 
-    let n = out_some n in 
+    let n = Option.get n in 
     if n < nn then xlate_id_opt(List.nth names n)
     else xlate_error "unexpected result of parsing for Fixpoint";;
 
@@ -429,7 +429,7 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
 	 (* Pierre L: could the case [n=None && bl=[]] happen ? Normally not *)
 	 (* By the way, how could [bl = []] happen in V8 syntax ?  *)
          if bl = [] then
-	   let n = out_some n in 
+	   let n = Option.get n in 
            let (bl,arf,ardef) = Ppconstr.split_fix (n+1) arf ardef in
            (xlate_id_opt(List.nth (names_of_local_assums bl) n),bl,arf,ardef)
          else (make_fix_struct (n, bl),bl,arf,ardef) in
@@ -995,7 +995,7 @@ and xlate_tac =
 	  let cl_as_xlate_arg = 
 	    {cl_as_clause with 
 	       Tacexpr.onhyps = 
-		option_map 
+		Option.map 
 		  (fun l -> 
 		     List.map (fun ((l,id),hyp_flag) -> ((l, Tacexpr.AI ((),id)) ,hyp_flag)) l
 		  )
@@ -1312,7 +1312,7 @@ and coerce_genarg_to_TARG x =
 					 (snd (out_gen
 					    (rawwit_open_constr_gen b) x))))
   | ExtraArgType s as y when Pcoq.is_tactic_genarg y ->
-      let n = out_some (Pcoq.tactic_genarg_level s) in
+      let n = Option.get (Pcoq.tactic_genarg_level s) in
       let t = xlate_tactic (out_gen (Pcoq.rawwit_tactic n) x) in
       CT_coerce_TACTIC_COM_to_TARG t
   | ConstrWithBindingsArgType -> xlate_error "TODO: generic constr with bindings"
@@ -1405,7 +1405,7 @@ let coerce_genarg_to_VARG x =
   | ConstrMayEvalArgType -> xlate_error"TODO: generic constr-may-eval argument"
   | QuantHypArgType ->xlate_error"TODO: generic quantified hypothesis argument"
   | ExtraArgType s as y when Pcoq.is_tactic_genarg y ->
-      let n = out_some (Pcoq.tactic_genarg_level s) in
+      let n = Option.get (Pcoq.tactic_genarg_level s) in
       let t = xlate_tactic (out_gen (Pcoq.rawwit_tactic n) x) in
       CT_coerce_TACTIC_OPT_to_VARG (CT_coerce_TACTIC_COM_to_TACTIC_OPT t)
   | OpenConstrArgType _ -> xlate_error "TODO: generic open constr"
@@ -1832,7 +1832,7 @@ let rec xlate_vernac =
 	    CT_print_path (xlate_class id1, xlate_class id2)
 	| PrintCanonicalConversions ->
 	    xlate_error "TODO: Print Canonical Structures"
-	| PrintNeededAssumptions _ -> 
+	| PrintAssumptions _ -> 
 	    xlate_error "TODO: Print Needed Assumptions"
 	| PrintInspect n -> CT_inspect (CT_int n)
 	| PrintUniverses opt_s -> CT_print_universes(ctf_STRING_OPT opt_s)
@@ -1857,7 +1857,7 @@ let rec xlate_vernac =
 	CT_theorem_goal (CT_coerce_THM_to_DEFN_OR_THM (xlate_thm k), xlate_ident s,
            xlate_binder_list bl, xlate_formula c))
   | VernacSuspend -> CT_suspend
-  | VernacResume idopt -> CT_resume (xlate_ident_opt (option_map snd idopt))
+  | VernacResume idopt -> CT_resume (xlate_ident_opt (Option.map snd idopt))
   | VernacDefinition (k,(_,s),ProveBody (bl,typ),_) ->
       CT_coerce_THEOREM_GOAL_to_COMMAND
 	(CT_theorem_goal
@@ -1900,7 +1900,7 @@ let rec xlate_vernac =
       (_, (add_coercion, (_,s)), binders, c1,
        rec_constructor_or_none, field_list) ->
       let record_constructor =
-        xlate_ident_opt (option_map snd rec_constructor_or_none) in
+        xlate_ident_opt (Option.map snd rec_constructor_or_none) in
       CT_record
        ((if add_coercion then CT_coercion_atm else
           CT_coerce_NONE_to_COERCION_OPT(CT_none)),
@@ -1923,7 +1923,7 @@ let rec xlate_vernac =
 	 (* Pierre L: could the case [n=None && bl=[]] happen ? Normally not *)
 	 (* By the way, how could [bl = []] happen in V8 syntax ?  *)
          if bl = [] then
-	   let n = out_some n in 
+	   let n = Option.get n in 
            let (bl,arf,ardef) = Ppconstr.split_fix (n+1) arf ardef in
            (xlate_id_opt(List.nth (names_of_local_assums bl) n),bl,arf,ardef)
          else (make_fix_struct (n, bl),bl,arf,ardef) in

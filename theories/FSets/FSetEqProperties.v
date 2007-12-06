@@ -290,7 +290,7 @@ Qed.
 Lemma singleton_mem_2: ~E.eq x y -> mem y (singleton x)=false.
 Proof.
 intros; rewrite singleton_b.
-unfold ME.eqb; destruct (ME.eq_dec x y); intuition.
+unfold eqb; destruct (eq_dec x y); intuition.
 Qed.
 
 Lemma singleton_mem_3: mem y (singleton x)=true -> E.eq x y.

@@ -1,3 +1,15 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*                      Evgeny Makarov, INRIA, 2007                     *)
+(************************************************************************)
+
+(*i i*)
+
 Require Import NZAxioms.
 Require Import NZPlus.
 
@@ -5,20 +17,20 @@ Module NZTimesPropFunct (Import NZAxiomsMod : NZAxiomsSig).
 Module Export NZPlusPropMod := NZPlusPropFunct NZAxiomsMod.
 Open Local Scope NatIntScope.
 
-Theorem NZtimes_0_l : forall n : NZ, 0 * n == 0.
+Theorem NZtimes_0_r : forall n : NZ, n * 0 == 0.
 Proof.
 NZinduct n.
-now rewrite NZtimes_0_r.
-intro. rewrite NZtimes_succ_r. now rewrite NZplus_0_r.
+now rewrite NZtimes_0_l.
+intro. rewrite NZtimes_succ_l. now rewrite NZplus_0_r.
 Qed.
 
-Theorem NZtimes_succ_l : forall n m : NZ, (S n) * m == n * m + m.
+Theorem NZtimes_succ_r : forall n m : NZ, n * (S m) == n * m + n.
 Proof.
-intros n m; NZinduct m.
-do 2 rewrite NZtimes_0_r; now rewrite NZplus_0_l.
-intro m. do 2 rewrite NZtimes_succ_r. do 2 rewrite NZplus_succ_r.
-rewrite NZsucc_inj_wd. rewrite <- (NZplus_assoc (n * m) n m).
-rewrite (NZplus_comm n m). rewrite NZplus_assoc.
+intros n m; NZinduct n.
+do 2 rewrite NZtimes_0_l; now rewrite NZplus_0_l.
+intro n. do 2 rewrite NZtimes_succ_l. do 2 rewrite NZplus_succ_r.
+rewrite NZsucc_inj_wd. rewrite <- (NZplus_assoc (n * m) m n).
+rewrite (NZplus_comm m n). rewrite NZplus_assoc.
 now rewrite NZplus_cancel_r.
 Qed.
 

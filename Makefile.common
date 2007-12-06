@@ -67,11 +67,10 @@ CONFIG:=\
 
 LIBREP:=\
   lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/util.cmo lib/bigint.cmo \
-  lib/hashcons.cmo lib/dyn.cmo lib/system.cmo lib/options.cmo \
+  lib/hashcons.cmo lib/dyn.cmo lib/system.cmo lib/flags.cmo \
   lib/bstack.cmo lib/edit.cmo lib/gset.cmo lib/gmap.cmo \
   lib/tlm.cmo lib/gmapl.cmo lib/profile.cmo lib/explore.cmo \
-  lib/predicate.cmo lib/rtree.cmo lib/heap.cmo \
-  lib/biassoc.cmo
+  lib/predicate.cmo lib/rtree.cmo lib/heap.cmo lib/option.cmo
 # Rem: Cygwin already uses variable LIB 
 
 BYTERUN:=\
@@ -121,9 +120,6 @@ INTERP:=\
   toplevel/discharge.cmo library/declare.cmo
 
 PROOFS:=\
-  proofs/transactional_stack.cmo proofs/permutation.cmo \
-  proofs/sequence.cmo \
-  proofs/subproof.cmo proofs/proof.cmo \
   proofs/tacexpr.cmo proofs/proof_type.cmo proofs/redexpr.cmo \
   proofs/proof_trees.cmo proofs/logic.cmo \
   proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
@@ -352,8 +348,8 @@ MINICOQCMO:=$(CONFIG) $(LIBREP) $(KERNEL) \
 
 GRAMMARNEEDEDCMO:=\
   lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/util.cmo lib/bigint.cmo \
-  lib/dyn.cmo lib/options.cmo lib/hashcons.cmo lib/predicate.cmo \
-  lib/rtree.cmo \
+  lib/dyn.cmo lib/flags.cmo lib/hashcons.cmo lib/predicate.cmo \
+  lib/rtree.cmo lib/option.cmo \
   kernel/names.cmo kernel/univ.cmo \
   kernel/esubst.cmo kernel/term.cmo kernel/mod_subst.cmo kernel/sign.cmo \
   kernel/cbytecodes.cmo kernel/copcodes.cmo kernel/cemitcodes.cmo \
@@ -513,12 +509,11 @@ ZARITHVO:=\
  theories/ZArith/Zwf.vo		theories/ZArith/ZArith_base.vo \
  theories/ZArith/Zbool.vo	theories/ZArith/Zbinary.vo \
  theories/ZArith/Znumtheory.vo  theories/ZArith/Int.vo \
- theories/ZArith/Zpow_def.vo
+ theories/ZArith/Zpow_def.vo	theories/ZArith/Zpow_facts.vo \
+ theories/ZArith/ZOdiv_def.vo   theories/ZArith/ZOdiv.vo
 
 INTSVO:=\
- theories/Ints/Z/IntsZmisc.vo theories/Ints/Z/Pmod.vo \
- theories/Ints/Tactic.vo theories/Ints/Z/ZAux.vo \
- theories/Ints/Z/ZPowerAux.vo theories/Ints/Z/ZDivModAux.vo \
+ theories/Ints/Z/ZAux.vo \
  theories/Ints/Basic_type.vo theories/Ints/Int31.vo \
  theories/Ints/num/GenBase.vo theories/Ints/num/ZnZ.vo \
  theories/Ints/num/GenAdd.vo theories/Ints/num/GenSub.vo \
@@ -527,11 +522,7 @@ INTSVO:=\
  theories/Ints/num/GenLift.vo theories/Ints/num/Zn2Z.vo\
  theories/Ints/num/Nbasic.vo theories/Ints/num/NMake.vo \
  theories/Ints/BigN.vo theories/Ints/num/ZMake.vo \
- theories/Ints/BigZ.vo theories/Ints/num/QMake.vo
-# theories/Ints/List/ListAux.vo
-# theories/Ints/List/LPermutation.vo theories/Ints/List/Iterator.vo \
-# theories/Ints/List/ZProgression.vo
-# theories/Ints/Z/ZSum.vo theories/Ints/Z/Ppow.vo \
+ theories/Ints/BigZ.vo theories/Ints/num/BigQ.vo
 # spiwack : should use the genN.ml to create NMake eventually
 # arnaud : see above
 
@@ -540,7 +531,7 @@ QARITHVO:=\
  theories/QArith/Qring.vo       theories/QArith/Qreals.vo \
  theories/QArith/QArith.vo	theories/QArith/Qcanon.vo \
  theories/QArith/Qfield.vo	theories/QArith/Qpower.vo \
- theories/QArith/Qabs.vo
+ theories/QArith/Qabs.vo        theories/QArith/Qround.vo
 
 LISTSVO:=\
  theories/Lists/MonoList.vo \
@@ -665,6 +656,7 @@ NATINTVO:=\
   $(NATINTDIR)/NZPlus.vo\
   $(NATINTDIR)/NZTimes.vo\
   $(NATINTDIR)/NZOrder.vo\
+  $(NATINTDIR)/NZPlusOrder.vo\
   $(NATINTDIR)/NZTimesOrder.vo
 
 NATURALDIR:=$(NUMBERSDIR)/Natural
@@ -675,11 +667,17 @@ NATURALABSTRACTVO:=\
   $(NATABSTRACTDIR)/NPlus.vo\
   $(NATABSTRACTDIR)/NTimes.vo\
   $(NATABSTRACTDIR)/NOrder.vo\
+  $(NATABSTRACTDIR)/NPlusOrder.vo\
   $(NATABSTRACTDIR)/NTimesOrder.vo\
-  $(NATABSTRACTDIR)/NMinus.vo
+  $(NATABSTRACTDIR)/NMinus.vo\
+  $(NATABSTRACTDIR)/NIso.vo
 
 NATURALPEANOVO:=$(NATURALDIR)/Peano/NPeano.vo
-NATURALBINARYVO:=$(NATURALDIR)/Binary/NBinary.vo
+
+NATURALBINARYVO:=\
+  $(NATURALDIR)/Binary/NBinDefs.vo\
+  $(NATURALDIR)/Binary/NBinary.vo
+
 NATURALVO:=$(NATURALABSTRACTVO) $(NATURALPEANOVO) $(NATURALBINARYVO)
 
 INTEGERDIR:=$(NUMBERSDIR)/Integer
@@ -689,7 +687,7 @@ INTEGERABSTRACTVO:=\
   $(INTABSTRACTDIR)/ZBase.vo\
   $(INTABSTRACTDIR)/ZPlus.vo\
   $(INTABSTRACTDIR)/ZTimes.vo\
-  $(INTABSTRACTDIR)/ZOrder.vo\
+  $(INTABSTRACTDIR)/ZLt.vo\
   $(INTABSTRACTDIR)/ZPlusOrder.vo\
   $(INTABSTRACTDIR)/ZTimesOrder.vo
 
@@ -739,7 +737,7 @@ NEWRINGVO:=\
  contrib/setoid_ring/Ring_base.vo 	contrib/setoid_ring/InitialRing.vo \
  contrib/setoid_ring/Ring_equiv.vo 	contrib/setoid_ring/Ring.vo \
  contrib/setoid_ring/ArithRing.vo	contrib/setoid_ring/NArithRing.vo \
- contrib/setoid_ring/ZArithRing.vo 	contrib/setoid_ring/Ring_zdiv.vo \
+ contrib/setoid_ring/ZArithRing.vo \
  contrib/setoid_ring/Field_theory.vo	contrib/setoid_ring/Field_tac.vo \
  contrib/setoid_ring/Field.vo		contrib/setoid_ring/RealField.vo
 

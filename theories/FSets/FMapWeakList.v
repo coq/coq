@@ -221,10 +221,10 @@ Proof.
  destruct a as (x',e').
  simpl; case (X.eq_dec x x'); inversion_clear Hm; auto.
  constructor; auto.
- swap H.
+ contradict H.
  apply InA_eqk with (x,e); auto.
  constructor; auto.
- swap H; apply add_3' with x e; auto.
+ contradict H; apply add_3' with x e; auto.
 Qed.
 
 (* Not part of the exported specifications, used later for [combine]. *)
@@ -272,8 +272,8 @@ Proof.
 
  inversion_clear Hm.
  subst.
- swap H0.
- destruct H2 as (e,H2); unfold PX.MapsTo in H2.
+ contradict H0.
+ destruct H0 as (e,H2); unfold PX.MapsTo in H2.
  apply InA_eqk with (y,e); auto.
  compute; apply X.eq_trans with x; auto.
   
@@ -323,7 +323,7 @@ Proof.
  destruct a as (x',e').
  simpl; case (X.eq_dec x x'); auto.
  constructor; auto.
- swap H; apply remove_3' with x; auto.
+ contradict H; apply remove_3' with x; auto.
 Qed.  
 
 (** * [elements] *)
@@ -340,7 +340,7 @@ Proof.
 auto.
 Qed.
 
-Lemma elements_3 : forall m (Hm:NoDupA m), NoDupA (elements m). 
+Lemma elements_3w : forall m (Hm:NoDupA m), NoDupA (elements m). 
 Proof. 
  auto.
 Qed.
@@ -533,12 +533,12 @@ Proof.
  destruct a as (x',e').
  inversion_clear Hm.
  constructor; auto.
- swap H.
+ contradict H.
  (* il faut un map_1 avec eqk au lieu de eqke *)
  clear IHm H0. 
  induction m; simpl in *; auto.
- inversion H1.
- destruct a; inversion H1; auto.
+ inversion H.
+ destruct a; inversion H; auto.
 Qed.      
  
 (** Specification of [mapi] *)
@@ -593,11 +593,11 @@ Proof.
  destruct a as (x',e').
  inversion_clear Hm; auto.
  constructor; auto.
- swap H.
+ contradict H.
  clear IHm H0.
  induction m; simpl in *; auto.
- inversion_clear H1.
- destruct a; inversion_clear H1; auto.
+ inversion_clear H.
+ destruct a; inversion_clear H; auto.
 Qed.
 
 End Elt2. 
@@ -765,13 +765,13 @@ Proof.
  inversion_clear H1.
  destruct a; destruct o; simpl; auto.
  constructor; auto.
- swap H.
+ contradict H.
  clear IHl1.
  induction l1.
- inversion H1.
+ inversion H.
  inversion_clear H0.
  destruct a; destruct o; simpl in *; auto.
- inversion_clear  H1; auto.
+ inversion_clear H; auto.
 Qed.
 
 Definition at_least_one_then_f (o:option elt)(o':option elt') := 
@@ -807,7 +807,7 @@ Proof.
  rewrite H2.
  unfold f'; simpl.
  destruct (f oo oo'); simpl. 
- destruct (X.eq_dec x k); try absurd_hyp n; auto.
+ destruct (X.eq_dec x k); try contradict n; auto.
  destruct (IHm0 H1) as (_,H4); apply H4; auto.
  case_eq (find x m0); intros; auto.
  elim H0.
@@ -817,7 +817,7 @@ Proof.
  (* k < x *)
  unfold f'; simpl.
  destruct (f oo oo'); simpl.
- destruct (X.eq_dec x k); [ absurd_hyp n; auto | auto].
+ destruct (X.eq_dec x k); [ contradict n; auto | auto].
  destruct (IHm0 H1) as (H3,_); apply H3; auto.
  destruct (IHm0 H1) as (H3,_); apply H3; auto.
 
@@ -831,7 +831,7 @@ Proof.
  (* k < x *)
  unfold f'; simpl.
  destruct (f oo oo'); simpl.
- destruct (X.eq_dec x k); [ absurd_hyp n; auto | auto].
+ destruct (X.eq_dec x k); [ contradict n; auto | auto].
  destruct (IHm0 H1) as (_,H4); apply H4; auto.
  destruct (IHm0 H1) as (_,H4); apply H4; auto.
 Qed.
@@ -951,8 +951,8 @@ Section Elt.
  Proof. intros m; exact (@Raw.elements_1 elt m.(this)). Qed.
  Lemma elements_2 : forall m x e, InA eq_key_elt (x,e) (elements m) -> MapsTo x e m.
  Proof. intros m; exact (@Raw.elements_2 elt m.(this)). Qed.
- Lemma elements_3 : forall m, NoDupA eq_key (elements m).  
- Proof. intros m; exact (@Raw.elements_3 elt m.(this) m.(NoDup)). Qed.
+ Lemma elements_3w : forall m, NoDupA eq_key (elements m).  
+ Proof. intros m; exact (@Raw.elements_3w elt m.(this) m.(NoDup)). Qed.
 
  Lemma fold_1 : forall m (A : Type) (i : A) (f : key -> elt -> A -> A),
         fold f m i = fold_left (fun a p => f (fst p) (snd p) a) (elements m) i.

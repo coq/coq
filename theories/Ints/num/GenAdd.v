@@ -10,7 +10,6 @@ Set Implicit Arguments.
 
 Require Import ZArith.
 Require Import ZAux.
-Require Import ZDivModAux.
 Require Import Basic_type.
 Require Import GenBase.
 
@@ -265,11 +264,11 @@ Section GenAdd.
   Lemma spec_ww_succ : forall x, [[ww_succ x]] = ([[x]] + 1) mod wwB.
   Proof.
    destruct x as [ |xh xl];simpl.
-   rewrite spec_ww_1;rewrite Zmod_def_small;trivial.
+   rewrite spec_ww_1;rewrite Zmod_small;trivial.
    split;[intro;discriminate|apply wwB_pos].
    rewrite <- Zplus_assoc;generalize (spec_w_succ_c xl);
    destruct (w_succ_c xl) as[l|l];intro H;unfold interp_carry in H;rewrite <-H.
-   rewrite Zmod_def_small;trivial.
+   rewrite Zmod_small;trivial.
    rewrite wwB_wBwB;apply beta_mult;apply spec_to_Z.
    assert ([|l|] = 0). clear spec_ww_1 spec_w_1 spec_w_0.
     assert (H1:= spec_to_Z l); assert (H2:= spec_to_Z xl); omega.
@@ -281,10 +280,10 @@ Section GenAdd.
   Lemma spec_ww_add : forall x y, [[ww_add x y]] = ([[x]] + [[y]]) mod wwB.
   Proof.
    destruct x as [ |xh xl];intros y;simpl.
-   rewrite Zmod_def_small;trivial. apply spec_ww_to_Z;trivial.
+   rewrite Zmod_small;trivial. apply spec_ww_to_Z;trivial.
    destruct y as [ |yh yl].
    change [[W0]] with 0;rewrite Zplus_0_r.
-   rewrite Zmod_def_small;trivial. 
+   rewrite Zmod_small;trivial. 
     exact (spec_ww_to_Z w_digits w_to_Z spec_to_Z (WW xh xl)).
    simpl. replace ([|xh|] * wB + [|xl|] + ([|yh|] * wB + [|yl|])) 
    with (([|xh|]+[|yh|])*wB + ([|xl|]+[|yl|])). 2:ring.

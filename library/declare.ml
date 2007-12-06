@@ -47,7 +47,7 @@ let xml_declare_variable = ref (fun (sp:object_name) -> ())
 let xml_declare_constant = ref (fun (sp:bool * constant)-> ())
 let xml_declare_inductive = ref (fun (sp:bool * object_name) -> ())
 
-let if_xml f x = if !Options.xml_export then f x else ()
+let if_xml f x = if !Flags.xml_export then f x else ()
 
 let set_xml_declare_variable f = xml_declare_variable := if_xml f
 let set_xml_declare_constant f = xml_declare_constant := if_xml f
@@ -92,7 +92,7 @@ let cache_variable ((sp,_),o) =
     | SectionLocalDef (c,t,opaq) -> 
         let cst = Global.push_named_def (id,c,t) in
         let (_,bd,ty) = Global.lookup_named id in
-        CheckedSectionLocalDef (out_some bd,ty,cst,opaq) in
+        CheckedSectionLocalDef (Option.get bd,ty,cst,opaq) in
   Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);
   add_section_variable id;
   Dischargedhypsmap.set_discharged_hyps sp [];
@@ -196,11 +196,11 @@ let (in_constant, out_constant) =
     export_function = export_constant } 
 
 let hcons_constant_declaration = function
-  | DefinitionEntry ce when !Options.hash_cons_proofs ->
+  | DefinitionEntry ce when !Flags.hash_cons_proofs ->
       let (hcons1_constr,_) = hcons_constr (hcons_names()) in
       DefinitionEntry
        { const_entry_body = hcons1_constr ce.const_entry_body;
-	 const_entry_type = option_map hcons1_constr ce.const_entry_type;
+	 const_entry_type = Option.map hcons1_constr ce.const_entry_type;
          const_entry_opaque = ce.const_entry_opaque; 
          const_entry_boxed = ce.const_entry_boxed }
   | cd -> cd

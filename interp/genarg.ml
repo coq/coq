@@ -223,7 +223,7 @@ let app_list1 f = function
 let app_opt f = function
   | (OptArgType t as u, l) ->
       let o = Obj.magic l in
-      (u, Obj.repr (option_map (fun x -> out_gen t (f (in_gen t x))) o))
+      (u, Obj.repr (Option.map (fun x -> out_gen t (f (in_gen t x))) o))
   | _ -> failwith "Genarg: not an opt"
 
 let app_pair f1 f2 = function

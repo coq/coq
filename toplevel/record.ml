@@ -90,7 +90,7 @@ let warning_or_error coe indsp err =
               (pr_id fi ++ str " cannot be defined because it is not typable")
   in
   if coe then errorlabstrm "structure" st;
-  Options.if_verbose ppnl (hov 0 (str"Warning: " ++ st))
+  Flags.if_verbose ppnl (hov 0 (str"Warning: " ++ st))
 
 type field_status =
   | NoProjection of name
@@ -171,10 +171,10 @@ let declare_projections indsp coers fields =
 		    const_entry_body = proj;
                     const_entry_type = Some projtyp;
                     const_entry_opaque = false;
-		    const_entry_boxed = Options.boxed_definitions() } in
+		    const_entry_boxed = Flags.boxed_definitions() } in
 		  let k = (DefinitionEntry cie,IsDefinition StructureComponent) in
 		  let kn = declare_internal_constant fid k in
-		  Options.if_verbose message (string_of_id fid ^" is defined");
+		  Flags.if_verbose message (string_of_id fid ^" is defined");
 		  kn
                 with Type_errors.TypeError (ctx,te) ->
                   raise (NotDefinable (BadTypedProj (fid,ctx,te))) in

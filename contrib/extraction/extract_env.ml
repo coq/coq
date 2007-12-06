@@ -241,7 +241,7 @@ and extract_meb env mpo all = function
 and extract_module env mp all mb = 
   (* [mb.mod_expr <> None ], since we look at modules from outside. *)
   (* Example of module with empty [mod_expr] is X inside a Module F [X:SIG]. *)
-  let meb = out_some mb.mod_expr in
+  let meb = Option.get mb.mod_expr in
   let mtb = match mb.mod_user_type with None -> mb.mod_type | Some mt -> mt in
   (* Because of the "with" construct, the module type can be [MTBsig] with *)
   (* a msid different from the one of the module. Here is the patch. *)
@@ -282,7 +282,7 @@ let mono_filename f =
 	    Filename.chop_suffix f d.file_suffix 
 	  else f
 	in 
-	Some (f^d.file_suffix), option_map ((^) f) d.sig_suffix, id_of_string f
+	Some (f^d.file_suffix), Option.map ((^) f) d.sig_suffix, id_of_string f
 
 (* Builds a suitable filename from a module id *)
 
@@ -290,7 +290,7 @@ let module_filename m =
   let d = descr () in 
   let f = if d.capital_file then String.capitalize else String.uncapitalize in 
   let fn = f (string_of_id m) in
-  Some (fn^d.file_suffix), option_map ((^) fn) d.sig_suffix, m
+  Some (fn^d.file_suffix), Option.map ((^) fn) d.sig_suffix, m
 
 (*s Extraction of one decl to stdout. *)
 
@@ -317,7 +317,7 @@ let print_structure_to_file (fn,si,mo) struc =
       else struct_ast_search (function MLmagic _ -> true | _ -> false) struc }
   in
   (* print the implementation *)
-  let cout = option_map open_out fn in 
+  let cout = Option.map open_out fn in 
   let ft = match cout with 
     | None -> !Pp_control.std_ft
     | Some cout -> Pp_control.with_output_to cout in 
@@ -330,13 +330,13 @@ let print_structure_to_file (fn,si,mo) struc =
       reset_renaming_tables OnlyLocal; 
     end; 
     msg_with ft (d.pp_struct struc);
-    option_iter close_out cout; 
+    Option.iter close_out cout; 
   with e -> 
-    option_iter close_out cout; raise e
+    Option.iter close_out cout; raise e
   end;
-  option_iter info_file fn;
+  Option.iter info_file fn;
   (* print the signature *)
-  option_iter 
+  Option.iter 
     (fun si -> 
        let cout = open_out si in
        let ft = Pp_control.with_output_to cout in

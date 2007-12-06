@@ -7,7 +7,7 @@
 (************************************************************************)
 (*i $Id$ i*)
 
-(** Binary Integers (Pierre Crégut (CNET, Lannion, France) *)
+(** Binary Integers (Pierre CrÃ©gut (CNET, Lannion, France) *)
 
 Require Import BinPos.
 Require Import BinInt.
@@ -995,6 +995,32 @@ Lemma Zle_minus_le_0 : forall n m:Z, m <= n -> 0 <= n - m.
 Proof.
   intros n m H; unfold Zminus; apply Zplus_le_reg_r with (p := m); 
     rewrite <- Zplus_assoc; rewrite Zplus_opp_l; rewrite Zplus_0_r; exact H. 
+Qed.
+
+Lemma Zmult_lt_compat:
+  forall n m p q : Z, 0 <= n < p -> 0 <= m < q -> n * m < p * q.
+Proof.
+  intros n m p q (H1, H2) (H3,H4).
+  assert (0<p) by (apply Zle_lt_trans with n; auto).
+  assert (0<q) by (apply Zle_lt_trans with m; auto).
+  case Zle_lt_or_eq with (1 := H1); intros H5; auto with zarith.
+  case Zle_lt_or_eq with (1 := H3); intros H6; auto with zarith.
+  apply Zlt_trans with (n * q).
+  apply Zmult_lt_compat_l; auto.
+  apply Zmult_lt_compat_r; auto with zarith.
+  rewrite <- H6; rewrite Zmult_0_r; apply Zmult_lt_0_compat; auto with zarith.
+  rewrite <- H5; simpl; apply Zmult_lt_0_compat; auto with zarith.
+Qed.
+
+Lemma Zmult_lt_compat2: 
+  forall n m p q : Z, 0 < n <= p -> 0 < m < q -> n * m < p * q.
+Proof.
+  intros n m p q (H1, H2) (H3, H4).
+  apply Zle_lt_trans with (p * m).
+  apply Zmult_le_compat_r; auto.
+  apply Zlt_le_weak; auto.
+  apply Zmult_lt_compat_l; auto.
+  apply Zlt_le_trans with n; auto.
 Qed.
 
 (** For compatibility *)

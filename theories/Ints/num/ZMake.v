@@ -1,6 +1,5 @@
 Require Import ZArith.
 Require Import ZAux.
-Require Import ZDivModAux.
 
 Open Scope Z_scope.
 
@@ -113,6 +112,14 @@ Module Make (N:NType).
   | Neg nx => Zopp (N.to_Z nx)
   end.
 
+ Theorem spec_of_Z: forall x, to_Z (of_Z x) = x.
+ intros x; case x; unfold to_Z, of_Z, zero.
+   exact N.spec_0.
+   intros; rewrite N.spec_of_N; auto.
+   intros; rewrite N.spec_of_N; auto.
+ Qed.
+
+
  Theorem spec_0: to_Z zero = 0.
  exact N.spec_0.
  Qed.
@@ -186,6 +193,22 @@ Module Make (N:NType).
     if N.eq_bool nx N.zero then Eq else Lt
   | _, _ => Eq
   end.
+
+ Theorem spec_cmp_sign: forall x y,
+  match cmp_sign x y with
+  | Gt => 0 <= to_Z x /\ to_Z y < 0
+  | Lt => to_Z x <  0 /\ 0 <= to_Z y
+  | Eq => True
+  end.
+  Proof.
+  intros [x | x] [y | y]; unfold cmp_sign; auto.
+  generalize (N.spec_eq_bool y N.zero); case N.eq_bool; auto.
+  rewrite N.spec_0; unfold to_Z.
+  generalize (N.spec_pos x) (N.spec_pos y); auto with zarith.
+  generalize (N.spec_eq_bool x N.zero); case N.eq_bool; auto.
+  rewrite N.spec_0; unfold to_Z.
+  generalize (N.spec_pos x) (N.spec_pos y); auto with zarith.
+  Qed.
  
  Definition to_N x :=
   match x with

@@ -29,18 +29,16 @@ Module Properties (M: S).
   Import ME. (* for ME.eq_dec *)
   Import M.E.
   Import M.
-  Import Logic. (* to unmask [eq] *)  
-  Import Peano. (* to unmask [lt] *)
-  
-   (** Results about lists without duplicates *)
-
   Module FM := Facts M.
   Import FM.
+  Import Logic. (* to unmask [eq] *)  
+  Import Peano. (* to unmask [lt] *)
+
+  (** Results about lists without duplicates *)
 
   Definition Add x s s' := forall y, In y s' <-> E.eq x y \/ In y s.
   Definition Above x s := forall y, In y s -> E.lt y x.
   Definition Below x s := forall y, In y s -> E.lt x y.
-
 
   Lemma In_dec : forall x s, {In x s} + {~ In x s}.
   Proof.
@@ -231,14 +229,14 @@ Module Properties (M: S).
    union (remove x s) (add x s') [=] union (add x s) (remove x s').
   Proof.
   unfold Equal; intros; set_iff.
-  destruct (ME.eq_dec x a); intuition.
+  destruct (eq_dec x a); intuition.
   Qed.
 
   Lemma union_remove_add_2 : In x s -> 
    union (remove x s) (add x s') [=] union s s'.
   Proof.
   unfold Equal; intros; set_iff.
-  destruct (ME.eq_dec x a); intuition.
+  destruct (eq_dec x a); intuition.
   left; eauto with set.
   Qed.
 
@@ -548,7 +546,7 @@ Module Properties (M: S).
   rewrite leb_1 in H2.
   rewrite <- elements_iff in H1.
   assert (~E.eq x y).
-   swap H; rewrite H3; auto.
+   contradict H; rewrite H; auto.
   ME.order.
   intros.
   rewrite filter_InA in H1; auto; destruct H1.

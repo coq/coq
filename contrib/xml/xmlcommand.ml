@@ -691,11 +691,11 @@ let _ =
              Buffer.output_buffer ch theory_buffer ;
              close_out ch
        end ;
-       Util.option_iter 
+       Option.iter 
 	(fun fn ->
 	  let coqdoc = Coq_config.bindir^"/coqdoc" in
 	  let options = " --html -s --body-only --no-index --latin1 --raw-comments" in
-	  let dir = Util.out_some xml_library_root in
+	  let dir = Option.get xml_library_root in
           let command cmd =
            if Sys.command cmd <> 0 then
             Util.anomaly ("Error executing \"" ^ cmd ^ "\"")

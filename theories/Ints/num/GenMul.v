@@ -10,7 +10,6 @@ Set Implicit Arguments.
 
 Require Import ZArith.
 Require Import ZAux.
-Require Import ZDivModAux.
 Require Import Basic_type.
 Require Import GenBase.
 
@@ -327,7 +326,7 @@ Section GenMul.
    2:ring. rewrite <- H1;rewrite <- H;rewrite <- H0.  
    assert (H2 := sum_mul_carry _ _ _ _ _ _ H1).
    destruct cc as [ | cch ccl]; simpl zn2z_to_Z; simpl ww_to_Z.
-   rewrite spec_ww_add;rewrite spec_w_W0;rewrite Zmod_def_small;
+   rewrite spec_ww_add;rewrite spec_w_W0;rewrite Zmod_small;
     rewrite wwB_wBwB. ring.
    rewrite <- (Zplus_0_r ([|wc|]*wB));rewrite H;apply mult_add_ineq3;zarith.
    simpl ww_to_Z in H1. assert (U:=spec_to_Z cch).
@@ -349,7 +348,7 @@ Section GenMul.
    as [l|l];unfold interp_carry;rewrite spec_w_W0;try rewrite Zmult_1_l;
    simpl zn2z_to_Z;
    try rewrite spec_ww_add;try rewrite spec_ww_add_carry;rewrite spec_w_WW;
-   rewrite Zmod_def_small;rewrite wwB_wBwB;intros.
+   rewrite Zmod_small;rewrite wwB_wBwB;intros.
    rewrite H4;ring. rewrite H;apply mult_add_ineq2;zarith.
    rewrite Zplus_assoc;rewrite Zmult_plus_distr_l.
    rewrite Zmult_1_l;rewrite <- Zplus_assoc;rewrite H4;ring.
@@ -385,8 +384,8 @@ Section GenMul.
 
   Lemma spec_w_2: [|w_2|] = 2.
   unfold w_2; rewrite spec_w_add; rewrite spec_w_1; simpl.
-  apply Zmod_def_small; split; auto with zarith.
-  rewrite <- (Zpower_exp_1 2); unfold base; apply Zpower_lt_monotone; auto with zarith.
+  apply Zmod_small; split; auto with zarith.
+  rewrite <- (Zpower_1_r 2); unfold base; apply Zpower_lt_monotone; auto with zarith.
   Qed.
 
   Lemma kara_prod_aux : forall xh xl yh yl,
@@ -410,7 +409,7 @@ Section GenMul.
    generalize (spec_w_compare yl yh); case (w_compare yl yh); intros Hylh;
      try rewrite Hylh; try rewrite spec_w_0; try (ring; fail).
    repeat (rewrite spec_ww_sub || rewrite spec_w_sub || rewrite spec_w_mul_c).
-   repeat rewrite Zmod_def_small; auto with zarith; try (ring; fail).
+   repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
    split; auto with zarith.
    simpl in Hz; rewrite Hz; rewrite H; rewrite H0.
    rewrite kara_prod_aux; apply Zplus_le_0_compat; apply Zmult_le_0_compat; auto with zarith.
@@ -422,10 +421,10 @@ Section GenMul.
      intros z1 Hz2
    end.
    simpl in Hz2; rewrite Hz2; repeat (rewrite spec_w_sub || rewrite spec_w_mul_c).
-   repeat rewrite Zmod_def_small; auto with zarith; try (ring; fail).
+   repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
    rewrite spec_w_1; unfold interp_carry in Hz2; rewrite Hz2;
      repeat (rewrite spec_w_sub || rewrite spec_w_mul_c).
-   repeat rewrite Zmod_def_small; auto with zarith; try (ring; fail).
+   repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
    generalize (spec_w_compare yl yh); case (w_compare yl yh); intros Hylh;
      try rewrite Hylh; try rewrite spec_w_0; try (ring; fail).
    match goal with |- context[ww_add_c ?x ?y] =>
@@ -433,12 +432,12 @@ Section GenMul.
      intros z1 Hz2
    end.
    simpl in Hz2; rewrite Hz2; repeat (rewrite spec_w_sub || rewrite spec_w_mul_c).
-   repeat rewrite Zmod_def_small; auto with zarith; try (ring; fail).
+   repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
    rewrite spec_w_1; unfold interp_carry in Hz2; rewrite Hz2;
      repeat (rewrite spec_w_sub || rewrite spec_w_mul_c).
-   repeat rewrite Zmod_def_small; auto with zarith; try (ring; fail).
+   repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
    repeat (rewrite spec_ww_sub || rewrite spec_w_sub || rewrite spec_w_mul_c).
-   repeat rewrite Zmod_def_small; auto with zarith; try (ring; fail).
+   repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
    split.
    match goal with |- context[(?x - ?y) * (?z - ?t)] =>
      replace ((x - y) * (z - t)) with ((y - x) * (t - z)); [idtac | ring]
@@ -459,22 +458,22 @@ Section GenMul.
      intros z1 Hz2
    end.
    simpl in Hz2; rewrite Hz2; repeat (rewrite spec_w_sub || rewrite spec_w_mul_c).
-   repeat rewrite Zmod_def_small; auto with zarith; try (ring; fail).
+   repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
    rewrite spec_w_0; rewrite Zmult_0_l; rewrite Zplus_0_l.
    generalize Hz2; clear Hz2; unfold interp_carry.
    repeat (rewrite spec_w_sub || rewrite spec_w_mul_c).
-   repeat rewrite Zmod_def_small; auto with zarith; try (ring; fail).
+   repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
    match goal with |- context[ww_add_c ?x ?y] =>
      generalize (spec_ww_add_c x y); case (ww_add_c x y); try rewrite spec_w_1;
      intros z1 Hz2
    end.
    simpl in Hz2; rewrite Hz2; repeat (rewrite spec_w_sub || rewrite spec_w_mul_c).
-   repeat rewrite Zmod_def_small; auto with zarith; try (ring; fail).
+   repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
    rewrite spec_w_2; unfold interp_carry in Hz2.
    apply trans_equal with (wwB + (1 * wwB + [[z1]])).
    ring.
    rewrite Hz2; repeat (rewrite spec_w_sub || rewrite spec_w_mul_c).
-   repeat rewrite Zmod_def_small; auto with zarith; try (ring; fail).
+   repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
    generalize (spec_w_compare yl yh); case (w_compare yl yh); intros Hylh;
      try rewrite Hylh; try rewrite spec_w_1; try (ring; fail).
    match goal with |- context[ww_add_c ?x ?y] =>
@@ -482,25 +481,25 @@ Section GenMul.
      intros z1 Hz2
    end.
    simpl in Hz2; rewrite Hz2; repeat (rewrite spec_w_sub || rewrite spec_w_mul_c).
-   repeat rewrite Zmod_def_small; auto with zarith; try (ring; fail).
+   repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
    rewrite spec_w_2; unfold interp_carry in Hz2.
    apply trans_equal with (wwB + (1 * wwB + [[z1]])).
    ring.
    rewrite Hz2; repeat (rewrite spec_w_sub || rewrite spec_w_mul_c).
-   repeat rewrite Zmod_def_small; auto with zarith; try (ring; fail).
+   repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
    match goal with |- context[ww_sub_c ?x ?y] =>
      generalize (spec_ww_sub_c x y); case (ww_sub_c x y); try rewrite spec_w_1;
      intros z1 Hz2
    end.
    simpl in Hz2; rewrite Hz2; repeat (rewrite spec_w_sub || rewrite spec_w_mul_c).
-   repeat rewrite Zmod_def_small; auto with zarith; try (ring; fail).
+   repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
    rewrite spec_w_0; rewrite Zmult_0_l; rewrite Zplus_0_l.
    match goal with |- context[(?x - ?y) * (?z - ?t)] =>
      replace ((x - y) * (z - t)) with ((y - x) * (t - z)); [idtac | ring]
    end.
    generalize Hz2; clear Hz2; unfold interp_carry.
    repeat (rewrite spec_w_sub || rewrite spec_w_mul_c).
-   repeat rewrite Zmod_def_small; auto with zarith; try (ring; fail).
+   repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
   Qed.
 
   Lemma sub_carry : forall xh xl yh yl z, 
@@ -539,21 +538,21 @@ Section GenMul.
    assert (U1:= lt_0_wwB w_digits).
    intros x y; case x; auto; intros xh xl.
    case y; auto.
-   simpl; rewrite Zmult_0_r; rewrite Zmod_def_small; auto with zarith.
+   simpl; rewrite Zmult_0_r; rewrite Zmod_small; auto with zarith.
    intros yh yl;simpl.
    repeat (rewrite spec_ww_add || rewrite spec_w_W0 || rewrite spec_w_mul_c
     || rewrite spec_w_add || rewrite spec_w_mul).
-   rewrite <- Zmod_plus; auto with zarith.
+   rewrite <- Zplus_mod; auto with zarith.
    repeat (rewrite Zmult_plus_distr_l || rewrite Zmult_plus_distr_r).
    rewrite <- Zmult_mod_distr_r; auto with zarith.
    rewrite <- Zpower_2; rewrite <- wwB_wBwB; auto with zarith.
-   rewrite Zmod_plus; auto with zarith.
+   rewrite Zplus_mod; auto with zarith.
    rewrite Zmod_mod; auto with zarith.
-   rewrite <- Zmod_plus; auto with zarith.
+   rewrite <- Zplus_mod; auto with zarith.
    match goal with |- ?X mod _ = _ =>
      rewrite <- Z_mod_plus with (a := X) (b := [|xh|] * [|yh|])
    end; auto with zarith.
-   eq_tac; auto; rewrite wwB_wBwB; ring.
+   f_equal; auto; rewrite wwB_wBwB; ring.
   Qed.
 
   Lemma spec_ww_square_c : forall x, [||ww_square_c x||] = [[x]]*[[x]].
@@ -607,7 +606,7 @@ Section GenMul.
    rewrite spec_w_0;trivial.
    assert (U:=spec_w_add_c l r);destruct (w_add_c l r) as [lr|lr];unfold
    interp_carry in U;try rewrite Zmult_1_l in H;simpl.
-   rewrite U;ring. rewrite spec_w_succ. rewrite Zmod_def_small.
+   rewrite U;ring. rewrite spec_w_succ. rewrite Zmod_small.
    rewrite <- Zplus_assoc;rewrite <- U;ring.
    simpl in H;assert (H1:= Zmult_lt_b _ _ _ (spec_to_Z x) (spec_to_Z y)).
    rewrite <- H in H1.

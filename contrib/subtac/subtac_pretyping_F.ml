@@ -290,7 +290,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 		      let value, typ = applist (j_val resj, [j_val hj]), subst1 hj.uj_val c2 in
 		      let typ' = nf_isevar !isevars typ in
 		      let tycon = 
-			option_map 
+			Option.map 
 			  (fun (abs, ty) ->
 			     match abs with
 				 None ->
@@ -306,7 +306,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 			apply_rec env (n+1) 
 			  { uj_val = nf_isevar !isevars value;
 			    uj_type = nf_isevar !isevars typ' }
-			  (option_map (fun (abs, c) -> abs, nf_isevar !isevars c) tycon) rest
+			  (Option.map (fun (abs, c) -> abs, nf_isevar !isevars c) tycon) rest
 
 		  | _ ->
 		      let hj = pretype empty_tycon env isevars lvar c in
@@ -314,7 +314,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 			  (join_loc floc argloc) env (evars_of !isevars)
 	      		  resj [hj]
 	in
-	let ftycon = option_map (lift_abstr_tycon_type (-1)) ftycon in
+	let ftycon = Option.map (lift_abstr_tycon_type (-1)) ftycon in
 	let resj = j_nf_evar (evars_of !isevars) (apply_rec env 1 fj ftycon args) in
 	let resj =
 	  match kind_of_term resj.uj_val with

@@ -25,10 +25,10 @@ open Pp
 let raw_app (loc,hd,args) = if args =[] then hd else RApp(loc,hd,args) 
 
 let intern_justification_items globs = 
-  option_map (List.map (intern_constr globs))
+  Option.map (List.map (intern_constr globs))
 
 let intern_justification_method globs = 
-  option_map (intern_tactic globs)
+  Option.map (intern_tactic globs)
 
 let intern_statement intern_it globs st =
   {st_label=st.st_label;
@@ -52,7 +52,7 @@ let add_name nam globs=
 
 let intern_hyp iconstr globs = function 
     Hvar (loc,(id,topt)) -> add_var id globs,
-      Hvar (loc,(id,option_map (intern_constr globs) topt))
+      Hvar (loc,(id,Option.map (intern_constr globs) topt))
   | Hprop st -> add_name st.st_label globs,
       Hprop (intern_statement iconstr globs st)
 
@@ -73,7 +73,7 @@ let intern_casee globs = function
 let intern_hyp_list args globs =
   let intern_one globs (loc,(id,opttyp)) =
     (add_var id globs),
-    (loc,(id,option_map (intern_constr globs) opttyp)) in
+    (loc,(id,Option.map (intern_constr globs) opttyp)) in
   list_fold_map intern_one globs args 
 
 let intern_suffices_clause globs (hyps,c) = 
@@ -141,7 +141,7 @@ let rec intern_proof_instr globs instr=
 (* INTERP *)
 
 let interp_justification_items sigma env =
-    option_map (List.map (fun c ->understand sigma env (fst c)))
+    Option.map (List.map (fun c ->understand sigma env (fst c)))
 
 let interp_constr check_sort sigma env c = 
   if check_sort then 
@@ -153,7 +153,7 @@ let special_whd env =
   let infos=Closure.create_clos_infos Closure.betadeltaiota env in
     (fun t -> Closure.whd_val infos (Closure.inject t))
 
-let _eq = Libnames.constr_of_reference (Coqlib.glob_eq)
+let _eq = Libnames.constr_of_global (Coqlib.glob_eq)
 
 let decompose_eq env id =
   let typ = Environ.named_type id env in

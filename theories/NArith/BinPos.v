@@ -1226,6 +1226,24 @@ Proof.
   intros; unfold Plt, Pminus; rewrite Pminus_mask_Lt; auto.
 Qed.
 
+(** Number of digits in a number *)
+
+Fixpoint Psize (p:positive) : nat := 
+  match p with 
+    | xH => 1%nat
+    | xI p => S (Psize p) 
+    | xO p => S (Psize p)
+  end.
+
+Lemma Psize_monotone : forall p q, (p?=q) Eq = Lt -> (Psize p <= Psize q)%nat.
+Proof.
+  assert (le0 : forall n:nat, (0<=n)%nat) by (induction n; auto).
+  assert (leS : forall n m:nat, (n<=m)%nat -> (S n <= S m)%nat) by (induction 1; auto).
+  induction p; destruct q; simpl; auto; intros; try discriminate.
+  intros; generalize (Pcompare_Gt_Lt _ _ H); auto.
+  intros; destruct (Pcompare_Lt_Lt _ _ H); auto; subst; auto.
+Qed.
+
 
 
 

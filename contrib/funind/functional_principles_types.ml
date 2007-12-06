@@ -115,7 +115,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
     it_mkProd_or_LetIn 
       ~init:
       (it_mkProd_or_LetIn 
-	 ~init:(option_fold_right
+	 ~init:(Option.fold_right
 			   mkProd_or_LetIn
 			   princ_type_info.indarg
 			   princ_type_info.concl
@@ -384,7 +384,7 @@ let generate_functional_principle
 	  { const_entry_body = value;
 	    const_entry_type = None;
 	    const_entry_opaque = false;
-	    const_entry_boxed = Options.boxed_definitions()
+	    const_entry_boxed = Flags.boxed_definitions()
 	  }
 	in
 	ignore(
@@ -394,7 +394,7 @@ let generate_functional_principle
 	     Decl_kinds.IsDefinition (Decl_kinds.Scheme)
 	    )
 	);
-	Options.if_verbose 
+	Flags.if_verbose 
 	  (fun id -> Pp.msgnl (Ppconstr.pr_id id ++ str " is defined")) 
 	  name;
 	names := name :: !names
@@ -564,9 +564,9 @@ let make_scheme (fas : (constant*Rawterm.rawsort) list) : Entries.definition_ent
   let opacity = 
     let finfos = find_Function_infos this_block_funs.(0) in 
     try 
-      let equation =  out_some finfos.equation_lemma in  
+      let equation =  Option.get finfos.equation_lemma in  
       (Global.lookup_constant equation).Declarations.const_opaque 
-    with Failure "out_some" -> (* non recursive definition *) 
+    with Option.IsNone -> (* non recursive definition *) 
       false
   in
   let const = {const with const_entry_opaque = opacity } in 
@@ -655,7 +655,7 @@ let build_scheme fas =
 	 (Declare.declare_constant 
 	    princ_id 
 	    (Entries.DefinitionEntry def_entry,Decl_kinds.IsProof Decl_kinds.Theorem));
-       Options.if_verbose 
+       Flags.if_verbose 
 	 (fun id -> Pp.msgnl (Ppconstr.pr_id id ++ str " is defined")) princ_id
     )
     fas

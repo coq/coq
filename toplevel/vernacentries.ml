@@ -12,7 +12,7 @@
 
 open Pp
 open Util
-open Options
+open Flags
 open Names
 open Entries
 open Nameops
@@ -35,6 +35,7 @@ open Decl_kinds
 open Topconstr
 open Pretyping
 open Redexpr
+open Syntax_def
 
 (* Pcoq hooks *)
 
@@ -58,7 +59,7 @@ let set_pcoq_hook f = pcoq := Some f
 let cl_of_qualid = function
   | FunClass -> Classops.CL_FUN
   | SortClass -> Classops.CL_SORT
-  | RefClass r -> Class.class_of_global (Nametab.global r)
+  | RefClass r -> Class.class_of_global (global_with_alias r)
 
 (*******************)
 (* "Show" commands *)
@@ -284,8 +285,8 @@ let vernac_bind_scope sc cll =
 
 let vernac_open_close_scope = Notation.open_close_scope
 
-let vernac_arguments_scope local qid scl =
-  Notation.declare_arguments_scope local (global qid) scl
+let vernac_arguments_scope local r scl =
+  Notation.declare_arguments_scope local (global_with_alias r) scl
 
 let vernac_infix = Metasyntax.add_infix
 
@@ -297,7 +298,7 @@ let vernac_notation = Metasyntax.add_notation
 let start_proof_and_print idopt k t hook =
   start_proof_com idopt k t hook;
   print_subgoals ();
-  if !pcoq <> None then (out_some !pcoq).start_proof ()
+  if !pcoq <> None then (Option.get !pcoq).start_proof ()
 
 let vernac_definition (local,_,_ as k) id def hook =
   match def with
@@ -329,7 +330,7 @@ let vernac_start_proof kind sopt (bl,t) lettop hook =
 let vernac_end_proof = function
   | Admitted -> admit ()
   | Proved (is_opaque,idopt) ->
-    if not !Options.print_emacs then if_verbose show_script ();
+    if not !Flags.print_emacs then if_verbose show_script ();
     match idopt with
     | None -> save_named is_opaque
     | Some ((_,id),None) -> save_anonymous is_opaque id
@@ -385,7 +386,7 @@ let vernac_declare_module export id binders_ast mty_ast_o =
     Modintern.interp_modtype Modintern.interp_modexpr
      id binders_ast (Some mty_ast_o) None;
   if_verbose message ("Module "^ string_of_id id ^" is declared");
-  option_iter (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
+  Option.iter (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
 
 let vernac_define_module export id binders_ast mty_ast_o mexpr_ast_o = 
   (* We check the state of the system (in section, in module type)
@@ -405,7 +406,7 @@ let vernac_define_module export id binders_ast mty_ast_o mexpr_ast_o =
 	  ("Interactive Module "^ string_of_id id ^" started") ;
         List.iter
          (fun (export,id) ->
-           option_iter
+           Option.iter
             (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
          ) argsexport
     | Some _ ->
@@ -421,13 +422,13 @@ let vernac_define_module export id binders_ast mty_ast_o mexpr_ast_o =
 	  id binders_ast mty_ast_o mexpr_ast_o;
 	if_verbose message 
 	  ("Module "^ string_of_id id ^" is defined");
-        option_iter (fun export -> vernac_import export [Ident (dummy_loc,id)])
+        Option.iter (fun export -> vernac_import export [Ident (dummy_loc,id)])
          export
 
 let vernac_end_module export id =
   Declaremods.end_module id;
   if_verbose message ("Module "^ string_of_id id ^" is defined") ;
-  option_iter (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
+  Option.iter (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
 
 
 let vernac_declare_module_type id binders_ast mty_ast_o =
@@ -446,7 +447,7 @@ let vernac_declare_module_type id binders_ast mty_ast_o =
 	  ("Interactive Module Type "^ string_of_id id ^" started");
         List.iter
          (fun (export,id) ->
-           option_iter
+           Option.iter
             (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
          ) argsexport
 	  
@@ -506,24 +507,13 @@ let vernac_require import _ qidl =
   let qidl = List.map qualid_of_reference qidl in
   Library.require_library qidl import
 
-let vernac_canonical locqid =
-  Recordops.declare_canonical_structure (Nametab.global locqid)
-
-let locate_reference ref =
-  let (loc,qid) = qualid_of_reference ref in
-  try match Nametab.extended_locate qid with
-    | TrueGlobal ref -> ref
-    | SyntacticDef kn -> 
-	match Syntax_def.search_syntactic_definition loc kn with
-	  | Rawterm.RRef (_,ref) -> ref
-	  | _ -> raise Not_found
-  with Not_found ->
-    error_global_not_found_loc loc qid
+let vernac_canonical r =
+  Recordops.declare_canonical_structure (global_with_alias r)
 
 let vernac_coercion stre ref qids qidt =
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
-  let ref' = locate_reference ref in
+  let ref' = global_with_alias ref in
   Class.try_add_new_coercion_with_target ref' stre source target;
   if_verbose message ((string_of_reference ref) ^ " is now a coercion")
 
@@ -547,12 +537,12 @@ let vernac_solve n tcom b =
   (* in case a strict subtree was completed, 
      go back to the top of the prooftree *) 
   if subtree_solved () then begin
-    Options.if_verbose msgnl (str "Subgoal proved");
+    Flags.if_verbose msgnl (str "Subgoal proved");
     make_focus 0;
     reset_top_of_script ()
   end;
   print_subgoals();
-  if !pcoq <> None then (out_some !pcoq).solve n
+  if !pcoq <> None then (Option.get !pcoq).solve n
 
   (* A command which should be a tactic. It has been
      added by Christine to patch an error in the design of the proof
@@ -666,11 +656,11 @@ let vernac_hints = Auto.add_hints
 
 let vernac_syntactic_definition = Command.syntax_definition 
 
-let vernac_declare_implicits local locqid = function
+let vernac_declare_implicits local r = function
   | Some imps ->
-      Impargs.declare_manual_implicits local (Nametab.global locqid) imps
+      Impargs.declare_manual_implicits local (global_with_alias r) imps
   | None -> 
-      Impargs.declare_implicits local (Nametab.global locqid)
+      Impargs.declare_implicits local (global_with_alias r)
 
 let vernac_reserve idl c =
   let t = Constrintern.interp_type Evd.empty (Global.env()) c in
@@ -783,8 +773,8 @@ let _ =
     { optsync  = true;
       optname  = "raw printing";
       optkey   = (SecondaryTable ("Printing","All"));
-      optread  = (fun () -> !Options.raw_print);
-      optwrite = (fun b -> Options.raw_print := b) }
+      optread  = (fun () -> !Flags.raw_print);
+      optwrite = (fun b -> Flags.raw_print := b) }
 
 let _ =
   declare_bool_option 
@@ -799,8 +789,8 @@ let _ =
     { optsync  = true;
       optname  = "use of boxed definitions";
       optkey   = (SecondaryTable ("Boxed","Definitions"));
-      optread  = Options.boxed_definitions;
-      optwrite = (fun b -> Options.set_boxed_definitions b) } 
+      optread  = Flags.boxed_definitions;
+      optwrite = (fun b -> Flags.set_boxed_definitions b) } 
 
 let _ =
   declare_bool_option 
@@ -823,8 +813,8 @@ let _ =
     { optsync=false;
       optkey=SecondaryTable("Hyps","Limit");
       optname="the hypotheses limit";
-      optread=Options.print_hyps_limit;
-      optwrite=Options.set_print_hyps_limit }
+      optread=Flags.print_hyps_limit;
+      optwrite=Flags.set_print_hyps_limit }
 
 let _ =
   declare_int_option
@@ -861,8 +851,8 @@ let _ =
       optread=(fun () -> get_debug () <> Tactic_debug.DebugOff);
       optwrite=vernac_debug }
 
-let vernac_set_opacity opaq locqid =
-  match Nametab.global locqid with
+let vernac_set_opacity opaq r =
+  match global_with_alias r with
     | ConstRef sp ->
 	if opaq then set_opaque_const sp
 	else set_transparent_const sp
@@ -920,12 +910,12 @@ let vernac_check_may_eval redexp glopt rc =
   let j = Typeops.typing env c in
   match redexp with
     | None ->
-	if !pcoq <> None then (out_some !pcoq).print_check env j
+	if !pcoq <> None then (Option.get !pcoq).print_check env j
 	else msg (print_judgment env j)
     | Some r ->
 	let redfun = fst (reduction_of_red_expr (interp_redexp env evmap r)) in
 	if !pcoq <> None
-	then (out_some !pcoq).print_eval redfun env evmap rc j
+	then (Option.get !pcoq).print_eval redfun env evmap rc j
 	else msg (print_eval redfun env evmap rc j)
 
   (* The same but avoiding the current goal context if any *)
@@ -950,7 +940,7 @@ let vernac_print = function
   | PrintMLLoadPath -> Mltop.print_ml_path ()
   | PrintMLModules -> Mltop.print_ml_modules ()
   | PrintName qid -> 
-      if !pcoq <> None then (out_some !pcoq).print_name qid
+      if !pcoq <> None then (Option.get !pcoq).print_name qid
       else msg (print_name qid)
   | PrintOpaqueName qid -> msg (print_opaque_name qid)
   | PrintGraph -> ppnl (Prettyp.print_graph())
@@ -962,7 +952,7 @@ let vernac_print = function
   | PrintCanonicalConversions -> ppnl (Prettyp.print_canonical_projections ())
   | PrintUniverses None -> pp (Univ.pr_universes (Global.universes ()))
   | PrintUniverses (Some s) -> dump_universes s
-  | PrintHint qid -> Auto.print_hint_ref (Nametab.global qid)
+  | PrintHint r -> Auto.print_hint_ref (global_with_alias r)
   | PrintHintGoal -> Auto.print_applicable_hint ()
   | PrintHintDbName s -> Auto.print_hint_db_by_name s
   | PrintRewriteHintDbName s -> Autorewrite.print_rewrite_hintdb s
@@ -977,17 +967,14 @@ let vernac_print = function
   | PrintAbout qid -> msgnl (print_about qid)
   | PrintImplicit qid -> msg (print_impargs qid)
 (*spiwack: prints all the axioms and section variables used by a term *)
-  | PrintNeededAssumptions qid ->
-      let cstr =  constr_of_reference (global qid)
-      in
-      let nassumptions = Environ.needed_assumptions cstr
-                                          (Global.env ())
-      in
+  | PrintAssumptions r ->
+      let cstr = constr_of_global (global_with_alias r) in
+      let nassumptions = Environ.assumptions cstr (Global.env ()) in
       msg 
       (try
         Printer.pr_assumptionset (Global.env ()) nassumptions
       with Not_found ->
-        pr_reference qid ++ str " is closed under the global context")
+        pr_reference r ++ str " is closed under the global context")
 
 let global_module r =
   let (loc,qid) = qualid_of_reference r in
@@ -1003,12 +990,12 @@ let interp_search_restriction = function
 open Search
 
 let interp_search_about_item = function
-  | SearchRef qid -> GlobSearchRef (Nametab.global qid)
+  | SearchRef r -> GlobSearchRef (global_with_alias r)
   | SearchString s -> GlobSearchString s
 
 let vernac_search s r =
   let r = interp_search_restriction r in
-  if !pcoq <> None then (out_some !pcoq).search s r else
+  if !pcoq <> None then (Option.get !pcoq).search s r else
   match s with
   | SearchPattern c ->
       let _,pat = interp_constrpattern Evd.empty (Global.env()) c in
@@ -1016,8 +1003,8 @@ let vernac_search s r =
   | SearchRewrite c ->
       let _,pat = interp_constrpattern Evd.empty (Global.env()) c in
       Search.search_rewrite pat r
-  | SearchHead locqid ->
-      Search.search_by_head (Nametab.global locqid) r
+  | SearchHead ref ->
+      Search.search_by_head (global_with_alias ref) r
   | SearchAbout sl ->
       Search.search_about (List.map interp_search_about_item sl) r
 
@@ -1047,12 +1034,12 @@ let vernac_abort = function
   | None ->
       delete_current_proof ();
       if_verbose message "Current goal aborted";
-      if !pcoq <> None then (out_some !pcoq).abort ""
+      if !pcoq <> None then (Option.get !pcoq).abort ""
   | Some id ->
       delete_proof id;
       let s = string_of_id (snd id) in
       if_verbose message ("Goal "^s^" aborted");
-      if !pcoq <> None then (out_some !pcoq).abort s
+      if !pcoq <> None then (Option.get !pcoq).abort s
 
 let vernac_abort_all () =
   if refining() then begin
@@ -1122,7 +1109,7 @@ let explain_tree occ =
 
 let vernac_show = function
   | ShowGoal nopt ->
-      if !pcoq <> None then (out_some !pcoq).show_goal nopt
+      if !pcoq <> None then (Option.get !pcoq).show_goal nopt
       else msg (match nopt with
 	| None -> pr_open_subgoals ()
 	| Some n -> pr_nth_open_subgoal n)

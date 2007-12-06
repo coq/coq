@@ -96,7 +96,7 @@ let _ = Notation.declare_numeral_interpreter "positive_scope"
 (* Parsing N via scopes                                               *)
 (**********************************************************************)
 
-let binnat_module = ["Coq";"NArith";"BinNat"]
+let binnat_module = ["Coq";"Numbers";"Natural";"Binary";"NBinDefs"]
 let n_kn = make_kn (make_dir binnat_module) (id_of_string "N")
 let glob_n = IndRef (n_kn,0)
 let path_of_N0 = ((n_kn,0),1)

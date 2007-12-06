@@ -246,7 +246,7 @@ Proof.
   apply N_of_nat_of_N.
 Qed.
 
-(** Properties concerning Z_of_N *)
+(** Properties concerning [Z_of_N] *)
 
 Lemma Z_of_nat_of_N : forall n:N, Z_of_nat (nat_of_N n) = Z_of_N n.
 Proof.
@@ -350,31 +350,31 @@ Qed.
 
 Lemma Z_of_N_plus : forall n m:N, Z_of_N (n+m) = (Z_of_N n + Z_of_N m)%Z.
 Proof.
-intros; repeat rewrite <- Z_of_nat_of_N; rewrite nat_of_Nplus; apply inj_plus.
+ destruct n; destruct m; auto.
 Qed.
 
 Lemma Z_of_N_mult : forall n m:N, Z_of_N (n*m) = (Z_of_N n * Z_of_N m)%Z.
 Proof.
-intros; do 3 rewrite <- Z_of_nat_of_N; rewrite nat_of_Nmult; apply inj_mult.
+ destruct n; destruct m; auto.
 Qed.
 
 Lemma Z_of_N_minus : forall n m:N, Z_of_N (n-m) = Zmax 0 (Z_of_N n - Z_of_N m). 
 Proof.
-intros; do 3 rewrite <- Z_of_nat_of_N; rewrite nat_of_Nminus; apply inj_minus.
+ intros; do 3 rewrite <- Z_of_nat_of_N; rewrite nat_of_Nminus; apply inj_minus.
 Qed.
 
 Lemma Z_of_N_succ : forall n:N, Z_of_N (Nsucc n) = Zsucc (Z_of_N n). 
 Proof.
-intros; do 2 rewrite <- Z_of_nat_of_N; rewrite nat_of_Nsucc; apply inj_S.
+ intros; do 2 rewrite <- Z_of_nat_of_N; rewrite nat_of_Nsucc; apply inj_S.
 Qed.
 
 Lemma Z_of_N_min : forall n m:N, Z_of_N (Nmin n m) = Zmin (Z_of_N n) (Z_of_N m). 
 Proof.
-intros; do 3 rewrite <- Z_of_nat_of_N; rewrite nat_of_Nmin; apply inj_min.
+ intros; do 3 rewrite <- Z_of_nat_of_N; rewrite nat_of_Nmin; apply inj_min.
 Qed.
 
 Lemma Z_of_N_max : forall n m:N, Z_of_N (Nmax n m) = Zmax (Z_of_N n) (Z_of_N m). 
 Proof.
-intros; do 3 rewrite <- Z_of_nat_of_N; rewrite nat_of_Nmax; apply inj_max.
+ intros; do 3 rewrite <- Z_of_nat_of_N; rewrite nat_of_Nmax; apply inj_max.
 Qed.
 

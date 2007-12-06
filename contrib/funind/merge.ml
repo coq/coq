@@ -207,7 +207,7 @@ type linked_var =
     | Funres
 
 (** When merging two graphs, parameters may become regular arguments,
-    and thus be shifted. This type describe the result of computing
+    and thus be shifted. This type describes the result of computing
     the changes. *)
 type 'a shifted_params =
     {
@@ -252,7 +252,7 @@ type 'a merged_arg =
     | Arg_funres
 
 (** Information about graph merging of two inductives. 
-   All rel_decl list are IN INVERSE ORDER (ie well suited for compose) *)
+   All rel_decl list are IN REVERSE ORDER (ie well suited for compose) *)
 
 type merge_infos =
     {
@@ -549,7 +549,7 @@ let rec merge_app_unsafe c1 c2 shift filter_shift_stable =
 
 
 (* Heuristic when merging two lists of hypothesis: merge every rec
-   calls of nrach 1 with all rec calls of branch 2. *)
+   calls of branch 1 with all rec calls of branch 2. *)
 (* TODO: reecrire cette heuristique (jusqu'a merge_types) *)
 let rec merge_rec_hyps shift accrec 
     (ltyp:(Names.name * rawconstr option * rawconstr option) list) 
@@ -602,7 +602,6 @@ let rec merge_types shift accrec1
   let _ = prstr "\nltyp 2 : " in
   let _ = List.iter (fun (nm,lbdy,tp) -> prnt_prod_or_letin nm lbdy tp) ltyp2 in
   let _ = prstr "\n" in
-
   let res =
     match ltyp1 with
       | [] -> 
@@ -618,24 +617,21 @@ let rec merge_types shift accrec1
             else if isrec1 
                 (* if rec calls in accrec1 and not in ltyp2, add one to ltyp2 *)
             then  
-                 merge_rec_hyps shift accrec1 
-                   (ltyp2@[name_of_string "concl2",None,Some concl2]) filter_shift_stable
+              merge_rec_hyps shift accrec1 
+                (ltyp2@[name_of_string "concl2",None,Some concl2]) filter_shift_stable
             else if isrec2
             then merge_rec_hyps shift [name_of_string "concl1",None,Some concl1] ltyp2
               filter_shift_stable_right
             else ltyp2 in
-
           let _ = prstr"\nrechyps : " in
-          let _ = List.iter(fun (nm,lbdy,tp) -> prnt_prod_or_letin nm lbdy tp) rechyps in
+          let _ = List.iter(fun (nm,lbdy,tp)-> prnt_prod_or_letin nm lbdy tp) rechyps in
           let _ = prstr "MERGE CONCL :  " in
           let _ = prNamedRConstr "concl1" concl1 in
           let _ = prstr " with " in
           let _ = prNamedRConstr "concl2" concl2 in
           let _ = prstr "\n" in
-
           let concl = 
             merge_app concl1 concl2 ind1name ind2name shift filter_shift_stable in
-
           let _ = prstr "FIN " in
           let _ = prNamedRConstr "concl" concl in
           let _ = prstr "\n" in
@@ -696,7 +692,7 @@ let build_link_map allargs1 allargs2 lnk =
 
     forall recparams1 (recparams2 without linked params),
      forall ordparams1 (ordparams2 without linked params),
-      H1a' -> H2a' -> ...  -> H2a' -> H2b' -> ... 
+      H1a' -> H2a' -> ...  -> H2a' -> H2b'(shifted) -> ... 
         -> (newI x1 ... z1 x2 y2 ...z2 without linked params)
 
     where Hix' have been adapted, ie: 
@@ -738,7 +734,7 @@ let merge_one_constructor (shift:merge_infos) (typcstr1:rawconstr)
     list_filteri (fun i _ -> isArg_stable shift.lnk2.(i)) (List.rev allargs2) in
   let _ = prNamedRLDecl "ltyp allargs2" allargs2 in
   let _ = prNamedRLDecl "ltyp revargs2" revargs2 in
-  let typwithprms = 
+  let typwithprms =
     raw_compose_prod_or_letin typ (List.rev revargs2 @ List.rev revargs1) in
   typwithprms
 
@@ -823,7 +819,7 @@ let rec merge_mutual_inductive_body
 
   
 let rawterm_to_constr_expr x = (* build a constr_expr from a rawconstr *)
-  Options.with_option Options.raw_print (Constrextern.extern_rawtype Idset.empty) x
+  Flags.with_option Flags.raw_print (Constrextern.extern_rawtype Idset.empty) x
 
 let merge_rec_params_and_arity prms1 prms2 shift (concl:constr) = 
   let params = prms2 @ prms1 in
@@ -912,28 +908,29 @@ let merge_inductive (ind1: inductive) (ind2: inductive)
   Command.build_mutual [(indexpr,None)] true (* means: not coinductive *)
 
 
-let kn_of_id id =
-  let f_ref = Libnames.Ident (dummy_loc,id) in
-  locate_with_msg (str "Don't know what to do with " ++ Libnames.pr_reference f_ref)
-    locate_constant
-    f_ref
-
-
-let merge (id1:identifier) (id2:identifier) (args1:identifier array) 
-    (args2:identifier array) id =
-  let kn1 = kn_of_id id1 in
-  let kn2 = kn_of_id id2 in
-  let finfo1 = 
-    try find_Function_infos kn1 
+(* Find infos on identifier id. *)
+let find_Function_infos_safe (id:identifier): Indfun_common.function_info =
+  let kn_of_id x =
+    let f_ref = Libnames.Ident (dummy_loc,x) in
+    locate_with_msg (str "Don't know what to do with " ++ Libnames.pr_reference f_ref)
+      locate_constant f_ref in
+    try find_Function_infos (kn_of_id id)
     with Not_found ->
-      errorlabstrm "indfun" (Nameops.pr_id id1 ++ str " has no functional scheme") in
-  let finfo2 = 
-    try find_Function_infos kn2 
-    with Not_found -> 
-      errorlabstrm "indfun" (Nameops.pr_id id2 ++ str " has no functional scheme") in
-  let ind1 = finfo1.graph_ind in
-  let ind2 = finfo2.graph_ind in
-  (* args1 are unlinked. FIXME? mergescheme (G x x) ?? *)
+      errorlabstrm "indfun" (Nameops.pr_id id ++ str " has no functional scheme")
+
+(** [merge id1 id2 args1 args2 id] builds and declares a new inductive
+    type called [id], representing the merged graphs of both graphs
+    [ind1] and [ind2]. identifiers occuring in both arrays [args1] and
+    [args2] are considered linked (i.e. are the same variable) in the
+    new graph.
+    
+    Warning: For the moment, repetitions of an id in [args1] or
+    [args2] are not supported. *)
+let merge (id1:identifier) (id2:identifier) (args1:identifier array) 
+    (args2:identifier array) id : unit =
+  let finfo1 = find_Function_infos_safe id1 in
+  let finfo2 = find_Function_infos_safe id2 in
+  (* FIXME? args1 are supposed unlinked. mergescheme (G x x) ?? *)
   (* We add one arg (functional arg of the graph) *)
   let lnk1 = Array.make (Array.length args1 + 1) Unlinked in
   let lnk2' = (* args2 may be linked to args1 members. FIXME: same 
@@ -949,7 +946,7 @@ let merge (id1:identifier) (id2:identifier) (args1:identifier array)
   (* setting functional results *)
   let _ = lnk1.(Array.length lnk1 - 1) <- Funres in 
   let _ = lnk2.(Array.length lnk2 - 1) <- Funres in
-  merge_inductive ind1 ind2 lnk1 lnk2 id
+  merge_inductive finfo1.graph_ind finfo2.graph_ind lnk1 lnk2 id
 
 
 

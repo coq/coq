@@ -1,8 +1,24 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*                      Evgeny Makarov, INRIA, 2007                     *)
+(************************************************************************)
+
+(*i i*)
+
 Require Export ZBase.
 
 Module ZPlusPropFunct (Import ZAxiomsMod : ZAxiomsSig).
 Module Export ZBasePropMod := ZBasePropFunct ZAxiomsMod.
 Open Local Scope IntScope.
+
+Theorem Zplus_wd :
+  forall n1 n2 : Z, n1 == n2 -> forall m1 m2 : Z, m1 == m2 -> n1 + m1 == n2 + m2.
+Proof NZplus_wd.
 
 Theorem Zplus_0_l : forall n : Z, 0 + n == n.
 Proof NZplus_0_l.
@@ -22,7 +38,7 @@ Proof Zopp_0.
 Theorem Zopp_succ : forall n : Z, - (S n) == P (- n).
 Proof Zopp_succ.
 
-(** Theorems that are valid for both natural numbers and integers *)
+(* Theorems that are valid for both natural numbers and integers *)
 
 Theorem Zplus_0_r : forall n : Z, n + 0 == n.
 Proof NZplus_0_r.
@@ -54,7 +70,7 @@ Proof NZplus_cancel_l.
 Theorem Zplus_cancel_r : forall n m p : Z, n + p == m + p <-> n == m.
 Proof NZplus_cancel_r.
 
-(** Theorems that are either not valid on N or have different proofs on N and Z *)
+(* Theorems that are either not valid on N or have different proofs on N and Z *)
 
 Theorem Zplus_pred_l : forall n m : Z, P n + m == P (n + m).
 Proof.
@@ -69,7 +85,7 @@ intros n m; rewrite (Zplus_comm n (P m)), (Zplus_comm n m);
 apply Zplus_pred_l.
 Qed.
 
-Theorem Zplus_opp_minus : forall n m : Z, n + (- m) == n - m.
+Theorem Zplus_opp_r : forall n m : Z, n + (- m) == n - m.
 Proof.
 NZinduct m.
 rewrite Zopp_0; rewrite Zminus_0_r; now rewrite Zplus_0_r.
@@ -78,12 +94,12 @@ Qed.
 
 Theorem Zminus_0_l : forall n : Z, 0 - n == - n.
 Proof.
-intro n; rewrite <- Zplus_opp_minus; now rewrite Zplus_0_l.
+intro n; rewrite <- Zplus_opp_r; now rewrite Zplus_0_l.
 Qed.
 
 Theorem Zminus_succ_l : forall n m : Z, S n - m == S (n - m).
 Proof.
-intros n m; do 2 rewrite <- Zplus_opp_minus; now rewrite Zplus_succ_l.
+intros n m; do 2 rewrite <- Zplus_opp_r; now rewrite Zplus_succ_l.
 Qed.
 
 Theorem Zminus_pred_l : forall n m : Z, P n - m == P (n - m).
@@ -111,24 +127,24 @@ now rewrite Zminus_0_r.
 intro n. rewrite Zminus_succ_r, Zminus_succ_l; now rewrite Zpred_succ.
 Qed.
 
-Theorem Zplus_opp_r : forall n : Z, n + (- n) == 0.
+Theorem Zplus_opp_diag_l : forall n : Z, - n + n == 0.
 Proof.
-intro n; rewrite Zplus_opp_minus; now rewrite Zminus_diag.
+intro n; now rewrite Zplus_comm, Zplus_opp_r, Zminus_diag.
 Qed.
 
-Theorem Zplus_opp_l : forall n : Z, - n + n == 0.
+Theorem Zplus_opp_diag_r : forall n : Z, n + (- n) == 0.
 Proof.
-intro n; rewrite Zplus_comm; apply Zplus_opp_r.
+intro n; rewrite Zplus_comm; apply Zplus_opp_diag_l.
 Qed.
 
-Theorem Zminus_swap : forall n m : Z, - m + n == n - m.
+Theorem Zplus_opp_l : forall n m : Z, - m + n == n - m.
 Proof.
-intros n m; rewrite <- Zplus_opp_minus; now rewrite Zplus_comm.
+intros n m; rewrite <- Zplus_opp_r; now rewrite Zplus_comm.
 Qed.
 
 Theorem Zplus_minus_assoc : forall n m p : Z, n + (m - p) == (n + m) - p.
 Proof.
-intros n m p; do 2 rewrite <- Zplus_opp_minus; now rewrite Zplus_assoc.
+intros n m p; do 2 rewrite <- Zplus_opp_r; now rewrite Zplus_assoc.
 Qed.
 
 Theorem Zopp_involutive : forall n : Z, - (- n) == n.
@@ -148,7 +164,7 @@ Qed.
 
 Theorem Zopp_minus_distr : forall n m : Z, - (n - m) == - n + m.
 Proof.
-intros n m; rewrite <- Zplus_opp_minus, Zopp_plus_distr.
+intros n m; rewrite <- Zplus_opp_r, Zopp_plus_distr.
 now rewrite Zopp_involutive.
 Qed.
 
@@ -162,57 +178,168 @@ Proof.
 intros n m; split; [apply Zopp_inj | apply Zopp_wd].
 Qed.
 
+Theorem Zeq_opp_l : forall n m : Z, - n == m <-> n == - m.
+Proof.
+intros n m. now rewrite <- (Zopp_inj_wd (- n) m), Zopp_involutive.
+Qed.
+
+Theorem Zeq_opp_r : forall n m : Z, n == - m <-> - n == m.
+Proof.
+symmetry; apply Zeq_opp_l.
+Qed.
+
 Theorem Zminus_plus_distr : forall n m p : Z, n - (m + p) == (n - m) - p.
 Proof.
-intros n m p; rewrite <- Zplus_opp_minus, Zopp_plus_distr, Zplus_assoc.
-now do 2 rewrite Zplus_opp_minus.
+intros n m p; rewrite <- Zplus_opp_r, Zopp_plus_distr, Zplus_assoc.
+now do 2 rewrite Zplus_opp_r.
 Qed.
 
 Theorem Zminus_minus_distr : forall n m p : Z, n - (m - p) == (n - m) + p.
 Proof.
-intros n m p; rewrite <- Zplus_opp_minus, Zopp_minus_distr, Zplus_assoc.
-now rewrite Zplus_opp_minus.
+intros n m p; rewrite <- Zplus_opp_r, Zopp_minus_distr, Zplus_assoc.
+now rewrite Zplus_opp_r.
 Qed.
 
-Theorem Zminus_opp : forall n m : Z, n - (- m) == n + m.
+Theorem minus_opp_l : forall n m : Z, - n - m == - m - n.
 Proof.
-intros n m; rewrite <- Zplus_opp_minus; now rewrite Zopp_involutive.
+intros n m. do 2 rewrite <- Zplus_opp_r. now rewrite Zplus_comm.
+Qed.
+
+Theorem Zminus_opp_r : forall n m : Z, n - (- m) == n + m.
+Proof.
+intros n m; rewrite <- Zplus_opp_r; now rewrite Zopp_involutive.
 Qed.
 
 Theorem Zplus_minus_swap : forall n m p : Z, n + m - p == n - p + m.
 Proof.
-intros n m p. rewrite <- Zplus_minus_assoc, <- (Zplus_opp_minus n p), <- Zplus_assoc.
-now rewrite Zminus_swap.
+intros n m p. rewrite <- Zplus_minus_assoc, <- (Zplus_opp_r n p), <- Zplus_assoc.
+now rewrite Zplus_opp_l.
 Qed.
 
-Theorem Zminus_plus_diag : forall n m : Z, n - m + m == n.
+Theorem Zminus_cancel_l : forall n m p : Z, n - m == n - p <-> m == p.
 Proof.
-intros; rewrite <- Zplus_minus_swap; rewrite <- Zplus_minus_assoc;
-rewrite Zminus_diag; now rewrite Zplus_0_r.
+intros n m p. rewrite <- (Zplus_cancel_l (n - m) (n - p) (- n)).
+do 2 rewrite Zplus_minus_assoc. rewrite Zplus_opp_diag_l; do 2 rewrite Zminus_0_l.
+apply Zopp_inj_wd.
 Qed.
 
-Theorem Zplus_minus_diag : forall n m : Z, n + m - m == n.
-Proof.
-intros; rewrite <- Zplus_minus_assoc; rewrite Zminus_diag; now rewrite Zplus_0_r.
-Qed.
-
-Theorem Zplus_minus_eq_l : forall n m p : Z, m + p == n <-> n - m == p.
+Theorem Zminus_cancel_r : forall n m p : Z, n - p == m - p <-> n == m.
 Proof.
 intros n m p.
-stepl (-m + (m + p) == -m + n) by apply Zplus_cancel_l.
-stepr (p == n - m) by now split.
-rewrite Zplus_assoc, Zplus_opp_l, Zplus_0_l. now rewrite Zminus_swap.
+stepl (n - p + p == m - p + p) by apply Zplus_cancel_r.
+now do 2 rewrite <- Zminus_minus_distr, Zminus_diag, Zminus_0_r.
 Qed.
 
-Theorem Zplus_minus_eq_r : forall n m p : Z, m + p == n <-> n - p == m.
+(* The next several theorems are devoted to moving terms from one side of
+an equation to the other. The name contains the operation in the original
+equation (plus or minus) and the indication whether the left or right term
+is moved. *)
+
+Theorem Zplus_move_l : forall n m p : Z, n + m == p <-> m == p - n.
 Proof.
-intros n m p; rewrite Zplus_comm; now apply Zplus_minus_eq_l.
+intros n m p.
+stepl (n + m - n == p - n) by apply Zminus_cancel_r.
+now rewrite Zplus_comm, <- Zplus_minus_assoc, Zminus_diag, Zplus_0_r.
 Qed.
 
-Theorem Zminus_eq : forall n m : Z, n - m == 0 <-> n == m.
+Theorem Zplus_move_r : forall n m p : Z, n + m == p <-> n == p - m.
 Proof.
-intros n m. rewrite <- Zplus_minus_eq_l, Zplus_0_r; now split.
+intros n m p; rewrite Zplus_comm; now apply Zplus_move_l.
 Qed.
+
+(* The two theorems above do not allow rewriting subformulas of the form
+n - m == p to n == p + m since subtraction is in the right-hand side of
+the equation. Hence the following two theorems. *)
+
+Theorem Zminus_move_l : forall n m p : Z, n - m == p <-> - m == p - n.
+Proof.
+intros n m p; rewrite <- (Zplus_opp_r n m); apply Zplus_move_l.
+Qed.
+
+Theorem Zminus_move_r : forall n m p : Z, n - m == p <-> n == p + m.
+Proof.
+intros n m p; rewrite <- (Zplus_opp_r n m). now rewrite Zplus_move_r, Zminus_opp_r.
+Qed.
+
+Theorem Zplus_move_0_l : forall n m : Z, n + m == 0 <-> m == - n.
+Proof.
+intros n m; now rewrite Zplus_move_l, Zminus_0_l.
+Qed.
+
+Theorem Zplus_move_0_r : forall n m : Z, n + m == 0 <-> n == - m.
+Proof.
+intros n m; now rewrite Zplus_move_r, Zminus_0_l.
+Qed.
+
+Theorem Zminus_move_0_l : forall n m : Z, n - m == 0 <-> - m == - n.
+Proof.
+intros n m. now rewrite Zminus_move_l, Zminus_0_l.
+Qed.
+
+Theorem Zminus_move_0_r : forall n m : Z, n - m == 0 <-> n == m.
+Proof.
+intros n m. now rewrite Zminus_move_r, Zplus_0_l.
+Qed.
+
+(* The following section is devoted to cancellation of like terms. The name
+includes the first operator and the position of the term being canceled. *)
+
+Theorem Zplus_simpl_l : forall n m : Z, n + m - n == m.
+Proof.
+intros; now rewrite Zplus_minus_swap, Zminus_diag, Zplus_0_l.
+Qed.
+
+Theorem Zplus_simpl_r : forall n m : Z, n + m - m == n.
+Proof.
+intros; now rewrite <- Zplus_minus_assoc, Zminus_diag, Zplus_0_r.
+Qed.
+
+Theorem Zminus_simpl_l : forall n m : Z, - n - m + n == - m.
+Proof.
+intros; now rewrite <- Zplus_minus_swap, Zplus_opp_diag_l, Zminus_0_l.
+Qed.
+
+Theorem Zminus_simpl_r : forall n m : Z, n - m + m == n.
+Proof.
+intros; now rewrite <- Zminus_minus_distr, Zminus_diag, Zminus_0_r.
+Qed.
+
+(* Now we have two sums or differences; the name includes the two operators
+and the position of the terms being canceled *)
+
+Theorem Zplus_plus_simpl_l_l : forall n m p : Z, (n + m) - (n + p) == m - p.
+Proof.
+intros n m p. now rewrite (Zplus_comm n m), <- Zplus_minus_assoc,
+Zminus_plus_distr, Zminus_diag, Zminus_0_l, Zplus_opp_r.
+Qed.
+
+Theorem Zplus_plus_simpl_l_r : forall n m p : Z, (n + m) - (p + n) == m - p.
+Proof.
+intros n m p. rewrite (Zplus_comm p n); apply Zplus_plus_simpl_l_l.
+Qed.
+
+Theorem Zplus_plus_simpl_r_l : forall n m p : Z, (n + m) - (m + p) == n - p.
+Proof.
+intros n m p. rewrite (Zplus_comm n m); apply Zplus_plus_simpl_l_l.
+Qed.
+
+Theorem Zplus_plus_simpl_r_r : forall n m p : Z, (n + m) - (p + m) == n - p.
+Proof.
+intros n m p. rewrite (Zplus_comm p m); apply Zplus_plus_simpl_r_l.
+Qed.
+
+Theorem Zminus_plus_simpl_r_l : forall n m p : Z, (n - m) + (m + p) == n + p.
+Proof.
+intros n m p. now rewrite <- Zminus_minus_distr, Zminus_plus_distr, Zminus_diag,
+Zminus_0_l, Zminus_opp_r.
+Qed.
+
+Theorem Zminus_plus_simpl_r_r : forall n m p : Z, (n - m) + (p + m) == n + p.
+Proof.
+intros n m p. rewrite (Zplus_comm p m); apply Zminus_plus_simpl_r_l.
+Qed.
+
+(* Of course, there are many other variants *)
 
 End ZPlusPropFunct.
 

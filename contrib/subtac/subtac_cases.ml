@@ -385,7 +385,7 @@ let mkDeclTomatch na = function
 
 let map_tomatch_type f = function
   | IsInd (t,ind) -> IsInd (f t,map_inductive_type f ind)
-  | NotInd (c,t) -> NotInd (option_map f c, f t)
+  | NotInd (c,t) -> NotInd (Option.map f c, f t)
 
 let liftn_tomatch_type n depth = map_tomatch_type (liftn n depth)
 let lift_tomatch_type n = liftn_tomatch_type n 1
@@ -1127,7 +1127,7 @@ let rec generalize_problem pb = function
       let tomatch = regeneralize_index_tomatch (i+1) tomatch in
       { pb with
 	  tomatch = Abstract d :: tomatch;
-          pred = option_map (generalize_predicate i d) pb'.pred }
+          pred = Option.map (generalize_predicate i d) pb'.pred }
 
 (* No more patterns: typing the right-hand-side of equations *)
 let build_leaf pb =
@@ -1142,7 +1142,7 @@ let build_leaf pb =
 let shift_problem (current,t) pb =
   {pb with
      tomatch = Alias (current,current,NonDepAlias,type_of_tomatch t)::pb.tomatch;
-     pred = option_map (specialize_predicate_var (current,t)) pb.pred;
+     pred = Option.map (specialize_predicate_var (current,t)) pb.pred;
      history = push_history_pattern 0 AliasLeaf pb.history;
      mat = List.map remove_current_pattern pb.mat }
 
@@ -1207,7 +1207,7 @@ let build_branch current deps pb eqns const_info =
   let cur_alias = lift (List.length sign) current in
   let currents = Alias (ci,cur_alias,alias_type,ind) :: currents in
   let env' = push_rels sign pb.env in
-  let pred' = option_map (specialize_predicate (List.rev typs') dep_sign const_info) pb.pred in
+  let pred' = Option.map (specialize_predicate (List.rev typs') dep_sign const_info) pb.pred in
     sign,
   { pb with
       env = env';
@@ -1279,7 +1279,7 @@ and compile_generalization pb d rest =
     { pb with
        env = push_rel d pb.env;
        tomatch = rest;
-       pred = option_map ungeneralize_predicate pb.pred;
+       pred = Option.map ungeneralize_predicate pb.pred;
        mat = List.map (push_rels_eqn [d]) pb.mat } in
   let j = compile pb in
   { uj_val = mkLambda_or_LetIn d j.uj_val;
@@ -1304,7 +1304,7 @@ and compile_alias pb (deppat,nondeppat,d,t) rest =
     {pb with
        env = newenv;
        tomatch = tomatch;
-       pred = option_map (lift_predicate n) pb.pred;
+       pred = Option.map (lift_predicate n) pb.pred;
        history = history;
        mat = mat } in
   let j = compile pb in
@@ -1487,7 +1487,7 @@ let extract_arity_signature env0 tomatchl tmsign =
     match tm with
       | NotInd (bo,typ) -> 
 	  (match t with
-	    | None -> [na,option_map (lift n) bo,lift n typ]
+	    | None -> [na,Option.map (lift n) bo,lift n typ]
 	    | Some (loc,_,_,_) -> 
  	    user_err_loc (loc,"",
 	    str "Unexpected type annotation for a term of non inductive type"))
@@ -1765,14 +1765,14 @@ let subst_rel_context k ctx subst =
   let (_, ctx') =
     List.fold_right 
       (fun (n, b, t) (k, acc) ->
-	 (succ k, (n, option_map (substnl subst k) b, substnl subst k t) :: acc))
+	 (succ k, (n, Option.map (substnl subst k) b, substnl subst k t) :: acc))
       ctx (k, [])
   in ctx'
 
 let lift_rel_contextn n k sign =
   let rec liftrec k = function
     | (na,c,t)::sign ->
-	(na,option_map (liftn n k) c,liftn n k t)::(liftrec (k-1) sign)
+	(na,Option.map (liftn n k) c,liftn n k t)::(liftrec (k-1) sign)
     | [] -> []
   in
   liftrec (rel_context_length sign + k) sign
@@ -2065,7 +2065,7 @@ let build_dependent_signature env evars avoid tomatchs arsign =
 let liftn_rel_context n k sign =  
   let rec liftrec k = function
     | (na,c,t)::sign ->
-	(na,option_map (liftn n k) c,liftn n k t)::(liftrec (k-1) sign)
+	(na,Option.map (liftn n k) c,liftn n k t)::(liftrec (k-1) sign)
     | [] -> []
   in
     liftrec (k + rel_context_length sign) sign
@@ -2074,10 +2074,10 @@ let nf_evars_env evar_defs (env : env) : env =
   let nf t = nf_isevar evar_defs t in
   let env0 : env = reset_context env in 
   let f e (na, b, t) e' : env =
-    Environ.push_named (na, option_map nf b, nf t) e'
+    Environ.push_named (na, Option.map nf b, nf t) e'
   in
   let env' = Environ.fold_named_context f ~init:env0 env in
-    Environ.fold_rel_context (fun e (na, b, t) e' -> Environ.push_rel (na, option_map nf b, nf t) e')
+    Environ.fold_rel_context (fun e (na, b, t) e' -> Environ.push_rel (na, Option.map nf b, nf t) e')
      ~init:env' env
       
 let compile_cases loc (typing_fun, isevars) (tycon : Evarutil.type_constraint) env (predopt, tomatchl, eqns) =

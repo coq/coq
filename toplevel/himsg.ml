@@ -10,7 +10,7 @@
 
 open Pp
 open Util
-open Options
+open Flags
 open Names
 open Nameops
 open Term
@@ -320,7 +320,7 @@ let explain_hole_kind env = function
   | BinderType Anonymous ->
       str "the type of this anonymous binder"
   | ImplicitArg (c,(n,ido)) ->
-      let id = out_some ido in
+      let id = Option.get ido in
       str "the implicit parameter " ++
       pr_id id ++ spc () ++ str "of" ++
       spc () ++ Nametab.pr_global_env Idset.empty c

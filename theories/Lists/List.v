@@ -314,7 +314,27 @@ Section Facts.
     now_show (H = a \/ In a (y ++ m)).
     elim H2; auto.
   Qed.
-
+  
+  Lemma app_inv_head:
+   forall l l1 l2 : list A, l ++ l1 = l ++ l2 ->  l1 = l2.
+  Proof.
+    induction l; simpl; auto; injection 1; auto.
+  Qed.
+ 
+  Lemma app_inv_tail:
+    forall l l1 l2 : list A, l1 ++ l = l2 ++ l ->  l1 = l2.
+  Proof.
+    intros l l1 l2; revert l1 l2 l.
+    induction l1 as [ | x1 l1]; destruct l2 as [ | x2 l2]; 
+     simpl; auto; intros l H.
+    absurd (length (x2 :: l2 ++ l) <= length l).
+    simpl; rewrite app_length; auto with arith.
+    rewrite <- H; auto with arith.
+    absurd (length (x1 :: l1 ++ l) <= length l).
+    simpl; rewrite app_length; auto with arith.
+    rewrite H; auto with arith.
+    injection H; clear H; intros; f_equal; eauto.
+  Qed.
 
 End Facts.
 
@@ -899,7 +919,7 @@ Section ListOps.
     apply perm_trans with (l1'++a::l2); auto using Permutation_cons_app.
     apply perm_skip.
     apply (IH a l1' l2 l3' l4); auto.
-    (* swap *)
+    (* contradict *)
     intros x y l l' Hp IH; intros.
     break_list l1 b l1' H; break_list l3 c l3' H0.
     auto.
@@ -1672,8 +1692,8 @@ Section ReDun.
   inversion_clear 1; auto.
   inversion_clear 1.
   constructor.
-  swap H0.
-  apply in_or_app; destruct (in_app_or _ _ _ H); simpl; tauto.
+  contradict H0.
+  apply in_or_app; destruct (in_app_or _ _ _ H0); simpl; tauto.
   apply IHl with a0; auto.
   Qed.
 
@@ -1682,8 +1702,8 @@ Section ReDun.
   induction l; simpl.
   inversion_clear 1; auto.
   inversion_clear 1.
-  swap H0.
-  destruct H.
+  contradict H0.
+  destruct H0.
   subst a0.
   apply in_or_app; right; red; auto.
   destruct (IHl _ _ H1); auto.

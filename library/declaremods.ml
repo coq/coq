@@ -381,7 +381,7 @@ let (in_modtype,out_modtype) =
       load_function = load_modtype;
       subst_function = subst_modtype;
       classify_function = classify_modtype;
-      export_function = in_some }
+      export_function = Option.make }
 
 
 
@@ -579,7 +579,7 @@ let register_library dir cenv objs digest =
 	  let msid,substitute,keep = objs in
 	  let substobjs = empty_subst, [], msid, substitute in
 	  let substituted = subst_substobjs dir mp substobjs in
-	  let objects = option_map (fun seg -> seg@keep) substituted in
+	  let objects = Option.map (fun seg -> seg@keep) substituted in
 	  let modobjs = substobjs, objects in
 	    Hashtbl.add library_cache dir modobjs;
 	    modobjs

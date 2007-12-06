@@ -25,9 +25,9 @@ Require Import Compare_dec.
     the equality is the usual one of Coq. *)
 
 Module Type UsualOrderedType.
- Parameter t : Set.
+ Parameter Inline t : Set.
  Definition eq := @eq t.
- Parameter lt : t -> t -> Prop.
+ Parameter Inline lt : t -> t -> Prop.
  Definition eq_refl := @refl_equal t.
  Definition eq_sym := @sym_eq t.
  Definition eq_trans := @trans_eq t.

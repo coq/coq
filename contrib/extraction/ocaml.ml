@@ -95,7 +95,9 @@ let pp_modname mp = str (Common.pp_module mp)
 
 let is_infix r = 
   is_inline_custom r && 
-  (let s = find_custom r in s.[0] = '(' && s.[String.length s-1] = ')')
+  (let s = find_custom r in 
+   let l = String.length s in 
+   l >= 2 && s.[0] = '(' && s.[l-1] = ')')
 
 let get_infix r = 
   let s = find_custom r in 
@@ -572,7 +574,7 @@ and pp_module_type ol = function
       str "functor (" ++ name ++ str ":" ++ typ ++ str ") ->" ++ fnl () ++ def
   | MTsig (msid, sign) ->
       let tvm = top_visible_mp () in 
-      option_iter (fun l -> add_subst msid (MPdot (tvm, l))) ol; 
+      Option.iter (fun l -> add_subst msid (MPdot (tvm, l))) ol; 
       let mp = MPself msid in
       push_visible mp; 
       let l = map_succeed pp_specif sign in 

@@ -8,6 +8,7 @@ val yices : tactic
 val cvc_lite : tactic
 val harvey : tactic
 val zenon : tactic
+val gwhy : tactic
 
 val dp_hint : reference list -> unit
 val set_timeout : int -> unit

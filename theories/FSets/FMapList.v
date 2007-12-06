@@ -347,6 +347,13 @@ Proof.
  auto.
 Qed.
 
+Lemma elements_3w : forall m (Hm:Sort m), NoDupA eqk (elements m). 
+Proof. 
+ intros.
+ apply Sort_NoDupA.
+ apply elements_3; auto.
+Qed.
+
 (** * [fold] *)
 
 Function fold (A:Type)(f:key->elt->A->A)(m:t elt) (acc:A) {struct m} :  A :=
@@ -1113,6 +1120,8 @@ Section Elt.
  Proof. intros m; exact (@Raw.elements_2 elt m.(this)). Qed.
  Lemma elements_3 : forall m, sort lt_key (elements m).  
  Proof. intros m; exact (@Raw.elements_3 elt m.(this) m.(sorted)). Qed.
+ Lemma elements_3w : forall m, NoDupA eq_key (elements m).  
+ Proof. intros m; exact (@Raw.elements_3w elt m.(this) m.(sorted)). Qed.
 
  Lemma fold_1 : forall m (A : Type) (i : A) (f : key -> elt -> A -> A),
         fold f m i = fold_left (fun a p => f (fst p) (snd p) a) (elements m) i.

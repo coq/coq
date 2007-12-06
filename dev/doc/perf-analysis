@@ -1,7 +1,18 @@
-Performance analysis for V8-0 branch
-------------------------------------
+Performance analysis (trunk repository)
+---------------------------------------
 
-Apr 11, 2007: added primitive integers (+6% CoLoR, +7% CoRN, ...)
+Between Oct 12 and Oct 27, 2007: inefficiency temporarily introduced in the
+  tactic interpreter (from revision 10222 to 10267)
+  (+22% CoRN, +10% geometry, ...)
+
+Jun 6, 2007: optimization of the need for type unification in with-bindings
+  (-3.5% Stalmark, -6% Kildall)
+
+May 20, 21, 22, 2007: improved inference of with-bindings (including activation
+  of unification on types)
+  (+4% PICALC, +5% Stalmark, +7% Kildall)
+
+May 11, 2007: added primitive integers (+6% CoLoR, +7% CoRN, +5% FSets, ...)
 
 Between Feb 22 and March 16, 2007: bench temporarily moved on JMN's
   computer (-25% CoRN, -25% Fairisle, ...)

@@ -170,7 +170,7 @@ Proof.
   exact (lt_irrefl n).
   intros.
   apply not_gt.
-  swap H.
+  contradict H.
   destruct (nat_compare_gt n m); auto.
 Qed.  
 
@@ -184,7 +184,7 @@ Proof.
   exact (lt_irrefl m).
   intros.
   apply not_lt.
-  swap H.
+  contradict H.
   destruct (nat_compare_lt n m); auto.
 Qed.  
 

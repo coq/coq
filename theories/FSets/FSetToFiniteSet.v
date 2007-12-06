@@ -107,8 +107,8 @@ Module S_to_Finite_set (U:UsualOrderedType)(M:S with Module E := U).
  unfold Same_set, Included, mkEns, In.
  split; intro; set_iff; inversion 1; unfold E.eq in *; auto with sets.
  split; auto.
- swap H1.
- inversion H2; auto.
+ contradict H1.
+ inversion H1; auto.
  Qed.
 
  Lemma mkEns_Finite : forall s, Finite _ (!!s).

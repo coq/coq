@@ -28,8 +28,16 @@ Notation " ! " := (False_rect _ _).
 
 (** Abbreviation for first projection and hiding of proofs of subset objects. *)
 
+(** The scope in which programs are typed (not their types). *)
+
+Delimit Scope program_scope with prg.
+
 Notation " ` t " := (proj1_sig t) (at level 10) : core_scope.
-Notation "( x & ? )" := (@exist _ _ x _) : core_scope.
+
+Delimit Scope subset_scope with subset.
+
+(* In [subset_scope] to allow masking by redefinitions for particular types. *)
+Notation "( x & ? )" := (@exist _ _ x _) : subset_scope.
 
 (** Coerces objects to their support before comparing them. *)
 
@@ -64,7 +72,3 @@ Extract Inductive bool => "bool" [ "true" "false" ].
 Extract Inductive sumbool => "bool" [ "true" "false" ].
 (* Extract Inductive prod "'a" "'b" => " 'a * 'b " [ "(,)" ]. *)
 (* Extract Inductive sigT => "prod" [ "" ]. *)
-
-(** The scope in which programs are typed (not their types). *)
-
-Delimit Scope program_scope with prg.

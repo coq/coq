@@ -105,7 +105,7 @@ END
 
 let test_plurial_form = function
   | [(_,([_],_))] ->
-      Options.if_verbose warning
+      Flags.if_verbose warning
    "Keywords Variables/Hypotheses/Parameters expect more than one assumption"
   | _ -> ()
 
@@ -143,7 +143,7 @@ GEXTEND Gram
       | IDENT "Unboxed";"Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
           VernacFixpoint (recs,false)
        | "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
-          VernacFixpoint (recs,Options.boxed_definitions())
+          VernacFixpoint (recs,Flags.boxed_definitions())
       | "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
           VernacCoFixpoint (corecs,false)
       | IDENT "Scheme"; l = LIST1 scheme SEP "with" -> VernacScheme l
@@ -175,11 +175,11 @@ GEXTEND Gram
   ;
   def_token:
     [ [ "Definition" -> 
-	no_hook, (Global, Options.boxed_definitions(), Definition)
+	no_hook, (Global, Flags.boxed_definitions(), Definition)
       | IDENT "Let" -> 
-	no_hook, (Local, Options.boxed_definitions(), Definition)
+	no_hook, (Local, Flags.boxed_definitions(), Definition)
       | IDENT "Example" -> 
-	no_hook, (Global, Options.boxed_definitions(), Example)
+	no_hook, (Global, Flags.boxed_definitions(), Example)
       | IDENT "SubClass"  -> Class.add_subclass_hook, (Global, false, SubClass)
       | IDENT "Local"; IDENT "SubClass"  ->
           Class.add_subclass_hook, (Local, false, SubClass) ] ] 
@@ -274,8 +274,8 @@ GEXTEND Gram
   ;
   rec_annotation:
     [ [ "{"; IDENT "struct"; id=IDENT; "}" -> (Some (id_of_string id), CStructRec)
-      | "{"; IDENT "wf"; rel=constr; id=OPT IDENT; "}" -> (option_map id_of_string id, CWfRec rel) 
-      | "{"; IDENT "measure"; rel=constr; id=OPT IDENT; "}" -> (option_map id_of_string id, CMeasureRec rel) 
+      | "{"; IDENT "wf"; rel=constr; id=OPT IDENT; "}" -> (Option.map id_of_string id, CWfRec rel) 
+      | "{"; IDENT "measure"; rel=constr; id=OPT IDENT; "}" -> (Option.map id_of_string id, CMeasureRec rel) 
       | ->  (None, CStructRec)
       ] ]
   ;
@@ -634,7 +634,7 @@ GEXTEND Gram
       | IDENT "Visibility"; s = OPT IDENT -> PrintVisibility s
       | IDENT "Implicit"; qid = global -> PrintImplicit qid
       | IDENT "Universes"; fopt = OPT ne_string -> PrintUniverses fopt
-      | IDENT "Assumptions"; qid = global -> PrintNeededAssumptions qid ] ]
+      | IDENT "Assumptions"; qid = global -> PrintAssumptions qid ] ]
   ;
   class_rawexpr:
     [ [ IDENT "Funclass" -> FunClass

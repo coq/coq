@@ -10,7 +10,6 @@ Set Implicit Arguments.
 
 Require Import ZArith.
 Require Import ZAux.
-Require Import ZDivModAux.
 Require Import Basic_type.
 Require Import GenBase.
 
@@ -221,7 +220,7 @@ Section GenSub.
    rewrite H0;rewrite Zplus_0_r; rewrite Zpower_2;
     rewrite Zmult_mod_distr_r;try apply lt_0_wB.
    rewrite spec_opp;trivial.
-   apply Zmod_unique with (q:= -1). apply lt_0_wwB.
+   apply Zmod_unique with (q:= -1).
    exact (spec_ww_to_Z w_digits w_to_Z spec_to_Z (WW (w_opp_carry xh) l)).
    rewrite spec_opp_carry;rewrite wwB_wBwB;ring.
   Qed.
@@ -295,12 +294,12 @@ Section GenSub.
   Lemma spec_ww_pred : forall x, [[ww_pred x]] = ([[x]] - 1) mod wwB.
   Proof.
    destruct x as [ |xh xl];simpl. 
-   apply Zmod_unique with (-1). apply lt_0_wwB. apply spec_ww_to_Z;trivial.
+   apply Zmod_unique with (-1). apply spec_ww_to_Z;trivial.
    rewrite spec_ww_Bm1;ring.
    replace ([|xh|]*wB + [|xl|] - 1) with ([|xh|]*wB + ([|xl|] - 1)). 2:ring.
    generalize (spec_pred_c xl);destruct (w_pred_c xl) as [l|l];intro H;
    unfold interp_carry in H;rewrite <- H;simpl ww_to_Z.
-   rewrite Zmod_def_small. apply spec_w_WW. 
+   rewrite Zmod_small. apply spec_w_WW. 
    exact (spec_ww_to_Z w_digits w_to_Z spec_to_Z (WW xh l)).
    rewrite Zplus_assoc;rewrite <- Zmult_plus_distr_l. 
    change ([|xh|] + -1) with ([|xh|] - 1).
@@ -313,7 +312,7 @@ Section GenSub.
   Lemma spec_ww_sub : forall x y, [[ww_sub x y]] = ([[x]] - [[y]]) mod wwB.
   Proof.
    destruct y as [ |yh yl];simpl.
-   ring_simplify ([[x]] - 0);rewrite Zmod_def_small;trivial. apply spec_ww_to_Z;trivial.
+   ring_simplify ([[x]] - 0);rewrite Zmod_small;trivial. apply spec_ww_to_Z;trivial.
    destruct x as [ |xh xl];simpl. exact (spec_ww_opp (WW yh yl)).
    replace ([|xh|] * wB + [|xl|] - ([|yh|] * wB + [|yl|])) 
    with (([|xh|] - [|yh|]) * wB + ([|xl|] - [|yl|])). 2:ring.
@@ -331,7 +330,7 @@ Section GenSub.
    destruct y as [ |yh yl];simpl.
    ring_simplify ([[x]] - 0);exact (spec_ww_pred x).
    destruct x as [ |xh xl];simpl.
-   apply Zmod_unique with (-1). apply lt_0_wwB.
+   apply Zmod_unique with (-1).
    apply spec_ww_to_Z;trivial.
    fold (ww_opp_carry (WW yh yl)).
    rewrite (spec_ww_opp_carry (WW yh yl));simpl ww_to_Z;ring.

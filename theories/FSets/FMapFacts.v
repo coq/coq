@@ -680,7 +680,7 @@ Module Properties (M: S).
   destruct y; unfold O.ltk in *; simpl in *.
   rewrite <- elements_mapsto_iff in H1.
   assert (~E.eq x t0).
-   swap H.
+   contradict H.
    exists e0; apply MapsTo_1 with t0; auto.
   ME.order.
   intros.

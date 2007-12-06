@@ -60,7 +60,7 @@ let inj_open c = (Evd.empty,c)
 let inj_occ (occ,c) = (occ,inj_open c)
 
 let inj_red_expr = function
-  | Simpl lo -> Simpl (option_map inj_occ lo)
+  | Simpl lo -> Simpl (Option.map inj_occ lo)
   | Fold l -> Fold (List.map inj_open l)
   | Pattern l -> Pattern (List.map inj_occ l)
   | (ExtraRedExpr _ | CbvVm | Red _ | Hnf | Cbv _ | Lazy _ | Unfold _ as c)
@@ -1298,7 +1298,7 @@ let unfold_all x gl =
  *)
 
 let check_unused_names names =
-  if names <> [] & Options.is_verbose () then
+  if names <> [] & Flags.is_verbose () then
     let s = if List.tl names = [] then " " else "s " in
     msg_warning 
       (str"Unused introduction pattern" ++ str s ++ 
@@ -1685,8 +1685,16 @@ let mkEq t x y =
 let mkRefl t x = 
   mkApp ((build_coq_eq_data ()).refl, [| t; x |])
 
+let mkHEq t x u y = 
+  mkApp (coq_constant "mkHEq" ["Logic";"JMeq"] "JMeq",
+	[| t; x; u; y |])
+    
+let mkHRefl t x = 
+  mkApp (coq_constant "mkHEq" ["Logic";"JMeq"] "JMeq_refl",
+	[| t; x |])
+
 let mkCoe a x p px y eq = 
-  mkApp (out_some (build_coq_eq_data ()).rect, [| a; x; p; px; y; eq |])
+  mkApp (Option.get (build_coq_eq_data ()).rect, [| a; x; p; px; y; eq |])
 
 let lift_togethern n l =
   let l', _ =
@@ -1724,6 +1732,7 @@ let make_abstract_generalize gl id concl ctx c eqs args refls coe =
     
 let abstract_args gl id = 
   let c = pf_get_hyp_typ gl id in
+  let sigma = project gl in
   let env = pf_env gl in
   let concl = pf_concl gl in
   let avoid = ref [] in
@@ -1735,32 +1744,39 @@ let abstract_args gl id =
       App (f, args) -> 
 	(* Build application generalized w.r.t. the argument plus the necessary eqs.
 	   From env |- c : forall G, T and args : G we build
-	   (G' : ctx, env ; G' |- args' : G, eqs := G'_i = G_i, refls : G' = G)
+	   (T[G'], G' : ctx, env ; G' |- args' : G, eqs := G'_i = G_i, refls : G' = G)
 
 	   eqs are not lifted w.r.t. each other yet. (* will be needed when going to dependent indexes *)
 	*)
-	let aux (prod, ctx, c, args, eqs, refls, finalargs, env) arg =
+	let aux (prod, ctx, ctxenv, c, args, eqs, refls, finalargs, env) arg =
 	  let (name, ty, arity) = destProd prod in
+	  let argty = pf_type_of gl arg in
+	  let liftarg = lift (List.length ctx) arg in
+	  let liftargty = lift (List.length ctx) argty in
+	  let convertible = Reductionops.is_conv ctxenv sigma ty liftargty in
 	    match kind_of_term arg with
-	      | Var _ | Rel _ -> 
-		  let finalarg = lift (List.length ctx) arg in
-		    (* FIXME: also false when the quant var has not a type convertible to ty *)
-		    (subst1 arg arity, ctx, mkApp (c, [|arg|]), args, eqs, refls, (Anonymous, finalarg, finalarg) :: finalargs, env)
+	      | Var _ | Rel _ when convertible -> 
+		    (subst1 arg arity, ctx, ctxenv, mkApp (c, [|arg|]), args, eqs, refls, (Anonymous, liftarg, liftarg) :: finalargs, env)
 	      | _ ->
 		  let name = get_id name in
-		  let arity = subst1 (mkRel 1) arity in
-		  let ctx = (Name name, None, ty) :: ctx in
+		  let decl = (Name name, None, ty) in
+		  let ctx = decl :: ctx in
 		  let c' = mkApp (lift 1 c, [|mkRel 1|]) in
 		  let args = arg :: args in
 		  let liftarg = lift (List.length ctx) arg in
-		  let eq = mkEq ty (mkRel 1) liftarg in
-		  let eqs = eq :: lift_list eqs in (* FIXME: should be heterogenous in general *)
-		  let refls = mkRefl ty arg :: refls in
+		  let eq, refl = 
+		    if convertible then
+		      mkEq (lift 1 ty) (mkRel 1) liftarg, mkRefl argty arg
+		    else
+		      mkHEq (lift 1 ty) (mkRel 1) liftargty liftarg, mkHRefl argty arg
+		  in
+		  let eqs = eq :: lift_list eqs in
+		  let refls = refl :: refls in
 		  let finalargs = (Name name, mkRel 1, liftarg) :: List.map (fun (x, y, z) -> (x, lift 1 y, lift 1 z)) finalargs in
-		    (arity, ctx, c', args, eqs, refls, finalargs, env)
+		    (arity, ctx, push_rel decl ctxenv, c', args, eqs, refls, finalargs, env)
 	in 
-	let arity, ctx, c', args, eqs, refls, finalargs, env = 
-	  Array.fold_left aux (pf_type_of gl f, [],f,[],[],[],[],env) args
+	let arity, ctx, ctxenv, c', args, eqs, refls, finalargs, env = 
+	  Array.fold_left aux (pf_type_of gl f,[],env,f,[],[],[],[],env) args
 	in
 	let _, _, _, coe = 
 	  let alleqslen = List.length eqs in
