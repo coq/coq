@@ -1,8 +1,8 @@
 open Format
 
-let size = 13
+let size = 6
 let sizeaux = 1
-let gen_proof = false
+let gen_proof = true
 
 let t = "t"
 let c = "N"
@@ -19,7 +19,7 @@ let basename = "N"
 
 let print_header fmt l =
   let l = "ZAux"::"ZArith"::"Basic_type"::"ZnZ"::"Zn2Z"::"Nbasic"::"GenMul"::
-	  "GenDivn1"::"Wf_nat"::l in
+	  "GenDivn1"::"Wf_nat"::"MemoFn"::l in
   List.iter (fun s -> fprintf fmt "Require Import %s.\n" s) l;
   fprintf fmt "\n"
 
@@ -49,6 +49,13 @@ let print_Make () =
   fprintf fmt "(*        File automatically generated DO NOT EDIT             *)\n";
   fprintf fmt "(*        Constructors: %i  Generated Proofs: %b          %s %s *)\n" size gen_proof (if size < 10 then " " else  "") (if gen_proof then " " else "");
   fprintf fmt "(*                                                             *)\n";
+  fprintf fmt "(*  To change this file, edit in genN.ml the two lines         *)\n";
+  fprintf fmt "(*   let size = %i%s                                             *)\n" size  (if size < 10 then " " else  "");
+  fprintf fmt "(*   let gen_proof = %s                                     *)\n" (if gen_proof then "true " else  "false");
+  fprintf fmt "(*  Recompile the file                                         *)\n";
+  fprintf fmt "(*   camlopt -o genN unix.cmxa genN.ml                         *)\n";
+  fprintf fmt "(*  Regenerate NMake.v                                         *)\n";
+  fprintf fmt "(*   ./genN                                                    *)\n";
   fprintf fmt "(***************************************************************)\n\n";
 
 
@@ -99,7 +106,17 @@ let print_Make () =
   fprintf fmt "\n";
   fprintf fmt " End Make_op.\n";
   fprintf fmt "\n";
-  fprintf fmt " Definition make_op := make_op_aux mk_zn2z_op_karatsuba.\n";
+  fprintf fmt " Definition omake_op := make_op_aux mk_zn2z_op_karatsuba.\n";
+  fprintf fmt "\n";
+  fprintf fmt "\n";
+  fprintf fmt " Definition make_op_list := dmemo_list _ omake_op.\n";
+  fprintf fmt "\n";
+  fprintf fmt " Definition make_op n := dmemo_get _ omake_op n make_op_list.\n";
+  fprintf fmt "\n";
+  fprintf fmt " Lemma make_op_omake: forall n, make_op n = omake_op n.\n";
+  fprintf fmt " intros n; unfold make_op, make_op_list.\n";
+  fprintf fmt " refine (dmemo_get_correct _ _ _).\n";
+  fprintf fmt " Qed.\n";
   fprintf fmt "\n";
 
   fprintf fmt " Inductive %s_ : Set :=\n" t;
@@ -217,18 +234,20 @@ let print_Make () =
 
   fprintf fmt " Theorem make_op_S: forall n,\n";
   fprintf fmt "   make_op (S n) = mk_zn2z_op_karatsuba (make_op n).\n";
-  fprintf fmt " intro n; pattern n; apply lt_wf_ind; clear n.\n";
+  fprintf fmt " intro n.\n";
+  fprintf fmt " do 2 rewrite make_op_omake.\n";
+  fprintf fmt " pattern n; apply lt_wf_ind; clear n.\n";
   fprintf fmt " intros n; case n; clear n.\n";
-  fprintf fmt "   intros _; unfold make_op, make_op_aux, w%i_op; apply refl_equal.\n" (size + 2);
+  fprintf fmt "   intros _; unfold omake_op, make_op_aux, w%i_op; apply refl_equal.\n" (size + 2);
   fprintf fmt " intros n; case n; clear n.\n";
-  fprintf fmt "   intros _; unfold make_op, make_op_aux, w%i_op; apply refl_equal.\n" (size + 3);
+  fprintf fmt "   intros _; unfold omake_op, make_op_aux, w%i_op; apply refl_equal.\n" (size + 3);
   fprintf fmt " intros n; case n; clear n.\n";
-  fprintf fmt "   intros _; unfold make_op, make_op_aux, w%i_op, w%i_op; apply refl_equal.\n" (size + 3) (size + 2);
+  fprintf fmt "   intros _; unfold omake_op, make_op_aux, w%i_op, w%i_op; apply refl_equal.\n" (size + 3) (size + 2);
   fprintf fmt " intros n Hrec.\n";
-  fprintf fmt "   change (make_op (S (S (S (S n))))) with\n";
-  fprintf fmt "          (mk_zn2z_op_karatsuba (mk_zn2z_op_karatsuba (mk_zn2z_op_karatsuba (make_op (S n))))).\n";
-  fprintf fmt "   change (make_op (S (S (S n)))) with\n";
-  fprintf fmt "         (mk_zn2z_op_karatsuba (mk_zn2z_op_karatsuba (mk_zn2z_op_karatsuba (make_op n)))).\n";
+  fprintf fmt "   change (omake_op (S (S (S (S n))))) with\n";
+  fprintf fmt "          (mk_zn2z_op_karatsuba (mk_zn2z_op_karatsuba (mk_zn2z_op_karatsuba (omake_op (S n))))).\n";
+  fprintf fmt "   change (omake_op (S (S (S n)))) with\n";
+  fprintf fmt "         (mk_zn2z_op_karatsuba (mk_zn2z_op_karatsuba (mk_zn2z_op_karatsuba (omake_op n)))).\n";
   fprintf fmt "   rewrite Hrec; auto with arith.\n";
   fprintf fmt " Qed.\n";
   fprintf fmt " \n";
@@ -1799,13 +1818,13 @@ let print_Make () =
   fprintf fmt " intros x n; generalize x; elim n; clear n x; simpl power_pos.\n";
   fprintf fmt " intros; rewrite spec_mul; rewrite spec_square; rewrite H.\n";
   fprintf fmt " rewrite Zpos_xI; rewrite Zpower_exp; auto with zarith.\n";
-  fprintf fmt " rewrite (Zmult_comm 2); rewrite ZPowerAux.Zpower_mult; auto with zarith.\n";
-  fprintf fmt " rewrite ZAux.Zpower_2; rewrite ZAux.Zpower_exp_1; auto.\n";
+  fprintf fmt " rewrite (Zmult_comm 2); rewrite Zpower_mult; auto with zarith.\n";
+  fprintf fmt " rewrite Zpower_2; rewrite Zpower_1_r; auto.\n";
   fprintf fmt " intros; rewrite spec_square; rewrite H.\n";
   fprintf fmt " rewrite Zpos_xO; auto with zarith.\n";
-  fprintf fmt " rewrite (Zmult_comm 2); rewrite ZPowerAux.Zpower_mult; auto with zarith.\n";
-  fprintf fmt " rewrite ZAux.Zpower_2; auto.\n";
-  fprintf fmt " intros; rewrite ZAux.Zpower_exp_1; auto.\n";
+  fprintf fmt " rewrite (Zmult_comm 2); rewrite Zpower_mult; auto with zarith.\n";
+  fprintf fmt " rewrite Zpower_2; auto.\n";
+  fprintf fmt " intros; rewrite Zpower_1_r; auto.\n";
   fprintf fmt " Qed.\n";
   fprintf fmt "\n";
   end
@@ -2020,9 +2039,9 @@ let print_Make () =
   fprintf fmt "    rewrite <- (spec_cast_r n m y) in H2; auto.\n";
   fprintf fmt "  intros x y H1 H2; generalize (FO x y H1 H2); case div_gt.\n";
   fprintf fmt "  intros q r (H3, H4); split.\n";
-  fprintf fmt "  apply (ZDivModAux.Zdiv_unique [x] [y] [q] [r]); auto.\n";
+  fprintf fmt "  apply (Zdiv_unique [x] [y] [q] [r]); auto.\n";
   fprintf fmt "  rewrite Zmult_comm; auto.\n";
-  fprintf fmt "  apply (ZDivModAux.Zmod_unique [x] [y] [q] [r]); auto.\n";
+  fprintf fmt "  apply (Zmod_unique [x] [y] [q] [r]); auto.\n";
   fprintf fmt "  rewrite Zmult_comm; auto.\n";
   fprintf fmt "  Qed.\n";
   end
@@ -2057,8 +2076,8 @@ let print_Make () =
   fprintf fmt "  unfold Zdiv, Zmod; case Zdiv_eucl; intros; subst; auto.\n";
   fprintf fmt " assert (F2: 0 <= [x] < [y]).\n";
   fprintf fmt "   generalize (spec_pos x); auto.\n";
-  fprintf fmt " generalize (ZDivModAux.Zdiv_lt_0 _ _ F2)\n";
-  fprintf fmt "            (Zmod_def_small _ _ F2);\n";
+  fprintf fmt " generalize (Zdiv_small _ _ F2)\n";
+  fprintf fmt "            (Zmod_small _ _ F2);\n";
   fprintf fmt "  unfold Zdiv, Zmod; case Zdiv_eucl; intros; subst; auto.\n";
   fprintf fmt " generalize (spec_div_gt _ _ H0 H); auto.\n";
   fprintf fmt " unfold Zdiv, Zmod; case Zdiv_eucl; case div_gt.\n";
@@ -2208,7 +2227,7 @@ let print_Make () =
   fprintf fmt "   unfold modulo; case compare; try rewrite F0;\n";
   fprintf fmt "   try rewrite F1; intros; try split; auto with zarith.\n";
   fprintf fmt " rewrite H0; apply sym_equal; apply Z_mod_same; auto with zarith.\n";
-  fprintf fmt " apply sym_equal; apply ZAux.Zmod_def_small; auto with zarith.\n";
+  fprintf fmt " apply sym_equal; apply Zmod_small; auto with zarith.\n";
   fprintf fmt " generalize (spec_pos x); auto with zarith.\n";
   fprintf fmt " apply spec_mod_gt; auto.\n";
   fprintf fmt " Qed.\n";
@@ -2310,7 +2329,7 @@ let print_Make () =
   fprintf fmt " case (Z_mod_lt [a] [b]); auto with zarith.\n";
   fprintf fmt " rewrite Zmult_comm; rewrite spec_mod_gt; auto with zarith.\n";
   fprintf fmt " rewrite <- Z_div_mod_eq; auto with zarith.\n";
-  fprintf fmt " pattern 2 at 2; rewrite <- (Zpower_exp_1 2).\n";
+  fprintf fmt " pattern 2 at 2; rewrite <- (Zpower_1_r 2).\n";
   fprintf fmt " rewrite <- Zpower_exp; auto with zarith.\n";
   fprintf fmt " ring_simplify (p - 1 + 1); auto.\n";
   fprintf fmt " case (Zle_lt_or_eq 0 p); auto with zarith.\n";
@@ -2396,7 +2415,7 @@ let print_Make () =
   fprintf fmt " case (spec_digits a); intros H5 H6.\n";
   fprintf fmt " apply sym_equal; apply Zis_gcd_gcd; auto with zarith.\n";
   fprintf fmt " unfold gcd_gt; apply Zspec_gcd_gt_aux with 0; auto with zarith.\n";
-  fprintf fmt " intros a1 a2; rewrite Zpower_exp_0.\n";
+  fprintf fmt " intros a1 a2; rewrite Zpower_0_r.\n";
   fprintf fmt " case (spec_digits a2); intros H7 H8;\n";
   fprintf fmt "   intros; apply False_ind; auto with zarith.\n";
   fprintf fmt " Qed.\n";
@@ -2524,7 +2543,7 @@ let print_Make () =
   fprintf fmt "  rewrite (fun x y => (Zpos_xO (%sznz_digits x y))).\n" "@";
   fprintf fmt "  rewrite inj_S; unfold Zsucc.\n";
   fprintf fmt "  rewrite Zplus_comm; rewrite Zpower_exp; auto with zarith.\n";
-  fprintf fmt "  rewrite Zpower_exp_1.\n";
+  fprintf fmt "  rewrite Zpower_1_r.\n";
   fprintf fmt "  assert (tmp: forall x y z, x * (y * z) = y * (x * z));\n";
   fprintf fmt "   [intros; ring | rewrite tmp; clear tmp].\n";
   fprintf fmt "  apply Zmult_le_compat_l; auto with zarith.\n";
@@ -2605,7 +2624,7 @@ let print_Make () =
     fprintf fmt " pattern (Zpos (znz_digits w%i_op)) at 1; \n" i;
     fprintf fmt " rewrite <- (fun x => (F0 (Zpos x))).\n";
     fprintf fmt " rewrite Zpower_exp; auto with zarith.\n";
-    fprintf fmt " rewrite Zpower_exp_1; rewrite Z_div_mult; auto with zarith.\n";
+    fprintf fmt " rewrite Zpower_1_r; rewrite Z_div_mult; auto with zarith.\n";
   done;
   fprintf fmt " intros n x Hx; rewrite spec_reduce_n.\n";
   fprintf fmt " assert (F1:= spec_more_than_1_digit (wn_spec n)).\n";
@@ -2614,7 +2633,7 @@ let print_Make () =
   fprintf fmt " pattern (Zpos (znz_digits (make_op n))) at 1; \n";
   fprintf fmt " rewrite <- (fun x => (F0 (Zpos x))).\n";
   fprintf fmt " rewrite Zpower_exp; auto with zarith.\n";
-  fprintf fmt " rewrite Zpower_exp_1; rewrite Z_div_mult; auto with zarith.\n";
+  fprintf fmt " rewrite Zpower_1_r; rewrite Z_div_mult; auto with zarith.\n";
   fprintf fmt " Qed.\n";
   end
   else
@@ -2719,16 +2738,16 @@ let print_Make () =
   fprintf fmt "   intros x y z HH HH1 HH2.\n";
   fprintf fmt "   split; auto with zarith.\n";
   fprintf fmt "   apply Zle_lt_trans with (2 := HH2); auto with zarith.\n";
-  fprintf fmt "   apply ZDivModAux.Zdiv_le_upper_bound; auto with zarith.\n";
+  fprintf fmt "   apply Zdiv_le_upper_bound; auto with zarith.\n";
   fprintf fmt "   pattern x at 1; replace x with (x * 2 ^ 0); auto with zarith.\n";
   fprintf fmt "   apply Zmult_le_compat_l; auto.\n";
   fprintf fmt "   apply Zpower_le_monotone; auto with zarith.\n";
-  fprintf fmt "   rewrite Zpower_exp_0; ring.\n";
+  fprintf fmt "   rewrite Zpower_0_r; ring.\n";
   fprintf fmt "  assert (F3: forall x y, 0 <= y -> y <= x -> 0 <= x - y < 2 ^ x).\n";
   fprintf fmt "    intros xx y HH HH1.\n";
   fprintf fmt "    split; auto with zarith.\n";
   fprintf fmt "    apply Zle_lt_trans with xx; auto with zarith.\n";
-  fprintf fmt "    apply ZPowerAux.Zpower2_lt_lin; auto with zarith.\n";
+  fprintf fmt "    apply Zpower2_lt_lin; auto with zarith.\n";
   fprintf fmt "  assert (F4: forall ww ww1 ww2 \n";
   fprintf fmt "         (ww_op: znz_op ww) (ww1_op: znz_op ww1) (ww2_op: znz_op ww2)\n";
   fprintf fmt "           xx yy xx1 yy1,\n";
@@ -2753,10 +2772,10 @@ let print_Make () =
   fprintf fmt "     rewrite (spec_0 Hw).\n";
   fprintf fmt "     rewrite Zmult_0_l; rewrite Zplus_0_l.\n";
   fprintf fmt "     rewrite (ZnZ.spec_sub Hw).\n";
-  fprintf fmt "     rewrite Zmod_def_small; auto with zarith.\n";
+  fprintf fmt "     rewrite Zmod_small; auto with zarith.\n";
   fprintf fmt "     rewrite (spec_zdigits Hw).\n";
   fprintf fmt "     rewrite F0.\n";
-  fprintf fmt "     rewrite Zmod_def_small; auto with zarith.\n";
+  fprintf fmt "     rewrite Zmod_small; auto with zarith.\n";
   fprintf fmt "     unfold base; rewrite (spec_zdigits Hw) in Hl1 |- *;\n";
   fprintf fmt "      auto with zarith.\n";
   fprintf fmt "  assert (F5: forall n m, (n <= m)%snat ->\n" "%";
@@ -2865,11 +2884,11 @@ let print_Make () =
   fprintf fmt " intros n x; unfold safe_shiftr;\n";
   fprintf fmt "    generalize (spec_compare n (Ndigits x)); case compare; intros H.\n";
   fprintf fmt " apply trans_equal with (1 := spec_0 w0_spec).\n";
-  fprintf fmt " apply sym_equal; apply ZDivModAux.Zdiv_lt_0; rewrite H.\n";
+  fprintf fmt " apply sym_equal; apply Zdiv_small; rewrite H.\n";
   fprintf fmt " rewrite spec_Ndigits; exact (spec_digits x).\n";
   fprintf fmt " rewrite <- spec_shiftr; auto with zarith.\n";
   fprintf fmt " apply trans_equal with (1 := spec_0 w0_spec).\n";
-  fprintf fmt " apply sym_equal; apply ZDivModAux.Zdiv_lt_0.\n";
+  fprintf fmt " apply sym_equal; apply Zdiv_small.\n";
   fprintf fmt " rewrite spec_Ndigits in H; case (spec_digits x); intros H1 H2.\n";
   fprintf fmt " split; auto.\n";
   fprintf fmt " apply Zlt_le_trans with (1 := H2).\n";
@@ -2908,16 +2927,16 @@ let print_Make () =
   fprintf fmt "   intros x y z HH HH1 HH2.\n";
   fprintf fmt "   split; auto with zarith.\n";
   fprintf fmt "   apply Zle_lt_trans with (2 := HH2); auto with zarith.\n";
-  fprintf fmt "   apply ZDivModAux.Zdiv_le_upper_bound; auto with zarith.\n";
+  fprintf fmt "   apply Zdiv_le_upper_bound; auto with zarith.\n";
   fprintf fmt "   pattern x at 1; replace x with (x * 2 ^ 0); auto with zarith.\n";
   fprintf fmt "   apply Zmult_le_compat_l; auto.\n";
   fprintf fmt "   apply Zpower_le_monotone; auto with zarith.\n";
-  fprintf fmt "   rewrite Zpower_exp_0; ring.\n";
+  fprintf fmt "   rewrite Zpower_0_r; ring.\n";
   fprintf fmt "  assert (F3: forall x y, 0 <= y -> y <= x -> 0 <= x - y < 2 ^ x).\n";
   fprintf fmt "    intros xx y HH HH1.\n";
   fprintf fmt "    split; auto with zarith.\n";
   fprintf fmt "    apply Zle_lt_trans with xx; auto with zarith.\n";
-  fprintf fmt "    apply ZPowerAux.Zpower2_lt_lin; auto with zarith.\n";
+  fprintf fmt "    apply Zpower2_lt_lin; auto with zarith.\n";
   fprintf fmt "  assert (F4: forall ww ww1 ww2 \n";
   fprintf fmt "         (ww_op: znz_op ww) (ww1_op: znz_op ww1) (ww2_op: znz_op ww2)\n";
   fprintf fmt "           xx yy xx1 yy1,\n";
@@ -2952,10 +2971,10 @@ let print_Make () =
   fprintf fmt "       apply Zmult_le_compat_l; auto with zarith.\n";
   fprintf fmt "     apply Zpower_le_monotone; auto with zarith.\n";
   fprintf fmt "     rewrite (ZnZ.spec_head00 Hw1 xx); auto with zarith.\n";
-  fprintf fmt "     rewrite ZDivModAux.Zdiv_0; auto with zarith.\n";
+  fprintf fmt "     rewrite Zdiv_0_l; auto with zarith.\n";
   fprintf fmt "     rewrite Zplus_0_r.\n";
   fprintf fmt "     case (Zle_lt_or_eq _ _ HH1); intros HH5.\n";
-  fprintf fmt "     rewrite Zmod_def_small; auto with zarith.\n";
+  fprintf fmt "     rewrite Zmod_small; auto with zarith.\n";
   fprintf fmt "     intros HH; apply HH.\n";
   fprintf fmt "     rewrite Hy; apply Zle_trans with (1:= Hl).\n";
   fprintf fmt "     rewrite <- (spec_zdigits Hw). \n";
@@ -2976,16 +2995,10 @@ let print_Make () =
   fprintf fmt "     rewrite <- (spec_zdigits Hw1); auto with zarith.\n";
   fprintf fmt "     rewrite <- HH5.\n";
   fprintf fmt "     rewrite Zmult_0_l.\n";
-  fprintf fmt "     rewrite Zmod_def_small; auto with zarith.\n";
+  fprintf fmt "     rewrite Zmod_small; auto with zarith.\n";
   fprintf fmt "     intros HH; apply HH.\n";
   fprintf fmt "     rewrite Hy; apply Zle_trans with (1 := Hl).\n";
   fprintf fmt "     rewrite (ZnZ.spec_head00 Hw1 xx); auto with zarith.\n";
-  fprintf fmt "     rewrite <- (spec_zdigits Hw); auto with zarith.\n";
-  fprintf fmt "     rewrite <- (spec_zdigits Hw1); auto with zarith.\n";
-  fprintf fmt "     apply Zpower_lt_0; auto with zarith.\n";
-  fprintf fmt "     assert (znz_to_Z ww_op yy1 <= Zpos (znz_digits ww_op)); auto with zarith.\n";
-  fprintf fmt "     rewrite Hy; apply Zle_trans with (1 := Hl).\n";
-  fprintf fmt "     apply Zle_trans with (1 := F1).\n";
   fprintf fmt "     rewrite <- (spec_zdigits Hw); auto with zarith.\n";
   fprintf fmt "     rewrite <- (spec_zdigits Hw1); auto with zarith.\n";
   fprintf fmt "  assert (F5: forall n m, (n <= m)%snat ->\n" "%";
@@ -3151,7 +3164,7 @@ let print_Make () =
   fprintf fmt "   assert (tmp: forall x, x - 1 + 1 = x); [intros; ring | rewrite tmp; clear tmp].\n";
   fprintf fmt "   apply Zle_trans with (2 := Zlt_le_weak _ _ HH2).\n";
   fprintf fmt "   apply Zmult_le_compat_l; auto with zarith.\n";
-  fprintf fmt "   rewrite Zpower_exp_1; auto with zarith.\n";
+  fprintf fmt "   rewrite Zpower_1_r; auto with zarith.\n";
   fprintf fmt "   apply Zpower_le_monotone; auto with zarith.\n";
   fprintf fmt "   split; auto with zarith. \n";
   fprintf fmt "   case (Zle_or_lt (Zpos (digits x)) [head0 x]); auto with zarith; intros HH6.\n";
@@ -3166,7 +3179,7 @@ let print_Make () =
   fprintf fmt " replace (Zpos (xO (digits x)) - 1) with\n";
   fprintf fmt "   ((Zpos (digits x) - 1) + (Zpos (digits x))).\n";
   fprintf fmt " rewrite Zpower_exp; auto with zarith.\n";
-  fprintf fmt " apply Zmult_lt_compat; auto with zarith.\n";
+  fprintf fmt " apply Zmult_lt_compat2; auto with zarith.\n";
   fprintf fmt " split; auto with zarith.\n";
   fprintf fmt " apply Zmult_lt_0_compat; auto with zarith.\n";
   fprintf fmt " rewrite Zpos_xO; ring.\n";
@@ -3200,11 +3213,11 @@ let print_Make () =
   fprintf fmt "   split; auto with zarith.\n";
   fprintf fmt "   rewrite Zpos_xO; auto with zarith.\n";
   fprintf fmt " case (spec_head0 x F3).\n";
-  fprintf fmt " rewrite <- F1; rewrite Zpower_exp_0; rewrite Zmult_1_l; intros _ HH.\n";
+  fprintf fmt " rewrite <- F1; rewrite Zpower_0_r; rewrite Zmult_1_l; intros _ HH.\n";
   fprintf fmt " apply Zle_lt_trans with (2 := HH).\n";
   fprintf fmt " case (spec_head0 _ F4).\n";
   fprintf fmt " rewrite (spec_double_size x); rewrite (spec_double_size_digits x).\n";
-  fprintf fmt " rewrite <- F0; rewrite Zpower_exp_0; rewrite Zmult_1_l; auto.\n";
+  fprintf fmt " rewrite <- F0; rewrite Zpower_0_r; rewrite Zmult_1_l; auto.\n";
   fprintf fmt " generalize F1; rewrite (spec_head00 _ (sym_equal F3)); auto with zarith.\n";
   fprintf fmt " Qed.\n";
   end
@@ -3238,7 +3251,7 @@ let print_Make () =
   fprintf fmt " rewrite spec_double_size; auto.\n";
   fprintf fmt " rewrite Zplus_comm; rewrite Zpower_exp; auto with zarith.\n";
   fprintf fmt " apply Zle_trans with (2 := spec_double_size_head0 x).\n";
-  fprintf fmt " rewrite Zpower_exp_1; apply Zmult_le_compat_l; auto with zarith.\n";
+  fprintf fmt " rewrite Zpower_1_r; apply Zmult_le_compat_l; auto with zarith.\n";
   fprintf fmt " Qed.\n";
   end
   else
@@ -3320,7 +3333,7 @@ let print_Make () =
   fprintf fmt " replace (2 ^ 1) with (2 * 1).\n";
   fprintf fmt " apply Zmult_le_compat_l; auto with zarith.\n";
   fprintf fmt " generalize (spec_double_size_head0_pos x); auto with zarith.\n";
-  fprintf fmt " rewrite Zpower_exp_1; ring.\n";
+  fprintf fmt " rewrite Zpower_1_r; ring.\n";
   fprintf fmt " intros x1 H2; apply spec_shiftl.\n";
   fprintf fmt " apply Zle_trans with (2 := H2).\n";
   fprintf fmt " apply Zle_trans with (2 ^ Zpos (digits n)); auto with zarith.\n";
