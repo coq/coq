@@ -43,7 +43,7 @@ type program_info = {
 }
 
 let assumption_message id =
-  Options.if_verbose message ((string_of_id id) ^ " is assumed")
+  Flags.if_verbose message ((string_of_id id) ^ " is assumed")
 
 let default_tactic : Proof_type.tactic ref = ref Refiner.tclIDTAC
 let default_tactic_expr : Tacexpr.glob_tactic_expr ref = ref (Obj.magic ())
@@ -248,11 +248,11 @@ type progress =
 let obligations_message rem =
   if rem > 0 then
     if rem = 1 then
-      Options.if_verbose msgnl (int rem ++ str " obligation remaining")
+      Flags.if_verbose msgnl (int rem ++ str " obligation remaining")
     else
-      Options.if_verbose msgnl (int rem ++ str " obligations remaining")
+      Flags.if_verbose msgnl (int rem ++ str " obligations remaining")
   else
-    Options.if_verbose msgnl (str "No more obligations remaining")
+    Flags.if_verbose msgnl (str "No more obligations remaining")
 
 let update_obls prg obls rem = 
   let prg' = { prg with prg_obligations = (obls, rem) } in
@@ -390,21 +390,21 @@ and try_solve_obligations n tac =
   try ignore (solve_obligations n tac) with NoObligations _ -> ()
 
 and auto_solve_obligations n : progress =
-  Options.if_verbose msgnl (str "Solving obligations automatically...");
+  Flags.if_verbose msgnl (str "Solving obligations automatically...");
   try solve_obligations n !default_tactic with NoObligations _ -> Dependent
       
 let add_definition n b t obls =
-  Options.if_verbose pp (str (string_of_id n) ++ str " has type-checked");
+  Flags.if_verbose pp (str (string_of_id n) ++ str " has type-checked");
   let prg = init_prog_info n b t [] (Array.make 0 0) obls in
   let obls,_ = prg.prg_obligations in
   if Array.length obls = 0 then (
-    Options.if_verbose ppnl (str ".");    
+    Flags.if_verbose ppnl (str ".");    
     let cst = declare_definition prg in 
       from_prg := ProgMap.remove prg.prg_name !from_prg;
       Defined cst)
   else (
     let len = Array.length obls in
-    let _ = Options.if_verbose ppnl (str ", generating " ++ int len ++ str " obligation(s)") in
+    let _ = Flags.if_verbose ppnl (str ", generating " ++ int len ++ str " obligation(s)") in
       from_prg := ProgMap.add n prg !from_prg; 
       auto_solve_obligations (Some n))
 	

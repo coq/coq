@@ -10,7 +10,7 @@
 
 open Pp
 open Util
-open Options
+open Flags
 open Names
 open Nameops
 open Libnames
@@ -221,7 +221,7 @@ let contract_pat_notation ntn l =
 (**********************************************************************)
 (* Remembering the parsing scope of variables in notations            *)
 
-let make_current_scope (tmp_scope,scopes) = option_cons tmp_scope scopes
+let make_current_scope (tmp_scope,scopes) = Option.List.cons tmp_scope scopes
 
 let set_var_scope loc id (_,scopt,scopes) varscopes =
   let idscopes = List.assoc id varscopes in

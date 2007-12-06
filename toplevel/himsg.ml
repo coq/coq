@@ -10,7 +10,7 @@
 
 open Pp
 open Util
-open Options
+open Flags
 open Names
 open Nameops
 open Term

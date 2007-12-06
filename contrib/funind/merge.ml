@@ -819,7 +819,7 @@ let rec merge_mutual_inductive_body
 
   
 let rawterm_to_constr_expr x = (* build a constr_expr from a rawconstr *)
-  Options.with_option Options.raw_print (Constrextern.extern_rawtype Idset.empty) x
+  Flags.with_option Flags.raw_print (Constrextern.extern_rawtype Idset.empty) x
 
 let merge_rec_params_and_arity prms1 prms2 shift (concl:constr) = 
   let params = prms2 @ prms1 in

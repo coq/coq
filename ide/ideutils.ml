@@ -25,7 +25,7 @@ let set_location = ref  (function s -> failwith "not ready")
 let pulse = ref (function () -> failwith "not ready")
 
 
-let debug = Options.debug
+let debug = Flags.debug
 
 let prerr_endline s =
   if !debug then (prerr_endline s;flush stderr)
@@ -35,7 +35,7 @@ let prerr_string s =
 let lib_ide_file f =
   let coqlib =
     System.getenv_else "COQLIB"
-      (if Coq_config.local || !Options.boot then Coq_config.coqtop
+      (if Coq_config.local || !Flags.boot then Coq_config.coqtop
        else Coq_config.coqlib) in
   Filename.concat (Filename.concat coqlib "ide") f
   

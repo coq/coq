@@ -349,7 +349,7 @@ let build_mutrec lnameargsardef boxed =
       ([],env,[],[]) lnameargsardef in
   let arityl = List.rev arityl in
   let notations = 
-    List.fold_right (fun (_,ntnopt) l -> option_cons ntnopt l) 
+    List.fold_right (fun (_,ntnopt) l -> Option.List.cons ntnopt l) 
       lnameargsardef [] in
 
   let recdef =

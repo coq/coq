@@ -113,20 +113,20 @@ let debug_on = true
 
 let debug n s = 
   if debug_on then
-    if !Options.debug && n >= debug_level then
+    if !Flags.debug && n >= debug_level then
       msgnl s
     else ()
   else ()
 
 let debug_msg n s = 
   if debug_on then
-    if !Options.debug  && n >= debug_level then s
+    if !Flags.debug  && n >= debug_level then s
     else mt ()
   else mt ()
 
 let trace s = 
   if debug_on then
-    if !Options.debug  && debug_level > 0 then msgnl s
+    if !Flags.debug  && debug_level > 0 then msgnl s
     else ()
   else ()
 
@@ -353,7 +353,7 @@ let recursive_message v =
 		    spc () ++ str "are recursively defined")
 
 let print_message m =
-  Options.if_verbose ppnl m
+  Flags.if_verbose ppnl m
 
 (* Solve an obligation using tactics, return the corresponding proof term *)
 let solve_by_tac evi t =

@@ -234,7 +234,7 @@ let rec pat_of_raw metas vars = function
   | RHole _ ->
       PMeta None
   | RCast (_,c,_) ->
-      Options.if_verbose
+      Flags.if_verbose
         Pp.warning "Cast not taken into account in constr pattern";
       pat_of_raw metas vars c
   | RIf (_,c,(_,None),b1,b2) ->

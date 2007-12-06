@@ -14,7 +14,7 @@ open Util
 open Subtac_utils
 
 let trace s = 
-  if !Options.debug then (msgnl s; msgerr s)
+  if !Flags.debug then (msgnl s; msgerr s)
   else ()
 
 let succfix (depth, fixrels) = 

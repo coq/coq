@@ -503,7 +503,7 @@ let open_section id =
       (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
       Nametab.push_dir (Nametab.Until 1) dir (DirOpenSection prefix);
       path_prefix := prefix;
-      if !Options.xml_export then !xml_open_section id;
+      if !Flags.xml_export then !xml_open_section id;
       add_section ()
 
 
@@ -536,7 +536,7 @@ let close_section id =
   let full_olddir = fst !path_prefix in
   pop_path_prefix ();
   add_entry (make_oname id) (ClosedSection (List.rev_append secdecls (List.rev secopening)));
-  if !Options.xml_export then !xml_close_section id;
+  if !Flags.xml_export then !xml_close_section id;
   let newdecls = List.map discharge_item secdecls in
   Summary.section_unfreeze_summaries fs;
   List.iter (Option.iter (fun (id,o) -> add_discharged_leaf id o)) newdecls;

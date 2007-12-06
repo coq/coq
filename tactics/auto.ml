@@ -230,7 +230,7 @@ let make_resolves env sigma eap c =
   let ents = 
     map_succeed 
       (fun f -> f (c,cty)) 
-      [make_exact_entry; make_apply_entry env sigma (eap,Options.is_verbose())]
+      [make_exact_entry; make_apply_entry env sigma (eap,Flags.is_verbose())]
   in 
   if ents = [] then
     errorlabstrm "Hint" 

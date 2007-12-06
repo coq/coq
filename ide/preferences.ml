@@ -127,7 +127,7 @@ let (current:pref ref) =
     modifiers_valid = [`SHIFT; `CONTROL; `MOD1];
 
     
-    cmd_browse = Options.browser_cmd_fmt;
+    cmd_browse = Flags.browser_cmd_fmt;
     cmd_editor = 
 	 if Sys.os_type = "Win32"
 	 then "NOTEPAD ", ""

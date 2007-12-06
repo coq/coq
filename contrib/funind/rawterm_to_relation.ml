@@ -1181,8 +1181,8 @@ let do_build_inductive
     Array.map (List.map 
       (fun (id,t) -> 
 	 false,((dummy_loc,id),
-		Options.with_option
-		  Options.raw_print
+		Flags.with_option
+		  Flags.raw_print
 		  (Constrextern.extern_rawtype Idset.empty) ((* zeta_normalize *) t)
 	       )
       ))
@@ -1218,7 +1218,7 @@ let do_build_inductive
 (*   in *)
   let _time2 = System.get_time () in 
   try 
-    with_full_print (Options.silently (Command.build_mutual rel_inds)) true
+    with_full_print (Flags.silently (Command.build_mutual rel_inds)) true
   with 
     | UserError(s,msg) as e ->
 	let _time3 = System.get_time () in

@@ -67,7 +67,7 @@ CONFIG:=\
 
 LIBREP:=\
   lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/util.cmo lib/bigint.cmo \
-  lib/hashcons.cmo lib/dyn.cmo lib/system.cmo lib/options.cmo \
+  lib/hashcons.cmo lib/dyn.cmo lib/system.cmo lib/flags.cmo \
   lib/bstack.cmo lib/edit.cmo lib/gset.cmo lib/gmap.cmo \
   lib/tlm.cmo lib/gmapl.cmo lib/profile.cmo lib/explore.cmo \
   lib/predicate.cmo lib/rtree.cmo lib/heap.cmo lib/option.cmo
@@ -348,7 +348,7 @@ MINICOQCMO:=$(CONFIG) $(LIBREP) $(KERNEL) \
 
 GRAMMARNEEDEDCMO:=\
   lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/util.cmo lib/bigint.cmo \
-  lib/dyn.cmo lib/options.cmo lib/hashcons.cmo lib/predicate.cmo \
+  lib/dyn.cmo lib/flags.cmo lib/hashcons.cmo lib/predicate.cmo \
   lib/rtree.cmo lib/option.cmo \
   kernel/names.cmo kernel/univ.cmo \
   kernel/esubst.cmo kernel/term.cmo kernel/mod_subst.cmo kernel/sign.cmo \

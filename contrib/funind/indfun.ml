@@ -354,14 +354,14 @@ let register_struct is_rec fixpoint_exprl =
     | [(fname,_,bl,ret_type,body),_] when not is_rec -> 
 	Command.declare_definition
 	  fname
-	  (Decl_kinds.Global,Options.boxed_definitions (),Decl_kinds.Definition)
+	  (Decl_kinds.Global,Flags.boxed_definitions (),Decl_kinds.Definition)
 	  bl
 	  None
   	  body
 	  (Some ret_type)
 	  (fun _ _ -> ())
     | _ -> 
-	Command.build_recursive fixpoint_exprl (Options.boxed_definitions())
+	Command.build_recursive fixpoint_exprl (Flags.boxed_definitions())
 
 let generate_correction_proof_wf f_ref tcc_lemma_ref   
     is_mes functional_ref eq_ref rec_arg_num rec_arg_type nb_args relation

@@ -783,7 +783,7 @@ let start_pcoq_mode debug =
 *)
     set_pcoq_hook pcoq_hook;
     start_pcoq_objects();
-    Options.print_emacs := false; Pp.make_pp_nonemacs(); 
+    Flags.print_emacs := false; Pp.make_pp_nonemacs(); 
   end;;
 
 

@@ -108,7 +108,7 @@ module PrintingCasesLet =
 module PrintingIf  = Goptions.MakeRefTable(PrintingCasesIf)
 module PrintingLet = Goptions.MakeRefTable(PrintingCasesLet)
 
-(* Options for printing or not wildcard and synthetisable types *)
+(* Flags.for printing or not wildcard and synthetisable types *)
 
 open Goptions
 
@@ -299,7 +299,7 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
   let synth_type = synthetize_type () in
   let tomatch = detype c in
   let alias, aliastyp, pred= 
-    if (not !Options.raw_print) & synth_type & computable & Array.length bl<>0 
+    if (not !Flags.raw_print) & synth_type & computable & Array.length bl<>0 
     then 
       Anonymous, None, None
     else
@@ -319,7 +319,7 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
   let eqnl = detype_eqns constructs consnargsl bl in
   let tag =
     try 
-      if !Options.raw_print then
+      if !Flags.raw_print then
         RegularStyle
       else if PrintingLet.active (indsp,consnargsl) then
 	LetStyle
@@ -471,7 +471,7 @@ and share_names isgoal n l avoid env c t =
 
 and detype_eqns isgoal avoid env ci computable constructs consnargsl bl =
   try
-    if !Options.raw_print or not (reverse_matching ()) then raise Exit;
+    if !Flags.raw_print or not (reverse_matching ()) then raise Exit;
     let mat = build_tree Anonymous isgoal (avoid,env) ci bl in
     List.map (fun (pat,((avoid,env),c)) -> (dl,[],[pat],detype isgoal avoid env c))
       mat

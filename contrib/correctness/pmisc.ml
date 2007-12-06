@@ -21,12 +21,12 @@ open Topconstr
 (* debug *)
 
 let deb_mess s =
-  if !Options.debug then begin
+  if !Flags.debug then begin
     msgnl s; pp_flush()
   end
 
 let deb_print f x =
-  if !Options.debug then begin
+  if !Flags.debug then begin
     msgnl (f x); pp_flush()
   end
 
@@ -49,7 +49,7 @@ let reraise_with_loc loc f x =
 
 (* functions on names *)
 
-let at = if !Options.v7 then "@" else "'at'"
+let at = if !Flags.v7 then "@" else "'at'"
 
 let at_id id d = id_of_string ((string_of_id id) ^ at ^ d)
 

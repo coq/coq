@@ -13,7 +13,7 @@
 (*i camlp4deps: "parsing/grammar.cma" i*)
 (*i camlp4use: "pa_extend.cmo" i*)
 
-open Options
+open Flags
 open Util
 open Names
 open Nameops
@@ -228,7 +228,7 @@ let mk_prog loc p pre post =
     loc = loc; 
     info = () }
 
-if !Options.v7 then
+if !Flags.v7 then
 GEXTEND Gram
 
   (* Types ******************************************************************)

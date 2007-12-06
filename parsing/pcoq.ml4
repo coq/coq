@@ -162,7 +162,7 @@ let camlp4_verbosity silent f x =
 
 let grammar_extend te pos rls =
   camlp4_state := ByGrammar (Gramobj.weaken_entry te,pos,rls) :: !camlp4_state;
-  camlp4_verbosity (Options.is_verbose ()) (G.extend te pos) rls
+  camlp4_verbosity (Flags.is_verbose ()) (G.extend te pos) rls
 
 (* n is the number of extended entries (not the number of Grammar commands!)
    to remove. *)

@@ -17,7 +17,7 @@
 (* $Id$ *)
 
 
-open Options
+open Flags
 open Util
 open Names
 open Nameops

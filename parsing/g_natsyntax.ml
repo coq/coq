@@ -33,7 +33,7 @@ open Names
 let nat_of_int dloc n =
   if is_pos_or_zero n then begin
       if less_than (of_string "5000") n then
-	Options.if_warn msg_warning 
+	Flags.if_warn msg_warning 
 	  (strbrk "Stack overflow or segmentation fault happens when " ++
 	   strbrk "working with large numbers in nat (observed threshold " ++
 	   strbrk "may vary from 5000 to 70000 depending on your system " ++

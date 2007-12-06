@@ -30,7 +30,7 @@ open Ppconstr
 open Constrextern
 
 let emacs_str s alts = 
-  match !Options.print_emacs, !Options.print_emacs_safechar with
+  match !Flags.print_emacs, !Flags.print_emacs_safechar with
     | true, true -> alts
     | true , false -> s
     | false,_ -> "" 
@@ -227,7 +227,7 @@ let pr_context_limit n env =
     in 
     (sign_env ++ db_env)
 
-let pr_context_of env = match Options.print_hyps_limit () with 
+let pr_context_of env = match Flags.print_hyps_limit () with 
   | None -> hv 0 (pr_context_unlimited env)
   | Some n -> hv 0 (pr_context_limit n env)
 

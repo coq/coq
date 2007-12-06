@@ -74,7 +74,7 @@ let (inTacticGrammar, outTacticGrammar) =
 
 let cons_production_parameter l = function
   | VTerm _ -> l
-  | VNonTerm (_,_,ido) -> option_cons ido l
+  | VNonTerm (_,_,ido) -> Option.List.cons ido l
 
 let rec tactic_notation_key = function
   | VTerm id :: _ -> id
@@ -755,7 +755,7 @@ let find_precedence lev etyps symbols =
 	    error "The level of the leftmost non-terminal cannot be changed"
 	| ETIdent | ETBigint | ETReference -> 
 	    if lev = None then 
-	      Options.if_verbose msgnl (str "Setting notation at level 0")
+	      Flags.if_verbose msgnl (str "Setting notation at level 0")
 	    else
 	    if lev <> Some 0 then
 	      error "A notation starting with an atomic expression must be at level 0";
@@ -773,7 +773,7 @@ let find_precedence lev etyps symbols =
       (match list_last symbols with Terminal _ -> true |_ -> false)
       -> 
       if lev = None then
-	(Options.if_verbose msgnl (str "Setting notation at level 0"); 0)
+	(Flags.if_verbose msgnl (str "Setting notation at level 0"); 0)
       else Option.get lev
   | _ ->
       if lev = None then error "Cannot determine the level";

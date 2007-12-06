@@ -1298,7 +1298,7 @@ let unfold_all x gl =
  *)
 
 let check_unused_names names =
-  if names <> [] & Options.is_verbose () then
+  if names <> [] & Flags.is_verbose () then
     let s = if List.tl names = [] then " " else "s " in
     msg_warning 
       (str"Unused introduction pattern" ++ str s ++ 

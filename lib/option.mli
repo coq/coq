@@ -28,6 +28,9 @@ val get : 'a option -> 'a
 (** [make x] returns [Some x]. *)
 val make : 'a -> 'a option
 
+(** [init b x] returns [Some x] if [b] is [true] and [None] otherwise. *)
+val init : bool -> 'a -> 'a option
+
 (** [flatten x] is [Some y] if [x] is [Some (Some y)] and [None] otherwise. *)
 val flatten : 'a option option -> 'a option
 
@@ -64,7 +67,7 @@ val fold_left2 : ('a -> 'b -> 'c -> 'a) -> 'a -> 'b option -> 'c option -> 'a
 val fold_right : ('a -> 'b -> 'b) -> 'a option -> 'b -> 'b
 
 
-(** {6 More Specific operations} ***)
+(** {6 More Specific Operations} ***)
 
 (** [default f x a] is [f y] if [x] is [Some y] and [a] otherwise. *)
 val default : ('a -> 'b) -> 'a option -> 'b -> 'b
@@ -83,3 +86,15 @@ val lift_left : ('a -> 'b -> 'c) -> 'a option -> 'b -> 'c option
 (** [lift2 f x y] is [Some (f z w)] if [x] equals [Some z] and [y] equals 
     [Some w]. It is [None] otherwise. *)
 val lift2 : ('a -> 'b -> 'c) -> 'a option -> 'b option -> 'c option
+
+
+(** {6 Operations with Lists} *)
+
+module List : sig
+  (** [List.cons x l] equals [y::l] if [x] is [Some y] and [l] otherwise. *)
+  val cons : 'a option -> 'a list -> 'a list
+
+  (** [List.flatten l] is the list of all the [y]s such that [l] contains
+      [Some y] (in the same order). *)
+  val flatten : 'a option list -> 'a list
+end

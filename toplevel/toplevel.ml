@@ -10,7 +10,7 @@
 
 open Pp
 open Util
-open Options
+open Flags
 open Cerrors
 open Vernac
 open Pcoq
@@ -221,7 +221,7 @@ let make_emacs_prompt() =
       (fun acc x -> acc ^ (if acc <> "" then "|" else "") ^ Names.string_of_id x)
       "" pending in
   let proof_info = if dpth >= 0 then string_of_int dpth else "0" in
-  if !Options.print_emacs then statnum ^ " |" ^ pendingprompt ^ "| " ^ proof_info ^ " < "
+  if !Flags.print_emacs then statnum ^ " |" ^ pendingprompt ^ "| " ^ proof_info ^ " < "
   else ""
 
 (* A buffer to store the current command read on stdin. It is

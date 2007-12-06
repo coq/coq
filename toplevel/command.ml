@@ -10,7 +10,7 @@
 
 open Pp
 open Util
-open Options
+open Flags
 open Term
 open Termops
 open Declarations
@@ -132,7 +132,7 @@ let red_constant_entry bl ce = function
 
 let declare_global_definition ident ce local =
   let kn = declare_constant ident (DefinitionEntry ce,IsDefinition Definition) in
-  if local = Local && Options.is_verbose() then
+  if local = Local && Flags.is_verbose() then
     msg_warning (pr_id ident ++ str" is declared as a global definition");
   definition_message ident;
   ConstRef kn
@@ -147,7 +147,7 @@ let declare_definition ident (local,boxed,dok) bl red_option c typopt hook =
         let _ = declare_variable ident (Lib.cwd(),c,IsDefinition Definition) in
         definition_message ident;
         if Pfedit.refining () then 
-          Options.if_verbose msg_warning 
+          Flags.if_verbose msg_warning 
 	    (str"Local definition " ++ pr_id ident ++ 
              str" is not visible from current goals");
         VarRef ident
@@ -179,7 +179,7 @@ let declare_one_assumption is_coe (local,kind) c nl (_,ident) =
         let kn =
           declare_constant ident (ParameterEntry (c,nl), IsAssumption kind) in
         assumption_message ident;
-        if local=Local & Options.is_verbose () then
+        if local=Local & Flags.is_verbose () then
           msg_warning (pr_id ident ++ str" is declared as a parameter" ++
           str" because it is at a global level");
         ConstRef kn in
@@ -214,7 +214,7 @@ let declare_one_elimination ind =
         { const_entry_body = c;
           const_entry_type = t;
           const_entry_opaque = false;
-	  const_entry_boxed = Options.boxed_definitions() }, 
+	  const_entry_boxed = Flags.boxed_definitions() }, 
        Decl_kinds.IsDefinition Definition) in
     definition_message id;
     kn
@@ -283,7 +283,7 @@ let declare_eq_scheme sp =
       let cst_entry = {const_entry_body = eq_array.(i);
                        const_entry_type = None;
                        const_entry_opaque = false;
-                       const_entry_boxed = Options.boxed_definitions() } 
+                       const_entry_boxed = Flags.boxed_definitions() } 
       in
       let cst_decl =  (DefinitionEntry cst_entry),(IsDefinition Definition)
       in
@@ -583,7 +583,7 @@ let prepare_inductive ntnl indl =
       ind_arity = ar;
       ind_lc = List.map (fun (_,((_,id),t)) -> (id,t)) lc
     }) indl in
-  List.fold_right option_cons ntnl [], indl
+  List.fold_right Option.List.cons ntnl [], indl
 
 
 let elim_flag = ref true
@@ -785,7 +785,7 @@ let interp_recursive fixkind l boxed =
 
   (* Get interpretation metadatas *)
   let impls = compute_interning_datas env [] fixnames fixtypes in
-  let notations = List.fold_right option_cons ntnl [] in
+  let notations = List.fold_right Option.List.cons ntnl [] in
 
   (* Interp bodies with rollback because temp use of notations/implicit *)
   let fixdefs = 
@@ -904,7 +904,7 @@ let build_induction_scheme lnamedepindsort =
     let ce = { const_entry_body = decl;
                const_entry_type = Some decltype;
                const_entry_opaque = false;
-	       const_entry_boxed = Options.boxed_definitions() } in
+	       const_entry_boxed = Flags.boxed_definitions() } in
     let kn = declare_constant fi (DefinitionEntry ce, IsDefinition Scheme) in
     ConstRef kn :: lrecref
   in 
@@ -975,7 +975,7 @@ let build_combined_scheme name schemes =
   let ce = { const_entry_body = body;
              const_entry_type = Some typ;
              const_entry_opaque = false;
-	     const_entry_boxed = Options.boxed_definitions() } in
+	     const_entry_boxed = Flags.boxed_definitions() } in
   let _ = declare_constant (snd name) (DefinitionEntry ce, IsDefinition Scheme) in
     if_verbose ppnl (recursive_message Fixpoint None [snd name])
 

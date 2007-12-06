@@ -262,7 +262,7 @@ module Default = struct
 	    (* a little more effort to get products is needed *) 
 	    try decompose_prod_n nabs t
 	    with _ -> 
-	      if !Options.debug then
+	      if !Flags.debug then
 		msg_warning (str "decompose_prod_n failed");
 	      raise (Invalid_argument "Coercion.inh_conv_coerces_to")
 	  in

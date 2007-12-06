@@ -208,7 +208,7 @@ module MakeRefTable =
   functor (A : RefConvertArg) -> MakeTable (RefConvert(A))
 
 (****************************************************************************)
-(* 2- Options                                                               *)
+(* 2- Flags.                                                              *)
 
 type 'a option_sig = {
   optsync  : bool;

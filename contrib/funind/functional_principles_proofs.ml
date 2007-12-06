@@ -47,7 +47,7 @@ let observe_tac_stream s tac g =
 let observe_tac s tac g = observe_tac_stream (str s) tac g
 
 (* let tclTRYD tac =  *)
-(*   if  !Options.debug  || do_observe () *)
+(*   if  !Flags.debug  || do_observe () *)
 (*   then (fun g -> try (\* do_observe_tac ""  *\)tac g with _ -> tclIDTAC g) *)
 (*   else tac *)
 

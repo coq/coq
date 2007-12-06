@@ -552,7 +552,7 @@ class filename_cp = string_cp
 
 
 (* ******************************************************************************** *)
-(******************** Backward compatibility with module Options ****************** *)
+(******************** Backward compatibility with module Flags.****************** *)
 (* ******************************************************************************** *)
 
 type 'a option_class = 'a wrappers

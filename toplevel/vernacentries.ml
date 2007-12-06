@@ -12,7 +12,7 @@
 
 open Pp
 open Util
-open Options
+open Flags
 open Names
 open Entries
 open Nameops
@@ -330,7 +330,7 @@ let vernac_start_proof kind sopt (bl,t) lettop hook =
 let vernac_end_proof = function
   | Admitted -> admit ()
   | Proved (is_opaque,idopt) ->
-    if not !Options.print_emacs then if_verbose show_script ();
+    if not !Flags.print_emacs then if_verbose show_script ();
     match idopt with
     | None -> save_named is_opaque
     | Some ((_,id),None) -> save_anonymous is_opaque id
@@ -537,7 +537,7 @@ let vernac_solve n tcom b =
   (* in case a strict subtree was completed, 
      go back to the top of the prooftree *) 
   if subtree_solved () then begin
-    Options.if_verbose msgnl (str "Subgoal proved");
+    Flags.if_verbose msgnl (str "Subgoal proved");
     make_focus 0;
     reset_top_of_script ()
   end;
@@ -773,8 +773,8 @@ let _ =
     { optsync  = true;
       optname  = "raw printing";
       optkey   = (SecondaryTable ("Printing","All"));
-      optread  = (fun () -> !Options.raw_print);
-      optwrite = (fun b -> Options.raw_print := b) }
+      optread  = (fun () -> !Flags.raw_print);
+      optwrite = (fun b -> Flags.raw_print := b) }
 
 let _ =
   declare_bool_option 
@@ -789,8 +789,8 @@ let _ =
     { optsync  = true;
       optname  = "use of boxed definitions";
       optkey   = (SecondaryTable ("Boxed","Definitions"));
-      optread  = Options.boxed_definitions;
-      optwrite = (fun b -> Options.set_boxed_definitions b) } 
+      optread  = Flags.boxed_definitions;
+      optwrite = (fun b -> Flags.set_boxed_definitions b) } 
 
 let _ =
   declare_bool_option 
@@ -813,8 +813,8 @@ let _ =
     { optsync=false;
       optkey=SecondaryTable("Hyps","Limit");
       optname="the hypotheses limit";
-      optread=Options.print_hyps_limit;
-      optwrite=Options.set_print_hyps_limit }
+      optread=Flags.print_hyps_limit;
+      optwrite=Flags.set_print_hyps_limit }
 
 let _ =
   declare_int_option

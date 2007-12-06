@@ -96,13 +96,13 @@ let pr_delimiters key strm =
   strm ++ str ("%"^key)
 
 let pr_located pr (loc,x) =
-  if Options.do_translate() && loc<>dummy_loc then
+  if Flags.do_translate() && loc<>dummy_loc then
     let (b,e) = unloc loc in
     comment b ++ pr x ++ comment e
   else pr x
 
 let pr_com_at n =
-  if Options.do_translate() && n <> 0 then comment n 
+  if Flags.do_translate() && n <> 0 then comment n 
   else mt()
 
 let pr_with_comments loc pp = pr_located (fun x -> x) (loc,pp)

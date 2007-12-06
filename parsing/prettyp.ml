@@ -352,7 +352,7 @@ let gallina_print_inductive sp =
   let (mib,mip) = Global.lookup_inductive (sp,0) in
   let mipv = mib.mind_packets in
   let names = list_tabulate (fun x -> (sp,x)) (Array.length mipv) in
-  (if mib.mind_record & not !Options.raw_print then
+  (if mib.mind_record & not !Flags.raw_print then
     pr_record (List.hd names)
   else
     pr_mutual_inductive mib.mind_finite names) ++ fnl () ++

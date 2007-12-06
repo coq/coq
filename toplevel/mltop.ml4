@@ -15,7 +15,7 @@
 
 open Util
 open Pp
-open Options
+open Flags
 open System
 open Libobject
 open Library

@@ -612,16 +612,11 @@ let rec intern_match_context_hyps sigma env lfun = function
   | (Hyp ((_,na) as locna,mp))::tl ->
       let ido, metas1, pat = intern_pattern sigma env lfun mp in
       let lfun, metas2, hyps = intern_match_context_hyps sigma env lfun tl in
-      let lfun' = name_cons na (option_cons ido lfun) in
+      let lfun' = name_cons na (Option.List.cons ido lfun) in
       lfun', metas1@metas2, Hyp (locna,pat)::hyps
   | [] -> lfun, [], []
 
 (* Utilities *)
-let rec filter_some = function
-  | None :: l -> filter_some l
-  | Some a :: l -> a :: filter_some l
-  | [] -> []
-
 let extract_names lrc =
   List.fold_right 
     (fun ((loc,name),_) l ->
@@ -833,7 +828,7 @@ and intern_tactic_seq ist = function
 
 and intern_tactic_fun ist (var,body) = 
   let (l1,l2) = ist.ltacvars in
-  let lfun' = List.rev_append (filter_some var) l1 in
+  let lfun' = List.rev_append (Option.List.flatten var) l1 in
   (var,intern_tactic { ist with ltacvars = (lfun',l2) } body)
 
 and intern_tacarg strict ist = function
@@ -872,7 +867,7 @@ and intern_match_rule ist = function
       let lfun',metas1,hyps = intern_match_context_hyps sigma env lfun rl in
       let ido,metas2,pat = intern_pattern sigma env lfun mp in
       let metas = list_uniquize (metas1@metas2) in
-      let ist' = { ist with ltacvars = (metas@(option_cons ido lfun'),l2) } in
+      let ist' = { ist with ltacvars = (metas@(Option.List.cons ido lfun'),l2) } in
       Pat (hyps,pat,intern_tactic ist' tc) :: (intern_match_rule ist tl)
   | [] -> []
 
@@ -2635,18 +2630,18 @@ let make_absolute_name (loc,id) =
   kn
 
 let add_tacdef isrec tacl =
-(*  let isrec = if !Options.p1 then isrec else true in*)
+(*  let isrec = if !Flags.p1 then isrec else true in*)
   let rfun = List.map (fun ((loc,id as locid),_) -> (id,make_absolute_name locid)) tacl in
   let ist =
     {(make_empty_glob_sign()) with ltacrecvars = if isrec then rfun else []} in
   let gtacl =
     List.map (fun ((_,id),def) ->
-      (id,Options.with_option strict_check (intern_tactic ist) def))
+      (id,Flags.with_option strict_check (intern_tactic ist) def))
       tacl in
   let id0 = fst (List.hd rfun) in
   let _ = Lib.add_leaf id0 (inMD gtacl) in
   List.iter
-    (fun (id,_) -> Options.if_verbose msgnl (pr_id id ++ str " is defined"))
+    (fun (id,_) -> Flags.if_verbose msgnl (pr_id id ++ str " is defined"))
     rfun
 
 (***************************************************************************)
@@ -2655,7 +2650,7 @@ let add_tacdef isrec tacl =
 let glob_tactic x = intern_tactic (make_empty_glob_sign ()) x
 
 let glob_tactic_env l env x = 
-  Options.with_option strict_check
+  Flags.with_option strict_check
   (intern_tactic
     { ltacvars = (l,[]); ltacrecvars = []; gsigma = Evd.empty; genv = env })
     x
@@ -2674,7 +2669,7 @@ let _ = Auto.set_extern_interp
     interp_tactic {lfun=l;avoid_ids=[];debug=get_debug(); last_loc=dloc})
 let _ = Auto.set_extern_intern_tac 
   (fun l ->
-    Options.with_option strict_check
+    Flags.with_option strict_check
     (intern_tactic {(make_empty_glob_sign()) with ltacvars=(l,[])}))
 let _ = Auto.set_extern_subst_tactic subst_tactic
 let _ = Dhyp.set_extern_interp eval_tactic

@@ -86,7 +86,7 @@ let add_load_path (phys_path,coq_path) =
 	    begin
               (* Assume the user is concerned by library naming *)
 	      if dir <> Nameops.default_root_prefix then
-		Options.if_warn msg_warning
+		Flags.if_warn msg_warning
 		  (str phys_path ++ strbrk " was previously bound to " ++
 		   pr_dirpath dir ++ strbrk "; it is remapped to " ++
 		   pr_dirpath coq_path);
@@ -386,7 +386,7 @@ let try_locate_qualified_library (loc,qid) =
 (* Internalise libraries *)
 
 let lighten_library m = 
-  if !Options.dont_load_proofs then lighten_library m else m
+  if !Flags.dont_load_proofs then lighten_library m else m
 
 let mk_library md f digest = {
   library_name = md.md_name;
@@ -449,7 +449,7 @@ let rec_intern_by_filename_only id f =
   (* We check no other file containing same library is loaded *)
   try
     let m' = find_library m.library_name in
-    Options.if_verbose warning 
+    Flags.if_verbose warning 
       ((string_of_dirpath m.library_name)^" is already loaded from file "^
        m'.library_filename);
     m.library_name, []
@@ -536,7 +536,7 @@ let require_library qidl export =
     end
     else
       add_anonymous_leaf (in_require (needed,modrefl,export));
-  if !Options.xml_export then List.iter !xml_require modrefl;
+  if !Flags.xml_export then List.iter !xml_require modrefl;
   add_frozen_state ()
 
 let require_library_from_file idopt file export =
@@ -549,7 +549,7 @@ let require_library_from_file idopt file export =
   end
   else
     add_anonymous_leaf (in_require (needed,[modref],export));
-  if !Options.xml_export then !xml_require modref;
+  if !Flags.xml_export then !xml_require modref;
   add_frozen_state ()
 
 (* the function called by Vernacentries.vernac_import *)

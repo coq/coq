@@ -10,7 +10,7 @@
 
 open Util
 open Pp
-open Options
+open Flags
 open Names
 open Libnames
 open Nametab

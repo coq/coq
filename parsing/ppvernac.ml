@@ -570,7 +570,7 @@ let rec pr_vernac = function
       let pr_onerec = function
         | (id,(n,ro),bl,type_,def),ntn ->
             let (bl',def,type_) =
-              if Options.do_translate() then extract_def_binders def type_
+              if Flags.do_translate() then extract_def_binders def type_
               else ([],def,type_) in
             let bl = bl @ bl' in
             let ids = List.flatten (List.map name_of_binder bl) in
@@ -607,7 +607,7 @@ let rec pr_vernac = function
   | VernacCoFixpoint (corecs,b) ->
       let pr_onecorec ((id,bl,c,def),ntn) =
         let (bl',def,c) =
-              if Options.do_translate() then extract_def_binders def c
+              if Flags.do_translate() then extract_def_binders def c
               else ([],def,c) in
         let bl = bl @ bl' in
         pr_id id ++ spc() ++ pr_binders bl ++ spc() ++ str":" ++
@@ -753,7 +753,7 @@ let rec pr_vernac = function
 	  (Global.env())
 	  body in
       hov 1
-        (((*if !Options.p1 then
+        (((*if !Flags.p1 then
 	  (if rc then str "Recursive " else mt()) ++
 	  str "Tactic Definition " else*)
 	    (* Rec by default *) str "Ltac ") ++

@@ -11,10 +11,10 @@
 open Pp_control
 
 (* This should not be used outside of this file. Use
-   Options.print_emacs instead. This one is updated when reading
+   Flags.print_emacs instead. This one is updated when reading
    command line options. This was the only way to make [Pp] depend on
-   an option without creating a circularity: [Options] -> [Util] ->
-   [Pp] -> [Options] *)
+   an option without creating a circularity: [Flags. -> [Util] ->
+   [Pp] -> [Flags. *)
 let print_emacs = ref false
 let make_pp_emacs() = print_emacs:=true
 let make_pp_nonemacs() = print_emacs:=false

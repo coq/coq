@@ -26,7 +26,7 @@ let print_loc loc =
 let guill s = "\""^s^"\""
 
 let where s =
-  if !Options.debug then  (str"in " ++ str s ++ str":" ++ spc ()) else (mt ())
+  if !Flags.debug then  (str"in " ++ str s ++ str":" ++ spc ()) else (mt ())
 
 (* assumption : explain_sys_exn does NOT end with a 'FNL anymore! *)
 
@@ -138,7 +138,7 @@ let explain_exn_default =
   explain_exn_default_aux anomaly_string report
 
 let raise_if_debug e =
-  if !Options.debug then raise e
+  if !Flags.debug then raise e
 
 let _ = Tactic_debug.explain_logic_error := explain_exn_default
 

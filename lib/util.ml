@@ -788,19 +788,11 @@ let interval n m =
   in 
   interval_n ([],m)
 
-let option_cons a l = match a with
-  | Some x -> x::l
-  | None -> l
-
 let option_compare f a b = match (a,b) with
   | None, None -> true
   | Some a', Some b' -> f a' b'
   | _ -> failwith "option_compare"
 
-let rec filter_some = function
-  | [] -> []
-  | None::l -> filter_some l
-  | Some a::l -> a :: filter_some l
 
 let map_succeed f = 
   let rec map_f = function 

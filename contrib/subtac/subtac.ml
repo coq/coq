@@ -76,7 +76,7 @@ let start_proof_com env isevars sopt kind (bl,t) hook =
       let _ = Typeops.infer_type env c in
 	Command.start_proof id kind c hook
       
-let print_subgoals () = Options.if_verbose (fun () -> msg (Printer.pr_open_subgoals ())) ()
+let print_subgoals () = Flags.if_verbose (fun () -> msg (Printer.pr_open_subgoals ())) ()
 
 let start_proof_and_print env isevars idopt k t hook =
   start_proof_com env isevars idopt k t hook;
@@ -85,7 +85,7 @@ let start_proof_and_print env isevars idopt k t hook =
 let _ = Detyping.set_detype_anonymous (fun loc n -> RVar (loc, id_of_string ("Anonymous_REL_" ^ string_of_int n)))
   
 let assumption_message id =
-  Options.if_verbose message ((string_of_id id) ^ " is assumed")
+  Flags.if_verbose message ((string_of_id id) ^ " is assumed")
 
 let declare_assumption env isevars idl is_coe k bl c nl =
   if not (Pfedit.refining ()) then 

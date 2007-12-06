@@ -107,7 +107,7 @@ struct
 	      | Absolute (n,_) -> 
 		  (* This is an absolute name, we must keep it 
 		     otherwise it may become unaccessible forever *)
-		  Options.if_verbose
+		  Flags.if_verbose
 		    warning ("Trying to mask the absolute name \"" 
 			     ^ U.to_string n ^ "\"!"); 
 		  current
@@ -147,7 +147,7 @@ let rec push_exactly uname o level (current,dirmap) = function
 	      | Absolute (n,_) -> 
 		  (* This is an absolute name, we must keep it 
 		     otherwise it may become unaccessible forever *)
-		  Options.if_verbose
+		  Flags.if_verbose
 		    warning ("Trying to mask the absolute name \""
   			     ^ U.to_string n ^ "\"!");
 		  current

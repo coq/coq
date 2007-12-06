@@ -384,7 +384,7 @@ let generate_functional_principle
 	  { const_entry_body = value;
 	    const_entry_type = None;
 	    const_entry_opaque = false;
-	    const_entry_boxed = Options.boxed_definitions()
+	    const_entry_boxed = Flags.boxed_definitions()
 	  }
 	in
 	ignore(
@@ -394,7 +394,7 @@ let generate_functional_principle
 	     Decl_kinds.IsDefinition (Decl_kinds.Scheme)
 	    )
 	);
-	Options.if_verbose 
+	Flags.if_verbose 
 	  (fun id -> Pp.msgnl (Ppconstr.pr_id id ++ str " is defined")) 
 	  name;
 	names := name :: !names
@@ -655,7 +655,7 @@ let build_scheme fas =
 	 (Declare.declare_constant 
 	    princ_id 
 	    (Entries.DefinitionEntry def_entry,Decl_kinds.IsProof Decl_kinds.Theorem));
-       Options.if_verbose 
+       Flags.if_verbose 
 	 (fun id -> Pp.msgnl (Ppconstr.pr_id id ++ str " is defined")) princ_id
     )
     fas

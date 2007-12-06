@@ -32,6 +32,14 @@ let get = function
 (** [make x] returns [Some x]. *)
 let make x = Some x
 
+(** [init b x] returns [Some x] if [b] is [true] and [None] otherwise. *)
+let init b x =
+  if b then 
+    Some x
+  else
+    None
+    
+
 (** [flatten x] is [Some y] if [x] is [Some (Some y)] and [None] otherwise. *)
 let flatten = function
   | Some (Some y) -> Some y
@@ -120,3 +128,22 @@ let lift2 f x y =
   match x,y with
   | Some z, Some w -> Some (f z w)
   | _,_ -> None
+
+
+
+(** {6 Operations with Lists} *)
+
+module List =
+ struct 
+  (** [List.cons x l] equals [y::l] if [x] is [Some y] and [l] otherwise. *)
+  let cons x l =
+    match x with
+    | Some y -> y::l
+    | _ -> l
+ 
+  (** [List.flatten l] is the list of all the [y]s such that [l] contains
+      [Some y] (in the same order). *)
+  let rec flatten = function
+    | x::l -> cons x (flatten l)
+    | [] -> [] 
+end

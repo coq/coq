@@ -153,7 +153,7 @@ open Entries
 open Decl_kinds
 open Declare
 let definition_message id =
-  Options.if_verbose message ((string_of_id id) ^ " is defined")
+  Flags.if_verbose message ((string_of_id id) ^ " is defined")
 
 
 let save with_clean id const (locality,kind) hook =
@@ -237,8 +237,8 @@ let with_full_print f a =
   let old_implicit_args = Impargs.is_implicit_args ()
   and old_strict_implicit_args =  Impargs.is_strict_implicit_args ()
   and old_contextual_implicit_args = Impargs.is_contextual_implicit_args () in
-  let old_rawprint = !Options.raw_print in 
-  Options.raw_print := true;
+  let old_rawprint = !Flags.raw_print in 
+  Flags.raw_print := true;
   Impargs.make_implicit_args false;
   Impargs.make_strict_implicit_args false;
   Impargs.make_contextual_implicit_args false;
@@ -247,14 +247,14 @@ let with_full_print f a =
     Impargs.make_implicit_args old_implicit_args;
     Impargs.make_strict_implicit_args old_strict_implicit_args;
     Impargs.make_contextual_implicit_args old_contextual_implicit_args;
-    Options.raw_print := old_rawprint;
+    Flags.raw_print := old_rawprint;
     res
   with  
     | e -> 
 	Impargs.make_implicit_args old_implicit_args;
 	Impargs.make_strict_implicit_args old_strict_implicit_args;
 	Impargs.make_contextual_implicit_args old_contextual_implicit_args;
-	Options.raw_print := old_rawprint;
+	Flags.raw_print := old_rawprint;
 	raise e
 
 

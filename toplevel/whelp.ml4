@@ -10,7 +10,7 @@
 
 (* $Id$ *)
 
-open Options
+open Flags
 open Pp
 open Util
 open System

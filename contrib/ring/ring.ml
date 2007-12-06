@@ -12,7 +12,7 @@
 
 open Pp
 open Util
-open Options
+open Flags
 open Term
 open Names
 open Libnames

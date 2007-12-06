@@ -67,12 +67,12 @@ let print_projections = ref false
 
 let print_meta_as_hole = ref false
 
-let with_arguments f = Options.with_option print_arguments f
-let with_implicits f = Options.with_option print_implicits f
-let with_coercions f = Options.with_option print_coercions f
-let with_universes f = Options.with_option print_universes f
-let without_symbols f = Options.with_option print_no_symbol f
-let with_meta_as_hole f = Options.with_option print_meta_as_hole f
+let with_arguments f = Flags.with_option print_arguments f
+let with_implicits f = Flags.with_option print_implicits f
+let with_coercions f = Flags.with_option print_coercions f
+let with_universes f = Flags.with_option print_universes f
+let without_symbols f = Flags.with_option print_no_symbol f
+let with_meta_as_hole f = Flags.with_option print_meta_as_hole f
 
 (**********************************************************************)
 (* Various externalisation functions *)
@@ -409,7 +409,7 @@ let match_aconstr_cases_pattern c (metas_scl,pat) =
  (* Better to use extern_rawconstr composed with injection/retraction ?? *)
 let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
   try 
-    if !Options.raw_print or !print_no_symbol then raise No_match;
+    if !Flags.raw_print or !print_no_symbol then raise No_match;
     let (na,sc,p) = uninterp_prim_token_cases_pattern pat in
     match availability_of_prim_token sc scopes with
     | None -> raise No_match
@@ -418,7 +418,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
       insert_pat_alias loc (insert_pat_delimiters loc (CPatPrim(loc,p)) key) na
   with No_match ->
   try 
-    if !Options.raw_print or !print_no_symbol then raise No_match;
+    if !Flags.raw_print or !print_no_symbol then raise No_match;
     extern_symbol_pattern scopes vars pat
       (uninterp_cases_pattern_notations pat)
   with No_match ->
@@ -451,7 +451,7 @@ and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
               | None -> raise No_match
                   (* Uninterpretation is allowed in current context *)
 	      | Some (scopt,key) ->
-	          let scopes' = option_cons scopt scopes in
+	          let scopes' = Option.List.cons scopt scopes in
 	          let l =
 		    List.map (fun (c,(scopt,scl)) ->
 		      extern_cases_pattern_in_scope (scopt,scl@scopes') vars c)
@@ -476,7 +476,7 @@ let occur_name na aty =
     | Anonymous -> false
 
 let is_projection nargs = function
-  | Some r when not !Options.raw_print & !print_projections ->
+  | Some r when not !Flags.raw_print & !print_projections ->
       (try 
 	let n = Recordops.find_projection_nparams r + 1 in
 	if n <= nargs then Some n else None
@@ -496,7 +496,7 @@ let explicitize loc inctx impl (cf,f) args =
     | a::args, imp::impl when is_status_implicit imp ->
         let tail = exprec (q+1) (args,impl) in
         let visible =
-          !Options.raw_print or
+          !Flags.raw_print or
           (!print_implicits & !print_implicits_explicit_args) or 
 	  (!print_implicits_defensive &
 	   is_significant_implicit a impl tail &
@@ -535,7 +535,7 @@ let extern_app loc inctx impl (cf,f) args =
     extern_global loc impl f
   else
   if 
-    ((!Options.raw_print or
+    ((!Flags.raw_print or
       (!print_implicits & not !print_implicits_explicit_args)) &
      List.exists is_status_implicit impl)
   then 
@@ -554,7 +554,7 @@ let rec extern_args extern scopes env args subscopes =
 
 let rec remove_coercions inctx = function
   | RApp (loc,RRef (_,r),args) as c
-      when  not (!Options.raw_print or !print_coercions)
+      when  not (!Flags.raw_print or !print_coercions)
       ->
       let nargs = List.length args in
       (try match Classops.hide_coercion r with
@@ -638,11 +638,11 @@ let extern_rawsort = function
 let rec extern inctx scopes vars r =
   let r' = remove_coercions inctx r in
   try 
-    if !Options.raw_print or !print_no_symbol then raise No_match;
+    if !Flags.raw_print or !print_no_symbol then raise No_match;
     extern_optimal_prim_token scopes r r'
   with No_match ->
   try 
-    if !Options.raw_print or !print_no_symbol then raise No_match;
+    if !Flags.raw_print or !print_no_symbol then raise No_match;
     extern_symbol scopes vars r' (uninterp_notations r')
   with No_match -> match r' with
   | RRef (loc,ref) ->
@@ -772,7 +772,7 @@ and sub_extern inctx (_,scopes) = extern inctx (None,scopes)
 
 and factorize_prod scopes vars aty c =
   try 
-    if !Options.raw_print or !print_no_symbol then raise No_match;
+    if !Flags.raw_print or !print_no_symbol then raise No_match;
     ([],extern_symbol scopes vars c (uninterp_notations c))
   with No_match -> match c with
   | RProd (loc,(Name id as na),ty,c)
@@ -784,7 +784,7 @@ and factorize_prod scopes vars aty c =
 
 and factorize_lambda inctx scopes vars aty c =
   try 
-    if !Options.raw_print or !print_no_symbol then raise No_match;
+    if !Flags.raw_print or !print_no_symbol then raise No_match;
     ([],extern_symbol scopes vars c (uninterp_notations c))
   with No_match -> match c with
   | RLambda (loc,na,ty,c)
@@ -845,7 +845,7 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
               | None -> raise No_match
                   (* Uninterpretation is allowed in current context *)
 	      | Some (scopt,key) ->
-	          let scopes' = option_cons scopt scopes in
+	          let scopes' = Option.List.cons scopt scopes in
 	          let l =
 		    List.map (fun (c,(scopt,scl)) ->
 		      extern (* assuming no overloading: *) true

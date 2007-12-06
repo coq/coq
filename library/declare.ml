@@ -47,7 +47,7 @@ let xml_declare_variable = ref (fun (sp:object_name) -> ())
 let xml_declare_constant = ref (fun (sp:bool * constant)-> ())
 let xml_declare_inductive = ref (fun (sp:bool * object_name) -> ())
 
-let if_xml f x = if !Options.xml_export then f x else ()
+let if_xml f x = if !Flags.xml_export then f x else ()
 
 let set_xml_declare_variable f = xml_declare_variable := if_xml f
 let set_xml_declare_constant f = xml_declare_constant := if_xml f
@@ -196,7 +196,7 @@ let (in_constant, out_constant) =
     export_function = export_constant } 
 
 let hcons_constant_declaration = function
-  | DefinitionEntry ce when !Options.hash_cons_proofs ->
+  | DefinitionEntry ce when !Flags.hash_cons_proofs ->
       let (hcons1_constr,_) = hcons_constr (hcons_names()) in
       DefinitionEntry
        { const_entry_body = hcons1_constr ce.const_entry_body;

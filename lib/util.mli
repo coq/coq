@@ -223,9 +223,7 @@ val intmap_inv : 'a Intmap.t -> 'a -> int list
 
 val interval : int -> int -> int list
 
-val option_cons : 'a option -> 'a list -> 'a list
 val option_compare : ('a -> 'b -> bool) -> 'a option -> 'b option -> bool 
-val filter_some : 'a option list -> 'a list
 
 (* In [map_succeed f l] an element [a] is removed if [f a] raises *)
 (* [Failure _] otherwise behaves as [List.map f l] *)

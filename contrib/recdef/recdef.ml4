@@ -109,7 +109,7 @@ let (teq_id:identifier) = hyp_id 15 hyp_ids;;
 let (pmax_id:identifier) = hyp_id 16 hyp_ids;;
 let (hle_id:identifier) = hyp_id 17 hyp_ids;;
 
-let message s = if Options.is_verbose () then msgnl(str s);;
+let message s = if Flags.is_verbose () then msgnl(str s);;
 
 let def_of_const t =
    match (kind_of_term t) with
@@ -948,7 +948,7 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref goal_n
 (*       (Array.make nb_goal ()) *)
 (*     ; *)
     ref := Some lemma ;
-    Options.silently Vernacentries.interp (Vernacexpr.VernacAbort None);
+    Flags.silently Vernacentries.interp (Vernacexpr.VernacAbort None);
     build_proof 
       (  fun gls ->
 	   let hid = next_global_ident_away true h_id (pf_ids_of_hyps gls) in 
@@ -986,7 +986,7 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref goal_n
 	g);
   try
     by tclIDTAC; (* raises UserError _ if the proof is complete *)
-    if Options.is_verbose () then (pp (Printer.pr_open_subgoals()))
+    if Flags.is_verbose () then (pp (Printer.pr_open_subgoals()))
   with UserError _ -> 
     defined ()
   
@@ -1306,7 +1306,7 @@ let (com_eqn : identifier ->
        );
 (*      (try Vernacentries.interp (Vernacexpr.VernacShow Vernacexpr.ShowProof) with _ -> ()); *)
 (*      Vernacentries.interp (Vernacexpr.VernacShow Vernacexpr.ShowScript); *)
-     Options.silently (fun () ->Command.save_named opacity) () ;  
+     Flags.silently (fun () ->Command.save_named opacity) () ;  
 (*      Pp.msgnl (str "eqn finished"); *)
     
     );;
@@ -1377,7 +1377,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
       and eq_ref = destConst (constr_of_global eq_ref) in
       generate_induction_principle f_ref tcc_lemma_constr
 	functional_ref eq_ref rec_arg_num rec_arg_type (nb_prod res) relation;
-      if Options.is_verbose ()
+      if Flags.is_verbose ()
       then msgnl (h 1 (Ppconstr.pr_id function_name ++ 
 			 spc () ++ str"is defined" )++ fnl () ++ 
 		    h 1 (Ppconstr.pr_id equation_id ++ 

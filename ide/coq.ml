@@ -43,7 +43,7 @@ let init () =
      Problem: should not hide "xx is assumed"
      messages *)
 (**)
-  Options.make_silent true;
+  Flags.make_silent true;
 (**)
   Coqtop.init_ide ()
 
@@ -156,11 +156,11 @@ let interp verbosely s =
 		  | VernacExtend("Extraction", _)
 		  | VernacExtend("ExtractionLibrary",_)
 		  | VernacExtend("RecursiveExtractionLibrary",_)
-		    -> Options.make_silent (not verbosely)
+		    -> Flags.make_silent (not verbosely)
 		  | _ -> ()
 	      end;
 	      Vernac.raw_do_vernac (Pcoq.Gram.parsable (Stream.of_string s));
-	      Options.make_silent true;
+	      Flags.make_silent true;
 	      prerr_endline ("...Done with interp of : "^s);
 	      last
 

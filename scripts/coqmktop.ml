@@ -134,7 +134,7 @@ let all_subdirs dir =
 (* usage *)
 let usage () =
   prerr_endline "Usage: coqmktop <options> <ocaml options> files
-Options are:
+Flags.are:
   -srcdir dir   Specify where the Coq source files are
   -o exec-file  Specify the name of the resulting toplevel
   -opt          Compile in native code

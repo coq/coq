@@ -13,7 +13,7 @@
 open Pp
 open Lexer
 open Util
-open Options
+open Flags
 open System
 open Vernacexpr
 open Vernacinterp
@@ -127,7 +127,7 @@ let rec vernac_com interpfun (loc,com) =
         (* end translator state *)
         (* coqdoc state *)
         let cds = Constrintern.coqdoc_freeze() in
-          if !Options.translate_file then 
+          if !Flags.translate_file then 
 	    begin
               let _,f = find_file_in_path (Library.get_load_paths ())
 		(make_suffix fname ".v") in
@@ -137,13 +137,13 @@ let rec vernac_com interpfun (loc,com) =
           begin 
 	    try
 	      read_vernac_file verbosely (make_suffix fname ".v");
-              if !Options.translate_file then close_out !chan_translate;
+              if !Flags.translate_file then close_out !chan_translate;
               chan_translate := ch;
               Lexer.restore_com_state cs;
               Pp.comments := cl;
               Constrintern.coqdoc_unfreeze cds
 	    with e -> 
-	      if !Options.translate_file then close_out !chan_translate;
+	      if !Flags.translate_file then close_out !chan_translate;
               chan_translate := ch;
               Lexer.restore_com_state cs;
               Pp.comments := cl;
@@ -174,12 +174,12 @@ and vernac interpfun input =
   vernac_com interpfun (parse_phrase input)
 
 and read_vernac_file verbosely s =
-  Options.make_warn verbosely;
+  Flags.make_warn verbosely;
   let interpfun =
     if verbosely then 
       Vernacentries.interp
     else 
-      Options.silently Vernacentries.interp 
+      Flags.silently Vernacentries.interp 
   in
   let (in_chan, fname, input) = open_file_twice_if verbosely s in
   try
@@ -213,22 +213,22 @@ let set_xml_end_library f = xml_end_library := f
 (* Load a vernac file. Errors are annotated with file and location *)
 let load_vernac verb file =
   chan_translate :=
-    if !Options.translate_file then open_out (file^"8") else stdout;
+    if !Flags.translate_file then open_out (file^"8") else stdout;
   try 
     read_vernac_file verb file;
-    if !Options.translate_file then close_out !chan_translate;
+    if !Flags.translate_file then close_out !chan_translate;
   with e -> 
-    if !Options.translate_file then close_out !chan_translate;
+    if !Flags.translate_file then close_out !chan_translate;
     raise_with_file file e
 
 (* Compile a vernac file (f is assumed without .v suffix) *)
 let compile verbosely f =
   let ldir,long_f_dot_v = Library.start_library f in
   if !dump then dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");
-  if !Options.xml_export then !xml_start_library ();
+  if !Flags.xml_export then !xml_start_library ();
   let _ = load_vernac verbosely long_f_dot_v in
   if Pfedit.get_all_proof_names () <> [] then
     (message "Error: There are pending proofs"; exit 1);
-  if !Options.xml_export then !xml_end_library ();
+  if !Flags.xml_export then !xml_end_library ();
   Library.save_library_to ldir (long_f_dot_v ^ "o")
 
