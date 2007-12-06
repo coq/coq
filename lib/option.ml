@@ -29,6 +29,8 @@ let get = function
   | Some y -> y
   | _ -> raise IsNone
 
+(** [make x] returns [Some x]. *)
+let make x = Some x
 
 (** [flatten x] is [Some y] if [x] is [Some (Some y)] and [None] otherwise. *)
 let flatten = function
@@ -71,6 +73,15 @@ let smartmap f = function
 let fold_left f a = function
   | Some y -> f a y
   | _ -> a
+
+(** [fold_left2 f a x y] is [f z w] if [x] is [Some z] and [y] is [Some w].
+    It is [a] if both [x] and [y] are [None]. Otherwise it raises
+    [Heterogeneous]. *)
+let fold_left2 f a x y =
+  match x,y with
+  | Some x, Some y -> f a x y
+  | None, None -> a
+  | _ -> raise Heterogeneous
 
 (** [fold_right f x a] is [f y a] if [x] is [Some y], and [a] otherwise. *)
 let fold_right f x a = 

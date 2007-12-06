@@ -25,6 +25,8 @@ exception IsNone
     if [x] equals [None]. *)
 val get : 'a option -> 'a
 
+(** [make x] returns [Some x]. *)
+val make : 'a -> 'a option
 
 (** [flatten x] is [Some y] if [x] is [Some (Some y)] and [None] otherwise. *)
 val flatten : 'a option option -> 'a option
@@ -52,6 +54,11 @@ val smartmap : ('a -> 'a) -> 'a option -> 'a option
 
 (** [fold_left f a x] is [f a y] if [x] is [Some y], and [a] otherwise. *)
 val fold_left : ('b -> 'a -> 'b) -> 'b -> 'a option -> 'b
+
+(** [fold_left2 f a x y] is [f z w] if [x] is [Some z] and [y] is [Some w].
+    It is [a] if both [x] and [y] are [None]. Otherwise it raises
+    [Heterogeneous]. *)
+val fold_left2 : ('a -> 'b -> 'c -> 'a) -> 'a -> 'b option -> 'c option -> 'a
 
 (** [fold_right f x a] is [f y a] if [x] is [Some y], and [a] otherwise. *)
 val fold_right : ('a -> 'b -> 'b) -> 'a option -> 'b -> 'b

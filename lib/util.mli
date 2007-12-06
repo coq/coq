@@ -223,10 +223,7 @@ val intmap_inv : 'a Intmap.t -> 'a -> int list
 
 val interval : int -> int -> int list
 
-val in_some : 'a -> 'a option
 val option_cons : 'a option -> 'a list -> 'a list
-val option_fold_left2 : ('a -> 'b -> 'c -> 'a) -> 'a -> 'b option ->
-  'c option -> 'a
 val option_compare : ('a -> 'b -> bool) -> 'a option -> 'b option -> bool 
 val filter_some : 'a option list -> 'a list
 

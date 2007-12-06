@@ -13,9 +13,6 @@ open Vernacexpr
 open Coq
 open Ideutils
   
-let Option.get s = match s with 
-  | None -> failwith "Internal error in Option.get" | Some f -> f
-      
 let cb_ = ref None
 let cb () = ((Option.get !cb_):GData.clipboard)
 let last_cb_content = ref ""

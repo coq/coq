@@ -451,7 +451,7 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
 	 & List.length eqnl1 = List.length eqnl2 ->
       let rtno1' = abstract_return_type_context_rawconstr tml1 rtno1 in
       let rtno2' = abstract_return_type_context_aconstr tml2 rtno2 in
-      let sigma = option_fold_left2 (match_ alp metas) sigma rtno1' rtno2' in
+      let sigma = Option.fold_left2 (match_ alp metas) sigma rtno1' rtno2' in
       let sigma = List.fold_left2 
        (fun s (tm1,_) (tm2,_) -> match_ alp metas s tm1 tm2) sigma tml1 tml2 in
       List.fold_left2 (match_equations alp metas) sigma eqnl1 eqnl2

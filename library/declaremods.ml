@@ -381,7 +381,7 @@ let (in_modtype,out_modtype) =
       load_function = load_modtype;
       subst_function = subst_modtype;
       classify_function = classify_modtype;
-      export_function = in_some }
+      export_function = Option.make }
 
 
 
