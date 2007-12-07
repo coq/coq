@@ -147,3 +147,20 @@ module List =
     | x::l -> cons x (flatten l)
     | [] -> [] 
 end
+
+
+
+(** {6 Miscelaneous Primitives} *)
+
+module Misc =
+ struct
+  (** [Misc.compare f x y] lifts the equality predicate [f] to 
+      option types. That is, if both [x] and [y] are [None] then 
+      it returns [true], if they are bothe [Some _] then
+      [f] is called. Otherwise it returns [false]. *)
+   let compare f x y =
+     match x,y with
+     | None, None -> true
+     | Some z, Some w -> f z w
+     | _,_ -> false
+end

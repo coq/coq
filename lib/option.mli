@@ -98,3 +98,15 @@ module List : sig
       [Some y] (in the same order). *)
   val flatten : 'a option list -> 'a list
 end
+
+
+(** {6 Miscelaneous Primitives} *)
+
+module Misc : sig
+  (** [Misc.compare f x y] lifts the equality predicate [f] to 
+      option types. That is, if both [x] and [y] are [None] then 
+      it returns [true], if they are bothe [Some _] then
+      [f] is called. Otherwise it returns [false]. *)
+   val compare : ('a -> 'a -> bool) -> 'a option -> 'a option -> bool
+end
+

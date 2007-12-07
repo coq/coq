@@ -788,11 +788,6 @@ let interval n m =
   in 
   interval_n ([],m)
 
-let option_compare f a b = match (a,b) with
-  | None, None -> true
-  | Some a', Some b' -> f a' b'
-  | _ -> failwith "option_compare"
-
 
 let map_succeed f = 
   let rec map_f = function 
