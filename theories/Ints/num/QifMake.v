@@ -169,8 +169,6 @@ Module Qif.
   | BigN.N4 _ => false
   | BigN.N5 _ => false
   | BigN.N6 _ => false
-  | BigN.N7 _ => false
-  | BigN.N8 _ => false
   | _         => true 
   end.
 
