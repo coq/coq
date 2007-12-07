@@ -47,7 +47,6 @@ val frontier : transformation_tactic
 val list_pf : proof_tree -> goal list
 val unTAC : tactic -> goal sigma -> proof_tree sigma
 
-val local_Constraints : tactic
 
 (* [frontier_map f n p] applies f on the n-th open subgoal of p and
    rebuilds proof-tree.
@@ -60,6 +59,9 @@ val frontier_mapi :
   (int -> proof_tree -> proof_tree) -> proof_tree -> proof_tree
 
 (*s Tacticals. *)
+
+(* [tclNORMEVAR] forces propagation of evar constraints *)
+val tclNORMEVAR       : tactic
 
 (* [tclIDTAC] is the identity tactic without message printing*)
 val tclIDTAC          : tactic

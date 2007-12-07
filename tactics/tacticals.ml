@@ -37,6 +37,7 @@ open Tacexpr
 (* Tacticals re-exported from the Refiner module.*)
 (*************************************************)
 
+let tclNORMEVAR      = tclNORMEVAR
 let tclIDTAC         = tclIDTAC
 let tclIDTAC_MESSAGE = tclIDTAC_MESSAGE
 let tclORELSE        = tclORELSE
