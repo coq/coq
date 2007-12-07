@@ -24,44 +24,6 @@ type ('a,+'b) subproof = ('a,'b) Subproof.subproof
 open Transactional_stack
 
 
-(* arnaud: j'essaie un encodage basé sur les objets, ça devrait être plus rapide, et plus clair 
-(* We define a type of stored mutations of subproof pointers. 
-   We actually define it as a pair of a [pointer] and a [subproof].
-   The intended use of a stored mutation is to set the [pointer]
-   content as being the [subproof].
-   Stored mutations are used in the undo mechanism. The undo stacks 
-   stores basically series of such mutations to execute in case an
-   undo is required. *)
-
-(** Encoding the type
-     exists 'b 'c.{ sp : ('b,'c) subproof ; pt : ('b,'c) Subproof.pointer }
-   trick from Benjamin Pierce and Daniel Bünzli 
-   
-(cf: http://caml.inria.fr/pub/ml-archives/caml-list/2004/01/52732867110697f55650778d883ae5e9.en.html ) 
-
-**)
-type ('b,+'c) mutation = { sp : ('b,'c) subproof ; pt : ('b,'c) Subproof.pointer }
-type 't mutation_scope = { bind_mutation:'b 'c.('b,'c) mutation -> 't }
-type packed_mutation = { open_mutation : 't. 't mutation_scope -> 't }
-
-
-(* makes a packed_mutation out of mutation *)
-let pack_mutation mutn =
-  { open_mutation = fun scope -> scope.bind_mutation mutn }
-
-(* uses a scoped function on a packed mutation *)
-let unpack_mutation pck scp =
-  pck.open_mutation scp
-
-(* execute a packed mutation with its expected behavior: sets  the content
-   of the pointer [pt] as [sp] *)
-let do_packed_mutation =
-  let scoped_mutate = 
-    { bind_mutation = fun mtn -> Subproof.mutate mtn.pt mtn.sp }
-  in
-  fun pck ->
-    unpack_mutation pck scoped_mutate *)
-
 type mutation = < mutate:unit>
 
 let build_mutation pt sp =
@@ -72,8 +34,8 @@ let build_mutation pt sp =
 
 type 'a proof = { (* The root of the proof *)
 		  mutable root : ('a,[ `Subproof | `Resolved ]) Subproof.pointer;
-		  (* The list of focusings to be able to backtrack.
-		     The current focusing is the head of the list.
+		  (* The list of consecutive focusings to be able to backtrack.
+		     The current focus is the head of the list.
 		     The empty list means that the root is focused *)
                   mutable focus : (constr,[ `Subproof | `Resolved | `Open ]) 
 		                                            Subproof.pointer list;
@@ -85,7 +47,7 @@ type 'a proof = { (* The root of the proof *)
                   mutable eenv : Evd.evar_defs
 		}
 and 'a undo_action = 
-    | MutateBack of mutation (* arnaud:packed_mutation*)
+    | MutateBack of mutation
     | Unfocus of 'a proof
     | Focus of 'a proof * (constr,[`Subproof|`Resolved|`Open]) Subproof.pointer
 
@@ -143,7 +105,7 @@ let unsafe_unfocus pr =
 
 (* This function interpetes (and execute) a single [undo_action] *)
 let execute_undo_action = function
-  | MutateBack mutn -> mutn#mutate (*arnaud: do_packed_mutation pck*)
+  | MutateBack mutn -> mutn#mutate
   | Unfocus pr -> unsafe_unfocus pr
   | Focus(pr, pt) -> unsafe_focus pr pt
 				
@@ -187,12 +149,8 @@ let null_action = primitive ( fun _ _ -> () )
 let _mutate pt sp tr =
   push (MutateBack (build_mutation pt sp)) tr;
   Subproof.mutate pt sp
-(* arnaud:
-  push (MutateBack (pack_mutation {sp=sp;pt=pt})) tr;
-  Subproof.mutate pt sp *)
 
-let mutate =
-  primitive _mutate
+let mutate = primitive _mutate
 
 
 (* This function focuses the proof [pr] at position [pt] and 
@@ -201,8 +159,7 @@ let _focus pt pr tr =
   push (Unfocus pr) tr;
   unsafe_focus pr pt
 
-let focus =
-  primitive _focus
+let focus = primitive _focus
 
 (* This function unfocuses the proof [pr], fails if 
    [pr] is not focused (i.e. if it shows its root). It
@@ -212,8 +169,7 @@ let _unfocus pr tr =
   | [] -> fail (Pp.str "This proof is not focused")
   | pt::_ -> push (Focus (pr,pt)) tr; unsafe_unfocus pr
 
-let unfocus =
-  primitive _unfocus
+let unfocus = primitive _unfocus
 
 (*** The following function are complex or composed actions ***)
 
@@ -288,6 +244,8 @@ let undo pr =
 
 (*** The following functions define the tactic machinery. They 
      transform a tactical expression into a sequence of actions. ***)
+
+(* This function implement the base tactic "refine" *)
 
 type 'a tactical = 'a action -> 'a action
 

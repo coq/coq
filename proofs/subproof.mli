@@ -58,7 +58,7 @@
 open Term
 
 type ('a,+'b) subproof constraint 'b = [< `Open | `Resolved | `Subproof ] 
-type ('a,+'b) pointer  constraint 'b = [< `Open | `Resolved | `Subproof ] 
+type ('a,'b) pointer  constraint 'b = [< `Open | `Resolved | `Subproof ] 
 
 (* Gives the subproof held by a pointer *)
 val get : ('a,'b) pointer -> ('a,'b) subproof
@@ -125,62 +125,8 @@ val start_subproof : ?subgoals:Goal.goal array ->
                     ('a, [>`Subproof]) pointer
 
 
-(* arnaud:
-open Term
-open Goal
-
-(* A type which corresponds to the `Subproof case of subproofs *)
-type 'a proof_node
-
-(* The type 'a subproof represents the type of subproof "returning"
-   an object of type 'a. *)
-type 'a subproof = 
-    [ `Open of goal
-    | `Resolved of 'a
-    | `Subproof of 'a proof_node ]
-
-
-(* The type to identify a specific node or leaf of a subproof.
-   Be careful, it indicates a physical position. It can give
-   unexpected results if it is used after a proof has mutated *)
-type 'a position
-
-
-(* This function is meant to turn a PartiallyResolvedGoal that is actually
-   resolved into a Resolved Goal.
-   It can fail by raising the exception Unresolved when the current goal is
-   open or when not all it's immediate children are Resolved.
-   It is meant to be use later as the main tile of building a general
-   recursive resolve function which will take care of the additional
-   bureaucracy (such as the undo and such).
-   It is a pure function. *)
-exception Unresolved
-
-val resolve : [< 'a subproof ] -> [> `Resolved of 'a ]
-
-
-(* The following function creates a new subproof *)
-val open_proof : ?subgoals:goal array -> 
-                 callback:(constr array -> 'a) -> 
-               [ `Subproof of 'a proof_node ]
-
-(* The following function returns the position of the nth opened subgoal.
-   Raises not_found if there is not that many subgoals. *)
-val nth_subgoal : int -> [< `Subproof of 'a proof_node 
-                          | `Position of 'a position ] -> 'a position
-  
-(* This function changes the goal at a certain position *)
-val mutate : 'a position -> constr subproof -> unit
-
-(* This function returns the subproof pointed by the position [pos] *)
-val of_position : 'a position -> constr subproof
-
-(* This function iters a function on all the subproofs of a proof node,
-   except the node of the root *)
-val iter : ('a position -> constr subproof ->unit) -> constr proof_node -> unit
-
-
-(* This function iters a function on all the subproof of the root proof
-   node *)
-val root_iter : ('a position -> constr subproof->unit) -> 'a proof_node -> unit
-*)
+(* [iteri f s] takes a function [f] of indices and [Subproof.pointer]
+   and apply it to all the subproofs of [s], provided [s] is a
+   [[`Subproof] subproof] *)
+val iteri : (int -> (constr, [> `Open]) pointer -> unit) -> 
+                            ('a, [< `Subproof]) subproof -> unit

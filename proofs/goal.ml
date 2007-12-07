@@ -164,7 +164,7 @@ let refine defs env check_type step gl =
   let env = Environ.reset_with_named_context (hyps gl) env in
   (* if [check_type] is true, then creates a type constraint for the 
      proof-to-be *)
-  let tycon = Pretyping.OfType (if check_type then Some (concl gl) else None) in
+  let tycon = Pretyping.OfType (Option.init check_type (concl gl)) in
   (* the [defs] must be passed as a reference, redefs will be modified by
      the [understand_...] procedure *)
   let rdefs = ref defs in
