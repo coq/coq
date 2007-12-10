@@ -228,4 +228,5 @@ let definition_structure ((is_coe,(_,idstruc)),ps,cfs,idbuild,s) =
   let kinds,sp_projs = declare_projections rsp coers fields in
   let build = ConstructRef (rsp,1) in (* This is construct path of idbuild *)
   if is_coe then Class.try_add_new_coercion build Global;
-  Recordops.declare_structure(rsp,idbuild,List.rev kinds,List.rev sp_projs)
+  Recordops.declare_structure(rsp,idbuild,List.rev kinds,List.rev sp_projs);
+  kn

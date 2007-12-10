@@ -21,6 +21,7 @@ open Sign
 open Environ
 open Pretype_errors
 open Type_errors
+open Typeclasses_errors
 open Indrec
 open Reduction
 open Cases
@@ -441,6 +442,28 @@ let explain_pretype_error env err =
   | NoOccurrenceFound c -> explain_no_occurrence_found env c
   | CannotUnifyBindingType (m,n) -> explain_cannot_unify_binding_type env m n
 
+      
+(* Typeclass errors *)
+
+let explain_unbound_class env (_,id) =
+  str "Unbound class name " ++ Nameops.pr_id id
+
+let explain_no_instance env (_,id) l =
+  str "No instance found for class " ++ Nameops.pr_id id ++ spc () ++
+  str "applied to arguments" ++ spc () ++ 
+    prlist_with_sep pr_spc (pr_lconstr_env env) l
+
+let explain_mismatched_contexts env c i j = 
+  str"Mismatched contexts while declaring instance: " ++ brk (1,1) ++
+    str"Expected:" ++ spc () ++ pr_named_context env j ++ brk (1,1) ++
+    str"Found:" ++ spc () ++ prlist_with_sep pr_spc Ppconstr.pr_constr_expr i
+
+let explain_typeclass_error env err = 
+  match err with
+    | UnboundClass id -> explain_unbound_class env id
+    | NoInstance (id, l) -> explain_no_instance env id l
+    | MismatchedContextInstance (c, i, j) -> explain_mismatched_contexts env c i j
+	
 (* Refiner errors *)
 
 let explain_refiner_bad_type arg ty conclty =

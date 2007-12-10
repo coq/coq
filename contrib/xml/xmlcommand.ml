@@ -491,7 +491,10 @@ let kind_of_constant kn =
     | DK.IsDefinition DK.IdentityCoercion ->
         Pp.warning "IdentityCoercion not supported in dtd (used Definition instead)";
         "DEFINITION","Definition"
-    | DK.IsProof (DK.Theorem|DK.Lemma|DK.Corollary|DK.Fact|DK.Remark as thm) ->
+    | DK.IsDefinition DK.Instance ->
+        Pp.warning "Instance not supported in dtd (used Definition instead)";
+        "DEFINITION","Definition" 
+   | DK.IsProof (DK.Theorem|DK.Lemma|DK.Corollary|DK.Fact|DK.Remark as thm) ->
         "THEOREM",DK.string_of_theorem_kind thm
     | DK.IsProof _ ->
         Pp.warning "Unsupported theorem kind (used Theorem instead)";

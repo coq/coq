@@ -12,6 +12,8 @@ open Decl_kinds
 open Util
 open Evd
 
+type definition_hook = constant -> unit
+
 let pperror cmd = Util.errorlabstrm "Program" cmd
 let error s = pperror (str s)
 
@@ -40,6 +42,9 @@ type program_info = {
   prg_obligations: obligations;
   prg_deps : identifier list;
   prg_nvrec : int array;
+  prg_implicits : (Topconstr.explicitation * (bool * bool)) list;
+  prg_kind : definition_object_kind;
+  prg_hook : definition_hook;
 }
 
 let assumption_message id =
@@ -106,7 +111,7 @@ let progmap_union = ProgMap.fold ProgMap.add
 
 let cache (_, (infos, tac)) =
   from_prg := infos;
-  default_tactic_expr := tac
+  set_default_tactic tac
 
 let (input,output) = 
   declare_object
@@ -140,9 +145,13 @@ let declare_definition prg =
       const_entry_boxed = false} 
   in
   let c = Declare.declare_constant 
-    prg.prg_name (DefinitionEntry ce,IsDefinition Definition)
+    prg.prg_name (DefinitionEntry ce,IsDefinition prg.prg_kind)
   in
+  let gr = ConstRef c in
+    if Impargs.is_implicit_args () || prg.prg_implicits <> [] then
+      Impargs.declare_manual_implicits false gr (Impargs.is_implicit_args ()) prg.prg_implicits;
     print_message (definition_message c);
+    prg.prg_hook c;
     c
 
 open Pp
@@ -205,7 +214,7 @@ let try_tactics obls =
         
 let red = Reductionops.nf_betaiota
 
-let init_prog_info n b t deps nvrec obls =
+let init_prog_info n b t deps nvrec obls impls kind hook =
   let obls' = 
     Array.mapi
       (fun i (n, t, o, d) ->
@@ -216,7 +225,7 @@ let init_prog_info n b t deps nvrec obls =
       obls
   in
     { prg_name = n ; prg_body = b; prg_type = red t; prg_obligations = (obls', Array.length obls');
-      prg_deps = deps; prg_nvrec = nvrec; }
+      prg_deps = deps; prg_nvrec = nvrec; prg_implicits = impls; prg_kind = kind; prg_hook = hook; }
     
 let get_prog name =
   let prg_infos = !from_prg in
@@ -393,9 +402,9 @@ and auto_solve_obligations n : progress =
   Flags.if_verbose msgnl (str "Solving obligations automatically...");
   try solve_obligations n !default_tactic with NoObligations _ -> Dependent
       
-let add_definition n b t obls =
+let add_definition n b t ?(implicits=[]) ?(kind=Definition) ?(hook=fun x -> ()) obls =
   Flags.if_verbose pp (str (string_of_id n) ++ str " has type-checked");
-  let prg = init_prog_info n b t [] (Array.make 0 0) obls in
+  let prg = init_prog_info n b t [] (Array.make 0 0) obls implicits kind hook in
   let obls,_ = prg.prg_obligations in
   if Array.length obls = 0 then (
     Flags.if_verbose ppnl (str ".");    
@@ -408,11 +417,11 @@ let add_definition n b t obls =
       from_prg := ProgMap.add n prg !from_prg; 
       auto_solve_obligations (Some n))
 	
-let add_mutual_definitions l nvrec =
+let add_mutual_definitions l ?(implicits=[]) ?(kind=Definition) nvrec =
   let deps = List.map (fun (n, b, t, obls) -> n) l in
   let upd = List.fold_left
       (fun acc (n, b, t, obls) ->
-	 let prg = init_prog_info n b t deps nvrec obls in
+	 let prg = init_prog_info n b t deps nvrec obls implicits kind (fun x -> ()) in
 	   ProgMap.add n prg acc)
       !from_prg l
   in

@@ -140,7 +140,7 @@ let make_variable_ast name typ implicits =
     
 
 let make_definition_ast name c typ implicits =
-  VernacDefinition ((Global,false,Definition), (dummy_loc,name), DefineBody ([], None,
+  VernacDefinition ((Global,false,Definition), (dummy_loc,name), DefineBody ([], None, [],
     (constr_to_ast c), Some (constr_to_ast typ)),
     (fun _ _ -> ()))
   ::(implicits_to_ast_list implicits);;

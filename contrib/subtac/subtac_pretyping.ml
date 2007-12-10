@@ -93,12 +93,12 @@ let coqintern_type evd env : Topconstr.constr_expr -> Rawterm.rawconstr = Constr
 
 let env_with_binders env isevars l =
   let rec aux ((env, rels) as acc) = function
-      Topconstr.LocalRawDef ((loc, name), def) :: tl -> 
+      Topconstr.LocalRawDef ((loc, name), k, def) :: tl -> 
 	let rawdef = coqintern_constr !isevars env def in
 	let coqdef, deftyp = interp env isevars rawdef empty_tycon in
 	let reldecl = (name, Some coqdef, deftyp) in
 	  aux  (push_rel reldecl env, reldecl :: rels) tl
-    | Topconstr.LocalRawAssum (bl, typ) :: tl ->
+    | Topconstr.LocalRawAssum (bl, k, typ) :: tl ->
 	let rawtyp = coqintern_type !isevars env typ in
 	let coqtyp, typtyp = interp env isevars rawtyp empty_tycon in
 	let acc = 
@@ -111,45 +111,30 @@ let env_with_binders env isevars l =
     | [] -> acc
   in aux (env, []) l
 
-let subtac_process env isevars id l c tycon =
-  let c = Command.abstract_constr_expr c l in
-(*   let env_binders, binders_rel = env_with_binders env isevars l in *)
+let subtac_process env isevars id cbl l c tycon =
+  let bl = Implicit_quantifiers.ctx_of_class_binders env cbl @ l in
+  let imps = Implicit_quantifiers.implicits_of_binders bl in
+  let c = Command.abstract_constr_expr c bl in
   let tycon = 
     match tycon with
 	None -> empty_tycon
       | Some t -> 
-	  let t = Command.generalize_constr_expr t l in
+	  let t = Command.generalize_constr_expr t bl in
 	  let t = coqintern_type !isevars env t in
 	  let coqt, ttyp = interp env isevars t empty_tycon in
 	    mk_tycon coqt
   in    
   let c = coqintern_constr !isevars env c in
   let coqc, ctyp = interp env isevars c tycon in
-(*   let _ = try trace (str "Interpreted term: " ++ my_print_constr env coqc ++ spc () ++ *)
-(* 		 str "Coq type: " ++ my_print_constr env ctyp) *)
-(*   with _ -> () *)
-(*   in *)
-(*   let _ = try trace (str "Original evar map: " ++ Evd.pr_evar_map (evars_of !isevars))  with _ -> () in *)
-    
-(*   let fullcoqc = it_mkLambda_or_LetIn coqc binders_rel  *)
-(*   and fullctyp = it_mkProd_or_LetIn ctyp binders_rel *)
-(*   in *)
   let fullcoqc = Evarutil.nf_evar (evars_of !isevars) coqc in
   let fullctyp = Evarutil.nf_evar (evars_of !isevars) ctyp in
-(*   let evm = evars_of_term (evars_of !isevars) Evd.empty fullctyp in *)
-(*   let evm = evars_of_term (evars_of !isevars) evm fullcoqc in *)
-(*   let _ = try trace (str "After evar normalization remain: " ++ spc () ++ *)
-(* 		       Evd.pr_evar_map evm) *)
-(*   with _ -> () *)
-(*   in *)
   let evm = non_instanciated_map env isevars (evars_of !isevars) in
-(*   let _ = try trace (str "Non instanciated evars map: " ++ Evd.pr_evar_map evm)  with _ -> () in *)
-    evm, fullcoqc, fullctyp
+    evm, fullcoqc, fullctyp, imps
 
 open Subtac_obligations
 
-let subtac_proof env isevars id l c tycon =
-  let evm, coqc, coqt = subtac_process env isevars id l c tycon in
+let subtac_proof env isevars id cbl l c tycon =
+  let evm, coqc, coqt, imps = subtac_process env isevars id cbl l c tycon in
   let evm = Subtac_utils.evars_of_term evm Evd.empty coqc in
   let evars, def = Eterm.eterm_obligations env id !isevars evm 0 coqc (Some coqt) in
-    add_definition id def coqt evars
+    add_definition id def coqt ~implicits:imps evars

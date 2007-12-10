@@ -148,7 +148,7 @@ END
 VERNAC ARGUMENT EXTEND binder2
     [ "(" ne_ident_list(idl) ":" lconstr(c)  ")"] ->
      [
-       LocalRawAssum (List.map (fun id -> (Util.dummy_loc,Name id)) idl,c) ]
+       LocalRawAssum (List.map (fun id -> (Util.dummy_loc,Name id)) idl,Explicit,c) ]
 END
 
 

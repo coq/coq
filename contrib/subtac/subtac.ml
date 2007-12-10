@@ -60,8 +60,8 @@ let start_proof_com env isevars sopt kind (bl,t) hook =
 	next_global_ident_away false (id_of_string "Unnamed_thm")
  	  (Pfedit.get_all_proof_names ())
   in
-  let evm, c, typ = 
-    Subtac_pretyping.subtac_process env isevars id [] (Command.generalize_constr_expr t bl) None 
+  let evm, c, typ, _imps = 
+    Subtac_pretyping.subtac_process env isevars id [] [] (Command.generalize_constr_expr t bl) None 
   in
     if not (evm = Evd.empty) then 
       let stmt_id = Nameops.add_suffix id "_stmt" in
@@ -89,8 +89,8 @@ let assumption_message id =
 
 let declare_assumption env isevars idl is_coe k bl c nl =
   if not (Pfedit.refining ()) then 
-    let evm, c, typ = 
-      Subtac_pretyping.subtac_process env isevars (snd (List.hd idl)) [] (Command.generalize_constr_expr c bl) None 
+    let evm, c, typ, imps = 
+      Subtac_pretyping.subtac_process env isevars (snd (List.hd idl)) [] [] (Command.generalize_constr_expr c bl) None 
     in
       List.iter (Command.declare_one_assumption is_coe k c nl) idl
   else
@@ -114,9 +114,9 @@ let subtac (loc, command) =
   match command with
 	VernacDefinition (defkind, (locid, id), expr, hook) -> 
 	    (match expr with
-		 ProveBody (bl, c) -> ignore(Subtac_pretyping.subtac_proof env isevars id bl c None)
-	       | DefineBody (bl, _, c, tycon) -> 
-		   ignore(Subtac_pretyping.subtac_proof env isevars id bl c tycon))
+		 ProveBody (bl, c) -> ignore(Subtac_pretyping.subtac_proof env isevars id [] bl c None)
+	       | DefineBody (cbl, bl, _, c, tycon) -> 
+		   ignore(Subtac_pretyping.subtac_proof env isevars id cbl bl c tycon))
       | VernacFixpoint (l, b) -> 
 	  let _ = trace (str "Building fixpoint") in
 	    ignore(Subtac_command.build_recursive l b)
@@ -134,6 +134,9 @@ let subtac (loc, command) =
 
       | VernacAssumption (stre,nl,l) -> 
 	  vernac_assumption env isevars stre l nl
+
+      | VernacInstance (instid, qid, par, sup, props) ->
+	  Subtac_classes.new_instance instid qid par sup props
 
 (*       | VernacCoFixpoint (l, b) ->  *)
 (* 	  let _ = trace (str "Building cofixpoint") in *)

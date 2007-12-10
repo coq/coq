@@ -86,7 +86,7 @@ let explain_bad_patterns_number n1 n2 =
 
 let explain_bad_explicitation_number n po =
   match n with
-  | ExplByPos n ->
+  | ExplByPos (n,_id) ->
       let s = match po with
 	| None -> str "a regular argument"
 	| Some p -> int p in
@@ -683,7 +683,7 @@ let extract_explicit_arg imps args =
 		user_err_loc (loc,"",str "Argument name " ++ pr_id id
 		++ str " occurs more than once");
 	      id
-	  | ExplByPos p ->
+	  | ExplByPos (p,_id) ->
 	      let id =
 		try 
 		  let imp = List.nth imps (p-1) in
@@ -934,7 +934,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
   and intern_type env = intern (set_type_scope env)
 
   and intern_local_binder ((ids,ts,sc as env),bl) = function
-    | LocalRawAssum(nal,ty) ->
+    | LocalRawAssum(nal,k,ty) ->
 	let (loc,na) = List.hd nal in
 	(* TODO: fail if several names with different implicit types *)
 	let ty = locate_if_isevar loc na (intern_type env ty) in
@@ -942,7 +942,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
           (fun ((ids,ts,sc),bl) (_,na) ->
             ((name_fold Idset.add na ids,ts,sc), (na,None,ty)::bl))
           (env,bl) nal
-    | LocalRawDef((loc,na),def) ->
+    | LocalRawDef((loc,na),k,def) ->
         ((name_fold Idset.add na ids,ts,sc),
          (na,Some(intern env def),RHole(loc,Evd.BinderType na))::bl)
 
@@ -1046,7 +1046,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
       | (imp::impl', []) -> 
 	  if eargs <> [] then 
 	    (let (id,(loc,_)) = List.hd eargs in
-	    user_err_loc (loc,"",str "Not enough non implicit
+	       user_err_loc (loc,"",str "Not enough non implicit
 	    arguments to accept the argument bound to " ++ pr_id id));
 	  []
       | ([], rargs) ->
@@ -1175,16 +1175,16 @@ open Term
 let interp_context sigma env params = 
   List.fold_left
     (fun (env,params) d -> match d with
-      | LocalRawAssum ([_,na],(CHole _ as t)) ->
+      | LocalRawAssum ([_,na],k,(CHole _ as t)) ->
 	  let t = interp_binder sigma env na t in
 	  let d = (na,None,t) in
 	  (push_rel d env, d::params)
-      | LocalRawAssum (nal,t) ->
+      | LocalRawAssum (nal,k,t) ->
 	  let t = interp_type sigma env t in
 	  let ctx = list_map_i (fun i (_,na) -> (na,None,lift i t)) 0 nal in
 	  let ctx = List.rev ctx in
 	  (push_rel_context ctx env, ctx@params)
-      | LocalRawDef ((_,na),c) ->
+      | LocalRawDef ((_,na),k,c) ->
 	  let c = interp_constr_judgment sigma env c in
 	  let d = (na, Some c.uj_val, c.uj_type) in
 	  (push_rel d env,d::params))
@@ -1193,16 +1193,16 @@ let interp_context sigma env params =
 let interp_context_evars evdref env params =
   List.fold_left
     (fun (env,params) d -> match d with
-      | LocalRawAssum ([_,na],(CHole _ as t)) ->
+      | LocalRawAssum ([_,na],k,(CHole _ as t)) ->
 	  let t = interp_binder_evars evdref env na t in
 	  let d = (na,None,t) in
 	  (push_rel d env, d::params)
-      | LocalRawAssum (nal,t) ->
+      | LocalRawAssum (nal,k,t) ->
 	  let t = interp_type_evars evdref env t in
 	  let ctx = list_map_i (fun i (_,na) -> (na,None,lift i t)) 0 nal in
 	  let ctx = List.rev ctx in
 	  (push_rel_context ctx env, ctx@params)
-      | LocalRawDef ((_,na),c) ->
+      | LocalRawDef ((_,na),k,c) ->
 	  let c = interp_constr_judgment_evars evdref env c in
 	  let d = (na, Some c.uj_val, c.uj_type) in
 	  (push_rel d env,d::params))

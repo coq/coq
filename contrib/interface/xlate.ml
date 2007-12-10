@@ -1609,7 +1609,7 @@ let rec xlate_vernac =
    | VernacDeclareTacticDefinition (true, tacs) ->
        (match List.map 
 	 (function
-	      ((_, id), body) ->
+	      ((_, id), _, body) ->
 		CT_tac_def(CT_ident (string_of_id id), xlate_tactic body))
 	 tacs with
 	     [] -> assert false

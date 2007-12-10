@@ -138,8 +138,8 @@ type newfixpoint_expr =
 
 let rec abstract_rawconstr c = function
   | [] -> c
-  | Topconstr.LocalRawDef (x,b)::bl -> Topconstr.mkLetInC(x,b,abstract_rawconstr c bl)
-  | Topconstr.LocalRawAssum (idl,t)::bl ->
+  | Topconstr.LocalRawDef (x,k,b)::bl -> Topconstr.mkLetInC(x,b,abstract_rawconstr c bl)
+  | Topconstr.LocalRawAssum (idl,k,t)::bl ->
       List.fold_right (fun x b -> Topconstr.mkLambdaC([x],t,b)) idl
         (abstract_rawconstr c bl)
 
@@ -355,6 +355,7 @@ let register_struct is_rec fixpoint_exprl =
 	Command.declare_definition
 	  fname
 	  (Decl_kinds.Global,Flags.boxed_definitions (),Decl_kinds.Definition)
+	  []
 	  bl
 	  None
   	  body
@@ -434,7 +435,7 @@ let register_mes fname rec_impls wf_mes_expr wf_arg using_lemmas args ret_type b
       | None -> 
 	  begin
 	    match args with 
-	      | [Topconstr.LocalRawAssum ([(_,Name x)],t)] -> t,x 
+	      | [Topconstr.LocalRawAssum ([(_,Name x)],k,t)] -> t,x 
 	      | _ -> error "Recursive argument must be specified" 
 	  end
       | Some wf_args -> 
@@ -442,7 +443,7 @@ let register_mes fname rec_impls wf_mes_expr wf_arg using_lemmas args ret_type b
 	    match 
 	      List.find 
 		(function 
-		   | Topconstr.LocalRawAssum(l,t) -> 
+		   | Topconstr.LocalRawAssum(l,k,t) -> 
 		       List.exists 
 			 (function (_,Name id) -> id =  wf_args | _ -> false) 
 			 l 
@@ -450,7 +451,7 @@ let register_mes fname rec_impls wf_mes_expr wf_arg using_lemmas args ret_type b
 		)
 		args 
 	    with 
-	      | Topconstr.LocalRawAssum(_,t)  ->	    t,wf_args
+	      | Topconstr.LocalRawAssum(_,k,t)  ->	    t,wf_args
 	      | _ -> assert false 
 	  with Not_found -> assert false 
   in
@@ -673,7 +674,7 @@ let rec get_args b t : Topconstr.local_binder list *
 	  in
 	  let nal_tas,b'',t'' = get_args b' (chop_n_arrow n t) in 
 	  (List.map (fun (nal,ta) -> 
-		       (Topconstr.LocalRawAssum (nal,ta))) nal_ta)@nal_tas, b'',t'' 
+		       (Topconstr.LocalRawAssum (nal,Explicit,ta))) nal_ta)@nal_tas, b'',t'' 
 	end
     | _ -> [],b,t
 
@@ -715,8 +716,8 @@ let make_graph (f_ref:global_reference) =
 			 List.flatten 
 			   (List.map 
 			      (function 
-				 | Topconstr.LocalRawDef (na,_)-> []
-				 | Topconstr.LocalRawAssum (nal,_) -> nal
+				 | Topconstr.LocalRawDef (na,_,_)-> []
+				 | Topconstr.LocalRawAssum (nal,_,_) -> nal
 			      )
 			      bl
 			   )
@@ -729,8 +730,8 @@ let make_graph (f_ref:global_reference) =
 			 List.flatten 
 			   (List.map 
 			      (function
- 				 | Topconstr.LocalRawDef (na,_)-> []
-			      	 | Topconstr.LocalRawAssum (nal,_) -> 
+ 				 | Topconstr.LocalRawDef (na,_,_)-> []
+			      	 | Topconstr.LocalRawAssum (nal,_,_) -> 
 				     List.map 
 				       (fun (loc,n) -> 
 					  CRef(Libnames.Ident(loc, Nameops.out_name n))) 

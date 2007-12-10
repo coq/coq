@@ -54,7 +54,8 @@ GEXTEND Gram
   GLOBAL: subtac_gallina_loc Constr.binder_let Constr.binder subtac_nameopt;
  
   subtac_gallina_loc:
-    [ [ g = Vernac.gallina -> loc, g ] ]
+    [ [ g = Vernac.gallina -> loc, g
+    | g = Vernac.gallina_ext -> loc, g ] ]
     ;
 
   subtac_nameopt:
@@ -65,7 +66,7 @@ GEXTEND Gram
   Constr.binder_let:
     [ [ "("; id=Prim.name; ":"; t=Constr.lconstr; "|"; c=Constr.lconstr; ")" -> 
 	  let typ = mkAppC (sigref, [mkLambdaC ([id], t, c)]) in
-	    LocalRawAssum ([id], typ)
+	    LocalRawAssum ([id], Explicit, typ)
     ] ];
 
   Constr.binder:

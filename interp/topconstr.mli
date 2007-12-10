@@ -90,7 +90,9 @@ val match_aconstr : rawconstr -> interpretation ->
 
 type notation = string
 
-type explicitation = ExplByPos of int | ExplByName of identifier
+type explicitation = ExplByPos of int * identifier option | ExplByName of identifier
+  
+type binding_kind = Explicit | Implicit
 
 type proj_flag = int option (* [Some n] = proj of the n-th visible argument *)
 
@@ -145,8 +147,8 @@ and recursion_order_expr =
   | CMeasureRec of constr_expr
 
 and local_binder =
-  | LocalRawDef of name located * constr_expr
-  | LocalRawAssum of name located list * constr_expr
+  | LocalRawDef of name located * binding_kind * constr_expr
+  | LocalRawAssum of name located list * binding_kind * constr_expr
 
 (**********************************************************************)
 (* Utilities on constr_expr                                           *)
@@ -194,6 +196,11 @@ val names_of_local_assums : local_binder list -> name located list
 
 (* With let binders *)
 val names_of_local_binders : local_binder list -> name located list
+
+(* Used in typeclasses *)
+
+val fold_constr_expr_with_binders : (identifier -> 'a -> 'a) ->
+   ('a -> 'b -> constr_expr -> 'b) -> 'a -> 'b -> constr_expr -> 'b
 
 (* Used in correctness and interface; absence of var capture not guaranteed *)
 (* in pattern-matching clauses and in binders of the form [x,y:T(x)] *)

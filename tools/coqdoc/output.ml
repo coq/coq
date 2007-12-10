@@ -49,6 +49,7 @@ let is_keyword =
       (* Program *)
       "Program Definition"; "Program Fixpoint"; "Program Lemma";
       "Obligation"; "Obligations"; "Solve"; "using"; "Next Obligation"; "Next";
+      "Instance"; "Class"; "where"; "Instantiation";
       (*i (* correctness *)
       "array"; "assert"; "begin"; "do"; "done"; "else"; "end"; "if";
       "in"; "invariant"; "let"; "of"; "ref"; "state"; "then"; "variant";

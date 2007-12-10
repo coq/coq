@@ -224,9 +224,9 @@ and check_same_binder (nal1,e1) (nal2,e2) =
 and check_same_fix_binder bl1 bl2 =
   List.iter2 (fun b1 b2 ->
     match b1,b2 with
-        LocalRawAssum(nal1,ty1), LocalRawAssum(nal2,ty2) ->
+        LocalRawAssum(nal1,k,ty1), LocalRawAssum(nal2,k',ty2) ->
           check_same_binder (nal1,ty1) (nal2,ty2)
-      | LocalRawDef(na1,def1), LocalRawDef(na2,def2) ->
+      | LocalRawDef(na1,k,def1), LocalRawDef(na2,k',def2) ->
           check_same_binder ([na1],def1) ([na2],def2)          
       | _ -> failwith "not same binder") bl1 bl2
 
@@ -801,20 +801,20 @@ and extern_local_binder scopes vars = function
       let (ids,l) =
         extern_local_binder scopes (name_fold Idset.add na vars) l in
       (na::ids,
-       LocalRawDef((dummy_loc,na), extern false scopes vars bd) :: l)
+       LocalRawDef((dummy_loc,na), Explicit,extern false scopes vars bd) :: l)
       
   | (na,None,ty)::l ->
       let ty = extern_typ scopes vars (anonymize_if_reserved na ty) in
       (match extern_local_binder scopes (name_fold Idset.add na vars) l with
-          (ids,LocalRawAssum(nal,ty')::l)
+          (ids,LocalRawAssum(nal,k,ty')::l)
             when same ty ty' &
               match na with Name id -> not (occur_var_constr_expr id ty')
                 | _ -> true ->
               (na::ids,
-               LocalRawAssum((dummy_loc,na)::nal,ty')::l)
+               LocalRawAssum((dummy_loc,na)::nal,k,ty')::l)
         | (ids,l) ->
             (na::ids,
-             LocalRawAssum([(dummy_loc,na)],ty) :: l))
+             LocalRawAssum([(dummy_loc,na)],Explicit,ty) :: l))
 
 and extern_eqn inctx scopes vars (loc,ids,pl,c) =
   (loc,[List.map (extern_cases_pattern_in_scope scopes vars) pl],

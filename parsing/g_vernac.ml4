@@ -44,6 +44,7 @@ let proof_mode = Gram.Entry.create "vernac:proof_command"
 let noedit_mode = Gram.Entry.create "vernac:noedit_command"
 
 let class_rawexpr = Gram.Entry.create "vernac:class_rawexpr"
+let class_param = Gram.Entry.create "vernac:class_param"
 let thm_token = Gram.Entry.create "vernac:thm_token"
 let def_body = Gram.Entry.create "vernac:def_body"
 
@@ -164,6 +165,9 @@ GEXTEND Gram
 *)
     ] ]
   ;
+  binder_class:
+    [ [ "["; l=LIST1 [ id=identref ; cl = LIST1 class_param -> (id, cl) ] SEP ","; "]" -> l ] ]
+  ;
   thm_token:
     [ [ "Theorem" -> Theorem
       | IDENT "Lemma" -> Lemma
@@ -209,14 +213,19 @@ GEXTEND Gram
   ;
   (* Simple definitions *)
   def_body:
-    [ [ bl = LIST0 binder_let; ":="; red = reduce; c = lconstr ->
-      (match c with
-          CCast(_,c, Rawterm.CastConv (k,t)) -> DefineBody (bl, red, c, Some t)
-        | _ -> DefineBody (bl, red, c, None))
-      | bl = LIST0 binder_let; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
-          DefineBody (bl, red, c, Some t)
-      | bl = LIST0 binder_let; ":"; t = lconstr ->
-          ProveBody (bl, t) ] ]
+    [ [ bl = top_binders; ":="; red = reduce; c = lconstr ->
+      (let (cbl,bl) = bl in 
+	 match c with
+             CCast(_,c, Rawterm.CastConv (k,t)) -> DefineBody (cbl, bl, red, c, Some t)
+           | _ -> DefineBody (cbl, bl, red, c, None))
+    | bl = top_binders; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
+	let (cbl,bl) = bl in DefineBody (cbl, bl, red, c, Some t)
+    | bl = top_binders; ":"; t = lconstr ->
+        let (cbl,bl) = bl in ProveBody (bl, t) ] ]
+  ;
+  top_binders:
+    [ [ cbl = binder_class; "=>"; bl = LIST0 binder_let -> cbl, bl
+    | bl = LIST0 binder_let -> [], bl ] ]
   ;
   reduce:
     [ [ IDENT "Eval"; r = Tactic.red_expr; "in" -> Some r
@@ -431,7 +440,7 @@ END
 
 (* Extensions: implicits, coercions, etc. *)   
 GEXTEND Gram
-  GLOBAL: gallina_ext;
+  GLOBAL: gallina_ext class_param;
 
   gallina_ext:
     [ [ (* Transparent and Opaque *)
@@ -467,6 +476,24 @@ GEXTEND Gram
          t = class_rawexpr ->
 	  VernacCoercion (Global, qid, s, t)
 
+      (* Type classes *)
+      | IDENT "Class"; sup = OPT [ "[" ; l = LIST1 applied_class SEP "," ; "]"; "=>" -> l ];
+	 qid = identref; pars = LIST1 class_param_type;
+	 s = [ ":"; c = sort -> loc, c | -> (loc,Rawterm.RType None) ];
+	 "where"; props = LIST0 class_field_type SEP ";" ->
+	   VernacClass (qid, pars, s, (match sup with None -> [] | Some l -> l), props)
+	     
+      | IDENT "Instance"; sup = OPT [ "[" ; l = LIST1 operconstr SEP "," ; "]"; "=>" -> l ];
+	 is = instance_binder ; "where";
+	 props = LIST0 class_field_def SEP ";" ->
+	   let (instid, qid, pars) = is in
+	     VernacInstance (instid, qid, pars, (match sup with None -> [] | Some l -> l), props)
+
+      | IDENT "Existing"; IDENT "Instance"; is = identref -> VernacDeclareInstance is
+
+      | IDENT "Instantiation"; IDENT "Tactic"; ":="; tac = Tactic.tactic -> 
+	  VernacSetInstantiationTactic tac
+
       (* Implicit *)
       | IDENT "Implicit"; IDENT "Arguments"; 
 	 (local,qid,pos) = 
@@ -481,8 +508,38 @@ GEXTEND Gram
       | IDENT "Implicit"; ["Type" | IDENT "Types"];
 	   idl = LIST1 identref; ":"; c = lconstr -> VernacReserve (idl,c) ] ]
   ;
+
+  instance_binder:
+    [ [ instid = identref; ":"; qid = identref; pars = LIST1 class_param -> (Some instid, qid, pars) 
+    | qid = identref; pars = LIST1 class_param -> (None, qid, pars) 
+    ] ]
+  ;
+
+  applied_class:
+    [ [ id = identref; par = LIST1 class_param -> id,par ] ]
+  ;
+
+  class_param: 
+    [ [ id = identref -> CRef (Libnames.Ident id)
+    | "("; c = lconstr; ")" -> c ] ]
+  ;
+
+(*   class_ctx:  *)
+(*     [ [ sup = LIST1 operconstr SEP "->"; "=>" -> sup *)
+(*     ] ] *)
+(*   ; *)
   implicit_name:
     [ [ id = ident -> (id,false) | "["; id = ident; "]" -> (id,true) ] ]
+  ;
+  class_param_type:
+    [ [ "(" ; id = identref; ":"; t = lconstr ; ")" -> id, t 
+    | id = identref -> id, CSort (loc,Rawterm.RType None) ] ]
+  ;
+  class_field_type:
+    [ [ id = identref; ":"; t = lconstr -> id, t ] ]
+  ;
+  class_field_def:
+    [ [ id = identref; params = LIST0 identref; ":="; t = lconstr -> id, params, t ] ]
   ;
 END
 
@@ -614,6 +671,8 @@ GEXTEND Gram
       | IDENT "ML"; IDENT "Modules" -> PrintMLModules
       | IDENT "Graph" -> PrintGraph
       | IDENT "Classes" ->  PrintClasses
+      | IDENT "TypeClasses" -> PrintTypeClasses
+      | IDENT "Instances"; qid = global -> PrintInstances qid
       | IDENT "Ltac"; qid = global -> PrintLtac qid
       | IDENT "Coercions" -> PrintCoercions
       | IDENT "Coercion"; IDENT "Paths"; s = class_rawexpr; t = class_rawexpr

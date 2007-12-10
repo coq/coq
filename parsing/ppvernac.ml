@@ -148,7 +148,7 @@ let pr_non_globality local = if local then str "" else str "Global "
 
 let pr_explanation (e,b) =
   let a = match e with
-  | ExplByPos n -> anomaly "No more supported"
+  | ExplByPos (n,_) -> anomaly "No more supported"
   | ExplByName id -> pr_id id in
   if b then str "[" ++ a ++ str "]" else a
 
@@ -394,6 +394,9 @@ let make_pr_vernac pr_constr pr_lconstr =
 let pr_constrarg c = spc () ++ pr_constr c in
 let pr_lconstrarg c = spc () ++ pr_lconstr c in
 let pr_intarg n = spc () ++ int n in
+let pr_lident_constr sep (i,c) = pr_lident i ++ sep ++ pr_constrarg c in
+let pr_instance_def sep (i,l,c) = pr_lident i ++ prlist_with_sep spc pr_lident l 
+  ++ sep ++ pr_constrarg c in
 
 let rec pr_vernac = function
   
@@ -504,7 +507,7 @@ let rec pr_vernac = function
             pr_red_expr (pr_constr, pr_lconstr, pr_or_by_notation pr_reference) r ++
             str" in" ++ spc() in
       let pr_def_body = function
-        | DefineBody (bl,red,body,d) ->
+        | DefineBody (cbl,bl,red,body,d) ->
             let ty = match d with
               | None -> mt()
               | Some ty -> spc() ++ str":" ++ pr_spc_lconstr ty
@@ -565,8 +568,8 @@ let rec pr_vernac = function
 
   | VernacFixpoint (recs,b) ->
       let name_of_binder = function
-        | LocalRawAssum (nal,_) -> nal
-        | LocalRawDef (_,_) -> [] in
+        | LocalRawAssum (nal,_,_) -> nal
+        | LocalRawDef (_,_,_) -> [] in
       let pr_onerec = function
         | (id,(n,ro),bl,type_,def),ntn ->
             let (bl',def,type_) =
@@ -679,6 +682,32 @@ let rec pr_vernac = function
 	spc() ++ str":" ++ spc() ++ pr_class_rawexpr c1 ++ spc() ++ str">->" ++
 	spc() ++ pr_class_rawexpr c2)
 
+
+  | VernacClass (id, par, ar, sup, props) ->
+      hov 1 (
+	str"Class" ++ spc () ++ pr_lident id ++
+	  prlist_with_sep (spc) (pr_lident_constr (spc() ++ str ":" ++ spc())) par ++ 
+	  spc () ++ str":" ++ spc() ++ pr_rawsort (snd ar) ++
+	  spc () ++ str"where" ++ spc () ++
+	  prlist_with_sep (fun () -> str";" ++ spc()) (pr_lident_constr (spc () ++ str":" ++ spc())) props )
+	  
+
+ | VernacInstance (instid, cid, par, sup, props) -> 
+     hov 1 (
+       str"Instance" ++ spc () ++ 
+	 prlist_with_sep (fun () -> str"," ++ spc()) pr_constr sup ++
+	 str"=>" ++ spc () ++ 
+	 (match instid with Some id -> pr_lident id ++ spc () ++ str":" ++ spc () | None -> mt ()) ++
+	 pr_lident cid ++ prlist pr_constrarg par ++ spc () ++
+	 spc () ++ str"where" ++ spc () ++
+	 prlist_with_sep (fun () -> str";" ++ spc()) (pr_instance_def (spc () ++ str":=" ++ spc())) props)
+
+ | VernacDeclareInstance id ->
+     hov 1 (str"Instance" ++ spc () ++ pr_lident id)
+       
+ | VernacSetInstantiationTactic tac ->
+     hov 1 (str"Instantiation Tactic :=" ++ spc () ++ pr_raw_tactic tac)
+
   (* Modules and Module Types *)
   | VernacDefineModule (export,m,bl,ty,bd) ->
       let b = pr_module_binders_list bl pr_lconstr in 
@@ -738,7 +767,7 @@ let rec pr_vernac = function
 
   (* Commands *)
   | VernacDeclareTacticDefinition (rc,l) ->
-      let pr_tac_body (id, body) =
+      let pr_tac_body (id, redef, body) =
         let idl, body =
           match body with
 	    | Tacexpr.TacFun (idl,b) -> idl,b
@@ -746,10 +775,10 @@ let rec pr_vernac = function
         pr_located pr_ltac_id id ++ 
 	prlist (function None -> str " _"
                        | Some id -> spc () ++ pr_id id) idl
-	++ str" :=" ++ brk(1,1) ++
+	++ (if redef then str" ::=" else str" :=") ++ brk(1,1) ++
 	let idl = List.map Option.get (List.filter (fun x -> not (x=None)) idl)in
         pr_raw_tactic_env 
-	  (idl @ List.map snd (List.map fst l))
+	  (idl @ List.map snd (List.map (fun (x, _, _) -> x) l))
 	  (Global.env())
 	  body in
       hov 1
@@ -810,6 +839,8 @@ let rec pr_vernac = function
 	| PrintMLModules -> str"Print ML Modules"
 	| PrintGraph -> str"Print Graph"
 	| PrintClasses -> str"Print Classes"
+	| PrintTypeClasses -> str"Print TypeClasses"
+	| PrintInstances qid -> str"Print Instances" ++ spc () ++ pr_reference qid
 	| PrintLtac qid -> str"Print Ltac" ++ spc() ++ pr_reference qid
 	| PrintCoercions -> str"Print Coercions"
 	| PrintCoercionPaths (s,t) -> str"Print Coercion Paths" ++ spc() ++ pr_class_rawexpr s ++ spc() ++ pr_class_rawexpr t

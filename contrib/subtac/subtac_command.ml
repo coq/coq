@@ -98,16 +98,16 @@ let interp_binder sigma env na t =
 let interp_context sigma env params = 
   List.fold_left
     (fun (env,params) d -> match d with
-      | LocalRawAssum ([_,na],(CHole _ as t)) ->
+      | LocalRawAssum ([_,na],k,(CHole _ as t)) ->
 	  let t = interp_binder sigma env na t in
 	  let d = (na,None,t) in
 	  (push_rel d env, d::params)
-      | LocalRawAssum (nal,t) ->
+      | LocalRawAssum (nal,k,t) ->
 	  let t = interp_type sigma env t in
 	  let ctx = list_map_i (fun i (_,na) -> (na,None,lift i t)) 0 nal in
 	  let ctx = List.rev ctx in
 	  (push_rel_context ctx env, ctx@params)
-      | LocalRawDef ((_,na),c) ->
+      | LocalRawDef ((_,na),k,c) ->
 	  let c = interp_constr_judgment sigma env c in
 	  let d = (na, Some c.uj_val, c.uj_type) in
 	  (push_rel d env,d::params))
@@ -151,8 +151,8 @@ let collect_non_rec env =
 
 let list_of_local_binders l = 
   let rec aux acc = function
-      Topconstr.LocalRawDef (n, c) :: tl -> aux ((n, Some c, None) :: acc) tl
-    | Topconstr.LocalRawAssum (nl, c) :: tl -> 
+      Topconstr.LocalRawDef (n, k, c) :: tl -> aux ((n, Some c, None) :: acc) tl
+    | Topconstr.LocalRawAssum (nl, k, c) :: tl -> 
 	aux (List.fold_left (fun acc n -> (n, None, Some c) :: acc) acc nl) tl
     | [] -> List.rev acc
   in aux [] l

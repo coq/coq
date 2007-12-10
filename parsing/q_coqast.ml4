@@ -129,7 +129,7 @@ let mlexpr_of_red_flags {
 
 let mlexpr_of_explicitation = function
   | Topconstr.ExplByName id -> <:expr< Topconstr.ExplByName $mlexpr_of_ident id$ >>
-  | Topconstr.ExplByPos n -> <:expr< Topconstr.ExplByPos $mlexpr_of_int n$ >>
+  | Topconstr.ExplByPos (n,_id) -> <:expr< Topconstr.ExplByPos $mlexpr_of_int n$ >>
  
 let rec mlexpr_of_constr = function
   | Topconstr.CRef (Libnames.Ident (loc,id)) when is_meta (string_of_id id) ->

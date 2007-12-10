@@ -37,8 +37,8 @@ let mk_lam = function
   | (bl,c) -> CLambdaN(constr_loc c, bl,c)
 
 let loc_of_binder_let = function
-  | LocalRawAssum ((loc,_)::_,_)::_ -> loc
-  | LocalRawDef ((loc,_),_)::_ -> loc
+  | LocalRawAssum ((loc,_)::_,_,_)::_ -> loc
+  | LocalRawDef ((loc,_),_,_)::_ -> loc
   | _ -> dummy_loc
 
 let rec index_and_rec_order_of_annot loc bl ann =
@@ -307,23 +307,33 @@ GEXTEND Gram
   ;
   binder_list:
     [ [ idl=LIST1 name; bl=LIST0 binder_let -> 
-          LocalRawAssum (idl,CHole loc)::bl
+          LocalRawAssum (idl,Explicit,CHole loc)::bl
       | idl=LIST1 name; ":"; c=lconstr -> 
-          [LocalRawAssum (idl,c)]
+          [LocalRawAssum (idl,Explicit,c)]
       | "("; idl=LIST1 name; ":"; c=lconstr; ")"; bl=LIST0 binder_let ->
-          LocalRawAssum (idl,c)::bl ] ]
+          LocalRawAssum (idl,Explicit,c)::bl
+      | "`"; idl=LIST1 name; ":"; c=lconstr; "`"; bl=LIST0 binder_let ->
+          LocalRawAssum (idl,Implicit,c)::bl ] ]
   ;
   binder_let:
     [ [ id=name ->
-          LocalRawAssum ([id],CHole loc)
+          LocalRawAssum ([id],Explicit,CHole loc)
+      | "`"; id=name; "`" ->
+          LocalRawAssum ([id],Implicit,CHole loc)
       | "("; id=name; idl=LIST1 name; ":"; c=lconstr; ")" -> 
-          LocalRawAssum (id::idl,c)
+          LocalRawAssum (id::idl,Explicit,c)
       | "("; id=name; ":"; c=lconstr; ")" -> 
-          LocalRawAssum ([id],c)
+          LocalRawAssum ([id],Explicit,c)
+      | "~"; id=name; idl=LIST1 name; ":"; c=lconstr; "~" -> 
+          LocalRawAssum (id::idl,Implicit,c)
+      | "`"; id=name; ":"; c=lconstr; "`" -> 
+          LocalRawAssum ([id],Implicit,c)
+      | "`"; id=name; idl=LIST1 name; "`" -> 
+          LocalRawAssum (id::idl,Implicit,CHole loc)
       | "("; id=name; ":="; c=lconstr; ")" ->
-          LocalRawDef (id,c)
+          LocalRawDef (id,Explicit,c)
       | "("; id=name; ":"; t=lconstr; ":="; c=lconstr; ")" -> 
-          LocalRawDef (id,CCast (join_loc (constr_loc t) loc,c, CastConv (DEFAULTcast,t)))
+          LocalRawDef (id,Explicit,CCast (join_loc (constr_loc t) loc,c, CastConv (DEFAULTcast,t)))
     ] ]
   ;
   binder:

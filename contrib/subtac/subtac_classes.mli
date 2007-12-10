@@ -6,23 +6,27 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
+(*i $Id: classes.mli 6748 2005-02-18 22:17:50Z herbelin $ i*)
 
 (*i*)
 open Names
+open Decl_kinds
 open Term
 open Sign
-open Vernacexpr
+open Evd
+open Environ
+open Nametab
+open Mod_subst
 open Topconstr
+open Util
+open Typeclasses
+open Classes
 (*i*)
 
-(* [declare_projections ref coers params fields] declare projections of
-   record [ref] (if allowed), and put them as coercions accordingly to
-   [coers]; it returns the absolute names of projections *)
-
-val declare_projections :
-  inductive -> bool list -> rel_context -> bool list * constant option list
-
-val definition_structure :
-  lident with_coercion * local_binder list *
-  (local_decl_expr with_coercion) list * identifier * sorts -> kernel_name
+val new_instance : 
+  identifier located option ->
+  identifier located ->
+  constr_expr list ->
+  constr_expr list ->
+  binder_def_list ->
+  unit

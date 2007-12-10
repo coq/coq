@@ -1170,10 +1170,10 @@ let do_build_inductive
       (fun (n,t,is_defined) -> 
 	 if is_defined 
 	 then
-	   Topconstr.LocalRawDef((dummy_loc,n), Constrextern.extern_rawconstr Idset.empty t)
+	   Topconstr.LocalRawDef((dummy_loc,n), Topconstr.Explicit, Constrextern.extern_rawconstr Idset.empty t)
 	 else
 	 Topconstr.LocalRawAssum 
-	   ([(dummy_loc,n)], Constrextern.extern_rawconstr Idset.empty t)
+	   ([(dummy_loc,n)], Topconstr.Explicit, Constrextern.extern_rawconstr Idset.empty t)
       )
       rels_params
   in 

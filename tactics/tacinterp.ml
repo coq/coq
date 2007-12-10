@@ -2579,22 +2579,32 @@ let bad_tactic_args s =
 (* Declaration of the TAC-DEFINITION object *)
 let add (kn,td) = mactab := Gmap.add kn td !mactab
 
+type tacdef_kind = | NewTac of identifier
+		   | UpdateTac of ltac_constant
+
 let load_md i ((sp,kn),defs) =
   let dp,_ = repr_path sp in
   let mp,dir,_ = repr_kn kn in
   List.iter (fun (id,t) -> 
-    let sp = Libnames.make_path dp id in
-    let kn = Names.make_kn mp dir (label_of_id id) in
-    Nametab.push_tactic (Until i) sp kn;
-    add (kn,t)) defs
-
+    match id with
+	NewTac id ->
+	  let sp = Libnames.make_path dp id in
+	  let kn = Names.make_kn mp dir (label_of_id id) in
+	    Nametab.push_tactic (Until i) sp kn;
+	    add (kn,t)
+      | UpdateTac kn ->
+	  add (kn,t)) defs
+    
 let open_md i((sp,kn),defs) =
   let dp,_ = repr_path sp in
   let mp,dir,_ = repr_kn kn in
   List.iter (fun (id,t) -> 
-    let sp = Libnames.make_path dp id in
-    let kn = Names.make_kn mp dir (label_of_id id) in
-    Nametab.push_tactic (Exactly i) sp kn) defs
+    match id with
+	NewTac id ->
+	  let sp = Libnames.make_path dp id in
+	  let kn = Names.make_kn mp dir (label_of_id id) in
+	    Nametab.push_tactic (Exactly i) sp kn
+      | UpdateTac kn -> ()) defs
 
 let cache_md x = load_md 1 x
 
@@ -2622,27 +2632,40 @@ let print_ltac id =
     (pr_qualid id ++ spc() ++ str "is not a user defined tactic")
 
 (* Adds a definition for tactics in the table *)
-let make_absolute_name (loc,id) =
-  let kn = Lib.make_kn id in
-  if Gmap.mem kn !mactab or is_atomic_kn kn then
+let make_absolute_name (loc,id) repl =
+  try 
+    let kn = if repl then Nametab.locate_tactic (make_short_qualid id) else Lib.make_kn id in
+      if Gmap.mem kn !mactab then
+	if repl then kn
+	else
+	  user_err_loc (loc,"Tacinterp.add_tacdef",
+		       str "There is already an Ltac named " ++ pr_id id)
+      else if is_atomic_kn kn then 
+	user_err_loc (loc,"Tacinterp.add_tacdef",
+		     str "Reserved Ltac name " ++ pr_id id)
+      else kn
+  with Not_found ->
     user_err_loc (loc,"Tacinterp.add_tacdef",
-      str "There is already an Ltac named " ++ pr_id id);
-  kn
-
+		 str "There is no Ltac named " ++ pr_id id)
+      
 let add_tacdef isrec tacl =
 (*  let isrec = if !Flags.p1 then isrec else true in*)
-  let rfun = List.map (fun ((loc,id as locid),_) -> (id,make_absolute_name locid)) tacl in
+  let rfun = List.map (fun ((loc,id as locid),b,_) -> (id,make_absolute_name locid b)) tacl in
   let ist =
     {(make_empty_glob_sign()) with ltacrecvars = if isrec then rfun else []} in
   let gtacl =
-    List.map (fun ((_,id),def) ->
-      (id,Flags.with_option strict_check (intern_tactic ist) def))
-      tacl in
+    List.map2 (fun ((_,id),b,def) (_, qid) ->
+      let k = if b then UpdateTac qid else NewTac id in
+      let t = Flags.with_option strict_check (intern_tactic ist) def in
+	(k, t))
+      tacl rfun in
   let id0 = fst (List.hd rfun) in
   let _ = Lib.add_leaf id0 (inMD gtacl) in
   List.iter
-    (fun (id,_) -> Flags.if_verbose msgnl (pr_id id ++ str " is defined"))
-    rfun
+    (fun ((_,id),b,_) -> 
+      if b then Flags.if_verbose msgnl (pr_id id ++ str " is redefined")
+      else Flags.if_verbose msgnl (pr_id id ++ str " is defined"))
+    tacl
 
 (***************************************************************************)
 (* Other entry points *)
