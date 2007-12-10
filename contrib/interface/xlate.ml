@@ -325,8 +325,8 @@ and xlate_formula_opt =
     | Some e -> CT_coerce_FORMULA_to_FORMULA_OPT (xlate_formula e)
 
 and  xlate_binder_l = function
-    LocalRawAssum(l,t) -> CT_binder(xlate_id_opt_ne_list l, xlate_formula t)
-  | LocalRawDef(n,v) -> CT_coerce_DEF_to_BINDER(CT_def(xlate_id_opt n,
+    LocalRawAssum(l,_,t) -> CT_binder(xlate_id_opt_ne_list l, xlate_formula t)
+  | LocalRawDef(n,_,v) -> CT_coerce_DEF_to_BINDER(CT_def(xlate_id_opt n,
 						       xlate_formula v))
 and 
   xlate_match_pattern_ne_list = function
@@ -459,7 +459,7 @@ and xlate_matched_formula = function
       CT_coerce_FORMULA_to_MATCHED_FORMULA(xlate_formula f)
 and xlate_formula_expl = function
     (a, None) -> xlate_formula a
-  | (a, Some (_,ExplByPos i)) -> 
+  | (a, Some (_,ExplByPos (i, _))) -> 
       xlate_error "explicitation of implicit by rank not supported"
   | (a, Some (_,ExplByName i)) ->
       CT_labelled_arg(CT_ident (string_of_id i), xlate_formula a)
@@ -1863,7 +1863,7 @@ let rec xlate_vernac =
 	(CT_theorem_goal
 	   (CT_coerce_DEFN_to_DEFN_OR_THM (xlate_defn k),
 	    xlate_ident s, xlate_binder_list bl, xlate_formula typ))
-  | VernacDefinition (kind,(_,s),DefineBody(bl,red_option,c,typ_opt),_) ->
+  | VernacDefinition (kind,(_,s),DefineBody(cbl,bl,red_option,c,typ_opt),_) ->
       CT_definition
 	(xlate_defn kind, xlate_ident s, xlate_binder_list bl,
 	   cvt_optional_eval_for_definition c red_option,
@@ -2097,7 +2097,7 @@ let rec xlate_vernac =
 	       CT_coerce_ID_LIST_to_ID_LIST_OPT
 	       (CT_id_list
 	       (List.map
-		  (function ExplByPos x, _
+		  (function ExplByPos (x,_), _
 		       -> xlate_error
 			   "explication argument by rank is obsolete"
 		     | ExplByName id, _ -> CT_ident (string_of_id id)) l)))
