@@ -18,7 +18,7 @@
 
 open Term
 
-type ('a,+'b) subproof = ('a,'b) Subproof.subproof 
+type 'a subproof = 'a Subproof.subproof 
      (* rather than opening Subproof *)
 
 open Transactional_stack
@@ -33,23 +33,22 @@ let build_mutation pt sp =
 
 
 type 'a proof = { (* The root of the proof *)
-		  mutable root : ('a,[ `Subproof | `Resolved ]) Subproof.pointer;
+		  mutable root : 'a Subproof.pointer;
 		  (* The list of consecutive focusings to be able to backtrack.
 		     The current focus is the head of the list.
 		     The empty list means that the root is focused *)
-                  mutable focus : (constr,[ `Subproof | `Resolved | `Open ]) 
-		                                            Subproof.pointer list;
+                  mutable focus : constr Subproof.pointer list;
 		  (* The undo stack *)
 		  undo_stack : 'a undo_action transactional_stack;
 		  (* The dependent goal heap *)
 		  mutable dependent_goals : 
-		          ((constr,[ `Subproof | `Resolved | `Open ]) Subproof.pointer, Evd.evar) Biassoc.biassoc;
+		          (constr Subproof.pointer, Evd.evar) Biassoc.biassoc;
                   mutable eenv : Evd.evar_defs
 		}
 and 'a undo_action = 
     | MutateBack of mutation
     | Unfocus of 'a proof
-    | Focus of 'a proof * (constr,[`Subproof|`Resolved|`Open]) Subproof.pointer
+    | Focus of 'a proof * constr Subproof.pointer
 
 
 
@@ -244,6 +243,8 @@ let undo pr =
 
 (*** The following functions define the tactic machinery. They 
      transform a tactical expression into a sequence of actions. ***)
+
+type 'a tactic = constr Subproof.pointer -> 'a action
 
 (* This function implement the base tactic "refine" *)
 

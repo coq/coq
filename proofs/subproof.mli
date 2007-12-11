@@ -57,19 +57,19 @@
 *)
 open Term
 
-type ('a,+'b) subproof constraint 'b = [< `Open | `Resolved | `Subproof ] 
-type ('a,'b) pointer  constraint 'b = [< `Open | `Resolved | `Subproof ] 
+type 'a subproof 
+type 'a pointer 
 
 (* Gives the subproof held by a pointer *)
-val get : ('a,'b) pointer -> ('a,'b) subproof
+val get : 'a pointer -> 'a subproof
 
 (* Changes the subproof held by a pointer *)
-val mutate : ('a,'b) pointer -> ('a,'b) subproof -> unit
+val mutate : 'a pointer -> 'a subproof -> unit
 
 
 (* Type of functions to  be used with [percolate] *)
 type iterator =
-    { iterator : 'a.('a,[ `Subproof | `Open | `Resolved ]) pointer -> unit }
+    { iterator : 'a.'a pointer -> unit }
 
 (* The percolation function applies a function to all node pointer in the
    subproof. It is guaranteed that an ancestor node will have the function
@@ -77,7 +77,7 @@ type iterator =
 (* This function may be a little ad hoc, it has been design mostly solely
    for the interaction with [resolve] and [mutate] and being able to add 
    undo information around the resolution. *)
-val percolate : iterator -> ('a,'b)  pointer -> unit
+val percolate : iterator -> 'a pointer -> unit
 
 (* This function is meant to turn a subproof that is actually
    resolved into a Resolved Goal.
@@ -87,46 +87,46 @@ val percolate : iterator -> ('a,'b)  pointer -> unit
    recursive resolve function which will take care of the additional
    bureaucracy (such as the undo and such) *)
 exception Unresolved
-val resolve : ('a,'b) subproof -> ('a, [> `Resolved]) subproof
+val resolve : 'a subproof -> 'a subproof
 
 (* This function perform one step of instantiation (of evars) of a subproof, 
    it is pure, and is meant to be used together with percolate and the 
    undo mechanism *)
-val instantiate : Evd.evar_map -> ('a,'b) subproof -> ('a,'b) subproof
+val instantiate : Evd.evar_map -> 'a subproof -> 'a subproof
 
 (* This function returns [true] if it's argument is resolved, and
    [false] otherwise] *)
-val is_resolved : ('a,'b) subproof -> bool
+val is_resolved : 'a subproof -> bool
 
 (* This function returns the array containing pointers to all the open 
    subgoals of a given subproof pointer *)
-val opengoals : ('a,'b) pointer -> (constr, [> `Open]) pointer array
+val opengoals : 'a pointer -> constr pointer array
 
 (* This function returns the result of a resolved subproof *)
-val get_result : ('a,[< `Resolved ]) subproof -> 'a
+val get_result : 'a subproof -> 'a
 
 (* This function returns the actual goal represented by an open 
    goal subproof *)
-val get_goal : (constr, [< `Open ]) subproof -> Goal.goal
+val get_goal : constr subproof -> Goal.goal
 
 (* Reorders the open goals of the given pointer, according to the 
    permutation *)
-val reorder : Permutation.permutation -> ('a, 'b) pointer -> unit
+val reorder : Permutation.permutation -> 'a pointer -> unit
 
 (* The following function creates a new subproof *)
 val open_subproof : ?subgoals:Goal.goal array -> 
                     ?instantiate_once_resolved:(Evd.evar_map -> 'a -> 'a) ->
                     (constr array -> 'a) ->
-                    ('a, [>`Subproof]) subproof
+                    'a subproof
 
 (* The following function creates a new pointer with a new subproof in it *)
 val start_subproof : ?subgoals:Goal.goal array -> 
                     (constr array -> 'a) ->
-                    ('a, [>`Subproof]) pointer
+                    'a pointer
 
 
 (* [iteri f s] takes a function [f] of indices and [Subproof.pointer]
    and apply it to all the subproofs of [s], provided [s] is a
    [[`Subproof] subproof] *)
-val iteri : (int -> (constr, [> `Open]) pointer -> unit) -> 
-                            ('a, [< `Subproof]) subproof -> unit
+val iteri : (int -> constr pointer -> unit) -> 
+                            'a subproof -> unit

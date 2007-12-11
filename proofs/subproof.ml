@@ -24,6 +24,11 @@
    mutables <= from .mli.
            rechecker un peu la doc des fonctions 
            rajouter les histoires de return value dans le .mli *)
+(* arnaud: beaucoup de commentaires ne sont plus à jour depuis l'enlevage des
+   types fantômes.
+   Il faut repenser en particulier les commentaires des fonctions qui lèvent
+   des anomalies. Ou bien faire des exceptions ?
+   Peut-être repenser un peu l'interface ? *)
 
 open Term
 open Goal
@@ -40,7 +45,7 @@ open Goal
    It is actually a type giving a way to access and mutate a subproof.
    That is either a reference or a position in an array.
    The reference is used to carry the mutable behavior down to the root *)
-type 'a _subproof =
+type 'a subproof =
     (* An open goal *)
     | Open of goal
     (* A subproof whose content is resolved, holds its "return value" *)
@@ -49,9 +54,9 @@ type 'a _subproof =
     (* A partially resolved subproof *)
     | Subproof of 'a partially_resolved_subproof
     (* A proof whose open goals have been permuted *)
-    | Permutation of constr _pointer array * 'a _subproof
+    | Permutation of constr pointer array * 'a subproof
     (* A subproof which is routed because there has been a permutation *)
-    | Route of 'a _pointer
+    | Route of 'a pointer
 
 (* A partially_resolved_subproof is that data of an array of subsubproofs
    and a resolver function to close the subproof when every subproof above is
@@ -68,20 +73,14 @@ type 'a _subproof =
    choice is probably definite *)
    (* arnaud: raconter les histoire d'instanciations *)
 and  'a partially_resolved_subproof = 
-    { node : constr _subproof array;
+    { node : constr subproof array;
       resolver : constr array -> 'a;
       instantiate_once_resolved: Evd.evar_map -> 'a -> 'a
     }
-and 'a _pointer = 
-    | Root of 'a _subproof ref
-    | Node of 'a _subproof array*int
+and 'a pointer = 
+    | Root of 'a subproof ref
+    | Node of 'a subproof array*int
 
-type ('a,+'b) pointer = 'a _pointer 
-     constraint 'b = [< `Open | `Resolved | `Subproof ] 
-
-(* This type gives *)
-type ('a,+'b) subproof = 'a _subproof
-     constraint 'b = [< `Open | `Resolved | `Subproof ] 
 
 (* Internal function which gives the subproof contained by the pointer *)
 let get = function
@@ -109,7 +108,7 @@ let mutate pt sp =
 (* Type of the iterators (used with the iteration function) *)
 (* The need to define a new type is due the universal quantification
    since not all the nodes have the same type case *)
-type iterator = { iterator : 'a.'a _pointer -> unit }
+type iterator = { iterator : 'a.'a pointer -> unit }
 
 (* The percolation function applies a function to all node pointer in the
    subproof. It is guaranteed that an ancestor node will have the function
@@ -118,9 +117,9 @@ type iterator = { iterator : 'a.'a _pointer -> unit }
    for the interaction with [resolve] and [mutate] and being able to add 
    undo information around the resolution. *)
 (* The extra seemingly unnecessary functions are here for typing issue,
-   the idea is that traverse_deep (: iterator -> constr _subproof -> unit) 
+   the idea is that traverse_deep (: iterator -> constr subproof -> unit) 
    doesn't have the same type as traverse 
-   (: iterator -> 'a -> _subproof -> unit) *)
+   (: iterator -> 'a -> subproof -> unit) *)
 let percolate =
   let rec percolate_body traverse it pt =
      match get pt with
@@ -198,7 +197,7 @@ let opengoals =
       (* by construction a pointer containing an Open goal are
 	 always constr _pointer. If we omit the magic, then we
          cannot express opengoals in all generality *)
-      | Open _ -> [(Obj.magic pt:constr _pointer)]
+      | Open _ -> [(Obj.magic pt:constr pointer)]
       | Resolved _ -> next cont
       | Subproof psr -> loga next cont psr.node 0
       (* For the semantics to be correct here we need all the
