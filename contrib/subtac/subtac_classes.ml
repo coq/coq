@@ -60,16 +60,17 @@ let new_instance instid id par sup props =
   let gen_ctx = Implicit_quantifiers.compute_constrs_freevars_binders env (sup @ par) in
   let type_ctx_instance env ctx inst previnst =
     List.fold_left2
-      (fun (inst, instctx, env) (na, _, t) ce -> 
-	let c = interp_casted_constr_evars isevars env ce t in
-	let d = na, Some c, t in
-	let instc = substl inst c in
-	  instc :: inst, d :: instctx, push_named d env)
-      (previnst, [], env) (List.rev ctx) inst
+      (fun (inst, subst, instctx, env) (na, _, t) ce -> 
+	let t' = replace_vars subst t in
+	let c = interp_casted_constr_evars isevars env ce t' in
+	let d = na, Some c, t' in
+(* 	let instc = substl inst (subst_vars ids c) in *)
+	  c :: inst, (na, c) :: subst, d :: instctx, env)
+      (previnst, [], [], env) (List.rev ctx) inst
   in
   let env', avoid, genctx = interp_binders_evars isevars env avoid gen_ctx in
   let env', avoid, supctx = interp_constrs_evars isevars env' avoid sup in
-  let params, paramsctx, envctx = 
+  let params, paramssubst, paramsctx, envctx = 
     if List.length par <> List.length k.cl_params then 
       Classes.mismatched_params env par k.cl_params;
     type_ctx_instance env' k.cl_params par []

@@ -10,6 +10,12 @@ open Impargs
 
 module Pretyping : Pretyping.S
 
+val interp :
+    Environ.env ->
+    Evd.evar_defs ref ->
+    Rawterm.rawconstr ->
+    Evarutil.type_constraint -> Term.constr * Term.constr
+
 val subtac_process : env -> evar_defs ref -> identifier -> typeclass_context -> local_binder list ->
   constr_expr -> constr_expr option -> evar_map * constr * types * manual_explicitation list
 

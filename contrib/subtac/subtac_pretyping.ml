@@ -70,7 +70,12 @@ let merge_evms x y =
 
 let interp env isevars c tycon = 
   let j = pretype tycon env isevars ([],[]) c in
-  let evm = evars_of !isevars in    
+  let _ = isevars := Evarutil.nf_evar_defs !isevars in
+  let evd,_ = consider_remaining_unif_problems env !isevars in
+  let unevd = undefined_evars evd in
+  let unevd' = Typeclasses.resolve_typeclasses env (Evd.evars_of unevd) evd in
+  let evm = evars_of unevd' in
+    isevars := unevd';
     nf_evar evm j.uj_val, nf_evar evm j.uj_type
 
 let find_with_index x l =
@@ -126,10 +131,8 @@ let subtac_process env isevars id cbl l c tycon =
   in    
   let c = coqintern_constr !isevars env c in
   let coqc, ctyp = interp env isevars c tycon in
-  let fullcoqc = Evarutil.nf_evar (evars_of !isevars) coqc in
-  let fullctyp = Evarutil.nf_evar (evars_of !isevars) ctyp in
   let evm = non_instanciated_map env isevars (evars_of !isevars) in
-    evm, fullcoqc, fullctyp, imps
+    evm, coqc, ctyp, imps
 
 open Subtac_obligations
 

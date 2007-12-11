@@ -258,7 +258,7 @@ GEXTEND Gram
   ;
   (* (co)-fixpoints *)
   rec_definition:
-    [ [ id = ident; bl = LIST1 binder_let;
+    [ [ id = ident; (* cbl = class_binders ;  *)bl = LIST1 binder_let;
         annot = rec_annotation; ty = type_cstr; 
 	":="; def = lconstr; ntn = decl_notation ->
           let names = List.map snd (names_of_local_assums bl) in

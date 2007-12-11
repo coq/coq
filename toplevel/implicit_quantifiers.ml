@@ -71,7 +71,7 @@ let resolve_class_binders env l =
   let cstrs = List.map (fun (id, l) -> 
     let c = class_info (snd id) in
     let args = combine_params avoid l (c.cl_params @ c.cl_super) in
-      mkAppC (CRef (Ident id), args)) l 
+      CAppExpl (dummy_loc, (None, Ident id), args)) l 
   in
   let fv_ctx = compute_constrs_freevars_binders env cstrs in
     fv_ctx, cstrs
