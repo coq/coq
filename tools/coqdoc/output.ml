@@ -46,10 +46,11 @@ let is_keyword =
       "Delimit"; "Bind"; "Open"; "Scope";
       "Boxed"; "Unboxed";
       "Arguments";
+      "Instance"; "Class"; "where"; "Instantiation";
       (* Program *)
       "Program Definition"; "Program Fixpoint"; "Program Lemma";
       "Obligation"; "Obligations"; "Solve"; "using"; "Next Obligation"; "Next";
-      "Instance"; "Class"; "where"; "Instantiation";
+      "Program Instance";
       (*i (* correctness *)
       "array"; "assert"; "begin"; "do"; "done"; "else"; "end"; "if";
       "in"; "invariant"; "let"; "of"; "ref"; "state"; "then"; "variant";
@@ -367,7 +368,7 @@ module Html = struct
 		 module_ref m s
 	     | Ref (m,fullid) -> 
 		 ident_ref m fullid s
-	     | Mod _ | Ref _ ->
+	     | Mod _ ->
 		 raw_ident s)
 	with Not_found ->
 	  raw_ident s

@@ -77,6 +77,9 @@ let new_instance instid id par sup props =
   let super, superctx =
     Classes.infer_super_instances envctx params paramsctx k.cl_super
   in
+  isevars := Evarutil.nf_evar_defs !isevars;
+  let sigma = Evd.evars_of !isevars in
+  let env' = Implicit_quantifiers.nf_env sigma env' in
   let props, _, propsctx, env' = 
     let props = 
       List.map (fun (x, l, d) -> 
@@ -103,7 +106,8 @@ let new_instance instid id par sup props =
 	      instc :: inst, na :: ids, d :: instctx, push_named d env)
 	  (previnst, [], [], env) (List.rev ctx) inst
       in
-      let subst = List.map (function (na, Some c, t) -> na, c | _ -> assert false) (superctx @ paramsctx) in 
+      let substctx = Implicit_quantifiers.nf_named_context sigma (superctx @ paramsctx) in
+      let subst = List.map (function (na, Some c, t) -> na, c | _ -> assert false) substctx in 
 	type_defs_instance env' k.cl_props props (super @ params) subst
   in
   let app = 
@@ -125,6 +129,11 @@ let new_instance instid id par sup props =
 	  let i = Nameops.add_suffix (snd id) "_instance_" in
 	    Termops.next_global_ident_away false i (Termops.ids_of_context env)
   in
+  let imps = 
+    Util.list_map_i 
+      (fun i (na, b, t) -> ExplByPos (i, Some na), (true, true))
+      1 (genctx @ List.rev supctx)
+  in
   let hook cst = 
     let inst = 
       { is_class = k;
@@ -136,6 +145,7 @@ let new_instance instid id par sup props =
       }
     in
       Classes.add_instance_hint id;
+      Impargs.declare_manual_implicits false (ConstRef cst) false imps;
       Typeclasses.add_instance inst
   in
   let evm = Subtac_utils.evars_of_term (Evd.evars_of !isevars) Evd.empty term in

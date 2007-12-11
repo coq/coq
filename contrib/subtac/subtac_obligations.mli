@@ -38,7 +38,7 @@ val try_solve_obligation : int -> Names.identifier option -> Proof_type.tactic -
 
 val try_solve_obligations : Names.identifier option -> Proof_type.tactic -> unit
 
-val show_obligations : Names.identifier option -> unit
+val show_obligations : ?msg:bool -> Names.identifier option -> unit
 
 val admit_obligations : Names.identifier option -> unit
 

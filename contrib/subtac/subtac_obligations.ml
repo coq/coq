@@ -336,7 +336,8 @@ let rec solve_obligation prg num =
 		       | _ -> ());
 	      trace (str "Started obligation " ++ int user_num ++ str "  proof: " ++
 		       Subtac_utils.my_print_constr (Global.env ()) obl.obl_type);
-	      Pfedit.by !default_tactic
+	      Pfedit.by !default_tactic;
+	      Flags.if_verbose (fun () -> msg (Printer.pr_open_subgoals ())) ()
 	| l -> pperror (str "Obligation " ++ int user_num ++ str " depends on obligation(s) "
 			++ str (string_of_list ", " (fun x -> string_of_int (succ x)) l))
 
@@ -402,6 +403,19 @@ and auto_solve_obligations n : progress =
   Flags.if_verbose msgnl (str "Solving obligations automatically...");
   try solve_obligations n !default_tactic with NoObligations _ -> Dependent
       
+open Pp
+let show_obligations ?(msg=true) n =
+  let prg = get_prog_err n in
+  let n = prg.prg_name in
+  let obls, rem = prg.prg_obligations in
+    if msg then msgnl (int rem ++ str " obligation(s) remaining: ");
+    Array.iteri (fun i x -> 
+		   match x.obl_body with 
+		       None -> msgnl (str "Obligation" ++ spc() ++ int (succ i) ++ spc () ++ str "of" ++ spc() ++ str (string_of_id n) ++ str ":" ++ spc () ++ 
+					my_print_constr (Global.env ()) x.obl_type ++ str "." ++ fnl ())
+		    | Some _ -> ())
+      obls
+
 let add_definition n b t ?(implicits=[]) ?(kind=Definition) ?(hook=fun x -> ()) obls =
   Flags.if_verbose pp (str (string_of_id n) ++ str " has type-checked");
   let prg = init_prog_info n b t [] (Array.make 0 0) obls implicits kind hook in
@@ -415,7 +429,10 @@ let add_definition n b t ?(implicits=[]) ?(kind=Definition) ?(hook=fun x -> ()) 
     let len = Array.length obls in
     let _ = Flags.if_verbose ppnl (str ", generating " ++ int len ++ str " obligation(s)") in
       from_prg := ProgMap.add n prg !from_prg; 
-      auto_solve_obligations (Some n))
+      let res = auto_solve_obligations (Some n) in
+	match res with
+	  | Remain rem when rem < 5 -> Flags.if_verbose (fun () -> show_obligations ~msg:false (Some n)) (); res
+	  | _ -> res)
 	
 let add_mutual_definitions l ?(implicits=[]) ?(kind=Definition) nvrec =
   let deps = List.map (fun (n, b, t, obls) -> n) l in
@@ -456,18 +473,5 @@ let next_obligation n =
     array_find (fun x ->  x.obl_body = None && deps_remaining obls x.obl_deps = [])
       obls
   in solve_obligation prg i
-      
-open Pp
-let show_obligations n =
-  let prg = get_prog_err n in
-  let n = prg.prg_name in
-  let obls, rem = prg.prg_obligations in
-    msgnl (int rem ++ str " obligation(s) remaining: ");
-    Array.iteri (fun i x -> 
-		   match x.obl_body with 
-		       None -> msgnl (str "Obligation" ++ spc() ++ int (succ i) ++ spc () ++ str "of" ++ spc() ++ str (string_of_id n) ++ str ":" ++ spc () ++ 
-					my_print_constr (Global.env ()) x.obl_type ++ str "." ++ fnl ())
-		    | Some _ -> ())
-      obls
-			
+      			
 let default_tactic () = !default_tactic

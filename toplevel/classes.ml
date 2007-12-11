@@ -135,7 +135,24 @@ let declare_structure env id idbuild params arity fields =
   let _build = ConstructRef (rsp,1) in
     Recordops.declare_structure(rsp,idbuild,List.rev kinds,List.rev sp_projs);
     rsp
+
+
+let mk_interning_data env na typ =
+  let impl =
+    if Impargs.is_implicit_args() then
+      Impargs.compute_implicits env typ
+    else []
+  in (na, ([], impl, Notation.compute_arguments_scope typ))
     
+let interp_fields_evars isevars env avoid l =
+  List.fold_left
+    (fun (env, ids, params, impls) ((loc, i), t) -> 
+      let t' = interp_type_evars isevars env ~impls t in
+      let data = mk_interning_data env i t' in
+      let d = (i,None,t') in
+	(push_named d env, i :: ids, d::params, ([], data :: snd impls)))
+    (env, avoid, [], ([], [])) l    
+
 (* FIXME ignoring sup *)
 let new_class id par ar sup props =
   let env0 = Global.env() in
@@ -161,14 +178,17 @@ let new_class id par ar sup props =
   (* let fullarity = it_mkProd_or_LetIn (it_mkProd_or_LetIn arity ctx_defs) ctx_params in*)
 
   (* Interpret the definitions and propositions *)
-  let env_props, avoid, ctx_props = interp_binders_evars isevars env_super avoid props in
+  let env_props, avoid, ctx_props, _ = 
+    interp_fields_evars isevars env_super avoid props 
+(*       interp_binders_evars isevars env_super avoid props  *)
+  in
     
   (* Instantiate evars and check all are resolved *)
   let isevars,_ = Evarconv.consider_remaining_unif_problems env_props !isevars in
   let sigma = Evd.evars_of isevars in
-  let ctx_params = Sign.map_named_context (Reductionops.nf_evar sigma) ctx_params in
-  let ctx_super = Sign.map_named_context (Reductionops.nf_evar sigma) ctx_super in
-  let ctx_props = Sign.map_named_context (Reductionops.nf_evar sigma) ctx_props in
+  let ctx_params = Implicit_quantifiers.nf_named_context sigma ctx_params in
+  let ctx_super = Implicit_quantifiers.nf_named_context sigma ctx_super in
+  let ctx_props = Implicit_quantifiers.nf_named_context sigma ctx_props in
   let arity = Reductionops.nf_evar sigma arity in
   let kn = 
     let idb = id_of_string ("Build_" ^ (string_of_id (snd id))) in
@@ -277,6 +297,9 @@ let new_instance instid id par sup props =
   let super, superctx =
     infer_super_instances envctx params paramsctx k.cl_super
   in
+  isevars := Evarutil.nf_evar_defs !isevars;
+  let sigma = Evd.evars_of !isevars in
+  let env' = Implicit_quantifiers.nf_env sigma env' in
   let props, _, propsctx, env' = 
     let props = 
       List.map (fun (x, l, d) -> 
@@ -295,7 +318,8 @@ let new_instance instid id par sup props =
 	      instc :: inst, na :: ids, d :: instctx, push_named d env)
 	  (previnst, [], [], env) (List.rev ctx) inst
       in
-      let subst = List.map (function (na, Some c, t) -> na, c | _ -> assert false) (superctx @ paramsctx) in 
+      let substctx = Implicit_quantifiers.nf_named_context sigma (superctx @ paramsctx) in
+      let subst = List.map (function (na, Some c, t) -> na, c | _ -> assert false) substctx in 
 	type_defs_instance env' k.cl_props props (super @ params) subst
   in
   let app = 
