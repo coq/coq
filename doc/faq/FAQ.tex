@@ -2445,11 +2445,12 @@ session began. It does not make sense in files to compile.
 
 This means that {\eauto} or {\eapply} didn't instantiate an
 existential variable which eventually got erased by some computation.
-You have to backtrack to the faulty occurrence of {\eauto} or
-{\eapply} and give the missing argument an explicit value.
+You may backtrack to the faulty occurrence of {\eauto} or {\eapply}
+and give the missing argument an explicit value. Alternatively, you
+can use the commands \texttt{Show Existentials.} and
+\texttt{Existential.} to display and instantiate the remainig
+existential variables.
 
-Note that you can see what the current existential are using the {\tt
-  Show Existentials} command.
 
 \begin{coq_example}
 Lemma example_show_existentials :  forall a b c:nat, a=b -> b=c -> a=c.
