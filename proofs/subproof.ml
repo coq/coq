@@ -97,9 +97,6 @@ let rec simplify = function
   | Permutation(_,sp) -> sp
   | Route pt -> simplify (get pt)
 
-(* composition of the above two functions *)
-let get_simplify sp = simplify (get sp)
-
 let mutate pt sp =
   match pt with
   | Root r_nd -> r_nd := sp
@@ -108,6 +105,7 @@ let mutate pt sp =
 (* Type of the iterators (used with the iteration function) *)
 (* The need to define a new type is due the universal quantification
    since not all the nodes have the same type case *)
+(*arnaud: il me faut un meilleurs commentaire ici *)
 type iterator = { iterator : 'a.'a pointer -> unit }
 
 (* The percolation function applies a function to all node pointer in the
@@ -117,9 +115,9 @@ type iterator = { iterator : 'a.'a pointer -> unit }
    for the interaction with [resolve] and [mutate] and being able to add 
    undo information around the resolution. *)
 (* The extra seemingly unnecessary functions are here for typing issue,
-   the idea is that traverse_deep (: iterator -> constr subproof -> unit) 
+   the idea is that traverse_deep (: iterator -> constr subproof array -> unit) 
    doesn't have the same type as traverse 
-   (: iterator -> 'a -> subproof -> unit) *)
+   (: iterator -> 'a subproof array -> unit) *)
 let percolate =
   let rec percolate_body traverse it pt =
      match get pt with
@@ -128,6 +126,10 @@ let percolate =
      | Subproof prs 
      | Permutation(_, Subproof prs) -> traverse it prs ; it.iterator pt
      | Permutation(_, _) -> it.iterator pt
+     (* both calls on [Permutation] cannot use a recursive call of 
+        [percolate_body], since their second argument is a subproof not 
+        a pointer. However, all the exported function (on subproofs) use 
+	[simplify] thus the call to [pt] doesn't show the [Permutation]. *)
      | Route pt -> percolate_body traverse it pt
   in
   let traverse_body traverse_deep it prs =
@@ -256,6 +258,7 @@ let reorder =
 
 (* The following function creates a new subproof *)
 let no_instantiate _ _ = Util.anomaly "Subproof.instantiate: this proof does not support instantiation in its resolved form"
+
 let open_subproof ?(subgoals=[||]) ?(instantiate_once_resolved= no_instantiate) resolver =
    Subproof { node = Array.map (fun g -> Open g) subgoals;
               resolver = resolver;
