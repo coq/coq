@@ -47,6 +47,7 @@ let class_rawexpr = Gram.Entry.create "vernac:class_rawexpr"
 let class_param = Gram.Entry.create "vernac:class_param"
 let thm_token = Gram.Entry.create "vernac:thm_token"
 let def_body = Gram.Entry.create "vernac:def_body"
+let class_context = Gram.Entry.create "vernac:class_context"
 
 let get_command_entry () =
   match Decl_mode.get_current_mode () with
@@ -117,7 +118,7 @@ let no_coercion loc (c,x) =
 
 (* Gallina declarations *)
 GEXTEND Gram
-  GLOBAL: gallina gallina_ext thm_token def_body;
+  GLOBAL: gallina gallina_ext thm_token def_body class_context;
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
@@ -165,8 +166,13 @@ GEXTEND Gram
 *)
     ] ]
   ;
-  binder_class:
-    [ [ "["; l=LIST1 [ id=identref ; cl = LIST1 class_param -> (id, cl) ] SEP ","; "]" -> l ] ]
+  class_context:
+    [ [ "["; l=LIST1 class_constraint SEP ","; "]" -> l ] ]
+  ;
+  class_constraint:
+    [ [ id=identref ; cl = LIST1 class_param -> ((loc, Anonymous), id, cl) 
+    | iid=identref ; ":" ; id=identref ; cl = LIST1 class_param -> (fst iid, Name (snd iid)), id, cl
+    ] ]
   ;
   thm_token:
     [ [ "Theorem" -> Theorem
@@ -221,10 +227,10 @@ GEXTEND Gram
     | bl = top_binders; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
 	let (cbl,bl) = bl in DefineBody (cbl, bl, red, c, Some t)
     | bl = top_binders; ":"; t = lconstr ->
-        let (cbl,bl) = bl in ProveBody (bl, t) ] ]
+        let (cbl,bl) = bl in ProveBody (cbl, bl, t) ] ]
   ;
   top_binders:
-    [ [ cbl = binder_class; "=>"; bl = LIST0 binder_let -> cbl, bl
+    [ [ cbl = class_context; bl = LIST0 binder_let -> cbl, bl
     | bl = LIST0 binder_let -> [], bl ] ]
   ;
   reduce:
@@ -477,17 +483,18 @@ GEXTEND Gram
 	  VernacCoercion (Global, qid, s, t)
 
       (* Type classes *)
-      | IDENT "Class"; sup = OPT [ "[" ; l = LIST1 applied_class SEP "," ; "]"; "=>" -> l ];
+      | IDENT "Class"; sup = OPT [ l = class_context; "=>" -> l ];
 	 qid = identref; pars = LIST1 class_param_type;
 	 s = [ ":"; c = sort -> loc, c | -> (loc,Rawterm.RType None) ];
 	 "where"; props = LIST0 class_field_type SEP ";" ->
 	   VernacClass (qid, pars, s, (match sup with None -> [] | Some l -> l), props)
 	     
-      | IDENT "Instance"; sup = OPT [ "[" ; l = LIST1 operconstr SEP "," ; "]"; "=>" -> l ];
+      | IDENT "Instance"; sup = OPT [ l = class_context ; "=>" -> l ];
 	 is = instance_binder ; "where";
 	 props = LIST0 class_field_def SEP ";" ->
 	   let (instid, qid, pars) = is in
-	     VernacInstance (instid, qid, pars, (match sup with None -> [] | Some l -> l), props)
+	   let sup = match sup with None -> [] | Some l -> l in
+	     VernacInstance (sup, instid, qid, pars, props)
 
       | IDENT "Existing"; IDENT "Instance"; is = identref -> VernacDeclareInstance is
 
@@ -513,10 +520,6 @@ GEXTEND Gram
     [ [ instid = identref; ":"; qid = identref; pars = LIST1 class_param -> (Some instid, qid, pars) 
     | qid = identref; pars = LIST1 class_param -> (None, qid, pars) 
     ] ]
-  ;
-
-  applied_class:
-    [ [ id = identref; par = LIST1 class_param -> id,par ] ]
   ;
 
   class_param: 

@@ -32,17 +32,28 @@ let free_vars_of_constr_expr c l =
   | c -> fold_constr_expr_with_binders (fun a l -> a::l) aux bdvars l c
   in aux [] l c
 
+let freevars_of_ids env ids = 
+  List.filter (fun x -> try
+      try ignore(Environ.lookup_named x env) ; false
+      with _ ->
+	ignore(Constrintern.global_reference x); false 
+    with _ -> true) 
+    ids
+
 let compute_constrs_freevars env constrs =
   let ids = 
     List.rev (List.fold_left 
 		 (fun acc x -> free_vars_of_constr_expr x acc) 
 		 [] constrs)
-  in
-    List.filter (fun x -> try
-	try ignore(Environ.lookup_named x env) ; false
-	with _ ->
-	  ignore(Constrintern.global_reference x); false 
-      with _ -> true) ids
+  in freevars_of_ids env ids
+
+(* let compute_context_freevars env ctx = *)
+(*   let ids =  *)
+(*     List.rev  *)
+(*       (List.fold_left  *)
+(* 	  (fun acc (_,i,x) -> free_vars_of_constr_expr x acc)  *)
+(* 	  [] constrs) *)
+(*   in freevars_of_ids ids *)
 
 let compute_constrs_freevars_binders env constrs =
   let elts = compute_constrs_freevars env constrs in
@@ -64,22 +75,47 @@ let combine_params avoid applied needed =
       | _ :: _, [] -> failwith "combine_params: overly applied typeclass"
   in aux [] applied needed
 
-type typeclass_context = (identifier located * constr_expr list) list
+let full_class_binders env l = 
+  let avoid = compute_constrs_freevars env (List.concat (List.map (fun (_, (_,id), l) -> l) l)) in
+    List.map (fun (iid, id, l) -> 
+      try 
+	let c = class_info (snd id) in
+	let args = combine_params avoid l (c.cl_params @ c.cl_super) in
+	  iid, id, args
+      with Not_found -> unbound_class env id)
+      l 
+      
+let constr_expr_of_constraint id l =
+  CAppExpl (fst id, (None, Ident id), l)
+
+let constrs_of_context l =
+  List.map (fun (_, id, l) -> constr_expr_of_constraint id l) l
+
+let compute_context_freevars env ctx =
+  let ids = 
+    List.rev 
+      (List.fold_left 
+	  (fun acc (oid, id, x) -> 
+	    List.fold_left (fun acc x -> free_vars_of_constr_expr x acc) acc x)
+	  [] ctx)
+  in freevars_of_ids env ids
 
 let resolve_class_binders env l = 
-  let avoid = compute_constrs_freevars env (List.concat (List.map (fun ((_,id), l) -> l) l)) in
-  let cstrs = List.map (fun (id, l) -> 
-    let c = class_info (snd id) in
-    let args = combine_params avoid l (c.cl_params @ c.cl_super) in
-      CAppExpl (dummy_loc, (None, Ident id), args)) l 
+  let ctx = full_class_binders env l in
+  let fv_ctx = 
+    let elts = compute_context_freevars env ctx in
+      List.map (fun id -> (dummy_loc, id), CHole dummy_loc) elts
   in
-  let fv_ctx = compute_constrs_freevars_binders env cstrs in
-    fv_ctx, cstrs
+    fv_ctx, ctx
+
+let generalize_class_binders env l = 
+  let fv_ctx, cstrs = resolve_class_binders env l in
+    List.map (fun ((loc, id), t) -> LocalRawAssum ([loc, Name id], Implicit, t)) fv_ctx,
+  List.map (fun (iid, id, c) -> LocalRawAssum ([iid], Implicit, constr_expr_of_constraint id c)) 
+    cstrs
 
 let ctx_of_class_binders env l = 
-  let fv_ctx, cstrs = resolve_class_binders env l in
-    List.map (fun ((loc, id), t) -> LocalRawAssum ([loc, Name id], Implicit, t)) fv_ctx @ 
-      List.map (fun c -> LocalRawAssum ([dummy_loc, Anonymous], Implicit, c)) cstrs
+  let (x, y) = generalize_class_binders env l in x @ y
 	
 let implicits_of_binders l = 
   let rec aux i l = 

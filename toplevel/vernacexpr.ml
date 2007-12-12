@@ -152,9 +152,10 @@ type 'a with_coercion = coercion_flag * 'a
 type constructor_expr = (lident * constr_expr) with_coercion
 type inductive_expr =
      lident * local_binder list * constr_expr * constructor_expr list
+
 type definition_expr =
-  | ProveBody of local_binder list * constr_expr
-  | DefineBody of class_binder list * local_binder list * raw_red_expr option * constr_expr
+  | ProveBody of typeclass_context * local_binder list * constr_expr
+  | DefineBody of typeclass_context * local_binder list * raw_red_expr option * constr_expr
       * constr_expr option
 
 type local_decl_expr =
@@ -228,14 +229,14 @@ type vernac_expr =
       lident * (* name *)
 	(lident * constr_expr) list * (* params *)
 	sort_expr located * (* arity *)
-	(lident * constr_expr list) list * (* super *)
+	(lname * lident * constr_expr list) list * (* super *)
 	(lident * constr_expr) list (* props *)
 	
   | VernacInstance of
-      lident option * (* instance name *)
-      lident * (* class name *)
+      (lname * lident * constr_expr list) list * (* super *)
+	lident option * (* instance name *)
+	lident * (* class name *)
 	constr_expr list * (* params *)
-	constr_expr list * (* super *)
 	(lident * lident list * constr_expr) list (* props *)
 	
   | VernacDeclareInstance of

@@ -190,9 +190,9 @@ let resolve_typeclass env ev evi (evd, defined as acc) =
     with Exit -> acc
   else acc
 
-let resolve_one_typeclass env nc types =
+let resolve_one_typeclass env types =
   try
-    let evi = Evd.make_evar (Environ.val_of_named_context nc) types in
+    let evi = Evd.make_evar (Environ.named_context_val env) types in
     let ev = 1 in
     let evm = Evd.add Evd.empty ev evi in
     let evd = Evd.create_evar_defs evm in

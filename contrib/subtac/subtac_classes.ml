@@ -40,6 +40,18 @@ let interp_binders_evars isevars env avoid l =
 	(push_named d env, i :: ids, d::params))
     (env, avoid, []) l
 
+let interp_typeclass_context_evars isevars env avoid l =
+  List.fold_left
+    (fun (env, ids, params) (iid, (loc, i), l) -> 
+      let t' = interp_binder_evars isevars env (snd iid) (Implicit_quantifiers.constr_expr_of_constraint (loc,i) l) in
+      let i = match snd iid with
+	| Anonymous -> Nameops.next_name_away (Termops.named_hd env t' Anonymous) ids
+	| Name id -> id
+      in
+      let d = (i,None,t') in
+	(push_named d env, i :: ids, d::params))
+    (env, avoid, []) l
+
 let interp_constrs_evars isevars env avoid l =
   List.fold_left
     (fun (env, ids, params) t -> 
@@ -49,7 +61,7 @@ let interp_constrs_evars isevars env avoid l =
 	(push_named d env, id :: ids, d::params))
     (env, avoid, []) l
 
-let new_instance instid id par sup props =
+let new_instance sup instid id par props =
   let env = Global.env() in
   let isevars = ref (Evd.create_evar_defs Evd.empty) in
   let avoid = Termops.ids_of_context env in
@@ -57,7 +69,16 @@ let new_instance instid id par sup props =
     try class_info (snd id)
     with Not_found -> unbound_class env id
   in
-  let gen_ctx = Implicit_quantifiers.compute_constrs_freevars_binders env (sup @ par) in
+  let gen_ctx, sup = Implicit_quantifiers.resolve_class_binders env sup in
+  let gen_ctx = 
+    let parbinders = Implicit_quantifiers.compute_constrs_freevars_binders env par in
+    let parbinders' =
+      List.filter (fun ((_, x), _) -> not (List.exists (fun ((_, y), _) -> y = x) gen_ctx)) parbinders
+    in
+      gen_ctx @ parbinders'
+  in
+(*   let sup = Implicit_quantifiers.full_class_binders env sup in *)
+(*   let gen_ctx = Implicit_quantifiers.compute_constrs_freevars_binders env (sup @ par) in *)
   let type_ctx_instance env ctx inst previnst =
     List.fold_left2
       (fun (inst, subst, instctx, env) (na, _, t) ce -> 
@@ -69,13 +90,16 @@ let new_instance instid id par sup props =
       (previnst, [], [], env) (List.rev ctx) inst
   in
   let env', avoid, genctx = interp_binders_evars isevars env avoid gen_ctx in
-  let env', avoid, supctx = interp_constrs_evars isevars env' avoid sup in
+  let env', avoid, supctx = interp_typeclass_context_evars isevars env' avoid sup in
   let params, paramssubst, paramsctx, envctx = 
     if List.length par <> List.length k.cl_params then 
       Classes.mismatched_params env par k.cl_params;
     type_ctx_instance env' k.cl_params par []
   in
-  let super, superctx =
+  isevars := Evarutil.nf_evar_defs !isevars;
+  let sigma = Evd.evars_of !isevars in
+  let envctx = Implicit_quantifiers.nf_env sigma envctx in
+  let super, envctx, superctx =
     Classes.infer_super_instances envctx params paramsctx k.cl_super
   in
   isevars := Evarutil.nf_evar_defs !isevars;

@@ -302,7 +302,7 @@ let start_proof_and_print idopt k t hook =
 
 let vernac_definition (local,_,_ as k) id def hook =
   match def with
-  | ProveBody (bl,t) ->   (* local binders, typ *)
+  | ProveBody (cbl,bl,t) ->   (* local binders, typ *)
       if Lib.is_modtype () then
 	errorlabstrm "Vernacentries.VernacDefinition"
 	  (str "Proof editing mode not supported in module types")
@@ -526,8 +526,8 @@ let vernac_identity_coercion stre id qids qidt =
 let vernac_class id par ar sup props =
   Classes.new_class id par ar sup props
 
-let vernac_instance iid cid par sup props =
-  Classes.new_instance iid cid par sup props
+let vernac_instance sup iid cid par props =
+  Classes.new_instance sup iid cid par props
 
 let vernac_declare_instance id =
   Classes.declare_instance id
@@ -1219,7 +1219,7 @@ let interp c = match c with
   (* Type classes *)
   | VernacClass (id, par, ar, sup, props) -> vernac_class id par ar sup props
 
-  | VernacInstance (instid, cid, par, sup, props) -> vernac_instance instid cid par sup props
+  | VernacInstance (sup, instid, cid, par, props) -> vernac_instance sup instid cid par props
   | VernacDeclareInstance id -> vernac_declare_instance id
 
   | VernacSetInstantiationTactic (tac) -> vernac_set_instantiation_tac tac

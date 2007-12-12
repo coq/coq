@@ -20,13 +20,14 @@ open Mod_subst
 open Topconstr
 open Util
 open Typeclasses
+open Implicit_quantifiers
 open Classes
 (*i*)
 
 val new_instance : 
+  typeclass_context ->
   identifier located option ->
   identifier located ->
-  constr_expr list ->
   constr_expr list ->
   binder_def_list ->
   unit

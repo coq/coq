@@ -31,7 +31,7 @@ open Redexpr
    defined object *)
 
 val declare_definition : identifier -> definition_kind ->
-  class_binder list -> local_binder list -> red_expr option -> constr_expr ->
+  typeclass_context -> local_binder list -> red_expr option -> constr_expr ->
     constr_expr option -> declaration_hook -> unit
 
 val syntax_definition : identifier -> constr_expr -> bool -> bool -> unit

@@ -48,7 +48,7 @@ val add_instance : instance -> unit
 val class_info : identifier -> typeclass (* raises Not_found *)
 val class_of_inductive : inductive -> typeclass (* raises Not_found *)
 
-val resolve_one_typeclass : env -> named_context -> types -> types (* Raises Not_found *)
+val resolve_one_typeclass : env -> types -> types (* Raises Not_found *)
 
 val resolve_typeclass : env -> evar -> evar_info -> evar_defs * bool -> evar_defs * bool
 val resolve_typeclasses : env -> evar_map -> evar_defs -> evar_defs

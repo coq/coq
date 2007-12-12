@@ -395,6 +395,9 @@ let pr_constrarg c = spc () ++ pr_constr c in
 let pr_lconstrarg c = spc () ++ pr_lconstr c in
 let pr_intarg n = spc () ++ int n in
 let pr_lident_constr sep (i,c) = pr_lident i ++ sep ++ pr_constrarg c in
+let pr_lname_lident_constr (oi,i,a) = 
+  (match snd oi with Anonymous -> mt () | Name id -> pr_lident (fst oi, id) ++ spc () ++ str":" ++ spc ()) 
+    ++ pr_lident i ++ spc () ++ prlist_with_sep spc pr_constrarg a in
 let pr_instance_def sep (i,l,c) = pr_lident i ++ prlist_with_sep spc pr_lident l 
   ++ sep ++ pr_constrarg c in
 
@@ -513,7 +516,7 @@ let rec pr_vernac = function
               | Some ty -> spc() ++ str":" ++ pr_spc_lconstr ty
 	    in
             (pr_binders_arg bl,ty,Some (pr_reduce red ++ pr_lconstr body))
-        | ProveBody (bl,t) ->
+        | ProveBody (cbl,bl,t) ->
             (pr_binders_arg bl, str" :" ++ pr_spc_lconstr t, None) in
       let (binds,typ,c) = pr_def_body b in
       hov 2 (pr_def_token d ++ spc() ++ pr_lident id ++ binds ++ typ ++
@@ -692,10 +695,10 @@ let rec pr_vernac = function
 	  prlist_with_sep (fun () -> str";" ++ spc()) (pr_lident_constr (spc () ++ str":" ++ spc())) props )
 	  
 
- | VernacInstance (instid, cid, par, sup, props) -> 
+ | VernacInstance (sup, instid, cid, par, props) -> 
      hov 1 (
        str"Instance" ++ spc () ++ 
-	 prlist_with_sep (fun () -> str"," ++ spc()) pr_constr sup ++
+	 prlist_with_sep (fun () -> str"," ++ spc()) pr_lname_lident_constr sup ++
 	 str"=>" ++ spc () ++ 
 	 (match instid with Some id -> pr_lident id ++ spc () ++ str":" ++ spc () | None -> mt ()) ++
 	 pr_lident cid ++ prlist pr_constrarg par ++ spc () ++
