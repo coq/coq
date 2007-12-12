@@ -524,6 +524,7 @@ GEXTEND Gram
 
   class_param: 
     [ [ id = identref -> CRef (Libnames.Ident id)
+    | c = sort -> CSort (loc, c)
     | "("; c = lconstr; ")" -> c ] ]
   ;
 
@@ -536,7 +537,7 @@ GEXTEND Gram
   ;
   class_param_type:
     [ [ "(" ; id = identref; ":"; t = lconstr ; ")" -> id, t 
-    | id = identref -> id, CSort (loc,Rawterm.RType None) ] ]
+    | id = identref -> id, CHole loc ] ]
   ;
   class_field_type:
     [ [ id = identref; ":"; t = lconstr -> id, t ] ]
