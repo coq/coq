@@ -31,7 +31,7 @@ val binders_of_lidents : identifier located list -> local_binder list
 val declare_implicit_proj : typeclass -> constant -> unit
 
 val infer_super_instances : env -> constr list ->
-  named_context -> named_context -> types list * env * named_context
+  named_context -> named_context -> types list * identifier list * named_context
 
 
 val new_class : identifier located ->
@@ -47,6 +47,8 @@ val new_instance :
   constr_expr list ->
   binder_def_list ->
   unit
+
+val context : typeclass_context -> unit
 
 val add_instance_hint : identifier -> unit
 

@@ -398,6 +398,12 @@ let pr_lident_constr sep (i,c) = pr_lident i ++ sep ++ pr_constrarg c in
 let pr_lname_lident_constr (oi,i,a) = 
   (match snd oi with Anonymous -> mt () | Name id -> pr_lident (fst oi, id) ++ spc () ++ str":" ++ spc ()) 
     ++ pr_lident i ++ spc () ++ prlist_with_sep spc pr_constrarg a in
+let pr_typeclass_context l = 
+  match l with
+      [] -> mt ()
+    | _ -> str"[" ++ spc () ++ prlist_with_sep (fun () -> str"," ++ spc()) pr_lname_lident_constr l
+	++ spc () ++ str"]" ++ spc ()
+in
 let pr_instance_def sep (i,l,c) = pr_lident i ++ prlist_with_sep spc pr_lident l 
   ++ sep ++ pr_constrarg c in
 
@@ -524,8 +530,9 @@ let rec pr_vernac = function
         | None -> mt()
         | Some cc -> str" :=" ++ spc() ++ cc))
 
-  | VernacStartTheoremProof (ki,id,(bl,c),b,d) ->
+  | VernacStartTheoremProof (ki,id,(cbl,bl,c),b,d) ->
       hov 1 (pr_thm_token ki ++ spc() ++ pr_lident id ++ spc() ++
+		pr_typeclass_context cbl ++
       (match bl with
         | [] -> mt()
         | _ -> pr_binders bl ++ spc())
@@ -694,16 +701,23 @@ let rec pr_vernac = function
 	  spc () ++ str"where" ++ spc () ++
 	  prlist_with_sep (fun () -> str";" ++ spc()) (pr_lident_constr (spc () ++ str":" ++ spc())) props )
 	  
-
+	
  | VernacInstance (sup, instid, cid, par, props) -> 
      hov 1 (
        str"Instance" ++ spc () ++ 
-	 prlist_with_sep (fun () -> str"," ++ spc()) pr_lname_lident_constr sup ++
+	 pr_typeclass_context sup ++
 	 str"=>" ++ spc () ++ 
 	 (match instid with Some id -> pr_lident id ++ spc () ++ str":" ++ spc () | None -> mt ()) ++
 	 pr_lident cid ++ prlist pr_constrarg par ++ spc () ++
 	 spc () ++ str"where" ++ spc () ++
 	 prlist_with_sep (fun () -> str";" ++ spc()) (pr_instance_def (spc () ++ str":=" ++ spc())) props)
+
+ | VernacContext l ->
+     hov 1 (
+       str"Context" ++ spc () ++ str"[" ++ spc () ++
+	 prlist_with_sep (fun () -> str"," ++ spc()) pr_lname_lident_constr l ++
+	 spc () ++ str "]")
+	      
 
  | VernacDeclareInstance id ->
      hov 1 (str"Instance" ++ spc () ++ pr_lident id)

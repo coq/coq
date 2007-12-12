@@ -308,7 +308,7 @@ let vernac_definition (local,_,_ as k) id def hook =
 	  (str "Proof editing mode not supported in module types")
       else
 	let hook _ _ = () in
-	start_proof_and_print (Some id) (local,DefinitionBody Definition) (bl,t) hook
+	start_proof_and_print (Some id) (local,DefinitionBody Definition) (cbl,bl,t) hook
   | DefineBody (cbl,bl,red_option,c,typ_opt) ->
       let red_option = match red_option with
         | None -> None
@@ -317,7 +317,7 @@ let vernac_definition (local,_,_ as k) id def hook =
 	    Some (interp_redexp env evc r) in
       declare_definition id k cbl bl red_option c typ_opt hook
 
-let vernac_start_proof kind sopt (bl,t) lettop hook =
+let vernac_start_proof kind sopt (cbl,bl,t) lettop hook =
   if not(refining ()) then
     if lettop then
       errorlabstrm "Vernacentries.StartProof"
@@ -325,7 +325,7 @@ let vernac_start_proof kind sopt (bl,t) lettop hook =
   if Lib.is_modtype () then
     errorlabstrm "Vernacentries.StartProof"
       (str "Proof editing mode not supported in module types");
-  start_proof_and_print sopt (Global, Proof kind) (bl,t) hook
+  start_proof_and_print sopt (Global, Proof kind) (cbl,bl,t) hook
 
 let vernac_end_proof = function
   | Admitted -> admit ()
@@ -528,6 +528,9 @@ let vernac_class id par ar sup props =
 
 let vernac_instance sup iid cid par props =
   Classes.new_instance sup iid cid par props
+
+let vernac_context l =
+  Classes.context l
 
 let vernac_declare_instance id =
   Classes.declare_instance id
@@ -1220,6 +1223,7 @@ let interp c = match c with
   | VernacClass (id, par, ar, sup, props) -> vernac_class id par ar sup props
 
   | VernacInstance (sup, instid, cid, par, props) -> vernac_instance sup instid cid par props
+  | VernacContext sup -> vernac_context sup
   | VernacDeclareInstance id -> vernac_declare_instance id
 
   | VernacSetInstantiationTactic (tac) -> vernac_set_instantiation_tac tac
@@ -1276,7 +1280,7 @@ let interp c = match c with
   | VernacNop -> ()
 
   (* Proof management *)
-  | VernacGoal t -> vernac_start_proof Theorem None ([],t) false (fun _ _ ->())
+  | VernacGoal t -> vernac_start_proof Theorem None ([],[],t) false (fun _ _ ->())
   | VernacAbort id -> vernac_abort id
   | VernacAbortAll -> vernac_abort_all ()
   | VernacRestart -> vernac_restart ()

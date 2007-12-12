@@ -53,7 +53,6 @@ val compute_interning_datas :  Environ.env ->
       Topconstr.scope_name option list))
     list
 
-
 val build_mutual : (inductive_expr * decl_notation) list -> bool -> unit
 
 val declare_mutual_with_eliminations :
@@ -75,7 +74,7 @@ val start_proof : identifier -> goal_kind -> constr ->
   declaration_hook -> unit
 
 val start_proof_com : identifier option -> goal_kind -> 
-  (local_binder list * constr_expr) -> declaration_hook -> unit
+  (typeclass_context * local_binder list * constr_expr) -> declaration_hook -> unit
 
 (*s [save_named b] saves the current completed proof under the name it
 was started; boolean [b] tells if the theorem is declared opaque; it

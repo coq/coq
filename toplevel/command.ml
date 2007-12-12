@@ -996,7 +996,7 @@ let build_combined_scheme name schemes =
     if_verbose ppnl (recursive_message Fixpoint None [snd name])
 
 (* 4| Goal declaration *)
-let start_proof_com sopt kind (bl,t) hook =
+let start_proof_com sopt kind (cbl,bl,t) hook =
   let id = match sopt with
     | Some id ->
         (* We check existence here: it's a bit late at Qed time *)
@@ -1008,6 +1008,7 @@ let start_proof_com sopt kind (bl,t) hook =
  	  (Pfedit.get_all_proof_names ())
   in
   let env = Global.env () in
+  let bl = Implicit_quantifiers.ctx_of_class_binders env cbl @ bl in
   let c = interp_type Evd.empty env (generalize_constr_expr t bl) in
   let _ = Typeops.infer_type env c in
   start_proof id kind c hook

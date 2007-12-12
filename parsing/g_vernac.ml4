@@ -44,10 +44,11 @@ let proof_mode = Gram.Entry.create "vernac:proof_command"
 let noedit_mode = Gram.Entry.create "vernac:noedit_command"
 
 let class_rawexpr = Gram.Entry.create "vernac:class_rawexpr"
-let class_param = Gram.Entry.create "vernac:class_param"
 let thm_token = Gram.Entry.create "vernac:thm_token"
 let def_body = Gram.Entry.create "vernac:def_body"
-let class_context = Gram.Entry.create "vernac:class_context"
+let typeclass_context = Gram.Entry.create "vernac:typeclass_context"
+let typeclass_constraint = Gram.Entry.create "vernac:typeclass_constraint"
+let typeclass_param = Gram.Entry.create "vernac:typeclass_param"
 
 let get_command_entry () =
   match Decl_mode.get_current_mode () with
@@ -118,13 +119,13 @@ let no_coercion loc (c,x) =
 
 (* Gallina declarations *)
 GEXTEND Gram
-  GLOBAL: gallina gallina_ext thm_token def_body class_context;
+  GLOBAL: gallina gallina_ext thm_token def_body typeclass_context typeclass_constraint;
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
-    [ [ thm = thm_token; id = identref; bl = LIST0 binder_let; ":";
+    [ [ thm = thm_token; id = identref; cbl = typeclass_context ; bl = LIST0 binder_let; ":";
         c = lconstr ->
-          VernacStartTheoremProof (thm, id, (bl, c), false, no_hook)
+          VernacStartTheoremProof (thm, id, (cbl, bl, c), false, no_hook)
       | stre = assumption_token; nl = inline; bl = assum_list -> 
 	  VernacAssumption (stre, nl, bl)
       | stre = assumptions_token; nl = inline; bl = assum_list ->
@@ -166,12 +167,12 @@ GEXTEND Gram
 *)
     ] ]
   ;
-  class_context:
-    [ [ "["; l=LIST1 class_constraint SEP ","; "]" -> l ] ]
+  typeclass_context:
+    [ [ "["; l=LIST1 typeclass_constraint SEP ","; "]" -> l ] ]
   ;
-  class_constraint:
-    [ [ id=identref ; cl = LIST1 class_param -> ((loc, Anonymous), id, cl) 
-    | iid=identref ; ":" ; id=identref ; cl = LIST1 class_param -> (fst iid, Name (snd iid)), id, cl
+  typeclass_constraint:
+    [ [ id=identref ; cl = LIST1 typeclass_param -> ((loc, Anonymous), id, cl) 
+    | iid=identref ; ":" ; id=identref ; cl = LIST1 typeclass_param -> (fst iid, Name (snd iid)), id, cl
     ] ]
   ;
   thm_token:
@@ -230,7 +231,7 @@ GEXTEND Gram
         let (cbl,bl) = bl in ProveBody (cbl, bl, t) ] ]
   ;
   top_binders:
-    [ [ cbl = class_context; bl = LIST0 binder_let -> cbl, bl
+    [ [ cbl = typeclass_context; bl = LIST0 binder_let -> cbl, bl
     | bl = LIST0 binder_let -> [], bl ] ]
   ;
   reduce:
@@ -446,7 +447,7 @@ END
 
 (* Extensions: implicits, coercions, etc. *)   
 GEXTEND Gram
-  GLOBAL: gallina_ext class_param;
+  GLOBAL: gallina_ext typeclass_param;
 
   gallina_ext:
     [ [ (* Transparent and Opaque *)
@@ -483,15 +484,18 @@ GEXTEND Gram
 	  VernacCoercion (Global, qid, s, t)
 
       (* Type classes *)
-      | IDENT "Class"; sup = OPT [ l = class_context; "=>" -> l ];
-	 qid = identref; pars = LIST1 class_param_type;
+      | IDENT "Class"; sup = OPT [ l = typeclass_context; "=>" -> l ];
+	 qid = identref; pars = LIST1 typeclass_param_type;
 	 s = [ ":"; c = sort -> loc, c | -> (loc,Rawterm.RType None) ];
-	 "where"; props = LIST0 class_field_type SEP ";" ->
+	 "where"; props = LIST0 typeclass_field_type SEP ";" ->
 	   VernacClass (qid, pars, s, (match sup with None -> [] | Some l -> l), props)
 	     
-      | IDENT "Instance"; sup = OPT [ l = class_context ; "=>" -> l ];
+      | IDENT "Context"; c = typeclass_context -> 
+	  VernacContext c
+
+      | IDENT "Instance"; sup = OPT [ l = typeclass_context ; "=>" -> l ];
 	 is = instance_binder ; "where";
-	 props = LIST0 class_field_def SEP ";" ->
+	 props = LIST0 typeclass_field_def SEP ";" ->
 	   let (instid, qid, pars) = is in
 	   let sup = match sup with None -> [] | Some l -> l in
 	     VernacInstance (sup, instid, qid, pars, props)
@@ -517,32 +521,32 @@ GEXTEND Gram
   ;
 
   instance_binder:
-    [ [ instid = identref; ":"; qid = identref; pars = LIST1 class_param -> (Some instid, qid, pars) 
-    | qid = identref; pars = LIST1 class_param -> (None, qid, pars) 
+    [ [ instid = identref; ":"; qid = identref; pars = LIST1 typeclass_param -> (Some instid, qid, pars) 
+    | qid = identref; pars = LIST1 typeclass_param -> (None, qid, pars) 
     ] ]
   ;
 
-  class_param: 
+  typeclass_param: 
     [ [ id = identref -> CRef (Libnames.Ident id)
     | c = sort -> CSort (loc, c)
     | "("; c = lconstr; ")" -> c ] ]
   ;
 
-(*   class_ctx:  *)
+(*   typeclass_ctx:  *)
 (*     [ [ sup = LIST1 operconstr SEP "->"; "=>" -> sup *)
 (*     ] ] *)
 (*   ; *)
   implicit_name:
     [ [ id = ident -> (id,false) | "["; id = ident; "]" -> (id,true) ] ]
   ;
-  class_param_type:
+  typeclass_param_type:
     [ [ "(" ; id = identref; ":"; t = lconstr ; ")" -> id, t 
     | id = identref -> id, CHole loc ] ]
   ;
-  class_field_type:
+  typeclass_field_type:
     [ [ id = identref; ":"; t = lconstr -> id, t ] ]
   ;
-  class_field_def:
+  typeclass_field_def:
     [ [ id = identref; params = LIST0 identref; ":="; t = lconstr -> id, params, t ] ]
   ;
 END

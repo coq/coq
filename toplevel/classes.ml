@@ -249,6 +249,9 @@ let subst_ids_in_named_context subst l =
       l ([], 1)
   in x
     
+let subst_one_named inst ids t =
+  substnl inst 0 (substn_vars 1 ids t)
+      
 let subst_named inst subst ctx =
   let ids = List.map (fun (id, _, _) -> id) subst in
   let ctx' = subst_ids_in_named_context ids ctx in
@@ -271,7 +274,8 @@ let destClass c =
 let infer_super_instances env params params_ctx super =
   let super = subst_named params params_ctx super in
     List.fold_right 
-      (fun (na, _, t) (sups, env, supctx) -> 
+      (fun (na, _, t) (sups, ids, supctx) -> 
+	let t = subst_one_named sups ids t in
 	let inst = 
 	  try resolve_one_typeclass env t 
 	  with Not_found -> 
@@ -279,8 +283,8 @@ let infer_super_instances env params params_ctx super =
 	      no_instance (push_named_context supctx env) (dummy_loc, cl.cl_name) (Array.to_list args)
 	in
 	let d = (na, Some inst, t) in
-	  inst :: sups, push_named d env, d :: supctx)
-      super ([],env, [])
+	  inst :: sups, na :: ids, d :: supctx)
+      super ([], [], [])
 
 let new_instance sup instid id par props =
   let env = Global.env() in
@@ -386,6 +390,20 @@ let solve_by_tac env evd evar evi t =
 	    evd', true
 	else evd, false
     else evd, false
+
+let context l =
+  let env = Global.env() in
+  let isevars = ref (Evd.create_evar_defs Evd.empty) in
+  let avoid = Termops.ids_of_context env in
+  let ctx, l = Implicit_quantifiers.resolve_class_binders env l in
+  let env', avoid, ctx = interp_binders_evars isevars env avoid ctx in
+  let env', avoid, l = interp_typeclass_context_evars isevars env' avoid l in
+  isevars := Evarutil.nf_evar_defs !isevars;
+  let sigma = Evd.evars_of !isevars in
+  let fullctx = Implicit_quantifiers.nf_named_context sigma (l @ ctx) in
+    List.iter (function (id,_,t) -> 
+      Command.declare_one_assumption false (Local (* global *), Definitional) t false (* inline *) (dummy_loc, id))
+      (List.rev fullctx)
 
 (* let init     () = hints := [] *)
 (* let freeze   () = !hints *)

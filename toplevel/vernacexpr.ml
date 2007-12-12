@@ -200,7 +200,7 @@ type vernac_expr =
   | VernacDefinition of definition_kind * lident * definition_expr * 
       declaration_hook
   | VernacStartTheoremProof of theorem_kind * lident *
-      (local_binder list * constr_expr) * bool * declaration_hook
+      (typeclass_context * local_binder list * constr_expr) * bool * declaration_hook
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
   | VernacAssumption of assumption_kind * bool * simple_binder with_coercion list
@@ -229,15 +229,17 @@ type vernac_expr =
       lident * (* name *)
 	(lident * constr_expr) list * (* params *)
 	sort_expr located * (* arity *)
-	(lname * lident * constr_expr list) list * (* super *)
+	typeclass_context * (* super *)
 	(lident * constr_expr) list (* props *)
 	
   | VernacInstance of
-      (lname * lident * constr_expr list) list * (* super *)
+      typeclass_context * (* super *)
 	lident option * (* instance name *)
 	lident * (* class name *)
 	constr_expr list * (* params *)
 	(lident * lident list * constr_expr) list (* props *)
+
+  | VernacContext of typeclass_context
 	
   | VernacDeclareInstance of
       lident (* instance name *)

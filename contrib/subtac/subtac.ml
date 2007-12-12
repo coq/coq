@@ -121,7 +121,7 @@ let subtac (loc, command) =
 	  let _ = trace (str "Building fixpoint") in
 	    ignore(Subtac_command.build_recursive l b)
 
-      | VernacStartTheoremProof (thkind, (locid, id), (bl, t), lettop, hook) ->
+      | VernacStartTheoremProof (thkind, (locid, id), (cbl, bl, t), lettop, hook) ->
 	  if not(Pfedit.refining ()) then
 	    if lettop then
 	      errorlabstrm "Subtac_command.StartProof"
