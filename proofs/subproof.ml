@@ -274,5 +274,5 @@ let start_subproof ?(subgoals=[||]) resolver =
    [[`Subproof] subproof] *)
 let iteri f s = 
   match simplify s with
-  | Subproof {node=a} -> Array.iteri (fun i _ -> f i (Node(a,i)))
+  | Subproof {node=a} -> Array.iteri (fun i _ -> f i (Node(a,i))) a
   | _  -> Util.anomaly "Subproof.iteri: failure of simplify"
