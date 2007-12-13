@@ -168,7 +168,8 @@ GEXTEND Gram
     ] ]
   ;
   typeclass_context:
-    [ [ "["; l=LIST1 typeclass_constraint SEP ","; "]" -> l ] ]
+    [ [ "["; l=LIST1 typeclass_constraint SEP ","; "]" -> l 
+    | -> [] ] ]
   ;
   typeclass_constraint:
     [ [ id=identref ; cl = LIST1 typeclass_param -> ((loc, Anonymous), id, cl) 
