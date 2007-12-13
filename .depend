@@ -2975,9 +2975,9 @@ contrib/funind/functional_principles_proofs.cmo: lib/util.cmi \
     pretyping/typing.cmi kernel/typeops.cmi pretyping/termops.cmi \
     kernel/term.cmi tactics/tactics.cmi tactics/tacticals.cmi \
     pretyping/tacred.cmi proofs/tacmach.cmi tactics/tacinterp.cmi \
-    kernel/sign.cmi pretyping/reductionops.cmi contrib/recdef/recdef.cmo \
-    pretyping/rawterm.cmi proofs/proof_type.cmi parsing/printer.cmi \
-    lib/pp.cmi proofs/pfedit.cmi lib/options.cmi library/nametab.cmi \
+    proofs/tacexpr.cmo kernel/sign.cmi pretyping/reductionops.cmi \
+    contrib/recdef/recdef.cmo pretyping/rawterm.cmi proofs/proof_type.cmi \
+    parsing/printer.cmi lib/pp.cmi proofs/pfedit.cmi library/nametab.cmi \
     kernel/names.cmi library/nameops.cmi library/libnames.cmi \
     contrib/funind/indfun_common.cmi tactics/hiddentac.cmi library/global.cmi \
     interp/genarg.cmi pretyping/evd.cmi tactics/equality.cmi \
@@ -2989,9 +2989,9 @@ contrib/funind/functional_principles_proofs.cmx: lib/util.cmx \
     pretyping/typing.cmx kernel/typeops.cmx pretyping/termops.cmx \
     kernel/term.cmx tactics/tactics.cmx tactics/tacticals.cmx \
     pretyping/tacred.cmx proofs/tacmach.cmx tactics/tacinterp.cmx \
-    kernel/sign.cmx pretyping/reductionops.cmx contrib/recdef/recdef.cmx \
-    pretyping/rawterm.cmx proofs/proof_type.cmx parsing/printer.cmx \
-    lib/pp.cmx proofs/pfedit.cmx lib/options.cmx library/nametab.cmx \
+    proofs/tacexpr.cmx kernel/sign.cmx pretyping/reductionops.cmx \
+    contrib/recdef/recdef.cmx pretyping/rawterm.cmx proofs/proof_type.cmx \
+    parsing/printer.cmx lib/pp.cmx proofs/pfedit.cmx library/nametab.cmx \
     kernel/names.cmx library/nameops.cmx library/libnames.cmx \
     contrib/funind/indfun_common.cmx tactics/hiddentac.cmx library/global.cmx \
     interp/genarg.cmx pretyping/evd.cmx tactics/equality.cmx \
