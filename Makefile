@@ -171,7 +171,7 @@ archclean: clean-ide cleantheories
 	rm -f $(MINICOQ)
 
 clean-ide:
-	rm -f $(COQIDEVO) $(COQIDEVO:.vo=.glob) $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)
+	rm -f $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)
 	rm -f ide/extract_index.ml ide/find_phrase.ml ide/highlight.ml
 	rm -f ide/config_lexer.ml ide/config_parser.mli ide/config_parser.ml
 	rm -f ide/utf8_convert.ml
@@ -198,10 +198,8 @@ cleantheories:
 # Emacs tags
 ###########################################################################
 
-# NB: the -maxdepth 3 is for excluding files from contrib/extraction/test
-
 tags:
-	find . -maxdepth 3 -regex ".*\.ml[i4]?" | sort -r | xargs \
+	echo $(MLIFILES) $(MLFILES) $(ML4FILES) | sort -r | xargs \
 	etags --language=none\
 	      "--regex=/let[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/let[ \t]+rec[ \t]+\([^ \t]+\)/\1/" \
@@ -210,15 +208,14 @@ tags:
               "--regex=/exception[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/val[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/module[ \t]+\([^ \t]+\)/\1/"
-	find . -maxdepth 3 -name "*.ml4" | sort -r | xargs \
+	echo $(ML4FILES) | sort -r | xargs \
 	etags --append --language=none\
 	      "--regex=/[ \t]*\([^: \t]+\)[ \t]*:/\1/"
 
 
 otags: 
-	find . -maxdepth 3 -name "*.ml" -o -name "*.mli" \
-	| sort -r | xargs otags
-	find . -maxdepth 3 -name "*.ml4" | sort -r | xargs \
+	echo $(MLIFILES) $(MLFILES) | sort -r | xargs otags
+	echo $(ML4FILES) | sort -r | xargs \
 	etags --append --language=none\
 	      "--regex=/let[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/let[ \t]+rec[ \t]+\([^ \t]+\)/\1/" \

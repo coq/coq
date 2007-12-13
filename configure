@@ -766,7 +766,7 @@ PRINTF=`which printf`
 
 # Subdirectories of theories/ added in coq_config.ml
 subdirs () {
-    (cd $1; find * \( -name .svn -prune \) -o \( -type d -exec $PRINTF "\"%s\";\n" {} \; \) | grep -v extraction/test | grep -v correctness >> "$mlconfig_file")
+    (cd $1; find * \( -name .svn -prune \) -o \( -type d -exec $PRINTF "\"%s\";\n" {} \; \) | grep -v correctness >> "$mlconfig_file")
 }
 
 echo "let theories_dirs = [" >> "$mlconfig_file"

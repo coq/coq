@@ -51,6 +51,6 @@ Goal ∀ x, True -> (∃ y , x ≥ y + 1) ∨ x ≤ 0.
 *)
 
 (* Integer Arithmetic *)
-(* TODO
+(* TODO: this should come after ZArith
 Notation "x ≤ y" := (Zle x y) (at level 1, y at level 10).
 *)
