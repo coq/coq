@@ -326,7 +326,7 @@ let get_fields =
     | LetIn (na,b,_,c) ->
 	let id = match na with Name id -> id | Anonymous -> id_of_string "_" in
 	prodec_rec ((id,false,substl subst b)::l) (mkVar id::subst) c
-    | _               -> l
+    | _               -> List.rev l
   in 
   prodec_rec [] []
 
