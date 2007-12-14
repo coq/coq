@@ -100,10 +100,9 @@ let fold_right f x a =
 
 (** {6 More Specific operations} ***)
 
-(** [default f x a] is [f y] if [x] is [Some y] and [a] otherwise. *)
-let default f x a = 
-  match x with
-  | Some y -> f y
+(** [default a x] is [y] if [x] is [Some y] and [a] otherwise. *)
+let default a = function
+  | Some y -> y
   | _ -> a
 
 (** [lift f x] is the same as [map f x]. *)
