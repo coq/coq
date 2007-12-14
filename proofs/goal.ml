@@ -14,7 +14,7 @@ open Term
 
 (* type of the goals *)
 type goal = {
-  content : Evd.evar_info; (* logical information hyps |- concl and alike *)
+  content : Evd.evar;      (* logical information hyps |- concl and alike *)
   name : string option     (* optional name of the goal to be displayed *)
 }
 
