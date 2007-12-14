@@ -69,10 +69,10 @@ val fold_right : ('a -> 'b -> 'b) -> 'a option -> 'b -> 'b
 
 (** {6 More Specific Operations} ***)
 
-(** [default f x a] is [f y] if [x] is [Some y] and [a] otherwise. *)
-val default : ('a -> 'b) -> 'a option -> 'b -> 'b
+(** [default a x] is [y] if [x] is [Some y] and [a] otherwise. *)
+val default : 'a -> 'a option -> 'a
 
-(** [lift f x] is the same as [map f x]. *)
+(** [lift] is the same as {!map}. *)
 val lift : ('a -> 'b) -> 'a option -> 'b option
 
 (** [lift_right f a x] is [Some (f a y)] if [x] is [Some y], and 

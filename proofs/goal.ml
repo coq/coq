@@ -36,6 +36,9 @@ let of_info ?name evi =
     name = name
   }
 
+(* Returns [true] if the goal has been partially resolved. *)
+let is_defined evars { content = e }
+
 (* return type of the Goal.refine function *)
 (* it contains the new subgoals to produce, a function to reconstruct
    the proof to the current goal knowing the result of the subgoals,

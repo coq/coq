@@ -42,6 +42,7 @@ let check_permutation arr =
 (* Function to build a permutation from an array. 
    Raises Invalid_argument "Permutation.of_array: ill formed permutation"
    if the array is not a permutation of [| 0 1 ... (n-1) |] *)
+(*arnaud: mettre une vrai exception là :p *)
 let of_array arr =
   if check_permutation arr then
     Array.copy arr
@@ -63,6 +64,9 @@ let extend perm n =
    Raises Invalid_argument "Permutation.permute: array and permutation size do not match"
    if the size of the array is smaller than that of the permutation.
    If the size of the array is bigger than the permutation, then the permutation   is extended *)
+(* arnaud: ici aussi ce serait pas plus mal de faire une vrai exception.
+   et puis tant qu'à faire reporter la comparaison dans "extend" je suis sûr
+   que ce sera mieux *)
 let permute =
   (* permutes [arr] according to [per] both must be of length [len] *)
   let unsafe_permute perm arr len =
