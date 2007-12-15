@@ -39,4 +39,4 @@ val nf_named_context : evar_map -> named_context -> named_context
 val nf_rel_context : evar_map -> rel_context -> rel_context
 val nf_env : evar_map -> env -> env
 
-val constr_expr_of_constraint : identifier located -> constr_expr list -> constr_expr
+val constr_expr_of_constraint : (binding_kind * identifier located) -> constr_expr list -> constr_expr

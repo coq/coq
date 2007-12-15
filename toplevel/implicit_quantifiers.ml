@@ -26,11 +26,11 @@ open Typeclasses_errors
 
 (* Auxilliary functions for the inference of implicitly quantified variables. *)    
 
-let free_vars_of_constr_expr c l = 
+let free_vars_of_constr_expr c ?(bound=[]) l = 
   let rec aux bdvars l = function
   | CRef (Ident (_,id)) -> if List.mem id bdvars then l else if List.mem id l then l else id :: l
   | c -> fold_constr_expr_with_binders (fun a l -> a::l) aux bdvars l c
-  in aux [] l c
+  in aux bound l c
 
 let freevars_of_ids env ids = 
   List.filter (fun x -> try
@@ -60,45 +60,62 @@ let compute_constrs_freevars_binders env constrs =
     List.map (fun id -> (dummy_loc, id), CHole dummy_loc) elts
       
 let ids_of_named_context_avoiding avoid l =
-  let (ids, avoid) =
-    List.fold_left (fun (ids, avoid) id -> 
-      let id' = Nameops.next_ident_away_from id avoid in id' :: ids, id' :: avoid) 
-      ([], avoid) (Termops.ids_of_named_context l)
-  in List.rev ids
-
+  List.fold_left (fun (ids, avoid) id -> 
+    let id' = Nameops.next_ident_away_from id avoid in id' :: ids, id' :: avoid) 
+    ([], avoid) (Termops.ids_of_named_context l)
+    
 let combine_params avoid applied needed =
   let rec aux ids app need =
     match app, need with
-	[], need -> List.rev ids @ 
-	  (List.map mkIdentC (ids_of_named_context_avoiding avoid need))
+	[], need -> 
+	  let need', avoid = ids_of_named_context_avoiding avoid need in
+	    List.rev ids @ (List.map mkIdentC need'), avoid
       | x :: app, _ :: need -> aux (x :: ids) app need    
       | _ :: _, [] -> failwith "combine_params: overly applied typeclass"
   in aux [] applied needed
 
+let compute_context_vars env l =
+  List.fold_right (fun (iid, (_,id), l) ids -> 
+    (match snd iid with Name i -> [i] | Anonymous -> []) @ compute_constrs_freevars env l)
+    l []
+
 let full_class_binders env l = 
-  let avoid = compute_constrs_freevars env (List.concat (List.map (fun (_, (_,id), l) -> l) l)) in
-    List.map (fun (iid, id, l) -> 
-      try 
-	let c = class_info (snd id) in
-	let args = combine_params avoid l (c.cl_params @ c.cl_super) in
-	  iid, id, args
-      with Not_found -> unbound_class env id)
-      l 
+  let avoid = compute_context_vars env l in
+  let l', avoid =
+    List.fold_left (fun (l', avoid) (iid, (bk,id), l as x) -> 
+      match bk with
+	  Explicit -> 
+	    (try 
+		let c = class_info (snd id) in
+		let args, avoid = combine_params avoid l (c.cl_params @ c.cl_super) in
+		  (iid, (bk,id), args) :: l', avoid
+	      with Not_found -> unbound_class env id)
+	| Implicit -> (x :: l', avoid))
+      ([], avoid) l
+  in List.rev l'
       
-let constr_expr_of_constraint id l =
-  CAppExpl (fst id, (None, Ident id), l)
+let constr_expr_of_constraint (kind, id) l =
+  match kind with
+    | Explicit -> CAppExpl (fst id, (None, Ident id), l)
+    | Implicit -> CApp (fst id, (None, CRef (Ident id)), 
+		       List.map (fun x -> x, None) l)
+
+(*    | CApp of loc * (proj_flag * constr_expr) *  *)
+(*         (constr_expr * explicitation located option) list *)
+
 
 let constrs_of_context l =
   List.map (fun (_, id, l) -> constr_expr_of_constraint id l) l
 
 let compute_context_freevars env ctx =
-  let ids = 
-    List.rev 
-      (List.fold_left 
-	  (fun acc (oid, id, x) -> 
-	    List.fold_left (fun acc x -> free_vars_of_constr_expr x acc) acc x)
-	  [] ctx)
-  in freevars_of_ids env ids
+  let bound, ids = 
+    List.fold_left 
+      (fun (bound, acc) (oid, id, x) -> 
+	let bound = match snd oid with Name n -> n :: bound | Anonymous -> bound in
+	  List.fold_left (fun (bound, acc) x -> bound, free_vars_of_constr_expr x ~bound acc) 
+	    (bound, acc) x)
+      ([],[]) ctx
+  in freevars_of_ids env (List.rev ids)
 
 let resolve_class_binders env l = 
   let ctx = full_class_binders env l in

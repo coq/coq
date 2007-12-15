@@ -150,7 +150,7 @@ and local_binder =
   | LocalRawDef of name located * binding_kind * constr_expr
   | LocalRawAssum of name located list * binding_kind * constr_expr
 
-type typeclass_constraint = name located * identifier located * constr_expr list
+type typeclass_constraint = name located * (binding_kind * identifier located) * constr_expr list
 
 type typeclass_context = typeclass_constraint list
 

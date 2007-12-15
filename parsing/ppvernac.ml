@@ -395,7 +395,7 @@ let pr_constrarg c = spc () ++ pr_constr c in
 let pr_lconstrarg c = spc () ++ pr_lconstr c in
 let pr_intarg n = spc () ++ int n in
 let pr_lident_constr sep (i,c) = pr_lident i ++ sep ++ pr_constrarg c in
-let pr_lname_lident_constr (oi,i,a) = 
+let pr_lname_lident_constr (oi,(bk,i),a) = 
   (match snd oi with Anonymous -> mt () | Name id -> pr_lident (fst oi, id) ++ spc () ++ str":" ++ spc ()) 
     ++ pr_lident i ++ spc () ++ prlist_with_sep spc pr_constrarg a in
 let pr_typeclass_context l = 

@@ -172,8 +172,14 @@ GEXTEND Gram
     | -> [] ] ]
   ;
   typeclass_constraint:
-    [ [ id=identref ; cl = LIST1 typeclass_param -> ((loc, Anonymous), id, cl) 
-    | iid=identref ; ":" ; id=identref ; cl = LIST1 typeclass_param -> (fst iid, Name (snd iid)), id, cl
+    [ [ id=identref ; cl = LIST1 typeclass_param -> ((loc, Anonymous), (Explicit, id), cl) 
+    | "?" ; id=identref ; cl = LIST1 typeclass_param -> ((loc, Anonymous), (Implicit, id), cl) 
+    | iid=identref ; ":" ; id=typeclass_name ; cl = LIST1 typeclass_param -> (fst iid, Name (snd iid)), id, cl
+    ] ]
+  ;
+  typeclass_name:
+    [ [ id=identref -> (Explicit, id)
+    | "?"; id = identref -> (Implicit, id)
     ] ]
   ;
   thm_token:

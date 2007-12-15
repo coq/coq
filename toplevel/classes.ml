@@ -165,7 +165,6 @@ let interp_fields_evars isevars env avoid l =
 	(push_named d env, i :: ids, d::params, ([], data :: snd impls)))
     (env, avoid, [], ([], [])) l    
 
-(* FIXME ignoring sup *)
 let new_class id par ar sup props =
   let env0 = Global.env() in
   let isevars = ref (Evd.create_evar_defs Evd.empty) in
@@ -202,10 +201,13 @@ let new_class id par ar sup props =
   let ctx_super = Implicit_quantifiers.nf_named_context sigma ctx_super in
   let ctx_props = Implicit_quantifiers.nf_named_context sigma ctx_props in
   let arity = Reductionops.nf_evar sigma arity in
+  let ce t = Evarutil.check_evars env0 Evd.empty isevars t in
   let kn = 
     let idb = id_of_string ("Build_" ^ (string_of_id (snd id))) in
     let params, subst = rel_of_named_context [] (ctx_super @ ctx_params) in
     let fields, _ = rel_of_named_context subst ctx_props in
+      List.iter (fun (_,c,t) -> ce t; match c with Some c -> ce c | None -> ()) (params @ fields);
+
       declare_structure env0 (snd id) idb params arity fields
 (*     let params =  *)
 (*       raw_assum_of_binders Explicit par  *)
