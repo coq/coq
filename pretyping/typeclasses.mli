@@ -24,8 +24,9 @@ open Util
 (* This module defines type-classes *)
 type typeclass = {
   cl_name : identifier; (* Name of the class *)
-  cl_params : named_context; (* Context of the parameters (usually types) *)
+  cl_context : named_context; (* Context in which superclasses and params are typed (usually types) *)
   cl_super : named_context; (* Superclasses applied to some of the params *)
+  cl_params : named_context; (* Context of the real parameters (types and operations) *)
 (*   cl_defs : rel_context; (\* Context of the definitions (usually functions), which may be shared *\) *)
   cl_props : named_context; (* Context of the properties on defs, in Prop, will not be shared *)
   cl_impl : inductive; (* The class implementation: a record parameterized by params and defs *)
@@ -49,6 +50,10 @@ val class_info : identifier -> typeclass (* raises Not_found *)
 val class_of_inductive : inductive -> typeclass (* raises Not_found *)
 
 val resolve_one_typeclass : env -> types -> types (* Raises Not_found *)
+
+val is_class : inductive -> bool
+
+val class_of_constr : constr -> typeclass option
 
 val resolve_typeclass : env -> evar -> evar_info -> evar_defs * bool -> evar_defs * bool
 val resolve_typeclasses : env -> evar_map -> evar_defs -> evar_defs

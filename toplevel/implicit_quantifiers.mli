@@ -35,8 +35,16 @@ val ctx_of_class_binders : env -> typeclass_context -> local_binder list
 
 val implicits_of_binders : local_binder list -> (Topconstr.explicitation * (bool * bool)) list
 
+type substitution = (identifier * constr) list
+
+val substitution_of_named_context : 
+  evar_defs ref -> env -> identifier -> int ->
+  substitution -> named_context -> substitution
+
 val nf_named_context : evar_map -> named_context -> named_context
 val nf_rel_context : evar_map -> rel_context -> rel_context
 val nf_env : evar_map -> env -> env
+val nf_substitution : evar_map -> substitution -> substitution
 
 val constr_expr_of_constraint : (binding_kind * identifier located) -> constr_expr list -> constr_expr
+

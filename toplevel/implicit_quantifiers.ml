@@ -32,13 +32,15 @@ let free_vars_of_constr_expr c ?(bound=[]) l =
   | c -> fold_constr_expr_with_binders (fun a l -> a::l) aux bdvars l c
   in aux bound l c
 
+let is_freevar env x =
+  try
+    try ignore(Environ.lookup_named x env) ; false
+    with _ ->
+      ignore(Constrintern.global_reference x); false 
+  with _ -> true
+
 let freevars_of_ids env ids = 
-  List.filter (fun x -> try
-      try ignore(Environ.lookup_named x env) ; false
-      with _ ->
-	ignore(Constrintern.global_reference x); false 
-    with _ -> true) 
-    ids
+  List.filter (is_freevar env) ids
 
 let compute_constrs_freevars env constrs =
   let ids = 
@@ -48,10 +50,10 @@ let compute_constrs_freevars env constrs =
   in freevars_of_ids env ids
 
 (* let compute_context_freevars env ctx = *)
-(*   let ids =  *)
-(*     List.rev  *)
-(*       (List.fold_left  *)
-(* 	  (fun acc (_,i,x) -> free_vars_of_constr_expr x acc)  *)
+(*   let ids = *)
+(*     List.rev *)
+(*       (List.fold_left *)
+(* 	  (fun acc (_,i,x) -> free_vars_of_constr_expr x acc) *)
 (* 	  [] constrs) *)
 (*   in freevars_of_ids ids *)
 
@@ -87,7 +89,7 @@ let full_class_binders env l =
 	  Explicit -> 
 	    (try 
 		let c = class_info (snd id) in
-		let args, avoid = combine_params avoid l (c.cl_params @ c.cl_super) in
+		let args, avoid = combine_params avoid l (List.rev c.cl_context @ List.rev c.cl_super @ List.rev c.cl_params) in
 		  (iid, (bk,id), args) :: l', avoid
 	      with Not_found -> unbound_class env id)
 	| Implicit -> (x :: l', avoid))
@@ -164,3 +166,16 @@ let nf_env sigma env =
   let nc' = nf_named_context sigma (Environ.named_context env) in
   let rel' = nf_rel_context sigma (Environ.rel_context env) in
     push_rel_context rel' (reset_with_named_context (val_of_named_context nc') env)
+
+type substitution = (identifier * constr) list
+
+let substitution_of_named_context isevars env id n subst l = 
+  List.fold_right
+    (fun (na, _, t) subst -> 
+      let t' = replace_vars subst t in
+      let b = Evarutil.e_new_evar isevars env ~src:(dummy_loc, ImplicitArg (VarRef id, (n, Some na))) t' in
+	(na, b) :: subst)
+    l subst
+
+let nf_substitution sigma subst = 
+  List.map (function (na, c) -> na, Reductionops.nf_evar sigma c) subst

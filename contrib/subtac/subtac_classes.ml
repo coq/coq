@@ -60,8 +60,17 @@ let interp_constrs_evars isevars env avoid l =
       let d = (id,None,t') in
 	(push_named d env, id :: ids, d::params))
     (env, avoid, []) l
+    
+let type_ctx_instance isevars env ctx inst subst =
+  List.fold_left2
+    (fun (subst, instctx) (na, _, t) ce ->
+      let t' = replace_vars subst t in
+      let c = interp_casted_constr_evars isevars env ce t' in
+      let d = na, Some c, t' in
+	(na, c) :: subst, d :: instctx)
+    (subst, []) (List.rev ctx) inst
 
-let new_instance sup instid id par props =
+let new_instance sup  (instid, (bk, id), par) props =
   let env = Global.env() in
   let isevars = ref (Evd.create_evar_defs Evd.empty) in
   let avoid = Termops.ids_of_context env in
@@ -77,35 +86,32 @@ let new_instance sup instid id par props =
     in
       gen_ctx @ parbinders'
   in
-(*   let sup = Implicit_quantifiers.full_class_binders env sup in *)
-(*   let gen_ctx = Implicit_quantifiers.compute_constrs_freevars_binders env (sup @ par) in *)
-  let type_ctx_instance env ctx inst previnst =
-    List.fold_left2
-      (fun (inst, subst, instctx, env) (na, _, t) ce -> 
-	let t' = replace_vars subst t in
-	let c = interp_casted_constr_evars isevars env ce t' in
-	let d = na, Some c, t' in
-(* 	let instc = substl inst (subst_vars ids c) in *)
-	  c :: inst, (na, c) :: subst, d :: instctx, env)
-      (previnst, [], [], env) (List.rev ctx) inst
-  in
   let env', avoid, genctx = interp_binders_evars isevars env avoid gen_ctx in
   let env', avoid, supctx = interp_typeclass_context_evars isevars env' avoid sup in
-  let params, paramssubst, paramsctx, envctx = 
+
+  let subst, par =
+    match bk with
+	Explicit ->
+	  if List.length par <> List.length k.cl_context + List.length k.cl_params then 
+	    Classes.mismatched_params env par (k.cl_params @ k.cl_context);
+	  let len = List.length k.cl_context in
+	  let ctx, par = Util.list_chop len par in
+	  let subst, _ = type_ctx_instance isevars env' k.cl_context ctx [] in
+	    Implicit_quantifiers.substitution_of_named_context isevars env' k.cl_name len subst 
+	      k.cl_super, par
+      | Implicit ->
+	  Implicit_quantifiers.substitution_of_named_context isevars env' k.cl_name 0 [] (k.cl_super @ k.cl_context),
+	  par
+  in
+  let subst, paramsctx = 
     if List.length par <> List.length k.cl_params then 
       Classes.mismatched_params env par k.cl_params;
-    type_ctx_instance env' k.cl_params par []
+    type_ctx_instance isevars env' k.cl_params par subst
   in
   isevars := Evarutil.nf_evar_defs !isevars;
   let sigma = Evd.evars_of !isevars in
-  let envctx = Implicit_quantifiers.nf_env sigma envctx in
-  let super, envctx, superctx =
-    Classes.infer_super_instances envctx params paramsctx k.cl_super
-  in
-  isevars := Evarutil.nf_evar_defs !isevars;
-  let sigma = Evd.evars_of !isevars in
-  let env' = Implicit_quantifiers.nf_env sigma env' in
-  let props, _, propsctx, env' = 
+  let substctx = Implicit_quantifiers.nf_substitution sigma subst in
+  let subst, _propsctx = 
     let props = 
       List.map (fun (x, l, d) -> 
 	x, Topconstr.abstract_constr_expr d (Classes.binders_of_lidents l))
@@ -113,44 +119,34 @@ let new_instance sup instid id par props =
     in
       if List.length props > List.length k.cl_props then 
 	Classes.mismatched_props env' (List.map snd props) k.cl_props;
-      let props = 
-	List.rev_map 
-	  (fun (id,_,_) -> 
+      let props, rest = 
+	List.fold_left
+	  (fun (props, rest) (id,_,_) -> 
 	    try 
-	      let (_, c) = List.find (fun ((_,id'), c) -> id' = id) props in c
-	    with Not_found -> CHole Util.dummy_loc)
-	  k.cl_props
+	      let (_, c) = List.find (fun ((_,id'), c) -> id' = id) rest in
+	      let rest' = List.filter (fun ((_,id'), c) -> id' <> id) rest in
+		c :: props, rest'
+	    with Not_found -> (CHole Util.dummy_loc :: props), rest)
+	  ([], props) k.cl_props
       in
-      let type_defs_instance env ctx inst previnst subst =
-	List.fold_left2
-	  (fun (inst, ids, instctx, env) (na, _, t) ce -> 
-	    let t' = replace_vars subst t in
-	    let c = interp_casted_constr_evars isevars env ce t' in
-	    let d = na, Some c, t' in
-	    let instc = substl inst (subst_vars ids c) in
-	      instc :: inst, na :: ids, d :: instctx, push_named d env)
-	  (previnst, [], [], env) (List.rev ctx) inst
-      in
-      let substctx = Implicit_quantifiers.nf_named_context sigma (superctx @ paramsctx) in
-      let subst = List.map (function (na, Some c, t) -> na, c | _ -> assert false) substctx in 
-	type_defs_instance env' k.cl_props props (super @ params) subst
+	type_ctx_instance isevars env' k.cl_props props substctx
   in
   let app = 
-    applistc (mkConstruct (k.cl_impl, 1)) (List.rev props)
+    applistc (mkConstruct (k.cl_impl, 1)) (List.rev_map snd subst)
   in 
   let term = it_mkNamedLambda_or_LetIn (it_mkNamedLambda_or_LetIn app supctx) genctx in
   isevars := Evarutil.nf_evar_defs !isevars;
   let term = Evarutil.nf_isevar !isevars term in
   let termtype = 
-    let app = applistc (mkInd (k.cl_impl)) (List.rev params @ List.rev super) in
+    let app = applistc (mkInd (k.cl_impl)) (List.rev_map snd substctx) in
     let t = it_mkNamedProd_or_LetIn (it_mkNamedProd_or_LetIn app supctx) genctx in
       Evarutil.nf_isevar !isevars t
   in
   isevars := undefined_evars !isevars;
   let id =
-    match instid with
-	Some (_, id) -> id
-      | None -> 
+    match snd instid with
+	Name id -> id
+      | Anonymous -> 
 	  let i = Nameops.add_suffix (snd id) "_instance_" in
 	    Termops.next_global_ident_away false i (Termops.ids_of_context env)
   in

@@ -24,10 +24,16 @@ open Implicit_quantifiers
 open Classes
 (*i*)
 
+val type_ctx_instance :     Evd.evar_defs ref ->
+    Environ.env ->
+    (Names.identifier * 'a * Term.constr) list ->
+    Topconstr.constr_expr list ->
+    (Names.identifier * Term.constr) list ->
+    (Names.identifier * Term.constr) list *
+    (Names.identifier * Term.constr option * Term.constr) list
+
 val new_instance : 
   typeclass_context ->
-  identifier located option ->
-  identifier located ->
-  constr_expr list ->
+  typeclass_constraint ->
   binder_def_list ->
   unit

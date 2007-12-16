@@ -234,9 +234,7 @@ type vernac_expr =
 	
   | VernacInstance of
       typeclass_context * (* super *)
-	lident option * (* instance name *)
-	lident * (* class name *)
-	constr_expr list * (* params *)
+	typeclass_constraint * (* instance name, class name, params *)
 	(lident * lident list * constr_expr) list (* props *)
 
   | VernacContext of typeclass_context

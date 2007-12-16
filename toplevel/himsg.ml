@@ -448,6 +448,11 @@ let explain_pretype_error env err =
 let explain_unbound_class env (_,id) =
   str "Unbound class name " ++ Nameops.pr_id id
 
+let pr_constr_exprs exprs = 
+  hv 0 (List.fold_right 
+	 (fun d pps -> ws 2 ++ Ppconstr.pr_constr_expr d ++ pps)
+         exprs (mt ()))
+
 let explain_no_instance env (_,id) l =
   str "No instance found for class " ++ Nameops.pr_id id ++ spc () ++
   str "applied to arguments" ++ spc () ++ 
@@ -455,8 +460,8 @@ let explain_no_instance env (_,id) l =
 
 let explain_mismatched_contexts env c i j = 
   str"Mismatched contexts while declaring instance: " ++ brk (1,1) ++
-    str"Expected:" ++ spc () ++ pr_named_context env j ++ brk (1,1) ++
-    str"Found:" ++ spc () ++ prlist_with_sep pr_spc Ppconstr.pr_constr_expr i
+    hov 1 (str"Expected:" ++ brk (1, 1) ++ pr_named_context env j) ++ fnl () ++ brk (1,1) ++ 
+    hov 1 (str"Found:" ++ brk (1, 1) ++ pr_constr_exprs i)
 
 let explain_typeclass_error env err = 
   match err with

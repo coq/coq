@@ -492,7 +492,7 @@ GEXTEND Gram
 
       (* Type classes *)
       | IDENT "Class"; sup = OPT [ l = typeclass_context; "=>" -> l ];
-	 qid = identref; pars = LIST1 typeclass_param_type;
+	 qid = identref; pars = LIST0 typeclass_param_type;
 	 s = [ ":"; c = sort -> loc, c | -> (loc,Rawterm.RType None) ];
 	 "where"; props = LIST0 typeclass_field_type SEP ";" ->
 	   VernacClass (qid, pars, s, (match sup with None -> [] | Some l -> l), props)
@@ -501,11 +501,10 @@ GEXTEND Gram
 	  VernacContext c
 
       | IDENT "Instance"; sup = OPT [ l = typeclass_context ; "=>" -> l ];
-	 is = instance_binder ; "where";
+	 is = typeclass_constraint ; "where";
 	 props = LIST0 typeclass_field_def SEP ";" ->
-	   let (instid, qid, pars) = is in
 	   let sup = match sup with None -> [] | Some l -> l in
-	     VernacInstance (sup, instid, qid, pars, props)
+	     VernacInstance (sup, is, props)
 
       | IDENT "Existing"; IDENT "Instance"; is = identref -> VernacDeclareInstance is
 
@@ -525,12 +524,6 @@ GEXTEND Gram
 
       | IDENT "Implicit"; ["Type" | IDENT "Types"];
 	   idl = LIST1 identref; ":"; c = lconstr -> VernacReserve (idl,c) ] ]
-  ;
-
-  instance_binder:
-    [ [ instid = identref; ":"; qid = identref; pars = LIST1 typeclass_param -> (Some instid, qid, pars) 
-    | qid = identref; pars = LIST1 typeclass_param -> (None, qid, pars) 
-    ] ]
   ;
 
   typeclass_param: 

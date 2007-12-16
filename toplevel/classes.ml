@@ -84,7 +84,7 @@ let rec unfold n f acc =
 open Topconstr
 
 let declare_implicit_proj c proj =
-  let len = List.length c.cl_params + List.length c.cl_super in
+  let len = List.length c.cl_context + List.length c.cl_super + List.length c.cl_params in
   let (ctx, _) = decompose_prod_n (len + 1) (Typeops.type_of_constant (Global.env()) proj) in
   let expls =
     let rec aux i expls = function
@@ -108,7 +108,7 @@ let declare_implicits cl =
     let indimps = 
       list_map_i 
 	(fun i (na, b, t) -> ExplByPos (i, Some na), (false, true))
-	(List.length cl.cl_params + 1) cl.cl_super
+	1 (List.rev cl.cl_context)
     in
       Impargs.declare_manual_implicits true (IndRef cl.cl_impl) false indimps
 
@@ -170,18 +170,19 @@ let new_class id par ar sup props =
   let isevars = ref (Evd.create_evar_defs Evd.empty) in
   let avoid = Termops.ids_of_context env0 in
 
-  let env_params, avoid, ctx_params = interp_binders_evars isevars env0 avoid par in
-    
+  let env_params, avoid = env0, avoid in
+
   (* Find the implicitly quantified variables *)
   let gen_ctx, super = Implicit_quantifiers.resolve_class_binders env_params sup in
 
   let env_super_ctx, avoid, ctx_super_ctx = interp_binders_evars isevars env_params avoid gen_ctx in
     
   (* Interpret the superclasses constraints *)
-  let env_super, avoid, ctx_super = 
-    let (a, b, c) = interp_typeclass_context_evars isevars env_super_ctx avoid super in
-      (a, b, c @ ctx_super_ctx)
+  let env_super, avoid, ctx_super0 = 
+    interp_typeclass_context_evars isevars env_super_ctx avoid super 
   in
+
+  let env_params, avoid, ctx_params = interp_binders_evars isevars env_super avoid par in
 
   (* Interpret the arity *)
   let arity = interp_type_evars isevars env_params (CSort (fst ar, snd ar)) in
@@ -190,38 +191,40 @@ let new_class id par ar sup props =
 
   (* Interpret the definitions and propositions *)
   let env_props, avoid, ctx_props, _ = 
-    interp_fields_evars isevars env_super avoid props 
-(*       interp_binders_evars isevars env_super avoid props  *)
+    interp_fields_evars isevars env_params avoid props 
   in
     
   (* Instantiate evars and check all are resolved *)
   let isevars,_ = Evarconv.consider_remaining_unif_problems env_props !isevars in
   let sigma = Evd.evars_of isevars in
+  let ctx_super_ctx = Implicit_quantifiers.nf_named_context sigma ctx_super_ctx in
+  let ctx_super = Implicit_quantifiers.nf_named_context sigma ctx_super0 in
   let ctx_params = Implicit_quantifiers.nf_named_context sigma ctx_params in
-  let ctx_super = Implicit_quantifiers.nf_named_context sigma ctx_super in
   let ctx_props = Implicit_quantifiers.nf_named_context sigma ctx_props in
   let arity = Reductionops.nf_evar sigma arity in
   let ce t = Evarutil.check_evars env0 Evd.empty isevars t in
   let kn = 
     let idb = id_of_string ("Build_" ^ (string_of_id (snd id))) in
-    let params, subst = rel_of_named_context [] (ctx_super @ ctx_params) in
+    let params, subst = rel_of_named_context [] (ctx_params @ ctx_super @ ctx_super_ctx) in
     let fields, _ = rel_of_named_context subst ctx_props in
       List.iter (fun (_,c,t) -> ce t; match c with Some c -> ce c | None -> ()) (params @ fields);
-
       declare_structure env0 (snd id) idb params arity fields
-(*     let params =  *)
-(*       raw_assum_of_binders Explicit par  *)
-(*       @ raw_assum_of_binders Implicit gen_ctx *)
-(*       @ raw_assum_of_anonymous_constrs Implicit super  *)
-(*     in *)
-(*       Record.definition_structure  *)
-(* 	((false, id), params,  *)
-(* 	decl_expr_of_binders props, (), destSort arity) *)
+  in
+  let ctx_context, ctx_super = 
+    let class_binders, regular_binders = 
+      List.partition (fun (na, b, t) -> 
+	Typeclasses.class_of_constr t <> None)
+	ctx_super_ctx
+    in 
+      if (ctx_super_ctx = class_binders @ regular_binders) then
+	regular_binders, ctx_super @ class_binders
+      else ctx_super_ctx, ctx_super
   in
   let k =
     { cl_name = snd id;
-      cl_params = ctx_params;
+      cl_context = ctx_context;
       cl_super = ctx_super;
+      cl_params = ctx_params;
       cl_props = ctx_props;
       cl_impl = kn }
   in
@@ -287,8 +290,24 @@ let infer_super_instances env params params_ctx super =
 	let d = (na, Some inst, t) in
 	  inst :: sups, na :: ids, d :: supctx)
       super ([], [], [])
+      
+(* let evars_of_context ctx id n env = *)
+(*   List.fold_right (fun (na, _, t) (n, env, nc) ->  *)
+(*     let b = Evarutil.e_new_evar isevars env ~src:(dummy_loc, ImplicitArg (Ident id, (n * Some na))) t in *)
+(*     let d = (na, Some b, t) in *)
+(*       (succ n, push_named d env, d :: nc)) *)
+(*     ctx (n, env, []) *)
 
-let new_instance sup instid id par props =
+let type_ctx_instance isevars env ctx inst subst =
+  List.fold_left2
+    (fun (subst, instctx) (na, _, t) ce ->
+      let t' = replace_vars subst t in
+      let c = interp_casted_constr_evars isevars env ce t' in
+      let d = na, Some c, t' in
+	(na, c) :: subst, d :: instctx)
+    (subst, []) (List.rev ctx) inst
+
+let new_instance sup (instid, (bk, id), par) props =
   let env = Global.env() in
   let isevars = ref (Evd.create_evar_defs Evd.empty) in
   let avoid = Termops.ids_of_context env in
@@ -297,29 +316,33 @@ let new_instance sup instid id par props =
     with Not_found -> unbound_class env id
   in
   let gen_ctx, sup = Implicit_quantifiers.resolve_class_binders env sup in
-  let type_ctx_instance env ctx inst previnst =
-    List.fold_left2
-      (fun (inst, instctx, env) (na, _, t) ce -> 
-	let c = interp_casted_constr_evars isevars env ce t in
-	let d = na, Some c, t in
-	let instc = substl inst c in
-	  instc :: inst, d :: instctx, push_named d env)
-      (previnst, [], env) (List.rev ctx) inst
-  in
   let env', avoid, genctx = interp_binders_evars isevars env avoid gen_ctx in
   let env', avoid, supctx = interp_typeclass_context_evars isevars env' avoid sup in
-  let params, paramsctx, envctx = 
+  let subst, par = 
+    match bk with
+	Explicit ->
+	  if List.length par <> List.length k.cl_context + List.length k.cl_params then 
+	    mismatched_params env par (k.cl_params @ k.cl_context);
+	  let len = List.length k.cl_context in
+	  let ctx, par = Util.list_chop len par in
+	  let subst, _ = type_ctx_instance isevars env' k.cl_context ctx [] in
+	    Implicit_quantifiers.substitution_of_named_context isevars env' k.cl_name len subst 
+	      k.cl_super, par
+      | Implicit ->
+	  Implicit_quantifiers.substitution_of_named_context isevars env' k.cl_name 0 [] (k.cl_super @ k.cl_context),
+	  par
+  in
+
+  let subst, paramsctx = 
     if List.length par <> List.length k.cl_params then 
       mismatched_params env par k.cl_params;
-    type_ctx_instance env' k.cl_params par []
-  in
-  let super, _, superctx =
-    infer_super_instances envctx params paramsctx k.cl_super
+    type_ctx_instance isevars env' k.cl_params par subst
   in
   isevars := Evarutil.nf_evar_defs !isevars;
   let sigma = Evd.evars_of !isevars in
   let env' = Implicit_quantifiers.nf_env sigma env' in
-  let props, _, propsctx, env' = 
+  let subst = Implicit_quantifiers.nf_substitution sigma subst in 
+  let subst, propsctx = 
     let props = 
       List.map (fun (x, l, d) -> 
 	Topconstr.abstract_constr_expr d (binders_of_lidents l))
@@ -327,22 +350,10 @@ let new_instance sup instid id par props =
     in
       if List.length props <> List.length k.cl_props then 
 	mismatched_props env' props k.cl_props;
-      let type_defs_instance env ctx inst previnst subst =
-	List.fold_left2
-	  (fun (inst, ids, instctx, env) (na, _, t) ce -> 
-	    let t' = replace_vars subst t in
-	    let c = interp_casted_constr_evars isevars env ce t' in
-	    let d = na, Some c, t' in
-	    let instc = substl inst (subst_vars ids c) in
-	      instc :: inst, na :: ids, d :: instctx, push_named d env)
-	  (previnst, [], [], env) (List.rev ctx) inst
-      in
-      let substctx = Implicit_quantifiers.nf_named_context sigma (superctx @ paramsctx) in
-      let subst = List.map (function (na, Some c, t) -> na, c | _ -> assert false) substctx in 
-	type_defs_instance env' k.cl_props props (super @ params) subst
+      type_ctx_instance isevars env' k.cl_props props subst
   in
   let app = 
-    applistc (mkConstruct (k.cl_impl, 1)) (List.rev props)
+    applistc (mkConstruct (k.cl_impl, 1)) (List.rev_map snd subst)
   in 
   let term = Termops.it_mkNamedLambda_or_LetIn (Termops.it_mkNamedLambda_or_LetIn app supctx) genctx in
   isevars := Evarutil.nf_evar_defs !isevars;
@@ -358,9 +369,9 @@ let new_instance sup instid id par props =
   in
   let id, cst =
     let instid = 
-      match instid with
-	  Some (_, id) -> id
-	| None -> 
+      match snd instid with
+	  Name id -> id
+	| Anonymous -> 
 	    let i = Nameops.add_suffix (snd id) "_instance_" in
 	      Termops.next_global_ident_away false i (Termops.ids_of_context env)
     in

@@ -526,8 +526,8 @@ let vernac_identity_coercion stre id qids qidt =
 let vernac_class id par ar sup props =
   Classes.new_class id par ar sup props
 
-let vernac_instance sup iid cid par props =
-  Classes.new_instance sup iid cid par props
+let vernac_instance sup inst props =
+  Classes.new_instance sup inst props
 
 let vernac_context l =
   Classes.context l
@@ -1222,7 +1222,7 @@ let interp c = match c with
   (* Type classes *)
   | VernacClass (id, par, ar, sup, props) -> vernac_class id par ar sup props
 
-  | VernacInstance (sup, instid, cid, par, props) -> vernac_instance sup instid cid par props
+  | VernacInstance (sup, inst, props) -> vernac_instance sup inst props
   | VernacContext sup -> vernac_context sup
   | VernacDeclareInstance id -> vernac_declare_instance id
 

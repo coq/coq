@@ -33,7 +33,6 @@ val declare_implicit_proj : typeclass -> constant -> unit
 val infer_super_instances : env -> constr list ->
   named_context -> named_context -> types list * identifier list * named_context
 
-
 val new_class : identifier located ->
   binder_list ->
   Vernacexpr.sort_expr located ->
@@ -42,9 +41,7 @@ val new_class : identifier located ->
 
 val new_instance : 
   typeclass_context ->
-  identifier located option ->
-  identifier located ->
-  constr_expr list ->
+  typeclass_constraint ->
   binder_def_list ->
   unit
 

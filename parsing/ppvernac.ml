@@ -702,12 +702,12 @@ let rec pr_vernac = function
 	  prlist_with_sep (fun () -> str";" ++ spc()) (pr_lident_constr (spc () ++ str":" ++ spc())) props )
 	  
 	
- | VernacInstance (sup, instid, cid, par, props) -> 
+ | VernacInstance (sup, (instid, (bk, cid), par), props) -> 
      hov 1 (
        str"Instance" ++ spc () ++ 
 	 pr_typeclass_context sup ++
 	 str"=>" ++ spc () ++ 
-	 (match instid with Some id -> pr_lident id ++ spc () ++ str":" ++ spc () | None -> mt ()) ++
+	 (match snd instid with Name id -> pr_lident (fst instid, id) ++ spc () ++ str":" ++ spc () | Anonymous -> mt ()) ++
 	 pr_lident cid ++ prlist pr_constrarg par ++ spc () ++
 	 spc () ++ str"where" ++ spc () ++
 	 prlist_with_sep (fun () -> str";" ++ spc()) (pr_instance_def (spc () ++ str":=" ++ spc())) props)

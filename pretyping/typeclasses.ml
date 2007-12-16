@@ -30,8 +30,9 @@ type rels = constr list
 (* This module defines type-classes *)
 type typeclass = {
   cl_name : identifier; (* Name of the class *)
-  cl_params : named_context; (* Context of the parameters (usually types) *)
+  cl_context : named_context; (* Context in which superclasses and params are typed (usually types) *)
   cl_super : named_context; (* Superclasses applied to some of the params *)
+  cl_params : named_context; (* Context of the parameters (usually types) *)
 (*   cl_defs : named_context; (\* Context of the definitions (usually functions), which may be shared *\) *)
   cl_props : named_context; (* Context of the properties on defs, in Prop, will not be shared *)
   cl_impl : inductive; (* The class implementation: a record parameterized by params and defs *)
@@ -245,3 +246,11 @@ let resolve_typeclasses env sigma evd =
       else
 	sat (Evarutil.nf_evar_defs evars')
   in sat evd
+
+let class_of_constr c = 
+  match kind_of_term c with
+      App (c, _) -> 
+	(match kind_of_term c with
+	    Ind ind -> (try Some (class_of_inductive ind) with Not_found -> None)
+	  | _ -> None)
+    | _ -> None
