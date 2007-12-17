@@ -106,6 +106,10 @@ Tactic Notation "narrow" hyp(H) "with" constr(x) constr(y) constr(z) constr(t):=
  generalize (H x y z t); clear H; intro H.
 Tactic Notation "narrow" hyp(H) "with" constr(x) constr(y) constr(z) constr(t) constr(u):= 
  generalize (H x y z t u); clear H; intro H.
+Tactic Notation "narrow" hyp(H) "with" constr(x) constr(y) constr(z) constr(t) constr(u) constr(v) := 
+ generalize (H x y z t u v); clear H; intro H.
+Tactic Notation "narrow" hyp(H) "with" constr(x) constr(y) constr(z) constr(t) constr(u) constr(v) constr(w) := 
+ generalize (H x y z t u v w); clear H; intro H.
 
 (* Rewriting in all hypothesis several times everywhere *)
 
