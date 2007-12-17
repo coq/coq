@@ -468,32 +468,46 @@ let pr_prim_rule = function
 let prterm = pr_lconstr
 
 
-(* spiwack a little printer function for sets of Environ.assumption *)
-(* arnaud : tester "Print Assumptions" *)
+(* spiwack: printer function for sets of Environ.assumption.
+            It is used primarily by the Print Assumption command. *)
+exception EmptyAssumptionSet
+
 let pr_assumptionset env s = 
-  if not (Environ.AssumptionSet.is_empty s) then
+  if (Environ.AssumptionSet.is_empty s) then
+    str "Closed under the global context"
+  else
     let (vars, axioms) = Environ.AssumptionSet.partition 
-                         (function |Variable _ -> true | _ -> false) s
+                         (function |Variable _ -> true | _ -> false) 
+			 s
     in
-    (if not (Environ.AssumptionSet.is_empty vars) then
-      str "Section Variables:" ++ fnl () ++
+    (if Environ.AssumptionSet.is_empty vars then
+       mt ()
+     else
+      str "Section Variables:" ++
       (Environ.AssumptionSet.fold 
          (function Variable (id,typ ) -> 
-	    (fun s -> s++str (string_of_identifier id)++str " : "++pr_ltype typ++spc ())
-	    | _ -> assert false)
+	    (fun b -> b++str (string_of_identifier id)
+	               ++str " : "
+	               ++pr_ltype typ
+	               ++fnl ())
+	 | _ -> anomaly 
+	        "Printer.pr_assumptionset: failure of partition (Variable)")
          vars (fnl ()))
-     else
-       mt ()
-    )++
-    if not (Environ.AssumptionSet.is_empty axioms) then
-      str "Axioms:" ++ fnl () ++
+    )
+    ++ fnl () 
+    ++
+    if Environ.AssumptionSet.is_empty axioms then
+      mt ()
+    else
+      str "Axioms:" ++
       (Environ.AssumptionSet.fold
          (function Axiom (cst, typ) -> 
-	    (fun s -> s++(pr_constant env cst)++str " : "++pr_ltype typ++spc ())
-	    | _ -> assert false)
-         axioms (mt ()))
-    else
-      mt ()
-  else
-    raise Not_found
+	    (fun b -> b++(pr_constant env cst)
+	               ++str " : "
+	               ++pr_ltype typ
+	               ++fnl ())
+	  | _ -> anomaly 
+	         "Printer.pr_assumptionset: failure of partition (Axiom)")
+         axioms 
+	 (fnl ()))
 

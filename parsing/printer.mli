@@ -115,7 +115,8 @@ val emacs_str              : string -> string -> string
 val prterm                 : constr -> std_ppcmds (* = pr_lconstr *)
 
 
-(* spiwack: A printer for sets of Environ.assumption *)
+(* spiwack: printer function for sets of Environ.assumption.
+            It is used primarily by the Print Assumption command. *)
 val pr_assumptionset : env -> Environ.AssumptionSet.t -> std_ppcmds
 
 
