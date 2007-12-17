@@ -235,6 +235,10 @@ let gallina_ext =
   | "Infix"
   | "Tactic" space+ "Notation"
   | "Reserved" space+ "Notation"
+  | "Section"
+  | "Variable" 's'?
+  | ("Hypothesis" | "Hypotheses")
+  | "End"
 
 let commands = 
   "Pwd"
@@ -275,11 +279,7 @@ let gallina_kw_to_hide =
   | "Transparent"
   | "Opaque"
   | ("Declare" space+ ("Morphism" | "Step") )
-  | "Section"
   | "Chapter"
-  | "Variable" 's'?
-  | ("Hypothesis" | "Hypotheses")
-  | "End"
   | ("Set" | "Unset") space+ "Printing" space+ "Coercions"
   | "Declare" space+ ("Left" | "Right") space+ "Step" 
 
