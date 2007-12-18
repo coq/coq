@@ -23,35 +23,66 @@
    to be able to return information about the subproof. *)
 
 type subproof = {
-     initial : Term.existential list;
+     initial : Term.constr list;
      solution : Evd.evar_defs;
      comb : Goal.goal list
      }
 
-(* infix notation for function composition *)
-let (|>) = Util.compose
+let rec init = function
+  | [] ->  { initial = [] ; 
+	     solution = Evd.create_evar_defs Evd.empty ;
+	     comb = []
+	   }
+  | (env,typ,name)::l -> let { initial = ret ; solution = sol ; comb = comb } =
+                           init l
+                         in
+                         let ( new_defs , econstr ) = 
+			   Evarutil.new_evar sol env typ
+			 in
+			 let e = match Term.kind_of_term econstr with
+			         | Term.Evar (e,_) -> e
+				 | _ -> Util.anomaly 
+				     "Subproof.init: new_evar failure"
+				       (* the above error would mean
+					  that [Evarutil.new_evar]
+					  outputed a non-evar constr,
+					  which it should not. *)
+			 in
+			 let gl = Goal.build ?name e in
+			 { initial = econstr::ret;
+			   solution = new_defs ;
+			   comb = gl::comb }
+		    
+let rec start env l =
+  init (List.map (fun x -> (env,x,None)) l)
+
+
+(* Returns whether this subproof is finished or not. *)
+let finished = function
+  | {comb = []} -> true
+  | _  -> false
+
 
 (* Function which returns the current state of refinement of the required
    evars. *)
 let return { initial=init; solution=defs } =
-  List.map (Evarutil.nf_evar (Evd.evars_of defs) |> Term.mkEvar) init
+  List.map (Evarutil.nf_evar (Evd.evars_of defs)) init
 
 (* arnaud: reporter certaines fonctions dans lib/ *)
-(* [IndexOutOfRange(i,n)] supposedly means that [i>=n] where it was
-   expected to range from [0] to [n-1]. *)
-exception IndexOutOfRange of int*int
-exception NegativeIndex
+(* [IndexOutOfRange] occurs in case of malformed indices
+   with respect to list lengths. *)
+exception IndexOutOfRange
 
 (*arnaud: commenter*)
 let list_goto i = 
   let rec aux acc index = function
-    | [] -> raise (IndexOutOfRange (i, index))
+    | [] -> raise IndexOutOfRange
     | a::q when index < i -> aux (a::acc) (index+1) q
     | l -> (acc,l)
   in
   fun l ->
     if i < 0 then
-      raise NegativeIndex
+      raise IndexOutOfRange
     else
       aux [] 0 l
 
@@ -68,15 +99,17 @@ type focus_context = Goal.goal list * Goal.goal list
 (* arnaud: préciser "between to indices". *)
 let focus_sublist i j l =
   let (left,sub_right) = list_goto i l in
-  let (rev_sub, right) = list_goto (j-i+1) sub_right in
-  (List.rev rev_sub, (left,right))
+  let (sub, right) = Util.list_chop (j-i+1) sub_right in
+  (sub, (left,right))
 
 (* Inverse operation to the previous one. *)
 let unfocus_sublist (left,right) s =
   List.rev_append left (s@right)
 
 
-(* Focuses a subproof on the goals from index [i] to index [j] (inclusive).
+(* [focus i j] focuses a subproof on the goals from index [i] to index [j] 
+   (inclusive). (i.e. goals number [i] to [j] become the only goals of the
+   returned subproof).
    It returns the focus proof, and a context for the focus trace. *)
 let focus i j sp =
   let (new_comb, context) = focus_sublist i j sp.comb in
@@ -94,23 +127,47 @@ let reorder p sp =
 		  (Array.of_list sp.comb)) 
   }
 
-(* Returns the opengoals of the subproof *)
-let opengoals { comb = comb } = comb
+(* Returns the open goals of the subproof *)
+let goals { comb = comb } = comb
 
-(* Runs a tactic on the subproof, from the last goal to the first one. *)
-(* arnaud: à ce stade là il faut refaire Goal :( . *)
-let run_tactic f sp =
+
+
+
+
+
+
+
+
+(******************************************************************)
+(***                                                            ***)
+(***                Definition related to tactics               ***)
+(***                                                            ***)
+(******************************************************************)
+
+
+
+(* type of tactics *)
+
+type tactic = subproof -> subproof
+
+
+(* Transforms a function of type 
+   [Evd.evar_defs -> Goal.goal -> Goal.refinement] (i.e.
+   a tactic that operates on a single goal) into an actual tactic.
+   It operates by iterating the single-tactic from the last goal to 
+   the first one. *)
+let single_tactic f sp =
   let wrap g ((defs, partial_list) as partial_res) = 
-    if Goal.is_defined (Evd.of_evars defs) g then 
+    if Goal.is_defined (Evd.evars_of defs) g then 
       partial_res
     else
-      let (d',gl) = f d g in
-      (d',gl::cl)
+      let { Goal.new_defs = d' ; Goal.subgoals = sg } = f defs g in
+      (d',sg::partial_list)
   in
-  let (new_defs,combed_lists) = 
-    List.fold_right wrap sp.solution sp.comb
+  let ( new_defs , combed_subgoals ) = 
+    List.fold_right wrap sp.comb (sp.solution,[])
   in
   { sp with solution = new_defs;
-            comb = List.flatten  }
+            comb = List.flatten combed_subgoals }
 
 
