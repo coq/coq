@@ -176,8 +176,8 @@ let variables l =
     | _ :: r -> var_aux r
   in
   section "Variables definitions.";
-  print "CAMLP4LIB=`camlp5 -where 2> /dev/null || camlp4 -where`\n";
-  print "CAMLP4=`basename $CAMLP4LIB`\n"; 
+  print "CAMLP4LIB=$(shell camlp5 -where 2> /dev/null || camlp4 -where)\n";
+  print "CAMLP4=$(notdir $(CAMLP4LIB))\n"; 
 (*  print "MAKE=make \"COQBIN=$(COQBIN)\" \"OPT=$(OPT)\"\n"; *)
   print "COQSRC=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
   -I $(COQTOP)/library -I $(COQTOP)/parsing \\
@@ -200,7 +200,7 @@ let variables l =
   print "COQC=$(COQBIN)coqc\n";
   print "GALLINA=$(COQBIN)gallina\n";
   print "COQDOC=$(COQBIN)coqdoc\n";
-  print "CAMLC=ocamlc -c\n";
+  print "CAMLC=ocamlc -rectypes -c\n";
   print "CAMLOPTC=ocamlopt -c\n";
   print "CAMLLINK=ocamlc\n";
   print "CAMLOPTLINK=ocamlopt\n";
