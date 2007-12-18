@@ -331,9 +331,18 @@ let do_replace_lb aavoid narg gls p q =
     let u,v = destruct_ind type_of_pq
     in let lb_type_of_p = 
         try find_lb_proof u 
-        with Not_found -> error 
-          ("Leibniz->boolean:You have to declare the decidability over "^
-          (string_of_constr type_of_pq)^" first.")
+        with Not_found -> 
+          (* spiwack: the format of this error message should probably
+	              be improved. *)
+          let err_msg = msg_with Format.str_formatter 
+	                              (str "Leibniz->boolean:" ++
+                                       str "You have to declare the" ++ 
+				       str "decidability over " ++
+				       Printer.pr_constr type_of_pq ++ 
+				       str " first.");
+	                Format.flush_str_formatter ()
+          in
+          error err_msg
     in let lb_args = Array.append (Array.append 
                           (Array.map (fun x -> x) v)
                           (Array.map (fun x -> do_arg x 1) v))
@@ -381,9 +390,18 @@ let do_replace_bl ind gls aavoid narg lft rgt =
              else (
                let bl_t1 = 
                try find_bl_proof u 
-               with Not_found -> error 
-                 ("boolean->Leibniz:You have to declare the decidability over "^
-                 (string_of_constr tt1)^" first.")
+               with Not_found -> 
+		 (* spiwack: the format of this error message should probably
+	                     be improved. *)
+		 let err_msg = msg_with Format.str_formatter 
+	                                (str "boolean->Leibniz:" ++
+                                         str "You have to declare the" ++ 
+			   	         str "decidability over " ++
+				         Printer.pr_constr tt1 ++ 
+				         str " first.");
+ 	                       Format.flush_str_formatter ()
+		 in
+		 error err_msg
                in let bl_args = 
                         Array.append (Array.append 
                           (Array.map (fun x -> x) v)

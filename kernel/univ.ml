@@ -578,17 +578,3 @@ let hcons1_univ u =
   let _,_,hdir,_,_,_ = Names.hcons_names() in
   Hashcons.simple_hcons Huniv.f hdir u
 
-
-
-(* spiwack: function for internal representation printing *)
-let string_of_universe =
-  let string_of_universe_level = function
-  | Base -> "Base"
-  | Level (path,i) -> "Level ("^Names.string_of_dir_path path^", "^string_of_int i^")"
-in
-function 
-  | Atom u -> "Atom "^string_of_universe_level u
-  | Max (l1,l2) -> "Max (["^
-               String.concat "; " (List.map string_of_universe_level l1)^"], ["^
-               String.concat "; " (List.map string_of_universe_level l2)
-               ^"])"

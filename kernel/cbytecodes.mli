@@ -132,8 +132,6 @@ type comp_env = {
 
 val draw_instr : bytecodes -> unit
 
-val string_of_instr : bytecodes -> string
-
 
 
 (*spiwack: moved this here because I needed it for retroknowledge *)

@@ -235,7 +235,3 @@ type block =
  
 let draw_instr c =
   fprintf std_formatter "@[<v 0>%a@]" instruction_list c
-
-let string_of_instr c =
-  fprintf str_formatter "@[<v 0>%a@]" instruction_list c;
-  flush_str_formatter ()

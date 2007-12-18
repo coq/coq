@@ -543,9 +543,3 @@ val hcons1_types : types -> types
 (**************************************)
 
 type values
-
-
-(*************************************************************)
-
-(* spiwack: printing of internal representation of constr *)
-val string_of_constr : constr -> string

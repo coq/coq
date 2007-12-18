@@ -413,23 +413,6 @@ VERNAC COMMAND EXTEND RetroknowledgeRegister
              Global.register f tc tb ]
 END
 
-(* spiwack : Vernac commands for developement *)
-
-(* arnaud : comment out/clear ? *)
-VERNAC COMMAND EXTEND InternalRepresentation (* Prints internal representation of the argument *)
-| [ "Internal" "Representation" "of" constr(t) ] -> 
-    [ let t' = Constrintern.interp_constr Evd.empty (Global.env ()) t in
-      pp (str (string_of_constr t'))]
-END
-
-VERNAC COMMAND EXTEND Bytecode (* Prints Bytecode representation of the argument *)
-| [ "Bytecode" "of" constr(t) ] -> 
-    [ let t' = Constrintern.interp_constr Evd.empty (Global.env ()) t in
-      let (bc,_,_) = Cbytegen.compile (Environ.pre_env (Global.env ())) t' in
-      pp (str (Cbytecodes.string_of_instr bc))]
-END
-
-(* /spiwack *)
 
 
 TACTIC EXTEND apply_in

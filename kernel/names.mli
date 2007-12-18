@@ -174,15 +174,3 @@ type inv_rel_key = int (* index in the [rel_context] part of environment
 			  of de Bruijn indice *)
 
 type id_key = inv_rel_key tableKey
-
-
-
-(* spiwack : function used for printing identifiers *)
-val string_of_identifier : identifier-> string
-val string_of_module_ident : module_ident-> string
-val string_of_dir_path : dir_path -> string
-val string_of_name : name -> string
-val string_of_constant : constant -> string
-val string_of_mutual_inductive : mutual_inductive -> string
-val string_of_inductive : inductive -> string
-val string_of_constructor : constructor -> string

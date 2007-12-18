@@ -486,7 +486,7 @@ let pr_assumptionset env s =
       str "Section Variables:" ++
       (Environ.AssumptionSet.fold 
          (function Variable (id,typ ) -> 
-	    (fun b -> b++str (string_of_identifier id)
+	    (fun b -> b++str (string_of_id id)
 	               ++str " : "
 	               ++pr_ltype typ
 	               ++fnl ())

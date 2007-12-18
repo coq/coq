@@ -14,7 +14,6 @@ val compile_constant_body :
                                  (* opaque *) (* boxed *)
 
 
-(* arnaud : a commenter *)
 (* spiwack: this function contains the information needed to perform
             the static compilation of int31 (trying and obtaining
             a 31-bit integer in processor representation at compile time) *)

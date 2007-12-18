@@ -335,7 +335,7 @@ let rec str_const c =
   | App(f,args) -> 
       begin
 	match kind_of_term f with
-	| Construct(((kn,j),i) as cstr) -> 
+	| Construct((kn,j),i) -> (* arnaud: Construct(((kn,j),i) as cstr) -> *)
             begin
 	    let oib = lookup_mind kn !global_env in
 	    let oip = oib.mind_packets.(j) in
@@ -405,7 +405,7 @@ let rec str_const c =
 	| _ -> Bconstr c
       end
   | Ind ind -> Bstrconst (Const_ind ind)
-  | Construct ((kn,j),i as cstr) ->  
+  | Construct ((kn,j),i) ->  (*arnaud: Construct ((kn,j),i as cstr) ->  *)
       begin
       (* spiwack: tries first to apply the run-time compilation 
            behavior of the constructor, as in 2/ above *)
@@ -664,7 +664,7 @@ and compile_str_cst reloc sc sz cont =
 (* spiwack : compilation of constants with their arguments. 
    Makes a special treatment with 31-bit integer addition *)
 and compile_const =
-  let code_construct kn cont = 
+(*arnaud:  let code_construct kn cont = 
      let f_cont = 
          let else_lbl = Label.create () in
          Kareconst(2, else_lbl):: Kacc 0:: Kpop 1::
@@ -672,11 +672,11 @@ and compile_const =
          (* works as comp_app with nargs = 2 and tailcall cont [Kreturn 0]*)
           Kgetglobal (get_allias !global_env kn)::
           Kappterm(2, 2):: [] (* = discard_dead_code [Kreturn 0] *)
-     in
+     in 
      let lbl = Label.create () in 
      fun_code := [Ksequence (add_grab 2 lbl f_cont, !fun_code)];
      Kclosure(lbl, 0)::cont
-  in
+  in *)
   fun reloc-> fun  kn -> fun args -> fun sz -> fun cont ->
   let nargs = Array.length args in
   (* spiwack: checks if there is a specific way to compile the constant
