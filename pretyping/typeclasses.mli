@@ -50,6 +50,7 @@ val class_info : identifier -> typeclass (* raises Not_found *)
 val class_of_inductive : inductive -> typeclass (* raises Not_found *)
 
 val resolve_one_typeclass : env -> types -> types (* Raises Not_found *)
+val resolve_one_typeclass_evd : env -> evar_defs ref -> types -> types (* Raises Not_found *)
 
 val is_class : inductive -> bool
 
@@ -63,3 +64,11 @@ val discharge :
     (('b, typeclass) Gmap.t * 'c * ('d, instance list) Gmap.t) option
 
 val solve_instanciation_problem : (env -> evar_defs -> existential_key -> evar_info -> evar_defs * bool) ref
+
+type substitution = (identifier * constr) list
+
+val substitution_of_named_context : 
+  evar_defs ref -> env -> identifier -> int ->
+  substitution -> named_context -> substitution
+
+val nf_substitution : evar_map -> substitution -> substitution

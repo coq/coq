@@ -146,11 +146,12 @@ let pr_search a b pr_p = match a with
 let pr_locality local = if local then str "Local " else str ""
 let pr_non_globality local = if local then str "" else str "Global "
 
-let pr_explanation (e,b) =
+let pr_explanation (e,b,f) =
   let a = match e with
   | ExplByPos (n,_) -> anomaly "No more supported"
   | ExplByName id -> pr_id id in
-  if b then str "[" ++ a ++ str "]" else a
+  let a = if f then str"!" ++ a else a in
+    if b then str "[" ++ a ++ str "]" else a
 
 let pr_class_rawexpr = function
   | FunClass -> str"Funclass"
@@ -811,9 +812,9 @@ let rec pr_vernac = function
         (str"Notation " ++ pr_locality local ++ pr_id id ++ str" :=" ++
          pr_constrarg c ++
          pr_syntax_modifiers (if onlyparsing then [SetOnlyParsing] else []))
-  | VernacDeclareImplicits (local,q,None) ->
+  | VernacDeclareImplicits (local,q,e,None) ->
       hov 2 (str"Implicit Arguments" ++ spc() ++ pr_reference q)
-  | VernacDeclareImplicits (local,q,Some imps) ->
+  | VernacDeclareImplicits (local,q,e,Some imps) ->
       hov 1 (str"Implicit Arguments" ++ pr_non_globality local ++
       spc() ++ pr_reference q ++ spc() ++
              str"[" ++ prlist_with_sep sep pr_explanation imps ++ str"]")

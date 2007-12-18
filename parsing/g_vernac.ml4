@@ -512,15 +512,15 @@ GEXTEND Gram
 	  VernacSetInstantiationTactic tac
 
       (* Implicit *)
-      | IDENT "Implicit"; IDENT "Arguments"; 
+      | IDENT "Implicit"; IDENT "Arguments"; enrich = [ IDENT "Enriching" -> true | -> false ];
 	 (local,qid,pos) = 
 	     [ local = [ IDENT "Global" -> false | IDENT "Local" -> true ];
 	       qid = global -> (local,qid,None) 
 	     | qid = global;
 	       l = OPT [ "["; l = LIST0 implicit_name; "]" -> 
-		   List.map (fun (id,b) -> (ExplByName id,b)) l ] ->
+		   List.map (fun (id,b,f) -> (ExplByName id,b,f)) l ] ->
 		 (true,qid,l) ] ->
-	   VernacDeclareImplicits (local,qid,pos)
+	   VernacDeclareImplicits (local,qid,enrich,pos)
 
       | IDENT "Implicit"; ["Type" | IDENT "Types"];
 	   idl = LIST1 identref; ":"; c = lconstr -> VernacReserve (idl,c) ] ]
@@ -537,7 +537,10 @@ GEXTEND Gram
 (*     ] ] *)
 (*   ; *)
   implicit_name:
-    [ [ id = ident -> (id,false) | "["; id = ident; "]" -> (id,true) ] ]
+    [ [ "!"; id = ident -> (id, false, true)
+    | id = ident -> (id,false,false)
+    | "["; "!"; id = ident; "]" -> (id,true,true) 
+    | "["; id = ident; "]" -> (id,true, false) ] ]
   ;
   typeclass_param_type:
     [ [ "(" ; id = identref; ":"; t = lconstr ; ")" -> id, t 

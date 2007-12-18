@@ -25,12 +25,15 @@ type contexts = Parameters | Properties
 
 type typeclass_error = 
     | UnboundClass of identifier located
+    | UnboundMethod of identifier * identifier located (* Class name, method *)
     | NoInstance of identifier located * constr list
     | MismatchedContextInstance of contexts * constr_expr list * named_context (* found, expected *)
 
 exception TypeClassError of env * typeclass_error
 
 val unbound_class : env -> identifier located -> 'a
+
+val unbound_method : env -> identifier -> identifier located -> 'a
 
 val no_instance : env -> identifier located -> constr list -> 'a
 

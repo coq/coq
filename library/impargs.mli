@@ -72,3 +72,4 @@ val declare_manual_implicits : bool -> global_reference -> bool ->
   manual_explicitation list -> unit
 
 val implicits_of_global : global_reference -> implicits_list
+

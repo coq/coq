@@ -307,6 +307,9 @@ let type_ctx_instance isevars env ctx inst subst =
 	(na, c) :: subst, d :: instctx)
     (subst, []) (List.rev ctx) inst
 
+let substitution_of_constrs ctx cstrs =
+  List.fold_right2 (fun c (na, _, _) acc -> (na, c) :: acc) cstrs ctx []
+
 let new_instance sup (instid, (bk, id), par) props =
   let env = Global.env() in
   let isevars = ref (Evd.create_evar_defs Evd.empty) in
@@ -318,7 +321,7 @@ let new_instance sup (instid, (bk, id), par) props =
   let gen_ctx, sup = Implicit_quantifiers.resolve_class_binders env sup in
   let env', avoid, genctx = interp_binders_evars isevars env avoid gen_ctx in
   let env', avoid, supctx = interp_typeclass_context_evars isevars env' avoid sup in
-  let subst, par = 
+  let subst = 
     match bk with
 	Explicit ->
 	  if List.length par <> List.length k.cl_context + List.length k.cl_params then 
@@ -326,22 +329,26 @@ let new_instance sup (instid, (bk, id), par) props =
 	  let len = List.length k.cl_context in
 	  let ctx, par = Util.list_chop len par in
 	  let subst, _ = type_ctx_instance isevars env' k.cl_context ctx [] in
-	    Implicit_quantifiers.substitution_of_named_context isevars env' k.cl_name len subst 
-	      k.cl_super, par
-      | Implicit ->
-	  Implicit_quantifiers.substitution_of_named_context isevars env' k.cl_name 0 [] (k.cl_super @ k.cl_context),
-	  par
-  in
+	  let subst = 
+	    Typeclasses.substitution_of_named_context isevars env' k.cl_name len subst 
+	      k.cl_super 
+	  in 
+	    if List.length par <> List.length k.cl_params then 
+	      mismatched_params env par k.cl_params;
+	    let subst, par = type_ctx_instance isevars env' k.cl_params par subst in subst
 
-  let subst, paramsctx = 
-    if List.length par <> List.length k.cl_params then 
-      mismatched_params env par k.cl_params;
-    type_ctx_instance isevars env' k.cl_params par subst
+      | Implicit ->
+	  let t' = interp_type_evars isevars env (Topconstr.mkAppC (CRef (Ident id), par)) in
+	    match kind_of_term t' with 
+		App (c, args) -> 
+		  substitution_of_constrs (k.cl_params @ k.cl_super @ k.cl_context) 
+		    (List.rev (Array.to_list args))
+	      | _ -> assert false
   in
   isevars := Evarutil.nf_evar_defs !isevars;
   let sigma = Evd.evars_of !isevars in
   let env' = Implicit_quantifiers.nf_env sigma env' in
-  let subst = Implicit_quantifiers.nf_substitution sigma subst in 
+  let subst = Typeclasses.nf_substitution sigma subst in 
   let subst, propsctx = 
     let props = 
       List.map (fun (x, l, d) -> 

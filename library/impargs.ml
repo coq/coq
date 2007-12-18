@@ -197,12 +197,20 @@ let add_free_rels_until strict strongly_strict revpat bound env m pos acc =
 
 (* calcule la liste des arguments implicites *)
 
-let compute_implicits_gen strict strongly_strict revpat contextual env t =
+let concrete_name avoid_flags l env_names n all c =
+  if n = Anonymous & noccurn 1 c then
+    (Anonymous,l)
+  else
+    let fresh_id = next_name_not_occuring avoid_flags n l env_names c in
+    let idopt = if not all && noccurn 1 c then Anonymous else Name fresh_id in
+    (idopt, fresh_id::l)
+
+let compute_implicits_gen strict strongly_strict revpat contextual all env t =
   let rec aux env avoid n names t =
     let t = whd_betadeltaiota env t in
     match kind_of_term t with
       | Prod (na,a,b) ->
-	  let na',avoid' = Termops.concrete_name None avoid names na b in
+	  let na',avoid' = concrete_name None avoid names na all b in
 	  add_free_rels_until strict strongly_strict revpat n env a (Hyp (n+1))
             (aux (push_rel (na',None,a) env) avoid' (n+1) (na'::names) b)
       | _ -> 
@@ -214,7 +222,7 @@ let compute_implicits_gen strict strongly_strict revpat contextual env t =
   in 
   match kind_of_term (whd_betadeltaiota env t) with 
     | Prod (na,a,b) ->
-	let na',avoid = Termops.concrete_name None [] [] na b in
+	let na',avoid = concrete_name None [] [] na all b in
 	let v = aux (push_rel (na',None,a) env) avoid 1 [na'] b in
 	Array.to_list v
     | _ -> []
@@ -227,12 +235,12 @@ let rec prepare_implicits f = function
       Some (id,imp,set_maximality imps' f.maximal) :: imps'
   | _::imps -> None :: prepare_implicits f imps
 
-let compute_implicits_flags env f t = 
+let compute_implicits_flags env f all t = 
   compute_implicits_gen 
-    f.strict f.strongly_strict f.reversible_pattern f.contextual env t
+    f.strict f.strongly_strict f.reversible_pattern f.contextual all env t
     
 let compute_implicits_auto env f t =
-  let l = compute_implicits_flags env f t in
+  let l = compute_implicits_flags env f false t in
     prepare_implicits f l
 
 let compute_implicits env t = compute_implicits_auto env !implicit_args t
@@ -253,13 +261,13 @@ let compute_manual_implicits flags ref enriching l =
   let t = Global.type_of_global ref in
   let env = Global.env () in
   let autoimps =
-    if enriching then compute_implicits_flags env flags t
-    else compute_implicits_gen false false false true env t in
+    if enriching then compute_implicits_flags env flags true t
+    else compute_implicits_gen false false false true true env t in
   let n = List.length autoimps in
   let try_forced k l =
     try 
       let (id, (b, f)), l' = assoc_by_pos k l in
-	if f then 
+	if f then
 	  let id = match id with Some id -> id | None -> id_of_string ("arg_" ^ string_of_int k) in
 	    l', Some (id,Manual f,b)
 	else l, None

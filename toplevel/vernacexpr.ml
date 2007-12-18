@@ -288,8 +288,8 @@ type vernac_expr =
   | VernacHints of locality_flag * lstring list * hints
   | VernacSyntacticDefinition of identifier * constr_expr * locality_flag *
       onlyparsing_flag
-  | VernacDeclareImplicits of locality_flag * lreference *
-      (explicitation * bool) list option
+  | VernacDeclareImplicits of locality_flag * lreference * bool *
+      (explicitation * bool * bool) list option
   | VernacReserve of lident list * constr_expr
   | VernacSetOpacity of opacity_flag * lreference list
   | VernacUnsetOption of Goptions.option_name

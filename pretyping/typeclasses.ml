@@ -82,14 +82,24 @@ let gmap_merge old ne =
   Gmap.fold (fun k v acc -> Gmap.add k v acc) ne old
 
 let gmap_list_merge old ne =
-  Gmap.fold (fun k v acc -> 
-    let oldv = try Gmap.find k acc with Not_found -> [] in
-    let v' = 
-      List.fold_left (fun acc x -> 
-	if not (List.exists (fun y -> y.is_name = x.is_name) v) then x :: acc else acc)
+  let ne = 
+    Gmap.fold (fun k v acc -> 
+      let oldv = try Gmap.find k old with Not_found -> [] in
+      let v' = 
+	List.fold_left (fun acc x -> 
+	  if not (List.exists (fun y -> y.is_name = x.is_name) v) then x :: acc else acc)
 	v oldv
-    in Gmap.add k v' acc)
-    ne Gmap.empty
+      in Gmap.add k v' acc)
+      ne Gmap.empty
+  in
+    Gmap.fold (fun k v acc -> 
+      let newv = try Gmap.find k ne with Not_found -> [] in
+      let v' = 
+	List.fold_left (fun acc x -> 
+	  if not (List.exists (fun y -> y.is_name = x.is_name) acc) then x :: acc else acc)
+	  newv v
+      in Gmap.add k v' acc)
+      old ne
 
 let cache (_, (cl, m, inst)) =
   classes := gmap_merge !classes cl;
@@ -206,6 +216,22 @@ let resolve_one_typeclass env types =
       else raise Not_found
   with Exit -> raise Not_found
 
+let resolve_one_typeclass_evd env evd types =
+  try
+    let ev = Evarutil.e_new_evar evd env types in
+    let (ev,_) = destEvar ev in
+    let evd', b =
+	!solve_instanciation_problem env !evd ev (Evd.find (Evd.evars_of !evd) ev)
+    in
+      evd := evd';
+      if b then 
+	let evm' = Evd.evars_of evd' in
+	  match Evd.evar_body (Evd.find evm' ev) with
+	      Evar_empty -> raise Not_found
+	    | Evar_defined c -> c
+      else raise Not_found
+  with Exit -> raise Not_found
+
 let method_typeclass ref = 
   match ref with 
     | ConstRef c -> 
@@ -254,3 +280,17 @@ let class_of_constr c =
 	    Ind ind -> (try Some (class_of_inductive ind) with Not_found -> None)
 	  | _ -> None)
     | _ -> None
+
+
+type substitution = (identifier * constr) list
+
+let substitution_of_named_context isevars env id n subst l = 
+  List.fold_right
+    (fun (na, _, t) subst -> 
+      let t' = replace_vars subst t in
+      let b = Evarutil.e_new_evar isevars env ~src:(dummy_loc, ImplicitArg (VarRef id, (n, Some na))) t' in
+	(na, b) :: subst)
+    l subst
+
+let nf_substitution sigma subst = 
+  List.map (function (na, c) -> na, Reductionops.nf_evar sigma c) subst

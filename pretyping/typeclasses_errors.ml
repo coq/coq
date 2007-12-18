@@ -25,6 +25,7 @@ type contexts = Parameters | Properties
 
 type typeclass_error = 
     | UnboundClass of identifier located
+    | UnboundMethod of identifier * identifier located (* Class name, method *)
     | NoInstance of identifier located * constr list
     | MismatchedContextInstance of contexts * constr_expr list * named_context (* found, expected *)
 
@@ -33,6 +34,8 @@ exception TypeClassError of env * typeclass_error
 let typeclass_error env err = raise (TypeClassError (env, err))
 
 let unbound_class env id = typeclass_error env (UnboundClass id)
+
+let unbound_method env cid id = typeclass_error env (UnboundMethod (cid, id))
 
 let no_instance env id args = typeclass_error env (NoInstance (id, args))
 

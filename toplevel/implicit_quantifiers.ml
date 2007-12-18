@@ -27,9 +27,12 @@ open Typeclasses_errors
 (* Auxilliary functions for the inference of implicitly quantified variables. *)    
 
 let free_vars_of_constr_expr c ?(bound=[]) l = 
-  let rec aux bdvars l = function
-  | CRef (Ident (_,id)) -> if List.mem id bdvars then l else if List.mem id l then l else id :: l
-  | c -> fold_constr_expr_with_binders (fun a l -> a::l) aux bdvars l c
+  let found id bdvars l = if List.mem id bdvars then l else if List.mem id l then l else id :: l in
+  let rec aux bdvars l c = match c with
+    | CRef (Ident (_,id)) -> found id bdvars l
+    | CNotation (_, "{ _ : _ | _ }", (CRef (Ident (_, id))) :: _) when not (List.mem id bdvars) ->
+	fold_constr_expr_with_binders (fun a l -> a::l) aux (id :: bdvars) l c
+    | c -> fold_constr_expr_with_binders (fun a l -> a::l) aux bdvars l c
   in aux bound l c
 
 let is_freevar env x =
@@ -77,9 +80,9 @@ let combine_params avoid applied needed =
   in aux [] applied needed
 
 let compute_context_vars env l =
-  List.fold_right (fun (iid, (_,id), l) ids -> 
+  List.fold_left (fun iid (iid, (_,id), l) -> 
     (match snd iid with Name i -> [i] | Anonymous -> []) @ compute_constrs_freevars env l)
-    l []
+    [] l
 
 let full_class_binders env l = 
   let avoid = compute_context_vars env l in
@@ -166,16 +169,3 @@ let nf_env sigma env =
   let nc' = nf_named_context sigma (Environ.named_context env) in
   let rel' = nf_rel_context sigma (Environ.rel_context env) in
     push_rel_context rel' (reset_with_named_context (val_of_named_context nc') env)
-
-type substitution = (identifier * constr) list
-
-let substitution_of_named_context isevars env id n subst l = 
-  List.fold_right
-    (fun (na, _, t) subst -> 
-      let t' = replace_vars subst t in
-      let b = Evarutil.e_new_evar isevars env ~src:(dummy_loc, ImplicitArg (VarRef id, (n, Some na))) t' in
-	(na, b) :: subst)
-    l subst
-
-let nf_substitution sigma subst = 
-  List.map (function (na, c) -> na, Reductionops.nf_evar sigma c) subst
