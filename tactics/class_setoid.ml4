@@ -41,11 +41,6 @@ let e_give_exact c gl =
 
 let assumption id = e_give_exact (mkVar id)
 
-let decompose_setoid_eqhyp t = 
-  match kind_of_term t with
-    | App (equiv, [| a; r; s; x; y |]) -> (a, r, s, x, y)
-    | _ -> error "Not a setoid equality"
-
 let morphism_class = lazy (class_info (id_of_string "Morphism"))
 let morphism2_class = lazy (class_info (id_of_string "BinaryMorphism"))
 let morphism3_class = lazy (class_info (id_of_string "TernaryMorphism"))
@@ -63,10 +58,15 @@ let gen_constant dir s = Coqlib.gen_constant "Class_setoid" dir s
 let coq_proj1 = lazy(gen_constant ["Init"; "Logic"] "proj1")
 let coq_proj2 = lazy(gen_constant ["Init"; "Logic"] "proj2")
 
+let arrow_morphism a b = 
+  mkLambda (Name (id_of_string "A"), a, 
+	   mkLambda (Name (id_of_string "B"), b, 
+		    mkProd (Anonymous, mkRel 2, mkRel 2)))
+    
 let setoid_refl l sa x = 
   applistc (Lazy.force setoid_refl_proj) (l @ [sa ; x])
 
-let resolve_morphism env m args args' = 
+let resolve_morphism env oldt m args args' = 
   let evars = ref (Evd.create_evar_defs Evd.empty) in
   let morph_instance, proj, evs, len = 
     let cl, proj = 
@@ -88,7 +88,7 @@ let resolve_morphism env m args args' =
   let ctxargs = List.map (Reductionops.nf_evar evm) evs in
   let ctx, sup = Util.list_chop len ctxargs in
   let appproj = applistc (mkConst proj) (ctxargs @ [m ; morph_instance]) in 
-  let projargs, _, _, typeargs = 
+  let projargs, respars, ressetoid, typeargs = 
     array_fold_left2 
       (fun (acc, ctx, sup, typeargs') x y -> 
 	let par, ctx = list_chop 2 ctx in
@@ -97,40 +97,58 @@ let resolve_morphism env m args args' =
 	      None ->
 		let refl_proof = setoid_refl par setoid x in
 		  [ refl_proof ; x ; x ] @ acc, ctx, sup, x :: typeargs'
-	    | Some (t', p) ->
+	    | Some (p, (_, _, _, _, t')) ->
 		[ p ; t'; x ] @ acc, ctx, sup, t' :: typeargs')
       ([], ctx, sup, []) args args'
   in
   let proof = applistc appproj (List.rev projargs) in
   let newt = applistc m (List.rev typeargs) in
-    (newt, proof)
+    match respars, ressetoid with
+	[ a ; r ], [ s ] -> (proof, (a, r, s, oldt, newt))
+      | _ -> assert(false)
       
-let build_new env setoid origt newt hyp concl =
+let build_new gl env setoid origt newt hyp hypinfo concl =
   let rec aux t = 
     match kind_of_term t with
       | _ when eq_constr t origt -> 
-	  Some (newt, hyp)
+	  Some (hyp, hypinfo)
       | App (m, args) ->
 	  let args' = Array.map aux args in
 	    if array_for_all (fun x -> x = None) args' then None
 	    else 
-	      (try Some (resolve_morphism env m args args')
+	      (try Some (resolve_morphism env t m args args')
 		with Not_found -> None)
+      | Prod (_, x, b) -> 
+	  let x', b' = aux x, aux b in
+	    if x' = None && b' = None then None
+	    else 
+	      (try Some (resolve_morphism env t (arrow_morphism (pf_type_of gl x) (pf_type_of gl b)) [| x ; b |] [| x' ; b' |])
+		with Not_found -> None)
+		
       | _ -> None
   in aux concl
  
+let decompose_setoid_eqhyp env id t = 
+  match kind_of_term t with
+    | App (equiv, [| a; r; s; x; y |]) -> (mkVar id, (a, r, s, x, y))
+    | App (r, [| x ; y |]) -> 
+	(try 
+	    let (p, (a, r, s, _, _)) = resolve_morphism env t r [| x ; y |] [| None; None |] in
+	      (mkVar id, (a, r, s, x, y))
+	  with Not_found -> error "Not a (declared) setoid equality")
+    | _ -> error "Not a setoid equality"
+
 let cl_rewrite id gl =
   let env = pf_env gl in
   let hyp = pf_get_hyp_typ gl id in
-  let (typ, rel, setoid, origt, newt) = decompose_setoid_eqhyp hyp in
+  let hypt, (typ, rel, setoid, origt, newt as hypinfo) = decompose_setoid_eqhyp env id hyp in
   let concl = pf_concl gl in
   let _concltyp = pf_type_of gl concl in
-  let eq = build_new env setoid origt newt (mkVar id) concl in
+  let eq = build_new gl env setoid origt newt hypt hypinfo concl in
     match eq with  
-	Some (t, p) -> 
+	Some (p, (_, _, _, _, t)) -> 
 	  let proj = applistc (Lazy.force coq_proj2) [ mkProd (Anonymous, concl, t) ; mkProd (Anonymous, t, concl) ; p ] in
 	    (Tactics.apply proj) gl
-(* tclTHENSEQ [letin_tac true Anonymous p Tacticals.allHyps ]  gl *)
       | None -> tclIDTAC gl
 	  
 TACTIC EXTEND class_rewrite
