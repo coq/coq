@@ -119,14 +119,6 @@ let focus i j sp =
 let unfocus c sp =
   { sp with comb = unfocus_sublist c sp.comb }
 
-
-(* Reoders the goals on the comb according to a permutation *)
-let reorder p sp =
-  { sp with comb = Array.to_list 
-                  (Permutation.permute p 
-		  (Array.of_list sp.comb)) 
-  }
-
 (* Returns the open goals of the subproof *)
 let goals { comb = comb } = comb
 
@@ -151,6 +143,10 @@ let goals { comb = comb } = comb
 type tactic = subproof -> subproof
 
 
+(* Applies a tactic to the current subproof. *)
+let apply t sp = t sp
+
+
 (* Transforms a function of type 
    [Evd.evar_defs -> Goal.goal -> Goal.refinement] (i.e.
    a tactic that operates on a single goal) into an actual tactic.
@@ -171,3 +167,20 @@ let single_tactic f sp =
             comb = List.flatten combed_subgoals }
 
 
+(* Focuses a tactic at a single subgoal, found by it's index. *)
+(* There could easily be such a tactical for a range of goals. *)
+let choose_one i t sp =
+  let (single,context) = focus i i sp in
+  unfocus context (apply t single)
+
+(* Interpetes the ";" (semicolon) of Ltac. *)
+let tac_then t1 t2 sp = t2 (t1 sp)
+
+
+
+(* Reoders the goals on the comb according to a permutation *)
+let reorder p sp =
+  { sp with comb = Array.to_list 
+                  (Permutation.permute p 
+		  (Array.of_list sp.comb)) 
+  }

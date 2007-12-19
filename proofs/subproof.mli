@@ -49,14 +49,6 @@ val focus : int -> int -> subproof -> subproof * focus_context
 val unfocus : focus_context -> subproof -> subproof
 
 
-(* arnaud: donner un nom à la section *)
-(*** ***)
-
-(* Reorders the open goals of the given pointer, according to the 
-   permutation *)
-val reorder : Permutation.permutation -> subproof -> subproof
-
-
 
 
 
@@ -69,9 +61,26 @@ val reorder : Permutation.permutation -> subproof -> subproof
 
 type tactic 
 
+
+(* Applies a tactic to the current subproof. *)
+val apply : tactic -> subproof -> subproof
+
 (* Transforms a function of type 
    [Evd.evar_defs -> Goal.goal -> Goal.refinement] (i.e.
    a tactic that operates on a single goal) into an actual tactic.
    It operates by iterating the single-tactic from the last goal to 
    the first one. *)
 val single_tactic : (Evd.evar_defs -> Goal.goal -> Goal.refinement) -> tactic
+
+
+(* Focuses a tactic at a single subgoal, found by it's index. *)
+(* There could easily be such a tactical for a range of goals. *)
+val choose_one : int -> tactic -> tactic
+
+(* Interpetes the ";" (semicolon) of Ltac. *)
+val tac_then : tactic -> tactic -> tactic
+
+
+(* Reorders the open goals of the given pointer, according to the 
+   permutation *)
+val reorder : Permutation.permutation -> tactic

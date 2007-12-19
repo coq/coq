@@ -8,252 +8,173 @@
 
 (* $Id$ *)
 
-(* This module implements the actual proof datatype. It enforces strong
-   invariants, and it is the only module that should access the module
-   Subproof.
-   Actually from outside the proofs/ subdirectory, this is the only module
-   that should be used directly. *)
-
-(* arnaud: rajouter le blabla sur la  théorie du module ici *)
+(* arnaud: rajouter le blabla sur la  théorie du module ici. Le undo ! Le undo ! Note importante : une preuve est un record mutable de truc immutables !*)
 
 open Term
+type subproof = Subproof.subproof (* rather than opening Subproof *)
 
-type 'a subproof = 'a Subproof.subproof 
-     (* rather than opening Subproof *)
+(* arnaud: transactional_stack retiré le 19 decembre 2007, il est trouvable
+   dans la révision 10394 *)
 
-open Transactional_stack
+(* Basically a subtype of proof: it is used to store a state of a proof
+   at a given stage, to be able to perform undo.
+   The invariant is that it does not contain the undo stack. *)
+type save_state = 
+    { restore_subproof: subproof;
+      restore_focus_stack: Subproof.focus_context list
+    }
 
-
-type mutation = < mutate:unit>
-
-let build_mutation pt sp =
-  object 
-    method mutate = Subproof.mutate pt sp
-  end
-
-
-type 'a proof = { (* The root of the proof *)
-		  mutable root : 'a Subproof.pointer;
-		  (* The list of consecutive focusings to be able to backtrack.
-		     The current focus is the head of the list.
-		     The empty list means that the root is focused *)
-                  mutable focus : constr Subproof.pointer list;
+type 'a proof = { (* Current focused subproof *)
+		  mutable subproof : subproof;
+		  (* History of the focusings, provides information
+		     on how to unfocus the proof.
+		     The list is empty when the proof is fully
+		     unfocused. *)
+                  (* arnaud: à enrichir pour begin subproof/end subproof *)
+                  mutable focus_stack : Subproof.focus_context list;
 		  (* The undo stack *)
-		  undo_stack : 'a undo_action transactional_stack;
-		  (* The dependent goal heap *)
-		  mutable dependent_goals : 
-		          (constr Subproof.pointer, Evd.evar) Biassoc.biassoc;
-                  mutable eenv : Evd.evar_defs
+		  mutable undo_stack : save_state list;
+                  (* function executed at QED. *)
+		  return: constr list -> 'a
 		}
-and 'a undo_action = 
-    | MutateBack of mutation
-    | Unfocus of 'a proof
-    | Focus of 'a proof * constr Subproof.pointer
 
 
 
-(* Gives the type of a proof action *)
-(* arnaud: compléter les commentaires *)
-type 'a _action = 'a proof -> 'a undo_action transaction -> unit
-type 'a action = 'a _action Sequence.sequence
+(*** The following functions implement the basic internal mechanisms
+     of proofs, they are not meant to be exported in the .mli ***)
 
-let primitive = Sequence.element
-let compose = Sequence.append
+(* An auxiliary function to push a {!focus_context} on the focus stack. *)
+let push_focus context pr =
+  pr.focus_stack <- context::pr.focus_stack
 
+(* An auxiliary function to pop and read the last {!Subproof.focus_context} 
+   on the focus stack. *)
+exception CannotUnfocus
+let pop_focus pr =
+  match pr.focus_stack with
+  | context::other_focus -> pr.focus_stack <- other_focus; context
+  | _ -> raise CannotUnfocus
 
+(* Auxiliary function to push a [save_state] unto the undo stack. *)
+let push_undo save ({ undo_stack = stack } as pr) =
+  pr.undo_stack <- save::stack
 
-(*** The following functions give more abstract methods to access
-     the data of a proof ***)
-
-(* This function gives the position of the focus if the proof is
-   focused, [None] otherwise *)
-let get_focus pr =
-  match pr.focus with
-  | [] -> None
-  | pos::_ -> Some pos
-
-(* The following function gives the content of the root *)
-let get_root pr =
-  pr.root
-
-
-
-(*** The following functions are somewhat unsafe, they are meant to 
-     be used by other functions later. They shouldn't be declared in
-     the .mli ***)
+(* Auxiliary function to pop and read a [save_state] from the undo stack. *)
+let pop_undo pr = 
+  match pr.undo_stack with
+  | state::stack -> pr.undo_stack <- stack; state
+  | _ -> Util.anomaly "Proof.undo_pop: malformed call."
 
 
-(* This function performs a focusing on a given position
-   with no safety check nor caring of undos *)
-let unsafe_focus pr pos =
-  pr.focus <- pos::pr.focus
+(* This function focuses the proof [pr] between indices [i] and [j] *)
+let _focus i j pr =
+  let (focused,context) = Subproof.focus i j pr.subproof in
+  push_focus context pr;
+  pr.subproof <- focused
 
-(* This function unfocuses the proof [pr] with no safety
-   check nor caring of undos *)
-let unsafe_unfocus pr =
-  pr.focus <- List.tl pr.focus
+(* This function unfocuses the proof [pr], it raises [CannotUnfocus],
+   if the proof is already fully unfocused. *)
+let _unfocus pr =
+  (* In a single line, since the effects commute. *)
+  pr.subproof <- Subproof.unfocus (pop_focus pr) pr.subproof
 
 
 
 
 
-(*** The following functions define the basic safety mechanism of the
+(*** The following functions define the safety mechanism of the
      proof system, they may be unsafe if not used carefully. There is
      currently no reason to export them in the .mli ***)
 
+(* This functions saves the current state into a [save_state]. *)
+let save_state { subproof = sp ; focus_stack = focus_stack } =
+  { restore_subproof = sp;
+    restore_focus_stack = focus_stack 
+  }
 
 (* This function interpetes (and execute) a single [undo_action] *)
-let execute_undo_action = function
-  | MutateBack mutn -> mutn#mutate
-  | Unfocus pr -> unsafe_unfocus pr
-  | Focus(pr, pt) -> unsafe_focus pr pt
-				
-
-(* This function interpetes a list of undo action, starting with
-   the one on the head. *)
-let execute_undo_sequence l =
-  List.iter execute_undo_action l
-
-(* This function gives the rollback procedure on unsuccessful commands .
-   tr is the current transaction. *)
-let rollback tr =
-  Transactional_stack.rollback execute_undo_sequence tr
-
-
-
+let restore_state save pr =
+  pr.subproof <- save.restore_subproof;
+  pr.focus_stack <- save.restore_focus_stack
 
 
 (* exception which represent a failure in a command *)
-exception Failure of Pp.std_ppcmds
+exception TacticFailure of Pp.std_ppcmds
 
 (* function to raise a failure less verbosely *)
-let fail msg = raise (Failure msg)
+let fail msg = raise (TacticFailure msg)
 
 
 
-(*** The functions that come below are meant to be used as 
-     atomic actions, they raise [Failure] when they fail
-     and they push an [undo_action] to revert themselves.
-     They come in two flavors, [_name] is meant to be used in
-     complex primitive actions, [name] is the exported version, 
-     of type ['a action] ***)
-
-(* This action does nothing, it may be used to end any continuation based action, like tacticals *)
-let null_action = primitive ( fun _ _ -> () )
-
-(* This function performs sound mutation at a given position.
-   That is a mutation which stores an undo_action into the 
-   transaction [tr] *)
-
-let _mutate pt sp tr =
-  push (MutateBack (build_mutation pt sp)) tr;
-  Subproof.mutate pt sp
-
-let mutate = primitive _mutate
-
-
-(* This function focuses the proof [pr] at position [pt] and 
-   pushes an [undo_action] into the transaction [tr]. *)
-let _focus pt pr tr =
-  push (Unfocus pr) tr;
-  unsafe_focus pr pt
-
-let focus = primitive _focus
-
-(* This function unfocuses the proof [pr], fails if 
-   [pr] is not focused (i.e. if it shows its root). It
-   pushed an [undo_action] into the transaction [tr] *)
-let _unfocus pr tr =
-  match pr.focus with
-  | [] -> fail (Pp.str "This proof is not focused")
-  | pt::_ -> push (Focus (pr,pt)) tr; unsafe_unfocus pr
-
-let unfocus = primitive _unfocus
-
-(*** The following function are complex or composed actions ***)
-
-(* arnaud: repasser sur les commentaires *)
-(* This pair of functions tries percolate the resolved subgoal as much
-   as possible. It unfocuses the proof as much as needed so that it
-   is not focused on a resolved proof *)
-(* only [resolve] is meant to be used later on *)
-(* [deep_resolve] takes care of the non-root cases *)
-(* arnaud: rajouter les instanciations de métavariables *)
-let resolve =
-  (* This function unfocuses a proof until it is totally unfocused or
-     is focused on a non-resolved subproof *)
-  let rec unfocus_until_sound pr tr = 
-    match get_focus pr with
-    | None -> ()
-    | Some pt -> if Subproof.is_resolved (Subproof.get pt) then
-	           (_unfocus pr tr;
-                    unfocus_until_sound pr tr)
-                 else 
-                   ()  
-  in
-  let resolve_iterator_fun pt tr =
+(* This function unfocuses a proof until it is fully unfocused
+   or there is at least one focused subgoal. *)
+let rec unfocus_until_sound ({subproof = sp} as pr) =
+  if Subproof.finished sp then
     try 
-      let res = Subproof.resolve (Subproof.get pt) in
-      _mutate pt res tr
-    with Subproof.Unresolved ->
-      ()
-  in
-  let resolve_iterator tr = 
-    { Subproof.iterator = fun pt -> resolve_iterator_fun pt tr }
-  in
-  primitive (fun pr tr ->
-              Subproof.percolate (resolve_iterator tr) (get_root pr);
-              unfocus_until_sound pr tr)
+      _unfocus pr
+    with
+      | CannotUnfocus -> ()
+  else
+    ()
 
-(* instantiates the evars throughout the proof, according to 
-   an evar_map *)
-(* arnaud: resolve et instantiate, méritent-ils une version en _* ? *)
-let instantiate = 
-  let instantiate_iterator_fun em pt tr = 
-    _mutate pt (Subproof.instantiate em (Subproof.get pt)) tr
-  in
-  let instantiate_iterator em tr =
-    { Subproof.iterator = fun pt -> instantiate_iterator_fun em pt tr }
-  in
-  fun em -> primitive (fun pr tr ->
-	       Subproof.percolate (instantiate_iterator em tr) (get_root pr))
-
-(*** The following function takes an action and makes it into 
-     a command ***)
-
-let do_action actions pr = 
-  let tr = start_transaction pr.undo_stack in
-  try 
-    let actions = compose actions resolve in (* arnaud:really need a resolve here ? *)
-    Sequence.iter (fun action -> action pr tr) actions;
-    commit tr
-  with e -> (* arnaud: traitement particulier de Failure ? *)
-    rollback tr;
-    raise e
-  
-
-(*** The functions below are actually commands that can be used,
-     They cannot be used as a part of a compound transformation ***)
 
 (* This function gives the semantics of the "undo" command.
    [pr] is the current proof *)
 let undo pr = 
-  Transactional_stack.pop execute_undo_sequence (pr.undo_stack)
+  (* on a single line since the effects commute *)
+  restore_state (pop_undo pr) pr(* focus tactic (focuses on the [i]th subgoal) *)
+(* there could also, easily be a focus-on-a-range tactic, is there 
+   a need for it? *)
+let focus i pr = _focus i i pr
+
+(* unfocus command.
+   Fails if the proof is not focused. *)
+let unfocus  =
+  fun pr ->
+    try
+      _unfocus pr
+    with
+      | CannotUnfocus -> Util.error "This proof is not focused"
 
 
+(* arnaud: kill death kill, sauf run_tactic qui est juste à modifier 
 (*** The following functions define the tactic machinery. They 
      transform a tactical expression into a sequence of actions. ***)
 
-type 'a tactic = constr Subproof.pointer -> 'a action
 
-(* This function implement the base tactic "refine" *)
+(* Gives the type of a proof action *)
+(* arnaud: compléter les commentaires *)
+type _tactic = { tactic:'a.'a proof -> unit }
+type tactic = _tactic Sequence.sequence
 
-type 'a tactical = 'a action -> 'a action
+(* Not exported: used to build an primitive tactic (i.e. a tactic from
+   OCaml code) *)
+let primitive = Sequence.element
 
-(* 'a tactical -> 'a action *)
-let close_tactical t = t null_action
+(* Interpretes the ";" (semicolon) from the tactic scripts *)
+let tac_then = Sequence.append
+
+(* Executes a tactic on a proof *)
+let run_tactic tac pr =  
+  let starting_point = save_state pr in
+  try 
+    Sequence.iter (fun {tactic=primtac} -> primtac pr) tac;
+    unfocus_until_sound pr;
+    push_undo starting_point pr
+  with e -> (* arnaud: traitement particulier de Failure ? *)
+    restore_state starting_point pr;
+    raise e
+
+(* Internalizes a subproof-level tactic *)
+let internalize t = 
+  primitive { tactic = fun pr -> 
+		pr.subproof <- Subproof.apply t pr.subproof 
+	    }
+*)
+
   
 
+(* arnaud: ? *)
 (* apply_one *)
 (* apply_all *)
 (* apply_array *)

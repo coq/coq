@@ -16,19 +16,46 @@
 
 open Term
 
-(* Type of a proof *)
+(* Type of a proof of return type ['a]. *)
 type 'a proof
 
-(* Type of the proof transformations *)
-type 'a transformation
 
-(* exception which represent a failure in a command.
-   Opposed to anomalies and uncaught exceptions. *)
-exception Failure of Pp.std_ppcmds
+val undo : 'a proof -> unit
 
-(* function to raise a failure less verbosely *)
+
+(* focus command (focuses on the [i]th subgoal) *)
+(* there could also, easily be a focus-on-a-range tactic, is there 
+   a need for it? *)
+val focus : int -> 'a proof -> unit
+
+(* unfocus command.
+   Fails if the proof is not focused. *)
+val unfocus : 'a proof -> unit
+
+
+(*** ***)
+
+(* arnaud: kill death kill, sauf run_tactic qui est juste à modifier 
+
+(* Exception which represents a failure in a tactic.
+   May be caught by the "try" tactical for instance. *)
+exception TacticFailure of Pp.std_ppcmds
+
+(* Function to raise a [TacticFailure]. *)
 val fail : Pp.std_ppcmds -> 'a
 
-val do_command : 'a transformation -> 'a proof -> unit
+
+(* Type of the tactics *)
+(* arnaud: compléter les commentaires *)
+type tactic
+
+(* Executes a tactic on a proof *)
+val run_tactic : tactic -> 'a proof -> unit
 
 
+(* Internalizes a subproof-level tactic *)
+val internalize : Subproof.tactic -> tactic 
+
+(* Interpretes the ";" (semicolon) from the tactic scripts *)
+val tac_then : tactic -> tactic -> tactic
+*)
