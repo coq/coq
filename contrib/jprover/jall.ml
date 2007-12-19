@@ -31,23 +31,6 @@
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
-(*: All of Huang's modifications of this file are quoted or denoted
-    by comments followed by a colon.
-:*)
-
-(*:
-open Mp_debug
-
-open Refiner.Refiner
-open Term
-open TermType
-open TermOp
-open TermSubst
-open TermMan
-open RefineError
-open Opname
-:*)
-
 open Jterm
 open Opname
 open Jlogic
@@ -55,10 +38,6 @@ open Jtunify
 
 let ruletable = Jlogic.ruletable
 
-(*:
-let free_var_op = make_opname ["free_variable";"Jprover"]
-let jprover_op = make_opname ["string";"Jprover"]
-:*)
 let free_var_op = make_opname ["free_variable"; "Jprover"]
 let jprover_op = make_opname ["jprover"; "string"]
 
@@ -1308,23 +1287,6 @@ struct
 (* append renamed paramater "r" to non-quantifier subformulae
    of renamed quantifier formulae *)
 
-(*: BUG :*)
-(*:
-   let make_new_eigenvariable term =
-      let op = (dest_term term).term_op in
-      let opn = (dest_op op).op_name in
-      let opnam = dest_opname opn in
-      match opnam with
-         [] ->
-            raise jprover_bug
-       | ofirst::orest ->
-            let ofname = List.hd orest in
-            let new_eigen_var = (ofname^"_r"^(string_of_int (!eigen_counter))) in
-            eigen_counter := !eigen_counter + 1;
-(*        print_endline ("New Counter :"^(string_of_int (!eigen_counter))); *)
-            mk_string_term jprover_op new_eigen_var
-:*)
-
    let make_new_eigenvariable term =
       let op = (dest_term term).term_op in
       let opa = (dest_op op).op_params in
@@ -2485,30 +2447,6 @@ struct
          let dbt = dest_bterm bt in
          (dbt.bterm)::(collect_subterms r)
 
-   (*: Bug! :*)
-(*:   let rec collect_delta_terms = function
-      [] -> []
-    | t::r ->
-         let dt = dest_term t in
-         let top = dt.term_op
-         and tterms = dt.term_terms in
-         let dop = dest_op top in
-         let don = dest_opname dop.op_name in
-         match don with
-            [] ->
-               let sub_terms = collect_subterms tterms in
-               collect_delta_terms (sub_terms @ r)
-          | op1::opr ->
-               if op1 = "jprover" then
-                  match opr with
-                     [] -> raise (Invalid_argument "Jprover: delta position missing")
-                   | delta::_ ->
-                        delta::(collect_delta_terms r)
-               else
-                  let sub_terms = collect_subterms tterms in
-                  collect_delta_terms (sub_terms @ r)
-:*)
-
   let rec collect_delta_terms = function
       [] -> []
     | t::r ->
@@ -3219,23 +3157,7 @@ struct
        | (v,termlist)::r ->
             let dterms = collect_delta_terms termlist in
             begin
-(*:               print_stringlist dterms;
-               mbreak "add_sigmaQ:1\n";
-               Format.open_box 0;
-               print_endline " ";
-               print_endline "sigmaQ: ";
-               print_string (v^" = ");
-               print_term_list termlist;
-               Format.force_newline ();
-               print_stringlist dterms;
-               Format.force_newline ();
-               Format.print_flush ();
-               mbreak "add_sigmaQ:2\n";
-:*)
                let new_ordering = add_arrowsQ  v dterms ordering in
-(*:               print_ordering new_ordering;
-               mbreak "add_sigmaQ:3\n";
-:*)
                let (rest_pairs,rest_ordering) = add_sigmaQ r new_ordering in
                    ((v,dterms)::rest_pairs),rest_ordering
             end
@@ -3303,7 +3225,6 @@ struct
    let jqunify term1 term2 sigmaQ =
       let app_term1,app_term2 = apply_2_sigmaQ term1 term2 sigmaQ in
       try
-(*:         let tauQ = unify_mm app_term1 app_term2 String_set.StringSet.empty in :*)
          let tauQ = unify_mm app_term1 app_term2 StringSet.empty in
          let (mult,oel) = multiply sigmaQ tauQ in
          (mult,oel)
@@ -3740,19 +3661,7 @@ let rec subst_replace subst_list t =
       [] -> t
     | (old_t,new_t)::r ->
          let inter_term = var_subst t  old_t "dummy"  in
-(*:         print_string "(";
-         print_term stdout old_t;
-         print_string " --> ";
-         print_term stdout new_t;
-         print_string ")\n";
-         print_term stdout t;
-         print_newline ();
-         print_term stdout inter_term;
-         print_newline ();     :*)
          let new_term = subst1 inter_term "dummy" new_t in
-(*:         print_term stdout new_term;
-         print_newline ();
-         mbreak "\n+++========-----    ---------..........\n";  :*)
          subst_replace r new_term
 
 let rename_pos x m =
@@ -3950,10 +3859,6 @@ exception Failed_connections
 let path_checker atom_rel atom_sets qprefixes init_ordering logic =
 
    let con = connections atom_rel [] in
-(*:   print_endline "";
-   print_endline ("number of connections: "^(string_of_int (List.length con)));
-   mbreak "#connec\n";
-:*)
    let rec provable path closed (orderingQ,reduction_ordering) eqlist (sigmaQ,sigmaJ) =
 
       let rec check_connections (reduction_partners,extension_partners) ext_atom =
@@ -4470,7 +4375,6 @@ let rec create_output rule_list input_map =
          and new_term2 = apply_var_subst next_term2 var_mapping
          and (a,b) = pos
          in
-(*:         print_string (a^"+++"^b^"\n");  :*)
 
 (* kick away the first argument, the position *)
          (JLogic.append_inf (create_output r input_map) (b,new_term1) (a,new_term2) rule)
@@ -4513,8 +4417,6 @@ let rec make_test_interface rule_list input_map =
          end
 
 (**************************************************************)
-
-(*: modified for Coq :*)
 
 let decomp_pos pos =
     let {name=n; address=a; label=l} = pos in
@@ -4590,8 +4492,6 @@ let gen_prover mult_limit logic calculus hyps concls =
      (* from the LJmc to the LJ proof *)
      create_coq_input (create_output sequent_proof input_map) idl
 
-(*: end of coq modification :*)
-
 let prover mult_limit hyps concl = gen_prover mult_limit "J" "LJ" hyps [concl]
 
 (************* test with propositional proof reconstruction ************)
@@ -4658,7 +4558,6 @@ let do_prove mult_limit termlist logic calculus =
       print_endline "";
       print_endline "";
       Format.print_flush ();
-(*:      let _ = input_char stdin in :*)
       let reconstr_proof = reconstruct ftree red_ordering sigmaQ ext_proof logic calculus in
       let sequent_proof = make_test_interface reconstr_proof input_map in
       Format.open_box 0;
@@ -4676,7 +4575,7 @@ let do_prove mult_limit termlist logic calculus =
       Format.force_newline ();
       Format.force_newline ();
       Format.print_flush ();
-      tt ptree;     (*: print proof tree :*)
+      tt ptree;
       Format.print_flush ();
       print_endline "";
       print_endline ""
