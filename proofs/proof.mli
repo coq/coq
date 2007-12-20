@@ -20,6 +20,7 @@ open Term
 type 'a proof
 
 
+(* Interpretes the Undo command. *)
 val undo : 'a proof -> unit
 
 
@@ -34,6 +35,9 @@ val unfocus : 'a proof -> unit
 
 
 (*** ***)
+(* arnaud: cette section, si courte qu'elle est, mérite probablement un titre *)
+
+val run_tactic : Subproof.tactic -> 'a proof -> unit
 
 (* arnaud: kill death kill, sauf run_tactic qui est juste à modifier 
 

@@ -14,7 +14,6 @@ open Term
 open Sign
 open Evd
 open Environ
-open Proof_type
 (*i*)
 
 (* This suppresses check done in [prim_refiner] for the tactic given in

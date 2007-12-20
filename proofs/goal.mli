@@ -17,6 +17,9 @@ val build : ?name:string -> Evd.evar -> goal
 
 val is_defined : Evd.evar_map -> goal -> bool
 
+
+(*** Refine tactic ***)
+
 (* return type of the Goal.refine function *)
 (* it contains the new subgoals to produce, a function to reconstruct
    the proof to the current goal knowing the result of the subgoals,

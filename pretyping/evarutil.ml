@@ -493,7 +493,7 @@ let rec check_and_clear_in_constr evdref c ids =
 		mkEvar(evk', Array.of_list nargs)
       | _ -> map_constr (fun c -> check_and_clear_in_constr evdref c ids) c
 
-and clear_hyps_in_evi evdref evi ids =
+let clear_hyps_in_evi evdref evi ids =
   (* clear_evar_hyps erases hypotheses ids in evi, checking if some
      hypothesis does not depend on a element of ids, and erases ids in
      the contexts of the evars occuring in evi *)
@@ -503,9 +503,7 @@ and clear_hyps_in_evi evdref evi ids =
     let check_context (id,ob,c) = 
       try
 	(id,
-	(match ob with 
-	    None -> None
-	  | Some b -> Some (check_and_clear_in_constr evdref b ids)),
+	Option.map (fun b -> check_and_clear_in_constr evdref b ids) ob,
 	check_and_clear_in_constr evdref c ids)
       with Dependency_error id' -> error (string_of_id id' ^ " is used in hypothesis "
 					   ^ string_of_id id) 

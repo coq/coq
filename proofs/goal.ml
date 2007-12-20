@@ -38,6 +38,10 @@ let build ?name e =
 (* Returns [true] if the goal has been partially resolved. *)
 let is_defined evars { content = e } = Evd.is_defined evars e
 
+
+(*** Refine tactic ***)
+
+
 (* return type of the Goal.refine function *)
 (* it contains the new subgoals to produce, a function to reconstruct
    the proof to the current goal knowing the result of the subgoals,
@@ -58,14 +62,6 @@ let evar_map_filter f evm =
 	   ) 
            evm 
            Evd.empty
-
-(* Inverts an array into a gmap (expectingly an array of evars) *)
-(* arnaud: expliquer pour evar vs evar*evar_info *)
-let invert a =
-  let m = ref Gmap.empty in
-  Array.iteri (fun i (e,_) -> m := Gmap.add e i !m) a;
-  !m
-
 
 
 (* arnaud: à commenter un brin  *)
@@ -89,6 +85,8 @@ let refine defs env check_type step gl =
   (* [delta_evars] holds the evars that have been introduced by this
      refinement (but not immediatly solved) *)
   (* arnaud: probablement à speeder up un bit *)
+  (* arnaud: il va probablement même falloir renvoyer les existentials.
+     Parce que sinon c'est trop laid à trouver ! *)
   let delta_evars = evar_map_filter (fun ev evi ->
                                       evi.Evd.evar_body = Evd.Evar_empty &&
                                       (* arnaud: factoriser la map ?*)
@@ -109,6 +107,13 @@ let refine defs env check_type step gl =
   }
 
 
+
+(*** Other tactics ***)
+
+(* Implements the clear tactics *)
+let clear indents defs gl =
+  let rdefs = ref defs in
+  
 (* arnaud: remplacer par un "print goal" I guess suppose. 
 (* This function returns a new goal where the evars have been
    instantiated according to an evar_map *)

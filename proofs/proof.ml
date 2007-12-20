@@ -15,6 +15,8 @@ type subproof = Subproof.subproof (* rather than opening Subproof *)
 
 (* arnaud: transactional_stack retiré le 19 decembre 2007, il est trouvable
    dans la révision 10394 *)
+(* arnaud: sequence retiré le 20 décembre 2007, il est aussi trouvable dans
+   la révision 10394 (ainsi que quelques suivantes). *)
 
 (* Basically a subtype of proof: it is used to store a state of a proof
    at a given stage, to be able to perform undo.
@@ -98,13 +100,6 @@ let restore_state save pr =
   pr.focus_stack <- save.restore_focus_stack
 
 
-(* exception which represent a failure in a command *)
-exception TacticFailure of Pp.std_ppcmds
-
-(* function to raise a failure less verbosely *)
-let fail msg = raise (TacticFailure msg)
-
-
 
 (* This function unfocuses a proof until it is fully unfocused
    or there is at least one focused subgoal. *)
@@ -118,17 +113,18 @@ let rec unfocus_until_sound ({subproof = sp} as pr) =
     ()
 
 
-(* This function gives the semantics of the "undo" command.
-   [pr] is the current proof *)
+(* Interpretes the Undo command. *)
 let undo pr = 
   (* on a single line since the effects commute *)
   restore_state (pop_undo pr) pr(* focus tactic (focuses on the [i]th subgoal) *)
 (* there could also, easily be a focus-on-a-range tactic, is there 
    a need for it? *)
+(* arnaud: il faut mettre des undo information ! *)
 let focus i pr = _focus i i pr
 
 (* unfocus command.
    Fails if the proof is not focused. *)
+(* arnaud: il faut mettre des undo information ! *)
 let unfocus  =
   fun pr ->
     try
@@ -136,6 +132,21 @@ let unfocus  =
     with
       | CannotUnfocus -> Util.error "This proof is not focused"
 
+
+
+(*** ***)
+(* arnaud: cette section, si courte qu'elle est, mérite probablement un titre *)
+
+let run_tactic tac ( { subproof = sp } as pr ) =
+  let starting_point = save_state pr in
+  try
+    let tacticced_subproof = Subproof.apply tac sp in
+    pr.subproof <- tacticced_subproof;
+    unfocus_until_sound pr;
+    push_undo starting_point pr
+  with e -> (* arnaud: traitement particulier de TacticFailure ? *)
+    restore_state starting_point pr;
+    raise e
 
 (* arnaud: kill death kill, sauf run_tactic qui est juste à modifier 
 (*** The following functions define the tactic machinery. They 

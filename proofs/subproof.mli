@@ -77,6 +77,22 @@ val single_tactic : (Evd.evar_defs -> Goal.goal -> Goal.refinement) -> tactic
 (* There could easily be such a tactical for a range of goals. *)
 val choose_one : int -> tactic -> tactic
 
+(* Makes a list of tactic into a tactic (interpretes the [ | ] construct).
+   It applies the tactics from the last one to the first one.
+   Fails on the proofs with a number of subgoals not matching the length
+   of the list.*)
+val list_of_tactics : tactic list -> tactic
+
+(* arnaud: syntax de la construction ? *)
+(* Interpretes the [ t1 | t2 | ... | t3 | t4 ] construct.
+   That is it applies [t1] to the first goal, [t3] and [t4] to the 
+   last two, and [t2] to the rest (this generalizes to two lists
+   of tactics and a tactic to be repeated.
+   As in the other constructions, the tactics are applied from the last
+   goal to the first. *)
+val extend_list_of_tactics : tactic list -> tactic -> tactic list -> tactic
+
+
 (* Interpetes the ";" (semicolon) of Ltac. *)
 val tac_then : tactic -> tactic -> tactic
 

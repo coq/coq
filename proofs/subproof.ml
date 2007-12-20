@@ -142,6 +142,12 @@ let goals { comb = comb } = comb
 
 type tactic = subproof -> subproof
 
+(* exception which represent a failure in a command *)
+exception TacticFailure of Pp.std_ppcmds
+
+(* [fail s] raises [TacticFailure s].  *)
+let fail msg = raise (TacticFailure msg)
+
 
 (* Applies a tactic to the current subproof. *)
 let apply t sp = t sp
@@ -169,9 +175,46 @@ let single_tactic f sp =
 
 (* Focuses a tactic at a single subgoal, found by it's index. *)
 (* There could easily be such a tactical for a range of goals. *)
+(* arnaud: bug if 0 goals ! *)
 let choose_one i t sp =
   let (single,context) = focus i i sp in
   unfocus context (apply t single)
+
+(* Makes a list of tactic into a tactic (interpretes the [ | ] construct).
+   It applies the tactics from the last one to the first one.
+   Fails on the proofs with a number of subgoals not matching the length
+   of the list.*)
+let rec list_of_tactics tac_list sp =
+  match tac_list, sp.comb with
+  | tac::list,goal::comb -> let rec_sp = { sp with comb = comb } in
+                            let intermediate = list_of_tactics list rec_sp in
+		            let this_sp = { intermediate with comb = [goal] } in
+			    let almost = tac this_sp in
+			    { almost with comb = almost.comb@intermediate.comb }
+  | [],[] -> sp
+  | _,_ -> fail (Pp.str "Not the right number of subgoals.")
+
+(* arnaud: syntax de la construction ? *)
+(* arnaud: catcher l'erreur en Failure, à faire après avoir retouché Util... *)
+(* Interpretes the [ t1 | t2 | ... | t3 | t4 ] construct.
+   That is it applies [t1] to the first goal, [t3] and [t4] to the 
+   last two, and [t2] to the rest (this generalizes to two lists
+   of tactics and a tactic to be repeated.
+   As in the other constructions, the tactics are applied from the last
+   goal to the first. *)
+let rec extend_list_of_tactics begin_tac_list repeat_tac end_tac_list sp =
+  let comb = sp.comb in
+  let (b,m_e) = Util.list_chop (List.length begin_tac_list) comb in
+  let (m,e) = Util.list_chop (List.length m_e - List.length end_tac_list) m_e in
+  let end_sp = { sp with comb = e } in
+  let intermediate_end_sp = list_of_tactics end_tac_list end_sp in
+  let middle_sp = { intermediate_end_sp with comb = m } in
+  let intermediate_middle_sp = apply repeat_tac middle_sp in
+  let begin_sp = { intermediate_middle_sp with comb = b } in
+  let almost = list_of_tactics begin_tac_list begin_sp in
+  { almost with comb = almost.comb@(intermediate_middle_sp.comb
+				  @ intermediate_end_sp.comb)
+  }
 
 (* Interpetes the ";" (semicolon) of Ltac. *)
 let tac_then t1 t2 sp = t2 (t1 sp)

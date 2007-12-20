@@ -120,11 +120,11 @@ INTERP:=\
   toplevel/discharge.cmo library/declare.cmo
 
 PROOFS:=\
-  proofs/tacexpr.cmo proofs/proof_type.cmo proofs/redexpr.cmo \
-  proofs/proof_trees.cmo proofs/logic.cmo \
-  proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
-  proofs/pfedit.cmo proofs/tactic_debug.cmo \
-  proofs/clenvtac.cmo proofs/decl_mode.cmo
+  proofs/tacexpr.cmo proofs/redexpr.cmo \
+  proofs/logic.cmo \
+  proofs/evar_refiner.cmo proofs/tacmach.cmo \
+  proofs/tactic_debug.cmo \
+  proofs/decl_mode.cmo
 
 PARSING:=\
   parsing/extend.cmo \
@@ -424,9 +424,9 @@ PRINTERSCMO:=\
   interp/topconstr.cmo interp/notation.cmo interp/reserve.cmo		\
   library/impargs.cmo\
   interp/constrextern.cmo interp/syntax_def.cmo interp/constrintern.cmo	\
-  proofs/proof_trees.cmo proofs/logic.cmo proofs/refiner.cmo \
+  proofs/logic.cmo \
   proofs/tacexpr.cmo \
-  proofs/evar_refiner.cmo proofs/pfedit.cmo proofs/tactic_debug.cmo \
+  proofs/evar_refiner.cmo proofs/tactic_debug.cmo \
   proofs/decl_mode.cmo \
   parsing/ppconstr.cmo parsing/extend.cmo parsing/pcoq.cmo \
   parsing/printer.cmo parsing/pptactic.cmo \

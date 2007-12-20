@@ -21,8 +21,6 @@ open Reductionops
 open Inductive
 open Inductiveops
 open Typing
-open Proof_trees
-open Proof_type
 open Typeops
 open Type_errors
 open Retyping

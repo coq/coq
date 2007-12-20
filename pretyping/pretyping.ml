@@ -302,7 +302,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	let hyps = evar_context (Evd.find (evars_of !evdref) evk) in
 	let args = match instopt with
           | None -> instance_from_named_context hyps
-          | Some inst -> failwith "Evar subtitutions not implemented" in
+          | Some _ -> failwith "Evar subtitutions not implemented" in
 	let c = mkEvar (evk, args) in
 	let j = (Retyping.get_judgment_of env (evars_of !evdref) c) in
 	  inh_conv_coerce_to_tycon loc env evdref j tycon
@@ -385,6 +385,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     | RApp (loc,f,args) -> 
 	let fj = pretype empty_tycon env evdref lvar f in
  	let floc = loc_of_rawconstr f in
+        (* arnaud: le [n] n'est pas utilisé, à rapporter *)
 	let rec apply_rec env n resj = function
 	  | [] -> resj
 	  | c::rest ->
@@ -394,6 +395,8 @@ module Pretyping_F (Coercion : Coercion.S) = struct
       		match kind_of_term resty with
 		  | Prod (na,c1,c2) ->
 		      let hj = pretype (mk_tycon c1) env evdref lvar c in
+		      (* arnaud: value et typ sont séparés... virer
+			 le couple inutile. *)
 		      let value, typ = applist (j_val resj, [j_val hj]), subst1 hj.uj_val c2 in
 			apply_rec env (n+1) 
 			  { uj_val = value;
@@ -411,13 +414,14 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	  | App (f,args) ->
               let f = whd_evar (Evd.evars_of !evdref) f in
               begin match kind_of_term f with
-              | Ind _ (* | Const _ *) ->
+              | Ind _ (* | Const _ *) -> (* arnaud: ça fait plus d'un an que c'est là, virer ce commentaire au nettoyage. *)
 	          let sigma = evars_of !evdref in
 		  let c = mkApp (f,Array.map (whd_evar sigma) args) in
 	          let t = Retyping.get_type_of env sigma c in
 		  make_judge c t
               | _ -> resj end
-	  | _ -> resj in
+	  | _ -> resj in (* arnaud: comprendre comment on peut rentrer dans
+			    ce cas là. *)
 	inh_conv_coerce_to_tycon loc env evdref resj tycon
 
     | RLambda(loc,name,c1,c2)      ->
@@ -586,7 +590,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     | RCases (loc,po,tml,eqns) ->
 	Cases.compile_cases loc
 	  ((fun vtyc env -> pretype vtyc env evdref lvar),evdref)
-	  tycon env (* loc *) (po,tml,eqns)
+	  tycon env (* loc *) (po,tml,eqns) (* arnaud: à nettoyer, plus d'un an ici aussi *)
 
     | RCast (loc,c,k) ->
 	let cj =
@@ -610,6 +614,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	  let j = (Retyping.get_judgment_of env (evars_of !evdref) c) in
 	    j
 	      (*inh_conv_coerce_to_tycon loc env evdref j tycon*)
+	      (* arnaud: aussi là depuis un an, modulo renomage de isevars en evdref :p *)
 	else
 	  user_err_loc (loc,"pretype",(str "Not a constr tagged Dynamic"))
 
@@ -644,20 +649,17 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		else
 		  error_unexpected_type_loc
                     (loc_of_rawconstr c) env (evars_of !evdref) tj.utj_val v
+(*arnaud:qu'est-ce que lvar ?? *)
+(*arnaud:uniquement utilisé dans une contrib (subtac)... hautement douteux. *)
 
   let pretype_gen evdref env lvar kind c =
     let c' = match kind with
       | OfType exptyp ->
-	  let tycon = match exptyp with None -> empty_tycon | Some t -> mk_tycon t in
-	    (pretype tycon env evdref lvar c).uj_val
+	  let tycon = Option.default empty_tycon (Option.map mk_tycon exptyp) in
+	  (pretype tycon env evdref lvar c).uj_val
       | IsType ->
 	  (pretype_type empty_valcon env evdref lvar c).utj_val in
       nf_evar (evars_of !evdref) c'
-
-  (* TODO: comment faire remonter l'information si le typage a resolu des
-     variables du sigma original. il faudrait que la fonction de typage
-     retourne aussi le nouveau sigma...
-  *)
 
   let understand_judgment sigma env c =
     let evdref = ref (create_evar_defs sigma) in
