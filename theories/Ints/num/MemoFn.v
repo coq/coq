@@ -144,7 +144,7 @@ End DependentMemoFunction.
 
 (* An example with the memo function on factorial *)
 
-(**
+(*
 Require Import ZArith.
 
 Fixpoint tfact (n: nat) {struct n} := 
@@ -173,5 +173,5 @@ Time Eval vm_compute in test (lfact 2000).
 Time Eval vm_compute in test (lfact 1500).
 Time Eval vm_compute in (lfact 1500).
 
-**)
+*)
  
