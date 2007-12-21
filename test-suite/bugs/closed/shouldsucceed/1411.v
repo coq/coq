@@ -27,3 +27,8 @@ Program Fixpoint fetch t p (x:Exact t p) {struct x} :=
    | Br l r, false::t => fetch r t _
    end.
 
+Next Obligation. inversion x. Qed.
+Next Obligation. inversion x. Qed.
+Next Obligation. inversion x; trivial. Qed.
+Next Obligation. inversion x; trivial. Qed.
+

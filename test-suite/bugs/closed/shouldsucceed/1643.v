@@ -4,17 +4,18 @@
 CoInductive Str : Set := Cons (h:nat) (t:Str).
 
 Definition decomp_func (s:Str) :=
-   match s with
-   | Cons h t => Cons h t
-   end.
+  match s with
+    | Cons h t => Cons h t
+  end.
 
 Theorem decomp s: s = decomp_func s.
 Proof.
-intros s.
-case s; simpl; reflexivity.
+  intros s.
+  case s; simpl; reflexivity.
 Qed.
 
 Definition zeros := (cofix z : Str := Cons 0 z).
 Lemma zeros_rw : zeros = Cons 0 zeros.
-rewrite (decomp zeros).
-simpl.
+  rewrite (decomp zeros).
+  simpl.
+Admitted.
