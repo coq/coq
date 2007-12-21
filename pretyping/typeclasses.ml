@@ -110,27 +110,41 @@ open Libobject
 
 let subst (_,subst,(cl,m,inst)) = 
   let do_subst_con c = fst (Mod_subst.subst_con subst c)
+  and do_subst c = Mod_subst.subst_mps subst c
   and do_subst_ind (kn,i) = (Mod_subst.subst_kn subst kn,i)
   in
-  let subst_class cl = 
-    { cl with cl_impl = do_subst_ind cl.cl_impl }
+  let do_subst_named ctx = 
+    List.map (fun (na, b, t) ->
+      (na, Option.smartmap do_subst b, do_subst t))
+      ctx
   in
-  let subst_inst insts =
-    List.map (fun is -> { is with is_impl = do_subst_con is.is_impl }) insts
+  let subst_class cl = 
+    let cl' = { cl with cl_impl = do_subst_ind cl.cl_impl;
+		cl_context = do_subst_named cl.cl_context;
+		cl_super = do_subst_named cl.cl_super;
+		cl_params = do_subst_named cl.cl_params;
+		cl_props = do_subst_named cl.cl_props; }
+    in if cl' = cl then cl else cl'
+  in
+  let subst_inst classes insts =
+    List.map (fun is -> 
+      { is with is_class = Gmap.find is.is_class.cl_name classes; 
+	is_impl = do_subst_con is.is_impl }) insts
   in
   let classes = Gmap.map subst_class cl in
-  let instances = Gmap.map subst_inst inst in
+  let instances = Gmap.map (subst_inst classes) inst in
     (classes, m, instances)
 
 let discharge (_,(cl,m,inst)) =
   let subst_class cl = 
     { cl with cl_impl = Lib.discharge_inductive cl.cl_impl }
   in
-  let subst_inst insts =
-    List.map (fun is -> { is with is_impl = Lib.discharge_con is.is_impl }) insts
+  let subst_inst classes insts =
+    List.map (fun is -> { is with is_impl = Lib.discharge_con is.is_impl;
+      is_class = Gmap.find is.is_class.cl_name classes; }) insts
   in
   let classes = Gmap.map subst_class cl in
-  let instances = Gmap.map subst_inst inst in
+  let instances = Gmap.map (subst_inst classes) inst in
     Some (classes, m, instances)
   
 let (input,output) = 
@@ -242,23 +256,23 @@ let method_typeclass ref =
 let is_class ind = 
   Gmap.fold (fun k v acc -> acc || v.cl_impl = ind) !classes false
   
-let resolve_typeclasses env sigma evd =
+let is_implicit_arg k = 
+  match k with
+      ImplicitArg (ref, (n, id)) -> true
+    | _ -> false
+
+let resolve_typeclasses ?(check=true) env sigma evd =
   let evm = Evd.evars_of evd in
   let tc_evars = 
     let f ev evi acc =
       let (l, k) = Evd.evar_source ev evd in
-	match k with
-	    ImplicitArg (ref, (n, id)) ->
-	      (try 
-		  (* 		  let cl = method_typeclass ref in 
-				  if destInd ki = cl.cl_impl then*)
-		  match kind_of_term evi.evar_concl with
-		    | App(ki, args) -> 
-			if is_class (destInd ki) then Evd.add acc ev evi
-			else acc
-		    | _ -> acc
-		with _ -> acc)
-	  | _ -> acc
+	if not check || is_implicit_arg k then
+	  match kind_of_term evi.evar_concl with
+	    | App(ki, args) when isInd ki -> 
+		if is_class (destInd ki) then Evd.add acc ev evi
+		else acc
+	    | _ -> acc
+	else acc
     in Evd.fold f evm Evd.empty
   in
   let rec sat evars =

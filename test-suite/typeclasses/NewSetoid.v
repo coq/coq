@@ -24,7 +24,7 @@ Unset Strict Implicit.
 
 Require Export Coq.Relations.Relations.
 
-Class Setoid (carrier : Type) (equiv : relation carrier) where
+Class Setoid (carrier : Type) (equiv : relation carrier) :=
   equiv_prf : equivalence carrier equiv.
 
 (** Overloaded notation for setoid equivalence. Not to be confused with [eq] and [=]. *)
@@ -55,7 +55,7 @@ Ltac trans Y :=
 Definition respectful [ sa : Setoid a eqa, sb : Setoid b eqb ] (m : a -> b) : Prop :=
   forall x y, eqa x y -> eqb (m x) (m y).
 
-Class [ Setoid a eqa, Setoid b eqb ] => Morphism (m : a -> b) where
+Class [ Setoid a eqa, Setoid b eqb ] => Morphism (m : a -> b) :=
   respect : respectful m.
 
 (** Here we build a setoid instance for functions which relates respectful ones only. *)
@@ -66,7 +66,7 @@ Obligations Tactic := try red ; program_simpl ; unfold equiv in * ; try tauto.
 
 Program Instance [ sa : Setoid a R, sb : Setoid b R' ] => arrow_setoid : 
   Setoid ({ morph : a -> b | respectful morph })
-  (fun (f g : respecting) => forall (x y : a), R x y -> R' (`f x) (`g y)) where
+  (fun (f g : respecting) => forall (x y : a), R x y -> R' (`f x) (`g y)) :=
   equiv_prf := Build_equivalence _ _ _ _ _.
 
 Next Obligation.
@@ -89,15 +89,15 @@ Definition binary_respectful [ sa : Setoid a eqa, sb : Setoid b eqb, Setoid c eq
   forall x y, eqa x y -> 
     forall z w, eqb z w -> eqc (m x z) (m y w).
 
-Class [ sa : Setoid a eqa, sb : Setoid b eqb, sc : Setoid c eqc ] => BinaryMorphism (m : a -> b -> c) where
+Class [ sa : Setoid a eqa, sb : Setoid b eqb, sc : Setoid c eqc ] => BinaryMorphism (m : a -> b -> c) :=
   respect2 : binary_respectful m.
 
-Program Instance iff_setoid : Setoid Prop iff where
+Program Instance iff_setoid : Setoid Prop iff :=
   equiv_prf := @Build_equivalence _ _ iff_refl iff_trans iff_sym.
 
-Program Instance not_morphism : Morphism Prop iff Prop iff not where.
+Program Instance not_morphism : Morphism Prop iff Prop iff not.
 
-Program Instance and_morphism : ? BinaryMorphism iff_setoid iff_setoid iff_setoid and where.
+Program Instance and_morphism : ? BinaryMorphism iff_setoid iff_setoid iff_setoid and.
 
 Set Printing All.
 
@@ -110,11 +110,11 @@ Implicit Arguments Enriching BinaryMorphism [[!sa] [!sb] [!sc]].
 
 Print BinaryMorphism.
 
-Program Instance or_morphism : ? BinaryMorphism or where.
+Program Instance or_morphism : ? BinaryMorphism or.
 
 Definition impl (A B : Prop) := A -> B.
 
-Program Instance impl_morphism : ? BinaryMorphism impl where.
+Program Instance impl_morphism : ? BinaryMorphism impl.
 
 Next Obligation.
 Proof.
@@ -125,7 +125,7 @@ Unset Printing All.
 
 Print respect.
 
-Program Instance [ Setoid a R ] => setoid_morphism : ? BinaryMorphism R where.
+Program Instance [ Setoid a R ] => setoid_morphism : ? BinaryMorphism R.
 
 Next Obligation.
 Proof with auto.
@@ -141,16 +141,16 @@ Print BinaryMorphism.
 
 Implicit Arguments eq [[A]].
 
-Program Instance eq_setoid : Setoid A eq where
+Program Instance eq_setoid : Setoid A eq :=
   equiv_prf := Build_equivalence _ _ _ _ _.
 
-Program Instance eq_morphism : BinaryMorphism A eq A eq Prop iff eq where.
+Program Instance eq_morphism : BinaryMorphism A eq A eq Prop iff eq.
 
-Program Instance arrow_morphism : BinaryMorphism A eq B eq C eq m where.
+Program Instance arrow_morphism : BinaryMorphism A eq B eq C eq m.
 
 Implicit Arguments arrow_morphism [[A] [B] [C]].
 
-Program Instance type_setoid : Setoid Type (fun x y => x = y) where
+Program Instance type_setoid : Setoid Type (fun x y => x = y) :=
   equiv_prf := Build_equivalence _ _ _ _ _.
 
 Lemma setoid_subst : forall (x y : Type), x == y -> x -> y.
@@ -163,14 +163,14 @@ Qed.
 Lemma prop_setoid_subst : forall (x y : Prop), x == y -> x -> y.
 Proof.
   intros.
-  pose (equiv_sym H).
-  clrewrite e.
+  clrewrite <- H.
   apply H0.
 Qed.
 
 Goal not True == not (not False) -> ((not True -> True)) \/ True.
   intros.
   clrewrite H.
+  clrewrite <- H.
   right ; auto.
 Defined.
 

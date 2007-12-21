@@ -704,7 +704,7 @@ NUMBERSVO:=$(NATURALVO) $(INTEGERVO)
 
 SETOIDSVO:= theories/Setoids/Setoid_tac.vo theories/Setoids/Setoid_Prop.vo theories/Setoids/Setoid.vo
 
-CLASSESVO:= theories/Classes/Init.vo
+CLASSESVO:= theories/Classes/Init.vo theories/Classes/Setoid.vo theories/Classes/SetoidTactics.v
 
 THEORIESVO:=\
   $(INITVO) $(LOGICVO) $(ARITHVO) $(BOOLVO) $(NARITHVO) $(ZARITHVO) \

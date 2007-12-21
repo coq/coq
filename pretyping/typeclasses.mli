@@ -57,11 +57,7 @@ val is_class : inductive -> bool
 val class_of_constr : constr -> typeclass option
 
 val resolve_typeclass : env -> evar -> evar_info -> evar_defs * bool -> evar_defs * bool
-val resolve_typeclasses : env -> evar_map -> evar_defs -> evar_defs
-
-val discharge :
-    'a * (('b, typeclass) Gmap.t * 'c * ('d, instance list) Gmap.t) ->
-    (('b, typeclass) Gmap.t * 'c * ('d, instance list) Gmap.t) option
+val resolve_typeclasses : ?check:bool -> env -> evar_map -> evar_defs -> evar_defs
 
 val solve_instanciation_problem : (env -> evar_defs -> existential_key -> evar_info -> evar_defs * bool) ref
 

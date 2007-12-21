@@ -52,12 +52,12 @@ let respect_proj = lazy (get_respect (Lazy.force morphism_class))
 let respect2_proj = lazy (get_respect (Lazy.force morphism2_class))
 let respect3_proj = lazy (get_respect (Lazy.force morphism3_class))
 
-let setoid_refl_proj = lazy (mkConst (Lib.make_con (id_of_string "equiv_refl")))
-
 let gen_constant dir s = Coqlib.gen_constant "Class_setoid" dir s
 let coq_proj1 = lazy(gen_constant ["Init"; "Logic"] "proj1")
 let coq_proj2 = lazy(gen_constant ["Init"; "Logic"] "proj2")
 
+let setoid_refl_proj = lazy (gen_constant ["Classes"; "Setoid"] "equiv_refl")
+  
 let arrow_morphism a b = 
   mkLambda (Name (id_of_string "A"), a, 
 	   mkLambda (Name (id_of_string "B"), b, 
@@ -65,29 +65,54 @@ let arrow_morphism a b =
     
 let setoid_refl l sa x = 
   applistc (Lazy.force setoid_refl_proj) (l @ [sa ; x])
+      
+let class_one = lazy (Lazy.force morphism_class, Lazy.force respect_proj)
+let class_two = lazy (Lazy.force morphism2_class, Lazy.force respect2_proj)
+let class_three = lazy (Lazy.force morphism3_class, Lazy.force respect3_proj)
 
-let resolve_morphism env oldt m args args' = 
+exception Found of (constr * constant * constr list * int * constr * constr array *
+		       (constr * (constr * constr * constr * constr * constr)) option array)
+
+let resolve_morphism_evd env evd app = 
+  let ev = Evarutil.e_new_evar evd env app in
+  let evd' = resolve_typeclasses ~check:false env (Evd.evars_of !evd) !evd in
+  let evm' = Evd.evars_of evd' in
+    match Evd.evar_body (Evd.find evm' (fst (destEvar ev))) with
+	Evd.Evar_empty -> raise Not_found
+      | Evd.Evar_defined c -> c
+
+let resolve_morphism env direction oldt m args args' = 
   let evars = ref (Evd.create_evar_defs Evd.empty) in
-  let morph_instance, proj, evs, len = 
-    let cl, proj = 
+  let morph_instance, proj, evs, len, m', args, args' = 
+    let cls =
       match Array.length args with
-	  1 -> Lazy.force morphism_class, Lazy.force respect_proj
-	| 2 -> Lazy.force morphism2_class, Lazy.force respect2_proj
-	| 3 -> Lazy.force morphism3_class, Lazy.force respect3_proj
-	| _ -> raise Not_found
+	  1 -> [Lazy.force class_one, 1]
+	| 2 -> [Lazy.force class_two, 2; Lazy.force class_one, 1]
+	| 3 -> [(* Lazy.force class_three, 0;  *)Lazy.force class_two, 2; Lazy.force class_one, 1]
+	| n -> [Lazy.force class_three, 3; Lazy.force class_two, 2; Lazy.force class_one, 1]
     in
-    let ctxevs = substitution_of_named_context evars env cl.cl_name 0 [] cl.cl_context in
-    let len = List.length ctxevs in
-    let superevs = substitution_of_named_context evars env cl.cl_name len ctxevs cl.cl_super in
-    let args = List.rev_map (fun (_, c) -> c) superevs in
-    let app = applistc (mkInd cl.cl_impl) (args @ [m]) in
-      resolve_one_typeclass_evd env evars app, proj, args, len
+      try 
+	List.iter (fun ((cl, proj), n) ->
+	  evars := Evd.create_evar_defs Evd.empty;
+	  let ctxevs = substitution_of_named_context evars env cl.cl_name 0 [] cl.cl_context in
+	  let len = List.length ctxevs in
+	  let superevs = substitution_of_named_context evars env cl.cl_name len ctxevs cl.cl_super in
+	  let morphargs, morphobjs = array_chop (Array.length args - n) args in
+	  let morphargs', morphobjs' = array_chop (Array.length args - n) args' in
+	  let args = List.rev_map (fun (_, c) -> c) superevs in
+	  let appm = mkApp(m, morphargs) in
+	  let app = applistc (mkInd cl.cl_impl) (args @ [appm]) in
+	  try raise (Found (resolve_morphism_evd env evars app, proj, args, len, appm, morphobjs, morphobjs'))
+	  with Not_found -> ())
+	  cls; 
+	raise Not_found
+      with Found x -> x
   in 
   evars := Evarutil.nf_evar_defs !evars;
   let evm = Evd.evars_of !evars in
   let ctxargs = List.map (Reductionops.nf_evar evm) evs in
   let ctx, sup = Util.list_chop len ctxargs in
-  let appproj = applistc (mkConst proj) (ctxargs @ [m ; morph_instance]) in 
+  let appproj = applistc (mkConst proj) (ctxargs @ [m' ; morph_instance]) in
   let projargs, respars, ressetoid, typeargs = 
     array_fold_left2 
       (fun (acc, ctx, sup, typeargs') x y -> 
@@ -98,16 +123,18 @@ let resolve_morphism env oldt m args args' =
 		let refl_proof = setoid_refl par setoid x in
 		  [ refl_proof ; x ; x ] @ acc, ctx, sup, x :: typeargs'
 	    | Some (p, (_, _, _, _, t')) ->
-		[ p ; t'; x ] @ acc, ctx, sup, t' :: typeargs')
+		if direction then
+		  [ p ; t'; x ] @ acc, ctx, sup, t' :: typeargs'
+		else [ p ; x; t' ] @ acc, ctx, sup, t' :: typeargs')
       ([], ctx, sup, []) args args'
   in
   let proof = applistc appproj (List.rev projargs) in
-  let newt = applistc m (List.rev typeargs) in
+  let newt = applistc m' (List.rev typeargs) in
     match respars, ressetoid with
 	[ a ; r ], [ s ] -> (proof, (a, r, s, oldt, newt))
       | _ -> assert(false)
       
-let build_new gl env setoid origt newt hyp hypinfo concl =
+let build_new gl env setoid direction origt newt hyp hypinfo concl =
   let rec aux t = 
     match kind_of_term t with
       | _ when eq_constr t origt -> 
@@ -116,41 +143,54 @@ let build_new gl env setoid origt newt hyp hypinfo concl =
 	  let args' = Array.map aux args in
 	    if array_for_all (fun x -> x = None) args' then None
 	    else 
-	      (try Some (resolve_morphism env t m args args')
+	      (try Some (resolve_morphism env direction t m args args')
 		with Not_found -> None)
       | Prod (_, x, b) -> 
 	  let x', b' = aux x, aux b in
 	    if x' = None && b' = None then None
 	    else 
-	      (try Some (resolve_morphism env t (arrow_morphism (pf_type_of gl x) (pf_type_of gl b)) [| x ; b |] [| x' ; b' |])
+	      (try Some (resolve_morphism env direction t (arrow_morphism (pf_type_of gl x) (pf_type_of gl b)) [| x ; b |] [| x' ; b' |])
 		with Not_found -> None)
 		
       | _ -> None
   in aux concl
- 
-let decompose_setoid_eqhyp env id t = 
+
+let decompose_setoid_eqhyp env c dir t = 
   match kind_of_term t with
-    | App (equiv, [| a; r; s; x; y |]) -> (mkVar id, (a, r, s, x, y))
-    | App (r, [| x ; y |]) -> 
+    | App (equiv, [| a; r; s; x; y |]) ->
+	if dir then (c, (a, r, s, x, y))
+	else (c, (a, r, s, y, x))
+    | App (r, args) when Array.length args >= 2 -> 
 	(try 
-	    let (p, (a, r, s, _, _)) = resolve_morphism env t r [| x ; y |] [| None; None |] in
-	      (mkVar id, (a, r, s, x, y))
+	    let (p, (a, r, s, _, _)) = resolve_morphism env dir t r args (Array.map (fun _ -> None) args) in
+	    let _, args = array_chop (Array.length args - 2) args in
+	      if dir then (c, (a, r, s, args.(0), args.(1)))
+	      else (c, (a, r, s, args.(1), args.(0)))
 	  with Not_found -> error "Not a (declared) setoid equality")
     | _ -> error "Not a setoid equality"
 
-let cl_rewrite id gl =
+let cl_rewrite c left2right gl =
   let env = pf_env gl in
-  let hyp = pf_get_hyp_typ gl id in
-  let hypt, (typ, rel, setoid, origt, newt as hypinfo) = decompose_setoid_eqhyp env id hyp in
+  let hyp = pf_type_of gl c in
+  let hypt, (typ, rel, setoid, origt, newt as hypinfo) = decompose_setoid_eqhyp env c left2right hyp in
   let concl = pf_concl gl in
   let _concltyp = pf_type_of gl concl in
-  let eq = build_new gl env setoid origt newt hypt hypinfo concl in
+  let eq = build_new gl env setoid left2right origt newt hypt hypinfo concl in
     match eq with  
 	Some (p, (_, _, _, _, t)) -> 
-	  let proj = applistc (Lazy.force coq_proj2) [ mkProd (Anonymous, concl, t) ; mkProd (Anonymous, t, concl) ; p ] in
+	  let proj = 
+	    if left2right then 
+	      applistc (Lazy.force coq_proj2)
+		[ mkProd (Anonymous, concl, t) ; mkProd (Anonymous, t, concl) ; p ] 
+	    else 
+	      applistc (Lazy.force coq_proj1)
+		[ mkProd (Anonymous, t, concl) ; mkProd (Anonymous, concl, t) ; p ] 
+	  in
 	    (Tactics.apply proj) gl
       | None -> tclIDTAC gl
 	  
+open Extraargs
+
 TACTIC EXTEND class_rewrite
-| [ "clrewrite" ident(id) ] -> [ cl_rewrite id ]
+| [ "clrewrite" orient(o) constr(c) ] -> [ cl_rewrite c o ]
 END
