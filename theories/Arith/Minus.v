@@ -97,23 +97,40 @@ Hint Resolve le_plus_minus_r: arith v62.
 
 (** * Relation with order *)
 
-Theorem le_minus : forall n m, n - m <= n.
+Theorem minus_le_compat_r : forall n m p : nat, n <= m -> n - p <= m - p.
 Proof.
-  intros i h; pattern i, h in |- *; apply nat_double_ind;
-    [ auto
-      | auto
-      | intros m n H; simpl in |- *; apply le_trans with (m := m); auto ].
+  intros n m p; generalize n m; clear n m; induction p as [|p HI].
+    intros n m; rewrite <- (minus_n_O n); rewrite <- (minus_n_O m); trivial.
+
+    intros n m Hnm; apply le_elim_rel with (n:=n) (m:=m); auto with arith.
+    intros q r H _. simpl. auto using HI.
 Qed.
+
+Theorem minus_le_compat_l : forall n m p : nat, n <= m -> p - m <= p - n.
+Proof.
+  intros n m p; generalize n m; clear n m; induction p as [|p HI].
+    trivial.
+
+    intros n m Hnm; apply le_elim_rel with (n:=n) (m:=m); trivial.
+      intros q; destruct q; auto with arith.
+        simpl. 
+        apply le_trans with (m := p - 0); [apply HI | rewrite <- minus_n_O];
+          auto with arith.
+        
+      intros q r Hqr _. simpl. auto using HI.
+Qed.
+
+Corollary le_minus : forall n m, n - m <= n.
+Proof.
+  intros n m; rewrite minus_n_O; auto using minus_le_compat_l with arith.
+Qed.
+Hint Resolve le_minus: arith v62.
 
 Lemma lt_minus : forall n m, m <= n -> 0 < m -> n - m < n.
 Proof.
   intros n m Le; pattern m, n in |- *; apply le_elim_rel; simpl in |- *;
     auto with arith.
-  intros; absurd (0 < 0); auto with arith.
-  intros p q lepq Hp gtp.
-  elim (le_lt_or_eq 0 p); auto with arith.
-  auto with arith.
-  induction 1; elim minus_n_O; auto with arith.
+    intros; absurd (0 < 0); auto with arith.
 Qed.
 Hint Resolve lt_minus: arith v62.
 
