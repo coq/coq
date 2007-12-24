@@ -1,1 +1,1 @@
-Instantiation Tactic := eauto with typeclass_instances || eauto.
+Instantiation Tactic := eauto 50 with typeclass_instances || eauto.

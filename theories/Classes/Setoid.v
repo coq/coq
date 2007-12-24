@@ -1,3 +1,4 @@
+(* -*- coq-prog-args: ("-emacs-U" "-nois") -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -33,23 +34,32 @@ Definition equiv [ Setoid A R ] : _ := R.
 
 Infix "==" := equiv (at level 70, no associativity).
 
-Definition equiv_refl [ Setoid A R ] : forall x : A, R x x := equiv_refl _ _ equiv_prf.
-Definition equiv_sym [ Setoid A R ] : forall x y : A, R x y -> R y x := equiv_sym _ _ equiv_prf.
-Definition equiv_trans [ Setoid A R ] : forall x y z : A, R x y -> R y z -> R x z := equiv_trans _ _ equiv_prf.
+Definition equiv_refl [ s : Setoid A R ] : forall x : A, R x x := equiv_refl _ _ equiv_prf.
+Definition equiv_sym [ s : Setoid A R ] : forall x y : A, R x y -> R y x := equiv_sym _ _ equiv_prf.
+Definition equiv_trans [ s : Setoid A R ] : forall x y z : A, R x y -> R y z -> R x z := equiv_trans _ _ equiv_prf.
 
 Ltac refl :=
   match goal with
-    [ |- ?R ?X _ ] => apply (equiv_refl (R:=R) X)
+    | [ |- ?R ?X _ ] => apply (equiv_refl (R:=R) X)
+    | [ |- ?R ?A ?X _ ] => apply (equiv_refl (R:=R A) X)
+    | [ |- ?R ?A ?B ?X _ ] => apply (equiv_refl (R:=R A B) X)
+    | [ |- ?R ?A ?B ?C ?X _ ] => apply (equiv_refl (R:=R A B C) X)
   end.
 
 Ltac sym := 
   match goal with
-    [ |- ?R ?X ?Y ] => apply (equiv_sym (R:=R) (x:=Y) (y:=X))
+    | [ |- ?R ?X ?Y ] => apply (equiv_sym (R:=R) (x:=Y) (y:=X))
+    | [ |- ?R ?A ?X ?Y ] => apply (equiv_sym (R:=R A) (x:=Y) (y:=X))
+    | [ |- ?R ?A ?B ?X ?Y ] => apply (equiv_sym (R:=R A B) (x:=Y) (y:=X))
+    | [ |- ?R ?A ?B ?C ?X ?Y ] => apply (equiv_sym (R:=R A B C) (x:=Y) (y:=X))
   end.
 
 Ltac trans Y := 
   match goal with
-    [ |- ?R ?X ?Z ] => apply (equiv_trans (R:=R) (x:=X) (y:=Y) (z:=Z))
+    | [ |- ?R ?X ?Z ] => apply (equiv_trans (R:=R) (x:=X) (y:=Y) (z:=Z))
+    | [ |- ?R ?A ?X ?Z ] => apply (equiv_trans (R:=R A) (x:=X) (y:=Y) (z:=Z))
+    | [ |- ?R ?A ?B ?X ?Z ] => apply (equiv_trans (R:=R A B) (x:=X) (y:=Y) (z:=Z))
+    | [ |- ?R ?A ?B ?C ?X ?Z ] => apply (equiv_trans (R:=R A B C) (x:=X) (y:=Y) (z:=Z))
   end.
 
 Definition respectful [ sa : Setoid a eqa, sb : Setoid b eqb ] (m : a -> b) : Prop :=
@@ -82,8 +92,8 @@ Proof.
   sym ; auto.
 Qed.
 
-(** We redefine respect for binary morphims because we cannot get a satisfying instance of [Setoid (a -> b)] from 
-   some arbitrary domain and codomain setoids. We can define it on respectful Coq functions though, see arrow_setoid.*)
+(** We redefine respect for binary and ternary morphims because we cannot get a satisfying instance of [Setoid (a -> b)] from 
+   some arbitrary domain and codomain setoids. We can define it on respectful Coq functions though, see [arrow_setoid] above. *)
 
 Definition binary_respectful [ sa : Setoid a eqa, sb : Setoid b eqb, Setoid c eqc ] (m : a -> b -> c) : Prop :=
   forall x y, eqa x y -> 
@@ -92,6 +102,14 @@ Definition binary_respectful [ sa : Setoid a eqa, sb : Setoid b eqb, Setoid c eq
 Class [ sa : Setoid a eqa, sb : Setoid b eqb, sc : Setoid c eqc ] => BinaryMorphism (m : a -> b -> c) :=
   respect2 : binary_respectful m.
 
+Definition ternary_respectful [ sa : Setoid a eqa, sb : Setoid b eqb, sc : Setoid c eqc, Setoid d eqd ] (m : a -> b -> c -> d) : Prop :=
+  forall x y, eqa x y -> forall z w, eqb z w -> forall u v, eqc u v -> eqd (m x z u) (m y w v).
+
+Class [ sa : Setoid a eqa, sb : Setoid b eqb, sc : Setoid c eqc, sd : Setoid d eqd ] => TernaryMorphism (m : a -> b -> c -> d) :=
+  respect3 : ternary_respectful m.
+
+(** Definition of the usual morphisms in [Prop]. *)
+
 Program Instance iff_setoid : Setoid Prop iff :=
   equiv_prf := @Build_equivalence _ _ iff_refl iff_trans iff_sym.
 
@@ -99,16 +117,9 @@ Program Instance not_morphism : Morphism Prop iff Prop iff not.
 
 Program Instance and_morphism : ? BinaryMorphism iff_setoid iff_setoid iff_setoid and.
 
-Set Printing All.
-
-Print and_morphism.
-Print BinaryMorphism.
-
 (* We make the setoids implicit, they're always [iff] *)
 
 Implicit Arguments Enriching BinaryMorphism [[!sa] [!sb] [!sc]].
-
-Print BinaryMorphism.
 
 Program Instance or_morphism : ? BinaryMorphism or.
 
@@ -121,9 +132,7 @@ Proof.
   unfold impl. tauto.
 Qed.
 
-Unset Printing All.
-
-Print respect.
+(** Every setoid relation gives rise to a morphism, in fact every partial setoid does. *)
 
 Program Instance [ Setoid a R ] => setoid_morphism : ? BinaryMorphism R.
 
@@ -137,7 +146,6 @@ Qed.
 Definition iff_morphism : BinaryMorphism iff := setoid_morphism.
 
 Existing Instance iff_morphism.
-Print BinaryMorphism.
 
 Implicit Arguments eq [[A]].
 
@@ -167,59 +175,13 @@ Proof.
   apply H0.
 Qed.
 
-Require Import Coq.Classes.SetoidTactics.
+Program Instance [ sa : Setoid a eqa, sb : Setoid b eqb, sc : Setoid c eqc,
+  ? Morphism sb sc g, ? Morphism sa sb f ] => 
+  compose_morphism : ? Morphism sa sc (fun x => g (f x)).
 
-Goal not True == not (not False) -> ((not True -> True)) \/ True.
-  intros.
-  clrewrite H.
-  clrewrite <- H.
-  right ; auto.
-Defined.
-
-Print Unnamed_thm.
-
-Definition reduced_thm := Eval compute in Unnamed_thm.
-
-Print reduced_thm.
-
-Lemma foo [ Setoid a R ] : True. (* forall x y, R x y -> x -> y. *)
+Next Obligation.
 Proof.
-  intros.
-  Print respect2.
-  pose setoid_morphism.
-  pose (respect2 (b0:=b)).
-  simpl in b0.
-  unfold binary_respectful in b0.
-  pose (arrow_morphism R).
-  pose (respect2 (b0:=b1)).
-  unfold binary_respectful in b2.
-
-  pose (eq_morphism (A:=a)).
-  pose (respect2 (b0:=b3)).
-  unfold binary_respectful in b4.
-  exact I.
+  apply (respect (m0:=m)).
+  apply (respect (m0:=m0)).
+  assumption.
 Qed.
-
-Goal forall A B C (H : A <-> B) (H' : B <-> C), A /\ B <-> B /\ C.
-  intros.
-  Set Printing All.
-  Print iff_morphism.
-  clrewrite H.
-  clrewrite H'.
-  reflexivity.
-Defined.
-
-Print Unnamed_thm0.
-
-
-Goal forall A B C (H : A <-> B) (H' : B <-> C), A /\ B <-> B /\ C.
-  intros.
-  rewrite H.
-  rewrite H'.
-  reflexivity.
-Defined.
-
-Require Import Setoid_tac.
-Require Import Setoid_Prop.
-Print Unnamed_thm1.
-
