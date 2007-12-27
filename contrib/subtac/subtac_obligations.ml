@@ -130,17 +130,19 @@ let rec intset_to = function
   
 let subst_body prg = 
   let obls, _ = prg.prg_obligations in
-    subst_deps obls (intset_to (pred (Array.length obls))) prg.prg_body
-
+  let ints = intset_to (pred (Array.length obls)) in
+    subst_deps obls ints prg.prg_body,
+  subst_deps obls ints (Termops.refresh_universes prg.prg_type)
+    
 let declare_definition prg =
-  let body = subst_body prg in
+  let body, typ = subst_body prg in
     (try trace (str "Declaring: " ++ Ppconstr.pr_id prg.prg_name ++ spc () ++
 		  my_print_constr (Global.env()) body ++ str " : " ++ 
 		  my_print_constr (Global.env()) prg.prg_type);
      with _ -> ());
   let ce = 
     { const_entry_body = body;
-      const_entry_type = Some (Termops.refresh_universes prg.prg_type);
+      const_entry_type = Some typ;
       const_entry_opaque = false;
       const_entry_boxed = false} 
   in
@@ -160,14 +162,18 @@ open Ppconstr
 let declare_mutual_definition l =
   let len = List.length l in
   let namerec = Array.of_list (List.map (fun x -> x.prg_name) l) in
-  let arrec = 
-    Array.of_list (List.map (fun x -> snd (decompose_prod_n len x.prg_type)) l)
-  in
-  let recvec = 
-    Array.of_list 
-      (List.map (fun x -> 
-		   let subs = (subst_body x) in
-		     snd (decompose_lam_n len subs)) l)
+(*   let arrec =  *)
+(*     Array.of_list (List.map (fun x -> snd (decompose_prod_n len x.prg_type)) l) *)
+(*   in *)
+  let recvec, arrec = 
+    let l, l' = 
+      List.split
+	(List.map (fun x -> 
+	  let subs, typ = (subst_body x) in
+	    snd (decompose_lam_n len subs), 
+	  snd (decompose_prod_n len typ)) l)
+    in
+      Array.of_list l, Array.of_list l'
   in
   let nvrec = (List.hd l).prg_nvrec in
   let recdecls = (Array.map (fun id -> Name id) namerec, arrec, recvec) in

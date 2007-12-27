@@ -355,30 +355,32 @@ let recursive_message v =
 let print_message m =
   Flags.if_verbose ppnl m
 
-(* (\* Solve an obligation using tactics, return the corresponding proof term *\) *)
-(* let solve_by_tac evi t = *)
-(*   debug 2 (str "Solving goal using tactics: " ++ Evd.pr_evar_info evi); *)
-(*   let id = id_of_string "H" in *)
-(*   try  *)
-(*     Pfedit.start_proof id goal_kind evi.evar_hyps evi.evar_concl *)
-(*     (fun _ _ -> ()); *)
-(*     debug 2 (str "Started proof"); *)
-(*     Pfedit.by (tclCOMPLETE t); *)
-(*     let _,(const,_,_) = Pfedit.cook_proof () in  *)
-(*       Pfedit.delete_current_proof (); const.Entries.const_entry_body *)
-(*   with e ->  *)
-(*     Pfedit.delete_current_proof(); *)
-(*     raise Exit *)
-
+(* Solve an obligation using tactics, return the corresponding proof term *)
 let solve_by_tac evi t =
-  let goal = {it = evi; sigma = Evd.empty } in
-  let (res, valid) = t goal in 
-    if res.it = [] then 
-      let prooftree = valid [] in
-      let proofterm, obls = Refiner.extract_open_proof res.sigma prooftree in
-	if obls = [] then proofterm
-	else raise Exit
-    else raise Exit
+  let id = id_of_string "H" in
+  try
+    Pfedit.start_proof id goal_kind evi.evar_hyps evi.evar_concl
+    (fun _ _ -> ());
+    Pfedit.by (tclCOMPLETE t);
+    let _,(const,_,_) = Pfedit.cook_proof () in
+      Pfedit.delete_current_proof (); const.Entries.const_entry_body
+  with e ->
+    Pfedit.delete_current_proof();
+    raise Exit
+
+(* let apply_tac t goal = t goal *)
+
+(* let solve_by_tac evi t = *)
+(*   let ev = 1 in *)
+(*   let evm = Evd.add Evd.empty ev evi in *)
+(*   let goal = {it = evi; sigma = evm } in *)
+(*   let (res, valid) = apply_tac t goal in *)
+(*     if res.it = [] then *)
+(*       let prooftree = valid [] in *)
+(*       let proofterm, obls = Refiner.extract_open_proof res.sigma prooftree in *)
+(* 	if obls = [] then proofterm *)
+(* 	else raise Exit *)
+(*     else raise Exit *)
 
 let rec string_of_list sep f = function
     [] -> ""

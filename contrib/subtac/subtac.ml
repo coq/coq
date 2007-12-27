@@ -65,7 +65,10 @@ let start_proof_com env isevars sopt kind (bl,t) hook =
   in
     if not (evm = Evd.empty) then 
       let stmt_id = Nameops.add_suffix id "_stmt" in
-      let obls, c' = eterm_obligations env stmt_id !isevars evm 0 c (Some typ) in
+      let obls, c', t' = eterm_obligations env stmt_id !isevars evm 0 c typ in
+      (** Make all obligations transparent so that real dependencies can be sorted out by the user *)
+      let obls = Array.map (fun (id, t, op, d) -> (id, t, false, d)) obls in
+	
 	match Subtac_obligations.add_definition stmt_id c' typ obls with
 	    Subtac_obligations.Defined cst -> Command.start_proof id kind (constant_value (Global.env()) cst) hook
 	  | _ -> 

@@ -759,7 +759,7 @@ CCVO:=
 
 DPVO:=contrib/dp/Dp.vo
 
-SUBTACVO:=theories/Program/Tactics.vo theories/Program/Equality.vo \
+SUBTACVO:=theories/Program/Tactics.vo theories/Program/Equality.vo theories/Program/Subset.vo \
 	theories/Program/Utils.vo theories/Program/Wf.vo theories/Program/Program.vo \
 	theories/Program/FunctionalExtensionality.vo
 

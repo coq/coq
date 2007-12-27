@@ -59,8 +59,6 @@ Proof.
   admit.
 Qed.
 
-Print setoideq_eq.
-
 Implicit Arguments setoideq_eq [[a] [eqa] [sa]].
 
 Ltac setoideq :=

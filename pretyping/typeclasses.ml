@@ -259,6 +259,7 @@ let is_class ind =
 let is_implicit_arg k = 
   match k with
       ImplicitArg (ref, (n, id)) -> true
+    | InternalHole -> true
     | _ -> false
 
 let resolve_typeclasses ?(check=true) env sigma evd =

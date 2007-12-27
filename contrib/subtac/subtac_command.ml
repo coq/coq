@@ -294,12 +294,11 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
 		    lift lift_cst prop ;
 		    lift lift_cst intern_body_lam |])
       | Some f ->
-	  lift (succ after_length) 
-	    (mkApp (constr_of_global (Lazy.force fix_measure_sub_ref), 
-		    [| argtyp ; 
-		       f ;
-		       lift lift_cst prop ;
-		       lift lift_cst intern_body_lam |]))
+	  mkApp (constr_of_global (Lazy.force fix_measure_sub_ref), 
+		[| lift lift_cst argtyp ; 
+		   lift lift_cst f ;
+		   lift lift_cst prop ;
+		   lift lift_cst intern_body_lam |])
   in
   let def_appl = applist (fix_def, gen_rels (after_length + 1)) in
   let def = it_mkLambda_or_LetIn def_appl binders_rel in
@@ -316,13 +315,13 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
   let evm = non_instanciated_map env isevars evm in
 
     (*   let _ = try trace (str "Non instanciated evars map: " ++ Evd.pr_evar_map evm)  with _ -> () in *)
-  let evars, evars_def = Eterm.eterm_obligations env recname !isevars evm 0 fullcoqc (Some fullctyp) in
+  let evars, evars_def, evars_typ = Eterm.eterm_obligations env recname !isevars evm 0 fullcoqc fullctyp in
     (*     (try trace (str "Generated obligations : "); *)
 (*        Array.iter *)
     (* 	 (fun (n, t, _) -> trace (str "Evar " ++ str (string_of_id n) ++ spc () ++ my_print_constr env t)) *)
     (* 	 evars; *)
     (*      with _ -> ());     *)
-    Subtac_obligations.add_definition recname evars_def fullctyp evars
+    Subtac_obligations.add_definition recname evars_def evars_typ evars
 
 let nf_evar_context isevars ctx = 
   List.map (fun (n, b, t) -> 
@@ -412,11 +411,12 @@ let build_mutrec lnameargsardef boxed =
 	(* Generalize by the recursive prototypes  *)
       let def = 
 	Termops.it_mkNamedLambda_or_LetIn def rec_sign
-      and typ = 
+      and typ =
 	Termops.it_mkNamedProd_or_LetIn typ rec_sign
       in
-      let evm = Subtac_utils.evars_of_term evm Evd.empty def in
-      let evars, def = Eterm.eterm_obligations env id isevars evm recdefs def (Some typ) in
+      let evm' = Subtac_utils.evars_of_term evm Evd.empty def in
+      let evm' = Subtac_utils.evars_of_term evm evm' typ in
+      let evars, def, typ = Eterm.eterm_obligations env id isevars evm' recdefs def typ in
 	collect_evars (succ i) ((id, def, typ, evars) :: acc)
     else acc
   in 

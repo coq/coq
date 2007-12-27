@@ -50,6 +50,7 @@ Tactic Notation "destruct" "exist" ident(t) ident(Ht) := destruct t as [t Ht].
 Tactic Notation "destruct" "or" ident(H) := destruct H as [H|H].
 
 (** Discriminate that also work on a [x <> x] hypothesis. *)
+
 Ltac discriminates :=
   match goal with
     | [ H : ?x <> ?x |- _ ] => elim H ; reflexivity
@@ -151,21 +152,12 @@ Ltac bang :=
 Tactic Notation "contradiction" "by" constr(t) := 
   let H := fresh in assert t as H by auto with * ; contradiction.
 
-(** The following tactics allow to do induction on an already instantiated inductive predicate
-   by first generalizing it and adding the proper equalities to the context, in a manner similar to 
-   the BasicElim tactic of "Elimination with a motive" by Conor McBride. *)
+(** The default simplification tactic used by Program is defined by [program_simpl], sometimes [auto with *]
+   is overkill and slows things down, better rebind using [Obligations Tactic := tac] in this case, 
+   possibly using [program_simplify] to use standard goal-cleaning tactics. *)
 
-Tactic Notation "dependent" "induction" ident(H) := 
-  generalize_eqs H ; clear H ; (intros until 1 || intros until H) ; 
-    induction H ; intros ; subst* ; try discriminates.
+Ltac program_simplify :=
+  simpl ; intros ; destruct_conjs ; simpl proj1_sig in * ; subst* ; 
+    try (solve [ red ; intros ; destruct_conjs ; discriminate ]).
 
-(** This tactic also generalizes the goal by the given variables before the induction. *)
-
-Tactic Notation "dependent" "induction" ident(H) "generalizing" ne_hyp_list(l) := 
-  generalize_eqs H ; clear H ; (intros until 1 || intros until H) ; 
-    generalize l ; clear l ; induction H ; intros ; subst* ; try discriminates.
-
-(** The default simplification tactic used by Program. *)
-
-Ltac program_simpl := simpl ; intros ; destruct_conjs ; simpl in * ; try subst ; 
-  try (solve [ red ; intros ; destruct_conjs ; discriminate ]) ; auto with *.  
+Ltac program_simpl := program_simplify ; auto with *.

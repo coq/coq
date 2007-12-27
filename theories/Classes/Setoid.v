@@ -15,6 +15,7 @@
 (* $Id: FSetAVL_prog.v 616 2007-08-08 12:28:10Z msozeau $ *)
 
 Require Import Coq.Program.Program.
+Require Import Coq.Classes.Init.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
