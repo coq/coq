@@ -138,9 +138,9 @@ type newfixpoint_expr =
 
 let rec abstract_rawconstr c = function
   | [] -> c
-  | Topconstr.LocalRawDef (x,k,b)::bl -> Topconstr.mkLetInC(x,b,abstract_rawconstr c bl)
+  | Topconstr.LocalRawDef (x,b)::bl -> Topconstr.mkLetInC(x,b,abstract_rawconstr c bl)
   | Topconstr.LocalRawAssum (idl,k,t)::bl ->
-      List.fold_right (fun x b -> Topconstr.mkLambdaC([x],t,b)) idl
+      List.fold_right (fun x b -> Topconstr.mkLambdaC([x],k,t,b)) idl
         (abstract_rawconstr c bl)
 
 let interp_casted_constr_with_implicits sigma env impls c  =
@@ -213,7 +213,7 @@ let rec is_rec names =
     | RRec _ -> error "RRec not handled"
     | RIf(_,b,_,lhs,rhs) -> 
 	(lookup names b) || (lookup names lhs) || (lookup names rhs)
-    | RLetIn(_,na,t,b) | RLambda(_,na,t,b) | RProd(_,na,t,b)  -> 
+    | RLetIn(_,na,t,b) | RLambda(_,na,_,t,b) | RProd(_,na,_,t,b)  -> 
 	lookup names t || lookup (Nameops.name_fold Idset.remove na names) b
     | RLetTuple(_,nal,_,t,b) -> lookup names t || 
 	lookup 
@@ -355,7 +355,6 @@ let register_struct is_rec fixpoint_exprl =
 	Command.declare_definition
 	  fname
 	  (Decl_kinds.Global,Flags.boxed_definitions (),Decl_kinds.Definition)
-	  []
 	  bl
 	  None
   	  body
@@ -463,7 +462,7 @@ let register_mes fname rec_impls wf_mes_expr wf_arg using_lemmas args ret_type b
   let fun_from_mes = 
     let applied_mes = 
       Topconstr.mkAppC(wf_mes_expr,[Topconstr.mkIdentC wf_arg])    in
-    Topconstr.mkLambdaC ([(dummy_loc,Name wf_arg)],wf_arg_type,applied_mes) 
+    Topconstr.mkLambdaC ([(dummy_loc,Name wf_arg)],Topconstr.default_binder_kind,wf_arg_type,applied_mes) 
   in
   let wf_rel_from_mes = 
     Topconstr.mkAppC(Topconstr.mkRefC  ltof,[wf_arg_type;fun_from_mes])
@@ -571,11 +570,11 @@ let rec add_args id new_args b =
       CArrow(loc,add_args id new_args  b1, add_args id new_args b2)
   | CProdN(loc,nal,b1) -> 
       CProdN(loc,
-	     List.map (fun (nal,b2) -> (nal,add_args id new_args b2)) nal, 
+	     List.map (fun (nal,k,b2) -> (nal,k,add_args id new_args b2)) nal, 
 	     add_args id new_args  b1)
   | CLambdaN(loc,nal,b1) -> 
       CLambdaN(loc,
-	       List.map (fun (nal,b2) -> (nal,add_args id new_args  b2)) nal, 
+	       List.map (fun (nal,k,b2) -> (nal,k,add_args id new_args  b2)) nal, 
 	       add_args id new_args  b1)
   | CLetIn(loc,na,b1,b2) -> 
       CLetIn(loc,na,add_args id new_args b1,add_args id new_args b2)
@@ -645,13 +644,15 @@ let rec chop_n_arrow n t =
 	      let new_n =
 		let rec aux (n:int) = function 
 		    [] -> n
-		| (nal,t'')::nal_ta' -> 
+		| (nal,k,t'')::nal_ta' -> 
 		    let nal_l = List.length nal in 
 		    if n >= nal_l
 		    then 
 		      aux (n - nal_l) nal_ta'
 		    else 
-		      let new_t' = Topconstr.CProdN(dummy_loc,((snd (list_chop n nal)),t'')::nal_ta',t')
+		      let new_t' = 
+			Topconstr.CProdN(dummy_loc,
+					((snd (list_chop n nal)),k,t'')::nal_ta',t')
 		      in 
 		      raise (Stop new_t')
 		in
@@ -669,12 +670,12 @@ let rec get_args b t : Topconstr.local_binder list *
     | Topconstr.CLambdaN (loc, (nal_ta), b') -> 
 	begin
 	  let n = 
-	    (List.fold_left (fun n (nal,_) -> 
+	    (List.fold_left (fun n (nal,_,_) -> 
 			       n+List.length nal) 0 nal_ta )
 	  in
 	  let nal_tas,b'',t'' = get_args b' (chop_n_arrow n t) in 
-	  (List.map (fun (nal,ta) -> 
-		       (Topconstr.LocalRawAssum (nal,Explicit,ta))) nal_ta)@nal_tas, b'',t'' 
+	  (List.map (fun (nal,k,ta) -> 
+		       (Topconstr.LocalRawAssum (nal,k,ta))) nal_ta)@nal_tas, b'',t'' 
 	end
     | _ -> [],b,t
 
@@ -716,7 +717,7 @@ let make_graph (f_ref:global_reference) =
 			 List.flatten 
 			   (List.map 
 			      (function 
-				 | Topconstr.LocalRawDef (na,_,_)-> []
+				 | Topconstr.LocalRawDef (na,_)-> []
 				 | Topconstr.LocalRawAssum (nal,_,_) -> nal
 			      )
 			      bl
@@ -730,7 +731,7 @@ let make_graph (f_ref:global_reference) =
 			 List.flatten 
 			   (List.map 
 			      (function
- 				 | Topconstr.LocalRawDef (na,_,_)-> []
+ 				 | Topconstr.LocalRawDef (na,_)-> []
 			      	 | Topconstr.LocalRawAssum (nal,_,_) -> 
 				     List.map 
 				       (fun (loc,n) -> 

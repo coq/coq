@@ -205,7 +205,7 @@ let pr_eqn pr (loc,pl,rhs) =
       pr_sep_com spc (pr ltop) rhs))
 
 let begin_of_binder = function
-    LocalRawDef((loc,_),_,_) -> fst (unloc loc)
+    LocalRawDef((loc,_),_) -> fst (unloc loc)
   | LocalRawAssum((loc,_)::_,_,_) -> fst (unloc loc)
   | _ -> assert false
 
@@ -215,13 +215,15 @@ let begin_of_binders = function
 
 let surround_binder k p = 
   match k with
-      Explicit -> hov 1 (str"(" ++ p ++ str")")
-    | Implicit -> hov 1 (str"[" ++ p ++ str"]")
-	
+      Default Explicit -> hov 1 (str"(" ++ p ++ str")")
+    | Default Implicit -> hov 1 (str"`" ++ p ++ str"`")
+    | TypeClass b -> hov 1 (str"[" ++ p ++ str"]")
+
 let surround_implicit k p =
   match k with
-      Explicit -> p
-    | Implicit -> (str"[" ++ p ++ str"]")
+      Default Explicit -> p
+    | Default Implicit -> (str"`" ++ p ++ str"`")
+    | TypeClass b -> (str"[" ++ p ++ str"]")
 
 let pr_binder many pr (nal,k,t) =
   match t with
@@ -233,13 +235,12 @@ let pr_binder many pr (nal,k,t) =
 let pr_binder_among_many pr_c = function
   | LocalRawAssum (nal,k,t) ->
       pr_binder true pr_c (nal,k,t)
-  | LocalRawDef (na,k,c) ->
+  | LocalRawDef (na,c) ->
       let c,topt = match c with
         | CCast(_,c, CastConv (_,t)) -> c, t
         | _ -> c, CHole dummy_loc in
-      hov 1 (surround_binder k
-        (pr_lname na ++ pr_opt_type pr_c topt ++
-         str":=" ++ cut() ++ pr_c c))
+      hov 1 (pr_lname na ++ pr_opt_type pr_c topt ++
+         str":=" ++ cut() ++ pr_c c)
 
 let pr_undelimited_binders pr_c =
   prlist_with_sep spc (pr_binder_among_many pr_c)
@@ -259,9 +260,9 @@ let rec extract_prod_binders = function
       if bl = [] then [], x else LocalRawDef (na,b) :: bl, c*)
   | CProdN (loc,[],c) ->
       extract_prod_binders c
-  | CProdN (loc,(nal,t)::bl,c) ->
+  | CProdN (loc,(nal,bk,t)::bl,c) ->
       let bl,c = extract_prod_binders (CProdN(loc,bl,c)) in
-      LocalRawAssum (nal,Explicit,t) :: bl, c
+      LocalRawAssum (nal,bk,t) :: bl, c
   | c -> [], c
 
 let rec extract_lam_binders = function
@@ -270,15 +271,15 @@ let rec extract_lam_binders = function
       if bl = [] then [], x else LocalRawDef (na,b) :: bl, c*)
   | CLambdaN (loc,[],c) ->
       extract_lam_binders c
-  | CLambdaN (loc,(nal,t)::bl,c) ->
+  | CLambdaN (loc,(nal,bk,t)::bl,c) ->
       let bl,c = extract_lam_binders (CLambdaN(loc,bl,c)) in
-      LocalRawAssum (nal,Explicit,t) :: bl, c
+      LocalRawAssum (nal,bk,t) :: bl, c
   | c -> [], c
     
 let split_lambda = function
-  | CLambdaN (loc,[[na],t],c) -> (na,t,c)
-  | CLambdaN (loc,([na],t)::bl,c) -> (na,t,CLambdaN(loc,bl,c))
-  | CLambdaN (loc,(na::nal,t)::bl,c) -> (na,t,CLambdaN(loc,(nal,t)::bl,c))
+  | CLambdaN (loc,[[na],bk,t],c) -> (na,t,c)
+  | CLambdaN (loc,([na],bk,t)::bl,c) -> (na,t,CLambdaN(loc,bl,c))
+  | CLambdaN (loc,(na::nal,bk,t)::bl,c) -> (na,t,CLambdaN(loc,(nal,bk,t)::bl,c))
   | _ -> anomaly "ill-formed fixpoint body"
 
 let rename na na' t c =
@@ -289,13 +290,13 @@ let rename na na' t c =
   
 let split_product na' = function
   | CArrow (loc,t,c) -> (na',t,c)
-  | CProdN (loc,[[na],t],c) -> rename na na' t c
-  | CProdN (loc,([na],t)::bl,c) -> rename na na' t (CProdN(loc,bl,c))
-  | CProdN (loc,(na::nal,t)::bl,c) ->
-      rename na na' t (CProdN(loc,(nal,t)::bl,c))
+  | CProdN (loc,[[na],bk,t],c) -> rename na na' t c
+  | CProdN (loc,([na],bk,t)::bl,c) -> rename na na' t (CProdN(loc,bl,c))
+  | CProdN (loc,(na::nal,bk,t)::bl,c) ->
+      rename na na' t (CProdN(loc,(nal,bk,t)::bl,c))
   | _ -> anomaly "ill-formed fixpoint body"
 
-let merge_binders (na1,ty1) cofun (na2,ty2) codom =
+let merge_binders (na1,bk1,ty1) cofun (na2,bk2,ty2) codom =
   let na =
     match snd na1, snd na2 with
         Anonymous, Name id ->
@@ -316,34 +317,34 @@ let merge_binders (na1,ty1) cofun (na2,ty2) codom =
       | _ ->
           Constrextern.check_same_type ty1 ty2;
           ty2 in
-  (LocalRawAssum ([na],Explicit,ty), codom)
+  (LocalRawAssum ([na],bk1,ty), codom)
             
 let rec strip_domain bvar cofun c =
   match c with
     | CArrow(loc,a,b) ->
-        merge_binders bvar cofun ((dummy_loc,Anonymous),a) b
-    | CProdN(loc,[([na],ty)],c') ->
-        merge_binders bvar cofun (na,ty) c'
-    | CProdN(loc,([na],ty)::bl,c') ->
-        merge_binders bvar cofun (na,ty) (CProdN(loc,bl,c'))
-    | CProdN(loc,(na::nal,ty)::bl,c') ->
-        merge_binders bvar cofun (na,ty) (CProdN(loc,(nal,ty)::bl,c'))
+        merge_binders bvar cofun ((dummy_loc,Anonymous),default_binder_kind,a) b
+    | CProdN(loc,[([na],bk,ty)],c') ->
+        merge_binders bvar cofun (na,bk,ty) c'
+    | CProdN(loc,([na],bk,ty)::bl,c') ->
+        merge_binders bvar cofun (na,bk,ty) (CProdN(loc,bl,c'))
+    | CProdN(loc,(na::nal,bk,ty)::bl,c') ->
+        merge_binders bvar cofun (na,bk,ty) (CProdN(loc,(nal,bk,ty)::bl,c'))
     | _ -> failwith "not a product"
 
 (* Note: binder sharing is lost *)
-let rec strip_domains (nal,ty) cofun c =
+let rec strip_domains (nal,bk,ty) cofun c =
   match nal with
       [] -> assert false
     | [na] ->
-        let bnd, c' = strip_domain (na,ty) cofun c in
+        let bnd, c' = strip_domain (na,bk,ty) cofun c in
         ([bnd],None,c')
     | na::nal ->
-        let f = CLambdaN(dummy_loc,[(nal,ty)],cofun) in
-        let bnd, c1 = strip_domain (na,ty) f c in
+        let f = CLambdaN(dummy_loc,[(nal,bk,ty)],cofun) in
+        let bnd, c1 = strip_domain (na,bk,ty) f c in
         (try
-          let bl, rest, c2 = strip_domains (nal,ty) cofun c1 in
+          let bl, rest, c2 = strip_domains (nal,bk,ty) cofun c1 in
           (bnd::bl, rest, c2)
-        with Failure _ -> ([bnd],Some (nal,ty), c1))
+        with Failure _ -> ([bnd],Some (nal,bk,ty), c1))
 
 (* Re-share binders *)
 let rec factorize_binders = function
@@ -380,7 +381,7 @@ let rec split_fix n typ def =
     let (na,_,def) = split_lambda def in
     let (na,t,typ) = split_product na typ in
     let (bl,typ,def) = split_fix (n-1) typ def in
-    (LocalRawAssum ([na],Explicit,t)::bl,typ,def)
+    (LocalRawAssum ([na],default_binder_kind,t)::bl,typ,def)
 
 let pr_recursive_decl pr pr_dangling dangling_with_for id bl annot t c =
   let pr_body =
@@ -611,31 +612,31 @@ let rec strip_context n iscast t =
   if n = 0 then
     [], if iscast then match t with CCast (_,c,_) -> c | _ -> t else t
   else match t with
-    | CLambdaN (loc,(nal,t)::bll,c) ->
+    | CLambdaN (loc,(nal,bk,t)::bll,c) ->
 	let n' = List.length nal in
 	if n' > n then
 	  let nal1,nal2 = list_chop n nal in
-	  [LocalRawAssum (nal1,Explicit,t)], CLambdaN (loc,(nal2,t)::bll,c)
+	  [LocalRawAssum (nal1,bk,t)], CLambdaN (loc,(nal2,bk,t)::bll,c)
 	else
 	let bl', c = strip_context (n-n') iscast
 	  (if bll=[] then c else CLambdaN (loc,bll,c)) in
-	LocalRawAssum (nal,Explicit,t) :: bl', c 
-    | CProdN (loc,(nal,t)::bll,c) ->
+	LocalRawAssum (nal,bk,t) :: bl', c 
+    | CProdN (loc,(nal,bk,t)::bll,c) ->
 	let n' = List.length nal in
 	if n' > n then
 	  let nal1,nal2 = list_chop n nal in
-	  [LocalRawAssum (nal1,Explicit,t)], CProdN (loc,(nal2,t)::bll,c)
+	  [LocalRawAssum (nal1,bk,t)], CProdN (loc,(nal2,bk,t)::bll,c)
 	else
 	let bl', c = strip_context (n-n') iscast
 	  (if bll=[] then c else CProdN (loc,bll,c)) in
-	LocalRawAssum (nal,Explicit,t) :: bl', c 
+	LocalRawAssum (nal,bk,t) :: bl', c 
     | CArrow (loc,t,c) ->
 	let bl', c = strip_context (n-1) iscast c in
-	LocalRawAssum ([loc,Anonymous],Explicit,t) :: bl', c 
+	LocalRawAssum ([loc,Anonymous],default_binder_kind,t) :: bl', c
     | CCast (_,c,_) -> strip_context n false c
     | CLetIn (_,na,b,c) -> 
 	let bl', c = strip_context (n-1) iscast c in
-	LocalRawDef (na,Explicit,b) :: bl', c
+	LocalRawDef (na,b) :: bl', c
     | _ -> anomaly "strip_context"
 
 type term_pr = {

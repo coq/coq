@@ -520,13 +520,13 @@ let build_mutual_indrec env sigma = function
     	(List.map
 	   (function (mind',mibi',mipi',dep',s') ->
 	      let (sp',_) = mind' in
-(* 	      if sp=sp' then  *)
+	      if sp=sp' then
                 let (mibi',mipi') = lookup_mind_specif env mind' in
 		(mind',mibi',mipi',dep',s')
-(* 	      else  *)
-(*		  raise (RecursionSchemeError (NotMutualInScheme (mind,mind'))) *))
-		  lrecspec)
-	in
+	      else
+		  raise (RecursionSchemeError (NotMutualInScheme (mind,mind'))))
+	   lrecspec)
+      in
       let _ = check_arities listdepkind in 
       mis_make_indrec env sigma listdepkind mib
   | _ -> anomaly "build_indrec expects a non empty list of inductive types"

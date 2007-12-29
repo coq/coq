@@ -1061,7 +1061,7 @@ let (value_f:constr list -> global_reference -> constr) =
       List.fold_left2 
 	(fun acc x_id a -> 
 	   RLambda
-      	     (d0, Name x_id, RDynamic(d0, constr_in a),
+      	     (d0, Name x_id, Explicit, RDynamic(d0, constr_in a),
 	      acc
 	     ) 
 	)

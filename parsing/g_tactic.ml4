@@ -95,9 +95,9 @@ open Tactic
 let mk_fix_tac (loc,id,bl,ann,ty) =
   let n =
     match bl,ann with
-        [([_],_)], None -> 1
+        [([_],_,_)], None -> 1
       | _, Some x ->
-          let ids = List.map snd (List.flatten (List.map fst bl)) in
+          let ids = List.map snd (List.flatten (List.map pi1 bl)) in
           (try list_index (snd x) ids
           with Not_found -> error "no such fix variable")
       | _ -> error "cannot guess decreasing argument of fix" in

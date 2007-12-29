@@ -21,39 +21,8 @@ Unset Strict Implicit.
 
 Require Export Coq.Classes.Setoid.
 
-Ltac refl :=
-  match goal with
-    | [ |- @equiv ?A ?R ?s ?X _ ] => apply (equiv_refl (A:=A) (R:=R) (s:=s) X)
-    | [ |- ?R ?X _ ] => apply (equiv_refl (R:=R) X)
-    | [ |- ?R ?A ?X _ ] => apply (equiv_refl (R:=R A) X)
-    | [ |- ?R ?A ?B ?X _ ] => apply (equiv_refl (R:=R A B) X)
-    | [ |- ?R ?A ?B ?C ?X _ ] => apply (equiv_refl (R:=R A B C) X)
-  end.
-
-Ltac sym := 
-  match goal with
-    | [ |- @equiv ?A ?R ?s ?X ?Y ] => apply (equiv_sym (A:=A) (R:=R) (s:=s) (x:=X) (y:=Y))
-    | [ |- ?R ?X ?Y ] => apply (equiv_sym (R:=R) (x:=Y) (y:=X))
-    | [ |- ?R ?A ?X ?Y ] => apply (equiv_sym (R:=R A) (x:=Y) (y:=X))
-    | [ |- ?R ?A ?B ?X ?Y ] => apply (equiv_sym (R:=R A B) (x:=Y) (y:=X))
-    | [ |- ?R ?A ?B ?C ?X ?Y ] => apply (equiv_sym (R:=R A B C) (x:=Y) (y:=X))
-  end.
-
-Ltac trans Y := 
-  match goal with
-    | [ |- @equiv ?A ?R ?s ?X ?Z ] => apply (equiv_trans (A:=A) (R:=R) (s:=s) (x:=X) (y:=Y) (z:=Z))
-    | [ |- ?R ?X ?Z ] => apply (equiv_trans (R:=R) (x:=X) (y:=Y) (z:=Z))
-    | [ |- ?R ?A ?X ?Z ] => apply (equiv_trans (R:=R A) (x:=X) (y:=Y) (z:=Z))
-    | [ |- ?R ?A ?B ?X ?Z ] => apply (equiv_trans (R:=R A B) (x:=X) (y:=Y) (z:=Z))
-    | [ |- ?R ?A ?B ?C ?X ?Z ] => apply (equiv_trans (R:=R A B C) (x:=X) (y:=Y) (z:=Z))
-  end.
-
-(* Bug, rebinding notation *)
-Notation " x == y " := (equiv x y) (at level 70, no associativity).
-
 Ltac rew H := clrewrite H.
 
-(** Why have to rebind it, again ? *)
 Lemma setoideq_eq [ sa : Setoid a eqa ] : forall x y, eqa x y -> x = y.
 Proof.
   admit.

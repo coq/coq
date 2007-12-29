@@ -31,8 +31,8 @@ open Redexpr
    defined object *)
 
 val declare_definition : identifier -> definition_kind ->
-  typeclass_context -> local_binder list -> red_expr option -> constr_expr ->
-    constr_expr option -> declaration_hook -> unit
+  local_binder list -> red_expr option -> constr_expr ->
+  constr_expr option -> declaration_hook -> unit
 
 val syntax_definition : identifier -> constr_expr -> bool -> bool -> unit
 
@@ -74,7 +74,7 @@ val start_proof : identifier -> goal_kind -> constr ->
   declaration_hook -> unit
 
 val start_proof_com : identifier option -> goal_kind -> 
-  (typeclass_context * local_binder list * constr_expr) -> declaration_hook -> unit
+  (local_binder list * constr_expr) -> declaration_hook -> unit
 
 (*s [save_named b] saves the current completed proof under the name it
 was started; boolean [b] tells if the theorem is declared opaque; it

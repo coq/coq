@@ -830,7 +830,7 @@ let merge_rec_params_and_arity prms1 prms2 shift (concl:constr) =
         let _ = prNamedRConstr (string_of_name nme) tp in
         let _ = prstr "  ;  " in
         let typ = rawterm_to_constr_expr tp in
-        LocalRawAssum ([(dummy_loc,nme)], Explicit, typ) :: acc)
+        LocalRawAssum ([(dummy_loc,nme)], Topconstr.default_binder_kind, typ) :: acc)
       [] params in
   let concl = Constrextern.extern_constr false (Global.env()) concl in
   let arity,_ = 
@@ -838,7 +838,7 @@ let merge_rec_params_and_arity prms1 prms2 shift (concl:constr) =
       (fun (acc,env) (nm,_,c) -> 
         let typ = Constrextern.extern_constr false env c in
         let newenv = Environ.push_rel (nm,None,c) env in
-        CProdN (dummy_loc, [[(dummy_loc,nm)],typ] , acc) , newenv)
+        CProdN (dummy_loc, [[(dummy_loc,nm)],Topconstr.default_binder_kind,typ] , acc) , newenv)
       (concl,Global.env())
       (shift.funresprms2 @ shift.funresprms1 
         @ shift.args2 @ shift.args1 @ shift.otherprms2 @ shift.otherprms1) in  
@@ -867,7 +867,7 @@ let mkProd_reldecl (rdecl:rel_declaration) (t2:rawconstr) =
   match rdecl with
     | (nme,None,t) -> 
         let traw = Detyping.detype false [] [] t in
-        RProd (dummy_loc,nme,traw,t2)
+        RProd (dummy_loc,nme,Explicit,traw,t2)
     | (_,Some _,_) -> assert false
 
 
@@ -877,7 +877,7 @@ let mkProd_reldecl (rdecl:rel_declaration) (t2:rawconstr) =
   match rdecl with
     | (nme,None,t) -> 
         let traw = Detyping.detype false [] [] t in
-        RProd (dummy_loc,nme,traw,t2)
+        RProd (dummy_loc,nme,Explicit,traw,t2)
     | (_,Some _,_) -> assert false
 
 

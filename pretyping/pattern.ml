@@ -220,10 +220,10 @@ let rec pat_of_raw metas vars = function
   | RApp (_,c,cl) -> 
       PApp (pat_of_raw metas vars c,
 	    Array.of_list (List.map (pat_of_raw metas vars) cl))
-  | RLambda (_,na,c1,c2) ->
+  | RLambda (_,na,bk,c1,c2) ->
       PLambda (na, pat_of_raw metas vars c1,
 	       pat_of_raw metas (na::vars) c2)
-  | RProd (_,na,c1,c2) ->
+  | RProd (_,na,bk,c1,c2) ->
       PProd (na, pat_of_raw metas vars c1,
 	       pat_of_raw metas (na::vars) c2)
   | RLetIn (_,na,c1,c2) ->
@@ -241,7 +241,7 @@ let rec pat_of_raw metas vars = function
       PIf (pat_of_raw metas vars c,
            pat_of_raw metas vars b1,pat_of_raw metas vars b2)
   | RLetTuple (loc,nal,(_,None),b,c) ->
-      let mkRLambda c na = RLambda (loc,na,RHole (loc,Evd.InternalHole),c) in
+      let mkRLambda c na = RLambda (loc,na,Explicit,RHole (loc,Evd.InternalHole),c) in
       let c = List.fold_left mkRLambda c nal in
       PCase ((LetStyle,[|1|],None,None),PMeta None,pat_of_raw metas vars b,
              [|pat_of_raw metas vars c|])

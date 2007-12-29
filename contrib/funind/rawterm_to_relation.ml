@@ -586,7 +586,7 @@ let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
 	    | RProd _ -> error "Cannot apply a type"
 	end (* end of the application treatement *) 
 
-    | RLambda(_,n,t,b) ->
+    | RLambda(_,n,_,t,b) ->
 	(* we first compute the list of constructor 
 	   corresponding to the body of the function, 
 	   then the one corresponding to the type 
@@ -601,7 +601,7 @@ let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
 	let new_env = raw_push_named (new_n,None,t) env in
 	let b_res = build_entry_lc new_env funnames avoid b in
 	combine_results (combine_lam new_n) t_res b_res
-    | RProd(_,n,t,b) ->
+    | RProd(_,n,_,t,b) ->
 	(* we first compute the list of constructor 
 	   corresponding to the body of the function, 
 	   then the one corresponding to the type 
@@ -865,7 +865,7 @@ let is_res id =
 *)
 let rec rebuild_cons nb_args relname args crossed_types depth rt = 
   match rt with 
-    | RProd(_,n,t,b) -> 
+    | RProd(_,n,k,t,b) -> 
 	let not_free_in_t id = not (is_free_in id t) in 
 	let new_crossed_types = t::crossed_types in 
 	begin
@@ -928,7 +928,7 @@ let rec rebuild_cons nb_args relname args crossed_types depth rt =
 			(Idset.filter not_free_in_t id_to_exclude)
 		  | _ -> mkRProd(n,t,new_b),Idset.filter not_free_in_t id_to_exclude
 	end
-    | RLambda(_,n,t,b) ->
+    | RLambda(_,n,k,t,b) ->
 	begin
 	  let not_free_in_t id = not (is_free_in id t) in
 	  let new_crossed_types = t :: crossed_types in
@@ -944,7 +944,7 @@ let rec rebuild_cons nb_args relname args crossed_types depth rt =
 		then 
 		  new_b, Idset.remove id (Idset.filter not_free_in_t id_to_exclude)
 		else
-		  RProd(dummy_loc,n,t,new_b),Idset.filter not_free_in_t id_to_exclude
+		  RProd(dummy_loc,n,k,t,new_b),Idset.filter not_free_in_t id_to_exclude
 	    | _ -> anomaly "Should not have an anonymous function here" 
 		(* We have renamed all the anonymous functions during alpha_renaming phase *)
 	  
@@ -1016,7 +1016,7 @@ let rec compute_cst_params relnames params = function
       compute_cst_params_from_app [] (params,rtl)
   | RApp(_,f,args) -> 
       List.fold_left (compute_cst_params relnames) params (f::args)
-  | RLambda(_,_,t,b) | RProd(_,_,t,b) | RLetIn(_,_,t,b) | RLetTuple(_,_,_,t,b) -> 
+  | RLambda(_,_,_,t,b) | RProd(_,_,_,t,b) | RLetIn(_,_,t,b) | RLetTuple(_,_,_,t,b) -> 
       let t_params = compute_cst_params relnames params t in 
       compute_cst_params relnames t_params b
   | RCases _ -> params  (* If there is still cases at this point they can only be 
@@ -1153,7 +1153,7 @@ let do_build_inductive
 	 else
 	   Topconstr.CProdN
 	   (dummy_loc,
-	    [[(dummy_loc,n)],Constrextern.extern_rawconstr Idset.empty t],
+	   [[(dummy_loc,n)],Topconstr.default_binder_kind,Constrextern.extern_rawconstr Idset.empty t],
 	    acc
 	   )
       )
@@ -1170,10 +1170,10 @@ let do_build_inductive
       (fun (n,t,is_defined) -> 
 	 if is_defined 
 	 then
-	   Topconstr.LocalRawDef((dummy_loc,n), Topconstr.Explicit, Constrextern.extern_rawconstr Idset.empty t)
+	   Topconstr.LocalRawDef((dummy_loc,n), Constrextern.extern_rawconstr Idset.empty t)
 	 else
 	 Topconstr.LocalRawAssum 
-	   ([(dummy_loc,n)], Topconstr.Explicit, Constrextern.extern_rawconstr Idset.empty t)
+	   ([(dummy_loc,n)], Topconstr.default_binder_kind, Constrextern.extern_rawconstr Idset.empty t)
       )
       rels_params
   in 

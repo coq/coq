@@ -116,7 +116,7 @@ INTERP:=\
   parsing/lexer.cmo interp/topconstr.cmo interp/ppextend.cmo \
   interp/notation.cmo \
   interp/genarg.cmo interp/syntax_def.cmo interp/reserve.cmo \
-  library/impargs.cmo interp/constrintern.cmo \
+  library/impargs.cmo interp/implicit_quantifiers.cmo interp/constrintern.cmo \
   interp/modintern.cmo interp/constrextern.cmo interp/coqlib.cmo \
   toplevel/discharge.cmo library/declare.cmo
 
@@ -157,7 +157,7 @@ TACTICS:=\
 TOPLEVEL:=\
   toplevel/himsg.cmo toplevel/cerrors.cmo \
   toplevel/class.cmo toplevel/vernacexpr.cmo toplevel/metasyntax.cmo \
-  toplevel/auto_ind_decl.cmo toplevel/implicit_quantifiers.cmo \
+  toplevel/auto_ind_decl.cmo \
   toplevel/command.cmo toplevel/record.cmo \
   parsing/ppvernac.cmo toplevel/classes.cmo \
   toplevel/vernacinterp.cmo toplevel/mltop.cmo \
@@ -423,8 +423,8 @@ PRINTERSCMO:=\
   pretyping/pretyping.cmo pretyping/clenv.cmo pretyping/pattern.cmo \
   parsing/lexer.cmo interp/ppextend.cmo interp/genarg.cmo \
   interp/topconstr.cmo interp/notation.cmo interp/reserve.cmo		\
-  library/impargs.cmo\
-  interp/constrextern.cmo interp/syntax_def.cmo interp/constrintern.cmo	\
+  library/impargs.cmo interp/constrextern.cmo \
+  interp/syntax_def.cmo interp/implicit_quantifiers.cmo  interp/constrintern.cmo \
   proofs/proof_trees.cmo proofs/logic.cmo proofs/refiner.cmo \
   proofs/tacexpr.cmo \
   proofs/evar_refiner.cmo proofs/pfedit.cmo proofs/tactic_debug.cmo \

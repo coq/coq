@@ -98,7 +98,7 @@ let coqintern_type evd env : Topconstr.constr_expr -> Rawterm.rawconstr = Constr
 
 let env_with_binders env isevars l =
   let rec aux ((env, rels) as acc) = function
-      Topconstr.LocalRawDef ((loc, name), k, def) :: tl -> 
+      Topconstr.LocalRawDef ((loc, name), def) :: tl -> 
 	let rawdef = coqintern_constr !isevars env def in
 	let coqdef, deftyp = interp env isevars rawdef empty_tycon in
 	let reldecl = (name, Some coqdef, deftyp) in
@@ -116,8 +116,8 @@ let env_with_binders env isevars l =
     | [] -> acc
   in aux (env, []) l
 
-let subtac_process env isevars id cbl l c tycon =
-  let bl = Implicit_quantifiers.ctx_of_class_binders env cbl @ l in
+let subtac_process env isevars id bl c tycon =
+(*   let bl = Implicit_quantifiers.ctx_of_class_binders (vars_of_env env) cbl @ l in *)
   let imps = Implicit_quantifiers.implicits_of_binders bl in
   let c = Command.abstract_constr_expr c bl in
   let tycon = 
@@ -136,8 +136,8 @@ let subtac_process env isevars id cbl l c tycon =
 
 open Subtac_obligations
 
-let subtac_proof env isevars id cbl l c tycon =
-  let evm, coqc, coqt, imps = subtac_process env isevars id cbl l c tycon in
+let subtac_proof env isevars id bl c tycon =
+  let evm, coqc, coqt, imps = subtac_process env isevars id bl c tycon in
   let evm = Subtac_utils.evars_of_term evm Evd.empty coqc in
   let evars, def, ty = Eterm.eterm_obligations env id !isevars evm 0 coqc coqt in
     add_definition id def ty ~implicits:imps evars

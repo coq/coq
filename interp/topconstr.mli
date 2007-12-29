@@ -92,7 +92,7 @@ type notation = string
 
 type explicitation = ExplByPos of int * identifier option | ExplByName of identifier
   
-type binding_kind = Explicit | Implicit
+type binder_kind = Default of binding_kind | TypeClass of binding_kind
 
 type proj_flag = int option (* [Some n] = proj of the n-th visible argument *)
 
@@ -112,8 +112,8 @@ type constr_expr =
   | CFix of loc * identifier located * fixpoint_expr list
   | CCoFix of loc * identifier located * cofixpoint_expr list
   | CArrow of loc * constr_expr * constr_expr
-  | CProdN of loc * (name located list * constr_expr) list * constr_expr
-  | CLambdaN of loc * (name located list * constr_expr) list * constr_expr
+  | CProdN of loc * (name located list * binder_kind * constr_expr) list * constr_expr
+  | CLambdaN of loc * (name located list * binder_kind * constr_expr) list * constr_expr
   | CLetIn of loc * name located * constr_expr * constr_expr
   | CAppExpl of loc * (proj_flag * reference) * constr_expr list
   | CApp of loc * (proj_flag * constr_expr) * 
@@ -147,12 +147,12 @@ and recursion_order_expr =
   | CMeasureRec of constr_expr
 
 and local_binder =
-  | LocalRawDef of name located * binding_kind * constr_expr
-  | LocalRawAssum of name located list * binding_kind * constr_expr
+  | LocalRawDef of name located * constr_expr
+  | LocalRawAssum of name located list * binder_kind * constr_expr
+      
+type typeclass_constraint = name located * binding_kind * constr_expr
 
-type typeclass_constraint = name located * (binding_kind * identifier located) * constr_expr list
-
-type typeclass_context = typeclass_constraint list
+and typeclass_context = typeclass_constraint list
 
 (**********************************************************************)
 (* Utilities on constr_expr                                           *)
@@ -167,6 +167,8 @@ val replace_vars_constr_expr :
 val free_vars_of_constr_expr : constr_expr -> Idset.t
 val occur_var_constr_expr : identifier -> constr_expr -> bool
 
+val default_binder_kind : binder_kind
+
 (* Specific function for interning "in indtype" syntax of "match" *)
 val ids_of_cases_indtype : constr_expr -> identifier list
 
@@ -174,9 +176,9 @@ val mkIdentC : identifier -> constr_expr
 val mkRefC : reference -> constr_expr
 val mkAppC : constr_expr * constr_expr list -> constr_expr
 val mkCastC : constr_expr * constr_expr cast_type -> constr_expr
-val mkLambdaC : name located list * constr_expr * constr_expr -> constr_expr
+val mkLambdaC : name located list * binder_kind * constr_expr * constr_expr -> constr_expr
 val mkLetInC : name located * constr_expr * constr_expr -> constr_expr
-val mkProdC : name located list * constr_expr * constr_expr -> constr_expr
+val mkProdC : name located list * binder_kind * constr_expr * constr_expr -> constr_expr
 
 val coerce_to_id : constr_expr -> identifier located
 

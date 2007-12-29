@@ -434,6 +434,9 @@ module Constr =
     let lconstr_pattern = gec_constr "lconstr_pattern"
     let binder = Gram.Entry.create "constr:binder"
     let binder_let = Gram.Entry.create "constr:binder_let"
+    let binders_let = Gram.Entry.create "constr:binders_let"
+    let typeclass_constraint = Gram.Entry.create "constr:typeclass_constraint"
+    let typeclass_param = Gram.Entry.create "constr:typeclass_param"
   end
 
 module Module =

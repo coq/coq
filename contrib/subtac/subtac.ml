@@ -49,6 +49,22 @@ open Decl_kinds
 open Tacinterp
 open Tacexpr
 
+let solve_tccs_in_type env id isevars evm c typ =
+  if not (evm = Evd.empty) then 
+    let stmt_id = Nameops.add_suffix id "_stmt" in
+    let obls, c', t' = eterm_obligations env stmt_id !isevars evm 0 c typ in
+    (** Make all obligations transparent so that real dependencies can be sorted out by the user *)
+    let obls = Array.map (fun (id, t, op, d) -> (id, t, false, d)) obls in
+      match Subtac_obligations.add_definition stmt_id c' typ obls with
+	  Subtac_obligations.Defined cst -> constant_value (Global.env()) cst
+	| _ -> 
+	    errorlabstrm "start_proof" 
+	      (str "The statement obligations could not be resolved automatically, " ++ spc () ++
+		  str "write a statement definition first.")
+  else
+    let _ = Typeops.infer_type env c in c
+
+
 let start_proof_com env isevars sopt kind (bl,t) hook =
   let id = match sopt with
     | Some id ->
@@ -61,23 +77,10 @@ let start_proof_com env isevars sopt kind (bl,t) hook =
  	  (Pfedit.get_all_proof_names ())
   in
   let evm, c, typ, _imps = 
-    Subtac_pretyping.subtac_process env isevars id [] [] (Command.generalize_constr_expr t bl) None 
+    Subtac_pretyping.subtac_process env isevars id [] (Command.generalize_constr_expr t bl) None 
   in
-    if not (evm = Evd.empty) then 
-      let stmt_id = Nameops.add_suffix id "_stmt" in
-      let obls, c', t' = eterm_obligations env stmt_id !isevars evm 0 c typ in
-      (** Make all obligations transparent so that real dependencies can be sorted out by the user *)
-      let obls = Array.map (fun (id, t, op, d) -> (id, t, false, d)) obls in
-	
-	match Subtac_obligations.add_definition stmt_id c' typ obls with
-	    Subtac_obligations.Defined cst -> Command.start_proof id kind (constant_value (Global.env()) cst) hook
-	  | _ -> 
-	      errorlabstrm "start_proof" 
-		(str "The statement obligations could not be resolved automatically, " ++ spc () ++
-		    str "write a statement definition first.")
-    else
-      let _ = Typeops.infer_type env c in
-	Command.start_proof id kind c hook
+  let c = solve_tccs_in_type env id isevars evm c typ in
+    Command.start_proof id kind c hook	
       
 let print_subgoals () = Flags.if_verbose (fun () -> msg (Printer.pr_open_subgoals ())) ()
 
@@ -91,10 +94,12 @@ let assumption_message id =
   Flags.if_verbose message ((string_of_id id) ^ " is assumed")
 
 let declare_assumption env isevars idl is_coe k bl c nl =
-  if not (Pfedit.refining ()) then 
+  if not (Pfedit.refining ()) then
+    let id = snd (List.hd idl) in
     let evm, c, typ, imps = 
-      Subtac_pretyping.subtac_process env isevars (snd (List.hd idl)) [] [] (Command.generalize_constr_expr c bl) None 
+      Subtac_pretyping.subtac_process env isevars id [] (Command.generalize_constr_expr c bl) None 
     in
+    let c = solve_tccs_in_type env id isevars evm c typ in
       List.iter (Command.declare_one_assumption is_coe k c nl) idl
   else
     errorlabstrm "Command.Assumption"
@@ -117,14 +122,14 @@ let subtac (loc, command) =
   match command with
 	VernacDefinition (defkind, (locid, id), expr, hook) -> 
 	    (match expr with
-	      | ProveBody (cbl, bl, c) -> ignore(Subtac_pretyping.subtac_proof env isevars id cbl bl c None)
-	      | DefineBody (cbl, bl, _, c, tycon) -> 
-		   ignore(Subtac_pretyping.subtac_proof env isevars id cbl bl c tycon))
+	      | ProveBody (bl, c) -> ignore(Subtac_pretyping.subtac_proof env isevars id bl c None)
+	      | DefineBody (bl, _, c, tycon) -> 
+		   ignore(Subtac_pretyping.subtac_proof env isevars id bl c tycon))
       | VernacFixpoint (l, b) -> 
 	  let _ = trace (str "Building fixpoint") in
 	    ignore(Subtac_command.build_recursive l b)
 
-      | VernacStartTheoremProof (thkind, (locid, id), (cbl, bl, t), lettop, hook) ->
+      | VernacStartTheoremProof (thkind, (locid, id), (bl, t), lettop, hook) ->
 	  if not(Pfedit.refining ()) then
 	    if lettop then
 	      errorlabstrm "Subtac_command.StartProof"

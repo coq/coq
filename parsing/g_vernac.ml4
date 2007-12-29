@@ -47,8 +47,6 @@ let class_rawexpr = Gram.Entry.create "vernac:class_rawexpr"
 let thm_token = Gram.Entry.create "vernac:thm_token"
 let def_body = Gram.Entry.create "vernac:def_body"
 let typeclass_context = Gram.Entry.create "vernac:typeclass_context"
-let typeclass_constraint = Gram.Entry.create "vernac:typeclass_constraint"
-let typeclass_param = Gram.Entry.create "vernac:typeclass_param"
 
 let get_command_entry () =
   match Decl_mode.get_current_mode () with
@@ -123,9 +121,9 @@ GEXTEND Gram
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
-    [ [ thm = thm_token; id = identref; cbl = typeclass_context ; bl = LIST0 binder_let; ":";
+    [ [ thm = thm_token; id = identref; bl = binders_let; ":";
         c = lconstr ->
-          VernacStartTheoremProof (thm, id, (cbl, bl, c), false, no_hook)
+          VernacStartTheoremProof (thm, id, (bl, c), false, no_hook)
       | stre = assumption_token; nl = inline; bl = assum_list -> 
 	  VernacAssumption (stre, nl, bl)
       | stre = assumptions_token; nl = inline; bl = assum_list ->
@@ -170,17 +168,6 @@ GEXTEND Gram
   typeclass_context:
     [ [ "["; l=LIST1 typeclass_constraint SEP ","; "]" -> l 
     | -> [] ] ]
-  ;
-  typeclass_constraint:
-    [ [ id=identref ; cl = LIST1 typeclass_param -> ((loc, Anonymous), (Explicit, id), cl) 
-    | "?" ; id=identref ; cl = LIST1 typeclass_param -> ((loc, Anonymous), (Implicit, id), cl) 
-    | iid=identref ; ":" ; id=typeclass_name ; cl = LIST1 typeclass_param -> (fst iid, Name (snd iid)), id, cl
-    ] ]
-  ;
-  typeclass_name:
-    [ [ id=identref -> (Explicit, id)
-    | "?"; id = identref -> (Implicit, id)
-    ] ]
   ;
   thm_token:
     [ [ "Theorem" -> Theorem
@@ -227,19 +214,14 @@ GEXTEND Gram
   ;
   (* Simple definitions *)
   def_body:
-    [ [ bl = top_binders; ":="; red = reduce; c = lconstr ->
-      (let (cbl,bl) = bl in 
-	 match c with
-             CCast(_,c, Rawterm.CastConv (k,t)) -> DefineBody (cbl, bl, red, c, Some t)
-           | _ -> DefineBody (cbl, bl, red, c, None))
-    | bl = top_binders; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
-	let (cbl,bl) = bl in DefineBody (cbl, bl, red, c, Some t)
-    | bl = top_binders; ":"; t = lconstr ->
-        let (cbl,bl) = bl in ProveBody (cbl, bl, t) ] ]
-  ;
-  top_binders:
-    [ [ cbl = typeclass_context; bl = LIST0 binder_let -> cbl, bl
-    | bl = LIST0 binder_let -> [], bl ] ]
+    [ [ bl = binders_let; ":="; red = reduce; c = lconstr ->
+      (match c with
+          CCast(_,c, Rawterm.CastConv (k,t)) -> DefineBody (bl, red, c, Some t)
+        | _ -> DefineBody (bl, red, c, None))
+    | bl = binders_let; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
+	DefineBody (bl, red, c, Some t)
+    | bl = binders_let; ":"; t = lconstr ->
+        ProveBody (bl, t) ] ]
   ;
   reduce:
     [ [ IDENT "Eval"; r = Tactic.red_expr; "in" -> Some r
@@ -272,7 +254,7 @@ GEXTEND Gram
   ;
   (* (co)-fixpoints *)
   rec_definition:
-    [ [ id = ident; (* cbl = class_binders ;  *)bl = LIST1 binder_let;
+    [ [ id = ident; bl = LIST1 binder_let;
         annot = rec_annotation; ty = type_cstr; 
 	":="; def = lconstr; ntn = decl_notation ->
           let names = List.map snd (names_of_local_assums bl) in
@@ -523,12 +505,6 @@ GEXTEND Gram
 
       | IDENT "Implicit"; ["Type" | IDENT "Types"];
 	   idl = LIST1 identref; ":"; c = lconstr -> VernacReserve (idl,c) ] ]
-  ;
-
-  typeclass_param: 
-    [ [ id = identref -> CRef (Libnames.Ident id)
-    | c = sort -> CSort (loc, c)
-    | "("; c = lconstr; ")" -> c ] ]
   ;
 
 (*   typeclass_ctx:  *)

@@ -302,22 +302,22 @@ let start_proof_and_print idopt k t hook =
 
 let vernac_definition (local,_,_ as k) id def hook =
   match def with
-  | ProveBody (cbl,bl,t) ->   (* local binders, typ *)
+  | ProveBody (bl,t) ->   (* local binders, typ *)
       if Lib.is_modtype () then
 	errorlabstrm "Vernacentries.VernacDefinition"
 	  (str "Proof editing mode not supported in module types")
       else
 	let hook _ _ = () in
-	start_proof_and_print (Some id) (local,DefinitionBody Definition) (cbl,bl,t) hook
-  | DefineBody (cbl,bl,red_option,c,typ_opt) ->
+	start_proof_and_print (Some id) (local,DefinitionBody Definition) (bl,t) hook
+  | DefineBody (bl,red_option,c,typ_opt) ->
       let red_option = match red_option with
         | None -> None
         | Some r -> 
 	    let (evc,env)= Command.get_current_context () in
 	    Some (interp_redexp env evc r) in
-      declare_definition id k cbl bl red_option c typ_opt hook
+      declare_definition id k bl red_option c typ_opt hook
 
-let vernac_start_proof kind sopt (cbl,bl,t) lettop hook =
+let vernac_start_proof kind sopt (bl,t) lettop hook =
   if not(refining ()) then
     if lettop then
       errorlabstrm "Vernacentries.StartProof"
@@ -325,7 +325,7 @@ let vernac_start_proof kind sopt (cbl,bl,t) lettop hook =
   if Lib.is_modtype () then
     errorlabstrm "Vernacentries.StartProof"
       (str "Proof editing mode not supported in module types");
-  start_proof_and_print sopt (Global, Proof kind) (cbl,bl,t) hook
+  start_proof_and_print sopt (Global, Proof kind) (bl,t) hook
 
 let vernac_end_proof = function
   | Admitted -> admit ()
@@ -1280,7 +1280,7 @@ let interp c = match c with
   | VernacNop -> ()
 
   (* Proof management *)
-  | VernacGoal t -> vernac_start_proof Theorem None ([],[],t) false (fun _ _ ->())
+  | VernacGoal t -> vernac_start_proof Theorem None ([],t) false (fun _ _ ->())
   | VernacAbort id -> vernac_abort id
   | VernacAbortAll -> vernac_abort_all ()
   | VernacRestart -> vernac_restart ()

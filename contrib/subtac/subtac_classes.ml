@@ -12,6 +12,7 @@ open Pretyping
 open Evd
 open Environ
 open Term
+open Rawterm
 open Topconstr
 open Names
 open Libnames
@@ -42,8 +43,8 @@ let interp_binders_evars isevars env avoid l =
 
 let interp_typeclass_context_evars isevars env avoid l =
   List.fold_left
-    (fun (env, ids, params) (iid, (loc, i), l) -> 
-      let t' = interp_binder_evars isevars env (snd iid) (Implicit_quantifiers.constr_expr_of_constraint (loc,i) l) in
+    (fun (env, ids, params) (iid, bk, cl) -> 
+      let t' = interp_binder_evars isevars env (snd iid) cl in
       let i = match snd iid with
 	| Anonymous -> Nameops.next_name_away (Termops.named_hd env t' Anonymous) ids
 	| Name id -> id
@@ -73,7 +74,8 @@ let type_ctx_instance isevars env ctx inst subst =
 let substitution_of_constrs ctx cstrs =
   List.fold_right2 (fun c (na, _, _) acc -> (na, c) :: acc) cstrs ctx []
 
-let new_instance sup  (instid, (bk, id), par) props =
+let new_instance sup  (instid, bk, cl) props =
+  let id, par = Implicit_quantifiers.destClassApp cl in
   let env = Global.env() in
   let isevars = ref (Evd.create_evar_defs Evd.empty) in
   let avoid = Termops.ids_of_context env in
@@ -81,14 +83,14 @@ let new_instance sup  (instid, (bk, id), par) props =
     try class_info (snd id)
     with Not_found -> unbound_class env id
   in
-  let gen_ctx, sup = Implicit_quantifiers.resolve_class_binders env sup in
+  let gen_ctx, sup = Implicit_quantifiers.resolve_class_binders (vars_of_env env) sup in
   let gen_ctx = 
     let is_free ((_, x), _) = 
       let f l = not (List.exists (fun ((_, y), _) -> y = x) l) in
       let g l = not (List.exists (fun ((_, y), _, _) -> y = Name x) l) in
 	f gen_ctx && g sup
     in
-    let parbinders = Implicit_quantifiers.compute_constrs_freevars_binders env par in
+    let parbinders = Implicit_quantifiers.compute_constrs_freevars_binders (vars_of_env env) par in
     let parbinders' = List.filter is_free parbinders in
       gen_ctx @ parbinders'
   in
@@ -97,7 +99,7 @@ let new_instance sup  (instid, (bk, id), par) props =
 
   let subst =
     match bk with
-	Explicit ->
+      | Explicit ->
 	  if List.length par <> List.length k.cl_context + List.length k.cl_params then 
 	    Classes.mismatched_params env par (k.cl_params @ k.cl_context);
 	  let len = List.length k.cl_context in

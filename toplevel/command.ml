@@ -46,21 +46,21 @@ open Goptions
 open Mod_subst
 open Evd
 
-let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,a,b))
-let mkProdCit = List.fold_right (fun (x,a) b -> mkProdC(x,a,b))
+let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,default_binder_kind,a,b))
+let mkProdCit = List.fold_right (fun (x,a) b -> mkProdC(x,default_binder_kind,a,b))
 
 let rec abstract_constr_expr c = function
   | [] -> c
-  | LocalRawDef (x,k,b)::bl -> mkLetInC(x,b,abstract_constr_expr c bl)
+  | LocalRawDef (x,b)::bl -> mkLetInC(x,b,abstract_constr_expr c bl)
   | LocalRawAssum (idl,k,t)::bl ->
-      List.fold_right (fun x b -> mkLambdaC([x],t,b)) idl
+      List.fold_right (fun x b -> mkLambdaC([x],k,t,b)) idl
         (abstract_constr_expr c bl)
 
 let rec generalize_constr_expr c = function
   | [] -> c
-  | LocalRawDef (x,k,b)::bl -> mkLetInC(x,b,generalize_constr_expr c bl)
+  | LocalRawDef (x,b)::bl -> mkLetInC(x,b,generalize_constr_expr c bl)
   | LocalRawAssum (idl,k,t)::bl ->
-      List.fold_right (fun x b -> mkProdC([x],t,b)) idl
+      List.fold_right (fun x b -> mkProdC([x],k,t,b)) idl
         (generalize_constr_expr c bl)
 
 let rec under_binders env f n c =
@@ -100,15 +100,16 @@ let rec complete_conclusion a cs = function
 let definition_message id =
   if_verbose message ((string_of_id id) ^ " is defined")
 
-let constant_entry_of_com (cbl,bl,com,comtypopt,opacity,boxed) =
+let constant_entry_of_com (bl,com,comtypopt,opacity,boxed) =
   let sigma = Evd.empty in
   let env = Global.env() in
-  let bl = Implicit_quantifiers.ctx_of_class_binders env cbl @ bl in
-  let entry = 
     match comtypopt with
       None -> 
 	let b = abstract_constr_expr com bl in
-	let j = interp_constr_judgment sigma env b in
+	let ib = intern_constr sigma env b in
+	let imps = Implicit_quantifiers.implicits_of_rawterm ib in
+  	let j = Default.understand_judgment sigma env ib in
+	  imps,
 	{ const_entry_body = j.uj_val;
 	  const_entry_type = None;
           const_entry_opaque = opacity;
@@ -117,12 +118,14 @@ let constant_entry_of_com (cbl,bl,com,comtypopt,opacity,boxed) =
 	(* We use a cast to avoid troubles with evars in comtyp *)
 	(* that can only be resolved knowing com *)
 	let b = abstract_constr_expr (mkCastC (com, Rawterm.CastConv (DEFAULTcast,comtyp))) bl in
-	let (body,typ) = destSubCast (interp_constr sigma env b) in
+	let ib = intern_gen false sigma env b in
+	let imps = Implicit_quantifiers.implicits_of_rawterm ib in
+	let (body,typ) = destSubCast (Default.understand_gen (OfType None) sigma env ib) in
+	  imps,
 	{ const_entry_body = body;
 	  const_entry_type = Some typ;
           const_entry_opaque = opacity;
 	  const_entry_boxed = boxed }
-  in bl, entry
 
 let red_constant_entry bl ce = function
   | None -> ce
@@ -143,10 +146,9 @@ let declare_global_definition ident ce local imps =
     definition_message ident;
     gr
 
-let declare_definition ident (local,boxed,dok) cbl bl red_option c typopt hook =
-  let bl, ce = constant_entry_of_com (cbl,bl,c,typopt,false,boxed) in
+let declare_definition ident (local,boxed,dok) bl red_option c typopt hook =
+  let imps, ce = constant_entry_of_com (bl,c,typopt,false,boxed) in
   let ce' = red_constant_entry bl ce red_option in
-  let imps = Implicit_quantifiers.implicits_of_binders bl in
   let r = match local with
     | Local when Lib.sections_are_opened () ->
         let c =
@@ -561,8 +563,8 @@ let eq_local_binder d1 d2 = match d1,d2 with
       List.length nal1 = List.length nal2 && k1 = k2 &&
       List.for_all2 (fun (_,na1) (_,na2) -> na1 = na2) nal1 nal2 &&
       eq_constr_expr c1 c2
-  | LocalRawDef ((_,id1),k1,c1), LocalRawDef ((_,id2),k2,c2) ->
-      id1 = id2 && k1 = k2 && eq_constr_expr c1 c2
+  | LocalRawDef ((_,id1),c1), LocalRawDef ((_,id2),c2) ->
+      id1 = id2 && eq_constr_expr c1 c2
   | _ ->
       false
 
@@ -777,6 +779,7 @@ let compute_possible_guardness_evidences (n,_) fixl fixtype =
 	 but doing it properly involves delta-reduction, and it finally 
          doesn't seem to worth the effort (except for huge mutual 
 	 fixpoints ?) *)
+      (* FIXME, local_binders_length does not give the size of the final product if typeclasses are used *)
       let m = local_binders_length fixl.fix_binders in
       let ctx = fst (Sign.decompose_prod_n_assum m fixtype) in
       list_map_i (fun i _ -> i) 0 ctx
@@ -996,7 +999,7 @@ let build_combined_scheme name schemes =
     if_verbose ppnl (recursive_message Fixpoint None [snd name])
 
 (* 4| Goal declaration *)
-let start_proof_com sopt kind (cbl,bl,t) hook =
+let start_proof_com sopt kind (bl,t) hook =
   let id = match sopt with
     | Some id ->
         (* We check existence here: it's a bit late at Qed time *)
@@ -1008,7 +1011,6 @@ let start_proof_com sopt kind (cbl,bl,t) hook =
  	  (Pfedit.get_all_proof_names ())
   in
   let env = Global.env () in
-  let bl = Implicit_quantifiers.ctx_of_class_binders env cbl @ bl in
   let c = interp_type Evd.empty env (generalize_constr_expr t bl) in
   let _ = Typeops.infer_type env c in
   start_proof id kind c hook

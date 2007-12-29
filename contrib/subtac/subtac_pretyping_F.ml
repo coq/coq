@@ -200,11 +200,11 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
     | RRec (loc,fixkind,names,bl,lar,vdef) ->
 	let rec type_bl env ctxt = function
             [] -> ctxt
-          | (na,None,ty)::bl ->
+          | (na,k,None,ty)::bl ->
               let ty' = pretype_type empty_valcon env isevars lvar ty in
               let dcl = (na,None,ty'.utj_val) in
 		type_bl (push_rel dcl env) (add_rel_decl dcl ctxt) bl
-          | (na,Some bd,ty)::bl ->
+          | (na,k,Some bd,ty)::bl ->
               let ty' = pretype_type empty_valcon env isevars lvar ty in
               let bd' = pretype (mk_tycon ty'.utj_val) env isevars lvar ty in
               let dcl = (na,Some bd'.uj_val,ty'.utj_val) in
@@ -326,7 +326,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	  | _ -> resj in
 	  inh_conv_coerce_to_tycon loc env isevars resj tycon
 
-    | RLambda(loc,name,c1,c2)      ->
+    | RLambda(loc,name,k,c1,c2)      ->
 	let (name',dom,rng) = evd_comb1 (split_tycon loc env) isevars tycon in
 	let dom_valcon = valcon_of_tycon dom in
 	let j = pretype_type dom_valcon env isevars lvar c1 in
@@ -334,7 +334,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	let j' = pretype rng (push_rel var env) isevars lvar c2 in 
 	  judge_of_abstraction env name j j'
 
-    | RProd(loc,name,c1,c2)        ->
+    | RProd(loc,name,k,c1,c2)        ->
 	let j = pretype_type empty_valcon env isevars lvar c1 in
 	let var = (name,j.utj_val) in
 	let env' = push_rel_assum var env in

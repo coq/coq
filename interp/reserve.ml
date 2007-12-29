@@ -54,8 +54,8 @@ open Rawterm
 let rec unloc = function
   | RVar (_,id) -> RVar (dummy_loc,id)
   | RApp (_,g,args) -> RApp (dummy_loc,unloc g, List.map unloc args)
-  | RLambda (_,na,ty,c) -> RLambda (dummy_loc,na,unloc ty,unloc c)
-  | RProd (_,na,ty,c) -> RProd (dummy_loc,na,unloc ty,unloc c)
+  | RLambda (_,na,bk,ty,c) -> RLambda (dummy_loc,na,bk,unloc ty,unloc c)
+  | RProd (_,na,bk,ty,c) -> RProd (dummy_loc,na,bk,unloc ty,unloc c)
   | RLetIn (_,na,b,c) -> RLetIn (dummy_loc,na,unloc b,unloc c)
   | RCases (_,rtntypopt,tml,pl) ->
       RCases (dummy_loc,
@@ -69,7 +69,7 @@ let rec unloc = function
   | RRec (_,fk,idl,bl,tyl,bv) ->
       RRec (dummy_loc,fk,idl,
             Array.map (List.map 
-              (fun (na,obd,ty) -> (na,Option.map unloc obd, unloc ty)))
+              (fun (na,k,obd,ty) -> (na,k,Option.map unloc obd, unloc ty)))
               bl,
             Array.map unloc tyl,
             Array.map unloc bv)

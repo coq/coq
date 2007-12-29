@@ -302,9 +302,10 @@ let strip_prod_binders_expr n ty =
     match ty with
         Topconstr.CProdN(_,bll,a) ->
           let nb =
-            List.fold_left (fun i (nal,_) -> i + List.length nal) 0 bll in
-          if nb >= n then (List.rev (bll@acc), a)
-          else strip_ty (bll@acc) (n-nb) a
+            List.fold_left (fun i (nal,_,_) -> i + List.length nal) 0 bll in
+	  let bll = List.map (fun (x, _, y) -> x, y) bll in
+            if nb >= n then (List.rev (bll@acc)), a
+            else strip_ty (bll@acc) (n-nb) a
       | Topconstr.CArrow(_,a,b) ->
           if n=1 then
             (List.rev (([(dummy_loc,Anonymous)],a)::acc), b)
@@ -978,7 +979,7 @@ let strip_prod_binders_rawterm n (ty,_) =
   let rec strip_ty acc n ty =
     if n=0 then (List.rev acc, (ty,None)) else
       match ty with
-          Rawterm.RProd(loc,na,a,b) ->
+          Rawterm.RProd(loc,na,Explicit,a,b) ->
             strip_ty (([dummy_loc,na],(a,None))::acc) (n-1) b
         | _ -> error "Cannot translate fix tactic: not enough products" in
   strip_ty [] n ty

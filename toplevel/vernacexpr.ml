@@ -154,8 +154,8 @@ type inductive_expr =
      lident * local_binder list * constr_expr * constructor_expr list
 
 type definition_expr =
-  | ProveBody of typeclass_context * local_binder list * constr_expr
-  | DefineBody of typeclass_context * local_binder list * raw_red_expr option * constr_expr
+  | ProveBody of local_binder list * constr_expr
+  | DefineBody of local_binder list * raw_red_expr option * constr_expr
       * constr_expr option
 
 type local_decl_expr =
@@ -200,7 +200,7 @@ type vernac_expr =
   | VernacDefinition of definition_kind * lident * definition_expr * 
       declaration_hook
   | VernacStartTheoremProof of theorem_kind * lident *
-      (typeclass_context * local_binder list * constr_expr) * bool * declaration_hook
+      (local_binder list * constr_expr) * bool * declaration_hook
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
   | VernacAssumption of assumption_kind * bool * simple_binder with_coercion list

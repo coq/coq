@@ -24,6 +24,7 @@ open Typeclasses_errors
 open Typeclasses
 open Libnames
 open Constrintern
+open Rawterm
 open Topconstr
 (*i*)
 
@@ -44,8 +45,8 @@ let interp_binders_evars isevars env avoid l =
 
 let interp_typeclass_context_evars isevars env avoid l =
   List.fold_left
-    (fun (env, ids, params) (iid, (loc, i), l) -> 
-      let t' = interp_binder_evars isevars env (snd iid) (Implicit_quantifiers.constr_expr_of_constraint (loc,i) l) in
+    (fun (env, ids, params) (iid, bk, l) -> 
+      let t' = interp_binder_evars isevars env (snd iid) l in
       let i = match snd iid with
 	| Anonymous -> Nameops.next_name_away (Termops.named_hd env t' Anonymous) ids
 	| Name id -> id
@@ -173,7 +174,7 @@ let new_class id par ar sup props =
   let env_params, avoid = env0, avoid in
 
   (* Find the implicitly quantified variables *)
-  let gen_ctx, super = Implicit_quantifiers.resolve_class_binders env_params sup in
+  let gen_ctx, super = Implicit_quantifiers.resolve_class_binders (vars_of_env env0) sup in
 
   let env_super_ctx, avoid, ctx_super_ctx = interp_binders_evars isevars env_params avoid gen_ctx in
     
@@ -245,7 +246,7 @@ let declare_instance (_,id) =
 type binder_def_list = (identifier located * identifier located list * constr_expr) list
 
 let binders_of_lidents l =
-  List.map (fun (loc, id) -> LocalRawAssum ([loc, Name id], Explicit, CHole loc)) l
+  List.map (fun (loc, id) -> LocalRawAssum ([loc, Name id], Default Rawterm.Implicit, CHole loc)) l
 
 let subst_ids_in_named_context subst l =
   let x, _ = 
@@ -310,7 +311,13 @@ let type_ctx_instance isevars env ctx inst subst =
 let substitution_of_constrs ctx cstrs =
   List.fold_right2 (fun c (na, _, _) acc -> (na, c) :: acc) cstrs ctx []
 
-let new_instance sup (instid, (bk, id), par) props =
+let destClassApp cl =
+  match cl with
+    | CApp (loc, (None,CRef (Ident f)), l) -> f, List.map fst l
+    | _ -> raise Not_found
+
+let new_instance sup (instid, bk, cl) props =
+  let id, par = destClassApp cl in
   let env = Global.env() in
   let isevars = ref (Evd.create_evar_defs Evd.empty) in
   let avoid = Termops.ids_of_context env in
@@ -318,7 +325,7 @@ let new_instance sup (instid, (bk, id), par) props =
     try class_info (snd id)
     with Not_found -> unbound_class env id
   in
-  let gen_ctx, sup = Implicit_quantifiers.resolve_class_binders env sup in
+  let gen_ctx, sup = Implicit_quantifiers.resolve_class_binders (vars_of_env env) sup in
   let env', avoid, genctx = interp_binders_evars isevars env avoid gen_ctx in
   let env', avoid, supctx = interp_typeclass_context_evars isevars env' avoid sup in
   let subst = 
@@ -415,7 +422,7 @@ let context l =
   let env = Global.env() in
   let isevars = ref (Evd.create_evar_defs Evd.empty) in
   let avoid = Termops.ids_of_context env in
-  let ctx, l = Implicit_quantifiers.resolve_class_binders env l in
+  let ctx, l = Implicit_quantifiers.resolve_class_binders (vars_of_env env) l in
   let env', avoid, ctx = interp_binders_evars isevars env avoid ctx in
   let env', avoid, l = interp_typeclass_context_evars isevars env' avoid l in
   isevars := Evarutil.nf_evar_defs !isevars;

@@ -396,9 +396,9 @@ let pr_constrarg c = spc () ++ pr_constr c in
 let pr_lconstrarg c = spc () ++ pr_lconstr c in
 let pr_intarg n = spc () ++ int n in
 let pr_lident_constr sep (i,c) = pr_lident i ++ sep ++ pr_constrarg c in
-let pr_lname_lident_constr (oi,(bk,i),a) = 
+let pr_lname_lident_constr (oi,bk,a) = 
   (match snd oi with Anonymous -> mt () | Name id -> pr_lident (fst oi, id) ++ spc () ++ str":" ++ spc ()) 
-    ++ pr_lident i ++ spc () ++ prlist_with_sep spc pr_constrarg a in
+  ++ pr_lconstr a in
 let pr_typeclass_context l = 
   match l with
       [] -> mt ()
@@ -517,13 +517,13 @@ let rec pr_vernac = function
             pr_red_expr (pr_constr, pr_lconstr, pr_or_by_notation pr_reference) r ++
             str" in" ++ spc() in
       let pr_def_body = function
-        | DefineBody (cbl,bl,red,body,d) ->
+        | DefineBody (bl,red,body,d) ->
             let ty = match d with
               | None -> mt()
               | Some ty -> spc() ++ str":" ++ pr_spc_lconstr ty
 	    in
             (pr_binders_arg bl,ty,Some (pr_reduce red ++ pr_lconstr body))
-        | ProveBody (cbl,bl,t) ->
+        | ProveBody (bl,t) ->
             (pr_binders_arg bl, str" :" ++ pr_spc_lconstr t, None) in
       let (binds,typ,c) = pr_def_body b in
       hov 2 (pr_def_token d ++ spc() ++ pr_lident id ++ binds ++ typ ++
@@ -531,9 +531,8 @@ let rec pr_vernac = function
         | None -> mt()
         | Some cc -> str" :=" ++ spc() ++ cc))
 
-  | VernacStartTheoremProof (ki,id,(cbl,bl,c),b,d) ->
+  | VernacStartTheoremProof (ki,id,(bl,c),b,d) ->
       hov 1 (pr_thm_token ki ++ spc() ++ pr_lident id ++ spc() ++
-		pr_typeclass_context cbl ++
       (match bl with
         | [] -> mt()
         | _ -> pr_binders bl ++ spc())
@@ -580,7 +579,7 @@ let rec pr_vernac = function
   | VernacFixpoint (recs,b) ->
       let name_of_binder = function
         | LocalRawAssum (nal,_,_) -> nal
-        | LocalRawDef (_,_,_) -> [] in
+        | LocalRawDef (_,_) -> [] in
       let pr_onerec = function
         | (id,(n,ro),bl,type_,def),ntn ->
             let (bl',def,type_) =
@@ -703,13 +702,13 @@ let rec pr_vernac = function
 	  prlist_with_sep (fun () -> str";" ++ spc()) (pr_lident_constr (spc () ++ str":" ++ spc())) props )
 	  
 	
- | VernacInstance (sup, (instid, (bk, cid), par), props) -> 
+ | VernacInstance (sup, (instid, bk, cl), props) -> 
      hov 1 (
        str"Instance" ++ spc () ++ 
 	 pr_typeclass_context sup ++
 	 str"=>" ++ spc () ++ 
 	 (match snd instid with Name id -> pr_lident (fst instid, id) ++ spc () ++ str":" ++ spc () | Anonymous -> mt ()) ++
-	 pr_lident cid ++ prlist pr_constrarg par ++ spc () ++
+	 pr_constr_expr cl ++ spc () ++
 	 spc () ++ str"where" ++ spc () ++
 	 prlist_with_sep (fun () -> str";" ++ spc()) (pr_instance_def (spc () ++ str":=" ++ spc())) props)
 

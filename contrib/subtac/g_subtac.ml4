@@ -65,17 +65,17 @@ GEXTEND Gram
 
   Constr.binder_let:
     [ [ "("; id=Prim.name; ":"; t=Constr.lconstr; "|"; c=Constr.lconstr; ")" -> 
-	  let typ = mkAppC (sigref, [mkLambdaC ([id], t, c)]) in
-	    LocalRawAssum ([id], Explicit, typ)
+	  let typ = mkAppC (sigref, [mkLambdaC ([id], default_binder_kind, t, c)]) in
+	    LocalRawAssum ([id], default_binder_kind, typ)
     ] ];
 
   Constr.binder:
     [ [ "("; id=Prim.name; ":"; c=Constr.lconstr; "|"; p=Constr.lconstr; ")" ->
-          ([id],mkAppC (sigref, [mkLambdaC ([id], c, p)]))
+          ([id],default_binder_kind, mkAppC (sigref, [mkLambdaC ([id], default_binder_kind, c, p)]))
       | "("; id=Prim.name; ":"; c=Constr.lconstr; ")" ->
-          ([id],c)
+          ([id],default_binder_kind, c)
       | "("; id=Prim.name; lid=LIST1 Prim.name; ":"; c=Constr.lconstr; ")" ->
-          (id::lid,c)
+          (id::lid,default_binder_kind, c)
     ] ];
 
   END

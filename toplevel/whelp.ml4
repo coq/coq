@@ -151,12 +151,12 @@ let rec uri_of_constr c =
       let inst,rest = merge (section_parameters f) args in
       uri_of_constr f; url_char ' '; uri_params uri_of_constr inst; 
       url_list_with_sep " " uri_of_constr rest
-  | RLambda (_,na,ty,c) ->
+  | RLambda (_,na,k,ty,c) ->
       url_string "\\lambda "; url_of_name na; url_string ":";
       uri_of_constr ty; url_string "."; uri_of_constr c
-  | RProd (_,Anonymous,ty,c) ->
+  | RProd (_,Anonymous,k,ty,c) ->
       uri_of_constr ty; url_string "\\to "; uri_of_constr c
-  | RProd (_,Name id,ty,c) ->
+  | RProd (_,Name id,k,ty,c) ->
       url_string "\\forall "; url_id id; url_string ":";
       uri_of_constr ty; url_string "."; uri_of_constr c
   | RLetIn (_,na,b,c) ->

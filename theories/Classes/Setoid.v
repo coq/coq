@@ -39,8 +39,10 @@ Definition equiv_refl [ s : Setoid A R ] : forall x : A, R x x := equiv_refl _ _
 Definition equiv_sym [ s : Setoid A R ] : forall x y : A, R x y -> R y x := equiv_sym _ _ equiv_prf.
 Definition equiv_trans [ s : Setoid A R ] : forall x y z : A, R x y -> R y z -> R x z := equiv_trans _ _ equiv_prf.
 
+
 Ltac refl :=
   match goal with
+    | [ |- @equiv ?A ?R ?s ?X _ ] => apply (equiv_refl (A:=A) (R:=R) (s:=s) X)
     | [ |- ?R ?X _ ] => apply (equiv_refl (R:=R) X)
     | [ |- ?R ?A ?X _ ] => apply (equiv_refl (R:=R A) X)
     | [ |- ?R ?A ?B ?X _ ] => apply (equiv_refl (R:=R A B) X)
@@ -49,6 +51,7 @@ Ltac refl :=
 
 Ltac sym := 
   match goal with
+    | [ |- @equiv ?A ?R ?s ?X ?Y ] => apply (equiv_sym (A:=A) (R:=R) (s:=s) (x:=X) (y:=Y))
     | [ |- ?R ?X ?Y ] => apply (equiv_sym (R:=R) (x:=Y) (y:=X))
     | [ |- ?R ?A ?X ?Y ] => apply (equiv_sym (R:=R A) (x:=Y) (y:=X))
     | [ |- ?R ?A ?B ?X ?Y ] => apply (equiv_sym (R:=R A B) (x:=Y) (y:=X))
@@ -57,6 +60,7 @@ Ltac sym :=
 
 Ltac trans Y := 
   match goal with
+    | [ |- @equiv ?A ?R ?s ?X ?Z ] => apply (equiv_trans (A:=A) (R:=R) (s:=s) (x:=X) (y:=Y) (z:=Z))
     | [ |- ?R ?X ?Z ] => apply (equiv_trans (R:=R) (x:=X) (y:=Y) (z:=Z))
     | [ |- ?R ?A ?X ?Z ] => apply (equiv_trans (R:=R A) (x:=X) (y:=Y) (z:=Z))
     | [ |- ?R ?A ?B ?X ?Z ] => apply (equiv_trans (R:=R A B) (x:=X) (y:=Y) (z:=Z))
