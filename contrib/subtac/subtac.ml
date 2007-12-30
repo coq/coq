@@ -122,7 +122,12 @@ let subtac (loc, command) =
   match command with
 	VernacDefinition (defkind, (locid, id), expr, hook) -> 
 	    (match expr with
-	      | ProveBody (bl, c) -> ignore(Subtac_pretyping.subtac_proof env isevars id bl c None)
+	      | ProveBody (bl, t) -> 
+		  if Lib.is_modtype () then
+		    errorlabstrm "Subtac_command.StartProof"
+		      (str "Proof editing mode not supported in module types");
+		  start_proof_and_print env isevars (Some id) (Global, DefinitionBody Definition) (bl,t) 
+		    (fun _ _ -> ())
 	      | DefineBody (bl, _, c, tycon) -> 
 		   ignore(Subtac_pretyping.subtac_proof env isevars id bl c tycon))
       | VernacFixpoint (l, b) -> 

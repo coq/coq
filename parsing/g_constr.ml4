@@ -101,8 +101,8 @@ let lpar_id_coloneq =
 
 GEXTEND Gram
   GLOBAL: binder_constr lconstr constr operconstr sort global
-  constr_pattern lconstr_pattern Constr.ident binder binder_let binders_let
-  typeclass_constraint typeclass_param pattern;
+  constr_pattern lconstr_pattern Constr.ident
+  binder binder_let binders_let typeclass_constraint typeclass_param pattern;
   Constr.ident:
     [ [ id = Prim.ident -> id
 
@@ -310,14 +310,7 @@ GEXTEND Gram
           LocalRawAssum (idl,Default Explicit,CHole loc)::bl
       | idl=LIST1 name; ":"; c=lconstr -> 
           [LocalRawAssum (idl,Default Explicit,c)]
-      | "("; idl=LIST1 name; ":"; c=lconstr; ")"; bl=LIST0 binder_let ->
-          LocalRawAssum (idl,Default Explicit,c)::bl
-      | "`"; idl=LIST1 name; ":"; c=lconstr; "`"; bl=LIST0 binder_let ->
-          LocalRawAssum (idl,Default Implicit,c)::bl
-      | "`"; idl=LIST1 name; "`"; bl=LIST0 binder_let ->
-          LocalRawAssum (idl,Default Implicit,CHole loc)::bl
-      | "["; ctx = LIST1 typeclass_constraint_binder SEP ","; "]"; bl=LIST0 binder_let -> 
-	  ctx @ bl
+      | cl = binders_let -> cl
     ] ]
   ;
   binders_let: 

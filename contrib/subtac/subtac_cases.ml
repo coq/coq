@@ -2091,13 +2091,12 @@ let compile_cases loc (typing_fun, isevars) (tycon : Evarutil.type_constraint) e
 (*   let env = nf_evars_env !isevars (env : env) in *)
 (*      trace (str "Evars : " ++ my_print_evardefs !isevars); *)
 (*     trace (str "Env : " ++ my_print_env env); *)
-    
-  let tomatchs, tomatchs_lets = abstract_tomatch env tomatchs in
-  let tomatchs_len = List.length tomatchs_lets in
-  let tycon = lift_tycon tomatchs_len tycon in
-  let env = push_rel_context tomatchs_lets env in
   let _isdep = List.exists (fun (x, y) -> is_dependent_ind y) tomatchs in
     if predopt = None then
+      let tomatchs, tomatchs_lets = abstract_tomatch env tomatchs in
+      let tomatchs_len = List.length tomatchs_lets in
+      let tycon = lift_tycon tomatchs_len tycon in
+      let env = push_rel_context tomatchs_lets env in
       let len = List.length eqns in 
       let sign, allnames, signlen, eqs, neqs, args = 
 	(* The arity signature *)
@@ -2185,7 +2184,6 @@ let compile_cases loc (typing_fun, isevars) (tycon : Evarutil.type_constraint) e
 	  let j = compile pb in
 	  (* We check for unused patterns *)
 	  List.iter (check_unused_pattern env) matx;
-	  let j = { j with uj_val = it_mkLambda_or_LetIn j.uj_val tomatchs_lets } in
 	    inh_conv_coerce_to_tycon loc env isevars j tycon	  
 
 end

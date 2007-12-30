@@ -100,3 +100,42 @@ Proof.
 
   pi.
 Qed.
+
+(* Somewhat trivial definition, but not unfolded automatically hence we can match on [match_eq ?A ?B ?x ?f] 
+   in tactics. *)
+
+Program Definition match_eq (A B : Type) (x : A) (fn : forall (y : A | y = x), B) : B :=
+  fn (exist _ x (refl_equal x)).
+
+(* This is what we want to be able to do: replace the originaly matched object by a new, 
+   propositionally equal one. If [fn] works on [x] it should work on any [y | y = x]. *)
+
+Lemma match_eq_rewrite : forall (A B : Type) (x : A) (fn : forall (y : A | y = x), B) 
+  (y : A | y = x),
+  match_eq A B x fn = fn y.
+Proof.
+  intros.
+  unfold match_eq.
+  f_equal.
+  destruct y.
+  (* uses proof-irrelevance *)
+  apply <- subset_eq.
+  symmetry. assumption.
+Qed.
+
+(** Now we make a tactic to be able to rewrite a term [t] which is applied to a [match_eq] using an arbitrary
+   equality [t = u], and [u] is now the subject of the [match]. *)
+
+Ltac rewrite_match_eq H := 
+  match goal with
+    [ |- ?T ] => 
+    match T with
+      context [ match_eq ?A ?B ?t ?f ] =>
+      rewrite (match_eq_rewrite A B t f (exist _ _ (sym_eq H)))
+    end
+  end.
+
+(** Otherwise we can simply unfold [match_eq] and the term trivially reduces to the original definition. *)
+
+Ltac simpl_match_eq := unfold match_eq ; simpl.
+

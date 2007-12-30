@@ -449,8 +449,16 @@ let add_mutual_definitions l ?(implicits=[]) ?(kind=Definition) nvrec =
       !from_prg l
   in
     from_prg := upd;
-    List.iter (fun x -> ignore(auto_solve_obligations (Some x))) deps
-
+    let _defined = 
+      List.fold_left (fun finished x -> 
+	if finished then finished 
+	else
+	  match auto_solve_obligations (Some x) with
+	      Defined _ -> (* If one definition is turned into a constant, the whole block is defined. *) true
+	    | _ -> false) 
+	false deps
+    in ()
+	
 let admit_obligations n =
   let prg = get_prog_err n in
   let obls, rem = prg.prg_obligations in

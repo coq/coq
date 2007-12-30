@@ -44,14 +44,16 @@ struct
   let subtac_nameopt : identifier option Gram.Entry.e = gec "subtac_nameopt"
 end
 
+open Rawterm
 open SubtacGram 
 open Util
 open Pcoq
-
+open Prim
+open Constr
 let sigref = mkRefC (Qualid (dummy_loc, Libnames.qualid_of_string "Coq.Init.Specif.sig"))
 
 GEXTEND Gram
-  GLOBAL: subtac_gallina_loc Constr.binder_let Constr.binder subtac_nameopt;
+  GLOBAL: subtac_gallina_loc typeclass_constraint Constr.binder_let Constr.binder subtac_nameopt;
  
   subtac_gallina_loc:
     [ [ g = Vernac.gallina -> loc, g
@@ -64,7 +66,7 @@ GEXTEND Gram
     ;
 
   Constr.binder_let:
-    [ [ "("; id=Prim.name; ":"; t=Constr.lconstr; "|"; c=Constr.lconstr; ")" -> 
+    [[ "("; id=Prim.name; ":"; t=Constr.lconstr; "|"; c=Constr.lconstr; ")" -> 
 	  let typ = mkAppC (sigref, [mkLambdaC ([id], default_binder_kind, t, c)]) in
 	    LocalRawAssum ([id], default_binder_kind, typ)
     ] ];
