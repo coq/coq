@@ -19,7 +19,7 @@ Require Import Coq.Program.Program.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Require Export Coq.Classes.Setoid.
+Require Export Coq.Classes.SetoidClass.
 
 Ltac rew H := clrewrite H.
 

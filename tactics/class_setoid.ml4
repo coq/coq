@@ -57,10 +57,10 @@ let coq_proj1 = lazy(gen_constant ["Init"; "Logic"] "proj1")
 let coq_proj2 = lazy(gen_constant ["Init"; "Logic"] "proj2")
 let iff = lazy (gen_constant ["Init"; "Logic"] "iff")
 
-let iff_setoid = lazy (gen_constant ["Classes"; "Setoid"] "iff_setoid")
-let setoid_equiv = lazy (gen_constant ["Classes"; "Setoid"] "equiv")
-let setoid_morphism = lazy (gen_constant ["Classes"; "Setoid"] "setoid_morphism")
-let setoid_refl_proj = lazy (gen_constant ["Classes"; "Setoid"] "equiv_refl")
+let iff_setoid = lazy (gen_constant ["Classes"; "SetoidClass"] "iff_setoid")
+let setoid_equiv = lazy (gen_constant ["Classes"; "SetoidClass"] "equiv")
+let setoid_morphism = lazy (gen_constant ["Classes"; "SetoidClass"] "setoid_morphism")
+let setoid_refl_proj = lazy (gen_constant ["Classes"; "SetoidClass"] "equiv_refl")
   
 let arrow_morphism a b = 
   mkLambda (Name (id_of_string "A"), a, 
