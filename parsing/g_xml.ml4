@@ -141,12 +141,12 @@ let rec interp_xml_constr = function
   | XmlTag (loc,"LAMBDA",al,(_::_ as xl)) ->
       let body,decls = list_sep_last xl in
       let ctx = List.map interp_xml_decl decls in
-      List.fold_right (fun (na,t) b -> RLambda (loc, na, t, b))
+      List.fold_right (fun (na,t) b -> RLambda (loc, na, Explicit, t, b))
 	ctx (interp_xml_target body)
   | XmlTag (loc,"PROD",al,(_::_ as xl)) ->
       let body,decls = list_sep_last xl in
       let ctx = List.map interp_xml_decl decls in
-      List.fold_right (fun (na,t) b -> RProd (loc, na, t, b))
+      List.fold_right (fun (na,t) b -> RProd (loc, na, Explicit, t, b))
 	ctx (interp_xml_target body)
   | XmlTag (loc,"LETIN",al,(_::_ as xl)) ->
       let body,defs = list_sep_last xl in

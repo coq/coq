@@ -85,17 +85,6 @@ Ltac abstract_eq_hyp H' p :=
       end
     end.
 
-(** Try to abstract a proof of equality, if no proof of the same equality is present in the context. *)
-
-Ltac abstract_any_hyp H' p := 
-  match type of p with
-    ?X => 
-    match goal with 
-      | [ H : X |- _ ] => fail 1
-      | _ => set (H':=p) ; try (change p with H') ; clearbody H' ; simpl in H'
-    end
-  end.
-
 (** Apply the tactic tac to proofs of equality appearing as coercion arguments. 
    Just redefine this tactic (using [Ltac on_coerce_proof tac ::=]) to handle custom coercion operators.
    *)
@@ -180,3 +169,39 @@ Ltac clear_eqs := repeat clear_eq.
 Ltac simplify_eqs := 
   simpl ; simpl_eqs ; clear_eq_ctx ; clear_refl_eqs ;  
     try subst ; simpl ; repeat simpl_uip ; rewrite_refl_id.
+
+(** A tactic to remove trivial equality guards in hypotheses. *)
+
+Ltac simpl_IH_eq H :=
+  let tac H' := clear H ; rename H' into H in
+  let H' := fresh "H" in
+    match type of H with
+      | JMeq _ _ -> _ =>
+        assert (H' := H (JMeq_refl _)) ; tac H'
+      | _ = _ -> _ =>
+        assert (H' := H (refl_equal _)) ; tac H'
+    end.
+
+Ltac simpl_IH_eqs H := repeat simpl_IH_eq H.
+
+Ltac simpl_IHs_eqs := 
+  match goal with
+    | [ H : JMeq _ _ -> _ |- _ ] => simpl_IH_eqs H
+    | [ H : _ = _ -> _ |- _ ] => simpl_IH_eqs H
+  end.
+
+Require Import Coq.Program.Tactics.
+
+(** The following tactics allow to do induction on an already instantiated inductive predicate
+   by first generalizing it and adding the proper equalities to the context, in a maner similar to 
+   the BasicElim tactic of "Elimination with a motive" by Conor McBride. *)
+
+Tactic Notation "dependent" "induction" ident(H) := 
+  generalize_eqs H ; clear H ; (intros until 1 || intros until H) ; 
+    induction H ; intros ; subst* ; try discriminates ; try simpl_IHs_eqs.
+
+(** This tactic also generalizes the goal by the given variables before the induction. *)
+
+Tactic Notation "dependent" "induction" ident(H) "generalizing" ne_hyp_list(l) := 
+  generalize_eqs H ; clear H ; (intros until 1 || intros until H) ; 
+    generalize l ; clear l ; induction H ; intros ; subst* ; try discriminates ; try simpl_IHs_eqs.

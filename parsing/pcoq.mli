@@ -161,8 +161,11 @@ module Constr :
     val annot : constr_expr Gram.Entry.e
     val constr_pattern : constr_expr Gram.Entry.e
     val lconstr_pattern : constr_expr Gram.Entry.e
-    val binder : (name located list * constr_expr) Gram.Entry.e
+    val binder : (name located list * binder_kind * constr_expr) Gram.Entry.e
     val binder_let : local_binder Gram.Entry.e
+    val binders_let : local_binder list Gram.Entry.e
+    val typeclass_constraint : (name located * binding_kind * constr_expr) Gram.Entry.e
+    val typeclass_param : constr_expr Gram.Entry.e
   end
 
 module Module : 

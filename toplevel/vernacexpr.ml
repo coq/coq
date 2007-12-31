@@ -48,6 +48,8 @@ type printable =
   | PrintOpaqueName of reference
   | PrintGraph
   | PrintClasses
+  | PrintTypeClasses
+  | PrintInstances of reference
   | PrintLtac of reference
   | PrintCoercions
   | PrintCoercionPaths of class_rawexpr * class_rawexpr
@@ -145,10 +147,12 @@ type sort_expr = Rawterm.rawsort
 
 type decl_notation = (string * constr_expr * scope_name option) option
 type simple_binder = lident list  * constr_expr
+type class_binder = lident * constr_expr list
 type 'a with_coercion = coercion_flag * 'a
 type constructor_expr = (lident * constr_expr) with_coercion
 type inductive_expr =
      lident * local_binder list * constr_expr * constructor_expr list
+
 type definition_expr =
   | ProveBody of local_binder list * constr_expr
   | DefineBody of local_binder list * raw_red_expr option * constr_expr
@@ -220,6 +224,26 @@ type vernac_expr =
   | VernacIdentityCoercion of strength * lident * 
       class_rawexpr * class_rawexpr
 
+  (* Type classes *)
+  | VernacClass of
+      lident * (* name *)
+	(lident * constr_expr) list * (* params *)
+	sort_expr located * (* arity *)
+	typeclass_context * (* super *)
+	(lident * constr_expr) list (* props *)
+	
+  | VernacInstance of
+      typeclass_context * (* super *)
+	typeclass_constraint * (* instance name, class name, params *)
+	(lident * lident list * constr_expr) list (* props *)
+
+  | VernacContext of typeclass_context
+	
+  | VernacDeclareInstance of
+      lident (* instance name *)
+
+  | VernacSetInstantiationTactic of raw_tactic_expr
+
   (* Modules and Module Types *)
   | VernacDeclareModule of bool option * lident * 
       module_binder list * (module_type_ast * bool)
@@ -260,12 +284,12 @@ type vernac_expr =
 
   (* Commands *)
   | VernacDeclareTacticDefinition of
-      rec_flag * (lident * raw_tactic_expr) list
+      rec_flag * (lident * bool * raw_tactic_expr) list
   | VernacHints of locality_flag * lstring list * hints
   | VernacSyntacticDefinition of identifier * constr_expr * locality_flag *
       onlyparsing_flag
-  | VernacDeclareImplicits of locality_flag * lreference *
-      (explicitation * bool) list option
+  | VernacDeclareImplicits of locality_flag * lreference * bool *
+      (explicitation * bool * bool) list option
   | VernacReserve of lident list * constr_expr
   | VernacSetOpacity of opacity_flag * lreference list
   | VernacUnsetOption of Goptions.option_name

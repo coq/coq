@@ -182,17 +182,17 @@ let interp_constr_or_thesis check_sort sigma env = function
 
 let type_tester_var body typ = 
   raw_app(dummy_loc,
-       RLambda(dummy_loc,Anonymous,typ,
+       RLambda(dummy_loc,Anonymous,Explicit,typ,
 	       RSort (dummy_loc,RProp Null)),body)
 
 let abstract_one_hyp inject h raw = 
   match h with 
       Hvar (loc,(id,None)) ->  
-	RProd (dummy_loc,Name id, RHole (loc,Evd.BinderType (Name id)), raw)
+	RProd (dummy_loc,Name id, Explicit, RHole (loc,Evd.BinderType (Name id)), raw)
     | Hvar (loc,(id,Some typ)) ->  
-	RProd (dummy_loc,Name id,fst typ, raw)
+	RProd (dummy_loc,Name id, Explicit, fst typ, raw)
     | Hprop st -> 
-	RProd (dummy_loc,st.st_label,inject st.st_it, raw)
+	RProd (dummy_loc,st.st_label, Explicit, inject st.st_it, raw)
 
 let rawconstr_of_hyps inject hyps head = 
   List.fold_right (abstract_one_hyp inject) hyps head
@@ -254,18 +254,18 @@ let rec raw_of_pat =
 let prod_one_hyp = function
     (loc,(id,None)) ->
       (fun raw ->  
-	 RProd (dummy_loc,Name id, 
+	 RProd (dummy_loc,Name id, Explicit,
 		RHole (loc,Evd.BinderType (Name id)), raw))
   | (loc,(id,Some typ)) -> 
       (fun raw ->  
-	 RProd (dummy_loc,Name id,fst typ, raw))
+	 RProd (dummy_loc,Name id, Explicit, fst typ, raw))
 
 let prod_one_id (loc,id) raw =
-  RProd (dummy_loc,Name id,
+  RProd (dummy_loc,Name id, Explicit,
 	 RHole (loc,Evd.BinderType (Name id)), raw)
 
 let let_in_one_alias (id,pat) raw =
-  RLetIn (dummy_loc,Name id,raw_of_pat pat, raw)
+  RLetIn (dummy_loc,Name id, raw_of_pat pat, raw)
 
 let rec bind_primary_aliases map pat =
   match pat with 
@@ -417,11 +417,11 @@ let interp_casee sigma env = function
 let abstract_one_arg = function
     (loc,(id,None)) ->
       (fun raw ->  
-	 RLambda (dummy_loc,Name id, 
+	 RLambda (dummy_loc,Name id, Explicit, 
 		RHole (loc,Evd.BinderType (Name id)), raw))
   | (loc,(id,Some typ)) -> 
       (fun raw ->  
-	 RLambda (dummy_loc,Name id,fst typ, raw))
+	 RLambda (dummy_loc,Name id, Explicit, fst typ, raw))
 
 let rawconstr_of_fun args body = 
   List.fold_right abstract_one_arg args (fst body)

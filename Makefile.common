@@ -105,6 +105,7 @@ PRETYPING:=\
   pretyping/retyping.cmo pretyping/cbv.cmo \
   pretyping/pretype_errors.cmo pretyping/recordops.cmo pretyping/typing.cmo \
   pretyping/tacred.cmo pretyping/evarutil.cmo pretyping/evarconv.cmo \
+  pretyping/typeclasses_errors.cmo pretyping/typeclasses.cmo \
   pretyping/classops.cmo pretyping/coercion.cmo \
   pretyping/unification.cmo pretyping/clenv.cmo \
   pretyping/rawterm.cmo pretyping/pattern.cmo \
@@ -115,7 +116,7 @@ INTERP:=\
   parsing/lexer.cmo interp/topconstr.cmo interp/ppextend.cmo \
   interp/notation.cmo \
   interp/genarg.cmo interp/syntax_def.cmo interp/reserve.cmo \
-  library/impargs.cmo interp/constrintern.cmo \
+  library/impargs.cmo interp/implicit_quantifiers.cmo interp/constrintern.cmo \
   interp/modintern.cmo interp/constrextern.cmo interp/coqlib.cmo \
   toplevel/discharge.cmo library/declare.cmo
 
@@ -154,11 +155,11 @@ TACTICS:=\
   tactics/decl_interp.cmo tactics/decl_proof_instr.cmo
 
 TOPLEVEL:=\
-  toplevel/himsg.cmo toplevel/cerrors.cmo toplevel/class.cmo \
-  toplevel/vernacexpr.cmo toplevel/metasyntax.cmo \
+  toplevel/himsg.cmo toplevel/cerrors.cmo \
+  toplevel/class.cmo toplevel/vernacexpr.cmo toplevel/metasyntax.cmo \
   toplevel/auto_ind_decl.cmo \
   toplevel/command.cmo toplevel/record.cmo \
-  parsing/ppvernac.cmo \
+  parsing/ppvernac.cmo toplevel/classes.cmo \
   toplevel/vernacinterp.cmo toplevel/mltop.cmo \
   toplevel/vernacentries.cmo toplevel/whelp.cmo toplevel/vernac.cmo \
   toplevel/line_oriented_parser.cmo toplevel/protectedtoplevel.cmo \
@@ -167,7 +168,7 @@ TOPLEVEL:=\
 
 HIGHTACTICS:=\
   tactics/refine.cmo tactics/extraargs.cmo \
-  tactics/extratactics.cmo tactics/eauto.cmo
+  tactics/extratactics.cmo tactics/eauto.cmo tactics/class_setoid.cmo
 
 SPECTAC:= tactics/tauto.ml4 tactics/eqdecide.ml4
 USERTAC:= $(SPECTAC)
@@ -251,9 +252,9 @@ SUBTACCMO:=contrib/subtac/subtac_utils.cmo contrib/subtac/eterm.cmo \
   contrib/subtac/subtac_errors.cmo contrib/subtac/subtac_coercion.cmo \
   contrib/subtac/subtac_obligations.cmo contrib/subtac/subtac_cases.cmo \
   contrib/subtac/subtac_pretyping_F.cmo contrib/subtac/subtac_pretyping.cmo \
-  contrib/subtac/subtac_command.cmo contrib/subtac/subtac.cmo \
+  contrib/subtac/subtac_command.cmo contrib/subtac/subtac_classes.cmo \
+  contrib/subtac/subtac.cmo \
   contrib/subtac/g_subtac.cmo
-
 
 RTAUTOCMO:=contrib/rtauto/proof_search.cmo contrib/rtauto/refl_tauto.cmo \
 	contrib/rtauto/g_rtauto.cmo
@@ -415,15 +416,15 @@ PRINTERSCMO:=\
   pretyping/reductionops.cmo pretyping/inductiveops.cmo			    \
   pretyping/retyping.cmo pretyping/cbv.cmo				    \
   pretyping/pretype_errors.cmo pretyping/recordops.cmo pretyping/typing.cmo \
-  pretyping/evarutil.cmo pretyping/evarconv.cmo   \
-  pretyping/tacred.cmo pretyping/classops.cmo pretyping/detyping.cmo	    \
-  pretyping/indrec.cmo pretyping/coercion.cmo \
+  pretyping/evarutil.cmo pretyping/evarconv.cmo pretyping/tacred.cmo \
+  pretyping/classops.cmo pretyping/typeclasses_errors.cmo pretyping/typeclasses.cmo \
+  pretyping/detyping.cmo pretyping/indrec.cmo pretyping/coercion.cmo \
   pretyping/unification.cmo pretyping/cases.cmo \
   pretyping/pretyping.cmo pretyping/clenv.cmo pretyping/pattern.cmo \
   parsing/lexer.cmo interp/ppextend.cmo interp/genarg.cmo \
   interp/topconstr.cmo interp/notation.cmo interp/reserve.cmo		\
-  library/impargs.cmo\
-  interp/constrextern.cmo interp/syntax_def.cmo interp/constrintern.cmo	\
+  library/impargs.cmo interp/constrextern.cmo \
+  interp/syntax_def.cmo interp/implicit_quantifiers.cmo  interp/constrintern.cmo \
   proofs/proof_trees.cmo proofs/logic.cmo proofs/refiner.cmo \
   proofs/tacexpr.cmo \
   proofs/evar_refiner.cmo proofs/pfedit.cmo proofs/tactic_debug.cmo \
@@ -432,8 +433,8 @@ PRINTERSCMO:=\
   parsing/printer.cmo parsing/pptactic.cmo \
   parsing/ppdecl_proof.cmo \
   parsing/tactic_printer.cmo \
-  parsing/egrammar.cmo toplevel/himsg.cmo \
-  toplevel/cerrors.cmo toplevel/vernacexpr.cmo toplevel/vernacinterp.cmo \
+  parsing/egrammar.cmo toplevel/himsg.cmo toplevel/cerrors.cmo \
+  toplevel/vernacexpr.cmo toplevel/vernacinterp.cmo \
   dev/top_printers.cmo
 
 ###########################################################################
@@ -705,11 +706,13 @@ SETOIDSVO:= theories/Setoids/Setoid_tac.vo theories/Setoids/Setoid_Prop.vo theor
 
 UNICODEVO:= theories/Unicode/Utf8.vo
 
+CLASSESVO:= theories/Classes/Init.vo theories/Classes/Setoid.vo theories/Classes/SetoidTactics.v
+
 THEORIESVO:=\
   $(INITVO) $(LOGICVO) $(ARITHVO) $(BOOLVO) $(NARITHVO) $(ZARITHVO) \
   $(SETOIDSVO) $(LISTSVO) $(STRINGSVO) $(SETSVO) $(FSETSVO) $(INTMAPVO) \
   $(RELATIONSVO) $(WELLFOUNDEDVO) $(REALSVO)  $(SORTINGVO) $(QARITHVO) \
-  $(INTSVO) $(NUMBERSVO) $(UNICODEVO)
+  $(INTSVO) $(NUMBERSVO) $(UNICODEVO) $(CLASSESVO)
 
 THEORIESLIGHTVO:= $(INITVO) $(LOGICVO) $(ARITHVO)
 
@@ -758,7 +761,7 @@ CCVO:=
 
 DPVO:=contrib/dp/Dp.vo
 
-SUBTACVO:=theories/Program/Tactics.vo theories/Program/Equality.vo \
+SUBTACVO:=theories/Program/Tactics.vo theories/Program/Equality.vo theories/Program/Subset.vo \
 	theories/Program/Utils.vo theories/Program/Wf.vo theories/Program/Program.vo \
 	theories/Program/FunctionalExtensionality.vo
 

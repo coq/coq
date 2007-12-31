@@ -18,9 +18,9 @@ Notation " {{ x }} " := (tt : { y : unit | x }).
 
 (** A simpler notation for subsets defined on a cartesian product. *)
 
-Notation "{ ( x , y )  :  A  |  P }" := 
-  (sig (fun anonymous : A => let (x,y) := anonymous in P))
-  (x ident, y ident) : type_scope.
+(* Notation "{ ( x , y )  :  A  |  P }" :=  *)
+(*   (sig (fun anonymous : A => let (x,y) := anonymous in P)) *)
+(*   (x ident, y ident, at level 10) : type_scope. *)
 
 (** Generates an obligation to prove False. *)
 
@@ -45,13 +45,13 @@ Notation " x '`=' y " := ((x :>) = (y :>)) (at level 70).
 
 (** Quantifying over subsets. *)
 
-Notation "'fun' { x : A | P } => Q" :=
-  (fun x:{x:A|P} => Q)
-  (at level 200, x ident, right associativity).
+(* Notation "'fun' ( x : A | P ) => Q" := *)
+(*   (fun (x :A|P} => Q) *)
+(*   (at level 200, x ident, right associativity). *)
 
-Notation "'forall' { x : A | P } , Q" :=
-  (forall x:{x:A|P}, Q)
-  (at level 200, x ident, right associativity).
+(* Notation "'forall' ( x : A | P ), Q" := *)
+(*   (forall (x : A | P), Q) *)
+(*   (at level 200, x ident, right associativity). *)
 
 Require Import Coq.Bool.Sumbool.
 

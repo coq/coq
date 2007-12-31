@@ -40,6 +40,8 @@ type rawsort = RProp of Term.contents | RType of Univ.universe option
 
 type binder_kind = BProd | BLambda | BLetIn
 
+type binding_kind = Explicit | Implicit
+
 type quantified_hypothesis = AnonHyp of int | NamedHyp of identifier
 
 type 'a explicit_bindings = (loc * quantified_hypothesis * 'a) list
@@ -61,8 +63,8 @@ type rawconstr =
   | REvar of loc * existential_key * rawconstr list option
   | RPatVar of loc * (bool * patvar) (* Used for patterns only *)
   | RApp of loc * rawconstr * rawconstr list
-  | RLambda of loc * name * rawconstr * rawconstr
-  | RProd of loc * name * rawconstr * rawconstr
+  | RLambda of loc * name * binding_kind *  rawconstr * rawconstr
+  | RProd of loc * name * binding_kind * rawconstr * rawconstr
   | RLetIn of loc * name * rawconstr * rawconstr
   | RCases of loc * rawconstr option * tomatch_tuple * cases_clauses
   | RLetTuple of loc * name list * (name * rawconstr option) * 
@@ -75,7 +77,7 @@ type rawconstr =
   | RCast of loc * rawconstr * rawconstr cast_type
   | RDynamic of loc * Dyn.t
 
-and rawdecl = name * rawconstr option * rawconstr
+and rawdecl = name * binding_kind * rawconstr option * rawconstr
 
 and fix_recursion_order = RStructRec | RWfRec of rawconstr | RMeasureRec of rawconstr
 

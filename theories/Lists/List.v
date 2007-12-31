@@ -9,7 +9,7 @@
   (*i $Id$ i*)
 
 Require Import Le Gt Minus Min Bool.
-Require Import Setoid.
+Require Import Coq.Setoids.Setoid.
 
 Set Implicit Arguments.
 

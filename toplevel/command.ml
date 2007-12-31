@@ -46,21 +46,21 @@ open Goptions
 open Mod_subst
 open Evd
 
-let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,a,b))
-let mkProdCit = List.fold_right (fun (x,a) b -> mkProdC(x,a,b))
+let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,default_binder_kind,a,b))
+let mkProdCit = List.fold_right (fun (x,a) b -> mkProdC(x,default_binder_kind,a,b))
 
 let rec abstract_constr_expr c = function
   | [] -> c
   | LocalRawDef (x,b)::bl -> mkLetInC(x,b,abstract_constr_expr c bl)
-  | LocalRawAssum (idl,t)::bl ->
-      List.fold_right (fun x b -> mkLambdaC([x],t,b)) idl
+  | LocalRawAssum (idl,k,t)::bl ->
+      List.fold_right (fun x b -> mkLambdaC([x],k,t,b)) idl
         (abstract_constr_expr c bl)
 
 let rec generalize_constr_expr c = function
   | [] -> c
   | LocalRawDef (x,b)::bl -> mkLetInC(x,b,generalize_constr_expr c bl)
-  | LocalRawAssum (idl,t)::bl ->
-      List.fold_right (fun x b -> mkProdC([x],t,b)) idl
+  | LocalRawAssum (idl,k,t)::bl ->
+      List.fold_right (fun x b -> mkProdC([x],k,t,b)) idl
         (generalize_constr_expr c bl)
 
 let rec under_binders env f n c =
@@ -103,10 +103,13 @@ let definition_message id =
 let constant_entry_of_com (bl,com,comtypopt,opacity,boxed) =
   let sigma = Evd.empty in
   let env = Global.env() in
-  match comtypopt with
+    match comtypopt with
       None -> 
 	let b = abstract_constr_expr com bl in
-	let j = interp_constr_judgment sigma env b in
+	let ib = intern_constr sigma env b in
+	let imps = Implicit_quantifiers.implicits_of_rawterm ib in
+  	let j = Default.understand_judgment sigma env ib in
+	  imps,
 	{ const_entry_body = j.uj_val;
 	  const_entry_type = None;
           const_entry_opaque = opacity;
@@ -115,7 +118,10 @@ let constant_entry_of_com (bl,com,comtypopt,opacity,boxed) =
 	(* We use a cast to avoid troubles with evars in comtyp *)
 	(* that can only be resolved knowing com *)
 	let b = abstract_constr_expr (mkCastC (com, Rawterm.CastConv (DEFAULTcast,comtyp))) bl in
-	let (body,typ) = destSubCast (interp_constr sigma env b) in
+	let ib = intern_gen false sigma env b in
+	let imps = Implicit_quantifiers.implicits_of_rawterm ib in
+	let (body,typ) = destSubCast (Default.understand_gen (OfType None) sigma env ib) in
+	  imps,
 	{ const_entry_body = body;
 	  const_entry_type = Some typ;
           const_entry_opaque = opacity;
@@ -130,15 +136,18 @@ let red_constant_entry bl ce = function
 	  (local_binders_length bl)
 	  body }
 
-let declare_global_definition ident ce local =
+let declare_global_definition ident ce local imps =
   let kn = declare_constant ident (DefinitionEntry ce,IsDefinition Definition) in
-  if local = Local && Flags.is_verbose() then
-    msg_warning (pr_id ident ++ str" is declared as a global definition");
-  definition_message ident;
-  ConstRef kn
+  let gr = ConstRef kn in
+    if Impargs.is_implicit_args () || imps <> [] then
+      declare_manual_implicits false gr (Impargs.is_implicit_args ()) imps;
+    if local = Local && Flags.is_verbose() then
+      msg_warning (pr_id ident ++ str" is declared as a global definition");
+    definition_message ident;
+    gr
 
 let declare_definition ident (local,boxed,dok) bl red_option c typopt hook =
-  let ce = constant_entry_of_com (bl,c,typopt,false,boxed) in
+  let imps, ce = constant_entry_of_com (bl,c,typopt,false,boxed) in
   let ce' = red_constant_entry bl ce red_option in
   let r = match local with
     | Local when Lib.sections_are_opened () ->
@@ -152,7 +161,7 @@ let declare_definition ident (local,boxed,dok) bl red_option c typopt hook =
              str" is not visible from current goals");
         VarRef ident
     | (Global|Local) ->
-        declare_global_definition ident ce' local in
+        declare_global_definition ident ce' local imps in
   hook local r
 
 let syntax_definition ident c local onlyparse =
@@ -550,8 +559,8 @@ let eq_constr_expr c1 c2 =
 
 (* Very syntactical equality *)
 let eq_local_binder d1 d2 = match d1,d2 with
-  | LocalRawAssum (nal1,c1), LocalRawAssum (nal2,c2) ->
-      List.length nal1 = List.length nal2 &&
+  | LocalRawAssum (nal1,k1,c1), LocalRawAssum (nal2,k2,c2) ->
+      List.length nal1 = List.length nal2 && k1 = k2 &&
       List.for_all2 (fun (_,na1) (_,na2) -> na1 = na2) nal1 nal2 &&
       eq_constr_expr c1 c2
   | LocalRawDef ((_,id1),c1), LocalRawDef ((_,id2),c2) ->
@@ -742,7 +751,7 @@ let interp_fix_body evdref env_rec impls (_,ctx) fix ccl =
 
 let build_fix_type (_,ctx) ccl = it_mkProd_or_LetIn ccl ctx
 
-let declare_fix boxed kind f def t =
+let declare_fix boxed kind f def t imps =
   let ce = {
     const_entry_body = def;
     const_entry_type = Some t;
@@ -750,7 +759,11 @@ let declare_fix boxed kind f def t =
     const_entry_boxed = boxed
   } in
   let kn = declare_constant f (DefinitionEntry ce,IsDefinition kind) in
-  ConstRef kn
+  let gr = ConstRef kn in
+    if Impargs.is_implicit_args () || imps <> [] then
+      declare_manual_implicits false gr (Impargs.is_implicit_args ()) imps;
+    gr
+
 
 let prepare_recursive_declaration fixnames fixtypes fixdefs =
   let defs = List.map (subst_vars (List.rev fixnames)) fixdefs in
@@ -766,6 +779,7 @@ let compute_possible_guardness_evidences (n,_) fixl fixtype =
 	 but doing it properly involves delta-reduction, and it finally 
          doesn't seem to worth the effort (except for huge mutual 
 	 fixpoints ?) *)
+      (* FIXME, local_binders_length does not give the size of the final product if typeclasses are used *)
       let m = local_binders_length fixl.fix_binders in
       let ctx = fst (Sign.decompose_prod_n_assum m fixtype) in
       list_map_i (fun i _ -> i) 0 ctx
@@ -778,6 +792,11 @@ let interp_recursive fixkind l boxed =
 
   (* Interp arities allowing for unresolved types *)
   let evdref = ref (Evd.create_evar_defs Evd.empty) in
+  let fiximps = 
+    List.map 
+      (fun x -> Implicit_quantifiers.implicits_of_binders x.fix_binders) 
+      fixl 
+  in
   let fixctxs = List.map (interp_fix_context evdref env) fixl in
   let fixccls = List.map2 (interp_fix_ccl evdref) fixctxs fixl in
   let fixtypes = List.map2 build_fix_type fixctxs fixccls in
@@ -816,7 +835,7 @@ let interp_recursive fixkind l boxed =
   in
 
   (* Declare the recursive definitions *)
-  ignore (list_map3 (declare_fix boxed kind) fixnames fixdecls fixtypes);
+  ignore (list_map4 (declare_fix boxed kind) fixnames fixdecls fixtypes fiximps);
   if_verbose ppnl (recursive_message kind indexes fixnames);
 
   (* Declare notations *)

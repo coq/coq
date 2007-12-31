@@ -207,6 +207,7 @@ let thm_token =
 let def_token = 
   "Definition" 
   | "Let" 
+  | "Class"
   | "SubClass" 
   | "Example"
   | "Local" 
@@ -214,11 +215,10 @@ let def_token =
   | "CoFixpoint" 
   | "Record" 
   | "Structure" 
+  | "Instance"
   | "Scheme"
   | "Inductive"
   | "CoInductive"
-  | "Program" space+ "Definition"
-  | "Program" space+ "Fixpoint"
 
 let decl_token = 
   "Hypothesis" 
@@ -263,11 +263,16 @@ let commands =
   | "Check"
   | "Type"
 
+  | "Section"
+  | "Chapter"
+  | "Variable" 's'?
+  | ("Hypothesis" | "Hypotheses")
+  | "End"
+
 let extraction = 
   "Extraction"
   | "Recursive" space+ "Extraction" 
   | "Extract"
-
 
 let gallina_kw = thm_token | def_token | decl_token | gallina_ext | commands | extraction
 
@@ -291,7 +296,6 @@ let gallina_kw_to_hide =
   | "Transparent"
   | "Opaque"
   | ("Declare" space+ ("Morphism" | "Step") )
-  | "Chapter"
   | ("Set" | "Unset") space+ "Printing" space+ "Coercions"
   | "Declare" space+ ("Left" | "Right") space+ "Step" 
 

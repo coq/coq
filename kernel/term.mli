@@ -473,10 +473,10 @@ val replace_vars : (identifier * constr) list -> constr -> constr
 val subst_var : identifier -> constr -> constr
 
 (* [subst_vars [id1;...;idn] t] substitute [VAR idj] by [Rel j] in [t]
-   if two names are identical, the one of least indice is keeped *)
+   if two names are identical, the one of least indice is kept *)
 val subst_vars : identifier list -> constr -> constr
 (* [substn_vars n [id1;...;idn] t] substitute [VAR idj] by [Rel j+n-1] in [t]
-   if two names are identical, the one of least indice is keeped *)
+   if two names are identical, the one of least indice is kept *)
 val substn_vars : int -> identifier list -> constr -> constr
 
 

@@ -268,7 +268,7 @@ let is_nondep_branch c n =
 let extract_nondep_branches test c b n =
   let rec strip n r = if n=0 then r else
     match r with
-      | RLambda (_,_,_,t) -> strip (n-1) t
+      | RLambda (_,_,_,_,t) -> strip (n-1) t
       | RLetIn (_,_,_,t) -> strip (n-1) t
       | _ -> assert false in
   if test c n then Some (strip n b) else None
@@ -276,7 +276,7 @@ let extract_nondep_branches test c b n =
 let it_destRLambda_or_LetIn_names n c =
   let rec aux n nal c =
     if n=0 then (List.rev nal,c) else match c with
-      | RLambda (_,na,_,c) -> aux (n-1) (na::nal) c
+      | RLambda (_,na,_,_,c) -> aux (n-1) (na::nal) c
       | RLetIn (_,na,_,c) -> aux (n-1) (na::nal) c
       | _ ->
           (* eta-expansion *)
@@ -308,7 +308,7 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
         | Some p ->
             let nl,typ = it_destRLambda_or_LetIn_names k p in
 	    let n,typ = match typ with 
-              | RLambda (_,x,t,c) -> x, c
+              | RLambda (_,x,_,t,c) -> x, c
 	      | _ -> Anonymous, typ in
 	    let aliastyp =
 	      if List.for_all ((=) Anonymous) nl then None
@@ -444,14 +444,14 @@ and share_names isgoal n l avoid env c t =
         let t = detype isgoal avoid env t in
 	let id = next_name_away na avoid in 
         let avoid = id::avoid and env = add_name (Name id) env in
-        share_names isgoal (n-1) ((Name id,None,t)::l) avoid env c c'
+        share_names isgoal (n-1) ((Name id,Explicit,None,t)::l) avoid env c c'
     (* May occur for fix built interactively *)
     | LetIn (na,b,t',c), _ when n > 0 ->
         let t' = detype isgoal avoid env t' in
         let b = detype isgoal avoid env b in
 	let id = next_name_away na avoid in 
         let avoid = id::avoid and env = add_name (Name id) env in
-        share_names isgoal n ((Name id,Some b,t')::l) avoid env c t
+        share_names isgoal n ((Name id,Explicit,Some b,t')::l) avoid env c t
     (* Only if built with the f/n notation or w/o let-expansion in types *)
     | _, LetIn (_,b,_,t) when n > 0 ->
 	share_names isgoal n l avoid env c (subst1 b t)
@@ -461,7 +461,7 @@ and share_names isgoal n l avoid env c t =
 	let id = next_name_away na' avoid in 
         let avoid = id::avoid and env = add_name (Name id) env in
         let appc = mkApp (lift 1 c,[|mkRel 1|]) in
-        share_names isgoal (n-1) ((Name id,None,t')::l) avoid env appc c'
+        share_names isgoal (n-1) ((Name id,Explicit,None,t')::l) avoid env appc c'
     (* If built with the f/n notation: we renounce to share names *)
     | _ ->
         if n>0 then warning "Detyping.detype: cannot factorize fix enough";
@@ -524,8 +524,8 @@ and detype_binder isgoal bk avoid env na ty c =
       concrete_name (avoid_flag isgoal) avoid env na c in
   let r =  detype isgoal avoid' (add_name na' env) c in
   match bk with
-  | BProd -> RProd (dl, na',detype isgoal avoid env ty, r)
-  | BLambda -> RLambda (dl, na',detype isgoal avoid env ty, r)
+  | BProd -> RProd (dl, na',Explicit,detype isgoal avoid env ty, r)
+  | BLambda -> RLambda (dl, na',Explicit,detype isgoal avoid env ty, r)
   | BLetIn -> RLetIn (dl, na',detype isgoal avoid env ty, r)
 
 let rec detype_rel_context where avoid env sign =
@@ -541,7 +541,7 @@ let rec detype_rel_context where avoid env sign =
 	    else concrete_name None avoid env na c in
       let b = Option.map (detype false avoid env) b in
       let t = detype false avoid env t in
-      (na',b,t) :: aux avoid' (add_name na' env) rest
+      (na',Explicit,b,t) :: aux avoid' (add_name na' env) rest
   in aux avoid env (List.rev sign)
 
 (**********************************************************************)
@@ -573,15 +573,15 @@ let rec subst_rawconstr subst raw =
 	if r' == r && rl' == rl then raw else
 	  RApp(loc,r',rl')
 
-  | RLambda (loc,n,r1,r2) -> 
+  | RLambda (loc,n,bk,r1,r2) -> 
       let r1' = subst_rawconstr subst r1 and r2' = subst_rawconstr subst r2 in
 	if r1' == r1 && r2' == r2 then raw else
-	  RLambda (loc,n,r1',r2')
+	  RLambda (loc,n,bk,r1',r2')
 
-  | RProd (loc,n,r1,r2) -> 
+  | RProd (loc,n,bk,r1,r2) -> 
       let r1' = subst_rawconstr subst r1 and r2' = subst_rawconstr subst r2 in
 	if r1' == r1 && r2' == r2 then raw else
-	  RProd (loc,n,r1',r2')
+	  RProd (loc,n,bk,r1',r2')
 
   | RLetIn (loc,n,r1,r2) -> 
       let r1' = subst_rawconstr subst r1 and r2' = subst_rawconstr subst r2 in
@@ -629,10 +629,10 @@ let rec subst_rawconstr subst raw =
       let ra1' = array_smartmap (subst_rawconstr subst) ra1
       and ra2' = array_smartmap (subst_rawconstr subst) ra2 in
       let bl' = array_smartmap
-        (list_smartmap (fun (na,obd,ty as dcl) ->
+        (list_smartmap (fun (na,k,obd,ty as dcl) ->
           let ty' = subst_rawconstr subst ty in
           let obd' = Option.smartmap (subst_rawconstr subst) obd in
-          if ty'==ty & obd'==obd then dcl else (na,obd',ty')))
+          if ty'==ty & obd'==obd then dcl else (na,k,obd',ty')))
         bl in
 	if ra1' == ra1 && ra2' == ra2 && bl'==bl then raw else
 	  RRec (loc,fix,ida,bl',ra1',ra2')

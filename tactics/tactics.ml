@@ -1753,7 +1753,10 @@ let abstract_args gl id =
 	  let argty = pf_type_of gl arg in
 	  let liftarg = lift (List.length ctx) arg in
 	  let liftargty = lift (List.length ctx) argty in
-	  let convertible = Reductionops.is_conv ctxenv sigma ty liftargty in
+	  let convertible = 
+	    Reductionops.is_conv ctxenv sigma
+	      (Termops.refresh_universes ty) (Termops.refresh_universes liftargty) 
+	  in
 	    match kind_of_term arg with
 	      | Var _ | Rel _ when convertible -> 
 		    (subst1 arg arity, ctx, ctxenv, mkApp (c, [|arg|]), args, eqs, refls, (Anonymous, liftarg, liftarg) :: finalargs, env)

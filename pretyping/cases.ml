@@ -1408,9 +1408,9 @@ let set_arity_signature dep n arsign tomatchl pred x =
   let rec decomp_lam_force n avoid l p =
     if n = 0 then (List.rev l,p,avoid) else
     match p with
-      | RLambda (_,(Name id as na),_,c) -> 
+      | RLambda (_,(Name id as na),_,_,c) -> 
           decomp_lam_force (n-1) (id::avoid) (na::l) c
-      | RLambda (_,(Anonymous as na),_,c) -> decomp_lam_force (n-1) avoid (na::l) c
+      | RLambda (_,(Anonymous as na),_,_,c) -> decomp_lam_force (n-1) avoid (na::l) c
       | _ ->
           let x = next_ident_away (id_of_string "x") avoid in
           decomp_lam_force (n-1) (x::avoid) (Name x :: l) 

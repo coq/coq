@@ -71,6 +71,7 @@ let hm2 s =
 (* The list of all theories in the standard library /!\ order does matter *)
 let theories_dirs_map = [
     "theories/Unicode", "Unicode" ;
+    "theories/Classes", "Classes" ; 
     "theories/Program", "Program" ; 
     "theories/FSets", "FSets" ; 
     "theories/IntMap", "IntMap" ; 

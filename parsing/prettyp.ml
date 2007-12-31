@@ -746,3 +746,22 @@ let print_canonical_projections () =
 
 (*************************************************************************)
 
+(*************************************************************************)
+(* Pretty-printing functions for type classes                     *)
+
+open Typeclasses
+
+let pr_typeclass env t = 
+  gallina_print_inductive (fst t.cl_impl)
+
+let print_typeclasses () =
+  let env = Global.env () in
+    prlist_with_sep pr_spc (pr_typeclass env) (typeclasses ())
+
+let pr_instance env i = 
+  gallina_print_constant_with_infos i.is_impl
+
+let print_instances r =
+  let env = Global.env () in
+  let inst = instances r in 
+    prlist_with_sep pr_spc (pr_instance env) inst

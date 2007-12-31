@@ -86,7 +86,7 @@ let explain_bad_patterns_number n1 n2 =
 
 let explain_bad_explicitation_number n po =
   match n with
-  | ExplByPos n ->
+  | ExplByPos (n,_id) ->
       let s = match po with
 	| None -> str "a regular argument"
 	| Some p -> int p in
@@ -683,7 +683,7 @@ let extract_explicit_arg imps args =
 		user_err_loc (loc,"",str "Argument name " ++ pr_id id
 		++ str " occurs more than once");
 	      id
-	  | ExplByPos p ->
+	  | ExplByPos (p,_id) ->
 	      let id =
 		try 
 		  let imp = List.nth imps (p-1) in
@@ -775,6 +775,16 @@ let set_type_scope (ids,tmp_scope,scopes) =
 let reset_tmp_scope (ids,tmp_scope,scopes) =
   (ids,None,scopes)
 
+let rec it_mkRProd env body =
+  match env with
+      (na, bk, _, t) :: tl -> it_mkRProd tl (RProd (dummy_loc, na, bk, t, body))
+    | [] -> body
+
+let rec it_mkRLambda env body =
+  match env with
+      (na, bk, _, t) :: tl -> it_mkRLambda tl (RLambda (dummy_loc, na, bk, t, body))
+    | [] -> body
+
 (**********************************************************************)
 (* Main loop                                                          *)
 
@@ -844,15 +854,15 @@ let internalise sigma globalenv env allow_patvar lvar c =
               Array.map (fun (_,ty,_) -> ty) idl,
               Array.map (fun (_,_,bd) -> bd) idl)
     | CArrow (loc,c1,c2) ->
-        RProd (loc, Anonymous, intern_type env c1, intern_type env c2)
+        RProd (loc, Anonymous, Explicit, intern_type env c1, intern_type env c2)
     | CProdN (loc,[],c2) ->
         intern_type env c2
-    | CProdN (loc,(nal,ty)::bll,c2) ->
-        iterate_prod loc env ty (CProdN (loc, bll, c2)) nal
+    | CProdN (loc,(nal,bk,ty)::bll,c2) ->
+        iterate_prod loc env bk ty (CProdN (loc, bll, c2)) nal
     | CLambdaN (loc,[],c2) ->
         intern env c2
-    | CLambdaN (loc,(nal,ty)::bll,c2) ->
-	iterate_lam loc (reset_tmp_scope env) ty (CLambdaN (loc, bll, c2)) nal
+    | CLambdaN (loc,(nal,bk,ty)::bll,c2) ->
+	iterate_lam loc (reset_tmp_scope env) bk ty (CLambdaN (loc, bll, c2)) nal
     | CLetIn (loc,(_,na),c1,c2) ->
 	RLetIn (loc, na, intern (reset_tmp_scope env) c1,
           intern (push_name_env lvar env na) c2)
@@ -934,17 +944,20 @@ let internalise sigma globalenv env allow_patvar lvar c =
   and intern_type env = intern (set_type_scope env)
 
   and intern_local_binder ((ids,ts,sc as env),bl) = function
-    | LocalRawAssum(nal,ty) ->
-	let (loc,na) = List.hd nal in
-	(* TODO: fail if several names with different implicit types *)
-	let ty = locate_if_isevar loc na (intern_type env ty) in
-        List.fold_left
-          (fun ((ids,ts,sc),bl) (_,na) ->
-            ((name_fold Idset.add na ids,ts,sc), (na,None,ty)::bl))
-          (env,bl) nal
+    | LocalRawAssum(nal,bk,ty) ->
+	(match bk with
+	  | Default k ->
+	      let (loc,na) = List.hd nal in
+		(* TODO: fail if several names with different implicit types *)
+	      let ty = locate_if_isevar loc na (intern_type env ty) in
+		List.fold_left
+		  (fun ((ids,ts,sc),bl) (_,na) ->
+		    ((name_fold Idset.add na ids,ts,sc), (na,k,None,ty)::bl))
+		  (env,bl) nal
+	  | TypeClass b -> anomaly ("TODO: intern_local_binder TypeClass"))
     | LocalRawDef((loc,na),def) ->
         ((name_fold Idset.add na ids,ts,sc),
-         (na,Some(intern env def),RHole(loc,Evd.BinderType na))::bl)
+         (na,Explicit,Some(intern env def),RHole(loc,Evd.BinderType na))::bl)
 
   (* Expands a multiple pattern into a disjunction of multiple patterns *)
   and intern_multiple_pattern scopes pl =
@@ -1004,22 +1017,50 @@ let internalise sigma globalenv env allow_patvar lvar c =
       | _, None -> Anonymous
       | _, Some na -> na in
     (tm',(na,typ)), na::ids
+      
+  and intern_typeclass_binders env bl =
+    List.fold_left 
+      (fun ((ids,ts,sc) as env,bl) ((loc, na), bk, ty) ->
+	let ty = locate_if_isevar loc na (intern_type env ty) in
+	  ((name_fold Idset.add na ids,ts,sc), (na,bk,None,ty)::bl))
+      env bl
 
-  and iterate_prod loc2 env ty body = function
+  and iterate_prod loc2 env bk ty body nal =
+    let rec default env bk = function
     | (loc1,na)::nal ->
 	if nal <> [] then check_capture loc1 ty na;
-	let body = iterate_prod loc2 (push_name_env lvar env na) ty body nal in
+	let body = default (push_name_env lvar env na) bk nal in
 	let ty = locate_if_isevar loc1 na (intern_type env ty) in
-	RProd (join_loc loc1 loc2, na, ty, body)
+	  RProd (join_loc loc1 loc2, na, bk, ty, body)
     | [] -> intern_type env body
-
-  and iterate_lam loc2 env ty body = function
-    | (loc1,na)::nal ->
-	if nal <> [] then check_capture loc1 ty na;
-	let body = iterate_lam loc2 (push_name_env lvar env na) ty body nal in
-	let ty = locate_if_isevar loc1 na (intern_type env ty) in
-	RLambda (join_loc loc1 loc2, na, ty, body)
-    | [] -> intern env body
+    in
+      match bk with
+	| Default b -> default env b nal
+	| TypeClass b -> 
+	    let ctx = (List.hd nal, b, ty) in
+	    let (fvs, bind) = Implicit_quantifiers.generalize_class_binders_raw (pi1 env) [ctx] in
+	    let env, ifvs = intern_typeclass_binders (env,[]) fvs in
+	    let env, ibind = intern_typeclass_binders (env,ifvs) bind in
+	    let body = intern_type env body in
+	      it_mkRProd ibind body
+					   
+  and iterate_lam loc2 env bk ty body nal = 
+    let rec default env bk = function 
+      | (loc1,na)::nal ->
+	  if nal <> [] then check_capture loc1 ty na;
+	  let body = default (push_name_env lvar env na) bk nal in
+	  let ty = locate_if_isevar loc1 na (intern_type env ty) in
+	    RLambda (join_loc loc1 loc2, na, bk, ty, body)
+      | [] -> intern env body
+    in match bk with
+      | Default b -> default env b nal
+      | TypeClass b ->
+	  let ctx = (List.hd nal, b, ty) in
+	  let (fvs, bind) = Implicit_quantifiers.generalize_class_binders_raw (pi1 env) [ctx] in
+	  let env, ifvs = intern_typeclass_binders (env,[]) fvs in
+	  let env, ibind = intern_typeclass_binders (env,ifvs) bind in
+	  let body = intern env body in
+	    it_mkRLambda ibind body
 
   and intern_impargs c env l subscopes args =
     let eargs, rargs = extract_explicit_arg l args in
@@ -1046,7 +1087,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
       | (imp::impl', []) -> 
 	  if eargs <> [] then 
 	    (let (id,(loc,_)) = List.hd eargs in
-	    user_err_loc (loc,"",str "Not enough non implicit
+	       user_err_loc (loc,"",str "Not enough non implicit
 	    arguments to accept the argument bound to " ++ pr_id id));
 	  []
       | ([], rargs) ->
@@ -1123,7 +1164,6 @@ let interp_open_constr sigma env c =
 let interp_constr_judgment sigma env c =
   Default.understand_judgment sigma env (intern_constr sigma env c)
 
-
 let interp_constr_evars_gen evdref env ?(impls=([],[])) kind c =
   Default.understand_tcc_evars evdref env kind
     (intern_gen (kind=IsType) ~impls (Evd.evars_of !evdref) env c)
@@ -1175,11 +1215,11 @@ open Term
 let interp_context sigma env params = 
   List.fold_left
     (fun (env,params) d -> match d with
-      | LocalRawAssum ([_,na],(CHole _ as t)) ->
+      | LocalRawAssum ([_,na],k,(CHole _ as t)) ->
 	  let t = interp_binder sigma env na t in
 	  let d = (na,None,t) in
 	  (push_rel d env, d::params)
-      | LocalRawAssum (nal,t) ->
+      | LocalRawAssum (nal,k,t) ->
 	  let t = interp_type sigma env t in
 	  let ctx = list_map_i (fun i (_,na) -> (na,None,lift i t)) 0 nal in
 	  let ctx = List.rev ctx in
@@ -1193,11 +1233,11 @@ let interp_context sigma env params =
 let interp_context_evars evdref env params =
   List.fold_left
     (fun (env,params) d -> match d with
-      | LocalRawAssum ([_,na],(CHole _ as t)) ->
+      | LocalRawAssum ([_,na],k,(CHole _ as t)) ->
 	  let t = interp_binder_evars evdref env na t in
 	  let d = (na,None,t) in
 	  (push_rel d env, d::params)
-      | LocalRawAssum (nal,t) ->
+      | LocalRawAssum (nal,k,t) ->
 	  let t = interp_type_evars evdref env t in
 	  let ctx = list_map_i (fun i (_,na) -> (na,None,lift i t)) 0 nal in
 	  let ctx = List.rev ctx in

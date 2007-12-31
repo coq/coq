@@ -41,10 +41,13 @@ val with_implicits : implicits_flags -> ('a -> 'b) -> 'a -> 'b
 type implicit_status
 type implicits_list = implicit_status list
 
+type implicit_explanation
+
 val is_status_implicit : implicit_status -> bool
 val is_inferable_implicit : bool -> int -> implicit_status -> bool
 val name_of_implicit : implicit_status -> identifier
 val maximal_insertion_of : implicit_status -> bool
+val forced_implicit : implicit_status -> bool
 
 val positions_of_implicits : implicits_list -> int list
 
@@ -60,8 +63,13 @@ val declare_mib_implicits : mutual_inductive -> unit
 
 val declare_implicits : bool -> global_reference -> unit
 
+(* A [manual_explicitation] is a tuple of a positional or named explicitation with
+   maximal insertion and forcing flags. *)
+type manual_explicitation = Topconstr.explicitation * (bool * bool) 
+
 (* Manual declaration of which arguments are expected implicit *)
-val declare_manual_implicits : bool -> global_reference -> 
-  (Topconstr.explicitation * bool) list -> unit
+val declare_manual_implicits : bool -> global_reference -> bool ->
+  manual_explicitation list -> unit
 
 val implicits_of_global : global_reference -> implicits_list
+

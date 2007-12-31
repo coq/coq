@@ -36,6 +36,8 @@ type rawsort = RProp of Term.contents | RType of Univ.universe option
 
 type binder_kind = BProd | BLambda | BLetIn
 
+type binding_kind = Explicit | Implicit
+
 type quantified_hypothesis = AnonHyp of int | NamedHyp of identifier
 
 type 'a explicit_bindings = (loc * quantified_hypothesis * 'a) list
@@ -57,8 +59,8 @@ type rawconstr =
   | REvar of loc * existential_key * rawconstr list option
   | RPatVar of loc * (bool * patvar) (* Used for patterns only *)
   | RApp of loc * rawconstr * rawconstr list
-  | RLambda of loc * name * rawconstr * rawconstr
-  | RProd of loc * name * rawconstr * rawconstr
+  | RLambda of loc * name * binding_kind * rawconstr * rawconstr
+  | RProd of loc * name * binding_kind * rawconstr * rawconstr
   | RLetIn of loc * name * rawconstr * rawconstr
   | RCases of loc * rawconstr option * tomatch_tuple * cases_clauses
   | RLetTuple of loc * name list * (name * rawconstr option) * 
@@ -71,7 +73,7 @@ type rawconstr =
   | RCast of loc * rawconstr * rawconstr cast_type
   | RDynamic of loc * Dyn.t
 
-and rawdecl = name * rawconstr option * rawconstr
+and rawdecl = name * binding_kind * rawconstr option * rawconstr
 
 and fix_recursion_order = RStructRec | RWfRec of rawconstr | RMeasureRec of rawconstr
 
@@ -101,13 +103,13 @@ let cases_predicate_names tml =
 
    - boolean in POldCase means it is recursive
 i*)
-let map_rawdecl f (na,obd,ty) = (na,Option.map f obd,f ty)
+let map_rawdecl f (na,k,obd,ty) = (na,k,Option.map f obd,f ty)
 
 let map_rawconstr f = function
   | RVar (loc,id) -> RVar (loc,id)
   | RApp (loc,g,args) -> RApp (loc,f g, List.map f args)
-  | RLambda (loc,na,ty,c) -> RLambda (loc,na,f ty,f c)
-  | RProd (loc,na,ty,c) -> RProd (loc,na,f ty,f c)
+  | RLambda (loc,na,bk,ty,c) -> RLambda (loc,na,bk,f ty,f c)
+  | RProd (loc,na,bk,ty,c) -> RProd (loc,na,bk,f ty,f c)
   | RLetIn (loc,na,b,c) -> RLetIn (loc,na,f b,f c)
   | RCases (loc,rtntypopt,tml,pl) ->
       RCases (loc,Option.map f rtntypopt,
@@ -166,8 +168,8 @@ let occur_rawconstr id =
   let rec occur = function
     | RVar (loc,id') -> id = id'
     | RApp (loc,f,args) -> (occur f) or (List.exists occur args)
-    | RLambda (loc,na,ty,c) -> (occur ty) or ((na <> Name id) & (occur c))
-    | RProd (loc,na,ty,c) -> (occur ty) or ((na <> Name id) & (occur c))
+    | RLambda (loc,na,bk,ty,c) -> (occur ty) or ((na <> Name id) & (occur c))
+    | RProd (loc,na,bk,ty,c) -> (occur ty) or ((na <> Name id) & (occur c))
     | RLetIn (loc,na,b,c) -> (occur b) or ((na <> Name id) & (occur c))
     | RCases (loc,rtntypopt,tml,pl) ->
 	(occur_option rtntypopt)
@@ -182,7 +184,7 @@ let occur_rawconstr id =
         not (array_for_all4 (fun fid bl ty bd ->
           let rec occur_fix = function
               [] -> not (occur ty) && (fid=id or not(occur bd))
-            | (na,bbd,bty)::bl ->
+            | (na,k,bbd,bty)::bl ->
                 not (occur bty) &&
                 (match bbd with
                     Some bd -> not (occur bd)
@@ -211,7 +213,7 @@ let free_rawvars  =
   let rec vars bounded vs = function
     | RVar (loc,id') -> if Idset.mem id' bounded then vs else Idset.add id' vs
     | RApp (loc,f,args) -> List.fold_left (vars bounded) vs (f::args)
-    | RLambda (loc,na,ty,c) | RProd (loc,na,ty,c) | RLetIn (loc,na,ty,c) -> 
+    | RLambda (loc,na,_,ty,c) | RProd (loc,na,_,ty,c) | RLetIn (loc,na,ty,c) -> 
 	let vs' = vars bounded vs ty in 
 	let bounded' = add_name_to_ids bounded na in 
 	vars bounded' vs' c
@@ -234,7 +236,7 @@ let free_rawvars  =
 	let vars_fix i vs fid = 
 	  let vs1,bounded1 = 
 	    List.fold_left 
-	      (fun (vs,bounded) (na,bbd,bty) -> 
+	      (fun (vs,bounded) (na,k,bbd,bty) -> 
 		 let vs' = vars_option bounded vs bbd in 
 		 let vs'' = vars bounded vs' bty in
 		 let bounded' = add_name_to_ids bounded na in 
@@ -272,8 +274,8 @@ let loc_of_rawconstr = function
   | REvar (loc,_,_) -> loc
   | RPatVar (loc,_) -> loc
   | RApp (loc,_,_) -> loc
-  | RLambda (loc,_,_,_) -> loc
-  | RProd (loc,_,_,_) -> loc
+  | RLambda (loc,_,_,_,_) -> loc
+  | RProd (loc,_,_,_,_) -> loc
   | RLetIn (loc,_,_,_) -> loc
   | RCases (loc,_,_,_) -> loc
   | RLetTuple (loc,_,_,_,_) -> loc

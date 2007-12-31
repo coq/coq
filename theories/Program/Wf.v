@@ -34,11 +34,11 @@ Section Well_founded.
     Hypothesis
       F_ext :
       forall (x:A) (f g:forall y:{y:A | R y x}, P (`y)),
-        (forall y:{ y:A | R y x}, f y = g y) -> F_sub x f = F_sub x g.
+        (forall (y : A | R y x), f y = g y) -> F_sub x f = F_sub x g.
 
     Lemma Fix_F_eq :
       forall (x:A) (r:Acc R x),
-        F_sub x (fun (y:{y:A|R y x}) => Fix_F (`y) (Acc_inv r (proj1_sig y) (proj2_sig y))) = Fix_F x r.
+        F_sub x (fun (y:A|R y x) => Fix_F (`y) (Acc_inv r (proj1_sig y) (proj2_sig y))) = Fix_F x r.
     Proof. 
       destruct r using Acc_inv_dep; auto.
     Qed.
@@ -52,7 +52,7 @@ Section Well_founded.
       rewrite (proof_irrelevance (Acc R x) r s) ; auto.
     Qed.
 
-    Lemma Fix_eq : forall x:A, Fix x = F_sub x (fun (y:{y:A|R y x}) => Fix (proj1_sig y)).
+    Lemma Fix_eq : forall x:A, Fix x = F_sub x (fun (y:A|R y x) => Fix (proj1_sig y)).
     Proof.
       intro x; unfold Fix in |- *.
       rewrite <- (Fix_F_eq ).
@@ -64,7 +64,7 @@ Section Well_founded.
         forall x : A,
           Fix_sub P F_sub x =
           let f_sub := F_sub in
-            f_sub x (fun  {y : A | R y x}=> Fix (`y)).
+            f_sub x (fun (y : A | R y x) => Fix (`y)).
       exact Fix_eq.
     Qed.
 
@@ -98,7 +98,7 @@ Section Well_founded_measure.
   Section FixPoint.
     Variable P : A -> Type.
     
-    Variable F_sub : forall x:A, (forall y: { y : A | m y < m x }, P (proj1_sig y)) -> P x.
+    Variable F_sub : forall x:A, (forall (y : A | m y < m x), P (proj1_sig y)) -> P x.
     
     Notation Fix_F := (Fix_measure_F_sub P F_sub) (only parsing). (* alias *)
     
@@ -106,8 +106,8 @@ Section Well_founded_measure.
     
     Hypothesis
       F_ext :
-      forall (x:A) (f g:forall y:{y:A | m y < m x}, P (`y)),
-        (forall y:{ y:A | m y < m x}, f y = g y) -> F_sub x f = F_sub x g.
+      forall (x:A) (f g:forall y : { y : A | m y < m x}, P (`y)),
+        (forall y : { y : A | m y < m x}, f y = g y) -> F_sub x f = F_sub x g.
 
     Lemma Fix_measure_F_eq :
       forall (x:A) (r:Acc lt (m x)),
@@ -137,7 +137,7 @@ Section Well_founded_measure.
         forall x : A,
           Fix_measure_sub P F_sub x =
           let f_sub := F_sub in
-            f_sub x (fun  {y : A | m y < m x}=> Fix_measure (`y)).
+            f_sub x (fun (y : A | m y < m x) => Fix_measure (`y)).
       exact Fix_measure_eq.
     Qed.
 

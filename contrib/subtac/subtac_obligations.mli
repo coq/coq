@@ -12,11 +12,18 @@ type progress = (* Resolution status of a program *)
 val set_default_tactic : Tacexpr.glob_tactic_expr -> unit
 val default_tactic : unit -> Proof_type.tactic
 
+type definition_hook = constant -> unit
+
 val add_definition : Names.identifier ->  Term.constr -> Term.types -> 
-  obligation_info -> progress
+  ?implicits:(Topconstr.explicitation * (bool * bool)) list ->
+  ?kind:Decl_kinds.definition_object_kind ->
+  ?hook:definition_hook -> obligation_info -> progress
 
 val add_mutual_definitions : 
-  (Names.identifier * Term.constr * Term.types * obligation_info) list -> int array -> unit
+  (Names.identifier * Term.constr * Term.types * obligation_info) list -> 
+  ?implicits:(Topconstr.explicitation * (bool * bool)) list ->
+  ?kind:Decl_kinds.definition_object_kind ->
+  int array -> unit
 
 val subtac_obligation : int * Names.identifier option * Topconstr.constr_expr option -> unit
 
@@ -31,7 +38,7 @@ val try_solve_obligation : int -> Names.identifier option -> Proof_type.tactic -
 
 val try_solve_obligations : Names.identifier option -> Proof_type.tactic -> unit
 
-val show_obligations : Names.identifier option -> unit
+val show_obligations : ?msg:bool -> Names.identifier option -> unit
 
 val admit_obligations : Names.identifier option -> unit
 

@@ -44,17 +44,20 @@ struct
   let subtac_nameopt : identifier option Gram.Entry.e = gec "subtac_nameopt"
 end
 
+open Rawterm
 open SubtacGram 
 open Util
 open Pcoq
-
+open Prim
+open Constr
 let sigref = mkRefC (Qualid (dummy_loc, Libnames.qualid_of_string "Coq.Init.Specif.sig"))
 
 GEXTEND Gram
-  GLOBAL: subtac_gallina_loc Constr.binder_let Constr.binder subtac_nameopt;
+  GLOBAL: subtac_gallina_loc typeclass_constraint Constr.binder_let Constr.binder subtac_nameopt;
  
   subtac_gallina_loc:
-    [ [ g = Vernac.gallina -> loc, g ] ]
+    [ [ g = Vernac.gallina -> loc, g
+    | g = Vernac.gallina_ext -> loc, g ] ]
     ;
 
   subtac_nameopt:
@@ -63,18 +66,18 @@ GEXTEND Gram
     ;
 
   Constr.binder_let:
-    [ [ "("; id=Prim.name; ":"; t=Constr.lconstr; "|"; c=Constr.lconstr; ")" -> 
-	  let typ = mkAppC (sigref, [mkLambdaC ([id], t, c)]) in
-	    LocalRawAssum ([id], typ)
+    [[ "("; id=Prim.name; ":"; t=Constr.lconstr; "|"; c=Constr.lconstr; ")" -> 
+	  let typ = mkAppC (sigref, [mkLambdaC ([id], default_binder_kind, t, c)]) in
+	    LocalRawAssum ([id], default_binder_kind, typ)
     ] ];
 
   Constr.binder:
     [ [ "("; id=Prim.name; ":"; c=Constr.lconstr; "|"; p=Constr.lconstr; ")" ->
-          ([id],mkAppC (sigref, [mkLambdaC ([id], c, p)]))
+          ([id],default_binder_kind, mkAppC (sigref, [mkLambdaC ([id], default_binder_kind, c, p)]))
       | "("; id=Prim.name; ":"; c=Constr.lconstr; ")" ->
-          ([id],c)
+          ([id],default_binder_kind, c)
       | "("; id=Prim.name; lid=LIST1 Prim.name; ":"; c=Constr.lconstr; ")" ->
-          (id::lid,c)
+          (id::lid,default_binder_kind, c)
     ] ];
 
   END

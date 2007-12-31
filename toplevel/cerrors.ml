@@ -77,6 +77,8 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
       hov 0 (str "Error:" ++ spc () ++ Himsg.explain_type_error ctx te)
   | PretypeError(ctx,te) ->
       hov 0 (str "Error:" ++ spc () ++ Himsg.explain_pretype_error ctx te)
+  | Typeclasses_errors.TypeClassError(env, te) ->
+      hov 0 (str "Error:" ++ spc () ++ Himsg.explain_typeclass_error env te)
   | InductiveError e -> 
       hov 0 (str "Error:" ++ spc () ++ Himsg.explain_inductive_error e)
   | RecursionSchemeError e -> 

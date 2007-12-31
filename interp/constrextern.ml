@@ -216,7 +216,7 @@ let rec check_same_type ty1 ty2 =
   | _ when ty1=ty2 -> ()
   | _ -> failwith "not same type"
 
-and check_same_binder (nal1,e1) (nal2,e2) =
+and check_same_binder (nal1,_,e1) (nal2,_,e2) =
   List.iter2 (fun (_,na1) (_,na2) ->
     if na1<>na2 then failwith "not same name") nal1 nal2;
   check_same_type e1 e2
@@ -224,10 +224,10 @@ and check_same_binder (nal1,e1) (nal2,e2) =
 and check_same_fix_binder bl1 bl2 =
   List.iter2 (fun b1 b2 ->
     match b1,b2 with
-        LocalRawAssum(nal1,ty1), LocalRawAssum(nal2,ty2) ->
-          check_same_binder (nal1,ty1) (nal2,ty2)
+        LocalRawAssum(nal1,k,ty1), LocalRawAssum(nal2,k',ty2) ->
+          check_same_binder (nal1,k,ty1) (nal2,k',ty2)
       | LocalRawDef(na1,def1), LocalRawDef(na2,def2) ->
-          check_same_binder ([na1],def1) ([na2],def2)          
+          check_same_binder ([na1],default_binder_kind,def1) ([na2],default_binder_kind,def2)
       | _ -> failwith "not same binder") bl1 bl2
 
 let same c d = try check_same_type c d; true with _ -> false
@@ -255,10 +255,10 @@ let rec same_raw c d =
   | RPatVar(_,pv1), RPatVar(_,pv2) -> if pv1<>pv2 then failwith "RPatVar"
   | RApp(_,f1,a1), RApp(_,f2,a2) ->
       List.iter2 same_raw (f1::a1) (f2::a2)
-  | RLambda(_,na1,t1,m1), RLambda(_,na2,t2,m2) ->
+  | RLambda(_,na1,bk1,t1,m1), RLambda(_,na2,bk2,t2,m2) ->
       if na1 <> na2 then failwith "RLambda";
       same_raw t1 t2; same_raw m1 m2
-  | RProd(_,na1,t1,m1), RProd(_,na2,t2,m2) ->
+  | RProd(_,na1,bk1,t1,m1), RProd(_,na2,bk2,t2,m2) ->
       if na1 <> na2 then failwith "RProd";
       same_raw t1 t2; same_raw m1 m2
   | RLetIn(_,na1,t1,m1), RLetIn(_,na2,t2,m2) ->
@@ -283,7 +283,7 @@ let rec same_raw c d =
   | RRec(_,fk1,na1,bl1,ty1,def1), RRec(_,fk2,na2,bl2,ty2,def2) ->
       if fk1 <> fk2 || na1 <> na2 then failwith "RRec";
       array_iter2
-        (List.iter2 (fun (na1,bd1,ty1) (na2,bd2,ty2) ->
+        (List.iter2 (fun (na1,bk1,bd1,ty1) (na2,bk2,bd2,ty2) ->
           if na1<>na2 then failwith "RRec";
           Option.iter2 same_raw bd1 bd2;
           same_raw ty1 ty2)) bl1 bl2;
@@ -582,7 +582,7 @@ let rec rename_rawconstr_var id0 id1 = function
 
 let rec share_fix_binders n rbl ty def =
   match ty,def with
-      RProd(_,na0,t0,b), RLambda(_,na1,t1,m) ->
+      RProd(_,na0,bk0,t0,b), RLambda(_,na1,bk1,t1,m) ->
         if not(same_rawconstr t0 t1) then List.rev rbl, ty, def
         else
           let (na,b,m) =
@@ -672,7 +672,7 @@ let rec extern inctx scopes vars r =
 	     explicitize loc inctx [] (None,sub_extern false scopes vars f)
                (List.map (sub_extern true scopes vars) args))
 
-  | RProd (loc,Anonymous,t,c) ->
+  | RProd (loc,Anonymous,_,t,c) ->
       (* Anonymous product are never factorized *)
       CArrow (loc,extern_typ scopes vars t, extern_typ scopes vars c)
 
@@ -680,15 +680,15 @@ let rec extern inctx scopes vars r =
       CLetIn (loc,(loc,na),sub_extern false scopes vars t,
               extern inctx scopes (add_vname vars na) c)
 
-  | RProd (loc,na,t,c) ->
+  | RProd (loc,na,bk,t,c) ->
       let t = extern_typ scopes vars (anonymize_if_reserved na t) in
       let (idl,c) = factorize_prod scopes (add_vname vars na) t c in
-      CProdN (loc,[(dummy_loc,na)::idl,t],c)
+      CProdN (loc,[(dummy_loc,na)::idl,Default bk,t],c)
 
-  | RLambda (loc,na,t,c) ->
+  | RLambda (loc,na,bk,t,c) ->
       let t = extern_typ scopes vars (anonymize_if_reserved na t) in
       let (idl,c) = factorize_lambda inctx scopes (add_vname vars na) t c in
-      CLambdaN (loc,[(dummy_loc,na)::idl,t],c)
+      CLambdaN (loc,[(dummy_loc,na)::idl,Default bk,t],c)
 
   | RCases (loc,rtntypopt,tml,eqns) ->
       let vars' = 
@@ -775,7 +775,7 @@ and factorize_prod scopes vars aty c =
     if !Flags.raw_print or !print_no_symbol then raise No_match;
     ([],extern_symbol scopes vars c (uninterp_notations c))
   with No_match -> match c with
-  | RProd (loc,(Name id as na),ty,c)
+  | RProd (loc,(Name id as na),bk,ty,c)
       when same aty (extern_typ scopes vars (anonymize_if_reserved na ty))
 	& not (occur_var_constr_expr id aty) (* avoid na in ty escapes scope *)
 	-> let (nal,c) = factorize_prod scopes (Idset.add id vars) aty c in
@@ -787,7 +787,7 @@ and factorize_lambda inctx scopes vars aty c =
     if !Flags.raw_print or !print_no_symbol then raise No_match;
     ([],extern_symbol scopes vars c (uninterp_notations c))
   with No_match -> match c with
-  | RLambda (loc,na,ty,c)
+  | RLambda (loc,na,bk,ty,c)
       when same aty (extern_typ scopes vars (anonymize_if_reserved na ty))
 	& not (occur_name na aty) (* To avoid na in ty' escapes scope *)
 	-> let (nal,c) =
@@ -797,24 +797,24 @@ and factorize_lambda inctx scopes vars aty c =
 
 and extern_local_binder scopes vars = function
     [] -> ([],[])
-  | (na,Some bd,ty)::l ->
+  | (na,bk,Some bd,ty)::l ->
       let (ids,l) =
         extern_local_binder scopes (name_fold Idset.add na vars) l in
       (na::ids,
        LocalRawDef((dummy_loc,na), extern false scopes vars bd) :: l)
       
-  | (na,None,ty)::l ->
+  | (na,bk,None,ty)::l ->
       let ty = extern_typ scopes vars (anonymize_if_reserved na ty) in
       (match extern_local_binder scopes (name_fold Idset.add na vars) l with
-          (ids,LocalRawAssum(nal,ty')::l)
+          (ids,LocalRawAssum(nal,k,ty')::l)
             when same ty ty' &
               match na with Name id -> not (occur_var_constr_expr id ty')
                 | _ -> true ->
               (na::ids,
-               LocalRawAssum((dummy_loc,na)::nal,ty')::l)
+               LocalRawAssum((dummy_loc,na)::nal,k,ty')::l)
         | (ids,l) ->
             (na::ids,
-             LocalRawAssum([(dummy_loc,na)],ty) :: l))
+             LocalRawAssum([(dummy_loc,na)],Default bk,ty) :: l))
 
 and extern_eqn inctx scopes vars (loc,ids,pl,c) =
   (loc,[List.map (extern_cases_pattern_in_scope scopes vars) pl],
@@ -927,11 +927,11 @@ let rec raw_of_pat env = function
       RApp (loc,RPatVar (loc,(true,n)),
         List.map (raw_of_pat env) args)
   | PProd (na,t,c) ->
-      RProd (loc,na,raw_of_pat env t,raw_of_pat (na::env) c)
+      RProd (loc,na,Explicit,raw_of_pat env t,raw_of_pat (na::env) c)
   | PLetIn (na,t,c) ->
       RLetIn (loc,na,raw_of_pat env t, raw_of_pat (na::env) c)
   | PLambda (na,t,c) ->
-      RLambda (loc,na,raw_of_pat env t, raw_of_pat (na::env) c)
+      RLambda (loc,na,Explicit,raw_of_pat env t, raw_of_pat (na::env) c)
   | PIf (c,b1,b2) ->
       RIf (loc, raw_of_pat env c, (Anonymous,None), 
            raw_of_pat env b1, raw_of_pat env b2)

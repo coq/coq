@@ -46,6 +46,7 @@ let noedit_mode = Gram.Entry.create "vernac:noedit_command"
 let class_rawexpr = Gram.Entry.create "vernac:class_rawexpr"
 let thm_token = Gram.Entry.create "vernac:thm_token"
 let def_body = Gram.Entry.create "vernac:def_body"
+let typeclass_context = Gram.Entry.create "vernac:typeclass_context"
 
 let get_command_entry () =
   match Decl_mode.get_current_mode () with
@@ -116,11 +117,11 @@ let no_coercion loc (c,x) =
 
 (* Gallina declarations *)
 GEXTEND Gram
-  GLOBAL: gallina gallina_ext thm_token def_body;
+  GLOBAL: gallina gallina_ext thm_token def_body typeclass_context typeclass_constraint;
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
-    [ [ thm = thm_token; id = identref; bl = LIST0 binder_let; ":";
+    [ [ thm = thm_token; id = identref; bl = binders_let; ":";
         c = lconstr ->
           VernacStartTheoremProof (thm, id, (bl, c), false, no_hook)
       | stre = assumption_token; nl = inline; bl = assum_list -> 
@@ -163,6 +164,10 @@ GEXTEND Gram
           VernacInductive (f,[id,None,indpar,s,lc])
 *)
     ] ]
+  ;
+  typeclass_context:
+    [ [ "["; l=LIST1 typeclass_constraint SEP ","; "]" -> l 
+    | -> [] ] ]
   ;
   thm_token:
     [ [ "Theorem" -> Theorem
@@ -209,14 +214,14 @@ GEXTEND Gram
   ;
   (* Simple definitions *)
   def_body:
-    [ [ bl = LIST0 binder_let; ":="; red = reduce; c = lconstr ->
+    [ [ bl = binders_let; ":="; red = reduce; c = lconstr ->
       (match c with
           CCast(_,c, Rawterm.CastConv (k,t)) -> DefineBody (bl, red, c, Some t)
         | _ -> DefineBody (bl, red, c, None))
-      | bl = LIST0 binder_let; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
-          DefineBody (bl, red, c, Some t)
-      | bl = LIST0 binder_let; ":"; t = lconstr ->
-          ProveBody (bl, t) ] ]
+    | bl = binders_let; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
+	DefineBody (bl, red, c, Some t)
+    | bl = binders_let; ":"; t = lconstr ->
+        ProveBody (bl, t) ] ]
   ;
   reduce:
     [ [ IDENT "Eval"; r = Tactic.red_expr; "in" -> Some r
@@ -431,7 +436,7 @@ END
 
 (* Extensions: implicits, coercions, etc. *)   
 GEXTEND Gram
-  GLOBAL: gallina_ext;
+  GLOBAL: gallina_ext typeclass_param;
 
   gallina_ext:
     [ [ (* Transparent and Opaque *)
@@ -467,22 +472,68 @@ GEXTEND Gram
          t = class_rawexpr ->
 	  VernacCoercion (Global, qid, s, t)
 
+      (* Type classes *)
+      | IDENT "Class"; sup = OPT [ l = typeclass_context; "=>" -> l ];
+	 qid = identref; pars = LIST0 typeclass_param_type;
+	 s = [ ":"; c = sort -> loc, c | -> (loc,Rawterm.RType None) ];
+	 props = typeclass_field_types ->
+	   VernacClass (qid, pars, s, (match sup with None -> [] | Some l -> l), props)
+	     
+      | IDENT "Context"; c = typeclass_context -> 
+	  VernacContext c
+
+      | IDENT "Instance"; sup = OPT [ l = typeclass_context ; "=>" -> l ];
+	 is = typeclass_constraint ; props = typeclass_field_defs ->
+	   let sup = match sup with None -> [] | Some l -> l in
+	     VernacInstance (sup, is, props)
+
+      | IDENT "Existing"; IDENT "Instance"; is = identref -> VernacDeclareInstance is
+
+      | IDENT "Instantiation"; IDENT "Tactic"; ":="; tac = Tactic.tactic -> 
+	  VernacSetInstantiationTactic tac
+
       (* Implicit *)
-      | IDENT "Implicit"; IDENT "Arguments"; 
+      | IDENT "Implicit"; IDENT "Arguments"; enrich = [ IDENT "Enriching" -> true | -> false ];
 	 (local,qid,pos) = 
 	     [ local = [ IDENT "Global" -> false | IDENT "Local" -> true ];
 	       qid = global -> (local,qid,None) 
 	     | qid = global;
 	       l = OPT [ "["; l = LIST0 implicit_name; "]" -> 
-		   List.map (fun (id,b) -> (ExplByName id,b)) l ] ->
+		   List.map (fun (id,b,f) -> (ExplByName id,b,f)) l ] ->
 		 (true,qid,l) ] ->
-	   VernacDeclareImplicits (local,qid,pos)
+	   VernacDeclareImplicits (local,qid,enrich,pos)
 
       | IDENT "Implicit"; ["Type" | IDENT "Types"];
 	   idl = LIST1 identref; ":"; c = lconstr -> VernacReserve (idl,c) ] ]
   ;
+
+(*   typeclass_ctx:  *)
+(*     [ [ sup = LIST1 operconstr SEP "->"; "=>" -> sup *)
+(*     ] ] *)
+(*   ; *)
   implicit_name:
-    [ [ id = ident -> (id,false) | "["; id = ident; "]" -> (id,true) ] ]
+    [ [ "!"; id = ident -> (id, false, true)
+    | id = ident -> (id,false,false)
+    | "["; "!"; id = ident; "]" -> (id,true,true) 
+    | "["; id = ident; "]" -> (id,true, false) ] ]
+  ;
+  typeclass_param_type:
+    [ [ "(" ; id = identref; ":"; t = lconstr ; ")" -> id, t 
+    | id = identref -> id, CHole loc ] ]
+  ;
+  typeclass_field_type:
+    [ [ id = identref; ":"; t = lconstr -> id, t ] ]
+  ;
+  typeclass_field_def:
+    [ [ id = identref; params = LIST0 identref; ":="; t = lconstr -> id, params, t ] ]
+  ;
+  typeclass_field_types:
+    [ [ ":="; l = LIST1 typeclass_field_type SEP ";" -> l
+    | -> [] ] ]
+  ;
+  typeclass_field_defs:
+    [ [ ":="; l = LIST1 typeclass_field_def SEP ";" -> l
+    | -> [] ] ]
   ;
 END
 
@@ -614,6 +665,8 @@ GEXTEND Gram
       | IDENT "ML"; IDENT "Modules" -> PrintMLModules
       | IDENT "Graph" -> PrintGraph
       | IDENT "Classes" ->  PrintClasses
+      | IDENT "TypeClasses" -> PrintTypeClasses
+      | IDENT "Instances"; qid = global -> PrintInstances qid
       | IDENT "Ltac"; qid = global -> PrintLtac qid
       | IDENT "Coercions" -> PrintCoercions
       | IDENT "Coercion"; IDENT "Paths"; s = class_rawexpr; t = class_rawexpr

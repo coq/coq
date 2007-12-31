@@ -25,4 +25,4 @@ val declare_projections :
 
 val definition_structure :
   lident with_coercion * local_binder list *
-  (local_decl_expr with_coercion) list * identifier * sorts -> unit
+  (local_decl_expr with_coercion) list * identifier * sorts -> kernel_name

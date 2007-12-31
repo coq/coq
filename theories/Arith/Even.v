@@ -40,7 +40,7 @@ Proof.
   induction n.
     auto with arith.
     elim IHn; auto with arith.
-Qed.
+Defined.
 
 Lemma not_even_and_odd : forall n, even n -> odd n -> False.
 Proof.

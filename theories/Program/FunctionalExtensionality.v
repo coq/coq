@@ -48,13 +48,13 @@ Ltac apply_ext :=
 
 (** For a function defined with Program using a well-founded order. *)
 
-Lemma fix_sub_eq_ext :
+Program Lemma fix_sub_eq_ext :
   forall (A : Set) (R : A -> A -> Prop) (Rwf : well_founded R)
     (P : A -> Set)
-    (F_sub : forall x : A, (forall  {y : A | R y x}, P (`y)) -> P x),
+    (F_sub : forall x : A, (forall (y : A | R y x), P y) -> P x),
     forall x : A,
       Fix_sub A R Rwf P F_sub x =
-        F_sub x (fun {y : A | R y x}=> Fix A R Rwf P F_sub (`y)).
+        F_sub x (fun (y : A | R y x) => Fix A R Rwf P F_sub y).
 Proof.
   intros ; apply Fix_eq ; auto.
   intros.
@@ -65,12 +65,12 @@ Qed.
 
 (** For a function defined with Program using a measure. *)
 
-Lemma fix_sub_measure_eq_ext :
+Program Lemma fix_sub_measure_eq_ext :
   forall (A : Type) (f : A -> nat) (P : A -> Type)
-    (F_sub : forall x : A, (forall  {y : A | f y < f x}, P (`y)) -> P x),
+    (F_sub : forall x : A, (forall (y : A | f y < f x), P y) -> P x),
     forall x : A,
       Fix_measure_sub A f P F_sub x =
-        F_sub x (fun {y : A | f y < f x}=> Fix_measure_sub A f P F_sub (`y)).
+        F_sub x (fun (y : A | f y < f x) => Fix_measure_sub A f P F_sub y).
 Proof.
   intros ; apply Fix_measure_eq ; auto.
   intros.

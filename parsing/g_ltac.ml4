@@ -215,12 +215,17 @@ GEXTEND Gram
       | n = integer -> MsgInt n ] ]
   ;
 
+  ltac_def_kind:
+    [ [ ":=" -> false
+      | "::=" -> true ] ]
+  ;
+	
   (* Definitions for tactics *)
   tacdef_body:
-    [ [ name = identref; it=LIST1 input_fun; ":="; body = tactic_expr ->
-	  (name, TacFun (it, body))
-      | name = identref; ":="; body = tactic_expr ->
-	  (name, body) ] ]
+    [ [ name = identref; it=LIST1 input_fun; redef = ltac_def_kind; body = tactic_expr ->
+	  (name, redef, TacFun (it, body))
+      | name = identref; redef = ltac_def_kind; body = tactic_expr ->
+	  (name, redef, body) ] ]
   ;
   tactic:
     [ [ tac = tactic_expr -> tac ] ]

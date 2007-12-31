@@ -312,7 +312,7 @@ let make_fix_struct (n,bl) =
 
 
 let rec xlate_binder = function
-    (l,t) -> CT_binder(xlate_id_opt_ne_list l, xlate_formula t)
+    (l,k,t) -> CT_binder(xlate_id_opt_ne_list l, xlate_formula t)
 and xlate_return_info = function
 | (Some Anonymous, None) | (None, None) ->
    CT_coerce_NONE_to_RETURN_INFO CT_none
@@ -325,7 +325,7 @@ and xlate_formula_opt =
     | Some e -> CT_coerce_FORMULA_to_FORMULA_OPT (xlate_formula e)
 
 and  xlate_binder_l = function
-    LocalRawAssum(l,t) -> CT_binder(xlate_id_opt_ne_list l, xlate_formula t)
+    LocalRawAssum(l,_,t) -> CT_binder(xlate_id_opt_ne_list l, xlate_formula t)
   | LocalRawDef(n,v) -> CT_coerce_DEF_to_BINDER(CT_def(xlate_id_opt n,
 						       xlate_formula v))
 and 
@@ -459,7 +459,7 @@ and xlate_matched_formula = function
       CT_coerce_FORMULA_to_MATCHED_FORMULA(xlate_formula f)
 and xlate_formula_expl = function
     (a, None) -> xlate_formula a
-  | (a, Some (_,ExplByPos i)) -> 
+  | (a, Some (_,ExplByPos (i, _))) -> 
       xlate_error "explicitation of implicit by rank not supported"
   | (a, Some (_,ExplByName i)) ->
       CT_labelled_arg(CT_ident (string_of_id i), xlate_formula a)
@@ -1609,7 +1609,7 @@ let rec xlate_vernac =
    | VernacDeclareTacticDefinition (true, tacs) ->
        (match List.map 
 	 (function
-	      ((_, id), body) ->
+	      ((_, id), _, body) ->
 		CT_tac_def(CT_ident (string_of_id id), xlate_tactic body))
 	 tacs with
 	     [] -> assert false
@@ -1834,6 +1834,10 @@ let rec xlate_vernac =
 	    xlate_error "TODO: Print Canonical Structures"
 	| PrintAssumptions _ -> 
 	    xlate_error "TODO: Print Needed Assumptions"
+	| PrintInstances _ -> 
+	    xlate_error "TODO: Print Instances"
+	| PrintTypeClasses -> 
+	    xlate_error "TODO: Print TypeClasses"
 	| PrintInspect n -> CT_inspect (CT_int n)
 	| PrintUniverses opt_s -> CT_print_universes(ctf_STRING_OPT opt_s)
 	| PrintSetoids -> CT_print_setoids
@@ -2075,6 +2079,12 @@ let rec xlate_vernac =
        | Local -> CT_local in
       CT_coercion (local_opt, id_opt, xlate_ident id1,
         xlate_class id2, xlate_class id3)
+
+    (* TypeClasses *) 
+   | VernacSetInstantiationTactic _|VernacDeclareInstance _|VernacContext _|
+	 VernacInstance (_, _, _)|VernacClass (_, _, _, _, _) ->
+	   xlate_error "TODO: Type Classes commands"
+
   | VernacResetName id -> CT_reset (xlate_ident (snd id))
   | VernacResetInitial -> CT_restore_state (CT_ident "Initial")
   | VernacExtend (s, l) ->
@@ -2088,7 +2098,7 @@ let rec xlate_vernac =
   | VernacNop -> CT_proof_no_op
   | VernacComments l -> 
       CT_scomments(CT_scomment_content_list (List.map xlate_comment l))
-  | VernacDeclareImplicits(true, id, opt_positions) ->
+  | VernacDeclareImplicits(true, id, _, opt_positions) ->
       CT_implicits
 	(reference_to_ct_ID id,
 	 match opt_positions with
@@ -2097,11 +2107,11 @@ let rec xlate_vernac =
 	       CT_coerce_ID_LIST_to_ID_LIST_OPT
 	       (CT_id_list
 	       (List.map
-		  (function ExplByPos x, _
+		  (function ExplByPos (x,_), _, _
 		       -> xlate_error
 			   "explication argument by rank is obsolete"
-		     | ExplByName id, _ -> CT_ident (string_of_id id)) l)))
-  | VernacDeclareImplicits(false, id, opt_positions) ->
+		     | ExplByName id, _, _ -> CT_ident (string_of_id id)) l)))
+  | VernacDeclareImplicits(false, id, _, opt_positions) ->
       xlate_error "TODO: Implicit Arguments Global"
   | VernacReserve((_,a)::l, f) ->
       CT_reserve(CT_id_ne_list(xlate_ident a, 

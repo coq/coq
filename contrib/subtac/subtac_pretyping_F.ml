@@ -200,11 +200,11 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
     | RRec (loc,fixkind,names,bl,lar,vdef) ->
 	let rec type_bl env ctxt = function
             [] -> ctxt
-          | (na,None,ty)::bl ->
+          | (na,k,None,ty)::bl ->
               let ty' = pretype_type empty_valcon env isevars lvar ty in
               let dcl = (na,None,ty'.utj_val) in
 		type_bl (push_rel dcl env) (add_rel_decl dcl ctxt) bl
-          | (na,Some bd,ty)::bl ->
+          | (na,k,Some bd,ty)::bl ->
               let ty' = pretype_type empty_valcon env isevars lvar ty in
               let bd' = pretype (mk_tycon ty'.utj_val) env isevars lvar ty in
               let dcl = (na,Some bd'.uj_val,ty'.utj_val) in
@@ -326,7 +326,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	  | _ -> resj in
 	  inh_conv_coerce_to_tycon loc env isevars resj tycon
 
-    | RLambda(loc,name,c1,c2)      ->
+    | RLambda(loc,name,k,c1,c2)      ->
 	let (name',dom,rng) = evd_comb1 (split_tycon loc env) isevars tycon in
 	let dom_valcon = valcon_of_tycon dom in
 	let j = pretype_type dom_valcon env isevars lvar c1 in
@@ -334,7 +334,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	let j' = pretype rng (push_rel var env) isevars lvar c2 in 
 	  judge_of_abstraction env name j j'
 
-    | RProd(loc,name,c1,c2)        ->
+    | RProd(loc,name,k,c1,c2)        ->
 	let j = pretype_type empty_valcon env isevars lvar c1 in
 	let var = (name,j.utj_val) in
 	let env' = push_rel_assum var env in
@@ -557,7 +557,14 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	    (pretype tycon env isevars lvar c).uj_val
       | IsType ->
 	  (pretype_type empty_valcon env isevars lvar c).utj_val in
-      nf_evar (evars_of !isevars) c'
+    let evd,_ = consider_remaining_unif_problems env !isevars in
+    let evd = nf_evar_defs evd in
+    let c' = nf_evar (evars_of evd) c' in
+(*     let evd = undefined_evars evd in *)
+    let evd = Typeclasses.resolve_typeclasses env (evars_of evd) evd in
+    let c' = nf_evar (evars_of evd) c' in
+      isevars := evd;
+      c'
 
   (* TODO: comment faire remonter l'information si le typage a resolu des
      variables du sigma original. il faudrait que la fonction de typage
@@ -585,11 +592,16 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
   let ise_pretype_gen fail_evar sigma env lvar kind c =
     let isevars = ref (Evd.create_evar_defs sigma) in
     let c = pretype_gen isevars env lvar kind c in
-    let isevars,_ = consider_remaining_unif_problems env !isevars in
-    let c = nf_evar (evars_of isevars) c in
-      if fail_evar then check_evars env sigma isevars c;
-      isevars, c
-
+(*     let evd,_ = consider_remaining_unif_problems env !isevars in *)
+(*     let evd = nf_evar_defs evd in *)
+(*     let c = nf_evar (evars_of evd) c in *)
+(*     let evd = undefined_evars evd in *)
+(*     let evd = Typeclasses.resolve_typeclasses env sigma evd in *)
+(*     let c = nf_evar (evars_of evd) c in *)
+    let evd = !isevars in
+      if fail_evar then check_evars env (Evd.evars_of evd) evd c;
+      evd, c
+	
   (** Entry points of the high-level type synthesis algorithm *)
 
   let understand_gen kind sigma env c =
@@ -604,8 +616,15 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
   let understand_ltac sigma env lvar kind c =
     ise_pretype_gen false sigma env lvar kind c
       
-  let understand_tcc_evars isevars env kind c =
-    pretype_gen isevars env ([],[]) kind c
+  let understand_tcc_evars evdref env kind c =
+    pretype_gen evdref env ([],[]) kind c 
+
+(*     evdref := nf_evar_defs !evdref; *)
+(*     let c = nf_evar (evars_of !evdref) c in *)
+(*     let evd = undefined_evars !evdref in *)
+(*     let evd = Typeclasses.resolve_typeclasses env (evars_of evd) !evdref in *)
+(*       evdref := evd; *)
+(*       nf_evar (evars_of evd) c       *)
 
   let understand_tcc sigma env ?expected_type:exptyp c =
     let ev, t = ise_pretype_gen false sigma env ([],[]) (OfType exptyp) c in

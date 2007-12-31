@@ -121,7 +121,7 @@ let rec chop_product n t =
       | Prod (_, _, b) ->  if noccurn 1 b then chop_product (pred n) (Termops.pop b) else None
       | _ -> None
 
-let eterm_obligations env name isevars evm fs t tycon = 
+let eterm_obligations env name isevars evm fs t ty = 
   (* 'Serialize' the evars, we assume that the types of the existentials
      refer to previous existentials in the list only *)
   trace (str " In eterm: isevars: " ++ my_print_evardefs isevars);
@@ -165,6 +165,7 @@ let eterm_obligations env name isevars evm fs t tycon =
   let t', _, transparent = (* Substitute evar refs in the term by variables *)
     subst_evar_constr evts 0 t 
   in
+  let ty, _, _ = subst_evar_constr evts 0 ty in
   let evars = 
     List.map (fun (_, ((_, name), _, opaque, typ, deps)) -> name, typ, not (opaque = None) && not (Idset.mem name transparent), deps) evts
   in
@@ -177,7 +178,7 @@ let eterm_obligations env name isevars evm fs t tycon =
 			    Termops.print_constr_env (Global.env ()) typ))
 		evars);
      with _ -> ());
-    Array.of_list (List.rev evars), t'
+    Array.of_list (List.rev evars), t', ty
 
 let mkMetas n = list_tabulate (fun _ -> Evarutil.mk_new_meta ()) n
 

@@ -486,7 +486,7 @@ let vernac_record struc binders sort nameopt cfs =
     | Sort s -> s
     | _ -> user_err_loc
         (constr_loc sort,"definition_structure", str "Sort expected") in
-  Record.definition_structure (struc,binders,cfs,const,s)
+  ignore(Record.definition_structure (struc,binders,cfs,const,s))
 
   (* Sections *)
 
@@ -522,6 +522,22 @@ let vernac_identity_coercion stre id qids qidt =
   let source = cl_of_qualid qids in
   Class.try_add_new_identity_coercion id stre source target
 
+(* Type classes *)
+let vernac_class id par ar sup props =
+  Classes.new_class id par ar sup props
+
+let vernac_instance sup inst props =
+  Classes.new_instance sup inst props
+
+let vernac_context l =
+  Classes.context l
+
+let vernac_declare_instance id =
+  Classes.declare_instance id
+
+(* Default tactics for solving evars management. *)
+let vernac_set_instantiation_tac tac =
+  Classes.set_instantiation_tactic tac
 
 (***********)
 (* Solving *)
@@ -656,9 +672,10 @@ let vernac_hints = Auto.add_hints
 
 let vernac_syntactic_definition = Command.syntax_definition 
 
-let vernac_declare_implicits local r = function
+let vernac_declare_implicits local r e = function
   | Some imps ->
-      Impargs.declare_manual_implicits local (global_with_alias r) imps
+      Impargs.declare_manual_implicits local (global_with_alias r) e
+	(List.map (fun (ex,b,f) -> ex, (b,f)) imps)
   | None -> 
       Impargs.declare_implicits local (global_with_alias r)
 
@@ -711,6 +728,14 @@ let _ =
       optkey   = (SecondaryTable ("Contextual","Implicit"));
       optread  = Impargs.is_contextual_implicit_args;
       optwrite = Impargs.make_contextual_implicit_args }
+
+(* let _ = *)
+(*   declare_bool_option  *)
+(*     { optsync  = true; *)
+(*       optname  = "forceable implicit arguments"; *)
+(*       optkey   = (SecondaryTable ("Forceable","Implicit")); *)
+(*       optread  = Impargs.is_forceable_implicit_args; *)
+(*       optwrite = Impargs.make_forceable_implicit_args } *)
 
 let _ =
   declare_bool_option 
@@ -945,6 +970,8 @@ let vernac_print = function
   | PrintOpaqueName qid -> msg (print_opaque_name qid)
   | PrintGraph -> ppnl (Prettyp.print_graph())
   | PrintClasses -> ppnl (Prettyp.print_classes())
+  | PrintTypeClasses -> ppnl (Prettyp.print_typeclasses())
+  | PrintInstances c -> ppnl (Prettyp.print_instances c)
   | PrintLtac qid -> ppnl (Tacinterp.print_ltac (snd (qualid_of_reference qid)))
   | PrintCoercions -> ppnl (Prettyp.print_coercions())
   | PrintCoercionPaths (cls,clt) ->
@@ -1188,6 +1215,15 @@ let interp c = match c with
   | VernacCoercion (str,r,s,t) -> vernac_coercion str r s t
   | VernacIdentityCoercion (str,(_,id),s,t) -> vernac_identity_coercion str id s t
 
+  (* Type classes *)
+  | VernacClass (id, par, ar, sup, props) -> vernac_class id par ar sup props
+
+  | VernacInstance (sup, inst, props) -> vernac_instance sup inst props
+  | VernacContext sup -> vernac_context sup
+  | VernacDeclareInstance id -> vernac_declare_instance id
+
+  | VernacSetInstantiationTactic (tac) -> vernac_set_instantiation_tac tac
+
   (* Solving *)
   | VernacSolve (n,tac,b) -> vernac_solve n tac b
   | VernacSolveExistential (n,c) -> vernac_solve_existential n c
@@ -1222,7 +1258,7 @@ let interp c = match c with
   | VernacDeclareTacticDefinition (x,l) -> vernac_declare_tactic_definition x l
   | VernacHints (local,dbnames,hints) -> vernac_hints local dbnames hints
   | VernacSyntacticDefinition (id,c,l,b) ->vernac_syntactic_definition id c l b
-  | VernacDeclareImplicits (local,qid,l) ->vernac_declare_implicits local qid l
+  | VernacDeclareImplicits (local,qid,e,l) ->vernac_declare_implicits local qid e l
   | VernacReserve (idl,c) -> vernac_reserve idl c
   | VernacSetOpacity (opaq, qidl) -> List.iter (vernac_set_opacity opaq) qidl
   | VernacSetOption (key,v) -> vernac_set_option key v

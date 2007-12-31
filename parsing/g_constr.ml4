@@ -37,7 +37,7 @@ let mk_lam = function
   | (bl,c) -> CLambdaN(constr_loc c, bl,c)
 
 let loc_of_binder_let = function
-  | LocalRawAssum ((loc,_)::_,_)::_ -> loc
+  | LocalRawAssum ((loc,_)::_,_,_)::_ -> loc
   | LocalRawDef ((loc,_),_)::_ -> loc
   | _ -> dummy_loc
 
@@ -99,10 +99,10 @@ let lpar_id_coloneq =
               | _ -> raise Stream.Failure)
         | _ -> raise Stream.Failure)
 
-
 GEXTEND Gram
   GLOBAL: binder_constr lconstr constr operconstr sort global
-  constr_pattern lconstr_pattern Constr.ident binder binder_let pattern;
+  constr_pattern lconstr_pattern Constr.ident
+  binder binder_let binders_let typeclass_constraint typeclass_param pattern;
   Constr.ident:
     [ [ id = Prim.ident -> id
 
@@ -307,28 +307,70 @@ GEXTEND Gram
   ;
   binder_list:
     [ [ idl=LIST1 name; bl=LIST0 binder_let -> 
-          LocalRawAssum (idl,CHole loc)::bl
+          LocalRawAssum (idl,Default Explicit,CHole loc)::bl
       | idl=LIST1 name; ":"; c=lconstr -> 
-          [LocalRawAssum (idl,c)]
-      | "("; idl=LIST1 name; ":"; c=lconstr; ")"; bl=LIST0 binder_let ->
-          LocalRawAssum (idl,c)::bl ] ]
+          [LocalRawAssum (idl,Default Explicit,c)]
+      | cl = binders_let -> cl
+    ] ]
+  ;
+  binders_let: 
+    [ [ "["; ctx = LIST1 typeclass_constraint_binder SEP ","; "]"; bl=binders_let -> 
+	  ctx @ bl
+    | cl = LIST0 binder_let -> cl
+    ] ]
   ;
   binder_let:
     [ [ id=name ->
-          LocalRawAssum ([id],CHole loc)
+          LocalRawAssum ([id],Default Explicit,CHole loc)
       | "("; id=name; idl=LIST1 name; ":"; c=lconstr; ")" -> 
-          LocalRawAssum (id::idl,c)
+          LocalRawAssum (id::idl,Default Explicit,c)
       | "("; id=name; ":"; c=lconstr; ")" -> 
-          LocalRawAssum ([id],c)
+          LocalRawAssum ([id],Default Explicit,c)
+      | "`"; id=name; "`" ->
+          LocalRawAssum ([id],Default Implicit,CHole loc)
+      | "`"; id=name; idl=LIST1 name; ":"; c=lconstr; "`" -> 
+          LocalRawAssum (id::idl,Default Implicit,c)
+      | "`"; id=name; ":"; c=lconstr; "`" -> 
+          LocalRawAssum ([id],Default Implicit,c)
+      | "`"; id=name; idl=LIST1 name; "`" -> 
+          LocalRawAssum (id::idl,Default Implicit,CHole loc)
       | "("; id=name; ":="; c=lconstr; ")" ->
           LocalRawDef (id,c)
       | "("; id=name; ":"; t=lconstr; ":="; c=lconstr; ")" -> 
           LocalRawDef (id,CCast (join_loc (constr_loc t) loc,c, CastConv (DEFAULTcast,t)))
+      | "["; tc = typeclass_constraint_binder; "]" -> tc
     ] ]
   ;
   binder:
-    [ [ id=name -> ([id],CHole loc)
-      | "("; idl=LIST1 name; ":"; c=lconstr; ")" -> (idl,c) ] ]
+    [ [ id=name -> ([id],Default Explicit,CHole loc)
+      | "("; idl=LIST1 name; ":"; c=lconstr; ")" -> (idl,Default Explicit,c) 
+      | "`"; idl=LIST1 name; ":"; c=lconstr; "`" -> (idl,Default Implicit,c) 
+    ] ]
+  ;
+  typeclass_constraint_binder:
+    [ [ tc = typeclass_constraint ->
+      let (n,bk,t) = tc in
+	LocalRawAssum ([n], TypeClass bk, t)
+    ] ]
+  ;
+  typeclass_constraint:
+    [ [ id=identref ; cl = LIST1 typeclass_param -> 
+      (loc, Anonymous), Explicit, mkAppC (mkIdentC (snd id), cl)
+    | "?" ; id=identref ; cl = LIST1 typeclass_param -> 
+	(loc, Anonymous), Implicit, mkAppC (mkIdentC (snd id), cl)
+    | iid=identref ; ":" ; id=typeclass_name ; cl = LIST1 typeclass_param -> 
+	(fst iid, Name (snd iid)), (fst id), mkAppC (mkIdentC (snd (snd id)), cl)
+    ] ]
+  ;
+  typeclass_name:
+    [ [ id=identref -> (Explicit, id)
+    | "?"; id = identref -> (Implicit, id)
+    ] ]
+  ;
+  typeclass_param: 
+    [ [ id = identref -> CRef (Libnames.Ident id)
+    | c = sort -> CSort (loc, c)
+    | "("; c = lconstr; ")" -> c ] ]
   ;
   type_cstr:
     [ [ c=OPT [":"; c=lconstr -> c] -> (loc,c) ] ]

@@ -207,6 +207,14 @@ let list_map3 f l1 l2 l3 =
   in 
   map (l1,l2,l3)
 
+let list_map4 f l1 l2 l3 l4 =
+  let rec map = function
+    | ([], [], [], []) -> []
+    | ((h1::t1), (h2::t2), (h3::t3), (h4::t4)) -> let v = f h1 h2 h3 h4 in v::map (t1,t2,t3,t4)
+    | (_, _, _, _) -> invalid_arg "map4"
+  in 
+  map (l1,l2,l3,l4)
+
 let list_index x = 
   let rec index_x n = function
     | y::l -> if x = y then n else index_x (succ n) l

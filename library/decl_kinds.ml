@@ -38,6 +38,7 @@ type definition_object_kind =
   | Scheme
   | StructureComponent
   | IdentityCoercion
+  | Instance
 
 type strength = locality_flag (* For compatibility *)
 
@@ -97,5 +98,5 @@ let string_of_definition_kind (l,boxed,d) =
   | Global, Example -> "Example"
   | Local, (CanonicalStructure|Example) ->
       anomaly "Unsupported local definition kind"
-  | _, (StructureComponent|Scheme|CoFixpoint|Fixpoint|IdentityCoercion)
+  | _, (StructureComponent|Scheme|CoFixpoint|Fixpoint|IdentityCoercion|Instance)
       -> anomaly "Internal definition kind"

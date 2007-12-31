@@ -2,7 +2,7 @@
 (* File to include to install the pretty-printers in the ocaml toplevel *)
 
 (* clflags.cmi (a ocaml compilation by-product) must be in the library path *)
-Clflags.recursive_types := true;;
+(* Clflags.recursive_types := true;;*)
 #cd ".";;
 #use "base_include";;
 
