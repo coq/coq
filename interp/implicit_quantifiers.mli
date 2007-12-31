@@ -27,7 +27,7 @@ val destClassApp : constr_expr -> identifier located * constr_expr list
 
 val free_vars_of_constr_expr :     Topconstr.constr_expr ->
     ?bound:Idset.t ->
-    Names.identifier list -> Names.identifier list
+  Names.identifier list -> Names.identifier list
 
 val compute_constrs_freevars : Idset.t -> constr_expr list -> identifier list
 val compute_constrs_freevars_binders : Idset.t -> constr_expr list -> (identifier located * constr_expr) list

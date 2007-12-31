@@ -81,9 +81,14 @@ let compute_constrs_freevars_binders env constrs =
   let elts = compute_constrs_freevars env constrs in
     List.map (fun id -> (dummy_loc, id), CHole dummy_loc) elts
       
+let next_ident_away_from id avoid = 
+  let rec name_rec id =
+    if Idset.mem id avoid then name_rec (Nameops.lift_ident id) else id in 
+  name_rec id 
+
 let ids_of_named_context_avoiding avoid l =
   List.fold_left (fun (ids, avoid) id -> 
-    let id' = Nameops.next_ident_away_from id avoid in id' :: ids, id' :: avoid) 
+    let id' = next_ident_away_from id avoid in id' :: ids, Idset.add id' avoid) 
     ([], avoid) (Termops.ids_of_named_context l)
     
 let combine_params avoid applied needed =
@@ -97,8 +102,8 @@ let combine_params avoid applied needed =
   in aux [] applied needed
 
 let compute_context_vars env l =
-  List.fold_left (fun l (iid, _, c) -> 
-    (match snd iid with Name i -> [i] | Anonymous -> []) @ free_vars_of_constr_expr c ~bound:env l)
+  List.fold_left (fun avoid (iid, _, c) -> 
+    (match snd iid with Name i -> [i] | Anonymous -> []) @ (free_vars_of_constr_expr c ~bound:env avoid))
     [] l
 
 let destClassApp cl =
@@ -106,8 +111,11 @@ let destClassApp cl =
     | CApp (loc, (None,CRef (Ident f)), l) -> f, List.map fst l
     | _ -> raise Not_found
 
+let ids_of_list l = 
+  List.fold_right Idset.add l Idset.empty
+
 let full_class_binders env l = 
-  let avoid = compute_context_vars env l in
+  let avoid = Idset.union env (ids_of_list (compute_context_vars env l)) in
   let l', avoid =
     List.fold_left (fun (l', avoid) (iid, bk, cl as x) -> 
       match bk with

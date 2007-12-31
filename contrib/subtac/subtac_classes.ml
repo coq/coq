@@ -62,6 +62,13 @@ let interp_constrs_evars isevars env avoid l =
 	(push_named d env, id :: ids, d::params))
     (env, avoid, []) l
     
+let interp_constr_evars_gen evdref env ?(impls=([],[])) kind c =
+  SPretyping.understand_tcc_evars evdref env kind
+    (intern_gen (kind=IsType) ~impls (Evd.evars_of !evdref) env c)
+
+let interp_casted_constr_evars evdref env ?(impls=([],[])) c typ =
+  interp_constr_evars_gen evdref env ~impls (OfType (Some typ)) c
+
 let type_ctx_instance isevars env ctx inst subst =
   List.fold_left2
     (fun (subst, instctx) (na, _, t) ce ->
