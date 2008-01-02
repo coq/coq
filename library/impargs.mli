@@ -55,6 +55,12 @@ val positions_of_implicits : implicits_list -> int list
    for an object of the given type in the given env *)
 val compute_implicits : env -> types -> implicits_list
 
+(* A [manual_explicitation] is a tuple of a positional or named explicitation with
+   maximal insertion and forcing flags. *)
+type manual_explicitation = Topconstr.explicitation * (bool * bool) 
+
+val compute_implicits_with_manual : env -> types -> bool -> manual_explicitation list -> implicits_list
+
 (*s Computation of implicits (done using the global environment). *)
 
 val declare_var_implicits : variable -> unit
@@ -63,13 +69,8 @@ val declare_mib_implicits : mutual_inductive -> unit
 
 val declare_implicits : bool -> global_reference -> unit
 
-(* A [manual_explicitation] is a tuple of a positional or named explicitation with
-   maximal insertion and forcing flags. *)
-type manual_explicitation = Topconstr.explicitation * (bool * bool) 
-
 (* Manual declaration of which arguments are expected implicit *)
 val declare_manual_implicits : bool -> global_reference -> bool ->
   manual_explicitation list -> unit
 
 val implicits_of_global : global_reference -> implicits_list
-

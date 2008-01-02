@@ -257,9 +257,7 @@ let rec assoc_by_pos k = function
   | hd :: tl -> let (x, tl) = assoc_by_pos k tl in x, hd :: tl
   | [] -> raise Not_found
 
-let compute_manual_implicits flags ref enriching l =
-  let t = Global.type_of_global ref in
-  let env = Global.env () in
+let compute_manual_implicits flags env t enriching l =
   let autoimps =
     if enriching then compute_implicits_flags env flags true t
     else compute_implicits_gen false false false true true env t in
@@ -517,9 +515,14 @@ let declare_mib_implicits kn =
 (* Declare manual implicits *)
 type manual_explicitation = Topconstr.explicitation * (bool * bool) 
 
+let compute_implicits_with_manual env typ enriching l = 
+  compute_manual_implicits !implicit_args env typ enriching l
+
 let declare_manual_implicits local ref enriching l =
   let flags = !implicit_args in
-  let l' = compute_manual_implicits flags ref enriching l in
+  let env = Global.env () in
+  let t = Global.type_of_global ref in
+  let l' = compute_manual_implicits flags env t enriching l in
   let req =
     if local or isVarRef ref then ImplNoDischarge
     else ImplInteractive(ref,flags,ImplManual l')

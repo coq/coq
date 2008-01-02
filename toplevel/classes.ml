@@ -84,7 +84,7 @@ let rec unfold n f acc =
 (* Declare everything in the parameters as implicit, and the class instance as well *)
 open Topconstr
 
-let declare_implicit_proj c proj =
+let declare_implicit_proj c proj imps =
   let len = List.length c.cl_context + List.length c.cl_super + List.length c.cl_params in
   let (ctx, _) = decompose_prod_n (len + 1) (Typeops.type_of_constant (Global.env()) proj) in
   let expls =
@@ -96,16 +96,18 @@ let declare_implicit_proj c proj =
       | (Anonymous,_) :: _ -> assert(false)
     in
       aux 1 [] ctx
-  in Impargs.declare_manual_implicits true (ConstRef proj) true expls
+  in 
+  let expls = expls @ List.map (function (ExplByPos (i, n), f) -> (ExplByPos (succ len + i, n)), f | _ -> assert(false)) imps in
+    Impargs.declare_manual_implicits true (ConstRef proj) true expls
       
-let declare_implicits cl =
+let declare_implicits impls cl =
   let projs = Recordops.lookup_projections cl.cl_impl in
-    List.iter
-      (fun c -> 
+    List.iter2 
+      (fun c imps -> 
 	match c with 
 	  | None -> assert(false)
-	  | Some p -> declare_implicit_proj cl p)
-      projs;
+	  | Some p -> declare_implicit_proj cl p imps)
+      projs impls;
     let indimps = 
       list_map_i 
 	(fun i (na, b, t) -> ExplByPos (i, Some na), (false, true))
@@ -149,22 +151,24 @@ let declare_structure env id idbuild params arity fields =
     Recordops.declare_structure(rsp,idbuild,List.rev kinds,List.rev sp_projs);
     rsp
 
+let interp_type_evars evdref env ?(impls=([],[])) typ =
+  let typ' = intern_gen true ~impls (Evd.evars_of !evdref) env typ in
+  let imps = Implicit_quantifiers.implicits_of_rawterm typ' in
+    imps, Pretyping.Default.understand_tcc_evars evdref env Pretyping.IsType typ'
 
-let mk_interning_data env na typ =
-  let impl =
-    if Impargs.is_implicit_args() then
-      Impargs.compute_implicits env typ
-    else []
+
+let mk_interning_data env na impls typ =
+  let impl = Impargs.compute_implicits_with_manual env typ (Impargs.is_implicit_args()) impls
   in (na, ([], impl, Notation.compute_arguments_scope typ))
     
 let interp_fields_evars isevars env avoid l =
   List.fold_left
-    (fun (env, ids, params, impls) ((loc, i), t) -> 
-      let t' = interp_type_evars isevars env ~impls t in
-      let data = mk_interning_data env i t' in
+    (fun (env, uimpls, ids, params, impls) ((loc, i), t) -> 
+      let impl, t' = interp_type_evars isevars env ~impls t in
+      let data = mk_interning_data env i impl t' in
       let d = (i,None,t') in
-	(push_named d env, i :: ids, d::params, ([], data :: snd impls)))
-    (env, avoid, [], ([], [])) l    
+	(push_named d env, impl :: uimpls, i :: ids, d::params, ([], data :: snd impls)))
+    (env, [], avoid, [], ([], [])) l    
 
 let new_class id par ar sup props =
   let env0 = Global.env() in
@@ -186,12 +190,12 @@ let new_class id par ar sup props =
   let env_params, avoid, ctx_params = interp_binders_evars isevars env_super avoid par in
 
   (* Interpret the arity *)
-  let arity = interp_type_evars isevars env_params (CSort (fst ar, snd ar)) in
+  let _arity_imps, arity = interp_type_evars isevars env_params (CSort (fst ar, snd ar)) in
     
   (* let fullarity = it_mkProd_or_LetIn (it_mkProd_or_LetIn arity ctx_defs) ctx_params in*)
 
   (* Interpret the definitions and propositions *)
-  let env_props, avoid, ctx_props, _ = 
+  let env_props, prop_impls, avoid, ctx_props, _ = 
     interp_fields_evars isevars env_params avoid props 
   in
     
@@ -229,7 +233,7 @@ let new_class id par ar sup props =
       cl_props = ctx_props;
       cl_impl = kn }
   in
-    declare_implicits k;
+    declare_implicits (List.rev prop_impls) k;
     add_class k
     
 open Decl_kinds
@@ -345,7 +349,7 @@ let new_instance sup (instid, bk, cl) props =
 	    let subst, par = type_ctx_instance isevars env' k.cl_params par subst in subst
 
       | Implicit ->
-	  let t' = interp_type_evars isevars env (Topconstr.mkAppC (CRef (Ident id), par)) in
+	  let _imps, t' = interp_type_evars isevars env (Topconstr.mkAppC (CRef (Ident id), par)) in
 	    match kind_of_term t' with 
 		App (c, args) -> 
 		  substitution_of_constrs (k.cl_params @ k.cl_super @ k.cl_context) 

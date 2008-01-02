@@ -28,7 +28,7 @@ type binder_def_list = (identifier located * identifier located list * constr_ex
  
 val binders_of_lidents : identifier located list -> local_binder list
 
-val declare_implicit_proj : typeclass -> constant -> unit
+val declare_implicit_proj : typeclass -> constant -> Impargs.manual_explicitation list -> unit
 
 val infer_super_instances : env -> constr list ->
   named_context -> named_context -> types list * identifier list * named_context
