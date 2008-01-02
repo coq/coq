@@ -24,8 +24,8 @@ open Util
 (* This module defines type-classes *)
 type typeclass = {
   cl_name : identifier; (* Name of the class *)
-  cl_context : named_context; (* Context in which superclasses and params are typed (usually types) *)
-  cl_super : named_context; (* Superclasses applied to some of the params *)
+  cl_context : named_context; (* Context in which superclasses and params are typed (usually types and indirect superclasses) *)
+  cl_super : named_context; (* Direct superclasses applied to some of the params *)
   cl_params : named_context; (* Context of the real parameters (types and operations) *)
 (*   cl_defs : rel_context; (\* Context of the definitions (usually functions), which may be shared *\) *)
   cl_props : named_context; (* Context of the properties on defs, in Prop, will not be shared *)

@@ -1,4 +1,4 @@
-Require Import Coq.Program.Tactics.
+Require Import Coq.Program.Program.
 
 Variable A : Set.
 
@@ -17,7 +17,7 @@ Require Import ProofIrrelevance.
 Goal forall n, forall v : vector (S n), exists v' : vector n, exists a : A, v = vcons a n v'.
 Proof.
   intros n H.
-  dependent induction H.
+  dependent induction H generalizing n.
   inversion H0 ; subst.
   rewrite (UIP_refl _ _ H0).
   simpl.
@@ -52,20 +52,27 @@ Proof with simpl in * ; auto.
   dependent induction H generalizing G D.
 
   destruct D...
-  subst.
-  apply weak ; apply ax.
-  inversion H ; subst.
-  apply ax.
+    subst.
+    apply weak ; apply ax.
 
-  induction D...
-  subst.
-  do 2 apply weak.
+    inversion H ; subst.
+    apply ax.
+    
+  destruct D...
+    subst.
+    do 2 apply weak.
+    assumption.
+
+    apply weak.
+    apply IHterm.
+    inversion H0 ; subst ; reflexivity.
+
+  cut(term (snoc (app G0 D) tau'0) (arrow tau tau') -> term (app (snoc G0 tau'0) D) (arrow tau tau')).
+  intros.
+  apply H0.
+  apply weak.
+  apply abs.
   assumption.
 
-  apply weak.
-  apply IHterm.
-  inversion H0 ; subst ; reflexivity.
-
-  apply abs.
-  apply weak.
+  intros.
 Admitted.

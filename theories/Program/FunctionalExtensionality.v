@@ -1,5 +1,24 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+
+(*i $Id: Tactics.v 10410 2007-12-31 13:11:55Z msozeau $ i*)
+
+(** This module states the axiom of (dependent) functional extensionality and (dependent) eta-expansion.
+   It introduces a tactic [extensionality] to apply the axiom of extensionality to an equality goal. 
+
+   It also defines two lemmas for expansion of fixpoint defs using extensionnality and proof-irrelevance
+   to avoid a side condition on the functionals. *)
+   
 Require Import Coq.Program.Utils.
 Require Import Coq.Program.Wf.
+
+Set Implicit Arguments.
+Unset Strict Implicit.
 
 (** The converse of functional equality. *)
 
@@ -37,10 +56,11 @@ Qed.
 
 Hint Resolve fun_extensionality fun_extensionality_dep : program.
 
-(** Unification needs help sometimes... *)
-Ltac apply_ext :=
-  match goal with 
-    [ |- ?x = ?y ] => apply (@fun_extensionality _ _ x y)
+(** Apply [fun_extensionality], introducing variable x. *)
+
+Tactic Notation "extensionality" ident(x) :=
+  match goal with
+    [ |- ?X = ?Y ] => apply (@fun_extensionality _ _ X Y) || apply (@fun_extensionality_dep _ _ X Y) ; intro x
   end.
 
 (** The two following lemmas allow to unfold a well-founded fixpoint definition without
@@ -59,7 +79,7 @@ Proof.
   intros ; apply Fix_eq ; auto.
   intros.
   assert(f = g).
-  apply (fun_extensionality_dep _ _ _ _ H).
+  extensionality y ; apply H.
   rewrite H0 ; auto.
 Qed.
 
@@ -75,7 +95,7 @@ Proof.
   intros ; apply Fix_measure_eq ; auto.
   intros.
   assert(f0 = g).
-  apply (fun_extensionality_dep _ _ _ _ H).
+  extensionality y ; apply H.
   rewrite H0 ; auto.
 Qed.
 

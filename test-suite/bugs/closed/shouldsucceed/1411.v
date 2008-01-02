@@ -18,7 +18,7 @@ intros.
 destruct H.
 Defined.
 
-Program Fixpoint fetch t p (x:Exact t p) {struct x} :=
+Program Fixpoint fetch t p (x:Exact t p) {struct t} :=
    match t, p with
    | No p' , nil      => p'
    | No p' , _::_     => unreachable nat _

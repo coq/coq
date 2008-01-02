@@ -134,6 +134,8 @@ Ltac autoinjection :=
       | [ H : ?f ?a ?b ?c ?d ?e ?g ?h ?i ?j = ?f' ?a' ?b' ?c' ?d' ?e'?g' ?h' ?i' ?j' |- _ ] => tac H
     end.
 
+Ltac autoinjections := repeat autoinjection.
+
 (** Destruct an hypothesis by first copying it to avoid dependencies. *)
 
 Ltac destruct_nondep H := let H0 := fresh "H" in assert(H0 := H); destruct H0.
@@ -157,7 +159,7 @@ Tactic Notation "contradiction" "by" constr(t) :=
    possibly using [program_simplify] to use standard goal-cleaning tactics. *)
 
 Ltac program_simplify :=
-  simpl ; intros ; destruct_conjs ; simpl proj1_sig in * ; subst* ; 
-    try (solve [ red ; intros ; destruct_conjs ; discriminate ]).
+  simpl ; intros ; destruct_conjs ; simpl proj1_sig in * ; subst* ; try autoinjection ; try discriminates ;
+    try (solve [ red ; intros ; destruct_conjs ; try autoinjection ; discriminates ]).
 
 Ltac program_simpl := program_simplify ; auto with *.

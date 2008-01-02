@@ -18,9 +18,9 @@ Notation " {{ x }} " := (tt : { y : unit | x }).
 
 (** A simpler notation for subsets defined on a cartesian product. *)
 
-(* Notation "{ ( x , y )  :  A  |  P }" :=  *)
-(*   (sig (fun anonymous : A => let (x,y) := anonymous in P)) *)
-(*   (x ident, y ident, at level 10) : type_scope. *)
+Notation "{ ( x , y )  :  A  |  P }" :=
+  (sig (fun anonymous : A => let (x,y) := anonymous in P))
+  (x ident, y ident, at level 10) : type_scope.
 
 (** Generates an obligation to prove False. *)
 
