@@ -496,9 +496,9 @@ Qed.
 (** Properties of [fold] *)
 
 Lemma exclusive_set : forall s s' x,
- ~In x s\/~In x s' <-> mem x s && mem x s'=false.
+ ~(In x s/\In x s') <-> mem x s && mem x s'=false.
 Proof.
-intros; do 2 rewrite not_mem_iff.
+intros; do 2 rewrite mem_iff.
 destruct (mem x s); destruct (mem x s'); intuition.
 Qed.
 

@@ -567,6 +567,16 @@ Module Properties
     exists e; auto.
   Qed.
 
+  Lemma cardinal_inv_2b :
+   forall s, cardinal s <> 0 -> { x : elt | In x s }.
+  Proof.
+    intros; rewrite M.cardinal_1 in H.
+    generalize (elements_2 (s:=s)).
+    destruct (elements s); simpl in H.
+    elim H; auto.
+    exists e; auto.
+  Qed.
+
   Lemma Equal_cardinal_aux :
    forall n s s', cardinal s = n -> s[=]s' -> cardinal s = cardinal s'.
   Proof.
@@ -761,7 +771,8 @@ Module Properties
   apply fold_1; auto with set.
   Qed.
 
-  Lemma fold_union: forall s s', (forall x, ~In x s\/~In x s') ->
+  Lemma fold_union: forall s s', 
+   (forall x, ~(In x s/\In x s')) ->
    eqA (fold f (union s s') i) (fold f s (fold f s' i)).
   Proof.
   intros.
@@ -821,7 +832,7 @@ Module Properties
   Qed.
 
   Lemma union_cardinal: 
-   forall s s', (forall x, ~In x s\/~In x s') -> 
+   forall s s', (forall x, ~(In x s/\In x s')) -> 
    cardinal (union s s')=cardinal s+cardinal s'.
   Proof.
   intros; do 3 rewrite cardinal_fold.

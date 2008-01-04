@@ -810,6 +810,18 @@ Module Properties (M: S).
     apply H0; constructor; red; auto.
   Qed.
 
+  Lemma cardinal_inv_2b :
+   forall m, cardinal m <> 0 -> { p : key*elt | MapsTo (fst p) (snd p) m }.
+  Proof. 
+    intros; unfold cardinal in *.
+    generalize (elements_2 (m:=m)).
+    destruct (elements m).
+    simpl in H; elim H; auto.
+    exists p; auto.
+    destruct p; simpl; auto.
+    apply H0; constructor; red; auto.
+  Qed.
+
   Lemma cardinal_1 : forall (m:t elt), Empty m -> cardinal m = 0.
   Proof.
     intros; rewrite <- cardinal_Empty; auto.

@@ -640,6 +640,16 @@ Module Properties (M: S).
     exists e; auto.
   Qed.
 
+  Lemma cardinal_inv_2b :
+   forall s, cardinal s <> 0 -> { x : elt | In x s }.
+  Proof.
+    intros; rewrite M.cardinal_1 in H.
+    generalize (elements_2 (s:=s)).
+    destruct (elements s); simpl in H.
+    elim H; auto.
+    exists e; auto.
+  Qed.
+
   Lemma cardinal_1 : forall s, Empty s -> cardinal s = 0.
   Proof.
     intros. rewrite <- cardinal_Empty; auto.
@@ -950,7 +960,8 @@ Module Properties (M: S).
   apply fold_1; auto with set.
   Qed.
 
-  Lemma fold_union: forall i s s', (forall x, ~In x s\/~In x s') ->
+  Lemma fold_union: forall i s s', 
+   (forall x, ~(In x s/\In x s')) ->
    eqA (fold f (union s s') i) (fold f s (fold f s' i)).
   Proof.
   intros.
@@ -1005,7 +1016,7 @@ Module Properties (M: S).
   Qed.
 
   Lemma union_cardinal: 
-   forall s s', (forall x, ~In x s\/~In x s') -> 
+   forall s s', (forall x, ~(In x s/\In x s')) -> 
    cardinal (union s s')=cardinal s+cardinal s'.
   Proof.
   intros; do 3 rewrite cardinal_fold.
