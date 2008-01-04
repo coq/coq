@@ -59,6 +59,9 @@ let is_freevar ids env x =
       with _ -> not (is_global x)
   with _ -> true
 
+let rec make_fresh ids env x =
+  if is_freevar ids env x then x else make_fresh ids env (Nameops.lift_ident x)
+
 let freevars_of_ids env ids = 
   List.filter (is_freevar env (Global.env())) ids
 
@@ -81,10 +84,10 @@ let compute_constrs_freevars_binders env constrs =
   let elts = compute_constrs_freevars env constrs in
     List.map (fun id -> (dummy_loc, id), CHole dummy_loc) elts
       
-let next_ident_away_from id avoid = 
-  let rec name_rec id =
-    if Idset.mem id avoid then name_rec (Nameops.lift_ident id) else id in 
-  name_rec id 
+let next_ident_away_from id avoid = make_fresh avoid (Global.env ()) id
+(*   let rec name_rec id = *)
+(*     if Idset.mem id avoid then name_rec (Nameops.lift_ident id) else id in  *)
+(*   name_rec id  *)
 
 let ids_of_named_context_avoiding avoid l =
   List.fold_left (fun (ids, avoid) id -> 
@@ -172,6 +175,7 @@ let generalize_class_binders env l =
     cstrs
 
 let generalize_class_binders_raw env l = 
+  let env = Idset.union env (Termops.vars_of_env (Global.env())) in
   let fv_ctx, cstrs = resolve_class_binders env l in
     List.map (fun ((loc, id), t) -> ((loc, Name id), Implicit, t)) fv_ctx,
   List.map (fun (iid, bk, c) -> (iid, Implicit, c)) cstrs

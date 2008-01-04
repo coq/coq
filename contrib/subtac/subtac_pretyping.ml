@@ -118,7 +118,6 @@ let env_with_binders env isevars l =
 
 let subtac_process env isevars id bl c tycon =
 (*   let bl = Implicit_quantifiers.ctx_of_class_binders (vars_of_env env) cbl @ l in *)
-  let imps = Implicit_quantifiers.implicits_of_binders bl in
   let c = Command.abstract_constr_expr c bl in
   let tycon = 
     match tycon with
@@ -130,6 +129,7 @@ let subtac_process env isevars id bl c tycon =
 	    mk_tycon coqt
   in    
   let c = coqintern_constr !isevars env c in
+  let imps = Implicit_quantifiers.implicits_of_rawterm c in
   let coqc, ctyp = interp env isevars c tycon in
   let evm = non_instanciated_map env isevars (evars_of !isevars) in
     evm, coqc, ctyp, imps

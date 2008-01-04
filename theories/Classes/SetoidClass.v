@@ -33,7 +33,7 @@ Class Setoid (carrier : Type) (equiv : relation carrier) :=
 
 Definition equiv [ Setoid A R ] : _ := R.
 
-Infix "==" := equiv (at level 70, no associativity).
+Infix "==" := equiv (at level 70, no associativity) : type_scope.
 
 Definition equiv_refl [ s : Setoid A R ] : forall x : A, R x x := equiv_refl _ _ equiv_prf.
 Definition equiv_sym [ s : Setoid A R ] : forall x y : A, R x y -> R y x := equiv_sym _ _ equiv_prf.
@@ -190,3 +190,46 @@ Proof.
   apply (respect (m0:=m0)).
   assumption.
 Qed.
+
+(** Partial setoids don't require reflexivity so we can build a partial setoid on the function space. *)
+
+Class PartialSetoid (carrier : Type) (equiv : relation carrier) :=
+  pequiv_prf : PER carrier equiv.
+
+(** Overloaded notation for partial setoid equivalence. *)
+
+Definition pequiv [ PartialSetoid A R ] : _ := R.
+
+Infix "=~=" := pequiv (at level 70, no associativity) : type_scope.
+
+Definition pequiv_sym [ s : PartialSetoid A R ] : forall x y : A, R x y -> R y x := per_sym _ _ pequiv_prf.
+Definition pequiv_trans [ s : PartialSetoid A R ] : forall x y z : A, R x y -> R y z -> R x z := per_trans _ _ pequiv_prf.
+
+Program Instance [ sa : Setoid a R, sb : Setoid b R' ] => arrow_partial_setoid : 
+  PartialSetoid (a -> b)
+  (fun f g => forall (x y : a), R x y -> R' (f x) (g y)) :=
+  pequiv_prf := Build_PER _ _ _ _.
+
+Next Obligation.
+Proof.
+  sym.
+  apply H.
+  sym ; assumption.
+Qed.
+
+Next Obligation.
+Proof.
+  trans (y x0).
+  apply H ; auto.
+  trans y0 ; auto.
+  sym ; auto.
+  apply H0 ; auto.
+Qed.
+
+(** The following is not definable. *)
+(*
+Program Instance [ sa : Setoid a R, sb : Setoid b R' ] => arrow_setoid : 
+  Setoid (a -> b)
+  (fun f g => forall (x y : a), R x y -> R' (f x) (g y)) :=
+  equiv_prf := Build_equivalence _ _ _ _ _.
+*)
