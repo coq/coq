@@ -128,7 +128,7 @@ let rec infos_and_sort env t =
 	let small = Term.is_small varj.utj_type in
 	(logic,small) :: (infos_and_sort env1 c2)
     | _ when is_constructor_head t -> []
-    | _ -> anomaly "infos_and_sort: not a positive constructor"
+    | _ -> (* don't fail if not positive, it is tested later *) []
 
 let small_unit constrsinfos =
   let issmall = List.for_all is_small constrsinfos 
