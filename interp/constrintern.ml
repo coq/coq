@@ -379,7 +379,7 @@ let check_linearity lhs ids =
 	()
 
 (* Match the number of pattern against the number of matched args *)
-let check_number_of_pattern loc n l =
+let check_number_of_pattern loc n (_,l) =
   let p = List.length l in
   if n<>p then raise (InternalisationError (loc,BadPatternsNumber (n,p)))
 
@@ -970,7 +970,7 @@ let internalise sigma globalenv env allow_soapp lvar c =
     let eqn_ids,pll = intern_disjunctive_multiple_pattern scopes loc lhs in
     (* Linearity implies the order in ids is irrelevant *)
     check_linearity lhs eqn_ids;
-    check_number_of_pattern loc n (snd (List.hd pll));
+    List.map (check_number_of_pattern loc n) pll;
     let env_ids = List.fold_right Idset.add eqn_ids ids in
     List.map (fun (subst,pl) ->
       let rhs = replace_vars_constr_expr subst rhs in
