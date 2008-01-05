@@ -154,6 +154,19 @@ Ltac bang :=
 Tactic Notation "contradiction" "by" constr(t) := 
   let H := fresh in assert t as H by auto with * ; contradiction.
 
+(** A tactic that adds [H:=p:typeof(p)] to the context if no hypothesis of the same type appears in the goal.
+   Useful to do saturation using tactics. *)
+
+Ltac add_hypothesis H' p := 
+  match type of p with
+    ?X => 
+    match goal with 
+      | [ H : X |- _ ] => fail 1
+      | _ => set (H':=p) ; try (change p with H') ; clearbody H'
+    end
+  end.
+
+
 (** The default simplification tactic used by Program is defined by [program_simpl], sometimes [auto with *]
    is overkill and slows things down, better rebind using [Obligations Tactic := tac] in this case, 
    possibly using [program_simplify] to use standard goal-cleaning tactics. *)

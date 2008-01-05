@@ -209,11 +209,9 @@ let instances r =
 let solve_instanciation_problem = ref (fun _ _ _ _ -> assert false)
 
 let resolve_typeclass env ev evi (evd, defined as acc) =
-  if evi.evar_body = Evar_empty then
-    try
-      !solve_instanciation_problem env evd ev evi
-    with Exit -> acc
-  else acc
+  try
+    !solve_instanciation_problem env evd ev evi
+  with Exit -> acc
 
 let resolve_one_typeclass env types =
   try
@@ -280,7 +278,9 @@ let resolve_typeclasses ?(check=true) env sigma evd =
     let (evars', progress) = 
       Evd.fold 
 	(fun ev evi acc -> 
-	  if Evd.mem tc_evars ev then resolve_typeclass env ev evi acc else acc) 
+	  if (Evd.mem tc_evars ev || not (Evd.mem evm ev)) && evi.evar_body = Evar_empty then
+	    resolve_typeclass env ev evi acc 
+	  else acc) 
 	(Evd.evars_of evars) (evars, false) 
     in
       if not progress then evars'

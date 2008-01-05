@@ -29,18 +29,28 @@ Require Export Coq.Relations.Relations.
 Class Setoid (carrier : Type) (equiv : relation carrier) :=
   equiv_prf : equivalence carrier equiv.
 
-(** Overloaded notation for setoid equivalence. Not to be confused with [eq] and [=]. *)
+(** Overloaded notations for setoid equivalence and inequivalence. Not to be confused with [eq] and [=]. *)
 
 Definition equiv [ Setoid A R ] : _ := R.
 
 Infix "==" := equiv (at level 70, no associativity) : type_scope.
 
+Notation " x =!= y " := (~ x == y) (at level 70, no associativity).
+
 Definition equiv_refl [ s : Setoid A R ] : forall x : A, R x x := equiv_refl _ _ equiv_prf.
 Definition equiv_sym [ s : Setoid A R ] : forall x y : A, R x y -> R y x := equiv_sym _ _ equiv_prf.
 Definition equiv_trans [ s : Setoid A R ] : forall x y z : A, R x y -> R y z -> R x z := equiv_trans _ _ equiv_prf.
 
+Lemma nequiv_sym : forall [ s : Setoid A R ] (x y : A), x =!= y -> y =!= x.
+Proof.
+  intros ; red ; intros.
+  apply equiv_sym in H0...
+  apply (H H0).
+Qed.
 
-Ltac refl :=
+(** Tactics to do some progress on the goal, called by the user. *)
+
+Ltac do_setoid_refl :=
   match goal with
     | [ |- @equiv ?A ?R ?s ?X _ ] => apply (equiv_refl (A:=A) (R:=R) (s:=s) X)
     | [ |- ?R ?X _ ] => apply (equiv_refl (R:=R) X)
@@ -49,16 +59,21 @@ Ltac refl :=
     | [ |- ?R ?A ?B ?C ?X _ ] => apply (equiv_refl (R:=R A B C) X)
   end.
 
-Ltac sym := 
+Ltac refl := do_setoid_refl.
+
+Ltac do_setoid_sym := 
   match goal with
     | [ |- @equiv ?A ?R ?s ?X ?Y ] => apply (equiv_sym (A:=A) (R:=R) (s:=s) (x:=X) (y:=Y))
+    | [ |- not (@equiv ?A ?R ?s ?X ?Y) ] => apply (nequiv_sym (A:=A) (R:=R) (s:=s) (x:=X) (y:=Y))
     | [ |- ?R ?X ?Y ] => apply (equiv_sym (R:=R) (x:=Y) (y:=X))
     | [ |- ?R ?A ?X ?Y ] => apply (equiv_sym (R:=R A) (x:=Y) (y:=X))
     | [ |- ?R ?A ?B ?X ?Y ] => apply (equiv_sym (R:=R A B) (x:=Y) (y:=X))
     | [ |- ?R ?A ?B ?C ?X ?Y ] => apply (equiv_sym (R:=R A B C) (x:=Y) (y:=X))
   end.
 
-Ltac trans Y := 
+Ltac sym := do_setoid_sym.
+
+Ltac do_setoid_trans Y := 
   match goal with
     | [ |- @equiv ?A ?R ?s ?X ?Z ] => apply (equiv_trans (A:=A) (R:=R) (s:=s) (x:=X) (y:=Y) (z:=Z))
     | [ |- ?R ?X ?Z ] => apply (equiv_trans (R:=R) (x:=X) (y:=Y) (z:=Z))
@@ -66,6 +81,72 @@ Ltac trans Y :=
     | [ |- ?R ?A ?B ?X ?Z ] => apply (equiv_trans (R:=R A B) (x:=X) (y:=Y) (z:=Z))
     | [ |- ?R ?A ?B ?C ?X ?Z ] => apply (equiv_trans (R:=R A B C) (x:=X) (y:=Y) (z:=Z))
   end.
+
+Ltac trans y := do_setoid_trans y.
+
+(** Tactics to immediately solve the goal without user help. *)
+
+Ltac setoid_refl :=
+  match goal with
+    | [ |- @equiv ?A ?R ?s ?X _ ] => apply (equiv_refl (A:=A) (R:=R) (s:=s) X)
+    | [ |- ?R ?X _ ] => apply (equiv_refl (R:=R) X)
+    | [ |- ?R ?A ?X _ ] => apply (equiv_refl (R:=R A) X)
+    | [ |- ?R ?A ?B ?X _ ] => apply (equiv_refl (R:=R A B) X)
+    | [ |- ?R ?A ?B ?C ?X _ ] => apply (equiv_refl (R:=R A B C) X)
+  end.
+
+Ltac setoid_sym := 
+  match goal with
+    | [ H : ?X == ?Y |- ?Y == ?X ] => apply (equiv_sym (x:=X) (y:=Y) H)
+    | [ H : ?X =!= ?Y |- ?Y =!= ?X ] => apply (nequiv_sym (x:=X) (y:=Y) H)
+  end.
+
+Ltac setoid_trans := 
+  match goal with
+    | [ H : ?X == ?Y, H' : ?Y == ?Z |- @equiv ?A ?R ?s ?X ?Z ] => apply (equiv_trans (A:=A) (R:=R) (s:=s) (x:=X) (y:=Y) (z:=Z) H H')
+  end.
+
+(** To immediatly solve a goal on setoid equality. *)
+
+Ltac setoid_tac := setoid_refl || setoid_sym || setoid_trans.
+
+Lemma nequiv_equiv : forall [ Setoid A ] (x y z : A), x =!= y -> y == z -> x =!= z.
+Proof.
+  intros; intro. 
+  assert(z == y) by setoid_sym.
+  assert(x == y) by setoid_trans.
+  contradiction.
+Qed.
+
+Lemma equiv_nequiv : forall [ Setoid A ] (x y z : A), x == y -> y =!= z -> x =!= z.
+Proof.
+  intros; intro. 
+  assert(y == x) by setoid_sym.
+  assert(y == z) by setoid_trans.
+  contradiction.
+Qed.
+
+Open Scope type_scope.
+
+Ltac setoid_sat :=
+  let add H t := let name := fresh H in add_hypothesis name t in
+    match goal with
+      | [ H : ?x == ?y |- _ ] => let name:=fresh "Heq" y x in add name (equiv_sym H)
+      | [ H : ?x =!= ?y |- _ ] => let name:=fresh "Hneq" y x in add name (nequiv_sym H)
+      | [ H : ?x == ?y, H' : ?y == ?z |- _ ] => let name:=fresh "Heq" x z in add name (equiv_trans H H')
+      | [ H : ?x == ?y, H' : ?y =!= ?z |- _ ] => let name:=fresh "Hneq" x z in add name (equiv_nequiv H H')
+      | [ H : ?x =!= ?y, H' : ?y == ?z |- _ ] => let name:=fresh "Hneq" x z in add name (nequiv_equiv H H')
+    end.
+
+Ltac setoid_saturate := repeat setoid_sat.
+
+Ltac setoidify_tac :=
+  match goal with
+    | [ s : Setoid ?A ?R, H : ?R ?x ?y |- _ ] => change R with (@equiv A R s) in H
+    | [ s : Setoid ?A ?R |- ?R ?x ?y ] => change R with (@equiv A R s)
+  end.
+
+Ltac setoidify := repeat setoidify_tac.
 
 Definition respectful [ sa : Setoid a eqa, sb : Setoid b eqb ] (m : a -> b) : Prop :=
   forall x y, eqa x y -> eqb (m x) (m y).

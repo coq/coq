@@ -99,7 +99,7 @@ let combine_params avoid applied needed =
     match app, need with
 	[], need -> 
 	  let need', avoid = ids_of_named_context_avoiding avoid (List.map snd need) in
-	    List.rev ids @ (List.map mkIdentC need'), avoid
+	    List.rev ids @ (List.rev_map mkIdentC need'), avoid
       | _, (true, (id, _, _)) :: need -> 
 	  let id' = next_ident_away_from id avoid in
 	    aux (CRef (Ident (dummy_loc, id')) :: ids) (Idset.add id' avoid) app need
@@ -130,7 +130,9 @@ let full_class_binders env l =
 	      (try
 		  let c = class_info (snd id) in
 		  let args, avoid = combine_params avoid l 
-		    (List.rev_map (fun x -> false, x) c.cl_context @ List.rev_map (fun x -> true, x) c.cl_super @ List.rev_map (fun x -> false, x) c.cl_params) 
+		    (List.rev_map (fun x -> false, x) c.cl_context @ 
+			List.rev_map (fun x -> true, x) c.cl_super @ 
+			List.rev_map (fun x -> false, x) c.cl_params) 
 		  in
 		    (iid, bk, CAppExpl (fst id, (None, Ident id), args)) :: l', avoid
 		with Not_found -> unbound_class (Global.env ()) id)

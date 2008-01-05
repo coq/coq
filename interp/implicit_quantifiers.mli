@@ -49,3 +49,7 @@ val nf_named_context : evar_map -> named_context -> named_context
 val nf_rel_context : evar_map -> rel_context -> rel_context
 val nf_env : evar_map -> env -> env
 
+
+val ids_of_named_context_avoiding :     Names.Idset.t ->
+    Sign.named_context -> Names.Idset.elt list * Names.Idset.t
+
