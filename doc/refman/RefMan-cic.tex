@@ -16,7 +16,7 @@ We call this calculus the
 {\em Predicative Calculus of (Co)Inductive
   Constructions}\index{Predicative Calculus of
   (Co)Inductive Constructions} (\pCIC\ in short).
-In section~\ref{impredicativity} we give the extra-rules for \iCIC. A
+In Section~\ref{impredicativity} we give the extra-rules for \iCIC. A
   compiling option of \Coq{} allows to type-check theories in this
   extended system.
 
@@ -28,7 +28,7 @@ type.  For instance, the statement {\it ``for all x, P''} is not
 allowed in type theory; you must say instead: {\it ``for all x
 belonging to T, P''}. The expression {\it ``x belonging to T''} is
 written {\it ``x:T''}. One also says: {\it ``x has type T''}.
-The terms of {\CIC} are detailed in section \ref{Terms}.
+The terms of {\CIC} are detailed in Section~\ref{Terms}.
 
 In \CIC\, there is an internal reduction mechanism. In particular, it
 allows to decide if two programs are {\em intentionally} equal (one
@@ -132,7 +132,7 @@ the universe variables is maintained globally. To ensure the existence
 of a mapping of the universes to the positive integers, the graph of
 constraints must remain acyclic.  Typing expressions that violate the
 acyclicity of the graph of constraints results in a \errindex{Universe
-inconsistency} error (see also section~\ref{PrintingUniverses}).
+inconsistency} error (see also Section~\ref{PrintingUniverses}).
 
 \subsection{Constants}
 Besides the sorts, the language also contains constants denoting
@@ -266,7 +266,7 @@ names. Declarations are either assumptions or ``standard''
 definitions, that is abbreviations for well-formed terms
 but also definitions of inductive objects. In the latter
 case, an object in the environment will define one or more constants
-(that is types and constructors, see section \ref{Cic-inductive-definitions}).
+(that is types and constructors, see Section~\ref{Cic-inductive-definitions}).
 
 An assumption will be represented in the environment as
 \Assum{\Gamma}{c}{T} which means that $c$ is assumed of some type $T$
@@ -346,7 +346,7 @@ be derived from the following rules.
 \Rem We may have $\kw{let}~x:=t~\kw{in}~u$
 well-typed without having $((\lb~x:T\mto u)~t)$ well-typed (where
 $T$ is a type of $t$). This is because the value $t$ associated to $x$
-may be used in a conversion rule (see section \ref{conv-rules}).
+may be used in a conversion rule (see Section~\ref{conv-rules}).
 
 \section[Conversion rules]{Conversion rules\index{Conversion rules}
 \label{conv-rules}}
@@ -372,7 +372,7 @@ refer the interested reader to \cite{Coq85}.
 
 \paragraph[$\iota$-reduction.]{$\iota$-reduction.\label{iota}\index{iota-reduction@$\iota$-reduction}}
 A specific conversion rule is associated to the inductive objects in
-the environment.  We shall give later on (section \ref{iotared}) the
+the environment.  We shall give later on (see Section~\ref{iotared}) the
 precise rules but it just says that a destructor applied to an object
 built from a constructor behaves as expected.  This reduction is
 called $\iota$-reduction and is more precisely studied in
@@ -455,7 +455,7 @@ convertibility rule of \Coq.
 A term which cannot be any more reduced is said to be in {\em normal
   form}. There are several ways (or strategies) to apply the reduction
 rule. Among them, we have to mention the {\em head reduction} which
-will play an important role (see chapter \ref{Tactics}). Any term can
+will play an important role (see Chapter~\ref{Tactics}). Any term can
 be written as $\lb~x_1:T_1\mto \ldots \lb x_k:T_k \mto 
 (t_0\ t_1\ldots t_n)$ where
 $t_0$ is not an application. We say then that $t_0$ is the {\em head
@@ -995,7 +995,7 @@ inductive types (i.e. of inductive types with one single constructor
 and that contains either proofs or inhabitants of singleton types
 only). More precisely, a small singleton inductive family is set in
 {\Prop}, a small non singleton inductive family is set in {\Set} (even
-in case {\Set} is impredicative -- see section~\ref{impredicativity}),
+in case {\Set} is impredicative -- see Section~\ref{impredicativity}),
 and otherwise in the {\Type} hierarchy.
 % TODO: clarify the case of a partial application ??
 
@@ -1529,7 +1529,7 @@ The terms structurally smaller than $y$ are:
   which one of the $I_l$ occurs) are structurally smaller than $y$.
 \end{itemize}
 The following definitions are correct, we enter them using the
-{\tt Fixpoint} command as described in section~\ref{Fixpoint} and show
+{\tt Fixpoint} command as described in Section~\ref{Fixpoint} and show
 the internal representation.
 \begin{coq_example}
 Fixpoint plus (n m:nat) {struct n} : nat :=
@@ -1630,14 +1630,14 @@ Abort.
 \subsubsection{Mutual induction}
 
 The principles of mutual induction can be automatically generated 
-using the {\tt Scheme} command described in section~\ref{Scheme}.
+using the {\tt Scheme} command described in Section~\ref{Scheme}.
 
 \section{Coinductive types}
 The implementation contains also coinductive definitions, which are
 types inhabited by infinite objects. 
 More information on coinductive definitions can be found
 in~\cite{Gimenez95b,Gim98,GimCas05}.
-%They are described in chapter~\ref{Coinductives}.
+%They are described in Chapter~\ref{Coinductives}.
 
 \section[\iCIC : the Calculus of Inductive Construction with
   impredicative \Set]{\iCIC : the Calculus of Inductive Construction with

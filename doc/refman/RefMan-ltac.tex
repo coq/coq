@@ -27,14 +27,14 @@ problems.
 \def\cpattern{\nterm{cpattern}}
 
 The syntax of the tactic language is given Figures~\ref{ltac}
-and~\ref{ltac_aux}. See page~\pageref{BNF-syntax} for a description of
+and~\ref{ltac_aux}. See Chapter~\ref{BNF-syntax} for a description of
 the BNF metasyntax used in these grammar rules. Various already
 defined entries will be used in this chapter: entries
 {\naturalnumber}, {\integer}, {\ident}, {\qualid}, {\term},
 {\cpattern} and {\atomictac} represent respectively the natural and
 integer numbers, the authorized identificators and qualified names,
 {\Coq}'s terms and patterns and all the atomic tactics described in
-chapter~\ref{Tactics}. The syntax of {\cpattern} is the same as that
+Chapter~\ref{Tactics}. The syntax of {\cpattern} is the same as that
 of terms, but it is extended with pattern matching metavariables. In
 {\cpattern}, a pattern-matching metavariable is represented with the
 syntax {\tt ?id} where {\tt id} is a {\ident}. The notation {\tt \_}
@@ -536,7 +536,7 @@ If the evaluation of the right-hand-side of a valid match fails, the
 next matching subterm is tried. If no further subterm matches, the
 next clause is tried. Matching subterms are considered top-bottom and
 from left to right (with respect to the raw printing obtained by
-setting option {\tt Printing All}, see section~\ref{SetPrintingAll}).
+setting option {\tt Printing All}, see Section~\ref{SetPrintingAll}).
 
 \begin{coq_example}
 Ltac f x :=

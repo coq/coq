@@ -7,13 +7,13 @@ commands are {\tt Notation} and {\tt Infix} which are described in
 section \ref{Notation}.  It also happens that the same symbolic
 notation is expected in different contexts. To achieve this form of
 overloading, {\Coq} offers a notion of interpretation scope. This is
-described in section \ref{scopes}.
+described in Section~\ref{scopes}.
 
 \Rem The commands {\tt Grammar}, {\tt Syntax} and {\tt Distfix} which
 were present for a while in {\Coq} are no longer available from {\Coq}
 version 8.0. The underlying AST structure is also no longer available.
 The functionalities of the command {\tt Syntactic Definition} are
-still available, see section \ref{Abbreviations}.
+still available, see Section~\ref{Abbreviations}.
 
 \section[Notations]{Notations\label{Notation}
 \comindex{Notation}}
@@ -209,7 +209,7 @@ Notation "x < y < z" := (x < y /\ y < z) (at level 70, y at next level).
 For the sake of factorization with {\Coq} predefined rules, simple
 rules have to be observed for notations starting with a symbol:
 e.g. rules starting with ``\{'' or ``('' should be put at level 0. The
-list of {\Coq} predefined notations can be found in chapter \ref{Theories}.
+list of {\Coq} predefined notations can be found in Chapter~\ref{Theories}.
 
 The command to display the current state of the {\Coq} term parser is
 \comindex{Print Grammar constr}
@@ -374,7 +374,7 @@ and corecursive definitions can benefit of customized notations. To do
 this, insert a {\tt where} notation clause after the definition of the
 (co)inductive type or (co)recursive term (or after the definition of
 each of them in case of mutual definitions). The exact syntax is given
-on Figure \ref{notation-syntax}. Here are examples:
+on Figure~\ref{notation-syntax}. Here are examples:
 
 \begin{coq_eval}
 Set Printing Depth 50.
@@ -418,7 +418,7 @@ To reactivate it, use the command
 \end{quote}
 The default is to use notations for printing terms wherever possible.
 
-\SeeAlso {\tt Set Printing All} in section \ref{SetPrintingAll}.
+\SeeAlso {\tt Set Printing All} in Section~\ref{SetPrintingAll}.
 
 \subsection{Locating notations
 \comindex{Locate}
@@ -597,8 +597,8 @@ a single identifier.
 \paragraph{Syntax of notations}
 
 The different syntactic variants of the command \texttt{Notation} are
-given on Figure \ref{notation-syntax}. The optional {\tt :{\scope}} is
-described in the section \ref{scopes}.
+given on Figure~\ref{notation-syntax}. The optional {\tt :{\scope}} is
+described in the Section~\ref{scopes}.
 
 \Rem No typing of the denoted expression is performed at definition
 time. Type-checking is done only at the time of use of the notation.
@@ -743,7 +743,7 @@ is interpreted in the scope stack extended by the scopes bound (if any)
 to these arguments.
 
 \SeeAlso The command to show the scopes bound to the arguments of a
-function is described in section \ref{About}.
+function is described in Section~\ref{About}.
 
 \subsubsection{Binding types of arguments to an interpretation scope}
 
@@ -759,7 +759,7 @@ interpretation of the notation itself expects arguments of the same
 type that would trigger the same scope).
 
 \comindex{Bind Scope}
-More generally, any {\class} (see chapter \ref{Coercions-full}) can be
+More generally, any {\class} (see Chapter~\ref{Coercions-full}) can be
 bound to an interpretation scope. The command to do it is
 \begin{quote}
 {\tt Bind Scope} {\scope} \texttt{with} {\class}
@@ -782,7 +782,7 @@ Check (fun x y1 y2 z t => P _ (x + t) ((f _ (y1 + y2) + z))).
 interpretation. See the next section.
 
 \SeeAlso The command to show the scopes bound to the arguments of a
-function is described in section \ref{About}.
+function is described in Section~\ref{About}.
 
 \subsection[The {\tt type\_scope} interpretation scope]{The {\tt type\_scope} interpretation scope\index{type\_scope}}
 
@@ -878,7 +878,7 @@ This includes the notation for pairs. It is delimited by key {\tt core}.
 
 This includes notation for strings as elements of the type {\tt
 string}.  Special characters and escaping follow {\Coq} conventions
-on strings (see page~\pageref{strings}). Especially, there is no
+on strings (see Section~\ref{strings}). Especially, there is no
 convention to visualize non printable characters of a string.  The
 file {\tt String.v} shows an example that contains quotes, a newline
 and a beep (i.e. the ascii character of code 7).

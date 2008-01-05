@@ -11,7 +11,7 @@
 This section describes the full form of pattern-matching in {\Coq} terms.
 
 \asection{Patterns}\label{implementation} The full syntax of {\tt
-match} is presented in figures~\ref{term-syntax}
+match} is presented in Figures~\ref{term-syntax}
 and~\ref{term-syntax-aux}.  Identifiers in patterns are either
 constructor names or variables. Any identifier that is not the
 constructor of an inductive or coinductive type is considered to be a
@@ -472,7 +472,7 @@ In all the previous examples the elimination predicate does not depend
 on the object(s) matched. But it may depend and the typical case 
 is when we write a proof by induction or a function that yields an
 object of dependent type. An example of proof using \texttt{match} in
-given in section \ref{refine-example}
+given in Section~\ref{refine-example}
 
 For example, we can write 
 the function \texttt{buildlist} that given a natural number
@@ -524,7 +524,7 @@ the second is not.
 % $[\vec{d_1}:\vec{D_1}][x_1:T_1]\ldots [\vec{d_n}:\vec{D_n}][x_n:T_n]Q.$
 
 The user can also use \texttt{match} in combination with the tactic
-\texttt{refine} (see section \ref{refine}) to build incomplete proofs
+\texttt{refine} (see Section~\ref{refine}) to build incomplete proofs
 beginning with a \texttt{match} construction.
 
 \asection{Pattern-matching on inductive objects involving local

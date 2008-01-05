@@ -64,14 +64,14 @@ the resulting term with its type. The term to be reduced may depend on
 hypothesis introduced in the first subgoal (if a proof is in
 progress).
 
-\SeeAlso section~\ref{Conversion-tactics}.
+\SeeAlso Section~\ref{Conversion-tactics}.
 
 \subsection[\tt Extraction \term.]{\tt Extraction \term.\label{ExtractionTerm}
 \comindex{Extraction}} 
 This command displays the extracted term from
 {\term}. The extraction is processed according to the distinction
 between {\Set} and {\Prop}; that is to say, between logical and
-computational content (see section \ref{Sorts}). The extracted term is
+computational content (see Section~\ref{Sorts}). The extracted term is
 displayed in Objective Caml syntax, where global identifiers are still
 displayed as in \Coq\ terms.
 
@@ -81,7 +81,7 @@ displayed as in \Coq\ terms.
   globals {\qualid$_1$} \ldots{} {\qualid$_n$}.
 \end{Variants}
 
-\SeeAlso chapter~\ref{Extraction}.
+\SeeAlso Chapter~\ref{Extraction}.
 
 \subsection[\tt Opaque \qualid$_1$ \dots \qualid$_n$.]{\tt Opaque \qualid$_1$ \dots \qualid$_n$.\comindex{Opaque}\label{Opaque}} This command tells not to unfold the
 the constants {\qualid$_1$} \dots {\qualid$_n$} in tactics using
@@ -161,7 +161,7 @@ This restricts the search to constructions not defined in modules
 
 \begin{ErrMsgs}
 \item \errindex{Module/section \module{} not found}
-No module \module{} has been required (see section~\ref{Require}).
+No module \module{} has been required (see Section~\ref{Require}).
 \end{ErrMsgs}
 
 \end{Variants}
@@ -425,7 +425,7 @@ for \Coq's toplevel. This kind of file is called a {\em script} for
 \subsection[\tt Load {\ident}.]{\tt Load {\ident}.\comindex{Load}\label{Load}}
 This command loads the file named {\ident}{\tt .v}, searching
 successively in each of the directories specified in the {\em
-  loadpath}. (see section \ref{loadpath})
+  loadpath}. (see Section~\ref{loadpath})
 
 \begin{Variants}
 \item {\tt Load {\str}.}\label{Load-str}\\
@@ -439,7 +439,7 @@ successively in each of the directories specified in the {\em
   \comindex{Load Verbose}
   Display, while loading, the answers of \Coq\ to each command
   (including tactics) contained in the loaded file
-  \SeeAlso section \ref{Begin-Silent}
+  \SeeAlso Section~\ref{Begin-Silent}
 \end{Variants}
 
 \begin{ErrMsgs}
@@ -572,7 +572,7 @@ These different variants can be combined.
 
   The command did not find the file {\tt toto.vo}. Either {\tt
     toto.v} exists but is not compiled or {\tt toto.vo} is in a directory
-  which is not in your {\tt LoadPath} (see section \ref{loadpath}).
+  which is not in your {\tt LoadPath} (see Section~\ref{loadpath}).
 
 \item \errindex{Bad magic number}
 
@@ -582,7 +582,7 @@ These different variants can be combined.
   version of \Coq.
 \end{ErrMsgs}
 
-\SeeAlso chapter \ref{Addoc-coqc}
+\SeeAlso Chapter~\ref{Addoc-coqc}
 
 \subsection[\tt Print Modules.]{\tt Print Modules.\comindex{Print Modules}}
 This command shows the currently loaded and currently opened
@@ -592,10 +592,10 @@ This command shows the currently loaded and currently opened
 This commands loads the Objective Caml compiled files {\str$_1$} \dots
 {\str$_n$} (dynamic link). It is mainly used to load tactics
 dynamically.
-% (see chapter \ref{WritingTactics}).
+% (see Chapter~\ref{WritingTactics}).
  The files are
 searched into the current Objective Caml loadpath (see the command {\tt
-Add ML Path} in the section \ref{loadpath}).  Loading of Objective Caml
+Add ML Path} in the Section~\ref{loadpath}).  Loading of Objective Caml
 files is only possible under the bytecode version of {\tt coqtop}
 (i.e. {\tt coqtop} called with options {\tt -byte}, see chapter 
 \ref{Addoc-coqc}).
@@ -608,14 +608,14 @@ files is only possible under the bytecode version of {\tt coqtop}
 \subsection[\tt Print ML Modules.]{\tt Print ML Modules.\comindex{Print ML Modules}}
 This print the name of all \ocaml{} modules loaded with \texttt{Declare
   ML Module}. To know from where these module were loaded, the user
-should use the command \texttt{Locate File} (see page \pageref{Locate File})
+should use the command \texttt{Locate File} (see Section~\ref{Locate File})
 
 \section[Loadpath]{Loadpath\label{loadpath}\index{Loadpath}}
 
 There are currently two loadpaths in \Coq. A loadpath where seeking
 {\Coq} files (extensions {\tt .v} or {\tt .vo} or {\tt .vi}) and one where
 seeking Objective Caml files. The default loadpath contains the
-directory ``\texttt{.}'' denoting the current directory and mapped to the empty logical path (see section \ref{LongNames}).
+directory ``\texttt{.}'' denoting the current directory and mapped to the empty logical path (see Section~\ref{LongNames}).
 
 \subsection[\tt Pwd.]{\tt Pwd.\comindex{Pwd}\label{Pwd}}
 This command displays the current working directory.
@@ -662,14 +662,14 @@ This command displays the current \Coq\ loadpath.
 
 \subsection[\tt Add ML Path {\str}.]{\tt Add ML Path {\str}.\comindex{Add ML Path}}
 This command adds the path {\str} to the current Objective Caml loadpath (see
-the command {\tt Declare ML Module} in the section \ref{compiled}).
+the command {\tt Declare ML Module} in the Section~\ref{compiled}).
 
 \Rem This command is implied by {\tt Add LoadPath {\str} as {\dirpath}}.
 
 \subsection[\tt Add Rec ML Path {\str}.]{\tt Add Rec ML Path {\str}.\comindex{Add Rec ML Path}}
 This command adds the directory {\str} and all its subdirectories 
 to the current Objective Caml loadpath (see
-the command {\tt Declare ML Module} in the section \ref{compiled}).
+the command {\tt Declare ML Module} in the Section~\ref{compiled}).
 
 \Rem This command is implied by {\tt Add Rec LoadPath {\str} as {\dirpath}}.
 
@@ -727,15 +727,15 @@ This command is dedicated for the use in graphical interfaces.  It
 allows to backtrack to a particular \emph{global} state, i.e.
 typically a state corresponding to a previous line in a script. A
 global state includes declaration environment but also proof
-environment (see chapter~\ref{Proof-handling}). The three numbers
+environment (see Chapter~\ref{Proof-handling}). The three numbers
 $\num_1$, $\num_2$ and $\num_3$ represent the following:
 \begin{itemize}
 \item $\num_3$: Number of \texttt{Abort} to perform, i.e. the number
   of currently opened nested proofs that must be cancelled (see
-  chapter~\ref{Proof-handling}).
+  Chapter~\ref{Proof-handling}).
 \item $\num_2$: \emph{Proof state number} to unbury once aborts have
   been done. Coq will compute the number of \texttt{Undo} to perform
-  (see chapter~\ref{Proof-handling}).
+  (see Chapter~\ref{Proof-handling}).
 \item $\num_1$: Environment state number to unbury, Coq will compute
   the number of \texttt{Back} to perform.
 \end{itemize}
@@ -758,7 +758,7 @@ Where:
 \begin{itemize}
 \item \emph{$id_i$} is the name of the current proof (if there is
   one, otherwise \texttt{Coq} is displayed, see
-chapter~\ref{Proof-handling}).
+Chapter~\ref{Proof-handling}).
 \item $\num_1$ is the environment state number after the last
   command.
 \item $\num_2$ is the proof state number after the last
@@ -814,7 +814,7 @@ use in a further session. This file can be given as the {\tt
 \begin{Variants}
 \item {\tt Write State \ident}\\
  Equivalent to {\tt Write State "}{\ident}{\tt .coq"}.
- The state is saved in the current directory (see \pageref{Pwd}).
+ The state is saved in the current directory (see Section~\ref{Pwd}).
 \end{Variants}
 
 \section{Quitting and debugging}
@@ -840,7 +840,7 @@ all abstract types of \Coq - section\_path, identfifiers, terms, judgements,
 \dots. You can also use the file \texttt{base\_include} instead,
 that loads only the pretty-printers for section\_paths and
 identifiers.
-% See section \ref{test-and-debug} more information on the
+% See Section~\ref{test-and-debug} more information on the
 % usage of the toplevel.
 You can return back to \Coq{} with the command: 
 
@@ -851,9 +851,9 @@ go();;
 \end{flushleft}
 
 \begin{Warnings}
-\item It only works with the bytecode version of {\Coq} (i.e. {\tt coqtop} called with option {\tt -byte}, see page \pageref{binary-images}).
+\item It only works with the bytecode version of {\Coq} (i.e. {\tt coqtop} called with option {\tt -byte}, see the contents of Section~\ref{binary-images}).
 \item You must have compiled {\Coq} from the source package and set the
-  environment variable \texttt{COQTOP} to the root of your copy of the sources (see section \ref{EnvVariables}).
+  environment variable \texttt{COQTOP} to the root of your copy of the sources (see Section~\ref{EnvVariables}).
 \end{Warnings}
 
 \subsection[\tt Time \textrm{\textsl{command}}.]{\tt Time \textrm{\textsl{command}}.\comindex{Time}
@@ -907,7 +907,7 @@ This command displays the current nesting depth used for display.
 \section{Controlling the conversion algorithm}
 
 {\Coq} comes with two algorithms to check the convertibility of types
-(see section~\ref{convertibility}). The first algorithm lazily
+(see Section~\ref{convertibility}). The first algorithm lazily
 compares applicative terms while the other is a brute-force but efficient
 algorithm that first normalizes the terms before comparing them.  The
 second algorithm is based on a bytecode representation of terms
