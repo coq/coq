@@ -26,7 +26,7 @@ open Typeops
 type inductive_error =
   | NonPos of env * constr * constr
   | NotEnoughArgs of env * constr * constr
-  | NotConstructor of env * constr * constr
+  | NotConstructor of env * identifier * constr * constr * int * int
   | NonPar of env * constr * int * constr * constr
   | SameNamesTypes of identifier
   | SameNamesConstructors of identifier

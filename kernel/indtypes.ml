@@ -39,7 +39,7 @@ let is_constructor_head t =
 type inductive_error =
   | NonPos of env * constr * constr
   | NotEnoughArgs of env * constr * constr
-  | NotConstructor of env * constr * constr
+  | NotConstructor of env * identifier * constr * constr * int * int
   | NonPar of env * constr * int * constr * constr
   | SameNamesTypes of identifier
   | SameNamesConstructors of identifier
@@ -128,7 +128,7 @@ let rec infos_and_sort env t =
 	let small = Term.is_small varj.utj_type in
 	(logic,small) :: (infos_and_sort env1 c2)
     | _ when is_constructor_head t -> []
-    | _ -> anomaly "infos_and_sort: not a positive constructor"
+    | _ -> (* don't fail if not positive, it is tested later *) []
 
 let small_unit constrsinfos =
   let issmall = List.for_all is_small constrsinfos 
@@ -290,7 +290,7 @@ exception IllFormedInd of ill_formed_ind
 
 let mind_extract_params = decompose_prod_n_assum
 
-let explain_ind_err ntyp env0 nbpar c err = 
+let explain_ind_err id ntyp env0 nbpar c nargs err = 
   let (lpar,c') = mind_extract_params nbpar c in
   let env = push_rel_context lpar env0 in
   match err with
@@ -301,7 +301,7 @@ let explain_ind_err ntyp env0 nbpar c err =
 		 (NotEnoughArgs (env,c',mkRel (kt+nbpar))))
     | LocalNotConstructor ->
 	raise (InductiveError 
-		 (NotConstructor (env,c',mkRel (ntyp+nbpar))))
+		 (NotConstructor (env,id,c',mkRel (ntyp+nbpar),nbpar,nargs)))
     | LocalNonPar (n,l) ->
 	raise (InductiveError 
 		 (NonPar (env,c',n,mkRel (nbpar-n+1), mkRel (l+nbpar))))
@@ -397,7 +397,7 @@ let array_min nmr a = if nmr = 0 then 0 else
 
 (* The recursive function that checks positivity and builds the list
    of recursive arguments *)
-let check_positivity_one (env, _,ntypes,_ as ienv) hyps i indlc =
+let check_positivity_one (env, _,ntypes,_ as ienv) hyps i nargs lcnames indlc =
   let lparams = rel_context_length hyps in
   let nmr = rel_context_nhyps hyps in
   (* check the inductive types occur positively in [c] *)
@@ -495,14 +495,14 @@ let check_positivity_one (env, _,ntypes,_ as ienv) hyps i indlc =
     in check_constr_rec ienv nmr [] c
   in
   let irecargs_nmr =
-    Array.map
-      (fun c ->
+    array_map2
+      (fun id c ->
         let _,rawc = mind_extract_params lparams c in
           try
 	    check_constructors ienv true nmr rawc
           with IllFormedInd err -> 
-	    explain_ind_err (ntypes-i) env lparams c err)
-      indlc
+	    explain_ind_err id (ntypes-i) env lparams c nargs err)
+      (Array.of_list lcnames) indlc
   in
   let irecargs = Array.map snd irecargs_nmr
   and nmr' = array_min nmr irecargs_nmr
@@ -514,11 +514,12 @@ let check_positivity env_ar params inds =
     List.rev (list_tabulate (fun j -> (Mrec j, Rtree.mk_param j)) ntypes) in
   let lparams = rel_context_length params in
   let nmr = rel_context_nhyps params in
-  let check_one i (_,_,lc,_) =
+  let check_one i (_,lcnames,lc,(sign,_)) =
     let ra_env =
       list_tabulate (fun _ -> (Norec,mk_norec)) lparams @ lra_ind in
     let ienv = (env_ar, 1+lparams, ntypes, ra_env) in
-      check_positivity_one ienv params i lc 
+    let nargs = rel_context_nhyps sign - nmr in
+    check_positivity_one ienv params i nargs lcnames lc 
   in
   let irecargs_nmr = Array.mapi check_one inds in 
   let irecargs = Array.map snd irecargs_nmr

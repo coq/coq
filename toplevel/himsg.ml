@@ -534,12 +534,24 @@ let error_ill_formed_inductive env c v =
   str "Not enough arguments applied to the " ++ pv ++
   str " in" ++ brk(1,1) ++ pc ++ str "."
 
-let error_ill_formed_constructor env c v =
-  let pc = pr_lconstr_env env c in
+let error_ill_formed_constructor env id c v nparams nargs =
   let pv = pr_lconstr_env env v in
-  str "The conclusion of" ++ brk(1,1) ++ pc ++ brk(1,1) ++
-  str "is not valid;" ++ brk(1,1) ++ str "it must be built from " ++
-  pv ++ str "."
+  let atomic = (nb_prod c = 0) in
+  str "The type of constructor" ++ brk(1,1) ++ pr_id id ++ brk(1,1) ++
+  str "is not valid;" ++ brk(1,1) ++ 
+  strbrk (if atomic then "it must be " else "its conclusion must be ") ++ 
+  pv ++ 
+  (* warning: because of implicit arguments it is difficult to say which
+     parameters must be explicitly given *)
+  (if nparams<>0 then
+    strbrk " applied to its " ++ str (plural nparams "parameter")
+  else
+    mt()) ++
+  (if nargs<>0 then
+     str (if nparams<>0 then " and" else " applied") ++
+     strbrk " to some " ++ str (plural nargs "argument")
+   else
+     mt()) ++ str "."
 
 let error_bad_ind_parameters env c n v1 v2  =
   let pc = pr_lconstr_env_at_top env c in
@@ -593,7 +605,8 @@ let error_not_mutual_in_scheme ind ind' =
 let explain_inductive_error = function
   | NonPos (env,c,v) -> error_non_strictly_positive env c v
   | NotEnoughArgs (env,c,v) -> error_ill_formed_inductive env c v
-  | NotConstructor (env,c,v) -> error_ill_formed_constructor env c v
+  | NotConstructor (env,id,c,v,n,m) ->
+      error_ill_formed_constructor env id c v n m
   | NonPar (env,c,n,v1,v2) -> error_bad_ind_parameters env c n v1 v2
   | SameNamesTypes id -> error_same_names_types id
   | SameNamesConstructors id -> error_same_names_constructors id
