@@ -1,21 +1,22 @@
 \chapter{The \gallina{} specification language
 \label{Gallina}\index{Gallina}}
+\label{BNF-syntax} % Used referred to as a chapter label
 
 This chapter describes \gallina, the specification language of {\Coq}.
 It allows to develop mathematical theories and to prove specifications
 of programs.  The theories are built from axioms, hypotheses,
 parameters, lemmas, theorems and definitions of constants, functions,
 predicates and sets. The syntax of logical objects involved in
-theories is described in section \ref{term}. The language of
+theories is described in Section~\ref{term}. The language of
 commands, called {\em The Vernacular} is described in section
 \ref{Vernacular}.
 
 In {\Coq}, logical objects are typed to ensure their logical
 correctness. The rules implemented by the typing algorithm are described in
-chapter \ref{Cic}.
+Chapter \ref{Cic}.
 
 \subsection*{About the grammars in the manual
-\label{BNF-syntax}\index{BNF metasyntax}}
+\index{BNF metasyntax}}
 
 Grammars are presented in Backus-Naur form (BNF). Terminal symbols are
 set in {\tt typewriter font}.  In addition, there are special
@@ -219,9 +220,9 @@ possible one (among all tokens defined at this moment), and so on.
 Figures \ref{term-syntax} and \ref{term-syntax-aux} describe the basic
 set of terms which form the {\em Calculus of Inductive Constructions}
 (also called \CIC). The formal presentation of {\CIC} is given in
-chapter \ref{Cic}. Extensions of this syntax are given in chapter
+Chapter \ref{Cic}. Extensions of this syntax are given in chapter
 \ref{Gallina-extension}. How to customize the syntax is described in
-chapter \ref{Addoc-syntax}.
+Chapter \ref{Addoc-syntax}.
 
 \begin{figure}[htbp]
 \begin{centerframe}
@@ -363,7 +364,7 @@ denote local {\em variables}, what qualified identifiers do not.
 
 Numerals have no definite semantics in the calculus. They are mere
 notations that can be bound to objects through the notation mechanism
-(see chapter~\ref{Addoc-syntax} for details). Initially, numerals are
+(see Chapter~\ref{Addoc-syntax} for details). Initially, numerals are
 bound to Peano's representation of natural numbers
 (see~\ref{libnats}).
 
@@ -393,7 +394,7 @@ subclass of the syntactic class {\term}.
 \index{specif@{\specif}}
 \item {\Type} is the type of {\Set} and {\Prop}
 \end{itemize}
-\noindent More on sorts can be found in section \ref{Sorts}.
+\noindent More on sorts can be found in Section~\ref{Sorts}.
 
 \bigskip
 
@@ -596,10 +597,10 @@ Definition bool_case (b:bool) : or (eq bool b true) (eq bool b false)
 \end{coq_example*}
 
 The second subcase is only relevant for annotated inductive types such
-as the equality predicate (see section~\ref{Equality}), the order
-predicate on natural numbers % (see section~\ref{le}) % undefined reference
+as the equality predicate (see Section~\ref{Equality}), the order
+predicate on natural numbers % (see Section~\ref{le}) % undefined reference
 or the type of
-lists of a given length (see section~\ref{listn}). In this configuration,
+lists of a given length (see Section~\ref{listn}). In this configuration,
 the type of each branch can depend on the type dependencies specific
 to the branch and the whole pattern-matching expression has a type
 determined by the specific dependencies in the type of the term being
@@ -1271,7 +1272,7 @@ CoInductive Stream : Set :=
 \end{coq_example}
 
 The syntax of this command is the same as the command \texttt{Inductive}
-(cf. Section~\ref{gal_Inductive_Definitions}). Notice that no
+(see Section~\ref{gal_Inductive_Definitions}). Notice that no
 principle of induction is derived from the definition of a
 co-inductive type, since such principles only make sense for inductive
 ones. For co-inductive ones, the only elimination principle is case
@@ -1517,7 +1518,7 @@ Eval compute in (tl (from 0)).
      with\\
         \mbox{}\hspace{0.1cm} $\ldots$  \\
         with {\ident$_m$}   : {\type$_m$} := {\term$_m$}}\\
-As in the \texttt{Fixpoint} command (cf. Section~\ref{Fixpoint}), it
+As in the \texttt{Fixpoint} command (see Section~\ref{Fixpoint}), it
 is possible to introduce a block of mutually dependent methods.
 \end{Variants}
 
@@ -1528,7 +1529,7 @@ is possible to introduce a block of mutually dependent methods.
 
 A statement claims a goal of which the proof is then interactively done
 using tactics. More on the proof editing mode, statements and proofs can be
-found in chapter \ref{Proof-handling}.
+found in Chapter~\ref{Proof-handling}.
 
 \subsubsection{\tt Theorem {\ident} : {\type}.
 \comindex{Theorem}
@@ -1578,7 +1579,7 @@ A proof starts by the keyword {\tt Proof}.  Then {\Coq} enters the
 proof editing mode until the proof is completed. The proof editing
 mode essentially contains tactics that are described in chapter
 \ref{Tactics}. Besides tactics, there are commands to manage the proof
-editing mode. They are described in chapter \ref{Proof-handling}. When
+editing mode. They are described in Chapter~\ref{Proof-handling}. When
 the proof is completed it should be validated and put in the
 environment using the keyword {\tt Qed}.
 \medskip

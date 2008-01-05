@@ -157,7 +157,7 @@ CoFixpoint zeros  : Stream nat := cons nat 0%N zeros.
 CoFixpoint from (n:nat) : Stream nat := cons nat n (from (S n)).
 \end{coq_example}
 
-As in the \verb!Fixpoint! command (cf. section~\ref{Fixpoint}), it is possible 
+As in the \verb!Fixpoint! command (see Section~\ref{Fixpoint}), it is possible 
 to introduce a block of mutually dependent methods. The general syntax
 for this case is :
 

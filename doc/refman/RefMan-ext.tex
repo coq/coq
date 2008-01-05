@@ -9,7 +9,7 @@ the Gallina's syntax.
 
 The \verb+Record+ construction is a macro allowing the definition of
 records as is done in many programming languages.  Its syntax is
-described on figure \ref{record-syntax}.  In fact, the \verb+Record+
+described on Figure~\ref{record-syntax}.  In fact, the \verb+Record+
 macro is more general than the usual record types, since it allows
 also for ``manifest'' expressions. In this sense, the \verb+Record+
 construction allows to define ``signatures''.
@@ -231,7 +231,7 @@ construction defined using the extended {\tt match} is generally
 printed under its expanded form (see~\texttt{Set Printing Matching} in
 section~\ref{SetPrintingMatching}).
 
-\SeeAlso chapter \ref{Mult-match-full}.
+\SeeAlso Chapter~\ref{Mult-match-full}.
 
 \subsection{Pattern-matching on boolean values: the {\tt if} expression
 \label{if-then-else}
@@ -283,7 +283,7 @@ Check (fun x (H:{x=0}+{x<>0}) =>
 \end{coq_example}
 
 Notice that the printing uses the {\tt if} syntax because {\tt sumbool} is
-declared as such (see section \ref{printing-options}).
+declared as such (see Section~\ref{printing-options}).
 
 \subsection{Irrefutable patterns: the destructuring {\tt let}
 \index{let in@{\tt let ... in}}
@@ -521,7 +521,7 @@ Print fst.
 % Fix} implementing a combinator for primitive recursion equivalent to
 % the {\tt Match} construction of \Coq\ V5.8. It is provided only for
 % sake of compatibility with \Coq\ V5.8. It is recommended to avoid it.
-% (see section~\ref{Matchexpr}).
+% (see Section~\ref{Matchexpr}).
 
 % There is also a notation \texttt{Case} that is the
 % ancestor of \texttt{match}. Again, it is still in the code for
@@ -542,7 +542,7 @@ Print fst.
 %% It forces the first term to be of type the second term. The
 %% type must be compatible with
 %% the term. More precisely it must be either a type convertible to
-%% the automatically inferred type (see chapter \ref{Cic}) or a type
+%% the automatically inferred type (see Chapter~\ref{Cic}) or a type
 %% coercible to it, (see \ref{Coercions}). When the type of a
 %% whole expression is forced, it is usually not necessary to give the types of
 %% the variables involved in the term.
@@ -581,9 +581,9 @@ The {\tt Function} construction enjoys also the {\tt with} extension
 to define mutually recursive definitions. However, this feature does
 not work for non structural recursive functions. % VRAI??
 
-See the documentation of {\tt functional induction} (section
-\ref{FunInduction}) and {\tt Functional Scheme} (section
-\ref{FunScheme} and \ref{FunScheme-examples}) for how to use the 
+See the documentation of {\tt functional induction}
+(see Section~\ref{FunInduction}) and {\tt Functional Scheme}
+(see Section~\ref{FunScheme} and \ref{FunScheme-examples}) for how to use the
 induction principle to easily reason about the function.
 
 \noindent {\bf Remark: } To obtain the right principle, it is better
@@ -803,7 +803,7 @@ inside section {\tt s1} and outside.
 \item Most commands, like {\tt Hint}, {\tt Notation}, option management, ...
 which appear inside a section are cancelled when the
 section is closed.
-% cf section \ref{LongNames}
+% see Section~\ref{LongNames}
 %\item Usually all identifiers must be distinct. 
 %However, a name already used in a closed section (see \ref{Section})
 %can be reused. In this case, the old name is no longer accessible.
@@ -1234,7 +1234,7 @@ Conversely, to restore the hidding of implicit arguments, use command
 {\tt Unset Printing Implicit.}
 \end{quote}
 
-\SeeAlso {\tt Set Printing All} in section \ref{SetPrintingAll}.
+\SeeAlso {\tt Set Printing All} in Section~\ref{SetPrintingAll}.
 
 \subsection{Interaction with subtyping}
 
@@ -1377,14 +1377,14 @@ which declares the construction denoted by {\qualid} as a
 coercion between {\class$_1$} and {\class$_2$}.
 
 More details and examples, and a description of the commands related
-to coercions are provided in chapter \ref{Coercions-full}.
+to coercions are provided in Chapter~\ref{Coercions-full}.
 
 \section[Printing constructions in full]{Printing constructions in full\label{SetPrintingAll}
 \comindex{Set Printing All}
 \comindex{Unset Printing All}}
 
 Coercions, implicit arguments, the type of pattern-matching, but also
-notations (see chapter \ref{Addoc-syntax}) can obfuscate the behavior
+notations (see Chapter~\ref{Addoc-syntax}) can obfuscate the behavior
 of some tactics (typically the tactics applying to occurrences of
 subterms are sensitive to the implicit arguments). The command
 \begin{quote}
@@ -1411,7 +1411,7 @@ The following command:
 {\tt Set Printing Universes}
 \end{quote}
 activates the display of the actual level of each occurrence of
-{\Type}. See section~\ref{Sorts} for details.  This wizard option, in
+{\Type}. See Section~\ref{Sorts} for details.  This wizard option, in
 combination with \texttt{Set Printing All} (see
 section~\ref{SetPrintingAll}) can help to diagnose failures to unify
 terms apparently identical but internally different in the Calculus of
@@ -1424,7 +1424,7 @@ of the occurrences of {\Type}, use
 \comindex{Print Universes}
 
 The constraints on the internal level of the occurrences of {\Type}
-(see section~\ref{Sorts}) can be printed using the command
+(see Section~\ref{Sorts}) can be printed using the command
 \begin{quote}
 {\tt Print Universes.}
 \end{quote}

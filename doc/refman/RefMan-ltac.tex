@@ -27,13 +27,13 @@ problems.
 \def\cpattern{\nterm{cpattern}}
 
 The syntax of the tactic language is given Figures~\ref{ltac}
-and~\ref{ltac_aux}. See page~\pageref{BNF-syntax} for a description of
+and~\ref{ltac_aux}. See Chapter~\ref{BNF-syntax} for a description of
 the BNF metasyntax used in these grammar rules. Various already defined
 entries will be used in this chapter: entries {\naturalnumber},
 {\integer}, {\ident}, {\qualid}, {\term}, {\cpattern} and {\atomictac}
 represent respectively the natural and integer numbers, the authorized
 identificators and qualified names, {\Coq}'s terms and patterns and
-all the atomic tactics described in chapter~\ref{Tactics}. The syntax
+all the atomic tactics described in Chapter~\ref{Tactics}. The syntax
 of {\cpattern} is the same as that of terms, but there can be specific
 variables like {\tt ?id} where {\tt id} is a {\ident} or {\tt \_},
 which are metavariables for pattern matching. {\tt ?id} allows us to
@@ -48,6 +48,14 @@ Figure~\ref{ltactop}.
 \begin{Remarks}
 \item The infix tacticals ``\dots\ {\tt ||} \dots'' and ``\dots\ {\tt
     ;} \dots'' are associative. 
+
+\item In {\tacarg}, there is an overlap between {\qualid} as a
+direct tactic argument and {\qualid} as a particular case of
+{\term}. The resolution is done by first looking for a reference of
+the tactic language and if it fails, for a reference to a term. To
+force the resolution as a reference of the tactic language, use the
+form {\tt ltac :} {\qualid}. To force the resolution as a reference to
+a term, use the syntax {\tt ({\qualid})}.
 
 \item As shown by the figure, tactical {\tt ||} binds more than the
 prefix tacticals {\tt try}, {\tt repeat}, {\tt do}, {\tt info} and
@@ -511,7 +519,7 @@ If the evaluation of the right-hand-side of a valid match fails, the
 next matching subterm is tried. If no further subterm matches, the
 next clause is tried. Matching subterms are considered top-bottom and
 from left to right (with respect to the raw printing obtained by
-setting option {\tt Printing All}, see section~\ref{SetPrintingAll}).
+setting option {\tt Printing All}, see Section~\ref{SetPrintingAll}).
 
 \begin{coq_example}
 Ltac f x :=

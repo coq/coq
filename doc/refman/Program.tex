@@ -14,7 +14,7 @@
 We present here the new \Program\ tactic commands, used to build certified
 \Coq\ programs, elaborating them from their algorithmic skeleton and a
 rich specification \cite{Sozeau06}. It can be sought of as a dual of extraction
-(chapter \ref{Extraction}). The goal of \Program~is to program as in a regular
+(see Chapter~\ref{Extraction}). The goal of \Program~is to program as in a regular
 functional programming language whilst using as rich a specification as 
 desired and proving that the code meets the specification using the whole \Coq{} proof
 apparatus. This is done using a technique originating from the
@@ -44,7 +44,7 @@ generate an obligation for every such coercion. In the other direction,
 
 Another distinction is the treatment of pattern-matching. Apart from the
 following differences, it is equivalent to the standard {\tt match}
-operation (section \ref{Caseexpr}).
+operation (see Section~\ref{Caseexpr}).
 \begin{itemize}
 \item Generation of equalities. A {\tt match} expression is always
   generalized by the corresponding equality. As an example,
@@ -82,7 +82,7 @@ fall back directly to \Coq's usual typing of dependent pattern-matching.
 
 
 The next two commands are similar to their standard counterparts
-Definition (section \ref{Simpl-definitions}) and Fixpoint (section \ref{Fixpoint}) in that
+Definition (see Section~\ref{Simpl-definitions}) and Fixpoint (see Section~\ref{Fixpoint}) in that
 they define constants. However, they may require the user to prove some
 goals to construct the final definitions.
 
@@ -129,7 +129,7 @@ obligations. Once solved using the commands shown below, it binds the final
   \label{ProgramFixpoint}}
 
 The structural fixpoint operator behaves just like the one of Coq
-(section \ref{Fixpoint}), except it may also generate obligations.
+(see Section~\ref{Fixpoint}), except it may also generate obligations.
 It works with mutually recursive definitions too.
 
 \begin{coq_example}
