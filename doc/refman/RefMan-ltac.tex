@@ -59,6 +59,14 @@ Figure~\ref{ltactop}.
 \item The infix tacticals ``\dots\ {\tt ||} \dots'' and ``\dots\ {\tt
     ;} \dots'' are associative. 
 
+\item In {\tacarg}, there is an overlap between {\qualid} as a
+direct tactic argument and {\qualid} as a particular case of
+{\term}. The resolution is done by first looking for a reference of
+the tactic language and if it fails, for a reference to a term. To
+force the resolution as a reference of the tactic language, use the
+form {\tt ltac :} {\qualid}. To force the resolution as a reference to
+a term, use the syntax {\tt ({\qualid})}.
+
 \item As shown by the figure, tactical {\tt ||} binds more than the
 prefix tacticals {\tt try}, {\tt repeat}, {\tt do}, {\tt info} and
 {\tt abstract} which themselves bind more than the postfix tactical
