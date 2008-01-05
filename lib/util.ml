@@ -34,6 +34,9 @@ let anomaly_loc (loc,s,strm) = Stdpp.raise_with_loc loc (Anomaly (s,strm))
 let user_err_loc (loc,s,strm) = Stdpp.raise_with_loc loc (UserError (s,strm))
 let invalid_arg_loc (loc,s) = Stdpp.raise_with_loc loc (Invalid_argument s)
 
+let located_fold_left f x (_,a) = f x a 
+let located_iter2 f (_,a) (_,b) = f a b
+
 (* Like Exc_located, but specifies the outermost file read, the filename
    associated to the location of the error, and the error itself. *)
 

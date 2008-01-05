@@ -120,7 +120,7 @@ type constr_expr =
         (constr_expr * explicitation located option) list
   | CCases of loc * constr_expr option *
       (constr_expr * (name option * constr_expr option)) list *
-      (loc * cases_pattern_expr list list * constr_expr) list
+      (loc * cases_pattern_expr list located list * constr_expr) list
   | CLetTuple of loc * name list * (name option * constr_expr option) *
       constr_expr * constr_expr
   | CIf of loc * constr_expr * (name option * constr_expr option)

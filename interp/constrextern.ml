@@ -198,7 +198,7 @@ let rec check_same_type ty1 ty2 =
   | CCases(_,_,a1,brl1), CCases(_,_,a2,brl2) ->
       List.iter2 (fun (tm1,_) (tm2,_) -> check_same_type tm1 tm2) a1 a2;
       List.iter2 (fun (_,pl1,r1) (_,pl2,r2) ->
-        List.iter2 (List.iter2 check_same_pattern) pl1 pl2;
+        List.iter2 (located_iter2 (List.iter2 check_same_pattern)) pl1 pl2;
         check_same_type r1 r2) brl1 brl2
   | CHole _, CHole _ -> ()
   | CPatVar(_,i1), CPatVar(_,i2) when i1=i2 -> ()
@@ -817,7 +817,7 @@ and extern_local_binder scopes vars = function
              LocalRawAssum([(dummy_loc,na)],Default bk,ty) :: l))
 
 and extern_eqn inctx scopes vars (loc,ids,pl,c) =
-  (loc,[List.map (extern_cases_pattern_in_scope scopes vars) pl],
+  (loc,[loc,List.map (extern_cases_pattern_in_scope scopes vars) pl],
    extern inctx scopes vars c)
 
 and extern_symbol (tmp_scope,scopes as allscopes) vars t = function

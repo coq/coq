@@ -203,8 +203,9 @@ GEXTEND Gram
           CLetTuple (loc,List.map snd lb,po,c1,c2)
       | "dest"; c1 = operconstr LEVEL "200"; "as"; p=pattern;
           "in"; c2 = operconstr LEVEL "200" ->
+	 let loc' = cases_pattern_expr_loc p in
          CCases (loc, None, [(c1, (None, None))],
-                 [loc, [[p]], c2])
+                 [loc, [loc',[p]], c2])
       | "if"; c=operconstr LEVEL "200"; po = return_type;
 	"then"; b1=operconstr LEVEL "200";
         "else"; b2=operconstr LEVEL "200" ->
@@ -274,8 +275,11 @@ GEXTEND Gram
   branches:
     [ [ OPT"|"; br=LIST0 eqn SEP "|" -> br ] ]
   ;
+  mult_pattern:
+    [ [ pl = LIST1 pattern LEVEL "99" SEP "," -> (loc,pl) ] ]
+  ;
   eqn:
-    [ [ pll = LIST1 LIST1 pattern LEVEL "99" SEP "," SEP "|"; 
+    [ [ pll = LIST1 mult_pattern SEP "|";
         "=>"; rhs = lconstr -> (loc,pll,rhs) ] ]
   ;
   pattern:

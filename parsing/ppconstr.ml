@@ -197,6 +197,7 @@ let rec pr_patt sep inh p =
 let pr_patt = pr_patt mt
 
 let pr_eqn pr (loc,pl,rhs) =
+  let pl = List.map snd pl in
   spc() ++ hov 4
     (pr_with_comments loc
       (str "| " ++

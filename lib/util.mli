@@ -43,6 +43,8 @@ val anomaly_loc : loc * string * std_ppcmds -> 'a
 val user_err_loc : loc * string * std_ppcmds -> 'a
 val invalid_arg_loc : loc * string -> 'a
 val join_loc : loc -> loc -> loc
+val located_fold_left : ('a -> 'b -> 'a) -> 'a -> 'b located -> 'a
+val located_iter2 : ('a -> 'b -> unit) -> 'a located -> 'b located -> unit
 
 (* Like [Exc_located], but specifies the outermost file read, the
    input buffer associated to the location of the error (or the module name

@@ -560,7 +560,7 @@ type constr_expr =
       (constr_expr * explicitation located option) list
   | CCases of loc * constr_expr option *
       (constr_expr * (name option * constr_expr option)) list *
-      (loc * cases_pattern_expr list list * constr_expr) list
+      (loc * cases_pattern_expr list located list * constr_expr) list
   | CLetTuple of loc * name list * (name option * constr_expr option) *
       constr_expr * constr_expr
   | CIf of loc * constr_expr * (name option * constr_expr option)
@@ -688,7 +688,9 @@ let rec cases_pattern_fold_names f a = function
   | CPatPrim _ | CPatAtom _ -> a
 
 let ids_of_pattern_list =
-  List.fold_left (List.fold_left (cases_pattern_fold_names Idset.add))
+  List.fold_left
+    (located_fold_left 
+      (List.fold_left (cases_pattern_fold_names Idset.add)))
     Idset.empty
 
 let rec fold_constr_expr_binders g f n acc b = function

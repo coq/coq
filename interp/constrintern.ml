@@ -368,8 +368,7 @@ let rec has_duplicate = function
   | x::l -> if List.mem x l then (Some x) else has_duplicate l
 
 let loc_of_lhs lhs = 
- join_loc (cases_pattern_expr_loc (List.hd (List.hd lhs)))
-          (cases_pattern_expr_loc (list_last (list_last lhs)))
+ join_loc (fst (List.hd lhs)) (fst (list_last lhs))
 
 let check_linearity lhs ids =
   match has_duplicate ids with
@@ -960,15 +959,16 @@ let internalise sigma globalenv env allow_patvar lvar c =
          (na,Explicit,Some(intern env def),RHole(loc,Evd.BinderType na))::bl)
 
   (* Expands a multiple pattern into a disjunction of multiple patterns *)
-  and intern_multiple_pattern scopes pl =
+  and intern_multiple_pattern scopes n (loc,pl) =
     let idsl_pll = 
       List.map (intern_cases_pattern globalenv scopes ([],[]) None) pl in
+    check_number_of_pattern loc n pl;
     product_of_cases_patterns [] idsl_pll
 
   (* Expands a disjunction of multiple pattern *)
-  and intern_disjunctive_multiple_pattern scopes loc mpl =
+  and intern_disjunctive_multiple_pattern scopes loc n mpl =
     assert (mpl <> []);
-    let mpl' = List.map (intern_multiple_pattern scopes) mpl in
+    let mpl' = List.map (intern_multiple_pattern scopes n) mpl in
     let (idsl,mpl') = List.split mpl' in
     let ids = List.hd idsl in
     check_or_pat_variables loc ids (List.tl idsl);
@@ -976,10 +976,9 @@ let internalise sigma globalenv env allow_patvar lvar c =
 
   (* Expands a pattern-matching clause [lhs => rhs] *)
   and intern_eqn n (ids,tmp_scope,scopes) (loc,lhs,rhs) =
-    let eqn_ids,pll = intern_disjunctive_multiple_pattern scopes loc lhs in
+    let eqn_ids,pll = intern_disjunctive_multiple_pattern scopes loc n lhs in
     (* Linearity implies the order in ids is irrelevant *)
     check_linearity lhs eqn_ids;
-    check_number_of_pattern loc n (snd (List.hd pll));
     let env_ids = List.fold_right Idset.add eqn_ids ids in
     List.map (fun (subst,pl) ->
       let rhs = replace_vars_constr_expr subst rhs in
