@@ -115,3 +115,17 @@ There are three configuration files located in your $(HOME) dir.
   to change the default shortcuts for the menus.
 
 Read ide/FAQ for more informations.
+
+
+TROUBLESHOOTING
+
+  - Problem with automatic templates
+
+    Some users may experiment problems with unwanted automatic
+    templates while using Coqide. This is due to a change in the
+    modifiers keys available through GTK. The straightest way to get
+    rid of the problem is to edit by hand your .coqiderc (either
+    /home/<user>/.coqiderc under Linux, or 
+    C:\Documents and Settings\<user>\.coqiderc under Windows) 
+    and replace any occurence of MOD4 by MOD1.
+
