@@ -436,7 +436,7 @@ END
 
 (* Extensions: implicits, coercions, etc. *)   
 GEXTEND Gram
-  GLOBAL: gallina_ext typeclass_param;
+  GLOBAL: gallina_ext;
 
   gallina_ext:
     [ [ (* Transparent and Opaque *)
@@ -472,9 +472,15 @@ GEXTEND Gram
          t = class_rawexpr ->
 	  VernacCoercion (Global, qid, s, t)
 
+      (* Type classes, new syntax without artificial sup. *)
+      | IDENT "Class"; qid = identref; pars = binders_let;
+	 s = [ ":"; c = sort -> loc, c | -> (loc,Rawterm.RType None) ];
+	 props = typeclass_field_types ->
+	   VernacClass (qid, pars, s, [], props)
+
       (* Type classes *)
-      | IDENT "Class"; sup = OPT [ l = typeclass_context; "=>" -> l ];
-	 qid = identref; pars = LIST0 typeclass_param_type;
+      | IDENT "Class"; sup = OPT [ l = binders_let; "=>" -> l ];
+	 qid = identref; pars = binders_let;
 	 s = [ ":"; c = sort -> loc, c | -> (loc,Rawterm.RType None) ];
 	 props = typeclass_field_types ->
 	   VernacClass (qid, pars, s, (match sup with None -> [] | Some l -> l), props)
@@ -517,10 +523,10 @@ GEXTEND Gram
     | "["; "!"; id = ident; "]" -> (id,true,true) 
     | "["; id = ident; "]" -> (id,true, false) ] ]
   ;
-  typeclass_param_type:
-    [ [ "(" ; id = identref; ":"; t = lconstr ; ")" -> id, t 
-    | id = identref -> id, CHole loc ] ]
-  ;
+(*   typeclass_param_type: *)
+(*     [ [ "(" ; id = identref; ":"; t = lconstr ; ")" -> id, t  *)
+(*     | id = identref -> id, CHole loc ] ] *)
+(*   ; *)
   typeclass_field_type:
     [ [ id = identref; ":"; t = lconstr -> id, t ] ]
   ;

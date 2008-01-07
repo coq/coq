@@ -25,6 +25,7 @@ open Typeclasses_errors
 open Termops
 open Decl_kinds
 open Entries
+open Util
 
 module SPretyping = Subtac_pretyping.Pretyping
 
@@ -78,11 +79,27 @@ let type_ctx_instance isevars env ctx inst subst =
 	(na, c) :: subst, d :: instctx)
     (subst, []) (List.rev ctx) inst
 
+let type_class_instance_params isevars env id n ctx inst subst =
+  List.fold_left2
+    (fun (subst, instctx) (na, _, t) ce ->
+      let t' = replace_vars subst t in
+      let c = 
+(* 	if ce = CHole (dummy_loc) then *)
+(* 	  (\* Control over the evars which are direct superclasses to avoid partial instanciations *)
+(* 	     in instance search. *\) *)
+(* 	  Evarutil.e_new_evar isevars env ~src:(dummy_loc, ImplicitArg (VarRef id, (n, Some na))) t' *)
+(* 	else *)
+	  interp_casted_constr_evars isevars env ce t' 
+      in
+      let d = na, Some c, t' in
+	(na, c) :: subst, d :: instctx)
+    (subst, []) (List.rev ctx) inst
+
 let substitution_of_constrs ctx cstrs =
   List.fold_right2 (fun c (na, _, _) acc -> (na, c) :: acc) cstrs ctx []
 
-let new_instance sup  (instid, bk, cl) props =
-  let id, par = Implicit_quantifiers.destClassApp cl in
+let new_instance sup (instid, bk, cl) props =
+  let id, par = Implicit_quantifiers.destClassAppExpl cl in
   let env = Global.env() in
   let isevars = ref (Evd.create_evar_defs Evd.empty) in
   let avoid = Termops.ids_of_context env in
@@ -97,7 +114,7 @@ let new_instance sup  (instid, bk, cl) props =
       let g l = not (List.exists (fun ((_, y), _, _) -> y = Name x) l) in
 	f gen_ctx && g sup
     in
-    let parbinders = Implicit_quantifiers.compute_constrs_freevars_binders (vars_of_env env) par in
+    let parbinders = Implicit_quantifiers.compute_constrs_freevars_binders (vars_of_env env) (List.map fst par) in
     let parbinders' = List.filter is_free parbinders in
       gen_ctx @ parbinders'
   in
@@ -105,27 +122,34 @@ let new_instance sup  (instid, bk, cl) props =
   let env', avoid, supctx = interp_typeclass_context_evars isevars env' avoid sup in
 
   let subst =
+    let cl_context = List.map snd k.cl_context in
     match bk with
       | Explicit ->
-	  if List.length par <> List.length k.cl_context + List.length k.cl_params then 
-	    Classes.mismatched_params env par (k.cl_params @ k.cl_context);
-	  let len = List.length k.cl_context in
-	  let ctx, par = Util.list_chop len par in
-	  let subst, _ = type_ctx_instance isevars env' k.cl_context ctx [] in
-	  let subst = Typeclasses.substitution_of_named_context isevars env' k.cl_name len subst 
-	    k.cl_super
-	  in
-	  let subst, par = type_ctx_instance isevars env' k.cl_params par subst in subst
+	  let applen = List.fold_left (fun acc (x, y) -> if y = None then succ acc else acc) 0 par in
+	  let needlen = List.fold_left (fun acc (x, y) -> if x = None then succ acc else acc) 0 k.cl_context in
+	    if needlen <> applen then 
+	      Classes.mismatched_params env (List.map fst par) cl_context;
+	    let pars, _ = Implicit_quantifiers.combine_params Idset.empty (* need no avoid *)
+	      (fun avoid (clname, (id, _, t)) -> 
+		match clname with 
+		    Some _ -> CHole (Util.dummy_loc), avoid
+		  | None -> failwith ("new instance: under-applied typeclass"))
+	      par (List.rev k.cl_context)
+	    in
+	    let subst, _ = type_class_instance_params isevars env' (snd id) 0 cl_context pars [] in
+	      subst
 
       | Implicit ->
-	  let t' = interp_type_evars isevars env' (Topconstr.mkAppC (CRef (Ident id), par)) in
+	  let t' = interp_type_evars isevars env' (Topconstr.CApp (Util.dummy_loc, (None, CRef (Ident id)), par)) in
 	    match kind_of_term t' with 
 		App (c, args) -> 
-		  substitution_of_constrs (k.cl_params @ k.cl_super @ k.cl_context) 
+		  substitution_of_constrs cl_context
 		    (List.rev (Array.to_list args))
 	      | _ -> assert false
   in
   isevars := Evarutil.nf_evar_defs !isevars;
+  let sigma = Evd.evars_of !isevars in
+  isevars := resolve_typeclasses ~check:false env sigma !isevars;
   let sigma = Evd.evars_of !isevars in
   let substctx = Typeclasses.nf_substitution sigma subst in
   let subst, _propsctx = 

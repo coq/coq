@@ -29,13 +29,19 @@ type rels = constr list
 
 (* This module defines type-classes *)
 type typeclass = {
-  cl_name : identifier; (* Name of the class *)
-  cl_context : named_context; (* Context in which superclasses and params are typed (usually types) *)
-  cl_super : named_context; (* Superclasses applied to some of the params *)
-  cl_params : named_context; (* Context of the parameters (usually types) *)
-(*   cl_defs : named_context; (\* Context of the definitions (usually functions), which may be shared *\) *)
-  cl_props : named_context; (* Context of the properties on defs, in Prop, will not be shared *)
-  cl_impl : inductive; (* The class implementation: a record parameterized by params and defs *)
+  (* Name of the class. FIXME: should not necessarily be globally unique. *)
+  cl_name : identifier;
+
+  (* Context in which the definitions are typed. Includes both typeclass parameters and superclasses. *)
+  cl_context : (identifier option * named_declaration) list; 
+
+  cl_params: int;
+
+  (* Context of definitions and properties on defs, will not be shared *)
+  cl_props : named_context;
+
+  (* The class implementation: a record parameterized by the context with defs in it. *)
+  cl_impl : inductive; 
 }
 
 type typeclasses = (identifier, typeclass) Gmap.t
@@ -118,11 +124,14 @@ let subst (_,subst,(cl,m,inst)) =
       (na, Option.smartmap do_subst b, do_subst t))
       ctx
   in
+  let do_subst_ctx ctx = 
+    List.map (fun (cl, (na, b, t)) ->
+      (cl, (na, Option.smartmap do_subst b, do_subst t)))
+      ctx
+  in
   let subst_class cl = 
     let cl' = { cl with cl_impl = do_subst_ind cl.cl_impl;
-		cl_context = do_subst_named cl.cl_context;
-		cl_super = do_subst_named cl.cl_super;
-		cl_params = do_subst_named cl.cl_params;
+		cl_context = do_subst_ctx cl.cl_context;
 		cl_props = do_subst_named cl.cl_props; }
     in if cl' = cl then cl else cl'
   in

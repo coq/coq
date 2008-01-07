@@ -165,7 +165,6 @@ module Constr :
     val binder_let : local_binder Gram.Entry.e
     val binders_let : local_binder list Gram.Entry.e
     val typeclass_constraint : (name located * binding_kind * constr_expr) Gram.Entry.e
-    val typeclass_param : constr_expr Gram.Entry.e
   end
 
 module Module : 

@@ -112,16 +112,17 @@ let resolve_morphism env sigma direction oldt m args args' =
 	try 
 	  List.iter (fun ((cl, proj), n) ->
 	    evars := Evd.create_evar_defs Evd.empty;
-	    let ctxevs = substitution_of_named_context evars env cl.cl_name 0 [] cl.cl_context in
+	    let cl_param, cl_context = match cl.cl_context with hd :: tl -> hd, tl | [] -> assert false in
+	    let ctxevs = substitution_of_named_context evars env cl.cl_name 0 [] (List.map snd cl_context) in
 	    let len = List.length ctxevs in
-	    let superevs = substitution_of_named_context evars env cl.cl_name len ctxevs cl.cl_super in
+(* 	    let superevs = substitution_of_named_context evars env cl.cl_name len ctxevs cl.cl_super in *)
 	    let morphargs, morphobjs = array_chop (Array.length args - n) args in
 	    let morphargs', morphobjs' = array_chop (Array.length args - n) args' in
-	    let args = List.rev_map (fun (_, c) -> c) superevs in
+	    let args = List.rev_map (fun (_, c) -> c) ctxevs in
 	    let appm = mkApp(m, morphargs) in
 	    let appmtype = Typing.type_of env sigma appm in
 	    let app = applistc (mkInd cl.cl_impl) (args @ [appm]) in
-	    let mtype = replace_vars superevs (pi3 (List.hd cl.cl_params)) in
+	    let mtype = replace_vars ctxevs (pi3 (snd cl_param)) in
 	      try 
 		evars := Unification.w_unify true env CONV ~mod_delta:true appmtype mtype !evars;
 		evars := Evarutil.nf_evar_defs !evars;

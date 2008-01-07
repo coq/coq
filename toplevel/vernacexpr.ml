@@ -227,9 +227,9 @@ type vernac_expr =
   (* Type classes *)
   | VernacClass of
       lident * (* name *)
-	(lident * constr_expr) list * (* params *)
+	local_binder list * (* params *)
 	sort_expr located * (* arity *)
-	typeclass_context * (* super *)
+	local_binder list * (* constraints *)
 	(lident * constr_expr) list (* props *)
 	
   | VernacInstance of

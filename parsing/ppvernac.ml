@@ -696,7 +696,8 @@ let rec pr_vernac = function
   | VernacClass (id, par, ar, sup, props) ->
       hov 1 (
 	str"Class" ++ spc () ++ pr_lident id ++
-	  prlist_with_sep (spc) (pr_lident_constr (spc() ++ str ":" ++ spc())) par ++ 
+(* 	  prlist_with_sep (spc) (pr_lident_constr (spc() ++ str ":" ++ spc())) par ++  *)
+	  pr_and_type_binders_arg par ++
 	  spc () ++ str":" ++ spc() ++ pr_rawsort (snd ar) ++
 	  spc () ++ str"where" ++ spc () ++
 	  prlist_with_sep (fun () -> str";" ++ spc()) (pr_lident_constr (spc () ++ str":" ++ spc())) props )

@@ -209,7 +209,7 @@ Class [ sa : Setoid a eqa, sb : Setoid b eqb, sc : Setoid c eqc, sd : Setoid d e
 Program Instance iff_setoid : Setoid Prop iff :=
   equiv_prf := @Build_equivalence _ _ iff_refl iff_trans iff_sym.
 
-Program Instance not_morphism : Morphism Prop iff Prop iff not.
+(* Program Instance not_morphism : Morphism Prop iff Prop iff not. *)
 
 Program Instance and_morphism : ? BinaryMorphism iff_setoid iff_setoid iff_setoid and.
 

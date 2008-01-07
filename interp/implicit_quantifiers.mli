@@ -24,6 +24,7 @@ open Typeclasses
 (*i*)
 
 val destClassApp : constr_expr -> identifier located * constr_expr list
+val destClassAppExpl : constr_expr -> identifier located * (constr_expr * explicitation located option) list
 
 val free_vars_of_constr_expr :     Topconstr.constr_expr ->
     ?bound:Idset.t ->
@@ -48,6 +49,13 @@ val implicits_of_rawterm : Rawterm.rawconstr -> (Topconstr.explicitation * (bool
 val nf_named_context : evar_map -> named_context -> named_context
 val nf_rel_context : evar_map -> rel_context -> rel_context
 val nf_env : evar_map -> env -> env
+
+val combine_params : Names.Idset.t ->
+  (Names.Idset.t -> Names.identifier option * (Names.identifier * Term.constr option * Term.types) ->
+    Topconstr.constr_expr * Names.Idset.t) ->
+  (Topconstr.constr_expr * Topconstr.explicitation located option) list ->
+  (Names.identifier option * Term.named_declaration) list ->
+  Topconstr.constr_expr list * Names.Idset.t
 
 
 val ids_of_named_context_avoiding :     Names.Idset.t ->

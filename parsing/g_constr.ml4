@@ -102,7 +102,7 @@ let lpar_id_coloneq =
 GEXTEND Gram
   GLOBAL: binder_constr lconstr constr operconstr sort global
   constr_pattern lconstr_pattern Constr.ident
-  binder binder_let binders_let typeclass_constraint typeclass_param pattern;
+  binder binder_let binders_let typeclass_constraint pattern;
   Constr.ident:
     [ [ id = Prim.ident -> id
 
@@ -359,11 +359,11 @@ GEXTEND Gram
   ;
   typeclass_constraint:
     [ [ id=identref ; cl = LIST1 typeclass_param -> 
-      (loc, Anonymous), Explicit, mkAppC (mkIdentC (snd id), cl)
+      (loc, Anonymous), Explicit, CApp (loc, (None, mkIdentC (snd id)), cl)
     | "?" ; id=identref ; cl = LIST1 typeclass_param -> 
-	(loc, Anonymous), Implicit, mkAppC (mkIdentC (snd id), cl)
+	(loc, Anonymous), Implicit, CApp (loc, (None, mkIdentC (snd id)), cl)
     | iid=identref ; ":" ; id=typeclass_name ; cl = LIST1 typeclass_param -> 
-	(fst iid, Name (snd iid)), (fst id), mkAppC (mkIdentC (snd (snd id)), cl)
+	(fst iid, Name (snd iid)), (fst id), CApp (loc, (None, mkIdentC (snd (snd id))), cl)
     ] ]
   ;
   typeclass_name:
@@ -371,10 +371,14 @@ GEXTEND Gram
     | "?"; id = identref -> (Implicit, id)
     ] ]
   ;
+
   typeclass_param: 
-    [ [ id = identref -> CRef (Libnames.Ident id)
-    | c = sort -> CSort (loc, c)
-    | "("; c = lconstr; ")" -> c ] ]
+    [ [ id = identref -> CRef (Libnames.Ident id), None
+    | c = sort -> CSort (loc, c), None
+    | id = lpar_id_coloneq; c=lconstr; ")" ->
+	(c,Some (loc,ExplByName id))
+    | c=operconstr LEVEL "9" -> c, None
+    ] ]
   ;
   type_cstr:
     [ [ c=OPT [":"; c=lconstr -> c] -> (loc,c) ] ]

@@ -94,18 +94,35 @@ let ids_of_named_context_avoiding avoid l =
     let id' = next_ident_away_from id avoid in id' :: ids, Idset.add id' avoid) 
     ([], avoid) (Termops.ids_of_named_context l)
     
-let combine_params avoid applied needed =
+let combine_params avoid fn applied needed =
   let rec aux ids avoid app need =
     match app, need with
 	[], need -> 
-	  let need', avoid = ids_of_named_context_avoiding avoid (List.map snd need) in
-	    List.rev ids @ (List.rev_map mkIdentC need'), avoid
-      | _, (true, (id, _, _)) :: need -> 
-	  let id' = next_ident_away_from id avoid in
-	    aux (CRef (Ident (dummy_loc, id')) :: ids) (Idset.add id' avoid) app need
-      | x :: app, (false, _) :: need -> aux (x :: ids) avoid app need    
+	  let need', avoid = 
+	    List.fold_left (fun (terms, avoid) decl -> 
+	      let t', avoid = fn avoid decl in
+		(t' :: terms, avoid))
+	      ([], avoid) need
+	  in List.rev ids @ (List.rev need'), avoid
+
+      | (x, Some (loc, ExplByName id')) :: app, (Some _, (id, _, _)) :: need when id' = id -> 
+	  aux (x :: ids) avoid app need
+
+      | _, (Some cl, (id, _, _) as d) :: need -> 
+	  let t', avoid' = fn avoid d in
+	    aux (t' :: ids) avoid' app need
+
+      | x :: app, (None, _) :: need -> aux (fst x :: ids) avoid app need    
+
       | _ :: _, [] -> failwith "combine_params: overly applied typeclass"
   in aux [] avoid applied needed
+
+let combine_params_freevar avoid applied needed =
+  combine_params avoid
+    (fun avoid (_, (id, _, _)) -> 
+      let id' = next_ident_away_from id avoid in
+	(CRef (Ident (dummy_loc, id')), Idset.add id' avoid))
+    applied needed
 
 let compute_context_vars env l =
   List.fold_left (fun avoid (iid, _, c) -> 
@@ -117,6 +134,11 @@ let destClassApp cl =
     | CApp (loc, (None,CRef (Ident f)), l) -> f, List.map fst l
     | _ -> raise Not_found
 
+let destClassAppExpl cl =
+  match cl with
+    | CApp (loc, (None,CRef (Ident f)), l) -> f, l
+    | _ -> raise Not_found
+
 let ids_of_list l = 
   List.fold_right Idset.add l Idset.empty
 
@@ -126,14 +148,10 @@ let full_class_binders env l =
     List.fold_left (fun (l', avoid) (iid, bk, cl as x) -> 
       match bk with
 	  Explicit -> 
-	    let (id, l) = destClassApp cl in
+	    let (id, l) = destClassAppExpl cl in
 	      (try
 		  let c = class_info (snd id) in
-		  let args, avoid = combine_params avoid l 
-		    (List.rev_map (fun x -> false, x) c.cl_context @ 
-			List.rev_map (fun x -> true, x) c.cl_super @ 
-			List.rev_map (fun x -> false, x) c.cl_params) 
-		  in
+		  let args, avoid = combine_params_freevar avoid l (List.rev c.cl_context) in
 		    (iid, bk, CAppExpl (fst id, (None, Ident id), args)) :: l', avoid
 		with Not_found -> unbound_class (Global.env ()) id)
 	| Implicit -> (x :: l', avoid))

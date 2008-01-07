@@ -34,9 +34,9 @@ val infer_super_instances : env -> constr list ->
   named_context -> named_context -> types list * identifier list * named_context
 
 val new_class : identifier located ->
-  binder_list ->
+  local_binder list ->
   Vernacexpr.sort_expr located ->
-  typeclass_context ->
+  local_binder list ->
   binder_list -> unit
 
 val new_instance : 
